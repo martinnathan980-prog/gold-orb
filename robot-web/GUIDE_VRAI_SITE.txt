@@ -30,6 +30,9 @@ Ce qui change avec la version 19 :
      l'entreprise (connexion automatique) : il ressemble plus au votre.
    - Nouveau choix 9 du menu : tout rassembler en un fichier a relire.
    - Plus de bandeau jaune « --no-sandbox » inquietant en haut du Chrome du robot.
+   - Le fichier a m'envoyer laisse de cote ce qui ressemble a un nom de projet,
+     de site ou de personne (menus, onglets, champs, colonnes). Relisez-le
+     quand meme : le robot ne peut pas tous les reconnaitre.
    - Nouveau choix 10 : se connecter dans le Chrome du robot sans le robot, si
      le portail ou Google refusent la connexion (voir PARTIE D).
 
@@ -383,8 +386,10 @@ E4. Le Chrome du ROBOT s'ouvre : son titre commence par « ROBOT - » et un
     connectez-vous. Affichez la page d'accueil du portail.
 
 E5. Revenez dans la fenetre noire et appuyez sur Entree. VOUS VOYEZ :
-        Vous etes sur cette page :  « Accueil ... »   (adresse du portail)
+        Vous etes sur la page affichee dans la fenetre du robot (12 element(s) de menu).
         C'est bien votre portail, et vous etes connecte ? (o/n) [o] :
+    (Le robot n'ecrit ni le titre de la page ni son adresse : regardez la
+    fenetre du robot pour verifier.)
     Si c'est bien votre portail : [Entree].
     Sinon : tapez  n  puis Entree, affichez la bonne page dans le Chrome du
     robot, revenez dans la fenetre noire, Entree.
@@ -401,7 +406,9 @@ E6. La visite commence. Le bandeau vert vous guide, UNE ETAPE A LA FOIS :
        2. la recherche de plans (faites une recherche) ;
        3. la fiche d'un plan, puis CHACUN de ses onglets ;
        4. un PDF de ce plan (il arrive dans vos Telechargements, comme d'habitude) ;
-       5. la fiche d'un AUTRE plan ;
+       5. la fiche d'un AUTRE plan (important : les libelles d'une fiche vus
+          sur un seul plan ne sont pas repris dans le fichier a m'envoyer,
+          au cas ou ce serait un nom de site ou de projet) ;
        6. la recherche de composants, la fiche d'un composant et ses onglets ;
        7. tout autre ecran utile a votre travail.
     Une etape qui n'existe pas chez vous : « Etape suivante », simplement.

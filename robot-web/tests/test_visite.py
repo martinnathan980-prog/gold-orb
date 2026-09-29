@@ -97,6 +97,29 @@ class _Portail(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(PDF)
             return
+        elif chemin == "/noms":
+            corps = ("<!doctype html><meta charset=utf-8><title>Tableau de bord</title>"
+                     "<header><nav><a href=/accueil>Accueil</a> <a href=/plans>Plans</a> <a href=/projet>Projet Flamanville</a> "
+                     "<a href=/hpc>Hinkley Point C</a> <a href=/equipe>Kofi Mensah</a> <a href=/aide>Where Used</a></nav></header>"
+                     "<h1>Tableau de bord</h1>"
+                     "<div role=tablist><div role=tab tabindex=0>Général</div><div role=tab tabindex=0>Révisions</div></div>"
+                     "<div role=tablist><div role=tab tabindex=0>Pompe Bugey <img src=/img/close_tab.gif width=8 height=8 alt=''></div>"
+                     "<div role=tab tabindex=0>Vanne Paluel <span class='ti ti-x'></span></div></div>"
+                     "<label for=r>Rechercher dans Flamanville</label><input id=r>"
+                     "<table id=kv><tr><th>Turbine Chooz</th><td>A</td></tr><tr><th>Pompe Bugey</th><td>B</td></tr></table>"
+                     "<span>Gravelines :</span><span>12 plans</span> <span>Tricastin (tranche 3) :</span><span>4</span>"
+                     "<a href=/plans/42>ligne 42 - PL-FLA-00123 Flamanville</a>"
+                     "<button onclick=\"document.title='a'\">Newcastle</button> <button onclick=\"document.title='b'\">Printemps</button>"
+                     "<button onclick=\"document.title='c'\">Exporter en PDF</button>"
+                     "<button onclick=\"location.href='/note'\">Télécharger la note</button>")
+        elif chemin == "/note":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/octet-stream")
+            self.send_header("Content-Disposition", "attachment; filename=Note.Penly")
+            self.send_header("Content-Length", "4")
+            self.end_headers()
+            self.wfile.write(b"abcd")
+            return
         elif chemin == "/cadre":
             corps = ("<!doctype html><meta charset=utf-8><h2>Classeur</h2><table><thead><tr><th>Nom du fichier</th>"
                      "<th>Version</th></tr></thead><tbody><tr><td>Schéma Durand.pdf</td><td>3</td></tr></tbody></table>")
@@ -450,6 +473,61 @@ def test_noms_de_personnes_reconnus():
 
 
 
+def test_carte_sans_noms_de_projets_ni_de_sites(portail, tmp_path, navigateur_ok):
+    """Menus, chemin d'accès, onglets de document (croix en image), champs, entêtes, libellés, clé
+    « ligne ... », boutons qui commencent comme un verbe, type du fichier téléchargé : aucun nom de
+    projet, de site ou de personne dans le fichier à partager ni dans la fenêtre noire."""
+    def promenade(v):
+        page = v.nav.page_courante()
+        page.click("text=Newcastle")
+        v.laisser_tourner(0.6)
+        page.click("text=Télécharger la note")
+        v.laisser_tourner(1.2)
+        page.click("text=ligne 42 - PL-FLA-00123 Flamanville")
+        v.laisser_tourner(1.2)
+        page.goto(portail + "/noms")
+        v.laisser_tourner(0.8)
+        page.click("text=Projet Flamanville")
+        v.laisser_tourner(1.2)
+
+    visite = _visiter(tmp_path, portail + "/noms", promenade)
+    partage = (tmp_path / "carte" / "carte_a_partager.txt").read_text(encoding="utf-8")
+    for secret in ("Flamanville", "Hinkley", "Point C", "Kofi", "Mensah", "Bugey", "Paluel", "Chooz", "Newcastle",
+                   "Printemps", "Penly", "Gravelines", "Tricastin", "ligne 42", "FLA"):
+        assert secret not in partage, secret
+    assert "Where Used" in partage and "Général" in partage and "Révisions" in partage  # la structure reste
+    assert "onglets de document (un par élément ouvert) : 2" in partage
+    assert "Exporter en PDF" in partage and "(sans nom) [texte]" in partage
+    assert "télécharge un fichier .?" in partage and visite.telechargements
+
+
+def test_filtres_de_noms_et_de_types():
+    from autoweb.cli import cacher_mots
+    from autoweb.explorateur import (_modele_sans_requete, extension_connue, masquer, nom_propre_dedans,
+                                     verbe_de_bouton)
+
+    for nom in ("Projet Flamanville", "Site Penly", "Hinkley Point C", "Kofi Mensah", "Rechercher dans Chinon"):
+        assert nom_propre_dedans(nom), nom
+    for libelle in ("Date de création", "Where Used", "Bill of Materials", "Mes Documents", "Part Number",
+                    "Cycle de vie", "Advanced Search", "Change Requests", "Général"):
+        assert not nom_propre_dedans(libelle), libelle
+    for mot in ("Newcastle", "Lockheed", "Printemps", "Addison", "Runcorn", "Stopford", "Paluel"):
+        assert not verbe_de_bouton(mot), mot
+    for mot in ("Supprimer", "Exporter", "Delete", "Voir", "Nouveau", "Télécharger", "Print"):
+        assert verbe_de_bouton(mot), mot
+    assert extension_connue("CR réunion M.Roux") == "?" and extension_connue("Note.Penly") == "?"
+    assert extension_connue("plan.PDF") == "pdf" and extension_connue("/plans/{id}/vue.dwg?x=1") == "dwg"
+    assert masquer("Tricastin (tranche 3) :") == "Tricastin (tranche #) :"
+    assert _modele_sans_requete("/plans/{id}?onglet=general") == "/plans/{id}"
+    assert _modele_sans_requete("/app#/plan/{id}?tab=x") == "/app#/plan/{id}"
+    texte, comptes = cacher_mots("menus : Cœur Défense ; Œting ; Groß ; Ørsted ; Łódź",
+                                 ["Coeur Defense", "Oeting", "Gross", "Orsted", "Lodz"])
+    assert texte == "menus : XXX ; XXX ; XXX ; XXX ; XXX" and all(comptes.values())
+    import unicodedata
+    texte, _ = cacher_mots(unicodedata.normalize("NFD", "Étienne Lefèvre"), ["Lefèvre", "Étienne"])
+    assert texte == "XXX XXX"
+
+
 # ---------------------------------------------------------------------- filet de sécurité : les pièges de la relecture
 PIEGES = """<!doctype html><meta charset=utf-8><title>Fiche</title>
 <script>const envoi = n => fetch('/api/' + n, {method: 'POST', body: 'x'});</script>
@@ -486,6 +564,9 @@ PIEGES = """<!doctype html><meta charset=utf-8><title>Fiche</title>
 <button id=a18 onclick="fetch('/api/plans/5/delete', {method: 'POST', body: '{}'})">Oui</button>
 <button id=a19 onclick="fetch('/api/plans/5', {method: 'POST', headers: {'X-HTTP-Method-Override': 'DELETE'}})">OK</button>
 <button id=a20 onclick="fetch('/api/plans/bulk', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'action=supprimer&ids=5'})">Valider</button>
+<label id=a21 class=btn style="cursor:pointer" onclick="envoi('label_btn')">Supprimer</label>
+<button id=a22 onclick="fetch('/api/Plans.aspx', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: '__VIEWSTATE=x&__EVENTTARGET=ctl00%24Main%24gv&__EVENTARGUMENT=Delete%240'})">Continuer</button>
+<button id=a23 onclick="const w = window.open('', 'edition', 'width=400,height=300'); w.document.open(); w.document.write('<button id=b onclick=&quot;opener.envoi(\\'popup_docwrite\\')&quot;>Enregistrer</button>'); w.document.close();">Ouvrir la fiche</button>
 <iframe id=cadre_vide width=300 height=80></iframe>
 <script>
   window.addEventListener('load', () => setTimeout(() => {
@@ -506,16 +587,25 @@ CONSULTATION = """<!doctype html><meta charset=utf-8><title>Fiche</title>
 <button id=c9 onclick="lire('modifier_recherche')">Modifier la recherche</button>
 <button id=c10 onclick="lire('reinitialiser')">Réinitialiser</button>
 <button id=c11 onclick="fetch('/api/plans/5/comments').then(() => lire('commentaires_api'))">Voir les commentaires</button>
-<table><thead><tr><th>Titre</th></tr></thead><tbody>
-<tr style="cursor:pointer" onclick="lire('ligne')"><td id=c12>Nouveau poste source</td></tr></tbody></table>
+<table><thead><tr><th>Titre</th><th>Statut</th></tr></thead><tbody>
+<tr style="cursor:pointer" onclick="lire('ligne')"><td id=c12>Nouveau poste source</td><td>Publié</td></tr>
+<tr style="cursor:pointer" onclick="lire('ligne_new')"><td>Poste Nord</td><td id=c13>New</td></tr>
+<tr><td><a id=c14 href="javascript:void(0)" onclick="lire('titre_modifier')">Modifier poste HTA</a></td><td>Release</td></tr>
+</tbody></table>
+<div role=listbox aria-label=Statut><div role=option id=c15 onclick="lire('option_nouveau')">Nouveau</div></div>
+<button id=c16 onclick="lire('copier_lien')">Copier le lien</button>
+<ul role=menu><li role=menuitem id=c17 onclick="lire('release_notes')">Release notes</li></ul>
 """
+SESSION_EXPIREE = ("document.body.insertAdjacentHTML('beforeend', '<div role=dialog aria-label=\"Session expirée\">"
+                   "<input type=password><button id=c18 onclick=\"lire(\\'reconnexion\\')\">Envoyer</button></div>')")
 CONSULTATION_ATTENDUS = ["supprimes", "historique", "commentaires", "filtres", "nouvelle_recherche", "modifier_recherche",
-                         "reinitialiser", "commentaires_api", "ligne"]
+                         "reinitialiser", "commentaires_api", "ligne", "ligne_new", "titre_modifier", "option_nouveau",
+                         "copier_lien", "release_notes", "reconnexion"]
 
 DANGEREUX = ["menuitem_supprimer", "menuitem_dupliquer", "header_supprimer", "aside_enregistrer", "enregistrer_fermer",
              "cancel_checkout", "reviser", "grille", "icone_seule", "img_alt", "lien_onclick", "div_maison", "pointerup",
              "clavier", "formulaire_enregistrer", "composant_web", "emoji_trash", "keyup", "touche_suppr", "turbo",
-             "cadre_vide_enregistrer", "bulk"]
+             "cadre_vide_enregistrer", "bulk", "label_btn", "popup_docwrite"]
 PERMIS = ["ligne_publiee", "rechercher", "telecharger", "fermer"]
 
 
@@ -568,6 +658,11 @@ def test_filet_de_securite_resiste_aux_pieges(tmp_path, navigateur_ok):
             page.click(selecteur)
             page.wait_for_timeout(150)
         page.frame_locator("#cadre_vide").locator("#dans_cadre").click()
+        page.click("#a21")
+        page.click("#a22")
+        with page.expect_popup() as fenetre:
+            page.click("#a23")
+        fenetre.value.click("#b")  # tout de suite, avant le relevé suivant du robot
         page.click("#a10", button="middle")
         v.laisser_tourner(1.0)
         page.click("#b1")  # un lien ordinaire dont le texte ressemble à une action : il s'ouvre
@@ -593,6 +688,7 @@ def test_filet_de_securite_resiste_aux_pieges(tmp_path, navigateur_ok):
     assert not any(m == "DELETE" for m, _, _ in requetes)  # « Mettre à la une » : DELETE coupé par la 2e barrière
     assert not any(p in ("/api/plans/5/delete", "/api/plans/5", "/api/plans/bulk") for _, p, _ in requetes)
     assert not any("btnSupprimerPlan" in c for _, _, c in requetes)  # envoi ASP.NET de suppression coupé
+    assert not any("Delete%240" in c for _, _, c in requetes)  # suppression d'une ligne de grille ASP.NET coupée
     assert not any(p == "/plans/5/delete" for _, p, _ in requetes)  # clic molette sur un lien d'action
     assert any(p == "/plans/7" for _, p, _ in requetes)  # « Nouveau poste source » : simple lien, ouvert
     assert visite.envois_bloques and visite.boutons_bloques >= 10
@@ -636,9 +732,13 @@ def test_filet_de_securite_laisse_consulter(tmp_path, navigateur_ok):
 
     def promenade(v):
         page = v.nav.page_courante()
-        for selecteur in ("#c4", "#c5", "#c6", "#c7", "#c8", "#c9", "#c10", "#c11", "#c12"):
+        for selecteur in ("#c4", "#c5", "#c6", "#c7", "#c8", "#c9", "#c10", "#c11", "#c12", "#c13", "#c14", "#c15",
+                          "#c16", "#c17"):
             page.click(selecteur)
             page.wait_for_timeout(200)
+        page.evaluate(SESSION_EXPIREE)  # la session expire : on se reconnecte dans la page
+        page.click("#c18")
+        page.wait_for_timeout(200)
         for lien in ("#c1", "#c2", "#c3"):
             page.goto(url)
             page.click(lien)

@@ -33,7 +33,7 @@ from . import symboles as S
 from .explorateur import (
     CLES_ACTION, INDICATEURS_CHARGEMENT, JS_ECRAN, JS_OUTILS, METHODES_LECTURE, MOTIF_GARDE, RADICAUX_GARDE,
     VERBES_ANGLAIS, VERBES_FORTS, VERBES_FORTS_ONGLETS, Action, Ecran, Explorateur, Limites, _fin_adresse,
-    classer_requete, decouper, masquer, nom_de_code, nom_technique, normaliser, signature,
+    classer_requete, decouper, extension_connue, masquer, nom_de_code, nom_technique, normaliser, signature,
 )
 from .navigateur import Navigateur, est_onglet_parasite, site_de
 
@@ -61,7 +61,23 @@ ETAPES = [
 # quel écran), filet de sécurité sur les boutons de modification, bandeau vert.
 # Rejouable sans doublon : après un document.open(), les écoutes disparaissent et sont reposées.
 JS_VISITE_MODELE = r"""
-() => {
+function autowebArmer() {
+  // gardé dans la fenêtre : un document réécrit (document.open / document.write, fenêtre surgissante
+  // remplie par le portail) est ré-équipé aussitôt, sans attendre le robot
+  if (!window.__autoweb_armer) window.__autoweb_armer = autowebArmer;
+  const D = window.Document && window.Document.prototype;
+  if (D && !D.__autoweb) {
+    D.__autoweb = true;
+    for (const nom of ['open', 'write', 'writeln']) {
+      const origine = D[nom];
+      if (typeof origine !== 'function') continue;
+      D[nom] = function () {
+        const r = origine.apply(this, arguments);
+        try { const w = this.defaultView; if (w && w.__autoweb_armer) w.__autoweb_armer(); } catch (err) {}
+        return r;
+      };
+    }
+  }
   if (!document.__autoweb_visite) {
     document.__autoweb_visite = true;
     document.__autoweb_changements = 0;
@@ -136,6 +152,36 @@ JS_VISITE_MODELE = r"""
   };
   // chercher, filtrer, trier, afficher : de la consultation, même avec un verbe d'action devant
   const CONSULTATION = /\b(recherche|rechercher|critere|criteres|filtre|filtres|search|filter|filters|affichage|colonne|colonnes|tri|trier|vue|view|liste|list|page)\b/;
+  // « Copier le lien », « Partager le lien », « Release notes » : de la lecture aussi
+  const LECTURE = /^(copier|copy|partager|share)( (le|la|les|l|un|une|the|a|this))? (lien|liens|link|links|url|adresse|permalien|permalink)\b|\b(release notes|notes de version)\b/;
+  // mots ordinaires après un verbe : « Supprimer la ligne », « Enregistrer les modifications »,
+  // « Delete item 3 » ; « Modifier poste HTA » ou « New substation layout » sont des titres
+  const ORDINAIRES = new Set(('le la les l un une des du de d a au aux en ce cet cette ces mon ma mes son sa ses ' +
+    'votre vos leur leurs tout tous toute toutes et ou the an this that these those it all my your its of to for and or ' +
+    'ligne lignes element elements item items entree entrees row rows entry entries line lines record records ' +
+    'selection selectionne selectionnee selectionnes selectionnees selected fiche fiches objet objets object objects ' +
+    'plan plans document documents doc docs fichier fichiers file files piece pieces jointe jointes attachment attachments ' +
+    'version versions revision revisions brouillon draft modification modifications changement changements change changes ' +
+    'donnee donnees data formulaire form saisie valeur valeurs value values champ champs field fields courant courante ' +
+    'current actuel actuelle definitivement permanently maintenant now ici here').split(' '));
+  const libelleCourt = texte => {
+    const m = mots(texte);
+    return m.length <= 4 && m.slice(1).every(x => ORDINAIRES.has(x) || /\d/.test(x) || x.length <= 2);
+  };
+  const NOUVEAU = /^(nouveau|nouvelle|nouvel|nouveaux|nouvelles|new)$/;
+  // ligne d'une liste de résultats (tableau à entêtes de colonnes, grille ARIA), et non d'un tableau
+  // de mise en page : son texte est une donnée
+  const ligneDeDonnees = n => {
+    const tr = n.closest && n.closest('tr, [role=row]');
+    if (!tr) return false;
+    if (tr.getAttribute('role') === 'row') return true;
+    const t = tr.closest('table');
+    if (!t || !t.rows || t.rows.length < 2) return false;
+    // ses PROPRES entêtes (pas ceux d'un tableau imbriqué) : <thead>, ou une ligne tout en <th>
+    return !!t.tHead || Array.from(t.rows).slice(0, 3).some(r => r !== tr && r.cells.length > 1 &&
+           Array.from(r.cells).every(c => c.tagName === 'TH'));
+  };
+  const vraiBouton = n => n.matches('button, input, [role=button], .btn, .button, [class*="btn-"], [class*="button-"]');
   const siteDe = h => {
     h = String(h || '').toLowerCase();
     if (!h || /^[\d.]+$|^\[?[0-9a-f:]+\]?$/.test(h) || !h.includes('.')) return h;
@@ -204,17 +250,27 @@ JS_VISITE_MODELE = r"""
     try { u = new URL(url, location.href); } catch (err) { return false; }
     if (pageConnexion(u.pathname, u.hostname)) return false;
     const dernier = decodeURIComponent(u.pathname.split('/').filter(Boolean).pop() || '').replace(/\.[a-z0-9]{1,5}$/i, '');
-    if (commencePar(dernier, FORT) && !CONSULTATION.test(mots(dernier).join(' '))) return true;
+    const lu = mots(dernier).join(' ');
+    if (commencePar(dernier, FORT) && !CONSULTATION.test(lu) && !LECTURE.test(lu)) return true;
     for (const [k, v] of u.searchParams) {
       const cle = k.toLowerCase();
       if ((CLES_ACTION.includes(cle) && commencePar(v, FORT)) || (cle === '_method' && /^(delete|put|patch)$/i.test(v))) return true;
     }
     return false;
   };
+  // bouton d'un formulaire de connexion : un <form>, ou une fenêtre « Session expirée » dans la page
+  // (pas une fenêtre de signature ou de confirmation qui redemande le mot de passe)
+  const BOITES = '[role=dialog], [role=alertdialog], dialog, .modal';
+  const RECONNEXION = /\b(session|connexion|connecter|reconnecter|reconnectez|login|log in|sign in|identifi\w*|expire\w*|timeout|timed out)\b/;
+  const motDePasseVisible = f => Array.from(f.querySelectorAll('input[type=password]')).some(x => x.offsetWidth > 0);
   const surFormulaireDeConnexion = e => {
+    if (!/^(envoyer|submit|valider|ok|suivant|next|continuer|continue|se connecter|connexion|sign in|log in|login)$/.test(mots(etiquette(e, 0)).join(' '))) return false;
     const f = e.closest && e.closest('form');
-    return !!f && Array.from(f.querySelectorAll('input[type=password]')).some(x => x.offsetWidth > 0) &&
-           /^(envoyer|submit|valider|ok|suivant|next|continuer|continue|se connecter|connexion|sign in|log in|login)$/.test(mots(etiquette(e, 0)).join(' '));
+    if (f && motDePasseVisible(f)) return true;
+    const boite = e.closest && e.closest(BOITES);
+    if (!boite || !motDePasseVisible(boite)) return false;
+    const dit = mots((boite.getAttribute('aria-label') || '') + ' ' + (boite.innerText || '').slice(0, 400)).join(' ');
+    return RECONNEXION.test(dit) && !commencePar(dit, FORT) && !/\b(sign|signer|signature|approuv\w*|approve)\b/.test(dit.replace(/\bsign in\b/g, ''));
   };
   const departCurseur = n => { try { return getComputedStyle(n).cursor === 'pointer' && !(n.parentElement && getComputedStyle(n.parentElement).cursor === 'pointer'); } catch (err) { return false; } };
   const elementDangereux = n => {
@@ -223,23 +279,51 @@ JS_VISITE_MODELE = r"""
     if (surFormulaireDeConnexion(n)) return false;
     const texte = etiquette(n, 0);
     if (iconeAction(n)) return true;
-    if (CONSULTATION.test(sansAccents(texte))) return false;
-    let bouton = false, onglet = false;
+    const lu = mots(texte).join(' ');
+    if (CONSULTATION.test(lu) || LECTURE.test(lu)) return false;
+    let bouton = false, onglet = false, choix = false, ligne = false, vrai = false;
     try {
       bouton = n.matches(PETITS) || n.hasAttribute('tabindex') || n.tagName.includes('-') || departCurseur(n);
       onglet = n.matches('[role=tab], [data-toggle=tab], [data-bs-toggle=tab]') || !!n.closest('.nav-tabs, .nav-pills, [role=tablist]');
+      // choisir « Nouveau » dans une liste de statuts, c'est consulter
+      choix = n.matches('[role=option], [role=menuitemradio], [role=menuitemcheckbox]');
+      ligne = ligneDeDonnees(n);
+      vrai = vraiBouton(n);
     } catch (err) {}
-    if (onglet) return commencePar(texte, FORT_ONGLET);  // un onglet s'ouvre ; seul « Supprimer » y est bloqué
-    if (bouton) return commencePar(texte, ACTION) || annulerQuelqueChose(texte);
+    if (onglet || choix) return commencePar(texte, FORT_ONGLET);  // un onglet s'ouvre ; seul « Supprimer » y est bloqué
+    const nouveau = NOUVEAU.test(mots(texte)[0] || '');
+    if (bouton) {
+      // lien (ou ligne cliquable) dont le texte est un titre : « Modifier poste HTA », « New substation layout »
+      if (!vrai && ligne && (!libelleCourt(texte) || nouveau)) return false;
+      return commencePar(texte, ACTION) || annulerQuelqueChose(texte);
+    }
     // simple texte dans une ligne ou une carte cliquable : seulement un libellé court qui est un verbe
-    return mots(texte).length <= 2 && commencePar(texte, ACTION);
+    // (« Nouveau », « New » seuls : un badge de statut ; dans une ligne de résultats, seuls les verbes nets)
+    return !nouveau && mots(texte).length <= 2 && commencePar(texte, ligne ? FORT_ONGLET : ACTION);
   };
-  // chaque élément sous le clic, jusqu'à la ligne ou au formulaire qui le contient
+  const CELLULES = ['TD', 'TH'];
+  // chaque élément sous le clic, jusqu'à la cellule, la ligne ou le formulaire qui le contient
   const cheminDangereux = chemin => {
     for (const n of chemin) {
       if (!n || n.nodeType !== 1) continue;
       if (duRobot(n)) return false;
       if (GRANDS.includes(n.tagName)) return false;
+      let cellule = CELLULES.includes(n.tagName);
+      try { cellule = cellule || n.matches('[role=gridcell], [role=cell], [role=columnheader], [role=rowheader]'); } catch (err) {}
+      // une cellule qui porte elle-même le clic est examinée comme un bouton ; sinon son texte est une
+      // donnée (statut « Nouveau », « Release ») : seul un verbe net seul (« Supprimer ») y est bloqué
+      if (cellule) {
+        if (n.hasAttribute('onclick')) return elementDangereux(n);
+        const t = etiquette(n, 0), m = mots(t);
+        return m.length <= 2 && !NOUVEAU.test(m[0] || '') && commencePar(t, FORT_ONGLET);
+      }
+      if (n.tagName === 'LABEL') {  // un libellé lié à un champ est une saisie ; seul, il peut servir de bouton
+        let champ = null;
+        try { champ = n.control || n.querySelector('input, select, textarea'); } catch (err) {}
+        if (champ) return false;
+        if (elementDangereux(n)) return true;
+        continue;
+      }
       if (SAISIES.includes(n.tagName) && !(n.tagName === 'INPUT' && /^(submit|button|image|reset)$/i.test(n.type || ''))) return false;
       if (elementDangereux(n)) return true;
     }
@@ -324,6 +408,9 @@ JS_VISITE_MODELE = r"""
       const cle = k.toLowerCase();
       if (cle === '_method' && /^(delete|put|patch)$/i.test(v)) return true;
       if (cle === '__eventtarget' && v && commencePar(bouton(v), FORT)) return true;
+      // commande d'une grille ASP.NET : « Delete$0 », « Update$2 », « Edit$1 » (pas Page$2, Sort$x, Select$0)
+      if (cle === '__eventargument' && v &&
+          v.split(/[$;:|]/).some(x => /^[A-Za-z]{3,20}$/.test(x) && mots(x).length <= 2 && commencePar(x, FORT))) return true;
       if (CLES_ACTION.includes(cle) && commencePar(v, FORT)) return true;
       if (/\$(btn|lnk|lb|ib|cmd)/i.test(k) && commencePar(bouton(k), FORT)) return true;  // bouton ASP.NET qui envoie
     }
@@ -423,7 +510,7 @@ JS_VISITE_MODELE = r"""
   // fenêtre du robot : son titre commence par « ROBOT - », dès l'ouverture (pas la confondre)
   const titrer = () => { if (window === window.top && document.title && !document.title.startsWith('ROBOT - ')) document.title = 'ROBOT - ' + document.title; };
   titrer(); setTimeout(titrer, 800);
-  if (window === window.top) setInterval(titrer, 2000);  // un portail qui change son titre en route
+  if (window === window.top && !window.__autoweb_titre) window.__autoweb_titre = setInterval(titrer, 2000);  // titre changé en route
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', titrer);
   if (window === window.top) {
     const poser = () => {
@@ -658,7 +745,10 @@ class Visite(Explorateur):
         if ouvreur is not None:
             self._ouvreurs[page] = ouvreur
         page.on("download", self._telechargement_vu)
-        # un onglet ouvert par window.open ne reçoit pas toujours le script : on le repose
+        # un onglet ouvert par window.open ne reçoit pas toujours le script : on le pose tout de suite
+        # (une fenêtre surgissante peut être remplie et cliquée avant le relevé suivant), puis à chaque page
+        if self.site:
+            self._equiper(page)
         page.on("domcontentloaded", self._equiper)
 
     def _equiper(self, page: Any) -> None:
@@ -722,7 +812,7 @@ class Visite(Explorateur):
                     entree["nom"] = nom
                     self.telechargements.append(nom)
                     origine, clic = self._origine(entree["page"]) if entree["page"] is not None else (None, None)
-                    extension = nom.rsplit(".", 1)[-1].lower()[:5] if "." in nom else "?"
+                    extension = extension_connue(nom)  # « CR réunion M.Roux » : pas de type « roux »
                     entree["extension"] = extension
                     if origine is not None and clic:
                         origine.resultats.setdefault(self._cle(clic), f"télécharge un fichier .{masquer(extension)}")

@@ -539,25 +539,55 @@ def _mots_a_cacher(demander: bool) -> List[str]:
     return mots
 
 
-VARIANTES = {"a": "aàâäáã", "e": "eéèêë", "i": "iîïíì", "o": "oôöóò", "u": "uùûüú", "c": "cç", "y": "yÿ", "n": "nñ"}
+def _variantes() -> Dict[str, str]:
+    """Pour chaque lettre, ses formes accentuées : « z » -> « zźżž », « e » -> « eéèêëēė... »."""
+    import unicodedata
+
+    formes: Dict[str, str] = {}
+    for code in list(range(0xC0, 0x250)) + list(range(0x1E00, 0x1F00)):
+        c = chr(code).lower()
+        base = unicodedata.normalize("NFD", c)[0]
+        if base.isascii() and base.isalpha() and c != base and c not in formes.get(base, ""):
+            formes[base] = formes.get(base, base) + c
+    for base, autres in {"o": "ø", "l": "ł", "d": "đð", "i": "ı"}.items():
+        formes[base] = formes.get(base, base) + autres
+    return formes
+
+
+VARIANTES = _variantes()
+# lettres liées ou barrées : « Œting » s'écrit aussi « Oeting », « Groß » « Gross », « Ørsted » « Orsted »
+LIGATURES = str.maketrans({"œ": "oe", "æ": "ae", "ß": "ss", "ø": "o", "ł": "l", "đ": "d", "ð": "d", "þ": "th", "ı": "i"})
+PAIRES = {"oe": "œ", "ae": "æ", "ss": "ß"}
 
 
 def _motif_souple(mot: str) -> Optional[str]:
-    """« Saint-Étienne » trouve aussi « SAINT ETIENNE », « saint-etienne », « Saint Étienne »."""
+    """« Saint-Étienne » trouve aussi « SAINT ETIENNE », « saint-etienne », « Saint Étienne » ;
+    « Coeur » trouve « Cœur » (et inversement)."""
     import unicodedata
 
-    base = "".join(c for c in unicodedata.normalize("NFD", mot.lower()) if unicodedata.category(c) != "Mn")
+    base = unicodedata.normalize("NFC", mot).lower().translate(LIGATURES)
+    base = "".join(c for c in unicodedata.normalize("NFD", base) if unicodedata.category(c) != "Mn")
     base = re.sub(r"[\s\-_'’.]+", " ", base).strip()
     if len(base) < 2:
         return None
+
+    def lettre(c: str) -> str:
+        return f"[{VARIANTES[c]}]" if c in VARIANTES else re.escape(c)
+
     morceaux = []
-    for c in base:
+    i = 0
+    while i < len(base):
+        c = base[i]
         if c == " ":
             morceaux.append(r"[\s\-_'’.]*")
-        elif c in VARIANTES:
-            morceaux.append(f"[{VARIANTES[c]}]")
+        elif base[i:i + 2] in PAIRES:
+            paire = base[i:i + 2]
+            morceaux.append(f"(?:{lettre(paire[0])}{lettre(paire[1])}|{PAIRES[paire]})")
+            i += 2
+            continue
         else:
-            morceaux.append(re.escape(c))
+            morceaux.append(lettre(c))
+        i += 1
     return r"(?<![^\W\d_])" + "".join(morceaux) + r"(?![^\W\d_])"
 
 
@@ -574,6 +604,10 @@ def cacher_mots(texte: str, mots: List[str]) -> Tuple[str, Dict[str, int]]:
     """Remplace chaque mot de la liste par XXX, sans tenir compte des accents, des majuscules ni
     des tirets. Un nom en plusieurs mots cache aussi chacun de ses mots de 4 lettres ou plus
     (« Flamanville 3 » cache « Flamanville # »). Renvoie le texte et le nombre de remplacements."""
+    import unicodedata
+
+    # « É » écrit en deux caractères (E + accent, texte venu d'un Mac) : ramené à un seul
+    texte = unicodedata.normalize("NFC", texte)
     comptes: Dict[str, int] = {}
     for mot in sorted(mots, key=len, reverse=True):
         # les mots distinctifs d'un nom en plusieurs mots (« Flamanville » dans « Centrale de Flamanville 3 ») ;

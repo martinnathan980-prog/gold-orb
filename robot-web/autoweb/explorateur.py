@@ -108,6 +108,22 @@ EXTENSIONS_FICHIERS = (
     ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".xlsm", ".csv", ".zip", ".7z", ".rar", ".txt",
     ".xml", ".json", ".dwg", ".dxf", ".png", ".jpg", ".jpeg", ".gif", ".tif", ".tiff", ".ppt", ".pptx",
 )
+# Types de fichiers repris dans la carte : un nom de fichier peut finir par « .Roux » ou « .Penly »
+TYPES_FICHIERS = {e.lstrip(".") for e in EXTENSIONS_FICHIERS} | {
+    "step", "stp", "igs", "iges", "stl", "sat", "jt", "prt", "asm", "drw", "sldprt", "sldasm", "slddrw", "catpart",
+    "catproduct", "catdrawing", "dgn", "dwf", "dwfx", "plt", "hpgl", "svg", "bmp", "webp", "msg", "eml", "odt",
+    "ods", "odp", "odg", "rtf", "html", "htm", "gz", "tar", "tgz", "bin", "dat", "log", "ifc", "rvt", "vsd", "vsdx",
+    "mpp", "xlsb", "docm", "pptm", "xps", "oxps", "p7m", "sig",
+}
+
+
+def extension_connue(nom: str) -> str:
+    """Type d'un fichier (« pdf », « dwg ») s'il est connu, sinon « ? »."""
+    m = re.search(r"\.([A-Za-z0-9]{1,12})(?:$|[?#])", str(nom or ""))
+    extension = m.group(1).lower() if m else ""
+    return extension if extension in TYPES_FICHIERS else "?"
+
+
 METHODES_LECTURE = ("GET", "HEAD", "OPTIONS")
 # Adresses où le serveur de connexion de l'entreprise (SSO) renvoie l'utilisateur pour ouvrir
 # la session : ce retour se fait en POST, mais il ne modifie aucune donnée du portail.
@@ -179,6 +195,24 @@ def mot_garde(*textes: str) -> Optional[str]:
         if m:
             return m.group(0)
     return None
+
+
+# Premiers mots de bouton repris tels quels : des verbes, ou des noms d'action (jamais « Newcastle »,
+# « Printemps » ou « Lockheed », qui ne font que COMMENCER comme un verbe)
+MOTS_ACTION_BOUTONS = {
+    "nouveau", "nouvelle", "new", "impression", "export", "exportation", "import", "suppression", "creation",
+    "modification", "duplication", "enregistrement", "validation", "telechargement", "sauvegarde", "copie", "ajout",
+    "open", "close", "cancel", "print", "download", "show", "check", "refresh", "run", "start", "stop", "apply",
+    "reset", "compare", "generate", "validate", "confirm", "ok", "oui", "non", "yes", "no",
+}
+
+
+def verbe_de_bouton(mot: str) -> bool:
+    """« Supprimer », « Exporter », « Delete », « Voir », « Nouveau » : oui. « Newcastle » : non."""
+    m = normaliser(mot).strip(".:,;!?…()[]")
+    if m in PREMIERS_MOTS_LECTURE or m in VERBES_ANGLAIS or m in MOTS_ACTION_BOUTONS:
+        return True
+    return bool(re.fullmatch(r"[a-z]+(?:er|ir|re)", m)) and mot_interdit(m) is not None
 
 
 def est_lecture(texte: str) -> bool:
@@ -257,6 +291,15 @@ def modele_url(url: str) -> str:
     return chemin + (f"?{requete}" if requete else "") + (f"#{fragment}" if fragment else "")
 
 
+def _modele_sans_requete(modele: str) -> str:
+    """« /plans/{id}?onglet=general » -> « /plans/{id} » ; « /app#/plan/{id}?tab=x » -> « /app#/plan/{id} »."""
+    chemin, _, fragment = (modele or "").partition("#")
+    route = fragment.split("?")[0]
+    if "=" in route and not route.startswith("/"):
+        route = ""
+    return chemin.split("?")[0] + (f"#{route}" if route else "")
+
+
 def adresse_action(url: str) -> Optional[str]:
     """Raison pour laquelle une adresse ressemble à une action (…/supprimer, ?action=del), ou None."""
     m = decouper(url)
@@ -298,7 +341,8 @@ def sans_fragment(url: str) -> str:
 def masquer(texte: str) -> str:
     """Tout mot contenant un chiffre, et les adresses mail, sont masqués."""
     texte = re.sub(r"[\w.+-]+@[\w-]+\.[\w.-]+", "<email>", str(texte or ""))
-    return re.sub(r"\S*\d\S*", "#", texte)
+    # « (tranche 3) » -> « (tranche #) » : les parenthèses et crochets autour restent
+    return re.sub(r"[^\s()\[\]{}«»]*\d[^\s()\[\]{}«»]*", "#", texte)
 
 
 TYPES_CHAMPS = {
@@ -425,13 +469,27 @@ JS_OUTILS = r"""
   const FERMER = '[class*=close i], [class*=fermer i], [aria-label*=close i], [aria-label*=fermer i], ' +
                  '[title*=close i], [title*=fermer i], .fa-times, .fa-xmark, .k-i-x, .k-i-close, [class*=remove i], ' +
                  '.bi-x, .bi-x-lg, .bi-x-circle, .pi-times, .pi-times-circle, .lucide-x, [class*=icon-x i], ' +
-                 '[data-dismiss], [data-bs-dismiss], .glyphicon-remove';
-  // une croix dans l'élément : classe, info-bulle, ou glyphe (×, ligature « close » des icônes Material)
+                 '[data-dismiss], [data-bs-dismiss], .glyphicon-remove, img[alt*=ferm i], img[alt*=close i], ' +
+                 'img[title*=ferm i], img[title*=close i], img[src*=close i], img[src*=fermer i], use[href*=close i], ' +
+                 'use[href$="-x"], use[href$="#x"], [data-icon*=close i], [data-icon*=times i], [data-icon*=xmark i], ' +
+                 '[data-feather=x], [data-lucide=x], [data-icon=x]';
+  // classe d'icône « croix » : ti-x, bx-x, la-times, feather-x, icon-cross, mdi-close...
+  const CLASSE_CROIX = /(^|[-_])(x|times|close|xmark|cross)$/i;
+  const classesDe = i => {
+    const c = typeof i.className === 'string' ? i.className : ((i.className && i.className.baseVal) || '');
+    return c.split(/\s+/).filter(Boolean);
+  };
+  // une croix dans l'élément : classe, info-bulle, image, ou glyphe (×, ligature « close » des icônes Material)
   const croix = x => {
     if (!x) return false;
     try { if (x.querySelector(FERMER)) return true; } catch (err) {}
-    for (const i of [x].concat(Array.from(x.querySelectorAll('span, i, button, a, mat-icon, svg')).slice(0, 8))) {
-      if (i !== x && ['×', '✕', '✖', 'x', 'close', 'clear', 'cancel'].includes((i.textContent || '').trim().toLowerCase())) return true;
+    for (const i of [x].concat(Array.from(x.querySelectorAll('span, i, button, a, mat-icon, svg, img, use')).slice(0, 12))) {
+      if (i !== x && classesDe(i).some(c => CLASSE_CROIX.test(c))) return true;
+      try {
+        const lien = i.tagName.toLowerCase() === 'use' ? (i.getAttribute('href') || i.getAttribute('xlink:href') || '') : '';
+        if (/(close|fermer|times|xmark|cross|[#-]x)$/i.test(lien)) return true;
+      } catch (err) {}
+      if (i !== x && ['×', '✕', '✖', '⨯', 'x', 'close', 'clear', 'cancel'].includes((i.textContent || '').trim().toLowerCase())) return true;
       try {  // croix dessinée par le style (« ::after { content: '×' } »)
         for (const pseudo of ['::after', '::before']) {
           if (/[×✕✖]/.test(getComputedStyle(i, pseudo).content || '')) return true;
@@ -566,7 +624,11 @@ JS_ECRAN = r"""
   tous('table, [role=grid]').forEach(t => {
     if (!vis(t) || t.parentElement.closest('table')) return;
     let entetes = Array.from(t.querySelectorAll('thead th, [role=columnheader]')).map(texteSeul);
-    if (!entetes.length) { const tr = t.querySelector('tr'); if (tr) entetes = Array.from(tr.querySelectorAll('th')).map(texteSeul); }
+    if (!entetes.length) {
+      // première ligne TOUTE en entêtes (au moins 2) ; un <th> seul en tête de ligne est un nom d'objet
+      const tr = t.querySelector('tr');
+      if (tr && tr.children.length > 1 && Array.from(tr.children).every(c => c.tagName === 'TH')) entetes = Array.from(tr.children).map(texteSeul);
+    }
     tableaux.push({ entetes: entetes.slice(0, 40), lignes: t.querySelectorAll('tbody tr, [role=row]').length });
   });
   const cibles = [];
@@ -1163,11 +1225,48 @@ marco luca giovanni carlos jose juan miguel antonio manuel ana maria
 """.split())
 
 
+# Mots d'interface souvent écrits avec une majuscule (« Where Used », « Bill of Materials »,
+# « Part Number », « Mes Documents ») : cette majuscule ne signale pas un nom propre.
+MOTS_INTERFACE = set("""
+where used bill materials material tasks task requests request changes change notices notice orders order
+history structure related relations relation attachments attachment my all recent recents favorites workspace
+workspaces reports report dashboard bord settings parametres preferences help aide about overview summary resume
+general information informations proprietes attributs lifecycle cycle vie workflow processes process approvals
+approbation approbations notes notifications notification messages message inbox boite reception assemblies
+assembly drawings drawing objects object products product libraries library folders folder viewer visualisation
+preview apercu iterations iteration results queries saved team teams members member groups group roles role people
+personnes creation modification created modified updated by par of the and for in on at with sans avec number
+numbers owner owners creator context organization organisation container location emplacement quantity quantite
+unit units unite level niveau line position checked locked time heure weight poids length longueur width largeur
+height hauteur voltage tension power puissance reference category classification class classe parent child
+children primary secondary principal principale effective released release approved draft work progress cours
+used uses where-used bom plm erp sap cao cad dao ged eco ecr ecn ecm mrp oem hta htb bt pdf id management gestion
+links liens viewed recently recemment quick access acces control controle admin administration tools outils
+collaboration compare comparaison comparison search searches home tree view explorer navigator utilise utilisee
+utilises emploi cas lies liees lien associes associees composition dossier dossiers equivalences equivalents
+documentation proprietes caracteristiques caracteristique technique techniques contexte suivi audit securite droits
+acces visualiseur miniature vignette apercu signatures signature validations cycle etats etat revisions
+""".split())
+
+
+def _mot_interface(mot: str) -> bool:
+    m = normaliser(mot).strip(".:,;()[]{}'’«»\"!?")
+    connus = MOTS_GENERIQUES | VOCABULAIRE_CODE | MOTS_INTERFACE
+
+    def connu(x: str) -> bool:  # « Searches », « Requêtes » : le pluriel d'un mot connu aussi
+        return x in connus or (x.endswith("s") and x[:-1] in connus) or (x.endswith("es") and x[:-2] in connus)
+
+    return not m or bool(re.search(r"\d", m)) or connu(m) or all(connu(x) for x in m.split("-") if x)
+
+
 def nom_propre_dedans(texte: str) -> bool:
-    """« Résultats pour Tricastin », « Site Penly » : un mot à majuscule après le premier (les
-    libellés s'écrivent « Date de création ») ; ou un nom de personne."""
+    """« Résultats pour Tricastin », « Site Penly », « Hinkley Point C » : un mot à majuscule après le
+    premier, hors des mots d'interface (les libellés s'écrivent « Date de création », « Where Used ») ;
+    ou un nom de personne."""
     mots = str(texte or "").split()
-    return ressemble_a_une_personne(texte) or any(m[:1].isupper() and len(m) > 1 for m in mots[1:])
+    return ressemble_a_une_personne(texte) or any(
+        m[:1].isupper() and not _mot_interface(m) and (len(m) > 1 or i == len(mots) - 1)
+        for i, m in enumerate(mots[1:], 1))
 
 
 def ressemble_a_une_personne(texte: str) -> bool:
@@ -1282,6 +1381,7 @@ class Explorateur:
         self.connexion = connexion  # tests : se connecter sans intervention
         self.ecrans: List[Ecran] = []
         self._par_signature: Dict[str, Ecran] = {}
+        self._infos_vues: Dict[Tuple[str, str], set] = {}  # (modèle, libellé) -> adresses où il a été lu
         self._visites_modele: Dict[str, int] = {}
         self._clics_globaux: Dict[str, int] = {}
         self.transitions: List[Dict[str, str]] = []
@@ -1593,13 +1693,13 @@ class Explorateur:
             self._attendre(page)
             lecture = self._lire(page) or {}
             menus = sum(1 for c in lecture.get("cibles") or [] if c["zone"] in ("menu", "lateral", "arbre"))
-            titre = masquer((lecture.get("titres") or [""])[0] or lecture.get("titre") or "(page sans titre)")
-            m = decouper(page.url)
             print()
+            # ni le titre de la page, ni l'adresse du serveur : ces lignes peuvent être recopiées et envoyées
+            forme = f"{menus} élément(s) de menu" + (", un mot de passe demandé" if lecture.get("mot_de_passe") else "")
             if self.mode == "visite":
-                print(f"   Vous êtes sur cette page :  « {titre[:70]} »   ({(m.netloc if m else '') or page.url[:40]})")
+                print(f"   Vous êtes sur la page affichée dans la fenêtre du robot ({forme}).")
             else:
-                print(f"   Le robot partira de cette page :  « {titre[:70]} »   ({(m.netloc if m else '') or page.url[:40]})")
+                print(f"   Le robot partira de la page affichée dans sa fenêtre ({forme}).")
             doute = False
             if lecture.get("mot_de_passe") and menus < 3:  # « mon compte, changer le mot de passe » : normal
                 doute = True
@@ -1687,6 +1787,12 @@ class Explorateur:
         lecture = lecture or self._lire(page)
         if lecture is None:
             return None
+        # libellés de fiche : sur combien d'objets (d'adresses) de ce modèle d'écran les a-t-on vus ?
+        modele = _modele_sans_requete(modele_url(lecture["url"]))
+        for info in lecture.get("infos") or []:
+            vues = self._infos_vues.setdefault((modele, normaliser(info)), set())
+            if len(vues) < 3:
+                vues.add(lecture["url"])
         sig = signature(lecture)
         if sig in self._par_signature:
             return None
@@ -2014,8 +2120,9 @@ class Explorateur:
 
     @classmethod
     def _sur(cls, texte: str, mots: int = 3) -> Optional[str]:
-        """Le texte masqué s'il peut être repris, sinon None."""
-        if not cls._court(texte, mots) or ressemble_a_une_personne(texte):
+        """Le texte masqué s'il peut être repris, sinon None : ni nom de personne, ni nom propre
+        (« Projet Flamanville », « Hinkley Point C ») dans un onglet, un menu ou un chemin d'accès."""
+        if not cls._court(texte, mots) or nom_propre_dedans(texte):
             return None
         return masquer(texte)
 
@@ -2024,10 +2131,10 @@ class Explorateur:
         if cible.get("perso") or ressemble_a_une_personne(texte):
             return "(bouton)"
         premier = (texte.split() or [""])[0]
-        if est_lecture(texte) or (mot_interdit(premier) and self._court(texte, 4)):
+        if verbe_de_bouton(premier) and (est_lecture(texte) or self._court(texte, 4)):
             # « Voir le détail » oui ; « Voir Poste Lyon Sud », « Exporter Pompe Bugey » : la suite
             # peut être une donnée, seuls les mots génériques sont repris. Le premier mot doit être
-            # le verbe lui-même (« Paluel Exporter » : rien de repris)
+            # le verbe lui-même (« Paluel Exporter », « Newcastle », « Printemps » : rien de repris)
             mots = texte.split()
             suite = [m for m in mots[1:] if normaliser(m).strip(".:,;") in MOTS_GENERIQUES]
             return masquer(" ".join([mots[0]] + suite) + (" …" if len(suite) < len(mots) - 1 else ""))
@@ -2054,11 +2161,15 @@ class Explorateur:
             return "un lien"
         return f"bouton « {self._texte_bouton(cible)} »" if self._texte_bouton(cible) != "(bouton)" else "un bouton"
 
+    def _info_revue(self, ecran: "Ecran", info: str) -> bool:
+        """Libellé lu sur au moins deux objets (deux adresses) du même modèle d'écran."""
+        return len(self._infos_vues.get((_modele_sans_requete(ecran.modele), normaliser(info)), ())) >= 2
+
     def _libelle_champ(self, champ: Dict[str, Any]) -> str:
         if champ["type"] in ("checkbox", "radio"):
             return "(case)"
         libelle = champ["libelle"]
-        if ressemble_a_une_personne(libelle):
+        if nom_propre_dedans(libelle):  # « Rechercher dans Flamanville », « Site Penly », un nom de personne
             return "(sans nom)"
         if champ["source"] in ("label", "aria", "entete") and self._court(libelle, 5):
             return masquer(libelle)
@@ -2070,8 +2181,9 @@ class Explorateur:
         """Onglet qu'on retrouve sur un autre écran du même modèle : un onglet de l'interface, pas le
         nom d'un plan ouvert."""
         nom = _norm_chiffres(cible["texte"] or cible["aria"])
+        modele = _modele_sans_requete(ecran.modele)  # ?onglet=general, ?onglet=revisions : la même fiche
         return any(
-            autre is not ecran and autre.modele == ecran.modele
+            autre is not ecran and _modele_sans_requete(autre.modele) == modele
             and any(_norm_chiffres(c["texte"] or c["aria"]) == nom for c in autre.cibles if c["zone"] == "onglet")
             for autre in self.ecrans
         )
@@ -2105,8 +2217,11 @@ class Explorateur:
             lignes.append(f"     accès : {' › '.join(p.partage or 'un clic' for p in e.chemin)}")
             onglets_cibles = [c for c in e.cibles if c["zone"] == "onglet" and not c.get("perso")]
             documents_ouverts = any(c.get("fermable") for c in e.cibles)
+            # avec des onglets de document ouverts, un onglet sans croix est repris s'il est aussi sur une
+            # autre fiche, ou s'il n'est fait que de mots d'interface (« Général », « Où utilisé »)
             onglets = sorted({x for x in (self._sur(c["texte"]) for c in onglets_cibles if not c.get("fermable")
-                                          and (not documents_ouverts or self._onglet_courant(c, e))) if x})
+                                          and (not documents_ouverts or self._onglet_courant(c, e)
+                                               or all(_mot_interface(m) for m in c["texte"].split()))) if x})
             if onglets:
                 lignes.append(f"     onglets : {' ; '.join(onglets)}")
             documents = sum(1 for c in e.cibles if c.get("fermable") and not c.get("perso"))
@@ -2133,9 +2248,20 @@ class Explorateur:
                               + (", lecture seule" if c["lecture_seule"] else "") + "]")
             if champs:
                 lignes.append(f"     champs : {' ; '.join(champs)}")
-            infos = sorted({x for x in (self._sur(i, 5) for i in e.infos if not nom_propre_dedans(i)) if x})
-            if infos:
-                lignes.append(f"     libellés affichés (fiche en lecture) : {' ; '.join(infos[:40])}")
+            # un libellé de fiche se retrouve d'un objet à l'autre (fiche d'un deuxième plan) ; un nom de
+            # site écrit seul (« Flamanville : », « Gravelines ») non : seuls les libellés revus sont repris
+            gardes, autres = set(), 0
+            for i in e.infos:
+                x = self._sur(i, 5)
+                if x and (self._info_revue(e, i) or all(_mot_interface(m) for m in i.split())):
+                    gardes.add(x)
+                else:
+                    autres += 1
+            infos = sorted(gardes)
+            if infos or autres:
+                lignes.append("     libellés affichés (fiche en lecture) : " + " ; ".join(infos[:40])
+                              + (" ; " if infos and autres else "")
+                              + (f"{autres} autre(s), non repris (vus sur une seule fiche)" if autres else ""))
             boutons = []
             for c in e.cibles:
                 if c["zone"] not in ("page", "fenetre") or c["tag"] == "a":
@@ -2145,9 +2271,12 @@ class Explorateur:
             if boutons:
                 lignes.append(f"     boutons : {' ; '.join(boutons)}")
             for t in e.tableaux:
-                entetes = [x if not ressemble_a_une_personne(x) else "(nom)" for x in t["entetes"]]
+                entetes = [x if not nom_propre_dedans(x) else "(nom)" for x in t["entetes"]]
                 lignes.append(f"     tableau : [{masquer(' | '.join(entetes))}] ({t['lignes']} lignes)")
-            for k, v in sorted((k, v) for k, v in e.resultats.items() if k.startswith("ligne ")):
+            # seulement les clés du robot (« ligne 2 du tableau ») : un lien dont le texte commence par
+            # « ligne » est un texte de la page
+            for k, v in sorted((k, v) for k, v in e.resultats.items()
+                               if re.fullmatch(r"ligne \d+ du tableau(?:, élément \d+)?", k)):
                 lignes.append(f"     {k} → {resultat(v)}")
             liens = sum(1 for c in e.cibles if c["tag"] == "a" and c["zone"] in ("page", "arbre"))
             liens += sum(1 for c in e.cibles if c["zone"] == "menu" and not self._court(c["texte"]))
@@ -2202,8 +2331,7 @@ class Explorateur:
             for raison, nombre in sorted(raisons.items(), key=lambda x: (-x[1], x[0]))[:20]:
                 lignes.append(f"   {nombre:3} × {raison}")
         if self.telechargements:
-            extensions = sorted({m.group(1).lower() if m else "?" for m in
-                                 (re.search(r"\.([A-Za-z0-9]{1,5})(?:$|[?#])", t) for t in self.telechargements)})
+            extensions = sorted({extension_connue(t) for t in self.telechargements})
             lignes.append("")
             lignes.append(f"FICHIERS PROPOSES AU TELECHARGEMENT : {len(set(self.telechargements))} "
                           f"(types : {', '.join(masquer(x) for x in extensions)})")
