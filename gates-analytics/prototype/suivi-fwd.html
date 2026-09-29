@@ -205,7 +205,7 @@ body {
    un bouton pressé ne se distinguerait plus des autres. */
 @media (forced-colors: active) {
   .barre span, .pastille { forced-color-adjust: none; }
-  [aria-pressed="true"] { forced-color-adjust: none; background: Highlight; color: HighlightText; }
+  [aria-pressed="true"] { outline: 3px solid Highlight; outline-offset: -3px; }
 }
 
 /* ---------------------------------------------------- Classeur sans plans */
@@ -1456,7 +1456,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
      compte une fois la page chargée. */
   if (window.SUIVI_FWD_DEMARREE) { DEMARRAGE_FINI = true; montrerDoublon(); return; }
   window.SUIVI_FWD_DEMARREE = true;
-  window.addEventListener('load', function () {
+  document.addEventListener('DOMContentLoaded', function () {
     var copies = 0;
     for (var i = 0; i < document.scripts.length; i++) {
       if ((document.scripts[i].text || '').indexOf('function chargerSource(') !== -1) copies++;
@@ -2452,6 +2452,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
      (voir plansUniques) ; et l'ordre des dates de la colonne de création,
      jour/mois ou mois/jour (voir ordreDesDates). */
   var LIGNES_EN_DOUBLE = 0, MOIS_D_ABORD = false;
+  /* La colonne suivie vide sur tous les plans du jour alors que le dernier
+     relevé en avait : un export fait sans elle (voir chargerSource). */
+  var COLONNE_VIDEE = false;
   /* La figure de la comparaison s'anime une fois par source : le drapeau se
      lève au chargement, le premier rendu le consomme. */
   var ANIMER_FIGURE = false, GUETTEUR_FIGURE = null;
@@ -3178,7 +3181,11 @@ table.plans thead tr th.col-fige { z-index: 6; }
        une chute et remplirait le journal de faux reculs (débrief 17) : la
        courbe et le journal s'arrêtent au dernier relevé archivé, le message
        du haut dit pourquoi. */
-    if (dernier && PLANS.length && !PAR_CLE[CLE_SUIVIE]) {
+    /* De même quand elle est là mais vidée alors que le dernier relevé en
+       avait : un export fait sans elle ne fait pas reculer six cents plans. */
+    COLONNE_VIDEE = !!(dernier && PLANS.length && PAR_CLE[CLE_SUIVIE] && dernier.total - dernier.vide > 0 &&
+      VALEURS_COLONNE.every(function (v) { return v.famille === 'vide'; }));
+    if (dernier && PLANS.length && (!PAR_CLE[CLE_SUIVIE] || COLONNE_VIDEE)) {
       /* rien : les relevés archivés restent seuls */
     } else if (dernier && dernier.i === AUJ && iJour > AUJ && extraitABouge(vivant, dernier)) {
       EXTRAIT_EN_PLUS = true;
@@ -3207,7 +3214,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
     /* Le pied dit ce que dit la note du graphique : le dernier relevé, et
        combien il y en a — avec les mêmes mots. */
     var nArchives = RELEVES.length - (EXTRAIT_EN_PLUS ? 1 : 0);
-    $('import').textContent = !RELEVES_SRC.length
+    $('import').textContent = src.historiqueIllisible
+      ? 'Historique illisible pour l\u2019instant : voir l\u2019avis en haut de la page.'
+      : !RELEVES_SRC.length
       ? 'Aucun relevé archivé pour l\u2019instant : la page montre l\u2019extract du jour.'
       : EXTRAIT_EN_PLUS
         ? 'Dernier relevé : ' + semaineDite(RELEVES[RELEVES.length - 2].i) + ' · ' + nArchives + (nArchives > 1 ? ' relevés' : ' relevé') +
@@ -5833,7 +5842,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
       releve: semaineDite(AUJ),
       /* Ce que le classeur dit de ce contrat (colonne suivie introuvable…) :
          la ligne le montre au lieu d'un « 0 / N » qu'on croirait juste. */
-      message: SRC && SRC.message ? String(SRC.message) : '',
+      message: SRC && SRC.message ? String(SRC.message)
+        : COLONNE_VIDEE ? 'La colonne « ' + colonneDite(CLE_SUIVIE) + ' » est vide sur les ' + nb(PLANS.length) +
+          ' plans de l\u2019extract du jour : voir le haut de la page de ce contrat.' : '',
       aucunFini: !VALEURS_COLONNE.some(function (v) { return v.famille === 'termine'; }) &&
         VALEURS_COLONNE.some(function (v) { return v.famille !== 'vide'; })
     };

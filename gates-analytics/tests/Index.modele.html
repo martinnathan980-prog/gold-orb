@@ -18,7 +18,9 @@
       window.addEventListener('error', function (e) {
         window.SUIVI_FWD_ERREURS.push(String((e && e.message) || 'erreur'));
       });
-      window.addEventListener('load', function () {
+      /* À la fin de la lecture du document, sans attendre les polices : une
+         feuille retenue par le proxy retarderait le message d'autant. */
+      document.addEventListener('DOMContentLoaded', function () {
         if (window.SUIVI_FWD_DEMARREE) return;
         var erreurs = window.SUIVI_FWD_ERREURS;
         var phrase = document.getElementById('phrase');

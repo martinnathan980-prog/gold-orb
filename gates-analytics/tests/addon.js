@@ -1269,8 +1269,32 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('une fois renommé : plus d’avis, l’archivage passe et retrouve son relevé',
     !cRenomme.getDonneesPourClient().avis && cRenomme.getHistorique(clRenomme, 'HDK').length === 1);
 
+  /* Un historique dont l'onglet existe encore n'est pas orphelin : un contrat
+     masqué, une « Copie de HDK » archivée par une livraison d'avant. */
+  const fMasque17 = new Feuille('THS', feuilleExemple(10));
+  const clMasque17 = new Classeur([new Feuille('HDK', feuilleExemple(10)), fMasque17,
+                                   new Feuille('Copie de HDK', feuilleExemple(10))]);
+  const cMasque17 = chargerServeur(clMasque17, {});
+  cMasque17.enregistrerInstantaneHebdo();
+  clMasque17.insertSheet('Historique_FWD_Copie de HDK').valeurs.push(['Semaine'], ['2026-S39']);
+  fMasque17.cachee = true;
+  fMasque17.isSheetHidden = function () { return true; };
+  clMasque17.feuilles.push(new Feuille('VRK', feuilleExemple(10)));
+  let refusMasque17 = '';
+  try { cMasque17.enregistrerInstantaneHebdo(); } catch (e) { refusMasque17 = e.message; }
+  verifier('débrief 17 — un contrat masqué, une « Copie de HDK » écartée : leurs historiques ne sont pas « orphelins », aucun avis, un nouveau contrat s’archive',
+    !cMasque17.getDonneesPourClient().avis && !refusMasque17 && !!clMasque17.getSheetByName('Historique_FWD_VRK') &&
+    !/n'est rattaché à aucun contrat/.test(cMasque17.diagnostic()), (cMasque17.getDonneesPourClient().avis || '') + ' | ' + refusMasque17);
+  /* Une copie seule dans le classeur reste le contrat. */
+  const clCopieSeule17 = new Classeur([new Feuille('Copie de HDK', feuilleExemple(10))]);
+  verifier('… et une « Copie de HDK » seule dans le classeur reste le contrat',
+    chargerServeur(clCopieSeule17, {}).listerContrats(clCopieSeule17).map(c => c.id).join() === 'Copie de HDK');
+
   /* Des doublons comptés pareil partout : le relevé compte les références,
      une fois chacune, comme la carte et comme la page. */
+  verifier('… et le Diagnostic compte pareil : « 10 plans (12 lignes) »',
+    /✓ 11 colonnes, 10 plans \(12 lignes\)/.test(diagDoubles) && /Seule la première ligne de chaque référence compte/.test(diagDoubles),
+    diagDoubles.split('\n').filter(l => /plans|première ligne/.test(l)).join(' / '));
   verifier('débrief 17 — des références en double ne comptent qu’une fois dans le relevé (10 plans, pas 12)',
     cDoubles.contexte.getHistorique(cDoubles.classeur)[0].total === 10, String(cDoubles.contexte.getHistorique(cDoubles.classeur)[0].total));
 
@@ -1287,9 +1311,20 @@ function serveurSur(valeurs, proprietes, fichiers) {
     /L'onglet « THS » ne porte aucun plan \(en-têtes seuls\)/.test(pThs17.message), pThs17.message);
   let refusSansPlan17 = '';
   try { cVideTete17.enregistrerInstantaneHebdo(); } catch (e) { refusSansPlan17 = e.message; }
-  verifier('… l’archivage ne lui fabrique pas un relevé à zéro plan, et archive HDK',
-    /« THS » : L'onglet « THS » ne porte aucun plan/.test(refusSansPlan17) && /1 contrat\(s\) archivé\(s\)/.test(refusSansPlan17) &&
-    !clVideTete17.getSheetByName('Historique_FWD_THS'), refusSansPlan17);
+  const confirmation17 = (cVideTete17.__alertes || []).join(' ');
+  verifier('… l’archivage ne lui fabrique pas un relevé à zéro plan, archive HDK, et le vendredi n’échoue pas pour autant',
+    !refusSansPlan17 && /Relevé S\d+ archivé : HDK \(10 plans\)\..* Non archivé\(s\), en-têtes seuls : THS\./.test(confirmation17) &&
+    !clVideTete17.getSheetByName('Historique_FWD_THS'), refusSansPlan17 || confirmation17);
+  /* Le même onglet, mais avec la ligne de service de l'export GATES sous ses
+     en-têtes : pas de faux plan « ligne-1 ». */
+  const gTete17 = require('./feuille-gates').feuilleGates(3);
+  const clGatesTete17 = new Classeur([new Feuille('THS', gTete17.valeurs.slice(0, 3), false, gTete17.fusions),
+                                      new Feuille('HDK', feuilleGates(12).valeurs, false, feuilleGates(12).fusions)]);
+  const cGatesTete17 = chargerServeur(clGatesTete17, {});
+  const pGatesTete17 = cGatesTete17.getDonneesPourClient('THS');
+  verifier('… et avec la ligne de service de l’export sous les en-têtes : « aucun plan », pas un faux plan « ligne-1 »',
+    pGatesTete17.plans.length === 0 && /ne porte aucun plan/.test(pGatesTete17.message) &&
+    cGatesTete17.getDonneesPourClient().contrat === 'HDK', pGatesTete17.plans.length + ' / ' + pGatesTete17.message);
 
   /* La colonne suivie vidée d'une semaine à l'autre : refus, et la page le dit. */
   const fPleine17 = feuilleExemple(10);
@@ -1332,6 +1367,10 @@ function serveurSur(valeurs, proprietes, fichiers) {
   cFuseau17.contexte.Session = { getScriptTimeZone: function () { return 'America/Los_Angeles'; } };
   verifier('débrief 17 — un projet hors du fuseau de Paris est signalé',
     /⚠ Le projet Apps Script est réglé sur le fuseau « America\/Los_Angeles »/.test(cFuseau17.contexte.diagnostic()));
+  const cBerlin17 = serveurSur(feuilleExemple(10));
+  cBerlin17.contexte.Session = { getScriptTimeZone: function () { return 'Europe/Berlin'; } };
+  cBerlin17.contexte.Utilities.formatDate = function () { return '+0200'; };
+  verifier('… mais pas un fuseau à l’heure de Paris (Berlin, Bruxelles…)', !/fuseau/.test(cBerlin17.contexte.diagnostic()));
   const cAncien17 = serveurSur(feuilleExemple(10));
   cAncien17.contexte.enregistrerInstantaneHebdo();
   const hAncien17 = cAncien17.classeur.getSheetByName('Historique_FWD_Données');
@@ -2573,6 +2612,14 @@ function serveurSur(valeurs, proprietes, fichiers) {
         const apres = window.__serieAffichee().pts;
         return { avant: avant[avant.length - 1].termine, apres: apres[apres.length - 1].termine, n: apres.length };
       });
+      /* Et vidée alors que le dernier relevé en avait : de même. */
+      vuLivraison.videe = await pv.evaluate(() => {
+        const src = JSON.parse(JSON.stringify(window.SUIVI_FWD_DONNEES));
+        src.plans.forEach(p => { p.avancement = ''; });
+        window.__chargerSource(src);
+        const pts = window.__serieAffichee().pts;
+        return { dernier: pts[pts.length - 1].termine, alerte: document.getElementById('alerte-valeurs').textContent };
+      });
     }
     await pv.close();
     fs.unlinkSync(path.join(racineRepo, fichier));
@@ -2586,6 +2633,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
     /^Chiffres lus dans le classeur le \S+ \d+ \S+ à \d{2}:\d{2} — recharger la page/.test(V.luLe || ''), V.luLe);
   verifier('la colonne suivie introuvable : la courbe s’arrête au dernier relevé archivé, pas de point du jour à zéro',
     V.sansColonne.apres === V.sansColonne.avant && V.sansColonne.apres > 0, JSON.stringify(V.sansColonne));
+  verifier('la colonne suivie vidée (le relevé d’avant en avait) : pas de point à zéro, et l’alerte le dit',
+    V.videe.dernier === V.sansColonne.avant && /est vide sur les 60 plans/.test(V.videe.alerte), JSON.stringify(V.videe));
   const indexLivre = lireFichier('Index.html');
   verifier('le squelette dit « Chargement… », et ni « Démonstration » ni « classeur vide » ne s’y lisent sans le Javascript',
     /id="phrase">Chargement…</.test(indexLivre) && /id="avertissement-demo" hidden/.test(indexLivre) && /id="classeur-vide" hidden/.test(indexLivre));
@@ -2702,6 +2751,10 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const cStyles = servie(Object.assign({}, vrais, { Styles: vrais.Styles.replace('"' + ED + '"', '"abcdef0"') }));
   verifier('ouverture, Styles d’une autre livraison mais entiers : la page s’ouvre (elle le dit en tête)',
     cStyles.doGet({ parameter: {} }).source.modele === 'Index');
+  const squelette = t => '<!DOCTYPE html>\n<html>\n  <head>\n    <base target="_top">\n  </head>\n  <body>\n' + t + '\n  </body>\n</html>\n';
+  const cSquelette = servie(Object.assign({}, vrais, { Javascript: squelette(vrais.Javascript), Styles: squelette(vrais.Styles) }));
+  verifier('le squelette d’un fichier créé par « + → HTML » autour du code : la page s’ouvre (le Diagnostic le signale sans bloquer)',
+    cSquelette.doGet({ parameter: {} }).source.modele === 'Index' && /porte du texte hors de « <script>/.test(cSquelette.diagnostic()));
   const cSansFichier = servie({ Index: vrais.Index, Styles: vrais.Styles });
   const pSans = cSansFichier.doGet({ parameter: {} }).source.html || '';
   verifier('ouverture, Javascript introuvable : la page le dit', /« Javascript » est introuvable/.test(pSans), pSans.slice(0, 300));

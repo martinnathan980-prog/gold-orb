@@ -1009,8 +1009,9 @@ qui en est sorti, et ce que la page fait maintenant :
   raison, le dit (§ 10), et le Diagnostic compte les plans qui ont changé
   entre les deux derniers relevés.
 - **Des références en double** (un export collé par-dessus l'ancien sans le
-  vider) : chaque ligne compte dans les totaux, la carte archivée garde la
-  première ; la page et le Diagnostic le disent (« 3 lignes répètent une
+  vider) : seule la première ligne de chaque référence compte (débrief 17 —
+  avant, chaque ligne comptait dans les totaux et la carte gardait la
+  première) ; la page et le Diagnostic le disent (« 3 lignes répètent une
   référence déjà vue »).
 - **Un onglet de contrat renommé** après un archivage : son historique porte
   l'ancien nom (`Historique_FWD_Feuille 1`), la page repart d'un relevé. Le
@@ -1107,15 +1108,29 @@ mot. Ce que la page fait maintenant :
   l'archivage est refusé si le relevé d'avant en avait des valeurs (un export
   fait sans elle), pas pour un contrat qui démarre ; sous le concept harnais,
   un message seulement.
-- **Un onglet d'en-têtes seuls** : pas de relevé à zéro plan ; la page s'ouvre
-  sur le premier contrat qui a des plans ; demandé, il dit « ne porte aucun
-  plan », jusque dans la vue d'ensemble.
-- **Un historique orphelin** (onglet de contrat renommé) : la page le dit
-  au-dessus de la barre, avec le nom à lui donner ; l'archivage qui ouvrirait
-  un second historique à côté est refusé tant qu'il n'est pas renommé.
-- **Un historique illisible** (délai dépassé) n'emporte plus l'extract du jour.
-- **La colonne suivie introuvable** : plus de point du jour à zéro ni de
-  journal de faux reculs ; la courbe s'arrête au dernier relevé archivé.
+- **Un onglet d'en-têtes seuls** (sa ligne de service comprise) : pas de faux
+  plan, pas de relevé à zéro plan ; la page s'ouvre sur le premier contrat
+  qui a des plans ; demandé, il dit « ne porte aucun plan », jusque dans la
+  vue d'ensemble. Préparé d'avance, sans relevé encore, il n'est simplement
+  pas archivé (« Non archivé(s), en-têtes seuls : THS ») : le vendredi
+  n'échoue pas. Un contrat qui avait des relevés et dont l'export revient
+  vide, si : c'est une panne.
+- **Un historique orphelin** — dont l'onglet n'existe PLUS : un onglet de
+  contrat renommé. Un contrat masqué, une « Copie de HDK » ou un tableau
+  croisé écartés gardent le leur, sans avis. La page le dit au-dessus de la
+  barre, avec le nom à lui donner si un contrat n'a pas encore d'historique ;
+  l'archivage de ce contrat, qui ouvrirait un second historique à côté, est
+  refusé tant qu'il n'est pas renommé. Jamais de conseil de supprimer.
+- **Un historique illisible** (délai dépassé) n'emporte plus l'extract du
+  jour, et le pied ne prétend pas qu'il n'y a « aucun relevé ».
+- **La colonne suivie introuvable, ou vidée** alors que le dernier relevé en
+  avait : plus de point du jour à zéro ni de journal de faux reculs ; la
+  courbe s'arrête au dernier relevé archivé, et la vue d'ensemble le dit.
+- **Le contrôle à l'ouverture ne bloque que ce qui empêche la page** : du
+  texte inerte autour des balises (le squelette d'un fichier créé par
+  « + → HTML », collé sans tout effacer) est signalé au Diagnostic, sans
+  bloquer. Un fuseau à l'heure de Paris (Berlin, Bruxelles…) n'est pas
+  signalé.
 - **Les onglets pris pour des contrats** : une ligne d'en-têtes d'export veut
   au moins deux intitulés attendus, seuls dans leur cellule, sur une ligne
   large — un tableau croisé (« ATA | NBVAL de Référence UD ») n'en est pas un ;

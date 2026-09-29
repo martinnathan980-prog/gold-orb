@@ -39,7 +39,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = '7bd9817';
+const EDITION = '247cc3e';
 
 // =====================================================================
 //  CONFIGURATION
@@ -566,8 +566,10 @@ function ongletsDeDonnees(classeur) {
     .filter(function (f) { return !f.isSheetHidden() && !estOngletInterne(f.getName()) && f.getLastRow() > 0; });
   /* « Copie de HDK » : l'onglet dupliqué pour garder une sauvegarde. Compté
      comme contrat, il s'archivait chaque vendredi dans un historique à lui. */
-  const copies = visibles.filter(function (f) { return estCopieDOnglet(f.getName()); });
-  const candidats = visibles.filter(function (f) { return copies.indexOf(f) === -1; });
+  let copies = visibles.filter(function (f) { return estCopieDOnglet(f.getName()); });
+  let candidats = visibles.filter(function (f) { return copies.indexOf(f) === -1; });
+  /* Seule, une copie est le contrat : on ne l'écarte pas. */
+  if (!candidats.length) { candidats = copies; copies = []; }
   const exports = candidats.filter(aDesEntetes);
   return {
     contrats: exports.length ? exports : candidats,
@@ -876,8 +878,12 @@ function construireModele(contrat) {
   let lignes = lignesBrutes.filter(function (l) {
     return valeurCellule(l[iRef]) !== '';
   });
-  if (lignes.length === 0) {
-    // Aucune référence nulle part : on retombe sur « la ligne dit quelque chose ».
+  /* Aucune référence nulle part, et pas de colonne de référence reconnue par
+     son intitulé : on retombe sur « la ligne dit quelque chose ». Avec une
+     colonne « Référence UD » bien là mais vide, l'onglet n'a que ses en-têtes
+     (et sa ligne de service, qui devenait un faux plan « ligne-1 »). */
+  const refReconnue = /reference|ref|identifiant|numero de plan|plan/.test(normaliser(entetes[iRef]));
+  if (lignes.length === 0 && !refReconnue) {
     lignes = lignesBrutes.filter(ligneNonVide);
   }
 
@@ -1127,7 +1133,9 @@ function getDonneesPourClient(contrat) {
       message: [modele.avertissement, modele.avertissementConcept,
                 modele.plans.length ? '' : 'L\'onglet « ' + modele.feuille + ' » ne porte aucun plan (en-têtes seuls) : ' +
                   'y coller l\'export GATES du contrat en A1.'].filter(Boolean).join(' '),
-      avis: [avisHistorique, avisOrphelins(historiquesOrphelins(classeur, contrats), modele.feuille)].filter(Boolean).join(' '),
+      avis: [avisHistorique, avisOrphelins(historiquesOrphelins(classeur, contrats), modele.feuille,
+               contratsSansHistorique(classeur, contrats).map(function (c) { return c.id; }))].filter(Boolean).join(' '),
+      historiqueIllisible: !!avisHistorique,
       feuille: modele.feuille,
       genereLe: new Date().toISOString(),
       colonnes: modele.colonnes,
@@ -1318,7 +1326,15 @@ function diagnostic() {
      son relevé (débrief 17). */
   let fuseau = '';
   try { fuseau = Session.getScriptTimeZone(); } catch (err) { fuseau = ''; }
-  if (fuseau && fuseau !== 'Europe/Paris') {
+  let decale = !!fuseau && fuseau !== 'Europe/Paris';
+  if (decale) {
+    /* Berlin, Bruxelles, Madrid… ont l'heure de Paris : mêmes semaines. */
+    try {
+      const maintenant = new Date();
+      decale = Utilities.formatDate(maintenant, fuseau, 'Z') !== Utilities.formatDate(maintenant, 'Europe/Paris', 'Z');
+    } catch (err) { /* sans formatDate, on le dit quand même */ }
+  }
+  if (decale) {
     dire('⚠ Le projet Apps Script est réglé sur le fuseau « ' + fuseau + ' », pas « Europe/Paris » : un archivage ' +
          'du lundi matin peut tomber dans la semaine d\'avant et remplacer son relevé.');
     dire('   → Apps Script → ⚙ Paramètres du projet → Fuseau horaire : (GMT+01:00) Paris.');
@@ -1374,9 +1390,9 @@ function diagnostic() {
       dire('– Onglet « ' + e.nom + ' » écarté : une copie d\'onglet n\'est pas un contrat. Pour en faire un, ' +
            'le renommer du nom du contrat.');
     } else {
-      dire('– Onglet « ' + e.nom + ' » écarté : pas de ligne d\'en-têtes d\'export (Référence UD, ATA, Nom installation, ' +
-           'chacun dans sa cellule) dans ses ' + CONFIG.LIGNES_SCAN_ENTETE + ' premières lignes. Si c\'est un export, ' +
-           'le recoller entier en A1.');
+      dire('– Onglet « ' + e.nom + ' » écarté : pas de ligne d\'en-têtes d\'export dans ses ' + CONFIG.LIGNES_SCAN_ENTETE +
+           ' premières lignes (au moins deux de Référence UD, ATA, Nom installation, chacun seul dans sa cellule, sur une ' +
+           'ligne d\'au moins dix intitulés). Si c\'est un export, le recoller entier en A1.');
     }
   });
 
@@ -1660,7 +1676,10 @@ function diagnostiquerContrat(classeur, contrat, dire) {
     }
 
     const modele = construireModele(contrat.id);
-    dire('✓ ' + modele.colonnes.length + ' colonnes, ' + modele.plans.length + ' plans');
+    /* Une référence répétée ne compte qu'une fois, comme dans le relevé et sur la page. */
+    const uniques = plansUniques(modele.plans);
+    dire('✓ ' + modele.colonnes.length + ' colonnes, ' + uniques.length + ' plans' +
+         (uniques.length < modele.plans.length ? ' (' + modele.plans.length + ' lignes)' : ''));
 
     const colFWD = modele.colonnes.filter(function (c) { return c.cle === 'avancement'; })[0];
     if (modele.avertissement) {
@@ -1673,20 +1692,20 @@ function diagnostiquerContrat(classeur, contrat, dire) {
            (CONFIG.COLONNE_FWD ? ' — celle de CONFIG.COLONNE_FWD' : ' — trouvée d\'elle-même (CONFIG.COLONNE_FWD est vide)'));
       direDoublon(dire, modele.colonnes, CONFIG.COLONNE_FWD);
       const compte = { termine: 0, encours: 0, afaire: 0, vide: 0 };
-      modele.plans.forEach(function (p) { compte[classerFWD(p.avancement)]++; });
+      uniques.forEach(function (p) { compte[classerFWD(p.avancement)]++; });
       dire('  ' + compte.termine + ' terminés, ' + compte.encours + ' en cours, ' +
            compte.afaire + ' à faire, ' + compte.vide + ' non renseignés');
-      direValeurs(dire, modele.plans, 'avancement');
+      direValeurs(dire, uniques, 'avancement');
     }
     if (CONFIG.COLONNE_CONCEPT) {
       const colConcept = modele.cleConcept ? modele.colonnes.filter(function (c) { return c.cle === modele.cleConcept; })[0] : null;
       if (colConcept) {
         const compteC = { termine: 0, encours: 0, afaire: 0, vide: 0 };
-        modele.plans.forEach(function (p) { compteC[classerFWD(p[modele.cleConcept])]++; });
+        uniques.forEach(function (p) { compteC[classerFWD(p[modele.cleConcept])]++; });
         dire('✓ Concept harnais : colonne « ' + colConcept.titre + ' »' + (colConcept.groupe ? ', groupe « ' + colConcept.groupe + ' »' : ''));
         dire('  ' + compteC.termine + ' terminés, ' + compteC.encours + ' en cours, ' +
              compteC.afaire + ' à faire, ' + compteC.vide + ' non renseignés');
-        direValeurs(dire, modele.plans, modele.cleConcept);
+        direValeurs(dire, uniques, modele.cleConcept);
         direDoublon(dire, modele.colonnes, CONFIG.COLONNE_CONCEPT);
       } else {
         dire('✗ ' + modele.avertissementConcept);
@@ -1701,7 +1720,7 @@ function diagnostiquerContrat(classeur, contrat, dire) {
     }
     if (modele.doublons > 0) {
       dire('⚠ ' + modele.doublons + ' ligne(s) répètent une référence déjà vue : un export collé par-dessus l\'ancien, sans Ctrl+A puis Suppr ?');
-      dire('   Chaque ligne compte dans les totaux, le journal ne garde que la première. Recoller l\'export sur un onglet vidé.');
+      dire('   Seule la première ligne de chaque référence compte, comme sur la page et dans le relevé. Recoller l\'export sur un onglet vidé.');
     }
     if (colRef && /^Colonne \d+$/.test(colRef.titre)) {
       dire('⚠ La référence est lue dans « ' + colRef.titre + ' », une colonne sans intitulé : l\'en-tête « Référence UD » n\'a pas été trouvé.');
@@ -1878,19 +1897,32 @@ function verifierLivraison(contenus, direManquants) {
         (edition ? 'livraison ' + edition : 'sans livraison marquée : d\'avant le 29 septembre 2026') +
         ', Code : ' + EDITION + ').', recoller(nom) + ' Sinon la page s\'ouvre blanche ou incomplète.', nom !== 'Styles');
     }
+    /* Bloquant : ce qui empêche la page de tenir — deux copies, un début ou
+       une fin perdus. Du texte inerte autour des balises (le squelette d'un
+       fichier créé par + → HTML, collé sans tout effacer) ne l'empêche pas :
+       on le dit sans bloquer. */
+    const iMarque = m ? m.index : -1;
     if (nom === 'Javascript') {
+      const iOuverture = texte.indexOf('<script>');
       if (compter(texte, '<script') > 1 || compter(texte, FIN_DU_JAVASCRIPT) > 1) {
         ecart(nom, 'contient deux copies — collé sans tout effacer ?', recoller(nom), true);
-      } else if (premiere !== '<script>') {
-        ecart(nom, 'ne commence pas par sa première ligne « <script> » — début perdu au collage ?', recoller(nom), true);
-      } else if (derniere !== '</script>' || texte.indexOf(FIN_DU_JAVASCRIPT) === -1) {
+      } else if (iOuverture === -1 || (iMarque !== -1 && iOuverture > iMarque)) {
+        ecart(nom, 'a perdu sa première ligne « <script> » — début perdu au collage ?', recoller(nom), true);
+      } else if (!new RegExp(FIN_DU_JAVASCRIPT + '[^\\n]*\\*/\\s*</script>').test(texte)) {
         ecart(nom, 'est incomplet : sa fin manque (' + texte.length + ' caractères) — collé en partie ?', recoller(nom), true);
+      } else if (premiere !== '<script>' || derniere !== '</script>') {
+        ecart(nom, 'porte du texte hors de « <script> … </script> » (le squelette d\'un fichier créé par + → HTML ?).',
+          recoller(nom), false);
       }
     } else if (nom === 'Styles') {
+      const iOuverture = texte.indexOf('<style>'), iFermeture = texte.lastIndexOf('</style>');
       if (compter(texte, '<style') > 1) ecart(nom, 'contient deux copies — collé sans tout effacer ?', recoller(nom), true);
-      else if (premiere !== '<style>' || derniere !== '</style>') {
+      else if (iOuverture === -1 || iFermeture === -1 || (iMarque !== -1 && (iOuverture > iMarque || iFermeture < iMarque))) {
         ecart(nom, 'est incomplet (il doit commencer par « <style> » et finir par « </style> ») — collé en partie ?',
           recoller(nom), true);
+      } else if (premiere !== '<style>' || derniere !== '</style>') {
+        ecart(nom, 'porte du texte hors de « <style> … </style> » (le squelette d\'un fichier créé par + → HTML ?).',
+          recoller(nom), false);
       }
     } else if (texte.indexOf("include('Styles')") === -1 || texte.indexOf("include('Javascript')") === -1 ||
                texte.indexOf('donneesJSONPourPage()') === -1 || derniere !== '</html>') {
@@ -1975,7 +2007,14 @@ function getFeuilleHistorique(classeur, contrat, creerSiAbsente) {
  * archivage ouvrirait un second historique à côté (débrief 17).
  */
 function historiquesOrphelins(classeur, contrats) {
+  /* N'est orphelin que l'historique dont l'onglet n'existe PLUS : un onglet
+     de contrat masqué, une « Copie de HDK » ou un tableau croisé écartés
+     gardent le leur — ce ne sont pas des renommages. Un onglet vide qui
+     reprendrait l'ancien nom ne compte pas. */
   const attendus = {};
+  classeur.getSheets().forEach(function (f) {
+    if (!estOngletHistorique(f.getName()) && f.getLastRow() > 0) attendus[normaliser(nomFeuilleHistorique(f.getName()))] = true;
+  });
   contrats.forEach(function (c) { attendus[normaliser(nomFeuilleHistorique(c.id))] = true; });
   attendus[normaliser(CONFIG.FEUILLE_HISTORIQUE)] = true;       // l'ancien onglet sans suffixe : traité à part
   return classeur.getSheets()
@@ -1983,14 +2022,27 @@ function historiquesOrphelins(classeur, contrats) {
     .map(function (f) { return { nom: f.getName(), releves: Math.max(0, f.getLastRow() - 1) }; });
 }
 
-/** Ce que la page dit des historiques orphelins, au-dessus de la barre. */
-function avisOrphelins(orphelins, contrat) {
+/** Les contrats qui n'ont pas encore d'onglet d'historique : ceux qu'un orphelin empêche d'archiver. */
+function contratsSansHistorique(classeur, contrats) {
+  return contrats.filter(function (c) { return !getFeuilleHistorique(classeur, c.id, false); });
+}
+
+/**
+ * Ce que la page dit des historiques orphelins, au-dessus de la barre. Le
+ * renommage n'est proposé que vers un contrat qui n'a pas encore
+ * d'historique — le contrat affiché d'abord : c'est lui dont l'archivage est
+ * refusé d'ici là (archiverContrat). Sinon, rien à faire.
+ */
+function avisOrphelins(orphelins, contrat, sansHistorique) {
   if (!orphelins.length) return '';
+  const cible = sansHistorique.indexOf(contrat) !== -1 ? contrat : sansHistorique[0];
   return orphelins.map(function (o) {
     return 'L\'onglet d\'historique « ' + o.nom + ' » (' + o.releves + ' relevé' + (o.releves > 1 ? 's' : '') +
       ') n\'est rattaché à aucun contrat — un onglet de contrat renommé ?';
-  }).join(' ') + ' S\'il est celui de « ' + contrat + ' », le renommer « ' + nomFeuilleHistorique(contrat) +
-    ' » lui rend ses relevés (Affichage → Onglets masqués pour le voir). Le prochain archivage est refusé d\'ici là.';
+  }).join(' ') + (cible
+    ? ' S\'il est celui de « ' + cible + ' », le renommer « ' + nomFeuilleHistorique(cible) + ' » lui rend ses relevés ' +
+      '(Affichage → Onglets masqués pour le voir) ; d\'ici là, « ' + cible + ' » ne s\'archive pas.'
+    : ' Ses relevés ne s\'affichent nulle part ; il peut rester tel quel.');
 }
 
 /** Vrai si le classeur ne porte qu'un contrat. */
@@ -2093,7 +2145,13 @@ function compterAvancements(contrat) {
      « disparus », puis six cents « nouveaux » (débrief 17). */
   const plans = plansUniques(modele.plans);
   if (!plans.length) {
-    throw new Error('L\'onglet « ' + modele.feuille + ' » ne porte aucun plan (en-têtes seuls) : rien à archiver.');
+    const erreur = new Error('L\'onglet « ' + modele.feuille + ' » ne porte aucun plan (en-têtes seuls) : rien à archiver.');
+    /* Préparé d'avance, sans relevé encore : pas une panne, le vendredi n'a
+       pas à échouer. Un contrat qui avait des relevés et dont l'export revient
+       vide, si. */
+    const historique = getFeuilleHistorique(SpreadsheetApp.getActiveSpreadsheet(), modele.feuille, false);
+    erreur.sansPlan = !historique || historique.getLastRow() < 2;
+    throw erreur;
   }
   /* La colonne suivie vide sur TOUS les plans, alors que le dernier relevé en
      avait des valeurs : un export fait sans elle, pas un contrat qui démarre.
@@ -2229,11 +2287,13 @@ function enregistrerInstantaneHebdo() {
 
   const detail = [];
   const erreurs = [];
+  const sansPlan = [];
   contrats.forEach(function (c) {
     try {
       detail.push(archiverContrat(classeur, c, semaine));
     } catch (err) {
-      erreurs.push('« ' + c.nom + ' » : ' + (err && err.message ? err.message : err));
+      if (err && err.sansPlan) sansPlan.push(c.nom);
+      else erreurs.push('« ' + c.nom + ' » : ' + (err && err.message ? err.message : err));
     }
   });
 
@@ -2248,9 +2308,11 @@ function enregistrerInstantaneHebdo() {
      « Script terminé », et on ne sait pas si c'est fait. Lancé par le
      déclencheur du vendredi, il n'y a personne devant : pas d'interface, et
      l'appel ci-dessous échoue en silence. */
-  const mot = 'Relevé ' + dite + ' archivé : ' + detail.map(function (d) {
+  const mot = !detail.length ? 'Aucun relevé archivé en ' + dite + ' : ' + (sansPlan.length ? 'en-têtes seuls dans ' +
+      sansPlan.join(', ') + '.' : 'aucun contrat.') : 'Relevé ' + dite + ' archivé : ' + detail.map(function (d) {
     return d.nom + ' (' + d.compte.total + ' plans)';
-  }).join(', ') + '.' + (detail.length ? ' Un second archivage dans la semaine remplace celui-ci.' : '');
+  }).join(', ') + '.' + (detail.length ? ' Un second archivage dans la semaine remplace celui-ci.' : '') +
+    (sansPlan.length ? ' Non archivé(s), en-têtes seuls : ' + sansPlan.join(', ') + '.' : '');
   try {
     SpreadsheetApp.getUi().alert('Suivi FWD', mot, SpreadsheetApp.getUi().ButtonSet.OK);
   } catch (e) {
@@ -2284,8 +2346,8 @@ function archiverContrat(classeur, c, semaine) {
     const orphelins = historiquesOrphelins(classeur, listerContrats(classeur));
     if (orphelins.length) {
       throw new Error('l\'onglet d\'historique « ' + orphelins[0].nom + ' » n\'est rattaché à aucun contrat. ' +
-        'S\'il est celui de « ' + c.nom + ' », le renommer « ' + nomFeuilleHistorique(c.id) + ' » ; sinon, le supprimer. ' +
-        'Relevé non archivé.');
+        'S\'il est celui de « ' + c.nom + ' », le renommer « ' + nomFeuilleHistorique(c.id) + ' » ; sinon, le renommer ' +
+        'sans le préfixe « ' + CONFIG.FEUILLE_HISTORIQUE + '_ » pour le garder à part. Relevé non archivé.');
     }
   }
   const feuille = getFeuilleHistorique(classeur, c.id, true);
