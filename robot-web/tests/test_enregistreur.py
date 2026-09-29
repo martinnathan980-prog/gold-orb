@@ -56,7 +56,8 @@ def test_enregistrement_export_par_contrat(bac, navigateur_ok):
         page.select_option("#filtre-contrat", "HDK")
         page.click("#btn-rechercher")
         page.wait_for_selector("text=15 plan(s)")
-        page.click("#btn-exporter")
+        with page.expect_download():  # le téléchargement est bien parti avant la fin de l'enregistrement
+            page.click("#btn-exporter")
 
     etapes = _enregistrer(dossier, url, tache)
     actions = [(e.action, e.args.get("selecteur") or e.args.get("cliquer") or e.args.get("url")) for e in etapes]
