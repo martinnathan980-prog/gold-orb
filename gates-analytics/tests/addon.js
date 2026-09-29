@@ -2531,7 +2531,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('les quatre fichiers livrés portent la même livraison, posée par la construction',
     /^[0-9a-f]{7}$/.test(ED || '') && Object.keys(livraisons).every(k => livraisons[k] === ED), JSON.stringify(livraisons));
   verifier('le Javascript finit par sa ligne de fin (un fichier coupé au collage se reconnaît)',
-    /\/\* suivi-fwd : fin du fichier Javascript, livraison [0-9a-f]{7} \*\/\n<\/script>\n$/.test(lireFichier('Javascript.html')));
+    /\nwindow\.SUIVI_FWD_FIN = '[0-9a-f]{7}';\n<\/script>\n$/.test(lireFichier('Javascript.html')));
 
   construire({ gates: true, lignes: 60, sortie: 'apercu-livraison.html' });
   const pageLivraison = lireFichier('apercu-livraison.html');
@@ -2542,7 +2542,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
     indexAncienPanne: t => t.replace("window.SUIVI_FWD_LIVRAISON_INDEX = '" + ED + "';", '')
       .replace('<span id="colonne-suivie"></span>', ''),
     jsCoupe: t => {
-      const i = t.indexOf("var EDITION = '"), j = t.indexOf('/* suivi-fwd : fin du fichier Javascript');
+      const i = t.indexOf("var EDITION = '"), j = t.indexOf('window.SUIVI_FWD_FIN');
       return t.slice(0, i + Math.floor((j - i) / 2)) + t.slice(t.indexOf('</script>', j));
     },
     stylesAncien: t => t.replace('--suivi-fwd-edition: "' + ED + '";', ''),
@@ -2554,7 +2554,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
     /* Coupé sans sa fin : le <script> reste ouvert, avale la suite ; seul un
        filet posé en tête, avant Styles, peut encore parler. */
     jsCoupeSansFin: t => {
-      const i = t.indexOf("var EDITION = '"), j = t.indexOf('/* suivi-fwd : fin du fichier Javascript');
+      const i = t.indexOf("var EDITION = '"), j = t.indexOf('window.SUIVI_FWD_FIN');
       return t.slice(0, i + Math.floor((j - i) / 2));
     },
     stylesCoupe: t => {
@@ -2716,7 +2716,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const diagIndex = diagFichiers(Object.assign({}, vrais, { Index: vrais.Index.replace("window.SUIVI_FWD_LIVRAISON_INDEX = '" + ED + "';", '') }));
   verifier('le Diagnostic nomme un Index d’avant, et ne conclut plus « Tout est en place »',
     /✗ « Index » ne vient pas de la même livraison que Code \(sans livraison marquée/.test(diagIndex) &&
-    /Les fichiers collés ne concordent pas .* le tableau de bord ne s'ouvrira pas/.test(diagIndex) && !/Tout est en place/.test(diagIndex) &&
+    /Les fichiers collés ne concordent pas .* la page s'ouvrira sur un cadre qui dit quoi recoller/.test(diagIndex) && !/Tout est en place/.test(diagIndex) &&
     !/À vérifier avant de présenter/.test(diagIndex), diagIndex.slice(0, 900));
   const jsCoupe = vrais.Javascript.slice(0, Math.floor(vrais.Javascript.length * 0.6));
   const diagCoupe = diagFichiers(Object.assign({}, vrais, { Javascript: jsCoupe }));
@@ -2730,24 +2730,36 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const diagDouble = diagFichiers(Object.assign({}, vrais, { Javascript: vrais.Javascript + vrais.Javascript }));
   verifier('… un Javascript collé deux fois', /✗ « Javascript » contient deux copies — collé sans tout effacer \?/.test(diagDouble));
   const diagStylesCoupe = diagFichiers(Object.assign({}, vrais, { Styles: vrais.Styles.slice(0, Math.floor(vrais.Styles.length / 2)) }));
-  verifier('… des Styles coupés', /✗ « Styles » est incomplet/.test(diagStylesCoupe) && /ne s'ouvrira pas/.test(diagStylesCoupe));
+  verifier('… des Styles coupés', /✗ « Styles » est incomplet/.test(diagStylesCoupe) && /cadre qui dit quoi recoller/.test(diagStylesCoupe));
   const diagIndexSansJs = diagFichiers(Object.assign({}, vrais, { Index: vrais.Index.replace("<?!= include('Javascript'); ?>", '') }));
   verifier('… un Index qui n’inclut plus le Javascript', /✗ « Index » est incomplet ou abîmé/.test(diagIndexSansJs));
 
-  /* À l'ouverture : la page, ou, si les fichiers ne tiennent pas ensemble, une
-     page qui dit lesquels recoller — jamais un squelette vide. */
+  /* À l'ouverture : la page — sauf s'il manque un fichier au projet, où une
+     page dit lequel recréer. Le reste, la page le dit elle-même en tête : on ne
+     bloque pas sur une supposition (au bureau, un contrôle trompé par les
+     commentaires qu'Apps Script retire a bloqué une page saine). */
   const servie = contenus => chargerServeur(gates.classeur, {}, contenus);
   const cBon = servie(vrais);
   verifier('ouverture, fichiers concordants : la page du tableau de bord', cBon.doGet({ parameter: {} }).source.modele === 'Index');
   const cIndex = servie(Object.assign({}, vrais, { Index: vrais.Index.replace("window.SUIVI_FWD_LIVRAISON_INDEX = '" + ED + "';", '') }));
-  const pIndex = cIndex.doGet({ parameter: {} }).source.html || '';
-  verifier('ouverture, Index d’avant : une page qui dit « ne tiennent pas ensemble » et nomme Index, au lieu d’une page blanche',
-    /ne tiennent pas ensemble/.test(pIndex) && /« Index » ne vient pas de la même livraison/.test(pIndex) && /Nouvelle version/.test(pIndex), pIndex.slice(0, 400));
-  verifier('… et ?forcer=1 ouvre la page quand même', cIndex.doGet({ parameter: { forcer: '1' } }).source.modele === 'Index');
+  verifier('ouverture, Index d’avant : la page s’ouvre — c’est elle qui le dit en tête', cIndex.doGet({ parameter: {} }).source.modele === 'Index');
   const cCoupe = servie(Object.assign({}, vrais, { Javascript: jsSansFermeture }));
   cCoupe.ouvrirTableauDeBord();
-  verifier('ouverture depuis le menu, Javascript coupé : la fenêtre dit « incomplet »',
-    /« Javascript » est incomplet/.test((cCoupe.__dialogue && cCoupe.__dialogue.source.html) || ''));
+  verifier('ouverture depuis le menu, Javascript coupé : la page s’ouvre, son filet dira « incomplet »',
+    cCoupe.__dialogue && cCoupe.__dialogue.source.modele === 'Index');
+  /* Ce qu'Apps Script rend d'un fichier : son texte SANS SES COMMENTAIRES. Un
+     projet sain, relu ainsi, doit rester sain — la marque de fin comprise. */
+  const sansCommentaires = t => t.replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  const commeAppsScript = { Index: sansCommentaires(vrais.Index), Styles: sansCommentaires(vrais.Styles), Javascript: sansCommentaires(vrais.Javascript) };
+  const cRelu = servie(commeAppsScript);
+  verifier('les fichiers relus comme Apps Script les rend (sans commentaires) : entiers, concordants, la page s’ouvre',
+    /✓ Livraison [0-9a-f]{7} : Code, Index, Styles et Javascript concordent, et sont entiers\./.test(cRelu.diagnostic()) &&
+    cRelu.doGet({ parameter: {} }).source.modele === 'Index', cRelu.diagnostic().split('\n').filter(l => /Javascript|Styles|Index/.test(l)).join(' / '));
+  /* Et le Javascript de la livraison 247cc3e (sa marque de fin était un
+     commentaire, qu'Apps Script retire) : entier aussi. */
+  const js247 = sansCommentaires(vrais.Javascript.replace(/\nwindow\.SUIVI_FWD_FIN = '[0-9a-f]+';\n/, '\n/* suivi-fwd : fin du fichier Javascript, livraison 247cc3e */\n'));
+  verifier('… et le Javascript d’avant, dont la marque de fin était un commentaire, n’est plus dit « incomplet »',
+    !/« Javascript » est incomplet/.test(servie(Object.assign({}, commeAppsScript, { Javascript: js247 })).diagnostic()));
   const cStyles = servie(Object.assign({}, vrais, { Styles: vrais.Styles.replace('"' + ED + '"', '"abcdef0"') }));
   verifier('ouverture, Styles d’une autre livraison mais entiers : la page s’ouvre (elle le dit en tête)',
     cStyles.doGet({ parameter: {} }).source.modele === 'Index');

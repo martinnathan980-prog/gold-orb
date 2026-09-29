@@ -1094,13 +1094,24 @@ mot. Ce que la page fait maintenant :
 - **Le Javascript collé deux fois** (sans tout effacer, le neuf au-dessus de
   l'ancien) : la seconde copie ne démarre pas, une copie d'avant se compte au
   chargement ; la page le dit.
-- **À l'ouverture**, `Code` relit les trois fichiers : s'ils ne peuvent pas
-  faire tenir la page (un fichier manque, est coupé, collé deux fois, Index et
-  Javascript de livraisons différentes), il sert une page qui dit lesquels
-  recoller, au lieu d'une page blanche. Des Styles d'une autre livraison
-  n'empêchent pas la page : elle le dit en tête. Par le lien `…/exec`,
-  `?forcer=1` passe outre. Le Diagnostic fait le même contrôle, balises de
-  début et de fin comprises.
+- **À l'ouverture**, `Code` relit les trois fichiers ; il ne sert une page
+  d'explication à la place du tableau de bord que si un fichier MANQUE au
+  projet (la page ne pourrait pas se construire). Un fichier coupé, collé deux
+  fois, ou d'une autre livraison : la page s'ouvre et le dit elle-même en
+  tête. Le Diagnostic fait le contrôle complet, balises de début et de fin
+  comprises. Par le lien `…/exec`, `?forcer=1` passe outre.
+- **Apps Script rend un fichier SANS SES COMMENTAIRES.** La première version
+  de ce contrôle (livraison 247cc3e) cherchait une marque de fin écrite en
+  commentaire : disparue, elle faisait dire « Javascript incomplet
+  (213 307 caractères) » d'un fichier entier, et l'ouverture était bloquée.
+  La marque est désormais une instruction (`window.SUIVI_FWD_FIN`), un
+  Javascript qui finit par `})();` avant `</script>` est entier, et plus
+  rien ne bloque sur une supposition. Les tailles que dit le Diagnostic sont
+  donc celles des fichiers sans leurs commentaires : environ 70 à 80 % des
+  `.txt`.
+- **La livraison est l'empreinte de la PAGE** (prototype et modèle d'Index) :
+  une correction de `Code.gs` seul garde la même livraison, et ne demande de
+  recoller que `Code`.
 - **Des références en double comptent une fois**, à leur première ligne,
   partout : relevé, carte, page, groupes. Le point du jour comptait les
   lignes et les semaines archivées les références : la courbe sautait.

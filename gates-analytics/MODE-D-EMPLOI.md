@@ -39,7 +39,8 @@ livraison d'avant suffit à laisser la page blanche.
    Le menu Suivi FWD → Ouvrir le tableau de bord, lui, prend toujours le code
    enregistré.
 3. Vérifier : **en bas de la page, « Livraison xxxxxxx »** — le numéro que je
-   donne avec les fichiers. Suivi FWD → **Diagnostic** le confirme :
+   donne avec les fichiers. (Quand je ne corrige que `Code`, la livraison ne
+   change pas : on ne recolle que `Code`.) Suivi FWD → **Diagnostic** le confirme :
    « ✓ Livraison xxxxxxx : Code, Index, Styles et Javascript concordent ».
 
 Si un fichier ne concorde pas, **la page le dit elle-même**, en tête : « Les
@@ -286,7 +287,8 @@ onglet, et ce qui manque. Puis :
 | En tête : « La page n'a pas pu démarrer. Le fichier Javascript semble incomplet » | `Javascript` a été collé en partie (le fichier est long) | Dans `Javascript.html.txt` : Ctrl+A, Ctrl+C ; dans Apps Script : `Javascript`, Ctrl+A, Ctrl+V, Ctrl+S. Le Diagnostic dit « ✗ « Javascript » est incomplet » tant que ce n'est pas fait |
 | En tête : « La page n'a pas pu s'afficher. Une erreur l'a arrêtée » | Une panne de la page elle-même | M'envoyer une capture du cadre (il ne cite aucune valeur du classeur) : le « Détail » me dit où chercher |
 | En bas de la page, la livraison n'est pas celle que je vous ai donnée | Le lien `…/exec` sert encore l'ancienne version déployée | Déployer → Gérer les déploiements → ✏️ → Nouvelle version → Déployer |
-| Une page « Le tableau de bord ne peut pas s'ouvrir : les fichiers collés ne tiennent pas ensemble » | Un fichier manque, est coupé, collé deux fois, ou d'une autre livraison | Elle nomme le fichier et le geste. Recoller les quatre |
+| Une page « Le tableau de bord ne peut pas s'ouvrir : les fichiers collés ne tiennent pas ensemble » | Un fichier manque au projet (`Index`, `Styles` ou `Javascript`) | Elle nomme le fichier : + → HTML, le nommer exactement, y coller le `.txt` |
+| Le Diagnostic dit « Javascript : 213 307 caractères » alors que le `.txt` en fait 300 000 | Normal : Apps Script compte les fichiers sans leurs commentaires | Rien à faire, tant qu'il dit « ✓ … concordent, et sont entiers » |
 | « Le fichier Javascript contient deux copies » | Collé sans tout effacer (le neuf au-dessus de l'ancien) | `Javascript` : Ctrl+A, Suppr, coller, Ctrl+S |
 | Au-dessus de la barre : « L'onglet d'historique « Historique_FWD_… » n'est rattaché à aucun contrat » | Un onglet de contrat renommé : ses relevés sont restés sous l'ancien nom. L'archivage est refusé d'ici là | Afficher les onglets masqués, renommer l'historique comme la page l'indique |
 | « La colonne … est vide sur les N plans » | L'export collé n'a pas cette colonne remplie | Recoller un export complet ; l'archivage est refusé si la semaine d'avant en avait des valeurs |

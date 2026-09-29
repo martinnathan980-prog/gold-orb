@@ -39,7 +39,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = '247cc3e';
+const EDITION = 'e0afdc1';
 
 // =====================================================================
 //  CONFIGURATION
@@ -299,17 +299,18 @@ function ouvrirTableauDeBord() {
 }
 
 /**
- * La page du tableau de bord — ou, si les fichiers collés ne peuvent pas la
- * faire tenir (un fichier manque, est coupé, collé deux fois, ou l'Index et le
- * Javascript ne sont pas de la même livraison), une page qui dit lesquels
- * recoller, au lieu d'une page blanche (débrief 17). Le contrôle ne peut pas
- * empêcher la page : s'il échoue lui-même, la page s'ouvre comme avant.
+ * La page du tableau de bord — ou, si un fichier MANQUE au projet (la page
+ * ne pourrait pas se construire), une page qui dit lequel recréer. Tout le
+ * reste — un fichier coupé, collé deux fois, d'une autre livraison — la page
+ * le dit elle-même en tête, sans qu'on bloque sur une supposition : c'en est
+ * une qui, au bureau, a bloqué une page entière et saine (débrief 17). Le
+ * contrôle ne peut pas empêcher la page : s'il échoue lui-même, elle s'ouvre.
  */
 function pageDuTableau(forcer) {
   if (!forcer) {
     let verdict = null;
     try { verdict = verifierLivraison(lireFichiersDuProjet(), true); } catch (err) { verdict = null; }
-    if (verdict && verdict.bloquant) return HtmlService.createHtmlOutput(pageDePanne(verdict.lignes));
+    if (verdict && verdict.manquant) return HtmlService.createHtmlOutput(pageDePanne(verdict.lignes));
   }
   return HtmlService.createTemplateFromFile('Index').evaluate();
 }
@@ -1458,7 +1459,7 @@ function diagnostic() {
   const aVerifier = lignes.filter(function (l) { return l.charAt(0) === '⚠'; });
   dire('');
   if (nomsFichiers.length !== 3) dire('Il manque des fichiers HTML (voir ci-dessus).');
-  else if (livraison.bloquant) dire('Les fichiers collés ne concordent pas (voir ci-dessus) : le tableau de bord ne s\'ouvrira pas — il dira quoi recoller — tant qu\'ils ne sont pas recollés.');
+  else if (livraison.bloquant) dire('Les fichiers collés ne concordent pas (voir ci-dessus) : la page s\'ouvrira sur un cadre qui dit quoi recoller, tant qu\'ils ne sont pas recollés.');
   else if (!livraison.bonne) dire('Les fichiers collés ne concordent pas (voir ci-dessus) : la page s\'ouvrira avec un avertissement en tête tant qu\'ils ne sont pas recollés.');
   else if (!tousLisibles) dire('Un contrat au moins n\'est pas lisible (voir ci-dessus).');
   else if (!secondeLisible) dire('Tout est en place pour GATES : Suivi FWD → Ouvrir le tableau de bord. La seconde base, elle, ne se lit pas (voir ci-dessus).');
@@ -1854,11 +1855,16 @@ function plansQuiChangent(a, b) {
  * étant échappés, le Javascript n'a qu'une balise d'ouverture et une de
  * fermeture — deux, c'est deux copies (collé sans tout effacer).
  *
- * `contenus` : { Index, Styles, Javascript }, le texte des fichiers trouvés.
- * Renvoie les lignes à dire, si tout concorde (`bonne`), et si la page ne
- * peut pas tenir (`bloquant` : un fichier manque, est abîmé, ou l'Index et le
- * Javascript ne sont pas de la même livraison). `direManquants` : dire aussi
- * les fichiers introuvables (le Diagnostic les dit déjà de son côté).
+ * `contenus` : { Index, Styles, Javascript }, le texte des fichiers trouvés
+ * — tel qu'Apps Script le rend, SANS SES COMMENTAIRES : rien ici ne s'appuie
+ * sur un commentaire (débrief 17 : la marque de fin en était un, et un
+ * Javascript entier passait pour coupé). Renvoie les lignes à dire, si tout
+ * concorde (`bonne`), si la page a toutes les chances de ne pas tenir
+ * (`bloquant` : fichier abîmé, ou Index et Javascript de livraisons
+ * différentes — la page le dit elle-même en tête), et si un fichier manque
+ * (`manquant` : seul cas où l'ouverture sert une page d'explication au lieu
+ * du tableau de bord, qui ne pourrait pas se construire). `direManquants` :
+ * dire aussi les fichiers introuvables (le Diagnostic les dit de son côté).
  */
 function verifierLivraison(contenus, direManquants) {
   const marques = {
@@ -1867,7 +1873,7 @@ function verifierLivraison(contenus, direManquants) {
     Javascript: /var EDITION = '([^']*)';/
   };
   const lignes = [];
-  let bonne = true, bloquant = false;
+  let bonne = true, bloquant = false, manquant = false;
   function ecart(nom, texte, geste, bloque) {
     bonne = false;
     if (bloque) bloquant = true;
@@ -1884,6 +1890,7 @@ function verifierLivraison(contenus, direManquants) {
     if (typeof texte !== 'string') {
       bonne = false;
       bloquant = true;
+      manquant = true;
       if (direManquants) ecart(nom, 'est introuvable dans le projet.', '+ → HTML, le nommer exactement « ' + nom +
         ' » (sans .html), puis y coller ' + nom + '.html.txt.', true);
       return;
@@ -1908,7 +1915,8 @@ function verifierLivraison(contenus, direManquants) {
         ecart(nom, 'contient deux copies — collé sans tout effacer ?', recoller(nom), true);
       } else if (iOuverture === -1 || (iMarque !== -1 && iOuverture > iMarque)) {
         ecart(nom, 'a perdu sa première ligne « <script> » — début perdu au collage ?', recoller(nom), true);
-      } else if (!new RegExp(FIN_DU_JAVASCRIPT + '[^\\n]*\\*/\\s*</script>').test(texte)) {
+      } else if (!new RegExp(FIN_DU_JAVASCRIPT + "\\s*=\\s*'[^']*';?\\s*</script>").test(texte) &&
+                 !/\}\)\(\);\s*<\/script>\s*$/.test(texte)) {
         ecart(nom, 'est incomplet : sa fin manque (' + texte.length + ' caractères) — collé en partie ?', recoller(nom), true);
       } else if (premiere !== '<script>' || derniere !== '</script>') {
         ecart(nom, 'porte du texte hors de « <script> … </script> » (le squelette d\'un fichier créé par + → HTML ?).',
@@ -1931,11 +1939,12 @@ function verifierLivraison(contenus, direManquants) {
     }
   });
   if (bonne) lignes.push('✓ Livraison ' + EDITION + ' : Code, Index, Styles et Javascript concordent, et sont entiers.');
-  return { lignes: lignes, bonne: bonne, bloquant: bloquant };
+  return { lignes: lignes, bonne: bonne, bloquant: bloquant, manquant: manquant };
 }
 
 /** La dernière ligne du fichier Javascript, posée par la construction. */
-const FIN_DU_JAVASCRIPT = 'suivi-fwd : fin du fichier Javascript';
+/* Une instruction, pas un commentaire : Apps Script retire les commentaires. */
+const FIN_DU_JAVASCRIPT = 'SUIVI_FWD_FIN';
 
 function terminerDiagnostic(lignes) {
   const rapport = lignes.join('\n');

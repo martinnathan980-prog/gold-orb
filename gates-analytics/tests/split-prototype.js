@@ -14,16 +14,17 @@ const src = texteSource.split('\n');
    Index, Styles, Javascript — portent la même, pour que la page et le
    Diagnostic nomment celui qui serait resté à une livraison d'avant (débrief
    17 : un Index d'avant avec le Javascript du jour, et une page blanche).
-   C'est l'empreinte de ce qui les produit : le prototype, le modèle d'Index
-   et Code.gs sans sa propre ligne d'édition — la même source redonne la même
-   livraison, et une modification de l'un des trois en fait une nouvelle. */
+   C'est l'empreinte de ce qui produit la PAGE : le prototype et le modèle
+   d'Index — la même source redonne la même livraison. Code.gs la porte sans
+   en faire partie : une correction de Code.gs seule ne demande de recoller
+   que Code.gs. */
 const cheminCode = path.join(racine, 'Code.gs');
 const code = fs.readFileSync(cheminCode, 'utf8');
 const LIGNE_EDITION = /^const EDITION = '[0-9a-f]*';$/m;
 if (!LIGNE_EDITION.test(code)) throw new Error("Code.gs : ligne « const EDITION = '…'; » introuvable");
 const modeleIndex = fs.readFileSync(path.join(__dirname, 'Index.modele.html'), 'utf8');
 const EDITION = crypto.createHash('sha1')
-  .update(texteSource).update('\0').update(modeleIndex).update('\0').update(code.replace(LIGNE_EDITION, ''))
+  .update(texteSource).update('\0').update(modeleIndex)
   .digest('hex').slice(0, 7);
 function poser(texte, marque, par, fichier) {
   if (texte.split(marque).length !== 2) throw new Error(fichier + ' : marque de livraison introuvable ou répétée — ' + marque);
@@ -59,9 +60,12 @@ const livre = lignesScript.slice(0, d0).concat([
 const corps = echapperChevrons(poser(livre.join('\n'), "var EDITION = 'source';",
   "var EDITION = '" + EDITION + "';", 'Javascript'));
 /* La dernière ligne dit le fichier entier : le Diagnostic la cherche, pour
-   reconnaître un Javascript collé en partie (FIN_DU_JAVASCRIPT dans Code.gs). */
+   reconnaître un Javascript collé en partie (FIN_DU_JAVASCRIPT dans Code.gs).
+   Une instruction, pas un commentaire : Apps Script retire les commentaires
+   quand il relit un fichier — la marque disparaissait, et le fichier, entier,
+   passait pour coupé (débrief 17). */
 fs.writeFileSync(path.join(racine, 'Javascript.html'),
-  '<script>\n' + corps.texte + '\n/* suivi-fwd : fin du fichier Javascript, livraison ' + EDITION + ' */\n</script>\n');
+  '<script>\n' + corps.texte + '\nwindow.SUIVI_FWD_FIN = \'' + EDITION + '\';\n</script>\n');
 
 const markup = src.slice(s1 + 1, j0).join('\n').replace(/^\n+|\n+$/g, '');
 const index = fs.readFileSync(path.join(__dirname, 'Index.modele.html'), 'utf8');
