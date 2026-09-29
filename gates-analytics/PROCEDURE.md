@@ -1077,6 +1077,64 @@ mot. Le lien `…/exec` (application web) ajoute un piège : il sert la version
 - La page seule (démonstration, chargeur) porte la livraison « source » : un
   seul fichier, rien à comparer, rien d'affiché.
 
+Une relecture dédiée (quatre angles : fichiers collés, données réelles,
+historique, environnement du bureau ; chaque constat rejoué et contre-vérifié)
+a trouvé d'autres chemins vers le même écran, et des chiffres faux sans un
+mot. Ce que la page fait maintenant :
+
+- **Le filet est posé en tête.** Celui du Javascript, dès sa première ligne :
+  une erreur avant la fin du démarrage — un Index d'une autre livraison casse
+  le script dès qu'il branche ses boutons — s'affiche quel que soit l'Index.
+  Celui d'Index, en tête du `<head>`, AVANT Styles, et il attend la fin du
+  chargement : un Styles ou un Javascript coupé laisse un `<style>` ou un
+  `<script>` ouvert qui avale tout ce qui le suit ; un filet placé après ne
+  parlerait jamais. Le squelette dit « Chargement… », et ni « Démonstration »
+  ni « Le classeur n'a pas encore de plans » ne s'y lisent sans le Javascript.
+- **Le Javascript collé deux fois** (sans tout effacer, le neuf au-dessus de
+  l'ancien) : la seconde copie ne démarre pas, une copie d'avant se compte au
+  chargement ; la page le dit.
+- **À l'ouverture**, `Code` relit les trois fichiers : s'ils ne peuvent pas
+  faire tenir la page (un fichier manque, est coupé, collé deux fois, Index et
+  Javascript de livraisons différentes), il sert une page qui dit lesquels
+  recoller, au lieu d'une page blanche. Des Styles d'une autre livraison
+  n'empêchent pas la page : elle le dit en tête. Par le lien `…/exec`,
+  `?forcer=1` passe outre. Le Diagnostic fait le même contrôle, balises de
+  début et de fin comprises.
+- **Des références en double comptent une fois**, à leur première ligne,
+  partout : relevé, carte, page, groupes. Le point du jour comptait les
+  lignes et les semaines archivées les références : la courbe sautait.
+- **La colonne suivie vide sur tous les plans** : la page le dit ;
+  l'archivage est refusé si le relevé d'avant en avait des valeurs (un export
+  fait sans elle), pas pour un contrat qui démarre ; sous le concept harnais,
+  un message seulement.
+- **Un onglet d'en-têtes seuls** : pas de relevé à zéro plan ; la page s'ouvre
+  sur le premier contrat qui a des plans ; demandé, il dit « ne porte aucun
+  plan », jusque dans la vue d'ensemble.
+- **Un historique orphelin** (onglet de contrat renommé) : la page le dit
+  au-dessus de la barre, avec le nom à lui donner ; l'archivage qui ouvrirait
+  un second historique à côté est refusé tant qu'il n'est pas renommé.
+- **Un historique illisible** (délai dépassé) n'emporte plus l'extract du jour.
+- **La colonne suivie introuvable** : plus de point du jour à zéro ni de
+  journal de faux reculs ; la courbe s'arrête au dernier relevé archivé.
+- **Les onglets pris pour des contrats** : une ligne d'en-têtes d'export veut
+  au moins deux intitulés attendus, seuls dans leur cellule, sur une ligne
+  large — un tableau croisé (« ATA | NBVAL de Référence UD ») n'en est pas un ;
+  « Copie de HDK » non plus.
+- **Des dates mois/jour** (classeur réglé « États-Unis ») : la colonne dit son
+  ordre, le mois de création tombe juste.
+- **Le Diagnostic** signale un projet hors du fuseau de Paris (un archivage du
+  lundi matin tomberait dans la semaine d'avant) et un relevé daté d'avant le
+  22 septembre (la colonne suivie se devinait alors : « Réalisation FWD »).
+- **Le pied** dit quand les chiffres ont été lus dans le classeur : une page
+  restée ouverte depuis vendredi ne montre pas ceux de lundi.
+- **Contraste élevé de Windows** : la barre, les pastilles et le bouton
+  pressé restent visibles.
+- **À savoir, sans correction** : le rythme compte des semaines ISO, pas le
+  temps écoulé — deux relevés pris un dimanche soir et un lundi matin
+  comptent pour une semaine (l'archivage du vendredi garde des écarts
+  réguliers) ; sur un poste lent, la première peinture de 600 plans prend
+  quelques secondes (« Chargement… » s'affiche pendant ce temps).
+
 ## 13 quinquies. Vitesse d'ouverture et thème
 
 - **Le paquet voyage compacté** : chaque nom de colonne, chaque référence

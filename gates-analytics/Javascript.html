@@ -6,7 +6,31 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '5d67da8';
+  var EDITION = '4a66c44';
+  /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
+     — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
+     dès les premières lignes qui branchent les boutons — s'affiche en tête de
+     page au lieu de laisser le squelette vide. Posé ici, il couvre tout le
+     fichier ; les fonctions qu'il appelle sont hissées (voir « LIVRAISON ET
+     PANNE », en fin de fichier). L'erreur, elle, reste une erreur. */
+  var DEMARRAGE_FINI = false;
+  window.addEventListener('error', function (ev) {
+    if (DEMARRAGE_FINI || !ev || ev.message === 'Script error.') return;
+    if (ev.filename && /\.js(\?|#|$)/.test(ev.filename)) return;     // un script de Google, pas la page
+    montrerPanne(ev.error || { name: 'Erreur', message: ev.message }, ecartsDeLivraison(window.SUIVI_FWD_DONNEES));
+  });
+  /* Le fichier collé deux fois, sans tout effacer : la seconde copie ne
+     démarre pas, elle le dit. Une copie d'avant, qui ne s'annonce pas, se
+     compte une fois la page chargée. */
+  if (window.SUIVI_FWD_DEMARREE) { DEMARRAGE_FINI = true; montrerDoublon(); return; }
+  window.SUIVI_FWD_DEMARREE = true;
+  window.addEventListener('load', function () {
+    var copies = 0;
+    for (var i = 0; i < document.scripts.length; i++) {
+      if ((document.scripts[i].text || '').indexOf('function chargerSource(') !== -1) copies++;
+    }
+    if (copies > 1) montrerDoublon();
+  });
   function ech(v) {
     return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/\x3C/g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -293,10 +317,38 @@
     var an = Number(fr[3]);
     if (an < 100) an += an < 70 ? 2000 : 1900;
     /* Jour puis mois, comme en France — sauf si le premier nombre dépasse
-       douze : il est alors forcément le jour, et l'autre le mois. */
+       douze : il est alors forcément le jour, et l'autre le mois. Et une
+       colonne écrite mois/jour se lit mois/jour (ordreDesDates). */
     var a = Number(fr[1]), b = Number(fr[2]);
-    var mois = a > 12 ? b : (b > 12 ? a : b);
+    var mois = a > 12 ? b : (b > 12 ? a : (MOIS_D_ABORD ? a : b));
     return mois >= 1 && mois <= 12 ? { annee: an, mois: mois } : null;
+  }
+  /* Les plans, une fois chacun (voir chargerSource) ; une ligne sans
+     référence n'a pas de double. */
+  function plansUniques(plans) {
+    var vues = {};
+    return plans.filter(function (p) {
+      var ref = String(p.reference || '');
+      if (!ref) return true;
+      if (Object.prototype.hasOwnProperty.call(vues, ref)) return false;
+      vues[ref] = true;
+      return true;
+    });
+  }
+  /* Un classeur réglé en anglais (États-Unis) écrit ses dates mois/jour :
+     lues jour/mois, 41 % des plans tombaient dans le mauvais mois (débrief
+     17). La colonne tranche : les cellules dont un nombre dépasse douze
+     disent l'ordre ; à défaut d'indice, le jour d'abord, comme en France. */
+  function ordreDesDates(plans, cle) {
+    if (!cle) return false;
+    var jourDabord = 0, moisDabord = 0;
+    plans.forEach(function (p) {
+      var m = /^(\d{1,2})[-\/.](\d{1,2})[-\/.]\d{2,4}/.exec(String(p[cle] == null ? '' : p[cle]).trim());
+      if (!m) return;
+      if (Number(m[1]) > 12) jourDabord++;
+      else if (Number(m[2]) > 12) moisDabord++;
+    });
+    return moisDabord > jourDabord;
   }
   /* Écart en mois entre une date de cellule et une date de référence.
      `null` quand la cellule ne porte pas de date lisible. */
@@ -394,6 +446,10 @@
      (celui du vendredi, souvent) sans export recollé. Le point compte dans
      le rythme ; la note du graphique le signale (débrief 16). */
   var RELEVES_IDENTIQUES = [];
+  /* Les lignes écartées parce qu'elles répètent une référence déjà vue
+     (voir plansUniques) ; et l'ordre des dates de la colonne de création,
+     jour/mois ou mois/jour (voir ordreDesDates). */
+  var LIGNES_EN_DOUBLE = 0, MOIS_D_ABORD = false;
   /* La figure de la comparaison s'anime une fois par source : le drapeau se
      lève au chargement, le premier rendu le consomme. */
   var ANIMER_FIGURE = false, GUETTEUR_FIGURE = null;
@@ -821,6 +877,17 @@
     var z = $('alerte-valeurs'), morceaux = [];
     var remplies = VALEURS_COLONNE.filter(function (v) { return v.famille !== 'vide'; });
     var aucunFini = !VALEURS_COLONNE.some(function (v) { return v.famille === 'termine'; });
+    /* Ce que le classeur a à dire en plus — un historique rattaché à aucun
+       contrat, un historique illisible. */
+    if (SRC && SRC.avis) morceaux.push('\x3Cb>À savoir.\x3C/b> ' + ech(SRC.avis));
+    /* La colonne là, mais vide sur tous les plans : un export fait sans elle,
+       le plus souvent. « 0 terminé » sans un mot se croirait juste. */
+    if (PLANS.length && !remplies.length && PAR_CLE[CLE_SUIVIE]) {
+      morceaux.push('\x3Cb>La colonne « ' + ech(colonneDite(CLE_SUIVIE)) + ' » est vide sur les ' + nb(PLANS.length) +
+        ' plans.\x3C/b> Rien ne peut y être compté' + (INDICATEUR === 'concept'
+          ? ' : le concept harnais n\u2019a pas commencé, ou l\u2019export a été fait sans cette colonne.'
+          : ' : vérifier que l\u2019export collé porte bien cette colonne remplie.'));
+    }
     if (PLANS.length && remplies.length && aucunFini) {
       var vues = remplies.slice().sort(function (a, b) { return b.n - a.n; });
       var liste = vues.slice(0, 8).map(function (v) { return '« ' + ech(v.libelle) + ' » (' + nb(v.n) + ')'; }).join(', ') +
@@ -832,11 +899,11 @@
     }
     /* Une référence sur plusieurs lignes : un export collé par-dessus l'ancien
        sans le vider, le plus souvent. Chaque ligne compte ; on le dit. */
-    var vuesRef = {}, doublons = 0;
-    PLANS.forEach(function (p) { if (vuesRef[p.reference]) doublons++; else vuesRef[p.reference] = true; });
+    var doublons = LIGNES_EN_DOUBLE;
     if (doublons) {
       morceaux.push('\x3Cb>' + nb(doublons) + (doublons > 1 ? ' lignes répètent' : ' ligne répète') + ' une référence déjà vue.\x3C/b> ' +
-        'Chaque ligne compte dans les totaux. Si l\u2019export a été collé par-dessus l\u2019ancien, le recoller sur un onglet vidé (Ctrl+A, Suppr).');
+        'Seule la première ligne de chaque référence compte et s\u2019affiche. Si l\u2019export a été collé par-dessus l\u2019ancien, ' +
+        'le recoller sur un onglet vidé (Ctrl+A, Suppr).');
     }
     if (!z) return;                    // un Index d'une livraison d'avant : la page le dit (ecartsDeLivraison)
     z.hidden = !morceaux.length;
@@ -1001,7 +1068,13 @@
     SRC = src;
     ANIMER_FIGURE = true;
 
-    PLANS = src.plans;
+    /* Une référence répétée — un export collé par-dessus l'ancien, dont la
+       queue reste en dessous — ne compte qu'une fois, à sa première ligne :
+       comme dans la carte des relevés et côté Code.gs (plansUniques). Sinon
+       le point du jour comptait les lignes et les semaines archivées les
+       références, et la courbe sautait (débrief 17). */
+    PLANS = plansUniques(src.plans || []);
+    LIGNES_EN_DOUBLE = (src.plans || []).length - PLANS.length;
     /* Le tableau est l'extract, à une exception près, décidée par l'utilisateur :
        la première colonne, quand le serveur a dû la nommer lui-même
        (« Colonne 1 », faute d'intitulé) et qu'elle ne porte AUCUNE valeur —
@@ -1014,6 +1087,7 @@
     PAR_CLE = Object.create(null);
     COLONNES.forEach(function (c) { PAR_CLE[c.cle] = c; });
     CLE_DATE = src.cleDate || null;
+    MOIS_D_ABORD = ordreDesDates(PLANS, CLE_DATE);
     /* Le concept harnais ne se suit que si la source en nomme la colonne ;
        sinon l'interrupteur s'efface et la page revient à la définition. */
     if (INDICATEUR === 'concept' && !(src.cleConcept && PAR_CLE[src.cleConcept])) INDICATEUR = 'def';
@@ -1097,7 +1171,14 @@
        extract qui n'a pas bougé reste, lui, le point du dernier relevé : on
        ne sait rien de cette semaine, on n'y invente pas un palier. */
     EXTRAIT_EN_PLUS = false;
-    if (dernier && dernier.i === AUJ && iJour > AUJ && extraitABouge(vivant, dernier)) {
+    /* La colonne suivie introuvable : l'extract du jour ne dit rien de
+       l'avancement. En faire un point — tous « non renseigné » — tracerait
+       une chute et remplirait le journal de faux reculs (débrief 17) : la
+       courbe et le journal s'arrêtent au dernier relevé archivé, le message
+       du haut dit pourquoi. */
+    if (dernier && PLANS.length && !PAR_CLE[CLE_SUIVIE]) {
+      /* rien : les relevés archivés restent seuls */
+    } else if (dernier && dernier.i === AUJ && iJour > AUJ && extraitABouge(vivant, dernier)) {
       EXTRAIT_EN_PLUS = true;
       AUJ = iJour;
       vivant.i = AUJ;
@@ -1138,6 +1219,13 @@
     /* « Démonstration » ne se lit que dans la démonstration, la page
        ouverte seule. Sur les chiffres du tableur, le pied ne dit rien de tel. */
     $('avertissement-demo').hidden = SERVEUR;
+    var luLe = SERVEUR && src.genereLe ? new Date(src.genereLe) : null;
+    if ($('lu-le')) {
+      $('lu-le').hidden = !(luLe && !isNaN(luLe.getTime()));
+      $('lu-le').textContent = $('lu-le').hidden ? '' : 'Chiffres lus dans le classeur le ' +
+        luLe.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) + ' à ' +
+        luLe.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + ' — recharger la page pour les chiffres du moment.';
+    }
 
     /* Ce qui a bougé entre les deux derniers imports, plan par plan. Le
        comparatif affiché en découle, restreint au périmètre courant. */
@@ -3719,6 +3807,9 @@
      relevé à lui. Les paquets déjà reçus sont gardés.
      ============================================================ */
   var PAQUETS = {}, demandeEnsemble = 0;
+  /* Le message d'un contrat que la vue d'ensemble n'a pas pu charger — un
+     onglet d'en-têtes seuls — au lieu de « contrat impossible à charger ». */
+  var MESSAGES_ENSEMBLE = {};
   function resumeDuContrat() {
     var pts = serieDe('', null).pts;
     var der = pts[pts.length - 1], avant = pts.length > 1 ? pts[pts.length - 2] : null;
@@ -3775,7 +3866,7 @@
       var courant = c.id === CONTRAT;
       if (!r) {
         return '\x3Ctr' + (courant ? ' class="courant"' : '') + '>\x3Cth scope="row">\x3Cbutton type="button" class="lien-doux" data-aller-contrat="' + ech(c.id) + '">' +
-          ech(c.nom) + '\x3C/button>\x3C/th>\x3Ctd colspan="6" class="doux">' + (resumes === null ? 'chargement…' : 'contrat impossible à charger') + '\x3C/td>\x3C/tr>';
+          ech(c.nom) + '\x3C/button>\x3C/th>\x3Ctd colspan="6" class="doux">' + (resumes === null ? 'chargement…' : ech(MESSAGES_ENSEMBLE[c.id] || 'contrat impossible à charger')) + '\x3C/td>\x3C/tr>';
       }
       var e = r.echeance;
       if (r.message) {
@@ -3829,6 +3920,7 @@
       function recevoir(paquet) {
         paquet = deballerPaquet(paquet);
         if (paquet && paquet.plans && paquet.plans.length) PAQUETS[c.id] = paquet;
+        else MESSAGES_ENSEMBLE[c.id] = paquet && paquet.message ? String(paquet.message) : '';
         if (--restent === 0) finir();
       }
       if (API && API.chargerContrat) API.chargerContrat(c.id, recevoir);
@@ -5157,13 +5249,15 @@
     var noms = liste.map(function (f) { return '\x3Cb>' + f + '\x3C/b>'; });
     return noms.length > 1 ? noms.slice(0, -1).join(', ') + ' et ' + noms[noms.length - 1] : noms[0];
   }
-  var GESTE_EXEC = 'Par un lien \x3Cb>…/exec\x3C/b> : ensuite, Déployer → Gérer les déploiements → ✏️ → ' +
-    'Version : Nouvelle version → Déployer.';
+  function gesteExec() {
+    return 'Par un lien \x3Cb>…/exec\x3C/b> : ensuite, Déployer → Gérer les déploiements → ✏️ → ' +
+      'Version : Nouvelle version → Déployer.';
+  }
   function phraseEcarts(ecarts) {
     var un = ecarts.length === 1;
     return nommerFichiers(ecarts) + (un ? ' ne vient' : ' ne viennent') + ' pas de la même livraison que ' +
       (un ? 'les autres fichiers' : 'le reste') + ' : ' + (un ? 'le recoller' : 'les recoller') +
-      ' depuis la dernière livraison (tout effacer, coller le .txt, Ctrl+S). ' + GESTE_EXEC;
+      ' depuis la dernière livraison (tout effacer, coller le .txt, Ctrl+S). ' + gesteExec();
   }
   /* Le cadre, en tête de page, en styles posés sur lui : il doit se lire
      même quand c'est Styles qui manque. */
@@ -5179,6 +5273,9 @@
       'font:14px/1.55 system-ui,sans-serif;background:' + (grave ? '#fff4e5' : '#fffaf0') + ';' +
       'border-left:4px solid ' + (grave ? '#b54708' : '#bf7f14') + ';';
     cadre.innerHTML = html;
+    /* Plus de « Chargement… » sous un cadre qui dit que rien ne viendra. */
+    var phrase = document.getElementById('phrase');
+    if (grave && phrase && phrase.textContent === 'Chargement\u2026') phrase.textContent = '\u2014';
   }
   function signalerLivraison(ecarts) {
     if (!ecarts.length) return;
@@ -5194,6 +5291,11 @@
     }).filter(Boolean);
     return texte.slice(0, 200) + (pile.length ? ' — dans ' + pile.join(' ← ') : '');
   }
+  function montrerDoublon() {
+    cadreEnTete('\x3Cp style="margin:0">\x3Cb>Le fichier Javascript contient deux copies\x3C/b> — collé sans tout effacer ? ' +
+      'Les chiffres peuvent venir de l\u2019ancienne. Dans Apps Script : \x3Cb>Javascript\x3C/b>, Ctrl+A, Suppr, coller ' +
+      '\x3Cb>Javascript.html.txt\x3C/b> en entier, Ctrl+S. ' + gesteExec() + '\x3C/p>', true);
+  }
   function montrerPanne(e, ecarts) {
     var html = '\x3Cp style="margin:0 0 6px">\x3Cb>La page n\u2019a pas pu s\u2019afficher.\x3C/b> ' +
       (ecarts.length ? 'Cause la plus probable : ' + phraseEcarts(ecarts)
@@ -5203,26 +5305,18 @@
     cadreEnTete(html, true);
   }
 
-  /* Le démarrage. Arrivé ici, le fichier est entier : le filet d'Index
-     (un Javascript coupé, qui ne démarre jamais) n'a pas à parler. */
-  window.SUIVI_FWD_DEMARREE = true;
-  var ECARTS_LIVRAISON = [];
-  try {
-    ECARTS_LIVRAISON = ecartsDeLivraison(window.SUIVI_FWD_DONNEES);
-    signalerLivraison(ECARTS_LIVRAISON);
-    if ($('livraison') && EDITION !== 'source') {
-      $('livraison').textContent = 'Livraison ' + EDITION;
-      $('livraison').hidden = false;
-    }
-    chargerSource(SERVEUR ? sourceDuClasseur(window.SUIVI_FWD_DONNEES) : jeuDExemple());
-    chargerPrefs();
-    remplirDims();
-    rendre();
-  } catch (e) {
-    montrerPanne(e, ECARTS_LIVRAISON);
-    /* L'erreur reste une erreur : la console la garde, les batteries la voient. */
-    setTimeout(function () { throw e; }, 0);
+  /* Le démarrage. Une erreur ici remonte au filet posé en tête du fichier,
+     qui l'affiche avec la cause la plus probable. */
+  signalerLivraison(ecartsDeLivraison(window.SUIVI_FWD_DONNEES));
+  if ($('livraison') && EDITION !== 'source') {
+    $('livraison').textContent = 'Livraison ' + EDITION;
+    $('livraison').hidden = false;
   }
+  chargerSource(SERVEUR ? sourceDuClasseur(window.SUIVI_FWD_DONNEES) : jeuDExemple());
+  chargerPrefs();
+  remplirDims();
+  rendre();
+  DEMARRAGE_FINI = true;
 })();
-/* suivi-fwd : fin du fichier Javascript, livraison 5d67da8 */
+/* suivi-fwd : fin du fichier Javascript, livraison 4a66c44 */
 </script>

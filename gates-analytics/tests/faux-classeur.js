@@ -128,6 +128,14 @@ Classeur.prototype.insertSheet = function (nom) {
   return f;
 };
 
+function pageServie(source) {
+  const page = { source: source, getContent: function () { return source.html || ''; } };
+  ['setTitle', 'addMetaTag', 'setWidth', 'setHeight', 'setXFrameOptionsMode'].forEach(function (m) {
+    page[m] = function () { return page; };
+  });
+  return page;
+}
+
 /** Installe les globales Apps Script dans un contexte, autour d'un classeur. */
 function poserEnvironnement(contexte, classeur, proprietes, fichiers) {
   const props = proprietes || {};
@@ -153,7 +161,7 @@ function poserEnvironnement(contexte, classeur, proprietes, fichiers) {
           const menu = { addItem: function () { return menu; }, addSeparator: function () { return menu; }, addToUi: function () {} };
           return menu;
         },
-        showModalDialog: function () {}
+        showModalDialog: function (page) { contexte.__dialogue = page; }
       };
     }
   };
@@ -168,7 +176,10 @@ function poserEnvironnement(contexte, classeur, proprietes, fichiers) {
   let compteur = 0;
   contexte.Utilities = { getUuid: function () { compteur++; return 'uuid-' + compteur; } };
   contexte.HtmlService = {
-    createTemplateFromFile: function () { return { evaluate: function () { return { setTitle: function () { return this; }, addMetaTag: function () { return this; }, setWidth: function () { return this; }, setHeight: function () { return this; }, setXFrameOptionsMode: function () { return this; } }; } }; },
+    /* Une page servie se reconnaît à sa source : le modèle Index, ou une page
+       écrite par le script (celle qui dit quoi recoller, débrief 17). */
+    createTemplateFromFile: function (nom) { return { evaluate: function () { return pageServie({ modele: nom }); } }; },
+    createHtmlOutput: function (html) { return pageServie({ html: String(html) }); },
     createHtmlOutputFromFile: function (nom) {
       if (presents.indexOf(nom) === -1) throw new Error('Fichier introuvable : ' + nom);
       return { getContent: function () { return contenuDe(nom); } };

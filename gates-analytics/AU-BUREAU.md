@@ -21,8 +21,11 @@ garde l'installation (partie 1), et range à la fin ce qui attendra (partie 2).
 Le tableau de bord tient en **quatre fichiers** (`Code`, `Index`, `Styles`,
 `Javascript`). **Le plan C — les coller à la main depuis les `.txt` reçus dans
 la conversation — est celui qui marche au bureau** : c'est ainsi qu'il tourne
-aujourd'hui. À chaque mise à jour, je renvoie les fichiers qui ont changé, en
-`.txt`, et on recolle ceux-là (tout effacer, coller, Ctrl+S).
+aujourd'hui. À chaque mise à jour, je renvoie **les quatre fichiers**, en
+`.txt`, et on recolle **les quatre** (tout effacer, coller, Ctrl+S) : ils
+portent la même livraison, et un seul laissé à l'ancienne suffit à laisser
+la page blanche (débrief 17). Voir `MODE-D-EMPLOI.md`, § 1, « Recoller une
+livraison ».
 
 Les plans A et B restent décrits pour mémoire : ils supposent que Google
 puisse joindre le dépôt, ce qui n'est pas acquis depuis le poste.
@@ -184,7 +187,9 @@ conversation. (Le ZIP du dépôt marche aussi, quand GitHub est joignable.)
 Ils arrivent **dans la conversation, en `.txt`** : `Code.gs.txt`,
 `Index.html.txt`, `Styles.html.txt`, `Javascript.html.txt`. Les enregistrer
 dans **Téléchargements** (clic droit → Enregistrer). À chaque mise à jour, je
-renvoie seulement ceux qui ont changé, et on ne recolle que ceux-là.
+renvoie les quatre, et on recolle **les quatre** : ils vont ensemble. Attention
+aux doublons de Windows — `Javascript.html (1).txt` est le plus récent quand
+l'ancien est encore là : vider Téléchargements des anciens `.txt` avant.
 
 > *Si un jour GitHub est joignable depuis le poste*, les mêmes fichiers sont
 > dans le dépôt (bouton **Code → Download ZIP**, dossier `gates-analytics\`),

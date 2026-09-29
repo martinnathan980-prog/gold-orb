@@ -7,13 +7,56 @@
     <title>Suivi FWD</title>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-    <!-- Le filet : les erreurs du démarrage sont gardées, pour que la page
-         dise pourquoi elle ne s'affiche pas au lieu de rester vide (voir la
-         fin de ce fichier). Posé avant tout le reste. -->
+    <!-- Le filet de la page (débrief 17). Si le Javascript ne démarre pas —
+         coupé au collage, abîmé, absent, ou d'une livraison d'avant qui ne
+         s'annonce pas —, la page le dit au lieu de rester vide. Posé ici, en
+         tête, AVANT Styles : un fichier coupé (un <style> ou un <script> resté
+         ouvert) avale tout ce qui le suit, un filet placé après compris. Un
+         Javascript qui a démarré dit lui-même ses pannes. -->
     <script>
       window.SUIVI_FWD_ERREURS = [];
       window.addEventListener('error', function (e) {
         window.SUIVI_FWD_ERREURS.push(String((e && e.message) || 'erreur'));
+      });
+      window.addEventListener('load', function () {
+        if (window.SUIVI_FWD_DEMARREE) return;
+        var erreurs = window.SUIVI_FWD_ERREURS;
+        var phrase = document.getElementById('phrase');
+        var syntaxe = erreurs.some(function (m) {
+          return /SyntaxError|Unexpected|Invalid or unexpected|missing \)|Unterminated/i.test(m);
+        });
+        /* Un Javascript d'avant ne s'annonce pas, mais il dessine la page. */
+        var ancien = phrase && !erreurs.length && phrase.textContent !== 'Chargement\u2026';
+        var titre, cause;
+        if (!phrase) {
+          titre = 'La page n\u2019a pas pu se construire.';
+          cause = 'Le fichier <b>Styles</b> (ou <b>Index</b>) semble incomplet — collé en partie ? Le recoller en entier ' +
+            '(dans le .txt : Ctrl+A, Ctrl+C ; dans Apps Script : tout effacer, Ctrl+V, Ctrl+S).';
+        } else if (ancien) {
+          titre = 'Les fichiers du tableau de bord ne concordent pas.';
+          cause = '<b>Javascript</b> ne vient pas de la même livraison que les autres fichiers : le recoller depuis la ' +
+            'dernière livraison. D\u2019ici là, la page peut être incomplète ou fausse.';
+        } else {
+          titre = 'La page n\u2019a pas pu démarrer.';
+          cause = (syntaxe || !erreurs.length
+            ? 'Le fichier <b>Javascript</b> semble incomplet, abîmé ou absent — collé en partie ?'
+            : 'Une erreur l\u2019a arrêtée avant le démarrage.') +
+            ' Dans Apps Script, ouvrir <b>Javascript</b>, tout effacer, coller <b>Javascript.html.txt</b> en entier ' +
+            '(dans le .txt : Ctrl+A, Ctrl+C), Ctrl+S — et recoller les trois autres fichiers de la même livraison.';
+          phrase.textContent = '\u2014';
+        }
+        var cadre = document.createElement('div');
+        cadre.id = 'suivi-fwd-panne';
+        cadre.setAttribute('role', 'alert');
+        cadre.style.cssText = 'margin:16px auto;max-width:1100px;padding:14px 18px;background:#fff4e5;color:#191915;' +
+          'border-left:4px solid #b54708;font:14px/1.55 system-ui,sans-serif;';
+        var p = function (html) { var e = document.createElement('p'); e.style.margin = '0 0 6px'; e.innerHTML = html; cadre.appendChild(e); };
+        p('<b>' + titre + '</b> ' + cause);
+        p('Par un lien <b>…/exec</b> : ensuite, Déployer → Gérer les déploiements → ✏️ → Version : Nouvelle version → Déployer. ' +
+          'Le menu Suivi FWD → Diagnostic dit si les quatre fichiers sont entiers et de la même livraison.');
+        if (erreurs.length) p('<span style="color:#57564e;font-size:12px">Détail : ' +
+          erreurs[0].replace(/"[^"]*"/g, '"…"').slice(0, 200).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</span>');
+        document.body.insertBefore(cadre, document.body.firstChild);
       });
     </script>
     <?!= include('Styles'); ?>
@@ -49,39 +92,5 @@
 <!--MARKUP-->
 
     <?!= include('Javascript'); ?>
-    <!-- Le Javascript n'a pas démarré : coupé au collage, abîmé, arrêté par une
-         erreur avant son démarrage — ou d'une livraison d'avant, qui ne
-         s'annonce pas. La page le dit, avec le geste. -->
-    <script>
-      (function () {
-        if (window.SUIVI_FWD_DEMARREE) return;
-        var erreurs = window.SUIVI_FWD_ERREURS || [];
-        var coupe = !erreurs.length || erreurs.some(function (m) {
-          return /SyntaxError|Unexpected|Invalid or unexpected|missing \)|Unterminated/i.test(m);
-        });
-        /* Un Javascript d'avant ne s'annonce pas, mais il dessine la page. */
-        var phrase = document.getElementById('phrase');
-        var ancien = !erreurs.length && phrase && phrase.textContent !== '\u2014';
-        var detail = erreurs.length ? erreurs[0].replace(/"[^"]*"/g, '"…"').slice(0, 200) : 'aucune erreur signalée';
-        var cadre = document.createElement('div');
-        cadre.id = 'suivi-fwd-panne';
-        cadre.setAttribute('role', 'alert');
-        cadre.style.cssText = 'margin:16px auto;max-width:1100px;padding:14px 18px;background:#fff4e5;color:#191915;' +
-          'border-left:4px solid #b54708;font:14px/1.55 system-ui,sans-serif;';
-        var p = function (html) { var e = document.createElement('p'); e.style.margin = '0 0 6px'; e.innerHTML = html; cadre.appendChild(e); };
-        p(ancien
-          ? '<b>Les fichiers du tableau de bord ne concordent pas.</b> <b>Javascript</b> ne vient pas de la même ' +
-            'livraison que les autres fichiers. D\u2019ici là, la page peut être incomplète ou fausse.'
-          : '<b>La page n\u2019a pas pu démarrer.</b> ' + (coupe
-            ? 'Le fichier <b>Javascript</b> semble incomplet ou abîmé — collé en partie ?'
-            : 'Une erreur l\u2019a arrêtée avant le démarrage.'));
-        p('Dans Apps Script, ouvrir <b>Javascript</b>, tout effacer, coller <b>Javascript.html.txt</b> en entier ' +
-          '(dans le .txt : Ctrl+A, Ctrl+C), Ctrl+S — et recoller les trois autres fichiers de la même livraison.');
-        p('Par un lien <b>…/exec</b> : ensuite, Déployer → Gérer les déploiements → ✏️ → Version : Nouvelle version → Déployer. ' +
-          'Le menu Suivi FWD → Diagnostic dit si les quatre fichiers sont entiers et de la même livraison.');
-        if (!ancien) p('<span style="color:#57564e;font-size:12px">Détail : ' + detail.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</span>');
-        document.body.insertBefore(cadre, document.body.firstChild);
-      })();
-    </script>
   </body>
 </html>

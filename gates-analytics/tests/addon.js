@@ -1252,6 +1252,93 @@ function serveurSur(valeurs, proprietes, fichiers) {
     /⚠ L'onglet d'historique « Historique_FWD_Feuille 1 » \(1 relevé\) n'est rattaché à aucun contrat/.test(diagRenomme16) &&
     /Historique_FWD_<nom du contrat>/.test(diagRenomme16), diagRenomme16.split('\n').filter(l => /Historique_FWD/.test(l)).join(' / '));
 
+  /* Débrief 17 : ce même onglet renommé, vu de la page et de l'archivage. La
+     page le dit au-dessus de la barre ; l'archivage suivant, qui ouvrirait un
+     second historique à côté, est refusé tant que l'ancien n'est pas renommé. */
+  const paquetRenomme17 = cRenomme.getDonneesPourClient();
+  verifier('débrief 17 — la page reçoit l’avis de l’historique orphelin, avec le nom à lui donner',
+    /« Historique_FWD_Feuille 1 » \(1 relevé\) n'est rattaché à aucun contrat/.test(paquetRenomme17.avis) &&
+    /le renommer « Historique_FWD_HDK »/.test(paquetRenomme17.avis) && paquetRenomme17.plans.length === 10, paquetRenomme17.avis);
+  let refusRenomme17 = '';
+  try { cRenomme.enregistrerInstantaneHebdo(); } catch (e) { refusRenomme17 = e.message; }
+  verifier('… et l’archivage qui couperait l’historique en deux est refusé, avec le geste',
+    /« HDK » : l'onglet d'historique « Historique_FWD_Feuille 1 » n'est rattaché à aucun contrat\. S'il est celui de « HDK », le renommer « Historique_FWD_HDK »/.test(refusRenomme17) &&
+    !clRenomme.getSheetByName('Historique_FWD_HDK'), refusRenomme17);
+  clRenomme.getSheetByName('Historique_FWD_Feuille 1').nom = 'Historique_FWD_HDK';
+  cRenomme.enregistrerInstantaneHebdo();
+  verifier('une fois renommé : plus d’avis, l’archivage passe et retrouve son relevé',
+    !cRenomme.getDonneesPourClient().avis && cRenomme.getHistorique(clRenomme, 'HDK').length === 1);
+
+  /* Des doublons comptés pareil partout : le relevé compte les références,
+     une fois chacune, comme la carte et comme la page. */
+  verifier('débrief 17 — des références en double ne comptent qu’une fois dans le relevé (10 plans, pas 12)',
+    cDoubles.contexte.getHistorique(cDoubles.classeur)[0].total === 10, String(cDoubles.contexte.getHistorique(cDoubles.classeur)[0].total));
+
+  /* Un onglet d'en-têtes seuls : pas de relevé à zéro plan, et la page s'ouvre
+     sur le premier contrat qui a des plans. */
+  const enTetesSeuls17 = feuilleExemple(1).slice(0, 4);
+  const clVideTete17 = new Classeur([new Feuille('THS', enTetesSeuls17), new Feuille('HDK', feuilleExemple(10))]);
+  const cVideTete17 = chargerServeur(clVideTete17, {});
+  const pOuverture17 = cVideTete17.getDonneesPourClient();
+  const pThs17 = cVideTete17.getDonneesPourClient('THS');
+  verifier('débrief 17 — un onglet d’en-têtes seuls en tête : la page s’ouvre sur HDK, pas sur « 0 sur 0 »',
+    pOuverture17.contrat === 'HDK' && pOuverture17.plans.length === 10, pOuverture17.contrat);
+  verifier('… et demandé, il dit « ne porte aucun plan (en-têtes seuls) »',
+    /L'onglet « THS » ne porte aucun plan \(en-têtes seuls\)/.test(pThs17.message), pThs17.message);
+  let refusSansPlan17 = '';
+  try { cVideTete17.enregistrerInstantaneHebdo(); } catch (e) { refusSansPlan17 = e.message; }
+  verifier('… l’archivage ne lui fabrique pas un relevé à zéro plan, et archive HDK',
+    /« THS » : L'onglet « THS » ne porte aucun plan/.test(refusSansPlan17) && /1 contrat\(s\) archivé\(s\)/.test(refusSansPlan17) &&
+    !clVideTete17.getSheetByName('Historique_FWD_THS'), refusSansPlan17);
+
+  /* La colonne suivie vidée d'une semaine à l'autre : refus, et la page le dit. */
+  const fPleine17 = feuilleExemple(10);
+  const clVidee17 = new Classeur([new Feuille('HDK', fPleine17)]);
+  const cVidee17 = chargerServeur(clVidee17, {});
+  cVidee17.enregistrerInstantaneHebdo();
+  const colFwd1717 = fPleine17[3].indexOf('Avancement FWD');
+  fPleine17.slice(4).forEach(l => { if (l[0]) l[colFwd1717] = ''; });
+  let refusColonneVide17 = '';
+  try { cVidee17.enregistrerInstantaneHebdo(); } catch (e) { refusColonneVide17 = e.message; }
+  verifier('débrief 17 — une colonne suivie vidée alors que le relevé d’avant en avait : archivage refusé, avec la raison',
+    /est vide sur les 10 plans de « HDK », alors que le relevé \d{4}-S\d{2} en avait des valeurs/.test(refusColonneVide17) &&
+    cVidee17.getHistorique(clVidee17, 'HDK')[0].total - cVidee17.getHistorique(clVidee17, 'HDK')[0].vide > 0, refusColonneVide17);
+  const clNeuf17 = new Classeur([new Feuille('HDK', feuilleExemple(10).map((l, i) => i >= 4 && l[0] ? l.map((v, j) => j === colFwd1717 ? '' : v) : l))]);
+  const cNeuf17 = chargerServeur(clNeuf17, {});
+  let refusNeuf17 = '';
+  try { cNeuf17.enregistrerInstantaneHebdo(); } catch (e) { refusNeuf17 = e.message; }
+  verifier('… mais un contrat qui démarre, sans relevé d’avant, s’archive', !refusNeuf17 && cNeuf17.getHistorique(clNeuf17, 'HDK').length === 1, refusNeuf17);
+
+  /* Un tableau croisé et une copie d'onglet à côté de l'export : écartés. */
+  const tcd17 = [['ATA', 'NBVAL de Référence UD'], ['24', '12'], ['25', '7']];
+  const clTcd17 = new Classeur([new Feuille('Tableau croisé 1', tcd17), new Feuille('HDK', feuilleExemple(10)), new Feuille('Copie de HDK', feuilleExemple(10))]);
+  const cTcd17 = chargerServeur(clTcd17, {});
+  const diagTcd17 = cTcd17.diagnostic();
+  verifier('débrief 17 — un tableau croisé (« ATA | NBVAL de Référence UD ») et une « Copie de HDK » ne sont pas des contrats',
+    cTcd17.listerContrats(clTcd17).map(c => c.id).join() === 'HDK' && /Onglet « Tableau croisé 1 » écarté : pas de ligne d'en-têtes d'export/.test(diagTcd17) &&
+    /Onglet « Copie de HDK » écarté : une copie d'onglet n'est pas un contrat/.test(diagTcd17), cTcd17.listerContrats(clTcd17).map(c => c.id).join());
+
+  /* Un historique illisible n'emporte pas l'extract du jour. */
+  const cPanneHisto17 = serveurSur(feuilleExemple(10));
+  cPanneHisto17.contexte.enregistrerInstantaneHebdo();
+  vm.runInContext('getHistorique = function () { throw new Error("Délai dépassé"); };', cPanneHisto17.contexte);
+  const pPanneHisto17 = cPanneHisto17.contexte.getDonneesPourClient();
+  verifier('débrief 17 — un historique illisible : l’extract du jour reste, et l’avis le dit',
+    pPanneHisto17.ok && pPanneHisto17.plans.length === 10 && pPanneHisto17.releves.length === 0 &&
+    /n'a pas pu être lu \(Délai dépassé\)/.test(pPanneHisto17.avis), pPanneHisto17.avis);
+
+  /* Le fuseau du projet, et les relevés d'avant le 22 septembre. */
+  const cFuseau17 = serveurSur(feuilleExemple(10));
+  cFuseau17.contexte.Session = { getScriptTimeZone: function () { return 'America/Los_Angeles'; } };
+  verifier('débrief 17 — un projet hors du fuseau de Paris est signalé',
+    /⚠ Le projet Apps Script est réglé sur le fuseau « America\/Los_Angeles »/.test(cFuseau17.contexte.diagnostic()));
+  const cAncien17 = serveurSur(feuilleExemple(10));
+  cAncien17.contexte.enregistrerInstantaneHebdo();
+  const hAncien17 = cAncien17.classeur.getSheetByName('Historique_FWD_Données');
+  hAncien17.valeurs[1][1] = new Date(Date.UTC(2026, 8, 18));
+  verifier('… et un relevé d’avant le 22 septembre (colonne devinée à l’époque) aussi',
+    /⚠ Le relevé \d{4}-S\d{2} date du 2026-09-18 : avant le 22 septembre/.test(cAncien17.contexte.diagnostic()));
+
   const dSansHisto = serveurSur(feuilleExemple(10));
   verifier('l\'absence de relevé est signalée avec la marche à suivre',
     /Relevés archivés : 0/.test(dSansHisto.contexte.diagnostic()) &&
@@ -2425,6 +2512,34 @@ function serveurSur(valeurs, proprietes, fichiers) {
        prétendre que la page n'a pas démarré. */
     jsAncien: t => t.replace('window.SUIVI_FWD_DEMARREE = true;', '').replace("var EDITION = '" + ED + "';", "var EDITION = 'source';"),
     codeAncien: t => t.replace('"edition":"' + ED + '"', '"edition":"abcdef0"'),
+    /* Coupé sans sa fin : le <script> reste ouvert, avale la suite ; seul un
+       filet posé en tête, avant Styles, peut encore parler. */
+    jsCoupeSansFin: t => {
+      const i = t.indexOf("var EDITION = '"), j = t.indexOf('/* suivi-fwd : fin du fichier Javascript');
+      return t.slice(0, i + Math.floor((j - i) / 2));
+    },
+    stylesCoupe: t => {
+      const i = t.indexOf('<style>'), j = t.indexOf('</style>', i);
+      return t.slice(0, i + Math.floor((j - i) / 2)) + t.slice(j + '</style>'.length);
+    },
+    /* Un Index d'avant le débrief 14 : pas de bouton « Vue d'ensemble », que le
+       Javascript branche dès ses premières lignes, avant le démarrage — et
+       pas de filet d'Index. Le filet du Javascript, posé en tête, parle. */
+    indexTresAncien: t => t.replace("window.SUIVI_FWD_LIVRAISON_INDEX = '" + ED + "';", '')
+      .replace('id="voir-ensemble"', 'id="voir-ensemble-absent"')
+      .replace(/<script>\s*window\.SUIVI_FWD_ERREURS = \[\];[\s\S]*?<\/script>/, ''),
+    /* Collé deux fois (la même livraison) ; puis une copie d'avant laissée
+       sous la nouvelle, qui ne s'annonce pas. */
+    jsDeuxFois: t => {
+      const i = t.indexOf("<script>\n(function () {\n  'use strict';"), j = t.indexOf('</script>', i) + 9;
+      return t.slice(0, j) + '\n' + t.slice(i, j) + t.slice(j);
+    },
+    jsNeufPuisAncien: t => {
+      const i = t.indexOf("<script>\n(function () {\n  'use strict';"), j = t.indexOf('</script>', i) + 9;
+      const ancien = t.slice(i, j).replace('if (window.SUIVI_FWD_DEMARREE) { DEMARRAGE_FINI = true; montrerDoublon(); return; }', '')
+        .replace('window.SUIVI_FWD_DEMARREE = true;', '');
+      return t.slice(0, j) + '\n' + ancien + t.slice(j);
+    },
     erreur: t => t.replace('window.SUIVI_FWD_API = {',
       'String.prototype.normalize = function () { throw new TypeError(\'panne simulée "HDK-SECRET-42"\'); };\n  window.SUIVI_FWD_API = {')
   };
@@ -2441,10 +2556,24 @@ function serveurSur(valeurs, proprietes, fichiers) {
     await pv.waitForTimeout(900);
     vuLivraison[nom] = await pv.evaluate(() => ({
       cadre: (document.getElementById('suivi-fwd-panne') || {}).innerText || '',
-      phrase: document.getElementById('phrase').textContent,
+      phrase: (document.getElementById('phrase') || {}).textContent || '',
       pied: document.getElementById('livraison') && !document.getElementById('livraison').hidden ? document.getElementById('livraison').textContent : ''
     }));
     vuLivraison[nom].erreurs = erreursPage;
+    if (nom === 'normale') {
+      vuLivraison.luLe = await pv.evaluate(() => { const e = document.getElementById('lu-le'); return e && !e.hidden ? e.textContent : ''; });
+      vuLivraison.moisFr = await pv.evaluate(() => window.__anneeEtMois('03/04/2026').mois);
+      /* La colonne suivie introuvable : la courbe s'arrête au dernier relevé
+         archivé, au lieu d'un point du jour à zéro terminé. */
+      vuLivraison.sansColonne = await pv.evaluate(() => {
+        const avant = window.__serieAffichee().pts;
+        const src = JSON.parse(JSON.stringify(window.SUIVI_FWD_DONNEES));
+        src.colonnes = src.colonnes.filter(c => c.cle !== 'avancement');
+        window.__chargerSource(src);
+        const apres = window.__serieAffichee().pts;
+        return { avant: avant[avant.length - 1].termine, apres: apres[apres.length - 1].termine, n: apres.length };
+      });
+    }
     await pv.close();
     fs.unlinkSync(path.join(racineRepo, fichier));
   }
@@ -2453,6 +2582,13 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('quatre fichiers concordants : aucun cadre, et le pied dit « Livraison ' + ED + ' »',
     !V.normale.cadre && V.normale.pied === 'Livraison ' + ED && /sur 60 plans/.test(V.normale.phrase) && !V.normale.erreurs.length,
     JSON.stringify(V.normale));
+  verifier('le pied dit quand les chiffres ont été lus dans le classeur',
+    /^Chiffres lus dans le classeur le \S+ \d+ \S+ à \d{2}:\d{2} — recharger la page/.test(V.luLe || ''), V.luLe);
+  verifier('la colonne suivie introuvable : la courbe s’arrête au dernier relevé archivé, pas de point du jour à zéro',
+    V.sansColonne.apres === V.sansColonne.avant && V.sansColonne.apres > 0, JSON.stringify(V.sansColonne));
+  const indexLivre = lireFichier('Index.html');
+  verifier('le squelette dit « Chargement… », et ni « Démonstration » ni « classeur vide » ne s’y lisent sans le Javascript',
+    /id="phrase">Chargement…</.test(indexLivre) && /id="avertissement-demo" hidden/.test(indexLivre) && /id="classeur-vide" hidden/.test(indexLivre));
   verifier('un Index d’avant (le cas du bureau) : la page s’affiche quand même et nomme Index à recoller',
     /sur 60 plans/.test(V.indexAncien.phrase) && !V.indexAncien.erreurs.length &&
     /Les fichiers du tableau de bord ne concordent pas\. Index ne vient pas de la même livraison/.test(V.indexAncien.cadre) &&
@@ -2468,6 +2604,18 @@ function serveurSur(valeurs, proprietes, fichiers) {
     /sur 60 plans/.test(V.jsAncien.phrase) && !V.jsAncien.erreurs.length &&
     /Les fichiers du tableau de bord ne concordent pas\. Javascript ne vient pas de la même livraison/.test(V.jsAncien.cadre) &&
     !/pas pu démarrer/.test(V.jsAncien.cadre), JSON.stringify(V.jsAncien));
+  verifier('un Javascript coupé SANS sa fin (le <script> reste ouvert) : le filet en tête d’Index parle quand même',
+    /La page n’a pas pu démarrer\. Le fichier Javascript semble incomplet/.test(V.jsCoupeSansFin.cadre), JSON.stringify(V.jsCoupeSansFin));
+  verifier('des Styles coupés (le <style> reste ouvert et avale la page) : « La page n’a pas pu se construire », Styles nommé',
+    /La page n’a pas pu se construire\. Le fichier Styles \(ou Index\) semble incomplet/.test(V.stylesCoupe.cadre), JSON.stringify(V.stylesCoupe));
+  verifier('un Index très ancien, sans filet, qui arrête le script dès ses premières lignes : le filet du Javascript nomme Index',
+    V.indexTresAncien.erreurs.length === 1 && V.indexTresAncien.phrase === '—' &&
+    /La page n’a pas pu s’afficher\. Cause la plus probable : Index ne vient pas de la même livraison/.test(V.indexTresAncien.cadre),
+    JSON.stringify(V.indexTresAncien));
+  verifier('le Javascript collé deux fois : la seconde copie ne démarre pas, elle le dit',
+    /sur 60 plans/.test(V.jsDeuxFois.phrase) && /Le fichier Javascript contient deux copies/.test(V.jsDeuxFois.cadre), JSON.stringify(V.jsDeuxFois));
+  verifier('une copie d’avant laissée sous la nouvelle : comptée au chargement, et dite',
+    /Le fichier Javascript contient deux copies/.test(V.jsNeufPuisAncien.cadre), JSON.stringify(V.jsNeufPuisAncien));
   verifier('des Styles d’avant : nommés',
     /sur 60 plans/.test(V.stylesAncien.phrase) && /Styles ne vient pas de la même livraison/.test(V.stylesAncien.cadre), V.stylesAncien.cadre);
   verifier('un Code.gs d’une autre livraison : nommé',
@@ -2476,22 +2624,87 @@ function serveurSur(valeurs, proprietes, fichiers) {
     V.erreur.phrase === '—' && /La page n’a pas pu s’afficher\. Une erreur l’a arrêtée/.test(V.erreur.cadre) &&
     /panne simulée "…"/.test(V.erreur.cadre) && !/HDK-SECRET-42/.test(V.erreur.cadre), JSON.stringify(V.erreur));
 
+  /* Des références en double sur la page : une fois chacune, dites. */
+  construire({ lignes: 10, historique: false, sortie: 'apercu-doublons.html',
+               retoucher: v => { v.push(v[5].slice(), v[6].slice()); } });
+  const pDbl = await ctxGates.newPage();
+  pDbl.on('pageerror', e => erreursJS.push('doublons : ' + e.message));
+  await pDbl.goto('file://' + path.join(racineRepo, 'apercu-doublons.html'));
+  await pDbl.waitForTimeout(900);
+  const vDbl = await pDbl.evaluate(() => ({
+    phrase: document.getElementById('phrase').textContent.replace(/\s+/g, ' '),
+    alerte: document.getElementById('alerte-valeurs').hidden ? '' : document.getElementById('alerte-valeurs').textContent,
+    lignes: document.querySelectorAll('#corps-tableau tr').length
+  }));
+  await pDbl.close();
+  fs.unlinkSync(path.join(racineRepo, 'apercu-doublons.html'));
+  /* construire() pose au moins 12 plans : 12 références, 14 lignes. */
+  verifier('des références en double : la page compte 12 plans, pas 14 lignes, et dit que seule la première ligne compte',
+    / sur 12 plans/.test(vDbl.phrase) && vDbl.lignes === 12 && /2 lignes répètent une référence déjà vue\. Seule la première ligne/.test(vDbl.alerte),
+    JSON.stringify(vDbl));
+
+  /* Un classeur réglé en anglais (États-Unis) : des dates mois/jour. La
+     colonne dit son ordre ; lues jour/mois, 41 % des plans tombaient dans le
+     mauvais mois. */
+  const enUS = v => v.forEach((l, i) => { if (i >= 4 && /^\d{4}-\d{2}-\d{2}$/.test(l[7])) { const d = l[7].split('-'); l[7] = d[1] + '/' + d[2] + '/' + d[0]; } });
+  construire({ lignes: 40, historique: false, sortie: 'apercu-dates-us.html', retoucher: enUS });
+  const pUS = await ctxGates.newPage();
+  pUS.on('pageerror', e => erreursJS.push('dates US : ' + e.message));
+  await pUS.goto('file://' + path.join(racineRepo, 'apercu-dates-us.html'));
+  await pUS.waitForTimeout(900);
+  const moisUS = await pUS.evaluate(() => window.__anneeEtMois('03/04/2026').mois);
+  await pUS.close();
+  fs.unlinkSync(path.join(racineRepo, 'apercu-dates-us.html'));
+  verifier('des dates écrites mois/jour (classeur « États-Unis ») se lisent mois/jour ; celles d’un classeur français, jour/mois',
+    moisUS === 3 && V.moisFr === 4, moisUS + ' / ' + V.moisFr);
+
   /* Le Diagnostic lit les mêmes marques dans les fichiers du projet. */
   const diagFichiers = contenus => chargerServeur(gates.classeur, {}, contenus).diagnostic();
   const vrais = { Index: lireFichier('Index.html'), Styles: lireFichier('Styles.html'), Javascript: lireFichier('Javascript.html') };
   const diagOk = diagFichiers(vrais);
-  verifier('le Diagnostic : « Livraison ' + ED + ' : Code, Index, Styles et Javascript concordent »',
-    diagOk.indexOf('✓ Livraison ' + ED + ' : Code, Index, Styles et Javascript concordent.') !== -1 && /Tout est en place/.test(diagOk));
+  verifier('le Diagnostic : « Livraison ' + ED + ' : Code, Index, Styles et Javascript concordent, et sont entiers »',
+    diagOk.indexOf('✓ Livraison ' + ED + ' : Code, Index, Styles et Javascript concordent, et sont entiers.') !== -1 && /Tout est en place/.test(diagOk));
   const diagIndex = diagFichiers(Object.assign({}, vrais, { Index: vrais.Index.replace("window.SUIVI_FWD_LIVRAISON_INDEX = '" + ED + "';", '') }));
   verifier('le Diagnostic nomme un Index d’avant, et ne conclut plus « Tout est en place »',
     /✗ « Index » ne vient pas de la même livraison que Code \(sans livraison marquée/.test(diagIndex) &&
-    /Les fichiers collés ne concordent pas/.test(diagIndex) && !/Tout est en place/.test(diagIndex) && !/À vérifier avant de présenter/.test(diagIndex),
-    diagIndex.slice(0, 900));
+    /Les fichiers collés ne concordent pas .* le tableau de bord ne s'ouvrira pas/.test(diagIndex) && !/Tout est en place/.test(diagIndex) &&
+    !/À vérifier avant de présenter/.test(diagIndex), diagIndex.slice(0, 900));
   const jsCoupe = vrais.Javascript.slice(0, Math.floor(vrais.Javascript.length * 0.6));
   const diagCoupe = diagFichiers(Object.assign({}, vrais, { Javascript: jsCoupe }));
   verifier('le Diagnostic reconnaît un Javascript collé en partie',
-    /✗ « Javascript » est incomplet : sa dernière ligne manque \(\d+ caractères\)/.test(diagCoupe) && !/Tout est en place/.test(diagCoupe),
+    /✗ « Javascript » est incomplet : sa fin manque \(\d+ caractères\)/.test(diagCoupe) && !/Tout est en place/.test(diagCoupe),
     diagCoupe.slice(0, 900));
+  const jsSansFermeture = vrais.Javascript.replace(/<\/script>\s*$/, '');
+  const diagSansFermeture = diagFichiers(Object.assign({}, vrais, { Javascript: jsSansFermeture }));
+  verifier('… et un Javascript à qui ne manque que sa dernière ligne « </script> »',
+    /✗ « Javascript » est incomplet : sa fin manque/.test(diagSansFermeture), diagSansFermeture.slice(0, 700));
+  const diagDouble = diagFichiers(Object.assign({}, vrais, { Javascript: vrais.Javascript + vrais.Javascript }));
+  verifier('… un Javascript collé deux fois', /✗ « Javascript » contient deux copies — collé sans tout effacer \?/.test(diagDouble));
+  const diagStylesCoupe = diagFichiers(Object.assign({}, vrais, { Styles: vrais.Styles.slice(0, Math.floor(vrais.Styles.length / 2)) }));
+  verifier('… des Styles coupés', /✗ « Styles » est incomplet/.test(diagStylesCoupe) && /ne s'ouvrira pas/.test(diagStylesCoupe));
+  const diagIndexSansJs = diagFichiers(Object.assign({}, vrais, { Index: vrais.Index.replace("<?!= include('Javascript'); ?>", '') }));
+  verifier('… un Index qui n’inclut plus le Javascript', /✗ « Index » est incomplet ou abîmé/.test(diagIndexSansJs));
+
+  /* À l'ouverture : la page, ou, si les fichiers ne tiennent pas ensemble, une
+     page qui dit lesquels recoller — jamais un squelette vide. */
+  const servie = contenus => chargerServeur(gates.classeur, {}, contenus);
+  const cBon = servie(vrais);
+  verifier('ouverture, fichiers concordants : la page du tableau de bord', cBon.doGet({ parameter: {} }).source.modele === 'Index');
+  const cIndex = servie(Object.assign({}, vrais, { Index: vrais.Index.replace("window.SUIVI_FWD_LIVRAISON_INDEX = '" + ED + "';", '') }));
+  const pIndex = cIndex.doGet({ parameter: {} }).source.html || '';
+  verifier('ouverture, Index d’avant : une page qui dit « ne tiennent pas ensemble » et nomme Index, au lieu d’une page blanche',
+    /ne tiennent pas ensemble/.test(pIndex) && /« Index » ne vient pas de la même livraison/.test(pIndex) && /Nouvelle version/.test(pIndex), pIndex.slice(0, 400));
+  verifier('… et ?forcer=1 ouvre la page quand même', cIndex.doGet({ parameter: { forcer: '1' } }).source.modele === 'Index');
+  const cCoupe = servie(Object.assign({}, vrais, { Javascript: jsSansFermeture }));
+  cCoupe.ouvrirTableauDeBord();
+  verifier('ouverture depuis le menu, Javascript coupé : la fenêtre dit « incomplet »',
+    /« Javascript » est incomplet/.test((cCoupe.__dialogue && cCoupe.__dialogue.source.html) || ''));
+  const cStyles = servie(Object.assign({}, vrais, { Styles: vrais.Styles.replace('"' + ED + '"', '"abcdef0"') }));
+  verifier('ouverture, Styles d’une autre livraison mais entiers : la page s’ouvre (elle le dit en tête)',
+    cStyles.doGet({ parameter: {} }).source.modele === 'Index');
+  const cSansFichier = servie({ Index: vrais.Index, Styles: vrais.Styles });
+  const pSans = cSansFichier.doGet({ parameter: {} }).source.html || '';
+  verifier('ouverture, Javascript introuvable : la page le dit', /« Javascript » est introuvable/.test(pSans), pSans.slice(0, 300));
   const diagStyles = diagFichiers(Object.assign({}, vrais, { Styles: vrais.Styles.replace('"' + ED + '"', '"abcdef0"') }));
   verifier('et des Styles d’une autre livraison', /✗ « Styles » ne vient pas de la même livraison que Code \(livraison abcdef0, Code : /.test(diagStyles));
 

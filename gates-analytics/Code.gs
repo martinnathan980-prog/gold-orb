@@ -39,7 +39,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = '5d67da8';
+const EDITION = '4a66c44';
 
 // =====================================================================
 //  CONFIGURATION
@@ -278,10 +278,9 @@ const MAX_CARACTERES_CELLULE = 45000;
 //  POINTS D'ENTRÉE
 // =====================================================================
 
-/** Déploiement en application web. */
-function doGet() {
-  const page = HtmlService.createTemplateFromFile('Index')
-    .evaluate()
+/** Déploiement en application web. `?forcer=1` passe outre le contrôle des fichiers. */
+function doGet(e) {
+  const page = pageDuTableau(!!(e && e.parameter && e.parameter.forcer))
     .setTitle('Suivi FWD')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 
@@ -292,12 +291,55 @@ function doGet() {
 
 /** Ouverture depuis le classeur, en fenêtre. */
 function ouvrirTableauDeBord() {
-  const page = HtmlService.createTemplateFromFile('Index')
-    .evaluate()
+  const page = pageDuTableau(false)
     .setTitle('Suivi FWD')
     .setWidth(2000)
     .setHeight(1400);
   SpreadsheetApp.getUi().showModalDialog(page, 'Suivi FWD');
+}
+
+/**
+ * La page du tableau de bord — ou, si les fichiers collés ne peuvent pas la
+ * faire tenir (un fichier manque, est coupé, collé deux fois, ou l'Index et le
+ * Javascript ne sont pas de la même livraison), une page qui dit lesquels
+ * recoller, au lieu d'une page blanche (débrief 17). Le contrôle ne peut pas
+ * empêcher la page : s'il échoue lui-même, la page s'ouvre comme avant.
+ */
+function pageDuTableau(forcer) {
+  if (!forcer) {
+    let verdict = null;
+    try { verdict = verifierLivraison(lireFichiersDuProjet(), true); } catch (err) { verdict = null; }
+    if (verdict && verdict.bloquant) return HtmlService.createHtmlOutput(pageDePanne(verdict.lignes));
+  }
+  return HtmlService.createTemplateFromFile('Index').evaluate();
+}
+
+/** Le texte des trois fichiers HTML du projet ; un fichier introuvable manque. */
+function lireFichiersDuProjet() {
+  const contenus = {};
+  ['Index', 'Styles', 'Javascript'].forEach(function (nom) {
+    try { contenus[nom] = HtmlService.createHtmlOutputFromFile(nom).getContent(); } catch (err) { /* introuvable */ }
+  });
+  return contenus;
+}
+
+/** La page qui remplace le tableau de bord quand ses fichiers ne tiennent pas ensemble. */
+function pageDePanne(lignes) {
+  const ech = function (t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+  return '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Suivi FWD</title></head>' +
+    '<body style="margin:0;padding:40px 20px;background:#f4f2ed;color:#191915;font:15px/1.6 system-ui,sans-serif">' +
+    '<div id="suivi-fwd-panne" role="alert" style="max-width:880px;margin:0 auto;padding:18px 24px;' +
+    'background:#fff4e5;border-left:4px solid #b54708">' +
+    '<p style="margin:0 0 10px"><b>Le tableau de bord ne peut pas s\u2019ouvrir : les fichiers collés dans Apps Script ' +
+    'ne tiennent pas ensemble.</b> Rien n\u2019est touché dans le classeur.</p>' +
+    '<pre style="margin:0 0 12px;white-space:pre-wrap;font:13px/1.6 ui-monospace,Consolas,monospace">' +
+    ech(lignes.join('\n')) + '</pre>' +
+    '<p style="margin:0 0 6px">À chaque livraison, recoller <b>les quatre fichiers</b> (Code, Index, Styles, Javascript), ' +
+    'Ctrl+S sur chacun. Par un lien <b>…/exec</b> : ensuite, Déployer → Gérer les déploiements → ✏️ → Version : ' +
+    'Nouvelle version → Déployer.</p>' +
+    '<p style="margin:0;color:#57564e;font-size:13px">Le menu Suivi FWD → Diagnostic refait ce contrôle. Pour ouvrir ' +
+    'la page quand même, par le lien …/exec : ajouter <code>?forcer=1</code> à la fin du lien.</p>' +
+    '</div></body></html>';
 }
 
 /** Permet d'inclure Styles.html / Javascript.html depuis Index.html. */
@@ -332,7 +374,7 @@ function normaliser(valeur) {
     .toString()
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -520,13 +562,24 @@ function listerContrats(classeur) {
 
 /** Les onglets candidats, partagés entre contrats et onglets écartés. */
 function ongletsDeDonnees(classeur) {
-  const candidats = classeur.getSheets()
+  const visibles = classeur.getSheets()
     .filter(function (f) { return !f.isSheetHidden() && !estOngletInterne(f.getName()) && f.getLastRow() > 0; });
+  /* « Copie de HDK » : l'onglet dupliqué pour garder une sauvegarde. Compté
+     comme contrat, il s'archivait chaque vendredi dans un historique à lui. */
+  const copies = visibles.filter(function (f) { return estCopieDOnglet(f.getName()); });
+  const candidats = visibles.filter(function (f) { return copies.indexOf(f) === -1; });
   const exports = candidats.filter(aDesEntetes);
   return {
     contrats: exports.length ? exports : candidats,
-    ecartes: exports.length ? candidats.filter(function (f) { return exports.indexOf(f) === -1; }) : []
+    ecartes: (exports.length ? candidats.filter(function (f) { return exports.indexOf(f) === -1; }) : [])
+      .map(function (f) { return { feuille: f, raison: 'export' }; })
+      .concat(copies.map(function (f) { return { feuille: f, raison: 'copie' }; }))
   };
+}
+
+/** « Copie de HDK », « Copy of HDK » : un onglet dupliqué par Sheets. */
+function estCopieDOnglet(nom) {
+  return /^(copie de|copy of) /.test(normaliser(nom));
 }
 
 /** L'onglet porte-t-il, dans ses premières lignes, une ligne d'intitulés d'export ? */
@@ -534,12 +587,26 @@ function aDesEntetes(feuille) {
   const n = Math.min(CONFIG.LIGNES_SCAN_ENTETE, feuille.getLastRow());
   const largeur = feuille.getLastColumn();
   if (n < 1 || largeur < 1) return false;
-  return feuille.getRange(1, 1, n, largeur).getDisplayValues().some(ligneAIntitule);
+  return feuille.getRange(1, 1, n, largeur).getDisplayValues().some(ligneDEnteteDExport);
 }
 
-/** Les onglets visibles, non vides, qui ne sont pas des exports à côté d'exports : écartés, et on le dit. */
+/**
+ * Une ligne d'en-têtes d'EXPORT : au moins deux intitulés attendus, chacun
+ * seul dans sa cellule (« ATA », « Référence UD »), sur une ligne large — un
+ * export GATES en porte plus de cent. Un tableau croisé (« ATA | NBVAL de
+ * Référence UD ») ou une synthèse de quelques colonnes n'en est pas un : ils
+ * devenaient des contrats (débrief 17).
+ */
+function ligneDEnteteDExport(ligne) {
+  const cellules = (ligne || []).map(normaliser).filter(Boolean);
+  if (cellules.length < 10) return false;
+  return CONFIG.MOTS_CLES_ENTETE.map(normaliser)
+    .filter(function (m) { return cellules.indexOf(m) !== -1; }).length >= 2;
+}
+
+/** Les onglets visibles écartés des contrats, et pourquoi : [{ nom, raison: 'export' | 'copie' }]. */
 function ongletsEcartes(classeur) {
-  return ongletsDeDonnees(classeur).ecartes.map(function (f) { return f.getName(); });
+  return ongletsDeDonnees(classeur).ecartes.map(function (e) { return { nom: e.feuille.getName(), raison: e.raison }; });
 }
 
 /**
@@ -1044,11 +1111,23 @@ function getDonneesPourClient(contrat) {
   try {
     const classeur = SpreadsheetApp.getActiveSpreadsheet();
     const contrats = listerContrats(classeur);
-    const modele = construireModele(contrat);
+    const modele = modeleAOuvrir(contrat, contrats);
+    /* L'historique à part : illisible (délai dépassé…), il ne doit pas
+       emporter l'extract du jour avec lui. */
+    let releves = [], avisHistorique = '';
+    try {
+      releves = getHistorique(classeur, modele.feuille);
+    } catch (err) {
+      avisHistorique = 'L\'historique de « ' + modele.feuille + ' » n\'a pas pu être lu (' +
+        (err && err.message ? err.message : err) + ') : la page montre l\'extract du jour, sans courbe ni journal. Recharger la page.';
+    }
     const paquet = {
       ok: true,
       edition: EDITION,
-      message: [modele.avertissement, modele.avertissementConcept].filter(Boolean).join(' '),
+      message: [modele.avertissement, modele.avertissementConcept,
+                modele.plans.length ? '' : 'L\'onglet « ' + modele.feuille + ' » ne porte aucun plan (en-têtes seuls) : ' +
+                  'y coller l\'export GATES du contrat en A1.'].filter(Boolean).join(' '),
+      avis: [avisHistorique, avisOrphelins(historiquesOrphelins(classeur, contrats), modele.feuille)].filter(Boolean).join(' '),
       feuille: modele.feuille,
       genereLe: new Date().toISOString(),
       colonnes: modele.colonnes,
@@ -1063,7 +1142,7 @@ function getDonneesPourClient(contrat) {
       lignesIgnorees: modele.lignesIgnorees,
       doublons: modele.doublons,
       plans: modele.plans,
-      releves: getHistorique(classeur, modele.feuille),
+      releves: releves,
       jalons: getJalons(),
       contrats: contrats,
       contrat: modele.feuille
@@ -1085,6 +1164,23 @@ function getDonneesPourClient(contrat) {
       contrats: [], contrat: ''
     };
   }
+}
+
+/**
+ * Le modèle du contrat demandé. Sans demande — l'ouverture de la page —, le
+ * premier contrat qui porte des plans : un onglet préparé d'avance, en-têtes
+ * seuls, placé en tête, ouvrait la page sur « 0 sur 0 » alors que les plans
+ * du contrat suivant étaient là (débrief 17).
+ */
+function modeleAOuvrir(contrat, contrats) {
+  if (contrat !== undefined && contrat !== null && contrat !== '') return construireModele(contrat);
+  let premier = null;
+  for (let i = 0; i < contrats.length; i++) {
+    const modele = construireModele(contrats[i].id);
+    if (modele.plans.length) return modele;
+    if (!premier) premier = modele;
+  }
+  return premier || construireModele(contrat);
 }
 
 /**
@@ -1217,6 +1313,16 @@ function diagnostic() {
     return terminerDiagnostic(lignes);
   }
   dire('✓ Classeur : ' + classeur.getName());
+  /* Les semaines se comptent dans le fuseau du projet : hors de Paris, un
+     archivage du lundi matin peut tomber dans la semaine d'avant et remplacer
+     son relevé (débrief 17). */
+  let fuseau = '';
+  try { fuseau = Session.getScriptTimeZone(); } catch (err) { fuseau = ''; }
+  if (fuseau && fuseau !== 'Europe/Paris') {
+    dire('⚠ Le projet Apps Script est réglé sur le fuseau « ' + fuseau + ' », pas « Europe/Paris » : un archivage ' +
+         'du lundi matin peut tomber dans la semaine d\'avant et remplacer son relevé.');
+    dire('   → Apps Script → ⚙ Paramètres du projet → Fuseau horaire : (GMT+01:00) Paris.');
+  }
 
   const nomsFichiers = [], contenus = {};
   ['Index', 'Styles', 'Javascript'].forEach(function (nom) {
@@ -1234,8 +1340,17 @@ function diagnostic() {
   /* La livraison : les quatre fichiers viennent-ils de la même ? Un fichier
      resté à une livraison précédente, ou coupé au collage, donne une page
      blanche (débrief 17 : un Index d'avant avec le Javascript du jour). */
-  const livraison = verifierLivraison(contenus);
+  const livraison = verifierLivraison(contenus, false);
   livraison.lignes.forEach(dire);
+  /* L'application web (lien …/exec) sert la version DÉPLOYÉE, pas celle qui
+     vient d'être collée : la page affiche sa livraison en bas, à comparer. */
+  let urlWeb = null;
+  try { urlWeb = ScriptApp.getService().getUrl(); } catch (err) { urlWeb = null; }
+  if (urlWeb) {
+    dire('– Application web déployée : son lien (…/exec) sert la version déployée, pas forcément celle-ci.');
+    dire('   → après chaque collage : Déployer → Gérer les déploiements → ✏️ → Version : Nouvelle version → ' +
+      'Déployer. En bas de la page, « Livraison ' + EDITION + ' » dit que c\'est fait.');
+  }
 
   /* Les contrats : un onglet visible chacun. Sans aucun, rien à diagnostiquer. */
   let contrats = [];
@@ -1254,9 +1369,15 @@ function diagnostic() {
     dire('✓ ' + contrats.length + ' contrat(s), un onglet visible chacun : ' +
          contrats.map(function (c) { return '« ' + c.nom + ' »'; }).join(', '));
   }
-  ongletsEcartes(classeur).forEach(function (nom) {
-    dire('– Onglet « ' + nom + ' » écarté : aucun intitulé d\'export (Référence UD, ATA, Nom installation) dans ses ' +
-         CONFIG.LIGNES_SCAN_ENTETE + ' premières lignes. Si c\'est un export, le recoller entier en A1.');
+  ongletsEcartes(classeur).forEach(function (e) {
+    if (e.raison === 'copie') {
+      dire('– Onglet « ' + e.nom + ' » écarté : une copie d\'onglet n\'est pas un contrat. Pour en faire un, ' +
+           'le renommer du nom du contrat.');
+    } else {
+      dire('– Onglet « ' + e.nom + ' » écarté : pas de ligne d\'en-têtes d\'export (Référence UD, ATA, Nom installation, ' +
+           'chacun dans sa cellule) dans ses ' + CONFIG.LIGNES_SCAN_ENTETE + ' premières lignes. Si c\'est un export, ' +
+           'le recoller entier en A1.');
+    }
   });
 
   let tousLisibles = true;
@@ -1277,17 +1398,12 @@ function diagnostic() {
   /* Un onglet de contrat renommé (« Feuille 1 » devenu « HDK ») laisse son
      historique sous l'ancien nom : la page repart d'un seul relevé, le
      journal reste vide. On le dit (débrief 16). */
-  const attendus = {};
-  contrats.forEach(function (c) { attendus[normaliser(nomFeuilleHistorique(c.id))] = true; });
-  attendus[normaliser(CONFIG.FEUILLE_HISTORIQUE)] = true;       // l'ancien, traité juste au-dessus
-  classeur.getSheets().forEach(function (f) {
-    const nom = f.getName();
-    if (!estOngletHistorique(nom) || attendus[normaliser(nom)]) return;
-    const n = Math.max(0, f.getLastRow() - 1);
+  historiquesOrphelins(classeur, contrats).forEach(function (o) {
     dire('');
-    dire('⚠ L\'onglet d\'historique « ' + nom + ' » (' + n + ' relevé' + (n > 1 ? 's' : '') + ') n\'est rattaché à aucun contrat :');
+    dire('⚠ L\'onglet d\'historique « ' + o.nom + ' » (' + o.releves + ' relevé' + (o.releves > 1 ? 's' : '') +
+         ') n\'est rattaché à aucun contrat :');
     dire('   l\'onglet de son contrat a sans doute été renommé. Le renommer « ' + nomFeuilleHistorique('<nom du contrat>') +
-         ' » lui rend ses relevés.');
+         ' » lui rend ses relevés — avant le prochain archivage, qui est refusé d\'ici là.');
   });
 
   dire('');
@@ -1326,7 +1442,8 @@ function diagnostic() {
   const aVerifier = lignes.filter(function (l) { return l.charAt(0) === '⚠'; });
   dire('');
   if (nomsFichiers.length !== 3) dire('Il manque des fichiers HTML (voir ci-dessus).');
-  else if (!livraison.bonne) dire('Les fichiers collés ne concordent pas (voir ci-dessus) : la page s\'ouvrira blanche ou incomplète tant qu\'ils ne sont pas recollés.');
+  else if (livraison.bloquant) dire('Les fichiers collés ne concordent pas (voir ci-dessus) : le tableau de bord ne s\'ouvrira pas — il dira quoi recoller — tant qu\'ils ne sont pas recollés.');
+  else if (!livraison.bonne) dire('Les fichiers collés ne concordent pas (voir ci-dessus) : la page s\'ouvrira avec un avertissement en tête tant qu\'ils ne sont pas recollés.');
   else if (!tousLisibles) dire('Un contrat au moins n\'est pas lisible (voir ci-dessus).');
   else if (!secondeLisible) dire('Tout est en place pour GATES : Suivi FWD → Ouvrir le tableau de bord. La seconde base, elle, ne se lit pas (voir ci-dessus).');
   else dire('Tout est en place : Suivi FWD → Ouvrir le tableau de bord.');
@@ -1681,9 +1798,18 @@ function direJournal(dire, histo, modele) {
       }
     }
   }
+  /* Avant le 22 septembre (débrief 8), la colonne suivie se devinait seule :
+     « Réalisation FWD > Avancement », pas le bloc HDK AA 011. Un relevé de
+     cette époque, relu aujourd'hui, fabrique de faux passages et de faux
+     reculs (débrief 17). */
+  histo.filter(function (r) { return /^\d{4}-\d{2}-\d{2}$/.test(r.date) && r.date < '2026-09-23'; }).forEach(function (r) {
+    dire('⚠ Le relevé ' + r.semaine + ' date du ' + r.date + ' : avant le 22 septembre, la page suivait « Réalisation FWD > ' +
+         'Avancement », pas « ' + CONFIG.COLONNE_FWD + ' ».');
+    dire('   S\'il fausse la courbe ou le journal (faux reculs), supprimer sa ligne dans l\'onglet d\'historique.');
+  });
   if (dernier.plans) {
     const jour = {};
-    modele.plans.forEach(function (p) { jour[p.reference] = p.avancement; });
+    plansUniques(modele.plans).forEach(function (p) { jour[p.reference] = p.avancement; });
     dire('  l\'extract du jour s\'écarte du dernier relevé (' + dernier.semaine + ') sur ' + plansQuiChangent(dernier.plans, jour) + ' plan(s).');
   }
 }
@@ -1699,56 +1825,81 @@ function plansQuiChangent(a, b) {
 }
 
 /**
- * Les fichiers collés viennent-ils de la même livraison que ce Code ? Chaque
- * fichier porte l'édition posée par la construction : l'Index dans son
- * premier script (Apps Script ignore les balises meta d'un fichier), les
- * Styles dans une propriété CSS, le Javascript dans sa première déclaration
- * — et le Javascript finit par une ligne qui le dit entier.
- * `contenus` : { Index, Styles, Javascript }, le texte des fichiers trouvés
- * (un fichier introuvable est déjà signalé). Renvoie les lignes du
- * Diagnostic, et si tout concorde.
+ * Les fichiers collés tiennent-ils ensemble ? (débrief 17 — une page blanche
+ * au bureau : un Index d'avant avec le Javascript du jour.) Chaque fichier
+ * porte la livraison posée par la construction : l'Index dans son premier
+ * script (Apps Script ignore les balises meta d'un fichier), les Styles dans
+ * une propriété CSS, le Javascript dans sa première déclaration. Et chacun
+ * doit être ENTIER : un <style> ou un <script> resté ouvert avale tout ce qui
+ * le suit, et la page reste vide sans une erreur. Tous les « < » du code
+ * étant échappés, le Javascript n'a qu'une balise d'ouverture et une de
+ * fermeture — deux, c'est deux copies (collé sans tout effacer).
+ *
+ * `contenus` : { Index, Styles, Javascript }, le texte des fichiers trouvés.
+ * Renvoie les lignes à dire, si tout concorde (`bonne`), et si la page ne
+ * peut pas tenir (`bloquant` : un fichier manque, est abîmé, ou l'Index et le
+ * Javascript ne sont pas de la même livraison). `direManquants` : dire aussi
+ * les fichiers introuvables (le Diagnostic les dit déjà de son côté).
  */
-function verifierLivraison(contenus) {
-  const lire = {
+function verifierLivraison(contenus, direManquants) {
+  const marques = {
     Index: /SUIVI_FWD_LIVRAISON_INDEX = '([^']*)';/,
     Styles: /--suivi-fwd-edition:\s*"([^"]*)"/,
     Javascript: /var EDITION = '([^']*)';/
   };
   const lignes = [];
-  let bonne = true;
-  Object.keys(lire).forEach(function (nom) {
-    if (typeof contenus[nom] !== 'string') return;
-    const m = lire[nom].exec(contenus[nom]);
+  let bonne = true, bloquant = false;
+  function ecart(nom, texte, geste, bloque) {
+    bonne = false;
+    if (bloque) bloquant = true;
+    lignes.push('✗ « ' + nom + ' » ' + texte);
+    lignes.push('   → ' + geste);
+  }
+  function recoller(nom) {
+    return 'le recoller en entier depuis la dernière livraison : dans ' + nom + '.html.txt, Ctrl+A, Ctrl+C ; ' +
+      'dans Apps Script, « ' + nom + ' », tout effacer, Ctrl+V, Ctrl+S.';
+  }
+  function compter(texte, motif) { return texte.split(motif).length - 1; }
+  Object.keys(marques).forEach(function (nom) {
+    const texte = contenus[nom];
+    if (typeof texte !== 'string') {
+      bonne = false;
+      bloquant = true;
+      if (direManquants) ecart(nom, 'est introuvable dans le projet.', '+ → HTML, le nommer exactement « ' + nom +
+        ' » (sans .html), puis y coller ' + nom + '.html.txt.', true);
+      return;
+    }
+    const lignesDuFichier = texte.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+    const premiere = lignesDuFichier[0] || '', derniere = lignesDuFichier[lignesDuFichier.length - 1] || '';
+    const m = marques[nom].exec(texte);
     const edition = m ? m[1] : '';
-    if (edition === EDITION) return;
-    bonne = false;
-    lignes.push('✗ « ' + nom + ' » ne vient pas de la même livraison que Code (' +
-      (edition ? 'livraison ' + edition : 'sans livraison marquée : d\'avant le 29 septembre 2026') +
-      ', Code : ' + EDITION + ').');
-    lignes.push('   → le recoller depuis la dernière livraison (tout effacer, coller ' + nom +
-      '.html.txt, Ctrl+S) : sinon la page s\'ouvre blanche ou incomplète.');
+    if (edition !== EDITION) {
+      ecart(nom, 'ne vient pas de la même livraison que Code (' +
+        (edition ? 'livraison ' + edition : 'sans livraison marquée : d\'avant le 29 septembre 2026') +
+        ', Code : ' + EDITION + ').', recoller(nom) + ' Sinon la page s\'ouvre blanche ou incomplète.', nom !== 'Styles');
+    }
+    if (nom === 'Javascript') {
+      if (compter(texte, '<script') > 1 || compter(texte, FIN_DU_JAVASCRIPT) > 1) {
+        ecart(nom, 'contient deux copies — collé sans tout effacer ?', recoller(nom), true);
+      } else if (premiere !== '<script>') {
+        ecart(nom, 'ne commence pas par sa première ligne « <script> » — début perdu au collage ?', recoller(nom), true);
+      } else if (derniere !== '</script>' || texte.indexOf(FIN_DU_JAVASCRIPT) === -1) {
+        ecart(nom, 'est incomplet : sa fin manque (' + texte.length + ' caractères) — collé en partie ?', recoller(nom), true);
+      }
+    } else if (nom === 'Styles') {
+      if (compter(texte, '<style') > 1) ecart(nom, 'contient deux copies — collé sans tout effacer ?', recoller(nom), true);
+      else if (premiere !== '<style>' || derniere !== '</style>') {
+        ecart(nom, 'est incomplet (il doit commencer par « <style> » et finir par « </style> ») — collé en partie ?',
+          recoller(nom), true);
+      }
+    } else if (texte.indexOf("include('Styles')") === -1 || texte.indexOf("include('Javascript')") === -1 ||
+               texte.indexOf('donneesJSONPourPage()') === -1 || derniere !== '</html>') {
+      ecart(nom, 'est incomplet ou abîmé (il doit inclure Styles et Javascript, et finir par « </html> »).',
+        recoller(nom), true);
+    }
   });
-  const js = contenus.Javascript;
-  if (typeof js === 'string' && lire.Javascript.test(js) && js.indexOf(FIN_DU_JAVASCRIPT) === -1) {
-    bonne = false;
-    lignes.push('✗ « Javascript » est incomplet : sa dernière ligne manque (' + js.length +
-      ' caractères) — collé en partie ?');
-    lignes.push('   → le recoller en entier : dans Javascript.html.txt, Ctrl+A, Ctrl+C ; dans Apps Script, ' +
-      'tout effacer, Ctrl+V, Ctrl+S.');
-  }
-  if (bonne && Object.keys(lire).every(function (n) { return typeof contenus[n] === 'string'; })) {
-    lignes.push('✓ Livraison ' + EDITION + ' : Code, Index, Styles et Javascript concordent.');
-  }
-  /* L'application web (lien …/exec) sert la version DÉPLOYÉE, pas celle qui
-     vient d'être collée : la page affiche sa livraison en bas, à comparer. */
-  let urlWeb = null;
-  try { urlWeb = ScriptApp.getService().getUrl(); } catch (err) { urlWeb = null; }
-  if (urlWeb) {
-    lignes.push('– Application web déployée : son lien (…/exec) sert la version déployée, pas forcément celle-ci.');
-    lignes.push('   → après chaque collage : Déployer → Gérer les déploiements → ✏️ → Version : Nouvelle version → ' +
-      'Déployer. En bas de la page, « Livraison ' + EDITION + ' » dit que c\'est fait.');
-  }
-  return { lignes: lignes, bonne: bonne };
+  if (bonne) lignes.push('✓ Livraison ' + EDITION + ' : Code, Index, Styles et Javascript concordent, et sont entiers.');
+  return { lignes: lignes, bonne: bonne, bloquant: bloquant };
 }
 
 /** La dernière ligne du fichier Javascript, posée par la construction. */
@@ -1815,6 +1966,31 @@ function getFeuilleHistorique(classeur, contrat, creerSiAbsente) {
     feuille.hideSheet();
   }
   return feuille;
+}
+
+/**
+ * Les onglets d'historique rattachés à aucun contrat, [{ nom, releves }] — le
+ * plus souvent celui d'un onglet de contrat renommé (« Feuille 1 » devenu
+ * « HDK ») : ses relevés ne s'affichent plus nulle part, et le prochain
+ * archivage ouvrirait un second historique à côté (débrief 17).
+ */
+function historiquesOrphelins(classeur, contrats) {
+  const attendus = {};
+  contrats.forEach(function (c) { attendus[normaliser(nomFeuilleHistorique(c.id))] = true; });
+  attendus[normaliser(CONFIG.FEUILLE_HISTORIQUE)] = true;       // l'ancien onglet sans suffixe : traité à part
+  return classeur.getSheets()
+    .filter(function (f) { return estOngletHistorique(f.getName()) && !attendus[normaliser(f.getName())]; })
+    .map(function (f) { return { nom: f.getName(), releves: Math.max(0, f.getLastRow() - 1) }; });
+}
+
+/** Ce que la page dit des historiques orphelins, au-dessus de la barre. */
+function avisOrphelins(orphelins, contrat) {
+  if (!orphelins.length) return '';
+  return orphelins.map(function (o) {
+    return 'L\'onglet d\'historique « ' + o.nom + ' » (' + o.releves + ' relevé' + (o.releves > 1 ? 's' : '') +
+      ') n\'est rattaché à aucun contrat — un onglet de contrat renommé ?';
+  }).join(' ') + ' S\'il est celui de « ' + contrat + ' », le renommer « ' + nomFeuilleHistorique(contrat) +
+    ' » lui rend ses relevés (Affichage → Onglets masqués pour le voir). Le prochain archivage est refusé d\'ici là.';
 }
 
 /** Vrai si le classeur ne porte qu'un contrat. */
@@ -1912,28 +2088,45 @@ function compterAvancements(contrat) {
      d'après. Mieux vaut ne rien archiver et le dire. */
   if (modele.avertissement) throw new Error(modele.avertissement);
   if (modele.avertissementConcept) throw new Error(modele.avertissementConcept);
+  /* Un onglet qui n'a que ses en-têtes (un export revenu vide, un contrat
+     préparé d'avance) : un relevé à zéro plan fabriquerait six cents
+     « disparus », puis six cents « nouveaux » (débrief 17). */
+  const plans = plansUniques(modele.plans);
+  if (!plans.length) {
+    throw new Error('L\'onglet « ' + modele.feuille + ' » ne porte aucun plan (en-têtes seuls) : rien à archiver.');
+  }
+  /* La colonne suivie vide sur TOUS les plans, alors que le dernier relevé en
+     avait des valeurs : un export fait sans elle, pas un contrat qui démarre.
+     L'archiver ferait reculer chaque plan. */
+  if (plans.every(function (p) { return classerFWD(p.avancement) === 'vide'; })) {
+    const precedents = getHistorique(SpreadsheetApp.getActiveSpreadsheet(), modele.feuille);
+    const dernier = precedents[precedents.length - 1];
+    if (dernier && dernier.total - dernier.vide > 0) {
+      throw new Error('La colonne « ' + CONFIG.COLONNE_FWD + ' » est vide sur les ' + plans.length +
+        ' plans de « ' + modele.feuille + ' », alors que le relevé ' + dernier.semaine + ' en avait des valeurs : ' +
+        'l\'export a-t-il été fait sans elle ? Relevé non archivé.');
+    }
+  }
   const clesDim = modele.clesDim.concat(modele.cleDate ? ['_anciennete'] : []);
   const maintenant = new Date();
   const reference = new Date(Date.UTC(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate()));
 
   const compte = {
-    total: modele.plans.length,
+    total: plans.length,
     termine: 0, encours: 0, afaire: 0, vide: 0,
     groupes: {}, plans: {}
   };
   clesDim.forEach(function (d) { compte.groupes[d] = {}; });
 
-  modele.plans.forEach(function (p) {
+  plans.forEach(function (p) {
     const etat = classerFWD(p.avancement);
     compte[etat]++;
     /* Avec le concept harnais, chaque plan garde ses deux avancements :
        [définition électrique, concept harnais]. Les relevés d'avant n'en
        ont qu'un, une chaîne : les deux formes se relisent (separerCartes). */
-    if (!Object.prototype.hasOwnProperty.call(compte.plans, p.reference)) {   // une référence en double : la première ligne
-      compte.plans[p.reference] = modele.cleConcept
-        ? [String(p.avancement || ''), String(p[modele.cleConcept] || '')]
-        : String(p.avancement || '');
-    }
+    compte.plans[p.reference] = modele.cleConcept
+      ? [String(p.avancement || ''), String(p[modele.cleConcept] || '')]
+      : String(p.avancement || '');
     clesDim.forEach(function (d) {
       const v = String((d === '_anciennete'
         ? ancienneteDepuis(p[modele.cleDate], reference)
@@ -1945,6 +2138,25 @@ function compterAvancements(contrat) {
   });
 
   return compte;
+}
+
+/**
+ * Les plans, une fois chacun : une référence répétée — un export collé
+ * par-dessus l'ancien sans le vider, dont la queue reste en dessous — ne
+ * compte qu'à sa première ligne, la plus fraîche. Partout pareil : dans les
+ * comptes, les groupes et la carte du relevé, comme sur la page ; sinon le
+ * point du jour et les semaines archivées ne comptent pas la même chose
+ * (débrief 17). Une ligne sans référence n'a pas de double.
+ */
+function plansUniques(plans) {
+  const vues = {};
+  return plans.filter(function (p) {
+    const ref = String(p.reference || '');
+    if (!ref) return true;
+    if (Object.prototype.hasOwnProperty.call(vues, ref)) return false;
+    vues[ref] = true;
+    return true;
+  });
 }
 
 /**
@@ -2064,6 +2276,18 @@ function archiverContrat(classeur, c, semaine) {
     compte.afaire, compte.vide,
     jsonTenable(compte.groupes)
   ].concat(decouper(JSON.stringify(compte.plans), MAX_CARACTERES_CELLULE));
+  /* Un historique à ouvrir alors qu'un autre n'est rattaché à rien : c'est
+     presque toujours celui de ce contrat, sous son ancien nom. En ouvrir un
+     second couperait l'historique en deux, et le renommage deviendrait
+     impossible (le nom serait pris). On le dit au lieu d'archiver. */
+  if (!getFeuilleHistorique(classeur, c.id, false)) {
+    const orphelins = historiquesOrphelins(classeur, listerContrats(classeur));
+    if (orphelins.length) {
+      throw new Error('l\'onglet d\'historique « ' + orphelins[0].nom + ' » n\'est rattaché à aucun contrat. ' +
+        'S\'il est celui de « ' + c.nom + ' », le renommer « ' + nomFeuilleHistorique(c.id) + ' » ; sinon, le supprimer. ' +
+        'Relevé non archivé.');
+    }
+  }
   const feuille = getFeuilleHistorique(classeur, c.id, true);
   const indexLigne = ligneDeLaSemaine(feuille, semaine);
   if (indexLigne === -1) {

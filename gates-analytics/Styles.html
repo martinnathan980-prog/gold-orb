@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "5d67da8";
+  --suivi-fwd-edition: "4a66c44";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -196,6 +196,13 @@ body {
 .barre.focalise span { opacity: .3; transition: opacity .15s; }
 .barre.focalise span.eclaire { opacity: 1; box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--encre); position: relative; z-index: 1; }
 @media (prefers-reduced-motion: reduce) { .barre.focalise span { transition: none; } }
+/* Le contraste élevé de Windows repeint tout aux couleurs du système : la
+   barre et les pastilles, qui ne sont QUE de la couleur, disparaîtraient, et
+   un bouton pressé ne se distinguerait plus des autres. */
+@media (forced-colors: active) {
+  .barre span, .pastille { forced-color-adjust: none; }
+  [aria-pressed="true"] { forced-color-adjust: none; background: Highlight; color: HighlightText; }
+}
 
 /* ---------------------------------------------------- Classeur sans plans */
 .classeur-vide { display: none; max-width: 640px; margin: 34px auto 10px; padding: 22px 26px;

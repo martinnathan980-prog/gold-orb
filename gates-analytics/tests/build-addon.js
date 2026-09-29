@@ -115,6 +115,9 @@ function construire(options) {
     }
     return new Feuille(c.nom, feuilleExemple(c.lignes));
   });
+  /* Retoucher les onglets de données avant tout — par exemple y recopier des
+     lignes, comme un export collé par-dessus l'ancien (débrief 17). */
+  if (opts.retoucher) onglets.forEach(function (f) { opts.retoucher(f.valeurs, f.getName()); });
   /* D'autres onglets à côté des données — par exemple l'extract d'une seconde
      base à rapprocher — et une configuration à surcharger, comme le ferait
      quelqu'un qui édite Code.gs. */
