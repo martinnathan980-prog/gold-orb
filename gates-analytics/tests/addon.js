@@ -2386,6 +2386,115 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('le diagnostic dit le temps de chaque lecture : GATES, historique, seconde base',
     /préparé en \d+,\d s — lecture de GATES \d+,\d s, de l'historique \d+,\d s, de la seconde base \d+,\d s/.test(diagTemps), diagTemps.slice(-600));
 
+  // =================================================================
+  section('Débrief 17 : les quatre fichiers d’une même livraison');
+  /* Au bureau, la page est restée blanche : le Javascript du jour avec un
+     Index d'avant — l'emplacement de l'alerte des valeurs manquait, le
+     démarrage s'arrêtait sur un null, sans un mot. Chaque fichier porte
+     désormais sa livraison ; la page nomme celui qui diffère, et une panne
+     au démarrage s'affiche en tête de page. */
+  const racineRepo = path.join(__dirname, '..');
+  const lireFichier = n => fs.readFileSync(path.join(racineRepo, n), 'utf8');
+  const livraisons = {
+    Code: (/^const EDITION = '([0-9a-f]+)';$/m.exec(lireFichier('Code.gs')) || [])[1],
+    Index: (/SUIVI_FWD_LIVRAISON_INDEX = '([0-9a-f]+)';/.exec(lireFichier('Index.html')) || [])[1],
+    Styles: (/--suivi-fwd-edition: "([0-9a-f]+)";/.exec(lireFichier('Styles.html')) || [])[1],
+    Javascript: (/var EDITION = '([0-9a-f]+)';/.exec(lireFichier('Javascript.html')) || [])[1]
+  };
+  const ED = livraisons.Code;
+  verifier('les quatre fichiers livrés portent la même livraison, posée par la construction',
+    /^[0-9a-f]{7}$/.test(ED || '') && Object.keys(livraisons).every(k => livraisons[k] === ED), JSON.stringify(livraisons));
+  verifier('le Javascript finit par sa ligne de fin (un fichier coupé au collage se reconnaît)',
+    /\/\* suivi-fwd : fin du fichier Javascript, livraison [0-9a-f]{7} \*\/\n<\/script>\n$/.test(lireFichier('Javascript.html')));
+
+  construire({ gates: true, lignes: 60, sortie: 'apercu-livraison.html' });
+  const pageLivraison = lireFichier('apercu-livraison.html');
+  const variantes = {
+    normale: t => t,
+    indexAncien: t => t.replace("window.SUIVI_FWD_LIVRAISON_INDEX = '" + ED + "';", '')
+      .replace('<div class="alerte-valeurs" id="alerte-valeurs" role="status" hidden></div>', ''),
+    indexAncienPanne: t => t.replace("window.SUIVI_FWD_LIVRAISON_INDEX = '" + ED + "';", '')
+      .replace('<span id="colonne-suivie"></span>', ''),
+    jsCoupe: t => {
+      const i = t.indexOf("var EDITION = '"), j = t.indexOf('/* suivi-fwd : fin du fichier Javascript');
+      return t.slice(0, i + Math.floor((j - i) / 2)) + t.slice(t.indexOf('</script>', j));
+    },
+    stylesAncien: t => t.replace('--suivi-fwd-edition: "' + ED + '";', ''),
+    /* Un Javascript d'avant le débrief 17 ne s'annonce pas (ni livraison, ni
+       démarrage signalé) mais dessine la page : le filet d'Index le nomme sans
+       prétendre que la page n'a pas démarré. */
+    jsAncien: t => t.replace('window.SUIVI_FWD_DEMARREE = true;', '').replace("var EDITION = '" + ED + "';", "var EDITION = 'source';"),
+    codeAncien: t => t.replace('"edition":"' + ED + '"', '"edition":"abcdef0"'),
+    erreur: t => t.replace('window.SUIVI_FWD_API = {',
+      'String.prototype.normalize = function () { throw new TypeError(\'panne simulée "HDK-SECRET-42"\'); };\n  window.SUIVI_FWD_API = {')
+  };
+  const vuLivraison = {};
+  for (const nom of Object.keys(variantes)) {
+    const texte = variantes[nom](pageLivraison);
+    verifier('variante « ' + nom + ' » fabriquée', nom === 'normale' || texte !== pageLivraison);
+    const fichier = 'apercu-livraison-' + nom + '.html';
+    fs.writeFileSync(path.join(racineRepo, fichier), texte);
+    const pv = await ctxGates.newPage();
+    const erreursPage = [];
+    pv.on('pageerror', e => erreursPage.push(e.message));
+    await pv.goto('file://' + path.join(racineRepo, fichier));
+    await pv.waitForTimeout(900);
+    vuLivraison[nom] = await pv.evaluate(() => ({
+      cadre: (document.getElementById('suivi-fwd-panne') || {}).innerText || '',
+      phrase: document.getElementById('phrase').textContent,
+      pied: document.getElementById('livraison') && !document.getElementById('livraison').hidden ? document.getElementById('livraison').textContent : ''
+    }));
+    vuLivraison[nom].erreurs = erreursPage;
+    await pv.close();
+    fs.unlinkSync(path.join(racineRepo, fichier));
+  }
+  fs.unlinkSync(path.join(racineRepo, 'apercu-livraison.html'));
+  const V = vuLivraison;
+  verifier('quatre fichiers concordants : aucun cadre, et le pied dit « Livraison ' + ED + ' »',
+    !V.normale.cadre && V.normale.pied === 'Livraison ' + ED && /sur 60 plans/.test(V.normale.phrase) && !V.normale.erreurs.length,
+    JSON.stringify(V.normale));
+  verifier('un Index d’avant (le cas du bureau) : la page s’affiche quand même et nomme Index à recoller',
+    /sur 60 plans/.test(V.indexAncien.phrase) && !V.indexAncien.erreurs.length &&
+    /Les fichiers du tableau de bord ne concordent pas\. Index ne vient pas de la même livraison/.test(V.indexAncien.cadre) &&
+    /Nouvelle version/.test(V.indexAncien.cadre), JSON.stringify(V.indexAncien));
+  verifier('un Index d’avant qui arrête le démarrage : « La page n’a pas pu s’afficher », cause Index, au lieu d’un squelette vide',
+    V.indexAncienPanne.phrase === '—' && V.indexAncienPanne.erreurs.length === 1 &&
+    /La page n’a pas pu s’afficher\. Cause la plus probable : Index ne vient pas/.test(V.indexAncienPanne.cadre) &&
+    /Détail : TypeError : .* — dans chargerSource/.test(V.indexAncienPanne.cadre), JSON.stringify(V.indexAncienPanne));
+  verifier('un Javascript coupé au collage : le filet d’Index dit « incomplet », avec le geste',
+    V.jsCoupe.phrase === '—' && /La page n’a pas pu démarrer\. Le fichier Javascript semble incomplet/.test(V.jsCoupe.cadre) &&
+    /Javascript\.html\.txt en entier/.test(V.jsCoupe.cadre) && /SyntaxError/.test(V.jsCoupe.cadre), JSON.stringify(V.jsCoupe));
+  verifier('un Javascript d’avant, qui ne s’annonce pas : la page s’affiche, et le filet d’Index le nomme',
+    /sur 60 plans/.test(V.jsAncien.phrase) && !V.jsAncien.erreurs.length &&
+    /Les fichiers du tableau de bord ne concordent pas\. Javascript ne vient pas de la même livraison/.test(V.jsAncien.cadre) &&
+    !/pas pu démarrer/.test(V.jsAncien.cadre), JSON.stringify(V.jsAncien));
+  verifier('des Styles d’avant : nommés',
+    /sur 60 plans/.test(V.stylesAncien.phrase) && /Styles ne vient pas de la même livraison/.test(V.stylesAncien.cadre), V.stylesAncien.cadre);
+  verifier('un Code.gs d’une autre livraison : nommé',
+    /sur 60 plans/.test(V.codeAncien.phrase) && /Code ne vient pas de la même livraison/.test(V.codeAncien.cadre), V.codeAncien.cadre);
+  verifier('une autre erreur au démarrage : dite en tête de page, sans la valeur citée dans le message',
+    V.erreur.phrase === '—' && /La page n’a pas pu s’afficher\. Une erreur l’a arrêtée/.test(V.erreur.cadre) &&
+    /panne simulée "…"/.test(V.erreur.cadre) && !/HDK-SECRET-42/.test(V.erreur.cadre), JSON.stringify(V.erreur));
+
+  /* Le Diagnostic lit les mêmes marques dans les fichiers du projet. */
+  const diagFichiers = contenus => chargerServeur(gates.classeur, {}, contenus).diagnostic();
+  const vrais = { Index: lireFichier('Index.html'), Styles: lireFichier('Styles.html'), Javascript: lireFichier('Javascript.html') };
+  const diagOk = diagFichiers(vrais);
+  verifier('le Diagnostic : « Livraison ' + ED + ' : Code, Index, Styles et Javascript concordent »',
+    diagOk.indexOf('✓ Livraison ' + ED + ' : Code, Index, Styles et Javascript concordent.') !== -1 && /Tout est en place/.test(diagOk));
+  const diagIndex = diagFichiers(Object.assign({}, vrais, { Index: vrais.Index.replace("window.SUIVI_FWD_LIVRAISON_INDEX = '" + ED + "';", '') }));
+  verifier('le Diagnostic nomme un Index d’avant, et ne conclut plus « Tout est en place »',
+    /✗ « Index » ne vient pas de la même livraison que Code \(sans livraison marquée/.test(diagIndex) &&
+    /Les fichiers collés ne concordent pas/.test(diagIndex) && !/Tout est en place/.test(diagIndex) && !/À vérifier avant de présenter/.test(diagIndex),
+    diagIndex.slice(0, 900));
+  const jsCoupe = vrais.Javascript.slice(0, Math.floor(vrais.Javascript.length * 0.6));
+  const diagCoupe = diagFichiers(Object.assign({}, vrais, { Javascript: jsCoupe }));
+  verifier('le Diagnostic reconnaît un Javascript collé en partie',
+    /✗ « Javascript » est incomplet : sa dernière ligne manque \(\d+ caractères\)/.test(diagCoupe) && !/Tout est en place/.test(diagCoupe),
+    diagCoupe.slice(0, 900));
+  const diagStyles = diagFichiers(Object.assign({}, vrais, { Styles: vrais.Styles.replace('"' + ED + '"', '"abcdef0"') }));
+  verifier('et des Styles d’une autre livraison', /✗ « Styles » ne vient pas de la même livraison que Code \(livraison abcdef0, Code : /.test(diagStyles));
+
   await ctxGates.close();
   await ctx.close();
   await nav.close();

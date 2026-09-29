@@ -3,10 +3,32 @@
    seulement deux façons de l'alimenter (jeu d'exemple ou classeur). */
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const racine = path.join(__dirname, '..');
 const { echapperChevrons } = require('./echapper-chevrons');
 
-const src = fs.readFileSync(path.join(racine, 'prototype', 'suivi-fwd.html'), 'utf8').split('\n');
+const texteSource = fs.readFileSync(path.join(racine, 'prototype', 'suivi-fwd.html'), 'utf8');
+const src = texteSource.split('\n');
+
+/* La livraison. Les quatre fichiers que Nathan recolle à la main — Code,
+   Index, Styles, Javascript — portent la même, pour que la page et le
+   Diagnostic nomment celui qui serait resté à une livraison d'avant (débrief
+   17 : un Index d'avant avec le Javascript du jour, et une page blanche).
+   C'est l'empreinte de ce qui les produit : le prototype, le modèle d'Index
+   et Code.gs sans sa propre ligne d'édition — la même source redonne la même
+   livraison, et une modification de l'un des trois en fait une nouvelle. */
+const cheminCode = path.join(racine, 'Code.gs');
+const code = fs.readFileSync(cheminCode, 'utf8');
+const LIGNE_EDITION = /^const EDITION = '[0-9a-f]*';$/m;
+if (!LIGNE_EDITION.test(code)) throw new Error("Code.gs : ligne « const EDITION = '…'; » introuvable");
+const modeleIndex = fs.readFileSync(path.join(__dirname, 'Index.modele.html'), 'utf8');
+const EDITION = crypto.createHash('sha1')
+  .update(texteSource).update('\0').update(modeleIndex).update('\0').update(code.replace(LIGNE_EDITION, ''))
+  .digest('hex').slice(0, 7);
+function poser(texte, marque, par, fichier) {
+  if (texte.split(marque).length !== 2) throw new Error(fichier + ' : marque de livraison introuvable ou répétée — ' + marque);
+  return texte.replace(marque, par);
+}
 function borne(motif, depuis) {
   for (let i = depuis || 0; i < src.length; i++) if (src[i].trim() === motif) return i;
   throw new Error('balise introuvable : ' + motif);
@@ -14,7 +36,9 @@ function borne(motif, depuis) {
 const s0 = borne('<style>'), s1 = borne('</style>', s0);
 const j0 = borne('<script>', s1), j1 = borne('</script>', j0);
 
-fs.writeFileSync(path.join(racine, 'Styles.html'), src.slice(s0, s1 + 1).join('\n') + '\n');
+fs.writeFileSync(path.join(racine, 'Styles.html'),
+  poser(src.slice(s0, s1 + 1).join('\n') + '\n', '--suivi-fwd-edition: "source";',
+        '--suivi-fwd-edition: "' + EDITION + '";', 'Styles'));
 
 /* Le corps du script sort avec ses « < » échappés dans les chaînes : même code,
    mais plus une seule balise, donc un fichier qui traverse une passerelle de
@@ -32,12 +56,20 @@ const livre = lignesScript.slice(0, d0).concat([
   '  /* La démonstration n\'est pas livrée au classeur : il a ses propres données. */',
   '  function jeuDExemple() { return sourceDuClasseur(null); }'
 ], lignesScript.slice(d1 + 1));
-const corps = echapperChevrons(livre.join('\n'));
+const corps = echapperChevrons(poser(livre.join('\n'), "var EDITION = 'source';",
+  "var EDITION = '" + EDITION + "';", 'Javascript'));
+/* La dernière ligne dit le fichier entier : le Diagnostic la cherche, pour
+   reconnaître un Javascript collé en partie (FIN_DU_JAVASCRIPT dans Code.gs). */
 fs.writeFileSync(path.join(racine, 'Javascript.html'),
-  '<script>\n' + corps.texte + '\n</script>\n');
+  '<script>\n' + corps.texte + '\n/* suivi-fwd : fin du fichier Javascript, livraison ' + EDITION + ' */\n</script>\n');
 
 const markup = src.slice(s1 + 1, j0).join('\n').replace(/^\n+|\n+$/g, '');
 const index = fs.readFileSync(path.join(__dirname, 'Index.modele.html'), 'utf8');
-fs.writeFileSync(path.join(racine, 'Index.html'), index.replace('<!--MARKUP-->', markup));
+fs.writeFileSync(path.join(racine, 'Index.html'),
+  poser(index, "window.SUIVI_FWD_LIVRAISON_INDEX = 'source';",
+        "window.SUIVI_FWD_LIVRAISON_INDEX = '" + EDITION + "';", 'Index').replace('<!--MARKUP-->', markup));
+/* Et Code.gs, réécrit seulement si sa livraison change. */
+const codeLivre = code.replace(LIGNE_EDITION, "const EDITION = '" + EDITION + "';");
+if (codeLivre !== code) fs.writeFileSync(cheminCode, codeLivre);
 console.log('Styles.html, Javascript.html et Index.html régénérés depuis le prototype'
-  + ' — ' + corps.remplacements + ' chevrons échappés dans les chaînes');
+  + ' — ' + corps.remplacements + ' chevrons échappés dans les chaînes — livraison ' + EDITION);

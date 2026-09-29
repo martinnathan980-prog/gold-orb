@@ -3,6 +3,10 @@
   'use strict';
 
   var $ = function (id) { return document.getElementById(id); };
+  /* La livraison de ce fichier, posée par la construction (tests/split-
+     prototype.js). « source » : la page seule, la démonstration ou le
+     chargeur — un seul fichier, rien à comparer. */
+  var EDITION = '5d67da8';
   function ech(v) {
     return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/\x3C/g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -834,6 +838,7 @@
       morceaux.push('\x3Cb>' + nb(doublons) + (doublons > 1 ? ' lignes répètent' : ' ligne répète') + ' une référence déjà vue.\x3C/b> ' +
         'Chaque ligne compte dans les totaux. Si l\u2019export a été collé par-dessus l\u2019ancien, le recoller sur un onglet vidé (Ctrl+A, Suppr).');
     }
+    if (!z) return;                    // un Index d'une livraison d'avant : la page le dit (ecartsDeLivraison)
     z.hidden = !morceaux.length;
     z.innerHTML = morceaux.map(function (m) { return '\x3Cp>' + m + '\x3C/p>'; }).join('');
   }
@@ -5123,9 +5128,101 @@
     return j ? { texte: j.texte, semaine: etiquette(j.i), perimetre: j.perimetre } : null;
   };
 
-  chargerSource(SERVEUR ? sourceDuClasseur(window.SUIVI_FWD_DONNEES) : jeuDExemple());
-  chargerPrefs();
-  remplirDims();
-  rendre();
+  /* ============================================================
+     LIVRAISON ET PANNE
+     Quatre fichiers collés à la main dans Apps Script : il suffit d'en
+     laisser un à la livraison d'avant pour que la page reste blanche, sans
+     un mot (débrief 17 : un Index d'avant, le Javascript du jour). Chaque
+     fichier porte donc sa livraison, la page les compare et nomme celui qui
+     diffère ; et une erreur au démarrage s'affiche en tête de page, avec le
+     geste, au lieu d'un squelette vide.
+     ============================================================ */
+  function ecartsDeLivraison(paquet) {
+    if (EDITION === 'source') return [];
+    var lues = { 'Javascript': EDITION };
+    lues['Index'] = typeof window.SUIVI_FWD_LIVRAISON_INDEX === 'string' ? window.SUIVI_FWD_LIVRAISON_INDEX : '';
+    try {
+      lues['Styles'] = getComputedStyle(document.documentElement)
+        .getPropertyValue('--suivi-fwd-edition').replace(/["'\s]/g, '');
+    } catch (e) { lues['Styles'] = ''; }
+    /* Sans paquet, les données n'ont pas été posées : rien à dire de Code. */
+    if (paquet && typeof paquet === 'object') lues['Code'] = paquet.edition ? String(paquet.edition) : '';
+    /* La livraison de la majorité fait foi ; à égalité, celle de ce fichier. */
+    var n = {}, reference = EDITION;
+    Object.keys(lues).forEach(function (f) { if (lues[f]) n[lues[f]] = (n[lues[f]] || 0) + 1; });
+    Object.keys(n).forEach(function (ed) { if (n[ed] > n[reference]) reference = ed; });
+    return Object.keys(lues).filter(function (f) { return lues[f] !== reference; });
+  }
+  function nommerFichiers(liste) {
+    var noms = liste.map(function (f) { return '\x3Cb>' + f + '\x3C/b>'; });
+    return noms.length > 1 ? noms.slice(0, -1).join(', ') + ' et ' + noms[noms.length - 1] : noms[0];
+  }
+  var GESTE_EXEC = 'Par un lien \x3Cb>…/exec\x3C/b> : ensuite, Déployer → Gérer les déploiements → ✏️ → ' +
+    'Version : Nouvelle version → Déployer.';
+  function phraseEcarts(ecarts) {
+    var un = ecarts.length === 1;
+    return nommerFichiers(ecarts) + (un ? ' ne vient' : ' ne viennent') + ' pas de la même livraison que ' +
+      (un ? 'les autres fichiers' : 'le reste') + ' : ' + (un ? 'le recoller' : 'les recoller') +
+      ' depuis la dernière livraison (tout effacer, coller le .txt, Ctrl+S). ' + GESTE_EXEC;
+  }
+  /* Le cadre, en tête de page, en styles posés sur lui : il doit se lire
+     même quand c'est Styles qui manque. */
+  function cadreEnTete(html, grave) {
+    var cadre = document.getElementById('suivi-fwd-panne');
+    if (!cadre) {
+      cadre = document.createElement('div');
+      cadre.id = 'suivi-fwd-panne';
+      cadre.setAttribute('role', 'alert');
+      document.body.insertBefore(cadre, document.body.firstChild);
+    }
+    cadre.style.cssText = 'margin:16px auto;max-width:1100px;padding:14px 18px;color:#191915;' +
+      'font:14px/1.55 system-ui,sans-serif;background:' + (grave ? '#fff4e5' : '#fffaf0') + ';' +
+      'border-left:4px solid ' + (grave ? '#b54708' : '#bf7f14') + ';';
+    cadre.innerHTML = html;
+  }
+  function signalerLivraison(ecarts) {
+    if (!ecarts.length) return;
+    cadreEnTete('\x3Cp style="margin:0">\x3Cb>Les fichiers du tableau de bord ne concordent pas.\x3C/b> ' + phraseEcarts(ecarts) +
+      ' D\u2019ici là, la page peut être incomplète ou fausse.\x3C/p>', false);
+  }
+  /* L'erreur elle-même, pour moi : son nom, son message sans les valeurs
+     citées (une cellule n'a rien à faire à l'écran), et où elle est née. */
+  function detailDePanne(e) {
+    var texte = String((e && e.name) || 'Erreur') + ' : ' + String((e && e.message) || e).replace(/"[^"]*"/g, '"…"');
+    var pile = String((e && e.stack) || '').split('\n').slice(1, 4).map(function (l) {
+      var m = /at (?:new )?([\w$.]+) \(/.exec(l); return m ? m[1] : '';
+    }).filter(Boolean);
+    return texte.slice(0, 200) + (pile.length ? ' — dans ' + pile.join(' ← ') : '');
+  }
+  function montrerPanne(e, ecarts) {
+    var html = '\x3Cp style="margin:0 0 6px">\x3Cb>La page n\u2019a pas pu s\u2019afficher.\x3C/b> ' +
+      (ecarts.length ? 'Cause la plus probable : ' + phraseEcarts(ecarts)
+                     : 'Une erreur l\u2019a arrêtée — rien n\u2019est touché dans le classeur. Une capture de ce cadre ' +
+                       'suffit pour en trouver la cause ; le menu Suivi FWD → Diagnostic dit ce que le script voit.') + '\x3C/p>' +
+      '\x3Cp style="margin:0;color:#57564e;font-size:12px">Détail : ' + ech(detailDePanne(e)) + '\x3C/p>';
+    cadreEnTete(html, true);
+  }
+
+  /* Le démarrage. Arrivé ici, le fichier est entier : le filet d'Index
+     (un Javascript coupé, qui ne démarre jamais) n'a pas à parler. */
+  window.SUIVI_FWD_DEMARREE = true;
+  var ECARTS_LIVRAISON = [];
+  try {
+    ECARTS_LIVRAISON = ecartsDeLivraison(window.SUIVI_FWD_DONNEES);
+    signalerLivraison(ECARTS_LIVRAISON);
+    if ($('livraison') && EDITION !== 'source') {
+      $('livraison').textContent = 'Livraison ' + EDITION;
+      $('livraison').hidden = false;
+    }
+    chargerSource(SERVEUR ? sourceDuClasseur(window.SUIVI_FWD_DONNEES) : jeuDExemple());
+    chargerPrefs();
+    remplirDims();
+    rendre();
+  } catch (e) {
+    montrerPanne(e, ECARTS_LIVRAISON);
+    /* L'erreur reste une erreur : la console la garde, les batteries la voient. */
+    setTimeout(function () { throw e; }, 0);
+  }
 })();
+/* suivi-fwd : fin du fichier Javascript, livraison 5d67da8 */
 </script>

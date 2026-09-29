@@ -32,6 +32,15 @@
  * produits (le diagnostic le rappelle).
  */
 
+/**
+ * La livraison. Les quatre fichiers collés dans Apps Script — Code, Index,
+ * Styles, Javascript — portent la même édition, posée par la construction
+ * (tests/split-prototype.js) : NE PAS LA MODIFIER À LA MAIN. La page et le
+ * Diagnostic comparent les quatre : un fichier resté à une livraison
+ * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
+ */
+const EDITION = '5d67da8';
+
 // =====================================================================
 //  CONFIGURATION
 // =====================================================================
@@ -1038,6 +1047,7 @@ function getDonneesPourClient(contrat) {
     const modele = construireModele(contrat);
     const paquet = {
       ok: true,
+      edition: EDITION,
       message: [modele.avertissement, modele.avertissementConcept].filter(Boolean).join(' '),
       feuille: modele.feuille,
       genereLe: new Date().toISOString(),
@@ -1066,6 +1076,7 @@ function getDonneesPourClient(contrat) {
   } catch (err) {
     return {
       ok: false,
+      edition: EDITION,
       message: err && err.message ? err.message : String(err),
       feuille: '',
       genereLe: new Date().toISOString(),
@@ -1207,17 +1218,24 @@ function diagnostic() {
   }
   dire('✓ Classeur : ' + classeur.getName());
 
-  const nomsFichiers = [];
+  const nomsFichiers = [], contenus = {};
   ['Index', 'Styles', 'Javascript'].forEach(function (nom) {
     try {
       const contenu = HtmlService.createHtmlOutputFromFile(nom).getContent();
       dire('✓ Fichier « ' + nom +' » : ' + contenu.length + ' caractères');
       nomsFichiers.push(nom);
+      contenus[nom] = contenu;
     } catch (err) {
       dire('✗ Fichier « ' + nom + ' » INTROUVABLE.');
       dire('   → + → HTML, et le nommer exactement « ' + nom + ' », sans .html');
     }
   });
+
+  /* La livraison : les quatre fichiers viennent-ils de la même ? Un fichier
+     resté à une livraison précédente, ou coupé au collage, donne une page
+     blanche (débrief 17 : un Index d'avant avec le Javascript du jour). */
+  const livraison = verifierLivraison(contenus);
+  livraison.lignes.forEach(dire);
 
   /* Les contrats : un onglet visible chacun. Sans aucun, rien à diagnostiquer. */
   let contrats = [];
@@ -1308,10 +1326,11 @@ function diagnostic() {
   const aVerifier = lignes.filter(function (l) { return l.charAt(0) === '⚠'; });
   dire('');
   if (nomsFichiers.length !== 3) dire('Il manque des fichiers HTML (voir ci-dessus).');
+  else if (!livraison.bonne) dire('Les fichiers collés ne concordent pas (voir ci-dessus) : la page s\'ouvrira blanche ou incomplète tant qu\'ils ne sont pas recollés.');
   else if (!tousLisibles) dire('Un contrat au moins n\'est pas lisible (voir ci-dessus).');
   else if (!secondeLisible) dire('Tout est en place pour GATES : Suivi FWD → Ouvrir le tableau de bord. La seconde base, elle, ne se lit pas (voir ci-dessus).');
   else dire('Tout est en place : Suivi FWD → Ouvrir le tableau de bord.');
-  if (nomsFichiers.length === 3 && tousLisibles && aVerifier.length) {
+  if (nomsFichiers.length === 3 && livraison.bonne && tousLisibles && aVerifier.length) {
     dire('');
     dire('À vérifier avant de présenter (' + aVerifier.length + ') :');
     aVerifier.forEach(function (l) { dire('  ' + l); });
@@ -1678,6 +1697,62 @@ function plansQuiChangent(a, b) {
   Object.keys(a).forEach(function (r) { if (!Object.prototype.hasOwnProperty.call(b, r)) n++; });
   return n;
 }
+
+/**
+ * Les fichiers collés viennent-ils de la même livraison que ce Code ? Chaque
+ * fichier porte l'édition posée par la construction : l'Index dans son
+ * premier script (Apps Script ignore les balises meta d'un fichier), les
+ * Styles dans une propriété CSS, le Javascript dans sa première déclaration
+ * — et le Javascript finit par une ligne qui le dit entier.
+ * `contenus` : { Index, Styles, Javascript }, le texte des fichiers trouvés
+ * (un fichier introuvable est déjà signalé). Renvoie les lignes du
+ * Diagnostic, et si tout concorde.
+ */
+function verifierLivraison(contenus) {
+  const lire = {
+    Index: /SUIVI_FWD_LIVRAISON_INDEX = '([^']*)';/,
+    Styles: /--suivi-fwd-edition:\s*"([^"]*)"/,
+    Javascript: /var EDITION = '([^']*)';/
+  };
+  const lignes = [];
+  let bonne = true;
+  Object.keys(lire).forEach(function (nom) {
+    if (typeof contenus[nom] !== 'string') return;
+    const m = lire[nom].exec(contenus[nom]);
+    const edition = m ? m[1] : '';
+    if (edition === EDITION) return;
+    bonne = false;
+    lignes.push('✗ « ' + nom + ' » ne vient pas de la même livraison que Code (' +
+      (edition ? 'livraison ' + edition : 'sans livraison marquée : d\'avant le 29 septembre 2026') +
+      ', Code : ' + EDITION + ').');
+    lignes.push('   → le recoller depuis la dernière livraison (tout effacer, coller ' + nom +
+      '.html.txt, Ctrl+S) : sinon la page s\'ouvre blanche ou incomplète.');
+  });
+  const js = contenus.Javascript;
+  if (typeof js === 'string' && lire.Javascript.test(js) && js.indexOf(FIN_DU_JAVASCRIPT) === -1) {
+    bonne = false;
+    lignes.push('✗ « Javascript » est incomplet : sa dernière ligne manque (' + js.length +
+      ' caractères) — collé en partie ?');
+    lignes.push('   → le recoller en entier : dans Javascript.html.txt, Ctrl+A, Ctrl+C ; dans Apps Script, ' +
+      'tout effacer, Ctrl+V, Ctrl+S.');
+  }
+  if (bonne && Object.keys(lire).every(function (n) { return typeof contenus[n] === 'string'; })) {
+    lignes.push('✓ Livraison ' + EDITION + ' : Code, Index, Styles et Javascript concordent.');
+  }
+  /* L'application web (lien …/exec) sert la version DÉPLOYÉE, pas celle qui
+     vient d'être collée : la page affiche sa livraison en bas, à comparer. */
+  let urlWeb = null;
+  try { urlWeb = ScriptApp.getService().getUrl(); } catch (err) { urlWeb = null; }
+  if (urlWeb) {
+    lignes.push('– Application web déployée : son lien (…/exec) sert la version déployée, pas forcément celle-ci.');
+    lignes.push('   → après chaque collage : Déployer → Gérer les déploiements → ✏️ → Version : Nouvelle version → ' +
+      'Déployer. En bas de la page, « Livraison ' + EDITION + ' » dit que c\'est fait.');
+  }
+  return { lignes: lignes, bonne: bonne };
+}
+
+/** La dernière ligne du fichier Javascript, posée par la construction. */
+const FIN_DU_JAVASCRIPT = 'suivi-fwd : fin du fichier Javascript';
 
 function terminerDiagnostic(lignes) {
   const rapport = lignes.join('\n');

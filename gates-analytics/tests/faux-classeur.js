@@ -132,8 +132,17 @@ Classeur.prototype.insertSheet = function (nom) {
 function poserEnvironnement(contexte, classeur, proprietes, fichiers) {
   const props = proprietes || {};
   /* Les fichiers HTML du projet. Apps Script lève une exception sur un nom
-     inconnu : c'est exactement ce que le diagnostic doit savoir détecter. */
-  const presents = fichiers || ['Index', 'Styles', 'Javascript'];
+     inconnu : c'est exactement ce que le diagnostic doit savoir détecter.
+     Leur contenu est celui du dépôt — le Diagnostic y lit la livraison de
+     chacun — sauf si `fichiers` est un objet { nom: contenu }, pour un Index
+     d'une autre livraison ou un Javascript coupé au collage. */
+  const contenus = fichiers && !Array.isArray(fichiers) ? fichiers : null;
+  const presents = contenus ? Object.keys(contenus) : (fichiers || ['Index', 'Styles', 'Javascript']);
+  function contenuDe(nom) {
+    if (contenus) return contenus[nom];
+    const chemin = require('path').join(__dirname, '..', nom + '.html');
+    return require('fs').existsSync(chemin) ? require('fs').readFileSync(chemin, 'utf8') : '<!-- ' + nom + ' -->';
+  }
   contexte.SpreadsheetApp = {
     getActiveSpreadsheet: function () { return classeur; },
     getUi: function () {
@@ -162,7 +171,7 @@ function poserEnvironnement(contexte, classeur, proprietes, fichiers) {
     createTemplateFromFile: function () { return { evaluate: function () { return { setTitle: function () { return this; }, addMetaTag: function () { return this; }, setWidth: function () { return this; }, setHeight: function () { return this; }, setXFrameOptionsMode: function () { return this; } }; } }; },
     createHtmlOutputFromFile: function (nom) {
       if (presents.indexOf(nom) === -1) throw new Error('Fichier introuvable : ' + nom);
-      return { getContent: function () { return '<!-- ' + nom + ' -->'; } };
+      return { getContent: function () { return contenuDe(nom); } };
     },
     XFrameOptionsMode: { ALLOWALL: 'ALLOWALL' }
   };

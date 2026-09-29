@@ -1038,6 +1038,45 @@ qui en est sorti, et ce que la page fait maintenant :
   et une colonne d'avancement en pourcentages *formatés* arrondirait 99,6 %
   à « 100 % » (les exports lus jusqu'ici écrivent du texte).
 
+## 13 octies. Une page qui ne reste jamais blanche (débrief 17)
+
+Au bureau, la page s'est ouverte **blanche** : le titre, des cadres vides,
+des tirets. Cause reproduite à l'identique : le `Javascript` de la livraison
+du débrief 16 avec un `Index` d'avant. Le Javascript remplit, dès le
+démarrage, l'emplacement de l'alerte des valeurs — que seul le nouvel Index
+contient ; sur un emplacement absent, le démarrage s'arrêtait net, sans un
+mot. Le lien `…/exec` (application web) ajoute un piège : il sert la version
+**déployée**, pas le code qui vient d'être collé.
+
+- **Une livraison, quatre fichiers.** La construction (`npm run build`) pose
+  la même marque de livraison dans `Code` (`const EDITION`), `Index` (son
+  premier script — Apps Script ignore les balises meta d'un fichier),
+  `Styles` (propriété `--suivi-fwd-edition`) et `Javascript` (`var EDITION`,
+  plus une dernière ligne « fin du fichier Javascript »). C'est l'empreinte
+  du prototype, du modèle d'Index et de Code.gs : même source, même
+  livraison. **Ne jamais la modifier à la main.**
+- **La page compare** les quatre au démarrage. Un fichier qui diffère de la
+  majorité est nommé en tête de page (« Index ne vient pas de la même
+  livraison que les autres fichiers : le recoller… »), avec le geste pour un
+  lien `…/exec`. La page s'affiche quand même si elle le peut.
+- **Une panne au démarrage s'affiche** en tête de page, dans un cadre qui ne
+  dépend pas de `Styles` : « La page n'a pas pu s'afficher », la cause la plus
+  probable (un fichier d'une autre livraison), et un détail technique — le
+  nom de l'erreur, son message *sans les valeurs citées*, la fonction où
+  elle est née. L'erreur reste une erreur (console, batteries).
+- **Un Javascript qui ne démarre pas du tout** — coupé au collage, abîmé —
+  est rattrapé par le filet d'`Index` : « La page n'a pas pu démarrer. Le
+  fichier Javascript semble incomplet… ».
+- **Le pied de page dit la livraison** qui tourne (« Livraison 1a2b3c4 ») ;
+  le **Diagnostic** dit celle du code enregistré et si les quatre
+  concordent (« ✓ Livraison … concordent », ou « ✗ « Index » ne vient pas de
+  la même livraison… », « ✗ « Javascript » est incomplet ») — et, si une
+  application web est déployée, rappelle la nouvelle version à publier. Deux
+  numéros différents entre le pied et le Diagnostic : le déploiement est en
+  retard.
+- La page seule (démonstration, chargeur) porte la livraison « source » : un
+  seul fichier, rien à comparer, rien d'affiché.
+
 ## 13 quinquies. Vitesse d'ouverture et thème
 
 - **Le paquet voyage compacté** : chaque nom de colonne, chaque référence

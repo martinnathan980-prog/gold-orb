@@ -23,6 +23,31 @@ automatique.
    ci-dessous. Elle ne montre jamais rien de fabriqué : seulement vos
    données.
 
+### Recoller une livraison (quand je vous envoie les fichiers)
+
+Le tableau de bord tient en **quatre fichiers**, et ils vont **ensemble** :
+`Code`, `Index`, `Styles`, `Javascript`. À chaque livraison, **recollez les
+quatre**, même si un seul semble avoir changé : un fichier laissé à la
+livraison d'avant suffit à laisser la page blanche.
+
+1. Extensions → Apps Script. Pour chacun des quatre fichiers : l'ouvrir à
+   gauche, **Ctrl+A, Suppr**, puis coller le `.txt` du même nom **en entier**
+   (dans le `.txt` : Ctrl+A, Ctrl+C), **Ctrl+S**.
+2. **Si vous ouvrez la page par un lien `…/exec`** (application web) : ce lien
+   sert la version *déployée*, pas celle que vous venez de coller. Déployer →
+   Gérer les déploiements → ✏️ → Version : **Nouvelle version** → Déployer.
+   Le menu Suivi FWD → Ouvrir le tableau de bord, lui, prend toujours le code
+   enregistré.
+3. Vérifier : **en bas de la page, « Livraison xxxxxxx »** — le numéro que je
+   donne avec les fichiers. Suivi FWD → **Diagnostic** le confirme :
+   « ✓ Livraison xxxxxxx : Code, Index, Styles et Javascript concordent ».
+
+Si un fichier ne concorde pas, **la page le dit elle-même**, en tête : « Les
+fichiers du tableau de bord ne concordent pas. Index ne vient pas de la même
+livraison… » ; et si elle ne peut pas s'afficher du tout, un cadre « La page
+n'a pas pu s'afficher » (ou « n'a pas pu démarrer ») dit pourquoi et quoi
+recoller — plus jamais un squelette vide sans un mot.
+
 ## 2. Mettre un contrat : l'extract GATES, dans un onglet
 
 Un contrat = **un onglet** du classeur, qui porte **le nom du contrat**. Tout
@@ -256,6 +281,11 @@ onglet, et ce qui manque. Puis :
 |---|---|---|
 | Pas de menu « Suivi FWD » | Le script n'est pas chargé | F5 ; sinon Extensions → Apps Script, fonction `onOpen`, ▶ Exécuter (le menu ne dépend que du fichier `Code`) |
 | « Ouvrir le tableau de bord » donne une erreur | Un fichier HTML manque ou est mal nommé | Diagnostic : il nomme le fichier (`Index`, `Styles`, `Javascript`) introuvable |
+| La page reste **blanche** : le titre, des cadres vides, des tirets « — » | Le code de la page ne s'est pas lancé — le plus souvent un fichier resté à la livraison d'avant, ou coupé au collage (débrief 17) | Recoller **les quatre** fichiers de la dernière livraison (§ 1, « Recoller une livraison ») ; par un lien `…/exec`, publier une **nouvelle version** du déploiement. Les pages livrées depuis le 29 septembre le disent elles-mêmes en tête |
+| En tête : « Les fichiers du tableau de bord ne concordent pas. **Index** ne vient pas de la même livraison… » | Ce fichier-là est resté à une autre livraison | Le recoller depuis la dernière livraison, Ctrl+S (et nouvelle version du déploiement pour un lien `…/exec`) |
+| En tête : « La page n'a pas pu démarrer. Le fichier Javascript semble incomplet » | `Javascript` a été collé en partie (le fichier est long) | Dans `Javascript.html.txt` : Ctrl+A, Ctrl+C ; dans Apps Script : `Javascript`, Ctrl+A, Ctrl+V, Ctrl+S. Le Diagnostic dit « ✗ « Javascript » est incomplet » tant que ce n'est pas fait |
+| En tête : « La page n'a pas pu s'afficher. Une erreur l'a arrêtée » | Une panne de la page elle-même | M'envoyer une capture du cadre (il ne cite aucune valeur du classeur) : le « Détail » me dit où chercher |
+| En bas de la page, la livraison n'est pas celle que je vous ai donnée | Le lien `…/exec` sert encore l'ancienne version déployée | Déployer → Gérer les déploiements → ✏️ → Nouvelle version → Déployer |
 | « Le classeur est vide », avec une alerte | Aucun onglet de données lisible : l'alerte dit pourquoi | « Aucune colonne d'avancement FWD n'a été reconnue » : l'extract est collé sans sa ligne d'en-têtes ou sa ligne de groupes → recoller entier en A1 ; « Aucun onglet de données exploitable : « Feuille 1 » est vide » : aucun onglet ne contient encore d'extract |
 | En haut : « Colonne « HDK AA 011 > Avancement Définition Electrique » introuvable » | L'extract n'a pas cette colonne sous ce groupe (groupe renommé, bloc absent) : la page n'en lit **aucune autre** à la place, rien n'est dit terminé, l'archivage refuse | Diagnostic : il liste les groupes où l'intitulé existe ; corriger le nom du groupe dans `COLONNE_FWD` (partie avant « > ») s'il a changé dans l'export |
 | Pour vérifier la colonne lue | — | Le **pied de la page** la nomme : « Colonne suivie : HDK AA 011 › Avancement Définition Electrique » |
