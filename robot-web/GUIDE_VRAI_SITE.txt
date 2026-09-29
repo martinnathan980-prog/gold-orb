@@ -418,7 +418,9 @@ E6. La visite commence. Le bandeau vert vous guide, UNE ETAPE A LA FOIS :
         OK Ecran E4 note (etape « Fiche plan ») : 12 champ(s), 3 onglet(s)
            Onglets a ouvrir aussi, un par un : Documents ; Revisions
     Si un bouton ou un envoi est bloque, un message orange le dit : rien n'est
-    parti. Si le portail pose une question (« Continuer ? ») : le robot repond
+    parti. Un plan dont le titre commence par un verbe (« Supprimer... »,
+    « Modifier... ») peut etre bloque aussi, par prudence : ouvrez-le en
+    cliquant sur son numero, ou prenez-en un autre. Si le portail pose une question (« Continuer ? ») : le robot repond
     OK ; si elle parle de supprimer ou d'enregistrer : Annuler, par securite.
     Si le portail vous deconnecte : reconnectez-vous dans la fenetre du robot,
     puis revenez sur votre portail ; la visite continue.

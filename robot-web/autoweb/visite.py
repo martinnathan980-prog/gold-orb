@@ -140,6 +140,9 @@ function autowebArmer() {
   const commencePar = (texte, re) => {
     const m = mots(texte);
     if (!m.length) return false;
+    // « Nouvelle-Aquitaine », « New-York » : un nom ; « Release 2024 », « Import 3 » : un dossier, une version
+    if (/^\s*([Nn]ouveau|[Nn]ouvelle|[Nn]ouvel|[Nn]ew)-\p{Lu}/u.test(String(texte || ''))) return false;
+    if (/^(release|import|export|version)$/.test(m[0]) && /^\d/.test(m[1] || '')) return false;
     const r = re.exec(m.slice(0, 3).join(' '));
     if (!r || r.index !== 0) return false;
     return r[0].includes(' ') || verbal(m[0]);  // « mettre a jour », « check out » : plusieurs mots, déjà un verbe
@@ -258,19 +261,30 @@ function autowebArmer() {
     }
     return false;
   };
-  // bouton d'un formulaire de connexion : un <form>, ou une fenêtre « Session expirée » dans la page
-  // (pas une fenêtre de signature ou de confirmation qui redemande le mot de passe)
+  // bouton d'un formulaire de connexion : la plus petite boîte autour du bouton qui contient un mot de
+  // passe, avec peu de champs (identifiant, mot de passe, code) ; jamais une fenêtre de signature, de
+  // transmission ou de confirmation qui redemande le mot de passe
   const BOITES = '[role=dialog], [role=alertdialog], dialog, .modal';
-  const RECONNEXION = /\b(session|connexion|connecter|reconnecter|reconnectez|login|log in|sign in|identifi\w*|expire\w*|timeout|timed out)\b/;
+  const RECONNEXION = /\b(session|reconnect\w*|expire\w*|timeout|timed out|login|log in|sign in|se connecter|connexion)\b/;
+  const PAS_CONNEXION = /\b(sign|signer|signez|signature|signing|approuv\w*|approve\w*|transmet\w*|transmission|diffus\w*|valid\w*|confirm\w*)\b/;
   const motDePasseVisible = f => Array.from(f.querySelectorAll('input[type=password]')).some(x => x.offsetWidth > 0);
+  const verbeNet = m => { const r = FORT.exec(m); return !!r && r.index === 0 && verbal(m); };
   const surFormulaireDeConnexion = e => {
-    if (!/^(envoyer|submit|valider|ok|suivant|next|continuer|continue|se connecter|connexion|sign in|log in|login)$/.test(mots(etiquette(e, 0)).join(' '))) return false;
-    const f = e.closest && e.closest('form');
-    if (f && motDePasseVisible(f)) return true;
-    const boite = e.closest && e.closest(BOITES);
-    if (!boite || !motDePasseVisible(boite)) return false;
-    const dit = mots((boite.getAttribute('aria-label') || '') + ' ' + (boite.innerText || '').slice(0, 400)).join(' ');
-    return RECONNEXION.test(dit) && !commencePar(dit, FORT) && !/\b(sign|signer|signature|approuv\w*|approve)\b/.test(dit.replace(/\bsign in\b/g, ''));
+    const libelle = etiquette(e, 0);
+    if (!/^(envoyer|submit|valider|ok|suivant|next|continuer|continue|se connecter|connexion|sign in|log in|login)$/.test(mots(libelle).join(' '))) return false;
+    let boite = null;
+    for (let x = e.parentElement, i = 0; x && i < 8 && !boite; x = x.parentElement, i++) if (motDePasseVisible(x)) boite = x;
+    if (!boite) return false;
+    const champs = Array.from(boite.querySelectorAll('input:not([type=hidden]):not([type=submit]):not([type=button]):not([type=image])' +
+                                                     ':not([type=checkbox]):not([type=radio]), select, textarea')).filter(x => x.offsetWidth > 0);
+    if (champs.length > 3) return false;
+    // ce que dit la boîte, sans le libellé du bouton lui-même
+    const brut = mots(((boite.getAttribute && boite.getAttribute('aria-label')) || '') + ' ' +
+                      String(boite.innerText || '').slice(0, 600).split(libelle).join(' ')).join(' ');
+    const dit = brut.replace(/\b(sign in|log in)\b/g, ' ');
+    if (PAS_CONNEXION.test(dit) || dit.split(' ').some(verbeNet)) return false;
+    // une fenêtre dans la page (et non un formulaire de connexion) doit parler de session ou de connexion
+    return !e.closest(BOITES) || RECONNEXION.test(brut);
   };
   const departCurseur = n => { try { return getComputedStyle(n).cursor === 'pointer' && !(n.parentElement && getComputedStyle(n.parentElement).cursor === 'pointer'); } catch (err) { return false; } };
   const elementDangereux = n => {
@@ -285,16 +299,25 @@ function autowebArmer() {
     try {
       bouton = n.matches(PETITS) || n.hasAttribute('tabindex') || n.tagName.includes('-') || departCurseur(n);
       onglet = n.matches('[role=tab], [data-toggle=tab], [data-bs-toggle=tab]') || !!n.closest('.nav-tabs, .nav-pills, [role=tablist]');
-      // choisir « Nouveau » dans une liste de statuts, c'est consulter
+      // choisir « Nouveau » dans une liste de statuts, ouvrir un dossier de l'arborescence : consulter
       choix = n.matches('[role=option], [role=menuitemradio], [role=menuitemcheckbox]');
+      onglet = onglet || !!n.closest('[role=treeitem], [role=tree], .jstree, .dynatree-container, .fancytree-container');
       ligne = ligneDeDonnees(n);
       vrai = vraiBouton(n);
     } catch (err) {}
-    if (onglet || choix) return commencePar(texte, FORT_ONGLET);  // un onglet s'ouvre ; seul « Supprimer » y est bloqué
-    const nouveau = NOUVEAU.test(mots(texte)[0] || '');
+    const m = mots(texte);
+    const nouveau = NOUVEAU.test(m[0] || ''), nouveauSeul = nouveau && m.length === 1;
+    if (onglet) return commencePar(texte, FORT_ONGLET);  // un onglet s'ouvre ; seul « Supprimer » y est bloqué
+    if (choix) return !nouveauSeul && commencePar(texte, FORT);  // statut « Nouveau » : un filtre ; « Dupliquer » : une action
     if (bouton) {
-      // lien (ou ligne cliquable) dont le texte est un titre : « Modifier poste HTA », « New substation layout »
-      if (!vrai && ligne && (!libelleCourt(texte) || nouveau)) return false;
+      // lien d'une ligne de résultats dont le texte VISIBLE est un titre (« New substation layout »,
+      // « Remplacer transformateur T2 ») ; jamais un verbe net (« Supprimer », « Dupliquer ce composant »,
+      // « Retirer de la nomenclature ») ni une action en plusieurs mots (« Check out », « Mettre à jour »)
+      if (!vrai && ligne) {
+        if (nouveauSeul) return false;
+        const r = ACTION.exec(m.slice(0, 3).join(' '));
+        if (!libelleCourt(texteVisible(n)) && !commencePar(texte, FORT) && !(r && r.index === 0 && r[0].includes(' '))) return false;
+      }
       return commencePar(texte, ACTION) || annulerQuelqueChose(texte);
     }
     // simple texte dans une ligne ou une carte cliquable : seulement un libellé court qui est un verbe
@@ -313,7 +336,9 @@ function autowebArmer() {
       // une cellule qui porte elle-même le clic est examinée comme un bouton ; sinon son texte est une
       // donnée (statut « Nouveau », « Release ») : seul un verbe net seul (« Supprimer ») y est bloqué
       if (cellule) {
-        if (n.hasAttribute('onclick')) return elementDangereux(n);
+        let cible = n.hasAttribute('onclick') || n.matches('[role=button]');
+        try { cible = cible || departCurseur(n) || (n.hasAttribute('tabindex') && n.tabIndex >= 0); } catch (err) {}
+        if (cible) return elementDangereux(n);
         const t = etiquette(n, 0), m = mots(t);
         return m.length <= 2 && !NOUVEAU.test(m[0] || '') && commencePar(t, FORT_ONGLET);
       }
@@ -409,8 +434,11 @@ function autowebArmer() {
       if (cle === '_method' && /^(delete|put|patch)$/i.test(v)) return true;
       if (cle === '__eventtarget' && v && commencePar(bouton(v), FORT)) return true;
       // commande d'une grille ASP.NET : « Delete$0 », « Update$2 », « Edit$1 » (pas Page$2, Sort$x, Select$0)
-      if (cle === '__eventargument' && v &&
-          v.split(/[$;:|]/).some(x => /^[A-Za-z]{3,20}$/.test(x) && mots(x).length <= 2 && commencePar(x, FORT))) return true;
+      if (cle === '__eventargument' && v) {
+        const c = /^(?:FireCommand:[^;]*;)?([A-Za-z]{3,20})[$;]/.exec(v);  // « Delete$0 », « …;Delete;0 » (pas Sort$Release)
+        if (c && commencePar(c[1], FORT)) return true;
+        if (/^(delete|update|insert|edit|remove|save|supprimer|modifier|enregistrer|dupliquer|duplicate|copy)$/i.test(v)) return true;
+      }
       if (CLES_ACTION.includes(cle) && commencePar(v, FORT)) return true;
       if (/\$(btn|lnk|lb|ib|cmd)/i.test(k) && commencePar(bouton(k), FORT)) return true;  // bouton ASP.NET qui envoie
     }
@@ -484,8 +512,8 @@ function autowebArmer() {
   };
   const formulaireDangereux = (form, soumetteur) => {
     if (!gardeActive()) return false;
-    if (soumetteur && surFormulaireDeConnexion(soumetteur)) return false;
-    if (soumetteur && elementDangereux(soumetteur)) return true;
+    // un bouton de connexion n'est pas bloqué pour son libellé ; ce qu'il envoie est regardé quand même
+    if (soumetteur && !surFormulaireDeConnexion(soumetteur) && elementDangereux(soumetteur)) return true;
     let donnees = null;
     try { donnees = soumetteur ? new FormData(form, soumetteur) : new FormData(form); } catch (err) { try { donnees = new FormData(form); } catch (e2) {} }
     const methode = ((soumetteur && soumetteur.getAttribute('formmethod')) || form.getAttribute('method') || 'GET').toUpperCase();

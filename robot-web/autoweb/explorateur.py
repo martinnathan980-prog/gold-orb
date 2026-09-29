@@ -203,7 +203,10 @@ MOTS_ACTION_BOUTONS = {
     "nouveau", "nouvelle", "new", "impression", "export", "exportation", "import", "suppression", "creation",
     "modification", "duplication", "enregistrement", "validation", "telechargement", "sauvegarde", "copie", "ajout",
     "open", "close", "cancel", "print", "download", "show", "check", "refresh", "run", "start", "stop", "apply",
-    "reset", "compare", "generate", "validate", "confirm", "ok", "oui", "non", "yes", "no",
+    "reset", "compare", "generate", "validate", "confirm", "ok", "oui", "non", "yes", "no", "modify", "change", "set",
+    "go", "enable", "disable", "deconnexion", "connexion", "execute", "notify", "reply", "comment", "activate",
+    "deactivate", "logout", "login", "search", "find", "clear", "select", "rechercher", "actualiser", "rafraichir",
+    "mettre", "mise",
 }
 
 
@@ -261,6 +264,39 @@ def _valeur_modele(cle: str, valeur: str) -> str:
     if not valeur or _segment_variable(valeur) or MOTIF_CLE_IDENTIFIANT.search(cle):
         return "{}"
     return valeur
+
+
+# Réglages d'un écran, pas un objet : ?onglet=documents, ?page=2, ?tri=date, _=169...
+MOTIF_CLE_REGLAGE = re.compile(
+    r"^(?:q|query|search|recherche|rech|text|texte|keyword|keywords|motcle|mot_cle|term|terms|filter|filtre|s"
+    r"|page|pg|p|tri|sort|sortby|order|orderby|dir|size|pagesize|limit|offset|start|rows|onglet|tab|view|vue|mode"
+    r"|lang|langue|locale|format|_|t|ts|timestamp|cache|nocache|rnd|random)$",
+    re.IGNORECASE,
+)
+
+
+def cle_objet(url: str) -> str:
+    """Ce qui distingue un objet d'un autre dans l'adresse (numéros, identifiants), sans les réglages
+    de l'écran : /plans/12?onglet=general et /plans/12?onglet=documents sont le MÊME plan."""
+    m = decouper(url)
+    if m is None:
+        return ""
+    cles: List[str] = []
+
+    def parametres(chaine: str) -> None:
+        for k, v in parse_qsl(chaine, keep_blank_values=True):
+            if v and not MOTIF_CLE_REGLAGE.search(k) and (_segment_variable(v) or MOTIF_CLE_IDENTIFIANT.search(k)):
+                cles.append(f"{k}={v}")
+
+    cles += [x for x in m.path.split("/") if x and _segment_variable(x)]
+    parametres(m.query)
+    route, _, requete = (m.fragment or "").partition("?")
+    if "=" in route and not route.startswith("/"):
+        parametres(route)
+    else:
+        cles += [x for x in route.split("/") if x and _segment_variable(x)]
+        parametres(requete)
+    return "|".join(cles)
 
 
 def _requete_modele(paires) -> str:
@@ -341,8 +377,9 @@ def sans_fragment(url: str) -> str:
 def masquer(texte: str) -> str:
     """Tout mot contenant un chiffre, et les adresses mail, sont masqués."""
     texte = re.sub(r"[\w.+-]+@[\w-]+\.[\w.-]+", "<email>", str(texte or ""))
-    # « (tranche 3) » -> « (tranche #) » : les parenthèses et crochets autour restent
-    return re.sub(r"[^\s()\[\]{}«»]*\d[^\s()\[\]{}«»]*", "#", texte)
+    # tout le mot qui contient un chiffre (« Penly(3) » -> « #) ») ; seules les parenthèses AUTOUR restent :
+    # « (tranche 3) » -> « (tranche #) », « (PL-12) » -> « (#) »
+    return re.sub(r"(?<!\S)([(\[{«]*)\S*\d\S*?([)\]}»,;:.]*)(?!\S)", r"\1#\2", texte)
 
 
 TYPES_CHAMPS = {
@@ -1185,7 +1222,7 @@ MOTS_GENERIQUES = set("""
 le la les l du de des d un une au aux en et ou a sur pour par tout tous toute toutes ce cette ces mon ma mes
 pdf excel csv word xml zip fichier fichiers fiche fiches plan plans composant composants detail details liste
 listes selection element elements document documents version versions revision revisions ligne lignes resultat
-resultats recherche avancee simple page suivante precedente nomenclature historique arborescence donnees
+resultats recherche avancee simple page suivante precedente nomenclature historique arborescence donnees jour
 """.split())
 # Nom de personne : « Jean DUPONT », « DUPONT Jean », « J. Dupont », « M. Dupont », « Dupont, Jean ».
 MOTIF_PERSONNE = re.compile(
@@ -1246,24 +1283,33 @@ collaboration compare comparaison comparison search searches home tree view expl
 utilises emploi cas lies liees lien associes associees composition dossier dossiers equivalences equivalents
 documentation proprietes caracteristiques caracteristique technique techniques contexte suivi audit securite droits
 acces visualiseur miniature vignette apercu signatures signature validations cycle etats etat revisions
+taches tache jointes jointe favoris favori compte comptes account accounts demande demandes masse base documentaire
+documentaires rights right visited visites consultes measure measures mesure mesures reason reasons raison mise
+service mot mots cle cles keyword motif commande commandes affaire affaires ordre ordres travail travaux intervention
+interventions equipement equipements materiel installation installations schema schemas unifilaire synoptique
+nomenclatures liste listes profile profil options preferences notifications alertes alerte inbox outbox corbeille
+valide valides validee validees eclate eclatee eclatees publie publies publiee archive archives archivee perime
+perimes obsolete obsoletes courant courants jour
 """.split())
 
 
 def _mot_interface(mot: str) -> bool:
-    m = normaliser(mot).strip(".:,;()[]{}'’«»\"!?")
     connus = MOTS_GENERIQUES | VOCABULAIRE_CODE | MOTS_INTERFACE
 
-    def connu(x: str) -> bool:  # « Searches », « Requêtes » : le pluriel d'un mot connu aussi
-        return x in connus or (x.endswith("s") and x[:-1] in connus) or (x.endswith("es") and x[:-2] in connus)
+    def connu(x: str) -> bool:  # « Searches », « Requêtes » : le pluriel d'un mot connu aussi ; « 12 » : masqué
+        return x.isdigit() or x in connus or (x.endswith("s") and x[:-1] in connus) or \
+            (x.endswith("es") and x[:-2] in connus)
 
-    return not m or bool(re.search(r"\d", m)) or connu(m) or all(connu(x) for x in m.split("-") if x)
+    # chaque morceau (« Penly(3) » -> penly, 3) doit être connu : un chiffre ne couvre pas les lettres collées
+    morceaux = [x for x in re.split(r"[^a-z0-9]+", normaliser(mot)) if x]
+    return all(connu(x) for x in morceaux)
 
 
 def nom_propre_dedans(texte: str) -> bool:
     """« Résultats pour Tricastin », « Site Penly », « Hinkley Point C » : un mot à majuscule après le
     premier, hors des mots d'interface (les libellés s'écrivent « Date de création », « Where Used ») ;
     ou un nom de personne."""
-    mots = str(texte or "").split()
+    mots = [m.lstrip("([{«\"'“‘<") for m in str(texte or "").split()]  # « (Flamanville) », « [Gravelines] »
     return ressemble_a_une_personne(texte) or any(
         m[:1].isupper() and not _mot_interface(m) and (len(m) > 1 or i == len(mots) - 1)
         for i, m in enumerate(mots[1:], 1))
@@ -1787,12 +1833,14 @@ class Explorateur:
         lecture = lecture or self._lire(page)
         if lecture is None:
             return None
-        # libellés de fiche : sur combien d'objets (d'adresses) de ce modèle d'écran les a-t-on vus ?
+        # libellés de fiche : sur combien d'OBJETS de ce modèle d'écran les a-t-on vus ? (deux onglets
+        # du même plan ne comptent qu'une fois ; une adresse sans numéro d'objet non plus)
         modele = _modele_sans_requete(modele_url(lecture["url"]))
+        objet = cle_objet(lecture["url"])
         for info in lecture.get("infos") or []:
             vues = self._infos_vues.setdefault((modele, normaliser(info)), set())
-            if len(vues) < 3:
-                vues.add(lecture["url"])
+            if objet and len(vues) < 3:
+                vues.add(objet)
         sig = signature(lecture)
         if sig in self._par_signature:
             return None

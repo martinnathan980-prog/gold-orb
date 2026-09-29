@@ -518,6 +518,15 @@ def test_filtres_de_noms_et_de_types():
     assert extension_connue("CR réunion M.Roux") == "?" and extension_connue("Note.Penly") == "?"
     assert extension_connue("plan.PDF") == "pdf" and extension_connue("/plans/{id}/vue.dwg?x=1") == "dwg"
     assert masquer("Tricastin (tranche 3) :") == "Tricastin (tranche #) :"
+    assert "Penly" not in masquer("PL-104(Penly)") and "Penly" not in masquer("Plans Penly(3)")
+    for nom in ("Plans (Flamanville)", "Documents [Gravelines]", "Plans «Paluel»"):
+        assert nom_propre_dedans(nom), nom
+    for libelle in ("Mes Tâches", "Pièces Jointes", "Plan de Masse", "Unit of Measure", "Date de Mise en Service"):
+        assert not nom_propre_dedans(libelle), libelle
+    from autoweb.explorateur import cle_objet
+    assert cle_objet("http://p/plans/12?onglet=general") == cle_objet("http://p/plans/12?onglet=documents")
+    assert cle_objet("http://p/plans/12") != cle_objet("http://p/plans/13")
+    assert cle_objet("http://p/plans?q=Flamanville&page=2") == "" 
     assert _modele_sans_requete("/plans/{id}?onglet=general") == "/plans/{id}"
     assert _modele_sans_requete("/app#/plan/{id}?tab=x") == "/app#/plan/{id}"
     texte, comptes = cacher_mots("menus : Cœur Défense ; Œting ; Groß ; Ørsted ; Łódź",
@@ -567,6 +576,14 @@ PIEGES = """<!doctype html><meta charset=utf-8><title>Fiche</title>
 <label id=a21 class=btn style="cursor:pointer" onclick="envoi('label_btn')">Supprimer</label>
 <button id=a22 onclick="fetch('/api/Plans.aspx', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: '__VIEWSTATE=x&__EVENTTARGET=ctl00%24Main%24gv&__EVENTARGUMENT=Delete%240'})">Continuer</button>
 <button id=a23 onclick="const w = window.open('', 'edition', 'width=400,height=300'); w.document.open(); w.document.write('<button id=b onclick=&quot;opener.envoi(\\'popup_docwrite\\')&quot;>Enregistrer</button>'); w.document.close();">Ouvrir la fiche</button>
+<table><thead><tr><th>Composant</th><th>Action</th></tr></thead><tbody>
+<tr><td>Disjoncteur</td><td><a id=a24 href="javascript:void(0)" onclick="envoi('ligne_retirer')">Retirer de la nomenclature</a></td></tr>
+<tr><td>Sectionneur</td><td><a id=a25 href="javascript:void(0)" onclick="envoi('ligne_checkout')">Check Out</a></td></tr>
+<tr><td id=a26 style="cursor:pointer" onclick="envoi('cellule_dupliquer')">Dupliquer</td><td>x</td></tr>
+</tbody></table>
+<div role=listbox><div role=option id=a27 onclick="envoi('option_dupliquer')">Dupliquer</div></div>
+<div role=dialog aria-label="Transmission au circuit de validation"><p>Mot de passe :</p><input type=password>
+<button id=a28 onclick="envoi('signature')">Envoyer</button></div>
 <iframe id=cadre_vide width=300 height=80></iframe>
 <script>
   window.addEventListener('load', () => setTimeout(() => {
@@ -590,22 +607,25 @@ CONSULTATION = """<!doctype html><meta charset=utf-8><title>Fiche</title>
 <table><thead><tr><th>Titre</th><th>Statut</th></tr></thead><tbody>
 <tr style="cursor:pointer" onclick="lire('ligne')"><td id=c12>Nouveau poste source</td><td>Publié</td></tr>
 <tr style="cursor:pointer" onclick="lire('ligne_new')"><td>Poste Nord</td><td id=c13>New</td></tr>
-<tr><td><a id=c14 href="javascript:void(0)" onclick="lire('titre_modifier')">Modifier poste HTA</a></td><td>Release</td></tr>
+<tr><td><a id=c14 href="javascript:void(0)" onclick="lire('titre_remplacer')">Remplacer transformateur T2</a></td><td>Release</td></tr>
 </tbody></table>
 <div role=listbox aria-label=Statut><div role=option id=c15 onclick="lire('option_nouveau')">Nouveau</div></div>
 <button id=c16 onclick="lire('copier_lien')">Copier le lien</button>
 <ul role=menu><li role=menuitem id=c17 onclick="lire('release_notes')">Release notes</li></ul>
+<ul role=tree><li role=treeitem><span id=c19 tabindex=0 onclick="lire('dossier_import')">Import</span></li></ul>
+<button id=c20 onclick="fetch('/lecture/tri', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: '__VIEWSTATE=x&__EVENTTARGET=ctl00%24gv&__EVENTARGUMENT=Sort%24ReleaseDate'})">Trier</button>
 """
 SESSION_EXPIREE = ("document.body.insertAdjacentHTML('beforeend', '<div role=dialog aria-label=\"Session expirée\">"
                    "<input type=password><button id=c18 onclick=\"lire(\\'reconnexion\\')\">Envoyer</button></div>')")
 CONSULTATION_ATTENDUS = ["supprimes", "historique", "commentaires", "filtres", "nouvelle_recherche", "modifier_recherche",
-                         "reinitialiser", "commentaires_api", "ligne", "ligne_new", "titre_modifier", "option_nouveau",
-                         "copier_lien", "release_notes", "reconnexion"]
+                         "reinitialiser", "commentaires_api", "ligne", "ligne_new", "titre_remplacer", "option_nouveau",
+                         "copier_lien", "release_notes", "reconnexion", "dossier_import", "tri"]
 
 DANGEREUX = ["menuitem_supprimer", "menuitem_dupliquer", "header_supprimer", "aside_enregistrer", "enregistrer_fermer",
              "cancel_checkout", "reviser", "grille", "icone_seule", "img_alt", "lien_onclick", "div_maison", "pointerup",
              "clavier", "formulaire_enregistrer", "composant_web", "emoji_trash", "keyup", "touche_suppr", "turbo",
-             "cadre_vide_enregistrer", "bulk", "label_btn", "popup_docwrite"]
+             "cadre_vide_enregistrer", "bulk", "label_btn", "popup_docwrite", "ligne_retirer", "ligne_checkout",
+             "cellule_dupliquer", "option_dupliquer", "signature"]
 PERMIS = ["ligne_publiee", "rechercher", "telecharger", "fermer"]
 
 
@@ -658,8 +678,8 @@ def test_filet_de_securite_resiste_aux_pieges(tmp_path, navigateur_ok):
             page.click(selecteur)
             page.wait_for_timeout(150)
         page.frame_locator("#cadre_vide").locator("#dans_cadre").click()
-        page.click("#a21")
-        page.click("#a22")
+        for selecteur in ("#a21", "#a22", "#a24", "#a25", "#a26", "#a27", "#a28"):
+            page.click(selecteur)
         with page.expect_popup() as fenetre:
             page.click("#a23")
         fenetre.value.click("#b")  # tout de suite, avant le relevé suivant du robot
@@ -733,7 +753,7 @@ def test_filet_de_securite_laisse_consulter(tmp_path, navigateur_ok):
     def promenade(v):
         page = v.nav.page_courante()
         for selecteur in ("#c4", "#c5", "#c6", "#c7", "#c8", "#c9", "#c10", "#c11", "#c12", "#c13", "#c14", "#c15",
-                          "#c16", "#c17"):
+                          "#c16", "#c17", "#c19", "#c20"):
             page.click(selecteur)
             page.wait_for_timeout(200)
         page.evaluate(SESSION_EXPIREE)  # la session expire : on se reconnecte dans la page
