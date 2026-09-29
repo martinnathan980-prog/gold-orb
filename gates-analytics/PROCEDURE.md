@@ -199,7 +199,7 @@ trompe de la source »). Un extract où `HDK AA 011 > Avancement Définition
 Electrique` est introuvable — un groupe renommé, un bloc absent — n'est
 **jamais** lu dans une autre colonne à sa place : la page s'ouvre avec, en
 haut, « Colonne « HDK AA 011 > Avancement Définition Electrique »
-introuvable dans l'onglet « … » », aucun plan n'y est dit terminé, et
+introuvable dans l'onglet « … » », aucun plan n'y est dit validé, et
 **l'archivage refuse** — une semaine où tout serait « non renseigné »
 fausserait l'historique pour de bon. Le **Diagnostic** donne alors les
 colonnes de même intitulé avec leur groupe (« Colonnes intitulées
@@ -226,7 +226,7 @@ d'état). Le titre devient **« Suivi concept harnais »**. SEE ne connaît pas
 le concept harnais : sous lui, la **comparaison avec SEE disparaît** — la
 section comme l'interrupteur GATES | SEE du tableau — et revient avec la
 définition électrique. Changer d'avancement retire les filtres posés — un
-« terminé » n'a plus le même sens — et garde le cadre : périmètre,
+« validé » n'a plus le même sens — et garde le cadre : périmètre,
 regroupement. Le graphique revient sur **Échéances** : l'autre avancement a
 ses propres échéances (les diffusions TO tombent en février), qu'un zoom
 choisi pour le premier pouvait cacher. Sous les deux avancements, la page a
@@ -309,6 +309,17 @@ haut : Validé, En cours, À faire, Non renseigné… —, chacune avec sa pasti
 son compte, et dans chacune les références dans l'ordre, en colonnes
 régulières. Un clic sur une référence réduit le tableau du bas à ce plan. Le
 bloc défile : 640 références dans un seul groupe restent lisibles.
+
+**Le groupe se déplie sur place ; les autres restent** (débrief 17 : « tous
+les autres ECP ont disparu, ça a fait un filtre… je préfère comme la
+semaine »). Le bloc liste les groupes de la sélection **sans** le groupe
+choisi — ses propres lignes ne se filtrent pas elles-mêmes — : les autres
+ATA ou ECP gardent leur ligne et leurs comptes, le groupe choisi est marqué
+et ses plans s'ouvrent juste sous lui. Le reste de la page (phrase, courbe,
+tableau, jeton « ATA : 31 » du bandeau) suit ce groupe, comme avant ; un
+clic sur un autre groupe le déplie à sa place, un second clic sur le même
+le referme. La ligne cliquée ne bouge pas sous le pointeur ; ouverte au ras
+du bas du bloc, elle remonte en haut pour que ses plans se voient.
 
 Chaque colonne calculée porte un **?** qui ouvre la même explication chiffrée.
 
@@ -404,7 +415,7 @@ faudra rafraîchir le jeu de démonstration en même temps que les jalons.
 ## 8. Le périmètre : Tout / BASE/OPTION / PERSO
 
 Le titre reste seul dans sa zone : le sélecteur est posé **à droite de la
-phrase « N sur M plans terminés »**, juste au-dessus de la barre d'avancement
+phrase « N sur M plans validés »**, juste au-dessus de la barre d'avancement
 qu'il gouverne (à la ligne, à gauche, sur un petit écran) : **« Tout »**, puis
 une puce par valeur de la colonne de domaine, chacune avec son compte de
 plans. Il est masqué quand l'export n'a pas de colonne de domaine.
@@ -417,7 +428,7 @@ regarder une page qui ne parle que des plans PERSO.
 La courbe sous un périmètre n'est pas un filtre sur des comptes figés : elle
 est **dérivée**, relevé par relevé, de la carte plan par plan archivée,
 croisée avec le domaine **courant** de chaque plan (total = plans de la carte
-dans le périmètre, terminés = ceux classés terminés). Les rythmes du bloc par
+dans le périmètre, validés = ceux classés validés). Les rythmes du bloc par
 groupe passent par la même dérivation. L'onglet d'historique n'est jamais
 réécrit pour cela.
 
@@ -491,7 +502,7 @@ Il est **sous le graphique**, dans la même section : la courbe dit combien, le
 journal dit lesquels. Sa hauteur est bornée, on y descend.
 
 Dans chaque semaine, les plans sont **rangés par état d'arrivée** : tous les
-terminés, puis les passés en cours, puis les repassés à faire. Chaque ligne
+validés, puis les passés en cours, puis les repassés à faire. Chaque ligne
 ne dit que **quel plan est passé** : sa référence et son passage (« En cours
 → Validé »), sans le libellé de l'installation — il est dans le tableau.
 
@@ -506,22 +517,22 @@ ne dit que **quel plan est passé** : sa référence et son passage (« En cours
   semaine en semaine, au pixel près.
 - La semaine la plus récente est en haut ; les semaines se déplient d'un
   clic.
-- **Les reculs**, en rouge : un plan qui perd son « terminé », ou qui repasse
+- **Les reculs**, en rouge : un plan qui perd son « validé », ou qui repasse
   d'« en cours » à « à faire ». Ils ont leur colonne (« 1 recul », le nombre
   en rouge), leur filtre ; ils ne se comptent plus parmi les
   « passés à … ». Dans une semaine dépliée, ils ouvrent la liste, référence
   en rouge. Un plan réémis sous un autre indice n'est pas un recul (il se
   range sous « changement d'indice »), ni une case vidée (« en cours » →
   « non renseigné »).
-- `Tout / Terminés / En cours / Reculs / Changement d'indice`, chacun avec sa
+- `Tout / Validés / En cours / Reculs / Changement d'indice`, chacun avec sa
   pastille, ne garde que
   les passages voulus, et **chaque compte du résumé est cliquable** :
-  « 6 terminés » n'affiche plus que ceux-là, sur toutes les semaines à la fois.
+  « 6 validés » n'affiche plus que ceux-là, sur toutes les semaines à la fois.
 - Cliquer un plan réduit le tableau du bas à ce plan.
 - Les nouveaux plans, ceux qui ont disparu de l'export et les changements
   d'indice sont signalés.
 - **Survoler une semaine sur le graphique** en donne le résumé en chiffres :
-  « Relevé de S38 · sept. 2026 », terminés sur total, le gain net sur le
+  « Relevé de S38 · sept. 2026 », validés sur total, le gain net sur le
   relevé précédent, puis **les lignes mêmes du journal** — « 20 passés à
   « Validé » », « 3 passés à « Non renseigné » », changements d'indice,
   nouveaux, disparus. La bulle ne liste pas de références : le journal,
@@ -577,16 +588,29 @@ autre valeur qui voudrait dire « fini » s'ajoute à `VALEURS_FINIES`, en haut
 de `Code.gs` (et une valeur « pas commencé » à `VALEURS_A_FAIRE`).
 
 **Un mot « fini » inconnu ne passe pas inaperçu** (débrief 16 : « 0 sur 600
-plans terminés » sur les vraies données). Quand **aucun** plan n'est compté
-terminé alors que la colonne a des valeurs, la page le dit au-dessus de la
-barre : « Aucun plan n'est compté « terminé ». Aucune des valeurs lues dans
-« HDK AA 011 › Avancement Définition Electrique » ne veut dire « fini » pour
-la page : « Released » (256), « In work » (166)… Si l'une d'elles veut dire
-« fini », il faut la déclarer dans Code.gs, VALEURS_FINIES. » Le
+plans validés » sur les vraies données). Quand **aucun** plan n'est compté
+validé alors que la colonne a des valeurs, la page le dit au-dessus de la
+barre : « Aucun plan n'est compté « validé ». Aucune des valeurs lues dans
+« HDK AA 011 › Avancement Définition Electrique » ne veut dire « validé »
+pour la page : « Released » (256), « In work » (166)… Si l'une d'elles veut
+dire « validé », il faut la déclarer dans Code.gs, VALEURS_FINIES. » Le
 **Diagnostic** donne, pour chaque colonne suivie, chaque valeur lue avec son
 compte **et la façon dont elle est comptée** (« « Check » 312 → en cours »),
 et le même avertissement (seulement des valeurs d'état : au-delà de vingt
 valeurs différentes, ou de trente caractères, rien n'est recopié).
+
+**La page dit « validés »** (débrief 17 : « c'est en fonction des
+validated, on reste pas sur l'ancien »). La famille *fini* s'affiche
+**Validés** partout où la page parlait de « terminés » : la phrase « N sur
+M plans validés », la courbe (« validés par semaine »), la fiche
+d'échéance (« plans à valider »), le bloc par groupe (« rien de validé »,
+« tout est validé »), la vue d'ensemble (colonne *Validés*), les verdicts
+de la comparaison (« validés dans GATES et connus de SEE »…), le
+Diagnostic (« 54 validés, 238 en cours… », « → validé »), l'en-tête
+*Validés* des onglets d'historique créés désormais (ceux d'avant gardent
+*Terminés* : la colonne se lit à sa place, pas à son nom). Les valeurs,
+elles, restent écrites comme dans l'extract (VALIDATED, PWD_IN_PROGRESS…),
+et la clé interne de la famille reste `termine`.
 
 Une cellule vide reste un *défaut de saisie*, distinct de toute valeur : le
 bouton « non renseigné » sous la barre sort la liste.
@@ -625,8 +649,8 @@ choses ; sans description, ni l'une ni l'autre n'existe.
 
 **Ce que le rapprochement demande.** Dans SEE, un plan n'a pas d'état : soit
 il y est, soit il n'y est pas. **S'il y est, c'est qu'il a été créé** — donc
-terminé. La question posée est donc celle-là : *les plans que GATES dit
-terminés, SEE les connaît-il, et réciproquement ?* La comparaison ne porte que
+validé. La question posée est donc celle-là : *les plans que GATES dit
+validés, SEE les connaît-il, et réciproquement ?* La comparaison ne porte que
 sur la **référence** ; les autres colonnes de l'extract s'affichent, elles ne
 se comparent pas.
 
@@ -637,16 +661,16 @@ plans. Le titre suffit — plus de phrase ni de compte au-dessus, la figure et
 les verdicts disent tout.
 
 - la figure : le cercle **GATES** (plein, vert) à gauche avec son compte de
-  plans et de terminés, le cercle **SEE** (pointillé) à droite avec ses
+  plans et de validés, le cercle **SEE** (pointillé) à droite avec ses
   lignes. Dans leur recouvrement, un **anneau** compte les plans que les deux
   bases connaissent, en trois parts à l'échelle — vert d'accord, violet autre
-  indice, ambre connus de SEE mais pas terminés ici ; une part, même d'un seul
+  indice, ambre connus de SEE mais pas validés ici ; une part, même d'un seul
   plan, reste visible. À la première apparition d'une source, quand la section
   entre dans l'écran, les cercles s'installent et l'anneau se trace (rien de
   tout cela si le système demande moins de mouvement). À gauche du cercle
-  GATES, en rouge, les **terminés que SEE ignore** — le nombre qui compte —,
+  GATES, en rouge, les **validés que SEE ignore** — le nombre qui compte —,
   et dessous, dans le cercle, plus discret, ce qui n'est **pas encore** dans
-  SEE (rien d'anormal : ces plans ne sont pas terminés). À droite, ce que SEE
+  SEE (rien d'anormal : ces plans ne sont pas validés). À droite, ce que SEE
   est seul à connaître (« tout le contrat » sous un périmètre, car ces lignes
   n'ont pas de domaine) ;
 - à droite, six **verdicts**, un par ligne : la pastille, le grand nombre,
@@ -656,14 +680,14 @@ les verdicts disent tout.
 
 | Ce que dit la page | Ce qu'il compte | Ce qu'il veut dire |
 |---|---|---|
-| terminés dans GATES et connus de SEE | terminé ici, présent là sous le même indice | tout va bien |
-| dans SEE sous une autre lettre d'indice | terminé ici, présent là sous une autre lettre | une réémission d'un côté seulement |
-| dans SEE, mais GATES ne les dit pas terminés | présent là, mais GATES ne le dit pas terminé | l'avancement GATES est peut-être en retard |
-| terminés dans GATES, mais SEE ne les connaît pas | terminé ici, inconnu de SEE | à vérifier des deux côtés — c'est le lot qui compte |
-| pas terminés, et pas encore dans SEE : rien d'anormal | pas terminé ici, pas encore créé là | rien d'anormal |
+| validés dans GATES et connus de SEE | validé ici, présent là sous le même indice | tout va bien |
+| dans SEE sous une autre lettre d'indice | validé ici, présent là sous une autre lettre | une réémission d'un côté seulement |
+| dans SEE, mais GATES ne les dit pas validés | présent là, mais GATES ne le dit pas validé | l'avancement GATES est peut-être en retard |
+| validés dans GATES, mais SEE ne les connaît pas | validé ici, inconnu de SEE | à vérifier des deux côtés — c'est le lot qui compte |
+| pas validés, et pas encore dans SEE : rien d'anormal | pas validé ici, pas encore créé là | rien d'anormal |
 | lignes de SEE sans plan dans GATES | une ligne de là dont aucun plan du contrat n'a la racine et la solution | à regarder de près |
 
-Le bandeau des filtres redit la même phrase (« Comparaison : terminés dans
+Le bandeau des filtres redit la même phrase (« Comparaison : validés dans
 GATES, mais SEE ne les connaît pas ») : ce qu'on vient de cliquer se relit
 mot pour mot.
 
@@ -674,10 +698,10 @@ emmènent le tableau sur GATES, celui des lignes que SEE est seule à connaître
 sur SEE. Un seul lot à la fois ; le bandeau le nomme (« Comparaison : … »), la
 croix le retire sans changer de côté ; un second clic sur le verdict retire
 le filtre et le replie. Un verdict se **combine** avec les filtres du haut :
-« dans SEE, pas terminés ici » plus l'état *En cours* ne garde que ceux-là.
+« dans SEE, pas validés ici » plus l'état *En cours* ne garde que ceux-là.
 
 Survoler un verdict — ou sa part de l'anneau, ou un nombre de côté —
-l'éclaire dans la figure et ouvre une bulle : le compte, la part des terminés,
+l'éclaire dans la figure et ouvre une bulle : le compte, la part des validés,
 les paires « référence → solution et lettre », la répartition par état de
 GATES, et où mène le clic.
 
@@ -685,8 +709,8 @@ GATES, et où mène le clic.
 « plan par plan » qui répétait les six verdicts dessous) : **une puce par
 plan** — sa pastille d'état GATES, sa référence, et pour une réémission la
 lettre sous laquelle SEE le connaît (« → B », en violet). En tête, la légende
-des pastilles (Terminé, En cours, À faire, Non renseigné). La bulle du survol
-dit le reste (« Terminé dans GATES · absent dans SEE »). Pour « seulement dans
+des pastilles (Validé, En cours, À faire, Non renseigné). La bulle du survol
+dit le reste (« Validé dans GATES · absent dans SEE »). Pour « seulement dans
 SEE », la référence recomposée, sans pastille. Les références sont triées, et
 un verdict déplié montre **tous** ses plans — aucune coupure : au-delà de la
 hauteur d'un demi-écran, c'est sa zone qui défile. À l'ouverture, tout est
@@ -698,7 +722,7 @@ réduit le tableau GATES à ce plan (bandeau « Sélection : plan … ») ; sur 
 référence seulement là, le tableau passe sur SEE, cherché sur elle (le
 bandeau porte alors un jeton « Recherche dans SEE », qui se retire d'une
 croix). Un clic sur un plan efface les filtres libres (état, groupe,
-recherche, colonnes) — sans quoi un plan terminé sous le filtre « En cours »
+recherche, colonnes) — sans quoi un plan validé sous le filtre « En cours »
 donnerait un tableau vide — et garde le périmètre. Tout suit le périmètre,
 sauf « seulement dans SEE », compté sur tout le contrat et étiqueté ainsi,
 comme dans les cercles.
@@ -901,9 +925,9 @@ date** (sans date, jusqu'au vendredi de sa semaine) :
 Un clic — sur cette échéance, sur un jalon de la légende ou sur son
 numéro dans le graphique — ouvre la **fiche de l'échéance** : sa date
 (« mardi 15 décembre 2026 · S51 »), les **jours** et les **semaines**
-restants, les **plans à terminer**, la jauge des terminés, le **rythme
+restants, les **plans à valider**, la jauge des validés, le **rythme
 requis** d'ici là contre le **rythme tenu**, et le verdict : échéance tenue,
-ou combien de plans manqueraient le jour dit et quand tout serait terminé.
+ou combien de plans manqueraient le jour dit et quand tout serait validé.
 Les plans se comptent dans le périmètre regardé — sous PERSO, le solde FWD ne
 compte que les plans PERSO — et un jalon d'un seul périmètre ne compte que
 les siens : sur « Tout », « Diffusion PH Base » demande les plans
@@ -928,10 +952,10 @@ chiffres d'une seule fonction, avec une seule formule.
 
 ```
 semaines restantes = semaine du jalon − semaine en cours
-rythme requis      = plans à terminer ÷ semaines restantes (au moins une)
-rythme tenu        = terminés gagnés du premier au dernier relevé ÷ semaines écoulées
-fin estimée        = semaine en cours + arrondi supérieur(à terminer ÷ rythme tenu)
-manque             = à terminer − rythme tenu × semaines restantes (au plan supérieur)
+rythme requis      = plans à valider ÷ semaines restantes (au moins une)
+rythme tenu        = validés gagnés du premier au dernier relevé ÷ semaines écoulées
+fin estimée        = semaine en cours + arrondi supérieur(à valider ÷ rythme tenu)
+manque             = à valider − rythme tenu × semaines restantes (au plan supérieur)
 ```
 
 Un seul rythme : le **rythme tenu** (débrief 15 — un second rythme, sur les
@@ -962,7 +986,7 @@ au-dessus du tableau.
 
 - **Les plans à l'arrêt** : un plan **en cours** dont la valeur n'a pas changé
   depuis **6 semaines ou plus**, relevé après relevé. Seuls les « en cours »
-  comptent — ni les terminés, ni les à faire, ni les non renseignés. Au
+  comptent — ni les validés, ni les à faire, ni les non renseignés. Au
   début, rien n'est à l'arrêt : il faut six semaines de relevés pour qu'un
   plan puisse l'être. En haut, sous les états : « À surveiller : 16 plans en
   cours n'ont pas bougé depuis 6 semaines ou plus » — un clic les montre dans
@@ -983,7 +1007,7 @@ au-dessus du tableau.
   les filtres trouvent les deux écritures.
 - **La vue d'ensemble des contrats** : le lien « Vue d'ensemble », à gauche
   du sélecteur de contrat, ouvre sous le bandeau une ligne par contrat — ses
-  terminés, son gain et ses reculs depuis le relevé précédent, son rythme
+  validés, son gain et ses reculs depuis le relevé précédent, son rythme
   tenu, ses plans à l'arrêt, sa prochaine échéance et le verdict. Les
   chiffres sont ceux que la page de ce contrat affiche : chaque contrat est
   chargé tour à tour et lu par les mêmes fonctions, sur tout le contrat, puis

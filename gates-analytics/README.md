@@ -56,7 +56,7 @@ ferait perdre au découpage suivant. Tout passe par le prototype (et par
   qui résume chaque semaine en chiffres, cadrée à l'ouverture jusqu'à la
   semaine qui suit la dernière échéance, et dessous le **journal** de ce qui a
   changé, semaine par semaine — un tableau, une colonne par sorte de
-  passage (passés terminés, reculs en rouge, **changements d'indice** : le
+  passage (passés validés, reculs en rouge, **changements d'indice** : le
   même plan réémis sous un autre indice, retrouvé par la racine de sa
   référence UD, nouveaux, disparus) —, plan par plan. En haut, « À
   surveiller » : les plans en cours qui n'ont pas bougé depuis six semaines.
@@ -73,10 +73,10 @@ ferait perdre au découpage suivant. Tout passe par le prototype (et par
   contrat, avec les chiffres de sa propre page.
 - **La comparaison des bases de données** (GATES et SEE), dès qu'un onglet
   `SEE` est là, sous le tableau. Un plan connu de SEE est un plan créé, donc
-  terminé : la section croise cette présence avec l'avancement de GATES. Deux
+  validé : la section croise cette présence avec l'avancement de GATES. Deux
   cercles face à face, l'anneau des plans en commun dans leur recouvrement,
-  six verdicts en français — terminés et dans SEE, autre indice, dans SEE mais
-  pas terminés ici, terminés absents de SEE, pas encore dans SEE, seulement
+  six verdicts en français — validés et dans SEE, autre indice, dans SEE mais
+  pas validés ici, validés absents de SEE, pas encore dans SEE, seulement
   dans SEE — qui filtrent le tableau, puis **plan par plan** : un groupe par
   verdict dans l'ordre des priorités, tous repliés à l'ouverture,
   et un clic sur une référence la montre dans le tableau ; derrière

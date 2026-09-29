@@ -139,7 +139,7 @@ let totalEcarts = 0;
           };
         }, { ind, per, mode });
         ['termine', 'encours', 'afaire', 'vide'].forEach(k => ok(lieu + ' : compte « ' + k + ' »', r.etats[k] === (r.affEtats[k] || 0), JSON.stringify([r.etats[k], r.affEtats[k]])));
-        ok(lieu + ' : phrase « X sur Y terminés »', new RegExp('^' + r.etats.termine + ' sur ' + r.total + ' plans terminés').test(r.phrase.replace(/(\d) (\d)/g, '$1$2')), r.phrase);
+        ok(lieu + ' : phrase « X sur Y validés »', new RegExp('^' + r.etats.termine + ' sur ' + r.total + ' plans validés').test(r.phrase.replace(/(\d) (\d)/g, '$1$2')), r.phrase);
         ok(lieu + ' : série de la courbe', r.serie === r.serieAff, r.serie + '  ≠  ' + r.serieAff);
         const mR = r.leg.match(/au rythme tenu \(([\d,]+)\/sem\.\)(?: → fin S(\d+))?/);
         if (r.rythme !== null && r.etats.termine < r.total) {

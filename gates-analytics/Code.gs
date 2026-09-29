@@ -39,7 +39,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = 'e0afdc1';
+const EDITION = 'b8f6ff3';
 
 // =====================================================================
 //  CONFIGURATION
@@ -264,7 +264,7 @@ const CONFIG = {
 };
 
 const ENTETES_HISTORIQUE = [
-  'Semaine', 'Date', 'Total', 'Terminés', 'En cours', 'À faire', 'Non renseignés',
+  'Semaine', 'Date', 'Total', 'Validés', 'En cours', 'À faire', 'Non renseignés',
   'Par dimension', 'Plans'
 ];
 
@@ -1633,8 +1633,8 @@ function direValeurs(dire, plans, cle) {
     dire('  ' + ordre.length + ' valeurs différentes : trop, ou trop longues, pour être des états — rien n\'est recopié.');
   } else {
     /* Chaque valeur avec la façon dont elle est comptée : c'est ce qui dit,
-       d'un coup d'œil, qu'un mot « fini » n'est pas reconnu. */
-    const MOT = { termine: 'fini', encours: 'en cours', afaire: 'à faire', vide: 'non renseigné' };
+       d'un coup d'œil, qu'un mot « validé » n'est pas reconnu. */
+    const MOT = { termine: 'validé', encours: 'en cours', afaire: 'à faire', vide: 'non renseigné' };
     ordre.sort(function (a, b) { return par[b].n - par[a].n; });
     dire('  valeurs lues (comptées comme) : ' + ordre.map(function (k) {
       const v = par[k];
@@ -1642,7 +1642,7 @@ function direValeurs(dire, plans, cle) {
     }).join(' · '));
   }
   if (aucunFini) {
-    dire('⚠ Aucune valeur n\'est comptée comme finie : la page dira « 0 terminé ». Si l\'une de ces valeurs veut dire « fini »,');
+    dire('⚠ Aucune valeur n\'est comptée comme validée : la page dira « 0 validé ». Si l\'une de ces valeurs veut dire « validé »,');
     dire('   l\'ajouter à CONFIG.VALEURS_FINIES (aujourd\'hui : ' +
          (CONFIG.VALEURS_FINIES && CONFIG.VALEURS_FINIES.length ? CONFIG.VALEURS_FINIES : ['Validé']).join(', ') + ').');
   }
@@ -1698,7 +1698,7 @@ function diagnostiquerContrat(classeur, contrat, dire) {
       direDoublon(dire, modele.colonnes, CONFIG.COLONNE_FWD);
       const compte = { termine: 0, encours: 0, afaire: 0, vide: 0 };
       uniques.forEach(function (p) { compte[classerFWD(p.avancement)]++; });
-      dire('  ' + compte.termine + ' terminés, ' + compte.encours + ' en cours, ' +
+      dire('  ' + compte.termine + ' validés, ' + compte.encours + ' en cours, ' +
            compte.afaire + ' à faire, ' + compte.vide + ' non renseignés');
       direValeurs(dire, uniques, 'avancement');
     }
@@ -1708,7 +1708,7 @@ function diagnostiquerContrat(classeur, contrat, dire) {
         const compteC = { termine: 0, encours: 0, afaire: 0, vide: 0 };
         uniques.forEach(function (p) { compteC[classerFWD(p[modele.cleConcept])]++; });
         dire('✓ Concept harnais : colonne « ' + colConcept.titre + ' »' + (colConcept.groupe ? ', groupe « ' + colConcept.groupe + ' »' : ''));
-        dire('  ' + compteC.termine + ' terminés, ' + compteC.encours + ' en cours, ' +
+        dire('  ' + compteC.termine + ' validés, ' + compteC.encours + ' en cours, ' +
              compteC.afaire + ' à faire, ' + compteC.vide + ' non renseignés');
         direValeurs(dire, uniques, modele.cleConcept);
         direDoublon(dire, modele.colonnes, CONFIG.COLONNE_CONCEPT);

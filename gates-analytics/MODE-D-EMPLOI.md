@@ -208,7 +208,7 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
 ## 6. Lire la page, de haut en bas
 
 - **Le bandeau**, à droite : dès deux contrats le lien **Vue d'ensemble**
-  (une ligne par contrat : terminés, reculs, rythme, plans à l'arrêt,
+  (une ligne par contrat : validés, reculs, rythme, plans à l'arrêt,
   prochaine échéance) et le sélecteur **Contrat**, et
   dessous l'interrupteur **Avancement : Définition électrique | Concept
   harnais** — les deux
@@ -217,7 +217,7 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   titre, la semaine où l'on est, et rien d'autre.
 - **Le périmètre** : Tout / BASE/OPTION / PERSO — les valeurs de la colonne
   « Domaine » de l'extract, telles quelles. Il restreint toute la page.
-- **En haut, sans titre** : la phrase « N sur M plans terminés », la barre
+- **En haut, sans titre** : la phrase « N sur M plans validés », la barre
   des valeurs de la colonne telles qu'elles sont écrites (Validé, Check, En
   cours, A traiter, non renseigné…) avec leur nombre, et **À surveiller** :
   les plans en cours qui n'ont pas bougé depuis 6 semaines ou plus, un clic
@@ -225,10 +225,10 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   pour qu'un plan puisse être « à l'arrêt ». Au-delà de quatre valeurs, ou
   quand l'une est trop petite pour se voir (deux plans sur six cents), les
   valeurs passent en **légende** sous la barre ; survoler une case éclaire
-  son segment. « Validé » compte comme fini ;
-  une autre valeur qui voudrait dire fini se déclare dans `Code`
-  (`VALEURS_FINIES`).
-- **Avancement dans le temps** : la courbe des terminés relevé après relevé,
+  son segment. VALIDATED (« Validé ») compte comme validé — partout, la
+  page dit « validés » ; une autre valeur qui voudrait dire validé se
+  déclare dans `Code` (`VALEURS_FINIES`).
+- **Avancement dans le temps** : la courbe des validés relevé après relevé,
   les jalons du programme (numérotés 1 à 5 sur une rangée, en clair dans la
   légende dessous), la fin estimée au rythme tenu et le rythme requis pour
   tenir le prochain jalon (« manque N » quand le rythme ne suffit pas). Il
@@ -240,7 +240,7 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   ferme). Les jalons **TO** (table outil) suivent le concept harnais : sous
   la définition électrique, ils restent dessinés, en retrait.
 - **Ce qui a changé, semaine par semaine** : le journal — quels plans sont
-  passés terminés, lesquels ont changé d'indice, lesquels sont apparus ou ont
+  passés à VALIDATED, lesquels ont changé d'indice, lesquels sont apparus ou ont
   disparu de l'extract, et les **reculs**, en rouge. Les semaines forment un
   tableau : une colonne par sorte de passage, nommée dans l'en-tête, de la
   plus fréquente à la plus rare, la pastille et le nombre dans la case —
@@ -253,9 +253,11 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   dans l'ordre, chacun avec son chevron et, en ambre, ses plans **à
   l'arrêt** — en cours, sans changement depuis 6 semaines ou plus (le bloc
   le rappelle en tête).
-  Un clic sur un groupe déplie ses plans, une sous-liste par
-  valeur (Validé, En cours, À faire…), chacune avec son compte. Son champ
-  « ATA ou plan… » trouve un groupe ou un plan.
+  Un clic sur un groupe déplie ses plans **sur place**, sous sa ligne —
+  les autres groupes restent là, comme les semaines du journal ; le reste
+  de la page (phrase, courbe, tableau) suit ce groupe, un second clic le
+  referme. Une sous-liste par valeur (VALIDATED, PWD_IN_PROGRESS…), chacune
+  avec son compte. Son champ « ATA ou plan… » trouve un groupe ou un plan.
 - **Plans** : l'extract, à l'identique, avec ses colonnes ; recherche, tri,
   filtres. « Vue essentielle » n'en garde qu'une poignée — référence, nom
   d'installation, ECP, ATA, séquence, validation définition électrique, date
@@ -266,7 +268,7 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   il est dans son état, ses changements (reculs en rouge, changements
   d'indice en violet).
 - **Comparaison des bases de données** (si l'onglet `SEE` est là) : ce que
-  GATES dit terminé et que SEE connaît, et les écarts — en cercles, et à
+  GATES dit validé et que SEE connaît, et les écarts — en cercles, et à
   droite six verdicts, une seule liste : un clic sur un verdict filtre le
   tableau et déplie tous ses plans sous sa ligne, en puces. Un clic sur une
   référence la montre dans le tableau ; le petit champ à droite du titre ne
@@ -295,9 +297,9 @@ onglet, et ce qui manque. Puis :
 | « L'onglet « THS » ne porte aucun plan (en-têtes seuls) » | Un onglet préparé d'avance | Y coller l'export du contrat ; en attendant, il n'est pas archivé |
 | En bas : « Chiffres lus dans le classeur le vendredi… » | La page est ouverte depuis longtemps | Recharger la page avant de présenter |
 | « Le classeur est vide », avec une alerte | Aucun onglet de données lisible : l'alerte dit pourquoi | « Aucune colonne d'avancement FWD n'a été reconnue » : l'extract est collé sans sa ligne d'en-têtes ou sa ligne de groupes → recoller entier en A1 ; « Aucun onglet de données exploitable : « Feuille 1 » est vide » : aucun onglet ne contient encore d'extract |
-| En haut : « Colonne « HDK AA 011 > Avancement Définition Electrique » introuvable » | L'extract n'a pas cette colonne sous ce groupe (groupe renommé, bloc absent) : la page n'en lit **aucune autre** à la place, rien n'est dit terminé, l'archivage refuse | Diagnostic : il liste les groupes où l'intitulé existe ; corriger le nom du groupe dans `COLONNE_FWD` (partie avant « > ») s'il a changé dans l'export |
+| En haut : « Colonne « HDK AA 011 > Avancement Définition Electrique » introuvable » | L'extract n'a pas cette colonne sous ce groupe (groupe renommé, bloc absent) : la page n'en lit **aucune autre** à la place, rien n'est dit validé, l'archivage refuse | Diagnostic : il liste les groupes où l'intitulé existe ; corriger le nom du groupe dans `COLONNE_FWD` (partie avant « > ») s'il a changé dans l'export |
 | Pour vérifier la colonne lue | — | Le **pied de la page** la nomme : « Colonne suivie : HDK AA 011 › Avancement Définition Electrique » |
-| « 0 sur 600 plans terminés », et au-dessus de la barre « Aucun plan n'est compté « terminé » » | Le mot qui veut dire « fini » dans la colonne n'est pas connu de la page (seul « Validé » l'est, avec « Validée », « Terminé », « OK », « 100 % »…) | La page liste les valeurs lues : m'envoyer celle(s) qui veulent dire « fini » (et « pas commencé »), je les ajoute à `VALEURS_FINIES` (et `VALEURS_A_FAIRE`) dans `Code` |
+| « 0 sur 600 plans validés », et au-dessus de la barre « Aucun plan n'est compté « validé » » | Le mot qui veut dire « fini » dans la colonne n'est pas connu de la page (seul « Validé » l'est, avec « Validée », « Terminé », « OK », « 100 % »…) | La page liste les valeurs lues : m'envoyer celle(s) qui veulent dire « fini » (et « pas commencé »), je les ajoute à `VALEURS_FINIES` (et `VALEURS_A_FAIRE`) dans `Code` |
 | « Ce qui a changé semaine par semaine » reste vide | Le journal dit pourquoi : un seul relevé (deux archivages la même semaine n'en font qu'un), ou deux relevés identiques — le même export archivé deux fois | Recoller le **dernier** export de GATES, puis archiver ; le Diagnostic dit combien de plans ont changé entre les deux derniers relevés |
 | Pas de courbe, pas de fin estimée | Aucun relevé archivé | Suivi FWD → Archiver le relevé de cette semaine |
 | Pas de section « Comparaison » | Pas d'onglet `SEE <contrat>` (ou `SEE` pour un seul contrat), ou illisible | Diagnostic, ligne « Seconde base » : elle dit s'il manque l'onglet, s'il est vide, ou si les en-têtes NAME / SOL. / Cust.V ne s'y trouvent pas |

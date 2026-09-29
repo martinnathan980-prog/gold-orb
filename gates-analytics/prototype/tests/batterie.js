@@ -413,17 +413,17 @@ async function reinitialiser(pg) {
   const unSeulOuvert = await lireListe();
   verifier('un verdict à la fois : ouvrir le suivant replie le précédent', unSeulOuvert.groupes.filter(g => g.ouvert === 'true').map(g => g.cle).join() === 'seul',
     JSON.stringify(unSeulOuvert.groupes.map(g => g.cle + ':' + g.ouvert)));
-  verifier('« terminés, absents de SEE » : une puce par plan — pastille verte, référence, et la bulle dit Terminé dans GATES, absent dans SEE, où mène le clic',
+  verifier('« validés, absents de SEE » : une puce par plan — pastille verte, référence, et la bulle dit Validé dans GATES, absent dans SEE, où mène le clic',
     rangees.manque.length === MANQUE && rangees.manque.every(r => /^[A-Z]{2}E\d{4}A\d{6}[A-Z]$/.test(r.ref) && r.etat === 'termine' && r.see === 'absent' &&
-      r.pastille === '' && /--fait/.test(r.couleur) && r.vers === '' && r.bulle === 'Terminé dans GATES · absent dans SEE — ne montrer que ce plan dans le tableau'),
+      r.pastille === '' && /--fait/.test(r.couleur) && r.vers === '' && r.bulle === 'Validé dans GATES · absent dans SEE — ne montrer que ce plan dans le tableau'),
     JSON.stringify(rangees.manque));
-  verifier('« dans SEE, pas terminés ici » : jamais terminé côté GATES, présent côté SEE ; « autre indice » porte la lettre en violet ; « seulement dans SEE » n\'a ni plan ni pastille et mène au tableau de SEE',
+  verifier('« dans SEE, pas validés ici » : jamais validé côté GATES, présent côté SEE ; « autre indice » porte la lettre en violet ; « seulement dans SEE » n\'a ni plan ni pastille et mène au tableau de SEE',
     rangees.avance.length === AVANCE && rangees.avance.every(r => r.etat !== 'termine' && r.see === 'présent' && r.vers === '') &&
     rangees.emission.every(r => r.etat === 'termine' && /--fait/.test(r.couleur) && /^sous l’indice [A-Z] \([A-Z]{2}E\d{4}A\d{6}[A-Z]\)$/.test(r.see) && /^→ [A-Z]$/.test(r.vers)) &&
     rangees.seul.length === SEUL && rangees.seul.every(r => r.etat === undefined && r.la && r.see === 'présent' && r.pastille === null &&
       /^aucun plan dans GATES · présent dans SEE — voir cette ligne dans le tableau de SEE$/.test(r.bulle)),
     JSON.stringify([rangees.avance[0], rangees.emission[0], rangees.seul[0]]));
-  verifier('en tête des plans dépliés, la légende des pastilles d\'état', legendePuces === 'Terminé,En cours,À faire,Non renseigné', legendePuces);
+  verifier('en tête des plans dépliés, la légende des pastilles d\'état', legendePuces === 'Validé,En cours,À faire,Non renseigné', legendePuces);
   const deuxEcritures = await p.evaluate(() => {
     const a = window.__analyserUD('GBE3123A600002B'), b = window.__analyserUD('GBE312A3600002B');
     const c = window.__analyserUD('ZZE991A0800001A');
@@ -437,7 +437,7 @@ async function reinitialiser(pg) {
   verifier('les références d\'un lot sont triées', rangees.avance.map(r => r.ref).join() === rangees.avance.map(r => r.ref).sort((a, b) => a.localeCompare(b, 'fr', { numeric: true, sensitivity: 'base' })).join());
   await ouvrirLot('accord');
   const li1 = await lireListe();
-  verifier('déplier « terminés et dans SEE » montre TOUS ses plans — ' + ACCORD + ' puces, aucune coupure, aucun renvoi au tableau',
+  verifier('déplier « validés et dans SEE » montre TOUS ses plans — ' + ACCORD + ' puces, aucune coupure, aucun renvoi au tableau',
     li1.groupes[0].ouvert === 'true' && li1.groupes[0].lignes === ACCORD && li1.groupes.slice(1).every(g => g.ouvert === 'false') &&
     await p.evaluate(() => !document.querySelector('#verdicts-rapprochement .rapp-groupe-suite, #verdicts-rapprochement [data-rapp-tout]')),
     JSON.stringify(li1.groupes));
@@ -558,26 +558,26 @@ async function reinitialiser(pg) {
   verifier('et dit d\'avance où ses lignes existent : ce qui n\'est pas dans SEE emmène sur GATES, « seulement dans SEE » sur SEE',
     r0.puces.map(x => x.atterrit).join() === ',,,ici,ici,la', r0.puces.map(x => x.atterrit).join());
   verifier('chaque verdict se lit en une phrase de tous les jours, qui se suffit à elle-même',
-    r0.puces.map(x => x.phrase).join(' | ') === 'terminés dans GATES et connus de SEE | dans SEE sous une autre lettre d’indice | dans SEE, mais GATES ne les dit pas terminés | terminés dans GATES, mais SEE ne les connaît pas | pas terminés, et pas encore dans SEE : rien d’anormal | lignes de SEE sans plan dans GATES',
+    r0.puces.map(x => x.phrase).join(' | ') === 'validés dans GATES et connus de SEE | dans SEE sous une autre lettre d’indice | dans SEE, mais GATES ne les dit pas validés | validés dans GATES, mais SEE ne les connaît pas | pas validés, et pas encore dans SEE : rien d’anormal | lignes de SEE sans plan dans GATES',
     r0.puces.map(x => x.phrase).join(' | '));
   const F = r0.figure;
-  verifier('deux cercles face à face, GATES plein à gauche avec ses terminés, SEE en pointillé à droite avec ses lignes',
+  verifier('deux cercles face à face, GATES plein à gauche avec ses validés, SEE en pointillé à droite avec ses lignes',
     F && F.cercles === 'cercle-ici,cercle-la' && F.bases === 'GATES,SEE' &&
-    F.comptes === fr(TOTAL) + ' plans · ' + fr(TERMINES) + ' terminés | ' + fr(LIGNES_SEE) + ' lignes', JSON.stringify(F && [F.cercles, F.bases, F.comptes]));
+    F.comptes === fr(TOTAL) + ' plans · ' + fr(TERMINES) + ' validés | ' + fr(LIGNES_SEE) + ' lignes', JSON.stringify(F && [F.cercles, F.bases, F.comptes]));
   verifier('dans le recouvrement, l\'anneau des plans en commun : ' + COMMUN + ', en trois parts vert / violet / ambre, dans l\'ordre des verdicts',
     F && F.commun === COMMUN && F.motCommun === 'en commun' &&
     F.parts.map(x => x.cle + '=' + x.n + ':' + x.cat).join(' ') === 'accord=' + ACCORD + ':accord emission=2:emission avance=12:avance',
     JSON.stringify(F && F.parts));
   const degres = F ? F.parts.reduce((t, x) => t + x.degres, 0) : 0;
-  verifier('les parts sont à l\'échelle — le vert domine, ' + PCT + ' % des terminés — mais la plus petite reste visible',
+  verifier('les parts sont à l\'échelle — le vert domine, ' + PCT + ' % des validés — mais la plus petite reste visible',
     F && F.parts[0].degres >= 300 && F.parts.every(x => x.degres >= 4) && degres >= 340 && degres <= 360, JSON.stringify(F && F.parts.map(x => x.degres)));
-  verifier('à gauche, le nombre qui compte — 3 terminés sans SEE, en alerte — et dessous, discret, ' + ATTENTE + ' pas encore dans SEE ; à droite, 5 seulement dans SEE',
-    F && F.cotes.map(c => c.cle + '=' + c.n + ' ' + c.mots + (c.zero ? ' (zéro)' : '')).join(' | ') === 'manque=3 terminés sans SEE | attente=' + ATTENTE + ' pas encore dans SEE | seul=5 seulement dans SEE',
+  verifier('à gauche, le nombre qui compte — 3 validés sans SEE, en alerte — et dessous, discret, ' + ATTENTE + ' pas encore dans SEE ; à droite, 5 seulement dans SEE',
+    F && F.cotes.map(c => c.cle + '=' + c.n + ' ' + c.mots + (c.zero ? ' (zéro)' : '')).join(' | ') === 'manque=3 validés sans SEE | attente=' + ATTENTE + ' pas encore dans SEE | seul=5 seulement dans SEE',
     JSON.stringify(F && F.cotes));
   verifier('la figure se lit aussi à voix haute',
-    F && F.aria === 'Comparaison GATES / SEE, sur ' + TOTAL + ' plans : ' + ACCORD + ' terminés dans GATES et connus de SEE ; 2 dans SEE sous une autre lettre d’indice ; ' +
-      '12 dans SEE, mais GATES ne les dit pas terminés ; 3 terminés dans GATES, mais SEE ne les connaît pas ; ' + ATTENTE +
-      ' pas terminés, et pas encore dans SEE : rien d’anormal ; 5 lignes de SEE sans plan dans GATES.', F && F.aria);
+    F && F.aria === 'Comparaison GATES / SEE, sur ' + TOTAL + ' plans : ' + ACCORD + ' validés dans GATES et connus de SEE ; 2 dans SEE sous une autre lettre d’indice ; ' +
+      '12 dans SEE, mais GATES ne les dit pas validés ; 3 validés dans GATES, mais SEE ne les connaît pas ; ' + ATTENTE +
+      ' pas validés, et pas encore dans SEE : rien d’anormal ; 5 lignes de SEE sans plan dans GATES.', F && F.aria);
   const rectsRapp = await p.evaluate(() => {
     const fig = document.getElementById('venn-rapprochement').getBoundingClientRect();
     const zone = document.getElementById('verdicts-rapprochement').getBoundingClientRect();
@@ -589,11 +589,11 @@ async function reinitialiser(pg) {
   verifier('aucun n\'est pressé ni inactif au départ, les deux tableaux sont entiers',
     r0.puces.every(x => x.presse === 'false' && !x.inactif) && r0.lignes === TOTAL && r0.seconde === LIGNES_SEE && r0.jetons.length === 0,
     JSON.stringify([r0.lignes, r0.seconde, r0.jetons]));
-  verifier('le moteur donne les mêmes comptes : 22 choses à vérifier, ' + TERMINES + ' terminés, un lot par plan',
+  verifier('le moteur donne les mêmes comptes : 22 choses à vérifier, ' + TERMINES + ' validés, un lot par plan',
     r0.R && r0.R.total === 22 && r0.R.nbPlans === TOTAL && r0.R.nbLignes === LIGNES_SEE && r0.R.nbTermines === TERMINES &&
     r0.R.accord + r0.R.emission + r0.R.avance + r0.R.manque + r0.R.attente === TOTAL,
     JSON.stringify(r0.R && [r0.R.total, r0.R.nbPlans, r0.R.nbLignes, r0.R.nbTermines]));
-  verifier('les verdicts croisent bien l\'état d\'ici : d\'accord et absents-de-SEE sont terminés, les autres ne le sont pas',
+  verifier('les verdicts croisent bien l\'état d\'ici : d\'accord et absents-de-SEE sont validés, les autres ne le sont pas',
     r0.R.etatsAccord.every(e => e === 'termine') && r0.R.etatsManque.every(e => e === 'termine') &&
     r0.R.etatsAvance.every(e => e !== 'termine') && r0.R.etatsAttente.every(e => e !== 'termine') && r0.R.paires.every(x => x.etat === 'termine'),
     JSON.stringify([r0.R.etatsAvance, r0.R.etatsManque]));
@@ -605,13 +605,13 @@ async function reinitialiser(pg) {
   // « dans SEE, pas terminés ici » : les deux tableaux se réduisent aux douze plans concernés.
   await p.click('#verdicts-rapprochement button[data-rapp="avance"]'); await p.waitForTimeout(500);
   const rAv = await lireRapp();
-  verifier('cliquer « dans SEE, pas terminés ici » réduit le tableau d\'ici à 12 plans, et celui de SEE à leurs 12 lignes',
+  verifier('cliquer « dans SEE, pas validés ici » réduit le tableau d\'ici à 12 plans, et celui de SEE à leurs 12 lignes',
     rAv.lignes === 12 && rAv.seconde === 12, rAv.lignes + ' / ' + rAv.seconde);
   verifier('ce sont bien ces plans, des deux côtés',
     rAv.refsTableau.length === 12 && rAv.refsTableau.every(r => r0.R.refsAvance.indexOf(r) !== -1) &&
     rAv.secondeRefs.length === 12 && rAv.secondeRefs.every(r => r0.R.refsAvance.some(f => f.indexOf(deSEE(r)) === 0)), JSON.stringify(rAv.secondeRefs.slice(0, 3)));
-  verifier('le bandeau nomme le filtre « Comparaison : dans SEE, pas terminés ici », le verdict est pressé',
-    rAv.jetons.length === 1 && rAv.jetons[0] === 'Comparaison : dans SEE, mais GATES ne les dit pas terminés' &&
+  verifier('le bandeau nomme le filtre « Comparaison : dans SEE, pas validés ici », le verdict est pressé',
+    rAv.jetons.length === 1 && rAv.jetons[0] === 'Comparaison : dans SEE, mais GATES ne les dit pas validés' &&
     rAv.puces.filter(x => x.presse === 'true').map(x => x.cle).join() === 'avance', JSON.stringify(rAv.jetons));
   verifier('les comptes ne bougent pas : le rapprochement ne se filtre pas lui-même',
     rAv.puces.map(x => x.n).join() === [ACCORD, 2, 12, 3, ATTENTE, 5].join());
@@ -624,8 +624,8 @@ async function reinitialiser(pg) {
   await p.click('#etats .etat-btn[data-etat="encours"]'); await p.waitForTimeout(350);
   await p.click('#verdicts-rapprochement button[data-rapp="manque"]'); await p.waitForTimeout(500);
   const rMa = await lireRapp();
-  verifier('« terminés, absents de SEE » remplace la sélection : 3 plans ici, et le tableau de SEE le dit vide, avec le chemin du retour',
-    rMa.lignes === 3 && rMa.jetons[0] === 'Comparaison : terminés dans GATES, mais SEE ne les connaît pas' && rMa.seconde === 0 &&
+  verifier('« validés, absents de SEE » remplace la sélection : 3 plans ici, et le tableau de SEE le dit vide, avec le chemin du retour',
+    rMa.lignes === 3 && rMa.jetons[0] === 'Comparaison : validés dans GATES, mais SEE ne les connaît pas' && rMa.seconde === 0 &&
     rMa.secondeVide === 'Ces 3 plans n’ont pas de ligne dans SEE. Les voir dans GATES' &&
     rMa.refsTableau.every(r => r0.R.refsManque.indexOf(r) !== -1) &&
     rMa.puces.filter(x => x.presse === 'true').map(x => x.cle).join() === 'manque', JSON.stringify([rMa.jetons, rMa.lignes, rMa.secondeVide]));
@@ -636,8 +636,8 @@ async function reinitialiser(pg) {
     rIn.secondeRefs.length === 2 && rIn.secondeRefs.every(r => r0.R.paires.some(x => x.la.indexOf(deSEE(r)) === 0)), JSON.stringify([rIn.refsTableau, rIn.secondeRefs]));
   await p.click('#verdicts-rapprochement button[data-rapp="accord"]'); await p.waitForTimeout(500);
   const rId = await lireRapp();
-  verifier('« terminés et dans SEE » : les ' + ACCORD + ' plans, des deux côtés',
-    rId.lignes === ACCORD && rId.seconde === ACCORD && rId.jetons[0] === 'Comparaison : terminés dans GATES et connus de SEE', JSON.stringify([rId.lignes, rId.seconde]));
+  verifier('« validés et dans SEE » : les ' + ACCORD + ' plans, des deux côtés',
+    rId.lignes === ACCORD && rId.seconde === ACCORD && rId.jetons[0] === 'Comparaison : validés dans GATES et connus de SEE', JSON.stringify([rId.lignes, rId.seconde]));
   await p.click('#verdicts-rapprochement button[data-rapp="accord"]'); await p.waitForTimeout(500);
   const rOff = await lireRapp();
   verifier('re-cliquer le verdict pressé retire le filtre',
@@ -646,7 +646,7 @@ async function reinitialiser(pg) {
   const rAt = await lireRapp();
   verifier('« pas encore dans SEE » : les ' + ATTENTE + ' plans qui attendent, et le tableau de SEE le dit vide',
     rAt.lignes === ATTENTE && rAt.seconde === 0 && rAt.secondeVide === 'Ces ' + fr(ATTENTE) + ' plans n’ont pas de ligne dans SEE. Les voir dans GATES' &&
-    rAt.jetons[0] === 'Comparaison : pas terminés, et pas encore dans SEE : rien d’anormal', JSON.stringify([rAt.lignes, rAt.secondeVide]));
+    rAt.jetons[0] === 'Comparaison : pas validés, et pas encore dans SEE : rien d’anormal', JSON.stringify([rAt.lignes, rAt.secondeVide]));
   await p.click('.jeton .x'); await p.waitForTimeout(400);
   verifier('la croix du bandeau retire aussi le filtre du rapprochement',
     await p.evaluate(t => document.querySelectorAll('#corps-tableau tr').length === t &&
@@ -685,8 +685,8 @@ async function reinitialiser(pg) {
   const nEnCours = r0.R.etatsAvance.filter(e => e === 'encours').length;
   const svAv = await survolRapp('#verdicts-rapprochement button[data-rapp="avance"]');
   /* La tête de la bulle est la phrase même du verdict, avec son compte. */
-  verifier('survoler « dans SEE, mais GATES ne les dit pas terminés » éclaire sa part de l\'anneau et ouvre la bulle : la phrase du verdict, la répartition par état dans GATES, le sens, où mène le clic',
-    svAv.visible === 'true' && svAv.eclaire === 'avance' && /^12 dans SEE, mais GATES ne les dit pas terminés/.test(svAv.texte) &&
+  verifier('survoler « dans SEE, mais GATES ne les dit pas validés » éclaire sa part de l\'anneau et ouvre la bulle : la phrase du verdict, la répartition par état dans GATES, le sens, où mène le clic',
+    svAv.visible === 'true' && svAv.eclaire === 'avance' && /^12 dans SEE, mais GATES ne les dit pas validés/.test(svAv.texte) &&
     new RegExp('en cours dans GATES ' + nEnCours).test(svAv.texte) &&
     /l’avancement GATES est peut-être en retard/.test(svAv.texte) && /n’afficher que ceux-là dans le tableau/.test(svAv.texte), svAv.texte.slice(0, 200));
   const svEm = await survolRapp('#verdicts-rapprochement button[data-rapp="emission"]');
@@ -706,16 +706,16 @@ async function reinitialiser(pg) {
     visible: document.getElementById('bulle').dataset.visible, texte: document.getElementById('bulle').innerText.replace(/\s+/g, ' '),
     eclaire: [...document.querySelectorAll('#venn-rapprochement .survole')].map(x => x.getAttribute('data-cle')).join()
   }));
-  verifier('survoler la part verte de l\'anneau ouvre la bulle des plans d\'accord — avec leur part des terminés — et l\'épaissit',
-    svAn.visible === 'true' && svAn.eclaire === 'accord' && new RegExp('^' + ACCORD + ' terminés dans GATES et connus de SEE').test(svAn.texte) &&
-    new RegExp('part des terminés de GATES ' + PCT + '\\s?%').test(svAn.texte), svAn.texte.slice(0, 120));
+  verifier('survoler la part verte de l\'anneau ouvre la bulle des plans d\'accord — avec leur part des validés — et l\'épaissit',
+    svAn.visible === 'true' && svAn.eclaire === 'accord' && new RegExp('^' + ACCORD + ' validés dans GATES et connus de SEE').test(svAn.texte) &&
+    new RegExp('part des validés de GATES ' + PCT + '\\s?%').test(svAn.texte), svAn.texte.slice(0, 120));
   const svMa = await survolRapp('#venn-rapprochement .cote[data-cle="manque"] .grand');
-  verifier('survoler le 3 « terminés sans SEE » ouvre sa bulle et souligne le nombre',
-    svMa.visible === 'true' && svMa.eclaire === 'manque' && /^3 terminés dans GATES, mais SEE ne les connaît pas/.test(svMa.texte) &&
+  verifier('survoler le 3 « validés sans SEE » ouvre sa bulle et souligne le nombre',
+    svMa.visible === 'true' && svMa.eclaire === 'manque' && /^3 validés dans GATES, mais SEE ne les connaît pas/.test(svMa.texte) &&
     /à vérifier des deux côtés/.test(svMa.texte), svMa.texte.slice(0, 120));
   const svAt = await survolRapp('#venn-rapprochement .cote[data-cle="attente"] .moyen');
   verifier('survoler « pas encore dans SEE » dit que ce n\'est pas anormal, avec la répartition par état',
-    svAt.visible === 'true' && svAt.eclaire === 'attente' && /pas terminés, et pas encore dans SEE : rien d’anormal/.test(svAt.texte) &&
+    svAt.visible === 'true' && svAt.eclaire === 'attente' && /pas validés, et pas encore dans SEE : rien d’anormal/.test(svAt.texte) &&
     /à faire dans GATES/.test(svAt.texte), svAt.texte.slice(0, 120));
   const svSe = await survolRapp('#venn-rapprochement .cote[data-cle="seul"] .grand');
   verifier('survoler le 5 « seulement dans SEE » ouvre sa bulle',
@@ -732,7 +732,7 @@ async function reinitialiser(pg) {
   await p.click('#corps-seconde button[data-aller-base="ici"]'); await p.waitForTimeout(400);
   const rLien = await lireRapp();
   verifier('« Les voir dans GATES » repasse sur GATES sans retirer le lot : 3 plans, jeton intact',
-    rLien.lignes === 3 && rLien.jetons[0] === 'Comparaison : terminés dans GATES, mais SEE ne les connaît pas' &&
+    rLien.lignes === 3 && rLien.jetons[0] === 'Comparaison : validés dans GATES, mais SEE ne les connaît pas' &&
     await p.evaluate(() => !document.getElementById('cadre-tableau').hidden), JSON.stringify([rLien.lignes, rLien.jetons]));
   await p.click('.jeton .x'); await p.waitForTimeout(400);
 
@@ -745,7 +745,7 @@ async function reinitialiser(pg) {
     JSON.stringify(rPe.puces.map(x => x.n)));
   verifier('les références seulement là, sans domaine, restent comptées', rPe.R.seul === 5);
   verifier('la figure le dit aussi : « plans du périmètre », et « tout le contrat » sous ce qui n\'est que là',
-    rPe.figure.comptes.indexOf(rPe.R.nbPlans + ' plans du périmètre · ' + rPe.R.nbTermines + ' terminés') === 0 &&
+    rPe.figure.comptes.indexOf(rPe.R.nbPlans + ' plans du périmètre · ' + rPe.R.nbTermines + ' validés') === 0 &&
     rPe.figure.cotes[2].mots === 'seulement dans SEE · tout le contrat', JSON.stringify([rPe.figure.comptes, rPe.figure.cotes[2]]));
   verifier('le verdict « seulement dans SEE » le dit aussi', rPe.puces[5].phrase === 'lignes de SEE sans plan dans GATES — tout le contrat', rPe.puces[5].phrase);
   await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(600);
@@ -755,7 +755,7 @@ async function reinitialiser(pg) {
   await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
   const rSuit = await lireRapp();
   verifier('un lot posé suit le périmètre : sous PERSO, le tableau compte ce que le verdict annonce',
-    rSuit.puces[2].presse === 'true' && rSuit.lignes === rSuit.puces[2].n && rSuit.lignes < 12 && rSuit.jetons.indexOf('Comparaison : dans SEE, mais GATES ne les dit pas terminés') !== -1,
+    rSuit.puces[2].presse === 'true' && rSuit.lignes === rSuit.puces[2].n && rSuit.lignes < 12 && rSuit.jetons.indexOf('Comparaison : dans SEE, mais GATES ne les dit pas validés') !== -1,
     JSON.stringify([rSuit.lignes, rSuit.puces[2].n, rSuit.jetons]));
   await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(600);
   await p.click('.jeton .x'); await p.waitForTimeout(400);
@@ -784,8 +784,8 @@ async function reinitialiser(pg) {
   await p.evaluate(() => { const s = window.__jeuDExemple('HDK'); s.rapprochement = { nom: 'Vide', cleReference: 'REF', lignes: [] }; window.__chargerSource(s); });
   await p.waitForTimeout(900);
   const rVide = await lireRapp();
-  verifier('une seconde base vide : tous les terminés lui manquent, les autres attendent, le reste est inactif, et la figure compte 0 ligne',
-    !rVide.cache && rVide.R.manque === TERMINES && rVide.R.attente === TOTAL - TERMINES && rVide.puces[3].n === TERMINES && rVide.puces[3].phrase === 'terminés dans GATES, mais Vide ne les connaît pas' &&
+  verifier('une seconde base vide : tous les validés lui manquent, les autres attendent, le reste est inactif, et la figure compte 0 ligne',
+    !rVide.cache && rVide.R.manque === TERMINES && rVide.R.attente === TOTAL - TERMINES && rVide.puces[3].n === TERMINES && rVide.puces[3].phrase === 'validés dans GATES, mais Vide ne les connaît pas' &&
     rVide.puces.filter((x, i) => i !== 3 && i !== 4).every(x => x.inactif) && rVide.figure && /0 ligne/.test(rVide.figure.comptes),
     JSON.stringify([rVide.puces.map(x => x.n), rVide.figure && rVide.figure.comptes]));
   await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
@@ -874,7 +874,7 @@ async function reinitialiser(pg) {
   verifier('les cases à cocher de l\'extract se lisent ✓ ou – : cinq colonnes, ' + (5 * LIGNES_SEE) + ' cellules',
     s0.coches === 5 * LIGNES_SEE && s0.cochesTexte.join() === '–,✓', JSON.stringify([s0.coches, s0.cochesTexte]));
   verifier('la légende nomme les quatre verdicts qu\'on peut y lire',
-    s0.legende.join('|') === 'terminé ici|autre indice|pas terminé ici|seulement dans SEE', s0.legende.join('|'));
+    s0.legende.join('|') === 'validé ici|autre indice|pas validé ici|seulement dans SEE', s0.legende.join('|'));
   await p.click('#tete-seconde button[data-tri-seconde="VALIDITY PSN FULL"]'); await p.waitForTimeout(300);
   const sTri = await lireSeconde();
   verifier('cliquer un intitulé trie sur cette colonne',
@@ -1088,7 +1088,7 @@ async function reinitialiser(pg) {
     perso.rythmes.slice(0, 60));
   verifier('les non renseignés du périmètre sont ceux de la barre',
     new RegExp('non renseigné ' + perso.etats[3] + '$').test(perso.incomplets), perso.incomplets);
-  verifier('la courbe est dérivée du périmètre : dernier point = terminés / plans PERSO, autant de relevés',
+  verifier('la courbe est dérivée du périmètre : dernier point = validés / plans PERSO, autant de relevés',
     perso.dernier.termine === perso.etats[0] && perso.dernier.total === nPerso &&
     perso.serie.length === tout0.serie.length, JSON.stringify(perso.dernier));
   verifier('chaque point du périmètre est plus petit que le point global de la même semaine',
@@ -1137,7 +1137,7 @@ async function reinitialiser(pg) {
   await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(500);
   await p.click('#etats .etat-btn[data-etat="termine"]'); await p.waitForTimeout(500);
   const cumul = await lirePerimetre();
-  verifier('périmètre + état se cumulent : les terminés PERSO, « sur » les plans PERSO',
+  verifier('périmètre + état se cumulent : les validés PERSO, « sur » les plans PERSO',
     cumul.lignes === perso.etats[0] && cumul.compte === perso.etats[0] + ' plans sur ' + nPerso &&
     /dans la sélection/.test(cumul.phrase) && cumul.jetons.length === 2, cumul.compte + ' / ' + cumul.phrase);
   verifier('la courbe reste celle du périmètre, et le dit',
@@ -1471,14 +1471,14 @@ async function reinitialiser(pg) {
   await p.mouse.move(5, 5); await p.waitForTimeout(150);
   const releves = bulles.filter(b => /Relevé de S\d{1,2}[\u00a0 ]· \S+[\u00a0 ]\d{4}/.test(b.texte));
   verifier('chaque semaine relevée a sa bulle « Relevé de S38 · sept. 2026 »', releves.length >= 5, String(releves.length));
-  verifier('elle dit « terminés N / total »',
-    releves.every(b => /terminés\s*\d+\s*\/\s*\d+/.test(b.texte)), (releves[0] || {}).texte);
+  verifier('elle dit « validés N / total »',
+    releves.every(b => /validés\s*\d+\s*\/\s*\d+/.test(b.texte)), (releves[0] || {}).texte);
   verifier('et « gain net sur le relevé précédent ±n » dès le deuxième relevé',
     releves.filter(b => /gain net sur le relevé précédent\s*[+\-−]?\s*\d/.test(b.texte)).length >= releves.length - 1);
   verifier('plus aucune référence de plan dans la bulle',
     releves.every(b => !/[A-Z]{3}\d{4}A\d{3}/.test(b.texte)), (releves.find(b => /[A-Z]{3}\d{4}A\d{3}/.test(b.texte)) || {}).texte);
   verifier('ni « et N autres »', releves.every(b => !/autres/.test(b.texte)));
-  verifier('les semaines qui ont bougé donnent leurs comptes, dans les mots du journal : passés à « Terminé »…',
+  verifier('les semaines qui ont bougé donnent leurs comptes, dans les mots du journal : passés à « Validé »…',
     releves.filter(b => /passés? à « Terminé »/.test(b.texte.replace(/[\u00a0\u202f]/g, ' '))).length >= 3);
   verifier('… nouveaux, et changements d’indice',
     releves.some(b => /nouveaux/.test(b.texte)) && releves.some(b => /changements? d’indice/.test(b.texte)));
@@ -1737,7 +1737,7 @@ async function reinitialiser(pg) {
   await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(500);
   await p.click('#choix-indicateur button[data-indicateur="concept"]'); await p.waitForTimeout(700);
   const surConcept = await lireSuivi();
-  verifier('sur le concept harnais, toute la page le suit : ses terminés, son titre de groupe',
+  verifier('sur le concept harnais, toute la page le suit : ses validés, son titre de groupe',
     surConcept.presse && surConcept.presse.indicateur === 'concept' && surConcept.ind.cle === brut.cleConcept &&
     /^Concept harnais par /.test(surConcept.titre), JSON.stringify(surConcept));
   verifier('le périmètre choisi reste posé quand on change d’avancement suivi', /PERSO/i.test(surConcept.perimetre), surConcept.perimetre);
@@ -1753,14 +1753,14 @@ async function reinitialiser(pg) {
     pageConcept.titre === 'Suivi concept harnais' && pageConcept.rapp && pageConcept.base, JSON.stringify(pageConcept));
   await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(500);
   const conceptTout = await lireSuivi();
-  verifier('sur tout le contrat, les terminés du concept sont ceux de sa colonne (' + brut.conceptTermine + '), le total inchangé',
+  verifier('sur tout le contrat, les validés du concept sont ceux de sa colonne (' + brut.conceptTermine + '), le total inchangé',
     conceptTout.etats[0] === brut.conceptTermine && conceptTout.etats.reduce((a, b) => a + b, 0) === brut.total,
     JSON.stringify([conceptTout.etats, brut.conceptTermine]));
   verifier('sa courbe a son propre historique : les relevés qui ont gardé le concept', conceptTout.ind.releves >= 2 && conceptTout.ind.releves <= brut.relevesConcept + 1,
     JSON.stringify([conceptTout.ind, brut.relevesConcept]));
   await p.click('#etats .etat-btn[data-etat="termine"]'); await p.waitForTimeout(400);
   const lignesConcept = await p.evaluate(() => document.querySelectorAll('#corps-tableau tr').length);
-  verifier('le filtre « Terminés » du concept montre ses ' + brut.conceptTermine + ' plans dans le tableau', lignesConcept === brut.conceptTermine, String(lignesConcept));
+  verifier('le filtre « Validés » du concept montre ses ' + brut.conceptTermine + ' plans dans le tableau', lignesConcept === brut.conceptTermine, String(lignesConcept));
   await p.click('#etats .etat-btn[data-etat="termine"]'); await p.waitForTimeout(300);
   await p.click('#choix-indicateur button[data-indicateur="def"]'); await p.waitForTimeout(700);
   const pageDef = await p.evaluate(() => ({
@@ -1789,14 +1789,14 @@ async function reinitialiser(pg) {
      un seul plan, elles partiraient sans avoir jamais été lues. */
   const phrases1 = await p.evaluate(() => ['accord', 'emission', 'avance', 'manque', 'attente', 'seul'].map(c => window.__phraseLot(c, 1)));
   const phrases2 = await p.evaluate(() => ['accord', 'emission', 'avance', 'manque', 'attente', 'seul'].map(c => window.__phraseLot(c, 2)));
-  verifier('au singulier, chaque verdict s’accorde : « terminé », « le connaît pas », « ligne de »',
-    phrases1.join(' | ') === 'terminé dans GATES et connu de SEE | dans SEE sous une autre lettre d’indice | dans SEE, mais GATES ne le dit pas terminé | terminé dans GATES, mais SEE ne le connaît pas | pas terminé, et pas encore dans SEE : rien d’anormal | ligne de SEE sans plan dans GATES',
+  verifier('au singulier, chaque verdict s’accorde : « validé », « le connaît pas », « ligne de »',
+    phrases1.join(' | ') === 'validé dans GATES et connu de SEE | dans SEE sous une autre lettre d’indice | dans SEE, mais GATES ne le dit pas validé | validé dans GATES, mais SEE ne le connaît pas | pas validé, et pas encore dans SEE : rien d’anormal | ligne de SEE sans plan dans GATES',
     phrases1.join(' | '));
-  verifier('et au pluriel, la forme attendue', /^terminés dans GATES et connus de SEE/.test(phrases2[0]) && /lignes de SEE/.test(phrases2[5]), phrases2.join(' | '));
+  verifier('et au pluriel, la forme attendue', /^validés dans GATES et connus de SEE/.test(phrases2[0]) && /lignes de SEE/.test(phrases2[5]), phrases2.join(' | '));
   await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
   await p.waitForTimeout(700);
   verifier('les quatre états totalisent le nombre de plans', somme === TOTAL, somme + ' vs ' + TOTAL);
-  verifier('le % est écrit dans la barre et correspond aux terminés',
+  verifier('le % est écrit dans la barre et correspond aux validés',
     kpi.pct.replace(/\D/g, '') === String(Math.round(kpi.etats[0] / TOTAL * 100)), 'lu=' + kpi.pct);
   verifier('plus de pourcentage en doublon au-dessus de la barre',
     await p.evaluate(() => !document.getElementById('pourcentage') && !document.querySelector('.etat-part')));
@@ -2235,7 +2235,7 @@ async function reinitialiser(pg) {
     liste.paquets.every(q => q.refs.every(r => r.etat === q.libelle) && parRef(q.refs)),
     JSON.stringify(liste.paquets.map(q => [q.libelle, q.refs.slice(0, 2)])));
   verifier('l\'en-tete dit combien et invite a cliquer une reference',
-    new RegExp('^' + grosAta.total + ' plans · ' + restantsListe + ' pas encore terminés').test(liste.entete.trim()) &&
+    new RegExp('^' + grosAta.total + ' plans · ' + restantsListe + ' pas encore validés').test(liste.entete.trim()) &&
     /cliquez une référence pour la retrouver dans le tableau/.test(liste.entete), liste.entete.trim());
   verifier('des jetons compacts : pastille + reference en mono, aucun ne deborde',
     liste.pastilles && liste.mono && liste.dedans);
@@ -2613,7 +2613,7 @@ async function reinitialiser(pg) {
   await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
   const eRien = await lireEcheance();
   verifier('sous PERSO sans jalon à venir : « rythme tenu », et le graphique dit « dans ce périmètre »',
-    eRien.prochain === null && /Plans terminés par semaine/.test(eRien.entete) && eRien.zone === '' &&
+    eRien.prochain === null && /Plans validés par semaine/.test(eRien.entete) && eRien.zone === '' &&
     eRien.retrait.join('|') === 'Base seul' && eRien.aucun === 'Aucun jalon à venir dans ce périmètre',
     JSON.stringify(eRien));
   await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(500);
@@ -2773,10 +2773,10 @@ async function reinitialiser(pg) {
     coh.totaux.reduce((a, b) => a + b, 0) === TOTAL, String(coh.totaux.reduce((a, b) => a + b, 0)));
   verifier('chaque répartition totalise 100 %',
     coh.barres.every(b => Math.abs(b - 100) < 0.5), JSON.stringify(coh.barres.map(b => b.toFixed(1))));
-  verifier('« fin estimée » est une semaine dite comme partout — « S18 · mai 2027 » —, « — » ou « terminé »',
-    coh.dates.every(v => /^S\d{1,2} · \S+ \d{4}$/.test(v.replace(/[\u00a0\u202f]/g, ' ')) || v === '—' || v === 'terminé'), JSON.stringify(coh.dates));
+  verifier('« fin estimée » est une semaine dite comme partout — « S18 · mai 2027 » —, « — » ou « validé »',
+    coh.dates.every(v => /^S\d{1,2} · \S+ \d{4}$/.test(v.replace(/[\u00a0\u202f]/g, ' ')) || v === '—' || v === 'validé'), JSON.stringify(coh.dates));
   verifier('« rythme requis » se dit en plans par semaine, le rythme tenu dessous — un seul rythme (débrief 15)',
-    coh.efforts.every(v => /^\d+,\d\/sem\.(tenu \d+,\d\/sem\.|rien de terminé)$/.test(v) || /terminé|—/.test(v)) &&
+    coh.efforts.every(v => /^\d+,\d\/sem\.(tenu \d+,\d\/sem\.|rien de validé)$/.test(v) || /validé|—/.test(v)) &&
     !coh.efforts.some(v => /récent/.test(v)), JSON.stringify(coh.efforts.slice(0, 3)));
 
   // =================================================================
@@ -2830,6 +2830,10 @@ async function reinitialiser(pg) {
 
   // =================================================================
   section('Sélection d\'un groupe et dimensions');
+  const lignesDuBloc = () => p.evaluate(() => [...document.querySelectorAll('#zone-critique .critique-ligne')].map(l => ({
+    g: l.dataset.groupe, n: +l.querySelector('.critique-total').textContent, presse: l.getAttribute('aria-pressed') === 'true',
+    ouvert: !!(l.nextElementSibling && l.nextElementSibling.classList.contains('groupe-refs')) })));
+  const avantGroupe = await lignesDuBloc();
   await p.click('.critique-ligne >> nth=0'); await p.waitForTimeout(400);
   const apresGroupe = await p.evaluate(() => ({
     compte: document.getElementById('compte').textContent,
@@ -2839,6 +2843,20 @@ async function reinitialiser(pg) {
   verifier('cliquer un groupe filtre le tableau', apresGroupe.compte.indexOf(TOTAL + ' plans') === -1, apresGroupe.compte);
   verifier('le graphique suit le groupe, et le nomme', /^Historique · \S+ /.test(apresGroupe.note), apresGroupe.note);
   verifier('une seule ligne est marquée sélectionnée', apresGroupe.presse === 1);
+  // Débrief 17 : un groupe cliqué se déplie sur place, comme une semaine du journal — les autres restent.
+  const deplie17 = await lignesDuBloc();
+  verifier('cliquer un groupe le déplie sur place : tous les autres groupes restent, avec leurs comptes, et ses plans s\'ouvrent juste sous lui',
+    avantGroupe.length >= 5 && deplie17.map(l => l.g + '=' + l.n).join() === avantGroupe.map(l => l.g + '=' + l.n).join() &&
+    deplie17[0].presse && deplie17[0].ouvert && deplie17.slice(1).every(l => !l.presse && !l.ouvert),
+    JSON.stringify(deplie17.slice(0, 4)));
+  await p.click('.critique-ligne >> nth=2'); await p.waitForTimeout(400);
+  const bascule17 = await lignesDuBloc();
+  const lignesTableau17 = await p.evaluate(() => document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length);
+  verifier('cliquer un autre groupe le déplie à la place du premier, la liste reste entière, et le tableau suit ce groupe',
+    bascule17.map(l => l.g + '=' + l.n).join() === avantGroupe.map(l => l.g + '=' + l.n).join() &&
+    bascule17.filter(l => l.presse).length === 1 && bascule17[2].presse && bascule17[2].ouvert && !bascule17[0].ouvert &&
+    lignesTableau17 === bascule17[2].n, JSON.stringify([bascule17.slice(0, 3), lignesTableau17]));
+  await p.click('.critique-ligne >> nth=0'); await p.waitForTimeout(400);
   await p.click('.critique-ligne >> nth=0'); await p.waitForTimeout(350);
   verifier('re-cliquer désélectionne',
     await p.evaluate(t => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === t, TOTAL));
@@ -3112,8 +3130,8 @@ async function reinitialiser(pg) {
   verifier('un clic sur l’échéance du titre ouvre sa fiche : son nom, ses jours restants',
     !!fiche1 && fiche1.titre === prochainAttendu.nom && fiche1.chiffres[0].n === prochainAttendu.jours && /jours? restants?/.test(fiche1.chiffres[0].mot) &&
     fiche1.ouvert === String(prochainAttendu.idx), JSON.stringify(fiche1));
-  verifier('la fiche dit combien de plans restent — ceux que la barre ne dit pas terminés — et le rythme qu’il faut',
-    !!fiche1 && fiche1.chiffres[2].n === fiche1.restantsBarre && /Il faut [\d,]+ plans terminés par semaine/.test(fiche1.texte) &&
+  verifier('la fiche dit combien de plans restent — ceux que la barre ne dit pas validés — et le rythme qu’il faut',
+    !!fiche1 && fiche1.chiffres[2].n === fiche1.restantsBarre && /Il faut [\d,]+ plans validés par semaine/.test(fiche1.texte) &&
     /(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche) \d+ \S+ \d{4}/.test(fiche1.texte) && /(bon|mal)$/.test(fiche1.verdict), JSON.stringify(fiche1));
   // Un jalon d'un périmètre : ses plans à terminer sont ceux de ce périmètre.
   const jalonPerimetre = await p.evaluate(() => {
@@ -3134,7 +3152,7 @@ async function reinitialiser(pg) {
       const m = document.getElementById('phrase').textContent.replace(/\s/g, ' ').match(/([\d ]+) sur ([\d ]+) plans?/);
       return m ? +m[2].replace(/\s/g, '') - +m[1].replace(/\s/g, '') : null;
     });
-    verifier('un jalon BASE/OPTION compte les plans à terminer de BASE/OPTION, quel que soit le périmètre affiché',
+    verifier('un jalon BASE/OPTION compte les plans à valider de BASE/OPTION, quel que soit le périmètre affiché',
       !!fichePer && fichePer.restants === barreBase && /BASE\/OPTION/.test(fichePer.texte), JSON.stringify([fichePer && fichePer.restants, barreBase]));
     await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(400);
   }
@@ -3213,7 +3231,7 @@ async function reinitialiser(pg) {
       return {
         requisFiche: (fiche.match(/Il faut ([\d,]+) plans/) || [])[1], requisLegende: (leg.match(/requis pour « [^»]+ » : ([\d,]+)\/sem\./) || [])[1],
         tenuFiche: (fiche.match(/le rythme tenu est de ([\d,]+)/) || [])[1], tenuLegende: (leg.match(/au rythme tenu \(([\d,]+)\/sem\.\)/) || [])[1],
-        finFiche: (fiche.match(/tout serait terminé en (S\d+ · \S+ \d{4})/) || [])[1], finLegende: (leg.match(/→ fin (S\d+ · \S+ \d{4})/) || [])[1],
+        finFiche: (fiche.match(/tout serait validé en (S\d+ · \S+ \d{4})/) || [])[1], finLegende: (leg.match(/→ fin (S\d+ · \S+ \d{4})/) || [])[1],
         manqueFiche: (fiche.match(/il manquerait (\d[\d ]*) plans?/) || [])[1], manqueGraphe: manque[0],
         rouge: document.getElementById('echeance-titre').classList.contains('en-retard'),
         mal: f.querySelector('.fiche-echeance-verdict').classList.contains('mal'),
@@ -3227,7 +3245,7 @@ async function reinitialiser(pg) {
       !!m.manqueFiche && m.manqueFiche.replace(/ /g, '') === (m.manqueGraphe || '').replace(/ /g, '') && m.rouge === m.mal, JSON.stringify(m));
     verifier('jours et semaines restants se comptent tous deux d\'aujourd\'hui',
       m.semaines >= 1 && Math.abs(m.jours / 7 - m.semaines) < 1.2, JSON.stringify([m.jours, m.semaines]));
-    verifier('le rythme requis est bien les plans à terminer divisés par les semaines restantes',
+    verifier('le rythme requis est bien les plans à valider divisés par les semaines restantes',
       Math.abs(Number(m.requisFiche.replace(',', '.')) - m.restants / m.semaines) < 0.051, JSON.stringify([m.requisFiche, m.restants, m.semaines]));
     await pq.click('#fiche-echeance [data-fermer-echeance]'); await pq.waitForTimeout(300);
 
@@ -3247,7 +3265,7 @@ async function reinitialiser(pg) {
     const phraseG = esp(await pq.evaluate(() => document.getElementById('phrase').textContent));
     const noteG = esp(await pq.evaluate(() => document.getElementById('note-graphe').textContent));
     verifier('choisir un groupe : la phrase et la note du graphique le nomment de la même façon, sans « autres filtres » inventés',
-      /plans terminés dans \S+ \S+$/.test(phraseG) && noteG.indexOf(phraseG.replace(/^.* dans /, '')) !== -1 && !/autres filtres/.test(noteG),
+      /plans validés dans \S+ \S+$/.test(phraseG) && noteG.indexOf(phraseG.replace(/^.* dans /, '')) !== -1 && !/autres filtres/.test(noteG),
       JSON.stringify([phraseG, noteG]));
     await pq.click('.critique-ligne >> nth=0'); await pq.waitForTimeout(400);
 
@@ -3474,7 +3492,7 @@ async function reinitialiser(pg) {
   const lignesRecul = await p.evaluate(() => [...document.querySelectorAll('.journal-liste .journal-ligne')].map(l => ({
     recul: l.classList.contains('recul'), passage: l.querySelector('.vers').textContent.replace(/\s+/g, ' ').trim(),
     rouge: getComputedStyle(l.querySelector('.ref')).color })));
-  verifier('filtrer « Reculs » ne garde que des reculs — « Terminé → … » ou « En cours → À faire » —, référence en rouge',
+  verifier('filtrer « Reculs » ne garde que des reculs — « Validé → … » ou « En cours → À faire » —, référence en rouge',
     lignesRecul.length >= 1 && lignesRecul.every(l => l.recul && (/^Terminé ?→/.test(l.passage) || /^En cours ?→ ?À faire$/.test(l.passage))) &&
     new Set(lignesRecul.map(l => l.rouge)).size === 1, JSON.stringify(lignesRecul));
   await p.click('#filtre-journal button[data-journal=""]'); await p.waitForTimeout(300);
@@ -3503,7 +3521,7 @@ async function reinitialiser(pg) {
     ryt.legende.indexOf('au rythme tenu (' + v1(ryt.tenu) + '/sem.)') !== -1 && !/dernières semaines/.test(ryt.legende) && !ryt.recente,
     ryt.legende);
   verifier('le bloc par groupe écrit le rythme tenu de chaque groupe, seul',
-    ryt.bloc.length > 0 && ryt.bloc.every(t => /^tenu [\d,]+\/sem\.$|^rien de terminé$/.test(t)), JSON.stringify(ryt.bloc.slice(0, 3)));
+    ryt.bloc.length > 0 && ryt.bloc.every(t => /^tenu [\d,]+\/sem\.$|^rien de validé$/.test(t)), JSON.stringify(ryt.bloc.slice(0, 3)));
   await p.click('#echeance-titre'); await p.waitForTimeout(400);
   const ficheRyt = esp14(await p.evaluate(() => (document.getElementById('fiche-echeance') || {}).textContent));
   verifier('la fiche dit le rythme tenu, et plus « au rythme des 4 dernières semaines »',
@@ -3648,8 +3666,8 @@ async function reinitialiser(pg) {
         echeance: document.getElementById('echeance-titre').textContent.replace(/[  ]/g, ' ').replace(/\s+/g, ' ').trim()
       };
     });
-    verifier('vue d’ensemble, ' + r.nom + ' : terminés, rythme tenu, à l’arrêt et prochaine échéance sont ceux de sa page',
-      page.phrase.indexOf(r.cellules[0].replace(' / ', ' sur ') + ' plans terminés') === 0 &&
+    verifier('vue d’ensemble, ' + r.nom + ' : validés, rythme tenu, à l’arrêt et prochaine échéance sont ceux de sa page',
+      page.phrase.indexOf(r.cellules[0].replace(' / ', ' sur ') + ' plans validés') === 0 &&
       page.legende.indexOf('au rythme tenu (' + r.cellules[2] + ')') !== -1 &&
       r.cellules[3] === page.arret && page.echeance.indexOf(r.cellules[4]) !== -1, JSON.stringify([r.cellules, page]));
   }
@@ -3792,7 +3810,7 @@ async function reinitialiser(pg) {
   section('Débrief 16 : vocabulaire inconnu signalé, accords, journal vide expliqué');
   await p.evaluate(() => { window.__chargerSource(window.__jeuDExemple('HDK')); window.scrollTo(0, 0); });
   await p.waitForTimeout(600);
-  verifier('sur la démonstration, aucune alerte de vocabulaire : des plans sont comptés terminés',
+  verifier('sur la démonstration, aucune alerte de vocabulaire : des plans sont comptés validés',
     await p.evaluate(() => document.getElementById('alerte-valeurs').hidden));
   const vocab16 = await p.evaluate(() => {
     const s = window.__jeuDExemple('HDK');
@@ -3803,7 +3821,7 @@ async function reinitialiser(pg) {
   });
   await p.waitForTimeout(300);
   verifier('un mot « fini » inconnu : la page dit « Aucun plan n’est compté terminé », nomme la colonne et les valeurs lues, et où les déclarer',
-    vocab16.visible && /^0 sur 640 plans terminés/.test(vocab16.phrase) && /^Aucun plan n’est compté « terminé »\./.test(vocab16.texte) &&
+    vocab16.visible && /^0 sur 640 plans validés/.test(vocab16.phrase) && /^Aucun plan n’est compté « validé »\./.test(vocab16.texte) &&
     /HDK AA 011 › Avancement Définition Electrique/.test(vocab16.texte) && /« Released » \(\d+\)/.test(vocab16.texte) && /VALEURS_FINIES/.test(vocab16.texte),
     JSON.stringify(vocab16));
   const accords16 = await p.evaluate(() => ['Validé', 'Validée', 'VALIDÉS', 'Non validé', 'OK', 'Non OK', 'Non terminé', '3 - Validé', '1 - En cours', '2026-09-01', '100 %', 'Pas commencé']
@@ -3858,7 +3876,7 @@ async function reinitialiser(pg) {
     out.identiqueSem = tries[tries.length - 2].semaine;
     return out;
   });
-  verifier('des comptes archivés figés à « 0 terminé » : la courbe recompte chaque relevé sur sa carte plan par plan, au classement du jour',
+  verifier('des comptes archivés figés à « 0 validé » : la courbe recompte chaque relevé sur sa carte plan par plan, au classement du jour',
     pieges16.recompte.premier > 0 && pieges16.recompte.premier === pieges16.recompte.attendu, JSON.stringify(pieges16.recompte));
   verifier('des références en double : la page le dit — « 3 lignes répètent une référence déjà vue »',
     /3 lignes répètent une référence déjà vue\. Seule la première ligne de chaque référence compte et s’affiche/.test(pieges16.doublons), pieges16.doublons);

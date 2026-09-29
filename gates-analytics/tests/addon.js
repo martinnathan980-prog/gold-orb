@@ -288,8 +288,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('pour chaque colonne suivie, le diagnostic donne les valeurs lues et leur compte',
     (rapportGates.match(/^  valeurs lues \(comptées comme\) : /gm) || []).length === 2, rapportGates.split('\n').filter(l => /valeurs lues/.test(l)).join(' / '));
   const rapportValide = serveurSur(feuilleExemple(10).map((l, i) => i === 4 ? l.map((c, j) => j === 8 ? 'Validé' : c) : l)).contexte.diagnostic();
-  verifier('chaque valeur dit comment elle est comptée : « Validé » 1 → fini',
-    /« Validé » 1 → fini/.test(rapportValide) && /→ en cours/.test(rapportValide) && !/Aucune valeur n'est comptée comme finie/.test(rapportValide),
+  verifier('chaque valeur dit comment elle est comptée : « Validé » 1 → validé',
+    /« Validé » 1 → validé/.test(rapportValide) && /→ en cours/.test(rapportValide) && !/Aucune valeur n'est comptée comme validée/.test(rapportValide),
     rapportValide.split('\n').filter(l => /valeurs lues/.test(l)).join(' / '));
   /* Débrief 16 : « 0 sur 600 terminés » sur les vraies données. Un vocabulaire
      que la page ne connaît pas se voit au diagnostic ET sur la page. */
@@ -297,15 +297,15 @@ function serveurSur(valeurs, proprietes, fichiers) {
   // Lignes 0 à 3 : titres, groupes, en-têtes ; les plans commencent ligne 4, avancement en colonne 8.
   const feuilleVocab = feuilleExemple(10).map((l, i) => i >= 4 && i < 9 ? l.map((c, j) => j === 8 ? vocab[i - 4] : c) : l);
   const rapportVocab = serveurSur(feuilleVocab.map(l => l.map((c, j) => j === 8 && /^(Terminé|Validé|OK|100 ?%|Fini|Soldé)$/i.test(c) ? 'Checked' : c))).contexte.diagnostic();
-  verifier('un vocabulaire inconnu : le diagnostic l’annonce — « Aucune valeur n’est comptée comme finie »',
-    /⚠ Aucune valeur n'est comptée comme finie/.test(rapportVocab) && /« Released » \d+ → en cours/.test(rapportVocab),
+  verifier('un vocabulaire inconnu : le diagnostic l’annonce — « Aucune valeur n’est comptée comme validée »',
+    /⚠ Aucune valeur n'est comptée comme validée/.test(rapportVocab) && /« Released » \d+ → en cours/.test(rapportVocab),
     rapportVocab.split('\n').filter(l => /valeurs lues|Aucune valeur/.test(l)).join(' / '));
   verifier('et le bilan du diagnostic le reprend : « À vérifier avant de présenter », au lieu de conclure seul « tout est en place »',
-    /\nÀ vérifier avant de présenter \(\d+\) :\n(  ⚠ .*\n?)*  ⚠ Aucune valeur n'est comptée comme finie/.test(rapportVocab),
+    /\nÀ vérifier avant de présenter \(\d+\) :\n(  ⚠ .*\n?)*  ⚠ Aucune valeur n'est comptée comme validée/.test(rapportVocab),
     rapportVocab.split('\n').slice(-6).join(' / '));
   verifier('et celle du concept harnais, avec ses comptes',
     /✓ Concept harnais : colonne « Avancement Concept Harnais », groupe « HDK AA 011 »/.test(rapportGates) &&
-    /✓ Concept harnais[^\n]*\n  \d+ terminés, \d+ en cours, \d+ à faire, \d+ non renseignés/.test(rapportGates),
+    /✓ Concept harnais[^\n]*\n  \d+ validés, \d+ en cours, \d+ à faire, \d+ non renseignés/.test(rapportGates),
     rapportGates.split('\n').filter(l => /Concept harnais/.test(l)).join(' / '));
   verifier('il liste les colonnes d\'analyse en clair',
     /Analyse par : .*ATA/.test(rapportGates), rapportGates.split('\n').find(l => /Analyse par/.test(l)));
@@ -526,7 +526,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
      tout court, avec des relevés dedans. Il continue de servir tel quel — rien
      n'est renommé, rien n'est reconstruit, et aucun onglet nouveau n'apparaît. */
   section('Historique : rétro-compatibilité de l\'ancien onglet « Historique_FWD »');
-  const ENTETES_H = ['Semaine', 'Date', 'Total', 'Terminés', 'En cours', 'À faire', 'Non renseignés', 'Par dimension', 'Plans'];
+  const ENTETES_H = ['Semaine', 'Date', 'Total', 'Validés', 'En cours', 'À faire', 'Non renseignés', 'Par dimension', 'Plans'];
   const ancienHisto = new Feuille('Historique_FWD', [
     ENTETES_H.slice(),
     ['2026-S30', new Date(2026, 6, 24), 30, 5, 5, 10, 10, '{"ata":{"24":{"total":30,"termine":5}}}', '{}']
@@ -1191,7 +1191,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('il nomme la colonne d\'avancement',
     /Avancement FWD : colonne/.test(rapportOk), rapportOk.split('\n').find(l => /Avancement/.test(l)));
   verifier('il donne les quatre comptes',
-    /terminés, \d+ en cours, \d+ à faire, \d+ non renseignés/.test(rapportOk));
+    /validés, \d+ en cours, \d+ à faire, \d+ non renseignés/.test(rapportOk));
   verifier('il compte les relevés archivés', /Relevés archivés : 1/.test(rapportOk));
   verifier('il donne le poids du paquet', /Paquet envoyé à la page : \d+ Ko/.test(rapportOk));
   verifier('il conclut que tout est en place', /Tout est en place/.test(rapportOk));
@@ -1807,13 +1807,13 @@ function serveurSur(valeurs, proprietes, fichiers) {
     jrn.ouvertes[0] === 'true' && jrn.ouvertes.slice(1).every(v => v === 'false'),
     JSON.stringify(jrn.ouvertes));
   verifier('le résumé est écrit en français correct',
-    jrn.resumes.every(r => !/en en cour|passés en terminé/.test(r)) &&
+    jrn.resumes.every(r => !/en en cour|passés en terminé|passés en validé/.test(r)) &&
     jrn.resumes.some(r => /passés? à « [^»]+ »/.test(r)),
     JSON.stringify(jrn.resumes[0]));
   verifier('chaque ligne nomme le plan et son passage',
     /UD-/.test(jrn.premiere || ''), jrn.premiere);
   verifier('les états sont au singulier dans une flèche',
-    !/Terminés\s*$/.test(jrn.premiere || '') , jrn.premiere);
+    !/(Terminés|Validés)\s*$/.test(jrn.premiere || '') , jrn.premiere);
   /* Les références de cette feuille (UD-24-1037) ne sont pas au format UD :
      elles n'ont pas de racine, donc jamais d'appariement — un plan apparu est
      un nouveau, point. Un appariement de travers ferait un faux changement
@@ -2092,7 +2092,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
     ud.jetons.length + ' / ' + ud.total + ' ' + JSON.stringify(ud.paquets.map(q => [q.libelle, q.n])));
   verifier('toutes sont des références de plan', ud.jetons.every(t => /^UD-/.test(t)), JSON.stringify(ud.jetons.slice(0, 3)));
   verifier('l\'en-tête dit combien et combien restent',
-    /\d+ plans?/.test(ud.entete) && /(pas encore terminés?|tout est soldé)/.test(ud.entete), ud.entete.trim());
+    /\d+ plans?/.test(ud.entete) && /(pas encore validés?|tout est validé)/.test(ud.entete), ud.entete.trim());
   verifier('le tableau du bas montre exactement le même groupe',
     ud.tableau === Math.min(ud.jetons.length, ud.tableau) && ud.tableau > 0);
   verifier('chaque sous-liste ne porte que son état : plus de tas où les états se mêlent',
@@ -2183,7 +2183,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
      semaine. Les références, elles, sont dans le journal, dessous. */
   verifier('en comptes, sans lister les références ni « et N autres »',
     !/UD-/.test(texteBulle) && !/autres/.test(texteBulle) &&
-    /terminés\s*\d+\s*\/\s*\d+/.test(texteBulle), texteBulle.slice(0, 120));
+    /validés\s*\d+\s*\/\s*\d+/.test(texteBulle), texteBulle.slice(0, 120));
 
   // =================================================================
   section('La seconde base, de l\'onglet à l\'écran');
