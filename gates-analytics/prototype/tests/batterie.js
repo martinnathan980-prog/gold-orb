@@ -3861,7 +3861,7 @@ async function reinitialiser(pg) {
   verifier('des comptes archivés figés à « 0 terminé » : la courbe recompte chaque relevé sur sa carte plan par plan, au classement du jour',
     pieges16.recompte.premier > 0 && pieges16.recompte.premier === pieges16.recompte.attendu, JSON.stringify(pieges16.recompte));
   verifier('des références en double : la page le dit — « 3 lignes répètent une référence déjà vue »',
-    /3 lignes répètent une référence déjà vue\. Chaque ligne compte dans les totaux/.test(pieges16.doublons), pieges16.doublons);
+    /3 lignes répètent une référence déjà vue\. Seule la première ligne de chaque référence compte et s’affiche/.test(pieges16.doublons), pieges16.doublons);
   verifier('un relevé identique au précédent : la note du graphique le signale (export pas recollé ?)',
     /S\d{1,2} · \S+ \d{4} : identique au relevé d’avant, plan par plan \(export pas recollé \?\)/.test(pieges16.note), pieges16.note);
   await p.evaluate(() => { window.__chargerSource(window.__jeuDExemple('HDK')); });

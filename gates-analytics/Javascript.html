@@ -6,7 +6,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '4a66c44';
+  var EDITION = '7bd9817';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -1378,6 +1378,9 @@
     /* Un classeur sans plans : la page le dit, et dit le geste, au lieu
        d'afficher des sections vides. */
     document.body.dataset.vide = String(SERVEUR && !PLANS.length);
+    /* Le panneau est masqué dans le balisage : sans le Javascript, il ne
+       doit pas se lire (débrief 17). Ici seulement, il se montre. */
+    if ($('classeur-vide')) $('classeur-vide').hidden = !(SERVEUR && !PLANS.length);
   }
 
   /* Le sélecteur de contrat et le rappel du contrat courant sous le titre.
@@ -5318,5 +5321,5 @@
   rendre();
   DEMARRAGE_FINI = true;
 })();
-/* suivi-fwd : fin du fichier Javascript, livraison 4a66c44 */
+/* suivi-fwd : fin du fichier Javascript, livraison 7bd9817 */
 </script>

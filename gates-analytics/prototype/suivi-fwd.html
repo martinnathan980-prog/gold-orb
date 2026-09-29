@@ -3380,6 +3380,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
     /* Un classeur sans plans : la page le dit, et dit le geste, au lieu
        d'afficher des sections vides. */
     document.body.dataset.vide = String(SERVEUR && !PLANS.length);
+    /* Le panneau est masqué dans le balisage : sans le Javascript, il ne
+       doit pas se lire (débrief 17). Ici seulement, il se montre. */
+    if ($('classeur-vide')) $('classeur-vide').hidden = !(SERVEUR && !PLANS.length);
   }
 
   /* Le sélecteur de contrat et le rappel du contrat courant sous le titre.
