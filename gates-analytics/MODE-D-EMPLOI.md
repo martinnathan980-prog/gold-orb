@@ -37,7 +37,9 @@ livraison d'avant suffit à laisser la page blanche.
    sert la version *déployée*, pas celle que vous venez de coller. Déployer →
    Gérer les déploiements → ✏️ → Version : **Nouvelle version** → Déployer.
    Le menu Suivi FWD → Ouvrir le tableau de bord, lui, prend toujours le code
-   enregistré.
+   enregistré. Dans ce même écran, vérifier **« Qui a accès »** : les
+   utilisateurs de votre organisation (Airbus), **jamais « Tout le monde »**
+   (n'importe qui sur internet, sans connexion).
 3. Vérifier : **en bas de la page, « Livraison xxxxxxx »** — le numéro que je
    donne avec les fichiers. (Quand je ne corrige que `Code`, la livraison ne
    change pas : on ne recolle que `Code`.) Suivi FWD → **Diagnostic** le confirme :
@@ -161,8 +163,14 @@ l'export de cette semaine-là est encore sous la main :
    FWD → Archiver le relevé de cette semaine**. Sinon l'archivage du
    vendredi prendrait l'export de S39 pour celui de la semaine en cours.
 
-Une semaine à venir est refusée ; « S52 » tapé en janvier est celle de
-l'année d'avant (la boîte écrit alors « S52 2025 »).
+Une semaine à venir est refusée (« S41 » tapé en S40 aussi) ; « S52 »
+tapé début janvier est celle de l'année d'avant (la boîte écrit alors
+« S52 2025 », forme qu'on peut aussi taper). Coller l'export de la semaine
+passée dans un **nouvel** onglet (« HDK S39 ») est refusé : ce serait un
+nouveau contrat — c'est dans l'onglet `HDK` lui-même qu'il se colle.
+Et si l'étape 4 est oubliée, l'archivage de la semaine en cours (celui du
+vendredi compris) **refuse** d'écraser le bon relevé avec l'export
+rattrapé, et le dit.
 
 ## 5. La seconde base, SEE : un onglet par contrat
 
@@ -328,16 +336,34 @@ onglet, et ce qui manque. Puis :
 | Un contrat en trop ou en moins | Un onglet visible en trop, ou masqué | Chaque onglet visible qui porte un export (Référence UD, ATA…) est un contrat ; un onglet « Notes » à côté est écarté tout seul (le Diagnostic le dit) |
 | « N lignes répètent une référence déjà vue » au-dessus de la barre | L'export a été collé par-dessus l'ancien sans le vider : des lignes de l'ancien restent en dessous | Ctrl+A, Suppr, puis recoller l'export en A1 |
 | Après avoir renommé un onglet de contrat, la courbe repart d'un seul relevé | L'historique porte encore l'ancien nom (`Historique_FWD_Feuille 1`) | Le Diagnostic le signale : renommer cet onglet d'historique `Historique_FWD_<nom du contrat>` |
-| Sous le graphique : « S41 : identique au relevé d'avant (export pas recollé ?) » | L'archivage (celui du vendredi, souvent) a repris l'export de la semaine d'avant | Recoller le dernier export, puis archiver : le relevé de la semaine est remplacé |
+| Sous le graphique : « S41 : aucun changement depuis le relevé d'avant, plan par plan » | L'archivage (celui du vendredi, souvent) a repris l'export de la semaine d'avant — ou rien n'a vraiment bougé | Si un export plus récent existe : le recoller, puis archiver : le relevé de la semaine est remplacé |
 | Deux relevés identiques alors que j'ai bien les deux exports | La semaine passée a été archivée avec l'export d'aujourd'hui | § 4, « Rattraper une semaine passée » : recoller l'export de la semaine passée, **Archiver l'onglet affiché pour une semaine passée…**, puis recoller l'export du jour et archiver |
-| « Ce geste ne se lance que dans le classeur, menu Suivi FWD » | Quelqu'un a essayé d'archiver, supprimer ou couper l'archivage depuis la page (la console du navigateur) | Rien à faire : la page est en consultation, elle ne modifie rien. Ces gestes se font dans le classeur, menu Suivi FWD |
+| « Geste refusé : il ne se lance que dans le classeur, menu Suivi FWD » | Quelqu'un a essayé d'archiver, supprimer ou couper l'archivage depuis la page (la console du navigateur) | Rien à faire : la page est en consultation, elle ne modifie rien. Ces gestes se font dans le classeur, menu Suivi FWD |
+| « l'onglet « HDK » porte le même export que le relevé S39 : le relevé S40 déjà archivé, différent, n'est pas écrasé » (ou un mail d'échec de Google le vendredi) | L'export de la semaine passée, rattrapé, est resté dans l'onglet : l'archiver pour la semaine en cours écraserait le bon relevé | Recoller l'export du jour dans `HDK`, puis Suivi FWD → Archiver le relevé de cette semaine |
 | THS n'a pas d'échéance | Voulu : les jalons livrés sont ceux de HDK | Me donner les dates de THS quand elles existent : je les ajoute dans `CONFIG.JALONS` avec `contrat: 'THS'` |
 
 Et dans tous les cas : **le texte du Diagnostic** (copié à la souris dans la
 boîte, ou pris dans Extensions → Apps Script → Exécutions) suffit pour que je
 voie ce qui se passe.
 
-## 8. Ce qu'il ne faut pas faire
+## 8. Passer la main (congés longs, changement de poste)
+
+La page tourne au nom de celui qui l'a déployée, et l'archivage du vendredi
+aussi. Pour qu'un collègue reprenne :
+
+1. Partager le classeur avec lui en **modification**, puis Fichier →
+   Partager → le nommer **propriétaire** (les onglets d'historique suivent :
+   ils sont dans le classeur).
+2. Lui, dans le classeur : **Suivi FWD → Activer l'archivage automatique**
+   (le déclencheur est personnel : celui de l'ancien propriétaire s'arrête
+   avec son compte), puis **Déployer → Nouveau déploiement → Application web**
+   et diffuser le **nouveau** lien `…/exec`.
+3. Pour une absence courte, rien à transférer : il suffit que quelqu'un fasse
+   l'export GATES chaque semaine et le garde, nommé par semaine ; au retour,
+   **Archiver l'onglet affiché pour une semaine passée…** (§ 4) remet chaque
+   export à sa semaine.
+
+## 9. Ce qu'il ne faut pas faire
 
 - Renommer ou modifier les onglets `Historique_FWD_…` : c'est la mémoire.
 - Retoucher l'extract collé (trier, supprimer des colonnes, renommer des

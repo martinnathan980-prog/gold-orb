@@ -38,8 +38,13 @@ la page. C'est le premier réflexe quand quelque chose ne s'affiche pas.
 
 Pour le partager à quelqu'un qui n'ouvre pas le classeur :
 **Déployer → Nouveau déploiement → Application Web**, exécuter en tant que
-soi-même, accès selon la politique de l'entreprise. Le lien obtenu ouvre la
-même page.
+soi-même, et **« Qui a accès » : les utilisateurs de votre organisation
+(le domaine Airbus)** — jamais « Tout le monde », qui ouvre la page à
+n'importe qui sur internet, sans connexion : un lien transféré suffirait, et
+la page montre l'extract entier (colonnes « A traiter par » et
+« Commentaire » comprises). Si l'option du domaine n'apparaît pas, le
+classeur n'est pas sur un compte Google de l'entreprise : à régler avant
+de diffuser le lien. Le lien obtenu ouvre la même page.
 
 C'est un outil de **consultation** : la page ne modifie rien dans le classeur,
 et rien de ce qu'on y clique n'est visible par les autres. Ce que voit la
@@ -52,8 +57,9 @@ son propriétaire, et `google.script.run` atteint toute fonction publique de
 lancer un archivage, supprimer le relevé de la semaine ou couper
 l'archivage automatique. Ces gestes — archiver, archiver une semaine
 passée, supprimer, activer ou désactiver l'archivage automatique —
-**refusent désormais hors du classeur** : « Ce geste ne se lance que dans le
-classeur, menu Suivi FWD : la page du tableau de bord ne modifie rien. »
+**refusent désormais hors du classeur** : « Geste refusé : il ne se lance
+que dans le classeur, menu Suivi FWD (ou par l'archivage automatique du
+vendredi). La page du tableau de bord ne modifie rien. »
 Ce qui les distingue : hors du classeur, `SpreadsheetApp.getUi()` lève.
 L'archivage du vendredi, lui, passe : son déclencheur se reconnaît à son
 identifiant (`triggerUid`), qui doit être celui d'un déclencheur du projet.
@@ -138,10 +144,26 @@ le permet :
    d'archiver la semaine en cours — sinon l'archivage du vendredi prendrait
    l'ancien export pour celui de la semaine.
 
-Refusés, avec le geste à faire : une semaine illisible, une semaine à
-venir, un onglet affiché qui n'est pas un contrat (historique, SEE…).
-L'historique se relit trié par semaine : un relevé plus ancien ajouté après
-coup prend sa place dans la courbe et le journal.
+Refusés, avec le geste à faire : une semaine illisible ou qui n'existe
+pas (une S53 dans une année qui n'en a que 52), une semaine à venir — une
+semaine tapée sans année et pas encore arrivée n'est prise pour celle de
+l'an dernier que si celle-ci date de huit semaines au plus (« S52 » début
+janvier), jamais « S41 » tapé en S40 —, un onglet affiché qui n'est pas un
+contrat (historique, SEE…, vérifié avant même la question), un nouvel
+onglet sans relevé dont le nom prolonge celui d'un contrat (« HDK S39 » :
+ce serait un contrat à part), un historique orphelin (dit avant la
+confirmation, plus après). « S52 2025 », la forme que la boîte affiche, se
+tape aussi. L'historique se relit trié par semaine : un relevé plus ancien
+ajouté après coup prend sa place dans la courbe et le journal.
+
+**L'export rattrapé oublié dans l'onglet ne peut plus écraser le bon
+relevé.** Tout archivage (menu, vendredi, dépôt) compare d'abord la carte
+plan par plan à l'historique du contrat : si elle est exactement celle d'un
+relevé plus ancien alors que le relevé de la semaine visée, déjà archivé,
+en a une autre, il refuse — « l'onglet « HDK » porte le même export que le
+relevé S39 : le relevé S40 déjà archivé, différent, n'est pas écrasé.
+Recoller l'export du jour, puis archiver. » Le vendredi, ce refus arrive
+par le mail d'échec de Google ; les autres contrats sont archivés.
 
 ## 5. Ce que devient l'historique
 
@@ -1102,8 +1124,9 @@ qui en est sorti, et ce que la page fait maintenant :
 - **Un relevé identique au précédent**, plan par plan — un archivage sans
   export recollé, celui du vendredi le plus souvent — compte dans le rythme
   (on ne sait pas si rien n'a bougé ou si rien n'a été recollé) ; la note
-  sous le graphique le signale : « S41 : identique au relevé d'avant, plan
-  par plan (export pas recollé ?) ». Le journal, s'il est vide pour cette
+  sous le graphique le constate, sans reproche — elle est lue par tous :
+  « S41 : aucun changement depuis le relevé d'avant, plan par plan »
+  (débrief 17 ; elle disait « export pas recollé ? »). Le journal, s'il est vide pour cette
   raison, le dit (§ 10), et le Diagnostic compte les plans qui ont changé
   entre les deux derniers relevés.
 - **Des références en double** (un export collé par-dessus l'ancien sans le

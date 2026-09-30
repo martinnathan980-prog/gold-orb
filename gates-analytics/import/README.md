@@ -182,7 +182,12 @@ DEPOT: { SECRET: 'une phrase longue et imprévisible', MAX_LIGNES: 20000 },
 ```
 
 puis **Déployer → Nouveau déploiement → Application web**, exécutée en votre
-nom, accessible à vous seul. Copier l'adresse obtenue dans
+nom. **Attention à l'accès** : `deposer.py` n'a pas de compte Google, il
+ne passe que si l'application web est ouverte à « Tout le monde ». Or c'est
+la même application que le tableau de bord : l'ouvrir ainsi mettrait la
+page, et l'extract entier, sur internet sans connexion. Tant que le dépôt
+automatique reste « pour plus tard » (AU-BUREAU), ne pas l'activer ; le
+jour venu, il faudra une solution à part, à décider avant. Copier l'adresse obtenue dans
 `import/depot.json` (ce fichier n'est jamais publié — il est dans le
 `.gitignore`) :
 

@@ -2306,11 +2306,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
       dimParDefaut: 'ata',
       plans: plans,
       releves: releves,
-      /* Les jalons du programme, les mêmes que CONFIG.JALONS de Code.gs
+      /* Les jalons du programme HDK, les mêmes que CONFIG.JALONS de Code.gs
          (échéances transmises le 17/09/2026) : le solde FWD, puis les
          diffusions PH et TO, chacune pour un périmètre. La semaine courante
-         de la démonstration est la 38 de 2026 : tous sont à venir. */
-      jalons: [
+         de la démonstration est la 38 de 2026 : tous sont à venir. Les
+         autres contrats n'en ont pas, comme au bureau (débrief 17). */
+      jalons: fiche.id !== 'HDK' ? [] : [
         { semaine: '2026-S51', date: '2026-12-15', texte: 'Solde FWD' },
         { semaine: '2027-S02', date: '2027-01-15', texte: 'Diffusion PH Base',  perimetre: 'BASE/OPTION' },
         { semaine: '2027-S03', date: '2027-01-22', texte: 'Diffusion PH Perso', perimetre: 'PERSO' },
@@ -2807,7 +2808,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
      point vert ou rouge est le verdict de la fiche, mot pour mot. */
   function rendreEcheanceTitre() {
     var bouton = $('echeance-titre'), j = prochainJalon();
-    if (!j) { bouton.hidden = true; return; }
+    /* Vidée aussi : cachée, elle gardait le texte du contrat d'avant. */
+    if (!j) { bouton.hidden = true; bouton.innerHTML = ''; return; }
     var idx = jalons.indexOf(j), b = bilanEcheance(j);
     bouton.hidden = false;
     bouton.className = 'echeance-titre' + (b.enRetard ? ' en-retard' : '');
@@ -4222,7 +4224,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
     }
     if (RELEVES_IDENTIQUES.length && JOURNAL.length) {
       note += ' · ' + RELEVES_IDENTIQUES.map(function (i) { return semaineDite(i); }).join(', ') +
-        (RELEVES_IDENTIQUES.length > 1 ? ' : identiques' : ' : identique') + ' au relevé d\u2019avant, plan par plan (export pas recollé ?)';
+        /* Un constat, pas un reproche : la page est lue par tous (débrief 17). */
+        ' : aucun changement depuis le relevé d\u2019avant, plan par plan';
     }
     $('note-graphe').textContent = note;
     var prochain = prochainJalon();
@@ -4434,8 +4437,11 @@ table.plans thead tr th.col-fige { z-index: 6; }
     if (!prochain && d1 > AUJ + 2) {
       var xv = x(AUJ + Math.round((d1 - AUJ) / 2));
       s.push('<text class="grad" x="' + xv.toFixed(1) + '" y="' + (mHaut + plotH * 0.86).toFixed(1) +
-             '" text-anchor="middle">Aucun jalon \u00e0 venir' +
-             (jalonsAVenirAilleurs() ? ' dans ce p\u00e9rim\u00e8tre' : '') + '</text>');
+             '" text-anchor="middle">' +
+             /* Un contrat sans aucun jalon (THS, débrief 17) ne dit pas « à
+                venir » : on croirait ses échéances passées. */
+             (!jalons.length ? 'Aucun jalon pour ce contrat'
+               : 'Aucun jalon \u00e0 venir' + (jalonsAVenirAilleurs() ? ' dans ce p\u00e9rim\u00e8tre' : '')) + '</text>');
     }
 
     // Rythme hebdomadaire
@@ -4513,10 +4519,15 @@ table.plans thead tr th.col-fige { z-index: 6; }
     /* Les mêmes mots que la fiche et le bloc par groupe : « rythme tenu »,
        « fin », « requis » — et les mêmes nombres, tirés de bilanEcheance. */
     if (ryt && restants > 0) {
-      var explication = nb(ryt.gagnes) + ' plans validés en ' + ryt.semaines + ' semaines, du premier au dernier relevé : ' +
+      /* Accordé : avec deux relevés, « 7 plans validés en 1 semaine » (il
+         disait « 1 semaines », débrief 17). */
+      var dansSem = projIdx !== null ? projIdx - depart : 0;
+      var explication = nb(ryt.gagnes) + (ryt.gagnes > 1 ? ' plans validés' : ' plan validé') + ' en ' + ryt.semaines +
+        (ryt.semaines > 1 ? ' semaines' : ' semaine') + ', du premier au dernier relevé : ' +
         virgule(vitesse) + ' par semaine. ' +
         (projIdx !== null
-          ? 'À ce rythme, les ' + nb(restants) + ' restants demandent ' + (projIdx - depart) + ' semaines : fin ' + semaineDite(projIdx) + '.'
+          ? 'À ce rythme, ' + (restants > 1 ? 'les ' + nb(restants) + ' restants demandent ' : 'le dernier demande ') +
+            dansSem + (dansSem > 1 ? ' semaines' : ' semaine') + ' : fin ' + semaineDite(projIdx) + '.'
           : 'Aucun plan validé sur la période : pas de fin prévisible.');
       items.push('<span class="legende-item"><svg width="22" height="8" aria-hidden="true">' +
         '<line x1="0" y1="4" x2="22" y2="4" stroke="var(--fait)" stroke-width="1.6" stroke-dasharray="4 3" opacity=".65"/></svg>' +
@@ -5849,6 +5860,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
       fin: der.total && der.total === der.termine ? 'validé' : fin === null ? null : semaineDite(fin),
       arret: RELEVES.length > 1 ? plansALArret().liste.length : 0,
       echeance: j ? { texte: j.texte, quand: semaineDite(j.i), jours: joursAvant(j), enRetard: b.enRetard, manque: b.manque, requis: b.requis } : null,
+      /* Un contrat sans aucun jalon (THS, débrief 17) ne dit pas « aucune à
+         venir » : on croirait ses échéances passées. */
+      sansJalon: !jalons.length,
       releve: semaineDite(AUJ),
       /* Ce que le classeur dit de ce contrat (colonne suivie introuvable…) :
          la ligne le montre au lieu d'un « 0 / N » qu'on croirait juste. */
@@ -5908,7 +5922,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
           (r.reculs ? '<small class="recul">' + nb(r.reculs) + (r.reculs > 1 ? ' reculs' : ' recul') + '</small>' : '') + '</td>' +
         '<td><span class="v">' + (r.rythme === null ? '\u2014' : virgule(r.rythme) + '/sem.') + '</span></td>' +
         '<td><span class="v' + (r.arret ? ' arret' : '') + '">' + (r.arret ? nb(r.arret) : '\u2014') + '</span></td>' +
-        '<td>' + (e ? '<span class="v">' + ech(e.texte) + '</span><small>' + ech(e.quand) + ' · ' + ech(motJours(e.jours)) + '</small>' : '<span class="doux">aucune à venir</span>') + '</td>' +
+        '<td>' + (e ? '<span class="v">' + ech(e.texte) + '</span><small>' + ech(e.quand) + ' · ' + ech(motJours(e.jours)) + '</small>' : '<span class="doux">' + (r.sansJalon ? 'aucun jalon' : 'aucune à venir') + '</span>') + '</td>' +
         '<td>' + (e ? (e.enRetard
             ? '<span class="v tard">manque ' + nb(e.manque) + '</span><small>il faut ' + virgule(e.requis) + '/sem.</small>'
             : '<span class="v bon">tenue</span><small>' + (r.fin === 'validé' ? 'tout est validé' : r.fin ? 'fin ' + ech(r.fin) : '') + '</small>')

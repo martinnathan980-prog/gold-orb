@@ -2696,10 +2696,10 @@ async function reinitialiser(pg) {
     await p.evaluate(() => document.querySelectorAll('.jalon').length === 0 && document.querySelectorAll('.zone-clic').length > 0));
   verifier('sans jalon, le bloc par groupe bascule en mode « rythme actuel »',
     await p.evaluate(() => document.getElementById('zone-critique').classList.contains('sans-jalon')));
-  verifier('sans jalon, le graphique le dit sans inviter à en poser',
+  verifier('sans jalon, le graphique le dit — « Aucun jalon pour ce contrat », pas « à venir » — sans inviter à en poser',
     await p.evaluate(() => {
       const t = [...document.querySelectorAll('svg.graphe text')].map(x => x.textContent).find(x => /Aucun jalon/.test(x));
-      return !!t && !/cliquez/.test(t);
+      return t === 'Aucun jalon pour ce contrat' && !/cliquez/.test(t);
     }));
   // Retour à la source de démonstration, avec ses cinq jalons.
   await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
@@ -3680,13 +3680,18 @@ async function reinitialiser(pg) {
         phrase: document.getElementById('phrase').textContent.replace(/[  ]/g, ' ').replace(/\s+/g, ' ').trim(),
         legende: document.getElementById('legende').textContent.replace(/[  ]/g, ' '),
         arret: (document.getElementById('a-surveiller').textContent.match(/(\d+) plans?/) || [])[1] || '—',
-        echeance: document.getElementById('echeance-titre').textContent.replace(/[  ]/g, ' ').replace(/\s+/g, ' ').trim()
+        echeance: document.getElementById('echeance-titre').hidden ? '' :
+          document.getElementById('echeance-titre').textContent.replace(/[  ]/g, ' ').replace(/\s+/g, ' ').trim()
       };
     });
     verifier('vue d’ensemble, ' + r.nom + ' : validés, rythme tenu, à l’arrêt et prochaine échéance sont ceux de sa page',
       page.phrase.indexOf(r.cellules[0].replace(' / ', ' sur ') + ' plans validés') === 0 &&
       page.legende.indexOf('au rythme tenu (' + r.cellules[2] + ')') !== -1 &&
-      r.cellules[3] === page.arret && page.echeance.indexOf(r.cellules[4]) !== -1, JSON.stringify([r.cellules, page]));
+      r.cellules[3] === page.arret &&
+      /* THS et VRK n'ont pas de jalon (débrief 17) : ni puce sur leur page,
+         ni échéance dans la vue d'ensemble, qui dit « aucun jalon ». */
+      (r.nom === 'HDK' ? !!page.echeance && page.echeance.indexOf(r.cellules[4]) !== -1 : page.echeance === '' && r.cellules[4] === 'aucun jalon'),
+      JSON.stringify([r.cellules, page]));
   }
   await p.selectOption('#select-contrat', 'HDK'); await p.waitForTimeout(900);
 
@@ -3891,14 +3896,26 @@ async function reinitialiser(pg) {
     window.__chargerSource(s3);
     out.note = document.getElementById('note-graphe').textContent.replace(/[\u00a0\u202f]/g, ' ');
     out.identiqueSem = tries[tries.length - 2].semaine;
+    // 4. Deux relevés seulement, une semaine d'écart : l'infobulle du rythme s'accorde (débrief 17).
+    const s4 = window.__jeuDExemple('HDK');
+    const t4 = s4.releves.slice().sort((a, b) => a.semaine < b.semaine ? -1 : 1);
+    s4.releves = t4.slice(-2);
+    window.__chargerSource(s4);
+    const leg4 = [...document.querySelectorAll('.legende-item span[title]')].map(x => x.getAttribute('title')).filter(t => /du premier au dernier relevé/.test(t))[0] || '';
+    out.accord = leg4.replace(/[\u00a0\u202f]/g, ' ');
+    out.ecart4 = t4.length >= 2 ? t4[t4.length - 1].semaine + '/' + t4[t4.length - 2].semaine : '';
+    window.__chargerSource(window.__jeuDExemple('HDK'));
     return out;
   });
+  verifier('deux relevés à une semaine d\'écart : l\'infobulle du rythme dit « en 1 semaine », jamais « 1 semaines »',
+    / en 1 semaine, du premier au dernier relevé/.test(pieges16.accord) && !/\b1 semaines\b|\b1 plans\b|\b0 plans\b/.test(pieges16.accord),
+    JSON.stringify([pieges16.accord, pieges16.ecart4]));
   verifier('des comptes archivés figés à « 0 validé » : la courbe recompte chaque relevé sur sa carte plan par plan, au classement du jour',
     pieges16.recompte.premier > 0 && pieges16.recompte.premier === pieges16.recompte.attendu, JSON.stringify(pieges16.recompte));
   verifier('des références en double : la page le dit — « 3 lignes répètent une référence déjà vue »',
     /3 lignes répètent une référence déjà vue\. Seule la première ligne de chaque référence compte et s’affiche/.test(pieges16.doublons), pieges16.doublons);
-  verifier('un relevé identique au précédent : la note du graphique le signale (export pas recollé ?)',
-    /S\d{1,2} · \S+ \d{4} : identique au relevé d’avant, plan par plan \(export pas recollé \?\)/.test(pieges16.note), pieges16.note);
+  verifier('un relevé identique au précédent : la note du graphique le constate, sans reproche (lue par tous)',
+    /S\d{1,2} · \S+ \d{4} : aucun changement depuis le relevé d’avant, plan par plan/.test(pieges16.note) && !/recoll/.test(pieges16.note), pieges16.note);
   await p.evaluate(() => { window.__chargerSource(window.__jeuDExemple('HDK')); });
   await p.waitForTimeout(500);
   await reinitialiser(p);
