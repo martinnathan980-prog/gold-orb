@@ -3178,13 +3178,30 @@ async function reinitialiser(pg) {
     await p.click('#fiche-echeance [data-fermer-echeance]'); await p.waitForTimeout(300);
   }
   // Le bouton « haut de page » : caché en haut, visible plus bas, et il ramène en haut.
+  /* Caché pour de vrai : l'attribut ne suffisait pas, le display du bouton
+     (inline-flex) l'emportait — il restait affiché en haut (débrief 17). */
   await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(200);
-  const hautCache = await p.evaluate(() => document.getElementById('haut-de-page').hidden);
+  const hautCache = await p.evaluate(() => { const b = document.getElementById('haut-de-page'); return b.hidden && getComputedStyle(b).display === 'none'; });
   await p.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await p.waitForTimeout(300);
-  const hautVisible = await p.evaluate(() => !document.getElementById('haut-de-page').hidden);
+  const hautVisible = await p.evaluate(() => { const b = document.getElementById('haut-de-page'); return !b.hidden && getComputedStyle(b).display !== 'none'; });
   await p.click('#haut-de-page'); await p.waitForTimeout(1500);
-  verifier('le bouton « haut de page » paraît en descendant et ramène en haut',
+  verifier('le bouton « haut de page » est invisible en haut, paraît en descendant et ramène en haut',
     hautCache && hautVisible && await p.evaluate(() => window.scrollY < 5), JSON.stringify([hautCache, hautVisible]));
+  /* Débrief 17 : THS n'a pas de jalon. La puce « Prochaine échéance » de
+     HDK restait affichée en passant sur lui — cachée par l'attribut, montrée
+     par son display. Aucun élément caché ne doit rester à l'écran. */
+  await p.evaluate(() => { const s = window.__jeuDExemple('HDK'); s.jalons = []; window.__chargerSource(s); });
+  await p.waitForTimeout(600);
+  const sansJalon17 = await p.evaluate(() => {
+    const b = document.getElementById('echeance-titre');
+    return { cache: b.hidden, affiche: getComputedStyle(b).display, legende: document.getElementById('legende-jalons').textContent.trim(),
+      restes: [...document.querySelectorAll('[hidden]')].filter(e => getComputedStyle(e).display !== 'none').map(e => e.id || e.className) };
+  });
+  verifier('un contrat sans jalon : pas de puce « Prochaine échéance » à l\'écran, pas de légende de jalons, et aucun élément caché ne reste affiché',
+    sansJalon17.cache && sansJalon17.affiche === 'none' && sansJalon17.legende === '' && sansJalon17.restes.length === 0, JSON.stringify(sansJalon17));
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK'))); await p.waitForTimeout(600);
+  verifier('et de retour sur un contrat à jalons, la puce revient',
+    await p.evaluate(() => { const b = document.getElementById('echeance-titre'); return !b.hidden && getComputedStyle(b).display !== 'none' && /Prochaine échéance/.test(b.textContent); }));
 
   // =================================================================
   /* Une seule formule, une seule façon de dire une semaine, un seul mot :

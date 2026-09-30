@@ -144,6 +144,26 @@ l'écran, aucune boîte ne s'affiche. Vérifier une fois, dans **Extensions →
 Apps Script → ⚙ Paramètres du projet**, que le fuseau horaire est
 Europe/Paris. « Désactiver l'archivage automatique » l'arrête.
 
+### Rattraper une semaine passée (l'export gardé de côté)
+
+Quand un relevé porte le mauvais export — par exemple S39 archivé avec
+l'export de S40, les deux relevés identiques, donc aucun rythme — et que
+l'export de cette semaine-là est encore sous la main :
+
+1. Dans l'onglet du contrat (`HDK`) : **Ctrl+A**, **Suppr**, **A1**,
+   **Ctrl+V** de l'export **de la semaine passée**. Rester sur cet onglet.
+2. **Suivi FWD → Archiver l'onglet affiché pour une semaine passée…**,
+   taper la semaine où l'export a été tiré de GATES : `S39` (ou `39`).
+3. La boîte redit tout avant d'écrire : « Archiver l'export affiché dans
+   « HDK » comme relevé S39 ? Il remplace le relevé S39 déjà archivé… » →
+   **Oui**. Seul ce contrat est touché.
+4. **Tout de suite** : recoller l'export **du jour** dans `HDK`, puis **Suivi
+   FWD → Archiver le relevé de cette semaine**. Sinon l'archivage du
+   vendredi prendrait l'export de S39 pour celui de la semaine en cours.
+
+Une semaine à venir est refusée ; « S52 » tapé en janvier est celle de
+l'année d'avant (la boîte écrit alors « S52 2025 »).
+
 ## 5. La seconde base, SEE : un onglet par contrat
 
 Chaque contrat a sa propre base SEE, donc son propre onglet :
@@ -234,7 +254,9 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   tenir le prochain jalon (« manque N » quand le rythme ne suffit pas). Il
   s'ouvre sur **Échéances** — jusqu'à la semaine qui suit la dernière
   échéance : les cinq jalons à l'écran — ; **Échéances · 3 mois · 6 mois ·
-  1 an · Tout** à droite. Sous chaque jalon de la légende, son nom et sa
+  1 an · Tout** à droite. Les jalons sont ceux de **HDK** ; **THS** n'en a
+  pas (un autre contrat, d'autres dates, à venir) : sa page montre le rythme
+  tenu et la fin estimée, sans échéance. Sous chaque jalon de la légende, son nom et sa
   semaine ; le reste (périmètre, jours) au survol et dans la fiche. En
   tête, la prochaine échéance en jours : un clic ouvre sa fiche (Échap la
   ferme). Les jalons **TO** (table outil) suivent le concept harnais : sous
@@ -307,6 +329,9 @@ onglet, et ce qui manque. Puis :
 | « N lignes répètent une référence déjà vue » au-dessus de la barre | L'export a été collé par-dessus l'ancien sans le vider : des lignes de l'ancien restent en dessous | Ctrl+A, Suppr, puis recoller l'export en A1 |
 | Après avoir renommé un onglet de contrat, la courbe repart d'un seul relevé | L'historique porte encore l'ancien nom (`Historique_FWD_Feuille 1`) | Le Diagnostic le signale : renommer cet onglet d'historique `Historique_FWD_<nom du contrat>` |
 | Sous le graphique : « S41 : identique au relevé d'avant (export pas recollé ?) » | L'archivage (celui du vendredi, souvent) a repris l'export de la semaine d'avant | Recoller le dernier export, puis archiver : le relevé de la semaine est remplacé |
+| Deux relevés identiques alors que j'ai bien les deux exports | La semaine passée a été archivée avec l'export d'aujourd'hui | § 4, « Rattraper une semaine passée » : recoller l'export de la semaine passée, **Archiver l'onglet affiché pour une semaine passée…**, puis recoller l'export du jour et archiver |
+| « Ce geste ne se lance que dans le classeur, menu Suivi FWD » | Quelqu'un a essayé d'archiver, supprimer ou couper l'archivage depuis la page (la console du navigateur) | Rien à faire : la page est en consultation, elle ne modifie rien. Ces gestes se font dans le classeur, menu Suivi FWD |
+| THS n'a pas d'échéance | Voulu : les jalons livrés sont ceux de HDK | Me donner les dates de THS quand elles existent : je les ajoute dans `CONFIG.JALONS` avec `contrat: 'THS'` |
 
 Et dans tous les cas : **le texte du Diagnostic** (copié à la souris dans la
 boîte, ou pris dans Extensions → Apps Script → Exécutions) suffit pour que je

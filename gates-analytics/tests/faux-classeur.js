@@ -122,6 +122,9 @@ Classeur.prototype.getSheets = function () { return this.feuilles; };
 Classeur.prototype.getSheetByName = function (nom) {
   return this.feuilles.filter(function (f) { return f.getName() === nom; })[0] || null;
 };
+/* L'onglet affiché : celui qu'on a posé (setActiveSheet), sinon le premier. */
+Classeur.prototype.getActiveSheet = function () { return this.active || this.feuilles[0] || null; };
+Classeur.prototype.setActiveSheet = function (f) { this.active = f; return f; };
 Classeur.prototype.insertSheet = function (nom) {
   const f = new Feuille(nom, []);
   this.feuilles.push(f);
@@ -153,12 +156,28 @@ function poserEnvironnement(contexte, classeur, proprietes, fichiers) {
   }
   contexte.SpreadsheetApp = {
     getActiveSpreadsheet: function () { return classeur; },
+    /* Hors du classeur — la page ouverte par un lecteur, google.script.run —
+       Apps Script refuse l'interface : __sansInterface le simule. Une
+       question (prompt) prend sa réponse dans __saisies, une confirmation
+       (OUI/NON) dans __confirmations, OUI par défaut. */
     getUi: function () {
+      if (contexte.__sansInterface) throw new Error('Cannot call SpreadsheetApp.getUi() from this context.');
       return {
-        alert: function (a, b) { contexte.__alertes.push(b === undefined ? a : b); },
-        ButtonSet: { OK: 'OK' },
+        alert: function (a, b, boutons) {
+          contexte.__alertes.push(b === undefined ? a : b);
+          if (boutons === 'YES_NO') return contexte.__confirmations.length ? contexte.__confirmations.shift() : 'YES';
+          return 'OK';
+        },
+        prompt: function (titre, texte) {
+          contexte.__invites.push(texte);
+          const r = contexte.__saisies.length ? contexte.__saisies.shift() : { bouton: 'CANCEL', texte: '' };
+          return { getSelectedButton: function () { return r.bouton; }, getResponseText: function () { return r.texte; } };
+        },
+        ButtonSet: { OK: 'OK', OK_CANCEL: 'OK_CANCEL', YES_NO: 'YES_NO' },
+        Button: { OK: 'OK', CANCEL: 'CANCEL', YES: 'YES', NO: 'NO', CLOSE: 'CLOSE' },
         createMenu: function () {
-          const menu = { addItem: function () { return menu; }, addSeparator: function () { return menu; }, addToUi: function () {} };
+          const menu = { addItem: function (texte, fonction) { contexte.__menu.push(fonction); return menu; },
+                         addSeparator: function () { return menu; }, addToUi: function () {} };
           return menu;
         },
         showModalDialog: function (page) { contexte.__dialogue = page; }
@@ -186,10 +205,24 @@ function poserEnvironnement(contexte, classeur, proprietes, fichiers) {
     },
     XFrameOptionsMode: { ALLOWALL: 'ALLOWALL' }
   };
+  /* Les déclencheurs du projet, vrais objets : l'archivage du vendredi se
+     reconnaît à l'identifiant du sien. */
+  let numeroDeclencheur = 0;
+  contexte.__declencheurs = [];
   contexte.ScriptApp = {
-    newTrigger: function () { const t = { timeBased: function () { return t; }, onWeekDay: function () { return t; }, atHour: function () { return t; }, create: function () {} }; return t; },
-    getProjectTriggers: function () { return []; },
-    deleteTrigger: function () {},
+    newTrigger: function (fonction) {
+      const t = { timeBased: function () { return t; }, onWeekDay: function () { return t; }, atHour: function () { return t; },
+        create: function () {
+          numeroDeclencheur++;
+          const uid = 'declencheur-' + numeroDeclencheur;
+          const d = { getHandlerFunction: function () { return fonction; }, getUniqueId: function () { return uid; } };
+          contexte.__declencheurs.push(d);
+          return d;
+        } };
+      return t;
+    },
+    getProjectTriggers: function () { return contexte.__declencheurs.slice(); },
+    deleteTrigger: function (d) { contexte.__declencheurs = contexte.__declencheurs.filter(function (x) { return x !== d; }); },
     WeekDay: { FRIDAY: 'FRIDAY' }
   };
   /* La réponse d'une application web : le texte et son type, lisibles par la batterie. */
@@ -204,6 +237,11 @@ function poserEnvironnement(contexte, classeur, proprietes, fichiers) {
     }
   };
   contexte.__alertes = [];
+  contexte.__invites = [];
+  contexte.__menu = [];
+  contexte.__saisies = [];
+  contexte.__confirmations = [];
+  contexte.__sansInterface = false;
   contexte.__proprietes = props;
   return contexte;
 }

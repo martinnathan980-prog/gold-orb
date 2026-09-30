@@ -802,6 +802,191 @@ function serveurSur(valeurs, proprietes, fichiers) {
     Array.isArray(j.contexte.getJalons()) && j.contexte.getJalons().length === 0);
 
   // =================================================================
+  section('Débrief 17 (réponses) : des jalons pour HDK seulement');
+  /* « THS n'a pas du tout les mêmes (jalons), c'est un autre contrat… les
+     autres, il n'y a pas de jalons » : chaque jalon livré porte contrat: 'HDK'.
+     Un classeur au vrai nom de contrat — HDK et THS — garde la
+     configuration livrée telle quelle (le banc ne l'adapte qu'aux classeurs
+     d'essai sans onglet HDK). */
+  const fabriquerHT = () => {
+    const gH = feuilleGates(40), gT = feuilleGates(30);
+    return new Classeur([new Feuille('HDK', gH.valeurs, false, gH.fusions), new Feuille('THS', gT.valeurs, false, gT.fusions)], 'Suivi FWD');
+  };
+  const clJ = fabriquerHT();
+  const cJ = chargerServeur(clJ, {});
+  const livres17 = vm.runInContext('CONFIG.JALONS', cJ);
+  verifier('les cinq jalons livrés appartiennent au contrat HDK',
+    livres17.length === 5 && livres17.every(x => x.contrat === 'HDK'), JSON.stringify(livres17.map(x => x.contrat)));
+  const pqH = cJ.getDonneesPourClient('HDK'), pqT = cJ.getDonneesPourClient('THS');
+  verifier('la page de HDK reçoit ses cinq jalons, celle de THS aucun',
+    pqH.ok && pqT.ok && pqH.jalons.length === 5 && pqT.jalons.length === 0,
+    pqH.jalons.length + ' / ' + pqT.jalons.length);
+  verifier('le paquet compact (changement de contrat dans la page) dit pareil',
+    cJ.getDonneesCompactes('HDK').jalons.length === 5 && cJ.getDonneesCompactes('THS').jalons.length === 0);
+  verifier('la clé contrat ne voyage pas jusqu\'à la page : les jalons de HDK sont ceux d\'avant, tels quels',
+    pqH.jalons.every(x => !('contrat' in x)) &&
+    pqH.jalons.map(x => x.texte + '@' + x.semaine).join() ===
+      'Solde FWD@2026-S51,Diffusion PH Base@2027-S02,Diffusion PH Perso@2027-S03,Diffusion TO Base@2027-S05,Diffusion TO Perso@2027-S08',
+    JSON.stringify(pqH.jalons));
+  verifier('le nom du contrat se compare sans casse ni espaces autour ; sans contrat demandé, tous les jalons',
+    cJ.getJalons('hdk').length === 5 && cJ.getJalons(' Hdk ').length === 5 && cJ.getJalons('THS').length === 0 &&
+    cJ.getJalons().length === 5);
+  vm.runInContext('CONFIG.JALONS = ' + JSON.stringify([
+    { semaine: '2026-S50', texte: 'Pour tous' },
+    { semaine: '2026-S51', texte: 'Les deux', contrat: ['HDK', 'ths'] },
+    { semaine: '2026-S52', texte: 'THS seul', contrat: 'THS' },
+    { semaine: '2027-S01', texte: 'Vide', contrat: '  ' },
+    { semaine: '2027-S02', texte: 'Fantôme', contrat: 'HDX' }
+  ]), cJ);
+  verifier('sans contrat (ou vide) : tous ; une liste : chacun des contrats nommés ; un nom : lui seul',
+    cJ.getJalons('HDK').map(x => x.texte).join() === 'Pour tous,Les deux,Vide' &&
+    cJ.getJalons('THS').map(x => x.texte).join() === 'Pour tous,Les deux,THS seul,Vide',
+    cJ.getJalons('HDK').map(x => x.texte).join() + ' | ' + cJ.getJalons('THS').map(x => x.texte).join());
+  const diagJ17 = cJ.diagnostic();
+  verifier('le Diagnostic dit combien de jalons voit chaque contrat',
+    /par contrat : « HDK » 3 jalons · « THS » 4 jalons/.test(diagJ17), (diagJ17.match(/par contrat[^\n]*/) || [''])[0]);
+  verifier('et prévient d\'un contrat qu\'aucun onglet ne porte : ce jalon n\'apparaîtrait nulle part',
+    /⚠ Jalon « Fantôme » : contrat « HDX » — aucun onglet de contrat ne porte ce nom/.test(diagJ17) &&
+    !/Jalon « Les deux » : contrat/.test(diagJ17) && !/Jalon « Vide » : contrat/.test(diagJ17), diagJ17);
+  vm.runInContext('CONFIG.JALONS = ' + JSON.stringify(livres17), cJ);
+  const diagLivre = cJ.diagnostic();
+  verifier('avec la configuration livrée : « HDK » 5 jalons · « THS » aucun jalon, les périmètres vérifiés sur HDK, sans avertissement de contrat',
+    /par contrat : « HDK » 5 jalons · « THS » aucun jalon/.test(diagLivre) &&
+    /périmètres des jalons \(« HDK »\) : BASE\/OPTION, PERSO — tous connus de la colonne « Domaine »/.test(diagLivre) &&
+    !/: contrat « /.test(diagLivre), diagLivre);
+  /* La vue d'ensemble charge chaque contrat par son propre paquet : THS n'y
+     a donc pas d'échéance. Le banc des classeurs d'essai, lui, garde les
+     jalons pour ses contrats sans nom HDK. */
+  const cEssai = chargerServeur(new Classeur([new Feuille('X1', feuilleExemple(20))]), {});
+  verifier('un classeur d\'essai sans onglet HDK garde les jalons pour ses contrats (banc de test)',
+    cEssai.getDonneesPourClient('X1').jalons.length === 5);
+
+  // =================================================================
+  section('Débrief 17 (réponses) : archiver l\'onglet affiché pour une semaine passée');
+  /* « J'en ai que 2 » : l'export de la semaine dernière et celui de cette
+     semaine. S39 et S40 portaient le même : aucun rythme. Le menu remet
+     l'export de la semaine dernière à sa semaine. */
+  const clP = fabriquerHT();
+  const cP = chargerServeur(clP, {});
+  const courante17 = cP.numeroSemaineISO(new Date());
+  const precedente17 = cP.numeroSemaineISO(new Date(Date.now() - 7 * 864e5));
+  const numPrec = parseInt(precedente17.slice(6), 10);
+  cP.enregistrerInstantaneHebdo();
+  const histoHDK = () => cP.getHistorique(clP, 'HDK'), histoTHS = () => cP.getHistorique(clP, 'THS');
+  verifier('le menu propose le geste, et chaque entrée du menu est une fonction du serveur',
+    (cP.onOpen(), cP.__menu.indexOf('archiverSemainePassee') !== -1) &&
+    cP.__menu.every(f => typeof cP[f] === 'function'), cP.__menu.join(', '));
+  // L'export de la semaine dernière : moins de plans validés que celui du jour.
+  const ongletHDK = clP.getSheetByName('HDK');
+  const bH = ongletHDK.valeurs[0].indexOf('HDK AA 011') + 3;
+  const lignesHDK = ongletHDK.valeurs.filter(l => /^UD-/.test(l[1] || ''));
+  const avantValides = lignesHDK.filter(l => l[bH] === '100%').length;
+  const exportDuJour = lignesHDK.map(l => l[bH]);
+  lignesHDK.filter(l => l[bH] === '100%').slice(0, 5).forEach(l => { l[bH] = 'EMPTY'; });
+  clP.setActiveSheet(ongletHDK);
+  cP.__saisies.push({ bouton: 'OK', texte: 'S' + numPrec });
+  cP.__confirmations.push('YES');
+  const alertesAvant = cP.__alertes.length;
+  const rP = cP.archiverSemainePassee();
+  const confirmation = cP.__alertes[alertesAvant], resultatP = cP.__alertes[alertesAvant + 1];
+  verifier('« S' + numPrec + ' » tapé : la question confirme le contrat et la semaine, dit qu\'il n\'y a rien à remplacer, et rappelle de recoller l\'export du jour',
+    new RegExp('^Archiver l\'export affiché dans « HDK » comme relevé S' + numPrec + ' \\?').test(confirmation) &&
+    /Aucun relevé S\d+ n'existe encore pour « HDK » : il est ajouté\./.test(confirmation) &&
+    /recolle tout de suite l'export du jour dans « HDK »/.test(confirmation), confirmation);
+  verifier('le relevé de la semaine passée est archivé pour HDK seulement, avec les chiffres de l\'export affiché',
+    rP && rP.ok && rP.semaine === precedente17 &&
+    histoHDK().map(r => r.semaine).join() === precedente17 + ',' + courante17 &&
+    histoHDK()[0].termine === avantValides - 5 && histoHDK()[1].termine === avantValides &&
+    histoTHS().map(r => r.semaine).join() === courante17,
+    JSON.stringify([rP, histoHDK().map(r => [r.semaine, r.termine]), histoTHS().map(r => r.semaine)]));
+  verifier('et le message final redit de recoller l\'export du jour',
+    new RegExp('^Relevé S' + numPrec + ' de « HDK » archivé avec l\'export affiché \\(40 plans\\)\\.').test(resultatP) &&
+    /⚠ L'onglet « HDK » porte maintenant l'export de S\d+ : recolle l'export du jour/.test(resultatP), resultatP);
+  verifier('la page de HDK a maintenant deux relevés différents : un rythme',
+    cP.getDonneesPourClient('HDK').releves.length === 2 &&
+    cP.getDonneesPourClient('HDK').releves[1].termine - cP.getDonneesPourClient('HDK').releves[0].termine === 5);
+  // Une seconde fois la même semaine : on remplace, après l'avoir dit.
+  lignesHDK.filter(l => l[bH] === 'EMPTY').slice(0, 2).forEach(l => { l[bH] = '100%'; });
+  cP.__saisies.push({ bouton: 'OK', texte: String(numPrec) });
+  cP.__confirmations.push('YES');
+  const a2 = cP.__alertes.length;
+  const rP2 = cP.archiverSemainePassee();
+  verifier('la même semaine une seconde fois (« ' + numPrec + ' » sans S) : la question dit qu\'elle remplace, et l\'historique garde une seule ligne',
+    rP2 && rP2.ok && /Il remplace le relevé S\d+ déjà archivé pour « HDK »\./.test(cP.__alertes[a2]) &&
+    /^Relevé S\d+ de « HDK » remplacé/.test(cP.__alertes[a2 + 1]) &&
+    histoHDK().length === 2 && histoHDK()[0].termine === avantValides - 3,
+    JSON.stringify([cP.__alertes.slice(a2), histoHDK().map(r => [r.semaine, r.termine])]));
+  // NON à la confirmation, Annuler à la question : rien n'est écrit.
+  const ligneAvant = JSON.stringify(histoHDK());
+  cP.__saisies.push({ bouton: 'OK', texte: 'S' + numPrec });
+  cP.__confirmations.push('NO');
+  const rNon = cP.archiverSemainePassee();
+  cP.__saisies.push({ bouton: 'CANCEL', texte: 'S' + numPrec });
+  const rAnnule = cP.archiverSemainePassee();
+  verifier('« Non » à la confirmation, ou « Annuler » : rien n\'est archivé',
+    rNon === null && rAnnule === null && JSON.stringify(histoHDK()) === ligneAvant);
+  // Les refus : illisible, à venir, onglet qui n'est pas un contrat.
+  const refus = (texte, onglet) => cP.preparerSemainePassee(clP, onglet || 'HDK', texte);
+  verifier('une semaine illisible est refusée, et le message dit comment l\'écrire',
+    ['semaine 39', 'S60', '', '2026-S99'].every(t => !refus(t).ok && /^Semaine illisible : « .* »\. Écrire par exemple S39 \(ou 2026-S39\)\.$/.test(refus(t).message)),
+    refus('S60').message);
+  verifier('une semaine à venir (écrite avec son année) est refusée',
+    !refus('2099-S10').ok && /n'est pas encore arrivée : rien n'est archivé/.test(refus('2099-S10').message), refus('2099-S10').message);
+  verifier('« S52 » tapé tant que S52 n\'est pas passée cette année : c\'est celle de l\'an dernier, et la question le dit',
+    courante17 >= courante17.slice(0, 4) + '-S52' ||
+    (refus('S52').ok && refus('S52').semaine === (Number(courante17.slice(0, 4)) - 1) + '-S52' &&
+     new RegExp('relevé S52 ' + (Number(courante17.slice(0, 4)) - 1) + ' \\?').test(refus('S52').question)),
+    JSON.stringify(refus('S52')));
+  verifier('l\'onglet affiché doit être un contrat : un onglet d\'historique est refusé, avec le geste',
+    !refus('S' + numPrec, 'Historique_FWD_HDK').ok &&
+    /« Historique_FWD_HDK », n'est pas un contrat : afficher l'onglet du contrat \(HDK…\)/.test(refus('S' + numPrec, 'Historique_FWD_HDK').message),
+    refus('S' + numPrec, 'Historique_FWD_HDK').message);
+  verifier('la semaine en cours se tape aussi : pas de rappel de recoller, c\'est déjà l\'export du jour',
+    refus('S' + parseInt(courante17.slice(6), 10)).ok && !/recolle/.test(refus('S' + parseInt(courante17.slice(6), 10)).question));
+  // L'export du jour recollé, puis archivé : S40 retrouve ses chiffres.
+  lignesHDK.forEach((l, i) => { l[bH] = exportDuJour[i]; });
+  cP.enregistrerInstantaneHebdo();
+  verifier('recollé puis archivé, l\'export du jour refait la semaine en cours ; la semaine passée garde le sien',
+    histoHDK().length === 2 && histoHDK()[1].termine === avantValides && histoHDK()[0].termine === avantValides - 3,
+    JSON.stringify(histoHDK().map(r => [r.semaine, r.termine])));
+
+  // =================================================================
+  section('Débrief 17 (réponses) : la page est ouverte par tout le monde — elle ne modifie rien');
+  /* « Qui ouvre la page ? Tout le monde… c'est que de la consultation. »
+     L'application s'exécute au nom de Nathan : google.script.run atteint
+     toute fonction publique. Les gestes qui écrivent refusent hors du
+     classeur (getUi() lève) ; l'archivage du vendredi passe, reconnu à
+     l'identifiant de son déclencheur. */
+  const clG = fabriquerHT();
+  const cG = chargerServeur(clG, {});
+  cG.enregistrerInstantaneHebdo();
+  cG.installerSuiviHebdomadaire();
+  const declencheurs = () => cG.__declencheurs.filter(d => d.getHandlerFunction() === 'enregistrerInstantaneHebdo');
+  verifier('du menu, l\'archivage automatique s\'active : un seul déclencheur, même activé deux fois',
+    (cG.installerSuiviHebdomadaire(), declencheurs().length === 1));
+  const uid = declencheurs()[0].getUniqueId();
+  const histoG = () => JSON.stringify([cG.getHistorique(clG, 'HDK'), cG.getHistorique(clG, 'THS')].map(h => h.map(r => [r.semaine, r.total])));
+  const avantG = histoG();
+  cG.__sansInterface = true;   // la page, ouverte par un lecteur
+  const refuse = (f, arg) => { try { cG[f](arg); return ''; } catch (e) { return String(e.message || e); } };
+  const MOT = /^Ce geste ne se lance que dans le classeur, menu Suivi FWD : la page du tableau de bord ne modifie rien\.$/;
+  verifier('depuis la page : archiver, supprimer, activer ou couper l\'archivage automatique, archiver une semaine passée — tout est refusé',
+    ['enregistrerInstantaneHebdo', 'supprimerDernierReleve', 'installerSuiviHebdomadaire', 'desinstallerSuiviHebdomadaire', 'archiverSemainePassee']
+      .every(f => MOT.test(refuse(f))), refuse('desinstallerSuiviHebdomadaire'));
+  verifier('et rien n\'a bougé : relevés intacts, déclencheur du vendredi toujours là',
+    histoG() === avantG && declencheurs().length === 1 && declencheurs()[0].getUniqueId() === uid);
+  verifier('un faux déclencheur (identifiant inventé) est refusé aussi',
+    MOT.test(refuse('enregistrerInstantaneHebdo', { triggerUid: 'invente' })) && MOT.test(refuse('enregistrerInstantaneHebdo', { triggerUid: '' })));
+  const rVendredi = cG.enregistrerInstantaneHebdo({ triggerUid: uid, authMode: 'FULL' });
+  verifier('le vrai déclencheur du vendredi, lui, archive sans interface',
+    rVendredi && rVendredi.ok && rVendredi.contrats.length === 2, JSON.stringify(rVendredi && rVendredi.contrats.map(c => c.id)));
+  verifier('et la page, elle, se sert toujours : la lecture n\'est pas un geste',
+    cG.getDonneesPourClient('HDK').ok && cG.getDonneesCompactes('THS').ok);
+  cG.__sansInterface = false;
+  cG.desinstallerSuiviHebdomadaire();
+  verifier('du menu, couper l\'archivage automatique marche toujours', declencheurs().length === 0);
+
+  // =================================================================
   /* La seconde base : rien tant que CONFIG.RAPPROCHEMENT.FEUILLE est vide.
      Nommée, l'onglet est lu (en-tête = la ligne qui porte la référence,
      sinon la première non vide) et le paquet porte la description que la
@@ -2443,6 +2628,43 @@ function serveurSur(valeurs, proprietes, fichiers) {
     x2Ens.phrase.replace(/\s+/g, ' ').indexOf(ens[1].termines.replace(' / ', ' sur ')) === 0,
     JSON.stringify([ens[1], x2Ens.phrase, x2Ens.appels]));
   await ctxMulti.close();
+
+  // =================================================================
+  /* Débrief 17 (réponses) : HDK a les jalons du programme, THS aucun — de
+     bout en bout, par la page servie : le classeur a ses vrais noms
+     d'onglets, la configuration livrée n'est pas adaptée. */
+  section('Débrief 17 (réponses) : THS sans jalon, dans la page servie');
+  const ht17 = construire({ gates: true, contrats: ['HDK', 'THS'], lignes: 60, sortie: 'apercu-hdk-ths.html' });
+  const ctxHT = await nav.newContext({ viewport: { width: 1280, height: 1000 } });
+  const pht = await ctxHT.newPage();
+  pht.on('pageerror', e => erreursJS.push('hdk-ths : ' + e.message));
+  await brancherClasseur(pht, ht17.contexte);
+  await pht.goto('file://' + path.join(__dirname, '..', 'apercu-hdk-ths.html'));
+  await pht.waitForTimeout(1600);
+  const etatHT = () => pht.evaluate(() => {
+    const b = document.getElementById('echeance-titre');
+    return { contrat: document.getElementById('select-contrat').value, puce: getComputedStyle(b).display !== 'none' ? b.textContent.replace(/\s+/g, ' ').trim() : '',
+      legende: document.querySelectorAll('#legende-jalons [data-jalon]').length,
+      tete: [...document.querySelectorAll('.critique-tete button')].map(x => x.textContent.trim()).join('|') };
+  });
+  const hdk17 = await etatHT();
+  /* Tant qu'un jalon de HDK est à venir (jusqu'en février 2027). */
+  const avenir17 = ht17.contexte.getJalons('HDK').some(j => j.semaine >= ht17.contexte.numeroSemaineISO(new Date()));
+  verifier('HDK : la puce de la prochaine échéance, les cinq jalons en légende, le rythme requis par groupe',
+    hdk17.contrat === 'HDK' && hdk17.legende === 5 && (!avenir17 || (/^Prochaine échéance/.test(hdk17.puce) && /rythme requis/.test(hdk17.tete))), JSON.stringify(hdk17));
+  await pht.selectOption('#select-contrat', 'THS'); await pht.waitForTimeout(1500);
+  const ths17 = await etatHT();
+  verifier('THS : aucune échéance à l’écran — ni puce, ni légende — et le rythme tenu à la place du rythme requis',
+    ths17.contrat === 'THS' && ths17.puce === '' && ths17.legende === 0 && /rythme tenu/.test(ths17.tete) && !/rythme requis/.test(ths17.tete),
+    JSON.stringify(ths17));
+  await pht.click('#voir-ensemble'); await pht.waitForTimeout(2000);
+  const ensHT = await pht.evaluate(() => [...document.querySelectorAll('#ensemble tbody tr')].map(tr =>
+    tr.querySelector('th button').textContent.trim() + ':' + [...tr.querySelectorAll('td')].map(td => td.textContent.replace(/\s+/g, ' ').trim()).join('|')));
+  verifier('vue d’ensemble : HDK a sa prochaine échéance, THS un tiret',
+    ensHT.length === 2 && (!avenir17 || /^HDK:.*(Solde FWD|Diffusion)/.test(ensHT[0])) && /^THS:/.test(ensHT[1]) && !/Solde FWD|Diffusion/.test(ensHT[1]),
+    JSON.stringify(ensHT));
+  await ctxHT.close();
+  fs.unlinkSync(path.join(__dirname, '..', 'apercu-hdk-ths.html'));
 
   // =================================================================
   /* L'ouverture rapide. Le paquet voyage compacté — chaque nom de colonne,

@@ -39,7 +39,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = 'b8f6ff3';
+const EDITION = 'fe100ea';
 
 // =====================================================================
 //  CONFIGURATION
@@ -97,14 +97,23 @@ const CONFIG = {
    * outil ; sans suivi, la définition électrique, le FWD. Sous l'autre
    * avancement, le jalon reste dessiné, en retrait, et ne compte pas.
    *
-   * Les échéances du programme, telles que transmises le 17/09/2026.
+   * contrat (facultatif) : le contrat auquel le jalon appartient, écrit
+   * comme le nom de son onglet (« HDK » ; casse et accents indifférents),
+   * ou une liste de contrats ['HDK', 'X2']. Les autres contrats ne le
+   * voient pas. Sans contrat, le jalon vaut pour tous les contrats. Le
+   * Diagnostic dit combien de jalons a chaque contrat, et prévient quand
+   * aucun onglet ne porte le nom donné.
+   *
+   * Les échéances du programme HDK, telles que transmises le 17/09/2026.
+   * THS est un autre contrat, à d'autres dates : sans jalon pour l'instant
+   * (débrief 17), comme tout autre contrat.
    */
   JALONS: [
-    { semaine: '2026-S51', date: '2026-12-15', texte: 'Solde FWD' },
-    { semaine: '2027-S02', date: '2027-01-15', texte: 'Diffusion PH Base',  perimetre: 'BASE/OPTION' },
-    { semaine: '2027-S03', date: '2027-01-22', texte: 'Diffusion PH Perso', perimetre: 'PERSO' },
-    { semaine: '2027-S05', date: '2027-02-05', texte: 'Diffusion TO Base',  perimetre: 'BASE/OPTION', suivi: 'concept' },
-    { semaine: '2027-S08', date: '2027-02-26', texte: 'Diffusion TO Perso', perimetre: 'PERSO',       suivi: 'concept' }
+    { contrat: 'HDK', semaine: '2026-S51', date: '2026-12-15', texte: 'Solde FWD' },
+    { contrat: 'HDK', semaine: '2027-S02', date: '2027-01-15', texte: 'Diffusion PH Base',  perimetre: 'BASE/OPTION' },
+    { contrat: 'HDK', semaine: '2027-S03', date: '2027-01-22', texte: 'Diffusion PH Perso', perimetre: 'PERSO' },
+    { contrat: 'HDK', semaine: '2027-S05', date: '2027-02-05', texte: 'Diffusion TO Base',  perimetre: 'BASE/OPTION', suivi: 'concept' },
+    { contrat: 'HDK', semaine: '2027-S08', date: '2027-02-26', texte: 'Diffusion TO Perso', perimetre: 'PERSO',       suivi: 'concept' }
   ],
 
   /** Nombre maximum de jalons transmis à la page. */
@@ -360,6 +369,7 @@ function onOpen() {
     .addSeparator()
     .addItem('Archiver le relevé de cette semaine', 'enregistrerInstantaneHebdo')
     .addItem('Supprimer le relevé de cette semaine', 'supprimerDernierReleve')
+    .addItem('Archiver l\'onglet affiché pour une semaine passée…', 'archiverSemainePassee')
     .addSeparator()
     .addItem('Activer l\'archivage automatique (vendredi 17 h)', 'installerSuiviHebdomadaire')
     .addItem('Désactiver l\'archivage automatique', 'desinstallerSuiviHebdomadaire')
@@ -1156,7 +1166,7 @@ function getDonneesPourClient(contrat) {
       doublons: modele.doublons,
       plans: modele.plans,
       releves: releves,
-      jalons: getJalons(),
+      jalons: getJalons(modele.feuille),
       contrats: contrats,
       contrat: modele.feuille
     };
@@ -1430,7 +1440,27 @@ function diagnostic() {
   dire('');
   const jalons = getJalons();
   dire('✓ Jalons de configuration : ' + jalons.length);
-  diagnostiquerPerimetresDesJalons(contrats[0], jalons, dire);
+  /* Chaque contrat a les siens (débrief 17 : HDK a les jalons du programme,
+     THS aucun) : le Diagnostic dit qui voit quoi, et prévient d'un nom de
+     contrat qu'aucun onglet ne porte — ce jalon-là n'apparaîtrait nulle part. */
+  if (jalons.length && contrats.length) {
+    dire('  par contrat : ' + contrats.map(function (c) {
+      const n = getJalons(c.id).length;
+      return '« ' + c.nom + ' » ' + (n ? n + ' jalon' + (n > 1 ? 's' : '') : 'aucun jalon');
+    }).join(' · '));
+  }
+  (Array.isArray(CONFIG.JALONS) ? CONFIG.JALONS : []).forEach(function (j) {
+    (contratsDuJalon(j) || []).forEach(function (nom) {
+      if (contrats.some(function (c) { return normaliser(c.id) === normaliser(nom); })) return;
+      dire('⚠ Jalon « ' + String((j && j.texte) || 'Jalon').trim().slice(0, 60) + ' » : contrat « ' + nom.slice(0, 40) +
+           ' » — aucun onglet de contrat ne porte ce nom : il n\'apparaît sur aucune page. Corriger contrat dans CONFIG.JALONS.');
+    });
+  });
+  /* Les périmètres se vérifient contre la colonne de domaine du contrat qui
+     porte les jalons — chacun le sien. */
+  contrats.forEach(function (c) {
+    diagnostiquerPerimetresDesJalons(c, getJalons(c.id), dire, contrats.length > 1);
+  });
   dire('');
   const secondeLisible = diagnostiquerSecondeBase(classeur, dire);
   try {
@@ -1478,7 +1508,7 @@ function diagnostic() {
 }
 
 /**
- * Les périmètres des jalons contre la colonne de domaine du premier contrat.
+ * Les périmètres des jalons d'un contrat contre sa colonne de domaine.
  * Un jalon dont le périmètre n'est aucune des valeurs de la colonne ne
  * ferait jamais l'échéance sous un périmètre : on le dit, avec les valeurs
  * vues, pour corriger `perimetre` dans CONFIG.JALONS. Rien à dire tant
@@ -1488,9 +1518,10 @@ function diagnostic() {
 /** Un périmètre se compare comme sur la page : sans casse, accents ni espaces. */
 function clePerimetre(v) { return normaliser(v).replace(/\s+/g, ''); }
 
-function diagnostiquerPerimetresDesJalons(contrat, jalons, dire) {
+function diagnostiquerPerimetresDesJalons(contrat, jalons, dire, nommer) {
   const avecPerimetre = jalons.filter(function (j) { return j.perimetre; });
   if (!avecPerimetre.length || !contrat) return;
+  const de = nommer ? ' (« ' + contrat.nom + ' »)' : '';
   let modele;
   try {
     modele = construireModele(contrat.id);
@@ -1512,7 +1543,7 @@ function diagnostiquerPerimetresDesJalons(contrat, jalons, dire) {
   const colonne = modele.colonnes.filter(function (c) { return c.cle === modele.cleDomaine; })[0];
   const titre = colonne ? colonne.titre : modele.cleDomaine;
   if (!inconnus.length) {
-    dire('  périmètres des jalons : ' + avecPerimetre.map(function (j) { return j.perimetre; })
+    dire('  périmètres des jalons' + de + ' : ' + avecPerimetre.map(function (j) { return j.perimetre; })
       .filter(function (v, i, t) { return t.indexOf(v) === i; }).join(', ') +
       ' — tous connus de la colonne « ' + titre + ' »');
     return;
@@ -2290,7 +2321,31 @@ function ligneDeLaSemaine(feuille, semaine) {
  * est relancée à la fin, une fois les autres archivés, pour que le déclencheur
  * hebdomadaire la signale. Renvoie le détail, contrat par contrat.
  */
-function enregistrerInstantaneHebdo() {
+/**
+ * Les gestes qui écrivent dans le classeur — archiver, supprimer un relevé,
+ * activer ou couper l'archivage automatique — ne se lancent que du menu
+ * Suivi FWD, ou, pour l'archivage, par le vrai déclencheur du vendredi.
+ * La page est ouverte par tout le monde et s'exécute au nom du propriétaire :
+ * sans cette garde, un lecteur pourrait les appeler depuis la console de son
+ * navigateur (google.script.run atteint toute fonction dont le nom ne finit
+ * pas par « _ »). Hors du classeur, SpreadsheetApp.getUi() lève : c'est ce
+ * qui les distingue. Un déclencheur se reconnaît à son identifiant, qui doit
+ * être celui d'un déclencheur de ce projet.
+ */
+function gesteDuClasseur(e) {
+  if (e && typeof e === 'object' && e.triggerUid) {
+    const uid = String(e.triggerUid);
+    if (ScriptApp.getProjectTriggers().some(function (t) { return String(t.getUniqueId()) === uid; })) return;
+  }
+  try {
+    SpreadsheetApp.getUi();
+  } catch (err) {
+    throw new Error('Ce geste ne se lance que dans le classeur, menu Suivi FWD : la page du tableau de bord ne modifie rien.');
+  }
+}
+
+function enregistrerInstantaneHebdo(e) {
+  gesteDuClasseur(e);
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
   const semaine = numeroSemaineISO(new Date());
   const contrats = listerContrats(classeur);
@@ -2385,6 +2440,7 @@ function archiverContrat(classeur, c, semaine) {
  * n'avait rien.
  */
 function supprimerDernierReleve() {
+  gesteDuClasseur();
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
   const ui = SpreadsheetApp.getUi();
   const semaine = numeroSemaineISO(new Date());
@@ -2418,7 +2474,112 @@ function supprimerDernierReleve() {
   return { semaine: semaine, supprimes: supprimes, sans: sans };
 }
 
+/**
+ * Rattraper une semaine (débrief 17) : l'export d'une semaine passée —
+ * celui de la semaine dernière, gardé de côté —, recollé après coup dans
+ * l'onglet d'un contrat, devient le relevé de cette semaine-là. Sans lui,
+ * un relevé S39 identique à celui de S40 ne donne aucun rythme. Seul le
+ * contrat de l'onglet affiché est archivé ; la ligne de la semaine est créée
+ * ou remplacée, après confirmation. Une semaine à venir est refusée.
+ */
+function archiverSemainePassee() {
+  gesteDuClasseur();
+  const ui = SpreadsheetApp.getUi();
+  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  const onglet = classeur.getActiveSheet().getName();
+  const reponse = ui.prompt('Archiver pour une semaine passée',
+    'L\'export collé dans l\'onglet affiché (« ' + onglet + ' ») devient le relevé de la semaine où il a été ' +
+    'tiré de GATES.\nSemaine (par exemple S39) :', ui.ButtonSet.OK_CANCEL);
+  if (reponse.getSelectedButton() !== ui.Button.OK) return null;
+  const saisie = reponse.getResponseText();
+  const prevu = preparerSemainePassee(classeur, onglet, saisie);
+  if (!prevu.ok) {
+    ui.alert('Suivi FWD', prevu.message, ui.ButtonSet.OK);
+    return prevu;
+  }
+  if (ui.alert('Suivi FWD', prevu.question, ui.ButtonSet.YES_NO) !== ui.Button.YES) return null;
+  const resultat = archiverPourSemaine(classeur, onglet, saisie);
+  ui.alert('Suivi FWD', resultat.message, ui.ButtonSet.OK);
+  return resultat;
+}
+
+/**
+ * La semaine tapée : « S39 », « s 39 », « 39 » (de l'année en cours — ou
+ * de la précédente si elle tomberait plus tard qu'aujourd'hui : S52 tapé en
+ * janvier), ou « 2026-S39 ». Null si illisible.
+ */
+function semaineSaisie(texte, courante) {
+  const t = String(texte || '').trim();
+  let semaine = normaliserSemaine(t);
+  const m = /^[sS]?\s*(\d{1,2})$/.exec(t);
+  if (!semaine && m) {
+    const annee = Number(courante.slice(0, 4));
+    semaine = normaliserSemaine(annee + '-S' + m[1]);
+    if (semaine && semaine > courante) semaine = normaliserSemaine((annee - 1) + '-S' + m[1]);
+  }
+  return semaine;
+}
+
+/** « S39 », et l'année quand ce n'est pas celle d'aujourd'hui : « S52 2025 ». */
+function semaineDite(semaine, courante) {
+  const dite = 'S' + parseInt(semaine.slice(6), 10);
+  return semaine.slice(0, 4) === String(courante || '').slice(0, 4) ? dite : dite + ' ' + semaine.slice(0, 4);
+}
+
+/**
+ * Ce que ferait l'archivage d'une semaine passée, sans rien écrire :
+ * { ok, semaine, contrat, existe, question } — ou { ok: false, message }.
+ */
+function preparerSemainePassee(classeur, nomOnglet, saisie) {
+  const courante = numeroSemaineISO(new Date());
+  const texte = String(saisie || '').trim();
+  const semaine = semaineSaisie(texte, courante);
+  if (!semaine) {
+    return { ok: false, semaine: null, message: 'Semaine illisible : « ' + texte.slice(0, 20) + ' ». Écrire par exemple S39 (ou 2026-S39).' };
+  }
+  const dite = semaineDite(semaine, courante);
+  if (semaine > courante) {
+    return { ok: false, semaine: semaine, message: 'La semaine ' + dite + ' n\'est pas encore arrivée : rien n\'est archivé.' };
+  }
+  const contrat = listerContrats(classeur).filter(function (c) { return normaliser(c.id) === normaliser(nomOnglet); })[0];
+  if (!contrat) {
+    return { ok: false, semaine: semaine, message: 'L\'onglet affiché, « ' + nomOnglet + ' », n\'est pas un contrat : ' +
+      'afficher l\'onglet du contrat (HDK…) où l\'export de ' + dite + ' est collé, puis relancer.' };
+  }
+  const historique = getFeuilleHistorique(classeur, contrat.id, false);
+  const existe = !!historique && ligneDeLaSemaine(historique, semaine) !== -1;
+  const actuelle = semaine === courante;
+  return {
+    ok: true, semaine: semaine, contrat: contrat, existe: existe,
+    question: 'Archiver l\'export affiché dans « ' + contrat.nom + ' » comme relevé ' + dite + ' ?\n\n' +
+      (existe ? 'Il remplace le relevé ' + dite + ' déjà archivé pour « ' + contrat.nom + ' ».'
+              : 'Aucun relevé ' + dite + ' n\'existe encore pour « ' + contrat.nom + ' » : il est ajouté.') +
+      (actuelle ? '' : '\n\nEnsuite, recolle tout de suite l\'export du jour dans « ' + contrat.nom + ' » : sinon l\'archivage ' +
+        'du vendredi prendrait cet export-là pour celui de la semaine en cours.')
+  };
+}
+
+/** Le geste d'archiverSemainePassee, sans interface : { ok, semaine, message }. */
+function archiverPourSemaine(classeur, nomOnglet, saisie) {
+  const prevu = preparerSemainePassee(classeur, nomOnglet, saisie);
+  if (!prevu.ok) return { ok: false, semaine: prevu.semaine, message: prevu.message };
+  const courante = numeroSemaineISO(new Date());
+  const dite = semaineDite(prevu.semaine, courante);
+  try {
+    const detail = archiverContrat(classeur, prevu.contrat, prevu.semaine);
+    return { ok: true, semaine: prevu.semaine, message: 'Relevé ' + dite + ' de « ' + prevu.contrat.nom + ' » ' +
+      (prevu.existe ? 'remplacé' : 'archivé') + ' avec l\'export affiché (' + detail.compte.total + ' plans).' +
+      (prevu.semaine === courante ? '' : '\n\n⚠ L\'onglet « ' + prevu.contrat.nom + ' » porte maintenant l\'export de ' + dite +
+        ' : recolle l\'export du jour, puis Suivi FWD → Archiver le relevé de cette semaine.') };
+  } catch (err) {
+    const pourquoi = err && err.sansPlan ? 'l\'onglet « ' + prevu.contrat.nom + ' » ne porte aucun plan (en-têtes seuls)'
+      : (err && err.message ? err.message : err);
+    return { ok: false, semaine: prevu.semaine, message: 'Relevé ' + dite + ' non archivé : ' + pourquoi };
+  }
+}
+
 function installerSuiviHebdomadaire() {
+  gesteDuClasseur();
   desinstallerSuiviHebdomadaire();
   ScriptApp.newTrigger('enregistrerInstantaneHebdo')
     .timeBased()
@@ -2429,6 +2590,7 @@ function installerSuiviHebdomadaire() {
 }
 
 function desinstallerSuiviHebdomadaire() {
+  gesteDuClasseur();
   ScriptApp.getProjectTriggers().forEach(function (t) {
     if (t.getHandlerFunction() === 'enregistrerInstantaneHebdo') ScriptApp.deleteTrigger(t);
   });
@@ -2457,9 +2619,35 @@ function dateDeJalon(valeur) {
   return d.getUTCFullYear() === a && d.getUTCMonth() === mo - 1 && d.getUTCDate() === j ? d : null;
 }
 
-function getJalons() {
+/**
+ * Les contrats d'un jalon de CONFIG.JALONS (clé contrat : un nom d'onglet,
+ * ou une liste), épurés — null quand il n'en nomme aucun : il vaut alors
+ * pour tous les contrats.
+ */
+function contratsDuJalon(j) {
+  const brut = j && typeof j === 'object' ? j.contrat : null;
+  const liste = (Array.isArray(brut) ? brut : [brut])
+    .map(function (c) { return c === null || c === undefined || typeof c === 'object' ? '' : String(c).trim(); })
+    .filter(Boolean);
+  return liste.length ? liste : null;
+}
+
+/** Le jalon vaut-il pour ce contrat ? Sans contrat demandé : oui, tous. */
+function jalonPourContrat(j, contrat) {
+  if (contrat === undefined || contrat === null) return true;
+  const pour = contratsDuJalon(j);
+  return !pour || pour.some(function (c) { return normaliser(c) === normaliser(contrat); });
+}
+
+/**
+ * Les jalons d'un contrat (le nom de son onglet), prêts pour la page ; sans
+ * contrat, tous ceux de la configuration. La clé contrat ne voyage pas : la
+ * page ne reçoit que les jalons du contrat qu'elle montre.
+ */
+function getJalons(contrat) {
   const liste = Array.isArray(CONFIG.JALONS) ? CONFIG.JALONS : [];
   return liste
+    .filter(function (j) { return jalonPourContrat(j, contrat); })
     .map(function (j) {
       const date = dateDeJalon(j && j.date);
       const semaine = date ? numeroSemaineISO(date) : normaliserSemaine(j && j.semaine);

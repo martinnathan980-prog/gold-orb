@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "b8f6ff3";
+  --suivi-fwd-edition: "fe100ea";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -65,6 +65,10 @@
 select option { background-color: var(--surface); color: var(--encre); }
 
 * { box-sizing: border-box; }
+/* Un élément caché l'est toujours, quel que soit son display : la puce
+   « Prochaine échéance » (inline-flex) restait affichée sur un contrat sans
+   jalon, et le bouton ↑ en haut de page (débrief 17). */
+[hidden] { display: none !important; }
 body {
   margin: 0; background: var(--papier); color: var(--encre);
   font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;

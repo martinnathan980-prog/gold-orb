@@ -45,6 +45,20 @@ C'est un outil de **consultation** : la page ne modifie rien dans le classeur,
 et rien de ce qu'on y clique n'est visible par les autres. Ce que voit la
 collègue, sa chef le voit aussi.
 
+**Et personne ne peut rien modifier par elle** (débrief 17 : « tout le monde
+l'ouvre, c'est que de la consultation »). L'application s'exécute au nom de
+son propriétaire, et `google.script.run` atteint toute fonction publique de
+`Code.gs` : depuis la console de son navigateur, un lecteur aurait pu
+lancer un archivage, supprimer le relevé de la semaine ou couper
+l'archivage automatique. Ces gestes — archiver, archiver une semaine
+passée, supprimer, activer ou désactiver l'archivage automatique —
+**refusent désormais hors du classeur** : « Ce geste ne se lance que dans le
+classeur, menu Suivi FWD : la page du tableau de bord ne modifie rien. »
+Ce qui les distingue : hors du classeur, `SpreadsheetApp.getUi()` lève.
+L'archivage du vendredi, lui, passe : son déclencheur se reconnaît à son
+identifiant (`triggerUid`), qui doit être celui d'un déclencheur du projet.
+Le dépôt automatique (§ 15) garde son propre verrou, le secret.
+
 ## 3. Les contrats : un onglet visible par contrat
 
 Chaque onglet **visible** du classeur est un contrat, et **le nom de l'onglet
@@ -102,6 +116,32 @@ automatique (vendredi 17 h)**, et un relevé est pris chaque vendredi entre
 Les étapes 1 et 2 aussi : voir **§ 15, l'automatisation** — un script récupère
 les extracts dans Chrome et les dépose dans le classeur, qui archive la
 semaine dans la foulée.
+
+### Rattraper une semaine passée (débrief 17)
+
+L'archivage écrit toujours dans la semaine **en cours**. Un export gardé de
+côté — celui de la semaine dernière — ne pouvait donc plus devenir le relevé
+de sa semaine : S39 et S40 portaient le même export, et la page n'avait aucun
+rythme. **Suivi FWD → Archiver l'onglet affiché pour une semaine passée…**
+le permet :
+
+1. recoller l'export de la semaine passée dans l'onglet du contrat, et
+   rester sur cet onglet ;
+2. le menu demande la semaine — `S39`, `39` ou `2026-S39` ; une semaine
+   tapée sans année est celle de l'année en cours, ou de la précédente si
+   elle n'est pas encore arrivée (« S52 » en janvier) ;
+3. une confirmation redit le contrat et la semaine, et si un relevé de
+   cette semaine existe déjà, qu'il sera **remplacé** (« Non » : rien
+   n'est écrit) ;
+4. seul le contrat de l'onglet affiché est archivé, pour cette semaine-là ;
+   le message final rappelle de **recoller aussitôt l'export du jour** et
+   d'archiver la semaine en cours — sinon l'archivage du vendredi prendrait
+   l'ancien export pour celui de la semaine.
+
+Refusés, avec le geste à faire : une semaine illisible, une semaine à
+venir, un onglet affiché qui n'est pas un contrat (historique, SEE…).
+L'historique se relit trié par semaine : un relevé plus ancien ajouté après
+coup prend sa place dans la courbe et le journal.
 
 ## 5. Ce que devient l'historique
 
@@ -814,19 +854,45 @@ caractères au plus et, au besoin :
   valeur de la colonne de domaine (§ 8), écrite comme dans l'extract ;
 - **`suivi: 'concept'`** — quand le jalon appartient au **concept harnais**
   et non à la définition électrique (le FWD). Les diffusions **TO** (table
-  outil) sont dans ce cas ; les diffusions **PH** et le solde suivent le FWD.
+  outil) sont dans ce cas ; les diffusions **PH** et le solde suivent le FWD ;
+- **`contrat`** — le contrat auquel le jalon appartient, écrit comme le nom
+  de son onglet (`'HDK'` ; casse et accents indifférents), ou une liste
+  (`['HDK', 'X2']`). Les autres contrats ne le voient pas. Sans `contrat`,
+  le jalon vaut pour tous.
 
-Ce sont les échéances du programme, transmises le 17/09/2026 :
+Ce sont les échéances du programme **HDK**, transmises le 17/09/2026. THS
+est un autre contrat, à d'autres dates : il n'a **aucun jalon** pour
+l'instant, comme tout autre contrat (débrief 17, « pour les autres, il n'y a
+pas de jalons, tu n'en mets pas pour le moment »). Sa page montre le rythme
+tenu et la fin estimée, sans échéance ; la vue d'ensemble lui met « — » en
+prochaine échéance.
 
 ```js
 JALONS: [
-  { semaine: '2026-S51', date: '2026-12-15', texte: 'Solde FWD' },
-  { semaine: '2027-S02', date: '2027-01-15', texte: 'Diffusion PH Base',  perimetre: 'BASE/OPTION' },
-  { semaine: '2027-S03', date: '2027-01-22', texte: 'Diffusion PH Perso', perimetre: 'PERSO' },
-  { semaine: '2027-S05', date: '2027-02-05', texte: 'Diffusion TO Base',  perimetre: 'BASE/OPTION', suivi: 'concept' },
-  { semaine: '2027-S08', date: '2027-02-26', texte: 'Diffusion TO Perso', perimetre: 'PERSO',       suivi: 'concept' }
+  { contrat: 'HDK', semaine: '2026-S51', date: '2026-12-15', texte: 'Solde FWD' },
+  { contrat: 'HDK', semaine: '2027-S02', date: '2027-01-15', texte: 'Diffusion PH Base',  perimetre: 'BASE/OPTION' },
+  { contrat: 'HDK', semaine: '2027-S03', date: '2027-01-22', texte: 'Diffusion PH Perso', perimetre: 'PERSO' },
+  { contrat: 'HDK', semaine: '2027-S05', date: '2027-02-05', texte: 'Diffusion TO Base',  perimetre: 'BASE/OPTION', suivi: 'concept' },
+  { contrat: 'HDK', semaine: '2027-S08', date: '2027-02-26', texte: 'Diffusion TO Perso', perimetre: 'PERSO',       suivi: 'concept' }
 ],
 ```
+
+La page ne reçoit que les jalons du contrat qu'elle montre (la clé
+`contrat` ne voyage pas). Le **Diagnostic** dit qui voit quoi (« par
+contrat : « HDK » 5 jalons · « THS » aucun jalon »), vérifie les périmètres
+contre la colonne de domaine de chaque contrat, et prévient d'un nom de
+contrat qu'aucun onglet ne porte (« ⚠ Jalon « … » : contrat « HDX » — aucun
+onglet de contrat ne porte ce nom : il n'apparaît sur aucune page »). Un
+onglet de contrat renommé perd donc ses jalons tant que `contrat` n'est pas
+corrigé : le Diagnostic le signale.
+
+Sur un contrat sans jalon, la puce « Prochaine échéance » disparaît. Elle
+restait affichée, héritée du contrat d'avant : son `display: inline-flex`
+l'emportait sur l'attribut `hidden` — tant que tous les contrats avaient
+les mêmes jalons, rien ne le montrait. Une règle `[hidden] { display: none
+!important; }` le garantit désormais pour toute la page ; le bouton ↑,
+qui restait lui aussi visible en haut de page, n'apparaît plus qu'en
+descendant, comme prévu.
 
 Sous l'avancement « définition électrique », les deux jalons TO restent
 dessinés, **en retrait**, et ne comptent pas (ni échéance, ni rythme

@@ -28,6 +28,22 @@ function chargerServeur(classeur, proprietes, fichiers) {
     cfg.COLONNE_FWD = '';
     cfg.COLONNE_CONCEPT = '';
   }
+  /* Les jalons livrés sont ceux du contrat HDK (débrief 17 : THS n'en a
+     pas). Un classeur d'essai qui n'a aucun onglet du contrat nommé —
+     « Données », X1, X2… — les reçoit pour tous ses contrats, comme avant :
+     ses pages gardent leurs échéances. Un classeur qui a l'onglet HDK garde
+     la configuration livrée, telle quelle. */
+  const cfgJ = vm.runInContext('CONFIG', contexte);
+  const noms = (classeur && classeur.getSheets ? classeur.getSheets() : []).map(function (f) { return contexte.normaliser(f.getName()); });
+  if (Array.isArray(cfgJ.JALONS) && !cfgJ.JALONS.some(function (j) {
+    return (contexte.contratsDuJalon(j) || []).some(function (c) { return noms.indexOf(contexte.normaliser(c)) !== -1; });
+  })) {
+    cfgJ.JALONS = cfgJ.JALONS.map(function (j) {
+      const copie = Object.assign({}, j);
+      delete copie.contrat;
+      return copie;
+    });
+  }
   return contexte;
 }
 
