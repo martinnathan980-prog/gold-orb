@@ -89,6 +89,75 @@ JS_BANDEAU_ATTENTE = r"""
 JS_RETIRER_BANDEAU = "() => { const b = document.getElementById('__autoweb_attente'); if (b) b.remove(); }"
 
 
+# Bandeau orange qui prévient sans bloquer (8 secondes), dans la fenêtre du robot
+JS_PREVENIR = r"""
+(message) => {
+  if (window !== window.top || !document.documentElement) return;
+  let zone = document.getElementById('__autoweb_avis');
+  if (!zone) {
+    zone = document.createElement('div');
+    zone.id = '__autoweb_avis';
+    zone.setAttribute('data-autoweb', '1');
+    zone.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:2147483647;' +
+      'display:flex;flex-direction:column;gap:6px;max-width:640px;pointer-events:none';
+    (document.body || document.documentElement).appendChild(zone);
+  }
+  const b = document.createElement('div');
+  b.style.cssText = 'background:#b45309;color:#fff;font:600 14px/1.4 system-ui,-apple-system,Arial;padding:10px 14px;' +
+    'border-radius:8px;box-shadow:0 3px 14px rgba(0,0,0,.4)';
+  b.textContent = '⚠ ' + message;
+  zone.appendChild(b);
+  setTimeout(() => b.remove(), 8000);
+}
+"""
+# Fenêtre d'alerte ouverte dans la page (boîte de dialogue, fenêtre modale) : son texte, ou ""
+JS_TEXTE_ALERTE = r"""
+() => {
+  const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden' || +s.opacity === 0) return false;
+                     const r = e.getBoundingClientRect(); return r.width * r.height > 0; };
+  const sel = '[role=alertdialog], [role=dialog], dialog[open], .modal.show, .modal.in, .ui-dialog, .k-window, ' +
+              '.x-window, .swal2-popup, .bootbox, .MuiDialog-paper, .ant-modal';
+  for (const e of document.querySelectorAll(sel)) {
+    if (!vis(e) || e.closest('[data-autoweb]')) continue;
+    const t = (e.innerText || '').replace(/\s+/g, ' ').trim();
+    if (t) return t.slice(0, 400);
+  }
+  return '';
+}
+"""
+# Lignes d'un tableau (entêtes exclues, « Aucun résultat » exclu) ; une ligne contient-elle ce texte ?
+JS_TABLEAU = r"""
+(t, [colonne, texte]) => {
+  const norm = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+  const lignes = Array.from(t.querySelectorAll('tr, [role=row]')).filter(r => r.closest('table, [role=grid], [role=table]') === t ||
+                                                                              t.tagName !== 'TABLE');
+  let entetes = Array.from(t.querySelectorAll('thead th, [role=columnheader]'));
+  let premiere = null;
+  if (!entetes.length && lignes.length) {
+    const c = Array.from(lignes[0].children);
+    if (c.length > 1 && c.every(x => x.tagName === 'TH')) { entetes = c; premiere = lignes[0]; }
+  }
+  let rang = -1;
+  if (colonne) {
+    rang = entetes.findIndex(h => norm(h.innerText || h.textContent).includes(norm(colonne)));
+    if (rang < 0) return { lignes: -1, trouve: false, erreur: 'colonne' };
+  }
+  const donnees = lignes.filter(r => r !== premiere && !r.closest('thead') &&
+    Array.from(r.children).some(c => c.tagName === 'TD' || ['cell', 'gridcell'].includes(c.getAttribute('role'))));
+  const vraies = donnees.filter(r => !(r.children.length === 1 &&
+    /aucun|aucune|no data|no record|no result|vide|empty|pas de/i.test(r.innerText || '')));
+  let trouve = false;
+  if (texte) {
+    for (const r of vraies) {
+      const cible = rang >= 0 ? r.children[rang] : r;
+      if (cible && norm(cible.innerText || cible.textContent).includes(norm(texte))) { trouve = true; break; }
+    }
+  }
+  return { lignes: vraies.length, trouve: trouve };
+}
+"""
+
+
 def nom_fichier_sur(texte: str) -> str:
     """Retire les caractères interdits dans un nom de fichier Windows."""
     nom = re.sub(r'[\\/:*?"<>|\r\n\t]+', "_", texte).strip(" .")
@@ -225,8 +294,21 @@ class Executeur:
             self._gerer_echec(etape, libelle, premiere_ligne(e))
         except (OSError, ValueError, TypeError) as e:
             self._gerer_echec(etape, libelle, f"{e.__class__.__name__} : {e}")
+        self._verifier_alertes()
+
+    def _verifier_alertes(self) -> None:
+        """Mode « prudent » : une fenêtre du portail qui n'était pas attendue a été refusée (rien n'a été
+        validé). On prévient et on laisse cette ligne (ce plan) de côté : on passe à la suivante."""
+        alertes = getattr(self.nav, "alertes", None)
+        if not alertes:
+            return
+        message = re.sub(r"\s+", " ", alertes[0]).strip()[:200]
+        alertes.clear()
+        self.act_prevenir({"message": f"Fenêtre du portail refusée par le robot (rien n'a été validé) : « {message} »"}, None)
+        raise LigneIgnoree(f"fenêtre inattendue du portail, refusée : « {message} »")
 
     def _gerer_echec(self, etape: Etape, libelle: str, detail: str) -> None:
+        self._verifier_alertes()  # l'étape a échoué parce qu'une fenêtre du portail a été refusée
         message = f"{etape.position} « {libelle} » : {detail}"
         if etape.optionnel:
             journal.warning("      (étape optionnelle ignorée) %s", message)
@@ -736,7 +818,15 @@ class Executeur:
             resultats.append(existe(args["visible"], "visible"))
         if args.get("cache") is not None:
             resultats.append(not existe(args["cache"], "visible"))
-        if "valeur" in args:
+        if "alerte" in args:
+            try:
+                ouverte = bool(self.page.evaluate(JS_TEXTE_ALERTE))
+            except Exception:  # noqa: BLE001
+                ouverte = False
+            resultats.append(ouverte == est_vrai(args["alerte"]))
+        if args.get("tableau") is not None:
+            resultats.append(self._condition_tableau(args, delai))
+        if "valeur" in args and args.get("tableau") is None:
             valeur = args["valeur"]
             texte = valeur if isinstance(valeur, str) else formater(valeur)
             if "egal" in args:
@@ -758,6 +848,63 @@ class Executeur:
         if not resultats:
             raise ErreurEtape("condition « si » sans critère évaluable.")
         return all(resultats)
+
+    def _condition_tableau(self, args: Dict[str, Any], delai: int) -> bool:
+        """« tableau: X, colonne: Statut, ligne_contient: Validé » : une ligne (dans cette colonne) contient
+        ce texte ? « tableau: X, vide: true » : le tableau n'a aucune ligne ? Un tableau ou une colonne
+        introuvable est une ERREUR (jamais « rien trouvé, on continue ») : on ne supprime pas à l'aveugle."""
+        loc = self.localiser(args["tableau"], {k: v for k, v in args.items() if k in ("nieme", "premier", "dernier")}).first
+        try:
+            loc.wait_for(state="attached", timeout=delai)
+        except PlaywrightTimeout:
+            raise ErreurEtape(f"tableau introuvable ({args['tableau']}) : rien n'est fait pour cette ligne.")
+        colonne = str(args.get("colonne") or "")
+        texte = str(args.get("ligne_contient") or "")
+        mesure = loc.evaluate(JS_TABLEAU, [colonne, texte])
+        if mesure.get("erreur") == "colonne":
+            raise ErreurEtape(f"colonne « {colonne} » introuvable dans le tableau : rien n'est fait pour cette ligne.")
+        if "ligne_contient" in args:
+            return bool(mesure.get("trouve"))
+        if "vide" in args:
+            return (mesure.get("lignes", 0) == 0) == est_vrai(args["vide"])
+        if "non_vide" in args:
+            return (mesure.get("lignes", 0) > 0) == est_vrai(args["non_vide"])
+        return mesure.get("lignes", 0) > 0
+
+    def act_prevenir(self, args: Dict[str, Any], delai: Optional[int]) -> None:
+        """Prévient sans bloquer : bandeau orange dans la fenêtre du robot, et ligne dans la fenêtre noire."""
+        message = str(args.get("message") or "")
+        journal.warning("   %s %s", S.ATTENTION, message)
+        self.contexte["dernier_avertissement"] = message
+        try:
+            self.page.evaluate(JS_PREVENIR, message)
+        except Exception:  # noqa: BLE001 - page en cours de chargement : le message est dans la fenêtre noire
+            pass
+
+    def act_lire_alerte(self, args: Dict[str, Any], delai: Optional[int]) -> None:
+        """Texte de la fenêtre d'alerte du portail (ou de la dernière question refusée) -> variable."""
+        texte = ""
+        try:
+            texte = self.page.evaluate(JS_TEXTE_ALERTE) or ""
+        except Exception:  # noqa: BLE001
+            texte = ""
+        texte = texte or getattr(self.nav, "derniere_alerte", "") or ""
+        texte = re.sub(r"\s+", " ", texte).strip()[:300]
+        vers = str(args["vers"])
+        self.contexte[vers] = texte
+        if self.classeur is not None and self.numero_ligne is not None:
+            self.classeur.ecrire(self.numero_ligne, vers, texte)
+
+    def act_repeter(self, args: Dict[str, Any], delai: Optional[int]) -> None:
+        """Répète les étapes tant que la condition est vraie (« tant qu'il reste une référence »)."""
+        maximum = int(args.get("max", 50))
+        condition = dict(args["tant_que"])
+        for _ in range(maximum):
+            if not self._condition(condition):
+                return
+            self.executer(args["etapes"])
+        if self._condition(condition):
+            raise ErreurEtape(f"« répéter » : la condition est toujours vraie après {maximum} tours : arrêt, par sécurité.")
 
     def act_si(self, args: Dict[str, Any], delai: Optional[int]) -> None:
         verdict = self._condition(args)

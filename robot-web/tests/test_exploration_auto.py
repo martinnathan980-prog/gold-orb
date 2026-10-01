@@ -83,6 +83,15 @@ etapes:
     assert not [c for c in P.Portail.envois if any(x in c for x in DANGEREUX)]
 
 
+def test_repere_de_tableau(portail, tmp_path, monkeypatch, navigateur_ok):
+    """« carte=E8/T1 » : le tableau de l'écran, pour vérifier son contenu dans une tâche (« si: {tableau: ...} »)."""
+    robot = _explorer(tmp_path, portail)
+    monkeypatch.setattr(module_carte, "DOSSIER_EXPLORATIONS", tmp_path / "explorations")
+    ecran = next(e for e in robot.ecrans if e.tableaux)
+    selecteur = module_carte.selecteur(f"carte={ecran.id}/T1")
+    assert selecteur and "table" in selecteur.lower() or selecteur.startswith(("#", "[id="))
+
+
 def test_repere_inconnu_explique(tmp_path, monkeypatch):
     from autoweb.erreurs import ErreurEtape
 

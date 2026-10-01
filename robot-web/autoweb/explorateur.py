@@ -782,7 +782,8 @@ JS_ECRAN = r"""
     if (!tableDonnees(t) && t.tagName === 'TABLE') return;  // mise en page : ce n'est pas un tableau de l'écran
     const lignes = Array.from(t.tagName === 'TABLE' ? t.rows : t.querySelectorAll('[role=row]'))
       .filter(r => ligneDe((r.cells && r.cells[0]) || r.firstElementChild || r) === r).length;
-    tableaux.push({ entetes: entetes.slice(0, 40), lignes: lignes });
+    tableaux.push({ entetes: entetes.slice(0, 40), lignes: lignes,
+                    selecteur: (t.getRootNode && t.getRootNode() !== document) ? '' : chemin(t) });
   });
   const cibles = [];
   let tronque = false;

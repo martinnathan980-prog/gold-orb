@@ -185,6 +185,9 @@ etapes:                    # pour CHAQUE ligne de l'Excel
 | `pause` | `pause: "Vérifiez puis Entrée"` | attend « Continuer » (bandeau bleu dans le navigateur) ou Entrée (`stop` pour arrêter) |
 | `connexion` | `connexion: "Connectez-vous si besoin"` | continue tout de suite si l'outil est affiché ; sinon attend la connexion et repart seul |
 | `ecran` | `ecran: "carte=20261001-101500/E5"` | revient sur l'écran E5 de la carte en rejouant son chemin (chaque clic vérifié) |
+| `prevenir` | `prevenir: "Plan {{n}} : client associé, je n'y touche pas"` | bandeau orange dans la fenêtre du robot + fenêtre noire, sans bloquer |
+| `lire_alerte` | `lire_alerte: Message` | texte de la fenêtre d'alerte du portail (ou de la dernière question refusée) dans une variable / colonne |
+| `repeter` | `repeter: {tant_que: {tableau: "#refs", vide: false}, max: 20, etapes: [...]}` | répète tant que la condition est vraie (arrêt de sécurité après `max` tours) |
 | `inspecter` | `- inspecter` | ouvre l'inspecteur Playwright (pour mettre au point) |
 | `executer_js` | `executer_js: {script: "document.title", vers: "Titre"}` | exécute du JavaScript |
 | `si` | voir ci-dessous | condition |
@@ -213,7 +216,24 @@ Les alias anglais (`goto`, `fill`, `click`, `select`, `check`, `wait`…) sont a
       - cliquer: "#popup .fermer"
     sinon:
       - journal: "pas de popup"
+- si:
+    tableau: "carte=E9/T1"     # une ligne du tableau, dans la colonne « Statut », contient « Validé » ?
+    colonne: "Statut"          # (ou vide: true / non_vide: true) ; tableau ou colonne introuvable = ERREUR
+    ligne_contient: "Validé"
+    alors:
+      - prevenir: "Plan {{Numéro}} : référence validée, je n'y touche pas"
+      - ignorer: "référence validée"
+- si:
+    alerte: true               # une fenêtre d'alerte du portail est ouverte
+    alors:
+      - lire_alerte: Message
+      - ignorer: "{{Message}}"
 ```
+
+Fenêtres de question du navigateur (« Voulez-vous vraiment... ? ») : par défaut le robot répond OK.
+Pour une tâche qui supprime, mettez `navigateur: {dialogues: prudent, dialogues_ok: ["Voulez-vous vraiment
+supprimer ce plan"]}` : seules ces questions-là reçoivent OK ; toute autre fenêtre est refusée (Annuler),
+la ligne est laissée de côté (IGNORE, avec le message) et le robot passe à la suivante.
 
 ### Les sélecteurs (comment désigner un élément de la page)
 

@@ -136,7 +136,12 @@ def selecteur(repere: str, dossier: Optional[Path] = None) -> str:
         if not 0 <= rang < len(cibles):
             raise ErreurEtape(f"l'élément {element} n'existe pas sur l'écran {ecran_id}.")
         return selecteur_cible(cibles[rang])
-    raise ErreurEtape(f"« {element} » est un tableau : choisissez une ligne par son texte (texte=...).")
+    if element[0] == "T":  # un tableau : pour « si: {tableau: carte=E9/T1, colonne: Statut, ligne_contient: Validé} »
+        tableaux = ecran.get("tableaux") or []
+        if not 0 <= rang < len(tableaux) or not tableaux[rang].get("selecteur"):
+            raise ErreurEtape(f"le tableau {element} n'existe pas sur l'écran {ecran_id} (ou il n'a pas de repère).")
+        return str(tableaux[rang]["selecteur"])
+    raise ErreurEtape(f"repère « {element} » inconnu.")
 
 
 def chemin_vers(repere: str, dossier: Optional[Path] = None) -> List[Dict[str, Any]]:

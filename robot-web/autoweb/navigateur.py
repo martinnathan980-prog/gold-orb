@@ -71,6 +71,13 @@ EXTENSION_SSO_MICROSOFT = "ppnbnpeolgkicgegkbkbjmhlideopiji"
 FENETRE_DEMARRAGE_S = 15.0
 
 
+def _sans_accents(texte: str) -> str:
+    import unicodedata
+
+    texte = unicodedata.normalize("NFD", str(texte or ""))
+    return re.sub(r"\s+", " ", "".join(c for c in texte if unicodedata.category(c) != "Mn").lower()).strip()
+
+
 def est_onglet_parasite(url: str) -> bool:
     return bool(MOTIF_ONGLET_PARASITE.match(url or ""))
 
@@ -308,6 +315,9 @@ class Navigateur:
         # décide de la réponse à une boîte de dialogue (« accepter », « refuser », ou None : le réglage)
         self.decider_dialogue: Optional[Any] = None
         self._dialogues_differes: List[Any] = []
+        # mode « prudent » : fenêtres du portail refusées (pas attendues), lues par la tâche
+        self.alertes: List[str] = []
+        self.derniere_alerte = ""
 
     # ------------------------------------------------------------------ ouverture
     def ouvrir(self) -> Page:
@@ -444,6 +454,21 @@ class Navigateur:
             except Exception:  # noqa: BLE001
                 pass
         try:
+            if mode == "prudent":
+                message = str(dialogue.message or "")
+                self.derniere_alerte = message
+                attendue = any(_sans_accents(x) in _sans_accents(message) for x in self.config.dialogues_ok)
+                if dialogue.type == "beforeunload":
+                    dialogue.accept()
+                elif attendue:
+                    journal.info("Question attendue : %s -> OK", message[:120])
+                    dialogue.accept()
+                else:
+                    # pas attendue : on ne valide rien (Annuler) ; la tâche laisse cette ligne de côté
+                    journal.warning("Fenêtre inattendue du portail, refusée : %s", message[:200])
+                    self.alertes.append(message)
+                    dialogue.dismiss()
+                return
             if mode == "ignorer":
                 # comme Playwright sans gestionnaire : on ferme (on quitte la page si c'est demandé)
                 if dialogue.type == "beforeunload":

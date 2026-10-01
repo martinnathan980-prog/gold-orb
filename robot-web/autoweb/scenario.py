@@ -49,6 +49,9 @@ ALIAS: Dict[str, Tuple[str, ...]] = {
     "journal": ("log", "message", "afficher", "note"),
     "pause": ("manuel", "attendre_utilisateur", "confirmer"),
     "connexion": ("login", "se_connecter", "attendre_connexion"),
+    "prevenir": ("avertir", "alerter", "warn"),
+    "lire_alerte": ("lire_popup", "lire_fenetre"),
+    "repeter": ("tant_que", "boucle", "repeat"),
     "ecran": ("aller_ecran", "ecran_carte", "screen"),
     "inspecter": ("inspect", "debug", "inspector"),
     "executer_js": ("evaluate", "js", "script", "javascript"),
@@ -79,7 +82,7 @@ CLES_SCENARIO = ("nom", "description", "navigateur", "excel", "variables", "ques
                  "avant", "etapes", "apres")
 CLES_NAVIGATEUR = (
     "canal", "profil", "visible", "attacher", "delai_max", "lenteur", "largeur", "hauteur",
-    "executable", "dialogues", "telechargements", "arguments", "ignorer_https",
+    "executable", "dialogues", "telechargements", "arguments", "ignorer_https", "dialogues_ok",
 )
 CLES_EXCEL = (
     "fichier", "feuille", "ligne_entete", "colonne_statut", "colonne_message",
@@ -93,10 +96,14 @@ CANAUX = ("auto", "msedge", "chrome", "chromium")
 MOTIF_DESTRUCTIF = re.compile(
     r"suppr|(?<![a-z])del(?![a-z])|delete|effac|poubelle|corbeille|trash|remove|retir|enlev|detach|discard|erase"
     r"|purge|vider|archiv|detrui|destroy|clotur|rejet|reject")
-DIALOGUES = ("accepter", "refuser", "ignorer")
+# prudent : seules les questions attendues (dialogues_ok) reçoivent OK ; toute autre fenêtre du portail
+# est refusée, et la ligne est laissée de côté (rien n'est validé à l'aveugle)
+DIALOGUES = ("accepter", "refuser", "ignorer", "prudent")
 
 CLES_CONDITION = ("present", "absent", "visible", "cache", "valeur", "egal", "different",
-                  "contient", "vide", "non_vide", "vrai", "faux", "delai")
+                  "contient", "vide", "non_vide", "vrai", "faux", "delai",
+                  # fenêtre d'alerte du portail ouverte ; contenu d'un tableau (onglet Références...)
+                  "alerte", "tableau", "colonne", "ligne_contient")
 
 
 # ----------------------------------------------------------------------------- structures
@@ -112,6 +119,7 @@ class ConfigNavigateur:
     hauteur: int = 900
     executable: Optional[str] = None
     dialogues: str = "accepter"
+    dialogues_ok: List[str] = field(default_factory=list)  # « prudent » : débuts de questions acceptées
     telechargements: str = "telechargements"
     arguments: List[str] = field(default_factory=list)
     ignorer_https: bool = False
@@ -281,8 +289,10 @@ def _normaliser_args(action: str, valeur: Any, position: str) -> Dict[str, Any]:
         return {"touche": str(valeur)}
     if action == "capture":
         return {"chemin": str(valeur)}
-    if action in ("journal", "pause", "ignorer", "echouer", "arreter", "connexion"):
+    if action in ("journal", "pause", "ignorer", "echouer", "arreter", "connexion", "prevenir"):
         return {"message": str(valeur)}
+    if action == "lire_alerte":
+        return {"vers": str(valeur)}
     if action == "ecran":
         return {"repere": str(valeur)}
     if action == "executer_js":
@@ -351,6 +361,15 @@ def _valider_args(action: str, args: Dict[str, Any], position: str) -> None:
         _exiger(args, ("script",), position, a)
     elif a == "ecran":
         _exiger(args, ("repere",), position, a)
+    elif a == "prevenir":
+        _exiger(args, ("message",), position, a)
+    elif a == "lire_alerte":
+        _exiger(args, ("vers",), position, a)
+    elif a == "repeter":
+        _exiger(args, ("tant_que", "etapes"), position, a)
+        if not isinstance(args["tant_que"], dict):
+            raise ErreurScenario(f"{position} : « tant_que » attend une condition (comme « si »).")
+        _verifier_cles(args["tant_que"], CLES_CONDITION, position + " (tant_que)")
     elif a == "si":
         _verifier_cles({k: v for k, v in args.items() if k not in ("alors", "sinon")}, CLES_CONDITION, position + " (si)")
         if not any(k in args for k in CLES_CONDITION if k != "delai"):
@@ -454,6 +473,13 @@ def charger_config_navigateur(donnees: Any) -> ConfigNavigateur:
         if d not in DIALOGUES:
             raise ErreurScenario(f"navigateur.dialogues : « {d} » inconnu. Possibles : {', '.join(DIALOGUES)}.")
         cfg.dialogues = d
+    if "dialogues_ok" in donnees:
+        ok = donnees["dialogues_ok"]
+        if isinstance(ok, str):
+            ok = [ok]
+        if not isinstance(ok, list) or not all(isinstance(x, (str, int, float)) for x in ok):
+            raise ErreurScenario("navigateur.dialogues_ok : une liste de débuts de questions (textes).")
+        cfg.dialogues_ok = [str(x) for x in ok if str(x).strip()]
     if donnees.get("telechargements"):
         cfg.telechargements = str(donnees["telechargements"])
     if "arguments" in donnees:

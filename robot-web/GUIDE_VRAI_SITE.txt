@@ -1,9 +1,9 @@
 ROBOT WEB - METTRE A JOUR, FAIRE LA CARTE, MONTRER ET RELANCER DES TACHES
 ==========================================================================
-(Windows, au bureau. Version 21 du robot.)
+(Windows, au bureau. Version 22 du robot.)
 
 A FAIRE, DANS L'ORDRE (chaque partie est expliquee plus bas) :
-   1. PARTIE A : mettre le robot a jour, version 21 (5 minutes).
+   1. PARTIE A : mettre le robot a jour, version 22 (5 minutes).
    2. PARTIE E : faire la carte du portail. Vous donnez l'adresse, le robot
       explore TOUT SEUL (menus, recherches, fiches, onglets) pendant 20 a 45
       minutes, sans rien modifier. Vous n'avez rien a montrer.
@@ -12,7 +12,16 @@ A FAIRE, DANS L'ORDRE (chaque partie est expliquee plus bas) :
       plan et telecharger son PDF », « dupliquer le plan X »...). Je vous ecris
       la tache, vous l'ajoutez au robot (PARTIE H), vous la lancez (PARTIE C).
 
-Ce qui change avec la version 21 :
+Ce qui change avec la version 22 :
+   - Le robot est pret pour les taches qui suppriment avec precaution :
+     il verifie d'abord (clients associes, references validees ou utilisees
+     ailleurs) ; si quelque chose est utilise ailleurs, il NE TOUCHE A RIEN,
+     affiche un bandeau orange, et passe au plan suivant. Toute fenetre
+     d'alerte du portail qu'il n'attendait pas est refusee : rien n'est
+     valide a l'aveugle. A la fin, il liste les plans laisses de cote et
+     pourquoi. (Rien a faire de votre cote : je l'utiliserai dans les taches
+     que je vous ecrirai.)
+Et depuis la version 21 :
    - Une tache « qui ne fait rien » a la relance : c'etait une tache ou le
      robot n'avait vu aucun geste (ce qui est tape dans la barre tout en haut
      de Chrome est invisible pour lui). Maintenant il le dit tout de suite, a
@@ -66,9 +75,9 @@ Les parties :
 
 
 =====================================================================
- PARTIE A - METTRE A JOUR LE ROBOT (version 21)
+ PARTIE A - METTRE A JOUR LE ROBOT (version 22)
 =====================================================================
-On remplace les programmes du robot par la version 21. Vos taches, vos cartes
+On remplace les programmes du robot par la version 22. Vos taches, vos cartes
 et la connexion du Chrome du robot sont GARDEES. Votre Chrome habituel et vos
 mots de passe ne sont pas touches.
 
@@ -96,7 +105,7 @@ A4. On efface les anciens installeurs (pour ne pas les confondre avec le
 
 A5. Dans Gmail, ouvrez mon dernier mail et telechargez la piece jointe
         robot-web-installeur.txt
-    (en haut du fichier est ecrit VERSION 21)
+    (en haut du fichier est ecrit VERSION 22)
 
 A6. Revenez dans la fenetre noire. VOUS TAPEZ :
         move "%USERPROFILE%\Downloads\robot-web-installeur.txt" .
@@ -106,17 +115,17 @@ A6. Revenez dans la fenetre noire. VOUS TAPEZ :
     SI « Le fichier specifie est introuvable » : le telechargement n'est pas
     fini ou n'est pas alle dans Telechargements. Attendez, puis refaites A6.
 
-A7. On verifie que c'est bien la version 21. VOUS TAPEZ :
-        findstr /c:"VERSION 21" robot-web-installeur.txt
+A7. On verifie que c'est bien la version 22. VOUS TAPEZ :
+        findstr /c:"VERSION 22" robot-web-installeur.txt
 
-    VOUS VOYEZ une ligne qui contient :   INSTALLEUR AUTOMATIQUE - VERSION 21
+    VOUS VOYEZ une ligne qui contient :   INSTALLEUR AUTOMATIQUE - VERSION 22
     SI rien ne s'affiche : ce n'est pas le bon fichier. Refaites A4 a A6.
 
 A8. On installe. VOUS TAPEZ (le plus simple : copier-coller, puis Entree) :
         py -c "exec(open('robot-web-installeur.txt', encoding='utf-8').read())"
 
     VOUS VOYEZ defiler, en 1 a 3 minutes :
-        ROBOT-WEB - installeur version 21
+        ROBOT-WEB - installeur version 22
         === 1/4  Extraction des fichiers ===
         === 2/4  Environnement Python ===
         === 3/4  Installation des bibliotheques ===

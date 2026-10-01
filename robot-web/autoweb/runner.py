@@ -63,6 +63,7 @@ class Bilan:
     message: str = ""
     lignes_fichier: int = 0  # lignes de données présentes dans l'Excel, traitées ou non
     sans_excel: bool = False  # tâche jouée une fois, sans liste
+    laissees: List[str] = field(default_factory=list)  # « ligne 3 (PL-12) : raison » : lignes laissées de côté
 
     @property
     def tout_deja_fait(self) -> bool:
@@ -91,7 +92,10 @@ class Bilan:
             texte += " — INTERROMPU (relancez la même commande pour reprendre)"
         if self.message:
             texte += f" — {self.message}"
-        return texte + "."
+        texte += "."
+        if self.laissees:
+            texte += "\nLaissé(s) de côté, sans rien y changer :\n" + "\n".join(f"   - {x}" for x in self.laissees[:50])
+        return texte
 
 
 def analyser_lignes(texte: str) -> Set[int]:
@@ -600,6 +604,7 @@ def _boucle(
         except LigneIgnoree as e:
             classeur.marquer(ligne.numero, STATUT_IGNORE, str(e))
             bilan.ignorees += 1
+            bilan.laissees.append(f"ligne {ligne.numero}" + (f" ({libelle.strip()})" if libelle.strip() else "") + f" : {e}")
             journal.info("   %s IGNORE : %s", S.IGNORE, e)
         except ErreurEtape as e:
             capture = _capture_erreur(navigateur, scenario, ligne.numero)
