@@ -129,10 +129,22 @@ def cmd_lancer(args: argparse.Namespace) -> int:
     from .runner import lancer
     from .scenario import charger
 
+    from .scenario import toutes_les_etapes
+
     scenario = charger(Path(args.scenario))
     fichier_journal = configurer_journal(scenario.dossier, args.verbeux)
     if fichier_journal:
         journal.debug("Journal : %s", fichier_journal)
+    sans_geste = ("aller", "attendre", "patienter", "capture", "journal", "pause", "connexion", "onglet", "recharger")
+    if not getattr(args, "simuler", False) and not scenario.excel.fichier and \
+            not any(e.action not in sans_geste for e in toutes_les_etapes(scenario.etapes)):
+        # une tâche qui ne fait qu'ouvrir la page : enregistrée avec une version précédente, quand les
+        # gestes faits dans la barre de Chrome (tout en haut) n'étaient pas vus
+        print()
+        print(f"{S.ATTENTION} La tâche « {scenario.nom} » ne contient aucun geste (ni clic, ni texte tapé) : elle")
+        print("   ne ferait qu'ouvrir la page. Le robot ne voit que ce qui est fait DANS LA PAGE, pas dans la")
+        print("   barre tout en haut de Chrome. Refaites-la : menu, choix 1 (puis supprimez celle-ci, choix 4).")
+        return 1
     options = _options_depuis(args)
     bilan = lancer(scenario, options)
     print()
@@ -969,8 +981,17 @@ def cmd_enregistrer(args: argparse.Namespace) -> int:
         print(f"{S.ATTENTION} {enregistreur.ignorees} action(s) faite(s) sur une page Google ou Chrome, hors de")
         print("   votre outil : elles sont ignorées et ne seront pas rejouées.")
 
-    if not etapes:
-        print(f"{S.ATTENTION} Aucune action enregistrée : rien à écrire.")
+    if not any(e.action not in ("aller", "attendre", "onglet") for e in etapes):
+        # une tâche qui ne ferait qu'ouvrir la page : on ne l'écrit pas, et on dit pourquoi
+        print()
+        print(f"{S.ATTENTION} Le robot n'a vu AUCUN geste dans la page (ni clic, ni texte tapé) : la tâche")
+        print("   n'est pas enregistrée, car elle ne ferait qu'ouvrir la page.")
+        print("   Le robot voit seulement ce que vous faites DANS LA PAGE. Ce qui est tapé dans la")
+        print("   barre tout en haut de Chrome (adresse ou recherche Google) ne compte pas : tapez dans")
+        print("   les champs de la page elle-même, puis cliquez sur ses boutons.")
+        if enregistreur.ignorees:
+            print(f"   ({enregistreur.ignorees} geste(s) faits sur une page Google ou de Chrome ont été laissés de côté.)")
+        print("   Recommencez : menu, choix 1.")
         return 1
     sortie.parent.mkdir(parents=True, exist_ok=True)
     # chemin de l'Excel : relatif s'il est à côté du scénario, absolu sinon

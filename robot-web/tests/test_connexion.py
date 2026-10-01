@@ -109,3 +109,24 @@ etapes:
     bilan = lancer(charger(chemin), Options(visible=False, interactif=True))
     assert (bilan.ok, bilan.erreurs) == (1, 0), bilan.resume()
     assert time.monotonic() - debut < 20
+
+
+def test_adresse_tapee_dans_la_barre_de_chrome_est_rejouee():
+    """Pendant l'enregistrement, l'utilisateur tape l'adresse de son outil dans la barre de Chrome (le robot
+    ne voit pas cette barre) : la tâche doit ouvrir cette adresse. Les redirections (connexion) et les pages
+    ouvertes par un clic ou par Entrée ne deviennent pas des « ouvrir »."""
+    from autoweb.enregistreur import Evenement, construire_etapes
+
+    evenements = [
+        Evenement("page", {"url": "https://www.google.com/", "titre": ""}, t=0.0),
+        Evenement("navigation", {"url": "https://www.google.com/"}, t=0.2),                 # le départ lui-même
+        Evenement("navigation", {"url": "https://portail.entreprise.fr/login"}, t=20.0),    # tapée en haut
+        Evenement("navigation", {"url": "https://portail.entreprise.fr/accueil"}, t=21.0),  # redirection
+        Evenement("saisie", {"selecteur": "#num", "valeur": "PL-12", "tag": "input", "type": "text"}, t=30.0),
+        Evenement("touche", {"selecteur": "#num", "touche": "Enter", "tag": "input"}, t=31.0),
+        Evenement("navigation", {"url": "https://portail.entreprise.fr/plans?n=PL-12"}, t=32.0),  # après Entrée
+    ]
+    etapes = construire_etapes(evenements)
+    allers = [e.args["url"] for e in etapes if e.action == "aller"]
+    assert allers == ["https://www.google.com/", "https://portail.entreprise.fr/login"], allers
+    assert [e.action for e in etapes if e.action != "attendre"][-2:] == ["remplir", "touche"]

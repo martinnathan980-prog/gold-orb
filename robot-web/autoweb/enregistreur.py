@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -384,6 +385,7 @@ class Evenement:
     frame: Any = None  # objet Playwright, résolu en fin d'enregistrement seulement
     page: Any = None  # onglet d'où vient l'événement (simple référence, aucun appel Playwright)
     onglet: int = 0  # 0 = premier onglet utilisé, 1 = le suivant...
+    t: float = field(default_factory=time.monotonic)  # moment où le robot l'a reçu
 
 
 PREFIXES_NAVIGATEUR = ("chrome://", "chrome-extension://", "chrome-search://", "chrome-untrusted://",
@@ -498,6 +500,21 @@ class Enregistreur:
         # Un onglet ouvert par window.open ne rejoue pas toujours le script d'enregistrement
         # sur sa vraie page : on le réinjecte à chaque chargement (sans doublon, voir le script).
         page.on("domcontentloaded", self._injecter)
+        # adresse tapée dans la barre de Chrome (le robot ne voit pas cette barre) : notée à part
+        page.on("framenavigated", lambda frame, p=page: self._navigation(p, frame))
+
+    def _navigation(self, page: Page, frame: Any) -> None:
+        """Appelé par Playwright : AUCUN appel Playwright ici (frame.url est une valeur connue)."""
+        if not self._actif:
+            return
+        try:
+            if frame is not page.main_frame:
+                return
+            url = frame.url
+        except Exception:  # noqa: BLE001
+            return
+        if url and not url.startswith(("about:", "chrome", "data:", "blob:")):
+            self.evenements.append(Evenement("navigation", {"url": url}, "", None, page))
 
     def _injecter(self, page: Page) -> None:
         if not self._actif:
@@ -591,6 +608,10 @@ class Enregistreur:
         self._actif = False
 
     def _hors_tache(self, evenement: Evenement) -> bool:
+        if evenement.type == "navigation":  # page Google, de Chrome, onglet ouvert par Chrome : pas la tâche
+            if evenement.page is not None and evenement.page in getattr(self.nav, "parasites", []):
+                return True
+            return est_hors_tache(str(evenement.donnees.get("url", "")), self.url_depart)
         if evenement.type not in ("clic", "saisie", "touche", "ecran"):
             return False  # page de départ, téléchargement : notés par le robot lui-même
         d = evenement.donnees
@@ -609,7 +630,7 @@ class Enregistreur:
             if evenement.type == "onglet_ouvert" and evenement.page in getattr(self.nav, "parasites", []):
                 continue  # onglet ouvert par Chrome lui-même, refermé par le robot
             if self._hors_tache(evenement):
-                if evenement.type != "ecran":
+                if evenement.type not in ("ecran", "navigation"):
                     self.ignorees += 1
                 continue
             gardes.append(evenement)
@@ -618,7 +639,7 @@ class Enregistreur:
         self.evenements = gardes
         ordre: List[Any] = []  # onglets dans l'ordre où l'utilisateur s'en est servi
         for evenement in self.evenements:
-            if evenement.page is not None and evenement.type in ("clic", "saisie", "touche", "ecran", "onglet_ouvert"):
+            if evenement.page is not None and evenement.type in ("clic", "saisie", "touche", "ecran", "onglet_ouvert", "navigation"):
                 if evenement.page not in ordre:
                     ordre.append(evenement.page)
                 evenement.onglet = ordre.index(evenement.page)
@@ -686,8 +707,22 @@ def construire_etapes(evenements: List[Evenement], url_depart: str = "") -> List
     derniere_url: Optional[str] = None
     ecran: Optional[Dict[str, Any]] = None
     onglet_courant, onglet_max = 0, 0
+    dernier_geste_t = -1e9
+    derniere_nav_t = evenements[0].t if evenements else 0.0
     for ev in evenements:
         d = ev.donnees
+        if ev.type in ("clic", "saisie", "touche"):
+            dernier_geste_t = ev.t
+        if ev.type == "navigation":
+            # changement de page sans geste dans la page juste avant (ni clic, ni Entrée), ni redirection
+            # rapide : une adresse tapée dans la barre de Chrome, que le robot devra ouvrir lui-même
+            url = str(d.get("url", ""))
+            tapee = ev.t - dernier_geste_t > 6 and ev.t - derniere_nav_t > 3
+            derniere_nav_t = ev.t
+            if tapee and url and url != derniere_url and ev.onglet == onglet_courant:
+                etapes.append(EtapeEnregistree("aller", {"url": url}))
+                derniere_url = url
+            continue
         if ev.type == "ecran":
             ecran = {"champs": d.get("champs") or [], "boutons": d.get("boutons") or []}
             continue

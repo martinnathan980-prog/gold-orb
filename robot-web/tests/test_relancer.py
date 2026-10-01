@@ -139,3 +139,14 @@ def test_refaire_toujours_retraite_les_lignes_deja_ok(tmp_path):
         assert len(selectionner(classeur, scenario, Options())) == 1
     finally:
         classeur.fermer()
+
+
+def test_une_tache_sans_aucun_geste_est_signalee(tmp_path, capsys):
+    """Tâche enregistrée en tapant dans la barre de Chrome (invisible pour le robot) : elle ne ferait
+    qu'ouvrir la page. Le robot le dit au lieu de « ne rien faire » en silence."""
+    chemin = tmp_path / "vide.yaml"
+    chemin.write_text("nom: vide\nnavigateur: {canal: auto, visible: false}\n"
+                      "etapes:\n  - aller: \"https://exemple.invalid\"\n  - capture: \"captures/x.png\"\n", encoding="utf-8")
+    assert cli.main(["lancer", str(chemin)]) == 1
+    sortie = capsys.readouterr().out
+    assert "aucun geste" in sortie and "barre tout en haut de Chrome" in sortie
