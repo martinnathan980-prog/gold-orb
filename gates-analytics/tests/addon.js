@@ -2259,25 +2259,42 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const past18 = await pg.evaluate(() => {
     const cles = (sel, attr) => [...document.querySelectorAll(sel + ' button')].map(b => b.getAttribute(attr));
     const vals = window.__valeurs();
+    /* Ce que chaque rangée doit montrer, recompté ici : les passages du
+       journal, les valeurs que portent les plans, celles que les relevés
+       ont portées (débrief 19 : rien d'autre). */
+    const evts = window.__journalAffiche().reduce((l, s) => l.concat(s.evenements), []);
+    const estRecul = e => e.type === 'change' && ((e.avant === 'termine' && e.apres !== 'termine') || (e.avant === 'encours' && e.apres === 'afaire'));
+    const arrivees = {};
+    evts.forEach(e => { if ((e.type === 'change' || e.type === 'indice') && e.cApres && e.cApres !== e.cAvant) arrivees[e.cApres] = (arrivees[e.cApres] || 0) + 1; });
+    const max = k => Math.max(...window.__serieValeur(k).pts.map(p => p.termine));
     return {
-      vals: vals.map(v => v.cle), finies: vals.filter(v => v.famille === 'termine').length,
+      vals: vals.map(v => v.cle), portees: vals.filter(v => v.n > 0).map(v => v.cle),
+      seule: vals.filter(v => v.famille === 'termine').length === 1 ? vals.filter(v => v.famille === 'termine')[0].cle : null,
+      arrivees, reculs: evts.filter(estRecul).length, indice: evts.filter(e => e.type === 'indice').length,
+      releves: vals.filter(v => max(v.cle) > 0).map(v => v.cle),
       journal: cles('#filtre-journal', 'data-journal'),
       bloc: cles('#filtre-valeur-groupe', 'data-valeur-bloc'), blocVisible: !document.getElementById('filtre-valeur-groupe').hidden,
       graphe: cles('#filtre-valeur-graphe', 'data-valeur-graphe'), grapheVisible: !document.getElementById('filtre-valeur-graphe').hidden,
-      comptes: [...document.querySelectorAll('#filtre-journal button .n')].map(n => n.textContent)
+      grapheMax: cles('#filtre-valeur-graphe', 'data-valeur-graphe').filter(Boolean).map(max),
+      comptes: [...document.querySelectorAll('#filtre-journal button .n')].map(n => Number(n.textContent.replace(/\D/g, ''))),
+      desactives: document.querySelectorAll('#filtre-journal button:disabled, #filtre-valeur-groupe button:disabled, #filtre-valeur-graphe button:disabled').length
     };
   });
-  verifier('journal : la rangée commence par toutes les valeurs de la colonne, dans l’ordre des tuiles, et finit par reculs et indice, chacune comptée',
-    past18.journal.slice(0, past18.vals.length + 1).join() === ['', ...past18.vals].join() &&
-    past18.journal.slice(-2).join() === 'reculs,indice' && past18.comptes.length === past18.journal.length - 1, JSON.stringify(past18));
-  verifier('bloc : « Tout » puis chaque valeur, visible',
-    past18.blocVisible && past18.bloc.join() === ['', ...past18.vals].join(), JSON.stringify(past18.bloc));
+  const jAttendu18 = past18.vals.filter(k => past18.arrivees[k]);
+  verifier('journal : seulement les passages qu’il y a — « Tout », les valeurs atteintes dans l’ordre des tuiles, puis reculs et indice s’il y en a ; chacune comptée, aucune à zéro',
+    past18.journal[0] === '' && past18.journal.slice(1, jAttendu18.length + 1).join() === jAttendu18.join() &&
+    past18.journal.indexOf('reculs') === (past18.reculs ? past18.journal.length - (past18.indice ? 2 : 1) : -1) &&
+    past18.journal.indexOf('indice') === (past18.indice ? past18.journal.length - 1 : -1) &&
+    past18.comptes.length === past18.journal.length - 1 && past18.comptes.every(n => n > 0), JSON.stringify(past18));
+  verifier('bloc : « Tout » puis chaque valeur que portent les plans, et elles seules',
+    past18.blocVisible && past18.bloc.join() === ['', ...past18.portees].join(), JSON.stringify([past18.bloc, past18.portees]));
   /* Après les valeurs du jour viennent celles « d'hier » : portées par des
      relevés, plus par aucun plan (ici « Entre 0 et 100 % », « À faire »). */
-  const nJour18 = past18.vals.length + (past18.finies === 1 ? 0 : 1);
-  verifier('graphique : une pilule par valeur du jour (et « Validés » en tête s’il y a plusieurs valeurs finies), puis celles d’hier ; la courbe des validés par défaut',
-    past18.grapheVisible && past18.graphe[0] === '' && past18.graphe.length >= nJour18 &&
-    past18.graphe.slice(nJour18).every(k => k && past18.vals.indexOf(k) === -1), JSON.stringify([past18.vals, past18.graphe]));
+  verifier('graphique : « Validés » (ou la seule valeur validée) en tête, puis une pilule par valeur que les relevés ont portée, et aucune autre',
+    past18.grapheVisible && past18.graphe[0] === '' && past18.grapheMax.every(m => m > 0) &&
+    past18.releves.every(k => k === past18.seule || past18.graphe.indexOf(k) !== -1),
+    JSON.stringify([past18.releves, past18.graphe, past18.grapheMax]));
+  verifier('aucune pilule grisée dans les trois rangées', past18.desactives === 0, String(past18.desactives));
   const choix18 = await pg.evaluate(() => window.__valeurs().filter(v => v.famille !== 'termine' && v.n > 0)[0]);
   await pg.evaluate(k => [...document.querySelectorAll('#filtre-valeur-groupe button')].find(b => b.dataset.valeurBloc === k).click(), choix18.cle);
   await pg.waitForTimeout(300);

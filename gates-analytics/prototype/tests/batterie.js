@@ -1628,8 +1628,8 @@ async function reinitialiser(pg) {
   await p.click('#reinit').catch(() => {}); await p.waitForTimeout(300);
   const champs = await p.evaluate(() => ({
     global: !!document.getElementById('chercher-plan') || !!document.getElementById('champ-plan'),
-    journal: !!document.querySelector('.section-journal #recherche-journal'),
-    groupe: !!document.querySelector('.commandes-groupe #filtre-groupe'),
+    journal: !!document.querySelector('.section-journal + .ligne-filtres #recherche-journal'),
+    groupe: !!document.querySelector('.ligne-filtres #filtre-groupe'),
     rapp: !!document.querySelector('#rapprochement .section-tete #recherche-rapp')
   }));
   verifier('plus de barre « Chercher un plan » en haut : un champ dans le journal, les groupes et la comparaison',
@@ -2133,7 +2133,9 @@ async function reinitialiser(pg) {
   const avantFiltre = await p.evaluate(() => ({
     champ: !!document.getElementById('filtre-groupe'),
     placeholder: (document.getElementById('filtre-groupe') || {}).placeholder,
-    dansTete: !!document.querySelector('.section-tete #filtre-groupe'),
+    /* Débrief 19 : sur la ligne des pastilles, à droite — comme au journal. */
+    dansTete: !!document.querySelector('.ligne-filtres #filtre-groupe') &&
+      Math.abs(document.getElementById('filtre-groupe').getBoundingClientRect().right - document.querySelector('.ligne-filtres').getBoundingClientRect().right) < 2,
     hauteur: Math.round(document.getElementById('filtre-groupe').getBoundingClientRect().height),
     largeur: Math.round(document.getElementById('filtre-groupe').getBoundingClientRect().width),
     loupe: !!document.querySelector('.recherche-groupe svg'),
@@ -2143,7 +2145,7 @@ async function reinitialiser(pg) {
     lignes: document.querySelectorAll('#corps-tableau tr').length,
     points: document.querySelectorAll('svg.graphe circle').length
   }));
-  verifier('le champ de filtre existe, dans l\'en-tete du bloc, avec sa loupe',
+  verifier('le champ de filtre existe, sur la ligne des pastilles du bloc, au bout à droite, avec sa loupe',
     avantFiltre.champ && avantFiltre.dansTete && avantFiltre.loupe);
   verifier('son invite suit la dimension, et dit qu\'il trouve aussi un plan : « ATA ou plan… »',
     avantFiltre.placeholder === 'ATA ou plan…', avantFiltre.placeholder);
@@ -3264,21 +3266,27 @@ async function reinitialiser(pg) {
       const esp = t => String(t || '').replace(/[  ]/g, ' ').replace(/\s+/g, ' ');
       const f = document.getElementById('fiche-echeance');
       const fiche = esp(f.textContent), leg = esp(document.getElementById('legende').textContent);
+      /* Débrief 19 : la légende ne dit plus « → fin … » ni le nombre du
+         requis ; ils sont dans ses survols. */
+      const survols = esp([...document.querySelectorAll('#legende .legende-item span[title]')].map(x => x.getAttribute('title')).join(' | '));
       const manque = [...document.querySelectorAll('.manque-jalon')].map(t => (esp(t.textContent).match(/manque (\d[\d ]*)$/) || [])[1]);
       const ch = [...f.querySelectorAll('.fiche-echeance-chiffres > div b')].map(b => +b.textContent.replace(/\s/g, ''));
       return {
-        requisFiche: (fiche.match(/Il faut ([\d,]+) plans/) || [])[1], requisLegende: (leg.match(/requis pour « [^»]+ » : ([\d,]+)\/sem\./) || [])[1],
+        requisFiche: (fiche.match(/Il faut ([\d,]+) plans/) || [])[1], requisLegende: (survols.match(/ : ([\d,]+) par semaine\. En rouge/) || [])[1],
         tenuFiche: (fiche.match(/le rythme tenu est de ([\d,]+)/) || [])[1], tenuLegende: (leg.match(/au rythme tenu \(([\d,]+)\/sem\.\)/) || [])[1],
-        finFiche: (fiche.match(/tout serait validé en (S\d+ · \S+ \d{4})/) || [])[1], finLegende: (leg.match(/→ fin (S\d+ · \S+ \d{4})/) || [])[1],
+        finFiche: (fiche.match(/tout serait validé en (S\d+ · \S+ \d{4})/) || [])[1], finLegende: (survols.match(/: fin (S\d+ · \S+ \d{4})\./) || [])[1],
+        legendeCourte: !/→ fin|\/sem\. sur|» : [\d,]+\/sem\./.test(leg),
         manqueFiche: (fiche.match(/il manquerait (\d[\d ]*) plans?/) || [])[1], manqueGraphe: manque[0],
         rouge: document.getElementById('echeance-titre').classList.contains('en-retard'),
         mal: f.querySelector('.fiche-echeance-verdict').classList.contains('mal'),
         jours: ch[0], semaines: ch[1], restants: ch[2]
       };
     });
-    verifier('la fiche et la légende du graphique disent le même rythme requis, le même rythme tenu, la même fin',
+    verifier('la fiche et la légende du graphique disent le même rythme requis, le même rythme tenu, la même fin (le requis et la fin dans les survols de la légende)',
       !!m.requisFiche && m.requisFiche === m.requisLegende && !!m.tenuFiche && m.tenuFiche === m.tenuLegende &&
       !!m.finFiche && m.finFiche === m.finLegende, JSON.stringify(m));
+    verifier('débrief 19 : la légende dit « au rythme tenu (N/sem.) » et « requis pour « … » », sans « → fin … » ni le nombre du requis',
+      m.legendeCourte && !!m.tenuLegende, JSON.stringify(m));
     verifier('« manque N » sur le graphique est le nombre de la fiche ; la puce a la couleur du verdict',
       !!m.manqueFiche && m.manqueFiche.replace(/ /g, '') === (m.manqueGraphe || '').replace(/ /g, '') && m.rouge === m.mal, JSON.stringify(m));
     verifier('jours et semaines restants se comptent tous deux d\'aujourd\'hui',
@@ -3297,9 +3305,10 @@ async function reinitialiser(pg) {
     });
     await pq.click('.critique-ligne >> nth=0'); await pq.waitForTimeout(500);
     const legG = esp(await pq.evaluate(() => document.getElementById('legende').textContent));
+    const survG = esp(await pq.evaluate(() => [...document.querySelectorAll('#legende .legende-item span[title]')].map(x => x.getAttribute('title')).join(' | ')));
     verifier('une ligne du bloc et le graphique de son groupe disent le même rythme requis, le même rythme tenu, la même fin',
-      !!ligne.requis && legG.indexOf(': ' + ligne.requis + '/sem.') !== -1 && legG.indexOf('au rythme tenu (' + ligne.tenu + '/sem.)') !== -1 &&
-      legG.indexOf('→ fin ' + ligne.fin) !== -1 && /requis pour « [^»]+ » \(\S+ [^)]+\)/.test(legG), JSON.stringify([ligne, legG]));
+      !!ligne.requis && survG.indexOf(': ' + ligne.requis + ' par semaine.') !== -1 && legG.indexOf('au rythme tenu (' + ligne.tenu + '/sem.)') !== -1 &&
+      survG.indexOf(': fin ' + ligne.fin + '.') !== -1 && /requis pour « [^»]+ » \(\S+ [^)]+\)/.test(legG), JSON.stringify([ligne, legG, survG]));
     const phraseG = esp(await pq.evaluate(() => document.getElementById('phrase').textContent));
     const noteG = esp(await pq.evaluate(() => document.getElementById('note-graphe').textContent));
     verifier('choisir un groupe : la phrase et la note du graphique le nomment de la même façon, sans « autres filtres » inventés',
@@ -3350,16 +3359,17 @@ async function reinitialiser(pg) {
                                            voir: !!document.querySelector('#legende button[data-voir-perimetre]'),
                                            manque: document.querySelectorAll('.manque-jalon').length }));
     verifier('sur « Tout », un jalon BASE/OPTION se lit dans la légende, « sur ses plans BASE/OPTION », avec un lien — pas de droite sur la courbe de tous',
-      /requis pour « Diffusion TO Base » : [\d,]+\/sem\. sur ses plans BASE\/OPTION/.test(leg.texte) && leg.voir && leg.manque === 0, JSON.stringify(leg));
+      /requis pour « Diffusion TO Base » sur ses plans BASE\/OPTION/.test(leg.texte) && leg.voir && leg.manque === 0, JSON.stringify(leg));
     await pq.click('#legende button[data-voir-perimetre]'); await pq.waitForTimeout(600);
     await pq.click('#echeance-titre'); await pq.waitForTimeout(400);
     const surBase = await pq.evaluate(() => {
       const esp = t => String(t || '').replace(/[  ]/g, ' ');
       return { per: document.querySelector('#choix-perimetre button[aria-pressed="true"]').dataset.perimetre,
-               leg: esp(document.getElementById('legende').textContent), fiche: esp((document.getElementById('fiche-echeance') || {}).textContent || ''),
+               leg: esp([...document.querySelectorAll('#legende .legende-item span[title]')].map(x => x.getAttribute('title')).join(' | ')),
+               fiche: esp((document.getElementById('fiche-echeance') || {}).textContent || ''),
                voir: !!document.querySelector('#legende button[data-voir-perimetre]') };
     });
-    const rL = (surBase.leg.match(/requis pour « [^»]+ » : ([\d,]+)\/sem\./) || [])[1], rF = (surBase.fiche.match(/Il faut ([\d,]+) plans/) || [])[1];
+    const rL = (surBase.leg.match(/ : ([\d,]+) par semaine\. En rouge/) || [])[1], rF = (surBase.fiche.match(/Il faut ([\d,]+) plans/) || [])[1];
     verifier('« voir BASE/OPTION » passe au périmètre du jalon, où la légende et la fiche disent le même rythme requis',
       surBase.per === 'BASE/OPTION' && !surBase.voir && !!rL && rL === rF, JSON.stringify([surBase.per, rL, rF]));
     /* Débrief 14 : « dans le concept harnais, on ne voyait pas les jalons ».
@@ -3966,11 +3976,14 @@ async function reinitialiser(pg) {
     return { boutons, attendu, reemisArrivees: evts.filter(e => e.type === 'indice' && e.cApres !== e.cAvant).length };
   });
   verifier('journal : chaque pilule de valeur a la pastille de sa tuile du haut (couleur et hachure)',
-    j18.boutons.filter(b => b.tuile).length === (await p.evaluate(() => window.__valeurs().length)) &&
+    j18.boutons.filter(b => b.tuile).length >= 2 &&
     j18.boutons.every(b => !b.tuile || b.pastille === b.tuile), JSON.stringify(j18.boutons.filter(b => b.pastille !== b.tuile && b.tuile)));
-  verifier('journal : chaque pilule dit combien de plans y sont arrivés — passages, reculs et réémissions —, grisée à zéro',
-    j18.boutons.every(b => nDe18(b.n) === (j18.attendu[b.cle] || 0) && b.off === !(j18.attendu[b.cle] || 0)),
-    JSON.stringify(j18.boutons.map(b => b.cle + '=' + b.n + (b.off ? '(off)' : '') + '/' + (j18.attendu[b.cle] || 0))));
+  /* Débrief 19 : seulement les passages qu'il y a — une pastille par sorte
+     de passage présente, aucune pour les autres, et aucune grisée. */
+  verifier('journal : une pilule par sorte de passage qu’il y a, chacune avec son nombre — passages, reculs et réémissions —, aucune à zéro ni grisée',
+    j18.boutons.every(b => nDe18(b.n) === (j18.attendu[b.cle] || 0) && nDe18(b.n) > 0 && !b.off) &&
+    Object.keys(j18.attendu).filter(k => j18.attendu[k] > 0).sort().join() === j18.boutons.map(b => b.cle).sort().join(),
+    JSON.stringify([j18.boutons.map(b => b.cle + '=' + b.n), j18.attendu]));
   verifier('journal : la démonstration a des plans réémis qui ont changé de valeur au passage — ils comptent sous leur valeur d’arrivée',
     j18.reemisArrivees >= 1, String(j18.reemisArrivees));
   /* Sous la recherche du journal, chaque pastille compte ce qu'elle
@@ -3987,26 +4000,25 @@ async function reinitialiser(pg) {
       cle: b.dataset.journal, n: Number(b.querySelector('.n').textContent), off: b.disabled, presse: b.getAttribute('aria-pressed') === 'true' }));
     return { lus, att, journal: window.__vueValeurs().journal };
   }, refJ18);
-  verifier('journal : sous une recherche, chaque pastille compte les arrivées de ce plan-là, grisée à zéro — le choix posé tient et reste cliquable',
-    rechJ18.journal === 'termine' && rechJ18.lus.every(b => b.n === (rechJ18.att[b.cle] || 0) && b.off === (!(rechJ18.att[b.cle] || 0) && !b.presse)),
+  verifier('journal : sous une recherche, seules les pastilles de ce plan-là restent, avec ses nombres — le choix posé tient et reste là',
+    rechJ18.journal === 'termine' && rechJ18.lus.every(b => b.n === (rechJ18.att[b.cle] || 0) && !b.off && (b.n > 0 || b.presse)) &&
+    rechJ18.lus.some(b => b.cle === 'termine' && b.presse) &&
+    Object.keys(rechJ18.att).filter(k => rechJ18.att[k] > 0).every(k => rechJ18.lus.some(b => b.cle === k)),
     JSON.stringify(rechJ18));
   await p.fill('#recherche-journal', ''); await p.waitForTimeout(350);
   await p.click('#filtre-journal button[data-journal=""]'); await p.waitForTimeout(250);
-  // Un clic sur une pilule grisée ne fait rien.
+  // Une valeur que personne n'a atteinte : pas de pilule (débrief 19).
   const grise18 = await p.evaluate(() => {
     const s = window.__jeuDExemple('HDK');
     const ref = s.plans[0].reference;
     s.plans[0].avancement = 'Statut inédit';
     s.releves.forEach(r => { if (r.plans && Object.prototype.hasOwnProperty.call(r.plans, ref)) r.plans[ref] = 'Statut inédit'; });
     window.__chargerSource(s);
-    const b = document.querySelector('#filtre-journal button[data-journal="statutinedit"]');
-    if (!b) return { present: false };
-    b.click(); b.querySelector('.pastille').dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    return { present: true, off: b.disabled, journal: window.__vueValeurs().journal,
-             tout: document.querySelector('#filtre-journal button[data-journal=""]').getAttribute('aria-pressed') };
+    return { present: !!document.querySelector('#filtre-journal button[data-journal="statutinedit"]'),
+             tuile: !!document.querySelector('#etats .etat-btn[data-cle="statutinedit"]'), journal: window.__vueValeurs().journal };
   });
-  verifier('journal : une valeur que personne n’a encore atteinte a sa pilule, grisée, et la cliquer ne change rien',
-    grise18.present && grise18.off && grise18.journal === '' && grise18.tout === 'true', JSON.stringify(grise18));
+  verifier('journal : une valeur que personne n’a encore atteinte a sa tuile en haut, mais pas de pilule dans le journal',
+    !grise18.present && grise18.tuile && grise18.journal === '', JSON.stringify(grise18));
   // Jamais périmée : un filtre posé, puis une source à un seul relevé.
   await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
   await p.click('#filtre-journal button[data-journal="termine"]'); await p.waitForTimeout(300);
@@ -4014,13 +4026,13 @@ async function reinitialiser(pg) {
     const s = window.__jeuDExemple('HDK');
     s.releves = s.releves.slice(-1);
     window.__chargerSource(s);
-    const bs = [...document.querySelectorAll('#filtre-journal button')];
-    return { cles: bs.map(b => b.dataset.journal).join(), attendu: ['', ...window.__valeurs().map(v => v.cle), 'reculs', 'indice'].join(),
-             actifs: bs.filter(b => !b.disabled).map(b => b.dataset.journal).join(), tout: bs[0].getAttribute('aria-pressed'),
-             message: !!document.querySelector('#zone-journal .journal-vide') };
+    const r = document.getElementById('filtre-journal');
+    return { boutons: r.querySelectorAll('button').length, cachee: r.hidden, journal: window.__vueValeurs().journal,
+             message: !!document.querySelector('#zone-journal .journal-vide'),
+             recherche: !!document.getElementById('recherche-journal').offsetParent };
   });
-  verifier('journal vide : la rangée reste là, avec les valeurs de la source affichée, toutes grisées, « Tout » pressé — rien de la source d’avant',
-    perime18.cles === perime18.attendu && perime18.actifs === '' && perime18.tout === 'true' && perime18.message, JSON.stringify(perime18));
+  verifier('journal vide : aucune pastille, pas même « Tout » — rien de la source d’avant ; la recherche et le message restent',
+    perime18.boutons === 0 && perime18.cachee && perime18.journal === '' && perime18.message && perime18.recherche, JSON.stringify(perime18));
   // Une valeur d'hier : plus personne ne la porte, mais des plans y sont passés.
   const hier18 = await p.evaluate(() => {
     const s = window.__jeuDExemple('HDK');
@@ -4058,14 +4070,17 @@ async function reinitialiser(pg) {
     const b = document.querySelector('#choix-indicateur button[data-indicateur="concept"]');
     if (!b || document.getElementById('choix-indicateur').hidden) return null;
     b.click();
-    const r = { cles: [...document.querySelectorAll('#filtre-journal button')].map(x => x.dataset.journal).join(),
-                attendu: ['', ...window.__valeurs().map(v => v.cle), 'reculs', 'indice'].join(),
+    const evts = [].concat(...window.__journalAffiche().map(s => s.evenements));
+    const arrivees = new Set(evts.filter(e => (e.type === 'change' || e.type === 'indice') && e.cApres !== e.cAvant).map(e => e.cApres));
+    const vals = window.__valeurs().map(v => v.cle);
+    const r = { cles: [...document.querySelectorAll('#filtre-journal button')].map(x => x.dataset.journal).filter(Boolean).filter(k => k !== 'reculs' && k !== 'indice').join(),
+                attendu: vals.filter(k => arrivees.has(k)).join(),
                 bloc: [...document.querySelectorAll('#filtre-valeur-groupe button')].map(x => x.dataset.valeurBloc).join(),
-                attenduBloc: ['', ...window.__valeurs().map(v => v.cle)].join() };
+                attenduBloc: (vals.length ? [''].concat(vals) : []).join() };
     document.querySelector('#choix-indicateur button[data-indicateur="def"]').click();
     return r;
   });
-  verifier('concept harnais : les rangées du journal et du bloc prennent ses valeurs à lui',
+  verifier('concept harnais : les rangées du journal et du bloc prennent ses valeurs à lui — seulement celles qu’il y a, comme sous la définition',
     !!concept18 && concept18.cles === concept18.attendu && concept18.bloc === concept18.attenduBloc, JSON.stringify(concept18));
   await p.waitForTimeout(400);
   // Au clavier, le focus reste sur la pilule choisie.
@@ -4090,14 +4105,14 @@ async function reinitialiser(pg) {
     etats: [...document.querySelectorAll('#etats .etat-n')].map(x => x.textContent).join(),
     rangee: (() => { const z = document.getElementById('filtre-valeur-groupe'); return {
       cles: [...z.querySelectorAll('button')].map(b => b.dataset.valeurBloc).join(), visible: !z.hidden,
-      horsTete: !z.closest('.section-tete'), apresIndice: z.previousElementSibling && z.previousElementSibling.id === 'indice-dim',
+      horsTete: !z.closest('.section-tete'), apresIndice: !!z.closest('.ligne-filtres') && z.closest('.ligne-filtres').previousElementSibling.id === 'indice-dim',
       presse: [...z.querySelectorAll('button[aria-pressed="true"]')].map(b => b.dataset.valeurBloc).join() }; })(),
-    attendu: ['', ...window.__valeurs().map(v => v.cle)].join(),
+    attendu: ['', ...window.__valeurs().filter(v => v.n > 0).map(v => v.cle)].join(),
     couleurs: [...document.querySelectorAll('#filtre-valeur-groupe button[data-valeur-bloc]:not([data-valeur-bloc=""])')].every(b =>
       getComputedStyle(b.querySelector('.pastille')).backgroundColor ===
       getComputedStyle(document.querySelector('#etats .etat-btn[data-cle="' + b.dataset.valeurBloc + '"] .pastille')).backgroundColor)
   }));
-  verifier('bloc : sous l’explication de la dimension, une rangée « Tout » puis chaque valeur dans l’ordre des tuiles, aux couleurs des tuiles',
+  verifier('bloc : sous l’explication de la dimension, une ligne « Tout » puis chaque valeur présente dans l’ordre des tuiles, aux couleurs des tuiles',
     avantBloc.rangee.visible && avantBloc.rangee.horsTete && avantBloc.rangee.apresIndice && avantBloc.rangee.cles === avantBloc.attendu &&
     avantBloc.rangee.presse === '' && avantBloc.couleurs, JSON.stringify(avantBloc.rangee));
   await p.click('#filtre-valeur-groupe button[data-valeur-bloc="termine"]'); await p.waitForTimeout(400);
@@ -4186,7 +4201,7 @@ async function reinitialiser(pg) {
   await p.click('#etats .etat-btn[data-cle="termine"]'); await p.waitForTimeout(400);
   const tuile18 = await p.evaluate(() => ({ bloc: window.__vueValeurs().bloc,
     actives: [...document.querySelectorAll('#filtre-valeur-groupe button:not([disabled])')].map(b => b.dataset.valeurBloc).join() }));
-  verifier('bloc : cliquer la tuile d’une autre valeur ramène la rangée à « Tout » ; seules « Tout » et cette valeur restent cliquables',
+  verifier('bloc : cliquer la tuile d’une autre valeur ramène la rangée à « Tout » ; seules « Tout » et cette valeur restent (les autres ne sont plus dans la sélection)',
     tuile18.bloc === '' && tuile18.actives === ',termine', JSON.stringify(tuile18));
   await p.click('#filtre-valeur-groupe button[data-valeur-bloc="termine"]'); await p.waitForTimeout(300);
   await p.click('#etats .etat-btn[data-cle="termine"]'); await p.waitForTimeout(300);
@@ -4382,8 +4397,154 @@ async function reinitialiser(pg) {
   await p.waitForTimeout(400);
   await reinitialiser(p);
 
+  // =================================================================
+  /* Débrief 19 : « homogène à la ligne » — dans chaque section, une seule
+     ligne : les pastilles à gauche, la recherche au bout à droite ; seulement
+     les valeurs qu'il y a, au concept comme à la définition ; les sept
+     tuiles de GATES sur une ligne ; plus d'alerte au concept harnais. */
+  section('Débrief 19 : une ligne par section, seulement ce qu’il y a, tuiles sur une ligne');
+  await p.evaluate(() => { window.__chargerSource(window.__jeuDExemple('HDK')); window.scrollTo(0, 0); });
+  await p.waitForTimeout(600);
+  const ligne19 = () => p.evaluate(() => {
+    const lire = id => {
+      const r = document.getElementById(id), l = r.closest('.ligne-filtres') || r, rech = l.querySelector('.recherche-groupe');
+      const rr = r.getBoundingClientRect(), lr = l.getBoundingClientRect();
+      const o = { visible: !r.hidden && rr.height > 0, rangs: new Set([...r.querySelectorAll('button')].map(b => Math.round(b.getBoundingClientRect().top))).size,
+                  gauche: Math.round(rr.left - lr.left), fondu: r.classList.contains('deborde-droite'),
+                  deborde: r.scrollWidth - r.clientWidth - r.scrollLeft > 2 };
+      if (rech && rech !== r) {
+        const sr = rech.getBoundingClientRect();
+        Object.assign(o, { droite: Math.round(lr.right - sr.right), centres: Math.round(Math.abs((sr.top + sr.bottom) / 2 - (rr.top + rr.bottom) / 2)),
+                           chevauche: rr.right > sr.left + 1, hauteur: Math.round(lr.height) });
+      }
+      return o;
+    };
+    return { journal: lire('filtre-journal'), bloc: lire('filtre-valeur-groupe'), graphe: lire('filtre-valeur-graphe'),
+             page: document.documentElement.scrollWidth <= window.innerWidth };
+  });
+  const bienAligne19 = o => o.visible && o.rangs === 1 && o.gauche <= 2 && o.droite <= 1 && o.centres <= 3 && !o.chevauche && o.hauteur <= 52 && o.fondu === o.deborde;
+  for (const w of [1440, 1280, 1024]) {
+    await p.setViewportSize({ width: w, height: 950 }); await p.waitForTimeout(450);
+    const l = await ligne19();
+    verifier('à ' + w + ' px, journal : les pastilles sur une seule ligne à gauche, « Chercher un plan » au bout à droite, sur la même ligne',
+      bienAligne19(l.journal), JSON.stringify(l.journal));
+    verifier('à ' + w + ' px, bloc par groupe : la même ligne — pastilles à gauche, compte et recherche à droite',
+      bienAligne19(l.bloc), JSON.stringify(l.bloc));
+    verifier('à ' + w + ' px, graphique : les pilules sur une seule ligne, sans débord de la page',
+      l.graphe.visible && l.graphe.rangs === 1 && l.graphe.fondu === l.graphe.deborde && l.page, JSON.stringify(l.graphe));
+  }
+  // Une ligne trop longue défile, avec un fondu au bord droit tant qu'il en reste.
+  await p.setViewportSize({ width: 800, height: 950 }); await p.waitForTimeout(450);
+  const fondu19 = await p.evaluate(async () => {
+    const r = document.getElementById('filtre-journal');
+    const avant = { deborde: r.scrollWidth > r.clientWidth + 2, fondu: r.classList.contains('deborde-droite') };
+    r.scrollLeft = r.scrollWidth; r.dispatchEvent(new Event('scroll'));
+    await new Promise(f => setTimeout(f, 100));
+    return { avant, auBout: r.classList.contains('deborde-droite'), page: document.documentElement.scrollWidth <= window.innerWidth };
+  });
+  verifier('à 800 px, la ligne du journal qui déborde défile, avec un fondu à droite qui s’efface au bout',
+    fondu19.avant.deborde && fondu19.avant.fondu && !fondu19.auBout && fondu19.page, JSON.stringify(fondu19));
+  await p.setViewportSize({ width: 1280, height: 950 }); await p.waitForTimeout(450);
+
+  // Seulement les valeurs qu'il y a — à la définition comme au concept, dans les trois rangées.
+  const rangees19 = () => p.evaluate(() => {
+    const vals = window.__valeurs();
+    const finies = vals.filter(v => v.famille === 'termine'), seule = finies.length === 1 ? finies[0].cle : null;
+    const evts = [].concat(...window.__journalAffiche().map(s => s.evenements));
+    const arrivees = new Set(evts.filter(e => (e.type === 'change' || e.type === 'indice') && e.cApres && e.cApres !== e.cAvant).map(e => e.cApres));
+    const cles = (id, a) => [...document.querySelectorAll('#' + id + ' button')].map(b => b.getAttribute('data-' + a)).filter(Boolean);
+    const max = k => Math.max(0, ...window.__serieValeur(k).pts.map(x => x.termine));
+    const j = cles('filtre-journal', 'journal').filter(k => k !== 'reculs' && k !== 'indice'), b = cles('filtre-valeur-groupe', 'valeur-bloc'),
+          g = cles('filtre-valeur-graphe', 'valeur-graphe');
+    return { indicateur: document.querySelector('#choix-indicateur button[aria-pressed="true"]') ? document.querySelector('#choix-indicateur button[aria-pressed="true"]').dataset.indicateur : '',
+      journal: j.every(k => arrivees.has(k)) && [...arrivees].every(k => j.indexOf(k) !== -1),
+      bloc: b.join() === vals.filter(v => v.n > 0).map(v => v.cle).join(),
+      graphe: g.every(k => max(k) > 0) && vals.filter(v => v.cle !== seule && max(v.cle) > 0).every(v => g.indexOf(v.cle) !== -1),
+      grises: document.querySelectorAll('#filtre-journal button:disabled, #filtre-valeur-groupe button:disabled, #filtre-valeur-graphe button:disabled').length,
+      detail: { j, b, g, vals: vals.map(v => v.cle + '=' + v.n) } };
+  });
+  const def19 = await rangees19();
+  verifier('définition : journal, bloc et graphique n’ont que les valeurs qu’il y a, aucune grisée',
+    def19.journal && def19.bloc && def19.graphe && def19.grises === 0, JSON.stringify(def19));
+  const aConcept19 = await p.evaluate(() => !document.getElementById('choix-indicateur').hidden);
+  if (aConcept19) {
+    await p.click('#choix-indicateur button[data-indicateur="concept"]'); await p.waitForTimeout(700);
+    const con19 = await rangees19();
+    verifier('concept harnais : exactement pareil — journal, bloc et graphique n’ont que ses valeurs à lui qu’il y a, aucune grisée',
+      con19.indicateur === 'concept' && con19.journal && con19.bloc && con19.graphe && con19.grises === 0, JSON.stringify(con19));
+    const lc19 = await ligne19();
+    verifier('concept harnais : la même ligne qu’à la définition — pastilles à gauche, recherche à droite',
+      bienAligne19(lc19.journal) && bienAligne19(lc19.bloc), JSON.stringify(lc19));
+    await p.click('#choix-indicateur button[data-indicateur="def"]'); await p.waitForTimeout(700);
+  } else verifier('la démonstration a un concept harnais', false);
+
+  // Une seule valeur portée par les plans : « Tout » et elle, rien d'autre.
+  const seule19 = await p.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    const fini = s.plans.map(x => x.avancement).find(v => window.__classer(v) === 'termine');
+    s.plans.forEach(x => { x.avancement = fini; });
+    window.__chargerSource(s);
+    return { bloc: [...document.querySelectorAll('#filtre-valeur-groupe button')].map(b => b.dataset.valeurBloc).join(),
+             attendu: ['', ...window.__valeurs().map(v => v.cle)].join(), n: window.__valeurs().length };
+  });
+  verifier('des plans tous validés : le bloc n’a que « Tout » et la pastille validée',
+    seule19.n === 1 && seule19.bloc === seule19.attendu, JSON.stringify(seule19));
+
+  // Les sept valeurs de GATES : sept tuiles sur une ligne, aucun libellé coupé, de 1024 px à la pleine largeur.
+  await p.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    const vals = ['VALIDATED', 'TO_CONFIRM', 'PWD_TO_CONTROL', 'PWD_IN_PROGRESS', 'FWD_TO_SEIZE', 'TO_TREAT', ''];
+    const poids = [54, 4, 6, 238, 3, 1, 334];
+    s.plans.forEach((pl, i) => { let c = 0, j = 0; while (j < poids.length - 1 && i >= c + poids[j]) { c += poids[j]; j++; } pl.avancement = vals[j]; });
+    window.__chargerSource(s);
+  });
+  for (const w of [1440, 1280, 1024]) {
+    await p.setViewportSize({ width: w, height: 950 }); await p.waitForTimeout(450);
+    const t = await p.evaluate(() => {
+      const bs = [...document.querySelectorAll('#etats .etat-btn')];
+      return { n: bs.length, rangs: new Set(bs.map(b => Math.round(b.getBoundingClientRect().top))).size,
+               coupes: bs.filter(b => { const l = b.querySelector('.libelle'); return l.scrollWidth > l.clientWidth + 1; }).map(b => b.querySelector('.libelle').textContent),
+               titres: bs.every(b => b.querySelector('.libelle').getAttribute('title') === b.querySelector('.libelle').textContent),
+               page: document.documentElement.scrollWidth <= window.innerWidth };
+    });
+    /* Dès 1280 px, chaque nom en entier ; plus étroit, un nom trop long
+       s'abrège, entier au survol — la ligne, elle, ne se casse pas. */
+    verifier('à ' + w + ' px, les sept valeurs de GATES : sept tuiles sur une seule ligne, ' + (w >= 1280 ? 'aucun libellé coupé' : 'chaque nom entier au survol') + ', sans débord de la page',
+      t.n === 7 && t.rangs === 1 && (w < 1280 || !t.coupes.length) && t.titres && t.page, JSON.stringify(t));
+  }
+  await p.setViewportSize({ width: 1280, height: 950 }); await p.waitForTimeout(300);
+
+  // Plus d'alerte « aucun plan compté validé » au concept harnais, ni sur des plans tous « à faire ».
+  const alerte19 = await p.evaluate(() => {
+    const cachee = () => document.getElementById('alerte-valeurs').hidden;
+    const out = {};
+    const s1 = window.__jeuDExemple('HDK');
+    s1.plans.forEach(x => { if (window.__classer(x[s1.cleConcept]) === 'termine') x[s1.cleConcept] = 'À traiter'; });
+    window.__chargerSource(s1);
+    const b = document.querySelector('#choix-indicateur button[data-indicateur="concept"]');
+    if (b) b.click();
+    out.concept = { cachee: cachee(), finies: window.__valeurs().filter(v => v.famille === 'termine').length,
+                    texte: document.getElementById('alerte-valeurs').textContent.slice(0, 120) };
+    document.querySelector('#choix-indicateur button[data-indicateur="def"]').click();
+    const s2 = window.__jeuDExemple('HDK');
+    s2.plans.forEach((x, i) => { x.avancement = i % 3 ? 'Pas commencé' : ''; });
+    window.__chargerSource(s2);
+    out.afaire = { cachee: cachee(), familles: [...new Set(window.__valeurs().map(v => v.famille))].join() };
+    window.__chargerSource(window.__jeuDExemple('HDK'));
+    return out;
+  });
+  verifier('concept harnais sans aucun « Traité » : pas d’alerte « Aucun plan n’est compté validé »',
+    alerte19.concept.cachee && alerte19.concept.finies === 0, JSON.stringify(alerte19.concept));
+  verifier('définition aux plans tous « à faire » ou vides : pas d’alerte non plus (seul un mot inconnu rangé « en cours » la déclenche)',
+    alerte19.afaire.cachee && !/termine|encours/.test(alerte19.afaire.familles), JSON.stringify(alerte19.afaire));
+  await p.waitForTimeout(400);
+  await reinitialiser(p);
+
   section('Persistance (même navigateur, page rechargée)');
   await p.click('button[data-trig="fin"]'); await p.waitForTimeout(300);
+  /* Débrief 19 : « quand on ouvre, t'es directement sur Tout » — un cadrage
+     choisi à la main ne se reprend plus : on rouvre sur « Échéances ». */
+  await p.click('.commandes-graphe .segmente button[data-span="0"]'); await p.waitForTimeout(300);
   const triAvant = await p.evaluate(() => {
     const b = document.querySelector('button[data-trig][data-actif="true"]');
     return b ? b.dataset.trig : null;
@@ -4393,8 +4554,12 @@ async function reinitialiser(pg) {
   const apresRech = await p.evaluate(() => {
     const b = document.querySelector('button[data-trig][data-actif="true"]');
     return { tri: b ? b.dataset.trig : null, jalons: window.__jeuDExemple('HDK').jalons.length,
-             stockes: /"jalons"/.test(localStorage.getItem('suivi-fwd:v1') || '') };
+             stockes: /"jalons"/.test(localStorage.getItem('suivi-fwd:v1') || ''),
+             zoom: [...document.querySelectorAll('.commandes-graphe .segmente button[aria-pressed="true"]')].map(x => x.textContent).join(),
+             cadrageStocke: /"fen"|"cadrage"/.test(localStorage.getItem('suivi-fwd:v1') || '') };
   });
+  verifier('débrief 19 : après un clic sur « Tout », la page rouverte est sur « Échéances » — le cadrage ne se mémorise plus',
+    apresRech.zoom === 'Échéances' && !apresRech.cadrageStocke, JSON.stringify(apresRech));
   verifier('le tri du bloc par groupe survit au rechargement',
     apresRech.tri === triAvant, triAvant + ' → ' + apresRech.tri);
   verifier('les jalons ne passent pas par le stockage : ils viennent de la source',

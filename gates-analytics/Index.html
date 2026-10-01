@@ -70,7 +70,7 @@
 <script>
   /* La livraison de ce fichier, posée par la construction : la page la compare
      à celles de Code, Styles et Javascript, et nomme celui qui diffère. */
-  window.SUIVI_FWD_LIVRAISON_INDEX = '02462f4';
+  window.SUIVI_FWD_LIVRAISON_INDEX = '83c0d77';
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
@@ -193,9 +193,9 @@
       </div>
     </div>
     <!-- La valeur que suit la courbe (débrief 18) : les validés par défaut,
-         ou n'importe quelle valeur de la colonne, relevé après relevé. Rien
-         n'en est mémorisé. -->
-    <div class="filtre-journal rangee-valeurs" id="filtre-valeur-graphe" role="group" aria-label="Valeur suivie par la courbe" hidden></div>
+         ou une autre valeur de la colonne, relevé après relevé — seulement
+         celles que les relevés portent (débrief 19). Rien n'en est mémorisé. -->
+    <div class="ligne-filtres filtre-journal rangee-valeurs" id="filtre-valeur-graphe" role="group" aria-label="Valeur suivie par la courbe" hidden></div>
     <div class="feuille">
       <div class="cadre-graphe" id="cadre-graphe">
         <div id="zone-graphe"></div>
@@ -209,20 +209,21 @@
          dit lesquels. Les séparer obligeait à faire l'aller-retour. -->
     <div class="section-tete section-journal">
       <h2 class="titre-journal">Ce qui a changé, semaine par semaine</h2>
-      <div class="commandes-journal">
-        <span class="filtre-journal" id="filtre-journal" role="group" aria-label="Ne montrer que certains passages">
-          <button type="button" data-journal="" aria-pressed="true">Tout</button>
-        </span>
-        <!-- Chercher un plan dans le journal seulement : ses semaines
-             s'ouvrent sur lui, les autres s'effacent. -->
-        <div class="recherche recherche-groupe">
-          <label class="masque" for="recherche-journal">Chercher un plan dans le journal</label>
-          <input id="recherche-journal" type="search" placeholder="Chercher un plan…" autocomplete="off" spellcheck="false">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
-            <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-          </svg>
-        </div>
+    </div>
+    <!-- Débrief 19 : une seule ligne, dans toute la largeur — les pastilles
+         des passages qu'il y a, et la recherche à droite, comme dans le bloc
+         par groupe. -->
+    <div class="ligne-filtres">
+      <span class="filtre-journal" id="filtre-journal" role="group" aria-label="Ne montrer que certains passages" hidden></span>
+      <!-- Chercher un plan dans le journal seulement : ses semaines
+           s'ouvrent sur lui, les autres s'effacent. -->
+      <div class="recherche recherche-groupe">
+        <label class="masque" for="recherche-journal">Chercher un plan dans le journal</label>
+        <input id="recherche-journal" type="search" placeholder="Chercher un plan…" autocomplete="off" spellcheck="false">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+          <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
       </div>
     </div>
     <div class="feuille">
@@ -236,25 +237,29 @@
       <div class="commandes-groupe">
         <label class="masque" for="dim-critique">Grouper par</label>
         <select class="select" id="dim-critique"></select>
-        <!-- Le filtre de la colonne de gauche : il ne touche qu'aux lignes de
-             ce bloc, jamais au reste de la page. Rien n'en est mémorisé. -->
-        <div class="recherche recherche-groupe">
-          <label class="masque" for="filtre-groupe">Filtrer les groupes</label>
-          <input id="filtre-groupe" type="search" placeholder="Filtrer…" autocomplete="off">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
-            <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <span class="compte-groupes" id="compte-groupes" role="status" aria-live="polite"></span>
       </div>
     </div>
     <p class="indice-dim" id="indice-dim"></p>
-    <!-- Le filtre par valeur du bloc (débrief 18) : comme le champ de gauche,
-         il ne touche qu'à ce bloc. Il garde sa valeur d'une dimension à
-         l'autre — « VALIDATED » par ATA, puis par ECP —, et rien n'en est
-         mémorisé. -->
-    <div class="filtre-journal rangee-valeurs" id="filtre-valeur-groupe" role="group" aria-label="Ne compter dans ce bloc que les plans d'une valeur" hidden></div>
+    <!-- Débrief 19 : la même ligne que le journal — les pastilles des valeurs
+         qu'il y a, puis, à droite, le compte « n sur m » et la recherche. -->
+    <div class="ligne-filtres">
+      <!-- Le filtre par valeur du bloc (débrief 18) : comme le champ de
+           gauche, il ne touche qu'à ce bloc. Il garde sa valeur d'une
+           dimension à l'autre — « VALIDATED » par ATA, puis par ECP —, et
+           rien n'en est mémorisé. -->
+      <div class="filtre-journal rangee-valeurs" id="filtre-valeur-groupe" role="group" aria-label="Ne compter dans ce bloc que les plans d'une valeur" hidden></div>
+      <span class="compte-groupes" id="compte-groupes" role="status" aria-live="polite"></span>
+      <!-- Le filtre de la colonne de gauche : il ne touche qu'aux lignes de
+           ce bloc, jamais au reste de la page. Rien n'en est mémorisé. -->
+      <div class="recherche recherche-groupe">
+        <label class="masque" for="filtre-groupe">Filtrer les groupes</label>
+        <input id="filtre-groupe" type="search" placeholder="Filtrer…" autocomplete="off">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+          <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
     <div class="feuille">
       <div class="defile-liste" id="zone-critique"></div>
     </div>

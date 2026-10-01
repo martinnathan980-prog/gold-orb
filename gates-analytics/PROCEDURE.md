@@ -605,9 +605,15 @@ ne dit que **quel plan est passé** : sa référence et son passage (« En cours
   range sous « changement d'indice »), ni une case vidée (« en cours » →
   « non renseigné »).
 - **La rangée de pastilles** (débrief 18 : « je ne peux filtrer que par
-  changement d'indice ») : **Tout**, puis **toutes les valeurs de la
-  colonne**, dans l'ordre de la barre du haut et avec ses couleurs, puis
-  **Reculs** et **Changement d'indice**. Chacune dit **combien de plans y
+  changement d'indice ») : **Tout**, puis **les valeurs vers lesquelles des
+  plans sont passés**, dans l'ordre de la barre du haut et avec ses
+  couleurs, puis **Reculs** et **Changement d'indice** s'il y en a.
+  **Seulement ce qu'il y a** (débrief 19) : s'il n'y a eu que des
+  validations, « Tout » et VALIDATED ; un journal vide n'a pas de pastille.
+  Elles tiennent **sur une seule ligne**, et le champ « Chercher un plan… »
+  au bout à droite de cette ligne — la même que dans le bloc par groupe ;
+  trop longue pour la largeur, la ligne défile, un fondu au bord droit le
+  dit. Chacune dit **combien de plans y
   sont arrivés**, toutes semaines du périmètre confondues ; un clic
   n'affiche qu'eux, sur toutes les semaines à la fois. Sous une valeur, ce
   sont **tous les plans arrivés à elle** : passages, reculs, et plans
@@ -616,8 +622,8 @@ ne dit que **quel plan est passé** : sa référence et son passage (« En cours
   montre désormais. Dans sa semaine, chaque ligne garde sa case (le réémis
   devenu validé se compte sous « changement d'indice ») : le nombre de la
   pastille est exactement le nombre de lignes montrées — sous le petit
-  champ « Chercher un plan… », celui des plans cherchés. Une pastille
-  **grisée** : personne n'y est arrivé. Une valeur que plus aucun plan ne
+  champ « Chercher un plan… », celui des plans cherchés : seules restent
+  alors les pastilles de ce plan (et celle qu'on a choisie). Une valeur que plus aucun plan ne
   porte, mais vers laquelle des plans sont passés, garde sa pastille, après
   celles de la barre. La rangée est réécrite à chaque affichage, journal
   vide compris : elle ne garde jamais les boutons d'un autre contrat ni de
@@ -684,8 +690,9 @@ de `Code.gs` (et une valeur « pas commencé » à `VALEURS_A_FAIRE`).
 
 **Un mot « fini » inconnu ne passe pas inaperçu** (débrief 16 : « 0 sur 600
 plans validés » sur les vraies données). Quand **aucun** plan n'est compté
-validé alors que la colonne a des valeurs, la page le dit au-dessus de la
-barre : « Aucun plan n'est compté « validé ». Aucune des valeurs lues dans
+validé alors qu'une valeur de la colonne est rangée « en cours » — c'est là
+que se cache un mot « fini » que la page ne connaît pas —, elle le dit
+au-dessus de la barre : « Aucun plan n'est compté « validé ». Aucune des valeurs lues dans
 « HDK AA 011 › Avancement Définition Electrique » ne veut dire « validé »
 pour la page : « Released » (256), « In work » (166)… Si l'une d'elles veut
 dire « validé », il faut la déclarer dans Code.gs, VALEURS_FINIES. » Le
@@ -693,6 +700,12 @@ dire « validé », il faut la déclarer dans Code.gs, VALEURS_FINIES. » Le
 compte **et la façon dont elle est comptée** (« « Check » 312 → en cours »),
 et le même avertissement (seulement des valeurs d'état : au-delà de vingt
 valeurs différentes, ou de trente caractères, rien n'est recopié).
+**Jamais sous le concept harnais** (débrief 19 : « aucun plan n'est compté
+comme validé… ne le mets pas ») : son vocabulaire est connu — rien, « À
+traiter », « Traité » —, et aucun « Traité » veut seulement dire que rien
+n'est encore traité ; la page montre ce qu'il y a, comme pour la
+définition. Des plans tous « à faire » ou non renseignés ne la déclenchent
+pas non plus : rien n'y cache un mot « fini ».
 
 **La page dit « validés »** (débrief 17 : « c'est en fonction des
 validated, on reste pas sur l'ancien »). La famille *fini* s'affiche
@@ -717,7 +730,10 @@ plans sur six cents), ils passent en **légende** : une grille, une case par
 valeur avec sa pastille, son nom, son nombre et sa part (« < 1 % » plutôt
 que « 0 % »). Survoler une case — ou un segment — **éclaire** son segment et
 estompe les autres : une valeur de deux plans se retrouve d'un coup d'œil.
-Un clic filtre le tableau, comme avant.
+Un clic filtre le tableau, comme avant. Les cases tiennent **sur une seule
+ligne** (débrief 19 : les sept valeurs de GATES faisaient deux lignes) tant
+que chacune garde 112 px : dès 1280 px de large, chaque nom s'y lit en
+entier ; plus étroit, un nom trop long s'abrège, entier au survol.
 
 
 **Le vocabulaire réel de GATES** (relevé au bureau le 29 septembre, colonne
@@ -990,8 +1006,10 @@ chacun est bien l'une des valeurs de la colonne de domaine du premier contrat
 ## 13 bis. Chercher un plan dans une section
 
 Pas de barre qui cherche partout : chaque section qui montre des plans a
-**son propre petit champ**, à droite de son titre, qui ne cherche **que chez
-elle** — on regarde son plan dans le carré qu'on veut, sans remonter en haut
+**son propre petit champ** qui ne cherche **que chez elle** — au bout à
+droite de sa ligne de pastilles pour le journal et le bloc par groupe
+(débrief 19 : la même ligne aux deux, les pastilles à gauche), à droite du
+titre ailleurs — — on regarde son plan dans le carré qu'on veut, sans remonter en haut
 de la page :
 
 - **Ce qui a changé, semaine par semaine** : le journal ne garde que les
@@ -1022,7 +1040,10 @@ avant le dernier relevé jusqu'à **la semaine qui suit la dernière
 échéance** — toutes les échéances à l'écran, la cinquième comprise, et rien
 au-delà. Sans jalon à venir, il s'ouvre sur six mois. Tant qu'on n'a ni zoomé
 ni déplacé, ce cadrage se refait quand on change de contrat, de périmètre ou
-d'avancement ; un cadrage choisi à la main est gardé. Les boutons
+d'avancement ; un cadrage choisi à la main est gardé le temps de la visite.
+**La page rouverte repart toujours sur « Échéances »** (débrief 19 : « quand
+on ouvre, t'es directement sur Tout » — le dernier cadrage choisi était
+retenu d'une ouverture à l'autre ; il ne l'est plus). Les boutons
 **Échéances · 3 mois · 6 mois · 1 an · Tout** sont à droite de l'en-tête du
 graphique, un seul pressé à la fois ; l'aide « glisser pour déplacer, molette
 pour zoomer » a disparu (le geste, lui, marche toujours). Un jalon hors du
@@ -1064,6 +1085,11 @@ phrase entière. La droite « requis » et ce trait ne se tracent que sur la
 courbe des plans que l'échéance demande : sur « Tout », un jalon BASE/OPTION
 se lit dans la légende (« requis … sur ses plans BASE/OPTION ») avec un lien
 **voir BASE/OPTION** qui passe à ce périmètre.
+
+La légende du graphique tient en peu de mots (débrief 19) : **réalisé**,
+**au rythme tenu (2/sem.)**, **requis pour « Solde FWD »**. La fin estimée
+au rythme tenu et le nombre du requis n'y sont plus écrits — ils restent
+dans leurs survols, dans la fiche de l'échéance et dans le bloc par groupe.
 
 ## 13 quater bis. Une seule formule, une seule façon de dire une semaine
 
@@ -1320,7 +1346,12 @@ mot. Ce que la page fait maintenant :
 « Semaine par semaine, savoir les valider, filtrer, avec les petites
 pastilles de couleur… pareil pour l'avancement par ECP, ATA… et pour le
 graphe. » Une même rangée de pastilles — les valeurs de la colonne, dans
-l'ordre et aux couleurs de la barre du haut — sert à trois endroits. Rien
+l'ordre et aux couleurs de la barre du haut — sert à trois endroits, **avec
+seulement les valeurs qu'il y a** (débrief 19 : « on ne met les filtres que
+lorsqu'ils apparaissent dans les plans ») : pas de pastille grisée, pas de
+rangée du tout quand il n'y a rien à choisir. Au concept harnais,
+exactement pareil : « Traité », « À traiter », « Non renseigné », pour
+autant qu'il y en ait. Rien
 n'en est mémorisé : chacune repart de « Tout » avec un autre contrat ou
 l'autre avancement. Comme le champ de gauche du bloc, elles sont locales à
 leur section : « tout réinitialiser » (les filtres de la page) ne les
@@ -1329,7 +1360,10 @@ touche pas ; leur premier bouton les remet à « Tout ».
 - **Le journal** : voir § 10. Le nombre de chaque pastille : les plans
   arrivés à cette valeur, réémissions comprises.
 - **Le bloc par groupe** (« Avancement FWD par ATA… ») : sous l'explication
-  de la dimension, **Tout** puis chaque valeur. Choisir VALIDATED compte,
+  de la dimension, une ligne : **Tout** puis chaque valeur que portent ses
+  plans (des plans tous VALIDATED : « Tout » et VALIDATED) ; au bout à
+  droite, le compte des groupes et le champ « ATA ou plan… » — la même
+  ligne que celle du journal. Choisir VALIDATED compte,
   dans chaque groupe, ses plans VALIDATED **« sur » son total**, avec
   **« +n »** ceux qui y sont arrivés au dernier relevé — ou, si l'extract
   du jour n'est pas encore archivé, depuis le dernier relevé (les mêmes
@@ -1355,7 +1389,9 @@ touche pas ; leur premier bouton les remet à « Tout ».
   requis, ni « manque » sur une telle courbe : ils sont ceux des validés.
   La note, la légende et la bulle la nomment. Elle se lit sur la carte plan
   par plan de chaque relevé ; un relevé archivé sans carte est écarté, et
-  la note le dit.
+  la note le dit. Les pastilles sont celles des valeurs que les relevés ont
+  portées, sur une ligne ; sans autre courbe que celle des validés, pas de
+  rangée.
 
 ## 13 quinquies. Vitesse d'ouverture et thème
 
@@ -1402,8 +1438,9 @@ touche pas ; leur premier bouton les remet à « Tout ».
 
 ## 14. Ce qui reste local à chaque personne
 
-La dimension ouverte, l'ordre des colonnes, les tris et le cadrage du graphique
-sont retenus dans le navigateur de chacun. Personne n'impose sa mise en page à
+La dimension ouverte, l'ordre des colonnes et les tris sont retenus dans le
+navigateur de chacun. Le cadrage du graphique ne l'est plus (débrief 19) : la
+page s'ouvre toujours sur « Échéances ». Personne n'impose sa mise en page à
 personne — et rien de ce qui se partage (jalons, contrats, historique) n'y
 passe. Le périmètre, les filtres et la vue du tableau repartent de zéro à
 chaque ouverture.

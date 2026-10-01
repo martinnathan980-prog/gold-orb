@@ -189,12 +189,12 @@ body {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 8px; height: auto; margin-top: 14px;
 }
 .etats.en-legende .etat-btn {
-  position: relative; text-align: left; white-space: normal; padding: 9px 12px 8px;
+  position: relative; text-align: left; white-space: normal; padding: 9px 10px 8px;
   background: var(--surface); border: 1px solid var(--filet); border-radius: 8px;
   grid-template-columns: 1fr auto; align-items: baseline; column-gap: 8px;
   transition: border-color .15s, box-shadow .15s;
 }
-.etats.en-legende .etat-haut { justify-content: flex-start; grid-column: 1 / -1; min-width: 0; }
+.etats.en-legende .etat-haut { justify-content: flex-start; grid-column: 1 / -1; min-width: 0; gap: 6px; font-size: 12px; }
 .etats.en-legende .etat-haut .libelle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .etats.en-legende .etat-n { font-size: 22px; }
 .etats.en-legende .etat-pct { display: inline; }
@@ -332,8 +332,27 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .titre-journal { margin: 0; }
 /* Le filtre du journal : des mots avec leur pastille, pas une barre noire.
    Le choix courant se cerne d'un filet ; le reste s'efface. */
-.commandes-journal { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; min-width: 0; }
 .filtre-journal { display: inline-flex; flex-wrap: wrap; gap: 2px 4px; }
+/* Débrief 19 : une seule ligne de commandes par section, dans toute la
+   largeur, la même au graphique, au journal et au bloc par groupe — les
+   pastilles à gauche, sur une ligne (elles défilent si la place manque, plutôt
+   que de passer à la ligne), le compte et la recherche à droite. */
+.ligne-filtres { display: flex; align-items: center; gap: 8px 16px; margin: 0 0 12px; min-width: 0; }
+.ligne-filtres > .filtre-journal, .filtre-journal.ligne-filtres {
+  display: flex; flex: 1 1 auto; flex-wrap: nowrap; min-width: 0; overflow-x: auto;
+  padding: 2px; scrollbar-width: thin;
+}
+.ligne-filtres > .filtre-journal[hidden], .filtre-journal.ligne-filtres[hidden] { display: none; }
+/* Quand la place manque, un fondu au bord dit qu'il reste des pastilles à
+   faire défiler — plutôt qu'un mot coupé net. */
+.filtre-journal.deborde-droite { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); }
+.ligne-filtres > .compte-groupes, .ligne-filtres > .recherche-groupe { margin-left: auto; }
+.ligne-filtres > .compte-groupes ~ .recherche-groupe { margin-left: 0; }
+.ligne-filtres > .compte-groupes:empty ~ .recherche-groupe { margin-left: auto; }
+@media (max-width: 720px) {
+  .ligne-filtres { flex-wrap: wrap; }
+  .ligne-filtres > .filtre-journal { flex-basis: 100%; }
+}
 .filtre-journal button {
   display: inline-flex; align-items: center; gap: 6px; border: 1px solid transparent; background: none;
   padding: 4px 10px; font: inherit; font-size: 12.5px; color: var(--encre-2); cursor: pointer; border-radius: 999px;
@@ -343,16 +362,13 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .filtre-journal button[aria-pressed="true"] { border-color: var(--filet-fort); background: var(--surface); color: var(--encre); font-weight: 500; }
 .filtre-journal .pastille { width: 8px; height: 8px; }
 /* Débrief 18 : la même rangée sert au journal, au bloc par groupe et au
-   graphique. Toutes les valeurs y sont, toujours dans l'ordre des tuiles ;
-   une valeur sans rien à montrer reste là, grisée — la rangée garde sa
-   forme d'un contrat, d'un périmètre à l'autre. */
-.filtre-journal button:disabled { opacity: .42; cursor: default; }
-.filtre-journal button:disabled:hover { background: none; color: var(--encre-2); }
+   graphique, dans l'ordre des tuiles. Débrief 19 : seulement les valeurs
+   qu'il y a — rien à montrer, pas de pastille. */
 .filtre-journal .n {
   font-family: "IBM Plex Mono", monospace; font-size: 11.5px;
   font-variant-numeric: tabular-nums; opacity: .72;
 }
-.rangee-valeurs { display: flex; margin: 0 0 10px; }
+.rangee-valeurs { display: flex; }
 .journal-semaine {
   border-bottom: 1px solid var(--filet);
 }
@@ -393,7 +409,10 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 /* Les semaines sur une même grille : la semaine, puis une colonne par sorte
    de passage — alignées d'une semaine à l'autre, une case vide quand une
    semaine n'en a pas —, puis la mini-jauge au bord droit. */
-#zone-journal.journal-grille { display: grid; column-gap: 14px; align-content: start; }
+/* « position: relative » : le cadre qui défile tient aussi les mots lus à
+   voix haute (.mot-case, hors flux) — sans lui, un journal plus large que la
+   page (les sept colonnes de GATES) la faisait défiler de côté. */
+#zone-journal.journal-grille { display: grid; column-gap: 14px; align-content: start; position: relative; }
 .journal-grille .journal-semaine { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
 .journal-grille .journal-tete { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center; }
 .journal-grille .journal-tete .resume { display: contents; }
@@ -558,7 +577,7 @@ select.select:focus { outline: none; border-bottom-color: var(--focus); }
 .segmente button[aria-pressed="true"] { background: var(--encre); color: var(--surface); }
 /* Cinq boutons ne tiennent pas sur un téléphone : le filtre du journal passe
    sur deux lignes plutôt que de faire déborder la page. */
-@media (max-width: 480px) { #filtre-journal { flex-wrap: wrap; } }
+
 
 .cadre-graphe { position: relative; }
 svg.graphe { width: 100%; height: auto; display: block; overflow: visible; }
@@ -1276,9 +1295,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
       </div>
     </div>
     <!-- La valeur que suit la courbe (débrief 18) : les validés par défaut,
-         ou n'importe quelle valeur de la colonne, relevé après relevé. Rien
-         n'en est mémorisé. -->
-    <div class="filtre-journal rangee-valeurs" id="filtre-valeur-graphe" role="group" aria-label="Valeur suivie par la courbe" hidden></div>
+         ou une autre valeur de la colonne, relevé après relevé — seulement
+         celles que les relevés portent (débrief 19). Rien n'en est mémorisé. -->
+    <div class="ligne-filtres filtre-journal rangee-valeurs" id="filtre-valeur-graphe" role="group" aria-label="Valeur suivie par la courbe" hidden></div>
     <div class="feuille">
       <div class="cadre-graphe" id="cadre-graphe">
         <div id="zone-graphe"></div>
@@ -1292,20 +1311,21 @@ table.plans thead tr th.col-fige { z-index: 6; }
          dit lesquels. Les séparer obligeait à faire l'aller-retour. -->
     <div class="section-tete section-journal">
       <h2 class="titre-journal">Ce qui a changé, semaine par semaine</h2>
-      <div class="commandes-journal">
-        <span class="filtre-journal" id="filtre-journal" role="group" aria-label="Ne montrer que certains passages">
-          <button type="button" data-journal="" aria-pressed="true">Tout</button>
-        </span>
-        <!-- Chercher un plan dans le journal seulement : ses semaines
-             s'ouvrent sur lui, les autres s'effacent. -->
-        <div class="recherche recherche-groupe">
-          <label class="masque" for="recherche-journal">Chercher un plan dans le journal</label>
-          <input id="recherche-journal" type="search" placeholder="Chercher un plan…" autocomplete="off" spellcheck="false">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
-            <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-          </svg>
-        </div>
+    </div>
+    <!-- Débrief 19 : une seule ligne, dans toute la largeur — les pastilles
+         des passages qu'il y a, et la recherche à droite, comme dans le bloc
+         par groupe. -->
+    <div class="ligne-filtres">
+      <span class="filtre-journal" id="filtre-journal" role="group" aria-label="Ne montrer que certains passages" hidden></span>
+      <!-- Chercher un plan dans le journal seulement : ses semaines
+           s'ouvrent sur lui, les autres s'effacent. -->
+      <div class="recherche recherche-groupe">
+        <label class="masque" for="recherche-journal">Chercher un plan dans le journal</label>
+        <input id="recherche-journal" type="search" placeholder="Chercher un plan…" autocomplete="off" spellcheck="false">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+          <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
       </div>
     </div>
     <div class="feuille">
@@ -1319,25 +1339,29 @@ table.plans thead tr th.col-fige { z-index: 6; }
       <div class="commandes-groupe">
         <label class="masque" for="dim-critique">Grouper par</label>
         <select class="select" id="dim-critique"></select>
-        <!-- Le filtre de la colonne de gauche : il ne touche qu'aux lignes de
-             ce bloc, jamais au reste de la page. Rien n'en est mémorisé. -->
-        <div class="recherche recherche-groupe">
-          <label class="masque" for="filtre-groupe">Filtrer les groupes</label>
-          <input id="filtre-groupe" type="search" placeholder="Filtrer…" autocomplete="off">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
-            <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <span class="compte-groupes" id="compte-groupes" role="status" aria-live="polite"></span>
       </div>
     </div>
     <p class="indice-dim" id="indice-dim"></p>
-    <!-- Le filtre par valeur du bloc (débrief 18) : comme le champ de gauche,
-         il ne touche qu'à ce bloc. Il garde sa valeur d'une dimension à
-         l'autre — « VALIDATED » par ATA, puis par ECP —, et rien n'en est
-         mémorisé. -->
-    <div class="filtre-journal rangee-valeurs" id="filtre-valeur-groupe" role="group" aria-label="Ne compter dans ce bloc que les plans d'une valeur" hidden></div>
+    <!-- Débrief 19 : la même ligne que le journal — les pastilles des valeurs
+         qu'il y a, puis, à droite, le compte « n sur m » et la recherche. -->
+    <div class="ligne-filtres">
+      <!-- Le filtre par valeur du bloc (débrief 18) : comme le champ de
+           gauche, il ne touche qu'à ce bloc. Il garde sa valeur d'une
+           dimension à l'autre — « VALIDATED » par ATA, puis par ECP —, et
+           rien n'en est mémorisé. -->
+      <div class="filtre-journal rangee-valeurs" id="filtre-valeur-groupe" role="group" aria-label="Ne compter dans ce bloc que les plans d'une valeur" hidden></div>
+      <span class="compte-groupes" id="compte-groupes" role="status" aria-live="polite"></span>
+      <!-- Le filtre de la colonne de gauche : il ne touche qu'aux lignes de
+           ce bloc, jamais au reste de la page. Rien n'en est mémorisé. -->
+      <div class="recherche recherche-groupe">
+        <label class="masque" for="filtre-groupe">Filtrer les groupes</label>
+        <input id="filtre-groupe" type="search" placeholder="Filtrer…" autocomplete="off">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+          <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
     <div class="feuille">
       <div class="defile-liste" id="zone-critique"></div>
     </div>
@@ -2930,7 +2954,14 @@ table.plans thead tr th.col-fige { z-index: 6; }
           ? ' : le concept harnais n\u2019a pas commencé, ou l\u2019export a été fait sans cette colonne.'
           : ' : vérifier que l\u2019export collé porte bien cette colonne remplie.'));
     }
-    if (PLANS.length && remplies.length && aucunFini) {
+    /* Débrief 19 : sous le concept harnais, « aucun validé » est normal tant
+       que rien n'est « Traité » — son vocabulaire est connu (rien, « À
+       traiter », « Traité ») : la page ne dit rien. En définition, seule une
+       valeur rangée « en cours » faute d'être reconnue peut cacher un mot
+       « fini » inconnu ; des plans tous « à faire » ou non renseignés n'ont
+       rien de suspect. */
+    var douteuses = remplies.some(function (v) { return v.famille === 'encours'; });
+    if (PLANS.length && douteuses && aucunFini && INDICATEUR !== 'concept') {
       var vues = remplies.slice().sort(function (a, b) { return b.n - a.n; });
       var liste = vues.slice(0, 8).map(function (v) { return '« ' + ech(v.libelle) + ' » (' + nb(v.n) + ')'; }).join(', ') +
         (vues.length > 8 ? ', et ' + (vues.length - 8) + ' autres' : '');
@@ -3326,9 +3357,10 @@ table.plans thead tr th.col-fige { z-index: 6; }
      échéances à l'écran, la cinquième comprise, et rien au-delà. Sans jalon
      à venir, six mois (le bouton « 6 mois »). Tant que le lecteur n'a ni
      zoomé ni déplacé (vue.fenAuto), le cadrage se refait à chaque rendu. Un
-     cadrage choisi à la main se mémorise, et ne se reprend à l'ouverture que
-     s'il montre encore le dernier relevé (voir chargerPrefs). bornerFenetre()
-     ramène le tout sous le plafond de l'axe. */
+     cadrage choisi à la main ne vaut que le temps de la visite : la page
+     s'ouvre toujours sur « Échéances » (débrief 19 : un clic sur « Tout »,
+     mémorisé, faisait rouvrir sur « Tout »). bornerFenetre() ramène le tout
+     sous le plafond de l'axe. */
   var SPAN_OUVERTURE = 26, RECUL_OUVERTURE = 12;
   function cadrageSur(span) {
     return { debut: Math.max(0, AUJ - Math.round(span * 0.45)), span: span };
@@ -3774,8 +3806,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
          rejouer sous « toutes les colonnes » — c'est l'extract, dans l'ordre
          de la feuille, exactement ce que rend appliquerVueTable() au retour. */
       localStorage.setItem(CLE_PREFS, JSON.stringify({
-        fen: vue.fenAuto ? null : vue.fen,
-        cadrage: 4,
         dimCritique: vue.dimCritique,
         ordre: vue.vueTable === 'essentielle' ? ORDRE_FEUILLE.slice() : vue.ordre,
         tri: vue.tri,
@@ -3814,16 +3844,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
       if (!pref || typeof pref !== 'object') return;
       /* Un ancien stockage pouvait contenir des jalons : ils ne font plus
          foi, les jalons viennent de la configuration. On les ignore. */
-      /* Le cadrage ne se reprend que s'il montre encore aujourd'hui : laissé
-         sur le passé, il n'est plus celui qu'on veut à l'ouverture. */
-      /* « cadrage: 4 » : seul un cadrage choisi à la main est mémorisé ; un
-         cadrage plus ancien (automatique, ou d'avant les six mois) ne
-         s'impose plus. */
-      if (pref.cadrage === 4 && pref.fen && typeof pref.fen.debut === 'number' && typeof pref.fen.span === 'number' &&
-          pref.fen.debut <= AUJ && AUJ < pref.fen.debut + pref.fen.span) {
-        vue.fen = { debut: pref.fen.debut, span: pref.fen.span };
-        vue.fenAuto = false;
-      }
+      /* Le cadrage du graphique ne se reprend plus (débrief 19) : la page
+         s'ouvre toujours sur « Échéances ». Un ancien stockage qui en porte
+         un (fen, cadrage) est ignoré. */
       appliquerDisposition(pref);
     } catch (e) { /* preferences illisibles : on repart des valeurs par defaut */ }
   }
@@ -4039,6 +4062,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var segs = Array.prototype.slice.call(barre.querySelectorAll('span[data-cle]'));
     var boutons = Array.prototype.slice.call(zone.querySelectorAll('button[data-cle]'));
     if (filets) filets.innerHTML = '';
+    zone.style.gridTemplateColumns = '';
     if (!boutons.length) return;
     if (window.matchMedia('(max-width: 680px)').matches || barre.offsetParent === null) {
       boutons.forEach(function (b) { b.style.left = ''; });
@@ -4061,6 +4085,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
     if (boutons.length > 4 || etroit || besoin > largeur) {
       zone.classList.add('en-legende');
       boutons.forEach(function (b) { b.style.left = ''; });
+      /* Débrief 19 : toutes les cartes sur une seule ligne — les sept valeurs
+         de GATES tiennent dans la largeur de la page —, tant que chacune garde
+         au moins 112 px (un nom trop long s'abrège, entier au survol). Au-delà,
+         la grille passe à la ligne. */
+      var n = boutons.length;
+      if ((largeur - 8 * (n - 1)) / n >= 112) zone.style.gridTemplateColumns = 'repeat(' + n + ', minmax(0, 1fr))';
       return;
     }
     /* Un filet par coupure — sauf après un segment trop étroit pour que le
@@ -4142,7 +4172,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       return '<button class="etat-btn" type="button" data-etat="' + ech(v.cle) + '" data-cle="' + ech(v.cle) + '" data-famille="' + v.famille +
         '" style="--teinte:' + v.teinte +
         '" aria-pressed="' + actif + '" title="' + (actif ? 'Retirer le filtre' : 'N\u2019afficher que ces plans') + '">' +
-        '<span class="etat-haut">' + pastille + '<span class="libelle">' + ech(v.libelle) + '</span></span>' +
+        '<span class="etat-haut">' + pastille + '<span class="libelle" title="' + ech(v.libelle) + '">' + ech(v.libelle) + '</span></span>' +
         '<span class="etat-n">' + nb(parValeur[v.cle] || 0) + '</span>' +
         '<span class="etat-pct">' + partDite(parValeur[v.cle] || 0, c.total) + '</span></button>';
     }).join('');
@@ -4246,8 +4276,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
      tuiles. Par défaut, la courbe des validés — avec le rythme, la fin
      estimée, l'échéance. Quand une seule valeur veut dire « validé », c'est
      sa pilule qui tient ce rôle ; sinon un premier bouton « Validés ». Une
-     valeur qu'aucun relevé de la portée n'a portée est grisée. Sans relevé
-     gardé plan par plan, ou avec une seule valeur, la rangée s'efface. */
+     valeur qu'aucun relevé de la portée n'a portée n'a pas de pilule
+     (débrief 19). Sans relevé gardé plan par plan, ou sans autre courbe que
+     celle des validés, la rangée s'efface. */
   /* Les valeurs « d'hier » de la courbe : portées par des relevés, plus par
      aucun plan aujourd'hui — « TO_TREAT » tombé à zéro est justement ce
      qu'on veut voir descendre. Nommées par leur première écriture, de la
@@ -4256,7 +4287,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
   function rendreFiltreValeurGraphe() {
     var z = $('filtre-valeur-graphe');
     HIER_GRAPHE = {};
-    if (!z || VALEURS_COLONNE.length < 2 || !RELEVES.some(function (r) { return r.plans; })) {
+    if (!z || !VALEURS_COLONNE.length || !RELEVES.some(function (r) { return r.plans; })) {
       vue.valeurGraphe = '';
       if (z) { z.hidden = true; z.innerHTML = ''; }
       return '';
@@ -4281,17 +4312,23 @@ table.plans thead tr th.col-fige { z-index: 6; }
     /* Un choix qui n'est plus dans la rangée — une autre portée, une autre
        source — revient à la courbe par défaut. */
     if (vue.valeurGraphe === seule || (vue.valeurGraphe && !valeurDeCle(vue.valeurGraphe) && !HIER_GRAPHE[vue.valeurGraphe])) vue.valeurGraphe = '';
-    z.hidden = false;
-    z.innerHTML = boutonsPastilles('valeur-graphe', vue.valeurGraphe, VALEURS_COLONNE.concat(hier).map(function (v) {
+    /* Seulement les valeurs que les relevés de la portée portent (débrief
+       19) ; la courbe par défaut, celle des validés, est toujours là. */
+    var items = VALEURS_COLONNE.concat(hier).map(function (v) {
       var defaut = v.cle === seule, aujourdhui = !!valeurDeCle(v.cle);
-      return { cle: defaut ? '' : v.cle, famille: v.famille, libelle: v.libelle, desactive: !defaut && !vues[v.cle],
+      return { cle: defaut ? '' : v.cle, famille: v.famille, libelle: v.libelle, absente: !defaut && !vues[v.cle],
                pastille: aujourdhui ? undefined : pastilleDe(v.famille),
                titre: defaut ? 'Les plans « ' + v.libelle + ' », relevé après relevé, avec le rythme tenu, la fin estimée et l\u2019échéance'
                     : !aujourdhui ? 'Plus aucun plan n\u2019est « ' + v.libelle + ' » ; combien l\u2019étaient, relevé après relevé'
-                    : vues[v.cle] ? 'Combien de plans « ' + v.libelle + ' », relevé après relevé'
-                    : 'Aucun relevé n\u2019a de plan « ' + v.libelle + ' »' };
-    }), seule ? null : { libelle: 'Validés', pastille: pastilleDe('termine'),
-                          titre: 'Les plans validés, relevé après relevé, avec le rythme tenu, la fin estimée et l\u2019échéance' });
+                    : 'Combien de plans « ' + v.libelle + ' », relevé après relevé' };
+    });
+    /* Rien d'autre à suivre que les validés : pas de rangée. */
+    var autres = items.filter(function (x) { return x.cle && (!x.absente || x.cle === vue.valeurGraphe); }).length;
+    z.innerHTML = autres ? boutonsPastilles('valeur-graphe', vue.valeurGraphe, items, seule ? null : { libelle: 'Validés', pastille: pastilleDe('termine'),
+      titre: 'Les plans validés, relevé après relevé, avec le rythme tenu, la fin estimée et l\u2019échéance' }) : '';
+    z.hidden = !z.innerHTML;
+    if (z.hidden) vue.valeurGraphe = '';
+    marquerDebord(z);
     return vue.valeurGraphe;
   }
   /* La couleur d'une courbe de valeur : celle de sa pastille ; le gris de
@@ -4707,9 +4744,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
           : 'Aucun plan validé sur la période : pas de fin prévisible.');
       items.push('<span class="legende-item"><svg width="22" height="8" aria-hidden="true">' +
         '<line x1="0" y1="4" x2="22" y2="4" stroke="var(--fait)" stroke-width="1.6" stroke-dasharray="4 3" opacity=".65"/></svg>' +
-        '<span title="' + ech(explication) + '">au rythme tenu (' + virgule(vitesse) + '/sem.)' +
-        (projIdx !== null ? ' \u2192 fin ' + semaineDite(projIdx) : ' \u2014 pas de fin pr\u00e9visible') +
-        '</span></span>');
+        /* Le rythme seul (débrief 19 : « la flèche et fin juillet 2032, on
+           s'en fout ») : la fin estimée reste dans le survol et sur la courbe. */
+        '<span title="' + ech(explication) + '">au rythme tenu (' + virgule(vitesse) + '/sem.)</span></span>');
     }
     if (requis !== null && !vVal) {
       var dom = bilan.domaine && bilan.domaine !== vue.perimetre ? bilan.domaine : '';
@@ -4722,8 +4759,10 @@ table.plans thead tr th.col-fige { z-index: 6; }
         (enRetard ? 'var(--alerte)' : 'var(--fait)') + '" stroke-width="1.6"/></svg>' +
         '<span title="' + ech(nb(bilan.restants) + (bilan.restants > 1 ? ' plans' : ' plan') + ' à valider' + (dom ? ' dans ' + dom : '') +
           ' en ' + bilan.semaines + (bilan.semaines > 1 ? ' semaines' : ' semaine') + ', d\u2019ici le ' + JOURS_SEMAINE[d.getUTCDay()] + ' ' +
-          d.getUTCDate() + ' ' + MOIS[d.getUTCMonth()] + '. En rouge quand le rythme tenu ne suffit pas.') + '">' +
-        'requis pour \u00ab\u00a0' + ech(prochain.texte) + '\u00a0\u00bb' + (porteeG ? ' (' + ech(porteeG) + ')' : '') + ' : ' + virgule(requis) + '/sem.' +
+          d.getUTCDate() + ' ' + MOIS[d.getUTCMonth()] + ' : ' + virgule(requis) + ' par semaine. En rouge quand le rythme tenu ne suffit pas.') + '">' +
+        /* Sans le nombre (débrief 19) : il est dans le survol, dans la fiche de
+           l'échéance et dans le bloc par groupe. */
+        'requis pour \u00ab\u00a0' + ech(prochain.texte) + '\u00a0\u00bb' + (porteeG ? ' (' + ech(porteeG) + ')' : '') +
         (dom ? ' sur ses plans ' + ech(dom) : '') + '</span>' +
         (!surLaCourbe && dom ? '<button type="button" class="lien-doux" data-voir-perimetre="' + ech(dom) + '">voir ' + ech(dom) + '</button>' : '') +
         '</span>');
@@ -5069,26 +5108,28 @@ table.plans thead tr th.col-fige { z-index: 6; }
   }
   /* La rangée de pastilles du bloc (débrief 18) : « Tout », puis chaque
      valeur de la colonne, dans l'ordre des tuiles. Une valeur qu'aucun plan
-     de la sélection ne porte est grisée. Sans dimension, ou avec une seule
-     valeur, la rangée s'efface. Rend la valeur choisie, '' pour « Tout ». */
+     du bloc ne porte n'a pas de pastille (débrief 19) ; sans plan, pas de
+     rangée. Rend la valeur choisie, '' pour « Tout ». */
   function rendreFiltreValeurBloc(liste) {
     var z = $('filtre-valeur-groupe');
     if (vue.valeurBloc && !valeurDeCle(vue.valeurBloc)) vue.valeurBloc = '';
-    if (!z || !liste || VALEURS_COLONNE.length < 2) {
+    if (!z || !liste) {
       /* Sans rangée — ou sous un Index d'une livraison d'avant —, pas de
          valeur choisie qu'on ne pourrait plus retirer. */
       vue.valeurBloc = '';
       if (z) { z.hidden = true; z.innerHTML = ''; }
       return '';
     }
+    /* Seulement les valeurs que portent les plans du bloc (débrief 19). */
     var presentes = {};
     liste.forEach(function (p) { presentes[p._cle] = true; });
-    z.hidden = false;
     z.innerHTML = boutonsPastilles('valeur-bloc', vue.valeurBloc, VALEURS_COLONNE.map(function (v) {
-      return { cle: v.cle, famille: v.famille, libelle: v.libelle, desactive: !presentes[v.cle],
-               titre: presentes[v.cle] ? 'Compter, dans chaque groupe, les plans « ' + v.libelle + ' »'
-                                       : 'Aucun plan « ' + v.libelle + ' » dans la sélection' };
+      return { cle: v.cle, famille: v.famille, libelle: v.libelle, absente: !presentes[v.cle],
+               titre: 'Compter, dans chaque groupe, les plans « ' + v.libelle + ' »' };
     }), { libelle: 'Tout', titre: 'Tous les plans de chaque groupe' });
+    z.hidden = !z.innerHTML;
+    if (z.hidden) vue.valeurBloc = '';
+    marquerDebord(z);
     return vue.valeurBloc;
   }
   /* Ce qui est arrivé à une valeur au dernier relevé, groupe par groupe :
@@ -5693,25 +5734,38 @@ table.plans thead tr th.col-fige { z-index: 6; }
   /* Une rangée de pastilles (débrief 18), la même pour le journal, le bloc
      par groupe et le graphique : un premier bouton (« Tout »), puis une
      pilule par valeur — la pastille de sa tuile, son nom, son compte quand
-     elle en a un. Une pilule sans rien à montrer reste à sa place, grisée,
-     sauf si c'est le choix en cours : on ne retire pas un choix en douce. */
+     elle en a un. Débrief 19 : seulement les valeurs qu'il y a — une valeur
+     absente (« absente ») n'a pas de pilule, sauf le choix en cours, qu'on
+     ne retire pas en douce. Rien à montrer : la rangée est vide (''), et
+     la section la cache. */
   function boutonsPastilles(attr, actif, items, premier) {
     var bouton = function (x) {
-      var off = !!x.desactive && x.cle !== actif;
       return '<button type="button" data-' + attr + '="' + ech(x.cle) + '"' + (x.famille ? ' data-famille="' + x.famille + '"' : '') +
-        ' aria-pressed="' + (x.cle === actif) + '"' + (off ? ' disabled' : '') + (x.titre ? ' title="' + ech(x.titre) + '"' : '') + '>' +
+        ' aria-pressed="' + (x.cle === actif) + '"' + (x.titre ? ' title="' + ech(x.titre) + '"' : '') + '>' +
         (x.pastille === undefined ? pastilleValeur(x.cle, x.famille) : x.pastille) + '<span class="libelle">' + ech(x.libelle) + '</span>' +
         (x.n !== undefined ? '<span class="n">' + nb(x.n) + '</span>' : '') + '</button>';
     };
+    var montres = items.filter(function (x) { return !x.absente || x.cle === actif; });
+    if (!montres.length) return '';
     return (premier ? bouton({ cle: '', libelle: premier.libelle, pastille: premier.pastille || '', titre: premier.titre }) : '') +
-      items.map(bouton).join('');
+      montres.map(bouton).join('');
+  }
+  /* Une rangée trop longue pour sa ligne : le fondu du bord droit, tant
+     qu'il reste à faire défiler (débrief 19). */
+  function marquerDebord(rangee) {
+    if (!rangee) return;
+    var reste = rangee.scrollWidth - rangee.clientWidth - rangee.scrollLeft;
+    rangee.classList.toggle('deborde-droite', !rangee.hidden && reste > 2);
+  }
+  function marquerDebords() {
+    ['filtre-journal', 'filtre-valeur-groupe', 'filtre-valeur-graphe'].forEach(function (id) { marquerDebord($(id)); });
   }
   /* Le bouton d'une rangée, retrouvé après qu'elle a été réécrite : par
      comparaison de clé, sans sélecteur fabriqué — une valeur peut contenir
      n'importe quel signe. */
   function rendreFocus(zone, attr, cle) {
     var b = [].filter.call(zone.querySelectorAll('button'), function (x) { return x.getAttribute('data-' + attr) === cle; })[0];
-    if (b && !b.disabled) b.focus({ preventScroll: true });
+    if (b) b.focus({ preventScroll: true });
   }
 
   /* L'historique d'un plan, au-dessus du tableau quand il n'en montre qu'un :
@@ -5924,19 +5978,19 @@ table.plans thead tr th.col-fige { z-index: 6; }
       'recoller le dernier export de GATES, puis archiver.';
   }
 
-  /* La rangée du journal (débrief 18) : toutes les valeurs de la colonne,
-     dans l'ordre des tuiles du haut — pas seulement celles qu'on a vues
-     arriver —, puis celles qu'aucun plan ne porte plus mais vers lesquelles
-     des plans sont passés, puis les reculs et les changements d'indice.
-     Chacune dit combien de plans y sont arrivés, toutes semaines du
-     périmètre confondues : exactement les lignes qu'elle montre. À zéro,
-     grisée. Réécrite à chaque rendu, journal vide compris : elle ne garde
-     jamais les boutons d'un autre contrat ni de l'autre avancement. */
+  /* La rangée du journal (débrief 18) : les valeurs de la colonne, dans
+     l'ordre des tuiles du haut, puis celles qu'aucun plan ne porte plus mais
+     vers lesquelles des plans sont passés, puis les reculs et les
+     changements d'indice. Chacune dit combien de plans y sont arrivés,
+     toutes semaines du périmètre confondues : exactement les lignes qu'elle
+     montre. À zéro, pas de pastille (débrief 19). Réécrite à chaque rendu,
+     journal vide compris : elle ne garde jamais les boutons d'un autre
+     contrat ni de l'autre avancement. */
   function rendreFiltreJournal(journal) {
     /* Deux comptes : sur tout le journal du périmètre (il décide si le
        choix tient encore), et sous la recherche du journal — celui qui
-       s'affiche et grise : chaque pastille dit exactement les lignes
-       qu'elle montrerait. */
+       s'affiche : chaque pastille dit exactement les lignes qu'elle
+       montrerait, et celle qui n'en montrerait aucune n'est pas posée. */
     var q = motCherche(vue.rechercheJournal);
     var total = {}, vu = {}, hier = {};
     var compter = function (k, trouve) { total[k] = (total[k] || 0) + 1; if (trouve) vu[k] = (vu[k] || 0) + 1; };
@@ -5955,7 +6009,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var pour = q ? ' pour « ' + vue.rechercheJournal.trim() + ' »' : '';
     var item = function (v) {
       var n = vu[v.cle] || 0;
-      return { cle: v.cle, famille: v.famille, libelle: v.libelle, n: n, desactive: !n, total: total[v.cle] || 0,
+      return { cle: v.cle, famille: v.famille, libelle: v.libelle, n: n, absente: !n, total: total[v.cle] || 0,
                titre: n ? (n > 1 ? nb(n) + ' arrivées' : '1 arrivée') + ' à « ' + v.libelle + ' »' + pour + ', toutes semaines confondues' +
                           ' — passages, reculs et réémissions sous un autre indice ; un plan arrivé deux fois compte deux fois'
                         : 'Aucun plan n\u2019est arrivé à « ' + v.libelle + ' »' + pour + dans + ' d\u2019un relevé à l\u2019autre' };
@@ -5964,15 +6018,21 @@ table.plans thead tr th.col-fige { z-index: 6; }
       .sort(function (a, b) { return RANG_FAMILLE[a.famille] - RANG_FAMILLE[b.famille] || COMPARER_REF(a.libelle, b.libelle); })
       .map(item));
     var nR = vu['\u0001reculs'] || 0, nI = vu['\u0001indice'] || 0;
-    items.push({ cle: 'reculs', libelle: 'Reculs', pastille: '<span class="pastille recul"></span>', n: nR, desactive: !nR, total: total['\u0001reculs'] || 0,
+    items.push({ cle: 'reculs', libelle: 'Reculs', pastille: '<span class="pastille recul"></span>', n: nR, absente: !nR, total: total['\u0001reculs'] || 0,
                  titre: nR ? 'Les plans qui ont reculé' + pour + ' : validés qui ne le sont plus, en cours revenus « à faire »' : 'Aucun recul' + pour + dans },
-               { cle: 'indice', libelle: 'Changement d\u2019indice', pastille: '<span class="pastille indice"></span>', n: nI, desactive: !nI, total: total['\u0001indice'] || 0,
+               { cle: 'indice', libelle: 'Changement d\u2019indice', pastille: '<span class="pastille indice"></span>', n: nI, absente: !nI, total: total['\u0001indice'] || 0,
                  titre: nI ? 'Les plans réémis sous un autre indice' + pour : 'Aucun changement d\u2019indice' + pour + dans });
     /* Un choix qui n'a plus rien à montrer dans tout le journal — l'autre
        périmètre, une valeur disparue — revient à « Tout ». La recherche,
        elle, ne le retire pas : on le garde pendant la frappe. */
     if (vue.journal && !items.some(function (x) { return x.cle === vue.journal && x.total; })) vue.journal = '';
-    $('filtre-journal').innerHTML = boutonsPastilles('journal', vue.journal, items, { libelle: 'Tout' });
+    /* Seulement les passages qu'il y a (débrief 19) : un journal vide n'a
+       pas de pastille du tout, un journal de validations seules n'a que
+       « Tout » et « VALIDATED ». */
+    var rangee = $('filtre-journal');
+    rangee.innerHTML = boutonsPastilles('journal', vue.journal, items, { libelle: 'Tout' });
+    rangee.hidden = !rangee.innerHTML;
+    marquerDebord(rangee);
   }
 
   function rendreJournal() {
@@ -7594,7 +7654,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
     minuteurTaille = setTimeout(function () {
       rendreGraphique(selection()); ajusterSticky(); majOmbre();
       alignerSousBarre('barre', 'filets', 'etats');
+      marquerDebords();
     }, 160);
+  });
+  /* Le fondu suit le défilement de chaque rangée : il s'efface au bout. */
+  ['filtre-journal', 'filtre-valeur-groupe', 'filtre-valeur-graphe'].forEach(function (id) {
+    if ($(id)) $(id).addEventListener('scroll', function () { marquerDebord($(id)); }, { passive: true });
   });
 
   /* Une page de consultation reste ouverte des jours durant : la semaine se

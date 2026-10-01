@@ -101,6 +101,9 @@ let totalEcarts = 0;
           });
           const phrase = esp(document.getElementById('phrase').textContent);
           const leg = esp(document.getElementById('legende').textContent);
+          /* Débrief 19 : la fin estimée et le nombre du requis ne sont plus
+             écrits dans la légende, seulement dans ses survols. */
+          const survols = esp([...document.querySelectorAll('#legende .legende-item span[title]')].map(x => x.getAttribute('title')).join(' | '));
           const serie = window.__serieAffichee().pts;
           /* ---- le requis de la prochaine échéance ---- */
           const pj = window.__prochainJalon();
@@ -112,7 +115,7 @@ let totalEcarts = 0;
             const restJ = popJ.filter(p => classer(p[cle]) !== 'termine').length;
             const semJ = Math.max(1, idx(jal.semaine) - depart);
             requis = restJ / semJ;
-            const m = leg.match(/requis pour « [^»]+ »(?: \([^)]*\))? : ([\d,]+)\/sem\./);
+            const m = /requis pour « [^»]+ »/.test(leg) ? survols.match(/ : ([\d,]+) par semaine\. En rouge/) : null;
             requisAff = m ? Number(m[1].replace(',', '.')) : null;
           }
           /* ---- à l'arrêt : recalcul depuis les cartes ---- */
@@ -134,19 +137,21 @@ let totalEcarts = 0;
             etats, affEtats, total: pop.length, phrase,
             serieAff: serie.map(x => x.i + ':' + x.termine + '/' + x.total).join(' '),
             serie: pts.map(x => x.i + ':' + x.termine + '/' + x.total).join(' '),
-            rythme, leg, fin: fin === null ? null : semDe(fin), requis, requisAff, arret, arretAff,
+            rythme, leg, survols, fin: fin === null ? null : semDe(fin), requis, requisAff, arret, arretAff,
             jalon: pj && pj.texte
           };
         }, { ind, per, mode });
         ['termine', 'encours', 'afaire', 'vide'].forEach(k => ok(lieu + ' : compte « ' + k + ' »', r.etats[k] === (r.affEtats[k] || 0), JSON.stringify([r.etats[k], r.affEtats[k]])));
         ok(lieu + ' : phrase « X sur Y validés »', new RegExp('^' + r.etats.termine + ' sur ' + r.total + ' plans validés').test(r.phrase.replace(/(\d) (\d)/g, '$1$2')), r.phrase);
         ok(lieu + ' : série de la courbe', r.serie === r.serieAff, r.serie + '  ≠  ' + r.serieAff);
-        const mR = r.leg.match(/au rythme tenu \(([\d,]+)\/sem\.\)(?: → fin S(\d+))?/);
+        const mR = r.leg.match(/au rythme tenu \(([\d,]+)\/sem\.\)/), mF = r.survols.match(/ : fin S(\d+) · /);
         if (r.rythme !== null && r.etats.termine < r.total) {
           ok(lieu + ' : rythme tenu', !!mR && Math.abs(Number(mR[1].replace(',', '.')) - Math.round(r.rythme * 10) / 10) < 0.051, JSON.stringify([r.rythme, mR && mR[1]]));
-          if (r.fin) ok(lieu + ' : fin estimée', !!mR && mR[2] && Number(mR[2]) === Number(r.fin.slice(6)), JSON.stringify([r.fin, mR && mR[2]]));
+          if (r.fin) ok(lieu + ' : fin estimée', !!mF && Number(mF[1]) === Number(r.fin.slice(6)), JSON.stringify([r.fin, mF && mF[1]]));
         }
-        if (r.requis !== null && r.requisAff !== null) ok(lieu + ' : rythme requis « ' + r.jalon + ' »', Math.abs(r.requisAff - Math.round(r.requis * 10) / 10) < 0.051, JSON.stringify([r.requis, r.requisAff]));
+        /* La légende nomme le requis : son survol doit en porter le nombre —
+           un survol muet n'est pas « rien à vérifier ». */
+        if (r.requis !== null && /requis pour « /.test(r.leg)) ok(lieu + ' : rythme requis « ' + r.jalon + ' »', r.requisAff !== null && Math.abs(r.requisAff - Math.round(r.requis * 10) / 10) < 0.051, JSON.stringify([r.requis, r.requisAff]));
         ok(lieu + ' : plans à l’arrêt', r.arret === r.arretAff, JSON.stringify([r.arret, r.arretAff]));
       }
       await p.evaluate(() => { const b = [...document.querySelectorAll('#choix-perimetre button')][0]; b && b.click(); });

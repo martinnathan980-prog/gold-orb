@@ -265,25 +265,30 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   les montre. Au début, il n'y en a aucun : il faut six semaines de relevés
   pour qu'un plan puisse être « à l'arrêt ». Au-delà de quatre valeurs, ou
   quand l'une est trop petite pour se voir (deux plans sur six cents), les
-  valeurs passent en **légende** sous la barre ; survoler une case éclaire
-  son segment. VALIDATED (« Validé ») compte comme validé — partout, la
+  valeurs passent en **légende** sous la barre, toutes sur une ligne (les
+  sept de GATES comprises) ; survoler une case éclaire son segment. VALIDATED (« Validé ») compte comme validé — partout, la
   page dit « validés » ; une autre valeur qui voudrait dire validé se
   déclare dans `Code` (`VALEURS_FINIES`).
 - **Avancement dans le temps** : la courbe des validés relevé après relevé,
   les jalons du programme (numérotés 1 à 5 sur une rangée, en clair dans la
   légende dessous), la fin estimée au rythme tenu et le rythme requis pour
-  tenir le prochain jalon (« manque N » quand le rythme ne suffit pas). Il
-  s'ouvre sur **Échéances** — jusqu'à la semaine qui suit la dernière
-  échéance : les cinq jalons à l'écran — ; **Échéances · 3 mois · 6 mois ·
-  1 an · Tout** à droite. Les jalons sont ceux de **HDK** ; **THS** n'en a
+  tenir le prochain jalon (« manque N » quand le rythme ne suffit pas). La
+  légende dit seulement **réalisé**, **au rythme tenu (2/sem.)** et
+  **requis pour « Solde FWD »** : la fin estimée et le nombre du requis sont
+  au survol, dans la fiche de l'échéance et dans le bloc par groupe. Il
+  s'ouvre **toujours** sur **Échéances** — jusqu'à la semaine qui suit la
+  dernière échéance : les cinq jalons à l'écran — ; **Échéances · 3 mois ·
+  6 mois · 1 an · Tout** à droite (un autre choix vaut pour la visite, pas
+  pour la prochaine ouverture). Les jalons sont ceux de **HDK** ; **THS** n'en a
   pas (un autre contrat, d'autres dates, à venir) : sa page montre le rythme
   tenu et la fin estimée, sans échéance. Sous chaque jalon de la légende, son nom et sa
   semaine ; le reste (périmètre, jours) au survol et dans la fiche. En
   tête, la prochaine échéance en jours : un clic ouvre sa fiche (Échap la
   ferme). Les jalons **TO** (table outil) suivent le concept harnais : sous
   la définition électrique, ils restent dessinés, en retrait.
-  **Au-dessus de la courbe, des pastilles** (une par valeur de la colonne) :
-  par défaut celle de VALIDATED, la courbe des validés. Un clic sur une autre
+  **Au-dessus de la courbe, des pastilles** (une par valeur que les relevés
+  ont portée, sur une ligne) : par défaut celle de VALIDATED, la courbe des
+  validés. Un clic sur une autre
   — PWD_IN_PROGRESS, TO_CONFIRM… — montre combien de plans la portent,
   relevé après relevé, et dessous sa variation par semaine (les baisses
   sous le trait). Le rythme, la fin estimée et l'échéance restent ceux des
@@ -294,14 +299,17 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   tableau : une colonne par sorte de passage, nommée dans l'en-tête, de la
   plus fréquente à la plus rare, la pastille et le nombre dans la case —
   tout tombe droit d'une semaine à l'autre. Dépliée, une ligne = une
-  référence et son passage, sans libellé. Les semaines s'ouvrent repliées ; le petit champ
-  « Chercher un plan… » à droite ne cherche que dans le journal.
-  **Les pastilles au-dessus** : toutes les valeurs de la colonne (dans
-  l'ordre de la barre du haut), puis Reculs et Changement d'indice, chacune
-  avec son nombre — combien de plans y sont arrivés, toutes semaines
-  confondues. Un clic n'affiche qu'eux : « VALIDATED » montre tous les plans
-  devenus validés, **y compris ceux validés sous un nouvel indice**. Une
-  pastille grisée : personne n'y est arrivé.
+  référence et son passage, sans libellé. Les semaines s'ouvrent repliées.
+  **Au-dessus, une seule ligne** : les pastilles à gauche, le petit champ
+  « Chercher un plan… » au bout à droite (il ne cherche que dans le
+  journal). Les pastilles : **seulement les valeurs vers lesquelles des
+  plans sont passés** (dans l'ordre de la barre du haut), puis Reculs et
+  Changement d'indice s'il y en a, chacune avec son nombre — combien de
+  plans y sont arrivés, toutes semaines confondues. S'il n'y a eu que des
+  validations, il n'y a que « Tout » et VALIDATED. Un clic n'affiche
+  qu'eux : « VALIDATED » montre tous les plans devenus validés, **y compris
+  ceux validés sous un nouvel indice**. Une ligne trop longue défile (un
+  fondu à droite le dit).
 - **Avancement FWD par…** (ou **Concept harnais par…**) : le même avancement découpé par ATA, séquence,
   CC, ECP, ou par mois de création, avec la fin estimée et le rythme requis
   (en plans par semaine, le rythme tenu dessous) par groupe, rangés par ATA
@@ -312,8 +320,10 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   les autres groupes restent là, comme les semaines du journal ; le reste
   de la page (phrase, courbe, tableau) suit ce groupe, un second clic le
   referme. Une sous-liste par valeur (VALIDATED, PWD_IN_PROGRESS…), chacune
-  avec son compte. Son champ « ATA ou plan… » trouve un groupe ou un plan.
-  **Ses pastilles**, sous le titre : un clic sur VALIDATED compte, dans
+  avec son compte. **Sous le titre, la même ligne que le journal** : ses
+  pastilles à gauche — seulement les valeurs que portent ses plans —, le
+  nombre de groupes et le champ « ATA ou plan… » (un groupe ou un plan) au
+  bout à droite. Un clic sur VALIDATED compte, dans
   chaque groupe, ses plans VALIDATED « sur » son total, et « +n » ceux
   arrivés au dernier relevé ; la barre n'éclaire que cette valeur. Le choix
   ne touche que ce bloc et tient quand on passe d'ATA à ECP ; la fin estimée
@@ -359,7 +369,7 @@ onglet, et ce qui manque. Puis :
 | « Le classeur est vide », avec une alerte | Aucun onglet de données lisible : l'alerte dit pourquoi | « Aucune colonne d'avancement FWD n'a été reconnue » : l'extract est collé sans sa ligne d'en-têtes ou sa ligne de groupes → recoller entier en A1 ; « Aucun onglet de données exploitable : « Feuille 1 » est vide » : aucun onglet ne contient encore d'extract |
 | En haut : « Colonne « HDK AA 011 > Avancement Définition Electrique » introuvable » | L'extract n'a pas cette colonne sous ce groupe (groupe renommé, bloc absent) : la page n'en lit **aucune autre** à la place, rien n'est dit validé, l'archivage refuse | Diagnostic : il liste les groupes où l'intitulé existe ; corriger le nom du groupe dans `COLONNE_FWD` (partie avant « > ») s'il a changé dans l'export |
 | Pour vérifier la colonne lue | — | Le **pied de la page** la nomme : « Colonne suivie : HDK AA 011 › Avancement Définition Electrique » |
-| « 0 sur 600 plans validés », et au-dessus de la barre « Aucun plan n'est compté « validé » » | Le mot qui veut dire « fini » dans la colonne n'est pas connu de la page (seul « Validé » l'est, avec « Validée », « Terminé », « OK », « 100 % »…) | La page liste les valeurs lues : m'envoyer celle(s) qui veulent dire « fini » (et « pas commencé »), je les ajoute à `VALEURS_FINIES` (et `VALEURS_A_FAIRE`) dans `Code` |
+| « 0 sur 600 plans validés », et au-dessus de la barre « Aucun plan n'est compté « validé » » | Le mot qui veut dire « fini » dans la colonne n'est pas connu de la page (seul « Validé » l'est, avec « Validée », « Terminé », « OK », « 100 % »…). Jamais au concept harnais : « 0 Traité » y est un vrai zéro, sans message | La page liste les valeurs lues : m'envoyer celle(s) qui veulent dire « fini » (et « pas commencé »), je les ajoute à `VALEURS_FINIES` (et `VALEURS_A_FAIRE`) dans `Code` |
 | « Ce qui a changé semaine par semaine » reste vide | Le journal dit pourquoi : un seul relevé (deux archivages la même semaine n'en font qu'un), ou deux relevés identiques — le même export archivé deux fois | Recoller le **dernier** export de GATES, puis archiver ; le Diagnostic dit combien de plans ont changé entre les deux derniers relevés |
 | Pas de courbe, pas de fin estimée | Aucun relevé archivé | Suivi FWD → Archiver le relevé de cette semaine |
 | Pas de section « Comparaison » | Pas d'onglet `SEE <contrat>` (ou `SEE` pour un seul contrat), ou illisible | Diagnostic, ligne « Seconde base » : elle dit s'il manque l'onglet, s'il est vide, ou si les en-têtes NAME / SOL. / Cust.V ne s'y trouvent pas |

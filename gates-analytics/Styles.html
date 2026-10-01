@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "02462f4";
+  --suivi-fwd-edition: "83c0d77";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -185,12 +185,12 @@ body {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 8px; height: auto; margin-top: 14px;
 }
 .etats.en-legende .etat-btn {
-  position: relative; text-align: left; white-space: normal; padding: 9px 12px 8px;
+  position: relative; text-align: left; white-space: normal; padding: 9px 10px 8px;
   background: var(--surface); border: 1px solid var(--filet); border-radius: 8px;
   grid-template-columns: 1fr auto; align-items: baseline; column-gap: 8px;
   transition: border-color .15s, box-shadow .15s;
 }
-.etats.en-legende .etat-haut { justify-content: flex-start; grid-column: 1 / -1; min-width: 0; }
+.etats.en-legende .etat-haut { justify-content: flex-start; grid-column: 1 / -1; min-width: 0; gap: 6px; font-size: 12px; }
 .etats.en-legende .etat-haut .libelle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .etats.en-legende .etat-n { font-size: 22px; }
 .etats.en-legende .etat-pct { display: inline; }
@@ -328,8 +328,27 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .titre-journal { margin: 0; }
 /* Le filtre du journal : des mots avec leur pastille, pas une barre noire.
    Le choix courant se cerne d'un filet ; le reste s'efface. */
-.commandes-journal { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; min-width: 0; }
 .filtre-journal { display: inline-flex; flex-wrap: wrap; gap: 2px 4px; }
+/* Débrief 19 : une seule ligne de commandes par section, dans toute la
+   largeur, la même au graphique, au journal et au bloc par groupe — les
+   pastilles à gauche, sur une ligne (elles défilent si la place manque, plutôt
+   que de passer à la ligne), le compte et la recherche à droite. */
+.ligne-filtres { display: flex; align-items: center; gap: 8px 16px; margin: 0 0 12px; min-width: 0; }
+.ligne-filtres > .filtre-journal, .filtre-journal.ligne-filtres {
+  display: flex; flex: 1 1 auto; flex-wrap: nowrap; min-width: 0; overflow-x: auto;
+  padding: 2px; scrollbar-width: thin;
+}
+.ligne-filtres > .filtre-journal[hidden], .filtre-journal.ligne-filtres[hidden] { display: none; }
+/* Quand la place manque, un fondu au bord dit qu'il reste des pastilles à
+   faire défiler — plutôt qu'un mot coupé net. */
+.filtre-journal.deborde-droite { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); }
+.ligne-filtres > .compte-groupes, .ligne-filtres > .recherche-groupe { margin-left: auto; }
+.ligne-filtres > .compte-groupes ~ .recherche-groupe { margin-left: 0; }
+.ligne-filtres > .compte-groupes:empty ~ .recherche-groupe { margin-left: auto; }
+@media (max-width: 720px) {
+  .ligne-filtres { flex-wrap: wrap; }
+  .ligne-filtres > .filtre-journal { flex-basis: 100%; }
+}
 .filtre-journal button {
   display: inline-flex; align-items: center; gap: 6px; border: 1px solid transparent; background: none;
   padding: 4px 10px; font: inherit; font-size: 12.5px; color: var(--encre-2); cursor: pointer; border-radius: 999px;
@@ -339,16 +358,13 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .filtre-journal button[aria-pressed="true"] { border-color: var(--filet-fort); background: var(--surface); color: var(--encre); font-weight: 500; }
 .filtre-journal .pastille { width: 8px; height: 8px; }
 /* Débrief 18 : la même rangée sert au journal, au bloc par groupe et au
-   graphique. Toutes les valeurs y sont, toujours dans l'ordre des tuiles ;
-   une valeur sans rien à montrer reste là, grisée — la rangée garde sa
-   forme d'un contrat, d'un périmètre à l'autre. */
-.filtre-journal button:disabled { opacity: .42; cursor: default; }
-.filtre-journal button:disabled:hover { background: none; color: var(--encre-2); }
+   graphique, dans l'ordre des tuiles. Débrief 19 : seulement les valeurs
+   qu'il y a — rien à montrer, pas de pastille. */
 .filtre-journal .n {
   font-family: "IBM Plex Mono", monospace; font-size: 11.5px;
   font-variant-numeric: tabular-nums; opacity: .72;
 }
-.rangee-valeurs { display: flex; margin: 0 0 10px; }
+.rangee-valeurs { display: flex; }
 .journal-semaine {
   border-bottom: 1px solid var(--filet);
 }
@@ -389,7 +405,10 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 /* Les semaines sur une même grille : la semaine, puis une colonne par sorte
    de passage — alignées d'une semaine à l'autre, une case vide quand une
    semaine n'en a pas —, puis la mini-jauge au bord droit. */
-#zone-journal.journal-grille { display: grid; column-gap: 14px; align-content: start; }
+/* « position: relative » : le cadre qui défile tient aussi les mots lus à
+   voix haute (.mot-case, hors flux) — sans lui, un journal plus large que la
+   page (les sept colonnes de GATES) la faisait défiler de côté. */
+#zone-journal.journal-grille { display: grid; column-gap: 14px; align-content: start; position: relative; }
 .journal-grille .journal-semaine { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
 .journal-grille .journal-tete { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center; }
 .journal-grille .journal-tete .resume { display: contents; }
@@ -554,7 +573,7 @@ select.select:focus { outline: none; border-bottom-color: var(--focus); }
 .segmente button[aria-pressed="true"] { background: var(--encre); color: var(--surface); }
 /* Cinq boutons ne tiennent pas sur un téléphone : le filtre du journal passe
    sur deux lignes plutôt que de faire déborder la page. */
-@media (max-width: 480px) { #filtre-journal { flex-wrap: wrap; } }
+
 
 .cadre-graphe { position: relative; }
 svg.graphe { width: 100%; height: auto; display: block; overflow: visible; }
