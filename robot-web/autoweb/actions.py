@@ -31,6 +31,7 @@ from .erreurs import ArretDemande, ErreurEtape, ErreurGabarit, LigneIgnoree, Nav
 from .excel import ClasseurSuivi, csv_vers_excel
 from .gabarit import est_vrai, formater, rendre_structure
 from .navigateur import Navigateur, navigateur_ferme, premiere_ligne
+from .carte import chemin_vers, est_repere, selecteur as selecteur_carte
 from .scenario import Etape, Scenario, masquer_secrets
 
 journal = logging.getLogger("autoweb")
@@ -38,6 +39,54 @@ journal = logging.getLogger("autoweb")
 PREFIXES = ("texte=", "texte_exact=", "libelle=", "placeholder=", "titre=", "role=", "test=", "alt=")
 # « role=button:Exporter [CSV] » : le nom peut contenir n'importe quoi, y compris des crochets.
 MOTIF_ROLE = re.compile(r"^role=([a-zA-Z]+)(?::(.*))?$", re.S)
+
+
+# Pauses « connexion » écrites par les versions précédentes : rejouées comme une attente de connexion
+# qui continue toute seule dès que l'outil s'affiche (au lieu d'attendre Entrée dans la fenêtre noire)
+MOTIF_PAUSE_CONNEXION = re.compile(r"(bien connect|connectez-vous|connexion|se connecter|log ?in|sign ?in)", re.IGNORECASE)
+# Actions dont la cible montre que l'outil est affiché (on est connecté)
+ACTIONS_A_CIBLE = ("remplir", "taper", "effacer", "cliquer", "choisir", "cocher", "decocher", "touche", "survoler",
+                   "televerser", "lire", "telecharger", "attendre")
+
+# Bandeau du robot dans la page pendant une attente : le message, « Continuer », « Arrêter ».
+# Sans innerHTML ni attribut style (pages protégées : Google, Microsoft...).
+JS_BANDEAU_ATTENTE = r"""
+([message, boutons]) => {
+  if (window !== window.top || !document.documentElement) return '';
+  let b = document.getElementById('__autoweb_attente');
+  if (!b) {
+    b = document.createElement('div');
+    b.id = '__autoweb_attente';
+    b.setAttribute('data-autoweb', '1');
+    b.style.cssText = 'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:2147483647;' +
+      'background:#1e3a8a;color:#fff;font:600 15px/1.4 system-ui,-apple-system,Arial;padding:12px 16px;' +
+      'border-radius:10px;box-shadow:0 4px 18px rgba(0,0,0,.45);max-width:620px;text-align:center';
+    const t = document.createElement('div');
+    t.className = '__autoweb_message';
+    b.appendChild(t);
+    const zone = document.createElement('div');
+    zone.className = '__autoweb_zone';
+    zone.style.cssText = 'margin-top:8px;display:flex;gap:10px;justify-content:center';
+    for (const [libelle, reponse, fond] of [['Continuer ▸', 'continuer', '#16a34a'], ['Arrêter', 'stop', '#b91c1c']]) {
+      const x = document.createElement('button');
+      x.type = 'button';
+      x.textContent = libelle;
+      x.style.cssText = 'all:initial;cursor:pointer;background:' + fond + ';color:#fff;font:600 14px system-ui,Arial;' +
+        'padding:6px 14px;border-radius:6px';
+      x.addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); window.__autoweb_reponse = reponse; }, true);
+      zone.appendChild(x);
+    }
+    b.appendChild(zone);
+    (document.body || document.documentElement).appendChild(b);
+  }
+  b.querySelector('.__autoweb_message').textContent = message;
+  b.querySelector('.__autoweb_zone').style.display = boutons ? 'flex' : 'none';
+  const r = window.__autoweb_reponse || '';
+  window.__autoweb_reponse = '';
+  return r;
+}
+"""
+JS_RETIRER_BANDEAU = "() => { const b = document.getElementById('__autoweb_attente'); if (b) b.remove(); }"
 
 
 def nom_fichier_sur(texte: str) -> str:
@@ -82,6 +131,8 @@ class Executeur:
         sel = str(selecteur).strip()
         if not sel:
             raise ErreurEtape("sélecteur vide.")
+        if est_repere(sel):  # « carte=E5/C1 » : l'élément noté pendant la carte, retrouvé sur ce poste
+            sel = selecteur_carte(sel)
         portee = self.portee
         exact = bool(args.get("exact", False))
         if sel.startswith("texte="):
@@ -194,6 +245,53 @@ class Executeur:
                 url = "https://" + url
         attendre = str(args.get("attendre_chargement", "load"))
         self.page.goto(url, wait_until=attendre, timeout=self._delai(args, delai))
+
+    def act_ecran(self, args: Dict[str, Any], delai: Optional[int]) -> None:
+        """Revient sur un écran de la carte (« E5 ») en rejouant le chemin noté pendant l'exploration :
+        menus, onglets, recherche. Chaque clic est vérifié : si l'écran a changé, rien n'est cliqué."""
+        repere = str(args.get("repere") or "")
+        pas_liste = chemin_vers(repere)
+        if not pas_liste:
+            raise ErreurEtape(f"aucun chemin noté pour {repere}.")
+        timeout = self._delai(args, delai) or self.scenario.navigateur.delai_max
+        for pas in pas_liste:
+            page = self.page
+            genre = pas.get("type")
+            if genre == "aller":
+                page.goto(pas["url"], wait_until="domcontentloaded", timeout=timeout)
+            elif genre == "chercher":
+                champ = page.locator(pas["selecteur"]).first
+                champ.fill(str(pas.get("valeur") or ""), timeout=timeout)
+                if pas.get("bouton"):
+                    self._clic_verifie(pas["bouton"], pas.get("attendu") or {}, timeout)
+                else:
+                    champ.press("Enter", timeout=timeout)
+            else:
+                self._clic_verifie(pas.get("selecteur") or "", pas.get("attendu") or {}, timeout)
+            try:
+                self.page.wait_for_load_state("domcontentloaded", timeout=timeout)
+            except PlaywrightTimeout:
+                pass
+            self.page.wait_for_timeout(400)
+
+    def _clic_verifie(self, selecteur: str, attendu: Dict[str, Any], timeout: Optional[int]) -> None:
+        """Clic sur l'élément noté dans la carte, seulement s'il est toujours le même (texte, rôle...)."""
+        from .explorateur import JS_CLIC
+
+        fin = time.monotonic() + (timeout or 15000) / 1000
+        resultat = ""
+        while time.monotonic() < fin:
+            try:
+                resultat = self.page.evaluate(JS_CLIC, [selecteur, attendu])
+            except PlaywrightError as e:
+                if "context was destroyed" in str(e) or "navigat" in str(e):
+                    return  # le clic a changé de page
+                raise
+            if resultat == "ok":
+                return
+            self.page.wait_for_timeout(300)  # l'écran finit de s'afficher
+        raise ErreurEtape(f"l'écran a changé depuis la carte ({resultat}) : rien n'a été cliqué. "
+                          "Refaites la carte (menu, choix 8), puis relancez la tâche.")
 
     def act_recharger(self, args: Dict[str, Any], delai: Optional[int]) -> None:
         self.page.reload(timeout=self._delai(args, delai))
@@ -489,16 +587,112 @@ class Executeur:
 
     def act_pause(self, args: Dict[str, Any], delai: Optional[int]) -> None:
         message = str(args.get("message") or "Action manuelle requise")
+        if MOTIF_PAUSE_CONNEXION.search(message):
+            # « Vérifiez que vous êtes bien connecté... » (tâches des versions précédentes) : le robot
+            # n'attend que si l'outil n'est pas encore affiché, et repart tout seul dès qu'il l'est
+            self.act_connexion({}, delai)
+            return
         if self.interactif and sys.stdin is not None and sys.stdin.isatty():
-            print(f"\n{S.PAUSE}  {message}\n   Appuyez sur Entrée pour continuer (ou tapez « stop » puis Entrée pour arrêter) : ", end="", flush=True)
-            # le navigateur continue de tourner pendant l'attente : un onglet que Chrome
-            # ouvrirait de lui-même est refermé au lieu de rester devant l'outil
-            with self.nav.pause_manuelle():
-                reponse = (lire_ligne(self.nav.pomper) or "").strip().lower()
-            if reponse in ("stop", "arreter", "arrêter", "q", "quit"):
-                raise ArretDemande("arrêt demandé par l'utilisateur pendant une pause.")
+            self._attendre_utilisateur(message)
         else:
             journal.warning("      pause ignorée (mode non interactif) : %s", message)
+
+    def _attendre_utilisateur(self, message: str, cible: Any = None, duree_max_s: float = 1800.0) -> str:
+        """Attend l'utilisateur : Entrée ici, ou « Continuer » dans le bandeau bleu de la page, ou (si
+        `cible` est donnée) l'apparition de cet élément. Renvoie « continuer » ou « vu »."""
+        from .console import touche_entree_disponible, vider_clavier
+
+        print(f"\n{S.PAUSE}  {message}", flush=True)
+        print("   Dans la fenêtre Chrome du robot : bouton « Continuer ▸ » en bas de la page"
+              + (", ou le robot continue tout seul quand votre outil s'affiche." if cible is not None else "."), flush=True)
+        print("   (Ou ici : Entrée pour continuer, « stop » puis Entrée pour arrêter.)", flush=True)
+        vider_clavier()
+        fin = time.monotonic() + duree_max_s
+        with self.nav.pause_manuelle():
+            while time.monotonic() < fin:
+                reponse = ""
+                try:
+                    reponse = self.page.evaluate(JS_BANDEAU_ATTENTE, [message, True]) or ""
+                except Exception:  # noqa: BLE001 - page en cours de chargement : bandeau reposé au tour suivant
+                    pass
+                if reponse == "stop":
+                    raise ArretDemande("arrêt demandé par l'utilisateur pendant une pause.")
+                if reponse == "continuer":
+                    break
+                if cible is not None and self._cible_visible(cible):
+                    reponse = "vu"
+                    break
+                if touche_entree_disponible():
+                    ligne = (lire_ligne(self.nav.pomper) or "").strip().lower()
+                    if ligne in ("stop", "arreter", "arrêter", "q", "quit"):
+                        raise ArretDemande("arrêt demandé par l'utilisateur pendant une pause.")
+                    reponse = "continuer"
+                    break
+                self.nav.pomper(400)
+            else:
+                raise ErreurEtape(f"personne n'a répondu pendant {int(duree_max_s // 60)} minutes : arrêt.")
+        try:
+            self.page.evaluate(JS_RETIRER_BANDEAU)
+        except Exception:  # noqa: BLE001
+            pass
+        return reponse
+
+    def _cible_visible(self, cible: Any) -> bool:
+        try:
+            if isinstance(cible, tuple):  # (cadre, sélecteur) : l'outil est dans un iframe
+                return self.page.locator(cible[0]).first.is_visible()
+            return self.localiser(cible).first.is_visible()
+        except Exception:  # noqa: BLE001 - sélecteur illisible sur cette page, page qui change
+            return False
+
+    def _premiere_cible(self) -> Any:
+        """Premier élément que la tâche touche (champ, bouton) : s'il est affiché, l'outil est là."""
+        def chercher(etapes: List[Etape]) -> Any:
+            for etape in etapes:
+                if etape.action == "cadre":
+                    return (str(etape.args.get("selecteur") or ""), None) if etape.args.get("selecteur") else None
+                if etape.action == "si":
+                    continue
+                if etape.action not in ACTIONS_A_CIBLE:
+                    continue
+                try:
+                    args = rendre_structure(etape.args, self.contexte)
+                except ErreurGabarit:
+                    continue
+                sel = args.get("selecteur") or args.get("cliquer")
+                if not sel and isinstance(args.get("champs"), dict) and args["champs"]:
+                    sel = next(iter(args["champs"]))
+                if sel and not isinstance(sel, (dict, list)) and "{{" not in str(sel):
+                    return str(sel)
+            return None
+
+        return chercher(self.scenario.etapes)
+
+    def act_connexion(self, args: Dict[str, Any], delai: Optional[int]) -> None:
+        """Connexion au début d'une tâche : si l'outil est déjà affiché, le robot continue tout de
+        suite ; sinon il attend que l'utilisateur se connecte dans SA fenêtre (bandeau bleu), et
+        repart tout seul dès que l'outil s'affiche."""
+        cible = args.get("selecteur") or self._premiere_cible()
+        if isinstance(cible, str) and "{{" in cible:
+            cible = None
+        attente_s = (self._delai(args, None) or 8000) / 1000
+        fin = time.monotonic() + attente_s
+        while cible is not None and time.monotonic() < fin:  # déjà connecté ? (la page finit de s'afficher)
+            if self._cible_visible(cible):
+                journal.info("      Connexion : déjà connecté, le robot continue.")
+                return
+            self.nav.pomper(300)
+        if not (self.interactif and sys.stdin is not None and sys.stdin.isatty()):
+            if cible is None:
+                journal.warning("      connexion : rien à vérifier (mode non interactif).")
+            else:
+                journal.warning("      connexion : l'outil n'est pas encore affiché (mode non interactif) ; le robot continue.")
+            return
+        message = str(args.get("message") or "Connectez-vous dans cette fenêtre si votre outil le demande.")
+        reponse = self._attendre_utilisateur(
+            message + (" Le robot continuera tout seul dès que votre outil s'affiche." if cible is not None else ""),
+            cible=cible, duree_max_s=float(args.get("minutes", 20)) * 60)
+        journal.info("      Connexion %s : le robot continue.", "vue" if reponse == "vu" else "confirmée")
 
     def act_inspecter(self, args: Dict[str, Any], delai: Optional[int]) -> None:
         if not self.nav.visible:

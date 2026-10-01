@@ -1,40 +1,37 @@
 ROBOT WEB - METTRE A JOUR, FAIRE LA CARTE, MONTRER ET RELANCER DES TACHES
 ==========================================================================
-(Windows, au bureau. Version 19 du robot.)
+(Windows, au bureau. Version 20 du robot.)
 
 A FAIRE, DANS L'ORDRE (chaque partie est expliquee plus bas) :
-   1. PARTIE A : mettre le robot a jour, version 19 (5 minutes).
-   2. PARTIE E : faire la carte du portail (15 a 20 minutes). C'est VOUS qui
-      cliquez, guide etape par etape ; le robot regarde et note. Il ne clique
-      sur rien. Consultez seulement (n'enregistrez rien) : en plus, le robot
-      bloque la plupart des boutons de modification pendant la visite.
-   3. PARTIE F : me montrer une action (dupliquer, supprimer un plan), sur un
-      plan de test. Si vous l'avez deja fait avec la version 18 : inutile de
-      recommencer.
-   4. PARTIE G : tout rassembler en UN fichier, le relire, me l'envoyer.
+   1. PARTIE A : mettre le robot a jour, version 20 (5 minutes).
+   2. PARTIE E : faire la carte du portail. Vous donnez l'adresse, le robot
+      explore TOUT SEUL (menus, recherches, fiches, onglets) pendant 20 a 45
+      minutes, sans rien modifier. Vous n'avez rien a montrer.
+   3. PARTIE G : tout rassembler en UN fichier, le relire, me l'envoyer.
+   4. Ensuite, vous me dites simplement ce que vous voulez (« rechercher un
+      plan et telecharger son PDF », « dupliquer le plan X »...). Je vous ecris
+      la tache, vous l'ajoutez au robot (PARTIE H), vous la lancez (PARTIE C).
 
-Ce qui change avec la version 19 :
-   - La carte se fait maintenant en VISITE GUIDEE : vous vous promenez dans
-     votre portail comme d'habitude, guide etape par etape par un bandeau vert ;
-     le robot regarde et note. Il ne clique sur rien, ne modifie rien, et
-     bloque pendant la visite la plupart des boutons de modification
-     (Supprimer, Enregistrer, Dupliquer...) et des envois qui y ressemblent.
-   - La premiere fois, on se connecte dans le Chrome du robot sans le robot,
-     comme dans un Chrome ordinaire (Google et certains portails refusent une
-     connexion dans un navigateur pilote par un robot).
-   - Le robot montre la page d'ou il part et vous demande si c'est bien votre
-     portail : il ne part plus d'une page Google ou de connexion.
-   - UN SEUL Chrome du robot pour tout (carte, taches, relances) : vous vous y
-     connectez une fois, il s'en souvient.
-   - Le Chrome du robot laisse fonctionner les extensions imposees par
-     l'entreprise (connexion automatique) : il ressemble plus au votre.
-   - Nouveau choix 9 du menu : tout rassembler en un fichier a relire.
-   - Plus de bandeau jaune « --no-sandbox » inquietant en haut du Chrome du robot.
-   - Le fichier a m'envoyer laisse de cote ce qui ressemble a un nom de projet,
-     de site ou de personne (menus, onglets, champs, colonnes). Relisez-le
-     quand meme : le robot ne peut pas tous les reconnaitre.
-   - Nouveau choix 10 : se connecter dans le Chrome du robot sans le robot, si
-     le portail ou Google refusent la connexion (voir PARTIE D).
+Ce qui change avec la version 20 :
+   - LA CARTE SE FAIT TOUTE SEULE : le robot ouvre chaque menu, lance les
+     recherches, ouvre une ou deux fiches de chaque sorte et leurs onglets. Il
+     note chaque champ, bouton et onglet avec un repere (E5, C1, K7) : avec
+     ces reperes, je peux ecrire une tache sans que vous me montriez les
+     boutons un par un.
+   - Il ne clique JAMAIS sur Enregistrer, Supprimer, Creer, Modifier,
+     Dupliquer, Valider, Oui, OK... et coupe avant qu'il parte tout envoi qui
+     ressemble a une modification.
+   - LA RELANCE D'UNE TACHE NE RESTE PLUS « BLOQUEE » : avant, elle attendait
+     un Entree dans la fenetre noire (« Verifiez que vous etes bien
+     connecte... »). Maintenant, si vous etes deja connecte, le robot enchaine
+     tout seul ; sinon un bandeau BLEU apparait en bas de SA fenetre Chrome :
+     connectez-vous, il repart tout seul (ou cliquez « Continuer »).
+     Vos taches deja enregistrees en profitent sans rien refaire.
+   - Le robot retient l'adresse de votre portail : Entree suffit la fois
+     suivante.
+   - Nouveau choix 11 : ajouter une tache que je vous ai ecrite.
+   - La visite guidee (vous cliquez, le robot regarde) existe toujours : au
+     menu, tapez  8v  au lieu de 8.
 
 POURQUOI LE CHROME DU ROBOT N'EST PAS VOTRE CHROME HABITUEL ?
    Chrome interdit aux robots de piloter votre Chrome a vous : c'est une
@@ -56,15 +53,16 @@ Les parties :
    PARTIE B - Montrer la tache au robot                   (une fois par tache)
    PARTIE C - Relancer la tache                           (quand vous voulez)
    PARTIE D - Si ca ne marche pas
-   PARTIE E - Faire la carte de mon portail, sans rien modifier   (quand vous voulez)
-   PARTIE F - Montrer une action : dupliquer, supprimer un plan  (quand vous voulez)
-   PARTIE G - Tout rassembler et me l'envoyer               (a la fin)
+   PARTIE E - Faire la carte de mon portail (le robot seul)       (une fois)
+   PARTIE F - Montrer une action au robot (facultatif)          (si je le demande)
+   PARTIE G - Tout rassembler et me l'envoyer                   (apres la carte)
+   PARTIE H - Ajouter une tache que je vous ai ecrite           (quand vous la recevez)
 
 
 =====================================================================
- PARTIE A - METTRE A JOUR LE ROBOT (version 19)
+ PARTIE A - METTRE A JOUR LE ROBOT (version 20)
 =====================================================================
-On remplace les programmes du robot par la version 19. Vos taches, vos cartes
+On remplace les programmes du robot par la version 20. Vos taches, vos cartes
 et la connexion du Chrome du robot sont GARDEES. Votre Chrome habituel et vos
 mots de passe ne sont pas touches.
 
@@ -92,7 +90,7 @@ A4. On efface les anciens installeurs (pour ne pas les confondre avec le
 
 A5. Dans Gmail, ouvrez mon dernier mail et telechargez la piece jointe
         robot-web-installeur.txt
-    (en haut du fichier est ecrit VERSION 19)
+    (en haut du fichier est ecrit VERSION 20)
 
 A6. Revenez dans la fenetre noire. VOUS TAPEZ :
         move "%USERPROFILE%\Downloads\robot-web-installeur.txt" .
@@ -102,17 +100,17 @@ A6. Revenez dans la fenetre noire. VOUS TAPEZ :
     SI « Le fichier specifie est introuvable » : le telechargement n'est pas
     fini ou n'est pas alle dans Telechargements. Attendez, puis refaites A6.
 
-A7. On verifie que c'est bien la version 19. VOUS TAPEZ :
-        findstr /c:"VERSION 19" robot-web-installeur.txt
+A7. On verifie que c'est bien la version 20. VOUS TAPEZ :
+        findstr /c:"VERSION 20" robot-web-installeur.txt
 
-    VOUS VOYEZ une ligne qui contient :   INSTALLEUR AUTOMATIQUE - VERSION 19
+    VOUS VOYEZ une ligne qui contient :   INSTALLEUR AUTOMATIQUE - VERSION 20
     SI rien ne s'affiche : ce n'est pas le bon fichier. Refaites A4 a A6.
 
 A8. On installe. VOUS TAPEZ (le plus simple : copier-coller, puis Entree) :
         py -c "exec(open('robot-web-installeur.txt', encoding='utf-8').read())"
 
     VOUS VOYEZ defiler, en 1 a 3 minutes :
-        ROBOT-WEB - installeur version 19
+        ROBOT-WEB - installeur version 20
         === 1/4  Extraction des fichiers ===
         === 2/4  Environnement Python ===
         === 3/4  Installation des bibliotheques ===
@@ -265,13 +263,12 @@ C4. SI il demande :   Mot de passe pour « mot_de_passe » (il ne s'affiche pas)
     tapez le mot de passe du site. RIEN NE S'AFFICHE pendant la frappe, c'est
     voulu. Puis Entree. Il n'est ecrit nulle part.
 
-C5. Le Chrome du robot s'ouvre. La fenetre noire s'arrete sur :
-        Verifiez que vous etes bien connecte dans le navigateur, puis appuyez sur Entree
-    Regardez le Chrome du robot :
-       - si le site est affiche normalement : revenez dans la fenetre noire
-         (cliquez dedans) et appuyez sur Entree ;
-       - si le site demande de se connecter : connectez-vous dans ce Chrome,
-         PUIS revenez dans la fenetre noire et appuyez sur Entree.
+C5. Le Chrome du robot s'ouvre.
+       - Si vous etes deja connecte, le robot enchaine tout seul : rien a faire.
+       - Si le site demande de se connecter, un bandeau BLEU apparait en bas
+         de la fenetre du robot. Connectez-vous dans CETTE fenetre : le robot
+         repart tout seul des que votre outil s'affiche (ou cliquez
+         « Continuer ▸ » dans le bandeau ; « Arreter » pour tout arreter).
 
 C6. Le robot refait vos gestes tout seul. NE TOUCHEZ A RIEN, regardez.
 
@@ -314,7 +311,7 @@ Cas deja connus :
 
  - Un bandeau jaune en haut du Chrome du robot (« indicateur de ligne de
    commande non pris en charge ») : c'etait la version 18. Il ne s'affiche
-   plus en version 19.
+   plus depuis la version 19.
 
  - Une page Google s'ouvre, ou le robot « est sur Google » a la relance
        -> c'etait le cas en version 15. Refaites la PARTIE A avec la
@@ -338,6 +335,15 @@ Cas deja connus :
  - Le robot ne demande pas le mot de passe et la connexion echoue
        -> repondez « o » a la pause (B13) et connectez-vous a la main en C5.
 
+ - A la relance, le robot ouvre la page puis « ne fait rien »
+       -> c'etait la version 19 : il attendait un Entree dans la fenetre
+          noire. En version 20, il continue tout seul (bandeau bleu, C5).
+
+ - La carte (PARTIE E) s'arrete vite, avec peu d'ecrans
+       -> envoyez-moi les 5 dernieres lignes de la fenetre noire et le
+          fichier de la PARTIE G : la fin du fichier (« ELEMENTS NON CLIQUES
+          PAR SECURITE », « ENVOIS COUPES ») me dit ce qui l'a bloque.
+
  - « Le Chrome du robot est deja ouvert » ou Chrome du robot qui se ferme tout de suite
        -> un Chrome du robot est encore ouvert quelque part : fermez-le,
           puis relancez (C2).
@@ -350,17 +356,17 @@ Cas deja connus :
 
 
 =====================================================================
- PARTIE E - FAIRE LA CARTE DE MON PORTAIL, SANS RIEN MODIFIER
+ PARTIE E - FAIRE LA CARTE DE MON PORTAIL (LE ROBOT EXPLORE TOUT SEUL)
 =====================================================================
-C'est VOUS qui vous promenez dans le portail, comme d'habitude, guide etape par
-etape. Le robot regarde par-dessus votre epaule et note comment chaque ecran
-est construit : les noms des champs, des boutons, des onglets, des colonnes.
-Jamais ce qui est ecrit dedans. Il ne clique sur rien, ne tape rien, ne
-modifie rien. Pendant la visite, CONSULTEZ seulement : n'enregistrez rien, ne
-validez rien. Par securite, le robot bloque en plus la plupart des boutons de
-modification (Supprimer, Enregistrer, Dupliquer, Creer, Modifier, Reviser...)
-et coupe les envois qui ressemblent a une modification. Il ne peut pas tous
-les reconnaitre : c'est un filet de securite, pas une permission.
+Vous donnez l'adresse ; le robot fait le reste. Il ouvre chaque menu, lance
+les recherches, ouvre une ou deux fiches de chaque sorte (plans, composants)
+et chacun de leurs onglets, et note comment chaque ecran est construit : les
+noms des champs, des boutons, des onglets, des colonnes, avec un repere (E5,
+C1, K7). Jamais ce qui est ecrit dedans.
+Il ne clique JAMAIS sur Enregistrer, Supprimer, Creer, Modifier, Dupliquer,
+Valider, Oui, OK... Il ne remplit qu'un seul genre de champ : le champ d'une
+recherche. Et tout envoi vers le portail qui ressemble a une modification est
+coupe avant de partir. Les PDF ne sont pas telecharges.
 
 E1. Fenetre noire, dans le dossier du robot (PARTIE C1), puis :
         robot
@@ -369,78 +375,67 @@ E1. Fenetre noire, dans le dossier du robot (PARTIE C1), puis :
 E2. Il demande l'adresse de la page d'ACCUEIL du portail. Pour l'avoir : dans
     votre Chrome habituel, cliquez une fois dans la barre d'adresse, Ctrl+C.
     Puis dans la fenetre noire : clic droit (l'adresse se colle), Entree.
+    (La fois suivante, il la propose entre crochets : Entree suffit.)
 
-E3. LA PREMIERE FOIS SEULEMENT, il dit :
+E3. Il demande :
+        Numero ou mot a chercher (Entree = aucun) :
+    Tapez un numero de plan que vous connaissez (ou un mot que vous cherchez
+    souvent), Entree. Il sert seulement a essayer les recherches ; il n'est
+    ecrit nulle part dans le fichier a m'envoyer. Sans numero : [Entree], le
+    robot lance alors les recherches sans critere.
+
+E4. LA PREMIERE FOIS SEULEMENT, il dit :
         C'est la PREMIERE fois que le Chrome du robot s'ouvre...
         On le fait maintenant ? (o/n) [o] :
     [Entree]. Une fenetre Chrome ORDINAIRE s'ouvre (le robot est eteint) :
        - connectez-vous au portail comme d'habitude (et a Google s'il le
          demande) ; si on vous propose « Rester connecte ? » : Oui ;
-       - fermez les pages de bienvenue de Chrome ou du portail, s'il y en a ;
        - puis FERMEZ cette fenetre Chrome (la croix en haut a droite).
     Les fois suivantes, cette etape ne revient pas.
 
-E4. Le Chrome du ROBOT s'ouvre : son titre commence par « ROBOT - » et un
-    bandeau VERT est en bas. C'est dans CETTE fenetre qu'il faut cliquer
-    (pas dans votre Chrome habituel). Vous devez y etre deja connecte ; sinon,
-    connectez-vous. Affichez la page d'accueil du portail.
-
-E5. Revenez dans la fenetre noire et appuyez sur Entree. VOUS VOYEZ :
-        Vous etes sur la page affichee dans la fenetre du robot (12 element(s) de menu).
+E5. Le Chrome du ROBOT s'ouvre (un bandeau bleu « Robot en LECTURE SEULE » en
+    bas). Si le portail demande de vous connecter : connectez-vous dans CETTE
+    fenetre. Affichez la page d'accueil du portail, puis revenez dans la
+    fenetre noire et appuyez sur Entree. VOUS VOYEZ :
+        Le robot partira de la page affichee dans sa fenetre (12 element(s) de menu).
         C'est bien votre portail, et vous etes connecte ? (o/n) [o] :
-    (Le robot n'ecrit ni le titre de la page ni son adresse : regardez la
-    fenetre du robot pour verifier.)
     Si c'est bien votre portail : [Entree].
-    Sinon : tapez  n  puis Entree, affichez la bonne page dans le Chrome du
-    robot, revenez dans la fenetre noire, Entree.
-    S'il affiche [n] a la fin de la question (il a un doute : page de
-    connexion, adresse differente) alors que c'est bien votre portail,
-    connecte : tapez  o  puis Entree.
+    S'il affiche [n] a la fin (il a un doute : page de connexion, adresse
+    differente) alors que c'est bien votre portail : tapez  o  puis Entree.
 
-E6. La visite commence. Le bandeau vert vous guide, UNE ETAPE A LA FOIS :
-        Etape 1/7 : affichez la page d'accueil, puis chaque menu principal...
-        [Etape suivante]  [Terminer la visite]  [⇆]
-    Faites ce qu'il dit, comme d'habitude, en restant 2 ou 3 secondes sur
-    chaque ecran, puis cliquez « Etape suivante ». Les etapes :
-       1. l'accueil et chaque menu principal ;
-       2. la recherche de plans (faites une recherche) ;
-       3. la fiche d'un plan, puis CHACUN de ses onglets ;
-       4. un PDF de ce plan (il arrive dans vos Telechargements, comme d'habitude) ;
-       5. la fiche d'un AUTRE plan (important : les libelles d'une fiche vus
-          sur un seul plan ne sont pas repris dans le fichier a m'envoyer,
-          au cas ou ce serait un nom de site ou de projet) ;
-       6. la recherche de composants, la fiche d'un composant et ses onglets ;
-       7. tout autre ecran utile a votre travail.
-    Une etape qui n'existe pas chez vous : « Etape suivante », simplement.
-    Le bandeau cache un bouton du portail ? Cliquez [⇆] (deux fleches) : il
-    passe de l'autre cote.
-    La fenetre noire affiche chaque ecran note, par exemple :
-        OK Ecran E4 note (etape « Fiche plan ») : 12 champ(s), 3 onglet(s)
-           Onglets a ouvrir aussi, un par un : Documents ; Revisions
-    Si un bouton ou un envoi est bloque, un message orange le dit : rien n'est
-    parti. Un plan dont le titre commence par un verbe (« Supprimer... »,
-    « Modifier... ») peut etre bloque aussi, par prudence : ouvrez-le en
-    cliquant sur son numero, ou prenez-en un autre. Si le portail pose une question (« Continuer ? ») : le robot repond
-    OK ; si elle parle de supprimer ou d'enregistrer : Annuler, par securite.
-    Si le portail vous deconnecte : reconnectez-vous dans la fenetre du robot,
-    puis revenez sur votre portail ; la visite continue.
+E6. Le robot explore. NE TOUCHEZ PLUS a sa fenetre (vous pouvez travailler
+    dans votre Chrome habituel a cote). Il faut 20 a 45 minutes. La fenetre
+    noire affiche ce qu'il voit, par exemple :
+        OK E7 : « Plan ... » - 12 champ(s), 30 element(s) cliquable(s), 1 tableau(x)
+    Pour l'arreter avant la fin : Entree dans la fenetre noire. Ce qui a ete
+    vu est garde.
+    Si le portail vous deconnecte en cours de route, le robot vous demande de
+    vous reconnecter dans sa fenetre, puis continue.
 
-E7. Quand vous avez fini : « Terminer la visite » dans le bandeau (il demande
-    de cliquer une deuxieme fois, pour etre sur). Ou bien : Entree dans la
-    fenetre noire, puis a la question « Terminer la visite ? », tapez  o  puis
-    Entree (Entree seule : la visite continue).
-    La fenetre du robot se ferme. VOUS VOYEZ :
-        OK Visite terminee : 23 ecran(s) note(s)...
-    et deux fichiers, dans explorations\<date>-visite :
+E7. A la fin, VOUS VOYEZ :
+        OK Exploration terminee (...).
+           45 ecran(s) differents vus, ...
+           Carte n° 20261003-101500 : citez ce numero et les reperes...
+    et deux fichiers, dans explorations\<date> :
        - carte_PRIVEE_ne_pas_envoyer.html : tout ce qui a ete vu. Il
          reste sur votre poste : ne l'envoyez pas.
-       - carte_a_partager.txt : la STRUCTURE seulement, sans vos donnees.
+       - carte_a_partager.txt : la STRUCTURE seulement, sans vos donnees,
+         avec les reperes. Par exemple :
+            E5   accès : page de départ › menu « Plans » › bouton « Rechercher »
+                 champs : C1 Numéro [texte] ; C2 Titre [texte]
+                 boutons : K4 Rechercher → mène à E5 ; K5 Nouveau plan → non cliqué : risque
     Pour me l'envoyer : PARTIE G.
 
+E8. Si des ecrans manquent (le robot n'a pas pu les atteindre seul) : au menu,
+    tapez  8v  : c'est la visite guidee, ou vous cliquez et ou le robot
+    regarde. Le bandeau vert vous guide etape par etape.
+
 =====================================================================
- PARTIE F - MONTRER UNE ACTION : DUPLIQUER UN PLAN, SUPPRIMER UN PLAN
+ PARTIE F - MONTRER UNE ACTION AU ROBOT (FACULTATIF, SI JE LE DEMANDE)
 =====================================================================
-Vous faites l'action UNE fois devant le robot. Il la refait ensuite seul, et
+Avec la carte (PARTIE E), je peux ecrire la plupart des taches sans que vous
+me les montriez. Cette partie sert si je vous le demande, ou si vous voulez
+une tache tout de suite. Vous faites l'action UNE fois devant le robot. Il la refait ensuite seul, et
 vous demande a chaque lancement ce qui change (le plan de depart, un titre).
 Il ecrit aussi un fichier qui me decrit l'action (gestes, champs remplis ou
 laisses vides, boutons), SANS aucune valeur.
@@ -504,11 +499,11 @@ G2. Il demande :
         OK Tout est rassemble dans UN fichier (3 partie(s)) :
              C:\Users\...\robot\robot-web\A_ENVOYER_A_CLAUDE_<date>.txt
     et le Bloc-notes s'ouvre avec ce fichier. Il contient, l'un apres l'autre :
-    vos cartes (visites guidees de la version 19) et chaque tache montree au
+    la derniere carte (et vos visites guidees) et chaque tache montree au
     robot (sans vos valeurs).
     (Un nouveau fichier a chaque fois : l'ancien n'est jamais ecrase.)
-    Seules les cartes faites avec la version 19, d'au moins 2 ecrans, sont
-    reprises ; la liste s'affiche dans la fenetre noire.
+    Seules les cartes faites avec la version 19 ou 20, d'au moins 2 ecrans,
+    sont reprises ; la liste s'affiche dans la fenetre noire.
 
 G3. RELISEZ-LE. Si un mot vous semble sensible (nom de client, de projet, de
     personne, de site), remplacez-le par XXX. Puis enregistrez : Ctrl+S.
@@ -520,5 +515,31 @@ G4. Seulement si c'est permis chez vous : Ctrl+A (tout selectionner), Ctrl+C
     (copier), puis collez-le dans votre message pour moi.
     Sinon, decrivez-moi avec vos mots ce que vous y voyez : ca suffit aussi.
 
-G5. Avec ce fichier, je vous prepare les automatismes. Vous les recevrez dans
-    un nouvel installeur, et vous les lancerez avec le menu, choix 2.
+G5. Avec ce fichier, dites-moi ce que vous voulez automatiser, avec vos mots :
+    « chercher un plan par son numero et telecharger son PDF », « dupliquer
+    le plan X avec un nouveau titre »... Je vous ecris la tache : un petit
+    fichier .txt, que vous ajoutez au robot (PARTIE H).
+
+
+=====================================================================
+ PARTIE H - AJOUTER UNE TACHE QUE JE VOUS AI ECRITE
+=====================================================================
+H1. Enregistrez le fichier que je vous envoie (par exemple
+    tache_chercher_un_plan.txt) dans vos Telechargements, comme une piece
+    jointe ordinaire.
+
+H2. Menu, VOUS TAPEZ :   11
+    VOUS VOYEZ la liste des fichiers de tache trouves (les plus recents
+    d'abord) :
+        1. tache_chercher_un_plan.txt   (C:\Users\...\Downloads)
+    Tapez le numero, Entree. VOUS VOYEZ :
+        OK Tache « chercher un plan » ajoutee : ...\taches\chercher_un_plan.yaml
+    S'il dit que la tache contient une erreur : envoyez-moi le message, je la
+    corrige.
+
+H3. Pour la lancer : menu, choix 2, puis son numero (PARTIE C). Le robot
+    vous demande ce qui change a chaque fois (par exemple le numero du plan).
+    La tache utilise les reperes de VOTRE carte (E5, C1...) : le robot les
+    retrouve tout seul sur votre poste. Si le portail a beaucoup change depuis
+    la carte, il s'arrete sans rien cliquer et vous demande de refaire la
+    carte (PARTIE E).

@@ -225,6 +225,49 @@ def est_lecture(texte: str) -> bool:
     return bool(mots) and mots[0] in PREMIERS_MOTS_LECTURE and mot_interdit(texte) is None
 
 
+# Noms qui finissent comme un verbe (-er, -ir, -re) : « Dossier », « Nomenclature », « Folder »...
+NOMS_EN_ER_IR_RE = set("""
+dossier dossiers fichier premier dernier calendrier chantier cahier atelier metier quartier panier papier clavier
+escalier courrier palier levier acier routier hiver enfer fer mer cancer laser poster master router server user folder
+header footer viewer manager explorer browser number owner member parameter filter layer marker register printer
+computer cluster order cover other customer supplier provider partner container trigger counter center letter
+plaisir avenir souvenir loisir desir soupir elixir
+""".split())
+VERBES_EN_RE = re.compile(r"(?:ttre|ndre|uire|crire|lire|dire|faire|aitre|oire|ivre|clure|ompre|aincre|oudre|aire)$")
+NOMS_EN_RE = set("""
+lettre livre histoire memoire repertoire territoire accessoire observatoire laboratoire trajectoire auditoire
+directoire gendre cendre affaire affaires commentaire formulaire inventaire dictionnaire glossaire annuaire
+calendaire salaire horaire horaires partenaire destinataire prestataire gestionnaire proprietaire signataire
+titulaire secretaire notaire volontaire vocabulaire questionnaire itineraire sommaire exemplaire inventaire
+annexe
+""".split())
+
+
+def ressemble_a_un_verbe(mot: str) -> bool:
+    """« Basculer », « Choisir », « Transmettre » : oui. « Dossier », « Nomenclature », « Formulaire » : non."""
+    m = normaliser(mot)
+    if m in NOMS_EN_ER_IR_RE or m in NOMS_EN_RE or len(m) < 4:
+        return False
+    if m.endswith("er") or m.endswith("ir"):
+        return True
+    return bool(VERBES_EN_RE.search(m))
+
+
+def libelle_neutre(texte: str) -> bool:
+    """« Historique », « Plan de masse », « Nomenclature » : un nom, pas un verbe ni un mot d'action.
+    « Basculer », « Rattacher », « Release » : non (un verbe, même inconnu, peut modifier)."""
+    mots = re.findall(r"[a-z]+", normaliser(texte))
+    if not mots or len(mots) > 8 or mot_interdit(texte):
+        return False
+    premier = mots[0]
+    if premier in PREMIERS_MOTS_LECTURE:
+        return True
+    if ressemble_a_un_verbe(premier):
+        return False
+    return premier not in VERBES_ANGLAIS and premier not in ("set", "make", "do", "run", "go", "get", "put", "mark",
+                                                             "link", "unlink", "toggle", "assign", "attach", "submit")
+
+
 def a_des_lettres(texte: str) -> bool:
     return bool(re.search(r"[a-z]{2}", normaliser(texte)))
 
@@ -469,13 +512,45 @@ JS_OUTILS = r"""
   // arborescence et fil d'Ariane : souvent des données (dossiers, projets) ; menu latéral : navigation
   const ARBRE = '[role=tree], .tree, .breadcrumb, [aria-label*=readcrumb], [aria-label*="Fil d"]';
   const LATERAL = 'aside, .sidebar, .side-bar, .sidenav, .side-nav';
+  // tableau de DONNÉES (liste de résultats) : entêtes de colonnes, grille ARIA, ou au moins 3 lignes
+  // de même forme sans champ de saisie. Un tableau de mise en page (vieux portails) n'en est pas un.
+  const tablesDonnees = new Map();
+  const tableDonnees = t => {
+    if (!t) return false;
+    if (tablesDonnees.has(t)) return tablesDonnees.get(t);
+    let oui = false;
+    const role = t.getAttribute('role');
+    if (role === 'grid' || role === 'treegrid' || role === 'table' || t.tHead) oui = true;
+    else if (t.rows && t.rows.length >= 2) {
+      const lignes = Array.from(t.rows);
+      if (lignes.slice(0, 3).some(r => r.cells.length > 1 && Array.from(r.cells).every(c => c.tagName === 'TH'))) oui = true;
+      else if (!t.querySelector('input:not([type=hidden]):not([type=checkbox]):not([type=radio]), select, textarea')) {
+        const formes = new Map();
+        for (const r of lignes) if (r.cells.length > 1) formes.set(r.cells.length, (formes.get(r.cells.length) || 0) + 1);
+        oui = Math.max(0, ...formes.values()) >= 3;
+      }
+    }
+    tablesDonnees.set(t, oui);
+    return oui;
+  };
+  // la ligne de données qui contient l'élément (jamais la ligne d'entêtes), ou null
+  const ligneDe = e => {
+    const tr = e.closest && e.closest('tr, [role=row]');
+    if (!tr) return null;
+    if (tr.getAttribute('role') === 'row') return tr.querySelector('[role=columnheader]') ? null : tr;
+    if (tr.parentElement && tr.parentElement.tagName === 'THEAD') return null;
+    if (tr.cells && tr.cells.length && Array.from(tr.cells).every(c => c.tagName === 'TH')) return null;
+    return tableDonnees(tr.closest('table')) ? tr : null;
+  };
   const zone = e => {
     if (dansFenetre(e)) return 'fenetre';
-    if (e.getAttribute('role') === 'tab' || e.closest('[role=tablist]')) return 'onglet';
-    if (e.closest('tbody tr, [role=row]')) return 'tableau';
+    if (e.getAttribute('role') === 'tab' || e.closest('[role=tablist], .tabs, .onglets, .tab-strip, .tabstrip, ' +
+                                                      '[class*=tabstrip i], .rtsUL, .ui-tabs-nav, .nav-tabs')) return 'onglet';
+    if (ligneDe(e)) return 'tableau';
     if (e.closest(ARBRE) || e.getAttribute('role') === 'treeitem') return 'arbre';
     if (e.closest(LATERAL)) return 'lateral';
-    if (e.closest('nav, [role=navigation], [role=menu], [role=menubar], header, .menu, .navbar, .nav')) return 'menu';
+    if (e.closest('nav, [role=navigation], [role=menu], [role=menubar], header, .menu, .navbar, .nav, [id*=menu i], ' +
+                  '[class*=menu i]')) return 'menu';
     return 'page';
   };
   const conteneurDe = (e, z) => {
@@ -541,7 +616,15 @@ JS_OUTILS = r"""
     const parent = tr.parentElement;
     if (!parent) return -1;
     let m = indexes.get(parent);
-    if (!m) { m = new Map(); Array.prototype.forEach.call(parent.children, (x, i) => m.set(x, i)); indexes.set(parent, m); }
+    if (!m) {  // rang parmi les lignes de données (la ligne d'entêtes ne compte pas)
+      m = new Map();
+      let i = 0;
+      for (const x of parent.children) {
+        const entete = x.tagName === 'TR' && x.cells && x.cells.length && Array.from(x.cells).every(c => c.tagName === 'TH');
+        if (!entete) m.set(x, i++);
+      }
+      indexes.set(parent, m);
+    }
     const i = m.get(tr);
     return i === undefined ? -1 : i;
   };
@@ -562,7 +645,7 @@ JS_OUTILS = r"""
     const cont = conteneurDe(e, z);
     if (cont) {
       if (z === 'tableau') {
-        const tr = e.closest('tbody tr, [role=row]');
+        const tr = ligneDe(e);
         ligne = tr ? indexLigne(tr) : -1;
         rang = tr ? (tr === e ? 0 : Array.from(tr.querySelectorAll(SELECTION)).filter(x => !x.matches(EXCLUS)).indexOf(e) + 1) : -1;
       } else {
@@ -607,15 +690,16 @@ JS_ECRAN = r"""
   const titres = [];
   tous('h1, h2, h3, [role=heading]').forEach(h => { if (vis(h) && !robot(h) && titres.length < 12) titres.push(court(h.innerText, 100)); });
   const champs = [];
+  const ombreChamp = e => !!(e.getRootNode && e.getRootNode() !== document);
   tous('input, select, textarea, [contenteditable=true]').forEach(e => {
     const tag = e.tagName.toLowerCase();
     const type = (e.getAttribute('type') || '').toLowerCase();
     if (type === 'hidden' || ['submit', 'button', 'reset', 'image'].includes(type) || !vis(e) || robot(e) || champs.length >= 200) return;
-    const tr = e.closest('tbody tr');
+    const tr = ligneDe(e);
     if (tr && indexLigne(tr) >= exemples) return;
     const [lib, source] = libelle(e);
     champs.push({
-      libelle: lib, source: source, nom: e.id || e.getAttribute('name') || '',
+      libelle: lib, source: source, nom: e.id || e.getAttribute('name') || '', chemin: ombreChamp(e) ? '' : chemin(e),
       type: tag === 'select' ? 'liste' : tag === 'textarea' ? 'texte long' : (e.isContentEditable && tag !== 'input') ? 'texte riche' : (type || 'text'),
       obligatoire: !!e.required, lecture_seule: !!(e.readOnly || e.disabled),
       nb_options: tag === 'select' ? e.options.length : 0,
@@ -659,24 +743,71 @@ JS_ECRAN = r"""
   }
   const tableaux = [];
   tous('table, [role=grid]').forEach(t => {
-    if (!vis(t) || t.parentElement.closest('table')) return;
+    const parent = t.parentElement && t.parentElement.closest('table');
+    if (!vis(t) || (parent && tableDonnees(parent))) return;  // tableau dans une liste : c'est un détail de ligne
     let entetes = Array.from(t.querySelectorAll('thead th, [role=columnheader]')).map(texteSeul);
     if (!entetes.length) {
       // première ligne TOUTE en entêtes (au moins 2) ; un <th> seul en tête de ligne est un nom d'objet
       const tr = t.querySelector('tr');
       if (tr && tr.children.length > 1 && Array.from(tr.children).every(c => c.tagName === 'TH')) entetes = Array.from(tr.children).map(texteSeul);
     }
-    tableaux.push({ entetes: entetes.slice(0, 40), lignes: t.querySelectorAll('tbody tr, [role=row]').length });
+    if (!tableDonnees(t) && t.tagName === 'TABLE') return;  // mise en page : ce n'est pas un tableau de l'écran
+    const lignes = Array.from(t.tagName === 'TABLE' ? t.rows : t.querySelectorAll('[role=row]'))
+      .filter(r => ligneDe((r.cells && r.cells[0]) || r.firstElementChild || r) === r).length;
+    tableaux.push({ entetes: entetes.slice(0, 40), lignes: lignes });
   });
   const cibles = [];
   let tronque = false;
   for (const e of tous(SELECTION)) {
-    const tr = e.closest('tbody tr, [role=row]');
+    const tr = ligneDe(e);
     if (tr && indexLigne(tr) >= exemples) continue;   // une ligne ressemble aux autres : les premières suffisent
     if (e.matches(EXCLUS) || !vis(e) || robot(e)) continue;
     if (cibles.length >= maxCibles) { tronque = true; break; }
     cibles.push(decrire(e));
   }
+  // liens des sous-menus repliés (menus déroulants au survol) : leur adresse suffit pour y aller
+  let caches = 0;
+  for (const e of tous('nav a[href], [role=menu] a[href], [role=menubar] a[href], .dropdown-menu a[href], .menu a[href], ' +
+                       '.navbar a[href], header a[href], .submenu a[href], .sous-menu a[href], ul ul a[href]')) {
+    if (caches >= 150 || cibles.length >= maxCibles + 150 || robot(e) || vis(e)) continue;
+    const href = (e.getAttribute('href') || '').trim();
+    if (!href || /^(#|javascript:|mailto:|tel:)/i.test(href)) continue;
+    const d = decrire(e);
+    d.cache = true;
+    d.texte = court(e.textContent || '', 80);
+    cibles.push(d);
+    caches++;
+  }
+  // formulaires de recherche : un champ texte et, à côté, un bouton « Rechercher » (ou la touche Entrée)
+  const recherches = [];
+  const sansAcc = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+  const MOT_RECHERCHE = /^(rechercher|recherche|chercher|lancer la recherche|search|find|trouver|filtrer|filter|appliquer les filtres)\b/;
+  const MOT_COURT = /^(ok|go|>|>>|»|→|valider la recherche)$/;
+  const deja = new Set();
+  for (const c of tous('input[type=text], input[type=search], input:not([type])')) {
+    if (recherches.length >= 4) break;
+    if (!vis(c) || robot(c) || c.readOnly || c.disabled || ligneDe(c) || dansFenetre(c)) continue;
+    const indices = sansAcc([c.type, c.name, c.id, c.getAttribute('placeholder'), c.getAttribute('aria-label'), c.getAttribute('title')].join(' '));
+    const champRecherche = c.type === 'search' || /search|recherche|rechercher|query|keyword|mot.?cle|\bq\b/.test(indices);
+    let bouton = null, texteBouton = '';
+    for (let x = c.parentElement, i = 0; x && i < 5 && !bouton; x = x.parentElement, i++) {
+      for (const b of x.querySelectorAll('button, input[type=submit], input[type=button], input[type=image], a[href], [role=button]')) {
+        if (!vis(b) || robot(b) || b.disabled) continue;
+        const t = sansAcc(b.tagName === 'INPUT' ? (b.value || b.getAttribute('alt') || b.getAttribute('title') || '')
+                                                : (b.innerText || b.getAttribute('aria-label') || b.getAttribute('title') || ''));
+        if (MOT_RECHERCHE.test(t) || (champRecherche && MOT_COURT.test(t))) { bouton = b; texteBouton = court(t, 40); break; }
+      }
+    }
+    if (!bouton && !champRecherche) continue;
+    const cle = bouton ? chemin(bouton) : chemin(c);
+    if (deja.has(cle)) continue;
+    deja.add(cle);
+    recherches.push({ champ: chemin(c), libelle: libelle(c)[0], bouton: bouton ? chemin(bouton) : '',
+                      texte_bouton: texteBouton, cible: bouton ? decrire(bouton) : null });
+  }
+  // liens vers des fichiers (PDF de plan...) : un onglet « Documents » n'est pas l'onglet « Général »
+  const fichiers = tous('a[href]').filter(a => vis(a) && !robot(a) &&
+    (a.hasAttribute('download') || /\.(pdf|docx?|xlsx?|xlsm|csv|zip|dwg|dxf|tiff?|png|jpe?g|pptx?|txt|xml)(\?|#|$)/i.test(a.getAttribute('href') || ''))).length;
   const cadres = Array.from(document.querySelectorAll('iframe, frame')).filter(vis).map(f => String(f.src || ''));
   const motDePasse = !!tous('input[type=password]').find(vis);
   const identifiant = !!Array.from(document.querySelectorAll('input[type=email], input[autocomplete=username], ' +
@@ -686,7 +817,7 @@ JS_ECRAN = r"""
     url: location.href, titre: court(document.title, 120), titres: titres, champs: champs,
     tableaux: tableaux, cibles: cibles, tronque: tronque, cadres: cadres,
     mot_de_passe: motDePasse, identifiant: identifiant, fenetre: fenetre,
-    infos: infos, chargement: chargement, ombre: racines().length > 1,
+    infos: infos, chargement: chargement, ombre: racines().length > 1, recherches: recherches, fichiers: fichiers,
   };
 }
 """
@@ -759,10 +890,10 @@ window.print = function () {}; window.showModalDialog = function () {};
     const b = document.createElement('div');
     b.id = '__autoweb_lecture';
     b.setAttribute('data-autoweb', '1');
-    b.setAttribute('style', 'position:fixed;bottom:12px;left:12px;z-index:2147483647;background:#1d4ed8;' +
+    b.style.cssText = ('position:fixed;bottom:12px;left:12px;z-index:2147483647;background:#1d4ed8;' +
       'color:#fff;font:600 12px/1.3 system-ui,-apple-system,Arial;padding:8px 11px;border-radius:6px;' +
       'box-shadow:0 2px 10px rgba(0,0,0,.35);pointer-events:none;max-width:320px;opacity:.93');
-    b.textContent = 'Robot en LECTURE SEULE : il regarde et note. Tout envoi de données vers le portail est bloqué.';
+    b.textContent = 'Robot en LECTURE SEULE : il parcourt le portail et note. Il ne modifie rien. Ne touchez pas à cette fenêtre.';
     document.documentElement.appendChild(b);
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', poser); else poser();
@@ -1068,6 +1199,99 @@ def classer_requete(requete: Any, motif: Optional[Any] = None) -> str:
         return f"{requete.method.upper()} …"
 
 
+# Envoi permis pendant l'exploration automatique : une CONSULTATION (recherche, changement d'écran
+# d'un vieux portail). Tout le reste est coupé avant de partir.
+METHODES_ECRITURE = ("DELETE", "PUT", "PATCH", "MERGE")
+CLES_ACTION_CORPS = CLES_ACTION | {"method", "verb", "type_action", "actiontype", "_action", "submitaction", "commande"}
+
+
+def corps_action(corps: str, type_contenu: str = "") -> str:
+    """Raison pour laquelle le contenu d'un envoi ressemble à une modification, ou ""."""
+    corps = (corps or "")[:200000]
+    t = corps.strip()
+    if not t:
+        return ""
+    if t[:1] in "{[":
+        try:
+            donnees = json.loads(t)
+        except ValueError:
+            return "contenu illisible"
+        for x in (donnees if isinstance(donnees, list) else [donnees]):
+            if not isinstance(x, dict):
+                continue
+            requete_gql = x.get("query")
+            if isinstance(requete_gql, str) and re.search(r"(^|\n)\s*mutation\b", re.sub(r"#[^\n]*", "", requete_gql)):
+                return "GraphQL mutation"
+            for cle, valeur in x.items():
+                nom = normaliser(str(cle))
+                if nom in ("_method",) and str(valeur).upper() in METHODES_ECRITURE:
+                    return f"_method={valeur}"
+                if nom in CLES_ACTION_CORPS and isinstance(valeur, str) and mot_interdit(valeur):
+                    return f"{cle}={nom_technique(valeur, 30)}"
+                if isinstance(valeur, (dict, list)) and mot_interdit(re.sub(r"([a-z])([A-Z])", r"\1 \2", str(cle))):
+                    return f"opération {nom_technique(cle, 30)}"
+        return ""
+    if t[:1] == "<":
+        for action in re.findall(r"<Item\b[^>]*\baction=[\"']([\w-]+)[\"']", t):
+            if action.lower() not in ("get", "getitem", "getitemrepeatconfig", "getitemtypebyformid") and \
+                    not action.lower().startswith(("get", "search", "find", "read", "list")):
+                return f"Aras {nom_technique(action, 30)}"
+        m = re.search(r"<(?:\w+:)?Body[^>]*>\s*<(?:\w+:)?([A-Za-z_][\w.-]*)", t)
+        if m and mot_interdit(re.sub(r"([a-z])([A-Z])", r"\1 \2", m.group(1))):
+            return f"SOAP {nom_technique(m.group(1), 30)}"
+        return ""
+    if "multipart/form-data" in (type_contenu or "").lower():
+        return "envoi de fichier ou formulaire en plusieurs parties"
+    for cle, valeur in parse_qsl(t, keep_blank_values=True):
+        nom = cle.lower()
+        if nom == "_method" and valeur.upper() in METHODES_ECRITURE:
+            return f"_method={valeur}"
+        if nom in CLES_ACTION_CORPS and valeur and mot_interdit(valeur):
+            return f"{cle}={nom_technique(valeur, 30)}"
+        if nom == "__eventtarget" and valeur:
+            bouton = re.sub(r"^(btn|lnk|lb|ib|img|cmd|bt|link|button)(?=[A-Z_])", "", re.split(r"[$:.]", valeur)[-1])
+            if mot_interdit(re.sub(r"([a-z])([A-Z])", r"\1 \2", bouton)):
+                return f"bouton {nom_technique(valeur, 40)}"
+        if nom == "__eventargument" and valeur:
+            commande = re.split(r"[$;:]", re.sub(r"^FireCommand:[^;]*;", "", valeur))[0]
+            if commande.lower() in COMMANDES_GRILLE:
+                if commande.lower() not in ("page", "sort", "select", "cancel"):
+                    return f"commande de grille {commande}"
+            elif re.fullmatch(r"[A-Za-z][\w ]{1,40}", valeur) and mot_interdit(valeur):
+                return f"argument {nom_technique(valeur, 30)}"
+        # bouton ASP.NET qui envoie le formulaire : son nom est une clé (ctl00$Main$btnSupprimer=Supprimer)
+        if re.search(r"[$:](btn|lnk|lb|ib|cmd|bt|button)\w*$", cle, re.IGNORECASE) or \
+                (valeur and re.search(r"(?:^|[$:_])(btn|cmd|button)", cle, re.IGNORECASE)):
+            dernier = re.split(r"[$:.]", cle)[-1]
+            if mot_interdit(re.sub(r"([a-z])([A-Z])", r"\1 \2", dernier)) or (valeur and mot_interdit(valeur)):
+                return f"bouton {nom_technique(cle, 40)}"
+    return ""
+
+
+def envoi_interdit(requete: Any) -> str:
+    """Raison de couper un envoi (POST...) pendant l'exploration automatique, ou "" s'il est permis."""
+    try:
+        entetes = {k.lower(): v for k, v in (requete.headers or {}).items()}
+    except Exception:  # noqa: BLE001
+        entetes = {}
+    methode = (entetes.get("x-http-method-override") or entetes.get("x-http-method") or requete.method or "").upper()
+    if methode in METHODES_ECRITURE:
+        return methode
+    action = adresse_action(requete.url)
+    if action:
+        return action
+    try:
+        corps = requete.post_data or ""
+    except Exception:  # noqa: BLE001 - contenu binaire (fichier) : jamais envoyé
+        return "contenu binaire"
+    raison = corps_action(corps, entetes.get("content-type", ""))
+    if raison:
+        return raison
+    if "écriture probable" in classer_requete(requete):
+        return "écriture probable"
+    return ""
+
+
 # Plateformes reconnues d'après les adresses appelées par la page (jamais l'adresse elle-même).
 TECHNO_ADRESSES = (
     (re.compile(r"/JsonRestServices/", re.I), "Siemens Teamcenter (SOA)"),
@@ -1216,7 +1440,7 @@ JS_TECHNO = r"""
 
 
 # Version des cartes : le choix 9 n'envoie que des cartes faites avec les filtres actuels.
-VERSION_CARTE = 19
+VERSION_CARTE = 20
 # Mots qui peuvent suivre le verbe d'un bouton sans rien dire des données (« Voir le détail »).
 MOTS_GENERIQUES = set("""
 le la les l du de des d un une au aux en et ou a sur pour par tout tous toute toutes ce cette ces mon ma mes
@@ -1337,7 +1561,7 @@ def ressemble_a_une_personne(texte: str) -> bool:
 class Action:
     """Un pas pour atteindre un écran : ouvrir une adresse, ou cliquer sur un élément."""
 
-    type: str  # "aller" | "clic"
+    type: str  # "aller" | "clic" | "chercher"
     url: str = ""
     selecteur: str = ""
     texte: str = ""
@@ -1345,10 +1569,14 @@ class Action:
     ligne: int = -1
     attendu: Dict[str, Any] = field(default_factory=dict)
     partage: str = ""  # libellé sans données, pour la carte à partager
+    valeur: str = ""  # « chercher » : texte tapé dans le champ (reste sur le poste)
+    bouton: str = ""  # « chercher » : bouton qui lance la recherche (vide = touche Entrée)
 
     def libelle(self) -> str:
         if self.type == "aller":
             return f"ouvrir {modele_url(self.url)}"
+        if self.type == "chercher":
+            return f"chercher « {self.valeur} »" if self.valeur else "lancer la recherche sans critère"
         if self.zone == "tableau":
             return f"ligne {self.ligne + 1} du tableau"
         return self.texte or "(élément sans texte)"
@@ -1376,13 +1604,14 @@ class Ecran:
     chargement: List[str] = field(default_factory=list)  # indicateurs de chargement vus
     ombre: bool = False  # composants web (racines fantômes)
     etape: str = ""  # visite guidée : ce que l'utilisateur montrait à ce moment-là
+    recherches: List[Dict[str, Any]] = field(default_factory=list)  # formulaires de recherche de l'écran
 
 
 @dataclass
 class Limites:
-    ecrans: int = 150
-    profondeur: int = 6
-    minutes: float = 60.0
+    ecrans: int = 250
+    profondeur: int = 8
+    minutes: float = 45.0
     delai_ms: int = 500
     exemples: int = 2  # écrans visités par modèle d'adresse, lignes essayées par tableau
     max_cibles: int = 400  # éléments cliquables lus par écran
@@ -1390,6 +1619,18 @@ class Limites:
 
 class ArretExploration(Exception):
     pass
+
+
+def _avec_reperes(ecran: "Ecran", cibles: List[Dict[str, Any]], sur: Callable[[str], Optional[str]]) -> List[str]:
+    """« K3 Plans », « K4 Composants » : chaque libellé repris une fois, avec le repère de sa
+    première occurrence sur l'écran ; ce qui ne peut pas être repris est laissé de côté."""
+    vus: Dict[str, str] = {}
+    rangs = {id(c): i for i, c in enumerate(ecran.cibles, 1)}
+    for c in cibles:
+        texte = sur(c["texte"])
+        if texte and texte not in vus:
+            vus[texte] = f"K{rangs.get(id(c), '?')}"
+    return [f"{repere} {texte}" for texte, repere in sorted(vus.items())]
 
 
 def _norm_chiffres(texte: str) -> str:
@@ -1405,8 +1646,8 @@ def signature(lecture: Dict[str, Any]) -> str:
     champs = sorted({(_norm_chiffres(c["libelle"]) if c["source"] in ("label", "aria", "entete") else "", c["type"])
                      for c in lecture["champs"] if not c["dans_tableau"] and c["zone"] not in ("arbre", "lateral")})
     tableaux = sorted((tuple(_norm_chiffres(e) for e in t["entetes"]), t["lignes"] > 0) for t in lecture["tableaux"])
-    brut = json.dumps([modele_url(lecture["url"]), onglets, boutons, champs, tableaux, lecture.get("fenetre", False)],
-                      ensure_ascii=False)
+    brut = json.dumps([modele_url(lecture["url"]), onglets, boutons, champs, tableaux, lecture.get("fenetre", False)]
+                      + ([True] if lecture.get("fichiers") else []), ensure_ascii=False)
     return hashlib.sha1(brut.encode("utf-8")).hexdigest()[:12]
 
 
@@ -1434,6 +1675,7 @@ class Explorateur:
         self.bloquees: List[Tuple[str, str]] = []  # (méthode, modèle d'adresse) : envois empêchés
         # nature des envois (bloqués ici ; observés pendant une visite), sans aucune valeur
         self.envois: Dict[str, int] = {}
+        self.envois_coupes: Dict[str, int] = {}  # exploration automatique : envois coupés (nature seulement)
         self.techno: List[str] = []  # plateformes et outils reconnus
         self.mode = "exploration"
         self.diagnostic: List[Tuple[str, str]] = []  # réglages de connexion du poste (oui / non)
@@ -1458,6 +1700,11 @@ class Explorateur:
         self._interrompu: List[int] = []
         self._depuis_sauvegarde = 0
         self.url_demandee = ""
+        # les envois de CONSULTATION (formulaire de recherche, changement d'écran des vieux portails,
+        # qui passent par un envoi) sont permis ; tout envoi qui ressemble à une modification est coupé
+        self.lecture_permise = True
+        self.terme = ""  # mot à chercher pour essayer les recherches (donné par l'utilisateur, reste ici)
+        self._recherches_faites: Set[str] = set()
 
     # ------------------------------------------------------------------ sécurité réseau
     def _garde(self, route: Any) -> None:
@@ -1471,15 +1718,25 @@ class Explorateur:
             raison = ""
             if methode not in METHODES_LECTURE:
                 m = decouper(requete.url)
-                if not (methode == "POST" and m is not None and MOTIF_RETOUR_CONNEXION.search(m.path)):
+                if methode == "POST" and m is not None and MOTIF_RETOUR_CONNEXION.search(m.path):
+                    pass  # retour de la connexion d'entreprise
+                elif self.lecture_permise:
+                    raison = envoi_interdit(requete)
+                    if not raison:
+                        self._noter_envoi(classer_requete(requete))
+                else:
                     raison = methode
             elif requete.resource_type not in RESSOURCES_STATIQUES:
                 if not (requete.is_navigation_request() and sans_fragment(requete.url) in self._urls_sures):
                     raison = adresse_action(requete.url) or ""
             if self.garde_active and raison:
                 self.bloquees.append((methode, modele_url(requete.url)))
-                self._noter_envoi(classer_requete(requete) if methode not in METHODES_LECTURE
-                                  else f"{methode} {_fin_adresse(requete.url)} (adresse d'action)")
+                nature = (classer_requete(requete) if methode not in METHODES_LECTURE
+                          else f"{methode} {_fin_adresse(requete.url)} (adresse d'action)")
+                if self.lecture_permise:
+                    self.envois_coupes[nature] = self.envois_coupes.get(nature, 0) + 1
+                else:
+                    self._noter_envoi(nature)
                 journal.debug("Requête bloquée (%s) : %s %s", raison, methode, modele_url(requete.url))
                 route.abort()
             else:
@@ -1581,6 +1838,13 @@ class Explorateur:
             except Exception as e:  # noqa: BLE001
                 journal.debug("WebSocket non contrôlés : %s", e)
         contexte.add_init_script(JS_NEUTRALISER)
+        if self.lecture_permise:
+            # seconde barrière, dans la page : le filet de la visite guidée (boutons et envois qui
+            # ressemblent à une modification), actif une fois la page de départ confirmée
+            from .visite import JS_VISITE
+
+            contexte.add_init_script("window.__autoweb_auto = true;")
+            contexte.add_init_script(f"({JS_VISITE})()")
         contexte.on("page", self._nouvelle_page)
         contexte.on("response", self._reponse)
         page.on("download", self._telechargement)
@@ -1603,6 +1867,8 @@ class Explorateur:
         self.depart = page.url
         self._urls_sures.add(sans_fragment(page.url))
         self.garde_active = True
+        if self.lecture_permise:
+            self._armer_filet(page)
         premier = self._observer(page, [Action("aller", url=page.url, partage="page de départ")], 0)
         if premier is None:
             raise ErreurAutoweb("La page de départ n'a pas pu être lue.")
@@ -1642,6 +1908,21 @@ class Explorateur:
                 pass
             self._techno_cookies()
             self.enregistrer()
+
+    def _armer_filet(self, page: Page) -> None:
+        """Le filet de la page s'arme sur le site du portail (jamais sur une page de connexion)."""
+        from .visite import JS_VISITE
+
+        site = site_de(page.url)
+        self.nav.contexte.add_init_script(f"window.__autoweb_garde = {json.dumps({'site': site})};")
+        for ouverte in self.nav.contexte.pages:
+            for cadre in list(ouverte.frames):
+                try:
+                    cadre.evaluate("() => { window.__autoweb_auto = true; }")
+                    cadre.evaluate(f"({JS_VISITE})()")
+                    cadre.evaluate("s => { if (!window.__autoweb_garde) window.__autoweb_garde = { site: s }; }", site)
+                except Exception:  # noqa: BLE001 - cadre fermé, autre origine
+                    pass
 
     def _essayer_sans_planter(self, ecran: Ecran, cible: Dict[str, Any]) -> Optional[Ecran]:
         """Une erreur sur un élément ne doit pas arrêter toute l'exploration."""
@@ -1850,7 +2131,7 @@ class Explorateur:
             champs=lecture["champs"], tableaux=lecture["tableaux"], cibles=lecture["cibles"],
             cadres=lecture["cadres"], tronque=lecture["tronque"], fenetre=lecture["fenetre"], profondeur=profondeur,
             infos=list(lecture.get("infos") or []), chargement=list(lecture.get("chargement") or []),
-            ombre=bool(lecture.get("ombre")),
+            ombre=bool(lecture.get("ombre")), recherches=list(lecture.get("recherches") or []),
         )
         self.ecrans.append(ecran)
         self._par_signature[sig] = ecran
@@ -1899,7 +2180,8 @@ class Explorateur:
         if not a_des_lettres(texte):
             return "non", "symbole ou icône sans texte : on ne sait pas ce qu'il fait"
         if cible["soumet"]:
-            if cible["methode"] != "get" or not est_lecture(texte):
+            # « Rechercher », « Afficher » : l'envoi est permis s'il ne ressemble pas à une modification
+            if not est_lecture(texte) or (cible["methode"] != "get" and not self.lecture_permise):
                 return "non", "bouton qui envoie un formulaire"
             return "clic", ""
         if cible["tag"] == "a" and len(href) > 1 and href.startswith("#") and href != "#!":
@@ -1909,6 +2191,10 @@ class Explorateur:
         if cible["zone"] in ("menu", "lateral", "onglet", "arbre") or cible["role"] in ("tab", "menuitem", "treeitem"):
             return "clic", ""
         if cible["tag"] == "summary" or est_lecture(texte):
+            return "clic", ""
+        if self.lecture_permise and libelle_neutre(texte):
+            # « Historique », « Nomenclature », « Plan de masse » (lien javascript: d'un vieux portail) :
+            # rien qui ressemble à une action ; l'envoi qui suit est contrôlé avant de partir
             return "clic", ""
         return "non", "bouton d'action (à me montrer si utile)"
 
@@ -1927,10 +2213,31 @@ class Explorateur:
                 "zone": "page", "ligne": -1, "rang": -1, "conteneur": "", "soumet": False, "methode": "",
                 "selecteur": "", "pseudo": nature}
 
+    def _cibles_recherche(self, ecran: Ecran) -> List[Dict[str, Any]]:
+        """Chaque formulaire de recherche est essayé une fois par genre d'écran : avec le mot donné
+        par l'utilisateur, sinon sans critère (puis « * »)."""
+        cibles = []
+        for r in ecran.recherches:
+            cle = f"recherche|{_modele_sans_requete(ecran.modele)}|{_norm_chiffres(r.get('libelle') or '')}|{r.get('texte_bouton')}"
+            if cle in self._recherches_faites or not self.lecture_permise:
+                continue
+            bouton = r.get("cible") or {}
+            if r.get("bouton") and not (est_lecture(r.get("texte_bouton") or "") or
+                                        re.fullmatch(r"(ok|go|>|>>|»|→|valider la recherche|lancer la recherche|filtrer|filter|find|trouver)",
+                                                     normaliser(r.get("texte_bouton") or ""))):
+                continue
+            if bouton and mot_interdit(bouton.get("aria") or "", bouton.get("id") or ""):
+                continue
+            self._recherches_faites.add(cle)
+            cibles.append({**self._pseudo_lien("", "recherche"), "texte": f"recherche « {r.get('libelle') or 'champ'} »",
+                           "recherche": r, "cle_recherche": cle})
+        return cibles
+
     def _cibles_a_essayer(self, ecran: Ecran) -> List[Dict[str, Any]]:
         retenues: List[Dict[str, Any]] = []
         deja: set = set()
         cibles = list(ecran.cibles)
+        cibles += self._cibles_recherche(ecran)
         cibles += [self._pseudo_lien(src, "cadre") for src in ecran.cadres if src.startswith(("http", "file"))]
         for cible in cibles:
             if cible["zone"] == "tableau" and not (0 <= cible["ligne"] < self.limites.exemples):
@@ -1940,6 +2247,9 @@ class Explorateur:
                 continue
             if cible["zone"] == "lateral" and cible["ligne"] >= 25:
                 ecran.resultats.setdefault(self._cle(cible), "non essayé (menu latéral très long)")
+                continue
+            if cible.get("recherche"):
+                retenues.append(cible)
                 continue
             action, raison = self._decision(cible)
             cle = self._cle(cible)
@@ -1971,7 +2281,10 @@ class Explorateur:
         if cible["zone"] in ("menu", "lateral"):
             return f"menu|{_norm_chiffres(cible['texte'] or cible['aria'])}"
         if cible["zone"] == "onglet":
-            return f"onglet|{ecran.modele}|{_norm_chiffres(cible['texte'] or cible['aria'])}"
+            # une barre d'onglets (l'ensemble de ses onglets) sur un genre d'écran : chaque onglet une fois.
+            # Les vieux portails ont la même adresse pour tous les écrans : l'adresse ne suffit pas.
+            barre = "|".join(sorted({_norm_chiffres(c["texte"] or c["aria"]) for c in ecran.cibles if c["zone"] == "onglet"}))
+            return f"onglet|{ecran.modele}|{barre}|{_norm_chiffres(cible['texte'] or cible['aria'])}"
         return ""
 
     @staticmethod
@@ -1985,6 +2298,8 @@ class Explorateur:
         return {k: cible[k] for k in cles}
 
     def _essayer(self, ecran: Ecran, cible: Dict[str, Any]) -> Optional[Ecran]:
+        if cible.get("recherche"):
+            return self._essayer_recherche(ecran, cible)
         cle = self._cle(cible)
         action, _ = self._decision(cible)
         self._fermer_fenetres_en_trop()
@@ -2062,6 +2377,47 @@ class Explorateur:
         ecran.resultats[cle] = " ; ".join(notes)
         return nouveau
 
+    def _essayer_recherche(self, ecran: Ecran, cible: Dict[str, Any]) -> Optional[Ecran]:
+        """Remplit le champ de recherche (mot donné par l'utilisateur, sinon rien, puis « * ») et lance la
+        recherche : c'est ce qui fait apparaître les listes de résultats, puis les fiches."""
+        r = cible["recherche"]
+        cle = self._cle(cible)
+        essais = [self.terme] if self.terme else ["", "*"]
+        dernier: Optional[Ecran] = None
+        for valeur in essais:
+            if not self._restaurer(ecran):
+                ecran.resultats[cle] = "écran impossible à retrouver"
+                return None
+            pas = Action("chercher", selecteur=r["champ"], texte=r.get("libelle") or "", valeur=valeur,
+                         bouton=r.get("bouton") or "", attendu=self._attendu(r["cible"]) if r.get("cible") else {},
+                         partage=f"recherche dans « {self._sur(r.get('libelle') or '') or 'un champ'} »")
+            nb_bloquees = len(self.bloquees)
+            self.essais += 1
+            resultat = self._jouer(self.nav.page_courante(), pas)
+            if resultat != "ok":
+                ecran.resultats[cle] = f"non lancée : {resultat}"
+                return None
+            page = self.nav.page_courante()
+            self._fermer_fenetres_en_trop()
+            lecture = self._lire(page)
+            if lecture is None:
+                continue
+            if len(self.bloquees) > nb_bloquees:
+                ecran.resultats[cle] = "la recherche a voulu envoyer quelque chose qui ressemble à une modification : coupé"
+                return None
+            nouveau = self._observer(page, ecran.chemin + [pas], ecran.profondeur + 1, lecture)
+            vers = nouveau or self._par_signature.get(signature(lecture))
+            if vers is not None and vers is not ecran:
+                self.transitions.append({"de": ecran.id, "action": cle, "vers": vers.id})
+            if nouveau is not None:
+                dernier = nouveau
+            resultats = any(t.get("lignes", 0) > 0 for t in lecture["tableaux"])
+            ecran.resultats[cle] = (f"mène à {vers.id}" if vers is not None and vers is not ecran else "rien de nouveau") + \
+                ("" if resultats else " (aucune liste de résultats)")
+            if resultats:
+                break
+        return dernier
+
     def _restaurer(self, ecran: Ecran) -> bool:
         """Revient sur l'écran : il suffit parfois d'y être déjà, sinon on rejoue le chemin."""
         page = self.nav.page_courante()
@@ -2094,6 +2450,21 @@ class Explorateur:
             if pas.type == "aller":
                 self._urls_sures.add(sans_fragment(pas.url))
                 page.goto(pas.url, wait_until="domcontentloaded")
+            elif pas.type == "chercher":
+                champ = page.locator(pas.selecteur).first
+                champ.fill(pas.valeur, timeout=5000)
+                if pas.bouton:
+                    try:
+                        resultat = page.evaluate(JS_CLIC, [pas.bouton, pas.attendu])
+                    except Exception as e:  # noqa: BLE001
+                        if "context was destroyed" in str(e) or "navigat" in str(e):
+                            resultat = "ok"
+                        else:
+                            raise
+                    if resultat != "ok":
+                        return f"le bouton de recherche a changé ({resultat})"
+                else:
+                    champ.press("Enter", timeout=5000)
             else:
                 try:
                     resultat = page.evaluate(JS_CLIC, [pas.selecteur, pas.attendu])
@@ -2147,7 +2518,10 @@ class Explorateur:
             "sites_externes": sorted(set(self.externes)),
             "technologie": self.techno,
             "envois": self.envois,
+            "envois_coupes": self.envois_coupes,
             "version": VERSION_CARTE,
+            "id": self.dossier.name,
+            "reperes": True,  # E5/C1/K7 : la numérotation du fichier à partager
         }
         (self.dossier / "carte.json").write_text(json.dumps(donnees, ensure_ascii=False, indent=1), encoding="utf-8")
         (self.dossier / "carte_PRIVEE_ne_pas_envoyer.html").write_text(self._html(), encoding="utf-8")
@@ -2254,6 +2628,10 @@ class Explorateur:
             "Un nom d'onglet, de menu ou de colonne peut malgré tout être un nom de client, de projet",
             "ou de personne : RELISEZ-LE et remplacez ce qui vous semble sensible avant de l'envoyer.",
             "",
+            f"CARTE N° {self.dossier.name}",
+            "Repères : E = écran, C = champ, K = bouton, lien, onglet ou menu, T = tableau. Une tâche",
+            "peut les citer (par exemple carte=E5/C1) : le robot retrouve l'élément exact sur ce poste.",
+            "",
             self._bilan_partage(r),
             "",
         ]
@@ -2267,17 +2645,17 @@ class Explorateur:
             documents_ouverts = any(c.get("fermable") for c in e.cibles)
             # avec des onglets de document ouverts, un onglet sans croix est repris s'il est aussi sur une
             # autre fiche, ou s'il n'est fait que de mots d'interface (« Général », « Où utilisé »)
-            onglets = sorted({x for x in (self._sur(c["texte"]) for c in onglets_cibles if not c.get("fermable")
-                                          and (not documents_ouverts or self._onglet_courant(c, e)
-                                               or all(_mot_interface(m) for m in c["texte"].split()))) if x})
+            onglets = _avec_reperes(e, [c for c in onglets_cibles if not c.get("fermable")
+                                        and (not documents_ouverts or self._onglet_courant(c, e)
+                                             or all(_mot_interface(m) for m in c["texte"].split()))], self._sur)
             if onglets:
                 lignes.append(f"     onglets : {' ; '.join(onglets)}")
             documents = sum(1 for c in e.cibles if c.get("fermable") and not c.get("perso"))
             if documents:
                 lignes.append(f"     onglets de document (un par élément ouvert) : {documents}, noms non repris")
-            menus = sorted({x for x in (self._sur(c["texte"]) for c in e.cibles
-                                        if c["zone"] == "menu" and not c.get("perso") and not c.get("fermable")
-                                        and (c["tag"] == "a" or c["role"] == "menuitem")) if x})
+            menus = _avec_reperes(e, [c for c in e.cibles if c["zone"] == "menu" and not c.get("perso")
+                                      and not c.get("fermable") and (c["tag"] == "a" or c["role"] == "menuitem")],
+                                  self._sur)
             if menus:
                 lignes.append(f"     menus : {' ; '.join(menus)}")
             lateral = sum(1 for c in e.cibles if c["zone"] == "lateral")
@@ -2285,12 +2663,12 @@ class Explorateur:
                 # souvent « consultés récemment », dossiers, projets : noms non repris
                 lignes.append(f"     menu latéral : {lateral} entrée(s), noms non repris")
             champs = []
-            for c in e.champs:
+            for rang, c in enumerate(e.champs, 1):
                 if c["dans_tableau"] or c["zone"] in ("arbre", "lateral"):
                     continue
                 # les noms de code (id, name) restent dans carte.json, sur le poste : dans un nom de
                 # code peut se glisser un nom de site ou de personne (site_Flamanville, auteur_mmartin)
-                champs.append(f"{self._libelle_champ(c)} [{type_champ(c['type'])}"
+                champs.append(f"C{rang} {self._libelle_champ(c)} [{type_champ(c['type'])}"
                               + (f", {c['nb_options']} choix" if c["type"] == "liste" else "")
                               + (", obligatoire" if c["obligatoire"] else "")
                               + (", lecture seule" if c["lecture_seule"] else "") + "]")
@@ -2311,21 +2689,30 @@ class Explorateur:
                               + (" ; " if infos and autres else "")
                               + (f"{autres} autre(s), non repris (vus sur une seule fiche)" if autres else ""))
             boutons = []
-            for c in e.cibles:
-                if c["zone"] not in ("page", "fenetre") or c["tag"] == "a":
+            for rang, c in enumerate(e.cibles, 1):
+                if c["zone"] not in ("page", "fenetre") or c["tag"] == "a" or c.get("cache"):
                     continue
                 res = e.resultats.get(self._cle(c), "")
-                boutons.append(self._texte_bouton(c) + (f" → {resultat(res)}" if res else ""))
+                boutons.append(f"K{rang} " + self._texte_bouton(c) + (f" → {resultat(res)}" if res else ""))
             if boutons:
                 lignes.append(f"     boutons : {' ; '.join(boutons)}")
-            for t in e.tableaux:
+            for r_ in e.recherches:
+                cle_r = f"recherche « {r_.get('libelle') or 'champ'} »"
+                champ = next((f"C{i}" for i, c in enumerate(e.champs, 1) if r_.get("champ") and c.get("chemin") == r_["champ"]), "")
+                bouton = next((f"K{i}" for i, c in enumerate(e.cibles, 1) if r_.get("bouton") and c.get("selecteur") == r_["bouton"]), "")
+                res = e.resultats.get(cle_r, "")
+                lignes.append(f"     recherche : champ {champ or '?'} « {self._sur(r_.get('libelle') or '') or '(sans nom)'} »"
+                              + (f", bouton {bouton}" if bouton else ", touche Entrée")
+                              + (f" → {resultat(res)}" if res else ""))
+            for rang, t in enumerate(e.tableaux, 1):
                 entetes = [x if not nom_propre_dedans(x) else "(nom)" for x in t["entetes"]]
-                lignes.append(f"     tableau : [{masquer(' | '.join(entetes))}] ({t['lignes']} lignes)")
+                lignes.append(f"     tableau T{rang} : [{masquer(' | '.join(entetes))}] ({t['lignes']} lignes)")
             # seulement les clés du robot (« ligne 2 du tableau ») : un lien dont le texte commence par
             # « ligne » est un texte de la page
+            reperes_lignes = {self._cle(c): f"K{i}" for i, c in enumerate(e.cibles, 1) if c["zone"] == "tableau"}
             for k, v in sorted((k, v) for k, v in e.resultats.items()
                                if re.fullmatch(r"ligne \d+ du tableau(?:, élément \d+)?", k)):
-                lignes.append(f"     {k} → {resultat(v)}")
+                lignes.append(f"     {k}" + (f" ({reperes_lignes[k]})" if k in reperes_lignes else "") + f" → {resultat(v)}")
             liens = sum(1 for c in e.cibles if c["tag"] == "a" and c["zone"] in ("page", "arbre"))
             liens += sum(1 for c in e.cibles if c["zone"] == "menu" and not self._court(c["texte"]))
             if liens:
@@ -2363,10 +2750,19 @@ class Explorateur:
                 lignes.append(f"   {libelle} : {valeur}")
         if self.envois:
             lignes.append("")
-            lignes.append("ENVOIS DE DONNEES " + ("VUS PENDANT LA VISITE" if self.mode == "visite"
-                                                   else "BLOQUES PAR SECURITE (rien n'est parti)")
-                          + " : nature seulement, sans aucune valeur")
+            if self.mode == "visite":
+                titre = "VUS PENDANT LA VISITE"
+            elif self.lecture_permise:
+                titre = "DE CONSULTATION FAITS PAR LE ROBOT (recherches, changements d'écran)"
+            else:
+                titre = "BLOQUES PAR SECURITE (rien n'est parti)"
+            lignes.append(f"ENVOIS DE DONNEES {titre} : nature seulement, sans aucune valeur")
             for nature, nombre in sorted(self.envois.items(), key=lambda x: (-x[1], x[0]))[:40]:
+                lignes.append(f"   {nombre:3} × {nature}")
+        if self.envois_coupes:
+            lignes.append("")
+            lignes.append("ENVOIS COUPES PAR SECURITE (ils ressemblaient à une modification ; rien n'est parti)")
+            for nature, nombre in sorted(self.envois_coupes.items(), key=lambda x: (-x[1], x[0]))[:20]:
                 lignes.append(f"   {nombre:3} × {nature}")
         indicateurs = sorted({i for e in self.ecrans for i in e.chargement})
         if indicateurs:

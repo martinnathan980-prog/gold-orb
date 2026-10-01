@@ -82,7 +82,7 @@ JS_ENREGISTREUR = """
     if (document.getElementById(ID_BADGE) || !document.documentElement) return;
     const b = document.createElement('div');
     b.id = ID_BADGE;
-    b.setAttribute('style', 'position:fixed;bottom:12px;left:12px;z-index:2147483647;background:#dc2626;' +
+    b.style.cssText = ('position:fixed;bottom:12px;left:12px;z-index:2147483647;background:#dc2626;' +
       'color:#fff;font:600 12px/1.2 system-ui,-apple-system,Arial;padding:8px 11px;border-radius:6px;' +
       'box-shadow:0 2px 10px rgba(0,0,0,.35);cursor:pointer;user-select:none;max-width:300px;opacity:.93');
     b.textContent = 'Enregistrement en cours - cliquez pour terminer';

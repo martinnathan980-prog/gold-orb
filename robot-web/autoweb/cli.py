@@ -336,11 +336,9 @@ def cmd_explorer(args: argparse.Namespace) -> int:
     url = _normaliser_url(args.url)
     if not url:
         raise ErreurAutoweb("Indiquez l'adresse du portail : autoweb explorer https://mon-portail/...")
-    # par défaut, la visite guidée (l'utilisateur clique) ; l'exploration automatique sur demande.
-    # Sans pause ou navigateur caché, personne ne peut cliquer : c'est forcément l'exploration automatique.
-    visite = not (getattr(args, "auto", False) or getattr(args, "sans_pause", False) or getattr(args, "cache", False))
-    if not visite and not getattr(args, "auto", False):
-        print(f"{S.ATTENTION} --sans-pause ou --cache : personne ne clique, c'est donc l'exploration automatique (--auto).")
+    # par défaut, le robot explore seul ; la visite guidée (l'utilisateur clique) sur demande.
+    # Sans pause ou navigateur caché, personne ne peut cliquer : c'est forcément l'exploration seule.
+    visite = bool(getattr(args, "visite", False)) and not (getattr(args, "sans_pause", False) or getattr(args, "cache", False))
     horodatage = f"{dt.datetime.now():%Y%m%d-%H%M%S}"
     dossier = Path(args.sortie) if args.sortie else \
         DOSSIER_PROJET / "explorations" / (f"{horodatage}-visite" if visite else horodatage)
@@ -370,13 +368,23 @@ def cmd_explorer(args: argparse.Namespace) -> int:
     else:
         nav.options_contexte = {"service_workers": "block"}  # sinon certaines requêtes échapperaient au contrôle
         limites = Limites(ecrans=args.max_ecrans, profondeur=args.profondeur, minutes=args.minutes, delai_ms=args.delai)
-        print(f"{S.LIGNE} CARTE DU PORTAIL : EXPLORATION AUTOMATIQUE, SANS RIEN MODIFIER")
-        print("   Le robot parcourt les menus, les onglets, les listes et les fiches, et note tout.")
-        print("   Il ne remplit aucun champ, ne clique que sur des menus, onglets, lignes et boutons de")
-        print("   consultation (jamais Enregistrer, Supprimer, Créer, Modifier, Valider, Oui, OK...), et")
-        print("   bloque tout envoi de données vers le portail.")
+        print(f"{S.LIGNE} CARTE DU PORTAIL : LE ROBOT EXPLORE TOUT SEUL, SANS RIEN MODIFIER")
+        print("   Il ouvre les menus, les onglets, lance les recherches, ouvre une ou deux fiches de chaque")
+        print("   sorte, et note chaque champ, bouton, onglet et colonne avec un repère (E5, C1, K7).")
+        print("   Il ne clique JAMAIS sur Enregistrer, Supprimer, Créer, Modifier, Dupliquer, Valider,")
+        print("   Oui, OK... et coupe tout envoi qui ressemble à une modification avant qu'il parte.")
         print("   Ne touchez pas à sa fenêtre pendant l'exploration.")
-        print(f"   Limites : {limites.ecrans} écrans, {limites.minutes:g} minutes. Pour arrêter avant : Entrée ici.")
+        print(f"   Durée : {limites.minutes:g} minutes au plus. Pour arrêter avant : Entrée ici (ce qui est vu est gardé).")
+        from .console import console_interactive
+
+        terme = getattr(args, "terme", None)
+        if terme is None and not args.sans_pause and console_interactive():
+            print()
+            print("   Pour essayer les recherches, donnez un numéro de plan (ou un mot) que vous cherchez")
+            print("   souvent. Il sert seulement à lancer la recherche ; il n'est écrit nulle part dans le")
+            print("   fichier à m'envoyer.")
+            terme = _demander("   Numéro ou mot à chercher (Entrée = aucun)", "")
+        terme = (terme or "").strip()
     if premiere_fois:
         expliquer_premiere_fois(url)
     nav.ouvrir()
@@ -384,6 +392,7 @@ def cmd_explorer(args: argparse.Namespace) -> int:
         robot: Explorateur = Visite(nav, dossier, interactif=not args.sans_pause)
     else:
         robot = Explorateur(nav, dossier, limites, interactif=not args.sans_pause)
+        robot.terme = terme
     robot.diagnostic = diagnostic_connexion(Path(profil))
     try:
         if visite:
@@ -407,7 +416,8 @@ def cmd_explorer(args: argparse.Namespace) -> int:
         print("   Ce qui a été vu est gardé ; vous pouvez relancer plus tard (choix 8).")
     if not visite:
         print(f"   {r['ecrans']} écran(s) différents vus, {r['essais']} élément(s) essayés, "
-              f"{r['bloquees']} envoi(s) de données bloqué(s) (rien n'est parti).")
+              f"{r['bloquees']} envoi(s) coupé(s) par sécurité (rien n'est parti).")
+        print(f"   Carte n° {dossier.name} : citez ce numéro et les repères (E5, C1, K7) pour me demander une tâche.")
     print()
     print("   Résultats :")
     print(f"     {dossier / 'carte_PRIVEE_ne_pas_envoyer.html'}")
@@ -415,6 +425,87 @@ def cmd_explorer(args: argparse.Namespace) -> int:
     print(f"     {dossier / 'carte_a_partager.txt'}")
     print("        la structure du portail, sans vos données : à relire avant de me l'envoyer")
     print("   Pour tout rassembler en UN fichier à relire puis à m'envoyer : menu, choix 9.")
+    return 0
+
+
+def _taches_recues(dossiers: Optional[List[Path]] = None, jours: int = 60) -> List[Path]:
+    """Fichiers de tâche reçus (.txt, .yaml) dans Téléchargements, Bureau, Documents : les plus récents d'abord."""
+    import time as _time
+
+    maison = Path.home()
+    dossiers = dossiers or [maison / "Downloads", maison / "Téléchargements", maison / "Desktop", maison / "Bureau",
+                            maison / "OneDrive" / "Desktop", maison / "Documents", Path.cwd()]
+    limite = _time.time() - jours * 86400
+    trouves: List[Path] = []
+    vus = set()
+    for dossier in dossiers:
+        if not dossier.is_dir():
+            continue
+        for chemin in list(dossier.glob("*.txt")) + list(dossier.glob("*.yaml")) + list(dossier.glob("*.yml")):
+            nom = chemin.name.lower()
+            if nom.startswith(("a_envoyer_a_claude", "carte_", "robot-web-installeur")) or "_a_partager" in nom:
+                continue
+            try:
+                if chemin.stat().st_mtime < limite or chemin.stat().st_size > 300_000 or chemin.resolve() in vus:
+                    continue
+                texte = chemin.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            if re.search(r"(?m)^etapes\s*:", texte):
+                vus.add(chemin.resolve())
+                trouves.append(chemin)
+    return sorted(trouves, key=lambda p: p.stat().st_mtime, reverse=True)
+
+
+def cmd_ajouter(args: argparse.Namespace) -> int:
+    """Range dans taches/ une tâche écrite par Claude (fichier reçu), après l'avoir vérifiée."""
+    import yaml
+
+    from .scenario import charger
+
+    configurer_journal(None, getattr(args, "verbeux", False))
+    if args.fichier:
+        source = Path(nettoyer_chemin(args.fichier))
+        if not source.is_file():
+            raise ErreurAutoweb(f"Fichier introuvable : {source}")
+    else:
+        recus = _taches_recues()
+        if not recus:
+            print(f"{S.ATTENTION} Aucun fichier de tâche trouvé dans vos Téléchargements, sur le Bureau ou dans Documents.")
+            print("   Enregistrez d'abord le fichier reçu (pièce jointe .txt) dans vos Téléchargements, puis recommencez.")
+            return 1
+        print()
+        print("   Fichiers de tâche trouvés (les plus récents d'abord) :")
+        for i, chemin in enumerate(recus[:10], 1):
+            print(f"     {i}. {chemin.name}   ({chemin.parent})")
+        reponse = _demander("   Numéro du fichier à ajouter (0 = rien)", "1")
+        if not reponse.isdigit() or not 1 <= int(reponse) <= len(recus[:10]):
+            return 1
+        source = recus[int(reponse) - 1]
+    texte = source.read_text(encoding="utf-8", errors="replace")
+    try:
+        donnees = yaml.safe_load(texte) or {}
+    except yaml.YAMLError as e:
+        raise ErreurAutoweb(f"Ce fichier n'est pas une tâche lisible ({premiere_ligne(e)}). Renvoyez-le-moi tel quel.")
+    nom = str(donnees.get("nom") or source.stem) if isinstance(donnees, dict) else source.stem
+    dossier = DOSSIER_PROJET / "taches"
+    dossier.mkdir(parents=True, exist_ok=True)
+    cible = dossier / (re.sub(r"[^\w-]+", "_", nom.lower()).strip("_")[:50] + ".yaml")
+    if cible.exists() and not _demander(f"   Une tâche {cible.name} existe déjà. La remplacer ? (o/n)", "n").lower().startswith("o"):
+        return 1
+    ancien = cible.read_bytes() if cible.exists() else None
+    cible.write_text(texte, encoding="utf-8")
+    try:
+        charger(cible)
+    except ErreurAutoweb as e:
+        if ancien is not None:
+            cible.write_bytes(ancien)
+        else:
+            cible.unlink()
+        raise ErreurAutoweb(f"Cette tâche contient une erreur, elle n'a pas été ajoutée :\n   {e}\n"
+                            "   Envoyez-moi ce message : je corrige la tâche.")
+    print(f"{S.OK} Tâche « {nom} » ajoutée : {cible}")
+    print("   Pour la lancer : menu, choix 2.")
     return 0
 
 
@@ -1037,11 +1128,29 @@ def _ns(**kw) -> argparse.Namespace:
         sans_avant=False, sans_apres=False, inspecter_si_erreur=False, arret_premiere_erreur=False,
         sans_pause=False, simuler=False, scenario=None, port=8765, sans_attente=False, fichier=False,
         releve=None, sortie_releve=None, colonnes=None, regles=None, journal=False,
-        max_ecrans=150, profondeur=6, minutes=60.0, delai=500, visite=False, sans_ouvrir=False, suite=False,
-        auto=False,
+        max_ecrans=250, profondeur=8, minutes=45.0, delai=500, visite=False, sans_ouvrir=False, suite=False,
+        auto=False, terme=None,
     )
     defauts.update(kw)
     return argparse.Namespace(**defauts)
+
+
+FICHIER_PORTAIL = DOSSIER_PROJET / "portail.txt"  # dernière adresse de portail donnée (reste sur le poste)
+
+
+def _adresse_portail() -> Optional[str]:
+    """Adresse de la page d'accueil du portail ; la dernière donnée est proposée (Entrée pour la garder)."""
+    try:
+        derniere = FICHIER_PORTAIL.read_text(encoding="utf-8").strip()
+    except OSError:
+        derniere = ""
+    url = nettoyer_chemin(_demander("   Adresse de la page d'accueil du portail (elle commence par http)", derniere))
+    if url and url != derniere:
+        try:
+            FICHIER_PORTAIL.write_text(url + "\n", encoding="utf-8")
+        except OSError:
+            pass
+    return url or None
 
 
 def _demander(question: str, defaut: str = "") -> str:
@@ -1085,9 +1194,10 @@ def cmd_menu(args: argparse.Namespace) -> int:
         print("   5. Creer un fichier Excel de pilotage (facultatif)")
         print("   6. M'entrainer sur la fausse base de demonstration")
         print("   7. Verifier que tout fonctionne")
-        print("   8. Faire la carte de mon portail (sans rien modifier)")
+        print("   8. Faire la carte de mon portail : le robot explore TOUT SEUL, sans rien modifier")
         print("   9. Rassembler ce qu'il faut envoyer a Claude (un seul fichier a relire)")
         print("  10. Me connecter dans le Chrome du robot, sans le robot (si la connexion bloque)")
+        print("  11. Ajouter une tache ecrite par Claude (fichier recu)")
         print("   0. Quitter")
         print()
         print("   Votre choix (0 pour quitter) : ", end="", flush=True)
@@ -1190,23 +1300,23 @@ def cmd_menu(args: argparse.Namespace) -> int:
                 cmd_base_demo(_ns())
             elif choix == "7":
                 cmd_demo(_ns(sans_pause=True))
-            elif choix == "8":
-                url = nettoyer_chemin(_demander("   Adresse de la page d'accueil du portail (elle commence par http)"))
+            elif choix in ("8", "8v"):
+                url = _adresse_portail()
                 if not url:
                     continue
-                # visite guidée : c'est l'utilisateur qui clique, le robot regarde. L'exploration
-                # automatique reste disponible en ligne de commande (robot explorer <adresse> --auto).
-                cmd_explorer(_ns(url=url, visite=True))
+                # le robot explore seul ; « 8v » : visite guidée (c'est l'utilisateur qui clique)
+                cmd_explorer(_ns(url=url, visite=choix == "8v"))
             elif choix == "9":
                 cmd_rassembler(_ns())
             elif choix == "10":
-                url = nettoyer_chemin(_demander("   Adresse de la page d'accueil du portail (elle commence par http)"))
-                cmd_connecter(_ns(url=url or None))
+                cmd_connecter(_ns(url=_adresse_portail() or None))
+            elif choix == "11":
+                cmd_ajouter(_ns(fichier=None))
             elif choix in ("0", "q", "quitter"):
                 print("   A bientot.")
                 return 0
             else:
-                print("   Tapez un nombre de 0 a 10.")
+                print("   Tapez un nombre de 0 a 11.")
         except ErreurAutoweb as e:
             print()
             print(f"{S.ERREUR} {e}")
@@ -1414,21 +1524,27 @@ def construire_parseur() -> argparse.ArgumentParser:
     commun(p)
     p.set_defaults(fonction=cmd_releve)
 
-    p = sous.add_parser("explorer", help="faire la carte du portail SANS RIEN MODIFIER (visite guidée ; --auto : le robot seul)")
+    p = sous.add_parser("explorer", help="faire la carte du portail SANS RIEN MODIFIER (le robot explore seul ; --visite : vous cliquez)")
     p.add_argument("url", help="adresse du portail (page d'accueil)")
-    p.add_argument("--max-ecrans", type=int, default=150, help="nombre d'écrans différents au maximum (défaut 150)")
-    p.add_argument("--profondeur", type=int, default=6, help="nombre de clics au maximum depuis l'accueil (défaut 6)")
-    p.add_argument("--minutes", type=float, default=60, help="durée maximum (défaut 60)")
+    p.add_argument("--max-ecrans", type=int, default=250, help="nombre d'écrans différents au maximum (défaut 250)")
+    p.add_argument("--profondeur", type=int, default=8, help="nombre de clics au maximum depuis l'accueil (défaut 8)")
+    p.add_argument("--minutes", type=float, default=45, help="durée maximum (défaut 45)")
+    p.add_argument("--terme", help="mot ou numéro à chercher pour essayer les recherches (reste sur le poste)")
     p.add_argument("--delai", type=int, default=500, help="pause entre deux actions, en ms (défaut 500)")
     p.add_argument("--sortie", help="dossier des résultats (défaut : explorations/<date>)")
     p.add_argument("--sans-pause", action="store_true", help="ne pas attendre la connexion (page publique)")
     p.add_argument("--cache", action="store_true", help="navigateur invisible")
-    p.add_argument("--auto", action="store_true",
-                   help="exploration AUTOMATIQUE (le robot clique seul, en lecture seule) au lieu de la visite guidée")
-    p.add_argument("--visite", action="store_true", help=argparse.SUPPRESS)  # c'est le défaut
+    p.add_argument("--auto", action="store_true", help=argparse.SUPPRESS)  # c'est le défaut
+    p.add_argument("--visite", action="store_true",
+                   help="visite guidée : c'est vous qui cliquez, le robot regarde (au lieu de l'exploration seule)")
     options_navigateur(p)
     commun(p)
     p.set_defaults(fonction=cmd_explorer)
+
+    p = sous.add_parser("ajouter", help="ajouter une tâche écrite par Claude (fichier .txt ou .yaml reçu)")
+    p.add_argument("fichier", nargs="?", help="le fichier reçu (sinon : choisi parmi les Téléchargements)")
+    commun(p)
+    p.set_defaults(fonction=cmd_ajouter)
 
     p = sous.add_parser("connecter", help="ouvrir le Chrome du robot sans le robot, pour s'y connecter une fois")
     p.add_argument("url", nargs="?", help="adresse du portail")

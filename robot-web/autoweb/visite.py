@@ -358,7 +358,7 @@ function autowebArmer() {
     try {
       const a = document.createElement('div');
       a.setAttribute('data-autoweb', '1');
-      a.setAttribute('style', 'position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:2147483647;' +
+      a.style.cssText = ('position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:2147483647;' +
         'background:#b45309;color:#fff;font:600 13px/1.4 system-ui,Arial;padding:10px 14px;border-radius:8px;' +
         'box-shadow:0 2px 12px rgba(0,0,0,.4);max-width:560px;pointer-events:none');
       a.textContent = message;
@@ -540,13 +540,13 @@ function autowebArmer() {
   titrer(); setTimeout(titrer, 800);
   if (window === window.top && !window.__autoweb_titre) window.__autoweb_titre = setInterval(titrer, 2000);  // titre changé en route
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', titrer);
-  if (window === window.top) {
+  if (window === window.top && !window.__autoweb_auto) {  // exploration automatique : pas de bandeau vert
     const poser = () => {
       if (!document.body || document.getElementById('__autoweb_visite')) return;
       const b = document.createElement('div');
       b.id = '__autoweb_visite';
       b.setAttribute('data-autoweb', '1');
-      b.setAttribute('style', 'position:fixed;bottom:10px;left:10px;z-index:2147483647;background:#047857;' +
+      b.style.cssText = ('position:fixed;bottom:10px;left:10px;z-index:2147483647;background:#047857;' +
         'color:#fff;font:600 12px/1.35 system-ui,-apple-system,Arial;padding:7px 10px;border-radius:7px;' +
         'box-shadow:0 2px 10px rgba(0,0,0,.35);user-select:none;max-width:430px;opacity:.95');
       const texte = document.createElement('div');
@@ -562,12 +562,12 @@ function autowebArmer() {
       const boutons = document.createElement('div');
       boutons.className = '__autoweb_boutons';
       // les boutons n'apparaissent qu'une fois la visite commencée, sur le portail
-      boutons.setAttribute('style', 'margin-top:5px;gap:6px;flex-wrap:wrap;display:' + (surPortail ? 'flex' : 'none'));
+      boutons.style.cssText = ('margin-top:5px;gap:6px;flex-wrap:wrap;display:' + (surPortail ? 'flex' : 'none'));
       const bouton = (libelle, type) => {
         const x = document.createElement('span');
         x.textContent = libelle;
         x.className = '__autoweb_' + type;
-        x.setAttribute('style', 'background:#fff;color:#065f46;border-radius:4px;padding:2px 8px;cursor:pointer');
+        x.style.cssText = ('background:#fff;color:#065f46;border-radius:4px;padding:2px 8px;cursor:pointer');
         x.addEventListener('click', ev => {
           ev.stopPropagation(); ev.preventDefault();
           if (type === 'fin' && !x.dataset.sur) {  // une seule fausse manœuvre ne termine rien

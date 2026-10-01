@@ -30,9 +30,10 @@ Un menu s'affiche :
    5. Creer un fichier Excel de pilotage (facultatif)
    6. M'entrainer sur la fausse base de demonstration
    7. Verifier que tout fonctionne
-   8. Faire la carte de mon portail (sans rien modifier)
+   8. Faire la carte de mon portail : le robot explore TOUT SEUL, sans rien modifier
    9. Rassembler ce qu'il faut envoyer a Claude (un seul fichier a relire)
   10. Me connecter dans le Chrome du robot, sans le robot (si la connexion bloque)
+  11. Ajouter une tache ecrite par Claude (fichier recu)
    0. Quitter
 Tapez le chiffre, Entree. C'est tout ce qu'il y a a retenir.
 
@@ -109,14 +110,15 @@ taches et la connexion.
 =====================================================================
  5 bis. FAIRE LA CARTE DU PORTAIL (choix 8), PUIS ME L'ENVOYER (choix 9)
 =====================================================================
-Choix 8 : c'est VOUS qui vous promenez dans le portail, guide etape par etape
-par un bandeau vert ; le robot regarde et note la forme de chaque ecran (jamais
-vos donnees). Il ne clique sur rien et bloque, pendant la visite, la plupart des boutons
-de modification (Supprimer, Enregistrer, Dupliquer...). Resultats dans
-robot-web\explorations\<date>-visite\ : carte_PRIVEE_ne_pas_envoyer.html
+Choix 8 : vous donnez l'adresse, le robot explore TOUT SEUL (menus, recherches,
+fiches, onglets) et note la forme de chaque ecran avec des reperes (E5, C1, K7),
+jamais vos donnees. Il ne clique jamais sur un bouton de modification et coupe
+tout envoi qui y ressemble. (8v : visite guidee, c'est vous qui cliquez.)
+Resultats dans robot-web\explorations\<date>\ : carte_PRIVEE_ne_pas_envoyer.html
 (tout, reste sur le poste) et carte_a_partager.txt (la structure seule).
 Choix 9 : la carte et les taches montrees, dans UN fichier a relire avant de
-me l'envoyer. Pas a pas detaille : GUIDE_VRAI_SITE.txt, parties E et G.
+me l'envoyer. Choix 11 : ajouter une tache que je vous ai ecrite.
+Pas a pas detaille : GUIDE_VRAI_SITE.txt, parties E, G et H.
 
 
 =====================================================================

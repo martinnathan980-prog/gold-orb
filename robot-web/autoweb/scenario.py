@@ -48,6 +48,8 @@ ALIAS: Dict[str, Tuple[str, ...]] = {
     "verifier_url": ("expect_url", "controler_url"),
     "journal": ("log", "message", "afficher", "note"),
     "pause": ("manuel", "attendre_utilisateur", "confirmer"),
+    "connexion": ("login", "se_connecter", "attendre_connexion"),
+    "ecran": ("aller_ecran", "ecran_carte", "screen"),
     "inspecter": ("inspect", "debug", "inspector"),
     "executer_js": ("evaluate", "js", "script", "javascript"),
     "si": ("if", "condition"),
@@ -143,7 +145,7 @@ class Etape:
         if self.nom:
             return self.nom
         morceaux = []
-        for cle in ("selecteur", "url", "fichier", "valeur", "touche", "chemin", "message", "vers", "contient"):
+        for cle in ("repere", "selecteur", "url", "fichier", "valeur", "touche", "chemin", "message", "vers", "contient"):
             if cle in self.args and not isinstance(self.args[cle], (dict, list)):
                 texte = str(self.args[cle])
                 if len(texte) > 60:
@@ -279,8 +281,10 @@ def _normaliser_args(action: str, valeur: Any, position: str) -> Dict[str, Any]:
         return {"touche": str(valeur)}
     if action == "capture":
         return {"chemin": str(valeur)}
-    if action in ("journal", "pause", "ignorer", "echouer", "arreter"):
+    if action in ("journal", "pause", "ignorer", "echouer", "arreter", "connexion"):
         return {"message": str(valeur)}
+    if action == "ecran":
+        return {"repere": str(valeur)}
     if action == "executer_js":
         return {"script": str(valeur)}
     if action == "verifier_url":
@@ -345,6 +349,8 @@ def _valider_args(action: str, args: Dict[str, Any], position: str) -> None:
         _exiger(args, ("message",), position, a)
     elif a == "executer_js":
         _exiger(args, ("script",), position, a)
+    elif a == "ecran":
+        _exiger(args, ("repere",), position, a)
     elif a == "si":
         _verifier_cles({k: v for k, v in args.items() if k not in ("alors", "sinon")}, CLES_CONDITION, position + " (si)")
         if not any(k in args for k in CLES_CONDITION if k != "delai"):

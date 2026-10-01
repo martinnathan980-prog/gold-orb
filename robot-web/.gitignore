@@ -39,3 +39,4 @@ venv/
 # --- Fichier rassemblé à envoyer (choix 9) : relu par vous, jamais versionné
 A_ENVOYER_A_CLAUDE*.txt
 mots_a_cacher.txt
+portail.txt

@@ -6,6 +6,7 @@ des données, fichier PDF, lien externe. Le serveur note chaque requête reçue 
 rien de tout cela ne doit l'atteindre.
 """
 
+import re
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
@@ -133,13 +134,12 @@ def test_exploration_du_portail_sans_rien_modifier(portail, tmp_path, navigateur
     requetes = list(_Portail.requetes)
     chemins = [c for _, c in requetes]
 
-    # 1. rien de dangereux n'a atteint le serveur
-    assert {m for m, _ in requetes} == {"GET"}, requetes
+    # 1. rien de dangereux n'a atteint le serveur : seul l'envoi de CONSULTATION d'« Afficher les alertes »
+    #    est parti (version 20 : les envois qui ne ressemblent pas à une modification sont permis)
+    assert {(m, c) for m, c in requetes if m != "GET"} <= {("POST", "/api/plans/lecture")}, requetes
     for interdit in ("/deconnexion", "/plans/supprimer-tout", "/plans/nouveau", "/aide.pdf"):
         assert not any(c.startswith(interdit) for c in chemins), interdit
-    assert not any(c.startswith("/api/") for c in chemins)
-    # « Afficher les alertes » a été essayé, mais son envoi de données a été bloqué dans le navigateur
-    assert ("POST", "/api/plans/lecture") in explorateur.bloquees
+    assert not any(c.startswith("/api/") and c != "/api/plans/lecture" for c in chemins)
     assert not any("/maj" in u or "corbeille" in u for _, u in explorateur.bloquees)  # jamais cliqués
 
     # 2. une grosse base n'est pas visitée en entier : deux exemples par modèle
@@ -163,7 +163,7 @@ def test_exploration_du_portail_sans_rien_modifier(portail, tmp_path, navigateur
     for donnee in ("REF-", "PL-", "Disjoncteur", "confidentiel", "secret", "ACME", "127.0.0.1", "M. X", "bâtiment"):
         assert donnee not in partage, donnee
     assert "Référence | Désignation | Fabricant" in partage and "Titre [texte]" in partage
-    assert "onglets : Composants ; Général ; Historique" in partage
+    assert re.search(r"onglets : K\d+ Composants ; K\d+ Général ; K\d+ Historique", partage)
     assert (tmp_path / "carte" / "carte_PRIVEE_ne_pas_envoyer.html").exists() and (tmp_path / "carte" / "carte.json").exists()
 
 

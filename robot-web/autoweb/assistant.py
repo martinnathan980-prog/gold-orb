@@ -727,7 +727,8 @@ def construire_depuis_enregistrement(
             lignes.append("      alors:")
             lignes += lignes_connexion
         if pause_connexion:
-            lignes.append('  - pause: "Vérifiez que vous êtes bien connecté dans le navigateur, puis appuyez sur Entrée"')
+            # déjà connecté : le robot continue tout de suite ; sinon il attend, et repart tout seul
+            lignes.append('  - connexion: "Connectez-vous dans cette fenêtre si votre outil le demande."')
     lignes.append("etapes:")
     if not lignes_etapes or not lignes_etapes[0].strip().startswith("- aller"):
         lignes.append('  - aller: "{{url}}"')
@@ -827,7 +828,7 @@ def construire(
         lignes += [
             "avant:",
             "  - aller: \"{{url}}\"",
-            "  - pause: \"Connectez-vous dans le navigateur si nécessaire, puis appuyez sur Entrée\"",
+            "  - connexion: \"Connectez-vous dans cette fenêtre si votre outil le demande.\"",
         ]
     lignes += ["etapes:", "  - aller: \"{{url}}\""]
     lignes += etapes
