@@ -182,7 +182,9 @@ etapes:                    # pour CHAQUE ligne de l'Excel
 | `verifier_url` | `verifier_url: "/plans/"` | l'URL doit contenir ce texte |
 | `capture` | `capture: "captures/{{Numéro plan}}.png"` (`page_entiere: true`) | capture d'écran |
 | `journal` | `journal: "Ligne {{n}}/{{total}}"` | écrit dans le journal |
-| `pause` | `pause: "Vérifiez puis Entrée"` | attend que vous appuyiez sur Entrée (`stop` pour arrêter) |
+| `pause` | `pause: "Vérifiez puis Entrée"` | attend « Continuer » (bandeau bleu dans le navigateur) ou Entrée (`stop` pour arrêter) |
+| `connexion` | `connexion: "Connectez-vous si besoin"` | continue tout de suite si l'outil est affiché ; sinon attend la connexion et repart seul |
+| `ecran` | `ecran: "carte=20261001-101500/E5"` | revient sur l'écran E5 de la carte en rejouant son chemin (chaque clic vérifié) |
 | `inspecter` | `- inspecter` | ouvre l'inspecteur Playwright (pour mettre au point) |
 | `executer_js` | `executer_js: {script: "document.title", vers: "Titre"}` | exécute du JavaScript |
 | `si` | voir ci-dessous | condition |
@@ -223,6 +225,7 @@ Les alias anglais (`goto`, `fill`, `click`, `select`, `check`, `wait`…) sont a
 | Rôle | `role=button:Enregistrer`, `role=link:Nouveau plan` | boutons / liens par leur nom visible |
 | Indice | `placeholder=jj/mm/aaaa` | |
 | Autres | `titre=Fermer`, `test=btn-save`, `xpath=//table//tr[2]/td[1]` | |
+| Repère de carte | `carte=20261001-101500/E5/C1`, `carte=E5/K7` | champ C1 / bouton K7 de l'écran E5 (carte faite au choix 8) ; traduit sur le poste |
 
 Plusieurs correspondances ? ajoutez `nieme: 2` (le 2e) ou `premier: true` / `dernier: true`.
 

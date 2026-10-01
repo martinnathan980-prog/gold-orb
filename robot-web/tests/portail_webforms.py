@@ -32,11 +32,14 @@ def recherche(resultats=None, terme=""):
 <tr><td><label for=txtTitre>Titre</label></td><td><input name="ctl00$Main$txtTitre" id=txtTitre></td></tr>
 <tr><td><label for=ddlStatut>Statut</label></td><td><select name="ctl00$Main$ddlStatut" id=ddlStatut><option>Tous</option><option>Publié</option></select></td></tr>
 <tr><td colspan=2><input type=submit name="ctl00$Main$btnRechercher" value="Rechercher" id=btnRechercher>
-<input type=submit name="ctl00$Main$btnNouveau" value="Nouveau plan" id=btnNouveau></td></tr></table>"""
+<input type=submit name="ctl00$Main$btnNouveau" value="Nouveau plan" id=btnNouveau></td></tr></table>
+<fieldset><legend>Création rapide</legend><label for=txtNouveauTitre>Titre du nouveau plan</label>
+<input name="ctl00$Main$txtNouveauTitre" id=txtNouveauTitre><input type=submit name="ctl00$Main$btnCreerOK" value="OK"></fieldset>"""
     if resultats is not None:
         lignes = "".join(
             f"<tr><td><a href=\"javascript:__doPostBack('ctl00$Main$gvPlans','Select${i}')\">PL-{n}</a></td><td>{html.escape(t)}</td>"
             f"<td>Publié</td><td><a href=\"javascript:__doPostBack('ctl00$Main$gvPlans','Delete${i}')\">Supprimer</a>"
+            f"<ul class=sub><li><a href=/Plans.aspx?id={n}&statut=publie>Publier</a></li><li><a href=/Plans.aspx?id={n}&etat=gele>Geler</a></li></ul>"
             f" <a href=\"javascript:__doPostBack('ctl00$Main$gvPlans','Edit${i}')\">Éditer</a></td></tr>"
             for i, (n, t) in enumerate(resultats))
         corps += ("<table id=gvPlans><tr><th>Numéro</th><th>Titre</th><th>Statut</th><th></th></tr>" + lignes + "</table>"
@@ -58,12 +61,25 @@ def fiche(numero, onglet="general"):
              f"<div id=contenu>{contenu}</div>"
              "<input type=submit name=\"ctl00$Main$btnDupliquer\" value=\"Dupliquer\">"
              "<input type=submit name=\"ctl00$Main$btnSupprimer\" value=\"Supprimer\">"
-             "<button type=button onclick=\"fetch('/api/historique?id=" + numero + "').then(r=>r.text()).then(t=>document.getElementById('contenu').textContent=t)\">Historique</button>")
+             "<button type=button onclick=\"fetch('/api/historique?id=" + numero + "').then(r=>r.text()).then(t=>document.getElementById('contenu').textContent=t)\">Historique</button>"
+             # pièges : menu d'actions de la fiche, bouton d'état, envoi après un bouton neutre, GraphQL enregistrée
+             "<div class=dropdown><button type=button class=dropdown-toggle>Actions</button><ul class=dropdown-menu style=display:block>"
+             "<li><a href=\"javascript:__doPostBack('ctl00$Main$mnuEtat','Publie')\">Publié</a></li>"
+             "<li><a href=\"javascript:__doPostBack('ctl00$Main$mnuEtat','Gele')\">Gelé</a></li></ul></div>"
+             "<button type=button onclick=\"fetch('/api/etat',{method:'POST',body:'brouillon=1'})\">Brouillon</button>"
+             "<button type=button onclick=\"fetch('/api/vu',{method:'POST',headers:{'Content-Type':'application/json'},"
+             "body:JSON.stringify({id:" + numero + ",lu:true})})\">Détails</button>"
+             "<button type=button onclick=\"fetch('/graphql',{method:'POST',headers:{'Content-Type':'application/json'},"
+             "body:JSON.stringify({operationName:'DeletePlan',variables:{id:" + numero + "},extensions:{persistedQuery:{sha256Hash:'x'}}})})\">"
+             "Nomenclature</button>"
+             "<div class=fiche><label for=mc>Mots-clés</label><input id=mc name=\"ctl00$Main$txtMotsCles\">"
+             "<input type=submit name=\"ctl00$Main$btnOK\" value=OK></div>")
     return page(f"Plan PL-{numero}", corps, f"fiche{numero}{onglet}")
 
 
 class Portail(BaseHTTPRequestHandler):
     envois = []
+    lectures = []
 
     def log_message(self, *args):
         pass
@@ -77,6 +93,7 @@ class Portail(BaseHTTPRequestHandler):
         self.wfile.write(donnees)
 
     def do_GET(self):
+        type(self).lectures.append(self.path)
         chemin = urlsplit(self.path).path
         if chemin.startswith("/api/historique"):
             return self._repondre("Historique : 2 révisions", "text/plain")
@@ -94,7 +111,7 @@ class Portail(BaseHTTPRequestHandler):
     def do_POST(self):
         n = int(self.headers.get("Content-Length") or 0)
         corps = self.rfile.read(n).decode()
-        type(self).envois.append(corps)
+        type(self).envois.append(corps if not self.path.startswith(("/api/", "/graphql")) else f"{self.path} {corps}")
         d = {k: v[0] for k, v in parse_qs(corps, keep_blank_values=True).items()}
         cible, arg = d.get("__EVENTTARGET", ""), d.get("__EVENTARGUMENT", "")
         chemin = urlsplit(self.path).path
@@ -117,6 +134,7 @@ class Portail(BaseHTTPRequestHandler):
 
 def demarrer():
     Portail.envois = []
+    Portail.lectures = []
     serveur = ThreadingHTTPServer(("127.0.0.1", 0), Portail)
     threading.Thread(target=serveur.serve_forever, daemon=True).start()
     return serveur, f"http://127.0.0.1:{serveur.server_address[1]}/Default.aspx"

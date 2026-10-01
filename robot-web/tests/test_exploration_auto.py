@@ -13,7 +13,8 @@ from autoweb.navigateur import Navigateur
 from autoweb.runner import Options, lancer
 from autoweb.scenario import ConfigNavigateur, charger
 
-DANGEREUX = ("Delete%24", "Edit%24", "btnSupprimer", "btnDupliquer", "btnNouveau")
+DANGEREUX = ("Delete%24", "Edit%24", "btnSupprimer", "btnDupliquer", "btnNouveau", "mnuEtat", "/api/etat", "/api/vu",
+             "DeletePlan", "btnOK", "btnCreerOK", "txtMotsCles=%2A", "txtNouveauTitre=%2A")
 
 
 @pytest.fixture
@@ -48,8 +49,10 @@ def test_carte_toute_seule_d_un_portail_a_formulaires(portail, tmp_path, navigat
     for attendu in ("Recherche de plans", "Recherche de composants", "Composants trouvés", "Fournisseurs"):
         assert attendu in titres, (attendu, titres)
     assert sum(t.startswith("Plan PL-") for t in titres) >= 3, titres  # la fiche et ses onglets (Révisions, Documents)
-    # jamais une suppression, une duplication, une édition ni une création
-    assert not [c for c in P.Portail.envois if any(x in c for x in DANGEREUX)]
+    # jamais une suppression, une duplication, une édition, une création ni un changement d'état
+    assert not [c for c in P.Portail.envois if any(x in c for x in DANGEREUX)], P.Portail.envois
+    assert not [c for c in P.Portail.lectures if "statut=" in c or "etat=" in c]  # menu « ⋮ » d'une ligne
+    assert "Historique" in str([e.resultats for e in robot.ecrans])  # le bouton neutre reste essayé (GET permis)
     assert robot.complet
     partage = (tmp_path / "explorations" / "20261001-101500" / "carte_a_partager.txt").read_text(encoding="utf-8")
     assert "CARTE N° 20261001-101500" in partage

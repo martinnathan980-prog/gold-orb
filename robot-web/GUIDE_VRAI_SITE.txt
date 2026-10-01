@@ -406,7 +406,7 @@ E5. Le Chrome du ROBOT s'ouvre (un bandeau bleu « Robot en LECTURE SEULE » en
 E6. Le robot explore. NE TOUCHEZ PLUS a sa fenetre (vous pouvez travailler
     dans votre Chrome habituel a cote). Il faut 20 a 45 minutes. La fenetre
     noire affiche ce qu'il voit, par exemple :
-        OK E7 : « Plan ... » - 12 champ(s), 30 element(s) cliquable(s), 1 tableau(x)
+        OK E7 : 12 champ(s), 30 element(s) cliquable(s), 1 tableau(x)
     Pour l'arreter avant la fin : Entree dans la fenetre noire. Ce qui a ete
     vu est garde.
     Si le portail vous deconnecte en cours de route, le robot vous demande de

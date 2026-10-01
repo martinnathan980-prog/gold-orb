@@ -243,6 +243,27 @@ annexe
 """.split())
 
 
+# Mots d'état : un bouton « Publié », « Brouillon », « Terminé » change souvent l'état de l'objet
+MOTIF_ETAT = re.compile(
+    r"\b(publie|publiee|publies|publiees|brouillon|brouillons|draft|termine|terminee|reserve|reservee|gele|gelee|"
+    r"fige|figee|in work|en cours|pris en charge|released|frozen|locked|checked out|obsolete|favori|favoris|like|"
+    r"aime|suivi|suivre|lu|non lu|read|unread|epingle|pinned|statut|status|etat|state)\b")
+
+
+def champ_identique(champ: Any, controle: Dict[str, Any]) -> bool:
+    """Le champ de recherche est-il toujours le même (nom, type) qu'au moment de la carte ?"""
+    try:
+        nom, genre, balise = champ.evaluate(
+            "e => [e.id || e.getAttribute('name') || '', (e.getAttribute('type') || 'text').toLowerCase(), e.tagName]")
+    except Exception:  # noqa: BLE001
+        return False
+    if balise != "INPUT":
+        return False
+    if controle.get("nom") and nom != controle["nom"]:
+        return False
+    return not controle.get("type") or genre == controle["type"]
+
+
 def ressemble_a_un_verbe(mot: str) -> bool:
     """« Basculer », « Choisir », « Transmettre » : oui. « Dossier », « Nomenclature », « Formulaire » : non."""
     m = normaliser(mot)
@@ -257,7 +278,7 @@ def libelle_neutre(texte: str) -> bool:
     """« Historique », « Plan de masse », « Nomenclature » : un nom, pas un verbe ni un mot d'action.
     « Basculer », « Rattacher », « Release » : non (un verbe, même inconnu, peut modifier)."""
     mots = re.findall(r"[a-z]+", normaliser(texte))
-    if not mots or len(mots) > 8 or mot_interdit(texte):
+    if not mots or len(mots) > 8 or mot_interdit(texte) or MOTIF_ETAT.search(" ".join(mots)):
         return False
     premier = mots[0]
     if premier in PREMIERS_MOTS_LECTURE:
@@ -654,6 +675,13 @@ JS_OUTILS = r"""
       conteneur = chemin(cont);
     }
     const ombre = e.getRootNode && e.getRootNode() !== document;
+    // navigation GLOBALE du portail (barre de menus, entête, menu latéral), pas un menu d'actions d'une fiche
+    let globale = false;
+    try {
+      globale = !!e.closest('nav, header, [role=navigation], [role=menubar], [class*=navbar i], ' + LATERAL) ||
+                (!!e.closest('[id*=menu i], [class*=menu i]') && !e.closest('[role=menu], .dropdown-menu, [role=listbox], ' +
+                 '[role=dialog]') && !ligneDe(e));
+    } catch (err) {}
     let perso = false, fermable = false;
     try {
       perso = !!e.closest(PERSO) ||
@@ -667,7 +695,7 @@ JS_OUTILS = r"""
       fermable = commeOnglet && (croix(e) || (!!p && p.querySelectorAll('[role=tab], a').length <= 1 && croix(p)));
     } catch (err) {}
     return {
-      ombre: ombre, perso: perso, fermable: fermable,
+      ombre: ombre, perso: perso, fermable: fermable, globale: globale,
       texte: court(tag === 'input' ? (e.value || '') : (e.innerText || ''), 80),
       aria: court(e.getAttribute('aria-label') || e.getAttribute('title') || e.getAttribute('alt') || '', 80),
       tag: tag, type: type, role: e.getAttribute('role') || '', id: e.id || '',
@@ -773,6 +801,7 @@ JS_ECRAN = r"""
     const href = (e.getAttribute('href') || '').trim();
     if (!href || /^(#|javascript:|mailto:|tel:)/i.test(href)) continue;
     const d = decrire(e);
+    if (!d.globale) continue;  // menu « ⋮ » d'une ligne ou d'une fiche : jamais suivi sans être vu
     d.cache = true;
     d.texte = court(e.textContent || '', 80);
     cibles.push(d);
@@ -788,22 +817,35 @@ JS_ECRAN = r"""
     if (recherches.length >= 4) break;
     if (!vis(c) || robot(c) || c.readOnly || c.disabled || ligneDe(c) || dansFenetre(c)) continue;
     const indices = sansAcc([c.type, c.name, c.id, c.getAttribute('placeholder'), c.getAttribute('aria-label'), c.getAttribute('title')].join(' '));
-    const champRecherche = c.type === 'search' || /search|recherche|rechercher|query|keyword|mot.?cle|\bq\b/.test(indices);
-    let bouton = null, texteBouton = '';
+    // zone de recherche déclarée : champ « search », zone role=search, formulaire envoyé vers une recherche
+    const zoneRecherche = c.type === 'search' || !!c.closest('[role=search], [class*=search i], [id*=search i], ' +
+      '[class*=recherche i], [id*=recherche i]') || (!!c.form && /search|recherche|query|find/i.test(c.form.getAttribute('action') || ''));
+    const champRecherche = zoneRecherche || /search|recherche|rechercher|query|\bq\b/.test(indices);
+    let bouton = null, texteBouton = '', bloc = null;
     for (let x = c.parentElement, i = 0; x && i < 5 && !bouton; x = x.parentElement, i++) {
       for (const b of x.querySelectorAll('button, input[type=submit], input[type=button], input[type=image], a[href], [role=button]')) {
         if (!vis(b) || robot(b) || b.disabled) continue;
         const t = sansAcc(b.tagName === 'INPUT' ? (b.value || b.getAttribute('alt') || b.getAttribute('title') || '')
                                                 : (b.innerText || b.getAttribute('aria-label') || b.getAttribute('title') || ''));
-        if (MOT_RECHERCHE.test(t) || (champRecherche && MOT_COURT.test(t))) { bouton = b; texteBouton = court(t, 40); break; }
+        // « OK », « Go » : seulement dans une zone de recherche déclarée (sinon, c'est peut-être une création)
+        if (MOT_RECHERCHE.test(t) || (zoneRecherche && MOT_COURT.test(t))) { bouton = b; texteBouton = court(t, 40); bloc = x; break; }
       }
     }
-    if (!bouton && !champRecherche) continue;
+    if (!bouton && !zoneRecherche) continue;  // la touche Entrée seulement dans une vraie zone de recherche
+    // une recherche a peu de critères ; un formulaire de saisie (texte long, mot de passe, fichier) n'en est pas une
+    bloc = bloc || c.form || c.parentElement;
+    const saisies = Array.from(bloc.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio])' +
+      ':not([type=submit]):not([type=button]):not([type=image]):not([type=reset]), select, textarea')).filter(vis);
+    if (saisies.length > 6 || bloc.querySelector('textarea, input[type=password], input[type=file]')) continue;
     const cle = bouton ? chemin(bouton) : chemin(c);
     if (deja.has(cle)) continue;
     deja.add(cle);
-    recherches.push({ champ: chemin(c), libelle: libelle(c)[0], bouton: bouton ? chemin(bouton) : '',
-                      texte_bouton: texteBouton, cible: bouton ? decrire(bouton) : null });
+    const [lib, source] = libelle(c);
+    recherches.push({ champ: chemin(c), libelle: lib, source: source, bouton: bouton ? chemin(bouton) : '',
+                      texte_bouton: texteBouton, cible: bouton ? decrire(bouton) : null, zone_recherche: zoneRecherche,
+                      nom: c.id || c.getAttribute('name') || '', type: (c.getAttribute('type') || 'text').toLowerCase(),
+                      action: (bouton && bouton.form && (bouton.getAttribute('formaction') || bouton.form.action)) ||
+                              (c.form && c.form.action) || '' });
   }
   // liens vers des fichiers (PDF de plan...) : un onglet « Documents » n'est pas l'onglet « Général »
   const fichiers = tous('a[href]').filter(a => vis(a) && !robot(a) &&
@@ -1159,7 +1201,7 @@ def classer_envoi(methode: str, url: str, type_contenu: str, corps: Optional[str
 
 def _classer_graphql(methode: str, fin: str, lots: List[Dict[str, Any]], motif: Optional[Any] = None) -> str:
     """Type de CHAQUE opération (query / mutation) : le texte de la requête n'est jamais gardé."""
-    genres, operations = set(), []
+    genres, operations, bruts = set(), [], []
     for lot in lots:
         texte = str(lot.get("query") or "")
         trouves = re.findall(r"(?m)^\s*(query|mutation|subscription)\b", re.sub(r"#[^\n]*", "", texte))
@@ -1169,15 +1211,18 @@ def _classer_graphql(methode: str, fin: str, lots: List[Dict[str, Any]], motif: 
             genres.add("query")  # document abrégé « { plans { id } } » : une lecture
         else:
             genres.add("requête enregistrée")
-        nom = _code(lot.get("operationName") or "")
+        brut = str(lot.get("operationName") or "")
+        if brut:
+            bruts.append(brut)
+        nom = _code(brut)
         if nom and nom not in operations:
             operations.append(nom)
     if "mutation" in genres:
         sens = "écriture probable"
     elif genres <= {"query"}:
         sens = "lecture probable"
-    else:
-        sens = sens_operation(operations[0], motif) if operations else ""
+    else:  # requête enregistrée : son nom BRUT dit ce qu'elle fait (le nom affiché peut être masqué)
+        sens = sens_operation(bruts[0], motif) if bruts else ""
     texte = f"{methode} {fin} (GraphQL {'/'.join(sorted(genres))}{' ' + ', '.join(operations[:3]) if operations else ''})"
     return _avec_sens(texte, sens)
 
@@ -1222,14 +1267,22 @@ def corps_action(corps: str, type_contenu: str = "") -> str:
             requete_gql = x.get("query")
             if isinstance(requete_gql, str) and re.search(r"(^|\n)\s*mutation\b", re.sub(r"#[^\n]*", "", requete_gql)):
                 return "GraphQL mutation"
-            for cle, valeur in x.items():
-                nom = normaliser(str(cle))
-                if nom in ("_method",) and str(valeur).upper() in METHODES_ECRITURE:
-                    return f"_method={valeur}"
-                if nom in CLES_ACTION_CORPS and isinstance(valeur, str) and mot_interdit(valeur):
-                    return f"{cle}={nom_technique(valeur, 30)}"
-                if isinstance(valeur, (dict, list)) and mot_interdit(re.sub(r"([a-z])([A-Z])", r"\1 \2", str(cle))):
-                    return f"opération {nom_technique(cle, 30)}"
+            operation = x.get("operationName")
+            if isinstance(operation, str) and operation and not isinstance(requete_gql, str):
+                # requête GraphQL enregistrée (sans son texte) : une lecture seulement si son nom le dit
+                if not re.match(r"(get|search|list|find|fetch|load|read|query|lookup|show|view|count)", operation, re.I):
+                    return f"requête GraphQL enregistrée {nom_technique(operation, 30)}"
+        raison = _json_action(donnees)
+        if raison:
+            return raison
+        # {"state": "RELEASED"} seul : un changement d'état ; dans une recherche, l'état est un critère
+        for x in (donnees if isinstance(donnees, list) else [donnees]):
+            if isinstance(x, dict):
+                cles = {normaliser(str(k)) for k in x}
+                if cles & {"state", "status", "statut", "etat", "lifecycle", "lifecyclestate", "lifecycle_state"} and \
+                        not cles & {"q", "query", "search", "filter", "filters", "criteria", "criteres", "page", "size",
+                                    "sort", "offset", "limit", "pagesize", "start", "rows", "text", "keyword"}:
+                    return "changement d'état"
         return ""
     if t[:1] == "<":
         for action in re.findall(r"<Item\b[^>]*\baction=[\"']([\w-]+)[\"']", t):
@@ -1246,6 +1299,8 @@ def corps_action(corps: str, type_contenu: str = "") -> str:
         nom = cle.lower()
         if nom == "_method" and valeur.upper() in METHODES_ECRITURE:
             return f"_method={valeur}"
+        if _drapeau(cle, valeur):
+            return f"drapeau {nom_technique(cle, 30)}"
         if nom in CLES_ACTION_CORPS and valeur and mot_interdit(valeur):
             return f"{cle}={nom_technique(valeur, 30)}"
         if nom == "__eventtarget" and valeur:
@@ -1266,6 +1321,72 @@ def corps_action(corps: str, type_contenu: str = "") -> str:
             if mot_interdit(re.sub(r"([a-z])([A-Z])", r"\1 \2", dernier)) or (valeur and mot_interdit(valeur)):
                 return f"bouton {nom_technique(cle, 40)}"
     return ""
+
+
+# Drapeaux qui changent l'état d'un objet pour l'utilisateur : « lu », « favori », « verrouillé »...
+DRAPEAUX_ETAT = {"lu", "read", "vu", "seen", "isread", "favori", "favorite", "favourite", "isfavorite", "like", "liked",
+                 "pin", "pinned", "suivi", "follow", "followed", "archive", "archived", "locked", "lock", "verrou",
+                 "verrouille", "checkout", "checkedout", "subscribe", "subscribed", "abonne", "starred", "star",
+                 "done", "termine", "valide", "approved", "approuve", "hidden", "masque", "deleted", "supprime"}
+VALEURS_VRAIES = {"true", "1", "yes", "oui", "on", "vrai"}
+
+
+def _drapeau(cle: Any, valeur: Any) -> bool:
+    nom = re.sub(r"[^a-z]", "", normaliser(re.sub(r"([a-z])([A-Z])", r"\1\2", str(cle))))
+    return nom in DRAPEAUX_ETAT and (valeur is True or str(valeur).strip().lower() in VALEURS_VRAIES)
+
+
+def _json_action(donnees: Any, profondeur: int = 0) -> str:
+    """Un mot d'action dans une clé d'action ou un nom d'opération, à toute profondeur (8 niveaux)."""
+    if profondeur > 8:
+        return ""
+    if isinstance(donnees, list):
+        for x in donnees[:200]:
+            raison = _json_action(x, profondeur + 1)
+            if raison:
+                return raison
+        return ""
+    if not isinstance(donnees, dict):
+        return ""
+    for cle, valeur in list(donnees.items())[:200]:
+        nom = normaliser(str(cle))
+        if nom == "_method" and str(valeur).upper() in METHODES_ECRITURE:
+            return f"_method={valeur}"
+        if _drapeau(cle, valeur):
+            return f"drapeau {nom_technique(cle, 30)}"
+        if nom in CLES_ACTION_CORPS | {"operationname", "operation_name", "op_name", "methodname", "service", "verb"} \
+                and isinstance(valeur, str) and mot_interdit(re.sub(r"([a-z])([A-Z])", r"\1 \2", valeur)):
+            return f"{cle}={nom_technique(valeur, 30)}"
+        if isinstance(valeur, (dict, list)):
+            if mot_interdit(re.sub(r"([a-z])([A-Z])", r"\1 \2", str(cle))):
+                return f"opération {nom_technique(cle, 30)}"
+            raison = _json_action(valeur, profondeur + 1)
+            if raison:
+                return raison
+    return ""
+
+
+MOTIF_ADRESSE_RECHERCHE = re.compile(r"search|query|find|list|liste|recherche|filter|filtre|lookup|page|grid|report|rapport",
+                                     re.IGNORECASE)
+
+
+def raison_selon_geste(categorie: str, nature: str, requete: Any) -> str:
+    """Après quel geste du robot cet envoi (déjà jugé sans mot d'action) peut-il partir ?
+    navigation (menu, onglet, ligne, recherche) : oui ; bouton de consultation (« Voir », « Détails ») :
+    seulement le changement d'écran d'un vieux portail ou une recherche ; autre bouton, ou aucun geste :
+    seulement une lecture certaine."""
+    if "lecture probable" in nature or categorie == "navigation":
+        return ""
+    if categorie == "consultation":
+        if "WebForms" in nature or "JSF" in nature:
+            return ""
+        m = decouper(requete.url)
+        if m is not None and MOTIF_ADRESSE_RECHERCHE.search(m.path):
+            return ""
+        return "envoi après un bouton de consultation, vers une adresse qui n'est pas une recherche"
+    if categorie == "neutre":
+        return "envoi après un bouton non vérifié (seule une lecture certaine est permise)"
+    return "envoi sans geste du robot"
 
 
 def envoi_interdit(requete: Any) -> str:
@@ -1571,6 +1692,10 @@ class Action:
     partage: str = ""  # libellé sans données, pour la carte à partager
     valeur: str = ""  # « chercher » : texte tapé dans le champ (reste sur le poste)
     bouton: str = ""  # « chercher » : bouton qui lance la recherche (vide = touche Entrée)
+    # « navigation » (menu, onglet, ligne, recherche, bouton de consultation) ou « neutre » (autre bouton) :
+    # après un clic « neutre », seul un envoi qui est clairement une lecture peut partir
+    categorie: str = "navigation"
+    controle: Dict[str, Any] = field(default_factory=dict)  # « chercher » : le champ doit être le même
 
     def libelle(self) -> str:
         if self.type == "aller":
@@ -1705,6 +1830,7 @@ class Explorateur:
         self.lecture_permise = True
         self.terme = ""  # mot à chercher pour essayer les recherches (donné par l'utilisateur, reste ici)
         self._recherches_faites: Set[str] = set()
+        self._en_cours: Tuple[str, float] = ("", 0.0)  # (catégorie du dernier geste du robot, jusqu'à quand)
 
     # ------------------------------------------------------------------ sécurité réseau
     def _garde(self, route: Any) -> None:
@@ -1723,7 +1849,13 @@ class Explorateur:
                 elif self.lecture_permise:
                     raison = envoi_interdit(requete)
                     if not raison:
-                        self._noter_envoi(classer_requete(requete))
+                        nature = classer_requete(requete)
+                        categorie, jusqua = self._en_cours
+                        if time.monotonic() > jusqua:
+                            categorie = ""
+                        raison = raison_selon_geste(categorie, nature, requete)
+                        if not raison:
+                            self._noter_envoi(nature)
                 else:
                     raison = methode
             elif requete.resource_type not in RESSOURCES_STATIQUES:
@@ -2137,9 +2269,9 @@ class Explorateur:
         self._par_signature[sig] = ecran
         self._noter_techno(page)
         if annoncer:
-            journal.info("   %s %s : « %s » — %d champ(s), %d élément(s) cliquable(s), %d tableau(x)",
-                         S.OK, ecran.id, (ecran.titres[0] if ecran.titres else ecran.titre)[:60],
-                         len(ecran.champs), len(ecran.cibles), len(ecran.tableaux))
+            # la forme de l'écran seulement : ces lignes peuvent être recopiées et envoyées (pas de titre)
+            journal.info("   %s %s : %d champ(s), %d élément(s) cliquable(s), %d tableau(x)",
+                         S.OK, ecran.id, len(ecran.champs), len(ecran.cibles), len(ecran.tableaux))
         return ecran
 
     def _decision(self, cible: Dict[str, Any]) -> Tuple[str, str]:
@@ -2188,8 +2320,15 @@ class Explorateur:
             return "clic", ""  # lien de navigation interne (#fiche=..., #/plans)
         if cible["zone"] == "tableau" and cible["tag"] == "a" and cible["rang"] == 1:
             return "clic", ""  # premier lien d'une ligne : ouvre la fiche (son texte, ce sont des données)
-        if cible["zone"] in ("menu", "lateral", "onglet", "arbre") or cible["role"] in ("tab", "menuitem", "treeitem"):
+        if cible["zone"] in ("onglet", "arbre") or cible["role"] in ("tab", "treeitem"):
             return "clic", ""
+        if cible["zone"] in ("menu", "lateral") or cible["role"] == "menuitem":
+            if cible["zone"] in ("menu", "lateral") and cible.get("globale", True):
+                return "clic", ""  # navigation du portail
+            if est_lecture(texte):
+                return "clic", ""
+            # menu « Actions » d'une fiche : « Publié », « Brouillon », « Terminé » changent souvent l'état
+            return "non", "menu d'actions d'un élément (à me montrer si utile)"
         if cible["tag"] == "summary" or est_lecture(texte):
             return "clic", ""
         if self.lecture_permise and libelle_neutre(texte):
@@ -2197,6 +2336,26 @@ class Explorateur:
             # rien qui ressemble à une action ; l'envoi qui suit est contrôlé avant de partir
             return "clic", ""
         return "non", "bouton d'action (à me montrer si utile)"
+
+    @staticmethod
+    def _categorie(cible: Dict[str, Any]) -> str:
+        """« navigation » : menu du portail, onglet, arborescence, ligne d'une liste, bouton de consultation
+        (« Rechercher », « Voir »...), recherche. « neutre » : tout autre bouton jugé sans risque."""
+        texte = cible["texte"] or cible["aria"]
+        if cible.get("recherche") or cible.get("pseudo"):
+            return "navigation"
+        if cible["zone"] in ("onglet", "arbre") or cible["role"] in ("tab", "treeitem"):
+            return "navigation"
+        if cible["zone"] in ("menu", "lateral") and cible.get("globale", True):
+            return "navigation"
+        if cible["zone"] == "tableau" and (cible["tag"] == "tr" or cible["rang"] == 1):
+            return "navigation"
+        href = (cible.get("href") or "").strip()
+        if cible["tag"] == "a" and len(href) > 1 and href.startswith("#"):
+            return "navigation"
+        if est_lecture(texte):
+            return "consultation"  # « Voir », « Détails », « Rechercher » : un bouton de la page
+        return "neutre"
 
     def _cle(self, cible: Dict[str, Any]) -> str:
         if cible["zone"] == "tableau":
@@ -2222,11 +2381,15 @@ class Explorateur:
             if cle in self._recherches_faites or not self.lecture_permise:
                 continue
             bouton = r.get("cible") or {}
-            if r.get("bouton") and not (est_lecture(r.get("texte_bouton") or "") or
-                                        re.fullmatch(r"(ok|go|>|>>|»|→|valider la recherche|lancer la recherche|filtrer|filter|find|trouver)",
-                                                     normaliser(r.get("texte_bouton") or ""))):
+            texte_bouton = normaliser(r.get("texte_bouton") or "")
+            court = re.fullmatch(r"(ok|go|>|>>|»|→|valider la recherche)", texte_bouton)
+            if r.get("bouton") and not (est_lecture(texte_bouton) or (court and r.get("zone_recherche")) or
+                                        re.fullmatch(r"(lancer la recherche|filtrer|filter|find|trouver|appliquer les filtres)",
+                                                     texte_bouton)):
                 continue
-            if bouton and mot_interdit(bouton.get("aria") or "", bouton.get("id") or ""):
+            if bouton and mot_interdit(bouton.get("aria") or "", bouton.get("id") or "", bouton.get("testid") or ""):
+                continue
+            if r.get("action") and adresse_action(str(r["action"])):
                 continue
             self._recherches_faites.add(cle)
             cibles.append({**self._pseudo_lien("", "recherche"), "texte": f"recherche « {r.get('libelle') or 'champ'} »",
@@ -2316,7 +2479,7 @@ class Explorateur:
             page = self.nav.page_courante()
             pas = Action("clic", selecteur=cible["selecteur"], texte=cible["texte"] or cible["aria"],
                          zone=cible["zone"], ligne=cible["ligne"], attendu=self._attendu(cible),
-                         partage=self._libelle_partage(cible))
+                         partage=self._libelle_partage(cible), categorie=self._categorie(cible))
             chemin = ecran.chemin + [pas]
             globale = self._cle_globale(ecran, cible)
             if globale:
@@ -2337,8 +2500,8 @@ class Explorateur:
                 self._fenetres_a_voir.append(adresse)
         if len(self.bloquees) > nb_bloquees:
             notes.append("a voulu ENVOYER des données : bloqué")
-            journal.info("   %s « %s » : le portail a voulu envoyer des données. Bloqué : rien n'est parti.",
-                         S.ATTENTION, cle[:50])
+            journal.info("   %s %s : un envoi qui ressemblait à une modification a été coupé. Rien n'est parti.",
+                         S.ATTENTION, ecran.id)  # sans le texte de l'élément : il peut contenir une donnée
         if len(self.telechargements) > nb_fichiers:
             notes.append("lance un téléchargement (annulé)")
         lecture = self._lire(page)
@@ -2388,9 +2551,11 @@ class Explorateur:
             if not self._restaurer(ecran):
                 ecran.resultats[cle] = "écran impossible à retrouver"
                 return None
+            libelle = self._libelle_champ({"type": "text", "libelle": r.get("libelle") or "", "source": r.get("source") or ""})
             pas = Action("chercher", selecteur=r["champ"], texte=r.get("libelle") or "", valeur=valeur,
                          bouton=r.get("bouton") or "", attendu=self._attendu(r["cible"]) if r.get("cible") else {},
-                         partage=f"recherche dans « {self._sur(r.get('libelle') or '') or 'un champ'} »")
+                         partage=f"recherche dans « {libelle} »",
+                         controle={"nom": r.get("nom") or "", "type": r.get("type") or ""})
             nb_bloquees = len(self.bloquees)
             self.essais += 1
             resultat = self._jouer(self.nav.page_courante(), pas)
@@ -2446,12 +2611,15 @@ class Explorateur:
 
     def _jouer(self, page: Page, pas: Action) -> str:
         """« ok », ou la raison pour laquelle rien n'a été fait."""
+        self._en_cours = (pas.categorie if pas.type == "clic" else "navigation", time.monotonic() + 8)
         try:
             if pas.type == "aller":
                 self._urls_sures.add(sans_fragment(pas.url))
                 page.goto(pas.url, wait_until="domcontentloaded")
             elif pas.type == "chercher":
                 champ = page.locator(pas.selecteur).first
+                if pas.controle and not champ_identique(champ, pas.controle):
+                    return "le champ de recherche a changé"
                 champ.fill(pas.valeur, timeout=5000)
                 if pas.bouton:
                     try:
@@ -2701,7 +2869,8 @@ class Explorateur:
                 champ = next((f"C{i}" for i, c in enumerate(e.champs, 1) if r_.get("champ") and c.get("chemin") == r_["champ"]), "")
                 bouton = next((f"K{i}" for i, c in enumerate(e.cibles, 1) if r_.get("bouton") and c.get("selecteur") == r_["bouton"]), "")
                 res = e.resultats.get(cle_r, "")
-                lignes.append(f"     recherche : champ {champ or '?'} « {self._sur(r_.get('libelle') or '') or '(sans nom)'} »"
+                libelle = self._libelle_champ({"type": "text", "libelle": r_.get("libelle") or "", "source": r_.get("source") or ""})
+                lignes.append(f"     recherche : champ {champ or '?'} « {libelle} »"
                               + (f", bouton {bouton}" if bouton else ", touche Entrée")
                               + (f" → {resultat(res)}" if res else ""))
             for rang, t in enumerate(e.tableaux, 1):

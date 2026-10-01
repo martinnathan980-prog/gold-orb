@@ -260,7 +260,13 @@ class Executeur:
             if genre == "aller":
                 page.goto(pas["url"], wait_until="domcontentloaded", timeout=timeout)
             elif genre == "chercher":
+                from .explorateur import champ_identique
+
                 champ = page.locator(pas["selecteur"]).first
+                champ.wait_for(state="visible", timeout=timeout)
+                if pas.get("controle") and not champ_identique(champ, pas["controle"]):
+                    raise ErreurEtape("l'écran a changé depuis la carte (champ de recherche différent) : rien n'a été "
+                                      "rempli. Refaites la carte (menu, choix 8), puis relancez la tâche.")
                 champ.fill(str(pas.get("valeur") or ""), timeout=timeout)
                 if pas.get("bouton"):
                     self._clic_verifie(pas["bouton"], pas.get("attendu") or {}, timeout)
