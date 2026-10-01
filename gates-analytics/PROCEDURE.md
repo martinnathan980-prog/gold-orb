@@ -700,7 +700,7 @@ dire « validé », il faut la déclarer dans Code.gs, VALEURS_FINIES. » Le
 compte **et la façon dont elle est comptée** (« « Check » 312 → en cours »),
 et le même avertissement (seulement des valeurs d'état : au-delà de vingt
 valeurs différentes, ou de trente caractères, rien n'est recopié).
-**Jamais sous le concept harnais** (débrief 19 : « aucun plan n'est compté
+**Jamais sous le concept harnais**, ni sur la page ni au Diagnostic (débrief 19 : « aucun plan n'est compté
 comme validé… ne le mets pas ») : son vocabulaire est connu — rien, « À
 traiter », « Traité » —, et aucun « Traité » veut seulement dire que rien
 n'est encore traité ; la page montre ce qu'il y a, comme pour la
@@ -1009,7 +1009,7 @@ Pas de barre qui cherche partout : chaque section qui montre des plans a
 **son propre petit champ** qui ne cherche **que chez elle** — au bout à
 droite de sa ligne de pastilles pour le journal et le bloc par groupe
 (débrief 19 : la même ligne aux deux, les pastilles à gauche), à droite du
-titre ailleurs — — on regarde son plan dans le carré qu'on veut, sans remonter en haut
+titre ailleurs — : on regarde son plan dans le carré qu'on veut, sans remonter en haut
 de la page :
 
 - **Ce qui a changé, semaine par semaine** : le journal ne garde que les
@@ -1041,7 +1041,8 @@ avant le dernier relevé jusqu'à **la semaine qui suit la dernière
 au-delà. Sans jalon à venir, il s'ouvre sur six mois. Tant qu'on n'a ni zoomé
 ni déplacé, ce cadrage se refait quand on change de contrat, de périmètre ou
 d'avancement ; un cadrage choisi à la main est gardé le temps de la visite.
-**La page rouverte repart toujours sur « Échéances »** (débrief 19 : « quand
+**La page rouverte repart toujours sur « Échéances »** (six mois pour un
+contrat sans jalon) (débrief 19 : « quand
 on ouvre, t'es directement sur Tout » — le dernier cadrage choisi était
 retenu d'une ouverture à l'autre ; il ne l'est plus). Les boutons
 **Échéances · 3 mois · 6 mois · 1 an · Tout** sont à droite de l'en-tête du
@@ -1361,9 +1362,11 @@ touche pas ; leur premier bouton les remet à « Tout ».
   arrivés à cette valeur, réémissions comprises.
 - **Le bloc par groupe** (« Avancement FWD par ATA… ») : sous l'explication
   de la dimension, une ligne : **Tout** puis chaque valeur que portent ses
-  plans (des plans tous VALIDATED : « Tout » et VALIDATED) ; au bout à
-  droite, le compte des groupes et le champ « ATA ou plan… » — la même
-  ligne que celle du journal. Choisir VALIDATED compte,
+  plans (des plans tous VALIDATED : « Tout » et VALIDATED) — ceux que le
+  champ « ATA ou plan… » laisse voir quand il filtre, comme la rangée du
+  journal suit sa recherche ; au bout à droite, « n sur m » groupes quand
+  le champ filtre, et le champ lui-même — la même ligne que celle du
+  journal. Choisir VALIDATED compte,
   dans chaque groupe, ses plans VALIDATED **« sur » son total**, avec
   **« +n »** ceux qui y sont arrivés au dernier relevé — ou, si l'extract
   du jour n'est pas encore archivé, depuis le dernier relevé (les mêmes
@@ -1381,7 +1384,11 @@ touche pas ; leur premier bouton les remet à « Tout ».
 - **Le graphique** : par défaut, la courbe des validés, avec le rythme tenu,
   la fin estimée, l'échéance — la pastille de la valeur validée (VALIDATED)
   tient ce rôle ; s'il y a plusieurs valeurs validées, un premier bouton
-  **Validés**. Une autre pastille montre **son nombre relevé après
+  **Validés**. **S'il n'y en a aucune** — le concept harnais avant son
+  premier « Traité » —, pas de pastille pour elle : la courbe des validés
+  est celle qu'on voit quand aucune n'est pressée, et un second clic sur la
+  pastille pressée y revient. Un « Traité » que seuls des relevés d'avant
+  portent tient ce rôle, une seule fois. Une autre pastille montre **son nombre relevé après
   relevé**, à sa couleur, sur une échelle à sa mesure, sous le périmètre et
   pour le groupe choisi dans le bloc ; dessous, sa **variation nette par
   semaine** — les hausses au-dessus d'un trait, les baisses dessous (« À
@@ -1392,6 +1399,15 @@ touche pas ; leur premier bouton les remet à « Tout ».
   la note le dit. Les pastilles sont celles des valeurs que les relevés ont
   portées, sur une ligne ; sans autre courbe que celle des validés, pas de
   rangée.
+
+Les trois lignes ont le même pas entre pastilles. Trop longues pour la
+largeur, elles défilent sans barre de défilement (elle grandissait la ligne
+sous Windows) : le fondu au bord droit dit ce qui dépasse — il se remesure
+quand les polices arrivent et quand le compte du bloc paraît —, la molette
+et le clavier y mènent. Les **tuiles du haut** suivent la même règle sous
+un périmètre ou un groupe choisi : une valeur qu'aucun plan de la portée ne
+porte n'a pas de tuile (sous BASE/OPTION, plus de « TO_TREAT 0 »), sauf
+celle qu'on a pressée.
 
 ## 13 quinquies. Vitesse d'ouverture et thème
 
@@ -1440,7 +1456,8 @@ touche pas ; leur premier bouton les remet à « Tout ».
 
 La dimension ouverte, l'ordre des colonnes et les tris sont retenus dans le
 navigateur de chacun. Le cadrage du graphique ne l'est plus (débrief 19) : la
-page s'ouvre toujours sur « Échéances ». Personne n'impose sa mise en page à
+page s'ouvre toujours sur « Échéances » (six mois pour un contrat sans
+jalon). Personne n'impose sa mise en page à
 personne — et rien de ce qui se partage (jalons, contrats, historique) n'y
 passe. Le périmètre, les filtres et la vue du tableau repartent de zéro à
 chaque ouverture.

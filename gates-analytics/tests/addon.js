@@ -303,6 +303,18 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('et le bilan du diagnostic le reprend : « À vérifier avant de présenter », au lieu de conclure seul « tout est en place »',
     /\nÀ vérifier avant de présenter \(\d+\) :\n(  ⚠ .*\n?)*  ⚠ Aucune valeur n'est comptée comme validée/.test(rapportVocab),
     rapportVocab.split('\n').slice(-6).join(' / '));
+  /* Débrief 19 : la règle de la page — seul un mot rangé « en cours » peut
+     cacher un « validé » inconnu ; le concept harnais a son vocabulaire. */
+  const ctxDiag19 = serveurSur(feuilleExemple(10)).contexte, lus19 = [];
+  const direValeurs19 = (plans, estConcept) => { lus19.length = 0; ctxDiag19.direValeurs(l => lus19.push(l), plans.map(v => ({ c: v })), 'c', estConcept); return lus19.join('\n'); };
+  const diag19 = {
+    concept: direValeurs19(['À traiter', '', 'À traiter', ''], true),
+    afaire: direValeurs19(['Pas commencé', '', 'Pas commencé'], false),
+    inconnu: direValeurs19(['Released', 'Pas commencé', ''], false)
+  };
+  verifier('débrief 19 : au Diagnostic, pas d’avertissement « aucune valeur validée » au concept harnais sans « Traité », ni sur des plans tous à faire ; un mot inconnu le garde',
+    !/Aucune valeur n'est comptée/.test(diag19.concept) && !/Aucune valeur n'est comptée/.test(diag19.afaire) && /⚠ Aucune valeur n'est comptée comme validée/.test(diag19.inconnu),
+    JSON.stringify(diag19));
   verifier('et celle du concept harnais, avec ses comptes',
     /✓ Concept harnais : colonne « Avancement Concept Harnais », groupe « HDK AA 011 »/.test(rapportGates) &&
     /✓ Concept harnais[^\n]*\n  \d+ validés, \d+ en cours, \d+ à faire, \d+ non renseignés/.test(rapportGates),

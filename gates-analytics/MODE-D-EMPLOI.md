@@ -277,11 +277,13 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   **requis pour « Solde FWD »** : la fin estimée et le nombre du requis sont
   au survol, dans la fiche de l'échéance et dans le bloc par groupe. Il
   s'ouvre **toujours** sur **Échéances** — jusqu'à la semaine qui suit la
-  dernière échéance : les cinq jalons à l'écran — ; **Échéances · 3 mois ·
+  dernière échéance : les cinq jalons à l'écran ; six mois pour un contrat
+  sans jalon — ; **Échéances · 3 mois ·
   6 mois · 1 an · Tout** à droite (un autre choix vaut pour la visite, pas
   pour la prochaine ouverture). Les jalons sont ceux de **HDK** ; **THS** n'en a
   pas (un autre contrat, d'autres dates, à venir) : sa page montre le rythme
-  tenu et la fin estimée, sans échéance. Sous chaque jalon de la légende, son nom et sa
+  tenu, sans échéance — la fin estimée au survol de « au rythme tenu », dans
+  la vue d'ensemble et par groupe. Sous chaque jalon de la légende, son nom et sa
   semaine ; le reste (périmètre, jours) au survol et dans la fiche. En
   tête, la prochaine échéance en jours : un clic ouvre sa fiche (Échap la
   ferme). Les jalons **TO** (table outil) suivent le concept harnais : sous
@@ -292,7 +294,9 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   — PWD_IN_PROGRESS, TO_CONFIRM… — montre combien de plans la portent,
   relevé après relevé, et dessous sa variation par semaine (les baisses
   sous le trait). Le rythme, la fin estimée et l'échéance restent ceux des
-  validés.
+  validés. Au concept harnais sans aucun « Traité », pas de pastille pour
+  lui : la courbe des validés est celle qu'on voit quand aucune n'est
+  pressée, et un second clic sur la pastille pressée y revient.
 - **Ce qui a changé, semaine par semaine** : le journal — quels plans sont
   passés à VALIDATED, lesquels ont changé d'indice, lesquels sont apparus ou ont
   disparu de l'extract, et les **reculs**, en rouge. Les semaines forment un
@@ -321,9 +325,10 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   de la page (phrase, courbe, tableau) suit ce groupe, un second clic le
   referme. Une sous-liste par valeur (VALIDATED, PWD_IN_PROGRESS…), chacune
   avec son compte. **Sous le titre, la même ligne que le journal** : ses
-  pastilles à gauche — seulement les valeurs que portent ses plans —, le
-  nombre de groupes et le champ « ATA ou plan… » (un groupe ou un plan) au
-  bout à droite. Un clic sur VALIDATED compte, dans
+  pastilles à gauche — seulement les valeurs que portent ses plans, ceux
+  que le champ laisse voir quand il filtre —, et au bout à droite le champ
+  « ATA ou plan… » (un groupe ou un plan), précédé de « n sur m » groupes
+  quand il filtre. Un clic sur VALIDATED compte, dans
   chaque groupe, ses plans VALIDATED « sur » son total, et « +n » ceux
   arrivés au dernier relevé ; la barre n'éclaire que cette valeur. Le choix
   ne touche que ce bloc et tient quand on passe d'ATA à ECP ; la fin estimée

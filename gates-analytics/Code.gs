@@ -39,7 +39,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = '83c0d77';
+const EDITION = '4bf7a55';
 
 // =====================================================================
 //  CONFIGURATION
@@ -1892,7 +1892,7 @@ function diagnostiquerSecondeBaseDe(classeur, contrat, pour, dire) {
    valent pour la page (fini ou pas) : c'est ce qui permet de vérifier que
    « Validé » compte bien comme fini. Seulement des valeurs d'état — peu
    nombreuses et courtes ; une colonne de texte libre ne se recopie pas. */
-function direValeurs(dire, plans, cle) {
+function direValeurs(dire, plans, cle, estConcept) {
   const par = {}, ordre = [];
   plans.forEach(function (p) {
     const brut = String(p[cle] === null || p[cle] === undefined ? '' : p[cle]).trim();
@@ -1901,7 +1901,12 @@ function direValeurs(dire, plans, cle) {
     par[k].n++;
   });
   const remplies = ordre.filter(function (k) { return par[k].famille !== 'vide'; });
-  const aucunFini = remplies.length > 0 && !remplies.some(function (k) { return par[k].famille === 'termine'; });
+  /* La règle de la page (débrief 19) : seul un mot rangé « en cours » faute
+     d'être reconnu peut cacher un « validé » inconnu ; des plans tous « à
+     faire » ou vides n'ont rien de suspect, et le concept harnais a son
+     vocabulaire connu — aucun « Traité » y est un vrai zéro. */
+  const aucunFini = !estConcept && remplies.some(function (k) { return par[k].famille === 'encours'; }) &&
+    !remplies.some(function (k) { return par[k].famille === 'termine'; });
   if (ordre.length > 20 || ordre.some(function (k) { return par[k].brut.length > 30; })) {
     dire('  ' + ordre.length + ' valeurs différentes : trop, ou trop longues, pour être des états — rien n\'est recopié.');
   } else {
@@ -1983,7 +1988,7 @@ function diagnostiquerContrat(classeur, contrat, dire) {
         dire('✓ Concept harnais : colonne « ' + colConcept.titre + ' »' + (colConcept.groupe ? ', groupe « ' + colConcept.groupe + ' »' : ''));
         dire('  ' + compteC.termine + ' validés, ' + compteC.encours + ' en cours, ' +
              compteC.afaire + ' à faire, ' + compteC.vide + ' non renseignés');
-        direValeurs(dire, uniques, modele.cleConcept);
+        direValeurs(dire, uniques, modele.cleConcept, true);
         direDoublon(dire, modele.colonnes, CONFIG.COLONNE_CONCEPT);
       } else {
         dire('✗ ' + modele.avertissementConcept);

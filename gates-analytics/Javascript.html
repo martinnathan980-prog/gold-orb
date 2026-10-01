@@ -6,7 +6,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '83c0d77';
+  var EDITION = '4bf7a55';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -2102,7 +2102,19 @@
           ';color:' + v.encre + '" title="' + ech(v.libelle) + '">' + texte + '\x3C/span>';
     }).join('');
 
-    $('etats').innerHTML = VALEURS_COLONNE.map(function (v) {
+    /* Seulement les valeurs qu'il y a dans la portée — le périmètre, le
+       groupe choisi dans le bloc —, comme les pastilles de la page (débrief
+       19) : sous BASE/OPTION, une tuile « TO_TREAT 0 » ne filtrerait rien.
+       Les autres filtres (une tuile pressée, la recherche) ne retirent
+       aucune tuile : on passe d'une valeur à l'autre d'un clic ; la tuile
+       pressée reste toujours. */
+    var dansPortee = {};
+    PLANS.forEach(function (p) {
+      if (!dansPerimetre(p)) return;
+      if (vue.groupe && String(valeurDim(p, vue.groupe.dim) || '\u2014') !== vue.groupe.val) return;
+      dansPortee[cleValeur(p[CLE_SUIVIE])] = true;
+    });
+    $('etats').innerHTML = VALEURS_COLONNE.filter(function (v) { return dansPortee[v.cle] || vue.etat === v.cle; }).map(function (v) {
       var pastille = v.hachure
         ? '\x3Cspan class="pastille hachure">\x3C/span>'
         : '\x3Cspan class="pastille" style="background:' + v.couleur + '">\x3C/span>';
@@ -2245,7 +2257,11 @@
       });
     });
     hier.sort(function (a, b) { return RANG_FAMILLE[a.famille] - RANG_FAMILLE[b.famille] || COMPARER_REF(a.libelle, b.libelle); });
-    var finies = VALEURS_COLONNE.filter(function (v) { return v.famille === 'termine'; });
+    /* Les valeurs « validé » de la courbe : celles du jour, et celles que
+       seuls des relevés d'avant portent (un « Traité » sorti de l'extract) —
+       une seule tient le rôle de la courbe par défaut, jamais deux pilules
+       pour le même nombre. */
+    var finies = VALEURS_COLONNE.concat(hier).filter(function (v) { return v.famille === 'termine'; });
     var seule = finies.length === 1 ? finies[0].cle : null;
     /* Un choix qui n'est plus dans la rangée — une autre portée, une autre
        source — revient à la courbe par défaut. */
@@ -2260,10 +2276,20 @@
                     : !aujourdhui ? 'Plus aucun plan n\u2019est « ' + v.libelle + ' » ; combien l\u2019étaient, relevé après relevé'
                     : 'Combien de plans « ' + v.libelle + ' », relevé après relevé' };
     });
+    /* La pilule de la courbe par défaut ouvre la rangée, même quand elle
+       vient d'un relevé d'avant. */
+    items = items.filter(function (x) { return x.cle === ''; }).concat(items.filter(function (x) { return x.cle !== ''; }));
+    /* Aucune valeur ne veut dire « validé » — le concept harnais avant son
+       premier « Traité » (débrief 19 : « tu mets juste ce qu'il y a ») : pas
+       de pilule pour elle. La courbe des validés est celle qu'on voit quand
+       aucune n'est pressée, et un second clic sur la pilule pressée y
+       revient. Plusieurs valeurs « validé » : un premier bouton les réunit. */
+    var premier = finies.length > 1 ? { libelle: 'Validés', pastille: pastilleDe('termine'),
+      titre: 'Les plans validés, relevé après relevé, avec le rythme tenu, la fin estimée et l\u2019échéance' } : null;
+    if (!finies.length) items.forEach(function (x) { x.titre += ' \u2014 un second clic revient à la courbe des validés'; });
     /* Rien d'autre à suivre que les validés : pas de rangée. */
     var autres = items.filter(function (x) { return x.cle && (!x.absente || x.cle === vue.valeurGraphe); }).length;
-    z.innerHTML = autres ? boutonsPastilles('valeur-graphe', vue.valeurGraphe, items, seule ? null : { libelle: 'Validés', pastille: pastilleDe('termine'),
-      titre: 'Les plans validés, relevé après relevé, avec le rythme tenu, la fin estimée et l\u2019échéance' }) : '';
+    z.innerHTML = autres ? boutonsPastilles('valeur-graphe', vue.valeurGraphe, items, premier) : '';
     z.hidden = !z.innerHTML;
     if (z.hidden) vue.valeurGraphe = '';
     marquerDebord(z);
@@ -3048,7 +3074,7 @@
      valeur de la colonne, dans l'ordre des tuiles. Une valeur qu'aucun plan
      du bloc ne porte n'a pas de pastille (débrief 19) ; sans plan, pas de
      rangée. Rend la valeur choisie, '' pour « Tout ». */
-  function rendreFiltreValeurBloc(liste) {
+  function rendreFiltreValeurBloc(liste, dim) {
     var z = $('filtre-valeur-groupe');
     if (vue.valeurBloc && !valeurDeCle(vue.valeurBloc)) vue.valeurBloc = '';
     if (!z || !liste) {
@@ -3058,9 +3084,19 @@
       if (z) { z.hidden = true; z.innerHTML = ''; }
       return '';
     }
-    /* Seulement les valeurs que portent les plans du bloc (débrief 19). */
-    var presentes = {};
-    liste.forEach(function (p) { presentes[p._cle] = true; });
+    /* Seulement les valeurs que portent les plans du bloc (débrief 19) —
+       ceux que son champ « ATA ou plan… » laisse voir, comme la rangée du
+       journal suit sa recherche : un groupe trouvé par son nom montre tous
+       ses plans, un groupe gardé pour un plan cherché ne montre que lui. */
+    var presentes = {}, q = norm(vue.filtreGroupe), qr = motCherche(vue.filtreGroupe), nomVu = {};
+    liste.forEach(function (p) {
+      if (q && dim) {
+        var k = String(valeurDim(p, dim) || '\u2014');
+        if (nomVu[k] === undefined) nomVu[k] = nomGroupeCorrespond({ nom: k });
+        if (!nomVu[k] && !(qr && refCorrespond(p.reference, qr))) return;
+      }
+      presentes[p._cle] = true;
+    });
     z.innerHTML = boutonsPastilles('valeur-bloc', vue.valeurBloc, VALEURS_COLONNE.map(function (v) {
       return { cle: v.cle, famille: v.famille, libelle: v.libelle, absente: !presentes[v.cle],
                titre: 'Compter, dans chaque groupe, les plans « ' + v.libelle + ' »' };
@@ -3136,7 +3172,7 @@
     if (vue.groupe && vue.groupe.dim === dim) liste = selection(true);
     /* La rangée de pastilles se pose avant toute sortie : jamais celle d'un
        autre contrat sous une sélection vide. */
-    var vb = rendreFiltreValeurBloc(liste);
+    var vb = rendreFiltreValeurBloc(liste, dim);
     var vVal = vb ? valeurDeCle(vb) : null;
     var groupes = {};
     liste.forEach(function (p) {
@@ -3247,6 +3283,7 @@
     var tous = rangs.length;
     rangs = rangs.filter(retenuParFiltreGroupe);
     $('compte-groupes').textContent = rangs.length === tous ? '' : nb(rangs.length) + ' sur ' + nb(tous);
+    marquerDebord($('filtre-valeur-groupe'));     // le compte prend sa place sur la ligne
 
     function fleche(cle) {
       if (!tg || tg.cle !== cle) return '';
@@ -3977,6 +4014,12 @@
     var zone = $('zone-journal');
     var journal = JOURNAL.length ? journalAffiche() : [];
     rendreFiltreJournal(journal);
+    /* Un message seul n'a rien d'un tableau : la grille d'un rendu d'avant
+       (l'autre avancement) le coupait au bord de la carte. */
+    if (!JOURNAL.length || !journal.length) {
+      zone.classList.remove('journal-grille');
+      zone.style.gridTemplateColumns = '';
+    }
     if (!JOURNAL.length) {
       zone.innerHTML = '\x3Cdiv class="journal-vide">' + ech(pourquoiJournalVide()) + '\x3C/div>';
       return;
@@ -5417,9 +5460,13 @@
   if ($('filtre-valeur-graphe')) $('filtre-valeur-graphe').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-valeur-graphe]');
     if (!b || b.disabled) return;
-    vue.valeurGraphe = b.dataset.valeurGraphe;
+    var cle = b.dataset.valeurGraphe;
+    /* Sans pilule pour les validés, un second clic sur la pilule pressée
+       ramène leur courbe. */
+    var sansDefaut = !$('filtre-valeur-graphe').querySelector('button[data-valeur-graphe=""]');
+    vue.valeurGraphe = sansDefaut && cle === vue.valeurGraphe ? '' : cle;
     rendreGraphique(selection());
-    rendreFocus($('filtre-valeur-graphe'), 'valeur-graphe', vue.valeurGraphe);
+    rendreFocus($('filtre-valeur-graphe'), 'valeur-graphe', cle);
   });
 
   $('zone-journal').addEventListener('click', function (e) {
@@ -5595,10 +5642,32 @@
       marquerDebords();
     }, 160);
   });
-  /* Le fondu suit le défilement de chaque rangée : il s'efface au bout. */
+  /* Le fondu suit le défilement de chaque rangée : il s'efface au bout. La
+     molette, sur une rangée qui dépasse, la fait défiler de côté (elle n'a
+     pas de barre). */
   ['filtre-journal', 'filtre-valeur-groupe', 'filtre-valeur-graphe'].forEach(function (id) {
-    if ($(id)) $(id).addEventListener('scroll', function () { marquerDebord($(id)); }, { passive: true });
+    var r = $(id);
+    if (!r) return;
+    r.addEventListener('scroll', function () { marquerDebord(r); }, { passive: true });
+    r.addEventListener('wheel', function (e) {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) || r.scrollWidth - r.clientWidth <= 2) return;
+      var avant = r.scrollLeft;
+      r.scrollLeft += e.deltaY * (e.deltaMode === 1 ? 16 : 1);
+      if (r.scrollLeft !== avant) e.preventDefault();
+    }, { passive: false });
   });
+  /* Et il se remesure quand la rangée change de largeur (le compte « n sur
+     m » du bloc qui paraît ou s'en va) et quand les polices arrivent : la
+     page se dessine d'abord avec celles du système. */
+  if (window.ResizeObserver) {
+    var veilleRangees = new ResizeObserver(function (vus) { vus.forEach(function (x) { marquerDebord(x.target); }); });
+    ['filtre-journal', 'filtre-valeur-groupe', 'filtre-valeur-graphe'].forEach(function (id) { if ($(id)) veilleRangees.observe($(id)); });
+  }
+  if (document.fonts) {
+    var remesurer = function () { alignerSousBarre('barre', 'filets', 'etats'); marquerDebords(); };
+    if (document.fonts.ready) document.fonts.ready.then(remesurer);
+    if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', remesurer);
+  }
 
   /* Une page de consultation reste ouverte des jours durant : la semaine se
      reprend au retour sur l'onglet et une fois par heure, et quand elle a
@@ -5766,5 +5835,5 @@
      page affichée, pour ne rien retarder. */
   if (API && API.noterConsultation) setTimeout(API.noterConsultation, 1500);
 })();
-window.SUIVI_FWD_FIN = '83c0d77';
+window.SUIVI_FWD_FIN = '4bf7a55';
 </script>
