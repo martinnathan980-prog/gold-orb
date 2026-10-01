@@ -101,7 +101,7 @@ npm install
 npm test
 ```
 
-- `npm run test:addon` — 500 tests. Le vrai `Code.gs` tourne dans Node contre
+- `npm run test:addon` — 524 tests. Le vrai `Code.gs` tourne dans Node contre
   un classeur en mémoire (`tests/faux-classeur.js`), sur un export
   volontairement pénible : lignes de titre, groupes fusionnés, en-têtes
   accentués ou dupliqués, ligne vide au milieu, avancements de toutes les
@@ -131,12 +131,12 @@ npm test
   lire une lettre, puis les repères lus pour de vrai par RapidOCR et corrigés
   par la liste de la base, sur papier gris et page couchée. Sans Chrome ou
   sans RapidOCR sur le poste, ces parties-là sont sautées en le disant.
-- `npm run test:chargeur` — 29 tests sur le chargeur : un faux Apps Script en
+- `npm run test:chargeur` — 34 tests sur le chargeur : un faux Apps Script en
   mémoire (classeur, UrlFetchApp qui sert le dépôt depuis le disque, cache,
   menus, fenêtres), le vrai `Chargeur.gs` lancé dedans, et la page qu'il
   fabrique ouverte dans un vrai navigateur — les états, les colonnes, le
   graphe et le journal comparés au paquet du classeur.
-- `npm run test:interface` — 608 tests sur l’interface elle-même.
+- `npm run test:interface` — 654 tests sur l’interface elle-même.
   Elle n'essaie pas seulement de vérifier que ça marche : recherches avec
   balises, expressions régulières, 3 000 caractères ou émoji, jalon de
   configuration au texte injecté, `localStorage` corrompu puis inaccessible,

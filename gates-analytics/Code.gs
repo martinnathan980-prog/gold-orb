@@ -39,7 +39,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = '8598390';
+const EDITION = '02462f4';
 
 // =====================================================================
 //  CONFIGURATION
@@ -157,8 +157,10 @@ const CONFIG = {
      dit, valeur par valeur, comment chacune est comptée.
      Les vraies valeurs de GATES (relevées au bureau le 29/09) : VALIDATED
      est fini ; PWD_IN_PROGRESS, PWD_TO_CONTROL, TO_CONFIRM sont en cours
-     (rien à déclarer : c'est la famille par défaut). */
-  VALEURS_FINIES: ['Validé', 'VALIDATED'],
+     (rien à déclarer : c'est la famille par défaut). Le concept harnais
+     (débrief 18) : vide, « À traiter » (pas commencé, reconnu de lui-même),
+     « Traité » — fini. */
+  VALEURS_FINIES: ['Validé', 'VALIDATED', 'Traité'],
 
   /* Les valeurs qui veulent dire « pas commencé », même règle. S'ajoutent à
      « À faire », « A traiter », « Non commencé », 0 %. Dans GATES : TO_TREAT
@@ -293,6 +295,10 @@ const MAX_CARACTERES_CELLULE = 45000;
 
 /** Déploiement en application web. `?forcer=1` passe outre le contrôle des fichiers. */
 function doGet(e) {
+  /* ?frais=1 : tout ce qui est en cache devient caduc — cette ouverture
+     relit le classeur et garde ce qu'elle a lu ; les suivantes, et les
+     changements de contrat, en profitent. */
+  if (e && e.parameter && e.parameter.frais) marquerDonneesModifiees();
   const page = pageDuTableau(!!(e && e.parameter && e.parameter.forcer))
     .setTitle('Suivi FWD')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
@@ -600,7 +606,26 @@ function estCopieDOnglet(nom) {
 }
 
 /** L'onglet porte-t-il, dans ses premières lignes, une ligne d'intitulés d'export ? */
+/* Les en-têtes de chaque onglet, lus une fois par lecture (débrief 18) :
+   la liste des contrats est demandée cinq fois par ouverture, et relisait
+   chaque fois les premières lignes de chaque onglet — dix lectures du
+   classeur pour rien. Le mémo ne vit que le temps d'une lecture (enLecture),
+   jamais pendant une écriture ni d'une exécution à l'autre. */
+let MEMO_ENTETES = null;
+function enLecture(fn) {
+  const dejaOuvert = !!MEMO_ENTETES;
+  if (!dejaOuvert) MEMO_ENTETES = {};
+  try { return fn(); } finally { if (!dejaOuvert) MEMO_ENTETES = null; }
+}
+
 function aDesEntetes(feuille) {
+  if (!MEMO_ENTETES) return aDesEntetesLus(feuille);
+  const k = '\u0001' + feuille.getName();
+  if (!Object.prototype.hasOwnProperty.call(MEMO_ENTETES, k)) MEMO_ENTETES[k] = aDesEntetesLus(feuille);
+  return MEMO_ENTETES[k];
+}
+
+function aDesEntetesLus(feuille) {
   const n = Math.min(CONFIG.LIGNES_SCAN_ENTETE, feuille.getLastRow());
   const largeur = feuille.getLastColumn();
   if (n < 1 || largeur < 1) return false;
@@ -1129,6 +1154,10 @@ function choisirDimensionParDefaut(colonnes, clesDim) {
  * (ok: false, message), que la page affiche sans quitter le contrat courant.
  */
 function getDonneesPourClient(contrat) {
+  return enLecture(function () { return getDonneesPourClientLues(contrat); });
+}
+
+function getDonneesPourClientLues(contrat) {
   try {
     const classeur = SpreadsheetApp.getActiveSpreadsheet();
     const contrats = listerContrats(classeur);
@@ -1211,7 +1240,181 @@ function modeleAOuvrir(contrat, contrats) {
  * compacté comme celui de l'ouverture.
  */
 function getDonneesCompactes(contrat) {
-  return compacterPaquet(getDonneesPourClient(contrat));
+  return JSON.parse(paquetCompactJson(contrat));
+}
+
+/* =====================================================================
+   LE PAQUET EN CACHE (débrief 18 : « le site est très long à charger »)
+   Chaque ouverture relisait tout le classeur : l'extract entier, son
+   historique, la seconde base. Le paquet de chaque contrat se garde donc
+   six heures dans le cache du classeur — mais sous une clé qui change dès
+   que quelque chose change : un collage ou une saisie (onEdit), un
+   archivage, une suppression, un dépôt (marquerDonneesModifiees), un onglet
+   ajouté, renommé, masqué, des lignes ou des colonnes ajoutées ou
+   supprimées (la taille de chaque onglet est dans la clé : onEdit ne voit
+   pas ces gestes-là), la configuration ou la livraison, le jour. Ce que la
+   page montre est donc ce que le classeur contient ; « lus dans le classeur
+   le … », en bas de page, dit quand. Ce qui y échapperait — une version
+   restaurée depuis l'historique de Google — se rattrape par ?frais=1, qui
+   rend caduc tout le cache. Un paquet incomplet (historique illisible le
+   temps d'une panne de Google) ne se garde jamais.
+   ===================================================================== */
+const CACHE_SECONDES = 21600;          // six heures : le plafond de CacheService
+const CACHE_TRANCHE = 30000;           // caractères par clé : moins de 100 Ko même à 3 octets
+const CLE_VERSION_DONNEES = 'SUIVI_FWD_VERSION_DONNEES';
+let PAGE_FRAICHE = false;           // le Diagnostic mesure une lecture sans le cache
+
+/** Toute modification du classeur rend caducs les paquets en cache. */
+function marquerDonneesModifiees() {
+  try {
+    PropertiesService.getDocumentProperties().setProperty(CLE_VERSION_DONNEES,
+      String(new Date().getTime()) + '-' + Math.floor(Math.random() * 1e6));
+  } catch (err) { /* pas de propriétés : pas de cache non plus (versionDonnees) */ }
+}
+
+/**
+ * Déclencheur simple : chaque modification faite à la main — coller un
+ * export, effacer, saisir — renouvelle la version des données. Une ligne,
+ * pour ne rien ralentir.
+ */
+function onEdit(e) {
+  marquerDonneesModifiees();
+}
+
+/* =====================================================================
+   LES CONSULTATIONS, SANS NOM (débrief 18 : « pour avoir des stats »)
+   Chaque ouverture de la page est comptée, semaine par semaine, avec le
+   nombre de personnes différentes — reconnues par la clé temporaire que
+   Google donne à chaque lecteur (Session.getTemporaryActiveUserKey : elle
+   ne dit pas qui il est, et change tous les 30 jours), elle-même réduite à
+   une empreinte. Aucune adresse, aucun nom n'est lu ni gardé. Douze
+   semaines au plus ; pour les semaines finies, seul le nombre reste. Le
+   Diagnostic les montre ; le pied de la page dit que l'ouverture est
+   comptée.
+   ===================================================================== */
+const CLE_CONSULTATIONS = 'SUIVI_FWD_CONSULTATIONS';
+const MAX_SEMAINES_CONSULTATIONS = 12;
+const MAX_PERSONNES_SEMAINE = 400;
+
+/** Appelée par la page une fois affichée : compte l'ouverture. Ne lève jamais. */
+function noterConsultation() {
+  try {
+    const verrou = LockService.getDocumentLock();
+    if (!verrou.tryLock(3000)) return false;
+    try {
+      const props = PropertiesService.getDocumentProperties();
+      const semaine = numeroSemaineISO(new Date());
+      let cle = '';
+      try { cle = String(Session.getTemporaryActiveUserKey() || ''); } catch (err) { cle = ''; }
+      const stats = analyserJson(props.getProperty(CLE_CONSULTATIONS)) || {};
+      const s = stats[semaine] && typeof stats[semaine] === 'object' ? stats[semaine] : (stats[semaine] = { n: 0, k: [] });
+      if (!Array.isArray(s.k)) s.k = [];
+      s.n = (Number(s.n) || 0) + 1;
+      if (cle) {
+        const e = empreinte('consultation\u0001' + cle);
+        if (s.k.indexOf(e) === -1 && s.k.length < MAX_PERSONNES_SEMAINE) s.k.push(e);
+      }
+      /* Les semaines finies ne gardent que leurs nombres. */
+      Object.keys(stats).sort().reverse().forEach(function (w, i) {
+        if (i >= MAX_SEMAINES_CONSULTATIONS) { delete stats[w]; return; }
+        if (w !== semaine && stats[w] && Array.isArray(stats[w].k)) { stats[w].p = stats[w].k.length; delete stats[w].k; }
+      });
+      props.setProperty(CLE_CONSULTATIONS, JSON.stringify(stats));
+      return true;
+    } finally {
+      verrou.releaseLock();
+    }
+  } catch (err) {
+    return false;
+  }
+}
+
+/** Pour le Diagnostic : « S40 : 37 ouvertures, 12 personnes · S39 : … », les plus récentes d'abord. */
+function resumeConsultations() {
+  let stats = null;
+  try { stats = analyserJson(PropertiesService.getDocumentProperties().getProperty(CLE_CONSULTATIONS)); } catch (err) { stats = null; }
+  if (!stats || typeof stats !== 'object') return '';
+  return Object.keys(stats).filter(function (w) { return normaliserSemaine(w); }).sort().reverse().slice(0, 6).map(function (w) {
+    const s = stats[w] || {};
+    const n = Number(s.n) || 0;
+    const p = Array.isArray(s.k) ? s.k.length : Number(s.p) || 0;
+    return 'S' + parseInt(w.slice(6), 10) + ' : ' + n + ' ouverture' + (n > 1 ? 's' : '') +
+      (p ? ', ' + p + ' personne' + (p > 1 ? 's' : '') : '');
+  }).join(' · ');
+}
+
+/** Une empreinte courte d'un texte (clé de cache : 250 caractères au plus). */
+function empreinte(texte) {
+  let h1 = 5381, h2 = 52711;
+  for (let i = 0; i < texte.length; i++) {
+    const c = texte.charCodeAt(i);
+    h1 = ((h1 << 5) + h1 + c) | 0;
+    h2 = ((h2 << 5) + h2 + (c ^ 0x5bd1)) | 0;
+  }
+  return (h1 >>> 0).toString(36) + (h2 >>> 0).toString(36) + texte.length.toString(36);
+}
+
+/** Ce qui fait la version des données : la marque, les onglets et leur taille, la configuration, le jour. */
+function versionDonnees(classeur) {
+  const marque = PropertiesService.getDocumentProperties().getProperty(CLE_VERSION_DONNEES) || '0';
+  const onglets = classeur.getSheets().map(function (f) {
+    return f.getName() + (f.isSheetHidden() ? '~' : '') + ':' + f.getLastRow() + 'x' + f.getLastColumn();
+  }).join('\u0001');
+  return [EDITION, marque, onglets, JSON.stringify(CONFIG), Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd')].join('\u0002');
+}
+
+function cacheDuClasseur() {
+  try {
+    if (typeof CacheService === 'undefined') return null;
+    return CacheService.getDocumentCache() || CacheService.getScriptCache();
+  } catch (err) { return null; }
+}
+
+function lireCache(cache, cle) {
+  try {
+    const n = Number(cache.get(cle + ':n'));
+    if (!n) return null;
+    const cles = [];
+    for (let i = 0; i < n; i++) cles.push(cle + ':' + i);
+    const lus = cache.getAll(cles);
+    let texte = '';
+    for (let i = 0; i < n; i++) {
+      if (typeof lus[cles[i]] !== 'string') return null;
+      texte += lus[cles[i]];
+    }
+    return texte;
+  } catch (err) { return null; }
+}
+
+function ecrireCache(cache, cle, texte) {
+  try {
+    const valeurs = {};
+    let n = 0;
+    for (let i = 0; i < texte.length; i += CACHE_TRANCHE) valeurs[cle + ':' + (n++)] = texte.slice(i, i + CACHE_TRANCHE);
+    cache.putAll(valeurs, CACHE_SECONDES);
+    cache.put(cle + ':n', String(n), CACHE_SECONDES);   // en dernier : un paquet n'est lisible qu'entier
+  } catch (err) { /* trop gros, ou cache indisponible : la page se sert sans */ }
+}
+
+/** Le paquet compact d'un contrat, en JSON : du cache s'il est à jour, sinon lu et gardé. */
+function paquetCompactJson(contrat) {
+  const cache = PAGE_FRAICHE ? null : cacheDuClasseur();
+  let cle = null;
+  if (cache) {
+    try { cle = 'SFWD:' + empreinte(String(contrat || '') + '\u0003' + versionDonnees(SpreadsheetApp.getActiveSpreadsheet())); }
+    catch (err) { cle = null; }
+  }
+  if (cle) {
+    const lu = lireCache(cache, cle);
+    if (lu) return lu;
+  }
+  const paquet = compacterPaquet(getDonneesPourClient(contrat));
+  const json = JSON.stringify(paquet);
+  /* Un paquet en erreur, ou lu à moitié — l'historique illisible le temps
+     d'une panne passagère —, n'est pas gardé : la prochaine ouverture
+     relira, comme la page le conseille. */
+  if (cle && paquet && paquet.ok && !paquet.historiqueIllisible) ecrireCache(cache, cle, json);
+  return json;
 }
 
 /**
@@ -1298,7 +1501,7 @@ function compacterPaquet(paquet) {
  * mal choisie couperait la page en deux et rien ne s'afficherait.
  */
 function donneesJSONPourPage() {
-  return JSON.stringify(compacterPaquet(getDonneesPourClient()))
+  return paquetCompactJson()
     .replace(/</g, '\\u003c')
     .replace(/>/g, '\\u003e')
     .replace(/\u2028/g, '\\u2028')
@@ -1484,7 +1687,11 @@ function diagnostic() {
     const t2 = Date.now();
     getRapprochement(classeur, modele.feuille);
     const t3 = Date.now();
-    const poids = donneesJSONPourPage().length;
+    /* Mesuré sans le cache : c'est le coût d'une vraie lecture qu'on veut voir. */
+    const etaitFraiche = PAGE_FRAICHE;
+    PAGE_FRAICHE = true;
+    let poids = 0;
+    try { poids = donneesJSONPourPage().length; } finally { PAGE_FRAICHE = etaitFraiche; }
     const t4 = Date.now();
     dire('✓ Paquet envoyé à la page : ' + Math.round(poids / 1024) + ' Ko' +
          (contrats.length > 1
@@ -1492,10 +1699,16 @@ function diagnostic() {
            : ''));
     dire('   préparé en ' + secondes(t4 - t3) + ' — lecture de GATES ' + secondes(t1 - t0) +
          ', de l\'historique ' + secondes(t2 - t1) + ', de la seconde base ' + secondes(t3 - t2));
+    if (cacheDuClasseur()) dire('   ensuite gardé en cache (6 h) : les ouvertures suivantes ne relisent rien, tant que le classeur ne change pas');
   } catch (err) {
     dire('✗ Paquet envoyé à la page : ' + (err && err.message ? err.message : err));
     tousLisibles = false;
   }
+
+  /* Les consultations de la page, sans nom (débrief 18). */
+  const consultations = resumeConsultations();
+  dire('');
+  dire('✓ Consultations de la page (sans nom ni adresse) : ' + (consultations || 'aucune encore comptée'));
 
   /* Les ⚠ ne bloquent rien, mais faussent ce qu'on montrerait (0 terminé,
      journal vide…) : le bilan les reprend, au lieu de conclure « tout est en
@@ -2470,6 +2683,7 @@ function archiverContrat(classeur, c, semaine) {
     assurerColonnes(feuille, ligne.length);
     feuille.getRange(indexLigne, 1, 1, ligne.length).setValues([ligne]);
   }
+  marquerDonneesModifiees();
   return { id: c.id, nom: c.nom, historique: feuille.getName(), semaine: semaine, compte: compte };
 }
 
@@ -2526,6 +2740,7 @@ function supprimerDernierReleve() {
     feuille.deleteRow(indexLigne);
     supprimes.push(c.nom);
   });
+  if (supprimes.length) marquerDonneesModifiees();
 
   const nommer = function (liste) { return liste.map(function (n) { return '« ' + n + ' »'; }).join(', '); };
   /* La semaine se dit comme sur la page : « S39 ». */
@@ -2994,6 +3209,7 @@ function deposer(texte) {
      un extract ne doit pas se transformer en formules. */
   if (plage.setNumberFormat) plage.setNumberFormat('@');
   plage.setValues(valeurs);
+  marquerDonneesModifiees();
   const resultat = { ok: true, onglet: feuille.getName(), lignes: valeurs.length, colonnes: largeur };
   if (corps.archiver) {
     const contrat = listerContrats(classeur).filter(function (c) { return c.id === feuille.getName(); })[0];

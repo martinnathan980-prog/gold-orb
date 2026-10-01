@@ -70,7 +70,7 @@
 <script>
   /* La livraison de ce fichier, posée par la construction : la page la compare
      à celles de Code, Styles et Javascript, et nomme celui qui diffère. */
-  window.SUIVI_FWD_LIVRAISON_INDEX = '8598390';
+  window.SUIVI_FWD_LIVRAISON_INDEX = '02462f4';
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
@@ -87,6 +87,10 @@
           })
           .getDonneesCompactes(id);
       } catch (e) { cb(null); /* page ouverte hors classeur : sans conséquence */ }
+    },
+    /* L'ouverture, comptée sans nom (débrief 18) : rien n'attend la réponse. */
+    noterConsultation: function () {
+      try { google.script.run.withFailureHandler(function () {}).noterConsultation(); } catch (e) { /* hors classeur */ }
     }
   };
 </script>
@@ -188,6 +192,10 @@
         </span>
       </div>
     </div>
+    <!-- La valeur que suit la courbe (débrief 18) : les validés par défaut,
+         ou n'importe quelle valeur de la colonne, relevé après relevé. Rien
+         n'en est mémorisé. -->
+    <div class="filtre-journal rangee-valeurs" id="filtre-valeur-graphe" role="group" aria-label="Valeur suivie par la courbe" hidden></div>
     <div class="feuille">
       <div class="cadre-graphe" id="cadre-graphe">
         <div id="zone-graphe"></div>
@@ -242,6 +250,11 @@
       </div>
     </div>
     <p class="indice-dim" id="indice-dim"></p>
+    <!-- Le filtre par valeur du bloc (débrief 18) : comme le champ de gauche,
+         il ne touche qu'à ce bloc. Il garde sa valeur d'une dimension à
+         l'autre — « VALIDATED » par ATA, puis par ECP —, et rien n'en est
+         mémorisé. -->
+    <div class="filtre-journal rangee-valeurs" id="filtre-valeur-groupe" role="group" aria-label="Ne compter dans ce bloc que les plans d'une valeur" hidden></div>
     <div class="feuille">
       <div class="defile-liste" id="zone-critique"></div>
     </div>
@@ -356,6 +369,9 @@
     <div id="lu-le" hidden></div>
     <!-- La livraison qui tourne : le Diagnostic dit laquelle attendre. -->
     <div id="livraison" hidden></div>
+    <!-- Dit en clair : l'ouverture est comptée, sans nom ni adresse
+         (débrief 18). Seulement quand un classeur est derrière la page. -->
+    <div id="mention-consultations" hidden>Les ouvertures de cette page sont comptées, sans nom ni adresse.</div>
   </footer>
 </div>
 

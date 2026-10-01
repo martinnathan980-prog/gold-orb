@@ -192,6 +192,9 @@ async function brancherClasseur(page, contexte) {
     if (id === '__panne__') throw new Error('Panne simulée du classeur');
     return JSON.stringify(contexte.getDonneesPourClient(id === null ? undefined : id));
   });
+  await page.exposeFunction('__classeurNoterConsultation', function () {
+    return contexte.noterConsultation();
+  });
   await page.exposeFunction('__classeurGetDonneesCompactes', function (id) {
     if (id === '__panne__') throw new Error('Panne simulée du classeur');
     return JSON.stringify(contexte.getDonneesCompactes(id === null ? undefined : id));
@@ -206,6 +209,11 @@ async function brancherClasseur(page, contexte) {
           window.__classeurGetDonneesPourClient(id === undefined ? null : id).then(
             function (json) { if (succes) succes(JSON.parse(json)); },
             function (e) { if (echec) echec(e); });
+        },
+        // L'ouverture comptée (débrief 18) : compté à part, ce n'est pas un contrat demandé.
+        noterConsultation: function () {
+          window.__consultations = (window.__consultations || 0) + 1;
+          window.__classeurNoterConsultation().then(function () {}, function (e) { if (echec) echec(e); });
         },
         // Le pont d'Index.html demande le paquet compacté, comme au classeur.
         getDonneesCompactes: function (id) {

@@ -1325,20 +1325,23 @@ async function reinitialiser(pg) {
     app.reemissions.every(r => r.ancienne && r.ref && r.ancienne !== r.ref), lu(app.reemissions));
 
   /* La dernière semaine porte un changement d'indice : le filtre du journal
-     est celui-là, et il n'y en a pas d'autre sorte. */
+     est celui-là, et il n'y en a pas d'autre sorte. Débrief 18 : la rangée
+     porte toutes les valeurs de la colonne, dans l'ordre des tuiles, puis
+     les reculs et l'indice. */
   const cleReem = 'indice';
   const domIndice = await p.evaluate(cle => ({
     pastille: !!document.querySelector('#filtre-journal button[data-journal="' + cle + '"] .pastille.indice'),
     comptes: [...document.querySelectorAll('.compte-passage[data-passage="indice"]')].map(b => b.textContent.replace(/\s+/g, ' ').trim()),
     boutons: !!document.querySelector('#filtre-journal button[data-journal="indice"]') &&
              !document.querySelector('#filtre-journal button[data-journal="solution"]') &&
-             document.querySelectorAll('#filtre-journal button').length === 5
+             [...document.querySelectorAll('#filtre-journal button')].map(b => b.dataset.journal).join() ===
+               ['', ...window.__valeurs().map(v => v.cle), 'reculs', 'indice'].join()
   }), cleReem);
   verifier('le filtre du journal « changement d’indice » est là, avec sa pastille violette', domIndice.pastille);
   verifier('chaque semaine concernée compte son changement d’indice, en bouton',
     domIndice.comptes.length === 6 && domIndice.comptes.every(t => /^1 changement d’indice$/.test(t)),
     lu(domIndice.comptes));
-  verifier('et le filtre du journal ne propose que lui, en cinq boutons : Tout, deux valeurs d’arrivée, les reculs, l’indice',
+  verifier('et la rangée du journal : Tout, chaque valeur de la colonne dans l’ordre des tuiles, les reculs, l’indice',
     domIndice.boutons && await p.evaluate(() => !!document.querySelector('#filtre-journal button[data-journal="reculs"]')));
   const violet = await p.evaluate(() => {
     const fond = el => el && getComputedStyle(el).backgroundColor;
@@ -1377,19 +1380,37 @@ async function reinitialiser(pg) {
     justesse.every(x => !x.effaceBouton) || filtreVide, JSON.stringify([justesse.some(x => x.effaceBouton), filtreVide]));
   /* Chaque filtre que le journal propose — les valeurs d'arrivée, les
      reculs (débrief 14 : ils ne sont plus des « passés à … »), l'indice. */
-  const filtresPresents = await p.evaluate(() => [...document.querySelectorAll('#filtre-journal button[data-journal]')].map(b => b.dataset.journal).filter(Boolean));
+  const filtresPresents = await p.evaluate(() => [...document.querySelectorAll('#filtre-journal button[data-journal]:not([disabled])')].map(b => b.dataset.journal).filter(Boolean));
   verifier('le journal propose ses filtres, dont les reculs quand il y en a', filtresPresents.includes('indice') && filtresPresents.length >= 3, filtresPresents.join());
   for (const f of filtresPresents) {
     await p.click('#filtre-journal button[data-journal="' + f + '"]'); await p.waitForTimeout(300);
     await toutDeplier();
-    const sousFiltre = await p.evaluate(f => ({
-      lignes: document.querySelectorAll('.journal-ligne').length,
-      comptes: [...document.querySelectorAll('.compte-passage[data-passage="' + f + '"] b')].reduce((t, b) => t + Number(b.textContent.replace(/\s/g, '')), 0),
-      types: [...new Set([...document.querySelectorAll('.journal-ligne')].map(l => l.dataset.type))].join(),
-      arrivees: [...new Set([...document.querySelectorAll('.journal-ligne .etiq-etat.apres')].map(e => e.textContent.trim()))].join()
-    }), f);
+    const sousFiltre = await p.evaluate(f => {
+      const v = window.__valeurs().find(x => x.cle === f);
+      /* Les références attendues, tirées du journal lui-même : celles qui
+         sont ARRIVÉES à la valeur (passages, reculs, réémissions). */
+      const attendues = [].concat(...window.__journalAffiche().map(s => s.evenements))
+        .filter(e => (e.type === 'change' || e.type === 'indice') && e.cApres === f && e.cAvant !== f).map(e => e.ref).sort().join();
+      return {
+        refs: [...document.querySelectorAll('.journal-ligne')].map(l => l.dataset.ref).sort().join() === attendues,
+        lignes: document.querySelectorAll('.journal-ligne').length,
+        pilule: Number(document.querySelector('#filtre-journal button[data-journal="' + f + '"] .n').textContent.replace(/\s/g, '')),
+        comptes: [...document.querySelectorAll('.compte-passage[data-passage="' + f + '"] b')].reduce((t, b) => t + Number(b.textContent.replace(/\s/g, '')), 0),
+        resume: [...document.querySelectorAll('.resume b')].reduce((t, b) => t + Number(b.textContent.replace(/\s/g, '')), 0),
+        types: [...new Set([...document.querySelectorAll('.journal-ligne')].map(l => l.dataset.type))].sort().join(),
+        arrivees: [...new Set([...document.querySelectorAll('.journal-ligne .etiq-etat.apres')].map(e => e.textContent.trim()))].join(),
+        libelle: v ? v.libelle : null
+      };
+    }, f);
+    /* Sous une valeur : tous les plans ARRIVÉS à elle — passages, reculs,
+       réémissions —, chacun dans sa case de la semaine ; le compte de la
+       pilule est le nombre de lignes. Sous « reculs » et « indice » : leur
+       seule case. */
     verifier('sous « ' + f + ' », les lignes sont exactement celles que les comptes annoncent',
-      sousFiltre.lignes === sousFiltre.comptes && (f === 'indice' ? sousFiltre.types === 'indice' || sousFiltre.lignes === 0 : sousFiltre.types === 'change' || sousFiltre.lignes === 0),
+      sousFiltre.lignes === sousFiltre.pilule && sousFiltre.lignes === sousFiltre.resume &&
+      (f === 'indice' ? sousFiltre.types === 'indice' && sousFiltre.lignes === sousFiltre.comptes
+        : f === 'reculs' ? sousFiltre.types === 'change' && sousFiltre.lignes === sousFiltre.comptes
+        : /^(change|change,indice|indice)$/.test(sousFiltre.types) && sousFiltre.refs),
       JSON.stringify(sousFiltre));
   }
   await p.click('#filtre-journal button[data-journal=""]'); await p.waitForTimeout(300);
@@ -3918,6 +3939,447 @@ async function reinitialiser(pg) {
     /S\d{1,2} · \S+ \d{4} : aucun changement depuis le relevé d’avant, plan par plan/.test(pieges16.note) && !/recoll/.test(pieges16.note), pieges16.note);
   await p.evaluate(() => { window.__chargerSource(window.__jeuDExemple('HDK')); });
   await p.waitForTimeout(500);
+  await reinitialiser(p);
+
+  // =================================================================
+  /* Débrief 18 : « je ne peux filtrer que par changement d'indice » — les
+     petites pastilles de couleur partout : le journal (toutes les valeurs,
+     jamais périmé, les plans devenus validés sous un nouvel indice
+     compris), le bloc par ATA/ECP, et le graphique. */
+  section('Débrief 18 : filtres par valeur à pastilles — journal, bloc par groupe, graphique');
+  await p.evaluate(() => { window.__chargerSource(window.__jeuDExemple('HDK')); window.scrollTo(0, 0); });
+  await p.waitForTimeout(600);
+  const nDe18 = t => Number(String(t || '').replace(/[\s  ]/g, ''));
+
+  // --- Le journal : chaque pilule, la couleur de sa tuile et son compte juste.
+  const j18 = await p.evaluate(() => {
+    const fond = e => e ? getComputedStyle(e).backgroundColor + '|' + e.className : null;
+    const evts = [].concat(...window.__journalAffiche().map(s => s.evenements));
+    const estRecul = e => e.type === 'change' && ((e.avant === 'termine' && e.apres !== 'termine') || (e.avant === 'encours' && e.apres === 'afaire'));
+    const attendu = { reculs: evts.filter(estRecul).length, indice: evts.filter(e => e.type === 'indice').length };
+    evts.forEach(e => { if ((e.type === 'change' || e.type === 'indice') && e.cApres !== e.cAvant) attendu[e.cApres] = (attendu[e.cApres] || 0) + 1; });
+    const boutons = [...document.querySelectorAll('#filtre-journal button[data-journal]:not([data-journal=""])')].map(b => ({
+      cle: b.dataset.journal, n: b.querySelector('.n') ? b.querySelector('.n').textContent : null, off: b.disabled,
+      pastille: fond(b.querySelector('.pastille')),
+      tuile: fond(document.querySelector('#etats .etat-btn[data-cle="' + b.dataset.journal + '"] .pastille'))
+    }));
+    return { boutons, attendu, reemisArrivees: evts.filter(e => e.type === 'indice' && e.cApres !== e.cAvant).length };
+  });
+  verifier('journal : chaque pilule de valeur a la pastille de sa tuile du haut (couleur et hachure)',
+    j18.boutons.filter(b => b.tuile).length === (await p.evaluate(() => window.__valeurs().length)) &&
+    j18.boutons.every(b => !b.tuile || b.pastille === b.tuile), JSON.stringify(j18.boutons.filter(b => b.pastille !== b.tuile && b.tuile)));
+  verifier('journal : chaque pilule dit combien de plans y sont arrivés — passages, reculs et réémissions —, grisée à zéro',
+    j18.boutons.every(b => nDe18(b.n) === (j18.attendu[b.cle] || 0) && b.off === !(j18.attendu[b.cle] || 0)),
+    JSON.stringify(j18.boutons.map(b => b.cle + '=' + b.n + (b.off ? '(off)' : '') + '/' + (j18.attendu[b.cle] || 0))));
+  verifier('journal : la démonstration a des plans réémis qui ont changé de valeur au passage — ils comptent sous leur valeur d’arrivée',
+    j18.reemisArrivees >= 1, String(j18.reemisArrivees));
+  /* Sous la recherche du journal, chaque pastille compte ce qu'elle
+     montrerait pour ce plan-là (relecture 18) ; le choix posé tient. */
+  const refJ18 = await p.evaluate(() => [].concat(...window.__journalAffiche().map(s => s.evenements)).find(e => e.type === 'change' && e.cApres === 'encours').ref);
+  await p.click('#filtre-journal button[data-journal="termine"]'); await p.waitForTimeout(250);
+  await p.fill('#recherche-journal', refJ18); await p.waitForTimeout(400);
+  const rechJ18 = await p.evaluate(ref => {
+    const evts = [].concat(...window.__journalAffiche().map(s => s.evenements)).filter(e => e.ref === ref || e.ancienne === ref);
+    const estRecul = e => e.type === 'change' && ((e.avant === 'termine' && e.apres !== 'termine') || (e.avant === 'encours' && e.apres === 'afaire'));
+    const att = { reculs: evts.filter(estRecul).length, indice: evts.filter(e => e.type === 'indice').length };
+    evts.forEach(e => { if ((e.type === 'change' || e.type === 'indice') && e.cApres !== e.cAvant) att[e.cApres] = (att[e.cApres] || 0) + 1; });
+    const lus = [...document.querySelectorAll('#filtre-journal button[data-journal]:not([data-journal=""])')].map(b => ({
+      cle: b.dataset.journal, n: Number(b.querySelector('.n').textContent), off: b.disabled, presse: b.getAttribute('aria-pressed') === 'true' }));
+    return { lus, att, journal: window.__vueValeurs().journal };
+  }, refJ18);
+  verifier('journal : sous une recherche, chaque pastille compte les arrivées de ce plan-là, grisée à zéro — le choix posé tient et reste cliquable',
+    rechJ18.journal === 'termine' && rechJ18.lus.every(b => b.n === (rechJ18.att[b.cle] || 0) && b.off === (!(rechJ18.att[b.cle] || 0) && !b.presse)),
+    JSON.stringify(rechJ18));
+  await p.fill('#recherche-journal', ''); await p.waitForTimeout(350);
+  await p.click('#filtre-journal button[data-journal=""]'); await p.waitForTimeout(250);
+  // Un clic sur une pilule grisée ne fait rien.
+  const grise18 = await p.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    const ref = s.plans[0].reference;
+    s.plans[0].avancement = 'Statut inédit';
+    s.releves.forEach(r => { if (r.plans && Object.prototype.hasOwnProperty.call(r.plans, ref)) r.plans[ref] = 'Statut inédit'; });
+    window.__chargerSource(s);
+    const b = document.querySelector('#filtre-journal button[data-journal="statutinedit"]');
+    if (!b) return { present: false };
+    b.click(); b.querySelector('.pastille').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    return { present: true, off: b.disabled, journal: window.__vueValeurs().journal,
+             tout: document.querySelector('#filtre-journal button[data-journal=""]').getAttribute('aria-pressed') };
+  });
+  verifier('journal : une valeur que personne n’a encore atteinte a sa pilule, grisée, et la cliquer ne change rien',
+    grise18.present && grise18.off && grise18.journal === '' && grise18.tout === 'true', JSON.stringify(grise18));
+  // Jamais périmée : un filtre posé, puis une source à un seul relevé.
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
+  await p.click('#filtre-journal button[data-journal="termine"]'); await p.waitForTimeout(300);
+  const perime18 = await p.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    s.releves = s.releves.slice(-1);
+    window.__chargerSource(s);
+    const bs = [...document.querySelectorAll('#filtre-journal button')];
+    return { cles: bs.map(b => b.dataset.journal).join(), attendu: ['', ...window.__valeurs().map(v => v.cle), 'reculs', 'indice'].join(),
+             actifs: bs.filter(b => !b.disabled).map(b => b.dataset.journal).join(), tout: bs[0].getAttribute('aria-pressed'),
+             message: !!document.querySelector('#zone-journal .journal-vide') };
+  });
+  verifier('journal vide : la rangée reste là, avec les valeurs de la source affichée, toutes grisées, « Tout » pressé — rien de la source d’avant',
+    perime18.cles === perime18.attendu && perime18.actifs === '' && perime18.tout === 'true' && perime18.message, JSON.stringify(perime18));
+  // Une valeur d'hier : plus personne ne la porte, mais des plans y sont passés.
+  const hier18 = await p.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    s.plans.forEach(x => { if (window.__classer(x.avancement) === 'encours') x.avancement = 'Terminé'; });
+    window.__chargerSource(s);
+    const cles = [...document.querySelectorAll('#filtre-journal button')].map(b => b.dataset.journal);
+    const b = document.querySelector('#filtre-journal button[data-journal="encours"]');
+    return { dansValeurs: window.__valeurs().some(v => v.cle === 'encours'), cles: cles.join(), off: b ? b.disabled : null,
+             pastille: b ? !!b.querySelector('.pastille') : false };
+  });
+  verifier('journal : une valeur que plus aucun plan ne porte garde sa pilule, après celles des tuiles, si des plans y sont passés',
+    !hier18.dansValeurs && /,encours,reculs,indice$/.test(hier18.cles) && hier18.off === false && hier18.pastille, JSON.stringify(hier18));
+  await p.click('#filtre-journal button[data-journal="encours"]'); await p.waitForTimeout(300);
+  await toutDeplier();
+  const hierLignes = await p.evaluate(() => [...new Set([...document.querySelectorAll('.journal-ligne .etiq-etat.apres')].map(e => e.textContent.trim()))].join());
+  verifier('et son filtre ne montre que des arrivées à elle', hierLignes === 'En cours', hierLignes);
+  // Le graphique la garde aussi : on la voit descendre jusqu'à zéro.
+  const hierG18 = await p.evaluate(() => {
+    const cles = [...document.querySelectorAll('#filtre-valeur-graphe button')].map(b => b.dataset.valeurGraphe);
+    const b = document.querySelector('#filtre-valeur-graphe button[data-valeur-graphe="encours"]');
+    if (!b) return { cles };
+    b.click();
+    const pts = window.__serieValeur('encours').pts;
+    return { cles, off: b.disabled, max: Math.max(...pts.map(x => x.termine)), fin: pts[pts.length - 1].termine,
+             note: document.getElementById('note-graphe').textContent, courbe: !!document.querySelector('#zone-graphe path.courbe'),
+             garde: window.__vueValeurs().graphe };
+  });
+  verifier('graphique : une valeur que plus aucun plan ne porte garde sa pilule, et sa courbe descend jusqu’à zéro',
+    hierG18.cles[hierG18.cles.length - 1] === 'encours' && hierG18.off === false && hierG18.max > 0 && hierG18.fin === 0 &&
+    hierG18.courbe && hierG18.garde === 'encours' && /^Plans « En cours » · /.test(hierG18.note), JSON.stringify(hierG18));
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
+  await p.waitForTimeout(400);
+  // Le concept harnais : la rangée prend ses valeurs, jamais celles de la définition.
+  const concept18 = await p.evaluate(() => {
+    const b = document.querySelector('#choix-indicateur button[data-indicateur="concept"]');
+    if (!b || document.getElementById('choix-indicateur').hidden) return null;
+    b.click();
+    const r = { cles: [...document.querySelectorAll('#filtre-journal button')].map(x => x.dataset.journal).join(),
+                attendu: ['', ...window.__valeurs().map(v => v.cle), 'reculs', 'indice'].join(),
+                bloc: [...document.querySelectorAll('#filtre-valeur-groupe button')].map(x => x.dataset.valeurBloc).join(),
+                attenduBloc: ['', ...window.__valeurs().map(v => v.cle)].join() };
+    document.querySelector('#choix-indicateur button[data-indicateur="def"]').click();
+    return r;
+  });
+  verifier('concept harnais : les rangées du journal et du bloc prennent ses valeurs à lui',
+    !!concept18 && concept18.cles === concept18.attendu && concept18.bloc === concept18.attenduBloc, JSON.stringify(concept18));
+  await p.waitForTimeout(400);
+  // Au clavier, le focus reste sur la pilule choisie.
+  await p.focus('#filtre-journal button[data-journal="indice"]'); await p.keyboard.press('Enter'); await p.waitForTimeout(300);
+  verifier('journal : au clavier, Entrée choisit la pilule et le focus y reste',
+    await p.evaluate(() => document.activeElement && document.activeElement.dataset.journal === 'indice' && window.__vueValeurs().journal === 'indice'));
+  // Sous une pastille, une recherche vaine dit parmi quoi elle a cherché.
+  await p.click('#filtre-journal button[data-journal="reculs"]'); await p.waitForTimeout(300);
+  await p.fill('#recherche-journal', 'ZZZ-introuvable'); await p.waitForTimeout(350);
+  const vain18 = await p.evaluate(() => (document.querySelector('#zone-journal .journal-vide') || { textContent: '' }).textContent.replace(/[\u00a0\u202f]/g, ' '));
+  verifier('journal : sous « Reculs », une recherche vaine dit « parmi les reculs » et que « Tout » cherche partout',
+    /^Aucun changement pour « ZZZ-introuvable » parmi les reculs dans l’historique — « Tout » les cherche tous\./.test(vain18), vain18);
+  await p.fill('#recherche-journal', ''); await p.waitForTimeout(350);
+  const titres18 = await p.evaluate(() => [...document.querySelectorAll('#filtre-journal button[title]')].map(b => b.getAttribute('title')));
+  verifier('journal : les infobulles des pastilles s’accordent (« 1 arrivée », « 3 arrivées »), jamais « Les plan »',
+    titres18.length > 3 && !titres18.some(t => /\bLes plan\b|\b1 arrivées\b/.test(t)) && titres18.some(t => /^\d+ arrivées? à « /.test(t)), JSON.stringify(titres18));
+  await p.click('#filtre-journal button[data-journal=""]'); await p.waitForTimeout(300);
+
+  // --- Le bloc par groupe.
+  const avantBloc = await p.evaluate(() => ({
+    lignes: [...document.querySelectorAll('.critique-ligne')].map(l => l.dataset.groupe + '=' + l.querySelector('.critique-total').textContent),
+    etats: [...document.querySelectorAll('#etats .etat-n')].map(x => x.textContent).join(),
+    rangee: (() => { const z = document.getElementById('filtre-valeur-groupe'); return {
+      cles: [...z.querySelectorAll('button')].map(b => b.dataset.valeurBloc).join(), visible: !z.hidden,
+      horsTete: !z.closest('.section-tete'), apresIndice: z.previousElementSibling && z.previousElementSibling.id === 'indice-dim',
+      presse: [...z.querySelectorAll('button[aria-pressed="true"]')].map(b => b.dataset.valeurBloc).join() }; })(),
+    attendu: ['', ...window.__valeurs().map(v => v.cle)].join(),
+    couleurs: [...document.querySelectorAll('#filtre-valeur-groupe button[data-valeur-bloc]:not([data-valeur-bloc=""])')].every(b =>
+      getComputedStyle(b.querySelector('.pastille')).backgroundColor ===
+      getComputedStyle(document.querySelector('#etats .etat-btn[data-cle="' + b.dataset.valeurBloc + '"] .pastille')).backgroundColor)
+  }));
+  verifier('bloc : sous l’explication de la dimension, une rangée « Tout » puis chaque valeur dans l’ordre des tuiles, aux couleurs des tuiles',
+    avantBloc.rangee.visible && avantBloc.rangee.horsTete && avantBloc.rangee.apresIndice && avantBloc.rangee.cles === avantBloc.attendu &&
+    avantBloc.rangee.presse === '' && avantBloc.couleurs, JSON.stringify(avantBloc.rangee));
+  await p.click('#filtre-valeur-groupe button[data-valeur-bloc="termine"]'); await p.waitForTimeout(400);
+  const blocT = await p.evaluate(TOTAL => {
+    const lignes = [...document.querySelectorAll('.critique-ligne')];
+    return {
+      n: lignes.length,
+      somme: lignes.reduce((t, l) => t + Number(l.querySelector('.critique-total').textContent), 0),
+      tuile: Number(document.querySelector('#etats .etat-btn[data-cle="termine"] .etat-n').textContent.replace(/\s/g, '')),
+      sur: lignes.map(l => l.dataset.groupe + '=' + (l.querySelector('.sur-n') || { textContent: '' }).textContent.replace(/^sur (\d+).*$/, '$1')),
+      sansValeur: lignes.every(l => l.classList.contains('sans-valeur') === (l.querySelector('.critique-total').textContent === '0')),
+      barres: lignes.every(l => { const b = l.querySelector('.critique-barre'); const e = b.querySelectorAll('span.eclaire');
+        const w = [...b.children].reduce((t, s) => t + parseFloat(s.style.width), 0);
+        return b.classList.contains('focalise') && (Number(l.querySelector('.critique-total').textContent) === 0 ? e.length === 0 : e.length === 1 && e[0].dataset.cle === 'termine') && Math.abs(w - 100) < 0.5; }),
+      etats: [...document.querySelectorAll('#etats .etat-n')].map(x => x.textContent).join(),
+      tableau: document.querySelectorAll('#corps-tableau tr:not(.ligne-suite)').length === TOTAL,
+      reinit: document.getElementById('reinit').hidden,
+      jetons: document.querySelectorAll('#filtres-actifs button[data-retirer]').length,
+      note: (document.querySelector('#zone-critique .critique-note.note-valeur') || { textContent: '' }).textContent.replace(/[  ]/g, ' '),
+      entete: !!document.querySelector('button[data-trig="total"] .pastille')
+    };
+  }, TOTAL);
+  verifier('bloc sous « Terminé » : toutes les lignes restent, leurs comptes font le nombre de la tuile, chacune « sur » son total',
+    blocT.n === avantBloc.lignes.length && blocT.somme === blocT.tuile &&
+    blocT.sur.slice().sort().join() === avantBloc.lignes.slice().sort().join() && blocT.sansValeur, JSON.stringify(blocT));
+  verifier('bloc : la barre passe aux valeurs, seule celle choisie s’éclaire, toujours 100 %',
+    blocT.barres);
+  verifier('bloc : le filtre ne touche qu’au bloc — tuiles, tableau, bandeau des filtres inchangés',
+    blocT.etats === avantBloc.etats && blocT.tableau && blocT.reinit && blocT.jetons === 0, JSON.stringify([blocT.etats, avantBloc.etats, blocT.tableau, blocT.reinit, blocT.jetons]));
+  verifier('bloc : l’en-tête « plans » prend la pastille, et une note dit que la fin estimée et les rythmes restent ceux du groupe',
+    blocT.entete && /^Plans et répartition : les plans « Terminé » de chaque groupe, sur son total/.test(blocT.note) && /Fin estimée et rythmes : sur tous ses plans\.$/.test(blocT.note), blocT.note);
+  // Ce qui est arrivé à la valeur au dernier relevé, groupe par groupe.
+  const gains18 = await p.evaluate(() => {
+    const J = window.__journal(), sem = J[0];
+    const dim = document.getElementById('dim-critique').value;
+    const lignes = [...document.querySelectorAll('.critique-ligne')];
+    const affiches = lignes.reduce((t, l) => { const b = l.querySelector('.sur-n b'); return t + (b ? Number(b.textContent.replace('+', '')) : 0); }, 0);
+    const attendus = sem.evenements.filter(e => (e.type === 'change' || e.type === 'indice') && e.cApres === 'termine' && e.cAvant !== 'termine').length;
+    return { affiches, attendus, dim };
+  });
+  verifier('bloc : « +n » sous chaque groupe — les plans arrivés à la valeur au dernier relevé ; leur somme est celle du journal de cette semaine',
+    gains18.affiches === gains18.attendus && gains18.attendus > 0, JSON.stringify(gains18));
+  // Tri sur la valeur. Le tri du bloc est mémorisé : on part de celui
+  // qu'ont laissé les sections d'avant, et on le rend tel quel.
+  const etatTri18 = () => p.evaluate(() => {
+    const b = document.querySelector('button[data-trig][data-actif="true"]');
+    const d = b && b.querySelector('path') ? b.querySelector('path').getAttribute('d') : '';
+    return b ? b.dataset.trig + ':' + (/^M5 1\.5v7/.test(d) ? 'desc' : 'asc') : '';
+  });
+  const triInitial18 = await etatTri18();
+  for (let k = 0; k < 3 && await etatTri18() !== 'total:desc'; k++) { await p.click('button[data-trig="total"]'); await p.waitForTimeout(250); }
+  const tri18 = await p.evaluate(() => [...document.querySelectorAll('.critique-ligne .critique-total')].map(e => Number(e.textContent)));
+  verifier('bloc : sous une valeur, « plans » range par son nombre, du plus grand au plus petit',
+    (await etatTri18()) === 'total:desc' && tri18.every((n, k) => k === 0 || tri18[k - 1] >= n), tri18.join());
+  for (let k = 0; k < 3 && await etatTri18() !== triInitial18; k++) {
+    await p.click('button[data-trig="' + triInitial18.split(':')[0] + '"]'); await p.waitForTimeout(250);
+  }
+  // Dépliage : une seule sous-liste, celle de la valeur.
+  const ligne18 = await p.evaluate(() => {
+    const l = [...document.querySelectorAll('.critique-ligne')].find(x => Number(x.querySelector('.critique-total').textContent) > 0);
+    return l ? { g: l.dataset.groupe, n: Number(l.querySelector('.critique-total').textContent) } : null;
+  });
+  await p.evaluate(g => [...document.querySelectorAll('.critique-ligne')].find(x => x.dataset.groupe === g).click(), ligne18.g);
+  await p.waitForTimeout(500);
+  const deplie18 = await p.evaluate(() => {
+    const r = document.querySelector('#zone-critique .groupe-refs');
+    return { sous: r ? r.querySelectorAll('.sous-groupe').length : 0, titre: r && r.querySelector('.sous-titre') ? r.querySelector('.sous-titre').textContent : '',
+             jetons: r ? r.querySelectorAll('.jeton-ud').length : 0, lignes: document.querySelectorAll('.critique-ligne').length,
+             entete: r ? r.querySelector('.entete').textContent.replace(/[  ]/g, ' ') : '' };
+  });
+  verifier('bloc : déplier un groupe sous « Terminé » ne montre que ses plans « Terminé », les autres lignes restent',
+    deplie18.sous === 1 && /^Terminé/.test(deplie18.titre) && deplie18.jetons === ligne18.n && deplie18.lignes === avantBloc.lignes.length &&
+    new RegExp('^' + ligne18.n + ' plans? « Terminé » sur \\d+').test(deplie18.entete), JSON.stringify([deplie18, ligne18]));
+  await p.evaluate(g => [...document.querySelectorAll('.critique-ligne')].find(x => x.dataset.groupe === g).click(), ligne18.g);
+  await p.waitForTimeout(400);
+  // À l'arrêt : sous « Terminé », aucun ; sous « En cours », tous.
+  const arret18 = await p.evaluate(async () => {
+    const somme = () => [...document.querySelectorAll('.critique-plans .arret-n')].reduce((t, e) => t + parseInt(e.textContent, 10), 0);
+    const sousT = somme();
+    document.querySelector('#filtre-valeur-groupe button[data-valeur-bloc="encours"]').click();
+    return { sousT, sousE: somme(), attendu: window.__plansALArret().length };
+  });
+  verifier('bloc : « à l’arrêt » ne compte que les plans de la valeur — aucun sous « Terminé », tous sous « En cours »',
+    arret18.sousT === 0 && arret18.sousE === arret18.attendu && arret18.attendu > 0, JSON.stringify(arret18));
+  // La tuile d'une autre valeur l'emporte ; la même valeur garde le filtre.
+  await p.click('#etats .etat-btn[data-cle="termine"]'); await p.waitForTimeout(400);
+  const tuile18 = await p.evaluate(() => ({ bloc: window.__vueValeurs().bloc,
+    actives: [...document.querySelectorAll('#filtre-valeur-groupe button:not([disabled])')].map(b => b.dataset.valeurBloc).join() }));
+  verifier('bloc : cliquer la tuile d’une autre valeur ramène la rangée à « Tout » ; seules « Tout » et cette valeur restent cliquables',
+    tuile18.bloc === '' && tuile18.actives === ',termine', JSON.stringify(tuile18));
+  await p.click('#filtre-valeur-groupe button[data-valeur-bloc="termine"]'); await p.waitForTimeout(300);
+  await p.click('#etats .etat-btn[data-cle="termine"]'); await p.waitForTimeout(300);
+  await p.click('#etats .etat-btn[data-cle="termine"]'); await p.waitForTimeout(300);
+  verifier('bloc : la tuile de la même valeur garde le filtre du bloc',
+    await p.evaluate(() => window.__vueValeurs().bloc === 'termine'));
+  await p.click('#etats .etat-btn[data-cle="termine"]'); await p.waitForTimeout(300);
+  // Vie de l'état : survit à la dimension, pas à la source ; jamais mémorisé.
+  const dims18 = await p.evaluate(() => [...document.querySelectorAll('#dim-critique option')].map(o => o.value));
+  const dimAvant18 = await p.evaluate(() => document.getElementById('dim-critique').value);
+  await p.selectOption('#dim-critique', dims18.find(d => d !== dimAvant18));
+  await p.waitForTimeout(400);
+  const vie18 = await p.evaluate(() => ({ bloc: window.__vueValeurs().bloc, total: [...document.querySelectorAll('.critique-ligne .critique-total')].reduce((t, e) => t + Number(e.textContent), 0),
+    tuile: Number(document.querySelector('#etats .etat-btn[data-cle="termine"] .etat-n').textContent.replace(/\s/g, '')),
+    stocke: (() => { try { return localStorage.getItem('suivi-fwd:v1') || ''; } catch (e) { return ''; } })() }));
+  verifier('bloc : le filtre survit au changement de dimension (ATA → autre), et les comptes font toujours la tuile',
+    vie18.bloc === 'termine' && vie18.total === vie18.tuile, JSON.stringify([vie18.bloc, vie18.total, vie18.tuile]));
+  verifier('bloc et graphique : rien de ces filtres n’est mémorisé', !/valeurBloc|valeurGraphe/.test(vie18.stocke));
+  await p.selectOption('#dim-critique', dimAvant18); await p.waitForTimeout(300);
+  // La recherche du bloc croise la valeur.
+  const ref18 = await p.evaluate(() => {
+    const t = [...document.querySelectorAll('#corps-tableau tr')];
+    const i = [...document.querySelectorAll('tr.titres th')].findIndex(x => x.dataset.cle === 'reference');
+    const j = [...document.querySelectorAll('tr.titres th')].findIndex(x => x.dataset.cle === 'avancement');
+    const tr = t.find(r => /cours/i.test(r.children[j].textContent));
+    return tr ? tr.children[i].textContent.trim() : null;
+  });
+  await p.fill('#filtre-groupe', ref18); await p.waitForTimeout(450);
+  const rech18 = await p.evaluate(() => (document.querySelector('#zone-critique .vide-message') || { textContent: '' }).textContent.replace(/[  ]/g, ' '));
+  verifier('bloc : sous « Terminé », chercher un plan « En cours » ne le trouve pas, et le message nomme la valeur',
+    /^Ni groupe ni plan « Terminé » ne contient « /.test(rech18), rech18 + ' / ' + ref18);
+  await p.fill('#filtre-groupe', ''); await p.waitForTimeout(400);
+  // Deux valeurs d'une même famille : la barre par valeur les sépare.
+  const famille18 = await p.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    let k = 0;
+    s.plans.forEach(x => { if (window.__classer(x.avancement) === 'encours' && (k++ % 2)) x.avancement = 'PWD_TO_CONTROL'; });
+    window.__chargerSource(s);
+    const v = window.__valeurs().find(x => x.libelle === 'PWD_TO_CONTROL');
+    const b = document.querySelector('#filtre-valeur-groupe button[data-valeur-bloc="' + v.cle + '"]');
+    const cEnCours = getComputedStyle(document.querySelector('#filtre-valeur-groupe button[data-valeur-bloc="encours"] .pastille')).backgroundColor;
+    const cPwd = getComputedStyle(b.querySelector('.pastille')).backgroundColor;
+    b.click();
+    const somme = [...document.querySelectorAll('.critique-ligne .critique-total')].reduce((t, e) => t + Number(e.textContent), 0);
+    const eclaires = [...new Set([...document.querySelectorAll('.critique-barre span.eclaire')].map(e => e.dataset.cle))].join();
+    return { n: v.n, somme, eclaires, cle: v.cle, couleursDistinctes: cEnCours !== cPwd, famille: v.famille };
+  });
+  verifier('bloc : deux valeurs « en cours » (En cours, PWD_TO_CONTROL) ont deux pilules de teintes distinctes ; filtrer l’une ne compte qu’elle',
+    famille18.famille === 'encours' && famille18.couleursDistinctes && famille18.somme === famille18.n && famille18.eclaires === famille18.cle, JSON.stringify(famille18));
+  // Le groupe « — » (plans sans valeur dans la dimension) : le choisir
+  // donne au tableau et aux tuiles les mêmes plans que sa ligne du bloc.
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
+  await p.waitForTimeout(300);
+  const dimTiret18 = await p.evaluate(() => {
+    const sel = document.getElementById('dim-critique');
+    for (const o of [...sel.options]) {
+      sel.value = o.value; sel.dispatchEvent(new Event('change', { bubbles: true }));
+      if ([...document.querySelectorAll('.critique-ligne')].some(l => l.dataset.groupe === '\u2014')) return o.value;
+    }
+    return null;
+  });
+  if (dimTiret18) {
+    const tiret18 = await p.evaluate(() => {
+      const l = [...document.querySelectorAll('.critique-ligne')].find(x => x.dataset.groupe === '\u2014');
+      const n = Number(l.querySelector('.critique-total').textContent);
+      l.click();
+      return { n, tuiles: [...document.querySelectorAll('#etats .etat-n')].reduce((t, e) => t + Number(e.textContent.replace(/\s/g, '')), 0),
+               lignes: document.querySelectorAll('#corps-tableau tr:not(.ligne-suite)').length };
+    });
+    verifier('bloc : choisir le groupe « — » (plans sans valeur) donne aux tuiles et au tableau ses plans, ni plus ni moins',
+      tiret18.n > 0 && tiret18.tuiles === tiret18.n && tiret18.lignes === tiret18.n, JSON.stringify(tiret18));
+  }
+  // Le contrat change : tout repart à « Tout ».
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
+  await p.waitForTimeout(400);
+  verifier('bloc : une autre source ramène la rangée à « Tout »',
+    await p.evaluate(() => window.__vueValeurs().bloc === '' && document.querySelector('#filtre-valeur-groupe button[data-valeur-bloc=""]').getAttribute('aria-pressed') === 'true'));
+  await p.focus('#filtre-valeur-groupe button[data-valeur-bloc="afaire"]'); await p.keyboard.press('Enter'); await p.waitForTimeout(300);
+  verifier('bloc : au clavier, Entrée choisit la pilule et le focus y reste',
+    await p.evaluate(() => document.activeElement && document.activeElement.dataset.valeurBloc === 'afaire' && window.__vueValeurs().bloc === 'afaire'));
+  await p.click('#filtre-valeur-groupe button[data-valeur-bloc=""]'); await p.waitForTimeout(300);
+
+  // --- Le graphique.
+  const g18 = await p.evaluate(() => {
+    const z = document.getElementById('filtre-valeur-graphe');
+    return { visible: !z.hidden, boutons: [...z.querySelectorAll('button')].map(b => b.dataset.valeurGraphe + ':' + b.querySelector('.libelle').textContent + ':' + b.getAttribute('aria-pressed')),
+             projection: !!document.querySelector('#zone-graphe path[stroke-dasharray="5 4"]'), legende: document.getElementById('legende').textContent };
+  });
+  verifier('graphique : une rangée « Terminé » (la courbe des validés, pressée par défaut), puis les autres valeurs',
+    g18.visible && g18.boutons.join('|') === ':Terminé:true|encours:En cours:false|afaire:À faire:false|vide:Non renseigné:false' && g18.projection && /réalisé/.test(g18.legende),
+    JSON.stringify(g18));
+  await p.click('#filtre-valeur-graphe button[data-valeur-graphe="encours"]'); await p.waitForTimeout(400);
+  const gE = await p.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    const tries = s.releves.slice().sort((a, b) => a.semaine < b.semaine ? -1 : 1);
+    const premier = Object.keys(tries[0].plans).filter(r => window.__classer(tries[0].plans[r]) === 'encours').length;
+    const pts = window.__serieValeur('encours').pts;
+    const courbe = document.querySelector('#zone-graphe path.courbe');
+    return {
+      note: document.getElementById('note-graphe').textContent.replace(/[  ]/g, ' '),
+      legende: document.getElementById('legende').textContent.replace(/[  ]/g, ' '),
+      items: document.querySelectorAll('#legende .legende-item').length,
+      projection: !!document.querySelector('#zone-graphe path[stroke-dasharray="5 4"]'),
+      aria: document.querySelector('#zone-graphe svg').getAttribute('aria-label'),
+      couleur: courbe ? getComputedStyle(courbe).stroke : null,
+      tuile: getComputedStyle(document.querySelector('#etats .etat-btn[data-cle="encours"] .pastille')).backgroundColor,
+      premier, debut: pts[0].termine, fin: pts[pts.length - 1].termine,
+      nTuile: Number(document.querySelector('#etats .etat-btn[data-cle="encours"] .etat-n').textContent.replace(/\s/g, '')),
+      pertes: document.querySelectorAll('#zone-graphe .barre-semaine.perte').length,
+      bande: [...document.querySelectorAll('#zone-graphe text')].some(t => /« En cours » : variation nette par semaine/.test(t.textContent))
+    };
+  });
+  verifier('graphique sous « En cours » : la courbe compte ses plans relevé après relevé — du premier relevé au nombre de la tuile',
+    gE.debut === gE.premier && gE.fin === gE.nTuile, JSON.stringify([gE.premier, gE.debut, gE.fin, gE.nTuile]));
+  verifier('graphique : à la couleur de sa pastille, sans projection ni rythme requis, nommée dans la note, la légende et pour les lecteurs d’écran',
+    gE.couleur === gE.tuile && !gE.projection && gE.items === 1 && /^Plans « En cours » · /.test(gE.note) &&
+    /« En cours », relevé après relevé/.test(gE.legende) && /En cours/.test(gE.aria), JSON.stringify(gE));
+  verifier('graphique : une valeur qui se vide a sa bande à deux sens — les baisses sous le trait',
+    gE.bande && gE.pertes >= 1, JSON.stringify([gE.bande, gE.pertes]));
+  const iBulle = await p.evaluate(() => { const pts = window.__serieValeur('encours').pts; return pts[pts.length - 2].i; });
+  await p.hover('#zone-graphe .zone-clic[data-i="' + iBulle + '"]'); await p.waitForTimeout(300);
+  const bulle18 = await p.evaluate(() => document.getElementById('bulle').textContent.replace(/[  ]/g, ' '));
+  verifier('graphique : la bulle d’un relevé dit le nombre de la valeur et sa variation nette', /En cours\d/.test(bulle18) && /variation nette sur le relevé précédent/.test(bulle18), bulle18.slice(0, 160));
+  await p.mouse.move(5, 5);
+  // Sous un périmètre, la courbe de la valeur le suit.
+  await p.click('#choix-perimetre button:has-text("PERSO")'); await p.waitForTimeout(600);
+  const per18 = await p.evaluate(() => { const pts = window.__serieValeur('encours').pts;
+    return { fin: pts[pts.length - 1].termine, tuile: Number(document.querySelector('#etats .etat-btn[data-cle="encours"] .etat-n').textContent.replace(/\s/g, '')), garde: window.__vueValeurs().graphe }; });
+  verifier('graphique : sous le périmètre PERSO, la courbe « En cours » finit au nombre de sa tuile', per18.garde === 'encours' && per18.fin === per18.tuile, JSON.stringify(per18));
+  await p.click('#choix-perimetre button:has-text("Tout")'); await p.waitForTimeout(600);
+  // Un groupe choisi dans le bloc : la courbe de la valeur ne compte que lui.
+  await p.click('#filtre-valeur-groupe button[data-valeur-bloc="encours"]'); await p.waitForTimeout(300);
+  const ligneG18 = await p.evaluate(() => { const l = document.querySelector('.critique-ligne'); return { g: l.dataset.groupe, n: Number(l.querySelector('.critique-total').textContent) }; });
+  await p.click('.critique-ligne >> nth=0'); await p.waitForTimeout(500);
+  const grp18 = await p.evaluate(() => { const pts = window.__serieValeur('encours').pts; return pts[pts.length - 1].termine; });
+  verifier('graphique : un groupe choisi dans le bloc — la courbe « En cours » finit à son compte dans le bloc', grp18 === ligneG18.n, JSON.stringify([grp18, ligneG18]));
+  await p.click('.critique-ligne >> nth=0'); await p.waitForTimeout(400);
+  await p.click('#filtre-valeur-groupe button[data-valeur-bloc=""]'); await p.waitForTimeout(300);
+  await p.focus('#filtre-valeur-graphe button[data-valeur-graphe="afaire"]'); await p.keyboard.press('Enter'); await p.waitForTimeout(300);
+  verifier('graphique : au clavier, Entrée choisit la pilule et le focus y reste',
+    await p.evaluate(() => document.activeElement && document.activeElement.dataset.valeurGraphe === 'afaire' && window.__vueValeurs().graphe === 'afaire'));
+  await p.click('#filtre-valeur-graphe button[data-valeur-graphe=""]'); await p.waitForTimeout(400);
+  const retour18 = await p.evaluate(() => ({ projection: !!document.querySelector('#zone-graphe path[stroke-dasharray="5 4"]'),
+    legende: document.getElementById('legende').textContent, graphe: window.__vueValeurs().graphe }));
+  verifier('graphique : « Terminé » rend la courbe des validés, sa projection et sa légende',
+    retour18.projection && /réalisé/.test(retour18.legende) && retour18.graphe === '', JSON.stringify(retour18));
+  // Un relevé archivé sans carte plan par plan : hors de la courbe d'une valeur, et la bulle le dit.
+  const sansCarte18 = await p.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    const tries = s.releves.slice().sort((a, b) => a.semaine < b.semaine ? -1 : 1);
+    const trou = tries[tries.length - 4];
+    delete trou.plans; delete trou.plansConcept;
+    window.__chargerSource(s);
+    document.querySelector('#filtre-valeur-graphe button[data-valeur-graphe="encours"]').click();
+    const pts = window.__serieValeur('encours').pts;
+    const iTrou = [...document.querySelectorAll('#zone-graphe .zone-clic')].map(z => Number(z.dataset.i)).filter(i => !pts.some(pt => pt.i === i))
+      .find(i => /hors de cette courbe/.test(document.querySelector('#zone-graphe .zone-clic[data-i="' + i + '"]').getAttribute('aria-label')));
+    const apres = pts.find(pt => pt.i > iTrou);
+    return { iTrou, apres: apres ? apres.i : null, note: document.getElementById('note-graphe').textContent };
+  });
+  verifier('graphique : un relevé sans carte est dit « hors de cette courbe » (note et lecteur d’écran)',
+    sansCarte18.iTrou !== undefined && /1 relevé sans détail plan par plan, hors de cette courbe/.test(sansCarte18.note), JSON.stringify(sansCarte18));
+  if (sansCarte18.iTrou !== undefined) {
+    await p.hover('#zone-graphe .zone-clic[data-i="' + sansCarte18.iTrou + '"]'); await p.waitForTimeout(250);
+    const bTrou = await p.evaluate(() => document.getElementById('bulle').textContent);
+    await p.hover('#zone-graphe .zone-clic[data-i="' + sansCarte18.apres + '"]'); await p.waitForTimeout(250);
+    const bApres = await p.evaluate(() => document.getElementById('bulle').textContent.replace(/[\u00a0\u202f]/g, ' '));
+    verifier('graphique : sa bulle dit « sans détail plan par plan », et le relevé suivant dit sa variation « depuis le relevé de S… »',
+      /Relevé sans détail plan par plan : hors de cette courbe/.test(bTrou) && /variation nette depuis le relevé de S\d/.test(bApres), JSON.stringify([bTrou, bApres.slice(0, 160)]));
+    await p.mouse.move(5, 5);
+  }
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
+  await p.waitForTimeout(300);
+  // Plusieurs valeurs « validé » : un premier bouton « Validés ».
+  const deuxFinies = await p.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    let k = 0;
+    s.plans.forEach(x => { if (window.__classer(x.avancement) === 'termine' && (k++ % 3 === 0)) x.avancement = 'Validé'; });
+    window.__chargerSource(s);
+    const r = [...document.querySelectorAll('#filtre-valeur-graphe button')].map(b => b.dataset.valeurGraphe + ':' + b.querySelector('.libelle').textContent);
+    window.__chargerSource(window.__jeuDExemple('HDK'));
+    return r;
+  });
+  verifier('graphique : deux valeurs veulent dire « validé » — un premier bouton « Validés », puis chacune à part',
+    deuxFinies[0] === ':Validés' && deuxFinies.filter(x => /^termine:|^valide:/.test(x)).length === 2, JSON.stringify(deuxFinies));
+  // Le concept : la rangée du graphique repart des valeurs du concept, sur « Validés »/« Traité ».
+  await p.click('#filtre-valeur-graphe button[data-valeur-graphe="encours"]'); await p.waitForTimeout(300);
+  await p.evaluate(() => { const b = document.querySelector('#choix-indicateur button[data-indicateur="concept"]'); if (b) b.click(); });
+  await p.waitForTimeout(400);
+  verifier('graphique : passer au concept harnais ramène la courbe par défaut',
+    await p.evaluate(() => window.__vueValeurs().graphe === ''));
+  await p.evaluate(() => { const b = document.querySelector('#choix-indicateur button[data-indicateur="def"]'); if (b) b.click(); });
+  await p.waitForTimeout(400);
   await reinitialiser(p);
 
   section('Persistance (même navigateur, page rechargée)');

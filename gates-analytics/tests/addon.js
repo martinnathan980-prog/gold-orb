@@ -740,7 +740,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
       'Diffusion PH Base@2027-S02/BASE/OPTION,Diffusion PH Perso@2027-S03/PERSO,Diffusion TO Base@2027-S05/BASE/OPTION,Diffusion TO Perso@2027-S08/PERSO',
     JSON.stringify(parDefaut));
   verifier('aucune fonction de sauvegarde ni de propriété de document ne subsiste',
-    typeof j.contexte.sauverJalons === 'undefined' && !/PropertiesService|CLE_JALONS/.test(fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8')));
+    typeof j.contexte.sauverJalons === 'undefined' && !/CLE_JALONS/.test(fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8')) &&
+    /* Les propriétés du document ne gardent que la version des données et les consultations (débrief 18). */
+    (fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8').match(/[gs]etProperty\(([A-Z_]+)/g) || []).every(x => /CLE_VERSION_DONNEES|CLE_CONSULTATIONS/.test(x)));
   configurer([
     { semaine: '2026-s8', texte: '  Revue de définition  ' },
     { semaine: '2026-S02', texte: '' },
@@ -1034,6 +1036,136 @@ function serveurSur(valeurs, proprietes, fichiers) {
   cG.__sansInterface = false;
   cG.desinstallerSuiviHebdomadaire();
   verifier('du menu, couper l\'archivage automatique marche toujours', declencheurs().length === 0);
+
+  // =================================================================
+  section('Débrief 18 : le concept harnais — vide, « À traiter », « Traité »');
+  const cV18 = chargerServeur(fabriquerHT(), {});
+  verifier('« Traité » (et Traitée, TRAITÉS) compte validé ; « À traiter » (ou A traiter) à faire ; vide non renseigné ; « Non traité » jamais validé',
+    ['Traité', 'traitée', 'TRAITÉS', ' Traité '].every(v => cV18.classerFWD(v) === 'termine') &&
+    ['À traiter', 'A traiter', 'a traiter'].every(v => cV18.classerFWD(v) === 'afaire') &&
+    cV18.classerFWD('') === 'vide' && cV18.classerFWD('Non traité') !== 'termine',
+    JSON.stringify(['Traité', 'À traiter', '', 'Non traité'].map(v => cV18.classerFWD(v))));
+
+  // =================================================================
+  section('Débrief 18 : le paquet de chaque contrat en cache, renouvelé dès que le classeur change');
+  /* « Le site est très long à charger » : chaque ouverture relisait tout le
+     classeur. Le paquet se garde en cache, sous une clé qui change à la
+     moindre modification — un collage (onEdit), un archivage, un onglet. */
+  const clK = fabriquerHT();
+  const cK = chargerServeur(clK, {});
+  cK.enregistrerInstantaneHebdo();
+  cK.__activerCache();
+  const sansHeure = o => { const c = JSON.parse(JSON.stringify(o)); delete c.genereLe; return JSON.stringify(c); };
+  const frais = id => { vm.runInContext('PAGE_FRAICHE = true', cK); try { return sansHeure(cK.getDonneesCompactes(id)); } finally { vm.runInContext('PAGE_FRAICHE = false', cK); } };
+  const k1 = cK.getDonneesCompactes('HDK');
+  verifier('la première ouverture lit le classeur et garde le paquet en cache',
+    k1.ok && Object.keys(cK.__memoireCache).some(k => /:n$/.test(k)), Object.keys(cK.__memoireCache).join(', '));
+  const ongletK = clK.getSheetByName('HDK');
+  const bK = ongletK.valeurs[0].indexOf('HDK AA 011') + 3;
+  const ligneK = ongletK.valeurs.filter(l => /^UD-/.test(l[1] || '') && l[bK] !== '100%')[0];
+  ligneK[bK] = '100%';          // un plan de plus validé, sans passer par onEdit
+  const k2 = cK.getDonneesCompactes('HDK');
+  verifier('la seconde ouverture est servie du cache : rien n\'est relu tant que rien ne dit le classeur modifié',
+    JSON.stringify(k2) === JSON.stringify(k1));
+  cK.onEdit({});
+  const k3 = cK.getDonneesCompactes('HDK');
+  verifier('un collage ou une saisie (onEdit) rend le cache caduc : l\'ouverture suivante voit l\'extract du jour',
+    JSON.stringify(k3) !== JSON.stringify(k1) && sansHeure(k3) === frais('HDK'));
+  cK.enregistrerInstantaneHebdo();
+  verifier('un archivage aussi : le paquet suivant porte le relevé tout juste écrit', sansHeure(cK.getDonneesCompactes('HDK')) === frais('HDK') &&
+    sansHeure(cK.getDonneesCompactes('HDK')) !== sansHeure(k3));
+  clK.getSheetByName('THS').nom = 'THS 2';
+  const k5 = cK.getDonneesCompactes('HDK');
+  verifier('un onglet renommé aussi (la liste des contrats change) : « THS 2 » dans le paquet servi',
+    k5.contrats.map(c => c.id).join() === 'HDK,THS 2', JSON.stringify(k5.contrats));
+  clK.getSheetByName('THS 2').nom = 'THS';
+  vm.runInContext('CONFIG.JALONS = []', cK);
+  verifier('une configuration changée aussi (Code collé de nouveau) : plus de jalon servi',
+    cK.getDonneesCompactes('HDK').jalons.length === 0);
+  const avantErreur = Object.keys(cK.__memoireCache).length;
+  const erreurK = cK.getDonneesCompactes('Nulle part');
+  verifier('un paquet d\'erreur n\'est jamais gardé', erreurK.ok === false && Object.keys(cK.__memoireCache).length === avantErreur);
+  /* ?frais=1 (relecture du revue 18) : il rend caduc tout le cache — la
+     page ouverte relit, garde ce qu'elle a lu, et les ouvertures suivantes
+     (et les changements de contrat) en profitent. */
+  const ligneF = ongletK.valeurs.filter(l => /^UD-/.test(l[1] || '') && l[bK] !== '100%')[0];
+  ligneF[bK] = '100%';          // sans onEdit : le cache est périmé
+  const perimeF = sansHeure(cK.getDonneesCompactes('HDK'));
+  cK.doGet({ parameter: { frais: '1' } });
+  const apresF = sansHeure(cK.getDonneesCompactes('HDK'));
+  const ensuiteF = sansHeure(cK.getDonneesCompactes('HDK'));
+  verifier('?frais=1 rend tout le cache caduc : l\'ouverture relit le classeur, et les suivantes aussi voient l\'extract du jour',
+    perimeF !== frais('HDK') && apresF === frais('HDK') && ensuiteF === apresF && vm.runInContext('PAGE_FRAICHE', cK) === false);
+  // Des lignes supprimées ou ajoutées : onEdit ne les voit pas, la taille de l'onglet si.
+  const tailleAvant = sansHeure(cK.getDonneesCompactes('HDK'));
+  ongletK.deleteRow(ongletK.getLastRow());
+  const tailleApres = sansHeure(cK.getDonneesCompactes('HDK'));
+  verifier('des lignes supprimées (sans onEdit) : la taille de l\'onglet change, l\'ouverture relit le classeur',
+    tailleApres !== tailleAvant && tailleApres === frais('HDK'));
+  // Un historique illisible le temps d'une panne : ce paquet-là ne se garde pas.
+  cK.onEdit({});
+  vm.runInContext("var __hOrig = getHistorique, __hPannes = 1; getHistorique = function () { if (__hPannes-- > 0) throw new Error('Service Spreadsheets timed out'); return __hOrig.apply(this, arguments); };", cK);
+  const pannee = cK.getDonneesCompactes('HDK');
+  const remise = cK.getDonneesCompactes('HDK');
+  vm.runInContext('getHistorique = __hOrig', cK);
+  const relevesDe = p => (p.relevesTab ? p.relevesTab.releves : p.releves) || [];
+  verifier('un historique illisible le temps d\'une panne n\'est pas gardé : l\'ouverture suivante retrouve la courbe',
+    pannee.historiqueIllisible === true && !remise.historiqueIllisible && relevesDe(remise).length > 0,
+    JSON.stringify([pannee.historiqueIllisible, remise.historiqueIllisible, relevesDe(remise).length]));
+  // Un gros extract : le paquet se découpe sur plusieurs clés et se recolle à l'identique.
+  const gG = feuilleGates(640);
+  const clG18 = new Classeur([new Feuille('HDK', gG.valeurs, false, gG.fusions)], 'Gros');
+  const cG18 = chargerServeur(clG18, {});
+  cG18.enregistrerInstantaneHebdo();
+  cG18.__activerCache();
+  const g1 = cG18.donneesJSONPourPage();
+  const nTranches = Number(Object.keys(cG18.__memoireCache).filter(k => /:n$/.test(k)).map(k => cG18.__memoireCache[k])[0]);
+  const g2 = cG18.donneesJSONPourPage();
+  verifier('un paquet de 640 plans se range sur plusieurs clés (moins de 100 Ko chacune) et se relit à l\'identique',
+    nTranches > 1 && Object.keys(cG18.__memoireCache).filter(k => !/:n$/.test(k)).every(k => cG18.__memoireCache[k].length <= 30000) && g2 === g1,
+    nTranches + ' tranches, ' + g1.length + ' caractères');
+
+  // =================================================================
+  section('Débrief 18 : une ouverture ne lit les en-têtes de chaque onglet qu\'une fois');
+  const clE = fabriquerHT();
+  clE.feuilles.push(new Feuille('Notes', [['Une note'], ['à côté']]));
+  const cE = chargerServeur(clE, {});
+  cE.enregistrerInstantaneHebdo();
+  vm.runInContext('var __lecturesEntetes = 0; var __aDesEntetesLus = aDesEntetesLus; aDesEntetesLus = function (f) { __lecturesEntetes++; return __aDesEntetesLus(f); };', cE);
+  const pqE = cE.getDonneesPourClient('HDK');
+  const nE = vm.runInContext('__lecturesEntetes', cE);
+  verifier('les premières lignes de chaque onglet lues une fois par ouverture (elles l\'étaient cinq fois)',
+    pqE.ok && nE > 0 && nE <= clE.getSheets().filter(f => !f.isSheetHidden()).length, String(nE));
+  vm.runInContext('__lecturesEntetes = 0', cE);
+  cE.listerContrats(clE); cE.listerContrats(clE);
+  verifier('hors d\'une ouverture, rien n\'est gardé : la liste des contrats relit ce qu\'elle doit',
+    vm.runInContext('__lecturesEntetes', cE) >= 4 && vm.runInContext('MEMO_ENTETES', cE) === null);
+
+  // =================================================================
+  section('Débrief 18 : les consultations, comptées sans nom ni adresse');
+  const cS18 = chargerServeur(fabriquerHT(), {});
+  cS18.__cleLecteur = 'cle-temporaire-A'; cS18.noterConsultation(); cS18.noterConsultation();
+  cS18.__cleLecteur = 'cle-temporaire-B'; cS18.noterConsultation();
+  cS18.__cleLecteur = ''; cS18.noterConsultation();
+  const diagS18 = cS18.diagnostic();
+  verifier('le Diagnostic dit, semaine par semaine, combien d\'ouvertures et de personnes différentes',
+    /✓ Consultations de la page \(sans nom ni adresse\) : S\d+ : 4 ouvertures, 2 personnes/.test(diagS18),
+    (diagS18.match(/[^\n]*Consultations[^\n]*/) || [''])[0]);
+  verifier('rien de ce qui est gardé ne nomme quelqu\'un : ni adresse, ni clé de Google en clair',
+    !/cle-temporaire|@/.test(cS18.__proprietes.SUIVI_FWD_CONSULTATIONS || ''), cS18.__proprietes.SUIVI_FWD_CONSULTATIONS);
+  cS18.__proprietes.SUIVI_FWD_CONSULTATIONS = JSON.stringify({ '2026-S01': { n: 5, k: ['a', 'b', 'c'] } });
+  cS18.noterConsultation();
+  const gardees = JSON.parse(cS18.__proprietes.SUIVI_FWD_CONSULTATIONS);
+  verifier('une semaine finie ne garde que ses nombres : 5 ouvertures, 3 personnes, plus aucune empreinte',
+    gardees['2026-S01'].n === 5 && gardees['2026-S01'].p === 3 && !('k' in gardees['2026-S01']) &&
+    /S1 : 5 ouvertures, 3 personnes/.test(cS18.diagnostic()), JSON.stringify(gardees));
+  const vieilles = {};
+  for (let w = 1; w <= 20; w++) vieilles['2025-S' + String(w).padStart(2, '0')] = { n: 1, p: 1 };
+  cS18.__proprietes.SUIVI_FWD_CONSULTATIONS = JSON.stringify(vieilles);
+  cS18.noterConsultation();
+  verifier('douze semaines au plus', Object.keys(JSON.parse(cS18.__proprietes.SUIVI_FWD_CONSULTATIONS)).length === 12);
+  vm.runInContext('LockService = { getDocumentLock: function () { return { tryLock: function () { return false; }, releaseLock: function () {} }; } }', cS18);
+  verifier('verrou pris ailleurs : l\'ouverture n\'est pas comptée, et rien ne casse', cS18.noterConsultation() === false);
 
   // =================================================================
   /* La seconde base : rien tant que CONFIG.RAPPROCHEMENT.FEUILLE est vide.
@@ -1801,6 +1933,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
      partagent le même localStorage. Sans isolation, la page hériterait des
      colonnes et de la dimension choisies par les tests précédents. */
   const ctxGates = await nav.newContext({ viewport: { width: 1280, height: 1000 } });
+  /* Ici, on compte les lignes du tableau : toutes dessinées d'un coup. Le
+     découpage en tranches a ses propres tests (« 640 plans… »). */
+  await ctxGates.addInitScript(() => { window.SUIVI_FWD_BUDGET = 1e9; });
   const pg = await ctxGates.newPage();
   pg.on('pageerror', e => erreursJS.push('gates : ' + e.message));
   pg.on('console', m => { if (m.type() === 'error' && !m.text().includes('ERR_FILE')) erreursJS.push('gates : ' + m.text()); });
@@ -2082,16 +2217,18 @@ function serveurSur(valeurs, proprietes, fichiers) {
   /* Les boutons du journal sont les valeurs d'arrivée de la colonne : on
      prend le premier de la famille « fini », quel que soit son nom. */
   const boutonFini = await pg.evaluate(() => {
-    const b = document.querySelector('#filtre-journal button[data-famille="termine"]');
-    return b ? { cle: b.dataset.journal, mot: b.textContent.trim() } : null;
+    const b = document.querySelector('#filtre-journal button[data-famille="termine"]:not([disabled])');
+    return b ? { cle: b.dataset.journal, mot: b.querySelector('.libelle').textContent.trim() } : null;
   });
-  await pg.click('#filtre-journal button[data-famille="termine"]'); await pg.waitForTimeout(400);
+  await pg.click('#filtre-journal button[data-famille="termine"]:not([disabled])'); await pg.waitForTimeout(400);
   verifier('le filtre d’une valeur finie (« ' + (boutonFini && boutonFini.mot) + ' ») ne laisse que des passages vers elle',
     !!boutonFini && await pg.evaluate(m => [...document.querySelectorAll('.journal-ligne .vers')]
       .every(v => v.querySelector('.etiq-etat.apres').textContent.trim() === m), boutonFini.mot));
-  verifier('et les résumés ne parlent plus que d’elle',
+  /* Débrief 18 : un plan réémis devenu validé est de ceux-là ; dans sa
+     semaine, il garde sa case « changement d'indice ». */
+  verifier('et les résumés ne parlent plus que d’elle (ou des réémissions arrivées à elle)',
     !!boutonFini && await pg.evaluate(k => [...document.querySelectorAll('.journal-tete .resume .compte-passage')]
-      .every(b => b.dataset.passage === k) &&
+      .every(b => b.dataset.passage === k || b.dataset.passage === 'indice') &&
       [...document.querySelectorAll('.journal-tete .resume')].every(r => !/effacé/.test(r.textContent)), boutonFini.cle));
   await pg.click('#filtre-journal button[data-journal=""]'); await pg.waitForTimeout(400);
 
@@ -2114,6 +2251,46 @@ function serveurSur(valeurs, proprietes, fichiers) {
   await pg.click('.journal-ligne >> nth=0'); await pg.waitForTimeout(600);
   verifier('re-cliquer rend les 186 plans',
     await pg.evaluate(() => document.querySelectorAll('#corps-tableau tr').length) === 186);
+
+  // =================================================================
+  /* Débrief 18 : les petites pastilles de couleur — journal, bloc par
+     groupe, graphique —, sur la page servie par Code.gs. */
+  section('Débrief 18 : les pastilles du journal, du bloc et du graphique, dans la page servie');
+  const past18 = await pg.evaluate(() => {
+    const cles = (sel, attr) => [...document.querySelectorAll(sel + ' button')].map(b => b.getAttribute(attr));
+    const vals = window.__valeurs();
+    return {
+      vals: vals.map(v => v.cle), finies: vals.filter(v => v.famille === 'termine').length,
+      journal: cles('#filtre-journal', 'data-journal'),
+      bloc: cles('#filtre-valeur-groupe', 'data-valeur-bloc'), blocVisible: !document.getElementById('filtre-valeur-groupe').hidden,
+      graphe: cles('#filtre-valeur-graphe', 'data-valeur-graphe'), grapheVisible: !document.getElementById('filtre-valeur-graphe').hidden,
+      comptes: [...document.querySelectorAll('#filtre-journal button .n')].map(n => n.textContent)
+    };
+  });
+  verifier('journal : la rangée commence par toutes les valeurs de la colonne, dans l’ordre des tuiles, et finit par reculs et indice, chacune comptée',
+    past18.journal.slice(0, past18.vals.length + 1).join() === ['', ...past18.vals].join() &&
+    past18.journal.slice(-2).join() === 'reculs,indice' && past18.comptes.length === past18.journal.length - 1, JSON.stringify(past18));
+  verifier('bloc : « Tout » puis chaque valeur, visible',
+    past18.blocVisible && past18.bloc.join() === ['', ...past18.vals].join(), JSON.stringify(past18.bloc));
+  /* Après les valeurs du jour viennent celles « d'hier » : portées par des
+     relevés, plus par aucun plan (ici « Entre 0 et 100 % », « À faire »). */
+  const nJour18 = past18.vals.length + (past18.finies === 1 ? 0 : 1);
+  verifier('graphique : une pilule par valeur du jour (et « Validés » en tête s’il y a plusieurs valeurs finies), puis celles d’hier ; la courbe des validés par défaut',
+    past18.grapheVisible && past18.graphe[0] === '' && past18.graphe.length >= nJour18 &&
+    past18.graphe.slice(nJour18).every(k => k && past18.vals.indexOf(k) === -1), JSON.stringify([past18.vals, past18.graphe]));
+  const choix18 = await pg.evaluate(() => window.__valeurs().filter(v => v.famille !== 'termine' && v.n > 0)[0]);
+  await pg.evaluate(k => [...document.querySelectorAll('#filtre-valeur-groupe button')].find(b => b.dataset.valeurBloc === k).click(), choix18.cle);
+  await pg.waitForTimeout(300);
+  const somme18 = await pg.evaluate(() => [...document.querySelectorAll('.critique-ligne .critique-total')].reduce((t, e) => t + Number(e.textContent), 0));
+  verifier('bloc sous « ' + choix18.libelle + ' » : les comptes des groupes font ses ' + choix18.n + ' plans', somme18 === choix18.n, String(somme18));
+  await pg.click('#filtre-valeur-groupe button[data-valeur-bloc=""]'); await pg.waitForTimeout(300);
+  await pg.evaluate(k => [...document.querySelectorAll('#filtre-valeur-graphe button')].find(b => b.dataset.valeurGraphe === k).click(), choix18.cle);
+  await pg.waitForTimeout(300);
+  const courbe18 = await pg.evaluate(k => { const pts = window.__serieValeur(k).pts; return { fin: pts[pts.length - 1].termine,
+    note: document.getElementById('note-graphe').textContent }; }, choix18.cle);
+  verifier('graphique sous « ' + choix18.libelle + ' » : la courbe finit à ses ' + choix18.n + ' plans, et la note la nomme',
+    courbe18.fin === choix18.n && courbe18.note.indexOf('Plans « ' + choix18.libelle + ' »') === 0, JSON.stringify(courbe18));
+  await pg.click('#filtre-valeur-graphe button[data-valeur-graphe=""]'); await pg.waitForTimeout(300);
 
   // =================================================================
   /* Deux vues, et rien entre les deux : l'extract complet dans l'ordre de la
@@ -2529,7 +2706,10 @@ function serveurSur(valeurs, proprietes, fichiers) {
     interrupteur: !!document.getElementById('mode-donnees') || !!document.querySelector('[data-mode="exemple"]'),
     mot: document.getElementById('mot-mode').textContent.trim(),
     vide: document.body.dataset.vide,
-    plans: document.querySelectorAll('#corps-tableau tr').length,
+    /* Les plans du tableau, tranche dessinée et lignes à venir comprises
+       (débrief 18 : 60 lignes d'abord). */
+    plans: document.querySelectorAll('#corps-tableau tr:not(.ligne-suite)').length +
+      (Number(((document.querySelector('#corps-tableau tr.ligne-suite') || {}).textContent || '').replace(/[\s\u202f\u00a0]/g, '').replace(/^(\d+).*$/, '$1')) || 0),
     phrase: document.getElementById('phrase').textContent,
     journal: document.getElementById('zone-journal').textContent,
     pied: document.getElementById('avertissement-demo').hidden
@@ -2753,8 +2933,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
     suite: (document.querySelector('#corps-tableau tr.ligne-suite') || {}).textContent || '',
     compte: document.getElementById('compte').textContent
   }));
-  verifier('640 plans sur 138 colonnes : une première tranche seulement, et le compte dit bien 640',
-    tranche1.lignes > 60 && tranche1.lignes < 640 && /640 plans/.test(tranche1.compte) &&
+  verifier('640 plans sur 138 colonnes : une première tranche de 60 lignes seulement (débrief 18 : l\'ouverture rapide), et le compte dit bien 640',
+    tranche1.lignes >= 60 && tranche1.lignes <= 100 && /640 plans/.test(tranche1.compte) &&
     new RegExp((640 - tranche1.lignes) + ' lignes de plus').test(tranche1.suite.replace(/\s/g, ' ')), JSON.stringify(tranche1));
   /* Le bouton est au bas du cadre qui défile : y faire défiler pour le
      cliquer charge déjà la tranche suivante (« descendez, ou cliquez ici »)
@@ -2766,9 +2946,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('un clic sur « N lignes de plus » ajoute la tranche suivante', tranche2 > tranche1.lignes, tranche1.lignes + ' → ' + tranche2);
   // Comme quelqu'un qui lit : on descend jusqu'au tableau, puis dans le tableau.
   await pGros.evaluate(() => document.getElementById('section-plans').scrollIntoView()); await pGros.waitForTimeout(400);
-  for (let k = 0; k < 8; k++) {
+  for (let k = 0; k < 20; k++) {
     await pGros.evaluate(() => { const d = document.getElementById('defile'); d.scrollTop = d.scrollHeight; });
-    await pGros.waitForTimeout(250);
+    await pGros.waitForTimeout(200);
   }
   const toutes = await pGros.evaluate(() => ({
     lignes: document.querySelectorAll('#corps-tableau tr:not(.ligne-suite)').length,

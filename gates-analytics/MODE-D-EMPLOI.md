@@ -22,6 +22,17 @@ automatique.
    le dit — **« Le classeur est vide »** — et rappelle les trois gestes
    ci-dessous. Elle ne montre jamais rien de fabriqué : seulement vos
    données.
+4. **Plus rapide depuis le débrief 18** : le classeur n'est relu que s'il a
+   changé depuis la dernière ouverture (le script garde ce qu'il a lu, et
+   l'oublie dès qu'une cellule change, qu'on archive, qu'on ajoute, supprime
+   ou renomme un onglet, des lignes ou des colonnes — et chaque jour) ; le
+   tableau des plans se dessine par tranches d'une soixantaine de lignes, la
+   suite en descendant. Si un chiffre paraît ne pas suivre le classeur (après
+   avoir restauré une ancienne version du classeur, par exemple) : ajouter
+   `?frais=1` au bout du lien `…/exec` — tout ce qui était gardé est oublié.
+5. Les ouvertures de la page sont **comptées, sans nom ni adresse** (le pied
+   de la page le dit) : **Suivi FWD → Diagnostic** donne, par semaine, le
+   nombre d'ouvertures et de personnes distinctes.
 
 ### Recoller une livraison (quand je vous envoie les fichiers)
 
@@ -241,7 +252,9 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   dessous l'interrupteur **Avancement : Définition électrique | Concept
   harnais** — les deux
   avancements du bloc HDK AA 011 ; toute la page suit celui qui est choisi,
-  le titre aussi (« Suivi FWD » ou « Suivi concept harnais »). Sous le
+  le titre aussi (« Suivi FWD » ou « Suivi concept harnais »). Le concept
+  harnais a trois valeurs : rien, « À traiter », « Traité » — « Traité »
+  compte comme validé. Sous le
   titre, la semaine où l'on est, et rien d'autre.
 - **Le périmètre** : Tout / BASE/OPTION / PERSO — les valeurs de la colonne
   « Domaine » de l'extract, telles quelles. Il restreint toute la page.
@@ -269,6 +282,12 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   tête, la prochaine échéance en jours : un clic ouvre sa fiche (Échap la
   ferme). Les jalons **TO** (table outil) suivent le concept harnais : sous
   la définition électrique, ils restent dessinés, en retrait.
+  **Au-dessus de la courbe, des pastilles** (une par valeur de la colonne) :
+  par défaut celle de VALIDATED, la courbe des validés. Un clic sur une autre
+  — PWD_IN_PROGRESS, TO_CONFIRM… — montre combien de plans la portent,
+  relevé après relevé, et dessous sa variation par semaine (les baisses
+  sous le trait). Le rythme, la fin estimée et l'échéance restent ceux des
+  validés.
 - **Ce qui a changé, semaine par semaine** : le journal — quels plans sont
   passés à VALIDATED, lesquels ont changé d'indice, lesquels sont apparus ou ont
   disparu de l'extract, et les **reculs**, en rouge. Les semaines forment un
@@ -277,6 +296,12 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   tout tombe droit d'une semaine à l'autre. Dépliée, une ligne = une
   référence et son passage, sans libellé. Les semaines s'ouvrent repliées ; le petit champ
   « Chercher un plan… » à droite ne cherche que dans le journal.
+  **Les pastilles au-dessus** : toutes les valeurs de la colonne (dans
+  l'ordre de la barre du haut), puis Reculs et Changement d'indice, chacune
+  avec son nombre — combien de plans y sont arrivés, toutes semaines
+  confondues. Un clic n'affiche qu'eux : « VALIDATED » montre tous les plans
+  devenus validés, **y compris ceux validés sous un nouvel indice**. Une
+  pastille grisée : personne n'y est arrivé.
 - **Avancement FWD par…** (ou **Concept harnais par…**) : le même avancement découpé par ATA, séquence,
   CC, ECP, ou par mois de création, avec la fin estimée et le rythme requis
   (en plans par semaine, le rythme tenu dessous) par groupe, rangés par ATA
@@ -288,6 +313,11 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   de la page (phrase, courbe, tableau) suit ce groupe, un second clic le
   referme. Une sous-liste par valeur (VALIDATED, PWD_IN_PROGRESS…), chacune
   avec son compte. Son champ « ATA ou plan… » trouve un groupe ou un plan.
+  **Ses pastilles**, sous le titre : un clic sur VALIDATED compte, dans
+  chaque groupe, ses plans VALIDATED « sur » son total, et « +n » ceux
+  arrivés au dernier relevé ; la barre n'éclaire que cette valeur. Le choix
+  ne touche que ce bloc et tient quand on passe d'ATA à ECP ; la fin estimée
+  et les rythmes restent ceux de tout le groupe.
 - **Plans** : l'extract, à l'identique, avec ses colonnes ; recherche, tri,
   filtres. « Vue essentielle » n'en garde qu'une poignée — référence, nom
   d'installation, ECP, ATA, séquence, validation définition électrique, date

@@ -48,6 +48,7 @@ function monterLeChargeur(options) {
   const alertes = [];
   const appels = [];            // ce qui est allé chercher quoi, et dans quel ordre
   const cache = new Map();
+  const cacheClasseur = new Map();
 
   const base = poserEnvironnement({ console: { log: function () {} }, JSON: JSON, Date: Date, Math: Math },
                                   classeur, {}, {});
@@ -77,6 +78,16 @@ function monterLeChargeur(options) {
           put: function (c, v) { cache.set(c, v); },
           putAll: function (o) { Object.keys(o).forEach(function (c) { cache.set(c, o[c]); }); },
           removeAll: function (cles) { cles.forEach(function (c) { cache.delete(c); }); }
+        };
+      },
+      /* Le cache du classeur, où le serveur garde ses paquets (débrief 18). */
+      getDocumentCache: function () {
+        return {
+          get: function (c) { return cacheClasseur.has(c) ? cacheClasseur.get(c) : null; },
+          getAll: function (cles) { const o = {}; cles.forEach(function (c) { if (cacheClasseur.has(c)) o[c] = cacheClasseur.get(c); }); return o; },
+          put: function (c, v) { cacheClasseur.set(c, v); },
+          putAll: function (o) { Object.keys(o).forEach(function (c) { cacheClasseur.set(c, o[c]); }); },
+          removeAll: function (cles) { cles.forEach(function (c) { cacheClasseur.delete(c); }); }
         };
       }
     },
@@ -117,7 +128,7 @@ function monterLeChargeur(options) {
   contexte.SpreadsheetApp.getUi = function () { return ui; };
 
   vm.runInContext(fs.readFileSync(path.join(racine, 'apps-script', 'Chargeur.gs'), 'utf8'), contexte);
-  return { contexte: contexte, appels: appels, cache: cache, journal: journal,
+  return { contexte: contexte, appels: appels, cache: cache, cacheClasseur: cacheClasseur, journal: journal,
            alertes: alertes, classeur: classeur, menus: menus, dialogues: dialogues };
 }
 
@@ -139,7 +150,7 @@ function monterLeChargeur(options) {
   monte.contexte.viderLeCache();
   monte.contexte.pageComplete();
   verifier('« Recharger le code » le fait vraiment retourner au dépôt',
-    monte.appels.length > avant && monte.alertes.some(function (a) { return /Code oublié/.test(a); }),
+    monte.appels.length > avant && monte.alertes.some(function (a) { return /Code et chiffres oubliés/.test(a); }),
     monte.alertes);
 
   section('La page fabriquée est un document complet');
@@ -175,6 +186,36 @@ function monterLeChargeur(options) {
   verifier('« verifier » dit l\'état de tout, en trois lignes',
     /Page {6}:/.test(monte.contexte.verifier()) && /Classeur {2}:/.test(monte.contexte.verifier()),
     monte.contexte.verifier());
+
+  /* Débrief 18 : le serveur garde son paquet en cache. Dans le chargeur, il
+     tourne dans un eval : c'est le onEdit du chargeur qui rend les chiffres
+     caducs ; une suppression de lignes, « Recharger le code » et ?frais=1
+     aussi. */
+  section('Le chargeur et le cache des chiffres');
+  const frais = monterLeChargeur();
+  const compter = function (m) {
+    const brut = m.contexte.serveur().json();
+    const p = JSON.parse(brut.replace(/^[^{]*/, '').replace(/[^}]*$/, ''));
+    return p.plansTab ? p.plansTab.lignes.length : (p.plans || []).length;
+  };
+  const n0 = compter(frais);
+  verifier('le paquet du classeur est gardé dans le cache du classeur', n0 > 100 && [...frais.cacheClasseur.keys()].some(function (k) { return /^SFWD:/.test(k); }),
+    [n0, frais.cacheClasseur.size]);
+  verifier('le chargeur a son propre onEdit, que Google voit', typeof frais.contexte.onEdit === 'function');
+  const hdk = frais.classeur.getSheetByName('HDK');
+  for (let k = 0; k < 5; k++) hdk.deleteRow(hdk.getLastRow());
+  verifier('des lignes supprimées (geste que onEdit ne voit pas) : la réouverture relit le classeur', compter(frais) === n0 - 5, [compter(frais), n0 - 5]);
+  const iRef = hdk.valeurs[1].indexOf('Référence UD');
+  hdk.valeurs[2][iRef] = hdk.valeurs[2][iRef] + 'X';
+  const avantEdit = frais.contexte.serveur().json();
+  frais.contexte.onEdit({});
+  verifier('une saisie (onEdit du chargeur) : la réouverture relit le classeur',
+    frais.contexte.serveur().json() !== avantEdit && frais.contexte.serveur().json().indexOf(hdk.valeurs[2][iRef]) !== -1);
+  hdk.deleteRow(hdk.getLastRow()); hdk.valeurs.push(hdk.valeurs[hdk.valeurs.length - 1].slice());
+  hdk.valeurs[hdk.valeurs.length - 1][iRef] = 'UD-RECOLLE';
+  const avantVider = frais.contexte.serveur().json();
+  frais.contexte.viderLeCache();
+  verifier('« Recharger le code » oublie aussi les chiffres', frais.contexte.serveur().json().indexOf('UD-RECOLLE') !== -1 && avantVider.indexOf('UD-RECOLLE') === -1);
 
   section('Quand le dépôt ne répond pas, il le dit');
   const casse = monterLeChargeur({ panne: 404 });
@@ -231,7 +272,11 @@ function monterLeChargeur(options) {
         .map(function (e) { return +e.textContent.replace(/\s/g, ''); }),
       colonnes: [].slice.call(document.querySelectorAll('tr.titres th'))
         .map(function (t) { return t.textContent.trim(); }),
-      lignes: document.querySelectorAll('#corps-tableau tr').length,
+      /* Le tableau se dessine par tranches (débrief 18) : les lignes
+         dessinées, plus celles que la ligne « N lignes de plus » annonce. */
+      lignes: document.querySelectorAll('#corps-tableau tr:not(.ligne-suite)').length +
+        (Number(((document.querySelector('#corps-tableau tr.ligne-suite') || {}).textContent || '')
+          .replace(/[\s\u202f\u00a0]/g, '').replace(/^(\d+).*$/, '$1')) || 0),
       graphe: !!document.querySelector('svg.graphe'),
       journal: document.querySelectorAll('#zone-journal *').length,
       demo: document.getElementById('avertissement-demo') &&

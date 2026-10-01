@@ -188,12 +188,44 @@ function poserEnvironnement(contexte, classeur, proprietes, fichiers) {
     getDocumentProperties: function () {
       return {
         getProperty: function (k) { return Object.prototype.hasOwnProperty.call(props, k) ? props[k] : null; },
-        setProperty: function (k, v) { props[k] = v; }
+        setProperty: function (k, v) { props[k] = String(v); }
       };
     }
   };
   let compteur = 0;
-  contexte.Utilities = { getUuid: function () { compteur++; return 'uuid-' + compteur; } };
+  contexte.Utilities = {
+    getUuid: function () { compteur++; return 'uuid-' + compteur; },
+    formatDate: function (d, fuseau, motif) {
+      const deux = function (n) { return (n < 10 ? '0' : '') + n; };
+      /* Seul le jour est simulé : un autre motif (le décalage « Z » des
+         fuseaux) n'existe pas ici, comme avant. */
+      if (motif !== 'yyyy-MM-dd') throw new Error('formatDate : motif non simulé');
+      return d.getFullYear() + '-' + deux(d.getMonth() + 1) + '-' + deux(d.getDate());
+    }
+  };
+  /* La session : le fuseau du projet, et la clé temporaire du lecteur (celle
+     que posent les tests, sinon vide — un lecteur que Google ne nomme pas). */
+  contexte.__cleLecteur = '';
+  contexte.Session = {
+    getScriptTimeZone: function () { return 'Europe/Paris'; },
+    getTemporaryActiveUserKey: function () { return contexte.__cleLecteur; }
+  };
+  contexte.LockService = {
+    getDocumentLock: function () { return { tryLock: function () { return true; }, releaseLock: function () {} }; }
+  };
+  /* Le cache du classeur n'existe que si un test l'allume : ailleurs, chaque
+     test relit le classeur qu'il vient de modifier à la main. */
+  contexte.__activerCache = function () {
+    const memoire = {};
+    contexte.__memoireCache = memoire;
+    const cache = {
+      get: function (k) { return Object.prototype.hasOwnProperty.call(memoire, k) ? memoire[k] : null; },
+      getAll: function (cles) { const r = {}; cles.forEach(function (k) { if (Object.prototype.hasOwnProperty.call(memoire, k)) r[k] = memoire[k]; }); return r; },
+      put: function (k, v) { memoire[k] = String(v); },
+      putAll: function (o) { Object.keys(o).forEach(function (k) { memoire[k] = String(o[k]); }); }
+    };
+    contexte.CacheService = { getDocumentCache: function () { return cache; }, getScriptCache: function () { return cache; } };
+  };
   contexte.HtmlService = {
     /* Une page servie se reconnaît à sa source : le modèle Index, ou une page
        écrite par le script (celle qui dit quoi recoller, débrief 17). */

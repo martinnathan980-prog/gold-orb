@@ -50,6 +50,19 @@ C'est un outil de **consultation** : la page ne modifie rien dans le classeur,
 et rien de ce qu'on y clique n'est visible par les autres. Ce que voit la
 collègue, sa chef le voit aussi.
 
+**Combien de fois la page est ouverte** (débrief 18 : « pour avoir des
+stats ») : chaque ouverture est comptée, **sans nom ni adresse**. Le
+compte, par semaine, et le nombre de personnes distinctes sont dans le
+Diagnostic (« S40 : 37 ouvertures, 12 personnes »). Une personne se
+reconnaît d'une ouverture à l'autre par une clé qu'Apps Script donne pour
+ce script seulement (`Session.getTemporaryActiveUserKey`), elle-même
+réduite à une empreinte : rien ne permet de remonter à qui que ce soit. Les
+douze dernières semaines sont gardées ; le pied de la page dit que les
+ouvertures sont comptées. Relever **les adresses** de ceux qui ouvrent la
+page, à leur insu, n'est pas fait : c'est une surveillance des salariés,
+qui demande au minimum une information visible et l'accord de la
+hiérarchie (et du service RGPD) — à décider avant, pas à coder en douce.
+
 **Et personne ne peut rien modifier par elle** (débrief 17 : « tout le monde
 l'ouvre, c'est que de la consultation »). L'application s'exécute au nom de
 son propriétaire, et `google.script.run` atteint toute fonction publique de
@@ -297,7 +310,12 @@ plan, vue d'ensemble ; seule la comparaison avec SEE n'existe que pour la
 définition électrique.
 
 L'archivage garde **les deux valeurs de chaque plan** : la carte d'un relevé
-porte `[définition, concept]` par référence. Les relevés d'avant n'ont que
+porte `[définition, concept]` par référence. Le concept harnais a **son vocabulaire** (débrief 18) : rien, « À traiter »
+ou « Traité ». « Traité » compte comme validé (`VALEURS_FINIES`), « À
+traiter » comme à faire, une case vide comme non renseignée ; « Non traité »
+ne compte jamais validé.
+
+Les relevés d'avant n'ont que
 la définition ; ils se relisent tels quels, et **la courbe du concept
 commence au premier archivage qui l'a gardé** — un historique ne se
 reconstitue pas. Les deux colonnes se lisent avec les mêmes règles que
@@ -586,10 +604,25 @@ ne dit que **quel plan est passé** : sa référence et son passage (« En cours
   en rouge. Un plan réémis sous un autre indice n'est pas un recul (il se
   range sous « changement d'indice »), ni une case vidée (« en cours » →
   « non renseigné »).
-- `Tout / Validés / En cours / Reculs / Changement d'indice`, chacun avec sa
-  pastille, ne garde que
-  les passages voulus, et **chaque compte du résumé est cliquable** :
-  « 6 validés » n'affiche plus que ceux-là, sur toutes les semaines à la fois.
+- **La rangée de pastilles** (débrief 18 : « je ne peux filtrer que par
+  changement d'indice ») : **Tout**, puis **toutes les valeurs de la
+  colonne**, dans l'ordre de la barre du haut et avec ses couleurs, puis
+  **Reculs** et **Changement d'indice**. Chacune dit **combien de plans y
+  sont arrivés**, toutes semaines du périmètre confondues ; un clic
+  n'affiche qu'eux, sur toutes les semaines à la fois. Sous une valeur, ce
+  sont **tous les plans arrivés à elle** : passages, reculs, et plans
+  **réémis sous un nouvel indice qui en ont changé au passage** — un plan
+  validé l'est souvent avec un nouvel indice, et le filtre « VALIDATED » le
+  montre désormais. Dans sa semaine, chaque ligne garde sa case (le réémis
+  devenu validé se compte sous « changement d'indice ») : le nombre de la
+  pastille est exactement le nombre de lignes montrées — sous le petit
+  champ « Chercher un plan… », celui des plans cherchés. Une pastille
+  **grisée** : personne n'y est arrivé. Une valeur que plus aucun plan ne
+  porte, mais vers laquelle des plans sont passés, garde sa pastille, après
+  celles de la barre. La rangée est réécrite à chaque affichage, journal
+  vide compris : elle ne garde jamais les boutons d'un autre contrat ni de
+  l'autre avancement. Et **chaque compte du résumé est cliquable** :
+  « 6 passés à « Validé » » pose le même filtre.
 - Cliquer un plan réduit le tableau du bas à ce plan.
 - Les nouveaux plans, ceux qui ont disparu de l'export et les changements
   d'indice sont signalés.
@@ -1282,22 +1315,86 @@ mot. Ce que la page fait maintenant :
   réguliers) ; sur un poste lent, la première peinture de 600 plans prend
   quelques secondes (« Chargement… » s'affiche pendant ce temps).
 
+## 13 nonies. Filtrer par valeur, partout : les pastilles (débrief 18)
+
+« Semaine par semaine, savoir les valider, filtrer, avec les petites
+pastilles de couleur… pareil pour l'avancement par ECP, ATA… et pour le
+graphe. » Une même rangée de pastilles — les valeurs de la colonne, dans
+l'ordre et aux couleurs de la barre du haut — sert à trois endroits. Rien
+n'en est mémorisé : chacune repart de « Tout » avec un autre contrat ou
+l'autre avancement. Comme le champ de gauche du bloc, elles sont locales à
+leur section : « tout réinitialiser » (les filtres de la page) ne les
+touche pas ; leur premier bouton les remet à « Tout ».
+
+- **Le journal** : voir § 10. Le nombre de chaque pastille : les plans
+  arrivés à cette valeur, réémissions comprises.
+- **Le bloc par groupe** (« Avancement FWD par ATA… ») : sous l'explication
+  de la dimension, **Tout** puis chaque valeur. Choisir VALIDATED compte,
+  dans chaque groupe, ses plans VALIDATED **« sur » son total**, avec
+  **« +n »** ceux qui y sont arrivés au dernier relevé — ou, si l'extract
+  du jour n'est pas encore archivé, depuis le dernier relevé (les mêmes
+  arrivées que le journal). La barre passe aux valeurs — deux valeurs « en cours »,
+  PWD_IN_PROGRESS et PWD_TO_CONTROL, n'y sont plus confondues — et seule
+  celle choisie s'éclaire. « plans » et « répartition » trient sur elle ;
+  un groupe déplié ne montre qu'elle ; « à l'arrêt » ne compte qu'elle ; le
+  champ « ATA ou plan… » ne cherche que parmi elle. Toutes les lignes
+  restent (un groupe à zéro, grisé, reste lisible : « quels ATA n'ont rien
+  de validé ? »). Le choix **ne touche qu'au bloc**, comme le champ de
+  gauche : tuiles, courbe et tableau ne bougent pas. Il tient quand on
+  passe d'ATA à ECP. **Fin estimée et rythmes** restent ceux de tout le
+  groupe — une note le dit. Cliquer la tuile d'une autre valeur, en haut,
+  ramène le bloc à « Tout ».
+- **Le graphique** : par défaut, la courbe des validés, avec le rythme tenu,
+  la fin estimée, l'échéance — la pastille de la valeur validée (VALIDATED)
+  tient ce rôle ; s'il y a plusieurs valeurs validées, un premier bouton
+  **Validés**. Une autre pastille montre **son nombre relevé après
+  relevé**, à sa couleur, sur une échelle à sa mesure, sous le périmètre et
+  pour le groupe choisi dans le bloc ; dessous, sa **variation nette par
+  semaine** — les hausses au-dessus d'un trait, les baisses dessous (« À
+  traiter » baisse quand le travail avance). Ni projection, ni rythme
+  requis, ni « manque » sur une telle courbe : ils sont ceux des validés.
+  La note, la légende et la bulle la nomment. Elle se lit sur la carte plan
+  par plan de chaque relevé ; un relevé archivé sans carte est écarté, et
+  la note le dit.
+
 ## 13 quinquies. Vitesse d'ouverture et thème
 
 - **Le paquet voyage compacté** : chaque nom de colonne, chaque référence
   d'un relevé n'y est écrit qu'une fois (compacterPaquet dans `Code`, rendu à
   l'identique par la page) — trois à quatre fois moins lourd.
-- **Les gros tableaux se dessinent par tranches** : au-delà d'environ 40 000
-  cellules, la suite vient en descendant dans le tableau, ou d'un clic sur
-  « N lignes de plus ». Filtres, tris et comptes portent toujours sur toutes
-  les lignes. Le tableau de SEE ne se dessine que quand on bascule dessus, et
-  un tableau hors de l'écran ne se met pas en page tant qu'on ne s'en approche
-  pas.
+- **Le tableau se dessine par petites tranches** (débrief 18 : « le site est
+  très long à charger ») : environ 6 000 cellules — une soixantaine de lignes
+  sur l'extract réel de 138 colonnes — à l'ouverture, la suite en descendant
+  dans le tableau, ou d'un clic sur « N lignes de plus ». C'était 40 000 :
+  la mise en page d'un tableau aussi large prenait à elle seule plusieurs
+  secondes. Filtres, tris et comptes portent toujours sur toutes les lignes.
+  Le tableau de SEE ne se dessine que quand on bascule dessus, et un tableau
+  hors de l'écran ne se met pas en page tant qu'on ne s'en approche pas.
+- **Le classeur n'est relu que s'il a changé** (débrief 18) : le paquet de
+  chaque contrat, une fois calculé, est gardé dans le cache d'Apps Script
+  (`CacheService`, six heures au plus, découpé en morceaux de 30 Ko). Il est
+  **renouvelé dès que le classeur change** : une cellule modifiée (le
+  déclencheur simple `onEdit`), un archivage, une suppression, un dépôt
+  automatique, un onglet ajouté, renommé ou masqué, une modification de la
+  configuration dans `Code`, une nouvelle livraison — et chaque jour. Des
+  lignes ou des colonnes ajoutées ou supprimées (ce que `onEdit` ne voit
+  pas) aussi : la taille de chaque onglet fait partie de la clé. Un paquet
+  en erreur, ou lu à moitié (l'historique illisible le temps d'une panne de
+  Google), n'est jamais gardé. **`?frais=1`** au bout du lien `…/exec` rend
+  tout le cache caduc : cette ouverture relit le classeur, et les suivantes
+  en profitent. Ce qui échapperait encore — une version restaurée depuis
+  l'historique de Google Sheets, un script tiers — est rattrapé le
+  lendemain au plus tard, ou par `?frais=1`. Avec **le chargeur** (un seul
+  fichier, § 1), son propre `onEdit` fait le même travail, et « Recharger
+  le code » oublie aussi les chiffres.
+- **Une ouverture ne lit les en-têtes de chaque onglet qu'une fois** : les
+  trois lectures qui en avaient besoin (contrats, seconde base, historique)
+  partagent la même.
 - **Les polices** se chargent sans retenir l'affichage : un réseau lent
   n'empêche plus la page de paraître.
 - **Le Diagnostic dit le temps de chaque lecture** — GATES, historique,
-  seconde base — et le poids envoyé : c'est lui qui dit où l'ouverture passe
-  son temps sur ce classeur-là.
+  seconde base — et le poids envoyé, mesurés sans le cache : c'est lui qui
+  dit où l'ouverture passe son temps sur ce classeur-là.
 - **Le thème suit le navigateur** : clair ou sombre, menus déroulants, champs
   et barres de défilement compris — un Chrome en mode sombre n'ouvre plus de
   menu blanc écrit en clair.

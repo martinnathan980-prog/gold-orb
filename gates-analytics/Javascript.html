@@ -6,7 +6,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '8598390';
+  var EDITION = '02462f4';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -1102,6 +1102,7 @@
 
     PLANS.forEach(function (p) {
       p._etat = classer(p[CLE_SUIVIE]); p._pct = pourcentDe(p);
+      p._cle = cleValeur(p[CLE_SUIVIE]);                     // la valeur, pour les rangées de pastilles
       p._racine = cleAppariement(analyserUD(p.reference));   // racine + solution : l'identité du plan
     });
     VALEURS_COLONNE = lireValeurs(PLANS);
@@ -1258,7 +1259,7 @@
     PLAN_PAR_REF = {};
     PLAN_PAR_RACINE = {};
     PLANS.forEach(function (p) { PLAN_PAR_REF[p.reference] = p; PLAN_PAR_RACINE[p._racine] = p; });
-    MEMO_DERIVE = {};
+    MEMO_DERIVE = {}; MEMO_VALEURS = {};
     JOURNAL = construireJournal();
     ORDRE_RESUME = {};
     INDEX_RELEVES = null; MEMO_ARRET = {};
@@ -1345,6 +1346,11 @@
          nom des groupes et dans la référence de leurs plans. Ni mémorisé, ni
          conservé d'une dimension à l'autre. */
       filtreGroupe: '',
+      /* Les deux rangées de pastilles (débrief 18) : la valeur comptée dans
+         le bloc par groupe, et celle que suit la courbe — une clé de valeur,
+         '' pour « Tout » et pour « les validés ». Locales, jamais
+         mémorisées : elles repartent à zéro avec le contrat et l'avancement. */
+      valeurBloc: '', valeurGraphe: '',
       /* Deux vues du tableau, et rien entre les deux : « toutes » montre l'export
          tel quel, dans son ordre ; « essentielle » ne garde que ce qu'on regarde. */
       vueTable: 'toutes'
@@ -1793,7 +1799,10 @@
     return PLANS.filter(function (p) {
       if (!dansPerimetre(p)) return false;
       if (vue.etat && cleValeur(p[CLE_SUIVIE]) !== vue.etat) return false;
-      if (vue.groupe && !sansGroupe && String(valeurDim(p, vue.groupe.dim)) !== vue.groupe.val) return false;
+      /* La clé du groupe, écrite comme le bloc l'écrit : « — » pour un plan
+         sans valeur dans la dimension (sinon le groupe « — » choisi donnait
+         0 plan au tableau et 12 au bloc). */
+      if (vue.groupe && !sansGroupe && String(valeurDim(p, vue.groupe.dim) || '\u2014') !== vue.groupe.val) return false;
       if (vue.refs && !vue.refs[p.reference]) return false;
       for (var kv in vue.vides) {
         if (vue.vides[kv] && !celluleVide(p, kv)) return false;
@@ -2159,6 +2168,98 @@
        appliquent pas. */
     return { pts: pts, portee: portee, partiel: groupe ? filtreHorsGroupe() : filtreLibre(), ecartes: ecartes };
   }
+  /* La courbe d'une valeur (débrief 18) : relevé après relevé, combien de
+     plans de la portée du graphique — son périmètre, le groupe choisi —
+     portent cette valeur. Tirée de la carte plan par plan de chaque relevé ;
+     un relevé archivé sans carte est écarté, et la note le dit. Les comptes
+     de toutes les valeurs d'un relevé se font d'un seul passage, mémorisés
+     comme ceux de comptesDerives. */
+  var MEMO_VALEURS = {};
+  function valeursDuReleve(rel, per, groupe) {
+    var cle = rel.i + '|' + per + '|' + (groupe ? groupe.dim + '\u0001' + groupe.val : '');
+    if (MEMO_VALEURS[cle]) return MEMO_VALEURS[cle];
+    /* Sans prototype : une clé de valeur peut s'écrire n'importe comment.
+       « brut » garde la première écriture de chaque clé, pour nommer une
+       valeur que plus aucun plan ne porte aujourd'hui. */
+    var c = { total: 0, par: Object.create(null), brut: Object.create(null) }, tous = !per && !groupe;
+    Object.keys(rel.plans).forEach(function (ref) {
+      if (!tous) {
+        var p = planDeRef(ref);
+        if (!p || (per && domaineDe(p) !== per) || (groupe && String(valeurDim(p, groupe.dim) || '\u2014') !== groupe.val)) return;
+      }
+      var k = cleValeur(rel.plans[ref]);
+      c.total++;
+      c.par[k] = (c.par[k] || 0) + 1;
+      if (!(k in c.brut)) c.brut[k] = rel.plans[ref];
+    });
+    return (MEMO_VALEURS[cle] = c);
+  }
+  function serieValeur(k) {
+    var groupe = groupeAffiche(), per = vue.perimetre, pts = [], ecartes = 0;
+    RELEVES.forEach(function (r) {
+      if (!r.plans) { ecartes++; return; }
+      var c = valeursDuReleve(r, per, groupe);
+      pts.push({ i: r.i, total: c.total, termine: c.par[k] || 0 });
+    });
+    if (!pts.length) pts.push({ i: AUJ, total: 0, termine: 0 });
+    return { pts: pts, ecartes: ecartes };
+  }
+  /* La rangée du graphique : les valeurs de la colonne, dans l'ordre des
+     tuiles. Par défaut, la courbe des validés — avec le rythme, la fin
+     estimée, l'échéance. Quand une seule valeur veut dire « validé », c'est
+     sa pilule qui tient ce rôle ; sinon un premier bouton « Validés ». Une
+     valeur qu'aucun relevé de la portée n'a portée est grisée. Sans relevé
+     gardé plan par plan, ou avec une seule valeur, la rangée s'efface. */
+  /* Les valeurs « d'hier » de la courbe : portées par des relevés, plus par
+     aucun plan aujourd'hui — « TO_TREAT » tombé à zéro est justement ce
+     qu'on veut voir descendre. Nommées par leur première écriture, de la
+     couleur de leur famille. Refaites à chaque rangée. */
+  var HIER_GRAPHE = {};
+  function rendreFiltreValeurGraphe() {
+    var z = $('filtre-valeur-graphe');
+    HIER_GRAPHE = {};
+    if (!z || VALEURS_COLONNE.length < 2 || !RELEVES.some(function (r) { return r.plans; })) {
+      vue.valeurGraphe = '';
+      if (z) { z.hidden = true; z.innerHTML = ''; }
+      return '';
+    }
+    var groupe = groupeAffiche(), per = vue.perimetre, vues = {}, hier = [];
+    RELEVES.forEach(function (r) {
+      if (!r.plans) return;
+      var c = valeursDuReleve(r, per, groupe);
+      Object.keys(c.par).forEach(function (k) {
+        if (!c.par[k]) return;
+        vues[k] = true;
+        if (!valeurDeCle(k) && !HIER_GRAPHE[k]) {
+          var famille = classer(c.brut[k]), e = ETAT_PAR_CLE[famille];
+          HIER_GRAPHE[k] = { cle: k, libelle: libelleValeur(c.brut[k]), famille: famille, couleur: e.couleur, hachure: !!e.hachure };
+          hier.push(HIER_GRAPHE[k]);
+        }
+      });
+    });
+    hier.sort(function (a, b) { return RANG_FAMILLE[a.famille] - RANG_FAMILLE[b.famille] || COMPARER_REF(a.libelle, b.libelle); });
+    var finies = VALEURS_COLONNE.filter(function (v) { return v.famille === 'termine'; });
+    var seule = finies.length === 1 ? finies[0].cle : null;
+    /* Un choix qui n'est plus dans la rangée — une autre portée, une autre
+       source — revient à la courbe par défaut. */
+    if (vue.valeurGraphe === seule || (vue.valeurGraphe && !valeurDeCle(vue.valeurGraphe) && !HIER_GRAPHE[vue.valeurGraphe])) vue.valeurGraphe = '';
+    z.hidden = false;
+    z.innerHTML = boutonsPastilles('valeur-graphe', vue.valeurGraphe, VALEURS_COLONNE.concat(hier).map(function (v) {
+      var defaut = v.cle === seule, aujourdhui = !!valeurDeCle(v.cle);
+      return { cle: defaut ? '' : v.cle, famille: v.famille, libelle: v.libelle, desactive: !defaut && !vues[v.cle],
+               pastille: aujourdhui ? undefined : pastilleDe(v.famille),
+               titre: defaut ? 'Les plans « ' + v.libelle + ' », relevé après relevé, avec le rythme tenu, la fin estimée et l\u2019échéance'
+                    : !aujourdhui ? 'Plus aucun plan n\u2019est « ' + v.libelle + ' » ; combien l\u2019étaient, relevé après relevé'
+                    : vues[v.cle] ? 'Combien de plans « ' + v.libelle + ' », relevé après relevé'
+                    : 'Aucun relevé n\u2019a de plan « ' + v.libelle + ' »' };
+    }), seule ? null : { libelle: 'Validés', pastille: pastilleDe('termine'),
+                          titre: 'Les plans validés, relevé après relevé, avec le rythme tenu, la fin estimée et l\u2019échéance' });
+    return vue.valeurGraphe;
+  }
+  /* La couleur d'une courbe de valeur : celle de sa pastille ; le gris de
+     l'encre pour « Non renseigné », qui n'a que des hachures. */
+  function couleurCourbe(v) { return !v ? 'var(--fait)' : v.hachure ? 'var(--encre-3)' : v.couleur; }
+
   /* Un groupe du bloc, nommé comme partout : sa dimension et sa valeur —
      « ATA 24 », « Séquence 600 ». */
   function nomGroupe(g) {
@@ -2187,6 +2288,7 @@
 
   function rendreGraphique(liste) {
     bornerFenetre();
+    var vg = rendreFiltreValeurGraphe();
     var vueSerie = serieAffichee();
     var pts = vueSerie.pts;
     var dernier = pts[pts.length - 1];
@@ -2196,25 +2298,43 @@
     var ryt = rythmes(pts);
     var vitesse = ryt ? ryt.central : 0;
     var projIdx = semaineFin(atteint, total, vitesse);
+    /* Sous une valeur choisie (débrief 18), la courbe la suit : son compte,
+       relevé après relevé, à sa couleur, sur une échelle à sa mesure. Le
+       rythme, la fin estimée et l'échéance restent ceux des validés : ils
+       ne se dessinent pas sur elle. */
+    var vVal = vg ? (valeurDeCle(vg) || HIER_GRAPHE[vg] || null) : null;
+    var serieV = vVal ? serieValeur(vg) : null;
+    var trace = vVal ? serieV.pts : pts;
+    var dernierT = trace[trace.length - 1];
+    var coul = couleurCourbe(vVal);
+    var haut = total;
+    if (vVal) {
+      var maxV = 1, maxT = 1;
+      trace.forEach(function (pt) { maxV = Math.max(maxV, pt.termine); maxT = Math.max(maxT, pt.total); });
+      var pasV = pasDEchelle(maxV);
+      haut = Math.max(maxV, Math.min(maxT, Math.ceil(maxV / pasV) * pasV));
+    }
 
     /* Combien de relevés, et de quand à quand : les mêmes mots que le pied. */
     /* L'extract du jour, pas encore archivé, est le dernier point sans être
        un relevé : il se dit à part. */
-    var n1 = pts.length - (EXTRAIT_EN_PLUS ? 1 : 0);
-    var bornes = n1 > 1 ? ', de ' + semaineDite(pts[0].i) + ' à ' + semaineDite(pts[n1 - 1].i)
-                        : (n1 ? ', ' + semaineDite(pts[0].i) : '');
+    var n1 = trace.length - (EXTRAIT_EN_PLUS ? 1 : 0);
+    var bornes = n1 > 1 ? ', de ' + semaineDite(trace[0].i) + ' à ' + semaineDite(trace[n1 - 1].i)
+                        : (n1 ? ', ' + semaineDite(trace[0].i) : '');
     var releves = (n1 ? n1 + (n1 > 1 ? ' relevés' : ' relevé') + bornes : '') +
-      (EXTRAIT_EN_PLUS ? (n1 ? ', puis ' : '') + 'l’extract du jour en ' + semaineDite(pts[pts.length - 1].i) + ', pas encore archivé' : '');
+      (EXTRAIT_EN_PLUS ? (n1 ? ', puis ' : '') + 'l’extract du jour en ' + semaineDite(trace[trace.length - 1].i) + ', pas encore archivé' : '');
     var note = vueSerie.portee
       ? 'Historique · ' + vueSerie.portee + ' · ' + releves +
         (vueSerie.partiel ? ' · les autres filtres ne s’appliquent pas à l’historique' : '')
       : (vueSerie.partiel
           ? 'Historique de l’ensemble des plans : un relevé archivé ne se refiltre pas.'
           : releves);
-    if (vueSerie.ecartes) {
-      note += ' · ' + vueSerie.ecartes + ' relevé' + (vueSerie.ecartes > 1 ? 's' : '') +
-        ' sans détail plan par plan, hors périmètre';
+    var ecartes = vVal ? serieV.ecartes : vueSerie.ecartes;
+    if (ecartes) {
+      note += ' · ' + ecartes + ' relevé' + (ecartes > 1 ? 's' : '') +
+        ' sans détail plan par plan, ' + (vVal ? 'hors de cette courbe' : 'hors périmètre');
     }
+    if (vVal) note = 'Plans « ' + vVal.libelle + ' » · ' + note;
     if (RELEVES_IDENTIQUES.length && JOURNAL.length) {
       note += ' · ' + RELEVES_IDENTIQUES.map(function (i) { return semaineDite(i); }).join(', ') +
         /* Un constat, pas un reproche : la page est lue par tous (débrief 17). */
@@ -2262,44 +2382,48 @@
     mHaut = 26 + (1 + niveauAuj) * HAUTEUR_ETIQUETTE;
     H = mHaut + plotH + ecart + bandeH + mBas;
 
-    var y = function (v) { return mHaut + plotH - (v / total) * plotH; };
+    var y = function (v) { return mHaut + plotH - (v / haut) * plotH; };
     var yBande = mHaut + plotH + ecart;
     var basTotal = yBande + bandeH;
 
-    var s = ['\x3Csvg class="graphe" viewBox="0 0 ' + L + ' ' + H + '" role="img" aria-label="Plans validés par semaine, historique et projection">'];
+    var s = ['\x3Csvg class="graphe" viewBox="0 0 ' + L + ' ' + H + '" role="img" aria-label="' +
+      (vVal ? ech('Plans « ' + vVal.libelle + ' », relevé après relevé') : 'Plans validés par semaine, historique et projection') + '">'];
     s.push('\x3Cdefs>\x3CclipPath id="zoneTracee">\x3Crect x="' + mG + '" y="' + (mHaut - 12) + '" width="' + LARGEUR + '" height="' + (plotH + 16) + '"/>\x3C/clipPath>\x3C/defs>');
 
     /* L'échelle se lit d'un coup d'œil : des valeurs rondes, quatre traits au
        plus, le plafond à part et nommé. */
-    var pas = pasDEchelle(total);
-    for (var v = 0; v < total; v += pas) {
-      if (total - v < pas * 0.5) continue;
+    var pas = pasDEchelle(haut);
+    for (var v = 0; v < haut; v += pas) {
+      if (haut - v < pas * 0.5) continue;
       s.push('\x3Cline x1="' + mG + '" x2="' + (L - mD) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '" stroke="var(--filet)" stroke-width="1"/>');
       s.push('\x3Ctext class="grad" x="' + (mG - 8) + '" y="' + (y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + nb(v) + '\x3C/text>');
     }
-    s.push('\x3Cline x1="' + mG + '" x2="' + (L - mD) + '" y1="' + y(total).toFixed(1) + '" y2="' + y(total).toFixed(1) + '" stroke="var(--filet-fort)" stroke-width="1"/>');
-    s.push('\x3Ctext class="grad" x="' + (L - mD + 8) + '" y="' + (y(total) + 3.5).toFixed(1) + '">' + nb(total) + ' plans\x3C/text>');
+    /* Sous une valeur, le haut de l'échelle n'est pas le total des plans :
+       il se lit à gauche, comme les autres traits. */
+    s.push('\x3Cline x1="' + mG + '" x2="' + (L - mD) + '" y1="' + y(haut).toFixed(1) + '" y2="' + y(haut).toFixed(1) + '" stroke="var(--filet' + (vVal ? '' : '-fort') + ')" stroke-width="1"/>');
+    s.push(vVal ? '\x3Ctext class="grad" x="' + (mG - 8) + '" y="' + (y(haut) + 3.5).toFixed(1) + '" text-anchor="end">' + nb(haut) + '\x3C/text>'
+                : '\x3Ctext class="grad" x="' + (L - mD + 8) + '" y="' + (y(total) + 3.5).toFixed(1) + '">' + nb(total) + ' plans\x3C/text>');
 
     // Tout ce qui peut sortir du cadre est decoupe a la zone tracee.
     s.push('\x3Cg clip-path="url(#zoneTracee)">');
 
-    var visibles = pts.filter(function (pt) { return pt.i >= d0 - 2 && pt.i <= d1 + 2; });
+    var visibles = trace.filter(function (pt) { return pt.i >= d0 - 2 && pt.i <= d1 + 2; });
     if (visibles.length === 1) {
       s.push('\x3Ccircle cx="' + x(visibles[0].i).toFixed(1) + '" cy="' + y(visibles[0].termine).toFixed(1) +
-             '" r="4.5" fill="var(--fait)"/>');
+             '" r="4.5" fill="' + coul + '"/>');
     }
     if (visibles.length > 1) {
       var chemin = visibles.map(function (p, k) { return (k ? 'L' : 'M') + x(p.i).toFixed(1) + ' ' + y(p.termine).toFixed(1); }).join(' ');
       var xa = x(visibles[0].i).toFixed(1), xb = x(visibles[visibles.length - 1].i).toFixed(1);
-      s.push('\x3Cpath d="' + chemin + ' L' + xb + ' ' + y(0).toFixed(1) + ' L' + xa + ' ' + y(0).toFixed(1) + ' Z" fill="var(--fait)" opacity=".09"/>');
-      s.push('\x3Cpath d="' + chemin + '" fill="none" stroke="var(--fait)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>');
+      s.push('\x3Cpath d="' + chemin + ' L' + xb + ' ' + y(0).toFixed(1) + ' L' + xa + ' ' + y(0).toFixed(1) + ' Z" fill="' + coul + '" opacity=".09"/>');
+      s.push('\x3Cpath class="courbe" d="' + chemin + '" fill="none" stroke="' + coul + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>');
       /* Un point par relevé, plein, cerclé de la couleur du fond pour rester
          lisible sur la courbe ; discret quand les relevés se serrent. */
       var rayon = visibles.length > 40 ? 2 : 3;
       visibles.forEach(function (pt) {
-        if (pt.i === dernier.i) return;
+        if (pt.i === dernierT.i) return;
         s.push('\x3Ccircle cx="' + x(pt.i).toFixed(1) + '" cy="' + y(pt.termine).toFixed(1) +
-               '" r="' + rayon + '" fill="var(--fait)" stroke="var(--surface)" stroke-width="2"/>');
+               '" r="' + rayon + '" fill="' + coul + '" stroke="var(--surface)" stroke-width="2"/>');
       });
     }
 
@@ -2311,10 +2435,10 @@
        ne se lit pas sur la courbe de tous les plans — la projection de tous
        passerait au-dessus d'un objectif qui n'est pas le sien : la légende
        donne son rythme requis et mène à son périmètre. */
-    var surLaCourbe = !!bilan && (bilan.domaine || '') === (vue.perimetre || '');
+    var surLaCourbe = !vVal && !!bilan && (bilan.domaine || '') === (vue.perimetre || '');
     /* Entre le dernier relevé et la semaine en cours, rien n'a été relevé :
        un trait plat, fin, avant que les projections ne partent d'aujourd'hui. */
-    if (depart > AUJ) {
+    if (depart > AUJ && !vVal) {
       s.push('\x3Cpath d="M' + x(AUJ).toFixed(1) + ' ' + y(atteint).toFixed(1) + ' L' + x(depart).toFixed(1) + ' ' + y(atteint).toFixed(1) +
              '" fill="none" stroke="var(--encre-3)" stroke-width="1" stroke-dasharray="2 3"/>');
       /* D'où partent les projections, dit sous le point : la semaine en
@@ -2335,7 +2459,7 @@
       s.push('\x3Ccircle cx="' + x(prochain.i).toFixed(1) + '" cy="' + y(cible).toFixed(1) + '" r="3.4" fill="' + cr + '"/>');
     }
 
-    if (projIdx !== null) {
+    if (projIdx !== null && !vVal) {
       s.push('\x3Cpath d="M' + x(depart).toFixed(1) + ' ' + y(atteint).toFixed(1) + ' L' + x(projIdx).toFixed(1) + ' ' + y(total).toFixed(1) +
              '" fill="none" stroke="var(--fait)" stroke-width="1.6" stroke-dasharray="5 4" opacity=".6"/>');
       if (projIdx >= d0 && projIdx <= d1) {
@@ -2383,8 +2507,15 @@
          « aujourd'hui » différents, l'un au titre, l'autre sur la courbe. */
       s.push('\x3Ctext class="grad repere-auj" x="' + (x(AUJ) - 6).toFixed(1) + '" y="' + yAuj.toFixed(1) + '" text-anchor="end">' +
              (AUJ === semaineDAujourdhui() ? 'aujourd’hui' : 'dernier relevé') + '\x3C/text>');
-      s.push('\x3Ccircle cx="' + x(AUJ).toFixed(1) + '" cy="' + y(atteint).toFixed(1) + '" r="4.5" fill="var(--fait)" stroke="var(--surface)" stroke-width="2"/>');
-      s.push('\x3Ctext class="grad" x="' + (x(AUJ) - 9).toFixed(1) + '" y="' + (y(atteint) - 8).toFixed(1) + '" text-anchor="end" fill="var(--encre)" font-weight="500">' + atteint + '\x3C/text>');
+      /* Sous une valeur, le point n'est celui du jour que si la courbe
+         finit bien au dernier relevé ; et quand elle y descend, son nombre
+         s'écrit dessous, pas en travers du trait. */
+      var auPoint = vVal ? dernierT.termine : atteint;
+      if (!vVal || dernierT.i === AUJ) {
+        var dessous = !!vVal && trace.length > 1 && trace[trace.length - 2].termine > auPoint;
+        s.push('\x3Ccircle cx="' + x(AUJ).toFixed(1) + '" cy="' + y(auPoint).toFixed(1) + '" r="4.5" fill="' + coul + '" stroke="var(--surface)" stroke-width="2"/>');
+        s.push('\x3Ctext class="grad" x="' + (x(AUJ) - 9).toFixed(1) + '" y="' + (dessous ? y(auPoint) + 16 : y(auPoint) - 8).toFixed(1) + '" text-anchor="end" fill="var(--encre)" font-weight="500">' + auPoint + '\x3C/text>');
+      }
     }
 
     /* Jalons : un trait, un triangle, une étiquette. Rien à saisir ni à
@@ -2442,25 +2573,36 @@
        de trois semaines, le gain est réparti sur les trois. Les hauteurs
        restent comparables quelle que soit la cadence des imports. */
     var taux = [];
-    for (var k5 = 1; k5 < pts.length; k5++) {
-      var dSem = pts[k5].i - pts[k5 - 1].i;
+    for (var k5 = 1; k5 < trace.length; k5++) {
+      var dSem = trace[k5].i - trace[k5 - 1].i;
       if (dSem <= 0) continue;
-      var parSem = (pts[k5].termine - pts[k5 - 1].termine) / dSem;
-      for (var w = pts[k5 - 1].i + 1; w <= pts[k5].i; w++) taux.push({ i: w, v: parSem });
+      var parSem = (trace[k5].termine - trace[k5 - 1].termine) / dSem;
+      for (var w = trace[k5 - 1].i + 1; w <= trace[k5].i; w++) taux.push({ i: w, v: parSem });
     }
+    /* Une valeur peut aussi se vider (« À traiter » baisse quand le travail
+       avance) : sa bande est alors à deux sens, le gain au-dessus d'un trait
+       médian, la perte dessous. Les validés ne font que monter. */
+    var deuxSens = !!vVal && taux.some(function (t) { return t.v < 0; });
     var maxSem = 1;
-    taux.forEach(function (t) { maxSem = Math.max(maxSem, t.v); });
+    taux.forEach(function (t) { maxSem = Math.max(maxSem, deuxSens ? Math.abs(t.v) : t.v); });
     var lb = Math.min(14, Math.max(2, pasX - 2));
-    s.push('\x3Ctext class="grad" x="' + mG + '" y="' + (yBande - 3).toFixed(1) + '">validés par semaine\x3C/text>');
+    var hMax = deuxSens ? bandeH / 2 : bandeH, yZero = yBande + (deuxSens ? bandeH / 2 : bandeH);
+    s.push('\x3Ctext class="grad" x="' + mG + '" y="' + (yBande - 3).toFixed(1) + '">' +
+      (vVal ? ech('« ' + vVal.libelle + ' » : variation nette par semaine') : 'validés par semaine') + '\x3C/text>');
+    if (deuxSens) {
+      s.push('\x3Cline x1="' + mG + '" x2="' + (L - mD) + '" y1="' + yZero.toFixed(1) + '" y2="' + yZero.toFixed(1) + '" stroke="var(--filet)" stroke-width="1"/>');
+    }
     taux.forEach(function (t) {
-      if (t.i < d0 || t.i > d1 || t.v <= 0) return;
-      var h = Math.max(1.5, (t.v / maxSem) * bandeH);
+      if (t.i < d0 || t.i > d1 || !t.v || (!deuxSens && t.v < 0)) return;
+      var h = Math.max(1.5, (Math.abs(t.v) / maxSem) * hMax);
       var rx = Math.min(2, lb / 2, h / 2);
-      var xg = x(t.i) - lb / 2, yh = yBande + bandeH - h, yb = yBande + bandeH;
-      s.push('\x3Cpath d="M' + xg.toFixed(1) + ' ' + yb.toFixed(1) + ' V' + (yh + rx).toFixed(1) +
+      var xg = x(t.i) - lb / 2, monte = t.v > 0;
+      /* Le bout arrondi est toujours celui qui s'éloigne du trait de base. */
+      var yh = monte ? yZero - h : yZero + h, yb = yZero, sens = monte ? 1 : -1;
+      s.push('\x3Cpath class="barre-semaine' + (monte ? '' : ' perte') + '" d="M' + xg.toFixed(1) + ' ' + yb.toFixed(1) + ' V' + (yh + sens * rx).toFixed(1) +
              ' Q' + xg.toFixed(1) + ' ' + yh.toFixed(1) + ' ' + (xg + rx).toFixed(1) + ' ' + yh.toFixed(1) +
-             ' H' + (xg + lb - rx).toFixed(1) + ' Q' + (xg + lb).toFixed(1) + ' ' + yh.toFixed(1) + ' ' + (xg + lb).toFixed(1) + ' ' + (yh + rx).toFixed(1) +
-             ' V' + yb.toFixed(1) + ' Z" fill="var(--r4)"/>');
+             ' H' + (xg + lb - rx).toFixed(1) + ' Q' + (xg + lb).toFixed(1) + ' ' + yh.toFixed(1) + ' ' + (xg + lb).toFixed(1) + ' ' + (yh + sens * rx).toFixed(1) +
+             ' V' + yb.toFixed(1) + ' Z" fill="' + (vVal ? coul : 'var(--r4)') + '"' + (monte ? '' : ' opacity=".5"') + '/>');
     });
     s.push('\x3Cline x1="' + mG + '" x2="' + (L - mD) + '" y1="' + basTotal.toFixed(1) + '" y2="' + basTotal.toFixed(1) + '" stroke="var(--filet)" stroke-width="1"/>');
 
@@ -2492,7 +2634,7 @@
     /* Le point d'une semaine se cherche par son indice, pas par sa position
        dans la série : une semaine sans relevé n'a pas de point. */
     var ptParI = {};
-    pts.forEach(function (pt) { ptParI[pt.i] = pt; });
+    trace.forEach(function (pt) { ptParI[pt.i] = pt; });
     for (var k4 = d0; k4 <= d1; k4++) {
       var ptK = ptParI[k4];
       /* Une bande par semaine : elle porte le survol (bulle) et son libellé
@@ -2501,17 +2643,20 @@
       s.push('\x3Crect class="zone-clic" x="' + (x(k4) - pasX / 2).toFixed(1) + '" y="' + (mHaut - 6) + '" width="' + pasX.toFixed(1) +
              '" height="' + (plotH + ecart + bandeH + 6).toFixed(1) + '" fill="transparent" role="img" data-i="' + k4 + '" ' +
              'aria-label="' + semaineDite(k4) +
-             (ptK ? ' : ' + ptK.termine + ' validés' : k4 > depart ? ' (à venir)' : ' : pas de relevé') + '"/>');
+             (ptK ? ' : ' + ptK.termine + (vVal ? ech(' « ' + vVal.libelle + ' »') : ' validés') : k4 > depart ? ' (à venir)'
+               : RELEVES.some(function (r) { return r.i === k4; }) ? ' : relevé sans détail plan par plan, hors de cette courbe' : ' : pas de relevé') + '"/>');
     }
 
     s.push('\x3C/svg>');
     $('zone-graphe').innerHTML = s.join('');
 
-    var items = ['\x3Cspan class="legende-item">\x3Csvg width="20" height="8" aria-hidden="true">\x3Cline x1="0" y1="4" x2="20" y2="4" stroke="var(--fait)" stroke-width="2.2"/>\x3C/svg>' +
-      '\x3Cspan title="Plans validés, relevé après relevé.">r\u00e9alis\u00e9\x3C/span>\x3C/span>'];
+    var items = ['\x3Cspan class="legende-item">\x3Csvg width="20" height="8" aria-hidden="true">\x3Cline x1="0" y1="4" x2="20" y2="4" stroke="' + coul + '" stroke-width="2.2"/>\x3C/svg>' +
+      (vVal ? '\x3Cspan title="' + ech('Plans « ' + vVal.libelle + ' », relevé après relevé. Le rythme, la fin estimée et l’échéance se lisent sur les validés.') + '">' +
+                ech('« ' + vVal.libelle + ' », relevé après relevé') + '\x3C/span>\x3C/span>'
+            : '\x3Cspan title="Plans validés, relevé après relevé.">r\u00e9alis\u00e9\x3C/span>\x3C/span>')];
     /* Les mêmes mots que la fiche et le bloc par groupe : « rythme tenu »,
        « fin », « requis » — et les mêmes nombres, tirés de bilanEcheance. */
-    if (ryt && restants > 0) {
+    if (ryt && restants > 0 && !vVal) {
       /* Accordé : avec deux relevés, « 7 plans validés en 1 semaine » (il
          disait « 1 semaines », débrief 17). */
       var dansSem = projIdx !== null ? projIdx - depart : 0;
@@ -2528,7 +2673,7 @@
         (projIdx !== null ? ' \u2192 fin ' + semaineDite(projIdx) : ' \u2014 pas de fin pr\u00e9visible') +
         '\x3C/span>\x3C/span>');
     }
-    if (requis !== null) {
+    if (requis !== null && !vVal) {
       var dom = bilan.domaine && bilan.domaine !== vue.perimetre ? bilan.domaine : '';
       var d = dateEcheance(prochain);
       /* La portée du nombre, dite quand ce n'est pas celle de la fiche : le
@@ -2569,7 +2714,7 @@
     }).join('') + '\x3C/div>' + (vue.echeance !== null && jalons[vue.echeance] ? ficheEcheance(vue.echeance) : '') : '';
 
     derniereAnalyse = { pts: pts, total: total, atteint: atteint, restants: restants, vitesse: vitesse,
-                        projIdx: projIdx,
+                        projIdx: projIdx, trace: trace, valeur: vVal,
                         prochain: prochain, requis: requis, enRetard: enRetard, span: span, d0: d0 };
     majBoutonsZoom();
     planifierSauvegarde();
@@ -2690,21 +2835,29 @@
     var a = derniereAnalyse;
     if (i === null || !a) return;
     var bulle = $('bulle');
-    var k = -1;
-    for (var q = 0; q < a.pts.length; q++) if (a.pts[q].i === i) k = q;
+    var k = -1, serie = a.trace || a.pts, v = a.valeur;
+    for (var q = 0; q < serie.length; q++) if (serie[q].i === i) k = q;
+    /* Le relevé d'avant dans RELEVES, pour dire si le point précédent de la
+       courbe est bien lui (une courbe de valeur écarte les relevés sans
+       carte plan par plan). */
+    var iReleve = -1;
+    for (var q2 = 0; q2 < RELEVES.length; q2++) if (RELEVES[q2].i === i) iReleve = q2;
     if (k !== -1) {
-      var pt = a.pts[k];
-      var gagne = k > 0 ? pt.termine - a.pts[k - 1].termine : null;
+      var pt = serie[k];
+      var gagne = k > 0 ? pt.termine - serie[k - 1].termine : null;
+      var surPrecedent = k > 0 && iReleve > 0 && RELEVES[iReleve - 1].i === serie[k - 1].i;
       bulle.innerHTML = '\x3Cdiv class="tete-bulle">Relevé de ' + semaineDite(i) + '\x3C/div>' +
-        '\x3Cdiv class="bulle-ligne">\x3Cspan class="pastille" style="background:var(--fait)">\x3C/span>validés\x3Cspan class="n">' +
-          nb(pt.termine) + ' / ' + nb(pt.total) + '\x3C/span>\x3C/div>' +
-        (gagne !== null ? '\x3Cdiv class="bulle-ligne">\x3Cspan class="pastille sans">\x3C/span>gain net sur le relevé précédent\x3Cspan class="n">' +
+        '\x3Cdiv class="bulle-ligne">' + (v ? pastilleValeur(v.cle, v.famille) + ech(v.libelle) : '\x3Cspan class="pastille" style="background:var(--fait)">\x3C/span>validés') +
+          '\x3Cspan class="n">' + nb(pt.termine) + ' / ' + nb(pt.total) + '\x3C/span>\x3C/div>' +
+        (gagne !== null ? '\x3Cdiv class="bulle-ligne">\x3Cspan class="pastille sans">\x3C/span>' + (v ? 'variation nette' : 'gain net') +
+          (surPrecedent ? ' sur le relevé précédent' : ' depuis le relevé de ' + semaineDite(serie[k - 1].i)) + '\x3Cspan class="n">' +
           (gagne > 0 ? '+' : '') + nb(gagne) + '\x3C/span>\x3C/div>' : '') +
         comptesDeLaSemaine(i);
     } else {
       var depart = semaineDepart();
       bulle.innerHTML = '\x3Cdiv class="tete-bulle">' + semaineDite(i) + '\x3C/div>\x3Cdiv class="bulle-ligne">' +
-        (i > depart ? 'À venir' : i === depart && i > AUJ ? 'Semaine en cours : pas encore de relevé archivé' : 'Pas de relevé cette semaine-là') + '\x3C/div>';
+        (i > depart ? 'À venir' : i === depart && i > AUJ ? 'Semaine en cours : pas encore de relevé archivé'
+          : iReleve !== -1 ? 'Relevé sans détail plan par plan : hors de cette courbe' : 'Pas de relevé cette semaine-là') + '\x3C/div>';
     }
     bulle.dataset.visible = 'true';
     bulle.style.left = Math.min(e.clientX + 14, window.innerWidth - bulle.offsetWidth - 12) + 'px';
@@ -2720,7 +2873,7 @@
     if (vue.groupe && CLES_DIM.indexOf(vue.groupe.dim) !== -1) {
       evts = evts.filter(function (e) {
         var p = planDeRef(e.ref);
-        return p && String(valeurDim(p, vue.groupe.dim)) === vue.groupe.val;
+        return p && String(valeurDim(p, vue.groupe.dim) || '\u2014') === vue.groupe.val;
       });
     }
     var lignes = resumeEvenements(evts).map(function (l) {
@@ -2799,9 +2952,19 @@
   /* « Plus de 6 mois : 42 » ne dit pas lesquels. Choisir une ligne déplie donc
      TOUTES ses références. Rien n'est tronqué : un « et N autres » qui ne
      s'ouvre pas ne sert à personne. */
-  function listeUD(r) {
+  function listeUD(r, vb) {
     var plans = (r.plans || []).slice();
     if (!plans.length) return '';
+    /* Sous une valeur choisie dans la rangée du bloc, le groupe ne montre
+       qu'elle : une seule sous-liste, et l'en-tête dit sur combien. */
+    if (vb) {
+      var v0 = valeurDeCle(vb), nom = v0 ? v0.libelle : vb, tous = plans.length;
+      plans = plans.filter(function (p) { return p._cle === vb; });
+      if (!plans.length) {
+        return '\x3Cdiv class="groupe-refs">\x3Cdiv class="entete">\x3Cspan>Aucun plan « ' + ech(nom) + ' » dans ce groupe (' + nb(tous) +
+          ' plan' + (tous > 1 ? 's' : '') + ' en tout) — « Tout » les montre.\x3C/span>\x3C/div>\x3C/div>';
+      }
+    }
     /* Une sous-liste par valeur de la colonne, dans l'ordre de la barre du
        haut — Terminé, En cours, À faire, Non renseigné, et leurs variantes —,
        chacune avec sa pastille et son compte ; dans chacune, les références
@@ -2823,7 +2986,8 @@
     }).join('');
     return '\x3Cdiv class="groupe-refs">\x3Cdiv class="entete">' +
       '\x3Cspan>' + nb(plans.length) + ' plan' + (plans.length > 1 ? 's' : '') +
-      (restants ? ' · \x3Cb>' + nb(restants) + '\x3C/b> pas encore validé' + (restants > 1 ? 's' : '') : ' · tout est validé') +
+      (vb ? ' « ' + ech(valeurDeCle(vb) ? valeurDeCle(vb).libelle : vb) + ' » sur ' + nb((r.plans || []).length)
+          : (restants ? ' · \x3Cb>' + nb(restants) + '\x3C/b> pas encore validé' + (restants > 1 ? 's' : '') : ' · tout est validé')) +
       (nArret ? ' · \x3Cspan class="arret-n">\x3Cspan class="pastille arret">\x3C/span>' + nb(nArret) + ' à l\u2019arrêt\x3C/span>' : '') +
       '\x3C/span>\x3Cspan>cliquez une référence pour la retrouver dans le tableau\x3C/span>\x3C/div>' + html + '\x3C/div>';
   }
@@ -2857,13 +3021,68 @@
   function plansTrouvesDans(r) {
     var q = motCherche(vue.filtreGroupe);
     if (!q) return [];
-    return (r.plans || []).filter(function (p) { return refCorrespond(p.reference, q); })
+    var vb = vue.valeurBloc;
+    return (r.plans || []).filter(function (p) { return refCorrespond(p.reference, q) && (!vb || p._cle === vb); })
       .sort(function (a, b) { return COMPARER_REF(a.reference, b.reference); });
   }
   function retenuParFiltreGroupe(r) {
     if (!norm(vue.filtreGroupe)) return true;
     return nomGroupeCorrespond(r) || plansTrouvesDans(r).length > 0;
   }
+  /* La rangée de pastilles du bloc (débrief 18) : « Tout », puis chaque
+     valeur de la colonne, dans l'ordre des tuiles. Une valeur qu'aucun plan
+     de la sélection ne porte est grisée. Sans dimension, ou avec une seule
+     valeur, la rangée s'efface. Rend la valeur choisie, '' pour « Tout ». */
+  function rendreFiltreValeurBloc(liste) {
+    var z = $('filtre-valeur-groupe');
+    if (vue.valeurBloc && !valeurDeCle(vue.valeurBloc)) vue.valeurBloc = '';
+    if (!z || !liste || VALEURS_COLONNE.length < 2) {
+      /* Sans rangée — ou sous un Index d'une livraison d'avant —, pas de
+         valeur choisie qu'on ne pourrait plus retirer. */
+      vue.valeurBloc = '';
+      if (z) { z.hidden = true; z.innerHTML = ''; }
+      return '';
+    }
+    var presentes = {};
+    liste.forEach(function (p) { presentes[p._cle] = true; });
+    z.hidden = false;
+    z.innerHTML = boutonsPastilles('valeur-bloc', vue.valeurBloc, VALEURS_COLONNE.map(function (v) {
+      return { cle: v.cle, famille: v.famille, libelle: v.libelle, desactive: !presentes[v.cle],
+               titre: presentes[v.cle] ? 'Compter, dans chaque groupe, les plans « ' + v.libelle + ' »'
+                                       : 'Aucun plan « ' + v.libelle + ' » dans la sélection' };
+    }), { libelle: 'Tout', titre: 'Tous les plans de chaque groupe' });
+    return vue.valeurBloc;
+  }
+  /* Ce qui est arrivé à une valeur au dernier relevé, groupe par groupe :
+     les mêmes arrivées que la rangée du journal — passages, reculs,
+     réémissions —, sur les plans que compte le bloc. Rien si la semaine la
+     plus récente du journal n'est pas celle du dernier relevé : rien n'y a
+     bougé. */
+  /* Où ces arrivées ont eu lieu, avec les mots du pied : l'extract du jour
+     pas encore archivé n'est pas « le dernier relevé ». */
+  function quandDesGains(i) {
+    var avant = RELEVES.length > 1 ? RELEVES[RELEVES.length - 2].i : null;
+    return EXTRAIT_EN_PLUS && avant !== null
+      ? 'entre le dernier relevé (' + semaineDite(avant) + ') et l\u2019extract du jour'
+      : 'au dernier relevé (' + semaineDite(i) + ')';
+  }
+  function gainsAuDernierReleve(vb, liste, dim) {
+    var res = { sem: null, parGroupe: {} };
+    var der = RELEVES.length ? RELEVES[RELEVES.length - 1] : null, sem = JOURNAL[0];
+    if (!der || !sem || sem.i !== der.i) return res;
+    res.sem = sem.i;
+    var dansListe = {};
+    liste.forEach(function (p) { dansListe[p.reference] = true; });
+    sem.evenements.forEach(function (e) {
+      if (!arriveA(e, vb)) return;
+      var p = planDeRef(e.ref);
+      if (!p || !dansListe[p.reference]) return;
+      var k = String(valeurDim(p, dim) || '\u2014');
+      res.parGroupe[k] = (res.parGroupe[k] || 0) + 1;
+    });
+    return res;
+  }
+
   /* Le champ suit la dimension : « Filtrer les ATA… », « Filtrer les mois… ». */
   function libellerFiltreGroupe(dim) {
     var quoi = dim === '_mois' ? 'mois'
@@ -2887,6 +3106,7 @@
       $('indice-dim').textContent = '';
       $('compte-groupes').textContent = '';
       libellerFiltreGroupe(dim);
+      rendreFiltreValeurBloc(null);
       $('zone-critique').classList.remove('sans-jalon');
       $('zone-critique').innerHTML = '\x3Cdiv class="vide-message">Aucune colonne à analyser dans cette source.\x3C/div>';
       return;
@@ -2897,14 +3117,20 @@
        une semaine du journal, et les autres restent là (débrief 17) : le
        reste de la page, lui, le suit. */
     if (vue.groupe && vue.groupe.dim === dim) liste = selection(true);
+    /* La rangée de pastilles se pose avant toute sortie : jamais celle d'un
+       autre contrat sous une sélection vide. */
+    var vb = rendreFiltreValeurBloc(liste);
+    var vVal = vb ? valeurDeCle(vb) : null;
     var groupes = {};
     liste.forEach(function (p) {
       var k = String(valeurDim(p, dim) || '\u2014');
-      if (!groupes[k]) groupes[k] = { nom: k, total: 0, termine: 0, encours: 0, afaire: 0, vide: 0, plans: [] };
+      if (!groupes[k]) groupes[k] = { nom: k, total: 0, termine: 0, encours: 0, afaire: 0, vide: 0, plans: [], parValeur: {} };
       groupes[k].total++;
       groupes[k][p._etat]++;
+      groupes[k].parValeur[p._cle] = (groupes[k].parValeur[p._cle] || 0) + 1;
       groupes[k].plans.push(p);
     });
+    var gains = vb ? gainsAuDernierReleve(vb, liste, dim) : null;
 
     /* Le rythme, la fin estimée et le rythme requis d'un groupe se lisent
        sur sa série — celle que dessine le graphique quand on choisit la
@@ -2927,10 +3153,15 @@
          groupe — sous « Tout », un jalon BASE/OPTION ne lui demande que ses
          plans BASE/OPTION. */
       var b = prochain ? bilanEcheance(prochain, grp) : null;
+      var nValeur = vb ? (g.parValeur[vb] || 0) : g.total;
       return {
         rythme: rg, bilan: b,
         nom: g.nom, total: g.total, restants: g.total - g.termine, restantsGroupe: restantsGroupe, vitesse: vitesse, plans: g.plans,
-        arret: g.plans.filter(function (p) { return arretParRef[p.reference]; }).length,
+        parValeur: g.parValeur, nValeur: nValeur, partValeur: g.total ? nValeur / g.total : 0,
+        gain: gains ? (gains.parGroupe[k] || 0) : 0,
+        /* Sous une valeur, « à l'arrêt » ne compte que ses plans : on ne lit
+           pas « 3 à l'arrêt » sous « Validé ». */
+        arret: g.plans.filter(function (p) { return arretParRef[p.reference] && (!vb || p._cle === vb); }).length,
         termine: g.termine, encours: g.encours, afaire: g.afaire, vide: g.vide,
         pct: g.total ? Math.round((g.termine / g.total) * 100) : 0,
         fin: restantsGroupe === 0 ? depart : semaineFin(derG.termine, derG.total, vitesse),
@@ -2949,8 +3180,10 @@
       if (cle === 'nom' && dim === '_mois') return rangMois(r.nom);
       if (cle === 'nom' && dim === '_anciennete') return ORDRE_ANCIENNETE.indexOf(r.nom);
       if (cle === 'nom') return r.nom;
-      if (cle === 'total') return r.total;
-      if (cle === 'pct') return r.pct;
+      /* Sous une valeur choisie, « plans » et « répartition » rangent sur
+         elle : quel ATA a le plus de « VALIDATED », la plus grande part. */
+      if (cle === 'total') return vb ? r.nValeur : r.total;
+      if (cle === 'pct') return vb ? r.partValeur : r.pct;
       if (cle === 'requis') return r.requis;
       if (cle === 'vitesse') return r.vitesse;
       if (cle === 'tension') return r.tension;
@@ -3004,11 +3237,11 @@
         (tg.asc ? 'M5 8.5V1.5M2 4.5 5 1.5l3 3' : 'M5 1.5v7M2 5.5 5 8.5l3-3') +
         '" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>\x3C/svg>';
     }
-    function entete(cle, libelle, titre, classe) {
+    function entete(cle, libelle, titre, classe, avant) {
       var actif = !!(tg && tg.cle === cle);
       return '\x3Cspan class="' + (classe || '') + '">\x3Cbutton type="button" class="tri-groupe" data-trig="' + cle +
         '" data-actif="' + actif + '" aria-label="Trier par ' + ech(libelle) + '"' +
-        (titre ? ' title="' + ech(titre) + '"' : '') + '>' + ech(libelle) + fleche(cle) + '\x3C/button>';
+        (titre ? ' title="' + ech(titre) + '"' : '') + '>' + (avant || '') + ech(libelle) + fleche(cle) + '\x3C/button>';
     }
 
     function aide(quoi) {
@@ -3018,8 +3251,11 @@
 
     var html = '\x3Cdiv class="critique-tete">' +
       entete('nom', TITRE_DIM[dim].replace(/ \(.*\)$/, ''), TITRE_DIM[dim]) + '\x3C/span>' +
-      entete('total', 'plans', 'Nombre de plans du groupe dans la sélection courante.') + '\x3C/span>' +
-      entete('pct', 'répartition', 'Trier par part de plans validés.', 'a-gauche') + '\x3C/span>' +
+      (vVal
+        ? entete('total', 'plans', 'Plans « ' + vVal.libelle + ' » du groupe dans la sélection, sur son total.', '', pastilleValeur(vb, vVal.famille)) + '\x3C/span>' +
+          entete('pct', 'répartition', 'Trier par part de « ' + vVal.libelle + ' ».', 'a-gauche') + '\x3C/span>'
+        : entete('total', 'plans', 'Nombre de plans du groupe dans la sélection courante.') + '\x3C/span>' +
+          entete('pct', 'répartition', 'Trier par part de plans validés.', 'a-gauche') + '\x3C/span>') +
       entete('fin', 'fin estimée', 'Semaine où tout le groupe serait validé si le rythme tenu se maintient.') + aide('la fin estimée') + '\x3C/span>' +
       (prochain
         ? entete('requis', 'rythme requis', 'Plans à valider chaque semaine pour tenir \u00ab\u00a0' + prochain.texte + '\u00a0\u00bb (' +
@@ -3040,8 +3276,15 @@
       html += '\x3Cdiv class="critique-note note-arret">\x3Cspan class="pastille arret">\x3C/span>\x3Cspan>\x3Cb>à l\u2019arrêt\x3C/b> = en cours, sans changement depuis ' +
         SEMAINES_ARRET + ' semaines ou plus. Ouvrez le groupe pour les voir, cerclés de cette couleur.\x3C/span>\x3C/div>';
     }
-    /* Les autres filtres ne touchent pas l'historique : le bloc le dit. */
-    if (filtreHorsGroupe()) {
+    /* Sous une valeur, ce que comptent les colonnes : « plans » et la
+       barre suivent la valeur, la fin estimée et les rythmes restent ceux
+       de tout le groupe — sinon on lirait « la fin des TO_CONFIRM ». */
+    if (vVal) {
+      html += '\x3Cdiv class="critique-note note-valeur">' + pastilleValeur(vb, vVal.famille) + '\x3Cspan>Plans et répartition : les plans « ' + ech(vVal.libelle) +
+        ' » de chaque groupe, sur son total' + (gains && gains.sem !== null ? ', et ceux qui y sont arrivés ' + ech(quandDesGains(gains.sem)) : '') +
+        '. Fin estimée et rythmes : sur tous ses plans' + (filtreHorsGroupe() ? ' — un relevé archivé ne se refiltre pas' : '') + '.\x3C/span>\x3C/div>';
+    } else if (filtreHorsGroupe()) {
+      /* Les autres filtres ne touchent pas l'historique : le bloc le dit. */
       html += '\x3Cdiv class="critique-note">Fin estimée et rythmes : sur tous les plans de chaque groupe — un relevé archivé ne se refiltre pas.\x3C/div>';
     }
 
@@ -3055,8 +3298,19 @@
       var trouves = plansTrouvesDans(r);
 
       /* Le pourcentage s'ecrit dans le segment quand il y tient ; en dessous
-         il reste dans l'infobulle plutot que d'etre rogne. */
-      var barre = ETATS.map(function (e) {
+         il reste dans l'infobulle plutot que d'etre rogne. Sous une valeur
+         choisie, la barre passe aux valeurs — deux « en cours » n'y sont plus
+         confondus — et seule la sienne s'éclaire. */
+      var barre = vVal ? VALEURS_COLONNE.map(function (v) {
+        var nV = r.parValeur[v.cle];
+        if (!nV) return '';
+        var part = (nV / r.total) * 100;
+        var eclaire = v.cle === vb;
+        var texte = eclaire && part >= 11 ? Math.round(part) + ' %' : '';
+        return v.hachure
+          ? '\x3Cspan class="hachure' + (eclaire ? ' eclaire' : '') + '" data-cle="' + ech(v.cle) + '" style="width:' + part.toFixed(2) + '%;color:var(--encre-2)">' + texte + '\x3C/span>'
+          : '\x3Cspan' + (eclaire ? ' class="eclaire"' : '') + ' data-cle="' + ech(v.cle) + '" style="width:' + part.toFixed(2) + '%;background:' + v.couleur + ';color:' + v.encre + '">' + texte + '\x3C/span>';
+      }).join('') : ETATS.map(function (e) {
         if (!r[e.cle]) return '';
         var part = (r[e.cle] / r.total) * 100;
         var texte = part >= 11 ? Math.round(part) + ' %' : '';
@@ -3098,24 +3352,27 @@
           : ech(nb(r.restantsGroupe) + ' plans à valider à ' + virgule(r.vitesse) + ' par semaine : ' + (r.fin - depart) + ' semaines, fin ' + semaineDite(r.fin) + '.')) +
         '">\x3Cspan class="v">' + texteFin + '\x3C/span>\x3C/span>';
 
-      return '\x3Cbutton class="critique-ligne" type="button" data-groupe="' + ech(r.nom) + '" aria-pressed="' + !!actif +
-        '" title="' + r.termine + ' validés, ' + r.encours + ' en cours, ' + r.afaire + ' à faire, ' +
+      return '\x3Cbutton class="critique-ligne' + (vVal && !r.nValeur ? ' sans-valeur' : '') + '" type="button" data-groupe="' + ech(r.nom) + '" aria-pressed="' + !!actif +
+        '" title="' + (vVal ? ech(nb(r.nValeur) + ' « ' + vVal.libelle + ' » sur ' + nb(r.total)) + ' \u2014 ' : '') +
+        r.termine + ' validés, ' + r.encours + ' en cours, ' + r.afaire + ' à faire, ' +
         r.vide + ' non renseignés — cliquez pour voir lesquels">' +
         '\x3Csvg class="chevron" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">' +
         '\x3Cpath d="m3.5 1.5 3.5 3.5-3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>\x3C/svg>' +
         '\x3Cspan class="critique-nom">' + ech(libelleGroupe(r.nom)) + '\x3C/span>' +
-        '\x3Cspan class="critique-plans">\x3Cspan class="critique-total" data-libelle="plans">' + r.total + '\x3C/span>' +
+        '\x3Cspan class="critique-plans">\x3Cspan class="critique-total" data-libelle="plans">' + (vVal ? r.nValeur : r.total) + '\x3C/span>' +
+        (vVal ? '\x3Csmall class="sur-n">sur ' + nb(r.total) + (r.gain ? ' · \x3Cb title="' + ech(nb(r.gain) + (r.gain > 1 ? ' plans arrivés' : ' plan arrivé') + ' à « ' +
+          vVal.libelle + ' » ' + quandDesGains(gains.sem)) + '">+' + nb(r.gain) + '\x3C/b>' : '') + '\x3C/small>' : '') +
         /* Les plans à l'arrêt du groupe, sous son compte : en ambre, comme
            la puce « À surveiller » du haut. */
         (r.arret ? '\x3Csmall class="arret-n" title="' + ech(r.arret + (r.arret > 1 ? ' plans en cours n\u2019ont pas bougé' : ' plan en cours n\u2019a pas bougé') +
           ' depuis ' + SEMAINES_ARRET + ' semaines ou plus') + '">' + r.arret + ' à l\u2019arrêt\x3C/small>' : '') + '\x3C/span>' +
-        '\x3Cspan class="critique-barre">' + barre + '\x3C/span>' +
+        '\x3Cspan class="critique-barre' + (vVal ? ' focalise' : '') + '">' + barre + '\x3C/span>' +
         col3 + col2 + '\x3C/button>' +
-        (actif ? listeUD(r) : (trouves.length ? listeTrouves(trouves) : ''));
+        (actif ? listeUD(r, vb) : (trouves.length ? listeTrouves(trouves) : ''));
     }).join('');
 
     if (!rangs.length) {
-      html += '\x3Cdiv class="vide-message">Ni groupe ni plan ne contient « ' + ech(vue.filtreGroupe.trim()) +
+      html += '\x3Cdiv class="vide-message">Ni groupe ni plan' + (vVal ? ' « ' + ech(vVal.libelle) + ' »' : '') + ' ne contient « ' + ech(vue.filtreGroupe.trim()) +
         ' ». Échap vide le filtre.\x3C/div>';
     }
 
@@ -3276,7 +3533,12 @@
      delà d'un budget de cellules, les lignes suivantes s'ajoutent quand on
      approche du bas du cadre, ou d'un clic sur « N lignes de plus ». Les
      filtres, les tris et les comptes portent toujours sur toutes les lignes. */
-  var BUDGET_CELLULES = typeof window.SUIVI_FWD_BUDGET === 'number' && window.SUIVI_FWD_BUDGET > 0 ? window.SUIVI_FWD_BUDGET : 40000;
+  /* Débrief 18, « le site est très long à charger » : la mise en page des
+     292 premières lignes de 136 colonnes (40 000 cellules) prenait l'essentiel
+     de l'ouverture — 3 s sur un poste rapide, une vingtaine sur un poste
+     chargé. 6 000 cellules, soit 60 lignes de l'extract entier, se posent en
+     un clin d'œil ; la suite vient en descendant. */
+  var BUDGET_CELLULES = typeof window.SUIVI_FWD_BUDGET === 'number' && window.SUIVI_FWD_BUDGET > 0 ? window.SUIVI_FWD_BUDGET : 6000;
   var TRANCHES = {};
   function trancheHtml(t) {
     var fin = Math.min(t.total, t.montrees + t.pas), h = '';
@@ -3389,6 +3651,29 @@
     var v = valeurDeCle(cle);
     if (!v) return pastilleDe(famille || 'sans');
     return v.hachure ? '\x3Cspan class="pastille hachure">\x3C/span>' : '\x3Cspan class="pastille" style="background:' + v.couleur + '">\x3C/span>';
+  }
+  /* Une rangée de pastilles (débrief 18), la même pour le journal, le bloc
+     par groupe et le graphique : un premier bouton (« Tout »), puis une
+     pilule par valeur — la pastille de sa tuile, son nom, son compte quand
+     elle en a un. Une pilule sans rien à montrer reste à sa place, grisée,
+     sauf si c'est le choix en cours : on ne retire pas un choix en douce. */
+  function boutonsPastilles(attr, actif, items, premier) {
+    var bouton = function (x) {
+      var off = !!x.desactive && x.cle !== actif;
+      return '\x3Cbutton type="button" data-' + attr + '="' + ech(x.cle) + '"' + (x.famille ? ' data-famille="' + x.famille + '"' : '') +
+        ' aria-pressed="' + (x.cle === actif) + '"' + (off ? ' disabled' : '') + (x.titre ? ' title="' + ech(x.titre) + '"' : '') + '>' +
+        (x.pastille === undefined ? pastilleValeur(x.cle, x.famille) : x.pastille) + '\x3Cspan class="libelle">' + ech(x.libelle) + '\x3C/span>' +
+        (x.n !== undefined ? '\x3Cspan class="n">' + nb(x.n) + '\x3C/span>' : '') + '\x3C/button>';
+    };
+    return (premier ? bouton({ cle: '', libelle: premier.libelle, pastille: premier.pastille || '', titre: premier.titre }) : '') +
+      items.map(bouton).join('');
+  }
+  /* Le bouton d'une rangée, retrouvé après qu'elle a été réécrite : par
+     comparaison de clé, sans sélecteur fabriqué — une valeur peut contenir
+     n'importe quel signe. */
+  function rendreFocus(zone, attr, cle) {
+    var b = [].filter.call(zone.querySelectorAll('button'), function (x) { return x.getAttribute('data-' + attr) === cle; })[0];
+    if (b && !b.disabled) b.focus({ preventScroll: true });
   }
 
   /* L'historique d'un plan, au-dessus du tableau quand il n'en montre qu'un :
@@ -3503,17 +3788,22 @@
     return PLAN_PAR_REF[ref] || PLAN_PAR_RACINE[clePlan(analyserUD(ref))] || null;
   }
 
-  /* Le filtre du journal : un état d'arrivée, « reculs » ou « indice » — la
-     même case que dans les comptes, pour que le filtre montre exactement ce
-     que le résumé compte. Un changement d'indice ne se range que sous
-     « indice », un recul que sous « reculs » ; les nouveaux et les disparus
-     ne se voient que sous « Tout ». */
+  /* Le filtre du journal : une valeur, « reculs » ou « indice ». Sous une
+     valeur, tous les plans ARRIVÉS à elle, d'où qu'ils viennent : passages,
+     reculs, et réémissions qui en ont changé au passage (débrief 18 :
+     « ceux qui sont devenus validés » — un plan validé l'est souvent sous
+     un nouvel indice, et le filtre « Validé » ne le montrait pas). Dans la
+     semaine, chaque ligne garde sa case : un plan réémis devenu « Validé »
+     se compte sous « changement d'indice ». Les nouveaux et les disparus ne
+     se voient que sous « Tout ». */
+  function arriveA(e, cle) {
+    return (e.type === 'change' || e.type === 'indice') && e.cApres === cle && e.cAvant !== cle;
+  }
   function retenuParJournal(e, filtre) {
     if (!filtre) return true;
     if (filtre === 'indice') return e.type === 'indice';
     if (filtre === 'reculs') return estRecul(e);
-    if (e.type === 'nouveau' || e.type === 'disparu' || estReemission(e) || estRecul(e)) return false;
-    return e.cApres === filtre;
+    return arriveA(e, filtre);
   }
   /* Les comptes d'une liste d'événements, avec les mots du journal et de la
      bulle : passages par état d'arrivée, nouveaux, disparus, changements
@@ -3596,45 +3886,70 @@
       'recoller le dernier export de GATES, puis archiver.';
   }
 
+  /* La rangée du journal (débrief 18) : toutes les valeurs de la colonne,
+     dans l'ordre des tuiles du haut — pas seulement celles qu'on a vues
+     arriver —, puis celles qu'aucun plan ne porte plus mais vers lesquelles
+     des plans sont passés, puis les reculs et les changements d'indice.
+     Chacune dit combien de plans y sont arrivés, toutes semaines du
+     périmètre confondues : exactement les lignes qu'elle montre. À zéro,
+     grisée. Réécrite à chaque rendu, journal vide compris : elle ne garde
+     jamais les boutons d'un autre contrat ni de l'autre avancement. */
+  function rendreFiltreJournal(journal) {
+    /* Deux comptes : sur tout le journal du périmètre (il décide si le
+       choix tient encore), et sous la recherche du journal — celui qui
+       s'affiche et grise : chaque pastille dit exactement les lignes
+       qu'elle montrerait. */
+    var q = motCherche(vue.rechercheJournal);
+    var total = {}, vu = {}, hier = {};
+    var compter = function (k, trouve) { total[k] = (total[k] || 0) + 1; if (trouve) vu[k] = (vu[k] || 0) + 1; };
+    journal.forEach(function (sem) {
+      sem.evenements.forEach(function (e) {
+        var trouve = !q || refCorrespond(e.ref, q) || (!!e.ancienne && refCorrespond(e.ancienne, q));
+        if (e.type === 'indice') compter('\u0001indice', trouve);
+        if (estRecul(e)) compter('\u0001reculs', trouve);
+        if ((e.type === 'change' || e.type === 'indice') && e.cApres && e.cApres !== e.cAvant) {
+          compter(e.cApres, trouve);
+          if (!valeurDeCle(e.cApres) && !hier[e.cApres]) hier[e.cApres] = { cle: e.cApres, libelle: e.vApres, famille: e.apres };
+        }
+      });
+    });
+    var dans = vue.perimetre ? ' dans le périmètre ' + vue.perimetre : '';
+    var pour = q ? ' pour « ' + vue.rechercheJournal.trim() + ' »' : '';
+    var item = function (v) {
+      var n = vu[v.cle] || 0;
+      return { cle: v.cle, famille: v.famille, libelle: v.libelle, n: n, desactive: !n, total: total[v.cle] || 0,
+               titre: n ? (n > 1 ? nb(n) + ' arrivées' : '1 arrivée') + ' à « ' + v.libelle + ' »' + pour + ', toutes semaines confondues' +
+                          ' — passages, reculs et réémissions sous un autre indice ; un plan arrivé deux fois compte deux fois'
+                        : 'Aucun plan n\u2019est arrivé à « ' + v.libelle + ' »' + pour + dans + ' d\u2019un relevé à l\u2019autre' };
+    };
+    var items = VALEURS_COLONNE.map(item).concat(Object.keys(hier).map(function (k) { return hier[k]; })
+      .sort(function (a, b) { return RANG_FAMILLE[a.famille] - RANG_FAMILLE[b.famille] || COMPARER_REF(a.libelle, b.libelle); })
+      .map(item));
+    var nR = vu['\u0001reculs'] || 0, nI = vu['\u0001indice'] || 0;
+    items.push({ cle: 'reculs', libelle: 'Reculs', pastille: '\x3Cspan class="pastille recul">\x3C/span>', n: nR, desactive: !nR, total: total['\u0001reculs'] || 0,
+                 titre: nR ? 'Les plans qui ont reculé' + pour + ' : validés qui ne le sont plus, en cours revenus « à faire »' : 'Aucun recul' + pour + dans },
+               { cle: 'indice', libelle: 'Changement d\u2019indice', pastille: '\x3Cspan class="pastille indice">\x3C/span>', n: nI, desactive: !nI, total: total['\u0001indice'] || 0,
+                 titre: nI ? 'Les plans réémis sous un autre indice' + pour : 'Aucun changement d\u2019indice' + pour + dans });
+    /* Un choix qui n'a plus rien à montrer dans tout le journal — l'autre
+       périmètre, une valeur disparue — revient à « Tout ». La recherche,
+       elle, ne le retire pas : on le garde pendant la frappe. */
+    if (vue.journal && !items.some(function (x) { return x.cle === vue.journal && x.total; })) vue.journal = '';
+    $('filtre-journal').innerHTML = boutonsPastilles('journal', vue.journal, items, { libelle: 'Tout' });
+  }
+
   function rendreJournal() {
     var zone = $('zone-journal');
+    var journal = JOURNAL.length ? journalAffiche() : [];
+    rendreFiltreJournal(journal);
     if (!JOURNAL.length) {
       zone.innerHTML = '\x3Cdiv class="journal-vide">' + ech(pourquoiJournalVide()) + '\x3C/div>';
       return;
     }
-    var journal = journalAffiche();
     if (!journal.length) {
       zone.innerHTML = '\x3Cdiv class="journal-vide">Aucun changement dans le périmètre ' +
         ech(vue.perimetre) + '.\x3C/div>';
       return;
     }
-    /* Les filtres du journal : une valeur d'arrivée par bouton — celles que
-       le journal contient —, puis les changements d'indice. */
-    var arrivees = {}, listeArrivees = [], aDesReculs = false;
-    journal.forEach(function (sem) {
-      sem.evenements.forEach(function (e) {
-        if (estRecul(e)) { aDesReculs = true; return; }
-        if (e.type !== 'change' || !e.cApres || arrivees[e.cApres]) return;
-        arrivees[e.cApres] = { cle: e.cApres, libelle: e.vApres, famille: e.apres };
-        listeArrivees.push(arrivees[e.cApres]);
-      });
-    });
-    listeArrivees.sort(function (a, b) { return RANG_FAMILLE[a.famille] - RANG_FAMILLE[b.famille] || COMPARER_REF(a.libelle, b.libelle); });
-    if (vue.journal && vue.journal !== 'indice' && !(vue.journal === 'reculs' && aDesReculs) && !arrivees[vue.journal]) vue.journal = '';
-    /* Les boutons dans l'ordre des colonnes du résumé : le plus fréquent
-       d'abord. */
-    var boutonsJournal = listeArrivees.map(function (v) {
-      return { l: { passage: true, cle: v.cle, famille: v.famille, libelle: v.libelle },
-               html: '\x3Cbutton type="button" data-journal="' + ech(v.cle) + '" data-famille="' + v.famille + '" aria-pressed="' + (vue.journal === v.cle) + '">' +
-                 pastilleValeur(v.cle, v.famille) + ech(v.libelle) + '\x3C/button>' };
-    });
-    if (aDesReculs) boutonsJournal.push({ l: { cle: 'reculs' },
-      html: '\x3Cbutton type="button" data-journal="reculs" aria-pressed="' + (vue.journal === 'reculs') + '">\x3Cspan class="pastille recul">\x3C/span>Reculs\x3C/button>' });
-    boutonsJournal.push({ l: { cle: 'indice' },
-      html: '\x3Cbutton type="button" data-journal="indice" aria-pressed="' + (vue.journal === 'indice') + '">\x3Cspan class="pastille indice">\x3C/span>Changement d\u2019indice\x3C/button>' });
-    boutonsJournal.sort(function (a, b) { return comparerLignes(a.l, b.l); });
-    $('filtre-journal').innerHTML = '\x3Cbutton type="button" data-journal="" aria-pressed="' + !vue.journal + '">Tout\x3C/button>' +
-      boutonsJournal.map(function (x) { return x.html; }).join('');
     var filtre = vue.journal;
     var q = motCherche(vue.rechercheJournal);
     var retenus = function (sem) {
@@ -3686,7 +4001,7 @@
         var cle = l.cle;
         return '\x3Cbutton class="compte-passage' + (cle === 'reculs' ? ' recul' : '') + '" type="button" data-passage="' + ech(cle) +
           '" aria-pressed="' + (vue.journal === cle) + '" title="' + ech(nb(l.n) + ' ' + libelleLot(l, l.n)) + ' \u2014 n\u2019afficher que ' +
-          (l.passage ? 'ces passages' : cle === 'reculs' ? 'les reculs' : 'les changements d\u2019indice') + ', sur toutes les semaines">' +
+          (l.passage ? ech('les plans arrivés à « ' + l.libelle + ' », réémis et reculs compris') : cle === 'reculs' ? 'les reculs' : 'les changements d\u2019indice') + ', sur toutes les semaines">' +
           pastilleResume(l) + '\x3Cb>' + nb(l.n) + '\x3C/b>' + mot + '\x3C/button>';
       });
       /* La ligne de couleur de la semaine : une part par compte, dans l'ordre
@@ -3769,8 +4084,14 @@
           return '\x3Cspan class="entete-col">' + (l.cle === 'nouveaux' || l.cle === 'disparus' ? '' : pastilleResume(l)) + ech(l.des) + '\x3C/span>';
         }).join('') + '\x3Cspan>\x3C/span>\x3C/div>'
       : '';
+    /* Sous une pastille, « aucun changement pour X » ferait croire le plan
+       immobile : on dit parmi quoi on a cherché. */
+    var choisi = filtre ? [].filter.call($('filtre-journal').querySelectorAll('button'), function (b) { return b.getAttribute('data-journal') === filtre; })[0] : null;
+    var parmi = !choisi ? '' : filtre === 'reculs' ? ' parmi les reculs' : filtre === 'indice' ? ' parmi les changements d\u2019indice'
+      : ' parmi les arrivées à « ' + choisi.querySelector('.libelle').textContent + ' »';
     zone.innerHTML = entetes + html || (q
-      ? '\x3Cdiv class="journal-vide">Aucun changement pour « ' + ech(vue.rechercheJournal.trim()) + ' » dans l’historique. Échap vide la recherche.\x3C/div>'
+      ? '\x3Cdiv class="journal-vide">Aucun changement pour « ' + ech(vue.rechercheJournal.trim()) + ' »' + ech(parmi) + ' dans l’historique' +
+        (parmi ? ' — « Tout » les cherche tous' : '') + '. Échap vide la recherche.\x3C/div>'
       : '\x3Cdiv class="journal-vide">Aucun changement de ce type dans l’historique.\x3C/div>');
   }
 
@@ -4076,6 +4397,9 @@
     vue.base = 'ici';
     vue.seconde.recherche = ''; $('recherche-seconde').value = '';
     $('recherche').value = '';
+    /* Les rangées de pastilles du bloc et du graphique sont locales, comme
+       le champ de gauche du bloc et la rangée du journal : la remise à zéro
+       des filtres de la page ne les touche pas. */
   }
 
   function rendreFiltresActifs() {
@@ -4659,6 +4983,9 @@
     var b = e.target.closest('.etat-btn');
     if (!b) return;
     vue.etat = vue.etat === b.dataset.etat ? '' : b.dataset.etat;
+    /* Une tuile d'une autre valeur que celle du bloc : le choix le plus
+       récent l'emporte, plutôt qu'un bloc tout à zéro. */
+    if (vue.etat && vue.valeurBloc && vue.valeurBloc !== vue.etat) vue.valeurBloc = '';
     rendre();
   });
 
@@ -5033,6 +5360,32 @@
     }
   });
 
+  /* Les rangées de pastilles du bloc et du graphique (débrief 18) : elles
+     ne redessinent que leur section. Absentes d'un Index d'une livraison
+     d'avant : rien ne s'y branche. */
+  if ($('filtre-valeur-groupe')) $('filtre-valeur-groupe').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-valeur-bloc]');
+    if (!b || b.disabled) return;
+    vue.valeurBloc = b.dataset.valeurBloc;
+    /* La ligne dépliée reste à sa hauteur sous les yeux. */
+    var zone = $('zone-critique'), ouverte = zone.querySelector('.critique-ligne[aria-pressed="true"]');
+    var val = ouverte ? ouverte.dataset.groupe : null;
+    var avant = ouverte ? ouverte.getBoundingClientRect().top - zone.getBoundingClientRect().top : 0;
+    rendreCritique(selection());
+    if (val !== null) {
+      var ligne = [].filter.call(zone.querySelectorAll('.critique-ligne'), function (x) { return x.dataset.groupe === val; })[0];
+      if (ligne) zone.scrollTop += ligne.getBoundingClientRect().top - zone.getBoundingClientRect().top - avant;
+    }
+    rendreFocus($('filtre-valeur-groupe'), 'valeur-bloc', vue.valeurBloc);
+  });
+  if ($('filtre-valeur-graphe')) $('filtre-valeur-graphe').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-valeur-graphe]');
+    if (!b || b.disabled) return;
+    vue.valeurGraphe = b.dataset.valeurGraphe;
+    rendreGraphique(selection());
+    rendreFocus($('filtre-valeur-graphe'), 'valeur-graphe', vue.valeurGraphe);
+  });
+
   $('zone-journal').addEventListener('click', function (e) {
     var tout = e.target.closest('button[data-tout]');
     if (tout) {
@@ -5043,11 +5396,16 @@
     var passage = e.target.closest('button[data-passage]');
     if (passage) {
       var cible = passage.dataset.passage;
+      var semaine = passage.closest('.journal-semaine'), tetePassage = semaine && semaine.querySelector('button[data-semaine]');
+      var iSem = tetePassage ? tetePassage.dataset.semaine : null;
       vue.journal = (vue.journal === cible) ? '' : cible;
-      document.querySelectorAll('#filtre-journal button').forEach(function (x) {
-        x.setAttribute('aria-pressed', String(x.dataset.journal === vue.journal));
-      });
       rendreJournal();
+      /* Le journal est réécrit : le focus revient sur le même compte, dans
+         la même semaine, sans faire défiler. */
+      var teteN = [].filter.call($('zone-journal').querySelectorAll('button[data-semaine]'), function (x) { return x.dataset.semaine === iSem; })[0];
+      var semN = teteN && teteN.closest('.journal-semaine');
+      var repris = semN && [].filter.call(semN.querySelectorAll('button[data-passage]'), function (x) { return x.dataset.passage === cible; })[0];
+      if (repris) repris.focus({ preventScroll: true });
       return;
     }
     var tete = e.target.closest('button[data-semaine]');
@@ -5081,12 +5439,10 @@
 
   document.querySelector('#filtre-journal').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-journal]');
-    if (!b) return;
+    if (!b || b.disabled) return;
     vue.journal = b.dataset.journal;
-    document.querySelectorAll('#filtre-journal button').forEach(function (x) {
-      x.setAttribute('aria-pressed', String(x === b));
-    });
     rendreJournal();
+    rendreFocus($('filtre-journal'), 'journal', vue.journal);
   });
 
   $('filtres-actifs').addEventListener('click', function (e) {
@@ -5257,6 +5613,8 @@
      le domaine du plan derrière une référence — pour vérifier la dérivation. */
   window.__journalAffiche = function () { return journalAffiche(); };
   window.__serieAffichee = function () { return serieAffichee(); };
+  window.__serieValeur = function (k) { return serieValeur(k); };
+  window.__vueValeurs = function () { return { journal: vue.journal, bloc: vue.valeurBloc, graphe: vue.valeurGraphe }; };
   window.__domaineDe = function (ref) { var p = planDeRef(ref); return p ? domaineDe(p) : null; };
   /* L'échéance courante — le jalon qui pilote l'effort demandé sous le
      périmètre choisi. */
@@ -5357,11 +5715,15 @@
     $('livraison').textContent = 'Livraison ' + EDITION;
     $('livraison').hidden = false;
   }
+  if ($('mention-consultations') && API && API.noterConsultation) $('mention-consultations').hidden = false;
   chargerSource(SERVEUR ? sourceDuClasseur(window.SUIVI_FWD_DONNEES) : jeuDExemple());
   chargerPrefs();
   remplirDims();
   rendre();
   DEMARRAGE_FINI = true;
+  /* L'ouverture est comptée, sans nom ni adresse (débrief 18) — une fois la
+     page affichée, pour ne rien retarder. */
+  if (API && API.noterConsultation) setTimeout(API.noterConsultation, 1500);
 })();
-window.SUIVI_FWD_FIN = '8598390';
+window.SUIVI_FWD_FIN = '02462f4';
 </script>

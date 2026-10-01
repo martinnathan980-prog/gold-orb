@@ -54,8 +54,9 @@ function ouvrirTableauDeBord() {
 }
 
 
-/** Le tableau de bord en application web, si on en déploie une. */
-function doGet() {
+/** Le tableau de bord en application web, si on en déploie une. ?frais=1 relit le classeur. */
+function doGet(e) {
+  if (e && e.parameter && e.parameter.frais) chiffresOublies();
   return HtmlService.createHtmlOutput(pageComplete())
     .setTitle('Suivi FWD')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
@@ -80,10 +81,30 @@ function montrerLeDiagnostic() {
 
 
 /**
- * Oublie le code gardé en mémoire : la prochaine ouverture relira le dépôt.
- * À lancer après une mise à jour.
+ * Le serveur garde le paquet de chaque contrat en cache (débrief 18), sous une
+ * clé qui change à chaque modification du classeur. Il tourne ici dans un
+ * eval : sa fonction onEdit n'est pas vue par Google. Celle-ci la remplace —
+ * un collage, une saisie rendent les chiffres gardés caducs.
+ */
+function onEdit() {
+  chiffresOublies();
+}
+
+/** Les chiffres gardés en cache deviennent caducs : la prochaine ouverture relit le classeur. */
+function chiffresOublies() {
+  try {
+    PropertiesService.getDocumentProperties().setProperty('SUIVI_FWD_VERSION_DONNEES',
+      String(new Date().getTime()) + '-' + Math.floor(Math.random() * 1e6));
+  } catch (e) { /* sans propriétés, le serveur ne garde rien en cache */ }
+}
+
+
+/**
+ * Oublie le code gardé en mémoire, et les chiffres : la prochaine ouverture
+ * relira le dépôt et le classeur. À lancer après une mise à jour.
  */
 function viderLeCache() {
+  chiffresOublies();
   const cache = CacheService.getScriptCache();
   [PAGE, SERVEUR].forEach(function (chemin) {
     const compte = Number(cache.get(cle(chemin) + ':n') || 0);
@@ -93,7 +114,7 @@ function viderLeCache() {
     }
     cache.removeAll(cles);
   });
-  const mot = 'Code oublié. La prochaine ouverture ira le relire sur le dépôt.';
+  const mot = 'Code et chiffres oubliés. La prochaine ouverture ira relire le dépôt et le classeur.';
   try {
     SpreadsheetApp.getUi().alert('Suivi FWD', mot, SpreadsheetApp.getUi().ButtonSet.OK);
   } catch (e) {

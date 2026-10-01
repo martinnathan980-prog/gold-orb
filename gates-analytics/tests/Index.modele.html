@@ -87,6 +87,10 @@
           })
           .getDonneesCompactes(id);
       } catch (e) { cb(null); /* page ouverte hors classeur : sans conséquence */ }
+    },
+    /* L'ouverture, comptée sans nom (débrief 18) : rien n'attend la réponse. */
+    noterConsultation: function () {
+      try { google.script.run.withFailureHandler(function () {}).noterConsultation(); } catch (e) { /* hors classeur */ }
     }
   };
 </script>

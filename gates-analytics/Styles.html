@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "8598390";
+  --suivi-fwd-edition: "02462f4";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -338,6 +338,17 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .filtre-journal button:hover { background: var(--creux); color: var(--encre); }
 .filtre-journal button[aria-pressed="true"] { border-color: var(--filet-fort); background: var(--surface); color: var(--encre); font-weight: 500; }
 .filtre-journal .pastille { width: 8px; height: 8px; }
+/* Débrief 18 : la même rangée sert au journal, au bloc par groupe et au
+   graphique. Toutes les valeurs y sont, toujours dans l'ordre des tuiles ;
+   une valeur sans rien à montrer reste là, grisée — la rangée garde sa
+   forme d'un contrat, d'un périmètre à l'autre. */
+.filtre-journal button:disabled { opacity: .42; cursor: default; }
+.filtre-journal button:disabled:hover { background: none; color: var(--encre-2); }
+.filtre-journal .n {
+  font-family: "IBM Plex Mono", monospace; font-size: 11.5px;
+  font-variant-numeric: tabular-nums; opacity: .72;
+}
+.rangee-valeurs { display: flex; margin: 0 0 10px; }
 .journal-semaine {
   border-bottom: 1px solid var(--filet);
 }
@@ -932,8 +943,8 @@ table.plans tbody tr[data-plan] { cursor: pointer; }
 /* Quand d'autres filtres réduisent les lignes, les colonnes tirées de
    l'historique le disent : elles portent sur tout le groupe. */
 .critique-note { font-size: 11.5px; color: var(--encre-3); margin: 0 0 6px; line-height: 1.4; }
-.critique-note.note-arret { display: flex; align-items: baseline; gap: 6px; color: var(--encre-2); }
-.critique-note.note-arret .pastille { flex: none; width: 8px; height: 8px; align-self: center; }
+.critique-note.note-arret, .critique-note.note-valeur { display: flex; align-items: baseline; gap: 6px; color: var(--encre-2); }
+.critique-note.note-arret .pastille, .critique-note.note-valeur .pastille { flex: none; width: 8px; height: 8px; align-self: center; }
 .critique-note.note-arret b { color: var(--cours); font-weight: 500; }
 .critique-tete > span.a-gauche { justify-content: flex-start; }
 button.tri-groupe {
@@ -966,6 +977,14 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
 }
 .critique-plans { display: grid; justify-items: center; min-width: 0; }
 .critique-plans .arret-n { display: block; margin-top: 3px; font: 10.5px/1.2 "IBM Plex Sans", system-ui, sans-serif; color: var(--cours); white-space: nowrap; }
+/* Sous une valeur choisie (débrief 18) : « 12 », puis « sur 40 » et ce qui
+   y est arrivé au dernier relevé. */
+.critique-plans .sur-n { display: block; margin-top: 3px; font: 10.5px/1.2 "IBM Plex Sans", system-ui, sans-serif; color: var(--encre-3); white-space: nowrap; }
+.critique-plans .sur-n b { font-weight: 500; color: var(--encre-2); }
+.critique-ligne.sans-valeur .critique-nom, .critique-ligne.sans-valeur .critique-plans,
+.critique-ligne.sans-valeur .critique-barre { opacity: .5; }
+.critique-barre.focalise span { opacity: .26; }
+.critique-barre.focalise span.eclaire { opacity: 1; }
 .critique-effort, .critique-date { text-align: center; min-width: 0; }
 .critique-effort .v, .critique-date .v { display: block; }
 .critique-date .v {
