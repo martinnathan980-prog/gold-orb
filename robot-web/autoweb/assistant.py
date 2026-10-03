@@ -320,6 +320,11 @@ def _bloc_etapes(
                 lignes.append(f"{i}- cliquer: {{selecteur: {_yaml_chaine(selecteur)}, {', '.join(options)}}}{commentaire}")
             else:
                 lignes.append(f"{i}- cliquer: {_yaml_chaine(selecteur)}")
+        elif e.action == "survoler":
+            # ouvre le sous-menu ; si le menu est déjà ouvert ou a changé, le clic suivant dira ce qui manque
+            lignes.append(f"{i}- survoler: {{selecteur: {_yaml_chaine(str(e.args['selecteur']))}, delai: 5000}}"
+                          "   # ouvre le sous-menu, comme la souris")
+            lignes.append(f"{i}  optionnel: true")
         elif e.action == "onglet":
             lignes.append(f"{i}- onglet: {{index: {int(e.args.get('index', 1))}}}")
         elif e.action in ("remplir", "choisir", "cocher"):
@@ -479,6 +484,8 @@ def decrire_pour_partage(nom: str, etapes: List[Any], parametres: Dict[str, str]
             texte = "ouvrir la page de départ de l'outil"
         elif e.action == "onglet":
             texte = f"passer à l'onglet {e.args.get('index')}"
+        elif e.action == "survoler":
+            texte = f"survoler le menu « {_masquer(e.libelle)} »" if _texte_usuel(e.libelle) else "survoler un menu"
         elif e.action in ("cliquer", "telecharger"):
             variable = parametres.get(str(e.texte_selecteur or "").strip())
             if variable:

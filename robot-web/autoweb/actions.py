@@ -15,6 +15,7 @@ Paramètre `nieme: 2` pour prendre le 2e élément correspondant.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
@@ -156,6 +157,22 @@ JS_TABLEAU = r"""
   return { lignes: vraies.length, trouve: trouve };
 }
 """
+# Élément caché dans un sous-menu fermé : où poser la souris pour l'ouvrir ? Sur l'entrée de menu
+# visible la plus proche (« GATES »), sur son propre libellé, pas sur le sous-menu qu'elle contient.
+JS_ENTREE_A_SURVOLER = r"""
+e => {
+  const vis = n => { const s = getComputedStyle(n); if (s.display === 'none' || s.visibility === 'hidden') return false;
+                     const r = n.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  if (vis(e)) return null;
+  let n = e.parentElement, haut = 1;
+  while (n && !vis(n)) { n = n.parentElement; haut++; }
+  if (!n || n === document.body || n === document.documentElement || haut > 12) return { haut: 0, enfant: -2 };
+  const enfants = Array.from(n.children);
+  const enfant = enfants.findIndex(c => !c.contains(e) && vis(c) && (c.innerText || '').trim() &&
+    !c.matches('ul, ol, [role="menu"], [role="group"], [role="listbox"], .dropdown-menu, .submenu, .sub-menu'));
+  return { haut: haut, enfant: enfant };
+}
+"""
 
 
 def nom_fichier_sur(texte: str) -> str:
@@ -207,7 +224,11 @@ class Executeur:
         if sel.startswith("texte="):
             loc = portee.get_by_text(sel[len("texte="):], exact=exact)
         elif sel.startswith("texte_exact="):
-            loc = portee.get_by_text(sel[len("texte_exact="):], exact=True)
+            texte = sel[len("texte_exact="):]
+            # <li>GATES<ul>Données MK1...</ul></li> : le texte complet du li n'est pas « GATES »,
+            # mais son propre texte l'est (entrée de menu qui contient son sous-menu)
+            loc = portee.get_by_text(texte, exact=True).or_(
+                portee.locator("text=" + json.dumps(texte.strip(), ensure_ascii=False)))
         elif sel.startswith("libelle="):
             loc = portee.get_by_label(sel[len("libelle="):], exact=exact)
         elif sel.startswith("placeholder="):
@@ -506,6 +527,11 @@ class Executeur:
                         (["Shift"] if est_vrai(args.get("maj", False)) else [])
         if modificateurs:
             options["modifiers"] = modificateurs
+        if not options["force"]:
+            debut = time.monotonic()
+            loc = self._pret_a_cliquer(loc, args, timeout)
+            if timeout is not None:  # le temps déjà passé à chercher compte dans le délai
+                options["timeout"] = max(2000, int(timeout - (time.monotonic() - debut) * 1000))
         if args.get("nouvel_onglet"):
             # tout nouvel onglet compte : window.open, lien « nouvel onglet », Ctrl+clic, clic molette
             with self.page.context.expect_page(timeout=timeout) as popup:
@@ -520,7 +546,67 @@ class Executeur:
             loc.click(**options)
 
     def act_survoler(self, args: Dict[str, Any], delai: Optional[int]) -> None:
-        self.localiser(args["selecteur"], args).hover(timeout=self._delai(args, delai))
+        timeout = self._delai(args, delai)
+        loc = self._un_seul(self.localiser(args["selecteur"], args), args, timeout)
+        if not loc.is_visible():
+            self._ouvrir_menus(loc)
+        loc.hover(timeout=timeout)
+
+    def _un_seul(self, loc, args: Dict[str, Any], timeout: Optional[int]):
+        """L'élément visé. S'il y en a plusieurs (même menu en double, version mobile cachée...),
+        le seul qui est visible ; plusieurs visibles : le robot ne choisit pas au hasard."""
+        loc.first.wait_for(state="attached", timeout=timeout)  # absent : « délai dépassé », comme avant
+        nombre = loc.count()
+        if nombre <= 1:
+            return loc
+        visibles = [loc.nth(i) for i in range(min(nombre, 20)) if loc.nth(i).is_visible()]
+        if len(visibles) > 1:
+            raise ErreurEtape(
+                f"{len(visibles)} éléments visibles correspondent à « {args.get('selecteur')} » : le robot ne choisit "
+                "pas au hasard. Ajoutez « premier: true » (ou « nieme: 2 ») à l'étape, ou réenregistrez la tâche.")
+        return visibles[0] if visibles else loc.first
+
+    def _pret_a_cliquer(self, loc, args: Dict[str, Any], timeout: Optional[int]):
+        """Comme la main de l'utilisateur : si l'élément est dans un sous-menu fermé, le robot survole
+        d'abord le menu (« GATES ») pour l'ouvrir, puis clique. Jamais de clic sur un élément caché."""
+        loc = self._un_seul(loc, args, timeout)
+        try:
+            loc.click(trial=True, timeout=1500)  # vérifie seulement qu'un clic est possible, ne clique pas
+            return loc
+        except PlaywrightTimeout:
+            pass
+        if not loc.is_visible() and self._ouvrir_menus(loc):
+            journal.info("      sous-menu ouvert en survolant le menu")
+        return loc
+
+    def _ouvrir_menus(self, loc) -> bool:
+        """Survole, de haut en bas, les entrées de menu qui cachent l'élément (4 niveaux au plus)."""
+        deja = set()
+        for _ in range(4):
+            try:
+                point = loc.evaluate(JS_ENTREE_A_SURVOLER)
+            except PlaywrightError:
+                return False
+            if not point:
+                return True  # visible
+            if point["enfant"] == -2:
+                return False  # rien de visible au-dessus : ce n'est pas un menu fermé
+            cle = (point["haut"], point["enfant"])
+            if cle in deja:
+                return False  # le survol n'a rien ouvert
+            deja.add(cle)
+            entree = loc.locator("xpath=" + "/".join([".."] * point["haut"]))
+            if point["enfant"] >= 0:
+                entree = entree.locator(f"xpath=./*[{point['enfant'] + 1}]")
+            try:
+                entree.hover(timeout=2000)
+                loc.wait_for(state="visible", timeout=800)
+                return True
+            except PlaywrightTimeout:
+                continue
+            except PlaywrightError:
+                return False
+        return False
 
     # ------------------------------------------------------------------ lecture / vérification
     def _texte_element(self, loc, args: Dict[str, Any], timeout: Optional[int]) -> str:

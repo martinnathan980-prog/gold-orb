@@ -131,6 +131,18 @@ JS_ENREGISTREUR = """
     return '';
   }
 
+  // Menus : un élément de menu contient souvent ses sous-menus (« GATES » contient « Données MK1 »,
+  // « Données MK2 »...). Son nom, c'est SON texte, sans celui des sous-menus ni des sous-listes.
+  const SOUS_LISTES = 'ul, ol, [role="menu"], [role="group"], [role="listbox"], .dropdown-menu, .submenu, .sub-menu, table';
+  const MENU = 'nav, header, [role="menu"], [role="menubar"], [role="navigation"], [role="tree"], [role="tablist"], ' +
+               '.menu, .navbar, .dropdown-menu, [class*="menu" i], [id*="menu" i]';
+  function textePropre(e) {
+    if (!e.querySelector(SOUS_LISTES)) return e.innerText || '';
+    const c = e.cloneNode(true);
+    c.querySelectorAll(SOUS_LISTES).forEach(x => x.remove());
+    return c.textContent || '';
+  }
+
   // Texte visible d'un element : JAMAIS la valeur d'un champ de saisie.
   function texteDe(e) {
     if (estChampSaisie(e)) return '';
@@ -139,7 +151,7 @@ JS_ENREGISTREUR = """
     const type = (e.getAttribute('type') || '').toLowerCase();
     if (tag === 'input' && ['submit', 'button', 'reset'].includes(type)) return court(e.value || '', 60);
     // aria-label d'abord : c'est le nom que Playwright utilisera (bouton à icône)
-    return court(e.getAttribute('aria-label') || e.innerText || e.getAttribute('title') || '', 60);
+    return court(e.getAttribute('aria-label') || textePropre(e) || e.getAttribute('title') || '', 60);
   }
 
   function cheminCss(e) {
@@ -162,6 +174,10 @@ JS_ENREGISTREUR = """
   function ancreLigne(e) {
     const ligne = e.closest('tr, [role="row"], li');
     if (!ligne || ligne.contains(document.getElementById(ID_BADGE))) return '';
+    // un menu n'est pas une liste de résultats : « GATES » se désigne par son texte, pas par sa « ligne »
+    // (une liste dans une liste, c'est un sous-menu ou une arborescence, pas des résultats)
+    if (ligne.tagName === 'LI' && (e.closest(MENU) || ligne.querySelector('ul, ol') ||
+        (ligne.parentElement && ligne.parentElement.closest('li')))) return '';
     let texte = '';
     const cellules = ligne.querySelectorAll('td, th, [role="cell"], [role="gridcell"], a');
     for (let i = 0; i < cellules.length; i++) {
@@ -214,8 +230,36 @@ JS_ENREGISTREUR = """
     if (lib && ['input','select','textarea'].includes(tag)) return 'libelle=' + lib;
     const ancre = ancreLigne(e);
     if (ancre) return ancre;
-    if (texte && texte.length <= 40) return 'texte=' + texte;
+    if (role === 'menuitem' && texte) return 'role=menuitem:' + texte;
+    // texte exact : « GATES » ne doit pas attraper « GATES Données MK1 » ni un autre bloc qui le contient
+    if (texte && texte.length <= 40) return (e.closest(MENU) ? 'texte_exact=' : 'texte=') + texte;
     return cheminCss(e);
+  }
+
+  // Entrées de menu au-dessus de l'élément cliqué (« GATES » au-dessus de « Données MK1 »), de la
+  // plus haute à la plus basse : la souris les a survolées pour ouvrir les sous-menus, le robot
+  // les survolera aussi avant de cliquer (certains portails ne créent le sous-menu qu'au survol).
+  function menusAuDessus(e) {
+    const entrees = [];
+    for (let n = e.parentElement; n && n !== document.body && entrees.length < 4; n = n.parentElement) {
+      if (!n.matches('li, [role="menuitem"], [aria-haspopup]')) continue;
+      const sous = Array.from(n.querySelectorAll(SOUS_LISTES)).find(s => s.contains(e) && s !== e);
+      if (!sous) continue;
+      let flottant = false;
+      try { flottant = ['absolute', 'fixed'].includes(getComputedStyle(sous).position); } catch (err) {}
+      if (!(e.closest(MENU) || flottant || n.hasAttribute('aria-haspopup') || n.getAttribute('role') === 'menuitem' ||
+            n.querySelector(':scope > [aria-haspopup], :scope > [aria-expanded]'))) continue;
+      let libelle = n;
+      for (const c of n.children) {
+        if (!c.matches(SOUS_LISTES) && !c.contains(e) && court(textePropre(c), 60)) { libelle = c; break; }
+      }
+      const texte = court(textePropre(libelle), 60);
+      if (!texte || texte.length > 40) continue;
+      let s = selecteurDe(libelle);
+      if (s.startsWith('texte=')) s = 'texte_exact=' + s.slice(6);
+      entrees.unshift({ selecteur: s, texte: texte });
+    }
+    return entrees;
   }
 
   function cible(e) {
@@ -352,6 +396,9 @@ JS_ENREGISTREUR = """
     if (!e) return;
     const d = decrire(e);
     d.type_evenement = 'clic';
+    try { d.menus = menusAuDessus(e); } catch (err) { d.menus = []; }
+    // dans un sous-menu, « Données MK1 » ne doit pas attraper « Données MK1 bis »
+    if (d.menus.length && d.selecteur.startsWith('texte=')) d.selecteur = 'texte_exact=' + d.selecteur.slice(6);
     d.ctrl = !!(ev.ctrlKey || ev.metaKey);   // Ctrl+clic : ouvre souvent un nouvel onglet
     d.maj = !!ev.shiftKey;
     d.bouton = ev.button || 0;
@@ -436,6 +483,8 @@ class EtapeEnregistree:
             return f"passer à l'onglet {self.args.get('index')}"
         if self.action == "cliquer":
             return f"cliquer sur {libelle}" + (" (ouvre un nouvel onglet)" if self.args.get("nouvel_onglet") else "")
+        if self.action == "survoler":
+            return f"survoler le menu {libelle}"
         if self.action == "choisir":
             return f"choisir « {self.args.get('valeur')} » dans {libelle}"
         if self.action == "cocher":
@@ -791,6 +840,15 @@ def _traduire(ev: Evenement, d: Dict[str, Any], etapes: List[EtapeEnregistree], 
             args_clic["maj"] = True
         if d.get("bouton") == 1:
             args_clic["bouton"] = "middle"
+        # sous-menu : survoler d'abord les menus au-dessus (« GATES »), comme la souris l'a fait
+        for menu in d.get("menus") or []:
+            sel_menu = str((menu or {}).get("selecteur") or "")
+            gestes = [e for e in etapes if e.action != "attendre"]
+            if not sel_menu or (gestes and gestes[-1].action in ("cliquer", "survoler")
+                                and gestes[-1].args.get("selecteur") == sel_menu and gestes[-1].cadre == ev.cadre):
+                continue
+            etapes.append(EtapeEnregistree("survoler", {"selecteur": sel_menu},
+                                           libelle=str(menu.get("texte") or ""), cadre=ev.cadre))
         etapes.append(EtapeEnregistree(
             "cliquer", args_clic, libelle=libelle, cadre=ev.cadre,
             texte_selecteur=_texte_du_selecteur(selecteur),

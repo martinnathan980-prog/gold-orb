@@ -174,7 +174,7 @@ etapes:                    # pour CHAQUE ligne de l'Excel
 | `choisir` | `choisir: {selecteur: "#type", valeur: "{{Type}}"}` (ou `libelle:` / `index:`) | liste déroulante (valeur OU libellé de l'option) |
 | `cocher` / `decocher` | `cocher: {selecteur: "#urgent", valeur: "{{Urgent}}"}` | case à cocher ; oui/non/x/1/vrai… |
 | `touche` | `touche: Enter` / `{selecteur: "#a", touche: Tab}` | touche clavier |
-| `survoler` | `survoler: "#menu"` | passe la souris (menus) |
+| `survoler` | `survoler: "#menu"` | passe la souris (menus). Inutile pour un `cliquer` : un élément caché dans un sous-menu fermé est révélé en survolant le menu au-dessus, puis cliqué |
 | `televerser` | `televerser: {selecteur: "input[type=file]", fichier: "plans/{{Numéro plan}}.pdf"}` | joint un fichier |
 | `telecharger` | `telecharger: {cliquer: "texte=Exporter", vers: "telechargements/", vers_colonne: Fichier}` | clique et enregistre le téléchargement |
 | `lire` | `lire: {selecteur: ".ref", vers: "Référence outil", regex: "REF-(\\d+)"}` | relève un texte / une valeur / un attribut (`attribut: href`) et l'écrit dans l'Excel |
@@ -241,7 +241,7 @@ la ligne est laissée de côté (IGNORE, avec le message) et le robot passe à l
 |---|---|---|
 | CSS | `#numero`, `input[name=titre]`, `.btn-primary` | le plus stable quand l'élément a un `id` ou un `name` |
 | Libellé | `libelle=Numéro de plan` | le champ associé au texte du `<label>` : très lisible |
-| Texte | `texte=Enregistrer`, `texte_exact=OK` | un élément contenant ce texte |
+| Texte | `texte=Enregistrer`, `texte_exact=OK` | un élément contenant ce texte (`texte_exact` : exactement ce texte, ou une entrée de menu dont c'est le propre texte) |
 | Rôle | `role=button:Enregistrer`, `role=link:Nouveau plan` | boutons / liens par leur nom visible |
 | Indice | `placeholder=jj/mm/aaaa` | |
 | Autres | `titre=Fermer`, `test=btn-save`, `xpath=//table//tr[2]/td[1]` | |
