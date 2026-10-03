@@ -377,6 +377,8 @@ function onOpen() {
     .addItem('Supprimer le relevé de cette semaine', 'supprimerDernierReleve')
     .addItem('Archiver l\'onglet affiché pour une semaine passée…', 'archiverSemainePassee')
     .addSeparator()
+    .addItem('Importer la base ' + (feuilleRapprochement() || 'SEE') + ' (fichier Excel ou CSV)…', 'importerSecondeBase')
+    .addSeparator()
     .addItem('Activer l\'archivage automatique (vendredi 17 h)', 'installerSuiviHebdomadaire')
     .addItem('Désactiver l\'archivage automatique', 'desinstallerSuiviHebdomadaire')
     .addSeparator()
@@ -3279,4 +3281,798 @@ function assurerLignes(feuille, nbLignes) {
   if (!feuille.getMaxRows || !feuille.insertRowsAfter) return;
   const actuelles = feuille.getMaxRows();
   if (nbLignes > actuelles) feuille.insertRowsAfter(actuelles, nbLignes - actuelles);
+}
+
+// =====================================================================
+//  IMPORT DE LA SECONDE BASE, SANS EXCEL
+// =====================================================================
+
+/**
+ * « Les données de SEE sont tellement grosses, l'Excel bug à l'ouverture,
+ * j'arrive pas à les copier. » Le menu Suivi FWD → Importer la base SEE
+ * ouvre une petite fenêtre où l'on choisit le fichier : Chrome le lit sur le
+ * poste — un .xlsx est un zip, il se décompresse et se lit au fil de l'eau,
+ * sans Excel et sans tout charger —, et n'envoie au classeur que la ligne
+ * d'en-tête et les colonnes de la comparaison (NAME, SOL., Cust.V) : quelques
+ * mégaoctets au lieu de centaines. Le fichier lui-même ne quitte pas le poste.
+ *
+ * L'écriture se fait par lots dans un onglet temporaire, « SEE HDK (import) » ;
+ * l'onglet de la base n'est remplacé qu'une fois toutes les lignes reçues. Un
+ * import interrompu laisse l'ancien en place. Chaque fonction appelée par la
+ * fenêtre passe la garde des gestes qui écrivent : rien de tout cela n'est
+ * possible depuis la page du tableau de bord.
+ */
+const SUFFIXE_IMPORT = ' (import)';
+const IMPORT_MAX_LIGNES_LOT = 20000;
+const IMPORT_MAX_COLONNES = 400;
+
+/** Menu : la fenêtre d'import, sur l'onglet de la base du contrat affiché. */
+function importerSecondeBase() {
+  gesteDuClasseur();
+  const ui = SpreadsheetApp.getUi();
+  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  const cfg = CONFIG.RAPPROCHEMENT;
+  const nomBase = feuilleRapprochement();
+  const cles = !cfg ? [] : [].concat(cfg.CLE_REFERENCE === undefined || cfg.CLE_REFERENCE === null ? [] : cfg.CLE_REFERENCE)
+    .map(function (c) { return String(c).trim(); }).filter(Boolean);
+  if (!nomBase || !cles.length) {
+    ui.alert('Importer la seconde base', 'Aucune seconde base n\'est configurée (CONFIG.RAPPROCHEMENT dans Code).', ui.ButtonSet.OK);
+    return;
+  }
+  const contrats = listerContrats(classeur);
+  if (!contrats.length) {
+    ui.alert('Importer la base ' + nomBase, 'Aucun contrat dans le classeur : coller d\'abord l\'extract GATES dans un onglet.', ui.ButtonSet.OK);
+    return;
+  }
+  /* Le contrat proposé : celui de l'onglet affiché, ou dont la base est
+     affichée ; sinon le premier. */
+  const active = classeur.getActiveSheet() ? classeur.getActiveSheet().getName() : '';
+  let choisi = contrats[0].id;
+  const liste = contrats.map(function (c) {
+    const f = ongletSecondeBase(classeur, c.id);
+    const onglet = f ? f.getName() : nomAttenduSecondeBase(classeur, c.id);
+    if (c.id === active || onglet === active) choisi = c.id;
+    return { id: c.id, onglet: onglet, existe: !!f };
+  });
+  const parametres = {
+    base: nomBase,
+    cles: cles,
+    essentielles: (Array.isArray(cfg.ESSENTIELLES) ? cfg.ESSENTIELLES : []).map(function (c) { return String(c).trim(); }).filter(Boolean),
+    lignesScan: CONFIG.LIGNES_SCAN_ENTETE,
+    maxLignesLot: IMPORT_MAX_LIGNES_LOT,
+    contrats: liste,
+    choisi: choisi
+  };
+  const page = HtmlService.createHtmlOutput(pageImportSecondeBase(parametres)).setWidth(640).setHeight(520);
+  ui.showModalDialog(page, 'Importer la base ' + nomBase);
+}
+
+/** Le contrat nommé, ou une erreur qui le nomme. */
+function contratPourImport(classeur, idContrat) {
+  const id = String(idContrat === undefined || idContrat === null ? '' : idContrat);
+  const contrat = listerContrats(classeur).filter(function (c) { return c.id === id; })[0];
+  if (!contrat) throw new Error('Contrat introuvable : « ' + id + ' ». Rouvrir le menu Suivi FWD → Importer la base.');
+  return contrat;
+}
+
+/** L'onglet temporaire d'un import en cours — jamais un autre onglet. */
+function feuilleImportEnCours(classeur, nom) {
+  const n = String(nom === undefined || nom === null ? '' : nom);
+  const base = feuilleRapprochement();
+  if (!base || n.slice(-SUFFIXE_IMPORT.length) !== SUFFIXE_IMPORT || nomCompact(n).indexOf(nomCompact(base)) !== 0) {
+    throw new Error('Onglet d\'import non reconnu : « ' + n + ' ».');
+  }
+  const feuille = classeur.getSheetByName(n);
+  if (!feuille) throw new Error('L\'onglet d\'import « ' + n + ' » a disparu : relancer l\'import.');
+  return feuille;
+}
+
+/**
+ * Début d'un import : un onglet temporaire vide, à côté de la base qu'il
+ * remplacera. Un reste d'import interrompu, du même nom, est retiré d'abord.
+ * @return {{feuille: string, onglet: string}}
+ */
+function importSecondeBaseDebut(idContrat) {
+  gesteDuClasseur();
+  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  const contrat = contratPourImport(classeur, idContrat);
+  const existant = ongletSecondeBase(classeur, contrat.id);
+  const onglet = existant ? existant.getName() : nomAttenduSecondeBase(classeur, contrat.id);
+  const nom = onglet + SUFFIXE_IMPORT;
+  const reste = classeur.getSheetByName(nom);
+  if (reste) classeur.deleteSheet(reste);
+  classeur.insertSheet(nom, classeur.getSheets().length);
+  return { feuille: nom, onglet: onglet };
+}
+
+/**
+ * Un lot de lignes, écrit à partir de la ligne `premiere` (1-based) de
+ * l'onglet temporaire. Tout est vérifié avant d'écrire ; chaque cellule
+ * est posée en texte (une valeur « =… » ne devient pas une formule, « 01 »
+ * reste « 01 »).
+ * @return {{ecrites: number}}
+ */
+function importSecondeBaseLot(nomFeuille, premiere, lignes) {
+  gesteDuClasseur();
+  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  const feuille = feuilleImportEnCours(classeur, nomFeuille);
+  const debut = Number(premiere);
+  if (!(debut >= 1) || Math.floor(debut) !== debut) throw new Error('Ligne de départ illisible : ' + premiere);
+  if (!Array.isArray(lignes) || !lignes.length) throw new Error('Lot vide.');
+  if (lignes.length > IMPORT_MAX_LIGNES_LOT) throw new Error('Lot trop grand : ' + lignes.length + ' lignes (au plus ' + IMPORT_MAX_LIGNES_LOT + ').');
+  const largeur = lignes.reduce(function (m, l) { return Math.max(m, Array.isArray(l) ? l.length : 0); }, 0);
+  if (!largeur) throw new Error('Lot sans colonne.');
+  if (largeur > IMPORT_MAX_COLONNES) throw new Error('Trop de colonnes : ' + largeur + ' (au plus ' + IMPORT_MAX_COLONNES + ').');
+  const valeurs = lignes.map(function (l) {
+    const t = Array.isArray(l) ? l : [], out = [];
+    for (let j = 0; j < largeur; j++) {
+      const v = t[j];
+      /* Une cellule de Sheets ne tient pas plus de 50 000 caractères. */
+      out.push(v === null || v === undefined || typeof v === 'object' ? '' : String(v).slice(0, 50000));
+    }
+    return out;
+  });
+  assurerColonnes(feuille, largeur);
+  assurerLignes(feuille, debut + valeurs.length - 1);
+  const plage = feuille.getRange(debut, 1, valeurs.length, largeur);
+  if (plage.setNumberFormat) plage.setNumberFormat('@');
+  plage.setValues(valeurs);
+  return { ecrites: valeurs.length };
+}
+
+/**
+ * Fin d'un import : si l'onglet temporaire a bien toutes ses lignes, il
+ * prend la place — et le nom — de la base du contrat, à sa position ; la
+ * grille est resserrée sur les données (le classeur reste léger). La base
+ * est relue comme la page la lira, pour le dire.
+ */
+function importSecondeBaseFin(nomFeuille, idContrat, lignesAttendues) {
+  gesteDuClasseur();
+  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  const feuille = feuilleImportEnCours(classeur, nomFeuille);
+  const contrat = contratPourImport(classeur, idContrat);
+  const recues = feuille.getLastRow();
+  if (recues !== Number(lignesAttendues)) {
+    classeur.deleteSheet(feuille);
+    throw new Error('Import incomplet : ' + recues + ' lignes reçues sur ' + lignesAttendues +
+      '. Rien n\'est remplacé : l\'ancien onglet est intact.');
+  }
+  const derniereColonne = Math.max(1, feuille.getLastColumn());
+  if (feuille.deleteRows && feuille.getMaxRows() > recues) feuille.deleteRows(recues + 1, feuille.getMaxRows() - recues);
+  if (feuille.deleteColumns && feuille.getMaxColumns() > derniereColonne) {
+    feuille.deleteColumns(derniereColonne + 1, feuille.getMaxColumns() - derniereColonne);
+  }
+  const existant = ongletSecondeBase(classeur, contrat.id);
+  const onglet = existant ? existant.getName() : nomAttenduSecondeBase(classeur, contrat.id);
+  let position = 0;
+  if (existant) {
+    position = existant.getIndex();
+    classeur.deleteSheet(existant);
+  }
+  feuille.setName(onglet);
+  if (position) {
+    classeur.setActiveSheet(feuille);
+    classeur.moveActiveSheet(position);
+  }
+  marquerDonneesModifiees();
+  const lu = lireSecondeBase(classeur, contrat.id);
+  return {
+    onglet: onglet,
+    remplace: !!existant,
+    lignes: recues - 1,
+    colonnes: derniereColonne,
+    etat: lu.etat,
+    lues: lu.rapprochement ? lu.rapprochement.lignes.length : 0
+  };
+}
+
+/** Abandon : l'onglet temporaire est retiré, la base reste ce qu'elle était. */
+function importSecondeBaseAbandon(nomFeuille) {
+  gesteDuClasseur();
+  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  let feuille = null;
+  try { feuille = feuilleImportEnCours(classeur, nomFeuille); } catch (err) { feuille = null; }
+  if (feuille) classeur.deleteSheet(feuille);
+  return true;
+}
+
+/** La fenêtre d'import : son HTML, ses styles, et son programme avec ses paramètres. */
+function pageImportSecondeBase(parametres) {
+  const json = JSON.stringify(parametres).replace(/</g, '\\u003c');
+  const ech = function (t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+  const cles = parametres.cles.map(ech).join(', ');
+  return '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><base target="_top"><style>' +
+    ':root{--papier:#f4f2ed;--surface:#fff;--encre:#191915;--encre-2:#57564e;--encre-3:#8a887e;--filet:#e2dfd6;' +
+    '--fait:#2f6b4f;--alerte:#b5462e;--teinte:#191915}' +
+    '@media (prefers-color-scheme:dark){:root{--papier:#1b1b18;--surface:#23231f;--encre:#efede6;--encre-2:#c4c1b6;' +
+    '--encre-3:#8f8c82;--filet:#3a3933;--fait:#6fbf94;--alerte:#e2846d;--teinte:#efede6}}' +
+    'html,body{margin:0;background:var(--papier);color:var(--encre);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}' +
+    'body{padding:4px 18px 16px}p{margin:0 0 12px}.doux{color:var(--encre-2)}b{font-weight:600}' +
+    '.ligne{display:flex;align-items:center;gap:10px;margin:0 0 6px}select{font:inherit;padding:4px 6px;border:1px solid var(--filet);' +
+    'border-radius:6px;background:var(--surface);color:var(--encre)}.cible{margin:0 0 12px;color:var(--encre-2);font-size:13px}' +
+    '.depot{border:1.5px dashed var(--filet);border-radius:10px;background:var(--surface);padding:18px;text-align:center;margin:0 0 10px}' +
+    '.depot.survol{border-color:var(--encre-3)}.depot input{display:none}.nom{margin-top:8px;font-size:13px;color:var(--encre-2);word-break:break-all}' +
+    'button{font:inherit;padding:6px 14px;border-radius:7px;border:1px solid var(--filet);background:var(--surface);color:var(--encre);cursor:pointer}' +
+    'button.principal{background:var(--teinte);border-color:var(--teinte);color:var(--papier)}button:disabled{opacity:.45;cursor:default}' +
+    'button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--encre);outline-offset:2px}' +
+    '.option{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--encre-2);margin:0 0 12px}' +
+    '.barre{height:6px;border-radius:3px;background:var(--filet);overflow:hidden;margin:4px 0 6px}.barre div{height:100%;width:0;background:var(--fait);transition:width .2s}' +
+    '.progres{font-size:13px;color:var(--encre-2);min-height:20px}.etat{margin:8px 0 0;font-size:13.5px}.etat.ok{color:var(--fait)}' +
+    '.etat.erreur{color:var(--alerte)}.boutons{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}[hidden]{display:none!important}' +
+    '</style></head><body>' +
+    '<p>Choisir l\u2019export ' + ech(parametres.base) + ' <b>de ce contrat</b> (.xlsx, ou .csv). Il est lu ici, sur ce poste, ' +
+    '<b>sans ouvrir Excel</b> : seules la ligne d\u2019en-tête et les colonnes de la comparaison — ' + cles + ' — vont dans le classeur.</p>' +
+    '<div class="ligne" id="ligne-contrat"><label for="contrat">Contrat</label><select id="contrat"></select></div>' +
+    '<p class="cible" id="cible"></p>' +
+    '<div class="depot" id="depot"><input type="file" id="fichier" accept=".xlsx,.xlsm,.csv,.txt">' +
+    '<button type="button" id="choisir">Choisir le fichier…</button> <span class="doux">ou le glisser ici</span>' +
+    '<div class="nom" id="nom-fichier"></div></div>' +
+    '<label class="option"><input type="checkbox" id="toutes"> <span>Garder aussi les autres colonnes — plus lourd, ' +
+    'seulement pour regarder tout l\u2019extract dans le tableau ' + ech(parametres.base) + ' de la page.</span></label>' +
+    '<div class="barre" id="barre" hidden><div id="barre-plein"></div></div>' +
+    '<div class="progres" id="progres" aria-live="polite"></div>' +
+    '<div class="etat" id="etat" role="status" aria-live="polite"></div>' +
+    '<div class="boutons"><button type="button" id="fermer">Fermer</button>' +
+    '<button type="button" class="principal" id="importer" disabled>Importer</button></div>' +
+    '<script>(' + scriptImportSecondeBase_.toString() + ')(' + json + ');</script>' +
+    '</body></html>';
+}
+
+/**
+ * Le programme de la fenêtre d'import. Il ne tourne jamais dans Apps
+ * Script : la fonction n'est là que pour son texte, que la fenêtre reçoit
+ * (Function.prototype.toString) avec ses paramètres. Écrit en ES5, pour le
+ * Chrome ou l'Edge du poste ; il lui faut DecompressionStream (2022 et
+ * après). Un .xlsx est un zip : on en lit le répertoire à la fin du fichier,
+ * puis on décompresse au fil de l'eau les seules parties utiles — la liste
+ * des onglets, les styles, les chaînes partagées, et l'onglet qui porte
+ * l'en-tête — sans jamais tenir le fichier entier en mémoire.
+ */
+function scriptImportSecondeBase_(P) {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var fichier = null, enCours = false;
+
+  // ------------------------------------------------------------ petits outils
+  function norm(t) {
+    return String(t === null || t === undefined ? '' : t).toLowerCase().normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+  }
+  function nb(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f'); }
+  function ech(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function erreur(message) { var e = new Error(message); e.pourLecteur = true; return e; }
+  function dire(html, classe) { var z = $('etat'); z.className = 'etat' + (classe ? ' ' + classe : ''); z.innerHTML = html; }
+  function progres(part, texte) {
+    $('barre').hidden = false;
+    $('barre-plein').style.width = Math.round(Math.max(0, Math.min(1, part)) * 100) + '%';
+    if (texte !== undefined) $('progres').textContent = texte;
+  }
+  function souffle() { return new Promise(function (ok) { setTimeout(ok, 0); }); }
+
+  // ------------------------------------------------------------ lecture du fichier
+  function lireOctets(f, debut, fin) {
+    return new Promise(function (ok, ko) {
+      var r = new FileReader();
+      r.onload = function () { ok(new Uint8Array(r.result)); };
+      r.onerror = function () { ko(erreur('Le fichier n\u2019a pas pu être lu (est-il encore ouvert ailleurs, ou déplacé ?).')); };
+      r.readAsArrayBuffer(f.slice(debut, fin));
+    });
+  }
+  function u16(b, i) { return b[i] | (b[i + 1] << 8); }
+  function u32(b, i) { return (b[i] | (b[i + 1] << 8) | (b[i + 2] << 16)) + b[i + 3] * 16777216; }
+  function u64(b, i) { return u32(b, i) + u32(b, i + 4) * 4294967296; }
+
+  /* Le répertoire du zip : chaque partie, sa méthode, ses tailles, sa place. */
+  function lireZip(f) {
+    var lu = Math.min(f.size, 65536 + 22);
+    return lireOctets(f, f.size - lu, f.size).then(function (fin) {
+      var p = -1, i;
+      for (i = fin.length - 22; i >= 0; i--) {
+        if (fin[i] === 0x50 && fin[i + 1] === 0x4b && fin[i + 2] === 5 && fin[i + 3] === 6) { p = i; break; }
+      }
+      if (p < 0) throw erreur('Ce fichier n\u2019est pas un classeur .xlsx lisible (abîmé, ou pas fini de télécharger ?).');
+      var nbEntrees = u16(fin, p + 10), tailleCD = u32(fin, p + 12), debutCD = u32(fin, p + 16);
+      var avant = Promise.resolve();
+      if (debutCD === 0xFFFFFFFF || tailleCD === 0xFFFFFFFF || nbEntrees === 0xFFFF) {
+        var l = p - 20;
+        if (l >= 0 && u32(fin, l) === 0x07064b50) {
+          var o = u64(fin, l + 8);
+          avant = lireOctets(f, o, o + 56).then(function (z) {
+            if (u32(z, 0) !== 0x06064b50) throw erreur('Zip64 illisible.');
+            tailleCD = u64(z, 40); debutCD = u64(z, 48);
+          });
+        }
+      }
+      return avant.then(function () { return lireOctets(f, debutCD, debutCD + tailleCD); }).then(function (cd) {
+        var entrees = {}, j = 0, dec = new TextDecoder('utf-8');
+        while (j + 46 <= cd.length && u32(cd, j) === 0x02014b50) {
+          var methode = u16(cd, j + 10), tc = u32(cd, j + 20), tu = u32(cd, j + 24);
+          var ln = u16(cd, j + 28), lx = u16(cd, j + 30), lc = u16(cd, j + 32), off = u32(cd, j + 42);
+          var nom = dec.decode(cd.subarray(j + 46, j + 46 + ln));
+          var x = j + 46 + ln, xf = x + lx;
+          while (x + 4 <= xf) {
+            var id = u16(cd, x), lg = u16(cd, x + 2), q = x + 4;
+            if (id === 1) {
+              if (tu === 0xFFFFFFFF) { tu = u64(cd, q); q += 8; }
+              if (tc === 0xFFFFFFFF) { tc = u64(cd, q); q += 8; }
+              if (off === 0xFFFFFFFF) { off = u64(cd, q); q += 8; }
+            }
+            x += 4 + lg;
+          }
+          entrees[nom] = { nom: nom, methode: methode, tc: tc, tu: tu, off: off };
+          j += 46 + ln + lx + lc;
+        }
+        return entrees;
+      });
+    });
+  }
+  /* Une partie du zip, décompressée au fil de la lecture. */
+  function fluxPartie(f, e) {
+    return lireOctets(f, e.off, e.off + 30).then(function (h) {
+      if (u32(h, 0) !== 0x04034b50) throw erreur('Zip abîmé : la partie « ' + e.nom + ' » est introuvable.');
+      var debut = e.off + 30 + u16(h, 26) + u16(h, 28);
+      var brut = f.slice(debut, debut + e.tc).stream();
+      if (e.methode === 0) return brut;
+      if (e.methode === 8) return brut.pipeThrough(new DecompressionStream('deflate-raw'));
+      throw erreur('Compression inconnue (' + e.methode + ') dans « ' + e.nom + ' ».');
+    });
+  }
+  /* Lit un flux d'octets comme du texte, morceau par morceau. surTexte(texte,
+     fini) rend false pour arrêter là. surAvance(octets lus) dit l'avancée. */
+  function lireFlux(flux, encodage, surTexte, surAvance) {
+    var lecteur = flux.getReader(), dec = new TextDecoder(encodage), lus = 0, repos = Date.now();
+    function suite() {
+      return lecteur.read().then(function (r) {
+        if (r.done) { surTexte(dec.decode(), true); return; }
+        lus += r.value.length;
+        if (surTexte(dec.decode(r.value, { stream: true }), false) === false) { lecteur.cancel(); return; }
+        if (surAvance) surAvance(lus);
+        if (Date.now() - repos > 120) { repos = Date.now(); return souffle().then(suite); }
+        return suite();
+      });
+    }
+    return suite();
+  }
+  function lirePartie(f, e, surTexte, surAvance) {
+    return fluxPartie(f, e).then(function (flux) { return lireFlux(flux, 'utf-8', surTexte, surAvance); });
+  }
+  function partieEntiere(f, e) {
+    var t = [];
+    return lirePartie(f, e, function (x) { t.push(x); }).then(function () { return t.join(''); });
+  }
+
+  // ------------------------------------------------------------ XML
+  var ENT = { amp: '&', lt: '<', gt: '>', quot: '"', apos: '\'' };
+  function decoderXml(s) {
+    if (s.indexOf('&') !== -1) {
+      s = s.replace(/&(?:(amp|lt|gt|quot|apos)|#(\d+)|#x([0-9a-fA-F]+));/g, function (m, n, d, h) {
+        return n ? ENT[n] : String.fromCodePoint(d ? parseInt(d, 10) : parseInt(h, 16));
+      });
+    }
+    return s;
+  }
+  /* Excel écrit un caractère de contrôle « _x000D_ » dans une chaîne. */
+  function decoderChaine(s) {
+    s = decoderXml(s);
+    return s.indexOf('_x') === -1 ? s : s.replace(/_x([0-9A-Fa-f]{4})_/g, function (m, h) { return String.fromCharCode(parseInt(h, 16)); });
+  }
+  function attribut(s, nom) {
+    var m = new RegExp('\\s(?:[\\w.-]+:)?' + nom + '\\s*=\\s*(?:"([^"]*)"|\'([^\']*)\')').exec(' ' + s);
+    return m ? decoderXml(m[1] !== undefined ? m[1] : m[2]) : null;
+  }
+  /* Les éléments complets <nom …>…</nom> d'un texte qui arrive par morceaux ;
+     un préfixe d'espace de noms (« x:row ») est toléré. */
+  function decoupeur(nom, surElement) {
+    var re = new RegExp('<(?:[\\w.-]+:)?' + nom + '(?=[\\s/>])([^>]*?)(?:\\/>|>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?' + nom + '\\s*>)', 'g');
+    var reste = '';
+    return function (texte, fini) {
+      var tampon = reste + texte, fin = 0, m;
+      re.lastIndex = 0;
+      while ((m = re.exec(tampon))) {
+        fin = re.lastIndex;
+        if (surElement(m[1], m[2] === undefined ? '' : m[2]) === false) { reste = ''; return false; }
+      }
+      reste = tampon.slice(fin);
+      return true;
+    };
+  }
+  var RE_RPH = /<(?:[\w.-]+:)?rPh(?=[\s>])[\s\S]*?<\/(?:[\w.-]+:)?rPh\s*>/g;
+  var RE_T = /<(?:[\w.-]+:)?t(?=[\s>\/])[^>]*?(?:\/>|>([\s\S]*?)<\/(?:[\w.-]+:)?t\s*>)/g;
+  /* Le texte d'une chaîne riche (<r><t>…</t></r>…), sans sa lecture phonétique. */
+  function texteRiche(x) {
+    if (x.indexOf('rPh') !== -1) x = x.replace(RE_RPH, '');
+    var s = '', m;
+    RE_T.lastIndex = 0;
+    while ((m = RE_T.exec(x))) if (m[1]) s += m[1];
+    return decoderChaine(s);
+  }
+
+  // ------------------------------------------------------------ nombres et dates
+  var FORMATS_DATE = { 14: 1, 15: 1, 16: 1, 17: 1, 18: 2, 19: 2, 20: 2, 21: 2, 22: 3, 45: 2, 46: 2, 47: 2 };
+  function lireStyles(texte) {
+    var formats = {}, xfs = [], m;
+    var re = /<(?:[\w.-]+:)?numFmt\s([^>]*?)\/?>/g;
+    while ((m = re.exec(texte))) {
+      var id = attribut(m[1], 'numFmtId');
+      if (id !== null) formats[+id] = attribut(m[1], 'formatCode') || '';
+    }
+    var bloc = /<(?:[\w.-]+:)?cellXfs\b[\s\S]*?<\/(?:[\w.-]+:)?cellXfs\s*>/.exec(texte);
+    if (bloc) {
+      var rx = /<(?:[\w.-]+:)?xf(?=[\s>\/])([^>]*?)\/?>/g;
+      while ((m = rx.exec(bloc[0]))) { var n = attribut(m[1], 'numFmtId'); xfs.push(n === null ? 0 : +n); }
+    }
+    return { formats: formats, xfs: xfs };
+  }
+  /* La forme d'un format : 'date' (1 jour, 2 heure, 3 les deux), 'zeros'
+     (« 000 », pour garder les zéros de tête), 'texte', ou 'nombre'. */
+  function formeDuFormat(styles, s) {
+    var id = styles && styles.xfs[s] !== undefined ? styles.xfs[s] : 0;
+    if (FORMATS_DATE[id]) return { type: 'date', parties: FORMATS_DATE[id] };
+    if (id === 49) return { type: 'texte' };
+    var code = styles && styles.formats[id] !== undefined ? styles.formats[id] : '';
+    if (!code) return { type: 'nombre' };
+    var nu = code.replace(/"[^"]*"/g, '').replace(/\[[^\]]*\]/g, '').replace(/\\./g, '').split(';')[0];
+    if (/^0+$/.test(nu)) return { type: 'zeros', largeur: nu.length };
+    if (nu === '@') return { type: 'texte' };
+    var jour = /[dy]/i.test(nu) || /m/i.test(nu) && !/[hs]/i.test(nu), heure = /[hs]/i.test(nu);
+    if ((jour || heure) && !/^general$/i.test(nu)) return { type: 'date', parties: (jour ? 1 : 0) | (heure ? 2 : 0) };
+    return { type: 'nombre' };
+  }
+  function deux(n) { return (n < 10 ? '0' : '') + n; }
+  function texteNombre(brut, forme, en1904) {
+    var v = Number(brut);
+    if (brut === '' || isNaN(v)) return brut;
+    if (forme.type === 'zeros' && v >= 0 && Math.floor(v) === v) {
+      var z = String(v);
+      while (z.length < forme.largeur) z = '0' + z;
+      return z;
+    }
+    if (forme.type === 'date') {
+      var d = new Date(Math.round(((en1904 ? v + 1462 : v) - 25569) * 86400000));
+      if (isNaN(d.getTime())) return brut;
+      var jour = deux(d.getUTCDate()) + '/' + deux(d.getUTCMonth() + 1) + '/' + d.getUTCFullYear();
+      var heure = deux(d.getUTCHours()) + ':' + deux(d.getUTCMinutes()) + (d.getUTCSeconds() ? ':' + deux(d.getUTCSeconds()) : '');
+      return forme.parties === 2 ? heure : forme.parties === 3 ? jour + ' ' + heure : jour;
+    }
+    if (Math.floor(v) === v && Math.abs(v) < 1e15) return String(v);
+    return String(Number(v.toPrecision(15))).replace('.', ',');
+  }
+
+  // ------------------------------------------------------------ en-tête et lignes
+  /* Reçoit les lignes une à une (numéro 1-based, valeurs par colonne) :
+     cherche l'en-tête comme Code.gs le cherche — la première des premières
+     lignes qui porte toutes les colonnes de la référence —, puis garde les
+     colonnes voulues des lignes suivantes. */
+  function collecteur(toutes) {
+    var nCles = P.cles.map(norm), nEss = P.essentielles.map(norm);
+    var c = { entete: null, colonnes: null, voulues: null, lignes: [], meilleur: { portes: 0, ligne: 0, noms: [] }, vides: 0 };
+    c.ligne = function (num, valeurs) {
+      if (!c.colonnes) {
+        if (num > P.lignesScan) return false;
+        var ns = valeurs.map(norm), portes = nCles.filter(function (k) { return ns.indexOf(k) !== -1; });
+        if (portes.length === nCles.length) {
+          var prises = {};
+          nCles.forEach(function (k) { prises[ns.indexOf(k)] = true; });
+          nEss.forEach(function (k) { var j = ns.indexOf(k); if (j !== -1) prises[j] = true; });
+          if (toutes) ns.forEach(function (k, j) { if (k) prises[j] = true; });
+          c.colonnes = Object.keys(prises).map(Number).sort(function (a, b) { return a - b; });
+          c.voulues = prises;
+          c.entete = c.colonnes.map(function (j) { return String(valeurs[j] === undefined ? '' : valeurs[j]).trim(); });
+        } else if (portes.length > c.meilleur.portes) {
+          c.meilleur = { portes: portes.length, ligne: num, noms: valeurs.filter(function (v) { return String(v === undefined || v === null ? '' : v).trim(); }).slice(0, 12) };
+        }
+        return true;
+      }
+      var l = c.colonnes.map(function (j) { var v = valeurs[j]; return v === undefined || v === null ? '' : String(v); });
+      if (l.some(function (v) { return v.trim() !== ''; })) c.lignes.push(l); else c.vides++;
+      return true;
+    };
+    return c;
+  }
+
+  function colonneDe(ref) {
+    var n = 0, i, k;
+    for (i = 0; i < ref.length; i++) {
+      k = ref.charCodeAt(i);
+      if (k >= 65 && k <= 90) n = n * 26 + k - 64;
+      else if (k >= 97 && k <= 122) n = n * 26 + k - 96;
+      else break;
+    }
+    return n - 1;
+  }
+  function valeurAttr(s, motif) {
+    var i = s.indexOf(motif);
+    if (i === -1) return null;
+    i += motif.length;
+    return s.slice(i, s.indexOf(s.charAt(i - 1), i));
+  }
+  var RE_C = /<(?:[\w.-]+:)?c(?=[\s\/>])([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:[\w.-]+:)?c\s*>)/g;
+  var RE_V = /<(?:[\w.-]+:)?v(?:\s[^>]*)?>([\s\S]*?)<\/(?:[\w.-]+:)?v\s*>/;
+
+  /* Un onglet du classeur, ligne à ligne. Rend le collecteur ; il dit si
+     l'en-tête a été trouvé. */
+  function lireOnglet(f, e, chaines, styles, en1904, toutes, avance) {
+    var c = collecteur(toutes), numPrec = 0, formes = {};
+    function forme(s) { return formes[s] || (formes[s] = formeDuFormat(styles, s)); }
+    var surLigne = decoupeur('row', function (attrs, corps) {
+      var rr = valeurAttr(attrs, ' r="') || valeurAttr(attrs, ' r=\'');
+      var num = rr ? parseInt(rr, 10) : numPrec + 1;
+      numPrec = num;
+      var valeurs = [], colPrec = -1, m, voulues = c.voulues;
+      RE_C.lastIndex = 0;
+      while ((m = RE_C.exec(corps))) {
+        var a = m[1], ref = valeurAttr(a, ' r="') || valeurAttr(a, ' r=\'');
+        var col = ref ? colonneDe(ref) : colPrec + 1;
+        colPrec = col;
+        if (voulues && !voulues[col]) continue;
+        var dedans = m[2] || '', t = valeurAttr(a, ' t="') || valeurAttr(a, ' t=\'') || 'n', v = '';
+        if (t === 'inlineStr') v = texteRiche(dedans);
+        else {
+          var mv = RE_V.exec(dedans), brut = mv ? mv[1] : '';
+          if (t === 's') { v = chaines[parseInt(brut, 10)]; if (v === undefined) v = ''; }
+          else if (t === 'str' || t === 'e' || t === 'd') v = decoderChaine(brut);
+          else if (t === 'b') v = brut === '1' ? 'VRAI' : 'FAUX';
+          else v = texteNombre(brut, forme(+(valeurAttr(a, ' s="') || valeurAttr(a, ' s=\'') || 0)), en1904);
+        }
+        valeurs[col] = v;
+      }
+      for (var j = 0; j < valeurs.length; j++) if (valeurs[j] === undefined) valeurs[j] = '';
+      return c.ligne(num, valeurs);
+    });
+    return lirePartie(f, e, surLigne, avance).then(function () { return c; });
+  }
+
+  function chercher(entrees, chemin) {
+    if (entrees[chemin]) return entrees[chemin];
+    var b = chemin.toLowerCase();
+    for (var k in entrees) if (Object.prototype.hasOwnProperty.call(entrees, k) && k.toLowerCase() === b) return entrees[k];
+    return null;
+  }
+  function cible(dossier, t) {
+    if (t.charAt(0) === '/') return t.slice(1);
+    var parts = (dossier + t).split('/'), out = [];
+    parts.forEach(function (p) { if (p === '..') out.pop(); else if (p && p !== '.') out.push(p); });
+    return out.join('/');
+  }
+
+  function lireXlsx(f, toutes) {
+    progres(0.02, 'Ouverture du fichier…');
+    return lireZip(f).then(function (entrees) {
+      var wb = chercher(entrees, 'xl/workbook.xml');
+      if (!wb) {
+        if (chercher(entrees, 'xl/workbook.bin')) throw erreur('C\u2019est un classeur binaire (.xlsb). Il faut l\u2019export en .xlsx ou en .csv.');
+        throw erreur('Ce zip n\u2019est pas un classeur Excel (pas de xl/workbook.xml).');
+      }
+      var rels = chercher(entrees, 'xl/_rels/workbook.xml.rels');
+      return Promise.all([partieEntiere(f, wb), rels ? partieEntiere(f, rels) : '']).then(function (r) {
+        var classeur = r[0], liens = {}, m;
+        var reL = /<(?:[\w.-]+:)?Relationship\s([^>]*?)\/?>/g;
+        while ((m = reL.exec(r[1]))) liens[attribut(m[1], 'Id')] = { type: attribut(m[1], 'Type') || '', cible: cible('xl/', attribut(m[1], 'Target') || '') };
+        var parType = function (fin) { for (var k in liens) if (liens[k].type.slice(-fin.length) === fin) return liens[k].cible; return null; };
+        var onglets = [], reS = /<(?:[\w.-]+:)?sheet\s([^>]*?)\/?>/g;
+        while ((m = reS.exec(classeur))) {
+          var lien = liens[attribut(m[1], 'id')];
+          var e = lien ? chercher(entrees, lien.cible) : null;
+          if (e) onglets.push({ nom: attribut(m[1], 'name') || '', cache: !!attribut(m[1], 'state') && attribut(m[1], 'state') !== 'visible', e: e });
+        }
+        if (!onglets.length) {
+          for (var k in entrees) if (/^xl\/worksheets\/[^\/]+\.xml$/i.test(k)) onglets.push({ nom: k, cache: false, e: entrees[k] });
+        }
+        onglets.sort(function (a, b) { return (a.cache ? 1 : 0) - (b.cache ? 1 : 0); });
+        var en1904 = /date1904\s*=\s*"(?:1|true)"/.test(classeur);
+        var eChaines = chercher(entrees, parType('/sharedStrings') || 'xl/sharedStrings.xml');
+        var eStyles = chercher(entrees, parType('/styles') || 'xl/styles.xml');
+        var total = (eChaines ? eChaines.tu : 0) + onglets.reduce(function (s, o) { return s + o.e.tu; }, 0) || 1, fait = 0;
+        var chaines = [];
+        var etapeStyles = eStyles ? partieEntiere(f, eStyles).then(lireStyles) : Promise.resolve(null);
+        return etapeStyles.then(function (styles) {
+          if (!eChaines) return styles;
+          progres(0.05, 'Lecture des textes du classeur…');
+          var surSi = decoupeur('si', function (a, corps) { chaines.push(texteRiche(corps)); });
+          return lirePartie(f, eChaines, surSi, function (n) { progres(0.05 + 0.9 * n / total); }).then(function () {
+            fait = eChaines.tu;
+            return styles;
+          });
+        }).then(function (styles) {
+          var meilleur = null, i = 0;
+          function suivant() {
+            if (i >= onglets.length) return { trouve: false, meilleur: meilleur, onglets: onglets.map(function (o) { return o.nom; }) };
+            var o = onglets[i++];
+            progres(0.05 + 0.9 * fait / total, 'Lecture de l\u2019onglet « ' + o.nom + ' »…');
+            return lireOnglet(f, o.e, chaines, styles, en1904, toutes, function (n) { progres(0.05 + 0.9 * (fait + n) / total); }).then(function (c) {
+              fait += o.e.tu;
+              if (c.colonnes) { c.onglet = o.nom; c.trouve = true; return c; }
+              if (!meilleur || c.meilleur.portes > meilleur.portes) { meilleur = c.meilleur; meilleur.onglet = o.nom; }
+              return suivant();
+            });
+          }
+          return suivant();
+        });
+      });
+    });
+  }
+
+  // ------------------------------------------------------------ CSV
+  function analyseurCsv(sep, surLigne) {
+    var champ = '', ligne = [], dans = false, attente = false, cr = false, num = 0, arret = false;
+    function finLigne() { ligne.push(champ); champ = ''; var l = ligne; ligne = []; num++; if (surLigne(num, l) === false) arret = true; }
+    return function (texte, fini) {
+      for (var i = 0; i < texte.length && !arret; i++) {
+        var ch = texte.charAt(i), etaitCr = cr;
+        cr = false;
+        if (attente) {
+          attente = false;
+          if (ch === '"') { champ += '"'; continue; }
+          dans = false;
+        }
+        if (dans) { if (ch === '"') attente = true; else champ += ch; continue; }
+        if (ch === '"' && champ === '') { dans = true; continue; }
+        if (ch === sep) { ligne.push(champ); champ = ''; continue; }
+        if (ch === '\r') { finLigne(); cr = true; continue; }
+        if (ch === '\n') { if (!etaitCr) finLigne(); continue; }
+        champ += ch;
+      }
+      if (fini && !arret && (champ !== '' || ligne.length)) finLigne();
+      return !arret;
+    };
+  }
+  function lireCsv(f, toutes) {
+    progres(0.02, 'Lecture du fichier…');
+    return lireOctets(f, 0, Math.min(f.size, 1048576)).then(function (debut) {
+      var encodage = 'utf-8';
+      try { new TextDecoder('utf-8', { fatal: true }).decode(debut.subarray(0, debut.length === f.size ? debut.length : Math.max(0, debut.length - 4))); }
+      catch (e) { encodage = 'windows-1252'; }
+      var tete = new TextDecoder(encodage).decode(debut).replace(/^\ufeff/, '').split(/\r\n|\n|\r/).slice(0, P.lignesScan);
+      var nCles = P.cles.map(norm), sep = null, meilleur = -1;
+      [';', ',', '\t', '|'].forEach(function (s) {
+        var score = Math.max.apply(null, tete.map(function (l) {
+          var ns = l.split(s).map(function (x) { return norm(x.replace(/^"|"$/g, '')); });
+          return nCles.filter(function (k) { return ns.indexOf(k) !== -1; }).length * 1000 + Math.min(999, ns.length);
+        }));
+        if (score > meilleur) { meilleur = score; sep = s; }
+      });
+      var c = collecteur(toutes), premier = true;
+      var analyse = analyseurCsv(sep, function (num, l) { return c.ligne(num, l); });
+      return lireFlux(f.stream(), encodage, function (texte, fini) {
+        if (premier) { texte = texte.replace(/^\ufeff/, ''); premier = false; }
+        return analyse(texte, fini);
+      }, function (n) { progres(0.05 + 0.9 * n / (f.size || 1)); }).then(function () {
+        if (c.colonnes) { c.trouve = true; c.onglet = f.name; return c; }
+        c.meilleur.onglet = f.name;
+        return { trouve: false, meilleur: c.meilleur, onglets: [f.name] };
+      });
+    });
+  }
+
+  // ------------------------------------------------------------ envoi au classeur
+  function appeler(nom, args) {
+    return new Promise(function (ok, ko) {
+      var r = google.script.run.withSuccessHandler(ok).withFailureHandler(function (e) {
+        ko(erreur(e && e.message ? e.message : String(e)));
+      });
+      r[nom].apply(r, args);
+    });
+  }
+  function envoyer(contrat, entete, lignes) {
+    var total = lignes.length + 1, feuille = null;
+    progres(0, 'Préparation de l\u2019onglet…');
+    return appeler('importSecondeBaseDebut', [contrat]).then(function (d) {
+      feuille = d.feuille;
+      var i = -1, envoyees = 0;
+      function lot() {
+        if (i >= lignes.length) return null;
+        var paquet = [], taille = 0, premiere = i + 2;
+        while (i < lignes.length && paquet.length < P.maxLignesLot && taille < 900000) {
+          var l = i < 0 ? entete : lignes[i];
+          paquet.push(l);
+          for (var j = 0; j < l.length; j++) taille += l[j].length + 3;
+          i++;
+        }
+        return appeler('importSecondeBaseLot', [feuille, premiere, paquet]).then(function () {
+          envoyees += paquet.length;
+          progres(envoyees / total, 'Envoi au classeur : ' + nb(envoyees) + ' lignes sur ' + nb(total) + '…');
+          return lot();
+        });
+      }
+      return lot();
+    }).then(function () {
+      progres(1, 'Mise en place de l\u2019onglet…');
+      return appeler('importSecondeBaseFin', [feuille, contrat, total]);
+    }).catch(function (e) {
+      if (feuille) appeler('importSecondeBaseAbandon', [feuille]).catch(function () {});
+      throw e;
+    });
+  }
+
+  // ------------------------------------------------------------ la fenêtre
+  function contratChoisi() { return $('contrat').value; }
+  function majCible() {
+    var c = P.contrats.filter(function (x) { return x.id === contratChoisi(); })[0];
+    $('cible').innerHTML = c ? 'Onglet ' + (c.existe ? 'remplacé' : 'créé') + ' : <b>« ' + ech(c.onglet) + ' »</b>' +
+      (c.existe ? ' — l\u2019ancien ne s\u2019en va qu\u2019une fois tout reçu.' : '.') : '';
+  }
+  function poserFichier(f) {
+    fichier = f || null;
+    $('nom-fichier').textContent = fichier ? fichier.name + ' — ' + (fichier.size / 1048576).toFixed(1).replace('.', ',') + ' Mo' : '';
+    $('importer').disabled = !fichier || enCours;
+    dire('');
+  }
+  function sorteDuFichier(f) {
+    return lireOctets(f, 0, 8).then(function (b) {
+      if (b[0] === 0x50 && b[1] === 0x4b) return 'zip';
+      if (b[0] === 0xD0 && b[1] === 0xCF && b[2] === 0x11 && b[3] === 0xE0) return 'xls';
+      return 'texte';
+    });
+  }
+  function importer() {
+    if (!fichier || enCours) return;
+    var toutes = $('toutes').checked, f = fichier, contrat = contratChoisi();
+    enCours = true;
+    $('importer').disabled = true; $('choisir').disabled = true; $('contrat').disabled = true; $('toutes').disabled = true;
+    dire('');
+    var debut = Date.now();
+    sorteDuFichier(f).then(function (sorte) {
+      if (sorte === 'xls') throw erreur('C\u2019est un ancien fichier Excel (.xls), que la fenêtre ne sait pas lire. Il faut l\u2019export en .xlsx ou en .csv — ' +
+        'ou, dans le classeur : Fichier → Importer → ce fichier → « Insérer une nouvelle feuille », puis renommer l\u2019onglet.');
+      if (sorte === 'zip') {
+        if (typeof DecompressionStream !== 'function') throw erreur('Ce navigateur est trop ancien pour décompresser un .xlsx. Le mettre à jour, ou passer par un export .csv.');
+        try { new DecompressionStream('deflate-raw'); } catch (e) { throw erreur('Ce navigateur est trop ancien pour décompresser un .xlsx. Le mettre à jour, ou passer par un export .csv.'); }
+        return lireXlsx(f, toutes);
+      }
+      return lireCsv(f, toutes);
+    }).then(function (c) {
+      if (!c.trouve) {
+        var m = c.meilleur;
+        throw erreur('Aucune ligne d\u2019en-tête avec ' + P.cles.join(', ') + ' dans les ' + P.lignesScan + ' premières lignes' +
+          (c.onglets && c.onglets.length > 1 ? ' des onglets (' + c.onglets.join(', ') + ')' : '') + '. Est-ce bien l\u2019export ' + P.base + ' ?' +
+          (m && m.portes ? ' La ligne ' + m.ligne + ' de « ' + m.onglet + ' » en porte ' + m.portes + ' sur ' + P.cles.length +
+            ' : ' + m.noms.join(', ') + '.' : ''));
+      }
+      if (!c.lignes.length) throw erreur('L\u2019en-tête est là (onglet « ' + c.onglet + ' »), mais aucune ligne dessous.');
+      var cellules = (c.lignes.length + 1) * c.entete.length;
+      if (cellules > 4000000) throw erreur(nb(c.lignes.length) + ' lignes × ' + c.entete.length + ' colonnes : trop pour le classeur. ' +
+        'Décocher « Garder aussi les autres colonnes » : seules ' + P.cles.join(', ') + ' iront.');
+      var lu = (Date.now() - debut) / 1000;
+      progres(0, 'Fichier lu en ' + Math.round(lu) + ' s : ' + nb(c.lignes.length) + ' lignes, colonnes ' + c.entete.join(', ') + '.');
+      return envoyer(contrat, c.entete, c.lignes).then(function (r) {
+        $('barre').hidden = true;
+        $('progres').textContent = '';
+        dire('✓ <b>' + nb(r.lignes) + ' lignes</b> dans l\u2019onglet <b>« ' + ech(r.onglet) + ' »</b> (' + r.colonnes + ' colonne' + (r.colonnes > 1 ? 's' : '') + ').' +
+          (r.etat === 'ok' ? ' La comparaison est prête : rouvrir le tableau de bord (menu Suivi FWD → Ouvrir le tableau de bord).'
+            : ' Mais la page ne la lit pas (' + ech(r.etat) + ') : menu Suivi FWD → Diagnostic.'), r.etat === 'ok' ? 'ok' : 'erreur');
+        $('fermer').classList.add('principal');
+        $('importer').classList.remove('principal');
+      });
+    }).catch(function (e) {
+      $('barre').hidden = true;
+      $('progres').textContent = '';
+      dire(ech(e && e.pourLecteur ? e.message : 'Erreur inattendue : ' + (e && e.message ? e.message : e)) +
+        ' Rien n\u2019a été remplacé dans le classeur.', 'erreur');
+    }).then(function () {
+      enCours = false;
+      $('choisir').disabled = false; $('contrat').disabled = false; $('toutes').disabled = false;
+      $('importer').disabled = !fichier;
+    });
+  }
+
+  P.contrats.forEach(function (c) {
+    var o = document.createElement('option');
+    o.value = c.id; o.textContent = c.id;
+    if (c.id === P.choisi) o.selected = true;
+    $('contrat').appendChild(o);
+  });
+  $('ligne-contrat').hidden = P.contrats.length < 2;
+  majCible();
+  $('contrat').addEventListener('change', majCible);
+  $('choisir').addEventListener('click', function () { $('fichier').click(); });
+  $('fichier').addEventListener('change', function () { poserFichier($('fichier').files[0]); });
+  var depot = $('depot');
+  depot.addEventListener('dragover', function (e) { e.preventDefault(); depot.classList.add('survol'); });
+  depot.addEventListener('dragleave', function () { depot.classList.remove('survol'); });
+  depot.addEventListener('drop', function (e) {
+    e.preventDefault(); depot.classList.remove('survol');
+    if (!enCours && e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) poserFichier(e.dataTransfer.files[0]);
+  });
+  $('importer').addEventListener('click', importer);
+  $('fermer').addEventListener('click', function () { if (window.google && google.script && google.script.host) google.script.host.close(); });
 }

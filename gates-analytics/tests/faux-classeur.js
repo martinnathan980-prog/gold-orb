@@ -45,6 +45,25 @@ Feuille.prototype.appendRow = function (ligne) {
   this.valeurs.push(ligne.slice());
 };
 Feuille.prototype.deleteRow = function (n) { this.valeurs.splice(n - 1, 1); };
+Feuille.prototype.setName = function (nom) { this.nom = nom; return this; };
+/** La place de l'onglet dans le classeur, 1-based, comme Sheets. */
+Feuille.prototype.getIndex = function () { return this.classeur ? this.classeur.feuilles.indexOf(this) + 1 : 1; };
+/* Retirer des lignes ou des colonnes de la grille, comme Sheets : hors de la
+   grille, ou toutes, c'est une erreur. */
+Feuille.prototype.deleteRows = function (debut, nombre) {
+  const max = this.getMaxRows();
+  if (debut < 1 || nombre < 1 || debut + nombre - 1 > max) throw new Error('Those rows are out of bounds.');
+  if (nombre >= max) throw new Error('You can\'t delete all the rows on the sheet.');
+  this.valeurs.splice(debut - 1, nombre);
+  this.lignesGrille = max - nombre;
+};
+Feuille.prototype.deleteColumns = function (debut, nombre) {
+  const max = this.getMaxColumns();
+  if (debut < 1 || nombre < 1 || debut + nombre - 1 > max) throw new Error('Those columns are out of bounds.');
+  if (nombre >= max) throw new Error('You can\'t delete all the columns on the sheet.');
+  this.valeurs.forEach(function (l) { l.splice(debut - 1, nombre); });
+  this.colonnesGrille = max - nombre;
+};
 /** Vide les cellules ; la grille garde sa largeur, comme dans Sheets. */
 Feuille.prototype.clearContents = function () {
   this.colonnesGrille = this.getMaxColumns();
@@ -116,7 +135,12 @@ Feuille.prototype.getRange = function (ligne, colonne, nbLignes, nbColonnes) {
   };
 };
 
-function Classeur(feuilles, nom) { this.feuilles = feuilles; this.nom = nom || 'Classeur de test'; }
+function Classeur(feuilles, nom) {
+  this.feuilles = feuilles;
+  this.nom = nom || 'Classeur de test';
+  const self = this;
+  feuilles.forEach(function (f) { f.classeur = self; });
+}
 Classeur.prototype.getName = function () { return this.nom; };
 Classeur.prototype.getSheets = function () { return this.feuilles; };
 Classeur.prototype.getSheetByName = function (nom) {
@@ -125,10 +149,27 @@ Classeur.prototype.getSheetByName = function (nom) {
 /* L'onglet affiché : celui qu'on a posé (setActiveSheet), sinon le premier. */
 Classeur.prototype.getActiveSheet = function () { return this.active || this.feuilles[0] || null; };
 Classeur.prototype.setActiveSheet = function (f) { this.active = f; return f; };
-Classeur.prototype.insertSheet = function (nom) {
+Classeur.prototype.insertSheet = function (nom, index) {
+  if (this.getSheetByName(nom)) throw new Error('A sheet with the name "' + nom + '" already exists.');
   const f = new Feuille(nom, []);
-  this.feuilles.push(f);
+  f.classeur = this;
+  if (typeof index === 'number' && index >= 0 && index < this.feuilles.length) this.feuilles.splice(index, 0, f);
+  else this.feuilles.push(f);
   return f;
+};
+Classeur.prototype.deleteSheet = function (f) {
+  const i = this.feuilles.indexOf(f);
+  if (i === -1) throw new Error('Sheet not found.');
+  if (this.feuilles.length === 1) throw new Error('You can\'t remove all the sheets in a document.');
+  this.feuilles.splice(i, 1);
+  if (this.active === f) this.active = null;
+};
+/** Déplace l'onglet affiché à la place donnée, 1-based, comme Sheets. */
+Classeur.prototype.moveActiveSheet = function (position) {
+  const f = this.getActiveSheet();
+  const i = this.feuilles.indexOf(f);
+  this.feuilles.splice(i, 1);
+  this.feuilles.splice(Math.max(0, Math.min(this.feuilles.length, position - 1)), 0, f);
 };
 
 function pageServie(source) {

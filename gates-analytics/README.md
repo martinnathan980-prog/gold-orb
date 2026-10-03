@@ -131,6 +131,17 @@ npm test
   lire une lettre, puis les repères lus pour de vrai par RapidOCR et corrigés
   par la liste de la base, sur papier gris et page couchée. Sans Chrome ou
   sans RapidOCR sur le poste, ces parties-là sont sautées en le disant.
+- `npm run test:import-see` — 30 tests sur l'import de la base SEE sans
+  Excel (menu Suivi FWD → Importer la base) : la vraie fenêtre, rendue par le
+  vrai `Code.gs`, ouverte dans un vrai navigateur, `google.script.run`
+  branché sur le serveur en mémoire. Les fichiers sont fabriqués pour
+  l'occasion (`tests/fabriquer-xlsx.js`) : chaînes partagées ou en ligne,
+  chaînes riches et lecture phonétique, styles (dates, zéros de tête),
+  préfixes d'espace de noms, cellules sans référence, descripteurs de
+  données, Zip64, plusieurs onglets, CSV Windows-1252 ; la garde hors du
+  classeur, une panne au milieu (l'ancienne base reste), un import
+  incomplet, un ancien `.xls`, un fichier tronqué, et 120 000 lignes sur 24
+  colonnes.
 - `npm run test:chargeur` — 34 tests sur le chargeur : un faux Apps Script en
   mémoire (classeur, UrlFetchApp qui sert le dépôt depuis le disque, cache,
   menus, fenêtres), le vrai `Chargeur.gs` lancé dedans, et la page qu'il

@@ -185,16 +185,35 @@ rattrapé, et le dit.
 
 ## 5. La seconde base, SEE : un onglet par contrat
 
-Chaque contrat a sa propre base SEE, donc son propre onglet :
+Chaque contrat a sa propre base SEE, donc son propre onglet : **`SEE HDK`**
+pour le contrat de l'onglet `HDK`, **`SEE THS`** pour `THS`. Le plus simple —
+et le seul chemin quand l'Excel de SEE est **trop lourd pour s'ouvrir** :
 
-1. **+** pour un nouvel onglet, le nommer **`SEE` suivi du nom du contrat** —
-   **`SEE HDK`** pour le contrat de l'onglet `HDK`, **`SEE THS`** pour `THS`
-   (`SEE - HDK` ou `SEE_HDK` marchent aussi).
-2. Ouvrir l'extract « Nommage WD BFLOW » **de ce contrat** dans Excel,
-   **Ctrl+A**, **Ctrl+C**.
-3. Dans l'onglet `SEE HDK`, **A1**, **Ctrl+V** — tel quel, titre en ligne 1 et
-   en-têtes en ligne 3 compris.
+1. Dans le classeur, menu **Suivi FWD → Importer la base SEE (fichier Excel
+   ou CSV)…**
+2. Choisir le **contrat** (la liste n'apparaît que s'il y en a plusieurs),
+   puis **Choisir le fichier…** — l'export « Nommage WD BFLOW » **de ce
+   contrat**, tel qu'il a été téléchargé, **sans l'ouvrir dans Excel**. On
+   peut aussi le glisser dans la fenêtre.
+3. **Importer.** La fenêtre lit le fichier sur le poste — il ne part nulle
+   part — et n'envoie au classeur que la ligne d'en-tête et les trois
+   colonnes de la comparaison, **NAME**, **SOL.** et **Cust.V**. L'onglet
+   `SEE HDK` est créé, ou remplacé : l'ancien ne s'en va qu'une fois tout
+   reçu, un import interrompu le laisse en place. Quelques secondes pour la
+   lecture, puis l'envoi par paquets ; la fenêtre dit où elle en est.
 4. Rouvrir le tableau de bord : chaque contrat se compare à sa base.
+
+La case **« Garder aussi les autres colonnes »** ne sert qu'à regarder tout
+l'extract dans le tableau SEE de la page : la comparaison n'en a pas besoin,
+et c'est bien plus lourd. La fenêtre lit les `.xlsx` et les `.csv` ; un
+ancien `.xls`, elle le dit — alors, dans le classeur, **Fichier → Importer →
+le fichier → « Insérer une nouvelle feuille »**, puis renommer l'onglet
+`SEE HDK`.
+
+**À la main, pour un petit extract** : **+** pour un nouvel onglet nommé
+`SEE HDK` (`SEE - HDK` ou `SEE_HDK` marchent aussi), ouvrir l'extract dans
+Excel, **Ctrl+A**, **Ctrl+C**, puis dans l'onglet **A1**, **Ctrl+V** — tel
+quel, titre en ligne 1 et en-têtes en ligne 3 compris.
 
 Avec **un seul contrat** dans le classeur, un onglet nommé `SEE` tout court
 suffit. Avec plusieurs, un `SEE` tout court n'est lu pour aucun — il ne dit
@@ -211,13 +230,15 @@ du NAME, que SEE écrit un cran trop tôt (`TFE311A0600` pour le plan que
 GATES appelle `TFE3110A600`), est décalé pour retrouver le plan dans GATES.
 
 SEE n'a pas d'historique : la comparaison porte toujours sur l'extract qui
-est dans l'onglet. On le recolle quand on en a un plus récent (Ctrl+A, Suppr,
-A1, Ctrl+V), sans rien archiver.
+est dans l'onglet. On le réimporte quand on en a un plus récent (le même
+menu), sans rien archiver.
 
 ### Si le collage rame
 
-C'est Sheets qui peine sous le volume, pas le tableau de bord : aucun calcul
-n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
+Le menu **Importer la base SEE** évite le collage : c'est le premier remède.
+S'il faut coller quand même, c'est Sheets qui peine sous le volume, pas le
+tableau de bord : aucun calcul n'est déclenché par une saisie dans le
+classeur. Dans l'ordre d'efficacité :
 
 1. **Coller les valeurs seules** — **Ctrl+Maj+V** au lieu de Ctrl+V. C'est le
    plus gros gain : sans la mise en forme qui vient d'Excel (polices, bordures,
@@ -378,6 +399,8 @@ onglet, et ce qui manque. Puis :
 | « Ce qui a changé semaine par semaine » reste vide | Le journal dit pourquoi : un seul relevé (deux archivages la même semaine n'en font qu'un), ou deux relevés identiques — le même export archivé deux fois | Recoller le **dernier** export de GATES, puis archiver ; le Diagnostic dit combien de plans ont changé entre les deux derniers relevés |
 | Pas de courbe, pas de fin estimée | Aucun relevé archivé | Suivi FWD → Archiver le relevé de cette semaine |
 | Pas de section « Comparaison » | Pas d'onglet `SEE <contrat>` (ou `SEE` pour un seul contrat), ou illisible | Diagnostic, ligne « Seconde base » : elle dit s'il manque l'onglet, s'il est vide, ou si les en-têtes NAME / SOL. / Cust.V ne s'y trouvent pas |
+| La fenêtre d'import dit « Aucune ligne d'en-tête avec NAME, SOL., Cust.V » | Ce n'est pas l'export SEE, ou SEE a renommé une de ces colonnes (la fenêtre cite la ligne la plus proche) | Vérifier le fichier ; si SEE a changé ses intitulés, me les envoyer (les intitulés seulement, pas les données) |
+| La fenêtre d'import dit « ancien fichier Excel (.xls) » ou « navigateur trop ancien » | Un format qu'elle ne lit pas, ou un Chrome / Edge d'avant 2022 | Demander l'export en `.xlsx` ou `.csv` ; ou Fichier → Importer dans le classeur ; ou mettre le navigateur à jour |
 | Un contrat en trop ou en moins | Un onglet visible en trop, ou masqué | Chaque onglet visible qui porte un export (Référence UD, ATA…) est un contrat ; un onglet « Notes » à côté est écarté tout seul (le Diagnostic le dit) |
 | « N lignes répètent une référence déjà vue » au-dessus de la barre | L'export a été collé par-dessus l'ancien sans le vider : des lignes de l'ancien restent en dessous | Ctrl+A, Suppr, puis recoller l'export en A1 |
 | Après avoir renommé un onglet de contrat, la courbe repart d'un seul relevé | L'historique porte encore l'ancien nom (`Historique_FWD_Feuille 1`) | Le Diagnostic le signale : renommer cet onglet d'historique `Historique_FWD_<nom du contrat>` |

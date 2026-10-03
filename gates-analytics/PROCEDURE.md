@@ -69,7 +69,8 @@ son propriétaire, et `google.script.run` atteint toute fonction publique de
 `Code.gs` : depuis la console de son navigateur, un lecteur aurait pu
 lancer un archivage, supprimer le relevé de la semaine ou couper
 l'archivage automatique. Ces gestes — archiver, archiver une semaine
-passée, supprimer, activer ou désactiver l'archivage automatique —
+passée, supprimer, activer ou désactiver l'archivage automatique, importer
+la base SEE (§ 12) —
 **refusent désormais hors du classeur** : « Geste refusé : il ne se lance
 que dans le classeur, menu Suivi FWD (ou par l'archivage automatique du
 vendredi). La page du tableau de bord ne modifie rien. »
@@ -757,6 +758,35 @@ référence UD répartie sur trois colonnes — **NAME** (la racine), **SOL.** (
 solution, trois chiffres) et **Cust.V** (l'indice, une lettre). Collé tel quel
 dans un onglet de ce classeur et décrit dans la configuration, il donne deux
 choses ; sans description, ni l'une ni l'autre n'existe.
+
+**Importer SEE sans Excel** (débrief 20 : « les données de SEE sont tellement
+grosses, l'Excel bug à l'ouverture, j'arrive pas à les copier »). Le menu
+**Suivi FWD → Importer la base SEE (fichier Excel ou CSV)…** ouvre une
+fenêtre où l'on choisit le contrat et le fichier. Chrome le lit **sur le
+poste** : un `.xlsx` est un zip, dont on lit le répertoire à la fin du
+fichier, puis on décompresse au fil de l'eau les seules parties utiles — la
+liste des onglets, les styles, les chaînes partagées et l'onglet qui porte
+l'en-tête —, sans jamais tenir le fichier en mémoire (un export de 120 000
+lignes sur 24 colonnes se lit en quelques secondes). L'en-tête est cherché
+comme `Code` le cherche : la première des huit premières lignes qui porte
+NAME, SOL. et Cust.V, sans tenir compte de la casse ni des accents, onglet
+par onglet, les visibles d'abord. **Seules cette ligne et ces trois colonnes
+vont au classeur** (avec `ESSENTIELLES`, si on en a déclaré) ; les lignes
+vides sont laissées. Les nombres se lisent comme Excel les affiche : un
+format `000` garde ses zéros de tête, une date se lit jj/mm/aaaa. Un `.csv`
+aussi (séparateur trouvé seul, guillemets, UTF-8 ou Windows-1252) ; un ancien
+`.xls` ou un `.xlsb`, la fenêtre dit qu'elle ne les lit pas et donne l'autre
+chemin.
+
+L'envoi se fait par lots, dans un onglet temporaire, `SEE HDK (import)` ; une
+fois toutes les lignes reçues — et pas avant — il prend la place et le nom de
+la base du contrat, à sa position, sa grille resserrée sur les données. Une
+panne au milieu, des lignes manquantes : l'onglet temporaire est retiré,
+l'ancienne base reste. Chaque fonction de l'import passe la garde des gestes
+qui écrivent (§ 2) : la page du tableau de bord ne peut pas s'en servir, et
+un lot ne s'écrit jamais ailleurs que dans l'onglet temporaire d'un import. La case « Garder aussi les autres colonnes » envoie tout l'extract —
+seulement pour le regarder dans le tableau SEE, au plus quatre millions de
+cellules. Le fichier, lui, ne quitte jamais le poste.
 
 **Ce que le rapprochement demande.** Dans SEE, un plan n'a pas d'état : soit
 il y est, soit il n'y est pas. **S'il y est, c'est qu'il a été créé** — donc
