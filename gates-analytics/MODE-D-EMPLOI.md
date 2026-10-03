@@ -205,13 +205,19 @@ et le seul chemin quand l'Excel de SEE est **trop lourd pour s'ouvrir** :
    n'envoie au classeur que la ligne d'en-tête et les trois colonnes de la
    comparaison, **NAME**, **SOL.** et **Cust.V**. L'onglet `SEE HDK` est
    créé, ou remplacé : l'ancien ne s'en va qu'une fois tout reçu et vérifié,
-   un import interrompu le laisse intact. Quelques secondes pour la lecture
+   un import interrompu le laisse intact (si le classeur ne répond pas, la
+   fenêtre réessaie deux fois d'elle-même). Quelques secondes pour la lecture
    (une dizaine pour 120 000 lignes), puis l'envoi par paquets ; la fenêtre
    dit où elle en est, puis « ✓ N lignes dans l'onglet « SEE HDK » ».
 4. Rouvrir le tableau de bord : chaque contrat se compare à sa base.
 
 Même avec **un seul contrat**, l'import crée `SEE HDK` (le nom du
 contrat) : un `SEE` tout court déjà là, lui, est remplacé sous son nom.
+
+L'onglet importé n'a que ces trois colonnes : c'est normal, la comparaison
+n'en lit pas d'autre. Et comme l'ancien onglet est remplacé, une formule d'un
+autre onglet qui pointait dessus serait à refaire (le tableau de bord, lui,
+retrouve l'onglet par son nom).
 
 La case **« Garder aussi les autres colonnes »** ne sert qu'à regarder tout
 l'extract dans le tableau SEE de la page : la comparaison n'en a pas besoin,
@@ -221,7 +227,7 @@ fenêtre refuse et dit de la décocher).
 **Ce que la fenêtre lit** : les `.xlsx` et `.xlsm`, les `.csv` et `.txt`
 (séparateur, accents et zéros de tête compris), et les faux « `.xls` » que
 sortent certains outils (une page web ou du XML Excel 2003 renommés). Elle
-ne lit pas un **vrai ancien `.xls`**, un `.xlsb`, ni un fichier **protégé**
+ne lit pas un **vrai ancien `.xls`** (même renommé `.xlsx`), un `.xlsb`, ni un fichier **protégé**
 (mot de passe, étiquette de confidentialité) : elle le dit. Pour un vrai
 `.xls`, dans le classeur : **Fichier → Importer → le fichier → « Insérer de
 nouvelles feuilles »** — ⚠️ surtout pas « Remplacer la feuille de calcul »,
@@ -277,10 +283,11 @@ classeur. Dans l'ordre d'efficacité :
    **NAME**, **SOL.** et **Cust.V**. Les autres ne servent qu'à regarder
    l'extract dans le tableau SEE. Si c'est trop lourd, ne coller que ces trois
    colonnes : la page dit exactement la même chose, en beaucoup plus léger.
-5. **Onglet `SEE` nu** — pas de mise en forme conditionnelle, pas de filtre, pas
+5. **Onglet `SEE HDK` nu** — pas de mise en forme conditionnelle, pas de filtre, pas
    de volet figé, et surtout aucune formule d'un autre onglet qui pointe dessus :
    elle se recalculerait à chaque collage.
-6. **Si l'export existe en `.csv`** — onglet `SEE` sélectionné, Fichier →
+6. **Si l'export existe en `.csv`** — onglet `SEE HDK` sélectionné (`SEE`
+   tout court s'il n'y a qu'un contrat), Fichier →
    Importer → le fichier, puis **« Remplacer la feuille active »**. Sheets
    lit un fichier bien plus vite qu'il n'avale un collage. ⚠️ Surtout pas
    « Remplacer la feuille de calcul » : celle-là remplace **tout le

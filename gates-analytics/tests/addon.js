@@ -1309,7 +1309,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const diagSans = ctxPaquet.diagnostic();
   verifier('sans onglet SEE, le diagnostic le dit, et dit le geste : le menu d\'import, ou un onglet « SEE », l\'extract en A1, ses colonnes',
     /– Seconde base « SEE » : aucun onglet « SEE » — pas de rapprochement\./.test(diagSans) &&
-    /→ menu Suivi FWD → Importer la base SEE \(sans ouvrir l'Excel\) ; ou un onglet nommé « SEE », l'extract collé en A1 tel quel, avec ses colonnes NAME, SOL\., Cust\.V\./.test(diagSans) &&
+    /→ menu Suivi FWD → Importer la base SEE \(fichier Excel ou CSV\)…, sans ouvrir le fichier dans Excel ; ou un onglet nommé « SEE », l'extract collé en A1 tel quel, avec ses colonnes NAME, SOL\., Cust\.V\./.test(diagSans) &&
     /Tout est en place : Suivi FWD/.test(diagSans), diagSans);
   const seeVide = construire({ lignes: 10, feuilles: [new Feuille('SEE', [])], historique: false, sortie: 'apercu-see-vide.html' });
   fs.unlinkSync(path.join(__dirname, '..', 'apercu-see-vide.html'));

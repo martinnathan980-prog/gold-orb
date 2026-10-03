@@ -383,6 +383,21 @@ const sansImport = c => !nomsOnglets(c).some(x => /\((import|ancien) /.test(x));
     verifier('un « Excel » XML 2003 (deux onglets, l’en-tête dans le second, cellules indexées) : lu comme tel',
       /\bok\b/.test(r.etat.classe) && f.valeurs.length === 3 && f.valeurs[1].join('|') === 'TFE311A0600|001|A|15/03/2026' && f.valeurs[2].join('|') === 'HAR253A0011||B|3,5',
       r.etat.texte + ' ' + JSON.stringify(f && f.valeurs));
+    /* Cent cinquante styles avant la première feuille (80 Ko), et un texte en CDATA. */
+    const styles = '<Styles>' + Array.from({ length: 150 }, (_, i) => '<Style ss:ID="s' + i + '"><Alignment ss:Vertical="Bottom"/><Borders/><Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>' +
+      '<Interior/><NumberFormat/><Protection/>' + ' '.repeat(300) + '</Style>').join('') + '</Styles>';
+    const xmlLourd = xml.replace('<Worksheet ss:Name="Infos">', styles + '<Worksheet ss:Name="Infos">')
+      .replace('<Data ss:Type="String">HAR253A0011</Data>', '<Data ss:Type="String"><![CDATA[HAR253A0011 & <bis>]]></Data>');
+    r = await importer(page, 'lourd.xls', Buffer.from(xmlLourd, 'utf8'), { contrat: 'THS', toutes: true });
+    f = c.getSheetByName('SEE THS');
+    verifier('un XML 2003 dont la première feuille arrive après 64 Ko de styles, un texte en CDATA : lus',
+      /\bok\b/.test(r.etat.classe) && f.valeurs.length === 3 && f.valeurs[2][0] === 'HAR253A0011 & <bis>', r.etat.texte + ' ' + JSON.stringify(f && f.valeurs));
+    /* Tout entre guillemets, et une description pleine de « ; » dans un CSV à virgules. */
+    const guillemets = '"SCHEMA NUMBER","NAME","SOL.","Cust.V","Description"\r\n"S1","TFE311A0600","001","A","P1; P2; P3; P4; P5; P6; P7"\r\n"S2","HAR253A0011","002","B","x"\r\n';
+    r = await importer(page, 'see.csv', Buffer.from(guillemets, 'utf8'), { contrat: 'THS' });
+    f = c.getSheetByName('SEE THS');
+    verifier('un CSV tout entre guillemets, avec des « ; » dans une description : le bon séparateur',
+      /\bok\b/.test(r.etat.classe) && f.valeurs.length === 3 && f.valeurs[1].join('|') === 'TFE311A0600|001|A', r.etat.texte + ' ' + JSON.stringify(f && f.valeurs));
     await page.close();
   }
 
@@ -408,6 +423,19 @@ const sansImport = c => !nomsOnglets(c).some(x => /\((import|ancien) /.test(x));
       /surtout pas « Remplacer la feuille de calcul »/.test(r.etat.texte) && /« SEE HDK »/.test(r.etat.texte), r.etat.texte);
     r = await importer(page, 'Nommage WD BFLOW.xlsx', ole);
     verifier('un .xlsx protégé (mot de passe, étiquette) : dit protégé, pas « ancien .xls »', /erreur/.test(r.etat.classe) && /protégé/.test(r.etat.texte) && !/ancien fichier/.test(r.etat.texte), r.etat.texte);
+    /* Un vrai conteneur OLE : en-tête (secteurs de 512, répertoire au secteur 0), puis le répertoire. */
+    const conteneur = (noms) => {
+      const b = Buffer.alloc(512 * 3);
+      Buffer.from([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]).copy(b, 0);
+      b.writeUInt16LE(9, 0x1E); b.writeUInt32LE(0, 0x30);
+      ['Root Entry'].concat(noms).forEach((n, k) => { const o = 512 + 128 * k; Buffer.from(n + '\0', 'utf16le').copy(b, o); b.writeUInt16LE((n.length + 1) * 2, o + 64); });
+      return b;
+    };
+    r = await importer(page, 'export.xlsx', conteneur(['Workbook', '\u0005SummaryInformation']));
+    verifier('un vieux classeur (.xls) nommé .xlsx : dit « format .xls, malgré son nom » et l’autre chemin, pas « protégé »',
+      /erreur/.test(r.etat.classe) && /format \.xls, malgré son nom/.test(r.etat.texte) && /« Insérer de nouvelles feuilles »/.test(r.etat.texte) && !/protégé/.test(r.etat.texte), r.etat.texte);
+    r = await importer(page, 'chiffre.xls', conteneur(['\u0006DataSpaces', 'EncryptionInfo', 'EncryptedPackage']));
+    verifier('un .xlsx chiffré, même nommé .xls : dit protégé', /erreur/.test(r.etat.classe) && /protégé/.test(r.etat.texte), r.etat.texte);
     r = await importer(page, 'tronque.xlsx', xlsx({ onglets: [{ nom: 'S', lignes: lignesSEE(20) }] }).subarray(0, 900));
     verifier('un .xlsx tronqué (téléchargement pas fini) : le retélécharger', /erreur/.test(r.etat.classe) && /retélécharger/.test(r.etat.texte), r.etat.texte);
     /* Un zip abîmé au milieu : des octets de la feuille brouillés. */
@@ -419,19 +447,40 @@ const sansImport = c => !nomsOnglets(c).some(x => /\((import|ancien) /.test(x));
     verifier('un .xlsx abîmé au milieu : « abîmé, le retélécharger », jamais une base à moitié lue', /erreur/.test(r.etat.classe) && /abîmé/.test(r.etat.texte) && !/Erreur inattendue/.test(r.etat.texte), r.etat.texte);
     r = await importer(page, 'formules.xlsx', xlsx({ onglets: [{ nom: 'S', lignes: [['NAME', 'SOL.', 'Cust.V'], [{ f: 'D2&"x"' }, '001', 'A'], ['TFE2', '002', 'B']] }] }));
     verifier('NAME en formule sans valeur calculée : refusé, avec ce qu’il faut demander', /erreur/.test(r.etat.classe) && /formule sans valeur calculée/.test(r.etat.texte), r.etat.texte);
+    r = await importer(page, 'vide.xlsx', xlsx({ onglets: [{ nom: 'S', lignes: [['NAME', 'SOL.', 'Cust.V'], ['TFE1', '001', { str: '' }], ['TFE2', '002', 'B']] }] }), { contrat: 'THS' });
+    verifier('une formule qui rend une chaîne vide (enregistrée par Excel) : une valeur vide, pas un refus',
+      /\bok\b/.test(r.etat.classe) && c.getSheetByName('SEE THS').valeurs.map(l => l.join('|')).join(' / ') === 'NAME|SOL.|Cust.V / TFE1|001| / TFE2|002|B', r.etat.texte);
     await page.close();
 
-    /* Le serveur lâche au deuxième lot : l'ancien onglet reste, le temporaire part. */
-    page = await fenetre(ctx, html => html.replace('"maxLignesLot":20000', '"maxLignesLot":50'));
+    /* Le serveur lâche une fois, au deuxième lot : le lot est renvoyé, l'import va au bout. */
+    const rapide = html => html.replace('"maxLignesLot":20000', '"maxLignesLot":50').replace('"pausesReprise":[2000,6000]', '"pausesReprise":[30,60]');
+    page = await fenetre(ctx, rapide);
     const vrai = ctx.importSecondeBaseLot;
     let lots = 0;
-    ctx.importSecondeBaseLot = function () { lots++; if (lots === 2) throw new Error('Service Spreadsheets indisponible'); return vrai.apply(null, arguments); };
+    ctx.importSecondeBaseLot = function () { lots++; if (lots === 2) throw new Error('Service Spreadsheets timed out while accessing document'); return vrai.apply(null, arguments); };
+    r = await importer(page, 'see.xlsx', xlsx({ onglets: [{ nom: 'S', lignes: lignesSEE(200) }] }), { contrat: 'HDK' });
+    ctx.importSecondeBaseLot = vrai;
+    verifier('un lot qui échoue une fois en route : renvoyé, l’import va au bout, sans ligne en double',
+      /\bok\b/.test(r.etat.classe) && lots === 6 && c.getSheetByName('SEE HDK').valeurs.length === 201 &&
+      new Set(c.getSheetByName('SEE HDK').valeurs.map(l => l[0])).size === 201 && sansImport(c), r.etat.texte + ' / ' + lots);
+    await page.close();
+    c.getSheetByName('SEE HDK').valeurs = JSON.parse(avant);
+    /* Le serveur lâche pour de bon au deuxième lot : trois essais, puis l'ancien onglet reste, le temporaire part. */
+    page = await fenetre(ctx, rapide);
+    lots = 0;
+    ctx.importSecondeBaseLot = function () { lots++; if (lots >= 2) throw new Error('Service Spreadsheets indisponible'); return vrai.apply(null, arguments); };
     r = await importer(page, 'see.xlsx', xlsx({ onglets: [{ nom: 'S', lignes: lignesSEE(200) }] }), { contrat: 'HDK' });
     ctx.importSecondeBaseLot = vrai;
     await page.waitForTimeout(300);
-    verifier('une panne au milieu : le message la dit et dit quoi faire, « SEE HDK » est intact, l’onglet temporaire est retiré',
-      /erreur/.test(r.etat.classe) && /Service Spreadsheets indisponible/.test(r.etat.texte) && /Relancer l’import/.test(r.etat.texte) &&
-      JSON.stringify(c.getSheetByName('SEE HDK').valeurs) === avant && sansImport(c), r.etat.texte + ' / ' + nomsOnglets(c).join(', '));
+    verifier('une panne qui dure : trois essais, puis le message la dit et dit quoi faire, « SEE HDK » est intact, l’onglet temporaire est retiré',
+      /erreur/.test(r.etat.classe) && lots === 4 && /Service Spreadsheets indisponible/.test(r.etat.texte) && /Relancer l’import/.test(r.etat.texte) &&
+      JSON.stringify(c.getSheetByName('SEE HDK').valeurs) === avant && sansImport(c), r.etat.texte + ' / ' + lots + ' / ' + nomsOnglets(c).join(', '));
+    /* Un refus du serveur n'est pas renvoyé. */
+    page.__appels = [];
+    ctx.importSecondeBaseLot = function () { throw new Error('L’onglet d’import « x » a disparu (un autre import de ce contrat a-t-il été lancé ?) : relancer l’import.'); };
+    r = await importer(page, 'see.xlsx', xlsx({ onglets: [{ nom: 'S', lignes: lignesSEE(20) }] }), { contrat: 'HDK' });
+    ctx.importSecondeBaseLot = vrai;
+    verifier('un refus du serveur (« a disparu ») : pas renvoyé', /erreur/.test(r.etat.classe) && page.__appels.filter(n => n === 'importSecondeBaseLot').length === 1, page.__appels.join());
     /* Relancé : il passe, en lots de 50 lignes exactement. */
     page.__appels = [];
     const tailles = [];

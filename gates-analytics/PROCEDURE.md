@@ -789,7 +789,13 @@ faux « `.xls` » de certains outils — une page web (tableau HTML, `colspan`
 compris) ou du XML Excel 2003 (`ss:Index`, `MergeAcross`). Un vrai ancien
 `.xls`, un `.xlsb` (aucun autre chemin pour lui que l'export en `.xlsx` ou
 `.csv`), un fichier protégé : la fenêtre dit qu'elle ne les lit pas et donne
-le chemin qui reste.
+le chemin qui reste. Un conteneur OLE se reconnaît à son répertoire : un flux
+« Workbook » est un vieux classeur, même nommé `.xlsx` ; « EncryptionInfo »,
+un `.xlsx` chiffré. Le séparateur d'un CSV se choisit sur des champs lus
+guillemets compris (un en-tête `"NAME","SOL.","Cust.V"`, des « ; » dans une
+description entre guillemets ne le trompent pas) ; une section CDATA est lue
+telle quelle ; une formule qu'Excel a calculée vide (`t="str"`, `<v></v>`)
+vaut une cellule vide, pas un refus.
 
 L'envoi se fait par lots (vingt mille lignes, moins de 900 000 caractères)
 dans un onglet temporaire, `SEE HDK (import xxxxxx)`, créé en bas à la taille
@@ -804,6 +810,13 @@ avant — l'ancienne base est renommée `SEE HDK (ancien xxxxxx)`, l'onglet
 temporaire prend son nom et sa position, puis l'ancienne est supprimée ; le
 paquet gardé en cache est oublié (§ 13 quinquies). Une panne au milieu, des lignes
 manquantes : l'onglet temporaire est retiré, l'ancienne base reste intacte.
+Un appel qui échoue en route (classeur lent, réseau) est renvoyé deux fois,
+après deux puis six secondes — un lot s'écrit toujours aux mêmes lignes, le
+renvoyer ne double rien ; les refus du serveur (« a disparu », la limite, la
+garde) ne le sont pas, et la fin jamais : elle a pu échanger les onglets.
+L'ancienne base étant supprimée, une formule ou un tableau croisé d'un autre
+onglet qui la visait devient `#REF!` — le tableau de bord, lui, retrouve
+l'onglet par son nom.
 Une fenêtre fermée en plein envoi laisse l'onglet temporaire : le Diagnostic
 le signale, et le prochain import du même contrat le retire. Le début et la
 fin d'un import se font sous le verrou du document ; deux imports du même
@@ -900,8 +913,11 @@ sauf « seulement dans SEE », compté sur tout le contrat et étiqueté ainsi,
 comme dans les cercles.
 
 **Le tableau « SEE »**, derrière l'interrupteur **GATES | SEE** de la
-section « Plans » (un seul tableau à la fois, les mêmes outils) : l'extract à
-l'identique — toutes ses colonnes, dans son ordre, sous leurs intitulés. Pas
+section « Plans » (un seul tableau à la fois, les mêmes outils) : l'onglet
+SEE à l'identique — ses colonnes, dans leur ordre, sous leurs intitulés. Un
+extract collé à la main les a toutes ; importé par le menu, il n'a que NAME,
+SOL. et Cust.V, sauf si la case « Garder aussi les autres colonnes » était
+cochée. Pas
 de *Vue essentielle* : l'extract n'a qu'une vingtaine de colonnes, en retirer
 trois n'apporterait rien (elle reparaîtrait si `ESSENTIELLES` en désignait).
 Le verdict se lit sur chaque ligne, en pastille dans la cellule NAME. Les

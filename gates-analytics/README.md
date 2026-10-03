@@ -80,8 +80,8 @@ ferait perdre au découpage suivant. Tout passe par le prototype (et par
   dans SEE — qui filtrent le tableau, puis **plan par plan** : un groupe par
   verdict dans l'ordre des priorités, tous repliés à l'ouverture,
   et un clic sur une référence la montre dans le tableau ; derrière
-  l'interrupteur GATES | SEE, l'extract SEE à l'identique avec le verdict sur
-  chaque ligne.
+  l'interrupteur GATES | SEE, l'onglet SEE à l'identique (trois colonnes
+  s'il a été importé par le menu) avec le verdict sur chaque ligne.
 - **Le tableau** : l'extract GATES à l'identique — toutes les colonnes, les
   mêmes intitulés, l'ordre de la feuille (la colonne suivie figée juste après
   la référence) — en deux vues seulement,
@@ -131,7 +131,7 @@ npm test
   lire une lettre, puis les repères lus pour de vrai par RapidOCR et corrigés
   par la liste de la base, sur papier gris et page couchée. Sans Chrome ou
   sans RapidOCR sur le poste, ces parties-là sont sautées en le disant.
-- `npm run test:import-see` — 56 tests sur l'import de la base SEE sans
+- `npm run test:import-see` — 63 tests sur l'import de la base SEE sans
   Excel (menu Suivi FWD → Importer la base) : la vraie fenêtre, rendue par le
   vrai `Code.gs`, ouverte dans un vrai navigateur, `google.script.run`
   branché sur le serveur en mémoire. Les fichiers sont fabriqués pour
@@ -140,12 +140,16 @@ npm test
   zéros de tête, décimales, pourcentages, milliers, scientifique, monnaie),
   préfixes d'espace de noms, cellules sans référence, descripteurs de
   données, Zip64, plusieurs onglets, CSV Windows-1252, UTF-16 ou à accent
-  tardif, faux `.xls` en HTML ou en XML 2003 ; la garde hors du classeur et
-  le jeton, le contrat proposé et l'onglet créé, une panne au milieu
-  (l'ancienne base reste), la réponse de fin perdue, un import incomplet,
+  tardif, tout entre guillemets, faux `.xls` en HTML ou en XML 2003 (même
+  après 64 Ko de styles, CDATA compris), une formule calculée vide ; la
+  garde hors du classeur et le jeton, le contrat proposé et l'onglet créé,
+  un lot qui échoue une fois (renvoyé, sans doublon), une panne qui dure
+  (l'ancienne base reste), un refus jamais renvoyé, la réponse de fin
+  perdue, un import incomplet,
   deux imports en même temps, une fenêtre fermée en plein envoi (le reste
   signalé puis retiré), un classeur au bord des dix millions de cellules, un
-  vrai `.xls`, un fichier protégé, tronqué ou abîmé au milieu, une formule
+  vrai `.xls` (même nommé `.xlsx`), un fichier protégé ou chiffré, tronqué
+  ou abîmé au milieu, une formule
   sans valeur, et 120 000 lignes sur 24 colonnes suivies de liens.
 - `npm run test:chargeur` — 34 tests sur le chargeur : un faux Apps Script en
   mémoire (classeur, UrlFetchApp qui sert le dépôt depuis le disque, cache,

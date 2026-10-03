@@ -377,7 +377,7 @@ function onOpen() {
     .addItem('Supprimer le relevé de cette semaine', 'supprimerDernierReleve')
     .addItem('Archiver l\'onglet affiché pour une semaine passée…', 'archiverSemainePassee')
     .addSeparator()
-    .addItem('Importer la base ' + (feuilleRapprochement() || 'SEE') + ' (fichier Excel ou CSV)…', 'importerSecondeBase')
+    .addItem(libelleImport(), 'importerSecondeBase')
     .addSeparator()
     .addItem('Activer l\'archivage automatique (vendredi 17 h)', 'installerSuiviHebdomadaire')
     .addItem('Désactiver l\'archivage automatique', 'desinstallerSuiviHebdomadaire')
@@ -1852,12 +1852,12 @@ function diagnostiquerSecondeBaseDe(classeur, contrat, pour, dire) {
       return true;
     case 'absent':
       dire('– Seconde base ' + nom + ' : aucun onglet « ' + base.onglet + ' » — pas de rapprochement.');
-      dire('   → menu Suivi FWD → Importer la base ' + (feuilleRapprochement() || 'SEE') + ' (sans ouvrir l\'Excel) ; ou un onglet nommé « ' +
+      dire('   → menu Suivi FWD → ' + libelleImport() + ', sans ouvrir le fichier dans Excel ; ou un onglet nommé « ' +
            base.onglet + ' », l\'extract collé en A1 tel quel, avec ses colonnes ' + base.cles.join(', ') + '.');
       return true;
     case 'vide':
       dire('⚠ Seconde base ' + nom + ' : l\'onglet « ' + base.onglet + ' » est vide — pas de rapprochement.');
-      dire('   → menu Suivi FWD → Importer la base ' + (feuilleRapprochement() || 'SEE') + ', ou coller l\'extract en A1.');
+      dire('   → menu Suivi FWD → ' + libelleImport() + ', ou coller l\'extract en A1.');
       return false;
     case 'sans-reference': {
       dire('⚠ Seconde base ' + nom + ' : onglet « ' + base.onglet + ' » trouvé, mais la référence (' +
@@ -3318,6 +3318,11 @@ const IMPORT_LIMITE_CELLULES = 10000000;   // la limite d'un classeur Google She
 const CLE_JETON_IMPORT = 'SUIVI_FWD_JETON_IMPORT';
 const IMPORT_JETON_DUREE = 6 * 3600 * 1000;
 
+/** Le libellé de l'article du menu — le même au menu et dans le Diagnostic. */
+function libelleImport() {
+  return 'Importer la base ' + (feuilleRapprochement() || 'SEE') + ' (fichier Excel ou CSV)…';
+}
+
 /** Un onglet temporaire d'import : « SEE HDK (import 3f2a9c) ». */
 function estOngletImport(nom) {
   const base = feuilleRapprochement();
@@ -3389,6 +3394,7 @@ function importerSecondeBase() {
     lignesScan: CONFIG.LIGNES_SCAN_ENTETE,
     maxLignesLot: IMPORT_MAX_LIGNES_LOT,
     maxCellulesToutes: 4000000,
+    pausesReprise: [2000, 6000],
     contrats: liste,
     choisi: choisi
   };
@@ -3755,6 +3761,10 @@ function scriptImportSecondeBase_(P) {
   // ------------------------------------------------------------ XML
   var ENT = { amp: '&', lt: '<', gt: '>', quot: '"', apos: '\'', nbsp: '\u00a0' };
   function decoderXml(s) {
+    /* Le texte d'une section CDATA est pris tel quel. */
+    if (s.indexOf('<![CDATA[') !== -1) {
+      return s.split(/<!\[CDATA\[([\s\S]*?)\]\]>/).map(function (p, i) { return i % 2 ? p : decoderXml(p); }).join('');
+    }
     if (s.indexOf('&') !== -1) {
       s = s.replace(/&(?:(amp|lt|gt|quot|apos|nbsp)|#(\d+)|#x([0-9a-fA-F]+));/g, function (m, n, d, h) {
         return n ? ENT[n] : String.fromCodePoint(d ? parseInt(d, 10) : parseInt(h, 16));
@@ -3956,6 +3966,7 @@ function scriptImportSecondeBase_(P) {
   var RE_C = /<(?:[\w.-]+:)?c(?=[\s\/>])([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:[\w.-]+:)?c\s*>)/g;
   var RE_V = /<(?:[\w.-]+:)?v(?:\s[^>]*)?>([\s\S]*?)<\/(?:[\w.-]+:)?v\s*>/;
   var RE_F = /<(?:[\w.-]+:)?f(?=[\s>\/])/;
+  var RE_V_VIDE = /<(?:[\w.-]+:)?v\s*\/>/;
   var RE_FIN_DONNEES = /<\/(?:[\w.-]+:)?sheetData\s*>/;
 
   /* Un onglet du classeur, ligne à ligne. Rend le collecteur ; il dit si
@@ -3979,7 +3990,9 @@ function scriptImportSecondeBase_(P) {
         if (t === 'inlineStr') v = texteRiche(dedans);
         else {
           var mv = RE_V.exec(dedans), brut = mv ? mv[1] : '';
-          if (!brut && RE_F.test(dedans)) (sansValeur || (sansValeur = [])).push(col);
+          /* Sans valeur calculée : une formule sans <v>, ou dont le <v> vide
+             n'est pas une chaîne (Excel écrit t="str" et <v></v> pour « "" »). */
+          if (!brut && RE_F.test(dedans) && !(t === 'str' && (mv || RE_V_VIDE.test(dedans)))) (sansValeur || (sansValeur = [])).push(col);
           if (t === 's') { v = brut === '' ? '' : chaines[parseInt(brut, 10)]; if (v === undefined) v = ''; }
           else if (t === 'str' || t === 'e' || t === 'd') v = decoderChaine(brut);
           else if (t === 'b') v = brut === '1' ? 'VRAI' : brut === '0' ? 'FAUX' : '';
@@ -4151,7 +4164,7 @@ function scriptImportSecondeBase_(P) {
         col = ci ? parseInt(ci, 10) - 1 : col + 1;
         var d = m[2] ? RE_DATA.exec(m[2]) : null, v = '';
         if (d) {
-          var type = attribut(d[1], 'Type') || 'String', brut = d[2] ? d[2].replace(/<[^>]*>/g, '') : '';
+          var type = attribut(d[1], 'Type') || 'String', brut = d[2] ? d[2].replace(/<!\[CDATA\[[\s\S]*?\]\]>|<[^>]*>/g, function (x) { return x.charAt(1) === '!' ? x : ''; }) : '';
           if (type === 'Number') v = texteNombre(decoderXml(brut).trim(), { type: 'general' }, false);
           else if (type === 'DateTime') {
             var mm = /^(\d{4})-(\d\d)-(\d\d)(?:T(\d\d):(\d\d))?/.exec(brut);
@@ -4203,12 +4216,26 @@ function scriptImportSecondeBase_(P) {
       var debut = tete.replace(/^\s+/, '').slice(0, 4096).toLowerCase();
       var sorte = 'csv';
       if (debut.charAt(0) === '<') {
-        if (/urn:schemas-microsoft-com:office:spreadsheet/.test(tete) && /<(?:\w+:)?worksheet[\s>]/i.test(tete.slice(0, 65536))) sorte = 'xml2003';
+        if (/urn:schemas-microsoft-com:office:spreadsheet/.test(tete) && /<(?:\w+:)?(?:workbook|worksheet)[\s>]/i.test(tete) && !/<html|<!doctype html/.test(debut)) sorte = 'xml2003';
         else if (/<html|<table|<!doctype html|<body/.test(debut) || /<table[\s>]/i.test(tete)) sorte = 'html';
         else sorte = 'xml';
       }
       return { encodage: encodage, saut: saut, tete: tete, sorte: sorte };
     });
+  }
+  /* Les champs d'une ligne, guillemets compris (« "NAME" », « ="001" »,
+     un séparateur entre guillemets) — pour choisir le séparateur. */
+  function champsCsv(l, sep) {
+    var out = [], cur = '', q = false;
+    for (var i = 0; i < l.length; i++) {
+      var ch = l.charAt(i);
+      if (q) { if (ch !== '"') cur += ch; else if (l.charAt(i + 1) === '"') { cur += '"'; i++; } else q = false; }
+      else if (ch === '"') q = true;
+      else if (ch === sep) { out.push(cur); cur = ''; }
+      else cur += ch;
+    }
+    out.push(cur);
+    return out;
   }
   function lireTexte(f, toutes, sonde) {
     progres(0.02, 'Lecture du fichier…');
@@ -4223,7 +4250,7 @@ function scriptImportSecondeBase_(P) {
         var lignes = sonde.tete.split(/\r\n|\n|\r/).slice(0, P.lignesScan + 1), nCles = P.cles.map(norm), sep = ';', meilleur = -1;
         [';', ',', '\t', '|'].forEach(function (s) {
           var score = Math.max.apply(null, lignes.map(function (l) {
-            var ns = l.split(s).map(function (x) { return norm(x.replace(/^="?|"$/g, '')); });
+            var ns = champsCsv(l, s).map(function (x) { return norm(x.replace(/^=/, '')); });
             return nCles.filter(function (k) { return ns.indexOf(k) !== -1; }).length * 1000 + Math.min(999, ns.length);
           }));
           if (score > meilleur) { meilleur = score; sep = s; }
@@ -4269,12 +4296,33 @@ function scriptImportSecondeBase_(P) {
       r[nom].apply(r, [P.jeton].concat(args));
     });
   }
+  /* Un appel qui échoue en route (classeur lent, réseau de l'entreprise) est
+     renvoyé, deux fois au plus, après une pause : un lot s'écrit toujours aux
+     mêmes lignes, et un début retire l'onglet temporaire d'un début perdu —
+     les renvoyer ne double rien. Les refus du serveur, eux, sont définitifs ;
+     la fin n'est jamais renvoyée (elle a pu échanger les onglets). */
+  var DEFINITIF = /a disparu|non reconnu|Geste refusé|Contrat introuvable|limite de Google Sheets|illisible|Lot vide|Lot trop grand|Lot sans colonne|Trop de colonnes|Rien à importer|Import incomplet|PERMISSION_DENIED|reading from storage|autoris|authoriz/i;
+  function appelerAvecReprise(nom, args, surReprise) {
+    var essai = 0;
+    function tenter() {
+      return appeler(nom, args).catch(function (e) {
+        if (essai >= P.pausesReprise.length || DEFINITIF.test(e.message)) throw e;
+        var pause = P.pausesReprise[essai++];
+        surReprise(essai);
+        return new Promise(function (ok) { setTimeout(ok, pause); }).then(tenter);
+      });
+    }
+    return tenter();
+  }
   function envoyer(contrat, entete, lignes, etat) {
-    var total = lignes.length + 1, feuille = null;
+    var total = lignes.length + 1, feuille = null, envoyees = 0;
+    var reprise = function (n) {
+      progres(envoyees / lignes.length, 'Le classeur n\u2019a pas répondu : nouvel essai (' + n + ' sur ' + P.pausesReprise.length + ')…');
+    };
     progres(0, 'Préparation de l\u2019onglet…');
-    return appeler('importSecondeBaseDebut', [contrat, entete.length, total]).then(function (d) {
+    return appelerAvecReprise('importSecondeBaseDebut', [contrat, entete.length, total], reprise).then(function (d) {
       feuille = d.feuille;
-      var i = -1, envoyees = 0;
+      var i = -1;
       function lot() {
         if (i >= lignes.length) return null;
         var paquet = [], taille = 0, premiere = i + 2, donnees = 0;
@@ -4285,7 +4333,7 @@ function scriptImportSecondeBase_(P) {
           for (var j = 0; j < l.length; j++) taille += l[j].length + 3;
           i++;
         }
-        return appeler('importSecondeBaseLot', [feuille, premiere, paquet]).then(function () {
+        return appelerAvecReprise('importSecondeBaseLot', [feuille, premiere, paquet], reprise).then(function () {
           envoyees += donnees;
           progres(envoyees / lignes.length, 'Envoi au classeur : ' + nb(envoyees) + ' lignes sur ' + nb(lignes.length) + '…');
           return lot();
@@ -4317,10 +4365,27 @@ function scriptImportSecondeBase_(P) {
     dire('');
   }
   function sorteDuFichier(f) {
-    return lireOctets(f, 0, 8).then(function (b) {
+    return lireOctets(f, 0, 512).then(function (b) {
       if (b[0] === 0x50 && b[1] === 0x4b) return 'zip';
-      if (b[0] === 0xD0 && b[1] === 0xCF && b[2] === 0x11 && b[3] === 0xE0) return /\.xls[xmb]$/i.test(f.name) ? 'protege' : 'xls';
-      return 'texte';
+      if (!(b[0] === 0xD0 && b[1] === 0xCF && b[2] === 0x11 && b[3] === 0xE0)) return 'texte';
+      /* Un conteneur OLE : un vieux classeur (flux « Workbook » ou « Book »),
+         même nommé .xlsx, ou un .xlsx chiffré (« EncryptionInfo »). Le
+         premier secteur du répertoire le dit ; à défaut, l'extension. */
+      var parExtension = /\.xls[xmb]$/i.test(f.name) ? 'protege' : 'xls';
+      if (b.length < 512 || (u16(b, 0x1E) !== 9 && u16(b, 0x1E) !== 12)) return parExtension;
+      var taille = 1 << u16(b, 0x1E), debut = (u32(b, 0x30) + 1) * taille;
+      if (debut + taille > f.size) return parExtension;
+      return lireOctets(f, debut, debut + taille).then(function (d) {
+        var noms = [];
+        for (var k = 0; k + 128 <= d.length; k += 128) {
+          var lg = Math.min(64, u16(d, k + 64)), n = '';
+          for (var j = 0; j < lg - 2; j += 2) n += String.fromCharCode(u16(d, k + j));
+          noms.push(n);
+        }
+        if (noms.indexOf('Workbook') !== -1 || noms.indexOf('Book') !== -1) return 'xls';
+        if (noms.indexOf('EncryptionInfo') !== -1 || noms.indexOf('EncryptedPackage') !== -1) return 'protege';
+        return parExtension;
+      }, function () { return parExtension; });
     });
   }
   function messageDErreur(e, etat) {
@@ -4352,7 +4417,7 @@ function scriptImportSecondeBase_(P) {
       var onglet = c0 ? c0.onglet : P.base + ' ' + contrat;
       if (sorte === 'protege') throw erreur('Ce fichier Excel est protégé (mot de passe ou étiquette de confidentialité) : la fenêtre ne peut pas le lire, ' +
         'Google Sheets non plus. Demander l\u2019export SEE sans protection, ou en .csv.');
-      if (sorte === 'xls') throw erreur('C\u2019est un ancien fichier Excel (.xls), que la fenêtre ne sait pas lire. Il faut l\u2019export en .xlsx ou en .csv — ' +
+      if (sorte === 'xls') throw erreur('C\u2019est un ancien fichier Excel (' + (/\.xls[xmb]$/i.test(f.name) ? 'format .xls, malgré son nom' : '.xls') + '), que la fenêtre ne sait pas lire. Il faut l\u2019export en .xlsx ou en .csv — ' +
         'ou, dans le classeur : Fichier → Importer → ce fichier → « Insérer de nouvelles feuilles » (surtout pas « Remplacer la feuille de calcul » : ' +
         'elle remplace tout le classeur), puis supprimer l\u2019ancien onglet « ' + onglet + ' » et donner ce nom au nouveau.');
       if (sorte === 'zip') {
