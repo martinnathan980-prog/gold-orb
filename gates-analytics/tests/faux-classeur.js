@@ -27,7 +27,13 @@ Feuille.prototype.isSheetHidden = function () { return this.cachee; };
 Feuille.prototype.hideSheet = function () { this.cachee = true; };
 Feuille.prototype.showSheet = function () { this.cachee = false; };
 Feuille.prototype.setFrozenRows = function () { return this; };
-Feuille.prototype.getLastRow = function () { return this.valeurs.length; };
+/** La dernière ligne qui porte quelque chose, comme Sheets : les lignes vides du bas ne comptent pas. */
+Feuille.prototype.getLastRow = function () {
+  let n = this.valeurs.length;
+  const vide = function (l) { return !l || l.every(function (v) { return v === '' || v === null || v === undefined; }); };
+  while (n > 0 && vide(this.valeurs[n - 1])) n--;
+  return n;
+};
 /** La dernière colonne qui porte quelque chose, 1-based ; 0 si rien. */
 Feuille.prototype.getLastColumn = function () {
   return this.valeurs.reduce(function (m, l) {
@@ -37,15 +43,35 @@ Feuille.prototype.getLastColumn = function () {
   }, 0);
 };
 Feuille.prototype.getMaxColumns = function () { return Math.max(this.colonnesGrille, plusLarge(this.valeurs)); };
-Feuille.prototype.insertColumnsAfter = function (apres, nombre) { this.colonnesGrille = this.getMaxColumns() + nombre; };
+/* Sheets compte chaque cellule de la grille, vide ou pas, dans sa limite
+   de dix millions par classeur : agrandir au-delà lève, comme Sheets. */
+function limiteCellules(feuille, ajout) {
+  if (feuille.classeur && feuille.classeur.cellulesGrille() + ajout > 10000000) {
+    throw new Error('This action would increase the number of cells in the workbook above the limit of 10000000 cells.');
+  }
+}
+Feuille.prototype.insertColumnsAfter = function (apres, nombre) {
+  limiteCellules(this, nombre * this.getMaxRows());
+  this.colonnesGrille = this.getMaxColumns() + nombre;
+};
 Feuille.prototype.getMaxRows = function () { return Math.max(this.lignesGrille, this.valeurs.length); };
-Feuille.prototype.insertRowsAfter = function (apres, nombre) { this.lignesGrille = this.getMaxRows() + nombre; };
+Feuille.prototype.insertRowsAfter = function (apres, nombre) {
+  limiteCellules(this, nombre * this.getMaxColumns());
+  this.lignesGrille = this.getMaxRows() + nombre;
+};
 Feuille.prototype.appendRow = function (ligne) {
   if (ligne.length > this.getMaxColumns()) this.colonnesGrille = ligne.length;
   this.valeurs.push(ligne.slice());
 };
 Feuille.prototype.deleteRow = function (n) { this.valeurs.splice(n - 1, 1); };
-Feuille.prototype.setName = function (nom) { this.nom = nom; return this; };
+Feuille.prototype.setName = function (nom) {
+  const self = this;
+  if (this.classeur && this.classeur.feuilles.some(function (f) { return f !== self && f.getName() === nom; })) {
+    throw new Error('A sheet with the name "' + nom + '" already exists. Please enter another name.');
+  }
+  this.nom = nom;
+  return this;
+};
 /** La place de l'onglet dans le classeur, 1-based, comme Sheets. */
 Feuille.prototype.getIndex = function () { return this.classeur ? this.classeur.feuilles.indexOf(this) + 1 : 1; };
 /* Retirer des lignes ou des colonnes de la grille, comme Sheets : hors de la
@@ -142,6 +168,9 @@ function Classeur(feuilles, nom) {
   feuilles.forEach(function (f) { f.classeur = self; });
 }
 Classeur.prototype.getName = function () { return this.nom; };
+Classeur.prototype.cellulesGrille = function () {
+  return this.feuilles.reduce(function (s, f) { return s + f.getMaxRows() * f.getMaxColumns(); }, 0);
+};
 Classeur.prototype.getSheets = function () { return this.feuilles; };
 Classeur.prototype.getSheetByName = function (nom) {
   return this.feuilles.filter(function (f) { return f.getName() === nom; })[0] || null;
@@ -152,6 +181,7 @@ Classeur.prototype.setActiveSheet = function (f) { this.active = f; return f; };
 Classeur.prototype.insertSheet = function (nom, index) {
   if (this.getSheetByName(nom)) throw new Error('A sheet with the name "' + nom + '" already exists.');
   const f = new Feuille(nom, []);
+  if (this.cellulesGrille() + 26000 > 10000000) throw new Error('This action would increase the number of cells in the workbook above the limit of 10000000 cells.');
   f.classeur = this;
   if (typeof index === 'number' && index >= 0 && index < this.feuilles.length) this.feuilles.splice(index, 0, f);
   else this.feuilles.push(f);

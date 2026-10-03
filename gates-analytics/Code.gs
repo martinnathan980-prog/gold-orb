@@ -1824,6 +1824,12 @@ function diagnostiquerSecondeBase(classeur, dire) {
     if (!diagnostiquerSecondeBaseDe(classeur, c ? c.id : undefined, plusieurs ? ' de « ' + c.nom + ' »' : '', dire)) tout = false;
   });
   const base = feuilleRapprochement();
+  /* Un import interrompu (la fenêtre fermée en cours d'envoi) laisse son
+     onglet temporaire : le dire, il ne sert à rien. Le prochain import le
+     retire de lui-même. */
+  classeur.getSheets().filter(function (f) { return estOngletImport(f.getName()); }).forEach(function (f) {
+    dire('⚠ L\'onglet « ' + f.getName() + ' » est le reste d\'un import interrompu : le supprimer, ou relancer l\'import (il le retire).');
+  });
   if (plusieurs && base) {
     const generique = classeur.getSheets().filter(function (f) { return nomCompact(f.getName()) === nomCompact(base); })[0];
     if (generique) {
@@ -1846,12 +1852,12 @@ function diagnostiquerSecondeBaseDe(classeur, contrat, pour, dire) {
       return true;
     case 'absent':
       dire('– Seconde base ' + nom + ' : aucun onglet « ' + base.onglet + ' » — pas de rapprochement.');
-      dire('   → un onglet nommé « ' + base.onglet + ' », l\'extract collé en A1 tel quel, avec ses colonnes ' +
-           base.cles.join(', ') + '.');
+      dire('   → menu Suivi FWD → Importer la base ' + (feuilleRapprochement() || 'SEE') + ' (sans ouvrir l\'Excel) ; ou un onglet nommé « ' +
+           base.onglet + ' », l\'extract collé en A1 tel quel, avec ses colonnes ' + base.cles.join(', ') + '.');
       return true;
     case 'vide':
       dire('⚠ Seconde base ' + nom + ' : l\'onglet « ' + base.onglet + ' » est vide — pas de rapprochement.');
-      dire('   → coller l\'extract en A1.');
+      dire('   → menu Suivi FWD → Importer la base ' + (feuilleRapprochement() || 'SEE') + ', ou coller l\'extract en A1.');
       return false;
     case 'sans-reference': {
       dire('⚠ Seconde base ' + nom + ' : onglet « ' + base.onglet + ' » trouvé, mais la référence (' +
@@ -3098,8 +3104,10 @@ function lireSecondeBase(classeur, contrat) {
   for (let i = indexEntete + 1; i < donnees.length; i++) {
     if (!ligneNonVide(donnees[i])) continue;
     const ligne = {};
+    /* Deux colonnes du même intitulé : la première compte — la même que
+       retient l'import de la base (menu Suivi FWD). */
     entetes.forEach(function (titre, j) {
-      if (!titre) return;
+      if (!titre || Object.prototype.hasOwnProperty.call(ligne, titre)) return;
       ligne[titre] = String(donnees[i][j] === undefined ? '' : donnees[i][j]);
     });
     lignes.push(ligne);
@@ -3296,17 +3304,56 @@ function assurerLignes(feuille, nbLignes) {
  * d'en-tête et les colonnes de la comparaison (NAME, SOL., Cust.V) : quelques
  * mégaoctets au lieu de centaines. Le fichier lui-même ne quitte pas le poste.
  *
- * L'écriture se fait par lots dans un onglet temporaire, « SEE HDK (import) » ;
- * l'onglet de la base n'est remplacé qu'une fois toutes les lignes reçues. Un
- * import interrompu laisse l'ancien en place. Chaque fonction appelée par la
- * fenêtre passe la garde des gestes qui écrivent : rien de tout cela n'est
- * possible depuis la page du tableau de bord.
+ * L'écriture se fait par lots dans un onglet temporaire, « SEE HDK (import
+ * 3f2a9c) », taillé d'avance à la mesure des données ; l'onglet de la base
+ * n'est remplacé qu'une fois toutes les lignes reçues. Un import interrompu
+ * laisse l'ancien en place. Chaque appel de la fenêtre présente le jeton
+ * reçu à son ouverture, ou passe la garde des gestes qui écrivent : rien de
+ * tout cela n'est possible depuis la page du tableau de bord.
  */
-const SUFFIXE_IMPORT = ' (import)';
+const IMPORT_MOTIF = / \(import ([0-9a-z]{4,12})\)$/;
 const IMPORT_MAX_LIGNES_LOT = 20000;
 const IMPORT_MAX_COLONNES = 400;
+const IMPORT_LIMITE_CELLULES = 10000000;   // la limite d'un classeur Google Sheets, cellules vides comprises
+const CLE_JETON_IMPORT = 'SUIVI_FWD_JETON_IMPORT';
+const IMPORT_JETON_DUREE = 6 * 3600 * 1000;
 
-/** Menu : la fenêtre d'import, sur l'onglet de la base du contrat affiché. */
+/** Un onglet temporaire d'import : « SEE HDK (import 3f2a9c) ». */
+function estOngletImport(nom) {
+  const base = feuilleRapprochement();
+  const n = String(nom === undefined || nom === null ? '' : nom);
+  const m = IMPORT_MOTIF.exec(n);
+  return !!base && !!m && nomCompact(n.slice(0, m.index)).indexOf(nomCompact(base)) === 0;
+}
+
+/** Le nom de la base d'un contrat, écrit en toutes lettres : « SEE HDK ». */
+function souchePourImport(idContrat) {
+  return feuilleRapprochement() + ' ' + idContrat;
+}
+
+/**
+ * Le jeton de la fenêtre d'import, posé par le menu (dans le classeur). Les
+ * appels de la fenêtre le présentent ; sans lui, ils doivent passer la garde
+ * des gestes qui écrivent. La page du tableau de bord n'a ni l'un ni
+ * l'autre : le jeton ne s'écrit que dans la fenêtre ouverte par le menu.
+ */
+function ouvrirJetonImport() {
+  const jeton = (Utilities.getUuid() + Utilities.getUuid()).replace(/[^0-9a-z]/gi, '');
+  PropertiesService.getDocumentProperties().setProperty(CLE_JETON_IMPORT,
+    JSON.stringify({ jeton: jeton, expire: new Date().getTime() + IMPORT_JETON_DUREE }));
+  return jeton;
+}
+function gesteImport(jeton) {
+  let valide = false;
+  try {
+    const v = JSON.parse(PropertiesService.getDocumentProperties().getProperty(CLE_JETON_IMPORT) || 'null');
+    valide = !!v && typeof v.jeton === 'string' && typeof jeton === 'string' && jeton.length >= 8 &&
+      memeSecret(jeton, v.jeton) && Number(v.expire) > new Date().getTime();
+  } catch (err) { valide = false; }
+  if (!valide) gesteDuClasseur();
+}
+
+/** Menu : la fenêtre d'import, sur la base du contrat affiché. */
 function importerSecondeBase() {
   gesteDuClasseur();
   const ui = SpreadsheetApp.getUi();
@@ -3316,12 +3363,12 @@ function importerSecondeBase() {
   const cles = !cfg ? [] : [].concat(cfg.CLE_REFERENCE === undefined || cfg.CLE_REFERENCE === null ? [] : cfg.CLE_REFERENCE)
     .map(function (c) { return String(c).trim(); }).filter(Boolean);
   if (!nomBase || !cles.length) {
-    ui.alert('Importer la seconde base', 'Aucune seconde base n\'est configurée (CONFIG.RAPPROCHEMENT dans Code).', ui.ButtonSet.OK);
+    ui.alert('Importer la seconde base', 'Aucune seconde base n’est configurée (CONFIG.RAPPROCHEMENT dans Code).', ui.ButtonSet.OK);
     return;
   }
   const contrats = listerContrats(classeur);
   if (!contrats.length) {
-    ui.alert('Importer la base ' + nomBase, 'Aucun contrat dans le classeur : coller d\'abord l\'extract GATES dans un onglet.', ui.ButtonSet.OK);
+    ui.alert('Importer la base ' + nomBase, 'Aucun contrat dans le classeur : coller d’abord l’extract GATES dans un onglet.', ui.ButtonSet.OK);
     return;
   }
   /* Le contrat proposé : celui de l'onglet affiché, ou dont la base est
@@ -3330,20 +3377,22 @@ function importerSecondeBase() {
   let choisi = contrats[0].id;
   const liste = contrats.map(function (c) {
     const f = ongletSecondeBase(classeur, c.id);
-    const onglet = f ? f.getName() : nomAttenduSecondeBase(classeur, c.id);
+    const onglet = f ? f.getName() : souchePourImport(c.id);
     if (c.id === active || onglet === active) choisi = c.id;
     return { id: c.id, onglet: onglet, existe: !!f };
   });
   const parametres = {
+    jeton: ouvrirJetonImport(),
     base: nomBase,
     cles: cles,
     essentielles: (Array.isArray(cfg.ESSENTIELLES) ? cfg.ESSENTIELLES : []).map(function (c) { return String(c).trim(); }).filter(Boolean),
     lignesScan: CONFIG.LIGNES_SCAN_ENTETE,
     maxLignesLot: IMPORT_MAX_LIGNES_LOT,
+    maxCellulesToutes: 4000000,
     contrats: liste,
     choisi: choisi
   };
-  const page = HtmlService.createHtmlOutput(pageImportSecondeBase(parametres)).setWidth(640).setHeight(520);
+  const page = HtmlService.createHtmlOutput(pageImportSecondeBase(parametres)).setWidth(640).setHeight(540);
   ui.showModalDialog(page, 'Importer la base ' + nomBase);
 }
 
@@ -3358,31 +3407,63 @@ function contratPourImport(classeur, idContrat) {
 /** L'onglet temporaire d'un import en cours — jamais un autre onglet. */
 function feuilleImportEnCours(classeur, nom) {
   const n = String(nom === undefined || nom === null ? '' : nom);
-  const base = feuilleRapprochement();
-  if (!base || n.slice(-SUFFIXE_IMPORT.length) !== SUFFIXE_IMPORT || nomCompact(n).indexOf(nomCompact(base)) !== 0) {
-    throw new Error('Onglet d\'import non reconnu : « ' + n + ' ».');
-  }
+  if (!estOngletImport(n)) throw new Error('Onglet d’import non reconnu : « ' + n + ' ».');
   const feuille = classeur.getSheetByName(n);
-  if (!feuille) throw new Error('L\'onglet d\'import « ' + n + ' » a disparu : relancer l\'import.');
+  if (!feuille) {
+    throw new Error('L’onglet d’import « ' + n + ' » a disparu (un autre import de ce contrat a-t-il été lancé ?) : relancer l’import.');
+  }
   return feuille;
 }
 
+/** Les cellules de la grille du classeur, vides comprises : ce que compte Sheets. */
+function cellulesDuClasseur(classeur) {
+  return classeur.getSheets().reduce(function (s, f) { return s + f.getMaxRows() * f.getMaxColumns(); }, 0);
+}
+
 /**
- * Début d'un import : un onglet temporaire vide, à côté de la base qu'il
- * remplacera. Un reste d'import interrompu, du même nom, est retiré d'abord.
+ * Début d'un import : un onglet temporaire taillé à la mesure des données —
+ * `largeur` colonnes, `total` lignes (en-tête comprise) —, à côté de la base
+ * qu'il remplacera. Sheets compte chaque cellule de la grille, vide ou pas,
+ * dans sa limite de dix millions : un onglet neuf en a 26 colonnes, d'où la
+ * taille posée d'avance, et le compte fait avant le moindre envoi. Les restes
+ * d'un import interrompu de ce contrat sont retirés d'abord.
  * @return {{feuille: string, onglet: string}}
  */
-function importSecondeBaseDebut(idContrat) {
-  gesteDuClasseur();
+function importSecondeBaseDebut(jeton, idContrat, largeur, total) {
+  gesteImport(jeton);
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
   const contrat = contratPourImport(classeur, idContrat);
-  const existant = ongletSecondeBase(classeur, contrat.id);
-  const onglet = existant ? existant.getName() : nomAttenduSecondeBase(classeur, contrat.id);
-  const nom = onglet + SUFFIXE_IMPORT;
-  const reste = classeur.getSheetByName(nom);
-  if (reste) classeur.deleteSheet(reste);
-  classeur.insertSheet(nom, classeur.getSheets().length);
-  return { feuille: nom, onglet: onglet };
+  const larg = Math.floor(Number(largeur)), lignes = Math.floor(Number(total));
+  if (!(larg >= 1 && larg <= IMPORT_MAX_COLONNES)) throw new Error('Nombre de colonnes illisible : ' + largeur + ' (au plus ' + IMPORT_MAX_COLONNES + ').');
+  if (!(lignes >= 2)) throw new Error('Rien à importer : l’en-tête seul.');
+  const verrou = LockService.getDocumentLock();
+  const tenu = verrou.tryLock(30000);
+  try {
+    /* Les restes d'un import de ce contrat — fenêtre fermée en cours d'envoi,
+       ou import lancé en même temps : un envoi encore en cours s'arrête net
+       (« a disparu »), sans jamais mêler deux fichiers. */
+    const souche = souchePourImport(contrat.id);
+    classeur.getSheets().slice().forEach(function (f) {
+      const n = f.getName(), m = IMPORT_MOTIF.exec(n);
+      if (m && estOngletImport(n) && nomCompact(n.slice(0, m.index)) === nomCompact(souche)) classeur.deleteSheet(f);
+    });
+    const occupees = cellulesDuClasseur(classeur), voulues = lignes * larg;
+    if (occupees + voulues > IMPORT_LIMITE_CELLULES) {
+      throw new Error('Le classeur dépasserait la limite de Google Sheets : 10 millions de cellules, vides comprises. Il en compte déjà ' +
+        occupees + ', l’import en demande ' + voulues + ' (' + lignes + ' lignes × ' + larg + ' colonnes). ' +
+        (larg > 3 ? 'Décocher « Garder aussi les autres colonnes », ou ' : '') + 'supprimer les onglets qui ne servent plus.');
+    }
+    const nom = souche + ' (import ' + Utilities.getUuid().replace(/[^0-9a-z]/gi, '').slice(0, 6).toLowerCase() + ')';
+    const feuille = classeur.insertSheet(nom, classeur.getSheets().length);
+    if (feuille.getMaxColumns() > larg) feuille.deleteColumns(larg + 1, feuille.getMaxColumns() - larg);
+    else assurerColonnes(feuille, larg);
+    if (feuille.getMaxRows() > lignes) feuille.deleteRows(lignes + 1, feuille.getMaxRows() - lignes);
+    else assurerLignes(feuille, lignes);
+    const existant = ongletSecondeBase(classeur, contrat.id);
+    return { feuille: nom, onglet: existant ? existant.getName() : souche };
+  } finally {
+    if (tenu) verrou.releaseLock();
+  }
 }
 
 /**
@@ -3392,8 +3473,8 @@ function importSecondeBaseDebut(idContrat) {
  * reste « 01 »).
  * @return {{ecrites: number}}
  */
-function importSecondeBaseLot(nomFeuille, premiere, lignes) {
-  gesteDuClasseur();
+function importSecondeBaseLot(jeton, nomFeuille, premiere, lignes) {
+  gesteImport(jeton);
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
   const feuille = feuilleImportEnCours(classeur, nomFeuille);
   const debut = Number(premiere);
@@ -3422,56 +3503,63 @@ function importSecondeBaseLot(nomFeuille, premiere, lignes) {
 
 /**
  * Fin d'un import : si l'onglet temporaire a bien toutes ses lignes, il
- * prend la place — et le nom — de la base du contrat, à sa position ; la
- * grille est resserrée sur les données (le classeur reste léger). La base
- * est relue comme la page la lira, pour le dire.
+ * prend la place — et le nom — de la base du contrat, à sa position. Rien
+ * ne se perd en route : l'ancienne base est d'abord mise de côté sous un
+ * autre nom, la nouvelle prend le sien, puis l'ancienne s'en va. La relecture
+ * finale est légère (la ligne d'en-tête) : la base est en place avant elle.
  */
-function importSecondeBaseFin(nomFeuille, idContrat, lignesAttendues) {
-  gesteDuClasseur();
+function importSecondeBaseFin(jeton, nomFeuille, idContrat, lignesAttendues) {
+  gesteImport(jeton);
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
   const feuille = feuilleImportEnCours(classeur, nomFeuille);
   const contrat = contratPourImport(classeur, idContrat);
-  const recues = feuille.getLastRow();
-  if (recues !== Number(lignesAttendues)) {
-    classeur.deleteSheet(feuille);
-    throw new Error('Import incomplet : ' + recues + ' lignes reçues sur ' + lignesAttendues +
-      '. Rien n\'est remplacé : l\'ancien onglet est intact.');
+  const verrou = LockService.getDocumentLock();
+  const tenu = verrou.tryLock(30000);
+  let recues = 0, derniereColonne = 1, onglet = '', remplace = false;
+  try {
+    recues = feuille.getLastRow();
+    if (recues !== Number(lignesAttendues)) {
+      classeur.deleteSheet(feuille);
+      throw new Error('Import incomplet : ' + recues + ' lignes reçues sur ' + lignesAttendues + '.');
+    }
+    derniereColonne = Math.max(1, feuille.getLastColumn());
+    if (feuille.getMaxRows() > recues) feuille.deleteRows(recues + 1, feuille.getMaxRows() - recues);
+    if (feuille.getMaxColumns() > derniereColonne) feuille.deleteColumns(derniereColonne + 1, feuille.getMaxColumns() - derniereColonne);
+    const existant = ongletSecondeBase(classeur, contrat.id);
+    onglet = existant ? existant.getName() : souchePourImport(contrat.id);
+    remplace = !!existant;
+    let position = 0;
+    if (existant) {
+      position = existant.getIndex();
+      existant.setName(souchePourImport(contrat.id) + ' (ancien ' + IMPORT_MOTIF.exec(feuille.getName())[1] + ')');
+    }
+    feuille.setName(onglet);
+    if (position) {
+      classeur.setActiveSheet(feuille);
+      classeur.moveActiveSheet(position);
+    }
+    if (existant) classeur.deleteSheet(existant);
+    marquerDonneesModifiees();
+  } finally {
+    if (tenu) verrou.releaseLock();
   }
-  const derniereColonne = Math.max(1, feuille.getLastColumn());
-  if (feuille.deleteRows && feuille.getMaxRows() > recues) feuille.deleteRows(recues + 1, feuille.getMaxRows() - recues);
-  if (feuille.deleteColumns && feuille.getMaxColumns() > derniereColonne) {
-    feuille.deleteColumns(derniereColonne + 1, feuille.getMaxColumns() - derniereColonne);
-  }
-  const existant = ongletSecondeBase(classeur, contrat.id);
-  const onglet = existant ? existant.getName() : nomAttenduSecondeBase(classeur, contrat.id);
-  let position = 0;
-  if (existant) {
-    position = existant.getIndex();
-    classeur.deleteSheet(existant);
-  }
-  feuille.setName(onglet);
-  if (position) {
-    classeur.setActiveSheet(feuille);
-    classeur.moveActiveSheet(position);
-  }
-  marquerDonneesModifiees();
-  const lu = lireSecondeBase(classeur, contrat.id);
-  return {
-    onglet: onglet,
-    remplace: !!existant,
-    lignes: recues - 1,
-    colonnes: derniereColonne,
-    etat: lu.etat,
-    lues: lu.rapprochement ? lu.rapprochement.lignes.length : 0
-  };
+  /* La base est en place. Sa ligne d'en-tête, relue, dit si la page la
+     lira ; une panne ici ne défait rien. */
+  let etat = 'ok';
+  try {
+    const ligne = feuille.getRange(1, 1, 1, derniereColonne).getDisplayValues()[0].map(function (c) { return normaliser(String(c).trim()); });
+    const cles = [].concat(CONFIG.RAPPROCHEMENT.CLE_REFERENCE || []).map(function (c) { return normaliser(String(c).trim()); });
+    if (cles.some(function (k) { return ligne.indexOf(k) === -1; })) etat = 'sans-reference';
+  } catch (err) { etat = 'non relu'; }
+  return { onglet: onglet, remplace: remplace, lignes: recues - 1, colonnes: derniereColonne, etat: etat };
 }
 
 /** Abandon : l'onglet temporaire est retiré, la base reste ce qu'elle était. */
-function importSecondeBaseAbandon(nomFeuille) {
-  gesteDuClasseur();
+function importSecondeBaseAbandon(jeton, nomFeuille) {
+  gesteImport(jeton);
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
-  let feuille = null;
-  try { feuille = feuilleImportEnCours(classeur, nomFeuille); } catch (err) { feuille = null; }
+  const n = String(nomFeuille === undefined || nomFeuille === null ? '' : nomFeuille);
+  const feuille = estOngletImport(n) ? classeur.getSheetByName(n) : null;
   if (feuille) classeur.deleteSheet(feuille);
   return true;
 }
@@ -3497,20 +3585,22 @@ function pageImportSecondeBase(parametres) {
     'button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--encre);outline-offset:2px}' +
     '.option{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--encre-2);margin:0 0 12px}' +
     '.barre{height:6px;border-radius:3px;background:var(--filet);overflow:hidden;margin:4px 0 6px}.barre div{height:100%;width:0;background:var(--fait);transition:width .2s}' +
-    '.progres{font-size:13px;color:var(--encre-2);min-height:20px}.etat{margin:8px 0 0;font-size:13.5px}.etat.ok{color:var(--fait)}' +
+    '.progres{font-size:13px;color:var(--encre-2);min-height:20px}.consigne{font-size:13px;color:var(--encre);font-weight:600;margin:2px 0 0}' +
+    '.etat{margin:8px 0 0;font-size:13.5px}.etat.ok{color:var(--fait)}' +
     '.etat.erreur{color:var(--alerte)}.boutons{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}[hidden]{display:none!important}' +
     '</style></head><body>' +
-    '<p>Choisir l\u2019export ' + ech(parametres.base) + ' <b>de ce contrat</b> (.xlsx, ou .csv). Il est lu ici, sur ce poste, ' +
-    '<b>sans ouvrir Excel</b> : seules la ligne d\u2019en-tête et les colonnes de la comparaison — ' + cles + ' — vont dans le classeur.</p>' +
+    '<p>Choisir l’export ' + ech(parametres.base) + ' <b>de ce contrat</b> (.xlsx, ou .csv). Il est lu ici, sur ce poste, ' +
+    '<b>sans ouvrir Excel</b> : seules la ligne d’en-tête et les colonnes de la comparaison — ' + cles + ' — vont dans le classeur.</p>' +
     '<div class="ligne" id="ligne-contrat"><label for="contrat">Contrat</label><select id="contrat"></select></div>' +
     '<p class="cible" id="cible"></p>' +
-    '<div class="depot" id="depot"><input type="file" id="fichier" accept=".xlsx,.xlsm,.csv,.txt">' +
+    '<div class="depot" id="depot"><input type="file" id="fichier" accept=".xlsx,.xlsm,.csv,.txt,.xls,.xlsb,.xml,.htm,.html">' +
     '<button type="button" id="choisir">Choisir le fichier…</button> <span class="doux">ou le glisser ici</span>' +
     '<div class="nom" id="nom-fichier"></div></div>' +
     '<label class="option"><input type="checkbox" id="toutes"> <span>Garder aussi les autres colonnes — plus lourd, ' +
-    'seulement pour regarder tout l\u2019extract dans le tableau ' + ech(parametres.base) + ' de la page.</span></label>' +
+    'seulement pour regarder tout l’extract dans le tableau ' + ech(parametres.base) + ' de la page.</span></label>' +
     '<div class="barre" id="barre" hidden><div id="barre-plein"></div></div>' +
     '<div class="progres" id="progres" aria-live="polite"></div>' +
+    '<p class="consigne" id="consigne" hidden>Ne pas fermer cette fenêtre avant la fin.</p>' +
     '<div class="etat" id="etat" role="status" aria-live="polite"></div>' +
     '<div class="boutons"><button type="button" id="fermer">Fermer</button>' +
     '<button type="button" class="principal" id="importer" disabled>Importer</button></div>' +
@@ -3526,7 +3616,9 @@ function pageImportSecondeBase(parametres) {
  * après). Un .xlsx est un zip : on en lit le répertoire à la fin du fichier,
  * puis on décompresse au fil de l'eau les seules parties utiles — la liste
  * des onglets, les styles, les chaînes partagées, et l'onglet qui porte
- * l'en-tête — sans jamais tenir le fichier entier en mémoire.
+ * l'en-tête — sans jamais tenir le fichier entier en mémoire. Les « Excel »
+ * qui n'en sont pas (une page web, un XML 2003 nommés .xls) et les CSV se
+ * lisent aussi, au fil de l'eau.
  */
 function scriptImportSecondeBase_(P) {
   'use strict';
@@ -3548,6 +3640,11 @@ function scriptImportSecondeBase_(P) {
     if (texte !== undefined) $('progres').textContent = texte;
   }
   function souffle() { return new Promise(function (ok) { setTimeout(ok, 0); }); }
+  /* Une valeur gardée est recopiée : une sous-chaîne d'un morceau de XML le
+     tiendrait tout entier en mémoire, et un gros fichier ferait tomber
+     l'onglet du navigateur. */
+  function plat(v) { return v.length > 12 ? (' ' + v).slice(1) : v; }
+  var ABIME = 'Le fichier est abîmé (il ne se décompresse pas en entier) : le retélécharger depuis SEE.';
 
   // ------------------------------------------------------------ lecture du fichier
   function lireOctets(f, debut, fin) {
@@ -3570,7 +3667,7 @@ function scriptImportSecondeBase_(P) {
       for (i = fin.length - 22; i >= 0; i--) {
         if (fin[i] === 0x50 && fin[i + 1] === 0x4b && fin[i + 2] === 5 && fin[i + 3] === 6) { p = i; break; }
       }
-      if (p < 0) throw erreur('Ce fichier n\u2019est pas un classeur .xlsx lisible (abîmé, ou pas fini de télécharger ?).');
+      if (p < 0) throw erreur('Ce fichier n\u2019est pas un classeur .xlsx lisible : abîmé, ou pas fini de télécharger ? Le retélécharger depuis SEE.');
       var nbEntrees = u16(fin, p + 10), tailleCD = u32(fin, p + 12), debutCD = u32(fin, p + 16);
       var avant = Promise.resolve();
       if (debutCD === 0xFFFFFFFF || tailleCD === 0xFFFFFFFF || nbEntrees === 0xFFFF) {
@@ -3578,7 +3675,7 @@ function scriptImportSecondeBase_(P) {
         if (l >= 0 && u32(fin, l) === 0x07064b50) {
           var o = u64(fin, l + 8);
           avant = lireOctets(f, o, o + 56).then(function (z) {
-            if (u32(z, 0) !== 0x06064b50) throw erreur('Zip64 illisible.');
+            if (u32(z, 0) !== 0x06064b50) throw erreur(ABIME);
             tailleCD = u64(z, 40); debutCD = u64(z, 48);
           });
         }
@@ -3609,7 +3706,7 @@ function scriptImportSecondeBase_(P) {
   /* Une partie du zip, décompressée au fil de la lecture. */
   function fluxPartie(f, e) {
     return lireOctets(f, e.off, e.off + 30).then(function (h) {
-      if (u32(h, 0) !== 0x04034b50) throw erreur('Zip abîmé : la partie « ' + e.nom + ' » est introuvable.');
+      if (u32(h, 0) !== 0x04034b50) throw erreur(ABIME);
       var debut = e.off + 30 + u16(h, 26) + u16(h, 28);
       var brut = f.slice(debut, debut + e.tc).stream();
       if (e.methode === 0) return brut;
@@ -3618,23 +3715,37 @@ function scriptImportSecondeBase_(P) {
     });
   }
   /* Lit un flux d'octets comme du texte, morceau par morceau. surTexte(texte,
-     fini) rend false pour arrêter là. surAvance(octets lus) dit l'avancée. */
-  function lireFlux(flux, encodage, surTexte, surAvance) {
-    var lecteur = flux.getReader(), dec = new TextDecoder(encodage), lus = 0, repos = Date.now();
+     fini) rend false pour arrêter là. surAvance(octets lus) dit l'avancée ;
+     attendu, la taille annoncée par le zip : lu jusqu'au bout, un compte qui
+     n'y est pas dit un fichier abîmé. Avec strict, un octet qui n'est pas de
+     l'UTF-8 lève une erreur (marquée pasUtf8). */
+  function lireFlux(flux, encodage, surTexte, surAvance, attendu, strict) {
+    var lecteur = flux.getReader(), dec = new TextDecoder(encodage, strict ? { fatal: true } : undefined), lus = 0, repos = Date.now();
+    function decoder(octets, fin) {
+      try { return fin ? dec.decode() : dec.decode(octets, { stream: true }); }
+      catch (e) { var x = new Error('pas utf-8'); x.pasUtf8 = true; throw x; }
+    }
     function suite() {
       return lecteur.read().then(function (r) {
-        if (r.done) { surTexte(dec.decode(), true); return; }
+        if (r.done) {
+          if (typeof attendu === 'number' && attendu > 0 && attendu !== 0xFFFFFFFF && lus !== attendu) throw erreur(ABIME);
+          surTexte(decoder(null, true), true);
+          return;
+        }
         lus += r.value.length;
-        if (surTexte(dec.decode(r.value, { stream: true }), false) === false) { lecteur.cancel(); return; }
+        if (surTexte(decoder(r.value, false), false) === false) { lecteur.cancel().catch(function () {}); return; }
         if (surAvance) surAvance(lus);
         if (Date.now() - repos > 120) { repos = Date.now(); return souffle().then(suite); }
         return suite();
+      }, function (e) {
+        if (e && e.pourLecteur) throw e;
+        throw erreur(ABIME);
       });
     }
     return suite();
   }
   function lirePartie(f, e, surTexte, surAvance) {
-    return fluxPartie(f, e).then(function (flux) { return lireFlux(flux, 'utf-8', surTexte, surAvance); });
+    return fluxPartie(f, e).then(function (flux) { return lireFlux(flux, 'utf-8', surTexte, surAvance, e.tu); });
   }
   function partieEntiere(f, e) {
     var t = [];
@@ -3642,10 +3753,10 @@ function scriptImportSecondeBase_(P) {
   }
 
   // ------------------------------------------------------------ XML
-  var ENT = { amp: '&', lt: '<', gt: '>', quot: '"', apos: '\'' };
+  var ENT = { amp: '&', lt: '<', gt: '>', quot: '"', apos: '\'', nbsp: '\u00a0' };
   function decoderXml(s) {
     if (s.indexOf('&') !== -1) {
-      s = s.replace(/&(?:(amp|lt|gt|quot|apos)|#(\d+)|#x([0-9a-fA-F]+));/g, function (m, n, d, h) {
+      s = s.replace(/&(?:(amp|lt|gt|quot|apos|nbsp)|#(\d+)|#x([0-9a-fA-F]+));/g, function (m, n, d, h) {
         return n ? ENT[n] : String.fromCodePoint(d ? parseInt(d, 10) : parseInt(h, 16));
       });
     }
@@ -3657,13 +3768,18 @@ function scriptImportSecondeBase_(P) {
     return s.indexOf('_x') === -1 ? s : s.replace(/_x([0-9A-Fa-f]{4})_/g, function (m, h) { return String.fromCharCode(parseInt(h, 16)); });
   }
   function attribut(s, nom) {
-    var m = new RegExp('\\s(?:[\\w.-]+:)?' + nom + '\\s*=\\s*(?:"([^"]*)"|\'([^\']*)\')').exec(' ' + s);
+    var m = new RegExp('\\s(?:[\\w.-]+:)?' + nom + '\\s*=\\s*(?:"([^"]*)"|\'([^\']*)\')', 'i').exec(' ' + s);
     return m ? decoderXml(m[1] !== undefined ? m[1] : m[2]) : null;
   }
   /* Les éléments complets <nom …>…</nom> d'un texte qui arrive par morceaux ;
-     un préfixe d'espace de noms (« x:row ») est toléré. */
-  function decoupeur(nom, surElement) {
-    var re = new RegExp('<(?:[\\w.-]+:)?' + nom + '(?=[\\s/>])([^>]*?)(?:\\/>|>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?' + nom + '\\s*>)', 'g');
+     un préfixe d'espace de noms (« x:row ») est toléré. Ce qui ne se termine
+     pas encore attend le morceau suivant — mais ce qui suit le dernier
+     élément (des liens, des fusions après les lignes) n'est pas gardé : le
+     relire à chaque morceau rendait la lecture quadratique. */
+  function decoupeur(nom, surElement, sansCasse) {
+    var drapeaux = sansCasse ? 'gi' : 'g';
+    var re = new RegExp('<(?:[\\w.-]+:)?' + nom + '(?=[\\s/>])([^>]*?)(?:\\/>|>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?' + nom + '\\s*>)', drapeaux);
+    var ouvre = new RegExp('<(?:[\\w.-]+:)?' + nom + '(?=[\\s/>])', drapeaux);
     var reste = '';
     return function (texte, fini) {
       var tampon = reste + texte, fin = 0, m;
@@ -3673,6 +3789,12 @@ function scriptImportSecondeBase_(P) {
         if (surElement(m[1], m[2] === undefined ? '' : m[2]) === false) { reste = ''; return false; }
       }
       reste = tampon.slice(fin);
+      if (reste.length > 262144) {
+        var dernier = -1, o;
+        ouvre.lastIndex = 0;
+        while ((o = ouvre.exec(reste))) dernier = o.index;
+        reste = dernier >= 0 ? reste.slice(dernier) : reste.slice(-512);
+      }
       return true;
     };
   }
@@ -3684,11 +3806,13 @@ function scriptImportSecondeBase_(P) {
     var s = '', m;
     RE_T.lastIndex = 0;
     while ((m = RE_T.exec(x))) if (m[1]) s += m[1];
-    return decoderChaine(s);
+    return plat(decoderChaine(s));
   }
 
   // ------------------------------------------------------------ nombres et dates
   var FORMATS_DATE = { 14: 1, 15: 1, 16: 1, 17: 1, 18: 2, 19: 2, 20: 2, 21: 2, 22: 3, 45: 2, 46: 2, 47: 2 };
+  var FORMATS_INTEGRES = { 1: '0', 2: '0.00', 3: '#,##0', 4: '#,##0.00', 9: '0%', 10: '0.00%', 11: '0.00E+00',
+    37: '#,##0', 38: '#,##0', 39: '#,##0.00', 40: '#,##0.00', 48: '##0.0E+0' };
   function lireStyles(texte) {
     var formats = {}, xfs = [], m;
     var re = /<(?:[\w.-]+:)?numFmt\s([^>]*?)\/?>/g;
@@ -3703,29 +3827,50 @@ function scriptImportSecondeBase_(P) {
     }
     return { formats: formats, xfs: xfs };
   }
-  /* La forme d'un format : 'date' (1 jour, 2 heure, 3 les deux), 'zeros'
-     (« 000 », pour garder les zéros de tête), 'texte', ou 'nombre'. */
+  /* Ce qu'un format fait d'un nombre, pour l'écrire comme Excel l'affiche :
+     date (1 jour, 2 heure, 3 les deux), zéros de tête (« 000 »), texte, ou
+     nombre — décimales, séparateur des milliers, pourcentage, notation
+     scientifique, et le texte autour (« € »). */
   function formeDuFormat(styles, s) {
     var id = styles && styles.xfs[s] !== undefined ? styles.xfs[s] : 0;
     if (FORMATS_DATE[id]) return { type: 'date', parties: FORMATS_DATE[id] };
     if (id === 49) return { type: 'texte' };
-    var code = styles && styles.formats[id] !== undefined ? styles.formats[id] : '';
-    if (!code) return { type: 'nombre' };
-    var nu = code.replace(/"[^"]*"/g, '').replace(/\[[^\]]*\]/g, '').replace(/\\./g, '').split(';')[0];
+    var code = styles && styles.formats[id] !== undefined ? styles.formats[id] : (FORMATS_INTEGRES[id] || '');
+    if (!code || /^general$/i.test(code)) return { type: 'general' };
+    var section = code.split(';')[0];
+    var nu = section.replace(/"[^"]*"/g, '').replace(/\[\$([^\]-]*)[^\]]*\]/g, '').replace(/\[[^\]]*\]/g, '')
+      .replace(/\\./g, '').replace(/[_*]./g, '');
     if (/^0+$/.test(nu)) return { type: 'zeros', largeur: nu.length };
-    if (nu === '@') return { type: 'texte' };
+    if (/^@$/.test(nu.trim())) return { type: 'texte' };
+    if (/^general$/i.test(nu.trim())) return { type: 'general' };
     var jour = /[dy]/i.test(nu) || /m/i.test(nu) && !/[hs]/i.test(nu), heure = /[hs]/i.test(nu);
-    if ((jour || heure) && !/^general$/i.test(nu)) return { type: 'date', parties: (jour ? 1 : 0) | (heure ? 2 : 0) };
-    return { type: 'nombre' };
+    if (jour || heure) return { type: 'date', parties: (jour ? 1 : 0) | (heure ? 2 : 0) };
+    if (!/[0#?]/.test(nu)) return { type: 'general' };
+    /* Le texte autour des chiffres : entre guillemets, échappé, ou le
+       symbole d'une devise [$€-40C]. */
+    var litteral = section.replace(/\[\$([^\]-]*)[^\]]*\]/g, '"$1"').replace(/\[[^\]]*\]/g, '').replace(/\\(.)/g, '"$1"').replace(/[_*]./g, '');
+    var premier = litteral.search(/[0#?]/), dernier = Math.max(litteral.lastIndexOf('0'), litteral.lastIndexOf('#'), litteral.lastIndexOf('?'));
+    var lit = function (t) { var r = '', m, re = /"([^"]*)"/g; while ((m = re.exec(t))) r += m[1]; return r; };
+    var expo = /E[+-]/i.test(nu);
+    var partie = (/\.([0#?]+)/.exec(nu.split(/E/i)[0]) || [null, ''])[1];
+    return { type: 'nombre', min: (partie.match(/0/g) || []).length, max: partie.length, mille: /[0#?],[0#?]/.test(nu),
+             pourcent: nu.indexOf('%') !== -1, expo: expo,
+             avant: lit(litteral.slice(0, Math.max(0, premier))), apres: lit(litteral.slice(dernier + 1)).replace(/%/g, '') };
   }
   function deux(n) { return (n < 10 ? '0' : '') + n; }
+  function exposant(v, dec) {
+    var t = v.toExponential(dec).split('e'), e = parseInt(t[1], 10);
+    return t[0].replace('.', ',') + 'E' + (e < 0 ? '-' : '+') + deux(Math.abs(e));
+  }
+  function milliers(t) { return t.replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f'); }
   function texteNombre(brut, forme, en1904) {
     var v = Number(brut);
     if (brut === '' || isNaN(v)) return brut;
-    if (forme.type === 'zeros' && v >= 0 && Math.floor(v) === v) {
-      var z = String(v);
+    if (forme.type === 'texte') return brut;
+    if (forme.type === 'zeros') {
+      var z = String(Math.round(Math.abs(v)));
       while (z.length < forme.largeur) z = '0' + z;
-      return z;
+      return (v < 0 ? '-' : '') + z;
     }
     if (forme.type === 'date') {
       var d = new Date(Math.round(((en1904 ? v + 1462 : v) - 25569) * 86400000));
@@ -3734,37 +3879,59 @@ function scriptImportSecondeBase_(P) {
       var heure = deux(d.getUTCHours()) + ':' + deux(d.getUTCMinutes()) + (d.getUTCSeconds() ? ':' + deux(d.getUTCSeconds()) : '');
       return forme.parties === 2 ? heure : forme.parties === 3 ? jour + ' ' + heure : jour;
     }
+    if (forme.type === 'nombre') {
+      var x = forme.pourcent ? v * 100 : v, signe = x < 0 ? '-' : '', a = Math.abs(x), corps;
+      if (forme.expo) corps = exposant(a, forme.max);
+      else {
+        var t = a.toFixed(forme.max).split('.'), entier = t[0], frac = t[1] || '';
+        while (frac.length > forme.min && frac.charAt(frac.length - 1) === '0') frac = frac.slice(0, -1);
+        corps = (forme.mille ? milliers(entier) : entier) + (frac ? ',' + frac : '');
+      }
+      return signe + forme.avant + corps + (forme.pourcent ? '\u202f%' : '') + forme.apres;
+    }
+    /* Standard : l'entier tel quel ; quinze chiffres significatifs au plus,
+       la virgule décimale, et l'exposant à la manière d'Excel. */
     if (Math.floor(v) === v && Math.abs(v) < 1e15) return String(v);
-    return String(Number(v.toPrecision(15))).replace('.', ',');
+    var p = Number(v.toPrecision(15));
+    if (Math.abs(p) >= 1e15 || String(p).indexOf('e') !== -1) return exposant(p, 5).replace(/,?0+E/, 'E');
+    return String(p).replace('.', ',');
   }
 
   // ------------------------------------------------------------ en-tête et lignes
   /* Reçoit les lignes une à une (numéro 1-based, valeurs par colonne) :
      cherche l'en-tête comme Code.gs le cherche — la première des premières
-     lignes qui porte toutes les colonnes de la référence —, puis garde les
-     colonnes voulues des lignes suivantes. */
+     lignes qui porte toutes les colonnes de la référence, la première
+     colonne d'un intitulé en double —, puis garde les colonnes voulues des
+     lignes suivantes. */
   function collecteur(toutes) {
     var nCles = P.cles.map(norm), nEss = P.essentielles.map(norm);
-    var c = { entete: null, colonnes: null, voulues: null, lignes: [], meilleur: { portes: 0, ligne: 0, noms: [] }, vides: 0 };
-    c.ligne = function (num, valeurs) {
+    var c = { entete: null, colonnes: null, voulues: null, cles: null, lignes: [], meilleur: { portes: 0, ligne: 0, noms: [], manquent: P.cles.slice() },
+              formulesVides: 0, trop: false };
+    c.ligne = function (num, valeurs, sansValeur) {
       if (!c.colonnes) {
         if (num > P.lignesScan) return false;
         var ns = valeurs.map(norm), portes = nCles.filter(function (k) { return ns.indexOf(k) !== -1; });
         if (portes.length === nCles.length) {
-          var prises = {};
-          nCles.forEach(function (k) { prises[ns.indexOf(k)] = true; });
+          var prises = {}, cles = {};
+          nCles.forEach(function (k) { prises[ns.indexOf(k)] = true; cles[ns.indexOf(k)] = true; });
           nEss.forEach(function (k) { var j = ns.indexOf(k); if (j !== -1) prises[j] = true; });
           if (toutes) ns.forEach(function (k, j) { if (k) prises[j] = true; });
           c.colonnes = Object.keys(prises).map(Number).sort(function (a, b) { return a - b; });
-          c.voulues = prises;
-          c.entete = c.colonnes.map(function (j) { return String(valeurs[j] === undefined ? '' : valeurs[j]).trim(); });
+          c.voulues = prises; c.cles = cles;
+          c.entete = c.colonnes.map(function (j) { return plat(String(valeurs[j] === undefined ? '' : valeurs[j]).trim()); });
         } else if (portes.length > c.meilleur.portes) {
-          c.meilleur = { portes: portes.length, ligne: num, noms: valeurs.filter(function (v) { return String(v === undefined || v === null ? '' : v).trim(); }).slice(0, 12) };
+          c.meilleur = { portes: portes.length, ligne: num,
+            noms: valeurs.filter(function (v) { return String(v === undefined || v === null ? '' : v).trim(); }).slice(0, 12),
+            manquent: P.cles.filter(function (k, i) { return portes.indexOf(nCles[i]) === -1; }) };
         }
         return true;
       }
-      var l = c.colonnes.map(function (j) { var v = valeurs[j]; return v === undefined || v === null ? '' : String(v); });
-      if (l.some(function (v) { return v.trim() !== ''; })) c.lignes.push(l); else c.vides++;
+      if (sansValeur && sansValeur.some(function (j) { return c.cles[j]; })) c.formulesVides++;
+      var l = c.colonnes.map(function (j) { var v = valeurs[j]; return v === undefined || v === null ? '' : plat(String(v)); });
+      if (l.some(function (v) { return v.trim() !== ''; })) {
+        c.lignes.push(l);
+        if (toutes && (c.lignes.length + 1) * c.entete.length > P.maxCellulesToutes) { c.trop = true; return false; }
+      }
       return true;
     };
     return c;
@@ -3788,9 +3955,12 @@ function scriptImportSecondeBase_(P) {
   }
   var RE_C = /<(?:[\w.-]+:)?c(?=[\s\/>])([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:[\w.-]+:)?c\s*>)/g;
   var RE_V = /<(?:[\w.-]+:)?v(?:\s[^>]*)?>([\s\S]*?)<\/(?:[\w.-]+:)?v\s*>/;
+  var RE_F = /<(?:[\w.-]+:)?f(?=[\s>\/])/;
+  var RE_FIN_DONNEES = /<\/(?:[\w.-]+:)?sheetData\s*>/;
 
   /* Un onglet du classeur, ligne à ligne. Rend le collecteur ; il dit si
-     l'en-tête a été trouvé. */
+     l'en-tête a été trouvé. La lecture s'arrête après les lignes (ce qui
+     suit — liens, fusions, mise en page — ne sert à rien). */
   function lireOnglet(f, e, chaines, styles, en1904, toutes, avance) {
     var c = collecteur(toutes), numPrec = 0, formes = {};
     function forme(s) { return formes[s] || (formes[s] = formeDuFormat(styles, s)); }
@@ -3798,7 +3968,7 @@ function scriptImportSecondeBase_(P) {
       var rr = valeurAttr(attrs, ' r="') || valeurAttr(attrs, ' r=\'');
       var num = rr ? parseInt(rr, 10) : numPrec + 1;
       numPrec = num;
-      var valeurs = [], colPrec = -1, m, voulues = c.voulues;
+      var valeurs = [], sansValeur = null, colPrec = -1, m, voulues = c.voulues;
       RE_C.lastIndex = 0;
       while ((m = RE_C.exec(corps))) {
         var a = m[1], ref = valeurAttr(a, ' r="') || valeurAttr(a, ' r=\'');
@@ -3809,17 +3979,24 @@ function scriptImportSecondeBase_(P) {
         if (t === 'inlineStr') v = texteRiche(dedans);
         else {
           var mv = RE_V.exec(dedans), brut = mv ? mv[1] : '';
-          if (t === 's') { v = chaines[parseInt(brut, 10)]; if (v === undefined) v = ''; }
+          if (!brut && RE_F.test(dedans)) (sansValeur || (sansValeur = [])).push(col);
+          if (t === 's') { v = brut === '' ? '' : chaines[parseInt(brut, 10)]; if (v === undefined) v = ''; }
           else if (t === 'str' || t === 'e' || t === 'd') v = decoderChaine(brut);
-          else if (t === 'b') v = brut === '1' ? 'VRAI' : 'FAUX';
+          else if (t === 'b') v = brut === '1' ? 'VRAI' : brut === '0' ? 'FAUX' : '';
           else v = texteNombre(brut, forme(+(valeurAttr(a, ' s="') || valeurAttr(a, ' s=\'') || 0)), en1904);
         }
         valeurs[col] = v;
       }
       for (var j = 0; j < valeurs.length; j++) if (valeurs[j] === undefined) valeurs[j] = '';
-      return c.ligne(num, valeurs);
+      return c.ligne(num, valeurs, sansValeur);
     });
-    return lirePartie(f, e, surLigne, avance).then(function () { return c; });
+    var finDonnees = false;
+    return lirePartie(f, e, function (texte, fini) {
+      if (finDonnees) return false;
+      var r = surLigne(texte, fini);
+      if (r !== false && RE_FIN_DONNEES.test(texte)) { finDonnees = true; return false; }
+      return r;
+    }, avance).then(function () { return c; });
   }
 
   function chercher(entrees, chemin) {
@@ -3840,7 +4017,7 @@ function scriptImportSecondeBase_(P) {
     return lireZip(f).then(function (entrees) {
       var wb = chercher(entrees, 'xl/workbook.xml');
       if (!wb) {
-        if (chercher(entrees, 'xl/workbook.bin')) throw erreur('C\u2019est un classeur binaire (.xlsb). Il faut l\u2019export en .xlsx ou en .csv.');
+        if (chercher(entrees, 'xl/workbook.bin')) throw erreur('C\u2019est un classeur binaire (.xlsb), que ni la fenêtre ni Google Sheets ne lisent. Il faut l\u2019export SEE en .xlsx ou en .csv.');
         throw erreur('Ce zip n\u2019est pas un classeur Excel (pas de xl/workbook.xml).');
       }
       var rels = chercher(entrees, 'xl/_rels/workbook.xml.rels');
@@ -3892,9 +4069,9 @@ function scriptImportSecondeBase_(P) {
     });
   }
 
-  // ------------------------------------------------------------ CSV
+  // ------------------------------------------------------------ fichiers texte : CSV, page web, XML 2003
   function analyseurCsv(sep, surLigne) {
-    var champ = '', ligne = [], dans = false, attente = false, cr = false, num = 0, arret = false;
+    var champ = '', ligne = [], dans = false, attente = false, egal = false, cr = false, num = 0, arret = false;
     function finLigne() { ligne.push(champ); champ = ''; var l = ligne; ligne = []; num++; if (surLigne(num, l) === false) arret = true; }
     return function (texte, fini) {
       for (var i = 0; i < texte.length && !arret; i++) {
@@ -3905,90 +4082,232 @@ function scriptImportSecondeBase_(P) {
           if (ch === '"') { champ += '"'; continue; }
           dans = false;
         }
+        /* ="001" : la façon d'un export de garder ses zéros — le champ vaut 001. */
+        if (egal) {
+          egal = false;
+          if (ch === '"') { dans = true; continue; }
+          champ += '=';
+        }
         if (dans) { if (ch === '"') attente = true; else champ += ch; continue; }
         if (ch === '"' && champ === '') { dans = true; continue; }
+        if (ch === '=' && champ === '') { egal = true; continue; }
         if (ch === sep) { ligne.push(champ); champ = ''; continue; }
         if (ch === '\r') { finLigne(); cr = true; continue; }
         if (ch === '\n') { if (!etaitCr) finLigne(); continue; }
         champ += ch;
       }
-      if (fini && !arret && (champ !== '' || ligne.length)) finLigne();
+      if (fini && !arret) {
+        if (egal) { champ += '='; egal = false; }
+        if (champ !== '' || ligne.length) finLigne();
+      }
       return !arret;
     };
   }
-  function lireCsv(f, toutes) {
+  var ENTITES_HTML = { amp: '&', lt: '<', gt: '>', quot: '"', apos: '\'', nbsp: '\u00a0', eacute: 'é', egrave: 'è', ecirc: 'ê',
+    agrave: 'à', acirc: 'â', ccedil: 'ç', ocirc: 'ô', ucirc: 'û', ugrave: 'ù', icirc: 'î', iuml: 'ï', euml: 'ë', Eacute: 'É',
+    laquo: '«', raquo: '»', deg: '°', euro: '€', ndash: '–', mdash: '—', rsquo: '’', lsquo: '‘', hellip: '…' };
+  var zoneEntites = null;
+  function decoderHtml(s) {
+    return s.replace(/&(#\d+|#x[0-9a-fA-F]+|[A-Za-z]\w*);/g, function (m, n) {
+      if (n.charAt(0) === '#') return String.fromCodePoint(n.charAt(1) === 'x' || n.charAt(1) === 'X' ? parseInt(n.slice(2), 16) : parseInt(n.slice(1), 10));
+      if (ENTITES_HTML[n] !== undefined) return ENTITES_HTML[n];
+      zoneEntites = zoneEntites || document.createElement('textarea');
+      zoneEntites.innerHTML = m;
+      return zoneEntites.value;
+    });
+  }
+  function texteCellule(x) {
+    var t = x.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '');
+    return plat(decoderHtml(t).replace(/[ \t\r\n]+/g, ' ').trim());
+  }
+  var RE_TD = /<(?:[\w.-]+:)?t[dh](?=[\s>\/])([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:[\w.-]+:)?t[dh]\s*>)/gi;
+  function analyseurHtml(c) {
+    var num = 0;
+    return decoupeur('tr', function (attrs, corps) {
+      var valeurs = [], m;
+      RE_TD.lastIndex = 0;
+      while ((m = RE_TD.exec(corps))) {
+        var span = parseInt(attribut(m[1], 'colspan') || '1', 10);
+        valeurs.push(m[2] ? texteCellule(m[2]) : '');
+        for (var k = 1; k < span && k < 50; k++) valeurs.push('');
+      }
+      return c.ligne(++num, valeurs);
+    }, true);
+  }
+  var RE_CELL = /<(?:[\w.-]+:)?Cell(?=[\s>\/])([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:[\w.-]+:)?Cell\s*>)/g;
+  var RE_DATA = /<(?:[\w.-]+:)?Data(?=[\s>\/])([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:[\w.-]+:)?Data\s*>)/;
+  /* Le XML 2003 d'Excel : un onglet après l'autre ; l'en-tête est cherché
+     dans chacun tant qu'il n'est pas trouvé, et la lecture s'arrête à la fin
+     de celui qui le porte. */
+  function analyseurXml2003(nouveauCollecteur, surFin) {
+    var c = nouveauCollecteur(), num = 0, garde = { c: c };
+    var lignes = decoupeur('Row', function (attrs, corps) {
+      var idx = attribut(attrs, 'Index');
+      num = idx ? parseInt(idx, 10) : num + 1;
+      var valeurs = [], col = -1, m;
+      RE_CELL.lastIndex = 0;
+      while ((m = RE_CELL.exec(corps))) {
+        var ci = attribut(m[1], 'Index');
+        col = ci ? parseInt(ci, 10) - 1 : col + 1;
+        var d = m[2] ? RE_DATA.exec(m[2]) : null, v = '';
+        if (d) {
+          var type = attribut(d[1], 'Type') || 'String', brut = d[2] ? d[2].replace(/<[^>]*>/g, '') : '';
+          if (type === 'Number') v = texteNombre(decoderXml(brut).trim(), { type: 'general' }, false);
+          else if (type === 'DateTime') {
+            var mm = /^(\d{4})-(\d\d)-(\d\d)(?:T(\d\d):(\d\d))?/.exec(brut);
+            v = mm ? mm[3] + '/' + mm[2] + '/' + mm[1] + (mm[4] && (mm[4] !== '00' || mm[5] !== '00') ? ' ' + mm[4] + ':' + mm[5] : '') : brut;
+          } else if (type === 'Boolean') v = brut.trim() === '1' ? 'VRAI' : 'FAUX';
+          else v = plat(decoderXml(brut));
+        }
+        valeurs[col] = v;
+        var span = parseInt(attribut(m[1], 'MergeAcross') || '0', 10);
+        col += Math.min(span, 50);
+      }
+      for (var j = 0; j < valeurs.length; j++) if (valeurs[j] === undefined) valeurs[j] = '';
+      return garde.c.ligne(num, valeurs);
+    });
+    var reOnglet = /<(?:[\w.-]+:)?Worksheet(?=[\s>])/g;
+    var analyse = function (texte, fini) {
+      var debut = 0, m;
+      reOnglet.lastIndex = 0;
+      while ((m = reOnglet.exec(texte))) {
+        if (lignes(texte.slice(debut, m.index), false) === false && garde.c.colonnes) return false;
+        debut = m.index;
+        if (num > 0) {
+          if (garde.c.colonnes) { surFin(garde.c); return false; }
+          surFin(garde.c);
+          garde.c = nouveauCollecteur(); num = 0;
+        }
+      }
+      var r = lignes(texte.slice(debut), fini);
+      return r === false && !garde.c.colonnes ? true : r;
+    };
+    analyse.courant = function () { return garde.c; };
+    return analyse;
+  }
+
+  /* Ce qu'est un fichier texte : son encodage (une marque d'ordre, sinon de
+     l'UTF-8 s'il en est, sinon du Windows-1252), puis sa sorte — page web,
+     XML 2003 d'Excel, autre XML, ou CSV. */
+  function sonderTexte(f) {
+    return lireOctets(f, 0, Math.min(f.size, 1048576)).then(function (b) {
+      var encodage = 'utf-8', saut = 0;
+      if (b[0] === 0xEF && b[1] === 0xBB && b[2] === 0xBF) saut = 3;
+      else if (b[0] === 0xFF && b[1] === 0xFE) { encodage = 'utf-16le'; saut = 2; }
+      else if (b[0] === 0xFE && b[1] === 0xFF) { encodage = 'utf-16be'; saut = 2; }
+      else {
+        try { new TextDecoder('utf-8', { fatal: true }).decode(b.subarray(0, b.length === f.size ? b.length : Math.max(0, b.length - 4))); }
+        catch (e) { encodage = 'windows-1252'; }
+      }
+      var tete = new TextDecoder(encodage).decode(b.subarray(saut, Math.min(b.length, saut + 65536))).replace(/^\ufeff/, '');
+      var debut = tete.replace(/^\s+/, '').slice(0, 4096).toLowerCase();
+      var sorte = 'csv';
+      if (debut.charAt(0) === '<') {
+        if (/urn:schemas-microsoft-com:office:spreadsheet/.test(tete) && /<(?:\w+:)?worksheet[\s>]/i.test(tete.slice(0, 65536))) sorte = 'xml2003';
+        else if (/<html|<table|<!doctype html|<body/.test(debut) || /<table[\s>]/i.test(tete)) sorte = 'html';
+        else sorte = 'xml';
+      }
+      return { encodage: encodage, saut: saut, tete: tete, sorte: sorte };
+    });
+  }
+  function lireTexte(f, toutes, sonde) {
     progres(0.02, 'Lecture du fichier…');
-    return lireOctets(f, 0, Math.min(f.size, 1048576)).then(function (debut) {
-      var encodage = 'utf-8';
-      try { new TextDecoder('utf-8', { fatal: true }).decode(debut.subarray(0, debut.length === f.size ? debut.length : Math.max(0, debut.length - 4))); }
-      catch (e) { encodage = 'windows-1252'; }
-      var tete = new TextDecoder(encodage).decode(debut).replace(/^\ufeff/, '').split(/\r\n|\n|\r/).slice(0, P.lignesScan);
-      var nCles = P.cles.map(norm), sep = null, meilleur = -1;
-      [';', ',', '\t', '|'].forEach(function (s) {
-        var score = Math.max.apply(null, tete.map(function (l) {
-          var ns = l.split(s).map(function (x) { return norm(x.replace(/^"|"$/g, '')); });
-          return nCles.filter(function (k) { return ns.indexOf(k) !== -1; }).length * 1000 + Math.min(999, ns.length);
-        }));
-        if (score > meilleur) { meilleur = score; sep = s; }
-      });
-      var c = collecteur(toutes), premier = true;
-      var analyse = analyseurCsv(sep, function (num, l) { return c.ligne(num, l); });
-      return lireFlux(f.stream(), encodage, function (texte, fini) {
+    if (sonde.sorte === 'xml') throw erreur('Ce fichier est du XML, mais pas un classeur Excel que la fenêtre connaisse. Il faut l\u2019export SEE en .xlsx ou en .csv.');
+    function lecture(encodage, strict) {
+      var c = null, fin = null, nouveau = function () { return collecteur(toutes); };
+      var analyse, premier = true;
+      var retenir = function (x) { if (!fin || (x.colonnes && !fin.colonnes) || (!fin.colonnes && x.meilleur.portes > fin.meilleur.portes)) fin = x; };
+      if (sonde.sorte === 'html') { c = nouveau(); analyse = analyseurHtml(c); }
+      else if (sonde.sorte === 'xml2003') analyse = analyseurXml2003(nouveau, retenir);
+      else {
+        var lignes = sonde.tete.split(/\r\n|\n|\r/).slice(0, P.lignesScan + 1), nCles = P.cles.map(norm), sep = ';', meilleur = -1;
+        [';', ',', '\t', '|'].forEach(function (s) {
+          var score = Math.max.apply(null, lignes.map(function (l) {
+            var ns = l.split(s).map(function (x) { return norm(x.replace(/^="?|"$/g, '')); });
+            return nCles.filter(function (k) { return ns.indexOf(k) !== -1; }).length * 1000 + Math.min(999, ns.length);
+          }));
+          if (score > meilleur) { meilleur = score; sep = s; }
+        });
+        c = nouveau();
+        analyse = analyseurCsv(sep, function (num, l) { return c.ligne(num, l); });
+      }
+      var flux = f.slice(sonde.saut).stream();
+      return lireFlux(flux, encodage, function (texte, fini) {
         if (premier) { texte = texte.replace(/^\ufeff/, ''); premier = false; }
         return analyse(texte, fini);
-      }, function (n) { progres(0.05 + 0.9 * n / (f.size || 1)); }).then(function () {
-        if (c.colonnes) { c.trouve = true; c.onglet = f.name; return c; }
-        c.meilleur.onglet = f.name;
-        return { trouve: false, meilleur: c.meilleur, onglets: [f.name] };
+      }, function (n) { progres(0.05 + 0.9 * n / (f.size || 1)); }, null, strict).then(function () {
+        if (sonde.sorte === 'xml2003') retenir(analyse.courant());
+        var r = sonde.sorte === 'xml2003' ? (fin && fin.colonnes ? fin : null) : c;
+        if (sonde.sorte === 'xml2003' && !r) {
+          var dernier = fin;
+          return { trouve: false, meilleur: dernier ? dernier.meilleur : { portes: 0 }, onglets: [f.name] };
+        }
+        if (r.colonnes) { r.trouve = true; r.onglet = f.name; return r; }
+        r.meilleur.onglet = f.name;
+        return { trouve: false, meilleur: r.meilleur, onglets: [f.name] };
       });
-    });
+    }
+    /* De l'UTF-8 qui n'en est plus, loin dans le fichier : on relit en
+       Windows-1252 plutôt que d'écrire des « � ». */
+    if (sonde.encodage === 'utf-8') {
+      return lecture('utf-8', true).catch(function (e) {
+        if (e && e.pasUtf8) { progres(0.02, 'Lecture du fichier (accents Windows)…'); return lecture('windows-1252', false); }
+        throw e;
+      });
+    }
+    return lecture(sonde.encodage, false);
   }
 
   // ------------------------------------------------------------ envoi au classeur
   function appeler(nom, args) {
     return new Promise(function (ok, ko) {
       var r = google.script.run.withSuccessHandler(ok).withFailureHandler(function (e) {
-        ko(erreur(e && e.message ? e.message : String(e)));
+        var x = erreur(e && e.message ? e.message : String(e));
+        x.duServeur = true;
+        ko(x);
       });
-      r[nom].apply(r, args);
+      r[nom].apply(r, [P.jeton].concat(args));
     });
   }
-  function envoyer(contrat, entete, lignes) {
+  function envoyer(contrat, entete, lignes, etat) {
     var total = lignes.length + 1, feuille = null;
     progres(0, 'Préparation de l\u2019onglet…');
-    return appeler('importSecondeBaseDebut', [contrat]).then(function (d) {
+    return appeler('importSecondeBaseDebut', [contrat, entete.length, total]).then(function (d) {
       feuille = d.feuille;
       var i = -1, envoyees = 0;
       function lot() {
         if (i >= lignes.length) return null;
-        var paquet = [], taille = 0, premiere = i + 2;
+        var paquet = [], taille = 0, premiere = i + 2, donnees = 0;
         while (i < lignes.length && paquet.length < P.maxLignesLot && taille < 900000) {
           var l = i < 0 ? entete : lignes[i];
+          if (i >= 0) donnees++;
           paquet.push(l);
           for (var j = 0; j < l.length; j++) taille += l[j].length + 3;
           i++;
         }
         return appeler('importSecondeBaseLot', [feuille, premiere, paquet]).then(function () {
-          envoyees += paquet.length;
-          progres(envoyees / total, 'Envoi au classeur : ' + nb(envoyees) + ' lignes sur ' + nb(total) + '…');
+          envoyees += donnees;
+          progres(envoyees / lignes.length, 'Envoi au classeur : ' + nb(envoyees) + ' lignes sur ' + nb(lignes.length) + '…');
           return lot();
         });
       }
       return lot();
     }).then(function () {
       progres(1, 'Mise en place de l\u2019onglet…');
+      etat.fin = true;
       return appeler('importSecondeBaseFin', [feuille, contrat, total]);
     }).catch(function (e) {
-      if (feuille) appeler('importSecondeBaseAbandon', [feuille]).catch(function () {});
+      if (feuille && !etat.fin) appeler('importSecondeBaseAbandon', [feuille]).catch(function () {});
       throw e;
     });
   }
 
   // ------------------------------------------------------------ la fenêtre
   function contratChoisi() { return $('contrat').value; }
+  function cibleChoisie() { return P.contrats.filter(function (x) { return x.id === contratChoisi(); })[0] || null; }
   function majCible() {
-    var c = P.contrats.filter(function (x) { return x.id === contratChoisi(); })[0];
-    $('cible').innerHTML = c ? 'Onglet ' + (c.existe ? 'remplacé' : 'créé') + ' : <b>« ' + ech(c.onglet) + ' »</b>' +
+    var c = cibleChoisie();
+    $('cible').innerHTML = c ? (c.existe ? 'Remplacera l\u2019onglet' : 'Créera l\u2019onglet') + ' <b>« ' + ech(c.onglet) + ' »</b>' +
       (c.existe ? ' — l\u2019ancien ne s\u2019en va qu\u2019une fois tout reçu.' : '.') : '';
   }
   function poserFichier(f) {
@@ -4000,57 +4319,80 @@ function scriptImportSecondeBase_(P) {
   function sorteDuFichier(f) {
     return lireOctets(f, 0, 8).then(function (b) {
       if (b[0] === 0x50 && b[1] === 0x4b) return 'zip';
-      if (b[0] === 0xD0 && b[1] === 0xCF && b[2] === 0x11 && b[3] === 0xE0) return 'xls';
+      if (b[0] === 0xD0 && b[1] === 0xCF && b[2] === 0x11 && b[3] === 0xE0) return /\.xls[xmb]$/i.test(f.name) ? 'protege' : 'xls';
       return 'texte';
     });
   }
+  function messageDErreur(e, etat) {
+    var c = cibleChoisie(), onglet = c ? c.onglet : P.base, texte = e && e.message ? e.message : String(e);
+    if (e && e.name === 'TypeError' && /compress|decompress|deflate/i.test(texte)) return ABIME + ' Rien n\u2019a été remplacé dans le classeur.';
+    if (/PERMISSION_DENIED|reading from storage|ScriptError.*autoris|authoriz/i.test(texte)) {
+      return 'Google refuse l\u2019appel : plusieurs comptes Google sont sans doute ouverts dans ce navigateur, ce qu\u2019Apps Script ne supporte pas. ' +
+        'Ouvrir le classeur dans une fenêtre où seul le compte du classeur est connecté (ou une fenêtre de navigation privée), puis relancer.';
+    }
+    var t = e && e.pourLecteur ? texte : 'Erreur inattendue : ' + texte;
+    /* Après l'appel de fin, la base a pu être échangée — sauf pour ces refus,
+       qui arrivent avant tout échange. */
+    if (etat.fin && !/Import incomplet|a disparu|non reconnu|Contrat introuvable|Geste refusé/.test(texte)) {
+      return t + ' L\u2019import est peut-être allé au bout : regarder l\u2019onglet « ' + onglet + ' » (ou menu Suivi FWD → Diagnostic) avant de relancer.';
+    }
+    if (etat.fin) return t + ' L\u2019ancien onglet « ' + onglet + ' » est intact.';
+    if (e && e.duServeur && !/limite de Google Sheets|Import incomplet/.test(texte)) t += ' Relancer l\u2019import ; si ça recommence : menu Suivi FWD → Diagnostic.';
+    return t + (/Rien n.(a été|est) remplacé|intact/.test(t) ? '' : ' Rien n\u2019a été remplacé dans le classeur.');
+  }
   function importer() {
     if (!fichier || enCours) return;
-    var toutes = $('toutes').checked, f = fichier, contrat = contratChoisi();
+    var toutes = $('toutes').checked, f = fichier, contrat = contratChoisi(), etat = { fin: false }, c0 = cibleChoisie();
     enCours = true;
-    $('importer').disabled = true; $('choisir').disabled = true; $('contrat').disabled = true; $('toutes').disabled = true;
+    $('importer').disabled = true; $('choisir').disabled = true; $('contrat').disabled = true; $('toutes').disabled = true; $('fermer').disabled = true;
+    $('consigne').hidden = false;
     dire('');
     var debut = Date.now();
     sorteDuFichier(f).then(function (sorte) {
+      var onglet = c0 ? c0.onglet : P.base + ' ' + contrat;
+      if (sorte === 'protege') throw erreur('Ce fichier Excel est protégé (mot de passe ou étiquette de confidentialité) : la fenêtre ne peut pas le lire, ' +
+        'Google Sheets non plus. Demander l\u2019export SEE sans protection, ou en .csv.');
       if (sorte === 'xls') throw erreur('C\u2019est un ancien fichier Excel (.xls), que la fenêtre ne sait pas lire. Il faut l\u2019export en .xlsx ou en .csv — ' +
-        'ou, dans le classeur : Fichier → Importer → ce fichier → « Insérer une nouvelle feuille », puis renommer l\u2019onglet.');
+        'ou, dans le classeur : Fichier → Importer → ce fichier → « Insérer de nouvelles feuilles » (surtout pas « Remplacer la feuille de calcul » : ' +
+        'elle remplace tout le classeur), puis supprimer l\u2019ancien onglet « ' + onglet + ' » et donner ce nom au nouveau.');
       if (sorte === 'zip') {
         if (typeof DecompressionStream !== 'function') throw erreur('Ce navigateur est trop ancien pour décompresser un .xlsx. Le mettre à jour, ou passer par un export .csv.');
         try { new DecompressionStream('deflate-raw'); } catch (e) { throw erreur('Ce navigateur est trop ancien pour décompresser un .xlsx. Le mettre à jour, ou passer par un export .csv.'); }
         return lireXlsx(f, toutes);
       }
-      return lireCsv(f, toutes);
+      return sonderTexte(f).then(function (s) { return lireTexte(f, toutes, s); });
     }).then(function (c) {
       if (!c.trouve) {
-        var m = c.meilleur;
+        var m = c.meilleur || { portes: 0 };
         throw erreur('Aucune ligne d\u2019en-tête avec ' + P.cles.join(', ') + ' dans les ' + P.lignesScan + ' premières lignes' +
           (c.onglets && c.onglets.length > 1 ? ' des onglets (' + c.onglets.join(', ') + ')' : '') + '. Est-ce bien l\u2019export ' + P.base + ' ?' +
-          (m && m.portes ? ' La ligne ' + m.ligne + ' de « ' + m.onglet + ' » en porte ' + m.portes + ' sur ' + P.cles.length +
-            ' : ' + m.noms.join(', ') + '.' : ''));
+          (m.portes ? ' La ligne ' + m.ligne + ' de « ' + m.onglet + ' » en porte ' + m.portes + ' sur ' + P.cles.length +
+            ' — il manque : ' + m.manquent.join(', ') + ' (intitulés lus : ' + m.noms.join(', ') + ').' : ''));
       }
-      if (!c.lignes.length) throw erreur('L\u2019en-tête est là (onglet « ' + c.onglet + ' »), mais aucune ligne dessous.');
-      var cellules = (c.lignes.length + 1) * c.entete.length;
-      if (cellules > 4000000) throw erreur(nb(c.lignes.length) + ' lignes × ' + c.entete.length + ' colonnes : trop pour le classeur. ' +
+      if (c.trop) throw erreur('Plus de ' + nb(P.maxCellulesToutes) + ' cellules avec toutes les colonnes : trop pour le classeur. ' +
         'Décocher « Garder aussi les autres colonnes » : seules ' + P.cles.join(', ') + ' iront.');
+      if (!c.lignes.length) throw erreur('L\u2019en-tête est là (« ' + c.onglet + ' »), mais aucune ligne dessous.');
+      if (c.formulesVides) throw erreur(nb(c.formulesVides) + ' ligne(s) ont une formule sans valeur calculée dans ' + P.cles.join(', ') + ' : le fichier ' +
+        'a été écrit par un programme qui ne calcule pas. Demander l\u2019export SEE en .csv, ou en .xlsx enregistré une fois par Excel.');
       var lu = (Date.now() - debut) / 1000;
-      progres(0, 'Fichier lu en ' + Math.round(lu) + ' s : ' + nb(c.lignes.length) + ' lignes, colonnes ' + c.entete.join(', ') + '.');
-      return envoyer(contrat, c.entete, c.lignes).then(function (r) {
+      dire('Fichier lu en ' + Math.max(1, Math.round(lu)) + ' s : <b>' + nb(c.lignes.length) + ' lignes</b>, colonnes ' + ech(c.entete.join(', ')) + '.');
+      return envoyer(contrat, c.entete, c.lignes, etat).then(function (r) {
         $('barre').hidden = true;
         $('progres').textContent = '';
         dire('✓ <b>' + nb(r.lignes) + ' lignes</b> dans l\u2019onglet <b>« ' + ech(r.onglet) + ' »</b> (' + r.colonnes + ' colonne' + (r.colonnes > 1 ? 's' : '') + ').' +
-          (r.etat === 'ok' ? ' La comparaison est prête : rouvrir le tableau de bord (menu Suivi FWD → Ouvrir le tableau de bord).'
-            : ' Mais la page ne la lit pas (' + ech(r.etat) + ') : menu Suivi FWD → Diagnostic.'), r.etat === 'ok' ? 'ok' : 'erreur');
+          (r.etat === 'ok' || r.etat === 'non relu' ? ' La comparaison est prête : rouvrir le tableau de bord (menu Suivi FWD → Ouvrir le tableau de bord).'
+            : ' Mais la page ne la lit pas (' + ech(r.etat) + ') : menu Suivi FWD → Diagnostic.'), r.etat === 'ok' || r.etat === 'non relu' ? 'ok' : 'erreur');
         $('fermer').classList.add('principal');
         $('importer').classList.remove('principal');
       });
     }).catch(function (e) {
       $('barre').hidden = true;
       $('progres').textContent = '';
-      dire(ech(e && e.pourLecteur ? e.message : 'Erreur inattendue : ' + (e && e.message ? e.message : e)) +
-        ' Rien n\u2019a été remplacé dans le classeur.', 'erreur');
+      dire(ech(messageDErreur(e, etat)), 'erreur');
     }).then(function () {
       enCours = false;
-      $('choisir').disabled = false; $('contrat').disabled = false; $('toutes').disabled = false;
+      $('consigne').hidden = true;
+      $('choisir').disabled = false; $('contrat').disabled = false; $('toutes').disabled = false; $('fermer').disabled = false;
       $('importer').disabled = !fichier;
     });
   }
@@ -4074,5 +4416,5 @@ function scriptImportSecondeBase_(P) {
     if (!enCours && e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) poserFichier(e.dataTransfer.files[0]);
   });
   $('importer').addEventListener('click', importer);
-  $('fermer').addEventListener('click', function () { if (window.google && google.script && google.script.host) google.script.host.close(); });
+  $('fermer').addEventListener('click', function () { if (!enCours && window.google && google.script && google.script.host) google.script.host.close(); });
 }

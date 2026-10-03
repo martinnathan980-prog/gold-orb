@@ -753,8 +753,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
     JSON.stringify(parDefaut));
   verifier('aucune fonction de sauvegarde ni de propriété de document ne subsiste',
     typeof j.contexte.sauverJalons === 'undefined' && !/CLE_JALONS/.test(fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8')) &&
-    /* Les propriétés du document ne gardent que la version des données et les consultations (débrief 18). */
-    (fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8').match(/[gs]etProperty\(([A-Z_]+)/g) || []).every(x => /CLE_VERSION_DONNEES|CLE_CONSULTATIONS/.test(x)));
+    /* Les propriétés du document ne gardent que la version des données, les consultations (débrief 18)
+       et le jeton de la fenêtre d'import SEE (débrief 20). */
+    (fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8').match(/[gs]etProperty\(([A-Z_]+)/g) || []).every(x => /CLE_VERSION_DONNEES|CLE_CONSULTATIONS|CLE_JETON_IMPORT/.test(x)));
   configurer([
     { semaine: '2026-s8', texte: '  Revue de définition  ' },
     { semaine: '2026-S02', texte: '' },
@@ -1306,9 +1307,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('le diagnostic compte la seconde base : onglet, lignes, référence, ligne d\'en-têtes',
     /✓ Seconde base « SEE » : onglet « SEE », 2 ligne\(s\), référence NAME \+ SOL\. \+ Cust\.V \(ligne d'en-têtes : 3\)/.test(diagSEE), diagSEE);
   const diagSans = ctxPaquet.diagnostic();
-  verifier('sans onglet SEE, le diagnostic le dit, et dit le geste : un onglet « SEE », l\'extract en A1, ses colonnes',
+  verifier('sans onglet SEE, le diagnostic le dit, et dit le geste : le menu d\'import, ou un onglet « SEE », l\'extract en A1, ses colonnes',
     /– Seconde base « SEE » : aucun onglet « SEE » — pas de rapprochement\./.test(diagSans) &&
-    /→ un onglet nommé « SEE », l'extract collé en A1 tel quel, avec ses colonnes NAME, SOL\., Cust\.V\./.test(diagSans) &&
+    /→ menu Suivi FWD → Importer la base SEE \(sans ouvrir l'Excel\) ; ou un onglet nommé « SEE », l'extract collé en A1 tel quel, avec ses colonnes NAME, SOL\., Cust\.V\./.test(diagSans) &&
     /Tout est en place : Suivi FWD/.test(diagSans), diagSans);
   const seeVide = construire({ lignes: 10, feuilles: [new Feuille('SEE', [])], historique: false, sortie: 'apercu-see-vide.html' });
   fs.unlinkSync(path.join(__dirname, '..', 'apercu-see-vide.html'));

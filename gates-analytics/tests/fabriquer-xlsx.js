@@ -96,8 +96,10 @@ function lettres(n) { let s = ''; n++; while (n > 0) { const r = (n - 1) % 26; s
  *   noms), sansRef: true (ni r de ligne ni r de cellule), date1904,
  *   descripteur, zip64, cheminsAbsolus }.
  * Une cellule : chaîne, nombre, null, ou { n, fmt: 'date' | 'heure' |
- *   'zeros5' | '0.00' }, { str } (résultat de formule), { b }, { riche:
- *   [morceaux], phonetique }.
+ *   'zeros5' | 'zeros3' | '0.00' | 'pct' | 'pct2' | 'mille' | 'euro' | 'sci' },
+ *   { str } (résultat de formule), { f } (formule sans valeur calculée), { b },
+ *   { riche: [morceaux], phonetique }. Un onglet peut porter une `queue` :
+ *   du XML écrit après les lignes (liens, fusions…).
  */
 function xlsx(spec) {
   const px = spec.prefixe ? spec.prefixe + ':' : '';
@@ -105,7 +107,7 @@ function xlsx(spec) {
     : ' xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"';
   const chaines = [], index = new Map();
   const styles = [0], styleDe = {};
-  const FMT = { date: 14, heure: 20, zeros5: 164, '0.00': 2 };
+  const FMT = { date: 14, heure: 20, zeros5: 164, '0.00': 2, pct: 9, pct2: 10, mille: 3, euro: 165, sci: 11, zeros3: 166 };
   function style(fmt) {
     if (!fmt) return 0;
     if (styleDe[fmt] === undefined) { styleDe[fmt] = styles.length; styles.push(FMT[fmt]); }
@@ -117,7 +119,9 @@ function xlsx(spec) {
   }
   function cellule(v, ref) {
     const r = spec.sansRef ? '' : ' r="' + ref + '"';
-    if (v === null || v === undefined) return '';
+    /* Sans références, une cellule vide s'écrit quand même (<c/>) : sinon
+       les suivantes glisseraient d'une colonne. */
+    if (v === null || v === undefined) return spec.sansRef ? '<' + px + 'c/>' : '';
     if (typeof v === 'number') return '<' + px + 'c' + r + '><' + px + 'v>' + v + '</' + px + 'v></' + px + 'c>';
     if (typeof v === 'string') {
       if (spec.chaines === 'inline') return '<' + px + 'c' + r + ' t="inlineStr"><' + px + 'is><' + px + 't xml:space="preserve">' + echXml(v) + '</' + px + 't></' + px + 'is></' + px + 'c>';
@@ -130,6 +134,7 @@ function xlsx(spec) {
       const i = partagee('r:' + JSON.stringify(v), xml);
       return '<' + px + 'c' + r + ' t="s"><' + px + 'v>' + i + '</' + px + 'v></' + px + 'c>';
     }
+    if (v.f !== undefined) return '<' + px + 'c' + r + '><' + px + 'f>' + echXml(v.f) + '</' + px + 'f><' + px + 'v/></' + px + 'c>';
     if (v.str !== undefined) return '<' + px + 'c' + r + ' t="str"><' + px + 'f>CONCAT(A1)</' + px + 'f><' + px + 'v>' + echXml(v.str) + '</' + px + 'v></' + px + 'c>';
     if (v.b !== undefined) return '<' + px + 'c' + r + ' t="b"><' + px + 'v>' + (v.b ? 1 : 0) + '</' + px + 'v></' + px + 'c>';
     if (v.n !== undefined) return '<' + px + 'c' + r + ' s="' + style(v.fmt) + '"><' + px + 'v>' + v.n + '</' + px + 'v></' + px + 'c>';
@@ -141,11 +146,13 @@ function xlsx(spec) {
     o.lignes.forEach(function (l, i) {
       if (!l || !l.some(function (v) { return v !== null && v !== undefined && v !== ''; })) return;   // ligne vide : absente, comme Excel
       const r = spec.sansRef ? '' : ' r="' + (i + 1) + '" spans="1:' + l.length + '"';
-      lignes.push('<' + px + 'row' + r + '>' + l.map(function (v, j) { return v === '' ? '' : cellule(v, lettres(j) + (i + 1)); }).join('') + '</' + px + 'row>');
+      lignes.push('<' + px + 'row' + r + '>' + l.map(function (v, j) { return v === '' ? cellule(null, '') : cellule(v, lettres(j) + (i + 1)); }).join('') + '</' + px + 'row>');
     });
+    const largeur = o.lignes.reduce(function (m, l) { return Math.max(m, l ? l.length : 0); }, 1);
+    const dimension = 'A1:' + lettres(largeur - 1) + Math.max(1, o.lignes.length);
     feuilles.push('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<' + px + 'worksheet' + nsP +
-      ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><' + px + 'sheetPr/><' + px + 'dimension ref="A1"/><' + px + 'sheetViews><' + px + 'sheetView workbookViewId="0"/></' + px + 'sheetViews>' +
-      '<' + px + 'cols><' + px + 'col min="1" max="3" width="12"/></' + px + 'cols><' + px + 'sheetData>' + lignes.join('') + '</' + px + 'sheetData>' +
+      ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><' + px + 'sheetPr/><' + px + 'dimension ref="' + dimension + '"/><' + px + 'sheetViews><' + px + 'sheetView workbookViewId="0"/></' + px + 'sheetViews>' +
+      '<' + px + 'cols><' + px + 'col min="1" max="3" width="12"/></' + px + 'cols><' + px + 'sheetData>' + lignes.join('') + '</' + px + 'sheetData>' + (o.queue || '') +
       '<' + px + 'rowBreaks count="0"/></' + px + 'worksheet>');
   });
   const chemin = function (c) { return spec.cheminsAbsolus ? '/xl/' + c : c; };
@@ -168,7 +175,10 @@ function xlsx(spec) {
   if (spec.chaines !== 'inline') rels.push('<Relationship Id="rId' + (n + 2) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="' + chemin('sharedStrings.xml') + '"/>');
   parties.push({ nom: 'xl/_rels/workbook.xml.rels', donnees: '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + rels.join('') + '</Relationships>' });
   feuilles.forEach(function (x, k) { parties.push({ nom: 'xl/worksheets/sheet' + (k + 1) + '.xml', donnees: x }); });
-  parties.push({ nom: 'xl/styles.xml', donnees: '<?xml version="1.0" encoding="UTF-8"?><' + px + 'styleSheet' + nsP + '><' + px + 'numFmts count="1"><' + px + 'numFmt numFmtId="164" formatCode="00000"/></' + px + 'numFmts>' +
+  parties.push({ nom: 'xl/styles.xml', donnees: '<?xml version="1.0" encoding="UTF-8"?><' + px + 'styleSheet' + nsP + '><' + px + 'numFmts count="3"><' + px + 'numFmt numFmtId="164" formatCode="00000"/><' + px + 'numFmt numFmtId="165" formatCode="#,##0.00\\ &quot;€&quot;"/><' + px + 'numFmt numFmtId="166" formatCode="000"/></' + px + 'numFmts>' +
+    '<' + px + 'fonts count="1"><' + px + 'font><' + px + 'sz val="11"/><' + px + 'name val="Calibri"/></' + px + 'font></' + px + 'fonts>' +
+    '<' + px + 'fills count="2"><' + px + 'fill><' + px + 'patternFill patternType="none"/></' + px + 'fill><' + px + 'fill><' + px + 'patternFill patternType="gray125"/></' + px + 'fill></' + px + 'fills>' +
+    '<' + px + 'borders count="1"><' + px + 'border><' + px + 'left/><' + px + 'right/><' + px + 'top/><' + px + 'bottom/><' + px + 'diagonal/></' + px + 'border></' + px + 'borders>' +
     '<' + px + 'cellStyleXfs count="1"><' + px + 'xf numFmtId="0"/></' + px + 'cellStyleXfs><' + px + 'cellXfs count="' + styles.length + '">' +
     styles.map(function (id) { return '<' + px + 'xf numFmtId="' + id + '" fontId="0" applyNumberFormat="1"><' + px + 'alignment wrapText="1"/></' + px + 'xf>'; }).join('') +
     '</' + px + 'cellXfs></' + px + 'styleSheet>' });

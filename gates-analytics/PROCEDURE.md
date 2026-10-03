@@ -772,21 +772,52 @@ comme `Code` le cherche : la première des huit premières lignes qui porte
 NAME, SOL. et Cust.V, sans tenir compte de la casse ni des accents, onglet
 par onglet, les visibles d'abord. **Seules cette ligne et ces trois colonnes
 vont au classeur** (avec `ESSENTIELLES`, si on en a déclaré) ; les lignes
-vides sont laissées. Les nombres se lisent comme Excel les affiche : un
-format `000` garde ses zéros de tête, une date se lit jj/mm/aaaa. Un `.csv`
-aussi (séparateur trouvé seul, guillemets, UTF-8 ou Windows-1252) ; un ancien
-`.xls` ou un `.xlsb`, la fenêtre dit qu'elle ne les lit pas et donne l'autre
-chemin.
+vides sont laissées ; deux colonnes au même intitulé, la première l'emporte
+(comme dans `lireSecondeBase`). Les nombres se lisent comme Excel les
+affiche, formats intégrés et personnalisés : `000` garde ses zéros de tête,
+`0.00` ses décimales (virgule), `0 %`, les milliers, l'écriture
+scientifique, une monnaie entre guillemets, une date jj/mm/aaaa (classeurs
+1900 et 1904), une heure hh:mm. Une formule sans valeur calculée dans NAME,
+SOL. ou Cust.V (fichier écrit par un programme qui ne calcule pas) est
+refusée, plutôt que lue vide. Un fichier coupé ou abîmé est refusé aussi : la
+taille décompressée de chaque partie est vérifiée.
 
-L'envoi se fait par lots, dans un onglet temporaire, `SEE HDK (import)` ; une
-fois toutes les lignes reçues — et pas avant — il prend la place et le nom de
-la base du contrat, à sa position, sa grille resserrée sur les données. Une
-panne au milieu, des lignes manquantes : l'onglet temporaire est retiré,
-l'ancienne base reste. Chaque fonction de l'import passe la garde des gestes
-qui écrivent (§ 2) : la page du tableau de bord ne peut pas s'en servir, et
-un lot ne s'écrit jamais ailleurs que dans l'onglet temporaire d'un import. La case « Garder aussi les autres colonnes » envoie tout l'extract —
-seulement pour le regarder dans le tableau SEE, au plus quatre millions de
-cellules. Le fichier, lui, ne quitte jamais le poste.
+Les fichiers texte : `.csv` et `.txt` (séparateur trouvé seul, guillemets,
+`="001"` ; encodage par la marque d'ordre, UTF-16, UTF-8 strict, et reprise
+en Windows-1252 si un accent mal codé apparaît loin dans le fichier), et les
+faux « `.xls` » de certains outils — une page web (tableau HTML, `colspan`
+compris) ou du XML Excel 2003 (`ss:Index`, `MergeAcross`). Un vrai ancien
+`.xls`, un `.xlsb` (aucun autre chemin pour lui que l'export en `.xlsx` ou
+`.csv`), un fichier protégé : la fenêtre dit qu'elle ne les lit pas et donne
+le chemin qui reste.
+
+L'envoi se fait par lots (vingt mille lignes, moins de 900 000 caractères)
+dans un onglet temporaire, `SEE HDK (import xxxxxx)`, créé en bas à la taille
+exacte de l'extract. Avant de le créer, le script compte les cellules du
+classeur : Google Sheets s'arrête à **dix millions, vides comprises**, et un
+import qui les dépasserait est refusé d'emblée, avec les deux nombres et quoi
+faire (décocher « Garder aussi les autres colonnes », supprimer des onglets).
+Chaque cellule est posée en texte (une valeur « =… » ne devient pas une
+formule, « 01 » reste « 01 »), coupée à 50 000 caractères comme Sheets
+l'exige. Une fois toutes les lignes reçues — le nombre est vérifié, et pas
+avant — l'ancienne base est renommée `SEE HDK (ancien xxxxxx)`, l'onglet
+temporaire prend son nom et sa position, puis l'ancienne est supprimée ; le
+paquet gardé en cache est oublié (§ 13 quinquies). Une panne au milieu, des lignes
+manquantes : l'onglet temporaire est retiré, l'ancienne base reste intacte.
+Une fenêtre fermée en plein envoi laisse l'onglet temporaire : le Diagnostic
+le signale, et le prochain import du même contrat le retire. Le début et la
+fin d'un import se font sous le verrou du document ; deux imports du même
+contrat lancés en même temps ne se mêlent jamais : le second retire l'onglet
+temporaire du premier, qui s'arrête net (« a disparu »).
+
+Chaque fonction de l'import passe la garde des gestes qui écrivent (§ 2) :
+la fenêtre reçoit à l'ouverture un **jeton** à usage de six heures, gardé
+dans les propriétés du document, que chaque appel présente ; sans lui, la
+garde ordinaire s'applique. La page du tableau de bord ne peut donc pas s'en
+servir, et un lot ne s'écrit jamais ailleurs que dans l'onglet temporaire
+d'un import. La case « Garder aussi les autres colonnes » envoie tout
+l'extract — seulement pour le regarder dans le tableau SEE, au plus quatre
+millions de cellules. Le fichier, lui, ne quitte jamais le poste.
 
 **Ce que le rapprochement demande.** Dans SEE, un plan n'a pas d'état : soit
 il y est, soit il n'y est pas. **S'il y est, c'est qu'il a été créé** — donc
@@ -890,13 +921,17 @@ mémorisé.
 
 La démonstration seule en montre un exemple aux écarts délibérés.
 
-**Brancher SEE, en trois gestes.** Dans le classeur, un onglet nommé
-**`SEE`** (le nom configuré, `NOM`) ; l'extract « Nommage WD BFLOW » ouvert
-dans Excel, **Ctrl+A, Ctrl+C** ; dans l'onglet, **A1, Ctrl+V**, tel quel —
-titre en ligne 1, en-têtes en ligne 3, sans rien retoucher. Rouvrir le tableau
-de bord : les deux cercles sont sous le tableau, et l'interrupteur **GATES |
-SEE** apparaît. Rien à configurer : la configuration de `Code.gs` décrit déjà
-SEE tel qu'il a été vu, et l'onglet est reconnu par son nom.
+**Brancher SEE, en trois gestes.** Dans le classeur, menu **Suivi FWD →
+Importer la base SEE (fichier Excel ou CSV)…** ; choisir le contrat et
+l'export « Nommage WD BFLOW » tel que téléchargé, sans l'ouvrir ;
+**Importer** — l'onglet `SEE <contrat>` est créé ou remplacé. Rouvrir le
+tableau de bord : les deux cercles sont sous le tableau, et l'interrupteur
+**GATES | SEE** apparaît. Pour un petit extract, le collage marche aussi : un
+onglet `SEE HDK` (ou `SEE` avec un seul contrat), l'extract ouvert dans
+Excel, **Ctrl+A, Ctrl+C**, dans l'onglet **A1, Ctrl+V**, tel quel — titre en
+ligne 1, en-têtes en ligne 3. Rien à configurer : la configuration de
+`Code.gs` décrit déjà SEE tel qu'il a été vu, et l'onglet est reconnu par
+son nom.
 
 ```js
 RAPPROCHEMENT: {

@@ -55,6 +55,9 @@ livraison d'avant suffit à laisser la page blanche.
    donne avec les fichiers. (Quand je ne corrige que `Code`, la livraison ne
    change pas : on ne recolle que `Code`.) Suivi FWD → **Diagnostic** le confirme :
    « ✓ Livraison xxxxxxx : Code, Index, Styles et Javascript concordent ».
+4. **Un nouvel article du menu Suivi FWD** n'apparaît qu'une fois le
+   classeur rechargé : revenir à l'onglet du classeur, **F5**, attendre dix
+   secondes.
 
 Si un fichier ne concorde pas, **la page le dit elle-même**, en tête : « Les
 fichiers du tableau de bord ne concordent pas. Index ne vient pas de la même
@@ -190,25 +193,45 @@ pour le contrat de l'onglet `HDK`, **`SEE THS`** pour `THS`. Le plus simple —
 et le seul chemin quand l'Excel de SEE est **trop lourd pour s'ouvrir** :
 
 1. Dans le classeur, menu **Suivi FWD → Importer la base SEE (fichier Excel
-   ou CSV)…**
-2. Choisir le **contrat** (la liste n'apparaît que s'il y en a plusieurs),
-   puis **Choisir le fichier…** — l'export « Nommage WD BFLOW » **de ce
-   contrat**, tel qu'il a été téléchargé, **sans l'ouvrir dans Excel**. On
-   peut aussi le glisser dans la fenêtre.
-3. **Importer.** La fenêtre lit le fichier sur le poste — il ne part nulle
-   part — et n'envoie au classeur que la ligne d'en-tête et les trois
-   colonnes de la comparaison, **NAME**, **SOL.** et **Cust.V**. L'onglet
-   `SEE HDK` est créé, ou remplacé : l'ancien ne s'en va qu'une fois tout
-   reçu, un import interrompu le laisse en place. Quelques secondes pour la
-   lecture, puis l'envoi par paquets ; la fenêtre dit où elle en est.
+   ou CSV)…** (absent après avoir recollé `Code` : **F5** sur le classeur).
+2. Choisir le **contrat** (la liste n'apparaît que s'il y en a plusieurs ;
+   elle propose celui de l'onglet affiché), puis **Choisir le fichier…** —
+   l'export « Nommage WD BFLOW » **de ce contrat**, tel qu'il a été
+   téléchargé, **sans l'ouvrir dans Excel**. On peut aussi le glisser dans
+   la fenêtre. Sous la liste, la fenêtre dit l'onglet qu'elle va remplir :
+   « Remplacera l'onglet « SEE HDK » » ou « Créera l'onglet « SEE HDK » ».
+3. **Importer**, puis **ne pas fermer la fenêtre avant la fin** (elle le
+   rappelle). Elle lit le fichier sur le poste — il ne part nulle part — et
+   n'envoie au classeur que la ligne d'en-tête et les trois colonnes de la
+   comparaison, **NAME**, **SOL.** et **Cust.V**. L'onglet `SEE HDK` est
+   créé, ou remplacé : l'ancien ne s'en va qu'une fois tout reçu et vérifié,
+   un import interrompu le laisse intact. Quelques secondes pour la lecture
+   (une dizaine pour 120 000 lignes), puis l'envoi par paquets ; la fenêtre
+   dit où elle en est, puis « ✓ N lignes dans l'onglet « SEE HDK » ».
 4. Rouvrir le tableau de bord : chaque contrat se compare à sa base.
+
+Même avec **un seul contrat**, l'import crée `SEE HDK` (le nom du
+contrat) : un `SEE` tout court déjà là, lui, est remplacé sous son nom.
 
 La case **« Garder aussi les autres colonnes »** ne sert qu'à regarder tout
 l'extract dans le tableau SEE de la page : la comparaison n'en a pas besoin,
-et c'est bien plus lourd. La fenêtre lit les `.xlsx` et les `.csv` ; un
-ancien `.xls`, elle le dit — alors, dans le classeur, **Fichier → Importer →
-le fichier → « Insérer une nouvelle feuille »**, puis renommer l'onglet
-`SEE HDK`.
+et c'est bien plus lourd (au-delà de quatre millions de cellules, la
+fenêtre refuse et dit de la décocher).
+
+**Ce que la fenêtre lit** : les `.xlsx` et `.xlsm`, les `.csv` et `.txt`
+(séparateur, accents et zéros de tête compris), et les faux « `.xls` » que
+sortent certains outils (une page web ou du XML Excel 2003 renommés). Elle
+ne lit pas un **vrai ancien `.xls`**, un `.xlsb`, ni un fichier **protégé**
+(mot de passe, étiquette de confidentialité) : elle le dit. Pour un vrai
+`.xls`, dans le classeur : **Fichier → Importer → le fichier → « Insérer de
+nouvelles feuilles »** — ⚠️ surtout pas « Remplacer la feuille de calcul »,
+qui remplace **tout le classeur** —, puis supprimer l'ancien onglet
+`SEE HDK` et donner ce nom au nouveau. Pour un fichier protégé : demander
+l'export sans protection, ou en `.csv`.
+
+Si la fenêtre a été fermée en plein envoi, il reste un onglet
+`SEE HDK (import …)` : le **Diagnostic** le signale, et le prochain import
+du même contrat le retire tout seul (on peut aussi le supprimer à la main).
 
 **À la main, pour un petit extract** : **+** pour un nouvel onglet nommé
 `SEE HDK` (`SEE - HDK` ou `SEE_HDK` marchent aussi), ouvrir l'extract dans
@@ -258,7 +281,7 @@ classeur. Dans l'ordre d'efficacité :
    de volet figé, et surtout aucune formule d'un autre onglet qui pointe dessus :
    elle se recalculerait à chaque collage.
 6. **Si l'export existe en `.csv`** — onglet `SEE` sélectionné, Fichier →
-   Importer → le fichier, puis **« Remplacer la feuille actuelle »**. Sheets
+   Importer → le fichier, puis **« Remplacer la feuille active »**. Sheets
    lit un fichier bien plus vite qu'il n'avale un collage. ⚠️ Surtout pas
    « Remplacer la feuille de calcul » : celle-là remplace **tout le
    classeur**, contrats et historique compris.
@@ -400,7 +423,12 @@ onglet, et ce qui manque. Puis :
 | Pas de courbe, pas de fin estimée | Aucun relevé archivé | Suivi FWD → Archiver le relevé de cette semaine |
 | Pas de section « Comparaison » | Pas d'onglet `SEE <contrat>` (ou `SEE` pour un seul contrat), ou illisible | Diagnostic, ligne « Seconde base » : elle dit s'il manque l'onglet, s'il est vide, ou si les en-têtes NAME / SOL. / Cust.V ne s'y trouvent pas |
 | La fenêtre d'import dit « Aucune ligne d'en-tête avec NAME, SOL., Cust.V » | Ce n'est pas l'export SEE, ou SEE a renommé une de ces colonnes (la fenêtre cite la ligne la plus proche) | Vérifier le fichier ; si SEE a changé ses intitulés, me les envoyer (les intitulés seulement, pas les données) |
-| La fenêtre d'import dit « ancien fichier Excel (.xls) » ou « navigateur trop ancien » | Un format qu'elle ne lit pas, ou un Chrome / Edge d'avant 2022 | Demander l'export en `.xlsx` ou `.csv` ; ou Fichier → Importer dans le classeur ; ou mettre le navigateur à jour |
+| La fenêtre d'import dit « ancien fichier Excel (.xls) » ou « navigateur trop ancien » | Un format qu'elle ne lit pas, ou un Chrome / Edge d'avant 2022 | Demander l'export en `.xlsx` ou `.csv` ; ou Fichier → Importer → « Insérer de nouvelles feuilles » (§ 5) ; ou mettre le navigateur à jour |
+| La fenêtre d'import dit « Ce fichier Excel est protégé » | Mot de passe ou étiquette de confidentialité sur l'export : ni la fenêtre ni Sheets ne peuvent le lire | Demander l'export SEE sans protection, ou en `.csv` |
+| La fenêtre d'import dit « Google refuse l'appel : plusieurs comptes Google… » | Plusieurs comptes Google connectés dans le même Chrome : Apps Script se trompe de compte | Ouvrir le classeur dans une fenêtre où seul le compte du classeur est connecté (ou une fenêtre de navigation privée), puis relancer |
+| La fenêtre d'import dit « Le classeur dépasserait la limite de Google Sheets : 10 millions de cellules » | Un classeur Google ne dépasse pas dix millions de cellules, **vides comprises** ; la fenêtre compte avant d'envoyer, rien n'est créé | Décocher « Garder aussi les autres colonnes » ; sinon supprimer les onglets qui ne servent plus (vieux essais, copies), ou les lignes et colonnes vides en bas et à droite des gros onglets |
+| La fenêtre d'import dit « Le fichier est abîmé » | Téléchargement coupé, ou fichier enregistré à moitié | Le retélécharger depuis SEE |
+| Un onglet `SEE HDK (import …)` en plus | La fenêtre d'import a été fermée (ou la connexion coupée) en plein envoi ; l'ancien `SEE HDK` est intact | Le supprimer, ou relancer l'import : il le retire. Le Diagnostic le signale |
 | Un contrat en trop ou en moins | Un onglet visible en trop, ou masqué | Chaque onglet visible qui porte un export (Référence UD, ATA…) est un contrat ; un onglet « Notes » à côté est écarté tout seul (le Diagnostic le dit) |
 | « N lignes répètent une référence déjà vue » au-dessus de la barre | L'export a été collé par-dessus l'ancien sans le vider : des lignes de l'ancien restent en dessous | Ctrl+A, Suppr, puis recoller l'export en A1 |
 | Après avoir renommé un onglet de contrat, la courbe repart d'un seul relevé | L'historique porte encore l'ancien nom (`Historique_FWD_Feuille 1`) | Le Diagnostic le signale : renommer cet onglet d'historique `Historique_FWD_<nom du contrat>` |
