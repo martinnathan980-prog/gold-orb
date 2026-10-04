@@ -6,7 +6,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '4bf7a55';
+  var EDITION = '9dc320b';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -3156,6 +3156,7 @@
        reconnue : le bloc le dit au lieu de chercher un titre qui n'existe pas. */
     if (!dim || !TITRE_DIM[dim]) {
       $('titre-groupe').textContent = motSuivi();
+      $('dim-critique').hidden = true;
       $('indice-dim').textContent = '';
       $('compte-groupes').textContent = '';
       libellerFiltreGroupe(dim);
@@ -3266,7 +3267,13 @@
     }
 
     // « par groupe » ne parlait à personne : le titre nomme la dimension choisie.
-    $('titre-groupe').textContent = motSuivi() + ' par ' + TITRE_DIM[dim].replace(/ \(.*\)$/, '');
+    /* Débrief 20 : le mot de la dimension, à l'écran, c'est le menu qui suit
+       le titre ; le titre le garde en texte masqué, pour qu'un lecteur
+       d'écran entende la phrase entière, « Avancement FWD par ATA ». */
+    $('titre-groupe').innerHTML = ech(motSuivi()) + ' par \x3Cspan class="masque">' +
+      ech(TITRE_DIM[dim].replace(/ \(.*\)$/, '')) + '\x3C/span>';
+    $('dim-critique').hidden = false;
+    ajusterChoixDim();
     $('indice-dim').textContent = NOTE_DIM(dim);
     libellerFiltreGroupe(dim);
 
@@ -3465,6 +3472,26 @@
       return '\x3Coption value="' + d.cle + '">' + ech(d.titre) + '\x3C/option>';
     }).join('');
     $('dim-critique').value = vue.dimCritique;
+    ajusterChoixDim();
+  }
+
+  /* Le menu de la dimension est un mot du titre : sa largeur suit le mot
+     choisi, pas le plus long de la liste — sinon « par ATA » traînerait un
+     grand blanc avant son chevron. On mesure le texte dans la police du menu
+     (un canevas, sans rien ajouter à la page), plus la place du chevron ; le
+     max-width de la feuille de style coupe un nom trop long au bord. */
+  var mesureChoix = null;
+  function ajusterChoixDim() {
+    var sel = $('dim-critique'), o = sel.options[sel.selectedIndex];
+    if (!o) { sel.style.width = ''; return; }
+    try {
+      var cs = getComputedStyle(sel);
+      mesureChoix = mesureChoix || document.createElement('canvas').getContext('2d');
+      mesureChoix.font = cs.fontStyle + ' ' + cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+      var w = mesureChoix.measureText(o.text).width + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+      // 4 px de marge : le canevas ignore la taille optique de Newsreader.
+      sel.style.width = Math.ceil(w + 4) + 'px';
+    } catch (e) { sel.style.width = ''; }
   }
 
   /* ============================================================ TABLEAU */
@@ -4323,7 +4350,8 @@
             : r.fin ? '\x3Cspan class="v">fin ' + ech(r.fin) + '\x3C/span>' : '\x3Cspan class="doux">\u2014\x3C/span>')) + '\x3C/td>' +
         '\x3C/tr>';
     }).join('');
-    zone.innerHTML = '\x3Cdiv class="ensemble-tete">\x3Ch2>Vue d’ensemble des contrats\x3C/h2>' +
+    zone.innerHTML = '\x3Cp class="surtitre" aria-hidden="true">Tous les contrats\x3C/p>' +
+      '\x3Cdiv class="ensemble-tete">\x3Ch2>Vue d’ensemble des contrats\x3C/h2>' +
       '\x3Cspan class="indice">tout le contrat, ' + (INDICATEUR === 'concept' ? 'concept harnais' : 'définition électrique') +
         ', au dernier relevé \u2014 un clic sur un contrat l’affiche\x3C/span>' +
       '\x3Cbutton type="button" class="fiche-plan-fermer" data-fermer-ensemble="1" aria-label="Fermer la vue d’ensemble">×\x3C/button>\x3C/div>' +
@@ -5361,6 +5389,7 @@
        n'aurait plus de sens, il repart à blanc. */
     vue.dimCritique = e.target.value; vue.groupe = null;
     vue.filtreGroupe = ''; $('filtre-groupe').value = '';
+    ajusterChoixDim();
     rendre();
   });
   /* Le filtre de la colonne de gauche : il ne redessine que le bloc. Échap
@@ -5664,7 +5693,7 @@
     ['filtre-journal', 'filtre-valeur-groupe', 'filtre-valeur-graphe'].forEach(function (id) { if ($(id)) veilleRangees.observe($(id)); });
   }
   if (document.fonts) {
-    var remesurer = function () { alignerSousBarre('barre', 'filets', 'etats'); marquerDebords(); };
+    var remesurer = function () { alignerSousBarre('barre', 'filets', 'etats'); marquerDebords(); ajusterChoixDim(); };
     if (document.fonts.ready) document.fonts.ready.then(remesurer);
     if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', remesurer);
   }
@@ -5835,5 +5864,5 @@
      page affichée, pour ne rien retarder. */
   if (API && API.noterConsultation) setTimeout(API.noterConsultation, 1500);
 })();
-window.SUIVI_FWD_FIN = '4bf7a55';
+window.SUIVI_FWD_FIN = '9dc320b';
 </script>

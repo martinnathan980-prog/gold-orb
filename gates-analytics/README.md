@@ -11,7 +11,7 @@ C'est un outil de **consultation** : la page montre, elle ne modifie rien.
 
 | Fichier | Rôle |
 |---|---|
-| `Code.gs` | Serveur : contrats (un onglet visible chacun), modèle de colonnes, historique par contrat, jalons de configuration, lecture de la seconde base |
+| `Code.gs` | Serveur : contrats (un onglet visible chacun), modèle de colonnes, historique par contrat, jalons de configuration, lecture de la seconde base, et la fenêtre d'import des exports GATES et SEE (lus sur le poste, sans Excel) |
 | `Index.html` | Page ; elle injecte le premier contrat au rendu, sans aller-retour, et tend le pont `SUIVI_FWD_API.chargerContrat` pour les autres |
 | `Styles.html` | Feuille de style |
 | `Javascript.html` | Interface |
@@ -19,7 +19,7 @@ C'est un outil de **consultation** : la page montre, elle ne modifie rien.
 | `prototype/` | La même interface, autonome, avec une démonstration à trois contrats fictifs — c'est la source |
 | `import/` | L'automatisation : pilote Chrome, recettes d'extraction, dépôt dans le classeur, lecture des composants sur les plans (PDF, Visio, DXF, scans), transport par la messagerie |
 | `apps-script/` | Ce qu'on colle dans Apps Script : le **chargeur** (un fichier, qui va chercher le reste à l'ouverture) et l'**installateur** (qui écrit les quatre fichiers dans le projet) |
-| `MODE-D-EMPLOI.md` | Ce qu'on fait dans le classeur, concrètement : coller un extract, un onglet par contrat, archiver la semaine, brancher SEE, lire la page |
+| `MODE-D-EMPLOI.md` | Ce qu'on fait dans le classeur, concrètement : importer les exports de la semaine d'un coup (ou les coller), un onglet par contrat, archiver la semaine, brancher SEE, lire la page |
 | `AU-BUREAU.md` | La marche à suivre, pas à pas, pour installer sur le poste de travail — et, pour plus tard, l'automatisation |
 | `tests/` | Batterie de l'add-on (serveur + page rendue) |
 
@@ -131,11 +131,27 @@ npm test
   lire une lettre, puis les repères lus pour de vrai par RapidOCR et corrigés
   par la liste de la base, sur papier gris et page couchée. Sans Chrome ou
   sans RapidOCR sur le poste, ces parties-là sont sautées en le disant.
-- `npm run test:import-see` — 63 tests sur l'import de la base SEE sans
-  Excel (menu Suivi FWD → Importer la base) : la vraie fenêtre, rendue par le
+- `npm run test:import-see` — 137 tests sur la fenêtre d'import (menu Suivi
+  FWD → Importer les exports GATES et SEE…) : la vraie fenêtre, rendue par le
   vrai `Code.gs`, ouverte dans un vrai navigateur, `google.script.run`
-  branché sur le serveur en mémoire. Les fichiers sont fabriqués pour
-  l'occasion (`tests/fabriquer-xlsx.js`) : chaînes partagées ou en ligne,
+  branché sur le serveur en mémoire. Plusieurs fichiers d'un coup, choisis ou
+  glissés, chacun reconnu GATES ou SEE à sa ligne d'en-têtes par les règles
+  du serveur. L'essai clé : la vraie structure GATES (138 colonnes, 16
+  cellules fusionnées), importée en `.xlsx`, donne le même onglet que le même
+  export collé, et `construireModele`, `getDonneesPourClient`,
+  `compterAvancements` y lisent la même chose — aussi depuis une page web
+  nommée `.xls` (colspan, rowspan), du XML 2003, ou un CSV (sans fusion : la
+  fenêtre prévient). Puis le contrat deviné (plans en commun, nom au-dessus
+  des en-têtes, nom du fichier, nouveau contrat nommé d'après ses groupes ;
+  pour SEE, l'échantillon rapproché par le serveur comme la page), le nom
+  d'un nouveau contrat vérifié et sa place, deux fichiers pour le même
+  onglet, GATES puis SEE pour deux contrats, le relevé archivé contrat par
+  contrat et ses refus, un import GATES interrompu (l'ancien onglet, ses
+  fusions et son historique intacts ; un nouveau contrat jamais créé à
+  moitié), les restes d'un import jamais pris pour des contrats, la case
+  « toutes » changée pendant une lecture. Et tout l'import SEE d'avant ; les
+  fichiers sont fabriqués pour l'occasion (`tests/fabriquer-xlsx.js`,
+  cellules fusionnées comprises) : chaînes partagées ou en ligne,
   chaînes riches et lecture phonétique, formats (dates 1900 et 1904, heures,
   zéros de tête, décimales, pourcentages, milliers, scientifique, monnaie),
   préfixes d'espace de noms, cellules sans référence, descripteurs de

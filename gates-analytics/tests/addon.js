@@ -643,7 +643,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
     cM.getHistorique(clM, 'X1').length === 4 && cM.getHistorique(clM, 'X2').length === 4,
     JSON.stringify(sM));
   verifier('et l\'alerte récapitule contrat par contrat',
-    /^Relevé S\d{1,2} supprimé pour « X1 », « X2 »\. Recollez/.test(cM.__alertes[cM.__alertes.length - 1]),
+    /^Relevé S\d{1,2} supprimé pour « X1 », « X2 »\. Importez le bon export \(menu Suivi FWD → Importer les exports GATES et SEE…, qui archive dans la foulée\), ou recollez-le puis relancez l'archivage\./.test(cM.__alertes[cM.__alertes.length - 1]),
     cM.__alertes[cM.__alertes.length - 1]);
   const sM2 = cM.supprimerDernierReleve();
   verifier('une seconde suppression n\'a plus rien à retirer, et le dit',
@@ -922,19 +922,19 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const alertesAvant = cP.__alertes.length;
   const rP = cP.archiverSemainePassee();
   const confirmation = cP.__alertes[alertesAvant], resultatP = cP.__alertes[alertesAvant + 1];
-  verifier('« S' + numPrec + ' » tapé : la question confirme le contrat et la semaine, dit qu\'il n\'y a rien à remplacer, et rappelle de recoller l\'export du jour',
+  verifier('« S' + numPrec + ' » tapé : la question confirme le contrat et la semaine, dit qu\'il n\'y a rien à remplacer, et rappelle de remettre l\'export du jour (l\'import d\'abord, le collage ensuite)',
     new RegExp('^Archiver l\'export affiché dans « HDK » comme relevé S' + numPrec + ' \\?').test(confirmation) &&
     /Aucun relevé S\d+ n'existe encore pour « HDK » : il est ajouté\./.test(confirmation) &&
-    /recolle tout de suite l'export du jour dans « HDK »/.test(confirmation), confirmation);
+    /remets tout de suite l'export du jour dans « HDK » \(menu Suivi FWD → Importer les exports GATES et SEE…, ou un collage\)/.test(confirmation), confirmation);
   verifier('le relevé de la semaine passée est archivé pour HDK seulement, avec les chiffres de l\'export affiché',
     rP && rP.ok && rP.semaine === precedente17 &&
     histoHDK().map(r => r.semaine).join() === precedente17 + ',' + courante17 &&
     histoHDK()[0].termine === avantValides - 5 && histoHDK()[1].termine === avantValides &&
     histoTHS().map(r => r.semaine).join() === courante17,
     JSON.stringify([rP, histoHDK().map(r => [r.semaine, r.termine]), histoTHS().map(r => r.semaine)]));
-  verifier('et le message final redit de recoller l\'export du jour',
+  verifier('et le message final redit de remettre l\'export du jour : l\'importer (il archive dans la foulée), ou le recoller puis archiver',
     new RegExp('^Relevé S' + numPrec + ' de « HDK » archivé avec l\'export affiché \\(40 plans\\)\\.').test(resultatP) &&
-    /⚠ L'onglet « HDK » porte maintenant l'export de S\d+ : recolle l'export du jour/.test(resultatP), resultatP);
+    /⚠ L'onglet « HDK » porte maintenant l'export de S\d+ : importe l'export du jour \(menu Suivi FWD → Importer les exports GATES et SEE…, qui archive dans la foulée\), ou recolle-le puis Suivi FWD → Archiver le relevé de cette semaine\./.test(resultatP), resultatP);
   verifier('la page de HDK a maintenant deux relevés différents : un rythme',
     cP.getDonneesPourClient('HDK').releves.length === 2 &&
     cP.getDonneesPourClient('HDK').releves[1].termine - cP.getDonneesPourClient('HDK').releves[0].termine === 5);
@@ -985,7 +985,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   clP.feuilles.push(copieS39);
   const rCopie = refus('S' + numPrec, 'HDK S' + numPrec);
   verifier('l\'export rattrapé collé dans un nouvel onglet « HDK S' + numPrec + ' » : refusé — ce serait un nouveau contrat —, avec le bon geste',
-    !rCopie.ok && new RegExp('« HDK S' + numPrec + ' » n\'a aucun relevé : ce serait un nouveau contrat\\. Coller l\'export de S' + numPrec + ' dans l\'onglet « HDK » lui-même').test(rCopie.message) &&
+    !rCopie.ok && new RegExp('« HDK S' + numPrec + ' » n\'a aucun relevé : ce serait un nouveau contrat\\. Mettre l\'export de S' + numPrec + ' dans l\'onglet « HDK » lui-même — menu Suivi FWD → Importer les exports GATES et SEE…, case « Archiver » décochée, ou Ctrl\\+A, Suppr, A1, Ctrl\\+V —').test(rCopie.message) &&
     !clP.getSheetByName('Historique_FWD_HDK S' + numPrec), rCopie.message);
   /* Un nouvel onglet au nom sans rapport (« Semaine 39 ») : pas refusé —
      ce peut être un vrai nouveau contrat —, mais la question le dit. */
@@ -993,7 +993,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   clP.feuilles.push(autreNom);
   const rAutre = refus('S' + numPrec, 'Semaine ' + numPrec);
   verifier('un nouvel onglet au nom sans rapport : la question prévient que ce sera un NOUVEAU contrat, et dit où coller pour rattraper',
-    rAutre.ok && /ce sera un NOUVEAU contrat, avec son propre historique, archivé chaque vendredi\. Pour rattraper une semaine de « HDK », coller l'export dans son onglet à lui\./.test(rAutre.question),
+    rAutre.ok && /ce sera un NOUVEAU contrat, avec son propre historique, archivé chaque vendredi\. Pour rattraper une semaine de « HDK », mettre l'export dans son onglet à lui \(par l'import, case « Archiver » décochée, ou par un collage\)\./.test(rAutre.question),
     rAutre.question || rAutre.message);
   clP.feuilles.splice(clP.feuilles.indexOf(autreNom), 1);
   clP.feuilles.splice(clP.feuilles.indexOf(copieS39), 1);
@@ -1005,7 +1005,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   let refusEcrase = '';
   try { cP.enregistrerInstantaneHebdo(); } catch (e) { refusEcrase = String(e.message || e); }
   verifier('l\'export rattrapé laissé dans l\'onglet : l\'archivage de la semaine refuse d\'écraser le bon relevé, et dit quoi faire',
-    new RegExp('« HDK » : l\'onglet « HDK » porte le même export que le relevé S' + numPrec + ' : le relevé S\\d+ déjà archivé, différent, n\'est pas écrasé\\. Recoller l\'export du jour, puis archiver\\.').test(refusEcrase) &&
+    new RegExp('« HDK » : l\'onglet « HDK » porte le même export que le relevé S' + numPrec + ' : le relevé S\\d+ déjà archivé, différent, n\'est pas écrasé\\. Importer l\'export du jour \\(menu Suivi FWD → Importer les exports GATES et SEE…, qui archive dans la foulée\\), ou le recoller puis archiver\\.').test(refusEcrase) &&
     JSON.stringify(histoHDK().map(r => [r.semaine, r.termine])) === s40avant && histoTHS().length === 1, refusEcrase);
   // L'export du jour recollé, puis archivé : S40 retrouve ses chiffres.
   lignesHDK.forEach((l, i) => { l[bH] = exportDuJour[i]; });
@@ -1309,7 +1309,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const diagSans = ctxPaquet.diagnostic();
   verifier('sans onglet SEE, le diagnostic le dit, et dit le geste : le menu d\'import, ou un onglet « SEE », l\'extract en A1, ses colonnes',
     /– Seconde base « SEE » : aucun onglet « SEE » — pas de rapprochement\./.test(diagSans) &&
-    /→ menu Suivi FWD → Importer la base SEE \(fichier Excel ou CSV\)…, sans ouvrir le fichier dans Excel ; ou un onglet nommé « SEE », l'extract collé en A1 tel quel, avec ses colonnes NAME, SOL\., Cust\.V\./.test(diagSans) &&
+    /→ menu Suivi FWD → Importer les exports GATES et SEE…, sans ouvrir le fichier dans Excel ; ou un onglet nommé « SEE », l'extract collé en A1 tel quel, avec ses colonnes NAME, SOL\., Cust\.V\./.test(diagSans) &&
     /Tout est en place : Suivi FWD/.test(diagSans), diagSans);
   const seeVide = construire({ lignes: 10, feuilles: [new Feuille('SEE', [])], historique: false, sortie: 'apercu-see-vide.html' });
   fs.unlinkSync(path.join(__dirname, '..', 'apercu-see-vide.html'));
@@ -1522,7 +1522,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const vide = serveurSur([]);
   const pVide = vide.contexte.getDonneesPourClient();
   verifier('une feuille vide renvoie une erreur lisible, pas une exception — qui nomme l\'onglet vide et dit le geste',
-    pVide.ok === false && /« Données » est vide — coller l'export GATES en A1/.test(pVide.message), pVide.message);
+    pVide.ok === false && /« Données » est vide — menu Suivi FWD → Importer les exports GATES et SEE…, ou coller l'export GATES en A1/.test(pVide.message), pVide.message);
   verifier('et le paquet d\'erreur porte une liste de contrats vide',
     Array.isArray(pVide.contrats) && pVide.contrats.length === 0 && pVide.contrat === '');
 
@@ -1590,7 +1590,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
 
   const dVide = serveurSur([]);
   verifier('un classeur dont le seul onglet est vide est diagnostiqué : l\'onglet nommé, et le geste',
-    /Onglet de données : Aucun onglet de données exploitable dans ce classeur : « Données » est vide — coller l'export GATES en A1/.test(dVide.contexte.diagnostic()),
+    /Onglet de données : Aucun onglet de données exploitable dans ce classeur : « Données » est vide — menu Suivi FWD → Importer les exports GATES et SEE…, ou coller l'export GATES en A1/.test(dVide.contexte.diagnostic()),
     dVide.contexte.diagnostic());
 
   const dSansFWD = serveurSur([['Référence UD', 'Truc'], ['A-1', 'x']]);
@@ -1605,7 +1605,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const dSansIntitule = serveurSur([['A-1', 'Retard fournisseur, voir M. Dupont', 'x'], ['A-2', 'y', 'z']]);
   const rapportSansIntitule = dSansIntitule.contexte.diagnostic();
   verifier('une ligne d\'en-têtes introuvable : le diagnostic le dit, ne recopie aucune cellule, et dit le geste',
-    /✗ Ligne d'en-têtes introuvable/.test(rapportSansIntitule) && !/Dupont|A-1/.test(rapportSansIntitule) && /recoller l'extract entier en A1/.test(rapportSansIntitule),
+    /✗ Ligne d'en-têtes introuvable/.test(rapportSansIntitule) && !/Dupont|A-1/.test(rapportSansIntitule) && /réimporter l'export \(menu Suivi FWD → Importer les exports GATES et SEE…\), ou le recoller entier en A1/.test(rapportSansIntitule),
     rapportSansIntitule.split('\n').filter(l => /en-têtes|Dupont|A-1/.test(l)).join(' / '));
   /* Un onglet « Notes » à côté d'un vrai export n'est pas un contrat : l'onglet
      « SEE » et le contrat unique restent ce qu'ils sont. */

@@ -70,7 +70,7 @@
 <script>
   /* La livraison de ce fichier, posée par la construction : la page la compare
      à celles de Code, Styles et Javascript, et nomme celui qui diffère. */
-  window.SUIVI_FWD_LIVRAISON_INDEX = '4bf7a55';
+  window.SUIVI_FWD_LIVRAISON_INDEX = '9dc320b';
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
@@ -132,7 +132,7 @@
 
   <!-- La vue d'ensemble des contrats : une ligne par contrat, ouverte à la
        demande depuis le bandeau. -->
-  <section class="ensemble" id="ensemble" hidden aria-label="Vue d’ensemble des contrats"></section>
+  <section class="ensemble panneau panneau-hors-suite" id="ensemble" hidden aria-label="Vue d’ensemble des contrats"></section>
 
   <!-- Le titre, seul, au centre : rien ne lui vole sa zone. Le contrat n'est
        pas répété, il est déjà choisi en haut. -->
@@ -157,7 +157,13 @@
     <p class="doux">En cas de doute : <b>Suivi FWD → Diagnostic</b> dit ce que le script voit du classeur.</p>
   </section>
 
-  <section class="avancement">
+  <!-- Débrief 20 : chaque section est un panneau — un surtitre numéroté
+       (« 01 · Synthèse »), le titre, puis le contenu — pour qu'on la repère
+       d'un coup d'œil au lieu d'un fil continu. Le numéro est posé par la
+       feuille de style : une section cachée (la comparaison sans SEE) ne
+       laisse pas de trou dans la suite. -->
+  <section class="avancement panneau" aria-labelledby="surtitre-synthese">
+    <p class="surtitre" id="surtitre-synthese">Synthèse</p>
     <!-- Le périmètre — ce qu'on regarde — à droite de la phrase qu'il
          gouverne, juste au-dessus de la barre. -->
     <div class="avancement-ligne">
@@ -176,7 +182,8 @@
     <div class="a-surveiller" id="a-surveiller" hidden></div>
   </section>
 
-  <section class="bloc">
+  <section class="bloc panneau">
+    <p class="surtitre" aria-hidden="true">Tendance</p>
     <div class="section-tete">
       <h2>Avancement dans le temps</h2>
       <!-- La prochaine échéance, en jours : un clic ouvre sa fiche sous le
@@ -231,12 +238,18 @@
     </div>
   </section>
 
-  <section class="bloc">
-    <div class="section-tete">
-      <h2 id="titre-groupe">Avancement FWD</h2>
-      <div class="commandes-groupe">
+  <section class="bloc panneau">
+    <p class="surtitre" aria-hidden="true">Répartition</p>
+    <!-- Débrief 20 : le choix ATA / ECP / Séquence… n'est plus un menu isolé
+         au-dessus de la recherche : c'est le dernier mot du titre lui-même,
+         « Avancement FWD par [ATA ▾] ». Le titre (h2) garde la phrase entière
+         pour un lecteur d'écran ; le mot visible est le menu, un vrai
+         <select> — clavier, focus, liste native. -->
+    <div class="section-tete" id="tete-groupe">
+      <div class="titre-choix">
+        <h2 id="titre-groupe">Avancement FWD</h2>
         <label class="masque" for="dim-critique">Grouper par</label>
-        <select class="select" id="dim-critique"></select>
+        <select class="choix-titre" id="dim-critique" title="Changer le regroupement"></select>
       </div>
     </div>
     <p class="indice-dim" id="indice-dim"></p>
@@ -268,7 +281,8 @@
   <!-- Un seul tableau, deux bases : l'interrupteur GATES | SEE bascule de
        l'extract d'ici à celui de là, avec les mêmes outils. SEE n'existe que
        si la source décrit une seconde base ; sinon l'interrupteur s'efface. -->
-  <section class="bloc" id="section-plans">
+  <section class="bloc panneau" id="section-plans">
+    <p class="surtitre" aria-hidden="true">Détail</p>
     <div class="section-tete">
       <h2>Plans</h2>
       <span class="segmente" id="choix-base" role="group" aria-label="Base affichée" hidden>
@@ -341,7 +355,8 @@
        filtre le tableau. Un plan connu de SEE est un plan créé, donc terminé :
        le rapprochement croise cette présence avec l'avancement de GATES.
        Présent seulement quand la source décrit une seconde base. -->
-  <section class="bloc rapprochement" id="rapprochement" hidden>
+  <section class="bloc rapprochement panneau" id="rapprochement" hidden>
+    <p class="surtitre" aria-hidden="true">Contrôle</p>
     <div class="section-tete">
       <h2 id="titre-rapprochement">Comparaison des bases de données</h2>
       <!-- Chercher un plan dans la comparaison seulement : les lots qui le

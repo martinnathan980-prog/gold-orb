@@ -70,7 +70,7 @@ son propriétaire, et `google.script.run` atteint toute fonction publique de
 lancer un archivage, supprimer le relevé de la semaine ou couper
 l'archivage automatique. Ces gestes — archiver, archiver une semaine
 passée, supprimer, activer ou désactiver l'archivage automatique, importer
-la base SEE (§ 12) —
+les exports GATES et SEE (§ 4 bis) —
 **refusent désormais hors du classeur** : « Geste refusé : il ne se lance
 que dans le classeur, menu Suivi FWD (ou par l'archivage automatique du
 vendredi). La page du tableau de bord ne modifie rien. »
@@ -83,15 +83,18 @@ Le dépôt automatique (§ 15) garde son propre verrou, le secret.
 
 Chaque onglet **visible** du classeur est un contrat, et **le nom de l'onglet
 est le nom du contrat** : un onglet `X1` donne le contrat « X1 » dans la page.
-Rien à configurer : ajouter un onglet, y coller un export, c'est un contrat de
-plus.
+Rien à configurer : importer l'export d'un nouveau contrat (la fenêtre crée
+son onglet, § 4 bis), ou ajouter un onglet et y coller l'export, c'est un
+contrat de plus.
 
 Ne sont jamais pris pour des contrats : les onglets masqués, les onglets
 **vides** (la « Feuille 1 » d'un classeur neuf, restée à côté), les onglets
 d'historique (`Historique_FWD…`), l'onglet de la seconde base s'il est nommé
-(voir § 12) et les onglets de service (`Paramètres`, `Config`). Sans aucun
-contrat, le message nomme les onglets vides et dit le geste : coller l'export
-GATES en A1 d'un onglet nommé du contrat.
+(voir § 12), les onglets de service (`Paramètres`, `Config`) et les restes
+d'un import (`HDK (import xxxxxx)`, `HDK (ancien xxxxxx)`, § 4 bis). Sans
+aucun contrat, le message nomme les onglets vides et dit le geste : le menu
+d'import (Suivi FWD → Importer les exports GATES et SEE…), ou coller
+l'export GATES en A1 d'un onglet nommé du contrat.
 
 Dans la page, un **sélecteur « Contrat »** dans le bandeau du haut passe de
 l'un à l'autre sans recharger ; le titre ne le répète pas. Il est à droite,
@@ -118,24 +121,31 @@ FEUILLE_DONNEES: 'Données',
    par le groupe « HDK AA 011 » que la bonne colonne « Avancement Définition
    Electrique » se reconnaît parmi les treize blocs qui portent le même
    intitulé (§ 7).
-2. Ouvrir l'onglet du contrat, `Ctrl+A`, `Suppr`, puis coller l'export
-   en **A1**. Même chose pour chaque contrat.
-3. **Suivi FWD → Archiver le relevé de cette semaine.** Une boîte confirme :
-   « Relevé S39 archivé : HDK (186 plans), THS (93 plans). Un second
-   archivage dans la semaine remplace celui-ci. »
+2. **Suivi FWD → Importer les exports GATES et SEE…** : choisir tous les
+   exports d'un coup (Ctrl+clic ou Maj+clic dans la fenêtre de Windows,
+   Ctrl+A pour un dossier qui ne contient qu'eux, ou les glisser dans la
+   fenêtre), laisser cochée la case « Archiver le relevé de
+   la semaine S40 pour les contrats importés », **Importer**. Chaque export
+   va dans l'onglet de son contrat, tel quel, et le relevé de la semaine est
+   archivé pour chaque contrat importé ; la fenêtre finit sur une ligne par
+   fichier (§ 4 bis).
 
-C'est tout. L'archivage passe sur **tous les contrats d'un coup**, une ligne
-par contrat dans son propre onglet d'historique. Un onglet illisible n'empêche
-pas les autres d'être relevés : l'erreur le nomme, et les autres sont
-archivés.
+C'est tout. Le geste d'avant marche toujours, sans la fenêtre : ouvrir
+l'onglet du contrat, `Ctrl+A`, `Suppr`, coller l'export en **A1** (pour
+chaque contrat), puis **Suivi FWD → Archiver le relevé de cette semaine**.
+Une boîte confirme : « Relevé S39 archivé : HDK (186 plans), THS (93 plans).
+Un second archivage dans la semaine remplace celui-ci. » Ce menu-là passe sur
+**tous les contrats d'un coup**, une ligne par contrat dans son propre onglet
+d'historique ; un onglet illisible n'empêche pas les autres d'être relevés :
+l'erreur le nomme, et les autres sont archivés.
 
-L'étape 3 peut se faire toute seule : **Suivi FWD → Activer l'archivage
-automatique (vendredi 17 h)**, et un relevé est pris chaque vendredi entre
-17 h et 18 h (heure du fuseau du projet Apps Script).
+L'archivage peut aussi se faire tout seul : **Suivi FWD → Activer
+l'archivage automatique (vendredi 17 h)**, et un relevé est pris chaque
+vendredi entre 17 h et 18 h (heure du fuseau du projet Apps Script).
 
-Les étapes 1 et 2 aussi : voir **§ 15, l'automatisation** — un script récupère
-les extracts dans Chrome et les dépose dans le classeur, qui archive la
-semaine dans la foulée.
+La récupération des extracts aussi : voir **§ 15, l'automatisation** — un
+script récupère les extracts dans Chrome et les dépose dans le classeur, qui
+archive la semaine dans la foulée.
 
 ### Rattraper une semaine passée (débrief 17)
 
@@ -145,8 +155,10 @@ de sa semaine : S39 et S40 portaient le même export, et la page n'avait aucun
 rythme. **Suivi FWD → Archiver l'onglet affiché pour une semaine passée…**
 le permet :
 
-1. recoller l'export de la semaine passée dans l'onglet du contrat, et
-   rester sur cet onglet ;
+1. mettre l'export de la semaine passée dans l'onglet du contrat — par la
+   fenêtre d'import, case « Archiver » **décochée** (cochée, elle
+   l'archiverait pour la semaine en cours), ou par un collage —, et rester
+   sur cet onglet ;
 2. le menu demande la semaine — `S39`, `39` ou `2026-S39` ; une semaine
    tapée sans année est celle de l'année en cours, ou de la précédente si
    elle n'est pas encore arrivée (« S52 » en janvier) ;
@@ -154,9 +166,10 @@ le permet :
    cette semaine existe déjà, qu'il sera **remplacé** (« Non » : rien
    n'est écrit) ;
 4. seul le contrat de l'onglet affiché est archivé, pour cette semaine-là ;
-   le message final rappelle de **recoller aussitôt l'export du jour** et
-   d'archiver la semaine en cours — sinon l'archivage du vendredi prendrait
-   l'ancien export pour celui de la semaine.
+   le message final rappelle de **remettre aussitôt l'export du jour** —
+   l'importer (il archive dans la foulée), ou le recoller puis archiver la
+   semaine en cours — sinon l'archivage du vendredi prendrait l'ancien
+   export pour celui de la semaine.
 
 Refusés, avec le geste à faire : une semaine illisible ou qui n'existe
 pas (une S53 dans une année qui n'en a que 52), une semaine à venir — une
@@ -176,8 +189,156 @@ plan par plan à l'historique du contrat : si elle est exactement celle d'un
 relevé plus ancien alors que le relevé de la semaine visée, déjà archivé,
 en a une autre, il refuse — « l'onglet « HDK » porte le même export que le
 relevé S39 : le relevé S40 déjà archivé, différent, n'est pas écrasé.
-Recoller l'export du jour, puis archiver. » Le vendredi, ce refus arrive
-par le mail d'échec de Google ; les autres contrats sont archivés.
+Importer l'export du jour (menu Suivi FWD → Importer les exports GATES et
+SEE…, qui archive dans la foulée), ou le recoller puis archiver. » Le
+vendredi, ce refus arrive par le mail d'échec de Google ; les autres contrats
+sont archivés. Après un import, case « Archiver » cochée, il revient sur la
+ligne du fichier, en ⚠ : l'import, lui, est fait.
+
+## 4 bis. La fenêtre d'import : GATES et SEE, sans Excel (débrief 20)
+
+Débrief 20 : « je sélectionne carrément les fichiers Excel qu'il faut, et
+directement ça les met dans la bonne position, la sauvegarde, tout ; j'ai
+même plus à les copier-coller ». **Suivi FWD → Importer les exports GATES et
+SEE…** (« Importer les exports GATES… » quand aucune seconde base n'est
+configurée) ouvre une fenêtre qui prend **plusieurs fichiers à la fois** : le
+bouton **Choisir les fichiers…** (sélection multiple de Windows : Ctrl+clic,
+Maj+clic, Ctrl+A) ou un glisser-déposer ; dix fichiers au plus
+(`IMPORT_MAX_FICHIERS`), un même fichier jamais deux fois, et ce qui n'est
+pas un tableau est laissé de côté et nommé.
+
+**Chaque fichier est lu dès qu'il est ajouté**, un à la fois, avec sa barre,
+**sur le poste** — il ne part nulle part ; la lecture elle-même (zip lu au
+fil de l'eau, formats d'Excel, CSV, page web, XML 2003) est celle décrite au
+§ 12. La fenêtre reconnaît l'export à sa ligne d'en-têtes, cherchée dans les
+huit premières lignes de chaque onglet (`LIGNES_SCAN_ENTETE`), avec **les
+règles du serveur, reçues à l'ouverture et non recopiées** :
+
+- **SEE** : une ligne qui porte toutes les colonnes de la référence
+  (`CLE_REFERENCE` : NAME, SOL., Cust.V), casse et accents indifférents ;
+- **GATES** : la règle de `ligneDEnteteDExport`, celle-là même qui fait un
+  contrat d'un onglet — au moins dix intitulés, dont deux des
+  `MOTS_CLES_ENTETE` (Référence UD, Référence, ATA, Nom installation), chacun
+  seul dans sa cellule.
+
+Une ligne qui répond aux deux règles est SEE : ses intitulés propres sont
+plus sûrs que deux mots courants. Un en-tête trouvé plus bas que la huitième
+ligne est refusé, avec sa ligne (« le fichier a-t-il été retouché ? ») : la
+page ne le trouverait pas. Ni l'un ni l'autre : la fenêtre dit pourquoi, et
+cite la ligne la plus proche.
+
+**Un export GATES part tel quel** : toutes ses lignes, de la première à la
+dernière remplie, **chacune à son numéro** (une ligne vide reste une ligne
+vide), de la colonne A à la dernière remplie, chaque cellule comme Excel
+l'affiche — ce qu'un Ctrl+A / Ctrl+V depuis Excel aurait posé. Les
+**cellules fusionnées** qui commencent sur la ligne d'en-têtes ou au-dessus
+(la ligne des groupes : « HDK AA 011 » couvre son bloc) sont lues —
+`<mergeCells>` d'un `.xlsx`, `colspan` / `rowspan` d'une page web,
+`MergeAcross` / `MergeDown` du XML 2003 — et **recréées avant l'échange des
+onglets** : la page lit l'onglet dès qu'il porte son nom, et c'est par ces
+fusions qu'elle reconnaît la colonne suivie (§ 7). Un `.csv` n'en a pas : la
+page déduit alors les groupes de proche en proche, et la fenêtre conseille
+l'export Excel. L'essai de référence (`tests/import-see.js`) le vérifie : un
+export de 186 plans et 138 colonnes, importé, donne le même onglet, valeur
+pour valeur et fusion pour fusion, que le même export collé — et
+`construireModele`, `getDonneesPourClient` et `compterAvancements` y lisent
+exactement la même chose. Refusés dès la lecture, sans rien envoyer : plus de
+400 colonnes, plus de quatre millions de cellules, un en-tête sans aucun plan
+dessous (l'onglet d'un contrat n'est jamais remplacé par un export vide), une
+formule sans valeur calculée dans l'en-tête, les lignes au-dessus ou la
+colonne de référence.
+
+**Un export SEE** part comme avant : sa ligne d'en-tête et les colonnes de la
+référence (avec `ESSENTIELLES`, ou toutes avec la case « Garder aussi les
+autres colonnes »), les lignes vides laissées. La case se lit à la lecture :
+la changer relit les exports SEE déjà lus — et celui qu'on est en train de
+lire, sitôt sa lecture finie.
+
+**Le contrat de chaque fichier** est deviné, la raison écrite sous sa ligne,
+et reste modifiable dans sa liste :
+
+- un export **GATES** : (a) le contrat dont l'onglet partage **le plus de
+  plans** avec le fichier, s'il en partage au moins 20 % et au moins le
+  double du suivant (`IMPORT_SEUIL_RECOUVREMENT`) — « 186 plans sur 186 déjà
+  dans « HDK » » ; (b) sinon le seul contrat nommé au-dessus de l'en-tête
+  (la ligne des groupes dit « HDK AA 011 ») ; (c) sinon le seul nommé dans le
+  nom du fichier — mais un contrat qui a des plans et n'en partage presque
+  aucun avec le fichier reste **à vérifier**, rien n'est choisi pour lui ;
+  (d) sinon **un nouveau contrat**, nommé d'après le mot de ses groupes
+  « XXX AA … » (« Nouveau contrat… », le nom modifiable). Sans aucun
+  contrat, le premier export en crée un. Les références de chaque contrat,
+  normalisées, viennent avec la fenêtre (`IMPORT_MAX_REFERENCES`, 30 000 au
+  plus) : le recouvrement se compte sur le poste.
+- un export **SEE** : (a) la fenêtre envoie un **échantillon** (400 lignes
+  au plus, `IMPORT_ECHANTILLON_SEE`, les seules colonnes de la référence) ;
+  le serveur (`importDevinerContratSEE`) le lit comme `lireSecondeBase` lit
+  l'onglet — le même code, `lireTableauSecondeBase` — et le rapproche des
+  plans de chaque contrat **comme la page** : racine + solution, le A du
+  NAME remis à sa place (les fonctions de la page, jumelées côté serveur :
+  toute modification va des deux côtés) ; seuls des comptes reviennent. Le
+  contrat qui en retrouve le plus, au même seuil ; (b) sinon le seul nommé
+  dans le nom du fichier ; (c) sinon le seul contrat ; (d) sinon celui de
+  l'onglet affiché, **à vérifier**. Le nouveau contrat qu'un export GATES de
+  la même liste va créer est proposé aussi (« NEO (nouveau) »).
+
+**Un nouveau contrat** : son nom est vérifié par le serveur à mesure qu'on le
+tape (`importVerifierNouveauContrat`), puis de nouveau au début et à la fin
+de l'import. Refusés : un nom vide, de plus de 80 caractères
+(`NOM_CONTRAT_MAX`), celui d'un onglet de service, d'une base SEE, d'un
+historique, d'un onglet d'import ou d'une copie — aucun ne serait un
+contrat —, et celui d'un onglet qui existe déjà, casse et accents
+indifférents (« Le contrat « HDK » existe déjà : le choisir dans la
+liste »). L'onglet créé se range **après le dernier onglet de contrat**. Avec
+`FEUILLE_DONNEES` (un seul contrat imposé), pas de nouveau contrat.
+
+**« Importer » attend**, et dit pourquoi sous la liste : une lecture en
+cours, un fichier en erreur (✗) à retirer — **Retirer les fichiers en
+erreur** les enlève d'un coup —, un contrat à choisir, un nom à vérifier,
+deux fichiers pour le même onglet. Sous chaque ligne, l'onglet visé :
+« Remplacera l'onglet « HDK » — l'ancien ne s'en va qu'une fois tout reçu ;
+son historique est gardé », ou « Créera l'onglet « VRK » : un nouveau
+contrat, rangé après les autres ».
+
+**L'import** passe les exports GATES d'abord — un nouveau contrat existe avant
+sa base SEE —, puis ceux de SEE, chacun pour lui-même : un échec n'arrête pas
+les suivants. Chacun suit le chemin du § 12 (onglet temporaire taillé à la
+mesure, lots, échange sous le verrou du document, reprise des appels perdus),
+avec une cible `{ sorte: 'gates' | 'see', contrat, nouveau }` que le serveur
+résout et revérifie (`cibleImport`) au début comme à la fin. Les onglets
+temporaires (`HDK (import xxxxxx)`) et l'ancien mis de côté le temps de
+l'échange (`HDK (ancien xxxxxx)`) ne sont **jamais un contrat, ni une base
+SEE, ni un historique** — `estOngletImport` les écarte partout, l'archivage
+du vendredi compris — ; le Diagnostic nomme ceux qui restent (« reste d'un
+import interrompu… ») et le prochain import du même onglet les retire. Le
+compte des dix millions de cellules retranche l'onglet remplacé, qui s'en
+ira, mais refuse aussi l'import que l'ancien et le nouveau feraient dépasser
+le temps de coexister.
+
+**Après l'échange**, le serveur relit l'onglet avec la logique même de la
+page (`construireModele`), et la fenêtre le dit : le nombre de plans, la
+colonne suivie (« HDK AA 011 › Avancement Définition Electrique »), le
+concept harnais — ou, en ⚠, la colonne suivie introuvable. L'onglet étant
+remplacé en entier, ce qu'on y avait ajouté à la main (largeurs, volets
+figés, filtre, protections, mise en forme conditionnelle) ne suit pas, et une
+formule d'un autre onglet qui le visait devient `#REF!` ; l'historique,
+rangé sous le nom du contrat, ne bouge pas.
+
+**Le relevé de la semaine**, si la case « Archiver le relevé de la semaine
+S40 pour les contrats importés » est cochée (elle l'est, et n'apparaît
+qu'avec un export GATES dans la liste) : pour chaque export GATES importé, et
+pour lui seul, un appel à part (`importArchiverReleve`, sous le verrou du
+document, par `archiverContrat`), avec les garde-fous du menu — l'export
+d'une semaine déjà archivée qui écraserait un relevé différent, un
+historique orphelin, un onglet sans plan. Un refus revient comme tel, en ⚠ :
+l'import, lui, est fait. Renvoyé après une panne de réseau, l'appel ne double
+rien (il remplace la ligne de sa semaine). Sans colonne suivie, l'archivage
+n'est pas tenté.
+
+À la fin, **une ligne par fichier** — ✓, ⚠ ou ✗ — et « Rouvrir le tableau de
+bord pour voir les nouveaux chiffres ». Un nouveau choix de fichiers repart
+d'une liste propre. Les messages du serveur qui disaient de coller l'export
+disent maintenant l'import d'abord, le collage ensuite : classeur vide,
+onglet sans plan, Diagnostic, archivage refusé, semaine passée.
 
 ## 5. Ce que devient l'historique
 
@@ -193,18 +354,21 @@ s'accumule, un relevé par semaine, **par contrat**, dans un onglet masqué
   la page dérive de l'historique (périmètre, groupes, changements d'indice)
   se calcule à la lecture, à partir de ces cartes plan par plan ; l'onglet,
   lui, n'est jamais retouché.
-- Mauvais export collé par erreur ? **Suivi FWD → Supprimer le relevé de cette
-  semaine** retire la semaine courante de tous les contrats et récapitule ce
-  qui a été retiré ; recoller le bon, ré-archiver.
+- Mauvais export importé ou collé par erreur ? **Suivi FWD → Supprimer le
+  relevé de cette semaine** retire la semaine courante de tous les contrats et
+  récapitule ce qui a été retiré ; importer le bon (case « Archiver »
+  cochée), ou le recoller et ré-archiver.
 
-**Coller, archiver : ce qui écrase quoi.** Coller un export dans l'onglet du
-contrat **remplace l'export de la semaine d'avant** — l'onglet ne garde que
-l'état du jour, c'est voulu. Ce qui est gardé, c'est l'**archive** : chaque
-semaine archivée est une ligne à elle dans l'onglet d'historique, que rien
-n'écrase — sauf un second archivage **dans la même semaine**, qui remplace
-celui de la semaine. D'où le seul piège : recoller un nouvel export **avant**
-d'avoir archivé le précédent fait perdre la semaine du précédent. Coller puis
-archiver dans la foulée (ou laisser l'archivage du vendredi le faire) suffit.
+**Importer ou coller, archiver : ce qui écrase quoi.** Importer (ou coller)
+un export dans l'onglet du contrat **remplace l'export de la semaine
+d'avant** — l'onglet ne garde que l'état du jour, c'est voulu. Ce qui est
+gardé, c'est l'**archive** : chaque semaine archivée est une ligne à elle dans
+l'onglet d'historique, que rien n'écrase — sauf un second archivage **dans la
+même semaine**, qui remplace celui de la semaine. D'où le seul piège :
+remplacer l'export **avant** d'avoir archivé le précédent fait perdre la
+semaine du précédent. La case « Archiver » de la fenêtre d'import l'évite ;
+après un collage, archiver dans la foulée (ou laisser l'archivage du vendredi
+le faire) suffit.
 
 Entre le collage et l'archivage, la page ne perd rien : si l'export du jour a
 changé depuis le dernier relevé archivé, d'une semaine d'avant, il compte
@@ -244,8 +408,8 @@ Aucun nom de colonne n'est écrit en dur.
   colonne de commentaires ou d'identifiants en est donc exclue d'office.
 - **La date de création**, si elle existe, ajoute la dimension « ancienneté ».
 
-Si les colonnes de l'export changent, il n'y a rien à modifier : recoller et
-ré-archiver suffit.
+Si les colonnes de l'export changent, il n'y a rien à modifier : réimporter
+(ou recoller) et ré-archiver suffit.
 
 ## 7. Sur l'export GATES réel
 
@@ -759,19 +923,21 @@ solution, trois chiffres) et **Cust.V** (l'indice, une lettre). Collé tel quel
 dans un onglet de ce classeur et décrit dans la configuration, il donne deux
 choses ; sans description, ni l'une ni l'autre n'existe.
 
-**Importer SEE sans Excel** (débrief 20 : « les données de SEE sont tellement
+**Importer sans Excel** (débrief 20 : « les données de SEE sont tellement
 grosses, l'Excel bug à l'ouverture, j'arrive pas à les copier »). Le menu
-**Suivi FWD → Importer la base SEE (fichier Excel ou CSV)…** ouvre une
-fenêtre où l'on choisit le contrat et le fichier. Chrome le lit **sur le
-poste** : un `.xlsx` est un zip, dont on lit le répertoire à la fin du
+**Suivi FWD → Importer les exports GATES et SEE…** ouvre la fenêtre du § 4 bis,
+qui prend les exports SEE avec ceux de GATES et retrouve le contrat de
+chacun. Chrome lit chaque fichier **sur le poste** : un `.xlsx` est un zip, dont on lit le répertoire à la fin du
 fichier, puis on décompresse au fil de l'eau les seules parties utiles — la
 liste des onglets, les styles, les chaînes partagées et l'onglet qui porte
 l'en-tête —, sans jamais tenir le fichier en mémoire (un export de 120 000
 lignes sur 24 colonnes se lit en quelques secondes). L'en-tête est cherché
 comme `Code` le cherche : la première des huit premières lignes qui porte
 NAME, SOL. et Cust.V, sans tenir compte de la casse ni des accents, onglet
-par onglet, les visibles d'abord. **Seules cette ligne et ces trois colonnes
-vont au classeur** (avec `ESSENTIELLES`, si on en a déclaré) ; les lignes
+par onglet, les visibles d'abord (ou la ligne d'en-têtes d'un export GATES,
+qui part, lui, tout entier : § 4 bis). **D'un export SEE, seules cette ligne
+et ces trois colonnes vont au classeur** (avec `ESSENTIELLES`, si on en a
+déclaré) ; les lignes
 vides sont laissées ; deux colonnes au même intitulé, la première l'emporte
 (comme dans `lireSecondeBase`). Les nombres se lisent comme Excel les
 affiche, formats intégrés et personnalisés : `000` garde ses zéros de tête,
@@ -798,11 +964,13 @@ telle quelle ; une formule qu'Excel a calculée vide (`t="str"`, `<v></v>`)
 vaut une cellule vide, pas un refus.
 
 L'envoi se fait par lots (vingt mille lignes, moins de 900 000 caractères)
-dans un onglet temporaire, `SEE HDK (import xxxxxx)`, créé en bas à la taille
-exacte de l'extract. Avant de le créer, le script compte les cellules du
+dans un onglet temporaire, `SEE HDK (import xxxxxx)` — `HDK (import xxxxxx)`
+pour un export GATES —, créé en bas à la taille exacte de l'extract. Avant de le créer, le script compte les cellules du
 classeur : Google Sheets s'arrête à **dix millions, vides comprises**, et un
 import qui les dépasserait est refusé d'emblée, avec les deux nombres et quoi
-faire (décocher « Garder aussi les autres colonnes », supprimer des onglets).
+faire (décocher « Garder aussi les autres colonnes », supprimer des onglets) ;
+l'onglet remplacé est retranché du compte, mais l'ancien et le nouveau
+coexistent le temps de l'import, et le compte le sait.
 Chaque cellule est posée en texte (une valeur « =… » ne devient pas une
 formule, « 01 » reste « 01 »), coupée à 50 000 caractères comme Sheets
 l'exige. Une fois toutes les lignes reçues — le nombre est vérifié, et pas
@@ -810,6 +978,9 @@ avant — l'ancienne base est renommée `SEE HDK (ancien xxxxxx)`, l'onglet
 temporaire prend son nom et sa position, puis l'ancienne est supprimée ; le
 paquet gardé en cache est oublié (§ 13 quinquies). Une panne au milieu, des lignes
 manquantes : l'onglet temporaire est retiré, l'ancienne base reste intacte.
+Pour un export GATES, les cellules fusionnées de la ligne des groupes sont
+recréées sur l'onglet temporaire **avant** l'échange, et l'historique du
+contrat, nommé d'après l'onglet, ne bouge pas.
 Un appel qui échoue en route (classeur lent, réseau) est renvoyé deux fois,
 après deux puis six secondes — un lot s'écrit toujours aux mêmes lignes, le
 renvoyer ne double rien ; les refus du serveur (« a disparu », la limite, la
@@ -818,7 +989,7 @@ L'ancienne base étant supprimée, une formule ou un tableau croisé d'un autre
 onglet qui la visait devient `#REF!` — le tableau de bord, lui, retrouve
 l'onglet par son nom.
 Une fenêtre fermée en plein envoi laisse l'onglet temporaire : le Diagnostic
-le signale, et le prochain import du même contrat le retire. Le début et la
+le signale, et le prochain import du même onglet le retire. Le début et la
 fin d'un import se font sous le verrou du document ; deux imports du même
 contrat lancés en même temps ne se mêlent jamais : le second retire l'onglet
 temporaire du premier, qui s'arrête net (« a disparu »).
@@ -938,8 +1109,9 @@ mémorisé.
 La démonstration seule en montre un exemple aux écarts délibérés.
 
 **Brancher SEE, en trois gestes.** Dans le classeur, menu **Suivi FWD →
-Importer la base SEE (fichier Excel ou CSV)…** ; choisir le contrat et
-l'export « Nommage WD BFLOW » tel que téléchargé, sans l'ouvrir ;
+Importer les exports GATES et SEE…** ; choisir l'export « Nommage WD BFLOW »
+de chaque contrat, tel que téléchargé, sans l'ouvrir (avec les exports GATES
+de la semaine, au besoin) — la fenêtre retrouve le contrat de chacun ;
 **Importer** — l'onglet `SEE <contrat>` est créé ou remplacé. Rouvrir le
 tableau de bord : les deux cercles sont sous le tableau, et l'interrupteur
 **GATES | SEE** apparaît. Pour un petit extract, le collage marche aussi : un

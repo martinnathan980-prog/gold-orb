@@ -1,8 +1,9 @@
-/* Fabrique des classeurs .xlsx pour les essais de l'import SEE : un zip
-   écrit à la main (zlib pour la compression), et les parties d'un classeur
-   comme Excel les écrit — chaînes partagées ou en ligne, chaînes riches avec
-   lecture phonétique, styles (dates, zéros de tête), préfixes d'espace de
-   noms, cellules sans référence, descripteurs de données, Zip64. */
+/* Fabrique des classeurs .xlsx pour les essais de l'import des exports GATES
+   et SEE : un zip écrit à la main (zlib pour la compression), et les parties
+   d'un classeur comme Excel les écrit — chaînes partagées ou en ligne,
+   chaînes riches avec lecture phonétique, styles (dates, zéros de tête),
+   cellules fusionnées, préfixes d'espace de noms, cellules sans référence,
+   descripteurs de données, Zip64. */
 const zlib = require('zlib');
 
 const TABLE_CRC = (function () {
@@ -96,10 +97,13 @@ function lettres(n) { let s = ''; n++; while (n > 0) { const r = (n - 1) % 26; s
  *   noms), sansRef: true (ni r de ligne ni r de cellule), date1904,
  *   descripteur, zip64, cheminsAbsolus }.
  * Une cellule : chaîne, nombre, null, ou { n, fmt: 'date' | 'heure' |
- *   'zeros5' | 'zeros3' | '0.00' | 'pct' | 'pct2' | 'mille' | 'euro' | 'sci' },
+ *   'jour' (jj/mm/aaaa) | 'jourheure' (jj/mm/aaaa hh:mm) | 'zeros5' |
+ *   'zeros3' | '0.00' | 'pct' | 'pct2' | 'mille' | 'euro' | 'sci' },
  *   { str } (résultat de formule), { f } (formule sans valeur calculée), { b },
- *   { riche: [morceaux], phonetique }. Un onglet peut porter une `queue` :
- *   du XML écrit après les lignes (liens, fusions…).
+ *   { riche: [morceaux], phonetique }. Un onglet peut porter des `fusions`,
+ *   [{ ligne, col, larg, haut }] en 1-based, écrites comme Excel les écrit :
+ *   <mergeCells> APRÈS les lignes ; et une `queue` : du XML écrit après les
+ *   lignes et les fusions (liens…).
  */
 function xlsx(spec) {
   const px = spec.prefixe ? spec.prefixe + ':' : '';
@@ -107,7 +111,8 @@ function xlsx(spec) {
     : ' xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"';
   const chaines = [], index = new Map();
   const styles = [0], styleDe = {};
-  const FMT = { date: 14, heure: 20, zeros5: 164, '0.00': 2, pct: 9, pct2: 10, mille: 3, euro: 165, sci: 11, zeros3: 166 };
+  const FMT = { date: 14, heure: 20, zeros5: 164, '0.00': 2, pct: 9, pct2: 10, mille: 3, euro: 165, sci: 11, zeros3: 166,
+                jour: 167, jourheure: 168 };
   function style(fmt) {
     if (!fmt) return 0;
     if (styleDe[fmt] === undefined) { styleDe[fmt] = styles.length; styles.push(FMT[fmt]); }
@@ -150,9 +155,12 @@ function xlsx(spec) {
     });
     const largeur = o.lignes.reduce(function (m, l) { return Math.max(m, l ? l.length : 0); }, 1);
     const dimension = 'A1:' + lettres(largeur - 1) + Math.max(1, o.lignes.length);
+    const fusions = (o.fusions || []).length ? '<' + px + 'mergeCells count="' + o.fusions.length + '">' + o.fusions.map(function (f) {
+      return '<' + px + 'mergeCell ref="' + lettres(f.col - 1) + f.ligne + ':' + lettres(f.col + f.larg - 2) + (f.ligne + (f.haut || 1) - 1) + '"/>';
+    }).join('') + '</' + px + 'mergeCells>' : '';
     feuilles.push('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<' + px + 'worksheet' + nsP +
       ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><' + px + 'sheetPr/><' + px + 'dimension ref="' + dimension + '"/><' + px + 'sheetViews><' + px + 'sheetView workbookViewId="0"/></' + px + 'sheetViews>' +
-      '<' + px + 'cols><' + px + 'col min="1" max="3" width="12"/></' + px + 'cols><' + px + 'sheetData>' + lignes.join('') + '</' + px + 'sheetData>' + (o.queue || '') +
+      '<' + px + 'cols><' + px + 'col min="1" max="3" width="12"/></' + px + 'cols><' + px + 'sheetData>' + lignes.join('') + '</' + px + 'sheetData>' + fusions + (o.queue || '') +
       '<' + px + 'rowBreaks count="0"/></' + px + 'worksheet>');
   });
   const chemin = function (c) { return spec.cheminsAbsolus ? '/xl/' + c : c; };
@@ -175,7 +183,8 @@ function xlsx(spec) {
   if (spec.chaines !== 'inline') rels.push('<Relationship Id="rId' + (n + 2) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="' + chemin('sharedStrings.xml') + '"/>');
   parties.push({ nom: 'xl/_rels/workbook.xml.rels', donnees: '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + rels.join('') + '</Relationships>' });
   feuilles.forEach(function (x, k) { parties.push({ nom: 'xl/worksheets/sheet' + (k + 1) + '.xml', donnees: x }); });
-  parties.push({ nom: 'xl/styles.xml', donnees: '<?xml version="1.0" encoding="UTF-8"?><' + px + 'styleSheet' + nsP + '><' + px + 'numFmts count="3"><' + px + 'numFmt numFmtId="164" formatCode="00000"/><' + px + 'numFmt numFmtId="165" formatCode="#,##0.00\\ &quot;€&quot;"/><' + px + 'numFmt numFmtId="166" formatCode="000"/></' + px + 'numFmts>' +
+  parties.push({ nom: 'xl/styles.xml', donnees: '<?xml version="1.0" encoding="UTF-8"?><' + px + 'styleSheet' + nsP + '><' + px + 'numFmts count="5"><' + px + 'numFmt numFmtId="164" formatCode="00000"/><' + px + 'numFmt numFmtId="165" formatCode="#,##0.00\\ &quot;€&quot;"/><' + px + 'numFmt numFmtId="166" formatCode="000"/>' +
+    '<' + px + 'numFmt numFmtId="167" formatCode="dd/mm/yyyy"/><' + px + 'numFmt numFmtId="168" formatCode="dd/mm/yyyy\\ hh:mm"/></' + px + 'numFmts>' +
     '<' + px + 'fonts count="1"><' + px + 'font><' + px + 'sz val="11"/><' + px + 'name val="Calibri"/></' + px + 'font></' + px + 'fonts>' +
     '<' + px + 'fills count="2"><' + px + 'fill><' + px + 'patternFill patternType="none"/></' + px + 'fill><' + px + 'fill><' + px + 'patternFill patternType="gray125"/></' + px + 'fill></' + px + 'fills>' +
     '<' + px + 'borders count="1"><' + px + 'border><' + px + 'left/><' + px + 'right/><' + px + 'top/><' + px + 'bottom/><' + px + 'diagonal/></' + px + 'border></' + px + 'borders>' +

@@ -78,6 +78,12 @@ async function reinitialiser(pg) {
      intitules, l'ordre de la feuille. C'est la condition pour que tout le
      monde regarde la meme chose. */
   section('Le tableau ouvre sur l\'extract entier');
+  /* Débrief 20 : les sections en panneaux allongent la page ; le tableau
+     n'est plus dans la zone que le navigateur met en page à l'ouverture
+     (content-visibility), et ses colonnes figées ne se posent qu'en
+     paraissant. On l'amène à l'écran avant de les mesurer, puis on remonte. */
+  await p.evaluate(() => document.getElementById('cadre-tableau').scrollIntoView());
+  await p.waitForTimeout(500);
   const extrait = await p.evaluate(() => ({
     affichees: document.querySelectorAll('tr.titres th').length,
     ordre: [...document.querySelectorAll('tr.titres th')].map(t => t.dataset.cle),
@@ -113,6 +119,7 @@ async function reinitialiser(pg) {
     extrait.gauches[0] === 0 &&
     extrait.gauches.every((g, i) => i === 0 || g > extrait.gauches[i - 1]),
     JSON.stringify(extrait.gauches));
+  await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(200);
 
   // =================================================================
   section('Les deux vues du tableau');

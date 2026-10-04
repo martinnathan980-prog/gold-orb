@@ -3,7 +3,7 @@
  * =============================================================
  * Côté serveur (Google Apps Script).
  *
- * Ce fichier ne fait que six choses :
+ * Ce fichier ne fait que sept choses :
  *   1. reconnaître les contrats du classeur : chaque onglet VISIBLE qui n'est
  *      pas un onglet de service est un contrat, et le nom de l'onglet est à la
  *      fois son identifiant et son nom (« X1 ») ;
@@ -17,7 +17,10 @@
  *   5. fournir les jalons du programme, fixés ici dans la configuration :
  *      la page les montre, personne ne les modifie à l'écran ;
  *   6. lire, si la configuration en nomme un, l'onglet d'une seconde base à
- *      rapprocher des plans (CONFIG.RAPPROCHEMENT) — la page fait le reste.
+ *      rapprocher des plans (CONFIG.RAPPROCHEMENT) — la page fait le reste ;
+ *   7. importer, sans Excel, les exports de la semaine choisis sur le poste
+ *      (menu Suivi FWD → Importer les exports GATES et SEE) : chacun dans
+ *      son onglet, puis le relevé de la semaine archivé.
  *
  * La page est rendue d'une traite : Index.html injecte le paquet du PREMIER
  * contrat (l'ordre des onglets) au moment de l'évaluation du modèle, sans
@@ -39,7 +42,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = '4bf7a55';
+const EDITION = '9dc320b';
 
 // =====================================================================
 //  CONFIGURATION
@@ -373,11 +376,12 @@ function onOpen() {
     .createMenu('Suivi FWD')
     .addItem('Ouvrir le tableau de bord', 'ouvrirTableauDeBord')
     .addSeparator()
+    /* Le geste de chaque semaine d'abord : les exports, et le relevé avec. */
+    .addItem(libelleImport(), 'importerSecondeBase')
+    .addSeparator()
     .addItem('Archiver le relevé de cette semaine', 'enregistrerInstantaneHebdo')
     .addItem('Supprimer le relevé de cette semaine', 'supprimerDernierReleve')
     .addItem('Archiver l\'onglet affiché pour une semaine passée…', 'archiverSemainePassee')
-    .addSeparator()
-    .addItem(libelleImport(), 'importerSecondeBase')
     .addSeparator()
     .addItem('Activer l\'archivage automatique (vendredi 17 h)', 'installerSuiviHebdomadaire')
     .addItem('Désactiver l\'archivage automatique', 'desinstallerSuiviHebdomadaire')
@@ -544,6 +548,10 @@ function nomAttenduSecondeBase(classeur, contrat) {
 
 function estOngletInterne(nom) {
   const n = normaliser(nom);
+  /* Le reste d'un import, « HDK (import 3f2a9c) » ou « HDK (ancien 3f2a9c) »,
+     n'est jamais un contrat : un import interrompu ne doit pas en faire
+     apparaître un de plus, ni l'archivage lui ouvrir un historique. */
+  if (estOngletImport(nom)) return true;
   /* L'onglet de la seconde base n'est pas un contrat non plus — ni celui
      d'un contrat, « SEE HDK ». */
   const internes = CONFIG.FEUILLES_INTERNES
@@ -643,10 +651,14 @@ function aDesEntetesLus(feuille) {
  */
 function ligneDEnteteDExport(ligne) {
   const cellules = (ligne || []).map(normaliser).filter(Boolean);
-  if (cellules.length < 10) return false;
+  if (cellules.length < ENTETE_EXPORT_MIN_INTITULES) return false;
   return CONFIG.MOTS_CLES_ENTETE.map(normaliser)
-    .filter(function (m) { return cellules.indexOf(m) !== -1; }).length >= 2;
+    .filter(function (m) { return cellules.indexOf(m) !== -1; }).length >= ENTETE_EXPORT_MIN_MOTS;
 }
+/* Les deux nombres de la règle, écrits une fois : la fenêtre d'import les
+   reçoit tels quels pour reconnaître un export GATES dans un fichier. */
+const ENTETE_EXPORT_MIN_INTITULES = 10;
+const ENTETE_EXPORT_MIN_MOTS = 2;
 
 /** Les onglets visibles écartés des contrats, et pourquoi : [{ nom, raison: 'export' | 'copie' }]. */
 function ongletsEcartes(classeur) {
@@ -662,11 +674,13 @@ function messageSansContrat(classeur) {
   const vides = classeur.getSheets()
     .filter(function (f) { return !f.isSheetHidden() && !estOngletInterne(f.getName()) && f.getLastRow() === 0; })
     .map(function (f) { return '« ' + f.getName() + ' »'; });
+  /* Le geste d'abord par le menu d'import — il crée l'onglet du contrat —,
+     le collage ensuite. */
   return 'Aucun onglet de données exploitable dans ce classeur : ' +
     (vides.length
       ? vides.join(', ') + (vides.length > 1 ? ' sont vides' : ' est vide') +
-        ' — coller l\'export GATES en A1 d\'un onglet nommé du contrat.'
-      : 'aucun onglet visible.');
+        ' — ' + cheminImport() + ', ou coller l\'export GATES en A1 d\'un onglet nommé du contrat.'
+      : 'aucun onglet visible — ' + cheminImport() + ' crée l\'onglet du contrat.');
 }
 
 /**
@@ -823,14 +837,17 @@ function trouverIndexFWD(entetes, groupes) {
 
 /** Index de la colonne qui identifie un plan : elle sera figée à gauche. */
 function trouverIndexReference(entetes) {
-  const motifs = ['reference ud', 'reference', 'ref', 'identifiant', 'numero de plan', 'plan'];
-  for (let m = 0; m < motifs.length; m++) {
+  for (let m = 0; m < MOTIFS_REFERENCE.length; m++) {
     for (let i = 0; i < entetes.length; i++) {
-      if (normaliser(entetes[i]).indexOf(motifs[m]) !== -1) return i;
+      if (normaliser(entetes[i]).indexOf(MOTIFS_REFERENCE[m]) !== -1) return i;
     }
   }
   return 0;
 }
+/* Les intitulés de la colonne de référence, dans l'ordre de préférence. La
+   fenêtre d'import choisit la même colonne dans un fichier, pour rattacher
+   un export GATES au contrat dont il partage les plans. */
+const MOTIFS_REFERENCE = ['reference ud', 'reference', 'ref', 'identifiant', 'numero de plan', 'plan'];
 
 /** Index de la colonne qui distingue le perso de la base/option. */
 function trouverIndexDomaine(entetes, groupes) {
@@ -1178,7 +1195,7 @@ function getDonneesPourClientLues(contrat) {
       edition: EDITION,
       message: [modele.avertissement, modele.avertissementConcept,
                 modele.plans.length ? '' : 'L\'onglet « ' + modele.feuille + ' » ne porte aucun plan (en-têtes seuls) : ' +
-                  'y coller l\'export GATES du contrat en A1.'].filter(Boolean).join(' '),
+                  'importer l\'export GATES du contrat (' + cheminImport() + '), ou l\'y coller en A1.'].filter(Boolean).join(' '),
       avis: [avisHistorique, avisOrphelins(historiquesOrphelins(classeur, contrats), modele.feuille,
                contratsSansHistorique(classeur, contrats).map(function (c) { return c.id; }))].filter(Boolean).join(' '),
       historiqueIllisible: !!avisHistorique,
@@ -1588,7 +1605,8 @@ function diagnostic() {
       'Déployer. En bas de la page, « Livraison ' + EDITION + ' » dit que c\'est fait.');
   }
 
-  /* Les contrats : un onglet visible chacun. Sans aucun, rien à diagnostiquer. */
+  /* Les contrats : un onglet visible chacun. Sans aucun, rien à diagnostiquer
+     — sauf le reste d'un premier import interrompu, qui dit pourquoi. */
   let contrats = [];
   try {
     contrats = listerContrats(classeur);
@@ -1597,6 +1615,7 @@ function diagnostic() {
     }
   } catch (err) {
     dire('✗ Onglet de données : ' + err.message);
+    direRestesDImport(classeur, dire);
     return terminerDiagnostic(lignes);
   }
   if (CONFIG.FEUILLE_DONNEES) {
@@ -1612,9 +1631,10 @@ function diagnostic() {
     } else {
       dire('– Onglet « ' + e.nom + ' » écarté : pas de ligne d\'en-têtes d\'export dans ses ' + CONFIG.LIGNES_SCAN_ENTETE +
            ' premières lignes (au moins deux de Référence UD, ATA, Nom installation, chacun seul dans sa cellule, sur une ' +
-           'ligne d\'au moins dix intitulés). Si c\'est un export, le recoller entier en A1.');
+           'ligne d\'au moins dix intitulés). Si c\'est un export, le réimporter (' + cheminImport() + ') ou le recoller entier en A1.');
     }
   });
+  direRestesDImport(classeur, dire);
 
   let tousLisibles = true;
   contrats.forEach(function (c) {
@@ -1824,12 +1844,6 @@ function diagnostiquerSecondeBase(classeur, dire) {
     if (!diagnostiquerSecondeBaseDe(classeur, c ? c.id : undefined, plusieurs ? ' de « ' + c.nom + ' »' : '', dire)) tout = false;
   });
   const base = feuilleRapprochement();
-  /* Un import interrompu (la fenêtre fermée en cours d'envoi) laisse son
-     onglet temporaire : le dire, il ne sert à rien. Le prochain import le
-     retire de lui-même. */
-  classeur.getSheets().filter(function (f) { return estOngletImport(f.getName()); }).forEach(function (f) {
-    dire('⚠ L\'onglet « ' + f.getName() + ' » est le reste d\'un import interrompu : le supprimer, ou relancer l\'import (il le retire).');
-  });
   if (plusieurs && base) {
     const generique = classeur.getSheets().filter(function (f) { return nomCompact(f.getName()) === nomCompact(base); })[0];
     if (generique) {
@@ -1838,6 +1852,21 @@ function diagnostiquerSecondeBase(classeur, dire) {
     }
   }
   return tout;
+}
+
+/**
+ * Un import interrompu — la fenêtre fermée en cours d'envoi, un échange
+ * coupé — laisse son onglet temporaire, « HDK (import 3f2a9c) », ou l'ancien
+ * mis de côté, « HDK (ancien 3f2a9c) » : ni l'un ni l'autre n'est lu. On le
+ * dit ; le prochain import du même onglet les retire de lui-même.
+ */
+function direRestesDImport(classeur, dire) {
+  classeur.getSheets().filter(function (f) { return estOngletImport(f.getName()); }).forEach(function (f) {
+    const ancien = IMPORT_MOTIF.exec(f.getName())[1] === 'ancien';
+    dire('⚠ L\'onglet « ' + f.getName() + ' » est le reste d\'un import interrompu' +
+         (ancien ? ' (l\'ancien onglet, mis de côté le temps de l\'échange)' : '') +
+         ' : il n\'est pas lu. Le supprimer, ou relancer l\'import (il le retire).');
+  });
 }
 
 function diagnostiquerSecondeBaseDe(classeur, contrat, pour, dire) {
@@ -1852,12 +1881,12 @@ function diagnostiquerSecondeBaseDe(classeur, contrat, pour, dire) {
       return true;
     case 'absent':
       dire('– Seconde base ' + nom + ' : aucun onglet « ' + base.onglet + ' » — pas de rapprochement.');
-      dire('   → menu Suivi FWD → ' + libelleImport() + ', sans ouvrir le fichier dans Excel ; ou un onglet nommé « ' +
+      dire('   → ' + cheminImport() + ', sans ouvrir le fichier dans Excel ; ou un onglet nommé « ' +
            base.onglet + ' », l\'extract collé en A1 tel quel, avec ses colonnes ' + base.cles.join(', ') + '.');
       return true;
     case 'vide':
       dire('⚠ Seconde base ' + nom + ' : l\'onglet « ' + base.onglet + ' » est vide — pas de rapprochement.');
-      dire('   → menu Suivi FWD → ' + libelleImport() + ', ou coller l\'extract en A1.');
+      dire('   → ' + cheminImport() + ', ou coller l\'extract en A1.');
       return false;
     case 'sans-reference': {
       dire('⚠ Seconde base ' + nom + ' : onglet « ' + base.onglet + ' » trouvé, mais la référence (' +
@@ -1948,7 +1977,7 @@ function diagnostiquerContrat(classeur, contrat, dire) {
     const donnees = feuille.getDataRange().getDisplayValues();
     dire('  ' + donnees.length + ' lignes lues dans l\'onglet');
     if (donnees.length === 0) {
-      dire('✗ L\'onglet est vide : collez l\'export GATES en A1.');
+      dire('✗ L\'onglet est vide : importer l\'export GATES (' + cheminImport() + '), ou le coller en A1.');
       return false;
     }
     const iEntete = detecterLigneEntete(donnees);
@@ -1961,8 +1990,9 @@ function diagnostiquerContrat(classeur, contrat, dire) {
     } else {
       dire('✗ Ligne d\'en-têtes introuvable : aucun intitulé attendu (Référence UD, ATA, Nom installation) dans les ' +
            CONFIG.LIGNES_SCAN_ENTETE + ' premières lignes.');
-      dire('   → recoller l\'extract entier en A1, avec ses lignes de groupes et d\'en-têtes. Le reste de cet onglet n\'est pas');
-      dire('     détaillé : ses « intitulés » seraient des cellules de plans, qui ne sortent pas d\'ici.');
+      dire('   → réimporter l\'export (' + cheminImport() + '), ou le recoller entier en A1, avec ses lignes de groupes et');
+      dire('     d\'en-têtes. Le reste de cet onglet n\'est pas détaillé : ses « intitulés » seraient des cellules de plans,');
+      dire('     qui ne sortent pas d\'ici.');
       return false;
     }
 
@@ -2011,7 +2041,8 @@ function diagnostiquerContrat(classeur, contrat, dire) {
     }
     if (modele.doublons > 0) {
       dire('⚠ ' + modele.doublons + ' ligne(s) répètent une référence déjà vue : un export collé par-dessus l\'ancien, sans Ctrl+A puis Suppr ?');
-      dire('   Seule la première ligne de chaque référence compte, comme sur la page et dans le relevé. Recoller l\'export sur un onglet vidé.');
+      dire('   Seule la première ligne de chaque référence compte, comme sur la page et dans le relevé. Réimporter l\'export (' +
+           cheminImport() + ' : l\'onglet est remplacé en entier), ou le recoller sur un onglet vidé.');
     }
     if (colRef && /^Colonne \d+$/.test(colRef.titre)) {
       dire('⚠ La référence est lue dans « ' + colRef.titre + ' », une colonne sans intitulé : l\'en-tête « Référence UD » n\'a pas été trouvé.');
@@ -2104,7 +2135,8 @@ function direJournal(dire, histo, modele) {
       dire('  entre ' + avant.semaine + ' et ' + dernier.semaine + ' : ' + n + ' plan(s) ont changé de valeur — c\'est ce que dit le journal.');
       if (n === 0) {
         dire('⚠ Les deux derniers relevés sont identiques, plan par plan : le même extract a sans doute été archivé deux fois.');
-        dire('   Le journal restera vide. Recoller le dernier export de GATES, puis archiver de nouveau.');
+        dire('   Le journal restera vide. Importer le dernier export de GATES (' + cheminImport() + ', qui archive dans la foulée),');
+        dire('   ou le recoller, puis archiver de nouveau.');
       }
     }
   }
@@ -2662,7 +2694,7 @@ function archiverContrat(classeur, c, semaine) {
     const courante = numeroSemaineISO(new Date());
     const erreur = new Error('l\'onglet « ' + c.nom + ' » porte le même export que le relevé ' + semaineDite(ancien, courante) +
       ' : le relevé ' + semaineDite(semaine, courante) + ' déjà archivé, différent, n\'est pas écrasé. ' +
-      'Recoller l\'export du jour, puis archiver.');
+      'Importer l\'export du jour (' + cheminImport() + ', qui archive dans la foulée), ou le recoller puis archiver.');
     erreur.ancienExport = true;
     throw erreur;
   }
@@ -2762,11 +2794,12 @@ function supprimerDernierReleve() {
   if (!supprimes.length) {
     message = 'Aucun relevé pour la semaine en cours (' + dite + ').';
   } else if (contrats.length === 1) {
-    message = 'Relevé ' + dite + ' supprimé. Recollez le bon export puis relancez l\'archivage.';
+    message = 'Relevé ' + dite + ' supprimé. Importez le bon export (' + cheminImport() + ', qui archive dans la foulée), ' +
+      'ou recollez-le puis relancez l\'archivage.';
   } else {
     message = 'Relevé ' + dite + ' supprimé pour ' + nommer(supprimes) +
       (sans.length ? ' ; aucun relevé pour ' + nommer(sans) : '') +
-      '. Recollez le bon export puis relancez l\'archivage.';
+      '. Importez le bon export (' + cheminImport() + ', qui archive dans la foulée), ou recollez-le puis relancez l\'archivage.';
   }
   ui.alert(message);
   return { semaine: semaine, supprimes: supprimes, sans: sans };
@@ -2886,8 +2919,8 @@ function preparerSemainePassee(classeur, nomOnglet, saisie) {
     })[0];
     if (parent) {
       return { ok: false, semaine: semaine, message: 'L\'onglet « ' + contrat.nom + ' » n\'a aucun relevé : ce serait un nouveau contrat. ' +
-        'Coller l\'export de ' + dite + ' dans l\'onglet « ' + parent.nom + ' » lui-même (Ctrl+A, Suppr, A1, Ctrl+V), ' +
-        'l\'afficher, puis relancer. L\'onglet « ' + contrat.nom + ' » peut être supprimé.' };
+        'Mettre l\'export de ' + dite + ' dans l\'onglet « ' + parent.nom + ' » lui-même — ' + cheminImport() + ', case « Archiver » ' +
+        'décochée, ou Ctrl+A, Suppr, A1, Ctrl+V —, l\'afficher, puis relancer. L\'onglet « ' + contrat.nom + ' » peut être supprimé.' };
     }
     const orphelins = historiquesOrphelins(classeur, contrats);
     if (orphelins.length) {
@@ -2907,10 +2940,10 @@ function preparerSemainePassee(classeur, nomOnglet, saisie) {
                 (historique ? '' : autresAvecHistorique.length
                   ? '\n\n⚠ « ' + contrat.nom + ' » n\'a encore aucun relevé : ce sera un NOUVEAU contrat, avec son propre ' +
                     'historique, archivé chaque vendredi. Pour rattraper une semaine de « ' + autresAvecHistorique[0].nom +
-                    ' », coller l\'export dans son onglet à lui.'
+                    ' », mettre l\'export dans son onglet à lui (par l\'import, case « Archiver » décochée, ou par un collage).'
                   : ' C\'est le tout premier relevé de ce contrat.')) +
-      (actuelle ? '' : '\n\nEnsuite, recolle tout de suite l\'export du jour dans « ' + contrat.nom + ' » : sinon l\'archivage ' +
-        'du vendredi prendrait cet export-là pour celui de la semaine en cours.')
+      (actuelle ? '' : '\n\nEnsuite, remets tout de suite l\'export du jour dans « ' + contrat.nom + ' » (' + cheminImport() +
+        ', ou un collage) : sinon l\'archivage du vendredi prendrait cet export-là pour celui de la semaine en cours.')
   };
 }
 
@@ -2925,7 +2958,8 @@ function archiverPourSemaine(classeur, nomOnglet, saisie) {
     return { ok: true, semaine: prevu.semaine, message: 'Relevé ' + dite + ' de « ' + prevu.contrat.nom + ' » ' +
       (prevu.existe ? 'remplacé' : 'archivé') + ' avec l\'export affiché (' + detail.compte.total + ' plans).' +
       (prevu.semaine === courante ? '' : '\n\n⚠ L\'onglet « ' + prevu.contrat.nom + ' » porte maintenant l\'export de ' + dite +
-        ' : recolle l\'export du jour, puis Suivi FWD → Archiver le relevé de cette semaine.') };
+        ' : importe l\'export du jour (' + cheminImport() + ', qui archive dans la foulée), ou recolle-le puis Suivi FWD → ' +
+        'Archiver le relevé de cette semaine.') };
   } catch (err) {
     const pourquoi = err && err.sansPlan ? 'l\'onglet « ' + prevu.contrat.nom + ' » ne porte aucun plan (en-têtes seuls)'
       : (err && err.message ? err.message : err);
@@ -3064,15 +3098,41 @@ function getRapprochement(classeur, contrat) {
 function lireSecondeBase(classeur, contrat) {
   const cfg = CONFIG.RAPPROCHEMENT;
   const nomFeuille = feuilleRapprochement();
-  const clesVoulues = !cfg ? [] : [].concat(cfg.CLE_REFERENCE === undefined || cfg.CLE_REFERENCE === null ? [] : cfg.CLE_REFERENCE)
-    .map(function (c) { return String(c).trim(); }).filter(Boolean);
+  const clesVoulues = clesSecondeBase();
   const rendu = { etat: 'sans-configuration', onglet: nomFeuille, cles: clesVoulues, entetes: [], ligneEntete: null, rapprochement: null };
   if (!cfg || !nomFeuille || !clesVoulues.length) return rendu;
   const feuille = ongletSecondeBase(classeur, contrat);
   if (!feuille) { rendu.etat = 'absent'; rendu.onglet = nomAttenduSecondeBase(classeur, contrat); return rendu; }
   rendu.onglet = feuille.getName();
 
-  const donnees = feuille.getDataRange().getDisplayValues();
+  const t = lireTableauSecondeBase(feuille.getDataRange().getDisplayValues(), clesVoulues);
+  if (t.etat === 'vide') { rendu.etat = 'vide'; return rendu; }
+  rendu.entetes = t.entetes.filter(Boolean);
+  rendu.ligneEntete = t.ligneEntete;
+  if (t.etat === 'sans-reference') { rendu.etat = 'sans-reference'; return rendu; }
+  const essentielles = (Array.isArray(cfg.ESSENTIELLES) ? cfg.ESSENTIELLES : [])
+    .map(t.enteteLa).filter(Boolean);
+
+  rendu.etat = 'ok';
+  rendu.rapprochement = {
+    nom: String(cfg.NOM || feuille.getName()).trim().slice(0, 80) || feuille.getName(),
+    cleReference: t.clesReference.length === 1 ? t.clesReference[0] : t.clesReference,
+    lignes: t.lignes,
+    colonnes: t.entetes.filter(Boolean),
+    essentielles: essentielles
+  };
+  return rendu;
+}
+
+/**
+ * Le tableau d'une seconde base, lu dans ses valeurs (un tableau de lignes) :
+ *   { etat: 'vide' | 'sans-reference' | 'ok', entetes, ligneEntete,
+ *     lignes: [{ intitulé: valeur }], clesReference, enteteLa }.
+ * Sert à lireSecondeBase (l'onglet du classeur) comme à la fenêtre d'import
+ * (importDevinerContratSEE : un échantillon du fichier choisi, pour deviner
+ * son contrat) — les deux lisent de la même façon.
+ */
+function lireTableauSecondeBase(donnees, clesVoulues) {
   let indexEntete = -1, premiereNonVide = -1, presque = -1, mieuxPortes = 0;
   const limite = Math.min(CONFIG.LIGNES_SCAN_ENTETE, donnees.length);
   for (let i = 0; i < limite && indexEntete === -1; i++) {
@@ -3095,23 +3155,10 @@ function lireSecondeBase(classeur, contrat) {
       if (ligneNonVide(donnees[i])) { indexEntete = i; break; }
     }
   }
-  if (indexEntete === -1) { rendu.etat = 'vide'; return rendu; }
-  const entetes = donnees[indexEntete].map(function (e) { return String(e).trim(); });
-  rendu.entetes = entetes.filter(Boolean);
-  rendu.ligneEntete = indexEntete + 1;
-
-  const lignes = [];
-  for (let i = indexEntete + 1; i < donnees.length; i++) {
-    if (!ligneNonVide(donnees[i])) continue;
-    const ligne = {};
-    /* Deux colonnes du même intitulé : la première compte — la même que
-       retient l'import de la base (menu Suivi FWD). */
-    entetes.forEach(function (titre, j) {
-      if (!titre || Object.prototype.hasOwnProperty.call(ligne, titre)) return;
-      ligne[titre] = String(donnees[i][j] === undefined ? '' : donnees[i][j]);
-    });
-    lignes.push(ligne);
+  if (indexEntete === -1) {
+    return { etat: 'vide', entetes: [], ligneEntete: null, lignes: [], clesReference: [], enteteLa: function () { return ''; } };
   }
+  const entetes = donnees[indexEntete].map(function (e) { return String(e).trim(); });
 
   /* Un intitulé de la seconde base, retrouvé sans tenir compte de la casse ni
      des accents, mais rendu tel qu'il est écrit dans l'onglet. */
@@ -3122,20 +3169,21 @@ function lireSecondeBase(classeur, contrat) {
     }
     return '';
   }
-
   const clesReference = clesVoulues.map(enteteLa);
+  const rendu = { etat: 'ok', entetes: entetes, ligneEntete: indexEntete + 1, lignes: [], clesReference: clesReference, enteteLa: enteteLa };
   if (clesReference.some(function (c) { return !c; })) { rendu.etat = 'sans-reference'; return rendu; }
-  const essentielles = (Array.isArray(cfg.ESSENTIELLES) ? cfg.ESSENTIELLES : [])
-    .map(enteteLa).filter(Boolean);
 
-  rendu.etat = 'ok';
-  rendu.rapprochement = {
-    nom: String(cfg.NOM || feuille.getName()).trim().slice(0, 80) || feuille.getName(),
-    cleReference: clesReference.length === 1 ? clesReference[0] : clesReference,
-    lignes: lignes,
-    colonnes: entetes.filter(Boolean),
-    essentielles: essentielles
-  };
+  for (let i = indexEntete + 1; i < donnees.length; i++) {
+    if (!ligneNonVide(donnees[i])) continue;
+    const ligne = {};
+    /* Deux colonnes du même intitulé : la première compte — la même que
+       retient l'import de la base (menu Suivi FWD). */
+    entetes.forEach(function (titre, j) {
+      if (!titre || Object.prototype.hasOwnProperty.call(ligne, titre)) return;
+      ligne[titre] = String(donnees[i][j] === undefined ? '' : donnees[i][j]);
+    });
+    rendu.lignes.push(ligne);
+  }
   return rendu;
 }
 
@@ -3292,48 +3340,107 @@ function assurerLignes(feuille, nbLignes) {
 }
 
 // =====================================================================
-//  IMPORT DE LA SECONDE BASE, SANS EXCEL
+//  IMPORT DES EXPORTS GATES ET SEE, SANS EXCEL
 // =====================================================================
 
 /**
- * « Les données de SEE sont tellement grosses, l'Excel bug à l'ouverture,
- * j'arrive pas à les copier. » Le menu Suivi FWD → Importer la base SEE
- * ouvre une petite fenêtre où l'on choisit le fichier : Chrome le lit sur le
- * poste — un .xlsx est un zip, il se décompresse et se lit au fil de l'eau,
- * sans Excel et sans tout charger —, et n'envoie au classeur que la ligne
- * d'en-tête et les colonnes de la comparaison (NAME, SOL., Cust.V) : quelques
- * mégaoctets au lieu de centaines. Le fichier lui-même ne quitte pas le poste.
+ * « Je sélectionne les fichiers Excel qu'il faut, et directement ça les met
+ * dans la bonne position, la sauvegarde, tout : j'ai même plus à les
+ * copier-coller » (débrief 20). Le menu Suivi FWD → Importer les exports
+ * GATES et SEE ouvre une fenêtre où l'on choisit, d'un coup, les fichiers de
+ * la semaine. Chrome les lit sur le poste, l'un après l'autre — un .xlsx est
+ * un zip, il se décompresse et se lit au fil de l'eau, sans Excel et sans
+ * tout charger —, reconnaît chacun à sa ligne d'en-têtes, devine son contrat
+ * et l'envoie dans son onglet :
+ *   – l'export GATES d'un contrat remplace l'onglet du contrat tel quel,
+ *     comme un collage : chaque ligne à son numéro, chaque colonne de A à la
+ *     dernière remplie, et les cellules fusionnées de la ligne des groupes —
+ *     c'est par elles que la page reconnaît la colonne suivie (HDK AA 011).
+ *     Puis, si la case est cochée, le relevé de la semaine de ce contrat est
+ *     archivé ;
+ *   – l'export SEE n'envoie que sa ligne d'en-tête et les colonnes de la
+ *     comparaison (NAME, SOL., Cust.V) : quelques mégaoctets au lieu de
+ *     centaines.
+ * Les fichiers eux-mêmes ne quittent pas le poste.
  *
- * L'écriture se fait par lots dans un onglet temporaire, « SEE HDK (import
- * 3f2a9c) », taillé d'avance à la mesure des données ; l'onglet de la base
- * n'est remplacé qu'une fois toutes les lignes reçues. Un import interrompu
- * laisse l'ancien en place. Chaque appel de la fenêtre présente le jeton
- * reçu à son ouverture, ou passe la garde des gestes qui écrivent : rien de
- * tout cela n'est possible depuis la page du tableau de bord.
+ * L'écriture se fait par lots dans un onglet temporaire — « HDK (import
+ * 3f2a9c) », « SEE HDK (import 3f2a9c) » —, taillé d'avance à la mesure des
+ * données ; l'onglet visé n'est remplacé qu'une fois toutes les lignes
+ * reçues, à sa place et sous son nom : l'historique, rangé sous ce nom
+ * (Historique_FWD_HDK), suit sans rien faire. Un import interrompu laisse
+ * l'ancien en place. Chaque appel de la fenêtre présente le jeton reçu à son
+ * ouverture, ou passe la garde des gestes qui écrivent : rien de tout cela
+ * n'est possible depuis la page du tableau de bord.
+ *
+ * Les fonctions gardent leur nom d'origine (importSecondeBase…) : SEE a été
+ * importé le premier, et une fenêtre ouverte avant une livraison les appelle
+ * encore ainsi. Elles servent désormais aux deux sortes d'export.
  */
-const IMPORT_MOTIF = / \(import ([0-9a-z]{4,12})\)$/;
+/* L'étiquette des onglets d'un import : six chiffres hexadécimaux, dont au
+   moins une lettre (etiquetteImport) — ce qu'un onglet nommé à la main,
+   « HDK (ancien export) » ou « HDK (ancien 041026) », n'a pas : celui-là
+   reste un onglet comme un autre, jamais retiré par un import. */
+const IMPORT_MOTIF = / \((import|ancien) ((?=[0-9a-f]*[a-f])[0-9a-f]{6})\)$/;
 const IMPORT_MAX_LIGNES_LOT = 20000;
 const IMPORT_MAX_COLONNES = 400;
+const IMPORT_MAX_FICHIERS = 10;
+const IMPORT_MAX_FUSIONS = 2000;
+const IMPORT_MAX_REFERENCES = 30000;       // par contrat : ce que la fenêtre reçoit pour deviner
+const IMPORT_ECHANTILLON_SEE = 400;        // lignes d'un export SEE envoyées pour deviner son contrat
+const IMPORT_SEUIL_RECOUVREMENT = 0.2;     // part de ses plans qu'un fichier doit partager avec un contrat
 const IMPORT_LIMITE_CELLULES = 10000000;   // la limite d'un classeur Google Sheets, cellules vides comprises
 const CLE_JETON_IMPORT = 'SUIVI_FWD_JETON_IMPORT';
 const IMPORT_JETON_DUREE = 6 * 3600 * 1000;
+/* Le nom d'un nouveau contrat devient celui de son onglet, de son historique
+   (« Historique_FWD_ » devant) et de l'onglet temporaire de ses imports
+   (« (import xxxxxx) » derrière) : 80 caractères laissent les trois sous la
+   centaine qu'accepte un nom d'onglet. */
+const NOM_CONTRAT_MAX = 80;
 
-/** Le libellé de l'article du menu — le même au menu et dans le Diagnostic. */
+/** Le libellé de l'article du menu — le même au menu, en titre de la fenêtre et dans le Diagnostic. */
 function libelleImport() {
-  return 'Importer la base ' + (feuilleRapprochement() || 'SEE') + ' (fichier Excel ou CSV)…';
+  const base = feuilleRapprochement();
+  return 'Importer les exports GATES' + (base ? ' et ' + base : '') + '…';
 }
 
-/** Un onglet temporaire d'import : « SEE HDK (import 3f2a9c) ». */
+/** Le chemin du menu, pour les messages qui disent le geste : l'import d'abord, le collage ensuite. */
+function cheminImport() {
+  return 'menu Suivi FWD → ' + libelleImport();
+}
+
+/**
+ * Un onglet laissé par un import : le temporaire, « HDK (import 3f2a9c) »,
+ * ou l'ancien mis de côté le temps de l'échange, « HDK (ancien 3f2a9c) ».
+ * Ni l'un ni l'autre n'est jamais un contrat ni une base SEE : un import
+ * interrompu ne fait pas apparaître un contrat de plus.
+ */
 function estOngletImport(nom) {
-  const base = feuilleRapprochement();
-  const n = String(nom === undefined || nom === null ? '' : nom);
-  const m = IMPORT_MOTIF.exec(n);
-  return !!base && !!m && nomCompact(n.slice(0, m.index)).indexOf(nomCompact(base)) === 0;
+  return IMPORT_MOTIF.test(String(nom === undefined || nom === null ? '' : nom));
+}
+
+/** Six chiffres hexadécimaux, dont au moins une lettre : l'étiquette d'un import (voir IMPORT_MOTIF). */
+function etiquetteImport() {
+  let id = ('00000' + Math.floor(Math.random() * 0x1000000).toString(16)).slice(-6);
+  if (!/[a-f]/.test(id)) id = 'a' + id.slice(1);
+  return id;
+}
+
+/** Le nom visé par un onglet d'import (« HDK » pour « HDK (import 3f2a9c) »), ou null. */
+function soucheDOngletImport(nom) {
+  const n = String(nom === undefined || nom === null ? '' : nom), m = IMPORT_MOTIF.exec(n);
+  return m ? n.slice(0, m.index) : null;
 }
 
 /** Le nom de la base d'un contrat, écrit en toutes lettres : « SEE HDK ». */
 function souchePourImport(idContrat) {
   return feuilleRapprochement() + ' ' + idContrat;
+}
+
+/** Les intitulés de la référence de la seconde base (CONFIG.RAPPROCHEMENT.CLE_REFERENCE), épurés. */
+function clesSecondeBase() {
+  const cfg = CONFIG.RAPPROCHEMENT;
+  return !cfg ? [] : [].concat(cfg.CLE_REFERENCE === undefined || cfg.CLE_REFERENCE === null ? [] : cfg.CLE_REFERENCE)
+    .map(function (c) { return String(c).trim(); }).filter(Boolean);
 }
 
 /**
@@ -3342,13 +3449,16 @@ function souchePourImport(idContrat) {
  * des gestes qui écrivent. La page du tableau de bord n'a ni l'un ni
  * l'autre : le jeton ne s'écrit que dans la fenêtre ouverte par le menu.
  */
-function ouvrirJetonImport() {
+function ouvrirJetonImport_() {
+  /* Le « _ » final la cache de google.script.run : la page du tableau de
+     bord, ouverte par toute l'organisation, ne peut pas se faire donner un
+     jeton (débrief 20). Seul le menu, côté serveur, l'appelle. */
   const jeton = (Utilities.getUuid() + Utilities.getUuid()).replace(/[^0-9a-z]/gi, '');
   PropertiesService.getDocumentProperties().setProperty(CLE_JETON_IMPORT,
     JSON.stringify({ jeton: jeton, expire: new Date().getTime() + IMPORT_JETON_DUREE }));
   return jeton;
 }
-function gesteImport(jeton) {
+function gesteImport_(jeton) {
   let valide = false;
   try {
     const v = JSON.parse(PropertiesService.getDocumentProperties().getProperty(CLE_JETON_IMPORT) || 'null');
@@ -3358,62 +3468,252 @@ function gesteImport(jeton) {
   if (!valide) gesteDuClasseur();
 }
 
-/** Menu : la fenêtre d'import, sur la base du contrat affiché. */
+/**
+ * Menu : la fenêtre d'import. Elle s'ouvre même sans contrat ni seconde base
+ * configurée — le premier export GATES crée le premier contrat ; sans
+ * seconde base, seuls les exports GATES sont reconnus. Le nom de la fonction
+ * est resté celui de l'import SEE, le premier : le menu l'appelle ainsi.
+ */
 function importerSecondeBase() {
   gesteDuClasseur();
-  const ui = SpreadsheetApp.getUi();
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  const page = HtmlService.createHtmlOutput(pageImportSecondeBase(parametresImport_(classeur))).setWidth(720).setHeight(640);
+  SpreadsheetApp.getUi().showModalDialog(page, libelleImport().replace(/…$/, ''));
+}
+
+/**
+ * Ce que la fenêtre reçoit à son ouverture. Les règles qui reconnaissent un
+ * export sont celles du serveur, transmises et non recopiées : la ligne
+ * d'en-têtes d'un export GATES (ligneDEnteteDExport), la colonne de
+ * référence (trouverIndexReference), les colonnes de la seconde base. Et,
+ * pour chaque contrat, les références de ses plans, normalisées : quelques
+ * centaines par contrat, c'est ce qui rattache un export GATES au contrat
+ * dont il partage les plans.
+ */
+function parametresImport_(classeur) {
   const cfg = CONFIG.RAPPROCHEMENT;
-  const nomBase = feuilleRapprochement();
-  const cles = !cfg ? [] : [].concat(cfg.CLE_REFERENCE === undefined || cfg.CLE_REFERENCE === null ? [] : cfg.CLE_REFERENCE)
-    .map(function (c) { return String(c).trim(); }).filter(Boolean);
-  if (!nomBase || !cles.length) {
-    ui.alert('Importer la seconde base', 'Aucune seconde base n’est configurée (CONFIG.RAPPROCHEMENT dans Code).', ui.ButtonSet.OK);
-    return;
-  }
-  const contrats = listerContrats(classeur);
-  if (!contrats.length) {
-    ui.alert('Importer la base ' + nomBase, 'Aucun contrat dans le classeur : coller d’abord l’extract GATES dans un onglet.', ui.ButtonSet.OK);
-    return;
-  }
-  /* Le contrat proposé : celui de l'onglet affiché, ou dont la base est
-     affichée ; sinon le premier. */
+  const base = feuilleRapprochement();
+  const cles = clesSecondeBase();
+  const avecBase = !!base && cles.length > 0;
+  let contrats = [];
+  try { contrats = listerContrats(classeur); } catch (err) { contrats = []; }
   const active = classeur.getActiveSheet() ? classeur.getActiveSheet().getName() : '';
-  let choisi = contrats[0].id;
-  const liste = contrats.map(function (c) {
-    const f = ongletSecondeBase(classeur, c.id);
-    const onglet = f ? f.getName() : souchePourImport(c.id);
-    if (c.id === active || onglet === active) choisi = c.id;
-    return { id: c.id, onglet: onglet, existe: !!f };
+  let choisi = contrats.length ? contrats[0].id : '';
+  const liste = enLecture(function () {
+    return contrats.map(function (c) {
+      const f = avecBase ? ongletSecondeBase(classeur, c.id) : null;
+      const onglet = f ? f.getName() : souchePourImport(c.id);
+      if (c.id === active || (avecBase && onglet === active)) choisi = c.id;
+      let refs = [];
+      try { refs = referencesNormalisees(classeur.getSheetByName(c.id)); } catch (err) { refs = []; }
+      return { id: c.id, onglet: onglet, existe: !!f, refs: refs };
+    });
   });
-  const parametres = {
-    jeton: ouvrirJetonImport(),
-    base: nomBase,
-    cles: cles,
-    essentielles: (Array.isArray(cfg.ESSENTIELLES) ? cfg.ESSENTIELLES : []).map(function (c) { return String(c).trim(); }).filter(Boolean),
+  const semaine = numeroSemaineISO(new Date());
+  return {
+    jeton: ouvrirJetonImport_(),
+    base: avecBase ? base : '',
+    cles: avecBase ? cles : [],
+    essentielles: avecBase ? (Array.isArray(cfg.ESSENTIELLES) ? cfg.ESSENTIELLES : []).map(function (c) { return String(c).trim(); }).filter(Boolean) : [],
     lignesScan: CONFIG.LIGNES_SCAN_ENTETE,
+    motsCles: CONFIG.MOTS_CLES_ENTETE.map(normaliser),
+    minIntitules: ENTETE_EXPORT_MIN_INTITULES,
+    minMotsCles: ENTETE_EXPORT_MIN_MOTS,
+    motifsReference: MOTIFS_REFERENCE,
     maxLignesLot: IMPORT_MAX_LIGNES_LOT,
+    maxColonnes: IMPORT_MAX_COLONNES,
     maxCellulesToutes: 4000000,
+    maxFichiers: IMPORT_MAX_FICHIERS,
     pausesReprise: [2000, 6000],
+    seuilRecouvrement: IMPORT_SEUIL_RECOUVREMENT,
+    echantillonSee: IMPORT_ECHANTILLON_SEE,
     contrats: liste,
-    choisi: choisi
+    choisi: choisi,
+    nouveauPermis: !CONFIG.FEUILLE_DONNEES,
+    nomMax: NOM_CONTRAT_MAX,
+    semaine: semaineDite(semaine, semaine)
   };
-  const page = HtmlService.createHtmlOutput(pageImportSecondeBase(parametres)).setWidth(640).setHeight(540);
-  ui.showModalDialog(page, 'Importer la base ' + nomBase);
+}
+
+/**
+ * Les références des plans d'un onglet de contrat, lues comme la page les
+ * lit : la ligne d'en-têtes (detecterLigneEntete), la colonne de référence
+ * (trouverIndexReference), les cellules non vides dessous. Deux lectures
+ * étroites — le haut de l'onglet, puis une colonne —, pas l'onglet entier.
+ */
+function referencesDeLOnglet(feuille) {
+  if (!feuille) return [];
+  const derniere = feuille.getLastRow(), largeur = feuille.getLastColumn();
+  if (derniere < 2 || largeur < 1) return [];
+  const haut = feuille.getRange(1, 1, Math.min(CONFIG.LIGNES_SCAN_ENTETE, derniere), largeur).getDisplayValues();
+  const iEntete = detecterLigneEntete(haut);
+  const iRef = trouverIndexReference(haut[iEntete].map(function (e) { return String(e).trim(); }));
+  if (derniere <= iEntete + 1) return [];
+  return feuille.getRange(iEntete + 2, iRef + 1, derniere - iEntete - 1, 1).getDisplayValues()
+    .map(function (l) { return String(l[0]).trim(); }).filter(Boolean);
+}
+
+/** Les mêmes, normalisées et sans doublon, pour la fenêtre. */
+function referencesNormalisees(feuille) {
+  const vues = {}, liste = [];
+  referencesDeLOnglet(feuille).forEach(function (r) {
+    const n = normaliser(r);
+    if (n && !Object.prototype.hasOwnProperty.call(vues, n)) { vues[n] = true; liste.push(n); }
+  });
+  return liste.slice(0, IMPORT_MAX_REFERENCES);
 }
 
 /** Le contrat nommé, ou une erreur qui le nomme. */
 function contratPourImport(classeur, idContrat) {
   const id = String(idContrat === undefined || idContrat === null ? '' : idContrat);
   const contrat = listerContrats(classeur).filter(function (c) { return c.id === id; })[0];
-  if (!contrat) throw new Error('Contrat introuvable : « ' + id + ' ». Rouvrir le menu Suivi FWD → Importer la base.');
+  if (!contrat) throw new Error('Contrat introuvable : « ' + id + ' ». Rouvrir le ' + cheminImport());
   return contrat;
 }
 
-/** L'onglet temporaire d'un import en cours — jamais un autre onglet. */
+/**
+ * Le nom d'un nouveau contrat, vérifié : il deviendra le nom d'un onglet, et
+ * le contrat n'existe que par lui. Refusé s'il est vide ou trop long, s'il
+ * est celui d'un onglet de service, d'une base SEE, d'un historique, d'un
+ * import ou d'une copie (aucun ne serait un contrat), ou d'un onglet qui
+ * existe déjà — casse et accents indifférents, comme partout.
+ */
+function nomNouveauContrat(classeur, brut) {
+  const nom = String(brut === undefined || brut === null ? '' : brut).trim();
+  if (!nom) throw new Error('Le nouveau contrat n’a pas de nom : écrire celui de son onglet, comme « HDK ».');
+  if (nom.length > NOM_CONTRAT_MAX) throw new Error('Nom trop long : ' + nom.length + ' caractères (au plus ' + NOM_CONTRAT_MAX + ').');
+  if (estOngletInterne(nom) || estOngletImport(nom) || estCopieDOnglet(nom)) {
+    throw new Error('« ' + nom + ' » est un nom réservé (base ' + (feuilleRapprochement() || 'SEE') + ', historique, onglet de service, ' +
+      'd’import ou copie) : il ne serait pas un contrat. Donner au contrat le nom de son onglet, comme « HDK ».');
+  }
+  const deja = classeur.getSheetByName(nom) || ongletNormalise(classeur, nom);
+  if (deja) {
+    let estContrat = false;
+    try { estContrat = listerContrats(classeur).some(function (c) { return c.id === deja.getName(); }); } catch (err) { estContrat = false; }
+    throw new Error(estContrat
+      ? 'Le contrat « ' + deja.getName() + ' » existe déjà : le choisir dans la liste.'
+      : 'Un onglet « ' + deja.getName() + ' » existe déjà : choisir un autre nom, ou renommer cet onglet.');
+  }
+  return nom;
+}
+
+/** La fenêtre vérifie le nom d'un nouveau contrat dès qu'il est tapé : { ok, nom } ou { ok: false, message }. */
+function importVerifierNouveauContrat(jeton, nom) {
+  gesteImport_(jeton);
+  try {
+    return { ok: true, nom: nomNouveauContrat(SpreadsheetApp.getActiveSpreadsheet(), nom) };
+  } catch (err) {
+    return { ok: false, message: err && err.message ? err.message : String(err) };
+  }
+}
+
+/**
+ * La cible d'un import, résolue et vérifiée — ce que la fenêtre envoie, un
+ * objet { sorte: 'gates' | 'see', contrat, nouveau }, ou l'identifiant d'un
+ * contrat tout court (une base SEE : la forme d'avant le débrief 20) :
+ *   { sorte, contrat, nouveau, onglet (le nom visé), souche (le nom qui
+ *     préfixe l'onglet temporaire), existant (l'onglet remplacé, ou null) }.
+ */
+function cibleImport(classeur, cible) {
+  const c = cible !== null && typeof cible === 'object' ? cible : { sorte: 'see', contrat: cible };
+  if (c.sorte === 'see') {
+    if (!feuilleRapprochement() || !clesSecondeBase().length) {
+      throw new Error('Aucune seconde base n’est configurée (CONFIG.RAPPROCHEMENT dans Code) : rien à importer comme ' + (feuilleRapprochement() || 'SEE') + '.');
+    }
+    const contrat = contratPourImport(classeur, c.contrat);
+    const existant = ongletSecondeBase(classeur, contrat.id);
+    const souche = souchePourImport(contrat.id);
+    return { sorte: 'see', contrat: contrat.id, nouveau: false, onglet: existant ? existant.getName() : souche, souche: souche, existant: existant };
+  }
+  if (c.sorte !== 'gates') throw new Error('Sorte d’import inconnue : « ' + String(c.sorte).slice(0, 20) + ' ».');
+  if (c.nouveau) {
+    if (CONFIG.FEUILLE_DONNEES) throw new Error('CONFIG.FEUILLE_DONNEES impose un seul contrat, « ' + CONFIG.FEUILLE_DONNEES + ' » : pas de nouveau contrat.');
+    const nom = nomNouveauContrat(classeur, c.contrat);
+    return { sorte: 'gates', contrat: nom, nouveau: true, onglet: nom, souche: nom, existant: null };
+  }
+  const contrat = contratPourImport(classeur, c.contrat);
+  return { sorte: 'gates', contrat: contrat.id, nouveau: false, onglet: contrat.id, souche: contrat.id,
+           existant: classeur.getSheetByName(contrat.id) };
+}
+
+/* =====================================================================
+   Deviner le contrat d'un export SEE : la fenêtre en envoie un
+   échantillon (quelques centaines de lignes des colonnes de la référence),
+   lu ici comme lireSecondeBase lit l'onglet, puis rapproché des plans de
+   chaque contrat comme la page les rapproche : par racine + solution, le A
+   du NAME remis à sa place. Seuls des comptes reviennent à la fenêtre.
+   ===================================================================== */
+
+/* ⚠ Les trois fonctions qui suivent reprennent à l'identique, côté serveur,
+   remettreLeA, analyserUD + cleAppariement et refDeLigne du script de la
+   page : c'est par elles que la page apparie SEE à GATES. Toute
+   modification va des deux côtés. */
+const FORME_UD = /^([A-Z]{3})(\d{4})A(\d{3})(\d{3})([A-Z])$/;
+const FORME_UD_SEE = /^[A-Z]{3}\d{3}A\d/;
+/** SEE écrit le A un cran trop tôt (GBE312A3600002B pour GBE3123A600002B) : on le remet à sa place. */
+function udRemettreLeA(brut) {
+  return FORME_UD_SEE.test(brut) ? brut.slice(0, 6) + brut.charAt(7) + 'A' + brut.slice(8) : brut;
+}
+/** La clé d'appariement d'une référence : racine + solution, ou « ? » + la chaîne entière si elle est hors format. */
+function cleRapprochementUD(ref) {
+  const brut = String(ref === undefined || ref === null ? '' : ref).trim().toUpperCase();
+  const m = FORME_UD.exec(udRemettreLeA(brut.replace(/[-_\s.\/]+/g, '')));
+  return m ? m[1] + m[2] + 'A' + m[3] + m[4] : '?' + brut;
+}
+/** La référence d'une ligne de la seconde base : une colonne entière, ou NAME + SOL. (sur trois chiffres) + Cust.V. */
+function refLigneSecondeBase(cleReference, ligne) {
+  if (!Array.isArray(cleReference)) return String(ligne[cleReference] === undefined || ligne[cleReference] === null ? '' : ligne[cleReference]).trim();
+  const parts = cleReference.map(function (k) { return String(ligne[k] === undefined || ligne[k] === null ? '' : ligne[k]).trim(); });
+  if (parts.length === 3) {
+    if (/^\d{1,3}$/.test(parts[1])) parts[1] = ('00' + parts[1]).slice(-3);
+    parts[2] = parts[2].toUpperCase();
+  }
+  return udRemettreLeA(parts.join('').toUpperCase());
+}
+
+/**
+ * L'échantillon d'un export SEE, rapproché de chaque contrat :
+ * { lignes: références distinctes de l'échantillon, contrats: [{ id, commun, part }] }.
+ */
+function importDevinerContratSEE(jeton, entete, lignes) {
+  gesteImport_(jeton);
+  const cles = clesSecondeBase();
+  if (!feuilleRapprochement() || !cles.length) return { lignes: 0, contrats: [] };
+  if (!Array.isArray(entete) || !Array.isArray(lignes)) throw new Error('Échantillon illisible.');
+  const chaine = function (v) { return v === null || v === undefined || typeof v === 'object' ? '' : String(v).slice(0, 1000); };
+  const donnees = [entete.map(chaine)].concat(lignes.slice(0, IMPORT_ECHANTILLON_SEE).map(function (l) {
+    return Array.isArray(l) ? l.map(chaine) : [];
+  }));
+  const t = lireTableauSecondeBase(donnees, cles);
+  if (t.etat !== 'ok') return { lignes: 0, contrats: [] };
+  const cleReference = t.clesReference.length === 1 ? t.clesReference[0] : t.clesReference;
+  const vues = {};
+  let n = 0;
+  t.lignes.forEach(function (l) {
+    const ref = refLigneSecondeBase(cleReference, l);
+    if (!ref) return;
+    const k = cleRapprochementUD(ref);
+    if (!Object.prototype.hasOwnProperty.call(vues, k)) { vues[k] = true; n++; }
+  });
+  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  return enLecture(function () {
+    return {
+      lignes: n,
+      contrats: listerContrats(classeur).map(function (c) {
+        const ici = {};
+        referencesDeLOnglet(classeur.getSheetByName(c.id)).forEach(function (r) { ici[cleRapprochementUD(r)] = true; });
+        let commun = 0;
+        Object.keys(vues).forEach(function (k) { if (ici[k]) commun++; });
+        return { id: c.id, commun: commun, part: n ? commun / n : 0 };
+      })
+    };
+  });
+}
+
+/** L'onglet temporaire d'un import en cours — jamais un autre onglet, ni l'ancien mis de côté. */
 function feuilleImportEnCours(classeur, nom) {
-  const n = String(nom === undefined || nom === null ? '' : nom);
-  if (!estOngletImport(n)) throw new Error('Onglet d’import non reconnu : « ' + n + ' ».');
+  const n = String(nom === undefined || nom === null ? '' : nom), m = IMPORT_MOTIF.exec(n);
+  if (!m || m[1] !== 'import') throw new Error('Onglet d’import non reconnu : « ' + n + ' ».');
   const feuille = classeur.getSheetByName(n);
   if (!feuille) {
     throw new Error('L’onglet d’import « ' + n + ' » a disparu (un autre import de ce contrat a-t-il été lancé ?) : relancer l’import.');
@@ -3427,46 +3727,59 @@ function cellulesDuClasseur(classeur) {
 }
 
 /**
+ * Les restes d'un import du même onglet — fenêtre fermée en cours d'envoi,
+ * échange coupé, ou import lancé en même temps : retirés. Un envoi encore en
+ * cours s'arrête net (« a disparu »), sans jamais mêler deux fichiers.
+ */
+function retirerRestesDImport(classeur, souche) {
+  classeur.getSheets().slice().forEach(function (f) {
+    const s = soucheDOngletImport(f.getName());
+    if (s !== null && nomCompact(s) === nomCompact(souche)) classeur.deleteSheet(f);
+  });
+}
+
+/**
  * Début d'un import : un onglet temporaire taillé à la mesure des données —
- * `largeur` colonnes, `total` lignes (en-tête comprise) —, à côté de la base
- * qu'il remplacera. Sheets compte chaque cellule de la grille, vide ou pas,
- * dans sa limite de dix millions : un onglet neuf en a 26 colonnes, d'où la
- * taille posée d'avance, et le compte fait avant le moindre envoi. Les restes
- * d'un import interrompu de ce contrat sont retirés d'abord.
+ * `largeur` colonnes, `total` lignes —, en bas du classeur. Sheets compte
+ * chaque cellule de la grille, vide ou pas, dans sa limite de dix millions :
+ * un onglet neuf en a 26 colonnes, d'où la taille posée d'avance, et le
+ * compte fait avant le moindre envoi — sans l'onglet remplacé, qui s'en ira,
+ * mais en sachant que l'ancien et le nouveau coexistent le temps de
+ * l'import. `cible` : voir cibleImport.
  * @return {{feuille: string, onglet: string}}
  */
-function importSecondeBaseDebut(jeton, idContrat, largeur, total) {
-  gesteImport(jeton);
+function importSecondeBaseDebut(jeton, cible, largeur, total) {
+  gesteImport_(jeton);
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
-  const contrat = contratPourImport(classeur, idContrat);
   const larg = Math.floor(Number(largeur)), lignes = Math.floor(Number(total));
   if (!(larg >= 1 && larg <= IMPORT_MAX_COLONNES)) throw new Error('Nombre de colonnes illisible : ' + largeur + ' (au plus ' + IMPORT_MAX_COLONNES + ').');
   if (!(lignes >= 2)) throw new Error('Rien à importer : l’en-tête seul.');
   const verrou = LockService.getDocumentLock();
   const tenu = verrou.tryLock(30000);
   try {
-    /* Les restes d'un import de ce contrat — fenêtre fermée en cours d'envoi,
-       ou import lancé en même temps : un envoi encore en cours s'arrête net
-       (« a disparu »), sans jamais mêler deux fichiers. */
-    const souche = souchePourImport(contrat.id);
-    classeur.getSheets().slice().forEach(function (f) {
-      const n = f.getName(), m = IMPORT_MOTIF.exec(n);
-      if (m && estOngletImport(n) && nomCompact(n.slice(0, m.index)) === nomCompact(souche)) classeur.deleteSheet(f);
-    });
+    const c = cibleImport(classeur, cible);
+    retirerRestesDImport(classeur, c.souche);
     const occupees = cellulesDuClasseur(classeur), voulues = lignes * larg;
-    if (occupees + voulues > IMPORT_LIMITE_CELLULES) {
+    const remplacees = c.existant ? c.existant.getMaxRows() * c.existant.getMaxColumns() : 0;
+    const geste = (c.sorte === 'see' && larg > clesSecondeBase().length ? 'Décocher « Garder aussi les autres colonnes », ou ' : '') +
+      'supprimer les onglets qui ne servent plus.';
+    if (occupees - remplacees + voulues > IMPORT_LIMITE_CELLULES) {
       throw new Error('Le classeur dépasserait la limite de Google Sheets : 10 millions de cellules, vides comprises. Il en compte déjà ' +
-        occupees + ', l’import en demande ' + voulues + ' (' + lignes + ' lignes × ' + larg + ' colonnes). ' +
-        (larg > 3 ? 'Décocher « Garder aussi les autres colonnes », ou ' : '') + 'supprimer les onglets qui ne servent plus.');
+        (occupees - remplacees) + (remplacees ? ' (sans l’onglet « ' + c.onglet + ' », qu’il remplacera)' : '') + ', l’import en demande ' +
+        voulues + ' (' + lignes + ' lignes × ' + larg + ' colonnes). ' + geste);
     }
-    const nom = souche + ' (import ' + Utilities.getUuid().replace(/[^0-9a-z]/gi, '').slice(0, 6).toLowerCase() + ')';
+    if (occupees + voulues > IMPORT_LIMITE_CELLULES) {
+      throw new Error('Le classeur dépasserait la limite de Google Sheets : 10 millions de cellules, vides comprises. Le temps de l’import, ' +
+        'l’ancien onglet « ' + c.onglet + ' » (' + remplacees + ' cellules) et le nouveau (' + voulues + ') coexistent : il en faudrait ' +
+        (occupees + voulues) + '. ' + geste);
+    }
+    const nom = c.souche + ' (import ' + etiquetteImport() + ')';
     const feuille = classeur.insertSheet(nom, classeur.getSheets().length);
     if (feuille.getMaxColumns() > larg) feuille.deleteColumns(larg + 1, feuille.getMaxColumns() - larg);
     else assurerColonnes(feuille, larg);
     if (feuille.getMaxRows() > lignes) feuille.deleteRows(lignes + 1, feuille.getMaxRows() - lignes);
     else assurerLignes(feuille, lignes);
-    const existant = ongletSecondeBase(classeur, contrat.id);
-    return { feuille: nom, onglet: existant ? existant.getName() : souche };
+    return { feuille: nom, onglet: c.onglet };
   } finally {
     if (tenu) verrou.releaseLock();
   }
@@ -3476,11 +3789,12 @@ function importSecondeBaseDebut(jeton, idContrat, largeur, total) {
  * Un lot de lignes, écrit à partir de la ligne `premiere` (1-based) de
  * l'onglet temporaire. Tout est vérifié avant d'écrire ; chaque cellule
  * est posée en texte (une valeur « =… » ne devient pas une formule, « 01 »
- * reste « 01 »).
+ * reste « 01 ») : ce que la fenêtre envoie est déjà ce que la cellule doit
+ * montrer.
  * @return {{ecrites: number}}
  */
 function importSecondeBaseLot(jeton, nomFeuille, premiere, lignes) {
-  gesteImport(jeton);
+  gesteImport_(jeton);
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
   const feuille = feuilleImportEnCours(classeur, nomFeuille);
   const debut = Number(premiere);
@@ -3508,21 +3822,55 @@ function importSecondeBaseLot(jeton, nomFeuille, premiere, lignes) {
 }
 
 /**
- * Fin d'un import : si l'onglet temporaire a bien toutes ses lignes, il
- * prend la place — et le nom — de la base du contrat, à sa position. Rien
- * ne se perd en route : l'ancienne base est d'abord mise de côté sous un
- * autre nom, la nouvelle prend le sien, puis l'ancienne s'en va. La relecture
- * finale est légère (la ligne d'en-tête) : la base est en place avant elle.
+ * Les cellules fusionnées qu'envoie la fenêtre, { ligne, col, nbLignes,
+ * nbCols } en 1-based, vérifiées et rognées à l'onglet ; celles d'une seule
+ * cellule sont laissées.
  */
-function importSecondeBaseFin(jeton, nomFeuille, idContrat, lignesAttendues) {
-  gesteImport(jeton);
+function fusionsAPoser(fusions, nbLignes, nbColonnes) {
+  return (Array.isArray(fusions) ? fusions : []).slice(0, IMPORT_MAX_FUSIONS).map(function (f) {
+    const o = f !== null && typeof f === 'object' ? f : {};
+    const ligne = Math.floor(Number(o.ligne)), col = Math.floor(Number(o.col));
+    const finLigne = Math.min(nbLignes, ligne + Math.floor(Number(o.nbLignes)) - 1);
+    const finCol = Math.min(nbColonnes, col + Math.floor(Number(o.nbCols)) - 1);
+    return { ligne: ligne, col: col, nbLignes: finLigne - ligne + 1, nbCols: finCol - col + 1 };
+  }).filter(function (f) {
+    return f.ligne >= 1 && f.col >= 1 && f.nbLignes >= 1 && f.nbCols >= 1 && f.nbLignes * f.nbCols > 1;
+  });
+}
+
+/**
+ * Fin d'un import : si l'onglet temporaire a bien toutes ses lignes, il
+ * prend la place — et le nom — de l'onglet visé, à sa position. Rien ne se
+ * perd en route : l'ancien est d'abord mis de côté sous un autre nom, le
+ * nouveau prend le sien, puis l'ancien s'en va. Pour un export GATES, les
+ * cellules fusionnées de la ligne des groupes sont recréées AVANT l'échange :
+ * la page lit l'onglet dès qu'il porte son nom. Un nouveau contrat se range
+ * après le dernier onglet de contrat.
+ *
+ * Ensuite, l'onglet en place est relu — une panne ici ne défait rien : pour
+ * SEE, sa ligne d'en-tête (la page la lira-t-elle ?) ; pour GATES, tout,
+ * avec la logique même de la page (construireModele) : le nombre de plans,
+ * la colonne suivie « groupe > intitulé » ou null, le concept harnais.
+ */
+function importSecondeBaseFin(jeton, nomFeuille, cible, lignesAttendues, fusions) {
+  gesteImport_(jeton);
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
   const feuille = feuilleImportEnCours(classeur, nomFeuille);
-  const contrat = contratPourImport(classeur, idContrat);
   const verrou = LockService.getDocumentLock();
   const tenu = verrou.tryLock(30000);
-  let recues = 0, derniereColonne = 1, onglet = '', remplace = false;
+  let c = null, recues = 0, derniereColonne = 1, remplace = false, posees = 0, ratees = 0;
   try {
+    try {
+      c = cibleImport(classeur, cible);
+    } catch (err) {
+      /* Le contrat a disparu, ou le nom du nouveau est pris depuis : rien
+         n'est échangé, l'onglet temporaire ne sert plus. */
+      classeur.deleteSheet(feuille);
+      throw err;
+    }
+    if (nomCompact(soucheDOngletImport(feuille.getName())) !== nomCompact(c.souche)) {
+      throw new Error('Onglet d’import non reconnu : « ' + feuille.getName() + ' » n’est pas celui de « ' + c.onglet + ' ».');
+    }
     recues = feuille.getLastRow();
     if (recues !== Number(lignesAttendues)) {
       classeur.deleteSheet(feuille);
@@ -3531,15 +3879,27 @@ function importSecondeBaseFin(jeton, nomFeuille, idContrat, lignesAttendues) {
     derniereColonne = Math.max(1, feuille.getLastColumn());
     if (feuille.getMaxRows() > recues) feuille.deleteRows(recues + 1, feuille.getMaxRows() - recues);
     if (feuille.getMaxColumns() > derniereColonne) feuille.deleteColumns(derniereColonne + 1, feuille.getMaxColumns() - derniereColonne);
-    const existant = ongletSecondeBase(classeur, contrat.id);
-    onglet = existant ? existant.getName() : souchePourImport(contrat.id);
+    if (c.sorte === 'gates') {
+      fusionsAPoser(fusions, recues, derniereColonne).forEach(function (f) {
+        try { feuille.getRange(f.ligne, f.col, f.nbLignes, f.nbCols).merge(); posees++; } catch (err) { ratees++; }
+      });
+    }
+    const existant = c.existant;
     remplace = !!existant;
     let position = 0;
     if (existant) {
       position = existant.getIndex();
-      existant.setName(souchePourImport(contrat.id) + ' (ancien ' + IMPORT_MOTIF.exec(feuille.getName())[1] + ')');
+      existant.setName(c.souche + ' (ancien ' + IMPORT_MOTIF.exec(feuille.getName())[2] + ')');
+    } else if (c.sorte === 'gates') {
+      /* Un nouveau contrat : juste après le dernier onglet de contrat (un
+         onglet d'import n'en est jamais un). */
+      listerContrats(classeur).forEach(function (k) {
+        const f = classeur.getSheetByName(k.id);
+        if (f) position = Math.max(position, f.getIndex());
+      });
+      position += 1;
     }
-    feuille.setName(onglet);
+    feuille.setName(c.onglet);
     if (position) {
       classeur.setActiveSheet(feuille);
       classeur.moveActiveSheet(position);
@@ -3549,62 +3909,131 @@ function importSecondeBaseFin(jeton, nomFeuille, idContrat, lignesAttendues) {
   } finally {
     if (tenu) verrou.releaseLock();
   }
-  /* La base est en place. Sa ligne d'en-tête, relue, dit si la page la
-     lira ; une panne ici ne défait rien. */
-  let etat = 'ok';
+  if (c.sorte === 'see') {
+    let etat = 'ok';
+    try {
+      const ligne = feuille.getRange(1, 1, 1, derniereColonne).getDisplayValues()[0].map(function (v) { return normaliser(String(v).trim()); });
+      if (clesSecondeBase().map(normaliser).some(function (k) { return ligne.indexOf(k) === -1; })) etat = 'sans-reference';
+    } catch (err) { etat = 'non relu'; }
+    return { onglet: c.onglet, remplace: remplace, lignes: recues - 1, colonnes: derniereColonne, etat: etat };
+  }
+  const rendu = { sorte: 'gates', onglet: c.onglet, nouveau: c.nouveau, remplace: remplace, lignes: recues, colonnes: derniereColonne,
+                  fusions: posees, fusionsRatees: ratees, etat: 'ok', plans: 0, colonneSuivie: null, concept: false,
+                  conceptDemande: !!CONFIG.COLONNE_CONCEPT };
   try {
-    const ligne = feuille.getRange(1, 1, 1, derniereColonne).getDisplayValues()[0].map(function (c) { return normaliser(String(c).trim()); });
-    const cles = [].concat(CONFIG.RAPPROCHEMENT.CLE_REFERENCE || []).map(function (c) { return normaliser(String(c).trim()); });
-    if (cles.some(function (k) { return ligne.indexOf(k) === -1; })) etat = 'sans-reference';
-  } catch (err) { etat = 'non relu'; }
-  return { onglet: onglet, remplace: remplace, lignes: recues - 1, colonnes: derniereColonne, etat: etat };
+    enLecture(function () {
+      const m = construireModele(c.onglet);
+      const col = m.colonnes.filter(function (k) { return k.cle === 'avancement'; })[0];
+      rendu.plans = plansUniques(m.plans).length;
+      rendu.colonneSuivie = !m.fwdDemandeeAbsente && col ? (col.groupe ? col.groupe + ' > ' : '') + col.titre : null;
+      rendu.concept = !!m.cleConcept;
+    });
+  } catch (err) {
+    rendu.etat = 'non relu';
+    rendu.message = err && err.message ? err.message : String(err);
+  }
+  return rendu;
 }
 
-/** Abandon : l'onglet temporaire est retiré, la base reste ce qu'elle était. */
+/** Abandon : l'onglet temporaire est retiré, l'onglet visé reste ce qu'il était. */
 function importSecondeBaseAbandon(jeton, nomFeuille) {
-  gesteImport(jeton);
+  gesteImport_(jeton);
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
-  const n = String(nomFeuille === undefined || nomFeuille === null ? '' : nomFeuille);
-  const feuille = estOngletImport(n) ? classeur.getSheetByName(n) : null;
+  const n = String(nomFeuille === undefined || nomFeuille === null ? '' : nomFeuille), m = IMPORT_MOTIF.exec(n);
+  const feuille = m && m[1] === 'import' ? classeur.getSheetByName(n) : null;
   if (feuille) classeur.deleteSheet(feuille);
   return true;
+}
+
+/**
+ * Après l'import d'un export GATES : le relevé de la semaine en cours, pour
+ * ce contrat seulement (archiverContrat, sous le verrou du document). Ses
+ * refus — l'export est celui d'un relevé plus ancien, un historique orphelin
+ * attend d'être rattaché, l'onglet n'a pas de plan — reviennent comme tels,
+ * { ok: false, message } : l'import, lui, est fait. Archiver deux fois dans
+ * la semaine remplace la ligne de la semaine : renvoyer l'appel ne double rien.
+ */
+function importArchiverReleve(jeton, idContrat) {
+  gesteImport_(jeton);
+  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  const contrat = contratPourImport(classeur, idContrat);
+  const semaine = numeroSemaineISO(new Date());
+  const dite = semaineDite(semaine, semaine);
+  const verrou = LockService.getDocumentLock();
+  const tenu = verrou.tryLock(30000);
+  try {
+    const d = archiverContrat(classeur, contrat, semaine);
+    return { ok: true, semaine: semaine, dite: dite, plans: d.compte.total, valides: d.compte.termine, historique: d.historique };
+  } catch (err) {
+    return { ok: false, semaine: semaine, dite: dite, ancienExport: !!(err && err.ancienExport),
+             message: err && err.sansPlan ? 'l’onglet « ' + contrat.nom + ' » ne porte aucun plan (en-têtes seuls).'
+               : (err && err.message ? err.message : String(err)) };
+  } finally {
+    if (tenu) verrou.releaseLock();
+  }
 }
 
 /** La fenêtre d'import : son HTML, ses styles, et son programme avec ses paramètres. */
 function pageImportSecondeBase(parametres) {
   const json = JSON.stringify(parametres).replace(/</g, '\\u003c');
   const ech = function (t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
-  const cles = parametres.cles.map(ech).join(', ');
+  const base = parametres.base ? ech(parametres.base) : '';
   return '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><base target="_top"><style>' +
     ':root{--papier:#f4f2ed;--surface:#fff;--encre:#191915;--encre-2:#57564e;--encre-3:#8a887e;--filet:#e2dfd6;' +
-    '--fait:#2f6b4f;--alerte:#b5462e;--teinte:#191915}' +
+    '--fait:#2f6b4f;--alerte:#b5462e;--attention:#8a5a00;--see:#3f51a3;--teinte:#191915}' +
     '@media (prefers-color-scheme:dark){:root{--papier:#1b1b18;--surface:#23231f;--encre:#efede6;--encre-2:#c4c1b6;' +
-    '--encre-3:#8f8c82;--filet:#3a3933;--fait:#6fbf94;--alerte:#e2846d;--teinte:#efede6}}' +
+    '--encre-3:#8f8c82;--filet:#3a3933;--fait:#6fbf94;--alerte:#e2846d;--attention:#e0b25a;--see:#9aa8ec;--teinte:#efede6}}' +
     'html,body{margin:0;background:var(--papier);color:var(--encre);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}' +
     'body{padding:4px 18px 16px}p{margin:0 0 12px}.doux{color:var(--encre-2)}b{font-weight:600}' +
-    '.ligne{display:flex;align-items:center;gap:10px;margin:0 0 6px}select{font:inherit;padding:4px 6px;border:1px solid var(--filet);' +
-    'border-radius:6px;background:var(--surface);color:var(--encre)}.cible{margin:0 0 12px;color:var(--encre-2);font-size:13px}' +
-    '.depot{border:1.5px dashed var(--filet);border-radius:10px;background:var(--surface);padding:18px;text-align:center;margin:0 0 10px}' +
-    '.depot.survol{border-color:var(--encre-3)}.depot input{display:none}.nom{margin-top:8px;font-size:13px;color:var(--encre-2);word-break:break-all}' +
+    'select,input[type=text]{font:inherit;font-size:13px;padding:3px 6px;border:1px solid var(--filet);border-radius:6px;background:var(--surface);color:var(--encre)}' +
+    'input[type=text]{width:13em}' +
+    '.depot{border:1.5px dashed var(--filet);border-radius:10px;background:var(--surface);padding:14px 16px;text-align:center;margin:0 0 10px}' +
+    '.depot.survol{border-color:var(--encre-3)}.depot input{display:none}.astuce{margin-top:6px;font-size:12.5px;color:var(--encre-3)}' +
     'button{font:inherit;padding:6px 14px;border-radius:7px;border:1px solid var(--filet);background:var(--surface);color:var(--encre);cursor:pointer}' +
     'button.principal{background:var(--teinte);border-color:var(--teinte);color:var(--papier)}button:disabled{opacity:.45;cursor:default}' +
+    'button.lien{border:0;background:none;padding:0;color:var(--encre-2);text-decoration:underline;font-size:13px}' +
     'button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--encre);outline-offset:2px}' +
-    '.option{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--encre-2);margin:0 0 12px}' +
-    '.barre{height:6px;border-radius:3px;background:var(--filet);overflow:hidden;margin:4px 0 6px}.barre div{height:100%;width:0;background:var(--fait);transition:width .2s}' +
+    '.liste{list-style:none;margin:0 0 6px;padding:0;display:flex;flex-direction:column;gap:8px;max-height:330px;overflow:auto}' +
+    '.fichier{background:var(--surface);border:1px solid var(--filet);border-left:4px solid var(--filet);border-radius:8px;padding:8px 12px}' +
+    '.fichier.gates{border-left-color:var(--fait)}.fichier.see{border-left-color:var(--see)}' +
+    '.fichier.erreur{border-left-color:var(--alerte)}.fichier.fait{opacity:.95}' +
+    '.tete{display:flex;align-items:baseline;gap:8px}.tete .nom{font-weight:600;word-break:break-all;flex:1}' +
+    '.tete .taille{color:var(--encre-3);font-size:12px;white-space:nowrap}' +
+    '.tete .retirer{padding:1px 8px;font-size:12px;color:var(--encre-2)}' +
+    '.sorte{flex:none;font-size:11px;font-weight:700;letter-spacing:.05em;padding:0 6px;border-radius:4px;border:1px solid currentColor}' +
+    '.sorte.gates{color:var(--fait)}.sorte.see{color:var(--see)}' +
+    '.lu{font-size:13px;color:var(--encre-2);margin-top:2px}.lu.erreur{color:var(--alerte)}' +
+    '.barre{height:4px;border-radius:2px;background:var(--filet);overflow:hidden;margin:5px 0 2px}' +
+    '.barre div{height:100%;width:0;background:var(--fait);transition:width .2s}' +
+    '.choix{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:6px;font-size:13px}' +
+    '.note{color:var(--encre-3);font-size:12.5px}.note.verifier{color:var(--attention);font-weight:600}' +
+    '.cible{font-size:13px;color:var(--encre-2);margin-top:4px}.cible .refus{color:var(--alerte)}' +
+    '.resultat{font-size:13px;margin-top:5px}.resultat.ok{color:var(--fait)}.resultat.erreur{color:var(--alerte)}' +
+    '.resultat.avertissement{color:var(--attention)}' +
+    '.sous-liste{display:flex;align-items:baseline;gap:12px;margin:0 0 10px;font-size:13px}' +
+    '.blocage{color:var(--encre-2);flex:1}' +
+    '.option{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--encre-2);margin:0 0 8px}' +
     '.progres{font-size:13px;color:var(--encre-2);min-height:20px}.consigne{font-size:13px;color:var(--encre);font-weight:600;margin:2px 0 0}' +
-    '.etat{margin:8px 0 0;font-size:13.5px}.etat.ok{color:var(--fait)}' +
-    '.etat.erreur{color:var(--alerte)}.boutons{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}[hidden]{display:none!important}' +
+    '.etat{margin:8px 0 0;font-size:13.5px}.etat > div{margin:0 0 4px}.etat.ok,.etat .ok{color:var(--fait)}' +
+    '.etat.erreur,.etat .erreur{color:var(--alerte)}.etat .avertissement{color:var(--attention)}.etat .suite{color:var(--encre);margin-top:6px}' +
+    '.boutons{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}[hidden]{display:none!important}' +
     '</style></head><body>' +
-    '<p>Choisir l’export ' + ech(parametres.base) + ' <b>de ce contrat</b> (.xlsx, ou .csv). Il est lu ici, sur ce poste, ' +
-    '<b>sans ouvrir Excel</b> : seules la ligne d’en-tête et les colonnes de la comparaison — ' + cles + ' — vont dans le classeur.</p>' +
-    '<div class="ligne" id="ligne-contrat"><label for="contrat">Contrat</label><select id="contrat"></select></div>' +
-    '<p class="cible" id="cible"></p>' +
-    '<div class="depot" id="depot"><input type="file" id="fichier" accept=".xlsx,.xlsm,.csv,.txt,.xls,.xlsb,.xml,.htm,.html">' +
-    '<button type="button" id="choisir">Choisir le fichier…</button> <span class="doux">ou le glisser ici</span>' +
-    '<div class="nom" id="nom-fichier"></div></div>' +
-    '<label class="option"><input type="checkbox" id="toutes"> <span>Garder aussi les autres colonnes — plus lourd, ' +
-    'seulement pour regarder tout l’extract dans le tableau ' + ech(parametres.base) + ' de la page.</span></label>' +
-    '<div class="barre" id="barre" hidden><div id="barre-plein"></div></div>' +
+    '<p>Choisir <b>tous les exports de la semaine d’un coup</b> — l’export GATES de chaque contrat' +
+    (base ? ', l’export ' + base + ' de chaque contrat' : '') + ' —, tels que téléchargés, <b>sans les ouvrir dans Excel</b>. ' +
+    'Ils sont lus ici, sur ce poste, et chacun va dans son onglet : l’export GATES tel quel' +
+    (base ? ', celui de ' + base + ' réduit à sa ligne d’en-tête et à ' + parametres.cles.map(ech).join(', ') : '') + '.</p>' +
+    '<div class="depot" id="depot"><input type="file" id="fichier" multiple accept=".xlsx,.xlsm,.csv,.txt,.xls,.xlsb,.xml,.htm,.html">' +
+    '<button type="button" id="choisir">Choisir les fichiers…</button> <span class="doux">ou les glisser ici</span>' +
+    '<div class="astuce">Plusieurs à la fois : dans la fenêtre de Windows, <b>Ctrl+clic</b> sur chacun, ou <b>Maj+clic</b> pour toute une suite ; ' +
+    '<b>Ctrl+A</b> prend tout le dossier — pour un dossier qui ne contient que les exports (ce qui n’en est pas sera signalé, à retirer).</div></div>' +
+    '<ul class="liste" id="liste" hidden></ul>' +
+    '<div class="sous-liste"><span class="blocage" id="blocage" aria-live="polite"></span>' +
+    '<button type="button" class="lien" id="retirer-erreurs" hidden>Retirer les fichiers en erreur</button></div>' +
+    '<label class="option" id="option-toutes"' + (base ? '' : ' hidden') + '><input type="checkbox" id="toutes"> <span>' +
+    (base || 'SEE') + ' : garder aussi les autres colonnes — plus lourd, seulement pour regarder tout l’extract dans le tableau ' +
+    (base || 'SEE') + ' de la page.</span></label>' +
+    '<label class="option" id="option-archiver" hidden><input type="checkbox" id="archiver" checked> <span>Archiver le relevé de la semaine ' +
+    ech(parametres.semaine) + ' pour les contrats importés</span></label>' +
     '<div class="progres" id="progres" aria-live="polite"></div>' +
     '<p class="consigne" id="consigne" hidden>Ne pas fermer cette fenêtre avant la fin.</p>' +
     '<div class="etat" id="etat" role="status" aria-live="polite"></div>' +
@@ -3624,12 +4053,17 @@ function pageImportSecondeBase(parametres) {
  * des onglets, les styles, les chaînes partagées, et l'onglet qui porte
  * l'en-tête — sans jamais tenir le fichier entier en mémoire. Les « Excel »
  * qui n'en sont pas (une page web, un XML 2003 nommés .xls) et les CSV se
- * lisent aussi, au fil de l'eau.
+ * lisent aussi, au fil de l'eau. Chaque fichier ajouté est lu tout de suite,
+ * un à la fois, et reconnu à sa ligne d'en-têtes ; « Importer » envoie
+ * ensuite les exports GATES, puis ceux de SEE.
  */
 function scriptImportSecondeBase_(P) {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
-  var fichier = null, enCours = false;
+  /* La valeur du choix « Nouveau contrat… » : un caractère qu'aucun nom d'onglet ne porte. */
+  var NOUVEAU = '\u0001nouveau';
+  var N_CLES = P.cles.map(norm), N_ESS = P.essentielles.map(norm);
+  var fichiers = [], aLire = [], enLecture = null, enCours = false, numero = 0;
 
   // ------------------------------------------------------------ petits outils
   function norm(t) {
@@ -3640,18 +4074,20 @@ function scriptImportSecondeBase_(P) {
   function ech(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   function erreur(message) { var e = new Error(message); e.pourLecteur = true; return e; }
   function dire(html, classe) { var z = $('etat'); z.className = 'etat' + (classe ? ' ' + classe : ''); z.innerHTML = html; }
-  function progres(part, texte) {
-    $('barre').hidden = false;
-    $('barre-plein').style.width = Math.round(Math.max(0, Math.min(1, part)) * 100) + '%';
-    if (texte !== undefined) $('progres').textContent = texte;
-  }
+  /* L'avancement de ce qui se fait — la lecture d'un fichier, puis son envoi
+     au classeur —, dit dans la ligne de ce fichier. */
+  var suivi = null;
+  function progres(part, texte) { if (suivi) suivi(part, texte); }
   function souffle() { return new Promise(function (ok) { setTimeout(ok, 0); }); }
   /* Une valeur gardée est recopiée : une sous-chaîne d'un morceau de XML le
      tiendrait tout entier en mémoire, et un gros fichier ferait tomber
      l'onglet du navigateur. */
   function plat(v) { return v.length > 12 ? (' ' + v).slice(1) : v; }
-  var ABIME = 'Le fichier est abîmé (il ne se décompresse pas en entier) : le retélécharger depuis SEE.';
-
+  function taille(octets) {
+    return octets < 1048576 ? Math.max(1, Math.round(octets / 1024)) + ' Ko' : (octets / 1048576).toFixed(1).replace('.', ',') + ' Mo';
+  }
+  function sansExtension(nom) { return String(nom).replace(/\.[^.]*$/, ''); }
+  var ABIME = 'Le fichier est abîmé (il ne se décompresse pas en entier) : le retélécharger depuis GATES ou SEE.';
   // ------------------------------------------------------------ lecture du fichier
   function lireOctets(f, debut, fin) {
     return new Promise(function (ok, ko) {
@@ -3673,7 +4109,7 @@ function scriptImportSecondeBase_(P) {
       for (i = fin.length - 22; i >= 0; i--) {
         if (fin[i] === 0x50 && fin[i + 1] === 0x4b && fin[i + 2] === 5 && fin[i + 3] === 6) { p = i; break; }
       }
-      if (p < 0) throw erreur('Ce fichier n\u2019est pas un classeur .xlsx lisible : abîmé, ou pas fini de télécharger ? Le retélécharger depuis SEE.');
+      if (p < 0) throw erreur('Ce fichier n\u2019est pas un classeur .xlsx lisible : abîmé, ou pas fini de télécharger ? Le retélécharger.');
       var nbEntrees = u16(fin, p + 10), tailleCD = u32(fin, p + 12), debutCD = u32(fin, p + 16);
       var avant = Promise.resolve();
       if (debutCD === 0xFFFFFFFF || tailleCD === 0xFFFFFFFF || nbEntrees === 0xFFFF) {
@@ -3907,35 +4343,64 @@ function scriptImportSecondeBase_(P) {
     return String(p).replace('.', ',');
   }
 
-  // ------------------------------------------------------------ en-tête et lignes
-  /* Reçoit les lignes une à une (numéro 1-based, valeurs par colonne) :
-     cherche l'en-tête comme Code.gs le cherche — la première des premières
-     lignes qui porte toutes les colonnes de la référence, la première
-     colonne d'un intitulé en double —, puis garde les colonnes voulues des
-     lignes suivantes. */
+  // ------------------------------------------------------------ reconnaître l'export à sa ligne d'en-têtes
+  /* Les deux règles du serveur, reçues avec les paramètres — rien n'est
+     recopié ici : un export SEE porte, sur une même ligne, toutes les
+     colonnes de la référence (P.cles) ; un export GATES, la ligne
+     d'en-têtes d'un export (ligneDEnteteDExport dans Code.gs) — au moins
+     P.minIntitules intitulés, dont P.minMotsCles de P.motsCles, chacun seul
+     dans sa cellule. `ns` : les cellules de la ligne, normalisées. */
+  function enteteSee(ns) {
+    if (!N_CLES.length) return false;
+    for (var i = 0; i < N_CLES.length; i++) if (ns.indexOf(N_CLES[i]) === -1) return false;
+    return true;
+  }
+  function enteteGates(ns) {
+    var remplies = ns.filter(Boolean);
+    if (remplies.length < P.minIntitules) return false;
+    return P.motsCles.filter(function (m) { return remplies.indexOf(m) !== -1; }).length >= P.minMotsCles;
+  }
+  /* La colonne de référence d'un en-tête, choisie comme trouverIndexReference
+     la choisit : le premier motif reconnu, dans l'ordre de P.motifsReference. */
+  function indexReference(entete) {
+    var ns = entete.map(norm);
+    for (var m = 0; m < P.motifsReference.length; m++) {
+      for (var i = 0; i < ns.length; i++) if (ns[i].indexOf(P.motifsReference[m]) !== -1) return i;
+    }
+    return 0;
+  }
+  /* Au-delà des P.lignesScan premières lignes, on regarde encore celles-ci,
+     seulement pour dire « l'en-tête est trop bas » au lieu de « pas d'en-tête ». */
+  var LIGNES_SONDE = 30;
+
+  /* Reçoit les lignes d'un onglet une à une (numéro 1-based, valeurs par
+     colonne) et reconnaît l'export à sa ligne d'en-têtes, cherchée comme
+     Code.gs la cherche, dans les P.lignesScan premières lignes :
+       – SEE : la première colonne d'un intitulé en double compte ; on garde
+         les colonnes voulues des lignes suivantes, les lignes vides laissées ;
+       – GATES : on garde tout, tel quel — les lignes au-dessus de l'en-tête
+         (titre, groupes), l'en-tête, les données —, chaque ligne à son
+         numéro, chaque colonne à sa place : c'est ce qu'un collage poserait.
+     Une ligne qui répond aux deux règles est SEE : ses intitulés propres
+     sont plus sûrs que deux mots courants. Les cellules fusionnées
+     (c.fusion) sont notées au passage ; on ne garde, pour GATES, que celles
+     qui commencent sur l'en-tête ou au-dessus. */
   function collecteur(toutes) {
-    var nCles = P.cles.map(norm), nEss = P.essentielles.map(norm);
-    var c = { entete: null, colonnes: null, voulues: null, cles: null, lignes: [], meilleur: { portes: 0, ligne: 0, noms: [], manquent: P.cles.slice() },
-              formulesVides: 0, trop: false };
-    c.ligne = function (num, valeurs, sansValeur) {
-      if (!c.colonnes) {
-        if (num > P.lignesScan) return false;
-        var ns = valeurs.map(norm), portes = nCles.filter(function (k) { return ns.indexOf(k) !== -1; });
-        if (portes.length === nCles.length) {
-          var prises = {}, cles = {};
-          nCles.forEach(function (k) { prises[ns.indexOf(k)] = true; cles[ns.indexOf(k)] = true; });
-          nEss.forEach(function (k) { var j = ns.indexOf(k); if (j !== -1) prises[j] = true; });
-          if (toutes) ns.forEach(function (k, j) { if (k) prises[j] = true; });
-          c.colonnes = Object.keys(prises).map(Number).sort(function (a, b) { return a - b; });
-          c.voulues = prises; c.cles = cles;
-          c.entete = c.colonnes.map(function (j) { return plat(String(valeurs[j] === undefined ? '' : valeurs[j]).trim()); });
-        } else if (portes.length > c.meilleur.portes) {
-          c.meilleur = { portes: portes.length, ligne: num,
-            noms: valeurs.filter(function (v) { return String(v === undefined || v === null ? '' : v).trim(); }).slice(0, 12),
-            manquent: P.cles.filter(function (k, i) { return portes.indexOf(nCles[i]) === -1; }) };
-        }
-        return true;
-      }
+    var c = { sorte: null, ligneEntete: 0, entete: null, colonnes: null, voulues: null, cles: null, lignes: [], fusions: [],
+              avant: [], largeur: 0, iRef: -1, formulesVides: 0, formulesAilleurs: 0, trop: false, tropBas: null,
+              meilleur: { portes: 0, ligne: 0, noms: [], manquent: P.cles.slice() } };
+    function poserSee(num, valeurs, ns) {
+      var prises = {}, cles = {};
+      N_CLES.forEach(function (k) { prises[ns.indexOf(k)] = true; cles[ns.indexOf(k)] = true; });
+      N_ESS.forEach(function (k) { var j = ns.indexOf(k); if (j !== -1) prises[j] = true; });
+      if (toutes) ns.forEach(function (k, j) { if (k) prises[j] = true; });
+      c.sorte = 'see';
+      c.ligneEntete = num;
+      c.colonnes = Object.keys(prises).map(Number).sort(function (a, b) { return a - b; });
+      c.voulues = prises; c.cles = cles;
+      c.entete = c.colonnes.map(function (j) { return plat(String(valeurs[j] === undefined ? '' : valeurs[j]).trim()); });
+    }
+    function ligneSee(valeurs, sansValeur) {
       if (sansValeur && sansValeur.some(function (j) { return c.cles[j]; })) c.formulesVides++;
       var l = c.colonnes.map(function (j) { var v = valeurs[j]; return v === undefined || v === null ? '' : plat(String(v)); });
       if (l.some(function (v) { return v.trim() !== ''; })) {
@@ -3943,10 +4408,121 @@ function scriptImportSecondeBase_(P) {
         if (toutes && (c.lignes.length + 1) * c.entete.length > P.maxCellulesToutes) { c.trop = true; return false; }
       }
       return true;
+    }
+    /* Une ligne d'un export GATES, gardée à son numéro. Une ligne vide n'est
+       pas gardée : son numéro suffit, le trou se comble à la fin. Une formule
+       sans valeur calculée compte à part si elle tombe dans ce qui fait
+       reconnaître l'export — l'en-tête, les lignes au-dessus (les groupes),
+       la colonne de référence. */
+    function ligneGates(num, valeurs, sansValeur) {
+      var j = valeurs.length;
+      while (j > 0 && (valeurs[j - 1] === '' || valeurs[j - 1] === undefined)) j--;
+      if (sansValeur) {
+        sansValeur.forEach(function (col) {
+          if (num <= c.ligneEntete || col === c.iRef) c.formulesVides++; else c.formulesAilleurs++;
+        });
+      }
+      if (!j) return true;
+      if (j > c.largeur) c.largeur = j;
+      c.lignes[num - 1] = valeurs;
+      if (num * c.largeur > P.maxCellulesToutes) { c.trop = true; return false; }
+      return true;
+    }
+    function poserGates(num, valeurs) {
+      c.sorte = 'gates';
+      c.ligneEntete = num;
+      c.entete = valeurs.map(function (v) { return String(v === undefined || v === null ? '' : v).trim(); });
+      c.iRef = indexReference(c.entete);
+      var avant = c.avant;
+      c.avant = [];
+      for (var i = 0; i < avant.length; i++) if (!ligneGates(avant[i].num, avant[i].valeurs, avant[i].sansValeur)) return false;
+      return true;
+    }
+    c.ligne = function (num, valeurs, sansValeur) {
+      if (c.sorte === 'gates') return ligneGates(num, valeurs, sansValeur);
+      if (c.sorte === 'see') return ligneSee(valeurs, sansValeur);
+      var ns = valeurs.map(norm);
+      if (num <= P.lignesScan) {
+        if (enteteSee(ns)) { poserSee(num, valeurs, ns); return true; }
+        if (enteteGates(ns)) return poserGates(num, valeurs) && ligneGates(num, valeurs, sansValeur);
+        c.avant.push({ num: num, valeurs: valeurs, sansValeur: sansValeur });
+        var portes = N_CLES.filter(function (k) { return ns.indexOf(k) !== -1; });
+        if (portes.length > c.meilleur.portes) {
+          c.meilleur = { portes: portes.length, ligne: num,
+            noms: valeurs.filter(function (v) { return String(v === undefined || v === null ? '' : v).trim(); }).slice(0, 12),
+            manquent: P.cles.filter(function (k, i) { return portes.indexOf(N_CLES[i]) === -1; }) };
+        }
+        return true;
+      }
+      if (!c.tropBas && (enteteSee(ns) || enteteGates(ns))) c.tropBas = { sorte: enteteSee(ns) ? 'see' : 'gates', ligne: num };
+      return !c.tropBas && num < P.lignesScan + LIGNES_SONDE;
+    };
+    c.fusion = function (ligne, col, nbLignes, nbCols) {
+      /* Sous un en-tête déjà trouvé, une fusion ne sert à rien : ne pas la
+         garder, pour que des milliers de fusions dans les plans ne fassent
+         pas oublier celles de la ligne des groupes. */
+      if (c.ligneEntete && ligne > c.ligneEntete) return;
+      if (ligne >= 1 && col >= 1 && nbLignes >= 1 && nbCols >= 1 && nbLignes * nbCols > 1 && c.fusions.length < 5000) {
+        c.fusions.push({ ligne: ligne, col: col, nbLignes: nbLignes, nbCols: nbCols });
+      }
     };
     return c;
   }
 
+  /* Un export GATES lu, mis en forme pour partir : les lignes de 1 à la
+     dernière remplie, les trous comblés par des lignes vides ; les cellules
+     fusionnées gardées (celles qui commencent sur l'en-tête ou au-dessus),
+     rognées au bloc, leurs cellules cachées vidées — Sheets, en fusionnant,
+     ne garde que celle du coin ; les références des plans (la colonne de
+     référence, sous l'en-tête), le texte au-dessus de l'en-tête et le mot
+     de ses groupes « XXX AA … », pour deviner le contrat. */
+  function bilanGates(c) {
+    var lignes = c.lignes, i, j;
+    for (i = 0; i < lignes.length; i++) if (!lignes[i]) lignes[i] = [];
+    var fusions = c.fusions.filter(function (f) { return f.ligne <= c.ligneEntete && f.ligne <= lignes.length && f.col <= c.largeur; })
+      .map(function (f) {
+        return { ligne: f.ligne, col: f.col, nbLignes: Math.min(f.nbLignes, lignes.length - f.ligne + 1), nbCols: Math.min(f.nbCols, c.largeur - f.col + 1) };
+      })
+      .filter(function (f) { return f.nbLignes * f.nbCols > 1; });
+    fusions.forEach(function (f) {
+      for (var a = f.ligne; a < f.ligne + f.nbLignes; a++) {
+        for (var b = f.col; b < f.col + f.nbCols; b++) {
+          if ((a !== f.ligne || b !== f.col) && lignes[a - 1][b - 1] !== undefined) lignes[a - 1][b - 1] = '';
+        }
+      }
+    });
+    /* La largeur et la hauteur, recomptées après coup : de A à la dernière
+       colonne remplie, de 1 à la dernière ligne remplie. */
+    var largeur = 0, hauteur = 0;
+    for (i = 0; i < lignes.length; i++) {
+      for (j = lignes[i].length; j > 0 && (lignes[i][j - 1] === '' || lignes[i][j - 1] === undefined); j--) { /* vide */ }
+      if (j) { hauteur = i + 1; if (j > largeur) largeur = j; }
+    }
+    lignes.length = hauteur;
+    var vues = {}, refs = [], donnees = 0;
+    for (i = c.ligneEntete; i < hauteur; i++) {
+      if (lignes[i].some(function (v) { return v !== '' && v !== undefined; })) donnees++;
+      var r = norm(lignes[i][c.iRef]);
+      if (r && !Object.prototype.hasOwnProperty.call(vues, r)) { vues[r] = true; refs.push(r); }
+    }
+    var dessus = [], compte = {}, mot = '', meilleur = 0;
+    for (i = 0; i < c.ligneEntete - 1 && i < hauteur; i++) {
+      lignes[i].forEach(function (v) {
+        var t = String(v === undefined || v === null ? '' : v).trim();
+        if (!t) return;
+        dessus.push(t);
+        var m = /^(\S+)\s+AA(?:\s|$)/i.exec(t);
+        if (m) {
+          var k = norm(m[1]);
+          compte[k] = (compte[k] || 0) + 1;
+          if (compte[k] > meilleur) { meilleur = compte[k]; mot = m[1]; }
+        }
+      });
+    }
+    return { sorte: 'gates', ligneEntete: c.ligneEntete, entete: c.entete, lignes: lignes, largeur: largeur, fusions: fusions,
+             refs: refs, donnees: donnees, dessus: norm(dessus.join(' | ')), motGroupe: mot, onglet: c.onglet,
+             formulesAilleurs: c.formulesAilleurs };
+  }
   function colonneDe(ref) {
     var n = 0, i, k;
     for (i = 0; i < ref.length; i++) {
@@ -3968,10 +4544,21 @@ function scriptImportSecondeBase_(P) {
   var RE_F = /<(?:[\w.-]+:)?f(?=[\s>\/])/;
   var RE_V_VIDE = /<(?:[\w.-]+:)?v\s*\/>/;
   var RE_FIN_DONNEES = /<\/(?:[\w.-]+:)?sheetData\s*>/;
+  var RE_FIN_FUSIONS = /<\/(?:[\w.-]+:)?mergeCells\s*>/;
+  /* Une plage écrite à la manière d'Excel (« B1:Q1 », « $A$2 ») : { ligne, col, nbLignes, nbCols } en 1-based, ou null. */
+  function plageA1(ref) {
+    var m = /^\$?([A-Za-z]{1,3})\$?(\d+)(?::\$?([A-Za-z]{1,3})\$?(\d+))?$/.exec(String(ref === null || ref === undefined ? '' : ref).trim());
+    if (!m) return null;
+    var c1 = colonneDe(m[1]) + 1, l1 = parseInt(m[2], 10);
+    var c2 = m[3] ? colonneDe(m[3]) + 1 : c1, l2 = m[4] ? parseInt(m[4], 10) : l1;
+    return { ligne: Math.min(l1, l2), col: Math.min(c1, c2), nbLignes: Math.abs(l2 - l1) + 1, nbCols: Math.abs(c2 - c1) + 1 };
+  }
 
   /* Un onglet du classeur, ligne à ligne. Rend le collecteur ; il dit si
-     l'en-tête a été trouvé. La lecture s'arrête après les lignes (ce qui
-     suit — liens, fusions, mise en page — ne sert à rien). */
+     l'en-tête a été trouvé. Les cellules fusionnées s'écrivent APRÈS les
+     lignes (<mergeCells>) : pour un export GATES, on lit jusqu'à elles ;
+     pour SEE, ce qui suit les lignes — liens, fusions, mise en page — ne
+     sert à rien, la lecture s'arrête là. */
   function lireOnglet(f, e, chaines, styles, en1904, toutes, avance) {
     var c = collecteur(toutes), numPrec = 0, formes = {};
     function forme(s) { return formes[s] || (formes[s] = formeDuFormat(styles, s)); }
@@ -4003,15 +4590,30 @@ function scriptImportSecondeBase_(P) {
       for (var j = 0; j < valeurs.length; j++) if (valeurs[j] === undefined) valeurs[j] = '';
       return c.ligne(num, valeurs, sansValeur);
     });
-    var finDonnees = false;
+    var surFusion = decoupeur('mergeCell', function (attrs) {
+      var z = plageA1(attribut(attrs, 'ref'));
+      if (z) c.fusion(z.ligne, z.col, z.nbLignes, z.nbCols);
+    });
+    /* `queue` : la fin du morceau précédent, pour voir une balise coupée en deux. */
+    var apresLignes = false, queue = '';
     return lirePartie(f, e, function (texte, fini) {
-      if (finDonnees) return false;
-      var r = surLigne(texte, fini);
-      if (r !== false && RE_FIN_DONNEES.test(texte)) { finDonnees = true; return false; }
-      return r;
+      var vu;
+      if (!apresLignes) {
+        if (surLigne(texte, fini) === false) return false;
+        vu = queue + texte;
+        var i = vu.search(RE_FIN_DONNEES);
+        if (i === -1) { queue = vu.slice(-40); return true; }
+        if (c.sorte !== 'gates') return false;
+        apresLignes = true;
+        texte = vu.slice(i);
+        queue = '';
+      }
+      surFusion(texte, fini);
+      vu = queue + texte;
+      queue = vu.slice(-40);
+      return !RE_FIN_FUSIONS.test(vu);
     }, avance).then(function () { return c; });
   }
-
   function chercher(entrees, chemin) {
     if (entrees[chemin]) return entrees[chemin];
     var b = chemin.toLowerCase();
@@ -4030,8 +4632,8 @@ function scriptImportSecondeBase_(P) {
     return lireZip(f).then(function (entrees) {
       var wb = chercher(entrees, 'xl/workbook.xml');
       if (!wb) {
-        if (chercher(entrees, 'xl/workbook.bin')) throw erreur('C\u2019est un classeur binaire (.xlsb), que ni la fenêtre ni Google Sheets ne lisent. Il faut l\u2019export SEE en .xlsx ou en .csv.');
-        throw erreur('Ce zip n\u2019est pas un classeur Excel (pas de xl/workbook.xml).');
+        if (chercher(entrees, 'xl/workbook.bin')) throw erreur('C’est un classeur binaire (.xlsb), que ni la fenêtre ni Google Sheets ne lisent. Il faut l’export en .xlsx ou en .csv.');
+        throw erreur('Ce zip n’est pas un classeur Excel (pas de xl/workbook.xml).');
       }
       var rels = chercher(entrees, 'xl/_rels/workbook.xml.rels');
       return Promise.all([partieEntiere(f, wb), rels ? partieEntiere(f, rels) : '']).then(function (r) {
@@ -4064,14 +4666,15 @@ function scriptImportSecondeBase_(P) {
             return styles;
           });
         }).then(function (styles) {
-          var meilleur = null, i = 0;
+          var meilleur = null, tropBas = null, i = 0;
           function suivant() {
-            if (i >= onglets.length) return { trouve: false, meilleur: meilleur, onglets: onglets.map(function (o) { return o.nom; }) };
+            if (i >= onglets.length) return { trouve: false, meilleur: meilleur, tropBas: tropBas, onglets: onglets.map(function (o) { return o.nom; }) };
             var o = onglets[i++];
-            progres(0.05 + 0.9 * fait / total, 'Lecture de l\u2019onglet « ' + o.nom + ' »…');
+            progres(0.05 + 0.9 * fait / total, 'Lecture de l’onglet « ' + o.nom + ' »…');
             return lireOnglet(f, o.e, chaines, styles, en1904, toutes, function (n) { progres(0.05 + 0.9 * (fait + n) / total); }).then(function (c) {
               fait += o.e.tu;
-              if (c.colonnes) { c.onglet = o.nom; c.trouve = true; return c; }
+              if (c.sorte) { c.onglet = o.nom; c.trouve = true; c.format = 'xlsx'; return c; }
+              if (c.tropBas && !tropBas) { tropBas = c.tropBas; tropBas.onglet = o.nom; }
               if (!meilleur || c.meilleur.portes > meilleur.portes) { meilleur = c.meilleur; meilleur.onglet = o.nom; }
               return suivant();
             });
@@ -4133,35 +4736,61 @@ function scriptImportSecondeBase_(P) {
     var t = x.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '');
     return plat(decoderHtml(t).replace(/[ \t\r\n]+/g, ' ').trim());
   }
+  /* La taille d'une fusion (colspan, rowspan, MergeAcross…), bornée — en
+     largeur, par le plus grand nombre de colonnes accepté : un titre sur
+     toute la largeur d'un export GATES (138 colonnes) reste entier ; un
+     nombre illisible vaut une cellule. */
+  function etendue(texte, max) {
+    var n = parseInt(texte, 10);
+    return n >= 1 ? Math.min(n, max) : 1;
+  }
   var RE_TD = /<(?:[\w.-]+:)?t[dh](?=[\s>\/])([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:[\w.-]+:)?t[dh]\s*>)/gi;
+  /* Une page web : une ligne par <tr>, une cellule par <td>. Une cellule
+     étendue (colspan, rowspan) occupe toutes ses places — vides, sauf la
+     première — et devient une fusion, comme dans un collage ; les cellules
+     des lignes suivantes passent après celles qu'un rowspan occupe. */
   function analyseurHtml(c) {
-    var num = 0;
+    var num = 0, occupees = {};
     return decoupeur('tr', function (attrs, corps) {
-      var valeurs = [], m;
+      num++;
+      var valeurs = [], col = 0, prises = occupees[num] || {}, m, k;
+      delete occupees[num];
       RE_TD.lastIndex = 0;
       while ((m = RE_TD.exec(corps))) {
-        var span = parseInt(attribut(m[1], 'colspan') || '1', 10);
-        valeurs.push(m[2] ? texteCellule(m[2]) : '');
-        for (var k = 1; k < span && k < 50; k++) valeurs.push('');
+        while (prises[col]) valeurs[col++] = '';
+        var large = etendue(attribut(m[1], 'colspan'), P.maxColonnes), haut = etendue(attribut(m[1], 'rowspan'), 1000);
+        valeurs[col] = m[2] ? texteCellule(m[2]) : '';
+        for (k = 1; k < large; k++) valeurs[col + k] = '';
+        if (large > 1 || haut > 1) c.fusion(num, col + 1, haut, large);
+        for (var r = 1; r < haut; r++) {
+          var o = occupees[num + r] || (occupees[num + r] = {});
+          for (k = 0; k < large; k++) o[col + k] = true;
+        }
+        col += large;
       }
-      return c.ligne(++num, valeurs);
+      for (k in prises) if (Object.prototype.hasOwnProperty.call(prises, k) && +k >= valeurs.length) valeurs[+k] = '';
+      for (k = 0; k < valeurs.length; k++) if (valeurs[k] === undefined) valeurs[k] = '';
+      return c.ligne(num, valeurs);
     }, true);
   }
   var RE_CELL = /<(?:[\w.-]+:)?Cell(?=[\s>\/])([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:[\w.-]+:)?Cell\s*>)/g;
   var RE_DATA = /<(?:[\w.-]+:)?Data(?=[\s>\/])([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:[\w.-]+:)?Data\s*>)/;
   /* Le XML 2003 d'Excel : un onglet après l'autre ; l'en-tête est cherché
      dans chacun tant qu'il n'est pas trouvé, et la lecture s'arrête à la fin
-     de celui qui le porte. */
+     de celui qui le porte. MergeAcross et MergeDown font des fusions ; une
+     cellule sans ss:Index passe après celles qu'un MergeDown occupe. */
   function analyseurXml2003(nouveauCollecteur, surFin) {
-    var c = nouveauCollecteur(), num = 0, garde = { c: c };
+    var c = nouveauCollecteur(), num = 0, garde = { c: c }, occupees = {};
     var lignes = decoupeur('Row', function (attrs, corps) {
       var idx = attribut(attrs, 'Index');
       num = idx ? parseInt(idx, 10) : num + 1;
-      var valeurs = [], col = -1, m;
+      var valeurs = [], col = -1, m, prises = occupees[num] || {};
+      delete occupees[num];
       RE_CELL.lastIndex = 0;
       while ((m = RE_CELL.exec(corps))) {
         var ci = attribut(m[1], 'Index');
-        col = ci ? parseInt(ci, 10) - 1 : col + 1;
+        if (ci) col = parseInt(ci, 10) - 1;
+        else { col++; while (prises[col]) col++; }
         var d = m[2] ? RE_DATA.exec(m[2]) : null, v = '';
         if (d) {
           var type = attribut(d[1], 'Type') || 'String', brut = d[2] ? d[2].replace(/<!\[CDATA\[[\s\S]*?\]\]>|<[^>]*>/g, function (x) { return x.charAt(1) === '!' ? x : ''; }) : '';
@@ -4173,8 +4802,14 @@ function scriptImportSecondeBase_(P) {
           else v = plat(decoderXml(brut));
         }
         valeurs[col] = v;
-        var span = parseInt(attribut(m[1], 'MergeAcross') || '0', 10);
-        col += Math.min(span, 50);
+        var large = etendue(String(1 + (parseInt(attribut(m[1], 'MergeAcross') || '0', 10) || 0)), P.maxColonnes);
+        var haut = etendue(String(1 + (parseInt(attribut(m[1], 'MergeDown') || '0', 10) || 0)), 1001);
+        if (large > 1 || haut > 1) garde.c.fusion(num, col + 1, haut, large);
+        for (var r = 1; r < haut; r++) {
+          var o = occupees[num + r] || (occupees[num + r] = {});
+          for (var k = 0; k < large; k++) o[col + k] = true;
+        }
+        col += large - 1;
       }
       for (var j = 0; j < valeurs.length; j++) if (valeurs[j] === undefined) valeurs[j] = '';
       return garde.c.ligne(num, valeurs);
@@ -4184,16 +4819,16 @@ function scriptImportSecondeBase_(P) {
       var debut = 0, m;
       reOnglet.lastIndex = 0;
       while ((m = reOnglet.exec(texte))) {
-        if (lignes(texte.slice(debut, m.index), false) === false && garde.c.colonnes) return false;
+        if (lignes(texte.slice(debut, m.index), false) === false && garde.c.sorte) return false;
         debut = m.index;
         if (num > 0) {
-          if (garde.c.colonnes) { surFin(garde.c); return false; }
+          if (garde.c.sorte) { surFin(garde.c); return false; }
           surFin(garde.c);
-          garde.c = nouveauCollecteur(); num = 0;
+          garde.c = nouveauCollecteur(); num = 0; occupees = {};
         }
       }
       var r = lignes(texte.slice(debut), fini);
-      return r === false && !garde.c.colonnes ? true : r;
+      return r === false && !garde.c.sorte ? true : r;
     };
     analyse.courant = function () { return garde.c; };
     return analyse;
@@ -4239,19 +4874,26 @@ function scriptImportSecondeBase_(P) {
   }
   function lireTexte(f, toutes, sonde) {
     progres(0.02, 'Lecture du fichier…');
-    if (sonde.sorte === 'xml') throw erreur('Ce fichier est du XML, mais pas un classeur Excel que la fenêtre connaisse. Il faut l\u2019export SEE en .xlsx ou en .csv.');
+    if (sonde.sorte === 'xml') throw erreur('Ce fichier est du XML, mais pas un classeur Excel que la fenêtre connaisse. Il faut l’export en .xlsx ou en .csv.');
     function lecture(encodage, strict) {
-      var c = null, fin = null, nouveau = function () { return collecteur(toutes); };
+      var c = null, fin = null, tropBas = null, nouveau = function () { return collecteur(toutes); };
       var analyse, premier = true;
-      var retenir = function (x) { if (!fin || (x.colonnes && !fin.colonnes) || (!fin.colonnes && x.meilleur.portes > fin.meilleur.portes)) fin = x; };
+      var retenir = function (x) {
+        if (x.tropBas && !tropBas) tropBas = x.tropBas;
+        if (!fin || (x.sorte && !fin.sorte) || (!fin.sorte && x.meilleur.portes > fin.meilleur.portes)) fin = x;
+      };
       if (sonde.sorte === 'html') { c = nouveau(); analyse = analyseurHtml(c); }
       else if (sonde.sorte === 'xml2003') analyse = analyseurXml2003(nouveau, retenir);
       else {
-        var lignes = sonde.tete.split(/\r\n|\n|\r/).slice(0, P.lignesScan + 1), nCles = P.cles.map(norm), sep = ';', meilleur = -1;
+        /* Le séparateur : celui qui fait le mieux apparaître une ligne
+           d'en-têtes — les colonnes de SEE, les mots d'un en-tête GATES —,
+           puis le plus de champs. */
+        var lignes = sonde.tete.split(/\r\n|\n|\r/).slice(0, P.lignesScan + 1), sep = ';', meilleur = -1;
         [';', ',', '\t', '|'].forEach(function (s) {
           var score = Math.max.apply(null, lignes.map(function (l) {
             var ns = champsCsv(l, s).map(function (x) { return norm(x.replace(/^=/, '')); });
-            return nCles.filter(function (k) { return ns.indexOf(k) !== -1; }).length * 1000 + Math.min(999, ns.length);
+            return (N_CLES.filter(function (k) { return ns.indexOf(k) !== -1; }).length +
+                    P.motsCles.filter(function (k) { return ns.indexOf(k) !== -1; }).length) * 1000 + Math.min(999, ns.length);
           }));
           if (score > meilleur) { meilleur = score; sep = s; }
         });
@@ -4264,14 +4906,11 @@ function scriptImportSecondeBase_(P) {
         return analyse(texte, fini);
       }, function (n) { progres(0.05 + 0.9 * n / (f.size || 1)); }, null, strict).then(function () {
         if (sonde.sorte === 'xml2003') retenir(analyse.courant());
-        var r = sonde.sorte === 'xml2003' ? (fin && fin.colonnes ? fin : null) : c;
-        if (sonde.sorte === 'xml2003' && !r) {
-          var dernier = fin;
-          return { trouve: false, meilleur: dernier ? dernier.meilleur : { portes: 0 }, onglets: [f.name] };
-        }
-        if (r.colonnes) { r.trouve = true; r.onglet = f.name; return r; }
+        var r = sonde.sorte === 'xml2003' ? (fin && fin.sorte ? fin : null) : c;
+        if (!r) return { trouve: false, meilleur: fin ? fin.meilleur : { portes: 0 }, tropBas: tropBas, onglets: [f.name] };
+        if (r.sorte) { r.trouve = true; r.onglet = f.name; r.format = sonde.sorte; return r; }
         r.meilleur.onglet = f.name;
-        return { trouve: false, meilleur: r.meilleur, onglets: [f.name] };
+        return { trouve: false, meilleur: r.meilleur, tropBas: r.tropBas || tropBas, onglets: [f.name] };
       });
     }
     /* De l'UTF-8 qui n'en est plus, loin dans le fichier : on relit en
@@ -4284,7 +4923,6 @@ function scriptImportSecondeBase_(P) {
     }
     return lecture(sonde.encodage, false);
   }
-
   // ------------------------------------------------------------ envoi au classeur
   function appeler(nom, args) {
     return new Promise(function (ok, ko) {
@@ -4298,72 +4936,62 @@ function scriptImportSecondeBase_(P) {
   }
   /* Un appel qui échoue en route (classeur lent, réseau de l'entreprise) est
      renvoyé, deux fois au plus, après une pause : un lot s'écrit toujours aux
-     mêmes lignes, et un début retire l'onglet temporaire d'un début perdu —
-     les renvoyer ne double rien. Les refus du serveur, eux, sont définitifs ;
-     la fin n'est jamais renvoyée (elle a pu échanger les onglets). */
-  var DEFINITIF = /a disparu|non reconnu|Geste refusé|Contrat introuvable|limite de Google Sheets|illisible|Lot vide|Lot trop grand|Lot sans colonne|Trop de colonnes|Rien à importer|Import incomplet|PERMISSION_DENIED|reading from storage|autoris|authoriz/i;
+     mêmes lignes, un début retire l'onglet temporaire d'un début perdu, un
+     archivage remplace la ligne de sa semaine — les renvoyer ne double rien.
+     Les refus du serveur, eux, sont définitifs ; la fin n'est jamais renvoyée
+     (elle a pu échanger les onglets). */
+  var DEFINITIF = /a disparu|non reconnu|Geste refusé|Contrat introuvable|limite de Google Sheets|illisible|Lot vide|Lot trop grand|Lot sans colonne|Trop de colonnes|Rien à importer|Import incomplet|existe déjà|nom réservé|Nom trop long|pas de nom|seconde base|Sorte d.import|FEUILLE_DONNEES|PERMISSION_DENIED|reading from storage|autoris|authoriz/i;
   function appelerAvecReprise(nom, args, surReprise) {
     var essai = 0;
     function tenter() {
       return appeler(nom, args).catch(function (e) {
         if (essai >= P.pausesReprise.length || DEFINITIF.test(e.message)) throw e;
         var pause = P.pausesReprise[essai++];
-        surReprise(essai);
+        if (surReprise) surReprise(essai);
         return new Promise(function (ok) { setTimeout(ok, pause); }).then(tenter);
       });
     }
     return tenter();
   }
-  function envoyer(contrat, entete, lignes, etat) {
-    var total = lignes.length + 1, feuille = null, envoyees = 0;
+  /* Un bloc de lignes vers son onglet : le début (l'onglet temporaire), les
+     lots, puis la fin, qui échange les onglets — avec, pour GATES, les
+     cellules fusionnées à recréer. */
+  function envoyer(cible, bloc, largeur, fusions, etat) {
+    var total = bloc.length, feuille = null, envoyees = 0;
     var reprise = function (n) {
-      progres(envoyees / lignes.length, 'Le classeur n\u2019a pas répondu : nouvel essai (' + n + ' sur ' + P.pausesReprise.length + ')…');
+      progres(envoyees / total, 'Le classeur n’a pas répondu : nouvel essai (' + n + ' sur ' + P.pausesReprise.length + ')…');
     };
-    progres(0, 'Préparation de l\u2019onglet…');
-    return appelerAvecReprise('importSecondeBaseDebut', [contrat, entete.length, total], reprise).then(function (d) {
+    progres(0, 'Préparation de l’onglet…');
+    return appelerAvecReprise('importSecondeBaseDebut', [cible, largeur, total], reprise).then(function (d) {
       feuille = d.feuille;
-      var i = -1;
+      var i = 0;
       function lot() {
-        if (i >= lignes.length) return null;
-        var paquet = [], taille = 0, premiere = i + 2, donnees = 0;
-        while (i < lignes.length && paquet.length < P.maxLignesLot && taille < 900000) {
-          var l = i < 0 ? entete : lignes[i];
-          if (i >= 0) donnees++;
+        if (i >= total) return null;
+        var paquet = [], poids = 0, premiere = i + 1;
+        while (i < total && paquet.length < P.maxLignesLot && poids < 900000) {
+          var l = bloc[i];
           paquet.push(l);
-          for (var j = 0; j < l.length; j++) taille += l[j].length + 3;
+          for (var j = 0; j < l.length; j++) poids += l[j].length + 3;
           i++;
         }
         return appelerAvecReprise('importSecondeBaseLot', [feuille, premiere, paquet], reprise).then(function () {
-          envoyees += donnees;
-          progres(envoyees / lignes.length, 'Envoi au classeur : ' + nb(envoyees) + ' lignes sur ' + nb(lignes.length) + '…');
+          envoyees = i;
+          progres(envoyees / total, 'Envoi au classeur : ' + nb(envoyees) + ' lignes sur ' + nb(total) + '…');
           return lot();
         });
       }
       return lot();
     }).then(function () {
-      progres(1, 'Mise en place de l\u2019onglet…');
+      progres(1, 'Mise en place de l’onglet…');
       etat.fin = true;
-      return appeler('importSecondeBaseFin', [feuille, contrat, total]);
+      return appeler('importSecondeBaseFin', [feuille, cible, total].concat(fusions ? [fusions] : []));
     }).catch(function (e) {
       if (feuille && !etat.fin) appeler('importSecondeBaseAbandon', [feuille]).catch(function () {});
       throw e;
     });
   }
 
-  // ------------------------------------------------------------ la fenêtre
-  function contratChoisi() { return $('contrat').value; }
-  function cibleChoisie() { return P.contrats.filter(function (x) { return x.id === contratChoisi(); })[0] || null; }
-  function majCible() {
-    var c = cibleChoisie();
-    $('cible').innerHTML = c ? (c.existe ? 'Remplacera l\u2019onglet' : 'Créera l\u2019onglet') + ' <b>« ' + ech(c.onglet) + ' »</b>' +
-      (c.existe ? ' — l\u2019ancien ne s\u2019en va qu\u2019une fois tout reçu.' : '.') : '';
-  }
-  function poserFichier(f) {
-    fichier = f || null;
-    $('nom-fichier').textContent = fichier ? fichier.name + ' — ' + (fichier.size / 1048576).toFixed(1).replace('.', ',') + ' Mo' : '';
-    $('importer').disabled = !fichier || enCours;
-    dire('');
-  }
+  // ------------------------------------------------------------ ce qu'est un fichier
   function sorteDuFichier(f) {
     return lireOctets(f, 0, 512).then(function (b) {
       if (b[0] === 0x50 && b[1] === 0x4b) return 'zip';
@@ -4373,9 +5001,9 @@ function scriptImportSecondeBase_(P) {
          premier secteur du répertoire le dit ; à défaut, l'extension. */
       var parExtension = /\.xls[xmb]$/i.test(f.name) ? 'protege' : 'xls';
       if (b.length < 512 || (u16(b, 0x1E) !== 9 && u16(b, 0x1E) !== 12)) return parExtension;
-      var taille = 1 << u16(b, 0x1E), debut = (u32(b, 0x30) + 1) * taille;
-      if (debut + taille > f.size) return parExtension;
-      return lireOctets(f, debut, debut + taille).then(function (d) {
+      var secteur = 1 << u16(b, 0x1E), debut = (u32(b, 0x30) + 1) * secteur;
+      if (debut + secteur > f.size) return parExtension;
+      return lireOctets(f, debut, debut + secteur).then(function (d) {
         var noms = [];
         for (var k = 0; k + 128 <= d.length; k += 128) {
           var lg = Math.min(64, u16(d, k + 64)), n = '';
@@ -4388,98 +5016,679 @@ function scriptImportSecondeBase_(P) {
       }, function () { return parExtension; });
     });
   }
-  function messageDErreur(e, etat) {
-    var c = cibleChoisie(), onglet = c ? c.onglet : P.base, texte = e && e.message ? e.message : String(e);
-    if (e && e.name === 'TypeError' && /compress|decompress|deflate/i.test(texte)) return ABIME + ' Rien n\u2019a été remplacé dans le classeur.';
-    if (/PERMISSION_DENIED|reading from storage|ScriptError.*autoris|authoriz/i.test(texte)) {
-      return 'Google refuse l\u2019appel : plusieurs comptes Google sont sans doute ouverts dans ce navigateur, ce qu\u2019Apps Script ne supporte pas. ' +
-        'Ouvrir le classeur dans une fenêtre où seul le compte du classeur est connecté (ou une fenêtre de navigation privée), puis relancer.';
-    }
-    var t = e && e.pourLecteur ? texte : 'Erreur inattendue : ' + texte;
-    /* Après l'appel de fin, la base a pu être échangée — sauf pour ces refus,
-       qui arrivent avant tout échange. */
-    if (etat.fin && !/Import incomplet|a disparu|non reconnu|Contrat introuvable|Geste refusé/.test(texte)) {
-      return t + ' L\u2019import est peut-être allé au bout : regarder l\u2019onglet « ' + onglet + ' » (ou menu Suivi FWD → Diagnostic) avant de relancer.';
-    }
-    if (etat.fin) return t + ' L\u2019ancien onglet « ' + onglet + ' » est intact.';
-    if (e && e.duServeur && !/limite de Google Sheets|Import incomplet/.test(texte)) t += ' Relancer l\u2019import ; si ça recommence : menu Suivi FWD → Diagnostic.';
-    return t + (/Rien n.(a été|est) remplacé|intact/.test(t) ? '' : ' Rien n\u2019a été remplacé dans le classeur.');
+  /* Le contrat qui sert d'exemple dans les messages : celui de l'onglet affiché. */
+  function contratExemple() {
+    var k = contratExistant(P.choisi) || P.contrats[0];
+    return k ? { gates: k.id, see: k.onglet } : { gates: 'HDK', see: (P.base || 'SEE') + ' HDK' };
   }
-  function importer() {
-    if (!fichier || enCours) return;
-    var toutes = $('toutes').checked, f = fichier, contrat = contratChoisi(), etat = { fin: false }, c0 = cibleChoisie();
-    enCours = true;
-    $('importer').disabled = true; $('choisir').disabled = true; $('contrat').disabled = true; $('toutes').disabled = true; $('fermer').disabled = true;
-    $('consigne').hidden = false;
-    dire('');
-    var debut = Date.now();
-    sorteDuFichier(f).then(function (sorte) {
-      var onglet = c0 ? c0.onglet : P.base + ' ' + contrat;
+  /* Lit un fichier et dit ce qu'il est : un export GATES ou SEE prêt à
+     partir, ou une erreur qui dit pourquoi — et rien n'est encore envoyé. */
+  function lireFichier(f, toutes) {
+    return sorteDuFichier(f).then(function (sorte) {
       if (sorte === 'protege') throw erreur('Ce fichier Excel est protégé (mot de passe ou étiquette de confidentialité) : la fenêtre ne peut pas le lire, ' +
-        'Google Sheets non plus. Demander l\u2019export SEE sans protection, ou en .csv.');
-      if (sorte === 'xls') throw erreur('C\u2019est un ancien fichier Excel (' + (/\.xls[xmb]$/i.test(f.name) ? 'format .xls, malgré son nom' : '.xls') + '), que la fenêtre ne sait pas lire. Il faut l\u2019export en .xlsx ou en .csv — ' +
-        'ou, dans le classeur : Fichier → Importer → ce fichier → « Insérer de nouvelles feuilles » (surtout pas « Remplacer la feuille de calcul » : ' +
-        'elle remplace tout le classeur), puis supprimer l\u2019ancien onglet « ' + onglet + ' » et donner ce nom au nouveau.');
+        'Google Sheets non plus. Demander l’export sans protection, ou en .csv.');
+      if (sorte === 'xls') {
+        var ex = contratExemple();
+        throw erreur('C’est un ancien fichier Excel (' + (/\.xls[xmb]$/i.test(f.name) ? 'format .xls, malgré son nom' : '.xls') + '), que la fenêtre ne sait pas lire. ' +
+          'Il faut l’export en .xlsx ou en .csv — ou, dans le classeur : Fichier → Importer → ce fichier → « Insérer de nouvelles feuilles » ' +
+          '(surtout pas « Remplacer la feuille de calcul » : elle remplace tout le classeur), puis supprimer l’ancien onglet et donner son nom au nouveau : ' +
+          '« ' + ex.gates + ' » pour l’export GATES du contrat, « ' + ex.see + ' » pour sa base ' + (P.base || 'SEE') + '.');
+      }
       if (sorte === 'zip') {
-        if (typeof DecompressionStream !== 'function') throw erreur('Ce navigateur est trop ancien pour décompresser un .xlsx. Le mettre à jour, ou passer par un export .csv.');
-        try { new DecompressionStream('deflate-raw'); } catch (e) { throw erreur('Ce navigateur est trop ancien pour décompresser un .xlsx. Le mettre à jour, ou passer par un export .csv.'); }
+        var vieux = 'Ce navigateur est trop ancien pour décompresser un .xlsx. Le mettre à jour, ou passer par un export .csv.';
+        if (typeof DecompressionStream !== 'function') throw erreur(vieux);
+        try { new DecompressionStream('deflate-raw'); } catch (e) { throw erreur(vieux); }
         return lireXlsx(f, toutes);
       }
       return sonderTexte(f).then(function (s) { return lireTexte(f, toutes, s); });
-    }).then(function (c) {
-      if (!c.trouve) {
-        var m = c.meilleur || { portes: 0 };
-        throw erreur('Aucune ligne d\u2019en-tête avec ' + P.cles.join(', ') + ' dans les ' + P.lignesScan + ' premières lignes' +
-          (c.onglets && c.onglets.length > 1 ? ' des onglets (' + c.onglets.join(', ') + ')' : '') + '. Est-ce bien l\u2019export ' + P.base + ' ?' +
-          (m.portes ? ' La ligne ' + m.ligne + ' de « ' + m.onglet + ' » en porte ' + m.portes + ' sur ' + P.cles.length +
-            ' — il manque : ' + m.manquent.join(', ') + ' (intitulés lus : ' + m.noms.join(', ') + ').' : ''));
+    }).then(function (c) { return bilan(c, f); });
+  }
+  function bilan(c, f) {
+    if (!c.trouve) {
+      var t = c.tropBas;
+      if (t) {
+        throw erreur(t.sorte === 'gates'
+          ? 'La ligne d’en-têtes de cet export GATES est en ligne ' + t.ligne + ' de « ' + (t.onglet || f.name) + ' » : la page ne la trouverait pas — ' +
+            'elle la cherche dans les ' + P.lignesScan + ' premières lignes. Le fichier a-t-il été retouché (des lignes ajoutées en haut) ? Le retélécharger de GATES tel quel.'
+          : 'Aucune ligne d’en-tête avec ' + P.cles.join(', ') + ' dans les ' + P.lignesScan + ' premières lignes : elle est en ligne ' + t.ligne +
+            ' de « ' + (t.onglet || f.name) + ' », trop bas pour la page. Le retélécharger de ' + P.base + ' tel quel.');
       }
-      if (c.trop) throw erreur('Plus de ' + nb(P.maxCellulesToutes) + ' cellules avec toutes les colonnes : trop pour le classeur. ' +
-        'Décocher « Garder aussi les autres colonnes » : seules ' + P.cles.join(', ') + ' iront.');
-      if (!c.lignes.length) throw erreur('L\u2019en-tête est là (« ' + c.onglet + ' »), mais aucune ligne dessous.');
-      if (c.formulesVides) throw erreur(nb(c.formulesVides) + ' ligne(s) ont une formule sans valeur calculée dans ' + P.cles.join(', ') + ' : le fichier ' +
-        'a été écrit par un programme qui ne calcule pas. Demander l\u2019export SEE en .csv, ou en .xlsx enregistré une fois par Excel.');
-      var lu = (Date.now() - debut) / 1000;
-      dire('Fichier lu en ' + Math.max(1, Math.round(lu)) + ' s : <b>' + nb(c.lignes.length) + ' lignes</b>, colonnes ' + ech(c.entete.join(', ')) + '.');
-      return envoyer(contrat, c.entete, c.lignes, etat).then(function (r) {
-        $('barre').hidden = true;
-        $('progres').textContent = '';
-        dire('✓ <b>' + nb(r.lignes) + ' lignes</b> dans l\u2019onglet <b>« ' + ech(r.onglet) + ' »</b> (' + r.colonnes + ' colonne' + (r.colonnes > 1 ? 's' : '') + ').' +
-          (r.etat === 'ok' || r.etat === 'non relu' ? ' La comparaison est prête : rouvrir le tableau de bord (menu Suivi FWD → Ouvrir le tableau de bord).'
-            : ' Mais la page ne la lit pas (' + ech(r.etat) + ') : menu Suivi FWD → Diagnostic.'), r.etat === 'ok' || r.etat === 'non relu' ? 'ok' : 'erreur');
-        $('fermer').classList.add('principal');
-        $('importer').classList.remove('principal');
-      });
-    }).catch(function (e) {
-      $('barre').hidden = true;
-      $('progres').textContent = '';
-      dire(ech(messageDErreur(e, etat)), 'erreur');
-    }).then(function () {
-      enCours = false;
-      $('consigne').hidden = true;
-      $('choisir').disabled = false; $('contrat').disabled = false; $('toutes').disabled = false; $('fermer').disabled = false;
-      $('importer').disabled = !fichier;
+      var m = c.meilleur || { portes: 0 };
+      throw erreur('Ni un export GATES ni un export ' + (P.base || 'SEE') + ' : ' +
+        (P.cles.length ? 'aucune ligne d’en-tête avec ' + P.cles.join(', ') + ', ni avec ' : 'aucune ligne d’en-tête avec ') +
+        'au moins deux de Référence UD, ATA, Nom installation (chacun seul dans sa cellule, sur une ligne d’au moins dix intitulés), dans les ' +
+        P.lignesScan + ' premières lignes' + (c.onglets && c.onglets.length > 1 ? ' des onglets (' + c.onglets.join(', ') + ')' : '') + '.' +
+        (m.portes ? ' La ligne ' + m.ligne + ' de « ' + m.onglet + ' » en porte ' + m.portes + ' sur ' + P.cles.length + ' — il manque : ' +
+          m.manquent.join(', ') + ' (intitulés lus : ' + m.noms.join(', ') + ').' : ''));
+    }
+    if (c.sorte === 'gates') {
+      if (c.trop) throw erreur('Plus de ' + nb(P.maxCellulesToutes) + ' cellules : trop pour le classeur. Est-ce bien l’export GATES d’un contrat ?');
+      var d = bilanGates(c);
+      d.format = c.format;
+      if (d.largeur > P.maxColonnes) throw erreur(d.largeur + ' colonnes : trop pour un export GATES (au plus ' + P.maxColonnes + ').');
+      if (!d.donnees) {
+        throw erreur('L’en-tête GATES est là (ligne ' + d.ligneEntete + ' de « ' + c.onglet + ' »), mais aucun plan dessous : ' +
+          'l’onglet du contrat n’est pas remplacé par un export vide.');
+      }
+      if (c.formulesVides) {
+        throw erreur(nb(c.formulesVides) + ' cellule(s) de l’en-tête, des lignes au-dessus ou de la colonne de référence sont des formules sans ' +
+          'valeur calculée : le fichier a été écrit par un programme qui ne calcule pas. Demander l’export GATES en .csv, ou en .xlsx enregistré une fois par Excel.');
+      }
+      return d;
+    }
+    if (c.trop) throw erreur('Plus de ' + nb(P.maxCellulesToutes) + ' cellules avec toutes les colonnes : trop pour le classeur. ' +
+      'Décocher « Garder aussi les autres colonnes » : seules ' + P.cles.join(', ') + ' iront.');
+    if (!c.lignes.length) throw erreur('L’en-tête est là (« ' + c.onglet + ' »), mais aucune ligne dessous.');
+    if (c.formulesVides) throw erreur(nb(c.formulesVides) + ' ligne(s) ont une formule sans valeur calculée dans ' + P.cles.join(', ') + ' : le fichier ' +
+      'a été écrit par un programme qui ne calcule pas. Demander l’export ' + P.base + ' en .csv, ou en .xlsx enregistré une fois par Excel.');
+    return { sorte: 'see', entete: c.entete, lignes: c.lignes, onglet: c.onglet, format: c.format,
+             positionsCles: c.colonnes.map(function (j, k) { return c.cles[j] ? k : -1; }).filter(function (k) { return k !== -1; }) };
+  }
+  function messageDeLecture(e) {
+    var texte = e && e.message ? e.message : String(e);
+    if (e && e.name === 'TypeError' && /compress|decompress|deflate/i.test(texte)) return ABIME;
+    return e && e.pourLecteur ? texte : 'Erreur inattendue : ' + texte;
+  }
+  /* `existe` : l'onglet visé était déjà là (il serait remplacé) — sinon
+     l'import l'aurait créé, et rien n'a été créé. */
+  function messageDErreur(e, etat, onglet, existe) {
+    var texte = e && e.message ? e.message : String(e);
+    if (/PERMISSION_DENIED|reading from storage|ScriptError.*autoris|authoriz/i.test(texte)) {
+      return 'Google refuse l’appel : plusieurs comptes Google sont sans doute ouverts dans ce navigateur, ce qu’Apps Script ne supporte pas. ' +
+        'Ouvrir le classeur dans une fenêtre où seul le compte du classeur est connecté (ou une fenêtre de navigation privée), puis relancer.';
+    }
+    var t = e && e.pourLecteur ? texte : 'Erreur inattendue : ' + texte;
+    var rien = existe ? ' Rien n’a été remplacé dans le classeur.' : ' Rien n’a été créé dans le classeur.';
+    /* Après l'appel de fin, l'onglet a pu être échangé — sauf pour ces refus,
+       qui arrivent avant tout échange. */
+    if (etat.fin && !/Import incomplet|a disparu|non reconnu|Contrat introuvable|Geste refusé|existe déjà|nom réservé/.test(texte)) {
+      return t + ' L’import est peut-être allé au bout : regarder l’onglet « ' + onglet + ' » (ou menu Suivi FWD → Diagnostic) avant de relancer.';
+    }
+    if (etat.fin) return t + (existe ? ' L’ancien onglet « ' + onglet + ' » est intact.' : rien);
+    if (e && e.duServeur && !/limite de Google Sheets|Import incomplet/.test(texte)) t += ' Relancer l’import ; si ça recommence : menu Suivi FWD → Diagnostic.';
+    return t + (/Rien n.(a été|est) (remplacé|créé)|intact/.test(t) ? '' : rien);
+  }
+
+  // ------------------------------------------------------------ deviner le contrat
+  function contratExistant(id) { return P.contrats.filter(function (k) { return k.id === id; })[0] || null; }
+  var ENSEMBLES = {};
+  function ensembleDe(k) {
+    if (!ENSEMBLES[k.id]) { var e = {}; k.refs.forEach(function (r) { e[r] = true; }); ENSEMBLES[k.id] = e; }
+    return ENSEMBLES[k.id];
+  }
+  /* Les contrats dont le nom est un mot entier du texte (normalisé). */
+  function nommes(texte, ids) {
+    return ids.filter(function (id) {
+      var n = norm(id);
+      return !!n && new RegExp('(^|[^a-z0-9])' + n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^a-z0-9]|$)').test(texte);
+    });
+  }
+  /* Le meilleur recouvrement, s'il est net : au moins P.seuilRecouvrement des
+     plans du fichier, et au moins le double du suivant. */
+  function net(parts) {
+    var tri = parts.slice().sort(function (a, b) { return b.part - a.part; }), a = tri[0], b = tri[1];
+    return a && a.part >= P.seuilRecouvrement && (!b || b.part * 2 <= a.part) ? a : null;
+  }
+  /* Un export GATES : (a) le contrat dont il partage le plus de plans ;
+     (b) sinon le seul contrat nommé au-dessus de l'en-tête (la ligne des
+     groupes dit « HDK AA 011 ») ; (c) sinon le seul nommé dans le nom du
+     fichier — mais un contrat qui a des plans et n'en partage presque aucun
+     avec le fichier reste à confirmer ; (d) sinon un nouveau contrat, nommé
+     d'après les groupes « XXX AA … » ; sans aucun contrat, c'est le premier. */
+  function devinerGates(r) {
+    var d = r.lu, ids = P.contrats.map(function (k) { return k.id; });
+    var parts = P.contrats.map(function (k) {
+      var e = ensembleDe(k), commun = 0;
+      d.refs.forEach(function (x) { if (e[x]) commun++; });
+      return { id: k.id, commun: commun, part: d.refs.length ? commun / d.refs.length : 0, plans: k.refs.length };
+    });
+    var a = net(parts);
+    if (a) return { choix: a.id, note: nb(a.commun) + ' plan' + (a.commun > 1 ? 's' : '') + ' sur ' + nb(d.refs.length) + ' déjà dans « ' + a.id + ' »' };
+    var candidat = '', source = '', parGroupes = nommes(d.dessus, ids);
+    if (parGroupes.length === 1) { candidat = parGroupes[0]; source = 'nommé au-dessus des en-têtes'; }
+    else {
+      var parNom = nommes(norm(sansExtension(r.f.name)), ids);
+      if (parNom.length === 1) { candidat = parNom[0]; source = 'dans le nom du fichier'; }
+    }
+    if (candidat) {
+      var p = parts.filter(function (x) { return x.id === candidat; })[0];
+      if (p && p.plans && p.part < P.seuilRecouvrement) {
+        return { choix: '', aVerifier: true, note: '« ' + candidat + ' » est ' + source + ', mais son onglet n’a que ' + nb(p.commun) + ' plan' +
+          (p.commun > 1 ? 's' : '') + ' en commun avec ce fichier : choisir le contrat.' };
+      }
+      return { choix: candidat, note: '« ' + candidat + ' » ' + source };
+    }
+    var mot = d.motGroupe;
+    if (P.nouveauPermis && mot && !ids.some(function (id) { return norm(id) === norm(mot); })) {
+      return { choix: NOUVEAU, nom: mot, note: ids.length ? 'aucun plan en commun avec les contrats du classeur : un nouveau contrat, nommé d’après ses groupes « ' + mot + ' AA … »'
+        : 'le premier contrat du classeur, nommé d’après ses groupes « ' + mot + ' AA … »' };
+    }
+    if (P.nouveauPermis && !ids.length) return { choix: NOUVEAU, nom: '', note: 'le premier contrat du classeur : lui donner le nom de son onglet' };
+    return { choix: '', aVerifier: true, note: (parGroupes.length > 1 ? 'plusieurs contrats nommés dans le fichier (' + parGroupes.join(', ') + ')'
+      : 'aucun plan en commun avec les contrats du classeur') + ' : choisir le contrat' + (P.nouveauPermis ? ', ou « Nouveau contrat… »' : '') + '.' };
+  }
+  /* Les nouveaux contrats qu'un export GATES de la liste va créer, au nom
+     vérifié : un export SEE peut y aller — les exports GATES passent d'abord. */
+  function nouveauxDuLot() {
+    var vus = {}, noms = [];
+    fichiers.forEach(function (r) {
+      if (r.lu && r.lu.sorte === 'gates' && r.choix === NOUVEAU && r.nom.etat === 'ok' && !vus[norm(r.nom.valeur)]) {
+        vus[norm(r.nom.valeur)] = true;
+        noms.push(r.nom.valeur);
+      }
+    });
+    return noms;
+  }
+  /* Un export SEE : (a) le contrat dont un échantillon du fichier retrouve
+     le plus de plans (le serveur rapproche comme la page) ; (b) sinon le seul
+     nommé dans le nom du fichier ; (c) sinon le seul contrat ; (d) sinon
+     celui de l'onglet affiché — à vérifier. */
+  function devinerSee(r) {
+    var ids = P.contrats.map(function (k) { return k.id; }).concat(nouveauxDuLot());
+    if (!ids.length) return { choix: '', aVerifier: true, note: 'aucun contrat encore : ajouter l’export GATES du contrat (il passe avant).' };
+    var a = net(r.parts || []);
+    if (a) return { choix: a.id, note: nb(a.commun) + ' référence' + (a.commun > 1 ? 's' : '') + ' de l’échantillon sur ' + nb(r.echantillon) + ' retrouvée' + (a.commun > 1 ? 's' : '') + ' dans « ' + a.id + ' »' };
+    var parNom = nommes(norm(sansExtension(r.f.name)), ids);
+    if (parNom.length === 1) return { choix: parNom[0], note: '« ' + parNom[0] + ' » dans le nom du fichier' };
+    if (ids.length === 1) return { choix: ids[0], note: '' };
+    return { choix: ids.indexOf(P.choisi) !== -1 ? P.choisi : ids[0], aVerifier: true, note: 'à vérifier' };
+  }
+  function deviner(r) {
+    if (!r.lu || r.manuel) return;
+    var g = r.lu.sorte === 'gates' ? devinerGates(r) : devinerSee(r);
+    r.choix = g.choix;
+    r.note = g.note;
+    r.aVerifier = !!g.aVerifier;
+    if (g.choix === NOUVEAU && g.nom && !r.nom.valeur) saisirNom(r, g.nom, true);
+  }
+  /* L'échantillon d'un export SEE part au serveur, qui le rapproche des
+     plans de chaque contrat ; rien à demander avec un seul contrat. */
+  function demanderParts(r) {
+    r.parts = null;
+    if (P.contrats.length < 2) { deviner(r); return; }
+    var d = r.lu, cles = d.positionsCles, pas = Math.max(1, Math.floor(d.lignes.length / P.echantillonSee)), lignes = [];
+    for (var i = 0; i < d.lignes.length && lignes.length < P.echantillonSee; i += pas) {
+      lignes.push(cles.map(function (k) { return d.lignes[i][k]; }));
+    }
+    r.attenteParts = true;
+    deviner(r);
+    /* Un fichier relu entre-temps a sa propre demande : la réponse d'une
+       demande dépassée est laissée. */
+    var demande = r.demandeParts = (r.demandeParts || 0) + 1;
+    appelerAvecReprise('importDevinerContratSEE', [cles.map(function (k) { return d.entete[k]; }), lignes]).then(function (rep) {
+      if (demande !== r.demandeParts) return;
+      r.parts = rep && rep.contrats ? rep.contrats : [];
+      r.echantillon = rep ? rep.lignes : 0;
+    }, function () { if (demande === r.demandeParts) r.parts = []; }).then(function () {
+      if (demande !== r.demandeParts) return;
+      r.attenteParts = false;
+      if (r.retire) return;
+      deviner(r);
+      dessiner(r);
+      majTout();
     });
   }
 
-  P.contrats.forEach(function (c) {
-    var o = document.createElement('option');
-    o.value = c.id; o.textContent = c.id;
-    if (c.id === P.choisi) o.selected = true;
-    $('contrat').appendChild(o);
-  });
-  $('ligne-contrat').hidden = P.contrats.length < 2;
-  majCible();
-  $('contrat').addEventListener('change', majCible);
+  // ------------------------------------------------------------ le nom d'un nouveau contrat
+  /* Vérifié par le serveur dès qu'il est tapé (nom réservé, onglet qui
+     existe déjà…) : « Importer » attend sa réponse. */
+  function saisirNom(r, valeur, aussitot) {
+    var n = r.nom, v = String(valeur === undefined || valeur === null ? '' : valeur).trim();
+    /* Le même nom, déjà vérifié ou en cours de l'être : rien à redemander.
+       Sinon, cliquer « Importer » juste après l'avoir tapé — le champ perd
+       le focus, « change » part — éteindrait le bouton sous le clic. */
+    if (v === n.valeur && n.etat !== 'vide') return;
+    n.valeur = v;
+    n.etat = n.valeur ? 'attente' : 'vide';
+    n.message = '';
+    clearTimeout(n.minuteur);
+    var demande = ++n.demande;
+    if (r.el) {
+      var champ = r.el.querySelector('.nouveau');
+      if (champ.value.trim() !== n.valeur) champ.value = n.valeur;
+    }
+    if (!n.valeur) { if (r.el) { dessiner(r); majTout(); } return; }
+    n.minuteur = setTimeout(function () {
+      appeler('importVerifierNouveauContrat', [n.valeur]).then(function (rep) {
+        if (demande !== n.demande) return;
+        n.etat = rep && rep.ok ? 'ok' : 'refus';
+        n.message = rep && rep.ok ? '' : String(rep && rep.message ? rep.message : 'Nom refusé.');
+        if (rep && rep.ok) n.valeur = rep.nom;
+      }, function (e) {
+        if (demande !== n.demande) return;
+        n.etat = 'refus';
+        n.message = 'Le nom n’a pas pu être vérifié (' + e.message + ') : le retaper.';
+        n.valeur = '';   // oublié : le même nom, retapé, est redemandé
+      }).then(function () {
+        if (demande !== n.demande || r.retire) return;
+        dessiner(r);
+        majTout();
+      });
+    }, aussitot ? 0 : 400);
+    if (r.el) { dessiner(r); majTout(); }
+  }
+
+  // ------------------------------------------------------------ la liste des fichiers
+  /* Chaque fichier ajouté est une ligne de la liste : lu tout de suite, un à
+     la fois, puis rattaché à son contrat. Un nouveau choix de fichiers, après
+     un import, repart d'une liste propre. */
+  function ajouter(liste) {
+    if (enCours) return;
+    fichiers = fichiers.filter(function (r) {
+      if (r.etat !== 'fait' && r.etat !== 'echec') return true;
+      if (r.el && r.el.parentNode) r.el.parentNode.removeChild(r.el);
+      return false;
+    });
+    var tableaux = /\.(xlsx|xlsm|xls|xlsb|csv|txt|xml|html?)$/i, autres = [], doublons = 0, trop = 0;
+    for (var i = 0; i < liste.length; i++) {
+      var f = liste[i];
+      if (!tableaux.test(f.name)) { autres.push(f.name); continue; }
+      if (fichiers.some(function (r) { return r.f.name === f.name && r.f.size === f.size && r.f.lastModified === f.lastModified; })) { doublons++; continue; }
+      if (fichiers.length >= P.maxFichiers) { trop++; continue; }
+      var r = { n: ++numero, f: f, etat: 'attente', lu: null, choix: '', manuel: false, note: '', aVerifier: false,
+                nom: { valeur: '', etat: 'vide', message: '', demande: 0, minuteur: null } };
+      fichiers.push(r);
+      creerLigne(r);
+      dessiner(r);
+      aLire.push(r);
+    }
+    /* Après un import, « Importer » redevient le bouton principal. */
+    $('importer').classList.add('principal');
+    $('fermer').classList.remove('principal');
+    var mots = [];
+    if (autres.length) mots.push(autres.length + ' fichier' + (autres.length > 1 ? 's' : '') + ' laissé' + (autres.length > 1 ? 's' : '') +
+      ' de côté, pas des tableaux : ' + autres.slice(0, 4).join(', ') + (autres.length > 4 ? ', …' : '') + '.');
+    if (doublons) mots.push(doublons + ' fichier' + (doublons > 1 ? 's' : '') + ' déjà dans la liste.');
+    if (trop) mots.push('Au plus ' + P.maxFichiers + ' fichiers à la fois : ' + trop + ' laissé' + (trop > 1 ? 's' : '') + ' de côté — les importer ensuite.');
+    dire(ech(mots.join(' ')));
+    majTout();
+    lireSuivant();
+  }
+  function lireSuivant() {
+    if (enLecture) return;
+    var r = aLire.shift();
+    while (r && r.retire) r = aLire.shift();
+    if (!r) { majTout(); return; }
+    enLecture = r;
+    r.etat = 'lecture';
+    r.texteLecture = 'Lecture…';
+    var debut = Date.now(), toutes = $('toutes').checked;
+    suivi = function (part, texte) {
+      avancer(r, part);
+      if (texte !== undefined) { r.texteLecture = texte; r.el.querySelector('.lu').textContent = texte; }
+    };
+    dessiner(r);
+    lireFichier(r.f, toutes).then(function (d) {
+      d.duree = (Date.now() - debut) / 1000;
+      r.lu = d;
+      r.etat = 'lu';
+      r.toutes = toutes;
+    }, function (e) {
+      r.lu = null;
+      r.etat = 'erreur';
+      r.erreur = messageDeLecture(e);
+    }).then(function () {
+      suivi = null;
+      enLecture = null;
+      if (r.retire) {
+        /* retiré pendant sa lecture : plus rien à en faire */
+      } else if (toutes !== $('toutes').checked && ((r.lu && r.lu.sorte === 'see') || r.etat === 'erreur')) {
+        /* « Garder aussi les autres colonnes » a changé pendant la lecture :
+           un export SEE — ou un fichier en erreur, trop gros peut-être —
+           est relu avec le nouveau réglage, avant les autres. */
+        r.etat = 'attente';
+        r.lu = null;
+        aLire.unshift(r);
+        dessiner(r);
+      } else {
+        if (r.lu && r.lu.sorte === 'see') demanderParts(r);
+        else if (r.lu) deviner(r);
+        dessiner(r);
+      }
+      majTout();
+      lireSuivant();
+    });
+  }
+  function retirer(r) {
+    if (enCours) return;
+    r.retire = true;
+    fichiers = fichiers.filter(function (x) { return x !== r; });
+    if (r.el && r.el.parentNode) r.el.parentNode.removeChild(r.el);
+    dire('');
+    majTout();
+  }
+  function creerLigne(r) {
+    var li = document.createElement('li');
+    li.className = 'fichier';
+    li.setAttribute('data-n', String(r.n));
+    li.innerHTML = '<div class="tete"><span class="sorte" hidden></span><span class="nom"></span><span class="taille"></span>' +
+      '<button type="button" class="retirer">Retirer</button></div>' +
+      '<div class="lu"></div><div class="barre" hidden><div></div></div>' +
+      '<div class="choix" hidden><label>Contrat <select class="contrat"></select></label>' +
+      '<input type="text" class="nouveau" maxlength="' + P.nomMax + '" placeholder="Nom du contrat (celui de son onglet)" aria-label="Nom du nouveau contrat" hidden>' +
+      '<span class="note"></span></div>' +
+      '<div class="cible"></div><div class="resultat" hidden></div>';
+    $('liste').appendChild(li);
+    r.el = li;
+    li.querySelector('.nom').textContent = r.f.name;
+    li.querySelector('.taille').textContent = taille(r.f.size);
+    li.querySelector('.retirer').setAttribute('aria-label', 'Retirer « ' + r.f.name + ' » de la liste');
+    li.querySelector('.retirer').addEventListener('click', function () { retirer(r); });
+    li.querySelector('.contrat').addEventListener('change', function () {
+      r.choix = this.value;
+      r.manuel = true;
+      r.note = '';
+      r.aVerifier = false;
+      if (r.choix === NOUVEAU) {
+        /* Le nom proposé : celui déjà tapé, sinon le mot des groupes — s'il
+           n'est pas déjà un contrat (« HDK AA » dans l'export d'un autre). */
+        var mot = r.lu && r.lu.motGroupe ? r.lu.motGroupe : '';
+        if (P.contrats.some(function (k) { return norm(k.id) === norm(mot); })) mot = '';
+        saisirNom(r, r.el.querySelector('.nouveau').value || mot, true);
+      }
+      dessiner(r);
+      majTout();
+    });
+    li.querySelector('.nouveau').addEventListener('input', function () { saisirNom(r, this.value, false); });
+    li.querySelector('.nouveau').addEventListener('change', function () { saisirNom(r, this.value, true); });
+  }
+  function avancer(r, part) {
+    var b = r.el.querySelector('.barre');
+    b.hidden = false;
+    b.firstChild.style.width = Math.round(Math.max(0, Math.min(1, part)) * 100) + '%';
+  }
+  /* Les choix de contrat d'une ligne : les contrats du classeur ; pour GATES,
+     « Nouveau contrat… » ; pour SEE, les nouveaux contrats de la liste. */
+  function options(r) {
+    var sel = r.el.querySelector('.contrat'), gates = r.lu.sorte === 'gates';
+    var liste = [{ v: '', t: '— choisir —' }];
+    P.contrats.forEach(function (k) { liste.push({ v: k.id, t: k.id }); });
+    if (!gates) nouveauxDuLot().forEach(function (n) { liste.push({ v: n, t: n + ' (nouveau)' }); });
+    if (gates && P.nouveauPermis) liste.push({ v: NOUVEAU, t: 'Nouveau contrat…' });
+    var cle = JSON.stringify(liste);
+    if (sel.getAttribute('data-cle') !== cle) {
+      sel.innerHTML = '';
+      liste.forEach(function (o) { var e = document.createElement('option'); e.value = o.v; e.textContent = o.t; sel.appendChild(e); });
+      sel.setAttribute('data-cle', cle);
+    }
+    if (r.choix && !liste.some(function (o) { return o.v === r.choix; })) {
+      r.choix = '';
+      r.manuel = false;
+      r.aVerifier = true;
+      r.note = 'le contrat choisi n’est plus dans la liste : le choisir de nouveau.';
+    }
+    sel.value = r.choix;
+    return liste.length;
+  }
+  /* L'onglet qu'un fichier remplacera ou créera, ou null tant qu'il n'a pas de cible. */
+  function cibleDuFichier(r) {
+    if (!r.lu || !r.choix) return null;
+    if (r.lu.sorte === 'gates') {
+      if (r.choix === NOUVEAU) return r.nom.etat === 'ok' ? { onglet: r.nom.valeur, existe: false, contrat: r.nom.valeur, nouveau: true } : null;
+      var k = contratExistant(r.choix);
+      return k ? { onglet: k.id, existe: true, contrat: k.id, nouveau: false } : null;
+    }
+    var e = contratExistant(r.choix);
+    if (e) return { onglet: e.onglet, existe: e.existe, contrat: e.id, nouveau: false };
+    if (nouveauxDuLot().indexOf(r.choix) !== -1) return { onglet: P.base + ' ' + r.choix, existe: false, contrat: r.choix, nouveau: true };
+    return null;
+  }
+  function resumeLu(d) {
+    var dit = d.duree >= 0 ? ' · lu en ' + Math.max(1, Math.round(d.duree)) + ' s' : '';
+    if (d.sorte === 'see') return nb(d.lignes.length) + ' ligne' + (d.lignes.length > 1 ? 's' : '') + ', colonnes ' + d.entete.join(', ') + dit;
+    return (d.refs.length ? nb(d.refs.length) + ' plan' + (d.refs.length > 1 ? 's' : '') : nb(d.donnees) + ' lignes') + ' · ' + d.largeur + ' colonnes' +
+      ' · en-têtes en ligne ' + d.ligneEntete + (d.fusions.length ? ' · ' + d.fusions.length + ' cellules fusionnées' : '') + dit +
+      (d.format === 'csv' ? ' · un .csv ne garde pas les cellules fusionnées de la ligne des groupes : l’export Excel (.xlsx) est plus sûr' : '') +
+      (d.formulesAilleurs ? ' · ' + nb(d.formulesAilleurs) + ' formule(s) sans valeur calculée, laissée(s) vide(s)' : '');
+  }
+  function dessiner(r) {
+    var li = r.el, d = r.lu, q = function (s) { return li.querySelector(s); };
+    if (!li) return;
+    li.className = 'fichier' + (d ? ' ' + d.sorte : '') + (r.etat === 'erreur' || r.etat === 'echec' ? ' erreur' : r.etat === 'fait' ? ' fait' : '');
+    li.setAttribute('data-etat', r.etat);
+    if (r.attenteParts || r.nom.etat === 'attente') li.setAttribute('data-occupe', '1'); else li.removeAttribute('data-occupe');
+    var sorte = q('.sorte');
+    sorte.hidden = !d;
+    if (d) { sorte.textContent = d.sorte === 'gates' ? 'GATES' : P.base; sorte.className = 'sorte ' + d.sorte; }
+    q('.retirer').hidden = enCours || r.etat === 'fait' || r.etat === 'echec';
+    var lu = q('.lu');
+    lu.className = 'lu' + (r.etat === 'erreur' ? ' erreur' : '');
+    lu.textContent = r.etat === 'attente' ? 'En attente de lecture…' : r.etat === 'lecture' ? r.texteLecture :
+      r.etat === 'erreur' ? '✗ ' + r.erreur : d ? resumeLu(d) : '';
+    q('.barre').hidden = r.etat !== 'lecture' && r.etat !== 'envoi';
+    var choix = q('.choix'), avant = r.etat === 'lu';
+    if (avant && d) {
+      var n = options(r);
+      /* Un export SEE qui n'a qu'un contrat possible : rien à choisir. */
+      choix.hidden = d.sorte === 'see' && n === 2 && !!r.choix;
+      q('.nouveau').hidden = r.choix !== NOUVEAU;
+      q('.contrat').disabled = enCours;
+      q('.nouveau').disabled = enCours;
+      var note = q('.note');
+      note.textContent = r.note;
+      note.className = 'note' + (r.aVerifier ? ' verifier' : '');
+    } else choix.hidden = true;
+    var c = cibleDuFichier(r), texte = '';
+    if (avant && c) {
+      texte = (c.existe ? 'Remplacera l’onglet' : 'Créera l’onglet') + ' <b>« ' + ech(c.onglet) + ' »</b>' +
+        (d.sorte === 'gates' ? (c.existe ? ' — l’ancien ne s’en va qu’une fois tout reçu ; son historique est gardé.' : ' : un nouveau contrat, rangé après les autres.')
+          : (c.existe ? ' — l’ancien ne s’en va qu’une fois tout reçu.' : '.'));
+    } else if (avant && r.choix === NOUVEAU && r.nom.etat === 'refus') texte = '<span class="refus">' + ech(r.nom.message) + '</span>';
+    else if (avant && r.choix === NOUVEAU && r.nom.etat === 'attente') texte = 'Vérification du nom…';
+    q('.cible').innerHTML = texte;
+    var res = q('.resultat');
+    res.hidden = !r.resultat && r.etat !== 'envoi';
+    if (r.resultat) { res.className = 'resultat ' + r.resultat.classe; res.innerHTML = r.resultat.html; }
+    else if (r.etat === 'envoi') { res.className = 'resultat'; res.textContent = r.texteEnvoi || ''; }
+  }
+  /* Pourquoi « Importer » attend : rien à importer (pas de message), une
+     lecture en cours, un fichier qui ne s'importe pas, un contrat à choisir,
+     un nom à vérifier, deux fichiers pour le même onglet. */
+  function raisonDAttendre() {
+    var actifs = fichiers.filter(function (r) { return r.etat !== 'fait' && r.etat !== 'echec'; }), i;
+    if (!actifs.length) return ' ';
+    if (actifs.some(function (r) { return r.etat === 'attente' || r.etat === 'lecture'; })) return 'Lecture des fichiers…';
+    var ko = actifs.filter(function (r) { return r.etat === 'erreur'; });
+    if (ko.length) return ko.length === 1 ? 'Retirer « ' + ko[0].f.name + ' », qui ne s’importe pas (✗), pour lancer l’import.'
+      : 'Retirer les ' + ko.length + ' fichiers qui ne s’importent pas (✗) pour lancer l’import.';
+    for (i = 0; i < actifs.length; i++) {
+      var r = actifs[i];
+      if (r.attenteParts) return 'Recherche du contrat de « ' + r.f.name + ' »…';
+      if (r.choix === NOUVEAU) {
+        if (r.nom.etat === 'vide') return 'Donner un nom au nouveau contrat de « ' + r.f.name + ' ».';
+        if (r.nom.etat === 'attente') return 'Vérification du nom « ' + r.nom.valeur + ' »…';
+        if (r.nom.etat === 'refus') return '« ' + r.f.name + ' » : ' + r.nom.message;
+      }
+      if (!cibleDuFichier(r)) return 'Choisir le contrat de « ' + r.f.name + ' ».';
+    }
+    var parOnglet = {}, ordre = [];
+    actifs.forEach(function (r) {
+      var k = norm(cibleDuFichier(r).onglet);
+      if (!parOnglet[k]) { parOnglet[k] = []; ordre.push(k); }
+      parOnglet[k].push(r);
+    });
+    for (i = 0; i < ordre.length; i++) {
+      var memes = parOnglet[ordre[i]];
+      if (memes.length > 1) {
+        return (memes.length === 2 ? 'Deux' : memes.length) + ' fichiers vont dans l’onglet « ' + cibleDuFichier(memes[0]).onglet + ' » : ' +
+          memes.map(function (x) { return '« ' + x.f.name + ' »'; }).join(' et ') + '. En retirer un, ou changer son contrat.';
+      }
+    }
+    return '';
+  }
+  function majTout() {
+    /* Un export SEE que personne n'a rattaché à la main est revu à chaque
+       changement de la liste : un nouveau contrat peut y être apparu. */
+    fichiers.forEach(function (r) {
+      if (r.lu && r.etat === 'lu' && r.lu.sorte === 'see' && !r.attenteParts) deviner(r);
+      if (r.el && r.lu && r.etat === 'lu') dessiner(r);
+    });
+    var raison = raisonDAttendre();
+    $('blocage').textContent = raison.trim();
+    $('importer').disabled = enCours || !!raison;
+    $('liste').hidden = !fichiers.length;
+    $('option-archiver').hidden = !fichiers.some(function (r) { return r.lu && r.lu.sorte === 'gates' && r.etat !== 'fait' && r.etat !== 'echec'; });
+    $('retirer-erreurs').hidden = enCours || !fichiers.some(function (r) { return r.etat === 'erreur'; });
+  }
+  function verrouiller(oui) {
+    ['choisir', 'toutes', 'archiver', 'fermer', 'importer', 'retirer-erreurs'].forEach(function (id) { $(id).disabled = oui; });
+    fichiers.forEach(dessiner);
+  }
+
+  // ------------------------------------------------------------ importer
+  /* Les exports GATES d'abord — un nouveau contrat existe avant sa base SEE
+     —, puis ceux de SEE ; chaque fichier pour lui-même : un échec n'arrête
+     pas les suivants. À la fin, une ligne par fichier. */
+  function importerTout() {
+    if (enCours || $('importer').disabled) return;
+    var lot = fichiers.filter(function (r) { return r.etat === 'lu'; });
+    var ordre = lot.filter(function (r) { return r.lu.sorte === 'gates'; }).concat(lot.filter(function (r) { return r.lu.sorte === 'see'; }));
+    var archiver = !$('option-archiver').hidden && $('archiver').checked, bilans = [], k = 0;
+    ordre.forEach(function (r) { r.cible = cibleDuFichier(r); });
+    enCours = true;
+    verrouiller(true);
+    $('consigne').hidden = false;
+    dire('');
+    function suivant() {
+      if (k >= ordre.length) return Promise.resolve();
+      var r = ordre[k++];
+      return importerFichier(r, archiver, k, ordre.length).then(function (b) { bilans.push(b); return suivant(); });
+    }
+    suivant().then(function () {
+      var echec = bilans.some(function (b) { return !b.ok; }), alerte = bilans.some(function (b) { return b.avertissement; });
+      dire(bilans.map(function (b) { return '<div class="' + b.classe + '">' + b.html + '</div>'; }).join('') +
+        (bilans.some(function (b) { return b.ok; }) ? '<div class="suite">Rouvrir le tableau de bord pour voir les nouveaux chiffres : menu Suivi FWD → Ouvrir le tableau de bord.</div>' : ''),
+        echec ? 'erreur' : 'ok' + (alerte ? ' avertissement' : ''));
+      $('fermer').classList.add('principal');
+      $('importer').classList.remove('principal');
+    }, function (e) {
+      dire(ech('Erreur inattendue : ' + (e && e.message ? e.message : e)), 'erreur');
+    }).then(function () {
+      enCours = false;
+      suivi = null;
+      $('consigne').hidden = true;
+      $('progres').textContent = '';
+      verrouiller(false);
+      majTout();
+    });
+  }
+  function importerFichier(r, archiver, rang, nombre) {
+    var d = r.lu, c = r.cible, etat = { fin: false }, nom = '« ' + ech(r.f.name) + ' »';
+    var cible = d.sorte === 'gates' ? { sorte: 'gates', contrat: c.contrat, nouveau: c.nouveau } : { sorte: 'see', contrat: c.contrat };
+    var avant = nombre > 1 ? 'Fichier ' + rang + ' sur ' + nombre + ' (« ' + r.f.name + ' ») — ' : '';
+    r.etat = 'envoi';
+    r.texteEnvoi = '';
+    suivi = function (part, texte) {
+      avancer(r, part);
+      if (texte !== undefined) {
+        r.texteEnvoi = texte;
+        r.el.querySelector('.resultat').textContent = texte;
+        $('progres').textContent = avant + texte;
+      }
+    };
+    dessiner(r);
+    var bloc, largeur;
+    if (d.sorte === 'gates') {
+      largeur = d.largeur;
+      bloc = d.lignes.map(function (l) {
+        var out = [];
+        for (var j = 0; j < largeur; j++) out.push(l[j] === undefined || l[j] === null ? '' : String(l[j]));
+        return out;
+      });
+    } else {
+      largeur = d.entete.length;
+      bloc = [d.entete].concat(d.lignes);
+    }
+    return envoyer(cible, bloc, largeur, d.sorte === 'gates' ? d.fusions : null, etat).then(function (fin) {
+      return d.sorte === 'gates' ? bilanGatesImporte(r, fin, archiver) : bilanSeeImporte(r, fin);
+    }).then(function (b) {
+      r.etat = 'fait';
+      r.resultat = b;
+      return b;
+    }, function (e) {
+      var b = { ok: false, classe: 'erreur', html: '✗ ' + nom + ' → « ' + ech(c.onglet) + ' » : ' + ech(messageDErreur(e, etat, c.onglet, c.existe)) };
+      r.etat = 'echec';
+      r.resultat = b;
+      return b;
+    }).then(function (b) {
+      suivi = null;
+      dessiner(r);
+      return b;
+    });
+  }
+  function bilanSeeImporte(r, fin) {
+    var bon = fin.etat === 'ok' || fin.etat === 'non relu';
+    return { ok: bon, classe: bon ? 'ok' : 'erreur', html: (bon ? '✓ ' : '✗ ') + '« ' + ech(r.f.name) + ' » → <b>' + nb(fin.lignes) + ' ligne' + (fin.lignes > 1 ? 's' : '') + '</b> dans l’onglet <b>« ' +
+      ech(fin.onglet) + ' »</b> (' + fin.colonnes + ' colonne' + (fin.colonnes > 1 ? 's' : '') + ')' +
+      (bon ? ' : la comparaison est prête.' : '. Mais la page ne la lit pas (' + ech(fin.etat) + ') : menu Suivi FWD → Diagnostic.') };
+  }
+  /* Un export GATES posé : ce que la page y lit (le serveur l'a relu avec sa
+     propre logique), puis le relevé de la semaine — seulement si la colonne
+     suivie est là : sans elle, l'archivage refuserait de toute façon. */
+  function bilanGatesImporte(r, fin, archiver) {
+    var d = r.lu, debut = '« ' + ech(r.f.name) + ' » → onglet <b>« ' + ech(fin.onglet) + ' »</b> ' + (fin.nouveau ? 'créé (nouveau contrat)' : 'remplacé') + ' : ';
+    var avis = function (html) { return { ok: true, avertissement: true, classe: 'avertissement', html: '⚠ ' + html }; };
+    if (fin.etat !== 'ok') return avis(debut + nb(fin.lignes) + ' lignes posées, mais l’onglet n’a pas pu être relu (' + ech(fin.message || fin.etat) + ') : menu Suivi FWD → Diagnostic.');
+    var texte = debut + '<b>' + nb(fin.plans) + ' plan' + (fin.plans > 1 ? 's' : '') + '</b>';
+    if (fin.fusionsRatees) texte += ', ' + fin.fusionsRatees + ' cellule(s) fusionnée(s) non recréée(s)';
+    if (!fin.colonneSuivie) {
+      return avis(texte + ', mais la colonne suivie est introuvable : la page n’en lira aucune' + (archiver ? ', et le relevé n’est pas archivé' : '') + '. ' +
+        (d.format === 'csv' ? 'Un .csv ne garde pas les cellules fusionnées de la ligne des groupes, par lesquelles la page la reconnaît : importer plutôt l’export Excel (.xlsx) de GATES.'
+          : 'Menu Suivi FWD → Diagnostic dit quelles colonnes il a lues.'));
+    }
+    texte += ', colonne suivie ' + ech(fin.colonneSuivie.replace(' > ', ' › ')) +
+      (fin.conceptDemande ? (fin.concept ? ', concept harnais lu' : ', mais le concept harnais est introuvable') : '');
+    var csv = d.format === 'csv' ? ' Un .csv ne garde pas les cellules fusionnées : la page a déduit les groupes de proche en proche ; l’export Excel (.xlsx) est plus sûr.' : '';
+    var fini = function (html) { return csv ? avis(html + csv) : { ok: true, classe: 'ok', html: '✓ ' + html }; };
+    if (!archiver) return fini(texte + '.');
+    progres(1, 'Archivage du relevé ' + P.semaine + ' de « ' + fin.onglet + ' »…');
+    return appelerAvecReprise('importArchiverReleve', [fin.onglet]).then(function (a) {
+      if (a && a.ok) return fini(texte + '. Relevé ' + ech(a.dite) + ' archivé (' + nb(a.plans) + ' plans, ' + nb(a.valides) + ' validés).');
+      return avis(texte + '. Relevé ' + ech(a && a.dite ? a.dite : P.semaine) + ' non archivé : ' + ech(a && a.message ? a.message : '?') + ' L’import, lui, est fait.' + csv);
+    }, function (e) {
+      return avis(texte + '. Relevé ' + ech(P.semaine) + ' non archivé (' + ech(e.message) + ') : menu Suivi FWD → Archiver le relevé de cette semaine. ' +
+        'L’import, lui, est fait.' + csv);
+    });
+  }
+
+  // ------------------------------------------------------------ la fenêtre
   $('choisir').addEventListener('click', function () { $('fichier').click(); });
-  $('fichier').addEventListener('change', function () { poserFichier($('fichier').files[0]); });
+  $('fichier').addEventListener('change', function () {
+    var choisis = [], l = $('fichier').files;
+    for (var i = 0; i < l.length; i++) choisis.push(l[i]);
+    $('fichier').value = '';
+    ajouter(choisis);
+  });
   var depot = $('depot');
   depot.addEventListener('dragover', function (e) { e.preventDefault(); depot.classList.add('survol'); });
   depot.addEventListener('dragleave', function () { depot.classList.remove('survol'); });
   depot.addEventListener('drop', function (e) {
-    e.preventDefault(); depot.classList.remove('survol');
-    if (!enCours && e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) poserFichier(e.dataTransfer.files[0]);
+    e.preventDefault();
+    depot.classList.remove('survol');
+    if (enCours || !e.dataTransfer || !e.dataTransfer.files) return;
+    var choisis = [];
+    for (var i = 0; i < e.dataTransfer.files.length; i++) choisis.push(e.dataTransfer.files[i]);
+    ajouter(choisis);
   });
-  $('importer').addEventListener('click', importer);
+  /* « Garder aussi les autres colonnes » se lit à la lecture : les exports
+     SEE déjà lus — et ceux qui ont échoué, trop gros peut-être — sont relus. */
+  $('toutes').addEventListener('change', function () {
+    fichiers.forEach(function (r) {
+      if ((r.lu && r.lu.sorte === 'see' && r.etat === 'lu') || r.etat === 'erreur') {
+        r.etat = 'attente';
+        r.lu = null;
+        r.resultat = null;
+        aLire.push(r);
+        dessiner(r);
+      }
+    });
+    majTout();
+    lireSuivant();
+  });
+  $('retirer-erreurs').addEventListener('click', function () {
+    fichiers.filter(function (r) { return r.etat === 'erreur'; }).forEach(retirer);
+  });
+  $('importer').addEventListener('click', importerTout);
   $('fermer').addEventListener('click', function () { if (!enCours && window.google && google.script && google.script.host) google.script.host.close(); });
+  majTout();
 }

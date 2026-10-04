@@ -6,9 +6,9 @@ function Feuille(nom, valeurs, cachee, fusions) {
   this.nom = nom;
   this.valeurs = valeurs;          // tableau de tableaux de chaînes
   this.cachee = !!cachee;
-  /* Les plages fusionnées, en 1-based : { ligne, col, larg }. La ligne de
-     groupes d'un export GATES en est faite, et c'est elle qui dit à quelle
-     famille appartient chaque colonne. */
+  /* Les plages fusionnées, en 1-based : { ligne, col, larg, haut } (haut :
+     1 si absent). La ligne de groupes d'un export GATES en est faite, et
+     c'est elle qui dit à quelle famille appartient chaque colonne. */
   this.fusions = fusions || [];
   /* La largeur de la grille, comme dans Sheets : 26 colonnes à la création,
      davantage si les données en occupent plus. Lire ou écrire au-delà lève
@@ -112,23 +112,49 @@ Feuille.prototype.getRange = function (ligne, colonne, nbLignes, nbColonnes) {
   if (colonne + nbColonnes - 1 > this.getMaxColumns() || ligne + nbLignes - 1 > this.getMaxRows()) {
     throw new Error('The coordinates of the range are outside the dimensions of the sheet.');
   }
+  /* Comme Sheets : les fusions qui touchent la plage, même en partie. */
+  function touche(f) {
+    const haut = f.haut || 1;
+    return f.ligne <= ligne + nbLignes - 1 && f.ligne + haut - 1 >= ligne &&
+           f.col <= colonne + nbColonnes - 1 && f.col + f.larg - 1 >= colonne;
+  }
   function fusionsDansLaPlage() {
     return self.fusions
-      .filter(function (f) {
-        return f.ligne >= ligne && f.ligne < ligne + nbLignes &&
-               f.col >= colonne && f.col < colonne + nbColonnes;
-      })
+      .filter(touche)
       .map(function (f) {
         return {
           getColumn: function () { return f.col; },
           getNumColumns: function () { return f.larg; },
           getRow: function () { return f.ligne; },
-          getNumRows: function () { return 1; }
+          getNumRows: function () { return f.haut || 1; }
         };
       });
   }
   return {
     getMergedRanges: fusionsDansLaPlage,
+    /* Fusionner, comme Sheets : une fusion qui déborde de la plage est une
+       erreur ; celles qu'elle contient sont absorbées ; seule la cellule du
+       coin garde sa valeur. */
+    merge: function () {
+      if (nbLignes * nbColonnes < 2) return this;
+      const dedans = function (f) {
+        return f.ligne >= ligne && f.ligne + (f.haut || 1) - 1 <= ligne + nbLignes - 1 &&
+               f.col >= colonne && f.col + f.larg - 1 <= colonne + nbColonnes - 1;
+      };
+      if (self.fusions.some(function (f) { return touche(f) && !dedans(f); })) {
+        throw new Error('You must select all cells in a merged range to merge or unmerge them.');
+      }
+      self.fusions = self.fusions.filter(function (f) { return !dedans(f); });
+      for (let i = 0; i < nbLignes; i++) {
+        const l = self.valeurs[ligne - 1 + i];
+        if (!l) continue;
+        for (let j = 0; j < nbColonnes; j++) {
+          if ((i || j) && l[colonne - 1 + j] !== undefined) l[colonne - 1 + j] = '';
+        }
+      }
+      self.fusions.push({ ligne: ligne, col: colonne, larg: nbColonnes, haut: nbLignes });
+      return this;
+    },
     getDisplayValues: function () {
       return this.getValues().map(function (l) {
         return l.map(function (v) { return v === null || v === undefined ? '' : String(v); });
@@ -251,7 +277,7 @@ function poserEnvironnement(contexte, classeur, proprietes, fichiers) {
                          addSeparator: function () { return menu; }, addToUi: function () {} };
           return menu;
         },
-        showModalDialog: function (page) { contexte.__dialogue = page; }
+        showModalDialog: function (page, titre) { contexte.__dialogue = page; contexte.__titreDialogue = titre; }
       };
     }
   };
