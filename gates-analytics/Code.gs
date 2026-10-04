@@ -32,7 +32,8 @@
  * rien n'est renommé, rien n'est reconstruit. Le jour où un second onglet de
  * contrat apparaît, cet ancien onglet n'appartient plus à personne : le
  * renommer « Historique_FWD_<nom> » rend ses relevés au contrat qui les a
- * produits (le diagnostic le rappelle).
+ * produits (la page et le diagnostic le rappellent ; d'ici là, un contrat
+ * sans historique ne s'archive pas, pour ne pas couper l'historique en deux).
  */
 
 /**
@@ -42,7 +43,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = '60e5a87';
+const EDITION = 'e906173';
 
 // =====================================================================
 //  CONFIGURATION
@@ -134,8 +135,11 @@ const CONFIG = {
    *
    * COLONNE_FWD : intitulé exact de la colonne d'avancement FWD. Si deux
    *   colonnes portent le même intitulé, préfixer par le groupe :
-   *   'Réalisation FWD > Avancement'. Introuvable dans un extract, la
-   *   détection reprend la main — et le Diagnostic le dit.
+   *   'Réalisation FWD > Avancement'. Introuvable dans un extract, aucune
+   *   autre colonne n'est lue à sa place (des chiffres justes d'allure,
+   *   mais faux) : la page le dit en haut, l'archivage refuse, et le
+   *   Diagnostic montre les colonnes de même intitulé avec leur groupe.
+   *   Vide, la détection automatique choisit seule.
    * COLONNE_CONCEPT : la colonne du second avancement suivi, le concept
    *   harnais. La page propose alors l'interrupteur « Définition électrique |
    *   Concept harnais », et l'archivage garde les deux valeurs plan par plan.
@@ -301,7 +305,7 @@ function doGet(e) {
   /* ?frais=1 : tout ce qui est en cache devient caduc — cette ouverture
      relit le classeur et garde ce qu'elle a lu ; les suivantes, et les
      changements de contrat, en profitent. */
-  if (e && e.parameter && e.parameter.frais) marquerDonneesModifiees();
+  if (e && e.parameter && e.parameter.frais) marquerDonneesModifiees_();
   const page = pageDuTableau(!!(e && e.parameter && e.parameter.forcer))
     .setTitle('Suivi FWD')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
@@ -802,11 +806,13 @@ function indexParDesignation(designation, entetes, groupes) {
 }
 
 /**
- * Index de la colonne d'avancement FWD.
+ * Index de la colonne d'avancement FWD : celle de CONFIG.COLONNE_FWD quand
+ * elle est remplie (introuvable : -1, aucune autre) ; vide, la détection
+ * automatique ci-dessous.
  *
  * L'export GATES compte vingt-sept colonnes dont l'intitulé contient
- * « avancement » : une seule est le FWD (« Avancement », sous le groupe
- * « Réalisation FWD »), les autres appartiennent aux blocs répétés par
+ * « avancement ». Sans CONFIG.COLONNE_FWD, le FWD est « Avancement », sous
+ * le groupe « Réalisation FWD » ; les autres appartiennent aux blocs répétés par
  * variante (« Avancement Définition Electrique », « Avancement Concept
  * Harnais »). Le groupe est donc le critère décisif, et les intitulés qui
  * nomment explicitement un autre sujet sont écartés d'office.
@@ -1268,7 +1274,7 @@ function getDonneesCompactes(contrat) {
    historique, la seconde base. Le paquet de chaque contrat se garde donc
    six heures dans le cache du classeur — mais sous une clé qui change dès
    que quelque chose change : un collage ou une saisie (onEdit), un
-   archivage, une suppression, un dépôt (marquerDonneesModifiees), un onglet
+   archivage, une suppression, un dépôt (marquerDonneesModifiees_), un onglet
    ajouté, renommé, masqué, des lignes ou des colonnes ajoutées ou
    supprimées (la taille de chaque onglet est dans la clé : onEdit ne voit
    pas ces gestes-là), la configuration ou la livraison, le jour. Ce que la
@@ -1283,8 +1289,13 @@ const CACHE_TRANCHE = 30000;           // caractères par clé : moins de 100 Ko
 const CLE_VERSION_DONNEES = 'SUIVI_FWD_VERSION_DONNEES';
 let PAGE_FRAICHE = false;           // le Diagnostic mesure une lecture sans le cache
 
-/** Toute modification du classeur rend caducs les paquets en cache. */
-function marquerDonneesModifiees() {
+/**
+ * Toute modification du classeur rend caducs les paquets en cache. Le « _ »
+ * final la cache de google.script.run : un lecteur ne peut pas, depuis la
+ * page, vider le cache en boucle et faire relire tout le classeur à chaque
+ * ouverture.
+ */
+function marquerDonneesModifiees_() {
   try {
     PropertiesService.getDocumentProperties().setProperty(CLE_VERSION_DONNEES,
       String(new Date().getTime()) + '-' + Math.floor(Math.random() * 1e6));
@@ -1297,7 +1308,7 @@ function marquerDonneesModifiees() {
  * pour ne rien ralentir.
  */
 function onEdit(e) {
-  marquerDonneesModifiees();
+  marquerDonneesModifiees_();
 }
 
 /* =====================================================================
@@ -1348,8 +1359,9 @@ function noterConsultation() {
   }
 }
 
-/** Pour le Diagnostic : « S40 : 37 ouvertures, 12 personnes · S39 : … », les plus récentes d'abord. */
-function resumeConsultations() {
+/** Pour le Diagnostic : « S40 : 37 ouvertures, 12 personnes · S39 : … », les plus récentes d'abord.
+    Le « _ » : ces chiffres ne sortent que par le Diagnostic, pas par la page. */
+function resumeConsultations_() {
   let stats = null;
   try { stats = analyserJson(PropertiesService.getDocumentProperties().getProperty(CLE_CONSULTATIONS)); } catch (err) { stats = null; }
   if (!stats || typeof stats !== 'object') return '';
@@ -1642,23 +1654,20 @@ function diagnostic() {
     if (!diagnostiquerContrat(classeur, c, dire)) tousLisibles = false;
   });
 
-  /* L'ancien onglet d'historique, à côté de plusieurs contrats, n'appartient
-     à personne : ses relevés ne s'afficheront nulle part tant qu'il n'est pas
-     renommé. On le dit, on ne le renomme pas à la place de quelqu'un. */
-  if (contrats.length > 1 && classeur.getSheetByName(CONFIG.FEUILLE_HISTORIQUE)) {
-    dire('');
-    dire('⚠ L\'ancien onglet « ' + CONFIG.FEUILLE_HISTORIQUE + ' » n\'est rattaché à aucun contrat.');
-    dire('   → le renommer « ' + nomFeuilleHistorique('<nom du contrat>') +
-         ' » rend ses relevés au contrat qui les a produits.');
-  }
   /* Un onglet de contrat renommé (« Feuille 1 » devenu « HDK ») laisse son
      historique sous l'ancien nom : la page repart d'un seul relevé, le
-     journal reste vide. On le dit (débrief 16). */
+     journal reste vide (débrief 16). L'ancien onglet « Historique_FWD »,
+     à côté de plusieurs contrats, n'appartient plus à personne non plus.
+     On le dit, on ne le renomme pas à la place de quelqu'un. */
   historiquesOrphelins(classeur, contrats).forEach(function (o) {
     dire('');
-    dire('⚠ L\'onglet d\'historique « ' + o.nom + ' » (' + o.releves + ' relevé' + (o.releves > 1 ? 's' : '') +
-         ') n\'est rattaché à aucun contrat :');
-    dire('   l\'onglet de son contrat a sans doute été renommé. Le renommer « ' + nomFeuilleHistorique('<nom du contrat>') +
+    const releves = o.releves + ' relevé' + (o.releves > 1 ? 's' : '');
+    dire(o.ancien
+      ? '⚠ L\'ancien onglet « ' + o.nom + ' » n\'est rattaché à aucun contrat (' + releves + ') :'
+      : '⚠ L\'onglet d\'historique « ' + o.nom + ' » (' + releves + ') n\'est rattaché à aucun contrat :');
+    dire('   ' + (o.ancien ? 'il servait quand le classeur n\'avait qu\'un contrat. Le renommer « '
+                           : 'l\'onglet de son contrat a sans doute été renommé. Le renommer « ') +
+         nomFeuilleHistorique('<nom du contrat>') +
          ' » lui rend ses relevés — avant le prochain archivage, qui est refusé d\'ici là.');
   });
 
@@ -1702,8 +1711,10 @@ function diagnostic() {
     /* Le temps de chaque lecture, mesuré ici même : c'est ce qui dit où
        l'ouverture de la page passe son temps, sur ce classeur-là. */
     const secondes = function (ms) { return (ms / 1000).toFixed(1).replace('.', ',') + ' s'; };
+    /* Le contrat que la page ouvre vraiment (modeleAOuvrir) : le premier qui
+       porte des plans, pas forcément le premier onglet. */
     const t0 = Date.now();
-    const modele = construireModele(contrats[0].id);
+    const modele = modeleAOuvrir(undefined, contrats);
     const t1 = Date.now();
     getHistorique(classeur, modele.feuille);
     const t2 = Date.now();
@@ -1717,7 +1728,9 @@ function diagnostic() {
     const t4 = Date.now();
     dire('✓ Paquet envoyé à la page : ' + Math.round(poids / 1024) + ' Ko' +
          (contrats.length > 1
-           ? ' (contrat « ' + contrats[0].nom + ' », le premier ; les autres se chargent à la demande)'
+           ? ' (contrat « ' + contrats.filter(function (c) { return c.id === modele.feuille; }).concat([{ nom: modele.feuille }])[0].nom + ' », ' +
+             (modele.feuille === contrats[0].id ? 'le premier' : 'le premier qui porte des plans') +
+             ' ; les autres se chargent à la demande)'
            : ''));
     dire('   préparé en ' + secondes(t4 - t3) + ' — lecture de GATES ' + secondes(t1 - t0) +
          ', de l\'historique ' + secondes(t2 - t1) + ', de la seconde base ' + secondes(t3 - t2));
@@ -1728,7 +1741,7 @@ function diagnostic() {
   }
 
   /* Les consultations de la page, sans nom (débrief 18). */
-  const consultations = resumeConsultations();
+  const consultations = resumeConsultations_();
   dire('');
   dire('✓ Consultations de la page (sans nom ni adresse) : ' + (consultations || 'aucune encore comptée'));
 
@@ -1999,8 +2012,15 @@ function diagnostiquerContrat(classeur, contrat, dire) {
     const modele = construireModele(contrat.id);
     /* Une référence répétée ne compte qu'une fois, comme dans le relevé et sur la page. */
     const uniques = plansUniques(modele.plans);
-    dire('✓ ' + modele.colonnes.length + ' colonnes, ' + uniques.length + ' plans' +
-         (uniques.length < modele.plans.length ? ' (' + modele.plans.length + ' lignes)' : ''));
+    /* En-têtes seuls (un contrat préparé d'avance, un export revenu vide) :
+       pas un ✓ — et rien à archiver tant que l'export n'y est pas. */
+    const sansPlan = !uniques.length;
+    if (sansPlan) {
+      dire('⚠ L\'onglet ne porte aucun plan (en-têtes seuls) : y importer l\'export GATES (' + cheminImport() + ') ou le coller en A1.');
+    } else {
+      dire('✓ ' + modele.colonnes.length + ' colonnes, ' + uniques.length + ' plans' +
+           (uniques.length < modele.plans.length ? ' (' + modele.plans.length + ' lignes)' : ''));
+    }
 
     const colFWD = modele.colonnes.filter(function (c) { return c.cle === 'avancement'; })[0];
     if (modele.avertissement) {
@@ -2012,11 +2032,13 @@ function diagnostiquerContrat(classeur, contrat, dire) {
            (colFWD.groupe ? ', groupe « ' + colFWD.groupe + ' »' : '') +
            (CONFIG.COLONNE_FWD ? ' — celle de CONFIG.COLONNE_FWD' : ' — trouvée d\'elle-même (CONFIG.COLONNE_FWD est vide)'));
       direDoublon(dire, modele.colonnes, CONFIG.COLONNE_FWD);
-      const compte = { termine: 0, encours: 0, afaire: 0, vide: 0 };
-      uniques.forEach(function (p) { compte[classerFWD(p.avancement)]++; });
-      dire('  ' + compte.termine + ' validés, ' + compte.encours + ' en cours, ' +
-           compte.afaire + ' à faire, ' + compte.vide + ' non renseignés');
-      direValeurs(dire, uniques, 'avancement');
+      if (!sansPlan) {
+        const compte = { termine: 0, encours: 0, afaire: 0, vide: 0 };
+        uniques.forEach(function (p) { compte[classerFWD(p.avancement)]++; });
+        dire('  ' + compte.termine + ' validés, ' + compte.encours + ' en cours, ' +
+             compte.afaire + ' à faire, ' + compte.vide + ' non renseignés');
+        direValeurs(dire, uniques, 'avancement');
+      }
     }
     if (CONFIG.COLONNE_CONCEPT) {
       const colConcept = modele.cleConcept ? modele.colonnes.filter(function (c) { return c.cle === modele.cleConcept; })[0] : null;
@@ -2024,9 +2046,11 @@ function diagnostiquerContrat(classeur, contrat, dire) {
         const compteC = { termine: 0, encours: 0, afaire: 0, vide: 0 };
         uniques.forEach(function (p) { compteC[classerFWD(p[modele.cleConcept])]++; });
         dire('✓ Concept harnais : colonne « ' + colConcept.titre + ' »' + (colConcept.groupe ? ', groupe « ' + colConcept.groupe + ' »' : ''));
-        dire('  ' + compteC.termine + ' validés, ' + compteC.encours + ' en cours, ' +
-             compteC.afaire + ' à faire, ' + compteC.vide + ' non renseignés');
-        direValeurs(dire, uniques, modele.cleConcept, true);
+        if (!sansPlan) {
+          dire('  ' + compteC.termine + ' validés, ' + compteC.encours + ' en cours, ' +
+               compteC.afaire + ' à faire, ' + compteC.vide + ' non renseignés');
+          direValeurs(dire, uniques, modele.cleConcept, true);
+        }
         direDoublon(dire, modele.colonnes, CONFIG.COLONNE_CONCEPT);
       } else {
         dire('✗ ' + modele.avertissementConcept);
@@ -2062,15 +2086,18 @@ function diagnostiquerContrat(classeur, contrat, dire) {
       ? ' (onglet « ' + feuilleHisto.getName() + ' »)'
       : ' (onglet « ' + nomFeuilleHistorique(contrat.id) + ' », créé au premier archivage)'));
     if (histo.length === 0) {
-      dire('   → Suivi FWD → Archiver le relevé de cette semaine.');
-      dire('     Sans relevé, pas de courbe ni de fin estimée.');
+      /* Sans plan, l'archivage refuserait : on ne l'envoie pas archiver. */
+      if (!sansPlan) {
+        dire('   → Suivi FWD → Archiver le relevé de cette semaine.');
+        dire('     Sans relevé, pas de courbe ni de fin estimée.');
+      }
     } else {
       dire('  du ' + histo[0].semaine + ' au ' + histo[histo.length - 1].semaine);
       const cellulesCarte = feuilleHisto.getLastColumn() - ENTETES_HISTORIQUE.length + 1;
       if (cellulesCarte > 1) {
         dire('  carte plan par plan sur ' + cellulesCarte + ' cellules par relevé, au plus');
       }
-      direJournal(dire, histo, modele);
+      direJournal(dire, histo, modele, sansPlan);
     }
     return true;
   } catch (err) {
@@ -2117,10 +2144,12 @@ function direDoublon(dire, colonnes, designation) {
  * combien l'extract du jour s'écarte du dernier relevé. Des comptes
  * seulement, jamais une valeur ni une référence.
  */
-function direJournal(dire, histo, modele) {
+function direJournal(dire, histo, modele, sansPlan) {
   const semaine = numeroSemaineISO(new Date());
   const dernier = histo[histo.length - 1];
-  if (dernier.semaine !== semaine) {
+  /* Un onglet sans plan ne s'archive pas : ni « archiver », ni un écart
+     avec l'extract du jour, qui n'a rien. */
+  if (dernier.semaine !== semaine && !sansPlan) {
     dire('  pas encore de relevé pour la semaine en cours (' + semaine + ') : Suivi FWD → Archiver le relevé de cette semaine.');
   }
   if (histo.length === 1) {
@@ -2149,7 +2178,7 @@ function direJournal(dire, histo, modele) {
          'Avancement », pas « ' + CONFIG.COLONNE_FWD + ' ».');
     dire('   S\'il fausse la courbe ou le journal (faux reculs), supprimer sa ligne dans l\'onglet d\'historique.');
   });
-  if (dernier.plans) {
+  if (dernier.plans && !sansPlan) {
     const jour = {};
     plansUniques(modele.plans).forEach(function (p) { jour[p.reference] = p.avancement; });
     dire('  l\'extract du jour s\'écarte du dernier relevé (' + dernier.semaine + ') sur ' + plansQuiChangent(dernier.plans, jour) + ' plan(s).');
@@ -2310,8 +2339,9 @@ function idContrat(classeur, contrat) {
  * Rétro-compatibilité : un classeur à contrat unique qui porte encore
  * l'ancien onglet « Historique_FWD » tout court le garde — ses relevés sont
  * ceux de ce contrat, rien n'est renommé ni recopié. Dès qu'il y a plusieurs
- * contrats, chacun a le sien, et l'ancien onglet n'est plus lu (le diagnostic
- * dit comment le rattacher). L'onglet propre au contrat l'emporte toujours
+ * contrats, chacun a le sien, et l'ancien onglet n'est plus lu : il devient
+ * orphelin (historiquesOrphelins) — la page et le diagnostic disent comment
+ * le rattacher. L'onglet propre au contrat l'emporte toujours
  * s'il existe.
  */
 function getFeuilleHistorique(classeur, contrat, creerSiAbsente) {
@@ -2347,10 +2377,24 @@ function historiquesOrphelins(classeur, contrats) {
     if (!estOngletHistorique(f.getName()) && f.getLastRow() > 0) attendus[normaliser(nomFeuilleHistorique(f.getName()))] = true;
   });
   contrats.forEach(function (c) { attendus[normaliser(nomFeuilleHistorique(c.id))] = true; });
-  attendus[normaliser(CONFIG.FEUILLE_HISTORIQUE)] = true;       // l'ancien onglet sans suffixe : traité à part
+  /* L'ancien onglet sans suffixe, « Historique_FWD », est celui d'un
+     classeur à contrat unique. Dès qu'il y a plusieurs contrats, plus
+     personne ne le lit : orphelin lui aussi — sinon tout l'historique
+     disparaissait de la page sans un mot, et le vendredi ouvrait
+     « Historique_FWD_HDK » à côté (l'historique coupé en deux, le renommage
+     devenu impossible). */
+  const ancien = normaliser(CONFIG.FEUILLE_HISTORIQUE);
   return classeur.getSheets()
-    .filter(function (f) { return estOngletHistorique(f.getName()) && !attendus[normaliser(f.getName())]; })
-    .map(function (f) { return { nom: f.getName(), releves: Math.max(0, f.getLastRow() - 1) }; });
+    .filter(function (f) {
+      const n = normaliser(f.getName());
+      if (n === ancien) return contrats.length > 1;
+      return estOngletHistorique(f.getName()) && !attendus[n];
+    })
+    .map(function (f) {
+      const o = { nom: f.getName(), releves: Math.max(0, f.getLastRow() - 1) };
+      if (normaliser(f.getName()) === ancien) o.ancien = true;
+      return o;
+    });
 }
 
 /** Les contrats qui n'ont pas encore d'onglet d'historique : ceux qu'un orphelin empêche d'archiver. */
@@ -2362,14 +2406,15 @@ function contratsSansHistorique(classeur, contrats) {
  * Ce que la page dit des historiques orphelins, au-dessus de la barre. Le
  * renommage n'est proposé que vers un contrat qui n'a pas encore
  * d'historique — le contrat affiché d'abord : c'est lui dont l'archivage est
- * refusé d'ici là (archiverContrat). Sinon, rien à faire.
+ * refusé d'ici là (archiverContrat_). Sinon, rien à faire.
  */
 function avisOrphelins(orphelins, contrat, sansHistorique) {
   if (!orphelins.length) return '';
   const cible = sansHistorique.indexOf(contrat) !== -1 ? contrat : sansHistorique[0];
   return orphelins.map(function (o) {
-    return 'L\'onglet d\'historique « ' + o.nom + ' » (' + o.releves + ' relevé' + (o.releves > 1 ? 's' : '') +
-      ') n\'est rattaché à aucun contrat — un onglet de contrat renommé ?';
+    return (o.ancien ? 'L\'ancien onglet d\'historique « ' : 'L\'onglet d\'historique « ') + o.nom + ' » (' + o.releves +
+      ' relevé' + (o.releves > 1 ? 's' : '') + ') n\'est rattaché à aucun contrat — ' +
+      (o.ancien ? 'il servait quand le classeur n\'en avait qu\'un.' : 'un onglet de contrat renommé ?');
   }).join(' ') + (cible
     ? ' S\'il est celui de « ' + cible + ' », le renommer « ' + nomFeuilleHistorique(cible) + ' » lui rend ses relevés ' +
       '(Affichage → Onglets masqués pour le voir) ; d\'ici là, « ' + cible + ' » ne s\'archive pas.'
@@ -2451,12 +2496,55 @@ function recoller(cellules) {
   return cellules.map(function (v) { return v === null || v === undefined ? '' : String(v); }).join('');
 }
 
+/**
+ * L'année et le mois d'une date de cellule, { annee, mois } — ou null. La
+ * cellule arrive telle que le classeur l'affiche : « 16/07/2020 » sur une
+ * feuille française, « 2020-07-16 » ailleurs. Ne lire que l'année d'abord
+ * rangeait tous les plans d'un classeur français dans « — » au relevé.
+ * ⚠ Même règle que anneeEtMois et ordreDesDates du script de la page : toute
+ *    modification va des deux côtés.
+ */
+function anneeEtMois(valeur, moisDabord) {
+  const t = String(valeur === null || valeur === undefined ? '' : valeur).trim();
+  const iso = /^(\d{4})[-\/.](\d{1,2})/.exec(t);
+  if (iso) {
+    const mi = Number(iso[2]);
+    return mi >= 1 && mi <= 12 ? { annee: Number(iso[1]), mois: mi } : null;
+  }
+  const fr = /^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/.exec(t);
+  if (!fr) return null;
+  let an = Number(fr[3]);
+  if (an < 100) an += an < 70 ? 2000 : 1900;
+  /* Jour puis mois, comme en France — sauf si le premier nombre dépasse
+     douze (c'est alors le jour), ou si la colonne s'écrit mois/jour. */
+  const a = Number(fr[1]), b = Number(fr[2]);
+  const mois = a > 12 ? b : (b > 12 ? a : (moisDabord ? a : b));
+  return mois >= 1 && mois <= 12 ? { annee: an, mois: mois } : null;
+}
+
+/**
+ * Une colonne de dates écrite mois/jour (un classeur réglé en anglais) ? Les
+ * cellules dont un nombre dépasse douze disent l'ordre ; à défaut, le jour
+ * d'abord, comme en France.
+ */
+function ordreDesDates(plans, cle) {
+  if (!cle) return false;
+  let jourDabord = 0, moisDabord = 0;
+  plans.forEach(function (p) {
+    const m = /^(\d{1,2})[-\/.](\d{1,2})[-\/.]\d{2,4}/.exec(String(p[cle] === null || p[cle] === undefined ? '' : p[cle]).trim());
+    if (!m) return;
+    if (Number(m[1]) > 12) jourDabord++;
+    else if (Number(m[2]) > 12) moisDabord++;
+  });
+  return moisDabord > jourDabord;
+}
+
 /** Ancienneté d'un plan, en toutes lettres — même découpage que côté page. */
-function ancienneteDepuis(valeur, reference) {
-  const m = /(\d{4})[-\/.](\d{1,2})/.exec(String(valeur || ''));
-  if (!m) return '—';
-  const mois = (reference.getUTCFullYear() - Number(m[1])) * 12 +
-               (reference.getUTCMonth() + 1 - Number(m[2]));
+function ancienneteDepuis(valeur, reference, moisDabord) {
+  const v = anneeEtMois(valeur, moisDabord);
+  if (!v) return '—';
+  const mois = (reference.getUTCFullYear() - v.annee) * 12 +
+               (reference.getUTCMonth() + 1 - v.mois);
   if (mois >= 6) return 'plus de 6 mois';
   if (mois >= 3) return '3 à 6 mois';
   if (mois >= 1) return '1 à 3 mois';
@@ -2499,6 +2587,7 @@ function compterAvancements(contrat) {
   const clesDim = modele.clesDim.concat(modele.cleDate ? ['_anciennete'] : []);
   const maintenant = new Date();
   const reference = new Date(Date.UTC(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate()));
+  const moisDabord = ordreDesDates(plans, modele.cleDate);
 
   const compte = {
     total: plans.length,
@@ -2518,7 +2607,7 @@ function compterAvancements(contrat) {
       : String(p.avancement || '');
     clesDim.forEach(function (d) {
       const v = String((d === '_anciennete'
-        ? ancienneteDepuis(p[modele.cleDate], reference)
+        ? ancienneteDepuis(p[modele.cleDate], reference, moisDabord)
         : p[d]) || '—');
       if (!compte.groupes[d][v]) compte.groupes[d][v] = { total: 0, termine: 0 };
       compte.groupes[d][v].total++;
@@ -2622,6 +2711,28 @@ function gesteDuClasseur(e) {
 }
 
 /**
+ * Les gestes qui écrivent dans l'historique — l'archivage du vendredi,
+ * celui du menu, une semaine passée, la suppression, l'import, le dépôt —
+ * passent un à un. Sans verrou, le déclencheur du vendredi et un archivage
+ * lancé au même moment trouvaient tous deux la semaine absente et ajoutaient
+ * chacun sa ligne : deux relevés pour une semaine. Le verrou se prend au
+ * niveau du geste, une seule fois : archiverContrat_ ne le prend pas
+ * lui-même (ceux qui l'appellent le tiennent déjà). Pas obtenu en trente
+ * secondes : rien n'est écrit, et on le dit.
+ */
+const MESSAGE_VERROU = 'un autre geste écrit en ce moment dans l\'historique de ce classeur (l\'archivage du vendredi, ' +
+  'un import ou le menu, lancé au même moment) : l\'historique n\'est pas touché. Relancer dans une minute.';
+function sousVerrou_(fn) {
+  const verrou = LockService.getDocumentLock();
+  if (!verrou.tryLock(30000)) {
+    const erreur = new Error(MESSAGE_VERROU);
+    erreur.verrou = true;
+    throw erreur;
+  }
+  try { return fn(); } finally { verrou.releaseLock(); }
+}
+
+/**
  * Archive le relevé de la semaine courante, pour TOUS les contrats du
  * classeur : une ligne par contrat, dans l'onglet d'historique du contrat.
  * Idempotent : réimporter dans la même semaine met la ligne à jour au lieu
@@ -2644,17 +2755,26 @@ function enregistrerInstantaneHebdo(e) {
   const detail = [];
   const erreurs = [];
   const sansPlan = [];
-  contrats.forEach(function (c) {
-    try {
-      detail.push(archiverContrat(classeur, c, semaine));
-    } catch (err) {
-      if (err && err.sansPlan) sansPlan.push(c.nom);
-      else erreurs.push('« ' + c.nom + ' » : ' + (err && err.message ? err.message : err));
-    }
-  });
-
   /* La semaine se dit comme sur la page : « S39 », pas l'étiquette 2026-S39. */
   const dite = 'S' + parseInt(semaine.slice(6), 10);
+  try {
+    sousVerrou_(function () {
+      contrats.forEach(function (c) {
+        try {
+          detail.push(archiverContrat_(classeur, c, semaine));
+        } catch (err) {
+          if (err && err.sansPlan) sansPlan.push(c.nom);
+          else erreurs.push('« ' + c.nom + ' » : ' + (err && err.message ? err.message : err));
+        }
+      });
+    });
+  } catch (err) {
+    /* Le verrou refusé : le déclencheur du vendredi le signale par son
+       courriel d'échec, le menu par sa boîte d'erreur. */
+    if (!err || !err.verrou) throw err;
+    throw new Error('Relevé ' + dite + ' non archivé : ' + err.message);
+  }
+
   if (erreurs.length) {
     throw new Error('Relevé ' + dite + ' — ' +
       (detail.length ? detail.length + ' contrat(s) archivé(s), ' : '') +
@@ -2681,19 +2801,26 @@ function enregistrerInstantaneHebdo(e) {
  * Archive le relevé d'UN contrat pour la semaine donnée, dans son onglet
  * d'historique : la ligne de la semaine est créée ou mise à jour. Renvoie
  * { id, nom, historique, semaine, compte }. Sert au geste hebdomadaire
- * (tous les contrats) comme au dépôt automatique (un seul).
+ * (tous les contrats) comme au dépôt automatique et à l'import (un seul).
+ * Ceux qui l'appellent tiennent déjà le verrou (sousVerrou_) ; le « _ » la
+ * garde hors de portée de la page.
  */
-function archiverContrat(classeur, c, semaine) {
+function archiverContrat_(classeur, c, semaine) {
   const compte = compterAvancements(c.id);
   /* L'export d'une semaine passée, rattrapé et laissé dans l'onglet
      (débrief 17) : archivé pour la semaine en cours, il écraserait en
-     silence le bon relevé déjà pris. Même carte, plan par plan, qu'un
-     relevé plus ancien, alors que celui de la semaine diffère : on refuse. */
+     silence le bon relevé déjà pris — ou, la semaine n'ayant pas encore le
+     sien, ferait reculer tout ce qui a bougé depuis. Même carte, plan par
+     plan, qu'un relevé plus ancien, alors que le relevé de la semaine (ou, à
+     défaut, le dernier) diffère : on refuse. */
   const ancien = exportDejaArchive(classeur, c, semaine, compte.plans);
   if (ancien) {
     const courante = numeroSemaineISO(new Date());
-    const erreur = new Error('l\'onglet « ' + c.nom + ' » porte le même export que le relevé ' + semaineDite(ancien, courante) +
-      ' : le relevé ' + semaineDite(semaine, courante) + ' déjà archivé, différent, n\'est pas écrasé. ' +
+    const erreur = new Error('l\'onglet « ' + c.nom + ' » porte le même export que le relevé ' + semaineDite(ancien.semaine, courante) +
+      (ancien.ecrase
+        ? ' : le relevé ' + semaineDite(semaine, courante) + ' déjà archivé, différent, n\'est pas écrasé. '
+        : ', alors que le relevé ' + semaineDite(ancien.dernier, courante) + ', plus récent, est différent : archivé comme relevé ' +
+          semaineDite(semaine, courante) + ', il ferait reculer les plans qui ont bougé depuis. ') +
       'Importer l\'export du jour (' + cheminImport() + ', qui archive dans la foulée), ou le recoller puis archiver.');
     erreur.ancienExport = true;
     throw erreur;
@@ -2728,15 +2855,17 @@ function archiverContrat(classeur, c, semaine) {
     assurerColonnes(feuille, ligne.length);
     feuille.getRange(indexLigne, 1, 1, ligne.length).setValues([ligne]);
   }
-  marquerDonneesModifiees();
+  marquerDonneesModifiees_();
   return { id: c.id, nom: c.nom, historique: feuille.getName(), semaine: semaine, compte: compte };
 }
 
 /** Ce qu'on dit d'un historique orphelin, à l'archivage comme avant. */
 function messageOrphelin(o, c) {
-  return 'l\'onglet d\'historique « ' + o.nom + ' » n\'est rattaché à aucun contrat. ' +
+  return (o.ancien
+    ? 'l\'ancien onglet d\'historique « ' + o.nom + ' » n\'est rattaché à aucun contrat depuis que le classeur en a plusieurs. '
+    : 'l\'onglet d\'historique « ' + o.nom + ' » n\'est rattaché à aucun contrat. ') +
     'S\'il est celui de « ' + c.nom + ' », le renommer « ' + nomFeuilleHistorique(c.id) + ' » ; sinon, le renommer ' +
-    'sans le préfixe « ' + CONFIG.FEUILLE_HISTORIQUE + '_ » pour le garder à part. Relevé non archivé.';
+    'sans le préfixe « ' + CONFIG.FEUILLE_HISTORIQUE + (o.ancien ? '' : '_') + ' » pour le garder à part. Relevé non archivé.';
 }
 
 /** Une carte plan par plan, en texte stable : pour comparer deux relevés. */
@@ -2746,50 +2875,93 @@ function carteCanonique(carte) {
 }
 
 /**
- * La semaine d'un relevé PLUS ANCIEN dont la carte est exactement celle-ci,
- * quand le relevé de `semaine`, déjà archivé, en a une autre — sinon null.
+ * L'export d'un relevé PLUS ANCIEN, revenu dans l'onglet : { semaine (celle
+ * de ce relevé), ecrase (vrai si `semaine` a déjà un relevé, différent),
+ * dernier (sinon, la semaine du dernier relevé, qui diffère) } — sinon null.
+ * Deux cas :
+ *   – `semaine` a déjà un relevé, autre que cette carte : l'écraser avec un
+ *     export plus ancien effacerait le bon relevé ;
+ *   – `semaine` n'a pas encore de relevé, mais le dernier relevé d'avant
+ *     diffère de cette carte, qu'un relevé plus ancien porte exactement :
+ *     c'est l'export rattrapé (S38) laissé dans l'onglet après coup, et
+ *     l'archiver ferait reculer tout ce qui a bougé depuis (S39). Une semaine
+ *     calme — S38 = S39 = S40 — reste acceptée : le dernier relevé est pareil.
  * Un historique illisible ne bloque rien.
  */
 function exportDejaArchive(classeur, c, semaine, plans) {
   let releves;
   try { releves = getHistorique(classeur, c.id); } catch (err) { return null; }
-  const actuel = releves.filter(function (r) { return r.semaine === semaine; })[0];
-  if (!actuel || !actuel.plans) return null;
   const neuves = separerCartes(plans);
   const cle = carteCanonique(neuves.plans) + '\u0003' + carteCanonique(neuves.plansConcept);
   const cleDe = function (r) { return carteCanonique(r.plans) + '\u0003' + carteCanonique(r.plansConcept); };
-  if (cleDe(actuel) === cle) return null;
-  const pareils = releves.filter(function (r) { return r.semaine < semaine && r.plans && cleDe(r) === cle; });
-  return pareils.length ? pareils[pareils.length - 1].semaine : null;
+  const avant = releves.filter(function (r) { return r.semaine < semaine; });
+  const actuel = releves.filter(function (r) { return r.semaine === semaine; })[0];
+  const dernier = avant[avant.length - 1];
+  if (actuel) {
+    if (!actuel.plans || cleDe(actuel) === cle) return null;
+  } else if (!dernier || !dernier.plans || cleDe(dernier) === cle) {
+    /* Sans carte au dernier relevé, rien ne dit s'il diffère : on laisse passer. */
+    return null;
+  }
+  const pareils = avant.filter(function (r) { return r.plans && cleDe(r) === cle; });
+  return pareils.length
+    ? { semaine: pareils[pareils.length - 1].semaine, ecrase: !!actuel, dernier: actuel ? null : dernier.semaine }
+    : null;
 }
 
 /**
  * Retire le relevé de la semaine courante — pour rattraper un mauvais export —
  * de tous les contrats, et récapitule à l'écran ce qui a été retiré et ce qui
- * n'avait rien.
+ * n'avait rien. D'un clic, tous les contrats perdaient leur relevé : on
+ * demande d'abord, OUI / NON, en nommant ceux qui en ont un cette semaine ;
+ * NON ne touche à rien.
  */
 function supprimerDernierReleve() {
   gesteDuClasseur();
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
   const ui = SpreadsheetApp.getUi();
   const semaine = numeroSemaineISO(new Date());
-  const supprimes = [];
-  const sans = [];
   let contrats = [];
   try { contrats = listerContrats(classeur); } catch (err) { contrats = []; }
-
-  contrats.forEach(function (c) {
-    const feuille = getFeuilleHistorique(classeur, c.id, false);
-    const indexLigne = feuille ? ligneDeLaSemaine(feuille, semaine) : -1;
-    if (indexLigne === -1) { sans.push(c.nom); return; }
-    feuille.deleteRow(indexLigne);
-    supprimes.push(c.nom);
-  });
-  if (supprimes.length) marquerDonneesModifiees();
-
   const nommer = function (liste) { return liste.map(function (n) { return '« ' + n + ' »'; }).join(', '); };
   /* La semaine se dit comme sur la page : « S39 ». */
   const dite = 'S' + parseInt(semaine.slice(6), 10);
+  const avecReleve = contrats.filter(function (c) {
+    const feuille = getFeuilleHistorique(classeur, c.id, false);
+    return !!feuille && ligneDeLaSemaine(feuille, semaine) !== -1;
+  }).map(function (c) { return c.nom; });
+  if (!avecReleve.length) {
+    ui.alert('Aucun relevé pour la semaine en cours (' + dite + ').');
+    return { semaine: semaine, supprimes: [], sans: contrats.map(function (c) { return c.nom; }) };
+  }
+  const question = 'Supprimer le relevé ' + dite + ' de ' + nommer(avecReleve) + ' ?\n\n' +
+    'La ligne ' + dite + ' de ' + (avecReleve.length > 1 ? 'leur' : 'son') + ' historique est retirée ; ' +
+    'les semaines d\'avant ne bougent pas.';
+  if (ui.alert('Suivi FWD', question, ui.ButtonSet.YES_NO) !== ui.Button.YES) return null;
+
+  const supprimes = [];
+  const sans = [];
+  try {
+    sousVerrou_(function () {
+      /* Relu sous le verrou : un archivage a pu passer pendant la question.
+         Seuls les contrats nommés dans la question perdent leur relevé. */
+      contrats.forEach(function (c) {
+        const feuille = avecReleve.indexOf(c.nom) !== -1 ? getFeuilleHistorique(classeur, c.id, false) : null;
+        const indexLigne = feuille ? ligneDeLaSemaine(feuille, semaine) : -1;
+        if (indexLigne === -1) { sans.push(c.nom); return; }
+        feuille.deleteRow(indexLigne);
+        supprimes.push(c.nom);
+      });
+      if (supprimes.length) marquerDonneesModifiees_();
+    });
+  } catch (err) {
+    /* Seul le verrou refusé se dit ici : rien n'a été retiré. Toute autre
+       panne remonte telle quelle, sans prétendre que rien n'a bougé. */
+    if (!err || !err.verrou) throw err;
+    ui.alert('Relevé ' + dite + ' non supprimé : ' + err.message);
+    return null;
+  }
+
   let message;
   if (!supprimes.length) {
     message = 'Aucun relevé pour la semaine en cours (' + dite + ').';
@@ -2834,7 +3006,7 @@ function archiverSemainePassee() {
     return prevu;
   }
   if (ui.alert('Suivi FWD', prevu.question, ui.ButtonSet.YES_NO) !== ui.Button.YES) return null;
-  const resultat = archiverPourSemaine(classeur, onglet, saisie);
+  const resultat = archiverPourSemaine_(classeur, onglet, saisie);
   ui.alert('Suivi FWD', resultat.message, ui.ButtonSet.OK);
   return resultat;
 }
@@ -2947,14 +3119,14 @@ function preparerSemainePassee(classeur, nomOnglet, saisie) {
   };
 }
 
-/** Le geste d'archiverSemainePassee, sans interface : { ok, semaine, message }. */
-function archiverPourSemaine(classeur, nomOnglet, saisie) {
+/** Le geste d'archiverSemainePassee, sans interface, sous le verrou : { ok, semaine, message }. */
+function archiverPourSemaine_(classeur, nomOnglet, saisie) {
   const prevu = preparerSemainePassee(classeur, nomOnglet, saisie);
   if (!prevu.ok) return { ok: false, semaine: prevu.semaine, message: prevu.message };
   const courante = numeroSemaineISO(new Date());
   const dite = semaineDite(prevu.semaine, courante);
   try {
-    const detail = archiverContrat(classeur, prevu.contrat, prevu.semaine);
+    const detail = sousVerrou_(function () { return archiverContrat_(classeur, prevu.contrat, prevu.semaine); });
     return { ok: true, semaine: prevu.semaine, message: 'Relevé ' + dite + ' de « ' + prevu.contrat.nom + ' » ' +
       (prevu.existe ? 'remplacé' : 'archivé') + ' avec l\'export affiché (' + detail.compte.total + ' plans).' +
       (prevu.semaine === courante ? '' : '\n\n⚠ L\'onglet « ' + prevu.contrat.nom + ' » porte maintenant l\'export de ' + dite +
@@ -3195,13 +3367,13 @@ function lireTableauSecondeBase(donnees, clesVoulues) {
  * Point d'entrée des dépôts : un script (import/deposer.py) envoie un
  * extract en JSON, { secret, onglet, lignes: [[…], …], archiver, creer }.
  * La réponse est du JSON : { ok, onglet, lignes, colonnes, archive } ou
- * { ok: false, message }. Tout passe par deposer(), testable sans requête.
+ * { ok: false, message }. Tout passe par deposer_(), testable sans requête.
  */
 function doPost(e) {
   let reponse;
   try {
     const texte = e && e.postData && e.postData.contents ? String(e.postData.contents) : '';
-    reponse = deposer(texte);
+    reponse = deposer_(texte);
   } catch (err) {
     /* Sans ce filet, Apps Script répondrait une page HTML d'erreur : le script
        appelant n'y comprendrait rien. */
@@ -3216,9 +3388,10 @@ function doPost(e) {
  * Ctrl+A, Suppr, coller en A1 — puis, si `archiver` est vrai et que l'onglet
  * est un contrat, archive le relevé de la semaine pour ce contrat. Refuse
  * tout tant que CONFIG.DEPOT.SECRET est vide, et tout ce qui ne porte pas ce
- * secret. Un onglet d'historique n'est jamais une cible.
+ * secret. Un onglet d'historique n'est jamais une cible. Le « _ » : doPost
+ * est sa seule porte, la page n'en ouvre pas une seconde.
  */
-function deposer(texte) {
+function deposer_(texte) {
   const cfg = CONFIG.DEPOT || {};
   const secret = String(cfg.SECRET || '');
   if (!secret) return { ok: false, message: 'Dépôt désactivé : CONFIG.DEPOT.SECRET est vide.' };
@@ -3272,7 +3445,7 @@ function deposer(texte) {
      un extract ne doit pas se transformer en formules. */
   if (plage.setNumberFormat) plage.setNumberFormat('@');
   plage.setValues(valeurs);
-  marquerDonneesModifiees();
+  marquerDonneesModifiees_();
   const resultat = { ok: true, onglet: feuille.getName(), lignes: valeurs.length, colonnes: largeur };
   if (corps.archiver) {
     const contrat = listerContrats(classeur).filter(function (c) { return c.id === feuille.getName(); })[0];
@@ -3280,7 +3453,7 @@ function deposer(texte) {
       resultat.archive = { ok: false, message: '« ' + feuille.getName() + ' » n\'est pas un onglet de contrat : rien à archiver.' };
     } else {
       try {
-        const detail = archiverContrat(classeur, contrat, numeroSemaineISO(new Date()));
+        const detail = sousVerrou_(function () { return archiverContrat_(classeur, contrat, numeroSemaineISO(new Date())); });
         resultat.archive = { ok: true, semaine: detail.semaine, historique: detail.historique,
                              total: detail.compte.total, termine: detail.compte.termine };
       } catch (err) {
@@ -3885,6 +4058,16 @@ function importSecondeBaseFin(jeton, nomFeuille, cible, lignesAttendues, fusions
       });
     }
     const existant = c.existant;
+    /* Un export où la page ne trouverait pas la colonne suivie ne remplace
+       pas un onglet où elle la trouve : ce serait échanger un contrat qui se
+       lit contre un contrat muet (un export d'un autre programme, un export
+       sans le bloc suivi). L'ancien reste ; l'onglet temporaire s'en va. */
+    if (c.sorte === 'gates' && existant && CONFIG.COLONNE_FWD &&
+        colonneSuivieLue_(existant) && !colonneSuivieLue_(feuille)) {
+      classeur.deleteSheet(feuille);
+      throw new Error('Colonne suivie absente de cet export : « ' + CONFIG.COLONNE_FWD.replace('>', '›') + ' » n’y est pas, alors que l’onglet « ' +
+        c.onglet + ' » l’a. Est-ce bien l’export de ce contrat, avec son bloc suivi ?');
+    }
     remplace = !!existant;
     let position = 0;
     if (existant) {
@@ -3905,7 +4088,7 @@ function importSecondeBaseFin(jeton, nomFeuille, cible, lignesAttendues, fusions
       classeur.moveActiveSheet(position);
     }
     if (existant) classeur.deleteSheet(existant);
-    marquerDonneesModifiees();
+    marquerDonneesModifiees_();
   } finally {
     if (tenu) verrou.releaseLock();
   }
@@ -3935,6 +4118,23 @@ function importSecondeBaseFin(jeton, nomFeuille, cible, lignesAttendues, fusions
   return rendu;
 }
 
+/**
+ * La page lirait-elle la colonne suivie (CONFIG.COLONNE_FWD) dans cet
+ * onglet ? Les mêmes gestes que construireModele — la ligne d'en-têtes dans
+ * les premières lignes, les groupes par leurs fusions —, sur ces seules
+ * lignes : de quoi trancher avant d'échanger deux onglets.
+ */
+function colonneSuivieLue_(feuille) {
+  const n = Math.min(CONFIG.LIGNES_SCAN_ENTETE, feuille.getLastRow());
+  const largeur = feuille.getLastColumn();
+  if (n < 1 || largeur < 1) return false;
+  const tete = feuille.getRange(1, 1, n, largeur).getDisplayValues();
+  const i = detecterLigneEntete(tete);
+  const entetes = tete[i].map(function (e) { return String(e).trim(); });
+  const groupes = i > 0 ? groupesParColonne(feuille, i, entetes.length) : new Array(entetes.length).fill('');
+  return trouverIndexFWD(entetes, groupes) !== -1;
+}
+
 /** Abandon : l'onglet temporaire est retiré, l'onglet visé reste ce qu'il était. */
 function importSecondeBaseAbandon(jeton, nomFeuille) {
   gesteImport_(jeton);
@@ -3947,7 +4147,7 @@ function importSecondeBaseAbandon(jeton, nomFeuille) {
 
 /**
  * Après l'import d'un export GATES : le relevé de la semaine en cours, pour
- * ce contrat seulement (archiverContrat, sous le verrou du document). Ses
+ * ce contrat seulement (archiverContrat_, sous le verrou du document). Ses
  * refus — l'export est celui d'un relevé plus ancien, un historique orphelin
  * attend d'être rattaché, l'onglet n'a pas de plan — reviennent comme tels,
  * { ok: false, message } : l'import, lui, est fait. Archiver deux fois dans
@@ -3959,17 +4159,15 @@ function importArchiverReleve(jeton, idContrat) {
   const contrat = contratPourImport(classeur, idContrat);
   const semaine = numeroSemaineISO(new Date());
   const dite = semaineDite(semaine, semaine);
-  const verrou = LockService.getDocumentLock();
-  const tenu = verrou.tryLock(30000);
+  /* Le verrou se prend ici, une fois (sousVerrou_) : pas obtenu, rien n'est
+     écrit et la fenêtre le dit — l'archivage n'avance plus sans lui. */
   try {
-    const d = archiverContrat(classeur, contrat, semaine);
+    const d = sousVerrou_(function () { return archiverContrat_(classeur, contrat, semaine); });
     return { ok: true, semaine: semaine, dite: dite, plans: d.compte.total, valides: d.compte.termine, historique: d.historique };
   } catch (err) {
     return { ok: false, semaine: semaine, dite: dite, ancienExport: !!(err && err.ancienExport),
              message: err && err.sansPlan ? 'l’onglet « ' + contrat.nom + ' » ne porte aucun plan (en-têtes seuls).'
                : (err && err.message ? err.message : String(err)) };
-  } finally {
-    if (tenu) verrou.releaseLock();
   }
 }
 
@@ -5101,7 +5299,7 @@ function scriptImportSecondeBase_(P) {
     var rien = existe ? ' Rien n’a été remplacé dans le classeur.' : ' Rien n’a été créé dans le classeur.';
     /* Après l'appel de fin, l'onglet a pu être échangé — sauf pour ces refus,
        qui arrivent avant tout échange. */
-    if (etat.fin && !/Import incomplet|a disparu|non reconnu|Contrat introuvable|Geste refusé|existe déjà|nom réservé/.test(texte)) {
+    if (etat.fin && !/Import incomplet|a disparu|non reconnu|Contrat introuvable|Geste refusé|existe déjà|nom réservé|Colonne suivie absente/.test(texte)) {
       return t + ' L’import est peut-être allé au bout : regarder l’onglet « ' + onglet + ' » (ou menu Suivi FWD → Diagnostic) avant de relancer.';
     }
     if (etat.fin) return t + (existe ? ' L’ancien onglet « ' + onglet + ' » est intact.' : rien);

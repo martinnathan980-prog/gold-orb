@@ -5331,6 +5331,178 @@ async function reinitialiser(pg) {
   await ctxBloque.close();
 
   // =================================================================
+  section('Débrief 20 : un graphique lisible à toute largeur');
+  /* Le graphique se dessinait sur 980 unités puis se laissait réduire :
+     3,5 px de texte sur un téléphone, 7 px dans une demi-fenêtre au bureau.
+     Il se dessine maintenant à la largeur de son cadre, et ses mots ne se
+     chevauchent ni ne se font barrer par un trait, à toutes les largeurs,
+     dans les deux thèmes. */
+  const lireDessin20 = () => document.querySelector('svg.graphe') && (() => {
+    const svg = document.querySelector('svg.graphe');
+    const rs = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+    const echelle = rs.width / vb.width;
+    const boites = [...svg.querySelectorAll('text')]
+      .filter(t => !t.classList.contains('masque') && t.textContent.trim())
+      .map(t => { const b = t.getBoundingClientRect();
+        return { t: t.textContent.trim().slice(-24), g: b.left, d: b.right, h: b.top, b: b.bottom,
+                 px: parseFloat(getComputedStyle(t).fontSize) * echelle, nominal: parseFloat(getComputedStyle(t).fontSize) }; });
+    const croisent = (a, c) => a.g < c.d - 0.5 && c.g < a.d - 0.5 && a.h < c.b - 0.5 && c.h < a.b - 0.5;
+    const chevauchements = [];
+    for (let i = 0; i < boites.length; i++) for (let j = i + 1; j < boites.length; j++) {
+      if (croisent(boites[i], boites[j])) chevauchements.push(boites[i].t + ' / ' + boites[j].t);
+    }
+    /* Les traits verticaux : jalons et dernier relevé. Un mot posé sur un
+       fond plein qui cache le trait n'est pas barré. */
+    const traits = [...svg.querySelectorAll('line')]
+      .filter(l => l.getAttribute('x1') === l.getAttribute('x2') && Math.abs(l.getAttribute('y1') - l.getAttribute('y2')) > 30)
+      .map(l => l.getBoundingClientRect());
+    const fonds = [...svg.querySelectorAll('rect.fond-mot')].map(r => r.getBoundingClientRect());
+    const barres = [];
+    boites.forEach(a => traits.forEach(tr => {
+      if (tr.left > a.g + 0.5 && tr.left < a.d - 0.5 && tr.top < a.b && tr.bottom > a.h &&
+          !fonds.some(f => f.left <= a.g + 1 && f.right >= a.d - 1 && f.top <= a.h + 3 && f.bottom >= a.b - 3)) barres.push(a.t);
+    }));
+    return {
+      vb: vb.width, largeur: Math.round(rs.width),
+      tailles: boites.every(a => Math.abs(a.px - a.nominal) < 0.2), pxMin: Math.min(...boites.map(a => a.px)),
+      chevauchements, barres,
+      dehors: boites.filter(a => a.g < rs.left - 1 || a.d > rs.right + 1).map(a => a.t),
+      graduations: boites.filter(a => /^S\d+$/.test(a.t)).length
+    };
+  })();
+  const largeurs20 = [];
+  for (const theme of ['light', 'dark']) {
+    const ctxL = await contexte({ colorScheme: theme });
+    const pl = await page(ctxL, 'graphique ' + theme);
+    for (const w of [360, 768, 1024, 1440, 1920]) {
+      await pl.setViewportSize({ width: w, height: 950 }); await pl.waitForTimeout(450);
+      largeurs20.push(Object.assign({ theme, w }, await pl.evaluate(lireDessin20)));
+    }
+    await ctxL.close();
+  }
+  verifier('débrief 20 : le graphique se dessine à la largeur de son cadre — une unité pour un pixel, redessiné quand la fenêtre change',
+    largeurs20.every(x => Math.abs(x.vb - x.largeur) <= 1) && new Set(largeurs20.map(x => x.vb)).size >= 4,
+    JSON.stringify(largeurs20.map(x => [x.theme, x.w, x.vb, x.largeur])));
+  verifier('débrief 20 : ses mots gardent leur taille (10 à 11 px) à 360, 768, 1024, 1440 et 1920 px',
+    largeurs20.every(x => x.tailles && x.pxMin >= 9.9), JSON.stringify(largeurs20.map(x => [x.theme, x.w, x.pxMin.toFixed(1)])));
+  verifier('débrief 20 : aucun mot n’en chevauche un autre, aucun ne sort du cadre, à toutes les largeurs et dans les deux thèmes',
+    largeurs20.every(x => !x.chevauchements.length && !x.dehors.length),
+    JSON.stringify(largeurs20.filter(x => x.chevauchements.length || x.dehors.length).map(x => [x.theme, x.w, x.chevauchements, x.dehors])));
+  verifier('débrief 20 : aucun mot barré par le trait d’un jalon ou du dernier relevé',
+    largeurs20.every(x => !x.barres.length), JSON.stringify(largeurs20.filter(x => x.barres.length).map(x => [x.theme, x.w, x.barres])));
+  const grad20 = largeurs20.filter(x => x.theme === 'light').map(x => x.graduations);
+  verifier('débrief 20 : moins de graduations sur un cadre étroit, une dizaine sur un grand écran',
+    grad20[0] >= 3 && grad20[0] < grad20[grad20.length - 1] && grad20[grad20.length - 1] >= 8, JSON.stringify(grad20));
+
+  /* Sur un cadre étroit, le survol et le zoom visent toujours la bonne
+     semaine : la bulle du point du dernier relevé dit sa semaine. */
+  const ctxEtroit = await contexte({ viewport: { width: 390, height: 900 } });
+  const pe = await page(ctxEtroit, 'graphique étroit');
+  const zoneAuj20 = await pe.evaluate(() => {
+    const zones = [...document.querySelectorAll('svg.graphe .zone-clic')];
+    // La bande la plus à droite qui porte un nombre de validés : le dernier relevé.
+    const z = zones.filter(r => / : \d+ validés$/.test(r.getAttribute('aria-label'))).pop();
+    z.scrollIntoView({ block: 'center' });
+    const b = z.getBoundingClientRect();
+    return { x: b.left + b.width / 2, y: b.top + b.height / 2, libelle: z.getAttribute('aria-label') };
+  });
+  await pe.mouse.move(zoneAuj20.x, zoneAuj20.y); await pe.waitForTimeout(250);
+  const bulle20 = await pe.evaluate(() => ({ visible: document.getElementById('bulle').dataset.visible, tete: (document.querySelector('#bulle .tete-bulle') || {}).textContent || '' }));
+  verifier('débrief 20 : à 390 px, le survol du dernier relevé ouvre la bulle de sa semaine',
+    bulle20.visible === 'true' && bulle20.tete.indexOf(zoneAuj20.libelle.split(' : ')[0]) !== -1, JSON.stringify([zoneAuj20.libelle, bulle20]));
+
+  /* La molette en zoom arrière s'arrête à la largeur de « Tout » (elle
+     allait jusqu'à deux ans, la moitié du graphique vide). */
+  await pe.setViewportSize({ width: 1280, height: 950 }); await pe.waitForTimeout(450);
+  await pe.click('.segmente button[data-span="0"]'); await pe.waitForTimeout(350);
+  const nTout20 = await pe.evaluate(() => document.querySelectorAll('svg.graphe .zone-clic').length);
+  await pe.click('.segmente button[data-span="26"]'); await pe.waitForTimeout(350);
+  const boiteZ = await (await pe.$('svg.graphe')).boundingBox();
+  await pe.mouse.move(boiteZ.x + boiteZ.width / 2, boiteZ.y + boiteZ.height / 2);
+  for (let i = 0; i < 40; i++) await pe.mouse.wheel(0, 400);
+  await pe.waitForTimeout(400);
+  const molette20 = await pe.evaluate(() => ({
+    n: document.querySelectorAll('svg.graphe .zone-clic').length,
+    presses: [...document.querySelectorAll('.commandes-graphe .segmente button[aria-pressed="true"]')].map(b => b.textContent.trim()).join()
+  }));
+  verifier('débrief 20 : 40 crans de zoom arrière s’arrêtent à la fenêtre de « Tout », qui se marque pressé',
+    molette20.n === nTout20 && molette20.presses === 'Tout', JSON.stringify([nTout20, molette20]));
+  await pe.click('.segmente button[data-span="52"]'); await pe.waitForTimeout(350);
+  const boiteAn = await (await pe.$('svg.graphe')).boundingBox();
+  await pe.mouse.move(boiteAn.x + boiteAn.width / 2, boiteAn.y + boiteAn.height / 2);
+  for (let i = 0; i < 10; i++) await pe.mouse.wheel(0, 400);
+  await pe.waitForTimeout(400);
+  const an20 = await pe.evaluate(() => document.querySelectorAll('svg.graphe .zone-clic').length);
+  verifier('débrief 20 : depuis « 1 an », plus large que « Tout », la molette n’élargit ni ne rétrécit en zoom arrière',
+    an20 === 52, an20 + ' semaines');
+
+  /* Le bout de la projection : un losange plein du vert du réalisé, plus
+     un petit cercle creux qu'on lisait « jalon 5 atteint » ; « fin … » ne
+     se pose ni en travers d'un jalon ni sur « 640 plans ». */
+  await pe.click('.segmente button[data-span="jalons"]'); await pe.waitForTimeout(350);
+  const fin20 = await pe.evaluate(() => {
+    const svg = document.querySelector('svg.graphe');
+    const mot = svg.querySelector('.fin-mot'), bout = svg.querySelector('.fin-projection');
+    const b = mot ? mot.getBoundingClientRect() : null;
+    const traits = [...svg.querySelectorAll('.jalon line:not(.jalon-lien)')].map(l => l.getBoundingClientRect().left);
+    const plafond = [...svg.querySelectorAll('text')].filter(t => / plans$/.test(t.textContent))[0];
+    const p = plafond ? plafond.getBoundingClientRect() : null;
+    return { mot: mot ? mot.textContent : '', bout: bout ? bout.tagName + ':' + bout.getAttribute('fill') : '',
+             cerclesCreux: svg.querySelectorAll('circle[fill="none"]').length,
+             barre: !!b && traits.some(x => x > b.left && x < b.right),
+             surPlafond: !!b && !!p && b.left < p.right && p.left < b.right && b.top < p.bottom - 0.5 && p.top < b.bottom - 0.5 };
+  });
+  verifier('débrief 20 : le bout de la projection est un losange plein (vert du réalisé), « fin … » n’est barré par aucun jalon ni posé sur « 640 plans »',
+    /^fin S\d+/.test(fin20.mot) && fin20.bout === 'path:var(--fait)' && fin20.cerclesCreux === 0 && !fin20.barre && !fin20.surPlafond, JSON.stringify(fin20));
+
+  /* Tout validé : pas de projection (« fin S40 » s'écrivait sur un groupe
+     fini), et le nombre du dernier point s'écrit sous lui, pas sur
+     « dernier relevé ». */
+  await pe.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    s.plans.forEach(x => { x.avancement = 'Terminé'; });
+    const r = s.releves[s.releves.length - 1];
+    r.termine = r.total; r.encours = r.afaire = r.vide = 0;
+    window.__chargerSource(s);
+  });
+  await pe.waitForTimeout(500);
+  const plein20 = await pe.evaluate(() => {
+    const svg = document.querySelector('svg.graphe');
+    const n = svg.querySelector('.nombre-point'), a = svg.querySelector('.repere-auj');
+    const bn = n.getBoundingClientRect(), ba = a.getBoundingClientRect(), bs = svg.getBoundingClientRect();
+    return { fin: svg.querySelectorAll('.fin-mot, .fin-projection, circle[fill="none"]').length + [...svg.querySelectorAll('text')].filter(t => /^fin /.test(t.textContent)).length,
+             nombre: n.textContent, total: window.__serieAffichee().pts.slice(-1)[0].total,
+             surRepere: bn.left < ba.right && ba.left < bn.right && bn.top < ba.bottom && ba.top < bn.bottom,
+             dansLeCadre: bn.top >= bs.top, sousLePoint: bn.top > n.previousElementSibling.getBoundingClientRect().top,
+             legende: document.getElementById('legende').textContent };
+  });
+  verifier('débrief 20 : tout validé — ni « fin … » ni bout de projection',
+    plein20.fin === 0 && !/rythme tenu/.test(plein20.legende), JSON.stringify(plein20));
+  verifier('débrief 20 : à 100 %, le nombre du dernier point s’écrit sous lui, pas sur « dernier relevé »',
+    +plein20.nombre === plein20.total && !plein20.surRepere && plein20.dansLeCadre && plein20.sousLePoint, JSON.stringify(plein20));
+
+  /* Rien de validé depuis le premier relevé : pas de projection, donc pas
+     de « au rythme tenu (0,0/sem.) » ni de trait pointillé en légende. */
+  await pe.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    const dernier = JSON.stringify(s.releves[s.releves.length - 1]);
+    s.releves = s.releves.map(r => Object.assign(JSON.parse(dernier), { semaine: r.semaine }));
+    window.__chargerSource(s);
+  });
+  await pe.waitForTimeout(500);
+  const plat20 = await pe.evaluate(() => {
+    const leg = document.getElementById('legende');
+    return { legende: leg.textContent, pointilles: leg.querySelectorAll('line[stroke-dasharray]').length,
+             projection: document.querySelectorAll('svg.graphe path[stroke-dasharray="5 4"]').length,
+             item: !!leg.querySelector('.sans-rythme') && !leg.querySelector('.sans-rythme svg') };
+  });
+  verifier('débrief 20 : rien de validé depuis le premier relevé — la légende le dit, sans pastille ni « 0,0/sem. », et aucune projection n’est tracée',
+    /rien de validé depuis le premier relevé/.test(plat20.legende) && !/rythme tenu/.test(plat20.legende) && plat20.pointilles === 0 &&
+    plat20.projection === 0 && plat20.item, JSON.stringify(plat20));
+  await pe.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
+  await ctxEtroit.close();
+
+  // =================================================================
   section('Clavier et accessibilité');
   const ctxClavier = await contexte();
   let pk = await page(ctxClavier, 'clavier');

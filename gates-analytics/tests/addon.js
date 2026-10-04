@@ -1181,6 +1181,225 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('verrou pris ailleurs : l\'ouverture n\'est pas comptée, et rien ne casse', cS18.noterConsultation() === false);
 
   // =================================================================
+  /* La chasse aux bugs du serveur (débrief 20) : chaque cas rejoue le geste
+     qui faisait la panne, sur le vrai Code.gs. */
+  section('Débrief 20 : l\'historique protégé, le Diagnostic juste, le serveur fermé à la page');
+  const semaineIl = (c, jours) => c.numeroSemaineISO(new Date(Date.now() - jours * 864e5));
+  const dite20 = s => 'S' + parseInt(s.slice(6), 10);
+  /* La colonne suivie de HDK (bloc HDK AA 011) et ses lignes de plans : on
+     y fabrique l'export d'une semaine plus ancienne, avec moins de validés. */
+  const exportsDe = (cl, onglet) => {
+    const f = cl.getSheetByName(onglet);
+    const col = f.valeurs[0].indexOf('HDK AA 011') + 3;
+    const lignes = f.valeurs.filter(l => /^UD-/.test(l[1] || ''));
+    const duJour = lignes.map(l => l[col]);
+    const plusAncien = duJour.slice();
+    let n = 0;
+    plusAncien.forEach((v, i) => { if (v === '100%' && n < 5) { plusAncien[i] = 'EMPTY'; n++; } });
+    return { poser: valeurs => lignes.forEach((l, i) => { l[col] = valeurs[i]; }), duJour, plusAncien };
+  };
+  const verrouRefuse = c => vm.runInContext('LockService = { getDocumentLock: function () { return { tryLock: function () { __prises++; return false; }, releaseLock: function () {} }; } }', c);
+  const verrouAccorde = c => vm.runInContext('LockService = { getDocumentLock: function () { return { tryLock: function () { __prises++; return true; }, releaseLock: function () {} }; } }', c);
+
+  /* R — S38 archivé (5 validés de moins), S39 archivé ; lundi S40, l'export
+     de S38 est rattrapé dans l'onglet et laissé là. Le vendredi, S40 n'a pas
+     encore de relevé : l'archiver ferait « reculer » les cinq plans. */
+  {
+    const cl = fabriquerHT(), c = chargerServeur(cl, {});
+    const s38 = semaineIl(c, 14), s39 = semaineIl(c, 7), s40 = semaineIl(c, 0);
+    const e = exportsDe(cl, 'HDK');
+    e.poser(e.plusAncien); c.archiverContrat_(cl, { id: 'HDK', nom: 'HDK' }, s38);
+    e.poser(e.duJour);     c.archiverContrat_(cl, { id: 'HDK', nom: 'HDK' }, s39);
+    e.poser(e.plusAncien);   // l'export de S38, rattrapé, resté dans l'onglet
+    const avant = JSON.stringify(c.getHistorique(cl, 'HDK').map(r => [r.semaine, r.termine]));
+    let refus = '';
+    try { c.enregistrerInstantaneHebdo(); } catch (err) { refus = String(err.message || err); }
+    verifier('R — l\'export d\'une semaine passée laissé dans l\'onglet, la semaine en cours sans relevé : refusé, avec le bon geste',
+      new RegExp('« HDK » : l\'onglet « HDK » porte le même export que le relevé ' + dite20(s38) + ', alors que le relevé ' + dite20(s39) +
+        ', plus récent, est différent : archivé comme relevé ' + dite20(s40) + ', il ferait reculer les plans qui ont bougé depuis\\. ' +
+        'Importer l\'export du jour \\(menu Suivi FWD → Importer les exports GATES et SEE…, qui archive dans la foulée\\), ou le recoller puis archiver\\.').test(refus) &&
+      JSON.stringify(c.getHistorique(cl, 'HDK').map(r => [r.semaine, r.termine])) === avant &&
+      c.getHistorique(cl, 'THS').map(r => r.semaine).join() === s40, refus);
+    const parImport = c.importArchiverReleve(c.ouvrirJetonImport_(), 'HDK');
+    verifier('R — même refus par la fenêtre d\'import (« Relevé S40 non archivé : l\'onglet « HDK » porte le même export… »), rien d\'écrit',
+      parImport.ok === false && parImport.ancienExport === true &&
+      /^l'onglet « HDK » porte le même export que le relevé S\d+, alors que le relevé S\d+, plus récent, est différent/.test(parImport.message) &&
+      JSON.stringify(c.getHistorique(cl, 'HDK').map(r => [r.semaine, r.termine])) === avant, JSON.stringify(parImport));
+    e.poser(e.duJour);
+    const r = c.enregistrerInstantaneHebdo();
+    verifier('R — l\'export du jour remis : la semaine en cours s\'archive',
+      r.ok && c.getHistorique(cl, 'HDK').map(x => x.semaine).join() === [s38, s39, s40].join(), JSON.stringify(c.getHistorique(cl, 'HDK').map(x => x.semaine)));
+  }
+  {
+    /* Une semaine calme — S38 = S39 = S40, rien n'a bougé — reste acceptée. */
+    const cl = fabriquerHT(), c = chargerServeur(cl, {});
+    const s38 = semaineIl(c, 14), s39 = semaineIl(c, 7);
+    c.archiverContrat_(cl, { id: 'HDK', nom: 'HDK' }, s38);
+    c.archiverContrat_(cl, { id: 'HDK', nom: 'HDK' }, s39);
+    let refus = '';
+    try { c.enregistrerInstantaneHebdo(); } catch (err) { refus = String(err.message || err); }
+    verifier('R — une semaine calme (S38 = S39 = S40) s\'archive sans refus',
+      !refus && c.getHistorique(cl, 'HDK').length === 3, refus);
+  }
+
+  /* S — « Supprimer le relevé de cette semaine » demande d'abord, en ne
+     nommant que les contrats qui en ont un ; NON ne touche à rien. */
+  {
+    const cl = fabriquerHT(), c = chargerServeur(cl, {});
+    const s40 = semaineIl(c, 0);
+    c.archiverContrat_(cl, { id: 'HDK', nom: 'HDK' }, semaineIl(c, 7));
+    c.archiverContrat_(cl, { id: 'HDK', nom: 'HDK' }, s40);
+    const avant = JSON.stringify(c.getHistorique(cl, 'HDK').map(r => r.semaine));
+    c.__confirmations.push('NO');
+    const a0 = c.__alertes.length;
+    const rNon = c.supprimerDernierReleve();
+    const question = c.__alertes[a0] || '';
+    verifier('S — la question vient d\'abord, OUI / NON, et ne nomme que HDK (THS n\'a pas de relevé cette semaine)',
+      new RegExp('^Supprimer le relevé ' + dite20(s40) + ' de « HDK » \\?\\n\\nLa ligne ' + dite20(s40) + ' de son historique est retirée ; les semaines d\'avant ne bougent pas\\.$').test(question) &&
+      !/THS/.test(question), question);
+    verifier('S — « Non » : rien n\'est retiré, et rien d\'autre n\'est dit',
+      rNon === null && c.__alertes.length === a0 + 1 && JSON.stringify(c.getHistorique(cl, 'HDK').map(r => r.semaine)) === avant);
+    c.__confirmations.push('YES');
+    const rOui = c.supprimerDernierReleve();
+    verifier('S — « Oui » : la semaine en cours est retirée de HDK seulement, la semaine d\'avant reste',
+      rOui && rOui.supprimes.join() === 'HDK' && rOui.sans.join() === 'THS' &&
+      c.getHistorique(cl, 'HDK').map(r => r.semaine).join() === semaineIl(c, 7), JSON.stringify(rOui));
+    /* Sans relevé cette semaine nulle part : rien à demander. */
+    const a1 = c.__alertes.length;
+    const rRien = c.supprimerDernierReleve();
+    verifier('S — sans relevé cette semaine : pas de question, « Aucun relevé pour la semaine en cours »',
+      rRien.supprimes.length === 0 && c.__alertes.length === a1 + 1 && /^Aucun relevé pour la semaine en cours/.test(c.__alertes[a1]));
+  }
+
+  /* T — l'ancien onglet « Historique_FWD » d'un classeur à contrat unique, et
+     un second contrat ajouté : l'historique ne disparaît plus sans un mot, et
+     le vendredi n'ouvre pas « Historique_FWD_HDK » à côté. */
+  {
+    const gH = feuilleGates(40), gT = feuilleGates(30);
+    const c0 = chargerServeur(new Classeur([]), {});
+    const ligne = (s, t) => [s, new Date(), 40, t, 40 - t, 0, 0, '{}', '{}'];
+    const legacy = new Feuille('Historique_FWD', [ENTETES_H.slice(), ligne(semaineIl(c0, 14), 3), ligne(semaineIl(c0, 7), 6)], true);
+    const cl = new Classeur([new Feuille('HDK', gH.valeurs, false, gH.fusions), legacy], 'Ancien classeur');
+    const c = chargerServeur(cl, {});
+    verifier('T — un seul contrat : l\'ancien onglet est son historique, sans avis',
+      c.getDonneesPourClient('HDK').releves.length === 2 && !c.getDonneesPourClient('HDK').avis);
+    cl.feuilles.push(new Feuille('THS', gT.valeurs, false, gT.fusions));
+    const avis = c.getDonneesPourClient('HDK').avis;
+    verifier('T — un second contrat : la page dit que l\'ancien onglet n\'est plus rattaché, et comment le renommer',
+      /L'ancien onglet d'historique « Historique_FWD » \(2 relevés\) n'est rattaché à aucun contrat — il servait quand le classeur n'en avait qu'un\. S'il est celui de « HDK », le renommer « Historique_FWD_HDK » lui rend ses relevés/.test(avis), avis);
+    let refus = '';
+    try { c.enregistrerInstantaneHebdo(); } catch (err) { refus = String(err.message || err); }
+    verifier('T — l\'archivage refuse au lieu de couper l\'historique en deux : pas de « Historique_FWD_HDK » ouvert à côté',
+      /« HDK » : l'ancien onglet d'historique « Historique_FWD » n'est rattaché à aucun contrat depuis que le classeur en a plusieurs\. S'il est celui de « HDK », le renommer « Historique_FWD_HDK »/.test(refus) &&
+      !cl.getSheetByName('Historique_FWD_HDK') && !cl.getSheetByName('Historique_FWD_THS') && legacy.valeurs.length === 3, refus);
+    const diag = c.diagnostic();
+    verifier('T — le Diagnostic le dit aussi',
+      /⚠ L'ancien onglet « Historique_FWD » n'est rattaché à aucun contrat \(2 relevés\) :/.test(diag), diag.split('\n').filter(l => /Historique_FWD/.test(l)).join(' / '));
+    legacy.setName('Historique_FWD_HDK');
+    const rT = c.enregistrerInstantaneHebdo();
+    verifier('T — renommé « Historique_FWD_HDK » : HDK retrouve ses relevés, les deux contrats s\'archivent',
+      rT.ok && !c.getDonneesPourClient('HDK').avis && c.getHistorique(cl, 'HDK').length === 3 && c.getHistorique(cl, 'THS').length === 1,
+      c.getDonneesPourClient('HDK').avis);
+  }
+
+  /* U — le Diagnostic mesure le contrat que la page ouvre vraiment, et un
+     onglet d'en-têtes seuls n'a pas de ✓. */
+  {
+    const gTete = feuilleGates(3), gT = feuilleGates(30);
+    const cl = new Classeur([new Feuille('HDK', gTete.valeurs.slice(0, 3), false, gTete.fusions),
+                             new Feuille('THS', gT.valeurs, false, gT.fusions)]);
+    const c = chargerServeur(cl, {});
+    const diag = c.diagnostic();
+    const partHDK = diag.slice(diag.indexOf('— Contrat « HDK » —'), diag.indexOf('— Contrat « THS » —'));
+    verifier('U — un onglet d\'en-têtes seuls : ⚠ « ne porte aucun plan », pas de ✓, et rien ne l\'envoie archiver',
+      /⚠ L'onglet ne porte aucun plan \(en-têtes seuls\) : y importer l'export GATES \(menu Suivi FWD → Importer les exports GATES et SEE…\) ou le coller en A1\./.test(partHDK) &&
+      !/✓ \d+ colonnes, 0 plans/.test(partHDK) && !/Archiver le relevé/.test(partHDK), partHDK);
+    verifier('U — le paquet mesuré est celui que la page ouvre : THS, le premier qui porte des plans',
+      /✓ Paquet envoyé à la page : \d+ Ko \(contrat « THS », le premier qui porte des plans ; les autres se chargent à la demande\)/.test(diag) &&
+      c.getDonneesPourClient().contrat === 'THS', (diag.match(/[^\n]*Paquet envoyé[^\n]*/) || [''])[0]);
+  }
+
+  /* V — l'ancienneté archivée lit les dates telles qu'une feuille française
+     les montre (« 16/07/2020 ») : plus aucun plan daté dans « — ». */
+  {
+    const g = feuilleGates(186);
+    const cl = new Classeur([new Feuille('HDK', g.valeurs, false, g.fusions)]);
+    const c = chargerServeur(cl, {});
+    const compte = c.compterAvancements('HDK');
+    const anc = compte.groupes._anciennete || {};
+    const totalAnc = Object.keys(anc).reduce((s, k) => s + anc[k].total, 0);
+    verifier('V — relevé de l\'export GATES (dates « JJ/MM/AAAA ») : aucun plan daté dans « — », tous rangés par ancienneté',
+      !!c.construireModele('HDK').cleDate && !anc['—'] && totalAnc === compte.total && Object.keys(anc).length >= 1, JSON.stringify(anc));
+    const am = (v, md) => JSON.stringify(c.anneeEtMois(v, md));
+    verifier('V — même règle que la page : jour d\'abord, ISO, mois/jour quand la colonne l\'est, l\'illisible écarté',
+      am('16/07/2020') === '{"annee":2020,"mois":7}' && am('2020-07-16 10:42') === '{"annee":2020,"mois":7}' &&
+      am('03/04/2020') === '{"annee":2020,"mois":4}' && am('03/04/2020', true) === '{"annee":2020,"mois":3}' &&
+      am('07/16/2020') === '{"annee":2020,"mois":7}' && am('16.07.20') === '{"annee":2020,"mois":7}' &&
+      am('31/13/2020') === 'null' && am('') === 'null' && am('à préciser') === 'null');
+  }
+
+  /* LOCK — les gestes qui écrivent l'historique passent un à un : le verrou
+     du document, pris une fois par geste ; refusé, rien n'est écrit, et on
+     le dit. */
+  {
+    const cl = fabriquerHT(), c = chargerServeur(cl, {});
+    vm.runInContext('var __prises = 0;', c);
+    const prises = () => vm.runInContext('__prises', c);
+    verrouAccorde(c);
+    c.enregistrerInstantaneHebdo();
+    const p1 = prises();
+    c.importArchiverReleve(c.ouvrirJetonImport_(), 'HDK');
+    const p2 = prises();
+    verifier('LOCK — l\'archivage (deux contrats) prend le verrou une seule fois, l\'import aussi : pas de verrou dans le verrou',
+      p1 === 1 && p2 === 2, p1 + ' / ' + p2);
+    const histo = () => JSON.stringify([c.getHistorique(cl, 'HDK'), c.getHistorique(cl, 'THS')].map(h => h.map(r => [r.semaine, r.total])));
+    const avant = histo();
+    verrouRefuse(c);
+    const MOT_VERROU = /un autre geste écrit en ce moment dans l'historique de ce classeur \(l'archivage du vendredi, un import ou le menu, lancé au même moment\) : l'historique n'est pas touché\. Relancer dans une minute\./;
+    let refusHebdo = '';
+    try { c.enregistrerInstantaneHebdo(); } catch (err) { refusHebdo = String(err.message || err); }
+    verifier('LOCK — verrou pris ailleurs : l\'archivage de la semaine le dit (« Relevé S40 non archivé : … »)',
+      /^Relevé S\d+ non archivé : /.test(refusHebdo) && MOT_VERROU.test(refusHebdo), refusHebdo);
+    const parImport = c.importArchiverReleve(c.ouvrirJetonImport_(), 'HDK');
+    verifier('LOCK — par la fenêtre d\'import : refus rendu tel quel, l\'import reste fait',
+      parImport.ok === false && MOT_VERROU.test(parImport.message), JSON.stringify(parImport));
+    cl.setActiveSheet(cl.getSheetByName('HDK'));
+    const passee = c.archiverPourSemaine_(cl, 'HDK', dite20(semaineIl(c, 7)));
+    verifier('LOCK — une semaine passée : « Relevé S39 non archivé : un autre geste… »',
+      passee.ok === false && /^Relevé S\d+ non archivé : un autre geste/.test(passee.message), passee.message);
+    c.__confirmations.push('YES');
+    const a0 = c.__alertes.length;
+    const sup = c.supprimerDernierReleve();
+    verifier('LOCK — la suppression : « Relevé S40 non supprimé : un autre geste… », rien de retiré',
+      sup === null && /^Relevé S\d+ non supprimé : un autre geste/.test(c.__alertes[c.__alertes.length - 1]) && c.__alertes.length === a0 + 2,
+      c.__alertes.slice(a0).join(' | '));
+    verifier('LOCK — et l\'historique n\'a pas bougé', histo() === avant);
+  }
+
+  /* PRIV — la page, ouverte par toute l'organisation, atteint par
+     google.script.run toute fonction dont le nom ne finit pas par « _ ».
+     Celles qu'elle n'appelle pas, et qui écrivent ou ne servent qu'au
+     Diagnostic, sont privées ; celles que la page, la fenêtre d'import, le
+     menu et le déclencheur appellent restent publiques. */
+  {
+    const c = chargerServeur(fabriquerHT(), {});
+    const privees = ['marquerDonneesModifiees', 'resumeConsultations', 'archiverContrat', 'archiverPourSemaine', 'deposer'];
+    verifier('PRIV — ' + privees.join(', ') + ' : hors de portée de la page (suffixe « _ »)',
+      privees.every(n => typeof c[n] === 'undefined' && typeof c[n + '_'] === 'function'),
+      privees.filter(n => typeof c[n] !== 'undefined').join(', '));
+    const source = fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8');
+    const fenetre = [];
+    source.replace(/appeler(?:AvecReprise)?\('([A-Za-z_]+)'/g, (m, n) => { fenetre.push(n); return m; });
+    const modele = fs.readFileSync(path.join(__dirname, 'Index.modele.html'), 'utf8');
+    const page = ['getDonneesCompactes', 'noterConsultation'].filter(n => modele.indexOf('.' + n + '(') !== -1);
+    c.onOpen();
+    const publiques = fenetre.concat(page, c.__menu, ['enregistrerInstantaneHebdo', 'doGet', 'doPost', 'onOpen', 'onEdit']);
+    verifier('PRIV — ce que la page, la fenêtre d\'import, le menu et le déclencheur appellent reste public',
+      fenetre.length >= 7 && page.length === 2 && publiques.every(n => !/_$/.test(n) && typeof c[n] === 'function'),
+      publiques.filter(n => /_$/.test(n) || typeof c[n] !== 'function').join(', ') || fenetre.join(', '));
+  }
+
+  // =================================================================
   /* La seconde base : rien tant que CONFIG.RAPPROCHEMENT.FEUILLE est vide.
      Nommée, l'onglet est lu (en-tête = la ligne qui porte la référence,
      sinon la première non vide) et le paquet porte la description que la
@@ -1393,14 +1612,14 @@ function serveurSur(valeurs, proprietes, fichiers) {
 
   // =================================================================
   /* Le dépôt automatique : un script envoie un extract à l'application web
-     (doPost → deposer). Refusé tant que la configuration n'a pas de secret,
+     (doPost → deposer_). Refusé tant que la configuration n'a pas de secret,
      refusé sans le bon secret, refusé vers un onglet d'historique ; sinon
      l'onglet est vidé et réécrit, et le relevé de la semaine archivé pour ce
      contrat si on le demande. */
   section('Dépôt automatique (doPost)');
   const depotFerme = construire({ lignes: 12, historique: false, sortie: 'apercu-depot.html' });
   const cD = depotFerme.contexte;
-  const envoi = (ctx, corps) => ctx.deposer(typeof corps === 'string' ? corps : JSON.stringify(corps));
+  const envoi = (ctx, corps) => ctx.deposer_(typeof corps === 'string' ? corps : JSON.stringify(corps));
   verifier('par défaut, aucun secret : tout dépôt est refusé, et le message le dit',
     envoi(cD, { secret: '', onglet: 'Données', lignes: [] }).ok === false &&
     /Dépôt désactivé/.test(envoi(cD, { secret: 'x', onglet: 'Données', lignes: [] }).message));
@@ -1501,8 +1720,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
   /* MAX_LIGNES à zéro ferme le dépôt : il ne doit pas rouvrir en grand. */
   const ferme = construire({ lignes: 8, historique: false, config: { DEPOT: { SECRET: S, MAX_LIGNES: 0 } }, sortie: 'apercu-depot.html' });
   verifier('MAX_LIGNES à zéro ferme le dépôt au lieu de revenir à la valeur par défaut',
-    /Trop de lignes : 1 \(au plus 0\)/.test(ferme.contexte.deposer(JSON.stringify({ secret: S, onglet: 'Données', lignes: [['a']] })).message),
-    ferme.contexte.deposer(JSON.stringify({ secret: S, onglet: 'Données', lignes: [['a']] })).message);
+    /Trop de lignes : 1 \(au plus 0\)/.test(ferme.contexte.deposer_(JSON.stringify({ secret: S, onglet: 'Données', lignes: [['a']] })).message),
+    ferme.contexte.deposer_(JSON.stringify({ secret: S, onglet: 'Données', lignes: [['a']] })).message);
   fs.unlinkSync(path.join(__dirname, '..', 'apercu-depot.html'));
 
   // =================================================================

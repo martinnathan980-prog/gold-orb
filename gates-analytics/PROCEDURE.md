@@ -77,7 +77,20 @@ vendredi). La page du tableau de bord ne modifie rien. »
 Ce qui les distingue : hors du classeur, `SpreadsheetApp.getUi()` lève.
 L'archivage du vendredi, lui, passe : son déclencheur se reconnaît à son
 identifiant (`triggerUid`), qui doit être celui d'un déclencheur du projet.
-Le dépôt automatique (§ 15) garde son propre verrou, le secret.
+Le dépôt automatique (§ 15) garde son propre verrou, le secret. Et ce que ni
+la page, ni la fenêtre d'import, ni le menu n'appellent — vider le cache
+(`marquerDonneesModifiees_`), écrire un relevé (`archiverContrat_`,
+`archiverPourSemaine_`), déposer sans passer par `doPost` (`deposer_`), les
+consultations du Diagnostic (`resumeConsultations_`) — porte le suffixe
+« _ » : `google.script.run` ne l'atteint pas du tout.
+
+Les gestes qui écrivent l'historique (l'archivage du vendredi ou du menu,
+une semaine passée, la suppression, l'import, le dépôt) passent **un à un**,
+sous le verrou du document : sans lui, le vendredi et un import lancés au
+même moment pouvaient écrire deux relevés pour la même semaine. Pas obtenu
+en trente secondes, rien n'est écrit, et le message le dit (« un autre geste
+écrit en ce moment dans l'historique de ce classeur… Relancer dans une
+minute »).
 
 ## 3. Les contrats : un onglet visible par contrat
 
@@ -327,9 +340,10 @@ rangé sous le nom du contrat, ne bouge pas.
 S40 pour les contrats importés » est cochée (elle l'est, et n'apparaît
 qu'avec un export GATES dans la liste) : pour chaque export GATES importé, et
 pour lui seul, un appel à part (`importArchiverReleve`, sous le verrou du
-document, par `archiverContrat`), avec les garde-fous du menu — l'export
-d'une semaine déjà archivée qui écraserait un relevé différent, un
-historique orphelin, un onglet sans plan. Un refus revient comme tel, en ⚠ :
+document, par `archiverContrat_`), avec les garde-fous du menu — l'export
+d'une semaine déjà archivée qui écraserait un relevé différent, ou ferait
+reculer les plans depuis le dernier relevé, un historique orphelin, un
+onglet sans plan. Un refus revient comme tel, en ⚠ :
 l'import, lui, est fait. Renvoyé après une panne de réseau, l'appel ne double
 rien (il remplace la ligne de sa semaine). Sans colonne suivie, l'archivage
 n'est pas tenté.
@@ -382,8 +396,11 @@ Un classeur d'avant les contrats, qui porte encore l'ancien onglet
 **`Historique_FWD`** tout court, continue de s'en servir tant qu'il n'a qu'un
 seul contrat : rien n'est renommé, rien n'est reconstruit. Dès qu'un second
 onglet de contrat apparaît, cet ancien onglet n'appartient plus à personne ;
-le **Diagnostic** le signale, et il suffit de le renommer
-`Historique_FWD_<nom>` pour rendre ses relevés au contrat qui les a produits.
+la **page** (au-dessus de la barre) et le **Diagnostic** le signalent, et il
+suffit de le renommer `Historique_FWD_<nom>` (`Historique_FWD_HDK`) pour
+rendre ses relevés au contrat qui les a produits. D'ici là, un contrat sans
+historique ne s'archive pas : le vendredi ouvrait sinon `Historique_FWD_HDK`
+à côté, l'historique coupé en deux et le renommage devenu impossible.
 
 Pour consulter un onglet d'historique : clic droit sur un onglet → *Afficher
 les feuilles masquées*. Le remasquer ensuite n'est pas obligatoire : un onglet
@@ -981,6 +998,13 @@ manquantes : l'onglet temporaire est retiré, l'ancienne base reste intacte.
 Pour un export GATES, les cellules fusionnées de la ligne des groupes sont
 recréées sur l'onglet temporaire **avant** l'échange, et l'historique du
 contrat, nommé d'après l'onglet, ne bouge pas.
+Avant l'échange aussi, la colonne suivie (`CONFIG.COLONNE_FWD`) est cherchée
+dans l'onglet temporaire comme la page la chercherait (`colonneSuivieLue_`) :
+absente là où l'onglet actuel l'a — l'export d'un autre contrat, un `.csv`
+sans sa ligne de groupes —, rien n'est échangé, l'onglet temporaire s'en va,
+la fenêtre dit « Colonne suivie absente de cet export… L'ancien onglet est
+intact ». Un onglet qui ne la lisait déjà pas se remplace comme avant, avec
+l'avertissement.
 Un appel qui échoue en route (classeur lent, réseau) est renvoyé deux fois,
 après deux puis six secondes — un lot s'écrit toujours aux mêmes lignes, le
 renvoyer ne double rien ; les refus du serveur (« a disparu », la limite, la

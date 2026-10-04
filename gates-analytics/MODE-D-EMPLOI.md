@@ -56,7 +56,8 @@ livraison d'avant suffit à laisser la page blanche.
 3. Vérifier : **en bas de la page, « Livraison xxxxxxx »** — le numéro que je
    donne avec les fichiers. (Quand je ne corrige que `Code`, la livraison ne
    change pas : on ne recolle que `Code`.) Suivi FWD → **Diagnostic** le confirme :
-   « ✓ Livraison xxxxxxx : Code, Index, Styles et Javascript concordent ».
+   « ✓ Livraison xxxxxxx : Code, Index, Styles et Javascript concordent, et
+   sont entiers. »
 4. **Un nouvel article du menu Suivi FWD** n'apparaît qu'une fois le
    classeur rechargé : revenir à l'onglet du classeur, **F5**, attendre dix
    secondes.
@@ -113,8 +114,12 @@ pour les suivants, **+** en bas à gauche, puis renommer de même. Cellule
 pour 138 colonnes). Un onglet resté vide n'est pas pris pour un contrat.
 
 Ce que la page a compris de l'extract se lit dans **Suivi FWD → Diagnostic**
-(les colonnes reconnues, le nombre de plans, la ligne « Avancement FWD :
-colonne « Avancement Définition Electrique », groupe « HDK AA 011 » »).
+(les colonnes reconnues, le nombre de plans, la ligne « ✓ Avancement FWD :
+colonne « Avancement Définition Electrique », groupe « HDK AA 011 » — celle
+de CONFIG.COLONNE_FWD »). Un onglet qui n'a que ses en-têtes y est marqué
+« ⚠ L'onglet ne porte aucun plan (en-têtes seuls) : y importer l'export
+GATES (menu Suivi FWD → Importer les exports GATES et SEE…) ou le coller en
+A1. »
 **Envoyez-moi ce texte** : c'est lui qui me dit si le modèle de colonnes
 tombe juste. Le texte se copie à la souris dans la boîte ; s'il est trop
 long, il est aussi dans **Extensions → Apps Script → Exécutions**, dernière
@@ -152,6 +157,16 @@ groupes (« THS AA … » → `THS`), et range le nouvel onglet après les autre
 À la main : un **nouvel onglet** nommé du contrat (`THS`), l'export collé en
 A1. Dans la page, un sélecteur **Contrat** apparaît dans le bandeau du haut
 dès qu'il y a deux onglets ; il passe de l'un à l'autre sans recharger.
+
+Un classeur commencé avec un seul contrat garde parfois son historique dans
+l'ancien onglet masqué `Historique_FWD`, sans nom de contrat. Dès le
+deuxième contrat, cet onglet n'est plus celui de personne : la page le dit
+au-dessus de la barre (« L'ancien onglet d'historique « Historique_FWD »
+(12 relevés) n'est rattaché à aucun contrat… »), le Diagnostic aussi, et
+l'archivage des contrats qui n'ont pas encore d'historique est refusé tant
+qu'il n'est pas rattaché — pour ne pas couper l'historique en deux. Le
+geste : Affichage → Onglets masqués, renommer `Historique_FWD` en
+`Historique_FWD_HDK` (le nom du contrat qui a produit ces relevés).
 
 ## 4. Chaque semaine : importer les exports, le relevé suit
 
@@ -214,6 +229,10 @@ archivage). Importer de nouveau dans la même semaine **remplace** la ligne
 de la semaine, il n'en ajoute pas une seconde. Si l'archivage refuse
 (l'export importé est celui d'une semaine déjà archivée, la colonne suivie
 est introuvable…), la ligne du fichier le dit en ⚠ — l'import, lui, est fait.
+Seule exception : un export où la page **ne trouverait plus** la colonne
+suivie que l'onglet actuel a (un export d'un autre contrat, un `.csv` sans
+sa ligne de groupes) ne remplace rien — l'ancien onglet reste, la ligne le
+dit en ✗.
 
 **À la main** (sans la fenêtre) : dans l'onglet de chaque contrat, **Ctrl+A**,
 **Suppr**, cliquer **A1**, **Ctrl+V** de l'export ouvert dans Excel, puis
@@ -222,7 +241,10 @@ est introuvable…), la ligne du fichier le dit en ⚠ — l'import, lui, est fa
 **tous les contrats d'un coup**.
 
 Une erreur de manipulation (mauvais extract importé ou collé) : **Suivi FWD →
-Supprimer le relevé de cette semaine**, puis importer le bon (case
+Supprimer le relevé de cette semaine** — une boîte demande d'abord
+« Supprimer le relevé S39 de « HDK », « THS » ? » (seuls les contrats qui ont
+un relevé cette semaine sont nommés) ; **Non** ne touche à rien —, puis
+importer le bon (case
 « Archiver » cochée), ou le recoller et archiver de nouveau. Pour vérifier
 après coup : le pied du tableau de bord (« 3 relevés archivés ») ou le
 Diagnostic (« Relevés archivés : 3 »).
@@ -283,7 +305,11 @@ passée dans un **nouvel** onglet (« HDK S39 ») est refusé : ce serait un
 nouveau contrat — c'est dans l'onglet `HDK` lui-même qu'il va.
 Et si l'étape 4 est oubliée, l'archivage de la semaine en cours (celui du
 vendredi compris) **refuse** d'écraser le bon relevé avec l'export
-rattrapé, et le dit.
+rattrapé, et le dit. Il refuse aussi quand la semaine en cours n'a pas
+encore de relevé : archivé pour elle, l'export rattrapé ferait reculer tous
+les plans qui ont bougé depuis (« … porte le même export que le relevé S38,
+alors que le relevé S39, plus récent, est différent… »). Une semaine où rien
+n'a bougé, elle, s'archive normalement.
 
 ## 5. La seconde base, SEE : un onglet par contrat
 
@@ -530,11 +556,12 @@ onglet, et ce qui manque. Puis :
 | En tête : « La page n'a pas pu s'afficher. Une erreur l'a arrêtée » | Une panne de la page elle-même | M'envoyer une capture du cadre (il ne cite aucune valeur du classeur) : le « Détail » me dit où chercher |
 | En bas de la page, la livraison n'est pas celle que je vous ai donnée | Le lien `…/exec` sert encore l'ancienne version déployée | Déployer → Gérer les déploiements → ✏️ → Nouvelle version → Déployer |
 | Une page « Le tableau de bord ne peut pas s'ouvrir : les fichiers collés ne tiennent pas ensemble » | Un fichier manque au projet (`Index`, `Styles` ou `Javascript`) | Elle nomme le fichier : + → HTML, le nommer exactement, y coller le `.txt` |
-| Le Diagnostic dit « Javascript : 213 307 caractères » alors que le `.txt` en fait 300 000 | Normal : Apps Script compte les fichiers sans leurs commentaires | Rien à faire, tant qu'il dit « ✓ … concordent, et sont entiers » |
+| Le Diagnostic dit « ✓ Fichier « Javascript » : 213307 caractères » alors que le `.txt` en fait 300 000 | Normal : Apps Script compte les fichiers sans leurs commentaires | Rien à faire, tant qu'il dit « ✓ … concordent, et sont entiers » |
 | « Le fichier Javascript contient deux copies » | Collé sans tout effacer (le neuf au-dessus de l'ancien) | `Javascript` : Ctrl+A, Suppr, coller, Ctrl+S |
 | Au-dessus de la barre : « L'onglet d'historique « Historique_FWD_… » n'est rattaché à aucun contrat » | Un onglet de contrat renommé : ses relevés sont restés sous l'ancien nom. L'archivage est refusé d'ici là | Afficher les onglets masqués, renommer l'historique comme la page l'indique |
+| Au-dessus de la barre : « L'ancien onglet d'historique « Historique_FWD » … n'est rattaché à aucun contrat » | Un deuxième contrat a été ajouté à un classeur qui n'en avait qu'un : l'ancien historique, sans nom de contrat, n'est plus celui de personne. L'archivage du contrat sans historique est refusé d'ici là | Afficher les onglets masqués, renommer `Historique_FWD` en `Historique_FWD_HDK` (le contrat qui a produit ces relevés), comme la page l'indique |
 | « La colonne … est vide sur les N plans » | L'export importé ou collé n'a pas cette colonne remplie | Réimporter (ou recoller) un export complet ; l'archivage est refusé si la semaine d'avant en avait des valeurs |
-| « L'onglet « THS » ne porte aucun plan (en-têtes seuls) » | Un onglet préparé d'avance | Y importer (ou coller) l'export du contrat ; en attendant, il n'est pas archivé |
+| « L'onglet « THS » ne porte aucun plan (en-têtes seuls) » (dans le Diagnostic : « ⚠ L'onglet ne porte aucun plan (en-têtes seuls) : y importer l'export GATES… ») | Un onglet préparé d'avance | Y importer (ou coller) l'export du contrat ; en attendant, il n'est pas archivé |
 | En bas : « Chiffres lus dans le classeur le vendredi… » | La page est ouverte depuis longtemps | Recharger la page avant de présenter |
 | « Le classeur est vide », avec une alerte | Aucun onglet de données lisible : l'alerte dit pourquoi | « Aucune colonne d'avancement FWD n'a été reconnue » : l'extract est collé sans sa ligne d'en-têtes ou sa ligne de groupes → le réimporter (Suivi FWD → Importer les exports GATES et SEE…), ou le recoller entier en A1 ; « Aucun onglet de données exploitable : « Feuille 1 » est vide » : aucun onglet ne contient encore d'extract → l'importer (§ 2) |
 | En haut : « Colonne « HDK AA 011 > Avancement Définition Electrique » introuvable » | L'extract n'a pas cette colonne sous ce groupe (groupe renommé, bloc absent) : la page n'en lit **aucune autre** à la place, rien n'est dit validé, l'archivage refuse | Diagnostic : il liste les groupes où l'intitulé existe ; corriger le nom du groupe dans `COLONNE_FWD` (partie avant « > ») s'il a changé dans l'export |
@@ -547,6 +574,7 @@ onglet, et ce qui manque. Puis :
 | Sur une ligne de la fenêtre, en ambre : « … choisir le contrat » ou « à vérifier » | La fenêtre n'a pas pu rattacher l'export à un contrat avec certitude : aucun plan en commun, plusieurs contrats nommés dans le fichier, ou un contrat nommé dont l'onglet n'a presque aucun plan en commun avec lui | Choisir le contrat dans la liste de la ligne — ou « Nouveau contrat… » pour l'export GATES d'un contrat que le classeur n'a pas encore |
 | La fenêtre dit « Deux fichiers vont dans l'onglet « HDK » » | Deux exports du même contrat dans la liste (celui de la semaine dernière, resté dans Téléchargements, souvent) | **Retirer** celui qui ne sert pas, ou changer son contrat |
 | La fenêtre dit « La ligne d'en-têtes de cet export GATES est en ligne 14 » | Le fichier a été retouché (des lignes ajoutées en haut) : la page ne trouverait pas ses en-têtes | Le retélécharger de GATES tel quel |
+| Sur une ligne de la fenêtre, ✗ « Colonne suivie absente de cet export… L'ancien onglet « HDK » est intact » | La page ne trouverait pas la colonne suivie dans cet export, alors qu'elle la trouve dans l'onglet actuel : un export d'un autre contrat ou d'un autre programme, ou un `.csv` sans sa ligne de groupes. Rien n'est remplacé, rien n'est archivé | Vérifier le contrat choisi sur la ligne ; importer l'export **Excel** (`.xlsx`) de GATES de ce contrat |
 | Après l'import d'un export GATES, ⚠ « … mais la colonne suivie est introuvable » | L'export n'a pas la colonne suivie sous son groupe — le plus souvent un `.csv`, qui perd les cellules fusionnées de la ligne des groupes ; rien n'est archivé | Importer l'export **Excel** (`.xlsx`) de GATES ; sinon, Diagnostic (ligne « Colonne … introuvable » ci-dessous) |
 | Après l'import, ⚠ « Relevé S40 non archivé : … » | L'import est fait, mais l'archivage a refusé, pour la raison qui suit (l'export est celui d'une semaine déjà archivée, un historique attend d'être rattaché…) | Faire ce que dit le message, puis Suivi FWD → Archiver le relevé de cette semaine |
 | La fenêtre d'import dit « ancien fichier Excel (.xls) » ou « navigateur trop ancien » | Un format qu'elle ne lit pas, ou un Chrome / Edge d'avant 2022 | Demander l'export en `.xlsx` ou `.csv` ; ou Fichier → Importer → « Insérer de nouvelles feuilles » (§ 5) ; ou mettre le navigateur à jour |
@@ -561,7 +589,8 @@ onglet, et ce qui manque. Puis :
 | Sous le graphique : « S41 : aucun changement depuis le relevé d'avant, plan par plan » | L'archivage (celui du vendredi, souvent) a repris l'export de la semaine d'avant — ou rien n'a vraiment bougé | Si un export plus récent existe : l'importer (case « Archiver » cochée), ou le recoller puis archiver : le relevé de la semaine est remplacé |
 | Deux relevés identiques alors que j'ai bien les deux exports | La semaine passée a été archivée avec l'export d'aujourd'hui | § 4, « Rattraper une semaine passée » : remettre l'export de la semaine passée (import, case « Archiver » décochée, ou collage), **Archiver l'onglet affiché pour une semaine passée…**, puis remettre l'export du jour et archiver |
 | « Geste refusé : il ne se lance que dans le classeur, menu Suivi FWD » | Quelqu'un a essayé d'archiver, supprimer ou couper l'archivage depuis la page (la console du navigateur) | Rien à faire : la page est en consultation, elle ne modifie rien. Ces gestes se font dans le classeur, menu Suivi FWD |
-| « l'onglet « HDK » porte le même export que le relevé S39 : le relevé S40 déjà archivé, différent, n'est pas écrasé » (ou un mail d'échec de Google le vendredi) | L'export de la semaine passée, rattrapé, est resté dans l'onglet : l'archiver pour la semaine en cours écraserait le bon relevé | Importer l'export du jour (case « Archiver » cochée), ou le recoller dans `HDK` puis Suivi FWD → Archiver le relevé de cette semaine |
+| « l'onglet « HDK » porte le même export que le relevé S39 : le relevé S40 déjà archivé, différent, n'est pas écrasé » — ou « … que le relevé S38, alors que le relevé S39, plus récent, est différent » (ou un mail d'échec de Google le vendredi) | L'export d'une semaine passée, rattrapé, est resté dans l'onglet : l'archiver pour la semaine en cours écraserait le bon relevé, ou ferait reculer les plans qui ont bougé depuis | Importer l'export du jour (case « Archiver » cochée), ou le recoller dans `HDK` puis Suivi FWD → Archiver le relevé de cette semaine |
+| « … un autre geste écrit en ce moment dans l'historique de ce classeur … : l'historique n'est pas touché » | Deux archivages en même temps (celui du vendredi et un import, ou le menu) : le second attend trente secondes, puis renonce plutôt que d'écrire deux relevés pour la même semaine | Relancer dans une minute (menu Suivi FWD → Archiver le relevé de cette semaine) |
 | THS n'a pas d'échéance | Voulu : les jalons livrés sont ceux de HDK | Me donner les dates de THS quand elles existent : je les ajoute dans `CONFIG.JALONS` avec `contrat: 'THS'` |
 
 Et dans tous les cas : **le texte du Diagnostic** (copié à la souris dans la

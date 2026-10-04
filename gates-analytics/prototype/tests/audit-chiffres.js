@@ -145,7 +145,11 @@ let totalEcarts = 0;
         ok(lieu + ' : phrase « X sur Y validés »', new RegExp('^' + r.etats.termine + ' sur ' + r.total + ' plans validés').test(r.phrase.replace(/(\d) (\d)/g, '$1$2')), r.phrase);
         ok(lieu + ' : série de la courbe', r.serie === r.serieAff, r.serie + '  ≠  ' + r.serieAff);
         const mR = r.leg.match(/au rythme tenu \(([\d,]+)\/sem\.\)/), mF = r.survols.match(/ : fin S(\d+) · /);
-        if (r.rythme !== null && r.etats.termine < r.total) {
+        /* Rien de validé depuis le premier relevé (débrief 20) : pas de
+           projection, et la légende le dit en mots au lieu de « 0,0/sem. ». */
+        if (r.rythme !== null && r.rythme <= 0 && r.etats.termine < r.total) {
+          ok(lieu + ' : rythme tenu nul', !mR && /rien de validé depuis le premier relevé/.test(r.leg), JSON.stringify([r.rythme, r.leg]));
+        } else if (r.rythme !== null && r.etats.termine < r.total) {
           ok(lieu + ' : rythme tenu', !!mR && Math.abs(Number(mR[1].replace(',', '.')) - Math.round(r.rythme * 10) / 10) < 0.051, JSON.stringify([r.rythme, mR && mR[1]]));
           if (r.fin) ok(lieu + ' : fin estimée', !!mF && Number(mF[1]) === Number(r.fin.slice(6)), JSON.stringify([r.fin, mF && mF[1]]));
         }

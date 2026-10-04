@@ -890,7 +890,7 @@ const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now
     const ctxColle = serveur(colle);
     const importe = new Classeur([ongletGates('HDK', gates(40)), new Feuille('SEE HDK', [['NAME', 'SOL.', 'Cust.V'], ['X', '001', 'A']])]);
     const ctx = serveur(importe);
-    ctx.archiverContrat(importe, { id: 'HDK', nom: 'HDK' }, semaineDe(ctx, 7));
+    ctx.archiverContrat_(importe, { id: 'HDK', nom: 'HDK' }, semaineDe(ctx, 7));
     const histoAvant = JSON.stringify(importe.getSheetByName('Historique_FWD_HDK').valeurs);
     const place = nomsOnglets(importe).indexOf('HDK');
     const page = await fenetre(ctx);
@@ -989,9 +989,14 @@ const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now
     const histo = JSON.stringify(c.getSheetByName('Historique_FWD_HDK').valeurs);
     page.__appels = [];
     r = await importer(page, 'export.csv', Buffer.from(csvGates(g, { sansGroupes: true }), 'utf8'));
-    verifier('sans ligne de groupes : importé, mais la colonne suivie est introuvable — la fenêtre le dit, conseille l’export Excel, et n’archive rien',
-      /avertissement/.test(r.etat.classe) && /colonne suivie est introuvable/.test(r.etat.texte) && /importer plutôt l’export Excel \(\.xlsx\) de GATES/.test(r.etat.texte) &&
-      page.__appels.indexOf('importArchiverReleve') === -1 && JSON.stringify(c.getSheetByName('Historique_FWD_HDK').valeurs) === histo, r.etat.texte);
+    /* Sans ligne de groupes, la page ne trouverait plus la colonne suivie, que
+       « HDK » a : l'export ne le remplace pas (débrief 20). La ligne du
+       fichier disait déjà qu'un .csv ne garde pas les fusions. */
+    const avantCsv = JSON.stringify(c.getSheetByName('HDK').valeurs);
+    verifier('sans ligne de groupes : la page n’y trouverait plus la colonne suivie, que « HDK » a — refusé, l’ancien intact, rien d’archivé ; la ligne du fichier conseillait l’export Excel',
+      /erreur/.test(r.etat.classe) && /Colonne suivie absente de cet export/.test(r.etat.texte) && /L’ancien onglet « HDK » est intact/.test(r.etat.texte) &&
+      /\.csv ne garde pas les cellules fusionnées/.test(r.ligne.lu) && JSON.stringify(c.getSheetByName('HDK').valeurs) === avantCsv && sansImport(c) &&
+      page.__appels.indexOf('importArchiverReleve') === -1 && JSON.stringify(c.getSheetByName('Historique_FWD_HDK').valeurs) === histo, r.etat.texte + ' / ' + r.ligne.lu);
     await page.close();
   }
 
@@ -1173,8 +1178,8 @@ const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now
     const c = new Classeur([ongletGates('HDK', gates(40)), ongletGates('THS', gates(30, { prefixe: 'THS' }))]);
     const ctx = serveur(c);
     const semaine = semaineDe(ctx), precedente = semaineDe(ctx, 7);
-    ctx.archiverContrat(c, { id: 'HDK', nom: 'HDK' }, precedente);
-    ctx.archiverContrat(c, { id: 'THS', nom: 'THS' }, precedente);
+    ctx.archiverContrat_(c, { id: 'HDK', nom: 'HDK' }, precedente);
+    ctx.archiverContrat_(c, { id: 'THS', nom: 'THS' }, precedente);
     const thsAvant = JSON.stringify(c.getSheetByName('Historique_FWD_THS').valeurs);
     let page = await fenetre(ctx);
     let r = await importer(page, 'export_48.xlsx', xlsxGates(gates(40, { avancement: (i, v) => i < 10 ? 'VALIDATED' : v })));
@@ -1214,7 +1219,7 @@ const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now
   {
     const c = new Classeur([ongletGates('HDK', gates(40))]);
     const ctx = serveur(c);
-    ctx.archiverContrat(c, { id: 'HDK', nom: 'HDK' }, semaineDe(ctx, 7));
+    ctx.archiverContrat_(c, { id: 'HDK', nom: 'HDK' }, semaineDe(ctx, 7));
     const avantOnglet = JSON.stringify(c.getSheetByName('HDK').valeurs), avantFusions = JSON.stringify(c.getSheetByName('HDK').fusions);
     const avantHisto = JSON.stringify(c.getSheetByName('Historique_FWD_HDK').valeurs);
     const page = await fenetre(ctx, rapide);
@@ -1239,6 +1244,28 @@ const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now
     verifier('la fenêtre fermée en plein envoi : l’onglet temporaire « HDK (import …) », qui porte pourtant un export, n’est pas un contrat — l’archivage du vendredi ne lui ouvre pas d’historique',
       ctx.listerContrats(c).map(x => x.id).join() === 'HDK' && !c.getSheets().some(f => /^Historique_FWD_HDK \(import/.test(f.getName())) && ctx.getHistorique(c, 'HDK').length === 2,
       nomsOnglets(c).join(', '));
+  }
+
+  // =================================================================
+  section('Un export sans la colonne suivie ne remplace pas un onglet qui l’a');
+  {
+    const c = new Classeur([ongletGates('HDK', gates(40)), ongletGates('XYZ', gates(30, { prefixe: 'XYZ', groupe: 'XYZ' }))]);
+    const ctx = serveur(c);
+    const avant = JSON.stringify(c.getSheetByName('HDK').valeurs), avantFusions = JSON.stringify(c.getSheetByName('HDK').fusions);
+    const page = await fenetre(ctx);
+    /* Un export d'un autre programme (blocs « XYZ AA … ») choisi pour HDK : la page n'y trouverait pas « HDK AA 011 › … ». */
+    const r = await importer(page, 'export_autre.xlsx', xlsxGates(gates(40, { groupe: 'XYZ' })), { contrat: 'HDK' });
+    verifier('un export où la page ne trouverait pas la colonne suivie ne remplace pas « HDK », qui l’a : refusé, dit pourquoi, l’ancien intact, ses fusions aussi, pas d’onglet temporaire, rien d’archivé',
+      /erreur/.test(r.etat.classe) && /Colonne suivie absente de cet export/.test(r.etat.texte) && /L’ancien onglet « HDK » est intact/.test(r.etat.texte) &&
+      !/peut-être allé au bout/.test(r.etat.texte) && JSON.stringify(c.getSheetByName('HDK').valeurs) === avant &&
+      JSON.stringify(c.getSheetByName('HDK').fusions) === avantFusions && sansImport(c) && page.__appels.indexOf('importArchiverReleve') === -1,
+      r.etat.texte + ' / ' + nomsOnglets(c).join(', '));
+    /* Un onglet qui ne la lisait déjà pas (XYZ) : l'export de même forme le remplace, avec l'avertissement d'avant. */
+    const r2 = await importer(page, 'export_xyz.xlsx', xlsxGates(gates(30, { prefixe: 'XYZ', groupe: 'XYZ', avancement: () => 'VALIDATED' })), { contrat: 'XYZ' });
+    verifier('un onglet où la colonne suivie était déjà introuvable se remplace comme avant, avec l’avertissement : rien de mieux n’est perdu',
+      /introuvable/.test(r2.etat.texte) && !/Colonne suivie absente/.test(r2.etat.texte) && sansImport(c) &&
+      c.getSheetByName('XYZ').valeurs.slice(3).every(l => l[I_SUIVIE] === 'VALIDATED'), r2.etat.texte);
+    await page.close();
   }
 
   // =================================================================

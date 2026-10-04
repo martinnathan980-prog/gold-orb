@@ -6,7 +6,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '60e5a87';
+  var EDITION = 'e906173';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -2409,12 +2409,46 @@
     for (var i = 0; i < candidats.length; i++) if (total / candidats[i] <= 4.5) return candidats[i];
     return candidats[candidats.length - 1];
   }
+  /* L et la hauteur du tracé se refont à chaque dessin, à la largeur du
+     cadre (mesurerGraphique) : 980 n'est que la valeur d'avant mesure. */
   var L = 980, mG = 36, mD = 72, plotH = 176, ecart = 16, bandeH = 30, mBas = 34;
   var mHaut = 44, H = mHaut + plotH + ecart + bandeH + mBas;
   var HAUTEUR_ETIQUETTE = 23;   // un niveau de marqueurs (rayon 10) et son interligne
   var LARGEUR = L - mG - mD;
   var MAX_IDX = 104;                       // deux ans, ou un an au-delà d'aujourd'hui : voir chargerSource()
   var derniereAnalyse = null;
+  /* Largeur d'un mot du graphique (« fin … », « manque … », « aujourd'hui »),
+     en 11 px — la police des mots du dessin (svg.graphe text). Mesurée, pas
+     devinée : sur un cadre étroit, chaque pixel décide si le mot tient à
+     côté d'un trait. Tant que la police se charge encore, une marge de 8 %
+     (la police de secours n'a pas tout à fait la même chasse) ; à défaut de
+     mesure, 0,6 em par signe, plus large que tout. */
+  var mesureMots = null, policeAttendue = false, redessinPolices = false;
+  function largeurMot(mot, gras) {
+    try { if (!mesureMots) mesureMots = document.createElement('canvas').getContext('2d'); } catch (e) { mesureMots = null; }
+    if (!mesureMots) return String(mot).length * 6.6;
+    var police = (gras ? '500 ' : '') + '11px "IBM Plex Sans", sans-serif';
+    var chargee = true;
+    try { chargee = !document.fonts || document.fonts.check(police); } catch (e) { chargee = false; }
+    if (!chargee) policeAttendue = true;
+    mesureMots.font = police;
+    return Math.ceil(mesureMots.measureText(String(mot)).width * (chargee ? 1 : 1.08)) + 1;
+  }
+
+  /* Débrief 20 : le graphique se dessinait sur 980 unités puis se laissait
+     réduire — ses mots tombaient à 3,5 px sur un téléphone, à 7 px dans une
+     demi-fenêtre au bureau. Il se dessine désormais à la largeur réelle de
+     son cadre, une unité pour un pixel : les polices gardent leur taille.
+     Le redessin à chaque changement de taille de la fenêtre existait déjà.
+     La hauteur du tracé suit la largeur, dans des bornes : sur un
+     téléphone il ne devient pas plus haut que large, sur un grand écran il
+     garde à peu près la hauteur qu'il avait une fois agrandi. */
+  function mesurerGraphique() {
+    var w = $('zone-graphe').clientWidth;
+    L = w > 0 ? Math.max(280, Math.round(w)) : 980;
+    LARGEUR = L - mG - mD;
+    plotH = Math.min(200, Math.max(120, Math.round(L * 0.27)));
+  }
 
   function bornerFenetre() {
     var f = vue.fen;
@@ -2424,6 +2458,8 @@
 
   function rendreGraphique(liste) {
     bornerFenetre();
+    mesurerGraphique();
+    policeAttendue = false;
     var vg = rendreFiltreValeurGraphe();
     var vueSerie = serieAffichee();
     var pts = vueSerie.pts;
@@ -2433,7 +2469,9 @@
     var restants = total - atteint;
     var ryt = rythmes(pts);
     var vitesse = ryt ? ryt.central : 0;
-    var projIdx = semaineFin(atteint, total, vitesse);
+    /* Tout validé : rien à projeter. semaineFin rendrait la semaine en
+       cours, et la courbe dirait « fin S40 » sur un groupe déjà fini. */
+    var projIdx = restants > 0 ? semaineFin(atteint, total, vitesse) : null;
     /* Sous une valeur choisie (débrief 18), la courbe la suit : son compte,
        relevé après relevé, à sa couleur, sur une échelle à sa mesure. Le
        rythme, la fin estimée et l'échéance restent ceux des validés : ils
@@ -2507,11 +2545,23 @@
         places.push({ j: o.j, idx: o.idx, jx: jx, cx: cx, niveau: 0 });
         dernierCx = cx;
       });
+    /* Sur un cadre étroit, la rangée poussée vers la droite sortirait du
+       tracé et toucherait « 640 plans » : elle se resserre alors depuis le
+       bord droit, chaque numéro relié à sa semaine par son court trait. */
+    for (var q0 = places.length - 1; q0 >= 0; q0--) {
+      var borneCx = q0 === places.length - 1 ? L - mD - 10 : places[q0 + 1].cx - ESPACE_MARQUEURS;
+      if (places[q0].cx > borneCx) places[q0].cx = borneCx;
+    }
     /* Le mot « aujourd'hui » s'écrit à gauche de son trait, dans la même
-       rangée ; s'il y croiserait un numéro, il passe au-dessus. */
+       rangée ; s'il y croiserait un numéro, il passe au-dessus. Quand le
+       trait est trop près du bord gauche pour lui, il s'écrit à droite. */
     var niveauAuj = 0;
+    var motAuj = AUJ === semaineDAujourdhui() ? 'aujourd’hui' : 'dernier relevé';
+    var aujADroite = false;
     if (xAuj !== null) {
-      var motG = xAuj - 72, motD = xAuj - 4;
+      var wAuj = largeurMot(motAuj) + 6;
+      aujADroite = xAuj - wAuj < 2;
+      var motG = aujADroite ? xAuj + 4 : xAuj - wAuj, motD = aujADroite ? xAuj + wAuj : xAuj - 4;
       if (places.some(function (pl) { return pl.cx + 11 > motG && pl.cx - 11 < motD; })) niveauAuj = 1;
       places.push({ aujourdhui: true, jx: xAuj, niveau: niveauAuj });
     }
@@ -2572,6 +2622,63 @@
        passerait au-dessus d'un objectif qui n'est pas le sien : la légende
        donne son rythme requis et mène à son périmètre. */
     var surLaCourbe = !vVal && !!bilan && (bilan.domaine || '') === (vue.perimetre || '');
+    /* Où poser un mot sur la courbe sans qu'un trait le barre (débrief 20 :
+       « fin S8 » écrit en travers du pointillé du jalon 4). Parmi quelques
+       places candidates, la première qui ne croise ni le trait d'un jalon
+       ou du dernier relevé, ni un autre mot, ni une droite tracée, et qui
+       tient dans le cadre ; à défaut, celle qui gêne le moins. Un trait de
+       jalon pèse plus lourd qu'une droite : le fond du mot cache la droite,
+       mais un jalon caché sous « fin … » se lirait « fin = jalon ». */
+    var traitsX = places.map(function (pl) { return pl.jx; });
+    var droites = [], boites = [];
+    if (!vVal) boites.push({ g: L - mD + 6, d: L - mD + 10 + largeurMot(nb(total) + ' plans'), h: y(total) - 9, b: y(total) + 5 });
+    function coupe(bx, sg) {
+      var n = Math.max(20, Math.ceil(Math.max(Math.abs(sg[2] - sg[0]), Math.abs(sg[3] - sg[1])) / 3));
+      for (var t = 0; t <= n; t++) {
+        var px = sg[0] + (sg[2] - sg[0]) * t / n, py = sg[1] + (sg[3] - sg[1]) * t / n;
+        if (px > bx.g && px < bx.d && py > bx.h && py < bx.b) return true;
+      }
+      return false;
+    }
+    function gene(bx, dMax, gMin) {
+      var n = 0;
+      traitsX.forEach(function (tx) { if (tx > bx.g - 1 && tx < bx.d + 1) n += 10; });
+      droites.forEach(function (sg) { if (coupe(bx, sg)) n += 2; });
+      boites.forEach(function (o) { if (o.g < bx.d && bx.g < o.d && o.h < bx.b && bx.h < o.b) n += 20; });
+      if (bx.g < (gMin === undefined ? mG - 5 : gMin) || bx.d > dMax) n += 50;   // la boîte compte 3 px de fond de chaque côté
+      return n;
+    }
+    /* Une candidate : ses lignes (une ou deux), son point d'ancrage et sa
+       ligne de base. Sa boîte compte la marge du fond, 3 px tout autour.
+       dMax et gMin : jusqu'où elle peut aller à droite et à gauche. */
+    function placerMot(candidats, dMax, gMin) {
+      var meilleur = null;
+      candidats.forEach(function (c, k) {
+        var w = Math.max.apply(null, c.lignes.map(function (l) { return largeurMot(l, c.gras); }));
+        var g = c.ancre === 'end' ? c.x - w : c.ancre === 'middle' ? c.x - w / 2 : c.x;
+        c.boite = { g: g - 3, d: g + w + 3, h: c.base - 11, b: c.base + 4 + 13 * (c.lignes.length - 1) };
+        c.gene = gene(c.boite, dMax, gMin) + (c.malus || 0) + k * 0.01;
+        if (!meilleur || c.gene < meilleur.gene) meilleur = c;
+      });
+      boites.push(meilleur.boite);
+      return meilleur;
+    }
+    /* Sur deux lignes, un espace finit la première : le mot se lit d'un
+       tenant (« manque 176 ») pour un lecteur d'écran. */
+    function texteMot(c, attrs) {
+      return '\x3Ctext class="grad' + (attrs.cls ? ' ' + attrs.cls : '') + '" x="' + c.x.toFixed(1) + '" y="' + c.base.toFixed(1) + '" text-anchor="' + c.ancre + '"' + (attrs.plus || '') + '>' +
+        (attrs.titre || '') + (c.lignes.length > 1
+          ? c.lignes.map(function (l, k) { return '\x3Ctspan x="' + c.x.toFixed(1) + '"' + (k ? ' dy="13"' : '') + '>' + l + (k < c.lignes.length - 1 ? ' ' : '') + '\x3C/tspan>'; }).join('')
+          : c.lignes[0]) + '\x3C/text>';
+    }
+    /* Un fond plein sous le mot, pas seulement un liseré : le liseré
+       épouse les lettres et laissait passer, entre les mots, le pointillé
+       de la projection ou d'un jalon. Il déborde le mot de 3 px. */
+    function fondMot(c) {
+      return '\x3Crect class="fond-mot" x="' + c.boite.g.toFixed(1) + '" y="' + (c.boite.h + 1).toFixed(1) + '" width="' + (c.boite.d - c.boite.g).toFixed(1) +
+        '" height="' + (c.boite.b - c.boite.h - 1).toFixed(1) + '" rx="3" fill="var(--surface)"/>';
+    }
+
     /* Entre le dernier relevé et la semaine en cours, rien n'a été relevé :
        un trait plat, fin, avant que les projections ne partent d'aujourd'hui. */
     if (depart > AUJ && !vVal) {
@@ -2580,8 +2687,9 @@
       /* D'où partent les projections, dit sous le point : la semaine en
          cours, que le dernier relevé n'a pas encore rattrapée. */
       if (depart >= d0 && depart <= d1) {
-        horsClip.push('\x3Ctext class="grad repere-depart" x="' + (x(depart) + 3).toFixed(1) + '" y="' + (y(atteint) + 15).toFixed(1) +
-          '" text-anchor="start">aujourd\u2019hui\x3C/text>');
+        var cDep = placerMot([{ lignes: ['aujourd’hui'], x: x(depart) + 3, base: y(atteint) + 15, ancre: 'start' }], L - 2);
+        if (cDep.gene >= 10) horsClip.push(fondMot(cDep));
+        horsClip.push(texteMot(cDep, { cls: 'repere-depart' }));
       }
     }
     /* La droite « requis » monte de ce qui est terminé à ce que le jalon
@@ -2593,29 +2701,24 @@
       var cr = enRetard ? 'var(--alerte)' : 'var(--fait)';
       s.push('\x3Cpath d="M' + x(depart).toFixed(1) + ' ' + y(atteint).toFixed(1) + ' L' + x(prochain.i).toFixed(1) + ' ' + y(cible).toFixed(1) + '" fill="none" stroke="' + cr + '" stroke-width="1.6"/>');
       s.push('\x3Ccircle cx="' + x(prochain.i).toFixed(1) + '" cy="' + y(cible).toFixed(1) + '" r="3.4" fill="' + cr + '"/>');
+      droites.push([x(depart), y(atteint), x(prochain.i), y(cible)]);
     }
 
+    var finVisible = false;
     if (projIdx !== null && !vVal) {
-      s.push('\x3Cpath d="M' + x(depart).toFixed(1) + ' ' + y(atteint).toFixed(1) + ' L' + x(projIdx).toFixed(1) + ' ' + y(total).toFixed(1) +
+      var xP = x(projIdx), yP = y(total);
+      s.push('\x3Cpath d="M' + x(depart).toFixed(1) + ' ' + y(atteint).toFixed(1) + ' L' + xP.toFixed(1) + ' ' + yP.toFixed(1) +
              '" fill="none" stroke="var(--fait)" stroke-width="1.6" stroke-dasharray="5 4" opacity=".6"/>');
+      droites.push([x(depart), y(atteint), xP, yP]);
       if (projIdx >= d0 && projIdx <= d1) {
-        s.push('\x3Ccircle cx="' + x(projIdx).toFixed(1) + '" cy="' + y(total).toFixed(1) + '" r="3.4" fill="none" stroke="var(--fait)" stroke-width="1.6"/>');
-        // Sous le plafond plutot qu'au-dessus : au-dessus, elle tombait dans la
-        // bande des jalons et se superposait a leurs etiquettes. Près du bord
-        // droit, elle se range avant le point ; un liseré la garde lisible
-        // sur les traits des jalons.
-        var auBord = x(projIdx) > L - mD - 60;
-        var motFin = 'fin ' + semaineDite(projIdx);
-        var xFin = auBord ? x(projIdx) - 8 : Math.max(mG + 40, x(projIdx));
-        /* Un fond plein sous le mot, pas seulement un liseré : le liseré
-           épouse les lettres et laissait passer, entre les mots, le
-           pointillé de la projection ou d'un jalon. Sa largeur est estimée
-           large — 0,6 em par signe, plus que la moyenne de la police. */
-        var wFin = motFin.length * 6.6;
-        horsClip.push('\x3Crect class="fond-mot" x="' + ((auBord ? xFin - wFin : xFin - wFin / 2) - 3).toFixed(1) + '" y="' + (y(total) + 5).toFixed(1) +
-                      '" width="' + (wFin + 6).toFixed(1) + '" height="15" rx="3" fill="var(--surface)"/>');
-        horsClip.push('\x3Ctext class="grad" x="' + xFin.toFixed(1) + '" y="' + (y(total) + 16).toFixed(1) +
-                      '" text-anchor="' + (auBord ? 'end' : 'middle') + '">' + motFin + '\x3C/text>');
+        /* Le bout de la projection : un losange plein, du vert du réalisé.
+           Le petit cercle creux d'avant se confondait avec le numéro d'un
+           jalon hors périmètre, posé sur son trait à la hauteur du total —
+           on lisait « jalon 5 atteint ». */
+        s.push('\x3Cpath class="fin-projection" d="M' + xP.toFixed(1) + ' ' + (yP - 4.5).toFixed(1) + ' L' + (xP + 4.5).toFixed(1) + ' ' + yP.toFixed(1) +
+               ' L' + xP.toFixed(1) + ' ' + (yP + 4.5).toFixed(1) + ' L' + (xP - 4.5).toFixed(1) + ' ' + yP.toFixed(1) + ' Z" fill="var(--fait)" stroke="var(--surface)" stroke-width="1.2"/>');
+        boites.push({ g: xP - 5, d: xP + 5, h: yP - 5, b: yP + 5 });
+        finVisible = true;
       }
     }
     /* Ce qui manquerait le jour de l'échéance, au rythme tenu — le même
@@ -2623,14 +2726,44 @@
     if (bilan && surLaCourbe && enRetard && bilan.manque > 0 && prochain.i >= d0 && prochain.i <= d1) {
       var xj = x(prochain.i), y1 = y(Math.max(0, cible - bilan.manque)), y2 = y(cible);
       s.push('\x3Cline x1="' + xj.toFixed(1) + '" x2="' + xj.toFixed(1) + '" y1="' + y1.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="var(--alerte)" stroke-width="1" opacity=".45"/>');
-      /* Hors du cadre découpé, et à gauche du trait quand l'échéance tombe
-         au bord droit : sinon le mot était rogné. Un liseré de la couleur
-         du fond le garde lisible sur les courbes. */
-      var aGauche = xj > L - mD - 70;
-      horsClip.push('\x3Ctext class="grad manque-jalon" x="' + (aGauche ? xj - 7 : xj + 7).toFixed(1) + '" y="' + ((y1 + y2) / 2 + 4).toFixed(1) +
-        '"' + (aGauche ? ' text-anchor="end"' : '') + ' fill="var(--alerte)" font-weight="500"' +
-        ' stroke="var(--surface)" stroke-width="4" stroke-linejoin="round" paint-order="stroke">' +
-        '\x3Ctitle>Au rythme tenu, il manquerait ' + nb(bilan.manque) + ' plan' + (bilan.manque > 1 ? 's' : '') + ' le jour de l\u2019échéance\x3C/title>manque ' + nb(bilan.manque) + '\x3C/text>');
+      /* Hors du cadre découpé, à droite du trait, ou à gauche quand la
+         droite est prise — le bord du tracé, ou le trait d'un jalon voisin
+         (débrief 20 : « manque 176 » barré par les jalons 2 et 3 sur un
+         écran moyen). Un liseré de la couleur du fond le garde lisible sur
+         les courbes ; un fond plein quand un trait le croise malgré tout. */
+      var motManque = 'manque ' + nb(bilan.manque), baseManque = (y1 + y2) / 2 + 4;
+      /* Sur un cadre étroit, s'il ne tient d'aucun côté, il passe sur deux
+         lignes (« manque », « 176 »), plus étroites. */
+      var cMq = placerMot([{ lignes: [motManque], x: xj + 7, base: baseManque, ancre: 'start', gras: true },
+                           { lignes: [motManque], x: xj - 7, base: baseManque, ancre: 'end', gras: true },
+                           { lignes: ['manque', nb(bilan.manque)], x: xj + 7, base: baseManque - 6, ancre: 'start', gras: true, malus: 1 },
+                           { lignes: ['manque', nb(bilan.manque)], x: xj - 7, base: baseManque - 6, ancre: 'end', gras: true, malus: 1 }], L - mD);
+      if (cMq.gene >= 10) horsClip.push(fondMot(cMq));
+      horsClip.push(texteMot(cMq, { cls: 'manque-jalon',
+        plus: ' fill="var(--alerte)" font-weight="500" stroke="var(--surface)" stroke-width="4" stroke-linejoin="round" paint-order="stroke"',
+        titre: '\x3Ctitle>Au rythme tenu, il manquerait ' + nb(bilan.manque) + ' plan' + (bilan.manque > 1 ? 's' : '') + ' le jour de l’échéance\x3C/title>' }));
+    }
+    /* « fin S9 · mars 2027 » sous le plafond plutôt qu'au-dessus :
+       au-dessus, il tombait dans la rangée des jalons. Centré sous le
+       losange, à sa droite ou à sa gauche ; sinon sur deux lignes à sa
+       droite (« fin S9 », « mars 2027 »), ou en court (« fin S9 ») : la
+       semaine entière reste dans le survol de la légende. */
+    if (finVisible) {
+      var parts = semaineDite(projIdx).split(' · ');
+      var motLong = ['fin ' + semaineDite(projIdx)], court = ['fin ' + parts[0]];
+      var deux = parts.length > 1 ? ['fin ' + parts[0], parts[1]] : motLong;
+      var cFin = placerMot([
+        { lignes: motLong, x: xP, base: yP + 18, ancre: 'middle' },
+        { lignes: motLong, x: xP + 7, base: yP + 18, ancre: 'start' },
+        { lignes: motLong, x: xP - 7, base: yP + 18, ancre: 'end' },
+        { lignes: deux, x: xP + 7, base: yP + 18, ancre: 'start', malus: 1 },
+        { lignes: deux, x: xP - 7, base: yP + 18, ancre: 'end', malus: 1 },
+        { lignes: court, x: xP + 7, base: yP + 18, ancre: 'start', malus: 3 },
+        { lignes: court, x: xP - 7, base: yP + 18, ancre: 'end', malus: 3 },
+        { lignes: court, x: xP, base: yP + 18, ancre: 'middle', malus: 3 }
+      ], L - 2);
+      horsClip.push(fondMot(cFin));
+      horsClip.push(texteMot(cFin, { cls: 'fin-mot' }));
     }
     s.push('\x3C/g>');
 
@@ -2641,16 +2774,19 @@
       /* Le trait marque le dernier relevé. Il ne s'appelle « aujourd'hui »
          que si ce relevé est de cette semaine — sinon la page dirait deux
          « aujourd'hui » différents, l'un au titre, l'autre sur la courbe. */
-      s.push('\x3Ctext class="grad repere-auj" x="' + (x(AUJ) - 6).toFixed(1) + '" y="' + yAuj.toFixed(1) + '" text-anchor="end">' +
-             (AUJ === semaineDAujourdhui() ? 'aujourd’hui' : 'dernier relevé') + '\x3C/text>');
+      s.push('\x3Ctext class="grad repere-auj" x="' + (aujADroite ? x(AUJ) + 6 : x(AUJ) - 6).toFixed(1) + '" y="' + yAuj.toFixed(1) + '" text-anchor="' + (aujADroite ? 'start' : 'end') + '">' +
+             motAuj + '\x3C/text>');
       /* Sous une valeur, le point n'est celui du jour que si la courbe
          finit bien au dernier relevé ; et quand elle y descend, son nombre
-         s'écrit dessous, pas en travers du trait. */
+         s'écrit dessous, pas en travers du trait. De même tout en haut
+         (100 %) : au-dessus du point, il sortait du tracé et s'écrivait sur
+         « dernier relevé ». */
       var auPoint = vVal ? dernierT.termine : atteint;
       if (!vVal || dernierT.i === AUJ) {
-        var dessous = !!vVal && trace.length > 1 && trace[trace.length - 2].termine > auPoint;
+        var dessous = (!!vVal && trace.length > 1 && trace[trace.length - 2].termine > auPoint) || y(auPoint) < mHaut + 12;
         s.push('\x3Ccircle cx="' + x(AUJ).toFixed(1) + '" cy="' + y(auPoint).toFixed(1) + '" r="4.5" fill="' + coul + '" stroke="var(--surface)" stroke-width="2"/>');
-        s.push('\x3Ctext class="grad" x="' + (x(AUJ) - 9).toFixed(1) + '" y="' + (dessous ? y(auPoint) + 16 : y(auPoint) - 8).toFixed(1) + '" text-anchor="end" fill="var(--encre)" font-weight="500">' + auPoint + '\x3C/text>');
+        s.push('\x3Ctext class="grad nombre-point" x="' + (x(AUJ) - 9).toFixed(1) + '" y="' + (dessous ? y(auPoint) + 16 : y(auPoint) - 8).toFixed(1) + '" text-anchor="end" fill="var(--encre)" font-weight="500"' +
+               ' stroke="var(--surface)" stroke-width="4" stroke-linejoin="round" paint-order="stroke">' + auPoint + '\x3C/text>');
       }
     }
 
@@ -2696,12 +2832,15 @@
 
     if (!prochain && d1 > AUJ + 2) {
       var xv = x(AUJ + Math.round((d1 - AUJ) / 2));
+      /* Un contrat sans aucun jalon (THS, débrief 17) ne dit pas « à
+         venir » : on croirait ses échéances passées. */
+      var motAucun = !jalons.length ? 'Aucun jalon pour ce contrat'
+        : 'Aucun jalon \u00e0 venir' + (jalonsAVenirAilleurs() ? ' dans ce p\u00e9rim\u00e8tre' : '');
+      /* Sur un cadre étroit, la phrase reste entière dans le tracé. */
+      var demiAucun = largeurMot(motAucun) / 2;
+      xv = Math.max(Math.min(xv, L - mD - demiAucun), Math.min(mG + demiAucun, mG + LARGEUR / 2));
       s.push('\x3Ctext class="grad" x="' + xv.toFixed(1) + '" y="' + (mHaut + plotH * 0.86).toFixed(1) +
-             '" text-anchor="middle">' +
-             /* Un contrat sans aucun jalon (THS, débrief 17) ne dit pas « à
-                venir » : on croirait ses échéances passées. */
-             (!jalons.length ? 'Aucun jalon pour ce contrat'
-               : 'Aucun jalon \u00e0 venir' + (jalonsAVenirAilleurs() ? ' dans ce p\u00e9rim\u00e8tre' : '')) + '\x3C/text>');
+             '" text-anchor="middle">' + motAucun + '\x3C/text>');
     }
 
     // Rythme hebdomadaire
@@ -2723,8 +2862,23 @@
     taux.forEach(function (t) { maxSem = Math.max(maxSem, deuxSens ? Math.abs(t.v) : t.v); });
     var lb = Math.min(14, Math.max(2, pasX - 2));
     var hMax = deuxSens ? bandeH / 2 : bandeH, yZero = yBande + (deuxSens ? bandeH / 2 : bandeH);
-    s.push('\x3Ctext class="grad" x="' + mG + '" y="' + (yBande - 3).toFixed(1) + '">' +
-      (vVal ? ech('« ' + vVal.libelle + ' » : variation nette par semaine') : 'validés par semaine') + '\x3C/text>');
+    /* Le nom de la bande, à gauche ; sur un cadre étroit, le trait du
+       dernier relevé le barrerait : il passe alors à sa droite, ou s'écrit
+       en court (« validés/sem. », « « En cours » par sem. ») à gauche ou
+       juste avant le trait, et sur un fond plein en dernier recours. */
+    var motBande = vVal ? ech('« ' + vVal.libelle + ' » : variation nette par semaine') : 'validés par semaine';
+    var motCourt = vVal ? ech('« ' + vVal.libelle + ' » par sem.') : 'validés/sem.';
+    var candBande = [{ lignes: [motBande], x: mG, base: yBande - 3, ancre: 'start' }];
+    if (xAuj !== null) candBande.push({ lignes: [motBande], x: xAuj + 6, base: yBande - 3, ancre: 'start' });
+    candBande.push({ lignes: [motCourt], x: mG, base: yBande - 3, ancre: 'start', malus: 3, court: true });
+    if (xAuj !== null) candBande.push({ lignes: [motCourt], x: xAuj - 6, base: yBande - 3, ancre: 'end', malus: 3, court: true });
+    /* À gauche, il peut mordre sur la marge jusqu'aux nombres de
+       l'échelle, qui s'arrêtent 8 px avant le tracé (et plus haut) : le
+       mot lui-même n'y entre pas, seulement les 3 px de son fond. */
+    var cBande = placerMot(candBande, L - 2, mG - 11);
+    if (cBande.gene >= 10) s.push(fondMot(cBande));
+    /* En court, le nom entier reste au survol. */
+    s.push(texteMot(cBande, cBande.court ? { titre: '\x3Ctitle>' + motBande + '\x3C/title>' } : {}));
     if (deuxSens) {
       s.push('\x3Cline x1="' + mG + '" x2="' + (L - mD) + '" y1="' + yZero.toFixed(1) + '" y2="' + yZero.toFixed(1) + '" stroke="var(--filet)" stroke-width="1"/>');
     }
@@ -2743,7 +2897,10 @@
     s.push('\x3Cline x1="' + mG + '" x2="' + (L - mD) + '" y1="' + basTotal.toFixed(1) + '" y2="' + basTotal.toFixed(1) + '" stroke="var(--filet)" stroke-width="1"/>');
 
     // Graduations : espacees pour tenir une dizaine d etiquettes quel que soit le zoom
-    var saut = Math.max(1, Math.ceil(span / 11));
+    /* Une dizaine sur un grand écran, moins sur un cadre étroit : une
+       graduation toutes les 60 px au plus serré, pour que « S38 » et
+       l'année dessous ne se touchent jamais. */
+    var saut = Math.max(1, Math.ceil(span / Math.max(2, Math.min(11, Math.floor(LARGEUR / 60)))));
     var anneeEcrite = '';
     for (var k3 = d0; k3 <= d1; k3++) {
       if ((k3 - d0) % saut !== 0 && k3 !== AUJ) continue;
@@ -2792,17 +2949,23 @@
             : '\x3Cspan title="Plans validés, relevé après relevé.">r\u00e9alis\u00e9\x3C/span>\x3C/span>')];
     /* Les mêmes mots que la fiche et le bloc par groupe : « rythme tenu »,
        « fin », « requis » — et les mêmes nombres, tirés de bilanEcheance. */
-    if (ryt && restants > 0 && !vVal) {
+    /* Rien de validé depuis le premier relevé : pas de projection tracée,
+       donc pas de trait pointillé en légende (débrief 20 : « au rythme tenu
+       (0,0/sem.) » renvoyait à une droite absente). Les mots du bloc par
+       groupe, sans pastille. */
+    if (ryt && restants > 0 && !vVal && projIdx === null) {
+      items.push('\x3Cspan class="legende-item sans-rythme">\x3Cspan title="Aucun plan validé depuis le premier relevé : pas de rythme, donc pas de date d\u2019arrivée.">' +
+        'rien de validé depuis le premier relevé\x3C/span>\x3C/span>');
+    }
+    if (ryt && restants > 0 && !vVal && projIdx !== null) {
       /* Accordé : avec deux relevés, « 7 plans validés en 1 semaine » (il
          disait « 1 semaines », débrief 17). */
-      var dansSem = projIdx !== null ? projIdx - depart : 0;
+      var dansSem = projIdx - depart;
       var explication = nb(ryt.gagnes) + (ryt.gagnes > 1 ? ' plans validés' : ' plan validé') + ' en ' + ryt.semaines +
         (ryt.semaines > 1 ? ' semaines' : ' semaine') + ', du premier au dernier relevé : ' +
         virgule(vitesse) + ' par semaine. ' +
-        (projIdx !== null
-          ? 'À ce rythme, ' + (restants > 1 ? 'les ' + nb(restants) + ' restants demandent ' : 'le dernier demande ') +
-            dansSem + (dansSem > 1 ? ' semaines' : ' semaine') + ' : fin ' + semaineDite(projIdx) + '.'
-          : 'Aucun plan validé sur la période : pas de fin prévisible.');
+        'À ce rythme, ' + (restants > 1 ? 'les ' + nb(restants) + ' restants demandent ' : 'le dernier demande ') +
+        dansSem + (dansSem > 1 ? ' semaines' : ' semaine') + ' : fin ' + semaineDite(projIdx) + '.';
       items.push('\x3Cspan class="legende-item">\x3Csvg width="22" height="8" aria-hidden="true">' +
         '\x3Cline x1="0" y1="4" x2="22" y2="4" stroke="var(--fait)" stroke-width="1.6" stroke-dasharray="4 3" opacity=".65"/>\x3C/svg>' +
         /* Le rythme seul (débrief 19 : « la flèche et fin juillet 2032, on
@@ -2850,6 +3013,15 @@
         '\x3Cb class="num">' + (idx + 1) + '\x3C/b>\x3Cspan class="mot">' + ech(j.texte) + '\x3C/span>' +
         '\x3Cspan class="quand">' + semaineDite(j.i) + '\x3C/span>\x3C/span>';
     }).join('') + '\x3C/div>' + (vue.echeance !== null && jalons[vue.echeance] ? ficheEcheance(vue.echeance) : '') : '';
+
+    /* Dessiné avant l'arrivée des polices, les mots ont été placés avec
+       de la marge : une fois les polices là, le graphique se redessine au
+       plus juste. Une seule fois — une police qui ne vient pas ne relance
+       pas le dessin sans fin. */
+    if (policeAttendue && !redessinPolices && document.fonts && document.fonts.ready) {
+      redessinPolices = true;
+      document.fonts.ready.then(function () { rendreGraphique(selection()); });
+    }
 
     derniereAnalyse = { pts: pts, total: total, atteint: atteint, restants: restants, vitesse: vitesse,
                         projIdx: projIdx, trace: trace, valeur: vVal,
@@ -2928,13 +3100,21 @@
     var i = indexSousCurseur(e.clientX);
     if (i === null) return;
     var span0 = vue.fen.span;
-    var span1 = Math.max(8, Math.min(MAX_IDX + 1, Math.round(span0 * (e.deltaY > 0 ? 1.18 : 1 / 1.18))));
+    /* Le zoom arrière s'arrête à la largeur de « Tout » (débrief 20 : il
+       allait jusqu'à deux ans, la moitié du graphique vide, les mots
+       croisés). Une fenêtre déjà plus large — « 1 an » — ne s'élargit pas
+       davantage, et la molette ne la rétrécit pas en zoomant arrière. */
+    var plafond = Math.max(span0, spanTout());
+    var span1 = Math.max(8, Math.min(plafond, MAX_IDX + 1, Math.round(span0 * (e.deltaY > 0 ? 1.18 : 1 / 1.18))));
     if (span1 === span0) return;
     // La semaine sous le curseur reste au meme endroit a l'ecran.
     var part = (i - vue.fen.debut) / (span0 - 1);
     vue.fenAuto = false;
     vue.fen.span = span1;
     vue.fen.debut = Math.round(i - part * (span1 - 1));
+    /* Arrivé au plafond en zoomant arrière : exactement la fenêtre de
+       « Tout », qui se marque pressé. */
+    if (e.deltaY > 0 && span1 === spanTout()) vue.fen.debut = 0;
     rendreGraphique(selection());
   }, { passive: false });
 
@@ -6253,5 +6433,5 @@
      page affichée, pour ne rien retarder. */
   if (API && API.noterConsultation) setTimeout(API.noterConsultation, 1500);
 })();
-window.SUIVI_FWD_FIN = '60e5a87';
+window.SUIVI_FWD_FIN = 'e906173';
 </script>
