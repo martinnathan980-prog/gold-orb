@@ -70,7 +70,7 @@
 <script>
   /* La livraison de ce fichier, posée par la construction : la page la compare
      à celles de Code, Styles et Javascript, et nomme celui qui diffère. */
-  window.SUIVI_FWD_LIVRAISON_INDEX = '9dc320b';
+  window.SUIVI_FWD_LIVRAISON_INDEX = '60e5a87';
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
@@ -145,15 +145,35 @@
     </div>
   </header>
 
+  <!-- Le sommaire (débrief 20) : les panneaux de la page, chacun avec son
+       numéro dans sa teinte, sous le titre puis collé en haut de l'écran
+       pendant qu'on descend ; il marque celui qu'on lit et y mène d'un clic.
+       Hors du bandeau du titre, qui reste seul. Un panneau absent (pas de
+       seconde base : pas de comparaison) s'efface du sommaire, et les
+       numéros suivent ceux des panneaux, posés de la même façon (compteur). -->
+  <nav class="sommaire" id="sommaire" aria-label="Sections de la page">
+    <span class="sommaire-marque" aria-hidden="true">Suivi FWD<span class="sommaire-contrat" id="sommaire-contrat"></span></span>
+    <ol class="sommaire-liste" id="sommaire-liste">
+      <li class="teinte-une"><a href="#section-synthese" data-chapitre="section-synthese">Synthèse</a></li>
+      <li class="teinte-temps"><a href="#section-tendance" data-chapitre="section-tendance">Tendance</a></li>
+      <li class="teinte-groupe"><a href="#section-repartition" data-chapitre="section-repartition" id="sommaire-groupe">Répartition</a></li>
+      <li class="teinte-plans"><a href="#section-plans" data-chapitre="section-plans">Plans</a></li>
+      <li><a href="#rapprochement" data-chapitre="rapprochement">Comparaison</a></li>
+    </ol>
+  </nav>
+
   <!-- Un classeur sans plans : ce qu'il faut faire, au lieu de sections vides. -->
   <section class="classeur-vide" id="classeur-vide" hidden>
     <h2>Le classeur n’a pas encore de plans</h2>
     <p>Le message au-dessus dit ce que le script a trouvé. Pour remplir la page :</p>
+    <!-- Débrief 20 : plus de copier-coller, la fenêtre d'import lit les
+         exports eux-mêmes ; le collage reste en secours, en une ligne. -->
     <ol>
-      <li>Ouvrir l’export GATES du contrat, tout sélectionner (<kbd>Ctrl</kbd>+<kbd>A</kbd>), copier.</li>
-      <li>Dans le classeur, un onglet au nom du contrat — « HDK » —, cellule <b>A1</b>, coller.</li>
-      <li>Menu <b>Suivi FWD → Archiver le relevé de cette semaine</b>, puis rouvrir le tableau de bord.</li>
+      <li>Dans le classeur, menu <b>Suivi FWD → Importer les exports GATES et SEE…</b></li>
+      <li>Choisir les exports téléchargés — plusieurs d’un coup, sans les ouvrir —, puis <b>Importer</b> : chacun va dans l’onglet de son contrat, et la même fenêtre archive le relevé de la semaine.</li>
+      <li>Fermer puis rouvrir le tableau de bord (<b>Suivi FWD → Ouvrir le tableau de bord</b>).</li>
     </ol>
+    <p class="doux">Si la fenêtre ne lit pas un fichier : l’ouvrir dans Excel, tout copier (<kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Ctrl</kbd>+<kbd>C</kbd>), coller en <b>A1</b> de l’onglet du contrat, puis <b>Suivi FWD → Archiver le relevé de cette semaine</b>.</p>
     <p class="doux">En cas de doute : <b>Suivi FWD → Diagnostic</b> dit ce que le script voit du classeur.</p>
   </section>
 
@@ -162,7 +182,7 @@
        d'un coup d'œil au lieu d'un fil continu. Le numéro est posé par la
        feuille de style : une section cachée (la comparaison sans SEE) ne
        laisse pas de trou dans la suite. -->
-  <section class="avancement panneau" aria-labelledby="surtitre-synthese">
+  <section class="avancement panneau teinte-une" id="section-synthese" aria-labelledby="surtitre-synthese">
     <p class="surtitre" id="surtitre-synthese">Synthèse</p>
     <!-- Le périmètre — ce qu'on regarde — à droite de la phrase qu'il
          gouverne, juste au-dessus de la barre. -->
@@ -182,7 +202,7 @@
     <div class="a-surveiller" id="a-surveiller" hidden></div>
   </section>
 
-  <section class="bloc panneau">
+  <section class="bloc panneau teinte-temps" id="section-tendance">
     <p class="surtitre" aria-hidden="true">Tendance</p>
     <div class="section-tete">
       <h2>Avancement dans le temps</h2>
@@ -238,7 +258,7 @@
     </div>
   </section>
 
-  <section class="bloc panneau">
+  <section class="bloc panneau teinte-groupe" id="section-repartition">
     <p class="surtitre" aria-hidden="true">Répartition</p>
     <!-- Débrief 20 : le choix ATA / ECP / Séquence… n'est plus un menu isolé
          au-dessus de la recherche : c'est le dernier mot du titre lui-même,
@@ -281,7 +301,7 @@
   <!-- Un seul tableau, deux bases : l'interrupteur GATES | SEE bascule de
        l'extract d'ici à celui de là, avec les mêmes outils. SEE n'existe que
        si la source décrit une seconde base ; sinon l'interrupteur s'efface. -->
-  <section class="bloc panneau" id="section-plans">
+  <section class="bloc panneau teinte-plans" id="section-plans">
     <p class="surtitre" aria-hidden="true">Détail</p>
     <div class="section-tete">
       <h2>Plans</h2>
@@ -317,7 +337,6 @@
         <button type="button" data-vue="toutes" aria-pressed="true">Toutes les colonnes</button>
         <button type="button" data-vue="essentielle" aria-pressed="false">Vue essentielle</button>
       </span>
-      <button class="lien-doux" id="reinit" type="button" hidden>tout réinitialiser</button>
       <span class="legende-rapp" id="legende-seconde" data-base="la" hidden></span>
     </div>
     <div class="incomplets" id="incomplets" data-base="ici"></div>
@@ -370,6 +389,9 @@
         </svg>
       </div>
     </div>
+    <!-- Ce qu'il y a à traiter, en une phrase : les nombres se cliquent
+         comme leur ligne de verdict. Absente quand il n'y a rien. -->
+    <p class="rapp-reponse" id="reponse-rapprochement" hidden></p>
     <div class="rapp-face">
       <div class="rapp-figure" id="venn-rapprochement" role="img" aria-label="Comparaison GATES / seconde base"></div>
       <div class="verdicts" id="verdicts-rapprochement" role="group" aria-label="Filtrer le tableau des plans par verdict de la comparaison"></div>

@@ -23,10 +23,11 @@ function section(titre) { sectionCourante = titre; console.log('\n— ' + titre 
 /* L'interrupteur Données réelles / Exemple est visible en haut de page ;
    la batterie le manœuvre comme un clic. */
 
-/* « tout reinitialiser » est masque quand rien n'est filtre : on ne clique que
-   s'il est visible, sinon on remet l'etat a la main. */
+/* « Tout effacer », dans le bandeau des filtres, n'existe que quand un
+   filtre est posé (débrief 20 : le seul bouton de remise à zéro) : on ne
+   clique que s'il est visible, sinon on remet l'etat a la main. */
 async function reinitialiser(pg) {
-  const bouton = await pg.$('#reinit');
+  const bouton = await pg.$('#tout-effacer');
   if (bouton && await bouton.isVisible()) { await bouton.click(); }
   else {
     await pg.fill('#recherche', '');
@@ -430,7 +431,9 @@ async function reinitialiser(pg) {
     rangees.seul.length === SEUL && rangees.seul.every(r => r.etat === undefined && r.la && r.see === 'présent' && r.pastille === null &&
       /^aucun plan dans GATES · présent dans SEE — voir cette ligne dans le tableau de SEE$/.test(r.bulle)),
     JSON.stringify([rangees.avance[0], rangees.emission[0], rangees.seul[0]]));
-  verifier('en tête des plans dépliés, la légende des pastilles d\'état', legendePuces === 'Validé,En cours,À faire,Non renseigné', legendePuces);
+  /* Débrief 20 : la légende ne nomme que les valeurs de la liste — sous
+     « validés, absents de SEE », une seule : pas de légende du tout. */
+  verifier('en tête des plans dépliés d’un verdict d’une seule valeur, pas de légende', legendePuces === '', legendePuces);
   const deuxEcritures = await p.evaluate(() => {
     const a = window.__analyserUD('GBE3123A600002B'), b = window.__analyserUD('GBE312A3600002B');
     const c = window.__analyserUD('ZZE991A0800001A');
@@ -845,7 +848,7 @@ async function reinitialiser(pg) {
                      document.querySelectorAll('#corps-seconde tr[data-cat="seul"][data-plan]').length,
       gates: document.querySelectorAll('#corps-tableau tr').length,
       jetons: [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').trim()),
-      reinit: !document.getElementById('reinit').hidden
+      reinit: !!document.getElementById('tout-effacer') && !document.getElementById('filtres-actifs').hidden
     };
   });
   const sAvant = await lireSeconde();
@@ -901,9 +904,9 @@ async function reinitialiser(pg) {
     JSON.stringify([sRe.n, sRe.compte, sRe.gates]));
   await p.fill('#recherche-seconde', 'aucune ligne ne porte ceci'); await p.waitForTimeout(500);
   verifier('rien trouvé : le tableau le dit', await p.evaluate(() => (document.querySelector('#corps-seconde .vide-message') || {}).textContent === 'Aucune ligne ne correspond.'));
-  await p.click('#reinit'); await p.waitForTimeout(500);
+  await p.click('#tout-effacer'); await p.waitForTimeout(500);
   const sRz = await lireSeconde();
-  verifier('« tout réinitialiser » vide aussi cette recherche, et ramène sur GATES',
+  verifier('« Tout effacer » vide aussi cette recherche, et ramène sur GATES',
     sRz.n === LIGNES_SEE && sRz.iciMontre && await p.evaluate(() => document.getElementById('recherche-seconde').value === ''));
   await p.click('#choix-base button[data-base="la"]'); await p.waitForTimeout(400);
   await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
@@ -937,9 +940,9 @@ async function reinitialiser(pg) {
   verifier('mais un lot du rapprochement se lit des deux côtés : posé depuis SEE, le tableau y reste',
     sLot.laMontre && sLot.n === ACCORD, JSON.stringify([sLot.base, sLot.n]));
   await p.click('#verdicts-rapprochement button[data-rapp="seul"]'); await p.waitForTimeout(500);
-  await p.click('#reinit'); await p.waitForTimeout(500);
+  await p.click('#tout-effacer'); await p.waitForTimeout(500);
   const sReinit = await lireSeconde();
-  verifier('« tout réinitialiser » ramène sur GATES, entier, sans lot',
+  verifier('« Tout effacer » ramène sur GATES, entier, sans lot',
     sReinit.iciMontre && sReinit.gates === TOTAL && sReinit.jetons.length === 0, JSON.stringify([sReinit.base, sReinit.gates, sReinit.jetons]));
 
   // =================================================================
@@ -1632,7 +1635,7 @@ async function reinitialiser(pg) {
      rapprochement et le journal, les écritures tapées sont fabriquées ici.
      --------------------------------------------------------------- */
   console.log('\n— Chercher dans une section —');
-  await p.click('#reinit').catch(() => {}); await p.waitForTimeout(300);
+  await reinitialiser(p);
   const champs = await p.evaluate(() => ({
     global: !!document.getElementById('chercher-plan') || !!document.getElementById('champ-plan'),
     journal: !!document.querySelector('.section-journal + .ligne-filtres #recherche-journal'),
@@ -1692,7 +1695,7 @@ async function reinitialiser(pg) {
   await p.click('#zone-critique .groupe-refs.trouves .jeton-ud[data-ud="' + cibles.accord + '"]'); await p.waitForTimeout(500);
   verifier('un clic sur le plan trouvé le montre dans le tableau',
     await p.evaluate(ref => { const l = [...document.querySelectorAll('#corps-tableau tr')]; return l.length >= 1 && l.every(tr => tr.textContent.indexOf(ref) !== -1); }, cibles.accord));
-  await p.click('#reinit').catch(() => {}); await p.waitForTimeout(300);
+  await reinitialiser(p);
   await p.focus('#filtre-groupe'); await p.keyboard.press('Escape'); await p.waitForTimeout(350);
 
   // La comparaison
@@ -2047,7 +2050,7 @@ async function reinitialiser(pg) {
     await p.evaluate(() => /aucun|Aucun/.test(document.getElementById('corps-tableau').parentElement.textContent) ||
                             /0 plan/.test(document.getElementById('compte').textContent)));
   await reinitialiser(p);
-  verifier('« tout réinitialiser » vide recherche et filtres',
+  verifier('« Tout effacer » vide recherche et filtres',
     await p.evaluate(t => document.getElementById('recherche').value === '' &&
       [...document.querySelectorAll('input[data-filtre]')].every(i => i.value === '') &&
       (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === t, TOTAL));
@@ -2233,6 +2236,9 @@ async function reinitialiser(pg) {
     });
     const zone = document.getElementById('zone-critique');
     return {
+      /* Débrief 20 : les plans à l'arrêt ouvrent la liste, sous leur titre,
+         et ne se répètent pas dans les sous-listes par valeur. */
+      arret: [...document.querySelectorAll('.groupe-refs .sous-arret .jeton-ud')].map(b => ({ ref: b.dataset.ud, etat: (b.getAttribute('title') || '').split(' — ')[0] })),
       jetons: refs.length, ud: refs.filter(b => b.dataset.ud).length,
       autres: /autres/.test(document.querySelector('.groupe-refs').textContent),
       paquets, valeurs: window.__valeurs(),
@@ -2246,7 +2252,7 @@ async function reinitialiser(pg) {
   const ordreValeurs = liste.valeurs.map(v => v.libelle);
   const familleDe = l => (liste.valeurs.find(v => v.libelle === l) || {}).famille;
   const parRef = refs => refs.every((r, i) => i === 0 || refs[i - 1].ref.localeCompare(r.ref, 'fr', { numeric: true }) <= 0);
-  const restantsListe = liste.paquets.filter(q => familleDe(q.libelle) !== 'termine').reduce((t, q) => t + q.refs.length, 0);
+  const restantsListe = liste.paquets.filter(q => familleDe(q.libelle) !== 'termine').reduce((t, q) => t + q.refs.length, 0) + liste.arret.length;
   verifier('deplier un groupe montre TOUTES ses references : autant de jetons que de plans',
     liste.ud === grosAta.total && liste.jetons === liste.ud, liste.ud + ' / ' + grosAta.total);
   verifier('plus aucun « et N autres »', !liste.autres);
@@ -2259,7 +2265,7 @@ async function reinitialiser(pg) {
     liste.paquets.every((q, i) => ordreValeurs.indexOf(q.libelle) !== -1 &&
       (i === 0 || ordreValeurs.indexOf(liste.paquets[i - 1].libelle) < ordreValeurs.indexOf(q.libelle))) &&
     liste.paquets.every(q => q.pastille && q.n === q.refs.length) &&
-    liste.paquets.reduce((t, q) => t + q.refs.length, 0) === grosAta.total,
+    liste.paquets.reduce((t, q) => t + q.refs.length, 0) + liste.arret.length === grosAta.total,
     JSON.stringify(liste.paquets.map(q => [q.libelle, q.n, q.refs.length])));
   verifier('dans chaque sous-liste, un seul état — celui de son titre — et les références dans l’ordre',
     liste.paquets.every(q => q.refs.every(r => r.etat === q.libelle) && parRef(q.refs)),
@@ -2862,7 +2868,8 @@ async function reinitialiser(pg) {
   section('Sélection d\'un groupe et dimensions');
   const lignesDuBloc = () => p.evaluate(() => [...document.querySelectorAll('#zone-critique .critique-ligne')].map(l => ({
     g: l.dataset.groupe, n: +l.querySelector('.critique-total').textContent, presse: l.getAttribute('aria-pressed') === 'true',
-    ouvert: !!(l.nextElementSibling && l.nextElementSibling.classList.contains('groupe-refs')) })));
+    /* Débrief 20 : le bouton « n à l'arrêt » se pose juste après la ligne. */
+    ouvert: (s => !!(s && s.classList.contains('groupe-refs')))(l.nextElementSibling && l.nextElementSibling.classList.contains('critique-arret') ? l.nextElementSibling.nextElementSibling : l.nextElementSibling) })));
   const avantGroupe = await lignesDuBloc();
   await p.click('.critique-ligne >> nth=0'); await p.waitForTimeout(400);
   const apresGroupe = await p.evaluate(() => ({
@@ -2938,7 +2945,7 @@ async function reinitialiser(pg) {
     await p.evaluate(() => document.querySelectorAll('.critique-ligne').length > 0 &&
       document.getElementById('compte').textContent.length > 0));
   await reinitialiser(p);
-  verifier('« tout réinitialiser » remet tout d\'aplomb',
+  verifier('« Tout effacer » remet tout d\'aplomb',
     await p.evaluate(t => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === t &&
       document.querySelectorAll('#etats .etat-btn[aria-pressed="true"]').length === 0, TOTAL));
 
@@ -3250,8 +3257,13 @@ async function reinitialiser(pg) {
     });
     verifier('plus aucune étiquette 2026-S38 à l\'écran : une semaine se dit « S38 · sept. 2026 »',
       !/\b20\d\d-S\d\d\b/.test(visible), (visible.match(/.{30}\b20\d\d-S\d\d\b.{10}/) || [''])[0]);
+    /* « Importer », avec sa majuscule, est le nom d'un geste du classeur — le
+       menu « Importer les exports GATES et SEE… » et le bouton de sa fenêtre —,
+       pas d'une photo archivée : le panneau du classeur vide (débrief 20) les
+       cite tels qu'ils sont écrits. */
+    const sansGestes = visible.replace(/\bImporter\b/g, '');
     verifier('un seul mot pour une photo archivée : « relevé », jamais « import »',
-      !/\bimport/i.test(visible), (visible.match(/.{30}\bimport.{20}/i) || [''])[0]);
+      !/\bimport/i.test(sansGestes), (sansGestes.match(/.{30}\bimport.{20}/i) || [''])[0]);
     const lieux = await pq.evaluate(() => ({
       pied: document.getElementById('import').textContent,
       note: document.getElementById('note-graphe').textContent,
@@ -3281,7 +3293,7 @@ async function reinitialiser(pg) {
       return {
         requisFiche: (fiche.match(/Il faut ([\d,]+) plans/) || [])[1], requisLegende: (survols.match(/ : ([\d,]+) par semaine\. En rouge/) || [])[1],
         tenuFiche: (fiche.match(/le rythme tenu est de ([\d,]+)/) || [])[1], tenuLegende: (leg.match(/au rythme tenu \(([\d,]+)\/sem\.\)/) || [])[1],
-        finFiche: (fiche.match(/tout serait validé en (S\d+ · \S+ \d{4})/) || [])[1], finLegende: (survols.match(/: fin (S\d+ · \S+ \d{4})\./) || [])[1],
+        finFiche: (fiche.match(/(?:tout serait validé|au rythme global, la fin serait) en (S\d+ · \S+ \d{4})/) || [])[1], finLegende: (survols.match(/: fin (S\d+ · \S+ \d{4})\./) || [])[1],
         legendeCourte: !/→ fin|\/sem\. sur|» : [\d,]+\/sem\./.test(leg),
         manqueFiche: (fiche.match(/il manquerait (\d[\d ]*) plans?/) || [])[1], manqueGraphe: manque[0],
         rouge: document.getElementById('echeance-titre').classList.contains('en-retard'),
@@ -4136,7 +4148,7 @@ async function reinitialiser(pg) {
         return b.classList.contains('focalise') && (Number(l.querySelector('.critique-total').textContent) === 0 ? e.length === 0 : e.length === 1 && e[0].dataset.cle === 'termine') && Math.abs(w - 100) < 0.5; }),
       etats: [...document.querySelectorAll('#etats .etat-n')].map(x => x.textContent).join(),
       tableau: document.querySelectorAll('#corps-tableau tr:not(.ligne-suite)').length === TOTAL,
-      reinit: document.getElementById('reinit').hidden,
+      reinit: document.getElementById('filtres-actifs').hidden,
       jetons: document.querySelectorAll('#filtres-actifs button[data-retirer]').length,
       note: (document.querySelector('#zone-critique .critique-note.note-valeur') || { textContent: '' }).textContent.replace(/[  ]/g, ' '),
       entete: !!document.querySelector('button[data-trig="total"] .pastille')
@@ -4689,6 +4701,225 @@ async function reinitialiser(pg) {
   await p.waitForTimeout(400);
   await reinitialiser(p);
 
+  section('Débrief 20 : des sections qu’on repère');
+  {
+    /* « Ça fait trop fil d'actualité, on n'arrive pas à bien les repérer » :
+       chaque panneau a sa teinte (numéro, amorce du filet, mot à choisir),
+       un sommaire collé en haut y mène. On vérifie aussi trois défauts de
+       mise en page relevés par la chasse aux bugs, et le panneau du
+       classeur vide réécrit pour la fenêtre d'import. */
+    const lireTeintes = pg => pg.evaluate(() => {
+      function lum(c) {
+        const m = c.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => {
+          v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+        });
+        return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2];
+      }
+      const contraste = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+      const papier = getComputedStyle(document.body).backgroundColor;
+      const panneaux = ['section-synthese', 'section-tendance', 'section-repartition', 'section-plans', 'rapprochement'].map(id => {
+        const sec = document.getElementById(id);
+        const sur = sec.querySelector('.surtitre');
+        const num = getComputedStyle(sur, '::before');
+        return { id, numero: num.color, fond: getComputedStyle(sec).backgroundColor,
+                 titre: getComputedStyle(sec.querySelector('h2, .phrase')).color,
+                 contrasteSurface: contraste(num.color, getComputedStyle(sec).backgroundColor),
+                 contrastePapier: contraste(num.color, papier) };
+      });
+      const sel = document.getElementById('dim-critique');
+      const liens = [...document.querySelectorAll('#sommaire-liste li:not([hidden]) a')].map(a => ({
+        texte: a.textContent.trim(), numero: getComputedStyle(a, '::before').color, cible: a.dataset.chapitre }));
+      return { panneaux, mot: getComputedStyle(sel).color, liens, encre: getComputedStyle(document.body).color,
+               dim: sel.options[sel.selectedIndex].text.replace(/ \(.*\)$/, ''),
+               surface: getComputedStyle(document.getElementById('section-plans')).backgroundColor };
+    });
+    await p.evaluate(() => { window.__chargerSource(window.__jeuDExemple('HDK')); window.scrollTo(0, 0); });
+    await p.setViewportSize({ width: 1280, height: 950 }); await p.waitForTimeout(600);
+    const t = await lireTeintes(p);
+    const nums = t.panneaux.map(x => x.numero);
+    verifier('chaque panneau porte sa teinte sur son numéro : cinq couleurs différentes, la synthèse à l’encre',
+      new Set(nums).size === 5 && nums[0] === t.encre, JSON.stringify(nums));
+    verifier('teintes calmes : aucun fond coloré, aucun titre coloré — les panneaux restent blancs, les titres à l’encre',
+      t.panneaux.every(x => x.fond === t.surface && x.titre === t.encre), JSON.stringify(t.panneaux.map(x => [x.fond, x.titre])));
+    verifier('thème clair : chaque numéro se lit (au moins 4,5:1 sur le panneau et sur le papier)',
+      t.panneaux.every(x => x.contrasteSurface >= 4.5 && x.contrastePapier >= 4.5),
+      JSON.stringify(t.panneaux.map(x => x.contrasteSurface.toFixed(2) + '/' + x.contrastePapier.toFixed(2))));
+    verifier('« par [ATA ▾] » : le mot à choisir est dans la teinte du panneau 03', t.mot === t.panneaux[2].numero, t.mot);
+    verifier('le sommaire liste les cinq panneaux, chacun dans la teinte de son panneau, dans le même ordre',
+      t.liens.length === 5 && t.liens.every((l, k) => l.cible === t.panneaux[k].id && l.numero === t.panneaux[k].numero) &&
+      t.liens[0].texte === 'Synthèse' && t.liens[2].texte === 'Par ' + t.dim && t.liens[4].texte === 'Comparaison', JSON.stringify([t.dim, t.liens]));
+    const ctxS = await contexte({ colorScheme: 'dark' });
+    const ps20 = await page(ctxS, 'teintes sombres');
+    const ts = await lireTeintes(ps20);
+    verifier('thème sombre : d’autres valeurs des mêmes teintes, toujours distinctes et lisibles (4,5:1)',
+      new Set(ts.panneaux.map(x => x.numero)).size === 5 && ts.panneaux.every((x, k) => x.numero !== nums[k]) &&
+      ts.panneaux.every(x => x.contrasteSurface >= 4.5 && x.contrastePapier >= 4.5) && ts.mot === ts.panneaux[2].numero,
+      JSON.stringify(ts.panneaux.map(x => x.numero + ' ' + x.contrasteSurface.toFixed(2))));
+    await ctxS.close();
+
+    // --- Le sommaire : hors du bandeau du titre, collé en haut, le panneau courant marqué.
+    const tete = await p.evaluate(() => ({
+      horsTitre: !document.querySelector('header.masthead .sommaire') && document.querySelector('.masthead').children.length === 2,
+      sousTitre: document.getElementById('sommaire').getBoundingClientRect().top >= document.querySelector('.masthead').getBoundingClientRect().bottom - 12,
+      avantPanneaux: document.getElementById('sommaire').getBoundingClientRect().bottom <= document.getElementById('section-synthese').getBoundingClientRect().top,
+      position: getComputedStyle(document.getElementById('sommaire')).position
+    }));
+    verifier('le sommaire est sous « Suivi FWD » et la semaine, hors de leur bandeau, avant le premier panneau, collant',
+      tete.horsTitre && tete.sousTitre && tete.avantPanneaux && tete.position === 'sticky', JSON.stringify(tete));
+    const adresse = await p.evaluate(() => location.href);
+    // Le glissement doux avance image par image : la page doit être au premier plan.
+    await p.bringToFront();
+    await p.click('#sommaire-liste a[data-chapitre="section-plans"]');
+    /* Attendre la fin du glissement (au plus 4 s) : sous Playwright, une page
+       sans rien à repeindre peut le laisser en plan ; l'attente image par
+       image (raf) le fait avancer. */
+    await p.waitForFunction(() => {
+      const s = document.getElementById('section-plans').getBoundingClientRect().top;
+      const n = document.getElementById('sommaire').getBoundingClientRect().bottom;
+      return s >= n && s <= n + 40;
+    }, null, { timeout: 4000, polling: 'raf' }).catch(() => {});
+    await p.waitForTimeout(300);
+    const saut = await p.evaluate(() => {
+      const nav = document.getElementById('sommaire').getBoundingClientRect();
+      const sec = document.getElementById('section-plans').getBoundingClientRect();
+      const courant = document.querySelector('#sommaire-liste a[aria-current]');
+      return { navHaut: Math.round(nav.top), navBas: nav.bottom, secHaut: sec.top, scroll: window.scrollY,
+               courant: courant && courant.dataset.chapitre, focus: document.activeElement === document.querySelector('#section-plans h2'),
+               href: location.href, colle: document.getElementById('sommaire').dataset.colle };
+    });
+    verifier('un clic sur « 04 Plans » descend au panneau, juste sous le sommaire collé en haut, sans toucher à l’adresse',
+      saut.scroll > 500 && saut.navHaut === 0 && saut.secHaut >= saut.navBas && saut.secHaut <= saut.navBas + 40 && saut.href === adresse && saut.colle === 'true',
+      JSON.stringify(saut));
+    verifier('le panneau atteint est marqué dans le sommaire, et le focus clavier est sur son titre',
+      saut.courant === 'section-plans' && saut.focus, JSON.stringify(saut));
+    await p.evaluate(() => document.getElementById('section-tendance').scrollIntoView());
+    await p.waitForTimeout(400);
+    verifier('en faisant défiler, la marque suit le panneau qu’on lit',
+      await p.evaluate(() => (document.querySelector('#sommaire-liste a[aria-current]') || {}).dataset.chapitre) === 'section-tendance');
+    // Un filtre actif : son bandeau colle en haut, le sommaire juste dessous.
+    await p.click('.etat-btn >> nth=0'); await p.waitForTimeout(500);
+    await p.evaluate(() => document.getElementById('section-repartition').scrollIntoView()); await p.waitForTimeout(400);
+    const sousFiltres = await p.evaluate(() => {
+      const f = document.getElementById('filtres-actifs').getBoundingClientRect(), n = document.getElementById('sommaire').getBoundingClientRect();
+      return { filtres: !document.getElementById('filtres-actifs').hidden, fBas: Math.round(f.bottom), nHaut: Math.round(n.top) };
+    });
+    verifier('avec un filtre actif, le sommaire colle sous le bandeau des filtres, sans le recouvrir',
+      sousFiltres.filtres && Math.abs(sousFiltres.nHaut - sousFiltres.fBas) <= 1, JSON.stringify(sousFiltres));
+    await reinitialiser(p);
+    // La dimension suit : « Par ECP » quand on groupe par ECP. Puis on remet celle d'avant.
+    const autreDim = await p.evaluate(() => {
+      const s = document.getElementById('dim-critique'), avant = s.value;
+      const o = [...s.options].find(x => x.value !== avant);
+      if (!o) return null;
+      s.value = o.value; s.dispatchEvent(new Event('change', { bubbles: true }));
+      const r = { choisi: o.text.replace(/ \(.*\)$/, ''), lien: document.getElementById('sommaire-groupe').textContent };
+      s.value = avant; s.dispatchEvent(new Event('change', { bubbles: true }));
+      return r;
+    });
+    verifier('l’entrée 03 du sommaire suit la dimension choisie dans le titre',
+      !!autreDim && autreDim.lien === 'Par ' + autreDim.choisi, JSON.stringify(autreDim));
+    // Concept harnais : pas de comparaison, l'entrée 05 s'efface.
+    await p.click('#choix-indicateur button[data-indicateur="concept"]'); await p.waitForTimeout(700);
+    const sansSEE = await p.evaluate(() => ({
+      cachee: document.getElementById('rapprochement').hidden,
+      liens: [...document.querySelectorAll('#sommaire-liste li:not([hidden]) a')].map(a => a.dataset.chapitre)
+    }));
+    verifier('sans seconde base affichée (concept harnais), le sommaire ne liste que les quatre panneaux présents',
+      sansSEE.cachee && sansSEE.liens.length === 4 && !sansSEE.liens.includes('rapprochement'), JSON.stringify(sansSEE));
+    await p.click('#choix-indicateur button[data-indicateur="def"]'); await p.waitForTimeout(700);
+    await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(300);
+
+    // Moins d'animations demandées : le saut est immédiat.
+    const ctxR = await contexte({ reducedMotion: 'reduce' });
+    const pr = await page(ctxR, 'sommaire sans animation');
+    await pr.click('#sommaire-liste a[data-chapitre="section-repartition"]');
+    const immediat = await pr.evaluate(() => window.scrollY);
+    await pr.waitForTimeout(600);
+    const ensuite = await pr.evaluate(() => window.scrollY);
+    verifier('si le système demande moins d’animations, le saut est immédiat, sans glissement',
+      immediat > 300 && immediat === ensuite, immediat + ' puis ' + ensuite);
+    await ctxR.close();
+
+    // Au téléphone : le sommaire défile de côté dans sa ligne, jamais la page.
+    const ctxT = await contexte({ viewport: { width: 390, height: 844 } });
+    const pt = await page(ctxT, 'sommaire téléphone');
+    await pt.click('#sommaire-liste a[data-chapitre="rapprochement"]'); await pt.waitForTimeout(1500);
+    const tel = await pt.evaluate(() => {
+      const l = document.getElementById('sommaire-liste'), a = l.querySelector('a[aria-current]');
+      const lr = l.getBoundingClientRect(), ar = a ? a.getBoundingClientRect() : null;
+      return { page: document.documentElement.scrollWidth <= window.innerWidth, defile: l.scrollWidth > l.clientWidth,
+               courant: a && a.dataset.chapitre, enVue: !!ar && ar.left >= lr.left - 1 && ar.right <= lr.right + 1,
+               haut: Math.round(document.getElementById('sommaire').getBoundingClientRect().top) };
+    });
+    verifier('à 390 px, le sommaire défile dans sa ligne (la page, non), collé en haut, le panneau courant en vue',
+      tel.page && tel.defile && tel.courant === 'rapprochement' && tel.enVue && tel.haut === 0, JSON.stringify(tel));
+
+    // Défaut 3c : au téléphone, « Plans 65 » s'aligne comme ses voisins.
+    await pt.evaluate(() => document.getElementById('zone-critique').scrollIntoView()); await pt.waitForTimeout(500);
+    const plansTel = await pt.evaluate(() => {
+      const l = [...document.querySelectorAll('#zone-critique .critique-ligne')].find(x => x.querySelector('.critique-total'));
+      const bordDroit = el => { const r = document.createRange(); r.selectNodeContents(el); return Math.round(r.getBoundingClientRect().right); };
+      const tot = l.querySelector('.critique-total'), fin = l.querySelector('.critique-fin, .critique-date');
+      return { total: bordDroit(tot), fin: bordDroit(fin), gaucheTotal: Math.round(tot.getBoundingClientRect().left),
+               gaucheLigne: Math.round(l.getBoundingClientRect().left), ligneDroite: Math.round(l.getBoundingClientRect().right) };
+    });
+    verifier('à 390 px, dans une ligne « par ATA », le nombre de plans est au bord droit comme la fin estimée, son libellé à gauche',
+      Math.abs(plansTel.total - plansTel.fin) <= 2 && Math.abs(plansTel.gaucheTotal - plansTel.gaucheLigne) <= 2, JSON.stringify(plansTel));
+
+    // Défaut 3b : la vue d'ensemble au téléphone, une carte par contrat.
+    await pt.evaluate(() => window.scrollTo(0, 0));
+    await pt.click('#voir-ensemble'); await pt.waitForTimeout(900);
+    const ens = await pt.evaluate(() => {
+      const d = document.querySelector('.defile-ensemble'), h2 = document.querySelector('.ensemble-tete h2'),
+            x = document.querySelector('.ensemble-tete .fiche-plan-fermer');
+      const cellules = [...document.querySelectorAll('.ensemble-table tbody td')];
+      const visibles = cellules.filter(c => c.getBoundingClientRect().width > 0);
+      return { cache: d.scrollWidth - d.clientWidth, page: document.documentElement.scrollWidth <= window.innerWidth,
+               cellules: cellules.length, visibles: visibles.length,
+               libelles: visibles.every(c => c.colSpan > 1 || (c.dataset.libelle && getComputedStyle(c, '::before').content.length > 2)),
+               dansLeCadre: visibles.every(c => c.getBoundingClientRect().right <= d.getBoundingClientRect().right + 1),
+               croix: Math.abs(x.getBoundingClientRect().top - h2.getBoundingClientRect().top) <= 8 && x.getBoundingClientRect().left > h2.getBoundingClientRect().left };
+    });
+    verifier('à 390 px, la vue d’ensemble montre toutes les valeurs, chacune avec le nom de sa colonne, rien de caché à droite',
+      ens.cache <= 0 && ens.page && ens.cellules > 6 && ens.visibles === ens.cellules && ens.libelles && ens.dansLeCadre, JSON.stringify(ens));
+    verifier('à 390 px, la croix de la vue d’ensemble est sur la ligne du titre, pas seule sur la sienne', ens.croix, JSON.stringify(ens));
+    await ctxT.close();
+
+    // Défaut 3a : les en-têtes du journal ne se coupent plus mot à mot entre 768 et 900 px.
+    for (const w of [900, 820, 768]) {
+      await p.setViewportSize({ width: w, height: 950 }); await p.waitForTimeout(450);
+      const ent = await p.evaluate(() => [...document.querySelectorAll('.journal-entetes .entete-col')].map(e => {
+        const lh = parseFloat(getComputedStyle(e.parentNode).lineHeight) || 15;
+        return { texte: e.textContent, lignes: Math.round(e.getBoundingClientRect().height / lh) };
+      }));
+      verifier('à ' + w + ' px, chaque en-tête du journal tient sur deux lignes au plus (« passés à » / « « Terminé » »)',
+        ent.length >= 3 && ent.every(e => e.lignes <= 2), JSON.stringify(ent));
+    }
+    await p.setViewportSize({ width: 1280, height: 950 }); await p.waitForTimeout(400);
+  }
+  {
+    // Le classeur vide : le geste de la fenêtre d'import, le collage en secours ; ni sommaire.
+    const ctxV = await contexte();
+    await ctxV.addInitScript(() => {
+      window.SUIVI_FWD_DONNEES = { ok: false, message: 'Feuille vide : aucun plan.', colonnes: [], plans: [], releves: [], jalons: [], contrats: [], contrat: '' };
+    });
+    const pv = await page(ctxV, 'classeur vide (débrief 20)');
+    const vide = await pv.evaluate(() => {
+      const z = document.getElementById('classeur-vide');
+      return { gestes: [...z.querySelectorAll('ol li')].map(li => li.textContent),
+               secours: [...z.querySelectorAll('p.doux')].map(x => x.textContent).join(' | '),
+               sommaire: getComputedStyle(document.getElementById('sommaire')).display };
+    });
+    verifier('classeur vide : trois gestes — le menu « Importer les exports GATES et SEE… », les fichiers choisis sans les ouvrir, le relevé archivé par la même fenêtre',
+      vide.gestes.length === 3 && /Suivi FWD → Importer les exports GATES et SEE…/.test(vide.gestes[0]) &&
+      /plusieurs d’un coup/.test(vide.gestes[1]) && /sans les ouvrir/.test(vide.gestes[1]) && /archive le relevé/.test(vide.gestes[1]) &&
+      !vide.gestes.some(g => /copier|coller|Ctrl/.test(g)), JSON.stringify(vide.gestes));
+    verifier('classeur vide : le collage reste, en secours, sur une ligne à part', /coller/.test(vide.secours) && /Archiver le relevé/.test(vide.secours), vide.secours);
+    verifier('classeur vide : pas de sommaire (il n’y a aucun panneau)', vide.sommaire === 'none', vide.sommaire);
+    await ctxV.close();
+  }
+  await reinitialiser(p);
+
   section('Persistance (même navigateur, page rechargée)');
   await p.click('button[data-trig="fin"]'); await p.waitForTimeout(300);
   /* Débrief 19 : « quand on ouvre, t'es directement sur Tout » — un cadrage
@@ -4713,6 +4944,341 @@ async function reinitialiser(pg) {
     apresRech.tri === triAvant, triAvant + ' → ' + apresRech.tri);
   verifier('les jalons ne passent pas par le stockage : ils viennent de la source',
     apresRech.jalons === 5 && !apresRech.stockes, JSON.stringify(apresRech));
+
+  // =================================================================
+  section('Débrief 20 : la page dit vrai partout');
+  /* La chasse aux bugs du débrief 20 : chaque nombre affiché est celui que
+     le clic montrera, un seul verdict par écran, pas de « 0 sur 0 ». Chaque
+     test reproduit d'abord la situation qui trompait. */
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
+  await p.waitForTimeout(500);
+  await reinitialiser(p);
+  /* Le regroupement choisi plus haut (ECP…) se garde d'un rechargement à
+     l'autre : ces tests parlent d'ATA. */
+  await p.selectOption('#dim-critique', 'ata'); await p.waitForTimeout(400);
+  const lignes20 =() => p.evaluate(() => document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length);
+  const nombre20 = t => parseInt(String(t || '').replace(/[\s\u00a0\u202f]/g, '').replace(/^\D*/, ''), 10);
+
+  // A. « / » ne vole plus la frappe d'un autre champ.
+  await p.click('#recherche-journal');
+  await p.keyboard.type('S38/A'); await p.waitForTimeout(300);
+  const barre20 = await p.evaluate(() => ({ journal: document.getElementById('recherche-journal').value, tableau: document.getElementById('recherche').value,
+    actif: document.activeElement.id }));
+  verifier('A — taper « S38/A » dans la recherche du journal : tout reste dans ce champ, la recherche du tableau ne prend rien',
+    barre20.journal === 'S38/A' && barre20.tableau === '' && barre20.actif === 'recherche-journal', JSON.stringify(barre20));
+  await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+  await p.evaluate(() => document.activeElement.blur());
+  await p.keyboard.press('/'); await p.waitForTimeout(150);
+  verifier('A — hors d’un champ, « / » mène toujours à la recherche du tableau',
+    await p.evaluate(() => document.activeElement.id === 'recherche'));
+  await p.evaluate(() => document.activeElement.blur());
+
+  // B et J. Une sélection vide : une phrase, une piste, des tuiles qui ne se recouvrent pas.
+  const tuilesSeChevauchent = () => p.evaluate(() => {
+    const r = [...document.querySelectorAll('#etats .etat-btn')].map(b => b.getBoundingClientRect());
+    return r.some((a, i) => r.some((b, k) => k > i && a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5));
+  });
+  await p.fill('#recherche', 'zzzz'); await p.waitForTimeout(600);
+  const vide20 = await p.evaluate(() => ({
+    phrase: document.getElementById('phrase').textContent.replace(/\s+/g, ' ').trim(),
+    piste: document.getElementById('barre').classList.contains('vide') && getComputedStyle(document.getElementById('barre'), '::before').content !== 'none' &&
+      document.getElementById('barre').getBoundingClientRect().height > 0,
+    legende: document.getElementById('etats').classList.contains('en-legende'),
+    tuiles: document.querySelectorAll('#etats .etat-btn').length
+  }));
+  verifier('J — sélection vide : « Aucun plan dans la sélection », plus de « 0 sur 0 plans validés »', vide20.phrase === 'Aucun plan dans la sélection', vide20.phrase);
+  verifier('B — sélection vide : la barre garde une piste fine au lieu d’un trou, et les tuiles passent en légende sans se recouvrir',
+    vide20.piste && vide20.legende && vide20.tuiles >= 2 && !(await tuilesSeChevauchent()), JSON.stringify(vide20));
+  const refs20 = await p.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    const fini = s.plans.find(x => window.__classer(x.avancement) === 'termine');
+    const pasFini = s.plans.find(x => window.__classer(x.avancement) === 'encours');
+    return { fini: fini.reference, pasFini: pasFini.reference };
+  });
+  await p.fill('#recherche', refs20.pasFini); await p.waitForTimeout(600);
+  const un0 = await p.evaluate(() => document.getElementById('phrase').textContent.replace(/[\s\u00a0\u202f]+/g, ' ').trim());
+  await p.fill('#recherche', refs20.fini); await p.waitForTimeout(600);
+  const un1 = await p.evaluate(() => document.getElementById('phrase').textContent.replace(/[\s\u00a0\u202f]+/g, ' ').trim());
+  verifier('J — un seul plan : « 0 sur 1 plan validé », « 1 sur 1 plan validé » (au singulier)',
+    un0 === '0 sur 1 plan validé dans la sélection' && un1 === '1 sur 1 plan validé dans la sélection', JSON.stringify([un0, un1]));
+  verifier('B — un seul plan : ses tuiles ne se recouvrent pas non plus', !(await tuilesSeChevauchent()));
+  await reinitialiser(p);
+  verifier('B — sur toute la page, les chiffres sous la barre ne se recouvrent pas', !(await tuilesSeChevauchent()));
+
+  // C. Les puces au-dessus du tableau comptent ce que leur clic montrera.
+  /* Un groupe qui a des deux : des plans à l'arrêt et des « non renseignés ». */
+  await p.evaluate(() => [...document.querySelectorAll('.critique-arret')].map(a => a.previousElementSibling)
+    .find(l => !/ 0 non renseignés/.test(l.title)).click()); await p.waitForTimeout(500);
+  const puces20 = await p.evaluate(() => ({
+    groupe: (document.querySelector('.critique-ligne[aria-pressed="true"]') || {}).dataset,
+    vide: (document.querySelector('#incomplets .puce-vide b') || {}).textContent,
+    arret: (document.getElementById('a-surveiller').textContent.match(/(\d+) plans?/) || [])[1]
+  }));
+  await p.click('#incomplets .puce-vide'); await p.waitForTimeout(500);
+  const apresVide20 = await lignes20();
+  await p.click('#incomplets .puce-vide'); await p.waitForTimeout(500);
+  await p.click('#a-surveiller button[data-arret]'); await p.waitForTimeout(500);
+  const apresArret20 = await lignes20();
+  await p.click('#a-surveiller button[data-arret]'); await p.waitForTimeout(500);
+  verifier('C — groupe ouvert : « non renseigné N » montre N lignes, « À surveiller : N plans » aussi (ils comptaient tout le périmètre)',
+    !!puces20.groupe && nombre20(puces20.vide) === apresVide20 && apresVide20 > 0 && Number(puces20.arret) === apresArret20 && apresArret20 > 0 &&
+    apresArret20 < 16, JSON.stringify([puces20, apresVide20, apresArret20]));
+  await reinitialiser(p);
+  await p.click('#etats .etat-btn[data-cle="termine"]'); await p.waitForTimeout(500);
+  verifier('C — sous la tuile « Terminé », « non renseigné » vaudrait 0 : la puce s’efface',
+    await p.evaluate(() => !document.querySelector('#incomplets .puce-vide')));
+
+  // F. Le choix le plus récent l'emporte entre « À surveiller » et une tuile contraire.
+  const arretVisible20 = await p.evaluate(() => !document.getElementById('a-surveiller').hidden &&
+    (document.getElementById('a-surveiller').textContent.match(/(\d+) plans?/) || [])[1]);
+  await p.click('#a-surveiller button[data-arret]'); await p.waitForTimeout(500);
+  const f20a = await p.evaluate(() => ({ lignes: document.querySelectorAll('#corps-tableau tr').length,
+    tuile: !!document.querySelector('#etats .etat-btn[aria-pressed="true"]'),
+    etats: [...new Set([...document.querySelectorAll('#corps-tableau .etat-cellule')].map(x => x.textContent.trim()))].join() }));
+  verifier('F — « À surveiller » sous la tuile « Terminé » : la tuile se retire, les plans à l’arrêt s’affichent (plus de 0 sur 0)',
+    arretVisible20 === '16' && f20a.lignes === 16 && !f20a.tuile && f20a.etats === 'En cours', JSON.stringify([arretVisible20, f20a]));
+  await p.click('#etats .etat-btn[data-cle="termine"]'); await p.waitForTimeout(500);
+  const f20b = await p.evaluate(() => ({ lignes: document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length,
+    jetons: [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').trim()),
+    phrase: document.getElementById('phrase').textContent }));
+  verifier('F — puis la tuile « Terminé » : « À surveiller » se retire, la page montre les validés',
+    f20b.lignes > 16 && f20b.jetons.length === 1 && /^État/.test(f20b.jetons[0]) && !/sur 0/.test(f20b.phrase), JSON.stringify(f20b));
+  await reinitialiser(p);
+
+  // G. Un filtre de colonne passe par le même chemin que la recherche.
+  await p.click('input[data-filtre="reference"]');
+  await p.keyboard.type(refs20.pasFini); await p.waitForTimeout(700);
+  const g20a = await p.evaluate(() => ({ fiche: !document.getElementById('fiche-plan').hidden && (document.querySelector('#fiche-plan .ref') || {}).textContent,
+    actif: document.activeElement.getAttribute('data-filtre'), valeur: document.activeElement.value, lignes: document.querySelectorAll('#corps-tableau tr').length,
+    jeton: [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').trim()).join() }));
+  verifier('G — un filtre de colonne qui ne laisse qu’un plan ouvre sa fiche, et le curseur reste dans le champ',
+    g20a.fiche === refs20.pasFini && g20a.actif === 'reference' && g20a.valeur === refs20.pasFini && g20a.lignes === 1 && /Référence/.test(g20a.jeton), JSON.stringify(g20a));
+  await p.keyboard.type('QQ'); await p.waitForTimeout(700);
+  const g20b = await p.evaluate(() => ({ fiche: document.getElementById('fiche-plan').hidden, vide: !!document.querySelector('#corps-tableau .vide-message'),
+    valeur: document.activeElement.value, incomplets: !!document.querySelector('#incomplets .puce-vide') }));
+  verifier('G — et la fiche se ferme sur un tableau vide ; la puce « non renseigné » recompte (0 : elle s’efface)',
+    g20b.fiche && g20b.vide && g20b.valeur === refs20.pasFini + 'QQ' && !g20b.incomplets, JSON.stringify(g20b));
+  await p.evaluate(() => document.activeElement.blur());
+  await reinitialiser(p);
+
+  // L. Un seul verdict par écran : la puce de l'échéance suit le groupe ouvert.
+  /* Un jalon entre les fins des groupes : tenu pour l'ensemble et pour
+     certains ATA, manqué pour d'autres — le test compare des deux côtés. */
+  await p.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    s.jalons = [{ semaine: '2027-S10', date: '2027-03-12', texte: 'Jalon de test' }];
+    window.__chargerSource(s);
+  });
+  await p.waitForTimeout(500);
+  const verdicts20 = await p.evaluate(async () => {
+    const att = ms => new Promise(r => setTimeout(r, ms));
+    const res = [];
+    const groupes = [...document.querySelectorAll('.critique-ligne')].map(l => l.dataset.groupe);
+    for (const g of groupes) {
+      [...document.querySelectorAll('.critique-ligne')].find(l => l.dataset.groupe === g).click();
+      await att(150);
+      const pill = document.getElementById('echeance-titre');
+      const prochain = window.__prochainJalon();
+      const idx = [...document.querySelectorAll('.legende-jalon')].findIndex(x => x.querySelector('.mot').textContent === prochain.texte);
+      const svg = document.querySelector('svg.graphe .jalon[data-jalon="' + idx + '"]');
+      res.push({ g, retard: pill.classList.contains('en-retard'), texte: pill.textContent,
+        legende: document.querySelectorAll('.legende-jalon')[idx].classList.contains('critique'),
+        svg: svg ? svg.classList.contains('critique') : null });
+      [...document.querySelectorAll('.critique-ligne')].find(l => l.dataset.groupe === g).click();
+      await att(120);
+    }
+    return res;
+  });
+  verifier('L — pour chaque ATA ouvert : le point de la puce « Prochaine échéance » a la couleur du jalon sur le graphique et dans sa légende, et la puce nomme le groupe',
+    verdicts20.length >= 5 && verdicts20.every(v => v.retard === v.legende && (v.svg === null || v.svg === v.retard) && v.texte.indexOf('ATA ' + v.g) !== -1),
+    JSON.stringify(verdicts20.filter(v => !(v.retard === v.legende && (v.svg === null || v.svg === v.retard) && v.texte.indexOf('ATA ' + v.g) !== -1))));
+  const groupeTenu = verdicts20.find(v => !v.retard), groupeTard = verdicts20.find(v => v.retard);
+  verifier('L — l’exemple a des groupes des deux sortes : le test compare vraiment', !!groupeTenu && !!groupeTard, JSON.stringify(verdicts20.map(v => v.g + ':' + v.retard)));
+  if (groupeTenu) {
+    await p.evaluate(g => [...document.querySelectorAll('.critique-ligne')].find(l => l.dataset.groupe === g).click(), groupeTenu.g); await p.waitForTimeout(400);
+    await p.click('#echeance-titre'); await p.waitForTimeout(400);
+    const fiche20 = await p.evaluate(() => { const f = document.getElementById('fiche-echeance');
+      return f ? { quand: f.querySelector('.quand').textContent, bon: f.querySelector('.fiche-echeance-verdict').classList.contains('bon'),
+                   verdict: f.querySelector('.fiche-echeance-verdict').textContent } : null; });
+    verifier('L — sous ce groupe, la fiche de l’échéance le nomme et dit le même verdict que la puce (tenue)',
+      !!fiche20 && fiche20.quand.indexOf('ATA ' + groupeTenu.g) !== -1 && fiche20.bon && /tenue dans ATA/.test(fiche20.verdict), JSON.stringify(fiche20));
+    await p.click('#echeance-titre'); await p.waitForTimeout(300);
+  }
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
+  await p.waitForTimeout(500);
+  await reinitialiser(p);
+
+  // W. « au rythme global », et le dernier groupe nommé quand il finit plus tard.
+  await p.click('#echeance-titre'); await p.waitForTimeout(400);
+  const w20 = await p.evaluate(() => {
+    const esp = t => String(t || '').replace(/[\u00a0\u202f]/g, ' ').replace(/\s+/g, ' ').trim();
+    const v = esp((document.querySelector('#fiche-echeance .fiche-echeance-verdict') || {}).textContent);
+    const fins = [...document.querySelectorAll('.critique-ligne')].map(l => ({ g: l.dataset.groupe, fin: esp(l.querySelector('.critique-date .v').textContent) }))
+      .filter(x => /^S\d+/.test(x.fin));
+    const rang = f => { const m = f.match(/^S(\d+) · \S+ (\d{4})$/); return m ? +m[2] * 100 + +m[1] : 0; };
+    fins.sort((a, b) => rang(b.fin) - rang(a.fin));
+    return { v, dernier: fins[0], globale: (v.match(/au rythme global, la fin serait en (S\d+ · \S+ \d{4})/) || [])[1] };
+  });
+  verifier('W — la fiche dit « au rythme global, la fin serait en … » et nomme le dernier groupe, à la fin que montre le bloc',
+    !!w20.globale && !!w20.dernier && w20.v.indexOf('le dernier groupe (ATA ' + w20.dernier.g + ') finirait en ' + w20.dernier.fin) !== -1, JSON.stringify(w20));
+  await p.click('#echeance-titre'); await p.waitForTimeout(300);
+
+  // M. Vue d'ensemble : sous « tenue », la fin du bilan de l'échéance, sur son périmètre.
+  await p.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    s.jalons = [{ semaine: '2027-S40', date: '2027-10-01', texte: 'Jalon lointain', perimetre: 'BASE/OPTION' }];
+    window.__chargerSource(s);
+  });
+  await p.waitForTimeout(500);
+  await p.click('#echeance-titre'); await p.waitForTimeout(400);
+  const ficheLoin = await p.evaluate(() => String((document.querySelector('#fiche-echeance .fiche-echeance-verdict') || {}).textContent).replace(/[\u00a0\u202f]/g, ' '));
+  await p.click('#voir-ensemble'); await p.waitForTimeout(1500);
+  const ens20 = await p.evaluate(() => [...document.querySelectorAll('#ensemble tbody tr')].map(tr =>
+    [...tr.querySelectorAll('td')].pop().textContent.replace(/[\u00a0\u202f]/g, ' ')));
+  await p.click('#ensemble button[data-fermer-ensemble]'); await p.waitForTimeout(200);
+  const finLoin = (ficheLoin.match(/la fin serait en (S\d+ · \S+ \d{4})/) || [])[1];
+  verifier('M — vue d’ensemble, échéance tenue : la fin écrite est celle de la fiche, sur le périmètre du jalon, qui est nommé',
+    !!finLoin && /^tenue/.test(ens20[0]) && ens20[0].indexOf('au rythme global de BASE/OPTION, la fin serait en ' + finLoin) !== -1, JSON.stringify([ficheLoin, ens20[0]]));
+  verifier('M — un contrat sans jalon garde la fin de tout le contrat', /^fin S\d+ · \S+ \d{4}$/.test(ens20[1]), ens20[1]);
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
+  await p.waitForTimeout(500);
+  await reinitialiser(p);
+
+  // X. Un verdict cliqué montre exactement son nombre, même avec un groupe ouvert.
+  await p.evaluate(() => document.querySelector('.critique-ligne').click()); await p.waitForTimeout(500);
+  await p.click('#verdicts-rapprochement button[data-rapp="avance"]'); await p.waitForTimeout(600);
+  const x20 = await p.evaluate(() => ({ lignes: document.querySelectorAll('#corps-tableau tr').length,
+    ouvert: !!document.querySelector('.critique-ligne[aria-pressed="true"]'),
+    jetons: [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').trim()) }));
+  verifier('X — groupe ouvert, clic sur « 12 dans SEE, mais GATES ne les dit pas validés » : le groupe se ferme, le tableau montre 12 lignes',
+    x20.lignes === AVANCE && !x20.ouvert && x20.jetons.length === 1 && /^Comparaison/.test(x20.jetons[0]), JSON.stringify(x20));
+
+  // AA. Sous un verdict déplié, la légende ne nomme que les valeurs de sa liste.
+  const aa20 = await p.evaluate(() => {
+    const corps = document.querySelector('#verdicts-rapprochement .verdict-corps[data-lot="avance"]');
+    const legende = [...corps.querySelectorAll('.rapp-puces-legende > span')].map(s => s.textContent.trim());
+    const parRef = {};
+    [...document.querySelectorAll('#corps-tableau tr')].forEach(tr => { parRef[tr.querySelector('td.ref').textContent.trim()] = tr.querySelector('.etat-cellule').textContent.trim(); });
+    const valeurs = [...new Set([...corps.querySelectorAll('.rapp-puce[data-plan-rapp]')].map(b => parRef[b.dataset.planRapp]))];
+    return { legende, valeurs };
+  });
+  verifier('AA — légende du verdict déplié : seulement les valeurs présentes, écrites comme dans la colonne',
+    aa20.legende.length >= 2 && aa20.legende.slice().sort().join() === aa20.valeurs.slice().sort().join(), JSON.stringify(aa20));
+
+  // P1. « Copier (n) » sur les listes de références.
+  await p.evaluate(() => {
+    window.__copies = [];
+    try { navigator.clipboard.writeText = t => { window.__copies.push(t); return Promise.resolve(); }; }
+    catch (e) { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: t => { window.__copies.push(t); return Promise.resolve(); } } }); }
+  });
+  const copieLot = await p.evaluate(async () => {
+    const b = document.querySelector('#verdicts-rapprochement .verdict-corps[data-lot="avance"] button[data-copier]');
+    const refs = [...document.querySelectorAll('#verdicts-rapprochement .verdict-corps[data-lot="avance"] .rapp-puce-ref')].map(x => x.textContent);
+    const avant = b.textContent;
+    b.click(); await new Promise(r => setTimeout(r, 100));
+    return { avant, apres: b.textContent, copie: window.__copies[0], refs: refs.join('\n'), imbrique: !!b.parentElement.closest('button') };
+  });
+  verifier('P1 — verdict déplié : « Copier (12) » met les 12 références dans le presse-papiers, une par ligne, puis dit « Copié »',
+    copieLot.avant === 'Copier (' + AVANCE + ')' && copieLot.apres === 'Copié' && copieLot.copie === copieLot.refs && !copieLot.imbrique, JSON.stringify(copieLot).slice(0, 300));
+  await p.waitForTimeout(2200);
+  verifier('P1 — deux secondes après, le bouton redit « Copier (12) »',
+    await p.evaluate(() => document.querySelector('#verdicts-rapprochement .verdict-corps[data-lot="avance"] button[data-copier]').textContent) === 'Copier (' + AVANCE + ')');
+  await reinitialiser(p);
+  // Au clavier, dans un groupe déplié : Entrée sur le bouton.
+  await p.evaluate(() => document.querySelector('.critique-ligne').click()); await p.waitForTimeout(500);
+  await p.focus('#zone-critique .groupe-refs button[data-copier]');
+  await p.keyboard.press('Enter'); await p.waitForTimeout(200);
+  const copieGroupe = await p.evaluate(() => ({ copie: window.__copies[window.__copies.length - 1],
+    refs: [...document.querySelectorAll('#zone-critique .groupe-refs .jeton-ud')].map(b => b.dataset.ud).join('\n'),
+    imbrique: !!document.querySelector('#zone-critique button button, #zone-critique button [data-copier]') }));
+  verifier('P1 — groupe déplié, au clavier : toutes ses références, dans l’ordre affiché ; jamais un bouton dans un bouton',
+    !!copieGroupe.copie && copieGroupe.copie === copieGroupe.refs && !copieGroupe.imbrique, JSON.stringify(copieGroupe).slice(0, 300));
+  await reinitialiser(p);
+  // Une semaine du journal, et la voie de secours quand le navigateur refuse le presse-papiers.
+  const copieJournal = await p.evaluate(async () => {
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: () => Promise.reject(new Error('refusé')) } });
+    let secours = null;
+    document.execCommand = c => { secours = c === 'copy' ? document.activeElement.value : null; return true; };
+    document.querySelector('#zone-journal button[data-semaine]').click();
+    await new Promise(r => setTimeout(r, 300));
+    const b = document.querySelector('#zone-journal .journal-copier button[data-copier]');
+    b.click(); await new Promise(r => setTimeout(r, 200));
+    return { n: +b.textContent.replace(/\D/g, '') || null, texte: b.textContent, secours, lignes: secours ? secours.split('\n').length : 0,
+             affichees: document.querySelectorAll('#zone-journal .journal-liste .journal-ligne').length };
+  });
+  verifier('P1 — semaine du journal dépliée : toutes ses références (même au-delà des douze affichées), par la voie de secours si le presse-papiers est refusé',
+    copieJournal.texte === 'Copié' && copieJournal.lignes > 0 && copieJournal.lignes >= copieJournal.affichees, JSON.stringify(copieJournal).slice(0, 300));
+  await p.evaluate(() => { delete document.execCommand; document.querySelector('#zone-journal button[data-semaine][aria-expanded="true"]').click(); });
+  await p.waitForTimeout(300);
+
+  // P2. « n à l'arrêt » d'un groupe est un bouton ; dans le groupe déplié, ils viennent en tête.
+  const arretG = await p.evaluate(() => {
+    const b = document.querySelector('#zone-critique button[data-arret-groupe]');
+    const place = b.parentElement.previousElementSibling.querySelector('.arret-n.place');
+    const rb = b.getBoundingClientRect(), rp = place.getBoundingClientRect();
+    return { g: b.dataset.arretGroupe, n: parseInt(b.textContent, 10), dx: Math.abs((rb.left + rb.right) / 2 - (rp.left + rp.right) / 2), dy: Math.abs(rb.bottom - rp.bottom),
+             imbrique: !!b.parentElement.closest('button') };
+  });
+  verifier('P2 — « n à l’arrêt » sous le compte d’un groupe : un vrai bouton, hors du bouton de la ligne, posé à la place que la ligne lui garde',
+    arretG.n > 0 && !arretG.imbrique && arretG.dx < 2 && arretG.dy < 2, JSON.stringify(arretG));
+  await p.evaluate(g => [...document.querySelectorAll('#zone-critique button[data-arret-groupe]')].find(b => b.dataset.arretGroupe === g).click(), arretG.g);
+  await p.waitForTimeout(600);
+  const p20 = await p.evaluate(g => ({
+    lignes: document.querySelectorAll('#corps-tableau tr').length,
+    etats: [...new Set([...document.querySelectorAll('#corps-tableau .etat-cellule')].map(x => x.textContent.trim()))].join(),
+    ouvert: (document.querySelector('.critique-ligne[aria-pressed="true"]') || {}).dataset,
+    presse: ([...document.querySelectorAll('#zone-critique button[data-arret-groupe]')].find(b => b.dataset.arretGroupe === g) || {}).getAttribute('aria-pressed'),
+    surveiller: (document.getElementById('a-surveiller').textContent.match(/(\d+) plans?/) || [])[1],
+    jetons: [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').trim()),
+    premier: (document.querySelector('#zone-critique .groupe-refs > :nth-child(2)') || {}).className,
+    titre: ((document.querySelector('#zone-critique .groupe-refs .titre-arret') || {}).textContent || '').replace(/[\u00a0\u202f]/g, ' '),
+    depuis: [...document.querySelectorAll('#zone-critique .groupe-refs .sous-arret .jeton-ud')].map(b => (b.querySelector('.depuis') || {}).textContent)
+  }), arretG.g);
+  verifier('P2 — un clic ne montre que ces plans : n lignes, toutes en cours, le groupe ouvert, « À surveiller » limité au groupe',
+    p20.lignes === arretG.n && p20.etats === 'En cours' && p20.ouvert && p20.ouvert.groupe === arretG.g && p20.presse === 'true' && Number(p20.surveiller) === arretG.n &&
+    p20.jetons.some(j => /^À surveiller/.test(j)) && p20.jetons.some(j => j.indexOf(arretG.g) !== -1), JSON.stringify(p20));
+  verifier('P2 — dans le groupe déplié, les plans à l’arrêt viennent d’abord, sous « À l’arrêt », chacun avec « depuis Sxx »',
+    p20.premier === 'sous-arret' && /^À l’arrêt/.test(p20.titre) && p20.depuis.length === arretG.n && p20.depuis.every(t => /^depuis S\d{1,2}$/.test(t)), JSON.stringify(p20));
+  await p.evaluate(g => [...document.querySelectorAll('#zone-critique button[data-arret-groupe]')].find(b => b.dataset.arretGroupe === g).click(), arretG.g);
+  await p.waitForTimeout(500);
+  const p20b = await p.evaluate(() => ({ lignes: document.querySelectorAll('#corps-tableau tr').length, ouvert: !!document.querySelector('.critique-ligne[aria-pressed="true"]'),
+    total: +((document.querySelector('.critique-ligne[aria-pressed="true"] .critique-total') || {}).textContent || 0) }));
+  verifier('P2 — un second clic retire le filtre et laisse le groupe ouvert', p20b.ouvert && p20b.lignes === p20b.total && p20b.total > arretG.n, JSON.stringify(p20b));
+  await reinitialiser(p);
+
+  // P3. La réponse sous le titre de la comparaison.
+  const p30 = await p.evaluate(async () => {
+    const att = ms => new Promise(r => setTimeout(r, ms));
+    const esp = t => String(t || '').replace(/[\u00a0\u202f]/g, ' ').replace(/\s+/g, ' ').trim();
+    const res = [];
+    for (const per of ['', 'BASE/OPTION', 'PERSO']) {
+      document.querySelector('#choix-perimetre button[data-perimetre="' + per + '"]').click(); await att(300);
+      const R = window.__rapprochement(), z = document.getElementById('reponse-rapprochement');
+      const parts = [];
+      if (R.manque.length) parts.push(R.manque.length + (R.manque.length > 1 ? ' plans validés absents de SEE' : ' plan validé absent de SEE'));
+      if (R.avance.length) parts.push(R.avance.length + (R.avance.length > 1 ? ' plans dans SEE que GATES ne dit pas validés' : ' plan dans SEE que GATES ne dit pas validé'));
+      res.push({ per, attendu: parts.length ? 'À traiter : ' + parts.join(' · ') : '', vu: z.hidden ? '' : esp(z.textContent) });
+    }
+    document.querySelector('#choix-perimetre button[data-perimetre=""]').click(); await att(300);
+    return res;
+  });
+  verifier('P3 — « À traiter : 3 plans validés absents de SEE · 12 plans dans SEE que GATES ne dit pas validés », une part à 0 omise, sur chaque périmètre',
+    p30[0].vu === 'À traiter : ' + MANQUE + ' plans validés absents de SEE · ' + AVANCE + ' plans dans SEE que GATES ne dit pas validés' &&
+    p30.every(x => x.vu === x.attendu), JSON.stringify(p30));
+  await p.click('#reponse-rapprochement button[data-rapp="manque"]'); await p.waitForTimeout(600);
+  const p30b = await p.evaluate(() => ({ lignes: document.querySelectorAll('#corps-tableau tr').length,
+    verdict: document.querySelector('#verdicts-rapprochement button[data-rapp="manque"]').getAttribute('aria-pressed'),
+    deplie: document.querySelector('#verdicts-rapprochement .verdict-bloc[data-lot="manque"]').dataset.ouvert,
+    focus: document.activeElement.closest('#reponse-rapprochement') !== null }));
+  verifier('P3 — cliquer « 3 » fait ce que fait sa ligne de verdict : le tableau montre les 3 plans, le verdict est posé et déplié',
+    p30b.lignes === MANQUE && p30b.verdict === 'true' && p30b.deplie === 'true' && p30b.focus, JSON.stringify(p30b));
+  await reinitialiser(p);
+
+  // AB. Un seul bouton de remise à zéro.
+  const ab20 = await p.evaluate(() => ({ reinit: !!document.getElementById('reinit'),
+    mots: [...document.querySelectorAll('button')].filter(b => /réinitialiser/i.test(b.textContent)).length }));
+  verifier('AB — plus de « tout réinitialiser » à côté de « Vue essentielle » : « Tout effacer », dans le bandeau des filtres, reste seul',
+    !ab20.reinit && ab20.mots === 0, JSON.stringify(ab20));
 
   // =================================================================
   section('Stockage local corrompu ou indisponible');

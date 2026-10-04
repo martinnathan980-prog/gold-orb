@@ -6,7 +6,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '9dc320b';
+  var EDITION = '60e5a87';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -737,6 +737,33 @@
       manque: enRetard ? Math.ceil(restants - Math.max(0, rythme) * semaines - 1e-9) : 0
     };
   }
+  /* Le groupe qui finirait le dernier, chacun à SON rythme — les fins que
+     calcule le bloc « par ATA » pour la dimension choisie, sur le périmètre
+     de l'échéance. La projection globale, elle, suppose que le rythme des
+     groupes finis passe aux autres : « tout serait validé en S8 » alors que
+     l'ATA 24, à son rythme, finit en S17. Un groupe sans rythme n'a pas de
+     fin : il ne compte pas. Rien quand la dimension n'existe pas. */
+  function dernierGroupe(per, dim) {
+    if (!dim || !TITRE_DIM[dim]) return null;
+    var vus = {}, pire = null;
+    PLANS.forEach(function (p) {
+      if (per && domaineDe(p) !== per) return;
+      var v = String(valeurDim(p, dim) || '\u2014');
+      if (vus[v]) return;
+      vus[v] = true;
+      var pts = serieDe(per, { dim: dim, val: v }).pts, der = pts[pts.length - 1];
+      if (!der || der.total <= der.termine) return;
+      var ry = rythmes(pts), fin = semaineFin(der.termine, der.total, ry ? ry.central : 0);
+      if (fin !== null && (!pire || fin > pire.fin)) pire = { nom: nomGroupe({ dim: dim, val: v }), fin: fin };
+    });
+    return pire;
+  }
+  /* « au rythme global, la fin serait en S8 » — et, quand un groupe finit
+     plus tard à son propre rythme, la phrase le nomme. */
+  function motDernierGroupe(finGlobale, per, dim) {
+    var d = dernierGroupe(per, dim);
+    return d && d.fin > finGlobale ? ' ; le dernier groupe (' + d.nom + ') finirait en ' + semaineDite(d.fin) : '';
+  }
   function virgule(x) { return (Math.round(x * 10) / 10).toFixed(1).replace('.', ','); }
   function ficheEcheance(idx) {
     var j = jalons[idx];
@@ -760,25 +787,36 @@
         '\x3Cdiv>\x3Cbutton type="button" class="lien-doux" data-aller-indicateur="' + autre + '" data-jalon="' + idx + '">Passer ' + versAutre + '\x3C/button>\x3C/div>' +
         '\x3C/div>';
     }
-    var b = bilanEcheance(j);
+    /* Un seul verdict par écran : sous un groupe ouvert dans le bloc, la
+       fiche suit la portée de la courbe — ce groupe —, comme le marqueur du
+       jalon, sa légende et la droite « requis », et elle le nomme. */
+    var gA = groupeAffiche();
+    var b = bilanEcheance(j, gA);
     var passe = b.jours < 0;
-    var dans = b.domaine ? ' dans ' + b.domaine : '';
+    var dans = gA ? ' dans ' + nomGroupe(gA) + (b.domaine ? ' (' + b.domaine + ')' : '') : b.domaine ? ' dans ' + b.domaine : '';
+    /* Sans groupe, la fin est celle du rythme global, qui suppose que le
+       rythme des groupes finis passe aux autres : la phrase le dit, et
+       nomme le groupe qui, à son propre rythme, finirait plus tard. */
+    var fin = gA ? 'tout serait validé en ' + semaineDite(b.fin) : 'au rythme global, la fin serait en ' + semaineDite(b.fin);
+    var dernier = gA ? '' : motDernierGroupe(b.fin, b.domaine, vue.dimCritique);
+    var dansG = gA ? dans : '';
     var verdict;
-    if (!b.total) verdict = { cls: 'mal', mot: 'Aucun plan' + (b.domaine ? ' dans le périmètre ' + b.domaine : '') + '.' };
+    if (!b.total) verdict = { cls: 'mal', mot: 'Aucun plan' + (gA ? ' dans ' + nomGroupe(gA) : '') + (b.domaine ? ' dans le périmètre ' + b.domaine : '') + '.' };
     else if (!b.restants) verdict = { cls: 'bon', mot: 'Tout est validé' + dans + '.' };
     else if (passe) verdict = { cls: 'mal', mot: 'Échéance passée : ' + nb(b.restants) + (b.restants > 1 ? ' plans restent' : ' plan reste') + ' à valider' + dans + '.' };
     else if (b.rythme === null) verdict = { cls: 'mal', mot: 'Un seul relevé pour l’instant : il en faut deux pour mesurer un rythme.' };
-    else if (b.rythme <= 0) verdict = { cls: 'mal', mot: 'Aucun plan validé depuis le premier relevé : pas de rythme, donc pas de date d’arrivée.' };
-    else if (!b.enRetard) verdict = { cls: 'bon', mot: 'Au rythme tenu, l’échéance est tenue : tout serait validé en ' + semaineDite(b.fin) + '.' };
+    else if (b.rythme <= 0) verdict = { cls: 'mal', mot: 'Aucun plan validé depuis le premier relevé' + dansG + ' : pas de rythme, donc pas de date d’arrivée.' };
+    else if (!b.enRetard) verdict = { cls: 'bon', mot: 'Au rythme tenu, l’échéance est tenue' + dansG + ' : ' + fin + dernier + '.' };
     else verdict = { cls: 'mal', mot: 'Au rythme tenu, il manquerait ' + nb(b.manque) + (b.manque > 1 ? ' plans' : ' plan') +
-      ' le jour de l’échéance ; tout serait validé en ' + semaineDite(b.fin) + ', ' +
-      nb(b.fin - j.i) + (b.fin - j.i > 1 ? ' semaines' : ' semaine') + ' après.' };
+      dansG + ' le jour de l’échéance ; ' + fin + ', ' +
+      nb(b.fin - j.i) + (b.fin - j.i > 1 ? ' semaines' : ' semaine') + ' après' + dernier + '.' };
     var pct = b.total ? Math.round(100 * b.termines / b.total) : 0;
     var jours = Math.abs(b.jours);
     /* Sous quel périmètre se comptent ces plans : celui qu'on regarde, ou
        celui du jalon quand il en porte un — et s'il n'est pas celui qu'on
        regarde, la fiche le dit. */
-    var portee = b.domaine ? ' · ' + ech(b.domaine) + (!jalonDansPerimetre(j) ? ' (hors du périmètre choisi)' : '') : '';
+    var portee = (gA ? ' · ' + ech(nomGroupe(gA)) : '') +
+      (b.domaine ? ' · ' + ech(b.domaine) + (!jalonDansPerimetre(j) ? ' (hors du périmètre choisi)' : '') : '');
     return '\x3Cdiv class="fiche-echeance" id="fiche-echeance" role="region" aria-label="Échéance ' + ech(j.texte) + '">' +
       '\x3Cdiv class="fiche-echeance-tete">\x3Cspan class="num">' + (idx + 1) + '\x3C/span>\x3Ch3>' + ech(j.texte) + '\x3C/h3>' +
       '\x3Cspan class="quand">' + ech(quand) + portee + '\x3C/span>' +
@@ -803,14 +841,20 @@
     var bouton = $('echeance-titre'), j = prochainJalon();
     /* Vidée aussi : cachée, elle gardait le texte du contrat d'avant. */
     if (!j) { bouton.hidden = true; bouton.innerHTML = ''; return; }
-    var idx = jalons.indexOf(j), b = bilanEcheance(j);
+    /* La portée de la courbe : sous un groupe ouvert dans le bloc, le point
+       est le verdict de CE groupe — celui du marqueur rouge et de la droite
+       « requis » —, et la puce le nomme. Un seul verdict par écran. */
+    var gA = groupeAffiche();
+    var idx = jalons.indexOf(j), b = bilanEcheance(j, gA);
     bouton.hidden = false;
     bouton.className = 'echeance-titre' + (b.enRetard ? ' en-retard' : '');
     bouton.dataset.jalon = idx;
     bouton.innerHTML = '\x3Cspan class="point" aria-hidden="true">\x3C/span>\x3Cspan>Prochaine échéance\x3C/span>' +
-      '\x3Cb>' + ech(j.texte) + '\x3C/b>\x3Cspan class="jours">' + ech(motJours(b.jours)) + '\x3C/span>';
-    bouton.title = b.enRetard ? 'Au rythme tenu, cette échéance ne sera pas tenue — cliquez pour le détail'
-                              : 'Au rythme tenu, cette échéance est tenue — cliquez pour le détail';
+      '\x3Cb>' + ech(j.texte) + '\x3C/b>' + (gA ? '\x3Cspan class="portee">\u00b7 ' + ech(nomGroupe(gA)) + '\x3C/span>' : '') +
+      '\x3Cspan class="jours">' + ech(motJours(b.jours)) + '\x3C/span>';
+    var pour = gA ? ' pour ' + nomGroupe(gA) : '';
+    bouton.title = b.enRetard ? 'Au rythme tenu, cette échéance ne sera pas tenue' + pour + ' — cliquez pour le détail'
+                              : 'Au rythme tenu, cette échéance est tenue' + pour + ' — cliquez pour le détail';
   }
   function ouvrirEcheance(idx, defiler) {
     vue.echeance = (vue.echeance === idx && !defiler) ? null : idx;
@@ -1718,6 +1762,13 @@
     if (deja) return;
     if (lot.atterrit) vue.base = lot.atterrit;
     if (cle === 'seul') { vue.lotLa = cle; vue.clesLotLa = clesSelection(); return; }
+    /* Le tableau montre exactement le nombre cliqué : la comparaison compte
+       sur tout le périmètre, alors un groupe ouvert, une tuile, une
+       recherche ou un filtre de colonne encore posés en auraient montré
+       moins (« 12 », puis 0 ligne). Ils s'effacent, comme pour « ne montrer
+       que ce plan » ; le périmètre reste. */
+    vue.etat = ''; vue.groupe = null; vue.filtres = {}; vue.vides = {};
+    vue.recherche = ''; $('recherche').value = '';
     vue.refs = {};
     refsDuLotRapprochement(cle).forEach(function (r) { vue.refs[r] = true; });
     vue.refsLibelle = 'rapprochement:' + cle;
@@ -1813,6 +1864,41 @@
       return true;
     });
   }
+  /* La sélection moins le filtre que pose une puce : ce que le tableau
+     montrerait si l'on cliquait cette puce. « Avancement non renseigné 88 »
+     et « À surveiller : 16 plans » comptent ainsi les lignes que leur clic
+     fera voir — le groupe ouvert, la tuile pressée, la recherche compris —,
+     et non tout le périmètre. sauf : { refs, etat, vide: clé de colonne,
+     groupe }. */
+  function selectionSans(sauf) {
+    var garde = { refs: vue.refs, etat: vue.etat, vides: vue.vides };
+    if (sauf.refs) vue.refs = null;
+    if (sauf.etat) vue.etat = '';
+    if (sauf.vide) {
+      var vides = {};
+      Object.keys(vue.vides).forEach(function (k) { if (k !== sauf.vide) vides[k] = vue.vides[k]; });
+      vue.vides = vides;
+    }
+    try { return selection(!!sauf.groupe); }
+    finally { vue.refs = garde.refs; vue.etat = garde.etat; vue.vides = garde.vides; }
+  }
+  /* Une tuile d'une valeur qui n'est pas « en cours » (Validé, À faire…) :
+     elle exclut tous les plans à l'arrêt, qui sont en cours. Le choix le
+     plus récent l'emporte — la tuile retire « À surveiller », « À
+     surveiller » retire la tuile —, plutôt qu'un tableau à 0 sur 0. */
+  function etatContraireALArret() {
+    var v = vue.etat ? valeurDeCle(vue.etat) : null;
+    return !!vue.etat && (!v || v.famille !== 'encours');
+  }
+  /* Les plans à l'arrêt que le clic sur « À surveiller » montrerait : ceux de
+     la sélection — sans sa sélection de plans, que le clic remplace, ni une
+     tuile contraire, que le clic retire. */
+  function arretsDuClic() {
+    if (RELEVES.length < 2) return [];
+    var arret = plansALArret(), dans = {};
+    selectionSans({ refs: true, etat: etatContraireALArret() }).forEach(function (p) { dans[p.reference] = true; });
+    return arret.liste.filter(function (x) { return dans[x.plan.reference]; });
+  }
   /* Une cellule « non renseignée » : vide, un tiret, ou EMPTY tel que
      l'extract l'écrit — pour la colonne suivie, exactement ce que la barre
      compte sous « Non renseigné ». Ailleurs, une cellule vide. */
@@ -1829,8 +1915,7 @@
   }
   /* Les filtres « libres » — recherche, état, groupe, lot, colonnes — ne
      s'appliquent qu'aux plans du jour : un compte archivé ne se refiltre pas.
-     Le périmètre, lui, se dérive des cartes plan par plan et suit l'historique ;
-     filtreActif() réunit les deux pour ce qui se voit à l'écran. */
+     Le périmètre, lui, se dérive des cartes plan par plan et suit l'historique. */
   function filtreLibre() {
     return !!(vue.recherche || vue.etat || vue.groupe || vue.refs ||
       Object.keys(vue.filtres).some(function (k) { return vue.filtres[k]; }) ||
@@ -1843,9 +1928,9 @@
       Object.keys(vue.filtres).some(function (k) { return vue.filtres[k]; }) ||
       Object.keys(vue.vides).some(function (k) { return vue.vides[k]; }));
   }
-  /* Le lot « seulement dans la seconde base » et la recherche de là ne filtrent
-     pas les plans : ils comptent pour « tout réinitialiser », pas pour la phrase. */
-  function filtreActif() { return !!vue.perimetre || !!vue.lotLa || !!vue.seconde.recherche || filtreLibre(); }
+  /* Débrief 20 : plus de « tout réinitialiser » à côté de « Vue essentielle »
+     — il faisait exactement ce que fait « Tout effacer » dans le bandeau des
+     filtres (toutEffacer), qui seul reste : un geste, un mot. */
 
   /* ============================================================
      PÉRIMÈTRE
@@ -2020,7 +2105,10 @@
        l'ordre de la barre, et le survol relie la carte à son segment. */
     var etroit = segs.some(function (seg) { return seg.getBoundingClientRect().width < 36; });
     var besoin = boutons.reduce(function (t, b) { return t + b.offsetWidth; }, 0) + 4 * (boutons.length - 1);
-    if (boutons.length > 4 || etroit || besoin > largeur) {
+    /* Une sélection vide (« zzzz » cherché, une tuile contraire) : plus un
+       seul segment sous lequel caler les chiffres — ils s'empilaient tous au
+       bord gauche, l'un sur l'autre. Ils passent en légende, eux aussi. */
+    if (boutons.length > 4 || etroit || besoin > largeur || !segs.length) {
       zone.classList.add('en-legende');
       boutons.forEach(function (b) { b.style.left = ''; });
       /* Débrief 19 : toutes les cartes sur une seule ligne — les sept valeurs
@@ -2055,6 +2143,10 @@
       return c;
     });
     var gauches = boutons.map(function (b, i) { return cibles[i] - b.offsetWidth / 2; });
+    /* Le premier se cale au bord AVANT qu'on pousse les suivants : poussés
+       depuis une position hors du cadre, puis le premier ramené à 0, ils le
+       recouvraient. */
+    gauches[0] = Math.max(0, gauches[0]);
     for (var i = 1; i < boutons.length; i++) {
       var mini = gauches[i - 1] + boutons[i - 1].offsetWidth + 4;
       if (gauches[i] < mini) gauches[i] = mini;
@@ -2080,7 +2172,10 @@
     /* La portée dite comme la note du graphique : le groupe choisi, le
        périmètre ; « la sélection » dès qu'un autre filtre s'ajoute. */
     var gA = groupeAffiche();
-    $('phrase').innerHTML = '\x3Cb>' + nb(c.termine) + '\x3C/b> sur ' + nb(c.total) + ' plans validés' +
+    /* Accordée au compte : « 0 sur 1 plan validé », et pour une sélection
+       vide, pas de « 0 sur 0 » — la phrase dit qu'il n'y a rien. */
+    $('phrase').innerHTML = !c.total ? 'Aucun plan dans la sélection'
+      : '\x3Cb>' + nb(c.termine) + '\x3C/b> sur ' + nb(c.total) + (c.total > 1 ? ' plans validés' : ' plan validé') +
       (filtreHorsGroupe() || (vue.groupe && !gA) ? ' dans la sélection'
         : gA ? ' dans ' + ech(nomGroupe(gA)) + (vue.perimetre ? ', périmètre ' + ech(vue.perimetre) : '')
         : (vue.perimetre ? ' dans le périmètre ' + ech(vue.perimetre) : ''));
@@ -2091,6 +2186,8 @@
        ne range pas les valeurs dans des cases qu'elle aurait prévues. */
     var parValeur = {};
     liste.forEach(function (p) { var k = cleValeur(p[CLE_SUIVIE]); parValeur[k] = (parValeur[k] || 0) + 1; });
+    /* Aucun plan : une piste fine et vide plutôt qu'un trou dans la page. */
+    $('barre').classList.toggle('vide', !c.total);
     $('barre').innerHTML = VALEURS_COLONNE.map(function (v) {
       var n = parValeur[v.cle] || 0;
       if (!n) return '';
@@ -3011,35 +3108,50 @@
        chacune avec sa pastille et son compte ; dans chacune, les références
        dans l'ordre. Plus de tas « pas encore terminés » où les états se
        mêlaient. */
+    var restants = plans.filter(function (p) { return p._etat !== 'termine'; }).length;
+    var arretParRef = RELEVES.length > 1 ? plansALArret().parRef : {};
+    /* Les plans à l'arrêt d'abord, sous leur propre titre, chacun avec la
+       semaine depuis laquelle il ne bouge plus — c'est souvent là que sont
+       les blocages ; les plus anciens en tête. Ils ne se répètent pas dans
+       les sous-listes par valeur. */
+    var arrets = plans.filter(function (p) { return arretParRef[p.reference]; }).map(function (p) { return arretParRef[p.reference]; })
+      .sort(function (a, b) { return (b.semaines - a.semaines) || COMPARER_REF(a.plan.reference, b.plan.reference); });
+    var nArret = arrets.length;
     var parValeur = {};
     plans.forEach(function (p) {
+      if (arretParRef[p.reference]) return;
       var k = cleValeur(p[CLE_SUIVIE]);
       (parValeur[k] = parValeur[k] || []).push(p);
     });
-    var restants = plans.filter(function (p) { return p._etat !== 'termine'; }).length;
-    var arretParRef = RELEVES.length > 1 ? plansALArret().parRef : {};
-    var nArret = plans.filter(function (p) { return arretParRef[p.reference]; }).length;
-    var html = VALEURS_COLONNE.filter(function (v) { return parValeur[v.cle]; }).map(function (v) {
+    var html = (nArret ? '\x3Cdiv class="sous-arret">\x3Ch4 class="titre-arret">\x3Cspan class="pastille arret">\x3C/span>À l\u2019arrêt' +
+        '\x3Cspan class="n">' + nb(nArret) + '\x3C/span>\x3C/h4>' +
+        '\x3Cdiv class="grille-arret">' + arrets.map(function (x) { return jetonUD(x.plan); }).join('') + '\x3C/div>\x3C/div>' : '') +
+      VALEURS_COLONNE.filter(function (v) { return parValeur[v.cle]; }).map(function (v) {
       var liste = parValeur[v.cle].sort(function (a, b) { return COMPARER_REF(a.reference, b.reference); });
       return '\x3Cdiv class="sous-groupe">\x3Ch4 class="sous-titre">' + pastilleValeur(v.cle, v.famille) + ech(v.libelle) +
         '\x3Cspan class="n">' + nb(liste.length) + '\x3C/span>\x3C/h4>' +
         '\x3Cdiv class="grille">' + liste.map(jetonUD).join('') + '\x3C/div>\x3C/div>';
     }).join('');
+    /* Copier les références du groupe déplié, dans l'ordre affiché. */
+    var copie = arrets.map(function (x) { return x.plan.reference; });
+    VALEURS_COLONNE.forEach(function (v) { (parValeur[v.cle] || []).forEach(function (p) { copie.push(p.reference); }); });
     return '\x3Cdiv class="groupe-refs">\x3Cdiv class="entete">' +
       '\x3Cspan>' + nb(plans.length) + ' plan' + (plans.length > 1 ? 's' : '') +
       (vb ? ' « ' + ech(valeurDeCle(vb) ? valeurDeCle(vb).libelle : vb) + ' » sur ' + nb((r.plans || []).length)
           : (restants ? ' · \x3Cb>' + nb(restants) + '\x3C/b> pas encore validé' + (restants > 1 ? 's' : '') : ' · tout est validé')) +
       (nArret ? ' · \x3Cspan class="arret-n">\x3Cspan class="pastille arret">\x3C/span>' + nb(nArret) + ' à l\u2019arrêt\x3C/span>' : '') +
-      '\x3C/span>\x3Cspan>cliquez une référence pour la retrouver dans le tableau\x3C/span>\x3C/div>' + html + '\x3C/div>';
+      '\x3C/span>' + boutonCopier(copie) + '\x3Cspan>cliquez une référence pour la retrouver dans le tableau\x3C/span>\x3C/div>' + html + '\x3C/div>';
   }
 
   function jetonUD(p) {
     var quoi = CLE_LIBELLE ? String(p[CLE_LIBELLE] || '') : '';
-    /* Un plan à l'arrêt porte un anneau ambre, et sa bulle dit depuis quand. */
+    /* Un plan à l'arrêt porte un anneau ambre, et sa bulle dit depuis quand ;
+       sur la puce même, « depuis S12 ». */
     var arret = RELEVES.length > 1 ? plansALArret().parRef[p.reference] : null;
     return '\x3Cbutton class="jeton-ud' + (arret ? ' arret' : '') + '" type="button" data-ud="' + ech(p.reference) +
       '" title="' + ech(libelleValeur(p[CLE_SUIVIE]) + (quoi ? ' — ' + quoi : '') + (arret ? ' — ' + motArret(arret) : '')) + '">' +
-      pastilleValeur(cleValeur(p[CLE_SUIVIE]), p._etat) + ech(p.reference) + '\x3C/button>';
+      pastilleValeur(cleValeur(p[CLE_SUIVIE]), p._etat) + ech(p.reference) +
+      (arret ? '\x3Cspan class="depuis">depuis S' + numeroSemaine(arret.depuis) + '\x3C/span>' : '') + '\x3C/button>';
   }
   /* Un plan cherché dans ce bloc : sous le groupe qui le contient, lui seul
      — pas toute la liste du groupe. */
@@ -3157,6 +3269,7 @@
     if (!dim || !TITRE_DIM[dim]) {
       $('titre-groupe').textContent = motSuivi();
       $('dim-critique').hidden = true;
+      $('sommaire-groupe').textContent = 'Répartition';
       $('indice-dim').textContent = '';
       $('compte-groupes').textContent = '';
       libellerFiltreGroupe(dim);
@@ -3195,6 +3308,23 @@
     var per = vue.perimetre;
     var depart = semaineDepart();
     var arretParRef = RELEVES.length > 1 ? plansALArret().parRef : {};
+    /* « 3 à l'arrêt » sous le compte d'un groupe est un bouton : il montre
+       ces plans-là dans le tableau (« À surveiller » limité au groupe). Son
+       nombre est celui des lignes que le clic montrera — la sélection, sans
+       sa sélection de plans que le clic remplace, ni une tuile contraire
+       qu'il retire ; sous une valeur du bloc, les plans de cette valeur. */
+    var arretClic = {};
+    if (RELEVES.length > 1) {
+      var dansClic = {};
+      selectionSans({ refs: true, groupe: true, etat: vb ? true : etatContraireALArret() })
+        .forEach(function (p) { dansClic[p.reference] = true; });
+      plansALArret().liste.forEach(function (x) {
+        if (!dansClic[x.plan.reference] || (vb && x.plan._cle !== vb)) return;
+        var kg = String(valeurDim(x.plan, dim) || '\u2014');
+        arretClic[kg] = (arretClic[kg] || 0) + 1;
+      });
+    }
+    var arretPresse = vue.refsLibelle === SEL_ARRET && vue.groupe && vue.groupe.dim === dim ? vue.groupe.val : null;
     var rangs = Object.keys(groupes).map(function (k) {
       var g = groupes[k];
       var grp = { dim: dim, val: k };
@@ -3216,6 +3346,7 @@
         /* Sous une valeur, « à l'arrêt » ne compte que ses plans : on ne lit
            pas « 3 à l'arrêt » sous « Validé ». */
         arret: g.plans.filter(function (p) { return arretParRef[p.reference] && (!vb || p._cle === vb); }).length,
+        arretClic: arretClic[k] || 0,
         termine: g.termine, encours: g.encours, afaire: g.afaire, vide: g.vide,
         pct: g.total ? Math.round((g.termine / g.total) * 100) : 0,
         fin: restantsGroupe === 0 ? depart : semaineFin(derG.termine, derG.total, vitesse),
@@ -3274,6 +3405,8 @@
       ech(TITRE_DIM[dim].replace(/ \(.*\)$/, '')) + '\x3C/span>';
     $('dim-critique').hidden = false;
     ajusterChoixDim();
+    // Le sommaire dit la même chose que le titre : « Par ATA », « Par ECP »…
+    $('sommaire-groupe').textContent = 'Par ' + TITRE_DIM[dim].replace(/ \(.*\)$/, '');
     $('indice-dim').textContent = NOTE_DIM(dim);
     libellerFiltreGroupe(dim);
 
@@ -3335,7 +3468,7 @@
        en compte un. */
     if (rangs.some(function (r) { return r.arret; })) {
       html += '\x3Cdiv class="critique-note note-arret">\x3Cspan class="pastille arret">\x3C/span>\x3Cspan>\x3Cb>à l\u2019arrêt\x3C/b> = en cours, sans changement depuis ' +
-        SEMAINES_ARRET + ' semaines ou plus. Ouvrez le groupe pour les voir, cerclés de cette couleur.\x3C/span>\x3C/div>';
+        SEMAINES_ARRET + ' semaines ou plus. Un clic sur « à l\u2019arrêt » ne montre qu\u2019eux dans le tableau ; le groupe ouvert les met en tête de sa liste.\x3C/span>\x3C/div>';
     }
     /* Sous une valeur, ce que comptent les colonnes : « plans » et la
        barre suivent la valeur, la fin estimée et les rythmes restent ceux
@@ -3424,11 +3557,16 @@
         (vVal ? '\x3Csmall class="sur-n">sur ' + nb(r.total) + (r.gain ? ' · \x3Cb title="' + ech(nb(r.gain) + (r.gain > 1 ? ' plans arrivés' : ' plan arrivé') + ' à « ' +
           vVal.libelle + ' » ' + quandDesGains(gains.sem)) + '">+' + nb(r.gain) + '\x3C/b>' : '') + '\x3C/small>' : '') +
         /* Les plans à l'arrêt du groupe, sous son compte : en ambre, comme
-           la puce « À surveiller » du haut. */
-        (r.arret ? '\x3Csmall class="arret-n" title="' + ech(r.arret + (r.arret > 1 ? ' plans en cours n\u2019ont pas bougé' : ' plan en cours n\u2019a pas bougé') +
-          ' depuis ' + SEMAINES_ARRET + ' semaines ou plus') + '">' + r.arret + ' à l\u2019arrêt\x3C/small>' : '') + '\x3C/span>' +
+           la puce « À surveiller » du haut. La ligne leur garde la place ;
+           le bouton, posé juste après elle (un bouton n'en contient pas un
+           autre), vient s'y loger. */
+        (r.arretClic ? '\x3Csmall class="arret-n place" aria-hidden="true">' + r.arretClic + ' à l\u2019arrêt\x3C/small>' : '') + '\x3C/span>' +
         '\x3Cspan class="critique-barre' + (vVal ? ' focalise' : '') + '">' + barre + '\x3C/span>' +
         col3 + col2 + '\x3C/button>' +
+        (r.arretClic ? '\x3Cdiv class="critique-arret">\x3Cbutton type="button" class="arret-groupe" data-arret-groupe="' + ech(r.nom) +
+          '" aria-pressed="' + (arretPresse === r.nom) + '" title="' + ech(r.arretClic + (r.arretClic > 1 ? ' plans en cours n\u2019ont pas bougé' : ' plan en cours n\u2019a pas bougé') +
+          ' depuis ' + SEMAINES_ARRET + ' semaines ou plus \u2014 ' + (arretPresse === r.nom ? 'cliquez pour retirer le filtre' : 'cliquez pour ne voir qu\u2019eux dans le tableau')) +
+          '">' + r.arretClic + ' à l\u2019arrêt\x3C/button>\x3C/div>' : '') +
         (actif ? listeUD(r, vb) : (trouves.length ? listeTrouves(trouves) : ''));
     }).join('');
 
@@ -3752,6 +3890,52 @@
     return (premier ? bouton({ cle: '', libelle: premier.libelle, pastille: premier.pastille || '', titre: premier.titre }) : '') +
       montres.map(bouton).join('');
   }
+  /* « Copier (n) » : les références d'une liste, une par ligne, pour les
+     coller dans un courriel ou un tableur. Elles voyagent dans le bouton
+     même : le clic copie exactement ce que la liste montre. */
+  function boutonCopier(refs) {
+    if (!refs || !refs.length) return '';
+    return '\x3Cbutton type="button" class="copier" data-copier="' + ech(refs.join('\n')) + '" aria-live="polite" title="' +
+      ech('Copier ' + (refs.length > 1 ? 'ces ' + nb(refs.length) + ' références' : 'cette référence') + ', une par ligne, pour les coller ailleurs') +
+      '">Copier (' + nb(refs.length) + ')\x3C/button>';
+  }
+  /* Le presse-papiers : la voie moderne d'abord ; dans le cadre d'Apps
+     Script, le navigateur peut la refuser — on repasse alors par une zone de
+     texte cachée et la vieille commande « copier ». */
+  function copierTexte(texte, fini) {
+    function secours() {
+      var zone = document.createElement('textarea');
+      zone.value = texte;
+      zone.setAttribute('readonly', '');
+      zone.style.position = 'fixed'; zone.style.top = '-1000px'; zone.style.opacity = '0';
+      var avant = document.activeElement;
+      document.body.appendChild(zone);
+      zone.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      document.body.removeChild(zone);
+      if (avant && avant.focus) avant.focus({ preventScroll: true });
+      fini(ok);
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texte).then(function () { fini(true); }, secours);
+        return;
+      }
+    } catch (e) { /* presse-papiers interdit dans ce cadre : la voie de secours */ }
+    secours();
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('button[data-copier]');
+    if (!b) return;
+    var mot = b.__mot || (b.__mot = b.textContent);
+    copierTexte(b.getAttribute('data-copier'), function (ok) {
+      b.textContent = ok ? 'Copié' : 'Copie refusée';
+      b.setAttribute('data-copie', ok ? 'faite' : 'refusee');
+      clearTimeout(b.__minuteur);
+      b.__minuteur = setTimeout(function () { b.textContent = mot; b.removeAttribute('data-copie'); }, 2000);
+    });
+  });
   /* Une rangée trop longue pour sa ligne : le fondu du bord droit, tant
      qu'il reste à faire défiler (débrief 19). */
   function marquerDebord(rangee) {
@@ -3840,10 +4024,14 @@
      montre dans le tableau — un second clic retire le filtre. */
   function rendreASurveiller() {
     var zone = $('a-surveiller');
-    var a = RELEVES.length > 1 ? plansALArret().liste : [];
-    zone.hidden = !a.length;
-    if (!a.length) { zone.innerHTML = ''; return; }
+    /* Le nombre dit, c'est le nombre de lignes que le clic montrera : compté
+       sur la sélection (groupe ouvert, recherche…), pas sur tout le
+       périmètre. À zéro, la puce s'efface — sauf pressée, pour qu'on puisse
+       la retirer. */
+    var a = arretsDuClic();
     var actif = vue.refsLibelle === SEL_ARRET;
+    zone.hidden = !a.length && !actif;
+    if (zone.hidden) { zone.innerHTML = ''; return; }
     zone.innerHTML = '\x3Cspan>À surveiller :\x3C/span>' +
       '\x3Cbutton class="puce-delta puce-arret" type="button" data-arret="1" aria-pressed="' + actif + '" title="' +
       ech('Plans en cours dont la valeur n\u2019a pas changé depuis ' + SEMAINES_ARRET + ' semaines ou plus, relevé après relevé \u2014 ' +
@@ -4166,6 +4354,10 @@
           vers + '\x3C/button>\x3C/li>';
       }).join('');
 
+      /* Copier toutes les références de la semaine — sous une pastille du
+         journal ou une recherche, celles qui restent —, même au-delà des
+         douze affichées. */
+      lignes = '\x3Cli class="journal-copier">' + boutonCopier(evts.map(function (e) { return e.ref; })) + '\x3C/li>' + lignes;
       var reste = evts.length - limite;
       if (reste > 0) {
         lignes += '\x3Cli>\x3Cbutton class="journal-plus" type="button" data-tout="' + sem.i + '">' +
@@ -4187,7 +4379,12 @@
     var entetes = enGrille && html
       ? '\x3Cdiv class="journal-entetes" aria-hidden="true">\x3Cspan>\x3C/span>' + colonnes.map(function (k) {
           var l = vuesCol[k];
-          return '\x3Cspan class="entete-col">' + (l.cle === 'nouveaux' || l.cle === 'disparus' ? '' : pastilleResume(l)) + ech(l.des) + '\x3C/span>';
+          /* Des espaces insécables dans « passés à « En cours » » : entre 768
+             et 900 px de large, l'en-tête se coupait mot à mot sur quatre
+             lignes ; il ne se coupe plus qu'avant le guillemet, en deux. */
+          var nom = ech(l.des).replace(/^(pass\S+) à /, '$1\u00a0à ')
+            .replace(/« [^»]* »/g, function (m) { return m.replace(/ /g, '\u00a0'); });
+          return '\x3Cspan class="entete-col">' + (l.cle === 'nouveaux' || l.cle === 'disparus' ? '' : pastilleResume(l)) + nom + '\x3C/span>';
         }).join('') + '\x3Cspan>\x3C/span>\x3C/div>'
       : '';
     /* Sous une pastille, « aucun changement pour X » ferait croire le plan
@@ -4265,7 +4462,10 @@
   /* Le message d'un contrat que la vue d'ensemble n'a pas pu charger — un
      onglet d'en-têtes seuls — au lieu de « contrat impossible à charger ». */
   var MESSAGES_ENSEMBLE = {};
-  function resumeDuContrat() {
+  /* dim : la dimension que regarde le lecteur, pour nommer le groupe qui
+     finirait le dernier — celle du contrat quand il ne l'a pas. */
+  function resumeDuContrat(dim) {
+    if (!dim || !TITRE_DIM[dim] || CLES_DIM.indexOf(dim) === -1) dim = vue.dimCritique;
     var pts = serieDe('', null).pts;
     var der = pts[pts.length - 1], avant = pts.length > 1 ? pts[pts.length - 2] : null;
     var ry = rythmes(pts);
@@ -4279,7 +4479,12 @@
       rythme: ry ? ry.central : null,
       fin: der.total && der.total === der.termine ? 'validé' : fin === null ? null : semaineDite(fin),
       arret: RELEVES.length > 1 ? plansALArret().liste.length : 0,
-      echeance: j ? { texte: j.texte, quand: semaineDite(j.i), jours: joursAvant(j), enRetard: b.enRetard, manque: b.manque, requis: b.requis } : null,
+      /* La fin sous « tenue » : celle du bilan de l'échéance, sur SON
+         périmètre — la même que la fiche (« au rythme global, la fin serait
+         en S4 ») —, et non celle de tout le contrat, qui disait S5 à côté. */
+      echeance: j ? { texte: j.texte, quand: semaineDite(j.i), jours: joursAvant(j), enRetard: b.enRetard, manque: b.manque, requis: b.requis,
+                      fin: b.restants ? semaineDite(b.fin) : 'validé', domaine: b.domaine,
+                      dernier: !b.enRetard && b.restants ? motDernierGroupe(b.fin, b.domaine, dim).replace(/^ ; /, '') : '' } : null,
       /* Un contrat sans aucun jalon (THS, débrief 17) ne dit pas « aucune à
          venir » : on croirait ses échéances passées. */
       sansJalon: !jalons.length,
@@ -4303,7 +4508,7 @@
       Object.keys(paquets).forEach(function (id) {
         INDICATEUR = garde.indicateur;
         chargerSource(id === garde.contrat ? garde.src : paquets[id]);
-        resumes[id] = resumeDuContrat();
+        resumes[id] = resumeDuContrat(garde.vue.dimCritique);
       });
     } finally {
       INDICATEUR = garde.indicateur;
@@ -4345,7 +4550,9 @@
         '\x3Ctd>' + (e ? '\x3Cspan class="v">' + ech(e.texte) + '\x3C/span>\x3Csmall>' + ech(e.quand) + ' · ' + ech(motJours(e.jours)) + '\x3C/small>' : '\x3Cspan class="doux">' + (r.sansJalon ? 'aucun jalon' : 'aucune à venir') + '\x3C/span>') + '\x3C/td>' +
         '\x3Ctd>' + (e ? (e.enRetard
             ? '\x3Cspan class="v tard">manque ' + nb(e.manque) + '\x3C/span>\x3Csmall>il faut ' + virgule(e.requis) + '/sem.\x3C/small>'
-            : '\x3Cspan class="v bon">tenue\x3C/span>\x3Csmall>' + (r.fin === 'validé' ? 'tout est validé' : r.fin ? 'fin ' + ech(r.fin) : '') + '\x3C/small>')
+            : '\x3Cspan class="v bon">tenue\x3C/span>\x3Csmall>' + (e.fin === 'validé' ? 'tout est validé' + (e.domaine ? ' dans ' + ech(e.domaine) : '')
+                : 'au rythme global' + (e.domaine ? ' de ' + ech(e.domaine) : '') + ', la fin serait en ' + ech(e.fin)) + '\x3C/small>' +
+              (e.dernier ? '\x3Csmall>' + ech(e.dernier) + '\x3C/small>' : ''))
           : (r.fin === 'validé' ? '\x3Cspan class="v bon">tout est validé\x3C/span>'
             : r.fin ? '\x3Cspan class="v">fin ' + ech(r.fin) + '\x3C/span>' : '\x3Cspan class="doux">\u2014\x3C/span>')) + '\x3C/td>' +
         '\x3C/tr>';
@@ -4358,6 +4565,15 @@
       '\x3Cdiv class="defile-ensemble">\x3Ctable class="ensemble-table">\x3Cthead>\x3Ctr>\x3Cth scope="col">Contrat\x3C/th>\x3Cth scope="col">Validés\x3C/th>' +
       '\x3Cth scope="col">Depuis le relevé précédent\x3C/th>\x3Cth scope="col">Rythme tenu\x3C/th>\x3Cth scope="col" title="' + ech('Plans en cours sans changement depuis ' + SEMAINES_ARRET + ' semaines ou plus') + '">À l’arrêt\x3C/th>' +
       '\x3Cth scope="col">Prochaine échéance\x3C/th>\x3Cth scope="col">Au rythme tenu\x3C/th>\x3C/tr>\x3C/thead>\x3Ctbody>' + lignes + '\x3C/tbody>\x3C/table>\x3C/div>';
+    /* Au téléphone, chaque contrat devient une carte : chaque valeur y
+       reprend le nom de sa colonne à gauche (voir la feuille de style), lu
+       ici dans l'en-tête pour ne l'écrire qu'une fois. */
+    var titres = zone.querySelectorAll('.ensemble-table thead th');
+    [].forEach.call(zone.querySelectorAll('.ensemble-table tbody tr'), function (tr) {
+      [].forEach.call(tr.children, function (c, k) {
+        if (c.tagName === 'TD' && c.colSpan === 1 && titres[k]) c.setAttribute('data-libelle', titres[k].textContent);
+      });
+    });
   }
   function ouvrirEnsemble() {
     var zone = $('ensemble');
@@ -4526,14 +4742,18 @@
 
   function rendreIncomplets() {
     var col = PAR_CLE[CLE_SUIVIE];
-    var plans = population();
+    /* Compté sur la sélection, moins ce filtre-ci : le nombre est celui des
+       lignes que le clic montrera (il comptait tout le périmètre, et un clic
+       sous un groupe ouvert en montrait trois fois moins). */
+    var plans = selectionSans({ vide: CLE_SUIVIE });
     var n = 0;
     for (var i = 0; i < plans.length; i++) {
       if (celluleVide(plans[i], CLE_SUIVIE)) n++;
     }
     /* Sans colonne d'avancement reconnue (le serveur prévient, la page
-       s'affiche tout en « non renseigné »), il n'y a rien à filtrer. */
-    if (!col || !n) { $('incomplets').innerHTML = ''; return; }
+       s'affiche tout en « non renseigné »), il n'y a rien à filtrer. À zéro,
+       la puce s'efface — sauf pressée : on doit pouvoir la retirer. */
+    if (!col || (!n && !vue.vides[CLE_SUIVIE])) { $('incomplets').innerHTML = ''; return; }
     $('incomplets').innerHTML =
       '\x3Cbutton class="puce-vide" type="button" data-vide="' + CLE_SUIVIE + '" aria-pressed="' + !!vue.vides[CLE_SUIVIE] +
       '" title="N\u2019afficher que les plans dont ' + ech(col.titre) + ' est vide">' +
@@ -4584,6 +4804,21 @@
     var comptes = {};
     LOTS_RAPPROCHEMENT.forEach(function (l) { comptes[l.cle] = compteLotRapp(l.cle); });
     var nP = R.nbPlans, nSeuls = comptes.seul;
+
+    /* La réponse, sous le titre : les deux écarts qui demandent un geste —
+       des validés que SEE ne connaît pas, des plans de SEE que GATES ne dit
+       pas validés. Une part à 0 se tait ; les deux à 0, la phrase aussi. */
+    var actifLot = lotRappActif();
+    var morceaux = [];
+    if (comptes.manque) morceaux.push('\x3Cbutton type="button" data-rapp="manque" aria-pressed="' + (actifLot === 'manque') + '">' + nb(comptes.manque) + '\x3C/button> ' +
+      (comptes.manque > 1 ? 'plans validés absents de ' : 'plan validé absent de ') + ech(nom));
+    if (comptes.avance) morceaux.push('\x3Cbutton type="button" data-rapp="avance" aria-pressed="' + (actifLot === 'avance') + '">' + nb(comptes.avance) + '\x3C/button> ' +
+      (comptes.avance > 1 ? 'plans' : 'plan') + ' dans ' + ech(nom) + ' que GATES ne dit pas ' + (comptes.avance > 1 ? 'validés' : 'validé'));
+    var reponse = $('reponse-rapprochement');
+    if (reponse) {
+      reponse.hidden = !morceaux.length;
+      reponse.innerHTML = morceaux.length ? 'À traiter\u00a0: ' + morceaux.join(' \u00b7 ') : '';
+    }
 
     /* La figure : deux cercles, ce qu'ils ont en commun au milieu — avec un
        anneau pour la part de plans d'accord — et ce que chacun est seul à
@@ -4678,13 +4913,27 @@
      la page. */
   function corpsLotRapp(cle, rangees, n, nom, cherche) {
     rangees = rangees.slice().sort(function (a, b) { return COMPARER_REF(a.ref, b.ref); });
+    /* La légende des pastilles : seulement les valeurs de la liste, écrites
+       comme dans la colonne, dans l'ordre de la barre — et aucune quand il
+       n'y en a qu'une (elle disait toujours « Validé · En cours · À faire ·
+       Non renseigné », même sous « validés, absents de SEE »). */
+    var vues = {};
+    rangees.forEach(function (r) { if (r.plan) vues[cleValeur(r.plan[CLE_SUIVIE])] = r.plan; });
+    var valeursListe = VALEURS_COLONNE.filter(function (v) { return vues[v.cle]; });
+    var legende = valeursListe.length > 1
+      ? '\x3Cspan class="rapp-puces-legende" aria-label="Pastilles : valeur du plan dans GATES">' + valeursListe.map(function (v) {
+          return '\x3Cspan>' + pastilleValeur(v.cle, v.famille) + ech(libelleValeur(vues[v.cle][CLE_SUIVIE])) + '\x3C/span>';
+        }).join('') + '\x3C/span>'
+      : '';
+    /* Copier les références de la liste, telle qu'elle s'affiche (une
+       recherche n'en garde que les trouvées). */
+    var copier = boutonCopier(rangees.map(function (r) { return r.ref; }));
     var tete = cherche
       ? '\x3Cspan class="rapp-sur">' + nb(rangees.length) + (rangees.length > 1 ? ' trouvés' : ' trouvé') + ' sur ' + nb(n) + '\x3C/span>'
       : (cle === 'seul'
           ? '\x3Cspan class="rapp-sur">un clic sur une ligne la montre dans le tableau de ' + ech(nom) + '\x3C/span>'
-          : '\x3Cspan class="rapp-puces-legende" aria-label="Pastilles : \u00e9tat du plan dans GATES">' + ETATS.map(function (e) {
-              return '\x3Cspan>' + pastilleDe(e.cle) + ech(e.court) + '\x3C/span>';
-            }).join('') + '\x3C/span>');
+          : legende);
+    tete += copier;
     return '\x3Cdiv class="verdict-corps" data-lot="' + cle + '">\x3Cdiv class="verdict-corps-tete">' + tete + '\x3C/div>\x3Cdiv class="rapp-puces">' +
       rangees.map(function (r) {
         var etat = r.plan ? r.plan._etat : '';
@@ -4695,7 +4944,7 @@
           ? ' data-plan-rapp="' + ech(r.ref) + '" data-etat="' + ech(etat) + '"'
           : ' data-ligne-la="' + ech(r.la) + '"';
         return '\x3Cbutton class="rapp-puce" type="button"' + attrs + ' data-see="' + ech(r.see) + '" title="' + ech(bulle) + '">' +
-          (r.plan ? pastilleDe(etat) : '') +
+          (r.plan ? pastilleValeur(cleValeur(r.plan[CLE_SUIVIE]), etat) : '') +
           '\x3Cspan class="rapp-puce-ref">' + ech(r.ref) + '\x3C/span>' +
           (r.vers ? '\x3Cspan class="rapp-puce-vers">\u2192 ' + ech(r.vers) + '\x3C/span>' : '') + '\x3C/button>';
       }).join('') + '\x3C/div>\x3C/div>';
@@ -5036,7 +5285,6 @@
     rendreSeconde();
     rendreIncomplets();
     rendreFiltresActifs();
-    $('reinit').hidden = !filtreActif();
     vue.dernieresCles = clesSelection();
     planifierSauvegarde();
   }
@@ -5093,6 +5341,9 @@
     /* Une tuile d'une autre valeur que celle du bloc : le choix le plus
        récent l'emporte, plutôt qu'un bloc tout à zéro. */
     if (vue.etat && vue.valeurBloc && vue.valeurBloc !== vue.etat) vue.valeurBloc = '';
+    /* De même pour « À surveiller » (des plans en cours) sous une tuile
+       Validé ou À faire : la page ne se vide pas, la tuile l'emporte. */
+    if (vue.refsLibelle === SEL_ARRET && etatContraireALArret()) { vue.refs = null; vue.refsLibelle = ''; }
     rendre();
   });
 
@@ -5115,6 +5366,9 @@
       vue.refs = {};
       plansALArret().liste.forEach(function (x) { vue.refs[x.plan.reference] = true; });
       vue.refsLibelle = SEL_ARRET;
+      /* Le choix le plus récent l'emporte : une tuile Validé pressée
+         n'aurait laissé aucun plan à l'arrêt à l'écran. */
+      if (etatContraireALArret()) vue.etat = '';
     }
     rendre();
   });
@@ -5151,6 +5405,7 @@
          recherche, les lots trouvés sont déjà dépliés : le clic ne fait que
          poser ou retirer le filtre. */
       var cleLot = b.dataset.rapp;
+      var depuisReponse = !!b.closest('#reponse-rapprochement');
       if (motCherche(vue.rechercheRapp)) poserLotRapp(cleLot);
       else if (vue.lotRappOuvert === cleLot && lotRappActif() === cleLot) { poserLotRapp(cleLot); vue.lotRappOuvert = null; }
       else { if (lotRappActif() !== cleLot) poserLotRapp(cleLot); vue.lotRappOuvert = cleLot; }
@@ -5158,7 +5413,7 @@
       /* Les boutons viennent d'être refaits : le focus revient sur le même,
          la bulle et l'éclairage repartent de zéro. */
       $('bulle').dataset.visible = 'false'; eclairerSegment(null);
-      var repris = document.querySelector('#verdicts-rapprochement button[data-rapp="' + b.dataset.rapp + '"]');
+      var repris = document.querySelector((depuisReponse ? '#reponse-rapprochement' : '#verdicts-rapprochement') + ' button[data-rapp="' + b.dataset.rapp + '"]');
       if (repris) repris.focus();
       return;
     }
@@ -5173,7 +5428,7 @@
     clearTimeout(minuteurSeconde);
     minuteurSeconde = setTimeout(function () {
       vue.seconde.recherche = v;
-      if (RAPPROCHEMENT) { rendreSeconde(); rendreFiltresActifs(); $('reinit').hidden = !filtreActif(); }
+      if (RAPPROCHEMENT) { rendreSeconde(); rendreFiltresActifs(); }
     }, 170);
   });
   $('vue-seconde').addEventListener('click', function (e) {
@@ -5333,6 +5588,102 @@
   $('echeance-titre').addEventListener('click', function () {
     ouvrirEcheance(+this.dataset.jalon, true);
   });
+
+  /* ============================================================ SOMMAIRE */
+  /* Les panneaux que la page montre vraiment : la comparaison n'existe
+     qu'avec une seconde base, et un classeur sans plans n'en a aucun. */
+  var SOMMAIRE = $('sommaire'), LISTE_SOMMAIRE = $('sommaire-liste');
+  var LIENS_SOMMAIRE = [].slice.call(LISTE_SOMMAIRE.querySelectorAll('a[data-chapitre]'));
+  function chapitreDe(a) { return document.getElementById(a.getAttribute('data-chapitre')); }
+  function chapitreVisible(sec) { return !!sec && !sec.hidden && sec.getClientRects().length > 0; }
+  function majChapitresPresents() {
+    LIENS_SOMMAIRE.forEach(function (a) {
+      var li = a.parentNode, montrer = chapitreVisible(chapitreDe(a));
+      if (li.hidden === montrer) li.hidden = !montrer;
+    });
+    marquerDebord(LISTE_SOMMAIRE);
+    majSommaire();
+  }
+  /* Le bandeau des filtres actifs est collé lui aussi, au-dessus : sa hauteur
+     décale le sommaire ; les deux ensemble, l'arrêt des sauts dans la page. */
+  function majHautSommaire() {
+    var f = $('filtres-actifs');
+    var h = f && !f.hidden ? Math.round(f.getBoundingClientRect().height) : 0;
+    var racine = document.documentElement.style;
+    racine.setProperty('--haut-sommaire', h + 'px');
+    racine.setProperty('--bas-sommaire', (h + Math.round(SOMMAIRE.getBoundingClientRect().height)) + 'px');
+  }
+  /* Le panneau courant : le dernier dont le haut est passé sous le sommaire.
+     Tout en bas de la page, le dernier panneau, même court. */
+  var chapitreCourant = null;
+  function majSommaire() {
+    var boite = SOMMAIRE.getBoundingClientRect();
+    if (!boite.height) return;                       // classeur vide : rien à suivre
+    var colle = window.scrollY > 0 && boite.top <= parseFloat(getComputedStyle(SOMMAIRE).top) + 0.5;
+    if ((SOMMAIRE.getAttribute('data-colle') === 'true') !== colle) SOMMAIRE.setAttribute('data-colle', colle ? 'true' : 'false');
+    // Le contrat peut changer pendant qu'on lit : relu à chaque passage.
+    var contrat = colle && !$('choix-contrat').hidden ? $('select-contrat').value : '';
+    if ($('sommaire-contrat').textContent !== contrat) $('sommaire-contrat').textContent = contrat;
+    var courant = null, presents = LIENS_SOMMAIRE.filter(function (a) { return !a.parentNode.hidden; });
+    presents.forEach(function (a) {
+      if (chapitreDe(a).getBoundingClientRect().top <= boite.bottom + 40) courant = a;
+    });
+    var fond = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+    if (fond && presents.length && window.scrollY > 0) courant = presents[presents.length - 1];
+    if (courant === chapitreCourant) return;
+    chapitreCourant = courant;
+    LIENS_SOMMAIRE.forEach(function (a) {
+      if (a === courant) a.setAttribute('aria-current', 'location'); else a.removeAttribute('aria-current');
+    });
+    /* Au téléphone le sommaire défile de côté : le panneau courant y reste
+       en vue, sans faire bouger la page. */
+    if (courant && LISTE_SOMMAIRE.scrollWidth > LISTE_SOMMAIRE.clientWidth + 1) {
+      var g = courant.parentNode.offsetLeft - LISTE_SOMMAIRE.offsetLeft, d = g + courant.offsetWidth;
+      if (g < LISTE_SOMMAIRE.scrollLeft || d > LISTE_SOMMAIRE.scrollLeft + LISTE_SOMMAIRE.clientWidth) {
+        LISTE_SOMMAIRE.scrollLeft = Math.max(0, g - (LISTE_SOMMAIRE.clientWidth - courant.offsetWidth) / 2);
+      }
+    }
+  }
+  var attenteSommaire = false;
+  window.addEventListener('scroll', function () {
+    if (attenteSommaire) return;
+    attenteSommaire = true;
+    requestAnimationFrame(function () { attenteSommaire = false; majSommaire(); });
+  }, { passive: true });
+  window.addEventListener('resize', function () { majHautSommaire(); majChapitresPresents(); });
+  LISTE_SOMMAIRE.addEventListener('scroll', function () { marquerDebord(LISTE_SOMMAIRE); }, { passive: true });
+  /* Un clic mène au panneau — en douceur, sauf si le système demande moins
+     d'animations — et pose le focus clavier sur son titre. L'adresse ne
+     change pas : dans le classeur, la page vit dans un cadre, et un « # »
+     dans l'adresse n'y servirait à rien. */
+  LISTE_SOMMAIRE.addEventListener('click', function (e) {
+    var a = e.target.closest('a[data-chapitre]');
+    if (!a) return;
+    e.preventDefault();
+    var sec = chapitreDe(a);
+    if (!chapitreVisible(sec)) return;
+    var doux = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    var haut = sec.getBoundingClientRect().top + window.scrollY - SOMMAIRE.getBoundingClientRect().height -
+      parseFloat(getComputedStyle(SOMMAIRE).top) - 14;
+    window.scrollTo({ top: Math.max(0, haut), behavior: doux ? 'smooth' : 'auto' });
+    /* Le titre du panneau ; la synthèse n'a pas de h2 : son surtitre, qui
+       nomme la section pour les lecteurs d'écran. */
+    var titre = sec.querySelector('h2') || sec.querySelector('.surtitre');
+    if (titre) {
+      if (!titre.hasAttribute('tabindex')) titre.setAttribute('tabindex', '-1');
+      try { titre.focus({ preventScroll: true }); } catch (err) { titre.focus(); }
+    }
+  });
+  /* Un panneau qui paraît ou s'efface (la comparaison selon le contrat, la
+     page vide), le bandeau des filtres qui s'ouvre : le sommaire suit. */
+  if (window.MutationObserver) {
+    var veilleSommaire = new MutationObserver(function () { majHautSommaire(); majChapitresPresents(); });
+    LIENS_SOMMAIRE.forEach(function (a) { var sec = chapitreDe(a); if (sec) veilleSommaire.observe(sec, { attributes: true, attributeFilter: ['hidden'] }); });
+    veilleSommaire.observe(document.body, { attributes: true, attributeFilter: ['data-vide'] });
+    veilleSommaire.observe($('filtres-actifs'), { attributes: true, attributeFilter: ['hidden'], childList: true });
+  }
+  majHautSommaire(); majChapitresPresents();
+
   var boutonHaut = $('haut-de-page');
   window.addEventListener('scroll', function () {
     var montrer = window.scrollY > window.innerHeight * 1.2;
@@ -5438,6 +5789,29 @@
       if (repris) repris.focus();
       return;
     }
+    var arretG = e.target.closest('button[data-arret-groupe]');
+    if (arretG) {
+      /* « À surveiller », limité à ce groupe : le groupe s'ouvre, le tableau
+         ne montre que ses plans à l'arrêt. Un second clic retire le filtre
+         et laisse le groupe ouvert. */
+      var valA = arretG.getAttribute('data-arret-groupe');
+      var dejaA = arretG.getAttribute('aria-pressed') === 'true';
+      if (dejaA) { vue.refs = null; vue.refsLibelle = ''; }
+      else {
+        vue.groupe = { dim: vue.dimCritique, val: valA };
+        vue.refs = {};
+        plansALArret().liste.forEach(function (x) { vue.refs[x.plan.reference] = true; });
+        vue.refsLibelle = SEL_ARRET;
+        /* Sous une valeur du bloc, le nombre ne comptait qu'elle : la tuile
+           de cette valeur se pose. Sinon, une tuile contraire se retire. */
+        if (vue.valeurBloc) vue.etat = vue.valeurBloc;
+        else if (etatContraireALArret()) vue.etat = '';
+      }
+      rendre();
+      var reprisA = [].filter.call($('zone-critique').querySelectorAll('button[data-arret-groupe]'), function (x) { return x.getAttribute('data-arret-groupe') === valA; })[0];
+      if (reprisA) reprisA.focus({ preventScroll: true });
+      return;
+    }
     var ud = e.target.closest('button[data-ud]');
     if (ud) {
       /* Une référence choisie dans la liste : le tableau se réduit à elle et
@@ -5462,7 +5836,9 @@
     if (!ligne) return;
     var haut = zone.getBoundingClientRect().top;
     zone.scrollTop += ligne.getBoundingClientRect().top - haut - avant;
-    var dessous = !meme && ligne.nextElementSibling && ligne.nextElementSibling.classList.contains('groupe-refs') ? ligne.nextElementSibling : null;
+    var suivant = ligne.nextElementSibling;
+    if (suivant && suivant.classList.contains('critique-arret')) suivant = suivant.nextElementSibling;   // le bouton « à l'arrêt » de la ligne
+    var dessous = !meme && suivant && suivant.classList.contains('groupe-refs') ? suivant : null;
     if (dessous && dessous.getBoundingClientRect().top > zone.getBoundingClientRect().bottom - 140) {
       zone.scrollTop += ligne.getBoundingClientRect().top - haut - 4;
     }
@@ -5590,10 +5966,20 @@
     clearTimeout(minuteurFiltre);
     minuteurFiltre = setTimeout(function () {
       if (val) vue.filtres[cle] = val; else delete vue.filtres[cle];
-      var liste = selection();
-      rendreAvancement(liste); rendreGraphique(liste); rendreCritique(liste); rendreCorps(liste);
-      rendreFiltresActifs();                // le jeton « ATA : 21 » et sa croix
-      $('reinit').hidden = !filtreActif();
+      /* Le même chemin que la recherche du tableau : la fiche du plan s'ouvre
+         quand le filtre n'en laisse qu'un et se ferme sur un tableau vide,
+         les puces du dessus recomptent, le lot de la comparaison s'efface.
+         Les en-têtes sont réécrits : le curseur revient dans le champ, à sa
+         place, pour qu'on continue de taper. */
+      var champ = document.activeElement;
+      var garde = champ && champ.getAttribute && champ.getAttribute('data-filtre') === cle
+        ? { debut: champ.selectionStart, fin: champ.selectionEnd } : null;
+      rendre();
+      if (!garde) return;
+      var neuf = [].filter.call(tete.querySelectorAll('input[data-filtre]'), function (x) { return x.getAttribute('data-filtre') === cle; })[0];
+      if (!neuf) return;
+      neuf.focus({ preventScroll: true });
+      try { neuf.setSelectionRange(garde.debut, garde.fin); } catch (err) { /* un champ sans sélection : le curseur reste au bout */ }
     }, 170);
   });
 
@@ -5642,7 +6028,6 @@
     tete.querySelectorAll('.glisse, .cible').forEach(function (el) { el.classList.remove('glisse', 'cible'); });
   });
 
-  $('reinit').addEventListener('click', function () { toutEffacer(); rendre(); });
   $('defile').addEventListener('scroll', majOmbre, { passive: true });
   suivreDefilement($('defile'), 'corps-tableau');
   ['cadre-tableau', 'cadre-seconde'].forEach(function (id) {
@@ -5658,9 +6043,13 @@
   });
   document.addEventListener('keydown', function (e) {
     var champ = vue.base === 'la' ? $('recherche-seconde') : $('recherche');
-    if (e.key === '/' && document.activeElement !== champ) {
-      e.preventDefault(); champ.focus(); champ.select();
-    }
+    if (e.key !== '/' || document.activeElement === champ) return;
+    /* « / » est aussi un caractère qu'on tape : dans un autre champ (le
+       journal, un filtre de colonne, « S38/A »…), il reste dans ce champ au
+       lieu d'emmener la frappe dans la recherche du tableau. */
+    var actif = document.activeElement;
+    if (actif && (actif.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(actif.tagName))) return;
+    e.preventDefault(); champ.focus(); champ.select();
   });
   var minuteurTaille = null;
   window.addEventListener('resize', function () {
@@ -5864,5 +6253,5 @@
      page affichée, pour ne rien retarder. */
   if (API && API.noterConsultation) setTimeout(API.noterConsultation, 1500);
 })();
-window.SUIVI_FWD_FIN = '9dc320b';
+window.SUIVI_FWD_FIN = '60e5a87';
 </script>

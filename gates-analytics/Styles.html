@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "9dc320b";
+  --suivi-fwd-edition: "60e5a87";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -45,6 +45,20 @@
   --accent-voile: #eef1f6;
   /* Le chevron du mot à choisir, peint dans l'accent du thème. */
   --chevron-accent: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5 6 8 9.5 4.5' fill='none' stroke='%2334507a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  /* Une teinte par panneau, en plus de l'ardoise (débrief 20, « on n'arrive
+     pas à bien les repérer ») : pétrole pour la tendance, prune pour la
+     répartition, kaki pour le détail ; la synthèse reste à l'encre, la
+     comparaison et la vue d'ensemble gardent l'ardoise. Des teintes sourdes,
+     loin des couleurs des données (vert, ambre, gris, rouge, violet) : elles
+     ne peignent que le numéro du panneau, l'amorce de son filet, son entrée
+     du sommaire et, au panneau 03, le mot qu'on change — jamais un fond,
+     jamais un titre, jamais un chiffre. Toutes au-dessus de 4,5:1 sur le
+     blanc des panneaux et sur le papier. Pour le mot à choisir du panneau
+     03 : -trait, son soulignement ; -voile, son fond au survol. */
+  --t-temps: #2d6873;
+  --t-groupe: #874f6f;  --t-groupe-trait: #cdb5c3;  --t-groupe-voile: #f4eef1;
+  --t-plans: #5c6530;
+  --chevron-groupe: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5 6 8 9.5 4.5' fill='none' stroke='%23874f6f' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -60,6 +74,10 @@
     --panneau-ombre: 0 1px 0 rgba(255, 255, 255, .02) inset, 0 10px 28px -16px rgba(0, 0, 0, .7);
     --accent: #a9bedb; --accent-trait: #4a5a72; --accent-voile: #1f2530;
     --chevron-accent: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5 6 8 9.5 4.5' fill='none' stroke='%23a9bedb' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    --t-temps: #7db9c4;
+    --t-groupe: #d19dbb;  --t-groupe-trait: #5d4957;  --t-groupe-voile: #2a2229;
+    --t-plans: #b3bb7d;
+    --chevron-groupe: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5 6 8 9.5 4.5' fill='none' stroke='%23d19dbb' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   }
 }
 :root[data-theme="dark"] {
@@ -75,6 +93,10 @@
   --panneau-ombre: 0 1px 0 rgba(255, 255, 255, .02) inset, 0 10px 28px -16px rgba(0, 0, 0, .7);
   --accent: #a9bedb; --accent-trait: #4a5a72; --accent-voile: #1f2530;
   --chevron-accent: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5 6 8 9.5 4.5' fill='none' stroke='%23a9bedb' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  --t-temps: #7db9c4;
+  --t-groupe: #d19dbb;  --t-groupe-trait: #5d4957;  --t-groupe-voile: #2a2229;
+  --t-plans: #b3bb7d;
+  --chevron-groupe: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5 6 8 9.5 4.5' fill='none' stroke='%23d19dbb' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
 }
 
 /* Les contrôles du navigateur — la liste d'un menu déroulant, les barres de
@@ -155,6 +177,12 @@ body {
 .phrase b { font-weight: 500; }
 
 .barre { display: flex; gap: 2px; height: 26px; margin-bottom: 0; }
+/* Une sélection sans plan : la barre garde sa hauteur, une piste fine et
+   vide en son milieu — la page ne saute pas, et rien ne ressemble à un trou. */
+.barre.vide::before {
+  content: ""; flex: 1; align-self: center; height: 6px; border-radius: 3px;
+  background: var(--creux); box-shadow: inset 0 0 0 1px var(--filet);
+}
 .barre span {
   min-width: 4px;                 /* 3 plans sur 640 restent visibles, en haut comme au rapprochement */
   transition: width .3s ease;
@@ -545,14 +573,15 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
   font-size: 11.5px; color: var(--encre-3); margin-bottom: 4px;
   display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
 }
-.groupe-refs .sous-groupe { margin-top: 10px; }
-.groupe-refs .sous-titre {
+.groupe-refs .sous-groupe, .groupe-refs .sous-arret { margin-top: 10px; }
+.groupe-refs .sous-titre, .groupe-refs .titre-arret {
   margin: 0 0 7px; font: 500 10.5px/1.4 "IBM Plex Sans", system-ui, sans-serif;
   letter-spacing: .09em; text-transform: uppercase; color: var(--encre-2);
   display: flex; align-items: center; gap: 7px;
 }
-.groupe-refs .sous-titre .pastille { width: 8px; height: 8px; }
-.groupe-refs .sous-titre .n {
+.groupe-refs .sous-titre .pastille, .groupe-refs .titre-arret .pastille { width: 8px; height: 8px; }
+.groupe-refs .titre-arret { color: var(--cours); }
+.groupe-refs .sous-titre .n, .groupe-refs .titre-arret .n {
   font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
   letter-spacing: 0; color: var(--encre-3);
 }
@@ -562,6 +591,12 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
   display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px 7px;
 }
 .groupe-refs .grille .jeton-ud { justify-content: flex-start; }
+/* Les plans à l'arrêt, en tête du groupe déplié : la puce porte aussi
+   « depuis S12 », d'où des colonnes un peu plus larges. */
+.groupe-refs .grille-arret {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(214px, 1fr)); gap: 6px 7px;
+}
+.jeton-ud .depuis { margin-left: auto; padding-left: 8px; font: 10.5px/1.2 "IBM Plex Sans", system-ui, sans-serif; color: var(--cours); }
 .jeton-ud {
   display: inline-flex; align-items: center; gap: 6px;
   border: 1px solid var(--filet); background: var(--surface); color: var(--encre-2);
@@ -606,9 +641,17 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
   .panneau { padding: 16px 14px 20px; margin-top: 18px; border-radius: 8px; }
   .panneau.bloc { margin-top: 18px; }
 }
+/* La teinte du panneau (voir :root) : la classe remplace l'accent ardoise
+   pour tout ce qui le porte dans le panneau — numéro, amorce du filet, mot
+   à choisir — et pour son entrée du sommaire. Sans classe, l'ardoise. */
+.teinte-une { --accent: var(--encre); }
+.teinte-temps { --accent: var(--t-temps); }
+.teinte-groupe { --accent: var(--t-groupe); --accent-trait: var(--t-groupe-trait); --accent-voile: var(--t-groupe-voile); --chevron-accent: var(--chevron-groupe); }
+.teinte-plans { --accent: var(--t-plans); }
 /* Le surtitre : « 01 · SYNTHÈSE », en petites capitales espacées, le numéro
-   dans l'accent, puis un filet qui court jusqu'au bord — ses premiers
-   millimètres dans l'accent. C'est lui qu'on repère en faisant défiler. */
+   dans la teinte du panneau, puis un filet qui court jusqu'au bord — ses
+   premiers millimètres, un peu plus épais, dans la teinte. C'est lui qu'on
+   repère en faisant défiler. */
 .surtitre {
   display: flex; align-items: center; gap: 10px; margin: 0 0 12px;
   font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 500; line-height: 1.4;
@@ -620,14 +663,76 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 }
 .panneau-hors-suite .surtitre::before { content: "—"; }
 .surtitre::after {
-  content: ""; flex: 1 1 auto; height: 1px; min-width: 24px;
-  background: linear-gradient(to right, var(--accent-trait) 0 36px, var(--filet) 36px);
+  content: ""; flex: 1 1 auto; height: 2px; min-width: 24px;
+  background: linear-gradient(var(--accent), var(--accent)) left center / 32px 2px no-repeat,
+              linear-gradient(var(--filet), var(--filet)) left center / 100% 1px no-repeat;
 }
 .panneau > .section-tete { margin-bottom: 16px; }
 /* Le journal appartient au panneau du graphique : un second temps, séparé
    par un filet et du blanc, sous le même surtitre. */
 .panneau .section-journal { margin-top: 30px; padding-top: 24px; border-top: 1px solid var(--filet); }
 .panneau .cadre-tableau { border-radius: 4px; }
+
+/* ---------------------------------------------------- Sommaire (débrief 20) */
+/* Sous le titre, une ligne d'index dans la police des surtitres : chaque
+   panneau, son numéro dans sa teinte. Dès qu'on descend, il reste collé en
+   haut de l'écran (sous le bandeau des filtres actifs s'il est là :
+   --haut-sommaire, posé par le script), d'un filet souligné ; le panneau
+   qu'on lit est écrit à l'encre et souligné de sa teinte. */
+.sommaire {
+  position: sticky; top: var(--haut-sommaire, 0px); z-index: 29;
+  display: flex; align-items: center; min-width: 0; margin-top: -10px;
+  background: var(--papier); border-bottom: 1px solid transparent;
+  transition: border-color .2s;
+}
+.sommaire[data-colle="true"] { border-bottom-color: var(--filet-fort); }
+.sommaire-liste {
+  list-style: none; margin: 0 auto; padding: 0 2px; display: flex; gap: 0 28px; min-width: 0;
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain;
+  counter-reset: chapitre;
+}
+.sommaire-liste::-webkit-scrollbar { display: none; }
+/* Un panneau absent ne compte pas ([hidden] vaut display: none, hors du
+   compteur) : les numéros restent ceux des panneaux. */
+.sommaire-liste li { counter-increment: chapitre; flex: none; }
+.sommaire a {
+  display: inline-flex; align-items: baseline; white-space: nowrap;
+  padding: 11px 1px 9px; margin-bottom: -1px; border-bottom: 2px solid transparent;
+  font: 500 11px/1.4 "IBM Plex Mono", monospace; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--encre-2); text-decoration: none;
+  transition: color .15s, border-color .15s;
+}
+.sommaire a::before {
+  content: counter(chapitre, decimal-leading-zero); margin-right: 8px;
+  color: var(--accent); letter-spacing: .04em; font-variant-numeric: tabular-nums;
+}
+.sommaire a:hover { color: var(--encre); }
+.sommaire a:focus-visible { outline-offset: -2px; }
+.sommaire a[aria-current] { color: var(--encre); border-bottom-color: var(--accent); }
+/* Collé en haut, le nom de la page et du contrat se rappellent à gauche —
+   posés par-dessus, sans rien pousser. Seulement quand la place est là. */
+.sommaire-marque {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  font: 400 16px Newsreader, Georgia, serif; color: var(--encre); white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.sommaire-contrat { margin-left: 8px; font: 500 11.5px "IBM Plex Mono", monospace; color: var(--encre-2); }
+.sommaire-contrat:empty { display: none; }
+.sommaire[data-colle="true"] .sommaire-marque { opacity: 1; }
+@media (max-width: 1180px) { .sommaire-marque { display: none; } }
+@media (max-width: 720px) {
+  .sommaire { margin-top: -6px; }
+  .sommaire-liste { gap: 0 20px; margin: 0; padding: 0; }
+  /* Ce qui dépasse à droite se devine par un fondu, comme les pastilles. */
+  .sommaire-liste.deborde-droite { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+}
+body[data-vide="true"] .sommaire { display: none; }
+@media (prefers-reduced-motion: reduce) { .sommaire, .sommaire a, .sommaire-marque { transition: none; } }
+@media print { .sommaire { display: none; } }
+/* Un saut vers un panneau — ou tout ce que la page amène à l'écran —
+   s'arrête sous le sommaire collé, pas derrière lui (--bas-sommaire : sa
+   hauteur et celle des filtres actifs, posée par le script). */
+html { scroll-padding-top: calc(var(--bas-sommaire, 40px) + 14px); }
 
 /* Le mot qu'on change dans le titre : « Avancement FWD par [ATA ▾] ». Le
    menu prend la police du titre, l'accent, un soulignement fin et un
@@ -864,6 +969,33 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .ensemble-table .v.bon { color: var(--fait); }
 .ensemble-table .v.arret { color: var(--cours); }
 .ensemble-table .alerte-ligne { color: var(--alerte); }
+/* Au téléphone, sept colonnes ne tiennent pas : trois restaient cachées à
+   droite, sans le dire. Chaque contrat devient une carte — son nom, puis
+   une ligne par valeur, le nom de la colonne à gauche et la valeur au bord
+   droit, comme les lignes « par ATA ». La croix reste à côté du titre. */
+@media (max-width: 720px) {
+  .ensemble-tete { align-items: flex-start; }
+  .ensemble-tete h2 { flex: 1 1 0; min-width: 0; font-size: 22px; }
+  .ensemble-tete .fiche-plan-fermer { flex: none; margin-top: 2px; }
+  .ensemble-tete .indice { order: 3; flex-basis: 100%; }
+  .defile-ensemble { overflow-x: visible; }
+  .ensemble-table, .ensemble-table tbody, .ensemble-table tr { display: block; }
+  .ensemble-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .ensemble-table tr { padding: 10px 0 8px; border-top: 1px solid var(--filet); }
+  /* Le fond du contrat affiché déborde de 10 px de chaque côté sans rien
+     élargir (une ombre ne compte pas dans la largeur). */
+  .ensemble-table tr.courant { box-shadow: -10px 0 var(--creux), 10px 0 var(--creux); }
+  .ensemble-table th, .ensemble-table td { border-top: none; padding: 3px 0; }
+  .ensemble-table tbody th { display: flex; align-items: baseline; gap: 10px; padding-bottom: 6px; }
+  .ensemble-table tbody th small { margin-top: 0; }
+  .ensemble-table td[data-libelle] { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: baseline; }
+  .ensemble-table td[data-libelle]::before {
+    content: attr(data-libelle); grid-column: 1; grid-row: 1 / span 2;
+    font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--encre-3);
+  }
+  .ensemble-table td[data-libelle] > * { grid-column: 2; text-align: right; }
+  .ensemble-table td:not([data-libelle]) { display: block; }
+}
 /* L'historique d'un plan, au-dessus du tableau. */
 .fiche-plan { margin: 0 0 12px; padding: 12px 16px 12px; background: var(--surface); border: 1px solid var(--filet); border-radius: 4px; }
 .fiche-plan[hidden] { display: none; }
@@ -911,6 +1043,16 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
    et, au cœur du recouvrement, un anneau qui dit d'un coup d'œil la part
    d'identiques. À droite, une ligne par verdict, en français, cliquable. */
 .rapp-face { display: grid; grid-template-columns: minmax(0, 12fr) minmax(0, 8fr); gap: 18px 36px; align-items: start; }
+/* La réponse d'abord, sous le titre : ce qu'il y a à traiter, en une
+   phrase ; chaque nombre fait ce que fait sa ligne de verdict. */
+.rapp-reponse { margin: 0 0 16px; font-size: 14px; line-height: 1.5; color: var(--encre-2); }
+.rapp-reponse[hidden] { display: none; }
+.rapp-reponse button {
+  border: none; background: none; padding: 0 1px; cursor: pointer; color: var(--encre);
+  font: 500 14px "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.rapp-reponse button:hover, .rapp-reponse button[aria-pressed="true"] { text-decoration-thickness: 2px; }
 @media (max-width: 860px) { .rapp-face { grid-template-columns: 1fr; } }
 .rapp-figure { min-width: 0; }
 .rapp-figure svg { width: 100%; height: auto; display: block; overflow: visible; }
@@ -1115,6 +1257,20 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
 }
 .critique-plans { display: grid; justify-items: center; min-width: 0; }
 .critique-plans .arret-n { display: block; margin-top: 3px; font: 10.5px/1.2 "IBM Plex Sans", system-ui, sans-serif; color: var(--cours); white-space: nowrap; }
+/* « 3 à l'arrêt » est un bouton (il montre ces plans dans le tableau), et
+   un bouton ne peut pas en contenir un autre : la ligne lui garde sa place
+   sous le compte, et le bouton, posé juste après la ligne, remonte s'y
+   loger — même colonne, même police, au ras du bas de la ligne. */
+.critique-plans .arret-n.place { visibility: hidden; }
+.critique-arret { display: grid; grid-template-columns: var(--cols); column-gap: 14px; height: 0; }
+.arret-groupe {
+  grid-column: 2; justify-self: center; position: relative; transform: translateY(-100%); margin-top: -7px;
+  border: none; background: none; padding: 0; cursor: pointer; white-space: nowrap;
+  font: 10.5px/1.2 "IBM Plex Sans", system-ui, sans-serif; color: var(--cours);
+  text-decoration: underline dotted; text-underline-offset: 2px;
+}
+.arret-groupe:hover { text-decoration-style: solid; }
+.arret-groupe[aria-pressed="true"] { font-weight: 600; text-decoration-style: solid; }
 /* Sous une valeur choisie (débrief 18) : « 12 », puis « sur 40 » et ce qui
    y est arrivé au dernier relevé. */
 .critique-plans .sur-n { display: block; margin-top: 3px; font: 10.5px/1.2 "IBM Plex Sans", system-ui, sans-serif; color: var(--encre-3); white-space: nowrap; }
@@ -1175,6 +1331,11 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
   /* Chaque valeur reprend son libelle a gauche. */
   #zone-critique, #zone-critique.sans-jalon { --cols: 1fr; }
   .critique-ligne { gap: 7px; padding: 13px 0; border-bottom: 1px solid var(--filet); }
+  /* En colonne, plus de place à rejoindre : le bouton « à l'arrêt » se lit
+     sous la ligne, au bord droit, comme les nombres. */
+  .critique-plans .arret-n.place { display: none; }
+  .critique-arret { display: block; height: auto; text-align: right; padding: 5px 0 9px; }
+  .arret-groupe { transform: none; margin: 0; }
   .critique-nom { text-align: left; font-weight: 600; font-size: 15px; padding-right: 22px; }
   /* En colonne, la ligne est haute : centré verticalement, le chevron
      tombait sur la barre. Il se range au bout de la ligne du nom. */
@@ -1224,6 +1385,18 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
 .lien-doux { border: none; background: none; padding: 3px 0; font: inherit; cursor: pointer; color: var(--encre-3); text-decoration: underline; text-underline-offset: 3px; }
 .lien-doux:hover { color: var(--encre); }
 .lien-doux[hidden] { display: none; }
+/* « Copier (12) » : sur chaque liste de références de la page (verdict de
+   la comparaison, semaine du journal, groupe déplié). Un petit bouton à
+   part, jamais dans un autre bouton ; il dit « Copié » deux secondes. */
+.copier {
+  border: 1px solid var(--filet); background: var(--surface); color: var(--encre-2); border-radius: 3px;
+  padding: 1px 8px; font: 11.5px/1.5 "IBM Plex Sans", system-ui, sans-serif; cursor: pointer; white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.copier:hover { border-color: var(--encre-3); color: var(--encre); }
+.copier[data-copie="faite"] { border-color: var(--fait); color: var(--fait); }
+.verdict-corps-tete .copier { margin-left: auto; }
+.journal-copier { margin: 2px 0 6px; }
 
 .incomplets {
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px;

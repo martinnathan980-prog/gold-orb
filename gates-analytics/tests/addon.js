@@ -2513,6 +2513,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
     entete: (document.querySelector('.groupe-refs .entete') || {}).textContent || '',
     /* Une sous-liste par valeur de la colonne (débrief 13) : son libellé, son
        compte, et les titres de ses jetons. */
+    /* Débrief 20 : les plans à l'arrêt ouvrent la liste, sous leur propre
+       titre, hors des sous-listes par valeur. */
+    arret: document.querySelectorAll('.groupe-refs .sous-arret .jeton-ud[data-ud]').length,
     paquets: [...document.querySelectorAll('.groupe-refs .sous-groupe')].map(sg => {
       const t = sg.querySelector('.sous-titre'), n = t.querySelector('.n');
       return { libelle: t.textContent.slice(0, t.textContent.length - (n ? n.textContent.length : 0)).replace(/\s+/g, ' ').trim(),
@@ -2529,7 +2532,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
     ud.jetons.length === ud.total && !ud.autres && ud.paquets.length >= 2 &&
     ud.paquets.every((q, i) => q.pastille && q.n === q.etats.length && ud.ordre.indexOf(q.libelle) !== -1 &&
       (i === 0 || ud.ordre.indexOf(ud.paquets[i - 1].libelle) < ud.ordre.indexOf(q.libelle))) &&
-    ud.paquets.reduce((t, q) => t + q.n, 0) === ud.total,
+    ud.paquets.reduce((t, q) => t + q.n, 0) + ud.arret === ud.total,
     ud.jetons.length + ' / ' + ud.total + ' ' + JSON.stringify(ud.paquets.map(q => [q.libelle, q.n])));
   verifier('toutes sont des références de plan', ud.jetons.every(t => /^UD-/.test(t)), JSON.stringify(ud.jetons.slice(0, 3)));
   verifier('l\'en-tête dit combien et combien restent',

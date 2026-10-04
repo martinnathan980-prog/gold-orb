@@ -1608,7 +1608,7 @@ exactement pareil : « Traité », « À traiter », « Non renseigné », pour
 autant qu'il y en ait. Rien
 n'en est mémorisé : chacune repart de « Tout » avec un autre contrat ou
 l'autre avancement. Comme le champ de gauche du bloc, elles sont locales à
-leur section : « tout réinitialiser » (les filtres de la page) ne les
+leur section : « Tout effacer » (les filtres de la page) ne les
 touche pas ; leur premier bouton les remet à « Tout ».
 
 - **Le journal** : voir § 10. Le nombre de chaque pastille : les plans
