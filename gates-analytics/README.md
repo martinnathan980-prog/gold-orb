@@ -30,7 +30,7 @@ sur une démonstration (trois contrats fictifs), ce qui permet de la montrer et
 de la tester sans classeur. Quand elle trouve `window.SUIVI_FWD_DONNEES` posé
 dans la page, elle s'alimente à la place sur le classeur — et sur lui seul :
 la construction retire la démonstration des fichiers de l'add-on, et un
-classeur vide affiche « Le classeur est vide », jamais des données fabriquées.
+classeur vide affiche « Le classeur n’a pas encore de plans », jamais des données fabriquées.
 
 `Styles.html`, `Javascript.html` et `Index.html` en sont **dérivés** :
 
@@ -101,7 +101,7 @@ npm install
 npm test
 ```
 
-- `npm run test:addon` — 551 tests. Le vrai `Code.gs` tourne dans Node contre
+- `npm run test:addon` — 566 tests. Le vrai `Code.gs` tourne dans Node contre
   un classeur en mémoire (`tests/faux-classeur.js`), sur un export
   volontairement pénible : lignes de titre, groupes fusionnés, en-têtes
   accentués ou dupliqués, ligne vide au milieu, avancements de toutes les
@@ -114,7 +114,10 @@ npm test
   changement de contrat dans la page, panne du classeur), périmètre dérivé
   des cartes plan par plan, seconde base à rapprocher, et le dépôt
   automatique (secret absent ou refusé, corps illisible, onglet d'historique
-  protégé, archivage de la semaine, réponse JSON de `doPost`). Et la colonne
+  protégé, archivage de la semaine — même quand `getDocumentLock()` rend
+  null, comme en application web —, réponse JSON de `doPost`), et l'export
+  identique à un relevé plus ancien : refusé le vendredi, archivé du menu
+  après « Oui ». Et la colonne
   suivie : `HDK AA 011 > Avancement Définition Electrique` sur la vraie
   structure, nommée dans le pied de la page ; introuvable, aucune autre n'est
   lue à la place, la page le dit en haut et l'archivage refuse.
@@ -131,7 +134,7 @@ npm test
   lire une lettre, puis les repères lus pour de vrai par RapidOCR et corrigés
   par la liste de la base, sur papier gris et page couchée. Sans Chrome ou
   sans RapidOCR sur le poste, ces parties-là sont sautées en le disant.
-- `npm run test:import-see` — 140 tests sur la fenêtre d'import (menu Suivi
+- `npm run test:import-see` — 157 tests sur la fenêtre d'import (menu Suivi
   FWD → Importer les exports GATES et SEE…) : la vraie fenêtre, rendue par le
   vrai `Code.gs`, ouverte dans un vrai navigateur, `google.script.run`
   branché sur le serveur en mémoire. Plusieurs fichiers d'un coup, choisis ou
@@ -145,8 +148,12 @@ npm test
   des en-têtes, nom du fichier, nouveau contrat nommé d'après ses groupes ;
   pour SEE, l'échantillon rapproché par le serveur comme la page), le nom
   d'un nouveau contrat vérifié et sa place, deux fichiers pour le même
-  onglet, GATES puis SEE pour deux contrats, le relevé archivé contrat par
-  contrat et ses refus, un import GATES interrompu (l'ancien onglet, ses
+  onglet (la date de chaque fichier, le plus récent désigné), GATES puis SEE
+  pour deux contrats, deux tours dans la même fenêtre (la liste des contrats
+  relue), le deuxième contrat qui fait renommer « SEE » et l'ancien
+  historique au nom du premier, la fin d'un import qui refuse sans le
+  verrou, le relevé archivé contrat par contrat et ses refus, un import
+  GATES interrompu (l'ancien onglet, ses
   fusions et son historique intacts ; un nouveau contrat jamais créé à
   moitié), les restes d'un import jamais pris pour des contrats, la case
   « toutes » changée pendant une lecture. Et tout l'import SEE d'avant ; les

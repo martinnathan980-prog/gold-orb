@@ -4920,6 +4920,300 @@ async function reinitialiser(pg) {
   }
   await reinitialiser(p);
 
+  // =================================================================
+  section('Débrief 20 : relecture');
+  /* Les constats de la relecture du débrief 20, chacun reproduit d'abord tel
+     qu'il trompait. Chaque cas ouvre sa propre fenêtre : la page principale
+     reste dans l'état qu'attend la suite. */
+  {
+    /* Graphique : « manque N » ne disparaît plus sous « fin … ». Le cas
+       trouvé : PERSO, par ECP, ECP-2108 ouvert — le jalon 1 et la fin à deux
+       semaines d'écart ; à 1024 px on ne lisait plus que « ma ». Puis un
+       balayage : à toute largeur, aucun mot du graphique n'est recouvert par
+       un fond plein posé après lui, ni ne chevauche un autre mot. */
+    /* La mesure, posée dans la page : les mots du graphique (« manque »,
+       « fin »), ceux qu'un fond plein dessiné après eux recouvre, et ceux
+       qui en chevauchent un autre. */
+    const poserMesure = pg => pg.evaluate(() => {
+      window.__motsRecouverts = () => {
+        const svg = document.querySelector('#zone-graphe svg');
+        if (!svg) return { mots: [], couverts: [], chevauches: [] };
+        const ts = [...svg.querySelectorAll('text')].filter(t => t.textContent.trim() && t.getClientRects().length);
+        const fonds = [...svg.querySelectorAll('rect.fond-mot')];
+        const coupe = (a, c) => Math.min(a.right, c.right) - Math.max(a.left, c.left) > 1 && Math.min(a.bottom, c.bottom) - Math.max(a.top, c.top) > 2;
+        const nom = t => (t.querySelector('title') ? t.textContent.replace(t.querySelector('title').textContent, '') : t.textContent).trim();
+        const couverts = [], chevauches = [];
+        ts.forEach((t, i) => {
+          const a = t.getBoundingClientRect();
+          fonds.forEach(r => { if ((t.compareDocumentPosition(r) & Node.DOCUMENT_POSITION_FOLLOWING) && coupe(a, r.getBoundingClientRect())) couverts.push(nom(t)); });
+          ts.slice(i + 1).forEach(u => { if (coupe(a, u.getBoundingClientRect())) chevauches.push(nom(t) + ' × ' + nom(u)); });
+        });
+        return { mots: ts.filter(t => t.classList.contains('manque-jalon') || t.classList.contains('fin-mot')).map(nom), couverts, chevauches };
+      };
+    });
+    const motsRecouverts = pg => pg.evaluate(() => window.__motsRecouverts());
+    for (const w of [1024, 1100, 1440]) {
+      const ctxM = await contexte({ viewport: { width: w, height: 900 } });
+      const pm = await page(ctxM, 'manque sous fin ' + w);
+      await pm.click('#choix-perimetre button:nth-child(3)'); await pm.waitForTimeout(300);
+      await pm.selectOption('#dim-critique', 'ecp'); await pm.waitForTimeout(300);
+      await pm.locator('#zone-critique button.critique-ligne[data-groupe="ECP-2108"]').click(); await pm.waitForTimeout(400);
+      await poserMesure(pm);
+      const r = await motsRecouverts(pm);
+      verifier('à ' + w + ' px, PERSO, ECP-2108 ouvert : « manque N » et « fin … » se lisent tous deux, aucun fond plein ne recouvre un mot',
+        r.mots.some(m => /^manque \d/.test(m)) && r.mots.some(m => /^fin S/.test(m)) && !r.couverts.length && !r.chevauches.length, JSON.stringify(r));
+      await ctxM.close();
+    }
+    /* Le balayage se joue dans la page (un clic, une mesure, sans aller-
+       retour avec le pilote) : le dessin du graphique suit le clic sans
+       attendre. */
+    const balayage = [];
+    let vus = 0, avecManque = 0;
+    for (const w of [390, 768, 1440]) {
+      const ctxB = await contexte({ viewport: { width: w, height: 900 } });
+      const pb = await page(ctxB, 'balayage du graphique ' + w);
+      await poserMesure(pb);
+      const r = await pb.evaluate(() => {
+        const out = { vus: 0, avecManque: 0, fautes: [] };
+        const choisirDim = d => { const s = document.getElementById('dim-critique'); s.value = d; s.dispatchEvent(new Event('change', { bubbles: true })); };
+        for (const span of ['jalons', '26']) {
+          document.querySelector('.commandes-graphe .segmente button[data-span="' + span + '"]').click();
+          for (let per = 1; per <= 3; per++) {
+            document.querySelector('#choix-perimetre button:nth-child(' + per + ')').click();
+            for (const dim of ['ata', 'cc', 'ecp']) {
+              choisirDim(dim);
+              const noms = [...document.querySelectorAll('#zone-critique button.critique-ligne')].slice(0, 12).map(b => b.dataset.groupe);
+              for (let i = -1; i < noms.length; i++) {
+                const ligne = () => [...document.querySelectorAll('#zone-critique button.critique-ligne')].find(b => b.dataset.groupe === noms[i]);
+                if (i >= 0) ligne().click();
+                const m = window.__motsRecouverts();
+                out.vus++; if (m.mots.some(x => /^manque/.test(x))) out.avecManque++;
+                if (m.couverts.length || m.chevauches.length) out.fautes.push(span + '/' + per + '/' + dim + '/' + (i < 0 ? '—' : noms[i]) + ' : ' + JSON.stringify(m));
+                if (i >= 0) ligne().click();
+              }
+            }
+          }
+        }
+        return out;
+      });
+      vus += r.vus; avecManque += r.avecManque;
+      r.fautes.forEach(f => balayage.push(w + ' px, ' + f));
+      await ctxB.close();
+    }
+    verifier('balayage (390, 768, 1440 px × Échéances, 6 mois × 3 périmètres × ATA, CC, ECP × chaque groupe) : aucun mot recouvert ni chevauché',
+      !balayage.length && vus > 300 && avecManque > 20, vus + ' graphiques, ' + avecManque + ' avec « manque » ; ' + balayage.slice(0, 4).join(' | '));
+  }
+  {
+    /* La fiche d'échéance nomme le périmètre du jalon quand ce n'est pas
+       celui qu'on regarde : sous « Tout », « Diffusion TO Base » compte ses
+       plans BASE/OPTION, et l'ATA 24 y finit plus tôt que sur sa ligne du
+       bloc, qui compte tous ses plans. Sous BASE/OPTION, les deux disent la
+       même semaine et la phrase n'a rien à préciser. */
+    const ctxF = await contexte({ viewport: { width: 1440, height: 900 } });
+    const pf = await page(ctxF, 'fiche et périmètre');
+    await pf.click('button:has-text("Concept harnais")'); await pf.waitForTimeout(800);
+    await pf.selectOption('#dim-critique', 'ata'); await pf.waitForTimeout(300);
+    const lireFiche = async per => {
+      await pf.click('#choix-perimetre button:nth-child(' + per + ')'); await pf.waitForTimeout(400);
+      if (!await pf.$('#fiche-echeance')) { await pf.click('#echeance-titre'); await pf.waitForTimeout(400); }
+      return pf.evaluate(() => {
+        const v = (document.querySelector('#fiche-echeance .fiche-echeance-verdict') || { textContent: '' }).textContent.replace(/[  ]/g, ' ');
+        const m = v.match(/le dernier groupe \(ATA (\w+)\)(, sur ses plans ([^,]+),)? finirait en (S\d+)/);
+        const ligne = m ? document.querySelector('#zone-critique .critique-ligne[data-groupe="' + m[1] + '"] .critique-date .v') : null;
+        return { verdict: v, groupe: m && m[1], portee: m && m[3], fin: m && m[4], ligne: ligne ? ligne.textContent.replace(/[  ]/g, ' ') : '' };
+      });
+    };
+    const tout = await lireFiche(1), base = await lireFiche(2);
+    verifier('concept harnais, sous « Tout » : « le dernier groupe (ATA 24), sur ses plans BASE/OPTION, finirait en S… » — le périmètre du jalon est dit',
+      !!tout.groupe && tout.portee === 'BASE/OPTION', JSON.stringify(tout));
+    verifier('sous BASE/OPTION, la phrase ne répète pas le périmètre, et sa semaine est celle de la ligne du groupe dans le bloc',
+      !!base.groupe && !base.portee && base.ligne.indexOf(base.fin + ' ') === 0, JSON.stringify(base));
+    verifier('et la fin dite sous « Tout » est bien celle du périmètre du jalon (la même que sous BASE/OPTION)',
+      tout.fin === base.fin && tout.groupe === base.groupe, tout.fin + ' / ' + base.fin);
+    await ctxF.close();
+  }
+  {
+    /* Sous une tuile Validé, les boutons « N à l'arrêt » restent (le clic
+       retire la tuile) : la note qui définit le mot reste avec eux. */
+    const ctxA = await contexte({ viewport: { width: 1440, height: 900 } });
+    const pa = await page(ctxA, 'note à l’arrêt');
+    await pa.selectOption('#dim-critique', 'ata'); await pa.waitForTimeout(300);
+    const lire = () => pa.evaluate(() => ({ boutons: document.querySelectorAll('#zone-critique button[data-arret-groupe]').length,
+      note: !!document.querySelector('#zone-critique .note-arret') }));
+    const avant = await lire();
+    await pa.click('#etats .etat-btn[data-famille="termine"]'); await pa.waitForTimeout(400);
+    const sousValide = await lire();
+    verifier('sans filtre, des groupes ont « N à l’arrêt » et la note qui le définit est là', avant.boutons > 0 && avant.note, JSON.stringify(avant));
+    verifier('sous la tuile Validé, les boutons « N à l’arrêt » restent et la note aussi (même compte)',
+      sousValide.boutons > 0 && sousValide.note, JSON.stringify(sousValide));
+    await pa.click('#etats .etat-btn[data-famille="termine"]'); await pa.waitForTimeout(300);
+    await pa.click('#filtre-valeur-groupe button[data-valeur-bloc="termine"]'); await pa.waitForTimeout(400);
+    const valeurValide = await lire();
+    verifier('sous la valeur « Validé » du bloc, aucun groupe n’a de plan à l’arrêt : ni bouton, ni note',
+      valeurValide.boutons === 0 && !valeurValide.note, JSON.stringify(valeurValide));
+    await ctxA.close();
+  }
+  {
+    /* Le second clic sur « N à l'arrêt » défait aussi la tuile que le
+       premier avait posée lui-même (sous la valeur « En cours » du bloc) —
+       mais pas une tuile que Nathan a pressée entre-temps. */
+    const ctxT = await contexte({ viewport: { width: 1440, height: 900 } });
+    const pt = await page(ctxT, 'tuile posée par « à l’arrêt »');
+    await pt.selectOption('#dim-critique', 'ata'); await pt.waitForTimeout(300);
+    const etat = () => pt.evaluate(() => ({
+      lignes: document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length,
+      tuiles: [...document.querySelectorAll('#etats .etat-btn[aria-pressed="true"]')].map(b => b.dataset.etat),
+      filtres: (document.getElementById('filtres-actifs') || { textContent: '' }).textContent.replace(/\s+/g, ' ').trim() }));
+    const depart = await etat();
+    await pt.click('#filtre-valeur-groupe button[data-valeur-bloc="encours"]'); await pt.waitForTimeout(400);
+    const groupeA = await pt.evaluate(() => document.querySelector('#zone-critique button[data-arret-groupe]').getAttribute('data-arret-groupe'));
+    const bouton = '#zone-critique button[data-arret-groupe="' + groupeA + '"]';
+    await pt.click(bouton); await pt.waitForTimeout(400);
+    const premier = await etat();
+    await pt.click(bouton); await pt.waitForTimeout(400);
+    const second = await etat();
+    verifier('sous la valeur « En cours » du bloc, le premier clic sur « N à l’arrêt » pose la tuile En cours et réduit le tableau',
+      premier.tuiles.join() === 'encours' && premier.lignes > 0 && premier.lignes < depart.lignes, JSON.stringify(premier));
+    verifier('le second clic retire la sélection ET la tuile qu’il avait posée : plus d’« État : En cours » jamais pressé à la main',
+      !second.tuiles.length && !/État/.test(second.filtres), JSON.stringify(second));
+    // La tuile pressée à la main entre les deux clics reste à Nathan.
+    await pt.click(bouton); await pt.waitForTimeout(400);
+    await pt.click('#etats .etat-btn[data-etat="encours"]'); await pt.waitForTimeout(300);
+    await pt.click('#etats .etat-btn[data-etat="encours"]'); await pt.waitForTimeout(300);
+    const presse = await pt.evaluate(b => document.querySelector(b).getAttribute('aria-pressed'), bouton);
+    await pt.click(bouton); await pt.waitForTimeout(400);
+    const garde = await etat();
+    verifier('une tuile En cours re-pressée à la main entre les deux clics n’est pas retirée par le second',
+      presse === 'true' && garde.tuiles.join() === 'encours', presse + ' ' + JSON.stringify(garde));
+    /* La sélection retirée par la croix du bandeau : la tuile qui reste,
+       Nathan l'a vue et gardée — elle est à lui. Un nouvel aller-retour sur
+       « à l'arrêt » ne la retire pas. */
+    await pt.click('#etats .etat-btn[data-etat="encours"]'); await pt.waitForTimeout(300);
+    await pt.click(bouton); await pt.waitForTimeout(400);
+    const avantCroix = await etat();
+    await pt.click('#filtres-actifs button[data-retirer="refs"]'); await pt.waitForTimeout(400);
+    await pt.click(bouton); await pt.waitForTimeout(400);
+    await pt.click(bouton); await pt.waitForTimeout(400);
+    const apresCroix = await etat();
+    verifier('la croix du bandeau sur la sélection laisse la tuile posée par le clic à Nathan : un aller-retour sur « à l’arrêt » ne la retire plus',
+      avantCroix.tuiles.join() === 'encours' && apresCroix.tuiles.join() === 'encours', JSON.stringify([avantCroix, apresCroix]));
+    await ctxT.close();
+  }
+  {
+    /* Le sommaire : un nom de dimension long pousse « Plans » et
+       « Comparaison » hors de la ligne bien au-delà du téléphone ; le fondu
+       du bord droit le dit à toute largeur. */
+    const longue = 'Classification calculée bêta du bureau d’études électrique';
+    for (const w of [768, 900]) {
+      const ctxS = await contexte({ viewport: { width: w, height: 850 } });
+      const ps = await page(ctxS, 'sommaire ' + w);
+      await ps.evaluate(t => {
+        const s = window.__jeuDExemple('HDK');
+        s.colonnes.forEach(c => { if (c.cle === 'ata') c.titre = t; });
+        window.__chargerSource(s);
+      }, longue);
+      await ps.waitForTimeout(500);
+      await ps.selectOption('#dim-critique', 'ata'); await ps.waitForTimeout(400);
+      const r = await ps.evaluate(() => {
+        const l = document.getElementById('sommaire-liste'), cs = getComputedStyle(l);
+        return { entree: document.getElementById('sommaire-groupe').textContent, deborde: l.scrollWidth - l.clientWidth,
+                 classe: l.classList.contains('deborde-droite'), masque: cs.webkitMaskImage || cs.maskImage };
+      });
+      verifier('à ' + w + ' px, « Par Classification calculée… » déborde du sommaire : le fondu du bord droit le signale',
+        /Classification/.test(r.entree) && r.deborde > 2 && r.classe && /gradient/.test(r.masque), JSON.stringify(r));
+      await ctxS.close();
+    }
+    const ctxL = await contexte({ viewport: { width: 1440, height: 850 } });
+    const pl = await page(ctxL, 'sommaire large');
+    const large = await pl.evaluate(() => {
+      const l = document.getElementById('sommaire-liste'), cs = getComputedStyle(l);
+      return { deborde: l.scrollWidth - l.clientWidth, classe: l.classList.contains('deborde-droite'), masque: cs.webkitMaskImage || cs.maskImage };
+    });
+    verifier('à 1440 px, le sommaire tient : pas de fondu', large.deborde <= 2 && !large.classe && large.masque === 'none', JSON.stringify(large));
+    await ctxL.close();
+  }
+  {
+    /* La puce d'un plan à l'arrêt garde le « au moins » de sa bulle : quand
+       la suite remonte au premier relevé connu, « depuis ≤ S26 ». */
+    await p.selectOption('#dim-critique', 'ata'); await p.waitForTimeout(300);
+    const jetons = await p.evaluate(() => {
+      const out = [];
+      [...document.querySelectorAll('#zone-critique .critique-ligne')].forEach(l => { if (l.getAttribute('aria-pressed') !== 'true') l.click(); });
+      document.querySelectorAll('#zone-critique .jeton-ud.arret').forEach(j => {
+        out.push({ auMoins: /depuis au moins S\d+/.test(j.title), puce: (j.querySelector('.depuis') || { textContent: '' }).textContent.replace(/ /g, ' ') });
+      });
+      [...document.querySelectorAll('#zone-critique .critique-ligne[aria-pressed="true"]')].forEach(l => l.click());
+      return out;
+    });
+    const faux = jetons.filter(j => j.auMoins ? !/^depuis ≤ S\d+$/.test(j.puce) : !/^depuis S\d+$/.test(j.puce));
+    verifier('plans à l’arrêt : « depuis ≤ S26 » quand la bulle dit « depuis au moins S26 », « depuis S30 » sinon',
+      jetons.some(j => j.auMoins) && !faux.length, jetons.length + ' puces ; ' + JSON.stringify(faux.slice(0, 3)));
+    await reinitialiser(p);
+  }
+  {
+    /* La puce d'échéance au téléphone : le groupe passe à la ligne, aligné
+       sous « Prochaine échéance », sans « · » isolé en tête ; au large, le
+       « · » sépare toujours l'échéance du groupe, sur la même ligne. */
+    for (const w of [360, 390, 1440]) {
+      const ctxE = await contexte({ viewport: { width: w, height: 900 } });
+      const pe = await page(ctxE, 'puce d’échéance ' + w);
+      const cas = [];
+      for (const dim of ['_mois', 'ata']) {
+        await pe.selectOption('#dim-critique', dim); await pe.waitForTimeout(300);
+        await pe.locator('#zone-critique button.critique-ligne').first().click(); await pe.waitForTimeout(300);
+        cas.push(await pe.evaluate(() => {
+          const b = document.getElementById('echeance-titre'), mot = b.querySelector('span:not(.point):not(.portee):not(.jours)');
+          const po = b.querySelector('.portee'), jo = b.querySelector('.jours');
+          const r = e => e.getBoundingClientRect();
+          return { texte: po.textContent, avant: getComputedStyle(po, '::before').content,
+                   gauche: Math.round(r(po).left - r(mot).left), jours: Math.round(r(jo).left - r(mot).left),
+                   ligne: Math.round(r(po).top - r(mot).top), largeur: b.scrollWidth <= b.clientWidth + 1 };
+        }));
+        await pe.locator('#zone-critique button.critique-ligne').first().click(); await pe.waitForTimeout(200);
+      }
+      const telephone = w < 480;
+      verifier('à ' + w + ' px, la puce d’échéance nomme le groupe sans « · » dans le texte' +
+        (telephone ? ' ; au téléphone, groupe et jours sur la seconde ligne, alignés sous « Prochaine échéance », sans « · »' : ' ; au large, le « · » du style le sépare, sur la même ligne'),
+        cas.every(c => c.texte.indexOf('·') === -1 && c.largeur &&
+          (telephone ? c.avant === 'none' && c.ligne > 8 && Math.abs(c.gauche) <= 1 && (Math.abs(c.jours) <= 1 || c.jours > c.gauche)
+                     : /·/.test(c.avant) && Math.abs(c.ligne) <= 2 && c.gauche > 0)), JSON.stringify(cas));
+      await ctxE.close();
+    }
+  }
+  {
+    /* Les messages de la page disent d'abord d'importer (la fenêtre
+       remplace l'onglet et archive dans la foulée), le collage en secours. */
+    const textes = await p.evaluate(() => {
+      const out = {};
+      const lireJournal = () => (document.querySelector('#zone-journal .journal-vide') || { textContent: '' }).textContent.replace(/[  ]/g, ' ');
+      const lireAlerte = () => { const z = document.getElementById('alerte-valeurs'); return z.hidden ? '' : z.textContent.replace(/[  ]/g, ' '); };
+      const s1 = window.__jeuDExemple('HDK');
+      const carte = {}; s1.plans.forEach(x => { carte[x.reference] = x.avancement; });
+      s1.releves = s1.releves.slice(-2).map(r => Object.assign({}, r, { plans: Object.assign({}, carte) }));
+      window.__chargerSource(s1);
+      out.journal = lireJournal();
+      const s2 = window.__jeuDExemple('HDK');
+      s2.plans = s2.plans.concat(s2.plans.slice(0, 3).map(x => Object.assign({}, x)));
+      window.__chargerSource(s2);
+      out.doublons = lireAlerte();
+      const s3 = window.__jeuDExemple('HDK');
+      s3.plans.forEach(x => { x.avancement = ''; });
+      window.__chargerSource(s3);
+      out.colonne = lireAlerte();
+      window.__chargerSource(window.__jeuDExemple('HDK'));
+      return out;
+    });
+    const menu = 'menu Suivi FWD → Importer les exports GATES et SEE…';
+    verifier('journal vide, deux relevés identiques : importer le dernier export (le menu, qui archive dans la foulée), ou le recoller puis archiver',
+      textes.journal.indexOf('importer le dernier export de GATES (' + menu + ', qui archive dans la foulée), ou le recoller puis archiver.') !== -1, textes.journal);
+    verifier('références en double : le réimporter (l’onglet est remplacé en entier), ou le recoller sur un onglet vidé',
+      textes.doublons.indexOf('le réimporter (' + menu + ' : l’onglet est remplacé en entier), ou le recoller sur un onglet vidé (Ctrl+A, Suppr).') !== -1, textes.doublons);
+    verifier('colonne suivie vide : vérifier l’export de GATES, puis le réimporter par le menu — plus « l’export collé »',
+      /est vide sur les \d+ plans/.test(textes.colonne) && textes.colonne.indexOf('puis le réimporter (' + menu + ').') !== -1 && !/export collé/.test(textes.colonne), textes.colonne);
+    await p.waitForTimeout(400);
+    await reinitialiser(p);
+  }
+
   section('Persistance (même navigateur, page rechargée)');
   await p.click('button[data-trig="fin"]'); await p.waitForTimeout(300);
   /* Débrief 19 : « quand on ouvre, t'es directement sur Tout » — un cadrage
@@ -5237,8 +5531,8 @@ async function reinitialiser(pg) {
   verifier('P2 — un clic ne montre que ces plans : n lignes, toutes en cours, le groupe ouvert, « À surveiller » limité au groupe',
     p20.lignes === arretG.n && p20.etats === 'En cours' && p20.ouvert && p20.ouvert.groupe === arretG.g && p20.presse === 'true' && Number(p20.surveiller) === arretG.n &&
     p20.jetons.some(j => /^À surveiller/.test(j)) && p20.jetons.some(j => j.indexOf(arretG.g) !== -1), JSON.stringify(p20));
-  verifier('P2 — dans le groupe déplié, les plans à l’arrêt viennent d’abord, sous « À l’arrêt », chacun avec « depuis Sxx »',
-    p20.premier === 'sous-arret' && /^À l’arrêt/.test(p20.titre) && p20.depuis.length === arretG.n && p20.depuis.every(t => /^depuis S\d{1,2}$/.test(t)), JSON.stringify(p20));
+  verifier('P2 — dans le groupe déplié, les plans à l’arrêt viennent d’abord, sous « À l’arrêt », chacun avec « depuis Sxx » (« depuis ≤ Sxx » quand le début n’est pas connu)',
+    p20.premier === 'sous-arret' && /^À l’arrêt/.test(p20.titre) && p20.depuis.length === arretG.n && p20.depuis.every(t => /^depuis (≤\u00a0)?S\d{1,2}$/.test(t)), JSON.stringify(p20));
   await p.evaluate(g => [...document.querySelectorAll('#zone-critique button[data-arret-groupe]')].find(b => b.dataset.arretGroupe === g).click(), arretG.g);
   await p.waitForTimeout(500);
   const p20b = await p.evaluate(() => ({ lignes: document.querySelectorAll('#corps-tableau tr').length, ouvert: !!document.querySelector('.critique-ligne[aria-pressed="true"]'),

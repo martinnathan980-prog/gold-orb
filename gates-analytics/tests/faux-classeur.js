@@ -307,7 +307,11 @@ function poserEnvironnement(contexte, classeur, proprietes, fichiers) {
     getScriptTimeZone: function () { return 'Europe/Paris'; },
     getTemporaryActiveUserKey: function () { return contexte.__cleLecteur; }
   };
+  /* Le verrou du script est celui que prennent les gestes (verrouDuClasseur_) ;
+     celui du document reste là, comme dans Apps Script, mais personne ne
+     devrait plus s'y fier : en application web (doPost), il vaut null. */
   contexte.LockService = {
+    getScriptLock: function () { return { tryLock: function () { return true; }, releaseLock: function () {} }; },
     getDocumentLock: function () { return { tryLock: function () { return true; }, releaseLock: function () {} }; }
   };
   /* Le cache du classeur n'existe que si un test l'allume : ailleurs, chaque

@@ -86,8 +86,13 @@ consultations du Diagnostic (`resumeConsultations_`) — porte le suffixe
 
 Les gestes qui écrivent l'historique (l'archivage du vendredi ou du menu,
 une semaine passée, la suppression, l'import, le dépôt) passent **un à un**,
-sous le verrou du document : sans lui, le vendredi et un import lancés au
-même moment pouvaient écrire deux relevés pour la même semaine. Pas obtenu
+sous un même verrou : sans lui, le vendredi et un import lancés au même
+moment pouvaient écrire deux relevés pour la même semaine. C'est le verrou
+**du script** (`verrouDuClasseur_`), pas celui du document : le dépôt
+(`doPost`) tourne en application web, où `getDocumentLock()` rend null — il
+plantait sur ce null et n'archivait plus rien. Pour un script lié à un seul
+classeur, les deux couvrent les mêmes gestes ; il faut seulement que tous
+prennent le même, sinon ils ne s'attendraient pas. Pas obtenu
 en trente secondes, rien n'est écrit, et le message le dit (« un autre geste
 écrit en ce moment dans l'historique de ce classeur… Relancer dans une
 minute »).
@@ -201,12 +206,27 @@ relevé.** Tout archivage (menu, vendredi, dépôt) compare d'abord la carte
 plan par plan à l'historique du contrat : si elle est exactement celle d'un
 relevé plus ancien alors que le relevé de la semaine visée, déjà archivé,
 en a une autre, il refuse — « l'onglet « HDK » porte le même export que le
-relevé S39 : le relevé S40 déjà archivé, différent, n'est pas écrasé.
-Importer l'export du jour (menu Suivi FWD → Importer les exports GATES et
-SEE…, qui archive dans la foulée), ou le recoller puis archiver. » Le
-vendredi, ce refus arrive par le mail d'échec de Google ; les autres contrats
-sont archivés. Après un import, case « Archiver » cochée, il revient sur la
-ligne du fichier, en ⚠ : l'import, lui, est fait.
+relevé S39 : le relevé S40 déjà archivé, différent, n'est pas écrasé. Si
+c'est voulu (GATES est vraiment revenu à cet état, ou le relevé S40 déjà
+pris vient d'un mauvais export) : menu Suivi FWD → Archiver le relevé de
+cette semaine, qui demandera confirmation. Sinon, importer l'export du
+jour… » Le vendredi, ce refus arrive par le mail d'échec de Google ; les
+autres contrats sont archivés. Après un import, case « Archiver » cochée, il
+revient sur la ligne du fichier, en ⚠ (« … Sinon, ce fichier n'est pas
+l'export du jour : importer le bon ») : l'import, lui, est fait.
+
+Ce refus ne doit pas être sans issue : un export **identique à un relevé
+plus ancien** peut être juste (GATES a retiré une validation ; le relevé de
+la semaine venait d'un mauvais export). Lancé **du menu**,
+`enregistrerInstantaneHebdo` archive d'abord tout ce qui passe, sous le
+verrou, puis — verrou rendu, pour qu'une boîte restée ouverte ne bloque
+personne — demande OUI / NON pour chaque contrat refusé ainsi (« L'export de
+« HDK » est identique au relevé S39, plus ancien que le relevé S40, qui est
+différent. L'archiver quand même comme relevé S41 ? Oui seulement si GATES
+est vraiment revenu à cet état… »), et archive les confirmés, sous le
+verrou, avec `archiverContrat_(…, forcer)`. Le déclencheur du vendredi
+(reconnu à son `triggerUid`, sans interface) ne demande rien : il refuse.
+Pour une semaine passée, le conseil est de vérifier l'export collé.
 
 ## 4 bis. La fenêtre d'import : GATES et SEE, sans Excel (débrief 20)
 
@@ -289,10 +309,14 @@ et reste modifiable dans sa liste :
   plans de chaque contrat **comme la page** : racine + solution, le A du
   NAME remis à sa place (les fonctions de la page, jumelées côté serveur :
   toute modification va des deux côtés) ; seuls des comptes reviennent. Le
-  contrat qui en retrouve le plus, au même seuil ; (b) sinon le seul nommé
-  dans le nom du fichier ; (c) sinon le seul contrat ; (d) sinon celui de
-  l'onglet affiché, **à vérifier**. Le nouveau contrat qu'un export GATES de
-  la même liste va créer est proposé aussi (« NEO (nouveau) »).
+  contrat qui en retrouve le plus, au même seuil — l'échantillon part même
+  avec un seul contrat : c'est ce qui le confirme ; (b) sinon le seul nommé
+  dans le nom du fichier ; (c) sinon le seul contrat, ou celui de l'onglet
+  affiché, **à vérifier**, la liste visible : rien ne confirme ce choix (le
+  seul contrat n'était pas toujours le bon — l'extract d'un contrat créé au
+  tour d'avant partait sans un mot dans « SEE HDK »). Le nouveau contrat
+  qu'un export GATES de la même liste va créer est proposé aussi (« NEO
+  (nouveau) »).
 
 **Un nouveau contrat** : son nom est vérifié par le serveur à mesure qu'on le
 tape (`importVerifierNouveauContrat`), puis de nouveau au début et à la fin
@@ -304,10 +328,21 @@ indifférents (« Le contrat « HDK » existe déjà : le choisir dans la
 liste »). L'onglet créé se range **après le dernier onglet de contrat**. Avec
 `FEUILLE_DONNEES` (un seul contrat imposé), pas de nouveau contrat.
 
+Quand ce nouveau contrat est le **deuxième**, deux onglets du premier, X, ne
+seraient plus lus : l'onglet `SEE` tout court (sa base) et l'ancien
+`Historique_FWD` (ses relevés). La fin de l'import, sous le verrou, avant
+l'échange (`rattacherAuContratUnique_`), les renomme `SEE X` et
+`Historique_FWD_X` — le propriétaire est certain — si ces noms-là
+n'existent pas déjà ; la fenêtre le dit (« l'onglet « SEE » devient « SEE
+HDK » »), et l'annonce dès la liste : la ligne SEE de X vise « SEE HDK
+(aujourd'hui « SEE », renommé à la création du nouveau contrat) ».
+
 **« Importer » attend**, et dit pourquoi sous la liste : une lecture en
 cours, un fichier en erreur (✗) à retirer — **Retirer les fichiers en
 erreur** les enlève d'un coup —, un contrat à choisir, un nom à vérifier,
-deux fichiers pour le même onglet. Sous chaque ligne, l'onglet visé :
+deux fichiers pour le même onglet (chaque ligne porte la date de son fichier,
+« du 3 oct. 14:20 », et le message désigne le plus récent à garder, s'il
+l'est d'au moins une minute). Sous chaque ligne, l'onglet visé :
 « Remplacera l'onglet « HDK » — l'ancien ne s'en va qu'une fois tout reçu ;
 son historique est gardé », ou « Créera l'onglet « VRK » : un nouveau
 contrat, rangé après les autres ».
@@ -315,7 +350,7 @@ contrat, rangé après les autres ».
 **L'import** passe les exports GATES d'abord — un nouveau contrat existe avant
 sa base SEE —, puis ceux de SEE, chacun pour lui-même : un échec n'arrête pas
 les suivants. Chacun suit le chemin du § 12 (onglet temporaire taillé à la
-mesure, lots, échange sous le verrou du document, reprise des appels perdus),
+mesure, lots, échange sous le verrou, reprise des appels perdus),
 avec une cible `{ sorte: 'gates' | 'see', contrat, nouveau }` que le serveur
 résout et revérifie (`cibleImport`) au début comme à la fin. Les onglets
 temporaires (`HDK (import xxxxxx)`) et l'ancien mis de côté le temps de
@@ -339,8 +374,8 @@ rangé sous le nom du contrat, ne bouge pas.
 **Le relevé de la semaine**, si la case « Archiver le relevé de la semaine
 S40 pour les contrats importés » est cochée (elle l'est, et n'apparaît
 qu'avec un export GATES dans la liste) : pour chaque export GATES importé, et
-pour lui seul, un appel à part (`importArchiverReleve`, sous le verrou du
-document, par `archiverContrat_`), avec les garde-fous du menu — l'export
+pour lui seul, un appel à part (`importArchiverReleve`, sous le verrou,
+par `archiverContrat_`), avec les garde-fous du menu — l'export
 d'une semaine déjà archivée qui écraserait un relevé différent, ou ferait
 reculer les plans depuis le dernier relevé, un historique orphelin, un
 onglet sans plan. Un refus revient comme tel, en ⚠ :
@@ -349,8 +384,11 @@ rien (il remplace la ligne de sa semaine). Sans colonne suivie, l'archivage
 n'est pas tenté.
 
 À la fin, **une ligne par fichier** — ✓, ⚠ ou ✗ — et « Rouvrir le tableau de
-bord pour voir les nouveaux chiffres ». Un nouveau choix de fichiers repart
-d'une liste propre. Les messages du serveur qui disaient de coller l'export
+bord pour voir les nouveaux chiffres ». Puis la fenêtre **relit la liste des
+contrats** (`importContrats`, même jeton) et vide ce qu'elle savait de leurs
+plans : un contrat créé à ce tour-là est proposé au suivant, et reconnu par
+ses plans. Si la relecture échoue, « Importer » attend et dit de rouvrir la
+fenêtre. Un nouveau choix de fichiers repart d'une liste propre. Les messages du serveur qui disaient de coller l'export
 disent maintenant l'import d'abord, le collage ensuite : classeur vide,
 onglet sans plan, Diagnostic, archivage refusé, semaine passée.
 
@@ -394,11 +432,18 @@ de palier.
 
 Un classeur d'avant les contrats, qui porte encore l'ancien onglet
 **`Historique_FWD`** tout court, continue de s'en servir tant qu'il n'a qu'un
-seul contrat : rien n'est renommé, rien n'est reconstruit. Dès qu'un second
-onglet de contrat apparaît, cet ancien onglet n'appartient plus à personne ;
-la **page** (au-dessus de la barre) et le **Diagnostic** le signalent, et il
-suffit de le renommer `Historique_FWD_<nom>` (`Historique_FWD_HDK`) pour
-rendre ses relevés au contrat qui les a produits. D'ici là, un contrat sans
+seul contrat : rien n'est renommé, rien n'est reconstruit. Quand la fenêtre
+d'import crée le second contrat, elle le renomme elle-même
+`Historique_FWD_<premier contrat>` (§ 4). Quand un second onglet de contrat
+apparaît autrement (collé à la main), cet ancien onglet n'appartient plus à
+personne ; la **page** (au-dessus de la barre) et le **Diagnostic** le
+signalent, et il suffit de le renommer `Historique_FWD_<nom>`
+(`Historique_FWD_HDK`) pour rendre ses relevés au contrat qui les a
+produits. Le refus d'archiver le nomme quand il le sait — le contrat dont
+les plans recoupent la carte du dernier relevé de l'onglet, sinon, après un
+import, pas le contrat qu'il vient de créer — et nomme tous les candidats
+sinon ; il ne propose jamais de retirer le préfixe, ce qui ferait sortir
+de la page tous les relevés du premier contrat. D'ici là, un contrat sans
 historique ne s'archive pas : le vendredi ouvrait sinon `Historique_FWD_HDK`
 à côté, l'historique coupé en deux et le renommage devenu impossible.
 
@@ -646,7 +691,7 @@ fabriqué.
   relevés archivés — un seul relevé donne un graphique à un point, et le
   journal attend le relevé suivant pour dire ce qui a bougé ;
 - **le classeur n'a encore rien donné** — pas d'onglet de contrat, feuille
-  vide — : à la place des sections, un panneau **« Le classeur est vide »**
+  vide — : à la place des sections, un panneau **« Le classeur n’a pas encore de plans »**
   rappelle les trois gestes (un onglet au nom du contrat, l'extract collé
   en A1, Actualiser), et l'alerte dit ce qui manque.
 
@@ -932,7 +977,9 @@ prévue est **SEE**, l'extract Excel de l'intranet (« Nommage WD BFLOW »).
 **Chaque contrat a la sienne** : l'onglet `SEE HDK` sert au contrat `HDK`,
 `SEE THS` à `THS` (`SEE - HDK`, `SEE_HDK`, `HDK SEE` valent aussi) ; un onglet
 `SEE` tout court ne vaut que pour un classeur d'un seul contrat — devant
-plusieurs, il n'est lu pour aucun, et le Diagnostic dit comment le renommer.
+plusieurs, il n'est lu pour aucun, et le Diagnostic dit comment le renommer
+(la fenêtre d'import le renomme elle-même quand elle crée le deuxième
+contrat, § 4).
 Un extract SEE : un
 titre en ligne 1, les en-têtes en ligne 3, les données dessous, et la
 référence UD répartie sur trois colonnes — **NAME** (la racine), **SOL.** (la
@@ -1014,9 +1061,13 @@ onglet qui la visait devient `#REF!` — le tableau de bord, lui, retrouve
 l'onglet par son nom.
 Une fenêtre fermée en plein envoi laisse l'onglet temporaire : le Diagnostic
 le signale, et le prochain import du même onglet le retire. Le début et la
-fin d'un import se font sous le verrou du document ; deux imports du même
-contrat lancés en même temps ne se mêlent jamais : le second retire l'onglet
-temporaire du premier, qui s'arrête net (« a disparu »).
+fin d'un import se font sous le verrou des gestes ; la fin, qui échange les
+onglets, refuse sans lui (« Le classeur est occupé par un autre geste
+(archivage…) : l'onglet « HDK » n'a pas été remplacé. Relancer l'import dans
+une minute. ») plutôt que de retirer l'onglet que le vendredi est peut-être
+en train de lire ; l'onglet temporaire s'en va, l'ancien reste. Deux imports
+du même contrat lancés en même temps ne se mêlent jamais : le second retire
+l'onglet temporaire du premier, qui s'arrête net (« a disparu »).
 
 Chaque fonction de l'import passe la garde des gestes qui écrivent (§ 2) :
 la fenêtre reçoit à l'ouverture un **jeton** à usage de six heures, gardé

@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "e906173";
+  --suivi-fwd-edition: "b7a3368";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -692,6 +692,12 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
   counter-reset: chapitre;
 }
 .sommaire-liste::-webkit-scrollbar { display: none; }
+/* Ce qui dépasse à droite se devine par un fondu, comme les pastilles — à
+   toute largeur : la barre de défilement est cachée, et un nom de dimension
+   long (« Par Classification calculée… ») pousse « Plans » hors de la ligne
+   bien au-delà du téléphone (relecture du débrief 20 : à 768 px, rien ne le
+   disait). Le script pose la classe tant qu'il reste à faire défiler. */
+.sommaire-liste.deborde-droite { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
 /* Un panneau absent ne compte pas ([hidden] vaut display: none, hors du
    compteur) : les numéros restent ceux des panneaux. */
 .sommaire-liste li { counter-increment: chapitre; flex: none; }
@@ -723,8 +729,6 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 @media (max-width: 720px) {
   .sommaire { margin-top: -6px; }
   .sommaire-liste { gap: 0 20px; margin: 0; padding: 0; }
-  /* Ce qui dépasse à droite se devine par un fondu, comme les pastilles. */
-  .sommaire-liste.deborde-droite { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
 }
 body[data-vide="true"] .sommaire { display: none; }
 @media (prefers-reduced-motion: reduce) { .sommaire, .sommaire a, .sommaire-marque { transition: none; } }
@@ -913,8 +917,20 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 /* Chaque morceau reste d'un bloc : sur un téléphone, « Prochaine échéance »
    se cassait en deux lignes au milieu de la puce. */
 .echeance-titre > span, .echeance-titre > b { white-space: nowrap; }
+/* Le « · » qui sépare l'échéance du groupe ouvert vient du style, pas du
+   texte : au téléphone, où la puce passe sur deux lignes, il ouvrait la
+   seconde, seul en tête (relecture du débrief 20). */
+.echeance-titre .portee::before { content: "\00b7\00a0"; }
 @media (max-width: 480px) {
-  .echeance-titre { flex-wrap: wrap; row-gap: 2px; margin-left: 0; font-size: 12.5px; }
+  /* Au téléphone, deux lignes nettes : l'échéance, puis le groupe et les
+     jours, alignés sous « Prochaine échéance » — le point se pose dans la
+     marge, la coupure est voulue (un élément pleine largeur entre les
+     deux), et le « · » n'a plus rien à séparer. */
+  .echeance-titre { flex-wrap: wrap; row-gap: 0; margin-left: 0; font-size: 12.5px; position: relative; padding-left: 28px; }
+  .echeance-titre .point { position: absolute; left: 11px; top: 12px; }
+  .echeance-titre::before { content: ""; order: 1; flex-basis: 100%; height: 0; }
+  .echeance-titre .portee, .echeance-titre .jours { order: 2; }
+  .echeance-titre .portee::before { content: none; }
   .haut-de-page { right: 12px; bottom: 12px; width: 36px; height: 36px; }
 }
 

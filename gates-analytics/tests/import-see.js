@@ -210,6 +210,7 @@ const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now
       choixVisible: !li.querySelector('.choix').hidden,
       options: Array.prototype.map.call(li.querySelector('.contrat').options, o => o.value),
       note: li.querySelector('.note').textContent,
+      date: li.querySelector('.date').textContent,
       verifier: li.querySelector('.note').classList.contains('verifier'),
       nouveau: li.querySelector('.nouveau').hidden ? null : li.querySelector('.nouveau').value,
       cible: li.querySelector('.cible').textContent,
@@ -233,10 +234,30 @@ const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now
     await page.waitForFunction(() => Array.prototype.every.call(document.querySelectorAll('#liste .fichier'),
       li => /^(lu|erreur|fait|echec)$/.test(li.getAttribute('data-etat') || '') && !li.hasAttribute('data-occupe')), null, { timeout: 120000 });
   }
+  /* `date` (ms) : la date du fichier, que setInputFiles ne sait pas poser —
+     les fichiers sont alors glissés dans la fenêtre, construits avec elle. */
   async function ajouter(page, fichiers) {
-    await page.setInputFiles('#fichier', fichiers.map(f => ({ name: f.nom, mimeType: 'application/octet-stream', buffer: f.contenu })));
+    if (fichiers.some(f => f.date)) {
+      await page.evaluate(liste => {
+        const dt = new DataTransfer();
+        liste.forEach(f => {
+          const bin = atob(f.b64), u = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+          dt.items.add(new File([u], f.nom, f.date ? { lastModified: f.date } : {}));
+        });
+        document.getElementById('depot').dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
+      }, fichiers.map(f => ({ nom: f.nom, b64: Buffer.from(f.contenu).toString('base64'), date: f.date || 0 })));
+    } else {
+      await page.setInputFiles('#fichier', fichiers.map(f => ({ name: f.nom, mimeType: 'application/octet-stream', buffer: f.contenu })));
+    }
     await attendreLecture(page);
     return lignes(page);
+  }
+  /* Une capture de la fenêtre, si CAPTURES nomme un dossier (pour la relecture à l'œil). */
+  async function capture(page, nom) {
+    if (!process.env.CAPTURES) return;
+    await page.setViewportSize({ width: 720, height: 1000 });
+    await page.screenshot({ path: path.join(process.env.CAPTURES, nom + '.png'), fullPage: true });
   }
   async function vider(page) {
     let bouton;
@@ -247,7 +268,8 @@ const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now
     await attendreLecture(page);
   }
   async function attendreFin(page, delai) {
-    await page.waitForFunction(() => /\bok\b|erreur/.test(document.getElementById('etat').className), null, { timeout: delai || 120000 });
+    /* La fin : le bilan affiché, et la fenêtre rendue (la liste des contrats relue). */
+    await page.waitForFunction(() => /\bok\b|erreur/.test(document.getElementById('etat').className) && !document.getElementById('choisir').disabled, null, { timeout: delai || 120000 });
     return page.evaluate(() => ({ classe: document.getElementById('etat').className, texte: document.getElementById('etat').textContent }));
   }
   /* « Importer », s'il est allumé ; sinon, pourquoi il attend. */
@@ -296,11 +318,11 @@ const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now
     const jeton = jetonDe(ctx);
     ctx.__sansInterface = true;
     const fonctions = ['importerSecondeBase', 'importSecondeBaseDebut', 'importSecondeBaseLot', 'importSecondeBaseFin', 'importSecondeBaseAbandon',
-      'importDevinerContratSEE', 'importVerifierNouveauContrat', 'importArchiverReleve'];
+      'importDevinerContratSEE', 'importVerifierNouveauContrat', 'importArchiverReleve', 'importContrats'];
     const refus = fonctions.map(n => {
       try { ctx[n]('faux-jeton-123', 'HDK', 3, 5); return n + ':passe'; } catch (e) { return /Geste refusé/.test(e.message) ? '' : n + ':' + e.message; }
     }).filter(Boolean);
-    verifier('hors du classeur (la page du tableau de bord), sans le jeton de la fenêtre, chaque fonction de l’import est refusée — deviner, vérifier un nom, archiver compris',
+    verifier('hors du classeur (la page du tableau de bord), sans le jeton de la fenêtre, chaque fonction de l’import est refusée — deviner, vérifier un nom, archiver, relire les contrats compris',
       !refus.length, refus.join(' | '));
     /* google.script.run atteint toute fonction dont le nom ne finit pas par
        « _ » : celle qui donne le jeton doit en porter un, sinon la page
@@ -378,9 +400,10 @@ const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now
     verifier('le paquet du tableau de bord, en cache avant l’import, est renouvelé : il porte la nouvelle base',
       avant.rapprochement.lignes.length === 1 && apres.rapprochement.lignes.length === n, avant.rapprochement.lignes.length + ' → ' + apres.rapprochement.lignes.length);
     verifier('THS reste sans base, intact', !c.getSheetByName('SEE THS') && !!c.getSheetByName('THS'));
-    verifier('la fenêtre n’a appelé que les gestes prévus, en ordre : deviner le contrat (il y en a deux), le début, les lots, la fin',
+    verifier('la fenêtre n’a appelé que les gestes prévus, en ordre : deviner le contrat (il y en a deux), le début, les lots, la fin, puis la liste des contrats relue',
       page.__appels[0] === 'importDevinerContratSEE' && page.__appels[1] === 'importSecondeBaseDebut' &&
-      page.__appels[page.__appels.length - 1] === 'importSecondeBaseFin' && page.__appels.slice(2, -1).every(x => x === 'importSecondeBaseLot'), page.__appels.join(','));
+      page.__appels[page.__appels.length - 2] === 'importSecondeBaseFin' && page.__appels[page.__appels.length - 1] === 'importContrats' &&
+      page.__appels.slice(2, -2).every(x => x === 'importSecondeBaseLot'), page.__appels.join(','));
     verifier('la ligne du fichier dit son résultat, et ne se retire plus', await page.evaluate(() => /1\u202f500 lignes dans l’onglet « SEE HDK »/.test(document.querySelector('#liste .fichier .resultat').textContent) &&
       !document.querySelector('#liste .retirer:not([hidden])')));
     /* Le même nombre de lignes, d'autres indices : le cache ne sert pas l'ancienne base. */
@@ -414,10 +437,19 @@ const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now
     page = await fenetre(ctxSeul);
     const l = (await ajouter(page, [{ nom: 'see.xlsx', contenu: seeXlsx(10) }]))[0];
     const r = { etat: await lancer(page) };
-    verifier('un seul contrat, pas encore de base : rien à choisir, l’onglet créé est « SEE HDK » (il tiendra quand un second contrat arrivera)',
-      !l.choixVisible && /Créera l’onglet « SEE HDK »/.test(l.cible) && /\bok\b/.test(r.etat.classe) && !!seul.getSheetByName('SEE HDK') && !seul.getSheetByName('SEE'),
+    verifier('un seul contrat, et un export SEE qui n’a aucun plan en commun avec lui : proposé quand même, mais « à vérifier », la liste visible — plus jamais sans un mot ; l’onglet créé est « SEE HDK »',
+      l.choixVisible && l.verifier && l.choix === 'HDK' && /« HDK » est le seul contrat, mais l’échantillon n’y retrouve que 0 référence sur 10 : à vérifier\./.test(l.note) &&
+      /Créera l’onglet « SEE HDK »/.test(l.cible) && /\bok\b/.test(r.etat.classe) && !!seul.getSheetByName('SEE HDK') && !seul.getSheetByName('SEE'),
       JSON.stringify(l) + ' / ' + nomsOnglets(seul).join(', '));
-    verifier('avec un seul contrat, aucun appel pour deviner : le début, le lot, la fin', page.__appels.join() === 'importSecondeBaseDebut,importSecondeBaseLot,importSecondeBaseFin', page.__appels.join());
+    verifier('avec un seul contrat aussi, l’échantillon part au serveur pour confirmer : deviner, le début, le lot, la fin, la liste relue',
+      page.__appels.join() === 'importDevinerContratSEE,importSecondeBaseDebut,importSecondeBaseLot,importSecondeBaseFin,importContrats', page.__appels.join());
+    await page.close();
+    /* Le même seul contrat, et un export SEE qui recoupe ses plans : rien à vérifier, rien à choisir. */
+    const recoupe = new Classeur([ongletGates('HDK', gates(40, { refs: i => refGates(i) }))]);
+    page = await fenetre(serveur(recoupe));
+    const lr = (await ajouter(page, [{ nom: 'see.xlsx', contenu: seeXlsx(30) }]))[0];
+    verifier('un seul contrat, et l’échantillon le confirme : « HDK », sans « à vérifier », la liste cachée',
+      lr.choix === 'HDK' && !lr.verifier && !lr.choixVisible && /30 références de l’échantillon sur 30 retrouvées dans « HDK »/.test(lr.note), JSON.stringify(lr));
     await page.close();
 
     const inverse = classeur({ ths: true, autres: [new Feuille('HDK SEE', [['NAME', 'SOL.', 'Cust.V'], ['OLD', '1', 'A']])] });
@@ -553,7 +585,8 @@ const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now
     const fichier = xlsx({ onglets: [{ nom: 'Lisez-moi', lignes: [['Export du 01/10'], ['Rien ici']] }, { nom: 'Masqué', cache: true, lignes: [['NAME', 'SOL.', 'Cust.V'], ['MASQUE', '9', 'Z']] },
       { nom: 'Données', lignes: lignesSEE(25) }] });
     const ui = (await ajouter(page, [{ nom: 'multi.xlsx', contenu: fichier }]))[0];
-    verifier('un seul contrat : pas de choix de contrat, l’onglet « SEE » existant est la cible', !ui.choixVisible && /Remplacera l’onglet « SEE »/.test(ui.cible), JSON.stringify(ui));
+    verifier('un seul contrat : l’onglet « SEE » existant est la cible — le contrat « à vérifier », l’échantillon n’ayant rien en commun avec lui',
+      ui.choix === 'HDK' && ui.verifier && ui.choixVisible && /Remplacera l’onglet « SEE »/.test(ui.cible), JSON.stringify(ui));
     const r = { etat: await lancer(page) };
     const f = c.getSheetByName('SEE');
     verifier('l’en-tête est cherché onglet par onglet, les visibles d’abord : « Données »',
@@ -783,7 +816,7 @@ const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now
     const r = await importer(page, 'see.xlsx', seeXlsx(9000));
     verifier('un classeur presque plein : refusé avant tout envoi, avec les nombres et quoi faire, rien de créé',
       /erreur/.test(r.etat.classe) && /limite de Google Sheets : 10 millions de cellules/.test(r.etat.texte) && /supprimer les onglets/.test(r.etat.texte) &&
-      page.__appels.join() === 'importSecondeBaseDebut' && sansImport(c) && !c.getSheetByName('SEE HDK'), r.etat.texte);
+      page.__appels.filter(x => x !== 'importDevinerContratSEE' && x !== 'importContrats').join() === 'importSecondeBaseDebut' && sansImport(c) && !c.getSheetByName('SEE HDK'), r.etat.texte);
     await page.close();
     /* L'onglet remplacé s'en ira : il ne compte pas dans le classeur d'après ; mais le temps de l'import, l'ancien et le nouveau coexistent. */
     const c2 = classeur({ autres: [new Feuille('Archives', [['x']])] });
@@ -919,7 +952,7 @@ const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now
     verifier('l’historique, rangé sous le nom de l’onglet, est intact (case « Archiver » décochée) et se lit toujours',
       JSON.stringify(importe.getSheetByName('Historique_FWD_HDK').valeurs) === histoAvant && ctx.getHistorique(importe, 'HDK').length === 1);
     verifier('la fenêtre n’a appelé que le début, les lots et la fin — rien à deviner côté serveur, pas d’archivage',
-      page.__appels[0] === 'importSecondeBaseDebut' && page.__appels[page.__appels.length - 1] === 'importSecondeBaseFin' && page.__appels.indexOf('importArchiverReleve') === -1 &&
+      page.__appels[0] === 'importSecondeBaseDebut' && page.__appels.slice(-2).join() === 'importSecondeBaseFin,importContrats' && page.__appels.indexOf('importArchiverReleve') === -1 &&
       page.__cibles[0] === JSON.stringify({ sorte: 'gates', contrat: 'HDK', nouveau: false }), page.__appels.join() + ' ' + page.__cibles.join());
     await page.close();
   }
@@ -1124,14 +1157,24 @@ const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now
     const c = new Classeur([ongletGates('HDK', gates(40))]);
     const ctx = serveur(c);
     const page = await fenetre(ctx);
-    await ajouter(page, [{ nom: 'export_47.xlsx', contenu: xlsxGates(gates(38)) }, { nom: 'export_48.xlsx', contenu: xlsxGates(gates(40)) },
-      { nom: 'see_1.xlsx', contenu: seeXlsx(5) }, { nom: 'see_2.xlsx', contenu: seeXlsx(6) }]);
+    /* Le cas courant : « Export GATES.xlsx », de la semaine dernière, resté
+       dans Téléchargements, et « Export GATES (1).xlsx », du jour. Le plus
+       récent est le PREMIER de la liste : c'est sa date qui le désigne. */
+    const an = new Date().getFullYear();
+    const lus = await ajouter(page, [{ nom: 'Export GATES (1).xlsx', contenu: xlsxGates(gates(40)), date: new Date(an, 9, 3, 14, 20).getTime() },
+      { nom: 'Export GATES.xlsx', contenu: xlsxGates(gates(38)), date: new Date(an, 8, 26, 9, 5).getTime() },
+      { nom: 'see_1.xlsx', contenu: seeXlsx(5), date: new Date(an, 9, 1, 8, 0).getTime() }, { nom: 'see_2.xlsx', contenu: seeXlsx(6), date: new Date(an, 9, 1, 8, 0, 30).getTime() }]);
+    verifier('chaque ligne dit la date de son fichier, « du 3 oct. 14:20 »', lus[0].date === 'du 3 oct. 14:20' && lus[1].date === 'du 26 sept. 09:05',
+      JSON.stringify(lus.map(x => x.date)));
     let ui = await fenetreEtat(page);
-    verifier('deux exports GATES du même contrat : « Importer » attend, et la fenêtre dit lesquels et où',
-      ui.desactive && /Deux fichiers vont dans l’onglet « HDK » : « export_47\.xlsx » et « export_48\.xlsx »\. En retirer un, ou changer son contrat\./.test(ui.blocage), ui.blocage);
-    await page.locator('#liste .fichier').nth(0).locator('.retirer').click();
+    verifier('deux exports GATES du même contrat : « Importer » attend, la fenêtre dit lesquels, leur date, et lequel garder — le plus récent',
+      ui.desactive && ui.blocage === 'Deux fichiers vont dans l’onglet « HDK » : « Export GATES (1).xlsx » (du 3 oct. 14:20) et « Export GATES.xlsx » (du 26 sept. 09:05). ' +
+        'Garder le plus récent, « Export GATES (1).xlsx » (du 3 oct. 14:20) : retirer l’autre — ou, si c’est l’export d’un autre contrat, changer son contrat.', ui.blocage);
+    await capture(page, 'deux-fichiers');
+    await page.locator('#liste .fichier').nth(1).locator('.retirer').click();
     ui = await fenetreEtat(page);
-    verifier('puis deux exports SEE de la même base', ui.desactive && /Deux fichiers vont dans l’onglet « SEE HDK » : « see_1\.xlsx » et « see_2\.xlsx »/.test(ui.blocage), ui.blocage);
+    verifier('puis deux exports SEE de la même base, de la même minute : la fenêtre ne désigne personne',
+      ui.desactive && /Deux fichiers vont dans l’onglet « SEE HDK » : « see_1\.xlsx » \(du 1 oct\. 08:00\) et « see_2\.xlsx » \(du 1 oct\. 08:00\)\. En retirer un, ou changer son contrat\.$/.test(ui.blocage), ui.blocage);
     await page.locator('#liste .fichier').nth(1).locator('.retirer').click();
     ui = await fenetreEtat(page);
     verifier('un de chaque : « Importer » s’allume', !ui.desactive && ui.blocage === '', JSON.stringify(ui));
@@ -1196,6 +1239,8 @@ const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now
       /\bok\b/.test(r.etat.classe) && /avertissement/.test(r.etat.classe) &&
       new RegExp('Relevé S\\d+ non archivé : l’onglet « HDK » porte le même export que le relevé ' + ctx.semaineDite(precedente, semaine) + ' : le relevé ' + ctx.semaineDite(semaine, semaine) +
         ' déjà archivé, différent, n’est pas écrasé\\.').test(r.etat.texte.replace(/'/g, '’')) && /L’import, lui, est fait/.test(r.etat.texte) &&
+      /Si c’est voulu \(GATES est vraiment revenu à cet état, ou le relevé S\d+ déjà pris vient d’un mauvais export\) : menu Suivi FWD → Archiver le relevé de cette semaine, qui demandera confirmation\. Sinon, ce fichier n’est pas l’export du jour : importer le bon\./.test(r.etat.texte.replace(/'/g, '’')) &&
+      !/Importer l.export du jour/.test(r.etat.texte) &&
       JSON.stringify(c.getSheetByName('HDK').valeurs) === JSON.stringify(gates(40).valeurs) && JSON.stringify(c.getSheetByName('Historique_FWD_HDK').valeurs) === histoAvant,
       r.etat.texte);
     await page.close();
@@ -1345,6 +1390,158 @@ const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now
       l.nouveau === 'NEO' && /erreur/.test(rNeo.etat.classe) && /Service Spreadsheets indisponible/.test(rNeo.etat.texte) && /Rien n’a été créé dans le classeur/.test(rNeo.etat.texte) &&
       !/remplacé|ancien onglet/.test(rNeo.etat.texte) && !c.getSheetByName('NEO') && sansImport(c), rNeo.etat.texte + ' / ' + nomsOnglets(c).join());
     await page2.close();
+  }
+
+  // =================================================================
+  section('Deux tours dans la même fenêtre : la liste des contrats est relue');
+  {
+    /* Le classeur n'a que HDK. Premier tour : l'export GATES de THS, nouveau
+       contrat. Second tour, sans fermer la fenêtre : l'extract SEE de THS
+       (un nom de fichier qui ne dit pas le contrat) et un export GATES de
+       THS corrigé. Avant, la fenêtre ne connaissait que HDK : l'extract
+       partait sans un mot dans « SEE HDK », et l'export butait sur « existe
+       déjà : le choisir dans la liste ». */
+    const refT = i => refGates(i, 500);
+    const c = new Classeur([ongletGates('HDK', gates(40))]);
+    const ctx = serveur(c);
+    const page = await fenetre(ctx);
+    await ajouter(page, [{ nom: 'export_ths.xlsx', contenu: xlsxGates(gates(20, { refs: refT })) }]);
+    await choisir(page, 0, '\u0001nouveau');
+    await page.locator('#liste .fichier .nouveau').fill('THS');
+    await attendreLecture(page);
+    let r = await lancer(page);
+    verifier('1er tour : THS créé, puis la liste des contrats relue (sans nouveau jeton)',
+      /\bok\b/.test(r.classe) && /Relevé S\d+ archivé \(20 plans/.test(r.texte) && !!c.getSheetByName('THS') && page.__appels[page.__appels.length - 1] === 'importContrats',
+      r.texte + ' / ' + page.__appels.join());
+    const lus = await ajouter(page, [{ nom: 'extract_SEE_semaine40.xlsx', contenu: seeXlsx(20, { decalage: 500 }) },
+      { nom: 'export_ths (1).xlsx', contenu: xlsxGates(gates(20, { refs: refT, avancement: () => 'VALIDATED' })) }]);
+    const see = lus[0], gat = lus[1];
+    verifier('2e tour : l’extract SEE va à THS, reconnu par ses plans — proposé, rien à vérifier',
+      see.choix === 'THS' && !see.verifier && see.options.indexOf('THS') !== -1 && /20 références de l’échantillon sur 20 retrouvées dans « THS »/.test(see.note) &&
+      /Créera l’onglet « SEE THS »/.test(see.cible), JSON.stringify(see));
+    verifier('2e tour : l’export GATES de THS va à THS, qui est dans la liste — plus de « existe déjà »',
+      gat.choix === 'THS' && !gat.verifier && /Remplacera l’onglet « THS »/.test(gat.cible), JSON.stringify(gat));
+    const ui = await fenetreEtat(page);
+    verifier('2e tour : « Importer » s’allume', !ui.desactive && ui.blocage === '', JSON.stringify(ui));
+    await capture(page, 'deux-tours-avant-import');
+    r = await lancer(page);
+    verifier('2e tour : « SEE THS » créé, « SEE HDK » jamais touché ; THS remplacé',
+      /\bok\b/.test(r.classe) && !!c.getSheetByName('SEE THS') && !c.getSheetByName('SEE HDK') && c.getSheetByName('THS').valeurs.length === 23 &&
+      ctx.lireSecondeBase(c, 'THS').etat === 'ok', r.texte + ' / ' + nomsOnglets(c).join(', '));
+    await capture(page, 'deux-tours-fin');
+    await page.close();
+  }
+  {
+    /* La relecture de la liste échoue (le classeur ne répond pas) : on ne
+       devine pas avec une liste périmée — « Importer » le dit et attend. */
+    const c = new Classeur([ongletGates('HDK', gates(40))]);
+    const ctx = serveur(c);
+    const page = await fenetre(ctx, rapide);
+    const vrai = ctx.importContrats;
+    ctx.importContrats = function () { throw new Error('Service Spreadsheets indisponible'); };
+    await ajouter(page, [{ nom: 'export_ths.xlsx', contenu: xlsxGates(gates(20, { prefixe: 'THS', groupe: 'THS' })) }]);
+    await lancer(page);
+    await ajouter(page, [{ nom: 'see.xlsx', contenu: seeXlsx(5) }]);
+    let ui = await fenetreEtat(page);
+    verifier('la liste des contrats n’a pas pu être relue : « Importer » attend, et dit de rouvrir la fenêtre',
+      ui.desactive && /La liste des contrats n’a pas pu être relue après l’import : fermer cette fenêtre et la rouvrir/.test(ui.blocage), JSON.stringify(ui));
+    ctx.importContrats = vrai;
+    await ajouter(page, [{ nom: 'see2.xlsx', contenu: seeXlsx(6) }]);
+    ui = await fenetreEtat(page);
+    const ls = await lignes(page);
+    verifier('au choix suivant, elle est redemandée ; relue, THS est proposé et « Importer » repart',
+      !/n’a pas pu être relue/.test(ui.blocage) && ls.every(x => x.options.indexOf('THS') !== -1), JSON.stringify(ui) + ' ' + JSON.stringify(ls.map(x => x.options)));
+    await page.close();
+  }
+
+  // =================================================================
+  section('Un deuxième contrat créé par l’import : l’onglet « SEE » et l’ancien historique suivent le premier');
+  {
+    /* HDK seul, sa base dans « SEE » tout court, ses relevés dans l'ancien
+       « Historique_FWD ». La fenêtre crée THS : avec deux contrats, ni l'un
+       ni l'autre ne serait plus lu. */
+    const c = new Classeur([ongletGates('HDK', gates(40)), new Feuille('SEE', [['NAME', 'SOL.', 'Cust.V'], ['GBE312A3600001', '001', 'A']])]);
+    const ctx = serveur(c);
+    ctx.archiverContrat_(c, { id: 'HDK', nom: 'HDK' }, semaineDe(ctx, 7));
+    c.getSheetByName('Historique_FWD_HDK').setName('Historique_FWD');
+    verifier('(avant) un seul contrat : « SEE » est sa base, « Historique_FWD » son historique',
+      ctx.lireSecondeBase(c, 'HDK').etat === 'ok' && ctx.getHistorique(c, 'HDK').length === 1);
+    const page = await fenetre(ctx);
+    await ajouter(page, [{ nom: 'export_ths.xlsx', contenu: xlsxGates(gates(20, { prefixe: 'THS' })) }, { nom: 'Nommage WD BFLOW.xlsx', contenu: seeXlsx(12) }]);
+    await choisir(page, 0, '\u0001nouveau');
+    await page.locator('#liste .fichier .nouveau').first().fill('THS');
+    await attendreLecture(page);
+    const lus = await lignes(page);
+    verifier('la ligne GATES annonce le renommage de « SEE », la ligne SEE de HDK vise le futur nom, « SEE HDK »',
+      lus[0].nouveau === 'THS' && /L’onglet « SEE » de « HDK » deviendra « SEE HDK »/.test(lus[0].cible) &&
+      lus[1].choix === 'HDK' && /^Remplacera l’onglet « SEE HDK » \(aujourd’hui « SEE », renommé à la création du nouveau contrat\)/.test(lus[1].cible), JSON.stringify(lus));
+    await capture(page, 'second-contrat-annonce');
+    const r = await lancer(page);
+    await capture(page, 'second-contrat-fin');
+    verifier('importé : « SEE » devenu « SEE HDK » (et rempli par l’export), « Historique_FWD » devenu « Historique_FWD_HDK » — et la fenêtre le dit',
+      /\bok\b/.test(r.classe) && /onglet « THS » créé \(nouveau contrat\) ; l’onglet « SEE » devient « SEE HDK », l’onglet « Historique_FWD » devient « Historique_FWD_HDK »/.test(r.texte) &&
+      !c.getSheetByName('SEE') && c.getSheetByName('SEE HDK').valeurs.length === 13 && !c.getSheetByName('Historique_FWD') && !!c.getSheetByName('Historique_FWD_HDK'),
+      r.texte + ' / ' + nomsOnglets(c).join(', '));
+    verifier('HDK garde sa comparaison et ses relevés ; THS a son premier relevé, dans son propre historique',
+      ctx.lireSecondeBase(c, 'HDK').etat === 'ok' && ctx.getHistorique(c, 'HDK').length === 1 && ctx.getHistorique(c, 'THS').length === 1 &&
+      /Relevé S\d+ archivé \(20 plans/.test(r.texte), r.texte);
+    await page.close();
+  }
+  {
+    /* Sans export SEE dans la liste : la comparaison de HDK ne disparaît plus. */
+    const c = new Classeur([ongletGates('HDK', gates(40)), new Feuille('SEE', [['NAME', 'SOL.', 'Cust.V'], ['GBE312A3600001', '001', 'A']])]);
+    const ctx = serveur(c);
+    const jeton = jetonDe(ctx);
+    const g = gates(20, { prefixe: 'THS', groupe: 'THS' }), cible = { sorte: 'gates', contrat: 'THS', nouveau: true };
+    const d = ctx.importSecondeBaseDebut(jeton, cible, 138, g.valeurs.length);
+    ctx.importSecondeBaseLot(jeton, d.feuille, 1, g.valeurs);
+    const fin = ctx.importSecondeBaseFin(jeton, d.feuille, cible, g.valeurs.length, []);
+    verifier('THS créé seul : « SEE » devient « SEE HDK », HDK garde sa comparaison',
+      JSON.stringify(fin.renommes) === JSON.stringify([{ de: 'SEE', vers: 'SEE HDK' }]) && ctx.lireSecondeBase(c, 'HDK').etat === 'ok' && !c.getSheetByName('SEE'),
+      JSON.stringify(fin.renommes) + ' / ' + nomsOnglets(c).join(', '));
+    /* Un « SEE HDK » déjà là : c'est lui qu'on lit, « SEE » n'est pas touché ; deux contrats déjà : rien n'est renommé. */
+    const c2 = new Classeur([ongletGates('HDK', gates(40)), new Feuille('SEE', [['NAME'], ['X']]), new Feuille('SEE HDK', [['NAME', 'SOL.', 'Cust.V'], ['Y', '001', 'A']]),
+      new Feuille('Historique_FWD', [['Semaine'], ['2026-S30']], true), new Feuille('Historique_FWD_HDK', [['Semaine'], ['2026-S31']], true)]);
+    const ctx2 = serveur(c2);
+    const j2 = jetonDe(ctx2);
+    const d2 = ctx2.importSecondeBaseDebut(j2, cible, 138, g.valeurs.length);
+    ctx2.importSecondeBaseLot(j2, d2.feuille, 1, g.valeurs);
+    const fin2 = ctx2.importSecondeBaseFin(j2, d2.feuille, cible, g.valeurs.length, []);
+    verifier('« SEE HDK » et « Historique_FWD_HDK » déjà là : rien n’est renommé', fin2.renommes.length === 0 && !!c2.getSheetByName('SEE') && !!c2.getSheetByName('Historique_FWD'),
+      JSON.stringify(fin2.renommes));
+  }
+
+  // =================================================================
+  section('La fin d’un import refuse quand le classeur est occupé');
+  {
+    const c = new Classeur([ongletGates('HDK', gates(40))]);
+    const ctx = serveur(c);
+    const avant = JSON.stringify(c.getSheetByName('HDK').valeurs);
+    const page = await fenetre(ctx);
+    /* Le verrou est pris ailleurs (le vendredi archive) : le début passe, il
+       ne touche qu'à l'onglet temporaire ; la fin, qui échange, refuse. */
+    vm.runInContext('LockService = { getScriptLock: function () { return { tryLock: function () { return false; }, releaseLock: function () {} }; }, ' +
+      'getDocumentLock: function () { return { tryLock: function () { return false; }, releaseLock: function () {} }; } };', ctx);
+    const r = await importer(page, 'export_48.xlsx', xlsxGates(gates(40, { avancement: () => 'VALIDATED' })));
+    verifier('l’onglet n’est pas échangé sans le verrou : le message le dit, « L’ancien onglet « HDK » est intact », rien ne traîne',
+      /erreur/.test(r.etat.classe) && /Le classeur est occupé par un autre geste \(archivage…\) : l’onglet « HDK » n’a pas été remplacé\. Relancer l’import dans une minute\. L’ancien onglet « HDK » est intact\./.test(r.etat.texte) &&
+      !/peut-être allé au bout/.test(r.etat.texte) && JSON.stringify(c.getSheetByName('HDK').valeurs) === avant && sansImport(c) && page.__appels.indexOf('importArchiverReleve') === -1,
+      r.etat.texte + ' / ' + nomsOnglets(c).join(', '));
+    await page.close();
+  }
+
+  // =================================================================
+  section('Plus de dix fichiers : ceux laissés de côté sont nommés');
+  {
+    const c = new Classeur([ongletGates('HDK', gates(40))]);
+    const page = await fenetre(serveur(c));
+    const douze = [];
+    for (let i = 1; i <= 12; i++) douze.push({ nom: 'see_' + String(i).padStart(2, '0') + '.csv', contenu: Buffer.from('NAME;SOL.;Cust.V\r\nA' + i + ';001;A\r\n') });
+    await ajouter(page, douze);
+    const ui = await fenetreEtat(page);
+    verifier('dix gardés ; les deux autres nommés, à importer ensuite',
+      ui.n === 10 && /Au plus 10 fichiers à la fois : 2 laissés de côté — les importer ensuite : see_11\.csv, see_12\.csv\./.test(ui.etat), JSON.stringify(ui));
+    await page.close();
   }
 
   await nav.close();

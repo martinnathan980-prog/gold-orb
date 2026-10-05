@@ -43,7 +43,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = 'e906173';
+const EDITION = 'b7a3368';
 
 // =====================================================================
 //  CONFIGURATION
@@ -1329,7 +1329,7 @@ const MAX_PERSONNES_SEMAINE = 400;
 /** Appelée par la page une fois affichée : compte l'ouverture. Ne lève jamais. */
 function noterConsultation() {
   try {
-    const verrou = LockService.getDocumentLock();
+    const verrou = verrouDuClasseur_();   // le même que les autres gestes : la page servie par …/exec est une application web
     if (!verrou.tryLock(3000)) return false;
     try {
       const props = PropertiesService.getDocumentProperties();
@@ -2722,8 +2722,21 @@ function gesteDuClasseur(e) {
  */
 const MESSAGE_VERROU = 'un autre geste écrit en ce moment dans l\'historique de ce classeur (l\'archivage du vendredi, ' +
   'un import ou le menu, lancé au même moment) : l\'historique n\'est pas touché. Relancer dans une minute.';
+/**
+ * LE verrou de tous ces gestes : celui du script, pas celui du document. Le
+ * dépôt automatique (doPost) tourne en application web, où
+ * LockService.getDocumentLock() rend null (doc Google : « null if called
+ * from a standalone script or webapp ») — le dépôt plantait sur ce null et
+ * n'archivait plus rien. Le verrou du script, lui, existe partout ; et pour
+ * un script lié à un seul classeur, il couvre exactement les mêmes gestes.
+ * Il faut que TOUS prennent le même : un dépôt sous le verrou du script et
+ * un vendredi sous celui du document ne s'attendraient pas l'un l'autre.
+ */
+function verrouDuClasseur_() {
+  return LockService.getScriptLock();
+}
 function sousVerrou_(fn) {
-  const verrou = LockService.getDocumentLock();
+  const verrou = verrouDuClasseur_();
   if (!verrou.tryLock(30000)) {
     const erreur = new Error(MESSAGE_VERROU);
     erreur.verrou = true;
@@ -2751,50 +2764,93 @@ function enregistrerInstantaneHebdo(e) {
   if (contrats.length === 0) {
     throw new Error(messageSansContrat(classeur));
   }
+  /* Lancé du menu, quelqu'un est devant l'écran : on peut lui poser une
+     question. Le déclencheur du vendredi (son identifiant, ou pas
+     d'interface du tout) n'a personne à qui la poser. */
+  let ui = null;
+  if (!(e && typeof e === 'object' && e.triggerUid)) {
+    try { ui = SpreadsheetApp.getUi(); } catch (err) { ui = null; }
+  }
 
   const detail = [];
   const erreurs = [];
   const sansPlan = [];
+  const aConfirmer = [];
+  const declines = [];
   /* La semaine se dit comme sur la page : « S39 », pas l'étiquette 2026-S39. */
   const dite = 'S' + parseInt(semaine.slice(6), 10);
-  try {
-    sousVerrou_(function () {
-      contrats.forEach(function (c) {
-        try {
-          detail.push(archiverContrat_(classeur, c, semaine));
-        } catch (err) {
-          if (err && err.sansPlan) sansPlan.push(c.nom);
-          else erreurs.push('« ' + c.nom + ' » : ' + (err && err.message ? err.message : err));
-        }
-      });
+  const archiverTous = function (liste, forcer) {
+    liste.forEach(function (c) {
+      try {
+        detail.push(archiverContrat_(classeur, c, semaine, forcer));
+      } catch (err) {
+        if (err && err.sansPlan) sansPlan.push(c.nom);
+        else if (err && err.ancienExport && ui && !forcer) aConfirmer.push({ c: c, err: err });
+        else erreurs.push('« ' + c.nom + ' » : ' + (err && err.message ? err.message : err));
+      }
     });
+  };
+  try {
+    sousVerrou_(function () { archiverTous(contrats, false); });
   } catch (err) {
     /* Le verrou refusé : le déclencheur du vendredi le signale par son
        courriel d'échec, le menu par sa boîte d'erreur. */
     if (!err || !err.verrou) throw err;
     throw new Error('Relevé ' + dite + ' non archivé : ' + err.message);
   }
+  /* L'export identique à un relevé plus ancien est refusé par prudence —
+     c'est souvent l'export de la semaine dernière, pris par erreur. Mais il
+     peut être juste : GATES est vraiment revenu à cet état (une validation
+     retirée), ou le relevé déjà pris cette semaine venait d'un mauvais
+     export. Sans issue, la semaine ne s'archivait plus par aucun chemin. Du
+     menu, on demande donc, contrat par contrat — APRÈS avoir rendu le
+     verrou : une question laissée ouverte ne doit pas bloquer le classeur —,
+     puis on archive ceux qui sont confirmés, sous le verrou. Le vendredi,
+     lui, continue de refuser. */
+  const confirmes = [];
+  aConfirmer.forEach(function (a) {
+    const anc = a.err.ancien;
+    const question = 'L’export de « ' + a.c.nom + ' » est identique au relevé ' + semaineDite(anc.semaine, semaine) +
+      (anc.ecrase ? ', alors que le relevé ' + dite + ' déjà archivé cette semaine est différent.'
+                  : ', plus ancien que le relevé ' + semaineDite(anc.dernier, semaine) + ', qui est différent.') +
+      '\n\nL’archiver quand même comme relevé ' + dite + (anc.ecrase ? ', à la place de celui-ci' : '') + ' ? ' +
+      'Oui seulement si GATES est vraiment revenu à cet état' +
+      (anc.ecrase ? ', ou si le relevé ' + dite + ' déjà pris vient d’un mauvais export.' : ' (une validation retirée, par exemple).') +
+      '\n\nSinon, répondre Non, puis importer l’export du jour (' + cheminImport() + ').';
+    if (ui.alert('Suivi FWD', question, ui.ButtonSet.YES_NO) === ui.Button.YES) confirmes.push(a.c);
+    else declines.push(a.c.nom);
+  });
+  if (confirmes.length) {
+    try {
+      sousVerrou_(function () { archiverTous(confirmes, true); });
+    } catch (err) {
+      if (!err || !err.verrou) throw err;
+      confirmes.forEach(function (c) { erreurs.push('« ' + c.nom + ' » : ' + err.message); });
+    }
+  }
+  const nonConfirmes = declines.length ? ' Non archivé(s), à votre demande : ' + declines.join(', ') + '.' : '';
 
   if (erreurs.length) {
     throw new Error('Relevé ' + dite + ' — ' +
       (detail.length ? detail.length + ' contrat(s) archivé(s), ' : '') +
-      erreurs.length + ' en erreur : ' + erreurs.join(' ; '));
+      erreurs.length + ' en erreur : ' + erreurs.join(' ; ') + nonConfirmes);
   }
   /* Lancé du menu, le geste doit se voir : sans cela, Sheets n'affiche que
      « Script terminé », et on ne sait pas si c'est fait. Lancé par le
      déclencheur du vendredi, il n'y a personne devant : pas d'interface, et
      l'appel ci-dessous échoue en silence. */
-  const mot = !detail.length ? 'Aucun relevé archivé en ' + dite + ' : ' + (sansPlan.length ? 'en-têtes seuls dans ' +
-      sansPlan.join(', ') + '.' : 'aucun contrat.') : 'Relevé ' + dite + ' archivé : ' + detail.map(function (d) {
-    return d.nom + ' (' + d.compte.total + ' plans)';
-  }).join(', ') + '.' + (detail.length ? ' Un second archivage dans la semaine remplace celui-ci.' : '') +
-    (sansPlan.length ? ' Non archivé(s), en-têtes seuls : ' + sansPlan.join(', ') + '.' : '');
+  const mot = (!detail.length
+    ? 'Aucun relevé archivé en ' + dite + '.'
+    : 'Relevé ' + dite + ' archivé : ' + detail.map(function (d) {
+      return d.nom + ' (' + d.compte.total + ' plans)';
+    }).join(', ') + '. Un second archivage dans la semaine remplace celui-ci.') +
+    (sansPlan.length ? ' Non archivé(s), en-têtes seuls : ' + sansPlan.join(', ') + '.' : '') + nonConfirmes;
   try {
     SpreadsheetApp.getUi().alert('Suivi FWD', mot, SpreadsheetApp.getUi().ButtonSet.OK);
   } catch (e) {
     /* Pas d'interface (déclencheur, test) : rien à montrer. */
   }
-  return { ok: true, semaine: semaine, contrats: detail };
+  return { ok: true, semaine: semaine, contrats: detail, nonConfirmes: declines };
 }
 
 /**
@@ -2805,24 +2861,40 @@ function enregistrerInstantaneHebdo(e) {
  * Ceux qui l'appellent tiennent déjà le verrou (sousVerrou_) ; le « _ » la
  * garde hors de portée de la page.
  */
-function archiverContrat_(classeur, c, semaine) {
+function archiverContrat_(classeur, c, semaine, forcer) {
   const compte = compterAvancements(c.id);
   /* L'export d'une semaine passée, rattrapé et laissé dans l'onglet
      (débrief 17) : archivé pour la semaine en cours, il écraserait en
      silence le bon relevé déjà pris — ou, la semaine n'ayant pas encore le
      sien, ferait reculer tout ce qui a bougé depuis. Même carte, plan par
      plan, qu'un relevé plus ancien, alors que le relevé de la semaine (ou, à
-     défaut, le dernier) diffère : on refuse. */
-  const ancien = exportDejaArchive(classeur, c, semaine, compte.plans);
+     défaut, le dernier) diffère : on refuse — sauf `forcer`, que seul le
+     menu passe, après avoir demandé (enregistrerInstantaneHebdo). */
+  const ancien = forcer ? null : exportDejaArchive(classeur, c, semaine, compte.plans);
   if (ancien) {
     const courante = numeroSemaineISO(new Date());
-    const erreur = new Error('l\'onglet « ' + c.nom + ' » porte le même export que le relevé ' + semaineDite(ancien.semaine, courante) +
+    const constat = 'l\'onglet « ' + c.nom + ' » porte le même export que le relevé ' + semaineDite(ancien.semaine, courante) +
       (ancien.ecrase
-        ? ' : le relevé ' + semaineDite(semaine, courante) + ' déjà archivé, différent, n\'est pas écrasé. '
+        ? ' : le relevé ' + semaineDite(semaine, courante) + ' déjà archivé, différent, n\'est pas écrasé.'
         : ', alors que le relevé ' + semaineDite(ancien.dernier, courante) + ', plus récent, est différent : archivé comme relevé ' +
-          semaineDite(semaine, courante) + ', il ferait reculer les plans qui ont bougé depuis. ') +
-      'Importer l\'export du jour (' + cheminImport() + ', qui archive dans la foulée), ou le recoller puis archiver.');
+          semaineDite(semaine, courante) + ', il ferait reculer les plans qui ont bougé depuis.');
+    /* Le conseil dépend du cas : refaire le geste qui vient d'échouer
+       (« importer l'export du jour ») ne sert à rien si l'export est
+       juste. Pour la semaine en cours, le menu Archiver demande
+       confirmation et passe outre ; pour une semaine passée, c'est
+       l'export collé qu'il faut revoir. */
+    const voulu = semaine === courante
+      ? 'Si c\'est voulu (GATES est vraiment revenu à cet état' +
+        (ancien.ecrase ? ', ou le relevé ' + semaineDite(semaine, courante) + ' déjà pris vient d\'un mauvais export' : '') +
+        ') : menu Suivi FWD → Archiver le relevé de cette semaine, qui demandera confirmation.'
+      : '';
+    const erreur = new Error(constat + ' ' + (voulu
+      ? voulu + ' Sinon, importer l\'export du jour (' + cheminImport() + ', qui archive dans la foulée).'
+      : 'Vérifier que l\'onglet porte bien l\'export tiré de GATES en ' + semaineDite(semaine, courante) + '.'));
     erreur.ancienExport = true;
+    erreur.ancien = ancien;
+    erreur.constat = constat;
+    erreur.voulu = voulu;
     throw erreur;
   }
   /* La carte plan par plan ne tient plus dans une cellule au-delà de
@@ -2839,8 +2911,9 @@ function archiverContrat_(classeur, c, semaine) {
      second couperait l'historique en deux, et le renommage deviendrait
      impossible (le nom serait pris). On le dit au lieu d'archiver. */
   if (!getFeuilleHistorique(classeur, c.id, false)) {
-    const orphelins = historiquesOrphelins(classeur, listerContrats(classeur));
-    if (orphelins.length) throw new Error(messageOrphelin(orphelins[0], c));
+    const contrats = listerContrats(classeur);
+    const orphelins = historiquesOrphelins(classeur, contrats);
+    if (orphelins.length) throw new Error(messageOrphelin(orphelins[0], c, classeur, contrats));
   }
   const feuille = getFeuilleHistorique(classeur, c.id, true);
   const indexLigne = ligneDeLaSemaine(feuille, semaine);
@@ -2859,13 +2932,88 @@ function archiverContrat_(classeur, c, semaine) {
   return { id: c.id, nom: c.nom, historique: feuille.getName(), semaine: semaine, compte: compte };
 }
 
-/** Ce qu'on dit d'un historique orphelin, à l'archivage comme avant. */
-function messageOrphelin(o, c) {
-  return (o.ancien
-    ? 'l\'ancien onglet d\'historique « ' + o.nom + ' » n\'est rattaché à aucun contrat depuis que le classeur en a plusieurs. '
-    : 'l\'onglet d\'historique « ' + o.nom + ' » n\'est rattaché à aucun contrat. ') +
+/**
+ * Ce qu'on dit d'un historique orphelin, à l'archivage comme avant. Ceux qui
+ * l'appellent disent déjà « Relevé S40 non archivé : » devant.
+ *
+ * L'ancien « Historique_FWD » servait quand le classeur n'avait qu'un
+ * contrat : ses relevés sont ceux d'un contrat qui n'a pas encore
+ * d'historique à son nom. Lequel ? Celui dont les plans recoupent la carte
+ * de son dernier relevé ; à défaut, pas le contrat que l'import vient de
+ * créer (`c.nouveau`) : lui donner ces relevés grefferait sur sa courbe le
+ * passé d'un autre. Sans indice, on nomme tous les candidats plutôt que de
+ * désigner, au hasard, l'un à l'archivage de HDK et l'autre à celui de THS.
+ * Et jamais « retirer le préfixe » tant que l'onglet peut être l'historique
+ * d'un contrat : ce serait faire sortir de la page tous ses relevés, et le
+ * vendredi ouvrirait un historique vide à côté.
+ */
+function messageOrphelin(o, c, classeur, contrats) {
+  const masques = ' (Affichage → Onglets masqués pour le voir)';
+  const nommer = function (liste) { return liste.map(function (k) { return '« ' + k.nom + ' »'; }).join(', '); };
+  if (o.ancien) {
+    let candidats = [];
+    try { candidats = classeur && contrats ? contratsSansHistorique(classeur, contrats) : []; } catch (err) { candidats = []; }
+    if (!candidats.some(function (k) { return k.id === c.id; })) candidats.push(c);
+    const autres = candidats.filter(function (k) { return k.id !== c.id; });
+    const tete = 'l\'ancien onglet d\'historique « ' + o.nom + ' » n\'est rattaché à aucun contrat depuis que le classeur en a plusieurs : ' +
+      'il servait quand le classeur n\'en avait qu\'un. ';
+    const rendre = function (k, sontCeux) {
+      return tete + sontCeux + ' : le renommer « ' + nomFeuilleHistorique(k.id) + ' »' + masques + ' les lui rend, puis relancer l\'archivage.';
+    };
+    const proprio = candidats.length > 1 ? proprietaireProbable_(classeur, o.nom, candidats) : null;
+    if (proprio) {
+      return rendre(proprio.contrat, 'Ses relevés sont ceux de « ' + proprio.contrat.nom + ' » (le dernier a ' + proprio.commun +
+        ' plan' + (proprio.commun > 1 ? 's' : '') + ' en commun avec l\'onglet « ' + proprio.contrat.nom + ' »)');
+    }
+    if (c.nouveau && autres.length === 1) return rendre(autres[0], 'Ses relevés sont sans doute ceux de « ' + autres[0].nom + ' »');
+    if (candidats.length > 1) {
+      const liste = c.nouveau ? autres : candidats;
+      return tete + 'Le renommer « ' + nomFeuilleHistorique('<le contrat qui a produit ces relevés>') + ' » — l\'un de ' + nommer(liste) +
+        masques + ', puis relancer l\'archivage.';
+    }
+    if (c.nouveau) {
+      /* Aucun autre contrat sans historique : chacun a déjà le sien,
+         l'ancien onglet n'est plus lu par personne. Le garder à part ne
+         cache rien. */
+      return tete + 'Il ne peut pas être celui de « ' + c.nom + ' », qui vient d\'être créé, et les autres contrats ont déjà leur propre ' +
+        'historique : le renommer sans le préfixe « ' + CONFIG.FEUILLE_HISTORIQUE + ' » (par exemple « Ancien historique ») pour le garder à part.';
+    }
+    return tete + 'S\'il est celui de « ' + c.nom + ' », le renommer « ' + nomFeuilleHistorique(c.id) + ' »' + masques +
+      ', puis relancer l\'archivage.';
+  }
+  return 'l\'onglet d\'historique « ' + o.nom + ' » n\'est rattaché à aucun contrat. ' +
     'S\'il est celui de « ' + c.nom + ' », le renommer « ' + nomFeuilleHistorique(c.id) + ' » ; sinon, le renommer ' +
-    'sans le préfixe « ' + CONFIG.FEUILLE_HISTORIQUE + (o.ancien ? '' : '_') + ' » pour le garder à part. Relevé non archivé.';
+    'sans le préfixe « ' + CONFIG.FEUILLE_HISTORIQUE + '_ » pour le garder à part.';
+}
+
+/**
+ * Le contrat dont les plans recoupent nettement la carte du dernier relevé
+ * d'un onglet d'historique — { contrat, commun } —, ou null : au moins
+ * IMPORT_SEUIL_RECOUVREMENT des plans du relevé, et au moins le double du
+ * suivant (la règle de la fenêtre d'import). Une carte vide ou illisible ne
+ * désigne personne.
+ */
+function proprietaireProbable_(classeur, nomOnglet, candidats) {
+  try {
+    const f = classeur.getSheetByName(nomOnglet);
+    if (!f || f.getLastRow() < 2) return null;
+    const ligne = f.getRange(f.getLastRow(), 1, 1, Math.max(ENTETES_HISTORIQUE.length, f.getLastColumn())).getValues()[0];
+    const carte = separerCartes(analyserJson(recoller(ligne.slice(ENTETES_HISTORIQUE.length - 1)))).plans;
+    const cles = carte && typeof carte === 'object' ? Object.keys(carte).map(normaliser).filter(Boolean) : [];
+    if (!cles.length) return null;
+    const parts = enLecture(function () {
+      return candidats.map(function (k) {
+        const ici = {};
+        referencesDeLOnglet(classeur.getSheetByName(k.id)).forEach(function (r) { ici[normaliser(r)] = true; });
+        const commun = cles.filter(function (x) { return ici[x]; }).length;
+        return { contrat: k, commun: commun, part: commun / cles.length };
+      });
+    }).sort(function (a, b) { return b.part - a.part; });
+    const a = parts[0], b = parts[1];
+    return a && a.part >= IMPORT_SEUIL_RECOUVREMENT && (!b || b.part * 2 <= a.part) ? { contrat: a.contrat, commun: a.commun } : null;
+  } catch (err) {
+    return null;
+  }
 }
 
 /** Une carte plan par plan, en texte stable : pour comparer deux relevés. */
@@ -3096,7 +3244,7 @@ function preparerSemainePassee(classeur, nomOnglet, saisie) {
     }
     const orphelins = historiquesOrphelins(classeur, contrats);
     if (orphelins.length) {
-      return { ok: false, semaine: semaine, message: messageOrphelin(orphelins[0], contrat) };
+      return { ok: false, semaine: semaine, message: 'Relevé ' + dite + ' non archivé : ' + messageOrphelin(orphelins[0], contrat, classeur, contrats) };
     }
   }
   const existe = !!historique && ligneDeLaSemaine(historique, semaine) !== -1;
@@ -3668,20 +3816,7 @@ function parametresImport_(classeur) {
   const base = feuilleRapprochement();
   const cles = clesSecondeBase();
   const avecBase = !!base && cles.length > 0;
-  let contrats = [];
-  try { contrats = listerContrats(classeur); } catch (err) { contrats = []; }
-  const active = classeur.getActiveSheet() ? classeur.getActiveSheet().getName() : '';
-  let choisi = contrats.length ? contrats[0].id : '';
-  const liste = enLecture(function () {
-    return contrats.map(function (c) {
-      const f = avecBase ? ongletSecondeBase(classeur, c.id) : null;
-      const onglet = f ? f.getName() : souchePourImport(c.id);
-      if (c.id === active || (avecBase && onglet === active)) choisi = c.id;
-      let refs = [];
-      try { refs = referencesNormalisees(classeur.getSheetByName(c.id)); } catch (err) { refs = []; }
-      return { id: c.id, onglet: onglet, existe: !!f, refs: refs };
-    });
-  });
+  const lus = contratsPourImport_(classeur);
   const semaine = numeroSemaineISO(new Date());
   return {
     jeton: ouvrirJetonImport_(),
@@ -3700,12 +3835,50 @@ function parametresImport_(classeur) {
     pausesReprise: [2000, 6000],
     seuilRecouvrement: IMPORT_SEUIL_RECOUVREMENT,
     echantillonSee: IMPORT_ECHANTILLON_SEE,
-    contrats: liste,
-    choisi: choisi,
+    contrats: lus.contrats,
+    choisi: lus.choisi,
     nouveauPermis: !CONFIG.FEUILLE_DONNEES,
     nomMax: NOM_CONTRAT_MAX,
     semaine: semaineDite(semaine, semaine)
   };
+}
+
+/**
+ * Les contrats tels que la fenêtre les voit : { contrats: [{ id, onglet (sa
+ * base SEE, existante ou à créer), existe, refs }], choisi (celui de
+ * l'onglet affiché) }. Sans jeton : parametresImport_ en ouvre un, et
+ * importContrats, qui relit la liste après un import, n'en ouvre pas.
+ */
+function contratsPourImport_(classeur) {
+  const base = feuilleRapprochement();
+  const avecBase = !!base && clesSecondeBase().length > 0;
+  let contrats = [];
+  try { contrats = listerContrats(classeur); } catch (err) { contrats = []; }
+  const active = classeur.getActiveSheet() ? classeur.getActiveSheet().getName() : '';
+  let choisi = contrats.length ? contrats[0].id : '';
+  const liste = enLecture(function () {
+    return contrats.map(function (c) {
+      const f = avecBase ? ongletSecondeBase(classeur, c.id) : null;
+      const onglet = f ? f.getName() : souchePourImport(c.id);
+      if (c.id === active || (avecBase && onglet === active)) choisi = c.id;
+      let refs = [];
+      try { refs = referencesNormalisees(classeur.getSheetByName(c.id)); } catch (err) { refs = []; }
+      return { id: c.id, onglet: onglet, existe: !!f, refs: refs };
+    });
+  });
+  return { contrats: liste, choisi: choisi };
+}
+
+/**
+ * La fenêtre relit la liste des contrats après chaque import : elle ne la
+ * recevait qu'à son ouverture. Un contrat créé au premier tour manquait
+ * donc au second — son export SEE partait sans un mot dans « SEE HDK »,
+ * son export GATES butait sur « existe déjà : le choisir dans la liste »,
+ * absent de la liste. Le même jeton : aucun nouveau n'est ouvert.
+ */
+function importContrats(jeton) {
+  gesteImport_(jeton);
+  return contratsPourImport_(SpreadsheetApp.getActiveSpreadsheet()).contrats;
 }
 
 /**
@@ -3927,7 +4100,9 @@ function importSecondeBaseDebut(jeton, cible, largeur, total) {
   const larg = Math.floor(Number(largeur)), lignes = Math.floor(Number(total));
   if (!(larg >= 1 && larg <= IMPORT_MAX_COLONNES)) throw new Error('Nombre de colonnes illisible : ' + largeur + ' (au plus ' + IMPORT_MAX_COLONNES + ').');
   if (!(lignes >= 2)) throw new Error('Rien à importer : l’en-tête seul.');
-  const verrou = LockService.getDocumentLock();
+  /* Le début ne touche qu'à l'onglet temporaire : sans le verrou, il passe
+     quand même (seule la fin, qui échange les onglets, l'exige). */
+  const verrou = verrouDuClasseur_();
   const tenu = verrou.tryLock(30000);
   try {
     const c = cibleImport(classeur, cible);
@@ -4029,9 +4204,20 @@ function importSecondeBaseFin(jeton, nomFeuille, cible, lignesAttendues, fusions
   gesteImport_(jeton);
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
   const feuille = feuilleImportEnCours(classeur, nomFeuille);
-  const verrou = LockService.getDocumentLock();
-  const tenu = verrou.tryLock(30000);
+  const verrou = verrouDuClasseur_();
+  if (!verrou.tryLock(30000)) {
+    /* Un autre geste tient le classeur (le vendredi archive peut-être
+       l'onglet que l'import remplacerait) : échanger quand même pouvait
+       retirer l'onglet sous ses yeux. On refuse, avant tout échange ;
+       l'onglet temporaire s'en va, l'onglet visé reste ce qu'il était. */
+    let vise = soucheDOngletImport(feuille.getName()) || '', existe = true;
+    try { const k = cibleImport(classeur, cible); vise = k.onglet; existe = !!k.existant; } catch (err) { /* le nom de l'import suffit */ }
+    classeur.deleteSheet(feuille);
+    throw new Error('Le classeur est occupé par un autre geste (archivage…) : l’onglet « ' + vise + ' » n’a pas été ' +
+      (existe ? 'remplacé' : 'créé') + '. Relancer l’import dans une minute.');
+  }
   let c = null, recues = 0, derniereColonne = 1, remplace = false, posees = 0, ratees = 0;
+  const renommes = [];
   try {
     try {
       c = cibleImport(classeur, cible);
@@ -4068,6 +4254,7 @@ function importSecondeBaseFin(jeton, nomFeuille, cible, lignesAttendues, fusions
       throw new Error('Colonne suivie absente de cet export : « ' + CONFIG.COLONNE_FWD.replace('>', '›') + ' » n’y est pas, alors que l’onglet « ' +
         c.onglet + ' » l’a. Est-ce bien l’export de ce contrat, avec son bloc suivi ?');
     }
+    if (c.sorte === 'gates' && c.nouveau) rattacherAuContratUnique_(classeur, renommes);
     remplace = !!existant;
     let position = 0;
     if (existant) {
@@ -4090,7 +4277,7 @@ function importSecondeBaseFin(jeton, nomFeuille, cible, lignesAttendues, fusions
     if (existant) classeur.deleteSheet(existant);
     marquerDonneesModifiees_();
   } finally {
-    if (tenu) verrou.releaseLock();
+    verrou.releaseLock();
   }
   if (c.sorte === 'see') {
     let etat = 'ok';
@@ -4102,7 +4289,7 @@ function importSecondeBaseFin(jeton, nomFeuille, cible, lignesAttendues, fusions
   }
   const rendu = { sorte: 'gates', onglet: c.onglet, nouveau: c.nouveau, remplace: remplace, lignes: recues, colonnes: derniereColonne,
                   fusions: posees, fusionsRatees: ratees, etat: 'ok', plans: 0, colonneSuivie: null, concept: false,
-                  conceptDemande: !!CONFIG.COLONNE_CONCEPT };
+                  conceptDemande: !!CONFIG.COLONNE_CONCEPT, renommes: renommes };
   try {
     enLecture(function () {
       const m = construireModele(c.onglet);
@@ -4116,6 +4303,40 @@ function importSecondeBaseFin(jeton, nomFeuille, cible, lignesAttendues, fusions
     rendu.message = err && err.message ? err.message : String(err);
   }
   return rendu;
+}
+
+/**
+ * Un deuxième contrat va naître. Tant que le classeur n'en avait qu'un, X,
+ * deux onglets lui appartenaient sans porter son nom : l'onglet « SEE » tout
+ * court (sa base) et l'ancien « Historique_FWD » (ses relevés). Dès qu'il y
+ * en a deux, ni l'un ni l'autre n'est plus lu (ongletSecondeBase,
+ * getFeuilleHistorique) : la comparaison de X disparaissait de la page, un
+ * « SEE X » neuf s'ouvrait à côté d'un « SEE » orphelin, et ses relevés
+ * sortaient de la page. Le propriétaire est certain — c'était le seul
+ * contrat — : ils prennent son nom, avant l'échange. Seulement si le nom
+ * propre n'existe pas encore (sinon c'est lui qu'on lit déjà). Appelé sous
+ * le verrou ; chaque renommage est noté dans `renommes` ({ de, vers }) pour
+ * que la fenêtre le dise.
+ */
+function rattacherAuContratUnique_(classeur, renommes) {
+  let avant = [];
+  try { avant = listerContrats(classeur); } catch (err) { avant = []; }
+  if (avant.length !== 1) return;
+  const x = avant[0].id;
+  const feuilles = classeur.getSheets();
+  const renommer = function (f, nom) {
+    const de = f.getName();
+    try { f.setName(nom); renommes.push({ de: de, vers: nom }); } catch (err) { /* laissé tel quel : le Diagnostic le signalera */ }
+  };
+  const base = feuilleRapprochement();
+  if (base) {
+    const b = nomCompact(base), cx = nomCompact(x);
+    const propre = feuilles.some(function (f) { const n = nomCompact(f.getName()); return n === b + ' ' + cx || n === cx + ' ' + b; });
+    const generique = feuilles.filter(function (f) { return nomCompact(f.getName()) === b; })[0];
+    if (generique && !propre) renommer(generique, base + ' ' + x);
+  }
+  const ancien = classeur.getSheetByName(CONFIG.FEUILLE_HISTORIQUE);
+  if (ancien && !classeur.getSheetByName(nomFeuilleHistorique(x))) renommer(ancien, nomFeuilleHistorique(x));
 }
 
 /**
@@ -4153,10 +4374,13 @@ function importSecondeBaseAbandon(jeton, nomFeuille) {
  * { ok: false, message } : l'import, lui, est fait. Archiver deux fois dans
  * la semaine remplace la ligne de la semaine : renvoyer l'appel ne double rien.
  */
-function importArchiverReleve(jeton, idContrat) {
+function importArchiverReleve(jeton, idContrat, nouveau) {
   gesteImport_(jeton);
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
   const contrat = contratPourImport(classeur, idContrat);
+  /* Un contrat que cet import vient de créer : un ancien historique
+     orphelin ne peut pas être le sien (messageOrphelin). */
+  if (nouveau === true) contrat.nouveau = true;
   const semaine = numeroSemaineISO(new Date());
   const dite = semaineDite(semaine, semaine);
   /* Le verrou se prend ici, une fois (sousVerrou_) : pas obtenu, rien n'est
@@ -4165,9 +4389,15 @@ function importArchiverReleve(jeton, idContrat) {
     const d = sousVerrou_(function () { return archiverContrat_(classeur, contrat, semaine); });
     return { ok: true, semaine: semaine, dite: dite, plans: d.compte.total, valides: d.compte.termine, historique: d.historique };
   } catch (err) {
-    return { ok: false, semaine: semaine, dite: dite, ancienExport: !!(err && err.ancienExport),
-             message: err && err.sansPlan ? 'l’onglet « ' + contrat.nom + ' » ne porte aucun plan (en-têtes seuls).'
-               : (err && err.message ? err.message : String(err)) };
+    /* L'export identique à un relevé plus ancien, juste après l'avoir
+       importé : « importer l'export du jour » serait le geste qui vient
+       d'échouer. Si ce fichier n'est pas l'export du jour, c'est le bon
+       qu'il faut importer ; s'il l'est, le menu Archiver passe outre après
+       confirmation. */
+    const message = err && err.sansPlan ? 'l’onglet « ' + contrat.nom + ' » ne porte aucun plan (en-têtes seuls).'
+      : err && err.ancienExport && err.voulu ? err.constat + ' ' + err.voulu + ' Sinon, ce fichier n’est pas l’export du jour : importer le bon.'
+      : (err && err.message ? err.message : String(err));
+    return { ok: false, semaine: semaine, dite: dite, ancienExport: !!(err && err.ancienExport), message: message };
   }
 }
 
@@ -4196,7 +4426,7 @@ function pageImportSecondeBase(parametres) {
     '.fichier.gates{border-left-color:var(--fait)}.fichier.see{border-left-color:var(--see)}' +
     '.fichier.erreur{border-left-color:var(--alerte)}.fichier.fait{opacity:.95}' +
     '.tete{display:flex;align-items:baseline;gap:8px}.tete .nom{font-weight:600;word-break:break-all;flex:1}' +
-    '.tete .taille{color:var(--encre-3);font-size:12px;white-space:nowrap}' +
+    '.tete .taille,.tete .date{color:var(--encre-3);font-size:12px;white-space:nowrap}' +
     '.tete .retirer{padding:1px 8px;font-size:12px;color:var(--encre-2)}' +
     '.sorte{flex:none;font-size:11px;font-weight:700;letter-spacing:.05em;padding:0 6px;border-radius:4px;border:1px solid currentColor}' +
     '.sorte.gates{color:var(--fait)}.sorte.see{color:var(--see)}' +
@@ -4262,6 +4492,10 @@ function scriptImportSecondeBase_(P) {
   var NOUVEAU = '\u0001nouveau';
   var N_CLES = P.cles.map(norm), N_ESS = P.essentielles.map(norm);
   var fichiers = [], aLire = [], enLecture = null, enCours = false, numero = 0;
+  /* La liste des contrats, relue après chaque import (relireContrats) :
+     `relecture` pendant qu'elle est demandée, `contratsPerimes` si elle n'a
+     pas pu l'être. */
+  var relecture = null, contratsPerimes = false;
 
   // ------------------------------------------------------------ petits outils
   function norm(t) {
@@ -4285,6 +4519,18 @@ function scriptImportSecondeBase_(P) {
     return octets < 1048576 ? Math.max(1, Math.round(octets / 1024)) + ' Ko' : (octets / 1048576).toFixed(1).replace('.', ',') + ' Mo';
   }
   function sansExtension(nom) { return String(nom).replace(/\.[^.]*$/, ''); }
+  /* La date d'un fichier, « 3 oct. 14:20 » (l'année si ce n'est pas celle-ci) :
+     deux exports du même contrat, « Export GATES.xlsx » et « Export GATES
+     (1).xlsx », ne se distinguent que par elle. */
+  var MOIS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  function dateFichier(f) {
+    if (!f || !f.lastModified) return '';
+    var d = new Date(f.lastModified), deuxC = function (n) { return (n < 10 ? '0' : '') + n; };
+    return d.getDate() + ' ' + MOIS[d.getMonth()] + (d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : '') +
+      ' ' + deuxC(d.getHours()) + ':' + deuxC(d.getMinutes());
+  }
+  /* Un nom d'onglet réduit pour être comparé, comme nomCompact côté serveur. */
+  function compact(t) { return norm(t).replace(/[\s_\-\u2013\u2014.:\/]+/g, ' ').trim(); }
   var ABIME = 'Le fichier est abîmé (il ne se décompresse pas en entier) : le retélécharger depuis GATES ou SEE.';
   // ------------------------------------------------------------ lecture du fichier
   function lireOctets(f, debut, fin) {
@@ -5299,7 +5545,7 @@ function scriptImportSecondeBase_(P) {
     var rien = existe ? ' Rien n’a été remplacé dans le classeur.' : ' Rien n’a été créé dans le classeur.';
     /* Après l'appel de fin, l'onglet a pu être échangé — sauf pour ces refus,
        qui arrivent avant tout échange. */
-    if (etat.fin && !/Import incomplet|a disparu|non reconnu|Contrat introuvable|Geste refusé|existe déjà|nom réservé|Colonne suivie absente/.test(texte)) {
+    if (etat.fin && !/Import incomplet|a disparu|non reconnu|Contrat introuvable|Geste refusé|existe déjà|nom réservé|Colonne suivie absente|occupé par un autre geste/.test(texte)) {
       return t + ' L’import est peut-être allé au bout : regarder l’onglet « ' + onglet + ' » (ou menu Suivi FWD → Diagnostic) avant de relancer.';
     }
     if (etat.fin) return t + (existe ? ' L’ancien onglet « ' + onglet + ' » est intact.' : rien);
@@ -5379,8 +5625,11 @@ function scriptImportSecondeBase_(P) {
   }
   /* Un export SEE : (a) le contrat dont un échantillon du fichier retrouve
      le plus de plans (le serveur rapproche comme la page) ; (b) sinon le seul
-     nommé dans le nom du fichier ; (c) sinon le seul contrat ; (d) sinon
-     celui de l'onglet affiché — à vérifier. */
+     nommé dans le nom du fichier ; (c) sinon le seul contrat, ou celui de
+     l'onglet affiché — mais à vérifier, la liste visible : rien ne confirme
+     ce choix. Le seul contrat n'était pas toujours le bon : l'extract d'un
+     contrat créé au tour d'avant, ou d'un contrat pas encore importé,
+     partait sans un mot dans « SEE HDK » et y remplaçait le sien. */
   function devinerSee(r) {
     var ids = P.contrats.map(function (k) { return k.id; }).concat(nouveauxDuLot());
     if (!ids.length) return { choix: '', aVerifier: true, note: 'aucun contrat encore : ajouter l’export GATES du contrat (il passe avant).' };
@@ -5388,8 +5637,12 @@ function scriptImportSecondeBase_(P) {
     if (a) return { choix: a.id, note: nb(a.commun) + ' référence' + (a.commun > 1 ? 's' : '') + ' de l’échantillon sur ' + nb(r.echantillon) + ' retrouvée' + (a.commun > 1 ? 's' : '') + ' dans « ' + a.id + ' »' };
     var parNom = nommes(norm(sansExtension(r.f.name)), ids);
     if (parNom.length === 1) return { choix: parNom[0], note: '« ' + parNom[0] + ' » dans le nom du fichier' };
-    if (ids.length === 1) return { choix: ids[0], note: '' };
-    return { choix: ids.indexOf(P.choisi) !== -1 ? P.choisi : ids[0], aVerifier: true, note: 'à vérifier' };
+    var choix = ids.length === 1 || ids.indexOf(P.choisi) === -1 ? ids[0] : P.choisi;
+    if (ids.length > 1) return { choix: choix, aVerifier: true, note: 'à vérifier' };
+    var p = (r.parts || []).filter(function (x) { return x.id === choix; })[0];
+    return { choix: choix, aVerifier: true, note: '« ' + choix + ' » est le seul contrat, mais ' + (p && r.echantillon
+      ? 'l’échantillon n’y retrouve que ' + nb(p.commun) + ' référence' + (p.commun > 1 ? 's' : '') + ' sur ' + nb(r.echantillon)
+      : 'rien dans le fichier ne le confirme') + ' : à vérifier.' };
   }
   function deviner(r) {
     if (!r.lu || r.manuel) return;
@@ -5400,10 +5653,11 @@ function scriptImportSecondeBase_(P) {
     if (g.choix === NOUVEAU && g.nom && !r.nom.valeur) saisirNom(r, g.nom, true);
   }
   /* L'échantillon d'un export SEE part au serveur, qui le rapproche des
-     plans de chaque contrat ; rien à demander avec un seul contrat. */
+     plans de chaque contrat — même d'un seul : c'est ce qui confirme qu'il
+     est le bon. Rien à demander sans contrat du tout. */
   function demanderParts(r) {
     r.parts = null;
-    if (P.contrats.length < 2) { deviner(r); return; }
+    if (!P.contrats.length) { deviner(r); return; }
     var d = r.lu, cles = d.positionsCles, pas = Math.max(1, Math.floor(d.lignes.length / P.echantillonSee)), lignes = [];
     for (var i = 0; i < d.lignes.length && lignes.length < P.echantillonSee; i += pas) {
       lignes.push(cles.map(function (k) { return d.lignes[i][k]; }));
@@ -5477,12 +5731,12 @@ function scriptImportSecondeBase_(P) {
       if (r.el && r.el.parentNode) r.el.parentNode.removeChild(r.el);
       return false;
     });
-    var tableaux = /\.(xlsx|xlsm|xls|xlsb|csv|txt|xml|html?)$/i, autres = [], doublons = 0, trop = 0;
+    var tableaux = /\.(xlsx|xlsm|xls|xlsb|csv|txt|xml|html?)$/i, autres = [], doublons = 0, laisses = [];
     for (var i = 0; i < liste.length; i++) {
       var f = liste[i];
       if (!tableaux.test(f.name)) { autres.push(f.name); continue; }
       if (fichiers.some(function (r) { return r.f.name === f.name && r.f.size === f.size && r.f.lastModified === f.lastModified; })) { doublons++; continue; }
-      if (fichiers.length >= P.maxFichiers) { trop++; continue; }
+      if (fichiers.length >= P.maxFichiers) { laisses.push(f.name); continue; }
       var r = { n: ++numero, f: f, etat: 'attente', lu: null, choix: '', manuel: false, note: '', aVerifier: false,
                 nom: { valeur: '', etat: 'vide', message: '', demande: 0, minuteur: null } };
       fichiers.push(r);
@@ -5497,13 +5751,35 @@ function scriptImportSecondeBase_(P) {
     if (autres.length) mots.push(autres.length + ' fichier' + (autres.length > 1 ? 's' : '') + ' laissé' + (autres.length > 1 ? 's' : '') +
       ' de côté, pas des tableaux : ' + autres.slice(0, 4).join(', ') + (autres.length > 4 ? ', …' : '') + '.');
     if (doublons) mots.push(doublons + ' fichier' + (doublons > 1 ? 's' : '') + ' déjà dans la liste.');
-    if (trop) mots.push('Au plus ' + P.maxFichiers + ' fichiers à la fois : ' + trop + ' laissé' + (trop > 1 ? 's' : '') + ' de côté — les importer ensuite.');
+    /* Nommés, comme le dit le mode d'emploi : sinon il fallait comparer la
+       liste au dossier pour savoir lesquels importer ensuite. */
+    if (laisses.length) mots.push('Au plus ' + P.maxFichiers + ' fichiers à la fois : ' + laisses.length + ' laissé' + (laisses.length > 1 ? 's' : '') +
+      ' de côté — les importer ensuite : ' + laisses.slice(0, 4).join(', ') + (laisses.length > 4 ? ', …' : '') + '.');
     dire(ech(mots.join(' ')));
     majTout();
-    lireSuivant();
+    /* La liste des contrats n'a pas pu être relue après l'import d'avant :
+       on la redemande avant de rattacher ces fichiers à un contrat. */
+    if (contratsPerimes && !relecture) relireContrats().then(function () { majTout(); lireSuivant(); });
+    else lireSuivant();
+  }
+  /* Après un import, la liste des contrats est relue : un contrat créé au
+     tour d'avant doit être proposé, et reconnu par ses plans (ENSEMBLES,
+     les plans de chaque contrat, est vidé avec elle). */
+  function relireContrats() {
+    relecture = appelerAvecReprise('importContrats', []).then(function (liste) {
+      if (!Array.isArray(liste)) throw erreur('liste illisible');
+      P.contrats = liste;
+      ENSEMBLES = {};
+      contratsPerimes = false;
+    }).catch(function () {
+      contratsPerimes = true;
+    }).then(function () {
+      relecture = null;
+    });
+    return relecture;
   }
   function lireSuivant() {
-    if (enLecture) return;
+    if (enLecture || relecture) return;
     var r = aLire.shift();
     while (r && r.retire) r = aLire.shift();
     if (!r) { majTout(); return; }
@@ -5559,7 +5835,7 @@ function scriptImportSecondeBase_(P) {
     var li = document.createElement('li');
     li.className = 'fichier';
     li.setAttribute('data-n', String(r.n));
-    li.innerHTML = '<div class="tete"><span class="sorte" hidden></span><span class="nom"></span><span class="taille"></span>' +
+    li.innerHTML = '<div class="tete"><span class="sorte" hidden></span><span class="nom"></span><span class="date"></span><span class="taille"></span>' +
       '<button type="button" class="retirer">Retirer</button></div>' +
       '<div class="lu"></div><div class="barre" hidden><div></div></div>' +
       '<div class="choix" hidden><label>Contrat <select class="contrat"></select></label>' +
@@ -5570,6 +5846,7 @@ function scriptImportSecondeBase_(P) {
     r.el = li;
     li.querySelector('.nom').textContent = r.f.name;
     li.querySelector('.taille').textContent = taille(r.f.size);
+    li.querySelector('.date').textContent = dateFichier(r.f) ? 'du ' + dateFichier(r.f) : '';
     li.querySelector('.retirer').setAttribute('aria-label', 'Retirer « ' + r.f.name + ' » de la liste');
     li.querySelector('.retirer').addEventListener('click', function () { retirer(r); });
     li.querySelector('.contrat').addEventListener('change', function () {
@@ -5627,9 +5904,22 @@ function scriptImportSecondeBase_(P) {
       return k ? { onglet: k.id, existe: true, contrat: k.id, nouveau: false } : null;
     }
     var e = contratExistant(r.choix);
-    if (e) return { onglet: e.onglet, existe: e.existe, contrat: e.id, nouveau: false };
+    if (e) {
+      var g = baseGeneriqueRenommee();
+      if (g && g.id === e.id) return { onglet: g.vers, existe: true, contrat: e.id, nouveau: false, avant: g.de };
+      return { onglet: e.onglet, existe: e.existe, contrat: e.id, nouveau: false };
+    }
     if (nouveauxDuLot().indexOf(r.choix) !== -1) return { onglet: P.base + ' ' + r.choix, existe: false, contrat: r.choix, nouveau: true };
     return null;
+  }
+  /* Le seul contrat du classeur a pour base l'onglet « SEE » tout court, et
+     la liste crée un deuxième contrat : le serveur renommera « SEE » en
+     « SEE HDK » avant d'y créer le nouveau (rattacherAuContratUnique_), et
+     c'est ce nom-là qu'un export SEE de HDK remplacera. Null sinon. */
+  function baseGeneriqueRenommee() {
+    if (P.contrats.length !== 1 || !P.base || !nouveauxDuLot().length) return null;
+    var k = P.contrats[0];
+    return k.existe && compact(k.onglet) === compact(P.base) ? { id: k.id, de: k.onglet, vers: P.base + ' ' + k.id } : null;
   }
   function resumeLu(d) {
     var dit = d.duree >= 0 ? ' · lu en ' + Math.max(1, Math.round(d.duree)) + ' s' : '';
@@ -5658,7 +5948,7 @@ function scriptImportSecondeBase_(P) {
     if (avant && d) {
       var n = options(r);
       /* Un export SEE qui n'a qu'un contrat possible : rien à choisir. */
-      choix.hidden = d.sorte === 'see' && n === 2 && !!r.choix;
+      choix.hidden = d.sorte === 'see' && n === 2 && !!r.choix && !r.aVerifier;
       q('.nouveau').hidden = r.choix !== NOUVEAU;
       q('.contrat').disabled = enCours;
       q('.nouveau').disabled = enCours;
@@ -5669,8 +5959,11 @@ function scriptImportSecondeBase_(P) {
     var c = cibleDuFichier(r), texte = '';
     if (avant && c) {
       texte = (c.existe ? 'Remplacera l’onglet' : 'Créera l’onglet') + ' <b>« ' + ech(c.onglet) + ' »</b>' +
+        (c.avant ? ' (aujourd’hui « ' + ech(c.avant) + ' », renommé à la création du nouveau contrat)' : '') +
         (d.sorte === 'gates' ? (c.existe ? ' — l’ancien ne s’en va qu’une fois tout reçu ; son historique est gardé.' : ' : un nouveau contrat, rangé après les autres.')
           : (c.existe ? ' — l’ancien ne s’en va qu’une fois tout reçu.' : '.'));
+      var g = d.sorte === 'gates' && c.nouveau ? baseGeneriqueRenommee() : null;
+      if (g) texte += ' L’onglet « ' + ech(g.de) + ' » de « ' + ech(g.id) + ' » deviendra « ' + ech(g.vers) + ' » : avec deux contrats, chaque base porte le nom du sien.';
     } else if (avant && r.choix === NOUVEAU && r.nom.etat === 'refus') texte = '<span class="refus">' + ech(r.nom.message) + '</span>';
     else if (avant && r.choix === NOUVEAU && r.nom.etat === 'attente') texte = 'Vérification du nom…';
     q('.cible').innerHTML = texte;
@@ -5685,6 +5978,8 @@ function scriptImportSecondeBase_(P) {
   function raisonDAttendre() {
     var actifs = fichiers.filter(function (r) { return r.etat !== 'fait' && r.etat !== 'echec'; }), i;
     if (!actifs.length) return ' ';
+    if (relecture) return 'Relecture de la liste des contrats…';
+    if (contratsPerimes) return 'La liste des contrats n’a pas pu être relue après l’import : fermer cette fenêtre et la rouvrir (menu Suivi FWD) avant d’importer d’autres fichiers.';
     if (actifs.some(function (r) { return r.etat === 'attente' || r.etat === 'lecture'; })) return 'Lecture des fichiers…';
     var ko = actifs.filter(function (r) { return r.etat === 'erreur'; });
     if (ko.length) return ko.length === 1 ? 'Retirer « ' + ko[0].f.name + ' », qui ne s’importe pas (✗), pour lancer l’import.'
@@ -5708,8 +6003,19 @@ function scriptImportSecondeBase_(P) {
     for (i = 0; i < ordre.length; i++) {
       var memes = parOnglet[ordre[i]];
       if (memes.length > 1) {
+        /* Le plus souvent, l'export de la semaine dernière resté dans
+           Téléchargements : leur date seule les distingue. On la dit, et
+           on désigne le plus récent. */
+        var recent = memes.slice().sort(function (a, b) { return (b.f.lastModified || 0) - (a.f.lastModified || 0); })[0];
+        var dateDe = function (x) { return dateFichier(x.f) ? ' (du ' + dateFichier(x.f) + ')' : ''; };
+        /* À la minute, comme la date affichée : deux fichiers de la même
+           minute ne se départagent pas à l'écran, on ne désigne personne. */
+        var minute = function (x) { return Math.floor((x.f.lastModified || 0) / 60000); };
+        var plusRecentNet = !!recent.f.lastModified && memes.every(function (x) { return x === recent || minute(x) < minute(recent); });
         return (memes.length === 2 ? 'Deux' : memes.length) + ' fichiers vont dans l’onglet « ' + cibleDuFichier(memes[0]).onglet + ' » : ' +
-          memes.map(function (x) { return '« ' + x.f.name + ' »'; }).join(' et ') + '. En retirer un, ou changer son contrat.';
+          memes.map(function (x) { return '« ' + x.f.name + ' »' + dateDe(x); }).join(' et ') + '. ' +
+          (plusRecentNet ? 'Garder le plus récent, « ' + recent.f.name + ' »' + dateDe(recent) + ' : retirer ' + (memes.length === 2 ? 'l’autre' : 'les autres') +
+            ' — ou, si c’est l’export d’un autre contrat, changer son contrat.' : 'En retirer un, ou changer son contrat.');
       }
     }
     return '';
@@ -5761,6 +6067,10 @@ function scriptImportSecondeBase_(P) {
       $('importer').classList.remove('principal');
     }, function (e) {
       dire(ech('Erreur inattendue : ' + (e && e.message ? e.message : e)), 'erreur');
+    }).then(function () {
+      /* Un contrat a pu naître, une base changer de nom : le tour suivant
+         doit le savoir avant de rattacher le moindre fichier. */
+      return relireContrats();
     }).then(function () {
       enCours = false;
       suivi = null;
@@ -5824,7 +6134,10 @@ function scriptImportSecondeBase_(P) {
      propre logique), puis le relevé de la semaine — seulement si la colonne
      suivie est là : sans elle, l'archivage refuserait de toute façon. */
   function bilanGatesImporte(r, fin, archiver) {
-    var d = r.lu, debut = '« ' + ech(r.f.name) + ' » → onglet <b>« ' + ech(fin.onglet) + ' »</b> ' + (fin.nouveau ? 'créé (nouveau contrat)' : 'remplacé') + ' : ';
+    var d = r.lu, debut = '« ' + ech(r.f.name) + ' » → onglet <b>« ' + ech(fin.onglet) + ' »</b> ' + (fin.nouveau ? 'créé (nouveau contrat)' : 'remplacé') +
+      (fin.renommes && fin.renommes.length ? ' ; ' + fin.renommes.map(function (x) {
+        return 'l’onglet « ' + ech(x.de) + ' » devient « ' + ech(x.vers) + ' »';
+      }).join(', ') + ' (il servait au seul contrat d’avant)' : '') + ' : ';
     var avis = function (html) { return { ok: true, avertissement: true, classe: 'avertissement', html: '⚠ ' + html }; };
     if (fin.etat !== 'ok') return avis(debut + nb(fin.lignes) + ' lignes posées, mais l’onglet n’a pas pu être relu (' + ech(fin.message || fin.etat) + ') : menu Suivi FWD → Diagnostic.');
     var texte = debut + '<b>' + nb(fin.plans) + ' plan' + (fin.plans > 1 ? 's' : '') + '</b>';
@@ -5840,7 +6153,7 @@ function scriptImportSecondeBase_(P) {
     var fini = function (html) { return csv ? avis(html + csv) : { ok: true, classe: 'ok', html: '✓ ' + html }; };
     if (!archiver) return fini(texte + '.');
     progres(1, 'Archivage du relevé ' + P.semaine + ' de « ' + fin.onglet + ' »…');
-    return appelerAvecReprise('importArchiverReleve', [fin.onglet]).then(function (a) {
+    return appelerAvecReprise('importArchiverReleve', [fin.onglet, !!fin.nouveau]).then(function (a) {
       if (a && a.ok) return fini(texte + '. Relevé ' + ech(a.dite) + ' archivé (' + nb(a.plans) + ' plans, ' + nb(a.valides) + ' validés).');
       return avis(texte + '. Relevé ' + ech(a && a.dite ? a.dite : P.semaine) + ' non archivé : ' + ech(a && a.message ? a.message : '?') + ' L’import, lui, est fait.' + csv);
     }, function (e) {

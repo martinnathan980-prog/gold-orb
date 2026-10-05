@@ -6,7 +6,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'e906173';
+  var EDITION = 'b7a3368';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -737,12 +737,16 @@
       manque: enRetard ? Math.ceil(restants - Math.max(0, rythme) * semaines - 1e-9) : 0
     };
   }
-  /* Le groupe qui finirait le dernier, chacun à SON rythme — les fins que
-     calcule le bloc « par ATA » pour la dimension choisie, sur le périmètre
-     de l'échéance. La projection globale, elle, suppose que le rythme des
-     groupes finis passe aux autres : « tout serait validé en S8 » alors que
-     l'ATA 24, à son rythme, finit en S17. Un groupe sans rythme n'a pas de
-     fin : il ne compte pas. Rien quand la dimension n'existe pas. */
+  /* Le groupe qui finirait le dernier, chacun à SON rythme, compté sur le
+     périmètre de l'échéance (per). Ce sont les fins du bloc « par ATA »
+     seulement quand ce périmètre est celui qu'on regarde : sous « Tout »,
+     un jalon BASE/OPTION ne compte que ses plans BASE/OPTION, et l'ATA 24
+     peut finir en S17 ici quand sa ligne du bloc, sur tous ses plans, dit
+     S20 — la phrase nomme alors le périmètre (motDernierGroupe). La
+     projection globale, elle, suppose que le rythme des groupes finis passe
+     aux autres : « tout serait validé en S8 » alors que l'ATA 24, à son
+     rythme, finit en S17. Un groupe sans rythme n'a pas de fin : il ne
+     compte pas. Rien quand la dimension n'existe pas. */
   function dernierGroupe(per, dim) {
     if (!dim || !TITRE_DIM[dim]) return null;
     var vus = {}, pire = null;
@@ -759,10 +763,15 @@
     return pire;
   }
   /* « au rythme global, la fin serait en S8 » — et, quand un groupe finit
-     plus tard à son propre rythme, la phrase le nomme. */
-  function motDernierGroupe(finGlobale, per, dim) {
+     plus tard à son propre rythme, la phrase le nomme. nommerPer : la fiche
+     d'échéance le demande quand le périmètre du jalon n'est pas celui qu'on
+     regarde (relecture du débrief 20) — sans lui, elle donnait pour
+     l'ATA 24 une autre fin que la ligne ATA 24 du bloc juste en dessous,
+     sans dire pourquoi. */
+  function motDernierGroupe(finGlobale, per, dim, nommerPer) {
     var d = dernierGroupe(per, dim);
-    return d && d.fin > finGlobale ? ' ; le dernier groupe (' + d.nom + ') finirait en ' + semaineDite(d.fin) : '';
+    return d && d.fin > finGlobale ? ' ; le dernier groupe (' + d.nom + ')' + (nommerPer && per ? ', sur ses plans ' + per + ',' : '') +
+      ' finirait en ' + semaineDite(d.fin) : '';
   }
   function virgule(x) { return (Math.round(x * 10) / 10).toFixed(1).replace('.', ','); }
   function ficheEcheance(idx) {
@@ -798,7 +807,7 @@
        rythme des groupes finis passe aux autres : la phrase le dit, et
        nomme le groupe qui, à son propre rythme, finirait plus tard. */
     var fin = gA ? 'tout serait validé en ' + semaineDite(b.fin) : 'au rythme global, la fin serait en ' + semaineDite(b.fin);
-    var dernier = gA ? '' : motDernierGroupe(b.fin, b.domaine, vue.dimCritique);
+    var dernier = gA ? '' : motDernierGroupe(b.fin, b.domaine, vue.dimCritique, (b.domaine || '') !== (vue.perimetre || ''));
     var dansG = gA ? dans : '';
     var verdict;
     if (!b.total) verdict = { cls: 'mal', mot: 'Aucun plan' + (gA ? ' dans ' + nomGroupe(gA) : '') + (b.domaine ? ' dans le périmètre ' + b.domaine : '') + '.' };
@@ -850,7 +859,7 @@
     bouton.className = 'echeance-titre' + (b.enRetard ? ' en-retard' : '');
     bouton.dataset.jalon = idx;
     bouton.innerHTML = '\x3Cspan class="point" aria-hidden="true">\x3C/span>\x3Cspan>Prochaine échéance\x3C/span>' +
-      '\x3Cb>' + ech(j.texte) + '\x3C/b>' + (gA ? '\x3Cspan class="portee">\u00b7 ' + ech(nomGroupe(gA)) + '\x3C/span>' : '') +
+      '\x3Cb>' + ech(j.texte) + '\x3C/b>' + (gA ? '\x3Cspan class="portee">' + ech(nomGroupe(gA)) + '\x3C/span>' : '') +
       '\x3Cspan class="jours">' + ech(motJours(b.jours)) + '\x3C/span>';
     var pour = gA ? ' pour ' + nomGroupe(gA) : '';
     bouton.title = b.enRetard ? 'Au rythme tenu, cette échéance ne sera pas tenue' + pour + ' — cliquez pour le détail'
@@ -921,6 +930,12 @@
      « 0 sur 600 plans terminés » sur les vraies données). La page le dit, avec
      les valeurs lues, au lieu d'afficher un zéro qu'on croirait juste. Sur
      tout le contrat, quel que soit le périmètre. */
+  /* Le geste d'aujourd'hui pour remettre un export (débrief 20) : la fenêtre
+     d'import, qui remplace l'onglet en entier et archive dans la foulée ; le
+     collage reste en secours. Le nom du menu est celui que Code.gs construit
+     (libelleImport), avec la base SEE de l'exemple et du classeur livré —
+     le même que dans « Le classeur n'a pas encore de plans ». */
+  var MENU_IMPORT = 'menu Suivi FWD \u2192 Importer les exports GATES et SEE\u2026';
   function rendreAlerteValeurs() {
     var z = $('alerte-valeurs'), morceaux = [];
     var remplies = VALEURS_COLONNE.filter(function (v) { return v.famille !== 'vide'; });
@@ -934,7 +949,7 @@
       morceaux.push('\x3Cb>La colonne « ' + ech(colonneDite(CLE_SUIVIE)) + ' » est vide sur les ' + nb(PLANS.length) +
         ' plans.\x3C/b> Rien ne peut y être compté' + (INDICATEUR === 'concept'
           ? ' : le concept harnais n\u2019a pas commencé, ou l\u2019export a été fait sans cette colonne.'
-          : ' : vérifier que l\u2019export collé porte bien cette colonne remplie.'));
+          : ' : vérifier que l\u2019export de GATES porte bien cette colonne remplie, puis le réimporter (' + MENU_IMPORT + ').'));
     }
     /* Débrief 19 : sous le concept harnais, « aucun validé » est normal tant
        que rien n'est « Traité » — son vocabulaire est connu (rien, « À
@@ -958,7 +973,7 @@
     if (doublons) {
       morceaux.push('\x3Cb>' + nb(doublons) + (doublons > 1 ? ' lignes répètent' : ' ligne répète') + ' une référence déjà vue.\x3C/b> ' +
         'Seule la première ligne de chaque référence compte et s\u2019affiche. Si l\u2019export a été collé par-dessus l\u2019ancien, ' +
-        'le recoller sur un onglet vidé (Ctrl+A, Suppr).');
+        'le réimporter (' + MENU_IMPORT + ' : l\u2019onglet est remplacé en entier), ou le recoller sur un onglet vidé (Ctrl+A, Suppr).');
     }
     if (!z) return;                    // un Index d'une livraison d'avant : la page le dit (ecartsDeLivraison)
     z.hidden = !morceaux.length;
@@ -1403,6 +1418,11 @@
          '' pour « Tout » et pour « les validés ». Locales, jamais
          mémorisées : elles repartent à zéro avec le contrat et l'avancement. */
       valeurBloc: '', valeurGraphe: '',
+      /* La tuile qu'un clic sur « N à l'arrêt » d'un groupe a posée lui-même
+         (sous une valeur du bloc) : son second clic la retire avec la
+         sélection. Oubliée dès qu'un autre geste touche à la tuile ou à la
+         sélection de plans — sinon il retirerait une tuile pressée à la main. */
+      etatParArret: '',
       /* Deux vues du tableau, et rien entre les deux : « toutes » montre l'export
          tel quel, dans son ordre ; « essentielle » ne garde que ce qu'on regarde. */
       vueTable: 'toutes'
@@ -1767,7 +1787,7 @@
        recherche ou un filtre de colonne encore posés en auraient montré
        moins (« 12 », puis 0 ligne). Ils s'effacent, comme pour « ne montrer
        que ce plan » ; le périmètre reste. */
-    vue.etat = ''; vue.groupe = null; vue.filtres = {}; vue.vides = {};
+    vue.etat = ''; vue.groupe = null; vue.filtres = {}; vue.vides = {}; vue.etatParArret = '';
     vue.recherche = ''; $('recherche').value = '';
     vue.refs = {};
     refsDuLotRapprochement(cle).forEach(function (r) { vue.refs[r] = true; });
@@ -2644,25 +2664,29 @@
       var n = 0;
       traitsX.forEach(function (tx) { if (tx > bx.g - 1 && tx < bx.d + 1) n += 10; });
       droites.forEach(function (sg) { if (coupe(bx, sg)) n += 2; });
-      boites.forEach(function (o) { if (o.g < bx.d && bx.g < o.d && o.h < bx.b && bx.h < o.b) n += 20; });
+      boites.forEach(function (o) { if (seCoupent(bx, o)) n += 20; });
       if (bx.g < (gMin === undefined ? mG - 5 : gMin) || bx.d > dMax) n += 50;   // la boîte compte 3 px de fond de chaque côté
       return n;
     }
     /* Une candidate : ses lignes (une ou deux), son point d'ancrage et sa
        ligne de base. Sa boîte compte la marge du fond, 3 px tout autour.
        dMax et gMin : jusqu'où elle peut aller à droite et à gauche. */
-    function placerMot(candidats, dMax, gMin) {
-      var meilleur = null;
+    function noterMots(candidats, dMax, gMin) {
       candidats.forEach(function (c, k) {
         var w = Math.max.apply(null, c.lignes.map(function (l) { return largeurMot(l, c.gras); }));
         var g = c.ancre === 'end' ? c.x - w : c.ancre === 'middle' ? c.x - w / 2 : c.x;
         c.boite = { g: g - 3, d: g + w + 3, h: c.base - 11, b: c.base + 4 + 13 * (c.lignes.length - 1) };
         c.gene = gene(c.boite, dMax, gMin) + (c.malus || 0) + k * 0.01;
-        if (!meilleur || c.gene < meilleur.gene) meilleur = c;
       });
+      return candidats;
+    }
+    function placerMot(candidats, dMax, gMin) {
+      var meilleur = null;
+      noterMots(candidats, dMax, gMin).forEach(function (c) { if (!meilleur || c.gene < meilleur.gene) meilleur = c; });
       boites.push(meilleur.boite);
       return meilleur;
     }
+    function seCoupent(a, o) { return o.g < a.d && a.g < o.d && o.h < a.b && a.h < o.b; }
     /* Sur deux lignes, un espace finit la première : le mot se lit d'un
        tenant (« manque 176 ») pour un lecteur d'écran. */
     function texteMot(c, attrs) {
@@ -2721,8 +2745,36 @@
         finVisible = true;
       }
     }
+    /* « fin S9 · mars 2027 » sous le plafond plutôt qu'au-dessus :
+       au-dessus, il tombait dans la rangée des jalons. Centré sous le
+       losange, à sa droite ou à sa gauche ; sinon sur deux lignes à sa
+       droite (« fin S9 », « mars 2027 »), ou en court (« fin S9 ») : la
+       semaine entière reste dans le survol de la légende. */
+    var candFin = null;
+    if (finVisible) {
+      var parts = semaineDite(projIdx).split(' · ');
+      var motLong = ['fin ' + semaineDite(projIdx)], court = ['fin ' + parts[0]];
+      var deux = parts.length > 1 ? ['fin ' + parts[0], parts[1]] : motLong;
+      candFin = [
+        { lignes: motLong, x: xP, base: yP + 18, ancre: 'middle' },
+        { lignes: motLong, x: xP + 7, base: yP + 18, ancre: 'start' },
+        { lignes: motLong, x: xP - 7, base: yP + 18, ancre: 'end' },
+        { lignes: deux, x: xP + 7, base: yP + 18, ancre: 'start', malus: 1 },
+        { lignes: deux, x: xP - 7, base: yP + 18, ancre: 'end', malus: 1 },
+        { lignes: court, x: xP + 7, base: yP + 18, ancre: 'start', malus: 3 },
+        { lignes: court, x: xP - 7, base: yP + 18, ancre: 'end', malus: 3 },
+        { lignes: court, x: xP, base: yP + 18, ancre: 'middle', malus: 3 },
+        /* Une ligne plus bas, en dernier recours : sur un cadre serré (un an
+           au téléphone), le jalon, « manque N » et la fin tiennent dans
+           quelques pixels, et la rangée du haut n'a plus de place libre. */
+        { lignes: court, x: xP - 7, base: yP + 31, ancre: 'end', malus: 6 },
+        { lignes: court, x: xP + 7, base: yP + 31, ancre: 'start', malus: 6 },
+        { lignes: court, x: xP, base: yP + 31, ancre: 'middle', malus: 6 }
+      ];
+    }
     /* Ce qui manquerait le jour de l'échéance, au rythme tenu — le même
        nombre que la fiche. Un trait sous le point visé, et le mot. */
+    var candMq = null;
     if (bilan && surLaCourbe && enRetard && bilan.manque > 0 && prochain.i >= d0 && prochain.i <= d1) {
       var xj = x(prochain.i), y1 = y(Math.max(0, cible - bilan.manque)), y2 = y(cible);
       s.push('\x3Cline x1="' + xj.toFixed(1) + '" x2="' + xj.toFixed(1) + '" y1="' + y1.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="var(--alerte)" stroke-width="1" opacity=".45"/>');
@@ -2734,36 +2786,45 @@
       var motManque = 'manque ' + nb(bilan.manque), baseManque = (y1 + y2) / 2 + 4;
       /* Sur un cadre étroit, s'il ne tient d'aucun côté, il passe sur deux
          lignes (« manque », « 176 »), plus étroites. */
-      var cMq = placerMot([{ lignes: [motManque], x: xj + 7, base: baseManque, ancre: 'start', gras: true },
-                           { lignes: [motManque], x: xj - 7, base: baseManque, ancre: 'end', gras: true },
-                           { lignes: ['manque', nb(bilan.manque)], x: xj + 7, base: baseManque - 6, ancre: 'start', gras: true, malus: 1 },
-                           { lignes: ['manque', nb(bilan.manque)], x: xj - 7, base: baseManque - 6, ancre: 'end', gras: true, malus: 1 }], L - mD);
+      candMq = [{ lignes: [motManque], x: xj + 7, base: baseManque, ancre: 'start', gras: true },
+                { lignes: [motManque], x: xj - 7, base: baseManque, ancre: 'end', gras: true },
+                { lignes: ['manque', nb(bilan.manque)], x: xj + 7, base: baseManque - 6, ancre: 'start', gras: true, malus: 1 },
+                { lignes: ['manque', nb(bilan.manque)], x: xj - 7, base: baseManque - 6, ancre: 'end', gras: true, malus: 1 }];
+    }
+    /* « fin … » et « manque N » se cherchent une place ensemble (relecture
+       du débrief 20). Posés l'un après l'autre, le premier prenait la
+       meilleure place et le second, quand le jalon et la fin tombent à
+       deux semaines d'écart, n'en trouvait plus et se posait par-dessus —
+       et le fond plein de « fin … », toujours tracé, cachait « manque 1 ».
+       On essaie donc chaque paire de places : la gêne de l'une, celle de
+       l'autre, et un chevauchement entre elles compté comme avec tout autre
+       mot ; on garde la paire qui gêne le moins (à égalité, la première
+       essayée). Si un chevauchement reste malgré tout, « manque N » — le
+       chiffre du retard — se dessine après le fond de « fin … », au-dessus :
+       il n'est jamais caché. */
+    var cFin = null, cMq = null;
+    if (candFin && candMq) {
+      var lesFins = noterMots(candFin, L - 2), lesManques = noterMots(candMq, L - mD), paire = null;
+      lesFins.forEach(function (f) {
+        lesManques.forEach(function (m) {
+          var t = f.gene + m.gene + (seCoupent(f.boite, m.boite) ? 20 : 0);
+          if (!paire || t < paire.t) paire = { t: t, f: f, m: m };
+        });
+      });
+      cFin = paire.f; cMq = paire.m;
+      if (seCoupent(cFin.boite, cMq.boite)) cMq.gene += 20;      // son fond plein, alors, par-dessus
+      boites.push(cFin.boite, cMq.boite);
+    } else if (candFin) cFin = placerMot(candFin, L - 2);
+    else if (candMq) cMq = placerMot(candMq, L - mD);
+    if (cFin) {
+      horsClip.push(fondMot(cFin));
+      horsClip.push(texteMot(cFin, { cls: 'fin-mot' }));
+    }
+    if (cMq) {
       if (cMq.gene >= 10) horsClip.push(fondMot(cMq));
       horsClip.push(texteMot(cMq, { cls: 'manque-jalon',
         plus: ' fill="var(--alerte)" font-weight="500" stroke="var(--surface)" stroke-width="4" stroke-linejoin="round" paint-order="stroke"',
         titre: '\x3Ctitle>Au rythme tenu, il manquerait ' + nb(bilan.manque) + ' plan' + (bilan.manque > 1 ? 's' : '') + ' le jour de l’échéance\x3C/title>' }));
-    }
-    /* « fin S9 · mars 2027 » sous le plafond plutôt qu'au-dessus :
-       au-dessus, il tombait dans la rangée des jalons. Centré sous le
-       losange, à sa droite ou à sa gauche ; sinon sur deux lignes à sa
-       droite (« fin S9 », « mars 2027 »), ou en court (« fin S9 ») : la
-       semaine entière reste dans le survol de la légende. */
-    if (finVisible) {
-      var parts = semaineDite(projIdx).split(' · ');
-      var motLong = ['fin ' + semaineDite(projIdx)], court = ['fin ' + parts[0]];
-      var deux = parts.length > 1 ? ['fin ' + parts[0], parts[1]] : motLong;
-      var cFin = placerMot([
-        { lignes: motLong, x: xP, base: yP + 18, ancre: 'middle' },
-        { lignes: motLong, x: xP + 7, base: yP + 18, ancre: 'start' },
-        { lignes: motLong, x: xP - 7, base: yP + 18, ancre: 'end' },
-        { lignes: deux, x: xP + 7, base: yP + 18, ancre: 'start', malus: 1 },
-        { lignes: deux, x: xP - 7, base: yP + 18, ancre: 'end', malus: 1 },
-        { lignes: court, x: xP + 7, base: yP + 18, ancre: 'start', malus: 3 },
-        { lignes: court, x: xP - 7, base: yP + 18, ancre: 'end', malus: 3 },
-        { lignes: court, x: xP, base: yP + 18, ancre: 'middle', malus: 3 }
-      ], L - 2);
-      horsClip.push(fondMot(cFin));
-      horsClip.push(texteMot(cFin, { cls: 'fin-mot' }));
     }
     s.push('\x3C/g>');
 
@@ -3326,12 +3387,14 @@
   function jetonUD(p) {
     var quoi = CLE_LIBELLE ? String(p[CLE_LIBELLE] || '') : '';
     /* Un plan à l'arrêt porte un anneau ambre, et sa bulle dit depuis quand ;
-       sur la puce même, « depuis S12 ». */
+       sur la puce même, « depuis S12 » — ou « depuis ≤ S26 » quand la suite
+       remonte au premier relevé connu : comme la bulle (« depuis au moins
+       S26 »), la puce n'affirme pas un début que les relevés ignorent. */
     var arret = RELEVES.length > 1 ? plansALArret().parRef[p.reference] : null;
     return '\x3Cbutton class="jeton-ud' + (arret ? ' arret' : '') + '" type="button" data-ud="' + ech(p.reference) +
       '" title="' + ech(libelleValeur(p[CLE_SUIVIE]) + (quoi ? ' — ' + quoi : '') + (arret ? ' — ' + motArret(arret) : '')) + '">' +
       pastilleValeur(cleValeur(p[CLE_SUIVIE]), p._etat) + ech(p.reference) +
-      (arret ? '\x3Cspan class="depuis">depuis S' + numeroSemaine(arret.depuis) + '\x3C/span>' : '') + '\x3C/button>';
+      (arret ? '\x3Cspan class="depuis">depuis ' + (arret.auMoins ? '\u2264\u00a0' : '') + 'S' + numeroSemaine(arret.depuis) + '\x3C/span>' : '') + '\x3C/button>';
   }
   /* Un plan cherché dans ce bloc : sous le groupe qui le contient, lui seul
      — pas toute la liste du groupe. */
@@ -3645,8 +3708,11 @@
     }
     /* « 1 à l'arrêt », sous le compte d'un groupe, ne s'explique pas tout
        seul (débrief 15) : le mot se définit ici, en clair, dès qu'un groupe
-       en compte un. */
-    if (rangs.some(function (r) { return r.arret; })) {
+       en compte un. Sur le même nombre que les boutons (arretClic) : sous une
+       tuile Validé, ils restent — le clic retire la tuile — et la note,
+       comptée avant sur la sélection (vide de plans en cours), disparaissait
+       en laissant le mot sans définition (relecture du débrief 20). */
+    if (rangs.some(function (r) { return r.arretClic; })) {
       html += '\x3Cdiv class="critique-note note-arret">\x3Cspan class="pastille arret">\x3C/span>\x3Cspan>\x3Cb>à l\u2019arrêt\x3C/b> = en cours, sans changement depuis ' +
         SEMAINES_ARRET + ' semaines ou plus. Un clic sur « à l\u2019arrêt » ne montre qu\u2019eux dans le tableau ; le groupe ouvert les met en tête de sa liste.\x3C/span>\x3C/div>';
     }
@@ -4345,7 +4411,7 @@
     return 'Aucun plan n\u2019a changé de valeur ' + (RELEVES.length > 2 ? 'd\u2019un relevé à l\u2019autre, de ' : 'entre ') +
       semaineDite(a.i) + (RELEVES.length > 2 ? ' à ' : ' et ') + semaineDite(b.i) + ' (' + nb(Object.keys(b.plans || {}).length) +
       ' plans comparés). Si des plans ont avancé entre-temps, c\u2019est sans doute le même export qui a été archivé deux fois : ' +
-      'recoller le dernier export de GATES, puis archiver.';
+      'importer le dernier export de GATES (' + MENU_IMPORT + ', qui archive dans la foulée), ou le recoller puis archiver.';
   }
 
   /* La rangée du journal (débrief 18) : les valeurs de la colonne, dans
@@ -4880,6 +4946,7 @@
   }
 
   function retirerFiltre(cle) {
+    if (cle === 'etat' || cle === 'refs') vue.etatParArret = '';
     if (cle === 'etat') vue.etat = '';
     else if (cle === 'perimetre') vue.perimetre = '';
     else if (cle === 'groupe') vue.groupe = null;
@@ -4893,7 +4960,7 @@
 
   function toutEffacer() {
     vue.recherche = ''; vue.etat = ''; vue.filtres = {}; vue.groupe = null; vue.vides = {};
-    vue.refs = null; vue.refsLibelle = '';
+    vue.refs = null; vue.refsLibelle = ''; vue.etatParArret = '';
     vue.perimetre = '';
     vue.lotLa = null;
     vue.lotRappOuvert = null;         // tout effacer, c'est aussi replier la comparaison
@@ -5518,6 +5585,7 @@
     var b = e.target.closest('.etat-btn');
     if (!b) return;
     vue.etat = vue.etat === b.dataset.etat ? '' : b.dataset.etat;
+    vue.etatParArret = '';            // la tuile est à Nathan, désormais
     /* Une tuile d'une autre valeur que celle du bloc : le choix le plus
        récent l'emporte, plutôt qu'un bloc tout à zéro. */
     if (vue.etat && vue.valeurBloc && vue.valeurBloc !== vue.etat) vue.valeurBloc = '';
@@ -5541,6 +5609,7 @@
   });
   $('a-surveiller').addEventListener('click', function (e) {
     if (!e.target.closest('button[data-arret]')) return;
+    vue.etatParArret = '';
     if (vue.refsLibelle === SEL_ARRET) { vue.refs = null; vue.refsLibelle = ''; }
     else {
       vue.refs = {};
@@ -5637,7 +5706,7 @@
      périmètre, lui, reste. Puis on descend au tableau, et le focus se pose
      sur le bouton de base, qui survit au rendu. */
   function montrerCePlan(ref) {
-    vue.etat = ''; vue.groupe = null; vue.filtres = {}; vue.vides = {};
+    vue.etat = ''; vue.groupe = null; vue.filtres = {}; vue.vides = {}; vue.etatParArret = '';
     vue.recherche = ''; $('recherche').value = '';
     vue.refs = {}; vue.refs[ref] = true; vue.refsLibelle = 'plan ' + ref;
     vue.lotLa = null; vue.base = 'ici';
@@ -5976,16 +6045,29 @@
          et laisse le groupe ouvert. */
       var valA = arretG.getAttribute('data-arret-groupe');
       var dejaA = arretG.getAttribute('aria-pressed') === 'true';
-      if (dejaA) { vue.refs = null; vue.refsLibelle = ''; }
+      /* Le second clic défait tout ce que le premier a posé : la sélection,
+         et la tuile qu'il avait pressée lui-même (relecture du débrief 20 :
+         restait « État : En cours », que Nathan n'avait jamais choisi). */
+      if (dejaA) {
+        vue.refs = null; vue.refsLibelle = '';
+        if (vue.etatParArret && vue.etat === vue.etatParArret) vue.etat = '';
+        vue.etatParArret = '';
+      }
       else {
+        /* La tuile reste « posée par le clic » si un clic d'un autre groupe
+           l'avait déjà posée ; pressée à la main, elle n'est pas à lui. */
+        var posee = vue.etatParArret && vue.etat === vue.etatParArret ? vue.etat : '';
         vue.groupe = { dim: vue.dimCritique, val: valA };
         vue.refs = {};
         plansALArret().liste.forEach(function (x) { vue.refs[x.plan.reference] = true; });
         vue.refsLibelle = SEL_ARRET;
         /* Sous une valeur du bloc, le nombre ne comptait qu'elle : la tuile
            de cette valeur se pose. Sinon, une tuile contraire se retire. */
-        if (vue.valeurBloc) vue.etat = vue.valeurBloc;
-        else if (etatContraireALArret()) vue.etat = '';
+        if (vue.valeurBloc) {
+          if (vue.etat !== vue.valeurBloc) posee = vue.valeurBloc;
+          vue.etat = vue.valeurBloc;
+        } else if (etatContraireALArret()) { vue.etat = ''; posee = ''; }
+        vue.etatParArret = posee;
       }
       rendre();
       var reprisA = [].filter.call($('zone-critique').querySelectorAll('button[data-arret-groupe]'), function (x) { return x.getAttribute('data-arret-groupe') === valA; })[0];
@@ -5997,7 +6079,7 @@
       /* Une référence choisie dans la liste : le tableau se réduit à elle et
          on y descend, plutôt que de la chercher à la main. */
       vue.refs = {}; vue.refs[ud.dataset.ud] = true;
-      vue.refsLibelle = 'plan ' + ud.dataset.ud;
+      vue.refsLibelle = 'plan ' + ud.dataset.ud; vue.etatParArret = '';
       rendre();
       var cadre = $('cadre-tableau');
       defilerVers(cadre, { behavior: 'smooth', block: 'center' });
@@ -6093,6 +6175,7 @@
       var plan = planDeRef(ligne.dataset.ref);
       var ref = plan ? plan.reference : ligne.dataset.ref;
       var meme = vue.refs && Object.keys(vue.refs).length === 1 && vue.refs[ref];
+      vue.etatParArret = '';
       if (meme) { vue.refs = null; vue.refsLibelle = ''; }
       else {
         vue.refs = {}; vue.refs[ref] = true;
@@ -6260,6 +6343,9 @@
   if (window.ResizeObserver) {
     var veilleRangees = new ResizeObserver(function (vus) { vus.forEach(function (x) { marquerDebord(x.target); }); });
     ['filtre-journal', 'filtre-valeur-groupe', 'filtre-valeur-graphe'].forEach(function (id) { if ($(id)) veilleRangees.observe($(id)); });
+    /* Le sommaire aussi : la fenêtre élargie ou rétrécie sans nouveau rendu
+       laissait son fondu tel qu'au dernier dessin. */
+    veilleRangees.observe(LISTE_SOMMAIRE);
   }
   if (document.fonts) {
     var remesurer = function () { alignerSousBarre('barre', 'filets', 'etats'); marquerDebords(); ajusterChoixDim(); };
@@ -6433,5 +6519,5 @@
      page affichée, pour ne rien retarder. */
   if (API && API.noterConsultation) setTimeout(API.noterConsultation, 1500);
 })();
-window.SUIVI_FWD_FIN = 'e906173';
+window.SUIVI_FWD_FIN = 'b7a3368';
 </script>

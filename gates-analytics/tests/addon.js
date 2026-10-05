@@ -26,6 +26,15 @@ function section(t) { sectionCourante = t; console.log('\n— ' + t + ' —'); }
 /* L'interrupteur exemple / réel est visible devant un classeur ;
    mais son mécanisme reste : la batterie le manœuvre comme un clic. */
 
+/* Le déclencheur du vendredi : son identifiant, et personne devant l'écran
+   (pas d'interface) — aucune question ne peut être posée. */
+function vendredi(c) {
+  if (!c.__declencheurs.length) c.installerSuiviHebdomadaire();
+  const avant = c.__sansInterface;
+  c.__sansInterface = true;
+  try { return c.enregistrerInstantaneHebdo({ triggerUid: c.__declencheurs[0].getUniqueId() }); } finally { c.__sansInterface = avant; }
+}
+
 function serveurSur(valeurs, proprietes, fichiers) {
   const classeur = new Classeur([new Feuille('Données', valeurs)]);
   return { contexte: chargerServeur(classeur, proprietes || {}, fichiers), classeur: classeur };
@@ -1003,9 +1012,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
      cours (le vendredi, souvent) écraserait le bon relevé. Refusé, et dit. */
   const s40avant = JSON.stringify(histoHDK().map(r => [r.semaine, r.termine]));
   let refusEcrase = '';
-  try { cP.enregistrerInstantaneHebdo(); } catch (e) { refusEcrase = String(e.message || e); }
-  verifier('l\'export rattrapé laissé dans l\'onglet : l\'archivage de la semaine refuse d\'écraser le bon relevé, et dit quoi faire',
-    new RegExp('« HDK » : l\'onglet « HDK » porte le même export que le relevé S' + numPrec + ' : le relevé S\\d+ déjà archivé, différent, n\'est pas écrasé\\. Importer l\'export du jour \\(menu Suivi FWD → Importer les exports GATES et SEE…, qui archive dans la foulée\\), ou le recoller puis archiver\\.').test(refusEcrase) &&
+  try { vendredi(cP); } catch (e) { refusEcrase = String(e.message || e); }
+  verifier('l\'export rattrapé laissé dans l\'onglet : l\'archivage du vendredi refuse d\'écraser le bon relevé, et dit quoi faire — dans les deux cas',
+    new RegExp('« HDK » : l\'onglet « HDK » porte le même export que le relevé S' + numPrec + ' : le relevé S\\d+ déjà archivé, différent, n\'est pas écrasé\\. Si c\'est voulu \\(GATES est vraiment revenu à cet état, ou le relevé S\\d+ déjà pris vient d\'un mauvais export\\) : menu Suivi FWD → Archiver le relevé de cette semaine, qui demandera confirmation\\. Sinon, importer l\'export du jour \\(menu Suivi FWD → Importer les exports GATES et SEE…, qui archive dans la foulée\\)\\.').test(refusEcrase) &&
     JSON.stringify(histoHDK().map(r => [r.semaine, r.termine])) === s40avant && histoTHS().length === 1, refusEcrase);
   // L'export du jour recollé, puis archivé : S40 retrouve ses chiffres.
   lignesHDK.forEach((l, i) => { l[bH] = exportDuJour[i]; });
@@ -1177,7 +1186,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   cS18.__proprietes.SUIVI_FWD_CONSULTATIONS = JSON.stringify(vieilles);
   cS18.noterConsultation();
   verifier('douze semaines au plus', Object.keys(JSON.parse(cS18.__proprietes.SUIVI_FWD_CONSULTATIONS)).length === 12);
-  vm.runInContext('LockService = { getDocumentLock: function () { return { tryLock: function () { return false; }, releaseLock: function () {} }; } }', cS18);
+  vm.runInContext('LockService = { getScriptLock: function () { return { tryLock: function () { return false; }, releaseLock: function () {} }; } }', cS18);
   verifier('verrou pris ailleurs : l\'ouverture n\'est pas comptée, et rien ne casse', cS18.noterConsultation() === false);
 
   // =================================================================
@@ -1198,8 +1207,10 @@ function serveurSur(valeurs, proprietes, fichiers) {
     plusAncien.forEach((v, i) => { if (v === '100%' && n < 5) { plusAncien[i] = 'EMPTY'; n++; } });
     return { poser: valeurs => lignes.forEach((l, i) => { l[col] = valeurs[i]; }), duJour, plusAncien };
   };
-  const verrouRefuse = c => vm.runInContext('LockService = { getDocumentLock: function () { return { tryLock: function () { __prises++; return false; }, releaseLock: function () {} }; } }', c);
-  const verrouAccorde = c => vm.runInContext('LockService = { getDocumentLock: function () { return { tryLock: function () { __prises++; return true; }, releaseLock: function () {} }; } }', c);
+  /* Le verrou des gestes est celui du script (verrouDuClasseur_) ; celui du
+     document, que l'application web n'a pas, rend null ici. */
+  const verrouRefuse = c => vm.runInContext('LockService = { getDocumentLock: function () { return null; }, getScriptLock: function () { return { tryLock: function () { __prises++; return false; }, releaseLock: function () {} }; } }', c);
+  const verrouAccorde = c => vm.runInContext('LockService = { getDocumentLock: function () { return null; }, getScriptLock: function () { return { tryLock: function () { __prises++; return true; }, releaseLock: function () {} }; } }', c);
 
   /* R — S38 archivé (5 validés de moins), S39 archivé ; lundi S40, l'export
      de S38 est rattrapé dans l'onglet et laissé là. Le vendredi, S40 n'a pas
@@ -1213,18 +1224,31 @@ function serveurSur(valeurs, proprietes, fichiers) {
     e.poser(e.plusAncien);   // l'export de S38, rattrapé, resté dans l'onglet
     const avant = JSON.stringify(c.getHistorique(cl, 'HDK').map(r => [r.semaine, r.termine]));
     let refus = '';
-    try { c.enregistrerInstantaneHebdo(); } catch (err) { refus = String(err.message || err); }
-    verifier('R — l\'export d\'une semaine passée laissé dans l\'onglet, la semaine en cours sans relevé : refusé, avec le bon geste',
+    try { vendredi(c); } catch (err) { refus = String(err.message || err); }
+    verifier('R — l\'export d\'une semaine passée laissé dans l\'onglet, la semaine en cours sans relevé : le vendredi refuse, avec le bon geste',
       new RegExp('« HDK » : l\'onglet « HDK » porte le même export que le relevé ' + dite20(s38) + ', alors que le relevé ' + dite20(s39) +
         ', plus récent, est différent : archivé comme relevé ' + dite20(s40) + ', il ferait reculer les plans qui ont bougé depuis\\. ' +
-        'Importer l\'export du jour \\(menu Suivi FWD → Importer les exports GATES et SEE…, qui archive dans la foulée\\), ou le recoller puis archiver\\.').test(refus) &&
+        'Si c\'est voulu \\(GATES est vraiment revenu à cet état\\) : menu Suivi FWD → Archiver le relevé de cette semaine, qui demandera confirmation\\. ' +
+        'Sinon, importer l\'export du jour \\(menu Suivi FWD → Importer les exports GATES et SEE…, qui archive dans la foulée\\)\\.').test(refus) &&
       JSON.stringify(c.getHistorique(cl, 'HDK').map(r => [r.semaine, r.termine])) === avant &&
       c.getHistorique(cl, 'THS').map(r => r.semaine).join() === s40, refus);
     const parImport = c.importArchiverReleve(c.ouvrirJetonImport_(), 'HDK');
-    verifier('R — même refus par la fenêtre d\'import (« Relevé S40 non archivé : l\'onglet « HDK » porte le même export… »), rien d\'écrit',
+    verifier('R — même refus par la fenêtre d\'import, mais le conseil change : pas « importer l\'export du jour », qu\'on vient de faire ; rien d\'écrit',
       parImport.ok === false && parImport.ancienExport === true &&
       /^l'onglet « HDK » porte le même export que le relevé S\d+, alors que le relevé S\d+, plus récent, est différent/.test(parImport.message) &&
+      /Si c'est voulu \(GATES est vraiment revenu à cet état\) : menu Suivi FWD → Archiver le relevé de cette semaine, qui demandera confirmation\. Sinon, ce fichier n’est pas l’export du jour : importer le bon\.$/.test(parImport.message) &&
       JSON.stringify(c.getHistorique(cl, 'HDK').map(r => [r.semaine, r.termine])) === avant, JSON.stringify(parImport));
+    /* Du menu, la même situation pose la question : NON ne touche à rien. */
+    c.__confirmations.push('NO');
+    const a0 = c.__alertes.length;
+    const rNon = c.enregistrerInstantaneHebdo();
+    const question = c.__alertes[a0] || '';
+    verifier('R — du menu : la question vient, nommant les relevés en cause ; « Non » n\'archive rien et le dit',
+      new RegExp('^L’export de « HDK » est identique au relevé ' + dite20(s38) + ', plus ancien que le relevé ' + dite20(s39) + ', qui est différent\\.\\n\\n' +
+        'L’archiver quand même comme relevé ' + dite20(s40) + ' \\? Oui seulement si GATES est vraiment revenu à cet état \\(une validation retirée, par exemple\\)\\.\\n\\n' +
+        'Sinon, répondre Non, puis importer l’export du jour').test(question) &&
+      rNon.ok && rNon.nonConfirmes.join() === 'HDK' && JSON.stringify(c.getHistorique(cl, 'HDK').map(r => [r.semaine, r.termine])) === avant &&
+      /Non archivé\(s\), à votre demande : HDK\./.test(c.__alertes[c.__alertes.length - 1]), question + ' | ' + c.__alertes.slice(a0 + 1).join(' | '));
     e.poser(e.duJour);
     const r = c.enregistrerInstantaneHebdo();
     verifier('R — l\'export du jour remis : la semaine en cours s\'archive',
@@ -1289,8 +1313,13 @@ function serveurSur(valeurs, proprietes, fichiers) {
       /L'ancien onglet d'historique « Historique_FWD » \(2 relevés\) n'est rattaché à aucun contrat — il servait quand le classeur n'en avait qu'un\. S'il est celui de « HDK », le renommer « Historique_FWD_HDK » lui rend ses relevés/.test(avis), avis);
     let refus = '';
     try { c.enregistrerInstantaneHebdo(); } catch (err) { refus = String(err.message || err); }
-    verifier('T — l\'archivage refuse au lieu de couper l\'historique en deux : pas de « Historique_FWD_HDK » ouvert à côté',
-      /« HDK » : l'ancien onglet d'historique « Historique_FWD » n'est rattaché à aucun contrat depuis que le classeur en a plusieurs\. S'il est celui de « HDK », le renommer « Historique_FWD_HDK »/.test(refus) &&
+    /* Ses relevés ne portent pas de carte : rien ne dit s'ils sont à HDK ou à
+       THS. Le message nomme les deux — le même pour l'un et pour l'autre —,
+       et ne propose jamais de retirer le préfixe. */
+    const motT = 'l\'ancien onglet d\'historique « Historique_FWD » n\'est rattaché à aucun contrat depuis que le classeur en a plusieurs : il servait quand le classeur n\'en avait qu\'un. ' +
+      'Le renommer « Historique_FWD_<le contrat qui a produit ces relevés> » — l\'un de « HDK », « THS » (Affichage → Onglets masqués pour le voir), puis relancer l\'archivage.';
+    verifier('T — l\'archivage refuse au lieu de couper l\'historique en deux : pas de « Historique_FWD_HDK » ouvert à côté ; sans indice, le même message pour HDK et THS, qui les nomme tous deux',
+      refus.indexOf('« HDK » : ' + motT) !== -1 && refus.indexOf('« THS » : ' + motT) !== -1 && !/préfixe/.test(refus) &&
       !cl.getSheetByName('Historique_FWD_HDK') && !cl.getSheetByName('Historique_FWD_THS') && legacy.valeurs.length === 3, refus);
     const diag = c.diagnostic();
     verifier('T — le Diagnostic le dit aussi',
@@ -1374,6 +1403,175 @@ function serveurSur(valeurs, proprietes, fichiers) {
       sup === null && /^Relevé S\d+ non supprimé : un autre geste/.test(c.__alertes[c.__alertes.length - 1]) && c.__alertes.length === a0 + 2,
       c.__alertes.slice(a0).join(' | '));
     verifier('LOCK — et l\'historique n\'a pas bougé', histo() === avant);
+  }
+
+
+  /* WEB — le dépôt automatique (doPost) tourne en application web, où
+     LockService.getDocumentLock() rend null : le dépôt plantait sur ce null
+     et n'archivait plus rien. Tous les gestes prennent le verrou du script,
+     qui existe partout — le même pour tous, sinon ils ne s'attendraient pas. */
+  {
+    const gH = feuilleGates(40);
+    const cl = new Classeur([new Feuille('HDK', gH.valeurs, false, gH.fusions)], 'Suivi FWD');
+    const c = chargerServeur(cl, {});
+    vm.runInContext("CONFIG.DEPOT = CONFIG.DEPOT || {}; CONFIG.DEPOT.SECRET = 's3cret'; var __prises = 0;", c);
+    verrouAccorde(c);
+    const rep = JSON.parse(c.doPost({ postData: { contents: JSON.stringify({ secret: 's3cret', onglet: 'HDK', lignes: gH.valeurs, archiver: true }) } }).getContent());
+    verifier('WEB — doPost avec « archiver », getDocumentLock() à null comme en application web : le relevé est archivé',
+      rep.ok && rep.archive && rep.archive.ok === true && rep.archive.total === 40 && c.getHistorique(cl, 'HDK').length === 1, JSON.stringify(rep));
+    c.__cleLecteur = 'lecteur-1';
+    verifier('WEB — la page servie par …/exec compte aussi ses ouvertures (même verrou)', c.noterConsultation() === true);
+    verrouRefuse(c);
+    const occupe = JSON.parse(c.doPost({ postData: { contents: JSON.stringify({ secret: 's3cret', onglet: 'HDK', lignes: gH.valeurs, archiver: true }) } }).getContent());
+    verifier('WEB — le verrou tenu par un autre geste (le vendredi) : le dépôt l\'attend aussi, et dit qu\'il n\'a pas archivé',
+      occupe.ok && occupe.archive.ok === false && /un autre geste écrit en ce moment/.test(occupe.archive.message), JSON.stringify(occupe.archive));
+    const source = fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8');
+    verifier('WEB — plus aucun geste ne prend le verrou du document (il vaut null en application web)',
+      !/LockService\.getDocumentLock\(\)\s*[;.]/.test(source.replace(/\/\*[\s\S]*?\*\//g, '')), (source.match(/[^\n]*getDocumentLock[^\n]*/g) || []).join(' | '));
+  }
+
+  /* RECUL — un retour en arrière légitime dans GATES (une validation
+     retirée) : l'export du jour vaut exactement un relevé plus ancien, alors
+     que le dernier diffère. Refusé par prudence ; mais du menu, une question
+     permet de passer outre — le vendredi, personne devant, continue de
+     refuser. */
+  {
+    const cl = fabriquerHT(), c = chargerServeur(cl, {});
+    const s38 = semaineIl(c, 14), s39 = semaineIl(c, 7), s40 = semaineIl(c, 0);
+    const e = exportsDe(cl, 'HDK');
+    e.poser(e.plusAncien); c.archiverContrat_(cl, { id: 'HDK', nom: 'HDK' }, s38);
+    e.poser(e.duJour);     c.archiverContrat_(cl, { id: 'HDK', nom: 'HDK' }, s39);
+    e.poser(e.plusAncien);   // GATES est revenu à l'état de S38 : c'est l'export du jour
+    const histo = () => JSON.stringify(c.getHistorique(cl, 'HDK').map(r => [r.semaine, r.termine]));
+    const avant = histo();
+    let refusV = '';
+    try { vendredi(c); } catch (err) { refusV = String(err.message || err); }
+    verifier('RECUL — le vendredi (sans interface) refuse toujours, et dit l\'issue : le menu, qui demandera confirmation',
+      /porte le même export que le relevé/.test(refusV) && /menu Suivi FWD → Archiver le relevé de cette semaine, qui demandera confirmation/.test(refusV) &&
+      histo() === avant && c.getHistorique(cl, 'THS').length === 1, refusV);
+    c.__confirmations.push('YES');
+    const a0 = c.__alertes.length;
+    const rOui = c.enregistrerInstantaneHebdo();
+    const h = c.getHistorique(cl, 'HDK');
+    verifier('RECUL — du menu, « Oui » : archivé comme relevé de la semaine, avec l\'export du jour',
+      rOui.ok && rOui.contrats.some(d => d.nom === 'HDK') && h.map(r => r.semaine).join() === [s38, s39, s40].join() && h[2].termine === h[0].termine &&
+      /^Relevé S\d+ archivé : .*HDK \(40 plans\)/.test(c.__alertes[c.__alertes.length - 1]) && !/à votre demande/.test(c.__alertes[c.__alertes.length - 1]),
+      JSON.stringify(h.map(r => [r.semaine, r.termine])) + ' | ' + c.__alertes.slice(a0).join(' | '));
+  }
+  {
+    /* Le même cas, la question posée APRÈS avoir rendu le verrou : une boîte
+       restée ouverte ne bloque ni le vendredi ni un import. */
+    const cl = fabriquerHT(), c = chargerServeur(cl, {});
+    const e = exportsDe(cl, 'HDK');
+    e.poser(e.plusAncien); c.archiverContrat_(cl, { id: 'HDK', nom: 'HDK' }, semaineIl(c, 14));
+    e.poser(e.duJour);     c.archiverContrat_(cl, { id: 'HDK', nom: 'HDK' }, semaineIl(c, 7));
+    e.poser(e.plusAncien);
+    vm.runInContext('var __tenu = false; LockService = { getDocumentLock: function () { return null; }, getScriptLock: function () { return { ' +
+      'tryLock: function () { __tenu = true; return true; }, releaseLock: function () { __tenu = false; } }; } };', c);
+    const ui = c.SpreadsheetApp.getUi();
+    let tenuPendant = null;
+    const vraiAlert = ui.alert;
+    c.SpreadsheetApp.getUi = function () { return Object.assign({}, ui, { alert: function (a, b, boutons) {
+      if (boutons === 'YES_NO') tenuPendant = vm.runInContext('__tenu', c);
+      return vraiAlert(a, b, boutons);
+    } }); };
+    c.__confirmations.push('NO');
+    c.enregistrerInstantaneHebdo();
+    verifier('RECUL — la question est posée verrou rendu', tenuPendant === false, String(tenuPendant));
+  }
+  {
+    /* #5 — un mauvais export archivé lundi (S40), puis le bon, identique au
+       relevé de vendredi dernier (rien n'a bougé ce week-end) : refusé à
+       l'import, qui ne conseille plus le geste qu'il vient de faire ; le
+       menu, après « Oui », remplace le relevé faux. */
+    const cl = fabriquerHT(), c = chargerServeur(cl, {});
+    const s39 = semaineIl(c, 7), s40 = semaineIl(c, 0);
+    const e = exportsDe(cl, 'HDK');
+    e.poser(e.duJour); c.archiverContrat_(cl, { id: 'HDK', nom: 'HDK' }, s39);
+    e.poser(e.plusAncien);
+    const faux = c.importArchiverReleve(c.ouvrirJetonImport_(), 'HDK');
+    e.poser(e.duJour);
+    const bon = c.importArchiverReleve(c.ouvrirJetonImport_(), 'HDK');
+    verifier('#5 — le bon export après un mauvais : refusé, et le message dit l\'issue juste (le menu, ou « le relevé S40 déjà pris vient d\'un mauvais export »)',
+      faux.ok && bon.ok === false && bon.ancienExport &&
+      new RegExp('^l\'onglet « HDK » porte le même export que le relevé ' + dite20(s39) + ' : le relevé ' + dite20(s40) + ' déjà archivé, différent, n\'est pas écrasé\\. ' +
+        'Si c\'est voulu \\(GATES est vraiment revenu à cet état, ou le relevé ' + dite20(s40) + ' déjà pris vient d\'un mauvais export\\) : menu Suivi FWD → Archiver le relevé de cette semaine, ' +
+        'qui demandera confirmation\\. Sinon, ce fichier n’est pas l’export du jour : importer le bon\\.$').test(bon.message), JSON.stringify(bon));
+    c.__confirmations.push('YES');
+    const a0 = c.__alertes.length;
+    c.enregistrerInstantaneHebdo();
+    const q = c.__alertes[a0] || '';
+    const h = c.getHistorique(cl, 'HDK');
+    verifier('#5 — du menu : la question nomme le relevé de la semaine, « Oui » le remplace par le bon',
+      new RegExp('^L’export de « HDK » est identique au relevé ' + dite20(s39) + ', alors que le relevé ' + dite20(s40) + ' déjà archivé cette semaine est différent\\.\\n\\n' +
+        'L’archiver quand même comme relevé ' + dite20(s40) + ', à la place de celui-ci \\? Oui seulement si GATES est vraiment revenu à cet état, ou si le relevé ' + dite20(s40) +
+        ' déjà pris vient d’un mauvais export\\.').test(q) && h.length === 2 && h[1].termine === h[0].termine, q + ' | ' + JSON.stringify(h.map(r => [r.semaine, r.termine])));
+  }
+  {
+    /* Une semaine PASSÉE refusée pour la même raison : pas de « menu
+       Archiver le relevé de cette semaine », qui archiverait la semaine en
+       cours — c'est l'export collé qu'il faut revoir. */
+    const cl = fabriquerHT(), c = chargerServeur(cl, {});
+    const s38 = semaineIl(c, 14), s39 = semaineIl(c, 7);
+    const e = exportsDe(cl, 'HDK');
+    e.poser(e.plusAncien); c.archiverContrat_(cl, { id: 'HDK', nom: 'HDK' }, s38);
+    e.poser(e.duJour);     c.archiverContrat_(cl, { id: 'HDK', nom: 'HDK' }, s39);
+    e.poser(e.plusAncien);
+    const r = c.archiverPourSemaine_(cl, 'HDK', dite20(s39));
+    verifier('une semaine passée refusée : le conseil est de vérifier l\'export collé, pas le menu de la semaine en cours',
+      r.ok === false && /Vérifier que l'onglet porte bien l'export tiré de GATES en S\d+\.$/.test(r.message) && !/cette semaine/.test(r.message), r.message);
+  }
+
+  /* ORPH — l'ancien « Historique_FWD » orphelin : le message nomme le
+     contrat qui a produit ses relevés (ses plans recoupent la carte du
+     dernier relevé), jamais le contrat que l'import vient de créer, et ne
+     propose plus de retirer le préfixe — ce qui ferait sortir de la page
+     tout l'historique de HDK. */
+  {
+    const gH = feuilleGates(40);
+    const cl = new Classeur([new Feuille('HDK', gH.valeurs, false, gH.fusions)], 'Ancien');
+    const c = chargerServeur(cl, {});
+    c.archiverContrat_(cl, { id: 'HDK', nom: 'HDK' }, semaineIl(c, 7));
+    cl.getSheetByName('Historique_FWD_HDK').setName('Historique_FWD');
+    const gT = feuilleGates(30), valT = gT.valeurs.map((l, r) => r < 3 ? l.slice() : l.map(v => String(v).replace(/^UD-/, 'THS-')));
+    const ths = new Feuille('THS', valT, false, gT.fusions);
+    ths.classeur = cl; cl.feuilles.push(ths);
+    const rT = c.importArchiverReleve(c.ouvrirJetonImport_(), 'THS');
+    const rH = c.importArchiverReleve(c.ouvrirJetonImport_(), 'HDK');
+    const motH = /Ses relevés sont ceux de « HDK » \(le dernier a 40 plans en commun avec l'onglet « HDK »\) : le renommer « Historique_FWD_HDK » \(Affichage → Onglets masqués pour le voir\) les lui rend, puis relancer l'archivage\.$/;
+    verifier('ORPH — l\'archivage de THS refusé désigne HDK, par ses plans — et celui de HDK aussi : le même propriétaire',
+      rT.ok === false && motH.test(rT.message) && rH.ok === false && motH.test(rH.message) && !/préfixe|Relevé non archivé/.test(rT.message + rH.message), rT.message + ' | ' + rH.message);
+    const passee = c.preparerSemainePassee(cl, 'THS', dite20(semaineIl(c, 7)));
+    verifier('ORPH — une semaine passée : « Relevé S40 non archivé : » devant, une seule fois',
+      passee.ok === false && /^Relevé S\d+ non archivé : l'ancien onglet d'historique/.test(passee.message) && !/Relevé non archivé/.test(passee.message), passee.message);
+  }
+  {
+    /* Sans carte dans le relevé, rien ne recoupe : le contrat que l'import
+       vient de créer n'est jamais désigné, l'autre l'est. */
+    const gH = feuilleGates(40), gT = feuilleGates(30);
+    const c0 = chargerServeur(new Classeur([]), {});
+    const legacy = new Feuille('Historique_FWD', [ENTETES_H.slice(), [semaineIl(c0, 7), new Date(), 40, 5, 35, 0, 0, '{}', '{}']], true);
+    const cl = new Classeur([new Feuille('HDK', gH.valeurs, false, gH.fusions), new Feuille('THS', gT.valeurs, false, gT.fusions), legacy], 'Ancien');
+    const c = chargerServeur(cl, {});
+    const nouveau = c.importArchiverReleve(c.ouvrirJetonImport_(), 'THS', true);
+    verifier('ORPH — THS vient d\'être créé par l\'import : « sans doute ceux de « HDK » », jamais « Historique_FWD_THS »',
+      nouveau.ok === false && /Ses relevés sont sans doute ceux de « HDK » : le renommer « Historique_FWD_HDK »/.test(nouveau.message) && !/Historique_FWD_THS/.test(nouveau.message),
+      nouveau.message);
+  }
+  {
+    /* HDK a déjà son propre historique : l'ancien onglet n'est plus lu par
+       personne, et ne peut pas être celui de THS, tout neuf. Le garder à part,
+       sans le préfixe, ne cache alors rien. */
+    const gH = feuilleGates(40), gT = feuilleGates(30);
+    const c0 = chargerServeur(new Classeur([]), {});
+    const ligne = [semaineIl(c0, 7), new Date(), 40, 5, 35, 0, 0, '{}', '{}'];
+    const cl = new Classeur([new Feuille('HDK', gH.valeurs, false, gH.fusions), new Feuille('THS', gT.valeurs, false, gT.fusions),
+      new Feuille('Historique_FWD', [ENTETES_H.slice(), ligne.slice()], true), new Feuille('Historique_FWD_HDK', [ENTETES_H.slice(), ligne.slice()], true)], 'Ancien');
+    const c = chargerServeur(cl, {});
+    const r = c.importArchiverReleve(c.ouvrirJetonImport_(), 'THS', true);
+    verifier('ORPH — HDK a déjà le sien : l\'ancien onglet ne peut pas être celui de THS, tout neuf — le garder à part, sans le préfixe',
+      r.ok === false && /Il ne peut pas être celui de « THS », qui vient d'être créé, et les autres contrats ont déjà leur propre historique : le renommer sans le préfixe « Historique_FWD »/.test(r.message) &&
+      !/Historique_FWD_THS/.test(r.message), r.message);
   }
 
   /* PRIV — la page, ouverte par toute l'organisation, atteint par
