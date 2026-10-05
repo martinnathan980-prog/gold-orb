@@ -3710,6 +3710,9 @@ const IMPORT_MAX_REFERENCES = 30000;       // par contrat : ce que la fenêtre r
 const IMPORT_ECHANTILLON_SEE = 400;        // lignes d'un export SEE envoyées pour deviner son contrat
 const IMPORT_SEUIL_RECOUVREMENT = 0.2;     // part de ses plans qu'un fichier doit partager avec un contrat
 const IMPORT_LIMITE_CELLULES = 10000000;   // la limite d'un classeur Google Sheets, cellules vides comprises
+/* Un vrai .xls (ou une page web archivée) se lit en entier dans la fenêtre :
+   au-delà, ce n'est pas un export (un .xls s'arrête à 65 536 lignes). */
+const IMPORT_MAX_OCTETS_XLS = 200 * 1048576;
 const CLE_JETON_IMPORT = 'SUIVI_FWD_JETON_IMPORT';
 const IMPORT_JETON_DUREE = 6 * 3600 * 1000;
 /* Le nom d'un nouveau contrat devient celui de son onglet, de son historique
@@ -3831,6 +3834,7 @@ function parametresImport_(classeur) {
     maxLignesLot: IMPORT_MAX_LIGNES_LOT,
     maxColonnes: IMPORT_MAX_COLONNES,
     maxCellulesToutes: 4000000,
+    maxOctetsXls: IMPORT_MAX_OCTETS_XLS,
     maxFichiers: IMPORT_MAX_FICHIERS,
     pausesReprise: [2000, 6000],
     seuilRecouvrement: IMPORT_SEUIL_RECOUVREMENT,
@@ -4447,10 +4451,10 @@ function pageImportSecondeBase(parametres) {
     '.boutons{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}[hidden]{display:none!important}' +
     '</style></head><body>' +
     '<p>Choisir <b>tous les exports de la semaine d’un coup</b> — l’export GATES de chaque contrat' +
-    (base ? ', l’export ' + base + ' de chaque contrat' : '') + ' —, tels que téléchargés, <b>sans les ouvrir dans Excel</b>. ' +
+    (base ? ', l’export ' + base + ' de chaque contrat' : '') + ' —, tels que téléchargés (.xlsx, .xls, .csv ou page web), <b>sans les ouvrir dans Excel</b>. ' +
     'Ils sont lus ici, sur ce poste, et chacun va dans son onglet : l’export GATES tel quel' +
     (base ? ', celui de ' + base + ' réduit à sa ligne d’en-tête et à ' + parametres.cles.map(ech).join(', ') : '') + '.</p>' +
-    '<div class="depot" id="depot"><input type="file" id="fichier" multiple accept=".xlsx,.xlsm,.csv,.txt,.xls,.xlsb,.xml,.htm,.html">' +
+    '<div class="depot" id="depot"><input type="file" id="fichier" multiple accept=".xlsx,.xlsm,.csv,.txt,.xls,.xlsb,.xml,.htm,.html,.mht,.mhtml">' +
     '<button type="button" id="choisir">Choisir les fichiers…</button> <span class="doux">ou les glisser ici</span>' +
     '<div class="astuce">Plusieurs à la fois : dans la fenêtre de Windows, <b>Ctrl+clic</b> sur chacun, ou <b>Maj+clic</b> pour toute une suite ; ' +
     '<b>Ctrl+A</b> prend tout le dossier — pour un dossier qui ne contient que les exports (ce qui n’en est pas sera signalé, à retirer).</div></div>' +
@@ -4479,9 +4483,12 @@ function pageImportSecondeBase(parametres) {
  * après). Un .xlsx est un zip : on en lit le répertoire à la fin du fichier,
  * puis on décompresse au fil de l'eau les seules parties utiles — la liste
  * des onglets, les styles, les chaînes partagées, et l'onglet qui porte
- * l'en-tête — sans jamais tenir le fichier entier en mémoire. Les « Excel »
- * qui n'en sont pas (une page web, un XML 2003 nommés .xls) et les CSV se
- * lisent aussi, au fil de l'eau. Chaque fichier ajouté est lu tout de suite,
+ * l'en-tête — sans jamais tenir le fichier entier en mémoire. Un vrai .xls
+ * (Excel 97-2003, ou Excel 5 / 95) est un conteneur OLE : lu en entier, son
+ * flux « Workbook » ou « Book » recomposé, puis parcouru enregistrement par
+ * enregistrement. Les « Excel » qui n'en sont pas (une page web, une page
+ * web archivée .mht, un XML 2003 nommés .xls) et les CSV se lisent aussi.
+ * Chaque fichier ajouté est lu tout de suite,
  * un à la fois, et reconnu à sa ligne d'en-têtes ; « Importer » envoie
  * ensuite les exports GATES, puis ceux de SEE.
  */
@@ -4657,9 +4664,11 @@ function scriptImportSecondeBase_(P) {
     s = decoderXml(s);
     return s.indexOf('_x') === -1 ? s : s.replace(/_x([0-9A-Fa-f]{4})_/g, function (m, h) { return String.fromCharCode(parseInt(h, 16)); });
   }
+  /* La valeur d'un attribut, entre guillemets — ou sans, comme Excel écrit
+     les nombres de ses pages web (colspan=16). */
   function attribut(s, nom) {
-    var m = new RegExp('\\s(?:[\\w.-]+:)?' + nom + '\\s*=\\s*(?:"([^"]*)"|\'([^\']*)\')', 'i').exec(' ' + s);
-    return m ? decoderXml(m[1] !== undefined ? m[1] : m[2]) : null;
+    var m = new RegExp('\\s(?:[\\w.-]+:)?' + nom + '\\s*=\\s*(?:"([^"]*)"|\'([^\']*)\'|([^\\s"\'>]+))', 'i').exec(' ' + s);
+    return m ? decoderXml(m[1] !== undefined ? m[1] : m[2] !== undefined ? m[2] : m[3]) : null;
   }
   /* Les éléments complets <nom …>…</nom> d'un texte qui arrive par morceaux ;
      un préfixe d'espace de noms (« x:row ») est toléré. Ce qui ne se termine
@@ -5071,13 +5080,24 @@ function scriptImportSecondeBase_(P) {
     return out.join('/');
   }
 
+  var DOSSIER_COMPRESSE = 'C’est un dossier compressé (.zip), pas un classeur : l’ouvrir (double-clic, ou clic droit → Extraire tout) et ' +
+    'glisser ici le fichier .xls, .xlsx ou .csv qu’il contient.';
   function lireXlsx(f, toutes) {
     progres(0.02, 'Ouverture du fichier…');
     return lireZip(f).then(function (entrees) {
       var wb = chercher(entrees, 'xl/workbook.xml');
       if (!wb) {
-        if (chercher(entrees, 'xl/workbook.bin')) throw erreur('C’est un classeur binaire (.xlsb), que ni la fenêtre ni Google Sheets ne lisent. Il faut l’export en .xlsx ou en .csv.');
-        throw erreur('Ce zip n’est pas un classeur Excel (pas de xl/workbook.xml).');
+        if (chercher(entrees, 'xl/workbook.bin')) {
+          throw erreur('C’est un classeur binaire (.xlsb), que ni la fenêtre ni Google Sheets ne lisent. Il faut l’export en .xlsx ou en .csv — ' +
+            'ou l’ouvrir dans Excel et l’enregistrer en classeur Excel (.xlsx).');
+        }
+        /* Un « dossier compressé » de Windows (un .zip), peut-être renommé :
+           dire de l'ouvrir, et ce qu'il renferme. */
+        var dedans = [];
+        for (var k in entrees) {
+          if (Object.prototype.hasOwnProperty.call(entrees, k) && /\.(xlsx|xlsm|xls|csv|mht|mhtml)$/i.test(k)) dedans.push(k.replace(/^.*\//, ''));
+        }
+        throw erreur(DOSSIER_COMPRESSE + (dedans.length ? ' Il renferme : ' + dedans.slice(0, 4).join(', ') + (dedans.length > 4 ? ', …' : '') + '.' : ''));
       }
       var rels = chercher(entrees, 'xl/_rels/workbook.xml.rels');
       return Promise.all([partieEntiere(f, wb), rels ? partieEntiere(f, rels) : '']).then(function (r) {
@@ -5205,7 +5225,10 @@ function scriptImportSecondeBase_(P) {
         var large = etendue(attribut(m[1], 'colspan'), P.maxColonnes), haut = etendue(attribut(m[1], 'rowspan'), 1000);
         valeurs[col] = m[2] ? texteCellule(m[2]) : '';
         for (k = 1; k < large; k++) valeurs[col + k] = '';
-        if (large > 1 || haut > 1) c.fusion(num, col + 1, haut, large);
+        /* « mso-ignore:colspan » : Excel regroupe ainsi des cases vides, ou
+           les voisines sur lesquelles un texte déborde — ce n'est pas une
+           fusion. La cellule occupe quand même ses colonnes. */
+        if ((large > 1 || haut > 1) && !/mso-ignore\s*:\s*colspan/i.test(m[1])) c.fusion(num, col + 1, haut, large);
         for (var r = 1; r < haut; r++) {
           var o = occupees[num + r] || (occupees[num + r] = {});
           for (k = 0; k < large; k++) o[col + k] = true;
@@ -5294,7 +5317,11 @@ function scriptImportSecondeBase_(P) {
       var tete = new TextDecoder(encodage).decode(b.subarray(saut, Math.min(b.length, saut + 65536))).replace(/^\ufeff/, '');
       var debut = tete.replace(/^\s+/, '').slice(0, 4096).toLowerCase();
       var sorte = 'csv';
-      if (debut.charAt(0) === '<') {
+      /* Une page web archivée (.mht) : des en-têtes de courriel, dont
+         MIME-Version ou un Content-Type multipart, avant la première ligne vide. */
+      var entetes = tete.replace(/^\s+/, '').split(/\r?\n\r?\n/)[0].slice(0, 8192);
+      if (/^[\w-]+[ \t]*:/.test(entetes) && /(^|\n)(mime-version[ \t]*:|content-type[ \t]*:[ \t]*multipart\/)/i.test(entetes)) sorte = 'mhtml';
+      else if (debut.charAt(0) === '<') {
         if (/urn:schemas-microsoft-com:office:spreadsheet/.test(tete) && /<(?:\w+:)?(?:workbook|worksheet)[\s>]/i.test(tete) && !/<html|<!doctype html/.test(debut)) sorte = 'xml2003';
         else if (/<html|<table|<!doctype html|<body/.test(debut) || /<table[\s>]/i.test(tete)) sorte = 'html';
         else sorte = 'xml';
@@ -5367,6 +5394,1001 @@ function scriptImportSecondeBase_(P) {
     }
     return lecture(sonde.encodage, false);
   }
+
+  // ------------------------------------------------------------ vrais .xls : le conteneur OLE
+  /* Un vrai .xls — Excel 97 à 2003 (BIFF8), ou Excel 5 et 95 (BIFF5) — n'est
+     ni un zip ni du texte : c'est un « conteneur OLE », un petit système de
+     fichiers fait de secteurs de 512 ou 4 096 octets. Sa table d'allocation
+     (la FAT) dit, pour chaque secteur, celui qui le suit ; les secteurs de la
+     FAT eux-mêmes sont listés par la DIFAT (109 places dans l'en-tête, puis
+     des secteurs chaînés pour les gros fichiers). Le répertoire — des entrées
+     de 128 octets, aux noms en UTF-16 — nomme les flux : le classeur est
+     « Workbook » (Excel 97-2003) ou « Book » (Excel 5 / 95). Un flux de moins
+     de 4 096 octets loge dans le « mini-flux », par blocs de 64 octets que
+     chaîne la mini-FAT. Il faut sauter d'un secteur à l'autre : le fichier
+     est lu en entier — un .xls ne dépasse pas 65 536 lignes, et au-delà de
+     P.maxOctetsXls ce n'est pas un export. Chaque chaîne est suivie sous
+     garde : un secteur hors du fichier, une boucle, une chaîne trop courte
+     pour le flux annoncé disent un fichier abîmé — le plus souvent un
+     téléchargement coupé. */
+  var FIN_DE_CHAINE = 0xFFFFFFFE, SECTEUR_SPECIAL = 0xFFFFFFFA;
+  var ABIME_XLS = 'Le fichier est abîmé (sa structure de classeur .xls ne se suit pas jusqu’au bout : téléchargement interrompu ?) : ' +
+    'le retélécharger depuis GATES ou SEE.';
+  var PROTEGE = 'Ce fichier Excel est protégé (mot de passe ou étiquette de confidentialité) : la fenêtre ne peut pas le lire, ' +
+    'Google Sheets non plus. Demander l’export sans protection, ou en .csv.';
+  var TRES_ANCIEN = 'C’est un très ancien format Excel (Excel 2 à 4, d’avant 1993), que la fenêtre ne lit pas : demander l’export en .xlsx, ' +
+    'en .xls ou en .csv — ou l’ouvrir dans Excel et l’enregistrer en classeur Excel (.xlsx).';
+  var SANS_CLASSEUR = 'Ce fichier est un document Office (conteneur OLE), mais il ne renferme aucun classeur Excel : est-ce un document Word, ' +
+    'ou un autre fichier renommé ? Demander l’export en .xlsx, en .xls ou en .csv.';
+  function tropGros(f) {
+    return erreur('Ce fichier fait ' + taille(f.size) + ' : bien plus qu’un export (au plus ' + taille(P.maxOctetsXls) + ' pour un .xls ou une ' +
+      'page web archivée). Est-ce bien l’export GATES ou SEE ? Sinon, demander l’export en .xlsx ou en .csv.');
+  }
+  function entreeOle(b, o, version) {
+    var lg = Math.min(64, u16(b, o + 64)), nom = '';
+    for (var j = 0; j < lg - 2; j += 2) nom += String.fromCharCode(u16(b, o + j));
+    return { nom: nom, gauche: u32(b, o + 68), droite: u32(b, o + 72), enfant: u32(b, o + 76), debut: u32(b, o + 116),
+             taille: u32(b, o + 120) + (version === 4 ? u32(b, o + 124) * 4294967296 : 0) };
+  }
+  /* Le conteneur d'un fichier lu en entier (`b`) : { nomme(noms), flux(entrée) }. */
+  function ouvrirOle(b) {
+    var decalage = b.length >= 512 ? u16(b, 0x1E) : 0;
+    if (decalage !== 9 && decalage !== 12) throw erreur(ABIME_XLS);
+    var taille = decalage === 9 ? 512 : 4096, parSecteur = taille / 4, version = u16(b, 0x1A);
+    var nbFat = u32(b, 0x2C), difat = [], vus = {}, n, o, i, k;
+    /* Un secteur entier dans le fichier : sinon, le fichier a été coupé. */
+    function present(s) { return s < SECTEUR_SPECIAL && (s + 2) * taille <= b.length; }
+    for (i = 0; i < 109 && difat.length < nbFat; i++) difat.push(u32(b, 0x4C + 4 * i));
+    n = u32(b, 0x44);
+    while (difat.length < nbFat && n < SECTEUR_SPECIAL) {
+      if (vus[n] || !present(n)) throw erreur(ABIME_XLS);
+      vus[n] = true;
+      o = (n + 1) * taille;
+      for (i = 0; i < parSecteur - 1 && difat.length < nbFat; i++) difat.push(u32(b, o + 4 * i));
+      n = u32(b, o + taille - 4);
+    }
+    var fat = new Uint32Array(difat.length * parSecteur);
+    for (k = 0; k < difat.length; k++) {
+      var la = present(difat[k]);
+      o = (difat[k] + 1) * taille;
+      for (i = 0; i < parSecteur; i++) fat[k * parSecteur + i] = la ? u32(b, o + 4 * i) : 0xFFFFFFFF;
+    }
+    /* La chaîne qui part du secteur `depart` dans `table`, au plus `besoin` secteurs. */
+    function suivre(depart, table, besoin) {
+      var l = [], s = depart, vu = new Uint8Array(table.length);
+      while (s !== FIN_DE_CHAINE && l.length < besoin) {
+        if (!(s < table.length) || vu[s]) throw erreur(ABIME_XLS);
+        vu[s] = 1;
+        l.push(s);
+        s = table[s];
+      }
+      return l;
+    }
+    var dir, repertoireCasse = false;
+    try { dir = suivre(u32(b, 0x30), fat, Infinity); } catch (e) { dir = []; repertoireCasse = true; }
+    /* Une FAT illisible : le premier secteur du répertoire dit encore ce que
+       renferme le fichier (un classeur chiffré, le plus souvent). Mais le
+       classeur peut être nommé plus loin : s'il manque, le fichier est abîmé
+       (repertoireCasse), pas un document sans classeur. */
+    if (!dir.length) dir = [u32(b, 0x30)];
+    var entrees = [];
+    for (k = 0; k < dir.length && present(dir[k]); k++) {
+      o = (dir[k] + 1) * taille;
+      for (i = 0; i < taille; i += 128) entrees.push(entreeOle(b, o + i, version));
+    }
+    if (!entrees.length) throw erreur(ABIME_XLS);
+    /* Les flux de la racine : un arbre (frères à gauche et à droite) qui part
+       de l'enfant de la première entrée. */
+    var racine = [], pile = [entrees[0].enfant], dejaVu = {};
+    while (pile.length) {
+      k = pile.pop();
+      if (k > 0 && k < entrees.length && !dejaVu[k]) {
+        dejaVu[k] = true;
+        racine.push(entrees[k]);
+        pile.push(entrees[k].gauche, entrees[k].droite);
+      }
+    }
+    /* La première entrée qui porte l'un de ces noms (en minuscules : un nom
+       OLE se compare sans la casse), à la racine d'abord, puis — répertoire
+       mal chaîné — parmi toutes. */
+    function nomme(noms) {
+      var listes = [racine, entrees.slice(1)];
+      for (var a = 0; a < listes.length; a++) {
+        for (var j = 0; j < noms.length; j++) {
+          for (var e = 0; e < listes[a].length; e++) if (listes[a][e].nom.toLowerCase() === noms[j]) return listes[a][e];
+        }
+      }
+      return null;
+    }
+    var coupure = u32(b, 0x38) || 4096, miniFat = null, miniFlux = null;
+    function copierSecteurs(l, t, sortie) {
+      var fait = 0, j, s, o2, m;
+      if (l.length * taille < t) throw erreur(ABIME_XLS);
+      /* Les secteurs qui se suivent dans le fichier sont copiés d'un bloc. */
+      for (j = 0; j < l.length && fait < t; j = s) {
+        for (s = j + 1; s < l.length && l[s] === l[s - 1] + 1; s++) { /* même bloc */ }
+        o2 = (l[j] + 1) * taille;
+        m = Math.min((s - j) * taille, t - fait);
+        if (o2 + m > b.length) throw erreur(ABIME_XLS);
+        sortie.set(b.subarray(o2, o2 + m), fait);
+        fait += m;
+      }
+      return sortie;
+    }
+    function depuisMiniFlux(e, sortie) {
+      var t = e.taille, fait = 0, j, s, o2, m, l;
+      if (!miniFlux) {
+        miniFlux = suivre(entrees[0].debut, fat, Math.ceil(entrees[0].taille / taille));
+        var lm = suivre(u32(b, 0x3C), fat, Infinity);
+        miniFat = new Uint32Array(lm.length * parSecteur);
+        for (j = 0; j < lm.length; j++) {
+          if (!present(lm[j])) throw erreur(ABIME_XLS);
+          for (var q = 0; q < parSecteur; q++) miniFat[j * parSecteur + q] = u32(b, (lm[j] + 1) * taille + 4 * q);
+        }
+      }
+      l = suivre(e.debut, miniFat, Math.ceil(t / 64));
+      if (l.length * 64 < t) throw erreur(ABIME_XLS);
+      for (j = 0; j < l.length; j++) {
+        s = Math.floor(l[j] * 64 / taille);
+        if (s >= miniFlux.length) throw erreur(ABIME_XLS);
+        o2 = (miniFlux[s] + 1) * taille + (l[j] * 64) % taille;
+        m = Math.min(64, t - fait);
+        if (o2 + m > b.length) throw erreur(ABIME_XLS);
+        sortie.set(b.subarray(o2, o2 + m), fait);
+        fait += m;
+      }
+      return sortie;
+    }
+    /* Le contenu d'un flux, recomposé secteur après secteur. */
+    function flux(e) {
+      var t = e.taille;
+      if (t > b.length) throw erreur(ABIME_XLS);
+      var sortie = new Uint8Array(t);
+      if (!t) return sortie;
+      if (t >= coupure) return copierSecteurs(suivre(e.debut, fat, Math.ceil(t / taille)), t, sortie);
+      /* Un petit flux rangé hors du mini-flux, contre la règle : on le
+         cherche aussi dans les secteurs ordinaires. */
+      try { return depuisMiniFlux(e, sortie); }
+      catch (x) { return copierSecteurs(suivre(e.debut, fat, Math.ceil(t / taille)), t, sortie); }
+    }
+    return { nomme: nomme, flux: flux, repertoireCasse: repertoireCasse };
+  }
+
+  // ------------------------------------------------------------ vrais .xls : les enregistrements BIFF
+  /* Le classeur est une suite d'enregistrements : un type et une longueur
+     sur deux octets chacun, puis les données. D'abord la partie commune
+     (BOF … EOF) : les onglets et leur place dans le flux (BOUNDSHEET), la
+     page de codes (CODEPAGE), le calendrier 1904 (DATEMODE), les formats de
+     nombres (FORMAT, et XF qui donne le format de chaque cellule), un mot de
+     passe (FILEPASS : le fichier est chiffré) et, en BIFF8, la table des
+     textes partagés (SST). Puis chaque onglet (BOF … EOF) : ses cellules,
+     ligne après ligne, et ses cellules fusionnées (MERGEDCELLS, après les
+     cellules, en plusieurs enregistrements s'il le faut). Lignes et colonnes
+     y comptent depuis 0 : la ligne 0 est la ligne 1 de l'onglet. */
+  var ERREURS_XLS = { 0: '#NULL!', 7: '#DIV/0!', 15: '#VALUE!', 23: '#REF!', 29: '#NAME?', 36: '#NUM!', 42: '#N/A', 43: '#GETTING_DATA' };
+  /* FORMULA porte aussi les numéros 0x0206 et 0x0406 (ceux d'Excel 3 et 4) :
+     Apple Numbers, entre autres, les écrit encore dans un .xls d'Excel 97,
+     avec la disposition de BIFF5/8 — les vrais BIFF3/4 sont refusés plus
+     haut (TRES_ANCIEN). */
+  var FORMULES_XLS = { 0x0006: 1, 0x0206: 1, 0x0406: 1 };
+  var CELLULES_XLS = { 0x0006: 1, 0x0206: 1, 0x0406: 1, 0x0201: 1, 0x00BE: 1, 0x0203: 1, 0x027E: 1, 0x00BD: 1, 0x00FD: 1, 0x0204: 1, 0x00D6: 1, 0x0205: 1 };
+  var PAGES_DE_CODES = { 367: 'windows-1252', 874: 'windows-874', 932: 'shift_jis', 936: 'gbk', 949: 'euc-kr', 950: 'big5',
+    1250: 'windows-1250', 1251: 'windows-1251', 1252: 'windows-1252', 1253: 'windows-1253', 1254: 'windows-1254', 1255: 'windows-1255',
+    1256: 'windows-1256', 1257: 'windows-1257', 1258: 'windows-1258', 10000: 'macintosh', 10007: 'x-mac-cyrillic', 20866: 'koi8-r',
+    21866: 'koi8-u', 28591: 'windows-1252', 32768: 'macintosh', 32769: 'windows-1252', 65001: 'utf-8' };
+  /* Deux pages de codes du DOS que le navigateur ne connaît pas : leur moitié haute, octets 128 à 255. */
+  var PAGES_DOS = {
+    437: '\u00c7\u00fc\u00e9\u00e2\u00e4\u00e0\u00e5\u00e7\u00ea\u00eb\u00e8\u00ef\u00ee\u00ec\u00c4\u00c5\u00c9\u00e6\u00c6\u00f4\u00f6\u00f2\u00fb\u00f9' +
+      '\u00ff\u00d6\u00dc\u00a2\u00a3\u00a5\u20a7\u0192\u00e1\u00ed\u00f3\u00fa\u00f1\u00d1\u00aa\u00ba\u00bf\u2310\u00ac\u00bd\u00bc\u00a1\u00ab\u00bb' +
+      '\u2591\u2592\u2593\u2502\u2524\u2561\u2562\u2556\u2555\u2563\u2551\u2557\u255d\u255c\u255b\u2510\u2514\u2534\u252c\u251c\u2500\u253c\u255e\u255f' +
+      '\u255a\u2554\u2569\u2566\u2560\u2550\u256c\u2567\u2568\u2564\u2565\u2559\u2558\u2552\u2553\u256b\u256a\u2518\u250c\u2588\u2584\u258c\u2590\u2580' +
+      '\u03b1\u00df\u0393\u03c0\u03a3\u03c3\u00b5\u03c4\u03a6\u0398\u03a9\u03b4\u221e\u03c6\u03b5\u2229\u2261\u00b1\u2265\u2264\u2320\u2321\u00f7\u2248' +
+      '\u00b0\u2219\u00b7\u221a\u207f\u00b2\u25a0\u00a0',
+    850: '\u00c7\u00fc\u00e9\u00e2\u00e4\u00e0\u00e5\u00e7\u00ea\u00eb\u00e8\u00ef\u00ee\u00ec\u00c4\u00c5\u00c9\u00e6\u00c6\u00f4\u00f6\u00f2\u00fb\u00f9' +
+      '\u00ff\u00d6\u00dc\u00f8\u00a3\u00d8\u00d7\u0192\u00e1\u00ed\u00f3\u00fa\u00f1\u00d1\u00aa\u00ba\u00bf\u00ae\u00ac\u00bd\u00bc\u00a1\u00ab\u00bb' +
+      '\u2591\u2592\u2593\u2502\u2524\u00c1\u00c2\u00c0\u00a9\u2563\u2551\u2557\u255d\u00a2\u00a5\u2510\u2514\u2534\u252c\u251c\u2500\u253c\u00e3\u00c3' +
+      '\u255a\u2554\u2569\u2566\u2560\u2550\u256c\u00a4\u00f0\u00d0\u00ca\u00cb\u00c8\u0131\u00cd\u00ce\u00cf\u2518\u250c\u2588\u2584\u00a6\u00cc\u2580' +
+      '\u00d3\u00df\u00d4\u00d2\u00f5\u00d5\u00b5\u00fe\u00de\u00da\u00db\u00d9\u00fd\u00dd\u00af\u00b4\u00ad\u00b1\u2017\u00be\u00b6\u00a7\u00f7\u00b8' +
+      '\u00b0\u00a8\u00b7\u00b9\u00b3\u00b2\u25a0\u00a0'
+  };
+  /* Les octets d'un texte d'Excel 5 / 95, lus dans la page de codes du
+     classeur (Windows-1252 si elle est absente ou inconnue). */
+  function decodeur8(page) {
+    var table = PAGES_DOS[page];
+    if (table) {
+      return function (w, p, n) {
+        var s = '';
+        for (var i = 0; i < n; i++) s += w[p + i] < 128 ? String.fromCharCode(w[p + i]) : table.charAt(w[p + i] - 128);
+        return s;
+      };
+    }
+    var d;
+    try { d = new TextDecoder(PAGES_DE_CODES[page] || 'windows-1252'); } catch (e) { d = new TextDecoder('windows-1252'); }
+    return function (w, p, n) { return d.decode(w.subarray(p, p + n)); };
+  }
+  /* Un texte BIFF8 « compressé » : de l'Unicode dont l'octet de poids fort,
+     nul, est omis — donc du Latin-1 exact, pas du Windows-1252. */
+  function texteLatin1(w, p, n) {
+    var s = '';
+    for (var i = 0; i < n; i += 4096) s += String.fromCharCode.apply(null, w.subarray(p + i, p + Math.min(n, i + 4096)));
+    return s;
+  }
+  /* Un texte BIFF8 « large » : des unités UTF-16, recopiées telles quelles.
+     Pas de TextDecoder : un émoji (deux unités) coupé entre deux
+     enregistrements CONTINUE deviendrait deux « � » ; ses deux moitiés,
+     gardées, se rejoignent quand les morceaux sont mis bout à bout. */
+  function texteUtf16(w, p, n) {
+    var s = '', i;
+    if (n < 16) {
+      for (i = 0; i < n; i++) s += String.fromCharCode(w[p + 2 * i] | (w[p + 2 * i + 1] << 8));
+      return s;
+    }
+    var u = new Uint16Array(n);
+    for (i = 0; i < n; i++) u[i] = w[p + 2 * i] | (w[p + 2 * i + 1] << 8);
+    for (i = 0; i < n; i += 4096) s += String.fromCharCode.apply(null, u.subarray(i, Math.min(n, i + 4096)));
+    return s;
+  }
+  /* Une chaîne BIFF8 qui peut continuer dans les enregistrements CONTINUE
+     qui suivent le sien (un enregistrement ne dépasse pas 8 224 octets) :
+     `morceaux`, ses données puis celles de chaque CONTINUE, [début, fin[
+     dans le flux. L'en-tête d'une chaîne et ce qui suit ses caractères (mises
+     en forme, phonétique) passent d'un morceau au suivant sans rien de plus ;
+     les caractères, eux, reprennent après un octet d'options qui redit leur
+     largeur, un ou deux octets — elle peut changer en route. */
+  function curseurBiff(w, morceaux) {
+    var k = 0, p = morceaux[0][0], fin = morceaux[0][1];
+    function suivant() {
+      if (++k >= morceaux.length) throw erreur(ABIME_XLS);
+      p = morceaux[k][0];
+      fin = morceaux[k][1];
+    }
+    function octet() { while (p >= fin) suivant(); return w[p++]; }
+    return {
+      octet: octet,
+      u16: function () { var a = octet(); return a | (octet() << 8); },
+      u32: function () { var a = octet(), b1 = octet(), c1 = octet(); return a + b1 * 256 + c1 * 65536 + octet() * 16777216; },
+      sauter: function (n) {
+        while (n > 0) {
+          while (p >= fin) suivant();
+          var d = Math.min(n, fin - p);
+          p += d;
+          n -= d;
+        }
+      },
+      caracteres: function (cch, larges) {
+        var parts = [], reste = cch, n;
+        while (reste > 0) {
+          if (p >= fin) { suivant(); if (p < fin) larges = w[p++] & 1; continue; }
+          n = Math.min(reste, larges ? (fin - p) >> 1 : fin - p);
+          if (!n) { p = fin; continue; }
+          parts.push(larges ? texteUtf16(w, p, n) : texteLatin1(w, p, n));
+          p += larges ? 2 * n : n;
+          reste -= n;
+        }
+        return parts.length === 1 ? parts[0] : parts.join('');
+      },
+      fini: function () { return p >= fin && k + 1 >= morceaux.length; }
+    };
+  }
+  /* La table des textes partagés (SST) : chaque cellule LABELSST y appelle
+     son texte par son rang. Lue par tranches — elle peut en compter des
+     centaines de milliers — : avancer(ms) rend true une fois tout lu. Un
+     texte riche porte ses mises en forme après ses caractères (4 octets
+     chacune), un texte étendu sa lecture phonétique (cbExtRst octets) :
+     sautées, même à cheval sur deux enregistrements. */
+  function lecteurSst(w, morceaux) {
+    var c = curseurBiff(w, morceaux), chaines = [], total;
+    c.sauter(4);
+    total = c.u32();
+    return {
+      chaines: chaines,
+      avancer: function (budget) {
+        var t0 = Date.now(), n = 0;
+        while (chaines.length < total && !c.fini()) {
+          var cch = c.u16(), options = c.octet();
+          var runs = options & 8 ? c.u16() : 0, etendu = options & 4 ? c.u32() : 0;
+          chaines.push(c.caracteres(cch, options & 1));
+          if (runs || etendu) c.sauter(4 * runs + etendu);
+          if (++n % 2000 === 0 && Date.now() - t0 > budget) return false;
+        }
+        return true;
+      }
+    };
+  }
+  /* Les lignes d'un onglet .xls, telles qu'elles arrivent : Excel les écrit
+     dans l'ordre, chaque ligne part au collecteur dès que la suivante
+     commence. Une ligne qui reviendrait en arrière (`desordre`) arrête tout :
+     l'onglet est alors relu par puitsEnOrdre. */
+  function puitsEnFlux(c) {
+    var rang = -1, valeurs = null, sansValeur = null, fusions = [];
+    var puits = { arret: false, desordre: false };
+    function vider() {
+      if (!valeurs) return;
+      for (var j = 0; j < valeurs.length; j++) if (valeurs[j] === undefined) valeurs[j] = '';
+      var v = valeurs;
+      valeurs = null;
+      if (!puits.arret && c.ligne(rang + 1, v, sansValeur) === false) puits.arret = true;
+    }
+    puits.cellule = function (r, col, v) {
+      if (r !== rang) {
+        if (r < rang) { puits.desordre = puits.arret = true; return; }
+        vider();
+        rang = r;
+        valeurs = [];
+        sansValeur = null;
+      }
+      valeurs[col] = v;
+    };
+    puits.sansCalcul = function (r, col) { if (r === rang && valeurs) (sansValeur || (sansValeur = [])).push(col); };
+    puits.fusion = function (l1, l2, c1, c2) { fusions.push([l1, l2, c1, c2]); };
+    /* Les fusions arrivent après les cellules ; le collecteur les trie
+       d'après la ligne d'en-têtes, connue à ce moment-là. */
+    puits.fin = function () {
+      vider();
+      if (puits.arret) return;
+      fusions.forEach(function (f) { if (f[1] >= f[0] && f[3] >= f[2]) c.fusion(f[0] + 1, f[2] + 1, f[1] - f[0] + 1, f[3] - f[2] + 1); });
+    };
+    return puits;
+  }
+  function puitsEnOrdre(c) {
+    var lignes = {}, rangs = [], fusions = [];
+    return {
+      arret: false, desordre: false,
+      cellule: function (r, col, v) {
+        var x = lignes[r];
+        if (!x) { x = lignes[r] = { v: [], s: null }; rangs.push(r); }
+        x.v[col] = v;
+      },
+      sansCalcul: function (r, col) { var x = lignes[r]; if (x) (x.s || (x.s = [])).push(col); },
+      fusion: function (l1, l2, c1, c2) { fusions.push([l1, l2, c1, c2]); },
+      fin: function () {
+        rangs.sort(function (a, b) { return a - b; });
+        for (var i = 0; i < rangs.length; i++) {
+          var x = lignes[rangs[i]];
+          for (var j = 0; j < x.v.length; j++) if (x.v[j] === undefined) x.v[j] = '';
+          if (c.ligne(rangs[i] + 1, x.v, x.s) === false) return;
+        }
+        fusions.forEach(function (f) { if (f[1] >= f[0] && f[3] >= f[2]) c.fusion(f[0] + 1, f[2] + 1, f[1] - f[0] + 1, f[3] - f[2] + 1); });
+      }
+    };
+  }
+  // ------------------------------------------------------------ .xls chiffré sans mot de passe à l'ouverture
+  /* Excel chiffre un .xls dont seule la structure est protégée, ou qui n'a
+     de mot de passe que pour la modification, avec un mot de passe par
+     défaut, toujours le même : « VelvetSweatshop » (MS-XLS 2.2.10). Excel et
+     LibreOffice l'ouvrent sans rien demander ; la fenêtre aussi, donc. Le
+     chiffrement est du RC4, sa clé tirée du mot de passe par MD5 (« RC4 »
+     d'Excel 97) ou par SHA-1 (« RC4 CryptoAPI », Excel 2002 et suivants) :
+     les trois, écrits ici en quelques lignes. Un vrai mot de passe, lui,
+     reste illisible (PROTEGE). */
+  var MOT_DE_PASSE_PAR_DEFAUT = 'VelvetSweatshop';
+  var MD5_K = (function () { var k = []; for (var i = 0; i < 64; i++) k[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 4294967296) | 0; return k; })();
+  var MD5_R = [7, 12, 17, 22, 5, 9, 14, 20, 4, 11, 16, 23, 6, 10, 15, 21];
+  /* Le message `m` complété comme le veulent MD5 et SHA-1 : un octet 0x80,
+     des zéros, puis sa longueur en bits sur 8 octets (petit-boutiste pour
+     MD5, gros-boutiste pour SHA-1). */
+  function completer(m, gros) {
+    var n = m.length, lg = ((n + 8) >> 6 << 6) + 64, x = new Uint8Array(lg), bits = n * 8;
+    x.set(m);
+    x[n] = 0x80;
+    for (var i = 0; i < 4; i++) x[gros ? lg - 1 - i : lg - 8 + i] = (bits >>> (8 * i)) & 255;
+    return x;
+  }
+  function md5(m) {
+    var x = completer(m, false), h = [0x67452301, 0xEFCDAB89 | 0, 0x98BADCFE | 0, 0x10325476], w = [], i, o;
+    for (o = 0; o < x.length; o += 64) {
+      for (i = 0; i < 16; i++) w[i] = x[o + 4 * i] | (x[o + 4 * i + 1] << 8) | (x[o + 4 * i + 2] << 16) | (x[o + 4 * i + 3] << 24);
+      var a = h[0], b = h[1], c = h[2], d = h[3], f, g, t, s, r;
+      for (i = 0; i < 64; i++) {
+        if (i < 16) { f = (b & c) | (~b & d); g = i; }
+        else if (i < 32) { f = (d & b) | (~d & c); g = (5 * i + 1) & 15; }
+        else if (i < 48) { f = b ^ c ^ d; g = (3 * i + 5) & 15; }
+        else { f = c ^ (b | ~d); g = (7 * i) & 15; }
+        r = MD5_R[(i >> 4) * 4 + (i & 3)];
+        s = (a + f + MD5_K[i] + w[g]) | 0;
+        t = d; d = c; c = b;
+        b = (b + ((s << r) | (s >>> (32 - r)))) | 0;
+        a = t;
+      }
+      h[0] = (h[0] + a) | 0; h[1] = (h[1] + b) | 0; h[2] = (h[2] + c) | 0; h[3] = (h[3] + d) | 0;
+    }
+    var out = new Uint8Array(16);
+    for (i = 0; i < 16; i++) out[i] = (h[i >> 2] >>> (8 * (i & 3))) & 255;
+    return out;
+  }
+  function sha1(m) {
+    var x = completer(m, true), h = [0x67452301, 0xEFCDAB89 | 0, 0x98BADCFE | 0, 0x10325476, 0xC3D2E1F0 | 0], w = [], i, o, t;
+    for (o = 0; o < x.length; o += 64) {
+      for (i = 0; i < 16; i++) w[i] = (x[o + 4 * i] << 24) | (x[o + 4 * i + 1] << 16) | (x[o + 4 * i + 2] << 8) | x[o + 4 * i + 3];
+      for (i = 16; i < 80; i++) { t = w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]; w[i] = (t << 1) | (t >>> 31); }
+      var a = h[0], b = h[1], c = h[2], d = h[3], e = h[4], f, k;
+      for (i = 0; i < 80; i++) {
+        if (i < 20) { f = (b & c) | (~b & d); k = 0x5A827999; }
+        else if (i < 40) { f = b ^ c ^ d; k = 0x6ED9EBA1; }
+        else if (i < 60) { f = (b & c) | (b & d) | (c & d); k = 0x8F1BBCDC | 0; }
+        else { f = b ^ c ^ d; k = 0xCA62C1D6 | 0; }
+        t = (((a << 5) | (a >>> 27)) + f + e + k + w[i]) | 0;
+        e = d; d = c; c = (b << 30) | (b >>> 2); b = a; a = t;
+      }
+      h[0] = (h[0] + a) | 0; h[1] = (h[1] + b) | 0; h[2] = (h[2] + c) | 0; h[3] = (h[3] + d) | 0; h[4] = (h[4] + e) | 0;
+    }
+    var out = new Uint8Array(20);
+    for (i = 0; i < 20; i++) out[i] = (h[i >> 2] >>> (24 - 8 * (i & 3))) & 255;
+    return out;
+  }
+  /* RC4 : la suite d'octets qui, par OU exclusif, chiffre et déchiffre. */
+  function rc4(cle) {
+    var s = new Uint8Array(256), i, j = 0, t;
+    for (i = 0; i < 256; i++) s[i] = i;
+    for (i = 0; i < 256; i++) { j = (j + s[i] + cle[i % cle.length]) & 255; t = s[i]; s[i] = s[j]; s[j] = t; }
+    i = j = 0;
+    return function (n) {
+      var o = new Uint8Array(n);
+      for (var k = 0; k < n; k++) {
+        i = (i + 1) & 255; j = (j + s[i]) & 255;
+        t = s[i]; s[i] = s[j]; s[j] = t;
+        o[k] = s[(s[i] + s[j]) & 255];
+      }
+      return o;
+    };
+  }
+  function concat(a, b) { var x = new Uint8Array(a.length + b.length); x.set(a); x.set(b, a.length); return x; }
+  function petitBoutiste32(n) { return new Uint8Array([n & 255, (n >>> 8) & 255, (n >>> 16) & 255, (n >>> 24) & 255]); }
+  function egaux(a, b) { if (a.length !== b.length) return false; for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) return false; return true; }
+  function enUtf16(t) { var o = new Uint8Array(2 * t.length); for (var i = 0; i < t.length; i++) { o[2 * i] = t.charCodeAt(i) & 255; o[2 * i + 1] = t.charCodeAt(i) >> 8; } return o; }
+  /* La clé du bloc n (1 024 octets du flux chacun) pour le mot de passe par
+     défaut, d'après l'enregistrement FILEPASS (ses données : [d, fin[) ; null
+     si ce n'est pas lui — un vrai mot de passe —, ou un chiffrement inconnu. */
+  function cleParDefaut(w, d, fin) {
+    if (fin - d < 6 || u16(w, d) !== 1) return null;
+    var maj = u16(w, d + 2), min = u16(w, d + 4), mdp = enUtf16(MOT_DE_PASSE_PAR_DEFAUT), cle, verif, empreinte, taille;
+    if (maj === 1 && min === 1 && fin - d >= 54) {
+      /* RC4 d'Excel 97 : MD5. */
+      var sel = w.subarray(d + 6, d + 22), h0 = md5(mdp).subarray(0, 5), inter = new Uint8Array(21 * 16);
+      for (var k = 0; k < 16; k++) { inter.set(h0, 21 * k); inter.set(sel, 21 * k + 5); }
+      var h1 = md5(inter).subarray(0, 5);
+      cle = function (n) { return md5(concat(h1, petitBoutiste32(n))); };
+      verif = w.subarray(d + 22, d + 38);
+      empreinte = w.subarray(d + 38, d + 54);
+      var flux = rc4(cle(0)), v = flux(16), e = flux(16), x;
+      for (x = 0; x < 16; x++) { v[x] ^= verif[x]; e[x] ^= empreinte[x]; }
+      return egaux(md5(v), e) ? cle : null;
+    }
+    if (maj >= 2 && maj <= 4 && min === 2 && fin - d >= 14) {
+      /* RC4 CryptoAPI : SHA-1, une clé de 40 à 128 bits. */
+      var tete = u32(w, d + 10), q = d + 14 + tete;
+      if (tete < 32 || q + 60 > fin) return null;
+      taille = u32(w, d + 14 + 16) || 40;
+      if (taille % 8 || taille < 40 || taille > 128) return null;
+      var sel2 = w.subarray(q + 4, q + 20), h = sha1(concat(sel2, mdp));
+      cle = function (n) {
+        var hf = sha1(concat(h, petitBoutiste32(n)));
+        if (taille === 40) { var c40 = new Uint8Array(16); c40.set(hf.subarray(0, 5)); return c40; }
+        return hf.subarray(0, taille / 8);
+      };
+      verif = w.subarray(q + 20, q + 36);
+      empreinte = w.subarray(q + 40, q + 60);
+      var flux2 = rc4(cle(0)), v2 = flux2(16), e2 = flux2(20), y;
+      for (y = 0; y < 16; y++) v2[y] ^= verif[y];
+      for (y = 0; y < 20; y++) e2[y] ^= empreinte[y];
+      return egaux(sha1(v2), e2) ? cle : null;
+    }
+    return null;
+  }
+  /* Déchiffre le flux `w` sur place, après le FILEPASS (qui finit en
+     `depart`) : les données de chaque enregistrement, octet du flux par
+     octet du flux — la suite RC4 avance aussi sous les en-têtes, et repart
+     d'une nouvelle clé tous les 1 024 octets —, sauf celles que le format
+     laisse en clair (BOF, FILEPASS, INTERFACEHDR…, et la place de chaque
+     onglet dans BOUNDSHEET). Par tranches : un gros fichier ne fige pas la
+     fenêtre. */
+  var EN_CLAIR_XLS = { 0x0809: 1, 0x002F: 1, 0x0194: 1, 0x0195: 1, 0x00E1: 1, 0x0196: 1, 0x0138: 1 };
+  function dechiffrerXls(w, cle, depart) {
+    var p = depart, bloc = -1, suite = null;
+    function xor(a, b) {
+      while (a < b) {
+        var n = Math.floor(a / 1024);
+        if (n !== bloc) { bloc = n; suite = rc4(cle(n))(1024); }
+        for (var fin = Math.min(b, (n + 1) * 1024); a < fin; a++) w[a] ^= suite[a & 1023];
+      }
+    }
+    function tranche() {
+      var t0 = Date.now(), k = 0;
+      while (p + 4 <= w.length) {
+        var t = u16(w, p), d = p + 4, fin = d + u16(w, p + 2);
+        if (fin > w.length) break;
+        if (!EN_CLAIR_XLS[t]) xor(t === 0x0085 ? Math.min(fin, d + 4) : d, fin);
+        p = fin;
+        if (++k % 2000 === 0 && Date.now() - t0 > 40) {
+          progres(0.05 * p / w.length, 'Ouverture du classeur (protégé, sans mot de passe à l’ouverture)…');
+          return souffle().then(tranche);
+        }
+      }
+      return null;
+    }
+    return Promise.resolve().then(tranche);
+  }
+  /* « General » a des noms locaux (Standard, Standaard, Allmänt, Yleinen,
+     Standardowy, Общий…), que formeDuFormat prendrait pour une date (le
+     « d » de « Standard ») : un code fait de lettres seules — rien d'un
+     format de nombre (0 # ? @, guillemets, crochets, séparateurs) — qui
+     n'est pas une suite de jetons de date ou d'heure (« dddd », « yyyy »). */
+  function nomDeGeneral(code) {
+    var t = String(code).trim();
+    if (/^(general|g\/standard)$/i.test(t)) return true;
+    return /^[A-Za-z\u00C0-\u024F\u0370-\u03FF\u0400-\u052F]{2,}$/.test(t) && !/^[dmyhsbeag]+$/i.test(t);
+  }
+  /* Lit le flux d'un classeur .xls (`w`) comme lireXlsx lit un .xlsx : les
+     onglets visibles d'abord, le premier qui porte l'en-tête l'emporte ; les
+     cellules vont au collecteur, chaque nombre écrit comme Excel l'affiche
+     — formeDuFormat et texteNombre, les mêmes que pour un .xlsx —, les
+     fusions ensuite. La lecture rend la main à la fenêtre toutes les
+     quelques milliers d'enregistrements : un gros fichier ne la fige pas. */
+  function lireBiff(w, toutes) {
+    if (w.length < 8) throw erreur(ABIME_XLS);
+    var t = u16(w, 0), l = u16(w, 2);
+    if (t === 0x0009 || t === 0x0209 || t === 0x0409) throw erreur(TRES_ANCIEN);
+    if (t !== 0x0809 || l < 4 || 4 + l > w.length || u16(w, 6) !== 0x0005) throw erreur(ABIME_XLS);
+    var vers = u16(w, 4), biff = vers === 0x0500 || (vers !== 0x0600 && l < 16) ? 5 : 8;
+    /* Un FILEPASS dans la partie commune : le classeur est chiffré. Avec le
+       mot de passe par défaut d'Excel, il est déchiffré, puis lu comme un
+       autre ; sinon, il est protégé. */
+    for (var q = 4 + l; q + 4 <= w.length; q += 4 + u16(w, q + 2)) {
+      var tq = u16(w, q);
+      if (tq === 0x000A || tq === 0x0809) break;
+      if (tq === 0x002F) {
+        var finFp = Math.min(w.length, q + 4 + u16(w, q + 2)), cle = biff === 8 ? cleParDefaut(w, q + 4, finFp) : null;
+        if (!cle) throw erreur(PROTEGE);
+        return dechiffrerXls(w, cle, finFp).then(function () { return lireBiffClair(w, toutes, biff, l); });
+      }
+    }
+    return lireBiffClair(w, toutes, biff, l);
+  }
+  function lireBiffClair(w, toutes, biff, l) {
+    var t;
+    var vue = new DataView(w.buffer, w.byteOffset, w.byteLength), tampon = new DataView(new ArrayBuffer(8));
+    var page = biff === 8 ? 1200 : 1252, en1904 = false, formats = {}, xfs = [], onglets = [], bruts = [], sstMorceaux = null, p = 4 + l, d, fin;
+    for (;;) {
+      if (p + 4 > w.length) throw erreur(ABIME_XLS);
+      t = u16(w, p);
+      l = u16(w, p + 2);
+      d = p + 4;
+      fin = d + l;
+      if (fin > w.length) throw erreur(ABIME_XLS);
+      p = fin;
+      if (t === 0x000A) break;
+      if (t === 0x0042 && l >= 2) page = u16(w, d);
+      else if (t === 0x0022 && l >= 2) en1904 = u16(w, d) === 1;
+      else if (t === 0x00E0 && l >= 4) xfs.push(u16(w, d + 2));
+      else if ((t === 0x041E || t === 0x001E) && l >= 2) bruts.push({ t: t, d: d, fin: fin });
+      else if (t === 0x0085 && l >= 7) onglets.push({ pos: u32(w, d), cache: (w[d + 4] & 3) !== 0, type: w[d + 5], d: d + 6, fin: fin });
+      else if (t === 0x00FC && l >= 8) {
+        sstMorceaux = [[d, fin]];
+        while (p + 4 <= w.length && u16(w, p) === 0x003C) {
+          var lc = u16(w, p + 2);
+          if (p + 4 + lc > w.length) throw erreur(ABIME_XLS);
+          sstMorceaux.push([p + 4, p + 4 + lc]);
+          p += 4 + lc;
+        }
+      }
+    }
+    var dec8 = decodeur8(page);
+    /* Un texte court, borné à son enregistrement : en BIFF5, des octets dans
+       la page de codes ; en BIFF8, un octet d'options (la largeur) puis les
+       caractères. */
+    function texte8(debut, borne, cch) { return dec8(w, debut, Math.max(0, Math.min(cch, borne - debut))); }
+    function texteU(debut, borne, cch) {
+      var larges = w[debut] & 1, n = Math.max(0, Math.min(cch, larges ? (borne - debut - 1) >> 1 : borne - debut - 1));
+      return larges ? texteUtf16(w, debut + 1, n) : texteLatin1(w, debut + 1, n);
+    }
+    onglets.forEach(function (o) { o.nom = biff === 8 ? texteU(o.d + 1, o.fin, w[o.d]) : texte8(o.d + 1, o.fin, w[o.d]); });
+    var implicite = 0;
+    bruts.forEach(function (x) {
+      var id, code, n = x.fin - x.d;
+      if (biff === 8) {
+        if (x.t !== 0x041E || n < 5) return;
+        id = u16(w, x.d);
+        code = texteU(x.d + 4, x.fin, u16(w, x.d + 2));
+      } else if (n >= 3 && (x.t === 0x041E || n === 3 + w[x.d + 2])) {
+        id = u16(w, x.d);
+        code = texte8(x.d + 3, x.fin, w[x.d + 2]);
+      } else {
+        /* Le FORMAT d'Excel 2 et 3, sans numéro : les formats se suivent. */
+        id = implicite++;
+        code = texte8(x.d + 1, x.fin, w[x.d]);
+      }
+      formats[id] = id === 0 || nomDeGeneral(code) ? 'General' : code;
+    });
+    var styles = { formats: formats, xfs: xfs }, formes = {}, sst = [];
+    function forme(x) { return formes[x] || (formes[x] = formeDuFormat(styles, x)); }
+    function nombre(v, x) { return texteNombre(String(v), forme(x), en1904); }
+    /* Un RK : un entier sur 30 bits, ou les 30 bits de tête d'un nombre à
+       virgule — et, dans les deux cas, peut-être à diviser par cent. */
+    function rk(o) {
+      var x = w[o] | (w[o + 1] << 8) | (w[o + 2] << 16) | (w[o + 3] << 24), v;
+      if (x & 2) v = x >> 2;
+      else {
+        tampon.setInt32(0, 0, true);
+        tampon.setInt32(4, x & -4, true);
+        v = tampon.getFloat64(0, true);
+      }
+      return x & 1 ? v / 100 : v;
+    }
+    /* Un enregistrement et les CONTINUE qui le suivent : ses morceaux. */
+    function avecSuites(debut, borne, apres) {
+      var m = [[debut, borne]], q = apres;
+      while (q + 4 <= w.length && u16(w, q) === 0x003C && q + 4 + u16(w, q + 2) <= w.length) {
+        m.push([q + 4, q + 4 + u16(w, q + 2)]);
+        q += 4 + u16(w, q + 2);
+      }
+      return m;
+    }
+    /* Le texte d'une cellule LABEL ou RSTRING, ou d'un résultat de formule
+       (STRING) : en BIFF8 une chaîne Unicode qui peut continuer plus loin,
+       en BIFF5 des octets dans la page de codes. */
+    function texteCellule(debut, borne, apres) {
+      if (biff === 5) return texte8(debut + 2, borne, u16(w, debut));
+      var c = curseurBiff(w, avecSuites(debut, borne, apres)), cch = c.u16();
+      /* Un texte vide : certains programmes n'écrivent pas l'octet d'options
+         qui suivrait — le lire prendrait l'enregistrement pour abîmé. */
+      if (!cch) return '';
+      return c.caracteres(cch, c.octet() & 1);
+    }
+    /* Un onglet, enregistrement après enregistrement, de son BOF à son EOF :
+       les cellules vont au puits, les sous-parties (un graphique posé sur
+       l'onglet, avec ses propres BOF et EOF) sont sautées. Rend false pour
+       un onglet qui n'a pas de cellules (graphique, macros). */
+    function parcourir(o, puits, c) {
+      var pos = o.pos, profondeur = 0, attente = null;
+      if (pos + 8 > w.length || u16(w, pos) !== 0x0809) throw erreur(ABIME_XLS);
+      if (u16(w, pos + 6) !== 0x0010) return Promise.resolve(false);
+      pos += 4 + u16(w, pos + 2);
+      function veut(col) { return !c.voulues || c.voulues[col]; }
+      function tranche() {
+        var t0 = Date.now(), n = 0, ty, lg, db, fn, r, col, x, k, nb;
+        for (;;) {
+          if (++n % 4000 === 0 && Date.now() - t0 > 40) {
+            progres(0.06 + 0.9 * pos / w.length);
+            return souffle().then(tranche);
+          }
+          if (pos + 4 > w.length) throw erreur(ABIME_XLS);
+          ty = u16(w, pos);
+          lg = u16(w, pos + 2);
+          db = pos + 4;
+          fn = db + lg;
+          if (fn > w.length) throw erreur(ABIME_XLS);
+          pos = fn;
+          if (ty === 0x0809) { profondeur++; continue; }
+          if (ty === 0x000A) { if (profondeur) { profondeur--; continue; } break; }
+          if (profondeur) continue;
+          if (ty === 0x0207) {
+            if (attente) { puits.cellule(attente.r, attente.col, texteCellule(db, fn, pos)); attente = null; }
+            continue;
+          }
+          if (ty === 0x00E5) {
+            nb = lg >= 2 ? u16(w, db) : 0;
+            for (k = 0; k < nb && db + 10 + 8 * k <= fn; k++) puits.fusion(u16(w, db + 2 + 8 * k), u16(w, db + 4 + 8 * k), u16(w, db + 6 + 8 * k), u16(w, db + 8 + 8 * k));
+            continue;
+          }
+          if (!CELLULES_XLS[ty] || lg < 6) continue;
+          /* Une formule qui disait un texte sans l'enregistrement STRING qui le
+             porte : une formule sans valeur calculée. */
+          if (attente) { puits.sansCalcul(attente.r, attente.col); attente = null; }
+          r = u16(w, db);
+          col = u16(w, db + 2);
+          x = u16(w, db + 4);
+          if (ty === 0x00BD) {
+            nb = Math.floor((lg - 6) / 6);
+            for (k = 0; k < nb; k++) if (veut(col + k)) puits.cellule(r, col + k, nombre(rk(db + 6 + 6 * k), u16(w, db + 4 + 6 * k)));
+          } else if (ty === 0x00BE) {
+            nb = (lg - 6) >> 1;
+            for (k = 0; k < nb; k++) if (veut(col + k)) puits.cellule(r, col + k, '');
+          } else if (!veut(col)) {
+            /* une colonne que l'export SEE ne garde pas */
+          } else if (ty === 0x0203) {
+            if (lg >= 14) puits.cellule(r, col, nombre(vue.getFloat64(db + 6, true), x));
+          } else if (ty === 0x027E) {
+            if (lg >= 10) puits.cellule(r, col, nombre(rk(db + 6), x));
+          } else if (ty === 0x00FD) {
+            if (lg >= 10) { var s = sst[u32(w, db + 6)]; puits.cellule(r, col, s === undefined ? '' : s); }
+          } else if (ty === 0x0204 || ty === 0x00D6) {
+            if (lg >= 8) puits.cellule(r, col, texteCellule(db + 6, fn, pos));
+          } else if (ty === 0x0205) {
+            if (lg >= 8) puits.cellule(r, col, w[db + 7] ? ERREURS_XLS[w[db + 6]] || '#N/A' : w[db + 6] ? 'VRAI' : 'FAUX');
+          } else if (ty === 0x0201) {
+            puits.cellule(r, col, '');
+          } else if (FORMULES_XLS[ty] && lg >= 20) {
+            /* Le résultat gardé de la formule : un nombre, ou — les deux
+               derniers octets à FFFF — un texte (dans le STRING qui suit),
+               un booléen, une erreur, un texte vide. */
+            if (u16(w, db + 12) !== 0xFFFF) puits.cellule(r, col, nombre(vue.getFloat64(db + 6, true), x));
+            else if (w[db + 6] === 0) { puits.cellule(r, col, ''); attente = { r: r, col: col }; }
+            else if (w[db + 6] === 1) puits.cellule(r, col, w[db + 8] ? 'VRAI' : 'FAUX');
+            else if (w[db + 6] === 2) puits.cellule(r, col, ERREURS_XLS[w[db + 8]] || '#N/A');
+            else puits.cellule(r, col, '');
+          }
+          if (puits.arret) break;
+        }
+        if (attente && !puits.arret) puits.sansCalcul(attente.r, attente.col);
+        puits.fin();
+        return true;
+      }
+      return Promise.resolve().then(tranche);
+    }
+    function lireOngletXls(o) {
+      var c = collecteur(toutes), puits = puitsEnFlux(c);
+      return parcourir(o, puits, c).then(function (lu) {
+        if (lu === false) return null;
+        if (!puits.desordre) return c;
+        /* Des lignes dans le désordre (Excel ne le fait pas, d'autres
+           programmes si) : l'onglet est relu, ses lignes rangées avant de
+           passer au collecteur. */
+        var c2 = collecteur(toutes);
+        return parcourir(o, puitsEnOrdre(c2), c2).then(function () { return c2; });
+      });
+    }
+    var liste = onglets.filter(function (o) { return o.type === 0; });
+    liste.sort(function (a, b) { return (a.cache ? 1 : 0) - (b.cache ? 1 : 0); });
+    var etapeSst = Promise.resolve();
+    if (biff === 8 && sstMorceaux) {
+      var lecteur = lecteurSst(w, sstMorceaux);
+      sst = lecteur.chaines;
+      progres(0.05, 'Lecture des textes du classeur…');
+      var tranche = function () { if (!lecteur.avancer(60)) return souffle().then(tranche); };
+      etapeSst = etapeSst.then(tranche);
+    }
+    return etapeSst.then(function () {
+      var meilleur = null, tropBas = null, i = 0;
+      function suivant() {
+        if (i >= liste.length) return { trouve: false, meilleur: meilleur, tropBas: tropBas, onglets: liste.map(function (o) { return o.nom; }) };
+        var o = liste[i++];
+        progres(0.06 + 0.9 * o.pos / w.length, 'Lecture de l’onglet « ' + o.nom + ' »…');
+        return lireOngletXls(o).then(function (c) {
+          if (!c) return suivant();
+          if (c.sorte) { c.onglet = o.nom; c.trouve = true; c.format = biff === 8 ? 'xls' : 'xls95'; return c; }
+          if (c.tropBas && !tropBas) { tropBas = c.tropBas; tropBas.onglet = o.nom; }
+          if (!meilleur || c.meilleur.portes > meilleur.portes) { meilleur = c.meilleur; meilleur.onglet = o.nom; }
+          return suivant();
+        });
+      }
+      return suivant();
+    });
+  }
+  /* Un fichier OLE : un vrai .xls — ou un .xlsx chiffré (« EncryptionInfo »),
+     protégé par un mot de passe ou une étiquette de confidentialité. */
+  function lireOle(f, toutes) {
+    var nomXlsx = /\.xls[xmb]$/i.test(f.name);
+    if (f.size > P.maxOctetsXls) throw nomXlsx ? erreur(PROTEGE) : tropGros(f);
+    progres(0.02, 'Ouverture du classeur…');
+    return lireOctets(f, 0, f.size).then(function (b) {
+      var ole;
+      /* Un .xlsx qui est un conteneur OLE est chiffré : même illisible, c'est
+         ce qu'il est presque toujours. */
+      try { ole = ouvrirOle(b); } catch (e) { throw nomXlsx && e && e.pourLecteur ? erreur(PROTEGE) : e; }
+      if (ole.nomme(['encryptioninfo', 'encryptedpackage'])) throw erreur(PROTEGE);
+      var entree = ole.nomme(['workbook', 'book']);
+      if (!entree) throw erreur(nomXlsx ? PROTEGE : ole.repertoireCasse ? ABIME_XLS : SANS_CLASSEUR);
+      var w = ole.flux(entree);
+      b = null;
+      ole = null;
+      progres(0.05, 'Lecture du classeur…');
+      return lireBiff(w, toutes);
+    }).catch(abimeSiHorsLimites);
+  }
+  /* Un flux BIFF sans conteneur (certains vieux outils l'écrivent ainsi). */
+  function lireBiffNu(f, toutes) {
+    if (f.size > P.maxOctetsXls) throw tropGros(f);
+    progres(0.02, 'Ouverture du classeur…');
+    return lireOctets(f, 0, f.size).then(function (b) { return lireBiff(b, toutes); }).catch(abimeSiHorsLimites);
+  }
+  /* Un octet lu hors du flux (un DataView qui proteste) : la structure
+     promettait plus que le fichier n'en a. */
+  function abimeSiHorsLimites(e) {
+    if (e instanceof RangeError) throw erreur(ABIME_XLS);
+    throw e;
+  }
+
+  // ------------------------------------------------------------ page web archivée (.mht, ou .xls qui en est une)
+  /* « Page web, fichier unique » : un message MIME, comme un courriel, dont
+     une partie au moins est la page HTML — en quoted-printable ou en
+     base64, avec son jeu de caractères. Un export web la nomme parfois .xls ;
+     Excel lui-même y range une page par onglet, après un cadre sans tableau.
+     Chaque page passe au lecteur de pages web : la première qui porte
+     l'en-tête l'emporte. */
+  function entetesMime(texte) {
+    var h = {};
+    texte.replace(/\r?\n[ \t]+/g, ' ').split(/\r?\n/).forEach(function (l) {
+      var m = /^([\w-]+)[ \t]*:[ \t]*(.*)$/.exec(l);
+      if (m && h[m[1].toLowerCase()] === undefined) h[m[1].toLowerCase()] = m[2].trim();
+    });
+    return h;
+  }
+  function parametreMime(valeur, nom) {
+    var m = new RegExp(';\\s*' + nom + '\\s*=\\s*(?:"([^"]*)"|([^;\\s]+))', 'i').exec(valeur || '');
+    return m ? (m[1] !== undefined ? m[1] : m[2]) : '';
+  }
+  /* Le décodage d'une page web archivée se fait par tranches de quelques
+     mégaoctets, la fenêtre respirant entre elles (souffle) : un export de
+     80 Mo, décodé d'un bloc, la figeait une à deux secondes. */
+  var TRANCHE_MHT = 4194304;
+  /* Fait `pas(debut, fin)` sur [0, n[ par tranches de `taille` (que `coupe`
+     peut avancer jusqu'à une frontière sûre), en rendant la main toutes les
+     40 ms ; `avance(part)` suit la progression. */
+  function parTranches(n, taille, pas, avance, coupe) {
+    var p = 0;
+    function tranche() {
+      var t0 = Date.now();
+      while (p < n) {
+        var q = Math.min(n, p + taille);
+        if (coupe && q < n) q = coupe(q);
+        pas(p, q);
+        p = q;
+        if (p < n && Date.now() - t0 > 40) {
+          if (avance) avance(p / n);
+          return souffle().then(tranche);
+        }
+      }
+      return null;
+    }
+    return Promise.resolve().then(tranche);
+  }
+  /* Le fichier lu en entier, un caractère par octet (« x-user-defined ») :
+     les positions dans le texte sont celles du fichier. */
+  function texteParOctet(b) {
+    var d = new TextDecoder('x-user-defined'), parts = [];
+    return parTranches(b.length, TRANCHE_MHT, function (p, q) { parts.push(d.decode(b.subarray(p, q))); },
+      function (x) { progres(0.02 + 0.02 * x); }).then(function () { return parts.join(''); });
+  }
+  /* Les pages HTML d'une page web archivée (son texte `t`, un caractère par
+     octet) : [{ nom, entetes, debut, fin }], [debut, fin[ étant le corps de
+     la page dans le fichier. */
+  function pagesMhtml(t) {
+    var pages = [];
+    function separer(debut, borne) {
+      var nl = /^\r?\n/.exec(t.slice(debut, debut + 2));
+      if (nl) return { entetes: {}, debut: debut + nl[0].length, fin: borne };
+      var re = /\r?\n\r?\n/g;
+      re.lastIndex = debut;
+      var x = re.exec(t);
+      if (!x || x.index >= borne) return null;
+      return { entetes: entetesMime(t.slice(debut, x.index)), debut: x.index + x[0].length, fin: borne };
+    }
+    function estPage(h) {
+      var type = (h['content-type'] || '').toLowerCase();
+      return type.indexOf('text/html') === 0 || type.indexOf('application/xhtml') === 0 || (!type && /\.html?$/i.test(h['content-location'] || ''));
+    }
+    function ajouterPage(x) {
+      var lieu = (x.entetes['content-location'] || '').replace(/[?#].*$/, '');
+      x.nom = lieu.replace(/^.*[\/\\]/, '') || 'page ' + (pages.length + 1);
+      pages.push(x);
+    }
+    var haut = separer(t.search(/\S|$/), t.length);
+    if (!haut) return pages;
+    var type = haut.entetes['content-type'] || '';
+    if (/^multipart\//i.test(type)) {
+      var delim = '--' + parametreMime(type, 'boundary'), pos = delim.length > 2 ? t.indexOf(delim, haut.debut) : -1;
+      while (pos !== -1) {
+        if (t.substr(pos + delim.length, 2) === '--') break;
+        var ligne = t.indexOf('\n', pos + delim.length);
+        if (ligne === -1) break;
+        var suite = t.indexOf('\n' + delim, ligne);
+        var x = separer(ligne + 1, suite === -1 ? t.length : t.charAt(suite - 1) === '\r' ? suite - 1 : suite);
+        if (x && estPage(x.entetes)) ajouterPage(x);
+        pos = suite === -1 ? -1 : suite + 1;
+      }
+    } else if (estPage(haut.entetes) || !type) ajouterPage(haut);
+    return pages;
+  }
+  function chiffreHexa(o) { return o >= 48 && o <= 57 ? o - 48 : o >= 65 && o <= 70 ? o - 55 : o >= 97 && o <= 102 ? o - 87 : -1; }
+  function deQuotedPrintable(o, out, n) {
+    var i = 0, j;
+    while (i < o.length) {
+      if (o[i] === 61) {
+        /* « = » en fin de ligne (des blancs après lui compris) : la ligne continue. */
+        for (j = i + 1; o[j] === 32 || o[j] === 9; j++) { /* blancs */ }
+        if (o[j] === 13 && o[j + 1] === 10) { i = j + 2; continue; }
+        if (o[j] === 10 || j >= o.length) { i = j + 1; continue; }
+        if (chiffreHexa(o[i + 1]) >= 0 && chiffreHexa(o[i + 2]) >= 0) { out[n++] = chiffreHexa(o[i + 1]) * 16 + chiffreHexa(o[i + 2]); i += 3; continue; }
+      }
+      out[n++] = o[i++];
+    }
+    return n;
+  }
+  /* Les octets d'une page, son codage de transfert défait, par tranches :
+     en quoted-printable, chaque tranche finit sur une fin de ligne (un
+     « =XX » ou un « = » de fin de ligne n'y est jamais coupé) ; en base64,
+     les caractères utiles qui ne font pas un groupe de quatre passent à la
+     tranche suivante. */
+  function octetsDePage(b, x) {
+    var codage = (x.entetes['content-transfer-encoding'] || '').toLowerCase(), o = b.subarray(x.debut, x.fin), n = 0, out;
+    var avance = function (part) { progres(0.04 + 0.01 * part); };
+    if (codage === 'quoted-printable') {
+      out = new Uint8Array(o.length);
+      return parTranches(o.length, TRANCHE_MHT, function (p, q) { n = deQuotedPrintable(o.subarray(p, q), out, n); }, avance,
+        function (q) { var k = o.indexOf(10, q); return k === -1 ? o.length : k + 1; }).then(function () { return out.subarray(0, n); });
+    }
+    if (codage === 'base64') {
+      var reste = '';
+      out = new Uint8Array(Math.ceil(o.length * 3 / 4) + 3);
+      return parTranches(o.length, TRANCHE_MHT, function (p, q) {
+        var s = reste + texteLatin1(o, p, q - p).replace(/[^A-Za-z0-9+\/]/g, ''), plein = q >= o.length ? s.length : s.length - s.length % 4;
+        reste = s.slice(plein);
+        s = s.slice(0, plein);
+        if (s.length % 4 === 1) s = s.slice(0, -1);
+        var bin = atob(s);
+        for (var i = 0; i < bin.length; i++) out[n++] = bin.charCodeAt(i);
+      }, avance).then(function () { return out.subarray(0, n); });
+    }
+    return Promise.resolve(o);
+  }
+  /* Des octets lus dans un jeu de caractères, par tranches (le décodeur en
+     flux garde un caractère coupé entre deux tranches) : les morceaux du
+     texte. `fatal` : un octet impossible fait échouer la lecture. */
+  function decoderParTranches(o, jeu, fatal) {
+    var d = new TextDecoder(jeu, fatal ? { fatal: true } : {}), parts = [];
+    return parTranches(o.length, TRANCHE_MHT, function (p, q) { parts.push(d.decode(o.subarray(p, q), { stream: true })); },
+      function (part) { progres(0.045 + 0.005 * part); }).then(function () { parts.push(d.decode()); return parts; });
+  }
+  /* Le texte d'une page (ses morceaux) : son codage de transfert défait, puis
+     lu dans son jeu de caractères — celui de ses en-têtes, sinon celui de sa
+     balise <meta>, sinon de l'UTF-8 s'il en est, sinon du Windows-1252. */
+  function texteDePage(b, x) {
+    return octetsDePage(b, x).then(function (o) {
+      var jeu = parametreMime(x.entetes['content-type'], 'charset');
+      if (!jeu) {
+        var m = /<meta[^>]+charset\s*=\s*["']?\s*([\w.:-]+)/i.exec(texteLatin1(o, 0, Math.min(o.length, 4096)));
+        if (m) jeu = m[1];
+      }
+      if (jeu) {
+        try { new TextDecoder(jeu.trim()); return decoderParTranches(o, jeu.trim(), false); } catch (e) { /* jeu inconnu du navigateur : on devine */ }
+      }
+      return decoderParTranches(o, 'utf-8', true).catch(function () { return decoderParTranches(o, 'windows-1252', false); });
+    });
+  }
+  function lireMhtml(f, toutes) {
+    if (f.size > P.maxOctetsXls) throw tropGros(f);
+    progres(0.02, 'Ouverture de la page web archivée…');
+    return lireOctets(f, 0, f.size).then(function (b) {
+      return texteParOctet(b).then(function (t) {
+        var pages = pagesMhtml(t), i = 0, meilleur = null, tropBas = null;
+        t = null;
+        if (!pages.length) throw erreur('Cette page web archivée ne renferme aucune page HTML lisible : demander l’export en .xlsx, en .xls ou en .csv.');
+        function suivante() {
+          if (i >= pages.length) return { trouve: false, meilleur: meilleur, tropBas: tropBas, onglets: pages.map(function (x) { return x.nom; }) };
+          var pg = pages[i++], c = collecteur(toutes), analyse = analyseurHtml(c);
+          progres(0.04 + 0.9 * (i - 1) / pages.length, 'Lecture de « ' + pg.nom + ' »…');
+          return texteDePage(b, pg).then(function (parts) {
+            /* Les morceaux passent à la lecture des lignes par tranches de 256 Ko. */
+            var k = 0, pos = 0, total = 0, lus = 0;
+            parts.forEach(function (x) { total += x.length; });
+            function morceau() {
+              var t0 = Date.now();
+              while (k < parts.length) {
+                var x = parts[k], finMorceau = Math.min(x.length, pos + 262144);
+                var dernier = finMorceau === x.length && k === parts.length - 1;
+                if (analyse(x.slice(pos, finMorceau), dernier) === false) return c;
+                lus += finMorceau - pos;
+                pos = finMorceau;
+                if (pos >= x.length) { k++; pos = 0; }
+                if (k < parts.length && Date.now() - t0 > 50) {
+                  progres(0.05 + 0.9 * (i - 1 + lus / (total || 1)) / pages.length);
+                  return souffle().then(morceau);
+                }
+              }
+              return c;
+            }
+            return morceau();
+          }).then(function () {
+            if (c.sorte) { c.onglet = pg.nom; c.trouve = true; c.format = 'mhtml'; return c; }
+            if (c.tropBas && !tropBas) { tropBas = c.tropBas; tropBas.onglet = pg.nom; }
+            if (!meilleur || c.meilleur.portes > meilleur.portes) { meilleur = c.meilleur; meilleur.onglet = pg.nom; }
+            return suivante();
+          });
+        }
+        return suivante();
+      });
+    });
+  }
   // ------------------------------------------------------------ envoi au classeur
   function appeler(nom, args) {
     return new Promise(function (ok, ko) {
@@ -5436,55 +6458,40 @@ function scriptImportSecondeBase_(P) {
   }
 
   // ------------------------------------------------------------ ce qu'est un fichier
+  /* À ses premiers octets : un zip (.xlsx, .xlsm, .xlsb), un conteneur OLE
+     (un vrai .xls, même nommé .xlsx, ou un .xlsx chiffré), un flux BIFF nu
+     (un .xls sans conteneur, ou un classeur d'Excel 2 à 4, très ancien), ou
+     du texte (CSV, page web, page web archivée, XML 2003). */
   function sorteDuFichier(f) {
-    return lireOctets(f, 0, 512).then(function (b) {
+    return lireOctets(f, 0, 16).then(function (b) {
       if (b[0] === 0x50 && b[1] === 0x4b) return 'zip';
-      if (!(b[0] === 0xD0 && b[1] === 0xCF && b[2] === 0x11 && b[3] === 0xE0)) return 'texte';
-      /* Un conteneur OLE : un vieux classeur (flux « Workbook » ou « Book »),
-         même nommé .xlsx, ou un .xlsx chiffré (« EncryptionInfo »). Le
-         premier secteur du répertoire le dit ; à défaut, l'extension. */
-      var parExtension = /\.xls[xmb]$/i.test(f.name) ? 'protege' : 'xls';
-      if (b.length < 512 || (u16(b, 0x1E) !== 9 && u16(b, 0x1E) !== 12)) return parExtension;
-      var secteur = 1 << u16(b, 0x1E), debut = (u32(b, 0x30) + 1) * secteur;
-      if (debut + secteur > f.size) return parExtension;
-      return lireOctets(f, debut, debut + secteur).then(function (d) {
-        var noms = [];
-        for (var k = 0; k + 128 <= d.length; k += 128) {
-          var lg = Math.min(64, u16(d, k + 64)), n = '';
-          for (var j = 0; j < lg - 2; j += 2) n += String.fromCharCode(u16(d, k + j));
-          noms.push(n);
-        }
-        if (noms.indexOf('Workbook') !== -1 || noms.indexOf('Book') !== -1) return 'xls';
-        if (noms.indexOf('EncryptionInfo') !== -1 || noms.indexOf('EncryptedPackage') !== -1) return 'protege';
-        return parExtension;
-      }, function () { return parExtension; });
+      if (b[0] === 0xD0 && b[1] === 0xCF && b[2] === 0x11 && b[3] === 0xE0) return 'ole';
+      /* Le premier enregistrement d'un flux BIFF : BOF (09 08 en BIFF5 et 8 ;
+         09 00, 09 02, 09 04 en BIFF2, 3, 4), de longueur fixe. */
+      if (b.length >= 8 && b[0] === 0x09 && b[3] === 0) {
+        if (b[1] === 0x08 && (b[2] === 8 || b[2] === 16)) return 'biff';
+        if ((b[1] === 0x00 && b[2] === 4) || ((b[1] === 0x02 || b[1] === 0x04) && b[2] === 6)) return 'biff-ancien';
+      }
+      return 'texte';
     });
-  }
-  /* Le contrat qui sert d'exemple dans les messages : celui de l'onglet affiché. */
-  function contratExemple() {
-    var k = contratExistant(P.choisi) || P.contrats[0];
-    return k ? { gates: k.id, see: k.onglet } : { gates: 'HDK', see: (P.base || 'SEE') + ' HDK' };
   }
   /* Lit un fichier et dit ce qu'il est : un export GATES ou SEE prêt à
      partir, ou une erreur qui dit pourquoi — et rien n'est encore envoyé. */
   function lireFichier(f, toutes) {
+    /* Un téléchargement raté (derrière le proxy de l'entreprise, souvent)
+       laisse un fichier vide : le dire, plutôt que « ni GATES ni SEE ». */
+    if (!f.size) return Promise.reject(erreur('Ce fichier est vide (0 octet) : le téléchargement n’a sans doute pas abouti. Le retélécharger depuis GATES ou SEE.'));
     return sorteDuFichier(f).then(function (sorte) {
-      if (sorte === 'protege') throw erreur('Ce fichier Excel est protégé (mot de passe ou étiquette de confidentialité) : la fenêtre ne peut pas le lire, ' +
-        'Google Sheets non plus. Demander l’export sans protection, ou en .csv.');
-      if (sorte === 'xls') {
-        var ex = contratExemple();
-        throw erreur('C’est un ancien fichier Excel (' + (/\.xls[xmb]$/i.test(f.name) ? 'format .xls, malgré son nom' : '.xls') + '), que la fenêtre ne sait pas lire. ' +
-          'Il faut l’export en .xlsx ou en .csv — ou, dans le classeur : Fichier → Importer → ce fichier → « Insérer de nouvelles feuilles » ' +
-          '(surtout pas « Remplacer la feuille de calcul » : elle remplace tout le classeur), puis supprimer l’ancien onglet et donner son nom au nouveau : ' +
-          '« ' + ex.gates + ' » pour l’export GATES du contrat, « ' + ex.see + ' » pour sa base ' + (P.base || 'SEE') + '.');
-      }
+      if (sorte === 'ole') return lireOle(f, toutes);
+      if (sorte === 'biff') return lireBiffNu(f, toutes);
+      if (sorte === 'biff-ancien') throw erreur(TRES_ANCIEN);
       if (sorte === 'zip') {
         var vieux = 'Ce navigateur est trop ancien pour décompresser un .xlsx. Le mettre à jour, ou passer par un export .csv.';
         if (typeof DecompressionStream !== 'function') throw erreur(vieux);
         try { new DecompressionStream('deflate-raw'); } catch (e) { throw erreur(vieux); }
         return lireXlsx(f, toutes);
       }
-      return sonderTexte(f).then(function (s) { return lireTexte(f, toutes, s); });
+      return sonderTexte(f).then(function (s) { return s.sorte === 'mhtml' ? lireMhtml(f, toutes) : lireTexte(f, toutes, s); });
     }).then(function (c) { return bilan(c, f); });
   }
   function bilan(c, f) {
@@ -5731,9 +6738,10 @@ function scriptImportSecondeBase_(P) {
       if (r.el && r.el.parentNode) r.el.parentNode.removeChild(r.el);
       return false;
     });
-    var tableaux = /\.(xlsx|xlsm|xls|xlsb|csv|txt|xml|html?)$/i, autres = [], doublons = 0, laisses = [];
+    var tableaux = /\.(xlsx|xlsm|xls|xlsb|csv|txt|xml|html?|mht|mhtml)$/i, autres = [], zips = [], doublons = 0, laisses = [];
     for (var i = 0; i < liste.length; i++) {
       var f = liste[i];
+      if (/\.zip$/i.test(f.name)) { zips.push(f.name); continue; }
       if (!tableaux.test(f.name)) { autres.push(f.name); continue; }
       if (fichiers.some(function (r) { return r.f.name === f.name && r.f.size === f.size && r.f.lastModified === f.lastModified; })) { doublons++; continue; }
       if (fichiers.length >= P.maxFichiers) { laisses.push(f.name); continue; }
@@ -5750,6 +6758,7 @@ function scriptImportSecondeBase_(P) {
     var mots = [];
     if (autres.length) mots.push(autres.length + ' fichier' + (autres.length > 1 ? 's' : '') + ' laissé' + (autres.length > 1 ? 's' : '') +
       ' de côté, pas des tableaux : ' + autres.slice(0, 4).join(', ') + (autres.length > 4 ? ', …' : '') + '.');
+    if (zips.length) mots.push('« ' + zips.slice(0, 4).join(' », « ') + ' »' + (zips.length > 4 ? ', …' : '') + ' : ' + DOSSIER_COMPRESSE.charAt(0).toLowerCase() + DOSSIER_COMPRESSE.slice(1));
     if (doublons) mots.push(doublons + ' fichier' + (doublons > 1 ? 's' : '') + ' déjà dans la liste.');
     /* Nommés, comme le dit le mode d'emploi : sinon il fallait comparer la
        liste au dossier pour savoir lesquels importer ensuite. */
@@ -5921,12 +6930,20 @@ function scriptImportSecondeBase_(P) {
     var k = P.contrats[0];
     return k.existe && compact(k.onglet) === compact(P.base) ? { id: k.id, de: k.onglet, vers: P.base + ' ' + k.id } : null;
   }
+  /* Un export GATES dans un format qui ne garde pas les cellules fusionnées
+     (un .csv ; un .xls d'Excel 95, les fusions étant venues avec Excel 97) :
+     la page déduit alors les groupes de proche en proche. Rend ce format tel
+     que les messages le nomment (« un .csv »), ou '' si les fusions sont là. */
+  function perteFusions(d) {
+    return d.format === 'csv' ? 'un .csv' : d.format === 'xls95' && !d.fusions.length ? 'un .xls d’Excel 95' : '';
+  }
+  function majuscule(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
   function resumeLu(d) {
     var dit = d.duree >= 0 ? ' · lu en ' + Math.max(1, Math.round(d.duree)) + ' s' : '';
     if (d.sorte === 'see') return nb(d.lignes.length) + ' ligne' + (d.lignes.length > 1 ? 's' : '') + ', colonnes ' + d.entete.join(', ') + dit;
     return (d.refs.length ? nb(d.refs.length) + ' plan' + (d.refs.length > 1 ? 's' : '') : nb(d.donnees) + ' lignes') + ' · ' + d.largeur + ' colonnes' +
       ' · en-têtes en ligne ' + d.ligneEntete + (d.fusions.length ? ' · ' + d.fusions.length + ' cellules fusionnées' : '') + dit +
-      (d.format === 'csv' ? ' · un .csv ne garde pas les cellules fusionnées de la ligne des groupes : l’export Excel (.xlsx) est plus sûr' : '') +
+      (perteFusions(d) ? ' · ' + perteFusions(d) + ' ne garde pas les cellules fusionnées de la ligne des groupes : l’export Excel (.xlsx, ou .xls d’Excel 97-2003) est plus sûr' : '') +
       (d.formulesAilleurs ? ' · ' + nb(d.formulesAilleurs) + ' formule(s) sans valeur calculée, laissée(s) vide(s)' : '');
   }
   function dessiner(r) {
@@ -6142,14 +7159,15 @@ function scriptImportSecondeBase_(P) {
     if (fin.etat !== 'ok') return avis(debut + nb(fin.lignes) + ' lignes posées, mais l’onglet n’a pas pu être relu (' + ech(fin.message || fin.etat) + ') : menu Suivi FWD → Diagnostic.');
     var texte = debut + '<b>' + nb(fin.plans) + ' plan' + (fin.plans > 1 ? 's' : '') + '</b>';
     if (fin.fusionsRatees) texte += ', ' + fin.fusionsRatees + ' cellule(s) fusionnée(s) non recréée(s)';
+    var perte = perteFusions(d);
     if (!fin.colonneSuivie) {
       return avis(texte + ', mais la colonne suivie est introuvable : la page n’en lira aucune' + (archiver ? ', et le relevé n’est pas archivé' : '') + '. ' +
-        (d.format === 'csv' ? 'Un .csv ne garde pas les cellules fusionnées de la ligne des groupes, par lesquelles la page la reconnaît : importer plutôt l’export Excel (.xlsx) de GATES.'
+        (perte ? majuscule(perte) + ' ne garde pas les cellules fusionnées de la ligne des groupes, par lesquelles la page la reconnaît : importer plutôt l’export Excel (.xlsx, ou .xls d’Excel 97-2003) de GATES.'
           : 'Menu Suivi FWD → Diagnostic dit quelles colonnes il a lues.'));
     }
     texte += ', colonne suivie ' + ech(fin.colonneSuivie.replace(' > ', ' › ')) +
       (fin.conceptDemande ? (fin.concept ? ', concept harnais lu' : ', mais le concept harnais est introuvable') : '');
-    var csv = d.format === 'csv' ? ' Un .csv ne garde pas les cellules fusionnées : la page a déduit les groupes de proche en proche ; l’export Excel (.xlsx) est plus sûr.' : '';
+    var csv = perte ? ' ' + majuscule(perte) + ' ne garde pas les cellules fusionnées : la page a déduit les groupes de proche en proche ; l’export Excel (.xlsx, ou .xls d’Excel 97-2003) est plus sûr.' : '';
     var fini = function (html) { return csv ? avis(html + csv) : { ok: true, classe: 'ok', html: '✓ ' + html }; };
     if (!archiver) return fini(texte + '.');
     progres(1, 'Archivage du relevé ' + P.semaine + ' de « ' + fin.onglet + ' »…');

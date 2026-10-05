@@ -242,8 +242,9 @@ pas un tableau est laissé de côté et nommé.
 
 **Chaque fichier est lu dès qu'il est ajouté**, un à la fois, avec sa barre,
 **sur le poste** — il ne part nulle part ; la lecture elle-même (zip lu au
-fil de l'eau, formats d'Excel, CSV, page web, XML 2003) est celle décrite au
-§ 12. La fenêtre reconnaît l'export à sa ligne d'en-têtes, cherchée dans les
+fil de l'eau, formats d'Excel, vrai `.xls` d'Excel 97-2003 ou 95, CSV, page
+web, page web archivée `.mht`, XML 2003) est celle décrite au § 12. La
+fenêtre reconnaît l'export à sa ligne d'en-têtes, cherchée dans les
 huit premières lignes de chaque onglet (`LIGNES_SCAN_ENTETE`), avec **les
 règles du serveur, reçues à l'ouverture et non recopiées** :
 
@@ -266,16 +267,20 @@ vide), de la colonne A à la dernière remplie, chaque cellule comme Excel
 l'affiche — ce qu'un Ctrl+A / Ctrl+V depuis Excel aurait posé. Les
 **cellules fusionnées** qui commencent sur la ligne d'en-têtes ou au-dessus
 (la ligne des groupes : « HDK AA 011 » couvre son bloc) sont lues —
-`<mergeCells>` d'un `.xlsx`, `colspan` / `rowspan` d'une page web,
-`MergeAcross` / `MergeDown` du XML 2003 — et **recréées avant l'échange des
-onglets** : la page lit l'onglet dès qu'il porte son nom, et c'est par ces
-fusions qu'elle reconnaît la colonne suivie (§ 7). Un `.csv` n'en a pas : la
-page déduit alors les groupes de proche en proche, et la fenêtre conseille
-l'export Excel. L'essai de référence (`tests/import-see.js`) le vérifie : un
-export de 186 plans et 138 colonnes, importé, donne le même onglet, valeur
-pour valeur et fusion pour fusion, que le même export collé — et
-`construireModele`, `getDonneesPourClient` et `compterAvancements` y lisent
-exactement la même chose. Refusés dès la lecture, sans rien envoyer : plus de
+`<mergeCells>` d'un `.xlsx`, `MERGEDCELLS` d'un `.xls`, `colspan` /
+`rowspan` d'une page web, `MergeAcross` / `MergeDown` du XML 2003 — et
+**recréées avant l'échange des onglets** : la page lit l'onglet dès qu'il
+porte son nom, et c'est par ces fusions qu'elle reconnaît la colonne suivie
+(§ 7). Un `.csv` n'en a pas, un `.xls` d'Excel 95 non plus (les fusions sont
+venues avec Excel 97) : la page déduit alors les groupes de proche en
+proche, et la fenêtre conseille l'export Excel. L'essai de référence
+(`tests/import-see.js`) le vérifie : un export de 186 plans et 138
+colonnes, importé, donne le même onglet, valeur pour valeur et fusion pour
+fusion, que le même export collé — et `construireModele`,
+`getDonneesPourClient` et `compterAvancements` y lisent exactement la même
+chose ; le même export en vrai `.xls` (écrit par LibreOffice, ou par xlwt)
+ou en page web archivée donne l'onglet du `.xlsx`, à la cellule et à la
+fusion près. Refusés dès la lecture, sans rien envoyer : plus de
 400 colonnes, plus de quatre millions de cellules, un en-tête sans aucun plan
 dessous (l'onglet d'un contrat n'est jamais remplacé par un export vide), une
 formule sans valeur calculée dans l'en-tête, les lignes au-dessus ou la
@@ -1012,20 +1017,94 @@ SOL. ou Cust.V (fichier écrit par un programme qui ne calcule pas) est
 refusée, plutôt que lue vide. Un fichier coupé ou abîmé est refusé aussi : la
 taille décompressée de chaque partie est vérifiée.
 
+**Les vrais `.xls`** (débrief du 5 octobre : « C'est un dossier xls, il
+arrive pas à le lire… »). Un `.xls` d'Excel 97-2003 (BIFF8) ou d'Excel 5 / 95
+(BIFF5) n'est ni un zip ni du texte : c'est un **conteneur OLE**, un petit
+système de fichiers en secteurs de 512 ou 4 096 octets. La fenêtre le lit en
+entier (un `.xls` s'arrête à 65 536 lignes ; au-delà de 200 Mo,
+`IMPORT_MAX_OCTETS_XLS`, ce n'est pas un export et elle refuse), suit sa
+table d'allocation (la FAT, listée par la DIFAT, jusque dans ses secteurs
+chaînés), son répertoire (les noms en UTF-16, l'arbre des flux de la
+racine), et recompose le flux « Workbook » (ou « Book »), y compris depuis
+le mini-flux (blocs de 64 octets) quand il fait moins de 4 096 octets. Chaque
+chaîne est suivie sous garde : un secteur hors du fichier, une boucle, une
+chaîne trop courte pour le flux annoncé disent « abîmé, le retélécharger »
+(un téléchargement coupé, le plus souvent). Le flux est ensuite parcouru
+enregistrement par enregistrement, en rendant la main à la fenêtre toutes
+les quelques milliers d'enregistrements : les onglets (BOUNDSHEET — les
+graphiques et les feuilles de macros écartés, les masqués après les
+visibles, comme pour un `.xlsx`), la page de codes (CODEPAGE : en Excel 95,
+les textes sont des octets — Windows-1252, ou celle que le fichier dit, 850
+et 437 du DOS comprises), le calendrier 1904, la table des textes partagés
+(SST) et ses suites (CONTINUE : une chaîne peut y être coupée en plein
+caractère — un octet d'options redit alors sa largeur, qui peut changer —,
+dans ses mises en forme ou dans sa lecture phonétique), et chaque façon
+d'écrire une cellule : texte partagé, LABEL, RSTRING, NUMBER, RK (entier ou
+nombre à virgule réduit, divisé par cent ou non), MULRK, BOOLERR (VRAI /
+FAUX comme pour un `.xlsx`, ou l'erreur : `#N/A`, `#DIV/0!`…), la valeur
+gardée d'une formule (nombre, texte dans l'enregistrement STRING qui la
+suit, booléen, erreur, texte vide — sous son numéro d'Excel 97, ou ceux
+d'Excel 3 et 4 qu'Apple Numbers écrit encore), BLANK, MULBLANK ; un texte
+vide écrit sans son octet d'options reste une cellule vide, et un caractère
+hors du plan de base (un émoji) coupé entre deux enregistrements se
+recompose ; puis les cellules
+fusionnées (MERGEDCELLS, en un ou plusieurs enregistrements). Chaque nombre
+s'écrit comme Excel l'affiche, **avec les mêmes règles que pour un
+`.xlsx`** : le format de la cellule (XF → FORMAT, ou un format intégré :
+14 à 22 et 45 à 47 pour les dates et heures) passe par la même mise en
+forme ; un nom local de « General » (Standard, Standaard, Allmänt, Общий…
+: des lettres seules, qui ne sont pas des jetons de date) n'est jamais pris
+pour une date, et le format n° 0 est toujours « General ». Un graphique posé dans un onglet a ses propres BOF et EOF, et des
+valeurs en cache qui ressemblent à des cellules : il est sauté. Des lignes
+écrites dans le désordre (certains programmes) sont rangées avant de partir.
+Un fichier chiffré (FILEPASS) avec le **mot de passe par défaut d'Excel**,
+« VelvetSweatshop » — Excel chiffre ainsi un `.xls` dont seule la structure
+est protégée, ou qui n'a de mot de passe que pour la modification, et
+l'ouvre sans rien demander —, est déchiffré puis lu comme un autre : RC4
+d'Excel 97 (clé tirée par MD5) ou RC4 CryptoAPI (SHA-1, 40 à 128 bits),
+vérifiés sur l'empreinte du FILEPASS, déchiffrés par blocs de 1 024 octets
+du flux, sauf ce que le format laisse en clair (BOF, FILEPASS, la place de
+chaque onglet…). Avec un vrai mot de passe, il est dit « protégé », comme
+un `.xlsx` chiffré (« EncryptionInfo » dans son
+conteneur ; un `.xlsx` qui est un conteneur OLE illisible est presque
+toujours protégé) ; un classeur d'Excel 2 à 4 (BIFF2 à 4, sans conteneur)
+est dit « très ancien » ; un document Office sans classeur (un document Word
+renommé) le dit aussi — sauf si son répertoire est lui-même cassé : le
+fichier est alors « abîmé ». Un fichier de 0 octet (un téléchargement
+raté) est dit vide ; un « dossier compressé » (`.zip`), choisi tel quel ou
+renommé en `.xls`, est dit tel, avec ce qu'il renferme. Une formule dont le résultat texte manque (un
+programme qui ne calcule pas) compte comme une formule sans valeur
+calculée, refusée dans NAME, SOL. ou Cust.V. Les essais
+(`tests/import-see.js`) lisent des `.xls` écrits par LibreOffice, SheetJS et
+xlwt — et comparent chaque cellule à la lecture qu'en fait SheetJS, un
+lecteur indépendant (`tests/xls/oracle.json.gz`, préparé par
+`tests/preparer-xls.js`) —, et des `.xls` fabriqués octet par octet pour
+chaque cas du format (`tests/fabriquer-xls.js`).
+
+**Une page web archivée** (« Page Web, fichier unique », `.mht`, que certains
+exports web nomment `.xls`) est un message MIME : ses pages HTML sont
+extraites, leur codage de transfert défait (quoted-printable, base64), lues
+dans leur jeu de caractères (celui de leurs en-têtes, sinon de leur balise
+`<meta>`) — tout cela par tranches de 4 Mo, la fenêtre respirant entre
+elles : une page de 80 Mo ne la fige pas —, puis passent au lecteur de
+pages web (où une case « `mso-ignore:colspan` », des cases vides
+qu'Excel regroupe, n'est pas une fusion) — la première qui porte
+l'en-tête l'emporte (Excel y range un cadre, puis une page par onglet).
+
 Les fichiers texte : `.csv` et `.txt` (séparateur trouvé seul, guillemets,
 `="001"` ; encodage par la marque d'ordre, UTF-16, UTF-8 strict, et reprise
 en Windows-1252 si un accent mal codé apparaît loin dans le fichier), et les
 faux « `.xls` » de certains outils — une page web (tableau HTML, `colspan`
-compris) ou du XML Excel 2003 (`ss:Index`, `MergeAcross`). Un vrai ancien
-`.xls`, un `.xlsb` (aucun autre chemin pour lui que l'export en `.xlsx` ou
-`.csv`), un fichier protégé : la fenêtre dit qu'elle ne les lit pas et donne
-le chemin qui reste. Un conteneur OLE se reconnaît à son répertoire : un flux
-« Workbook » est un vieux classeur, même nommé `.xlsx` ; « EncryptionInfo »,
-un `.xlsx` chiffré. Le séparateur d'un CSV se choisit sur des champs lus
-guillemets compris (un en-tête `"NAME","SOL.","Cust.V"`, des « ; » dans une
-description entre guillemets ne le trompent pas) ; une section CDATA est lue
-telle quelle ; une formule qu'Excel a calculée vide (`t="str"`, `<v></v>`)
-vaut une cellule vide, pas un refus.
+compris, avec ou sans guillemets comme Excel l'écrit) ou du XML Excel 2003
+(`ss:Index`, `MergeAcross`). Un `.xlsb` (classeur binaire, que Google Sheets
+n'importe pas non plus : l'export en `.xlsx` ou en `.csv`, ou Excel →
+Enregistrer sous → `.xlsx`) et un fichier protégé : la fenêtre dit qu'elle
+ne les lit pas et donne le chemin qui reste. Le séparateur d'un CSV se
+choisit sur des champs lus guillemets compris (un en-tête
+`"NAME","SOL.","Cust.V"`, des « ; » dans une description entre guillemets
+ne le trompent pas) ; une section CDATA est lue telle quelle ; une formule
+qu'Excel a calculée vide (`t="str"`, `<v></v>`) vaut une cellule vide, pas un
+refus.
 
 L'envoi se fait par lots (vingt mille lignes, moins de 900 000 caractères)
 dans un onglet temporaire, `SEE HDK (import xxxxxx)` — `HDK (import xxxxxx)`

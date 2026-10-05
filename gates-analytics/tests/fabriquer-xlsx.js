@@ -95,7 +95,7 @@ function lettres(n) { let s = ''; n++; while (n > 0) { const r = (n - 1) % 26; s
  * Un classeur. spec : { onglets: [{ nom, lignes: [[cellule…]…], cache }],
  *   chaines: 'partagees' | 'inline', prefixe: 'x' (préfixe d'espace de
  *   noms), sansRef: true (ni r de ligne ni r de cellule), date1904,
- *   descripteur, zip64, cheminsAbsolus }.
+ *   descripteur, zip64, cheminsAbsolus, actif (le rang de l'onglet actif) }.
  * Une cellule : chaîne, nombre, null, ou { n, fmt: 'date' | 'heure' |
  *   'jour' (jj/mm/aaaa) | 'jourheure' (jj/mm/aaaa hh:mm) | 'zeros5' |
  *   'zeros3' | '0.00' | 'pct' | 'pct2' | 'mille' | 'euro' | 'sci' },
@@ -172,7 +172,9 @@ function xlsx(spec) {
   parties.push({ nom: '[Content_Types].xml', donnees: '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' + types + '</Types>' });
   parties.push({ nom: '_rels/.rels', donnees: '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>' });
   parties.push({ nom: 'xl/workbook.xml', donnees: '<?xml version="1.0" encoding="UTF-8"?><' + px + 'workbook' + nsP + ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
-    '<' + px + 'workbookPr' + (spec.date1904 ? ' date1904="1"' : '') + '/><' + px + 'sheets>' +
+    '<' + px + 'workbookPr' + (spec.date1904 ? ' date1904="1"' : '') + '/>' +
+    /* L'onglet actif : un onglet masqué ne peut pas l'être (LibreOffice le démasquerait). */
+    (spec.actif !== undefined ? '<' + px + 'bookViews><' + px + 'workbookView activeTab="' + spec.actif + '"/></' + px + 'bookViews>' : '') + '<' + px + 'sheets>' +
     spec.onglets.map(function (o, k) { return '<' + px + 'sheet name="' + echXml(o.nom) + '" sheetId="' + (k + 1) + '"' + (o.cache ? ' state="hidden"' : '') + ' r:id="rId' + (k + 1) + '"/>'; }).join('') +
     '</' + px + 'sheets></' + px + 'workbook>' });
   const rels = spec.onglets.map(function (o, k) {

@@ -7,16 +7,22 @@
    la vraie structure (tests/feuille-gates.js : 138 colonnes, seize fusions
    dans la ligne des groupes), exports SEE ; chaînes partagées ou en ligne,
    chaînes riches, styles, préfixes, Zip64, CSV, pages web et XML 2003
-   nommés .xls. */
+   nommés .xls. Et les vrais .xls : ceux de tests/xls/, écrits par
+   LibreOffice, SheetJS et xlwt (tests/preparer-xls.js), comparés au .xlsx
+   d'où ils viennent et à la lecture qu'en fait SheetJS (l'oracle) ; ceux
+   de tests/fabriquer-xls.js, écrits octet par octet pour chaque cas du
+   format ; et les pages web archivées (.mht). */
 const { chromium } = require('playwright');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const vm = require('vm');
+const zlib = require('zlib');
 const { chargerServeur } = require('./build-addon');
 const { Feuille, Classeur } = require('./faux-classeur');
 const { feuilleGates, colonne } = require('./feuille-gates');
-const { xlsx } = require('./fabriquer-xlsx');
+const { xlsx, zip } = require('./fabriquer-xlsx');
+const FX = require('./fabriquer-xls');
 
 let reussis = 0;
 const echecs = [];
@@ -151,6 +157,88 @@ function serveur(c) {
 }
 const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now() - (decalageJours || 0) * 864e5));
 
+// ===================================================================== les vrais .xls
+const lireXls = nom => fs.readFileSync(path.join(__dirname, 'xls', nom));
+const ORACLE = JSON.parse(zlib.gunzipSync(lireXls('oracle.json.gz')).toString('utf8'));
+/* Un tableau sans ses cellules vides en fin de ligne ni ses lignes vides à la fin : deux lectures se comparent ainsi. */
+function rogne(lignes) {
+  const l = (lignes || []).map(x => {
+    const y = (x || []).map(v => v === undefined || v === null ? '' : String(v));
+    while (y.length && y[y.length - 1] === '') y.pop();
+    return y;
+  });
+  while (l.length && !l[l.length - 1].length) l.pop();
+  return l;
+}
+/* Le premier écart entre deux tableaux (« ligne 4, colonne 7 : … au lieu de … »), ou ''. */
+function premierEcart(obtenu, attendu) {
+  const a = rogne(obtenu), b = rogne(attendu);
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const x = a[i] || [], y = b[i] || [];
+    for (let j = 0; j < Math.max(x.length, y.length); j++) {
+      if ((x[j] || '') !== (y[j] || '')) return 'ligne ' + (i + 1) + ', colonne ' + (j + 1) + ' : ' + JSON.stringify(x[j] || '') + ' au lieu de ' + JSON.stringify(y[j] || '');
+    }
+  }
+  return '';
+}
+/* Les cellules fusionnées d'un onglet du faux classeur, [ligne, col, hauteur, largeur], triées. */
+const fusionsDe = f => (f.fusions || []).map(x => [x.ligne, x.col, x.haut || 1, x.larg]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+/* L'onglet SEE que la fenêtre poserait, « toutes » cochée, d'après les lignes brutes d'un onglet : la
+   ligne qui porte NAME, SOL. et Cust.V, ses colonnes nommées, et dessous les lignes qui ne sont pas vides. */
+function seeAttendu(lignes) {
+  const n = v => String(v || '').trim().toLowerCase();
+  const i = lignes.findIndex(l => ['name', 'sol.', 'cust.v'].every(k => l.map(n).indexOf(k) !== -1));
+  const cols = lignes[i].map((v, j) => n(v) ? j : -1).filter(j => j !== -1);
+  return [cols.map(j => String(lignes[i][j]).trim())].concat(lignes.slice(i + 1).map(l => cols.map(j => l[j] === undefined ? '' : l[j]))
+    .filter(l => l.some(v => String(v).trim() !== '')));
+}
+/* Les types des enregistrements du flux « Workbook » d'un .xls (conteneur à 512 octets, sans DIFAT) : ce
+   qu'un fichier de tests/xls exerce vraiment. */
+function typesEnregistrements(b) {
+  const taille = 1 << b.readUInt16LE(0x1E), fat = [];
+  for (let i = 0; i < Math.min(109, b.readUInt32LE(0x2C)); i++) {
+    const s = b.readUInt32LE(0x4C + 4 * i);
+    for (let k = 0; k < taille / 4; k++) fat.push(b.readUInt32LE((s + 1) * taille + 4 * k));
+  }
+  const chaine = s => { const l = []; while (s < 0xFFFFFFFA && l.length < 1e6) { l.push(s); s = fat[s]; } return l; };
+  const secteurs = l => Buffer.concat(l.map(s => b.subarray((s + 1) * taille, (s + 2) * taille)));
+  const dir = secteurs(chaine(b.readUInt32LE(0x30)));
+  let w = null;
+  for (let k = 0; k < dir.length; k += 128) {
+    if (dir.subarray(k, k + 16).toString('utf16le') === 'Workbook') w = secteurs(chaine(dir.readUInt32LE(k + 116))).subarray(0, dir.readUInt32LE(k + 120));
+  }
+  const types = [];
+  for (let p = 0; w && p + 4 <= w.length; p += 4 + w.readUInt16LE(p + 2)) types.push(w.readUInt16LE(p));
+  return types;
+}
+/* Une page web comme Excel l'enregistre : attributs sans guillemets (colspan=16), classes, nombres à droite ;
+   et des cases vides qui se suivent regroupées en une seule, « colspan=N style='mso-ignore:colspan' » —
+   ce n'est pas une fusion. */
+function htmlExcel(valeurs, fusionsLigne1, titre) {
+  const parCol = {};
+  (fusionsLigne1 || []).forEach(f => { parCol[f.col] = f.larg; });
+  let lignes = '';
+  valeurs.forEach((l, r) => {
+    let cellules = '';
+    for (let j = 0; j < l.length; j++) {
+      const larg = r === 0 ? parCol[j + 1] || 1 : 1;
+      let vides = 0;
+      while (larg === 1 && j + vides < l.length && l[j + vides] === '' && !(r === 0 && parCol[j + vides + 1])) vides++;
+      if (vides > 1) { cellules += '<td colspan=' + vides + ' style=\'mso-ignore:colspan\'></td>'; j += vides - 1; continue; }
+      cellules += '<td' + (larg > 1 ? ' colspan=' + larg : '') + ' class=xl' + (65 + (j % 3)) + (/^\d+$/.test(l[j]) ? ' align=right x:num' : '') + '>' +
+        echHtml(l[j]) + '</td>';
+      j += larg - 1;
+    }
+    lignes += ' <tr height=20 style=\'height:15.0pt\'>\r\n  ' + cellules + '\r\n </tr>\r\n';
+  });
+  return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">\r\n' +
+    '<head>\r\n<meta name=ProgId content=Excel.Sheet>\r\n<meta name=Generator content="Microsoft Excel 15">\r\n<style>\r\n.xl65 {mso-number-format:"\\@";}\r\n</style>\r\n' +
+    (titre ? '<title>' + echHtml(titre) + '</title>\r\n' : '') + '</head>\r\n<body link=blue vlink=purple>\r\n' +
+    '<table border=0 cellpadding=0 cellspacing=0 width=8832 style=\'border-collapse:collapse;table-layout:fixed\'>\r\n' + lignes + '</table>\r\n</body>\r\n</html>\r\n';
+}
+/* Le paquet de la page, sans ce qui dépend de l'heure. */
+const paquetSansDate = o => { const x = JSON.parse(JSON.stringify(o)); delete x.genereLe; delete x.releves; delete x.avis; delete x.rapprochement; return JSON.stringify(x); };
+
 (async () => {
   const nav = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
   const dossier = fs.mkdtempSync(path.join(os.tmpdir(), 'import-see-'));
@@ -248,7 +336,13 @@ const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now
         document.getElementById('depot').dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
       }, fichiers.map(f => ({ nom: f.nom, b64: Buffer.from(f.contenu).toString('base64'), date: f.date || 0 })));
     } else {
-      await page.setInputFiles('#fichier', fichiers.map(f => ({ name: f.nom, mimeType: 'application/octet-stream', buffer: f.contenu })));
+      /* Playwright ne passe pas un tampon de plus de 50 Mo : un gros fichier part d'un fichier sur le disque, à son nom. */
+      await page.setInputFiles('#fichier', fichiers.map(f => {
+        if (f.contenu.length < 40 * 1048576) return { name: f.nom, mimeType: 'application/octet-stream', buffer: f.contenu };
+        const sous = fs.mkdtempSync(path.join(dossier, 'gros-'));
+        fs.writeFileSync(path.join(sous, f.nom), f.contenu);
+        return path.join(sous, f.nom);
+      }));
     }
     await attendreLecture(page);
     return lignes(page);
@@ -683,11 +777,11 @@ const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now
     verifier('l’en-tête sans aucune ligne dessous : refusé, la base n’est pas vidée', /erreur/.test(r.etat.classe) && /aucune ligne dessous/.test(r.etat.texte) && page.__appels.length === 0, r.etat.texte);
     const ole = Buffer.concat([Buffer.from([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]), Buffer.alloc(600)]);
     r = await importer(page, 'vieux.xls', ole);
-    verifier('un ancien .xls : la fenêtre dit qu’elle ne le lit pas, et l’autre chemin — « Insérer de nouvelles feuilles », surtout pas « Remplacer la feuille de calcul », le nom à donner',
-      /erreur/.test(r.etat.classe) && /ancien fichier Excel \(\.xls\)/.test(r.etat.texte) && /« Insérer de nouvelles feuilles »/.test(r.etat.texte) &&
-      /surtout pas « Remplacer la feuille de calcul »/.test(r.etat.texte) && /« HDK » pour l’export GATES du contrat, « SEE HDK » pour sa base SEE/.test(r.etat.texte), r.etat.texte);
+    verifier('un .xls dont le conteneur ne se lit pas (la signature OLE, puis des zéros) : « abîmé, le retélécharger », sans rien envoyer — plus jamais « ancien fichier, que la fenêtre ne sait pas lire »',
+      /erreur/.test(r.etat.classe) && /abîmé/.test(r.etat.texte) && /retélécharger/.test(r.etat.texte) && !/ancien fichier|ne sait pas lire/.test(r.etat.texte) &&
+      page.__appels.length === 0, r.etat.texte);
     r = await importer(page, 'Nommage WD BFLOW.xlsx', ole);
-    verifier('un .xlsx protégé (mot de passe, étiquette) : dit protégé, pas « ancien .xls »', /erreur/.test(r.etat.classe) && /protégé/.test(r.etat.texte) && !/ancien fichier/.test(r.etat.texte), r.etat.texte);
+    verifier('les mêmes octets nommés .xlsx : un .xlsx qui est un conteneur OLE est un .xlsx protégé (mot de passe, étiquette) — dit protégé', /erreur/.test(r.etat.classe) && /protégé/.test(r.etat.texte) && !/abîmé/.test(r.etat.texte), r.etat.texte);
     /* Un vrai conteneur OLE : en-tête (secteurs de 512, répertoire au secteur 0), puis le répertoire. */
     const conteneur = (noms) => {
       const b = Buffer.alloc(512 * 3);
@@ -697,8 +791,11 @@ const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now
       return b;
     };
     r = await importer(page, 'export.xlsx', conteneur(['Workbook', '\u0005SummaryInformation']));
-    verifier('un vieux classeur (.xls) nommé .xlsx : dit « format .xls, malgré son nom » et l’autre chemin, pas « protégé »',
-      /erreur/.test(r.etat.classe) && /format \.xls, malgré son nom/.test(r.etat.texte) && /« Insérer de nouvelles feuilles »/.test(r.etat.texte) && !/protégé/.test(r.etat.texte), r.etat.texte);
+    verifier('un conteneur OLE qui nomme un flux « Workbook » vide, même nommé .xlsx : un classeur abîmé, pas « protégé »',
+      /erreur/.test(r.etat.classe) && /abîmé/.test(r.etat.texte) && !/protégé/.test(r.etat.texte), r.etat.texte);
+    r = await importer(page, 'Nommage WD BFLOW.xlsx', FX.xls({ onglets: [{ nom: 'S', lignes: [['NAME', 'SOL.', 'Cust.V'], ['TFE311A0600', '001', 'A']] }] }), { contrat: 'THS' });
+    verifier('un vrai .xls nommé .xlsx (un export renommé) : lu comme un .xls', /\bok\b/.test(r.etat.classe) &&
+      c.getSheetByName('SEE THS').valeurs.map(l => l.join('|')).join(' / ') === 'NAME|SOL.|Cust.V / TFE311A0600|001|A', r.etat.texte);
     r = await importer(page, 'chiffre.xls', conteneur(['\u0006DataSpaces', 'EncryptionInfo', 'EncryptedPackage']));
     verifier('un .xlsx chiffré, même nommé .xls : dit protégé', /erreur/.test(r.etat.classe) && /protégé/.test(r.etat.texte), r.etat.texte);
     r = await importer(page, 'tronque.xlsx', seeXlsx(20).subarray(0, 900));
@@ -985,6 +1082,523 @@ const semaineDe = (ctx, decalageJours) => ctx.numeroSemaineISO(new Date(Date.now
       /\bok\b/.test(r.etat.classe) && f.fusions.length === 16 && f.fusions.every(x => x.ligne === 1) && JSON.stringify(f.valeurs) === JSON.stringify(g.valeurs),
       r.etat.texte + ' / ' + f.fusions.length);
     await page.close();
+  }
+
+  // =================================================================
+  section('Un vrai .xls d’export GATES : le même onglet que le même export en .xlsx');
+  {
+    const source = FX.SOURCES.gates();
+    verifier('la source des .xls GATES de tests/xls est l’export GATES des autres essais (la vraie structure, 186 plans), octet pour octet',
+      source.equals(xlsxGates(feuilleGates(186))));
+    const lus = {};
+    for (const [nom, contenu] of [['export_48.xlsx', source], ['export_48.xls', lireXls('lo-gates.xls')], ['export_xlwt.xls', lireXls('xlwt-gates.xls')]]) {
+      const c = new Classeur([ongletGates('HDK', gates(40)), new Feuille('SEE HDK', [['NAME', 'SOL.', 'Cust.V'], ['X', '001', 'A']])]);
+      const ctx = serveur(c);
+      const page = await fenetre(ctx);
+      const r = await importer(page, nom, contenu, { sansArchiver: true });
+      lus[nom] = { r, f: c.getSheetByName('HDK'), ctx, appels: page.__appels.slice() };
+      await page.close();
+    }
+    const x = lus['export_48.xlsx'], l = lus['export_48.xls'], w = lus['export_xlwt.xls'];
+    verifier('le .xls écrit par LibreOffice est lu, rattaché à « HDK », et sa ligne dit ce qu’elle dit du .xlsx : 186 plans · 138 colonnes · en-têtes en ligne 2 · 16 cellules fusionnées',
+      l.r.ligne.choix === 'HDK' && /^186 plans · 138 colonnes · en-têtes en ligne 2 · 16 cellules fusionnées · lu en \d+ s$/.test(l.r.ligne.lu) &&
+      l.r.ligne.lu.replace(/lu en \d+ s/, '') === x.r.ligne.lu.replace(/lu en \d+ s/, ''), JSON.stringify([l.r.ligne.lu, x.r.ligne.lu]));
+    verifier('l’onglet importé du .xls porte exactement les valeurs de l’onglet importé du .xlsx — chaque ligne à son numéro, chaque colonne à sa place, dates jj/mm/aaaa, ATA lue en nombre',
+      /\bok\b/.test(l.r.etat.classe) && !premierEcart(l.f.valeurs, x.f.valeurs) && l.f.valeurs.length === 189 && JSON.stringify(l.f.valeurs) === JSON.stringify(x.f.valeurs),
+      premierEcart(l.f.valeurs, x.f.valeurs) || l.r.etat.texte);
+    verifier('… et les mêmes seize cellules fusionnées, aux mêmes places', JSON.stringify(fusionsDe(l.f)) === JSON.stringify(fusionsDe(x.f)) && l.f.fusions.length === 16,
+      JSON.stringify(fusionsDe(l.f)));
+    verifier('construireModele, getDonneesPourClient et compterAvancements lisent l’onglet du .xls exactement comme celui du .xlsx',
+      JSON.stringify(l.ctx.construireModele('HDK')) === JSON.stringify(x.ctx.construireModele('HDK')) &&
+      paquetSansDate(l.ctx.getDonneesPourClient('HDK')) === paquetSansDate(x.ctx.getDonneesPourClient('HDK')) &&
+      JSON.stringify(l.ctx.compterAvancements('HDK')) === JSON.stringify(x.ctx.compterAvancements('HDK')));
+    verifier('la fenêtre dit ce que la page y lit, comme pour le .xlsx : 186 plans, colonne suivie HDK AA 011 › Avancement Définition Electrique, concept harnais lu',
+      /« export_48\.xls » → onglet « HDK » remplacé : 186 plans, colonne suivie HDK AA 011 › Avancement Définition Electrique, concept harnais lu\./.test(l.r.etat.texte), l.r.etat.texte);
+    verifier('le .xls écrit par xlwt (un autre programme, son propre conteneur) : les mêmes valeurs, les mêmes seize fusions',
+      /\bok\b/.test(w.r.etat.classe) && !premierEcart(w.f.valeurs, x.f.valeurs) && JSON.stringify(fusionsDe(w.f)) === JSON.stringify(fusionsDe(x.f)),
+      premierEcart(w.f.valeurs, x.f.valeurs) || w.r.etat.texte);
+    verifier('rien de plus n’est demandé au serveur que pour le .xlsx : le début, les lots, la fin, la liste des contrats relue', JSON.stringify(l.appels) === JSON.stringify(x.appels),
+      l.appels.join() + ' / ' + x.appels.join());
+  }
+
+  // =================================================================
+  section('Un vrai .xls d’export SEE : les mêmes lignes que le .xlsx');
+  {
+    const types = typesEnregistrements(lireXls('lo-see.xls'));
+    const iSst = types.indexOf(0x00FC);
+    let suites = 0;
+    while (types[iSst + 1 + suites] === 0x003C) suites++;
+    verifier('le .xls SEE de LibreOffice exerce ce qu’exerce un vrai export : sa table de textes partagés court sur ' + suites +
+      ' enregistrements CONTINUE (des chaînes coupées en route), des MULRK, des booléens écrits en formules', suites >= 10 && types.indexOf(0x00BD) !== -1 &&
+      types.indexOf(0x0006) !== -1 && types.indexOf(0x00FD) !== -1, suites + ' CONTINUE');
+    for (const toutes of [false, true]) {
+      const lus = {};
+      for (const [nom, contenu] of [['Nommage WD BFLOW.xlsx', FX.SOURCES.see()], ['Nommage WD BFLOW.xls', lireXls('lo-see.xls')]]) {
+        const c = classeur();
+        const page = await fenetre(chargerServeur(c, {}));
+        const r = await importer(page, nom, contenu, { toutes });
+        lus[nom] = { r, f: c.getSheetByName('SEE HDK') };
+        await page.close();
+      }
+      const x = lus['Nommage WD BFLOW.xlsx'], l = lus['Nommage WD BFLOW.xls'];
+      verifier((toutes ? '« Garder aussi les autres colonnes » : les huit colonnes' : 'NAME, SOL. et Cust.V seules') + ' — « SEE HDK » porte, du .xls, les mêmes 3 200 lignes que du .xlsx' +
+        (toutes ? ' (codes à zéros de tête, dates jj/mm/aaaa, VRAI / FAUX, tiret long et accents)' : ''),
+        /\bok\b/.test(l.r.etat.classe) && l.f.valeurs.length === 3201 && !premierEcart(l.f.valeurs, x.f.valeurs) && l.f.valeurs[0].length === (toutes ? 8 : 3) &&
+        (!toutes || l.f.valeurs[1].join('|') === 'S-0|TFE311A0600|001|A|15/03/2023||VRAI|non — été 0'),
+        premierEcart(l.f.valeurs, x.f.valeurs) || l.r.etat.texte + ' ' + JSON.stringify(l.f && l.f.valeurs[1]));
+      if (!toutes) {
+        verifier('la ligne du .xls dit la même chose que celle du .xlsx : 3 200 lignes, colonnes NAME, SOL., Cust.V', /^3\u202f200 lignes, colonnes NAME, SOL\., Cust\.V/.test(l.r.ligne.lu) &&
+          l.r.ligne.lu.replace(/lu en \d+ s/, '') === x.r.ligne.lu.replace(/lu en \d+ s/, ''), l.r.ligne.lu);
+      }
+    }
+  }
+
+  // =================================================================
+  section('L’oracle : chaque vrai .xls lu par la fenêtre comme par SheetJS');
+  {
+    /* SheetJS (0.18.5, hors du dépôt) a lu chacun de ces fichiers une fois pour toutes (tests/preparer-xls.js).
+       Trois différences voulues, les mêmes que pour un .xlsx : VRAI / FAUX, toute date jj/mm/aaaa, la virgule décimale. */
+    verifier('l’oracle est la lecture de SheetJS 0.18.5, pour les huit fichiers lisibles de tests/xls', ORACLE.sheetjs === '0.18.5' && Object.keys(ORACLE.fichiers).length === 8,
+      ORACLE.sheetjs + ' ' + Object.keys(ORACLE.fichiers).join(', '));
+    const cas = [
+      { fichier: 'lo-gates.xls', onglet: 'Export', gates: true, qui: 'LibreOffice, l’export GATES' },
+      { fichier: 'xlwt-gates.xls', onglet: 'Export', gates: true, qui: 'xlwt, l’export GATES' },
+      { fichier: 'lo-see.xls', onglet: 'Nommage', qui: 'LibreOffice, 3 200 lignes SEE' },
+      { fichier: 'lo-deux-onglets.xls', onglet: 'Données', qui: 'LibreOffice, deux onglets, l’en-tête dans le second' },
+      { fichier: 'lo-onglet-cache.xls', onglet: 'Export', qui: 'LibreOffice, un premier onglet masqué qui porte lui aussi un en-tête : le visible passe d’abord' },
+      { fichier: 'sheetjs-see.xls', onglet: 'Nommage', qui: 'SheetJS, BIFF8 en cellules LABEL' },
+      { fichier: 'sheetjs-see-95.xls', onglet: 'Nommage', qui: 'SheetJS, Excel 95 (BIFF5, textes en Windows-1252)' },
+      { fichier: 'xlwt-see.xls', onglet: 'Nommage', qui: 'xlwt, un export SEE' }
+    ];
+    for (const k of cas) {
+      const lu = ORACLE.fichiers[k.fichier].filter(o => o.nom === k.onglet)[0];
+      const c = classeur();
+      const page = await fenetre(serveur(c));
+      const r = await importer(page, k.fichier, lireXls(k.fichier), k.gates ? { sansArchiver: true } : { toutes: true });
+      await page.close();
+      const f = c.getSheetByName(k.gates ? 'HDK' : 'SEE HDK');
+      const attendu = k.gates ? lu.lignes : seeAttendu(lu.lignes);
+      const cellules = rogne(attendu).reduce((s, x) => s + x.length, 0);
+      const ecart = f ? premierEcart(f.valeurs, attendu) : 'onglet absent';
+      const fusionsOk = !k.gates || JSON.stringify(fusionsDe(f)) === JSON.stringify(lu.fusions.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]));
+      verifier(k.fichier + ' (' + k.qui + ') : ' + cellules + ' cellules, chacune comme SheetJS la lit' + (k.gates ? ', et ses ' + lu.fusions.length + ' cellules fusionnées' : ''),
+        /\bok\b/.test(r.etat.classe) && !ecart && fusionsOk, ecart || (fusionsOk ? r.etat.texte : JSON.stringify(fusionsDe(f))));
+    }
+  }
+
+  // =================================================================
+  section('Chaque façon d’écrire un .xls (fabriqué octet par octet)');
+  {
+    const c = classeur();
+    const ctx = chargerServeur(c, {});
+    const page = await fenetre(ctx);
+    const voir = () => c.getSheetByName('SEE HDK') ? c.getSheetByName('SEE HDK').valeurs : [];
+    /* Une ligne par façon d'écrire une cellule ; dessous, ce que la fenêtre doit en lire. */
+    const lignesX = [
+      ['Nommage WD BFLOW'], [],
+      ['NAME', 'SOL.', 'Cust.V', 'Texte', 'Nombre', 'RK', 'Formule', 'Booléen'],
+      ['TFE311A0600', '001', 'A', { riche: 'Riche et accentué é', runs: 2, phonetique: 'ふりがな' }, { n: 45000, fmt: 'jour' }, { rk: 42, mode: 'entier' }, { f: 3.25 }, { b: true }],
+      ['TFE312A0601', '002', 'B', { label: 'Label — long' }, 3.5, { rk: 1.23, mode: 'entier100' }, { f: 'texte de formule assez long pour être coupé' }, { b: false }],
+      ['TFE313A0602', '003', 'C', { rstring: 'Riche RSTRING' }, { n: 0.25, fmt: 'pct' }, { rk: 3.5, mode: 'reel' }, { f: true }, { err: 0x2A }],
+      ['TFE314A0603', '004', 'D', 'chaîne partagée Ω grecque', { n: 1234567, fmt: 'mille' }, { rk: 12.34, mode: 'reel100' }, { f: { err: 7 } }, { blanc: true }],
+      ['TFE315A0604', { mulrk: [{ rk: 5 }, { rk: 6, mode: 'entier100' }, { rk: -2.5, mode: 'reel' }] }, , , 'fin', { mulblank: 3 }],
+      ['TFE316A0605', '006', 'E', { riche: 'encore un texte riche, plus long que les autres, pour que les coupures tombent partout', runs: 5, phonetique: 'よみがな と ふりがな' },
+        { n: -7.125 }, { rk: -123456, mode: 'entier' }, { f: '' }, { f: false }],
+      ['TFE317A0606', '007', 'F', 'Ωmega en tête, puis du latin : coupure possible en largeur double', { n: 1e21 }, { rk: 0.5, mode: 'reel' }, { f: 'é' }, { b: true }]
+    ];
+    const attenduX = [
+      ['NAME', 'SOL.', 'Cust.V', 'Texte', 'Nombre', 'RK', 'Formule', 'Booléen'],
+      ['TFE311A0600', '001', 'A', 'Riche et accentué é', '15/03/2023', '42', '3,25', 'VRAI'],
+      ['TFE312A0601', '002', 'B', 'Label — long', '3,5', '1,23', 'texte de formule assez long pour être coupé', 'FAUX'],
+      ['TFE313A0602', '003', 'C', 'Riche RSTRING', '25\u202f%', '3,5', 'VRAI', '#N/A'],
+      ['TFE314A0603', '004', 'D', 'chaîne partagée Ω grecque', '1\u202f234\u202f567', '12,34', '#DIV/0!', ''],
+      ['TFE315A0604', '5', '6', '-2,5', 'fin', '', '', ''],
+      ['TFE316A0605', '006', 'E', 'encore un texte riche, plus long que les autres, pour que les coupures tombent partout', '-7,125', '-123456', '', 'FAUX'],
+      ['TFE317A0606', '007', 'F', 'Ωmega en tête, puis du latin : coupure possible en largeur double', '1E+21', '0,5', 'é', 'VRAI']
+    ];
+    const variantes = [
+      ['secteurs de 512 octets, enregistrements pleins (comme Excel) : textes partagés riches et phonétiques, LABEL, RSTRING, NUMBER, les quatre formes de RK, MULRK, ' +
+        'BOOLERR (booléens et erreurs), formules (nombre, texte et son STRING, booléen, erreur, texte vide), BLANK, MULBLANK, formats', {}, {}],
+      ['secteurs de 4 096 octets mélangés dans le fichier ; textes partagés coupés tous les 40 octets — en plein caractère (l’octet d’options repris, la largeur qui ' +
+        'change en route), en pleine mise en forme, en pleine phonétique — et résultat de formule coupé tous les 12 octets', { sst: { max: 40, bascule: true }, maxString: 12 },
+        { secteur: 4096, melange: true }],
+      ['… et des en-têtes de chaîne coupés entre deux enregistrements, ce qu’Excel ne fait pas', { sst: { max: 23, entetesCoupes: true } }, {}],
+      ['les lignes écrites à l’envers (un programme qui ne les range pas) : rangées avant de partir', { desordre: true }, {}]
+    ];
+    for (const [nom, opts, ole] of variantes) {
+      const spec = { sst: opts.sst, onglets: [{ nom: 'Données', lignes: lignesX, maxString: opts.maxString, desordre: opts.desordre }] };
+      const r = await importer(page, 'fabrique.xls', FX.xls(spec, ole), { toutes: true });
+      verifier(nom, /\bok\b/.test(r.etat.classe) && !premierEcart(voir(), attenduX), premierEcart(voir(), attenduX) || r.etat.texte);
+    }
+    /* Un petit classeur : sous 4 096 octets, le flux loge dans le mini-flux. */
+    const petit = { onglets: [{ nom: 'S', lignes: [['NAME', 'SOL.', 'Cust.V'], ['TFE311A0600', '001', 'A'], ['TFE312A0601', { rk: 2 }, 'B']] }] };
+    let r = await importer(page, 'petit.xls', FX.xls(petit, { nomRacine: 'R' }), { toutes: true });
+    verifier('un petit classeur (' + FX.classeurBiff(petit).length + ' octets), rangé dans le mini-flux par blocs de 64 octets, la racine nommée « R » comme l’écrit SheetJS',
+      FX.classeurBiff(petit).length < 4096 && /\bok\b/.test(r.etat.classe) && voir().map(l => l.join('|')).join(' / ') === 'NAME|SOL.|Cust.V / TFE311A0600|001|A / TFE312A0601|2|B',
+      r.etat.texte + ' ' + JSON.stringify(voir()));
+    /* Plus de 109 secteurs de FAT : la DIFAT déborde de l'en-tête dans des secteurs chaînés. */
+    const gros = FX.ole([{ nom: 'Remplissage', donnees: Buffer.alloc(7600000, 0x20) }, { nom: 'Workbook', donnees: FX.classeurBiff(petit) }]);
+    r = await importer(page, 'difat.xls', gros, { toutes: true });
+    verifier('un conteneur de ' + (gros.length / 1048576).toFixed(1) + ' Mo : ' + gros.readUInt32LE(0x2C) + ' secteurs de FAT, dont ' + (gros.readUInt32LE(0x2C) - 109) +
+      ' listés hors de l’en-tête (' + gros.readUInt32LE(0x48) + ' secteur(s) de DIFAT), le classeur rangé après eux : lu',
+      gros.readUInt32LE(0x48) >= 1 && /\bok\b/.test(r.etat.classe) && voir().length === 3, r.etat.texte);
+    /* Le calendrier 1904 (les classeurs venus d'un Mac). */
+    r = await importer(page, '1904.xls', FX.xls({ date1904: true, onglets: [{ nom: 'S', lignes: [['NAME', 'SOL.', 'Cust.V', 'Date'], ['TFE1', '001', 'A', { n: 45000, fmt: 'jour' }]] }] }), { toutes: true });
+    verifier('calendrier 1904 : 45000 se lit 16/03/2027, comme dans un .xlsx', /\bok\b/.test(r.etat.classe) && voir()[1][3] === '16/03/2027', JSON.stringify(voir()));
+    /* Les formats : ceux d'Excel, ceux du fichier, et un « General » au nom local. */
+    r = await importer(page, 'formats.xls', FX.xls({ onglets: [{ nom: 'S', lignes: [
+      ['NAME', 'SOL.', 'Cust.V', 'Standard', 'Texte', 'Zéros', 'Pour cent', 'Milliers', 'Euro', 'Date FR', 'Mois/jour', 'Date et heure', 'Heure', 'Scientifique', 'Décimales'],
+      ['TFE1', '001', 'A', { n: 45000, fmt: 'standard' }, { n: 42.5, fmt: 'texte' }, { n: 7, fmt: 'zeros3' }, { n: 0.1234, fmt: 'pct2' }, { n: 1234567, fmt: 'mille' },
+        { n: 1234.5, fmt: 'euro' }, { n: 45000, fmt: 'jourFr' }, { n: 45000, fmt: 'moisjour' }, { n: 45000.5, fmt: 'jourheure' }, { n: 0.75, fmt: 'heure' },
+        { n: 12345, fmt: 'sci' }, { n: 3, fmt: '0.00' }]] }] }), { toutes: true });
+    verifier('les nombres comme Excel les affiche, avec les mêmes règles que pour un .xlsx : un « Standard » (le nom local de « General ») n’est pas pris pour une date, ' +
+      '42.5 au format texte tel quel, 007, 12,34 %, 1 234 567, 1 234,50 €, [$-40C]jj/mm/aaaa, m/j/aaaa écrit jj/mm/aaaa, date et heure, heure, 1,23E+04, 3,00',
+      /\bok\b/.test(r.etat.classe) && voir()[1].slice(3).join('|') === '45000|42.5|007|12,34\u202f%|1\u202f234\u202f567|1\u202f234,50 €|15/03/2023|15/03/2023|15/03/2023 12:00|18:00|1,23E+04|3,00',
+      JSON.stringify(voir()[1]));
+    /* Les onglets : un graphique, des macros, un très masqué qui porte un en-tête, puis l'onglet des données avec un graphique posé dessus. */
+    r = await importer(page, 'onglets.xls', FX.xls({ onglets: [{ nom: 'Graphique', type: 'graphique' }, { nom: 'Macros', type: 'macro' },
+      { nom: 'Caché', cache: 'tres', lignes: [['NAME', 'SOL.', 'Cust.V'], ['CACHE', '009', 'Z']] },
+      { nom: 'Données', graphiqueDedans: true, lignes: [['NAME', 'SOL.', 'Cust.V'], ['TFE1', '001', 'A'], ['TFE2', '002', 'B']] }] }), { toutes: true });
+    verifier('un onglet graphique, un onglet de macros, un onglet très masqué : écartés ; dans l’onglet des données, le graphique posé dessus (ses valeurs en cache, faites comme des cellules) est sauté',
+      /\bok\b/.test(r.etat.classe) && voir().map(l => l.join('|')).join(' / ') === 'NAME|SOL.|Cust.V / TFE1|001|A / TFE2|002|B', JSON.stringify(voir()));
+    r = await importer(page, 'rien.xls', FX.xls({ onglets: [{ nom: 'Graphique', type: 'graphique' }, { nom: 'Lisez-moi', lignes: [['Export du 01/10'], ['Rien ici']] },
+      { nom: 'Notes', lignes: [['REF', 'SOL.', 'Cust V'], ['X', '1', 'A']] }] }));
+    verifier('aucun onglet ne porte d’en-tête : « Ni un export GATES ni un export SEE », les onglets nommés (pas le graphique), la ligne la plus proche citée',
+      /erreur/.test(r.etat.classe) && /des onglets \(Lisez-moi, Notes\)/.test(r.etat.texte) && /La ligne 1 de « Notes » en porte 1 sur 3/.test(r.etat.texte), r.etat.texte);
+    /* Excel 5 / 95 : des octets dans la page de codes du classeur. */
+    r = await importer(page, 'excel95.xls', FX.xls({ biff: 5, page: 850, onglets: [{ nom: 'Données', lignes: [['NAME', 'SOL.', 'Cust.V', 'Libellé'],
+      ['TFE1', '001', 'A', 'Câble été à Élancourt'], ['TFE2', { rstring: 'RSTRING ç' }, 'B', { f: 'formule où' }], ['TFE3', { rk: 3 }, 'C', { n: 45000, fmt: 'jour' }]] }] }), { toutes: true });
+    verifier('un .xls d’Excel 95 (BIFF5, flux « Book ») en page de codes 850 du DOS : LABEL, RSTRING, formule et son STRING, accents justes, date et nombre',
+      /\bok\b/.test(r.etat.classe) && voir().map(l => l.join('|')).join(' / ') === 'NAME|SOL.|Cust.V|Libellé / TFE1|001|A|Câble été à Élancourt / TFE2|RSTRING ç|B|formule où / TFE3|3|C|15/03/2023',
+      JSON.stringify(voir()));
+    r = await importer(page, 'excel95.xls', FX.xls({ biff: 5, onglets: [{ nom: 'Données', lignes: [['NAME', 'SOL.', 'Cust.V', 'Libellé'], ['TFE1', '001', 'A', 'Prix 12 € — œuvre « été »']] }] }), { toutes: true });
+    verifier('… et en Windows-1252 (la page de codes d’Excel 95 sous Windows) : €, tiret long, œ, guillemets', /\bok\b/.test(r.etat.classe) && voir()[1][3] === 'Prix 12 € — œuvre « été »',
+      JSON.stringify(voir()));
+    /* Un flux BIFF sans conteneur OLE. */
+    r = await importer(page, 'nu.xls', FX.classeurBiff({ onglets: [{ nom: 'S', lignes: [['NAME', 'SOL.', 'Cust.V'], ['TFE1', '001', 'A']] }] }), { toutes: true });
+    verifier('un flux BIFF8 sans conteneur OLE (certains vieux outils) : lu', /\bok\b/.test(r.etat.classe) && voir().map(l => l.join('|')).join(' / ') === 'NAME|SOL.|Cust.V / TFE1|001|A', r.etat.texte);
+    /* Une formule qui dit « texte » sans le texte : un programme qui ne calcule pas. */
+    page.__appels = [];
+    r = await importer(page, 'sans-calcul.xls', FX.xls({ onglets: [{ nom: 'S', lignes: [['NAME', 'SOL.', 'Cust.V'], [{ formuleSansTexte: true }, '001', 'A'], ['TFE2', '002', 'B']] }] }));
+    verifier('NAME en formule dont le résultat texte manque (pas d’enregistrement STRING) : refusé, « formule sans valeur calculée », rien n’est envoyé',
+      /erreur/.test(r.etat.classe) && /formule sans valeur calculée/.test(r.etat.texte) && page.__appels.length === 0, r.etat.texte);
+    await page.close();
+    /* Les fusions en plusieurs enregistrements, et l'export GATES d'Excel 95 (qui n'en a pas). */
+    const g = feuilleGates(60);
+    const lignesG = FX.lignesGates(g);
+    const lus = {};
+    for (const [nom, contenu] of [['ref.xlsx', xlsxGates(g)], ['fusions.xls', FX.xls({ onglets: [{ nom: 'Export', lignes: lignesG, fusions: g.fusions, fusionsParEnregistrement: 5 }] })],
+      ['excel95.xls', FX.xls({ biff: 5, onglets: [{ nom: 'Export', lignes: lignesG, fusions: g.fusions }] })]]) {
+      const cg = new Classeur([ongletGates('HDK', gates(40))]);
+      const pg = await fenetre(serveur(cg));
+      lus[nom] = { r: await importer(pg, nom, contenu, { sansArchiver: true }), f: cg.getSheetByName('HDK') };
+      await pg.close();
+    }
+    const ref = lus['ref.xlsx'], fus = lus['fusions.xls'], e95 = lus['excel95.xls'];
+    verifier('les seize fusions de la ligne des groupes écrites en quatre enregistrements MERGEDCELLS : toutes recréées, les valeurs celles du .xlsx',
+      /\bok\b/.test(fus.r.etat.classe) && fus.f.fusions.length === 16 && JSON.stringify(fusionsDe(fus.f)) === JSON.stringify(fusionsDe(ref.f)) && !premierEcart(fus.f.valeurs, ref.f.valeurs),
+      premierEcart(fus.f.valeurs, ref.f.valeurs) || fus.r.etat.texte);
+    verifier('l’export GATES d’Excel 95, qui ne connaît pas les fusions : les mêmes valeurs ; la ligne prévient comme pour un .csv, la page déduit les groupes de proche en proche et trouve la colonne suivie',
+      !premierEcart(e95.f.valeurs, ref.f.valeurs) && e95.f.fusions.length === 0 && /un \.xls d’Excel 95 ne garde pas les cellules fusionnées de la ligne des groupes/.test(e95.r.ligne.lu) &&
+      /avertissement/.test(e95.r.etat.classe) && /colonne suivie HDK AA 011/.test(e95.r.etat.texte) && /Un \.xls d’Excel 95 ne garde pas les cellules fusionnées/.test(e95.r.etat.texte),
+      e95.r.ligne.lu + ' / ' + e95.r.etat.texte);
+  }
+
+  // =================================================================
+  section('Les .xls qui ne se lisent pas le disent, et rien ne part');
+  {
+    const c = classeur();
+    const ctx = chargerServeur(c, {});
+    const page = await fenetre(ctx, h => h.replace('"maxOctetsXls":209715200', '"maxOctetsXls":5000000'));
+    const simple = { onglets: [{ nom: 'S', lignes: [['NAME', 'SOL.', 'Cust.V'], ['TFE1', '001', 'A']] }] };
+    const refus = [
+      ['un .xls protégé par un mot de passe, écrit par LibreOffice (FILEPASS, chiffrement RC4) : dit protégé', 'lo-protege.xls', lireXls('lo-protege.xls'), /protégé/],
+      ['un .xls Excel 97-2003 au FILEPASS fabriqué : dit protégé', 'mdp.xls', FX.xls(Object.assign({ motDePasse: true }, simple)), /protégé/],
+      ['un .xls d’Excel 95 au FILEPASS (masquage XOR) : dit protégé', 'mdp95.xls', FX.xls(Object.assign({ motDePasse: true, biff: 5 }, simple)), /protégé/],
+      ['un vrai .xls tronqué au milieu (téléchargement coupé) : « abîmé, le retélécharger »', 'tronque.xls', lireXls('lo-see.xls').subarray(0, 380000), /abîmé.*retélécharger/],
+      ['une chaîne de secteurs qui boucle sur elle-même avant la fin du flux : abîmé, jamais une lecture sans fin', 'boucle.xls',
+        FX.xls({ onglets: [{ nom: 'S', lignes: FX.lignesSee(60) }] }, { boucle: 'Workbook' }), /abîmé/],
+      ['un flux « Workbook » qui n’est pas du BIFF : abîmé', 'brouille.xls', FX.ole([{ nom: 'Workbook', donnees: Buffer.alloc(5000, 0x41) }]), /abîmé/],
+      ['un document Office sans classeur (un « WordDocument ») : dit qu’il ne renferme aucun classeur', 'lettre.xls', FX.ole([{ nom: 'WordDocument', donnees: Buffer.alloc(5000, 0x41) }]),
+        /ne renferme aucun classeur Excel/],
+      ['un classeur d’Excel 2 à 4 (BIFF2, écrit par SheetJS) : « très ancien format », et quoi demander', 'vieux.xls', lireXls('sheetjs-see-biff2.xls'), /très ancien format Excel.*\.xlsx/],
+      ['un classeur binaire (.xlsb) : refusé, il faut l’export en .xlsx ou en .csv', 'export.xlsb', zip([{ nom: '[Content_Types].xml', donnees: '<Types/>' }, { nom: 'xl/workbook.bin', donnees: Buffer.alloc(64) }]),
+        /classeur binaire \(\.xlsb\).*\.xlsx ou en \.csv/],
+      ['un .xls de plus de 200 Mo (ici, le plafond baissé à 5 Mo) : « bien plus qu’un export », lu jamais', 'enorme.xls', FX.ole([{ nom: 'Workbook', donnees: Buffer.alloc(6000000) }]),
+        /bien plus qu’un export \(au plus 4,8 Mo/]
+    ];
+    for (const [nom, fichier, contenu, motif] of refus) {
+      const r = await importer(page, fichier, contenu);
+      verifier(nom, /erreur/.test(r.etat.classe) && motif.test(r.etat.texte) && !/Erreur inattendue/.test(r.etat.texte) && page.__appels.length === 0, r.etat.texte);
+    }
+    await page.close();
+  }
+
+  // =================================================================
+  section('Les .xls d’autres programmes, et leurs bords');
+  {
+    const c = classeur();
+    const page = await fenetre(chargerServeur(c, {}));
+    const voir = () => c.getSheetByName('SEE HDK') ? c.getSheetByName('SEE HDK').valeurs : [];
+    const texte = () => voir().map(l => l.join('|')).join(' / ');
+    /* FORMULA sous les numéros d'Excel 3 et 4 (0x0206, 0x0406), comme Apple Numbers les écrit dans un .xls d'Excel 97. */
+    const formules = [['NAME', 'SOL.', 'Cust.V', 'Quantité'], [{ f: 'TFE311A0600' }, '001', 'A', { f: 12 }], [{ f: 'TFE312A0601' }, '002', 'B', { f: 7.5 }]];
+    for (const type of [0x0406, 0x0206]) {
+      const r = await importer(page, 'numbers.xls', FX.xls({ typeFormule: type, onglets: [{ nom: 'Sheet 1 - Table 1', lignes: formules }] }), { toutes: true });
+      verifier('des formules notées 0x0' + type.toString(16) + ' (Apple Numbers) : lues comme des formules — NAME et Quantité calculés, le texte pris dans son STRING',
+        /\bok\b/.test(r.etat.classe) && texte() === 'NAME|SOL.|Cust.V|Quantité / TFE311A0600|001|A|12 / TFE312A0601|002|B|7,5', r.etat.texte + ' ' + JSON.stringify(voir()));
+    }
+    /* Une cellule texte vide écrite sans son octet d'options (8 octets) : le fichier n'est pas abîmé. */
+    let r = await importer(page, 'label-vide.xls', FX.xls({ onglets: [{ nom: 'S', lignes: [['NAME', 'SOL.', 'Cust.V', 'Commentaire'],
+      ['TFE311A0600', '001', 'A', { labelVide: true }], ['TFE312A0601', '002', 'B', { label: 'ok' }]] }] }), { toutes: true });
+    verifier('un LABEL vide de 8 octets, sans octet d’options (comme certains programmes l’écrivent) : une cellule vide, pas un fichier « abîmé »',
+      /\bok\b/.test(r.etat.classe) && texte() === 'NAME|SOL.|Cust.V|Commentaire / TFE311A0600|001|A| / TFE312A0601|002|B|ok', r.etat.texte + ' ' + JSON.stringify(voir()));
+    /* Un émoji (deux unités UTF-16) coupé entre deux enregistrements : textes partagés coupés tous les 41 octets,
+       résultats de formule tous les 13 ; les deux moitiés tombent tour à tour de chaque côté de la coupure. */
+    const notes = [];
+    for (let k = 0; k < 40; k++) notes.push('Ω'.repeat(k) + '📌 à reprendre, voir la note du lot 𝔄' + k);
+    const lignesE = [['NAME', 'SOL.', 'Cust.V', 'Commentaire', 'Formule']].concat(notes.map((t, k) => [FX.nomSee(k), '001', 'A', t, { f: t }]));
+    r = await importer(page, 'emoji.xls', FX.xls({ sst: { max: 41 }, onglets: [{ nom: 'S', lignes: lignesE, maxString: 13 }] }), { toutes: true });
+    const abimes = voir().slice(1).filter((l, k) => l[3] !== notes[k] || l[4] !== notes[k]).length;
+    verifier('un émoji ou une lettre hors du plan de base coupé entre deux enregistrements CONTINUE (40 positions de coupure, textes partagés et résultats de formule) : ' +
+      'ses deux moitiés se rejoignent, jamais de « � »', /\bok\b/.test(r.etat.classe) && voir().length === 41 && abimes === 0 && !JSON.stringify(voir()).includes('\ufffd'),
+      abimes + ' texte(s) faux ; ' + JSON.stringify(voir().slice(1, 3)));
+    /* « General » sous ses noms locaux : jamais une date. */
+    const nombres = (fmt, extra) => [['NAME', 'SOL.', 'Cust.V', 'Quantité', 'Date'], ['TFE1', '001', 'A', { n: 42, fmt }, { n: 45000, fmt: 'jour' }],
+      ['TFE2', '002', 'B', { n: 1234.5, fmt }, extra || { n: 45001, fmt: 'jour' }]];
+    const attendu = 'NAME|SOL.|Cust.V|Quantité|Date / TFE1|001|A|42|15/03/2023 / TFE2|002|B|1234,5|16/03/2023';
+    for (const [nom, spec] of [
+      ['un format nommé « Standaard » (néerlandais)', { onglets: [{ nom: 'S', lignes: nombres('standaard') }] }],
+      ['« Allmänt » (suédois)', { onglets: [{ nom: 'S', lignes: nombres('allmant') }] }],
+      ['« Yleinen » (finnois)', { onglets: [{ nom: 'S', lignes: nombres('yleinen') }] }],
+      ['« Standardowy » (polonais)', { onglets: [{ nom: 'S', lignes: nombres('standardowy') }] }],
+      ['« Общий » (russe)', { onglets: [{ nom: 'S', lignes: nombres('obchtchi') }] }],
+      ['le format n° 0 nommé « Standaard », en Excel 95', { biff: 5, formatZero: 'Standaard', onglets: [{ nom: 'S', lignes: nombres('general') }] }],
+      ['le format n° 0 nommé « Allmänt », en Excel 97', { formatZero: 'Allmänt', onglets: [{ nom: 'S', lignes: nombres('general') }] }]]) {
+      r = await importer(page, 'general.xls', FX.xls(spec), { toutes: true });
+      verifier(nom + ' : le nom local de « General », les nombres restent des nombres (42, 1234,5), les dates des dates', /\bok\b/.test(r.etat.classe) && texte() === attendu,
+        r.etat.texte + ' ' + JSON.stringify(voir()));
+    }
+    /* Le répertoire du conteneur dont la chaîne boucle : le classeur, nommé dans son deuxième secteur, ne se trouve pas. */
+    const flux = n => ({ nom: n, donnees: Buffer.alloc(200, 0x20) });
+    const classeurSimple = FX.classeurBiff({ onglets: [{ nom: 'S', lignes: [['NAME', 'SOL.', 'Cust.V'], ['TFE1', '001', 'A']] }] });
+    const quatre = [flux('\u0001CompObj'), flux('\u0005SummaryInformation'), flux('\u0005DocumentSummaryInformation'), { nom: 'Workbook', donnees: classeurSimple }];
+    r = await importer(page, 'repertoire.xls', FX.ole(quatre), { toutes: true });
+    const sain = /\bok\b/.test(r.etat.classe);
+    r = await importer(page, 'repertoire.xls', FX.ole(quatre, { boucleRepertoire: true }), { toutes: true });
+    verifier('un conteneur dont la chaîne du répertoire boucle (le classeur nommé dans son deuxième secteur) : « abîmé, le retélécharger », pas « aucun classeur, un document Word ? »' +
+      ' — le même fichier sain se lit', sain && /erreur/.test(r.etat.classe) && /abîmé.*retélécharger/.test(r.etat.texte) && !/aucun classeur/.test(r.etat.texte), r.etat.texte);
+    /* Un fichier vide : un téléchargement raté. */
+    for (const nom of ['vide.xls', 'vide.xlsx', 'vide.csv']) {
+      page.__appels = [];
+      r = await importer(page, nom, Buffer.alloc(0));
+      verifier('« ' + nom + ' » de 0 octet : « ce fichier est vide, le téléchargement n’a sans doute pas abouti », pas « ni GATES ni SEE », rien n’est envoyé',
+        /erreur/.test(r.etat.classe) && /Ce fichier est vide \(0 octet\) : le téléchargement n’a sans doute pas abouti\. Le retélécharger/.test(r.etat.texte) && page.__appels.length === 0,
+        r.etat.texte);
+    }
+    /* Un « dossier compressé » de Windows (.zip) : glissé tel quel, ou renommé en .xls. */
+    const dedans = zip([{ nom: 'export SEE.xls', donnees: FX.xls({ onglets: [{ nom: 'S', lignes: [['NAME', 'SOL.', 'Cust.V'], ['TFE1', '001', 'A']] }] }) }]);
+    await vider(page);
+    await ajouter(page, [{ nom: 'export-dossier.zip', contenu: dedans }]);
+    let ui = await fenetreEtat(page);
+    verifier('un .zip (« dossier compressé ») choisi : pas une ligne, mais dit de l’ouvrir et d’en glisser le fichier',
+      ui.n === 0 && /« export-dossier\.zip » : c’est un dossier compressé \(\.zip\), pas un classeur : l’ouvrir \(double-clic, ou clic droit → Extraire tout\) et glisser ici le fichier/.test(ui.etat),
+      ui.etat);
+    r = await importer(page, 'export.xls', dedans);
+    verifier('… renommé en .xls : la même explication sur sa ligne, avec ce qu’il renferme (plus de « pas de xl/workbook.xml »)',
+      /erreur/.test(r.etat.classe) && /dossier compressé \(\.zip\).*Il renferme : export SEE\.xls\./.test(r.etat.texte) && !/workbook\.xml/.test(r.etat.texte), r.etat.texte);
+    await page.close();
+  }
+
+  // =================================================================
+  section('Un .xls chiffré avec le mot de passe par défaut d’Excel (« VelvetSweatshop ») se lit sans rien demander');
+  {
+    /* Excel chiffre ainsi un .xls dont seule la structure est protégée, ou qui n'a de mot de passe que pour
+       la modification ; Excel et LibreOffice l'ouvrent sans rien demander. */
+    const lus = {};
+    for (const [nom, contenu] of [['export_48.xls', lireXls('lo-gates.xls')], ['export_48 protégé.xls', lireXls('lo-velvet.xls')]]) {
+      const cg = new Classeur([ongletGates('HDK', gates(40))]);
+      const ctx = serveur(cg);
+      const pg = await fenetre(ctx);
+      lus[nom] = { r: await importer(pg, nom, contenu, { sansArchiver: true }), f: cg.getSheetByName('HDK'), ctx };
+      await pg.close();
+    }
+    const l = lus['export_48.xls'], v = lus['export_48 protégé.xls'];
+    verifier('l’export GATES enregistré par LibreOffice avec « VelvetSweatshop » (FILEPASS, RC4 d’Excel 97) : déchiffré, lu, rattaché à « HDK » — 186 plans · 138 colonnes · ' +
+      'en-têtes en ligne 2 · 16 cellules fusionnées, les mêmes valeurs et les mêmes fusions que le .xls non chiffré, la colonne suivie trouvée',
+      /\bok\b/.test(v.r.etat.classe) && v.r.ligne.choix === 'HDK' && /^186 plans · 138 colonnes · en-têtes en ligne 2 · 16 cellules fusionnées/.test(v.r.ligne.lu) &&
+      !premierEcart(v.f.valeurs, l.f.valeurs) && JSON.stringify(v.f.valeurs) === JSON.stringify(l.f.valeurs) && JSON.stringify(fusionsDe(v.f)) === JSON.stringify(fusionsDe(l.f)) &&
+      JSON.stringify(v.ctx.construireModele('HDK')) === JSON.stringify(l.ctx.construireModele('HDK')) && /colonne suivie HDK AA 011/.test(v.r.etat.texte),
+      premierEcart(v.f.valeurs, l.f.valeurs) || v.r.ligne.lu + ' / ' + v.r.etat.texte);
+    /* Fabriqués : le même SEE en clair et chiffré des trois façons d'Excel (les chiffrés ont été vérifiés une fois avec
+       msoffcrypto-tool, hors du dépôt : il les déchiffre avec ce mot de passe, octet pour octet). */
+    const c = classeur();
+    const page = await fenetre(chargerServeur(c, {}));
+    const see = { onglets: [{ nom: 'Graphique', type: 'graphique' }, { nom: 'Nommage', lignes: FX.lignesSee(400) }] };
+    await importer(page, 'clair.xls', FX.xls(see), { toutes: true });
+    const clair = JSON.stringify(c.getSheetByName('SEE HDK').valeurs);
+    for (const [nom, chiffre] of [['RC4 d’Excel 97 (clé par MD5)', { methode: 'rc4' }], ['RC4 CryptoAPI, clé de 128 bits (SHA-1)', { methode: 'cryptoapi' }],
+      ['RC4 CryptoAPI, clé de 40 bits', { methode: 'cryptoapi', bits: 40 }]]) {
+      const r = await importer(page, 'chiffre.xls', FX.xls(Object.assign({ chiffre }, see)), { toutes: true });
+      verifier('un SEE de 400 lignes chiffré en ' + nom + ' avec le mot de passe par défaut : lu, exactement comme le même en clair',
+        /\bok\b/.test(r.etat.classe) && JSON.stringify(c.getSheetByName('SEE HDK').valeurs) === clair && c.getSheetByName('SEE HDK').valeurs.length === 401, r.etat.texte);
+    }
+    for (const [nom, chiffre] of [['RC4 d’Excel 97', { methode: 'rc4', motDePasse: 'secret' }], ['RC4 CryptoAPI', { methode: 'cryptoapi', motDePasse: 'secret' }]]) {
+      page.__appels = [];
+      const r = await importer(page, 'secret.xls', FX.xls(Object.assign({ chiffre }, see)), { toutes: true });
+      verifier('le même chiffré en ' + nom + ' avec un vrai mot de passe : « protégé », rien n’est envoyé', /erreur/.test(r.etat.classe) && /protégé/.test(r.etat.texte) &&
+        page.__appels.length === 0, r.etat.texte);
+    }
+    await page.close();
+  }
+
+  // =================================================================
+  section('Une page web archivée (.mht, ou nommée .xls)');
+  {
+    const g = feuilleGates(186);
+    const source = FX.SOURCES.gates();
+    const lus = {};
+    const mht = FX.mhtml([{ lieu: 'file:///C:/Users/nathan/Downloads/export_48.htm', type: 'text/html', jeu: 'windows-1252', codage: 'quoted-printable',
+      contenu: htmlExcel(g.valeurs, g.fusions, 'Export GATES') }]);
+    for (const [nom, contenu] of [['export_48.xlsx', source], ['export_48.xls', mht]]) {
+      const c = new Classeur([ongletGates('HDK', gates(40))]);
+      const ctx = serveur(c);
+      const page = await fenetre(ctx);
+      lus[nom] = { r: await importer(page, nom, contenu, { sansArchiver: true }), f: c.getSheetByName('HDK'), ctx };
+      await page.close();
+    }
+    const x = lus['export_48.xlsx'], m = lus['export_48.xls'];
+    verifier('l’export GATES en page web archivée nommée .xls (quoted-printable, Windows-1252, colspan=16 sans guillemets comme Excel les écrit, les cases vides regroupées en ' +
+      '« mso-ignore:colspan », qui ne sont pas des fusions) : le même onglet que le .xlsx, les seize fusions comprises — pas une de plus —, la colonne suivie trouvée',
+      /\bok\b/.test(m.r.etat.classe) && !premierEcart(m.f.valeurs, x.f.valeurs) && JSON.stringify(fusionsDe(m.f)) === JSON.stringify(fusionsDe(x.f)) &&
+      /186 plans, colonne suivie HDK AA 011 › Avancement Définition Electrique/.test(m.r.etat.texte) && /16 cellules fusionnées/.test(m.r.ligne.lu),
+      premierEcart(m.f.valeurs, x.f.valeurs) || m.r.etat.texte + ' / ' + m.r.ligne.lu);
+    verifier('… la page web porte bien de ces cases vides regroupées, sur la ligne des groupes comme sur celle des en-têtes',
+      (htmlExcel(g.valeurs, g.fusions).match(/mso-ignore:colspan/g) || []).length >= 2);
+    verifier('… et construireModele y lit la même chose', JSON.stringify(m.ctx.construireModele('HDK')) === JSON.stringify(x.ctx.construireModele('HDK')));
+    /* Comme Excel l'enregistre : un cadre, une page par onglet, la liste des onglets, des fichiers à côté. */
+    const lignesHtml = l => l.map(v => '<td>' + echHtml(v) + '</td>').join('');
+    const seeHtml = '<html><head><meta http-equiv=Content-Type content="text/html; charset=windows-1252"></head><body><table>' +
+      '<tr><td colspan=4>Nommage WD BFLOW</td></tr><tr><td></td></tr><tr>' + lignesHtml(['NAME', 'SOL.', 'Cust.V', 'Libellé']) + '</tr>' +
+      Array.from({ length: 30 }, (_, i) => '<tr>' + lignesHtml([FX.nomSee(i), String(i % 3 + 1).padStart(3, '0'), 'ABC'[i % 3], 'Câble n° ' + i + ' — « été »']) + '</tr>').join('') +
+      '</table></body></html>';
+    const parties = [
+      { lieu: 'file:///C:/x/Nommage.htm', type: 'text/html', jeu: 'windows-1252', codage: 'quoted-printable',
+        contenu: '<html><frameset rows="*,39"><frame src="Nommage_files/sheet001.htm" name="frSheet"><frame src="Nommage_files/tabstrip.htm" name="frTabs"></frameset></html>' },
+      { lieu: 'file:///C:/x/Nommage_files/sheet001.htm', type: 'text/html', jeu: 'utf-8', codage: 'base64',
+        contenu: '<html><body><table><tr><td>Lisez-moi : export du 01/10/2026</td></tr><tr><td>Rien ici</td></tr></table></body></html>' },
+      { lieu: 'file:///C:/x/Nommage_files/sheet002.htm', type: 'text/html', jeu: 'windows-1252', codage: 'quoted-printable', contenu: seeHtml },
+      { lieu: 'file:///C:/x/Nommage_files/tabstrip.htm', type: 'text/html', jeu: 'us-ascii', codage: 'quoted-printable',
+        contenu: '<html><body><table><tr><td><a href="sheet001.htm">Lisez-moi</a></td><td><a href="sheet002.htm">Nommage</a></td></tr></table></body></html>' },
+      { lieu: 'file:///C:/x/Nommage_files/filelist.xml', type: 'text/xml', jeu: 'utf-8', codage: 'quoted-printable', contenu: '<xml><o:File HRef="sheet001.htm"/></xml>' }
+    ];
+    const c = classeur();
+    const page = await fenetre(chargerServeur(c, {}));
+    let r = await importer(page, 'Nommage WD BFLOW.mht', FX.mhtml(parties), { toutes: true });
+    let f = c.getSheetByName('SEE HDK');
+    verifier('un export SEE en page web archivée comme Excel l’enregistre (.mht) — un cadre, une page par onglet (la première en base64, sans en-tête), la liste des onglets : ' +
+      'l’en-tête trouvé dans la deuxième page, accents et tiret long justes',
+      /\bok\b/.test(r.etat.classe) && f && f.valeurs.length === 31 && f.valeurs[0].join('|') === 'NAME|SOL.|Cust.V|Libellé' &&
+      f.valeurs[1].join('|') === 'TFE311A0600|001|A|Câble n° 0 — « été »', r.etat.texte + ' ' + JSON.stringify(f && f.valeurs.slice(0, 2)));
+    r = await importer(page, 'export.xls', FX.mhtml([{ lieu: 'export.htm', type: 'text/html', codage: '8bit',
+      contenu: '<html><head><meta charset="utf-8"></head><body><table><tr><th>NAME</th><th>SOL.</th><th>Cust.V</th></tr><tr><td>TFE311A0600</td><td>001</td><td>été — A</td></tr></table></body></html>' }],
+      { simple: true }), { toutes: true });
+    f = c.getSheetByName('SEE HDK');
+    verifier('une page web archivée d’une seule page (sans multipart), son jeu de caractères dans sa seule balise <meta> : lue', /\bok\b/.test(r.etat.classe) &&
+      f.valeurs.map(l => l.join('|')).join(' / ') === 'NAME|SOL.|Cust.V / TFE311A0600|001|été — A', r.etat.texte + ' ' + JSON.stringify(f && f.valeurs));
+    r = await importer(page, 'vide.mht', FX.mhtml([{ lieu: 'note.txt', type: 'text/plain', jeu: 'utf-8', codage: 'quoted-printable', contenu: 'Rien à voir' }]));
+    verifier('une page web archivée sans page HTML : le dit', /erreur/.test(r.etat.classe) && /ne renferme aucune page HTML lisible/.test(r.etat.texte), r.etat.texte);
+    await page.close();
+  }
+
+  // =================================================================
+  section('Un gros .xls se lit sans figer la fenêtre');
+  {
+    const n = 60000;
+    const lignesG = [['Nommage WD BFLOW'], [], FX.ENTETE_SEE];
+    for (let i = 0; i < n; i++) {
+      lignesG.push(['S-' + i, 'TFE' + (311 + i % 90) + 'A' + String(i).padStart(6, '0'), String(1 + i % 4).padStart(3, '0'), 'ABCD'[i % 4], { n: 45000 + i % 900, fmt: 'date' },
+        i % 3 ? { rk: 45100 + i % 700, mode: 'entier', fmt: 'date' } : null, { b: i % 2 === 0 }, 'texte ' + (i % 5000)]);
+    }
+    const fichier = FX.xls({ onglets: [{ nom: 'Export', lignes: lignesG }] });
+    const c = classeur();
+    const page = await fenetre(chargerServeur(c, {}));
+    /* Un battement toutes les 20 ms, dès que le fichier est remis à la fenêtre (avant, Playwright le
+       recopie lui-même dans la page, ce qui n'est pas la fenêtre) : le plus long silence dit si la
+       lecture, puis l'envoi, l'ont figée. */
+    await page.evaluate(() => {
+      window.__battements = [];
+      document.getElementById('fichier').addEventListener('change', () => {
+        window.__battements.push(performance.now());
+        window.__minuteur = setInterval(() => window.__battements.push(performance.now()), 20);
+      }, { capture: true, once: true });
+    });
+    const t0 = Date.now();
+    const r = await importer(page, 'gros.xls', fichier, { toutes: true, delai: 300000 });
+    const silence = await page.evaluate(() => {
+      clearInterval(window.__minuteur);
+      let m = 0;
+      for (let i = 1; i < window.__battements.length; i++) m = Math.max(m, window.__battements[i] - window.__battements[i - 1]);
+      return Math.round(m);
+    });
+    const f = c.getSheetByName('SEE HDK');
+    verifier('un .xls de ' + (fichier.length / 1048576).toFixed(1) + ' Mo, ' + n + ' lignes : importé en entier (' + ((Date.now() - t0) / 1000).toFixed(1) + ' s), NAME / SOL. / Cust.V alignés',
+      /\bok\b/.test(r.etat.classe) && f && f.valeurs.length === n + 1 && f.valeurs[n].slice(1, 4).join('|') === 'TFE' + (311 + (n - 1) % 90) + 'A' + String(n - 1).padStart(6, '0') + '|' + String(1 + (n - 1) % 4).padStart(3, '0') + '|' + 'ABCD'[(n - 1) % 4],
+      r.etat.texte + ' ' + JSON.stringify(f && f.valeurs[n]));
+    verifier('la fenêtre ne s’est jamais figée plus d’une seconde pendant la lecture et l’envoi (plus long silence : ' + silence + ' ms)', silence < 1000, silence + ' ms');
+    await page.close();
+  }
+
+  // =================================================================
+  section('Une grosse page web archivée se lit sans figer la fenêtre');
+  {
+    /* 60 000 lignes × 20 colonnes, comme Excel enregistre une page web : 74 Mo en quoted-printable, 91 Mo en base64. */
+    const n = 60000, entete = FX.ENTETE_SEE.concat(Array.from({ length: 12 }, (_, j) => 'COL' + (j + 8)));
+    const tr = c => '<tr height=17 style=\'height:12.75pt\'>' + c.map(v => '<td class=xl65 style=\'border-top:none\'>' + v + '</td>').join('') + '</tr>\r\n';
+    const lignesH = [tr(['Nommage WD BFLOW été']), tr([]), tr(entete)];
+    for (let i = 0; i < n; i++) {
+      const l = ['S-' + i, 'TFE' + (311 + i % 50) + 'A' + String(600 + i).padStart(5, '0'), String(i % 3 + 1).padStart(3, '0'), 'ABC'[i % 3], '01/02/2023', '05/06/2023',
+        i % 2 ? 'oui' : 'non', 'non — été € ' + i];
+      for (let j = 8; j < 20; j++) l.push('texte ' + (i * j % 9973));
+      lignesH.push(tr(l));
+    }
+    const html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta http-equiv=Content-Type content="text/html; charset=windows-1252"></head>' +
+      '<body><table x:str border=0 cellpadding=0 cellspacing=0>\r\n' + lignesH.join('') + '</table></body></html>';
+    for (const [codage, jeu] of [['quoted-printable', 'windows-1252'], ['base64', 'utf-8']]) {
+      const fichier = FX.mhtml([{ lieu: 'file:///C:/x/export.htm', type: 'text/html', jeu, codage, contenu: html }]);
+      const c = classeur();
+      const page = await fenetre(chargerServeur(c, {}));
+      await page.evaluate(() => {
+        window.__battements = [];
+        document.getElementById('fichier').addEventListener('change', () => {
+          window.__battements.push(performance.now());
+          window.__minuteur = setInterval(() => window.__battements.push(performance.now()), 20);
+        }, { capture: true, once: true });
+      });
+      const t0 = Date.now();
+      const r = await importer(page, codage === 'base64' ? 'export.xls' : 'export.mht', fichier, { toutes: true, delai: 300000 });
+      const silence = await page.evaluate(() => {
+        clearInterval(window.__minuteur);
+        let m = 0;
+        for (let i = 1; i < window.__battements.length; i++) m = Math.max(m, window.__battements[i] - window.__battements[i - 1]);
+        return Math.round(m);
+      });
+      const f = c.getSheetByName('SEE HDK');
+      /* Chaque ligne relue : ses accents, son tiret long, son « € » (des octets =XX, ou deux à trois octets en UTF-8) tombent partout sur les coupures des tranches. */
+      let faux = f ? f.valeurs.length === n + 1 ? 0 : n : n, premier = '';
+      for (let i = 0; f && i < n && f.valeurs.length === n + 1; i++) {
+        const l = f.valeurs[i + 1];
+        if (l[1] !== 'TFE' + (311 + i % 50) + 'A' + String(600 + i).padStart(5, '0') || l[3] !== 'ABC'[i % 3] || l[7] !== 'non — été € ' + i || l[19] !== 'texte ' + (i * 19 % 9973)) {
+          faux++;
+          premier = premier || JSON.stringify(l);
+        }
+      }
+      verifier('une page web archivée de ' + (fichier.length / 1048576).toFixed(0) + ' Mo en ' + codage + ' (' + jeu + '), ' + n + ' lignes × 20 colonnes : importée en entier (' +
+        ((Date.now() - t0) / 1000).toFixed(1) + ' s), chaque ligne juste — le décodage par tranches ne coupe ni un « =XX », ni un groupe base64, ni un caractère',
+        /\bok\b/.test(r.etat.classe) && faux === 0, r.etat.texte + ' ; ' + faux + ' ligne(s) fausse(s), dont ' + premier);
+      verifier('… et la fenêtre ne s’est jamais figée plus d’une seconde (plus long silence : ' + silence + ' ms)', silence < 1000, silence + ' ms');
+      await page.close();
+    }
   }
 
   // =================================================================

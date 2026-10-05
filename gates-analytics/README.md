@@ -11,7 +11,7 @@ C'est un outil de **consultation** : la page montre, elle ne modifie rien.
 
 | Fichier | Rôle |
 |---|---|
-| `Code.gs` | Serveur : contrats (un onglet visible chacun), modèle de colonnes, historique par contrat, jalons de configuration, lecture de la seconde base, et la fenêtre d'import des exports GATES et SEE (lus sur le poste, sans Excel) |
+| `Code.gs` | Serveur : contrats (un onglet visible chacun), modèle de colonnes, historique par contrat, jalons de configuration, lecture de la seconde base, et la fenêtre d'import des exports GATES et SEE (lus sur le poste, sans Excel : `.xlsx`, vrais `.xls` d'Excel 97-2003 et 95, `.csv`, pages web, pages web archivées `.mht`) |
 | `Index.html` | Page ; elle injecte le premier contrat au rendu, sans aller-retour, et tend le pont `SUIVI_FWD_API.chargerContrat` pour les autres |
 | `Styles.html` | Feuille de style |
 | `Javascript.html` | Interface |
@@ -21,7 +21,7 @@ C'est un outil de **consultation** : la page montre, elle ne modifie rien.
 | `apps-script/` | Ce qu'on colle dans Apps Script : le **chargeur** (un fichier, qui va chercher le reste à l'ouverture) et l'**installateur** (qui écrit les quatre fichiers dans le projet) |
 | `MODE-D-EMPLOI.md` | Ce qu'on fait dans le classeur, concrètement : importer les exports de la semaine d'un coup (ou les coller), un onglet par contrat, archiver la semaine, brancher SEE, lire la page |
 | `AU-BUREAU.md` | La marche à suivre, pas à pas, pour installer sur le poste de travail — et, pour plus tard, l'automatisation |
-| `tests/` | Batterie de l'add-on (serveur + page rendue) |
+| `tests/` | Batterie de l'add-on (serveur + page rendue) ; `tests/xls/`, de vrais `.xls` écrits par LibreOffice, SheetJS et xlwt, et leur lecture par SheetJS (l'oracle de la fenêtre d'import) |
 
 ## Une seule interface, deux sources
 
@@ -134,7 +134,7 @@ npm test
   lire une lettre, puis les repères lus pour de vrai par RapidOCR et corrigés
   par la liste de la base, sur papier gris et page couchée. Sans Chrome ou
   sans RapidOCR sur le poste, ces parties-là sont sautées en le disant.
-- `npm run test:import-see` — 157 tests sur la fenêtre d'import (menu Suivi
+- `npm run test:import-see` — 240 tests sur la fenêtre d'import (menu Suivi
   FWD → Importer les exports GATES et SEE…) : la vraie fenêtre, rendue par le
   vrai `Code.gs`, ouverte dans un vrai navigateur, `google.script.run`
   branché sur le serveur en mémoire. Plusieurs fichiers d'un coup, choisis ou
@@ -142,9 +142,32 @@ npm test
   du serveur. L'essai clé : la vraie structure GATES (138 colonnes, 16
   cellules fusionnées), importée en `.xlsx`, donne le même onglet que le même
   export collé, et `construireModele`, `getDonneesPourClient`,
-  `compterAvancements` y lisent la même chose — aussi depuis une page web
-  nommée `.xls` (colspan, rowspan), du XML 2003, ou un CSV (sans fusion : la
-  fenêtre prévient). Puis le contrat deviné (plans en commun, nom au-dessus
+  `compterAvancements` y lisent la même chose — aussi depuis un vrai `.xls`
+  (écrit par LibreOffice et par xlwt : les mêmes valeurs, les mêmes fusions),
+  une page web archivée (`.mht` nommé `.xls`), une page web nommée `.xls`
+  (colspan, rowspan), du XML 2003, ou un CSV (sans fusion : la fenêtre
+  prévient). Les vrais `.xls` : ceux de `tests/xls/` (LibreOffice, dont un
+  export SEE de 3 200 lignes, un fichier protégé par un mot de passe et
+  l'export GATES chiffré avec le mot de passe par défaut d'Excel ;
+  SheetJS en Excel 97-2003, 95 et 2 ; xlwt), lus cellule par cellule comme
+  les lit SheetJS, un lecteur indépendant (l'oracle,
+  `tests/xls/oracle.json.gz`, refait par `tests/preparer-xls.js`) ; et ceux
+  de `tests/fabriquer-xls.js`, écrits octet par octet : chaque façon
+  d'écrire une cellule, des textes partagés coupés en plein caractère, en
+  pleine mise en forme ou en pleine phonétique, secteurs de 4 096 octets
+  mélangés, mini-flux, DIFAT, calendrier 1904, formats, onglets graphiques,
+  de macros, masqués, un graphique posé dans l'onglet, lignes dans le
+  désordre, Excel 95 en page de codes 850, un flux sans conteneur, formules
+  d'Apple Numbers, texte vide sans octet d'options, émojis coupés entre deux
+  enregistrements, noms locaux de « General » ; un `.xls` chiffré avec le
+  mot de passe par défaut d'Excel (« VelvetSweatshop » : LibreOffice, et RC4
+  d'Excel 97 ou CryptoAPI 40 et 128 bits fabriqués, vérifiés une fois par
+  msoffcrypto-tool) lu comme en clair ; les refus (protégé par un vrai mot
+  de passe, tronqué, chaîne ou répertoire qui boucle, document Word, Excel 2
+  à 4, `.xlsb`, trop gros, fichier vide, dossier compressé) ; et 60 000
+  lignes lues sans que la fenêtre se fige — en `.xls` comme en page web
+  archivée de 70 à 90 Mo.
+  Puis le contrat deviné (plans en commun, nom au-dessus
   des en-têtes, nom du fichier, nouveau contrat nommé d'après ses groupes ;
   pour SEE, l'échantillon rapproché par le serveur comme la page), le nom
   d'un nouveau contrat vérifié et sa place, deux fichiers pour le même
@@ -171,7 +194,7 @@ npm test
   perdue, un import incomplet,
   deux imports en même temps, une fenêtre fermée en plein envoi (le reste
   signalé puis retiré), un classeur au bord des dix millions de cellules, un
-  vrai `.xls` (même nommé `.xlsx`), un fichier protégé ou chiffré, tronqué
+  vrai `.xls` nommé `.xlsx` (lu), un fichier protégé ou chiffré, tronqué
   ou abîmé au milieu, une formule
   sans valeur, et 120 000 lignes sur 24 colonnes suivies de liens.
 - `npm run test:chargeur` — 34 tests sur le chargeur : un faux Apps Script en

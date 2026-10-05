@@ -74,10 +74,11 @@ Un contrat = **un onglet** du classeur, qui porte **le nom du contrat** et
 son export GATES tel quel. Tout le reste se déduit de là. Le plus simple :
 la fenêtre d'import, qui crée l'onglet elle-même.
 
-1. Dans GATES, exporter la liste du contrat en **Excel** (`.xlsx`, de
-   préférence au CSV : l'export Excel garde les cellules fusionnées de la
-   ligne des groupes, et c'est par le groupe « HDK AA 011 » que la page
-   reconnaît la bonne colonne « Avancement Définition Electrique » parmi les
+1. Dans GATES, exporter la liste du contrat en **Excel** (`.xlsx`, ou
+   `.xls` si GATES le donne ainsi : la fenêtre lit les deux ; de préférence
+   au CSV : l'export Excel garde les cellules fusionnées de la ligne des
+   groupes, et c'est par le groupe « HDK AA 011 » que la page reconnaît la
+   bonne colonne « Avancement Définition Electrique » parmi les
    vingt-sept). **Ne pas l'ouvrir** : le laisser tel que téléchargé.
 2. Dans le classeur : **Suivi FWD → Importer les exports GATES et SEE…**
    (absent juste après avoir recollé `Code` : **F5** sur le classeur, dix
@@ -184,7 +185,11 @@ journal des changements n'existent que par lui.
 
 1. Refaire l'export GATES de **chaque contrat** (et, quand il en faut un
    plus récent, l'export SEE de chaque contrat, § 5). Ils arrivent dans
-   **Téléchargements** : **ne pas les ouvrir**.
+   **Téléchargements** : **ne pas les ouvrir**. Peu importe leur format :
+   `.xlsx`, `.xls` (l'ancien format d'Excel, 97-2003 ou même 95), `.csv`,
+   page web (`.htm`, ou page web archivée `.mht`, parfois nommée `.xls`) —
+   la fenêtre les lit tous tels quels (ce qu'elle ne lit pas : § 5, « Ce
+   que la fenêtre lit »).
 2. Dans le classeur : **Suivi FWD → Importer les exports GATES et SEE…**
 3. **Choisir les fichiers…**, puis, dans la fenêtre de Windows qui s'ouvre
    (dossier **Téléchargements**), les prendre **tous d'un coup** :
@@ -406,16 +411,43 @@ l'extract dans le tableau SEE de la page : la comparaison n'en a pas besoin,
 et c'est bien plus lourd (au-delà de quatre millions de cellules, la
 fenêtre refuse et dit de la décocher).
 
-**Ce que la fenêtre lit** : les `.xlsx` et `.xlsm`, les `.csv` et `.txt`
-(séparateur, accents et zéros de tête compris), et les faux « `.xls` » que
-sortent certains outils (une page web ou du XML Excel 2003 renommés). Elle
-ne lit pas un **vrai ancien `.xls`** (même renommé `.xlsx`), un `.xlsb`, ni un fichier **protégé**
-(mot de passe, étiquette de confidentialité) : elle le dit. Pour un vrai
-`.xls`, dans le classeur : **Fichier → Importer → le fichier → « Insérer de
-nouvelles feuilles »** — ⚠️ surtout pas « Remplacer la feuille de calcul »,
-qui remplace **tout le classeur** —, puis supprimer l'ancien onglet
-`SEE HDK` et donner ce nom au nouveau. Pour un fichier protégé : demander
-l'export sans protection, ou en `.csv`.
+**Ce que la fenêtre lit** : les `.xlsx` et `.xlsm` ; les **vrais `.xls`** —
+l'ancien format d'Excel 97 à 2003, et même celui d'Excel 5 / 95 —, tels que
+téléchargés, même renommés `.xlsx` (dates, zéros de tête, VRAI / FAUX et
+cellules fusionnées comme dans un `.xlsx` ; un `.xls` d'Excel 95 n'a pas de
+cellules fusionnées, la fenêtre le dit comme pour un `.csv`) ; les `.csv`
+et `.txt` (séparateur, accents et zéros de tête compris) ; et les faux
+« `.xls` » que sortent certains outils : une page web, une **page web
+archivée** (`.mht`, un seul fichier qui contient la page), du XML Excel
+2003. Un `.xls` se lit en entier sur le poste : au-delà de 200 Mo (bien plus
+qu'un export), la fenêtre refuse et le dit.
+
+Ce qu'elle ne lit pas, et le dit : un fichier **protégé** (mot de passe à
+l'ouverture — `.xls` compris —, étiquette de confidentialité) : demander
+l'export sans protection, ou en `.csv` (un `.xls` qu'Excel ouvre sans
+demander de mot de passe — structure protégée, mot de passe pour la seule
+modification —, lui, se lit) ; un fichier **vide** (0 octet : le
+téléchargement n'a pas abouti) : le retélécharger ; un **dossier
+compressé** (`.zip`) : l'ouvrir (double-clic, ou clic droit → Extraire
+tout) et glisser le fichier qu'il contient ; un **`.xlsb`** (classeur binaire d'Excel, que
+Google Sheets ne lit pas non plus) : demander l'export en `.xlsx` ou en
+`.csv`, ou l'ouvrir dans Excel et l'**enregistrer en classeur Excel
+(`.xlsx`)** ; un classeur d'**Excel 2 à 4** (« très ancien format », d'avant
+1993) : de même ; un fichier **abîmé** (téléchargement coupé) : le
+retélécharger.
+
+En dernier recours — un `.xls` qu'Excel ouvre sans mot de passe et que la
+fenêtre refuserait quand même — : dans le classeur, **Fichier → Importer →
+le fichier → « Insérer de nouvelles feuilles »** — ⚠️ surtout pas
+« Remplacer la feuille de calcul », qui remplace **tout le classeur** —,
+puis supprimer l'ancien onglet (`SEE HDK`, ou `HDK` pour un export GATES) et
+donner son nom au nouveau. Pour un export GATES, encore deux gestes, que la
+fenêtre aurait faits : **faire glisser le nouvel onglet à la place de
+l'ancien** (il arrive en dernier ; or le premier onglet est le contrat sur
+lequel la page s'ouvre), puis **Suivi FWD → Archiver le relevé de cette
+semaine** (sinon, le relevé de la semaine n'est pris que par l'archivage
+automatique du vendredi). Et me dire le message de la fenêtre. Ce chemin
+ne vaut pas pour un `.xlsb`, que Sheets n'importe pas.
 
 Si la fenêtre a été fermée en plein envoi, il reste un onglet
 `SEE HDK (import …)` (ou `HDK (import …)` pour un export GATES) : il n'est
@@ -619,14 +651,16 @@ onglet, et ce qui manque. Puis :
 | Sur une ligne de la fenêtre, en ambre : « … choisir le contrat » ou « à vérifier » | La fenêtre n'a pas pu rattacher l'export à un contrat avec certitude : aucun plan en commun, plusieurs contrats nommés dans le fichier, ou un contrat nommé dont l'onglet n'a presque aucun plan en commun avec lui. Pour un export SEE, même avec un seul contrat (« « HDK » est le seul contrat, mais l'échantillon n'y retrouve que 0 référence sur 400 : à vérifier ») — et **Importer reste allumé** | Choisir le contrat dans la liste de la ligne — ou « Nouveau contrat… » pour l'export GATES d'un contrat que le classeur n'a pas encore. Pour un SEE, vérifier l'onglet nommé sous la ligne avant d'importer |
 | La fenêtre dit « Deux fichiers vont dans l'onglet « HDK » » | Deux exports du même contrat dans la liste (celui de la semaine dernière, resté dans Téléchargements, souvent) ; la date de chaque fichier est sur sa ligne | **Garder le plus récent** — celui que la fenêtre nomme (« Garder le plus récent, « … » (du 3 oct. 14:20) ») — et **Retirer** l'autre ; ou changer son contrat si c'est l'export d'un autre contrat |
 | La fenêtre dit « La ligne d'en-têtes de cet export GATES est en ligne 14 » | Le fichier a été retouché (des lignes ajoutées en haut) : la page ne trouverait pas ses en-têtes | Le retélécharger de GATES tel quel |
-| Sur une ligne de la fenêtre, ✗ « Colonne suivie absente de cet export… L'ancien onglet « HDK » est intact » | La page ne trouverait pas la colonne suivie dans cet export, alors qu'elle la trouve dans l'onglet actuel : un export d'un autre contrat ou d'un autre programme, ou un `.csv` sans sa ligne de groupes. Rien n'est remplacé, rien n'est archivé | Vérifier le contrat choisi sur la ligne ; importer l'export **Excel** (`.xlsx`) de GATES de ce contrat |
-| Après l'import d'un export GATES, ⚠ « … mais la colonne suivie est introuvable » | L'export n'a pas la colonne suivie sous son groupe — le plus souvent un `.csv`, qui perd les cellules fusionnées de la ligne des groupes ; rien n'est archivé | Importer l'export **Excel** (`.xlsx`) de GATES ; sinon, Diagnostic (ligne « Colonne … introuvable » ci-dessous) |
+| Sur une ligne de la fenêtre, ✗ « Colonne suivie absente de cet export… L'ancien onglet « HDK » est intact » | La page ne trouverait pas la colonne suivie dans cet export, alors qu'elle la trouve dans l'onglet actuel : un export d'un autre contrat ou d'un autre programme, ou un `.csv` sans sa ligne de groupes. Rien n'est remplacé, rien n'est archivé | Vérifier le contrat choisi sur la ligne ; importer l'export **Excel** (`.xlsx`, ou `.xls` d'Excel 97-2003) de GATES de ce contrat |
+| Après l'import d'un export GATES, ⚠ « … mais la colonne suivie est introuvable » | L'export n'a pas la colonne suivie sous son groupe — le plus souvent un `.csv` (ou un `.xls` d'Excel 95), qui perd les cellules fusionnées de la ligne des groupes ; rien n'est archivé | Importer l'export **Excel** (`.xlsx`, ou `.xls` d'Excel 97-2003) de GATES ; sinon, Diagnostic (ligne « Colonne … introuvable » ci-dessous) |
 | Après l'import, ⚠ « Relevé S40 non archivé : … » | L'import est fait, mais l'archivage a refusé, pour la raison qui suit (l'export est identique à un relevé plus ancien, un historique attend d'être rattaché…) | Faire ce que dit le message. Pour un historique à rattacher : le geste du § 3 (renommer `Historique_FWD` au nom du contrat qui a produit ces relevés), puis Suivi FWD → Archiver le relevé de cette semaine |
-| La fenêtre d'import dit « ancien fichier Excel (.xls) » ou « navigateur trop ancien » | Un format qu'elle ne lit pas, ou un Chrome / Edge d'avant 2022 | Demander l'export en `.xlsx` ou `.csv` ; ou Fichier → Importer → « Insérer de nouvelles feuilles » (§ 5) ; ou mettre le navigateur à jour |
-| La fenêtre d'import dit « Ce fichier Excel est protégé » | Mot de passe ou étiquette de confidentialité sur l'export : ni la fenêtre ni Sheets ne peuvent le lire | Demander l'export sans protection, ou en `.csv` ; pour un export GATES qu'Excel ouvre, le collage à la main (§ 2) reste possible |
+| La fenêtre d'import dit « classeur binaire (.xlsb) », « très ancien format Excel » ou « navigateur trop ancien » | Un format qu'elle ne lit pas — un `.xlsb`, un classeur d'Excel 2 à 4 —, ou un Chrome / Edge d'avant 2022. (Un `.xls`, lui, se lit : Excel 97-2003 comme Excel 95) | Demander l'export en `.xlsx`, `.xls` ou `.csv`, ou ouvrir le fichier dans Excel et l'enregistrer en classeur Excel (`.xlsx`) ; ou mettre le navigateur à jour |
+| La fenêtre d'import dit « … ne renferme aucun classeur Excel » | Le fichier est un document Office, mais pas un classeur : un document Word renommé `.xls`, le plus souvent | Retirer ce fichier ; reprendre l'export dans GATES ou SEE |
+| La fenêtre d'import dit « Ce fichier Excel est protégé » | Mot de passe (un `.xls` aussi) ou étiquette de confidentialité sur l'export : ni la fenêtre ni Sheets ne peuvent le lire | Demander l'export sans protection, ou en `.csv` ; pour un export GATES qu'Excel ouvre, le collage à la main (§ 2) reste possible |
+| La fenêtre d'import dit « Ce fichier fait … : bien plus qu'un export » | Un `.xls` ou une page web archivée de plus de 200 Mo : la fenêtre les lit en entier, et aucun export n'est si gros | Vérifier que c'est bien l'export ; sinon demander l'export en `.xlsx` ou en `.csv` |
 | La fenêtre d'import dit « Google refuse l'appel : plusieurs comptes Google… » | Plusieurs comptes Google connectés dans le même Chrome : Apps Script se trompe de compte | Ouvrir le classeur dans une fenêtre où seul le compte du classeur est connecté (ou une fenêtre de navigation privée), puis relancer |
 | La fenêtre d'import dit « Le classeur dépasserait la limite de Google Sheets : 10 millions de cellules » | Un classeur Google ne dépasse pas dix millions de cellules, **vides comprises** — et le temps de l'import, l'ancien onglet et le nouveau coexistent ; la fenêtre compte avant d'envoyer, rien n'est créé | Décocher « Garder aussi les autres colonnes » ; sinon supprimer les onglets qui ne servent plus (vieux essais, copies), ou les lignes et colonnes vides en bas et à droite des gros onglets |
-| La fenêtre d'import dit « Le fichier est abîmé » | Téléchargement coupé, ou fichier enregistré à moitié | Le retélécharger depuis GATES ou SEE |
+| La fenêtre d'import dit « Le fichier est abîmé » | Téléchargement coupé, ou fichier enregistré à moitié (un `.xlsx` qui ne se décompresse pas en entier, un `.xls` dont la structure ne se suit pas jusqu'au bout) | Le retélécharger depuis GATES ou SEE |
 | Un onglet `HDK (import …)`, `SEE HDK (import …)` ou `… (ancien …)` en plus | La fenêtre d'import a été fermée (ou la connexion coupée) en plein envoi — l'onglet visé est intact —, ou l'échange des onglets a été coupé à mi-course (« ancien » : l'onglet d'avant, mis de côté). Ce reste n'est jamais lu, ni comme contrat ni comme base | Le supprimer, ou relancer l'import du même onglet : il le retire. Le Diagnostic le signale |
 | Un contrat en trop ou en moins | Un onglet visible en trop, ou masqué | Chaque onglet visible qui porte un export (Référence UD, ATA…) est un contrat ; un onglet « Notes » à côté est écarté tout seul (le Diagnostic le dit) |
 | « N lignes répètent une référence déjà vue » au-dessus de la barre | L'export a été collé par-dessus l'ancien sans le vider : des lignes de l'ancien restent en dessous | Le réimporter (l'onglet est remplacé en entier), ou Ctrl+A, Suppr, puis le recoller en A1 |
