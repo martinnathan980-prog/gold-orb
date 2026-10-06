@@ -6,7 +6,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '4c88f7c';
+  var EDITION = 'd7d39d0';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -1011,13 +1011,24 @@
   }
   /* La couleur d'un mot qui n'est plus dans l'extract du jour (une valeur
      « d'hier » de la courbe, de la frise, du journal) : la sienne s'il est
-     encore là, celle de sa place connue sinon, à défaut la première de sa
-     famille. null : « Non renseigné », hachuré. */
+     encore là ; sinon celle de sa place connue (à défaut, la première de sa
+     famille), en sautant les places que tiennent déjà les mots du jour de
+     sa famille — un FWD_TO_SEIZE tombé à zéro ne prend pas le gris du
+     TO_TREAT qui reste, ni un PWD_IN_PROGRESS d'hier le bleu d'un mot
+     arrivé depuis : le passage de l'un à l'autre se voit. Toutes tenues,
+     la sienne. null : « Non renseigné », hachuré. */
   function couleurConnue(cle, famille) {
     var v = VALEUR_PAR_CLE[cle];
     if (v) return v.hachure ? null : { couleur: v.couleur, encre: v.encre };
-    if (!SUITE_FAMILLE[famille]) return null;
-    return couleurDePlace(famille, Math.max(0, placeConnue(cle, famille)));
+    var suite = SUITE_FAMILLE[famille];
+    if (!suite) return null;
+    var tenues = {}, p = Math.max(0, placeConnue(cle, famille)), k = 0;
+    Object.keys(VALEUR_PAR_CLE).forEach(function (c) {
+      var x = VALEUR_PAR_CLE[c];
+      if (x.famille === famille) tenues[x.place % suite.length] = true;
+    });
+    while (k < suite.length && tenues[(p + k) % suite.length]) k++;
+    return couleurDePlace(famille, k < suite.length ? p + k : p);
   }
   function ordreDesCles(a, b) { return a.cle < b.cle ? -1 : a.cle > b.cle ? 1 : 0; }
   function poserPlaces(liste) {
@@ -3808,10 +3819,19 @@
         var part = (nV / r.total) * 100;
         var eclaire = !!vVal && v.cle === vb;
         var texte = (!vVal || eclaire) && part >= 11 ? Math.round(part) + '\u202f%' : '';
+        /* Chaque segment dit au survol sa valeur et son compte, comme la
+           barre du haut — les fins segments n'ont pas d'autre texte. */
+        var titre = ' title="' + ech(v.libelle + ' : ' + nb(nV) + ' sur ' + nb(r.total)) + '"';
         return v.hachure
-          ? '\x3Cspan class="hachure' + (eclaire ? ' eclaire' : '') + '" data-cle="' + ech(v.cle) + '" style="width:' + part.toFixed(2) + '%;color:var(--encre-2)">' + texte + '\x3C/span>'
-          : '\x3Cspan' + (eclaire ? ' class="eclaire"' : '') + ' data-cle="' + ech(v.cle) + '" style="width:' + part.toFixed(2) + '%;background:' + v.couleur + ';color:' + v.encre + '">' + texte + '\x3C/span>';
+          ? '\x3Cspan class="hachure' + (eclaire ? ' eclaire' : '') + '" data-cle="' + ech(v.cle) + '"' + titre + ' style="width:' + part.toFixed(2) + '%;color:var(--encre-2)">' + texte + '\x3C/span>'
+          : '\x3Cspan' + (eclaire ? ' class="eclaire"' : '') + ' data-cle="' + ech(v.cle) + '"' + titre + ' style="width:' + part.toFixed(2) + '%;background:' + v.couleur + ';color:' + v.encre + '">' + texte + '\x3C/span>';
       }).join('');
+      /* L'infobulle de la ligne (sa description pour un lecteur d'écran)
+         reprend la barre valeur par valeur, dans son ordre : le « 35 % »
+         écrit dans le bleu s'y retrouve, à côté de son mot. */
+      var detail = VALEURS_COLONNE.filter(function (v) { return r.parValeur[v.cle]; }).map(function (v) {
+        return nb(r.parValeur[v.cle]) + ' « ' + v.libelle + ' » (' + Math.round(100 * r.parValeur[v.cle] / r.total) + '\u202f%)';
+      }).join(', ');
 
       /* Une seule colonne d'appoint : le rythme requis quand un jalon fixe
          une échéance — en plans par semaine, avec le rythme tenu dessous —,
@@ -3847,8 +3867,7 @@
 
       return '\x3Cbutton class="critique-ligne' + (vVal && !r.nValeur ? ' sans-valeur' : '') + '" type="button" data-groupe="' + ech(r.nom) + '" aria-pressed="' + !!actif +
         '" title="' + (vVal ? ech(nb(r.nValeur) + ' « ' + vVal.libelle + ' » sur ' + nb(r.total)) + ' \u2014 ' : '') +
-        r.termine + ' validés, ' + r.encours + ' en cours, ' + r.afaire + ' à faire, ' +
-        r.vide + ' non renseignés — cliquez pour voir lesquels">' +
+        ech(detail) + ' — cliquez pour voir lesquels">' +
         '\x3Csvg class="chevron" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">' +
         '\x3Cpath d="m3.5 1.5 3.5 3.5-3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>\x3C/svg>' +
         '\x3Cspan class="critique-nom">' + ech(libelleGroupe(r.nom)) + '\x3C/span>' +
@@ -5271,12 +5290,22 @@
      des terminés, les paires « référence → solution et lettre », la
      répartition par état — et où mène le clic. */
   var MAX_PAIRES_RAPP = 10;
+  /* Débrief 22 : la répartition se lit valeur par valeur, dans l'ordre des
+     tuiles et à la couleur de chacune — le bleu de PWD_IN_PROGRESS ne
+     couvre plus des PWD_TO_CONTROL et des TO_CONFIRM, comme dans la liste
+     « plan par plan » juste dessous. Un plan dont la valeur n'a pas de
+     tuile (cas d'école) reste compté avec sa famille. */
   function repartitionEtats(plans) {
-    var comptes = {};
-    plans.forEach(function (p) { comptes[p._etat] = (comptes[p._etat] || 0) + 1; });
-    return ETATS.filter(function (e) { return comptes[e.cle]; }).map(function (e) {
-      return '\x3Cdiv class="bulle-ligne">' + pastilleDe(e.cle) + ech(e.libelle.toLowerCase()) + ' dans GATES\x3Cspan class="n">' + nb(comptes[e.cle]) + '\x3C/span>\x3C/div>';
-    }).join('');
+    var parValeur = {}, parFamille = {};
+    plans.forEach(function (p) {
+      if (valeurDeCle(p._cle)) parValeur[p._cle] = (parValeur[p._cle] || 0) + 1;
+      else parFamille[p._etat] = (parFamille[p._etat] || 0) + 1;
+    });
+    return VALEURS_COLONNE.filter(function (v) { return parValeur[v.cle]; }).map(function (v) {
+      return '\x3Cdiv class="bulle-ligne">' + pastilleValeur(v.cle, v.famille) + ech(v.libelle) + ' dans GATES\x3Cspan class="n">' + nb(parValeur[v.cle]) + '\x3C/span>\x3C/div>';
+    }).concat(ETATS.filter(function (e) { return parFamille[e.cle]; }).map(function (e) {
+      return '\x3Cdiv class="bulle-ligne">' + pastilleDe(e.cle) + ech(e.libelle.toLowerCase()) + ' dans GATES\x3Cspan class="n">' + nb(parFamille[e.cle]) + '\x3C/span>\x3C/div>';
+    })).join('');
   }
   function bulleLotRapp(cle) {
     var R = RAPPROCHEMENT, nom = nomSeconde();
@@ -6592,5 +6621,5 @@
      page affichée, pour ne rien retarder. */
   if (API && API.noterConsultation) setTimeout(API.noterConsultation, 1500);
 })();
-window.SUIVI_FWD_FIN = '4c88f7c';
+window.SUIVI_FWD_FIN = 'd7d39d0';
 </script>

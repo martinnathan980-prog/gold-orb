@@ -82,9 +82,15 @@ async function reinitialiser(pg) {
   /* Débrief 20 : les sections en panneaux allongent la page ; le tableau
      n'est plus dans la zone que le navigateur met en page à l'ouverture
      (content-visibility), et ses colonnes figées ne se posent qu'en
-     paraissant. On l'amène à l'écran avant de les mesurer, puis on remonte. */
+     paraissant. On l'amène à l'écran avant de les mesurer, puis on remonte.
+     Elles se posent dans l'image qui suit : on attend qu'elles le soient
+     (au plus 5 s) plutôt qu'un délai fixe, trop court sur une machine
+     chargée ; si elles ne le sont jamais, le test plus bas le dit. */
   await p.evaluate(() => document.getElementById('cadre-tableau').scrollIntoView());
-  await p.waitForTimeout(500);
+  await p.waitForFunction(() => {
+    const g = [...document.querySelectorAll('tr.titres th.col-fige')].map(t => parseFloat(t.style.left));
+    return g.length > 0 && g[0] === 0 && g.every((x, i) => i === 0 || x > g[i - 1]);
+  }, null, { timeout: 5000, polling: 'raf' }).catch(() => {});
   const extrait = await p.evaluate(() => ({
     affichees: document.querySelectorAll('tr.titres th').length,
     ordre: [...document.querySelectorAll('tr.titres th')].map(t => t.dataset.cle),
@@ -697,7 +703,7 @@ async function reinitialiser(pg) {
   /* La tête de la bulle est la phrase même du verdict, avec son compte. */
   verifier('survoler « dans SEE, mais GATES ne les dit pas validés » éclaire sa part de l\'anneau et ouvre la bulle : la phrase du verdict, la répartition par état dans GATES, le sens, où mène le clic',
     svAv.visible === 'true' && svAv.eclaire === 'avance' && /^12 dans SEE, mais GATES ne les dit pas validés/.test(svAv.texte) &&
-    new RegExp('en cours dans GATES ' + nEnCours).test(svAv.texte) &&
+    new RegExp('En cours dans GATES ' + nEnCours).test(svAv.texte) &&
     /l’avancement GATES est peut-être en retard/.test(svAv.texte) && /n’afficher que ceux-là dans le tableau/.test(svAv.texte), svAv.texte.slice(0, 200));
   const svEm = await survolRapp('#verdicts-rapprochement button[data-rapp="emission"]');
   verifier('la bulle d’« autre indice » montre les paires : référence GATES → solution et lettre dans SEE',
@@ -726,7 +732,7 @@ async function reinitialiser(pg) {
   const svAt = await survolRapp('#venn-rapprochement .cote[data-cle="attente"] .moyen');
   verifier('survoler « pas encore dans SEE » dit que ce n\'est pas anormal, avec la répartition par état',
     svAt.visible === 'true' && svAt.eclaire === 'attente' && /pas validés, et pas encore dans SEE : rien d’anormal/.test(svAt.texte) &&
-    /à faire dans GATES/.test(svAt.texte), svAt.texte.slice(0, 120));
+    /À faire dans GATES/.test(svAt.texte), svAt.texte.slice(0, 120));
   const svSe = await survolRapp('#venn-rapprochement .cote[data-cle="seul"] .grand');
   verifier('survoler le 5 « seulement dans SEE » ouvre sa bulle',
     svSe.visible === 'true' && svSe.eclaire === 'seul' && /^5 lignes de SEE sans plan dans GATES/.test(svSe.texte), svSe.texte.slice(0, 120));
@@ -5549,6 +5555,452 @@ async function reinitialiser(pg) {
     await ctxImp.close();
   }
 
+  // =================================================================
+  section('Couleurs des valeurs (débrief 22)');
+  /* Débrief 22 : « dans synthèse, les couleurs sont trop proches du orange.
+     Je voudrais des couleurs variées, différentes. » Chaque valeur de la
+     colonne suivie a maintenant SA couleur, et elle suit le mot, jamais son
+     compte : vert pour les validés ; bleu, framboise, turquoise pour les en
+     cours (PWD_IN_PROGRESS, PWD_TO_CONTROL, TO_CONFIRM) ; deux gris pour les
+     à faire ; hachures pour « Non renseigné » — plus d'ambre dans les
+     données. On injecte dans la démonstration le vrai vocabulaire GATES,
+     avec la configuration de Code.gs (VALEURS_FINIES, VALEURS_A_FAIRE) et
+     les comptes de HDK, puis de THS, et on vérifie tout dans les deux
+     thèmes, sur des pages à part : la page principale ne bouge pas. Les
+     lettres (a) à (m) renvoient à la spécification du débrief 22, (n) à
+     (r) aux constats de sa relecture : un mot d'hier ne prend pas la
+     couleur d'un mot du jour ; infobulles des barres par ATA ; bulle de
+     la comparaison SEE par valeur ; liseré de la pastille « avant ». */
+  {
+    const erreursAvant22 = erreursJS.length;
+    /* Les mots se répartissent sur les plans de la démonstration dans les
+       proportions données, sans hasard (un pas de 37) : les mêmes plans
+       reçoivent les mêmes mots à chaque passage. */
+    const injecter22 = ({ mots, config }) => {
+      const s = window.__jeuDExemple('HDK');
+      if (config) { s.valeursFinies = ['Validé', 'VALIDATED', 'Traité']; s.valeursAFaire = ['TO_TREAT', 'FWD_TO_SEIZE']; }
+      const total = mots.reduce((t, m) => t + m[1], 0);
+      s.plans.forEach((x, i) => { let k = (i * 37) % total, j = 0; while (k >= mots[j][1]) { k -= mots[j][1]; j++; } x.avancement = mots[j][0]; });
+      window.__chargerSource(s);
+      return window.__valeurs();
+    };
+    /* Ce que l'œil voit : la pastille de chaque tuile, les fonds de la barre
+       du haut dans l'ordre, et le contraste de l'encre sur chaque segment
+       peint de la barre du haut et des barres par ATA. */
+    const mesurer22 = () => {
+      function rgb(c) { return c.match(/[\d.]+/g).map(Number).slice(0, 3); }
+      function lum(c) { return rgb(c).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }).reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0); }
+      function contraste(a, b) { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
+      const segs = [...document.querySelectorAll('#barre span:not(.hachure)')];
+      const ata = [...document.querySelectorAll('.critique-barre span:not(.hachure)')];
+      const tuiles = {};
+      document.querySelectorAll('#etats .etat-btn').forEach(b => {
+        const p = b.querySelector('.pastille');
+        tuiles[b.dataset.cle] = p.classList.contains('hachure') ? 'hachure' : getComputedStyle(p).backgroundColor;
+      });
+      const fonds = segs.map(s => getComputedStyle(s).backgroundColor);
+      return {
+        tuiles, fonds,
+        voisinsEgaux: fonds.some((f, i) => i && f === fonds[i - 1]),
+        encres: segs.concat(ata).map(s => ({ cle: s.dataset.cle, c: contraste(getComputedStyle(s).color, getComputedStyle(s).backgroundColor) })),
+        ordre: [...document.querySelectorAll('#barre span')].map(s => s.dataset.cle).join(',')
+      };
+    };
+    const encresFaibles = m => m.encres.filter(e => !(e.c >= 4.5)).map(e => e.cle + ' ' + e.c.toFixed(2));
+    const GATES_HDK = [['VALIDATED', 54], ['PWD_IN_PROGRESS', 238], ['PWD_TO_CONTROL', 6], ['TO_CONFIRM', 4], ['FWD_TO_SEIZE', 3], ['TO_TREAT', 1], ['', 328]];
+    const GATES_THS = [['VALIDATED', 21], ['PWD_IN_PROGRESS', 64], ['PWD_TO_CONTROL', 3], ['TO_CONFIRM', 2], ['FWD_TO_SEIZE', 4], ['TO_TREAT', 6], ['', 80]];
+    const GATES_ECHANGES = [['VALIDATED', 54], ['PWD_IN_PROGRESS', 4], ['PWD_TO_CONTROL', 238], ['TO_CONFIRM', 6], ['FWD_TO_SEIZE', 1], ['TO_TREAT', 3], ['', 328]];
+    const DOUZE = [['VALIDATED', 9], ['Validé', 6], ['PWD_IN_PROGRESS', 14], ['PWD_TO_CONTROL', 9], ['TO_CONFIRM', 8], ['ON_HOLD', 7], ['PWD_REJECTED', 7],
+      ['TO_MODIFY', 7], ['FWD_TO_SEIZE', 8], ['TO_TREAT', 7], ['À faire', 7], ['', 11]];
+    /* Assez de PWD_TO_CONTROL et de TO_CONFIRM pour qu'ils tombent dans les
+       lots de la comparaison SEE de la démonstration. */
+    const GATES_SEE = [['VALIDATED', 254], ['PWD_IN_PROGRESS', 120], ['PWD_TO_CONTROL', 40], ['TO_CONFIRM', 30], ['FWD_TO_SEIZE', 50], ['TO_TREAT', 40], ['', 106]];
+    /* Les mots d'hier et ceux du jour : les mots de la démonstration
+       (« Terminé », « En cours », « À faire ») deviennent ceux de
+       « aujourdhui » dans l'extract et le dernier relevé, ceux de « avant »
+       dans les relevés d'avant — un mot peut ainsi n'exister qu'hier. */
+    const injecterHier22 = ({ aujourdhui, avant }) => {
+      const s = window.__jeuDExemple('HDK');
+      s.valeursFinies = ['Validé', 'VALIDATED', 'Traité']; s.valeursAFaire = ['TO_TREAT', 'FWD_TO_SEIZE'];
+      const m = (t, v) => (Object.prototype.hasOwnProperty.call(t, v) ? t[v] : v);
+      s.plans.forEach(x => { x.avancement = m(aujourdhui, x.avancement); });
+      s.releves.forEach((r, i) => {
+        const t = i === s.releves.length - 1 ? aujourdhui : avant;
+        Object.keys(r.plans).forEach(ref => { r.plans[ref] = m(t, r.plans[ref]); });
+      });
+      window.__chargerSource(s);
+    };
+    /* Un plan passé d'un mot (« avant », absent du jour) à un autre
+       (« apres ») : les pastilles des deux mots dans les pilules de la
+       tendance et du journal, sur sa ligne du journal, et les bandes de sa
+       frise (fiche ouverte d'un clic sur la ligne). */
+    const passage22 = async ({ avant, apres, cles }) => {
+      const attendre = ms => new Promise(r => setTimeout(r, ms));
+      const fond = e => e ? getComputedStyle(e).backgroundColor : null;
+      const r = {
+        tendance: cles.map(k => fond(document.querySelector('#filtre-valeur-graphe button[data-valeur-graphe="' + k + '"] .pastille'))),
+        pilules: cles.map(k => fond(document.querySelector('#filtre-journal button[data-journal="' + k + '"] .pastille'))),
+        ligne: null, frise: null
+      };
+      const pil = document.querySelector('#filtre-journal button[data-journal="' + cles[1] + '"]');
+      if (pil) { pil.click(); await attendre(250); }
+      const sem = document.querySelector('#zone-journal .journal-plier[aria-expanded="false"]');
+      if (sem) { sem.click(); await attendre(250); }
+      const l = [...document.querySelectorAll('#zone-journal .journal-ligne')].find(x =>
+        (x.querySelector('.etiq-etat.avant') || {}).textContent === avant && (x.querySelector('.etiq-etat.apres') || {}).textContent === apres);
+      if (!l) return r;
+      r.ligne = [fond(l.querySelector('.etiq-etat.avant .pastille')), fond(l.querySelector('.etiq-etat.apres .pastille'))];
+      l.click(); await attendre(500);
+      const bandes = m => [...new Set([...document.querySelectorAll('#fiche-plan .fiche-plan-frise .case')]
+        .filter(c => c.title.endsWith(' : ' + m)).map(c => fond(c.querySelector('.bande'))))];
+      r.frise = [bandes(avant), bandes(apres)];
+      return r;
+    };
+    /* Deux couleurs différentes à chaque endroit, une seule par mot. */
+    const distincts22 = r => ['tendance', 'pilules', 'ligne'].every(c => r[c] && r[c][0] && r[c][1] && r[c][0] !== r[c][1]) &&
+      !!r.frise && r.frise[0].length === 1 && r.frise[1].length === 1 && r.frise[0][0] !== r.frise[1][0];
+
+    for (const [theme, nom] of [['light', 'en clair'], ['dark', 'en sombre']]) {
+      const ctx22 = await contexte({ colorScheme: theme });
+      const pc = await page(ctx22, 'couleurs ' + theme);
+
+      // (a) La couleur suit le mot : ni son compte, ni le contrat n'y changent rien.
+      await pc.evaluate(injecter22, { mots: GATES_HDK, config: true }); await pc.waitForTimeout(400);
+      const hdk = await pc.evaluate(mesurer22);
+      await pc.evaluate(injecter22, { mots: GATES_THS, config: true }); await pc.waitForTimeout(400);
+      const ths = await pc.evaluate(mesurer22);
+      verifier(nom + ' : chaque mot GATES garde sa couleur, avec les comptes de HDK comme avec ceux de THS',
+        JSON.stringify(hdk.tuiles) === JSON.stringify(ths.tuiles), JSON.stringify([hdk.tuiles, ths.tuiles]));
+      verifier(nom + ' : et le même ordre de barre — FWD_TO_SEIZE avant TO_TREAT, même quand TO_TREAT est plus nombreux',
+        hdk.ordre === ths.ordre && hdk.ordre === 'validated,pwd_in_progress,pwd_to_control,to_confirm,fwd_to_seize,to_treat,vide', hdk.ordre + ' / ' + ths.ordre);
+      await pc.evaluate(injecter22, { mots: GATES_ECHANGES, config: true }); await pc.waitForTimeout(400);
+      const ech22 = await pc.evaluate(mesurer22);
+      verifier(nom + ' : comptes échangés (238 PWD_TO_CONTROL, 4 PWD_IN_PROGRESS) : aucune tuile ne change de couleur',
+        JSON.stringify(ech22.tuiles) === JSON.stringify(hdk.tuiles), JSON.stringify(ech22.tuiles));
+
+      // (h) Le vocabulaire GATES : six aplats distincts, des pourcentages lisibles.
+      await pc.evaluate(injecter22, { mots: GATES_HDK, config: true }); await pc.waitForTimeout(400);
+      const g = await pc.evaluate(mesurer22);
+      const pleines = Object.values(g.tuiles).filter(c => c !== 'hachure');
+      verifier(nom + ' : vocabulaire GATES : six aplats distincts, plus la hachure de « Non renseigné »',
+        pleines.length === 6 && new Set(pleines).size === 6 && Object.values(g.tuiles).filter(c => c === 'hachure').length === 1, JSON.stringify(g.tuiles));
+      verifier(nom + ' : chaque pourcentage écrit dans un aplat (barre du haut, barres par ATA) dépasse 4,5:1 — l’encre est mesurée sur chaque segment peint',
+        g.encres.length > 0 && !encresFaibles(g).length, JSON.stringify(encresFaibles(g)));
+
+      // (c) Aucune couleur de valeur n'imite une couleur réservée.
+      const reserve = await pc.evaluate(() => {
+        const t = document.createElement('i'); document.body.appendChild(t);
+        const val = n => { t.style.background = 'var(' + n + ')'; return getComputedStyle(t).backgroundColor; };
+        const r = { cours: val('--cours'), alerte: val('--alerte'), indice: val('--indice') };
+        t.remove(); return r;
+      });
+      verifier(nom + ' : aucun fond de valeur ne reprend l’ambre de « à l’arrêt » (--cours), le rouge d’alerte ni le violet d’indice',
+        pleines.every(c => c !== reserve.cours && c !== reserve.alerte && c !== reserve.indice), JSON.stringify([reserve, pleines]));
+
+      // (b) Plus de color-mix ni d'ambre dans les marques de valeur.
+      const styles = await pc.evaluate(() => [...document.querySelectorAll('#barre span, #etats .pastille, #etats .etat-btn, .critique-barre span, .mini-jauge span, ' +
+        '[data-valeur-graphe] .pastille, [data-valeur-bloc] .pastille, [data-journal] .pastille')]
+        .map(e => e.getAttribute('style') || '').filter(s => /color-mix\(|var\(--cours\)|var\(--afaire\)/.test(s)));
+      verifier(nom + ' : plus aucun color-mix(, var(--cours) ni var(--afaire) dans le style d’une marque de valeur',
+        styles.length === 0, styles.slice(0, 3).join(' | '));
+
+      // (l) Barres par ATA sans valeur choisie et mini-jauge du journal : découpées par valeur, aux couleurs des tuiles.
+      const decoupe = await pc.evaluate(() => {
+        const fond = e => e && getComputedStyle(e).backgroundColor;
+        const tuile = k => fond(document.querySelector('#etats .etat-btn[data-cle="' + k + '"] .pastille'));
+        const pilule = k => fond(document.querySelector('#filtre-journal button[data-journal="' + k + '"] .pastille'));
+        const famille = {}; window.__valeurs().forEach(v => { famille[v.cle] = v.famille; });
+        const cles = boite => [...boite.querySelectorAll('span[data-cle]')].map(s => s.dataset.cle);
+        const doublon = boite => { const c = cles(boite); return new Set(c).size !== c.length; };
+        const segs = [...document.querySelectorAll('.critique-barre span:not(.hachure)')];
+        const jauges = [...document.querySelectorAll('.mini-jauge')];
+        const jauge = [...document.querySelectorAll('.mini-jauge span[data-cle]')];
+        return {
+          segments: segs.length,
+          ata: segs.length > 0 && segs.every(s => s.dataset.cle && fond(s) === tuile(s.dataset.cle)),
+          ptc: segs.some(s => s.dataset.cle === 'pwd_to_control'),
+          doublonsAta: [...document.querySelectorAll('.critique-barre')].filter(doublon).length,
+          morceaux: jauge.length,
+          jauge: jauge.length > 0 && jauge.every(s => !!pilule(s.dataset.cle) && fond(s) === pilule(s.dataset.cle)),
+          sansPilule: jauge.filter(s => !pilule(s.dataset.cle)).map(s => s.dataset.cle),
+          doublonsJauge: jauges.filter(doublon).length,
+          // Trois mots « en cours » arrivés la même semaine : trois morceaux, plus un seul bleu.
+          enCoursSepares: jauges.some(j => new Set(cles(j).filter(k => famille[k] === 'encours')).size >= 2)
+        };
+      });
+      verifier(nom + ' : barres par ATA sans valeur choisie : un segment par valeur, à la couleur de sa tuile (PWD_TO_CONTROL compris)',
+        decoupe.ata && decoupe.ptc && decoupe.doublonsAta === 0, JSON.stringify(decoupe));
+      verifier(nom + ' : mini-jauge du journal : un segment par valeur d’arrivée, à la couleur de sa pilule',
+        decoupe.jauge && decoupe.doublonsJauge === 0 && decoupe.enCoursSepares, JSON.stringify(decoupe));
+
+      // (f) La pastille de la cellule du tableau est celle de la tuile.
+      const cellules = await pc.evaluate(() => {
+        const valeurs = window.__valeurs();
+        let n = 0, justes = 0;
+        const orphelines = [];
+        document.querySelectorAll('#corps-tableau .etat-cellule').forEach(c => {
+          const p = c.querySelector('.pastille'), mot = ((c.querySelector('.num') || {}).textContent || '').trim();
+          if (!mot || p.classList.contains('hachure')) return;
+          const v = valeurs.find(x => x.libelle === mot);
+          const t = v && document.querySelector('#etats .etat-btn[data-cle="' + v.cle + '"] .pastille');
+          if (!t) { orphelines.push(mot); return; }
+          n++;
+          if (getComputedStyle(p).backgroundColor === getComputedStyle(t).backgroundColor) justes++;
+        });
+        return { n, justes, orphelines: orphelines.slice(0, 5) };
+      });
+      verifier(nom + ' : la pastille de chaque cellule de la colonne suivie a la couleur de sa tuile',
+        cellules.n > 0 && cellules.justes === cellules.n && !cellules.orphelines.length, JSON.stringify(cellules));
+
+      // (d) Deux mots pour la première place des validés : l'ordre alphabétique décide, jamais les comptes.
+      const deux = await pc.evaluate(injecter22, { mots: [['Validé', 60], ['VALIDATED', 5], ['PWD_IN_PROGRESS', 50], ['', 20]], config: true });
+      const vd = deux.find(v => v.cle === 'validated'), ve = deux.find(v => v.cle === 'valide');
+      verifier(nom + ' : VALIDATED et Validé ensemble : VALIDATED garde le vert --fait, Validé prend --v-fait-2, même douze fois moins nombreux',
+        !!vd && !!ve && vd.couleur === 'var(--fait)' && ve.couleur === 'var(--v-fait-2)', JSON.stringify(deux));
+
+      // (g) Garde de famille : VALIDATED compté « en cours » (démonstration sans configuration) ne vole pas la place de PWD_IN_PROGRESS.
+      const garde = await pc.evaluate(injecter22, { mots: [['VALIDATED', 30], ['PWD_IN_PROGRESS', 50], ['Terminé', 10], ['', 20]], config: false });
+      const gv = garde.find(v => v.cle === 'validated'), gp = garde.find(v => v.cle === 'pwd_in_progress');
+      verifier(nom + ' : un mot connu rangé dans une autre famille (VALIDATED sans configuration, donc « en cours ») ne prend la place d’aucun autre',
+        !!gv && !!gp && gv.famille === 'encours' && gp.place === 0 && gp.couleur === 'var(--v-cours-1)' && gv.place !== 0, JSON.stringify(garde));
+
+      // (i) Douze valeurs : 2 validés, 6 en cours (dont trois mots inconnus), 3 à faire.
+      await pc.evaluate(injecter22, { mots: DOUZE, config: true }); await pc.waitForTimeout(400);
+      const douze = await pc.evaluate(mesurer22);
+      verifier(nom + ' : douze valeurs (2 validés, 6 en cours, 3 à faire) : chaque pourcentage dépasse 4,5:1',
+        douze.encres.length > 0 && !encresFaibles(douze).length, JSON.stringify(encresFaibles(douze)));
+      verifier(nom + ' : douze valeurs : deux segments voisins n’ont jamais la même couleur',
+        !douze.voisinsEgaux, douze.fonds.join(' '));
+      verifier(nom + ' : douze valeurs : l’ordre suit les places — les mots connus à la leur, les inconnus dans l’ordre alphabétique',
+        douze.ordre === 'validated,valide,pwd_in_progress,pwd_to_control,to_confirm,on_hold,pwd_rejected,to_modify,afaire,fwd_to_seize,to_treat,vide', douze.ordre);
+
+      // (m) La courbe « Non renseigné » se trace en tirets, comme sa hachure ; celle d'une autre valeur reste pleine.
+      await pc.evaluate(injecter22, { mots: GATES_HDK, config: true }); await pc.waitForTimeout(400);
+      const tirets = await pc.evaluate(async () => {
+        const attendre = ms => new Promise(r => setTimeout(r, ms));
+        const lire = async k => {
+          const b = document.querySelector('#filtre-valeur-graphe button[data-valeur-graphe="' + k + '"]');
+          if (!b) return ['pas de pilule ' + k];
+          b.click(); await attendre(250);
+          const c = document.querySelector('svg.graphe path.courbe'), l = document.querySelector('#legende .legende-item svg line');
+          return [c ? c.getAttribute('stroke-dasharray') : 'pas de courbe', l ? l.getAttribute('stroke-dasharray') : 'pas de légende'];
+        };
+        const r = { vide: await lire('vide'), pwd_in_progress: await lire('pwd_in_progress') };
+        const tout = document.querySelector('#filtre-valeur-graphe button[data-valeur-graphe=""]');
+        if (tout) { tout.click(); await attendre(250); }
+        return r;
+      });
+      verifier(nom + ' : la courbe « Non renseigné » se trace en tirets, sa ligne de légende aussi ; celle de PWD_IN_PROGRESS reste pleine',
+        tirets.vide[0] === '6 4' && tirets.vide[1] === '6 4' && tirets.pwd_in_progress[0] === null && tirets.pwd_in_progress[1] === null, JSON.stringify(tirets));
+
+      // (n) Un mot absent du jour ne prend pas la couleur d'un mot présent : PWD_IN_PROGRESS d'hier, ON_HOLD (mot inconnu) aujourd'hui.
+      const surPageNeuve22 = async (etiquette, f) => {
+        const cx = await contexte({ colorScheme: theme });
+        const pg = await page(cx, 'couleurs ' + theme + ' ' + etiquette);
+        const r = await f(pg);
+        await cx.close();
+        return r;
+      };
+      const hierN = await surPageNeuve22('hier-n', async pg => {
+        await pg.evaluate(injecterHier22, { aujourdhui: { 'Terminé': 'VALIDATED', 'En cours': 'ON_HOLD', 'À faire': 'FWD_TO_SEIZE' },
+          avant: { 'Terminé': 'VALIDATED', 'En cours': 'PWD_IN_PROGRESS', 'À faire': 'FWD_TO_SEIZE' } });
+        await pg.waitForTimeout(400);
+        return pg.evaluate(passage22, { avant: 'PWD_IN_PROGRESS', apres: 'ON_HOLD', cles: ['pwd_in_progress', 'on_hold'] });
+      });
+      verifier(nom + ' : PWD_IN_PROGRESS d’hier et ON_HOLD du jour ont deux couleurs — pilules de la tendance et du journal, ligne « PWD_IN_PROGRESS → ON_HOLD », frise du plan',
+        distincts22(hierN), JSON.stringify(hierN));
+      const hierB = await surPageNeuve22('hier-b', async pg => {
+        await pg.evaluate(injecterHier22, { aujourdhui: { 'Terminé': 'VALIDATED', 'En cours': 'PWD_IN_PROGRESS', 'À faire': 'FWD_TO_SEIZE' },
+          avant: { 'Terminé': 'Validé', 'En cours': 'PWD_IN_PROGRESS', 'À faire': 'FWD_TO_SEIZE' } });
+        await pg.waitForTimeout(400);
+        return pg.evaluate(passage22, { avant: 'Validé', apres: 'VALIDATED', cles: ['valide', 'validated'] });
+      });
+      verifier(nom + ' : « Validé » d’hier n’a pas le vert de VALIDATED du jour, nulle part',
+        distincts22(hierB), JSON.stringify(hierB));
+
+      // (o) FWD_TO_SEIZE tombé à zéro et TO_TREAT encore là : deux gris, jusque dans la frise.
+      const hierO = await surPageNeuve22('hier-o', async pg => {
+        await pg.evaluate(injecterHier22, { aujourdhui: { 'Terminé': 'VALIDATED', 'En cours': 'PWD_IN_PROGRESS', 'À faire': 'TO_TREAT' },
+          avant: { 'Terminé': 'VALIDATED', 'En cours': 'PWD_IN_PROGRESS', 'À faire': 'FWD_TO_SEIZE' } });
+        await pg.waitForTimeout(400);
+        return pg.evaluate(passage22, { avant: 'FWD_TO_SEIZE', apres: 'TO_TREAT', cles: ['fwd_to_seize', 'to_treat'] });
+      });
+      verifier(nom + ' : FWD_TO_SEIZE d’hier et TO_TREAT du jour : deux gris dans les pilules, sur la ligne du journal et dans les bandes de la frise',
+        distincts22(hierO), JSON.stringify(hierO));
+
+      // (p) Barres par ATA : chaque segment dit sa valeur et son compte au survol ; l'infobulle de la ligne reprend la barre valeur par valeur.
+      const ata22 = await pc.evaluate(() => {
+        const libelle = {}; window.__valeurs().forEach(v => { libelle[v.cle] = v.libelle; });
+        const chiffre = t => Number(String(t).replace(/[\s  ]/g, ''));
+        const fautes = [];
+        let segments = 0;
+        document.querySelectorAll('.critique-ligne').forEach(l => {
+          const segs = [...l.querySelectorAll('.critique-barre span[data-cle]')];
+          let somme = 0, total = null;
+          segs.forEach(s => {
+            segments++;
+            const m = (s.getAttribute('title') || '').match(/^(.+) : ([\d\s  ]+) sur ([\d\s  ]+)$/);
+            if (!m || m[1] !== libelle[s.dataset.cle]) { fautes.push(l.dataset.groupe + ' ' + s.dataset.cle + ' title=' + JSON.stringify(s.getAttribute('title'))); return; }
+            const n = chiffre(m[2]), t = chiffre(m[3]);
+            somme += n; total = total === null ? t : total;
+            const pct = Math.round(100 * n / t);
+            if (t !== total || l.title.indexOf(m[2] + ' « ' + m[1] + ' » (' + pct + ' %)') < 0) fautes.push(l.dataset.groupe + ' ligne=' + JSON.stringify(l.title));
+            const ecrit = s.textContent.replace(/[\s %]/g, '');
+            if (ecrit && Number(ecrit) !== pct) fautes.push(l.dataset.groupe + ' ' + s.dataset.cle + ' écrit ' + s.textContent + ' / ' + pct);
+          });
+          if (segs.length && somme !== total) fautes.push(l.dataset.groupe + ' somme ' + somme + ' / ' + total);
+        });
+        return { segments, fautes: fautes.slice(0, 4) };
+      });
+      verifier(nom + ' : barres par ATA : chaque segment a pour infobulle « valeur : n sur total », et l’infobulle de la ligne redit chaque part écrite, à côté de son mot',
+        ata22.segments > 0 && !ata22.fautes.length, JSON.stringify(ata22));
+
+      // (q) La bulle d'un verdict SEE répartit le lot valeur par valeur, chaque pastille à la couleur de sa tuile.
+      await pc.evaluate(injecter22, { mots: GATES_SEE, config: true }); await pc.waitForTimeout(600);
+      const bulles22 = {};
+      for (const lot of ['avance', 'attente']) {
+        await pc.evaluate(() => document.getElementById('rapprochement').scrollIntoView({ block: 'center' })); await pc.waitForTimeout(200);
+        await (await pc.$('#verdicts-rapprochement button[data-rapp="' + lot + '"]')).hover(); await pc.waitForTimeout(300);
+        bulles22[lot] = await pc.evaluate(() => {
+          const fond = e => e.classList.contains('hachure') ? 'hachure' : getComputedStyle(e).backgroundColor;
+          const tuile = {}, libelle = {};
+          document.querySelectorAll('#etats .etat-btn').forEach(b => { tuile[b.dataset.cle] = fond(b.querySelector('.pastille')); });
+          window.__valeurs().forEach(v => { libelle[v.libelle + ' dans GATES'] = v.cle; });
+          const lignes = [...document.querySelectorAll('#bulle .bulle-comptes .bulle-ligne')].map(l => {
+            const n = l.querySelector('.n').textContent, mot = l.textContent.slice(0, -n.length).trim();
+            const cle = libelle[mot];
+            return { mot, n: Number(n.replace(/[\s  ]/g, '')), cle, fond: fond(l.querySelector('.pastille')), tuile: cle ? tuile[cle] : null };
+          });
+          const tete = ((document.querySelector('#bulle .tete-bulle') || {}).textContent || '').match(/^[\d\s  ]+/);
+          return { tete: tete ? Number(tete[0].replace(/[\s  ]/g, '')) : null, lignes };
+        });
+        await pc.mouse.move(2, 2); await pc.waitForTimeout(150);
+      }
+      const bulleJuste = b => b.lignes.length >= 4 && b.lignes.every(l => l.cle && l.fond === l.tuile) &&
+        ['pwd_in_progress', 'pwd_to_control', 'to_confirm'].every(k => b.lignes.some(l => l.cle === k)) &&
+        b.lignes.reduce((t, l) => t + l.n, 0) === b.tete;
+      verifier(nom + ' : bulles « dans SEE, mais GATES ne les dit pas validés » et « pas encore dans SEE » : une ligne par valeur (PWD_IN_PROGRESS, PWD_TO_CONTROL, TO_CONFIRM séparés), chaque pastille à la couleur de sa tuile, le compte du lot au total',
+        bulleJuste(bulles22.avance) && bulleJuste(bulles22.attente), JSON.stringify(bulles22));
+
+      // (r) La pastille « avant » du journal : pâle, mais son liseré se voit (3:1 sur le fond), même sur le gris de FWD_TO_SEIZE.
+      const avant22 = await (async () => {
+        const cx = await contexte({ colorScheme: theme, deviceScaleFactor: 4 });
+        const pg = await page(cx, 'couleurs ' + theme + ' avant');
+        await pg.evaluate(injecterHier22, { aujourdhui: { 'Terminé': 'VALIDATED', 'En cours': 'PWD_IN_PROGRESS', 'À faire': 'FWD_TO_SEIZE' },
+          avant: { 'Terminé': 'VALIDATED', 'En cours': 'PWD_IN_PROGRESS', 'À faire': 'FWD_TO_SEIZE' } });
+        await pg.waitForTimeout(400);
+        // Toutes les semaines dépliées ; une pastille « avant » par couleur.
+        const cibles = await pg.evaluate(() => {
+          document.querySelectorAll('#zone-journal .journal-plier[aria-expanded="false"]').forEach(b => b.click());
+          const vus = {}, r = [];
+          document.querySelectorAll('#zone-journal .journal-ligne .etiq-etat.avant .pastille').forEach((p, i) => {
+            const hachure = p.classList.contains('hachure'), k = hachure ? 'hachure' : getComputedStyle(p).backgroundColor;
+            if (vus[k]) return;
+            vus[k] = true; p.setAttribute('data-avant22', i);
+            r.push({ i, hachure, couleur: k, mot: p.parentElement.textContent.trim() });
+          });
+          return r;
+        });
+        await pg.mouse.move(2, 2);
+        const mesures = [];
+        for (const c of cibles) {
+          const el = await pg.$('[data-avant22="' + c.i + '"]');
+          await el.scrollIntoViewIfNeeded();
+          const bb = await el.boundingBox();
+          const png = await pg.screenshot({ clip: { x: bb.x - 4, y: bb.y - 2, width: bb.width + 8, height: bb.height + 4 } });
+          /* Les pixels lus dans la capture (×4) : le fond à gauche de la
+             pastille, le milieu de son liseré gauche, son centre. */
+          const px = await pg.evaluate(async ({ b64, w, h }) => {
+            const img = new Image(); img.src = 'data:image/png;base64,' + b64; await img.decode();
+            const cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height;
+            const g = cv.getContext('2d'); g.drawImage(img, 0, 0);
+            const lire = (x, y) => Array.from(g.getImageData(Math.round(x * 4), Math.round(y * 4), 1, 1).data).slice(0, 3);
+            return { fond: lire(1.5, 2 + h / 2), lisere: lire(4.5, 2 + h / 2), centre: lire(4 + w / 2, 2 + h / 2) };
+          }, { b64: png.toString('base64'), w: bb.width, h: bb.height });
+          mesures.push(Object.assign({ mot: c.mot, couleur: c.couleur, hachure: c.hachure }, px));
+        }
+        await cx.close();
+        return mesures;
+      })();
+      const lumPx = c => c.map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }).reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);
+      const contrastePx = (a, b) => { const x = lumPx(a), y = lumPx(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+      const avantFaibles = avant22.filter(m => !(contrastePx(m.lisere, m.fond) >= 3)).map(m => m.mot + ' liseré ' + m.lisere + ' sur ' + m.fond + ' ' + contrastePx(m.lisere, m.fond).toFixed(2));
+      verifier(nom + ' : journal : le liseré de chaque pastille « avant » se voit à 3:1 au moins sur le fond — FWD_TO_SEIZE compris',
+        avant22.some(m => m.mot === 'FWD_TO_SEIZE') && !avantFaibles.length, JSON.stringify({ avantFaibles, mots: avant22.map(m => m.mot) }));
+      /* Et la pastille reste aussi pâle qu'au débrief 22 : sa couleur à 40 %
+         sur le fond (à 3 près par canal). */
+      const avantPales = avant22.filter(m => !m.hachure).filter(m => {
+        const c = m.couleur.match(/[\d.]+/g).map(Number);
+        return m.centre.some((v, i) => Math.abs(v - (0.4 * c[i] + 0.6 * m.fond[i])) > 3);
+      }).map(m => m.mot + ' centre ' + m.centre + ' couleur ' + m.couleur + ' fond ' + m.fond);
+      verifier(nom + ' : journal : la pastille « avant » reste pâle — sa couleur à 40 % sur le fond',
+        avant22.length > 1 && !avantPales.length, JSON.stringify(avantPales));
+      await ctx22.close();
+    }
+
+    // (j) Les deux blocs sombres (système sombre, data-theme="dark") déclarent les mêmes jetons, et pas ceux du clair.
+    {
+      const ctxJ = await contexte({ colorScheme: 'light' });
+      const pj = await page(ctxJ, 'couleurs jetons');
+      const jetons = () => pj.evaluate(() => {
+        const cs = getComputedStyle(document.documentElement);
+        return ['fait-2', 'cours-1', 'cours-2', 'cours-3', 'cours-4', 'cours-5', 'cours-6', 'afaire-1', 'afaire-2']
+          .map(k => cs.getPropertyValue('--v-' + k).trim() + '/' + cs.getPropertyValue('--v-' + k + '-encre').trim());
+      });
+      const clair = await jetons();
+      await pj.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
+      const bascule = await jetons();
+      await pj.evaluate(() => document.documentElement.removeAttribute('data-theme'));
+      await pj.emulateMedia({ colorScheme: 'dark' });
+      const systeme = await jetons();
+      await pj.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
+      const forceClair = await jetons();
+      await ctxJ.close();
+      const complet = l => l.length === 9 && l.every(x => /^#[0-9a-f]{6}\/#[0-9a-f]{6}$/i.test(x));
+      verifier('les jetons --v-* et leurs encres sont les mêmes dans les deux blocs sombres (système sombre, data-theme="dark"), et chaque couleur y diffère du clair',
+        complet(systeme) && complet(clair) && JSON.stringify(systeme) === JSON.stringify(bascule) &&
+        systeme.every((x, i) => x.split('/')[0] !== clair[i].split('/')[0]),
+        JSON.stringify({ clair, systeme, bascule }));
+      verifier('data-theme="light" sur un système sombre rend les jetons du clair',
+        JSON.stringify(forceClair) === JSON.stringify(clair), JSON.stringify({ clair, forceClair }));
+    }
+
+    // (e) Couleurs forcées (contraste élevé de Windows) : les marques de valeur gardent exactement leurs fonds.
+    {
+      const lireFonds = async pg => {
+        const r = await pg.evaluate(() => {
+          const lire = sel => [...document.querySelectorAll(sel)].map(s => (s.dataset.cle || '') + ' ' + getComputedStyle(s).backgroundColor);
+          /* Le témoin : un aplat hors des marques protégées, que les
+             couleurs forcées doivent bien repeindre — preuve qu'elles
+             s'appliquent. */
+          const t = document.createElement('span');
+          t.style.cssText = 'display:inline-block;width:8px;height:8px;background:rgb(22, 141, 217)';
+          document.getElementById('section-synthese').appendChild(t);
+          const temoin = getComputedStyle(t).backgroundColor; t.remove();
+          return { barre: lire('#barre span:not(.hachure)'), ata: lire('.critique-barre span:not(.hachure)'), jauge: lire('.mini-jauge span[data-cle]'), temoin };
+        });
+        // La frise de la fiche d'un plan, ouverte d'un clic sur sa référence.
+        await pg.evaluate(() => { const b = document.querySelector('#corps-tableau button[data-ref-plan]'); b.scrollIntoView({ block: 'center' }); b.click(); });
+        await pg.waitForTimeout(600);
+        r.frise = await pg.evaluate(() => [...document.querySelectorAll('.fiche-plan-frise .bande[style*="background"]')].map(s => getComputedStyle(s).backgroundColor));
+        return r;
+      };
+      const ctxN = await contexte();
+      const normal = await lireFonds(await page(ctxN, 'couleurs normales'));
+      await ctxN.close();
+      const ctxF = await contexte({ forcedColors: 'active' });
+      const force = await lireFonds(await page(ctxF, 'couleurs forcées'));
+      await ctxF.close();
+      verifier('couleurs forcées (contraste élevé de Windows) : barre du haut, barres par ATA, mini-jauge du journal et frise d’un plan gardent exactement leurs fonds',
+        ['barre', 'ata', 'jauge', 'frise'].every(k => normal[k].length > 0 && JSON.stringify(force[k]) === JSON.stringify(normal[k])) &&
+        normal.temoin === 'rgb(22, 141, 217)' && force.temoin !== normal.temoin,
+        JSON.stringify({ temoin: [normal.temoin, force.temoin], force: ['barre', 'ata', 'jauge', 'frise'].map(k => k + ' ' + force[k].length + '/' + normal[k].length + ' ' + force[k].slice(0, 3).join(' ; ')) }));
+    }
+
+    const erreurs22 = erreursJS.slice(erreursAvant22).filter(e => /^couleurs /.test(e));
+    verifier('aucune erreur JavaScript sur les pages de ces vérifications', !erreurs22.length, erreurs22.join(' | '));
+  }
+
   section('Persistance (même navigateur, page rechargée)');
   await p.click('button[data-trig="fin"]'); await p.waitForTimeout(300);
   /* Débrief 19 : « quand on ouvre, t'es directement sur Tout » — un cadrage
@@ -5637,7 +6089,7 @@ async function reinitialiser(pg) {
   // C. Les puces au-dessus du tableau comptent ce que leur clic montrera.
   /* Un groupe qui a des deux : des plans à l'arrêt et des « non renseignés ». */
   await p.evaluate(() => [...document.querySelectorAll('.critique-arret')].map(a => a.previousElementSibling)
-    .find(l => !/ 0 non renseignés/.test(l.title)).click()); await p.waitForTimeout(500);
+    .find(l => /« Non renseigné »/.test(l.title)).click()); await p.waitForTimeout(500);
   const puces20 = await p.evaluate(() => ({
     groupe: (document.querySelector('.critique-ligne[aria-pressed="true"]') || {}).dataset,
     vide: (document.querySelector('#incomplets .puce-vide b') || {}).textContent,

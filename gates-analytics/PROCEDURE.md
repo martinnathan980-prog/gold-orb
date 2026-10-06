@@ -937,13 +937,17 @@ que s'il est seul dans la cellule (une date n'en est pas un).
 
 Chaque valeur a sa couleur, qui suit le mot et non son compte (débrief 22) :
 validés en vert ; en cours en bleu (PWD_IN_PROGRESS, « En cours »),
-framboise (PWD_TO_CONTROL), turquoise (TO_CONFIRM), puis trois couleurs de
-réserve pour un mot inconnu ; à faire en deux gris qui alternent
-(FWD_TO_SEIZE puis TO_TREAT) ; non renseigné hachuré. La barre suit toujours
-cet ordre, sur tous les contrats. Seule la famille **fini** a un poids : c'est elle que
-compte la courbe, le rythme requis par jalon, la comparaison avec SEE. Une
-autre valeur qui voudrait dire « fini » s'ajoute à `VALEURS_FINIES`, en haut
-de `Code.gs` (et une valeur « pas commencé » à `VALEURS_A_FAIRE`).
+framboise (PWD_TO_CONTROL), turquoise (TO_CONFIRM) ; un mot inconnu prend
+la première de ces couleurs qu'aucun mot du contrat n'occupe, puis trois
+couleurs de réserve ; à faire en deux gris qui alternent (FWD_TO_SEIZE puis
+TO_TREAT) ; non renseigné hachuré. La barre suit toujours cet ordre, sur tous
+les contrats. Une valeur qui n'est plus dans l'extract (courbe, journal,
+historique d'un plan) garde sa couleur si aucun mot du jour ne la tient ;
+sinon elle prend la suivante libre de sa famille. Seule la famille **fini** a
+un poids : c'est elle que compte la courbe, le rythme requis par jalon, la
+comparaison avec SEE. Une autre valeur qui voudrait dire « fini » s'ajoute à
+`VALEURS_FINIES`, en haut de `Code.gs` (et une valeur « pas commencé » à
+`VALEURS_A_FAIRE`).
 
 **Un mot « fini » inconnu ne passe pas inaperçu** (débrief 16 : « 0 sur 600
 plans validés » sur les vraies données). Quand **aucun** plan n'est compté
