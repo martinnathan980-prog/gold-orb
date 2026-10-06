@@ -5477,8 +5477,12 @@ async function reinitialiser(pg) {
     }
     await ctxS21.close();
     // Collé en haut pendant qu'on lit : le sommaire, sur le papier, souligné d'un filet, devant les panneaux.
+    // Le filet arrive en fondu (0,2 s) : on attend qu'il soit posé, pas un instant pris au milieu.
     await p.evaluate(() => window.scrollTo(0, document.getElementById('section-repartition').getBoundingClientRect().top + window.scrollY + 300));
-    await p.waitForTimeout(500);
+    await p.waitForFunction(() => {
+      const n = document.getElementById('sommaire');
+      return n.dataset.colle === 'true' && /^rgb\(/.test(getComputedStyle(n).borderBottomColor);
+    }, null, { timeout: 3000 }).catch(() => {});
     const colle21 = await p.evaluate(() => {
       const n = document.getElementById('sommaire'), r = n.getBoundingClientRect(), cs = getComputedStyle(n);
       return { colle: n.dataset.colle, haut: Math.round(r.top), fond: cs.backgroundColor === getComputedStyle(document.body).backgroundColor,
