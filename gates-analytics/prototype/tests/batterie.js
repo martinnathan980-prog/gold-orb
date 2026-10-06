@@ -1638,7 +1638,7 @@ async function reinitialiser(pg) {
   await reinitialiser(p);
   const champs = await p.evaluate(() => ({
     global: !!document.getElementById('chercher-plan') || !!document.getElementById('champ-plan'),
-    journal: !!document.querySelector('.section-journal + .ligne-filtres #recherche-journal'),
+    journal: !!document.querySelector('#section-journal .panneau-tete + .ligne-filtres #recherche-journal'),
     groupe: !!document.querySelector('.ligne-filtres #filtre-groupe'),
     rapp: !!document.querySelector('#rapprochement .section-tete #recherche-rapp')
   }));
@@ -4717,7 +4717,7 @@ async function reinitialiser(pg) {
       }
       const contraste = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
       const papier = getComputedStyle(document.body).backgroundColor;
-      const panneaux = ['section-synthese', 'section-tendance', 'section-repartition', 'section-plans', 'rapprochement'].map(id => {
+      const panneaux = ['section-synthese', 'section-tendance', 'section-journal', 'section-repartition', 'section-plans', 'rapprochement'].map(id => {
         const sec = document.getElementById(id);
         const sur = sec.querySelector('.surtitre');
         const num = getComputedStyle(sur, '::before');
@@ -4737,23 +4737,23 @@ async function reinitialiser(pg) {
     await p.setViewportSize({ width: 1280, height: 950 }); await p.waitForTimeout(600);
     const t = await lireTeintes(p);
     const nums = t.panneaux.map(x => x.numero);
-    verifier('chaque panneau porte sa teinte sur son numéro : cinq couleurs différentes, la synthèse à l’encre',
-      new Set(nums).size === 5 && nums[0] === t.encre, JSON.stringify(nums));
-    verifier('teintes calmes : aucun fond coloré, aucun titre coloré — les panneaux restent blancs, les titres à l’encre',
+    verifier('chaque panneau porte sa teinte sur son numéro : six couleurs différentes (le journal a la sienne depuis le débrief 21), la synthèse à l’encre',
+      new Set(nums).size === 6 && nums[0] === t.encre, JSON.stringify(nums));
+    verifier('teintes calmes : aucun titre coloré — les panneaux restent blancs (seule leur tête est teintée, débrief 21), les titres à l’encre',
       t.panneaux.every(x => x.fond === t.surface && x.titre === t.encre), JSON.stringify(t.panneaux.map(x => [x.fond, x.titre])));
     verifier('thème clair : chaque numéro se lit (au moins 4,5:1 sur le panneau et sur le papier)',
       t.panneaux.every(x => x.contrasteSurface >= 4.5 && x.contrastePapier >= 4.5),
       JSON.stringify(t.panneaux.map(x => x.contrasteSurface.toFixed(2) + '/' + x.contrastePapier.toFixed(2))));
-    verifier('« par [ATA ▾] » : le mot à choisir est dans la teinte du panneau 03', t.mot === t.panneaux[2].numero, t.mot);
-    verifier('le sommaire liste les cinq panneaux, chacun dans la teinte de son panneau, dans le même ordre',
-      t.liens.length === 5 && t.liens.every((l, k) => l.cible === t.panneaux[k].id && l.numero === t.panneaux[k].numero) &&
-      t.liens[0].texte === 'Synthèse' && t.liens[2].texte === 'Par ' + t.dim && t.liens[4].texte === 'Comparaison', JSON.stringify([t.dim, t.liens]));
+    verifier('« par [ATA ▾] » : le mot à choisir est dans la teinte du panneau 04', t.mot === t.panneaux[3].numero, t.mot);
+    verifier('le sommaire liste les six panneaux, chacun dans la teinte de son panneau, dans le même ordre',
+      t.liens.length === 6 && t.liens.every((l, k) => l.cible === t.panneaux[k].id && l.numero === t.panneaux[k].numero) &&
+      t.liens[0].texte === 'Synthèse' && t.liens[2].texte === 'Changements' && t.liens[3].texte === 'Par ' + t.dim && t.liens[5].texte === 'Comparaison', JSON.stringify([t.dim, t.liens]));
     const ctxS = await contexte({ colorScheme: 'dark' });
     const ps20 = await page(ctxS, 'teintes sombres');
     const ts = await lireTeintes(ps20);
     verifier('thème sombre : d’autres valeurs des mêmes teintes, toujours distinctes et lisibles (4,5:1)',
-      new Set(ts.panneaux.map(x => x.numero)).size === 5 && ts.panneaux.every((x, k) => x.numero !== nums[k]) &&
-      ts.panneaux.every(x => x.contrasteSurface >= 4.5 && x.contrastePapier >= 4.5) && ts.mot === ts.panneaux[2].numero,
+      new Set(ts.panneaux.map(x => x.numero)).size === 6 && ts.panneaux.every((x, k) => x.numero !== nums[k]) &&
+      ts.panneaux.every(x => x.contrasteSurface >= 4.5 && x.contrastePapier >= 4.5) && ts.mot === ts.panneaux[3].numero,
       JSON.stringify(ts.panneaux.map(x => x.numero + ' ' + x.contrasteSurface.toFixed(2))));
     await ctxS.close();
 
@@ -4787,7 +4787,7 @@ async function reinitialiser(pg) {
                courant: courant && courant.dataset.chapitre, focus: document.activeElement === document.querySelector('#section-plans h2'),
                href: location.href, colle: document.getElementById('sommaire').dataset.colle };
     });
-    verifier('un clic sur « 04 Plans » descend au panneau, juste sous le sommaire collé en haut, sans toucher à l’adresse',
+    verifier('un clic sur « 05 Plans » descend au panneau, juste sous le sommaire collé en haut, sans toucher à l’adresse',
       saut.scroll > 500 && saut.navHaut === 0 && saut.secHaut >= saut.navBas && saut.secHaut <= saut.navBas + 40 && saut.href === adresse && saut.colle === 'true',
       JSON.stringify(saut));
     verifier('le panneau atteint est marqué dans le sommaire, et le focus clavier est sur son titre',
@@ -4816,16 +4816,16 @@ async function reinitialiser(pg) {
       s.value = avant; s.dispatchEvent(new Event('change', { bubbles: true }));
       return r;
     });
-    verifier('l’entrée 03 du sommaire suit la dimension choisie dans le titre',
+    verifier('l’entrée 04 du sommaire suit la dimension choisie dans le titre',
       !!autreDim && autreDim.lien === 'Par ' + autreDim.choisi, JSON.stringify(autreDim));
-    // Concept harnais : pas de comparaison, l'entrée 05 s'efface.
+    // Concept harnais : pas de comparaison, l'entrée 06 s'efface.
     await p.click('#choix-indicateur button[data-indicateur="concept"]'); await p.waitForTimeout(700);
     const sansSEE = await p.evaluate(() => ({
       cachee: document.getElementById('rapprochement').hidden,
       liens: [...document.querySelectorAll('#sommaire-liste li:not([hidden]) a')].map(a => a.dataset.chapitre)
     }));
-    verifier('sans seconde base affichée (concept harnais), le sommaire ne liste que les quatre panneaux présents',
-      sansSEE.cachee && sansSEE.liens.length === 4 && !sansSEE.liens.includes('rapprochement'), JSON.stringify(sansSEE));
+    verifier('sans seconde base affichée (concept harnais), le sommaire ne liste que les cinq panneaux présents',
+      sansSEE.cachee && sansSEE.liens.length === 5 && !sansSEE.liens.includes('rapprochement'), JSON.stringify(sansSEE));
     await p.click('#choix-indicateur button[data-indicateur="def"]'); await p.waitForTimeout(700);
     await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(300);
 
@@ -5211,6 +5211,299 @@ async function reinitialiser(pg) {
     verifier('colonne suivie vide : vérifier l’export de GATES, puis le réimporter par le menu — plus « l’export collé »',
       /est vide sur les \d+ plans/.test(textes.colonne) && textes.colonne.indexOf('puis le réimporter (' + menu + ').') !== -1 && !/export collé/.test(textes.colonne), textes.colonne);
     await p.waitForTimeout(400);
+    await reinitialiser(p);
+  }
+
+  // =================================================================
+  section('Débrief 21 : bandeau');
+  /* Débrief 21 : « ce qui change semaine par semaine, sa propre partie
+     distincte » ; « par ECP, la flèche est cachée par ECP » ; « Suivi FWD,
+     c'est trop caché dans le fond » ; « aller encore plus loin pour séparer
+     les étapes ». Chaque point est vérifié sur la page telle qu'elle se
+     dessine : le journal dans son panneau, le chevron jamais sous le mot,
+     le titre dans sa bande, les panneaux bien séparés — dans les deux thèmes. */
+  {
+    await reinitialiser(p);
+    await p.setViewportSize({ width: 1280, height: 950 });
+    await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(400);
+
+    // --- 1. Le journal, un panneau à lui, juste après la courbe.
+    const jp = await p.evaluate(() => {
+      const t = document.getElementById('section-tendance'), sec = document.getElementById('section-journal');
+      return {
+        panneau: !!sec && sec.matches('section.bloc.panneau.teinte-journal'),
+        apres: !!sec && t.nextElementSibling === sec,
+        chezLui: !!sec && ['zone-journal', 'filtre-journal', 'recherche-journal'].every(id => sec.contains(document.getElementById(id))) &&
+                 !!sec.querySelector('.panneau-tete h2.titre-journal'),
+        horsTendance: !t.querySelector('#zone-journal, .titre-journal, #recherche-journal, #filtre-journal'),
+        surtitre: sec ? sec.querySelector('.panneau-tete .surtitre').textContent : '',
+        titre: sec ? sec.querySelector('h2').textContent : '',
+        panneaux: [...document.querySelectorAll('section.panneau:not(.panneau-hors-suite)')].filter(s => !s.hidden).map(s => s.id),
+        liens: [...document.querySelectorAll('#sommaire-liste li:not([hidden]) a')].map(a => ({ cible: a.dataset.chapitre, texte: a.textContent.trim() }))
+      };
+    });
+    verifier('le journal est un panneau à lui (« Changements »), juste après la tendance : titre, pastilles, recherche et liste chez lui, plus rien sous la courbe',
+      jp.panneau && jp.apres && jp.chezLui && jp.horsTendance && jp.surtitre === 'Changements' && jp.titre === 'Ce qui a changé, semaine par semaine', JSON.stringify(jp));
+    verifier('panneaux et sommaire dans le même ordre, donc les mêmes numéros : 01 Synthèse, 02 Tendance, 03 Changements, 04 Par…, 05 Plans, 06 Comparaison',
+      JSON.stringify(jp.panneaux) === JSON.stringify(['section-synthese', 'section-tendance', 'section-journal', 'section-repartition', 'section-plans', 'rapprochement']) &&
+      JSON.stringify(jp.liens.map(l => l.cible)) === JSON.stringify(jp.panneaux) && jp.liens[2].texte === 'Changements' && /^Par /.test(jp.liens[3].texte),
+      JSON.stringify(jp.liens));
+    // Ses gestes, dans son panneau : pastille, recherche, semaine dépliée, « Copier ».
+    const gestes = await p.evaluate(async () => {
+      const attendre = ms => new Promise(r => setTimeout(r, ms));
+      const r = {};
+      const pastille = document.querySelector('#filtre-journal button[data-journal="termine"]');
+      pastille.click(); await attendre(250);
+      r.pastille = window.__vueValeurs().journal === 'termine';
+      document.querySelector('#filtre-journal button[data-journal=""]').click(); await attendre(250);
+      r.pastilleOtee = window.__vueValeurs().journal === '';
+      const tete = document.querySelector('#zone-journal button[data-semaine]');
+      const avant = tete.getAttribute('aria-expanded');
+      tete.click(); await attendre(250);
+      const tete2 = document.querySelector('#zone-journal button[data-semaine="' + tete.dataset.semaine + '"]');
+      r.deplie = avant !== tete2.getAttribute('aria-expanded');
+      r.copier = !!tete2.closest('.journal-semaine').querySelector('.journal-copier button[data-copier]') || avant === 'true';
+      const ref = (document.querySelector('#zone-journal button[data-ref]') || {}).dataset;
+      r.ref = ref ? ref.ref : '';
+      tete2.click(); await attendre(250);
+      return r;
+    });
+    await p.fill('#recherche-journal', gestes.ref); await p.waitForTimeout(450);
+    const rech21 = await p.evaluate(ref => {
+      const sem = [...document.querySelectorAll('#zone-journal .journal-semaine')];
+      return { n: sem.length, toutes: sem.every(s => s.textContent.indexOf(ref) !== -1) };
+    }, gestes.ref);
+    await p.fill('#recherche-journal', ''); await p.waitForTimeout(400);
+    verifier('dans son panneau, le journal garde ses gestes : la pastille filtre, « Tout » la retire, une semaine se déplie avec « Copier », la recherche ne garde que les semaines du plan',
+      gestes.pastille && gestes.pastilleOtee && gestes.deplie && gestes.copier && !!gestes.ref && rech21.n > 0 && rech21.toutes, JSON.stringify([gestes, rech21]));
+    // Le sommaire y mène, le marque, et pose le focus sur son titre.
+    await p.bringToFront();
+    await p.click('#sommaire-liste a[data-chapitre="section-journal"]');
+    await p.waitForFunction(() => {
+      const s = document.getElementById('section-journal').getBoundingClientRect().top;
+      const n = document.getElementById('sommaire').getBoundingClientRect().bottom;
+      return s >= n && s <= n + 40;
+    }, null, { timeout: 4000, polling: 'raf' }).catch(() => {});
+    await p.waitForTimeout(300);
+    const sautJ = await p.evaluate(() => {
+      const nav = document.getElementById('sommaire').getBoundingClientRect(), sec = document.getElementById('section-journal').getBoundingClientRect();
+      const courant = document.querySelector('#sommaire-liste a[aria-current]');
+      return { navBas: Math.round(nav.bottom), secHaut: Math.round(sec.top), courant: courant && courant.dataset.chapitre,
+               focus: document.activeElement === document.querySelector('#section-journal h2') };
+    });
+    verifier('« 03 Changements » dans le sommaire descend au journal, juste sous le sommaire collé, le marque et pose le focus sur son titre',
+      sautJ.secHaut >= sautJ.navBas && sautJ.secHaut <= sautJ.navBas + 40 && sautJ.courant === 'section-journal' && sautJ.focus, JSON.stringify(sautJ));
+    await p.evaluate(() => { document.activeElement.blur(); window.scrollTo(0, 0); }); await p.waitForTimeout(300);
+
+    // --- 2. Le chevron du « par [ATA ▾] » : jamais sous le mot.
+    /* Pour chaque dimension : le texte du mot, mesuré à part dans la police
+       réellement calculée du menu ; la boîte du chevron, lue dans sa
+       position de fond. Le texte (coupé au bord du contenu s'il est trop
+       long) doit finir avant le chevron, le chevron doit être dans le menu,
+       visible (rien ne le recouvre), et le menu dans son panneau. */
+    const mesurerChevrons = pg => pg.evaluate(async () => {
+      const sel = document.getElementById('dim-critique');
+      const avant = sel.value, out = [];
+      for (const o of [...sel.options]) {
+        sel.value = o.value; sel.dispatchEvent(new Event('change', { bubbles: true }));
+        sel.scrollIntoView({ block: 'center' });
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        const cs = getComputedStyle(sel), r = sel.getBoundingClientRect();
+        const padL = parseFloat(cs.paddingLeft), padR = parseFloat(cs.paddingRight);
+        const t = document.createElement('span');
+        t.textContent = o.text;
+        t.style.cssText = 'position:absolute;left:0;top:0;visibility:hidden;white-space:pre;';
+        ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'letterSpacing', 'fontOpticalSizing', 'fontVariationSettings'].forEach(k => { t.style[k] = cs[k]; });
+        document.body.appendChild(t);
+        const largeurTexte = t.getBoundingClientRect().width; t.remove();
+        const contenu = r.width - padL - padR;
+        const finTexte = r.left + padL + Math.min(largeurTexte, contenu);
+        const px = cs.backgroundPositionX, taille = parseFloat(cs.backgroundSize);
+        let decalage = null;
+        let m = px.match(/right\s+([\d.]+)px/); if (m) decalage = +m[1];
+        m = px.match(/calc\(100% - ([\d.]+)px\)/); if (m) decalage = +m[1];
+        const chevronG = decalage === null ? NaN : r.right - decalage - taille, chevronD = r.right - (decalage || 0);
+        const centre = document.elementFromPoint((chevronG + chevronD) / 2, r.top + r.height / 2);
+        const tete = sel.closest('.panneau-tete').getBoundingClientRect();
+        out.push({ dim: o.value, mot: o.text, largeurTexte: Math.round(largeurTexte * 10) / 10, contenu: Math.round(contenu * 10) / 10,
+                   ecart: Math.round((chevronG - finTexte) * 10) / 10,
+                   chevronDedans: chevronG >= r.left + padL && chevronD <= r.right + 0.5,
+                   visible: centre === sel, dansPanneau: r.right <= tete.right + 0.5 && r.left >= tete.left - 0.5,
+                   entier: largeurTexte <= contenu + 0.5, police: cs.fontFamily.split(',')[0] });
+      }
+      sel.value = avant; sel.dispatchEvent(new Event('change', { bubbles: true }));
+      return { mesures: out, page: document.documentElement.scrollWidth <= window.innerWidth };
+    });
+    const bonChevron = x => x.ecart >= 2 && x.chevronDedans && x.visible && x.dansPanneau;
+    const dims21 = await p.evaluate(() => [...document.getElementById('dim-critique').options].map(o => o.text));
+    for (const w of [360, 390, 768, 1024, 1440, 1920]) {
+      await p.setViewportSize({ width: w, height: 900 }); await p.waitForTimeout(350);
+      const m = await mesurerChevrons(p);
+      verifier('à ' + w + ' px, thème clair : pour les ' + dims21.length + ' dimensions, le chevron est dans le menu, visible, et le mot finit avant lui',
+        m.mesures.length === dims21.length && m.mesures.every(bonChevron) && m.page, JSON.stringify(m.mesures.filter(x => !bonChevron(x))) + ' page:' + m.page);
+      verifier('à ' + w + ' px : un nom court (ATA, ECP, CC, Séquence…) se lit en entier, sans être coupé',
+        m.mesures.filter(x => x.mot.length <= 14).every(x => x.entier), JSON.stringify(m.mesures.filter(x => x.mot.length <= 14 && !x.entier)));
+    }
+    /* Avant l'arrivée de la police du titre, la page écrit le mot dans la
+       police de secours ; puis Newsreader arrive. C'était le défaut : la
+       largeur, mesurée une fois, ne suivait pas. On pose une police de
+       secours nettement plus large (espacée), sans rien appeler du script,
+       puis on la retire. */
+    await p.setViewportSize({ width: 1280, height: 950 }); await p.waitForTimeout(300);
+    await p.selectOption('#dim-critique', 'ecp'); await p.waitForTimeout(400);
+    const largeurEcp = () => p.evaluate(() => Math.round(document.getElementById('dim-critique').getBoundingClientRect().width));
+    const lEcp = await largeurEcp();
+    await p.addStyleTag({ content: '.titre-choix { font-family: "DejaVu Sans", Verdana, Arial, sans-serif !important; letter-spacing: .25em; } /* débrief21-secours */' });
+    await p.waitForTimeout(200);
+    const lSecours = await largeurEcp();
+    const mSecours = await mesurerChevrons(p);
+    await p.evaluate(() => { [...document.querySelectorAll('style')].filter(s => /débrief21-secours/.test(s.textContent)).forEach(s => s.remove()); });
+    await p.waitForTimeout(200);
+    const mApres = await mesurerChevrons(p);
+    verifier('police de secours plus large (avant le chargement de Newsreader) : le menu s’élargit seul, le chevron reste après le mot, pour chaque dimension',
+      lSecours > lEcp + 4 && mSecours.mesures.every(bonChevron) && mSecours.mesures[0].police !== 'Newsreader',
+      lEcp + ' → ' + lSecours + ' ' + JSON.stringify(mSecours.mesures.filter(x => !bonChevron(x))));
+    verifier('puis Newsreader revenue : le menu reprend sa largeur, sans aucune mesure du script, et le chevron reste à sa place',
+      (await largeurEcp()) === lEcp && mApres.mesures.every(bonChevron), JSON.stringify(mApres.mesures.filter(x => !bonChevron(x))));
+    verifier('plus de mesure au canevas : aucune largeur posée à la main sur le menu, la copie invisible porte le mot choisi',
+      await p.evaluate(() => {
+        const s = document.getElementById('dim-critique'), m = document.getElementById('dim-critique-mesure');
+        return s.style.width === '' && m.textContent === s.options[s.selectedIndex].text && getComputedStyle(m).visibility === 'hidden' &&
+               getComputedStyle(m).fontFamily === getComputedStyle(s).fontFamily && getComputedStyle(m).fontSize === getComputedStyle(s).fontSize;
+      }));
+    await p.selectOption('#dim-critique', 'ata'); await p.waitForTimeout(300);
+    // Le cadre se cache avec le menu (sans dimension à proposer) : pas de blanc fantôme après « par ».
+    const cache21 = await p.evaluate(() => {
+      const s = document.getElementById('dim-critique'), c = document.getElementById('dim-critique-cadre');
+      s.hidden = true; s.dispatchEvent(new Event('input'));
+      const r = { cadre: getComputedStyle(c).display, largeur: c.getBoundingClientRect().width };
+      s.hidden = false; s.dispatchEvent(new Event('input'));
+      r.revenu = getComputedStyle(c).display !== 'none' && c.getBoundingClientRect().width > 20;
+      return r;
+    });
+    verifier('menu caché (aucune dimension) : sa grille disparaît avec lui, sans blanc après « par » ; elle revient avec lui',
+      cache21.cadre === 'none' && cache21.largeur === 0 && cache21.revenu, JSON.stringify(cache21));
+    await p.waitForTimeout(300);
+
+    // --- 3. Le bandeau du titre et les panneaux, dans les deux thèmes.
+    const lireBandeau = pg => pg.evaluate(() => {
+      function lum(c) {
+        const m = c.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => {
+          v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+        });
+        return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2];
+      }
+      const contraste = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+      const cs = el => getComputedStyle(el);
+      const mh = document.querySelector('header.masthead'), h1 = mh.querySelector('h1'), sem = mh.querySelector('.semaine');
+      const nav = document.getElementById('sommaire'), syn = document.getElementById('section-synthese');
+      const rm = mh.getBoundingClientRect(), rn = nav.getBoundingClientRect(), rs = syn.getBoundingClientRect();
+      const papier = cs(document.body).backgroundColor, surface = cs(document.getElementById('section-plans')).backgroundColor;
+      const fond = cs(mh).backgroundColor;
+      const bandeau = {
+        fond, papier, fondPlein: fond !== papier && !/rgba\(.*, 0\)$/.test(fond),
+        poids: +cs(h1).fontWeight, taille: parseFloat(cs(h1).fontSize), police: cs(h1).fontFamily.split(',')[0],
+        cTitre: contraste(cs(h1).color, fond), cSemaine: contraste(cs(sem).color, fond),
+        cSemaineB: contraste(cs(sem.querySelector('b')).color, fond),
+        largeur: Math.abs(rm.left - rs.left) <= 1 && Math.abs(rm.width - rs.width) <= 1,
+        accroche: Math.abs(rn.top - rm.bottom) <= 1 && Math.abs(rn.left - rm.left) <= 1 && Math.abs(rn.width - rm.width) <= 1,
+        navFond: cs(nav).backgroundColor === surface, navRayon: cs(nav).borderBottomLeftRadius !== '0px'
+      };
+      const ids = ['section-synthese', 'section-tendance', 'section-journal', 'section-repartition', 'section-plans', 'rapprochement'];
+      const panneaux = ids.map(id => {
+        const sec = document.getElementById(id), tete = sec.firstElementChild, r = sec.getBoundingClientRect(), rt = tete.getBoundingClientRect();
+        const csec = cs(sec), ct = cs(tete);
+        const titre = sec.querySelector('.panneau-tete h2, .panneau-tete .phrase'), sur = tete.querySelector('.surtitre');
+        const numero = getComputedStyle(sur, '::before').color;
+        return {
+          id, tete: tete.classList.contains('panneau-tete') && !!sur && !!titre, fondTete: ct.backgroundColor, fond: csec.backgroundColor,
+          pleineLargeur: Math.abs(rt.left - (r.left + parseFloat(csec.borderLeftWidth))) <= 1 && Math.abs(rt.right - (r.right - parseFloat(csec.borderRightWidth))) <= 1 &&
+                         Math.abs(rt.top - (r.top + parseFloat(csec.borderTopWidth))) <= 1,
+          filet: parseFloat(ct.borderBottomWidth) >= 1,
+          liseré: parseFloat(csec.borderTopWidth) >= 3 && csec.borderTopColor === numero,
+          cTitre: contraste(cs(titre).color, ct.backgroundColor), cNumero: contraste(numero, ct.backgroundColor),
+          cSurtitre: contraste(cs(sur).color, ct.backgroundColor), ombre: csec.boxShadow !== 'none',
+          haut: r.top, bas: r.bottom
+        };
+      });
+      const ecarts = panneaux.slice(1).map((x, k) => Math.round(x.haut - panneaux[k].bas));
+      return { bandeau, panneaux, ecarts, surface };
+    });
+    const verifierBandeau = (b, theme, largeur) => {
+      const B = b.bandeau;
+      verifier(theme + ', ' + largeur + ' px : « Suivi FWD » dans une vraie bande de titre — un fond plein, de la largeur des panneaux, le titre en Newsreader appuyé, grand, très lisible',
+        B.fondPlein && B.largeur && B.police === 'Newsreader' && B.poids >= 500 && B.taille >= (largeur < 720 ? 32 : 44) && B.cTitre >= 7 && B.cSemaine >= 4.5 && B.cSemaineB >= 4.5,
+        JSON.stringify(B));
+      verifier(theme + ', ' + largeur + ' px : le sommaire est accroché sous la bande, même largeur, sur le blanc des panneaux, arrondi en bas',
+        B.accroche && B.navFond && B.navRayon, JSON.stringify(B));
+      const P = b.panneaux;
+      verifier(theme + ', ' + largeur + ' px : chaque panneau ouvre sur sa tête teintée (surtitre et titre), d’un bord à l’autre, fermée d’un filet, sous un liseré de sa teinte',
+        P.every(x => x.tete && x.pleineLargeur && x.filet && x.liseré && x.fondTete !== x.fond && x.fond === b.surface),
+        JSON.stringify(P.filter(x => !(x.tete && x.pleineLargeur && x.filet && x.liseré && x.fondTete !== x.fond))));
+      verifier(theme + ', ' + largeur + ' px : six têtes, six fonds différents, et tout s’y lit (titre, numéro, surtitre à 4,5:1 au moins)',
+        new Set(P.map(x => x.fondTete)).size === 6 && P.every(x => x.cTitre >= 4.5 && x.cNumero >= 4.5 && x.cSurtitre >= 4.5),
+        JSON.stringify(P.map(x => x.id + ' ' + x.fondTete + ' ' + x.cTitre.toFixed(1) + '/' + x.cNumero.toFixed(1) + '/' + x.cSurtitre.toFixed(1))));
+      verifier(theme + ', ' + largeur + ' px : un vrai blanc entre deux panneaux (' + (largeur < 720 ? 24 : 36) + ' px au moins), chacun avec son ombre',
+        b.ecarts.every(e => e >= (largeur < 720 ? 24 : 36)) && P.every(x => x.ombre), JSON.stringify(b.ecarts));
+    };
+    await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(300);
+    verifierBandeau(await lireBandeau(p), 'thème clair', 1280);
+    await p.setViewportSize({ width: 390, height: 844 }); await p.waitForTimeout(450);
+    verifierBandeau(await lireBandeau(p), 'thème clair', 390);
+    await p.setViewportSize({ width: 1280, height: 950 }); await p.waitForTimeout(400);
+    const ctxS21 = await contexte({ colorScheme: 'dark' });
+    const ps21 = await page(ctxS21, 'bandeau sombre');
+    verifierBandeau(await lireBandeau(ps21), 'thème sombre', 1280);
+    for (const w of [360, 1440]) {
+      await ps21.setViewportSize({ width: w, height: 900 }); await ps21.waitForTimeout(350);
+      const m = await mesurerChevrons(ps21);
+      verifier('à ' + w + ' px, thème sombre : pour chaque dimension, le chevron est visible et le mot finit avant lui',
+        m.mesures.every(bonChevron) && m.page, JSON.stringify(m.mesures.filter(x => !bonChevron(x))));
+    }
+    await ctxS21.close();
+    // Collé en haut pendant qu'on lit : le sommaire garde la largeur des panneaux et flotte au-dessus d'eux.
+    await p.evaluate(() => window.scrollTo(0, document.getElementById('section-repartition').getBoundingClientRect().top + window.scrollY + 300));
+    await p.waitForTimeout(500);
+    const colle21 = await p.evaluate(() => {
+      const n = document.getElementById('sommaire'), r = n.getBoundingClientRect(), s = document.getElementById('section-plans').getBoundingClientRect();
+      return { colle: n.dataset.colle, haut: Math.round(r.top), largeur: Math.abs(r.left - s.left) <= 1 && Math.abs(r.width - s.width) <= 1,
+               ombre: getComputedStyle(n).boxShadow !== 'none', devant: +getComputedStyle(n).zIndex > 0 };
+    });
+    verifier('en lisant plus bas, le sommaire reste collé en haut, de la largeur des panneaux, avec son ombre, devant eux',
+      colle21.colle === 'true' && colle21.haut === 0 && colle21.largeur && colle21.ombre && colle21.devant, JSON.stringify(colle21));
+    await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(300);
+    await reinitialiser(p);
+
+    /* L'autre flèche du débrief 21 : celle qui déplie chaque ligne du bloc.
+       Centré dans sa colonne, « ECP-2100 » passait dessus, et en descendant
+       la liste on ne la voyait plus. Le nom part maintenant après elle :
+       pour chaque dimension, sur chaque ligne, le texte du nom ne touche
+       jamais le chevron — à 1280 px, puis au téléphone où il passe à droite. */
+    for (const w of [1280, 390]) {
+      await p.setViewportSize({ width: w, height: 950 }); await p.waitForTimeout(300);
+      const chev = await p.evaluate(async () => {
+        const attendre = ms => new Promise(r => setTimeout(r, ms));
+        const sel = document.getElementById('dim-critique'), faux = [];
+        let lignes = 0;
+        for (const o of [...sel.options]) {
+          sel.value = o.value; sel.dispatchEvent(new Event('change', { bubbles: true })); await attendre(250);
+          document.querySelectorAll('#zone-critique .critique-ligne').forEach(l => {
+            const c = l.querySelector('.chevron'), n = l.querySelector('.critique-nom');
+            if (!c || !n || !n.firstChild) return;
+            lignes++;
+            const rg = document.createRange(); rg.selectNodeContents(n);
+            const t = rg.getBoundingClientRect(), b = c.getBoundingClientRect();
+            const touche = t.right > b.left - 2 && t.left < b.right + 2 && t.bottom > b.top && t.top < b.bottom;
+            if (touche) faux.push(o.value + ' · ' + n.textContent);
+          });
+        }
+        sel.value = sel.options[0].value; sel.dispatchEvent(new Event('change', { bubbles: true })); await attendre(200);
+        return { lignes, faux: faux.slice(0, 6) };
+      });
+      verifier('à ' + w + ' px, dans chaque dimension (ATA, ECP…), le nom d’un groupe ne recouvre jamais le chevron qui le déplie',
+        chev.lignes > 20 && !chev.faux.length, JSON.stringify(chev));
+    }
+    await p.setViewportSize({ width: 1280, height: 950 });
     await reinitialiser(p);
   }
 

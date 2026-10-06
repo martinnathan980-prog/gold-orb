@@ -6,7 +6,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'b7a3368';
+  var EDITION = '7962d60';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -3512,6 +3512,7 @@
     if (!dim || !TITRE_DIM[dim]) {
       $('titre-groupe').textContent = motSuivi();
       $('dim-critique').hidden = true;
+      ajusterChoixDim();
       $('sommaire-groupe').textContent = 'Répartition';
       $('indice-dim').textContent = '';
       $('compte-groupes').textContent = '';
@@ -3861,21 +3862,18 @@
 
   /* Le menu de la dimension est un mot du titre : sa largeur suit le mot
      choisi, pas le plus long de la liste — sinon « par ATA » traînerait un
-     grand blanc avant son chevron. On mesure le texte dans la police du menu
-     (un canevas, sans rien ajouter à la page), plus la place du chevron ; le
-     max-width de la feuille de style coupe un nom trop long au bord. */
-  var mesureChoix = null;
+     grand blanc avant son chevron. Débrief 21 : plus de mesure au canevas
+     (« par ECP, la flèche est cachée ») ; on recopie seulement le mot choisi
+     dans sa copie invisible, et la feuille de style fait le reste
+     (.choix-titre-cadre) : la largeur suit la police réellement affichée,
+     avant comme après son chargement. Le cadre se cache avec le menu. */
   function ajusterChoixDim() {
-    var sel = $('dim-critique'), o = sel.options[sel.selectedIndex];
-    if (!o) { sel.style.width = ''; return; }
-    try {
-      var cs = getComputedStyle(sel);
-      mesureChoix = mesureChoix || document.createElement('canvas').getContext('2d');
-      mesureChoix.font = cs.fontStyle + ' ' + cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
-      var w = mesureChoix.measureText(o.text).width + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
-      // 4 px de marge : le canevas ignore la taille optique de Newsreader.
-      sel.style.width = Math.ceil(w + 4) + 'px';
-    } catch (e) { sel.style.width = ''; }
+    var sel = $('dim-critique'), o = sel.options[sel.selectedIndex], mesure = $('dim-critique-mesure');
+    sel.style.width = '';
+    var mot = o ? o.text : '';
+    if (mesure.textContent !== mot) mesure.textContent = mot;
+    var cadre = $('dim-critique-cadre');
+    if (cadre.hidden !== sel.hidden) cadre.hidden = sel.hidden;
   }
 
   /* ============================================================ TABLEAU */
@@ -5992,6 +5990,9 @@
     ajusterChoixDim();
     rendre();
   });
+  /* Au clavier, certaines plateformes changent le mot affiché avant le
+     « change » : la copie suit dès « input », le chevron reste à sa place. */
+  $('dim-critique').addEventListener('input', ajusterChoixDim);
   /* Le filtre de la colonne de gauche : il ne redessine que le bloc. Échap
      le vide ; le type « search » du champ fait de même par sa croix. */
   var minuteurGroupe = null;
@@ -6519,5 +6520,5 @@
      page affichée, pour ne rien retarder. */
   if (API && API.noterConsultation) setTimeout(API.noterConsultation, 1500);
 })();
-window.SUIVI_FWD_FIN = 'b7a3368';
+window.SUIVI_FWD_FIN = '7962d60';
 </script>

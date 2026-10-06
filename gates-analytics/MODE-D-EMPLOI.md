@@ -7,9 +7,10 @@ lecture.
 
 En une phrase : **un onglet par contrat, l'extract GATES dedans tel quel,
 et une fois par semaine un seul geste — Suivi FWD → Importer les exports
-GATES et SEE…, tous les exports choisis d'un coup, Importer** : chacun va
-dans l'onglet de son contrat et le relevé de la semaine est archivé dans la
-foulée. Le reste est automatique.
+GATES et SEE…, chaque export dans sa case, Importer** : l'export GATES de
+chaque contrat va dans l'onglet de sa case, l'extract SEE (un seul, pour
+tous les porteurs) est trié pour chaque contrat, et le relevé de la semaine
+est archivé dans la foulée. Le reste est automatique.
 
 ---
 
@@ -83,16 +84,18 @@ la fenêtre d'import, qui crée l'onglet elle-même.
 2. Dans le classeur : **Suivi FWD → Importer les exports GATES et SEE…**
    (absent juste après avoir recollé `Code` : **F5** sur le classeur, dix
    secondes).
-3. **Choisir les fichiers…** — l'export —, ou le glisser dans le cadre
-   pointillé de la fenêtre. Elle le lit sur le poste (il ne part nulle part),
-   le reconnaît — étiquette **GATES** — et dit ce qu'elle y trouve :
-   « 186 plans · 138 colonnes · en-têtes en ligne 2 · 16 cellules
-   fusionnées ».
-4. Pour un contrat que le classeur n'a pas encore, elle propose **« Nouveau
-   contrat… »**, nommé d'après la ligne des groupes (« HDK AA 011 » →
-   `HDK`) : garder ce nom ou en taper un autre — c'est le nom de l'onglet,
+3. La fenêtre a **une case par contrat** du classeur (« GATES HDK »,
+   « GATES THS »…). Pour un contrat qu'il n'a pas encore : **+ Ajouter un
+   contrat…** ouvre une case de plus, avec un champ pour son nom (un
+   classeur sans aucun contrat l'ouvre d'office). Glisser l'export sur
+   cette case, ou **Choisir le fichier…** dans la case. La fenêtre le lit
+   sur le poste (il ne part nulle part), vérifie que c'est bien un export
+   GATES, et dit ce qu'elle y trouve : « 186 plans · 138 colonnes ·
+   en-têtes en ligne 2 · 16 cellules fusionnées ».
+4. Le nom proposé est celui de la ligne des groupes (« HDK AA 011 » →
+   `HDK`) : le garder ou en taper un autre — c'est le nom de l'onglet,
    celui que la page affichera. Un nom déjà pris ou réservé est refusé à
-   mesure qu'on le tape. Sous la ligne : « Créera l'onglet « HDK » : un
+   mesure qu'on le tape. Sous la case : « Créera l'onglet « HDK » : un
    nouveau contrat, rangé après les autres ».
 5. **Importer**, et **ne pas fermer la fenêtre avant la fin** (elle le
    rappelle). L'export est posé **tel quel** : chaque ligne à son numéro,
@@ -151,10 +154,16 @@ exécution de `diagnostic`.
 
 ## 3. Un deuxième contrat, un troisième
 
-Même geste : son export dans la fenêtre d'import (on peut le mettre avec
-ceux des autres contrats). Elle voit qu'il ne partage ses plans avec aucun
-contrat du classeur, propose **« Nouveau contrat… »** nommé d'après ses
-groupes (« THS AA … » → `THS`), et range le nouvel onglet après les autres.
+Même geste : **+ Ajouter un contrat…** dans la fenêtre d'import, son
+export dans la nouvelle case (les exports des autres contrats peuvent partir
+en même temps, chacun dans sa case). Le nom proposé vient de ses groupes
+(« THS AA … » → `THS`), et le nouvel onglet est rangé après les autres. Si
+cet export porte en fait les plans d'un contrat du classeur, la case le dit,
+sans bloquer : « 40 de ses 40 plans sont déjà dans « HDK » : est-ce
+l'export de « HDK » ? Il irait alors dans sa case, « GATES HDK » ». Pour
+que le nouveau contrat ait aussi sa base SEE, **demander son PSN** (le
+numéro de sa machine) et le taper dans la case SEE (§ 5) : sans lui, pas
+de base SEE pour ce contrat.
 À la main : un **nouvel onglet** nommé du contrat (`THS`), l'export collé en
 A1. Dans la page, un sélecteur **Contrat** apparaît dans le bandeau du haut
 dès qu'il y a deux onglets ; il passe de l'un à l'autre sans recharger.
@@ -165,7 +174,7 @@ nom de contrat : son historique dans l'ancien onglet masqué
 contrats, ni l'un ni l'autre ne serait plus lu. Quand **la fenêtre d'import
 crée le deuxième contrat**, elle les renomme d'elle-même au nom du premier
 — `Historique_FWD_HDK`, `SEE HDK` : ils ne pouvaient être qu'à lui — et le
-dit sur la ligne du fichier (« l'onglet « SEE » devient « SEE HDK » »).
+dit dans le résultat de la case (« l'onglet « SEE » devient « SEE HDK » »).
 
 Si le deuxième contrat arrive **à la main** (un onglet collé), rien n'est
 renommé : la page le dit au-dessus de la barre (« L'ancien onglet
@@ -184,72 +193,64 @@ C'est le geste qui construit l'historique — la courbe, la fin estimée et le
 journal des changements n'existent que par lui.
 
 1. Refaire l'export GATES de **chaque contrat** (et, quand il en faut un
-   plus récent, l'export SEE de chaque contrat, § 5). Ils arrivent dans
-   **Téléchargements** : **ne pas les ouvrir**. Peu importe leur format :
-   `.xlsx`, `.xls` (l'ancien format d'Excel, 97-2003 ou même 95), `.csv`,
-   page web (`.htm`, ou page web archivée `.mht`, parfois nommée `.xls`) —
-   la fenêtre les lit tous tels quels (ce qu'elle ne lit pas : § 5, « Ce
-   que la fenêtre lit »).
+   plus récent, l'extract SEE « Nommage WD BFLOW » — **un seul**, celui de
+   tous les porteurs, § 5). Ils arrivent dans **Téléchargements** : **ne
+   pas les ouvrir**. Peu importe leur format : `.xlsx`, `.xls` (l'ancien
+   format d'Excel, 97-2003 ou même 95), `.csv`, page web (`.htm`, ou page
+   web archivée `.mht`, parfois nommée `.xls`) — la fenêtre les lit tous
+   tels quels (ce qu'elle ne lit pas : § 5, « Ce que la fenêtre lit »).
 2. Dans le classeur : **Suivi FWD → Importer les exports GATES et SEE…**
-3. **Choisir les fichiers…**, puis, dans la fenêtre de Windows qui s'ouvre
-   (dossier **Téléchargements**), les prendre **tous d'un coup** :
-   - **Ctrl+clic** sur chacun : un clic sur le premier, puis la touche
-     **Ctrl** maintenue pendant les clics sur les suivants ;
-   - ou, s'ils se suivent dans la liste (triée par date, les derniers
-     téléchargés ensemble), un clic sur le premier et **Maj+clic** sur le
-     dernier ;
-   - ou **Ctrl+A** pour tout le dossier — seulement pour un dossier qui ne
-     contient que les exports de la semaine (dans Téléchargements, il
-     prendrait tout le reste) ; un tableau qui n'est pas un export est
-     marqué ✗ dans la liste, le lien **Retirer les fichiers en erreur** les
-     enlève d'un coup, et ce qui n'est pas un tableau est laissé de côté ;
-   - puis **Ouvrir**.
-
-   Autre façon : sélectionner les fichiers dans l'Explorateur de Windows et
-   les **glisser** dans le cadre pointillé de la fenêtre. Dix fichiers au
-   plus à la fois (les suivants sont laissés de côté, et nommés : les
-   importer ensuite) ; un fichier choisi deux fois n'est pris qu'une fois.
-4. Chaque fichier est lu tout de suite, avec sa barre, puis rangé : une
-   étiquette **GATES** ou **SEE**, le contrat retrouvé et pourquoi (« 186
-   plans sur 186 déjà dans « HDK » »), l'onglet visé (« Remplacera l'onglet
+   La fenêtre a deux parties : **1 Exports GATES**, une case par contrat
+   (« GATES HDK », « GATES THS »…), et **2 Export SEE**, une seule case
+   pour l'extract de tous les porteurs.
+3. **Chaque export dans sa case** : glisser l'export GATES de HDK depuis
+   l'Explorateur de Windows sur la case **GATES HDK**, celui de THS sur
+   **GATES THS**, l'extract SEE sur la case **SEE** — ou **Choisir le
+   fichier…** dans chaque case. **Rien n'est deviné** : l'export va dans la
+   case où on le pose. Une case prend un seul fichier (les autres, lâchés
+   avec lui, sont laissés de côté et nommés) ; un fichier lâché à côté des
+   cases ne va nulle part, la fenêtre dit de le poser sur sa case. Un
+   contrat sans export cette semaine : laisser sa case vide, son onglet
+   n'est pas touché.
+4. Chaque fichier est lu tout de suite, avec sa barre, et sa case dit ce
+   qu'elle y a lu, la date du fichier (« du 3 oct. 14:20 » — un coup d'œil
+   suffit pour voir que ce n'est pas l'export de la semaine dernière,
+   resté dans Téléchargements) et l'onglet visé (« Remplacera l'onglet
    « HDK » — l'ancien ne s'en va qu'une fois tout reçu ; son historique est
-   gardé »). Un contrat **à vérifier**, écrit en ambre, se choisit dans la
-   liste de la ligne. Pour un export **GATES**, rien n'est choisi d'office :
-   tant qu'un fichier attend quelque chose (un contrat à choisir, un nom à
-   vérifier, deux fichiers pour le même onglet…), **Importer** reste éteint
-   et la fenêtre dit quoi, juste sous la liste. Pour un export **SEE**, la
-   fenêtre propose d'office un contrat — même quand il n'y en a qu'un —, et
-   écrit « à vérifier » quand rien dans le fichier ne le confirme :
-   **Importer reste allumé**, et le fichier partirait dans ce contrat.
-   Regarder alors l'onglet nommé sous la ligne (« Remplacera l'onglet
-   « SEE HDK » »), et changer le contrat si ce n'est pas le bon.
+   gardé »). La case **vérifie la sorte du fichier** : un extract SEE posé
+   sur une case GATES (ou l'inverse) est refusé tout de suite, en ✗, et la
+   case dit où le mettre. Elle **prévient, sans bloquer**, quand l'export
+   ressemble peu au contrat : « seulement 3 plans sur 186 en commun avec
+   « HDK » : est-ce bien son export ? » — et, quand elle les retrouve
+   ailleurs, « 180 sont dans « THS » : sa place serait plutôt la case
+   « GATES THS » ». Rien n'est déplacé pour autant : c'est à vous de
+   reposer le fichier dans la bonne case. Tant qu'une case attend quelque
+   chose (un fichier illisible, le même fichier dans deux cases, un nom à
+   vérifier, un PSN à corriger, une colonne du tri qui manque…),
+   **Importer** reste éteint et la fenêtre dit quoi, en bas.
 5. La case **« Archiver le relevé de la semaine S40 pour les contrats
    importés »** est cochée : la laisser (elle n'apparaît qu'avec un export
-   GATES dans la liste).
+   GATES posé).
 6. **Importer**, et **ne pas fermer la fenêtre avant la fin** (elle le
-   rappelle). Les exports GATES passent d'abord, puis ceux de SEE. À la fin,
-   une ligne par fichier : « ✓ « export_HDK.xlsx » → onglet « HDK »
-   remplacé : 186 plans, colonne suivie HDK AA 011 › Avancement Définition
+   rappelle). Les exports GATES passent d'abord, chacun suivi du relevé de
+   son contrat, puis la base SEE de chaque contrat. À la fin, une ligne par
+   case et par base : « ✓ « export_HDK.xlsx » → onglet « HDK » remplacé :
+   186 plans, colonne suivie HDK AA 011 › Avancement Définition
    Electrique, concept harnais lu. Relevé S40 archivé (186 plans, 52
-   validés). » Un fichier en échec (✗) n'arrête pas les autres, et son
-   onglet reste tel qu'il était.
+   validés). », puis « ✓ « Nommage WD BFLOW.xlsx » → 3 000 lignes dans
+   l'onglet « SEE HDK » (3 colonnes ; PSN 4530 · WD) : la comparaison est
+   prête. » Chaque case garde son résultat. Une case en échec (✗) n'arrête
+   pas les autres, et son onglet reste tel qu'il était.
 7. Rouvrir le tableau de bord : **Suivi FWD → Ouvrir le tableau de bord.**
 
-**Comment la fenêtre retrouve le contrat** d'un export GATES : par ses plans
-— le contrat dont l'onglet en a le plus en commun avec le fichier —, sinon
-par le nom du contrat écrit au-dessus des en-têtes (« HDK AA 011 »), sinon
-par le nom du fichier ; un export qui ne ressemble à aucun contrat propose
-« Nouveau contrat… ». Deux fichiers pour le même onglet (l'export de la
-semaine dernière resté dans Téléchargements, souvent — « Export GATES.xlsx »
-et « Export GATES (1).xlsx ») : chaque ligne dit la date de son fichier
-(« du 3 oct. 14:20 »), et la fenêtre attend qu'on en retire un — **garder le
-plus récent**, celui qu'elle nomme (« Garder le plus récent, « Export GATES
-(1).xlsx » (du 3 oct. 14:20) : retirer l'autre »), et **Retirer** l'autre
-sur sa ligne.
+Le **même fichier dans deux cases** (l'export de HDK posé aussi dans la
+case de THS) : Importer attend — « chaque contrat a son propre export » —,
+le temps de retirer celui qui n'est pas à sa place (**Retirer**, dans sa
+case) ou d'y mettre le bon.
 
 Après un import, on peut en lancer un autre **dans la même fenêtre** : elle
 relit d'abord la liste des contrats, donc un contrat créé au tour d'avant
-est proposé, et son export SEE retrouvé par ses plans.
+a désormais sa case, et sa ligne dans la case SEE.
 
 **Le relevé est archivé contrat par contrat**, pour les seuls contrats
 importés : une ligne datée de la semaine dans l'onglet d'historique du
@@ -257,7 +258,7 @@ contrat (`Historique_FWD_HDK`, créé et masqué tout seul au premier
 archivage). Importer de nouveau dans la même semaine **remplace** la ligne
 de la semaine, il n'en ajoute pas une seconde. Si l'archivage refuse
 (l'export importé est celui d'une semaine déjà archivée, la colonne suivie
-est introuvable…), la ligne du fichier le dit en ⚠ — l'import, lui, est fait.
+est introuvable…), la case le dit en ⚠ — l'import, lui, est fait.
 
 **Un export identique à un relevé plus ancien** est refusé par prudence :
 c'est presque toujours l'export de la semaine dernière, pris par erreur.
@@ -357,59 +358,116 @@ où rien n'a bougé, et le vendredi l'archive **sans un mot** pour S40 — une
 semaine plate. D'où l'étape 4, obligatoire. (Rattrapable ensuite : importer
 l'export du jour, case « Archiver » cochée, remplace la ligne de S40.)
 
-## 5. La seconde base, SEE : un onglet par contrat
+## 5. La seconde base, SEE : un seul extract, trié pour chaque contrat
 
-Chaque contrat a sa propre base SEE, donc son propre onglet : **`SEE HDK`**
-pour le contrat de l'onglet `HDK`, **`SEE THS`** pour `THS`. Le plus simple —
-et le seul chemin quand l'Excel de SEE est **trop lourd pour s'ouvrir** :
+L'extract SEE « Nommage WD BFLOW » couvre **tous les porteurs** : une ligne
+par schéma, toutes machines confondues. La fenêtre d'import en tire la base
+de chaque contrat — l'onglet **`SEE HDK`** pour le contrat de l'onglet
+`HDK`, **`SEE THS`** pour `THS` —, par deux tris :
 
-1. Dans le classeur, menu **Suivi FWD → Importer les exports GATES et
-   SEE…** — la fenêtre du § 4 : les exports SEE peuvent y aller avec ceux
-   de GATES, d'un coup (absente juste après avoir recollé `Code` : **F5**
-   sur le classeur).
-2. **Choisir les fichiers…** — l'export « Nommage WD BFLOW » de chaque
-   contrat, tel qu'il a été téléchargé, **sans l'ouvrir dans Excel** (ou les
-   glisser dans la fenêtre). Chacun prend l'étiquette **SEE**, et son
-   contrat est retrouvé **par ses plans** : la fenêtre envoie au classeur un
-   échantillon de quelques centaines de lignes — les seules colonnes NAME,
-   SOL., Cust.V —, que le classeur rapproche des plans de chaque contrat
-   comme la page le fait — même avec un seul contrat : c'est ce qui
-   confirme qu'il est le bon ; sinon par le nom du fichier ; sinon elle
-   propose le seul contrat, ou celui de l'onglet affiché, **à vérifier**
-   (en ambre, la liste visible). Sous la ligne, l'onglet qu'elle va remplir :
-   « Remplacera l'onglet « SEE HDK » » ou « Créera l'onglet « SEE HDK » ».
+- **la machine** : la colonne **VALIDITY PSN FULL** porte les numéros des
+  machines (les PSN) où le schéma vaut, séparés par des virgules
+  (« 4520,4530,4540 »). Une ligne va à un contrat quand l'un de ces numéros
+  est **son PSN**, en entier : 4530 n'est ni 14530 ni 45301. HDK, c'est
+  **4530**.
+- **le type de schéma** : la colonne **DIAGRAM TYPE** (GH, WD ou PH) —
+  seules les lignes **WD** sont gardées.
+
+De chaque ligne gardée, seules **NAME**, **SOL.** et **Cust.V** vont au
+classeur : la comparaison n'en lit pas d'autre. Le plus simple — et le seul
+chemin quand l'Excel de SEE est **trop lourd pour s'ouvrir** :
+
+1. Dans SEE, sortir l'extract « Nommage WD BFLOW » de tous les porteurs.
+   Ne pas l'ouvrir dans Excel.
+2. Dans le classeur, menu **Suivi FWD → Importer les exports GATES et
+   SEE…** — la fenêtre du § 4 (absente juste après avoir recollé `Code` :
+   **F5** sur le classeur). Glisser l'extract sur la case **SEE** (ou
+   **Choisir le fichier…** dans la case), seul ou avec les exports GATES
+   de la semaine. La fenêtre le lit sur le poste — il ne part nulle part —
+   et le trie **pendant la lecture** : « 60 000 lignes lues, 6 000 en WD
+   (DIAGRAM TYPE WD) ». Puis elle dit, **contrat par contrat**, ce qui lui
+   revient : « HDK — PSN 4530 — 3 000 lignes WD → remplacera « SEE HDK » »,
+   ou « créera » quand l'onglet n'existe pas encore.
 3. **Importer**, puis **ne pas fermer la fenêtre avant la fin** (elle le
-   rappelle). Elle lit le fichier sur le poste — il ne part nulle part — et
-   n'envoie au classeur que la ligne d'en-tête et les trois colonnes de la
-   comparaison, **NAME**, **SOL.** et **Cust.V**. L'onglet `SEE HDK` est
-   créé, ou remplacé : l'ancien ne s'en va qu'une fois tout reçu et vérifié,
-   un import interrompu le laisse intact (si le classeur ne répond pas, la
-   fenêtre réessaie deux fois d'elle-même). Quelques secondes pour la lecture
-   (une dizaine pour 120 000 lignes), puis l'envoi par paquets ; la fenêtre
-   dit où elle en est, puis « ✓ « export.xlsx » → N lignes dans l'onglet
-   « SEE HDK » ». Un export SEE n'archive rien : la case « Archiver » ne
-   concerne que les exports GATES.
+   rappelle). Chaque base est écrite à son tour : l'onglet `SEE HDK` est
+   créé, ou remplacé — l'ancien ne s'en va qu'une fois tout reçu et
+   vérifié, un import interrompu le laisse intact (si le classeur ne répond
+   pas, la fenêtre réessaie deux fois d'elle-même). Quelques secondes pour
+   la lecture (une dizaine pour 120 000 lignes), puis l'envoi par paquets ;
+   la fenêtre dit où elle en est, puis « ✓ « Nommage WD BFLOW.xlsx » →
+   3 000 lignes dans l'onglet « SEE HDK » (3 colonnes ; PSN 4530 · WD) : la
+   comparaison est prête. » Un extract SEE n'archive rien : la case
+   « Archiver » ne concerne que les exports GATES.
 4. Rouvrir le tableau de bord : chaque contrat se compare à sa base.
 
-L'export SEE d'un contrat **tout neuf** peut partir avec son export GATES,
-dans le même import : la fenêtre propose le nouveau contrat (« NEO
-(nouveau) ») dans la liste de la ligne SEE, et pose l'export GATES d'abord.
+En tête de chaque base, la fenêtre écrit **la ligne du tri** : « Trié à
+l'import : PSN 4530 · DIAGRAM TYPE = WD — 3 000 lignes gardées sur 60 000 ·
+« Nommage WD BFLOW.xlsx », le 05/10/2026 ». C'est par elle que le classeur
+sait de quelles lignes parle la base — le **Diagnostic** la redit (« SEE
+HDK : 3 000 lignes, triées à l'import sur 60 000 lignes (PSN 4530 ·
+DIAGRAM TYPE WD) ») : ne pas la retirer.
+
+### Le PSN de chaque contrat
+
+Le PSN de HDK, **4530**, est dans la configuration. Pour un autre contrat,
+**il faut le demander** — c'est le numéro de sa machine dans VALIDITY PSN
+FULL — puis le **taper dans la case SEE**, sur la ligne du contrat (le champ
+« PSN »). Il est aussitôt **gardé dans le classeur** (« enregistré » à côté
+du champ) : rien à retaper la fois suivante, ni dans une autre fenêtre.
+
+- Plusieurs PSN pour un contrat : les séparer par des virgules
+  (« 4610, 4620 ») ; une ligne qui porte l'un ou l'autre lui revient. Une
+  ligne qui porte les PSN de deux contrats (« 4530;4610 ») va dans les deux
+  bases.
+- Changer un PSN **recompte aussitôt** les lignes du contrat, sans relire le
+  fichier, même pour un extract de 60 000 lignes.
+- **Un contrat sans PSN n'a pas de base SEE** : sa ligne le dit (« pas de
+  base SEE tant que le PSN n'est pas donné »), et l'import ne touche pas à
+  son onglet SEE — mieux vaut pas de comparaison que celle des plans d'une
+  autre machine.
+- **Un nouveau contrat** (« + Ajouter un contrat… », § 3) a sa ligne dans
+  la case SEE dès que son export GATES est lu — « NEO (nouveau) » : son PSN
+  s'y tape tout de suite ; il est gardé une fois le contrat créé, et sa
+  base SEE suit dans le même import.
+- Un PSN effacé est gardé **vide** : le contrat n'a plus de base, même HDK
+  (le vide tapé l'emporte sur la configuration). Le retaper le rétablit.
+- Ce qui n'est pas un PSN (« 4530! ») est refusé sous le champ, et
+  Importer attend qu'on le corrige.
+- Changer le PSN **après** un import ne retrie pas la base déjà posée : le
+  Diagnostic le signale (« ⚠ SEE HDK a été trié à l'import sur le PSN 4530,
+  mais celui de « HDK » est maintenant 4531 : réimporter l'extract SEE »).
+
+### Si une colonne du tri manque
+
+La case SEE le dit en rouge, et **Importer attend** :
+
+- **Sans DIAGRAM TYPE** : cocher **« importer sans ce tri »** dans la case
+  — chaque contrat reçoit alors ses lignes par le PSN seul, tous types
+  confondus (la ligne du tri ne parle plus que du PSN).
+- **Sans VALIDITY PSN FULL** : l'extract ne se partage pas entre contrats.
+  Avec un seul contrat, « importer sans ce tri » lui donne tout l'extract
+  (ses lignes WD) ; avec plusieurs, c'est impossible : redemander
+  l'extract avec cette colonne.
+- Un extract **sans une seule ligne WD** est refusé : ce n'est pas
+  l'extract « Nommage WD BFLOW ». Un extract dont **aucune ligne ne porte
+  le PSN** des contrats : Importer attend — vérifier les PSN, ou l'extract.
 
 Même avec **un seul contrat**, l'import crée `SEE HDK` (le nom du
 contrat) : un `SEE` tout court déjà là, lui, est remplacé sous son nom — et
 renommé `SEE HDK` le jour où la fenêtre crée un deuxième contrat (§ 3) : la
-ligne SEE l'annonce alors (« Remplacera l'onglet « SEE HDK » (aujourd'hui
-« SEE », renommé à la création du nouveau contrat) »).
+ligne du contrat dans la case SEE l'annonce alors (« remplacera « SEE HDK »
+(aujourd'hui « SEE », renommé à la création du nouveau contrat) »).
 
-L'onglet importé n'a que ces trois colonnes : c'est normal, la comparaison
-n'en lit pas d'autre. Et comme l'ancien onglet est remplacé, une formule d'un
-autre onglet qui pointait dessus serait à refaire (le tableau de bord, lui,
-retrouve l'onglet par son nom).
+L'onglet importé n'a que la ligne du tri et ces trois colonnes : c'est
+normal, la comparaison n'en lit pas d'autre. Et comme l'ancien onglet est
+remplacé, une formule d'un autre onglet qui pointait dessus serait à refaire
+(le tableau de bord, lui, retrouve l'onglet par son nom).
 
 La case **« Garder aussi les autres colonnes »** ne sert qu'à regarder tout
-l'extract dans le tableau SEE de la page : la comparaison n'en a pas besoin,
-et c'est bien plus lourd (au-delà de quatre millions de cellules, la
-fenêtre refuse et dit de la décocher).
+l'extract dans le tableau SEE de la page : chaque base garde alors **ses**
+lignes (celles de son PSN, en WD) avec toutes leurs colonnes. La comparaison
+n'en a pas besoin, et c'est bien plus lourd (au-delà de quatre millions de
+cellules, la fenêtre refuse et dit de la décocher).
 
 **Ce que la fenêtre lit** : les `.xlsx` et `.xlsm` ; les **vrais `.xls`** —
 l'ancien format d'Excel 97 à 2003, et même celui d'Excel 5 / 95 —, tels que
@@ -458,7 +516,13 @@ supprimer à la main).
 **À la main, pour un petit extract** : **+** pour un nouvel onglet nommé
 `SEE HDK` (`SEE - HDK` ou `SEE_HDK` marchent aussi), ouvrir l'extract dans
 Excel, **Ctrl+A**, **Ctrl+C**, puis dans l'onglet **A1**, **Ctrl+V** — tel
-quel, titre en ligne 1 et en-têtes en ligne 3 compris.
+quel, titre en ligne 1 et en-têtes en ligne 3 compris. L'extract de tous
+les porteurs, collé ainsi, est **trié par la page à la lecture** : tant que
+l'onglet porte VALIDITY PSN FULL et DIAGRAM TYPE, elle n'en garde que les
+lignes WD du PSN du contrat (le Diagnostic dit combien : « SEE HDK :
+60 000 lignes, 3 000 gardées (PSN 4530 · DIAGRAM TYPE WD) »). Un contrat
+sans PSN n'a alors **aucune** comparaison — plutôt que celle des plans des
+autres machines — et le Diagnostic dit où taper son PSN.
 
 Avec **un seul contrat** dans le classeur, un onglet nommé `SEE` tout court
 suffit. Avec plusieurs, un `SEE` tout court n'est lu pour aucun — il ne dit
@@ -497,9 +561,12 @@ classeur. Dans l'ordre d'efficacité :
 3. **Coller par paquets** de deux ou trois mille lignes plutôt que tout d'un
    coup : la fenêtre reste utilisable pendant ce temps.
 4. **Ne garder que les colonnes utiles.** La comparaison n'en lit que trois :
-   **NAME**, **SOL.** et **Cust.V**. Les autres ne servent qu'à regarder
-   l'extract dans le tableau SEE. Si c'est trop lourd, ne coller que ces trois
-   colonnes : la page dit exactement la même chose, en beaucoup plus léger.
+   **NAME**, **SOL.** et **Cust.V** — plus, pour l'extract de tous les
+   porteurs, **VALIDITY PSN FULL** et **DIAGRAM TYPE**, qui disent quelles
+   lignes sont au contrat (sans elles, l'onglet entier serait pris pour
+   lui). Les autres ne servent qu'à regarder l'extract dans le tableau SEE.
+   Si c'est trop lourd, ne coller que ces colonnes-là : la page dit
+   exactement la même chose, en beaucoup plus léger.
 5. **Onglet `SEE HDK` nu** — pas de mise en forme conditionnelle, pas de filtre, pas
    de volet figé, et surtout aucune formule d'un autre onglet qui pointe dessus :
    elle se recalculerait à chaque collage.
@@ -646,12 +713,19 @@ onglet, et ce qui manque. Puis :
 | « 0 sur 600 plans validés », et au-dessus de la barre « Aucun plan n'est compté « validé » » | Le mot qui veut dire « fini » dans la colonne n'est pas connu de la page (seul « Validé » l'est, avec « Validée », « Terminé », « OK », « 100 % »…). Jamais au concept harnais : « 0 Traité » y est un vrai zéro, sans message | La page liste les valeurs lues : m'envoyer celle(s) qui veulent dire « fini » (et « pas commencé »), je les ajoute à `VALEURS_FINIES` (et `VALEURS_A_FAIRE`) dans `Code` |
 | « Ce qui a changé semaine par semaine » reste vide | Le journal dit pourquoi : un seul relevé (deux archivages la même semaine n'en font qu'un), ou deux relevés identiques — le même export archivé deux fois | Importer le **dernier** export de GATES (case « Archiver » cochée), ou le recoller puis archiver ; le Diagnostic dit combien de plans ont changé entre les deux derniers relevés |
 | Pas de courbe, pas de fin estimée | Aucun relevé archivé | Suivi FWD → Archiver le relevé de cette semaine (ou importer l'export, case « Archiver » cochée) |
-| Pas de section « Comparaison » | Pas d'onglet `SEE <contrat>` (ou `SEE` pour un seul contrat), ou illisible | Diagnostic, ligne « Seconde base » : elle dit s'il manque l'onglet, s'il est vide, ou si les en-têtes NAME / SOL. / Cust.V ne s'y trouvent pas |
+| Pas de section « Comparaison » | Pas d'onglet `SEE <contrat>` (ou `SEE` pour un seul contrat), ou illisible ; ou l'onglet porte l'extract de tous les porteurs et le contrat n'a pas de PSN | Diagnostic, ligne « Seconde base » : elle dit s'il manque l'onglet, s'il est vide, si les en-têtes NAME / SOL. / Cust.V ne s'y trouvent pas, ou si le contrat n'a pas de PSN (alors : le taper dans la case SEE de la fenêtre d'import, § 5) |
+| Dans la case SEE de la fenêtre, en rouge : « ✗ « … » n'a pas de colonne DIAGRAM TYPE » (ou VALIDITY PSN FULL) | L'extract n'a pas une des colonnes du tri : un autre modèle d'extract, ou une colonne renommée dans SEE. Importer attend | Redemander l'extract « Nommage WD BFLOW » avec ses colonnes. Sinon, cocher « importer sans ce tri » quand la case le permet : sans DIAGRAM TYPE, chaque contrat reçoit tous les types de son PSN ; sans VALIDITY PSN FULL, seulement avec un seul contrat (il reçoit tout l'extract) |
+| Sur la ligne d'un contrat, dans la case SEE : « pas de base SEE tant que le PSN n'est pas donné » | Le contrat n'a pas de PSN : la fenêtre ne sait pas quelles lignes de l'extract sont les siennes. Son onglet SEE n'est pas touché | Demander le PSN de sa machine (le numéro de VALIDITY PSN FULL), le taper dans le champ « PSN » de sa ligne : il est gardé pour les fois suivantes |
+| Sous le champ PSN : « … n'est pas un PSN », ou « Le PSN de « … » n'a pas pu être enregistré » | Un caractère qui n'a rien à faire dans un PSN (« 4530! ») ; ou le classeur était occupé (l'archivage du vendredi) au moment de l'enregistrer. Importer attend | Corriger le PSN : des chiffres (des lettres au besoin), plusieurs séparés par des virgules ; ou le retaper dans une minute |
+| « Aucune ligne de l'extract SEE ne porte le PSN des contrats (HDK 4530) », ou sur une ligne « aucune ligne WD pour ce PSN » | Le PSN tapé n'est dans aucune ligne WD de l'extract : un chiffre de travers, ou un extract qui n'est pas celui de tous les porteurs. L'onglet SEE de ce contrat n'est pas touché | Vérifier le PSN ; reprendre l'extract complet |
+| Dans la case SEE : « Aucune des … lignes … n'est en DIAGRAM TYPE WD » | L'extract n'a pas un seul schéma WD : ce n'est pas l'extract « Nommage WD BFLOW » | Reprendre le bon extract dans SEE |
+| Diagnostic : « ⚠ SEE HDK a été trié à l'import sur le PSN 4530, mais celui de « HDK » est maintenant 4531 » | Le PSN a changé depuis l'import : la base posée garde les lignes de l'ancien | Réimporter l'extract SEE |
+| Diagnostic : « ⚠ SEE HDK : aucune ligne gardée sur … — le PSN … n'est dans aucune ligne gardée par les autres tris : est-ce le bon ? » | L'extract de tous les porteurs est collé dans l'onglet, mais aucune de ses lignes WD ne porte le PSN du contrat | Vérifier le PSN du contrat (case SEE de la fenêtre d'import, ou `CONFIG.RAPPROCHEMENT.PSN`) |
 | La fenêtre d'import dit « Ni un export GATES ni un export SEE » | Le fichier n'est ni l'un ni l'autre — ou SEE a renommé une de ses colonnes NAME / SOL. / Cust.V (la fenêtre cite la ligne la plus proche et ce qui lui manque) | Retirer ce fichier ; si c'est bien un export et que ses intitulés ont changé, me les envoyer (les intitulés seulement, pas les données) |
-| Sur une ligne de la fenêtre, en ambre : « … choisir le contrat » ou « à vérifier » | La fenêtre n'a pas pu rattacher l'export à un contrat avec certitude : aucun plan en commun, plusieurs contrats nommés dans le fichier, ou un contrat nommé dont l'onglet n'a presque aucun plan en commun avec lui. Pour un export SEE, même avec un seul contrat (« « HDK » est le seul contrat, mais l'échantillon n'y retrouve que 0 référence sur 400 : à vérifier ») — et **Importer reste allumé** | Choisir le contrat dans la liste de la ligne — ou « Nouveau contrat… » pour l'export GATES d'un contrat que le classeur n'a pas encore. Pour un SEE, vérifier l'onglet nommé sous la ligne avant d'importer |
-| La fenêtre dit « Deux fichiers vont dans l'onglet « HDK » » | Deux exports du même contrat dans la liste (celui de la semaine dernière, resté dans Téléchargements, souvent) ; la date de chaque fichier est sur sa ligne | **Garder le plus récent** — celui que la fenêtre nomme (« Garder le plus récent, « … » (du 3 oct. 14:20) ») — et **Retirer** l'autre ; ou changer son contrat si c'est l'export d'un autre contrat |
+| Dans une case GATES, en ambre : « seulement 3 plans sur 186 en commun avec « HDK » : est-ce bien son export ? » | L'export posé partage peu de plans avec l'onglet qu'il va remplacer : l'export d'un autre contrat, peut-être (la note nomme la case où ses plans se trouvent, quand elle la connaît). Rien n'est déplacé, **Importer reste allumé** | Vérifier le fichier ; s'il est d'un autre contrat, le **Retirer** et le poser dans la case de ce contrat |
+| La fenêtre dit « Le même fichier, « … », est dans les cases « GATES HDK » et « GATES THS » » | Le même export posé dans deux cases ; la date de chaque fichier est dans sa case | **Retirer** celui qui n'est pas à sa place, et poser le bon export dans cette case |
 | La fenêtre dit « La ligne d'en-têtes de cet export GATES est en ligne 14 » | Le fichier a été retouché (des lignes ajoutées en haut) : la page ne trouverait pas ses en-têtes | Le retélécharger de GATES tel quel |
-| Sur une ligne de la fenêtre, ✗ « Colonne suivie absente de cet export… L'ancien onglet « HDK » est intact » | La page ne trouverait pas la colonne suivie dans cet export, alors qu'elle la trouve dans l'onglet actuel : un export d'un autre contrat ou d'un autre programme, ou un `.csv` sans sa ligne de groupes. Rien n'est remplacé, rien n'est archivé | Vérifier le contrat choisi sur la ligne ; importer l'export **Excel** (`.xlsx`, ou `.xls` d'Excel 97-2003) de GATES de ce contrat |
+| Dans une case GATES, ✗ « Colonne suivie absente de cet export… L'ancien onglet « HDK » est intact » | La page ne trouverait pas la colonne suivie dans cet export, alors qu'elle la trouve dans l'onglet actuel : un export d'un autre contrat ou d'un autre programme, ou un `.csv` sans sa ligne de groupes. Rien n'est remplacé, rien n'est archivé | Vérifier que l'export est dans la case de son contrat ; importer l'export **Excel** (`.xlsx`, ou `.xls` d'Excel 97-2003) de GATES de ce contrat |
 | Après l'import d'un export GATES, ⚠ « … mais la colonne suivie est introuvable » | L'export n'a pas la colonne suivie sous son groupe — le plus souvent un `.csv` (ou un `.xls` d'Excel 95), qui perd les cellules fusionnées de la ligne des groupes ; rien n'est archivé | Importer l'export **Excel** (`.xlsx`, ou `.xls` d'Excel 97-2003) de GATES ; sinon, Diagnostic (ligne « Colonne … introuvable » ci-dessous) |
 | Après l'import, ⚠ « Relevé S40 non archivé : … » | L'import est fait, mais l'archivage a refusé, pour la raison qui suit (l'export est identique à un relevé plus ancien, un historique attend d'être rattaché…) | Faire ce que dit le message. Pour un historique à rattacher : le geste du § 3 (renommer `Historique_FWD` au nom du contrat qui a produit ces relevés), puis Suivi FWD → Archiver le relevé de cette semaine |
 | La fenêtre d'import dit « classeur binaire (.xlsb) », « très ancien format Excel » ou « navigateur trop ancien » | Un format qu'elle ne lit pas — un `.xlsb`, un classeur d'Excel 2 à 4 —, ou un Chrome / Edge d'avant 2022. (Un `.xls`, lui, se lit : Excel 97-2003 comme Excel 95) | Demander l'export en `.xlsx`, `.xls` ou `.csv`, ou ouvrir le fichier dans Excel et l'enregistrer en classeur Excel (`.xlsx`) ; ou mettre le navigateur à jour |
@@ -669,8 +743,8 @@ onglet, et ce qui manque. Puis :
 | Deux relevés identiques alors que j'ai bien les deux exports | La semaine passée a été archivée avec l'export d'aujourd'hui | § 4, « Rattraper une semaine passée » : remettre l'export de la semaine passée (import, case « Archiver » décochée, ou collage), **Archiver l'onglet affiché pour une semaine passée…**, puis remettre l'export du jour et archiver |
 | « Geste refusé : il ne se lance que dans le classeur, menu Suivi FWD » | Quelqu'un a essayé d'archiver, supprimer ou couper l'archivage depuis la page (la console du navigateur) | Rien à faire : la page est en consultation, elle ne modifie rien. Ces gestes se font dans le classeur, menu Suivi FWD |
 | « l'onglet « HDK » porte le même export que le relevé S39 : le relevé S40 déjà archivé, différent, n'est pas écrasé » — ou « … que le relevé S38, alors que le relevé S39, plus récent, est différent » (ou un mail d'échec de Google le vendredi) | Le plus souvent, l'export d'une semaine passée (rattrapé, ou pris par erreur dans Téléchargements) est dans l'onglet : l'archiver pour la semaine en cours écraserait le bon relevé, ou ferait reculer les plans qui ont bougé depuis. Plus rarement, c'est voulu : GATES est vraiment revenu à cet état, ou le relevé de la semaine venait d'un mauvais export | Si l'onglet n'a pas l'export du jour : importer le bon (case « Archiver » cochée). Si c'est voulu : **Suivi FWD → Archiver le relevé de cette semaine**, qui demande « L'archiver quand même ? » → **Oui** |
-| Sur une ligne de la fenêtre, ✗ « Le classeur est occupé par un autre geste (archivage…) : l'onglet « HDK » n'a pas été remplacé » | L'archivage du vendredi (ou un autre import) tenait le classeur au moment d'échanger les onglets : l'import a renoncé plutôt que de retirer l'onglet sous ses yeux. L'ancien onglet est intact | Relancer l'import dans une minute |
-| La fenêtre dit « La liste des contrats n'a pas pu être relue après l'import » | Le classeur n'a pas répondu à la fin d'un import : la fenêtre ne rattache pas de nouveaux fichiers avec une liste périmée | Fermer la fenêtre et la rouvrir (menu Suivi FWD → Importer les exports GATES et SEE…) |
+| Dans une case, ✗ « Le classeur est occupé par un autre geste (archivage…) : l'onglet « HDK » n'a pas été remplacé » | L'archivage du vendredi (ou un autre import) tenait le classeur au moment d'échanger les onglets : l'import a renoncé plutôt que de retirer l'onglet sous ses yeux. L'ancien onglet est intact | Relancer l'import dans une minute |
+| La fenêtre dit « La liste des contrats n'a pas pu être relue après l'import » | Le classeur n'a pas répondu à la fin d'un import : la fenêtre n'importe plus rien avec une liste de contrats périmée | Fermer la fenêtre et la rouvrir (menu Suivi FWD → Importer les exports GATES et SEE…) |
 | « … un autre geste écrit en ce moment dans l'historique de ce classeur … : l'historique n'est pas touché » | Deux archivages en même temps (celui du vendredi et un import, ou le menu) : le second attend trente secondes, puis renonce plutôt que d'écrire deux relevés pour la même semaine | Relancer dans une minute (menu Suivi FWD → Archiver le relevé de cette semaine) |
 | THS n'a pas d'échéance | Voulu : les jalons livrés sont ceux de HDK | Me donner les dates de THS quand elles existent : je les ajoute dans `CONFIG.JALONS` avec `contrat: 'THS'` |
 

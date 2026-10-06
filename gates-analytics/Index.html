@@ -70,7 +70,7 @@
 <script>
   /* La livraison de ce fichier, posée par la construction : la page la compare
      à celles de Code, Styles et Javascript, et nomme celui qui diffère. */
-  window.SUIVI_FWD_LIVRAISON_INDEX = 'b7a3368';
+  window.SUIVI_FWD_LIVRAISON_INDEX = '7962d60';
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
@@ -134,8 +134,8 @@
        demande depuis le bandeau. -->
   <section class="ensemble panneau panneau-hors-suite" id="ensemble" hidden aria-label="Vue d’ensemble des contrats"></section>
 
-  <!-- Le titre, seul, au centre : rien ne lui vole sa zone. Le contrat n'est
-       pas répété, il est déjà choisi en haut. -->
+  <!-- Le titre, dans sa bande d'encre (débrief 21) : rien ne lui vole sa
+       zone. Le contrat n'est pas répété, il est déjà choisi en haut. -->
   <header class="masthead">
     <h1 id="titre-page">Suivi FWD</h1>
     <div class="semaine">
@@ -148,7 +148,7 @@
   <!-- Le sommaire (débrief 20) : les panneaux de la page, chacun avec son
        numéro dans sa teinte, sous le titre puis collé en haut de l'écran
        pendant qu'on descend ; il marque celui qu'on lit et y mène d'un clic.
-       Hors du bandeau du titre, qui reste seul. Un panneau absent (pas de
+       Accroché sous le bandeau du titre (débrief 21), mais hors de lui. Un panneau absent (pas de
        seconde base : pas de comparaison) s'efface du sommaire, et les
        numéros suivent ceux des panneaux, posés de la même façon (compteur). -->
   <nav class="sommaire" id="sommaire" aria-label="Sections de la page">
@@ -156,6 +156,7 @@
     <ol class="sommaire-liste" id="sommaire-liste">
       <li class="teinte-une"><a href="#section-synthese" data-chapitre="section-synthese">Synthèse</a></li>
       <li class="teinte-temps"><a href="#section-tendance" data-chapitre="section-tendance">Tendance</a></li>
+      <li class="teinte-journal"><a href="#section-journal" data-chapitre="section-journal">Changements</a></li>
       <li class="teinte-groupe"><a href="#section-repartition" data-chapitre="section-repartition" id="sommaire-groupe">Répartition</a></li>
       <li class="teinte-plans"><a href="#section-plans" data-chapitre="section-plans">Plans</a></li>
       <li><a href="#rapprochement" data-chapitre="rapprochement">Comparaison</a></li>
@@ -182,15 +183,19 @@
        d'un coup d'œil au lieu d'un fil continu. Le numéro est posé par la
        feuille de style : une section cachée (la comparaison sans SEE) ne
        laisse pas de trou dans la suite. -->
+  <!-- Débrief 21 : chaque panneau ouvre sur sa tête teintée (panneau-tete),
+       qui porte le surtitre et le titre ; le contenu suit, sur le blanc. -->
   <section class="avancement panneau teinte-une" id="section-synthese" aria-labelledby="surtitre-synthese">
-    <p class="surtitre" id="surtitre-synthese">Synthèse</p>
-    <!-- Le périmètre — ce qu'on regarde — à droite de la phrase qu'il
-         gouverne, juste au-dessus de la barre. -->
-    <div class="avancement-ligne">
-      <div class="phrase" id="phrase">Chargement…</div>
-      <div class="perimetre" id="perimetre" hidden>
-        <span class="mot-perimetre" id="mot-perimetre">Périmètre</span>
-        <span class="segmente" id="choix-perimetre" role="group" aria-labelledby="mot-perimetre"></span>
+    <div class="panneau-tete">
+      <p class="surtitre" id="surtitre-synthese">Synthèse</p>
+      <!-- Le périmètre — ce qu'on regarde — à droite de la phrase qu'il
+           gouverne, juste au-dessus de la barre. -->
+      <div class="avancement-ligne">
+        <div class="phrase" id="phrase">Chargement…</div>
+        <div class="perimetre" id="perimetre" hidden>
+          <span class="mot-perimetre" id="mot-perimetre">Périmètre</span>
+          <span class="segmente" id="choix-perimetre" role="group" aria-labelledby="mot-perimetre"></span>
+        </div>
       </div>
     </div>
     <div class="alerte-valeurs" id="alerte-valeurs" role="status" hidden></div>
@@ -203,20 +208,22 @@
   </section>
 
   <section class="bloc panneau teinte-temps" id="section-tendance">
-    <p class="surtitre" aria-hidden="true">Tendance</p>
-    <div class="section-tete">
-      <h2>Avancement dans le temps</h2>
-      <!-- La prochaine échéance, en jours : un clic ouvre sa fiche sous le
-           graphique. Pas sous le titre, qui ne dit que la semaine. -->
-      <button type="button" class="echeance-titre" id="echeance-titre" hidden></button>
-      <div class="commandes-graphe">
-        <span class="segmente" role="group" aria-label="Période affichée">
-          <button type="button" data-span="jalons" title="Jusqu'à la semaine après la dernière échéance : tous les jalons à l'écran">Échéances</button>
-          <button type="button" data-span="13">3 mois</button>
-          <button type="button" data-span="26">6 mois</button>
-          <button type="button" data-span="52">1 an</button>
-          <button type="button" data-span="0">Tout</button>
-        </span>
+    <div class="panneau-tete">
+      <p class="surtitre" aria-hidden="true">Tendance</p>
+      <div class="section-tete">
+        <h2>Avancement dans le temps</h2>
+        <!-- La prochaine échéance, en jours : un clic ouvre sa fiche sous le
+             graphique. Pas sous le titre, qui ne dit que la semaine. -->
+        <button type="button" class="echeance-titre" id="echeance-titre" hidden></button>
+        <div class="commandes-graphe">
+          <span class="segmente" role="group" aria-label="Période affichée">
+            <button type="button" data-span="jalons" title="Jusqu'à la semaine après la dernière échéance : tous les jalons à l'écran">Échéances</button>
+            <button type="button" data-span="13">3 mois</button>
+            <button type="button" data-span="26">6 mois</button>
+            <button type="button" data-span="52">1 an</button>
+            <button type="button" data-span="0">Tout</button>
+          </span>
+        </div>
       </div>
     </div>
     <!-- La valeur que suit la courbe (débrief 18) : les validés par défaut,
@@ -231,11 +238,19 @@
       <div class="legende" id="legende"></div>
       <div class="legende-jalons" id="legende-jalons"></div>
     </div>
+  </section>
 
-    <!-- Le journal appartient au graphe : la courbe dit combien, le journal
-         dit lesquels. Les séparer obligeait à faire l'aller-retour. -->
-    <div class="section-tete section-journal">
-      <h2 class="titre-journal">Ce qui a changé, semaine par semaine</h2>
+  <!-- Débrief 21 : le journal a son propre panneau, juste après la courbe
+       (« pas collé au graphique, sa propre partie distincte »). La courbe
+       dit combien, le journal dit lesquels : ils restent voisins, et la
+       bulle de la courbe reprend toujours, mot pour mot, les comptes de la
+       semaine du journal. -->
+  <section class="bloc panneau teinte-journal" id="section-journal">
+    <div class="panneau-tete">
+      <p class="surtitre" aria-hidden="true">Changements</p>
+      <div class="section-tete">
+        <h2 class="titre-journal">Ce qui a changé, semaine par semaine</h2>
+      </div>
     </div>
     <!-- Débrief 19 : une seule ligne, dans toute la largeur — les pastilles
          des passages qu'il y a, et la recherche à droite, comme dans le bloc
@@ -259,17 +274,21 @@
   </section>
 
   <section class="bloc panneau teinte-groupe" id="section-repartition">
-    <p class="surtitre" aria-hidden="true">Répartition</p>
-    <!-- Débrief 20 : le choix ATA / ECP / Séquence… n'est plus un menu isolé
-         au-dessus de la recherche : c'est le dernier mot du titre lui-même,
-         « Avancement FWD par [ATA ▾] ». Le titre (h2) garde la phrase entière
-         pour un lecteur d'écran ; le mot visible est le menu, un vrai
-         <select> — clavier, focus, liste native. -->
-    <div class="section-tete" id="tete-groupe">
-      <div class="titre-choix">
-        <h2 id="titre-groupe">Avancement FWD</h2>
-        <label class="masque" for="dim-critique">Grouper par</label>
-        <select class="choix-titre" id="dim-critique" title="Changer le regroupement"></select>
+    <div class="panneau-tete">
+      <p class="surtitre" aria-hidden="true">Répartition</p>
+      <!-- Débrief 20 : le choix ATA / ECP / Séquence… n'est plus un menu isolé
+           au-dessus de la recherche : c'est le dernier mot du titre lui-même,
+           « Avancement FWD par [ATA ▾] ». Le titre (h2) garde la phrase entière
+           pour un lecteur d'écran ; le mot visible est le menu, un vrai
+           <select> — clavier, focus, liste native. -->
+      <div class="section-tete" id="tete-groupe">
+        <div class="titre-choix">
+          <h2 id="titre-groupe">Avancement FWD</h2>
+          <label class="masque" for="dim-critique">Grouper par</label>
+          <!-- Débrief 21 : le menu dans sa grille, sur la copie invisible du
+               mot choisi (voir .choix-titre-cadre) : le chevron n'est jamais
+               recouvert. --><span class="choix-titre-cadre" id="dim-critique-cadre"><select class="choix-titre" id="dim-critique" title="Changer le regroupement"></select><span class="choix-titre-mesure" id="dim-critique-mesure" aria-hidden="true"></span></span>
+        </div>
       </div>
     </div>
     <p class="indice-dim" id="indice-dim"></p>
@@ -302,14 +321,16 @@
        l'extract d'ici à celui de là, avec les mêmes outils. SEE n'existe que
        si la source décrit une seconde base ; sinon l'interrupteur s'efface. -->
   <section class="bloc panneau teinte-plans" id="section-plans">
-    <p class="surtitre" aria-hidden="true">Détail</p>
-    <div class="section-tete">
-      <h2>Plans</h2>
-      <span class="segmente" id="choix-base" role="group" aria-label="Base affichée" hidden>
-        <button type="button" data-base="ici" aria-pressed="true">GATES</button>
-        <button type="button" data-base="la" aria-pressed="false" id="bouton-base-la">Seconde base</button>
-      </span>
-      <span class="compte" id="compte">—</span>
+    <div class="panneau-tete">
+      <p class="surtitre" aria-hidden="true">Détail</p>
+      <div class="section-tete">
+        <h2>Plans</h2>
+        <span class="segmente" id="choix-base" role="group" aria-label="Base affichée" hidden>
+          <button type="button" data-base="ici" aria-pressed="true">GATES</button>
+          <button type="button" data-base="la" aria-pressed="false" id="bouton-base-la">Seconde base</button>
+        </span>
+        <span class="compte" id="compte">—</span>
+      </div>
     </div>
 
     <div class="outils">
@@ -375,18 +396,20 @@
        le rapprochement croise cette présence avec l'avancement de GATES.
        Présent seulement quand la source décrit une seconde base. -->
   <section class="bloc rapprochement panneau" id="rapprochement" hidden>
-    <p class="surtitre" aria-hidden="true">Contrôle</p>
-    <div class="section-tete">
-      <h2 id="titre-rapprochement">Comparaison des bases de données</h2>
-      <!-- Chercher un plan dans la comparaison seulement : les lots qui le
-           contiennent s'ouvrent sur lui, les autres s'effacent. -->
-      <div class="recherche recherche-groupe">
-        <label class="masque" for="recherche-rapp">Chercher un plan dans la comparaison</label>
-        <input id="recherche-rapp" type="search" placeholder="Chercher un plan…" autocomplete="off" spellcheck="false">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
-          <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-        </svg>
+    <div class="panneau-tete">
+      <p class="surtitre" aria-hidden="true">Contrôle</p>
+      <div class="section-tete">
+        <h2 id="titre-rapprochement">Comparaison des bases de données</h2>
+        <!-- Chercher un plan dans la comparaison seulement : les lots qui le
+             contiennent s'ouvrent sur lui, les autres s'effacent. -->
+        <div class="recherche recherche-groupe">
+          <label class="masque" for="recherche-rapp">Chercher un plan dans la comparaison</label>
+          <input id="recherche-rapp" type="search" placeholder="Chercher un plan…" autocomplete="off" spellcheck="false">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+            <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </div>
       </div>
     </div>
     <!-- Ce qu'il y a à traiter, en une phrase : les nombres se cliquent

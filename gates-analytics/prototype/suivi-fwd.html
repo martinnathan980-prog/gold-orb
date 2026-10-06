@@ -43,7 +43,9 @@
      le mot qu'on change dans un titre : il ne ressemble à aucune couleur de
      donnée (vert, ambre, gris, rouge, violet), on ne le lit pas comme un état. */
   --panneau-bord: #e2dfd6;
-  --panneau-ombre: 0 1px 2px rgba(25, 25, 21, .04), 0 8px 24px -14px rgba(25, 25, 21, .14);
+  /* Débrief 21 : une ombre un peu plus marquée — chaque panneau se détache
+     du papier comme un bloc à part. */
+  --panneau-ombre: 0 1px 2px rgba(25, 25, 21, .06), 0 16px 36px -18px rgba(25, 25, 21, .26);
   --accent:       #34507a;
   --accent-trait: #a9b6c9;
   --accent-voile: #eef1f6;
@@ -55,14 +57,35 @@
      comparaison et la vue d'ensemble gardent l'ardoise. Des teintes sourdes,
      loin des couleurs des données (vert, ambre, gris, rouge, violet) : elles
      ne peignent que le numéro du panneau, l'amorce de son filet, son entrée
-     du sommaire et, au panneau 03, le mot qu'on change — jamais un fond,
-     jamais un titre, jamais un chiffre. Toutes au-dessus de 4,5:1 sur le
-     blanc des panneaux et sur le papier. Pour le mot à choisir du panneau
-     03 : -trait, son soulignement ; -voile, son fond au survol. */
+     du sommaire, le liseré du haut du panneau (débrief 21) et, au panneau
+     « par ATA », le mot qu'on change — jamais un titre, jamais un chiffre ;
+     pour fond, seulement la tête du panneau, à peine teintée (--tete-*).
+     Toutes au-dessus de 4,5:1 sur le blanc des panneaux et sur le papier. Pour le mot à choisir du panneau
+     « par ATA » : -trait, son soulignement ; -voile, son fond au survol. */
   --t-temps: #2d6873;
   --t-groupe: #874f6f;  --t-groupe-trait: #cdb5c3;  --t-groupe-voile: #f4eef1;
   --t-plans: #5c6530;
   --chevron-groupe: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5 6 8 9.5 4.5' fill='none' stroke='%23874f6f' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  /* Débrief 21 : le journal devient un panneau à lui, avec sa teinte — une
+     terre d'ombre, loin du vert, de l'ambre, du rouge et du violet des
+     données, distincte des quatre autres. */
+  --t-journal: #7a5434;
+  /* Débrief 21, « aller encore plus loin pour les séparer » : chaque panneau
+     ouvre sur une tête teintée — un fond à peine coloré de sa teinte, un
+     filet de la même famille dessous — où vivent son surtitre et son titre.
+     Des fonds très clairs : l'encre et les numéros y gardent plus de 4,5:1. */
+  --tete-une: #f5f4f0;      --tete-une-filet: #e4e1d8;
+  --tete-temps: #eef5f6;    --tete-temps-filet: #cfe0e3;
+  --tete-journal: #f8f3ed;  --tete-journal-filet: #e8dccd;
+  --tete-groupe: #f8f2f5;   --tete-groupe-filet: #e8d8e1;
+  --tete-plans: #f3f4ec;    --tete-plans-filet: #dcdfca;
+  --tete-ardoise: #f0f3f8;  --tete-ardoise-filet: #d5dce8;
+  /* Le bandeau du titre (débrief 21, « trop caché dans le fond ») : une
+     bande d'encre profonde, le titre en clair. */
+  --bandeau-fond: #1f1e1a;
+  --bandeau-encre: #f7f5ef;
+  --bandeau-encre-2: #c3bfb3;
+  --bandeau-bord: #1f1e1a;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -75,13 +98,24 @@
     --focus: #6fae82;
     --voile-ecart: rgba(221, 164, 52, .2);
     --panneau-bord: #2a2a2e;
-    --panneau-ombre: 0 1px 0 rgba(255, 255, 255, .02) inset, 0 10px 28px -16px rgba(0, 0, 0, .7);
+    --panneau-ombre: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 16px 36px -16px rgba(0, 0, 0, .85);
     --accent: #a9bedb; --accent-trait: #4a5a72; --accent-voile: #1f2530;
     --chevron-accent: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5 6 8 9.5 4.5' fill='none' stroke='%23a9bedb' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
     --t-temps: #7db9c4;
     --t-groupe: #d19dbb;  --t-groupe-trait: #5d4957;  --t-groupe-voile: #2a2229;
     --t-plans: #b3bb7d;
     --chevron-groupe: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5 6 8 9.5 4.5' fill='none' stroke='%23d19dbb' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    --t-journal: #d3b08c;
+    --tete-une: #1c1c21;      --tete-une-filet: #2d2d33;
+    --tete-temps: #172427;    --tete-temps-filet: #284047;
+    --tete-journal: #221d17;  --tete-journal-filet: #44372a;
+    --tete-groupe: #231b21;   --tete-groupe-filet: #46343f;
+    --tete-plans: #1e2017;    --tete-plans-filet: #3a3f27;
+    --tete-ardoise: #1a1f27;  --tete-ardoise-filet: #34404f;
+    --bandeau-fond: #202026;
+    --bandeau-encre: #f1f0ea;
+    --bandeau-encre-2: #aeaca2;
+    --bandeau-bord: #303037;
   }
 }
 :root[data-theme="dark"] {
@@ -94,13 +128,24 @@
   --focus: #6fae82;
   --voile-ecart: rgba(221, 164, 52, .2);
   --panneau-bord: #2a2a2e;
-  --panneau-ombre: 0 1px 0 rgba(255, 255, 255, .02) inset, 0 10px 28px -16px rgba(0, 0, 0, .7);
+  --panneau-ombre: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 16px 36px -16px rgba(0, 0, 0, .85);
   --accent: #a9bedb; --accent-trait: #4a5a72; --accent-voile: #1f2530;
   --chevron-accent: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5 6 8 9.5 4.5' fill='none' stroke='%23a9bedb' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   --t-temps: #7db9c4;
   --t-groupe: #d19dbb;  --t-groupe-trait: #5d4957;  --t-groupe-voile: #2a2229;
   --t-plans: #b3bb7d;
   --chevron-groupe: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5 6 8 9.5 4.5' fill='none' stroke='%23d19dbb' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  --t-journal: #d3b08c;
+  --tete-une: #1c1c21;      --tete-une-filet: #2d2d33;
+  --tete-temps: #172427;    --tete-temps-filet: #284047;
+  --tete-journal: #221d17;  --tete-journal-filet: #44372a;
+  --tete-groupe: #231b21;   --tete-groupe-filet: #46343f;
+  --tete-plans: #1e2017;    --tete-plans-filet: #3a3f27;
+  --tete-ardoise: #1a1f27;  --tete-ardoise-filet: #34404f;
+  --bandeau-fond: #202026;
+  --bandeau-encre: #f1f0ea;
+  --bandeau-encre-2: #aeaca2;
+  --bandeau-bord: #303037;
 }
 
 /* Les contrôles du navigateur — la liste d'un menu déroulant, les barres de
@@ -138,21 +183,38 @@ body {
 .panneau .feuille { background: none; border: none; border-top: 1px solid var(--filet); padding: 18px 0 0; }
 
 /* ---------------------------------------------------- Bandeau de titre */
-.masthead { text-align: center; padding-block: 40px 30px; }
-@media (max-width: 720px) { .masthead { padding-block: 26px 20px; } }
+/* Débrief 21 : « Suivi FWD, c'est trop caché dans le fond ». Le titre n'est
+   plus un mot clair posé sur le papier : c'est une bande d'encre de la
+   largeur des panneaux, le titre en clair et plus appuyé, la semaine en
+   face. Le sommaire s'accroche dessous comme sa dernière ligne : titre et
+   index font un seul en-tête, qu'on ne confond avec aucun panneau. Le
+   contrat n'y est pas répété (débrief 3) : il est choisi juste au-dessus. */
+.masthead {
+  display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 10px 32px;
+  margin-top: 16px; padding: 30px 30px 26px;   /* 30 px : le titre s'aligne sur le contenu des panneaux */
+  background: var(--bandeau-fond); color: var(--bandeau-encre);
+  border: 1px solid var(--bandeau-bord); border-bottom: none; border-radius: 12px 12px 0 0;
+}
+@media (max-width: 720px) { .masthead { margin-top: 12px; padding: 20px 14px 16px; border-radius: 10px 10px 0 0; } }
 .masthead h1 {
   font-family: Newsreader, Georgia, serif;
-  font-weight: 300; font-size: clamp(34px, 6vw, 52px);
-  letter-spacing: .015em; margin: 0 0 12px; line-height: 1.05;
+  font-weight: 500; font-size: clamp(34px, 5vw, 50px);
+  letter-spacing: .005em; margin: 0; line-height: 1.02; color: var(--bandeau-encre);
 }
 .semaine {
-  font-size: 15px; color: var(--encre-2);
-  display: flex; justify-content: center; align-items: baseline; gap: 9px; flex-wrap: wrap;
+  font-size: 15px; color: var(--bandeau-encre-2);
+  display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; padding-bottom: 3px;
 }
 /* Sur un téléphone, les dates passent sous la semaine : le point qui les
    séparait restait seul au bout de la première ligne. */
 @media (max-width: 420px) { .semaine > span[aria-hidden="true"] { display: none; } .semaine { row-gap: 2px; } }
-.masthead .semaine b { font-weight: 600; color: var(--encre); }
+.masthead .semaine b { font-weight: 600; color: var(--bandeau-encre); }
+/* À l'impression, pas d'aplat d'encre : le titre redevient noir sur blanc. */
+@media print {
+  .masthead { background: none; border: none; padding-inline: 0; }
+  .masthead h1, .masthead .semaine b { color: #000; }
+  .semaine { color: #444; }
+}
 .masthead .import {
   margin-top: 7px; font-size: 12.5px; color: var(--encre-3);
   display: inline-flex; align-items: center; gap: 7px;
@@ -387,7 +449,6 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .defile-liste::-webkit-scrollbar-track { background: transparent; }
 @media (max-width: 720px) { .defile-liste { max-height: 380px; } }
 
-.section-journal { margin-top: 26px; }
 /* Le même titre que les autres sections : une seule police, une seule
    taille, pour qu'on lise « ce qui a changé » comme on lit « avancement dans
    le temps ». */
@@ -634,24 +695,54 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .panneau {
   background: var(--surface); border: 1px solid var(--panneau-bord); border-radius: 10px;
   box-shadow: var(--panneau-ombre);
-  padding: 22px 30px 28px; margin-top: 30px;
+  padding: 22px 30px 28px; margin-top: 40px;
   counter-increment: panneau;
 }
-.panneau.bloc { margin-top: 30px; }
+/* Débrief 21 : « aller encore plus loin pour les séparer ». Plus de blanc
+   entre deux panneaux, un liseré de sa teinte en haut de chacun, et une
+   tête teintée (plus bas) : on voit d'un coup d'œil où une étape finit et
+   où la suivante commence. */
+.panneau:not(.panneau-hors-suite) { border-top: 3px solid var(--accent); }
+.panneau.bloc { margin-top: 40px; }
 /* La vue d'ensemble s'ouvre à la demande : elle n'entre pas dans la suite
    numérotée, et elle colle au bandeau qui l'ouvre. */
 .panneau.panneau-hors-suite { counter-increment: none; margin-top: 16px; }
 @media (max-width: 720px) {
-  .panneau { padding: 16px 14px 20px; margin-top: 18px; border-radius: 8px; }
-  .panneau.bloc { margin-top: 18px; }
+  .panneau { padding: 16px 14px 20px; margin-top: 26px; border-radius: 8px; }
+  .panneau.bloc { margin-top: 26px; }
 }
 /* La teinte du panneau (voir :root) : la classe remplace l'accent ardoise
    pour tout ce qui le porte dans le panneau — numéro, amorce du filet, mot
    à choisir — et pour son entrée du sommaire. Sans classe, l'ardoise. */
-.teinte-une { --accent: var(--encre); }
-.teinte-temps { --accent: var(--t-temps); }
-.teinte-groupe { --accent: var(--t-groupe); --accent-trait: var(--t-groupe-trait); --accent-voile: var(--t-groupe-voile); --chevron-accent: var(--chevron-groupe); }
-.teinte-plans { --accent: var(--t-plans); }
+.teinte-une { --accent: var(--encre); --tete: var(--tete-une); --tete-filet: var(--tete-une-filet); }
+.teinte-temps { --accent: var(--t-temps); --tete: var(--tete-temps); --tete-filet: var(--tete-temps-filet); }
+.teinte-journal { --accent: var(--t-journal); --tete: var(--tete-journal); --tete-filet: var(--tete-journal-filet); }
+.teinte-groupe { --accent: var(--t-groupe); --accent-trait: var(--t-groupe-trait); --accent-voile: var(--t-groupe-voile); --chevron-accent: var(--chevron-groupe);
+  --tete: var(--tete-groupe); --tete-filet: var(--tete-groupe-filet); }
+.teinte-plans { --accent: var(--t-plans); --tete: var(--tete-plans); --tete-filet: var(--tete-plans-filet); }
+/* La tête du panneau (débrief 21) : son surtitre et son titre sur un fond
+   à peine teinté, d'un bord à l'autre du panneau, fermé d'un filet de la
+   même famille. Le contenu commence dessous, sur le blanc. Les rayons
+   suivent l'intérieur du cadre (1 px de côté, 3 px de liseré en haut). */
+.panneau-tete {
+  margin: -22px -30px 20px; padding: 16px 30px 17px;
+  background: var(--tete, var(--tete-ardoise));
+  border-bottom: 1px solid var(--tete-filet, var(--tete-ardoise-filet));
+  border-radius: 9px 9px 0 0 / 7px 7px 0 0;
+}
+.panneau-tete > .surtitre { margin-bottom: 9px; }
+.panneau-tete > .section-tete, .panneau-tete > .avancement-ligne { margin-bottom: 0; }
+.panneau-tete .surtitre::after {
+  background: linear-gradient(var(--accent), var(--accent)) left center / 32px 2px no-repeat,
+              linear-gradient(var(--tete-filet, var(--filet)), var(--tete-filet, var(--filet))) left center / 100% 1px no-repeat;
+}
+/* Sur la tête teintée, le survol du mot à choisir s'éclaire en blanc : son
+   voile habituel s'y confondrait avec le fond. */
+.panneau-tete select.choix-titre:hover, .panneau-tete select.choix-titre:focus-visible { background-color: var(--surface); }
+@media (max-width: 720px) {
+  .panneau-tete { margin: -16px -14px 16px; padding: 12px 14px 13px; border-radius: 7px 7px 0 0 / 5px 5px 0 0; }
+}
+@media print { .panneau-tete { background: none; } }
 /* Le surtitre : « 01 · SYNTHÈSE », en petites capitales espacées, le numéro
    dans la teinte du panneau, puis un filet qui court jusqu'au bord — ses
    premiers millimètres, un peu plus épais, dans la teinte. C'est lui qu'on
@@ -672,9 +763,7 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
               linear-gradient(var(--filet), var(--filet)) left center / 100% 1px no-repeat;
 }
 .panneau > .section-tete { margin-bottom: 16px; }
-/* Le journal appartient au panneau du graphique : un second temps, séparé
-   par un filet et du blanc, sous le même surtitre. */
-.panneau .section-journal { margin-top: 30px; padding-top: 24px; border-top: 1px solid var(--filet); }
+.panneau-tete + .ligne-filtres, .panneau-tete + .feuille { margin-top: 0; }
 .panneau .cadre-tableau { border-radius: 4px; }
 
 /* ---------------------------------------------------- Sommaire (débrief 20) */
@@ -683,13 +772,18 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
    haut de l'écran (sous le bandeau des filtres actifs s'il est là :
    --haut-sommaire, posé par le script), d'un filet souligné ; le panneau
    qu'on lit est écrit à l'encre et souligné de sa teinte. */
+/* Débrief 21 : le sommaire est la dernière ligne de l'en-tête — une bande
+   blanche accrochée sous le bandeau d'encre, de la même largeur, arrondie
+   en bas. Collé en haut de l'écran, il garde cette forme et une ombre un
+   peu plus nette : on voit qu'il flotte au-dessus des panneaux. */
 .sommaire {
   position: sticky; top: var(--haut-sommaire, 0px); z-index: 29;
-  display: flex; align-items: center; min-width: 0; margin-top: -10px;
-  background: var(--papier); border-bottom: 1px solid transparent;
-  transition: border-color .2s;
+  display: flex; align-items: center; min-width: 0; margin-top: 0; padding-inline: 24px;
+  background: var(--surface); border: 1px solid var(--panneau-bord); border-top: none;
+  border-radius: 0 0 12px 12px; box-shadow: var(--panneau-ombre);
+  transition: border-color .2s, box-shadow .2s;
 }
-.sommaire[data-colle="true"] { border-bottom-color: var(--filet-fort); }
+.sommaire[data-colle="true"] { border-color: var(--filet-fort); box-shadow: 0 10px 22px -14px rgba(0, 0, 0, .45); }
 .sommaire-liste {
   list-style: none; margin: 0 auto; padding: 0 2px; display: flex; gap: 0 28px; min-width: 0;
   overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain;
@@ -722,8 +816,8 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 /* Collé en haut, le nom de la page et du contrat se rappellent à gauche —
    posés par-dessus, sans rien pousser. Seulement quand la place est là. */
 .sommaire-marque {
-  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-  font: 400 16px Newsreader, Georgia, serif; color: var(--encre); white-space: nowrap;
+  position: absolute; left: 24px; top: 50%; transform: translateY(-50%);
+  font: 500 16px Newsreader, Georgia, serif; color: var(--encre); white-space: nowrap;
   opacity: 0; pointer-events: none; transition: opacity .2s;
 }
 .sommaire-contrat { margin-left: 8px; font: 500 11.5px "IBM Plex Mono", monospace; color: var(--encre-2); }
@@ -731,10 +825,12 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .sommaire[data-colle="true"] .sommaire-marque { opacity: 1; }
 @media (max-width: 1180px) { .sommaire-marque { display: none; } }
 @media (max-width: 720px) {
-  .sommaire { margin-top: -6px; }
+  .sommaire { padding-inline: 14px; border-radius: 0 0 10px 10px; }
   .sommaire-liste { gap: 0 20px; margin: 0; padding: 0; }
 }
 body[data-vide="true"] .sommaire { display: none; }
+/* Sans sommaire (classeur vide), la bande du titre se referme seule. */
+body[data-vide="true"] .masthead { border-bottom: 1px solid var(--bandeau-bord); border-radius: 12px; }
 @media (prefers-reduced-motion: reduce) { .sommaire, .sommaire a, .sommaire-marque { transition: none; } }
 @media print { .sommaire { display: none; } }
 /* Un saut vers un panneau — ou tout ce que la page amène à l'écran —
@@ -744,16 +840,37 @@ html { scroll-padding-top: calc(var(--bas-sommaire, 40px) + 14px); }
 
 /* Le mot qu'on change dans le titre : « Avancement FWD par [ATA ▾] ». Le
    menu prend la police du titre, l'accent, un soulignement fin et un
-   chevron : on voit que c'est un choix sans qu'il fasse bouton. Sa largeur
-   suit le mot choisi (ajusterChoixDim) ; un nom long passe à la ligne, coupé
-   au bord plutôt que de déborder. */
+   chevron : on voit que c'est un choix sans qu'il fasse bouton. Un nom long
+   passe à la ligne, coupé au bord plutôt que de déborder.
+   Débrief 21 : « par ECP, la flèche est cachée par ECP ». La largeur venait
+   d'une mesure du texte au canevas, prise parfois avant l'arrivée de la
+   police du titre, et sans sa taille optique : un mot large comme « ECP »
+   dépassait sur le chevron. Plus de mesure : le menu est posé dans une
+   petite grille, par-dessus une copie invisible du mot choisi, écrite dans
+   la même police et avec la même marge à droite pour le chevron. La grille
+   prend la largeur de cette copie, le menu la remplit : quelle que soit la
+   police du moment, le mot finit avant la place du chevron. */
 .titre-choix { min-width: 0; max-width: 100%; font-family: Newsreader, Georgia, serif; font-size: 24px; line-height: 1.3; }
 .titre-choix h2 { display: inline; font-size: inherit; line-height: inherit; }
+.choix-titre-cadre {
+  display: inline-grid; grid-template-columns: minmax(0, max-content);
+  max-width: 100%; vertical-align: baseline;
+}
+.choix-titre-cadre > select, .choix-titre-mesure { grid-area: 1 / 1; }
+/* La copie : même police, même marge (plus 2 px de jeu pour l'arrondi des
+   mesures), aucune hauteur ni couleur — elle ne fait que donner la largeur. */
+.choix-titre-mesure {
+  font: inherit; white-space: pre; padding: 0 30px 0 4px;
+  height: 0; overflow: hidden; visibility: hidden;
+}
 select.choix-titre {
   appearance: none; -webkit-appearance: none;
-  font: inherit; color: var(--accent); max-width: 100%; vertical-align: baseline;
-  border: none; border-radius: 3px; margin: 0; padding: 0 22px 0 3px;
-  background: var(--chevron-accent) no-repeat right 4px center / 12px 12px;
+  /* Largeur nulle pour la grille, puis toute la case : un menu compte
+     d'ordinaire la largeur de sa plus longue option ; ici, seule la copie
+     du mot choisi décide. */
+  font: inherit; color: var(--accent); width: 0; min-width: 100%; max-width: 100%; vertical-align: baseline;
+  border: none; border-radius: 3px; margin: 0; padding: 0 28px 0 4px;
+  background: var(--chevron-accent) no-repeat right 7px center / 12px 12px;
   box-shadow: inset 0 -1.5px 0 var(--accent-trait);
   text-overflow: ellipsis; white-space: nowrap; overflow: hidden; cursor: pointer;
   transition: background-color .15s, box-shadow .15s;
@@ -1229,8 +1346,10 @@ table.plans tbody tr[data-plan] { cursor: pointer; }
 
 /* Une seule definition de colonnes, portee par le conteneur : l'en-tete et les
    lignes ne peuvent pas diverger, et la variante sans jalon n'a qu'a la redefinir. */
-#zone-critique { --cols: 96px 58px minmax(0, 1fr) 140px minmax(0, 160px); }
-#zone-critique.sans-jalon { --cols: 104px 62px minmax(0, 1fr) 140px minmax(0, 160px); }
+/* La première colonne loge le chevron puis le nom (débrief 21 : centré,
+   « ECP-2100 » recouvrait le chevron) : le nom part après lui, à gauche. */
+#zone-critique { --cols: 118px 58px minmax(0, 1fr) 140px minmax(0, 160px); }
+#zone-critique.sans-jalon { --cols: 124px 62px minmax(0, 1fr) 140px minmax(0, 160px); }
 .critique-tete, .critique-ligne {
   display: grid; grid-template-columns: var(--cols);
   gap: 14px; align-items: center;
@@ -1270,7 +1389,8 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
 .critique-ligne:hover .chevron { color: var(--encre); }
 .critique-ligne:hover { background: var(--creux); }
 .critique-ligne[aria-pressed="true"] { background: var(--creux); box-shadow: inset 3px 0 0 var(--encre); }
-.critique-nom { font-size: 13px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.critique-nom { font-size: 13px; text-align: left; padding-left: 24px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.critique-tete > span:first-child { justify-content: flex-start; padding-left: 24px; }
 .critique-total {
   font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
   font-size: 13px; color: var(--encre-2); text-align: center;
@@ -1356,7 +1476,8 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
   .critique-plans .arret-n.place { display: none; }
   .critique-arret { display: block; height: auto; text-align: right; padding: 5px 0 9px; }
   .arret-groupe { transform: none; margin: 0; }
-  .critique-nom { text-align: left; font-weight: 600; font-size: 15px; padding-right: 22px; }
+  .critique-nom { text-align: left; font-weight: 600; font-size: 15px; padding-left: 0; padding-right: 22px; }
+  .critique-tete > span:first-child { padding-left: 0; }
   /* En colonne, la ligne est haute : centré verticalement, le chevron
      tombait sur la barre. Il se range au bout de la ligne du nom. */
   .critique-ligne .chevron { top: 13px; margin-top: 7px; left: auto; right: 6px; }
@@ -1550,8 +1671,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
        demande depuis le bandeau. -->
   <section class="ensemble panneau panneau-hors-suite" id="ensemble" hidden aria-label="Vue d’ensemble des contrats"></section>
 
-  <!-- Le titre, seul, au centre : rien ne lui vole sa zone. Le contrat n'est
-       pas répété, il est déjà choisi en haut. -->
+  <!-- Le titre, dans sa bande d'encre (débrief 21) : rien ne lui vole sa
+       zone. Le contrat n'est pas répété, il est déjà choisi en haut. -->
   <header class="masthead">
     <h1 id="titre-page">Suivi FWD</h1>
     <div class="semaine">
@@ -1564,7 +1685,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
   <!-- Le sommaire (débrief 20) : les panneaux de la page, chacun avec son
        numéro dans sa teinte, sous le titre puis collé en haut de l'écran
        pendant qu'on descend ; il marque celui qu'on lit et y mène d'un clic.
-       Hors du bandeau du titre, qui reste seul. Un panneau absent (pas de
+       Accroché sous le bandeau du titre (débrief 21), mais hors de lui. Un panneau absent (pas de
        seconde base : pas de comparaison) s'efface du sommaire, et les
        numéros suivent ceux des panneaux, posés de la même façon (compteur). -->
   <nav class="sommaire" id="sommaire" aria-label="Sections de la page">
@@ -1572,6 +1693,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     <ol class="sommaire-liste" id="sommaire-liste">
       <li class="teinte-une"><a href="#section-synthese" data-chapitre="section-synthese">Synthèse</a></li>
       <li class="teinte-temps"><a href="#section-tendance" data-chapitre="section-tendance">Tendance</a></li>
+      <li class="teinte-journal"><a href="#section-journal" data-chapitre="section-journal">Changements</a></li>
       <li class="teinte-groupe"><a href="#section-repartition" data-chapitre="section-repartition" id="sommaire-groupe">Répartition</a></li>
       <li class="teinte-plans"><a href="#section-plans" data-chapitre="section-plans">Plans</a></li>
       <li><a href="#rapprochement" data-chapitre="rapprochement">Comparaison</a></li>
@@ -1598,15 +1720,19 @@ table.plans thead tr th.col-fige { z-index: 6; }
        d'un coup d'œil au lieu d'un fil continu. Le numéro est posé par la
        feuille de style : une section cachée (la comparaison sans SEE) ne
        laisse pas de trou dans la suite. -->
+  <!-- Débrief 21 : chaque panneau ouvre sur sa tête teintée (panneau-tete),
+       qui porte le surtitre et le titre ; le contenu suit, sur le blanc. -->
   <section class="avancement panneau teinte-une" id="section-synthese" aria-labelledby="surtitre-synthese">
-    <p class="surtitre" id="surtitre-synthese">Synthèse</p>
-    <!-- Le périmètre — ce qu'on regarde — à droite de la phrase qu'il
-         gouverne, juste au-dessus de la barre. -->
-    <div class="avancement-ligne">
-      <div class="phrase" id="phrase">Chargement…</div>
-      <div class="perimetre" id="perimetre" hidden>
-        <span class="mot-perimetre" id="mot-perimetre">Périmètre</span>
-        <span class="segmente" id="choix-perimetre" role="group" aria-labelledby="mot-perimetre"></span>
+    <div class="panneau-tete">
+      <p class="surtitre" id="surtitre-synthese">Synthèse</p>
+      <!-- Le périmètre — ce qu'on regarde — à droite de la phrase qu'il
+           gouverne, juste au-dessus de la barre. -->
+      <div class="avancement-ligne">
+        <div class="phrase" id="phrase">Chargement…</div>
+        <div class="perimetre" id="perimetre" hidden>
+          <span class="mot-perimetre" id="mot-perimetre">Périmètre</span>
+          <span class="segmente" id="choix-perimetre" role="group" aria-labelledby="mot-perimetre"></span>
+        </div>
       </div>
     </div>
     <div class="alerte-valeurs" id="alerte-valeurs" role="status" hidden></div>
@@ -1619,20 +1745,22 @@ table.plans thead tr th.col-fige { z-index: 6; }
   </section>
 
   <section class="bloc panneau teinte-temps" id="section-tendance">
-    <p class="surtitre" aria-hidden="true">Tendance</p>
-    <div class="section-tete">
-      <h2>Avancement dans le temps</h2>
-      <!-- La prochaine échéance, en jours : un clic ouvre sa fiche sous le
-           graphique. Pas sous le titre, qui ne dit que la semaine. -->
-      <button type="button" class="echeance-titre" id="echeance-titre" hidden></button>
-      <div class="commandes-graphe">
-        <span class="segmente" role="group" aria-label="Période affichée">
-          <button type="button" data-span="jalons" title="Jusqu'à la semaine après la dernière échéance : tous les jalons à l'écran">Échéances</button>
-          <button type="button" data-span="13">3 mois</button>
-          <button type="button" data-span="26">6 mois</button>
-          <button type="button" data-span="52">1 an</button>
-          <button type="button" data-span="0">Tout</button>
-        </span>
+    <div class="panneau-tete">
+      <p class="surtitre" aria-hidden="true">Tendance</p>
+      <div class="section-tete">
+        <h2>Avancement dans le temps</h2>
+        <!-- La prochaine échéance, en jours : un clic ouvre sa fiche sous le
+             graphique. Pas sous le titre, qui ne dit que la semaine. -->
+        <button type="button" class="echeance-titre" id="echeance-titre" hidden></button>
+        <div class="commandes-graphe">
+          <span class="segmente" role="group" aria-label="Période affichée">
+            <button type="button" data-span="jalons" title="Jusqu'à la semaine après la dernière échéance : tous les jalons à l'écran">Échéances</button>
+            <button type="button" data-span="13">3 mois</button>
+            <button type="button" data-span="26">6 mois</button>
+            <button type="button" data-span="52">1 an</button>
+            <button type="button" data-span="0">Tout</button>
+          </span>
+        </div>
       </div>
     </div>
     <!-- La valeur que suit la courbe (débrief 18) : les validés par défaut,
@@ -1647,11 +1775,19 @@ table.plans thead tr th.col-fige { z-index: 6; }
       <div class="legende" id="legende"></div>
       <div class="legende-jalons" id="legende-jalons"></div>
     </div>
+  </section>
 
-    <!-- Le journal appartient au graphe : la courbe dit combien, le journal
-         dit lesquels. Les séparer obligeait à faire l'aller-retour. -->
-    <div class="section-tete section-journal">
-      <h2 class="titre-journal">Ce qui a changé, semaine par semaine</h2>
+  <!-- Débrief 21 : le journal a son propre panneau, juste après la courbe
+       (« pas collé au graphique, sa propre partie distincte »). La courbe
+       dit combien, le journal dit lesquels : ils restent voisins, et la
+       bulle de la courbe reprend toujours, mot pour mot, les comptes de la
+       semaine du journal. -->
+  <section class="bloc panneau teinte-journal" id="section-journal">
+    <div class="panneau-tete">
+      <p class="surtitre" aria-hidden="true">Changements</p>
+      <div class="section-tete">
+        <h2 class="titre-journal">Ce qui a changé, semaine par semaine</h2>
+      </div>
     </div>
     <!-- Débrief 19 : une seule ligne, dans toute la largeur — les pastilles
          des passages qu'il y a, et la recherche à droite, comme dans le bloc
@@ -1675,17 +1811,21 @@ table.plans thead tr th.col-fige { z-index: 6; }
   </section>
 
   <section class="bloc panneau teinte-groupe" id="section-repartition">
-    <p class="surtitre" aria-hidden="true">Répartition</p>
-    <!-- Débrief 20 : le choix ATA / ECP / Séquence… n'est plus un menu isolé
-         au-dessus de la recherche : c'est le dernier mot du titre lui-même,
-         « Avancement FWD par [ATA ▾] ». Le titre (h2) garde la phrase entière
-         pour un lecteur d'écran ; le mot visible est le menu, un vrai
-         <select> — clavier, focus, liste native. -->
-    <div class="section-tete" id="tete-groupe">
-      <div class="titre-choix">
-        <h2 id="titre-groupe">Avancement FWD</h2>
-        <label class="masque" for="dim-critique">Grouper par</label>
-        <select class="choix-titre" id="dim-critique" title="Changer le regroupement"></select>
+    <div class="panneau-tete">
+      <p class="surtitre" aria-hidden="true">Répartition</p>
+      <!-- Débrief 20 : le choix ATA / ECP / Séquence… n'est plus un menu isolé
+           au-dessus de la recherche : c'est le dernier mot du titre lui-même,
+           « Avancement FWD par [ATA ▾] ». Le titre (h2) garde la phrase entière
+           pour un lecteur d'écran ; le mot visible est le menu, un vrai
+           <select> — clavier, focus, liste native. -->
+      <div class="section-tete" id="tete-groupe">
+        <div class="titre-choix">
+          <h2 id="titre-groupe">Avancement FWD</h2>
+          <label class="masque" for="dim-critique">Grouper par</label>
+          <!-- Débrief 21 : le menu dans sa grille, sur la copie invisible du
+               mot choisi (voir .choix-titre-cadre) : le chevron n'est jamais
+               recouvert. --><span class="choix-titre-cadre" id="dim-critique-cadre"><select class="choix-titre" id="dim-critique" title="Changer le regroupement"></select><span class="choix-titre-mesure" id="dim-critique-mesure" aria-hidden="true"></span></span>
+        </div>
       </div>
     </div>
     <p class="indice-dim" id="indice-dim"></p>
@@ -1718,14 +1858,16 @@ table.plans thead tr th.col-fige { z-index: 6; }
        l'extract d'ici à celui de là, avec les mêmes outils. SEE n'existe que
        si la source décrit une seconde base ; sinon l'interrupteur s'efface. -->
   <section class="bloc panneau teinte-plans" id="section-plans">
-    <p class="surtitre" aria-hidden="true">Détail</p>
-    <div class="section-tete">
-      <h2>Plans</h2>
-      <span class="segmente" id="choix-base" role="group" aria-label="Base affichée" hidden>
-        <button type="button" data-base="ici" aria-pressed="true">GATES</button>
-        <button type="button" data-base="la" aria-pressed="false" id="bouton-base-la">Seconde base</button>
-      </span>
-      <span class="compte" id="compte">—</span>
+    <div class="panneau-tete">
+      <p class="surtitre" aria-hidden="true">Détail</p>
+      <div class="section-tete">
+        <h2>Plans</h2>
+        <span class="segmente" id="choix-base" role="group" aria-label="Base affichée" hidden>
+          <button type="button" data-base="ici" aria-pressed="true">GATES</button>
+          <button type="button" data-base="la" aria-pressed="false" id="bouton-base-la">Seconde base</button>
+        </span>
+        <span class="compte" id="compte">—</span>
+      </div>
     </div>
 
     <div class="outils">
@@ -1791,18 +1933,20 @@ table.plans thead tr th.col-fige { z-index: 6; }
        le rapprochement croise cette présence avec l'avancement de GATES.
        Présent seulement quand la source décrit une seconde base. -->
   <section class="bloc rapprochement panneau" id="rapprochement" hidden>
-    <p class="surtitre" aria-hidden="true">Contrôle</p>
-    <div class="section-tete">
-      <h2 id="titre-rapprochement">Comparaison des bases de données</h2>
-      <!-- Chercher un plan dans la comparaison seulement : les lots qui le
-           contiennent s'ouvrent sur lui, les autres s'effacent. -->
-      <div class="recherche recherche-groupe">
-        <label class="masque" for="recherche-rapp">Chercher un plan dans la comparaison</label>
-        <input id="recherche-rapp" type="search" placeholder="Chercher un plan…" autocomplete="off" spellcheck="false">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
-          <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-        </svg>
+    <div class="panneau-tete">
+      <p class="surtitre" aria-hidden="true">Contrôle</p>
+      <div class="section-tete">
+        <h2 id="titre-rapprochement">Comparaison des bases de données</h2>
+        <!-- Chercher un plan dans la comparaison seulement : les lots qui le
+             contiennent s'ouvrent sur lui, les autres s'effacent. -->
+        <div class="recherche recherche-groupe">
+          <label class="masque" for="recherche-rapp">Chercher un plan dans la comparaison</label>
+          <input id="recherche-rapp" type="search" placeholder="Chercher un plan…" autocomplete="off" spellcheck="false">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+            <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </div>
       </div>
     </div>
     <!-- Ce qu'il y a à traiter, en une phrase : les nombres se cliquent
@@ -5925,6 +6069,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     if (!dim || !TITRE_DIM[dim]) {
       $('titre-groupe').textContent = motSuivi();
       $('dim-critique').hidden = true;
+      ajusterChoixDim();
       $('sommaire-groupe').textContent = 'Répartition';
       $('indice-dim').textContent = '';
       $('compte-groupes').textContent = '';
@@ -6274,21 +6419,18 @@ table.plans thead tr th.col-fige { z-index: 6; }
 
   /* Le menu de la dimension est un mot du titre : sa largeur suit le mot
      choisi, pas le plus long de la liste — sinon « par ATA » traînerait un
-     grand blanc avant son chevron. On mesure le texte dans la police du menu
-     (un canevas, sans rien ajouter à la page), plus la place du chevron ; le
-     max-width de la feuille de style coupe un nom trop long au bord. */
-  var mesureChoix = null;
+     grand blanc avant son chevron. Débrief 21 : plus de mesure au canevas
+     (« par ECP, la flèche est cachée ») ; on recopie seulement le mot choisi
+     dans sa copie invisible, et la feuille de style fait le reste
+     (.choix-titre-cadre) : la largeur suit la police réellement affichée,
+     avant comme après son chargement. Le cadre se cache avec le menu. */
   function ajusterChoixDim() {
-    var sel = $('dim-critique'), o = sel.options[sel.selectedIndex];
-    if (!o) { sel.style.width = ''; return; }
-    try {
-      var cs = getComputedStyle(sel);
-      mesureChoix = mesureChoix || document.createElement('canvas').getContext('2d');
-      mesureChoix.font = cs.fontStyle + ' ' + cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
-      var w = mesureChoix.measureText(o.text).width + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
-      // 4 px de marge : le canevas ignore la taille optique de Newsreader.
-      sel.style.width = Math.ceil(w + 4) + 'px';
-    } catch (e) { sel.style.width = ''; }
+    var sel = $('dim-critique'), o = sel.options[sel.selectedIndex], mesure = $('dim-critique-mesure');
+    sel.style.width = '';
+    var mot = o ? o.text : '';
+    if (mesure.textContent !== mot) mesure.textContent = mot;
+    var cadre = $('dim-critique-cadre');
+    if (cadre.hidden !== sel.hidden) cadre.hidden = sel.hidden;
   }
 
   /* ============================================================ TABLEAU */
@@ -8405,6 +8547,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
     ajusterChoixDim();
     rendre();
   });
+  /* Au clavier, certaines plateformes changent le mot affiché avant le
+     « change » : la copie suit dès « input », le chevron reste à sa place. */
+  $('dim-critique').addEventListener('input', ajusterChoixDim);
   /* Le filtre de la colonne de gauche : il ne redessine que le bloc. Échap
      le vide ; le type « search » du champ fait de même par sa croix. */
   var minuteurGroupe = null;

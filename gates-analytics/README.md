@@ -19,7 +19,7 @@ C'est un outil de **consultation** : la page montre, elle ne modifie rien.
 | `prototype/` | La même interface, autonome, avec une démonstration à trois contrats fictifs — c'est la source |
 | `import/` | L'automatisation : pilote Chrome, recettes d'extraction, dépôt dans le classeur, lecture des composants sur les plans (PDF, Visio, DXF, scans), transport par la messagerie |
 | `apps-script/` | Ce qu'on colle dans Apps Script : le **chargeur** (un fichier, qui va chercher le reste à l'ouverture) et l'**installateur** (qui écrit les quatre fichiers dans le projet) |
-| `MODE-D-EMPLOI.md` | Ce qu'on fait dans le classeur, concrètement : importer les exports de la semaine d'un coup (ou les coller), un onglet par contrat, archiver la semaine, brancher SEE, lire la page |
+| `MODE-D-EMPLOI.md` | Ce qu'on fait dans le classeur, concrètement : importer les exports de la semaine, chacun dans sa case (ou les coller), un onglet par contrat, archiver la semaine, brancher SEE (un extract pour tous, trié par le PSN de chaque contrat), lire la page |
 | `AU-BUREAU.md` | La marche à suivre, pas à pas, pour installer sur le poste de travail — et, pour plus tard, l'automatisation |
 | `tests/` | Batterie de l'add-on (serveur + page rendue) ; `tests/xls/`, de vrais `.xls` écrits par LibreOffice, SheetJS et xlwt, et leur lecture par SheetJS (l'oracle de la fenêtre d'import) |
 
@@ -101,7 +101,7 @@ npm install
 npm test
 ```
 
-- `npm run test:addon` — 566 tests. Le vrai `Code.gs` tourne dans Node contre
+- `npm run test:addon` — 567 tests. Le vrai `Code.gs` tourne dans Node contre
   un classeur en mémoire (`tests/faux-classeur.js`), sur un export
   volontairement pénible : lignes de titre, groupes fusionnés, en-têtes
   accentués ou dupliqués, ligne vide au milieu, avancements de toutes les
@@ -134,12 +134,14 @@ npm test
   lire une lettre, puis les repères lus pour de vrai par RapidOCR et corrigés
   par la liste de la base, sur papier gris et page couchée. Sans Chrome ou
   sans RapidOCR sur le poste, ces parties-là sont sautées en le disant.
-- `npm run test:import-see` — 240 tests sur la fenêtre d'import (menu Suivi
+- `npm run test:import-see` — 305 tests sur la fenêtre d'import (menu Suivi
   FWD → Importer les exports GATES et SEE…) : la vraie fenêtre, rendue par le
   vrai `Code.gs`, ouverte dans un vrai navigateur, `google.script.run`
-  branché sur le serveur en mémoire. Plusieurs fichiers d'un coup, choisis ou
-  glissés, chacun reconnu GATES ou SEE à sa ligne d'en-têtes par les règles
-  du serveur. L'essai clé : la vraie structure GATES (138 colonnes, 16
+  branché sur le serveur en mémoire. Une case par export (débrief 21) :
+  « GATES HDK » par contrat, « Ajouter un contrat… », une case SEE pour
+  l'extract de tous les porteurs ; chaque fichier posé ou glissé dans sa
+  case, sa sorte vérifiée à sa ligne d'en-têtes par les règles du serveur,
+  rien de deviné. L'essai clé : la vraie structure GATES (138 colonnes, 16
   cellules fusionnées), importée en `.xlsx`, donne le même onglet que le même
   export collé, et `construireModele`, `getDonneesPourClient`,
   `compterAvancements` y lisent la même chose — aussi depuis un vrai `.xls`
@@ -167,13 +169,21 @@ npm test
   à 4, `.xlsb`, trop gros, fichier vide, dossier compressé) ; et 60 000
   lignes lues sans que la fenêtre se fige — en `.xls` comme en page web
   archivée de 70 à 90 Mo.
-  Puis le contrat deviné (plans en commun, nom au-dessus
-  des en-têtes, nom du fichier, nouveau contrat nommé d'après ses groupes ;
-  pour SEE, l'échantillon rapproché par le serveur comme la page), le nom
-  d'un nouveau contrat vérifié et sa place, deux fichiers pour le même
-  onglet (la date de chaque fichier, le plus récent désigné), GATES puis SEE
-  pour deux contrats, deux tours dans la même fenêtre (la liste des contrats
-  relue), le deuxième contrat qui fait renommer « SEE » et l'ancien
+  Puis les cases : l'export d'un autre contrat posé dans la case de HDK
+  (prévenu, jamais déplacé : « seulement 3 plans sur 186 en commun »), le
+  nouveau contrat nommé d'après ses groupes, son nom vérifié et sa place,
+  le même fichier dans deux cases (la date de chaque fichier), GATES puis
+  SEE pour deux contrats, deux tours dans la même fenêtre (la liste des
+  contrats relue). Le tri de l'extract SEE : le PSN comparé en entier (4530
+  n'est ni 14530 ni 45301, aux virgules, points-virgules et espaces),
+  DIAGRAM TYPE « WD » à la casse et aux espaces près, deux contrats et deux
+  PSN tirés d'un seul fichier, un PSN tapé recompté sans relire le fichier,
+  enregistré et retrouvé à la réouverture, un PSN refusé, vidé, celui d'un
+  nouveau contrat gardé une fois créé, un contrat sans PSN sans base, une
+  colonne du tri qui manque (« importer sans ce tri »), « toutes » sur
+  l'extract trié, 60 000 lignes triées sans figer la fenêtre, l'extract
+  collé à la main trié par la page à la lecture, et les lignes du
+  Diagnostic. Et le deuxième contrat qui fait renommer « SEE » et l'ancien
   historique au nom du premier, la fin d'un import qui refuse sans le
   verrou, le relevé archivé contrat par contrat et ses refus, un import
   GATES interrompu (l'ancien onglet, ses
@@ -188,7 +198,7 @@ npm test
   données, Zip64, plusieurs onglets, CSV Windows-1252, UTF-16 ou à accent
   tardif, tout entre guillemets, faux `.xls` en HTML ou en XML 2003 (même
   après 64 Ko de styles, CDATA compris), une formule calculée vide ; la
-  garde hors du classeur et le jeton, le contrat proposé et l'onglet créé,
+  garde hors du classeur et le jeton, la case de chaque contrat et l'onglet créé,
   un lot qui échoue une fois (renvoyé, sans doublon), une panne qui dure
   (l'ancienne base reste), un refus jamais renvoyé, la réponse de fin
   perdue, un import incomplet,

@@ -139,14 +139,16 @@ FEUILLE_DONNEES: 'Données',
    par le groupe « HDK AA 011 » que la bonne colonne « Avancement Définition
    Electrique » se reconnaît parmi les treize blocs qui portent le même
    intitulé (§ 7).
-2. **Suivi FWD → Importer les exports GATES et SEE…** : choisir tous les
-   exports d'un coup (Ctrl+clic ou Maj+clic dans la fenêtre de Windows,
-   Ctrl+A pour un dossier qui ne contient qu'eux, ou les glisser dans la
-   fenêtre), laisser cochée la case « Archiver le relevé de
-   la semaine S40 pour les contrats importés », **Importer**. Chaque export
-   va dans l'onglet de son contrat, tel quel, et le relevé de la semaine est
-   archivé pour chaque contrat importé ; la fenêtre finit sur une ligne par
-   fichier (§ 4 bis).
+2. **Suivi FWD → Importer les exports GATES et SEE…** : chaque export dans
+   **sa case** — l'export GATES de HDK sur la case « GATES HDK », celui de
+   THS sur « GATES THS », l'extract SEE de tous les porteurs sur la case
+   « SEE » (glissé depuis l'Explorateur, ou « Choisir le fichier… » dans la
+   case) —, laisser cochée la case « Archiver le relevé de la semaine S40
+   pour les contrats importés », **Importer**. Chaque export GATES va dans
+   l'onglet de sa case, tel quel, et le relevé de la semaine est archivé
+   pour chaque contrat importé ; l'extract SEE est trié pour chaque contrat
+   (son PSN, les lignes WD) ; la fenêtre finit sur une ligne par case et par
+   base (§ 4 bis).
 
 C'est tout. Le geste d'avant marche toujours, sans la fenêtre : ouvrir
 l'onglet du contrat, `Ctrl+A`, `Suppr`, coller l'export en **A1** (pour
@@ -212,7 +214,7 @@ pris vient d'un mauvais export) : menu Suivi FWD → Archiver le relevé de
 cette semaine, qui demandera confirmation. Sinon, importer l'export du
 jour… » Le vendredi, ce refus arrive par le mail d'échec de Google ; les
 autres contrats sont archivés. Après un import, case « Archiver » cochée, il
-revient sur la ligne du fichier, en ⚠ (« … Sinon, ce fichier n'est pas
+revient dans la case du fichier, en ⚠ (« … Sinon, ce fichier n'est pas
 l'export du jour : importer le bon ») : l'import, lui, est fait.
 
 Ce refus ne doit pas être sans issue : un export **identique à un relevé
@@ -228,19 +230,34 @@ verrou, avec `archiverContrat_(…, forcer)`. Le déclencheur du vendredi
 (reconnu à son `triggerUid`, sans interface) ne demande rien : il refuse.
 Pour une semaine passée, le conseil est de vérifier l'export collé.
 
-## 4 bis. La fenêtre d'import : GATES et SEE, sans Excel (débrief 20)
+## 4 bis. La fenêtre d'import : une case par export (débriefs 20 et 21)
 
 Débrief 20 : « je sélectionne carrément les fichiers Excel qu'il faut, et
 directement ça les met dans la bonne position, la sauvegarde, tout ; j'ai
-même plus à les copier-coller ». **Suivi FWD → Importer les exports GATES et
-SEE…** (« Importer les exports GATES… » quand aucune seconde base n'est
-configurée) ouvre une fenêtre qui prend **plusieurs fichiers à la fois** : le
-bouton **Choisir les fichiers…** (sélection multiple de Windows : Ctrl+clic,
-Maj+clic, Ctrl+A) ou un glisser-déposer ; dix fichiers au plus
-(`IMPORT_MAX_FICHIERS`), un même fichier jamais deux fois, et ce qui n'est
-pas un tableau est laissé de côté et nommé.
+même plus à les copier-coller ». Débrief 21 : « pour télécharger le GATES de
+HDK, ça ne m'intéresse pas qu'il le devine tout seul : il faut mettre que
+c'est le GATES HDK, et ça va direct dans HDK ». **Suivi FWD → Importer les
+exports GATES et SEE…** (« Importer les exports GATES… » quand aucune seconde
+base n'est configurée) ouvre donc une fenêtre **à cases**, et **ne devine
+plus rien** :
 
-**Chaque fichier est lu dès qu'il est ajouté**, un à la fois, avec sa barre,
+- **1 Exports GATES** — une case par contrat du classeur, dans l'ordre des
+  onglets : « GATES HDK », « GATES THS »… L'export posé dans une case va dans
+  l'onglet de ce contrat, et dans aucun autre. **+ Ajouter un contrat…**
+  ouvre une case de plus pour un contrat que le classeur n'a pas encore (un
+  classeur sans contrat l'ouvre d'office) ; « Annuler » la retire.
+- **2 Export SEE** — une seule case, pour l'extract de **tous les porteurs**
+  (« Nommage WD BFLOW »), trié pour chaque contrat (§ 12, « Le tri de
+  l'extract SEE ») : une ligne par contrat sous la case, avec son PSN.
+
+Chaque case prend **un fichier**, glissé sur elle ou choisi par son bouton
+(« Choisir le fichier… », puis « Changer… ») ; plusieurs fichiers lâchés sur
+une case : le premier y va, les autres sont laissés de côté et nommés ; un
+fichier lâché à côté des cases ne va nulle part (la fenêtre dit de le poser
+sur sa case). Une case vide n'importe rien : l'onglet de ce contrat n'est
+pas touché.
+
+**Chaque fichier est lu dès qu'il est posé**, un à la fois, avec sa barre,
 **sur le poste** — il ne part nulle part ; la lecture elle-même (zip lu au
 fil de l'eau, formats d'Excel, vrai `.xls` d'Excel 97-2003 ou 95, CSV, page
 web, page web archivée `.mht`, XML 2003) est celle décrite au § 12. La
@@ -256,10 +273,15 @@ règles du serveur, reçues à l'ouverture et non recopiées** :
   seul dans sa cellule.
 
 Une ligne qui répond aux deux règles est SEE : ses intitulés propres sont
-plus sûrs que deux mots courants. Un en-tête trouvé plus bas que la huitième
-ligne est refusé, avec sa ligne (« le fichier a-t-il été retouché ? ») : la
-page ne le trouverait pas. Ni l'un ni l'autre : la fenêtre dit pourquoi, et
-cite la ligne la plus proche.
+plus sûrs que deux mots courants. **La case vérifie la sorte de son
+fichier** : un extract SEE posé sur une case GATES (ou l'inverse) arrête la
+lecture dès l'en-tête — sans lire l'extract entier — et la case le refuse en
+✗ en disant où le mettre (« C'est un export SEE (« NAME », « SOL. »,
+« Cust.V » en ligne 3 de « Nommage ») : le mettre dans la case SEE, plus
+bas. »). Un en-tête trouvé plus bas que la huitième ligne est refusé, avec
+sa ligne (« le fichier a-t-il été retouché ? ») : la page ne le trouverait
+pas. Ni l'un ni l'autre : la fenêtre dit pourquoi, et cite la ligne la plus
+proche.
 
 **Un export GATES part tel quel** : toutes ses lignes, de la première à la
 dernière remplie, **chacune à son numéro** (une ligne vide reste une ligne
@@ -286,52 +308,44 @@ dessous (l'onglet d'un contrat n'est jamais remplacé par un export vide), une
 formule sans valeur calculée dans l'en-tête, les lignes au-dessus ou la
 colonne de référence.
 
-**Un export SEE** part comme avant : sa ligne d'en-tête et les colonnes de la
+**Le doute, dit sans bloquer.** Les références de chaque contrat,
+normalisées, viennent avec la fenêtre (`IMPORT_MAX_REFERENCES`, 30 000 au
+plus) : le recouvrement se compte sur le poste. Un export qui partage moins
+de 20 % de ses plans (`IMPORT_SEUIL_RECOUVREMENT`) avec l'onglet de sa case
+fait écrire, en ambre, « seulement 3 plans sur 186 en commun avec « HDK » :
+est-ce bien son export ? » — et, si un autre contrat en partage au moins
+20 %, « 180 sont dans « THS » : sa place serait plutôt la case « GATES THS » ».
+Pour un contrat ajouté, un export dont les plans sont déjà ceux d'un contrat
+du classeur : « 40 de ses 40 plans sont déjà dans « HDK » : est-ce l'export
+de « HDK » ? Il irait alors dans sa case, « GATES HDK » ». **Rien n'est
+déplacé, rien n'est choisi** : Importer reste allumé, et l'export va dans la
+case où il a été posé. Un contrat préparé d'avance (ses en-têtes, sans plan)
+n'a rien à recouper : pas d'avertissement.
+
+**Un export SEE** est trié pendant la lecture (§ 12) : seules les lignes qui
+passent les `FILTRES` (DIAGRAM TYPE : WD) restent en mémoire, chacune avec sa
+cellule de PSN ; le PSN de chaque contrat les partage ensuite, sans relire
+le fichier. Vont au classeur la ligne d'en-tête et les colonnes de la
 référence (avec `ESSENTIELLES`, ou toutes avec la case « Garder aussi les
-autres colonnes »), les lignes vides laissées. La case se lit à la lecture :
-la changer relit les exports SEE déjà lus — et celui qu'on est en train de
-lire, sitôt sa lecture finie.
+autres colonnes »), sous la ligne « Trié à l'import ». La case « Garder… »
+se lit à la lecture : la changer relit l'extract déjà lu — et celui qu'on
+est en train de lire, sitôt sa lecture finie.
 
-**Le contrat de chaque fichier** est deviné, la raison écrite sous sa ligne,
-et reste modifiable dans sa liste :
-
-- un export **GATES** : (a) le contrat dont l'onglet partage **le plus de
-  plans** avec le fichier, s'il en partage au moins 20 % et au moins le
-  double du suivant (`IMPORT_SEUIL_RECOUVREMENT`) — « 186 plans sur 186 déjà
-  dans « HDK » » ; (b) sinon le seul contrat nommé au-dessus de l'en-tête
-  (la ligne des groupes dit « HDK AA 011 ») ; (c) sinon le seul nommé dans le
-  nom du fichier — mais un contrat qui a des plans et n'en partage presque
-  aucun avec le fichier reste **à vérifier**, rien n'est choisi pour lui ;
-  (d) sinon **un nouveau contrat**, nommé d'après le mot de ses groupes
-  « XXX AA … » (« Nouveau contrat… », le nom modifiable). Sans aucun
-  contrat, le premier export en crée un. Les références de chaque contrat,
-  normalisées, viennent avec la fenêtre (`IMPORT_MAX_REFERENCES`, 30 000 au
-  plus) : le recouvrement se compte sur le poste.
-- un export **SEE** : (a) la fenêtre envoie un **échantillon** (400 lignes
-  au plus, `IMPORT_ECHANTILLON_SEE`, les seules colonnes de la référence) ;
-  le serveur (`importDevinerContratSEE`) le lit comme `lireSecondeBase` lit
-  l'onglet — le même code, `lireTableauSecondeBase` — et le rapproche des
-  plans de chaque contrat **comme la page** : racine + solution, le A du
-  NAME remis à sa place (les fonctions de la page, jumelées côté serveur :
-  toute modification va des deux côtés) ; seuls des comptes reviennent. Le
-  contrat qui en retrouve le plus, au même seuil — l'échantillon part même
-  avec un seul contrat : c'est ce qui le confirme ; (b) sinon le seul nommé
-  dans le nom du fichier ; (c) sinon le seul contrat, ou celui de l'onglet
-  affiché, **à vérifier**, la liste visible : rien ne confirme ce choix (le
-  seul contrat n'était pas toujours le bon — l'extract d'un contrat créé au
-  tour d'avant partait sans un mot dans « SEE HDK »). Le nouveau contrat
-  qu'un export GATES de la même liste va créer est proposé aussi (« NEO
-  (nouveau) »).
-
-**Un nouveau contrat** : son nom est vérifié par le serveur à mesure qu'on le
-tape (`importVerifierNouveauContrat`), puis de nouveau au début et à la fin
-de l'import. Refusés : un nom vide, de plus de 80 caractères
+**Un nouveau contrat** (« + Ajouter un contrat… ») : son nom est proposé
+d'après le mot de ses groupes « XXX AA … » une fois son export lu (« NEO AA
+011 » → `NEO`, modifiable), et vérifié par le serveur à mesure qu'on le tape
+(`importVerifierNouveauContrat`), puis de nouveau au début et à la fin de
+l'import. Refusés : un nom vide, de plus de 80 caractères
 (`NOM_CONTRAT_MAX`), celui d'un onglet de service, d'une base SEE, d'un
 historique, d'un onglet d'import ou d'une copie — aucun ne serait un
 contrat —, et celui d'un onglet qui existe déjà, casse et accents
-indifférents (« Le contrat « HDK » existe déjà : le choisir dans la
-liste »). L'onglet créé se range **après le dernier onglet de contrat**. Avec
-`FEUILLE_DONNEES` (un seul contrat imposé), pas de nouveau contrat.
+indifférents (« Le contrat « HDK » existe déjà : son export va dans sa case,
+« GATES HDK » »). Deux cases pour le même nouveau contrat, ou une case nommée
+sans fichier, font attendre Importer. L'onglet créé se range **après le
+dernier onglet de contrat**. Avec `FEUILLE_DONNEES` (un seul contrat
+imposé), pas de « Ajouter un contrat… ». Son PSN se tape dans la case SEE,
+sur sa ligne « NEO (nouveau) » : il est gardé (`importEnregistrerPsn`) une
+fois le contrat créé, avant que sa base SEE parte.
 
 Quand ce nouveau contrat est le **deuxième**, deux onglets du premier, X, ne
 seraient plus lus : l'onglet `SEE` tout court (sa base) et l'ancien
@@ -339,33 +353,37 @@ seraient plus lus : l'onglet `SEE` tout court (sa base) et l'ancien
 l'échange (`rattacherAuContratUnique_`), les renomme `SEE X` et
 `Historique_FWD_X` — le propriétaire est certain — si ces noms-là
 n'existent pas déjà ; la fenêtre le dit (« l'onglet « SEE » devient « SEE
-HDK » »), et l'annonce dès la liste : la ligne SEE de X vise « SEE HDK
-(aujourd'hui « SEE », renommé à la création du nouveau contrat) ».
+HDK » »), et l'annonce dès que l'export est lu : la case du nouveau contrat
+le dit, et la ligne de X dans la case SEE vise « SEE HDK » (« aujourd'hui
+« SEE », renommé à la création du nouveau contrat »).
 
-**« Importer » attend**, et dit pourquoi sous la liste : une lecture en
-cours, un fichier en erreur (✗) à retirer — **Retirer les fichiers en
-erreur** les enlève d'un coup —, un contrat à choisir, un nom à vérifier,
-deux fichiers pour le même onglet (chaque ligne porte la date de son fichier,
-« du 3 oct. 14:20 », et le message désigne le plus récent à garder, s'il
-l'est d'au moins une minute). Sous chaque ligne, l'onglet visé :
-« Remplacera l'onglet « HDK » — l'ancien ne s'en va qu'une fois tout reçu ;
-son historique est gardé », ou « Créera l'onglet « VRK » : un nouveau
-contrat, rangé après les autres ».
+**« Importer » attend**, et dit pourquoi en bas de la fenêtre : une lecture
+en cours, un fichier en erreur (✗) à retirer ou à remplacer, **le même
+fichier dans deux cases** (même nom, même taille, même date : « chaque
+contrat a son propre export » ; chaque case porte la date de son fichier,
+« du 3 oct. 14:20 »), un nom de contrat à vérifier, un PSN en cours
+d'enregistrement ou refusé, une colonne du tri qui manque à l'extract SEE
+(« importer sans ce tri » non coché), aucun contrat avec un PSN, aucune
+ligne pour leurs PSN. Dans chaque case GATES, l'onglet visé : « Remplacera
+l'onglet « HDK » — l'ancien ne s'en va qu'une fois tout reçu ; son historique
+est gardé », ou « Créera l'onglet « VRK » : un nouveau contrat, rangé après
+les autres ».
 
-**L'import** passe les exports GATES d'abord — un nouveau contrat existe avant
-sa base SEE —, puis ceux de SEE, chacun pour lui-même : un échec n'arrête pas
-les suivants. Chacun suit le chemin du § 12 (onglet temporaire taillé à la
-mesure, lots, échange sous le verrou, reprise des appels perdus),
-avec une cible `{ sorte: 'gates' | 'see', contrat, nouveau }` que le serveur
-résout et revérifie (`cibleImport`) au début comme à la fin. Les onglets
-temporaires (`HDK (import xxxxxx)`) et l'ancien mis de côté le temps de
-l'échange (`HDK (ancien xxxxxx)`) ne sont **jamais un contrat, ni une base
-SEE, ni un historique** — `estOngletImport` les écarte partout, l'archivage
-du vendredi compris — ; le Diagnostic nomme ceux qui restent (« reste d'un
-import interrompu… ») et le prochain import du même onglet les retire. Le
-compte des dix millions de cellules retranche l'onglet remplacé, qui s'en
-ira, mais refuse aussi l'import que l'ancien et le nouveau feraient dépasser
-le temps de coexister.
+**L'import** passe les exports GATES d'abord, case par case — un nouveau
+contrat existe avant sa base SEE —, puis la base SEE de chaque contrat qui a
+un PSN et des lignes, dans l'ordre des contrats, chacun pour lui-même : un
+échec n'arrête pas les suivants. Chacun suit le chemin du § 12 (onglet
+temporaire taillé à la mesure, lots, échange sous le verrou, reprise des
+appels perdus), avec une cible `{ sorte: 'gates' | 'see', contrat, nouveau }`
+que le serveur résout et revérifie (`cibleImport`) au début comme à la fin.
+Les onglets temporaires (`HDK (import xxxxxx)`) et l'ancien mis de côté le
+temps de l'échange (`HDK (ancien xxxxxx)`) ne sont **jamais un contrat, ni
+une base SEE, ni un historique** — `estOngletImport` les écarte partout,
+l'archivage du vendredi compris — ; le Diagnostic nomme ceux qui restent
+(« reste d'un import interrompu… ») et le prochain import du même onglet les
+retire. Le compte des dix millions de cellules retranche l'onglet remplacé,
+qui s'en ira, mais refuse aussi l'import que l'ancien et le nouveau feraient
+dépasser le temps de coexister.
 
 **Après l'échange**, le serveur relit l'onglet avec la logique même de la
 page (`construireModele`), et la fenêtre le dit : le nombre de plans, la
@@ -378,7 +396,7 @@ rangé sous le nom du contrat, ne bouge pas.
 
 **Le relevé de la semaine**, si la case « Archiver le relevé de la semaine
 S40 pour les contrats importés » est cochée (elle l'est, et n'apparaît
-qu'avec un export GATES dans la liste) : pour chaque export GATES importé, et
+qu'avec un export GATES posé) : pour chaque export GATES importé, et
 pour lui seul, un appel à part (`importArchiverReleve`, sous le verrou,
 par `archiverContrat_`), avec les garde-fous du menu — l'export
 d'une semaine déjà archivée qui écraserait un relevé différent, ou ferait
@@ -388,14 +406,17 @@ l'import, lui, est fait. Renvoyé après une panne de réseau, l'appel ne double
 rien (il remplace la ligne de sa semaine). Sans colonne suivie, l'archivage
 n'est pas tenté.
 
-À la fin, **une ligne par fichier** — ✓, ⚠ ou ✗ — et « Rouvrir le tableau de
-bord pour voir les nouveaux chiffres ». Puis la fenêtre **relit la liste des
-contrats** (`importContrats`, même jeton) et vide ce qu'elle savait de leurs
-plans : un contrat créé à ce tour-là est proposé au suivant, et reconnu par
-ses plans. Si la relecture échoue, « Importer » attend et dit de rouvrir la
-fenêtre. Un nouveau choix de fichiers repart d'une liste propre. Les messages du serveur qui disaient de coller l'export
-disent maintenant l'import d'abord, le collage ensuite : classeur vide,
-onglet sans plan, Diagnostic, archivage refusé, semaine passée.
+À la fin, **une ligne par case et par base** — ✓, ⚠, ✗, ou « – » pour un
+contrat sans PSN, dont la base n'est pas touchée — et « Rouvrir le tableau
+de bord pour voir les nouveaux chiffres » ; chaque case garde son résultat.
+Puis la fenêtre **relit la liste des contrats** (`importContrats`, même
+jeton) et vide ce qu'elle savait de leurs plans : la case qui a créé un
+contrat devient la sienne (« GATES NEO »), et il a sa ligne dans la case SEE
+au tour suivant. Si la relecture échoue, « Importer » attend et dit de
+rouvrir la fenêtre (le fichier posé suivant la redemande d'abord). Les
+messages du serveur qui disaient de coller l'export disent l'import d'abord,
+le collage ensuite : classeur vide, onglet sans plan, Diagnostic, archivage
+refusé, semaine passée.
 
 ## 5. Ce que devient l'historique
 
@@ -995,8 +1016,8 @@ choses ; sans description, ni l'une ni l'autre n'existe.
 **Importer sans Excel** (débrief 20 : « les données de SEE sont tellement
 grosses, l'Excel bug à l'ouverture, j'arrive pas à les copier »). Le menu
 **Suivi FWD → Importer les exports GATES et SEE…** ouvre la fenêtre du § 4 bis,
-qui prend les exports SEE avec ceux de GATES et retrouve le contrat de
-chacun. Chrome lit chaque fichier **sur le poste** : un `.xlsx` est un zip, dont on lit le répertoire à la fin du
+dont la case SEE prend l'extract de **tous les porteurs** et le trie pour
+chaque contrat (plus bas, « Le tri de l'extract SEE »). Chrome lit chaque fichier **sur le poste** : un `.xlsx` est un zip, dont on lit le répertoire à la fin du
 fichier, puis on décompresse au fil de l'eau les seules parties utiles — la
 liste des onglets, les styles, les chaînes partagées et l'onglet qui porte
 l'en-tête —, sans jamais tenir le fichier en mémoire (un export de 120 000
@@ -1006,14 +1027,15 @@ NAME, SOL. et Cust.V, sans tenir compte de la casse ni des accents, onglet
 par onglet, les visibles d'abord (ou la ligne d'en-têtes d'un export GATES,
 qui part, lui, tout entier : § 4 bis). **D'un export SEE, seules cette ligne
 et ces trois colonnes vont au classeur** (avec `ESSENTIELLES`, si on en a
-déclaré) ; les lignes
+déclaré), et seulement les lignes du contrat, sous la ligne du tri ; les lignes
 vides sont laissées ; deux colonnes au même intitulé, la première l'emporte
 (comme dans `lireSecondeBase`). Les nombres se lisent comme Excel les
 affiche, formats intégrés et personnalisés : `000` garde ses zéros de tête,
 `0.00` ses décimales (virgule), `0 %`, les milliers, l'écriture
 scientifique, une monnaie entre guillemets, une date jj/mm/aaaa (classeurs
 1900 et 1904), une heure hh:mm. Une formule sans valeur calculée dans NAME,
-SOL. ou Cust.V (fichier écrit par un programme qui ne calcule pas) est
+SOL. ou Cust.V — ou dans une colonne du tri, où elle fausserait le tri
+lui-même — (fichier écrit par un programme qui ne calcule pas) est
 refusée, plutôt que lue vide. Un fichier coupé ou abîmé est refusé aussi : la
 taille décompressée de chaque partie est vérifiée.
 
@@ -1157,6 +1179,91 @@ d'un import. La case « Garder aussi les autres colonnes » envoie tout
 l'extract — seulement pour le regarder dans le tableau SEE, au plus quatre
 millions de cellules. Le fichier, lui, ne quitte jamais le poste.
 
+**Le tri de l'extract SEE (débrief 21).** « On a énormément de données. Il
+va falloir faire deux tris » : l'extract « Nommage WD BFLOW » couvre tous
+les porteurs, et chaque contrat n'en veut que ses lignes. Les règles sont
+dans `CONFIG.RAPPROCHEMENT` (voir le bloc plus bas) :
+
+- `COLONNE_PSN` (`'VALIDITY PSN FULL'`) : la colonne des machines où le
+  schéma vaut, plusieurs numéros par cellule (« 4520,4530,4540 »). Une
+  cellule est coupée aux virgules, points-virgules et espaces
+  (`jetonsPsn`), et chaque morceau se compare **en entier**, casse et
+  accents indifférents (`cellulePorteUnPsn`) : 4530 n'est ni 14530, ni
+  45301, ni « 4 530 » ; une cellule vide ne porte aucun PSN.
+- `PSN` (`{ HDK: '4530' }`) : le PSN de chaque contrat, cherché au nom du
+  contrat sans tenir compte de la casse ; une liste (`['4530', '4531']`) ou
+  « 4530, 4531 » pour plusieurs. Une ligne qui porte les PSN de deux
+  contrats va dans les deux bases.
+- `FILTRES` (`{ 'DIAGRAM TYPE': ['WD'] }`) : par colonne, les valeurs
+  gardées — intitulés et valeurs comparés sans casse, accents ni espaces
+  (`cleTri` : « wd », « W D » valent WD ; PH, GH, une cellule vide non).
+
+**Le PSN d'un contrat sans configuration se demande, et se tape dans la
+fenêtre** (« si jamais on en fera d'autres, il faudra demander le PSN ») :
+la case SEE porte une ligne par contrat, avec son champ PSN. Tapé, il est
+vérifié (`PSN_FORME` : des chiffres, des lettres au besoin, 20 caractères
+au plus ; 20 PSN au plus par contrat), puis gardé — sept dixièmes de seconde
+après la dernière frappe — par `importEnregistrerPsn` : le jeton de la
+fenêtre, le verrou des gestes, et les propriétés du document
+(`SUIVI_FWD_PSN`, `{ "THS": ["4610"] }`), sous le nom de l'onglet. Ce PSN
+**l'emporte sur la configuration, vide compris** (`psnDuContrat` : un
+contrat vidé dans la fenêtre n'a plus de base, même HDK) ; il vaut pour les
+ouvertures suivantes comme pour la lecture des onglets (le paquet en cache
+est oublié). Le PSN d'un contrat ajouté dans la fenêtre est gardé une fois
+le contrat créé, avant que sa base parte. **Un contrat sans PSN n'a pas de
+base SEE** : la fenêtre le dit sur sa ligne et dans le bilan (« – « THS » :
+pas de PSN, pas de base SEE — « SEE THS » n'est pas touché ») ; mieux vaut
+pas de comparaison que celle des plans d'une autre machine.
+
+**Le tri se fait pendant la lecture** : la fenêtre repère les colonnes du
+tri sur la ligne d'en-tête, et ne garde en mémoire que les lignes qui
+passent les `FILTRES`, chacune avec sa cellule de PSN — une cellule
+différente n'est gardée et découpée qu'une fois. Changer un PSN recompte
+alors la part de chaque contrat sur-le-champ, sans relire le fichier (un
+extract de 60 000 lignes se recompte en quelques millisecondes). Il manque une colonne du tri : la case le dit, et Importer
+attend que l'on coche « importer sans ce tri » — sans la colonne d'un
+filtre (DIAGRAM TYPE), chaque contrat reçoit toutes les lignes de son PSN,
+quel que soit leur type ; sans la colonne des PSN, l'extract ne se partage
+pas, et la case n'est permise qu'avec un seul contrat (il reçoit tout). Aucune ligne WD : l'extract est refusé (« … Est-ce bien
+l'extract SEE ? »). Aucune ligne pour les PSN des contrats : Importer
+attend.
+
+**La ligne du tri.** Au-dessus de l'en-tête de chaque base triée, la
+fenêtre écrit « Trié à l'import : PSN 4530 · DIAGRAM TYPE = WD — 3 000
+lignes gardées sur 60 000 · « Nommage WD BFLOW.xlsx », le 05/10/2026 »
+(`MARQUE_TRI`). L'en-tête est alors en ligne 2 ; la page, qui cherche
+l'en-tête dans les huit premières lignes, le trouve comme avant.
+
+**À la lecture d'un onglet** (`lireSecondeBase` → `trierSecondeBase`) :
+
+- l'onglet porte `COLONNE_PSN` ou une colonne de `FILTRES` — un extract
+  collé à la main, ou importé avec « Garder aussi les autres colonnes » :
+  le tri est **refait** avec le PSN du contrat d'aujourd'hui (`source:
+  'lecture'`), et la page ne compare que les lignes gardées ; les colonnes
+  de tri absentes sont dites, le tri se fait sur les autres. L'onglet porte
+  la colonne des PSN, mais le contrat n'en a pas : état **`sans-psn`**,
+  aucune comparaison — ce seraient les plans des autres ;
+- sinon, la ligne du tri posée par la fenêtre est relue (`source:
+  'import'`) : le tri d'alors, les lignes lues dans le fichier ;
+- sinon, l'onglet est lu tel quel.
+
+Le paquet de la page porte le tri en clair, `rapprochement.filtre` (« PSN
+4530 · WD »), pour qu'elle puisse dire de quelles lignes elle parle. Le
+**Diagnostic** donne la règle (« – Tri de SEE (l'extract de tous les
+porteurs) : le PSN du contrat dans VALIDITY PSN FULL, DIAGRAM TYPE WD. »),
+le PSN de chaque contrat et d'où il vient (« PSN : « HDK » 4530
+(configuration) · « THS » 4610 (tapé dans la fenêtre d'import) »), puis
+base par base : « SEE HDK : 60 000 lignes, 3 000 gardées (PSN 4530 ·
+DIAGRAM TYPE WD) » (trié à la lecture), ou « SEE HDK : 3 000 lignes, triées
+à l'import sur 60 000 lignes (PSN 4530 · DIAGRAM TYPE WD) », ou « … sans
+tri — l'onglet ne porte ni VALIDITY PSN FULL ni DIAGRAM TYPE, et n'a pas été
+trié par la fenêtre d'import : il est lu tel quel ». Et ce qui cloche, en ⚠ :
+aucune ligne gardée (« le PSN 9999 n'est dans aucune ligne gardée par les
+autres tris : est-ce le bon ? »), un PSN changé depuis l'import (« SEE HDK
+a été trié à l'import sur le PSN 4530, mais celui de « HDK » est maintenant
+4531 : réimporter l'extract SEE »), un contrat sans PSN devant l'extract de
+tous les porteurs, avec le geste.
+
 **Ce que le rapprochement demande.** Dans SEE, un plan n'a pas d'état : soit
 il y est, soit il n'y est pas. **S'il y est, c'est qu'il a été créé** — donc
 validé. La question posée est donc celle-là : *les plans que GATES dit
@@ -1239,7 +1346,8 @@ comme dans les cercles.
 
 **Le tableau « SEE »**, derrière l'interrupteur **GATES | SEE** de la
 section « Plans » (un seul tableau à la fois, les mêmes outils) : l'onglet
-SEE à l'identique — ses colonnes, dans leur ordre, sous leurs intitulés. Un
+SEE à l'identique — ses colonnes, dans leur ordre, sous leurs intitulés, et
+seulement les lignes que le tri garde. Un
 extract collé à la main les a toutes ; importé par le menu, il n'a que NAME,
 SOL. et Cust.V, sauf si la case « Garder aussi les autres colonnes » était
 cochée. Pas
@@ -1263,24 +1371,29 @@ mémorisé.
 La démonstration seule en montre un exemple aux écarts délibérés.
 
 **Brancher SEE, en trois gestes.** Dans le classeur, menu **Suivi FWD →
-Importer les exports GATES et SEE…** ; choisir l'export « Nommage WD BFLOW »
-de chaque contrat, tel que téléchargé, sans l'ouvrir (avec les exports GATES
-de la semaine, au besoin) — la fenêtre retrouve le contrat de chacun ;
-**Importer** — l'onglet `SEE <contrat>` est créé ou remplacé. Rouvrir le
-tableau de bord : les deux cercles sont sous le tableau, et l'interrupteur
-**GATES | SEE** apparaît. Pour un petit extract, le collage marche aussi : un
-onglet `SEE HDK` (ou `SEE` avec un seul contrat), l'extract ouvert dans
-Excel, **Ctrl+A, Ctrl+C**, dans l'onglet **A1, Ctrl+V**, tel quel — titre en
-ligne 1, en-têtes en ligne 3. Rien à configurer : la configuration de
-`Code.gs` décrit déjà SEE tel qu'il a été vu, et l'onglet est reconnu par
-son nom.
+Importer les exports GATES et SEE…** ; poser l'extract « Nommage WD BFLOW »
+de tous les porteurs, tel que téléchargé, sans l'ouvrir, sur la case SEE
+(avec les exports GATES de la semaine dans leurs cases, au besoin), et
+vérifier le PSN de chaque contrat sur sa ligne ; **Importer** — l'onglet
+`SEE <contrat>` de chaque contrat qui a un PSN est créé ou remplacé. Rouvrir
+le tableau de bord : les deux cercles sont sous le tableau, et
+l'interrupteur **GATES | SEE** apparaît. Pour un petit extract, le collage
+marche aussi : un onglet `SEE HDK` (ou `SEE` avec un seul contrat),
+l'extract ouvert dans Excel, **Ctrl+A, Ctrl+C**, dans l'onglet **A1,
+Ctrl+V**, tel quel — titre en ligne 1, en-têtes en ligne 3 ; la page le
+trie à la lecture. Rien d'autre à configurer que le PSN des contrats autres
+que HDK : la configuration de `Code.gs` décrit déjà SEE tel qu'il a été vu,
+et l'onglet est reconnu par son nom.
 
 ```js
 RAPPROCHEMENT: {
   FEUILLE: '',                                 // pour un onglet nommé autrement que NOM (vide = NOM)
   NOM: 'SEE',                                  // nom affiché, et nom de l'onglet cherché
   CLE_REFERENCE: ['NAME', 'SOL.', 'Cust.V'],   // la référence, recomposée dans cet ordre
-  ESSENTIELLES: []                             // pas de vue essentielle pour SEE
+  ESSENTIELLES: [],                            // pas de vue essentielle pour SEE
+  COLONNE_PSN: 'VALIDITY PSN FULL',            // les machines (PSN) où vaut chaque ligne ; '' = pas de tri par machine
+  PSN: { HDK: '4530' },                        // le PSN de chaque contrat ; celui tapé dans la fenêtre d'import l'emporte
+  FILTRES: { 'DIAGRAM TYPE': ['WD'] }          // par colonne, les valeurs gardées ; {} = aucun filtre
 },
 ```
 
@@ -1306,7 +1419,9 @@ page s'ouvre. **Si les cercles manquent, Suivi FWD → Diagnostic** : sa ligne
 vide, un onglet dont les en-têtes lus ne portent pas NAME, SOL. et Cust.V
 (l'extract collé sans ses en-têtes, ou un autre extract — sans recopier ses
 cellules), ou bien `✓ Seconde base « SEE » : onglet « SEE », 312 ligne(s),
-référence NAME + SOL. + Cust.V (ligne d'en-têtes : 3)`. Un onglet là mais
+référence NAME + SOL. + Cust.V (ligne d'en-têtes : 3)`, suivie de son tri
+(plus haut, « Le tri de l'extract SEE ») ; ou encore un onglet qui porte
+l'extract de tous les porteurs pour un contrat sans PSN. Un onglet là mais
 illisible ne fait pas conclure « tout est en place » : le bilan final le redit.
 
 Quand aucune ligne ne porte les trois intitulés, la ligne retenue est celle
@@ -1908,7 +2023,10 @@ d'exécutable, pas de bibliothèque, seulement Python et le Chrome déjà là.
    l'extract, le classeur vide l'onglet, colle les lignes et archive le relevé
    de la semaine. Sans secret, tout dépôt est refusé ; un onglet d'historique
    n'est jamais une cible ; redéposer la même semaine met la ligne à jour au
-   lieu d'en empiler une seconde.
+   lieu d'en empiler une seconde. L'extract SEE de tous les porteurs, déposé
+   tel quel dans `SEE HDK`, est trié par la page à la lecture (§ 12, « Le tri
+   de l'extract SEE ») — dans la limite de `MAX_LIGNES` par dépôt : au-delà,
+   la fenêtre d'import, qui trie avant d'envoyer, reste le chemin.
 
 4. **Le lundi, un double-clic** sur un `.bat` — ou rien du tout, avec le
    Planificateur de tâches Windows et la case *Exécuter la tâche dès que

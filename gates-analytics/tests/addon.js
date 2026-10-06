@@ -762,9 +762,10 @@ function serveurSur(valeurs, proprietes, fichiers) {
     JSON.stringify(parDefaut));
   verifier('aucune fonction de sauvegarde ni de propriété de document ne subsiste',
     typeof j.contexte.sauverJalons === 'undefined' && !/CLE_JALONS/.test(fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8')) &&
-    /* Les propriétés du document ne gardent que la version des données, les consultations (débrief 18)
-       et le jeton de la fenêtre d'import SEE (débrief 20). */
-    (fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8').match(/[gs]etProperty\(([A-Z_]+)/g) || []).every(x => /CLE_VERSION_DONNEES|CLE_CONSULTATIONS|CLE_JETON_IMPORT/.test(x)));
+    /* Les propriétés du document ne gardent que la version des données, les consultations (débrief 18),
+       le jeton de la fenêtre d'import SEE (débrief 20) et le PSN de chaque contrat tapé dans cette
+       fenêtre (débrief 21). */
+    (fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8').match(/[gs]etProperty\(([A-Z_]+)/g) || []).every(x => /CLE_VERSION_DONNEES|CLE_CONSULTATIONS|CLE_JETON_IMPORT|CLE_PSN/.test(x)));
   configurer([
     { semaine: '2026-s8', texte: '  Revue de définition  ' },
     { semaine: '2026-S02', texte: '' },
@@ -1612,6 +1613,10 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('mais décrit déjà SEE : la référence sur NAME, SOL. et Cust.V, sans vue essentielle ni champ à comparer — seule la référence sert',
     vm.runInContext('JSON.stringify(CONFIG.RAPPROCHEMENT.CLE_REFERENCE) === \'["NAME","SOL.","Cust.V"]\' && ' +
       'CONFIG.RAPPROCHEMENT.ESSENTIELLES.length === 0 && !("CHAMPS" in CONFIG.RAPPROCHEMENT)', ctxPaquet));
+  verifier('et le tri de l’extract de tous les porteurs (débrief 21) : la machine dans VALIDITY PSN FULL — 4530 pour HDK —, et seuls les DIAGRAM TYPE WD',
+    vm.runInContext('CONFIG.RAPPROCHEMENT.COLONNE_PSN === "VALIDITY PSN FULL" && JSON.stringify(CONFIG.RAPPROCHEMENT.PSN) === \'{"HDK":"4530"}\' && ' +
+      'JSON.stringify(CONFIG.RAPPROCHEMENT.FILTRES) === \'{"DIAGRAM TYPE":["WD"]}\'', ctxPaquet) &&
+    JSON.stringify(ctxPaquet.psnDuContrat('hdk')) === '{"psn":["4530"],"source":"configuration"}' && ctxPaquet.psnDuContrat('THS').psn.length === 0);
   verifier('le paquet ne porte alors pas de clé « rapprochement »', !('rapprochement' in paquet), Object.keys(paquet).join());
   verifier('getRapprochement rend null', ctxPaquet.getRapprochement(ctxPaquet.SpreadsheetApp.getActiveSpreadsheet()) === null);
 
@@ -1789,11 +1794,13 @@ function serveurSur(valeurs, proprietes, fichiers) {
   /* La forme rendue par lireSecondeBase, dans deux états. */
   const formeOk = seeParNom.contexte.lireSecondeBase(seeParNom.contexte.SpreadsheetApp.getActiveSpreadsheet());
   const formeVide = seeVide.contexte.lireSecondeBase(seeVide.contexte.SpreadsheetApp.getActiveSpreadsheet());
-  verifier('lireSecondeBase rend { etat, onglet, cles, entetes, ligneEntete, rapprochement } — ligneEntete à 3 pour SEE, null pour un onglet vide',
-    Object.keys(formeOk).sort().join() === 'cles,entetes,etat,ligneEntete,onglet,rapprochement' &&
+  verifier('lireSecondeBase rend { etat, onglet, cles, entetes, ligneEntete, tri, rapprochement } — ligneEntete à 3 pour SEE, null pour un onglet vide ; ' +
+    'tri null (débrief 21) pour un onglet qui ne porte ni VALIDITY PSN FULL ni DIAGRAM TYPE, ni la ligne « Trié à l’import » : il est lu tel quel, sans « filtre »',
+    Object.keys(formeOk).sort().join() === 'cles,entetes,etat,ligneEntete,onglet,rapprochement,tri' &&
     formeOk.etat === 'ok' && formeOk.onglet === 'SEE' && formeOk.ligneEntete === 3 && formeOk.entetes.join('|') === 'NAME|SOL.|Cust.V|Validated|REDRAW' &&
-    formeVide.etat === 'vide' && formeVide.ligneEntete === null && formeVide.rapprochement === null && formeVide.cles.join() === 'NAME,SOL.,Cust.V',
-    JSON.stringify([Object.keys(formeOk), formeOk.etat, formeOk.ligneEntete, formeVide]));
+    formeOk.tri === null && !('filtre' in formeOk.rapprochement) &&
+    formeVide.etat === 'vide' && formeVide.ligneEntete === null && formeVide.rapprochement === null && formeVide.tri === null && formeVide.cles.join() === 'NAME,SOL.,Cust.V',
+    JSON.stringify([Object.keys(formeOk), formeOk.etat, formeOk.ligneEntete, formeOk.tri, formeVide]));
   const rSEE = avecSEE.paquet.rapprochement;
   verifier('SEE : l\'en-tête est la ligne 3, celle qui porte NAME, SOL. et Cust.V — pas le titre « Nommage WD BFLOW »',
     !!rSEE && rSEE.lignes.length === 2 && rSEE.colonnes.join('|') === 'NAME|SOL.|Cust.V|Validated|REDRAW',
@@ -2469,7 +2476,14 @@ function serveurSur(valeurs, proprietes, fichiers) {
   /* Le bloc figé couvre tout ce qui précède la référence, elle comprise — et
      se pose colonne après colonne, sinon la référence recouvrirait ce qui la
      précède. « Colonne 1 » retirée, la référence ouvre le tableau : le bloc
-     se réduit à elle, sans que le mécanisme change. */
+     se réduit à elle, sans que le mécanisme change.
+     Les colonnes figées se posent quand le tableau paraît à l'écran
+     (content-visibility) : depuis le débrief 21 — le journal dans son propre
+     panneau, plus de blanc entre les panneaux —, le tableau est plus bas que
+     ce que le navigateur prépare d'avance. On l'amène à l'écran, comme le
+     ferait le lecteur, puis on remonte : la suite part du même état. */
+  await pg.evaluate(() => document.getElementById('cadre-tableau').scrollIntoView({ block: 'start' }));
+  await pg.waitForTimeout(500);
   const fige = await pg.evaluate(() => {
     const th = [...document.querySelectorAll('tr.titres th')];
     const n = th.findIndex(t => t.textContent.trim() === 'Référence UD');
@@ -2484,6 +2498,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
         .map(t => ({ debut: +t.dataset.debut, span: t.colSpan, gauche: parseFloat(t.style.left) }))
     };
   });
+  await pg.evaluate(() => window.scrollTo(0, 0)); await pg.waitForTimeout(300);
   verifier('le bloc figé couvre tout ce qui précède la référence, elle comprise, et la colonne suivie',
     fige.figees.length === fige.rang + 2 && fige.figees[fige.rang] === 'Référence UD' && fige.figees[fige.rang + 1] === 'Avancement Définition Electrique',
     JSON.stringify(fige.figees));
