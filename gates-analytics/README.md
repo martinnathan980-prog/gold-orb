@@ -134,7 +134,7 @@ npm test
   lire une lettre, puis les repères lus pour de vrai par RapidOCR et corrigés
   par la liste de la base, sur papier gris et page couchée. Sans Chrome ou
   sans RapidOCR sur le poste, ces parties-là sont sautées en le disant.
-- `npm run test:import-see` — 305 tests sur la fenêtre d'import (menu Suivi
+- `npm run test:import-see` — 328 tests sur la fenêtre d'import (menu Suivi
   FWD → Importer les exports GATES et SEE…) : la vraie fenêtre, rendue par le
   vrai `Code.gs`, ouverte dans un vrai navigateur, `google.script.run`
   branché sur le serveur en mémoire. Une case par export (débrief 21) :
