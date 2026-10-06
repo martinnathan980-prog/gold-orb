@@ -5016,7 +5016,10 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var items = VALEURS_COLONNE.concat(hier).map(function (v) {
       var defaut = v.cle === seule, aujourdhui = !!valeurDeCle(v.cle);
       return { cle: defaut ? '' : v.cle, famille: v.famille, libelle: v.libelle, absente: !defaut && !vues[v.cle],
-               pastille: aujourdhui ? undefined : v.hachure ? '<span class="pastille hachure"></span>' : '<span class="pastille" style="background:' + v.couleur + '"></span>',
+               /* La pilule de la courbe par défaut n'a pas de clé : sa pastille est
+                  celle de sa valeur, posée ici (pastilleValeur('') chercherait une
+                  place libre et tomberait sur celle d'un autre mot). */
+               pastille: aujourdhui && !defaut ? undefined : v.hachure ? '<span class="pastille hachure"></span>' : '<span class="pastille" style="background:' + v.couleur + '"></span>',
                titre: defaut ? 'Les plans « ' + v.libelle + ' », relevé après relevé, avec le rythme tenu, la fin estimée et l\u2019échéance'
                     : !aujourdhui ? 'Plus aucun plan n\u2019est « ' + v.libelle + ' » ; combien l\u2019étaient, relevé après relevé'
                     : 'Combien de plans « ' + v.libelle + ' », relevé après relevé' };

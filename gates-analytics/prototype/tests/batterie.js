@@ -5828,6 +5828,27 @@ async function reinitialiser(pg) {
       verifier(nom + ' : FWD_TO_SEIZE d’hier et TO_TREAT du jour : deux gris dans les pilules, sur la ligne du journal et dans les bandes de la frise',
         distincts22(hierO), JSON.stringify(hierO));
 
+      // (s) La pilule de la courbe par défaut (sans clé) porte la pastille de sa tuile : le vert de VALIDATED,
+      //     pas une place « libre » de sa famille ; et chaque pilule du jour a la pastille de sa tuile.
+      const defautS = await surPageNeuve22('defaut-s', async pg => {
+        const tout = { 'Terminé': 'VALIDATED', 'En cours': 'PWD_IN_PROGRESS', 'À faire': 'FWD_TO_SEIZE' };
+        await pg.evaluate(injecterHier22, { aujourdhui: tout, avant: tout });
+        await pg.waitForTimeout(400);
+        return pg.evaluate(() => {
+          const fond = e => e ? getComputedStyle(e).backgroundColor : null;
+          const tuile = k => fond(document.querySelector('#etats .etat-btn[data-cle="' + k + '"] .pastille'));
+          const defaut = document.querySelector('#filtre-valeur-graphe button[data-valeur-graphe=""]');
+          const autres = [...document.querySelectorAll('#filtre-valeur-graphe button[data-valeur-graphe]')]
+            .filter(b => b.dataset.valeurGraphe && document.querySelector('#etats .etat-btn[data-cle="' + b.dataset.valeurGraphe + '"]'))
+            .map(b => ({ k: b.dataset.valeurGraphe, pilule: fond(b.querySelector('.pastille:not(.hachure)')), tuile: tuile(b.dataset.valeurGraphe) }))
+            .filter(x => x.pilule);
+          return { texte: defaut && defaut.textContent.trim(), defaut: fond(defaut && defaut.querySelector('.pastille')), validated: tuile('validated'), autres };
+        });
+      });
+      verifier(nom + ' : la pilule de la courbe par défaut, « VALIDATED », a le vert de sa tuile, et chaque pilule du jour la pastille de sa tuile',
+        defautS.texte === 'VALIDATED' && !!defautS.defaut && defautS.defaut === defautS.validated && defautS.autres.length >= 2 &&
+        defautS.autres.every(x => x.pilule === x.tuile), JSON.stringify(defautS));
+
       // (p) Barres par ATA : chaque segment dit sa valeur et son compte au survol ; l'infobulle de la ligne reprend la barre valeur par valeur.
       const ata22 = await pc.evaluate(() => {
         const libelle = {}; window.__valeurs().forEach(v => { libelle[v.cle] = v.libelle; });

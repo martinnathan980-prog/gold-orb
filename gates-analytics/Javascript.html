@@ -6,7 +6,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'd7d39d0';
+  var EDITION = '18068af';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -2452,7 +2452,10 @@
     var items = VALEURS_COLONNE.concat(hier).map(function (v) {
       var defaut = v.cle === seule, aujourdhui = !!valeurDeCle(v.cle);
       return { cle: defaut ? '' : v.cle, famille: v.famille, libelle: v.libelle, absente: !defaut && !vues[v.cle],
-               pastille: aujourdhui ? undefined : v.hachure ? '\x3Cspan class="pastille hachure">\x3C/span>' : '\x3Cspan class="pastille" style="background:' + v.couleur + '">\x3C/span>',
+               /* La pilule de la courbe par défaut n'a pas de clé : sa pastille est
+                  celle de sa valeur, posée ici (pastilleValeur('') chercherait une
+                  place libre et tomberait sur celle d'un autre mot). */
+               pastille: aujourdhui && !defaut ? undefined : v.hachure ? '\x3Cspan class="pastille hachure">\x3C/span>' : '\x3Cspan class="pastille" style="background:' + v.couleur + '">\x3C/span>',
                titre: defaut ? 'Les plans « ' + v.libelle + ' », relevé après relevé, avec le rythme tenu, la fin estimée et l\u2019échéance'
                     : !aujourdhui ? 'Plus aucun plan n\u2019est « ' + v.libelle + ' » ; combien l\u2019étaient, relevé après relevé'
                     : 'Combien de plans « ' + v.libelle + ' », relevé après relevé' };
@@ -6621,5 +6624,5 @@
      page affichée, pour ne rien retarder. */
   if (API && API.noterConsultation) setTimeout(API.noterConsultation, 1500);
 })();
-window.SUIVI_FWD_FIN = 'd7d39d0';
+window.SUIVI_FWD_FIN = '18068af';
 </script>
