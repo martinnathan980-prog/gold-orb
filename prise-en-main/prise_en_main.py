@@ -50,19 +50,45 @@ INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
 FICHIER_CLAVIER = "essai_clavier.txt"
 
 # Sur le portail, le robot ne clique jamais sur ce qui pourrait modifier quelque chose.
-# (comparé au texte SANS accents : « Supprimer », « supprimé »... sont tous pris)
+# Comparé à mots() : texte sans accents, en minuscules, « camelCase » et ponctuation découpés en mots
+# (« btnSupprimer », « lnk_Suppr », « Supprimé »... sont tous pris).
 MOTS_INTERDITS = re.compile(
-    r"supprim|effac|delet|remov|retir|corbeil|dupliq|duplic|copi|copy|valid|enregistr|sauv|save|"
-    r"creer|cree|creat|nouveau|nouvelle|\bnew\b|ajout|\badd\b|modif|edit|envoy|\bsend\b|soumet|submit|"
-    r"confirm|annul|cancel|vider|archiv|publi|transfer|statut|status|etat|rejet|reject|approuv|approv|"
-    r"sign|associ|rattach|detach|import|revis|liber|releas|verrou|lock|bascul|clotur|ferm|close|"
-    r"mettre a jour|mise a jour|\bmaj\b|update|reinitialis|reset|purg|restaur|restore|lanc|execut|\brun\b|"
-    r"start|demarr|arret|\bstop\b|activ|enable|disable|affect|assign|accept|refus|declin|transmet|forward|"
-    r"termin|finish|complet|resou|resolv|appliqu|apply|attach|joindre|upload|televers|deplac|\bmove\b|"
-    r"renomm|rename|rempla|replace|\bgenerer|generate|command|\border\b|\bpay|repond|reply|comment|relanc|"
-    r"prendre en charge|^oui$|^ok$|^yes$|^non$|^no$|^go$",
+    r"suppr|\bdel\b|delet|remov|retir|retrait|effac|erase|destro|detrui|vider|\bclear|nettoy|corbeil|trash|purg|"
+    r"dupliq|duplic|\bcopi|\bcopy|\bclon|valid|enregistr|sauv|\bsave|\bcreer|\bcree\b|\bcreat|nouveau|nouvelle|"
+    r"\bnew\b|ajout|\badd\b|modif|\bedit|envoy|envoi|\bsend\b|soumet|soumis|submit|confirm|annul|cancel|"
+    r"\barchiv|\bpublier|\bpublish|transfer|transmet|transmis|forward|\bstatut|\bstatus|\betat\b|rejet|reject|"
+    r"approuv|approb|approv|\bsigner|\bsign\b|\bsignature|associ|rattach|attach|joindre|detach|\bimport|"
+    r"\breviser\b|\bliberer|\brelease|verrou|\block|unlock|bascul|clotur|\bclore|\bclos\b|ferm|\bclose|"
+    r"mettre a jour|mise a jour|\bmaj\b|update|upgrade|reinitialis|reset|\braz\b|restaur|restore|\blancer|execut|"
+    r"\brun\b|\bstart|demarr|arret|\bstop\b|activer|desactiv|activate|deactivat|\benable|\bdisable|affect|assign|"
+    r"attribu|\baccept|refus|declin|\bterminer|finish|\bcompleter|\bcomplete\b|resolu|resou|resolv|appliqu|"
+    r"\bapply|upload|televers|\bdepos|deplac|\bmove\b|renomm|rename|rempla|replace|\bgenerer|regener|generat|"
+    r"\bcommander|\border\b|\bpayer|paiement|\bpay\b|factur|repond|reply|\bcommenter|relanc|prise en charge|"
+    r"prendre en charge|\btraiter|\btraite\b|synchro|recalcul|fusion|merge|deploy|deploi|abandon|revoq|revok|"
+    r"autoris|inscri|mise en|mettre en|dissoci|unlink|"
+    r"^oui$|^ok$|^yes$|^non$|^no$|^go$",
     re.IGNORECASE,
 )
+
+# Adresse copiée juste après un clic : celle d'une ACTION si l'un de ses mots est un de ces verbes.
+VERBES_ACTION = set("""supprimer suppression suppr delete del remove retirer effacer erase destroy detruire purge purger
+vider clear valider validate validation enregistrer save sauvegarder dupliquer duplicate copier copy clone creer create
+new nouveau nouvelle ajouter add edit editer modifier modification update maj envoyer send submit soumettre approuver
+approve rejeter reject annuler cancel archiver archive publier publish importer import upload deplacer move renommer
+rename remplacer replace activer desactiver activate deactivate enable disable lock unlock verrouiller deverrouiller
+signer sign cloturer close reset restaurer restore transferer transfer assigner assign affecter attribuer appliquer
+apply confirmer confirm executer execute""".split())
+
+
+def mots(texte):
+    t = sans_accents(texte)
+    t = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", t)
+    t = re.sub(r"[^A-Za-z0-9]+", " ", t)
+    return " ".join(t.split()).lower()
+
+
+def interdit(texte):
+    return bool(MOTS_INTERDITS.search(mots(texte)))
 
 
 # ---------------------------------------------------------------------------- console
@@ -132,16 +158,23 @@ def masquer(texte, url=""):
         if len(hote) >= 3:
             texte = re.sub(r"(?<![\w.-])" + re.escape(hote) + r"(?![\w-])", "<portail>", texte, flags=re.IGNORECASE)
     texte = re.sub(r"(https?|file)://\S+", "<adresse>", texte)
+    texte = texte.replace("\\\\", "\\")  # chemins affichés avec des barres doublées (repr)
     for chemin in sorted({str(Path.home()), os.environ.get("USERPROFILE", ""), os.environ.get("OneDrive", ""),
                           os.environ.get("LOCALAPPDATA", ""), os.environ.get("APPDATA", "")}, key=len, reverse=True):
         if len(chemin) > 3:
             texte = texte.replace(chemin, "~")
-    texte = re.sub(r"(?i)\b[a-z]:\\users\\[^\\\s'\"]+", r"C:\\Users\\<moi>", texte)
+    texte = re.sub(r"(?i)\b[a-z]:\\[^'\"\n]*", "<chemin>", texte)
     texte = re.sub(r"/(home|Users)/[^/\s'\"]+", r"/\1/<moi>", texte)
     utilisateur = os.environ.get("USERNAME") or os.environ.get("USER") or ""
     if len(utilisateur) >= 3:
         texte = re.sub(r"(?<![\w])" + re.escape(utilisateur) + r"(?![\w])", "<moi>", texte, flags=re.IGNORECASE)
     return " ".join(texte.split())[:100]
+
+
+def erreur_courte(e):
+    """Une erreur de fichier sans son chemin (qui contient votre nom et celui de l'entreprise)."""
+    code = getattr(e, "winerror", None) or getattr(e, "errno", None)
+    return e.__class__.__name__ + (f" ({code})" if code else "")
 
 
 def premiere_ligne(erreur):
@@ -274,12 +307,14 @@ def rendre_net():
     if not WINDOWS:
         return
     try:
-        ctypes.windll.shcore.SetProcessDpiAwareness(2)
+        if ctypes.windll.shcore.SetProcessDpiAwareness(2) == 0:  # renvoie un code, ne lève pas d'erreur
+            return
     except Exception:
-        try:
-            user32.SetProcessDPIAware()
-        except Exception:
-            pass
+        pass
+    try:
+        user32.SetProcessDPIAware()
+    except Exception:
+        pass
 
 
 def edition_rapide_coupee():
@@ -292,7 +327,8 @@ def edition_rapide_coupee():
         mode = wintypes.DWORD()
         if not kernel32.GetConsoleMode(h, ctypes.byref(mode)):
             return None
-        kernel32.SetConsoleMode(h, (mode.value | 0x0080) & ~0x0040)
+        # sans « Sélectionner » (0x40) ni souris captée (0x10) : le clic droit colle à nouveau
+        kernel32.SetConsoleMode(h, (mode.value | 0x0080) & ~0x0040 & ~0x0010)
         return mode.value
     except Exception:
         return None
@@ -327,16 +363,31 @@ def _souris(drapeaux, dx=0, dy=0):
     return e
 
 
-def cliquer_en(x, y):
-    """Déplacement et clic dans UN SEUL envoi : aucun geste ne peut s'intercaler entre les deux."""
-    vx, vy = user32.GetSystemMetrics(SM_XVIRTUALSCREEN), user32.GetSystemMetrics(SM_YVIRTUALSCREEN)
-    vw, vh = user32.GetSystemMetrics(SM_CXVIRTUALSCREEN), user32.GetSystemMetrics(SM_CYVIRTUALSCREEN)
-    nx = int(round((x - vx) * 65535 / max(vw - 1, 1)))
-    ny = int(round((y - vy) * 65535 / max(vh - 1, 1)))
+def cliquer_ici():
+    """Appui et relâchement du bouton, là où est la souris (vérifiée juste avant), en un seul envoi."""
     gaucher = bool(user32.GetSystemMetrics(SM_SWAPBUTTON))
     appui, relache = (MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP) if gaucher else (MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP)
-    _envoyer(_souris(MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK, nx, ny),
-             _souris(appui), _souris(relache))
+    _envoyer(_souris(appui), _souris(relache))
+
+
+def zone_de_travail(x, y):
+    """L'écran (sans la barre des tâches) qui contient ce point : (gauche, haut, droite, bas)."""
+    class MONITORINFO(ctypes.Structure):
+        _fields_ = [("cbSize", wintypes.DWORD), ("rcMonitor", wintypes.RECT), ("rcWork", wintypes.RECT),
+                    ("dwFlags", wintypes.DWORD)]
+    try:
+        user32.MonitorFromPoint.argtypes = [wintypes.POINT, wintypes.DWORD]
+        user32.MonitorFromPoint.restype = wintypes.HANDLE
+        user32.GetMonitorInfoW.argtypes = [wintypes.HANDLE, ctypes.POINTER(MONITORINFO)]
+        ecran = user32.MonitorFromPoint(wintypes.POINT(int(x), int(y)), 2)  # MONITOR_DEFAULTTONEAREST
+        info = MONITORINFO()
+        info.cbSize = ctypes.sizeof(MONITORINFO)
+        if ecran and user32.GetMonitorInfoW(ecran, ctypes.byref(info)):
+            r = info.rcWork
+            return r.left, r.top, r.right, r.bottom
+    except Exception:
+        pass
+    return 0, 0, user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
 
 
 def fenetre_active():
@@ -439,6 +490,17 @@ def dossier_bureau():
     return Path.home()
 
 
+def effacer_dossier(chemin):
+    """Efface un dossier temporaire du robot, en réessayant : sous Windows, le navigateur garde parfois
+    des fichiers ouverts quelques instants après sa fermeture. Jamais d'erreur : au pire, il reste."""
+    import shutil
+    for _ in range(6):
+        shutil.rmtree(chemin, ignore_errors=True)
+        if not os.path.exists(chemin):
+            return
+        time.sleep(0.5)
+
+
 def ouvrir_dans_windows(chemin):
     if WINDOWS:
         os.startfile(str(chemin))
@@ -469,12 +531,12 @@ def etape_fichiers(bilan):
             "Vous pouvez supprimer le dossier « Robot - essai » quand vous voulez.\n"
             % datetime.now().strftime("%d/%m/%Y a %H:%M"), encoding="utf-8")
     except Exception as e:
-        bilan.noter("F", "Fichiers et dossiers", "ECHEC", premiere_ligne(e))
+        bilan.noter("F", "Fichiers et dossiers", "ECHEC", erreur_courte(e))
         return dossier if dossier.is_dir() else None
     try:
         ouvrir_dans_windows(dossier)
     except Exception as e:
-        bilan.noter("F", "Fichiers et dossiers", "PAS VU", "fichier cree, dossier pas ouvert : " + premiere_ligne(e))
+        bilan.noter("F", "Fichiers et dossiers", "PAS VU", "fichier cree, dossier pas ouvert : " + erreur_courte(e))
         return dossier
     time.sleep(1.5)
     revenez_ici()
@@ -501,7 +563,7 @@ def etape_clavier(bilan, dossier):
         fichier.write_text("", encoding="utf-8")
         subprocess.Popen(["notepad.exe", str(fichier)])
     except Exception as e:
-        bilan.noter("K", "Clavier (Bloc-notes)", "ECHEC", "Bloc-notes impossible a ouvrir : " + premiere_ligne(e))
+        bilan.noter("K", "Clavier (Bloc-notes)", "ECHEC", "Bloc-notes impossible a ouvrir : " + erreur_courte(e))
         return None
     hwnd = attendre_fenetre(est_notre_fichier, 10)
     if not hwnd:
@@ -563,16 +625,15 @@ def etape_souris(bilan, hwnd):
     try:
         if hwnd and not _ramener(hwnd):
             hwnd = None
-        vx, vy = user32.GetSystemMetrics(SM_XVIRTUALSCREEN), user32.GetSystemMetrics(SM_YVIRTUALSCREEN)
-        vw, vh = user32.GetSystemMetrics(SM_CXVIRTUALSCREEN), user32.GetSystemMetrics(SM_CYVIRTUALSCREEN)
         if hwnd:
             r = wintypes.RECT()
             user32.GetWindowRect(hwnd, ctypes.byref(r))
             cx, cy = (r.left + r.right) // 2, (r.top + r.bottom) // 2
         else:
-            cx, cy = vx + vw // 2, vy + vh // 2
-        cx = min(max(cx, vx + 130), vx + vw - 130)
-        cy = min(max(cy, vy + 90), vy + vh - 90)
+            cx, cy = position_souris()
+        gauche, haut, droite, bas = zone_de_travail(cx, cy)
+        cx = min(max(cx, gauche + 130), droite - 130)
+        cy = min(max(cy, haut + 90), bas - 90)
         carre = [(cx - 120, cy - 80), (cx + 120, cy - 80), (cx + 120, cy + 80), (cx - 120, cy + 80), (cx, cy)]
         bouge = True
         for x, y in carre:
@@ -583,9 +644,9 @@ def etape_souris(bilan, hwnd):
             # on ne clique QUE si la souris est bien là où le robot l'a mise, sur NOTRE fichier, au premier plan
             px, py = position_souris()
             sous = user32.GetAncestor(user32.WindowFromPoint(wintypes.POINT(px, py)), GA_ROOT)
-            if (bouge and abs(px - cx) <= 2 and abs(py - cy) <= 2 and sous == hwnd
+            if (bouge and abs(px - cx) <= 1 and abs(py - cy) <= 1 and sous == hwnd
                     and fenetre_active() == hwnd and est_notre_fichier(hwnd)):
-                cliquer_en(cx, cy)
+                cliquer_ici()
                 time.sleep(0.4)
                 taper("\nLe robot a aussi bouge la souris et clique ici.\n", hwnd)
                 clic = "clic fait dans le Bloc-notes"
@@ -606,11 +667,11 @@ def etape_souris(bilan, hwnd):
 
 
 def adresse_prudente(adresse):
-    """Une adresse copiée juste après un clic peut être celle d'une ACTION (…?action=supprimer&id=5) :
-    l'ouvrir la referait. Dans ce cas, on ne garde que l'accueil du portail."""
+    """Une adresse copiée juste après un clic peut être celle d'une ACTION (…/Plans/Suppression?id=5,
+    …#/plans/5/supprimer) : l'ouvrir la referait. Dans ce cas, on ne garde que l'accueil du portail."""
     morceaux = urlsplit(adresse)
-    reste = sans_accents(unquote(morceaux.path + "?" + morceaux.query))
-    if MOTS_INTERDITS.search(reste) or re.search(r"(?i)(^|[?&;])(action|op|cmd|method|do|event|mode)=", "?" + morceaux.query):
+    reste = mots(unquote(" ".join((morceaux.path, morceaux.query, morceaux.fragment))))
+    if VERBES_ACTION & set(reste.split()):
         return f"{morceaux.scheme}://{morceaux.netloc}/", True
     return adresse, False
 
@@ -630,10 +691,14 @@ def demander_adresse():
         return ""
     if not re.match(r"^[a-z][a-z0-9+.-]*://", adresse, re.I):
         adresse = "https://" + adresse
-    if not urlsplit(adresse).hostname:
+    try:
+        valable = bool(urlsplit(adresse).hostname)
+        adresse, coupee = adresse_prudente(adresse)
+    except ValueError:
+        valable = False
+    if not valable:
         ecrire("   Ce n'est pas une adresse de site : les etapes du portail sont sautees.")
         return ""
-    adresse, coupee = adresse_prudente(adresse)
     if coupee:
         ecrire("   Cette adresse ressemble a celle d'une ACTION (supprimer, valider...). Par prudence,")
         ecrire("   le robot ouvrira seulement l'ACCUEIL du portail.")
@@ -734,8 +799,8 @@ def etape_navigateur_robot(bilan, url):
             bilan.noter(lettre, intitule, "SAUTE", "pilote de navigateur absent", afficher=False)
         ecrire("   --> Etapes du navigateur sautees : pilote de navigateur absent.")
         return
-    with tempfile.TemporaryDirectory() as dossier:
-        echange = Path(dossier)
+    echange = Path(tempfile.mkdtemp(prefix="robot_essai_"))
+    try:
         (echange / "adresse.txt").write_text(url or "", encoding="utf-8")  # jamais sur la ligne de commande
         interrompu = None
         try:
@@ -749,7 +814,7 @@ def etape_navigateur_robot(bilan, url):
                 except Exception:
                     enfant.kill()
         except Exception as e:
-            bilan.noter("N", "Navigateur du robot (page d'essai)", "ECHEC", masquer(premiere_ligne(e), url), afficher=False)
+            bilan.noter("N", "Navigateur du robot (page d'essai)", "ECHEC", expliquer(e), afficher=False)
             return
         try:
             notes = json.loads((echange / "resultat.json").read_text(encoding="utf-8"))
@@ -760,6 +825,8 @@ def etape_navigateur_robot(bilan, url):
                 bilan.noter(lettre, intitule, statut, masquer(detail, url), afficher=False)
         if interrompu is not None:
             raise interrompu
+    finally:
+        effacer_dossier(echange)
 
 
 PAGE_ESSAI = """<!doctype html><html lang=fr><meta charset=utf-8><title>Page d'essai du robot</title>
@@ -791,69 +858,117 @@ JS_MARQUER_CLIQUABLES = """() => Array.from(document.querySelectorAll('a[href], 
   .slice(0, 5).map(e => { e.setAttribute('data-robot-essai', '1'); return 1; }).length"""
 
 JS_ENCADRER = """(e, ms) => { e.scrollIntoView({block: 'nearest', inline: 'nearest'});
-  const avant = [e.style.outline, e.style.outlineOffset];
+  if (e.dataset.robotContour === undefined) e.dataset.robotContour = e.style.outline || '';
   e.style.outline = '4px solid #dc2626'; e.style.outlineOffset = '2px';
-  setTimeout(() => { e.style.outline = avant[0]; e.style.outlineOffset = avant[1]; }, ms); }"""
+  if (ms > 0) setTimeout(() => { e.style.outline = e.dataset.robotContour || ''; e.style.outlineOffset = '';
+                                 delete e.dataset.robotContour; }, ms); }"""
 
-# L'élément trouvé par son texte -> l'élément que le clic déclencherait vraiment (lien, bouton, case...).
-# Liste BLANCHE : un lien, une entrée de menu ou d'onglet, un élément de menu sans formulaire.
-# Tout le reste est refusé : bouton de formulaire, case à cocher, liste, libellé de case, élément qui
-# contient un autre bouton (icône poubelle...), ou dont un texte, une bulle ou l'adresse ressemble à une action.
+# Après les essais : le robot retire ses marques et ses cadres de la page.
+JS_NETTOYER = """(tout) => { for (const e of document.querySelectorAll('[data-robot-cible], [data-robot-texte], [data-robot-essai], [data-robot-contour], [data-robot-trouve]')) {
+  if (e.dataset.robotContour !== undefined) { e.style.outline = e.dataset.robotContour; e.style.outlineOffset = ''; }
+  e.removeAttribute('data-robot-contour');
+  if (tout) for (const a of ['data-robot-cible', 'data-robot-texte', 'data-robot-essai', 'data-robot-trouve']) e.removeAttribute(a);
+} }"""
+
+# Les éléments dont le PROPRE texte (sans celui de leurs sous-menus) est ce mot, majuscules ignorées.
+JS_TROUVER_PROPRE_TEXTE = r"""([mot, jeton]) => {
+  const norme = t => (t || '').replace(/\s+/g, ' ').trim().toLowerCase();
+  const cherche = norme(mot);
+  for (const e of document.querySelectorAll('body *')) {
+    let propre = '';
+    for (const n of e.childNodes) if (n.nodeType === 3) propre += n.textContent;
+    if (norme(propre) === cherche) e.setAttribute('data-robot-trouve', jeton);
+  }
+}"""
+
+# L'élément trouvé par son texte -> l'élément que le clic déclencherait vraiment.
+# LISTE BLANCHE : un lien, une entrée de menu / d'onglet, ou un élément d'un menu (nav, menu...), un bouton
+# qui ouvre un menu. Refusé : bouton de formulaire, case, champ, bascule, zone modifiable, élément de tableau
+# qui n'est pas un simple lien, élément qui contient un autre bouton (icône poubelle...).
+# Les attributs de l'élément et les gestionnaires de clic de TOUS ses parents sont renvoyés pour le contrôle des mots.
 JS_EXAMINER = r"""(e, jeton) => {
   const SOUS = 'ul, ol, [role=menu], [role=group], [role=listbox], table, select';
-  const CLIQ = 'a, button, input, select, textarea, label, summary, [role=button], [role=link], [role=menuitem], ' +
-               '[role=tab], [role=checkbox], [role=switch], [role=radio], [role=option], [onclick]';
+  const CLIQ = 'a, button, input, select, textarea, label, summary, option, [role=button], [role=link], [role=menuitem], ' +
+               '[role=menuitemcheckbox], [role=menuitemradio], [role=tab], [role=treeitem], [role=checkbox], [role=switch], ' +
+               '[role=radio], [role=option], [onclick]';
+  const MENU = 'nav, header, [role=navigation], [role=menu], [role=menubar], [role=tablist], [role=tree], ' +
+               '[class*=menu i], [id*=menu i], [class*=nav i], [id*=nav i], [class*=tab i]';
   const c = e.closest(CLIQ) || e;
   c.setAttribute('data-robot-cible', jeton);
   const tag = c.tagName.toLowerCase(), role = (c.getAttribute('role') || '').toLowerCase();
-  const type = (c.getAttribute('type') || '').toLowerCase();
-  // le texte de l'élément et de tout ce qu'il contient, SANS les sous-menus qu'il porte
+  const href = (c.getAttribute('href') || '').trim();
+  const lien = tag === 'a' && c.hasAttribute('href') && !/^javascript:/i.test(href);
+  const lienScript = tag === 'a' && /^javascript:/i.test(href);
+  const entree = ['menuitem', 'tab', 'link', 'treeitem'].includes(role);
+  const bouton = tag === 'button' || role === 'button';
+  const menuBouton = bouton && !c.form && !c.closest('form') && (tag !== 'button' || c.type === 'button') &&
+                     (c.hasAttribute('aria-haspopup') || c.hasAttribute('aria-expanded'));
+  // un élément d'un menu, ou d'une liste (les menus sont presque toujours des listes ul > li)
+  const dansMenu = !!(c.closest(MENU) || c.closest('li')) && ['li', 'span', 'div', 'a', 'p'].includes(tag);
+  let refus = '';
+  if (['input', 'select', 'textarea', 'label', 'summary', 'option'].includes(tag) ||
+      ['checkbox', 'switch', 'radio', 'option', 'menuitemcheckbox', 'menuitemradio'].includes(role) ||
+      c.hasAttribute('aria-checked') || c.hasAttribute('aria-pressed') || (bouton && !menuBouton))
+    refus = 'bouton, case ou champ';
+  else if (c.isContentEditable || document.designMode === 'on')
+    refus = 'zone modifiable';
+  else if (!(lien || entree || menuBouton || dansMenu || (lienScript && c.closest(MENU))))
+    refus = 'pas un lien ni un menu';
+  else if (!lien && c.closest('table, [role=grid], [role=row], [role=gridcell], [role=treegrid]'))
+    refus = 'element de tableau';
+  else if (c.hasAttribute('data-confirm') || c.hasAttribute('data-method') || c.hasAttribute('data-turbo-method') ||
+           c.hasAttribute('data-ajax-method') || ['hx-post', 'hx-put', 'hx-patch', 'hx-delete'].some(a => c.hasAttribute(a)))
+    refus = 'action envoyee au serveur';
+  // le texte propre de l'élément (sous-menus à part), et ce qu'il contient
   const copie = c.cloneNode(true);
   copie.querySelectorAll(SOUS).forEach(x => x.remove());
-  const textes = [];
-  for (const n of [copie, ...copie.querySelectorAll('*')].slice(0, 80)) {
-    textes.push(n.textContent || '', n.value || '');
-    for (const a of ['title', 'aria-label', 'alt', 'value', 'data-original-title', 'data-tooltip'])
-      textes.push(n.getAttribute(a) || '');
-  }
-  for (const a of ['href', 'onclick', 'formaction', 'data-action', 'data-url', 'ng-click', 'data-bind'])
-    textes.push(c.getAttribute(a) || '');
-  let refus = '';
-  const menuBouton = (tag === 'button' || role === 'button') && !c.closest('form') && type !== 'submit' &&
-                     (c.hasAttribute('aria-haspopup') || c.hasAttribute('aria-expanded'));
-  if (['input', 'select', 'textarea', 'label', 'summary', 'option'].includes(tag) ||
-      ['checkbox', 'switch', 'radio', 'option'].includes(role) ||
-      ((tag === 'button' || role === 'button') && !menuBouton))
-    refus = 'bouton, case ou champ';
-  else if (c.hasAttribute('data-confirm') || c.hasAttribute('data-method'))
-    refus = 'action avec confirmation';
-  else if (copie.querySelector('a[href], button, input, select, textarea, label, [role=button], [role=checkbox], [onclick]'))
+  if (!refus && copie.querySelector('a[href], button, input, select, textarea, label, [role=button], [role=checkbox], [onclick]'))
     refus = 'contient un autre bouton';
-  return { texte: textes.join(' ').replace(/\s+/g, ' ').trim().slice(0, 3000), refus: refus };
+  const texte = (copie.textContent || '').replace(/\s+/g, ' ').trim();
+  const attributs = [];
+  for (const n of [copie, ...copie.querySelectorAll('*')].slice(0, 80))
+    for (const a of Array.from(n.attributes))
+      if (a.name !== 'style' && !a.name.startsWith('data-robot')) attributs.push(a.name + ' ' + a.value);
+  // les parents : leurs gestionnaires de clic, et le formulaire qui serait envoyé
+  const GEST = /^(on(click|dblclick|mousedown|mouseup|pointerdown|pointerup|touchstart|touchend|submit))$|click|^hx-|^wire:|^x-on|^@|^data-(ajax|turbo|confirm|method|action|url)/i;
+  for (let n = c.parentElement; n && n !== document.documentElement; n = n.parentElement)
+    for (const a of Array.from(n.attributes))
+      if (GEST.test(a.name)) attributs.push(a.name + ' ' + a.value);
+  const formulaire = c.form || c.closest('form');
+  if (formulaire) attributs.push('form ' + (formulaire.getAttribute('action') || ''));
+  return { texte: texte.slice(0, 300), attributs: attributs.join(' | '), refus: refus };
 }"""
 
-# Le point où cliquer : le propre texte de l'élément (pas son centre, qui peut tomber sur un sous-menu ouvert),
-# vérifié avec ce qui est réellement sous ce point.
-JS_POINT = r"""(c) => {
+# Le point où cliquer : le propre texte de l'élément (pas son centre, qui peut tomber sur un sous-menu).
+# Marque le parent de ce texte (data-robot-texte) pour revérifier le même point au dernier moment.
+JS_POINT = r"""(c, jeton) => {
   const SOUS = 'ul, ol, [role=menu], [role=group], [role=listbox], table, select';
   c.scrollIntoView({block: 'nearest', inline: 'nearest'});
   const rc = c.getBoundingClientRect();
-  let r = null;
+  let r = null, p = c;
   const marcheur = document.createTreeWalker(c, NodeFilter.SHOW_TEXT);
   for (let n = marcheur.nextNode(); n; n = marcheur.nextNode()) {
     if (!n.textContent.trim()) continue;
-    const p = n.parentElement;
-    if (p && p !== c && p.closest(SOUS) && c.contains(p.closest(SOUS))) continue;
+    const parent = n.parentElement;
+    if (parent && parent !== c && parent.closest(SOUS) && c.contains(parent.closest(SOUS))) continue;
     const plage = document.createRange(); plage.selectNodeContents(n);
     const b = plage.getBoundingClientRect();
-    if (b.width > 0 && b.height > 0) { r = b; break; }
+    if (b.width > 0 && b.height > 0) { r = b; p = parent || c; break; }
   }
   if (!r) r = rc;
-  const x = r.left + Math.min(r.width / 2, 40), y = r.top + r.height / 2;
-  const sous = document.elementFromPoint(x, y);
-  const bon = !!sous && (sous === c || c.contains(sous)) &&
-              !(sous.closest(SOUS) && c.contains(sous.closest(SOUS)) && sous.closest(SOUS) !== c);
-  return { x: x - rc.left, y: y - rc.top, bon: bon };
+  p.setAttribute('data-robot-texte', jeton);
+  return { x: r.left + Math.min(r.width / 2, 40) - rc.left, y: r.top + r.height / 2 - rc.top };
+}"""
+
+# Ce qui est sous la souris est-il bien le texte choisi (et pas un sous-menu ouvert par-dessus, un calque...) ?
+JS_VERIFIER_POINT = r"""(c, [x, y, jeton]) => {
+  const SOUS = 'ul, ol, [role=menu], [role=group], [role=listbox], table, select';
+  const p = document.querySelector('[data-robot-texte="' + jeton + '"]');
+  const rc = c.getBoundingClientRect();
+  const sous = document.elementFromPoint(rc.left + x, rc.top + y);
+  if (!p || !sous) return false;
+  const liste = sous.closest(SOUS);
+  return (sous === p || p.contains(sous)) && !(liste && liste !== p && p.contains(liste));
 }"""
 
 # Élément caché dans un menu fermé : l'entrée de menu visible la plus proche, à survoler (comme la souris).
@@ -990,7 +1105,8 @@ def _verifier_demarrage(p, canal, notes):
         notes.noter("D", "Demarrage avec un profil", "NON DISPONIBLE", "seul le navigateur integre a demarre")
         return
     ecrire("   Controle rapide : une deuxieme fenetre s'ouvre puis se ferme toute seule (5 secondes)...")
-    with tempfile.TemporaryDirectory() as profil:
+    profil = tempfile.mkdtemp(prefix="robot_profil_")
+    try:
         try:
             contexte = p.chromium.launch_persistent_context(profil, channel=canal, headless=INVISIBLE, timeout=30000)
         except Exception as e:
@@ -1018,6 +1134,8 @@ def _verifier_demarrage(p, canal, notes):
                 contexte.close()
             except Exception:
                 pass
+    finally:
+        effacer_dossier(profil)
 
 
 def _page_essai(page, nom, notes):
@@ -1091,6 +1209,7 @@ def _analyser_portail(page, url, notes):
             page.mouse.wheel(0, -500)
         except Exception:
             pass
+    _nettoyer(page)
     if encadres:
         revenez_ici()
         vu = oui("   Avez-vous vu des cadres rouges apparaitre sur le portail, dans la fenetre du robot ?")
@@ -1102,14 +1221,23 @@ def _analyser_portail(page, url, notes):
 
 
 def _candidats(page, mot):
-    """Tous les éléments qui portent ce texte, dans tous les cadres : d'abord le texte exact (y compris
-    une entrée de menu dont c'est le propre texte, sous-menu à part), puis le texte approchant."""
+    """Les éléments dont le texte est EXACTEMENT celui tapé, dans tous les cadres : texte complet,
+    propre texte d'une entrée de menu (sous-menu à part), puis la même chose sans tenir compte des majuscules.
+    Jamais un élément qui contient seulement ce mot (« plans » ne désigne pas « Suppression des plans »)."""
+    exact_sans_casse = re.compile(r"^\s*" + re.escape(mot) + r"\s*$", re.IGNORECASE)
+    jeton = secrets.token_hex(8)
+
+    def propre_texte_sans_casse(cadre):
+        cadre.evaluate(JS_TROUVER_PROPRE_TEXTE, [mot, jeton])
+        return cadre.locator(f'[data-robot-trouve="{jeton}"]')
+
     facons = (
-        (True, lambda cadre: cadre.get_by_text(mot, exact=True)),
-        (True, lambda cadre: cadre.locator("text=" + json.dumps(mot, ensure_ascii=False))),
-        (False, lambda cadre: cadre.get_by_text(mot)),
+        lambda cadre: cadre.get_by_text(mot, exact=True),
+        lambda cadre: cadre.locator("text=" + json.dumps(mot, ensure_ascii=False)),
+        lambda cadre: cadre.get_by_text(exact_sans_casse),
+        propre_texte_sans_casse,
     )
-    for exact, chercher in facons:
+    for chercher in facons:
         trouves = []
         for numero, cadre in enumerate(page.frames):
             try:
@@ -1119,8 +1247,8 @@ def _candidats(page, mot):
             except Exception:
                 continue
         if trouves:
-            return trouves, exact
-    return [], True
+            return trouves
+    return []
 
 
 def _examiner(cadre, loc):
@@ -1135,7 +1263,7 @@ def _examiner(cadre, loc):
         return cible, info["refus"]
     if not info["texte"]:
         return cible, "texte illisible"
-    if MOTS_INTERDITS.search(sans_accents(info["texte"])):
+    if interdit(info["texte"]) or interdit(info["attributs"]):
         return cible, "ressemble a une action qui modifie"
     return cible, ""
 
@@ -1153,25 +1281,39 @@ def _choisir(trouves):
     return None, refus, len(visibles)
 
 
-def _cliquer_prudemment(page, cadre, cible, cache):
-    """Rouvre le menu si besoin, revérifie l'élément au dernier moment, puis clique sur son texte."""
+def _cliquer_prudemment(page, cadre, cible):
+    """Rouvre le menu si besoin, revérifie l'élément au dernier moment, pose la souris sur son texte,
+    vérifie ce qui est VRAIMENT sous la souris, et seulement alors appuie. Renvoie "" si le clic est fait."""
     if cible.count() != 1:
         return "l'element a disparu de la page"
-    if not _visible(cible):
-        if not _ouvrir_menus(cible):
-            return "toujours cache : menu ferme"
+    if not _visible(cible) and not _ouvrir_menus(cible):
+        return "toujours cache : menu ferme"
     cible2, refus = _examiner(cadre, cible)
     if refus or cible2 is None:
         return "refuse au dernier moment : " + (refus or "texte illisible")
-    point = cible2.evaluate(JS_POINT)
-    if not point["bon"]:
-        return "refuse : autre chose se trouve sous le point a cliquer"
+    jeton = secrets.token_hex(8)
+    point = cible2.evaluate(JS_POINT, jeton)
+    cible2.hover(position=point, timeout=5000)  # la souris arrive sur le texte (un menu peut s'ouvrir)
+    time.sleep(0.5)
+    if not cible2.evaluate(JS_VERIFIER_POINT, [point["x"], point["y"], jeton]):
+        return "refuse : autre chose est sous la souris (sous-menu ouvert par-dessus ?)"
+    _, refus = _examiner(cadre, cible2)
+    if refus:
+        return "refuse au dernier moment : " + refus
     avant = len(page.context.pages)
-    cible2.click(position={"x": point["x"], "y": point["y"]}, timeout=5000)
+    page.mouse.down()  # la souris ne bouge plus : appui et relâchement là où on a vérifié
+    page.mouse.up()
     page.wait_for_timeout(1500)
-    if len(page.context.pages) > avant:
-        return "nouvel onglet"
-    return ""
+    return "nouvel onglet" if len(page.context.pages) > avant else ""
+
+
+def _nettoyer(page, tout=True):
+    """Retire les cadres rouges (et, avec tout=True, les marques du robot) de toutes les zones de la page."""
+    for cadre in page.frames:
+        try:
+            cadre.evaluate(JS_NETTOYER, tout)
+        except Exception:
+            pass
 
 
 def _clic_choisi(page, notes):
@@ -1179,57 +1321,59 @@ def _clic_choisi(page, notes):
     ecrire("=" * 70)
     ecrire(" ETAPE 8 : un clic que VOUS choisissez sur le portail")
     ecrire("=" * 70)
-    ecrire("   Tapez le texte d'un MENU ou d'un LIEN visible sur le portail (par exemple GATES),")
-    ecrire("   en respectant les accents. Le robot le cherche, l'encadre en rouge, et vous demande")
-    ecrire("   avant de cliquer. Il ne clique que sur des liens et des menus : jamais sur un bouton")
-    ecrire("   de formulaire, une case, ni sur Supprimer, Enregistrer, Valider, Dupliquer, OK...")
+    ecrire("   Tapez le texte EXACT d'un MENU ou d'un LIEN du portail, tel qu'il est ecrit")
+    ecrire("   (par exemple GATES), accents compris. Le robot le cherche, l'encadre en rouge, et")
+    ecrire("   vous demande avant de cliquer. Il ne clique que sur des liens et des menus : jamais")
+    ecrire("   sur un bouton de formulaire, une case, ni sur Supprimer, Enregistrer, Valider, OK...")
     ecrire("   Pendant que vous repondez, ne passez pas la souris sur la fenetre du robot.")
-    essais = []
-    while len(essais) < 5:
+    codes = []  # un code court par essai, pour le RESULTAT (jamais le mot tapé)
+    while len(codes) < 5:
         mot = demander("   Texte a chercher (Entree sans rien = finir) :")
         if not mot:
             break
-        numero = len(essais) + 1
+        n = len(codes) + 1
         if len(mot) < 3 or sans_accents(mot).lower() in ("oui", "non", "ok", "yes"):
             ecrire("   Tapez le texte d'un menu ou d'un lien (3 lettres au moins), pas une reponse o / n.")
             continue
-        if MOTS_INTERDITS.search(sans_accents(mot)):
+        if interdit(mot):
             ecrire("   Refuse : ce mot ressemble a une action qui modifie. Choisissez un menu ou un lien.")
-            essais.append(f"mot {numero} : refuse (action)")
+            codes.append(f"{n}:refus-mot")
             continue
-        trouves, exact = _candidats(page, mot)
+        trouves = _candidats(page, mot)
         if not trouves:
-            ecrire("   Pas trouve. Verifiez les accents (e / é). Si c'est dans un menu qui se deroule,")
-            ecrire("   tapez d'abord le nom du menu.")
-            essais.append(f"mot {numero} : pas trouve")
+            ecrire("   Pas trouve avec exactement ce texte. Recopiez-le tel qu'il est ecrit sur le portail")
+            ecrire("   (accents compris). Si c'est dans un menu qui se deroule, tapez d'abord le nom du menu.")
+            codes.append(f"{n}:introuvable")
             continue
         choix, refus, nb_visibles = _choisir(trouves)
         if choix is None:
             ecrire(f"   Refuse par prudence : {refus}.")
-            essais.append(f"mot {numero} : refuse ({refus})")
+            codes.append(f"{n}:refus({refus.split()[0]})")
             continue
         numero_cadre, cadre, cible = choix
         ou = "dans la page" if numero_cadre == 0 else "dans une zone interieure de la page"
         cache = not _visible(cible)
         if cache:
             question = (f"   Trouve {ou}, mais cache dans un menu ferme. Le robot va survoler le menu pour l'ouvrir,"
-                        " puis cliquer. On y va ?")
+                        " puis cliquer. Tapez o pour cliquer, n pour ne rien faire")
         else:
             if nb_visibles > 1:
-                ecrire(f"   {nb_visibles} elements visibles portent ce texte : le robot prend le premier qu'il a le droit de cliquer.")
-            _encadrer(cible, 1500)
-            question = f"   Trouve {ou} (texte {'exact' if exact else 'approchant'}), encadre en rouge. Le robot clique dessus ?"
+                ecrire(f"   {nb_visibles} elements portent ce texte : le robot prend le premier qu'il a le droit de cliquer.")
+            _encadrer(cible, 0)  # le cadre rouge reste pendant la question
+            question = f"   Trouve {ou}, encadre en rouge. Tapez o pour que le robot clique dessus, n pour ne rien faire"
         revenez_ici()
-        if not oui(question, "n"):
-            essais.append(f"mot {numero} : trouve, pas clique")
+        accord = oui(question, "n")
+        _nettoyer(page, tout=False)  # le cadre rouge part ; la marque de la cible reste jusqu'au clic
+        if not accord:
+            codes.append(f"{n}:non-clique")
             continue
         try:
-            souci = _cliquer_prudemment(page, cadre, cible, cache)
+            souci = _cliquer_prudemment(page, cadre, cible)
         except Exception as e:
             souci = "clic en echec (" + expliquer(e) + ")"
         if souci and souci != "nouvel onglet":
             ecrire("   Pas de clic : " + souci + ".")
-            essais.append(f"mot {numero} : {souci}")
+            codes.append(f"{n}:pas-de-clic")
             continue
         if souci == "nouvel onglet":
             page = page.context.pages[-1]
@@ -1241,13 +1385,14 @@ def _clic_choisi(page, notes):
         ecrire("   Clic fait. Regardez la fenetre du robot : la page a-t-elle reagi comme avec votre souris ?")
         revenez_ici()
         reagi = oui("   Ca a marche ?")
-        essais.append(f"mot {numero} : clique{' (menu ouvert par survol)' if cache else ''}"
-                      f"{'' if reagi else ', sans effet visible'}")
-    if not essais:
+        codes.append(f"{n}:clic" + ("-survol" if cache else "") + ("" if reagi else "-sans-effet"))
+        _nettoyer(page)
+    _nettoyer(page)
+    if not codes:
         notes.noter("C", "Clic choisi sur le portail", "SAUTE", "aucun mot donne")
     else:
-        bons = [e for e in essais if ": clique" in e and "sans effet" not in e]
-        notes.noter("C", "Clic choisi sur le portail", "OK" if bons else "ECHEC", " ; ".join(essais))
+        bons = [c for c in codes if ":clic" in c and "sans-effet" not in c]
+        notes.noter("C", "Clic choisi sur le portail", "OK" if bons else "ECHEC", " ".join(codes))
 
 
 def sous_programme_navigateur(dossier_echange):
@@ -1282,7 +1427,10 @@ def sous_programme_navigateur(dossier_echange):
                 if not oui("   Avez-vous vu le robot ecrire « Robot » et cliquer sur Valider ?"):
                     notes.noter("N", "Navigateur du robot (page d'essai)", "PAS VU", f"avec {nom}")
             etape[:] = ["D", "Demarrage avec un profil"]
-            _verifier_demarrage(p, canal, notes)
+            try:
+                _verifier_demarrage(p, canal, notes)
+            except Exception as e:  # ce contrôle ne doit jamais empêcher les étapes du portail
+                notes.noter("D", "Demarrage avec un profil", "ECHEC", expliquer(e))
             titre_etape(7, "Le navigateur du robot sur votre portail")
             if not url:
                 notes.noter("R", "Navigateur du robot sur le portail", "SAUTE", "pas d'adresse donnee")
@@ -1321,22 +1469,38 @@ def principal():
     ecrire(" Quand il pose une question : cliquez d'abord dans CETTE fenetre noire, puis repondez.")
     ecrire(" Pour arreter a tout moment : Ctrl + C dans cette fenetre.")
     bilan = Bilan()
-    dossier = None
+    etat = {"dossier": None, "hwnd": None, "url": ""}
+
+    def etape(lettre, intitule, faire):
+        """Une étape qui plante inopinément est notée ECHEC ; les suivantes ont quand même lieu."""
+        try:
+            faire()
+        except KeyboardInterrupt:
+            raise
+        except Exception as e:
+            bilan.noter(lettre, intitule, "ECHEC", "erreur imprevue : " + (erreur_courte(e) if isinstance(e, OSError)
+                                                                             else masquer(premiere_ligne(e))))
+
     try:
-        etape_python(bilan)
-        dossier = etape_fichiers(bilan)
-        hwnd = etape_clavier(bilan, dossier)
-        etape_souris(bilan, hwnd)
-        url = demander_adresse()
-        etape_navigateur_habituel(bilan, url)
-        etape_navigateur_robot(bilan, url)
+        etape("P", "Python fonctionne", lambda: etape_python(bilan))
+        etape("F", "Fichiers et dossiers", lambda: etat.update(dossier=etape_fichiers(bilan)))
+        etape("K", "Clavier (Bloc-notes)", lambda: etat.update(hwnd=etape_clavier(bilan, etat["dossier"])))
+        etape("S", "Souris", lambda: etape_souris(bilan, etat["hwnd"]))
+        etape("W", "Portail dans votre navigateur", lambda: etat.update(url=demander_adresse()))
+        etape("W", "Portail dans votre navigateur", lambda: etape_navigateur_habituel(bilan, etat["url"]))
+        etape("N", "Navigateur du robot (page d'essai)", lambda: etape_navigateur_robot(bilan, etat["url"]))
     except KeyboardInterrupt:
         ecrire("\n   Arrete a votre demande.")
+    dossier = etat["dossier"]
     texte = bilan.texte()
+    # la photo ne doit montrer que le résultat (ni l'adresse, ni les mots tapés plus haut) : des lignes
+    # vides d'abord (marche partout), puis l'effacement de l'écran si la fenêtre le permet
+    ecrire("\n" * 60)
     if WINDOWS:
-        os.system("cls")  # la photo ne doit montrer que le résultat (pas l'adresse ni les mots tapés)
-    else:
-        ecrire("\n" * 3)
+        try:
+            os.system("cls")
+        except Exception:
+            pass
     ecrire("=" * 70)
     ecrire(texte)
     ecrire("=" * 70)
