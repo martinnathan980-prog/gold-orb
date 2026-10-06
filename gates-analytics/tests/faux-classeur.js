@@ -19,6 +19,11 @@ function Feuille(nom, valeurs, cachee, fusions) {
   this.lignesGrille = Math.max(1000, (valeurs || []).length);
   this.formats = {};              // le format posé par ligne, quand il y en a un
 }
+/* Une cellule peut être { valeur, affiche } : un nombre rangé avec un format
+   d'affichage (4530 affiché « 4 530 »). getValues rend la valeur,
+   getDisplayValues ce qu'affiche Sheets. */
+function affichee(v) { return v === null || v === undefined ? '' : v && typeof v === 'object' && 'affiche' in v ? String(v.affiche) : String(v); }
+function brute(v) { return v && typeof v === 'object' && 'affiche' in v ? v.valeur : v; }
 function plusLarge(lignes) {
   return (lignes || []).reduce(function (m, l) { return Math.max(m, l.length); }, 0);
 }
@@ -102,7 +107,7 @@ Feuille.prototype.getDataRange = function () {
   return {
     getDisplayValues: function () {
       return self.valeurs.map(function (l) {
-        return l.map(function (v) { return v === null || v === undefined ? '' : String(v); });
+        return l.map(affichee);
       });
     }
   };
@@ -156,16 +161,21 @@ Feuille.prototype.getRange = function (ligne, colonne, nbLignes, nbColonnes) {
       return this;
     },
     getDisplayValues: function () {
-      return this.getValues().map(function (l) {
-        return l.map(function (v) { return v === null || v === undefined ? '' : String(v); });
-      });
+      const out = [];
+      for (let i = 0; i < nbLignes; i++) {
+        const source = self.valeurs[ligne - 1 + i] || [];
+        const l = [];
+        for (let j = 0; j < nbColonnes; j++) l.push(affichee(source[colonne - 1 + j]));
+        out.push(l);
+      }
+      return out;
     },
     getValues: function () {
       const out = [];
       for (let i = 0; i < nbLignes; i++) {
         const source = self.valeurs[ligne - 1 + i] || [];
         const l = [];
-        for (let j = 0; j < nbColonnes; j++) l.push(source[colonne - 1 + j] === undefined ? '' : source[colonne - 1 + j]);
+        for (let j = 0; j < nbColonnes; j++) l.push(source[colonne - 1 + j] === undefined ? '' : brute(source[colonne - 1 + j]));
         out.push(l);
       }
       return out;

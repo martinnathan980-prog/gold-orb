@@ -47,7 +47,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = '7962d60';
+const EDITION = '6568f96';
 
 // =====================================================================
 //  CONFIGURATION
@@ -2019,10 +2019,21 @@ function direTriSecondeBase(base, qui, sansPsn, geste, dire) {
     return;
   }
   if (tri.source === 'lecture') {
-    dire('   ' + onglet + ' : ' + ligne(tri.lues) + ', ' + nb(tri.gardees) + ' gardée' + (tri.gardees > 1 ? 's' : '') + ' (' + tri.detail + ')');
+    const relues = tri.relues === undefined || tri.relues === null ? tri.lues : tri.relues;
+    /* Déjà trié à l'import (colonnes gardées) : l'onglet n'a que les lignes
+       d'alors — le dire, avec ce que portait le fichier. */
+    dire('   ' + onglet + ' : ' + ligne(relues) + (tri.lues !== relues ? ' (triées à l’import sur ' + ligne(tri.lues) + ')' : '') +
+         ', ' + nb(tri.gardees) + ' gardée' + (tri.gardees > 1 ? 's' : '') + ' (' + tri.detail + ')');
     if (tri.absentes.length) dire('   ' + tri.absentes.join(', ') + ' : absente' + (tri.absentes.length > 1 ? 's' : '') + ' de l’onglet — pas de tri sur ' + (tri.absentes.length > 1 ? 'ces colonnes' : 'cette colonne') + '.');
-    if (!tri.gardees && tri.lues) {
-      dire('⚠ ' + onglet + ' : aucune ligne gardée sur ' + ligne(tri.lues) + (tri.psn ? ' — le PSN ' + tri.psn.join(', ') + ' n’est dans aucune ligne gardée par les autres tris : est-ce le bon ?' : '.'));
+    /* Un PSN du contrat que l'import n'a pas gardé : ses lignes ne sont pas
+       dans l'onglet, le retri n'y peut rien. Un PSN resserré, si. */
+    const dansImport = tri.psnImport ? tri.psnImport.map(normaliser) : [];
+    const elargi = !!(colPsn && tri.psnImport && tri.psnContrat.some(function (j) { return dansImport.indexOf(normaliser(j)) === -1; }));
+    if (elargi) {
+      dire('⚠ ' + onglet + ' a été trié à l’import sur le PSN ' + tri.psnImport.join(', ') + ', mais celui de « ' + qui + ' » est maintenant ' +
+           tri.psnContrat.join(', ') + ' : réimporter l’extract SEE (' + cheminImport() + ').');
+    } else if (!tri.gardees && relues) {
+      dire('⚠ ' + onglet + ' : aucune ligne gardée sur ' + ligne(relues) + (tri.psn ? ' — le PSN ' + tri.psn.join(', ') + ' n’est dans aucune ligne gardée par les autres tris : est-ce le bon ?' : '.'));
     }
     return;
   }
@@ -3539,6 +3550,7 @@ function lireSecondeBase(classeur, contrat) {
   if (t.etat === 'sans-reference') { rendu.etat = 'sans-reference'; return rendu; }
   const essentielles = (Array.isArray(cfg.ESSENTIELLES) ? cfg.ESSENTIELLES : [])
     .map(t.enteteLa).filter(Boolean);
+  relireColonnesTri_(feuille, donnees, t);
 
   /* Le tri du contrat (débrief 21) : refait ici quand l'onglet en porte les
      colonnes, sinon celui que la fenêtre d'import a noté en tête. Sans
@@ -3765,9 +3777,18 @@ function trierSecondeBase(t, donnees, contrat) {
   if (titrePsn || presents.length) {
     const absentes = (colPsn && !titrePsn ? [colPsn] : [])
       .concat(filtres.filter(function (f) { return !titreDe(f.cle); }).map(function (f) { return f.colonne; }));
+    /* Importé avec « Garder aussi les autres colonnes » : l'onglet porte les
+       colonnes de tri, mais ses lignes ont DÉJÀ été triées à l'import, sur le
+       PSN d'alors. Le retri ici ne peut que resserrer ; un PSN élargi depuis
+       demande de réimporter (direTriSecondeBase le dit). La ligne de la
+       fenêtre dit aussi combien le fichier en portait. */
+    const marque = marqueDeTri(donnees, t.ligneEntete);
+    const psnMarque = marque && marque.parts.filter(function (p) { return p.psn; })[0];
+    const psnImport = psnMarque ? psnMarque.psn : null;
+    const lues = marque && marque.lues !== null ? marque.lues : t.lignes.length;
     if (titrePsn && !psnContrat.length) {
-      return { source: 'lecture', sansPsn: true, colonnePsn: titrePsn, lues: t.lignes.length, gardees: 0, parts: [], texte: '', detail: '',
-               psn: [], psnContrat: [], absentes: absentes };
+      return { source: 'lecture', sansPsn: true, colonnePsn: titrePsn, lues: lues, relues: t.lignes.length, gardees: 0, parts: [], texte: '', detail: '',
+               psn: [], psnContrat: [], psnImport: psnImport, absentes: absentes };
     }
     const voulus = {};
     psnContrat.forEach(function (j) { voulus[normaliser(j)] = true; });
@@ -3783,14 +3804,40 @@ function trierSecondeBase(t, donnees, contrat) {
       return memo[cellule];
     });
     const parts = (titrePsn ? [{ psn: psnContrat }] : []).concat(presents.map(function (x) { return { colonne: x.f.colonne, valeurs: x.f.valeurs }; }));
-    return { source: 'lecture', lignes: lignes, lues: t.lignes.length, gardees: lignes.length, parts: parts, texte: triCourt(parts), detail: triDetaille(parts),
-             psn: titrePsn ? psnContrat : null, psnContrat: psnContrat, absentes: absentes };
+    return { source: 'lecture', lignes: lignes, lues: lues, relues: t.lignes.length, gardees: lignes.length, parts: parts, texte: triCourt(parts), detail: triDetaille(parts),
+             psn: titrePsn ? psnContrat : null, psnContrat: psnContrat, psnImport: psnImport, absentes: absentes };
   }
   const marque = marqueDeTri(donnees, t.ligneEntete);
   if (!marque || !marque.parts.length) return null;
   const psnImport = marque.parts.filter(function (p) { return p.psn; })[0];
   return { source: 'import', lues: marque.lues, gardees: t.lignes.length, parts: marque.parts, texte: triCourt(marque.parts),
            detail: triDetaille(marque.parts), psn: psnImport ? psnImport.psn : null, psnContrat: psnContrat, absentes: [], phrase: marque.phrase };
+}
+
+/**
+ * Les colonnes du tri (le PSN, les FILTRES) d'un onglet collé, relues dans
+ * leur valeur et non dans leur affichage : un PSN 4530 rangé en nombre et
+ * affiché « 4 530 » (#,##0) ou « 04530 » (00000) reste 4530 — sinon le tri
+ * l'écarterait en silence. Seules les cellules numériques changent, dans
+ * t.lignes (une par ligne non vide sous l'en-tête, dans l'ordre).
+ */
+function relireColonnesTri_(feuille, donnees, t) {
+  const colPsn = colonnePsnSecondeBase();
+  const cles = filtresSecondeBase().map(function (f) { return f.cle; }).concat(colPsn ? [cleTri(colPsn)] : []);
+  const debut = t.ligneEntete, n = donnees.length - debut;
+  if (!cles.length || !t.lignes.length || n <= 0) return;
+  t.entetes.forEach(function (titre, j) {
+    /* La première colonne d'un intitulé est celle que portent les lignes. */
+    if (!titre || t.entetes.indexOf(titre) !== j || cles.indexOf(cleTri(titre)) === -1) return;
+    const brutes = feuille.getRange(debut + 1, j + 1, n, 1).getValues();
+    let k = 0;
+    for (let i = debut; i < donnees.length && k < t.lignes.length; i++) {
+      if (!ligneNonVide(donnees[i])) continue;
+      const v = brutes[i - debut] ? brutes[i - debut][0] : '';
+      if (typeof v === 'number' && isFinite(v)) t.lignes[k][titre] = String(v);
+      k++;
+    }
+  });
 }
 
 /** Deux listes de PSN disent-elles la même chose (ordre, casse et doublons indifférents) ? */
@@ -4073,6 +4120,10 @@ const IMPORT_LIMITE_CELLULES = 10000000;   // la limite d'un classeur Google She
 /* Un vrai .xls (ou une page web archivée) se lit en entier dans la fenêtre :
    au-delà, ce n'est pas un export (un .xls s'arrête à 65 536 lignes). */
 const IMPORT_MAX_OCTETS_XLS = 200 * 1048576;
+/* L'extract SEE de tous les porteurs lu avec toutes ses colonnes : les
+   lignes de tous les contrats restent en mémoire dans la fenêtre, avant
+   d'être partagées par PSN. Au-delà, la fenêtre d'un navigateur peine. */
+const IMPORT_MAX_CELLULES_LECTURE = 16000000;
 const CLE_JETON_IMPORT = 'SUIVI_FWD_JETON_IMPORT';
 const IMPORT_JETON_DUREE = 6 * 3600 * 1000;
 /* Le nom d'un nouveau contrat devient celui de son onglet, de son historique
@@ -4204,6 +4255,10 @@ function parametresImport_(classeur) {
     maxLignesLot: IMPORT_MAX_LIGNES_LOT,
     maxColonnes: IMPORT_MAX_COLONNES,
     maxCellulesToutes: 4000000,
+    /* Ce que la fenêtre garde en mémoire en lisant l'extract de tous les
+       porteurs avec toutes ses colonnes : les lignes de tous les contrats,
+       avant le partage par PSN — pas ce qui ira au classeur. */
+    maxCellulesLecture: IMPORT_MAX_CELLULES_LECTURE,
     maxOctetsXls: IMPORT_MAX_OCTETS_XLS,
     pausesReprise: [2000, 6000],
     seuilRecouvrement: IMPORT_SEUIL_RECOUVREMENT,
@@ -4739,11 +4794,11 @@ function pageImportSecondeBase(parametres) {
     '.tete{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:30px}' +
     '.etiquette{flex:none;font-size:12px;font-weight:700;letter-spacing:.04em;padding:1px 8px;border-radius:5px;color:var(--fait);border:1.5px solid currentColor;white-space:nowrap}' +
     '.see .etiquette{color:var(--see)}' +
-    '.fichier-nom{flex:1;font-weight:600;word-break:break-all}.fichier-nom:empty{display:none}' +
+    '.fichier-nom{flex:1 1 13em;font-weight:600;overflow-wrap:anywhere}.fichier-nom:empty{display:none}' +
     '.date,.taille{color:var(--encre-3);font-size:12px;white-space:nowrap}.date:empty,.taille:empty{display:none}' +
     '.invite{flex:1;color:var(--encre-3);font-size:13px;text-align:right}' +
     '.tete .retirer,.tete .annuler{padding:2px 9px;font-size:12px;color:var(--encre-2)}' +
-    '.case.nouvelle .nom{width:15em}' +
+    '.case.nouvelle .nom{flex:0 1 13em;min-width:9em}' +
     '.verif-nom{font-size:12.5px;color:var(--encre-3);margin-top:3px}.verif-nom.refus{color:var(--alerte)}' +
     '.lu{font-size:13px;color:var(--encre-2);margin-top:3px}.lu.erreur{color:var(--alerte)}' +
     '.barre{height:4px;border-radius:2px;background:var(--filet);overflow:hidden;margin:6px 0 2px}' +
@@ -5074,6 +5129,11 @@ function scriptImportSecondeBase_(P) {
     return t[0].replace('.', ',') + 'E' + (e < 0 ? '-' : '+') + deux(Math.abs(e));
   }
   function milliers(t) { return t.replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f'); }
+  /* Les colonnes du tri de SEE (le PSN, DIAGRAM TYPE) se lisent dans leur
+     valeur, sans le format d'affichage : un PSN 4530 rangé en nombre et
+     affiché « 4 530 » ou « 04530 » reste 4530 (débrief 21, relecture). */
+  var STANDARD = { type: 'general' };
+  function formeTri(c, col, forme) { return c.tri && c.tri.triees[col] ? STANDARD : forme; }
   function texteNombre(brut, forme, en1904) {
     var v = Number(brut);
     if (brut === '' || isNaN(v)) return brut;
@@ -5181,7 +5241,7 @@ function scriptImportSecondeBase_(P) {
     var toutes = !!(o && o.toutes), attendu = o && o.attendu ? o.attendu : null;
     var c = { sorte: null, ligneEntete: 0, entete: null, colonnes: null, voulues: null, cles: null, lignes: [], fusions: [],
               avant: [], largeur: 0, iRef: -1, formulesVides: 0, formulesAilleurs: 0, trop: false, tropBas: null, autre: false,
-              tri: null, lues: 0, ecartees: 0, psn: [], psnCellules: [], psnCompte: [], rangPsn: {},
+              tri: null, lues: 0, ecartees: 0, psn: [], psnCellules: [], psnCompte: [], psnAutres: [], rangPsn: {},
               meilleur: { portes: 0, ligne: 0, noms: [], manquent: P.cles.slice() } };
     function poserSee(num, valeurs, ns) {
       var prises = {}, cles = {}, voulues = {}, j;
@@ -5237,14 +5297,26 @@ function scriptImportSecondeBase_(P) {
       c.lignes.push(l);
       if (t.jPsn !== -1) {
         /* La cellule de PSN, gardée une fois pour toutes les lignes qui la
-           partagent : un extract en répète peu de différentes. */
+           partagent — telle quelle, sans ses jetons : un vrai extract en a
+           des centaines de milliers de différentes, longues de dizaines de
+           PSN. Celles qui portent autre chose que de l'ASCII sont notées :
+           le tri grossier de cellulesDe ne vaut pas pour elles. */
         var p = valeurs[t.jPsn] === undefined || valeurs[t.jPsn] === null ? '' : String(valeurs[t.jPsn]);
         var r = c.rangPsn['\u0001' + p];
-        if (r === undefined) { r = c.rangPsn['\u0001' + p] = c.psnCellules.length; c.psnCellules.push(plat(p)); c.psnCompte.push(0); }
+        if (r === undefined) {
+          r = c.rangPsn['\u0001' + p] = c.psnCellules.length;
+          c.psnCellules.push(plat(p));
+          c.psnCompte.push(0);
+          if (/[^\x00-\x7f]/.test(p)) c.psnAutres.push(r);
+        }
         c.psnCompte[r]++;
         c.psn.push(r);
       }
-      if (toutes && (c.lignes.length + 1) * c.entete.length > P.maxCellulesToutes) { c.trop = true; return false; }
+      /* Toutes les colonnes : sans tri par PSN, tout ira dans un seul
+         onglet — la limite du classeur ; avec, chaque contrat n'en recevra
+         que sa part (comptée avant l'envoi, partsSee) — seule compte ici la
+         mémoire de la fenêtre. */
+      if (toutes && (c.lignes.length + 1) * c.entete.length > (t.jPsn === -1 ? P.maxCellulesToutes : P.maxCellulesLecture)) { c.trop = true; return false; }
       return true;
     }
     /* Une ligne d'un export GATES, gardée à son numéro. Une ligne vide n'est
@@ -5425,7 +5497,7 @@ function scriptImportSecondeBase_(P) {
           if (t === 's') { v = brut === '' ? '' : chaines[parseInt(brut, 10)]; if (v === undefined) v = ''; }
           else if (t === 'str' || t === 'e' || t === 'd') v = decoderChaine(brut);
           else if (t === 'b') v = brut === '1' ? 'VRAI' : brut === '0' ? 'FAUX' : '';
-          else v = texteNombre(brut, forme(+(valeurAttr(a, ' s="') || valeurAttr(a, ' s=\'') || 0)), en1904);
+          else v = texteNombre(brut, formeTri(c, col, forme(+(valeurAttr(a, ' s="') || valeurAttr(a, ' s=\'') || 0))), en1904);
         }
         valeurs[col] = v;
       }
@@ -6390,7 +6462,6 @@ function scriptImportSecondeBase_(P) {
     });
     var styles = { formats: formats, xfs: xfs }, formes = {}, sst = [];
     function forme(x) { return formes[x] || (formes[x] = formeDuFormat(styles, x)); }
-    function nombre(v, x) { return texteNombre(String(v), forme(x), en1904); }
     /* Un RK : un entier sur 30 bits, ou les 30 bits de tête d'un nombre à
        virgule — et, dans les deux cas, peut-être à diviser par cent. */
     function rk(o) {
@@ -6433,6 +6504,7 @@ function scriptImportSecondeBase_(P) {
       if (u16(w, pos + 6) !== 0x0010) return Promise.resolve(false);
       pos += 4 + u16(w, pos + 2);
       function veut(col) { return !c.voulues || c.voulues[col]; }
+      function nombreEn(v, x, col) { return texteNombre(String(v), formeTri(c, col, forme(x)), en1904); }
       function tranche() {
         var t0 = Date.now(), n = 0, ty, lg, db, fn, r, col, x, k, nb;
         for (;;) {
@@ -6468,16 +6540,16 @@ function scriptImportSecondeBase_(P) {
           x = u16(w, db + 4);
           if (ty === 0x00BD) {
             nb = Math.floor((lg - 6) / 6);
-            for (k = 0; k < nb; k++) if (veut(col + k)) puits.cellule(r, col + k, nombre(rk(db + 6 + 6 * k), u16(w, db + 4 + 6 * k)));
+            for (k = 0; k < nb; k++) if (veut(col + k)) puits.cellule(r, col + k, nombreEn(rk(db + 6 + 6 * k), u16(w, db + 4 + 6 * k), col + k));
           } else if (ty === 0x00BE) {
             nb = (lg - 6) >> 1;
             for (k = 0; k < nb; k++) if (veut(col + k)) puits.cellule(r, col + k, '');
           } else if (!veut(col)) {
             /* une colonne que l'export SEE ne garde pas */
           } else if (ty === 0x0203) {
-            if (lg >= 14) puits.cellule(r, col, nombre(vue.getFloat64(db + 6, true), x));
+            if (lg >= 14) puits.cellule(r, col, nombreEn(vue.getFloat64(db + 6, true), x, col));
           } else if (ty === 0x027E) {
-            if (lg >= 10) puits.cellule(r, col, nombre(rk(db + 6), x));
+            if (lg >= 10) puits.cellule(r, col, nombreEn(rk(db + 6), x, col));
           } else if (ty === 0x00FD) {
             if (lg >= 10) { var s = sst[u32(w, db + 6)]; puits.cellule(r, col, s === undefined ? '' : s); }
           } else if (ty === 0x0204 || ty === 0x00D6) {
@@ -6490,7 +6562,7 @@ function scriptImportSecondeBase_(P) {
             /* Le résultat gardé de la formule : un nombre, ou — les deux
                derniers octets à FFFF — un texte (dans le STRING qui suit),
                un booléen, une erreur, un texte vide. */
-            if (u16(w, db + 12) !== 0xFFFF) puits.cellule(r, col, nombre(vue.getFloat64(db + 6, true), x));
+            if (u16(w, db + 12) !== 0xFFFF) puits.cellule(r, col, nombreEn(vue.getFloat64(db + 6, true), x, col));
             else if (w[db + 6] === 0) { puits.cellule(r, col, ''); attente = { r: r, col: col }; }
             else if (w[db + 6] === 1) puits.cellule(r, col, w[db + 8] ? 'VRAI' : 'FAUX');
             else if (w[db + 6] === 2) puits.cellule(r, col, ERREURS_XLS[w[db + 8]] || '#N/A');
@@ -6925,8 +6997,13 @@ function scriptImportSecondeBase_(P) {
       return d;
     }
     var tri = c.tri, filtres = tri.filtres.map(function (x) { return { colonne: x.colonne, valeurs: x.valeurs }; });
-    if (c.trop) throw erreur('Plus de ' + nb(P.maxCellulesToutes) + ' cellules avec toutes les colonnes, même triées : trop pour le classeur. ' +
-      'Décocher « Garder aussi les autres colonnes » : seules ' + P.cles.join(', ') + ' iront.');
+    if (c.trop) {
+      throw erreur((tri.jPsn === -1
+        ? 'Plus de ' + nb(P.maxCellulesToutes) + ' cellules avec toutes les colonnes : trop pour le classeur. '
+        : 'Plus de ' + nb(P.maxCellulesLecture) + ' cellules avec toutes les colonnes' + (filtres.length ? ', rien qu’en ' + texteFiltres(filtres) : '') +
+          ', tous porteurs confondus : trop à garder en mémoire pour les partager entre les contrats. ') +
+        'Décocher « Garder aussi les autres colonnes » : seules ' + P.cles.join(', ') + ' iront.');
+    }
     if (!c.lues) throw erreur('L’en-tête est là (« ' + c.onglet + ' »), mais aucune ligne dessous.');
     if (c.formulesVides) {
       var lues = P.cles.concat(tri.jPsn !== -1 ? [P.colonnePsn] : []).concat(filtres.map(function (x) { return x.colonne; }));
@@ -6939,7 +7016,7 @@ function scriptImportSecondeBase_(P) {
     }
     return { sorte: 'see', entete: c.entete, lignes: c.lignes, onglet: c.onglet, format: c.format, lues: c.lues, ecartees: c.ecartees,
              tri: { psn: tri.jPsn !== -1, filtres: filtres, manquePsn: tri.manquePsn, manquent: tri.manquent },
-             psn: c.psn, psnCellules: c.psnCellules, psnCompte: c.psnCompte, psnJetons: c.psnCellules.map(jetonsPsn) };
+             psn: c.psn, psnCellules: c.psnCellules, psnCompte: c.psnCompte, psnAutres: c.psnAutres };
   }
   /* « DIAGRAM TYPE WD », « DIAGRAM TYPE WD ou GH, X 3 » : les filtres en clair. */
   function texteFiltres(filtres) {
@@ -7255,14 +7332,17 @@ function scriptImportSecondeBase_(P) {
   /* « Si on en fait d'autres, il faudra demander le PSN » : chaque contrat
      a le sien, celui de la configuration ou celui tapé ici — gardé dans le
      classeur pour les fois suivantes (importEnregistrerPsn), sitôt tapé.
-     Changer un PSN retrie l'extract déjà lu sur-le-champ : seules les lignes
-     qui passent les FILTRES sont en mémoire, chacune avec sa cellule de PSN. */
+     Changer un PSN retrie l'extract déjà lu, sans le relire : seules les
+     lignes qui passent les FILTRES sont en mémoire, chacune avec sa cellule
+     de PSN. Le recompte attend que la frappe se pose (700 ms, ou la sortie
+     du champ) : sur un vrai extract, il prend jusqu'à une demi-seconde. Un
+     PSN changé après un import rend la case SEE importable à nouveau. */
   function saisiePsn(id) {
     var cle = norm(id), s = saisiesPsn[cle];
     if (!s) {
       var k = contratExistant(id), initial = k ? (k.psn || []) : (P.psnConfig[cle] || []);
       s = saisiesPsn[cle] = { texte: initial.join(', '), jetons: initial.map(norm), etat: 'ok', message: '', touche: false, enregistre: false,
-                              source: k ? k.psnSource : (initial.length ? 'configuration' : ''), demande: 0, minuteur: null };
+                              source: k ? k.psnSource : (initial.length ? 'configuration' : ''), demande: 0, minuteur: null, frappe: false };
     }
     return s;
   }
@@ -7281,25 +7361,48 @@ function scriptImportSecondeBase_(P) {
   }
   function saisirPsn(id, texte, aussitot) {
     var s = saisiePsn(id), lu = lirePsn(texte);
-    if (texte === s.texte && s.touche && (s.etat === 'ok' || (s.etat === 'attente' && !aussitot))) return;
+    if (texte === s.texte && s.touche && !(aussitot && s.frappe) && (s.etat === 'ok' || (s.etat === 'attente' && !aussitot))) return;
     s.texte = texte;
     s.touche = true;
     s.enregistre = false;
+    /* L'extract est toujours en mémoire : la case SEE d'un import fini
+       redevient importable, recomptée pour ce PSN — sans relire le fichier. */
+    if (caseSee && caseSee.lu && (caseSee.etat === 'fait' || caseSee.etat === 'echec')) {
+      caseSee.etat = 'lu';
+      caseSee.resultat = null;
+      dire('');
+    }
     clearTimeout(s.minuteur);
     var demande = ++s.demande;
     if (lu.message) {
       s.etat = 'refus';
       s.message = lu.message;
+      s.frappe = false;
       dessinerSee();
       majTout();
       return;
     }
     s.jetons = lu.jetons;
     s.message = '';
+    s.frappe = !aussitot;
     /* Un contrat qui naît dans la fenêtre : son PSN est gardé sitôt le contrat créé. */
-    if (!contratExistant(id)) { s.etat = 'ok'; dessinerSee(); majTout(); return; }
+    if (!contratExistant(id)) {
+      s.etat = 'ok';
+      if (s.frappe) {
+        s.minuteur = setTimeout(function () {
+          if (demande !== s.demande) return;
+          s.frappe = false;
+          dessinerSee();
+          majTout();
+        }, 700);
+      }
+      dessinerSee();
+      majTout();
+      return;
+    }
     s.etat = 'attente';
     s.minuteur = setTimeout(function () {
+      if (demande === s.demande && s.frappe) { s.frappe = false; dessinerSee(); majTout(); }
       appelerAvecReprise('importEnregistrerPsn', [contratExistant(id).id, texte]).then(function (rep) {
         if (demande !== s.demande) return;
         s.etat = 'ok';
@@ -7367,7 +7470,15 @@ function scriptImportSecondeBase_(P) {
     if (!d.parPsn[cle]) {
       var voulus = {};
       jetons.forEach(function (j) { voulus[j] = true; });
-      var oui = d.psnJetons.map(function (js) { return js.some(function (j) { return voulus[j] === true; }); });
+      var porte = function (t) { return jetonsPsn(t).some(function (j) { return voulus[j] === true; }); };
+      /* Un tri grossier d'abord — l'un des PSN entre deux séparateurs, à la
+         casse près, d'une expression régulière —, puis la règle exacte
+         (jetonsPsn, comparés en entier) sur les seules cellules qu'il
+         retient. Une cellule hors ASCII passe par la règle exacte seule. */
+      var re = new RegExp('(?:^|[\\s,;])(?:' + jetons.map(function (j) { return j.replace(/[.*+?^${}()|[\]\\\/-]/g, '\\$&'); }).join('|') +
+        ')(?=$|[\\s,;])', 'i');
+      var oui = d.psnCellules.map(function (t) { return re.test(t) && porte(t); });
+      d.psnAutres.forEach(function (i) { oui[i] = porte(d.psnCellules[i]); });
       var n = 0;
       oui.forEach(function (o, i) { if (o) n += d.psnCompte[i]; });
       d.parPsn[cle] = { oui: oui, n: n };
@@ -7379,17 +7490,34 @@ function scriptImportSecondeBase_(P) {
      'aucune' | 'sans-tri-plusieurs' | '') }]. */
   function partsSee(d) {
     var tri = etatTri(d), cibles = ciblesSee();
+    /* Ce qu'un onglet recevrait au-delà de la limite du classeur — compté
+       sur la part du contrat, pas sur l'extract de tous les porteurs. */
+    function trop(c, jetons, n) {
+      return n && (n + 1) * d.entete.length > P.maxCellulesToutes ? { cible: c, jetons: jetons, n: n, raison: 'trop' } : null;
+    }
     return cibles.map(function (c) {
-      if (!tri.parPsn) return { cible: c, jetons: null, n: cibles.length === 1 ? d.lignes.length : 0, raison: cibles.length === 1 ? '' : 'sans-tri-plusieurs' };
+      if (!tri.parPsn) {
+        return cibles.length === 1 ? trop(c, null, d.lignes.length) || { cible: c, jetons: null, n: d.lignes.length, raison: '' }
+          : { cible: c, jetons: null, n: 0, raison: 'sans-tri-plusieurs' };
+      }
       var s = saisiePsn(c.id);
       if (!s.jetons.length || s.etat === 'refus') return { cible: c, jetons: [], n: 0, raison: 'sans-psn' };
+      /* La frappe pas encore posée : pas de recompte à chaque touche. */
+      if (s.frappe) return { cible: c, jetons: s.jetons, n: 0, raison: 'frappe' };
       var n = cellulesDe(d, s.jetons).n;
-      return { cible: c, jetons: s.jetons, n: n, raison: n ? '' : 'aucune' };
+      return trop(c, s.jetons, n) || { cible: c, jetons: s.jetons, n: n, raison: n ? '' : 'aucune' };
     });
   }
   /* « WD », « WD ou GH » : les valeurs gardées, pour dire les lignes. */
   function motFiltres(d) {
     return d.tri.filtres.length ? ' ' + d.tri.filtres.map(function (x) { return x.valeurs.join(' ou '); }).join(', ') : '';
+  }
+  /* Une base qui ne reçoit rien : « « SEE THS » n’est pas touché » quand
+     l'onglet existe ; sinon, aucun onglet n'est créé — ne pas envoyer
+     chercher dans le classeur un onglet qui n'y est pas. */
+  function pasTouche(c, futur) {
+    return c.existe ? '« ' + c.onglet + ' » ' + (futur ? 'ne sera pas touché' : 'n’est pas touché')
+      : 'aucun onglet « ' + c.onglet + ' » ' + (futur ? 'ne sera créé' : 'n’est créé');
   }
   /* Le tri d'une base, en parts : [{ psn }] puis [{ colonne, valeurs }] — la ligne « Trié à l’import » le dit en tête de l'onglet. */
   function partsTri(d, jetons) {
@@ -7475,7 +7603,10 @@ function scriptImportSecondeBase_(P) {
       if (!k.nouveau) {
         texte = 'Remplacera l’onglet <b>« ' + ech(k.id) + ' »</b> — l’ancien ne s’en va qu’une fois tout reçu ; son historique est gardé.';
       } else {
-        texte = 'Créera l’onglet <b>« ' + ech(contrat) + ' »</b> : un nouveau contrat, rangé après les autres.';
+        /* Le premier contrat d'un classeur vide va en tête des onglets (le serveur le range en premier). */
+        var avantElle = cases.slice(0, cases.indexOf(k)).some(function (o) { return o.nouveau && o.f && o.etat !== 'echec' && o.etat !== 'erreur'; });
+        texte = 'Créera l’onglet <b>« ' + ech(contrat) + ' »</b> : ' + (P.contrats.length || avantElle
+          ? 'un nouveau contrat, rangé après les autres.' : 'le premier contrat du classeur, rangé en tête des onglets.');
         var g = baseGeneriqueRenommee();
         if (g) texte += ' L’onglet « ' + ech(g.de) + ' » de « ' + ech(g.id) + ' » deviendra « ' + ech(g.vers) + ' » : avec deux contrats, chaque base porte le nom du sien.';
       }
@@ -7553,7 +7684,7 @@ function scriptImportSecondeBase_(P) {
     if (k.resultat) { res.className = 'resultat ' + k.resultat.classe; res.innerHTML = k.resultat.html; res.hidden = false; }
     /* Ce que la lecture garde en mémoire (les lignes qui passent les FILTRES), et un PSN en cours d'enregistrement. */
     el.setAttribute('data-gardees', d ? String(d.lignes.length) : '');
-    if (P.colonnePsn && cibles.some(function (c) { return saisiePsn(c.id).etat === 'attente'; })) el.setAttribute('data-occupe', '1');
+    if (P.colonnePsn && cibles.some(function (c) { var x = saisiePsn(c.id); return x.etat === 'attente' || x.frappe; })) el.setAttribute('data-occupe', '1');
     else el.removeAttribute('data-occupe');
   }
   function creerPorteur(c) {
@@ -7592,6 +7723,7 @@ function scriptImportSecondeBase_(P) {
     var vers = function () {
       return (c.existe ? 'remplacera « ' : 'créera « ') + c.onglet + ' »' + (c.avant ? ' (aujourd’hui « ' + c.avant + ' », renommé à la création du nouveau contrat)' : '');
     };
+    var largeur = d ? d.entete.length : 0;
     if (!d) {
       if (s && !s.jetons.length) { texte = 'pas de PSN : pas de base ' + P.base + ' pour ce contrat'; classe += ' rien'; }
     } else if (!p.jetons && p.raison === 'sans-tri-plusieurs') {
@@ -7603,8 +7735,14 @@ function scriptImportSecondeBase_(P) {
     } else if (p.raison === 'sans-psn') {
       texte = s && s.etat === 'refus' ? '' : ': pas de base ' + P.base + ' tant que le PSN n’est pas donné';
       classe += ' rien';
+    } else if (p.raison === 'frappe') {
+      texte = '— …';
     } else if (p.raison === 'aucune') {
-      texte = '— aucune ligne' + motFiltres(d) + ' pour ce PSN : « ' + c.onglet + ' » ne sera pas touché';
+      texte = '— aucune ligne' + motFiltres(d) + ' pour ce PSN : ' + pasTouche(c, true);
+      classe += ' attention';
+    } else if (p.raison === 'trop') {
+      texte = '— ' + nb(p.n) + ' ligne' + (p.n > 1 ? 's' : '') + motFiltres(d) + ' × ' + largeur + ' colonnes : plus de ' + nb(P.maxCellulesToutes) +
+        ' cellules, trop pour « ' + c.onglet + ' »';
       classe += ' attention';
     } else {
       texte = '— ' + nb(p.n) + ' ligne' + (p.n > 1 ? 's' : '') + motFiltres(d) + ' → ' + vers();
@@ -7658,6 +7796,7 @@ function scriptImportSecondeBase_(P) {
       for (i = 0; i < cibles.length; i++) {
         var s = saisiePsn(cibles[i].id);
         if (s.etat === 'attente') return 'Enregistrement du PSN de « ' + cibles[i].id + ' »…';
+        if (s.frappe) return 'PSN de « ' + cibles[i].id + ' » en cours de frappe…';
         if (s.etat === 'refus') return 'PSN de « ' + cibles[i].id + ' » : ' + s.message;
       }
     }
@@ -7670,10 +7809,22 @@ function scriptImportSecondeBase_(P) {
           : cibles.length ? 'sans elle, l’extract ne se partage pas entre les ' + cibles.length + ' contrats — demander l’extract ' + P.base + ' avec cette colonne, ou retirer le fichier.'
             : 'aucun contrat pour le recevoir — retirer le fichier.');
       }
-      if (!cibles.length) return 'Aucun contrat pour la base ' + P.base + ' : ajouter d’abord l’export GATES d’un contrat (« Ajouter un contrat… »).';
+      if (!cibles.length) {
+        /* La case d'un nouveau contrat est peut-être déjà ouverte (un classeur vide en ouvre une) : y renvoyer. */
+        var caseVide = cases.filter(function (x) { return x.nouveau && !x.f && x.etat !== 'fait'; })[0];
+        return 'Aucun contrat pour la base ' + P.base + ' : ' + (caseVide
+          ? 'poser d’abord l’export GATES du contrat dans sa case « ' + libelleCase(caseVide) + ' », plus haut.'
+          : 'ajouter d’abord l’export GATES d’un contrat (« Ajouter un contrat… »).');
+      }
       if (!tri.parPsn && cibles.length !== 1) return 'L’extract ' + P.base + ' va tout entier à un seul contrat, et le classeur en a ' + cibles.length + ' : il faut la colonne ' + (P.colonnePsn || 'des PSN') + ' pour le partager.';
       if (tri.parPsn && !parts.some(function (p) { return p.jetons && p.jetons.length; })) {
         return 'Aucun contrat n’a de PSN : taper celui de chaque contrat (le numéro de sa machine) dans la case ' + P.base + ', ou retirer le fichier.';
+      }
+      var tropPlein = parts.filter(function (p) { return p.raison === 'trop'; })[0];
+      if (tropPlein) {
+        return '« ' + tropPlein.cible.onglet + ' » recevrait ' + nb(tropPlein.n) + ' lignes × ' + d.entete.length + ' colonnes, plus de ' + nb(P.maxCellulesToutes) +
+          ' cellules : trop pour le classeur. ' + (d.toutes ? 'Décocher « Garder aussi les autres colonnes » : seules ' + P.cles.join(', ') + ' iront.'
+            : 'Vérifier le PSN de « ' + tropPlein.cible.id + ' ».');
       }
       if (!parts.some(function (p) { return p.n > 0; })) {
         return 'Aucune ligne de l’extract ' + P.base + ' ne porte le PSN des contrats (' + parts.filter(function (p) { return p.jetons && p.jetons.length; })
@@ -7758,7 +7909,7 @@ function scriptImportSecondeBase_(P) {
     var see = caseSee && caseSee.etat === 'lu' ? caseSee : null;
     var parts = see ? partsSee(see.lu) : [];
     var archiver = !$('option-archiver').hidden && $('archiver').checked, bilans = [], kg = 0, ks = 0;
-    var envois = parts.filter(function (p) { return p.n > 0; }), nombre = gates.length + envois.length, rang = 0;
+    var envois = parts.filter(function (p) { return p.n > 0 && !p.raison; }), nombre = gates.length + envois.length, rang = 0;
     enCours = true;
     verrouiller(true);
     $('consigne').hidden = false;
@@ -7780,9 +7931,9 @@ function scriptImportSecondeBase_(P) {
       if (!p.n) {
         bilans.push(p.raison === 'aucune'
           ? { ok: true, see: true, avertissement: true, classe: 'avertissement', html: '⚠ « ' + ech(p.cible.id) + ' » : aucune ligne' + ech(motFiltres(see.lu)) + ' pour le PSN ' +
-              ech(saisieTexte(p.jetons)) + ' — « ' + ech(p.cible.onglet) + ' » n’est pas touché.' }
+              ech(saisieTexte(p.jetons)) + ' — ' + ech(pasTouche(p.cible, false)) + '.' }
           : { ok: true, see: true, neutre: true, classe: 'neutre', html: '– « ' + ech(p.cible.id) + ' » : ' + (p.raison === 'sans-psn' ? 'pas de PSN, pas de base ' + ech(P.base) : 'pas de base ' + ech(P.base)) +
-              ' — « ' + ech(p.cible.onglet) + ' » n’est pas touché.' });
+              ' — ' + ech(pasTouche(p.cible, false)) + '.' });
         return suivantSee();
       }
       return importerSee(see, p, ++rang, nombre).then(function (b) { bilans.push(b); return suivantSee(); });
@@ -7815,7 +7966,13 @@ function scriptImportSecondeBase_(P) {
       $('progres').textContent = '';
       verrouiller(false);
       majTout();
-      try { $('etat').scrollIntoView({ block: 'nearest' }); } catch (e) { /* rien */ }
+      /* Le bilan entier au-dessus du pied fixe (Fermer, Importer), mesuré
+         maintenant : sa consigne et sa barre viennent de se cacher. */
+      try {
+        var zone = $('etat'), pied = document.querySelector('.pied');
+        zone.style.scrollMarginBottom = ((pied ? pied.offsetHeight : 0) + 8) + 'px';
+        zone.scrollIntoView({ block: 'nearest' });
+      } catch (e) { /* rien */ }
     });
   }
   /* Le PSN tapé pour un contrat ajouté : gardé une fois le contrat créé. */

@@ -579,9 +579,9 @@ const paquetSansDate = o => { const x = JSON.parse(JSON.stringify(o)); delete x.
     verifier('l’onglet temporaire est taillé d’avance : trois colonnes, les 1 502 lignes (la ligne du tri, l’en-tête, les 1 500) — pas les 26 colonnes d’un onglet neuf',
       mesures.length && mesures.every(x => x === '3×1502'), mesures.join(', '));
     const f = c.getSheetByName('SEE HDK');
-    verifier('l’import réussit et le dit, une ligne par base : « SEE HDK », 1 500 lignes, triée sur PSN 4530 · WD ; THS sans PSN, « SEE THS » pas touché',
+    verifier('l’import réussit et le dit, une ligne par base : « SEE HDK », 1 500 lignes, triée sur PSN 4530 · WD ; THS sans PSN, aucun onglet « SEE THS » créé',
       /\bok\b/.test(r.etat.classe) && /✓ « Nommage WD BFLOW\.xlsx » → 1 500 lignes dans l’onglet « SEE HDK » \(3 colonnes ; PSN 4530 · WD\) : la comparaison est prête\./.test(r.etat.texte) &&
-      /– « THS » : pas de PSN, pas de base SEE — « SEE THS » n’est pas touché\./.test(r.etat.texte) && /Rouvrir le tableau de bord/.test(r.etat.texte), r.etat.texte);
+      /– « THS » : pas de PSN, pas de base SEE — aucun onglet « SEE THS » n’est créé\./.test(r.etat.texte) && /Rouvrir le tableau de bord/.test(r.etat.texte), r.etat.texte);
     verifier('l’onglet « SEE HDK » : la ligne « Trié à l’import » (le tri, les lignes gardées sur celles du fichier, le fichier, le jour), l’en-tête, puis les ' + n + ' lignes, trois colonnes seulement',
       !!f && f.valeurs.length === n + 2 && f.valeurs[0][0].indexOf(MARQUE + 'PSN 4530 · DIAGRAM TYPE = WD — 1 500 lignes gardées sur 2 000 · « Nommage WD BFLOW.xlsx », le ') === 0 &&
       f.valeurs[1].join('|') === 'NAME|SOL.|Cust.V' && f.valeurs.every(l => l.length === 3), f && JSON.stringify([f.valeurs.length, f.valeurs[0], f.valeurs[1], f.valeurs[2]]));
@@ -2143,8 +2143,8 @@ const paquetSansDate = o => { const x = JSON.parse(JSON.stringify(o)); delete x.
     await poser(page, 'see', [{ nom: 'extract_SEE_semaine40.xlsx', contenu: seeComplet(20, tri) }]);
     const see = await taperPsn(page, 'THS', '4610');
     const gat = await poser(page, 'g:THS', [{ nom: 'export_ths (1).xlsx', contenu: xlsxGates(gates(20, { refs: refT, avancement: () => 'VALIDATED' })) }]);
-    verifier('2e tour : l’extract SEE donne ses 20 lignes à THS (PSN tapé : 4610) — et aucune à HDK (4530), qui n’est pas touché',
-      porteur(see, 'THS').part === '— 20 lignes WD → créera « SEE THS »' && porteur(see, 'HDK').part === '— aucune ligne WD pour ce PSN : « SEE HDK » ne sera pas touché',
+    verifier('2e tour : l’extract SEE donne ses 20 lignes à THS (PSN tapé : 4610) — et aucune à HDK (4530), dont aucun onglet SEE ne sera créé',
+      porteur(see, 'THS').part === '— 20 lignes WD → créera « SEE THS »' && porteur(see, 'HDK').part === '— aucune ligne WD pour ce PSN : aucun onglet « SEE HDK » ne sera créé',
       JSON.stringify(see.porteurs));
     verifier('2e tour : l’export GATES de THS va dans sa case, sans avertissement', gat.etat === 'lu' && /^Remplacera l’onglet « THS »/.test(gat.cible) && !gat.note, JSON.stringify(gat));
     ui = await fenetreEtat(page);
@@ -2153,7 +2153,7 @@ const paquetSansDate = o => { const x = JSON.parse(JSON.stringify(o)); delete x.
     r = await lancer(page);
     verifier('2e tour : « SEE THS » créé, « SEE HDK » jamais touché (dit en ⚠) ; THS remplacé',
       /\bok\b/.test(r.classe) && /avertissement/.test(r.classe) && !!c.getSheetByName('SEE THS') && !c.getSheetByName('SEE HDK') && c.getSheetByName('THS').valeurs.length === 23 &&
-      ctx.lireSecondeBase(c, 'THS').etat === 'ok' && /⚠ « HDK » : aucune ligne WD pour le PSN 4530 — « SEE HDK » n’est pas touché\./.test(r.texte), r.texte + ' / ' + nomsOnglets(c).join(', '));
+      ctx.lireSecondeBase(c, 'THS').etat === 'ok' && /⚠ « HDK » : aucune ligne WD pour le PSN 4530 — aucun onglet « SEE HDK » n’est créé\./.test(r.texte), r.texte + ' / ' + nomsOnglets(c).join(', '));
     await capture(page, 'deux-tours-fin');
     await page.close();
   }
@@ -2377,13 +2377,13 @@ const paquetSansDate = o => { const x = JSON.parse(JSON.stringify(o)); delete x.
       /^100 lignes lues, 85 en WD/.test(k.lu) && k.gardees === '85' && porteur(k, 'HDK').part === '— 45 lignes WD → créera « SEE HDK »' &&
       porteur(k, 'THS').part === ': pas de base SEE tant que le PSN n’est pas donné', JSON.stringify(k));
     await compterLectures(page);
-    /* Le PSN de THS tapé : sa part se recompte à la frappe, avant même d'être enregistrée. */
+    /* Le PSN de THS tapé : pas de recompte à chaque touche (« … ») ; une fois la frappe posée, sa part se recompte, et le PSN est enregistré. */
     await page.fill('[data-case="see"] .porteur[data-contrat="THS"] input', '4610');
     const aussitot = porteur(await laCase(page, 'see'), 'THS');
     await attendreLecture(page);
     k = await laCase(page, 'see');
-    verifier('« 4610 » tapé pour THS : sa part se recompte à la frappe (35 lignes, dont les 5 « 4530;4610 »), sans relire le fichier ; puis le PSN est enregistré, une fois',
-      aussitot.part === '— 35 lignes WD → créera « SEE THS »' && aussitot.enr === 'enregistrement…' && porteur(k, 'THS').enr === 'enregistré' && k.etat === 'lu' &&
+    verifier('« 4610 » tapé pour THS : « … » pendant la frappe, puis sa part se recompte (35 lignes, dont les 5 « 4530;4610 »), sans relire le fichier ; le PSN est enregistré, une fois',
+      aussitot.part === '— …' && porteur(k, 'THS').part === '— 35 lignes WD → créera « SEE THS »' && aussitot.enr === 'enregistrement…' && porteur(k, 'THS').enr === 'enregistré' && k.etat === 'lu' &&
       (await lectures(page)) === 0 && page.__appels.filter(x => x === 'importEnregistrerPsn').length === 1,
       JSON.stringify([aussitot, porteur(k, 'THS'), await lectures(page), page.__appels]));
     verifier('gardé dans le classeur, au nom de l’onglet : le serveur le rend comme tapé dans la fenêtre ; HDK garde celui de la configuration',
@@ -2565,19 +2565,243 @@ const paquetSansDate = o => { const x = JSON.parse(JSON.stringify(o)); delete x.
       new RegExp('30 lignes dans l’onglet « SEE HDK » \\(' + nommees.length + ' colonnes ; PSN 4530 · WD\\)').test(r.etat.texte),
       r.etat.texte + ' / ' + JSON.stringify(f && f.valeurs.slice(0, 3)));
     const lu = ctx.lireSecondeBase(c, 'HDK');
-    verifier('la page relit « SEE HDK » : il porte VALIDITY PSN FULL et DIAGRAM TYPE, elle refait donc le tri — 30 lignes, 30 gardées — avec ses ' + nommees.length + ' colonnes',
-      lu.etat === 'ok' && lu.ligneEntete === 2 && lu.tri.source === 'lecture' && lu.tri.lues === 30 && lu.tri.gardees === 30 && lu.rapprochement.filtre === 'PSN 4530 · WD' &&
+    verifier('la page relit « SEE HDK » : il porte VALIDITY PSN FULL et DIAGRAM TYPE, elle refait donc le tri — 30 lignes (50 dans le fichier), 30 gardées — avec ses ' + nommees.length + ' colonnes',
+      lu.etat === 'ok' && lu.ligneEntete === 2 && lu.tri.source === 'lecture' && lu.tri.lues === 50 && lu.tri.relues === 30 && lu.tri.gardees === 30 &&
+      JSON.stringify(lu.tri.psnImport) === '["4530"]' && lu.rapprochement.filtre === 'PSN 4530 · WD' &&
       lu.rapprochement.colonnes.length === nommees.length, JSON.stringify([lu.etat, lu.ligneEntete, lu.tri]));
     let d = lignesDuDiagnostic(ctx);
-    verifier('le Diagnostic : « SEE HDK : 30 lignes, 30 gardées (PSN 4530 · DIAGRAM TYPE WD) »', d.indexOf('   SEE HDK : 30 lignes, 30 gardées (PSN 4530 · DIAGRAM TYPE WD)') !== -1,
+    verifier('le Diagnostic : « SEE HDK : 30 lignes (triées à l’import sur 50 lignes), 30 gardées (PSN 4530 · DIAGRAM TYPE WD) »',
+      d.indexOf('   SEE HDK : 30 lignes (triées à l’import sur 50 lignes), 30 gardées (PSN 4530 · DIAGRAM TYPE WD)') !== -1,
       d.filter(x => /SEE/.test(x)).join(' / '));
-    /* Le PSN de THS changé après coup : son onglet, qui porte la colonne des PSN, est retrié à la lecture. */
+    /* Le PSN de THS changé après coup : son onglet, qui porte la colonne des PSN, est retrié à la lecture —
+       mais ses lignes ont été triées à l'import sur 4610 : celles de 4530 n'y sont pas, il faut réimporter. */
     ctx.importEnregistrerPsn(jetonDe(ctx), 'THS', '4530');
     d = lignesDuDiagnostic(ctx);
-    verifier('le PSN de THS changé après l’import (4530) : « SEE THS » est retrié à la lecture — aucune ligne gardée, et le Diagnostic demande si c’est le bon PSN',
+    verifier('le PSN de THS changé après l’import (4530) : « SEE THS » est retrié à la lecture — aucune ligne gardée, et le Diagnostic dit de réimporter (pas « est-ce le bon ? »)',
       ctx.lireSecondeBase(c, 'THS').rapprochement.lignes.length === 0 &&
-      d.indexOf('⚠ SEE THS : aucune ligne gardée sur 10 lignes — le PSN 4530 n’est dans aucune ligne gardée par les autres tris : est-ce le bon ?') !== -1,
+      d.indexOf('⚠ SEE THS a été trié à l’import sur le PSN 4610, mais celui de « THS » est maintenant 4530 : réimporter l’extract SEE (' + IMPORT_MENU + ').') !== -1 &&
+      !d.some(x => /SEE THS.*est-ce le bon/.test(x)),
       d.filter(x => /SEE THS/.test(x)).join(' / '));
+    await page.close();
+  }
+
+  // =================================================================
+  section('Débrief 21 : relecture — importé avec toutes les colonnes, puis le PSN élargi : réimporter');
+  {
+    const c = classeur();
+    const ctx = serveur(c);
+    const page = await fenetre(ctx);
+    /* 25 lignes : 10 en 4530/WD, 10 en 4610/WD, 5 en 4530/PH. */
+    const tri = i => i < 10 ? { psn: '4530', type: 'WD' } : i < 20 ? { psn: '4610', type: 'WD' } : { psn: '4530', type: 'PH' };
+    const r = await importer(page, 'Nommage WD BFLOW.xlsx', seeComplet(25, tri), { toutes: true });
+    await page.close();
+    const f = c.getSheetByName('SEE HDK');
+    verifier('importé avec « Garder aussi les autres colonnes » : « SEE HDK » porte ses 10 lignes 4530/WD, sous « 10 lignes gardées sur 25 »',
+      /\bok\b/.test(r.etat.classe) && !!f && f.valeurs.length === 12 && f.valeurs[0][0].indexOf(MARQUE + 'PSN 4530 · DIAGRAM TYPE = WD — 10 lignes gardées sur 25 · ') === 0,
+      r.etat.texte + ' / ' + JSON.stringify(f && f.valeurs[0]));
+    const jeton = jetonDe(ctx);
+    const voir = d => d.filter(x => /SEE HDK/.test(x)).join(' / ');
+    const REIMP = psn => '⚠ SEE HDK a été trié à l’import sur le PSN 4530, mais celui de « HDK » est maintenant ' + psn + ' : réimporter l’extract SEE (' + IMPORT_MENU + ').';
+    ctx.importEnregistrerPsn(jeton, 'HDK', '4530, 4610');
+    let d = lignesDuDiagnostic(ctx), lu = ctx.lireSecondeBase(c, 'HDK');
+    verifier('PSN élargi à « 4530, 4610 » : la page lit encore 10 lignes, et le Diagnostic dit qu’il faut réimporter, avec le nombre du fichier (« sur 25 »)',
+      lu.etat === 'ok' && lu.rapprochement.lignes.length === 10 && lu.tri.lues === 25 && d.indexOf(REIMP('4530, 4610')) !== -1 &&
+      d.indexOf('   SEE HDK : 10 lignes (triées à l’import sur 25 lignes), 10 gardées (PSN 4530, 4610 · DIAGRAM TYPE WD)') !== -1, voir(d));
+    ctx.importEnregistrerPsn(jeton, 'HDK', '4610');
+    d = lignesDuDiagnostic(ctx);
+    verifier('PSN changé en 4610 : aucune ligne gardée, et le Diagnostic dit de réimporter — pas « est-ce le bon ? » (l’extract en a 10)',
+      ctx.lireSecondeBase(c, 'HDK').rapprochement.lignes.length === 0 && d.indexOf(REIMP('4610')) !== -1 && !d.some(x => /est-ce le bon/.test(x)) &&
+      d.some(x => /SEE HDK : 10 lignes \(triées à l’import sur 25 lignes\), 0 gardée/.test(x)), voir(d));
+    ctx.importEnregistrerPsn(jeton, 'HDK', '4530');
+    d = lignesDuDiagnostic(ctx);
+    verifier('PSN remis à 4530, celui de l’import : pas d’avertissement',
+      !d.some(x => /réimporter|est-ce le bon/.test(x) && /SEE HDK/.test(x)) && ctx.lireSecondeBase(c, 'HDK').rapprochement.lignes.length === 10, voir(d));
+  }
+
+  // =================================================================
+  section('Débrief 21 : relecture — un PSN rangé en nombre se lit dans sa valeur, quel que soit son format');
+  {
+    /* Le PSN de chaque ligne (toutes en WD) : texte, ou le nombre 4530 sous divers formats d'affichage. */
+    const cas = [['4530', true], [{ n: 4530 }, true], [{ n: 4530, fmt: 'mille' }, true], [{ n: 4530, fmt: 'zeros5' }, true], [{ n: 4530, fmt: '0.00' }, true],
+      ['4 530', false], [{ n: 14530, fmt: 'mille' }, false], ['4610', false], [{ n: 4610, fmt: 'zeros5' }, false]];
+    const lignes = lignesSeeComplet(cas.length, i => ({ psn: cas[i][0], type: 'WD' }));
+    const voulus = cas.map((x, i) => x[1] ? nomDe(i) : null).filter(Boolean);
+    const c = classeur();
+    const ctx = serveur(c);
+    const page = await fenetre(ctx);
+    const noms = () => { const f = c.getSheetByName('SEE HDK'); return f ? f.valeurs.slice(2).map(l => l[0]) : null; };
+    let r = await importer(page, 'Nommage WD BFLOW.xlsx', xlsx({ onglets: [{ nom: 'Nommage', lignes }] }));
+    verifier('.xlsx : 4530 en texte, en nombre Standard, #,##0 (« 4 530 »), 00000 (« 04530 ») et 0.00 vont tous à « SEE HDK » ; « 4 530 » écrit en texte, 14530 et 4610 non',
+      /\bok\b/.test(r.etat.classe) && JSON.stringify(noms()) === JSON.stringify(voulus), r.etat.texte + ' / ' + JSON.stringify(noms()));
+    const enXls = lignes.map((l, k) => k < 3 ? l : l.map((v, j) => j === I_PSN && v && typeof v === 'object' && !v.fmt ? { rk: v.n, fmt: 'mille' } : v));
+    r = await importer(page, 'Nommage WD BFLOW.xls', FX.xls({ onglets: [{ nom: 'Nommage', lignes: enXls }] }));
+    verifier('.xls : les mêmes lignes — un NUMBER ou un RK au format #,##0, 00000 ou 0.00 reste le PSN 4530',
+      /\bok\b/.test(r.etat.classe) && JSON.stringify(noms()) === JSON.stringify(voulus), r.etat.texte + ' / ' + JSON.stringify(noms()));
+    r = await importer(page, 'Nommage WD BFLOW.xlsx', xlsx({ onglets: [{ nom: 'Nommage', lignes }] }), { toutes: true });
+    const f = c.getSheetByName('SEE HDK'), iPsn = ENTETE_COMPLET.filter(Boolean).indexOf('VALIDITY PSN FULL');
+    verifier('avec toutes les colonnes : la colonne VALIDITY PSN FULL posée porte « 4530 », la valeur, pour chaque ligne gardée',
+      /\bok\b/.test(r.etat.classe) && !!f && f.valeurs.length === 2 + voulus.length && f.valeurs.slice(2).every(l => l[iPsn] === '4530'),
+      r.etat.texte + ' / ' + JSON.stringify(f && f.valeurs.slice(2).map(l => l[iPsn])));
+    await page.close();
+    /* Collé à la main : Sheets affiche « 4 530 », la page relit la valeur. */
+    const affiches = ['4530', { valeur: 4530, affiche: '4530' }, { valeur: 4530, affiche: '4 530' }, { valeur: 4530, affiche: '04530' }, { valeur: 4530, affiche: '4530,00' },
+      '4 530', { valeur: 14530, affiche: '14 530' }, '4610', { valeur: 4610, affiche: '04610' }];
+    const collage = collees(lignes).map((l, k) => k < 3 ? l : l.map((v, j) => j === I_PSN ? affiches[k - 3] : v));
+    const c2 = new Classeur([ongletGates('HDK', gates(40)), new Feuille('SEE HDK', collage)]);
+    const ctx2 = serveur(c2);
+    const lu = ctx2.lireSecondeBase(c2, 'HDK');
+    verifier('un extract collé où Sheets affiche « 4 530 » ou « 04530 » pour le nombre 4530 : la page relit la valeur et garde ces lignes',
+      lu.etat === 'ok' && JSON.stringify(lu.rapprochement.lignes.map(l => l.NAME)) === JSON.stringify(voulus), JSON.stringify(lu.rapprochement && lu.rapprochement.lignes.map(l => l.NAME)));
+  }
+
+  // =================================================================
+  section('Débrief 21 : relecture — « toutes les colonnes » : la limite du classeur se compte sur la part de chaque contrat');
+  {
+    const nommees = ENTETE_COMPLET.filter(Boolean).length;
+    /* Les limites abaissées pour l'essai : 2 000 cellules par onglet, 3 000 en mémoire. */
+    const petites = html => html.replace('"maxCellulesToutes":4000000', '"maxCellulesToutes":2000');
+    const c = classeur();
+    const ctx = serveur(c);
+    let page = await fenetre(ctx, petites);
+    /* 300 lignes : 20 de HDK en WD, 250 d'autres porteurs en WD, 30 en PH — 270 × 19 colonnes en mémoire, bien plus que 2 000. */
+    const tri = i => i % 15 === 0 ? { psn: '4520,4530,4540', type: 'WD' } : i % 10 === 1 ? { psn: '4530', type: 'PH' } : { psn: '4610', type: 'WD' };
+    let r = await importer(page, 'Nommage WD BFLOW.xlsx', seeComplet(300, tri), { toutes: true });
+    let f = c.getSheetByName('SEE HDK');
+    verifier('l’extract de tous les porteurs, toutes colonnes : beaucoup de WD en tout, mais « SEE HDK » ne reçoit que ses 20 lignes × ' + nommees + ' colonnes — sous la limite, importé',
+      /\bok\b/.test(r.etat.classe) && !!f && f.valeurs.length === 22 && f.valeurs[1].length === nommees, r.etat.texte + ' / ' + (r.case && r.case.lu));
+    /* 120 lignes pour HDK : 121 × 19 > 2 000 — c'est l'onglet qui serait trop plein, et la fenêtre le dit avant d'envoyer. */
+    const k = await poser(page, 'see', [{ nom: 'Nommage WD BFLOW.xlsx', contenu: seeComplet(200, i => i < 120 ? { psn: '4530', type: 'WD' } : { psn: '4610', type: 'WD' }) }]);
+    let ui = await fenetreEtat(page);
+    verifier('120 lignes pour HDK avec toutes les colonnes : « Importer » attend — « SEE HDK » recevrait 120 lignes × ' + nommees + ' colonnes, plus que le classeur n’en prend ; décocher « toutes »',
+      k.etat === 'lu' && ui.desactive && /^« SEE HDK » recevrait 120 lignes × 19 colonnes, plus de 2.000 cellules : trop pour le classeur\. Décocher « Garder aussi les autres colonnes »/.test(ui.blocage) &&
+      /trop pour « SEE HDK »/.test(porteur(k, 'HDK').part), JSON.stringify([ui.blocage, porteur(k, 'HDK').part, k.lu]));
+    await page.close();
+    /* La mémoire de la fenêtre, elle, se compte sur toutes les lignes lues : sa propre limite, et un message qui ne parle pas du classeur. */
+    page = await fenetre(ctx, html => html.replace('"maxCellulesLecture":16000000', '"maxCellulesLecture":3000'));
+    r = await importer(page, 'Nommage WD BFLOW.xlsx', seeComplet(300, tri), { toutes: true });
+    verifier('au-delà de ce que la fenêtre garde en mémoire : la case le dit — tous porteurs confondus, trop à garder en mémoire — sans « même triées » ni « trop pour le classeur »',
+      r.etat.classe === 'erreur' && /Plus de 3.000 cellules avec toutes les colonnes, rien qu’en DIAGRAM TYPE WD, tous porteurs confondus : trop à garder en mémoire/.test(r.case.lu) &&
+      !/même triées|pour le classeur/.test(r.case.lu), r.case.lu);
+    await page.close();
+  }
+
+  // =================================================================
+  section('Débrief 21 : relecture — des cellules de PSN toutes différentes : la frappe ne recompte pas, la sortie du champ recompte juste');
+  {
+    const n = 20000;
+    let graine = 7;
+    const hasard = () => (graine = (graine * 16807) % 2147483647) / 2147483647;
+    /* Chaque cellule, une liste de 40 PSN qui ne se répète pas ; 4530 dans une ligne sur cent, 14530 et 45301 (pas 4530) dans une autre, « Á4530 » une fois. */
+    const liste = i => {
+      const t = [];
+      for (let j = 0; j < 40; j++) { let x = 1000 + Math.floor(hasard() * 8999); if (x === 4530) x = 4531; t.push(x); }
+      if (i % 100 === 0) t[Math.floor(hasard() * 40)] = 4530;
+      if (i % 100 === 1) { t[3] = 14530; t[9] = 45301; }
+      if (i === 7) t[5] = 'Á4530';
+      return t.join(',');
+    };
+    const c = classeur();
+    const ctx = serveur(c);
+    const page = await fenetre(ctx);
+    let k = await poser(page, 'see', [{ nom: 'Nommage WD BFLOW.xlsx', contenu: seeComplet(n, i => ({ psn: liste(i), type: 'WD' })) }]);
+    verifier('20 000 lignes, chacune sa liste de 40 PSN : HDK (4530) en a 200', k.etat === 'lu' && porteur(k, 'HDK').lignes === '200', JSON.stringify([k.lu, porteur(k, 'HDK')]));
+    const frappe = await page.evaluate(() => {
+      const champ = document.querySelector('[data-case="see"] .porteur[data-contrat="HDK"] input'), li = champ.closest('.porteur'), vu = [];
+      ['4', '45', '453', '4530,', '4530, ', '4530'].forEach(v => {
+        const t0 = performance.now();
+        champ.value = v;
+        champ.dispatchEvent(new Event('input', { bubbles: true }));
+        vu.push({ ms: performance.now() - t0, part: li.querySelector('.part').textContent, lignes: li.getAttribute('data-lignes') });
+      });
+      const t1 = performance.now();
+      champ.dispatchEvent(new Event('change', { bubbles: true }));
+      return { vu: vu, sortie: { ms: performance.now() - t1, lignes: li.getAttribute('data-lignes') } };
+    });
+    verifier('chaque touche (« 4 », « 45 »… « 4530 ») ne recompte rien — la part dit « … » ; la sortie du champ recompte une fois, juste (200, 14530 et 45301 écartés)',
+      frappe.vu.every(x => x.part === '— …' && x.lignes === '0' && x.ms < 50) && frappe.sortie.lignes === '200',
+      JSON.stringify(frappe));
+    await attendreLecture(page);
+    k = await taperPsn(page, 'HDK', 'A4530');
+    verifier('« A4530 » : la cellule « Á4530 » (hors ASCII) passe par la règle exacte — un PSN, accent ôté', porteur(k, 'HDK').lignes === '1', JSON.stringify(porteur(k, 'HDK')));
+    await page.close();
+  }
+
+  // =================================================================
+  section('Débrief 21 : relecture — un PSN corrigé après un import ; un onglet qui n’existe pas ; le bilan au-dessus du pied');
+  {
+    const c = classeur({ ths: true });
+    const ctx = serveur(c);
+    /* La vraie hauteur de la fenêtre (setHeight(700)). */
+    const page = await fenetre(ctx, null, { viewport: { width: 720, height: 700 } });
+    const tri = i => i % 3 === 0 ? { psn: '4530', type: 'WD' } : i % 3 === 1 ? { psn: '4610', type: 'WD' } : { psn: '4700', type: 'PH' };
+    let k = await poser(page, 'see', [{ nom: 'Nommage WD BFLOW.xlsx', contenu: seeComplet(90, tri) }]);
+    k = await taperPsn(page, 'THS', '9999');
+    verifier('THS, PSN 9999 et pas d’onglet « SEE THS » : la ligne dit qu’aucun onglet ne sera créé — pas « ne sera pas touché »',
+      porteur(k, 'THS').part === '— aucune ligne WD pour ce PSN : aucun onglet « SEE THS » ne sera créé', porteur(k, 'THS').part);
+    let r = await lancer(page);
+    const vue = await page.evaluate(() => {
+      const e = document.getElementById('etat').getBoundingClientRect(), p = document.querySelector('.pied').getBoundingClientRect();
+      return { bas: Math.round(e.bottom), pied: Math.round(p.top), haut: Math.round(e.top) };
+    });
+    verifier('le bilan : « aucun onglet « SEE THS » n’est créé » — et, à 720 × 700, il tient entier au-dessus du pied (Fermer, Importer)',
+      /\bavertissement\b/.test(r.classe) && /⚠ « THS » : aucune ligne WD pour le PSN 9999 — aucun onglet « SEE THS » n’est créé\./.test(r.texte) && !/SEE THS » n’est pas touché/.test(r.texte) &&
+      vue.bas <= vue.pied && vue.haut >= 0, r.texte + ' / ' + JSON.stringify(vue));
+    /* Le PSN corrigé dans la même fenêtre : l'extract est encore en mémoire, la case redevient importable. */
+    k = await taperPsn(page, 'THS', '4610');
+    let ui = await fenetreEtat(page);
+    verifier('le PSN de THS corrigé (4610) après l’import : sa part se recompte (30 lignes → créera « SEE THS »), l’ancien ⚠ s’efface, « Importer » se rallume',
+      k.etat === 'lu' && porteur(k, 'THS').part === '— 30 lignes WD → créera « SEE THS »' && k.resultat === '' && !ui.desactive && ui.etat === '',
+      JSON.stringify([k.etat, porteur(k, 'THS'), k.resultat, ui]));
+    r = await lancer(page);
+    const g = c.getSheetByName('SEE THS');
+    verifier('importé à nouveau : « SEE THS » est créé avec ses 30 lignes, sans reposer le fichier',
+      /\bok\b/.test(r.classe) && !!g && g.valeurs.length === 32, r.texte + ' / ' + nomsOnglets(c).join(', '));
+    await page.close();
+    /* Un onglet qui existe : « n’est pas touché » reste juste. */
+    const c2 = classeur({ ths: true, autres: [new Feuille('SEE THS', [['NAME', 'SOL.', 'Cust.V'], ['X', '001', 'A']])] });
+    const ctx2 = serveur(c2);
+    const page2 = await fenetre(ctx2);
+    r = await importer(page2, 'Nommage WD BFLOW.xlsx', seeComplet(90, tri), { psn: { THS: '9999' } });
+    verifier('« SEE THS » existe déjà : « n’est pas touché », et il ne l’est pas', /⚠ « THS » : aucune ligne WD pour le PSN 9999 — « SEE THS » n’est pas touché\./.test(r.etat.texte) &&
+      c2.getSheetByName('SEE THS').valeurs.length === 2, r.etat.texte);
+    await page2.close();
+  }
+
+  // =================================================================
+  section('Débrief 21 : relecture — un classeur vide, l’extract SEE posé d’abord');
+  {
+    const c = new Classeur([new Feuille('Feuille 1', [])]);
+    const ctx = serveur(c);
+    const page = await fenetre(ctx);
+    const premiere = (await fenetreEtat(page)).cases.filter(x => /^n/.test(x))[0];
+    await poser(page, 'see', [{ nom: 'Nommage WD BFLOW.xlsx', contenu: seeComplet(30, () => ({ psn: '4530', type: 'WD' })) }]);
+    let ui = await fenetreEtat(page);
+    verifier('l’extract SEE avant tout contrat : « Importer » renvoie à la case déjà ouverte, « GATES », plus haut — pas à « Ajouter un contrat… »',
+      ui.desactive && ui.blocage === 'Aucun contrat pour la base SEE : poser d’abord l’export GATES du contrat dans sa case « GATES », plus haut.' && ui.cases.length === 2, JSON.stringify(ui));
+    const l = await poser(page, premiere, [{ nom: 'export.xlsx', contenu: xlsxGates(gates(30)) }]);
+    verifier('l’export posé : « le premier contrat du classeur, rangé en tête des onglets » — pas « après les autres »',
+      /^Créera l’onglet « HDK » : le premier contrat du classeur, rangé en tête des onglets\.$/.test(l.cible), l.cible);
+    const r = await lancer(page);
+    verifier('importé : « HDK » est bien le premier onglet', /\bok\b/.test(r.classe) && nomsOnglets(c)[0] === 'HDK', r.texte + ' / ' + nomsOnglets(c).join(', '));
+    await page.close();
+  }
+
+  // =================================================================
+  section('Débrief 21 : relecture — la case d’un contrat ajouté, à 720 px : le nom du fichier d’un seul tenant');
+  {
+    const c = new Classeur([ongletGates('HDK', gates(40))]);
+    const ctx = serveur(c);
+    const page = await fenetre(ctx, null, { viewport: { width: 720, height: 700 } });
+    const id = await ajouterContrat(page);
+    const avant = await page.evaluate(i => { const el = document.querySelector('[data-case="' + i + '"] .invite'); return Math.round(el.getBoundingClientRect().height); }, id);
+    await poser(page, id, [{ nom: 'Export GATES (1).xlsx', contenu: xlsxGates(gates(20, { prefixe: 'NEO', groupe: 'NEO' })) }]);
+    const m = await page.evaluate(i => {
+      const el = document.querySelector('[data-case="' + i + '"]'), r = s => el.querySelector(s).getBoundingClientRect();
+      return { nomH: Math.round(r('.fichier-nom').height), nomL: Math.round(r('.fichier-nom').width), tete: Math.round(r('.tete').height),
+               ensemble: Math.abs(r('.choisir').top - r('.retirer').top) < 4 && Math.abs(r('.retirer').top - r('.annuler').top) < 4 };
+    }, id);
+    verifier('« Export GATES (1).xlsx » se lit sur une ligne, « Changer… », « Retirer » et « Annuler » restent ensemble ; l’invite de la case vide tient sur une ou deux lignes',
+      m.nomH <= 24 && m.nomL >= 150 && m.ensemble && m.tete <= 90 && avant <= 40, JSON.stringify([m, avant]));
     await page.close();
   }
 
@@ -2610,7 +2834,7 @@ const paquetSansDate = o => { const x = JSON.parse(JSON.stringify(o)); delete x.
       const champ = document.querySelector('[data-case="see"] .porteur[data-contrat="THS"] input');
       const debut = performance.now();
       champ.value = '4610, 4530';
-      champ.dispatchEvent(new Event('input', { bubbles: true }));
+      champ.dispatchEvent(new Event('change', { bubbles: true }));
       return { ms: performance.now() - debut, lignes: champ.closest('.porteur').getAttribute('data-lignes') };
     });
     await attendreLecture(page);

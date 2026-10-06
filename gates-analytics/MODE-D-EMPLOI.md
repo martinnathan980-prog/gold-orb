@@ -419,8 +419,9 @@ du champ) : rien à retaper la fois suivante, ni dans une autre fenêtre.
   (« 4610, 4620 ») ; une ligne qui porte l'un ou l'autre lui revient. Une
   ligne qui porte les PSN de deux contrats (« 4530;4610 ») va dans les deux
   bases.
-- Changer un PSN **recompte aussitôt** les lignes du contrat, sans relire le
-  fichier, même pour un extract de 60 000 lignes.
+- Changer un PSN **recompte** les lignes du contrat sans relire le
+  fichier, dès qu'on a fini de taper (ou qu'on quitte le champ) — même
+  pour un extract de 60 000 lignes.
 - **Un contrat sans PSN n'a pas de base SEE** : sa ligne le dit (« pas de
   base SEE tant que le PSN n'est pas donné »), et l'import ne touche pas à
   son onglet SEE — mieux vaut pas de comparaison que celle des plans d'une
@@ -433,7 +434,10 @@ du champ) : rien à retaper la fois suivante, ni dans une autre fenêtre.
   (le vide tapé l'emporte sur la configuration). Le retaper le rétablit.
 - Ce qui n'est pas un PSN (« 4530! ») est refusé sous le champ, et
   Importer attend qu'on le corrige.
-- Changer le PSN **après** un import ne retrie pas la base déjà posée : le
+- Un PSN corrigé **juste après** un import, fenêtre encore ouverte : la
+  case SEE se recompte et **Importer** se rallume — pas besoin de reposer
+  le fichier.
+- Changer le PSN **plus tard** ne retrie pas la base déjà posée : le
   Diagnostic le signale (« ⚠ SEE HDK a été trié à l'import sur le PSN 4530,
   mais celui de « HDK » est maintenant 4531 : réimporter l'extract SEE »).
 
@@ -466,8 +470,10 @@ remplacé, une formule d'un autre onglet qui pointait dessus serait à refaire
 La case **« Garder aussi les autres colonnes »** ne sert qu'à regarder tout
 l'extract dans le tableau SEE de la page : chaque base garde alors **ses**
 lignes (celles de son PSN, en WD) avec toutes leurs colonnes. La comparaison
-n'en a pas besoin, et c'est bien plus lourd (au-delà de quatre millions de
-cellules, la fenêtre refuse et dit de la décocher).
+n'en a pas besoin, et c'est bien plus lourd : au-delà de quatre millions de
+cellules **pour une base** (la part d'un contrat, pas l'extract de tous les
+porteurs), la ligne du contrat dit « trop pour « SEE HDK » » et Importer
+attend qu'on la décoche.
 
 **Ce que la fenêtre lit** : les `.xlsx` et `.xlsm` ; les **vrais `.xls`** —
 l'ancien format d'Excel 97 à 2003, et même celui d'Excel 5 / 95 —, tels que

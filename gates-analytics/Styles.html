@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "7962d60";
+  --suivi-fwd-edition: "6568f96";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -826,7 +826,7 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 }
 body[data-vide="true"] .sommaire { display: none; }
 /* Sans sommaire (classeur vide), la bande du titre se referme seule. */
-body[data-vide="true"] .masthead { border-bottom: 1px solid var(--bandeau-bord); border-radius: 12px; }
+@media screen { body[data-vide="true"] .masthead { border-bottom: 1px solid var(--bandeau-bord); border-radius: 12px; } }
 @media (prefers-reduced-motion: reduce) { .sommaire, .sommaire a, .sommaire-marque { transition: none; } }
 @media print { .sommaire { display: none; } }
 /* Un saut vers un panneau — ou tout ce que la page amène à l'écran —

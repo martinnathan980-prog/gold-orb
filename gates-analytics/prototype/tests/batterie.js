@@ -5514,6 +5514,29 @@ async function reinitialiser(pg) {
     await reinitialiser(p);
   }
 
+  section('Débrief 21 : relecture');
+  /* Un classeur vide imprimé : la bande du titre se referme d'un filet
+     arrondi à l'écran, mais à l'impression le titre redevient noir sur
+     blanc — sans cadre, comme pour un classeur rempli. */
+  {
+    const ctxImp = await contexte();
+    await ctxImp.addInitScript(() => {
+      window.SUIVI_FWD_DONNEES = { ok: false, message: 'Feuille vide : aucun plan.', colonnes: [], plans: [], releves: [], jalons: [], contrats: [], contrat: '' };
+    });
+    const pi = await page(ctxImp, 'classeur vide imprimé');
+    const cadre = () => pi.evaluate(() => {
+      const st = getComputedStyle(document.querySelector('.masthead'));
+      return { vide: document.body.dataset.vide, bas: st.borderBottomWidth + ' ' + st.borderBottomStyle, rayon: st.borderBottomLeftRadius };
+    });
+    const ecran = await cadre();
+    await pi.emulateMedia({ media: 'print' });
+    const papier = await cadre();
+    verifier('classeur vide : à l’écran, la bande du titre se referme d’un filet arrondi ; à l’impression, ni filet ni coins arrondis sous « Suivi FWD »',
+      ecran.vide === 'true' && /^1px solid/.test(ecran.bas) && ecran.rayon === '12px' && /^0px|none/.test(papier.bas) && papier.rayon === '0px',
+      JSON.stringify([ecran, papier]));
+    await ctxImp.close();
+  }
+
   section('Persistance (même navigateur, page rechargée)');
   await p.click('button[data-trig="fin"]'); await p.waitForTimeout(300);
   /* Débrief 19 : « quand on ouvre, t'es directement sur Tout » — un cadrage

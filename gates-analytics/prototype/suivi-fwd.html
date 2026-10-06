@@ -830,7 +830,7 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 }
 body[data-vide="true"] .sommaire { display: none; }
 /* Sans sommaire (classeur vide), la bande du titre se referme seule. */
-body[data-vide="true"] .masthead { border-bottom: 1px solid var(--bandeau-bord); border-radius: 12px; }
+@media screen { body[data-vide="true"] .masthead { border-bottom: 1px solid var(--bandeau-bord); border-radius: 12px; } }
 @media (prefers-reduced-motion: reduce) { .sommaire, .sommaire a, .sommaire-marque { transition: none; } }
 @media print { .sommaire { display: none; } }
 /* Un saut vers un panneau — ou tout ce que la page amène à l'écran —
