@@ -70,7 +70,7 @@
 <script>
   /* La livraison de ce fichier, posée par la construction : la page la compare
      à celles de Code, Styles et Javascript, et nomme celui qui diffère. */
-  window.SUIVI_FWD_LIVRAISON_INDEX = '6568f96';
+  window.SUIVI_FWD_LIVRAISON_INDEX = '6ac610d';
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
@@ -134,8 +134,8 @@
        demande depuis le bandeau. -->
   <section class="ensemble panneau panneau-hors-suite" id="ensemble" hidden aria-label="Vue d’ensemble des contrats"></section>
 
-  <!-- Le titre, dans sa bande d'encre (débrief 21) : rien ne lui vole sa
-       zone. Le contrat n'est pas répété, il est déjà choisi en haut. -->
+  <!-- Le titre, seul, au centre : rien ne lui vole sa zone. Le contrat n'est
+       pas répété, il est déjà choisi en haut. -->
   <header class="masthead">
     <h1 id="titre-page">Suivi FWD</h1>
     <div class="semaine">
@@ -148,7 +148,7 @@
   <!-- Le sommaire (débrief 20) : les panneaux de la page, chacun avec son
        numéro dans sa teinte, sous le titre puis collé en haut de l'écran
        pendant qu'on descend ; il marque celui qu'on lit et y mène d'un clic.
-       Accroché sous le bandeau du titre (débrief 21), mais hors de lui. Un panneau absent (pas de
+       Hors du bandeau du titre, qui reste seul. Un panneau absent (pas de
        seconde base : pas de comparaison) s'efface du sommaire, et les
        numéros suivent ceux des panneaux, posés de la même façon (compteur). -->
   <nav class="sommaire" id="sommaire" aria-label="Sections de la page">

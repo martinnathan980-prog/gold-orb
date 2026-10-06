@@ -5392,7 +5392,9 @@ async function reinitialiser(pg) {
       cache21.cadre === 'none' && cache21.largeur === 0 && cache21.revenu, JSON.stringify(cache21));
     await p.waitForTimeout(300);
 
-    // --- 3. Le bandeau du titre et les panneaux, dans les deux thèmes.
+    // --- 3. Le titre et les panneaux, dans les deux thèmes. Débrief 22 : la
+    //     bande d'encre du débrief 21 « faisait trop un bloc à part » — le
+    //     titre se fond de nouveau dans la page, sans cadre, comme au débrief 20.
     const lireBandeau = pg => pg.evaluate(() => {
       function lum(c) {
         const m = c.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => {
@@ -5407,14 +5409,20 @@ async function reinitialiser(pg) {
       const rm = mh.getBoundingClientRect(), rn = nav.getBoundingClientRect(), rs = syn.getBoundingClientRect();
       const papier = cs(document.body).backgroundColor, surface = cs(document.getElementById('section-plans')).backgroundColor;
       const fond = cs(mh).backgroundColor;
+      const transparent = c => /rgba\(.*, 0\)$/.test(c) || c === 'transparent';
+      const sansCadre = el => ['Top', 'Right', 'Bottom', 'Left'].every(c => parseFloat(cs(el)['border' + c + 'Width']) === 0) && cs(el).boxShadow === 'none';
+      const centre = Math.abs((rm.left + rm.right) / 2 - (rs.left + rs.right) / 2) <= 2;
+      const rt = document.createRange(); rt.selectNodeContents(h1);
+      const rtitre = rt.getBoundingClientRect();
       const bandeau = {
-        fond, papier, fondPlein: fond !== papier && !/rgba\(.*, 0\)$/.test(fond),
+        fond, papier, fondus: transparent(fond) && sansCadre(mh) && cs(mh).borderRadius === '0px',
         poids: +cs(h1).fontWeight, taille: parseFloat(cs(h1).fontSize), police: cs(h1).fontFamily.split(',')[0],
-        cTitre: contraste(cs(h1).color, fond), cSemaine: contraste(cs(sem).color, fond),
-        cSemaineB: contraste(cs(sem.querySelector('b')).color, fond),
-        largeur: Math.abs(rm.left - rs.left) <= 1 && Math.abs(rm.width - rs.width) <= 1,
-        accroche: Math.abs(rn.top - rm.bottom) <= 1 && Math.abs(rn.left - rm.left) <= 1 && Math.abs(rn.width - rm.width) <= 1,
-        navFond: cs(nav).backgroundColor === surface, navRayon: cs(nav).borderBottomLeftRadius !== '0px'
+        cTitre: contraste(cs(h1).color, papier), cSemaine: contraste(cs(sem).color, papier),
+        cSemaineB: contraste(cs(sem.querySelector('b')).color, papier),
+        centre: centre && Math.abs((rtitre.left + rtitre.right) / 2 - (rs.left + rs.right) / 2) <= 3,
+        sousTitre: rn.top >= rm.bottom - 12,
+        navFond: cs(nav).backgroundColor === papier, navSansCadre: transparent(cs(nav).borderBottomColor) && parseFloat(cs(nav).borderTopWidth) === 0 &&
+                 parseFloat(cs(nav).borderLeftWidth) === 0 && cs(nav).boxShadow === 'none' && cs(nav).borderBottomLeftRadius === '0px'
       };
       const ids = ['section-synthese', 'section-tendance', 'section-journal', 'section-repartition', 'section-plans', 'rapprochement'];
       const panneaux = ids.map(id => {
@@ -5438,11 +5446,11 @@ async function reinitialiser(pg) {
     });
     const verifierBandeau = (b, theme, largeur) => {
       const B = b.bandeau;
-      verifier(theme + ', ' + largeur + ' px : « Suivi FWD » dans une vraie bande de titre — un fond plein, de la largeur des panneaux, le titre en Newsreader appuyé, grand, très lisible',
-        B.fondPlein && B.largeur && B.police === 'Newsreader' && B.poids >= 500 && B.taille >= (largeur < 720 ? 32 : 44) && B.cTitre >= 7 && B.cSemaine >= 4.5 && B.cSemaineB >= 4.5,
+      verifier(theme + ', ' + largeur + ' px : « Suivi FWD » se fond dans la page — posé sur le papier, sans fond, sans cadre ni ombre, centré au-dessus des panneaux, en Newsreader, grand et lisible',
+        B.fondus && B.centre && B.police === 'Newsreader' && B.taille >= (largeur < 720 ? 32 : 44) && B.cTitre >= 7 && B.cSemaine >= 4.5 && B.cSemaineB >= 4.5,
         JSON.stringify(B));
-      verifier(theme + ', ' + largeur + ' px : le sommaire est accroché sous la bande, même largeur, sur le blanc des panneaux, arrondi en bas',
-        B.accroche && B.navFond && B.navRayon, JSON.stringify(B));
+      verifier(theme + ', ' + largeur + ' px : le sommaire suit le titre, sur le papier, sans cadre autour — rien ne fait de l’en-tête un bloc à part',
+        B.sousTitre && B.navFond && B.navSansCadre, JSON.stringify(B));
       const P = b.panneaux;
       verifier(theme + ', ' + largeur + ' px : chaque panneau ouvre sur sa tête teintée (surtitre et titre), d’un bord à l’autre, fermée d’un filet, sous un liseré de sa teinte',
         P.every(x => x.tete && x.pleineLargeur && x.filet && x.liseré && x.fondTete !== x.fond && x.fond === b.surface),
@@ -5468,16 +5476,16 @@ async function reinitialiser(pg) {
         m.mesures.every(bonChevron) && m.page, JSON.stringify(m.mesures.filter(x => !bonChevron(x))));
     }
     await ctxS21.close();
-    // Collé en haut pendant qu'on lit : le sommaire garde la largeur des panneaux et flotte au-dessus d'eux.
+    // Collé en haut pendant qu'on lit : le sommaire, sur le papier, souligné d'un filet, devant les panneaux.
     await p.evaluate(() => window.scrollTo(0, document.getElementById('section-repartition').getBoundingClientRect().top + window.scrollY + 300));
     await p.waitForTimeout(500);
     const colle21 = await p.evaluate(() => {
-      const n = document.getElementById('sommaire'), r = n.getBoundingClientRect(), s = document.getElementById('section-plans').getBoundingClientRect();
-      return { colle: n.dataset.colle, haut: Math.round(r.top), largeur: Math.abs(r.left - s.left) <= 1 && Math.abs(r.width - s.width) <= 1,
-               ombre: getComputedStyle(n).boxShadow !== 'none', devant: +getComputedStyle(n).zIndex > 0 };
+      const n = document.getElementById('sommaire'), r = n.getBoundingClientRect(), cs = getComputedStyle(n);
+      return { colle: n.dataset.colle, haut: Math.round(r.top), fond: cs.backgroundColor === getComputedStyle(document.body).backgroundColor,
+               filet: parseFloat(cs.borderBottomWidth) >= 1 && !/rgba\(.*, 0\)$/.test(cs.borderBottomColor), devant: +cs.zIndex > 0 };
     });
-    verifier('en lisant plus bas, le sommaire reste collé en haut, de la largeur des panneaux, avec son ombre, devant eux',
-      colle21.colle === 'true' && colle21.haut === 0 && colle21.largeur && colle21.ombre && colle21.devant, JSON.stringify(colle21));
+    verifier('en lisant plus bas, le sommaire reste collé en haut, sur le papier, souligné d’un filet, devant les panneaux',
+      colle21.colle === 'true' && colle21.haut === 0 && colle21.fond && colle21.filet && colle21.devant, JSON.stringify(colle21));
     await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(300);
     await reinitialiser(p);
 
@@ -5515,9 +5523,9 @@ async function reinitialiser(pg) {
   }
 
   section('Débrief 21 : relecture');
-  /* Un classeur vide imprimé : la bande du titre se referme d'un filet
-     arrondi à l'écran, mais à l'impression le titre redevient noir sur
-     blanc — sans cadre, comme pour un classeur rempli. */
+  /* Un classeur vide, à l'écran puis imprimé : le titre reste posé sur la
+     page, sans filet ni coins arrondis dessous (débrief 22 : plus de bande
+     de titre, donc plus rien à refermer quand le sommaire n'est pas là). */
   {
     const ctxImp = await contexte();
     await ctxImp.addInitScript(() => {
@@ -5531,8 +5539,8 @@ async function reinitialiser(pg) {
     const ecran = await cadre();
     await pi.emulateMedia({ media: 'print' });
     const papier = await cadre();
-    verifier('classeur vide : à l’écran, la bande du titre se referme d’un filet arrondi ; à l’impression, ni filet ni coins arrondis sous « Suivi FWD »',
-      ecran.vide === 'true' && /^1px solid/.test(ecran.bas) && ecran.rayon === '12px' && /^0px|none/.test(papier.bas) && papier.rayon === '0px',
+    verifier('classeur vide : à l’écran comme à l’impression, ni filet ni coins arrondis sous « Suivi FWD »',
+      ecran.vide === 'true' && /^0px|none/.test(ecran.bas) && ecran.rayon === '0px' && /^0px|none/.test(papier.bas) && papier.rayon === '0px',
       JSON.stringify([ecran, papier]));
     await ctxImp.close();
   }

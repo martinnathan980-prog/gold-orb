@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "6568f96";
+  --suivi-fwd-edition: "6ac610d";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -76,12 +76,6 @@
   --tete-groupe: #f8f2f5;   --tete-groupe-filet: #e8d8e1;
   --tete-plans: #f3f4ec;    --tete-plans-filet: #dcdfca;
   --tete-ardoise: #f0f3f8;  --tete-ardoise-filet: #d5dce8;
-  /* Le bandeau du titre (débrief 21, « trop caché dans le fond ») : une
-     bande d'encre profonde, le titre en clair. */
-  --bandeau-fond: #1f1e1a;
-  --bandeau-encre: #f7f5ef;
-  --bandeau-encre-2: #c3bfb3;
-  --bandeau-bord: #1f1e1a;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -108,10 +102,6 @@
     --tete-groupe: #231b21;   --tete-groupe-filet: #46343f;
     --tete-plans: #1e2017;    --tete-plans-filet: #3a3f27;
     --tete-ardoise: #1a1f27;  --tete-ardoise-filet: #34404f;
-    --bandeau-fond: #202026;
-    --bandeau-encre: #f1f0ea;
-    --bandeau-encre-2: #aeaca2;
-    --bandeau-bord: #303037;
   }
 }
 :root[data-theme="dark"] {
@@ -138,10 +128,6 @@
   --tete-groupe: #231b21;   --tete-groupe-filet: #46343f;
   --tete-plans: #1e2017;    --tete-plans-filet: #3a3f27;
   --tete-ardoise: #1a1f27;  --tete-ardoise-filet: #34404f;
-  --bandeau-fond: #202026;
-  --bandeau-encre: #f1f0ea;
-  --bandeau-encre-2: #aeaca2;
-  --bandeau-bord: #303037;
 }
 
 /* Les contrôles du navigateur — la liste d'un menu déroulant, les barres de
@@ -179,38 +165,25 @@ body {
 .panneau .feuille { background: none; border: none; border-top: 1px solid var(--filet); padding: 18px 0 0; }
 
 /* ---------------------------------------------------- Bandeau de titre */
-/* Débrief 21 : « Suivi FWD, c'est trop caché dans le fond ». Le titre n'est
-   plus un mot clair posé sur le papier : c'est une bande d'encre de la
-   largeur des panneaux, le titre en clair et plus appuyé, la semaine en
-   face. Le sommaire s'accroche dessous comme sa dernière ligne : titre et
-   index font un seul en-tête, qu'on ne confond avec aucun panneau. Le
-   contrat n'y est pas répété (débrief 3) : il est choisi juste au-dessus. */
-.masthead {
-  display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 10px 32px;
-  margin-top: 16px; padding: 30px 30px 26px;   /* 30 px : le titre s'aligne sur le contenu des panneaux */
-  background: var(--bandeau-fond); color: var(--bandeau-encre);
-  border: 1px solid var(--bandeau-bord); border-bottom: none; border-radius: 12px 12px 0 0;
-}
-@media (max-width: 720px) { .masthead { margin-top: 12px; padding: 20px 14px 16px; border-radius: 10px 10px 0 0; } }
+/* Le titre se fond dans la page : centré sur le papier, sans cadre ni
+   aplat (débrief 22 : la bande d'encre du débrief 21 faisait « un bloc à
+   part » — retour au titre du débrief 20). Le contrat n'y est pas répété
+   (débrief 3) : il est choisi juste au-dessus. */
+.masthead { text-align: center; padding-block: 40px 30px; }
+@media (max-width: 720px) { .masthead { padding-block: 26px 20px; } }
 .masthead h1 {
   font-family: Newsreader, Georgia, serif;
-  font-weight: 500; font-size: clamp(34px, 5vw, 50px);
-  letter-spacing: .005em; margin: 0; line-height: 1.02; color: var(--bandeau-encre);
+  font-weight: 300; font-size: clamp(34px, 6vw, 52px);
+  letter-spacing: .015em; margin: 0 0 12px; line-height: 1.05;
 }
 .semaine {
-  font-size: 15px; color: var(--bandeau-encre-2);
-  display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; padding-bottom: 3px;
+  font-size: 15px; color: var(--encre-2);
+  display: flex; justify-content: center; align-items: baseline; gap: 9px; flex-wrap: wrap;
 }
 /* Sur un téléphone, les dates passent sous la semaine : le point qui les
    séparait restait seul au bout de la première ligne. */
 @media (max-width: 420px) { .semaine > span[aria-hidden="true"] { display: none; } .semaine { row-gap: 2px; } }
-.masthead .semaine b { font-weight: 600; color: var(--bandeau-encre); }
-/* À l'impression, pas d'aplat d'encre : le titre redevient noir sur blanc. */
-@media print {
-  .masthead { background: none; border: none; padding-inline: 0; }
-  .masthead h1, .masthead .semaine b { color: #000; }
-  .semaine { color: #444; }
-}
+.masthead .semaine b { font-weight: 600; color: var(--encre); }
 .masthead .import {
   margin-top: 7px; font-size: 12.5px; color: var(--encre-3);
   display: inline-flex; align-items: center; gap: 7px;
@@ -768,18 +741,13 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
    haut de l'écran (sous le bandeau des filtres actifs s'il est là :
    --haut-sommaire, posé par le script), d'un filet souligné ; le panneau
    qu'on lit est écrit à l'encre et souligné de sa teinte. */
-/* Débrief 21 : le sommaire est la dernière ligne de l'en-tête — une bande
-   blanche accrochée sous le bandeau d'encre, de la même largeur, arrondie
-   en bas. Collé en haut de l'écran, il garde cette forme et une ombre un
-   peu plus nette : on voit qu'il flotte au-dessus des panneaux. */
 .sommaire {
   position: sticky; top: var(--haut-sommaire, 0px); z-index: 29;
-  display: flex; align-items: center; min-width: 0; margin-top: 0; padding-inline: 24px;
-  background: var(--surface); border: 1px solid var(--panneau-bord); border-top: none;
-  border-radius: 0 0 12px 12px; box-shadow: var(--panneau-ombre);
-  transition: border-color .2s, box-shadow .2s;
+  display: flex; align-items: center; min-width: 0; margin-top: -10px;
+  background: var(--papier); border-bottom: 1px solid transparent;
+  transition: border-color .2s;
 }
-.sommaire[data-colle="true"] { border-color: var(--filet-fort); box-shadow: 0 10px 22px -14px rgba(0, 0, 0, .45); }
+.sommaire[data-colle="true"] { border-bottom-color: var(--filet-fort); }
 .sommaire-liste {
   list-style: none; margin: 0 auto; padding: 0 2px; display: flex; gap: 0 28px; min-width: 0;
   overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain;
@@ -812,8 +780,8 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 /* Collé en haut, le nom de la page et du contrat se rappellent à gauche —
    posés par-dessus, sans rien pousser. Seulement quand la place est là. */
 .sommaire-marque {
-  position: absolute; left: 24px; top: 50%; transform: translateY(-50%);
-  font: 500 16px Newsreader, Georgia, serif; color: var(--encre); white-space: nowrap;
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  font: 400 16px Newsreader, Georgia, serif; color: var(--encre); white-space: nowrap;
   opacity: 0; pointer-events: none; transition: opacity .2s;
 }
 .sommaire-contrat { margin-left: 8px; font: 500 11.5px "IBM Plex Mono", monospace; color: var(--encre-2); }
@@ -821,12 +789,10 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .sommaire[data-colle="true"] .sommaire-marque { opacity: 1; }
 @media (max-width: 1180px) { .sommaire-marque { display: none; } }
 @media (max-width: 720px) {
-  .sommaire { padding-inline: 14px; border-radius: 0 0 10px 10px; }
+  .sommaire { margin-top: -6px; }
   .sommaire-liste { gap: 0 20px; margin: 0; padding: 0; }
 }
 body[data-vide="true"] .sommaire { display: none; }
-/* Sans sommaire (classeur vide), la bande du titre se referme seule. */
-@media screen { body[data-vide="true"] .masthead { border-bottom: 1px solid var(--bandeau-bord); border-radius: 12px; } }
 @media (prefers-reduced-motion: reduce) { .sommaire, .sommaire a, .sommaire-marque { transition: none; } }
 @media print { .sommaire { display: none; } }
 /* Un saut vers un panneau — ou tout ce que la page amène à l'écran —
