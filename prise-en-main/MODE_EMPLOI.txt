@@ -31,19 +31,24 @@ vu la chose se faire : repondez  o  (oui) ou  n  (non), puis Entree.
 
    Etape 1  Python fonctionne                      (rien a faire)
    Etape 2  Il cree un dossier sur le Bureau et l'ouvre
-   Etape 3  Il ouvre le Bloc-notes et ECRIT TOUT SEUL dedans
+   Etape 3  Il ouvre SON fichier « essai_clavier » dans le Bloc-notes et
+            ECRIT TOUT SEUL dedans (jamais dans un autre document)
             -> ne touchez ni au clavier ni a la souris pendant 10 secondes
-   Etape 4  Il BOUGE LA SOURIS tout seul et clique dans le Bloc-notes
+   Etape 4  Il BOUGE LA SOURIS tout seul et clique dans ce Bloc-notes
             -> ne touchez pas a la souris pendant 5 secondes
-   Il vous demande l'adresse de votre portail : copiez-la depuis votre Chrome,
-   puis CLIC DROIT dans la fenetre noire pour la coller, puis Entree.
+   Il vous demande l'adresse de votre portail : dans votre Chrome, allez sur
+   l'ACCUEIL du portail, cliquez dans la barre d'adresse, Ctrl+C. Revenez dans
+   la fenetre noire, Ctrl+V pour coller, puis Entree.
    Etape 5  Il ouvre le portail dans VOTRE Chrome habituel
    Etape 6  Il ouvre SON navigateur (une fenetre a part) et remplit une page d'essai
    Etape 7  Il ouvre le portail dans SA fenetre.
             Si le portail demande de vous connecter : connectez-vous dans SA fenetre.
             Puis il encadre en rouge ce qu'il sait cliquer (sans cliquer).
    Etape 8  Vous tapez le nom d'un menu ou d'un lien (par exemple GATES) :
-            il le trouve, l'encadre en rouge, et clique si vous dites o.
+            il le trouve, l'encadre en rouge, et clique seulement si vous
+            tapez o. Il ne clique jamais sur un bouton de formulaire, une
+            case a cocher, ni sur Supprimer, Enregistrer, Valider, OK...
+            Vous pouvez essayer jusqu'a 5 mots ; Entree sans rien = fini.
 
 IMPORTANT : quand le robot pose une question, CLIQUEZ D'ABORD DANS LA FENETRE NOIRE,
 puis repondez. (Si vous tapez « o » ailleurs, par exemple dans le Bloc-notes, il ne
