@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "6ac610d";
+  --suivi-fwd-edition: "4c88f7c";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -13,8 +13,9 @@
   --filet-fort: #cfccc2;
 
   --fait:   #286b45;
+  /* L'ambre ne peint plus aucune valeur (débrief 22) : il reste à « à
+     l'arrêt », au verdict SEE « avance », au mot « Démonstration ». */
   --cours:  #bf7f14;
-  --afaire: #71716a;
   --alerte: #a13b2a;
   /* Le changement d'indice : ni un état ni une alerte, une couleur à lui —
      un violet, distinct des trois états et du rouge, validé sur les deux
@@ -23,8 +24,22 @@
   /* Encre posee sur un aplat plein : claire sur les verts et gris soutenus du
      mode clair, sombre sur les memes aplats eclaircis du mode sombre. */
   --sur-plein: #ffffff;
-  /* L'ambre reste clair dans les deux themes : son encre ne bascule pas. */
-  --sur-ambre: #2c2208;
+  /* Débrief 22 — la couleur de chaque valeur de la colonne suivie (voir
+     lireValeurs) : validés, le vert --fait puis --v-fait-2 ; en cours,
+     bleu, framboise, turquoise (PWD_IN_PROGRESS, PWD_TO_CONTROL,
+     TO_CONFIRM), puis trois places de réserve pour des mots inconnus ;
+     à faire, deux gris. Chaque couleur déclare à côté d'elle l'encre de
+     son pourcentage (4,5:1 au moins, vérifié), thème par thème. Valeurs
+     passées au validateur dataviz : SPEC du débrief 22. */
+  --v-fait-2: #a0d466; --v-fait-2-encre: var(--encre);
+  --v-cours-1: #168dd9; --v-cours-1-encre: var(--encre);
+  --v-cours-2: #b0459a; --v-cours-2-encre: var(--sur-plein);
+  --v-cours-3: #1fbfbf; --v-cours-3-encre: var(--encre);
+  --v-cours-4: #1c689d; --v-cours-4-encre: var(--sur-plein);
+  --v-cours-5: #d773b8; --v-cours-5-encre: var(--encre);
+  --v-cours-6: #90cdf1; --v-cours-6-encre: var(--encre);
+  --v-afaire-1: #8a8880; --v-afaire-1-encre: var(--encre);
+  --v-afaire-2: #3b3a38; --v-afaire-2-encre: var(--sur-plein);
 
   /* Rampe séquentielle (clair → foncé), luminance strictement décroissante */
   --r1: #eef4f0; --r2: #d6e6dc; --r3: #b3d2c1; --r4: #86b8a0; --r5: #52997a; --r6: #286b45;
@@ -82,8 +97,17 @@
     --papier: #0d0d0c; --surface: #16161a; --creux: #1c1c20;
     --encre: #f1f0ea; --encre-2: #a6a49a; --encre-3: #7b7970;
     --filet: #272725; --filet-fort: #3d3c37;
-    --fait: #6fae82; --cours: #dda434; --afaire: #8f8f88; --alerte: #e0745c; --indice: #9d8cff;
+    --fait: #6fae82; --cours: #dda434; --alerte: #e0745c; --indice: #9d8cff;
     --sur-plein: #11110f;
+    --v-fait-2: #b1e3b7; --v-fait-2-encre: var(--sur-plein);
+    --v-cours-1: #2b5fc6; --v-cours-1-encre: var(--encre);
+    --v-cours-2: #ac3992; --v-cours-2-encre: var(--encre);
+    --v-cours-3: #1b98cc; --v-cours-3-encre: var(--sur-plein);
+    --v-cours-4: #94d9f6; --v-cours-4-encre: var(--sur-plein);
+    --v-cours-5: #9a73b8; --v-cours-5-encre: var(--sur-plein);
+    --v-cours-6: #6cd9d8; --v-cours-6-encre: var(--sur-plein);
+    --v-afaire-1: #696458; --v-afaire-1-encre: var(--encre);
+    --v-afaire-2: #c8c5c0; --v-afaire-2-encre: var(--sur-plein);
     --r1: #1a241e; --r2: #23382c; --r3: #2e4f3c; --r4: #3d6b51; --r5: #558a6b; --r6: #6fae82;
     --focus: #6fae82;
     --voile-ecart: rgba(221, 164, 52, .2);
@@ -108,8 +132,17 @@
   --papier: #0d0d0c; --surface: #16161a; --creux: #1c1c20;
   --encre: #f1f0ea; --encre-2: #a6a49a; --encre-3: #7b7970;
   --filet: #272725; --filet-fort: #3d3c37;
-  --fait: #6fae82; --cours: #dda434; --afaire: #8f8f88; --alerte: #e0745c; --indice: #9d8cff;
+  --fait: #6fae82; --cours: #dda434; --alerte: #e0745c; --indice: #9d8cff;
   --sur-plein: #11110f;
+  --v-fait-2: #b1e3b7; --v-fait-2-encre: var(--sur-plein);
+  --v-cours-1: #2b5fc6; --v-cours-1-encre: var(--encre);
+  --v-cours-2: #ac3992; --v-cours-2-encre: var(--encre);
+  --v-cours-3: #1b98cc; --v-cours-3-encre: var(--sur-plein);
+  --v-cours-4: #94d9f6; --v-cours-4-encre: var(--sur-plein);
+  --v-cours-5: #9a73b8; --v-cours-5-encre: var(--sur-plein);
+  --v-cours-6: #6cd9d8; --v-cours-6-encre: var(--sur-plein);
+  --v-afaire-1: #696458; --v-afaire-1-encre: var(--encre);
+  --v-afaire-2: #c8c5c0; --v-afaire-2-encre: var(--sur-plein);
   --r1: #1a241e; --r2: #23382c; --r3: #2e4f3c; --r4: #3d6b51; --r5: #558a6b; --r6: #6fae82;
   --focus: #6fae82;
   --voile-ecart: rgba(221, 164, 52, .2);
@@ -301,7 +334,7 @@ body {
    barre et les pastilles, qui ne sont QUE de la couleur, disparaîtraient, et
    un bouton pressé ne se distinguerait plus des autres. */
 @media (forced-colors: active) {
-  .barre span, .pastille { forced-color-adjust: none; }
+  .barre span, .pastille, .critique-barre span, .mini-jauge span, .fiche-plan-frise .bande { forced-color-adjust: none; }
   [aria-pressed="true"] { outline: 3px solid Highlight; outline-offset: -3px; }
 }
 
@@ -578,7 +611,7 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .fleche-etat { color: var(--filet-fort); text-align: center; }
 .etiq-etat { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; white-space: nowrap; }
 .etiq-etat.avant { color: var(--encre-3); justify-self: end; }
-.etiq-etat.avant .pastille { opacity: .4; }
+.etiq-etat.avant .pastille { opacity: .4; box-shadow: inset 0 0 0 1px var(--encre-3); }
 .etiq-etat.apres { color: var(--encre); font-weight: 500; }
 /* Les compteurs du résumé sont des boutons, avec leur pastille : un clic
    isole ce passage-là sur toutes les semaines. */

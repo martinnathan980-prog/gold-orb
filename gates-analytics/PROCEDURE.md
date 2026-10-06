@@ -935,8 +935,12 @@ Un numéro devant la valeur ne compte pas : « 3 - Validé » est « Validé »,
 « 1 - En cours » est « En cours ». Un nombre ne se lit comme un pourcentage
 que s'il est seul dans la cellule (une date n'en est pas un).
 
-Plusieurs valeurs d'une même famille prennent la couleur de la famille, de
-plus en plus claire. Seule la famille **fini** a un poids : c'est elle que
+Chaque valeur a sa couleur, qui suit le mot et non son compte (débrief 22) :
+validés en vert ; en cours en bleu (PWD_IN_PROGRESS, « En cours »),
+framboise (PWD_TO_CONTROL), turquoise (TO_CONFIRM), puis trois couleurs de
+réserve pour un mot inconnu ; à faire en deux gris qui alternent
+(FWD_TO_SEIZE puis TO_TREAT) ; non renseigné hachuré. La barre suit toujours
+cet ordre, sur tous les contrats. Seule la famille **fini** a un poids : c'est elle que
 compte la courbe, le rythme requis par jalon, la comparaison avec SEE. Une
 autre valeur qui voudrait dire « fini » s'ajoute à `VALEURS_FINIES`, en haut
 de `Code.gs` (et une valeur « pas commencé » à `VALEURS_A_FAIRE`).

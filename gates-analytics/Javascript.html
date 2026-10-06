@@ -6,7 +6,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '6ac610d';
+  var EDITION = '4c88f7c';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -97,17 +97,11 @@
   /* « libelle » compte des plans (« 63 Terminés »), « court » qualifie un plan
      (« À faire → Terminé ») : le pluriel n'a pas sa place dans le second. */
   var ETATS = [
-    { cle: 'termine', libelle: 'Validés',   court: 'Validé',   couleur: 'var(--fait)',   teinte: 'var(--fait)' },
-    { cle: 'encours', libelle: 'En cours',   court: 'En cours',  couleur: 'var(--cours)',  teinte: 'var(--cours)' },
-    { cle: 'afaire',  libelle: 'À faire',    court: 'À faire',   couleur: 'var(--afaire)', teinte: 'var(--afaire)' },
+    { cle: 'termine', libelle: 'Validés',   court: 'Validé',   couleur: 'var(--fait)',   teinte: 'var(--fait)', encre: 'var(--sur-plein)' },
+    { cle: 'encours', libelle: 'En cours',   court: 'En cours',  couleur: 'var(--v-cours-1)',  teinte: 'var(--v-cours-1)', encre: 'var(--v-cours-1-encre)' },
+    { cle: 'afaire',  libelle: 'À faire',    court: 'À faire',   couleur: 'var(--v-afaire-1)', teinte: 'var(--v-afaire-1)', encre: 'var(--v-afaire-1-encre)' },
     { cle: 'vide',    libelle: 'Non renseignés', court: 'Non renseigné', couleur: 'transparent', teinte: 'var(--filet-fort)', hachure: true }
   ];
-  /* Les deux fonds soutenus portent du blanc, l'ambre garde l'encre du texte :
-     c'est le couple valide par le controle de contraste. */
-  function encreSegment(cle) {
-    if (cle === 'termine' || cle === 'afaire') return 'var(--sur-plein)';
-    return cle === 'encours' ? 'var(--sur-ambre)' : 'var(--encre)';
-  }
   var ETAT_PAR_CLE = {};
   ETATS.forEach(function (e) { ETAT_PAR_CLE[e.cle] = e; });
 
@@ -980,6 +974,73 @@
     z.innerHTML = morceaux.map(function (m) { return '\x3Cp>' + m + '\x3C/p>'; }).join('');
   }
 
+  /* Débrief 22 : chaque valeur a SA couleur, et elle suit le mot, jamais
+     son compte — PWD_TO_CONTROL a la même sur HDK et sur THS, cette
+     semaine comme dans six mois. Chaque famille a sa suite de places ; les
+     mots connus de GATES et de la démonstration ont leur place fixe ; un
+     mot inconnu prend la première place libre de sa famille, dans l'ordre
+     alphabétique des clés ; au-delà de la suite, elle recommence. La barre
+     range chaque famille dans l'ordre de ses places — PWD_IN_PROGRESS,
+     PWD_TO_CONTROL, TO_CONFIRM ; FWD_TO_SEIZE, TO_TREAT : l'ordre que HDK
+     montrait déjà. Les voisinages que cet ordre peut créer sont tous
+     passés au validateur dataviz. « À faire » : deux gris qui alternent
+     dans l'ordre de la barre — la première valeur à faire a toujours le
+     même. */
+  var SUITE_FAMILLE = {
+    termine: ['fait-1', 'fait-2'],
+    encours: ['cours-1', 'cours-2', 'cours-3', 'cours-4', 'cours-5', 'cours-6'],
+    afaire: ['afaire-1', 'afaire-2']
+  };
+  var PLACE_CONNUE = {
+    validated: 'termine:0', valide: 'termine:0', traite: 'termine:0', termine: 'termine:0', pct100: 'termine:0',
+    pwd_in_progress: 'encours:0', encours: 'encours:0', pct: 'encours:0',
+    pwd_to_control: 'encours:1', to_confirm: 'encours:2',
+    fwd_to_seize: 'afaire:0', atraiter: 'afaire:0', afaire: 'afaire:0', pct0: 'afaire:0', to_treat: 'afaire:1'
+  };
+  /* La place connue d'un mot, seulement si la page le range dans la famille
+     de cette place : un VALIDATED que la démonstration sans configuration
+     compte « en cours » ne prend pas la place de PWD_IN_PROGRESS. -1 : aucune. */
+  function placeConnue(cle, famille) {
+    var p = PLACE_CONNUE[cle];
+    return p && p.split(':')[0] === famille ? Number(p.split(':')[1]) : -1;
+  }
+  function couleurDePlace(famille, place) {
+    var suite = SUITE_FAMILLE[famille], nom = suite[place % suite.length];
+    return nom === 'fait-1' ? { couleur: 'var(--fait)', encre: 'var(--sur-plein)' }
+      : { couleur: 'var(--v-' + nom + ')', encre: 'var(--v-' + nom + '-encre)' };
+  }
+  /* La couleur d'un mot qui n'est plus dans l'extract du jour (une valeur
+     « d'hier » de la courbe, de la frise, du journal) : la sienne s'il est
+     encore là, celle de sa place connue sinon, à défaut la première de sa
+     famille. null : « Non renseigné », hachuré. */
+  function couleurConnue(cle, famille) {
+    var v = VALEUR_PAR_CLE[cle];
+    if (v) return v.hachure ? null : { couleur: v.couleur, encre: v.encre };
+    if (!SUITE_FAMILLE[famille]) return null;
+    return couleurDePlace(famille, Math.max(0, placeConnue(cle, famille)));
+  }
+  function ordreDesCles(a, b) { return a.cle < b.cle ? -1 : a.cle > b.cle ? 1 : 0; }
+  function poserPlaces(liste) {
+    ['termine', 'encours'].forEach(function (f) {
+      var vals = liste.filter(function (v) { return v.famille === f; }).sort(ordreDesCles), prises = {};
+      /* Deux mots pour une même place (« Validé » et « VALIDATED ») : le
+         premier dans l'alphabet la garde, l'autre prend la suivante libre. */
+      vals.forEach(function (v) {
+        var p = placeConnue(v.cle, f);
+        if (p >= 0 && !prises[p]) { prises[p] = true; v.place = p; }
+      });
+      vals.forEach(function (v) {
+        if (v.place !== undefined) return;
+        var p = 0;
+        while (prises[p]) p++;
+        prises[p] = true; v.place = p;
+      });
+    });
+    liste.filter(function (v) { return v.famille === 'afaire'; }).sort(function (a, b) {
+      var pa = placeConnue(a.cle, 'afaire'), pb = placeConnue(b.cle, 'afaire');
+      return (pa < 0 ? 99 : pa) - (pb < 0 ? 99 : pb) || ordreDesCles(a, b);
+    }).forEach(function (v, i) { v.place = i; });
+  }
   function lireValeurs(plans) {
     var par = {}, liste = [];
     plans.forEach(function (p) {
@@ -987,25 +1048,17 @@
       if (!par[k]) { par[k] = { cle: k, libelle: libelleValeur(p[CLE_SUIVIE]), famille: classer(p[CLE_SUIVIE]), n: 0 }; liste.push(par[k]); }
       par[k].n++;
     });
+    poserPlaces(liste);
     liste.sort(function (a, b) {
-      return RANG_FAMILLE[a.famille] - RANG_FAMILLE[b.famille] || b.n - a.n || COMPARER_REF(a.libelle, b.libelle);
+      return RANG_FAMILLE[a.famille] - RANG_FAMILLE[b.famille] || (a.place || 0) - (b.place || 0) || COMPARER_REF(a.libelle, b.libelle);
     });
-    /* Plusieurs valeurs dans une même famille : la plus fréquente prend la
-       couleur de la famille, les suivantes s'éclaircissent. */
-    /* Le pas d'éclaircissement suit le nombre de valeurs de la famille :
-       la plus claire garde au moins la moitié de la teinte, pour rester
-       visible sur le papier, même en trait de quatre pixels. */
-    var rangs = {}, parFamille = {};
-    liste.forEach(function (v) { parFamille[v.famille] = (parFamille[v.famille] || 0) + 1; });
     liste.forEach(function (v) {
-      var r = rangs[v.famille] = (rangs[v.famille] || 0) + 1;
       var base = ETAT_PAR_CLE[v.famille];
-      var pas = parFamille[v.famille] > 1 ? Math.min(22, 50 / (parFamille[v.famille] - 1)) : 0;
       v.hachure = !!base.hachure;
-      v.teinte = base.teinte;
-      v.couleur = r === 1 ? base.couleur
-        : 'color-mix(in srgb, ' + base.couleur + ' ' + Math.round(100 - pas * (r - 1)) + '%, var(--surface))';
-      v.encre = r === 1 ? encreSegment(v.famille) : 'var(--encre)';
+      if (v.hachure) { v.couleur = base.couleur; v.teinte = base.teinte; v.encre = 'var(--encre)'; return; }
+      var c = couleurDePlace(v.famille, v.place);
+      v.couleur = v.teinte = c.couleur;
+      v.encre = c.encre;
     });
     VALEUR_PAR_CLE = par;
     return liste;
@@ -2349,7 +2402,7 @@
   /* Les valeurs « d'hier » de la courbe : portées par des relevés, plus par
      aucun plan aujourd'hui — « TO_TREAT » tombé à zéro est justement ce
      qu'on veut voir descendre. Nommées par leur première écriture, de la
-     couleur de leur famille. Refaites à chaque rangée. */
+     couleur de leur mot (couleurConnue). Refaites à chaque rangée. */
   var HIER_GRAPHE = {};
   function rendreFiltreValeurGraphe() {
     var z = $('filtre-valeur-graphe');
@@ -2368,7 +2421,7 @@
         vues[k] = true;
         if (!valeurDeCle(k) && !HIER_GRAPHE[k]) {
           var famille = classer(c.brut[k]), e = ETAT_PAR_CLE[famille];
-          HIER_GRAPHE[k] = { cle: k, libelle: libelleValeur(c.brut[k]), famille: famille, couleur: e.couleur, hachure: !!e.hachure };
+          HIER_GRAPHE[k] = { cle: k, libelle: libelleValeur(c.brut[k]), famille: famille, couleur: (couleurConnue(k, famille) || e).couleur, hachure: !!e.hachure };
           hier.push(HIER_GRAPHE[k]);
         }
       });
@@ -2388,7 +2441,7 @@
     var items = VALEURS_COLONNE.concat(hier).map(function (v) {
       var defaut = v.cle === seule, aujourdhui = !!valeurDeCle(v.cle);
       return { cle: defaut ? '' : v.cle, famille: v.famille, libelle: v.libelle, absente: !defaut && !vues[v.cle],
-               pastille: aujourdhui ? undefined : pastilleDe(v.famille),
+               pastille: aujourdhui ? undefined : v.hachure ? '\x3Cspan class="pastille hachure">\x3C/span>' : '\x3Cspan class="pastille" style="background:' + v.couleur + '">\x3C/span>',
                titre: defaut ? 'Les plans « ' + v.libelle + ' », relevé après relevé, avec le rythme tenu, la fin estimée et l\u2019échéance'
                     : !aujourdhui ? 'Plus aucun plan n\u2019est « ' + v.libelle + ' » ; combien l\u2019étaient, relevé après relevé'
                     : 'Combien de plans « ' + v.libelle + ' », relevé après relevé' };
@@ -2622,7 +2675,11 @@
       var chemin = visibles.map(function (p, k) { return (k ? 'L' : 'M') + x(p.i).toFixed(1) + ' ' + y(p.termine).toFixed(1); }).join(' ');
       var xa = x(visibles[0].i).toFixed(1), xb = x(visibles[visibles.length - 1].i).toFixed(1);
       s.push('\x3Cpath d="' + chemin + ' L' + xb + ' ' + y(0).toFixed(1) + ' L' + xa + ' ' + y(0).toFixed(1) + ' Z" fill="' + coul + '" opacity=".09"/>');
-      s.push('\x3Cpath class="courbe" d="' + chemin + '" fill="none" stroke="' + coul + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>');
+      /* « Non renseigné » n'a pas de couleur à lui, mais une texture : sa
+         courbe se trace en tirets, comme sa hachure — son gris est celui
+         d'« À traiter » (débrief 22). */
+      s.push('\x3Cpath class="courbe" d="' + chemin + '" fill="none" stroke="' + coul + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"' +
+             (vVal && vVal.hachure ? ' stroke-dasharray="6 4"' : '') + '/>');
       /* Un point par relevé, plein, cerclé de la couleur du fond pour rester
          lisible sur la courbe ; discret quand les relevés se serrent. */
       var rayon = visibles.length > 40 ? 2 : 3;
@@ -3004,7 +3061,8 @@
     s.push('\x3C/svg>');
     $('zone-graphe').innerHTML = s.join('');
 
-    var items = ['\x3Cspan class="legende-item">\x3Csvg width="20" height="8" aria-hidden="true">\x3Cline x1="0" y1="4" x2="20" y2="4" stroke="' + coul + '" stroke-width="2.2"/>\x3C/svg>' +
+    var items = ['\x3Cspan class="legende-item">\x3Csvg width="20" height="8" aria-hidden="true">\x3Cline x1="0" y1="4" x2="20" y2="4" stroke="' + coul + '" stroke-width="2.2"' +
+      (vVal && vVal.hachure ? ' stroke-dasharray="6 4"' : '') + '/>\x3C/svg>' +
       (vVal ? '\x3Cspan title="' + ech('Plans « ' + vVal.libelle + ' », relevé après relevé. Le rythme, la fin estimée et l’échéance se lisent sur les validés.') + '">' +
                 ech('« ' + vVal.libelle + ' », relevé après relevé') + '\x3C/span>\x3C/span>'
             : '\x3Cspan title="Plans validés, relevé après relevé.">r\u00e9alis\u00e9\x3C/span>\x3C/span>')];
@@ -3739,26 +3797,20 @@
       var trouves = plansTrouvesDans(r);
 
       /* Le pourcentage s'ecrit dans le segment quand il y tient ; en dessous
-         il reste dans l'infobulle plutot que d'etre rogne. Sous une valeur
-         choisie, la barre passe aux valeurs — deux « en cours » n'y sont plus
-         confondus — et seule la sienne s'éclaire. */
-      var barre = vVal ? VALEURS_COLONNE.map(function (v) {
+         il reste dans l'infobulle plutot que d'etre rogne. Débrief 22 : la
+         barre se découpe par valeur, comme la barre du haut — chaque valeur
+         a sa couleur, et un segment « en cours » d'un seul bleu dirait
+         PWD_IN_PROGRESS pour des PWD_TO_CONTROL. Sous une valeur choisie,
+         seule la sienne s'éclaire et porte sa part. */
+      var barre = VALEURS_COLONNE.map(function (v) {
         var nV = r.parValeur[v.cle];
         if (!nV) return '';
         var part = (nV / r.total) * 100;
-        var eclaire = v.cle === vb;
-        var texte = eclaire && part >= 11 ? Math.round(part) + ' %' : '';
+        var eclaire = !!vVal && v.cle === vb;
+        var texte = (!vVal || eclaire) && part >= 11 ? Math.round(part) + '\u202f%' : '';
         return v.hachure
           ? '\x3Cspan class="hachure' + (eclaire ? ' eclaire' : '') + '" data-cle="' + ech(v.cle) + '" style="width:' + part.toFixed(2) + '%;color:var(--encre-2)">' + texte + '\x3C/span>'
           : '\x3Cspan' + (eclaire ? ' class="eclaire"' : '') + ' data-cle="' + ech(v.cle) + '" style="width:' + part.toFixed(2) + '%;background:' + v.couleur + ';color:' + v.encre + '">' + texte + '\x3C/span>';
-      }).join('') : ETATS.map(function (e) {
-        if (!r[e.cle]) return '';
-        var part = (r[e.cle] / r.total) * 100;
-        var texte = part >= 11 ? Math.round(part) + ' %' : '';
-        var encre = encreSegment(e.cle);
-        return e.hachure
-          ? '\x3Cspan class="hachure" style="width:' + part.toFixed(2) + '%;color:var(--encre-2)">' + texte + '\x3C/span>'
-          : '\x3Cspan style="width:' + part.toFixed(2) + '%;background:' + e.couleur + ';color:' + encre + '">' + texte + '\x3C/span>';
       }).join('');
 
       /* Une seule colonne d'appoint : le rythme requis quand un jalon fixe
@@ -4074,7 +4126,7 @@
       return '\x3Ctr>' + cols.map(function (c, i) {
         var fige = classeFige(i, nFige);
         if (c.cle === CLE_SUIVIE) {
-          var e = ETAT_PAR_CLE[p._etat];
+          var e = valeurDeCle(p._cle) || ETAT_PAR_CLE[p._etat];
           var past = e.hachure ? '\x3Cspan class="pastille hachure">\x3C/span>'
             : '\x3Cspan class="pastille" style="background:' + e.couleur + '">\x3C/span>';
           return '\x3Ctd class="' + fige + '">\x3Cspan class="etat-cellule">' + past +
@@ -4109,10 +4161,14 @@
   /* « un » et « des » : le libellé s'accorde au compte — « 1 passé en
      terminé », « 20 passés en terminé ». */
   function libelleLot(l, n) { return n > 1 ? l.des : l.un; }
-  /* La pastille d'une valeur : la couleur que lui donne la barre. */
+  /* La pastille d'une valeur : la couleur que lui donne la barre ; absente
+     du jour, celle de son mot (couleurConnue). */
   function pastilleValeur(cle, famille) {
     var v = valeurDeCle(cle);
-    if (!v) return pastilleDe(famille || 'sans');
+    if (!v) {
+      var c = couleurConnue(cle, famille);
+      return c ? '\x3Cspan class="pastille" style="background:' + c.couleur + '">\x3C/span>' : pastilleDe(famille || 'sans');
+    }
     return v.hachure ? '\x3Cspan class="pastille hachure">\x3C/span>' : '\x3Cspan class="pastille" style="background:' + v.couleur + '">\x3C/span>';
   }
   /* Une rangée de pastilles (débrief 18), la même pour le journal, le bloc
@@ -4207,7 +4263,7 @@
     var v = valeurDeCle(h.cle);
     if (v) return v.hachure ? { cls: 'hachure', style: '' } : { cls: '', style: 'background:' + v.couleur };
     var e = ETAT_PAR_CLE[h.famille];
-    return e && !e.hachure ? { cls: '', style: 'background:' + e.couleur } : { cls: 'hachure', style: '' };
+    return e && !e.hachure ? { cls: '', style: 'background:' + (couleurConnue(h.cle, h.famille) || e).couleur } : { cls: 'hachure', style: '' };
   }
   function rendreFichePlan(liste) {
     var zone = $('fiche-plan');
@@ -4546,12 +4602,28 @@
          du résumé, sur la largeur d'une petite jauge. */
       var totalSem = ['termine', 'encours', 'afaire', 'vide', 'recul', 'indice', 'nouveau', 'disparu']
         .reduce(function (t, k) { return t + (parType[k] || 0); }, 0);
+      /* Débrief 22 : les passages s'y découpent par valeur d'arrivée, dans
+         l'ordre des tuiles et à la couleur de leur pilule — quatre
+         PWD_TO_CONTROL n'y sont plus peints du bleu de PWD_IN_PROGRESS. */
+      var rangTuile = {};
+      VALEURS_COLONNE.forEach(function (v, i) { rangTuile[v.cle] = i; });
+      var passages = lignesResume(evts).filter(function (l) { return l.passage; }).sort(function (a, b) {
+        var ra = rangTuile[a.cle] === undefined ? 999 : rangTuile[a.cle], rb = rangTuile[b.cle] === undefined ? 999 : rangTuile[b.cle];
+        return ra - rb || ordreDesCles(a, b);
+      });
+      var largeur = function (n) { return 'width:' + (100 * n / totalSem).toFixed(2) + '%'; };
       var jauge = totalSem ? '\x3Cspan class="mini-jauge" aria-hidden="true">' +
         ['termine', 'encours', 'afaire', 'vide', 'recul', 'indice', 'nouveau', 'disparu'].map(function (k) {
           if (!parType[k]) return '';
           var e = ETAT_PAR_CLE[k];
-          var style = 'width:' + (100 * parType[k] / totalSem).toFixed(1) + '%' + (e && !e.hachure ? ';background:' + e.couleur : '');
-          return '\x3Cspan class="' + k + '" style="' + style + '">\x3C/span>';
+          if (!e || e.hachure) return '\x3Cspan class="' + k + '" style="' + largeur(parType[k]) + '">\x3C/span>';
+          var vus = 0;
+          var morceaux = passages.filter(function (l) { return l.famille === k; }).map(function (l) {
+            vus += l.n;
+            return '\x3Cspan class="' + k + '" data-cle="' + ech(l.cle) + '" style="' + largeur(l.n) + ';background:' + (couleurConnue(l.cle, k) || e).couleur + '">\x3C/span>';
+          });
+          if (parType[k] > vus) morceaux.push('\x3Cspan class="' + k + '" style="' + largeur(parType[k] - vus) + ';background:' + e.couleur + '">\x3C/span>');
+          return morceaux.join('');
         }).join('') + '\x3C/span>' : '';
 
       /* Toutes les semaines s'ouvrent repliées : le lecteur déplie celle
@@ -6384,7 +6456,7 @@
              iAuj: semaineDAujourdhui(), auj: AUJ, etiquetteAuj: etiquette(AUJ) };
   };
   window.__bilanEcheance = function (idx) { var j = jalons[idx]; return j ? bilanEcheance(j) : null; };
-  window.__valeurs = function () { return VALEURS_COLONNE.map(function (v) { return { cle: v.cle, libelle: v.libelle, famille: v.famille, n: v.n }; }); };
+  window.__valeurs = function () { return VALEURS_COLONNE.map(function (v) { return { cle: v.cle, libelle: v.libelle, famille: v.famille, n: v.n, place: v.place, couleur: v.couleur, encre: v.encre }; }); };
   window.__classer = function (v) { return classer(v); };
   window.__indicateur = function () { return { indicateur: INDICATEUR, cle: CLE_SUIVIE, releves: RELEVES.length }; };
   window.__journal = function () { return JOURNAL; };
@@ -6520,5 +6592,5 @@
      page affichée, pour ne rien retarder. */
   if (API && API.noterConsultation) setTimeout(API.noterConsultation, 1500);
 })();
-window.SUIVI_FWD_FIN = '6ac610d';
+window.SUIVI_FWD_FIN = '4c88f7c';
 </script>
