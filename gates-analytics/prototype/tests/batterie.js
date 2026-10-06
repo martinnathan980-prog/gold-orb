@@ -2745,14 +2745,21 @@ async function reinitialiser(pg) {
   section('Bloc par groupe : colonnes triables');
   const tris = await p.evaluate(() => [...document.querySelectorAll('button[data-trig]')].map(b => b.dataset.trig));
   verifier('cinq colonnes triables avec un jalon', tris.length === 5, JSON.stringify(tris));
-  verifier('les en-têtes sont centrés (sauf la répartition)',
+  /* Débrief 21 : le nom du groupe part à gauche, juste après son chevron
+     (centré, un nom long venait couvrir la flèche) ; le reste est centré. */
+  verifier('les en-têtes sont centrés (sauf le nom, à gauche après le chevron, et la répartition)',
     await p.evaluate(() => {
       const c = [...document.querySelectorAll('.critique-tete > span')];
-      return c.filter(s => getComputedStyle(s).justifyContent === 'center').length === c.length - 1;
+      return getComputedStyle(c[0]).justifyContent === 'flex-start'
+        && c.filter(s => getComputedStyle(s).justifyContent === 'center').length === c.length - 2;
     }));
-  verifier('les valeurs sont centrées',
-    await p.evaluate(() => ['.critique-nom', '.critique-total', '.critique-fin', '.critique-effort', '.critique-date']
-      .every(sel => { const e = document.querySelector(sel); return !e || getComputedStyle(e).textAlign === 'center'; })));
+  verifier('les valeurs sont centrées, le nom du groupe à gauche',
+    await p.evaluate(() => {
+      const nom = document.querySelector('.critique-nom');
+      return (!nom || getComputedStyle(nom).textAlign === 'left')
+        && ['.critique-total', '.critique-fin', '.critique-effort', '.critique-date']
+          .every(sel => { const e = document.querySelector(sel); return !e || getComputedStyle(e).textAlign === 'center'; });
+    }));
 
   function lire(cle) {
     return p.evaluate(c => [...document.querySelectorAll('.critique-ligne')].map(l => {
