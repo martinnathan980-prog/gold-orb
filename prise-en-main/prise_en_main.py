@@ -108,9 +108,10 @@ def demander(question, defaut=""):
     return reponse.strip() or defaut
 
 
-def oui(question, defaut="o"):
+def oui(question, defaut=""):
+    """o ou n. Sans défaut (questions « avez-vous vu ? »), Entrée seule redemande : on ne note jamais OK par erreur."""
     while True:
-        reponse = demander(f"{question} (o/n) [{defaut}] :", defaut).lower()
+        reponse = demander(f"{question} (o/n)" + (f" [{defaut}]" if defaut else "") + " :", defaut).lower()
         if reponse[:1] in ("o", "y", "n"):
             return reponse[:1] != "n"
         ecrire("   Repondez o ou n.")
@@ -554,9 +555,11 @@ def etape_clavier(bilan, dossier):
         return None
     hwnd = attendre_fenetre(est_notre_fichier, 10)
     if not hwnd:
-        ecrire("   Le Bloc-notes n'est pas passe devant. Cliquez sur son icone qui clignote en bas,")
-        ecrire("   dans la barre des taches (la fenetre « essai_clavier »). Le robot attend 20 secondes...")
+        ecrire("   Cliquez sur l'icone du Bloc-notes « essai_clavier » en bas, dans la barre des taches,")
+        ecrire("   puis LACHEZ LA SOURIS. Le robot attend 20 secondes...")
         hwnd = attendre_fenetre(est_notre_fichier, 20)
+        if hwnd:
+            time.sleep(2)  # le temps de lâcher la souris
     if not hwnd:
         devant = fenetre_active()
         bilan.noter("K", "Clavier (Bloc-notes)", "ECHEC",
@@ -680,7 +683,13 @@ def demander_adresse():
     adresse = demander("   Adresse du portail :").strip().strip('"') or precedente
     if not adresse:
         return ""
+    if adresse.count("://") > 1 or " " in adresse:
+        ecrire("   Ce n'est pas une adresse (collee deux fois ?). Recommencez : Ctrl+V une seule fois.")
+        return demander_adresse()
     if not re.match(r"^[a-z][a-z0-9+.-]*://", adresse, re.I):
+        if "." not in adresse:
+            ecrire("   Ce n'est pas une adresse. Copiez-la dans la barre d'adresse de Chrome (Ctrl+C), puis Ctrl+V ici.")
+            return demander_adresse()
         adresse = "https://" + adresse
     try:
         valable = bool(urlsplit(adresse).hostname)
@@ -748,6 +757,9 @@ def trouver_python_playwright():
     return None
 
 
+RAISON_PILOTE = ["pilote de navigateur absent"]
+
+
 def obtenir_python_playwright():
     ecrire("   Recherche du pilote de navigateur sur ce poste...")
     python = trouver_python_playwright()
@@ -772,11 +784,12 @@ def obtenir_python_playwright():
     ecrire("      python " + " ".join(commande[1:]) + "   (rien a taper : le robot la lance lui-meme)")
     if not oui("   Tapez o pour l'installer, n pour sauter les etapes du navigateur.", "n"):
         return None
-    if subprocess.call(commande) != 0:
-        ecrire("   L'installation n'a pas abouti. Ce n'est pas grave : le robot continue.")
-        ecrire("   Prenez aussi en photo les dernieres lignes ci-dessus.")
+    if subprocess.call(commande) != 0 or not _python_avec_playwright(sys.executable):
+        ecrire("   L'installation n'a pas abouti.")
+        pause("Prenez en photo les lignes ci-dessus, puis Entree...")
+        RAISON_PILOTE[0] = "installation du pilote echouee"
         return None
-    return sys.executable if _python_avec_playwright(sys.executable) else None
+    return sys.executable
 
 
 def etape_navigateur_robot(bilan, url):
@@ -788,8 +801,9 @@ def etape_navigateur_robot(bilan, url):
     if not python:
         for lettre, intitule in (("N", "Navigateur du robot (page d'essai)"), ("R", "Navigateur du robot sur le portail"),
                                  ("C", "Clic choisi sur le portail")):
-            bilan.noter(lettre, intitule, "SAUTE", "pilote de navigateur absent", afficher=False)
-        ecrire("   --> Etapes du navigateur sautees : pilote de navigateur absent.")
+            bilan.noter(lettre, intitule, "ECHEC" if "echouee" in RAISON_PILOTE[0] else "SAUTE", RAISON_PILOTE[0],
+                        afficher=False)
+        ecrire(f"   --> Etapes du navigateur sautees : {RAISON_PILOTE[0]}.")
         return
     echange = Path(tempfile.mkdtemp(prefix="robot_essai_"))
     try:
@@ -1169,9 +1183,10 @@ def _analyser_portail(page, url, notes):
     ecrire("   fenetre est oubliee a la fin.")
     pause("Quand vous voyez la page d'ACCUEIL du portail, revenez ici et appuyez sur Entree...")
     try:
-        page.wait_for_load_state("domcontentloaded", timeout=15000)
-    except Exception:
-        pass
+        attendre_portail(page)
+    except ErreurTache:
+        notes.noter("R", "Navigateur du robot sur le portail", "ECHEC", "toujours sur la page de connexion")
+        return False
     total = {"cliquables": 0, "champs": 0, "ombres": 0, "dessins": 0}
     cadres_lus, cadres_illisibles, frameset = 0, 0, False
     meilleur, max_cliquables = None, -1
@@ -1497,6 +1512,8 @@ def adresse_du_portail():
     """L'adresse retenue la dernière fois ; sinon on la demande (et on la retient)."""
     url = adresse_retenue()
     if url:
+        ecrire(f"   Adresse du portail : {url}")
+        ecrire("   (pour la changer : supprimez Bureau > Robot > adresse_portail.txt, puis relancez)")
         return url
     url = demander_adresse()
     retenir_adresse(url)
@@ -1533,9 +1550,11 @@ def attendre_chargement(page, secondes=10):
 def attendre_portail(page):
     """Si le portail affiche une page de connexion, on attend que vous vous connectiez DANS la fenêtre du robot."""
     attendre_chargement(page)
+    attendu = False
     for _ in range(5):
         if not _champ_mot_de_passe(page):
-            return
+            return attendu
+        attendu = True
         ecrire()
         ecrire("   Le portail demande de vous connecter : connectez-vous DANS LA FENETRE DU ROBOT.")
         pause("Quand vous voyez l'accueil du portail, revenez ici et appuyez sur Entree...")
@@ -1591,9 +1610,12 @@ JS_SOUS_MENU = r"""(li) => {
                                   if (l) t = (l.textContent || '').replace(/\s+/g, ' ').trim(); }
                         return t; };
   const vus = [];
+  const h = x => (x && x.getAttribute('href')) || '';
+  const enregistrement = x => /^(tel|mailto):/i.test(h(x)) || /[?&][^=&]+=([^&]*\d{2,}|[A-Za-z]+-\d+)/.test(h(x)) ||
+                              /\/\d{2,}(\/|$|\?)/.test(h(x));
   for (const e of li.querySelectorAll('li, [role=menuitem]')) {
     if (e === li || !vis(e)) continue;
-    const t = propre(e);
+    const t = enregistrement(e.querySelector('a') || e.closest('a')) ? '(donnee masquee)' : propre(e);
     if (t && !vus.includes(t)) vus.push(t);
   }
   return vus;
@@ -1609,9 +1631,15 @@ JS_RELEVE = r"""() => {
   // de mise en page (qui contient d'autres tableaux), la ligne des titres, une ligne de formulaire, une ligne de fiche « Statut : »
   const ligneDeDonnees = e => { if (e.closest('[role=row], [role=gridcell]')) return true;
     const tr = e.closest('tr'); if (!tr) return false; const t = tr.closest('table');
-    if (!t || t.querySelector('table') || tr.closest('thead') || tr === t.querySelector('tr')) return false;
-    if (tr.querySelector('input:not([type=hidden]), select, textarea')) return false;
-    const c = tr.querySelector('td, th'); if (c && /:\s*$/.test(c.textContent || '')) return false;
+    if (!t || t.querySelector('table') || tr.closest('thead')) return false;
+    const premiere = t.querySelector('tr');
+    const titres = !!t.querySelector('thead th') || (premiere && premiere.children.length > 1 &&
+                   Array.from(premiere.children).every(c => c.tagName === 'TH'));
+    if (tr === premiere && (titres || !premiere.querySelector('td'))) return false;     // la ligne des titres
+    const corps = Array.from(t.querySelectorAll('tr')).filter(l => l.querySelector('td'));
+    if (titres && corps.length >= 2) return true;      // tableau à titres : chaque ligne est un enregistrement
+    if (tr.querySelector('input:not([type=hidden]), select, textarea')) return false;   // ligne de formulaire
+    const c = tr.querySelector('td, th'); if (c && /:\s*$/.test(c.textContent || '')) return false;   // fiche
     return true; };
   const MENU = 'nav, header, [role=navigation], [role=menu], [role=menubar], [class*=menu i], [id*=menu i], [data-robot-barre]';
   const libelleDe = e => {
@@ -1628,14 +1656,17 @@ JS_RELEVE = r"""() => {
     const prev = e.previousElementSibling; if (prev && !['INPUT', 'SELECT', 'TEXTAREA'].includes(prev.tagName)) { const t = sansChamps(prev); if (t && t.length < 50) return t; }
     return e.getAttribute('title') || '(sans nom)';
   };
+  const enregistrement = a => { const h = (a && a.getAttribute && a.getAttribute('href')) || '';
+    return /^(tel|mailto|callto|sip):/i.test(h) || /[?&][^=&]+=([^&]*\d{2,}|[A-Za-z]+-\d+)/.test(h) || /\/\d{2,}(\/|$|\?)/.test(h); };
+  const nomDe = e => enregistrement(e.closest('a') || e.querySelector('a')) ? '(donnee masquee)' : court(e.textContent);
   const r = { autresMenus: [], onglets: [], champs: [], boutons: [], tableaux: [], libelles: [], liens: [],
               cadres: document.querySelectorAll('iframe, frame').length };
   for (const e of document.querySelectorAll('nav a, [role=menuitem], [class*=menu i] a, [id*=menu i] a')) {
     if (!vis(e) || ligneDeDonnees(e) || e.closest('[data-robot-barre]')) continue;
-    r.autresMenus.push(court(e.textContent));
+    r.autresMenus.push(nomDe(e));
   }
   for (const e of document.querySelectorAll('[role=tab], [class*=onglet i] a, [class*=onglet i] li, [class*=tabs i] a, [class*=tabs i] li'))
-    if (vis(e) && !ligneDeDonnees(e)) r.onglets.push(court(e.textContent));
+    if (vis(e) && !ligneDeDonnees(e)) r.onglets.push(nomDe(e));
   for (const e of document.querySelectorAll('input, select, textarea')) {
     const type = (e.getAttribute('type') || '').toLowerCase();
     if (['hidden', 'submit', 'button', 'image', 'reset'].includes(type) || !vis(e) || ligneDeDonnees(e)) continue;
@@ -1660,6 +1691,7 @@ JS_RELEVE = r"""() => {
       const exemple = lignes.find(l => l.children.length === entetes.length);
       if (exemple && exemple.children[i]) { const c = exemple.children[i];
         if (c.querySelector('a[href]')) n += ' (lien)';
+        if (c.querySelector('input:not([type=hidden]), select, textarea')) n += ' (champ a remplir)';
         const actions = Array.from(c.querySelectorAll('button, input[type=button], input[type=submit], [role=button], a[title], img[title]'))
           .map(b => { const x = b.tagName === 'INPUT' ? court(b.value) : court(b.textContent);
                       return x && /[A-Za-zÀ-ÿ]/.test(x) && b.tagName !== 'A' ? 'bouton ' + x.split(' ').slice(0, 2).join(' ')
@@ -1681,14 +1713,29 @@ JS_RELEVE = r"""() => {
   for (const a of document.querySelectorAll('a[href]'))
     if (vis(a) && !a.closest('td, th, [role=gridcell], [role=row]') && !listeDeDonnees(a) && !a.closest(MENU) &&
         !a.closest('[class*=onglet i], [class*=tabs i], [role=tablist]'))
-      r.liens.push(court(a.textContent || a.getAttribute('title') || ''));
+      r.liens.push(enregistrement(a) ? '(donnee masquee)' : court(a.textContent || a.getAttribute('title') || ''));
   return r;
 }"""
 
 
-# « Jean DUPONT », « DUPONT Jean » : un nom de personne n'est jamais de la structure
+# « Jean DUPONT », « DUPONT Jean », « Mme Durand », « Paul Martin » : un nom de personne n'est jamais de la structure
+PRENOMS = set("""jean marie pierre paul jacques michel philippe alain nicolas christophe patrick daniel bernard eric
+laurent frederic stephane david olivier sebastien thomas julien francois pascal thierry vincent christian didier
+dominique gerard guillaume antoine alexandre maxime romain mathieu julie nathalie isabelle sylvie catherine sophie
+christine martine francoise valerie sandrine stephanie anne celine helene veronique monique nicole chantal brigitte
+caroline emilie aurelie claire camille laura sarah lea manon chloe emma louise lucas hugo louis gabriel arthur jules
+martin marc yves luc andre rene henri georges claude roger""".split())
 NOM_DE_PERSONNE = re.compile(r"\b[A-ZÉÈÀÂÎÔÛÇ][a-zéèêëàâîïôûüç]+(?:-[A-Z][a-z]+)?\s+[A-ZÉÈÀÂÎÔÛÇ]{2,}(?![\w])|"
-                             r"\b[A-ZÉÈÀÂÎÔÛÇ]{2,}\s+[A-ZÉÈÀÂÎÔÛÇ][a-zéèêëàâîïôûüç]+\b")
+                             r"\b[A-ZÉÈÀÂÎÔÛÇ]{2,}\s+[A-ZÉÈÀÂÎÔÛÇ][a-zéèêëàâîïôûüç]+\b|"
+                             r"\b(?:M\.|Mme|Mlle|Mr|Monsieur|Madame|Mademoiselle)\s+[A-ZÉÈ]")
+AUTRES_DONNEES = re.compile(r"\d{3,}|@|https?://|\\|\b[A-Za-z]{1,6}-\d+|\d{2}[ .]\d{2}[ .]\d{2}|\d{1,2}/\d{1,2}/\d{2,4}")
+
+
+def _prenom_nom(texte):
+    mots_ = re.findall(r"[A-Za-zÀ-ÿ'-]+", texte)
+    return any((sans_accents(a).lower() in PRENOMS and b[:1].isupper() and len(b) > 1) or
+               (sans_accents(b).lower() in PRENOMS and a[:1].isupper() and len(a) > 2 and a.lower() not in ("de", "du", "la"))
+               for a, b in zip(mots_, mots_[1:]))
 
 
 def _structure(texte):
@@ -1696,7 +1743,9 @@ def _structure(texte):
     t = " ".join(str(texte or "").split())
     if not t or len(t) > 45:
         return None
-    if re.search(r"\d{3,}|@|https?://|\\|\b[A-Za-z]{1,6}-\d+", t) or NOM_DE_PERSONNE.search(t):
+    if t == "(donnee masquee)":
+        return t
+    if AUTRES_DONNEES.search(t) or NOM_DE_PERSONNE.search(t) or _prenom_nom(t):
         return "(donnee masquee)"
     return t
 
@@ -2121,11 +2170,18 @@ JS_FOCUS = r"""() => {
   const f = e.form || e.closest('form');
   const boutons = f ? Array.from(f.querySelectorAll('button, input[type=submit], input[type=image]'))
     .map(b => [b.innerText, b.value, b.title, b.getAttribute('aria-label')].join(' ')) : [];
+  let touchesParents = '';
+  for (let n = e.parentElement; n; n = n.parentElement)
+    for (const a of ['onkeydown', 'onkeypress', 'onkeyup']) if (n.getAttribute && n.getAttribute(a)) touchesParents += ' ' + n.getAttribute(a);
+  const libelle = (e.labels && e.labels[0] ? e.labels[0].innerText : '') + ' ' + (e.name || '') + ' ' + (e.id || '');
   return { texte: [e.innerText, e.value, e.title, e.getAttribute('aria-label'), e.getAttribute('onclick'),
-                   e.getAttribute('onkeydown'), e.getAttribute('onkeypress')].join(' '),
+                   e.getAttribute('onkeydown'), e.getAttribute('onkeypress'), libelle, touchesParents].join(' '),
            formulaire: f ? [f.getAttribute('action') || '', f.getAttribute('onsubmit') || '', boutons.join(' ')].join(' ') : '',
-           post: !!f && (f.getAttribute('method') || '').toLowerCase() === 'post',
-           champ: ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.tagName) };
+           avecFormulaire: !!f, post: !!f && (f.getAttribute('method') || '').toLowerCase() === 'post',
+           genre: e.tagName === 'INPUT' ? (e.type || 'text').toLowerCase() : e.tagName.toLowerCase(),
+           lien: e.tagName === 'A' || e.tagName === 'BUTTON' || e.getAttribute('role') === 'button',
+           auto: !!(e.getAttribute('onchange') || e.getAttribute('onclick') || touchesParents ||
+                    (f && (f.getAttribute('onchange') || f.getAttribute('onclick')))) };
 }"""
 
 
@@ -2149,19 +2205,55 @@ class Tache:
         self.ligne_courante = 0
         self.lectures = {}
         self.attendues = []
+        self.en_vol = 0
         self.nouvel_element()
         self.suivre_page(page)
         page.context.on("page", self.suivre_page)
+        page.context.on("request", lambda r: self._reseau(r, 1))
+        page.context.on("requestfinished", lambda r: self._reseau(r, -1))
+        page.context.on("requestfailed", lambda r: self._reseau(r, -1))
+
+    def _reseau(self, requete, sens):
+        try:
+            if requete.resource_type in ("document", "xhr", "fetch"):
+                self.en_vol = max(0, self.en_vol + sens)
+        except Exception:
+            pass
+
+    def calme(self, maximum=15):
+        """Attendre que le portail ait répondu (plus aucune requête en cours pendant une demi-seconde) : sinon on
+        regarderait la page d'avant la réponse (ligne pas encore retirée, message pas encore affiché)."""
+        fin, tranquille = time.time() + maximum, None
+        while time.time() < fin:
+            if self.en_vol <= 0:
+                tranquille = tranquille or time.time()
+                if time.time() - tranquille >= 0.5:
+                    break
+            else:
+                tranquille = None
+            try:
+                self.page.wait_for_timeout(100)
+            except Exception:
+                break
+
+    def page_ouverte(self):
+        """Une fenêtre (popup d'édition) qui s'est fermée toute seule : on revient sur la dernière fenêtre ouverte."""
+        if self.page.is_closed():
+            ouvertes = [p for p in self.page.context.pages if not p.is_closed()]
+            if not ouvertes:
+                raise ErreurTache("la fenetre du robot a ete fermee")
+            self.page = ouvertes[-1]
+            self.page.bring_to_front()
 
     def nouvel_element(self):
         self.lectures = {}
         self.attendues = []
+        self.acceptee = None  # une action acceptée vaut pour tout l'élément : tout message ensuite = A VERIFIER
+        self.apres = []
         self.nouveau_geste()
 
     def nouveau_geste(self):
         self.refusees = []
-        self.acceptee = None
-        self.apres = []
         self.accord_geste = False
 
     # --- fenêtres du portail (« Voulez-vous vraiment supprimer ? ») : seule celle annoncée est acceptée
@@ -2170,6 +2262,8 @@ class Tache:
 
     def sur_fenetre(self, fenetre):
         message = " ".join((fenetre.message or "").split())
+        if fenetre.type == "beforeunload" or not message:
+            message = "Quitter cette page ? (des modifications pourraient ne pas etre enregistrees)"
         attendue = next((a for a in self.attendues if _correspond(a, message)), None)
         try:
             if attendue and not self.refusees and (self.accord_geste or not interdit(message)):
@@ -2286,9 +2380,11 @@ class Tache:
             except Exception:
                 pass
 
-    def confirmer(self, loc, quoi):
-        """Avant un geste qui modifie : votre accord (o), ou « t » donné avant pour cette ligne de la tâche."""
-        if self.tout_confirme or self.ligne_courante in self.oui_lignes:
+    def confirmer(self, loc, quoi, cle=None):
+        """Avant un geste qui modifie : votre accord (o), ou « t » donné avant pour CETTE action précise
+        (même ligne de la tâche ET même texte : « t » pour Archiver ne vaut jamais pour Supprimer)."""
+        cle = (self.ligne_courante, mots(cle or quoi))
+        if self.tout_confirme or cle in self.oui_lignes:
             self.accord_geste = True
             return
         attendues, self.attendues = self.attendues, []  # rien n'est accepté pendant la question
@@ -2300,16 +2396,22 @@ class Tache:
                            "t (oui pour cette action, pour toute la liste) :", "n").lower()
         _nettoyer(self.page, tout=False)
         if reponse.startswith("t"):
-            self.oui_lignes.add(self.ligne_courante)
+            self.oui_lignes.add(cle)
         elif not reponse.startswith(("o", "y")):
             raise Passer("refuse par vous")
         self.attendues = attendues
         self.accord_geste = True
 
     def _texte_de(self, loc):
+        """Le texte de l'élément, ses bulles et actions, et celles de ses PARENTS : le clic remonte jusqu'à eux."""
         try:
-            return loc.evaluate("e => [e.innerText, e.value, e.title, e.getAttribute('aria-label'), e.getAttribute('href'),"
-                                " e.getAttribute('onclick')].join(' ')")
+            return loc.evaluate(r"""e => {
+              const parts = [e.innerText, e.value, e.title, e.getAttribute('aria-label'), e.getAttribute('href'), e.getAttribute('onclick')];
+              const GEST = /^(on(click|dblclick|mousedown|mouseup|pointerdown|pointerup|touchstart|touchend))$|click|^hx-|^wire:|^x-on|^@|^data-(ajax|turbo|confirm|method|action|url)|^title$|^aria-label$/i;
+              for (let n = e.parentElement; n && n !== document.body; n = n.parentElement)
+                for (const a of Array.from(n.attributes)) if (GEST.test(a.name)) parts.push(a.value);
+              const f = e.form || e.closest('form'); if (f) parts.push(f.getAttribute('action') || '');
+              return parts.join(' '); }""")
         except Exception:
             return ""
 
@@ -2333,10 +2435,12 @@ class Tache:
             _ouvrir_menus(loc)
         if (interdit(arg) or interdit(self._texte_de(loc)) or any(interdit(a) for a in self.attendues)) \
                 and not self.accord_geste:
-            self.confirmer(loc, f"cliquer « {quoi} »")
+            self.confirmer(loc, f"cliquer « {quoi} »", cle="cliquer " + arg)
         avant = len(self.page.context.pages)
         loc.click(timeout=15000)
         attendre_chargement(self.page)
+        self.calme()
+        self.page_ouverte()
         if len(self.page.context.pages) > avant:
             self.page = self.page.context.pages[-1]
             self.page.bring_to_front()
@@ -2351,7 +2455,7 @@ class Tache:
                 raise ErreurTache(f"menu « {partie} » introuvable")
             loc = trouves[0]
             if i == 0 and any(interdit(p) for p in parties) and not self.accord_geste:
-                self.confirmer(loc, "ouvrir le menu « " + " > ".join(parties) + " »")
+                self.confirmer(loc, "ouvrir le menu « " + " > ".join(parties) + " »", cle="menu " + " > ".join(parties))
             if not _visible(loc):
                 _ouvrir_menus(loc)
             if dernier:
@@ -2363,7 +2467,7 @@ class Tache:
             if not (suivant and _visible(suivant[0])):
                 # menu qui s'ouvre au clic : ce clic aussi est contrôlé
                 if interdit(self._texte_de(loc)) and not self.accord_geste:
-                    self.confirmer(loc, f"cliquer « {partie} »")
+                    self.confirmer(loc, f"cliquer « {partie} »", cle="cliquer " + partie)
                 loc.click(timeout=10000)
                 self.page.wait_for_timeout(800)
 
@@ -2396,10 +2500,12 @@ class Tache:
                 raise ErreurTache(f"champ « {libelle} » introuvable sur la page")
             self.page.wait_for_timeout(500)
 
-    def _envoi_automatique(self, loc):
+    def _envoi_automatique(self, loc, texte=False):
+        """Le champ enregistre-t-il tout seul (au changement, ou quand on le quitte pour un texte) ?"""
+        attributs = "['onchange', 'onblur']" if texte else "['onclick', 'onchange']"
         try:
-            return bool(loc.evaluate("e => !!(e.getAttribute('onclick') || e.getAttribute('onchange') || "
-                                     "(e.form && (e.form.getAttribute('onchange') || e.form.getAttribute('onclick'))))"))
+            return bool(loc.evaluate("e => " + attributs + ".some(a => e.getAttribute(a)) || "
+                                     "!!(e.form && (e.form.getAttribute('onchange') || e.form.getAttribute('onclick')))"))
         except Exception:
             return False
 
@@ -2455,45 +2561,62 @@ class Tache:
 
     def touche(self, arg):
         nom = TOUCHES[_nom_action(arg)]
-        if nom in ("Enter", "Space"):
-            info = None
-            for cadre in self.cadres():
+        info = None
+        for cadre in self.cadres():
+            try:
+                info = cadre.evaluate(JS_FOCUS)
+            except Exception:
+                continue
+            if info:
+                break
+        demander_accord = False
+        if info:
+            dangereux = interdit(info["texte"]) or interdit(info["formulaire"])
+            if nom == "Enter":
+                # Entrée envoie : seul un formulaire de recherche ordinaire (sans POST, sans action) passe sans question
+                demander_accord = dangereux or info["post"] or info["auto"] or (not info["avecFormulaire"] and not info["lien"])
+            elif nom == "Space":
+                demander_accord = (info["lien"] or info["genre"] in ("checkbox", "radio")) and (dangereux or info["auto"])
+            elif nom in ("ArrowDown", "ArrowUp"):
+                demander_accord = info["genre"] in ("select", "radio") and (dangereux or info["auto"])
+        if demander_accord and not self.accord_geste:
+            self.confirmer(None, f"appuyer sur {arg} (cela peut enregistrer quelque chose)", cle="touche " + arg)
+            for cadre in self.cadres():  # la question a retiré le curseur du champ : on l'y remet
                 try:
-                    info = cadre.evaluate(JS_FOCUS)
+                    cadre.evaluate("() => { const e = document.querySelector('[data-robot-focus]');"
+                                   " if (e) { e.removeAttribute('data-robot-focus'); e.focus(); } }")
                 except Exception:
-                    continue
-                if info:
-                    break
-            if info and (interdit(info["texte"]) or interdit(info["formulaire"]) or info["post"]) and not self.accord_geste:
-                self.confirmer(None, f"appuyer sur {arg} (envoi d'un formulaire)")
-                for cadre in self.cadres():  # la question a retiré le curseur du champ : on l'y remet
-                    try:
-                        cadre.evaluate("() => { const e = document.querySelector('[data-robot-focus]');"
-                                       " if (e) { e.removeAttribute('data-robot-focus'); e.focus(); } }")
-                    except Exception:
-                        pass
+                    pass
         try:
             with self.page.expect_navigation(timeout=5000):
                 self.page.keyboard.press(nom)
         except Exception:
             pass  # pas de changement de page : rien à attendre
         attendre_chargement(self.page)
+        self.calme()
 
     def aller(self, arg):
         cible = urljoin(self.url or "", arg)
         if (urlsplit(cible).hostname or "") != (urlsplit(self.url or "").hostname or ""):
             raise ErreurTache("adresse hors du portail : refusee")
-        if adresse_prudente(cible)[1] and not self.accord_geste:
-            self.confirmer(None, "ouvrir une adresse qui ressemble a une action : " + (urlsplit(cible).path or "/"))
+        morceaux = urlsplit(cible)
+        action = adresse_prudente(cible)[1] or interdit(unquote(" ".join((morceaux.path, morceaux.query, morceaux.fragment))))
+        if action and not self.accord_geste:
+            self.confirmer(None, "ouvrir une adresse qui ressemble a une action : " + (morceaux.path or "/"),
+                           cle="aller " + re.sub(r"\d+", "#", morceaux.path))
         self.page.goto(cible, wait_until="domcontentloaded", timeout=60000)
-        attendre_portail(self.page)
-        if urlsplit(self.page.url).path != urlsplit(cible).path:  # après la connexion, le portail a pu ramener à l'accueil
+        connexion = attendre_portail(self.page)
+        # après une connexion, le portail a pu ramener à l'accueil : on rouvre l'adresse, mais JAMAIS une adresse
+        # d'action (elle referait l'action)
+        if connexion and not action and urlsplit(self.page.url).path != morceaux.path:
             self.page.goto(cible, wait_until="domcontentloaded", timeout=60000)
             attendre_chargement(self.page)
+        self.calme()
 
     # --- les actions
     def executer(self, etapes):
         for etape in etapes:
+            self.page_ouverte()
             self.verifier_fenetres()  # une fenêtre arrivée en retard, après le geste précédent
             self.nouveau_geste()
             self.ligne_courante = etape["ligne"]
@@ -2521,6 +2644,8 @@ class Tache:
     def bloc(self, etape, arg):
         mot = "si" if etape["action"] == "SI" else "repeter tant que"
         for tour in range(31 if etape["action"] == "REPETER" else 1):
+            self.calme()  # la réponse au geste précédent d'abord : jamais de décision sur la page d'avant
+            self.verifier_fenetres()
             try:
                 vrai = self.presence(arg) == etape["present"]
             except ErreurTache as e:
@@ -2559,19 +2684,24 @@ class Tache:
                 if rang is None:
                     raise ErreurTache(f"choix « {valeur} » absent de la liste « {libelle} »")
                 if (interdit(libelle) or interdit(valeur) or self._envoi_automatique(loc)) and not self.accord_geste:
-                    self.confirmer(loc, f"choisir « {valeur} » dans « {libelle} »")
+                    self.confirmer(loc, f"choisir « {valeur} » dans « {libelle} »", cle=f"choisir {libelle} {valeur}")
                 loc.select_option(index=rang, timeout=10000)
                 attendre_chargement(page)
+                self.calme()
             elif action == "CHOISIR":
                 raise ErreurTache(f"« {libelle} » n'est pas une liste de choix (utilisez ECRIRE)")
             else:
+                if (interdit(libelle) or self._envoi_automatique(loc, texte=True)) and not self.accord_geste:
+                    self.confirmer(loc, f"ecrire dans « {libelle} » (le portail peut l'enregistrer tout seul)",
+                                   cle=f"ecrire {libelle}")
                 loc.fill(valeur, timeout=10000)
         elif action in ("COCHER", "DECOCHER"):
             loc = self.champ(arg)
             if (interdit(arg) or self._envoi_automatique(loc)) and not self.accord_geste:
-                self.confirmer(loc, f"{action.lower()} « {arg} »")
+                self.confirmer(loc, f"{action.lower()} « {arg} »", cle=f"{action} {arg}")
             loc.set_checked(action == "COCHER", timeout=10000)
             attendre_chargement(page)
+            self.calme()
         elif action == "TOUCHE":
             self.touche(arg)
         elif action == "ATTENDRE":
@@ -2589,7 +2719,7 @@ class Tache:
         elif action == "LIRE":
             valeur = self.lire(arg)
             self.lectures[arg] = valeur
-            ecrire(f"      {arg} = {valeur}")
+            ecrire(f"      {arg} : lu (dans le fichier de resultats)")
         elif action == "ACCEPTER FENETRE":
             self.attendues.append(arg)
         elif action == "CAPTURE":
@@ -2613,6 +2743,12 @@ class Tache:
             self._sans_focus()
             revenez_ici()
             pause((arg or "Pause") + " - puis Entree pour continuer...")
+
+
+def _cellule_sure(valeur):
+    texte = str(valeur)
+    formule = texte[:1] in ("=", "@", "\t", "\r") or (texte[:1] in ("+", "-") and len(texte) > 1)
+    return "'" + texte if formule else texte
 
 
 def choisir_tache():
@@ -2693,7 +2829,7 @@ def executer_tache(p, chemin, url):
                     w = csv.writer(f, delimiter=";")
                     w.writerow(["N", "element", "statut", "message"] + colonnes_lues)
                     for l in lignes_csv:
-                        w.writerow(l[:4] + [l[4].get(c, "") for c in colonnes_lues])
+                        w.writerow([_cellule_sure(x) for x in l[:4] + [l[4].get(c, "") for c in colonnes_lues]])
                 if cible != ecrit[0]:
                     ecrire(f"   (fichier de resultats ouvert ailleurs : ecrit dans {cible.name})")
                     ecrit[0] = cible
@@ -2722,6 +2858,7 @@ def executer_tache(p, chemin, url):
             tache.nouvel_element()
             try:
                 tache.executer(tache.etapes)
+                tache.calme()
                 tache.verifier_fenetres()
                 statut, message = "OK", ""
             except Passer as e:
@@ -2824,7 +2961,8 @@ def programme_enfant(mode, dossier_echange):
 def lancer_programme_enfant(mode, demande):
     python = obtenir_python_playwright()
     if not python:
-        ecrire("   Le pilote de navigateur manque : relancez et repondez o a « Tapez o pour l'installer ».")
+        ecrire(f"   Le robot ne peut pas ouvrir son navigateur ({RAISON_PILOTE[0]}).")
+        ecrire("   Prenez cet ecran en photo et envoyez-la-moi.")
         return 1
     echange = Path(tempfile.mkdtemp(prefix="robot_"))
     try:
@@ -2864,7 +3002,8 @@ def principal():
         recent = robot_plus_recent()
         if recent:
             ecrire(f"   ATTENTION : un robot plus recent est la : « {recent.name} ».")
-            ecrire(f"   Supprimez robot.txt, renommez « {recent.name} » en robot.txt, puis relancez.")
+            ecrire(f"   Dans Telechargements : supprimez « {Path(__file__).stem} », renommez « {recent.stem} » en "
+                   f"{Path(__file__).stem} (sans .txt), puis relancez.")
         ecrire("   1 = Test de prise en main")
         ecrire("   2 = Releve des pages du portail (pour Claude)")
         ecrire("   3 = Lancer une tache")

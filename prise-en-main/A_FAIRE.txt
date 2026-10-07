@@ -22,7 +22,7 @@ RÈGLES PENDANT QUE LE ROBOT TOURNE
   Sauf « Cliquez sur l'icone du Bloc-notes » : clique dessus (en bas de l'écran), puis lâche la souris.
 
 C. TEST (aujourd'hui) : lance le robot (étapes 3 à 5), tape 1, Entrée
-6. À chaque étape : lis, puis Entrée.
+6. À chaque étape : lis, puis Entrée. Question (o/n) : o ou n, puis Entrée.
 7. « Adresse du portail » :
    - dans ton Chrome, ouvre l'accueil du portail ;
    - clique dans la barre d'adresse, Ctrl+C ;
@@ -52,6 +52,7 @@ D. LANCER UNE TÂCHE (quand je t'en envoie une)
 17. Supprime de Téléchargements l'ancien fichier du même nom s'il y en a un.
     Enregistre le fichier tache_....txt (et la liste .csv si je t'en envoie une) dans Téléchargements.
 18. Lance le robot (étapes 3 à 5), tape 3, Entrée, tape le numéro de la tâche, Entrée.
+    « Adresse du portail », « Dossier robot-web » : fais comme aux étapes 7 et 8.
 19. Une question (ex : « Numéro du plan ») : tape la valeur, Entrée.
 20. « Connectez-vous si besoin » : connecte-toi dans la fenêtre du robot si on te le demande, puis Entrée.
 21. « Le robot va ... » : o = oui, n = non (il passe au suivant), t = oui pour cette action pour toute la liste.
@@ -60,7 +61,8 @@ D. LANCER UNE TÂCHE (quand je t'en envoie une)
     Le détail est dans Bureau > Robot > resultats.
 
 E. RELEVER D'AUTRES PAGES (si je te le demande)
-23. Lance le robot (étapes 3 à 5), tape 2, Entrée. Puis comme les étapes 10, 12, 15 et 16.
+23. Lance le robot (étapes 3 à 5), tape 2, Entrée. Puis comme les étapes 7 et 8 (si demandé), 10, 12 et 15.
+    Envoie-moi le fichier A_ENVOYER_releve.txt (ou sa photo).
 
 SI ÇA BLOQUE
 - Rien ne bouge : clique sur la fenêtre noire (en bas de l'écran). Une question ? Réponds.
