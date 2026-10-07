@@ -1,0 +1,53 @@
+﻿ROBOT - CE QUE TU FAIS
+======================
+
+A. PREPARER (une seule fois)
+1. Enregistre robot.txt dans Téléchargements.
+2. Ouvre le dossier Téléchargements.
+3. Clique dans la barre d'adresse du dossier (en haut), tape  cmd  puis Entrée.
+   -> Une fenêtre noire s'ouvre.
+
+B. LANCER LE ROBOT (à chaque fois)
+4. Dans la fenêtre noire, tape  python robot.txt  puis Entrée.
+   -> Tu vois « ROBOT » et 1 / 2 / 3 : c'est bon.
+   -> « python n'est pas reconnu » : tape  py robot.txt  puis Entrée.
+   -> Autre message : photo de l'écran, envoie-la.
+
+C. TEST (aujourd'hui) : tape 1 puis Entrée
+5. À chaque étape : lis, puis Entrée.
+6. Question avec (o/n) : clique dans la fenêtre noire, tape o ou n, Entrée.
+7. « NE TOUCHEZ » : lâche le clavier et la souris jusqu'à la question suivante.
+8. « Adresse du portail » :
+   - dans ton Chrome, ouvre l'accueil du portail ;
+   - clique dans la barre d'adresse, Ctrl+C ;
+   - clique dans la fenêtre noire, Ctrl+V, Entrée.
+9. « Ouverture du navigateur du robot » : attends (30 secondes maximum), ne touche à rien.
+10. Le portail s'ouvre dans une fenêtre À PART (celle du robot) :
+    - connecte-toi dans CETTE fenêtre si on te le demande ;
+    - puis clique dans la fenêtre noire, Entrée.
+11. « Texte a chercher » : tape le nom exact d'un menu (ex : GATES), Entrée, puis o, Entrée.
+    Recommence avec 2 autres menus ou liens. Puis Entrée sans rien.
+12. « Nom de la page 1 » (relevé) :
+    - dans la fenêtre du robot, va sur la page de recherche des plans (à la souris, comme d'habitude) ;
+    - clique dans la fenêtre noire, tape un nom court (ex : recherche plans), Entrée.
+    Recommence pour : la liste des résultats, la fiche d'un plan, chaque onglet de la fiche.
+    Puis Entrée sans rien.
+13. « Entree pour fermer la fenetre du robot » : Entrée.
+14. Cadre RESULTAT : prends-le en photo.
+15. Ouvre Bureau > Robot > A_ENVOYER_releve.txt. Efface les données s'il y en a (noms, numéros).
+16. Envoie-moi : la photo du RESULTAT + ce fichier (ou sa photo).
+
+D. LANCER UNE TÂCHE (quand je t'en envoie une)
+17. Enregistre le fichier tache_....txt (et la liste .csv si je t'en envoie une) dans Téléchargements.
+18. python robot.txt, tape 3, Entrée, tape le numéro de la tâche, Entrée.
+19. Si le portail demande de te connecter : connecte-toi dans la fenêtre du robot, puis Entrée dans la fenêtre noire.
+20. « Le robot va cliquer ... » : o = oui, n = non (il passe au suivant), t = oui pour toute la tâche.
+21. À la fin : « FIN : ... OK, ... passe(s), ... erreur(s) » : photo de cet écran, envoie-la.
+    Le détail est dans Bureau > Robot > resultats.
+
+E. RELEVER D'AUTRES PAGES (si je te le demande)
+22. python robot.txt, tape 2, Entrée. Puis comme les étapes 10, 12, 15 et 16.
+
+SI ÇA BLOQUE
+- « PROBLEME », « ECHEC », message d'erreur, ou rien ne bouge pendant 1 minute : photo de tout l'écran, envoie-la.
+- Pour tout arrêter : Ctrl + C dans la fenêtre noire.

@@ -1,31 +1,6 @@
 # -*- coding: utf-8 -*-
-r"""
-PRISE EN MAIN DU ROBOT (version 1)
-==================================
-
-Le robot montre, une chose a la fois, qu'il sait prendre la main sur votre ordinateur :
-    1. Python fonctionne
-    2. fichiers et dossiers : il cree un dossier d'essai sur le Bureau et l'ouvre
-    3. clavier : il ouvre SON fichier dans le Bloc-notes et y ecrit une phrase tout seul
-    4. souris : il bouge la souris et clique dans ce Bloc-notes
-    5. votre navigateur habituel : il y ouvre l'adresse de votre portail
-    6. son propre navigateur : il remplit et clique une page d'essai
-    7. ce navigateur sur votre portail : il compte et encadre ce qu'il sait cliquer
-    8. un clic que VOUS choisissez sur le portail (un menu, un lien), apres votre accord
-
-Il ne modifie RIEN dans vos outils : il ne fait que creer le dossier « Robot - essai »
-sur le Bureau. Il n'ecrit QUE dans son propre fichier essai_clavier.txt. Sur le portail,
-il ne clique que sur des liens et des menus, jamais sur un bouton de formulaire, une case
-a cocher, ni sur ce qui ressemble a une action (Supprimer, Enregistrer, Valider, OK...).
-
-A la fin, un RESULTAT s'affiche : prenez-le en photo et envoyez-le. Il est aussi ecrit
-dans « Robot - essai\resultat_prise_en_main.txt ». Il ne contient aucune donnee du
-portail : ni adresse, ni texte des pages, ni les mots tapes. Seulement OK / ECHEC et des nombres.
-
-Lancement, dans une fenetre noire ouverte dans le dossier ou est ce fichier :
-    python prise_en_main.txt
-(si « python » n'est pas reconnu :  py prise_en_main.txt )
-"""
+# ROBOT - lancement :  python robot.txt   (1 = test, 2 = releve des pages, 3 = lancer une tache)
+# Il ne modifie rien sur le portail sans votre accord ; tout ce qu'il ecrit est dans Bureau > Robot.
 
 import ctypes
 import json
@@ -210,7 +185,7 @@ def expliquer(erreur):
 
 # ---------------------------------------------------------------------------- bilan
 CODES = {"OK": "1", "ECHEC": "0", "SAUTE": "-", "PAS VU": "?", "NON DISPONIBLE": "x"}
-ORDRE = "PFKSWNDRC"
+ORDRE = "PFKSWNDRCV"
 
 
 class Bilan:
@@ -520,15 +495,15 @@ def etape_python(bilan):
 
 def etape_fichiers(bilan):
     titre_etape(2, "Fichiers et dossiers")
-    dossier = dossier_bureau() / "Robot - essai"
-    ecrire("   Le robot va creer le dossier « Robot - essai » sur votre Bureau, y ecrire")
+    dossier = dossier_bureau() / "Robot"
+    ecrire("   Le robot va creer le dossier « Robot » sur votre Bureau, y ecrire")
     ecrire("   le fichier bonjour.txt, puis ouvrir ce dossier.")
     pause()
     try:
         dossier.mkdir(parents=True, exist_ok=True)
         (dossier / "bonjour.txt").write_text(
             "Bonjour ! Ce fichier a ete cree par le robot le %s.\n"
-            "Vous pouvez supprimer le dossier « Robot - essai » quand vous voulez.\n"
+            "Le robot range ici tout ce qu'il ecrit (releves, resultats des taches).\n"
             % datetime.now().strftime("%d/%m/%Y a %H:%M"), encoding="utf-8")
     except Exception as e:
         bilan.noter("F", "Fichiers et dossiers", "ECHEC", erreur_courte(e))
@@ -540,7 +515,7 @@ def etape_fichiers(bilan):
         return dossier
     time.sleep(1.5)
     revenez_ici()
-    if oui("   Voyez-vous le dossier « Robot - essai » avec le fichier bonjour.txt ?"):
+    if oui("   Voyez-vous le dossier « Robot » avec le fichier bonjour.txt ?"):
         bilan.noter("F", "Fichiers et dossiers", "OK")
     else:
         bilan.noter("F", "Fichiers et dossiers", "PAS VU", "fichier cree mais dossier pas vu a l'ecran")
@@ -684,9 +659,13 @@ def demander_adresse():
     ecrire("   Dans votre Chrome, allez sur la page d'ACCUEIL du portail. Cliquez dans la barre")
     ecrire("   d'adresse tout en haut, faites Ctrl+C pour la copier. Revenez dans cette fenetre noire")
     ecrire("   et faites Ctrl+V pour la coller (ou clic droit, puis Coller), puis Entree.")
-    ecrire("   Entree sans rien = sauter les etapes du portail.")
-    ecrire("   (L'adresse n'est ecrite nulle part : elle sert seulement pendant ce test.)")
-    adresse = demander("   Adresse du portail :").strip().strip('"')
+    precedente = adresse_retenue()
+    if precedente:
+        ecrire("   Entree sans rien = la meme adresse que la derniere fois.")
+    else:
+        ecrire("   Entree sans rien = sauter les etapes du portail.")
+    ecrire("   (L'adresse reste sur ce poste, dans Bureau > Robot ; elle n'est jamais dans le RESULTAT.)")
+    adresse = demander("   Adresse du portail :").strip().strip('"') or precedente
     if not adresse:
         return ""
     if not re.match(r"^[a-z][a-z0-9+.-]*://", adresse, re.I):
@@ -702,6 +681,7 @@ def demander_adresse():
     if coupee:
         ecrire("   Cette adresse ressemble a celle d'une ACTION (supprimer, valider...). Par prudence,")
         ecrire("   le robot ouvrira seulement l'ACCUEIL du portail.")
+    retenir_adresse(adresse)
     return adresse
 
 
@@ -821,7 +801,7 @@ def etape_navigateur_robot(bilan, url):
         except (OSError, ValueError):
             notes = [["N", "Navigateur du robot (page d'essai)", "ECHEC", "le programme du navigateur s'est arrete"]]
         for lettre, intitule, statut, detail in notes:
-            if lettre in ("N", "D", "R", "C"):
+            if lettre in ("N", "D", "R", "C", "V"):
                 bilan.noter(lettre, intitule, statut, masquer(detail, url), afficher=False)
         if interrompu is not None:
             raise interrompu
@@ -846,6 +826,10 @@ JS_STRUCTURE = r"""() => {
   const q = s => Array.from(document.querySelectorAll(s));
   const cliquables = q('a[href], button, input[type=submit], input[type=button], input[type=image], [role=button], ' +
                        '[role=link], [role=menuitem], [role=tab], [onclick]').filter(vis);
+  // vieux portails : menus faits de li / span avec la main de la souris (curseur « pointer »)
+  for (const e of q('li, span, div, td').slice(0, 3000))
+    if (!cliquables.includes(e) && vis(e) && getComputedStyle(e).cursor === 'pointer' &&
+        !(e.parentElement && getComputedStyle(e.parentElement).cursor === 'pointer')) cliquables.push(e);
   let ombres = 0;
   for (const e of document.querySelectorAll('*')) if (e.shadowRoot) ombres++;
   return { cliquables: cliquables.length, champs: q('input:not([type=hidden]), select, textarea').filter(vis).length,
@@ -853,8 +837,11 @@ JS_STRUCTURE = r"""() => {
            dessins: q('canvas, embed, object').filter(vis).length };
 }"""
 
-JS_MARQUER_CLIQUABLES = """() => Array.from(document.querySelectorAll('a[href], button, input[type=submit], input[type=button], [role=button], [role=menuitem], [role=tab]'))
-  .filter(e => { const r = e.getBoundingClientRect(); return r.width > 4 && r.height > 4 && r.top >= 0 && r.top < innerHeight; })
+JS_MARQUER_CLIQUABLES = """() => Array.from(document.querySelectorAll('a[href], button, input[type=submit], input[type=button], [role=button], [role=menuitem], [role=tab], [onclick], li, span'))
+  .filter(e => { const r = e.getBoundingClientRect(); if (!(r.width > 4 && r.height > 4 && r.top >= 0 && r.top < innerHeight)) return false;
+                 if (['LI', 'SPAN'].includes(e.tagName) && !e.hasAttribute('onclick')) return getComputedStyle(e).cursor === 'pointer' &&
+                   !(e.parentElement && getComputedStyle(e.parentElement).cursor === 'pointer');
+                 return true; })
   .slice(0, 5).map(e => { e.setAttribute('data-robot-essai', '1'); return 1; }).length"""
 
 JS_ENCADRER = """(e, ms) => { e.scrollIntoView({block: 'nearest', inline: 'nearest'});
@@ -1070,6 +1057,8 @@ class Notes:
         return next((n[2] for n in self.liste if n[0] == lettre), None)
 
     def sauver(self):
+        if self.fichier is None:
+            return
         try:
             self.fichier.write_text(json.dumps(self.liste, ensure_ascii=False), encoding="utf-8")
         except OSError:
@@ -1440,6 +1429,14 @@ def sous_programme_navigateur(dossier_echange):
                 if _analyser_portail(page, url, notes):
                     etape[:] = ["C", "Clic choisi sur le portail"]
                     _clic_choisi(page, notes)
+                    etape[:] = ["V", "Releve des pages (pour Claude)"]
+                    titre_etape(9, "Releve des pages du portail (pour Claude)")
+                    fichier, nombre = boucle_releve(page)
+                    if fichier:
+                        notes.noter("V", "Releve des pages (pour Claude)", "OK",
+                                    f"{nombre} page(s) : Bureau > Robot > A_ENVOYER_releve.txt")
+                    else:
+                        notes.noter("V", "Releve des pages (pour Claude)", "SAUTE", "aucune page relevee")
                 else:
                     notes.noter("C", "Clic choisi sur le portail", "SAUTE", "portail non affiche")
             pause("Fin des essais du navigateur. Entree pour fermer la fenetre du robot...")
@@ -1455,13 +1452,1108 @@ def sous_programme_navigateur(dossier_echange):
     return 0
 
 
+# ---------------------------------------------------------------------------- outils communs au relevé et aux tâches
+def dossier_robot(*sous):
+    """Bureau > Robot (et ses sous-dossiers) : tout ce que le robot écrit est là."""
+    d = dossier_bureau() / "Robot"
+    for s in sous:
+        d = d / s
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def adresse_retenue():
+    try:
+        return (dossier_robot() / "adresse_portail.txt").read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+
+
+def retenir_adresse(url):
+    if url:
+        try:
+            (dossier_robot() / "adresse_portail.txt").write_text(url, encoding="utf-8")
+        except OSError:
+            pass
+
+
+def adresse_du_portail():
+    """L'adresse retenue la dernière fois ; sinon on la demande (et on la retient)."""
+    url = adresse_retenue()
+    if url:
+        return url
+    url = demander_adresse()
+    retenir_adresse(url)
+    return url
+
+
+def _champ_mot_de_passe(page):
+    for cadre in page.frames:
+        try:
+            if cadre.locator("input[type=password]").filter(visible=True).count():
+                return True
+        except Exception:
+            try:
+                loc = cadre.locator("input[type=password]")
+                if any(_visible(loc.nth(i)) for i in range(min(loc.count(), 5))):
+                    return True
+            except Exception:
+                continue
+    return False
+
+
+def attendre_chargement(page, secondes=10):
+    for etat in ("domcontentloaded", "networkidle"):
+        try:
+            page.wait_for_load_state(etat, timeout=int(secondes * 1000))
+        except Exception:
+            pass
+    try:
+        page.wait_for_timeout(400)  # (attente qui laisse aussi passer les fenêtres du portail)
+    except Exception:
+        time.sleep(0.4)
+
+
+def attendre_portail(page):
+    """Si le portail affiche une page de connexion, on attend que vous vous connectiez DANS la fenêtre du robot."""
+    attendre_chargement(page)
+    for _ in range(5):
+        if not _champ_mot_de_passe(page):
+            return
+        ecrire()
+        ecrire("   Le portail demande de vous connecter : connectez-vous DANS LA FENETRE DU ROBOT.")
+        pause("Quand vous voyez l'accueil du portail, revenez ici et appuyez sur Entree...")
+        attendre_chargement(page)
+    raise ErreurTache("toujours sur la page de connexion")
+
+
+def ouvrir_robot(p):
+    """Le navigateur du robot (Chrome, sinon Edge, sinon le navigateur intégré) et sa page. Sans profil :
+    rien de votre Chrome n'est lu ni gardé."""
+    notes = Notes(None)
+    navigateur, nom, _, _ = _ouvrir_navigateur(p, notes)
+    if navigateur is None:
+        raise ErreurTache("le navigateur du robot ne s'ouvre pas sur ce poste (faites le test : choix 1)")
+    contexte = navigateur.new_context(no_viewport=True, accept_downloads=True)
+    return navigateur, contexte, contexte.new_page()
+
+
+# ---------------------------------------------------------------------------- relevé des pages (pour Claude)
+# STRUCTURE seulement : noms des menus, onglets, champs, boutons, colonnes de tableaux, libellés d'une fiche.
+# Jamais une valeur : ni le contenu des champs, ni les cellules des tableaux, ni les choix des listes.
+JS_BARRES = r"""() => {
+  const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
+                     const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  const propre = e => { let t = ''; for (const n of e.childNodes) if (n.nodeType === 3) t += n.textContent;
+                        t = t.replace(/\s+/g, ' ').trim();
+                        if (!t) { const l = e.querySelector(':scope > a, :scope > span, :scope > div, :scope > button');
+                                  if (l) t = (l.textContent || '').replace(/\s+/g, ' ').trim(); }
+                        return t; };
+  // une barre de menu : une liste de 2 à 15 entrées courtes, côte à côte, en haut de la page (ou dans un menu)
+  const MENU = 'nav, header, [role=navigation], [role=menubar], [class*=menu i], [id*=menu i], [class*=nav i]';
+  const entrees = [];
+  for (const ul of document.querySelectorAll('ul, ol, [role=menubar]')) {
+    if (ul.parentElement && ul.parentElement.closest('li')) continue;          // un sous-menu, pas une barre
+    const lis = Array.from(ul.children).filter(li => vis(li));
+    if (lis.length < 2 || lis.length > 15) continue;
+    const hauts = lis.map(li => Math.round(li.getBoundingClientRect().top));
+    const enLigne = Math.max(...hauts) - Math.min(...hauts) <= 6;
+    const enHaut = ul.getBoundingClientRect().top < 260 || !!ul.closest(MENU);
+    if (!enLigne || !enHaut) continue;
+    if (!lis.every(li => { const t = propre(li); return t && t.length <= 30; })) continue;
+    for (const li of lis) { li.setAttribute('data-robot-barre', String(entrees.length)); entrees.push(propre(li)); }
+  }
+  return entrees;
+}"""
+
+JS_SOUS_MENU = r"""(li) => {
+  const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
+                     const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  const propre = e => { let t = ''; for (const n of e.childNodes) if (n.nodeType === 3) t += n.textContent;
+                        t = t.replace(/\s+/g, ' ').trim();
+                        if (!t) { const l = e.querySelector(':scope > a, :scope > span, :scope > div, :scope > button');
+                                  if (l) t = (l.textContent || '').replace(/\s+/g, ' ').trim(); }
+                        return t; };
+  const vus = [];
+  for (const e of li.querySelectorAll('li, [role=menuitem]')) {
+    if (e === li || !vis(e)) continue;
+    const t = propre(e);
+    if (t && !vus.includes(t)) vus.push(t);
+  }
+  return vus;
+}"""
+
+JS_RELEVE = r"""() => {
+  const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
+                     const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  const court = t => (t || '').replace(/\s+/g, ' ').trim();
+  const sansChamps = n => { const c = n.cloneNode(true);
+    c.querySelectorAll('select, option, input, textarea, button, script, style').forEach(x => x.remove()); return court(c.textContent); };
+  // une ligne d'un tableau de DONNÉES (tableau avec des en-têtes) : son contenu n'est jamais relevé
+  const ligneDeDonnees = e => { if (e.closest('[role=row], [role=gridcell]')) return true;
+    const tr = e.closest('tr'); if (!tr) return false; const t = tr.closest('table');
+    return !!t && !!t.querySelector('th') && !!tr.querySelector('td'); };
+  const MENU = 'nav, header, [role=navigation], [role=menu], [role=menubar], [class*=menu i], [id*=menu i], [data-robot-barre]';
+  const libelleDe = e => {
+    if (e.id) { try { const l = document.querySelector('label[for="' + CSS.escape(e.id) + '"]'); if (l && sansChamps(l)) return sansChamps(l); } catch (x) {} }
+    const p = e.closest('label'); if (p && sansChamps(p)) return sansChamps(p);
+    const a = e.getAttribute('aria-label'); if (a) return court(a);
+    const ph = e.getAttribute('placeholder'); if (ph) return court(ph) + ' (indice)';
+    const cell = e.closest('td'); if (cell && cell.previousElementSibling) { const t = sansChamps(cell.previousElementSibling); if (t && t.length < 50) return t; }
+    const prev = e.previousElementSibling; if (prev && !['INPUT', 'SELECT', 'TEXTAREA'].includes(prev.tagName)) { const t = sansChamps(prev); if (t && t.length < 50) return t; }
+    return e.getAttribute('title') || '(sans nom)';
+  };
+  const r = { autresMenus: [], onglets: [], champs: [], boutons: [], tableaux: [], libelles: [], liens: [],
+              cadres: document.querySelectorAll('iframe, frame').length };
+  for (const e of document.querySelectorAll('nav a, [role=menuitem], [class*=menu i] a, [id*=menu i] a')) {
+    if (!vis(e) || ligneDeDonnees(e) || e.closest('[data-robot-barre]')) continue;
+    r.autresMenus.push(court(e.textContent));
+  }
+  for (const e of document.querySelectorAll('[role=tab], [class*=onglet i] a, [class*=onglet i] li, [class*=tabs i] a, [class*=tabs i] li'))
+    if (vis(e) && !ligneDeDonnees(e)) r.onglets.push(court(e.textContent));
+  for (const e of document.querySelectorAll('input, select, textarea')) {
+    const type = (e.getAttribute('type') || '').toLowerCase();
+    if (['hidden', 'submit', 'button', 'image', 'reset'].includes(type) || !vis(e) || ligneDeDonnees(e)) continue;
+    let genre = e.tagName === 'SELECT' ? 'liste de ' + e.options.length + ' choix' : (e.tagName === 'TEXTAREA' ? 'texte long' : (type || 'texte'));
+    if (type === 'password') genre = 'mot de passe';
+    r.champs.push(libelleDe(e) + ' [' + genre + (e.required ? ', obligatoire' : '') + (e.readOnly || e.disabled ? ', lecture seule' : '') + ']');
+  }
+  for (const e of document.querySelectorAll('button, input[type=submit], input[type=button], input[type=reset], [role=button]')) {
+    if (!vis(e) || ligneDeDonnees(e)) continue;
+    const texte = e.tagName === 'INPUT' ? court(e.value) : court(e.textContent);
+    const bulle = court(e.getAttribute('title') || e.getAttribute('aria-label') || '');
+    r.boutons.push(texte && /[A-Za-zÀ-ÿ]/.test(texte) ? texte : (bulle ? '(icone) ' + bulle : '(icone sans nom)'));
+  }
+  for (const t of document.querySelectorAll('table, [role=grid]')) {
+    if (!vis(t) || t.parentElement.closest('table td')) continue;
+    let entetes = Array.from(t.querySelectorAll('thead th, [role=columnheader]'));
+    if (!entetes.length) { const l = t.querySelector('tr'); if (l && l.children.length > 1 && Array.from(l.children).every(c => c.tagName === 'TH')) entetes = Array.from(l.children); }
+    if (!entetes.length) continue;
+    const lignes = Array.from(t.querySelectorAll('tr, [role=row]')).filter(l => l.querySelector('td, [role=gridcell]'));
+    const colonnes = entetes.map((h, i) => { let n = court(h.textContent) || '(sans titre)';
+      const exemple = lignes.find(l => l.children.length === entetes.length);
+      if (exemple && exemple.children[i]) { const c = exemple.children[i];
+        if (c.querySelector('a[href]')) n += ' (lien)';
+        const actions = Array.from(c.querySelectorAll('button, input[type=button], input[type=submit], [role=button], a[title], img[title]'))
+          .map(b => { const x = b.tagName === 'INPUT' ? court(b.value) : court(b.textContent);
+                      return x && /[A-Za-zÀ-ÿ]/.test(x) && b.tagName !== 'A' ? 'bouton ' + x : (b.getAttribute('title') ? 'icone ' + court(b.getAttribute('title')) : ''); })
+          .filter(Boolean);
+        if (actions.length) n += ' (' + actions.join(', ') + ')'; }
+      return n; });
+    const vide = lignes.length === 1 && lignes[0].children.length === 1 &&
+                 /aucun|aucune|vide|pas de|no data|no record|empty/i.test(lignes[0].textContent || '');
+    r.tableaux.push({ colonnes: colonnes, lignes: vide ? 0 : lignes.length });
+  }
+  // libellés d'une fiche (« Statut : » ...) : le libellé seulement, jamais la valeur à côté
+  for (const e of document.querySelectorAll('td, th, dt, label, span, b, strong, div, p')) {
+    if (!vis(e) || ligneDeDonnees(e) || e.closest(MENU)) continue;
+    let propre = ''; for (const n of e.childNodes) if (n.nodeType === 3) propre += n.textContent;
+    propre = court(propre);
+    if (propre && /:$/.test(propre) && propre.length <= 30) r.libelles.push(propre.replace(/\s*:$/, ''));
+  }
+  for (const a of document.querySelectorAll('a[href]'))
+    if (vis(a) && !ligneDeDonnees(a) && !a.closest(MENU) && !a.closest('[class*=onglet i], [class*=tabs i], [role=tablist]'))
+      r.liens.push(court(a.textContent || a.getAttribute('title') || ''));
+  return r;
+}"""
+
+
+def _structure(texte):
+    """Un nom d'élément du portail, gardé seulement s'il ressemble à de la structure (pas à une donnée)."""
+    t = " ".join(str(texte or "").split())
+    if not t or len(t) > 45:
+        return None
+    if re.search(r"\d{4,}|@|https?://|\\", t):
+        return "(donnee masquee)"
+    return t
+
+
+def _liste(elements, limite=40):
+    vus = []
+    for e in elements:
+        t = _structure(e)
+        if t and t not in vus:
+            vus.append(t)
+    return vus[:limite]
+
+
+def relever_page(page):
+    """La structure de la page affichée dans la fenêtre du robot (tous les cadres)."""
+    barres = []
+    try:
+        for i, nom in enumerate(page.evaluate(JS_BARRES)):
+            entree = page.locator(f'[data-robot-barre="{i}"]')
+            sous = []
+            try:
+                entree.hover(timeout=3000)  # survol seulement : jamais de clic
+                time.sleep(0.8)
+                sous = page.locator(f'[data-robot-barre="{i}"]').evaluate(JS_SOUS_MENU)
+            except Exception:
+                pass
+            barres.append((nom, sous))
+        page.mouse.move(0, 0)
+        time.sleep(0.3)
+    except Exception:
+        pass
+    total = {"autresMenus": [], "onglets": [], "champs": [], "boutons": [], "tableaux": [], "libelles": [], "liens": [], "cadres": 0}
+    for cadre in page.frames:
+        try:
+            r = cadre.evaluate(JS_RELEVE)
+        except Exception:
+            continue
+        for cle in total:
+            if cle == "cadres":
+                total[cle] += r[cle]
+            else:
+                total[cle] += r[cle]
+    _nettoyer(page)
+    for cadre in page.frames:
+        try:
+            cadre.evaluate("() => document.querySelectorAll('[data-robot-barre]').forEach(e => e.removeAttribute('data-robot-barre'))")
+        except Exception:
+            pass
+    menus = []
+    for nom, sous in barres:
+        t = _structure(nom)
+        if t:
+            s = _liste(sous, 25)
+            menus.append(t + (" > " + " ; ".join(s) if s else ""))
+    tableaux = []
+    for tab in total["tableaux"]:
+        cols = [c for c in (_structure(c) for c in tab["colonnes"]) if c]
+        if cols:
+            tableaux.append(" | ".join(cols) + f"   ({tab['lignes']} ligne(s))")
+    return {
+        "menus": menus, "autres menus": _liste(total["autresMenus"]), "onglets": _liste(total["onglets"]),
+        "champs": _liste(total["champs"]), "boutons": _liste(total["boutons"]), "tableaux": tableaux,
+        "libelles de fiche": _liste(total["libelles"]), "liens": _liste(total["liens"], 25),
+        "zones interieures (iframes)": total["cadres"],
+    }
+
+
+def ecrire_releve(pages):
+    lignes = [f"RELEVE DU PORTAIL - pour Claude - {datetime.now().strftime('%d/%m/%Y %H:%M')}",
+              "Structure seulement (noms des menus, champs, boutons, colonnes). Aucune valeur.",
+              "Relisez avant d'envoyer : si une ligne contient une donnee (nom, numero...), effacez-la.", ""]
+    menus_vus = None
+    for numero, (nom, r) in enumerate(pages, 1):
+        lignes.append(f"PAGE {numero} : {nom}")
+        if r["menus"] and r["menus"] != menus_vus:
+            lignes.append("  Menu du haut : " + "  |  ".join(r["menus"]))
+            menus_vus = r["menus"]
+        elif r["menus"]:
+            lignes.append("  Menu du haut : le meme")
+        for cle in ("autres menus", "onglets", "champs", "boutons", "libelles de fiche", "liens"):
+            if r[cle]:
+                lignes.append(f"  {cle.capitalize()} : " + " ; ".join(r[cle]))
+        for t in r["tableaux"]:
+            lignes.append("  Tableau : " + t)
+        if r["zones interieures (iframes)"]:
+            lignes.append(f"  Zones interieures (iframes) : {r['zones interieures (iframes)']}")
+        lignes.append("")
+    fichier = dossier_robot() / "A_ENVOYER_releve.txt"
+    fichier.write_text("\n".join(lignes), encoding="utf-8")
+    return fichier
+
+
+def boucle_releve(page):
+    """Vous allez sur une page dans la fenêtre du robot, vous la nommez, le robot la relève. Entrée vide = fini."""
+    pages = []
+    ecrire("   Dans la FENETRE DU ROBOT, allez sur une page du portail (comme d'habitude, a la souris).")
+    ecrire("   Puis revenez ici, tapez un nom court pour cette page et Entree.")
+    ecrire("   Exemples : recherche plans, liste resultats, fiche plan, onglet references.")
+    ecrire("   Entree sans rien = fini.")
+    while len(pages) < 30:
+        nom = demander(f"   Nom de la page {len(pages) + 1} (Entree sans rien = fini) :")
+        if not nom:
+            break
+        try:
+            page = page.context.pages[-1] if page.context.pages else page  # l'onglet le plus récent
+            page.bring_to_front()
+            attendre_chargement(page, 5)
+            r = relever_page(page)
+            pages.append((_structure(nom) or f"page {len(pages) + 1}", r))
+            nb = sum(len(v) for k, v in r.items() if isinstance(v, list))
+            ecrire(f"   --> page relevee ({nb} elements). Allez sur la page suivante, ou Entree sans rien = fini.")
+        except Exception as e:
+            ecrire("   --> cette page n'a pas pu etre relevee : " + expliquer(e))
+    if not pages:
+        return None, 0
+    return ecrire_releve(pages), len(pages)
+
+
+# ---------------------------------------------------------------------------- tâches (écrites par Claude, lancées par vous)
+class ErreurTache(Exception):
+    pass
+
+
+class Passer(Exception):
+    """On ne touche à rien de plus pour cet élément de la liste : on passe au suivant."""
+
+
+class Arreter(Exception):
+    pass
+
+
+ACTIONS_TACHE = {
+    # en-tête
+    "TACHE": "nom de la tache", "DEMANDER": "nom = question", "LISTE": "fichier", "CONFIRMER": "oui / non",
+    # navigation et gestes
+    "ACCUEIL": "", "ALLER": "adresse", "MENU": "Menu > Sous-menu", "CLIQUER": "texte [DANS LIGNE valeur]",
+    "ECRIRE": "Libelle = valeur", "CHOISIR": "Libelle = choix", "COCHER": "Libelle", "DECOCHER": "Libelle",
+    "TOUCHE": "Entree / Tab / Echap", "ATTENDRE": "texte, ou 3 secondes", "VERIFIER": "texte",
+    "LIRE": "Libelle", "ACCEPTER FENETRE": "texte de la fenetre", "CAPTURE": "nom",
+    # décisions
+    "SI PRESENT": "texte [DANS COLONNE titre]", "SI ABSENT": "texte [DANS COLONNE titre]", "SINON": "", "FIN SI": "",
+    "REPETER TANT QUE PRESENT": "texte [DANS COLONNE titre]", "REPETER TANT QUE ABSENT": "texte [DANS COLONNE titre]",
+    "FIN REPETER": "",
+    "PASSER": "raison", "PREVENIR": "message", "ARRETER": "raison", "PAUSE": "message",
+}
+TOUCHES = {"ENTREE": "Enter", "ENTER": "Enter", "TAB": "Tab", "TABULATION": "Tab", "ECHAP": "Escape",
+           "ECHAPPE": "Escape", "ESC": "Escape", "BAS": "ArrowDown", "HAUT": "ArrowUp", "ESPACE": "Space"}
+
+
+def _nom_action(brut):
+    return " ".join(sans_accents(brut).upper().split())
+
+
+def lire_tache(chemin):
+    """Lit un fichier de tâche. Renvoie (entête, étapes) ; une erreur dit la ligne et quoi corriger."""
+    try:
+        texte = Path(chemin).read_text(encoding="utf-8-sig")
+    except UnicodeDecodeError:
+        texte = Path(chemin).read_text(encoding="cp1252")
+    entete = {"nom": Path(chemin).stem, "demander": [], "liste": None, "confirmer": True}
+    racine = []
+    pile = [racine]
+    ouverts = []
+    for numero, ligne in enumerate(texte.splitlines(), 1):
+        brut = ligne.strip()
+        if not brut or brut.startswith(("#", "//")):
+            continue
+        m = re.match(r"^([A-Za-zÀ-ÿ' ]+?)\s*(?::\s*(.*))?$", brut)
+        action = _nom_action(m.group(1)) if m else ""
+        arg = (m.group(2) or "").strip() if m else ""
+        if action not in ACTIONS_TACHE:
+            raise ErreurTache(f"ligne {numero} : action inconnue « {brut[:40]} »")
+        if action == "TACHE":
+            entete["nom"] = arg or entete["nom"]
+        elif action == "DEMANDER":
+            if "=" not in arg:
+                raise ErreurTache(f"ligne {numero} : ecrire DEMANDER : nom = question")
+            nom, question = (x.strip() for x in arg.split("=", 1))
+            entete["demander"].append((nom, question or nom))
+        elif action == "LISTE":
+            entete["liste"] = arg
+        elif action == "CONFIRMER":
+            entete["confirmer"] = not sans_accents(arg).lower().startswith("non")
+        elif action in ("SI PRESENT", "SI ABSENT"):
+            bloc = {"action": "SI", "present": action == "SI PRESENT", "arg": arg, "ligne": numero, "alors": [], "sinon": []}
+            pile[-1].append(bloc)
+            pile.append(bloc["alors"])
+            ouverts.append(bloc)
+        elif action in ("REPETER TANT QUE PRESENT", "REPETER TANT QUE ABSENT"):
+            if not arg:
+                raise ErreurTache(f"ligne {numero} : il manque le texte apres « {action} : »")
+            bloc = {"action": "REPETER", "present": action.endswith("PRESENT"), "arg": arg, "ligne": numero,
+                    "alors": [], "sinon": [], "genre": "REPETER"}
+            pile[-1].append(bloc)
+            pile.append(bloc["alors"])
+            ouverts.append(bloc)
+        elif action == "FIN REPETER":
+            if not ouverts or ouverts[-1].get("genre") != "REPETER":
+                raise ErreurTache(f"ligne {numero} : FIN REPETER sans REPETER")
+            pile.pop()
+            ouverts.pop()
+        elif action == "SINON":
+            if not ouverts or ouverts[-1].get("genre") == "REPETER" or pile[-1] is not ouverts[-1]["alors"]:
+                raise ErreurTache(f"ligne {numero} : SINON sans SI")
+            pile[-1] = ouverts[-1]["sinon"]
+        elif action == "FIN SI":
+            if not ouverts or ouverts[-1].get("genre") == "REPETER":
+                raise ErreurTache(f"ligne {numero} : FIN SI sans SI")
+            pile.pop()
+            ouverts.pop()
+        else:
+            if action in ("ECRIRE", "CHOISIR") and "=" not in arg:
+                raise ErreurTache(f"ligne {numero} : ecrire {action} : Libelle = valeur")
+            if action in ("ALLER", "MENU", "CLIQUER", "ECRIRE", "CHOISIR", "COCHER", "DECOCHER", "TOUCHE", "ATTENDRE",
+                          "VERIFIER", "LIRE", "ACCEPTER FENETRE") and not arg:
+                raise ErreurTache(f"ligne {numero} : il manque ce qu'il faut apres « {action} : »")
+            if action == "TOUCHE" and _nom_action(arg) not in TOUCHES:
+                raise ErreurTache(f"ligne {numero} : touche inconnue « {arg} » (Entree, Tab, Echap, Bas, Haut, Espace)")
+            pile[-1].append({"action": action, "arg": arg, "ligne": numero})
+    if ouverts:
+        fin = "FIN REPETER" if ouverts[-1].get("genre") == "REPETER" else "FIN SI"
+        raise ErreurTache(f"ligne {ouverts[-1]['ligne']} : il manque {fin}")
+    if not racine:
+        raise ErreurTache("la tache ne contient aucune action")
+    return entete, racine
+
+
+def _chercher_fichier(nom, pres_de):
+    for base in (Path(pres_de).parent, Path.home() / "Downloads", Path.home() / "Téléchargements", dossier_robot(),
+                 dossier_robot("taches")):
+        f = base / nom
+        if f.is_file():
+            return f
+    raise ErreurTache(f"liste « {nom} » introuvable (mettez-la a cote du fichier de la tache)")
+
+
+def lire_liste(nom, pres_de):
+    """Les lignes de la liste (Excel, CSV ou texte) : une ligne = une fois la tâche."""
+    import csv
+    f = _chercher_fichier(nom, pres_de)
+    if f.suffix.lower() in (".xlsx", ".xlsm"):
+        try:
+            from openpyxl import load_workbook
+        except ImportError:
+            raise ErreurTache("pour une liste Excel, enregistrez-la en CSV (Fichier > Enregistrer sous > CSV)")
+        feuille = load_workbook(f, read_only=True, data_only=True).worksheets[0]
+        lignes = [["" if v is None else str(v).strip() for v in row] for row in feuille.iter_rows(values_only=True)]
+    elif f.suffix.lower() == ".csv":
+        try:
+            brut = f.read_text(encoding="utf-8-sig")
+        except UnicodeDecodeError:
+            brut = f.read_text(encoding="cp1252")
+        separateur = ";" if brut.count(";") >= brut.count(",") else ","
+        lignes = [[c.strip() for c in r] for r in csv.reader(brut.splitlines(), delimiter=separateur)]
+    else:
+        brut = f.read_text(encoding="utf-8-sig", errors="replace")
+        lignes = [["valeur"]] + [[l.strip()] for l in brut.splitlines() if l.strip()]
+    lignes = [l for l in lignes if any(l)]
+    if len(lignes) < 2:
+        raise ErreurTache(f"la liste « {nom} » est vide")
+    entetes = [h or f"colonne{i + 1}" for i, h in enumerate(lignes[0])]
+    return [dict(zip(entetes, l + [""] * (len(entetes) - len(l)))) for l in lignes[1:]]
+
+
+JS_LIGNE = r"""([valeur, jeton]) => {
+  const norme = t => (t || '').replace(/\s+/g, ' ').trim().toLowerCase();
+  const v = norme(valeur); let n = 0;
+  for (const e of document.querySelectorAll('td, th, [role=gridcell], li, a, span, div, b')) {
+    let propre = ''; for (const c of e.childNodes) if (c.nodeType === 3) propre += c.textContent;
+    if (norme(propre) !== v && norme(e.textContent) !== v) continue;
+    const ligne = e.closest('tr, [role=row], li');
+    if (ligne && !ligne.hasAttribute('data-robot-ligne')) { ligne.setAttribute('data-robot-ligne', jeton); n++; }
+  }
+  return n;
+}"""
+
+JS_CHAMP_PAR_LIBELLE = r"""([libelle, jeton]) => {
+  const norme = t => (t || '').replace(/\s+/g, ' ').replace(/[\s:*]+$/, '').trim().toLowerCase();
+  const v = norme(libelle); let n = 0;
+  const champs = Array.from(document.querySelectorAll('input:not([type=hidden]):not([type=submit]):not([type=button]), select, textarea'));
+  for (const e of document.querySelectorAll('label, td, th, span, div, b, strong, p, dt')) {
+    let propre = ''; for (const c of e.childNodes) if (c.nodeType === 3) propre += c.textContent;
+    if (norme(propre) !== v) continue;
+    // le premier champ qui suit ce libellé, dans la même ligne ou le même bloc
+    const bloc = e.closest('tr, li, p, dl, fieldset, .form-group, div') || e.parentElement;
+    const suivant = champs.find(c => (e.compareDocumentPosition(c) & Node.DOCUMENT_POSITION_FOLLOWING) && bloc.contains(c));
+    if (suivant) { suivant.setAttribute('data-robot-champ', jeton); n++; }
+  }
+  return n;
+}"""
+
+JS_LIRE = r"""([libelle]) => {
+  const norme = t => (t || '').replace(/\s+/g, ' ').replace(/[\s:*]+$/, '').trim().toLowerCase();
+  const court = t => (t || '').replace(/\s+/g, ' ').trim();
+  const valeurDe = c => c.tagName === 'SELECT' ? court((c.options[c.selectedIndex] || {}).text) : court(c.value);
+  const v = norme(libelle);
+  for (const e of document.querySelectorAll('label, td, th, span, div, b, strong, p, dt')) {
+    let propre = ''; for (const c of e.childNodes) if (c.nodeType === 3) propre += c.textContent;
+    const p = court(propre);
+    if (norme(p) !== v && !norme(p).startsWith(v + ' :') && !norme(p).startsWith(v + ':')) continue;
+    if (norme(p) !== v) return court(p.split(':').slice(1).join(':'));        // « Statut : Validé » dans le même élément
+    if (e.tagName === 'LABEL' && e.control) return valeurDe(e.control);
+    const champ = e.parentElement && e.parentElement.querySelector('input, select, textarea');
+    if (champ && (e.compareDocumentPosition(champ) & Node.DOCUMENT_POSITION_FOLLOWING)) return valeurDe(champ);
+    if (e.nextElementSibling) return court(e.nextElementSibling.textContent);
+    const cell = e.closest('td, th, dt');
+    if (cell && cell.nextElementSibling) return court(cell.nextElementSibling.textContent);
+  }
+  return null;
+}"""
+
+JS_COLONNE = r"""([colonne, texte]) => {
+  const norme = t => (t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+  let tableauTrouve = false;
+  for (const t of document.querySelectorAll('table, [role=grid]')) {
+    let entetes = Array.from(t.querySelectorAll('thead th, [role=columnheader]'));
+    if (!entetes.length) { const l = t.querySelector('tr'); if (l && Array.from(l.children).every(c => c.tagName === 'TH')) entetes = Array.from(l.children); }
+    const rang = entetes.findIndex(h => norme(h.textContent).includes(norme(colonne)));
+    if (rang < 0) continue;
+    tableauTrouve = true;
+    for (const l of t.querySelectorAll('tr, [role=row]')) {
+      const cellules = Array.from(l.children).filter(c => c.tagName === 'TD' || c.getAttribute('role') === 'gridcell');
+      if (cellules.length === entetes.length && norme(cellules[rang].textContent).includes(norme(texte))) return 'oui';
+    }
+  }
+  return tableauTrouve ? 'non' : 'colonne absente';
+}"""
+
+JS_BANDEAU = r"""(message) => {
+  const b = document.createElement('div');
+  b.textContent = 'ROBOT : ' + message;
+  b.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:2147483647;background:#f59e0b;' +
+    'color:#111;font:600 15px Arial,sans-serif;padding:12px 18px;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.4);max-width:80%';
+  document.documentElement.appendChild(b);
+  setTimeout(() => b.remove(), 5000);
+}"""
+
+
+class Tache:
+    """Exécute une tâche, élément par élément de la liste, en notant chaque résultat dans un fichier."""
+
+    def __init__(self, chemin, page, url):
+        self.chemin = Path(chemin)
+        self.entete, self.etapes = lire_tache(chemin)
+        self.page = page
+        self.url = url
+        self.variables = {}
+        self.tout_confirme = not self.entete["confirmer"]
+        self.fenetre_attendue = None
+        self.fenetres_refusees = []
+        self.lectures = {}
+        self.suivre_page(page)
+        page.context.on("page", self.suivre_page)
+
+    # --- fenêtres du portail (« Voulez-vous vraiment supprimer ? ») : seule celle annoncée est acceptée
+    def suivre_page(self, page):
+        page.on("dialog", self.sur_fenetre)
+
+    def sur_fenetre(self, fenetre):
+        message = " ".join((fenetre.message or "").split())
+        attendu = self.fenetre_attendue
+        try:
+            if attendu and mots(attendu) in mots(message):
+                self.fenetre_attendue = None
+                ecrire(f"      fenetre du portail acceptee : « {message[:80]} »")
+                fenetre.accept()
+            else:
+                self.fenetres_refusees.append(message)
+                ecrire(f"      fenetre du portail REFUSEE (pas prevue) : « {message[:80]} »")
+                fenetre.dismiss()
+        except Exception:
+            pass
+
+    def verifier_fenetres(self):
+        if self.fenetres_refusees:
+            message = self.fenetres_refusees.pop(0)
+            self.fenetres_refusees.clear()
+            raise Passer(f"le portail a affiche « {message[:100]} » : rien n'a ete valide, on passe au suivant")
+
+    # --- outils
+    def remplir(self, texte):
+        def valeur(m):
+            nom = m.group(1).strip()
+            for cle, v in self.variables.items():
+                if mots(cle) == mots(nom):
+                    return str(v)
+            raise ErreurTache(f"valeur inconnue {{{nom}}} (colonne absente de la liste ?)")
+        return re.sub(r"\{([^{}]+)\}", valeur, texte)
+
+    def cadres(self):
+        return list(self.page.frames)
+
+    def candidats(self, texte, racines):
+        exact_sans_casse = re.compile(r"^\s*" + re.escape(texte) + r"\s*$", re.IGNORECASE)
+        jeton = secrets.token_hex(6)
+
+        def propre_texte(r):
+            if hasattr(r, "child_frames"):  # un cadre de la page entière
+                r.evaluate(JS_TROUVER_PROPRE_TEXTE, [texte, jeton])
+            else:
+                r.evaluate("(e, [m, j]) => { const norme = t => (t || '').replace(/\\s+/g, ' ').trim().toLowerCase();"
+                           " for (const x of [e, ...e.querySelectorAll('*')]) { let p = '';"
+                           " for (const n of x.childNodes) if (n.nodeType === 3) p += n.textContent;"
+                           " if (norme(p) === norme(m)) x.setAttribute('data-robot-trouve', j); } }", [texte, jeton])
+            return r.locator(f'[data-robot-trouve="{jeton}"]')
+
+        facons = [lambda r, role=role: r.get_by_role(role, name=texte, exact=True)
+                  for role in ("button", "link", "menuitem", "tab", "treeitem")]
+        facons += [lambda r: r.get_by_text(texte, exact=True), propre_texte,
+                   lambda r: r.get_by_title(texte, exact=True),
+                   lambda r: r.locator(f"[aria-label={json.dumps(texte, ensure_ascii=False)}]"),
+                   lambda r: r.get_by_text(exact_sans_casse)]
+        for facon in facons:
+            trouves = []
+            for r in racines:
+                try:
+                    loc = facon(r)
+                    for i in range(min(loc.count(), 10)):
+                        trouves.append(loc.nth(i))
+                except Exception:
+                    continue
+            if trouves:
+                visibles = [t for t in trouves if _visible(t)]
+                return visibles + [t for t in trouves if t not in visibles]
+        return []
+
+    def racines_ligne(self, valeur):
+        jeton = secrets.token_hex(6)
+        racines = []
+        for cadre in self.cadres():
+            try:
+                if cadre.evaluate(JS_LIGNE, [valeur, jeton]):
+                    racines.append(cadre.locator(f'[data-robot-ligne="{jeton}"]'))
+            except Exception:
+                continue
+        lignes = sum(r.count() for r in racines)
+        if lignes == 0:
+            raise ErreurTache(f"aucune ligne « {valeur} » sur la page")
+        if lignes > 1:
+            raise ErreurTache(f"{lignes} lignes « {valeur} » sur la page : le robot ne choisit pas au hasard")
+        return racines
+
+    def confirmer(self, loc, quoi):
+        """Avant un clic qui modifie (Supprimer, Dupliquer, Enregistrer...) : votre accord, sauf « t » donné avant."""
+        if self.tout_confirme:
+            return
+        _encadrer(loc, 0)
+        revenez_ici()
+        reponse = demander(f"   Le robot va cliquer « {quoi} ». Tapez o (oui), n (non : on passe au suivant) "
+                           "ou t (oui pour toute la tache) :", "n").lower()
+        _nettoyer(self.page, tout=False)
+        if reponse.startswith("t"):
+            self.tout_confirme = True
+        elif not reponse.startswith(("o", "y")):
+            raise Passer("clic refuse par vous")
+
+    def cliquer(self, arg):
+        nieme = 1
+        m = re.match(r"^(.*?)\s*\[(\d+)\]\s*$", arg)
+        if m:
+            arg, nieme = m.group(1), int(m.group(2))
+        racines = self.cadres()
+        quoi = arg
+        m = re.match(r"^(.*?)\s+DANS\s+LIGNE\s+(.+)$", arg, re.IGNORECASE)
+        if m:
+            arg, ligne = m.group(1).strip(), m.group(2).strip()
+            racines = self.racines_ligne(ligne)
+            quoi = f"{arg} (ligne {ligne})"
+        trouves = self.candidats(arg, racines)
+        if len(trouves) < nieme:
+            raise ErreurTache(f"« {arg} » introuvable sur la page")
+        loc = trouves[nieme - 1]
+        if not _visible(loc):
+            _ouvrir_menus(loc)
+        try:
+            texte_element = loc.evaluate("e => [e.innerText, e.value, e.title, e.getAttribute('aria-label')].join(' ')")
+        except Exception:
+            texte_element = ""
+        if interdit(arg) or interdit(texte_element):
+            self.confirmer(loc, quoi)
+        avant = len(self.page.context.pages)
+        loc.click(timeout=15000)
+        attendre_chargement(self.page)
+        if len(self.page.context.pages) > avant:
+            self.page = self.page.context.pages[-1]
+            self.page.bring_to_front()
+            attendre_chargement(self.page)
+        self.verifier_fenetres()
+
+    def menu(self, arg):
+        parties = [p.strip() for p in arg.split(">") if p.strip()]
+        for i, partie in enumerate(parties):
+            dernier = i == len(parties) - 1
+            trouves = self.candidats(partie, self.cadres())
+            if not trouves:
+                raise ErreurTache(f"menu « {partie} » introuvable")
+            loc = trouves[0]
+            if not _visible(loc):
+                _ouvrir_menus(loc)
+            if dernier:
+                self.cliquer(partie)
+                return
+            loc.hover(timeout=10000)
+            time.sleep(0.8)
+            suivant = self.candidats(parties[i + 1], self.cadres())
+            if not (suivant and _visible(suivant[0])):
+                loc.click(timeout=10000)  # menu qui s'ouvre au clic
+                time.sleep(0.8)
+
+    def champ(self, libelle):
+        if libelle.startswith("#"):
+            return self.page.locator(libelle)
+        jeton = secrets.token_hex(6)
+        facons = [lambda r: r.get_by_label(libelle, exact=True),
+                  lambda r: r.get_by_label(re.compile(r"^\s*" + re.escape(libelle) + r"\s*[:*]?\s*$", re.IGNORECASE)),
+                  lambda r: r.get_by_placeholder(libelle, exact=True)]
+        for facon in facons + [None]:
+            trouves = []
+            for cadre in self.cadres():
+                try:
+                    if facon is None:
+                        cadre.evaluate(JS_CHAMP_PAR_LIBELLE, [libelle, jeton])
+                        loc = cadre.locator(f'[data-robot-champ="{jeton}"]')
+                    else:
+                        loc = facon(cadre)
+                    for i in range(min(loc.count(), 5)):
+                        trouves.append(loc.nth(i))
+                except Exception:
+                    continue
+            visibles = [t for t in trouves if _visible(t)]
+            if visibles:
+                return visibles[0]
+        raise ErreurTache(f"champ « {libelle} » introuvable sur la page")
+
+    def presence(self, arg, attente=3):
+        """Le texte est-il sur la page ? Avec « DANS COLONNE x » : dans une ligne du tableau, sous ce titre."""
+        m = re.match(r"^(.*?)\s+DANS\s+COLONNE\s+(.+)$", arg, re.IGNORECASE)
+        fin = time.time() + attente
+        while True:
+            if m:
+                reponses = []
+                for cadre in self.cadres():
+                    try:
+                        reponses.append(cadre.evaluate(JS_COLONNE, [m.group(2).strip(), m.group(1).strip()]))
+                    except Exception:
+                        continue
+                if "oui" in reponses:
+                    return True
+                if "non" not in reponses:
+                    # jamais « rien trouvé, on continue » quand le tableau a changé : c'est une erreur
+                    raise ErreurTache(f"colonne « {m.group(2).strip()} » absente de la page")
+            else:
+                for cadre in self.cadres():
+                    try:
+                        loc = cadre.get_by_text(arg)
+                        if any(_visible(loc.nth(i)) for i in range(min(loc.count(), 10))):
+                            return True
+                    except Exception:
+                        continue
+            if time.time() >= fin:
+                return False
+            self.page.wait_for_timeout(500)
+
+    # --- les actions
+    def executer(self, etapes):
+        for etape in etapes:
+            action = etape["action"]
+            if action == "SI":
+                arg = self.remplir(etape["arg"])
+                ecrire(f"   ligne {etape['ligne']:>3} : si {'present' if etape['present'] else 'absent'} : {arg}")
+                try:
+                    vrai = self.presence(arg) == etape["present"]
+                except ErreurTache as e:
+                    raise ErreurTache(f"ligne {etape['ligne']} (si) : {e}")
+                self.executer(etape["alors"] if vrai else etape["sinon"])
+                continue
+            if action == "REPETER":
+                arg = self.remplir(etape["arg"])
+                for tour in range(31):
+                    try:
+                        encore = self.presence(arg) == etape["present"]
+                    except ErreurTache as e:
+                        raise ErreurTache(f"ligne {etape['ligne']} (repeter) : {e}")
+                    if not encore:
+                        break
+                    if tour == 30:
+                        raise ErreurTache(f"ligne {etape['ligne']} : repete 30 fois sans fin, le robot s'arrete")
+                    ecrire(f"   ligne {etape['ligne']:>3} : repeter (tour {tour + 1})")
+                    self.executer(etape["alors"])
+                continue
+            arg = self.remplir(etape["arg"])
+            ecrire(f"   ligne {etape['ligne']:>3} : {action.lower()}" + (f" : {arg}" if arg else ""))
+            try:
+                self.faire(action, arg)
+            except (Passer, Arreter):
+                raise
+            except ErreurTache as e:
+                raise ErreurTache(f"ligne {etape['ligne']} ({action.lower()}) : {e}")
+            except Exception as e:
+                raise ErreurTache(f"ligne {etape['ligne']} ({action.lower()}) : {expliquer(e)}")
+            self.verifier_fenetres()
+
+    def faire(self, action, arg):
+        page = self.page
+        if action == "ACCUEIL":
+            if not self.url:
+                raise ErreurTache("adresse du portail inconnue (faites le test : choix 1)")
+            page.goto(self.url, wait_until="domcontentloaded", timeout=60000)
+            attendre_portail(page)
+        elif action == "ALLER":
+            page.goto(arg, wait_until="domcontentloaded", timeout=60000)
+            attendre_portail(page)
+        elif action == "MENU":
+            self.menu(arg)
+        elif action == "CLIQUER":
+            self.cliquer(arg)
+        elif action in ("ECRIRE", "CHOISIR"):
+            libelle, valeur = (x.strip() for x in arg.split("=", 1))
+            loc = self.champ(libelle)
+            balise = loc.evaluate("e => e.tagName.toLowerCase()")
+            if balise == "select":
+                try:
+                    loc.select_option(label=valeur, timeout=10000)
+                except Exception:
+                    loc.select_option(value=valeur, timeout=10000)
+            elif action == "CHOISIR":
+                raise ErreurTache(f"« {libelle} » n'est pas une liste de choix (utilisez ECRIRE)")
+            else:
+                loc.fill(valeur, timeout=10000)
+        elif action in ("COCHER", "DECOCHER"):
+            loc = self.champ(arg)
+            loc.set_checked(action == "COCHER", timeout=10000)
+        elif action == "TOUCHE":
+            page.keyboard.press(TOUCHES[_nom_action(arg)])
+            attendre_chargement(page)
+        elif action == "ATTENDRE":
+            m = re.match(r"^(\d+)\s*s", arg)
+            if m:
+                time.sleep(min(int(m.group(1)), 120))
+            elif not self.presence(arg, attente=30):
+                raise ErreurTache(f"« {arg} » n'est pas apparu en 30 secondes")
+        elif action == "VERIFIER":
+            if not self.presence(arg, attente=10):
+                raise ErreurTache(f"« {arg} » absent de la page")
+        elif action == "LIRE":
+            valeur = None
+            for cadre in self.cadres():
+                try:
+                    valeur = cadre.evaluate(JS_LIRE, [arg])
+                except Exception:
+                    continue
+                if valeur is not None:
+                    break
+            if valeur is None:
+                raise ErreurTache(f"« {arg} » introuvable sur la page")
+            self.lectures[arg] = valeur
+            ecrire(f"      {arg} = {valeur}")
+        elif action == "ACCEPTER FENETRE":
+            self.fenetre_attendue = arg
+        elif action == "CAPTURE":
+            nom = re.sub(r"[^\w.-]+", "_", arg)[:40] or "capture"
+            page.screenshot(path=str(dossier_robot("resultats") / f"{nom}_{datetime.now():%H%M%S}.png"))
+        elif action == "PREVENIR":
+            ecrire()
+            ecrire("   " + "!" * 66)
+            ecrire(f"   !!  {arg}")
+            ecrire("   " + "!" * 66)
+            try:
+                page.evaluate(JS_BANDEAU, arg)
+            except Exception:
+                pass
+            self.lectures.setdefault("prevenu", arg)
+        elif action == "PASSER":
+            raise Passer(arg or "passe")
+        elif action == "ARRETER":
+            raise Arreter(arg or "arret demande par la tache")
+        elif action == "PAUSE":
+            revenez_ici()
+            pause((arg or "Pause") + " - puis Entree pour continuer...")
+
+
+def choisir_tache():
+    """Les fichiers tache*.txt reçus, à côté de ce programme, dans Téléchargements ou Bureau > Robot."""
+    ici = Path(__file__).resolve().parent
+    vus = []
+    for base in (ici, Path.home() / "Downloads", Path.home() / "Téléchargements", dossier_robot(), dossier_robot("taches")):
+        try:
+            for f in sorted(base.glob("*.txt")):
+                if f.name.lower().startswith("tache") and f.resolve() not in [v.resolve() for v in vus]:
+                    vus.append(f)
+        except OSError:
+            continue
+    if not vus:
+        ecrire("   Aucune tache trouvee. Enregistrez le fichier tache_....txt recu dans Telechargements.")
+        return None
+    ecrire()
+    for i, f in enumerate(vus, 1):
+        ecrire(f"   {i}. {f.name}")
+    choix = demander("   Numero de la tache a lancer :")
+    if not choix.isdigit() or not 1 <= int(choix) <= len(vus):
+        ecrire("   Pas de tache choisie.")
+        return None
+    return vus[int(choix) - 1]
+
+
+def executer_tache(p, chemin, url):
+    """Lance une tâche sur chaque ligne de sa liste (ou une fois), et écrit le fichier de résultats."""
+    import csv
+    entete, _ = lire_tache(chemin)  # erreur de rédaction : dite tout de suite, avant d'ouvrir quoi que ce soit
+    variables_fixes = {}
+    for nom, question in entete["demander"]:
+        variables_fixes[nom] = demander(f"   {question} :")
+    lignes = lire_liste(entete["liste"], chemin) if entete["liste"] else [{}]
+    ecrire(f"   Tache « {entete['nom']} » : {len(lignes)} fois.")
+    navigateur, contexte, page = ouvrir_robot(p)
+    nom_fichier = re.sub(r"[^\w-]+", "_", sans_accents(entete["nom"]))[:40] or "tache"
+    resultats = dossier_robot("resultats") / f"{nom_fichier}_{datetime.now():%Y%m%d-%H%M}.csv"
+    colonnes_lues = []
+    lignes_csv = []
+    compte = {"OK": 0, "PASSE": 0, "ERREUR": 0}
+    erreurs_de_suite = 0
+    tache = Tache(chemin, page, url)
+
+    def sauver():
+        with open(resultats, "w", encoding="utf-8-sig", newline="") as f:
+            w = csv.writer(f, delimiter=";")
+            w.writerow(["N", "element", "statut", "message"] + colonnes_lues)
+            for l in lignes_csv:
+                w.writerow(l[:4] + [l[4].get(c, "") for c in colonnes_lues])
+
+    try:
+        for numero, ligne in enumerate(lignes, 1):
+            element = next(iter(ligne.values()), "") if ligne else (" ".join(variables_fixes.values()) or "-")
+            ecrire()
+            ecrire(f"=== {numero}/{len(lignes)} : {element}")
+            tache.variables = dict(variables_fixes, **ligne)
+            tache.lectures = {}
+            tache.fenetre_attendue = None
+            tache.fenetres_refusees = []
+            try:
+                tache.executer(tache.etapes)
+                statut, message = "OK", ""
+                erreurs_de_suite = 0
+            except Passer as e:
+                statut, message = "PASSE", str(e)
+                erreurs_de_suite = 0
+            except ErreurTache as e:
+                statut, message = "ERREUR", str(e)
+                erreurs_de_suite += 1
+                try:
+                    tache.page.screenshot(path=str(dossier_robot("resultats") / f"erreur_{numero}.png"))
+                except Exception:
+                    pass
+            compte[statut] += 1
+            ecrire(f"    --> {statut}" + (f" : {message}" if message else ""))
+            for c in tache.lectures:
+                if c not in colonnes_lues:
+                    colonnes_lues.append(c)
+            lignes_csv.append([numero, element, statut, message, dict(tache.lectures)])
+            sauver()
+            if erreurs_de_suite >= 3:
+                ecrire("   3 erreurs de suite : le robot s'arrete (le portail a peut-etre change).")
+                break
+    except Arreter as e:
+        ecrire(f"   Tache arretee : {e}")
+    except KeyboardInterrupt:
+        ecrire("   Arrete a votre demande.")
+    finally:
+        try:
+            sauver()
+        except OSError:
+            pass
+    ecrire()
+    ecrire("=" * 70)
+    ecrire(f" FIN : {compte['OK']} OK, {compte['PASSE']} passe(s), {compte['ERREUR']} erreur(s)")
+    for l in lignes_csv:
+        if l[2] != "OK":
+            ecrire(f"   {l[0]}. {l[1]} : {l[2]} - {l[3]}")
+    ecrire(f" Resultats : Bureau > Robot > resultats > {resultats.name}")
+    ecrire("=" * 70)
+    pause("Entree pour fermer la fenetre du robot...")
+    try:
+        navigateur.close()
+    except Exception:
+        pass
+    return 0 if compte["ERREUR"] == 0 else 1
+
+
+# ---------------------------------------------------------------------------- programmes du navigateur (processus enfant)
+def programme_enfant(mode, dossier_echange):
+    """Relevé (choix 2) ou tâche (choix 3), lancés avec le Python qui a le pilote de navigateur."""
+    preparer_console()
+    echange = json.loads((Path(dossier_echange) / "demande.json").read_text(encoding="utf-8"))
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            if mode == "tache":
+                return executer_tache(p, echange["fichier"], echange["url"])
+            navigateur, contexte, page = ouvrir_robot(p)
+            page.goto(echange["url"], wait_until="domcontentloaded", timeout=60000)
+            page.bring_to_front()
+            attendre_portail(page)
+            fichier, _ = boucle_releve(page)
+            if fichier:
+                ecrire()
+                ecrire(f"   Fichier cree : Bureau > Robot > {fichier.name}")
+                ecrire("   Ouvrez-le, relisez-le, puis envoyez-le-moi (ou une photo).")
+            try:
+                navigateur.close()
+            except Exception:
+                pass
+            return 0
+    except KeyboardInterrupt:
+        ecrire("   Arrete a votre demande.")
+        return 130
+    except ErreurTache as e:
+        ecrire(f"   PROBLEME : {e}")
+        ecrire("   Prenez cet ecran en photo et envoyez-la-moi.")
+        return 1
+    except Exception as e:
+        ecrire(f"   PROBLEME : {expliquer(e)}")
+        ecrire("   Prenez cet ecran en photo et envoyez-la-moi.")
+        return 1
+
+
+def lancer_programme_enfant(mode, demande):
+    python = obtenir_python_playwright()
+    if not python:
+        ecrire("   Le pilote de navigateur manque : faites d'abord le test (choix 1).")
+        return 1
+    echange = Path(tempfile.mkdtemp(prefix="robot_"))
+    try:
+        (echange / "demande.json").write_text(json.dumps(demande, ensure_ascii=False), encoding="utf-8")
+        enfant = subprocess.Popen([python, str(Path(__file__).resolve()), "--" + mode, str(echange)])
+        try:
+            return enfant.wait()
+        except KeyboardInterrupt:
+            try:
+                enfant.wait(timeout=5)
+            except Exception:
+                enfant.kill()
+            return 130
+    finally:
+        effacer_dossier(echange)
+
+
 # ---------------------------------------------------------------------------- programme principal
 def principal():
     preparer_console()
     rendre_net()
     ancien_mode = edition_rapide_coupee()
+    try:
+        ecrire("=" * 70)
+        ecrire(" ROBOT (version %s)" % VERSION)
+        ecrire("=" * 70)
+        ecrire("   1 = Test de prise en main")
+        ecrire("   2 = Releve des pages du portail (pour Claude)")
+        ecrire("   3 = Lancer une tache")
+        choix = demander(" Votre choix (1, 2 ou 3) :")
+        if choix == "2":
+            url = adresse_du_portail()
+            if url:
+                lancer_programme_enfant("releve", {"url": url})
+        elif choix == "3":
+            fichier = choisir_tache()
+            if fichier:
+                try:
+                    entete, _ = lire_tache(fichier)
+                except ErreurTache as e:
+                    ecrire(f"   La tache contient une erreur : {e}")
+                    ecrire("   Prenez cet ecran en photo et envoyez-la-moi.")
+                else:
+                    lancer_programme_enfant("tache", {"fichier": str(fichier), "url": adresse_du_portail()})
+        elif choix == "1":
+            test_prise_en_main()
+            return 0
+        else:
+            ecrire("   Rien a faire.")
+    except KeyboardInterrupt:
+        ecrire("\n   Arrete a votre demande.")
+    finally:
+        remettre_console(ancien_mode)
+    demander("\n Entree pour terminer.")
+    return 0
+
+
+def test_prise_en_main():
+    ancien_mode = None
     ecrire("=" * 70)
-    ecrire(" PRISE EN MAIN DU ROBOT (version %s)" % VERSION)
+    ecrire(" TEST DE PRISE EN MAIN")
     ecrire("=" * 70)
     ecrire(" Le robot va montrer, une chose a la fois, qu'il sait se servir de votre")
     ecrire(" ordinateur : fichiers, clavier, souris, navigateur. Il ne modifie RIEN dans vos")
@@ -1508,10 +2600,12 @@ def principal():
     if dossier is not None:
         try:
             (dossier / "resultat_prise_en_main.txt").write_text(texte + "\n", encoding="utf-8")
-            ecrire(" Il est aussi ecrit dans : Bureau > Robot - essai > resultat_prise_en_main.txt")
+            ecrire(" Il est aussi ecrit dans : Bureau > Robot > resultat_prise_en_main.txt")
         except OSError:
             pass
     ecrire(" Vous pouvez fermer le Bloc-notes (essai_clavier) ; enregistrer ou non, peu importe.")
+    if dossier is not None and (dossier / "A_ENVOYER_releve.txt").is_file():
+        ecrire(" Envoyez aussi le releve : Bureau > Robot > A_ENVOYER_releve.txt (relisez-le d'abord).")
     remettre_console(ancien_mode)
     demander("\n Entree pour terminer.")
     return 0
@@ -1520,4 +2614,6 @@ def principal():
 if __name__ == "__main__":
     if sys.argv[1:2] == ["--navigateur"] and len(sys.argv) >= 3:
         sys.exit(sous_programme_navigateur(sys.argv[2]))
+    if sys.argv[1:2] in (["--releve"], ["--tache"]) and len(sys.argv) >= 3:
+        sys.exit(programme_enfant(sys.argv[1][2:], sys.argv[2]))
     sys.exit(principal())
