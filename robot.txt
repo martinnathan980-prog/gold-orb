@@ -2258,6 +2258,9 @@ class Tache:
             ecrire(f"   ligne {etape['ligne']:>3} : {action.lower()}" + (f" : {arg}" if arg else ""))
             try:
                 self.faire(action, arg)
+                if action in ("CLIQUER", "MENU", "TOUCHE", "ACCUEIL", "ALLER"):
+                    # la fenêtre annoncée ne vaut que pour le geste qui suit : jamais pour une fenêtre plus tard
+                    self.fenetre_attendue = None
             except (Passer, Arreter):
                 raise
             except ErreurTache as e:
