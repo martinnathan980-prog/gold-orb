@@ -18,7 +18,7 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import unquote, urljoin, urlsplit
 
-VERSION = "1"
+VERSION = "2"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -633,15 +633,27 @@ def etape_souris(bilan, hwnd):
         if hwnd:
             # on ne clique QUE si la souris est bien là où le robot l'a mise, sur NOTRE fichier, au premier plan
             px, py = position_souris()
-            sous = user32.GetAncestor(user32.WindowFromPoint(wintypes.POINT(px, py)), GA_ROOT)
-            if (bouge and abs(px - cx) <= 1 and abs(py - cy) <= 1 and sous == hwnd
-                    and fenetre_active() == hwnd and est_notre_fichier(hwnd)):
+            dessous = user32.WindowFromPoint(wintypes.POINT(px, py))
+            sous = user32.GetAncestor(dessous, GA_ROOT) if dessous else None
+            r2 = wintypes.RECT()
+            user32.GetWindowRect(hwnd, ctypes.byref(r2))
+            dans_notre_fenetre = r2.left <= px <= r2.right and r2.top <= py <= r2.bottom
+            # Windows 11 : la zone de texte du Bloc-notes est une fenêtre interne d'une autre classe
+            # (Windows.UI...) ; elle est à nous si elle est dans notre rectangle et que nous sommes devant
+            classe_sous = _classe(sous) if sous else ""
+            notre = sous == hwnd or (sous and est_notre_fichier(sous)) or (
+                dans_notre_fenetre and fenetre_active() == hwnd and
+                classe_sous.startswith(("Windows.UI", "ApplicationFrame", "Microsoft.UI")))
+            if not bouge or abs(px - cx) > 3 or abs(py - cy) > 3:
+                clic = "clic annule par prudence : la souris n'est pas la ou le robot l'a mise"
+            elif not (notre and fenetre_active() == hwnd and est_notre_fichier(hwnd)):
+                clic = ("clic annule par prudence : sous la souris, " + (classe_sous or "rien")
+                        + ("" if fenetre_active() == hwnd else " ; le Bloc-notes n'est plus devant"))
+            else:
                 cliquer_ici()
                 time.sleep(0.4)
                 taper("\nLe robot a aussi bouge la souris et clique ici.\n", hwnd)
                 clic = "clic fait dans le Bloc-notes"
-            else:
-                clic = "clic annule par prudence : le Bloc-notes n'etait pas sous la souris"
         deplacer_doucement(*depart, duree=0.3)
     except OSError as e:
         bilan.noter("S", "Souris", "ECHEC", str(e))
@@ -894,6 +906,52 @@ JS_TROUVER_PROPRE_TEXTE = r"""([mot, jeton]) => {
   }
 }"""
 
+# Recherche tolérante : accents, majuscules, flèches et symboles (« GATES ▾ », « » Historique »), bulle d'aide,
+# texte de remplacement d'une image (menus en images). mode 'propre' = propre texte de l'élément ;
+# 'entier' = tout son texte s'il est court ; 'image' = alt / title d'une image ou de son lien.
+JS_TROUVER_TOLERANT = r"""([mot, jeton, mode]) => {
+  const norme = t => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+                     .replace(/[^a-z0-9]+/g, ' ').trim();
+  const cherche = norme(mot);
+  if (!cherche) return 0;
+  let n = 0;
+  if (mode === 'image') {
+    for (const img of document.querySelectorAll('img, input[type=image], svg, [class*=icon i]')) {
+      const t = [img.getAttribute('alt'), img.getAttribute('title'), img.getAttribute('aria-label')].map(norme);
+      const a = img.closest('a, button, [onclick], [role=button], [role=menuitem]');
+      const t2 = a ? [a.getAttribute('title'), a.getAttribute('aria-label')].map(norme) : [];
+      if (t.includes(cherche) || t2.includes(cherche)) { (a || img).setAttribute('data-robot-trouve', jeton); n++; }
+    }
+    return n;
+  }
+  for (const e of document.querySelectorAll('body *')) {
+    if (['SCRIPT', 'STYLE', 'OPTION'].includes(e.tagName)) continue;
+    let t;
+    if (mode === 'propre') { t = ''; for (const c of e.childNodes) if (c.nodeType === 3) t += c.textContent; t = norme(t); }
+    else { if ((e.textContent || '').length > 60) continue; t = norme(e.textContent); }
+    if (t === cherche) { e.setAttribute('data-robot-trouve', jeton); n++; }
+  }
+  return n;
+}"""
+
+# Ce que le robot voit comme menus, onglets, liens et boutons (noms courts, structure seulement)
+JS_CE_QUE_JE_VOIS = r"""() => {
+  const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
+                     const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  const court = t => (t || '').replace(/\s+/g, ' ').trim();
+  const vus = [];
+  for (const e of document.querySelectorAll('a, button, [role=menuitem], [role=tab], [role=button], li, [onclick], input[type=submit], input[type=button]')) {
+    if (!vis(e) || e.closest('td, [role=gridcell]')) continue;
+    let t = ''; for (const c of e.childNodes) if (c.nodeType === 3) t += c.textContent;
+    t = court(t) || court(e.tagName === 'INPUT' ? e.value : (e.getAttribute('title') || e.getAttribute('aria-label') ||
+        (e.querySelector('img') && e.querySelector('img').getAttribute('alt')) || ''));
+    if (!t && e.tagName !== 'LI' && (e.textContent || '').length <= 40) t = court(e.textContent);
+    if (t && t.length <= 40 && !vus.includes(t)) vus.push(t);
+    if (vus.length >= 40) break;
+  }
+  return vus;
+}"""
+
 # L'élément trouvé par son texte -> l'élément que le clic déclencherait vraiment.
 # LISTE BLANCHE : un lien, une entrée de menu / d'onglet, ou un élément d'un menu (nav, menu...), un bouton
 # qui ouvre un menu. Refusé : bouton de formulaire, case, champ, bascule, zone modifiable, élément de tableau
@@ -906,7 +964,10 @@ JS_EXAMINER = r"""(e, jeton) => {
                '[role=radio], [role=option], [onclick]';
   const MENU = 'nav, header, [role=navigation], [role=menu], [role=menubar], [role=tablist], [role=tree], ' +
                '[class*=menu i], [id*=menu i], [class*=nav i], [id*=nav i], [class*=tab i]';
-  const c = e.closest(CLIQ) || e;
+  let c = e.closest(CLIQ) || e;
+  // l'élément est dans un SOUS-MENU du bloc cliquable trouvé (« Données MK1 » sous « GATES ») :
+  // la cible reste l'entrée du sous-menu, jamais le menu parent
+  if (c !== e && Array.from(c.querySelectorAll(SOUS)).some(x => x.contains(e))) c = e.closest('li, [role=menuitem]') || e;
   c.setAttribute('data-robot-cible', jeton);
   const tag = c.tagName.toLowerCase(), role = (c.getAttribute('role') || '').toLowerCase();
   const href = (c.getAttribute('href') || '').trim();
@@ -937,7 +998,10 @@ JS_EXAMINER = r"""(e, jeton) => {
   copie.querySelectorAll(SOUS).forEach(x => x.remove());
   if (!refus && copie.querySelector('a[href], button, input, select, textarea, label, [role=button], [role=checkbox], [onclick]'))
     refus = 'contient un autre bouton';
-  const texte = (copie.textContent || '').replace(/\s+/g, ' ').trim();
+  let texte = (copie.textContent || '').replace(/\s+/g, ' ').trim();
+  if (!texte)   // lien ou bouton fait d'une image : son texte, c'est le nom de l'image ou sa bulle
+    texte = [c.getAttribute('title'), c.getAttribute('aria-label'), ...Array.from(copie.querySelectorAll('img, input[type=image]'))
+             .map(i => i.getAttribute('alt') || i.getAttribute('title'))].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
   const attributs = [];
   for (const n of [copie, ...copie.querySelectorAll('*')].slice(0, 80))
     for (const a of Array.from(n.attributes))
@@ -1210,27 +1274,26 @@ def _analyser_portail(page, url, notes):
     ecrire("   Le robot voit : " + detail)
     encadres = 0
     if meilleur is not None and max_cliquables > 0:
-        ecrire("   Il encadre en rouge, un par un, quelques elements qu'il saurait cliquer (SANS cliquer)...")
+        ecrire("   Il encadre en ROUGE quelques elements qu'il saurait cliquer (SANS cliquer). Les cadres")
+        ecrire("   restent affiches jusqu'a votre reponse : REGARDEZ LA FENETRE DU ROBOT (cliquez dessus")
+        ecrire("   dans la barre des taches si elle est cachee), puis revenez repondre ici.")
         try:
+            page.bring_to_front()
             meilleur.evaluate(JS_MARQUER_CLIQUABLES)
             marques = meilleur.locator("[data-robot-essai]")
             for i in range(min(marques.count(), 5)):
-                _encadrer(marques.nth(i), 900)
+                _encadrer(marques.nth(i), 0)  # 0 = reste jusqu'au nettoyage
                 encadres += 1
         except Exception:
             pass
-        try:
-            page.mouse.wheel(0, 500)
-            time.sleep(0.8)
-            page.mouse.wheel(0, -500)
-        except Exception:
-            pass
-    _nettoyer(page)
     if encadres:
+        time.sleep(1.5)
         revenez_ici()
-        vu = oui("   Avez-vous vu des cadres rouges apparaitre sur le portail, dans la fenetre du robot ?")
+        vu = oui("   Voyez-vous des cadres rouges sur le portail, dans la fenetre du robot ?")
+        _nettoyer(page)
         notes.noter("R", "Navigateur du robot sur le portail", "OK" if vu else "PAS VU", detail)
     else:
+        _nettoyer(page)
         notes.noter("R", "Navigateur du robot sur le portail", "ECHEC",
                     detail + " ; aucun element cliquable classique (menus faits en JavaScript ?)")
     return True
@@ -1247,11 +1310,20 @@ def _candidats(page, mot):
         cadre.evaluate(JS_TROUVER_PROPRE_TEXTE, [mot, jeton])
         return cadre.locator(f'[data-robot-trouve="{jeton}"]')
 
+    def tolerant(mode):
+        def chercher(cadre):
+            cadre.evaluate(JS_TROUVER_TOLERANT, [mot, jeton, mode])
+            return cadre.locator(f'[data-robot-trouve="{jeton}"]')
+        return chercher
+
     facons = (
         lambda cadre: cadre.get_by_text(mot, exact=True),
         lambda cadre: cadre.locator("text=" + json.dumps(mot, ensure_ascii=False)),
         lambda cadre: cadre.get_by_text(exact_sans_casse),
         propre_texte_sans_casse,
+        lambda cadre: cadre.get_by_title(mot, exact=True),
+        lambda cadre: cadre.get_by_alt_text(mot, exact=True),
+        tolerant("propre"), tolerant("entier"), tolerant("image"),
     )
     for chercher in facons:
         trouves = []
@@ -1265,6 +1337,23 @@ def _candidats(page, mot):
         if trouves:
             return trouves
     return []
+
+
+def _montrer_ce_que_je_vois(page):
+    """Les noms des menus, liens et boutons que le robot voit sur la page (pour retaper le bon texte)."""
+    vus = []
+    for cadre in page.frames:
+        try:
+            for t in cadre.evaluate(JS_CE_QUE_JE_VOIS):
+                t = _structure(t)
+                if t and t not in vus:
+                    vus.append(t)
+        except Exception:
+            continue
+    if vus:
+        ecrire("   Ce que le robot voit comme menus, liens et boutons : " + " | ".join(vus[:30]))
+    else:
+        ecrire("   Le robot ne voit aucun menu ni lien sur cette page (page de connexion ? page vide ?).")
 
 
 def _examiner(cadre, loc):
@@ -1357,8 +1446,8 @@ def _clic_choisi(page, notes):
             continue
         trouves = _candidats(page, mot)
         if not trouves:
-            ecrire("   Pas trouve avec exactement ce texte. Recopiez-le tel qu'il est ecrit sur le portail")
-            ecrire("   (accents compris). Si c'est dans un menu qui se deroule, tapez d'abord le nom du menu.")
+            ecrire("   Pas trouve. Si c'est dans un menu qui se deroule, tapez d'abord le nom du menu.")
+            _montrer_ce_que_je_vois(page)
             codes.append(f"{n}:introuvable")
             continue
         choix, refus, nb_visibles = _choisir(trouves)
