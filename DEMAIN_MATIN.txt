@@ -1,0 +1,55 @@
+﻿DEMAIN MATIN - 15 MINUTES
+=========================
+
+CE SOIR (2 minutes, sur ton téléphone)
+1. Dans la discussion avec Claude, télécharge les 2 fichiers : robot.txt (celui du message « version 2 »)
+   et A_FAIRE.txt.
+2. Envoie-les en pièces jointes à ton adresse mail du bureau.
+
+AU BUREAU
+3. Ouvre le dossier Téléchargements. Clic droit sur robot.txt -> Supprimer. Pareil pour A_FAIRE.txt s'il y est.
+4. Ouvre le mail, enregistre les 2 pièces jointes dans Téléchargements.
+   -> Tu vois robot.txt et A_FAIRE.txt : c'est bon.
+   -> Tu vois « robot (1).txt » : supprime tout, recommence le 3 et le 4.
+5. Dans Téléchargements, clique dans la barre d'adresse (en haut), tape  cmd  , Entrée. -> fenêtre noire.
+6. Tape  python robot.txt  , Entrée.
+   -> « ROBOT (version 2) » : c'est bon.
+   -> « version 1 » : c'est l'ancien fichier, reviens au 3.
+   -> « n'est pas reconnu » ou « introuvable » : tape  py robot.txt  , Entrée.
+7. Tape  1  , Entrée.
+8. À chaque écran : lis, puis Entrée. Question (o/n) : tape o ou n, Entrée.
+   « NE TOUCHEZ » : lâche clavier et souris jusqu'à la question suivante.
+9. « Adresse du portail » :
+   -> tu lis « Entree sans rien = la meme adresse » : Entrée.
+   -> sinon : dans Chrome, accueil du portail, clique dans la barre d'adresse, Ctrl+C ;
+      fenêtre noire, Ctrl+V, Entrée.
+10. Le portail s'ouvre dans la fenêtre du robot : connecte-toi dans CETTE fenêtre si on te le demande.
+    Puis fenêtre noire, Entrée.
+11. « Voyez-vous des cadres rouges ? » : regarde la fenêtre du robot (clique dessus en bas de l'écran
+    si elle est cachée). Reviens dans la fenêtre noire, tape o ou n, Entrée.
+12. « Texte a chercher » : tape le nom du menu du haut sur lequel tu cliques en premier pour chercher
+    un plan (ex : GATES), Entrée. « Tapez o » : o, Entrée. « Ca a marche ? » : o ou n, Entrée.
+    -> « Pas trouve » : PHOTO de la ligne « Ce que le robot voit ». Puis tape un des mots de cette ligne, Entrée.
+    Fais ça 3 fois, avec 3 menus ou liens différents. Puis Entrée sans rien.
+13. « Nom de la page 1 » :
+    - dans la fenêtre du robot, va sur la page de recherche des plans (à la souris, comme d'habitude) ;
+    - fenêtre noire, tape  recherche plans  , Entrée, attends « page relevee ».
+    Même chose pour :
+    - la liste des résultats d'une recherche      -> tape  resultats
+    - la fiche d'un plan                          -> tape  fiche plan
+    - chaque onglet de la fiche                   -> tape  onglet  + son nom
+    - l'écran où tu duplique ou supprime un plan  -> tape  suppression  (sans rien cliquer dessus)
+    Puis Entrée sans rien.
+14. « Entree pour fermer » : Entrée. Cadre RESULTAT : PHOTO. Entrée.
+15. Ouvre Bureau > Robot > A_ENVOYER_releve.txt. Un vrai numéro de plan ou un nom de client :
+    efface ce mot seulement. Enregistre (Ctrl+S).
+
+À M'ENVOYER
+16. La photo du RESULTAT.
+17. Les photos « Ce que le robot voit » (s'il y en a).
+18. Le fichier A_ENVOYER_releve.txt : envoie-le à ton mail perso, puis mets-le ici.
+    (Ou des photos de son contenu, en entier.)
+
+NE FAIS PAS : le choix 3 (il n'y a pas encore de tâche). Ne touche pas à l'ancien dossier robot-web.
+
+SI ÇA BLOQUE : photo de tout l'écran, envoie-la. Pour arrêter : Ctrl + C dans la fenêtre noire.
