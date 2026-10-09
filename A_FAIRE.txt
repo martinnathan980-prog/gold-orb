@@ -32,14 +32,17 @@ C. TEST (aujourd'hui) : lance le robot (étapes 3 à 5), tape 1, Entrée
 9. « Ouverture du navigateur du robot » : attends (30 secondes maximum).
 10. Le portail s'ouvre dans une fenêtre À PART (celle du robot) :
     connecte-toi dans CETTE fenêtre si on te le demande, puis Entrée dans la fenêtre noire.
-11. « Texte a chercher » : tape le nom exact d'un menu (ex : GATES), Entrée.
+11. « Texte a chercher » : tape le nom exact d'un menu (ex : GATES), ou d'une ligne qui apparaît
+    quand ta souris passe sur un menu de gauche, Entrée.
+    « le robot survole les menus » : lâche la souris (1 minute maximum).
     « Tapez o pour ... cliquer » : o, Entrée.
     « Ca a marche ? » : o ou n, Entrée.
+    -> « Pas trouve » : photo de l'écran.
     Recommence avec 2 autres menus ou liens. Puis Entrée sans rien.
 12. « Nom de la page 1 » :
     - dans la fenêtre du robot, va sur la page de recherche des plans (à la souris, comme d'habitude) ;
     - clique dans la fenêtre noire, tape un nom court (ex : recherche plans), Entrée ;
-    - attends « page relevee ».
+    - lâche la souris jusqu'à « page relevee » (1 minute maximum).
     Recommence pour : la liste des résultats, la fiche d'un plan, chaque onglet de la fiche.
     Puis Entrée sans rien.
 13. « Entree pour fermer la fenetre du robot » : Entrée.

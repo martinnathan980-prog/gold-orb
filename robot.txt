@@ -18,7 +18,7 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import unquote, urljoin, urlsplit
 
-VERSION = "2"
+VERSION = "3"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -875,10 +875,11 @@ JS_STRUCTURE = r"""() => {
            dessins: q('canvas, embed, object').filter(vis).length };
 }"""
 
-JS_MARQUER_CLIQUABLES = """() => Array.from(document.querySelectorAll('a[href], button, input[type=submit], input[type=button], [role=button], [role=menuitem], [role=tab], [onclick], li, span'))
+JS_MARQUER_CLIQUABLES = """() => Array.from(document.querySelectorAll('a[href], button, input[type=submit], input[type=button], [role=button], [role=menuitem], [role=tab], [onclick], li, span, div'))
   .filter(e => { const r = e.getBoundingClientRect(); if (!(r.width > 4 && r.height > 4 && r.top >= 0 && r.top < innerHeight)) return false;
-                 if (['LI', 'SPAN'].includes(e.tagName) && !e.hasAttribute('onclick')) return getComputedStyle(e).cursor === 'pointer' &&
-                   !(e.parentElement && getComputedStyle(e.parentElement).cursor === 'pointer');
+                 if (['LI', 'SPAN', 'DIV'].includes(e.tagName) && !e.matches('[onclick], [role=button], [role=menuitem], [role=tab]'))
+                   return getComputedStyle(e).cursor === 'pointer' && (e.textContent || '').length < 200 &&
+                     !(e.parentElement && getComputedStyle(e.parentElement).cursor === 'pointer');
                  return true; })
   .slice(0, 5).map(e => { e.setAttribute('data-robot-essai', '1'); return 1; }).length"""
 
@@ -889,10 +890,10 @@ JS_ENCADRER = """(e, ms) => { e.scrollIntoView({block: 'nearest', inline: 'neare
                                  delete e.dataset.robotContour; }, ms); }"""
 
 # Après les essais : le robot retire ses marques et ses cadres de la page.
-JS_NETTOYER = """(tout) => { for (const e of document.querySelectorAll('[data-robot-cible], [data-robot-texte], [data-robot-essai], [data-robot-contour], [data-robot-trouve]')) {
+JS_NETTOYER = """(tout) => { for (const e of document.querySelectorAll('[data-robot-cible], [data-robot-texte], [data-robot-essai], [data-robot-contour], [data-robot-trouve], [data-robot-barre], [data-robot-nouveau]')) {
   if (e.dataset.robotContour !== undefined) { e.style.outline = e.dataset.robotContour; e.style.outlineOffset = ''; }
   e.removeAttribute('data-robot-contour');
-  if (tout) for (const a of ['data-robot-cible', 'data-robot-texte', 'data-robot-essai', 'data-robot-trouve']) e.removeAttribute(a);
+  if (tout) for (const a of ['data-robot-cible', 'data-robot-texte', 'data-robot-essai', 'data-robot-trouve', 'data-robot-barre', 'data-robot-nouveau']) e.removeAttribute(a);
 } }"""
 
 # Les éléments dont le PROPRE texte (sans celui de leurs sous-menus) est ce mot, majuscules ignorées.
@@ -934,22 +935,140 @@ JS_TROUVER_TOLERANT = r"""([mot, jeton, mode]) => {
   return n;
 }"""
 
-# Ce que le robot voit comme menus, onglets, liens et boutons (noms courts, structure seulement)
-JS_CE_QUE_JE_VOIS = r"""() => {
+# Outils communs pour les MENUS : visibilité, nom d'une entrée (sans ses icônes ni ses flèches), éléments cliquables
+# (liens, boutons, entrées de menu, et les « div » ou « span » avec la main de la souris), lien vers un enregistrement.
+JS_OUTILS_MENUS = r"""
   const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
+                     if (e.checkVisibility && !e.checkVisibility({opacityProperty: true})) return false;
                      const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
-  const court = t => (t || '').replace(/\s+/g, ' ').trim();
+  const classe = x => typeof x.className === 'string' ? x.className : ((x.className && x.className.baseVal) || '');
+  const SOUS = 'ul, ol, [role=menu], [role=group], [role=listbox], table, select';
+  const ICONE = /(^|[\s_-])(ico|icon|icons|icone|material-icons|material-symbols\S*|mat-icon|fa|fas|far|fal|fab|glyphicon|bi|mdi|chevron|arrow|caret|fleche)([\s_-]|$)/i;
+  const motIcone = t => !t || /^[a-z0-9_]+$/.test(t) || /^[^A-Za-zÀ-ÿ0-9]{1,3}$/.test(t);
+  const texteDe = e => {
+    const c = e.cloneNode(true);
+    c.querySelectorAll(SOUS + ', svg, img, script, style, input, textarea').forEach(x => x.remove());
+    for (const x of Array.from(c.querySelectorAll('*')))
+      if (!x.children.length && (['I', 'MAT-ICON'].includes(x.tagName) || ICONE.test(classe(x))) && motIcone((x.textContent || '').trim()))
+        x.remove();
+    let t = (c.textContent || '').replace(/\s+/g, ' ').trim().replace(/^[\s›»<>▸▶►▾▼⌄+•·|-]+|[\s›»<>▸▶►▾▼⌄+•·|-]+$/g, '').trim();
+    if (!t) t = (e.getAttribute('aria-label') || e.getAttribute('title') || '').replace(/\s+/g, ' ').trim();
+    if (!t) { const i = e.querySelector('img[alt], [title], [aria-label]');
+              if (i) t = (i.getAttribute('alt') || i.getAttribute('title') || i.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim(); }
+    return t;
+  };
+  const CLIQ = 'a, button, [role=menuitem], [role=menuitemcheckbox], [role=menuitemradio], [role=option], [role=treeitem], ' +
+               '[role=link], [role=button], [role=tab], [onclick], li, [tabindex], input[type=submit], input[type=button]';
+  const pointeur = e => getComputedStyle(e).cursor === 'pointer' && !(e.parentElement && getComputedStyle(e.parentElement).cursor === 'pointer');
+  const cliquables = () => {
+    const s = new Set(document.querySelectorAll(CLIQ));
+    for (const e of document.querySelectorAll('div, span, td')) if (!s.has(e) && pointeur(e)) s.add(e);
+    return Array.from(s).filter(e => (e.textContent || '').length <= 300 && vis(e))
+      .sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
+  };
+  const enregistrement = e => { const a = e.closest('a[href]') || e.querySelector('a[href]'); const h = (a && a.getAttribute('href')) || '';
+    return /^(tel|mailto|callto|sip):/i.test(h) || /[?&][^=&]+=([^&]*\d{2,}|[A-Za-z]+-\d+)/.test(h) || /\/\d{2,}(\/|$|\?)/.test(h); };
+  // une entrée qui ouvre un sous-menu : flèche, attribut, classe, ou sous-liste cachée
+  const indiceSous = e => {
+    const h = e.getAttribute('aria-haspopup'); if (h && h !== 'false') return true;
+    if (e.hasAttribute('aria-expanded')) return true;
+    if (/(^|[\s_-])(has-?sub\w*|sub-?menu\w*|has-?children|parent|dropdown(-toggle)?|expand\w*)([\s_-]|$)/i.test(classe(e))) return true;
+    if (e.querySelector('[class*=chevron i], [class*=arrow i], [class*=caret i], [class*=sub i], ul, ol, [role=menu]')) return true;
+    return /([›»▸▶►]|chevron_right|arrow_right|navigate_next|keyboard_arrow_right|arrow_forward_ios)\s*$/.test((e.textContent || '').trim());
+  };
+"""
+
+# Ce que le robot voit comme menus, onglets, liens et boutons (noms courts, structure seulement)
+JS_CE_QUE_JE_VOIS = r"""() => {""" + JS_OUTILS_MENUS + r"""
   const vus = [];
-  for (const e of document.querySelectorAll('a, button, [role=menuitem], [role=tab], [role=button], li, [onclick], input[type=submit], input[type=button]')) {
-    if (!vis(e) || e.closest('td, [role=gridcell]')) continue;
-    let t = ''; for (const c of e.childNodes) if (c.nodeType === 3) t += c.textContent;
-    t = court(t) || court(e.tagName === 'INPUT' ? e.value : (e.getAttribute('title') || e.getAttribute('aria-label') ||
-        (e.querySelector('img') && e.querySelector('img').getAttribute('alt')) || ''));
-    if (!t && e.tagName !== 'LI' && (e.textContent || '').length <= 40) t = court(e.textContent);
+  for (const e of cliquables()) {
+    if (e.closest('td, [role=gridcell], [role=row]')) continue;
+    const t = e.tagName === 'INPUT' ? (e.value || '').replace(/\s+/g, ' ').trim() : texteDe(e);
     if (t && t.length <= 40 && !vus.includes(t)) vus.push(t);
     if (vus.length >= 40) break;
   }
   return vus;
+}"""
+
+# Les ENTRÉES DES MENUS de la page : barre du haut, menu de gauche (même fait de « div »), en ligne ou en colonne.
+# Un groupe = 2 à 25 éléments frères, visibles, cliquables, de nom court, alignés, dans une zone de menu (nav, menu,
+# side...) ou au bord (en haut / à gauche). Jamais : tableau, formulaire, onglets, fenêtre, ligne « Libellé : valeur ».
+# Chaque entrée est marquée (data-robot-barre) pour être survolée. Renvoie leurs noms.
+JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
+  document.querySelectorAll('[data-robot-barre]').forEach(x => x.removeAttribute('data-robot-barre'));
+  const ZONE = /menu|nav|side|flyout|dropdown|drawer|rail/i;
+  const nomDe = x => x.tagName + ' ' + (x.id || '') + ' ' + classe(x) + ' ' + (x.getAttribute('role') || '');
+  const dansZone = (n, colonne) => { for (let x = n; x && x !== document.body; x = x.parentElement)
+      if ((/^(NAV|ASIDE)$/.test(x.tagName) || ZONE.test(nomDe(x))) &&
+          (!colonne || x.getBoundingClientRect().width <= Math.max(400, innerWidth * 0.35))) return true;
+    return false; };
+  const ONGLETS = /(^|[\s_-])(tabs?|onglets?|tab-?bar|tablist|breadcrumbs?|ariane|fil|pagination|pager)([\s_-]|$)/i;
+  // bouton qui envoie un formulaire (Rechercher, Effacer...) : une rangée de ces boutons n'est pas un menu
+  const envoi = k => [k, ...k.querySelectorAll('button, input')].some(x => x.form && ['submit', 'reset', 'image'].includes(x.type));
+  const entreeCliquable = k => k.matches(CLIQ) || !!k.querySelector(CLIQ) || getComputedStyle(k).cursor === 'pointer';
+  const groupes = [];
+  for (const g of document.querySelectorAll('body *')) {
+    if (g.children.length < 2 || g.children.length > 40 || /^(SELECT|DATALIST|SVG|OPTGROUP)$/i.test(g.tagName)) continue;
+    if (g.closest('[role=grid], [role=row], [role=tablist], [role=dialog], [role=alertdialog], dialog, [role=tooltip]') ||
+        ONGLETS.test(classe(g)) || (/^(TABLE|TBODY|THEAD|TR)$/.test(g.tagName) && !dansZone(g, false)) || !vis(g)) continue;
+    const v = Array.from(g.children).filter(vis);
+    const e = v.filter(k => { if ((k.textContent || '').length > 3000) return false;
+      const t = texteDe(k); return t && t.length <= 30 && /[A-Za-zÀ-ÿ]/.test(t) && !t.includes(':'); });
+    if (e.length < 2 || e.length > 25 || e.length < 0.7 * v.length || !e.every(k => k.tagName === e[0].tagName)) continue;
+    if (e.some(k => k.matches('input, select, textarea') || k.querySelector('input:not([type=hidden]), select, textarea') || envoi(k))) continue;
+    if (e.filter(entreeCliquable).length < 0.7 * e.length) continue;
+    if (e.filter(enregistrement).length >= e.length / 2) continue;   // une liste de fiches (données), pas un menu
+    const rs = e.map(k => k.getBoundingClientRect());
+    const ecart = f => Math.max(...rs.map(f)) - Math.min(...rs.map(f));
+    const enLigne = ecart(r => r.top) <= 6, enColonne = !enLigne && ecart(r => r.left) <= 6;
+    if (!enLigne && !enColonne) continue;
+    const gr = g.getBoundingClientRect();
+    const ok = enLigne ? (gr.top < 260 || !!g.closest('header') || dansZone(g, false))
+                       : (dansZone(g, true) || (gr.left < 100 && gr.width <= 400));
+    if (ok) groupes.push({ g: g, e: e });
+  }
+  // un groupe qui n'est qu'une enveloppe d'un autre menu (en-tête = logo + menu + nom) : on garde le menu
+  const reste = (k, c) => texteDe(k).toLowerCase().replace(/[^a-z0-9à-ÿ]/g, '').replace(texteDe(c).toLowerCase().replace(/[^a-z0-9à-ÿ]/g, ''), '');
+  const garde = groupes.filter(G => !G.e.some(k => groupes.some(H => H !== G && k.contains(H.g) && !/[a-zà-ÿ]/.test(reste(k, H.g)))));
+  const noms = [];
+  for (const G of garde) {
+    if (G.e.some(k => k.closest('[data-robot-barre]'))) continue;   // sous-menu déjà ouvert d'une entrée retenue
+    for (const k of G.e) { if (noms.length >= 40) break; k.setAttribute('data-robot-barre', String(noms.length));
+                           noms.push(enregistrement(k) ? '(donnee masquee)' : texteDe(k)); }
+  }
+  return noms;
+}"""
+
+# Avant un survol : ce qui est déjà visible (pour voir ensuite ce qui APPARAÎT). Rien n'est écrit dans la page.
+JS_VUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
+  window.__robotVus = new WeakMap();
+  for (const e of cliquables()) window.__robotVus.set(e, texteDe(e));
+  return 0;
+}"""
+
+# Après un survol : les éléments cliquables qui viennent d'apparaître (sous-menu, panneau qui s'ouvre à côté du menu...),
+# et ceux de l'entrée survolée elle-même. Ils sont marqués (data-robot-nouveau) pour pouvoir être survolés à leur tour.
+JS_NOUVEAUX = r"""([numero, jeton]) => {""" + JS_OUTILS_MENUS + r"""
+  const entree = numero >= 0 ? document.querySelector('[data-robot-barre="' + numero + '"]') : null;
+  const groupe = entree ? entree.parentElement : null;
+  const nomEntree = entree ? texteDe(entree) : '';
+  const vus = window.__robotVus || new WeakMap();
+  const nouveaux = [];
+  for (const e of cliquables()) {
+    if (entree && (e === entree || e.contains(entree))) continue;
+    const dedans = !!(entree && entree.contains(e));
+    if (!dedans && ((groupe && groupe.contains(e)) ||
+        e.closest('[role=dialog], [role=alertdialog], dialog, [role=tooltip], [data-robot-barre]'))) continue;
+    const t = e.tagName === 'INPUT' ? '' : texteDe(e);
+    if (!t || t.length > 45 || !/[A-Za-zÀ-ÿ0-9]/.test(t) || t === nomEntree) continue;
+    if (!dedans && vus.has(e) && vus.get(e) === t) continue;
+    nouveaux.push([e, t]);
+  }
+  const ens = new Map(nouveaux);
+  const garde = nouveaux.filter(([e, t]) => { for (let p = e.parentElement; p; p = p.parentElement) if (ens.get(p) === t) return false;
+                                              return true; });
+  return garde.slice(0, 40).map(([e, t], i) => { e.setAttribute('data-robot-nouveau', jeton + '-' + i);
+    return { texte: enregistrement(e) ? '(donnee masquee)' : t, sous: indiceSous(e), cle: jeton + '-' + i }; });
 }"""
 
 # L'élément trouvé par son texte -> l'élément que le clic déclencherait vraiment.
@@ -961,9 +1080,9 @@ JS_EXAMINER = r"""(e, jeton) => {
   const SOUS = 'ul, ol, [role=menu], [role=group], [role=listbox], table, select';
   const CLIQ = 'a, button, input, select, textarea, label, summary, option, [role=button], [role=link], [role=menuitem], ' +
                '[role=menuitemcheckbox], [role=menuitemradio], [role=tab], [role=treeitem], [role=checkbox], [role=switch], ' +
-               '[role=radio], [role=option], [onclick]';
-  const MENU = 'nav, header, [role=navigation], [role=menu], [role=menubar], [role=tablist], [role=tree], ' +
-               '[class*=menu i], [id*=menu i], [class*=nav i], [id*=nav i], [class*=tab i]';
+               '[role=radio], [role=option], [onclick], [tabindex="0"]';
+  const MENU = 'nav, header, aside, [role=navigation], [role=menu], [role=menubar], [role=tablist], [role=tree], ' +
+               '[class*=menu i], [id*=menu i], [class*=nav i], [id*=nav i], [class*=tab i], [data-robot-barre], [data-robot-nouveau]';
   let c = e.closest(CLIQ) || e;
   // l'élément est dans un SOUS-MENU du bloc cliquable trouvé (« Données MK1 » sous « GATES ») :
   // la cible reste l'entrée du sous-menu, jamais le menu parent
@@ -974,11 +1093,24 @@ JS_EXAMINER = r"""(e, jeton) => {
   const lien = tag === 'a' && c.hasAttribute('href') && !/^javascript:/i.test(href);
   const lienScript = tag === 'a' && /^javascript:/i.test(href);
   const entree = ['menuitem', 'tab', 'link', 'treeitem'].includes(role);
-  const bouton = tag === 'button' || role === 'button';
-  const menuBouton = bouton && !c.form && !c.closest('form') && (tag !== 'button' || c.type === 'button') &&
-                     (c.hasAttribute('aria-haspopup') || c.hasAttribute('aria-expanded'));
+  const bouton = (tag === 'button' && !entree) || role === 'button';
+  // dans une fenêtre (« Êtes-vous sûr ? ») : jamais un menu
+  const classes = x => typeof x.className === 'string' ? x.className : '';
+  let fenetre = !!c.closest('[role=dialog], [role=alertdialog], dialog, [aria-modal=true]');
+  for (let x = c; x && !fenetre; x = x.parentElement) if (/modal|dialog|k-window|alert/i.test(classes(x))) fenetre = true;
+  // un menu : nav, aside, entrée repérée par le robot (data-robot-barre), élément apparu en survolant un menu
+  // (data-robot-nouveau), ou un parent dont le nom dit menu / nav / side / flyout / dropdown
+  let zoneMenu = false;
+  for (let x = c; x && x !== document.body && !zoneMenu && !fenetre; x = x.parentElement)
+    zoneMenu = /^(NAV|ASIDE)$/.test(x.tagName) || x.hasAttribute('data-robot-barre') || x.hasAttribute('data-robot-nouveau') ||
+               /menu|nav|side|flyout|dropdown|drawer|rail/i.test(x.tagName + ' ' + (x.id || '') + ' ' + classes(x) + ' ' + (x.getAttribute('role') || ''));
+  // un bouton qui n'envoie aucun formulaire : bouton « type=button », ou rôle bouton sur un div / span
+  const sansFormulaire = !(c.form || c.closest('form')) || (tag === 'button' && c.type === 'button') ||
+                         (role === 'button' && !['button', 'input'].includes(tag));
+  const menuBouton = bouton && sansFormulaire && !fenetre &&
+                     (c.hasAttribute('aria-haspopup') || c.hasAttribute('aria-expanded') || zoneMenu);
   // un élément d'un menu, ou d'une liste (les menus sont presque toujours des listes ul > li)
-  const dansMenu = !!(c.closest(MENU) || c.closest('li')) && ['li', 'span', 'div', 'a', 'p'].includes(tag);
+  const dansMenu = !!(c.closest(MENU) || c.closest('li') || zoneMenu) && !fenetre && ['li', 'span', 'div', 'a', 'p'].includes(tag);
   let refus = '';
   if (['input', 'select', 'textarea', 'label', 'summary', 'option'].includes(tag) ||
       ['checkbox', 'switch', 'radio', 'option', 'menuitemcheckbox', 'menuitemradio'].includes(role) ||
@@ -1109,6 +1241,159 @@ def _ouvrir_menus(loc):
     return _visible(loc)
 
 
+# ---------------------------------------------------------------------------- menus qui s'ouvrent au survol
+# (menu de gauche dont les sous-menus n'apparaissent que sous la souris). Le robot SURVOLE, il ne clique jamais ici.
+def _menus_de_la_page(page):
+    """Repère et marque les entrées des menus de la page (tous les cadres). Renvoie [(cadre, numéro, nom)]."""
+    entrees = []
+    for cadre in page.frames:
+        try:
+            for numero, nom in enumerate(cadre.evaluate(JS_MENUS)):
+                entrees.append((cadre, numero, nom))
+        except Exception:
+            continue
+    return entrees
+
+
+def _souris_au_repos(page):
+    """La souris quitte les menus (ils se referment) : en bas à droite de la page, loin du menu de gauche."""
+    try:
+        largeur, hauteur = page.evaluate("() => [innerWidth, innerHeight]")
+        page.mouse.move(int(largeur * 0.7), int(hauteur * 0.85))
+        page.wait_for_timeout(500)
+    except Exception:
+        pass
+
+
+def _survoler_et_voir(page, loc, cadre_entree=None, numero=-1):
+    """Pose la souris sur un élément (jamais de clic) et renvoie ce qui vient d'apparaître :
+    [{"texte", "sous" (ouvre lui-même un sous-menu), "loc"}]."""
+    for cadre in page.frames:
+        try:
+            cadre.evaluate(JS_VUS)
+        except Exception:
+            pass
+    loc.hover(timeout=3000)
+    jeton = secrets.token_hex(4)
+    nouveaux = []
+    for attente in (500, 900):  # un sous-menu peut arriver un peu après (animation, chargement)
+        page.wait_for_timeout(attente)
+        for cadre in page.frames:
+            try:
+                for n in cadre.evaluate(JS_NOUVEAUX, [numero if cadre == cadre_entree else -1, jeton]):
+                    n["loc"] = cadre.locator(f'[data-robot-nouveau="{n["cle"]}"]')
+                    nouveaux.append(n)
+            except Exception:
+                continue
+        if nouveaux:
+            break
+    return nouveaux
+
+
+def _rang_menu(loc):
+    """0 : apparu en survolant un menu ; 1 : entrée d'un menu ; 2 : ailleurs (titre, texte de la page)."""
+    try:
+        return loc.evaluate("e => e.closest('[data-robot-nouveau]') ? 0 : (e.closest('[data-robot-barre], nav, aside, "
+                            "[role=navigation], [role=menu], [role=menubar], [role=menuitem]') ? 1 : 2)")
+    except Exception:
+        return 2
+
+
+def _rouvrir(page, entree, cadre, numero, texte):
+    """Le sous-menu s'est refermé : on survole à nouveau l'entrée et on retrouve l'élément « texte »."""
+    _souris_au_repos(page)
+    return next((n["loc"] for n in _survoler_et_voir(page, entree, cadre, numero) if n["texte"] == texte), None)
+
+
+def _explorer_menus(page, memoire=None):
+    """Survole chaque entrée de menu, comme votre souris, et note ce qui apparaît (2 niveaux). JAMAIS de clic.
+    Renvoie [(entrée, [(élément, [sous-éléments])])]. memoire : le même menu déjà exploré sur une autre page."""
+    entrees = _menus_de_la_page(page)
+    cle = tuple(nom for _, _, nom in entrees)
+    if memoire is not None and cle in memoire:
+        return memoire[cle]
+    resultat = []
+    for cadre, numero, nom in entrees:
+        entree = cadre.locator(f'[data-robot-barre="{numero}"]')
+        elements = []
+        _souris_au_repos(page)
+        try:
+            nouveaux = _survoler_et_voir(page, entree, cadre, numero)
+        except Exception:
+            nouveaux = []
+        a_ouvrir = 4
+        for n in nouveaux:
+            sous = []
+            if n["sous"] and a_ouvrir > 0:
+                a_ouvrir -= 1
+                try:
+                    loc = n["loc"] if _visible(n["loc"]) else _rouvrir(page, entree, cadre, numero, n["texte"])
+                    if loc is not None:
+                        sous = [x["texte"] for x in _survoler_et_voir(page, loc)]
+                except Exception:
+                    pass
+            elements.append((n["texte"], sous))
+        resultat.append((nom, elements))
+    _souris_au_repos(page)
+    if memoire is not None and resultat:
+        memoire[cle] = resultat
+    return resultat
+
+
+def _chercher_en_survolant(page, mot):
+    """Le texte n'est pas (visible) sur la page : il apparaît peut-être en survolant un menu. Le robot survole
+    chaque entrée (et les sous-menus qu'elle ouvre), SANS CLIQUER, jusqu'à le voir.
+    Renvoie (éléments trouvés visibles, chemin pour rouvrir le menu, ce qui a été vu en survolant)."""
+    vu = []
+    for cadre, numero, nom in _menus_de_la_page(page):
+        entree = cadre.locator(f'[data-robot-barre="{numero}"]')
+        _souris_au_repos(page)
+        try:
+            nouveaux = _survoler_et_voir(page, entree, cadre, numero)
+        except Exception:
+            continue
+        vu.append((nom, [n["texte"] for n in nouveaux]))
+        chemin = [{"loc": entree, "cadre": cadre, "numero": numero, "nom": nom}]
+        trouves = [t for t in _candidats(page, mot) if _visible(t[2])]
+        if trouves:
+            return trouves, chemin, vu
+        for n in [n for n in nouveaux if n["sous"]][:4]:
+            try:
+                loc = n["loc"] if _visible(n["loc"]) else _rouvrir(page, entree, cadre, numero, n["texte"])
+                if loc is None:
+                    continue
+                _survoler_et_voir(page, loc)
+            except Exception:
+                continue
+            trouves = [t for t in _candidats(page, mot) if _visible(t[2])]
+            if trouves:
+                return trouves, chemin + [{"texte": n["texte"]}], vu
+    _souris_au_repos(page)
+    return [], [], vu
+
+
+def _resurvoler(page, chemin, mot):
+    """Rouvre le menu où le texte a été trouvé (il s'est refermé pendant la question). Sans cliquer."""
+    entree = chemin[0]
+    cadre, numero, loc = entree["cadre"], entree["numero"], entree["loc"]
+    if loc.count() != 1:  # la page a redessiné son menu : on le repère à nouveau
+        loc = None
+        for c, i, nom in _menus_de_la_page(page):
+            if c == cadre and nom == entree["nom"]:
+                numero, loc = i, c.locator(f'[data-robot-barre="{i}"]')
+                break
+        if loc is None:
+            return []
+    _souris_au_repos(page)
+    nouveaux = _survoler_et_voir(page, loc, cadre, numero)
+    if len(chemin) > 1:
+        loc2 = next((n["loc"] for n in nouveaux if n["texte"] == chemin[1]["texte"]), None)
+        if loc2 is None:
+            return []
+        _survoler_et_voir(page, loc2)
+    return [t for t in _candidats(page, mot) if _visible(t[2])]
+
+
 def _strategie_profil_impose(canal):
     """Stratégie d'entreprise « UserDataDir » : le navigateur ignorerait le profil vide du robot et
     ouvrirait VOTRE profil. Dans ce cas, le robot n'utilise pas ce navigateur."""
@@ -1165,6 +1450,8 @@ def _ouvrir_navigateur(p, notes):
         ecrire(f"   Ouverture du navigateur du robot avec {nom} (jusqu'a 30 secondes). Ne touchez a rien...")
         try:
             options = {"headless": INVISIBLE, "slow_mo": 0 if INVISIBLE else 120, "timeout": 30000}
+            if not INVISIBLE:  # fenêtre en grand : le portail s'affiche comme dans votre Chrome (menu de gauche ouvert)
+                options["args"] = ["--start-maximized"]
             if canal:
                 options["channel"] = canal
             navigateur = p.chromium.launch(**options)
@@ -1339,8 +1626,9 @@ def _candidats(page, mot):
     return []
 
 
-def _montrer_ce_que_je_vois(page):
-    """Les noms des menus, liens et boutons que le robot voit sur la page (pour retaper le bon texte)."""
+def _montrer_ce_que_je_vois(page, vu_en_survolant=()):
+    """Les noms des menus, liens et boutons que le robot voit sur la page, et ce qui apparaît en survolant
+    les menus (pour retaper le bon texte)."""
     vus = []
     for cadre in page.frames:
         try:
@@ -1354,6 +1642,18 @@ def _montrer_ce_que_je_vois(page):
         ecrire("   Ce que le robot voit comme menus, liens et boutons : " + " | ".join(vus[:30]))
     else:
         ecrire("   Le robot ne voit aucun menu ni lien sur cette page (page de connexion ? page vide ?).")
+    survols = []
+    for nom, textes in vu_en_survolant:
+        t = _structure(nom)
+        if t:
+            s = ["(contenu masque)"] if textes and _liste_de_donnees(nom) else _liste(textes, 8)
+            survols.append(t + " : " + (" | ".join(s) if s else "rien"))
+    if survols:
+        ecrire("   En survolant les menus, le robot a vu :")
+        for ligne in survols[:15]:
+            ecrire("     - " + ligne)
+    elif not vu_en_survolant:
+        ecrire("   Le robot n'a repere aucun menu a survoler sur cette page.")
 
 
 def _examiner(cadre, loc):
@@ -1386,9 +1686,15 @@ def _choisir(trouves):
     return None, refus, len(visibles)
 
 
-def _cliquer_prudemment(page, cadre, cible):
+def _cliquer_prudemment(page, cadre, cible, chemin=None, mot=""):
     """Rouvre le menu si besoin, revérifie l'élément au dernier moment, pose la souris sur son texte,
-    vérifie ce qui est VRAIMENT sous la souris, et seulement alors appuie. Renvoie "" si le clic est fait."""
+    vérifie ce qui est VRAIMENT sous la souris, et seulement alors appuie. Renvoie "" si le clic est fait.
+    chemin : le menu survolé où l'élément est apparu (à rouvrir s'il s'est refermé pendant la question)."""
+    if chemin and (cible.count() != 1 or not _visible(cible)):
+        choix, refus, _ = _choisir(_resurvoler(page, chemin, mot))
+        if choix is None:
+            return "le menu ne montre plus cet element" + (f" ({refus})" if refus else "")
+        _, cadre, cible = choix
     if cible.count() != 1:
         return "l'element a disparu de la page"
     if not _visible(cible) and not _ouvrir_menus(cible):
@@ -1427,8 +1733,10 @@ def _clic_choisi(page, notes):
     ecrire(" ETAPE 8 : un clic que VOUS choisissez sur le portail")
     ecrire("=" * 70)
     ecrire("   Tapez le texte EXACT d'un MENU ou d'un LIEN du portail, tel qu'il est ecrit")
-    ecrire("   (par exemple GATES), accents compris. Le robot le cherche, l'encadre en rouge, et")
-    ecrire("   vous demande avant de cliquer. Il ne clique que sur des liens et des menus : jamais")
+    ecrire("   (par exemple GATES), accents compris. Ca peut etre un element d'un sous-menu qui")
+    ecrire("   s'ouvre quand la souris passe dessus (menu de gauche) : le robot survole les menus")
+    ecrire("   pour le trouver. Il l'encadre en rouge, et vous demande avant de cliquer.")
+    ecrire("   Il ne clique que sur des liens et des menus : jamais")
     ecrire("   sur un bouton de formulaire, une case, ni sur Supprimer, Enregistrer, Valider, OK...")
     ecrire("   Pendant que vous repondez, ne passez pas la souris sur la fenetre du robot.")
     codes = []  # un code court par essai, pour le RESULTAT (jamais le mot tapé)
@@ -1444,19 +1752,31 @@ def _clic_choisi(page, notes):
             ecrire("   Refuse : ce mot ressemble a une action qui modifie. Choisissez un menu ou un lien.")
             codes.append(f"{n}:refus-mot")
             continue
+        _menus_de_la_page(page)  # le robot repère les entrées des menus (il sait alors ce qui est un menu)
         trouves = _candidats(page, mot)
+        chemin, vu = [], []
+        if not any(_visible(t[2]) for t in trouves):
+            ecrire("   Pas visible sur la page : le robot survole les menus (sans cliquer) pour le chercher.")
+            ecrire("   Ne touchez pas a la fenetre du robot (1 minute au plus)...")
+            trouves_survol, chemin, vu = _chercher_en_survolant(page, mot)
+            trouves = trouves_survol or trouves
         if not trouves:
-            ecrire("   Pas trouve. Si c'est dans un menu qui se deroule, tapez d'abord le nom du menu.")
-            _montrer_ce_que_je_vois(page)
+            ecrire("   Pas trouve, meme en survolant les menus.")
+            _montrer_ce_que_je_vois(page, vu)
             codes.append(f"{n}:introuvable")
+            _nettoyer(page)
             continue
         choix, refus, nb_visibles = _choisir(trouves)
         if choix is None:
             ecrire(f"   Refuse par prudence : {refus}.")
-            codes.append(f"{n}:refus({refus.split()[0]})")
+            codes.append(f"{n}:refus({refus.split()[0].rstrip(',')})")
+            _souris_au_repos(page)
+            _nettoyer(page)
             continue
         numero_cadre, cadre, cible = choix
         ou = "dans la page" if numero_cadre == 0 else "dans une zone interieure de la page"
+        if chemin:
+            ou = f"en survolant le menu « {_structure(chemin[0]['nom']) or '?'} »"
         cache = not _visible(cible)
         if cache:
             question = (f"   Trouve {ou}, mais cache dans un menu ferme. Le robot va survoler le menu pour l'ouvrir,"
@@ -1473,7 +1793,7 @@ def _clic_choisi(page, notes):
             codes.append(f"{n}:non-clique")
             continue
         try:
-            souci = _cliquer_prudemment(page, cadre, cible)
+            souci = _cliquer_prudemment(page, cadre, cible, chemin, mot)
         except Exception as e:
             souci = "clic en echec (" + expliquer(e) + ")"
         if souci and souci != "nouvel onglet":
@@ -1490,7 +1810,7 @@ def _clic_choisi(page, notes):
         ecrire("   Clic fait. Regardez la fenetre du robot : la page a-t-elle reagi comme avec votre souris ?")
         revenez_ici()
         reagi = oui("   Ca a marche ?")
-        codes.append(f"{n}:clic" + ("-survol" if cache else "") + ("" if reagi else "-sans-effet"))
+        codes.append(f"{n}:clic" + ("-survol" if cache or chemin else "") + ("" if reagi else "-sans-effet"))
         _nettoyer(page)
     _nettoyer(page)
     if not codes:
@@ -1665,51 +1985,6 @@ def ouvrir_robot(p):
 # ---------------------------------------------------------------------------- relevé des pages (pour Claude)
 # STRUCTURE seulement : noms des menus, onglets, champs, boutons, colonnes de tableaux, libellés d'une fiche.
 # Jamais une valeur : ni le contenu des champs, ni les cellules des tableaux, ni les choix des listes.
-JS_BARRES = r"""() => {
-  const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
-                     const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
-  const propre = e => { let t = ''; for (const n of e.childNodes) if (n.nodeType === 3) t += n.textContent;
-                        t = t.replace(/\s+/g, ' ').trim();
-                        if (!t) { const l = e.querySelector(':scope > a, :scope > span, :scope > div, :scope > button');
-                                  if (l) t = (l.textContent || '').replace(/\s+/g, ' ').trim(); }
-                        return t; };
-  // une barre de menu : une liste de 2 à 15 entrées courtes, côte à côte, en haut de la page (ou dans un menu)
-  const MENU = 'nav, header, [role=navigation], [role=menubar], [class*=menu i], [id*=menu i], [class*=nav i]';
-  const entrees = [];
-  for (const ul of document.querySelectorAll('ul, ol, [role=menubar]')) {
-    if (ul.parentElement && ul.parentElement.closest('li')) continue;          // un sous-menu, pas une barre
-    const lis = Array.from(ul.children).filter(li => vis(li));
-    if (lis.length < 2 || lis.length > 15) continue;
-    const hauts = lis.map(li => Math.round(li.getBoundingClientRect().top));
-    const enLigne = Math.max(...hauts) - Math.min(...hauts) <= 6;
-    const enHaut = ul.getBoundingClientRect().top < 260 || !!ul.closest(MENU);
-    if (!enLigne || !enHaut) continue;
-    if (!lis.every(li => { const t = propre(li); return t && t.length <= 30; })) continue;
-    for (const li of lis) { li.setAttribute('data-robot-barre', String(entrees.length)); entrees.push(propre(li)); }
-  }
-  return entrees;
-}"""
-
-JS_SOUS_MENU = r"""(li) => {
-  const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
-                     const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
-  const propre = e => { let t = ''; for (const n of e.childNodes) if (n.nodeType === 3) t += n.textContent;
-                        t = t.replace(/\s+/g, ' ').trim();
-                        if (!t) { const l = e.querySelector(':scope > a, :scope > span, :scope > div, :scope > button');
-                                  if (l) t = (l.textContent || '').replace(/\s+/g, ' ').trim(); }
-                        return t; };
-  const vus = [];
-  const h = x => (x && x.getAttribute('href')) || '';
-  const enregistrement = x => /^(tel|mailto):/i.test(h(x)) || /[?&][^=&]+=([^&]*\d{2,}|[A-Za-z]+-\d+)/.test(h(x)) ||
-                              /\/\d{2,}(\/|$|\?)/.test(h(x));
-  for (const e of li.querySelectorAll('li, [role=menuitem]')) {
-    if (e === li || !vis(e)) continue;
-    const t = enregistrement(e.querySelector('a') || e.closest('a')) ? '(donnee masquee)' : propre(e);
-    if (t && !vus.includes(t)) vus.push(t);
-  }
-  return vus;
-}"""
-
 JS_RELEVE = r"""() => {
   const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
                      const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
@@ -1765,7 +2040,7 @@ JS_RELEVE = r"""() => {
   }
   const listeDeDonnees = e => !!e.closest('li') && !e.closest(MENU) && !e.closest('[class*=onglet i], [class*=tabs i], [role=tablist]');
   for (const e of document.querySelectorAll('button, input[type=submit], input[type=button], input[type=reset], [role=button]')) {
-    if (!vis(e) || ligneDeDonnees(e) || listeDeDonnees(e)) continue;
+    if (!vis(e) || ligneDeDonnees(e) || listeDeDonnees(e) || e.closest('[data-robot-barre]')) continue;
     const texte = e.tagName === 'INPUT' ? court(e.value) : court(e.textContent);
     const bulle = court(e.getAttribute('title') || e.getAttribute('aria-label') || '');
     r.boutons.push(texte && /[A-Za-zÀ-ÿ]/.test(texte) ? texte : (bulle ? '(icone) ' + bulle : '(icone sans nom)'));
@@ -1839,6 +2114,12 @@ def _structure(texte):
     return t
 
 
+def _liste_de_donnees(nom):
+    """« Récents », « Favoris », « Historique »... : ce sous-menu liste des fiches (des données), pas des menus."""
+    return bool(re.search(r"recent|favori|historique|dernier|consult|history|favorite|bookmark|signet",
+                          sans_accents(str(nom or "")).lower()))
+
+
 def _liste(elements, limite=40):
     vus = []
     for e in elements:
@@ -1848,24 +2129,13 @@ def _liste(elements, limite=40):
     return vus[:limite]
 
 
-def relever_page(page):
-    """La structure de la page affichée dans la fenêtre du robot (tous les cadres)."""
-    barres = []
+def relever_page(page, memoire=None):
+    """La structure de la page affichée dans la fenêtre du robot (tous les cadres). Les menus sont survolés
+    (jamais cliqués) pour noter leurs sous-menus. memoire : les menus déjà explorés sur les pages précédentes."""
     try:
-        for i, nom in enumerate(page.evaluate(JS_BARRES)):
-            entree = page.locator(f'[data-robot-barre="{i}"]')
-            sous = []
-            try:
-                entree.hover(timeout=3000)  # survol seulement : jamais de clic
-                time.sleep(0.8)
-                sous = page.locator(f'[data-robot-barre="{i}"]').evaluate(JS_SOUS_MENU)
-            except Exception:
-                pass
-            barres.append((nom, sous))
-        page.mouse.move(0, 0)
-        time.sleep(0.3)
+        explores = _explorer_menus(page, memoire)
     except Exception:
-        pass
+        explores = []
     total = {"autresMenus": [], "onglets": [], "champs": [], "boutons": [], "tableaux": [], "libelles": [], "liens": [], "cadres": 0}
     for cadre in page.frames:
         try:
@@ -1878,17 +2148,23 @@ def relever_page(page):
             else:
                 total[cle] += r[cle]
     _nettoyer(page)
-    for cadre in page.frames:
-        try:
-            cadre.evaluate("() => document.querySelectorAll('[data-robot-barre]').forEach(e => e.removeAttribute('data-robot-barre'))")
-        except Exception:
-            pass
+    # « UD & Plans > Recherche de plans ; Mes plans ; Plans récents > (Cette semaine ; Ce mois) »
     menus = []
-    for nom, sous in barres:
+    for nom, elements in explores:
         t = _structure(nom)
-        if t:
-            s = _liste(sous, 25)
-            menus.append(t + (" > " + " ; ".join(s) if s else ""))
+        if not t:
+            continue
+        parties, deja = [], set()
+        for texte, sous in ([] if _liste_de_donnees(nom) else elements):
+            s = _structure(texte)
+            if not s or s in deja:
+                continue
+            deja.add(s)
+            ss = ["contenu masque"] if sous and _liste_de_donnees(texte) else _liste(sous, 15)
+            parties.append(s + (" > (" + " ; ".join(ss) + ")" if ss else ""))
+        if elements and _liste_de_donnees(nom):
+            parties = ["(contenu masque)"]
+        menus.append(t + (" > " + " ; ".join(parties[:25]) if parties else ""))
     tableaux = []
     for tab in total["tableaux"]:
         cols = [c for c in (_structure(c) for c in tab["colonnes"]) if c]
@@ -1910,10 +2186,11 @@ def ecrire_releve(pages):
     for numero, (nom, r) in enumerate(pages, 1):
         lignes.append(f"PAGE {numero} : {nom}")
         if r["menus"] and r["menus"] != menus_vus:
-            lignes.append("  Menu du haut : " + "  |  ".join(r["menus"]))
+            lignes.append("  Menus (survoles par le robot, sans cliquer) :")
+            lignes += ["    " + m for m in r["menus"]]
             menus_vus = r["menus"]
         elif r["menus"]:
-            lignes.append("  Menu du haut : le meme")
+            lignes.append("  Menus : les memes")
         for cle in ("autres menus", "onglets", "champs", "boutons", "libelles de fiche", "liens"):
             if r[cle]:
                 lignes.append(f"  {cle.capitalize()} : " + " ; ".join(r[cle]))
@@ -1934,7 +2211,7 @@ def ecrire_releve(pages):
 
 def boucle_releve(page):
     """Vous allez sur une page dans la fenêtre du robot, vous la nommez, le robot la relève. Entrée vide = fini."""
-    pages = []
+    pages, memoire = [], {}
     ecrire("   Dans la FENETRE DU ROBOT, allez sur une page du portail (comme d'habitude, a la souris).")
     ecrire("   Puis revenez ici, tapez un nom court pour cette page et Entree.")
     ecrire("   Exemples : recherche plans, liste resultats, fiche plan, onglet references.")
@@ -1949,9 +2226,10 @@ def boucle_releve(page):
             page = page.context.pages[-1] if page.context.pages else page  # l'onglet le plus récent
             page.bring_to_front()
             attendre_chargement(page, 5)
-            ecrire("   Releve en cours : ne touchez pas a la fenetre du robot...")
+            ecrire("   Releve en cours : le robot survole les menus (sans cliquer).")
+            ecrire("   Ne touchez ni a la souris ni a la fenetre du robot (1 minute au plus)...")
             avant = page.url
-            r = relever_page(page)
+            r = relever_page(page, memoire)
             if page.url != avant:
                 ecrire("   --> la page a change pendant le releve : revenez sur cette page, puis retapez son nom.")
                 continue
@@ -2421,12 +2699,21 @@ class Tache:
                            " if (norme(p) === norme(m)) x.setAttribute('data-robot-trouve', j); } }", [texte, jeton])
             return r.locator(f'[data-robot-trouve="{jeton}"]')
 
+        def tolerant(r):
+            """En dernier : accents, majuscules, flèches et symboles ignorés (« Plans récents › »)."""
+            if not hasattr(r, "child_frames"):
+                return r.locator("css=[data-robot-rien]")
+            r.evaluate(JS_TROUVER_TOLERANT, [texte, jeton, "propre"])
+            if not r.locator(f'[data-robot-trouve="{jeton}"]').count():
+                r.evaluate(JS_TROUVER_TOLERANT, [texte, jeton, "entier"])
+            return r.locator(f'[data-robot-trouve="{jeton}"]')
+
         facons = [lambda r, role=role: r.get_by_role(role, name=texte, exact=True)
                   for role in ("button", "link", "menuitem", "tab", "treeitem")]
         facons += [lambda r: r.get_by_text(texte, exact=True), propre_texte,
                    lambda r: r.get_by_title(texte, exact=True),
                    lambda r: r.locator(f"[aria-label={json.dumps(texte, ensure_ascii=False)}]"),
-                   lambda r: r.get_by_text(exact_sans_casse)]
+                   lambda r: r.get_by_text(exact_sans_casse), tolerant]
         fin = time.time() + attente
         while True:
             for facon in facons:
@@ -2519,7 +2806,9 @@ class Tache:
         trouves = self.candidats(arg, racines)
         if len(trouves) < nieme:
             raise ErreurTache(f"« {arg} » introuvable sur la page")
-        loc = trouves[nieme - 1]
+        self._cliquer_element(trouves[nieme - 1], arg, quoi)
+
+    def _cliquer_element(self, loc, arg, quoi):
         if not _visible(loc):
             _ouvrir_menus(loc)
         if (interdit(arg) or interdit(self._texte_de(loc)) or any(interdit(a) for a in self.attendues)) \
@@ -2537,23 +2826,33 @@ class Tache:
 
     def menu(self, arg):
         parties = [p.strip() for p in arg.split(">") if p.strip()]
+        _menus_de_la_page(self.page)  # les entrées des menus passent avant un titre de la page qui porte le même nom
         for i, partie in enumerate(parties):
             dernier = i == len(parties) - 1
             trouves = self.candidats(partie, self.cadres())
             if not trouves:
                 raise ErreurTache(f"menu « {partie} » introuvable")
+            trouves.sort(key=lambda t: (not _visible(t), _rang_menu(t)))
             loc = trouves[0]
             if i == 0 and any(interdit(p) for p in parties) and not self.accord_geste:
                 self.confirmer(loc, "ouvrir le menu « " + " > ".join(parties) + " »", cle="menu " + " > ".join(parties))
             if not _visible(loc):
                 _ouvrir_menus(loc)
             if dernier:
-                self.cliquer(partie)
+                self._cliquer_element(loc, partie, partie)
                 return
-            loc.hover(timeout=10000)
-            self.page.wait_for_timeout(800)
-            suivant = self.candidats(parties[i + 1], self.cadres(), attente=1)
-            if not (suivant and _visible(suivant[0])):
+            # survol (comme la souris) : le sous-menu apparaît, parfois ailleurs dans la page (menu de gauche)
+            ouvert = False
+            for essai in [t for t in trouves if _visible(t)][:3] or [loc]:
+                try:
+                    _survoler_et_voir(self.page, essai)
+                except Exception:
+                    continue
+                suivant = self.candidats(parties[i + 1], self.cadres(), attente=1)
+                if any(_visible(s) for s in suivant[:10]):
+                    loc, ouvert = essai, True
+                    break
+            if not ouvert:
                 # menu qui s'ouvre au clic : ce clic aussi est contrôlé
                 if interdit(self._texte_de(loc)) and not self.accord_geste:
                     self.confirmer(loc, f"cliquer « {partie} »", cle="cliquer " + partie)
