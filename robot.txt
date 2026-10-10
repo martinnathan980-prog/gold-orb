@@ -1004,7 +1004,7 @@ JS_OUTILS_MENUS = JS_ZONE_MENU + r"""
 # et ce qui est dans un menu. Pas les « div » cliquables du contenu (cartes, lignes de résultats : ce sont des données).
 JS_CE_QUE_JE_VOIS = r"""() => {""" + JS_OUTILS_MENUS + r"""
   const vus = [];
-  const NET = 'a, button, [role=menuitem], [role=tab], [role=button], input[type=submit], input[type=button]';
+  const NET = 'a, button, li, [role=menuitem], [role=tab], [role=button], input[type=submit], input[type=button]';
   const MENUS = '[data-robot-barre], [data-robot-nouveau], nav, [role=navigation], [role=menu], [role=menubar]';
   // le nom de la personne connectée (zone « user », « utilisateur », « compte », « profil »...) : jamais affiché
   const COMPTE = ['user', 'username', 'utilisateur', 'account', 'compte', 'profil', 'profile', 'avatar', 'login', 'identite'];
@@ -1012,7 +1012,7 @@ JS_CE_QUE_JE_VOIS = r"""() => {""" + JS_OUTILS_MENUS + r"""
                           if (jetonsDe(x).some(m => COMPTE.includes(m))) return true; return false; };
   for (const e of cliquables()) {
     if (e.closest('td, [role=gridcell], [role=row], [role=option], [role=listbox], [role=tree]')) continue;
-    if (!e.matches(NET) && !e.closest(MENUS)) continue;
+    if (!e.matches(NET) && !e.closest(MENUS) && !zoneMenu(e)) continue;
     const t = e.tagName === 'INPUT' ? (e.value || '').replace(/\s+/g, ' ').trim() :
               (enregistrement(e) ? '(donnee masquee)' : (compte(e) ? '(menu du compte)' : texteDe(e)));
     if (t && t.length <= 40 && !vus.includes(t)) vus.push(t);
@@ -1491,7 +1491,11 @@ def _chercher_en_survolant(page, mot):
     chaque entrée (et les sous-menus qu'elle ouvre), SANS CLIQUER, jusqu'à le voir apparaître.
     Renvoie (éléments apparus qui portent ce texte, chemin pour rouvrir le menu, ce qui a été vu en survolant)."""
     vu = []
+    fin = time.time() + 75  # au plus 1 minute et quart (poste lent, très grand menu)
     for e in _menus_de_la_page(page):
+        if time.time() > fin:
+            ecrire("   (le robot arrete de survoler : trop long)")
+            break
         _souris_au_repos(page)
         try:
             nouveaux = _survoler_et_voir(page, e["loc"], e["cadre"], e["numero"])
