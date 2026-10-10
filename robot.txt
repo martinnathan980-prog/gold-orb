@@ -945,18 +945,19 @@ JS_ZONE_MENU = r"""
   const MOTS_MENU = ['menu', 'menus', 'menubar', 'menuitem', 'submenu', 'menulist', 'nav', 'navbar', 'navigation', 'sidenav',
                      'sidebar', 'sidemenu', 'leftmenu', 'mainmenu', 'megamenu', 'topnav', 'mainnav', 'subnav', 'leftnav',
                      'navmenu', 'navlist', 'navitem', 'flyout', 'dropdown', 'drawer', 'rail'];
-  const MOTS_ARRET = ['content', 'contents', 'actions', 'action', 'toolbar', 'buttons', 'dialog', 'alertdialog', 'modal', 'main'];
+  const MOTS_ARRET = ['content', 'contents', 'actions', 'action', 'toolbar', 'buttons', 'dialog', 'alertdialog', 'modal'];
   const zoneMenu = n => {
     for (let x = n; x && x !== document.body && x !== document.documentElement; x = x.parentElement) {
       const t = jetonsDe(x);
-      if (/^(MAIN|FORM|DIALOG)$/.test(x.tagName) || t.some(m => MOTS_ARRET.includes(m))) return false;
+      if (/^(MAIN|FORM|DIALOG)$/.test(x.tagName) || x.getAttribute('role') === 'main' || t.some(m => MOTS_ARRET.includes(m))) return false;
       if (/^(NAV|ASIDE)$/.test(x.tagName) || t.some(m => MOTS_MENU.includes(m))) return true;
     }
     return false;
   };
   // dans le CONTENU de la page (main, formulaire, fenêtre, « ...-content », barre d'actions) : jamais un menu certain
   const contenu = n => { for (let y = n; y && y !== document.body && y !== document.documentElement; y = y.parentElement)
-                           if (/^(MAIN|FORM|DIALOG)$/.test(y.tagName) || jetonsDe(y).some(m => MOTS_ARRET.includes(m))) return true;
+                           if (/^(MAIN|FORM|DIALOG)$/.test(y.tagName) || y.getAttribute('role') === 'main' ||
+                               jetonsDe(y).some(m => MOTS_ARRET.includes(m))) return true;
                          return false; };
 """
 
@@ -994,6 +995,23 @@ JS_OUTILS_MENUS = JS_ZONE_MENU + r"""
   const enregistrement = e => { const a = e.closest('a[href]') || e.querySelector('a[href]'); const h = (a && a.getAttribute('href')) || '';
     return /^(tel|mailto|callto|sip):/i.test(h) || /[?&][^=&]+=([^&]*\d{2,}|[A-Za-z]+-\d+)/.test(h) || /\/\d{2,}(\/|$|\?)/.test(h) ||
            /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}/i.test(h); };
+  // le titre de section juste au-dessus d'un élément (texte court non cliquable, ou titre h1-h6 sans ses icônes)
+  const titreSection = x => {
+    for (let y = x, n = 0; y && y !== document.body && n < 3; y = y.parentElement, n++)
+      for (let p = y.previousElementSibling, k = 0; p && k < 40; p = p.previousElementSibling, k++) {
+        const titre = /^H[1-6]$/.test(p.tagName) || p.getAttribute('role') === 'heading';
+        if (!titre && (p.matches(CLIQ) || p.querySelector('a[href], button, [role=menuitem], [role=button], [role=link], [onclick]'))) continue;
+        const c = p.cloneNode(true); c.querySelectorAll('a, button, [role=button], svg, img, i, mat-icon').forEach(z => z.remove());
+        const t = (c.textContent || '').replace(/\s+/g, ' ').trim();
+        if (t && t.length <= 40) return t;
+      }
+    return '';
+  };
+  // la zone de la personne connectée (« user », « utilisateur », « compte », « profil », « avatar »...)
+  const COMPTE = ['user', 'username', 'utilisateur', 'account', 'compte', 'profil', 'profile', 'avatar', 'login', 'identite'];
+  const compteDe = e => { for (let x = e, n = 0; x && x !== document.body && n < 2; x = x.parentElement, n++)
+                            if (jetonsDe(x).some(m => COMPTE.includes(m))) return true;
+                          return Array.from(e.querySelectorAll('*')).slice(0, 30).some(x => jetonsDe(x).some(m => COMPTE.includes(m))); };
   // une entrée qui ouvre un sous-menu : attribut, classe, flèche (icône, image ou caractère), ou sous-liste cachée
   const indiceSous = e => {
     for (const x of [e, ...e.querySelectorAll('[aria-haspopup], [aria-expanded]')]) {
@@ -1012,16 +1030,12 @@ JS_CE_QUE_JE_VOIS = r"""() => {""" + JS_OUTILS_MENUS + r"""
   const vus = [];
   const NET = 'a, button, li, [role=menuitem], [role=tab], [role=button], input[type=submit], input[type=button]';
   const MENUS = '[data-robot-fort], [data-robot-nouveau], nav, [role=navigation], [role=menu], [role=menubar], header';
-  // le nom de la personne connectée (zone « user », « utilisateur », « compte », « profil »...) : jamais affiché
-  const COMPTE = ['user', 'username', 'utilisateur', 'account', 'compte', 'profil', 'profile', 'avatar', 'login', 'identite'];
-  const compte = e => { for (let x = e, n = 0; x && x !== document.body && n < 4; x = x.parentElement, n++)
-                          if (jetonsDe(x).some(m => COMPTE.includes(m))) return true; return false; };
   for (const e of cliquables()) {
     if (e.closest('td, [role=gridcell], [role=row], [role=option], [role=listbox], [role=tree]')) continue;
     if (!(e.closest('[data-robot-fort], [data-robot-nouveau]') || (e.matches(NET) && (e.closest(MENUS) || zoneMenu(e)) && !contenu(e))))
       continue;
     const t = e.tagName === 'INPUT' ? (e.value || '').replace(/\s+/g, ' ').trim() :
-              (enregistrement(e) ? '(donnee masquee)' : (compte(e) ? '(menu du compte)' : texteDe(e)));
+              (enregistrement(e) ? '(donnee masquee)' : (compteDe(e) ? '(menu du compte)' : texteDe(e)));
     if (t && t.length <= 40 && !vus.includes(t)) vus.push(t);
     if (vus.length >= 40) break;
   }
@@ -1099,7 +1113,7 @@ JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
       k.setAttribute('data-robot-barre', String(entrees.length));
       if (G.fort) k.setAttribute('data-robot-fort', '1');
       entrees.push({ nom: enregistrement(k) ? '(donnee masquee)' : texteDe(k), texte: texteDe(k), groupe: n, fort: G.fort,
-                     titre: titreDe(G.g) });
+                     titre: titreDe(G.g), section: titreSection(k), compte: compteDe(k) });
     }
   });
   return entrees;
@@ -1148,7 +1162,7 @@ JS_NOUVEAUX = r"""([numero, jeton]) => {""" + JS_OUTILS_MENUS + r"""
     const t = e.tagName === 'INPUT' ? '' : texteDe(e);
     if (!t || t.length > 45 || !/[A-Za-zÀ-ÿ0-9]/.test(t) || t === nomEntree) continue;
     if (vus.has(e) && vus.get(e) === t) continue;
-    nouveaux.push({ e: e, t: t, ok: dedans || pres(e) || dansPanneau(e) });
+    nouveaux.push({ e: e, t: t, ok: dedans || dansPanneau(e) || (pres(e) && !contenu(e)) });
   }
   if (nouveaux.length > 80) return [];   // la page entière a changé : ce n'est pas un sous-menu
   // les voisins (mêmes parents) d'un élément retenu font partie du même sous-menu
@@ -1164,7 +1178,8 @@ JS_NOUVEAUX = r"""([numero, jeton]) => {""" + JS_OUTILS_MENUS + r"""
   const garde = retenus.filter(n => { for (let p = n.e.parentElement; p; p = p.parentElement) if (ens.get(p) === n.t) return false;
                                       return !retenus.some(m => m.t !== n.t && contientDirect(n.e, m.e)); });
   return garde.slice(0, 40).map((n, i) => { n.e.setAttribute('data-robot-nouveau', jeton + '-' + i);
-    return { texte: enregistrement(n.e) ? '(donnee masquee)' : n.t, sous: indiceSous(n.e), cle: jeton + '-' + i }; });
+    return { texte: enregistrement(n.e) ? '(donnee masquee)' : n.t, sous: indiceSous(n.e), cle: jeton + '-' + i,
+             section: titreSection(n.e) }; });
 }"""
 
 # Un sous-menu en train de se charger près de l'élément survolé (« Chargement... », roue, barre, aria-busy) : on attend.
@@ -1377,7 +1392,12 @@ def _menus_de_la_page(page):
     for n_cadre, cadre in enumerate(page.frames):
         try:
             for numero, e in enumerate(cadre.evaluate(JS_MENUS)):
-                nom = "(donnee masquee)" if _titre_de_fiches(e.get("titre")) else e["nom"]   # liste « Récents »
+                if e.get("compte"):
+                    nom = "(menu du compte)"
+                elif _titre_de_fiches(e.get("titre")) or _titre_de_fiches(e.get("section")):   # liste « Récents »
+                    nom = "(donnee masquee)"
+                else:
+                    nom = e["nom"]
                 entrees.append({"cadre": cadre, "numero": numero, "nom": nom, "texte": e.get("texte", ""),
                                 "groupe": (n_cadre, e["groupe"]),
                                 "fort": e["fort"], "loc": cadre.locator(f'[data-robot-barre="{numero}"]')})
@@ -1446,6 +1466,8 @@ def _survoler_et_voir(page, loc, cadre_entree=None, numero=-1, patience=False):
             try:
                 for n in cadre.evaluate(JS_NOUVEAUX, [numero if cadre == cadre_entree else -1, jeton]):
                     n["loc"] = cadre.locator(f'[data-robot-nouveau="{n["cle"]}"]')
+                    if _titre_de_fiches(n.get("section")):  # sous le titre « Derniers plans consultés » : des fiches
+                        n["texte"] = "(donnee masquee)"
                     vus.append(n)
             except Exception:
                 continue
@@ -1651,13 +1673,15 @@ def _confirmer_entrees(page, trouves):
 def _menu_du_compte(textes):
     """Un menu dont les éléments sont « Se déconnecter », « Mon profil »... : c'est le menu de la personne connectée,
     et son nom (le titre du menu) est une donnée."""
-    return any(re.search(r"deconnex|deconnect|logout|log out|sign out|signout|mon profil|my profile|mon compte|my account",
+    return any(re.search(r"deconnex|deconnect|logout|log out|sign out|signout|mon profil|my profile|mon compte|my account|"
+                         r"mes informations|mes preferences|changer de role|mot de passe|password|mon espace",
                          sans_accents(str(t)).lower()) for t in textes)
 
 
 def _contenu_a_masquer(nom, textes):
     """Le sous-menu d'une liste de fiches (Récents, Mes plans...), du menu du compte, ou d'une entrée masquée."""
-    return _liste_de_donnees(nom) or _menu_du_compte(textes) or _structure(nom) in (None, "(donnee masquee)")
+    return (_liste_de_donnees(nom) or _menu_du_compte(textes) or
+            _structure(nom) in (None, "(donnee masquee)", "(menu du compte)"))
 
 
 def _contenu_survole(nom, textes, limite=12):
@@ -1674,7 +1698,7 @@ def _contenu_survole(nom, textes, limite=12):
 
 def _nom_menu(nom, textes=()):
     """Le nom d'un menu tel qu'il est écrit (relevé, écran) : jamais le nom de la personne connectée."""
-    return "(menu du compte)" if _menu_du_compte(textes) else _structure(nom)
+    return "(menu du compte)" if _menu_du_compte(textes) or nom == "(menu du compte)" else _structure(nom)
 
 
 def _strategie_profil_impose(canal):
@@ -1917,9 +1941,12 @@ def _montrer_ce_que_je_vois(page, vu_en_survolant=()):
     les menus (pour retaper le bon texte)."""
     vus = []
     comptes = {nom for nom, textes in vu_en_survolant if _menu_du_compte(textes)}  # le nom de la personne connectée
+    caches = {t for nom, textes in vu_en_survolant if _contenu_a_masquer(nom, textes) for t in textes}  # listes de fiches
     for cadre in page.frames:
         try:
             for t in cadre.evaluate(JS_CE_QUE_JE_VOIS):
+                if t in caches:
+                    continue
                 t = "(menu du compte)" if t in comptes else _structure(t)
                 if t and t not in vus:
                     vus.append(t)
@@ -2325,7 +2352,7 @@ JS_RELEVE = r"""() => {
   const r = { autresMenus: [], onglets: [], champs: [], boutons: [], tableaux: [], libelles: [], liens: [],
               cadres: document.querySelectorAll('iframe, frame').length };
   for (const e of document.querySelectorAll('nav a, [role=menuitem], [class*=menu i] a, [id*=menu i] a')) {
-    if (!vis(e) || ligneDeDonnees(e) || e.closest('[data-robot-barre]')) continue;
+    if (!vis(e) || ligneDeDonnees(e) || e.closest('[data-robot-barre], [data-robot-nouveau]')) continue;
     r.autresMenus.push(nomDe(e));
   }
   for (const e of document.querySelectorAll('[role=tab], [class*=onglet i] a, [class*=onglet i] li, [class*=tabs i] a, [class*=tabs i] li'))
@@ -2339,7 +2366,7 @@ JS_RELEVE = r"""() => {
   }
   const listeDeDonnees = e => !!e.closest('li') && !e.closest(MENU) && !e.closest('[class*=onglet i], [class*=tabs i], [role=tablist]');
   for (const e of document.querySelectorAll('button, input[type=submit], input[type=button], input[type=reset], [role=button]')) {
-    if (!vis(e) || ligneDeDonnees(e) || listeDeDonnees(e) || e.closest('[data-robot-barre]')) continue;
+    if (!vis(e) || ligneDeDonnees(e) || listeDeDonnees(e) || e.closest('[data-robot-barre], [data-robot-nouveau]')) continue;
     const texte = e.tagName === 'INPUT' ? court(e.value) : court(e.textContent);
     const bulle = court(e.getAttribute('title') || e.getAttribute('aria-label') || '');
     r.boutons.push(texte && /[A-Za-zÀ-ÿ]/.test(texte) ? texte : (bulle ? '(icone) ' + bulle : '(icone sans nom)'));
@@ -2374,7 +2401,7 @@ JS_RELEVE = r"""() => {
     if (propre && /:$/.test(propre) && propre.length <= 30) r.libelles.push(propre.replace(/\s*:$/, ''));
   }
   for (const a of document.querySelectorAll('a[href]'))
-    if (vis(a) && !a.closest('td, th, [role=gridcell], [role=row]') && !listeDeDonnees(a) && !a.closest(MENU) &&
+    if (vis(a) && !a.closest('td, th, [role=gridcell], [role=row], [data-robot-nouveau]') && !listeDeDonnees(a) && !a.closest(MENU) &&
         !a.closest('[class*=onglet i], [class*=tabs i], [role=tablist]'))
       r.liens.push(enregistrement(a) ? '(donnee masquee)' : court(a.textContent || a.getAttribute('title') || ''));
   return r;
@@ -2387,7 +2414,14 @@ laurent frederic stephane david olivier sebastien thomas julien francois pascal 
 dominique gerard guillaume antoine alexandre maxime romain mathieu julie nathalie isabelle sylvie catherine sophie
 christine martine francoise valerie sandrine stephanie anne celine helene veronique monique nicole chantal brigitte
 caroline emilie aurelie claire camille laura sarah lea manon chloe emma louise lucas hugo louis gabriel arthur jules
-martin marc yves luc andre rene henri georges claude roger""".split())
+martin marc yves luc andre rene henri georges claude roger kevin jeremy jerome fabien florian cedric arnaud benoit bruno
+damien franck gilles herve ludovic mickael michael sylvain xavier yann yannick anthony adrien alexis aurelien baptiste
+clement corentin dylan enzo quentin remi simon theo valentin william raphael tom nathan mathis ethan noah samuel victor
+charles joseph fabrice serge denis patrice regis lionel joel pascale agnes alice amandine anais audrey carole cecile
+charlotte christelle delphine elodie estelle eva fanny florence gaelle ines jade jeanne jessica justine karine laetitia
+laurence lucie magali marion mathilde melanie nadia noemie oceane pauline sandra severine sonia virginie zoe juliette
+margaux clara elise elisa ambre lina mia rose anna romane lola maeva nina myriam muriel odile josiane danielle jacqueline
+mohamed ahmed karim samir nicolas sophie""".split())
 NOM_DE_PERSONNE = re.compile(r"\b[A-ZÉÈÀÂÎÔÛÇ][a-zéèêëàâîïôûüç]+(?:-[A-Z][a-z]+)?\s+[A-ZÉÈÀÂÎÔÛÇ]{2,}(?![\w])|"
                              r"\b[A-ZÉÈÀÂÎÔÛÇ]{2,}\s+[A-ZÉÈÀÂÎÔÛÇ][a-zéèêëàâîïôûüç]+\b|"
                              r"\b(?:M\.|Mme|Mlle|Mr|Monsieur|Madame|Mademoiselle)\s+[A-ZÉÈ]")
@@ -2745,6 +2779,20 @@ JS_LIGNE = r"""([valeur, jeton]) => {
     if (!ligne.hasAttribute('data-robot-ligne')) { ligne.setAttribute('data-robot-ligne', jeton); n++; }
   }
   return n;
+}"""
+
+# Les lignes qui portent cette valeur (même règle que JS_LIGNE, sans rien marquer) ; avec un élément : est-il dans l'une d'elles ?
+JS_LIGNES_DE = r"""(e, valeur) => {
+  const norme = t => (t || '').replace(/\s+/g, ' ').trim().toLowerCase();
+  const v = norme(valeur), lignes = new Set();
+  for (const x of document.querySelectorAll('td, th, [role=gridcell], li, a, span, div, b')) {
+    let propre = ''; for (const c of x.childNodes) if (c.nodeType === 3) propre += c.textContent;
+    if (norme(propre) !== v && norme(x.textContent) !== v) continue;
+    const ligne = x.closest('tr, [role=row], li');
+    if (!ligne || ligne.querySelector('tr, [role=row], li, table')) continue;
+    lignes.add(ligne);
+  }
+  return { n: lignes.size, dedans: !!e && e.nodeType === 1 && Array.from(lignes).some(l => l.contains(e)) };
 }"""
 
 JS_CHAMP_PAR_LIBELLE = r"""([libelle, jeton]) => {
@@ -3108,7 +3156,7 @@ class Tache:
         if m:
             arg, nieme = m.group(1), int(m.group(2))
         racines = self.cadres()
-        quoi = arg
+        quoi, ligne = arg, None
         m = re.match(r"^(.*?)\s+DANS\s+LIGNE\s+(.+)$", arg, re.IGNORECASE)
         if m:
             arg, ligne = m.group(1).strip(), m.group(2).strip()
@@ -3117,14 +3165,36 @@ class Tache:
         trouves = self.candidats(arg, racines)
         if len(trouves) < nieme:
             raise ErreurTache(f"« {arg} » introuvable sur la page")
-        self._cliquer_element(trouves[nieme - 1], arg, quoi)
+        self._cliquer_element(trouves[nieme - 1], arg, quoi, ligne)
 
-    def _cliquer_element(self, loc, arg, quoi):
+    def _toujours_le_meme(self, loc, texte_avant, ligne):
+        """Juste avant le clic (la question a pu durer) : l'élément n'a pas changé, et il est toujours dans LA ligne de
+        cet élément de la liste. Une liste qui se rafraîchit peut afficher un AUTRE plan dans la même ligne."""
+        if self._texte_de(loc) != texte_avant:
+            raise Passer("l'element a change pendant la question : rien n'a ete clique")
+        if ligne is None:
+            return
+        lignes = 0
+        for cadre in self.cadres():
+            try:
+                lignes += cadre.evaluate("v => (" + JS_LIGNES_DE + ")(null, v).n", ligne)
+            except Exception:
+                continue
+        try:
+            dedans = loc.evaluate(JS_LIGNES_DE, ligne)["dedans"]
+        except Exception:
+            dedans = False
+        if lignes != 1 or not dedans:
+            raise Passer(f"la liste a change pendant la question (ligne « {ligne} ») : rien n'a ete clique")
+
+    def _cliquer_element(self, loc, arg, quoi, ligne=None):
         if not _visible(loc):
             _ouvrir_menus(loc)
-        if (interdit(arg) or interdit(self._texte_de(loc)) or any(interdit(a) for a in self.attendues)) \
+        texte_avant = self._texte_de(loc)
+        if (interdit(arg) or interdit(texte_avant) or any(interdit(a) for a in self.attendues)) \
                 and not self.accord_geste:
             self.confirmer(loc, f"cliquer « {quoi} »", cle="cliquer " + arg)
+        self._toujours_le_meme(loc, texte_avant, ligne)
         avant = len(self.page.context.pages)
         loc.click(timeout=15000)
         attendre_chargement(self.page)
