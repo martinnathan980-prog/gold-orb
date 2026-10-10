@@ -1244,8 +1244,8 @@ JS_EXAMINER = r"""(e, [jeton, premier]) => {""" + JS_ZONE_MENU + r"""
   const menuBouton = bouton && sansFormulaire && !fenetre &&
                      (entree || c.hasAttribute('aria-haspopup') || c.hasAttribute('aria-expanded') || menuSur);
   // un élément d'un menu (lien, li, div, span) : liste, menu repéré, ou parent dont le NOM est un mot de menu
-  // (un « li » d'une barre de menu repérée par le robot, hors du contenu de la page, compte aussi)
-  const dansMenu = !!(c.closest(MENU) || zoneMenu(c) || (c.closest('li') && c.closest('[data-robot-barre]') && !contenu(c))) &&
+  // (un « li » hors du contenu de la page — main, formulaire, « ...-content » — compte aussi : vieux menus en listes)
+  const dansMenu = !!(c.closest(MENU) || zoneMenu(c) || (c.closest('li') && !contenu(c))) &&
                    !fenetre && ['li', 'span', 'div', 'a', 'p'].includes(tag);
   let refus = '';
   if (['input', 'select', 'textarea', 'label', 'summary', 'option'].includes(tag) ||
