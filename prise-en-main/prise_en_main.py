@@ -940,9 +940,11 @@ JS_TROUVER_TOLERANT = r"""([mot, jeton, mode]) => {
 # La recherche s'arrête au contenu de la page : « mat-sidenav-content », barre d'actions, fenêtre, formulaire, main.
 JS_ZONE_MENU = r"""
   const jetonsDe = x => (x.tagName + ' ' + (x.id || '') + ' ' + (typeof x.className === 'string' ? x.className : '') + ' ' +
-                         (x.getAttribute('role') || '')).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
-  const MOTS_MENU = ['menu', 'menus', 'menubar', 'menuitem', 'submenu', 'nav', 'navbar', 'navigation', 'sidenav', 'sidebar',
-                     'sidemenu', 'leftmenu', 'mainmenu', 'megamenu', 'flyout', 'dropdown', 'drawer', 'rail'];
+                         (x.getAttribute('role') || '')).replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase()
+                         .split(/[^a-z0-9]+/).filter(Boolean);
+  const MOTS_MENU = ['menu', 'menus', 'menubar', 'menuitem', 'submenu', 'menulist', 'nav', 'navbar', 'navigation', 'sidenav',
+                     'sidebar', 'sidemenu', 'leftmenu', 'mainmenu', 'megamenu', 'topnav', 'mainnav', 'subnav', 'leftnav',
+                     'navmenu', 'navlist', 'navitem', 'flyout', 'dropdown', 'drawer', 'rail'];
   const MOTS_ARRET = ['content', 'contents', 'actions', 'action', 'toolbar', 'buttons', 'dialog', 'alertdialog', 'modal', 'main'];
   const zoneMenu = n => {
     for (let x = n; x && x !== document.body && x !== document.documentElement; x = x.parentElement) {
@@ -952,6 +954,10 @@ JS_ZONE_MENU = r"""
     }
     return false;
   };
+  // dans le CONTENU de la page (main, formulaire, fenêtre, « ...-content », barre d'actions) : jamais un menu certain
+  const contenu = n => { for (let y = n; y && y !== document.body && y !== document.documentElement; y = y.parentElement)
+                           if (/^(MAIN|FORM|DIALOG)$/.test(y.tagName) || jetonsDe(y).some(m => MOTS_ARRET.includes(m))) return true;
+                         return false; };
 """
 
 # Outils communs pour les MENUS : visibilité, nom d'une entrée (sans ses icônes ni ses flèches), éléments cliquables
@@ -1005,14 +1011,15 @@ JS_OUTILS_MENUS = JS_ZONE_MENU + r"""
 JS_CE_QUE_JE_VOIS = r"""() => {""" + JS_OUTILS_MENUS + r"""
   const vus = [];
   const NET = 'a, button, li, [role=menuitem], [role=tab], [role=button], input[type=submit], input[type=button]';
-  const MENUS = '[data-robot-barre], [data-robot-nouveau], nav, [role=navigation], [role=menu], [role=menubar]';
+  const MENUS = '[data-robot-fort], [data-robot-nouveau], nav, [role=navigation], [role=menu], [role=menubar], header';
   // le nom de la personne connectée (zone « user », « utilisateur », « compte », « profil »...) : jamais affiché
   const COMPTE = ['user', 'username', 'utilisateur', 'account', 'compte', 'profil', 'profile', 'avatar', 'login', 'identite'];
   const compte = e => { for (let x = e, n = 0; x && x !== document.body && n < 4; x = x.parentElement, n++)
                           if (jetonsDe(x).some(m => COMPTE.includes(m))) return true; return false; };
   for (const e of cliquables()) {
     if (e.closest('td, [role=gridcell], [role=row], [role=option], [role=listbox], [role=tree]')) continue;
-    if (!e.matches(NET) && !e.closest(MENUS) && !zoneMenu(e)) continue;
+    if (!(e.closest('[data-robot-fort], [data-robot-nouveau]') || (e.matches(NET) && (e.closest(MENUS) || zoneMenu(e)) && !contenu(e))))
+      continue;
     const t = e.tagName === 'INPUT' ? (e.value || '').replace(/\s+/g, ' ').trim() :
               (enregistrement(e) ? '(donnee masquee)' : (compte(e) ? '(menu du compte)' : texteDe(e)));
     if (t && t.length <= 40 && !vus.includes(t)) vus.push(t);
@@ -1068,7 +1075,8 @@ JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
     if (e.some(k => k.matches('input, select, textarea') || k.querySelector('input:not([type=hidden]), select, textarea') || envoi(k))) continue;
     if (e.filter(entreeCliquable).length < 0.7 * e.length) continue;
     if (e.filter(enregistrement).length >= e.length / 2) continue;   // une liste de fiches (données), pas un menu
-    const fort = !!g.closest('nav, [role=navigation], [role=menu], [role=menubar]') || e.filter(indiceSous).length >= e.length / 2;
+    const fort = !contenu(g) &&
+                 (!!g.closest('nav, [role=navigation], [role=menu], [role=menubar]') || e.filter(indiceSous).length >= e.length / 2);
     const rs = e.map(k => k.getBoundingClientRect());
     const ecart = f => Math.max(...rs.map(f)) - Math.min(...rs.map(f));
     const enLigne = ecart(r => r.top) <= 6, enColonne = !enLigne && ecart(r => r.left) <= 6;
@@ -1076,8 +1084,8 @@ JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
     // des boutons hors d'un menu certain et hors d'une zone de menu : barre de boutons d'action (Calculer, Imprimer...)
     if (!fort && e.filter(estBouton).length >= e.length / 2 && !dansZone(g, enColonne)) continue;
     const gr = g.getBoundingClientRect();
-    const ok = fort || (enLigne ? (gr.top < 260 || !!g.closest('header') || dansZone(g, false))
-                                : (dansZone(g, true) || (gr.left < 100 && gr.width <= 400)));
+    const ok = enLigne ? (gr.top < 260 || !!g.closest('header') || dansZone(g, false))
+                       : (dansZone(g, true) || (gr.left < 100 && gr.width <= 400));
     if (ok) groupes.push({ g: g, e: e, fort: fort });
   }
   // un groupe qui n'est qu'une enveloppe d'un autre menu (en-tête = logo + menu + nom) : on garde le menu
@@ -1090,7 +1098,8 @@ JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
       if (entrees.length >= 60) break;
       k.setAttribute('data-robot-barre', String(entrees.length));
       if (G.fort) k.setAttribute('data-robot-fort', '1');
-      entrees.push({ nom: enregistrement(k) ? '(donnee masquee)' : texteDe(k), groupe: n, fort: G.fort, titre: titreDe(G.g) });
+      entrees.push({ nom: enregistrement(k) ? '(donnee masquee)' : texteDe(k), texte: texteDe(k), groupe: n, fort: G.fort,
+                     titre: titreDe(G.g) });
     }
   });
   return entrees;
@@ -1127,12 +1136,18 @@ JS_NOUVEAUX = r"""([numero, jeton]) => {""" + JS_OUTILS_MENUS + r"""
   for (const e of cliquables()) {
     if (entree && (e === entree || e.contains(entree))) continue;
     if (survole && (e === survole || e.contains(survole))) continue;
-    const dedans = !!((entree && entree.contains(e)) || (survole && survole.contains(e)));
+    const hote = entree || survole;
+    const dedans = !!(hote && hote.contains(e));
     if (!dedans && ((groupe && groupe.contains(e)) ||
         e.closest('[role=dialog], [role=alertdialog], dialog, [aria-modal=true], [role=tooltip], [data-robot-barre]'))) continue;
+    if (dedans) {   // dans l'entrée survolée : un sous-menu (liste imbriquée, ou dessiné hors de l'entrée), pas une icône d'action
+      const l = e.closest(SOUS), r = e.getBoundingClientRect(), b = hote.getBoundingClientRect();
+      const cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
+      if (!((l && l !== hote && hote.contains(l)) || cx < b.left || cx > b.right || cy < b.top || cy > b.bottom)) continue;
+    }
     const t = e.tagName === 'INPUT' ? '' : texteDe(e);
     if (!t || t.length > 45 || !/[A-Za-zÀ-ÿ0-9]/.test(t) || t === nomEntree) continue;
-    if (!dedans && vus.has(e) && vus.get(e) === t) continue;
+    if (vus.has(e) && vus.get(e) === t) continue;
     nouveaux.push({ e: e, t: t, ok: dedans || pres(e) || dansPanneau(e) });
   }
   if (nouveaux.length > 80) return [];   // la page entière a changé : ce n'est pas un sous-menu
@@ -1152,6 +1167,26 @@ JS_NOUVEAUX = r"""([numero, jeton]) => {""" + JS_OUTILS_MENUS + r"""
     return { texte: enregistrement(n.e) ? '(donnee masquee)' : n.t, sous: indiceSous(n.e), cle: jeton + '-' + i }; });
 }"""
 
+# Un sous-menu en train de se charger près de l'élément survolé (« Chargement... », roue, barre, aria-busy) : on attend.
+JS_EN_ATTENTE = r"""() => {""" + JS_OUTILS_MENUS + r"""
+  const survole = document.querySelector('[data-robot-survole]');
+  if (!survole) return false;
+  const ra = survole.getBoundingClientRect();
+  const PANNEAU = ['menu', 'menus', 'submenu', 'flyout', 'dropdown', 'popover', 'popup', 'overlay', 'cdk', 'megamenu', 'listbox'];
+  const ici = x => { for (let y = x; y && y !== document.body; y = y.parentElement)
+                       if (jetonsDe(y).some(m => PANNEAU.includes(m))) return true;
+                     const r = x.getBoundingClientRect();
+                     return Math.max(0, ra.left - r.right, r.left - ra.right) <= 400 && Math.max(0, ra.top - r.bottom, r.top - ra.bottom) <= 400; };
+  for (const x of document.querySelectorAll('[aria-busy=true], [class*=spinner i], [class*=loading i], [class*=loader i], ' +
+                                            '[class*=progress i], mat-spinner, mat-progress-spinner, mat-progress-bar'))
+    if (vis(x) && ici(x)) return true;
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n = w.nextNode(); n; n = w.nextNode())
+    if (/chargement|loading|patientez|en cours/i.test(n.textContent) && n.textContent.length < 60 && n.parentElement &&
+        vis(n.parentElement) && ici(n.parentElement)) return true;
+  return false;
+}"""
+
 # L'élément trouvé par son texte -> l'élément que le clic déclencherait vraiment.
 # LISTE BLANCHE : un lien, une entrée de menu / d'onglet, ou un élément d'un menu (nav, menu...), un bouton
 # qui ouvre un menu. Refusé : bouton de formulaire, case, champ, bascule, zone modifiable, élément de tableau
@@ -1163,7 +1198,7 @@ JS_EXAMINER = r"""(e, [jeton, premier]) => {""" + JS_ZONE_MENU + r"""
                '[role=menuitemcheckbox], [role=menuitemradio], [role=tab], [role=treeitem], [role=checkbox], [role=switch], ' +
                '[role=radio], [role=option], [onclick]';
   const MENU = 'nav, header, [role=navigation], [role=menu], [role=menubar], [role=tablist], [role=tree], ' +
-               '[class*=menu i], [id*=menu i], [class*=nav i], [id*=nav i], [class*=tab i], [data-robot-fort], [data-robot-nouveau]';
+               '[data-robot-fort], [data-robot-nouveau]';
   let c = e.closest(CLIQ) || e;
   // l'élément est dans un SOUS-MENU du bloc cliquable trouvé (« Données MK1 » sous « GATES ») :
   // la cible reste l'entrée du sous-menu, jamais le menu parent
@@ -1193,7 +1228,9 @@ JS_EXAMINER = r"""(e, [jeton, premier]) => {""" + JS_ZONE_MENU + r"""
   const menuBouton = bouton && sansFormulaire && !fenetre &&
                      (entree || c.hasAttribute('aria-haspopup') || c.hasAttribute('aria-expanded') || menuSur);
   // un élément d'un menu (lien, li, div, span) : liste, menu repéré, ou parent dont le NOM est un mot de menu
-  const dansMenu = !!(c.closest(MENU) || c.closest('li') || zoneMenu(c)) && !fenetre && ['li', 'span', 'div', 'a', 'p'].includes(tag);
+  // (un « li » d'une barre de menu repérée par le robot, hors du contenu de la page, compte aussi)
+  const dansMenu = !!(c.closest(MENU) || zoneMenu(c) || (c.closest('li') && c.closest('[data-robot-barre]') && !contenu(c))) &&
+                   !fenetre && ['li', 'span', 'div', 'a', 'p'].includes(tag);
   let refus = '';
   if (['input', 'select', 'textarea', 'label', 'summary', 'option'].includes(tag) ||
       ['checkbox', 'switch', 'radio', 'option', 'menuitemcheckbox', 'menuitemradio'].includes(role) ||
@@ -1204,7 +1241,7 @@ JS_EXAMINER = r"""(e, [jeton, premier]) => {""" + JS_ZONE_MENU + r"""
     refus = 'element d une fenetre';
   else if (c.isContentEditable || document.designMode === 'on')
     refus = 'zone modifiable';
-  else if (!(lien || entree || menuBouton || dansMenu || (lienScript && c.closest(MENU))))
+  else if (!(lien || entree || menuBouton || dansMenu || (lienScript && (c.closest(MENU) || zoneMenu(c)))))
     refus = 'pas un lien ni un menu';
   else if (!lien && c.closest('table, [role=grid], [role=row], [role=gridcell], [role=treegrid]'))
     refus = 'element de tableau';
@@ -1340,12 +1377,23 @@ def _menus_de_la_page(page):
     for n_cadre, cadre in enumerate(page.frames):
         try:
             for numero, e in enumerate(cadre.evaluate(JS_MENUS)):
-                nom = "(donnee masquee)" if _liste_de_donnees(e.get("titre")) else e["nom"]   # liste « Récents »
-                entrees.append({"cadre": cadre, "numero": numero, "nom": nom, "groupe": (n_cadre, e["groupe"]),
+                nom = "(donnee masquee)" if _titre_de_fiches(e.get("titre")) else e["nom"]   # liste « Récents »
+                entrees.append({"cadre": cadre, "numero": numero, "nom": nom, "texte": e.get("texte", ""),
+                                "groupe": (n_cadre, e["groupe"]),
                                 "fort": e["fort"], "loc": cadre.locator(f'[data-robot-barre="{numero}"]')})
         except Exception:
             continue
     return entrees
+
+
+def _titre_de_fiches(titre):
+    """Le titre d'une liste de FICHES (« Récents », « Favoris », « Mes plans »...), pas celui d'un menu
+    (« Mes applications », « Suivi réseau » restent des menus)."""
+    t = " ".join(sans_accents(str(titre or "")).lower().split())
+    return bool(re.match(r"(recents?|recemment|favoris?|historique|derniers?|dernieres?|epingles?|pinned|history|bookmarks?|"
+                         r"signets?|last)\b", t) or
+                re.match(r"(mes|my) (favoris|recherches|plans|dossiers|demandes|fiches|documents|clients|contrats|projets|"
+                         r"taches|alertes|notifications|messages)\b", t))
 
 
 def _menu_confirme(entree):
@@ -1376,9 +1424,10 @@ def _souris_au_repos(page):
         pass
 
 
-def _survoler_et_voir(page, loc, cadre_entree=None, numero=-1):
+def _survoler_et_voir(page, loc, cadre_entree=None, numero=-1, patience=False):
     """Pose la souris sur un élément (jamais de clic) et renvoie ce qui vient d'apparaître À CÔTÉ de lui :
-    [{"texte", "sous" (ouvre lui-même un sous-menu), "loc"}]."""
+    [{"texte", "sous" (ouvre lui-même un sous-menu), "loc"}]. Un sous-menu qui se charge (« Chargement... ») est
+    attendu jusqu'à 6 secondes ; patience : attendre 6 secondes de toute façon."""
     for cadre in page.frames:
         try:
             cadre.evaluate(JS_VUS)
@@ -1402,12 +1451,25 @@ def _survoler_et_voir(page, loc, cadre_entree=None, numero=-1):
                 continue
         return vus
 
+    def en_attente():
+        for cadre in page.frames:
+            try:
+                if cadre.evaluate(JS_EN_ATTENTE):
+                    return True
+            except Exception:
+                continue
+        return False
+
     nouveaux = []
     for attente in (500, 800, 1200):  # un sous-menu peut arriver un peu après (animation, chargement)
         page.wait_for_timeout(attente)
         nouveaux = ce_qui_est_apparu()
         if nouveaux:
             break
+    fin = time.time() + 3.5
+    while not nouveaux and time.time() < fin and (patience or en_attente()):
+        page.wait_for_timeout(500)
+        nouveaux = ce_qui_est_apparu()
     for _ in range(3):  # il peut se remplir en plusieurs fois (titre tout de suite, éléments chargés ensuite)
         if not nouveaux:
             break
@@ -1428,6 +1490,15 @@ def _rang_menu(loc):
                             "[role=navigation], [role=menu], [role=menubar], [role=menuitem]') ? 1 : 2)")
     except Exception:
         return 2
+
+
+def _bouton_de_page(loc):
+    """Un bouton (ou un élément d'un formulaire ou d'une fenêtre) : une action de la page, pas une entrée de menu."""
+    try:
+        return loc.evaluate("e => e.matches('button, [role=button], input[type=submit], input[type=button], input[type=image]') || "
+                            "!!e.closest('button, [role=button], form, dialog, [role=dialog], [role=alertdialog], [aria-modal=true]')")
+    except Exception:
+        return True
 
 
 def _apparu(trouve):
@@ -1478,6 +1549,19 @@ def _explorer_menus(page, memoire=None):
         explores.append((e, elements))
     _souris_au_repos(page)
     ouverts = {e["groupe"] for e, elements in explores if elements}
+    for groupe in {e["groupe"] for e, _ in explores if not e["fort"]} - ouverts:
+        # groupe incertain qui n'a rien ouvert : sa première entrée est revue en attendant plus longtemps
+        # (sous-menu chargé lentement la première fois)
+        i, (e, _) = next((i, x) for i, x in enumerate(explores) if x[0]["groupe"] == groupe)
+        try:
+            nouveaux = _survoler_et_voir(page, e["loc"], e["cadre"], e["numero"], patience=True)
+        except Exception:
+            nouveaux = []
+        _souris_au_repos(page)
+        if nouveaux:
+            _menu_confirme(e)
+            explores[i] = (e, [(n["texte"], []) for n in nouveaux])
+            ouverts.add(groupe)
     a_oublier = {e["groupe"] for e, _ in explores if not e["fort"] and e["groupe"] not in ouverts}
     _oublier_groupes(entrees, a_oublier)
     resultat = [(e["nom"], elements) for e, elements in explores if e["groupe"] not in a_oublier]
@@ -1530,7 +1614,7 @@ def _resurvoler(page, chemin, mot):
     entree = dict(chemin[0])
     if entree["loc"].count() != 1:  # la page a redessiné son menu : on le repère à nouveau
         pareille = next((e for e in _menus_de_la_page(page)
-                         if e["cadre"] == entree["cadre"] and e["nom"] == entree["nom"]), None)
+                         if e["cadre"] == entree["cadre"] and e["texte"] == entree["texte"]), None)
         if pareille is None:
             return []
         entree.update(loc=pareille["loc"], numero=pareille["numero"])
@@ -1856,7 +1940,9 @@ def _montrer_ce_que_je_vois(page, vu_en_survolant=()):
         for ligne in survols[:15]:
             ecrire("     - " + ligne)
     elif not vu_en_survolant:
-        ecrire("   Le robot n'a repere aucun menu a survoler sur cette page.")
+        nombre = len(_menus_de_la_page(page))
+        ecrire(f"   Le robot a survole {nombre} entree(s) de menu : rien ne s'est ouvert a temps." if nombre else
+               "   Le robot n'a repere aucun menu a survoler sur cette page.")
 
 
 def _examiner(cadre, loc, premier=True):
@@ -2899,9 +2985,11 @@ class Tache:
             except Exception:
                 pass
 
-    def candidats(self, texte, racines, attente=5):
+    def candidats(self, texte, racines, attente=5, tous=False):
         """Les éléments qui portent EXACTEMENT ce texte (nom de bouton, lien, texte, bulle), les visibles d'abord.
-        On réessaie quelques secondes : la page peut être encore en train de s'afficher."""
+        On réessaie quelques secondes : la page peut être encore en train de s'afficher.
+        tous : réunir ce que trouvent toutes les façons de chercher (pour un menu : l'entrée du menu ET le bouton
+        de la page du même nom ; le menu choisit ensuite l'entrée du menu)."""
         if not texte.strip():
             raise ErreurTache("texte vide")
         exact_sans_casse = re.compile(r"^\s*" + re.escape(texte) + r"\s*$", re.IGNORECASE)
@@ -2934,6 +3022,7 @@ class Tache:
                    lambda r: r.get_by_text(exact_sans_casse), tolerant]
         fin = time.time() + attente
         while True:
+            reunis = []
             for facon in facons:
                 trouves = []
                 for r in racines:
@@ -2943,9 +3032,13 @@ class Tache:
                             trouves.append(loc.nth(i))
                     except Exception:
                         continue
-                if trouves:
+                if trouves and not tous:
                     visibles = [t for t in trouves if _visible(t)]
                     return visibles + [t for t in trouves if t not in visibles]
+                reunis += trouves
+            if reunis:
+                visibles = [t for t in reunis if _visible(t)]
+                return visibles + [t for t in reunis if t not in visibles]
             if time.time() >= fin:
                 return []
             self.page.wait_for_timeout(500)
@@ -3047,7 +3140,7 @@ class Tache:
         _menus_de_la_page(self.page)  # les entrées des menus passent avant un titre de la page qui porte le même nom
         for i, partie in enumerate(parties):
             dernier = i == len(parties) - 1
-            trouves = self.candidats(partie, self.cadres())
+            trouves = self.candidats(partie, self.cadres(), tous=True)[:20]
             if not trouves:
                 raise ErreurTache(f"menu « {partie} » introuvable")
             trouves.sort(key=lambda t: (not _visible(t), _rang_menu(t)))
@@ -3057,6 +3150,9 @@ class Tache:
             if not _visible(loc):
                 _ouvrir_menus(loc)
             if dernier:
+                # un bouton de la PAGE (hors menu) qui porte le même nom n'est jamais cliqué à la place de l'entrée du menu
+                if _rang_menu(loc) == 2 and _bouton_de_page(loc):
+                    raise ErreurTache(f"« {partie} » : le robot ne trouve que un bouton de la page, pas l'entree du menu")
                 self._cliquer_element(loc, partie, partie)
                 return
             # survol (comme la souris) : le sous-menu apparaît, parfois ailleurs dans la page (menu de gauche)
@@ -3066,8 +3162,8 @@ class Tache:
                     _survoler_et_voir(self.page, essai)
                 except Exception:
                     continue
-                suivant = self.candidats(parties[i + 1], self.cadres(), attente=1)
-                if any(_visible(s) for s in suivant[:10]):
+                suivant = self.candidats(parties[i + 1], self.cadres(), attente=1, tous=True)
+                if any(_visible(s) and _rang_menu(s) < 2 for s in suivant[:20]):  # apparu dans un menu, pas sur la page
                     loc, ouvert = essai, True
                     break
             if not ouvert:
