@@ -996,12 +996,13 @@ JS_OUTILS_MENUS = JS_ZONE_MENU + r"""
     return /^(tel|mailto|callto|sip):/i.test(h) || /[?&][^=&]+=([^&]*\d{2,}|[A-Za-z]+-\d+)/.test(h) || /\/\d{2,}(\/|$|\?)/.test(h) ||
            /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}/i.test(h); };
   // le titre de section juste au-dessus d'un élément (texte court non cliquable, ou titre h1-h6 sans ses icônes)
+  // (un élément cliquable ou une autre entrée du menu n'est pas un titre ; un titre peut avoir une icône d'action à côté)
+  const ACTION = 'a[href], button, [role=menuitem], [role=button], [role=link], [onclick]';
   const titreSection = x => {
     for (let y = x, n = 0; y && y !== document.body && n < 3; y = y.parentElement, n++)
       for (let p = y.previousElementSibling, k = 0; p && k < 40; p = p.previousElementSibling, k++) {
-        const titre = /^H[1-6]$/.test(p.tagName) || p.getAttribute('role') === 'heading';
-        if (!titre && (p.matches(CLIQ) || p.querySelector('a[href], button, [role=menuitem], [role=button], [role=link], [onclick]'))) continue;
-        const c = p.cloneNode(true); c.querySelectorAll('a, button, [role=button], svg, img, i, mat-icon').forEach(z => z.remove());
+        if (p.matches(ACTION) || getComputedStyle(p).cursor === 'pointer') continue;
+        const c = p.cloneNode(true); c.querySelectorAll(ACTION + ', svg, img, i, mat-icon').forEach(z => z.remove());
         const t = (c.textContent || '').replace(/\s+/g, ' ').trim();
         if (t && t.length <= 40) return t;
       }
@@ -1036,7 +1037,7 @@ JS_CE_QUE_JE_VOIS = r"""() => {""" + JS_OUTILS_MENUS + r"""
       continue;
     const t = e.tagName === 'INPUT' ? (e.value || '').replace(/\s+/g, ' ').trim() :
               (enregistrement(e) ? '(donnee masquee)' : (compteDe(e) ? '(menu du compte)' : texteDe(e)));
-    if (t && t.length <= 40 && !vus.includes(t)) vus.push(t);
+    if (t && t.length <= 40 && !vus.some(v => v[0] === t)) vus.push([t, titreSection(e)]);
     if (vus.length >= 40) break;
   }
   return vus;
@@ -1944,8 +1945,8 @@ def _montrer_ce_que_je_vois(page, vu_en_survolant=()):
     caches = {t for nom, textes in vu_en_survolant if _contenu_a_masquer(nom, textes) for t in textes}  # listes de fiches
     for cadre in page.frames:
         try:
-            for t in cadre.evaluate(JS_CE_QUE_JE_VOIS):
-                if t in caches:
+            for t, section in cadre.evaluate(JS_CE_QUE_JE_VOIS):
+                if t in caches or _titre_de_fiches(section):  # sous « Récents », « Favoris »... : des fiches
                     continue
                 t = "(menu du compte)" if t in comptes else _structure(t)
                 if t and t not in vus:
