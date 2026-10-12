@@ -1,58 +1,29 @@
-ROBOT VERSION 3 - CE QUE TU FAIS (15 minutes)
+ROBOT VERSION 4 - CE QUE TU FAIS (10 minutes)
 =============================================
+On ne refait PAS le test. On va directement voir ce que le robot rate.
 
-SUR TON TÉLÉPHONE
-1. Dans la discussion avec Claude, télécharge robot.txt (celui du message « version 3 »).
-2. Envoie-le en pièce jointe à ton adresse mail du bureau.
-
-AU BUREAU
-3. Ouvre le dossier Téléchargements. Clic droit sur robot.txt -> Supprimer.
-4. Ouvre le mail, enregistre robot.txt dans Téléchargements.
-   -> Tu vois « robot (1).txt » : supprime les deux, recommence le 4.
-5. Dans Téléchargements, clique dans la barre d'adresse (en haut), tape  cmd  , Entrée. -> fenêtre noire.
-6. Tape  python robot.txt  , Entrée.
-   -> « ROBOT (version 3) » : c'est bon.
-   -> « version 2 » : c'est l'ancien fichier, reviens au 3.
-   -> « n'est pas reconnu » ou « introuvable » : tape  py robot.txt  , Entrée.
-7. Tape  1  , Entrée.
-8. À chaque écran : lis, puis Entrée. Question (o/n) : tape o ou n, Entrée.
-   « NE TOUCHEZ » : lâche clavier et souris jusqu'à la question suivante.
-9. « Adresse du portail » : Entrée (même adresse que la dernière fois).
-10. Le portail s'ouvre dans la fenêtre du robot : connecte-toi dans CETTE fenêtre si on te le demande.
-    Puis fenêtre noire, Entrée.
-11. « Voyez-vous des cadres rouges ? » : o ou n, Entrée.
-
-12. « Texte a chercher » : 3 essais, un à la fois.
-    a) le nom d'un menu de gauche (ex : GATES) ;
-    b) le nom d'une ligne qui apparaît quand ta souris passe sur ce menu ;
-    c) le nom d'une ligne qui apparaît sous un AUTRE menu de gauche.
-    « le robot survole les menus » : lâche la souris (1 minute maximum).
-    « Tapez o pour que le robot clique » : o, Entrée.
-    « Ca a marche ? » : o ou n, Entrée.
-    -> « Pas trouve » : PHOTO de l'écran (lignes « Ce que le robot voit » et « En survolant les menus »).
-    Puis Entrée sans rien.
-
-13. « Nom de la page 1 » :
-    - dans la fenêtre du robot, va sur la page de recherche des plans (à la souris, comme d'habitude) ;
-    - fenêtre noire : tape  recherche plans  , Entrée ;
-    - lâche la souris jusqu'à « page relevee » (1 minute maximum).
-    Même chose pour :
-    - la liste des résultats d'une recherche      -> tape  resultats
-    - la fiche d'un plan                          -> tape  fiche plan
-    - chaque onglet de la fiche                   -> tape  onglet  + son nom
-    - l'écran où tu duplique ou supprime un plan  -> tape  suppression  (sans rien cliquer dessus)
-    Puis Entrée sans rien.
-14. « Entree pour fermer » : Entrée. Cadre RESULTAT : PHOTO. Entrée.
-15. Ouvre Bureau > Robot > A_ENVOYER_releve.txt. Un vrai numéro de plan, un nom de client ou de personne :
-    efface ce mot seulement. Enregistre (Ctrl+S).
+1. Sur ton téléphone : télécharge robot.txt (message « version 4 »), envoie-le à ton mail du bureau.
+2. Au bureau, Téléchargements : supprime l'ancien robot.txt, enregistre le nouveau.
+3. Barre d'adresse du dossier : cmd , Entrée. Puis : python robot.txt , Entrée.
+   -> « ROBOT (version 4) » : c'est bon. Sinon reviens au 2.
+4. Tape 4 , Entrée.
+5. La fenêtre du robot s'ouvre sur le portail. Connecte-toi DANS cette fenêtre si besoin.
+   Fenêtre noire : Entrée.
+6. Dans la fenêtre du robot, va sur une page où le robot rate des choses (à la souris).
+   Fenêtre noire : tape un nom court pour cette page (ex : accueil), Entrée.
+7. Va dans la fenêtre du robot. Des cadres apparaissent :
+   - ROUGE ou ORANGE : le robot l'a trouvé.
+   - Un truc cliquable SANS cadre : pose la souris dessus et NE BOUGE PLUS 3 secondes.
+     -> il devient VERT : noté. Fais pareil pour les autres.
+   Tu peux survoler le menu de gauche et ouvrir les sous-menus : les cadres suivent.
+8. Fini pour cette page : clique dans la fenêtre noire, Entrée.
+   « sont-ils bien cliquables ? » : o (ou n si un vert est une erreur), Entrée.
+9. Recommence 6 à 8 sur 2 ou 3 autres pages. Puis Entrée sans rien.
+10. Ouvre Bureau > Robot > A_ENVOYER_diagnostic.txt. Un vrai nom de client ou numéro de plan :
+    efface ce mot seulement. Ctrl+S.
 
 À M'ENVOYER
-16. La photo du RESULTAT.
-17. Les photos « Pas trouve » (s'il y en a).
-18. Le fichier A_ENVOYER_releve.txt : envoie-le à ton mail perso, puis mets-le ici.
-    (Ou des photos de son contenu, en entier.)
-19. Les 3 textes tapés au 12 (si ce n'est pas secret).
+11. A_ENVOYER_diagnostic.txt (ou des photos de tout son contenu).
+12. Une photo de la fenêtre du robot avec les cadres (si tu peux).
 
-NE FAIS PAS : le choix 3 (il n'y a pas encore de tâche).
-
-SI ÇA BLOQUE : photo de tout l'écran, envoie-la. Pour arrêter : Ctrl + C dans la fenêtre noire.
+SI ÇA BLOQUE : photo de tout l'écran. Pour arrêter : Ctrl + C dans la fenêtre noire.

@@ -18,7 +18,7 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import unquote, urljoin, urlsplit
 
-VERSION = "3"
+VERSION = "4"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -858,19 +858,74 @@ input{padding:6px;margin:0 10px}button{padding:8px 18px;cursor:pointer}#reponse{
   document.getElementById('reponse').textContent = 'Bonjour ' + document.getElementById('prenom').value + ', le clic a marché !';
 };</script></html>"""
 
-JS_STRUCTURE = r"""() => {
+# Tout ce qui est CLIQUABLE, de toutes les façons que le robot connaît. « avant » : liens, boutons, champs, rôles,
+# main de la souris ; « chrome » : élément qui a un écouteur de clic (signalé par Chrome, data-robot-ecoute) ;
+# « attribut » : attributs des applications (Angular, AngularJS, jQuery...) ; « appris » : montré par vous (choix 4).
+# Composants web (shadow DOM) compris. Les grands blocs (plus de 30 % de l'écran) ne sont pas des éléments.
+JS_DETECTION = r"""
+  const SEL_AVANT = 'a[href], button, input:not([type=hidden]), select, textarea, summary, area[href], label[for], ' +
+    '[role=button], [role=link], [role=menuitem], [role=menuitemcheckbox], [role=menuitemradio], [role=tab], [role=treeitem], ' +
+    '[role=option], [role=checkbox], [role=radio], [role=switch], [onclick], [tabindex]:not([tabindex="-1"])';
+  const SEL_ATTRIBUT = '[onmousedown], [onmouseup], [onpointerdown], [ng-click], [data-ng-click], [ui-sref], [routerlink], ' +
+    '[ng-reflect-router-link], [jsaction], [data-toggle], [data-bs-toggle]';
+  const visDet = e => { const r = e.getBoundingClientRect(); if (r.width < 4 || r.height < 4) return false;
+                        const s = getComputedStyle(e); return s.display !== 'none' && s.visibility !== 'hidden' && s.opacity !== '0'; };
+  const pointeurDet = e => { const s = getComputedStyle(e).cursor;
+                             return s === 'pointer' && !(e.parentElement && getComputedStyle(e.parentElement).cursor === 'pointer'); };
+  const detecter = () => {
+    const trouves = new Map();
+    const ajouter = (e, s) => { if (!trouves.has(e)) trouves.set(e, s); };
+    const appris = Array.isArray(window.__robotAppris) ? window.__robotAppris : [];
+    const fouiller = racine => {
+      for (const e of racine.querySelectorAll(SEL_AVANT)) ajouter(e, 'avant');
+      for (const e of racine.querySelectorAll('div, span, li, td, th, i, img, svg, p, label, mat-icon, b, strong, em, h1, h2, h3, h4, h5, h6'))
+        if (!trouves.has(e) && pointeurDet(e)) ajouter(e, 'avant');
+      for (const e of racine.querySelectorAll('[data-robot-ecoute]')) ajouter(e, 'chrome');
+      for (const e of racine.querySelectorAll(SEL_ATTRIBUT)) ajouter(e, 'attribut');
+      for (const sel of appris) { try { for (const e of racine.querySelectorAll(sel)) ajouter(e, 'appris'); } catch (x) {} }
+      for (const e of racine.querySelectorAll('*')) if (e.shadowRoot) fouiller(e.shadowRoot);
+    };
+    fouiller(document);
+    // une liste dont le clic est géré par la liste entière (ul, tbody...) : ce sont ses lignes qui sont cliquables
+    for (const [e, s] of Array.from(trouves)) {
+      if (s !== 'chrome') continue;
+      let c = e;
+      if (c.children.length === 1 && c.firstElementChild.children.length >= 2) c = c.firstElementChild;   // ul > li, table > tbody > tr
+      const enfants = Array.from(c.children).filter(k => visDet(k) && (k.textContent || '').trim());
+      const estListe = /^(UL|OL|MENU|DL|TBODY|TABLE)$/.test(c.tagName) || /^(list|listbox|menu|menubar|grid|tree|tablist)$/.test(c.getAttribute('role') || '') ||
+                    (enfants.length && /^(LI|TR)$/.test(enfants[0].tagName)) ||
+                    (enfants.length >= 3 && /^(DIV|A)$/.test(enfants[0].tagName));   // (pas « libellé + flèche » d'une entrée)
+      if (estListe && enfants.length >= 2 && enfants.length <= 200 && enfants.every(k => k.tagName === enfants[0].tagName) &&
+          enfants.length >= 0.8 * c.children.length) {
+        trouves.delete(e);
+        for (const k of enfants) ajouter(k, 'chrome');
+      }
+    }
+    const grand = innerWidth * innerHeight * 0.3, liste = [];
+    for (const [e, s] of trouves) {
+      if (e === document.body || e === document.documentElement || (e.closest && e.closest('#robot-cadres')) || !visDet(e)) continue;
+      const r = e.getBoundingClientRect();
+      if (r.width * r.height <= grand) liste.push({ e: e, s: s, r: r });
+    }
+    // le même élément vu deux fois (lien > texte, bouton > icône, même cadre) : on garde l'extérieur
+    const ens = new Set(liste.map(x => x.e));
+    const meme = (a, b) => Math.abs(a.left - b.left) <= 4 && Math.abs(a.top - b.top) <= 4 &&
+                           Math.abs(a.right - b.right) <= 4 && Math.abs(a.bottom - b.bottom) <= 4;
+    return liste.filter(x => { for (let p = x.e.parentElement, n = 0; p && n < 4; p = p.parentElement, n++)
+                                 if (ens.has(p) && meme(p.getBoundingClientRect(), x.r)) return false;
+                               return true; });
+  };
+"""
+
+JS_STRUCTURE = r"""() => {""" + JS_DETECTION + r"""
   const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
                      const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
   const q = s => Array.from(document.querySelectorAll(s));
-  const cliquables = q('a[href], button, input[type=submit], input[type=button], input[type=image], [role=button], ' +
-                       '[role=link], [role=menuitem], [role=tab], [onclick]').filter(vis);
-  // vieux portails : menus faits de li / span avec la main de la souris (curseur « pointer »)
-  for (const e of q('li, span, div, td').slice(0, 3000))
-    if (!cliquables.includes(e) && vis(e) && getComputedStyle(e).cursor === 'pointer' &&
-        !(e.parentElement && getComputedStyle(e.parentElement).cursor === 'pointer')) cliquables.push(e);
+  const liste = detecter();
   let ombres = 0;
   for (const e of document.querySelectorAll('*')) if (e.shadowRoot) ombres++;
-  return { cliquables: cliquables.length, champs: q('input:not([type=hidden]), select, textarea').filter(vis).length,
+  return { cliquables: liste.length, nouveaux: liste.filter(x => x.s !== 'avant').length,
+           champs: q('input:not([type=hidden]), select, textarea').filter(vis).length,
            frameset: !!document.querySelector('frameset'), ombres: ombres,
            dessins: q('canvas, embed, object').filter(vis).length };
 }"""
@@ -984,10 +1039,13 @@ JS_OUTILS_MENUS = JS_ZONE_MENU + r"""
     return t;
   };
   const CLIQ = 'a, button, [role=menuitem], [role=menuitemcheckbox], [role=menuitemradio], [role=option], [role=treeitem], ' +
-               '[role=link], [role=button], [role=tab], [onclick], li, [tabindex], input[type=submit], input[type=button]';
+               '[role=link], [role=button], [role=tab], [onclick], li, [tabindex], input[type=submit], input[type=button], ' +
+               '[data-robot-ecoute], [ng-click], [data-ng-click], [ui-sref], [routerlink], [ng-reflect-router-link], [jsaction]';
   const pointeur = e => getComputedStyle(e).cursor === 'pointer' && !(e.parentElement && getComputedStyle(e.parentElement).cursor === 'pointer');
   const cliquables = () => {
     const s = new Set(document.querySelectorAll(CLIQ));
+    for (const sel of (Array.isArray(window.__robotAppris) ? window.__robotAppris : []))
+      try { document.querySelectorAll(sel).forEach(e => s.add(e)); } catch (x) {}
     for (const e of document.querySelectorAll('div, span, td')) if (!s.has(e) && pointeur(e)) s.add(e);
     return Array.from(s).filter(e => (e.textContent || '').length <= 300 && vis(e))
       .sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
@@ -1015,6 +1073,7 @@ JS_OUTILS_MENUS = JS_ZONE_MENU + r"""
                           return Array.from(e.querySelectorAll('*')).slice(0, 30).some(x => jetonsDe(x).some(m => COMPTE.includes(m))); };
   // une entrée qui ouvre un sous-menu : attribut, classe, flèche (icône, image ou caractère), ou sous-liste cachée
   const indiceSous = e => {
+    if (e.hasAttribute('data-robot-survol') || e.querySelector('[data-robot-survol]')) return true;
     for (const x of [e, ...e.querySelectorAll('[aria-haspopup], [aria-expanded]')]) {
       const h = x.getAttribute('aria-haspopup'); if (h && h !== 'false') return true;
       if (x.hasAttribute('aria-expanded')) return true; }
@@ -1384,6 +1443,69 @@ def _ouvrir_menus(loc):
     return _visible(loc)
 
 
+# ---------------------------------------------------------------------------- éléments qui réagissent au clic (Chrome)
+EVENEMENTS_CLIC = {"click", "mousedown", "mouseup", "pointerdown", "pointerup", "touchstart", "touchend", "dblclick", "auxclick"}
+EVENEMENTS_SURVOL = {"mouseenter", "mouseover", "pointerenter", "pointerover"}
+_ECOUTEURS_MARQUES = {}  # page -> éléments déjà marqués (numéros internes de Chrome)
+_CLIC_DELEGUE = {}  # page -> la page entière (document, fenêtre) écoute les clics : les éléments n'ont pas d'écouteur à eux
+
+
+def _marquer_ecouteurs(page):
+    """Chrome sait quels éléments réagissent au clic ou au survol (ce que montre son outil F12, « Event Listeners ») :
+    le robot le lui demande et les marque (data-robot-ecoute, data-robot-survol). Rien n'est cliqué ni modifié.
+    Une seule question à Chrome pour toute la page (cadres et composants compris). Renvoie le nombre d'éléments marqués."""
+    deja = _ECOUTEURS_MARQUES.setdefault(id(page), set())
+    sessions = []
+    try:
+        sessions.append(page.context.new_cdp_session(page))
+    except Exception:
+        return 0  # navigateur sans ce service
+    for cadre in page.frames[1:]:  # cadre d'un autre site (processus à part) : sa propre session
+        try:
+            sessions.append(page.context.new_cdp_session(cadre))
+        except Exception:
+            pass  # cadre du même site : déjà compris dans la page
+    marques = 0
+    for session in sessions:
+        try:
+            doc = session.send("Runtime.evaluate", {"expression": "document", "objectGroup": "robot"})
+            ecouteurs = session.send("DOMDebugger.getEventListeners", {"objectId": doc["result"]["objectId"],
+                                                                         "depth": -1, "pierce": True})["listeners"]
+            par_noeud = {}
+            for e in ecouteurs:
+                if e.get("backendNodeId"):
+                    par_noeud.setdefault(e["backendNodeId"], set()).add(e.get("type", ""))
+                elif e.get("type") in EVENEMENTS_CLIC:
+                    _CLIC_DELEGUE[id(page)] = True
+            nouveaux = [b for b, types in par_noeud.items() if b not in deja and types & (EVENEMENTS_CLIC | EVENEMENTS_SURVOL)]
+            if nouveaux:
+                session.send("DOM.getDocument", {"depth": 0})
+                noeuds = session.send("DOM.pushNodesByBackendIdsToFrontend", {"backendNodeIds": nouveaux})["nodeIds"]
+                for b, n in zip(nouveaux, noeuds):
+                    deja.add(b)
+                    clic, survol = sorted(par_noeud[b] & EVENEMENTS_CLIC), sorted(par_noeud[b] & EVENEMENTS_SURVOL)
+                    try:
+                        if n and clic and session.send("DOM.describeNode", {"nodeId": n})["node"].get("nodeType") != 1:
+                            _CLIC_DELEGUE[id(page)] = True  # le document lui-même écoute les clics
+                            continue
+                        if n and clic:
+                            session.send("DOM.setAttributeValue", {"nodeId": n, "name": "data-robot-ecoute", "value": " ".join(clic)})
+                        if n and survol:
+                            session.send("DOM.setAttributeValue", {"nodeId": n, "name": "data-robot-survol", "value": " ".join(survol)})
+                        marques += 1
+                    except Exception:
+                        continue  # (le document lui-même, ou un élément qui vient de disparaître)
+            session.send("Runtime.releaseObjectGroup", {"objectGroup": "robot"})
+        except Exception:
+            continue
+        finally:
+            try:
+                session.detach()
+            except Exception:
+                pass
+    return marques
+
+
 # ---------------------------------------------------------------------------- menus qui s'ouvrent au survol
 # (menu de gauche dont les sous-menus n'apparaissent que sous la souris). Le robot SURVOLE, il ne clique jamais ici.
 def _menus_de_la_page(page):
@@ -1461,6 +1583,7 @@ def _survoler_et_voir(page, loc, cadre_entree=None, numero=-1, patience=False):
     loc.hover(timeout=3000)
 
     def ce_qui_est_apparu():
+        _marquer_ecouteurs(page)  # les éléments du sous-menu qui réagissent au clic (signalés par Chrome)
         jeton = secrets.token_hex(4)
         vus = []
         for cadre in page.frames:
@@ -1846,7 +1969,8 @@ def _analyser_portail(page, url, notes):
     except ErreurTache:
         notes.noter("R", "Navigateur du robot sur le portail", "ECHEC", "toujours sur la page de connexion")
         return False
-    total = {"cliquables": 0, "champs": 0, "ombres": 0, "dessins": 0}
+    _marquer_ecouteurs(page)  # Chrome signale les éléments qui réagissent au clic
+    total = {"cliquables": 0, "nouveaux": 0, "champs": 0, "ombres": 0, "dessins": 0}
     cadres_lus, cadres_illisibles, frameset = 0, 0, False
     meilleur, max_cliquables = None, -1
     for cadre in page.frames:
@@ -1861,7 +1985,8 @@ def _analyser_portail(page, url, notes):
             total[cle] += s[cle]
         if s["cliquables"] > max_cliquables:
             meilleur, max_cliquables = cadre, s["cliquables"]
-    detail = (f"{total['cliquables']} cliquables, {total['champs']} champs, {cadres_lus} cadre(s)"
+    detail = (f"{total['cliquables']} cliquables (dont {total['nouveaux']} trouves grace a Chrome), "
+              f"{total['champs']} champs, {cadres_lus} cadre(s)"
               + (", frameset" if frameset else "")
               + (f", {cadres_illisibles} illisible(s)" if cadres_illisibles else "")
               + (f", {total['ombres']} composant(s) web" if total["ombres"] else "")
@@ -2070,6 +2195,7 @@ def _clic_choisi(page, notes):
             ecrire("   Refuse : ce mot ressemble a une action qui modifie. Choisissez un menu ou un lien.")
             codes.append(f"{n}:refus-mot")
             continue
+        _marquer_ecouteurs(page)
         _menus_de_la_page(page)  # le robot repère les entrées des menus (il sait alors ce qui est un menu)
         trouves = _candidats(page, mot)
         _confirmer_entrees(page, trouves)
@@ -2169,7 +2295,9 @@ def sous_programme_navigateur(dossier_echange):
                                          ("C", "Clic choisi sur le portail")):
                     notes.noter(lettre, intitule, "SAUTE", "navigateur du robot impossible a ouvrir")
                 return 1
-            page = navigateur.new_context(no_viewport=True).new_page()
+            contexte = navigateur.new_context(no_viewport=True)
+            contexte.add_init_script(script_appris())
+            page = contexte.new_page()
             try:
                 _page_essai(page, nom, notes)
             except Exception as e:
@@ -2306,6 +2434,7 @@ def ouvrir_robot(p):
     if navigateur is None:
         raise ErreurTache("le navigateur du robot ne s'ouvre pas sur ce poste (faites le test : choix 1)")
     contexte = navigateur.new_context(no_viewport=True, accept_downloads=True)
+    contexte.add_init_script(script_appris())
     return navigateur, contexte, contexte.new_page()
 
 
@@ -2468,6 +2597,7 @@ def _liste(elements, limite=40):
 def relever_page(page, memoire=None):
     """La structure de la page affichée dans la fenêtre du robot (tous les cadres). Les menus sont survolés
     (jamais cliqués) pour noter leurs sous-menus. memoire : les menus déjà explorés sur les pages précédentes."""
+    _marquer_ecouteurs(page)
     try:
         explores = _explorer_menus(page, memoire)
     except Exception:
@@ -2580,6 +2710,283 @@ def boucle_releve(page):
     if not pages:
         return None, 0
     return ecrire_releve(pages), len(pages)
+
+
+# ---------------------------------------------------------------------------- choix 4 : voir ce que le robot trouve cliquable
+# Le robot ENCADRE tout ce qu'il trouve cliquable (rouge : ce qu'il trouvait déjà ; orange : trouvé en plus grâce à
+# Chrome, aux applications, ou appris ; vert : ce que vous lui avez montré). Vous posez la souris 3 secondes sur un
+# élément cliquable SANS cadre : il le note et l'apprend. Rien n'est cliqué. Rapport : structure seulement.
+JS_VOIR = r"""(appris) => {""" + JS_DETECTION + r"""
+  if (Array.isArray(appris)) window.__robotAppris = appris;
+  const liste = detecter();
+  window.__robotDetectes = new WeakSet(liste.map(x => x.e));
+  let boite = document.getElementById('robot-cadres');
+  if (!boite) {
+    boite = document.createElement('div'); boite.id = 'robot-cadres';
+    boite.style.cssText = 'position:absolute;left:0;top:0;width:0;height:0;overflow:visible;pointer-events:none;z-index:2147483647';
+    document.documentElement.appendChild(boite);
+  }
+  const couleur = { avant: '#dc2626', chrome: '#f59e0b', attribut: '#f59e0b', appris: '#f59e0b' };
+  const cadre = (r, c, epais) => { const d = document.createElement('div');
+    d.style.cssText = 'position:absolute;box-sizing:border-box;pointer-events:none;border:' + epais + 'px solid ' + c +
+      ';left:' + (r.left + scrollX - 2) + 'px;top:' + (r.top + scrollY - 2) + 'px;width:' + (r.width + 4) + 'px;height:' + (r.height + 4) + 'px';
+    return d; };
+  const morceaux = liste.slice(0, 1500).map(x => cadre(x.r, couleur[x.s], 2));
+  for (const e of (window.__robotMontres || [])) if (e.isConnected) morceaux.push(cadre(e.getBoundingClientRect(), '#16a34a', 4));
+  boite.replaceChildren(...morceaux);
+  const n = s => liste.filter(x => x.s === s).length;
+  let ombres = 0;
+  for (const e of document.querySelectorAll('*')) if (e.shadowRoot) ombres++;
+  return { total: liste.length, avant: n('avant'), chrome: n('chrome'), attribut: n('attribut'), appris: n('appris'), ombres: ombres,
+           delegation: !!((document.body && document.body.hasAttribute('data-robot-ecoute')) ||
+                          document.documentElement.hasAttribute('data-robot-ecoute')) };
+}"""
+
+JS_EFFACER_CADRES = r"""() => { const b = document.getElementById('robot-cadres'); if (b) b.remove(); window.__robotMontres = []; }"""
+
+# La souris est posée depuis « delai » ms sur un élément SANS cadre : le robot le note (vert) et décrit sa STRUCTURE
+# (balise, classes, attributs, curseur, écouteurs, parents). Son texte est renvoyé pour être masqué par le robot.
+JS_POINTE = r"""([delai, nouveau]) => {
+  if (!window.__robotEcoutePointeur) {
+    window.__robotEcoutePointeur = true;
+    document.addEventListener('mousemove', ev => {
+      window.__robotPointeur = { e: ev.composedPath ? ev.composedPath()[0] : ev.target, t: performance.now() }; }, true);
+    document.addEventListener('mouseout', ev => { if (!ev.relatedTarget) window.__robotPointeur = { e: null, t: performance.now() }; }, true);
+  }
+  window.__robotMontres = window.__robotMontres || [];
+  if (nouveau || !window.__robotPointeur) { window.__robotPointeur = { e: null, t: performance.now() }; return null; }
+  const p = window.__robotPointeur, e = p.e;
+  if (!e || e.nodeType !== 1 || performance.now() - p.t < delai) return null;
+  if (e === document.body || e === document.documentElement || (e.closest && e.closest('#robot-cadres'))) return null;
+  const det = window.__robotDetectes || new WeakSet();
+  for (let x = e; x; x = x.parentElement || (x.getRootNode && x.getRootNode() !== document && x.getRootNode().host) || null)
+    if (det.has(x)) return null;                                   // déjà encadré (lui ou ce qui le contient)
+  if (window.__robotMontres.some(m => m === e || m.contains(e))) return null;
+  const r = e.getBoundingClientRect();
+  if (r.width * r.height > innerWidth * innerHeight * 0.3) return null;   // un grand bloc (fond de page) : pas un élément
+  window.__robotMontres.push(e);
+  window.__robotPointeur = { e: null, t: performance.now() };
+  const classes = x => (typeof x.className === 'string' ? x.className : ((x.className && x.className.baseVal) || ''))
+                         .split(/\s+/).filter(c => c && !/\d{3,}/.test(c));
+  const sig = x => x.tagName.toLowerCase() + (x.id && !/\d{3,}/.test(x.id) ? '#' + x.id : '') +
+                   classes(x).slice(0, 4).map(c => '.' + c).join('');
+  const chemin = [];
+  for (let x = e.parentElement, n = 0; x && x !== document.body && n < 6; x = x.parentElement, n++) chemin.push(sig(x));
+  let parentEcoute = '';
+  for (let x = e.parentElement, n = 1; x && n <= 8 && !parentEcoute; x = x.parentElement, n++)
+    if (x.hasAttribute('data-robot-ecoute')) parentEcoute = n + ' niveau(x) au-dessus : ' + x.getAttribute('data-robot-ecoute') +
+      ' (' + Math.round(x.getBoundingClientRect().width) + 'x' + Math.round(x.getBoundingClientRect().height) + ')';
+  // un nom de classe stable pour reconnaître les éléments du même genre (jamais un état : actif, ouvert, survolé...)
+  const STABLE = c => !/^(ng-|cdk-|mat-focus|mat-ripple|active|actif|selected|hover|focus|focused|open|opened|ouvert|show|in$|collapsed|expanded|disabled)/i.test(c);
+  const base = x => { const c = classes(x).filter(STABLE).slice(0, 2);
+                      return c.length ? x.tagName.toLowerCase() + c.map(k => '.' + CSS.escape(k)).join('') : ''; };
+  let selecteur = base(e);
+  if (!selecteur && e.parentElement && base(e.parentElement)) selecteur = base(e.parentElement) + ' > ' + e.tagName.toLowerCase();
+  try { const n = selecteur ? document.querySelectorAll(selecteur).length : 0; if (n < 1 || n > 60) selecteur = ''; }
+  catch (x) { selecteur = ''; }
+  const s = getComputedStyle(e);
+  return { signature: sig(e), chemin: chemin.join(' < '), role: e.getAttribute('role') || '',
+           attributs: Array.from(e.attributes).map(a => a.name)
+                        .filter(n => !/^(class|style|id)$/.test(n) && !n.startsWith('data-robot') && !n.startsWith('_ng')).slice(0, 12).join(' '),
+           curseur: s.cursor, taille: Math.round(r.width) + 'x' + Math.round(r.height),
+           ecoute: e.getAttribute('data-robot-ecoute') || '', survol: e.getAttribute('data-robot-survol') || '',
+           parentEcoute: parentEcoute, ombre: e.getRootNode() !== document,
+           texte: (e.innerText || e.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 60), selecteur: selecteur };
+}"""
+
+
+def lire_appris():
+    """Les genres d'éléments que vous avez montrés au robot (Bureau > Robot > appris.txt), un par ligne."""
+    try:
+        lignes = (dossier_robot() / "appris.txt").read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeDecodeError):
+        return []
+    return [l.strip() for l in lignes if l.strip() and not l.strip().startswith("#")][:200]
+
+
+def script_appris():
+    """À chaque page du robot : ce qu'il a appris (pour reconnaître ces éléments comme cliquables)."""
+    return "window.__robotAppris = " + json.dumps(lire_appris(), ensure_ascii=False) + ";"
+
+
+def ajouter_appris(selecteurs):
+    actuels = lire_appris()
+    nouveaux = [s for s in dict.fromkeys(selecteurs) if s and s not in actuels and "\n" not in s and len(s) <= 120]
+    if nouveaux:
+        try:
+            with open(dossier_robot() / "appris.txt", "a", encoding="utf-8") as f:
+                f.write("\n".join(nouveaux) + "\n")
+        except OSError:
+            return actuels
+    return actuels + nouveaux
+
+
+def ligne_tapee(tampon):
+    """Le clavier SANS attendre (la fenêtre du robot continue d'être suivie) : la ligne tapée quand Entrée est appuyée,
+    sinon None."""
+    if WINDOWS:
+        import msvcrt
+        while msvcrt.kbhit():
+            c = msvcrt.getwch()
+            if c in ("\r", "\n"):
+                ligne = "".join(tampon)
+                tampon.clear()
+                print(flush=True)
+                return ligne
+            if c == "\x03":
+                raise KeyboardInterrupt
+            if c == "\b":
+                if tampon:
+                    tampon.pop()
+                    print("\b \b", end="", flush=True)
+                continue
+            if c in ("\x00", "\xe0"):  # touche spéciale (flèche...) : ignorée
+                msvcrt.getwch()
+                continue
+            tampon.append(c)
+            print(c, end="", flush=True)
+        return None
+    import select
+    if select.select([sys.stdin], [], [], 0)[0]:
+        return sys.stdin.readline().rstrip("\r\n")
+    return None
+
+
+def _dessiner(page, appris):
+    total = {"total": 0, "avant": 0, "chrome": 0, "attribut": 0, "appris": 0, "ombres": 0, "delegation": False, "cadres": 0}
+    for cadre in page.frames:
+        try:
+            r = cadre.evaluate(JS_VOIR, appris)
+        except Exception:
+            continue
+        total["cadres"] += 1
+        for cle in ("total", "avant", "chrome", "attribut", "appris", "ombres"):
+            total[cle] += r[cle]
+        total["delegation"] = total["delegation"] or r["delegation"]
+    total["delegation"] = total["delegation"] or _CLIC_DELEGUE.get(id(page), False)
+    return total
+
+
+def _effacer_cadres(page):
+    for cadre in page.frames:
+        try:
+            cadre.evaluate(JS_EFFACER_CADRES)
+        except Exception:
+            pass
+
+
+def _resume_montre(d):
+    texte = _structure(d.get("texte")) if d.get("texte") else None
+    return d["signature"][:60] + (f" « {texte} »" if texte else "")
+
+
+def voir_page(page, appris):
+    """Une page : cadres en direct, et ce que vous montrez. Renvoie (compte, éléments montrés, page)."""
+    _marquer_ecouteurs(page)
+    for cadre in page.frames:
+        try:
+            cadre.evaluate(JS_POINTE, [3000, True])
+        except Exception:
+            pass
+    info = _dessiner(page, appris)
+    plus = info["chrome"] + info["attribut"] + info["appris"]
+    ecrire(f"   Le robot voit {info['total']} elements cliquables sur cette page :")
+    ecrire(f"     - en ROUGE  : {info['avant']} (ce qu'il trouvait deja)")
+    ecrire(f"     - en ORANGE : {plus} (trouves en plus : Chrome {info['chrome']}, applications {info['attribut']},"
+           f" appris {info['appris']})")
+    ecrire("   >>> Allez dans la FENETRE DU ROBOT (en bas de l'ecran). Survolez les menus, ouvrez des pages :")
+    ecrire("       les cadres suivent.")
+    ecrire("   >>> Un element cliquable SANS cadre ? Posez la souris dessus et NE BOUGEZ PLUS (3 secondes) :")
+    ecrire("       il devient VERT, le robot l'a note. Puis le suivant.")
+    ecrire("   >>> Fini pour cette page : revenez ICI et appuyez sur Entree.")
+    notes, tampon, dernier = [], [], 0.0
+    while True:
+        if ligne_tapee(tampon) is not None:
+            break
+        if page.context.pages and page.context.pages[-1] != page:  # un clic a ouvert un nouvel onglet
+            page = page.context.pages[-1]
+        if time.time() - dernier >= 1.5:
+            _marquer_ecouteurs(page)
+            info = _dessiner(page, appris)
+            dernier = time.time()
+        for cadre in page.frames:
+            try:
+                d = cadre.evaluate(JS_POINTE, [3000, False])
+            except Exception:
+                d = None
+            if d:
+                notes.append(d)
+                _dessiner(page, appris)
+                ecrire(f"   --> Note n°{len(notes)} : {_resume_montre(d)}. Un autre ? Ou Entree ici pour finir.")
+        time.sleep(0.4)
+    return info, notes, page
+
+
+def boucle_voir(page):
+    """Choix 4. Page après page : ce que le robot trouve cliquable, et ce que vous lui montrez. Il apprend."""
+    appris = lire_appris()
+    pages = []
+    ecrire("   Cadres ROUGES : ce que le robot trouvait deja. ORANGES : ce qu'il trouve maintenant en plus.")
+    ecrire("   VERTS : ce que vous lui montrez. Le robot ne clique sur RIEN.")
+    while len(pages) < 30:
+        nom = demander(f"   Dans la fenetre du robot, allez sur une page. Puis ici : son nom (page {len(pages) + 1}, "
+                       "Entree sans rien = fini) :")
+        if not nom:
+            break
+        try:
+            page = page.context.pages[-1] if page.context.pages else page
+            page.bring_to_front()
+            attendre_chargement(page, 5)
+            info, notes, page = voir_page(page, appris)
+            if notes:
+                revenez_ici()
+                if oui(f"   Les {len(notes)} element(s) en VERT sont-ils bien cliquables (le robot va les apprendre) ?"):
+                    appris = ajouter_appris([n["selecteur"] for n in notes])
+                    ecrire(f"   --> Appris. Le robot connait maintenant {len(appris)} genre(s) d'elements en plus.")
+                else:
+                    for n in notes:
+                        n["douteux"] = True
+            pages.append((_structure(nom) or f"page {len(pages) + 1}", info, notes))
+            _effacer_cadres(page)
+        except Exception as e:
+            ecrire("   --> cette page n'a pas pu etre examinee : " + expliquer(e))
+    if not pages:
+        return None
+    return ecrire_diagnostic(pages, appris)
+
+
+def ecrire_diagnostic(pages, appris):
+    def propre(t):
+        return re.sub(r"\d{3,}", "#", str(t or ""))
+    lignes = [f"DIAGNOSTIC - CE QUE LE ROBOT TROUVE CLIQUABLE - pour Claude - {datetime.now().strftime('%d/%m/%Y %H:%M')}",
+              "Structure seulement (genres d'elements, classes). Relisez : une vraie valeur -> effacez ce mot seulement.", ""]
+    for numero, (nom, info, notes) in enumerate(pages, 1):
+        lignes.append(f"PAGE {numero} : {nom}")
+        lignes.append(f"  Trouves : {info['total']} (rouge {info['avant']}, Chrome {info['chrome']}, applications "
+                      f"{info['attribut']}, appris {info['appris']}) ; zones {info['cadres']} ; composants web {info['ombres']}"
+                      f" ; clic gere par la page entiere : {'oui' if info['delegation'] else 'non'}")
+        if notes:
+            lignes.append("  Montres par vous (le robot ne les voyait pas) :")
+        for i, d in enumerate(notes, 1):
+            texte = _structure(d.get("texte")) if d.get("texte") else None
+            lignes.append(f"    {i}. {propre(d['signature'])}" + (f" « {texte} »" if texte else "") +
+                          (" (PAS SUR : vous avez repondu non)" if d.get("douteux") else ""))
+            lignes.append(f"       role : {d['role'] or '-'} | attributs : {propre(d['attributs']) or '-'} | curseur : {d['curseur']}"
+                          f" | taille : {d['taille']} | composant web : {'oui' if d['ombre'] else 'non'}")
+            lignes.append(f"       ecouteur Chrome : {d['ecoute'] or '-'} | survol : {d['survol'] or '-'}"
+                          f" | parent qui ecoute : {d['parentEcoute'] or '-'}")
+            lignes.append(f"       parents : {propre(d['chemin'])[:300]}")
+            lignes.append(f"       appris comme : {propre(d['selecteur']) or '(trop general : non appris)'}")
+        lignes.append("")
+    lignes.append("APPRIS (Bureau > Robot > appris.txt) : " + (" ; ".join(propre(a) for a in appris) if appris else "rien"))
+    for nom in ("A_ENVOYER_diagnostic.txt", "A_ENVOYER_diagnostic_2.txt", "A_ENVOYER_diagnostic_3.txt"):
+        fichier = dossier_robot() / nom
+        try:
+            fichier.write_text("\n".join(lignes) + "\n", encoding="utf-8")
+            return fichier
+        except OSError:
+            continue
+    raise ErreurTache("impossible d'ecrire le diagnostic dans Bureau > Robot")
 
 
 # ---------------------------------------------------------------------------- tâches (écrites par Claude, lancées par vous)
@@ -3208,6 +3615,7 @@ class Tache:
 
     def menu(self, arg):
         parties = [p.strip() for p in arg.split(">") if p.strip()]
+        _marquer_ecouteurs(self.page)
         _menus_de_la_page(self.page)  # les entrées des menus passent avant un titre de la page qui porte le même nom
         for i, partie in enumerate(parties):
             dernier = i == len(parties) - 1
@@ -3687,7 +4095,7 @@ def executer_tache(p, chemin, url):
 
 # ---------------------------------------------------------------------------- programmes du navigateur (processus enfant)
 def programme_enfant(mode, dossier_echange):
-    """Relevé (choix 2) ou tâche (choix 3), lancés avec le Python qui a le pilote de navigateur."""
+    """Relevé (choix 2), tâche (choix 3) ou « voir » (choix 4), lancés avec le Python qui a le pilote de navigateur."""
     preparer_console()
     fichier_demande = Path(dossier_echange) / "demande.json"
     echange = json.loads(fichier_demande.read_text(encoding="utf-8"))
@@ -3706,13 +4114,16 @@ def programme_enfant(mode, dossier_echange):
             revenez_ici()
             pause("Connectez-vous si besoin dans la fenetre du robot. Quand vous voyez l'accueil du portail, Entree...")
             attendre_portail(page)
-            fichier, _ = boucle_releve(page)
+            if mode == "voir":
+                fichier = boucle_voir(page)
+            else:
+                fichier, _ = boucle_releve(page)
             ecrire()
             if fichier:
                 ecrire(f"   Fichier cree : Bureau > Robot > {fichier.name}")
                 ecrire("   Ouvrez-le, relisez-le, puis envoyez-le-moi (ou une photo).")
             else:
-                ecrire("   Aucune page relevee : rien a envoyer.")
+                ecrire("   Aucune page : rien a envoyer.")
             try:
                 navigateur.close()
             except Exception:
@@ -3780,11 +4191,18 @@ def principal():
         ecrire("   1 = Test de prise en main")
         ecrire("   2 = Releve des pages du portail (pour Claude)")
         ecrire("   3 = Lancer une tache")
-        choix = demander(" Votre choix (1, 2 ou 3) :")
+        ecrire("   4 = Voir ce que le robot trouve cliquable (et lui montrer ce qu'il rate)")
+        choix = demander(" Votre choix (1, 2, 3 ou 4) :")
         if choix == "1":
             test_prise_en_main()
             return 0
-        if choix in ("2", "3"):
+        if choix == "4":
+            url = adresse_du_portail()
+            if url:
+                lancer_programme_enfant("voir", {"url": url})
+            else:
+                ecrire("   Pas d'adresse du portail : rien a faire.")
+        elif choix in ("2", "3"):
             fichier = None
             if choix == "3":
                 fichier = choisir_tache()
@@ -3882,6 +4300,6 @@ def test_prise_en_main():
 if __name__ == "__main__":
     if sys.argv[1:2] == ["--navigateur"] and len(sys.argv) >= 3:
         sys.exit(sous_programme_navigateur(sys.argv[2]))
-    if sys.argv[1:2] in (["--releve"], ["--tache"]) and len(sys.argv) >= 3:
+    if sys.argv[1:2] in (["--releve"], ["--tache"], ["--voir"]) and len(sys.argv) >= 3:
         sys.exit(programme_enfant(sys.argv[1][2:], sys.argv[2]))
     sys.exit(principal())
