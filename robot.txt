@@ -42,6 +42,7 @@ MOTS_INTERDITS = re.compile(
     r"prendre en charge|\btraiter|\btraite\b|synchro|recalcul|fusion|merge|deploy|deploi|abandon|revoq|revok|"
     r"autoris|inscri|mise en|mettre en|\bdissocier|unlink|enlev|resili|\bradier|radiation|suspend|\bbloqu|debloqu|"
     r"ecras|\bexclu|\bdelier|declass|rebut|remettre a zero|\bcontinuer\b|poursuiv|"
+    r"partag|\bshare|\bcalcul|planifi|schedul|prolong|renouvel|acquitt|acknowledg|rouvr|reouvr|reopen|"
     r"^oui\b|^ok\b|^yes\b|^non$|^no$|^go$",
     re.IGNORECASE,
 )
@@ -894,7 +895,8 @@ JS_DETECTION = r"""
       const enfants = Array.from(c.children).filter(k => visDet(k) && (k.textContent || '').trim());
       const estListe = /^(UL|OL|MENU|DL|TBODY|TABLE)$/.test(c.tagName) || /^(list|listbox|menu|menubar|grid|tree|tablist)$/.test(c.getAttribute('role') || '') ||
                     (enfants.length && /^(LI|TR)$/.test(enfants[0].tagName)) ||
-                    (enfants.length >= 3 && /^(DIV|A)$/.test(enfants[0].tagName));   // (pas « libellé + flèche » d'une entrée)
+                    (enfants.length >= 3 && /^(DIV|A)$/.test(enfants[0].tagName) &&   // (pas « libellé + flèche » d'une entrée,
+                     c.getBoundingClientRect().width * c.getBoundingClientRect().height <= innerWidth * innerHeight * 0.3);  // ni la page)
       if (estListe && enfants.length >= 2 && enfants.length <= 200 && enfants.every(k => k.tagName === enfants[0].tagName) &&
           enfants.length >= 0.8 * c.children.length) {
         trouves.delete(e);
@@ -1073,7 +1075,6 @@ JS_OUTILS_MENUS = JS_ZONE_MENU + r"""
                           return Array.from(e.querySelectorAll('*')).slice(0, 30).some(x => jetonsDe(x).some(m => COMPTE.includes(m))); };
   // une entrée qui ouvre un sous-menu : attribut, classe, flèche (icône, image ou caractère), ou sous-liste cachée
   const indiceSous = e => {
-    if (e.hasAttribute('data-robot-survol') || e.querySelector('[data-robot-survol]')) return true;
     for (const x of [e, ...e.querySelectorAll('[aria-haspopup], [aria-expanded]')]) {
       const h = x.getAttribute('aria-haspopup'); if (h && h !== 'false') return true;
       if (x.hasAttribute('aria-expanded')) return true; }
@@ -1238,7 +1239,8 @@ JS_NOUVEAUX = r"""([numero, jeton]) => {""" + JS_OUTILS_MENUS + r"""
   const garde = retenus.filter(n => { for (let p = n.e.parentElement; p; p = p.parentElement) if (ens.get(p) === n.t) return false;
                                       return !retenus.some(m => m.t !== n.t && contientDirect(n.e, m.e)); });
   return garde.slice(0, 40).map((n, i) => { n.e.setAttribute('data-robot-nouveau', jeton + '-' + i);
-    return { texte: enregistrement(n.e) ? '(donnee masquee)' : n.t, sous: indiceSous(n.e), cle: jeton + '-' + i,
+    return { texte: enregistrement(n.e) ? '(donnee masquee)' : n.t, sous: indiceSous(n.e) || n.e.hasAttribute('data-robot-survol'),
+             cle: jeton + '-' + i,
              section: titreSection(n.e) }; });
 }"""
 
@@ -1444,17 +1446,35 @@ def _ouvrir_menus(loc):
 
 
 # ---------------------------------------------------------------------------- éléments qui réagissent au clic (Chrome)
-EVENEMENTS_CLIC = {"click", "mousedown", "mouseup", "pointerdown", "pointerup", "touchstart", "touchend", "dblclick", "auxclick"}
-EVENEMENTS_SURVOL = {"mouseenter", "mouseover", "pointerenter", "pointerover"}
-_ECOUTEURS_MARQUES = {}  # page -> éléments déjà marqués (numéros internes de Chrome)
-_CLIC_DELEGUE = {}  # page -> la page entière (document, fenêtre) écoute les clics : les éléments n'ont pas d'écouteur à eux
+# Dans chaque zone de la page (page, cadres, composants web) : l'outil de Chrome « getEventListeners » dit quels
+# éléments ont un écouteur de clic ou de survol ; ils sont marqués (data-robot-ecoute / data-robot-survol), et les
+# marques devenues fausses sont retirées. Renvoie [éléments marqués, la page ENTIÈRE écoute les clics].
+JS_MARQUER_ECOUTEURS = r"""(() => {
+  const CLIC = ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'touchstart', 'touchend', 'dblclick', 'auxclick'];
+  const SURVOL = ['mouseenter', 'mouseover', 'pointerenter', 'pointerover'];
+  const types = x => { try { return Object.keys(getEventListeners(x) || {}); } catch (e) { return []; } };
+  const poser = (e, nom, val) => { if (val) { if (e.getAttribute(nom) !== val) e.setAttribute(nom, val); }
+                                   else if (e.hasAttribute(nom)) e.removeAttribute(nom); };
+  let n = 0;
+  const fouiller = racine => {
+    for (const e of racine.querySelectorAll('*')) {
+      const t = types(e);
+      const c = t.filter(x => CLIC.includes(x)).sort().join(' '), s = t.filter(x => SURVOL.includes(x)).sort().join(' ');
+      if (c || s || e.hasAttribute('data-robot-ecoute') || e.hasAttribute('data-robot-survol')) {
+        poser(e, 'data-robot-ecoute', c); poser(e, 'data-robot-survol', s); if (c || s) n++; }
+      if (e.shadowRoot) fouiller(e.shadowRoot);
+    }
+  };
+  fouiller(document);
+  return [n, types(document).includes('click') || types(window).includes('click')];
+})()"""
+_CLIC_DELEGUE = {}  # page -> la page entière (document, fenêtre) écoute les clics
 
 
 def _marquer_ecouteurs(page):
     """Chrome sait quels éléments réagissent au clic ou au survol (ce que montre son outil F12, « Event Listeners ») :
-    le robot le lui demande et les marque (data-robot-ecoute, data-robot-survol). Rien n'est cliqué ni modifié.
-    Une seule question à Chrome pour toute la page (cadres et composants compris). Renvoie le nombre d'éléments marqués."""
-    deja = _ECOUTEURS_MARQUES.setdefault(id(page), set())
+    le robot le lui demande, zone par zone (page, cadres, composants), et les marque. Rien n'est cliqué.
+    Renvoie le nombre d'éléments marqués."""
     sessions = []
     try:
         sessions.append(page.context.new_cdp_session(page))
@@ -1464,38 +1484,27 @@ def _marquer_ecouteurs(page):
         try:
             sessions.append(page.context.new_cdp_session(cadre))
         except Exception:
-            pass  # cadre du même site : déjà compris dans la page
+            pass  # cadre du même site : déjà dans les zones de la page
     marques = 0
     for session in sessions:
+        contextes = []
         try:
-            doc = session.send("Runtime.evaluate", {"expression": "document", "objectGroup": "robot"})
-            ecouteurs = session.send("DOMDebugger.getEventListeners", {"objectId": doc["result"]["objectId"],
-                                                                         "depth": -1, "pierce": True})["listeners"]
-            par_noeud = {}
-            for e in ecouteurs:
-                if e.get("backendNodeId"):
-                    par_noeud.setdefault(e["backendNodeId"], set()).add(e.get("type", ""))
-                elif e.get("type") in EVENEMENTS_CLIC:
+            session.on("Runtime.executionContextCreated", lambda ev, l=contextes: l.append(ev["context"]))
+            session.send("Runtime.enable")
+            page.wait_for_timeout(30)
+            session.send("Runtime.disable")
+            zones = [c["id"] for c in contextes if (c.get("auxData") or {}).get("isDefault")] or [None]
+            for zone in zones:
+                demande = {"expression": JS_MARQUER_ECOUTEURS, "includeCommandLineAPI": True, "returnByValue": True}
+                if zone is not None:
+                    demande["contextId"] = zone
+                try:
+                    n, delegue = session.send("Runtime.evaluate", demande)["result"]["value"]
+                except Exception:
+                    continue
+                marques += n
+                if delegue:
                     _CLIC_DELEGUE[id(page)] = True
-            nouveaux = [b for b, types in par_noeud.items() if b not in deja and types & (EVENEMENTS_CLIC | EVENEMENTS_SURVOL)]
-            if nouveaux:
-                session.send("DOM.getDocument", {"depth": 0})
-                noeuds = session.send("DOM.pushNodesByBackendIdsToFrontend", {"backendNodeIds": nouveaux})["nodeIds"]
-                for b, n in zip(nouveaux, noeuds):
-                    deja.add(b)
-                    clic, survol = sorted(par_noeud[b] & EVENEMENTS_CLIC), sorted(par_noeud[b] & EVENEMENTS_SURVOL)
-                    try:
-                        if n and clic and session.send("DOM.describeNode", {"nodeId": n})["node"].get("nodeType") != 1:
-                            _CLIC_DELEGUE[id(page)] = True  # le document lui-même écoute les clics
-                            continue
-                        if n and clic:
-                            session.send("DOM.setAttributeValue", {"nodeId": n, "name": "data-robot-ecoute", "value": " ".join(clic)})
-                        if n and survol:
-                            session.send("DOM.setAttributeValue", {"nodeId": n, "name": "data-robot-survol", "value": " ".join(survol)})
-                        marques += 1
-                    except Exception:
-                        continue  # (le document lui-même, ou un élément qui vient de disparaître)
-            session.send("Runtime.releaseObjectGroup", {"objectGroup": "robot"})
         except Exception:
             continue
         finally:
@@ -2723,23 +2732,33 @@ JS_VOIR = r"""(appris) => {""" + JS_DETECTION + r"""
   let boite = document.getElementById('robot-cadres');
   if (!boite) {
     boite = document.createElement('div'); boite.id = 'robot-cadres';
-    boite.style.cssText = 'position:absolute;left:0;top:0;width:0;height:0;overflow:visible;pointer-events:none;z-index:2147483647';
+    boite.style.cssText = 'position:fixed;left:0;top:0;width:100vw;height:100vh;overflow:hidden;pointer-events:none;z-index:2147483647';
     document.documentElement.appendChild(boite);
   }
   const couleur = { avant: '#dc2626', chrome: '#f59e0b', attribut: '#f59e0b', appris: '#f59e0b' };
   const cadre = (r, c, epais) => { const d = document.createElement('div');
     d.style.cssText = 'position:absolute;box-sizing:border-box;pointer-events:none;border:' + epais + 'px solid ' + c +
-      ';left:' + (r.left + scrollX - 2) + 'px;top:' + (r.top + scrollY - 2) + 'px;width:' + (r.width + 4) + 'px;height:' + (r.height + 4) + 'px';
+      ';left:' + (r.left - 2) + 'px;top:' + (r.top - 2) + 'px;width:' + (r.width + 4) + 'px;height:' + (r.height + 4) + 'px';
     return d; };
-  const morceaux = liste.slice(0, 1500).map(x => cadre(x.r, couleur[x.s], 2));
+  // seulement ce qui se VOIT : dans l'écran, et pas caché sous autre chose (ligne défilée hors d'une grille...)
+  const lie = (a, b) => { for (let y = a; y; y = y.parentElement || (y.getRootNode && y.getRootNode() !== document ? y.getRootNode().host : null))
+                            if (y === b) return true; return false; };
+  const sevoit = x => { const r = x.r; if (r.bottom <= 0 || r.right <= 0 || r.top >= innerHeight || r.left >= innerWidth) return false;
+    const h = document.elementFromPoint(Math.min(Math.max(r.left + r.width / 2, 0), innerWidth - 1),
+                                        Math.min(Math.max(r.top + r.height / 2, 0), innerHeight - 1));
+    return !!h && (lie(h, x.e) || lie(x.e, h)); };
+  const morceaux = liste.filter(sevoit).slice(0, 1500).map(x => cadre(x.r, couleur[x.s], 2));
   for (const e of (window.__robotMontres || [])) if (e.isConnected) morceaux.push(cadre(e.getBoundingClientRect(), '#16a34a', 4));
   boite.replaceChildren(...morceaux);
   const n = s => liste.filter(x => x.s === s).length;
   let ombres = 0;
   for (const e of document.querySelectorAll('*')) if (e.shadowRoot) ombres++;
+  // la page entière écoute les clics : body, html, ou un bloc qui couvre presque tout l'écran (racine de l'application)
+  const ecran = innerWidth * innerHeight;
+  const delegation = Array.from(document.querySelectorAll('[data-robot-ecoute~=click]')).some(e => {
+    const r = e.getBoundingClientRect(); return e === document.body || e === document.documentElement || r.width * r.height >= 0.9 * ecran; });
   return { total: liste.length, avant: n('avant'), chrome: n('chrome'), attribut: n('attribut'), appris: n('appris'), ombres: ombres,
-           delegation: !!((document.body && document.body.hasAttribute('data-robot-ecoute')) ||
-                          document.documentElement.hasAttribute('data-robot-ecoute')) };
+           delegation: delegation };
 }"""
 
 JS_EFFACER_CADRES = r"""() => { const b = document.getElementById('robot-cadres'); if (b) b.remove(); window.__robotMontres = []; }"""
@@ -2759,17 +2778,20 @@ JS_POINTE = r"""([delai, nouveau]) => {
   if (!e || e.nodeType !== 1 || performance.now() - p.t < delai) return null;
   if (e === document.body || e === document.documentElement || (e.closest && e.closest('#robot-cadres'))) return null;
   const det = window.__robotDetectes || new WeakSet();
-  for (let x = e; x; x = x.parentElement || (x.getRootNode && x.getRootNode() !== document && x.getRootNode().host) || null)
-    if (det.has(x)) return null;                                   // déjà encadré (lui ou ce qui le contient)
+  for (let x = e; x; x = x.parentElement || (x.getRootNode && x.getRootNode() !== document && x.getRootNode().host) || null) {
+    const b = x.getBoundingClientRect();
+    if (det.has(x) && b.width * b.height <= innerWidth * innerHeight * 0.12) return null;  // déjà encadré (lui ou son bouton)
+  }
   if (window.__robotMontres.some(m => m === e || m.contains(e))) return null;
   const r = e.getBoundingClientRect();
   if (r.width * r.height > innerWidth * innerHeight * 0.3) return null;   // un grand bloc (fond de page) : pas un élément
   window.__robotMontres.push(e);
   window.__robotPointeur = { e: null, t: performance.now() };
+  // seulement des classes PARTAGÉES par plusieurs éléments (un genre d'élément), jamais l'identifiant d'un élément :
+  // une classe ou un identifiant propre à un seul élément peut contenir une donnée (nom de dossier, numéro...)
   const classes = x => (typeof x.className === 'string' ? x.className : ((x.className && x.className.baseVal) || ''))
-                         .split(/\s+/).filter(c => c && !/\d{3,}/.test(c));
-  const sig = x => x.tagName.toLowerCase() + (x.id && !/\d{3,}/.test(x.id) ? '#' + x.id : '') +
-                   classes(x).slice(0, 4).map(c => '.' + c).join('');
+                         .split(/\s+/).filter(c => c && !/\d{2,}/.test(c) && document.getElementsByClassName(c).length >= 2);
+  const sig = x => x.tagName.toLowerCase() + classes(x).slice(0, 4).map(c => '.' + c).join('');
   const chemin = [];
   for (let x = e.parentElement, n = 0; x && x !== document.body && n < 6; x = x.parentElement, n++) chemin.push(sig(x));
   let parentEcoute = '';
@@ -2791,7 +2813,7 @@ JS_POINTE = r"""([delai, nouveau]) => {
            curseur: s.cursor, taille: Math.round(r.width) + 'x' + Math.round(r.height),
            ecoute: e.getAttribute('data-robot-ecoute') || '', survol: e.getAttribute('data-robot-survol') || '',
            parentEcoute: parentEcoute, ombre: e.getRootNode() !== document,
-           texte: (e.innerText || e.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 60), selecteur: selecteur };
+           mots: (e.innerText || e.textContent || '').trim().split(/\s+/).filter(Boolean).length, selecteur: selecteur };
 }"""
 
 
@@ -2876,8 +2898,12 @@ def _effacer_cadres(page):
 
 
 def _resume_montre(d):
-    texte = _structure(d.get("texte")) if d.get("texte") else None
-    return d["signature"][:60] + (f" « {texte} »" if texte else "")
+    return _sans_donnee(d["signature"])[:60] + f" ({d.get('mots', 0)} mot(s), taille {d['taille']})"
+
+
+def _sans_donnee(t):
+    """Une description de structure, sans rien qui ressemble à une donnée (numéros, codes, dates)."""
+    return AUTRES_DONNEES.sub("#", re.sub(r"\d{2,}", "#", str(t or "")))
 
 
 def voir_page(page, appris):
@@ -2956,10 +2982,10 @@ def boucle_voir(page):
 
 
 def ecrire_diagnostic(pages, appris):
-    def propre(t):
-        return re.sub(r"\d{3,}", "#", str(t or ""))
+    propre = _sans_donnee
     lignes = [f"DIAGNOSTIC - CE QUE LE ROBOT TROUVE CLIQUABLE - pour Claude - {datetime.now().strftime('%d/%m/%Y %H:%M')}",
-              "Structure seulement (genres d'elements, classes). Relisez : une vraie valeur -> effacez ce mot seulement.", ""]
+              "Structure seulement (genres d'elements, classes communes). Aucun texte de la page.",
+              "Relisez : un mot qui ressemble a une vraie valeur -> effacez ce mot seulement.", ""]
     for numero, (nom, info, notes) in enumerate(pages, 1):
         lignes.append(f"PAGE {numero} : {nom}")
         lignes.append(f"  Trouves : {info['total']} (rouge {info['avant']}, Chrome {info['chrome']}, applications "
@@ -2968,8 +2994,7 @@ def ecrire_diagnostic(pages, appris):
         if notes:
             lignes.append("  Montres par vous (le robot ne les voyait pas) :")
         for i, d in enumerate(notes, 1):
-            texte = _structure(d.get("texte")) if d.get("texte") else None
-            lignes.append(f"    {i}. {propre(d['signature'])}" + (f" « {texte} »" if texte else "") +
+            lignes.append(f"    {i}. {propre(d['signature'])} ({d.get('mots', 0)} mot(s))" +
                           (" (PAS SUR : vous avez repondu non)" if d.get("douteux") else ""))
             lignes.append(f"       role : {d['role'] or '-'} | attributs : {propre(d['attributs']) or '-'} | curseur : {d['curseur']}"
                           f" | taille : {d['taille']} | composant web : {'oui' if d['ombre'] else 'non'}")
@@ -3622,7 +3647,7 @@ class Tache:
             trouves = self.candidats(partie, self.cadres(), tous=True)[:20]
             if not trouves:
                 raise ErreurTache(f"menu « {partie} » introuvable")
-            trouves.sort(key=lambda t: (not _visible(t), _rang_menu(t)))
+            trouves.sort(key=lambda t: (not _visible(t), _rang_menu(t), _bouton_de_page(t)))
             loc = trouves[0]
             if i == 0 and any(interdit(p) for p in parties) and not self.accord_geste:
                 self.confirmer(loc, "ouvrir le menu « " + " > ".join(parties) + " »", cle="menu " + " > ".join(parties))
