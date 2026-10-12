@@ -10,7 +10,7 @@ B. LANCER LE ROBOT (à chaque fois)
 4. Clique dans la barre d'adresse du dossier (en haut), tape  cmd  puis Entrée.
    -> Une fenêtre noire s'ouvre.
 5. Tape  python robot.txt  puis Entrée.
-   -> « ROBOT » et 1 / 2 / 3 / 4 : c'est bon.
+   -> « ROBOT » et 1 à 6 : c'est bon.
    -> « n'est pas reconnu » ou « Python est introuvable » : tape  py robot.txt  puis Entrée
       (et ensuite, toujours py au lieu de python).
    -> Autre message : photo de l'écran, envoie-la.
@@ -73,6 +73,24 @@ F. VOIR CE QUE LE ROBOT TROUVE CLIQUABLE (si je te le demande)
 26. Un élément cliquable SANS cadre : souris dessus, ne bouge plus 3 secondes -> il devient VERT.
 27. Fini : fenêtre noire, Entrée. « bien cliquables ? » : o ou n, Entrée.
 28. Envoie-moi Bureau > Robot > A_ENVOYER_diagnostic.txt (relu).
+
+G. LE ROBOT EXPLORE LE PORTAIL TOUT SEUL (la carte du site ; il ne modifie rien)
+29. Lance le robot (étapes 3 à 5), tape 5, Entrée. Connecte-toi dans la fenêtre du robot si besoin, Entrée.
+30. « NE TOUCHEZ PLUS A LA SOURIS » : lâche la souris. Le robot ouvre les menus et les pages tout seul
+    (bande JAUNE en bas de sa fenêtre). 30 minutes au plus.
+    -> Pour l'arrêter avant : clique dans la fenêtre noire, Entrée (ce qui est fait est gardé).
+    -> « Le portail demande de vous connecter » : connecte-toi dans la fenêtre du robot, puis Entrée.
+31. « Fichier cree » : ouvre Bureau > Robot > A_ENVOYER_carte.txt, relis (une vraie valeur : efface ce mot),
+    envoie-le-moi. Puis Entrée.
+32. Relancer le choix 5 plus tard : « COMPLETER » -> o (il reprend où il s'était arrêté).
+
+H. ALLER À UNE PAGE (le robot y va tout seul, avec sa carte : faire G avant)
+33. Lance le robot (étapes 3 à 5), tape 6, Entrée. Connecte-toi si besoin, Entrée.
+34. « Ou voulez-vous aller ? » : tape un mot (ex : MK2, contrats, references), Entrée.
+    Plusieurs réponses : tape le numéro, Entrée. « liste » = toutes les pages connues.
+35. Lâche la souris et regarde la fenêtre du robot : il y va, étape par étape. « ARRIVE » : c'est fait.
+    Un champ ou un bouton cherché est encadré en ROUGE (le robot ne clique pas dessus).
+36. Recommence avec un autre mot, ou Entrée sans rien = fini.
 
 SI ÇA BLOQUE
 - Rien ne bouge : clique sur la fenêtre noire (en bas de l'écran). Une question ? Réponds.
