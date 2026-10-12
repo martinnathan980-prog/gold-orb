@@ -69,9 +69,9 @@ E. RELEVER D'AUTRES PAGES (si je te le demande)
 
 F. VOIR CE QUE LE ROBOT TROUVE CLIQUABLE (si je te le demande)
 24. Lance le robot (étapes 3 à 5), tape 4, Entrée. Connecte-toi dans la fenêtre du robot si besoin, Entrée.
-25. Va sur une page (fenêtre du robot), tape son nom dans la fenêtre noire, Entrée.
-26. Fenêtre du robot : un élément cliquable SANS cadre -> souris dessus, ne bouge plus 3 secondes -> VERT.
-27. Fenêtre noire : Entrée. « bien cliquables ? » : o ou n. Autre page ou Entrée sans rien = fini.
+25. Fenêtre du robot : cadres rouges / orange + bande jaune en bas. Promène-toi (menus, pages).
+26. Un élément cliquable SANS cadre : souris dessus, ne bouge plus 3 secondes -> il devient VERT.
+27. Fini : fenêtre noire, Entrée. « bien cliquables ? » : o ou n, Entrée.
 28. Envoie-moi Bureau > Robot > A_ENVOYER_diagnostic.txt (relu).
 
 SI ÇA BLOQUE

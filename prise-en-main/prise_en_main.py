@@ -2738,7 +2738,7 @@ def boucle_releve(page):
 # Le robot ENCADRE tout ce qu'il trouve cliquable (rouge : ce qu'il trouvait déjà ; orange : trouvé en plus grâce à
 # Chrome, aux applications, ou appris ; vert : ce que vous lui avez montré). Vous posez la souris 3 secondes sur un
 # élément cliquable SANS cadre : il le note et l'apprend. Rien n'est cliqué. Rapport : structure seulement.
-JS_VOIR = r"""(appris) => {""" + JS_DETECTION + r"""
+JS_VOIR = r"""([appris, bandeau]) => {""" + JS_DETECTION + r"""
   if (Array.isArray(appris)) window.__robotAppris = appris;
   const liste = detecter();
   window.__robotDetectes = new WeakSet(liste.map(x => x.e));
@@ -2760,8 +2760,18 @@ JS_VOIR = r"""(appris) => {""" + JS_DETECTION + r"""
     const h = document.elementFromPoint(Math.min(Math.max(r.left + r.width / 2, 0), innerWidth - 1),
                                         Math.min(Math.max(r.top + r.height / 2, 0), innerHeight - 1));
     return !!h && (lie(h, x.e) || lie(x.e, h)); };
-  const morceaux = liste.filter(sevoit).slice(0, 1500).map(x => cadre(x.r, couleur[x.s], 2));
-  for (const e of (window.__robotMontres || [])) if (e.isConnected) morceaux.push(cadre(e.getBoundingClientRect(), '#16a34a', 4));
+  const visibles = liste.filter(sevoit);
+  const morceaux = visibles.slice(0, 1500).map(x => cadre(x.r, couleur[x.s], 3));
+  for (const e of (window.__robotMontres || [])) if (e.isConnected) morceaux.push(cadre(e.getBoundingClientRect(), '#16a34a', 5));
+  // bande jaune en bas de l'écran : ce que fait le robot (si on la voit, le dessin marche)
+  if (bandeau) {
+    const b = document.createElement('div');
+    b.textContent = bandeau.replace('{n}', String(liste.length));
+    b.style.cssText = 'position:absolute;left:50%;bottom:8px;transform:translateX(-50%);max-width:90vw;pointer-events:none;' +
+      'background:#fde047;color:#111;font:bold 15px/20px Arial,sans-serif;padding:6px 12px;border:2px solid #111;border-radius:6px;' +
+      'box-shadow:0 2px 8px rgba(0,0,0,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+    morceaux.push(b);
+  }
   boite.replaceChildren(...morceaux);
   const n = s => liste.filter(x => x.s === s).length;
   let ombres = 0;
@@ -2771,7 +2781,7 @@ JS_VOIR = r"""(appris) => {""" + JS_DETECTION + r"""
   const delegation = Array.from(document.querySelectorAll('[data-robot-ecoute~=click]')).some(e => {
     const r = e.getBoundingClientRect(); return e === document.body || e === document.documentElement || r.width * r.height >= 0.9 * ecran; });
   return { total: liste.length, avant: n('avant'), chrome: n('chrome'), attribut: n('attribut'), appris: n('appris'), ombres: ombres,
-           delegation: delegation };
+           delegation: delegation, dessines: Math.min(visibles.length, 1500) };
 }"""
 
 JS_EFFACER_CADRES = r"""() => { const b = document.getElementById('robot-cadres'); if (b) b.remove(); window.__robotMontres = []; }"""
@@ -2779,12 +2789,19 @@ JS_EFFACER_CADRES = r"""() => { const b = document.getElementById('robot-cadres'
 # La souris est posée depuis « delai » ms sur un élément SANS cadre : le robot le note (vert) et décrit sa STRUCTURE
 # (balise, classes, attributs, curseur, écouteurs, parents). Son texte est renvoyé pour être masqué par le robot.
 JS_POINTE = r"""([delai, nouveau]) => {
-  if (!window.__robotEcoutePointeur) {
-    window.__robotEcoutePointeur = true;
-    document.addEventListener('mousemove', ev => {
-      window.__robotPointeur = { e: ev.composedPath ? ev.composedPath()[0] : ev.target, t: performance.now() }; }, true);
-    document.addEventListener('mouseout', ev => { if (!ev.relatedTarget) window.__robotPointeur = { e: null, t: performance.now() }; }, true);
+  // les écouteurs de la souris sont reposés à chaque fois (le navigateur ne pose jamais deux fois le même) : une page
+  // qui remplace son contenu les efface
+  if (!window.__robotMm) {
+    // (Chrome envoie aussi un « mouvement » quand la page change sous la souris immobile, par exemple quand le robot
+    //  redessine ses cadres : seul un VRAI déplacement remet le compteur des 3 secondes à zéro)
+    window.__robotMm = ev => {
+      const e = ev.composedPath ? ev.composedPath()[0] : ev.target, p = window.__robotPointeur;
+      if (p && p.e && p.x === ev.clientX && p.y === ev.clientY) p.e = e;
+      else window.__robotPointeur = { e: e, t: performance.now(), x: ev.clientX, y: ev.clientY }; };
+    window.__robotMo = ev => { if (!ev.relatedTarget) window.__robotPointeur = { e: null, t: performance.now() }; };
   }
+  document.addEventListener('mousemove', window.__robotMm, true);
+  document.addEventListener('mouseout', window.__robotMo, true);
   window.__robotMontres = window.__robotMontres || [];
   if (nouveau || !window.__robotPointeur) { window.__robotPointeur = { e: null, t: performance.now() }; return null; }
   const p = window.__robotPointeur, e = p.e;
@@ -2887,15 +2904,18 @@ def ligne_tapee(tampon):
     return None
 
 
-def _dessiner(page, appris):
-    total = {"total": 0, "avant": 0, "chrome": 0, "attribut": 0, "appris": 0, "ombres": 0, "delegation": False, "cadres": 0}
+def _dessiner(page, appris, bandeau=""):
+    """Cadres (et bande jaune) dans toutes les zones de la page. Renvoie les nombres, et l'erreur s'il y en a une."""
+    total = {"total": 0, "avant": 0, "chrome": 0, "attribut": 0, "appris": 0, "ombres": 0, "delegation": False, "cadres": 0,
+             "dessines": 0, "erreur": ""}
     for cadre in page.frames:
         try:
-            r = cadre.evaluate(JS_VOIR, appris)
-        except Exception:
+            r = cadre.evaluate(JS_VOIR, [appris, bandeau if cadre == page.main_frame else ""])
+        except Exception as e:
+            total["erreur"] = total["erreur"] or expliquer(e)
             continue
         total["cadres"] += 1
-        for cle in ("total", "avant", "chrome", "attribut", "appris", "ombres"):
+        for cle in ("total", "avant", "chrome", "attribut", "appris", "ombres", "dessines"):
             total[cle] += r[cle]
         total["delegation"] = total["delegation"] or r["delegation"]
     total["delegation"] = total["delegation"] or _CLIC_DELEGUE.get(id(page), False)
@@ -2919,79 +2939,93 @@ def _sans_donnee(t):
     return AUTRES_DONNEES.sub("#", re.sub(r"\d{2,}", "#", str(t or "")))
 
 
-def voir_page(page, appris):
-    """Une page : cadres en direct, et ce que vous montrez. Renvoie (compte, éléments montrés, page)."""
-    _marquer_ecouteurs(page)
-    for cadre in page.frames:
-        try:
-            cadre.evaluate(JS_POINTE, [3000, True])
-        except Exception:
-            pass
-    info = _dessiner(page, appris)
-    plus = info["chrome"] + info["attribut"] + info["appris"]
-    ecrire(f"   Le robot voit {info['total']} elements cliquables sur cette page :")
-    ecrire(f"     - en ROUGE  : {info['avant']} (ce qu'il trouvait deja)")
-    ecrire(f"     - en ORANGE : {plus} (trouves en plus : Chrome {info['chrome']}, applications {info['attribut']},"
-           f" appris {info['appris']})")
-    ecrire("   >>> Allez dans la FENETRE DU ROBOT (en bas de l'ecran). Survolez les menus, ouvrez des pages :")
-    ecrire("       les cadres suivent.")
-    ecrire("   >>> Un element cliquable SANS cadre ? Posez la souris dessus et NE BOUGEZ PLUS (3 secondes) :")
-    ecrire("       il devient VERT, le robot l'a note. Puis le suivant.")
-    ecrire("   >>> Fini pour cette page : revenez ICI et appuyez sur Entree.")
-    notes, tampon, dernier = [], [], 0.0
+def _cle_page(page):
+    """Pour reconnaître qu'on a changé de page (jamais écrite : l'adresse peut contenir une donnée)."""
+    try:
+        morceaux = urlsplit(page.url)
+        return morceaux.path + "#" + morceaux.fragment.split("?")[0]
+    except Exception:
+        return ""
+
+
+def boucle_voir(page):
+    """Choix 4. Dès que le portail est là : cadres EN DIRECT sur tout ce que le robot trouve cliquable, sur chaque page
+    où vous allez. Vous posez la souris 3 secondes sur ce qu'il rate : il le note (vert). Entrée ici = fini.
+    Rien n'est cliqué par le robot. Il apprend ce que vous avez montré (avec votre accord) et écrit un rapport."""
+    appris = lire_appris()
+    pages, notes = [], []          # pages vues (dans l'ordre), éléments montrés
+    numero_de = {}                 # page -> son numéro (l'adresse elle-même n'est jamais écrite)
+    ecrire("   Le robot cherche les elements cliquables de la page...")
+    tampon, dernier, deja_dit, erreur_dite = [], 0.0, None, False
+    debut = True
     while True:
         if ligne_tapee(tampon) is not None:
             break
         if page.context.pages and page.context.pages[-1] != page:  # un clic a ouvert un nouvel onglet
             page = page.context.pages[-1]
         if time.time() - dernier >= 1.5:
+            cle = _cle_page(page)
+            if cle not in numero_de:
+                numero_de[cle] = len(pages) + 1
+                pages.append({"total": 0, "avant": 0, "chrome": 0, "attribut": 0, "appris": 0, "ombres": 0,
+                              "delegation": False, "cadres": 0, "dessines": 0})
+                for cadre in page.frames:
+                    try:
+                        cadre.evaluate(JS_POINTE, [3000, True])
+                    except Exception:
+                        pass
+            numero = numero_de[cle]
             _marquer_ecouteurs(page)
-            info = _dessiner(page, appris)
+            info = _dessiner(page, appris, "ROBOT : {n} elements cliquables encadres. Souris 3 s sur un oubli = VERT. "
+                                           f"Notes : {len(notes)}")
             dernier = time.time()
+            garde = pages[numero - 1]
+            if info["total"] >= garde["total"]:
+                garde.update({k: v for k, v in info.items() if k != "erreur"})
+            if info["erreur"] and not erreur_dite:
+                ecrire(f"   PROBLEME pour dessiner les cadres : {info['erreur']}")
+                ecrire("   Prenez cet ecran en photo et envoyez-la-moi.")
+                erreur_dite = True
+            etat = (numero, info["total"], info["dessines"])
+            if etat != deja_dit:
+                ecrire(f"   Page {numero} : le robot trouve {info['total']} elements cliquables "
+                       f"({info['avant']} en rouge, {info['total'] - info['avant']} en orange), "
+                       f"{info['dessines']} encadres a l'ecran.")
+                if info["total"] == 0:
+                    ecrire("   --> Il ne trouve RIEN sur cette page. Montrez-lui quand meme ce qui est cliquable (souris 3 s).")
+                deja_dit = etat
+            if debut:
+                ecrire("   >>> Allez dans la FENETRE DU ROBOT (Chrome, en bas de l'ecran). Vous devez y voir des cadres")
+                ecrire("       et une bande JAUNE en bas. Promenez-vous : survolez les menus, ouvrez des pages.")
+                ecrire("   >>> Un element cliquable SANS cadre : posez la souris dessus, NE BOUGEZ PLUS 3 secondes.")
+                ecrire("       Il devient VERT : c'est note. (Le robot ne clique pas : c'est normal.)")
+                ecrire("   >>> Quand vous avez fini : revenez ICI (fenetre noire) et appuyez sur Entree.")
+                debut = False
         for cadre in page.frames:
             try:
                 d = cadre.evaluate(JS_POINTE, [3000, False])
             except Exception:
                 d = None
             if d:
+                d["page"] = numero_de.get(_cle_page(page), 0)
                 notes.append(d)
-                _dessiner(page, appris)
-                ecrire(f"   --> Note n°{len(notes)} : {_resume_montre(d)}. Un autre ? Ou Entree ici pour finir.")
+                _dessiner(page, appris, f"NOTE ! ({len(notes)} element(s) note(s)). Continuez, ou Entree dans la fenetre noire.")
+                ecrire(f"   --> Note n°{len(notes)} : {_resume_montre(d)}.")
         time.sleep(0.4)
-    return info, notes, page
-
-
-def boucle_voir(page):
-    """Choix 4. Page après page : ce que le robot trouve cliquable, et ce que vous lui montrez. Il apprend."""
-    appris = lire_appris()
-    pages = []
-    ecrire("   Cadres ROUGES : ce que le robot trouvait deja. ORANGES : ce qu'il trouve maintenant en plus.")
-    ecrire("   VERTS : ce que vous lui montrez. Le robot ne clique sur RIEN.")
-    while len(pages) < 30:
-        nom = demander(f"   Dans la fenetre du robot, allez sur une page. Puis ici : son nom (page {len(pages) + 1}, "
-                       "Entree sans rien = fini) :")
-        if not nom:
-            break
-        try:
-            page = page.context.pages[-1] if page.context.pages else page
-            page.bring_to_front()
-            attendre_chargement(page, 5)
-            info, notes, page = voir_page(page, appris)
-            if notes:
-                revenez_ici()
-                if oui(f"   Les {len(notes)} element(s) en VERT sont-ils bien cliquables (le robot va les apprendre) ?"):
-                    appris = ajouter_appris([n["selecteur"] for n in notes])
-                    ecrire(f"   --> Appris. Le robot connait maintenant {len(appris)} genre(s) d'elements en plus.")
-                else:
-                    for n in notes:
-                        n["douteux"] = True
-            pages.append((_structure(nom) or f"page {len(pages) + 1}", info, notes))
-            _effacer_cadres(page)
-        except Exception as e:
-            ecrire("   --> cette page n'a pas pu etre examinee : " + expliquer(e))
+    _effacer_cadres(page)
+    if notes:
+        revenez_ici()
+        if oui(f"   Les {len(notes)} element(s) que vous avez montres (en VERT) sont-ils bien cliquables "
+               "(le robot va les apprendre) ?"):
+            appris = ajouter_appris([n["selecteur"] for n in notes])
+            ecrire(f"   --> Appris. Le robot connait maintenant {len(appris)} genre(s) d'elements en plus.")
+        else:
+            for n in notes:
+                n["douteux"] = True
     if not pages:
         return None
-    return ecrire_diagnostic(pages, appris)
+    return ecrire_diagnostic([(f"page {i}", info, [n for n in notes if n.get("page") == i])
+                              for i, info in enumerate(pages, 1)], appris)
 
 
 def ecrire_diagnostic(pages, appris):
