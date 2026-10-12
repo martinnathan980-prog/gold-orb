@@ -1239,8 +1239,7 @@ JS_NOUVEAUX = r"""([numero, jeton]) => {""" + JS_OUTILS_MENUS + r"""
   const garde = retenus.filter(n => { for (let p = n.e.parentElement; p; p = p.parentElement) if (ens.get(p) === n.t) return false;
                                       return !retenus.some(m => m.t !== n.t && contientDirect(n.e, m.e)); });
   return garde.slice(0, 40).map((n, i) => { n.e.setAttribute('data-robot-nouveau', jeton + '-' + i);
-    return { texte: enregistrement(n.e) ? '(donnee masquee)' : n.t, sous: indiceSous(n.e) || n.e.hasAttribute('data-robot-survol'),
-             cle: jeton + '-' + i,
+    return { texte: enregistrement(n.e) ? '(donnee masquee)' : n.t, sous: indiceSous(n.e), cle: jeton + '-' + i,
              section: titreSection(n.e) }; });
 }"""
 
@@ -1469,49 +1468,63 @@ JS_MARQUER_ECOUTEURS = r"""(() => {
   return [n, types(document).includes('click') || types(window).includes('click')];
 })()"""
 _CLIC_DELEGUE = {}  # page -> la page entière (document, fenêtre) écoute les clics
+_LIAISONS = {}  # (page, cadre) -> liaison avec Chrome gardée ouverte, et ses zones (page, cadres, après navigation)
+
+
+def _liaison(page, cible):
+    """La liaison avec Chrome pour la page (ou un cadre d'un autre site), ouverte une fois et gardée : Chrome dit
+    au fur et à mesure quelles zones existent (nouvelle page, cadre ajouté...). None si ce n'est pas possible."""
+    cle = (id(page), id(cible))
+    if cle in _LIAISONS:
+        return _LIAISONS[cle]
+    try:
+        session = page.context.new_cdp_session(cible)
+    except Exception:
+        _LIAISONS[cle] = None  # (cadre du même site : déjà dans les zones de la page)
+        return None
+    zones = {}
+
+    def creee(ev):
+        c = ev.get("context") or {}
+        if (c.get("auxData") or {}).get("isDefault"):
+            zones[c["id"]] = True
+
+    session.on("Runtime.executionContextCreated", creee)
+    session.on("Runtime.executionContextDestroyed", lambda ev: zones.pop(ev.get("executionContextId"), None))
+    session.on("Runtime.executionContextsCleared", lambda ev: zones.clear())
+    try:
+        session.send("Runtime.enable")
+        page.wait_for_timeout(30)
+    except Exception:
+        _LIAISONS[cle] = None
+        return None
+    _LIAISONS[cle] = {"session": session, "zones": zones}
+    return _LIAISONS[cle]
 
 
 def _marquer_ecouteurs(page):
     """Chrome sait quels éléments réagissent au clic ou au survol (ce que montre son outil F12, « Event Listeners ») :
     le robot le lui demande, zone par zone (page, cadres, composants), et les marque. Rien n'est cliqué.
     Renvoie le nombre d'éléments marqués."""
-    sessions = []
-    try:
-        sessions.append(page.context.new_cdp_session(page))
-    except Exception:
-        return 0  # navigateur sans ce service
-    for cadre in page.frames[1:]:  # cadre d'un autre site (processus à part) : sa propre session
-        try:
-            sessions.append(page.context.new_cdp_session(cadre))
-        except Exception:
-            pass  # cadre du même site : déjà dans les zones de la page
     marques = 0
-    for session in sessions:
-        contextes = []
-        try:
-            session.on("Runtime.executionContextCreated", lambda ev, l=contextes: l.append(ev["context"]))
-            session.send("Runtime.enable")
-            page.wait_for_timeout(30)
-            session.send("Runtime.disable")
-            zones = [c["id"] for c in contextes if (c.get("auxData") or {}).get("isDefault")] or [None]
-            for zone in zones:
-                demande = {"expression": JS_MARQUER_ECOUTEURS, "includeCommandLineAPI": True, "returnByValue": True}
-                if zone is not None:
-                    demande["contextId"] = zone
-                try:
-                    n, delegue = session.send("Runtime.evaluate", demande)["result"]["value"]
-                except Exception:
-                    continue
-                marques += n
-                if delegue:
-                    _CLIC_DELEGUE[id(page)] = True
-        except Exception:
+    for cible in [page] + list(page.frames[1:]):
+        liaison = _liaison(page, cible)
+        if not liaison:
             continue
-        finally:
+        for zone in list(liaison["zones"]) or [None]:
+            demande = {"expression": JS_MARQUER_ECOUTEURS, "includeCommandLineAPI": True, "returnByValue": True}
+            if zone is not None:
+                demande["contextId"] = zone
             try:
-                session.detach()
+                n, delegue = liaison["session"].send("Runtime.evaluate", demande)["result"]["value"]
             except Exception:
-                pass
+                liaison["zones"].pop(zone, None)
+                if zone is None:  # la liaison elle-même ne répond plus (page fermée...) : elle sera rouverte
+                    _LIAISONS.pop((id(page), id(cible)), None)
+                continue
+            marques += n
+            if delegue:
+                _CLIC_DELEGUE[id(page)] = True
     return marques
 
 
