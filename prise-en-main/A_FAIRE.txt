@@ -80,8 +80,8 @@ G. LE ROBOT EXPLORE LE PORTAIL TOUT SEUL (la carte du site ; il ne modifie rien)
     (bande JAUNE en bas de sa fenêtre). 30 minutes au plus.
     -> Pour l'arrêter avant : clique dans la fenêtre noire, Entrée (ce qui est fait est gardé).
     -> « Le portail demande de vous connecter » : connecte-toi dans la fenêtre du robot, puis Entrée.
-31. « Fichier cree » : ouvre Bureau > Robot > A_ENVOYER_carte.txt, relis (une vraie valeur : efface ce mot),
-    envoie-le-moi. Puis Entrée.
+31. « essayer tout de suite « aller a une page » ? » : o pour essayer (comme en H, étape 34), sinon n.
+    Ouvre Bureau > Robot > A_ENVOYER_carte.txt, relis (une vraie valeur : efface ce mot), envoie-le-moi.
 32. Relancer le choix 5 plus tard : « COMPLETER » -> o (il reprend où il s'était arrêté).
 
 H. ALLER À UNE PAGE (le robot y va tout seul, avec sa carte : faire G avant)

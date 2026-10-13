@@ -4,6 +4,7 @@
 # Il ne modifie rien sur le portail sans votre accord ; tout ce qu'il ecrit est dans Bureau > Robot.
 
 import ctypes
+import hashlib
 import json
 import os
 import platform
@@ -1039,13 +1040,19 @@ JS_OUTILS_MENUS = JS_ZONE_MENU + r"""
   };
   const texteDe = e => {
     let t = texteDuClone(e.cloneNode(true));
-    // une entrée dont le sous-menu FERMÉ est dans la page (caché) : son nom, c'est seulement ce qui se voit
-    if (t.length > 30 && (e.innerText || '').replace(/\s+/g, ' ').trim().length < t.length) {
+    // une entrée de MENU dont le sous-menu FERMÉ est dans la page (caché) : son nom, c'est seulement ce qui se voit.
+    // Jamais dans le contenu de la page (une tuile, une fiche dont le détail est caché n'est pas une entrée de menu),
+    // et seulement si la partie cachée contient des éléments cliquables (un sous-menu).
+    if (t.length > 30 && !contenu(e) && (e.innerText || '').replace(/\s+/g, ' ').trim().length < t.length) {
       const c = e.cloneNode(true), o = Array.from(e.querySelectorAll('*')), k = Array.from(c.querySelectorAll('*'));
       if (o.length <= 400) {
-        o.forEach((x, i) => { const s = getComputedStyle(x); if (s.display === 'none' || s.visibility === 'hidden') k[i].remove(); });
+        let sousMenu = false;
+        o.forEach((x, i) => { const s = getComputedStyle(x);
+          if (s.display === 'none' || s.visibility === 'hidden') {
+            if (x.matches('a, button, [role=menuitem], [onclick]') || x.querySelector('a, button, [role=menuitem], [onclick]')) sousMenu = true;
+            k[i].remove(); } });
         const vu = texteDuClone(c);
-        if (vu) t = vu;
+        if (vu && sousMenu) t = vu;
       }
     }
     if (!t) t = (e.getAttribute('aria-label') || e.getAttribute('title') || '').replace(/\s+/g, ' ').trim();
@@ -1187,7 +1194,9 @@ JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
       k.setAttribute('data-robot-barre', String(entrees.length));
       if (G.fort) k.setAttribute('data-robot-fort', '1');
       entrees.push({ nom: enregistrement(k) ? '(donnee masquee)' : texteDe(k), texte: texteDe(k), groupe: n, fort: G.fort,
-                     titre: titreDe(G.g), section: titreSection(k), compte: compteDe(k) });
+                     titre: titreDe(G.g), section: titreSection(k), compte: compteDe(k),
+                     // tout le texte, sous-menu caché compris (« Se déconnecter » : menu de la personne) ; jamais écrit
+                     cache: (k.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 600) });
     }
   });
   return entrees;
@@ -1550,7 +1559,7 @@ def _menus_de_la_page(page):
     for n_cadre, cadre in enumerate(page.frames):
         try:
             for numero, e in enumerate(cadre.evaluate(JS_MENUS)):
-                if e.get("compte"):
+                if e.get("compte") or _menu_du_compte([e.get("cache", "")]):
                     nom = "(menu du compte)"
                 elif _titre_de_fiches(e.get("titre")) or _titre_de_fiches(e.get("section")):   # liste « Récents »
                     nom = "(donnee masquee)"
@@ -1746,7 +1755,7 @@ def _explorer_menus(page, memoire=None):
     a_oublier = {e["groupe"] for e, _ in explores if not e["fort"] and e["groupe"] not in ouverts}
     _oublier_groupes(entrees, a_oublier)
     resultat = [(e["nom"], elements) for e, elements in explores if e["groupe"] not in a_oublier]
-    if memoire is not None and resultat:
+    if memoire is not None:  # (même vide : les mêmes entrées ne sont pas resurvolées sur chaque page)
         memoire[cle] = (resultat, a_oublier)
     return resultat
 
@@ -2477,6 +2486,8 @@ def ouvrir_robot(p, lecture=False):
     except TypeError:  # (pilote de navigateur ancien)
         options.pop("service_workers", None)
         contexte = navigateur.new_context(**options)
+    if lecture:  # (un « shared worker » échangerait avec le portail hors de la protection de la visite)
+        contexte.add_init_script("try { delete window.SharedWorker; } catch (e) {}")
     contexte.add_init_script(script_appris())
     return navigateur, contexte, contexte.new_page()
 
@@ -2528,8 +2539,10 @@ JS_RELEVE = r"""() => {
     if (!vis(e) || ligneDeDonnees(e) || e.closest('[data-robot-barre], [data-robot-nouveau]')) continue;
     r.autresMenus.push(nomDe(e));
   }
-  for (const e of document.querySelectorAll('[role=tab], [class*=onglet i] a, [class*=onglet i] li, [class*=tabs i] a, [class*=tabs i] li'))
-    if (vis(e) && !ligneDeDonnees(e)) r.onglets.push(nomDe(e));
+  // un bouton sans rôle dans une barre d'onglets : un onglet, sauf si la barre a de vrais onglets (c'est alors « x », « + »)
+  const ongletSansRole = e => e.matches('[role=tablist] > button:not([role])') && !e.parentElement.querySelector(':scope > [role=tab]');
+  for (const e of document.querySelectorAll('[role=tab], [role=tablist] > button:not([role]), [class*=onglet i] a, [class*=onglet i] li, [class*=tabs i] a, [class*=tabs i] li'))
+    if (vis(e) && !ligneDeDonnees(e) && (!e.matches('[role=tablist] > button:not([role])') || ongletSansRole(e))) r.onglets.push(nomDe(e));
   for (const e of document.querySelectorAll('input, select, textarea')) {
     const type = (e.getAttribute('type') || '').toLowerCase();
     if (['hidden', 'submit', 'button', 'image', 'reset'].includes(type) || !vis(e) || ligneDeDonnees(e)) continue;
@@ -2540,7 +2553,7 @@ JS_RELEVE = r"""() => {
   const listeDeDonnees = e => !!e.closest('li') && !e.closest(MENU) && !e.closest('[class*=onglet i], [class*=tabs i], [role=tablist]');
   for (const e of document.querySelectorAll('button, input[type=submit], input[type=button], input[type=reset], [role=button]')) {
     if (!vis(e) || ligneDeDonnees(e) || listeDeDonnees(e) || e.closest('[data-robot-barre], [data-robot-nouveau]') ||
-        e.matches('[role=tab]') || e.closest('[role=tablist]')) continue;   // (un onglet est noté avec les onglets)
+        e.matches('[role=tab]') || e.closest('[role=tab]') || ongletSansRole(e)) continue;   // (onglets : notés avec les onglets)
     const texte = e.tagName === 'INPUT' ? court(e.value) : court(e.textContent);
     const bulle = court(e.getAttribute('title') || e.getAttribute('aria-label') || '');
     r.boutons.push(texte && /[A-Za-zÀ-ÿ]/.test(texte) ? texte : (bulle ? '(icone) ' + bulle : '(icone sans nom)'));
@@ -2599,7 +2612,8 @@ mohamed ahmed karim samir nicolas sophie""".split())
 NOM_DE_PERSONNE = re.compile(r"\b[A-ZÉÈÀÂÎÔÛÇ][a-zéèêëàâîïôûüç]+(?:-[A-Z][a-z]+)?\s+[A-ZÉÈÀÂÎÔÛÇ]{2,}(?![\w])|"
                              r"\b[A-ZÉÈÀÂÎÔÛÇ]{2,}\s+[A-ZÉÈÀÂÎÔÛÇ][a-zéèêëàâîïôûüç]+\b|"
                              r"\b(?:M\.|Mme|Mlle|Mr|Monsieur|Madame|Mademoiselle)\s+[A-ZÉÈ]")
-AUTRES_DONNEES = re.compile(r"\d{3,}|@|https?://|\\|\b[A-Za-z]{1,6}-\d+|\d{2}[ .]\d{2}[ .]\d{2}|\d{1,2}/\d{1,2}/\d{2,4}")
+AUTRES_DONNEES = re.compile(r"\d{3,}|@|https?://|\\|\b[A-Za-z]{1,6}-\d+|\d{2}[ .]\d{2}[ .]\d{2}|\d{1,2}/\d{1,2}/\d{2,4}|"
+                            r"\b[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,6}\b")  # (nom de serveur, j.dupont, fichier.pdf)
 
 
 def _prenom_nom(texte):
@@ -2907,6 +2921,9 @@ def ajouter_appris(selecteurs):
     return actuels + nouveaux
 
 
+FIN_DU_CLAVIER = [False]
+
+
 def ligne_tapee(tampon):
     """Le clavier SANS attendre (la fenêtre du robot continue d'être suivie) : la ligne tapée quand Entrée est appuyée,
     sinon None."""
@@ -2933,8 +2950,12 @@ def ligne_tapee(tampon):
             print(c, end="", flush=True)
         return None
     import select
-    if select.select([sys.stdin], [], [], 0)[0]:
-        return sys.stdin.readline().rstrip("\r\n")
+    if not FIN_DU_CLAVIER[0] and select.select([sys.stdin], [], [], 0)[0]:
+        ligne = sys.stdin.readline()
+        if not ligne:  # fin de l'entrée (pas de clavier) : ce n'est pas une Entrée tapée
+            FIN_DU_CLAVIER[0] = True
+            return None
+        return ligne.rstrip("\r\n")
     return None
 
 
@@ -2970,7 +2991,8 @@ def _resume_montre(d):
 
 def _sans_donnee(t):
     """Une description de structure, sans rien qui ressemble à une donnée (numéros, codes, dates)."""
-    return re.sub(r"\d{2,}", "#", AUTRES_DONNEES.sub("#", str(t or "")))  # (« PL-10 » entier, pas « PL-# »)
+    # (les deux ordres : « PL-10 » entier, pas « PL-# » ; et « 64AB-2 » entier aussi)
+    return AUTRES_DONNEES.sub("#", re.sub(r"\d{2,}", "#", AUTRES_DONNEES.sub("#", str(t or ""))))
 
 
 def _cle_page(page):
@@ -3426,6 +3448,8 @@ def _correspond(attendu, message):
 
 class Tache:
     """Exécute une tâche, élément par élément de la liste, en notant chaque résultat dans un fichier."""
+    active = None  # la tâche (ou la visite) en cours : c'est elle qui répond aux fenêtres du portail
+    _pages_suivies = set()
 
     def __init__(self, entete, etapes, page, url, lecture_seule=False):
         self.entete, self.etapes = entete, etapes
@@ -3442,27 +3466,63 @@ class Tache:
         self.ligne_courante = 0
         self.lectures = {}
         self.attendues = []
-        self.en_vol = 0
+        self.en_cours = {}  # requête au portail en cours -> (sa page, quand elle est partie, interrogation régulière ?)
+        self.recentes = {}  # (méthode, adresse sans paramètres) -> heures de ses derniers départs
+        Tache.active = self
         self.nouvel_element()
         self.suivre_page(page)
         page.context.on("page", self.suivre_page)
-        page.context.on("request", lambda r: self._reseau(r, 1))
-        page.context.on("requestfinished", lambda r: self._reseau(r, -1))
-        page.context.on("requestfailed", lambda r: self._reseau(r, -1))
+        page.context.on("request", self._requete_partie)
+        page.context.on("requestfinished", lambda r: self.en_cours.pop(r, None))
+        page.context.on("requestfailed", lambda r: self.en_cours.pop(r, None))
 
-    def _reseau(self, requete, sens):
+    def _requete_partie(self, requete):
         try:
             if requete.resource_type in ("document", "xhr", "fetch"):
-                self.en_vol = max(0, self.en_vol + sens)
+                try:
+                    page = requete.frame.page
+                except Exception:
+                    page = None
+                maintenant = time.time()
+                # la même adresse 3 fois en 10 secondes : le portail s'interroge tout seul (notifications, session)
+                cle = (requete.method, requete.url.split("?")[0].split("#")[0])
+                heures = [h for h in self.recentes.get(cle, []) if maintenant - h < 10] + [maintenant]
+                if len(self.recentes) > 500:
+                    self.recentes.clear()
+                self.recentes[cle] = heures
+                self.en_cours[requete] = (page, maintenant, len(heures) >= 3)
         except Exception:
             pass
+
+    def oublier_requetes(self, page, avant):
+        """La page a été remplacée (retour à l'accueil) : ses requêtes parties avant ne répondront jamais."""
+        for r, (p, debut, _) in list(self.en_cours.items()):
+            if p is page and debut < avant:
+                self.en_cours.pop(r, None)
+
+    def en_vol(self):
+        """Les requêtes encore attendues. Celles d'une page fermée ne répondront jamais. En visite, une requête ouverte
+        depuis plus de 4 secondes est une écoute permanente du portail (elle ne répond qu'à un événement), et une
+        interrogation régulière (la même adresse sans cesse) n'est pas la réponse attendue."""
+        vieille = 4 if self.lecture_seule else 3600
+        maintenant, n = time.time(), 0
+        for r, (p, debut, reguliere) in list(self.en_cours.items()):
+            try:
+                fermee = p is not None and p.is_closed()
+            except Exception:
+                fermee = True
+            if fermee:
+                self.en_cours.pop(r, None)
+            elif maintenant - debut < vieille and not (self.lecture_seule and reguliere):
+                n += 1
+        return n
 
     def calme(self, maximum=None):
         """Attendre que le portail ait répondu (plus aucune requête en cours pendant une demi-seconde) : sinon on
         regarderait la page d'avant la réponse (ligne pas encore retirée, message pas encore affiché)."""
         fin, tranquille = time.time() + (maximum or self.calme_max), None
         while time.time() < fin:
-            if self.en_vol <= 0:
+            if self.en_vol() <= 0:
                 tranquille = tranquille or time.time()
                 if time.time() - tranquille >= 0.5:
                     break
@@ -3495,7 +3555,11 @@ class Tache:
 
     # --- fenêtres du portail (« Voulez-vous vraiment supprimer ? ») : seule celle annoncée est acceptée
     def suivre_page(self, page):
-        page.on("dialog", self.sur_fenetre)
+        # une seule écoute par page, même si une visite (choix 5) est suivie d'un « aller à » (choix 6)
+        if id(page) in Tache._pages_suivies:
+            return
+        Tache._pages_suivies.add(id(page))
+        page.on("dialog", lambda fenetre: Tache.active.sur_fenetre(fenetre))
 
     def sur_fenetre(self, fenetre):
         message = " ".join((fenetre.message or "").split())
@@ -3503,7 +3567,11 @@ class Tache:
             message = "Quitter cette page ? (des modifications pourraient ne pas etre enregistrees)"
         attendue = next((a for a in self.attendues if _correspond(a, message)), None)
         try:
-            if attendue and not self.refusees and (self.accord_geste or not interdit(message)):
+            if self.lecture_seule:  # visite : toujours refusée, et son texte (qui peut contenir une donnée) n'est pas écrit
+                self.refusees.append("une fenetre (refusee : visite en lecture seule)")
+                ecrire("      fenetre du portail REFUSEE (visite en lecture seule)")
+                fenetre.dismiss()
+            elif attendue and not self.refusees and (self.accord_geste or not interdit(message)):
                 self.attendues.remove(attendue)
                 self.acceptee = self.acceptee or message
                 ecrire(f"      fenetre du portail acceptee : « {message[:80]} »")
@@ -3701,9 +3769,14 @@ class Tache:
             return "illisible"
         if info["refus"]:
             return info["refus"]
-        if interdit(info["texte"]) or interdit(info["attributs"]):
+        if action_en_visite(info["texte"]) or action_en_visite(info["attributs"]):
             return "ressemble a une action"
         return ""
+
+    def _danger(self, texte):
+        """Un geste à contrôler : en tâche, tout mot d'action (v4) ; en visite, un VERBE d'action (une rubrique
+        « Factures » ou « Archives » se visite, « Archiver » non)."""
+        return action_en_visite(texte) if self.lecture_seule else interdit(texte)
 
     def _verifier_visite(self, loc, quoi):
         if self.lecture_seule:
@@ -3735,7 +3808,7 @@ class Tache:
         if not _visible(loc):
             _ouvrir_menus(loc)
         texte_avant = self._texte_de(loc)
-        if (interdit(arg) or interdit(texte_avant) or any(interdit(a) for a in self.attendues)) \
+        if (self._danger(arg) or self._danger(texte_avant) or any(interdit(a) for a in self.attendues)) \
                 and not self.accord_geste:
             self.confirmer(loc, f"cliquer « {quoi} »", cle="cliquer " + arg)
         self._toujours_le_meme(loc, texte_avant, ligne)
@@ -3761,7 +3834,7 @@ class Tache:
                 raise ErreurTache(f"menu « {partie} » introuvable")
             trouves.sort(key=lambda t: (not _visible(t), _rang_menu(t), _bouton_de_page(t)))
             loc = trouves[0]
-            if i == 0 and any(interdit(p) for p in parties) and not self.accord_geste:
+            if i == 0 and any(self._danger(p) for p in parties) and not self.accord_geste:
                 self.confirmer(loc, "ouvrir le menu « " + " > ".join(parties) + " »", cle="menu " + " > ".join(parties))
             if not _visible(loc):
                 _ouvrir_menus(loc)
@@ -3784,7 +3857,7 @@ class Tache:
                     break
             if not ouvert:
                 # menu qui s'ouvre au clic : ce clic aussi est contrôlé
-                if interdit(self._texte_de(loc)) and not self.accord_geste:
+                if self._danger(self._texte_de(loc)) and not self.accord_geste:
                     self.confirmer(loc, f"cliquer « {partie} »", cle="cliquer " + partie)
                 self._verifier_visite(loc, partie)
                 loc.click(timeout=10000)
@@ -4252,6 +4325,9 @@ LIMITE_PAGES, LIMITE_MINUTES, PROFONDEUR = 120, 30, 3
 A_EVITER_EN_VISITE = re.compile(r"deconnex|deconnect|logout|log ?out|log ?off|sign ?out|quitter|\bexit\b|imprim|\bprint|"
                                 r"export|telecharg|download|\blangues?\b|language|english|deutsch|espanol|\btheme\b|"
                                 r"mode sombre|dark mode|plein ecran|full ?screen")
+EXPRESSIONS_ACTION = re.compile(r"mise a jour|mettre a jour|prendre en charge|prise en charge|remettre a zero|"
+                                r"mettre en|mise en (service|production|ligne|place|attente|forme)")
+MOTS_ACTION_VISITE = {"nouveau", "nouvelle", "nouvel", "new", "oui", "ok", "yes", "non", "no", "go"}
 # mots d'une question sans importance pour chercher dans la carte
 MOTS_VIDES = set("""a au aux avec ce ces cet cette d de des du en et l la le les ou par pour sur un une dans vers aller
 va vais veux voudrais voir je j me moi page pages menu menus ecran onglet ici svp""".split())
@@ -4262,25 +4338,31 @@ JS_NOM_PAGE = r"""() => {
   const HORS = 'nav, aside, [role=navigation], [role=menu], [role=menubar], [role=dialog], [role=alertdialog], dialog, ' +
                '[data-robot-bandeau], #robot-cadres';
   const texte = e => (e.innerText || e.textContent || '').replace(/\s+/g, ' ').trim();
-  // l'onglet ouvert (des onglets qui ne changent pas l'adresse : chaque onglet est une page de la carte)
+  // les onglets ouverts (onglet, puis sous-onglet) : des onglets qui ne changent pas l'adresse sont des pages de la carte.
+  // Seulement de vrais onglets (rôle tab, ou li / a / bouton d'une barre d'onglets), jamais un élément choisi dans le
+  // contenu (ligne de liste, pagination, tableau).
   const jet = x => (typeof x.className === 'string' ? x.className : '').toLowerCase().split(/[^a-z0-9]+/);
-  const ONG = ['tab', 'tabs', 'tabset', 'tablist', 'onglet', 'onglets'], ACT = ['active', 'actif', 'selected', 'current'];
-  let actif = Array.from(document.querySelectorAll('[role=tab][aria-selected=true]')).find(e => vis(e) && !e.closest(HORS));
-  if (!actif)
+  const ONG = ['tab', 'tabs', 'tabset', 'tablist', 'onglet', 'onglets', 'nav-tabs'], ACT = ['active', 'actif', 'selected', 'current'];
+  const PAS_ONGLET = '[role=tabpanel], .tab-content, .tab-pane, table, [role=grid], [role=listbox], .list-group, .pagination, ' +
+                     '[role=dialog], dialog, [data-robot-bandeau], #robot-cadres';
+  let actifs = Array.from(document.querySelectorAll('[role=tab][aria-selected=true]')).filter(e => vis(e) && !e.closest(PAS_ONGLET));
+  if (!actifs.length)
     for (const c of document.querySelectorAll('[class]')) {
-      if (!jet(c).some(m => ONG.includes(m)) || c.closest(HORS) || !vis(c)) continue;
-      actif = Array.from(c.querySelectorAll('[class]')).find(k => jet(k).some(m => ACT.includes(m)) && vis(k) &&
-                                                                    texte(k) && texte(k).length <= 40);
-      if (actif) break;
+      if (!jet(c).some(m => ONG.includes(m)) || c.closest(PAS_ONGLET) || c.closest(HORS) || !vis(c)) continue;
+      const k = Array.from(c.querySelectorAll('li, a, button')).find(k => (jet(k).some(m => ACT.includes(m)) ||
+                  k.getAttribute('aria-current')) && vis(k) && !k.closest(PAS_ONGLET) && texte(k) && texte(k).length <= 40);
+      if (k) { actifs = [k]; break; }
     }
-  const onglet = actif ? texte(actif).slice(0, 40) : '';
+  const onglet = actifs.slice(0, 3).map(e => texte(e).slice(0, 40)).filter(Boolean).join(' > ');
   // le titre de la page : un titre hors de l'en-tête d'abord (l'en-tête porte souvent le nom de l'application)
   for (const [sel, entete] of [['h1', false], ['[role=heading][aria-level="1"]', false], ['h2', false], ['h1', true]])
     for (const e of document.querySelectorAll(sel)) {
       if (!vis(e) || e.closest(HORS) || !!e.closest('header, [role=banner]') !== entete) continue;
-      if (texte(e)) return [texte(e).slice(0, 80), onglet];
+      if (texte(e)) return [texte(e).slice(0, 200), onglet, true, innerWidth * innerHeight];
     }
-  return [(document.title || '').replace(/\s+/g, ' ').trim().slice(0, 80), onglet];
+  // pas de titre dans la page : le titre de la fenêtre (false : à prendre seulement si aucune zone n'a de vrai titre)
+  return [(document.title || '').replace(/\s+/g, ' ').trim().slice(0, 200), onglet, !document.querySelector('frameset'),
+          innerWidth * innerHeight];
 }"""
 
 JS_BANDEAU_VISITE = r"""(message) => {
@@ -4302,6 +4384,9 @@ def _valeur_masquee(v):
     return "#" if (re.search(r"\d{2,}", v) or AUTRES_DONNEES.search(v) or len(v) > 30 or NOM_DE_PERSONNE.search(v)) else v
 
 
+SECRET = re.compile(r"pass|pwd|mdp|token|jeton|session|sessid|^sid$|auth|apikey|api_key|secret", re.IGNORECASE)
+
+
 def _cle_url(url):
     """L'adresse d'une page, les valeurs qui ressemblent à des données remplacées par # (« /plan?n=# » : toutes les
     fiches de plans sont la même page). Elle reste sur ce poste (carte), jamais dans un fichier à envoyer."""
@@ -4312,7 +4397,8 @@ def _cle_url(url):
 
     def partie(chemin, requete):
         c = "/".join(_valeur_masquee(s) if s else "" for s in chemin.split("/"))
-        q = "&".join(sorted(f"{k}={_valeur_masquee(v)}" for k, v in parse_qsl(requete, keep_blank_values=True)))
+        q = "&".join(sorted(f"{k}=" + ("#" if SECRET.search(k) else _valeur_masquee(v))
+                            for k, v in parse_qsl(requete, keep_blank_values=True)))
         return c + ("?" + q if q else "")
 
     cle = partie(m.path, m.query)
@@ -4331,8 +4417,7 @@ def _adresse_d_action(url):
 
 # la connexion (identifiant, authentification unique de l'entreprise) passe aussi par des envois : ils ne modifient
 # rien sur le portail, et sans eux la session expirerait pendant la visite
-MOTS_CONNEXION = set("""saml saml2 acs oauth oauth2 openid oidc token sso signin login logon adfs wsfed authorize
-authenticate authentication auth cas kerberos negotiate ntlm connexion identification""".split())
+MOTS_CONNEXION = set("saml saml2 oauth oauth2 openid oidc token sso signin login logon adfs wsfed".split())
 
 
 def _envoi_de_connexion(req):
@@ -4355,7 +4440,7 @@ def proteger_en_visite(contexte):
     PUT, DELETE... : formulaire, application) est bloqué, sauf ce qui sert à la connexion.
     (Ce contrôle est fait par le robot lui-même : pendant qu'il attend une réponse dans la fenêtre noire, il doit
     continuer à faire vivre le navigateur, sinon la page attendrait ; voir demander_en_vivant et _garde_coupee.)"""
-    garde = {"bloquees": 0, "exemples": [], "liaison": False, "contexte": contexte}
+    garde = {"bloquees": 0, "exemples": [], "liaison": False, "contexte": contexte, "liaison_bloquee": False}
 
     def filtre(route):
         req, methode = None, "?"
@@ -4371,9 +4456,11 @@ def proteger_en_visite(contexte):
             if bloquer:
                 garde["bloquees"] += 1
                 if req is not None:
-                    # pour Claude : le genre d'envoi et la fin de son adresse (jamais le nom du portail ni une valeur)
-                    fin = [s for s in _cle_url(req.url).split("?")[0].split("#")[0].split("/") if s][-2:]
-                    exemple = f"{methode} .../{'/'.join(fin)}"
+                    # pour Claude : le genre d'envoi et le mot d'action de son adresse, rien d'autre de l'adresse
+                    # (un morceau d'adresse peut contenir un identifiant ou un nom)
+                    genre = "page" if req.resource_type == "document" else "application"
+                    verbes = sorted(VERBES_ACTION & set(mots(unquote(" ".join(urlsplit(req.url)[2:4]))).split()))
+                    exemple = f"{methode} ({genre}" + (f", adresse avec « {verbes[0]} »" if verbes else "") + ")"
                     if exemple not in garde["exemples"] and len(garde["exemples"]) < 10:
                         garde["exemples"].append(exemple)
                 route.abort("blockedbyclient")
@@ -4384,14 +4471,29 @@ def proteger_en_visite(contexte):
 
     garde["filtre"] = filtre
     contexte.route("**/*", filtre)
+    # liaison directe (websocket : SignalR, Blazor, socket.io...) : ses messages ne passent pas par le contrôle
+    # ci-dessus. Elle est remplacée par une liaison factice, jamais reliée au portail (une page ouverte avant garde la
+    # sienne jusqu'à son rechargement : programme_enfant recharge la page).
+    if hasattr(contexte, "route_web_socket"):
+        try:
+            contexte.route_web_socket("**/*", lambda ws: None)
+            garde["liaison_bloquee"] = True
+        except Exception:
+            pass
 
     def liaison(_):
-        garde["liaison"] = True  # liaison directe (websocket) : hors de la protection, notée dans la carte
+        garde["liaison"] = True  # (bloquée si liaison_bloquee ; sinon la visite s'arrête : voir _liaison_libre)
 
     for p in contexte.pages:
         p.on("websocket", liaison)
     contexte.on("page", lambda p: p.on("websocket", liaison))
     return garde
+
+
+def _liaison_libre(garde):
+    """Une liaison directe avec le portail que le pilote de navigateur (trop ancien) ne sait pas bloquer : la lecture
+    seule n'est plus garantie, la visite s'arrête."""
+    return garde["liaison"] and not garde["liaison_bloquee"]
 
 
 def _garde_coupee(garde, faire):
@@ -4414,6 +4516,8 @@ def demander_en_vivant(page, question, defaut=""):
         ligne = ligne_tapee(tampon)
         if ligne is not None:
             return ligne.strip() or defaut
+        if FIN_DU_CLAVIER[0]:
+            return defaut
         try:
             page.wait_for_timeout(150)
         except Exception:
@@ -4429,30 +4533,40 @@ def oui_en_vivant(page, question, defaut=""):
 
 
 def _nom_de_page(texte):
-    """Le titre d'une page tel qu'il est écrit dans la carte : sans numéro, code ni nom de personne."""
-    t = _sans_donnee(" ".join(str(texte or "").split())[:60])  # « Plan PL-10 » -> « Plan # »
-    if t and (NOM_DE_PERSONNE.search(t) or _prenom_nom(t)):
+    """Le titre d'une page tel qu'il est écrit dans la carte : sans numéro, code, adresse, nom de serveur ni nom de
+    personne. Le texte ENTIER est contrôlé avant d'être coupé (« ... pour Jean Martin » ne sort pas coupé en « Jean »)."""
+    t = " ".join(str(texte or "").split())
+    if not t:
+        return ""
+    t = _sans_donnee(t)  # « Plan PL-10 » -> « Plan # » (puis le texte entier est contrôlé, avant d'être coupé)
+    # « Dossier : Boulangerie Kowalski », « Client : ... » : après les deux-points, c'est souvent la fiche elle-même
+    t = re.sub(r"\s*:\s*\S.*$", " : #", t)
+    if NOM_DE_PERSONNE.search(t) or _prenom_nom(t):
         return "(donnee masquee)"
-    return t
+    return t[:60]
 
 
 def _identite(page):
     """(identité de la page, son titre) : son adresse sans les valeurs (et celles de ses cadres) + son titre + l'onglet
     ouvert. Deux pages de même identité sont la même page (deux fiches de plans, par exemple)."""
-    cles, noms, onglets = [_cle_url(page.url)], [], []
+    cles, titres, autres, onglets = [_cle_url(page.url)], [], [], []
     for cadre in page.frames:
         if cadre != page.main_frame and (cadre.url or "").startswith("http"):
             cles.append(_cle_url(cadre.url))
         try:
-            n, o = cadre.evaluate(JS_NOM_PAGE)
+            n, o, vrai, aire = cadre.evaluate(JS_NOM_PAGE)
         except Exception:
-            n, o = "", ""
+            n, o, vrai, aire = "", "", False, 0
         if n:
-            noms.append(n)
+            (titres if vrai else autres).append((aire, n))
         if o:
             onglets.append(o)
-    nom = _nom_de_page(noms[0] if noms else "")
-    onglet = _nom_de_page(onglets[0]) if onglets else ""
+    # un vrai titre de page ; s'il y a plusieurs zones (frameset, cadres), celui de la plus grande : le contenu, pas le
+    # bandeau du haut ni le menu
+    titres.sort(key=lambda x: -x[0])
+    nom = _nom_de_page(([n for _, n in titres] + [n for _, n in autres] + [""])[0])
+    # l'onglet : seulement si c'est de la structure (jamais le nom d'une fiche choisie)
+    onglet = " > ".join(o for o in (x.strip() for x in (onglets[0] if onglets else "").split(" > ")) if _structure(o) == o)
     if onglet and onglet != nom:
         nom = f"{nom} - onglet {onglet}"
     return " | ".join(cles) + " || " + re.sub(r"\d+", "#", nom), nom
@@ -4482,8 +4596,31 @@ def _nom_sur(texte):
     return bool(t) and _structure(t) == t and ">" not in t and not re.search(r"\[\d+\]\s*$|\bdans\s+ligne\b", t, re.I)
 
 
+def action_en_visite(texte):
+    """En visite : ce nom (ou cet attribut) désigne-t-il une ACTION ? Un VERBE d'action (Valider, Archiver, Créer,
+    Facturer, Validez, Delete, Nouveau...), Déconnexion, Imprimer, Exporter... Un NOM de rubrique (Factures, Archives,
+    Validations en attente, État des stocks, Paiements) se visite : la visite ne fait que regarder, et la protection
+    réseau et le contrôle de l'élément cliqué empêchent toujours tout envoi."""
+    t = mots(texte)
+    if not t:
+        return False
+    if A_EVITER_EN_VISITE.search(t) or EXPRESSIONS_ACTION.search(t):
+        return True
+    liste = t.split()
+    for i, m in enumerate(liste):
+        if m in MOTS_ACTION_VISITE or m in VERBES_ACTION:
+            return True
+        if re.search(r"(er|ir|re|ez)$", m) and interdit(m):  # infinitif ou impératif d'un verbe d'action
+            return True
+        if i and interdit(m) and (re.search(r"\d", liste[i - 1]) or
+                                  liste[i - 1] in ("action", "op", "operation", "cmd", "do", "faire", "traitement")):
+            # « /commandes/42/annulation », « ?action=cloture » : une action sur une fiche, même dite par un nom
+            return True
+    return False
+
+
 def _a_eviter(texte):
-    return interdit(texte) or bool(A_EVITER_EN_VISITE.search(sans_accents(str(texte)).lower()))
+    return action_en_visite(texte)
 
 
 def _lisible(chemin):
@@ -4491,29 +4628,36 @@ def _lisible(chemin):
     return " puis ".join(e.partition(" : ")[2] for e in chemin) or "accueil"
 
 
-def _chemins_de_la_page(chemin, r, menus, deja, par_onglet):
+def _chemins_de_la_page(chemin, r, menus, deja, par_onglet, par_lien, communs=()):
     """Les chemins à essayer depuis cette page : entrées des menus (et éléments de leurs sous-menus), autres menus,
-    onglets, liens. deja : ce qui est déjà prévu (un menu présent sur toutes les pages n'est essayé qu'une fois).
-    par_onglet : les chemins qui finissent par un clic sur un onglet (les autres onglets de cette page-là sont déjà
-    prévus depuis la page d'avant). Renvoie (chemins, évités par prudence)."""
+    onglets, liens. deja : ce qui est déjà prévu (un menu, un lien de l'accueil : une seule fois pour tout le portail ;
+    un onglet, un lien du contenu : une fois par page). par_onglet : chemin qui finit par un clic sur un onglet -> les
+    onglets de la page d'avant (déjà prévus ; seuls les sous-onglets restent à voir). Une longue liste (plus de 25
+    éléments, ou plus de 12 dans un sous-menu) est une liste de fiches : ni visitée, ni nommée. par_lien : chemins qui
+    finissent par un lien du contenu (la page peut être une fiche : son titre ne sera pas écrit). communs : les liens
+    de l'accueil (une colonne de liens présente sur toutes les pages : chaque lien n'est essayé qu'une fois).
+    Renvoie (chemins, évités par prudence)."""
     nouveaux, evites = [], []
 
-    def ajouter(etape, noms, propre=False):
-        # propre : propre à cette page (onglet) ; sinon le même menu, le même lien partout
+    def ajouter(etape, noms, propre=False, onglets=None):
         cle = " ++ ".join(chemin + [etape]) if propre else etape
-        if cle in deja:
-            return
+        if cle in deja or (propre and onglets is None and etape in deja):  # (lien déjà prévu depuis l'accueil)
+            return False
         deja.add(cle)
         if any(_a_eviter(n) for n in noms):
             evites.append(" > ".join(noms))
-        else:
-            nouveaux.append(chemin + [etape])
-            if propre:
-                par_onglet.add(cle)
+            return False
+        nouveaux.append(chemin + [etape])
+        if onglets is not None:
+            par_onglet[cle] = list(onglets)
+        return True
 
     for nom, elements in menus:
         textes = [t for t, _ in elements]
         if not _nom_sur(nom) or _contenu_a_masquer(nom, textes):  # liste de fiches (Récents...), menu du compte
+            continue
+        if len(elements) > 25:
+            evites.append(f"{nom} > ({len(elements)} elements : liste de fiches, pas visitee)")
             continue
         if not elements:
             ajouter("MENU : " + nom, [nom])
@@ -4522,26 +4666,58 @@ def _chemins_de_la_page(chemin, r, menus, deja, par_onglet):
                 continue
             if not sous:
                 ajouter(f"MENU : {nom} > {texte}", [nom, texte])
+            elif len(sous) > 12:
+                evites.append(f"{nom} > {texte} > ({len(sous)} elements : liste de fiches, pas visitee)")
             elif not _contenu_a_masquer(texte, sous):
                 for s in sous:
                     if _nom_sur(s):
                         ajouter(f"MENU : {nom} > {texte} > {s}", [nom, texte, s])
-    sur_un_onglet = " ++ ".join(chemin) in par_onglet
-    for cle, limite in (("autres menus", 30), ("onglets", 15), ("liens", 10)):
-        if cle == "onglets" and sur_un_onglet:
-            continue
-        for texte in r[cle][:limite]:
-            if _nom_sur(texte):
-                ajouter(f"CLIQUER : {texte}", [texte], propre=cle == "onglets")
+    onglets_d_avant = par_onglet.get(" ++ ".join(chemin), [])
+    for cle_r, limite in (("autres menus", 30), ("onglets", 15), ("liens", 25 if not chemin else 10)):
+        ajoutes = 0
+        for texte in r[cle_r]:  # (la limite compte les chemins NOUVEAUX : la liste n'est pas coupée avant)
+            if ajoutes >= limite:
+                break
+            if not _nom_sur(texte) or (cle_r == "onglets" and texte in onglets_d_avant):
+                continue
+            if ajouter(f"CLIQUER : {texte}", [texte],
+                       propre=cle_r == "onglets" or (cle_r == "liens" and texte not in communs),
+                       onglets=r["onglets"] if cle_r == "onglets" else None):
+                ajoutes += 1
+                if cle_r == "liens":
+                    par_lien.add(" ++ ".join(chemin + [f"CLIQUER : {texte}"]))
     return nouveaux, evites
 
 
-def lire_carte():
+def _empreinte(r):
+    """Ce qui distingue un écran d'un autre quand l'adresse et le titre ne changent pas (applications à adresse
+    unique) : ses champs, boutons, colonnes, onglets et libellés (sans le nombre de lignes des tableaux)."""
+    tableaux = [re.sub(r"\s+\(\d+ ligne\(s\)\)$", "", x) for x in r["tableaux"]]
+    return json.dumps([r["champs"], r["boutons"], tableaux, r["onglets"], r["libelles de fiche"]], ensure_ascii=False)
+
+
+def _adresse_carte(url):
+    """L'adresse de l'accueil pour reconnaître la carte (deux applications d'un même serveur ont deux cartes)."""
+    try:
+        m = urlsplit(url)
+        return f"{m.scheme}://{m.netloc}{_cle_url(url)}"
+    except ValueError:
+        return url
+
+
+def lire_carte(url=None):
+    """La carte du portail (None si elle n'existe pas, est abîmée, ou est celle d'une autre adresse)."""
     try:
         carte = json.loads((dossier_robot() / FICHIER_CARTE).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
-    return carte if isinstance(carte, dict) and isinstance(carte.get("pages"), list) else None
+    if not (isinstance(carte, dict) and isinstance(carte.get("pages"), list) and isinstance(carte.get("essais", {}), dict)):
+        return None
+    if url is not None and carte.get("adresse") != _adresse_carte(url):
+        return None
+    if not isinstance(carte.get("par_onglet"), dict):
+        carte["par_onglet"] = {}
+    return carte
 
 
 def sauver_carte(carte):
@@ -4554,9 +4730,26 @@ def sauver_carte(carte):
         pass
 
 
+def _vider_entree():
+    """Une Entrée tapée en avance (double appui, impatience pendant le relevé de l'accueil) ne doit pas arrêter la
+    visite dès son début."""
+    if WINDOWS:
+        vider_clavier()
+        return
+    import select
+    try:
+        while not FIN_DU_CLAVIER[0] and select.select([sys.stdin], [], [], 0)[0]:
+            if not sys.stdin.readline():
+                FIN_DU_CLAVIER[0] = True
+                break
+    except Exception:
+        pass
+
+
 def _accueil(t, url, garde):
     """Retour à l'accueil du portail dans la fenêtre principale du robot (les onglets ouverts en route sont fermés).
-    Si le portail redemande de se connecter, la protection est coupée le temps que VOUS vous connectiez."""
+    La page est RECHARGÉE (une application à adresses « #/ » garderait sinon ses panneaux ouverts). Si le portail
+    redemande de se connecter, la protection est coupée le temps que VOUS vous connectiez."""
     principale = t.principale
     if principale.is_closed():
         raise ErreurTache("la fenetre du robot a ete fermee")
@@ -4567,15 +4760,24 @@ def _accueil(t, url, garde):
             except Exception:
                 pass
     t.page = principale
+    depart = time.time()
+    try:
+        meme_document = urlsplit(principale.url)[:4] == urlsplit(url)[:4]
+    except ValueError:
+        meme_document = False
     for essai in range(3):
         try:
-            principale.goto(url, wait_until="domcontentloaded", timeout=60000)
+            if principale.url != url:
+                principale.goto(url, wait_until="domcontentloaded", timeout=60000)
+            if meme_document:  # (seul le « # » changeait, ou rien : rien n'a été rechargé)
+                principale.reload(wait_until="domcontentloaded", timeout=60000)
             break
         except Exception as e:
             # (une page bloquée par la protection affiche une page d'erreur qui arrive un peu après : on réessaie)
             if essai == 2 or "interrupted" not in str(e):
                 raise
             principale.wait_for_timeout(1000)
+    t.oublier_requetes(principale, depart)
     attendre_chargement(principale, t.chargement_max)
     if _champ_mot_de_passe(principale):
         revenez_ici()
@@ -4616,44 +4818,78 @@ def _raison_courte(e):
     return "echec"
 
 
+# ce qui a été noté pour un chemin et ne changera pas en recommençant (les autres sont réessayés en complétant la carte)
+STATUTS_DEFINITIFS = ("page", "deja vue", "reste sur l'accueil", "autre site", "bloque", "fenetre du portail refusee",
+                      "refuse par prudence")
+
+
 def explorer_portail(page, url, garde):
-    """Choix 5. Le robot visite le portail tout seul (lecture seule) et fait la carte du site. Entrée = arrêter."""
-    hote = urlsplit(url).hostname or ""
-    carte = lire_carte()
-    if carte and carte.get("hote") == hote and carte["pages"]:
+    """Choix 5. Le robot visite le portail tout seul (lecture seule) et fait la carte du site. Entrée = arrêter.
+    Renvoie (fichier à envoyer, raison de l'arrêt)."""
+    hote, adresse = urlsplit(url).hostname or "", _adresse_carte(url)
+    carte = lire_carte(url)
+    if carte and carte["pages"]:
         revenez_ici()
-        if not oui_en_vivant(page, f"   Le robot a deja une carte de ce portail ({len(carte['pages'])} pages). Tapez o pour la COMPLETER, "
-                   "n pour tout recommencer", "o"):
+        if not oui_en_vivant(page, f"   Le robot a deja une carte de ce portail ({len(carte['pages'])} pages). Tapez o pour la "
+                                   "COMPLETER, n pour tout recommencer", "o"):
             carte = None
-    else:
+    elif lire_carte() is not None:
+        ecrire("   (La carte deja sur ce poste est celle d'une autre adresse : le robot en fait une nouvelle.)")
         carte = None
     if carte is None:
-        carte = {"version": 1, "hote": hote, "pages": [], "essais": {}, "evites": [], "par_onglet": []}
-    par_onglet = set(carte.setdefault("par_onglet", []))
+        carte = {"version": 2, "hote": hote, "adresse": adresse, "pages": [], "essais": {}, "evites": [], "par_onglet": {}}
+    par_onglet = carte["par_onglet"]
+    par_lien = set(carte.get("par_lien", []))
     carte.update(date=datetime.now().strftime("%d/%m/%Y %H:%M"), bloquees=0, exemples=[], liaison=False)
+    # en complétant : les chemins en échec la fois d'avant sont réessayés (session expirée, portail lent...)
+    carte["essais"] = {c: st for c, st in carte["essais"].items() if st.startswith(STATUTS_DEFINITIFS)}
     index = {p["id"]: i for i, p in enumerate(carte["pages"])}
     t = Tache(dict(ENTETE_VISITE), [], page, url, lecture_seule=True)
-    t.chargement_max, t.calme_max = 5, 6
+    # (« plus aucun échange » n'arrive jamais sur un portail qui s'interroge sans cesse : on attend peu, et calme()
+    #  attend la vraie réponse)
+    t.chargement_max, t.calme_max = 1, 6
     memoire, deja, file = {}, set(), deque()
     for p in carte["pages"]:  # carte complétée : les chemins pas encore essayés la fois d'avant
         for c in p.get("a_essayer", []):
             deja.update((c[-1], " ++ ".join(c)))
             file.append(c)
-    debut, essais, arret = time.time(), 0, ""
+    pages_au_depart, debut, essais, arret, interrompu = len(carte["pages"]), time.time(), 0, "", False
+    accueil = [0]
 
     def noter_page(chemin):
         """La page affichée : (son numéro dans la carte, nouvelle ?). Une nouvelle page est relevée, et ses chemins
         (sous-menus, onglets, liens) sont ajoutés à ceux à essayer."""
         t.retirer_bandeaux()
         ident, nom = _identite(t.page)
+        r = menus = None
         if ident in index:
-            return index[ident], False
-        r, menus = _releve_et_menus(t.page, memoire)
-        nouveaux, evites = (_chemins_de_la_page(chemin, r, menus, deja, par_onglet) if len(chemin) < PROFONDEUR
-                            else ([], []))
-        carte["par_onglet"] = sorted(par_onglet)
+            connue = carte["pages"][index[ident]]
+            if not chemin or "empreinte" not in connue:
+                return index[ident], False
+            # même adresse et même titre : le même écran, ou un autre écran d'une application à adresse unique ?
+            r, menus = _releve_et_menus(t.page, memoire)
+            empreinte = _empreinte(r)
+            if empreinte == connue["empreinte"]:
+                return index[ident], False
+            ident += " || ecran " + hashlib.sha1(empreinte.encode("utf-8")).hexdigest()[:12]
+            if ident in index:
+                return index[ident], False
+            nom = chemin[-1].partition(" : ")[2].split(">")[-1].strip()  # (le titre est celui de l'autre écran)
+        elif chemin and " ++ ".join(chemin) in par_lien:
+            # page ouverte par un lien du contenu (« Voir », « Ma fiche ») : c'est peut-être une fiche, dont le titre
+            # EST une donnée (nom d'un client...) : elle porte le nom du lien
+            nom = chemin[-1].partition(" : ")[2].strip() + " (titre non ecrit)"
+        if r is None:
+            r, menus = _releve_et_menus(t.page, memoire)
+        if not chemin:  # (les liens de l'accueil : une navigation commune à toutes les pages)
+            carte["liens_accueil"] = list(r["liens"])
+        nouveaux, evites = (_chemins_de_la_page(chemin, r, menus, deja, par_onglet, par_lien,
+                                                set(carte.get("liens_accueil", [])))
+                            if len(chemin) < PROFONDEUR else ([], []))
+        carte["par_lien"] = sorted(par_lien)
         carte["pages"].append({"nom": nom, "id": ident, "chemin": chemin, "releve": r, "a_essayer": nouveaux,
-                               "cliquables": _nombre_cliquables(t.page), "autres_chemins": []})
+                               "empreinte": _empreinte(r), "cliquables": _nombre_cliquables(t.page),
+                               "autres_chemins": []})
         index[ident] = len(carte["pages"]) - 1
         file.extend(nouveaux)
         for e in evites:
@@ -4676,7 +4912,7 @@ def explorer_portail(page, url, garde):
                 statut = f"page {numero + 1}"
                 ecrire(f"      -> NOUVELLE PAGE {numero + 1} : « {p['nom'] or '(sans titre)'} » "
                        f"({p['cliquables']} elements cliquables)")
-            elif numero == accueil:
+            elif numero == accueil[0]:
                 statut = "reste sur l'accueil"
             else:
                 statut = f"deja vue (page {numero + 1})"
@@ -4690,12 +4926,54 @@ def explorer_portail(page, url, garde):
             ecrire(f"      -> {statut}")
         return statut
 
-    ecrire("   Le robot regarde l'accueil et survole les menus (sans cliquer)...")
+    def toujours_connecte():
+        """Après 3 échecs de suite : l'accueil est-il toujours l'accueil (pas une page « session expirée », « choisir un
+        compte »...) ? Sinon, vous vous reconnectez. Renvoie (l'accueil est là, il a fallu se reconnecter)."""
+        try:
+            _accueil(t, url, garde)
+            if _identite(t.principale)[0] == carte["pages"][accueil[0]]["id"]:
+                return True, False
+        except ErreurTache:
+            raise
+        except Exception:
+            pass
+        ecrire()
+        ecrire("   Le portail ne montre plus son accueil habituel : il vous a peut-etre deconnecte.")
+        revenez_ici()
+        _garde_coupee(garde, lambda: pause("Reconnectez-vous DANS LA FENETRE DU ROBOT si besoin, revenez a l'accueil du "
+                                           "portail, puis Entree ici..."))
+        _vider_entree()
+        try:
+            t.principale.bring_to_front()
+            _accueil(t, url, garde)
+            return _identite(t.principale)[0] == carte["pages"][accueil[0]]["id"], True
+        except ErreurTache:
+            raise
+        except Exception:
+            return False, True
+
+    ecrire("   Patientez : le robot regarde l'accueil et survole ses menus (sans cliquer), 1 a 2 minutes...")
     _accueil(t, url, garde)
-    accueil, _ = noter_page([])
-    if carte["evites"]:
-        ecrire("   Par prudence, le robot n'ira PAS dans : " + " | ".join(carte["evites"][:15]))
-    ecrire(f"   {len(file)} chemin(s) a essayer depuis l'accueil.")
+    connu = next((p for p in carte["pages"] if not p["chemin"]), None)
+    if connu is not None and _identite(t.principale)[0] != connu["id"]:
+        # en complétant : une page « session expirée » ne doit pas devenir l'accueil de la carte
+        ecrire("   L'accueil ne ressemble pas a celui de la carte : le portail vous a peut-etre deconnecte.")
+        revenez_ici()
+        _garde_coupee(garde, lambda: pause("Reconnectez-vous DANS LA FENETRE DU ROBOT si besoin, revenez a l'accueil du "
+                                           "portail, puis Entree ici..."))
+        _vider_entree()
+        _accueil(t, url, garde)
+    accueil[0], _ = noter_page([])
+    if _liaison_libre(garde):
+        arret = "liaison directe avec le portail que ce robot ne sait pas bloquer : visite arretee par prudence"
+        file.clear()
+    elif garde["liaison"]:
+        ecrire("   (Le portail utilise une liaison directe : elle est BLOQUEE pendant la visite, par prudence. Une partie")
+        ecrire("    du portail peut ne pas marcher pendant la visite : c'est normal.)")
+    evites = [e for e in carte["evites"] if "pas visitee" not in e]
+    if evites:
+        ecrire("   Par prudence, le robot n'ira PAS dans : " + " | ".join(evites[:15]))
+    ecrire(f"   {len(file)} chemin(s) a essayer.")
     ecrire("   >>> NE TOUCHEZ PLUS A LA SOURIS : le robot visite le portail tout seul. Regardez sa fenetre (Chrome,")
     ecrire("       en bas de l'ecran si elle est cachee) : bande JAUNE en bas.")
     ecrire("   >>> Pour l'arreter avant la fin : cliquez dans CETTE fenetre noire, puis Entree.")
@@ -4703,7 +4981,8 @@ def explorer_portail(page, url, garde):
         t.principale.bring_to_front()
     except Exception:
         pass
-    tampon = []
+    _vider_entree()
+    tampon, echecs_de_suite, en_echec, verifie = [], 0, [], False
     try:
         while file:
             if ligne_tapee(tampon) is not None:
@@ -4712,15 +4991,32 @@ def explorer_portail(page, url, garde):
             if t.principale.is_closed():
                 arret = "fenetre du robot fermee"
                 break
-            if time.time() - debut > LIMITE_MINUTES * 60:
-                arret = f"visite arretee au bout de {LIMITE_MINUTES} minutes"
+            if _liaison_libre(garde):
+                arret = "liaison directe avec le portail que ce robot ne sait pas bloquer : visite arretee par prudence"
                 break
-            if len(carte["pages"]) >= LIMITE_PAGES:
-                arret = f"visite arretee a {LIMITE_PAGES} pages"
+            if time.time() - debut > LIMITE_MINUTES * 60:
+                arret = f"visite arretee au bout de {LIMITE_MINUTES} minutes (relancez le choix 5 pour la completer)"
+                break
+            if len(carte["pages"]) - pages_au_depart >= LIMITE_PAGES:
+                arret = f"visite arretee a {LIMITE_PAGES} nouvelles pages (relancez le choix 5 pour la completer)"
+                break
+            if echecs_de_suite >= 3 and not verifie:
+                verifie = True
+                accueil_la, reconnecte = toujours_connecte()
+                if not accueil_la:
+                    arret = "le portail ne montre plus son accueil habituel (deconnexion ?)"
+                    break
+                if reconnecte:  # les chemins en échec pendant la déconnexion sont réessayés
+                    for c in en_echec:
+                        carte["essais"].pop(" ++ ".join(c), None)
+                        file.append(c)
+                    echecs_de_suite, en_echec, verifie = 0, [], False
+            if echecs_de_suite >= 8:
+                arret = "trop d'echecs de suite : le portail ne repond pas comme prevu"
                 break
             chemin = file.popleft()
             cle = " ++ ".join(chemin)
-            if cle in carte["essais"]:  # (carte complétée : déjà essayé la fois d'avant)
+            if cle in carte["essais"]:  # (déjà essayé : la fois d'avant, ou par un autre chemin)
                 continue
             essais += 1
             ecrire(f"   [{essais}] {_lisible(chemin)}")
@@ -4742,36 +5038,50 @@ def explorer_portail(page, url, garde):
                 except KeyboardInterrupt:
                     raise
                 except Exception as e:
-                    statut = "echec"
+                    statut = "echec : page pas relevee"
                     ecrire(f"      -> page pas relevee ({masquer(premiere_ligne(e))[:90]})")
             carte["essais"][cle] = statut
+            if statut.startswith(("echec", "introuvable", "connexion")):
+                echecs_de_suite += 1
+                en_echec.append(chemin)
+            else:
+                echecs_de_suite, en_echec, verifie = 0, [], False
     except KeyboardInterrupt:
-        arret = "visite arretee par Ctrl+C"
+        arret, interrompu = "visite arretee par Ctrl+C", True
     finally:
         carte.update(bloquees=garde["bloquees"], exemples=list(garde["exemples"]), liaison=garde["liaison"],
-                     duree=round((time.time() - debut) / 60, 1), arret=arret)
+                     liaison_bloquee=garde["liaison_bloquee"], duree=round((time.time() - debut) / 60, 1), arret=arret)
         sauver_carte(carte)
-        if not t.principale.is_closed():
-            _bandeau_visite(t.principale, "")
+    fichier = ecrire_carte(carte)  # (avant tout appel au navigateur : après un Ctrl+C, il peut ne plus répondre)
+    if not interrompu:
+        try:
+            if not t.principale.is_closed():
+                _bandeau_visite(t.principale, "")
+        except Exception:
+            pass
     ecrire()
-    ecrire(f"   CARTE : {len(carte['pages'])} page(s) connue(s), {essais} chemin(s) essaye(s) "
-           f"en {carte['duree']} minute(s)." + (f" ({arret})" if arret else ""))
+    ecrire(f"   CARTE : {len(carte['pages'])} page(s) connue(s) ({len(carte['pages']) - pages_au_depart} nouvelle(s)), "
+           f"{essais} chemin(s) essaye(s) en {carte['duree']} minute(s)." + (f" ({arret})" if arret else ""))
     if garde["bloquees"]:
         ecrire(f"   La protection a bloque {garde['bloquees']} envoi(s) au portail (rien n'a ete modifie).")
-    return ecrire_carte(carte)
+    return fichier, arret
 
 
 def ecrire_carte(carte):
     """A_ENVOYER_carte.txt : les pages du portail et comment y aller. Structure seulement (aucune adresse, aucune valeur)."""
+    if carte.get("liaison"):
+        liaison = "oui, bloquee pendant la visite" if carte.get("liaison_bloquee") else "oui, NON BLOQUEE (visite arretee)"
+    else:
+        liaison = "non"
     lignes = [f"CARTE DU PORTAIL - pour Claude - {carte.get('date', '')}",
-              "Faite par le robot (choix 5) en VISITE : lecture seule, rien n'a ete modifie.",
+              "Faite par le robot (choix 5) en VISITE : lecture seule (aucun envoi au portail).",
               "Structure seulement (menus, pages, champs, boutons, colonnes). Aucune valeur, aucune adresse.",
               "Relisez : une vraie valeur (nom de client, numero de plan...) -> effacez ce mot seulement.", "",
               f"Pages connues : {len(carte['pages'])} ; duree : {carte.get('duree', '?')} min"
               + (f" ; {carte['arret']}" if carte.get("arret") else " ; visite complete"),
               f"Envois bloques par la protection : {carte.get('bloquees', 0)}"
-              + (" (" + " ; ".join(_sans_donnee(x) for x in carte.get("exemples", [])) + ")" if carte.get("exemples") else ""),
-              f"Liaison directe avec le portail (websocket) : {'oui' if carte.get('liaison') else 'non'}", ""]
+              + (" (" + " ; ".join(carte.get("exemples", [])) + ")" if carte.get("exemples") else ""),
+              f"Liaison directe avec le portail (websocket) : {liaison}", ""]
     menus_vus = [None]
     for numero, p in enumerate(carte["pages"], 1):
         lignes.append(f"PAGE {numero} : « {p['nom'] or '(sans titre)'} »  ({p['cliquables']} elements cliquables)")
@@ -4781,7 +5091,7 @@ def ecrire_carte(carte):
         lignes += _lignes_releve(p["releve"], menus_vus)
         lignes.append("")
     if carte.get("evites"):
-        lignes.append("PAS VISITES PAR PRUDENCE (nom d'action) : " + " ; ".join(carte["evites"]))
+        lignes.append("PAS VISITES PAR PRUDENCE : " + " ; ".join(carte["evites"]))
     autres = [(c, s) for c, s in carte.get("essais", {}).items() if not s.startswith(("page", "deja vue"))]
     if autres:
         lignes.append("CHEMINS SANS NOUVELLE PAGE :")
@@ -4906,7 +5216,7 @@ def _aller_vers(t, url, garde, carte, i, genre="page", a_trouver=""):
     except KeyboardInterrupt:
         raise
     except Exception as e:
-        ecrire(f"   PAS PU Y ALLER : {masquer(premiere_ligne(e))}")
+        ecrire(f"   PAS PU Y ALLER ({_raison_courte(e)}).")  # (jamais le texte d'une fenêtre du portail)
         ecrire("   Le portail a peut-etre change : refaites le choix 5 pour mettre la carte a jour.")
         return False
     ident, nom = _identite(t.page)
@@ -4925,17 +5235,35 @@ def _aller_vers(t, url, garde, carte, i, genre="page", a_trouver=""):
     return True
 
 
+def _numero(reponse, maximum):
+    """Le numéro tapé (la rangée du haut d'un clavier AZERTY sans Maj : & é " ' ( - è _ ç à compte aussi)."""
+    reponse = reponse.strip().translate(str.maketrans("&é\"'(-è_çà", "1234567890"))
+    if not reponse.isdecimal():
+        return None
+    try:
+        n = int(reponse)
+    except ValueError:
+        return None
+    return n if 1 <= n <= maximum else None
+
+
 def boucle_gps(page, url, garde):
     """Choix 6. Vous dites où aller ; le robot cherche dans sa carte et y va tout seul, étape par étape (lecture seule)."""
-    carte = lire_carte()
-    if not carte or not carte["pages"] or carte.get("hote") != (urlsplit(url).hostname or ""):
-        ecrire("   Le robot n'a pas encore la carte de ce portail : faites d'abord le choix 5 (il explore le portail).")
+    carte = lire_carte(url)
+    if not carte or not carte["pages"]:
+        if lire_carte() is not None:
+            ecrire("   La carte sur ce poste est celle d'une autre adresse : faites d'abord le choix 5 pour ce portail.")
+        else:
+            ecrire("   Le robot n'a pas encore la carte de ce portail : faites d'abord le choix 5 (il explore le portail).")
         return
     t = Tache(dict(ENTETE_VISITE), [], page, url, lecture_seule=True)
-    t.chargement_max, t.calme_max = 8, 10
+    t.chargement_max, t.calme_max = 2, 10
     ecrire(f"   Le robot connait {len(carte['pages'])} page(s) de ce portail (carte du {carte.get('date', '?')}).")
     while True:
         ecrire()
+        if _liaison_libre(garde):
+            ecrire("   Le portail utilise une liaison directe que ce robot ne sait pas bloquer : arret par prudence.")
+            break
         question = demander_en_vivant(t.page, "   Ou voulez-vous aller ? (un nom de page, de menu, de champ ou de bouton ; « liste » = "
                             "toutes les pages ; Entree sans rien = fini) :")
         if not question:
@@ -4945,14 +5273,20 @@ def boucle_gps(page, url, garde):
                 ecrire(f"   {numero:>3}. « {p['nom'] or '(sans titre)'} »  (chemin : {_lisible(p['chemin'])})")
             ecrire("   Tapez le numero d'une page pour y aller.")
             continue
-        if question.isdigit():
-            if 1 <= int(question) <= len(carte["pages"]):
-                _aller_vers(t, url, garde, carte, int(question) - 1)
+        if question.strip().translate(str.maketrans("&é\"'(-è_çà", "1234567890")).isdecimal():
+            n = _numero(question, len(carte["pages"]))
+            if n:
+                _aller_vers(t, url, garde, carte, n - 1)
             else:
-                ecrire("   Pas de page avec ce numero (tapez « liste »).")
+                ecrire(f"   Tapez un numero entre 1 et {len(carte['pages'])} (tapez « liste » pour les voir).")
             continue
         resultats = chercher_dans_carte(carte, question)
         if not resultats:
+            evites = [e for e in carte.get("evites", []) if set(mots(question).split()) & set(mots(e).split())]
+            if evites:
+                ecrire(f"   « {question} » : le robot ne l'a PAS visite, par prudence (le nom ressemble a une action,")
+                ecrire("   ou c'est une liste de fiches) : " + " | ".join(evites[:3]))
+                continue
             ecrire(f"   Rien dans la carte pour « {question} ». Essayez un autre mot, ou « liste ».")
             ecrire("   (Si c'est une page derriere un bouton ou une recherche, le robot ne l'a pas visitee : en visite, il ne")
             ecrire("    clique que sur les menus, les liens et les onglets.)")
@@ -4965,9 +5299,11 @@ def boucle_gps(page, url, garde):
             for numero, (i, genre, montre, _) in enumerate(resultats, 1):
                 ecrire(f"   {numero}. " + _decrire_resultat(carte, i, genre, montre))
             reponse = demander_en_vivant(t.page, "   Numero de votre choix (Entree = 1, n = aucun) :", "1")
-            if not reponse.isdigit() or not 1 <= int(reponse) <= len(resultats):
+            choix = _numero(reponse, len(resultats))
+            if not choix:
+                if not reponse.lower().startswith("n"):
+                    ecrire(f"   Pas compris : tapez un numero entre 1 et {len(resultats)}. Reposez la question.")
                 continue
-            choix = int(reponse)
         i, genre, montre, a_trouver = resultats[choix - 1]
         _aller_vers(t, url, garde, carte, i, genre, a_trouver)
     _bandeau_visite(t.page, "")
@@ -5002,13 +5338,20 @@ def programme_enfant(mode, dossier_echange):
             if visite:
                 garde = proteger_en_visite(contexte)  # à partir d'ici : lecture seule, rien ne peut être envoyé au portail
                 ecrire("   VISITE EN LECTURE SEULE : le robot ne peut rien envoyer au portail (rien ne sera modifie).")
+                # (une liaison directe ouverte avant la protection resterait ouverte : la page est rechargée)
+                page.reload(wait_until="domcontentloaded", timeout=60000)
+                attendre_chargement(page)
+                if _champ_mot_de_passe(page):
+                    _garde_coupee(garde, lambda: attendre_portail(page))
             if mode == "voir":
                 fichier = boucle_voir(page)
             elif mode == "explorer":
-                fichier = explorer_portail(page, echange["url"], garde)
-                revenez_ici()
-                if oui_en_vivant(page, "   Voulez-vous essayer tout de suite « aller a une page » (le robot y va tout seul) ?", "n"):
-                    boucle_gps(page, echange["url"], garde)
+                fichier, arret = explorer_portail(page, echange["url"], garde)
+                if "Ctrl+C" not in arret and "liaison directe" not in arret and not page.is_closed():
+                    revenez_ici()
+                    if oui_en_vivant(page, "   Voulez-vous essayer tout de suite « aller a une page » (le robot y va tout "
+                                           "seul) ?", "n"):
+                        boucle_gps(page, echange["url"], garde)
             elif mode == "gps":
                 boucle_gps(page, echange["url"], garde)
                 fichier = False
