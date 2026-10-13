@@ -4818,6 +4818,8 @@ def _raison_courte(e):
     return "echec"
 
 
+PAGE_DE_CONNEXION = re.compile(r"session.{0,20}expir|expir.{0,20}session|deconnecte|reconnect|connectez-vous|"
+                               r"identifiez-vous|sign in|log in|choisir un compte|pick an account")
 # ce qui a été noté pour un chemin et ne changera pas en recommençant (les autres sont réessayés en complétant la carte)
 STATUTS_DEFINITIFS = ("page", "deja vue", "reste sur l'accueil", "autre site", "bloque", "fenetre du portail refusee",
                       "refuse par prudence")
@@ -4905,6 +4907,9 @@ def explorer_portail(page, url, garde):
             statut = "bloque par la protection (adresse d'action)"
         elif (urlsplit(ici.url).hostname or "") != hote:
             statut = "autre site (pas visite)"
+        elif PAGE_DE_CONNEXION.search(sans_accents(_identite(ici)[1]).lower()) or _champ_mot_de_passe(ici):
+            # (« Votre session a expiré », page de connexion : pas une page du portail ; compte comme un échec)
+            statut = "connexion demandee"
         else:
             numero, nouvelle = noter_page(chemin)
             p = carte["pages"][numero]
