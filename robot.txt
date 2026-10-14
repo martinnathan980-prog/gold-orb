@@ -21,7 +21,7 @@ from pathlib import Path
 from collections import deque
 from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
-VERSION = "5"
+VERSION = "5.1"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -57,7 +57,7 @@ new nouveau nouvelle ajouter add edit editer modifier modification update maj en
 approve rejeter reject annuler cancel archiver archive publier publish importer import upload deplacer move renommer
 rename remplacer replace activer desactiver activate deactivate enable disable lock unlock verrouiller deverrouiller
 signer sign cloturer close reset restaurer restore transferer transfer assigner assign affecter attribuer appliquer
-apply confirmer confirm executer execute""".split())
+apply confirmer confirm executer execute diffuser viser emettre notifier indicer figer reserver""".split())
 
 
 def mots(texte):
@@ -1031,19 +1031,30 @@ JS_OUTILS_MENUS = JS_ZONE_MENU + r"""
   const SOUS = 'ul, ol, [role=menu], [role=group], [role=listbox], table, select';
   const ICONE = /(^|[\s_-])(ico|icon|icons|icone|material-icons|material-symbols\S*|mat-icon|fa|fas|far|fal|fab|glyphicon|bi|mdi|chevron|arrow|caret|angle|fleche)([\s_-]|$)/i;
   const motIcone = t => !t || /^[a-z0-9_]+$/.test(t) || /^[^A-Za-zÀ-ÿ0-9]{1,3}$/.test(t);
+  // une pastille de compteur (« 3 » nouveaux messages) n'est pas un nom : seulement le compteur lui-même (des chiffres),
+  // jamais l'élément qui porte le texte (« <span matBadge=4>Plans à valider</span> »)
+  const PASTILLE = /badge|pastille|counter|compteur|bubble|count|scroll-number/i;
+  const compteur = x => (/^\s*\d{1,4}\+?\s*$/.test(x.textContent || '') &&
+                         (x.tagName === 'SUP' || PASTILLE.test(classe(x)) || (x.parentElement && PASTILLE.test(classe(x.parentElement))))) ||
+                        // (une étiquette d'un mot, « Nouveau », « Beta », dans une pastille)
+                        (!x.children.length && /(^|[\s_-])(badge|pastille|tag|chip-new|label-new)([\s_-]|$)/i.test(classe(x)) &&
+                         /^\s*[A-Za-zÀ-ÿ]{2,10}\s*$/.test(x.textContent || ''));
   const texteDuClone = c => {
     c.querySelectorAll(SOUS + ', svg, img, script, style, input, textarea').forEach(x => x.remove());
+    for (const x of Array.from(c.querySelectorAll('*'))) if (c.contains(x) && compteur(x)) x.remove();
     for (const x of Array.from(c.querySelectorAll('*')))
       if (!x.children.length && (['I', 'MAT-ICON'].includes(x.tagName) || ICONE.test(classe(x))) && motIcone((x.textContent || '').trim()))
         x.remove();
     return (c.textContent || '').replace(/\s+/g, ' ').trim().replace(/^[\s›»<>▸▶►▾▼⌄+•·|-]+|[\s›»<>▸▶►▾▼⌄+•·|-]+$/g, '').trim();
   };
   const texteDe = e => {
-    let t = texteDuClone(e.cloneNode(true));
+    let t = texteDuClone(e.cloneNode(true)), base = e, elague = false;
     // une entrée de MENU dont le sous-menu FERMÉ est dans la page (caché) : son nom, c'est seulement ce qui se voit.
     // Jamais dans le contenu de la page (une tuile, une fiche dont le détail est caché n'est pas une entrée de menu),
     // et seulement si la partie cachée contient des éléments cliquables (un sous-menu).
-    if (t.length > 30 && !contenu(e) && (e.innerText || '').replace(/\s+/g, ' ').trim().length < t.length) {
+    // (aussi une entrée courte dont le sous-menu caché est dedans : une icône seule, ou un nom suivi de son sous-menu)
+    const cache = Array.from(e.querySelectorAll('a, button, [role=menuitem], [onclick]')).slice(0, 20).some(x => !vis(x));
+    if (cache || (t.length > 30 && !contenu(e) && (e.innerText || '').replace(/\s+/g, ' ').trim().length < t.length)) {
       const c = e.cloneNode(true), o = Array.from(e.querySelectorAll('*')), k = Array.from(c.querySelectorAll('*'));
       if (o.length <= 400) {
         let sousMenu = false;
@@ -1051,14 +1062,93 @@ JS_OUTILS_MENUS = JS_ZONE_MENU + r"""
           if (s.display === 'none' || s.visibility === 'hidden') {
             if (x.matches('a, button, [role=menuitem], [onclick]') || x.querySelector('a, button, [role=menuitem], [onclick]')) sousMenu = true;
             k[i].remove(); } });
-        const vu = texteDuClone(c);
-        if (vu && sousMenu) t = vu;
+        const visible = c.cloneNode(true), vu = texteDuClone(c);
+        // (vide pour une icône seule : elle sera nommée par sa bulle ou son icône, jamais par ce qui est caché)
+        if (sousMenu) { t = vu; base = visible; elague = true; }
       }
     }
     if (!t) t = (e.getAttribute('aria-label') || e.getAttribute('title') || '').replace(/\s+/g, ' ').trim();
-    if (!t) { const i = e.querySelector('img[alt], [title], [aria-label]');
+    if (!t) { const i = Array.from(base.querySelectorAll('img[alt], [title], [aria-label]'))
+                              .find(x => { const s = x.parentElement && x.parentElement.closest(SOUS);
+                                           return (elague || vis(x)) && !(s && base.contains(s) && s !== base); });
               if (i) t = (i.getAttribute('alt') || i.getAttribute('title') || i.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim(); }
     return t;
+  };
+  // le nom d'une entrée faite d'une ICÔNE seule (barre d'icônes à gauche) : sa bulle, sinon le nom de son icône
+  // (« icone dashboard » : le mot de l'icône Material, la classe « fa-folder », le symbole SVG, le composant d'icône).
+  // Jamais le nom d'un fichier image (photo d'une personne, logo d'un client) ; une bulle qui ressemble à une donnée
+  // (chiffre, « Nom Prénom », longue phrase) n'est pas un nom.
+  // (jamais « alt » : le texte d'une image est souvent un logo ou une photo)
+  const BULLES = ['aria-label', 'title', 'data-tooltip', 'mattooltip', 'ng-reflect-message', 'data-original-title',
+                  'data-bs-original-title', 'tooltip', 'ptooltip', 'data-title', 'data-tip'];
+  // une bulle qui peut être un NOM DE PERSONNE n'est pas un nom d'entrée : « Jean-Pierre Dupont », « J. Dupont »,
+  // « Agnieszka K. », « nathan martin », « dupont.j », « JD »
+  const MAJ = x => /^[A-ZÀ-Ý][a-zà-ÿ']*(-[A-ZÀ-Ý][a-zà-ÿ']*)*$/.test(x) || /^[A-ZÀ-Ý'-]{2,}$/.test(x);
+  const HOTE = (location.hostname || '').toLowerCase().split(/[.-]/).filter(x => x.length >= 4 &&
+                 !/^(www|intranet|portail|portal|apps?|plans?|test|prod|recette|local|localhost|corp|com|net|org|gouv)$/.test(x));
+  const deLHote = t => HOTE.some(x => t.toLowerCase().replace(/[^a-z0-9]/g, '').includes(x));
+  const bulleSure = v => { const t = (v || '').replace(/\s+/g, ' ').trim(), m = t.split(' ');
+    if (t.length < 2 || t.length > 30 || /[:\d@_]/.test(t) || m.length > 4 || !/[A-Za-zÀ-ÿ]/.test(t) || deLHote(t)) return '';
+    // (« J. Dupont », « Dupont J », « dupont.j », « Jan Kowalski », « nathan martin » ; un sigle « P.L.U. », « SIG »
+    // reste un nom ; « Mes Plans » est aussi refusée : l'entrée sera nommée par son icône)
+    if (m.length >= 2 && m.some(x => /^[A-ZÀ-Ý]\.?$/.test(x))) return '';
+    if (/^[a-z]+\.[a-z]+$/.test(t)) return '';
+    if (m.length >= 2 && (m.every(x => /^[a-zà-ÿ'-]+$/.test(x)) || m.some((x, i) => i && MAJ(x) && MAJ(m[i - 1])))) return '';
+    return t; };
+  // un nom d'icône qui serait celui de l'entreprise ou d'une personne (logo, marque, photo) n'est jamais un nom
+  const ICONE_PERSO = /logo|brand|marque|avatar|photo|portrait|profil|picture/i;
+  // les noms d'icônes d'un registre PROPRE à l'application (svgIcon, data-icon, symbole « #... », classe « icon-... ») :
+  // seulement des mots courants d'icônes (sinon, le préfixe de l'entreprise pourrait s'écrire)
+  const MOTS_ICONE = new Set(('home house dashboard tableau bord accueil folder folders dossier dossiers file files fichier ' +
+    'document documents description doc docs settings setting parametres reglages gear cog cogs user users person people ' +
+    'group groups team equipe chart charts graph bar line pie map maps carte cartes location pin place search recherche list ' +
+    'liste grid table calendar calendrier event events clock time history historique book books library archive archives ' +
+    'inbox mail envelope message messages chat bell notification notifications star heart flag tag tags label bookmark help ' +
+    'aide question info information warning error alert shield lock key link print download upload cloud sync refresh edit ' +
+    'pencil plus add minus delete trash close check cross arrow arrows chevron caret left right up down back forward next ' +
+    'previous menu bars apps app view eye filter sort task tasks todo assignment work briefcase building city factory tools ' +
+    'tool wrench hammer box package truck car cart money euro wallet card bank report reports rapport rapports analytics ' +
+    'stats statistiques tree network sitemap layers layer stack database server code bug globe world language image images ' +
+    'photo camera video play phone mobile laptop desktop monitor plan plans contract contrat contrats client clients ' +
+    'project projet projets admin administration config configuration module modules nav icon ico svg sprite outline ' +
+    'filled fill round sharp solid o alt circle square small large').split(' '));
+  const registreSur = v => !ICONE_PERSO.test(v) && !deLHote(v) && v.toLowerCase().split(/[-_]+/).every(w => !w || MOTS_ICONE.has(w) || /^\d+$/.test(w));
+  // les classes de STYLE d'une police d'icônes (fa-solid, fa-fw, pi-fw, mdi-24px...) ne sont pas le nom de l'icône
+  const STYLE_ICONE = /^(fa|fas|far|fal|fab|fad|icon|ico|pi|mdi|bi|ti|ri|la|bx|bxs|lucide|feather|k-i|k-svg-i|e|ph)-(solid|regular|light|thin|duotone|sharp|brands|kit|fw|lg|sm|xs|xl|2xs|2xl|[0-9]+x|[0-9]+px|spin|pulse|border|inverse|stack|stack-[0-9]x|flip|flip-\w+|rotate-\w+|beat|beat-fade|bounce|fade|shake|spin-pulse|spin-reverse|li|ul|dark|inactive|icon|icons|size-\w+|fill)$/i;
+  const CLASSE_ICONE = /^(?:fa|fas|far|fal|fab|fad|mdi|bi|icon|ico|glyphicon|pi|k-i|k-svg-i|ti|ri|la|lucide|feather|bx|bxs|bxl|octicon|ion|ph|e)-([a-z][\w-]{1,30})$|^ms-Icon--([A-Za-z]\w{1,30})$/i;
+  const COMPTE_ICONE = /^icone (person|user|account|account_circle|account_box|manage_accounts|circle-user|user-circle|face|id-badge|avatar|user-tie|portrait|users|people|contacts)([-_](circle|alt|outline|outlined|solid|fill|filled|round|rounded|o))*$/i;
+  const iconeSeule = k => cleIcone(k, true);
+  const cleIcone = (k, sansBulle) => {
+    // (ce qui se VOIT seulement : jamais la bulle d'un lien d'un sous-menu caché dans l'entrée)
+    const tous = [k, ...Array.from(k.querySelectorAll('*')).slice(0, 80)
+                    .filter(x => !x.checkVisibility || x.checkVisibility({visibilityProperty: true, opacityProperty: true})).slice(0, 39)];
+    if (!sansBulle)
+      for (const x of tous)
+        for (const a of BULLES) { const v = bulleSure(x.getAttribute && x.getAttribute(a)); if (v) return v; }
+    for (const x of tous)
+      // un composant d'icône qui porte son nom : <mat-icon svgIcon="plans">, <app-icon name="plans">, data-icon="plans"
+      for (const a of ['data-mat-icon-name', 'svgicon', 'data-icon', 'icon', 'iconname', 'data-icon-name'].concat(
+                         /ICON/.test(x.tagName) ? ['name', 'type', 'key'] : [])) {
+        const v = (x.getAttribute && x.getAttribute(a) || '').split(':').pop().trim();
+        if (/^[A-Za-z][\w-]{1,30}$/.test(v) && registreSur(v)) return 'icone ' + v;
+      }
+    for (const x of tous) {
+      if (!['MAT-ICON', 'I', 'SPAN', 'SVG', 'USE', 'EM'].includes(x.tagName.toUpperCase()) && x !== k) continue;
+      if (x.tagName.toLowerCase() === 'use') { const m = (x.getAttribute('href') || x.getAttribute('xlink:href') || '').match(/#([A-Za-z][\w-]{1,30})$/);
+                                              const v = m ? m[1].replace(/^(icon|ico|i|svg|sprite)[-_]/i, '') : '';
+                                              if (v && registreSur(v)) return 'icone ' + v; }
+      // la classe d'icône (la DERNIÈRE qui n'est pas une classe de style : « fa-solid fa-house » -> house) ; une classe
+      // « icon-... » ou « ico-... » est propre à l'application : mots courants seulement
+      const c = classe(x).split(/\s+/).filter(c => CLASSE_ICONE.test(c) && !STYLE_ICONE.test(c) &&
+                                                 (!/^e-/i.test(c) || /(^|\s)e-icons(\s|$)/.test(classe(x)))).pop();
+      if (c) { const m = c.match(CLASSE_ICONE), v = (m[1] || m[2]).toLowerCase();
+               if (!ICONE_PERSO.test(v) && (!/^(icon|ico)-/i.test(c) || registreSur(v))) return 'icone ' + v; }
+      let t = ''; for (const n of x.childNodes) if (n.nodeType === 3) t += n.textContent;
+      t = t.trim();
+      if (['MAT-ICON', 'I', 'SPAN'].includes(x.tagName) && /^[a-z][a-z_]{2,30}$/.test(t) &&
+          (x.tagName !== 'SPAN' || ICONE.test(classe(x)))) return 'icone ' + t;   // mot d'une icône Material
+    }
+    return '';
   };
   const CLIQ = 'a, button, [role=menuitem], [role=menuitemcheckbox], [role=menuitemradio], [role=option], [role=treeitem], ' +
                '[role=link], [role=button], [role=tab], [onclick], li, [tabindex], input[type=submit], input[type=button], ' +
@@ -1157,6 +1247,68 @@ JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
     }
     return '';
   };
+  // le nom écrit d'une entrée (une seule fois par élément : la page peut être grande)
+  // (un nom qui ne vient que du texte d'une image, « alt » : jamais un logo ni un lien vers l'accueil, et pas un nom de
+  // personne ou de marque en deux mots)
+  const altSeul = (k, t) => !texteDuClone(k.cloneNode(true)) && !k.getAttribute('aria-label') && !k.getAttribute('title') &&
+                            Array.from(k.querySelectorAll('img[alt]')).some(i => (i.getAttribute('alt') || '').replace(/\s+/g, ' ').trim() === t);
+  const altRefuse = (k, t) => { const a = k.closest('a[href]') || k.querySelector('a[href]'), h = a ? (a.getAttribute('href') || '').trim() : '';
+    const autour = [k, a].filter(Boolean).map(x => classe(x) + ' ' + (x.id || '')).join(' ');
+    const logo = ICONE_PERSO.test(t + ' ' + autour + ' ' + Array.from(k.querySelectorAll('img')).map(i => (i.getAttribute('src') || '').slice(0, 200) + ' ' + classe(i)).join(' ')) ||
+                 /brand|navbar-header|entete|header-logo/i.test(autour);
+    let accueil = false;
+    try { const u = new URL(h || '#', location.href), b = new URL(document.baseURI);
+          accueil = h !== '#' && u.origin === location.origin && u.search === '' &&
+                    (/^\/(index\.\w+|home|accueil|dashboard)?\/?$/i.test(u.pathname) || u.pathname.replace(/\/$/, '') === b.pathname.replace(/\/$/, '')) &&
+                    /^(#\/?(home|accueil)?\/?)?$/i.test(u.hash); } catch (x) {}
+    return !bulleSure(t) || logo || accueil; };
+  // (un nom qui ne se VOIT pas, pris d'une bulle, d'un « title » ou d'un « alt » : contrôlé comme une bulle, jamais
+  // un nom de personne)
+  const memo = new Map(), T = k => { if (!memo.has(k)) {
+      let t = texteDe(k);
+      if (t && !texteDuClone(k.cloneNode(true)) && (!bulleSure(t) || (altSeul(k, t) && altRefuse(k, t)))) t = '';
+      memo.set(k, t); }
+    return memo.get(k); };
+  const nomCourt = t => (t && t.length <= 30 && /[A-Za-zÀ-ÿ]/.test(t) && !t.includes(':')) ? t : '';
+  // une entrée faite d'une ICÔNE seule (petite, sans texte à elle) : sa bulle ou son icône ; sans aucun nom, elle
+  // sera nommée par sa place (« icone 1 », « icone 2 »...)
+  const nomIcone = k => { const t = T(k).replace(/^\d+\+?$/, ''), r = k.getBoundingClientRect();   // (« 3 » : une pastille)
+    if (r.width > 160 || r.height > 160 || (t && (nomCourt(t) || texteDuClone(k.cloneNode(true)).replace(/^\d+\+?$/, '')))) return '';
+    return cleIcone(k) || ((k.matches('svg, img') || k.querySelector('svg, img, i, mat-icon, [class*=icon i]') ||
+                            [k, ...k.querySelectorAll('*')].slice(0, 20).some(x => /ICON/i.test(x.tagName))) ? 'icone ?' : ''); };
+  // un groupe d'entrées : 2 à 40, même genre d'élément, alignées, cliquables, pas un formulaire ni une liste de fiches
+  const essai = (g, v, e, icones) => {
+    if (e.length < 2 || e.length > 40 || e.length < 0.7 * v.length || !e.every(k => k.tagName === e[0].tagName)) return null;
+    if (e.some(k => k.matches('input, select, textarea') || k.querySelector('input:not([type=hidden]), select, textarea') || envoi(k))) return null;
+    if (e.filter(entreeCliquable).length < 0.7 * e.length) return null;
+    if (e.filter(enregistrement).length >= e.length / 2) return null;   // une liste de fiches (données), pas un menu
+    let fort = !contenu(g) &&
+               (!!g.closest('nav, [role=navigation], [role=menu], [role=menubar]') || e.filter(indiceSous).length >= e.length / 2);
+    const rs = e.map(k => k.getBoundingClientRect());
+    const ecart = f => Math.max(...rs.map(f)) - Math.min(...rs.map(f));
+    const enLigne = ecart(r => r.top) <= 6, enColonne = !enLigne && ecart(r => r.left) <= 6;
+    if (!enLigne && !enColonne) return null;
+    const gauche = enColonne && rs.every(r => r.left < 100);
+    // des icônes ailleurs qu'à gauche (barre du haut : replier le menu, langue, aide...) : gardées seulement si leur
+    // survol ouvre des sous-menus (jamais un menu « certain » cliqué entrée par entrée)
+    if (icones && !gauche) fort = false;
+    // un dessin sans aucun nom : seulement dans une colonne au bord gauche (barre d'icônes) ; ailleurs (barre d'outils),
+    // on ne sait pas ce qu'il fait
+    if (icones && !gauche) { e = e.filter(k => nomIcone(k) !== 'icone ?'); if (e.length < 2) return null; }
+    // une colonne à gauche reconnue par ses textes : ses entrées faites d'une icône nommée (sans bulle) en font partie
+    if (!icones && gauche) {
+      const en = new Set(e), x0 = rs[0].left;
+      e = v.filter(k => en.has(k) || (k.tagName === e[0].tagName && Math.abs(k.getBoundingClientRect().left - x0) <= 6 &&
+                                      (k.textContent || '').length <= 3000 && !nomCourt(T(k)) && /^icone [a-z]/.test(nomIcone(k))));
+    }
+    // des boutons hors d'un menu certain et hors d'une zone de menu : barre de boutons d'action (Calculer, Imprimer...)
+    if (!fort && e.filter(estBouton).length >= e.length / 2 && !dansZone(g, enColonne)) return null;
+    const gr = g.getBoundingClientRect();
+    const ok = enLigne ? (gr.top < 260 || !!g.closest('header') || dansZone(g, false))
+                       : (dansZone(g, true) || (gr.left < 100 && gr.width <= 400));
+    return ok ? { g: g, e: e, fort: fort, icones: icones } : null;
+  };
+  let anonymes = 0;
   const groupes = [];
   for (const g of document.querySelectorAll('body *')) {
     if (g.children.length < 2 || g.children.length > 40 || /^(SELECT|DATALIST|SVG|OPTGROUP)$/i.test(g.tagName)) continue;
@@ -1164,24 +1316,13 @@ JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
                   '[role=alertdialog], dialog, [role=tooltip]') ||
         ONGLETS.test(classe(g)) || (/^(TABLE|TBODY|THEAD|TR)$/.test(g.tagName) && !dansZone(g, false)) || !vis(g)) continue;
     const v = Array.from(g.children).filter(vis);
-    const e = v.filter(k => { if ((k.textContent || '').length > 3000) return false;
-      const t = texteDe(k); return t && t.length <= 30 && /[A-Za-zÀ-ÿ]/.test(t) && !t.includes(':'); });
-    if (e.length < 2 || e.length > 40 || e.length < 0.7 * v.length || !e.every(k => k.tagName === e[0].tagName)) continue;
-    if (e.some(k => k.matches('input, select, textarea') || k.querySelector('input:not([type=hidden]), select, textarea') || envoi(k))) continue;
-    if (e.filter(entreeCliquable).length < 0.7 * e.length) continue;
-    if (e.filter(enregistrement).length >= e.length / 2) continue;   // une liste de fiches (données), pas un menu
-    const fort = !contenu(g) &&
-                 (!!g.closest('nav, [role=navigation], [role=menu], [role=menubar]') || e.filter(indiceSous).length >= e.length / 2);
-    const rs = e.map(k => k.getBoundingClientRect());
-    const ecart = f => Math.max(...rs.map(f)) - Math.min(...rs.map(f));
-    const enLigne = ecart(r => r.top) <= 6, enColonne = !enLigne && ecart(r => r.left) <= 6;
-    if (!enLigne && !enColonne) continue;
-    // des boutons hors d'un menu certain et hors d'une zone de menu : barre de boutons d'action (Calculer, Imprimer...)
-    if (!fort && e.filter(estBouton).length >= e.length / 2 && !dansZone(g, enColonne)) continue;
-    const gr = g.getBoundingClientRect();
-    const ok = enLigne ? (gr.top < 260 || !!g.closest('header') || dansZone(g, false))
-                       : (dansZone(g, true) || (gr.left < 100 && gr.width <= 400));
-    if (ok) groupes.push({ g: g, e: e, fort: fort });
+    const court = v.filter(k => (k.textContent || '').length <= 3000);
+    // d'abord les entrées qui ont un texte ; les icônes seules seulement si le groupe n'est pas un menu sans elles
+    // (une barre d'icônes, ou des entrées surtout faites d'icônes)
+    let G = essai(g, v, court.filter(k => nomCourt(T(k))), false);
+    if (!G && court.some(k => !nomCourt(T(k))))
+      G = essai(g, v, court.filter(k => nomCourt(T(k)) || nomIcone(k)), true);
+    if (G) groupes.push(G);
   }
   // un groupe qui n'est qu'une enveloppe d'un autre menu (en-tête = logo + menu + nom) : on garde le menu
   const reste = (k, c) => texteDe(k).toLowerCase().replace(/[^a-z0-9à-ÿ]/g, '').replace(texteDe(c).toLowerCase().replace(/[^a-z0-9à-ÿ]/g, ''), '');
@@ -1193,13 +1334,56 @@ JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
       if (entrees.length >= 60) break;
       k.setAttribute('data-robot-barre', String(entrees.length));
       if (G.fort) k.setAttribute('data-robot-fort', '1');
-      entrees.push({ nom: enregistrement(k) ? '(donnee masquee)' : texteDe(k), texte: texteDe(k), groupe: n, fort: G.fort,
-                     titre: titreDe(G.g), section: titreSection(k), compte: compteDe(k),
+      const nomK = nomCourt(T(k)) || cleIcone(k) || ('icone ' + (++anonymes));
+      // (2 ou 3 majuscules dans une pastille RONDE : les initiales de la personne connectée, pas un sigle « SIG »)
+      const rond = [k, ...k.querySelectorAll('*')].slice(0, 6).some(x => { const r = x.getBoundingClientRect();
+        return r.width > 0 && parseFloat(getComputedStyle(x).borderTopLeftRadius) >= 0.4 * Math.min(r.width, r.height); });
+      entrees.push({ nom: enregistrement(k) ? '(donnee masquee)' : nomK, texte: nomK, groupe: n, fort: G.fort,
+                     titre: titreDe(G.g), section: titreSection(k),
+                     // (l'icône de la personne ne compte que pour une entrée SANS texte à elle : « Clients » avec une icône
+                     // de personnes reste un menu)
+                     compte: compteDe(k) || ((!T(k) || !texteDuClone(k.cloneNode(true))) && COMPTE_ICONE.test(iconeSeule(k))) ||
+                             (/^[A-ZÀ-Ý]{2,3}$/.test(texteDuClone(k.cloneNode(true))) && (rond || G.icones)),
                      // tout le texte, sous-menu caché compris (« Se déconnecter » : menu de la personne) ; jamais écrit
                      cache: (k.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 600) });
     }
   });
+  // deux icônes du même nom (« icone folder ») : la deuxième devient « icone folder 2 » (retrouvée par sa place)
+  const fois = {};
+  for (const x of entrees) if (/^icone /.test(x.texte)) {
+    fois[x.texte] = (fois[x.texte] || 0) + 1;
+    if (fois[x.texte] > 1) { x.texte = x.texte + ' ' + fois[x.texte]; if (x.nom !== '(donnee masquee)') x.nom = x.texte; }
+  }
   return entrees;
+}"""
+
+# L'entrée faite d'une icône seule dont le nom (bulle, ou « icone dashboard ») est celui-ci : l'élément le plus
+# intérieur (le lien dans « li > a », pas le « li »). numero : ou bien l'entrée de menu marquée data-robot-barre=numero.
+JS_TROUVER_ICONE = r"""([cle, jeton, numero]) => {""" + JS_OUTILS_MENUS + r"""
+  const LIEN = 'a[href], button, [role=menuitem], [role=link], [role=button], [role=tab], [routerlink], [ng-reflect-router-link]';
+  // une entrée qui contient UN seul lien ou bouton : c'est lui qu'on clique
+  const interieur = e => { if (e.matches(LIEN)) return e; const d = Array.from(e.querySelectorAll(LIEN)).filter(vis);
+                           return d.length === 1 ? d[0] : e; };
+  let trouves;
+  if (numero !== null && numero !== undefined) {
+    trouves = Array.from(document.querySelectorAll('[data-robot-barre="' + numero + '"]'));
+  } else {
+    // d'abord les entrées des menus (la bulle peut être sur l'entrée, autour du lien : « div[mattooltip] > a > icône ») ;
+    // sinon un élément cliquable de la page qui porte cette icône
+    // (pour RETROUVER un élément, la bulle telle qu'elle est, même si elle ne serait pas écrite dans un fichier :
+    // « tableau de bord », « Plans Validés en cours » tapés dans une tâche)
+    const norme = v => (v || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    const bulleBrute = e => { for (const x of [e, ...Array.from(e.querySelectorAll('*')).slice(0, 40)])
+                                for (const a of BULLES) { const v = x.getAttribute && x.getAttribute(a); if (v && v.trim()) return v; }
+                              return ''; };
+    const vise = e => cleIcone(e) === cle || norme(bulleBrute(e)) === norme(cle);
+    trouves = Array.from(document.querySelectorAll('[data-robot-barre]')).filter(e => !texteDe(e) && vise(e));
+    if (!trouves.length) trouves = cliquables().filter(e => !texteDe(e) && vise(e));
+    trouves = trouves.filter(e => !trouves.some(f => f !== e && e.contains(f)));
+  }
+  const marques = new Set(trouves.map(interieur));
+  marques.forEach(e => e.setAttribute('data-robot-trouve', jeton));
+  return marques.size;
 }"""
 
 # Avant un survol : ce qui est déjà visible (pour voir ensuite ce qui APPARAÎT). La marque du survol précédent
@@ -1349,6 +1533,17 @@ JS_EXAMINER = r"""(e, [jeton, premier]) => {""" + JS_ZONE_MENU + r"""
   // le texte propre de l'élément (sous-menus à part), et ce qu'il contient
   const copie = c.cloneNode(true);
   copie.querySelectorAll(SOUS).forEach(x => x.remove());
+  // le mot d'une icône (« archive » dans « <mat-icon>archive</mat-icon> Archives ») n'est pas le nom de l'élément, sauf
+  // s'il n'y a rien d'autre (icône seule : elle est alors jugée par son icône)
+  // (un mot d'icône : dans mat-icon, ou dans un i / span qui porte une classe d'icône ; jamais un mot en italique)
+  const motDIcone = x => !x.children.length && /^[a-z0-9_]+$/.test((x.textContent || '').trim()) &&
+      (x.tagName === 'MAT-ICON' || /icon|symbol|material|^fa|\bfa-|mdi|glyph/i.test(classes(x)));
+  const ligatures = Array.from(copie.querySelectorAll('mat-icon, i, span')).filter(motDIcone);
+  const sansIcones = copie.cloneNode(true);
+  Array.from(sansIcones.querySelectorAll('mat-icon, i, span')).filter(motDIcone).forEach(x => x.remove());
+  const propre = (sansIcones.textContent || '').replace(/\s+/g, ' ').trim();
+  const motsIcones = ligatures.map(x => (x.textContent || '').trim());
+  if (propre && ligatures.length) ligatures.forEach(x => x.remove());
   if (!refus && copie.querySelector('a[href], button, input, select, textarea, label, [role=button], [role=checkbox], [onclick]'))
     refus = 'contient un autre bouton';
   let texte = (copie.textContent || '').replace(/\s+/g, ' ').trim();
@@ -1368,7 +1563,14 @@ JS_EXAMINER = r"""(e, [jeton, premier]) => {""" + JS_ZONE_MENU + r"""
       if (GEST.test(a.name)) attributs.push(a.name + ' ' + a.value);
   const formulaire = c.form || c.closest('form');
   if (formulaire) attributs.push('form ' + (formulaire.getAttribute('action') || ''));
-  return { texte: texte.slice(0, 300), attributs: attributs.join(' | '), refus: refus };
+  // une entrée de MENU qui porte son propre nom (bulle, titre) : jugée par ce nom, pas par le dessin de son icône
+  const NOMS_BULLE = ['title', 'aria-label', 'mattooltip', 'data-tooltip', 'ng-reflect-message', 'data-bs-original-title', 'ptooltip'];
+  const bulle = NOMS_BULLE.some(a => (c.getAttribute(a) || '').trim() || (c.parentElement && (c.parentElement.getAttribute(a) || '').trim()));
+  // (la bulle du parent, « <span mattooltip="Supprimer"><a>... » : contrôlée aussi)
+  if (c.parentElement) for (const a of NOMS_BULLE) { const v = (c.parentElement.getAttribute(a) || '').trim(); if (v) attributs.push(a + ' ' + v); }
+  const menuNomme = bulle && !!c.closest('[data-robot-barre], nav, [role=navigation], [role=menu], [role=menubar]');
+  return { texte: texte.slice(0, 300), attributs: attributs.join(' | '), refus: refus, propre: propre.slice(0, 300),
+           menuNomme: menuNomme, ligatures: motsIcones.slice(0, 5) };
 }"""
 
 # Le point où cliquer : le propre texte de l'élément (pas son centre, qui peut tomber sur un sous-menu) ; si le mot
@@ -1842,13 +2044,33 @@ def _menu_du_compte(textes):
     """Un menu dont les éléments sont « Se déconnecter », « Mon profil »... : c'est le menu de la personne connectée,
     et son nom (le titre du menu) est une donnée."""
     return any(re.search(r"deconnex|deconnect|logout|log out|sign out|signout|mon profil|my profile|mon compte|my account|"
-                         r"mes informations|mes preferences|changer de role|mot de passe|password|mon espace",
+                         r"mes informations|mes preferences|changer de role|mot de passe|password|mon espace|"
+                         r"fermer la session|^quitter\b|log ?off",
                          sans_accents(str(t)).lower()) for t in textes)
+
+
+# une entrée faite d'une icône dont le sous-menu est une liste de fiches ou de messages (historique, notifications,
+# favoris, messagerie) ou le menu de la personne connectée : le nom ENTIER de l'icône est comparé (« account_tree »,
+# l'organigramme, reste un menu)
+ICONE_DE_FICHES = re.compile(r"(?:^|[-_])(history|recent|restore|inbox|e?mail|envelope|notifications?|bell|bookmarks?|"
+                             r"star|grade|favorite|heart|chat|forum|messages?|comments?|sms|cart|shopping|contacts?|"
+                             r"schedule|access_time|watch_later)(?=$|[-_\d]|s\b)|^clock-rotate-left$", re.I)
+# l'icône de la personne connectée (son menu, son profil) : jamais visitée, son sous-menu jamais écrit ; « users-gear »
+# (l'administration des utilisateurs) ou « person-digging » (les chantiers) sont des modules
+ICONE_DE_COMPTE = re.compile(r"(person|user|account|account_circle|account_box|manage_accounts|circle-user|user-circle|"
+                             r"face|id-badge|avatar|user-tie|portrait|users|people)([-_](circle|alt|outline|outlined|solid|fill|"
+                             r"filled|round|rounded|o))*", re.I)
 
 
 def _contenu_a_masquer(nom, textes):
     """Le sous-menu d'une liste de fiches (Récents, Mes plans...), du menu du compte, ou d'une entrée masquée."""
-    return (_liste_de_donnees(nom) or _menu_du_compte(textes) or
+    t = " ".join(str(nom or "").split())
+    if t.lower().startswith("icone "):
+        icone = re.sub(r" \d+$", "", t[6:]).strip()
+        fiches = bool(ICONE_DE_FICHES.search(icone) or ICONE_DE_COMPTE.fullmatch(icone))
+    else:
+        fiches = _liste_de_donnees(nom)
+    return (fiches or _menu_du_compte(textes) or
             _structure(nom) in (None, "(donnee masquee)", "(menu du compte)"))
 
 
@@ -2611,15 +2833,26 @@ margaux clara elise elisa ambre lina mia rose anna romane lola maeva nina myriam
 mohamed ahmed karim samir nicolas sophie""".split())
 NOM_DE_PERSONNE = re.compile(r"\b[A-ZÉÈÀÂÎÔÛÇ][a-zéèêëàâîïôûüç]+(?:-[A-Z][a-z]+)?\s+[A-ZÉÈÀÂÎÔÛÇ]{2,}(?![\w])|"
                              r"\b[A-ZÉÈÀÂÎÔÛÇ]{2,}\s+[A-ZÉÈÀÂÎÔÛÇ][a-zéèêëàâîïôûüç]+\b|"
-                             r"\b(?:M\.|Mme|Mlle|Mr|Monsieur|Madame|Mademoiselle)\s+[A-ZÉÈ]")
-AUTRES_DONNEES = re.compile(r"\d{3,}|@|https?://|\\|\b[A-Za-z]{1,6}-\d+|\d{2}[ .]\d{2}[ .]\d{2}|\d{1,2}/\d{1,2}/\d{2,4}|"
-                            r"\b[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,6}\b")  # (nom de serveur, j.dupont, fichier.pdf)
+                             r"\b(?:M\.|Mme|Mlle|Mr|Monsieur|Madame|Mademoiselle)\s+[A-ZÉÈ]|"
+                             # « J. Dupont » (au début, ou après « de », « par »... ; jamais un sigle « P.L.U. Zonage »),
+                             # « DUPONT J. », identifiant « marie.lefebvre »
+                             r"(?:^|\b(?:de|du|par|pour|chez|avec|à)\s+)(?<![A-Z]\.)[A-Z]\.(?![A-Z]\.)\s*[A-ZÉÈ][a-zéèêëàâîïôûüç]+|"
+                             r"\b[A-ZÉÈ]{3,}\s+[A-Z]\.$|\b[a-z]{2,}\.[a-z]{2,}\b")
+DONNEES_DE_BASE = r"\d{3,}|@|https?://|\\|\b[A-Za-z]{1,6}-\d+|\d{2}[ .]\d{2}[ .]\d{2}|\d{1,2}/\d{1,2}/\d{2,4}"
+AUTRES_DONNEES = re.compile(DONNEES_DE_BASE + r"|\b[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,6}\b")  # (+ serveur, j.dupont, fichier.pdf)
+# pour décrire la STRUCTURE (classes « div.ag-cell.ag-row ») : les points y séparent des classes, pas un nom de serveur
+AUTRES_DONNEES_CSS = re.compile(DONNEES_DE_BASE)
 
 
 def _prenom_nom(texte):
     mots_ = re.findall(r"[A-Za-zÀ-ÿ'-]+", texte)
-    return any((sans_accents(a).lower() in PRENOMS and b[:1].isupper() and len(b) > 1) or
-               (sans_accents(b).lower() in PRENOMS and a[:1].isupper() and len(a) > 2 and a.lower() not in ("de", "du", "la"))
+
+    def prenom(m):  # (« Jean-Pierre », « Marie-Claire » : toutes les parties ; jamais « Saint-Denis »)
+        parties = [x for x in sans_accents(m).lower().split("-") if x]
+        return bool(parties) and all(x in PRENOMS for x in parties)
+    return any((prenom(a) and b[:1].isupper() and len(b) > 1) or
+               (prenom(b) and a[:1].isupper() and len(a) > 2 and a.lower() not in ("de", "du", "la")) or
+               (prenom(a) and a[:1].isupper() and re.fullmatch(r"[A-Z]\.?", b))   # « Agnès K. »
                for a, b in zip(mots_, mots_[1:]))
 
 
@@ -2986,13 +3219,78 @@ def _effacer_cadres(page):
 
 
 def _resume_montre(d):
-    return _sans_donnee(d["signature"])[:60] + f" ({d.get('mots', 0)} mot(s), taille {d['taille']})"
+    return _sans_donnee(d["signature"], css=True)[:60] + f" ({d.get('mots', 0)} mot(s), taille {d['taille']})"
 
 
-def _sans_donnee(t):
-    """Une description de structure, sans rien qui ressemble à une donnée (numéros, codes, dates)."""
+# les mots des classes d'éléments qu'on peut écrire (structure courante des pages et des bibliothèques connues) ;
+# un autre mot (le préfixe propre à l'entreprise ou à l'application : « acme-nav ») devient « * »
+MOTS_CSS = set("""a abbr app apps area article aside nav navbar navigation navs menu menus menuitem menubar submenu sub item
+items list lists listitem link links rail side sidebar sidenav drawer bar bars top bottom left right header footer main
+content contents container wrapper wrap inner outer body panel panels pane card cards tile tiles grid row rows col cols
+column columns cell cells table tbody thead tr td th tab tabs tablist tabpanel btn button buttons icon icons ico label
+labels title titles text texts active selected disabled open opened closed close expanded collapsed collapse hover
+focus focused flyout popup popover dropdown dropdowns overlay dialog modal toolbar tool tools group groups section
+sections block box area zone region layout page pages view views root shell host component widget module feature home
+dashboard user avatar badge badges search input field fields form select option options checkbox radio toggle switch
+chip chips tag tags tooltip trigger handle arrow chevron caret divider separator spacer small large sm md lg xl xs full
+flex d inline hidden visible show hide fade in out primary secondary tertiary default light dark mini compact normal
+height width size wide narrow mobile desktop level parent child children first last odd even start end center middle
+align justify auto fixed sticky absolute relative cdk mat mdc ng star inserted ag theme quartz alpine balham material p
+k dx e x v el ant q bs ui mud fa fas far mdi bi ripple indicator state layer unbounded leading trailing touch target
+outline outlined filled raised flat stroked elevation z mt mb ml mr mx my pt pb pl pr px py m w h font bold color bg
+border rounded shadow cursor pointer clickable router current highlight highlighted vertical horizontal scroll
+scrollable overflow viewport backdrop portal accordion expansion panel header headers footer label logo brand breadcrumb
+breadcrumbs pagination pager paginator step steps stepper progress spinner loader loading empty placeholder
+notification notifications toast snackbar alert alerts message messages info warning error success danger help
+action actions control controls wrapper body cell normal value values key heading subheading caption legend fieldset
+tree node nodes leaf branch expand expander icon toggler hamburger burger more kebab ellipsis overflow content
+mdc ng c tns pristine valid invalid touched untouched dirty focused animating animation enter leave done collapsed
+mat focus indicator primary list item unscoped content text secondary line lines density outer inner component host
+root base core common shared global layout page app view frame frames iframe svg img image images pic thumb thumbnail
+mui notranslate css ngx kendo chakra mantine prime primeng pi dx devextreme syncfusion vuetify quasar bootstrap
+""".split())
+
+
+# les balises HTML et les noms d'attributs courants (une balise propre à l'application, « acme-shell », devient « *-shell »)
+BALISES = set("""abbr address article aside b body button canvas caption code dd details dialog div dl dt em fieldset
+figure footer form frame h1 h2 h3 h4 h5 h6 header html i iframe img input label legend li main mark menu nav ol
+optgroup option output p path pre section select small span strong sub summary sup svg table tbody td template textarea
+tfoot th thead tr u ul use video g circle rect polygon tabindex role aria labelledby describedby haspopup expanded
+controls routerlink router reflect href target rel title type name value tooltip mattooltip click onclick jsaction
+jsname jscontroller sref toggle placement original readonly checked for true false pointer default url gridcell
+columnheader rowheader navigation menubar listitem treeitem treegrid presentation heading banner complementary region
+alertdialog checkbox switch textbox combobox listbox searchbox spinbutton slider tabpanel status none data href id
+action pressed owns posinset setsize level current selected disabled hidden live atomic busy invalid required
+multiselectable orientation valuemin valuemax valuenow valuetext modal application menuitemcheckbox menuitemradio
+radiogroup rowgroup document feed img list math note row separator term definition directory polyline ellipse tspan
+text map area defs clippath mask pattern symbol lineargradient marker foreignobject hx x v wire phx routerlinkactive
+matmenutriggerfor matbadge cdkdrag src alt download lang dir mouse over out enter leave move key press dbl context
+pointer touch start end focus blur change input submit wheel drag drop menutrigger trigger get post put patch delete
+swap""".split())
+EVENEMENTS = set("""click dblclick mousedown mouseup mouseover mouseout mouseenter mouseleave mousemove keydown keyup keypress
+focus blur change input submit contextmenu pointerdown pointerup pointerover pointerenter pointerleave touchstart
+touchend wheel load""".split())
+
+
+def _css_generique(t):
+    """Une description d'éléments (« acme-shell > a.acme-nav-item#plans », noms d'attributs) réduite aux mots de
+    structure connus : balises, classes, identifiants ; le préfixe propre à l'entreprise (souvent son nom) devient
+    « * »."""
+    def mot(m):
+        ws = mots(m.group(0)).split()
+        return m.group(0) if ws and all(w in MOTS_CSS or w in BALISES or w.isdigit() or
+                                        (w.startswith("on") and w[2:] in EVENEMENTS) for w in ws) else "*"
+    return re.sub(r"[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9]*", mot, t)
+
+
+def _sans_donnee(t, css=False):
+    """Une description de structure, sans rien qui ressemble à une donnée (numéros, codes, dates). css : une description
+    d'éléments (« div.classe.autre ») dont les points ne sont pas ceux d'un nom de serveur ; ses classes sont réduites
+    aux mots de structure connus (voir _css_generique)."""
+    motif = AUTRES_DONNEES_CSS if css else AUTRES_DONNEES
     # (les deux ordres : « PL-10 » entier, pas « PL-# » ; et « 64AB-2 » entier aussi)
-    return AUTRES_DONNEES.sub("#", re.sub(r"\d{2,}", "#", AUTRES_DONNEES.sub("#", str(t or ""))))
+    propre = motif.sub("#", re.sub(r"\d{2,}", "#", motif.sub("#", str(t or ""))))
+    return _css_generique(propre) if css else propre
 
 
 def _cle_page(page):
@@ -3085,7 +3383,8 @@ def boucle_voir(page):
 
 
 def ecrire_diagnostic(pages, appris):
-    propre = _sans_donnee
+    def propre(t):
+        return _sans_donnee(t, css=True)
     lignes = [f"DIAGNOSTIC - CE QUE LE ROBOT TROUVE CLIQUABLE - pour Claude - {datetime.now().strftime('%d/%m/%Y %H:%M')}",
               "Structure seulement (genres d'elements, classes communes). Aucun texte de la page.",
               "Relisez : un mot qui ressemble a une vraie valeur -> effacez ce mot seulement.", ""]
@@ -3099,7 +3398,8 @@ def ecrire_diagnostic(pages, appris):
         for i, d in enumerate(notes, 1):
             lignes.append(f"    {i}. {propre(d['signature'])} ({d.get('mots', 0)} mot(s))" +
                           (" (PAS SUR : vous avez repondu non)" if d.get("douteux") else ""))
-            lignes.append(f"       role : {d['role'] or '-'} | attributs : {propre(d['attributs']) or '-'} | curseur : {d['curseur']}"
+            curseur = re.sub(r"url\([^)]*\)", "url(#)", str(d["curseur"] or ""))  # (l'adresse d'un curseur dessiné)
+            lignes.append(f"       role : {propre(d['role']) or '-'} | attributs : {propre(d['attributs']) or '-'} | curseur : {curseur}"
                           f" | taille : {d['taille']} | composant web : {'oui' if d['ombre'] else 'non'}")
             lignes.append(f"       ecouteur Chrome : {d['ecoute'] or '-'} | survol : {d['survol'] or '-'}"
                           f" | parent qui ecoute : {d['parentEcoute'] or '-'}")
@@ -3639,6 +3939,21 @@ class Tache:
                            " if (norme(p) === norme(m)) x.setAttribute('data-robot-trouve', j); } }", [texte, jeton])
             return r.locator(f'[data-robot-trouve="{jeton}"]')
 
+        def icone(r):
+            """Une entrée faite d'une icône seule (barre d'icônes) : son nom, c'est sa bulle ou son icône ; une icône
+            sans aucun nom (« icone 3 ») se retrouve par sa place parmi les entrées des menus."""
+            if not hasattr(r, "child_frames"):
+                return r.locator("css=[data-robot-rien]")
+            # « icone folder », « icone 3 », « icone folder 2 » : l'entrée des menus de ce nom (par sa place) ; sinon
+            # (bulle, ou icône hors des menus) l'élément qui porte cette bulle ou cette icône
+            numero = None
+            if texte.startswith("icone "):
+                numero = next((i for i, e in enumerate(r.evaluate(JS_MENUS)) if texte in (e["nom"], e.get("texte"))), None)
+                if numero is None and re.fullmatch(r"icone (.+ )?\d+", texte):
+                    return r.locator("css=[data-robot-rien]")
+            r.evaluate(JS_TROUVER_ICONE, [texte, jeton, numero])
+            return r.locator(f'[data-robot-trouve="{jeton}"]')
+
         def tolerant(r):
             """En dernier : accents, majuscules, flèches et symboles ignorés (« Plans récents › »)."""
             if not hasattr(r, "child_frames"):
@@ -3653,7 +3968,7 @@ class Tache:
         facons += [lambda r: r.get_by_text(texte, exact=True), propre_texte,
                    lambda r: r.get_by_title(texte, exact=True),
                    lambda r: r.locator(f"[aria-label={json.dumps(texte, ensure_ascii=False)}]"),
-                   lambda r: r.get_by_text(exact_sans_casse), tolerant]
+                   lambda r: r.get_by_text(exact_sans_casse), tolerant, icone]
         fin = time.time() + attente
         while True:
             reunis = []
@@ -3728,13 +4043,23 @@ class Tache:
     def _texte_de(self, loc):
         """Le texte de l'élément, ses bulles et actions, et celles de ses PARENTS : le clic remonte jusqu'à eux."""
         try:
-            return loc.evaluate(r"""e => {
-              const parts = [e.innerText, e.value, e.title, e.getAttribute('aria-label'), e.getAttribute('href'), e.getAttribute('onclick')];
+            return loc.evaluate(r"""(e, [visite, fortes]) => {
+              // (en visite, sans le mot d'une icône, « archive » dans « archive Archives », s'il reste un autre texte ;
+              // une icône d'action franche, « logout », reste)
+              const c = e.cloneNode(true);
+              const lig = Array.from(c.querySelectorAll('mat-icon, i, span')).filter(x => !x.children.length &&
+                  /^[a-z0-9_]+$/.test((x.textContent || '').trim()) &&
+                  (x.tagName === 'MAT-ICON' || /icon|symbol|material|^fa|\bfa-|mdi|glyph/i.test(String(x.className))));
+              let texte = e.innerText;
+              const autres = lig.filter(x => !fortes.includes((x.textContent || '').trim()));
+              if (visite && autres.length) {   // (une icône seule est jugée par son icône dans _refus_visite)
+                autres.forEach(x => x.remove()); texte = (c.textContent || '').replace(/\s+/g, ' ').trim(); }
+              const parts = [texte, e.value, e.title, e.getAttribute('aria-label'), e.getAttribute('href'), e.getAttribute('onclick')];
               const GEST = /^(on(click|dblclick|mousedown|mouseup|pointerdown|pointerup|touchstart|touchend))$|click|^hx-|^wire:|^x-on|^@|^data-(ajax|turbo|confirm|method|action|url)|^title$|^aria-label$/i;
               for (let n = e.parentElement; n && n !== document.body; n = n.parentElement)
                 for (const a of Array.from(n.attributes)) if (GEST.test(a.name)) parts.push(a.value);
               const f = e.form || e.closest('form'); if (f) parts.push(f.getAttribute('action') || '');
-              return parts.join(' '); }""")
+              return parts.join(' '); }""", [bool(self.lecture_seule), sorted(LIGATURES_D_ACTION)])
         except Exception:
             return ""
 
@@ -3769,14 +4094,27 @@ class Tache:
             return "illisible"
         if info["refus"]:
             return info["refus"]
-        if action_en_visite(info["texte"]) or action_en_visite(info["attributs"]):
+        nomme = info.get("menuNomme") and not info.get("propre")
+        # (une entrée de menu nommée par sa bulle, faite d'une icône : jugée par son nom, pas par le mot ni la classe de
+        # son icône, « bi-shield-lock » d'un module Habilitations)
+        attributs = info["attributs"]
+        if nomme:
+            attributs = " | ".join(x for x in attributs.split(" | ") if not x.startswith("class "))
+        if (not nomme and action_en_visite(info["texte"])) or action_en_visite(attributs):
             return "ressemble a une action"
+        if set(info.get("ligatures") or []) & LIGATURES_D_ACTION:
+            return "icone d une action"
+        # un élément SANS texte visible à lui (icône seule, même avec une bulle « Favori ») : son icône dit ce qu'il fait ;
+        # un lien « Signalements » avec un petit drapeau devant garde son nom, il se visite
+        if not info.get("propre") and not nomme and \
+                any(_icone_d_action("icone " + n) for n in _icones_de(info["texte"], info["attributs"])):
+            return "icone d une action"
         return ""
 
-    def _danger(self, texte):
+    def _danger(self, texte, survol=False):
         """Un geste à contrôler : en tâche, tout mot d'action (v4) ; en visite, un VERBE d'action (une rubrique
-        « Factures » ou « Archives » se visite, « Archiver » non)."""
-        return action_en_visite(texte) if self.lecture_seule else interdit(texte)
+        « Factures » ou « Archives » se visite, « Archiver » non). survol : une entrée seulement survolée."""
+        return action_en_visite(texte, survol) if self.lecture_seule else interdit(texte)
 
     def _verifier_visite(self, loc, quoi):
         if self.lecture_seule:
@@ -3834,7 +4172,8 @@ class Tache:
                 raise ErreurTache(f"menu « {partie} » introuvable")
             trouves.sort(key=lambda t: (not _visible(t), _rang_menu(t), _bouton_de_page(t)))
             loc = trouves[0]
-            if i == 0 and any(self._danger(p) for p in parties) and not self.accord_geste:
+            if i == 0 and any(self._danger(p, survol=j < len(parties) - 1) for j, p in enumerate(parties)) \
+                    and not self.accord_geste:
                 self.confirmer(loc, "ouvrir le menu « " + " > ".join(parties) + " »", cle="menu " + " > ".join(parties))
             if not _visible(loc):
                 _ouvrir_menus(loc)
@@ -4327,7 +4666,72 @@ A_EVITER_EN_VISITE = re.compile(r"deconnex|deconnect|logout|log ?out|log ?off|si
                                 r"mode sombre|dark mode|plein ecran|full ?screen")
 EXPRESSIONS_ACTION = re.compile(r"mise a jour|mettre a jour|prendre en charge|prise en charge|remettre a zero|"
                                 r"mettre en|mise en (service|production|ligne|place|attente|forme)")
-MOTS_ACTION_VISITE = {"nouveau", "nouvelle", "nouvel", "new", "oui", "ok", "yes", "non", "no", "go"}
+MOTS_ACTION_VISITE = {"nouveau", "nouvelle", "nouvel", "new", "oui", "ok", "yes", "non", "no", "go", "epingler",
+                      "desepingler", "marquer", "follow", "unfollow", "unpin", "favori", "lu", "signet"}
+# une entrée faite d'une icône seule (« icone trash ») qui fait une ACTION quand on clique dessus : un des MOTS de son
+# nom est une action (poubelle, crayon, plus, coche, croix, étoile des favoris, partage, pièce jointe, envoi...), les
+# mots de style (circle, square, solid, fill...) mis à part : « pen-to-square », « circle-plus », « trash-can » ; ou
+# c'est une bascule (déconnexion, menu replié, langue, thème, plein écran). « pin_drop » (une carte), « fact_check »
+# (un module de contrôles), « remove_red_eye » (voir) ne sont pas des actions.
+JETONS_D_ACTION = set("""trash delete remove bin recycle garbage broom eraser pencil pen edit create plus add minus
+xmark x times close cancel clear check checkmark done tick undo redo sync share send reply forward paperclip attach
+attachment star grade heart like favorite favorites thumbs thumb bookmark pin pushpin thumbtack keep ban block scissors cut
+copy paste
+clone play stop pause power poweroff logout signout save floppy upload publish archive unarchive restore lock unlock
+print download mark drafts off form gavel vote plane move unlink merge split toggle radio approve published unpublished
+push
+markunread rate recommend import export slash""".split())
+JETONS_DE_STYLE = set("""circle square solid outline outlined line fill filled round rounded sharp alt o two tone
+regular thin bold duotone rect rectangle lg sm""".split())
+ICONE_DE_BASCULE = re.compile(
+    r"(bars|navicon|hamburger|menu|menu_open|dehaze|reorder|first_page|last_page|keyboard_double_arrow_(left|right)|"
+    r"globe|translate|g_translate|language|dark_mode|light_mode|contrast|moon|sun|brightness\w*|circle-half-stroke|"
+    r"fullscreen\w*|compress|maximize|minimize|log-?out|logout|sign-?out\w*|exit_to_app|(arrow-)?right-from-bracket|"
+    r"door-(open|closed)|box-arrow-[\w-]+|power_settings_new|get_app|how_to_vote|highlight_off|"
+    r"(file|cloud|folder)-arrow-(up|down)|arrow-up-from-bracket|arrows?-rotate\w*|rotate(-left|-right)?|\w+_off|[\w-]+-slash)", re.I)
+ICONES_SANS_ACTION = re.compile(r"(fact_check|remove_red_eye|pin_drop|location_pin|map-pin|map-marker\w*|"
+                                r"push_pin_drop|edit_location_alt|checklist\w*)", re.I)
+
+
+# le mot d'une icône d'action FRANCHE, même à côté d'un nom (« <mat-icon>logout</mat-icon> Sortir », « add Plan ») ;
+# pas « archive Archives », « publish Publications », « lock Sécurité », « edit_road Voirie » (des modules)
+LIGATURES_D_ACTION = set("""add add_circle add_box delete delete_forever delete_outline remove remove_circle edit edit_note
+create save save_alt send upload close clear cancel logout exit_to_app power_settings_new post_add playlist_add note_add
+person_add group_add content_copy file_copy""".split())
+
+
+def _icone_d_action(nom):
+    """« icone trash », « icone pen-to-square », « icone menu » : une icône qui fait une action ou une bascule (et pas
+    « icone pin_drop » ni « icone description »)."""
+    t = " ".join(str(nom or "").split()).lower()
+    if not t.startswith("icone "):
+        return False
+    icone = re.sub(r" \d+$", "", t[6:]).strip()
+    if ICONES_SANS_ACTION.fullmatch(icone):
+        return False
+    if ICONE_DE_BASCULE.fullmatch(icone):
+        return True
+    # le PREMIER mot qui n'est pas un mot de style dit ce que fait l'icône (« pen-to-square », « circle-plus », « trash3 ») ;
+    # « list-check », « calendar-plus », « user-check » sont des modules (liste, agenda, utilisateurs)
+    jetons = [re.sub(r"\d+$", "", j) for j in re.split(r"[-_\s]+", icone) if j and j not in JETONS_DE_STYLE and not j.isdigit()]
+    # (ou un DERNIER mot qui ajoute, retire ou envoie : « file-circle-plus », « folder-minus », « paper-plane »)
+    return bool(jetons) and (jetons[0] in JETONS_D_ACTION or
+                             (len(jetons) > 1 and jetons[-1] in {"plus", "minus", "xmark", "x", "dash", "plane", "export", "import"}))
+
+
+def _icones_de(texte, attributs):
+    """Les noms d'icônes d'un élément examiné (JS_EXAMINER) : mot d'une icône Material (texte d'un seul mot en
+    minuscules), classe d'une police d'icônes (fa-trash, bi-pencil...), composant ou symbole d'icône."""
+    noms = [texte] if re.fullmatch(r"[a-z][a-z_]{2,30}", texte or "") else []
+    noms += re.findall(r"(?<![\w-])(?:fa|fas|far|mdi|bi|icon|ico|glyphicon|pi|k-i|k-svg-i|ti|ri|la|lucide|feather|bx|bxs|"
+                       r"octicon|ion|ph)-([a-z][\w-]{1,30})", attributs or "", re.I)
+    noms += re.findall(r"(?:data-mat-icon-name|svgicon|data-icon|iconname|data-icon-name) ([A-Za-z][\w-]{1,30})", attributs or "")
+    # (symbole d'une planche d'icônes : « xlink:href #trash », « href #icon-trash » ; jamais « href #/plans » d'un lien)
+    noms += re.findall(r"xlink:href [^|]*#([A-Za-z][\w-]{1,30})", attributs or "")
+    noms += re.findall(r"(?<![\w:-])href [^|#]*#(?:icon|ico|i|svg|sprite|symbol)[-_]([A-Za-z][\w-]{1,30})", attributs or "")
+    return noms
+
+
 # mots d'une question sans importance pour chercher dans la carte
 MOTS_VIDES = set("""a au aux avec ce ces cet cette d de des du en et l la le les ou par pour sur un une dans vers aller
 va vais veux voudrais voir je j me moi page pages menu menus ecran onglet ici svp""".split())
@@ -4354,15 +4758,42 @@ JS_NOM_PAGE = r"""() => {
       if (k) { actifs = [k]; break; }
     }
   const onglet = actifs.slice(0, 3).map(e => texte(e).slice(0, 40)).filter(Boolean).join(' > ');
-  // le titre de la page : un titre hors de l'en-tête d'abord (l'en-tête porte souvent le nom de l'application)
-  for (const [sel, entete] of [['h1', false], ['[role=heading][aria-level="1"]', false], ['h2', false], ['h1', true]])
+  // le titre de la page : un titre hors de l'en-tête d'abord (l'en-tête porte souvent le nom de l'application).
+  // 5e valeur : true si ce titre est sans doute le NOM DE L'APPLICATION (en-tête, titre de la fenêtre)
+  // (d'abord un titre hors de tout en-tête ; puis l'en-tête d'une PAGE, dans main ou article ; enfin l'en-tête de
+  // l'application, « banniere »)
+  const genre = e => { const h = e.closest('header, [role=banner]');
+    return !h ? 'libre' : (h.parentElement && h.parentElement.closest('main, article, [role=main]') ? 'page' : 'banniere'); };
+  for (const [sel, g] of [['h1', 'libre'], ['[role=heading][aria-level="1"]', 'libre'], ['h2', 'libre'], ['h1', 'page'],
+                          ['h2', 'page'], ['h1', 'banniere']])
     for (const e of document.querySelectorAll(sel)) {
-      if (!vis(e) || e.closest(HORS) || !!e.closest('header, [role=banner]') !== entete) continue;
-      if (texte(e)) return [texte(e).slice(0, 200), onglet, true, innerWidth * innerHeight];
+      if (!vis(e) || e.closest(HORS) || genre(e) !== g) continue;
+      if (texte(e)) return [texte(e).slice(0, 200), onglet, true, innerWidth * innerHeight, g === 'banniere'];
     }
-  // pas de titre dans la page : le titre de la fenêtre (false : à prendre seulement si aucune zone n'a de vrai titre)
+  // pas de titre dans la page : le titre de la fenêtre (false : à prendre seulement si aucune zone n'a de vrai titre) ;
+  // c'est le nom de l'application, sauf dans un cadre qui a son propre titre
+  let appli = true;
+  try { appli = window.top === window || document.title === window.top.document.title; } catch (x) { appli = true; }
   return [(document.title || '').replace(/\s+/g, ' ').trim().slice(0, 200), onglet, !document.querySelector('frameset'),
-          innerWidth * innerHeight];
+          innerWidth * innerHeight, appli];
+}"""
+
+# Pour Claude, quand la visite ne trouve presque rien : les éléments cliquables du HAUT et de la GAUCHE de la page
+# (là où sont les menus), décrits par leur structure seulement (balise, classes communes, nombre de mots, icône).
+JS_ZONES = r"""() => {""" + JS_DETECTION + JS_OUTILS_MENUS + r"""
+  const partagees = x => classe(x).split(/\s+/).filter(c => c && !/\d{2,}/.test(c) && document.getElementsByClassName(c).length >= 2).slice(0, 3);
+  const sig = x => x.tagName.toLowerCase() + partagees(x).map(c => '.' + c).join('');
+  const liste = detecter().filter(x => x.r.left < innerWidth * 0.3 || x.r.top < 130)
+                          .sort((a, b) => (a.r.top - b.r.top) || (a.r.left - b.r.left));
+  return liste.slice(0, 40).map(x => { const e = x.e, t = texteDe(e), ic = (compteDe(e) || enregistrement(e)) ? '' : cleIcone(e);
+    const parents = [];
+    for (let p = e.parentElement, n = 0; p && p !== document.body && n < 3; p = p.parentElement, n++) parents.push(sig(p));
+    return { zone: x.r.top < 130 ? 'haut' : 'gauche', sig: sig(e), role: e.getAttribute('role') || '',
+             mots: t ? t.split(/\s+/).length : 0, icone: ic.startsWith('icone ') ? ic.slice(6) : (ic ? '(bulle)' : ''),
+             source: x.s, ecoute: e.getAttribute('data-robot-ecoute') || '', survol: e.getAttribute('data-robot-survol') || '',
+             popup: e.getAttribute('aria-haspopup') || (e.hasAttribute('aria-expanded') ? 'expanded' : ''),
+             taille: Math.round(x.r.width) + 'x' + Math.round(x.r.height), x: Math.round(x.r.left), y: Math.round(x.r.top),
+             parents: parents.join(' < '), menu: !!e.closest('[data-robot-barre]') }; });
 }"""
 
 JS_BANDEAU_VISITE = r"""(message) => {
@@ -4408,9 +4839,67 @@ def _cle_url(url):
     return cle
 
 
+# un verbe d'action collé à un nom dans une adresse (« deleteplan », « updateStatut » écrit en minuscules)
+VERBES_COLLES = ("delete", "remove", "supprimer", "update", "create", "archive", "cancel", "annuler", "valider",
+                 "approve", "reject", "submit", "cloturer", "modifier", "upsert", "insert")
+
+
+# un nom d'action qui suit un numéro (« /commandes/42/annulation ») ; un verbe à l'infinitif aussi (« /taches/3/terminer »)
+NOMS_D_ACTION = set("""annulation suppression refus rejet resiliation revocation abandon cloture approbation envoi
+diffusion emission supprime supprimee supprimes efface annule detruit retire purge favorite favori follow subscribe
+unsubscribe pin unpin prendre read star unstar like""".split())
+# les clés d'ordre d'une adresse lue (« ?action= », « ?cmd= » ; pas « ?event= » d'un journal)
+ORDRES_GET = set("action op operation cmd command method verb do activity function fn call exec".split())
+# la valeur d'une clé d'ordre (« ?action=consulter ») qui ne fait que montrer quelque chose
+ORDRES_DE_LECTURE = set("""view voir afficher affichage consulter consultation detail details fiche show display list
+liste lister search recherche rechercher get load init index read lire open ouvrir""".split())
+
+
 def _adresse_d_action(url):
+    """Une adresse (lue par GET) qui fait une ACTION : un verbe d'action (« .../supprimer »), « markAllAsRead »,
+    un verbe collé à un nom (« deleteplan »), un ordre à côté d'un numéro (« /demandes/42/refuser », « /plans/cloture/42 »,
+    « /commandes/42/annulation »), ou une clé d'ordre qui ne fait pas que montrer (« ?action=cloture »). Une liste
+    (« /plans/a-valider », « /api/v1/statuts », « /plans/42/validations ») reste une lecture."""
     try:
-        return adresse_prudente(url)[1]
+        if adresse_prudente(url)[1]:
+            return True
+        morceaux = urlsplit(url)
+        # (un identifiant fait de lettres et de chiffres, « S64uHM50QpNoY0Nb », n'est pas découpé en mots)
+        brut = re.sub(r"[A-Za-z0-9_-]{10,}", lambda m: "0" if re.search(r"\d", m.group(0)) and re.search(r"[A-Za-z]", m.group(0))
+                      else m.group(0), unquote(morceaux.path + " " + morceaux.fragment))
+        ws = mots(brut).split()
+        # « markAsRead », « mark-all-read », « toggleFavori » (pas « feature-toggle », « sidenav-toggle »)
+        for segment in re.split(r"[/#]", unquote(morceaux.path + "#" + morceaux.fragment)):
+            m = mots(segment).split()
+            if len(m) > 1 and m[0] in ("mark", "marquer", "toggle"):
+                return True
+        for w in ws:
+            for v in VERBES_COLLES:  # (« deleteplan » ; pas « updated », « cancellations », « submitted »)
+                reste = w[len(v):]
+                if w.startswith(v) and len(reste) > 2 and \
+                        not re.fullmatch(r"(e?d|l?led|ted|s|d?ions?|e?urs?|ings?|t?als?|ables?|ments?|lations?|ations?)", reste):
+                    return True
+        # « .../notifications/seen », « .../alerts/42/dismiss » : marquer vu, lu, écarté ; « ?query=mutation{...} »
+        segments = [x for x in unquote(morceaux.path).split("/") if x]
+        if segments and mots(segments[-1]).replace(" ", "") in {"seen", "readall", "markallread", "markread", "markseen",
+                                                                "ack", "acknowledge", "dismiss", "lu", "vu"}:
+            return True
+        if re.search(r"\b(mutation|subscription)\b", unquote(morceaux.query)):
+            return True
+        numero = lambda x: bool(re.fullmatch(r"\d+|[0-9a-f]{8,}", x))
+        for i, w in enumerate(ws):
+            voisins = ws[max(0, i - 1):i] + ws[i + 1:i + 2]
+            ordre = w in VERBES_ACTION | MOTS_TACHE | NOMS_D_ACTION or (re.search(r"(er|ir|re)$", w) and interdit(w))
+            if ordre and any(numero(x) for x in voisins):
+                return True
+        for cle, valeur in parse_qsl(morceaux.query, keep_blank_values=True):
+            mots_cle, mots_valeur = mots(cle).split(), mots(valeur).split()
+            if len(mots_cle) > 1 and mots_cle[0] in ("mark", "marquer", "toggle"):  # (« ?markAsRead=true »)
+                return True
+            if mots_cle and mots_cle[-1] in ORDRES_GET and mots_valeur and \
+                    not set(mots_valeur) <= ORDRES_DE_LECTURE | {"0", "1"}:
+                return True
+        return False
     except Exception:
         return True
 
@@ -4434,22 +4923,184 @@ def _envoi_de_connexion(req):
     return bool(re.search(r"(^|&)(SAMLResponse|SAMLRequest|wresult|id_token|grant_type)=", corps))
 
 
+# un envoi qui ne fait que LIRE : beaucoup d'applications demandent leurs listes par un envoi (recherche, page d'une
+# grille, GraphQL « query ») ; sans lui, la page reste vide pendant la visite. Permis seulement dans 3 cas sûrs :
+# une demande GraphQL « query », une demande de lignes d'une grille (AG Grid), ou une adresse qui FINIT par un verbe de
+# recherche ou de liste (« .../plans/search », « .../getRows ») ; jamais le nom d'une collection (« POST .../rapports »
+# crée un rapport), jamais une adresse ou un contenu qui contient un mot d'action ou d'écriture.
+VERBES_LECTURE = set("""search recherche rechercher find list liste lister get lookup autocomplete typeahead suggest
+fetch""".split())
+# (« getRows », « searchPlans » : le verbe de lecture est le début du dernier morceau de l'adresse)
+DEBUT_LECTURE = re.compile(r"(get|search|find|list|lookup|fetch)(rows|list|all|data|items|page|results|by(id|ids|name|code|key)?)?")
+# après le verbe de lecture : jamais « fetchAndClaim », « getOrCreate », « getNextTask » (prend la tâche suivante)
+SUITE_INTERDITE = {"and", "or", "next", "then", "et", "ou", "suivant", "suivante"}
+# le dernier morceau d'une adresse de lignes de grille (sinon, un verbe de lecture)
+FINS_DE_GRILLE = set("rows row data grid datasource results items records lignes page".split())
+# mots d'une ÉCRITURE (en plus des verbes d'action) : marquer comme lu, épingler, suivre, enregistrer un état...
+MOTS_ECRITURE = set("""set mark marquer toggle increment decrement patch merge put post change changer modif modifier
+store persist write ecrire insert upsert register track tracking log logs logging record follow unfollow subscribe
+unsubscribe like unlike favori favoris favorite favorites pin unpin epingler star unstar vote rate rating read lu lue
+seen vu ack acknowledge dismiss hide masquer collect beacon telemetry metrics analytics event events""".split())
+# les ordres d'un flux de travail (prendre, terminer, accepter une tâche...) : dans l'adresse, dans un nom de clé du
+# contenu, ou comme valeur d'une clé d'ordre (« "method": "task.claim" »)
+MOTS_TACHE = set("""complete completer claim unclaim accept accepter decline refuse refuser assign reassign start stop
+finish terminer cloturer approve reject submit execute run launch lancer trigger declencher notify notifier send
+generate generer compute calculer recalculer enable disable link unlink attach detach share partager transfer escalate
+resolve reopen rouvrir""".split())
+# dans l'ADRESSE : un enregistrement de réglages (état d'une grille, préférences, disposition)
+MOTS_ETAT = set("""state etat preference preferences settings setting layout config configuration parametres parametre
+personalization personnalisation""".split())
+# une page de serveur à l'ancienne, un canal de messages, un lot de demandes : ils peuvent faire n'importe quoi
+ADRESSE_SERVEUR = re.compile(r"\.(aspx|ashx|xhtml|jsf|faces|do|action|php|jsp|cfm|pl|cgi)$|^(\$?batch|hubs?|signalr|"
+                             r"negotiate|socket\.io|cometd|rpc|jsonrpc|json-rpc|xmlrpc|xml-rpc|soap|livewire|wicket|ajax)$", re.I)
+# les clés d'un contenu qui donnent un ORDRE (leur valeur est un nom d'opération)
+CLES_D_ORDRE = set("""action op operation cmd command method verb target event handler activity function fn call exec
+task""".split())
+# les clés d'une demande de lignes d'une grille AG Grid (modèle « côté serveur ») : rien d'autre
+CLES_AG_GRID = set("""startrow endrow rowgroupcols valuecols pivotcols pivotmode groupkeys filtermodel sortmodel""".split())
+CLES_GRAPHQL = {"query", "variables", "operationname", "extensions"}
+# mots techniques d'une adresse qu'on peut écrire dans la carte (jamais un nom, un identifiant ni une valeur)
+MOTS_TECHNIQUES = set("""api apis rest rs ws service services svc graphql gql odata batch data datas json rpc app apps
+application backend bff gateway public private internal core common shared web ajax handler controller endpoint
+resource resources ressources plans plan dossiers dossier documents document fichiers fichier modules module user users
+utilisateur utilisateurs me profil profile session sessions log logs logging telemetry track tracking metrics analytics
+events event collect beacon notifications notification news actualites messages message items item entities entity
+signalr hub hubs negotiate rows row grid search recherche list liste query lookup""".split())
+
+
+def _chemin_technique(url):
+    """La fin d'une adresse, réduite aux mots techniques connus (« .../api/…/search ») : jamais un nom ni une valeur."""
+    try:
+        morceaux = [x for x in unquote(urlsplit(url).path).split("/") if x][-4:]
+    except ValueError:
+        return "…"
+    connus = MOTS_TECHNIQUES | VERBES_LECTURE | MOTS_ECRITURE | MOTS_CONNEXION | VERBES_ACTION
+    garde = []
+    for m in morceaux:
+        ws = mots(m).split()
+        bon = re.fullmatch(r"v\d{1,2}", m) or (ws and re.fullmatch(r"[A-Za-z_.$-]+", m) and all(w in connus for w in ws))
+        garde.append(m if bon else "…")
+    return ".../" + "/".join(garde)
+
+
+def _ordre_dans_demande(requete):
+    """La partie « ?... » d'une adresse donne un ORDRE : clé d'ordre (« ?action= », « ?pyActivity= », « ?_method= »),
+    clé qui est un ordre (« ?accept=5 »), ou demande GraphQL « mutation »."""
+    for cle, valeur in parse_qsl(requete or "", keep_blank_values=True):
+        mots_cle = mots(cle).split()
+        if not mots_cle:
+            continue
+        if mots_cle[-1] in CLES_D_ORDRE | {"do", "method"} or ("".join(mots_cle) in MOTS_TACHE and mots_cle != ["start"]):
+            return True
+        if re.search(r"\b(mutation|subscription)\b", valeur):
+            return True
+    return False
+
+
+def _envoi_de_lecture(req):
+    """Un envoi (POST) de l'application (jamais d'un formulaire de page) qui ne fait que LIRE : demande GraphQL
+    « query » (jamais « mutation »), demande de lignes d'une grille, ou adresse qui finit par un verbe de recherche ou
+    de liste ; contenu vide ou JSON ; et aucun mot d'action ou d'écriture, ni dans l'adresse ni dans le contenu."""
+    try:
+        if req.resource_type not in ("xhr", "fetch"):
+            return False
+        entetes = {str(k).lower(): str(v).lower() for k, v in (req.headers or {}).items()}
+        # (« POST » qui annonce un autre ordre : X-HTTP-Method: DELETE, MERGE... ; formulaire ou fichier envoyé)
+        if {"x-http-method", "x-http-method-override", "x-method-override"} & set(entetes) or \
+                re.search(r"multipart|form-urlencoded", entetes.get("content-type", "")):
+            return False
+        morceaux = urlsplit(req.url)
+        chemin, demande = unquote(morceaux.path), unquote(morceaux.query)
+        # (« list.do;jsessionid=... » : les paramètres d'un morceau d'adresse sont ôtés)
+        segments = [x.split(";")[0] for x in chemin.split("/") if x.split(";")[0]]
+        mots_adresse = set(mots(chemin + " " + demande).split())
+        if (action_en_visite(chemin + " " + demande) or mots_adresse & (VERBES_ACTION | MOTS_ECRITURE) or
+                set(mots(chemin).split()) & (MOTS_ETAT | MOTS_TACHE) or
+                _ordre_dans_demande(morceaux.query) or
+                any(ADRESSE_SERVEUR.search(x) for x in segments)):
+            return False
+        corps = req.post_data or ""
+    except Exception:
+        return False
+    if len(corps) > 20000:
+        return False
+    try:
+        objet = json.loads(corps) if corps.strip() else None
+    except ValueError:
+        return False  # ni vide ni JSON (formulaire, texte, XML) : jamais une lecture sûre
+    demandes = objet if isinstance(objet, list) else [objet]
+    # GraphQL : par son adresse (« graphql », « gql », « .../query ») ou par son contenu ; seul ce contrôle décide
+    chemin_gql = bool(segments) and ({"graphql", "gql"} & {s.lower() for s in segments} or segments[-1].lower() == "query")
+    contenu_gql = any(isinstance(d, dict) and ("operationName" in d or (isinstance(d.get("query"), str) and
+                      re.match(r"\s*(query|mutation|subscription|fragment)\b|\s*\{", d["query"]))) for d in demandes)
+    if chemin_gql or contenu_gql:
+        return bool(objet is not None and demandes and chemin_gql and
+                    all(isinstance(d, dict) and _graphql_lecture(d) for d in demandes))
+    if objet is not None and not isinstance(objet, (dict, list)):
+        return False
+    dernier = mots(segments[-1]).split() if segments else []
+    verbe = bool(dernier) and (dernier[0] in VERBES_LECTURE or bool(DEBUT_LECTURE.fullmatch(dernier[0]))) and \
+        not SUITE_INTERDITE & set(dernier[1:])
+    if isinstance(objet, dict):
+        cles = {mots(k).replace(" ", "") for k in objet}
+        if {"startrow", "endrow"} <= cles <= CLES_AG_GRID:
+            # lignes d'une grille (de telle ligne à telle ligne, tri, filtre) : rien d'autre dans la demande ; les valeurs
+            # (« dateModification », filtre « set ») sont des noms de colonnes, pas des ordres
+            return verbe or bool(dernier) and dernier[-1] in FINS_DE_GRILLE
+    if (VERBES_ACTION | MOTS_ECRITURE) & set(mots(corps).split()):
+        return False
+    # les noms des clés (« "complete": true ») et la valeur d'une clé d'ordre (« "method": "task.claim" »)
+    for cle, valeur in re.findall(r'"([^"\\]{1,60})"\s*:\s*("(?:[^"\\]|\\.){0,200}"|[^,}\]]{0,40})', corps):
+        mots_cle = mots(cle).split()
+        if set(mots_cle) & VERBES_ACTION or ("".join(mots_cle) in MOTS_TACHE and mots_cle != ["start"]):
+            return False
+        if "".join(mots_cle) in CLES_D_ORDRE and (set(mots(valeur).split()) & (VERBES_ACTION | MOTS_ECRITURE | MOTS_TACHE) or
+                                                 action_en_visite(valeur)):
+            return False
+    return verbe
+
+
+def _graphql_lecture(d):
+    """Une demande GraphQL qui ne fait que LIRE : un document « query » (jamais « mutation » ni « subscription »), sans
+    champ qui donne un ordre (« completeTask(...) », « markAllAsRead », « logout »). Les champs d'état (« canEdit »,
+    « isRead », « dateValidation ») sont des lectures."""
+    q = d.get("query")
+    if not isinstance(q, str) or not q.strip() or not {sans_accents(k).lower() for k in d} <= CLES_GRAPHQL:
+        return False
+    if re.search(r"\b(mutation|subscription)\b", q):
+        return False
+    texte = re.sub(r"\b(can|is|has|date|last|nb|count|total|nombre)[A-Z_]\w*", " ", q)
+    ws = set(mots(texte).split())
+    if ws & (VERBES_ACTION | MOTS_ECRITURE) or ws & {"logout", "signout", "deconnexion", "deconnecter"}:
+        return False
+    champs = [mots(c).split() for c in re.findall(r"([A-Za-z_]\w*)\s*[({]", texte)]
+    return not any(c and c[0] in MOTS_TACHE for c in champs)
+
+
 def proteger_en_visite(contexte):
     """Lecture seule pour tout le navigateur du robot (à mettre APRÈS votre connexion) : chaque demande au portail
     passe par ce contrôle. Seules les lectures (GET) passent, et jamais vers une adresse d'action ; tout envoi (POST,
     PUT, DELETE... : formulaire, application) est bloqué, sauf ce qui sert à la connexion.
     (Ce contrôle est fait par le robot lui-même : pendant qu'il attend une réponse dans la fenêtre noire, il doit
     continuer à faire vivre le navigateur, sinon la page attendrait ; voir demander_en_vivant et _garde_coupee.)"""
-    garde = {"bloquees": 0, "exemples": [], "liaison": False, "contexte": contexte, "liaison_bloquee": False}
+    garde = {"bloquees": 0, "exemples": [], "liaison": False, "contexte": contexte, "liaison_bloquee": False,
+             "lectures": 0, "exemples_lectures": []}
 
     def filtre(route):
         req, methode = None, "?"
         try:
             req = route.request
             methode = req.method.upper()
-            bloquer = ((methode not in ("GET", "HEAD", "OPTIONS") and not (methode == "POST" and _envoi_de_connexion(req)))
+            lecture = methode == "POST" and not _envoi_de_connexion(req) and _envoi_de_lecture(req)
+            bloquer = ((methode not in ("GET", "HEAD", "OPTIONS") and not (methode == "POST" and _envoi_de_connexion(req))
+                        and not lecture)
                        or (req.resource_type in ("document", "xhr", "fetch", "ping", "eventsource", "other")
                            and _adresse_d_action(req.url)))
+            if lecture and not bloquer:
+                garde["lectures"] += 1
+                exemple = f"POST {_chemin_technique(req.url)}"
+                if exemple not in garde["exemples_lectures"] and len(garde["exemples_lectures"]) < 8:
+                    garde["exemples_lectures"].append(exemple)
         except Exception:
             bloquer = True
         try:
@@ -4459,8 +5110,7 @@ def proteger_en_visite(contexte):
                     # pour Claude : le genre d'envoi et le mot d'action de son adresse, rien d'autre de l'adresse
                     # (un morceau d'adresse peut contenir un identifiant ou un nom)
                     genre = "page" if req.resource_type == "document" else "application"
-                    verbes = sorted(VERBES_ACTION & set(mots(unquote(" ".join(urlsplit(req.url)[2:4]))).split()))
-                    exemple = f"{methode} ({genre}" + (f", adresse avec « {verbes[0]} »" if verbes else "") + ")"
+                    exemple = f"{methode} {_chemin_technique(req.url)} ({genre})"
                     if exemple not in garde["exemples"] and len(garde["exemples"]) < 10:
                         garde["exemples"].append(exemple)
                 route.abort("blockedbyclient")
@@ -4549,27 +5199,56 @@ def _nom_de_page(texte):
 def _identite(page):
     """(identité de la page, son titre) : son adresse sans les valeurs (et celles de ses cadres) + son titre + l'onglet
     ouvert. Deux pages de même identité sont la même page (deux fiches de plans, par exemple)."""
+    return _identite_complete(page)[:2]
+
+
+def _identite_complete(page):
+    """(identité, titre, titre de l'application ?) : le 3e est vrai quand le titre vient de l'en-tête ou du titre de la
+    fenêtre (le nom de l'application, souvent celui de l'entreprise : il n'est pas écrit dans la carte)."""
     cles, titres, autres, onglets = [_cle_url(page.url)], [], [], []
     for cadre in page.frames:
         if cadre != page.main_frame and (cadre.url or "").startswith("http"):
             cles.append(_cle_url(cadre.url))
         try:
-            n, o, vrai, aire = cadre.evaluate(JS_NOM_PAGE)
+            n, o, vrai, aire, appli = (list(cadre.evaluate(JS_NOM_PAGE)) + [True])[:5]
         except Exception:
-            n, o, vrai, aire = "", "", False, 0
+            n, o, vrai, aire, appli = "", "", False, 0, True
         if n:
-            (titres if vrai else autres).append((aire, n))
+            (titres if vrai else autres).append((aire, n, appli))
         if o:
             onglets.append(o)
     # un vrai titre de page ; s'il y a plusieurs zones (frameset, cadres), celui de la plus grande : le contenu, pas le
     # bandeau du haut ni le menu
     titres.sort(key=lambda x: -x[0])
-    nom = _nom_de_page(([n for _, n in titres] + [n for _, n in autres] + [""])[0])
+    choix = (titres + autres + [(0, "", False)])[0]
+    nom = _nom_de_page(choix[1])
     # l'onglet : seulement si c'est de la structure (jamais le nom d'une fiche choisie)
     onglet = " > ".join(o for o in (x.strip() for x in (onglets[0] if onglets else "").split(" > ")) if _structure(o) == o)
     if onglet and onglet != nom:
         nom = f"{nom} - onglet {onglet}"
-    return " | ".join(cles) + " || " + re.sub(r"\d+", "#", nom), nom
+    return " | ".join(cles) + " || " + re.sub(r"\d+", "#", nom), nom, bool(choix[1]) and bool(choix[2])
+
+
+def _zones_de_la_page(page):
+    """La description (structure seulement) du haut et de la gauche de la page, pour Claude."""
+    _marquer_ecouteurs(page)
+    _menus_de_la_page(page)
+    lignes = []
+    for cadre in page.frames:
+        try:
+            zones = cadre.evaluate(JS_ZONES)
+        except Exception:
+            continue
+        for z in zones:
+            icone = _structure(z["icone"]) or "-" if z["icone"] else "-"
+            sig, parents = _sans_donnee(z["sig"][:60], css=True), _sans_donnee(z["parents"][:120], css=True)
+            role = _sans_donnee(z["role"] or "-", css=True)
+            lignes.append(f"{z['zone']:6} {sig} | role {role} | {z['mots']} mot(s) | icone {icone} | "
+                          f"{z['source']} | ecoute {z['ecoute'] or '-'} | survol {z['survol'] or '-'} | "
+                          f"popup {_sans_donnee(z['popup'] or '-', css=True)} | {z['taille']} a {z['x']},{z['y']} | "
+                          f"menu reconnu {'oui' if z['menu'] else 'non'} | parents {parents}")
+    _nettoyer(page)
+    return lignes[:40]
 
 
 def _nombre_cliquables(page):
@@ -4596,15 +5275,27 @@ def _nom_sur(texte):
     return bool(t) and _structure(t) == t and ">" not in t and not re.search(r"\[\d+\]\s*$|\bdans\s+ligne\b", t, re.I)
 
 
-def action_en_visite(texte):
+def action_en_visite(texte, survol=False):
     """En visite : ce nom (ou cet attribut) désigne-t-il une ACTION ? Un VERBE d'action (Valider, Archiver, Créer,
     Facturer, Validez, Delete, Nouveau...), Déconnexion, Imprimer, Exporter... Un NOM de rubrique (Factures, Archives,
     Validations en attente, État des stocks, Paiements) se visite : la visite ne fait que regarder, et la protection
-    réseau et le contrôle de l'élément cliqué empêchent toujours tout envoi."""
+    réseau et le contrôle de l'élément cliqué empêchent toujours tout envoi. survol : l'élément est seulement survolé
+    (une icône de module dont le sous-menu s'ouvre au survol), pas cliqué."""
     t = mots(texte)
     if not t:
         return False
     if A_EVITER_EN_VISITE.search(t) or EXPRESSIONS_ACTION.search(t):
+        return True
+    if survol and t.startswith("icone "):
+        # (une icône de module seulement SURVOLÉE : son sous-menu s'ouvre, rien n'est cliqué ; « icone edit_road » se
+        # survole. Le nom de ce qui sera cliqué dans le sous-menu est contrôlé à son tour.)
+        return bool(A_EVITER_EN_VISITE.search(t))
+    brut = " ".join(str(texte or "").split())
+    if re.fullmatch(r"(ne plus )?suivre", t):  # (le bouton « Suivre », pas « Dossiers à suivre »)
+        return True
+    if not survol and (_icone_d_action(brut) or
+                       # (le nom d'une icône en minuscules, bulle d'une icône Ant Design : « poweroff », « pushpin »)
+                       (re.fullmatch(r"[a-z][a-z_-]{2,30}", brut) and _icone_d_action("icone " + brut))):
         return True
     liste = t.split()
     for i, m in enumerate(liste):
@@ -4619,8 +5310,8 @@ def action_en_visite(texte):
     return False
 
 
-def _a_eviter(texte):
-    return action_en_visite(texte)
+def _a_eviter(texte, survol=False):
+    return action_en_visite(texte, survol)
 
 
 def _lisible(chemin):
@@ -4644,7 +5335,7 @@ def _chemins_de_la_page(chemin, r, menus, deja, par_onglet, par_lien, communs=()
         if cle in deja or (propre and onglets is None and etape in deja):  # (lien déjà prévu depuis l'accueil)
             return False
         deja.add(cle)
-        if any(_a_eviter(n) for n in noms):
+        if any(_a_eviter(n, survol=i < len(noms) - 1) for i, n in enumerate(noms)):  # (les premiers : survolés)
             evites.append(" > ".join(noms))
             return False
         nouveaux.append(chemin + [etape])
@@ -4654,7 +5345,13 @@ def _chemins_de_la_page(chemin, r, menus, deja, par_onglet, par_lien, communs=()
 
     for nom, elements in menus:
         textes = [t for t, _ in elements]
-        if not _nom_sur(nom) or _contenu_a_masquer(nom, textes):  # liste de fiches (Récents...), menu du compte
+        if not _nom_sur(nom):
+            continue
+        if _contenu_a_masquer(nom, textes):  # liste de fiches (Récents...), menu du compte
+            # (une icône de liste de fiches ou de la personne, « icone history » : ni visitée, ni son sous-menu écrit ;
+            # elle est notée comme évitée)
+            if str(nom).startswith("icone ") and _structure(nom) == nom:
+                evites.append(f"{nom} (liste de fiches ou compte, pas visite)")
             continue
         if len(elements) > 25:
             evites.append(f"{nom} > ({len(elements)} elements : liste de fiches, pas visitee)")
@@ -4862,7 +5559,10 @@ def explorer_portail(page, url, garde):
         """La page affichée : (son numéro dans la carte, nouvelle ?). Une nouvelle page est relevée, et ses chemins
         (sous-menus, onglets, liens) sont ajoutés à ceux à essayer."""
         t.retirer_bandeaux()
-        ident, nom = _identite(t.page)
+        ident, nom, appli = _identite_complete(t.page)
+        if appli:
+            # le titre est celui de l'APPLICATION (en-tête, fenêtre) : la page porte le nom de ce qui y mène
+            nom = (chemin[-1].partition(" : ")[2].split(">")[-1].strip() if chemin else "Accueil") + " (titre non ecrit)"
         r = menus = None
         if ident in index:
             connue = carte["pages"][index[ident]]
@@ -4975,6 +5675,16 @@ def explorer_portail(page, url, garde):
     elif garde["liaison"]:
         ecrire("   (Le portail utilise une liaison directe : elle est BLOQUEE pendant la visite, par prudence. Une partie")
         ecrire("    du portail peut ne pas marcher pendant la visite : c'est normal.)")
+    if len(file) < 5:
+        # presque rien à visiter depuis l'accueil : la carte décrira le haut et la gauche de l'accueil, pour Claude
+        ecrire("   Le robot ne trouve presque rien a visiter depuis l'accueil. Le fichier pour Claude contiendra une")
+        ecrire("   description de l'accueil (sans aucun texte de la page) pour qu'il corrige le robot.")
+        try:
+            carte["diagnostic_accueil"] = _zones_de_la_page(t.principale)
+        except Exception as e:
+            carte["diagnostic_accueil"] = ["(description impossible : " + _sans_donnee(masquer(premiere_ligne(e)))[:60] + ")"]
+    else:
+        carte.pop("diagnostic_accueil", None)
     evites = [e for e in carte["evites"] if "pas visitee" not in e]
     if evites:
         ecrire("   Par prudence, le robot n'ira PAS dans : " + " | ".join(evites[:15]))
@@ -5055,7 +5765,9 @@ def explorer_portail(page, url, garde):
         arret, interrompu = "visite arretee par Ctrl+C", True
     finally:
         carte.update(bloquees=garde["bloquees"], exemples=list(garde["exemples"]), liaison=garde["liaison"],
-                     liaison_bloquee=garde["liaison_bloquee"], duree=round((time.time() - debut) / 60, 1), arret=arret)
+                     liaison_bloquee=garde["liaison_bloquee"], duree=round((time.time() - debut) / 60, 1), arret=arret,
+                     lectures=garde.get("lectures", 0), exemples_lectures=list(garde.get("exemples_lectures", [])),
+                     comparaison=garde.get("comparaison"))
         sauver_carte(carte)
     fichier = ecrire_carte(carte)  # (avant tout appel au navigateur : après un Ctrl+C, il peut ne plus répondre)
     if not interrompu:
@@ -5086,7 +5798,14 @@ def ecrire_carte(carte):
               + (f" ; {carte['arret']}" if carte.get("arret") else " ; visite complete"),
               f"Envois bloques par la protection : {carte.get('bloquees', 0)}"
               + (" (" + " ; ".join(carte.get("exemples", [])) + ")" if carte.get("exemples") else ""),
-              f"Liaison directe avec le portail (websocket) : {liaison}", ""]
+              f"Envois de lecture permis (recherches, listes) : {carte.get('lectures', 0)}"
+              + (" (" + " ; ".join(carte.get("exemples_lectures", [])) + ")" if carte.get("exemples_lectures") else ""),
+              f"Liaison directe avec le portail (websocket) : {liaison}"]
+    if carte.get("comparaison"):
+        avant, apres = carte["comparaison"]
+        lignes.append(f"Elements cliquables a l'accueil : {avant} sans la protection, {apres} avec"
+                      + (" (LA PROTECTION EMPECHE UNE PARTIE DU PORTAIL DE S'AFFICHER)" if apres < 0.7 * avant else ""))
+    lignes.append("")
     menus_vus = [None]
     for numero, p in enumerate(carte["pages"], 1):
         lignes.append(f"PAGE {numero} : « {p['nom'] or '(sans titre)'} »  ({p['cliquables']} elements cliquables)")
@@ -5097,6 +5816,12 @@ def ecrire_carte(carte):
         lignes.append("")
     if carte.get("evites"):
         lignes.append("PAS VISITES PAR PRUDENCE : " + " ; ".join(carte["evites"]))
+    if carte.get("diagnostic_accueil"):
+        lignes.append("")
+        lignes.append("DESCRIPTION DE L'ACCUEIL pour Claude (le robot n'y trouve presque rien a visiter) : elements cliquables")
+        lignes.append("du haut et de la gauche, structure seulement (balise.classes | role | nombre de mots | icone | ...) :")
+        lignes += ["  " + l for l in carte["diagnostic_accueil"]]
+        lignes.append("")
     autres = [(c, s) for c, s in carte.get("essais", {}).items() if not s.startswith(("page", "deja vue"))]
     if autres:
         lignes.append("CHEMINS SANS NOUVELLE PAGE :")
@@ -5115,7 +5840,7 @@ def ecrire_carte(carte):
 def _elements_de_page(p):
     """Ce qu'on peut chercher dans une page de la carte : (genre, texte à montrer, texte à trouver sur la page, poids)."""
     r = p["releve"]
-    items = [("page", p["nom"], "", 4)]
+    items = [("page", re.sub(r" \(titre non ecrit\)$", "", p["nom"] or ""), "", 4)]
     for etape in p["chemin"]:
         for x in etape.partition(" : ")[2].split(">"):
             items.append(("chemin", x.strip(), "", 3))
@@ -5159,7 +5884,8 @@ def chercher_dans_carte(carte, question):
                 if cle not in trouves or trouves[cle][0] < rang:
                     trouves[cle] = (rang, a_trouver)
         # la page entière : ses mots dans son titre et son chemin ensemble (« base MK2 » + « GATES »)
-        ensemble = mots(p["nom"] + " " + _lisible(p["chemin"]).replace(" puis ", " ")).split()
+        ensemble = mots(re.sub(r" \(titre non ecrit\)$", "", p["nom"] or "") + " " +
+                        _lisible(p["chemin"]).replace(" puis ", " ")).split()
         n = sum(1 for m in cherches if touche(m, ensemble))
         if n == len(cherches) and (i, "page", p["nom"]) not in trouves:
             trouves[(i, "page", p["nom"])] = ((n, False, 4, -len(p["chemin"]), -i), "")
@@ -5341,6 +6067,12 @@ def programme_enfant(mode, dossier_echange):
             attendre_portail(page)
             garde = None
             if visite:
+                # ce que montre l'accueil SANS la protection (pour voir si la protection empêche le portail de s'afficher)
+                try:
+                    _marquer_ecouteurs(page)
+                    avant = _nombre_cliquables(page)
+                except Exception:
+                    avant = 0
                 garde = proteger_en_visite(contexte)  # à partir d'ici : lecture seule, rien ne peut être envoyé au portail
                 ecrire("   VISITE EN LECTURE SEULE : le robot ne peut rien envoyer au portail (rien ne sera modifie).")
                 # (une liaison directe ouverte avant la protection resterait ouverte : la page est rechargée)
@@ -5348,6 +6080,17 @@ def programme_enfant(mode, dossier_echange):
                 attendre_chargement(page)
                 if _champ_mot_de_passe(page):
                     _garde_coupee(garde, lambda: attendre_portail(page))
+                try:
+                    page.wait_for_timeout(1500)
+                    _marquer_ecouteurs(page)
+                    apres = _nombre_cliquables(page)
+                except Exception:
+                    apres = 0
+                if avant:
+                    garde["comparaison"] = (avant, apres)
+                    if apres < 0.7 * avant:
+                        ecrire(f"   Attention : avec la protection, l'accueil montre moins de choses ({apres} elements au lieu "
+                               f"de {avant}) : le portail a sans doute besoin d'envois que le robot bloque. C'est note pour Claude.")
             if mode == "voir":
                 fichier = boucle_voir(page)
             elif mode == "explorer":

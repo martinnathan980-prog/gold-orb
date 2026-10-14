@@ -1370,8 +1370,15 @@ JS_TROUVER_ICONE = r"""([cle, jeton, numero]) => {""" + JS_OUTILS_MENUS + r"""
   } else {
     // d'abord les entrées des menus (la bulle peut être sur l'entrée, autour du lien : « div[mattooltip] > a > icône ») ;
     // sinon un élément cliquable de la page qui porte cette icône
-    trouves = Array.from(document.querySelectorAll('[data-robot-barre]')).filter(e => !texteDe(e) && cleIcone(e) === cle);
-    if (!trouves.length) trouves = cliquables().filter(e => !texteDe(e) && cleIcone(e) === cle);
+    // (pour RETROUVER un élément, la bulle telle qu'elle est, même si elle ne serait pas écrite dans un fichier :
+    // « tableau de bord », « Plans Validés en cours » tapés dans une tâche)
+    const norme = v => (v || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    const bulleBrute = e => { for (const x of [e, ...Array.from(e.querySelectorAll('*')).slice(0, 40)])
+                                for (const a of BULLES) { const v = x.getAttribute && x.getAttribute(a); if (v && v.trim()) return v; }
+                              return ''; };
+    const vise = e => cleIcone(e) === cle || norme(bulleBrute(e)) === norme(cle);
+    trouves = Array.from(document.querySelectorAll('[data-robot-barre]')).filter(e => !texteDe(e) && vise(e));
+    if (!trouves.length) trouves = cliquables().filter(e => !texteDe(e) && vise(e));
     trouves = trouves.filter(e => !trouves.some(f => f !== e && e.contains(f)));
   }
   const marques = new Set(trouves.map(interieur));
@@ -4839,7 +4846,8 @@ VERBES_COLLES = ("delete", "remove", "supprimer", "update", "create", "archive",
 
 # un nom d'action qui suit un numéro (« /commandes/42/annulation ») ; un verbe à l'infinitif aussi (« /taches/3/terminer »)
 NOMS_D_ACTION = set("""annulation suppression refus rejet resiliation revocation abandon cloture approbation envoi
-diffusion emission supprime supprimee supprimes efface annule detruit retire purge""".split())
+diffusion emission supprime supprimee supprimes efface annule detruit retire purge favorite favori follow subscribe
+unsubscribe pin unpin prendre read star unstar like""".split())
 # les clés d'ordre d'une adresse lue (« ?action= », « ?cmd= » ; pas « ?event= » d'un journal)
 ORDRES_GET = set("action op operation cmd command method verb do activity function fn call exec".split())
 # la valeur d'une clé d'ordre (« ?action=consulter ») qui ne fait que montrer quelque chose
@@ -4886,6 +4894,8 @@ def _adresse_d_action(url):
                 return True
         for cle, valeur in parse_qsl(morceaux.query, keep_blank_values=True):
             mots_cle, mots_valeur = mots(cle).split(), mots(valeur).split()
+            if len(mots_cle) > 1 and mots_cle[0] in ("mark", "marquer", "toggle"):  # (« ?markAsRead=true »)
+                return True
             if mots_cle and mots_cle[-1] in ORDRES_GET and mots_valeur and \
                     not set(mots_valeur) <= ORDRES_DE_LECTURE | {"0", "1"}:
                 return True
