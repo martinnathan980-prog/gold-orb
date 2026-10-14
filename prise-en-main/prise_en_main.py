@@ -1340,7 +1340,9 @@ JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
         return r.width > 0 && parseFloat(getComputedStyle(x).borderTopLeftRadius) >= 0.4 * Math.min(r.width, r.height); });
       entrees.push({ nom: enregistrement(k) ? '(donnee masquee)' : nomK, texte: nomK, groupe: n, fort: G.fort,
                      titre: titreDe(G.g), section: titreSection(k),
-                     compte: compteDe(k) || COMPTE_ICONE.test(iconeSeule(k)) ||
+                     // (l'icône de la personne ne compte que pour une entrée SANS texte à elle : « Clients » avec une icône
+                     // de personnes reste un menu)
+                     compte: compteDe(k) || ((!T(k) || !texteDuClone(k.cloneNode(true))) && COMPTE_ICONE.test(iconeSeule(k))) ||
                              (/^[A-ZÀ-Ý]{2,3}$/.test(texteDuClone(k.cloneNode(true))) && (rond || G.icones)),
                      // tout le texte, sous-menu caché compris (« Se déconnecter » : menu de la personne) ; jamais écrit
                      cache: (k.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 600) });
