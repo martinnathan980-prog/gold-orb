@@ -1034,8 +1034,11 @@ JS_OUTILS_MENUS = JS_ZONE_MENU + r"""
   // une pastille de compteur (« 3 » nouveaux messages) n'est pas un nom : seulement le compteur lui-même (des chiffres),
   // jamais l'élément qui porte le texte (« <span matBadge=4>Plans à valider</span> »)
   const PASTILLE = /badge|pastille|counter|compteur|bubble|count|scroll-number/i;
-  const compteur = x => /^\s*\d{1,4}\+?\s*$/.test(x.textContent || '') &&
-                        (x.tagName === 'SUP' || PASTILLE.test(classe(x)) || (x.parentElement && PASTILLE.test(classe(x.parentElement))));
+  const compteur = x => (/^\s*\d{1,4}\+?\s*$/.test(x.textContent || '') &&
+                         (x.tagName === 'SUP' || PASTILLE.test(classe(x)) || (x.parentElement && PASTILLE.test(classe(x.parentElement))))) ||
+                        // (une étiquette d'un mot, « Nouveau », « Beta », dans une pastille)
+                        (!x.children.length && /(^|[\s_-])(badge|pastille|tag|chip-new|label-new)([\s_-]|$)/i.test(classe(x)) &&
+                         /^\s*[A-Za-zÀ-ÿ]{2,10}\s*$/.test(x.textContent || ''));
   const texteDuClone = c => {
     c.querySelectorAll(SOUS + ', svg, img, script, style, input, textarea').forEach(x => x.remove());
     for (const x of Array.from(c.querySelectorAll('*'))) if (c.contains(x) && compteur(x)) x.remove();
@@ -1065,8 +1068,9 @@ JS_OUTILS_MENUS = JS_ZONE_MENU + r"""
       }
     }
     if (!t) t = (e.getAttribute('aria-label') || e.getAttribute('title') || '').replace(/\s+/g, ' ').trim();
-    if (!t) { const i = Array.from(base.querySelectorAll(elague ? '[title], [aria-label]' : 'img[alt], [title], [aria-label]'))
-                              .find(x => elague || vis(x));
+    if (!t) { const i = Array.from(base.querySelectorAll('img[alt], [title], [aria-label]'))
+                              .find(x => { const s = x.parentElement && x.parentElement.closest(SOUS);
+                                           return (elague || vis(x)) && !(s && base.contains(s) && s !== base); });
               if (i) t = (i.getAttribute('alt') || i.getAttribute('title') || i.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim(); }
     return t;
   };
@@ -1085,9 +1089,11 @@ JS_OUTILS_MENUS = JS_ZONE_MENU + r"""
   const deLHote = t => HOTE.some(x => t.toLowerCase().replace(/[^a-z0-9]/g, '').includes(x));
   const bulleSure = v => { const t = (v || '').replace(/\s+/g, ' ').trim(), m = t.split(' ');
     if (t.length < 2 || t.length > 30 || /[:\d@_]/.test(t) || m.length > 4 || !/[A-Za-zÀ-ÿ]/.test(t) || deLHote(t)) return '';
-    // (« J. Dupont », « Dupont J », « dupont.j » ; un sigle « P.L.U. » reste un nom)
+    // (« J. Dupont », « Dupont J », « dupont.j », « Jan Kowalski », « nathan martin » ; un sigle « P.L.U. », « SIG »
+    // reste un nom ; « Mes Plans » est aussi refusée : l'entrée sera nommée par son icône)
     if (m.length >= 2 && m.some(x => /^[A-ZÀ-Ý]\.?$/.test(x))) return '';
     if (/^[a-z]+\.[a-z]+$/.test(t)) return '';
+    if (m.length >= 2 && (m.every(x => /^[a-zà-ÿ'-]+$/.test(x)) || m.some((x, i) => i && MAJ(x) && MAJ(m[i - 1])))) return '';
     return t; };
   // un nom d'icône qui serait celui de l'entreprise ou d'une personne (logo, marque, photo) n'est jamais un nom
   const ICONE_PERSO = /logo|brand|marque|avatar|photo|portrait|profil|picture/i;
@@ -1110,12 +1116,15 @@ JS_OUTILS_MENUS = JS_ZONE_MENU + r"""
   // les classes de STYLE d'une police d'icônes (fa-solid, fa-fw, pi-fw, mdi-24px...) ne sont pas le nom de l'icône
   const STYLE_ICONE = /^(fa|fas|far|fal|fab|fad|icon|ico|pi|mdi|bi|ti|ri|la|bx|bxs|lucide|feather|k-i|k-svg-i|e|ph)-(solid|regular|light|thin|duotone|sharp|brands|kit|fw|lg|sm|xs|xl|2xs|2xl|[0-9]+x|[0-9]+px|spin|pulse|border|inverse|stack|stack-[0-9]x|flip|flip-\w+|rotate-\w+|beat|beat-fade|bounce|fade|shake|spin-pulse|spin-reverse|li|ul|dark|inactive|icon|icons|size-\w+|fill)$/i;
   const CLASSE_ICONE = /^(?:fa|fas|far|fal|fab|fad|mdi|bi|icon|ico|glyphicon|pi|k-i|k-svg-i|ti|ri|la|lucide|feather|bx|bxs|bxl|octicon|ion|ph|e)-([a-z][\w-]{1,30})$|^ms-Icon--([A-Za-z]\w{1,30})$/i;
-  const cleIcone = k => {
+  const COMPTE_ICONE = /^icone (person|user|account|account_circle|account_box|manage_accounts|circle-user|user-circle|face|id-badge|avatar|user-tie|portrait|users|people|contacts)([-_](circle|alt|outline|outlined|solid|fill|filled|round|rounded|o))*$/i;
+  const iconeSeule = k => cleIcone(k, true);
+  const cleIcone = (k, sansBulle) => {
     // (ce qui se VOIT seulement : jamais la bulle d'un lien d'un sous-menu caché dans l'entrée)
     const tous = [k, ...Array.from(k.querySelectorAll('*')).slice(0, 80)
                     .filter(x => !x.checkVisibility || x.checkVisibility({visibilityProperty: true, opacityProperty: true})).slice(0, 39)];
-    for (const x of tous)
-      for (const a of BULLES) { const v = bulleSure(x.getAttribute && x.getAttribute(a)); if (v) return v; }
+    if (!sansBulle)
+      for (const x of tous)
+        for (const a of BULLES) { const v = bulleSure(x.getAttribute && x.getAttribute(a)); if (v) return v; }
     for (const x of tous)
       // un composant d'icône qui porte son nom : <mat-icon svgIcon="plans">, <app-icon name="plans">, data-icon="plans"
       for (const a of ['data-mat-icon-name', 'svgicon', 'data-icon', 'icon', 'iconname', 'data-icon-name'].concat(
@@ -1244,15 +1253,15 @@ JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
   const altSeul = (k, t) => !texteDuClone(k.cloneNode(true)) && !k.getAttribute('aria-label') && !k.getAttribute('title') &&
                             Array.from(k.querySelectorAll('img[alt]')).some(i => (i.getAttribute('alt') || '').replace(/\s+/g, ' ').trim() === t);
   const altRefuse = (k, t) => { const a = k.closest('a[href]') || k.querySelector('a[href]'), h = a ? (a.getAttribute('href') || '').trim() : '';
-    const autour = [k, a, k.parentElement, k.parentElement && k.parentElement.parentElement].filter(Boolean)
-                     .map(x => classe(x) + ' ' + (x.id || '')).join(' ');
+    const autour = [k, a].filter(Boolean).map(x => classe(x) + ' ' + (x.id || '')).join(' ');
     const logo = ICONE_PERSO.test(t + ' ' + autour + ' ' + Array.from(k.querySelectorAll('img')).map(i => (i.getAttribute('src') || '').slice(0, 200) + ' ' + classe(i)).join(' ')) ||
                  /brand|navbar-header|entete|header-logo/i.test(autour);
     let accueil = false;
-    try { const u = new URL(h || '#', location.href);
-          accueil = h !== '#' && u.origin === location.origin && /^\/(index\.\w+|home|accueil|dashboard)?\/?$/i.test(u.pathname) &&
+    try { const u = new URL(h || '#', location.href), b = new URL(document.baseURI);
+          accueil = h !== '#' && u.origin === location.origin && u.search === '' &&
+                    (/^\/(index\.\w+|home|accueil|dashboard)?\/?$/i.test(u.pathname) || u.pathname.replace(/\/$/, '') === b.pathname.replace(/\/$/, '')) &&
                     /^(#\/?(home|accueil)?\/?)?$/i.test(u.hash); } catch (x) {}
-    return !bulleSure(t) || logo || accueil || (h === '#' && logo); };
+    return !bulleSure(t) || logo || accueil; };
   const memo = new Map(), T = k => { if (!memo.has(k)) { let t = texteDe(k); if (t && altSeul(k, t) && altRefuse(k, t)) t = ''; memo.set(k, t); }
                                      return memo.get(k); };
   const nomCourt = t => (t && t.length <= 30 && /[A-Za-zÀ-ÿ]/.test(t) && !t.includes(':')) ? t : '';
@@ -1325,7 +1334,9 @@ JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
       const rond = [k, ...k.querySelectorAll('*')].slice(0, 6).some(x => { const r = x.getBoundingClientRect();
         return r.width > 0 && parseFloat(getComputedStyle(x).borderTopLeftRadius) >= 0.4 * Math.min(r.width, r.height); });
       entrees.push({ nom: enregistrement(k) ? '(donnee masquee)' : nomK, texte: nomK, groupe: n, fort: G.fort,
-                     titre: titreDe(G.g), section: titreSection(k), compte: compteDe(k) || (/^[A-ZÀ-Ý]{2,3}$/.test(nomK) && rond),
+                     titre: titreDe(G.g), section: titreSection(k),
+                     compte: compteDe(k) || COMPTE_ICONE.test(iconeSeule(k)) ||
+                             (/^[A-ZÀ-Ý]{2,3}$/.test(texteDuClone(k.cloneNode(true))) && (rond || G.icones)),
                      // tout le texte, sous-menu caché compris (« Se déconnecter » : menu de la personne) ; jamais écrit
                      cache: (k.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 600) });
     }
@@ -1510,12 +1521,14 @@ JS_EXAMINER = r"""(e, [jeton, premier]) => {""" + JS_ZONE_MENU + r"""
   copie.querySelectorAll(SOUS).forEach(x => x.remove());
   // le mot d'une icône (« archive » dans « <mat-icon>archive</mat-icon> Archives ») n'est pas le nom de l'élément, sauf
   // s'il n'y a rien d'autre (icône seule : elle est alors jugée par son icône)
-  const ligatures = Array.from(copie.querySelectorAll('mat-icon, i, span, em')).filter(x => !x.children.length &&
-      /^[a-z0-9_]+$/.test((x.textContent || '').trim()) && (x.tagName !== 'SPAN' || /icon|symbol/i.test(classes(x))));
+  // (un mot d'icône : dans mat-icon, ou dans un i / span qui porte une classe d'icône ; jamais un mot en italique)
+  const motDIcone = x => !x.children.length && /^[a-z0-9_]+$/.test((x.textContent || '').trim()) &&
+      (x.tagName === 'MAT-ICON' || /icon|symbol|material|^fa|\bfa-|mdi|glyph/i.test(classes(x)));
+  const ligatures = Array.from(copie.querySelectorAll('mat-icon, i, span')).filter(motDIcone);
   const sansIcones = copie.cloneNode(true);
-  Array.from(sansIcones.querySelectorAll('mat-icon, i, span, em')).filter(x => !x.children.length &&
-      /^[a-z0-9_]+$/.test((x.textContent || '').trim()) && (x.tagName !== 'SPAN' || /icon|symbol/i.test(classes(x)))).forEach(x => x.remove());
+  Array.from(sansIcones.querySelectorAll('mat-icon, i, span')).filter(motDIcone).forEach(x => x.remove());
   const propre = (sansIcones.textContent || '').replace(/\s+/g, ' ').trim();
+  const motsIcones = ligatures.map(x => (x.textContent || '').trim());
   if (propre && ligatures.length) ligatures.forEach(x => x.remove());
   if (!refus && copie.querySelector('a[href], button, input, select, textarea, label, [role=button], [role=checkbox], [onclick]'))
     refus = 'contient un autre bouton';
@@ -1537,11 +1550,13 @@ JS_EXAMINER = r"""(e, [jeton, premier]) => {""" + JS_ZONE_MENU + r"""
   const formulaire = c.form || c.closest('form');
   if (formulaire) attributs.push('form ' + (formulaire.getAttribute('action') || ''));
   // une entrée de MENU qui porte son propre nom (bulle, titre) : jugée par ce nom, pas par le dessin de son icône
-  const bulle = ['title', 'aria-label', 'mattooltip', 'data-tooltip', 'ng-reflect-message', 'data-bs-original-title', 'ptooltip']
-                  .some(a => (c.getAttribute(a) || '').trim() || (c.parentElement && (c.parentElement.getAttribute(a) || '').trim()));
+  const NOMS_BULLE = ['title', 'aria-label', 'mattooltip', 'data-tooltip', 'ng-reflect-message', 'data-bs-original-title', 'ptooltip'];
+  const bulle = NOMS_BULLE.some(a => (c.getAttribute(a) || '').trim() || (c.parentElement && (c.parentElement.getAttribute(a) || '').trim()));
+  // (la bulle du parent, « <span mattooltip="Supprimer"><a>... » : contrôlée aussi)
+  if (c.parentElement) for (const a of NOMS_BULLE) { const v = (c.parentElement.getAttribute(a) || '').trim(); if (v) attributs.push(a + ' ' + v); }
   const menuNomme = bulle && !!c.closest('[data-robot-barre], nav, [role=navigation], [role=menu], [role=menubar]');
   return { texte: texte.slice(0, 300), attributs: attributs.join(' | '), refus: refus, propre: propre.slice(0, 300),
-           menuNomme: menuNomme };
+           menuNomme: menuNomme, ligatures: motsIcones.slice(0, 5) };
 }"""
 
 # Le point où cliquer : le propre texte de l'élément (pas son centre, qui peut tomber sur un sous-menu) ; si le mot
@@ -2016,7 +2031,7 @@ def _menu_du_compte(textes):
     et son nom (le titre du menu) est une donnée."""
     return any(re.search(r"deconnex|deconnect|logout|log out|sign out|signout|mon profil|my profile|mon compte|my account|"
                          r"mes informations|mes preferences|changer de role|mot de passe|password|mon espace|"
-                         r"fermer la session|quitter|log ?off",
+                         r"fermer la session|^quitter\b|log ?off",
                          sans_accents(str(t)).lower()) for t in textes)
 
 
@@ -2024,12 +2039,12 @@ def _menu_du_compte(textes):
 # favoris, messagerie) ou le menu de la personne connectée : le nom ENTIER de l'icône est comparé (« account_tree »,
 # l'organigramme, reste un menu)
 ICONE_DE_FICHES = re.compile(r"(?:^|[-_])(history|recent|restore|inbox|e?mail|envelope|notifications?|bell|bookmarks?|"
-                             r"star|favorite|heart|chat|forum|messages?|comments?|sms|cart|shopping)(?=$|[-_\d]|s\b)|"
-                             r"^clock-rotate-left$", re.I)
+                             r"star|grade|favorite|heart|chat|forum|messages?|comments?|sms|cart|shopping|contacts?|"
+                             r"schedule|access_time|watch_later)(?=$|[-_\d]|s\b)|^clock-rotate-left$", re.I)
 # l'icône de la personne connectée (son menu, son profil) : jamais visitée, son sous-menu jamais écrit ; « users-gear »
 # (l'administration des utilisateurs) ou « person-digging » (les chantiers) sont des modules
 ICONE_DE_COMPTE = re.compile(r"(person|user|account|account_circle|account_box|manage_accounts|circle-user|user-circle|"
-                             r"face|id-badge|avatar|user-tie|portrait)([-_](circle|alt|outline|outlined|solid|fill|"
+                             r"face|id-badge|avatar|user-tie|portrait|users|people)([-_](circle|alt|outline|outlined|solid|fill|"
                              r"filled|round|rounded|o))*", re.I)
 
 
@@ -4014,19 +4029,23 @@ class Tache:
     def _texte_de(self, loc):
         """Le texte de l'élément, ses bulles et actions, et celles de ses PARENTS : le clic remonte jusqu'à eux."""
         try:
-            return loc.evaluate(r"""e => {
-              // (sans le mot d'une icône, « archive » dans « archive Archives » : une icône seule est contrôlée à part)
+            return loc.evaluate(r"""(e, [visite, fortes]) => {
+              // (en visite, sans le mot d'une icône, « archive » dans « archive Archives », s'il reste un autre texte ;
+              // une icône d'action franche, « logout », reste)
               const c = e.cloneNode(true);
-              const lig = Array.from(c.querySelectorAll('mat-icon, i, span, em')).filter(x => !x.children.length &&
-                  /^[a-z0-9_]+$/.test((x.textContent || '').trim()) && (x.tagName !== 'SPAN' || /icon|symbol/i.test(String(x.className))));
+              const lig = Array.from(c.querySelectorAll('mat-icon, i, span')).filter(x => !x.children.length &&
+                  /^[a-z0-9_]+$/.test((x.textContent || '').trim()) &&
+                  (x.tagName === 'MAT-ICON' || /icon|symbol|material|^fa|\bfa-|mdi|glyph/i.test(String(x.className))));
               let texte = e.innerText;
-              if (lig.length) { lig.forEach(x => x.remove()); texte = (c.textContent || '').replace(/\s+/g, ' ').trim(); }
+              const autres = lig.filter(x => !fortes.includes((x.textContent || '').trim()));
+              if (visite && autres.length) {   // (une icône seule est jugée par son icône dans _refus_visite)
+                autres.forEach(x => x.remove()); texte = (c.textContent || '').replace(/\s+/g, ' ').trim(); }
               const parts = [texte, e.value, e.title, e.getAttribute('aria-label'), e.getAttribute('href'), e.getAttribute('onclick')];
               const GEST = /^(on(click|dblclick|mousedown|mouseup|pointerdown|pointerup|touchstart|touchend))$|click|^hx-|^wire:|^x-on|^@|^data-(ajax|turbo|confirm|method|action|url)|^title$|^aria-label$/i;
               for (let n = e.parentElement; n && n !== document.body; n = n.parentElement)
                 for (const a of Array.from(n.attributes)) if (GEST.test(a.name)) parts.push(a.value);
               const f = e.form || e.closest('form'); if (f) parts.push(f.getAttribute('action') || '');
-              return parts.join(' '); }""")
+              return parts.join(' '); }""", [bool(self.lecture_seule), sorted(LIGATURES_D_ACTION)])
         except Exception:
             return ""
 
@@ -4069,6 +4088,8 @@ class Tache:
             attributs = " | ".join(x for x in attributs.split(" | ") if not x.startswith("class "))
         if (not nomme and action_en_visite(info["texte"])) or action_en_visite(attributs):
             return "ressemble a une action"
+        if set(info.get("ligatures") or []) & LIGATURES_D_ACTION:
+            return "icone d une action"
         # un élément SANS texte visible à lui (icône seule, même avec une bulle « Favori ») : son icône dit ce qu'il fait ;
         # un lien « Signalements » avec un petit drapeau devant garde son nom, il se visite
         if not info.get("propre") and not nomme and \
@@ -4632,7 +4653,7 @@ A_EVITER_EN_VISITE = re.compile(r"deconnex|deconnect|logout|log ?out|log ?off|si
 EXPRESSIONS_ACTION = re.compile(r"mise a jour|mettre a jour|prendre en charge|prise en charge|remettre a zero|"
                                 r"mettre en|mise en (service|production|ligne|place|attente|forme)")
 MOTS_ACTION_VISITE = {"nouveau", "nouvelle", "nouvel", "new", "oui", "ok", "yes", "non", "no", "go", "epingler",
-                      "desepingler", "marquer", "follow", "unfollow", "unpin", "favori", "lu", "suivre", "signet"}
+                      "desepingler", "marquer", "follow", "unfollow", "unpin", "favori", "lu", "signet"}
 # une entrée faite d'une icône seule (« icone trash ») qui fait une ACTION quand on clique dessus : un des MOTS de son
 # nom est une action (poubelle, crayon, plus, coche, croix, étoile des favoris, partage, pièce jointe, envoi...), les
 # mots de style (circle, square, solid, fill...) mis à part : « pen-to-square », « circle-plus », « trash-can » ; ou
@@ -4643,6 +4664,7 @@ xmark x times close cancel clear check checkmark done tick undo redo sync share 
 attachment star grade heart like thumbs thumb bookmark pin pushpin thumbtack keep ban block scissors cut copy paste
 clone play stop pause power poweroff logout signout save floppy upload publish archive unarchive restore lock unlock
 print download mark drafts off form gavel vote plane move unlink merge split toggle radio approve published unpublished
+push
 markunread rate recommend import export slash""".split())
 JETONS_DE_STYLE = set("""circle square solid outline outlined line fill filled round rounded sharp alt o two tone
 regular thin bold duotone rect rectangle lg sm""".split())
@@ -4654,6 +4676,13 @@ ICONE_DE_BASCULE = re.compile(
     r"(file|cloud|folder)-arrow-(up|down)|arrow-up-from-bracket|arrows?-rotate\w*|rotate(-left|-right)?|\w+_off|[\w-]+-slash)", re.I)
 ICONES_SANS_ACTION = re.compile(r"(fact_check|remove_red_eye|pin_drop|location_pin|map-pin|map-marker\w*|"
                                 r"push_pin_drop|edit_location_alt|checklist\w*)", re.I)
+
+
+# le mot d'une icône d'action FRANCHE, même à côté d'un nom (« <mat-icon>logout</mat-icon> Sortir », « add Plan ») ;
+# pas « archive Archives », « publish Publications », « lock Sécurité », « edit_road Voirie » (des modules)
+LIGATURES_D_ACTION = set("""add add_circle add_box delete delete_forever delete_outline remove remove_circle edit edit_note
+create save save_alt send upload close clear cancel logout exit_to_app power_settings_new post_add playlist_add note_add
+person_add group_add content_copy file_copy""".split())
 
 
 def _icone_d_action(nom):
@@ -4670,7 +4699,9 @@ def _icone_d_action(nom):
     # le PREMIER mot qui n'est pas un mot de style dit ce que fait l'icône (« pen-to-square », « circle-plus », « trash3 ») ;
     # « list-check », « calendar-plus », « user-check » sont des modules (liste, agenda, utilisateurs)
     jetons = [re.sub(r"\d+$", "", j) for j in re.split(r"[-_\s]+", icone) if j and j not in JETONS_DE_STYLE and not j.isdigit()]
-    return bool(jetons) and jetons[0] in JETONS_D_ACTION
+    # (ou un DERNIER mot qui ajoute, retire ou envoie : « file-circle-plus », « folder-minus », « paper-plane »)
+    return bool(jetons) and (jetons[0] in JETONS_D_ACTION or
+                             (len(jetons) > 1 and jetons[-1] in {"plus", "minus", "xmark", "x", "dash", "plane", "export", "import"}))
 
 
 def _icones_de(texte, attributs):
@@ -4714,12 +4745,15 @@ JS_NOM_PAGE = r"""() => {
   const onglet = actifs.slice(0, 3).map(e => texte(e).slice(0, 40)).filter(Boolean).join(' > ');
   // le titre de la page : un titre hors de l'en-tête d'abord (l'en-tête porte souvent le nom de l'application).
   // 5e valeur : true si ce titre est sans doute le NOM DE L'APPLICATION (en-tête, titre de la fenêtre)
-  for (const [sel, entete] of [['h1', false], ['[role=heading][aria-level="1"]', false], ['h2', false], ['h1', true]])
+  // (d'abord un titre hors de tout en-tête ; puis l'en-tête d'une PAGE, dans main ou article ; enfin l'en-tête de
+  // l'application, « banniere »)
+  const genre = e => { const h = e.closest('header, [role=banner]');
+    return !h ? 'libre' : (h.parentElement && h.parentElement.closest('main, article, [role=main]') ? 'page' : 'banniere'); };
+  for (const [sel, g] of [['h1', 'libre'], ['[role=heading][aria-level="1"]', 'libre'], ['h2', 'libre'], ['h1', 'page'],
+                          ['h2', 'page'], ['h1', 'banniere']])
     for (const e of document.querySelectorAll(sel)) {
-      const h = e.closest('header, [role=banner]');
-      const banniere = !!h && !(h.parentElement && h.parentElement.closest('main, article, section, [role=main]'));   // (l'en-tête de l'application)
-      if (!vis(e) || e.closest(HORS) || banniere !== entete) continue;
-      if (texte(e)) return [texte(e).slice(0, 200), onglet, true, innerWidth * innerHeight, entete];
+      if (!vis(e) || e.closest(HORS) || genre(e) !== g) continue;
+      if (texte(e)) return [texte(e).slice(0, 200), onglet, true, innerWidth * innerHeight, g === 'banniere'];
     }
   // pas de titre dans la page : le titre de la fenêtre (false : à prendre seulement si aucune zone n'a de vrai titre) ;
   // c'est le nom de l'application, sauf dans un cadre qui a son propre titre
@@ -4797,7 +4831,7 @@ VERBES_COLLES = ("delete", "remove", "supprimer", "update", "create", "archive",
 
 # un nom d'action qui suit un numéro (« /commandes/42/annulation ») ; un verbe à l'infinitif aussi (« /taches/3/terminer »)
 NOMS_D_ACTION = set("""annulation suppression refus rejet resiliation revocation abandon cloture approbation envoi
-diffusion emission""".split())
+diffusion emission supprime supprimee supprimes efface annule detruit retire purge""".split())
 # les clés d'ordre d'une adresse lue (« ?action= », « ?cmd= » ; pas « ?event= » d'un journal)
 ORDRES_GET = set("action op operation cmd command method verb do activity function fn call exec".split())
 # la valeur d'une clé d'ordre (« ?action=consulter ») qui ne fait que montrer quelque chose
@@ -4818,14 +4852,24 @@ def _adresse_d_action(url):
         brut = re.sub(r"[A-Za-z0-9_-]{10,}", lambda m: "0" if re.search(r"\d", m.group(0)) and re.search(r"[A-Za-z]", m.group(0))
                       else m.group(0), unquote(morceaux.path + " " + morceaux.fragment))
         ws = mots(brut).split()
-        if {"mark", "marquer", "toggle"} & set(ws + mots(unquote(morceaux.query)).split()):
-            return True
+        # « markAsRead », « mark-all-read », « toggleFavori » (pas « feature-toggle », « sidenav-toggle »)
+        for segment in re.split(r"[/#]", unquote(morceaux.path + "#" + morceaux.fragment)):
+            m = mots(segment).split()
+            if len(m) > 1 and m[0] in ("mark", "marquer", "toggle"):
+                return True
         for w in ws:
             for v in VERBES_COLLES:  # (« deleteplan » ; pas « updated », « cancellations », « submitted »)
                 reste = w[len(v):]
                 if w.startswith(v) and len(reste) > 2 and \
-                        not re.fullmatch(r"(e?d|ted|s|d?ions?|e?urs?|ings?|als?|ables?|ments?|lations?|ations?)", reste):
+                        not re.fullmatch(r"(e?d|l?led|ted|s|d?ions?|e?urs?|ings?|t?als?|ables?|ments?|lations?|ations?)", reste):
                     return True
+        # « .../notifications/seen », « .../alerts/42/dismiss » : marquer vu, lu, écarté ; « ?query=mutation{...} »
+        segments = [x for x in unquote(morceaux.path).split("/") if x]
+        if segments and mots(segments[-1]).replace(" ", "") in {"seen", "readall", "markallread", "markread", "markseen",
+                                                                "ack", "acknowledge", "dismiss", "lu", "vu"}:
+            return True
+        if re.search(r"\b(mutation|subscription)\b", unquote(morceaux.query)):
+            return True
         numero = lambda x: bool(re.fullmatch(r"\d+|[0-9a-f]{8,}", x))
         for i, w in enumerate(ws):
             voisins = ws[max(0, i - 1):i] + ws[i + 1:i + 2]
@@ -5229,6 +5273,8 @@ def action_en_visite(texte, survol=False):
         # survole. Le nom de ce qui sera cliqué dans le sous-menu est contrôlé à son tour.)
         return bool(A_EVITER_EN_VISITE.search(t))
     brut = " ".join(str(texte or "").split())
+    if re.fullmatch(r"(ne plus )?suivre", t):  # (le bouton « Suivre », pas « Dossiers à suivre »)
+        return True
     if not survol and (_icone_d_action(brut) or
                        # (le nom d'une icône en minuscules, bulle d'une icône Ant Design : « poweroff », « pushpin »)
                        (re.fullmatch(r"[a-z][a-z_-]{2,30}", brut) and _icone_d_action("icone " + brut))):
@@ -5820,7 +5866,8 @@ def chercher_dans_carte(carte, question):
                 if cle not in trouves or trouves[cle][0] < rang:
                     trouves[cle] = (rang, a_trouver)
         # la page entière : ses mots dans son titre et son chemin ensemble (« base MK2 » + « GATES »)
-        ensemble = mots(p["nom"] + " " + _lisible(p["chemin"]).replace(" puis ", " ")).split()
+        ensemble = mots(re.sub(r" \(titre non ecrit\)$", "", p["nom"] or "") + " " +
+                        _lisible(p["chemin"]).replace(" puis ", " ")).split()
         n = sum(1 for m in cherches if touche(m, ensemble))
         if n == len(cherches) and (i, "page", p["nom"]) not in trouves:
             trouves[(i, "page", p["nom"])] = ((n, False, 4, -len(p["chemin"]), -i), "")
