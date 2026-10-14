@@ -21,7 +21,7 @@ from pathlib import Path
 from collections import deque
 from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
-VERSION = "5"
+VERSION = "5.1"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -1262,8 +1262,13 @@ JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
                     (/^\/(index\.\w+|home|accueil|dashboard)?\/?$/i.test(u.pathname) || u.pathname.replace(/\/$/, '') === b.pathname.replace(/\/$/, '')) &&
                     /^(#\/?(home|accueil)?\/?)?$/i.test(u.hash); } catch (x) {}
     return !bulleSure(t) || logo || accueil; };
-  const memo = new Map(), T = k => { if (!memo.has(k)) { let t = texteDe(k); if (t && altSeul(k, t) && altRefuse(k, t)) t = ''; memo.set(k, t); }
-                                     return memo.get(k); };
+  // (un nom qui ne se VOIT pas, pris d'une bulle, d'un « title » ou d'un « alt » : contrôlé comme une bulle, jamais
+  // un nom de personne)
+  const memo = new Map(), T = k => { if (!memo.has(k)) {
+      let t = texteDe(k);
+      if (t && !texteDuClone(k.cloneNode(true)) && (!bulleSure(t) || (altSeul(k, t) && altRefuse(k, t)))) t = '';
+      memo.set(k, t); }
+    return memo.get(k); };
   const nomCourt = t => (t && t.length <= 30 && /[A-Za-zÀ-ÿ]/.test(t) && !t.includes(':')) ? t : '';
   // une entrée faite d'une ICÔNE seule (petite, sans texte à elle) : sa bulle ou son icône ; sans aucun nom, elle
   // sera nommée par sa place (« icone 1 », « icone 2 »...)
@@ -4661,7 +4666,8 @@ MOTS_ACTION_VISITE = {"nouveau", "nouvelle", "nouvel", "new", "oui", "ok", "yes"
 # (un module de contrôles), « remove_red_eye » (voir) ne sont pas des actions.
 JETONS_D_ACTION = set("""trash delete remove bin recycle garbage broom eraser pencil pen edit create plus add minus
 xmark x times close cancel clear check checkmark done tick undo redo sync share send reply forward paperclip attach
-attachment star grade heart like thumbs thumb bookmark pin pushpin thumbtack keep ban block scissors cut copy paste
+attachment star grade heart like favorite favorites thumbs thumb bookmark pin pushpin thumbtack keep ban block scissors cut
+copy paste
 clone play stop pause power poweroff logout signout save floppy upload publish archive unarchive restore lock unlock
 print download mark drafts off form gavel vote plane move unlink merge split toggle radio approve published unpublished
 push
