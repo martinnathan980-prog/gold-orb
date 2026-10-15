@@ -21,7 +21,7 @@ from pathlib import Path
 from collections import deque
 from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
-VERSION = "5.2"
+VERSION = "5.3"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -1024,9 +1024,29 @@ JS_ZONE_MENU = r"""
 # Outils communs pour les MENUS : visibilité, nom d'une entrée (sans ses icônes ni ses flèches), éléments cliquables
 # (liens, boutons, entrées de menu, et les « div » ou « span » avec la main de la souris), lien vers un enregistrement.
 JS_OUTILS_MENUS = JS_ZONE_MENU + r"""
+  // (un élément entièrement hors d'un parent « overflow: hidden » ne se voit pas : sous-menu FERMÉ par une hauteur 0,
+  //  libellé d'un menu replié ; un élément « absolute » ou « fixed » qui s'échappe de ce parent, lui, se voit)
+  const BORDS = new Map();
+  const bordDe = p => { if (!BORDS.has(p)) { const s = getComputedStyle(p), a = !/^(inline|contents)$/.test(s.display);
+      const b = { x: a && /hidden|clip/.test(s.overflowX), y: a && /hidden|clip/.test(s.overflowY), pos: s.position,
+                  cb: s.transform !== 'none' || s.filter !== 'none' };
+      if (b.x || b.y) b.r = p.getBoundingClientRect();
+      BORDS.set(p, b); }
+    return BORDS.get(p); };
+  const coupe = (e, r) => { let mode = getComputedStyle(e).position;
+    for (let p = e.parentElement, n = 0; p && p !== document.body && p !== document.documentElement && n < 30; p = p.parentElement, n++) {
+      const b = bordDe(p);
+      if (!(mode === 'fixed' || (mode === 'absolute' && b.pos === 'static' && !b.cb)) &&
+          ((b.y && (r.bottom <= b.r.top + 1 || r.top >= b.r.bottom - 1)) || (b.x && (r.right <= b.r.left + 1 || r.left >= b.r.right - 1))))
+        return true;
+      if (mode === 'fixed') { if (b.cb) mode = b.pos; }
+      else if (mode === 'absolute') { if (b.pos !== 'static' || b.cb) mode = b.pos; }
+      else mode = b.pos;
+    }
+    return false; };
   const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
                      if (e.checkVisibility && !e.checkVisibility({opacityProperty: true})) return false;
-                     const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+                     const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && !coupe(e, r); };
   const classe = x => typeof x.className === 'string' ? x.className : ((x.className && x.className.baseVal) || '');
   const SOUS = 'ul, ol, [role=menu], [role=group], [role=listbox], table, select';
   const ICONE = /(^|[\s_-])(ico|icon|icons|icone|material-icons|material-symbols\S*|mat-icon|fa|fas|far|fal|fab|glyphicon|bi|mdi|chevron|arrow|caret|angle|fleche)([\s_-]|$)/i;
@@ -1289,6 +1309,9 @@ JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
     const enLigne = ecart(r => r.top) <= 6, enColonne = !enLigne && ecart(r => r.left) <= 6;
     if (!enLigne && !enColonne) return null;
     const gauche = enColonne && rs.every(r => r.left < 100);
+    // une colonne à gauche DANS une navigation (nav, aside) : un menu certain, même dans une enveloppe « ...-content »
+    // (menu replié dont les sous-menus s'ouvrent au clic : rien n'apparaît au survol, il est quand même visité)
+    if (gauche && g.closest('nav, aside, [role=navigation]')) fort = true;
     // des icônes ailleurs qu'à gauche (barre du haut : replier le menu, langue, aide...) : gardées seulement si leur
     // survol ouvre des sous-menus (jamais un menu « certain » cliqué entrée par entrée)
     if (icones && !gauche) fort = false;
@@ -1362,8 +1385,13 @@ JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
 JS_TROUVER_ICONE = r"""([cle, jeton, numero]) => {""" + JS_OUTILS_MENUS + r"""
   const LIEN = 'a[href], button, [role=menuitem], [role=link], [role=button], [role=tab], [routerlink], [ng-reflect-router-link]';
   // une entrée qui contient UN seul lien ou bouton : c'est lui qu'on clique
+  // (une entrée qui contient son sous-menu, « li > ligne + ul » : la ligne qui réagit au clic, hors du sous-menu)
   const interieur = e => { if (e.matches(LIEN)) return e; const d = Array.from(e.querySelectorAll(LIEN)).filter(vis);
-                           return d.length === 1 ? d[0] : e; };
+                           if (d.length === 1) return d[0];
+                           const l = d.length ? [] : Array.from(e.querySelectorAll('[data-robot-ecoute]')).filter(x => vis(x) &&
+                                       !Array.from(e.querySelectorAll(SOUS)).some(s => s.contains(x)));
+                           const ext = l.filter(x => !l.some(y => y !== x && y.contains(x)));
+                           return ext.length === 1 ? ext[0] : e; };
   let trouves;
   if (numero !== null && numero !== undefined) {
     trouves = Array.from(document.querySelectorAll('[data-robot-barre="' + numero + '"]'));
@@ -1399,9 +1427,12 @@ JS_VUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
 # dans un panneau de menu (rôle menu, « flyout », « dropdown », « overlay »...), et ceux de l'entrée survolée elle-même.
 # Ce qui apparaît ailleurs dans la page (contenu qui finit de se charger) est ignoré ; trop de nouveautés = la page a changé.
 # Ils sont marqués (data-robot-nouveau) pour pouvoir être survolés à leur tour.
-JS_NOUVEAUX = r"""([numero, jeton]) => {""" + JS_OUTILS_MENUS + r"""
+JS_NOUVEAUX = r"""([numero, jeton, clic]) => {""" + JS_OUTILS_MENUS + r"""
   const entree = numero >= 0 ? document.querySelector('[data-robot-barre="' + numero + '"]') : null;
   const survole = document.querySelector('[data-robot-survole]');
+  // après un CLIC sur le nom d'une entrée de menu (« GATES » dans « li > ligne + sous-menu ») : son sous-menu est dans
+  // l'entrée entière
+  const porteur = clic && survole && !entree ? survole.closest('[data-robot-barre]') : null;
   const groupe = entree ? entree.parentElement : null;
   const nomEntree = (entree || survole) ? texteDe(entree || survole) : '';
   const vus = window.__robotVus || new WeakMap();
@@ -1417,7 +1448,7 @@ JS_NOUVEAUX = r"""([numero, jeton]) => {""" + JS_OUTILS_MENUS + r"""
   for (const e of cliquables()) {
     if (entree && (e === entree || e.contains(entree))) continue;
     if (survole && (e === survole || e.contains(survole))) continue;
-    const hote = entree || survole;
+    const hote = entree || porteur || survole;
     const dedans = !!(hote && hote.contains(e));
     if (!dedans && ((groupe && groupe.contains(e)) ||
         e.closest('[role=dialog], [role=alertdialog], dialog, [aria-modal=true], [role=tooltip], [data-robot-barre]'))) continue;
@@ -1754,9 +1785,62 @@ def _marquer_ecouteurs(page):
 
 # ---------------------------------------------------------------------------- menus qui s'ouvrent au survol
 # (menu de gauche dont les sous-menus n'apparaissent que sous la souris). Le robot SURVOLE, il ne clique jamais ici.
+# Un menu de gauche REPLIÉ : une colonne étroite d'icônes au bord gauche (nav, aside), qui se déplie sous la souris.
+# Renvoie les points où poser la souris (un endroit VIDE de la colonne, sinon/puis sa première entrée), ou null (pas de
+# colonne étroite : pas de menu replié, ou il est déjà déplié).
+JS_MENU_REPLIE = r"""() => {
+  const etroite = e => { const r = e.getBoundingClientRect(); return r.left <= 4 && r.width >= 30 && r.width <= 90; };
+  let col = null, nav = null;
+  for (const e of document.querySelectorAll('nav, aside, [role=navigation]')) {
+    if (!etroite(e) || !e.querySelector('li, a, [role=menuitem]')) continue;
+    nav = col = e;   // (la colonne entière, jusqu'en bas de la fenêtre : le plus grand parent aussi étroit)
+    for (let p = e.parentElement; p && p !== document.body && etroite(p); p = p.parentElement) col = p;
+    break;
+  }
+  if (!col) return null;
+  const r = col.getBoundingClientRect(), x = Math.round(r.left + r.width / 2), points = [];
+  const CLIC = 'a, button, input, select, textarea, li, [role=button], [role=menuitem], [role=link], [onclick], [tabindex], ' +
+               '[data-robot-ecoute], [data-robot-barre]';
+  for (let y = Math.min(innerHeight, r.bottom) - 12; y > r.top + 10; y -= 16) {
+    const p = document.elementFromPoint(x, y);
+    if (p && col.contains(p) && !p.closest(CLIC) && getComputedStyle(p).cursor !== 'pointer') { points.push([x, Math.round(y)]); break; }
+  }
+  // (un menu qui ne se déplie que sous ses entrées : la première)
+  const premiere = Array.from(nav.querySelectorAll('li, a, [role=menuitem]')).find(e => { const q = e.getBoundingClientRect();
+    return q.width > 0 && q.height > 0 && q.top >= 0 && q.bottom <= innerHeight; });
+  if (premiere) { const q = premiere.getBoundingClientRect(); points.push([Math.round(q.left + Math.min(q.width, 52) / 2), Math.round(q.top + q.height / 2)]); }
+  return points;
+}"""
+_MENU_FIXE = set()  # pages dont la colonne d'icônes ne se déplie pas sous la souris (pas besoin de réessayer)
+
+
+def _deplier_menu_replie(page):
+    """Un menu de gauche replié (icônes seules) se déplie sous la souris, comme pour vous : le robot pose la souris sur
+    un endroit VIDE de cette colonne (rien n'est cliqué) pour que les noms des entrées s'affichent."""
+    if id(page) in _MENU_FIXE:
+        return
+    try:
+        points = page.main_frame.evaluate(JS_MENU_REPLIE)
+        if points is None:
+            return
+        for x, y in points:
+            page.mouse.move(x, y)
+            for _ in range(7):
+                page.wait_for_timeout(100)
+                if page.main_frame.evaluate(JS_MENU_REPLIE) is None:  # la colonne s'est élargie : le menu est déplié
+                    page.wait_for_timeout(300)  # (les noms finissent d'apparaître)
+                    return
+        # une colonne d'icônes qui ne se déplie pas : la souris s'en va (un sous-menu ouvert par le survol se referme)
+        _MENU_FIXE.add(id(page))
+        _souris_au_repos(page)
+    except Exception:
+        pass
+
+
 def _menus_de_la_page(page):
-    """Repère et marque les entrées des menus de la page (tous les cadres).
-    Renvoie [{"cadre", "numero", "nom", "groupe", "fort" (menu certain), "loc"}]."""
+    """Repère et marque les entrées des menus de la page (tous les cadres). Un menu de gauche replié est d'abord déplié
+    (souris posée dessus). Renvoie [{"cadre", "numero", "nom", "groupe", "fort" (menu certain), "loc"}]."""
+    _deplier_menu_replie(page)
     entrees = []
     for n_cadre, cadre in enumerate(page.frames):
         try:
@@ -1819,7 +1903,7 @@ def _apparus_apres_clic(page):
     vus = []
     for cadre in page.frames:
         try:
-            for n in cadre.evaluate(JS_NOUVEAUX, [-1, secrets.token_hex(4)]):
+            for n in cadre.evaluate(JS_NOUVEAUX, [-1, secrets.token_hex(4), True]):
                 vus.append("(donnee masquee)" if _titre_de_fiches(n.get("section")) else n["texte"])
         except Exception:
             continue
