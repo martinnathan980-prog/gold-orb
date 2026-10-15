@@ -1030,7 +1030,13 @@ JS_OUTILS_MENUS = JS_ZONE_MENU + r"""
   const bordDe = p => { if (!BORDS.has(p)) { const s = getComputedStyle(p), a = !/^(inline|contents)$/.test(s.display);
       const b = { x: a && /hidden|clip/.test(s.overflowX), y: a && /hidden|clip/.test(s.overflowY), pos: s.position,
                   cb: s.transform !== 'none' || s.filter !== 'none', defile: a && /auto|scroll/.test(s.overflowX + s.overflowY) };
-      if (b.x || b.y) b.r = p.getBoundingClientRect();
+      if (b.x || b.y) {
+        b.r = p.getBoundingClientRect();
+        // (seulement un parent FERMÉ, hauteur ou largeur nulle, ou dont rien ne défile : une liste dans une boîte à
+        //  barre de défilement maison, « perfect-scrollbar », reste entière, comme ses règles de longue liste)
+        b.y = b.y && (b.r.height <= 2 || p.scrollHeight <= p.clientHeight + 2);
+        b.x = b.x && (b.r.width <= 2 || p.scrollWidth <= p.clientWidth + 2);
+      }
       BORDS.set(p, b); }
     return BORDS.get(p); };
   const coupe = (e, r) => { let mode = getComputedStyle(e).position;
@@ -1255,7 +1261,10 @@ JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
   const envoi = k => [k, ...k.querySelectorAll('button, input')].some(x => x.form && ['submit', 'reset', 'image'].includes(x.type));
   const B = 'button, [role=button], input, a[href^="javascript:" i]', LIEN = 'a[href]:not([href^="javascript:" i])';
   const estBouton = k => k.matches(B) || (!k.matches(LIEN) && !k.querySelector(LIEN) && !!k.querySelector(B));
-  const entreeCliquable = k => k.matches(CLIQ) || !!k.querySelector(CLIQ) || getComputedStyle(k).cursor === 'pointer';
+  // (la main de la souris HÉRITÉE du groupe — une ligne de menu cliquable, « icône + nom + flèche » — ne fait pas de ses
+  //  morceaux des entrées)
+  const entreeCliquable = (k, g) => k.matches(CLIQ) || !!k.querySelector(CLIQ) ||
+                                    (getComputedStyle(k).cursor === 'pointer' && !(g && getComputedStyle(g).cursor === 'pointer'));
   // le titre du groupe (« Récents » au-dessus d'une liste de fiches) : bulle, titre lié, ou titre juste au-dessus
   const titreDe = g => {
     const l = g.getAttribute('aria-label'); if (l) return l;
@@ -1302,7 +1311,7 @@ JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
   const essai = (g, v, e, icones) => {
     if (e.length < 2 || e.length > 40 || e.length < 0.7 * v.length || !e.every(k => k.tagName === e[0].tagName)) return null;
     if (e.some(k => k.matches('input, select, textarea') || k.querySelector('input:not([type=hidden]), select, textarea') || envoi(k))) return null;
-    if (e.filter(entreeCliquable).length < 0.7 * e.length) return null;
+    if (e.filter(k => entreeCliquable(k, g)).length < 0.7 * e.length) return null;
     if (e.filter(enregistrement).length >= e.length / 2) return null;   // une liste de fiches (données), pas un menu
     let fort = !contenu(g) &&
                (!!g.closest('nav, [role=navigation], [role=menu], [role=menubar]') || e.filter(indiceSous).length >= e.length / 2);
@@ -1353,7 +1362,9 @@ JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
   }
   // un groupe qui n'est qu'une enveloppe d'un autre menu (en-tête = logo + menu + nom) : on garde le menu
   const reste = (k, c) => texteDe(k).toLowerCase().replace(/[^a-z0-9à-ÿ]/g, '').replace(texteDe(c).toLowerCase().replace(/[^a-z0-9à-ÿ]/g, ''), '');
-  const garde = groupes.filter(G => !G.e.some(k => groupes.some(H => H !== G && k.contains(H.g) && !/[a-zà-ÿ]/.test(reste(k, H.g)))));
+  // (un groupe incertain DANS une entrée d'un menu certain, la ligne « icône + nom + flèche », ne fait pas du menu une enveloppe)
+  const garde = groupes.filter(G => !G.e.some(k => groupes.some(H => H !== G && k.contains(H.g) && !(G.fort && !H.fort) &&
+                                                                    !/[a-zà-ÿ]/.test(reste(k, H.g)))));
   const entrees = [];
   garde.forEach((G, n) => {
     if (G.e.some(k => k.closest('[data-robot-barre]'))) return;   // sous-menu déjà ouvert d'une entrée retenue
@@ -1370,7 +1381,11 @@ JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
                      // (l'icône de la personne ne compte que pour une entrée SANS texte à elle : « Clients » avec une icône
                      // de personnes reste un menu)
                      compte: compteDe(k) || ((!T(k) || !texteDuClone(k.cloneNode(true))) && COMPTE_ICONE.test(iconeSeule(k))) ||
-                             (/^[A-ZÀ-Ý]{2,3}$/.test(texteDuClone(k.cloneNode(true))) && (rond || G.icones)),
+                             (/^[A-ZÀ-Ý]{2,3}$/.test(texteDuClone(k.cloneNode(true))) && (rond || G.icones)) ||
+                             // (une PHOTO ronde dans l'entrée, ou une image à côté d'un identifiant « NMARTIN » : la personne)
+                             Array.from(k.querySelectorAll('img')).slice(0, 4).some(i => { const r = i.getBoundingClientRect();
+                               return r.width > 0 && parseFloat(getComputedStyle(i).borderTopLeftRadius) >= 0.4 * Math.min(r.width, r.height); }) ||
+                             (!!k.querySelector('img') && /^[A-Z][A-Z0-9._-]{3,15}$/.test(texteDuClone(k.cloneNode(true))) && /\d|[._-]|^[A-Z]{6,}$/.test(texteDuClone(k.cloneNode(true)))),
                      // tout le texte, sous-menu caché compris (« Se déconnecter » : menu de la personne) ; jamais écrit
                      cache: (k.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 600) });
     }
@@ -1659,6 +1674,19 @@ JS_ENTREE_MENU = r"""e => {
 def _visible(loc):
     try:
         return loc.is_visible()
+    except Exception:
+        return False
+
+
+JS_VRAIMENT_VISIBLE = r"""e => {""" + JS_OUTILS_MENUS + r"""
+  return vis(e);
+}"""
+
+
+def _vraiment_visible(loc):
+    """Visible ET pas caché dans un sous-menu fermé (hauteur 0) : ce que Playwright ne sait pas voir."""
+    try:
+        return loc.is_visible() and bool(loc.evaluate(JS_VRAIMENT_VISIBLE))
     except Exception:
         return False
 
@@ -4280,7 +4308,7 @@ class Tache:
             trouves = self.candidats(partie, self.cadres(), tous=True)[:20]
             if not trouves:
                 raise ErreurTache(f"menu « {partie} » introuvable")
-            trouves.sort(key=lambda t: (not _visible(t), _rang_menu(t), _bouton_de_page(t)))
+            trouves.sort(key=lambda t: (not _vraiment_visible(t), _rang_menu(t), _bouton_de_page(t)))
             loc = trouves[0]
             if i == 0 and any(self._danger(p, survol=j < len(parties) - 1) for j, p in enumerate(parties)) \
                     and not self.accord_geste:
@@ -4317,7 +4345,7 @@ class Tache:
                 except Exception:
                     continue
                 suivant = self.candidats(parties[i + 1], self.cadres(), attente=1, tous=True)
-                if any(_visible(s) and _rang_menu(s) < 2 for s in suivant[:20]):  # apparu dans un menu, pas sur la page
+                if any(_vraiment_visible(s) and _rang_menu(s) < 2 for s in suivant[:20]):  # apparu dans un menu, pas sur la page
                     loc, ouvert = essai, True
                     break
             if not ouvert:
