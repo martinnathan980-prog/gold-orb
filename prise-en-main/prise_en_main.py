@@ -1029,7 +1029,7 @@ JS_OUTILS_MENUS = JS_ZONE_MENU + r"""
   const BORDS = new Map();
   const bordDe = p => { if (!BORDS.has(p)) { const s = getComputedStyle(p), a = !/^(inline|contents)$/.test(s.display);
       const b = { x: a && /hidden|clip/.test(s.overflowX), y: a && /hidden|clip/.test(s.overflowY), pos: s.position,
-                  cb: s.transform !== 'none' || s.filter !== 'none' };
+                  cb: s.transform !== 'none' || s.filter !== 'none', defile: a && /auto|scroll/.test(s.overflowX + s.overflowY) };
       if (b.x || b.y) b.r = p.getBoundingClientRect();
       BORDS.set(p, b); }
     return BORDS.get(p); };
@@ -1039,6 +1039,8 @@ JS_OUTILS_MENUS = JS_ZONE_MENU + r"""
       if (!(mode === 'fixed' || (mode === 'absolute' && b.pos === 'static' && !b.cb)) &&
           ((b.y && (r.bottom <= b.r.top + 1 || r.top >= b.r.bottom - 1)) || (b.x && (r.right <= b.r.left + 1 || r.left >= b.r.right - 1))))
         return true;
+      // (dans une zone qui défile, menu long : l'élément peut être amené à l'écran, il compte comme visible)
+      if (b.defile && !(mode === 'fixed' || (mode === 'absolute' && b.pos === 'static' && !b.cb))) return false;
       if (mode === 'fixed') { if (b.cb) mode = b.pos; }
       else if (mode === 'absolute') { if (b.pos !== 'static' || b.cb) mode = b.pos; }
       else mode = b.pos;
@@ -1311,7 +1313,9 @@ JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
     const gauche = enColonne && rs.every(r => r.left < 100);
     // une colonne à gauche DANS une navigation (nav, aside) : un menu certain, même dans une enveloppe « ...-content »
     // (menu replié dont les sous-menus s'ouvrent au clic : rien n'apparaît au survol, il est quand même visité)
-    if (gauche && g.closest('nav, aside, [role=navigation]')) fort = true;
+    // (seulement la navigation collée au bord gauche de la fenêtre : jamais une liste dans le contenu de la page)
+    const navBord = g.closest('nav, [role=navigation]');
+    if (gauche && navBord && navBord.getBoundingClientRect().left <= 4 && !e.some(estBouton)) fort = true;
     // des icônes ailleurs qu'à gauche (barre du haut : replier le menu, langue, aide...) : gardées seulement si leur
     // survol ouvre des sous-menus (jamais un menu « certain » cliqué entrée par entrée)
     if (icones && !gauche) fort = false;
@@ -1388,7 +1392,7 @@ JS_TROUVER_ICONE = r"""([cle, jeton, numero]) => {""" + JS_OUTILS_MENUS + r"""
   // (une entrée qui contient son sous-menu, « li > ligne + ul » : la ligne qui réagit au clic, hors du sous-menu)
   const interieur = e => { if (e.matches(LIEN)) return e; const d = Array.from(e.querySelectorAll(LIEN)).filter(vis);
                            if (d.length === 1) return d[0];
-                           const l = d.length ? [] : Array.from(e.querySelectorAll('[data-robot-ecoute]')).filter(x => vis(x) &&
+                           const l = d.length || !e.querySelector(SOUS) ? [] : Array.from(e.querySelectorAll('[data-robot-ecoute]')).filter(x => vis(x) &&
                                        !Array.from(e.querySelectorAll(SOUS)).some(s => s.contains(x)));
                            const ext = l.filter(x => !l.some(y => y !== x && y.contains(x)));
                            return ext.length === 1 ? ext[0] : e; };
@@ -1811,13 +1815,14 @@ JS_MENU_REPLIE = r"""() => {
   if (premiere) { const q = premiere.getBoundingClientRect(); points.push([Math.round(q.left + Math.min(q.width, 52) / 2), Math.round(q.top + q.height / 2)]); }
   return points;
 }"""
-_MENU_FIXE = set()  # pages dont la colonne d'icônes ne se déplie pas sous la souris (pas besoin de réessayer)
+_MENU_FIXE = {}  # page -> nombre d'essais où sa colonne d'icônes ne s'est pas dépliée (après 3, on n'essaie plus)
+_MENU_DEPLIE = set()  # pages dont le menu replié a été déplié par la souris du robot
 
 
 def _deplier_menu_replie(page):
     """Un menu de gauche replié (icônes seules) se déplie sous la souris, comme pour vous : le robot pose la souris sur
     un endroit VIDE de cette colonne (rien n'est cliqué) pour que les noms des entrées s'affichent."""
-    if id(page) in _MENU_FIXE:
+    if _MENU_FIXE.get(id(page), 0) >= 3:
         return
     try:
         points = page.main_frame.evaluate(JS_MENU_REPLIE)
@@ -1829,9 +1834,10 @@ def _deplier_menu_replie(page):
                 page.wait_for_timeout(100)
                 if page.main_frame.evaluate(JS_MENU_REPLIE) is None:  # la colonne s'est élargie : le menu est déplié
                     page.wait_for_timeout(300)  # (les noms finissent d'apparaître)
+                    _MENU_DEPLIE.add(id(page))
                     return
         # une colonne d'icônes qui ne se déplie pas : la souris s'en va (un sous-menu ouvert par le survol se referme)
-        _MENU_FIXE.add(id(page))
+        _MENU_FIXE[id(page)] = _MENU_FIXE.get(id(page), 0) + 1
         _souris_au_repos(page)
     except Exception:
         pass
@@ -2995,6 +3001,8 @@ def _releve_et_menus(page, memoire=None):
         explores = _explorer_menus(page, memoire)
     except Exception:
         explores = []
+    if id(page) in _MENU_DEPLIE:  # (le relevé se fait menu replié : seulement ce qui se voit d'habitude)
+        _souris_au_repos(page)
     total = {"autresMenus": [], "onglets": [], "champs": [], "boutons": [], "tableaux": [], "libelles": [], "liens": [], "cadres": 0}
     for cadre in page.frames:
         try:
@@ -4298,6 +4306,8 @@ class Tache:
                 if self.voir_apres_clic and self.page.url == adresse:
                     self.page.wait_for_timeout(500)
                     self.apparus = _apparus_apres_clic(self.page)
+                if id(self.page) in _MENU_DEPLIE and self.page.url != adresse:
+                    _souris_au_repos(self.page)  # (le menu déplié ne doit pas cacher la nouvelle page)
                 return
             # survol (comme la souris) : le sous-menu apparaît, parfois ailleurs dans la page (menu de gauche)
             ouvert = False
