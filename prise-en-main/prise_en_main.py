@@ -21,7 +21,7 @@ from pathlib import Path
 from collections import deque
 from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
-VERSION = "5.1"
+VERSION = "5.2"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -1813,6 +1813,19 @@ def _souris_au_repos(page):
         pass
 
 
+def _apparus_apres_clic(page):
+    """Les noms de ce qui vient d'apparaître à côté de l'entrée cliquée (marquée data-robot-survole) : un sous-menu qui
+    s'ouvre au clic. Les éléments sous un titre de liste de fiches sont masqués."""
+    vus = []
+    for cadre in page.frames:
+        try:
+            for n in cadre.evaluate(JS_NOUVEAUX, [-1, secrets.token_hex(4)]):
+                vus.append("(donnee masquee)" if _titre_de_fiches(n.get("section")) else n["texte"])
+        except Exception:
+            continue
+    return vus
+
+
 def _survoler_et_voir(page, loc, cadre_entree=None, numero=-1, patience=False):
     """Pose la souris sur un élément (jamais de clic) et renvoie ce qui vient d'apparaître À CÔTÉ de lui :
     [{"texte", "sous" (ouvre lui-même un sous-menu), "loc"}]. Un sous-menu qui se charge (« Chargement... ») est
@@ -1926,7 +1939,7 @@ def _explorer_menus(page, memoire=None):
             nouveaux = []
         if nouveaux:
             _menu_confirme(e)
-        a_ouvrir = 4
+        a_ouvrir = 15
         for n in nouveaux:
             sous = []
             if n["sous"] and a_ouvrir > 0:
@@ -2918,7 +2931,7 @@ def _releve_et_menus(page, memoire=None):
         if not t:
             continue
         parties, deja = [], set()
-        if _contenu_a_masquer(nom, textes) or len(elements) > 25:
+        if _contenu_a_masquer(nom, textes) or len(elements) > 40:
             parties = _contenu_survole(nom, textes, 25)
         else:
             for texte, sous in elements:
@@ -3758,6 +3771,11 @@ class Tache:
         self.url = url
         # visite (choix 5 et 6) : le robot regarde seulement ; tout geste qui pourrait modifier est refusé sans question
         self.lecture_seule = lecture_seule
+        # visite : après le clic sur la dernière entrée d'un menu, ce qui vient d'APPARAÎTRE à côté (un sous-menu qui
+        # s'ouvre au clic, pas au survol) ; la carte y entre ensuite
+        self.voir_apres_clic, self.apparus = False, []
+        # les entrées de menu qui s'ouvrent au CLIC (notées par la carte) : cliquées tout de suite, sans essayer le survol
+        self.ouvre_au_clic = set()
         self.chargement_max, self.calme_max = 10, 15
         self.variables = {}
         self.tout_confirme = not entete["confirmer"]
@@ -4181,11 +4199,25 @@ class Tache:
                 # un bouton de la PAGE (hors menu) qui porte le même nom n'est jamais cliqué à la place de l'entrée du menu
                 if _rang_menu(loc) == 2 and _bouton_de_page(loc):
                     raise ErreurTache(f"« {partie} » : le robot ne trouve que un bouton de la page, pas l'entree du menu")
+                self.apparus, adresse = [], self.page.url
+                if self.voir_apres_clic:
+                    for cadre in self.page.frames:
+                        try:
+                            cadre.evaluate(JS_VUS)
+                        except Exception:
+                            pass
+                    try:
+                        loc.evaluate("e => e.setAttribute('data-robot-survole', '1')")
+                    except Exception:
+                        pass
                 self._cliquer_element(loc, partie, partie)
+                if self.voir_apres_clic and self.page.url == adresse:
+                    self.page.wait_for_timeout(500)
+                    self.apparus = _apparus_apres_clic(self.page)
                 return
             # survol (comme la souris) : le sous-menu apparaît, parfois ailleurs dans la page (menu de gauche)
             ouvert = False
-            for essai in [t for t in trouves if _visible(t)][:3] or [loc]:
+            for essai in ([] if partie in self.ouvre_au_clic else [t for t in trouves if _visible(t)][:3] or [loc]):
                 try:
                     _survoler_et_voir(self.page, essai)
                 except Exception:
@@ -4195,12 +4227,23 @@ class Tache:
                     loc, ouvert = essai, True
                     break
             if not ouvert:
-                # menu qui s'ouvre au clic : ce clic aussi est contrôlé
+                # menu qui s'ouvre au clic : ce clic aussi est contrôlé ; ce qui apparaît à côté est marqué comme un
+                # sous-menu (comme au survol)
                 if self._danger(self._texte_de(loc)) and not self.accord_geste:
                     self.confirmer(loc, f"cliquer « {partie} »", cle="cliquer " + partie)
                 self._verifier_visite(loc, partie)
+                for cadre in self.page.frames:
+                    try:
+                        cadre.evaluate(JS_VUS)
+                    except Exception:
+                        pass
+                try:
+                    loc.evaluate("e => e.setAttribute('data-robot-survole', '1')")
+                except Exception:
+                    pass
                 loc.click(timeout=10000)
                 self.page.wait_for_timeout(800)
+                _apparus_apres_clic(self.page)
 
     def champ(self, libelle):
         if libelle.startswith("#"):
@@ -5353,7 +5396,7 @@ def _chemins_de_la_page(chemin, r, menus, deja, par_onglet, par_lien, communs=()
             if str(nom).startswith("icone ") and _structure(nom) == nom:
                 evites.append(f"{nom} (liste de fiches ou compte, pas visite)")
             continue
-        if len(elements) > 25:
+        if len(elements) > 40:
             evites.append(f"{nom} > ({len(elements)} elements : liste de fiches, pas visitee)")
             continue
         if not elements:
@@ -5363,7 +5406,7 @@ def _chemins_de_la_page(chemin, r, menus, deja, par_onglet, par_lien, communs=()
                 continue
             if not sous:
                 ajouter(f"MENU : {nom} > {texte}", [nom, texte])
-            elif len(sous) > 12:
+            elif len(sous) > 25:
                 evites.append(f"{nom} > {texte} > ({len(sous)} elements : liste de fiches, pas visitee)")
             elif not _contenu_a_masquer(texte, sous):
                 for s in sous:
@@ -5547,6 +5590,8 @@ def explorer_portail(page, url, garde):
     # (« plus aucun échange » n'arrive jamais sur un portail qui s'interroge sans cesse : on attend peu, et calme()
     #  attend la vraie réponse)
     t.chargement_max, t.calme_max = 1, 6
+    t.voir_apres_clic = True
+    t.ouvre_au_clic = set(carte.get("ouvre_au_clic", []))
     memoire, deja, file = {}, set(), deque()
     for p in carte["pages"]:  # carte complétée : les chemins pas encore essayés la fois d'avant
         for c in p.get("a_essayer", []):
@@ -5610,6 +5655,9 @@ def explorer_portail(page, url, garde):
         elif PAGE_DE_CONNEXION.search(sans_accents(_identite(ici)[1]).lower()) or _champ_mot_de_passe(ici):
             # (« Votre session a expiré », page de connexion : pas une page du portail ; compte comme un échec)
             statut = "connexion demandee"
+        elif t.apparus and _identite(ici)[0] == carte["pages"][accueil[0]]["id"]:
+            # le clic a seulement ouvert un sous-menu sur l'accueil : pas besoin de relever à nouveau tout l'accueil
+            statut = "reste sur l'accueil"
         else:
             numero, nouvelle = noter_page(chemin)
             p = carte["pages"][numero]
@@ -5755,6 +5803,28 @@ def explorer_portail(page, url, garde):
                 except Exception as e:
                     statut = "echec : page pas relevee"
                     ecrire(f"      -> page pas relevee ({masquer(premiere_ligne(e))[:90]})")
+            if statut.startswith("reste sur l'accueil") and chemin[-1].startswith("MENU : ") and t.apparus:
+                # le clic a OUVERT un sous-menu (la page ne change pas) : le robot entrera dans chacun de ses éléments
+                base, ajoutes = chemin[-1].partition(" : ")[2], []
+                parties = [x.strip() for x in base.split(">")]
+                if len(parties) < 4 and not _contenu_a_masquer(parties[-1], t.apparus):
+                    for x in dict.fromkeys(t.apparus):
+                        if len(ajoutes) >= 40 or not _nom_sur(x) or x in parties:
+                            continue
+                        c = chemin[:-1] + [f"MENU : {base} > {x}"]
+                        if c[-1] in deja:
+                            continue
+                        deja.add(c[-1])
+                        if _a_eviter(x):
+                            carte["evites"].append(f"{base} > {x}")
+                            continue
+                        ajoutes.append(c)
+                if ajoutes:
+                    t.ouvre_au_clic.add(parties[-1])
+                    carte["ouvre_au_clic"] = sorted(t.ouvre_au_clic)
+                    file.extendleft(reversed(ajoutes))
+                    statut = f"ouvre un sous-menu ({len(ajoutes)} elements a visiter)"
+                    ecrire(f"      -> {statut}")
             carte["essais"][cle] = statut
             if statut.startswith(("echec", "introuvable", "connexion")):
                 echecs_de_suite += 1
@@ -5989,6 +6059,7 @@ def boucle_gps(page, url, garde):
         return
     t = Tache(dict(ENTETE_VISITE), [], page, url, lecture_seule=True)
     t.chargement_max, t.calme_max = 2, 10
+    t.ouvre_au_clic = set(carte.get("ouvre_au_clic", []))
     ecrire(f"   Le robot connait {len(carte['pages'])} page(s) de ce portail (carte du {carte.get('date', '?')}).")
     while True:
         ecrire()
