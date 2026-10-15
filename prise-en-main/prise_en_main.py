@@ -21,7 +21,7 @@ from pathlib import Path
 from collections import deque
 from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
-VERSION = "5.3"
+VERSION = "5.4"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -1342,7 +1342,7 @@ JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
     const gr = g.getBoundingClientRect();
     const ok = enLigne ? (gr.top < 260 || !!g.closest('header') || dansZone(g, false))
                        : (dansZone(g, true) || (gr.left < 100 && gr.width <= 400));
-    return ok ? { g: g, e: e, fort: fort, icones: icones } : null;
+    return ok ? { g: g, e: e, fort: fort, icones: icones, gauche: gauche } : null;
   };
   let anonymes = 0;
   const groupes = [];
@@ -1376,15 +1376,22 @@ JS_MENUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
       // (2 ou 3 majuscules dans une pastille RONDE : les initiales de la personne connectée, pas un sigle « SIG »)
       const rond = [k, ...k.querySelectorAll('*')].slice(0, 6).some(x => { const r = x.getBoundingClientRect();
         return r.width > 0 && parseFloat(getComputedStyle(x).borderTopLeftRadius) >= 0.4 * Math.min(r.width, r.height); });
+      const photo = Array.from(k.querySelectorAll('img')).slice(0, 4).some(i => { const r = i.getBoundingClientRect();
+        return r.width > 0 && parseFloat(getComputedStyle(i).borderTopLeftRadius) >= 0.4 * Math.min(r.width, r.height); });
       entrees.push({ nom: enregistrement(k) ? '(donnee masquee)' : nomK, texte: nomK, groupe: n, fort: G.fort,
                      titre: titreDe(G.g), section: titreSection(k),
                      // (l'icône de la personne ne compte que pour une entrée SANS texte à elle : « Clients » avec une icône
                      // de personnes reste un menu)
-                     compte: compteDe(k) || ((!T(k) || !texteDuClone(k.cloneNode(true))) && COMPTE_ICONE.test(iconeSeule(k))) ||
+                     // (une entrée qui porte son NOM dans la colonne de navigation à gauche, « Management Client » avec une
+                     //  image de personne : un module ; seules des initiales dans une pastille ronde y sont la personne)
+                     //  (une photo ronde sans sous-menu dans la page, elle, reste la personne)
+                     compte: (G.fort && G.gauche && nomCourt(T(k)) && texteDuClone(k.cloneNode(true))) ?
+                             ((/^[A-ZÀ-Ý]{2,3}$/.test(texteDuClone(k.cloneNode(true))) && rond) ||
+                              (photo && !k.querySelector('ul li, ol li, [role=menu] [role=menuitem]'))) :
+                             compteDe(k) || ((!T(k) || !texteDuClone(k.cloneNode(true))) && COMPTE_ICONE.test(iconeSeule(k))) ||
                              (/^[A-ZÀ-Ý]{2,3}$/.test(texteDuClone(k.cloneNode(true))) && (rond || G.icones)) ||
                              // (une PHOTO ronde dans l'entrée, ou une image à côté d'un identifiant « NMARTIN » : la personne)
-                             Array.from(k.querySelectorAll('img')).slice(0, 4).some(i => { const r = i.getBoundingClientRect();
-                               return r.width > 0 && parseFloat(getComputedStyle(i).borderTopLeftRadius) >= 0.4 * Math.min(r.width, r.height); }) ||
+                             photo ||
                              (!!k.querySelector('img') && /^[A-Z][A-Z0-9._-]{3,15}$/.test(texteDuClone(k.cloneNode(true))) && /\d|[._-]|^[A-Z]{6,}$/.test(texteDuClone(k.cloneNode(true)))),
                      // tout le texte, sous-menu caché compris (« Se déconnecter » : menu de la personne) ; jamais écrit
                      cache: (k.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 600) });
@@ -1446,9 +1453,11 @@ JS_VUS = r"""() => {""" + JS_OUTILS_MENUS + r"""
 # dans un panneau de menu (rôle menu, « flyout », « dropdown », « overlay »...), et ceux de l'entrée survolée elle-même.
 # Ce qui apparaît ailleurs dans la page (contenu qui finit de se charger) est ignoré ; trop de nouveautés = la page a changé.
 # Ils sont marqués (data-robot-nouveau) pour pouvoir être survolés à leur tour.
-JS_NOUVEAUX = r"""([numero, jeton, clic]) => {""" + JS_OUTILS_MENUS + r"""
+JS_NOUVEAUX = r"""([numero, jeton, clic, dedansSeul]) => {""" + JS_OUTILS_MENUS + r"""
   const entree = numero >= 0 ? document.querySelector('[data-robot-barre="' + numero + '"]') : null;
   const survole = document.querySelector('[data-robot-survole]');
+  // (après un clic qui a aussi changé la page : seulement le sous-menu DANS l'entrée cliquée, si elle est toujours là)
+  if (dedansSeul && !(survole && survole.closest('[data-robot-barre]'))) return [];
   // après un CLIC sur le nom d'une entrée de menu (« GATES » dans « li > ligne + sous-menu ») : son sous-menu est dans
   // l'entrée entière
   const porteur = clic && survole && !entree ? survole.closest('[data-robot-barre]') : null;
@@ -1465,6 +1474,7 @@ JS_NOUVEAUX = r"""([numero, jeton, clic]) => {""" + JS_OUTILS_MENUS + r"""
     return dx <= 400 && dy <= 400; };
   const nouveaux = [];
   for (const e of cliquables()) {
+    if (dedansSeul && !porteur.contains(e)) continue;
     if (entree && (e === entree || e.contains(entree))) continue;
     if (survole && (e === survole || e.contains(survole))) continue;
     const hote = entree || porteur || survole;
@@ -1931,13 +1941,14 @@ def _souris_au_repos(page):
         pass
 
 
-def _apparus_apres_clic(page):
+def _apparus_apres_clic(page, dedans_seul=False):
     """Les noms de ce qui vient d'apparaître à côté de l'entrée cliquée (marquée data-robot-survole) : un sous-menu qui
-    s'ouvre au clic. Les éléments sous un titre de liste de fiches sont masqués."""
+    s'ouvre au clic. Les éléments sous un titre de liste de fiches sont masqués. dedans_seul : le clic a aussi changé
+    la page ; seul compte le sous-menu ouvert DANS l'entrée cliquée."""
     vus = []
     for cadre in page.frames:
         try:
-            for n in cadre.evaluate(JS_NOUVEAUX, [-1, secrets.token_hex(4), True]):
+            for n in cadre.evaluate(JS_NOUVEAUX, [-1, secrets.token_hex(4), True, dedans_seul]):
                 vus.append("(donnee masquee)" if _titre_de_fiches(n.get("section")) else n["texte"])
         except Exception:
             continue
@@ -4330,13 +4341,20 @@ class Tache:
                         loc.evaluate("e => e.setAttribute('data-robot-survole', '1')")
                     except Exception:
                         pass
+                page_avant = self.page
                 self._cliquer_element(loc, partie, partie)
-                if self.voir_apres_clic and self.page.url == adresse:
+                if self.voir_apres_clic and self.page == page_avant:
+                    # (même si la page a changé : un portail qui rouvre la dernière rubrique, ou une entrée qui ouvre
+                    #  à la fois une page et son sous-menu ; son sous-menu est quand même relevé)
                     self.page.wait_for_timeout(500)
-                    self.apparus = _apparus_apres_clic(self.page)
+                    self.apparus = _apparus_apres_clic(self.page, dedans_seul=self.page.url != adresse)
                 if id(self.page) in _MENU_DEPLIE and self.page.url != adresse:
                     _souris_au_repos(self.page)  # (le menu déplié ne doit pas cacher la nouvelle page)
                 return
+            # sous-menu DÉJÀ ouvert (portail qui rouvre la dernière rubrique) : un clic le refermerait
+            if partie in self.ouvre_au_clic and any(_vraiment_visible(s) and _rang_menu(s) < 2 for s in
+                                                    self.candidats(parties[i + 1], self.cadres(), attente=0, tous=True)[:20]):
+                continue
             # survol (comme la souris) : le sous-menu apparaît, parfois ailleurs dans la page (menu de gauche)
             ouvert = False
             for essai in ([] if partie in self.ouvre_au_clic else [t for t in trouves if _visible(t)][:3] or [loc]):
@@ -5101,6 +5119,9 @@ DEBUT_LECTURE = re.compile(r"(get|search|find|list|lookup|fetch)(rows|list|all|d
 SUITE_INTERDITE = {"and", "or", "next", "then", "et", "ou", "suivant", "suivante"}
 # le dernier morceau d'une adresse de lignes de grille (sinon, un verbe de lecture)
 FINS_DE_GRILLE = set("rows row data grid datasource results items records lignes page".split())
+# ce qui peut suivre un verbe de recherche dans l'adresse (« .../search/page », « .../search/advanced »)
+SUITE_DE_RECHERCHE = FINS_DE_GRILLE | set("""pages paged pageable paginated pagination count size all list liste advanced
+avancee avance simple global globale criteria criteres filter filters filtre filtres""".split())
 # mots d'une ÉCRITURE (en plus des verbes d'action) : marquer comme lu, épingler, suivre, enregistrer un état...
 MOTS_ECRITURE = set("""set mark marquer toggle increment decrement patch merge put post change changer modif modifier
 store persist write ecrire insert upsert register track tracking log logs logging record follow unfollow subscribe
@@ -5204,8 +5225,20 @@ def _envoi_de_lecture(req):
     if objet is not None and not isinstance(objet, (dict, list)):
         return False
     dernier = mots(segments[-1]).split() if segments else []
-    verbe = bool(dernier) and (dernier[0] in VERBES_LECTURE or bool(DEBUT_LECTURE.fullmatch(dernier[0]))) and \
-        not SUITE_INTERDITE & set(dernier[1:])
+
+    def lecture(ws):
+        return bool(ws) and (ws[0] in VERBES_LECTURE or bool(DEBUT_LECTURE.fullmatch(ws[0]))) and \
+            not SUITE_INTERDITE & set(ws[1:])
+    verbe = lecture(dernier)
+    # (« .../plans/search/0 », « .../search/page » : le verbe de recherche suivi d'un ou deux morceaux — numéro de page,
+    #  nom de liste ; l'adresse entière a déjà été contrôlée : aucun mot d'action ni d'écriture)
+    # (seulement un numéro, un identifiant, ou un mot de page de résultats : jamais « release », « checkout »...)
+    def suite_de_recherche(x):
+        return bool(re.fullmatch(r"\d{1,12}|[0-9a-fA-F-]{8,40}", x)) or \
+            bool(mots(x).split()) and all(w in SUITE_DE_RECHERCHE for w in mots(x).split())
+    verbe = verbe or any(lecture(mots(segments[i]).split()) and segments[i].isalpha() and
+                         all(suite_de_recherche(x) for x in segments[i + 1:])
+                         for i in range(max(0, len(segments) - 3), len(segments) - 1))
     if isinstance(objet, dict):
         cles = {mots(k).replace(" ", "") for k in objet}
         if {"startrow", "endrow"} <= cles <= CLES_AG_GRID:
@@ -5683,6 +5716,8 @@ def _raison_courte(e):
 PAGE_DE_CONNEXION = re.compile(r"session.{0,20}expir|expir.{0,20}session|deconnecte|reconnect|connectez-vous|"
                                r"identifiez-vous|sign in|log in|choisir un compte|pick an account")
 # ce qui a été noté pour un chemin et ne changera pas en recommençant (les autres sont réessayés en complétant la carte)
+# ce qui n'a pas pu être fait (le sous-menu vu à ce moment-là n'est pas à suivre)
+ECHECS_DE_CHEMIN = ("echec", "introuvable", "connexion", "bloque", "autre site", "refuse", "fenetre", "pas de")
 STATUTS_DEFINITIFS = ("page", "deja vue", "reste sur l'accueil", "autre site", "bloque", "fenetre du portail refusee",
                       "refuse par prudence")
 
@@ -5806,7 +5841,7 @@ def explorer_portail(page, url, garde):
         compte »...) ? Sinon, vous vous reconnectez. Renvoie (l'accueil est là, il a fallu se reconnecter)."""
         try:
             _accueil(t, url, garde)
-            if _identite(t.principale)[0] == carte["pages"][accueil[0]]["id"]:
+            if _identite(t.principale)[0] in index:  # (une page connue : le portail rouvre peut-être la dernière rubrique)
                 return True, False
         except ErreurTache:
             raise
@@ -5821,7 +5856,7 @@ def explorer_portail(page, url, garde):
         try:
             t.principale.bring_to_front()
             _accueil(t, url, garde)
-            return _identite(t.principale)[0] == carte["pages"][accueil[0]]["id"], True
+            return _identite(t.principale)[0] in index, True
         except ErreurTache:
             raise
         except Exception:
@@ -5905,7 +5940,7 @@ def explorer_portail(page, url, garde):
                 continue
             essais += 1
             ecrire(f"   [{essais}] {_lisible(chemin)}")
-            avant = garde["bloquees"]
+            avant, t.apparus = garde["bloquees"], []
             try:
                 _bandeau_visite(t.principale, f"VISITE, lecture seule ({len(carte['pages'])} pages) : "
                                               f"{_lisible(chemin)}  -  ne touchez pas a la souris")
@@ -5925,8 +5960,9 @@ def explorer_portail(page, url, garde):
                 except Exception as e:
                     statut = "echec : page pas relevee"
                     ecrire(f"      -> page pas relevee ({masquer(premiere_ligne(e))[:90]})")
-            if statut.startswith("reste sur l'accueil") and chemin[-1].startswith("MENU : ") and t.apparus:
-                # le clic a OUVERT un sous-menu (la page ne change pas) : le robot entrera dans chacun de ses éléments
+            if chemin[-1].startswith("MENU : ") and t.apparus and not statut.startswith(ECHECS_DE_CHEMIN):
+                # le clic a OUVERT un sous-menu : le robot entrera dans chacun de ses éléments (même si la page affichée
+                # n'est pas l'accueil : un portail qui rouvre la dernière rubrique visitée)
                 base, ajoutes = chemin[-1].partition(" : ")[2], []
                 parties = [x.strip() for x in base.split(">")]
                 if len(parties) < 4 and not _contenu_a_masquer(parties[-1], t.apparus):
@@ -5945,8 +5981,9 @@ def explorer_portail(page, url, garde):
                     t.ouvre_au_clic.add(parties[-1])
                     carte["ouvre_au_clic"] = sorted(t.ouvre_au_clic)
                     file.extendleft(reversed(ajoutes))
-                    statut = f"ouvre un sous-menu ({len(ajoutes)} elements a visiter)"
-                    ecrire(f"      -> {statut}")
+                    ouvre = f"ouvre un sous-menu ({len(ajoutes)} elements a visiter)"
+                    statut = ouvre if statut.startswith("reste sur l'accueil") else f"{statut} ; {ouvre}"
+                    ecrire(f"      -> {ouvre}")
             carte["essais"][cle] = statut
             if statut.startswith(("echec", "introuvable", "connexion")):
                 echecs_de_suite += 1
@@ -6014,7 +6051,7 @@ def ecrire_carte(carte):
         lignes.append("du haut et de la gauche, structure seulement (balise.classes | role | nombre de mots | icone | ...) :")
         lignes += ["  " + l for l in carte["diagnostic_accueil"]]
         lignes.append("")
-    autres = [(c, s) for c, s in carte.get("essais", {}).items() if not s.startswith(("page", "deja vue"))]
+    autres = [(c, s) for c, s in carte.get("essais", {}).items() if not s.startswith("page")]
     if autres:
         lignes.append("CHEMINS SANS NOUVELLE PAGE :")
         for c, s in autres:
