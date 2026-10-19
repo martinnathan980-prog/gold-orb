@@ -21,7 +21,7 @@ from pathlib import Path
 from collections import deque
 from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
-VERSION = "5.4"
+VERSION = "5.5"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -1489,13 +1489,17 @@ JS_NOUVEAUX = r"""([numero, jeton, clic, dedansSeul]) => {""" + JS_OUTILS_MENUS 
     const t = e.tagName === 'INPUT' ? '' : texteDe(e);
     if (!t || t.length > 45 || !/[A-Za-zÀ-ÿ0-9]/.test(t) || t === nomEntree) continue;
     if (vus.has(e) && vus.get(e) === t) continue;
-    nouveaux.push({ e: e, t: t, ok: dedans || dansPanneau(e) || (pres(e) && !contenu(e)) });
+    // (après un clic sur une entrée d'un menu repéré : son sous-menu est dans l'entrée ou dans un panneau de menu, jamais
+    //  dans la page — les numéros de page d'un tableau qui vient de s'afficher ne sont pas un sous-menu)
+    const TABLEAU = 'table, [role=grid], [role=table], [role=row], [class*=paginat i], [class*=pager i], [class*=datatable i], [class*=p-table i]';
+    nouveaux.push({ e: e, t: t, dehors: !!porteur && !dedans,
+                    ok: dedans || (porteur ? dansPanneau(e) && !contenu(e) && !e.closest(TABLEAU) : dansPanneau(e) || (pres(e) && !contenu(e))) });
   }
   if (nouveaux.length > 80) return [];   // la page entière a changé : ce n'est pas un sous-menu
   // les voisins (mêmes parents) d'un élément retenu font partie du même sous-menu
   for (let tour = 0; tour < 2; tour++) {
     const parents = new Set(nouveaux.filter(n => n.ok).map(n => n.e.parentElement));
-    for (const n of nouveaux) if (!n.ok && parents.has(n.e.parentElement)) n.ok = true;
+    for (const n of nouveaux) if (!n.ok && !n.dehors && parents.has(n.e.parentElement)) n.ok = true;
   }
   const retenus = nouveaux.filter(n => n.ok);
   const ens = new Map(retenus.map(n => [n.e, n.t]));
@@ -4842,7 +4846,7 @@ def executer_tache(p, chemin, url):
 # La carte (Bureau > Robot > carte_du_site.json) reste sur ce poste. A_ENVOYER_carte.txt : structure seulement.
 FICHIER_CARTE = "carte_du_site.json"
 ENTETE_VISITE = {"nom": "visite", "demander": [], "liste": None, "confirmer": True}
-LIMITE_PAGES, LIMITE_MINUTES, PROFONDEUR = 120, 30, 3
+LIMITE_PAGES, LIMITE_MINUTES, PROFONDEUR = 150, 60, 3
 # en visite, le robot ne va jamais là : quitter le portail, imprimer, télécharger, changer la langue ou l'affichage
 A_EVITER_EN_VISITE = re.compile(r"deconnex|deconnect|logout|log ?out|log ?off|sign ?out|quitter|\bexit\b|imprim|\bprint|"
                                 r"export|telecharg|download|\blangues?\b|language|english|deutsch|espanol|\btheme\b|"
@@ -5741,7 +5745,9 @@ def explorer_portail(page, url, garde):
     par_lien = set(carte.get("par_lien", []))
     carte.update(date=datetime.now().strftime("%d/%m/%Y %H:%M"), bloquees=0, exemples=[], liaison=False)
     # en complétant : les chemins en échec la fois d'avant sont réessayés (session expirée, portail lent...)
-    carte["essais"] = {c: st for c, st in carte["essais"].items() if st.startswith(STATUTS_DEFINITIFS)}
+    # (une entrée qui ouvre un sous-menu est recliquée : ses éléments pas encore visités sont retrouvés et visités)
+    carte["essais"] = {c: st for c, st in carte["essais"].items()
+                       if st.startswith(STATUTS_DEFINITIFS) and "ouvre un sous-menu" not in st}
     index = {p["id"]: i for i, p in enumerate(carte["pages"])}
     t = Tache(dict(ENTETE_VISITE), [], page, url, lecture_seule=True)
     # (« plus aucun échange » n'arrive jamais sur un portail qui s'interroge sans cesse : on attend peu, et calme()
@@ -5754,6 +5760,10 @@ def explorer_portail(page, url, garde):
         for c in p.get("a_essayer", []):
             deja.update((c[-1], " ++ ".join(c)))
             file.append(c)
+    for c in carte.get("sous_a_essayer", []):  # (les éléments des sous-menus ouverts au clic, pas encore essayés)
+        if c[-1] not in deja:
+            deja.update((c[-1], " ++ ".join(c)))
+            file.appendleft(c)
     pages_au_depart, debut, essais, arret, interrompu = len(carte["pages"]), time.time(), 0, "", False
     accueil = [0]
 
@@ -5981,6 +5991,8 @@ def explorer_portail(page, url, garde):
                     t.ouvre_au_clic.add(parties[-1])
                     carte["ouvre_au_clic"] = sorted(t.ouvre_au_clic)
                     file.extendleft(reversed(ajoutes))
+                    # (gardés dans la carte : une visite arrêtée avant la fin les reprendra en complétant)
+                    carte.setdefault("sous_a_essayer", []).extend(c for c in ajoutes if c not in carte["sous_a_essayer"])
                     ouvre = f"ouvre un sous-menu ({len(ajoutes)} elements a visiter)"
                     statut = ouvre if statut.startswith("reste sur l'accueil") else f"{statut} ; {ouvre}"
                     ecrire(f"      -> {ouvre}")
