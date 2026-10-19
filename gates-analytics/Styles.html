@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "18068af";
+  --suivi-fwd-edition: "9280c99";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -302,6 +302,15 @@ body {
    un aplat. « sans » tient la place d'une pastille pour garder l'alignement. */
 .pastille.indice { background: var(--indice); }
 .pastille.recul { background: var(--alerte); }
+/* Débrief 23 : nouveaux et disparus ont leur pastille — un « + » pour un
+   plan arrivé dans l'extract, un « − » pour un plan qui en est sorti. Un
+   signe, pas une couleur : un carré gris se confondrait avec « à faire ». */
+.pastille.nouveau, .pastille.disparu { border-radius: 0; }
+.pastille.nouveau {
+  background: linear-gradient(var(--encre-2), var(--encre-2)) center / 100% 2px no-repeat,
+              linear-gradient(var(--encre-2), var(--encre-2)) center / 2px 100% no-repeat;
+}
+.pastille.disparu { background: linear-gradient(var(--encre-2), var(--encre-2)) center / 100% 2px no-repeat; }
 .pastille.sans { background: transparent; }
 /* Sous 680 px les segments sont trop étroits pour porter une étiquette :
    on repasse à une grille régulière. */
@@ -1351,8 +1360,13 @@ table.plans tbody tr[data-plan] { cursor: pointer; }
    lignes ne peuvent pas diverger, et la variante sans jalon n'a qu'a la redefinir. */
 /* La première colonne loge le chevron puis le nom (débrief 21 : centré,
    « ECP-2100 » recouvrait le chevron) : le nom part après lui, à gauche. */
-#zone-critique { --cols: 118px 58px minmax(0, 1fr) 140px minmax(0, 160px); }
-#zone-critique.sans-jalon { --cols: 124px 62px minmax(0, 1fr) 140px minmax(0, 160px); }
+/* Débrief 23 : « par ECP, des fois trois petits points, la colonne ne
+   s'adapte pas ». La largeur du nom (--col-nom) est posée par le script
+   (ajusterColonneNom) : celle du plus long nom affiché, au moins celle
+   d'avant, sans prendre à la barre de répartition ses 200 px — au-delà, le
+   nom passe à la ligne, en entier, jamais coupé de points de suspension. */
+#zone-critique { --cols: var(--col-nom, 118px) 58px minmax(0, 1fr) 140px minmax(0, 160px); }
+#zone-critique.sans-jalon { --cols: var(--col-nom, 124px) 62px minmax(0, 1fr) 140px minmax(0, 160px); }
 .critique-tete, .critique-ligne {
   display: grid; grid-template-columns: var(--cols);
   gap: 14px; align-items: center;
@@ -1392,7 +1406,9 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
 .critique-ligne:hover .chevron { color: var(--encre); }
 .critique-ligne:hover { background: var(--creux); }
 .critique-ligne[aria-pressed="true"] { background: var(--creux); box-shadow: inset 3px 0 0 var(--encre); }
-.critique-nom { font-size: 13px; text-align: left; padding-left: 24px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.critique-nom { font-size: 13px; text-align: left; padding-left: 24px; min-width: 0; white-space: normal; overflow-wrap: anywhere; line-height: 1.3; }
+/* Le temps de la mesure : chaque nom sur une ligne, pour lire sa largeur. */
+#zone-critique.mesure-nom .critique-nom { white-space: nowrap; overflow-wrap: normal; }
 .critique-tete > span:first-child { justify-content: flex-start; padding-left: 24px; }
 .critique-total {
   font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;

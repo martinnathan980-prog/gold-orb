@@ -6,7 +6,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '18068af';
+  var EDITION = '9280c99';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -1675,6 +1675,8 @@
   function pastilleResume(l) {
     if (l.passage) return pastilleValeur(l.cle, l.famille);
     if (l.cle === 'reculs') return '\x3Cspan class="pastille recul">\x3C/span>';
+    if (l.cle === 'nouveaux') return '\x3Cspan class="pastille nouveau">\x3C/span>';
+    if (l.cle === 'disparus') return '\x3Cspan class="pastille disparu">\x3C/span>';
     return pastilleDe(l.cle === 'indice' ? 'indice' : 'sans');
   }
   /* Ce qui a changé au dernier relevé, restreint au périmètre, résumé comme
@@ -3900,6 +3902,36 @@
        qui lui donne sa hauteur et sa barre de défilement. */
     $('zone-critique').classList.toggle('sans-jalon', !prochain);
     $('zone-critique').innerHTML = html;
+    ajusterColonneNom();
+  }
+  /* La colonne du nom de groupe prend la largeur du plus long nom affiché
+     (débrief 23 : un nom d'ECP coupé de « … » ne se lisait plus). Une seule
+     mesure, tous les noms d'un coup ; au téléphone, le nom a toute la ligne. */
+  function ajusterColonneNom() {
+    var zone = $('zone-critique');
+    if (!zone) return;
+    zone.style.removeProperty('--col-nom');
+    if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) return;
+    var noms = zone.querySelectorAll('.critique-ligne .critique-nom');
+    if (!noms.length || !zone.clientWidth) return;
+    /* La largeur du texte lui-même (une plage sur le nom, écrit sur une
+       ligne), plus la place du chevron : scrollWidth ne descend jamais sous
+       la largeur de la colonne, il ne dirait pas qu'un nom est court. */
+    zone.classList.add('mesure-nom');
+    var large = 0, plage = document.createRange();
+    var marge = parseFloat(getComputedStyle(noms[0]).paddingLeft) || 0;
+    for (var i = 0; i < noms.length; i++) {
+      plage.selectNodeContents(noms[i]);
+      large = Math.max(large, plage.getBoundingClientRect().width + marge);
+    }
+    zone.classList.remove('mesure-nom');
+    var sansJalon = zone.classList.contains('sans-jalon'), base = sansJalon ? 124 : 118;
+    /* Les autres colonnes (plans, fin, rythme) et leurs espaces sont fixes ;
+       la barre garde au moins 200 px, et le nom jamais plus de 40 % du bloc. */
+    var fixes = (sansJalon ? 62 : 58) + 140 + 160 + 4 * 14;
+    var plafond = Math.max(base, Math.floor(Math.min(zone.clientWidth * 0.4, zone.clientWidth - fixes - 200)));
+    if (large <= base) return;
+    zone.style.setProperty('--col-nom', Math.min(plafond, Math.ceil(large) + 2) + 'px');
   }
 
   /* L'ordre du sélecteur est celui que donne la source : quand la liste est
@@ -4407,6 +4439,9 @@
     if (!filtre) return true;
     if (filtre === 'indice') return e.type === 'indice';
     if (filtre === 'reculs') return estRecul(e);
+    /* Débrief 23 : les nouveaux et les disparus se filtrent comme le reste. */
+    if (filtre === 'nouveaux') return e.type === 'nouveau';
+    if (filtre === 'disparus') return e.type === 'disparu';
     return arriveA(e, filtre);
   }
   /* Les comptes d'une liste d'événements, avec les mots du journal et de la
@@ -4510,6 +4545,8 @@
       sem.evenements.forEach(function (e) {
         var trouve = !q || refCorrespond(e.ref, q) || (!!e.ancienne && refCorrespond(e.ancienne, q));
         if (e.type === 'indice') compter('\u0001indice', trouve);
+        if (e.type === 'nouveau') compter('\u0001nouveaux', trouve);
+        if (e.type === 'disparu') compter('\u0001disparus', trouve);
         if (estRecul(e)) compter('\u0001reculs', trouve);
         if ((e.type === 'change' || e.type === 'indice') && e.cApres && e.cApres !== e.cAvant) {
           compter(e.cApres, trouve);
@@ -4529,11 +4566,16 @@
     var items = VALEURS_COLONNE.map(item).concat(Object.keys(hier).map(function (k) { return hier[k]; })
       .sort(function (a, b) { return RANG_FAMILLE[a.famille] - RANG_FAMILLE[b.famille] || COMPARER_REF(a.libelle, b.libelle); })
       .map(item));
-    var nR = vu['\u0001reculs'] || 0, nI = vu['\u0001indice'] || 0;
+    var nR = vu['\u0001reculs'] || 0, nI = vu['\u0001indice'] || 0, nN = vu['\u0001nouveaux'] || 0, nD = vu['\u0001disparus'] || 0;
     items.push({ cle: 'reculs', libelle: 'Reculs', pastille: '\x3Cspan class="pastille recul">\x3C/span>', n: nR, absente: !nR, total: total['\u0001reculs'] || 0,
                  titre: nR ? 'Les plans qui ont reculé' + pour + ' : validés qui ne le sont plus, en cours revenus « à faire »' : 'Aucun recul' + pour + dans },
                { cle: 'indice', libelle: 'Changement d\u2019indice', pastille: '\x3Cspan class="pastille indice">\x3C/span>', n: nI, absente: !nI, total: total['\u0001indice'] || 0,
-                 titre: nI ? 'Les plans réémis sous un autre indice' + pour : 'Aucun changement d\u2019indice' + pour + dans });
+                 titre: nI ? 'Les plans réémis sous un autre indice' + pour : 'Aucun changement d\u2019indice' + pour + dans },
+               /* Débrief 23 : « nouveaux, supprimés… il faut un peu pour tous les filtres ». */
+               { cle: 'nouveaux', libelle: 'Nouveaux', pastille: '\x3Cspan class="pastille nouveau">\x3C/span>', n: nN, absente: !nN, total: total['\u0001nouveaux'] || 0,
+                 titre: nN ? 'Les plans apparus dans l\u2019extract' + pour + ' : absents du relevé précédent' : 'Aucun nouveau plan' + pour + dans },
+               { cle: 'disparus', libelle: 'Disparus', pastille: '\x3Cspan class="pastille disparu">\x3C/span>', n: nD, absente: !nD, total: total['\u0001disparus'] || 0,
+                 titre: nD ? 'Les plans sortis de l\u2019extract' + pour + ' : présents au relevé précédent, absents de celui-ci' : 'Aucun plan disparu' + pour + dans });
     /* Un choix qui n'a plus rien à montrer dans tout le journal — l'autre
        périmètre, une valeur disparue — revient à « Tout ». La recherche,
        elle, ne le retire pas : on le garde pendant la frappe. */
@@ -4601,7 +4643,7 @@
          la bulle du graphique. Chaque passage et les
          changements d'indice sont des boutons : cliquer « 4 passés à
          « Validé » » n'affiche plus que ceux-là, pour toutes les semaines à
-         la fois. Les nouveaux et les disparus se lisent sous « Tout ». */
+         la fois. Les nouveaux et les disparus aussi (débrief 23). */
       var parCle = {};
       lignesResume(evts).forEach(function (l) { parCle[cleResume(l)] = l; });
       var resume = colonnes.map(function (k) {
@@ -4611,13 +4653,11 @@
            que la pastille et le nombre ; les mots restent là pour les
            lecteurs d'écran et pour l'affichage en ligne des petits écrans. */
         var mot = '\x3Cspan class="mot-case"> ' + ech(libelleLot(l, l.n)) + '\x3C/span>';
-        if (l.cle === 'nouveaux' || l.cle === 'disparus') {
-          return '\x3Cspan class="doux-compte" title="' + ech(nb(l.n) + ' ' + libelleLot(l, l.n)) + '">\x3Cb>' + nb(l.n) + '\x3C/b>' + mot + '\x3C/span>';
-        }
         var cle = l.cle;
         return '\x3Cbutton class="compte-passage' + (cle === 'reculs' ? ' recul' : '') + '" type="button" data-passage="' + ech(cle) +
           '" aria-pressed="' + (vue.journal === cle) + '" title="' + ech(nb(l.n) + ' ' + libelleLot(l, l.n)) + ' \u2014 n\u2019afficher que ' +
-          (l.passage ? ech('les plans arrivés à « ' + l.libelle + ' », réémis et reculs compris') : cle === 'reculs' ? 'les reculs' : 'les changements d\u2019indice') + ', sur toutes les semaines">' +
+          (l.passage ? ech('les plans arrivés à « ' + l.libelle + ' », réémis et reculs compris') : cle === 'reculs' ? 'les reculs'
+            : cle === 'nouveaux' ? 'les nouveaux plans' : cle === 'disparus' ? 'les plans disparus' : 'les changements d\u2019indice') + ', sur toutes les semaines">' +
           pastilleResume(l) + '\x3Cb>' + nb(l.n) + '\x3C/b>' + mot + '\x3C/button>';
       });
       /* La ligne de couleur de la semaine : une part par compte, dans l'ordre
@@ -4722,7 +4762,7 @@
              lignes ; il ne se coupe plus qu'avant le guillemet, en deux. */
           var nom = ech(l.des).replace(/^(pass\S+) à /, '$1\u00a0à ')
             .replace(/« [^»]* »/g, function (m) { return m.replace(/ /g, '\u00a0'); });
-          return '\x3Cspan class="entete-col">' + (l.cle === 'nouveaux' || l.cle === 'disparus' ? '' : pastilleResume(l)) + nom + '\x3C/span>';
+          return '\x3Cspan class="entete-col">' + pastilleResume(l) + nom + '\x3C/span>';
         }).join('') + '\x3Cspan>\x3C/span>\x3C/div>'
       : '';
     /* Sous une pastille, « aucun changement pour X » ferait croire le plan
@@ -6425,6 +6465,7 @@
     minuteurTaille = setTimeout(function () {
       rendreGraphique(selection()); ajusterSticky(); majOmbre();
       alignerSousBarre('barre', 'filets', 'etats');
+      ajusterColonneNom();
       marquerDebords();
     }, 160);
   });
@@ -6624,5 +6665,5 @@
      page affichée, pour ne rien retarder. */
   if (API && API.noterConsultation) setTimeout(API.noterConsultation, 1500);
 })();
-window.SUIVI_FWD_FIN = '18068af';
+window.SUIVI_FWD_FIN = '9280c99';
 </script>

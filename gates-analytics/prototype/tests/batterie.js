@@ -6022,6 +6022,111 @@ async function reinitialiser(pg) {
     verifier('aucune erreur JavaScript sur les pages de ces vérifications', !erreurs22.length, erreurs22.join(' | '));
   }
 
+  section('Débrief 23 : le nom d’un groupe en entier, et un filtre pour chaque sorte de changement');
+  /* « Par ECP, des fois trois petits points, la colonne ne s'adapte pas » :
+     des noms d'ECP longs, puis la colonne du nom mesurée à trois largeurs. */
+  {
+    const cx23 = await contexte();
+    const p23 = await page(cx23, 'débrief 23');
+    const LONGS = ['ECP-2100-HARNAIS-COCKPIT-GAUCHE-MODIF-B', 'ECP 2207 — Câblage galley avant / zone 200', 'ECP-31'];
+    const mesurerNoms = () => p23.evaluate(() => {
+      const z = document.getElementById('zone-critique');
+      const noms = [...z.querySelectorAll('.critique-ligne .critique-nom')];
+      const tete = z.querySelector('.critique-tete > span:first-child');
+      const barre = z.querySelector('.critique-ligne .critique-barre');
+      const cs = n => getComputedStyle(n);
+      return {
+        col: z.style.getPropertyValue('--col-nom'), largeurZone: z.clientWidth,
+        barre: barre ? Math.round(barre.getBoundingClientRect().width) : 0,
+        noms: noms.map(n => ({ t: n.textContent, coupe: n.scrollWidth > n.clientWidth + 1 || cs(n).textOverflow === 'ellipsis',
+          lignes: Math.round(n.getBoundingClientRect().height / parseFloat(cs(n).lineHeight)),
+          gauche: Math.round(n.getBoundingClientRect().left), large: Math.round(n.getBoundingClientRect().width) })),
+        tete: tete ? Math.round(tete.getBoundingClientRect().width) : 0
+      };
+    });
+    await p23.evaluate(longs => {
+      const s = window.__jeuDExemple('HDK');
+      s.plans.forEach((x, i) => { x.ecp = longs[i % longs.length]; });
+      window.__chargerSource(s);
+    }, LONGS);
+    await p23.waitForTimeout(400);
+    await p23.selectOption('#dim-critique', 'ecp');
+    await p23.waitForTimeout(450);
+    const n1280 = await mesurerNoms();
+    verifier('par ECP, 1280 px : chaque nom d’ECP se lit en entier, sur une ligne, sans « … » — la colonne prend la largeur du plus long',
+      n1280.noms.length === 3 && n1280.noms.every(x => !x.coupe && x.lignes === 1) && parseFloat(n1280.col) > 118 &&
+      LONGS.every(l => n1280.noms.some(x => x.t === l)), JSON.stringify(n1280));
+    verifier('par ECP, 1280 px : les noms restent alignés, l’en-tête « ECP » a la même largeur que leur colonne, et la barre garde sa place',
+      new Set(n1280.noms.map(x => x.gauche)).size === 1 && new Set(n1280.noms.map(x => x.large)).size === 1 &&
+      Math.abs(n1280.tete - n1280.noms[0].large) <= 1 && n1280.barre >= 200, JSON.stringify(n1280));
+    await p23.setViewportSize({ width: 900, height: 950 }); await p23.waitForTimeout(400);
+    const n900 = await mesurerNoms();
+    verifier('par ECP, 900 px : la barre garde ses 200 px, le nom trop long passe à la ligne — toujours en entier, jamais coupé',
+      n900.barre >= 199 && n900.noms.every(x => !x.coupe) && n900.noms.some(x => x.lignes >= 2) && parseFloat(n900.col) <= n900.largeurZone * 0.4 + 1,
+      JSON.stringify(n900));
+    await p23.setViewportSize({ width: 390, height: 844 }); await p23.waitForTimeout(400);
+    const n390 = await mesurerNoms();
+    verifier('par ECP, au téléphone : le nom a toute la ligne, sans largeur imposée, et rien n’est coupé',
+      n390.col === '' && n390.noms.every(x => !x.coupe), JSON.stringify(n390));
+    await p23.setViewportSize({ width: 1280, height: 950 }); await p23.waitForTimeout(300);
+    /* Une dimension aux noms courts : la colonne revient à sa largeur d'avant. */
+    await p23.selectOption('#dim-critique', 'ata'); await p23.waitForTimeout(400);
+    const nAta = await mesurerNoms();
+    verifier('par ATA (noms courts) : la colonne garde sa largeur d’avant, rien à agrandir',
+      nAta.col === '' && nAta.noms.every(x => !x.coupe), JSON.stringify(nAta.col));
+
+    /* « Nouveaux, supprimés… il faut un peu pour tous les filtres » : trois
+       plans sortis de l'extract au dernier relevé, et les nouveaux de la
+       démonstration. */
+    await p23.evaluate(() => {
+      const s = window.__jeuDExemple('HDK');
+      const dernier = s.releves[s.releves.length - 1];
+      const partis = Object.keys(dernier.plans).slice(0, 3);
+      partis.forEach(ref => { delete dernier.plans[ref]; });
+      s.plans = s.plans.filter(x => partis.indexOf(x.reference) === -1);
+      window.__chargerSource(s);
+    });
+    await p23.waitForTimeout(400);
+    const pilules23 = await p23.evaluate(() => [...document.querySelectorAll('#filtre-journal button')].map(b => ({
+      cle: b.dataset.journal, texte: b.textContent.trim(), pastille: (b.querySelector('.pastille') || {}).className || '' })));
+    const pil = k => pilules23.find(x => x.cle === k) || {};
+    verifier('le journal a une pilule « Nouveaux » et une pilule « Disparus », chacune avec son compte et son signe (+ / −)',
+      /^Nouveaux\s*\d+$/.test(pil('nouveaux').texte || '') && /^Disparus\s*3$/.test(pil('disparus').texte || '') &&
+      /\bnouveau\b/.test(pil('nouveaux').pastille) && /\bdisparu\b/.test(pil('disparus').pastille), JSON.stringify(pilules23));
+    const filtrer23 = async cle => {
+      await p23.click('#filtre-journal button[data-journal="' + cle + '"]'); await p23.waitForTimeout(300);
+      return p23.evaluate(() => {
+        const sems = [...document.querySelectorAll('#zone-journal .journal-semaine')];
+        const cases = [...document.querySelectorAll('#zone-journal button[data-passage]')].map(b => b.dataset.passage);
+        const presse = (document.querySelector('#filtre-journal button[aria-pressed="true"]') || {}).dataset;
+        return { semaines: sems.length, cases: [...new Set(cases)], presse: presse ? presse.journal : null };
+      });
+    };
+    const fD = await filtrer23('disparus');
+    verifier('« Disparus » ne garde que les plans sortis de l’extract : la semaine où ils sont partis, et rien d’autre',
+      fD.presse === 'disparus' && fD.semaines === 1 && fD.cases.length === 1 && fD.cases[0] === 'disparus', JSON.stringify(fD));
+    const fN = await filtrer23('nouveaux');
+    verifier('« Nouveaux » ne garde que les plans apparus', fN.presse === 'nouveaux' && fN.semaines >= 1 && fN.cases.length === 1 && fN.cases[0] === 'nouveaux',
+      JSON.stringify(fN));
+    /* Dans le résumé d'une semaine, la case des disparus est un bouton comme
+       les autres : un clic filtre, un second le retire. */
+    await p23.click('#filtre-journal button[data-journal=""]'); await p23.waitForTimeout(300);
+    const caseD = await p23.evaluate(() => {
+      const b = document.querySelector('#zone-journal button[data-passage="disparus"]');
+      if (!b) return null;
+      b.click();
+      return true;
+    });
+    await p23.waitForTimeout(300);
+    const apresCase = await p23.evaluate(() => ({
+      presse: ((document.querySelector('#filtre-journal button[aria-pressed="true"]') || {}).dataset || {}).journal,
+      entetes: [...document.querySelectorAll('#zone-journal .journal-entetes .entete-col')].map(e => ({ t: e.textContent.trim(), pastille: !!e.querySelector('.pastille') }))
+    }));
+    verifier('la case « disparus » d’une semaine est un bouton : un clic n’affiche qu’eux, comme la pilule ; l’en-tête de sa colonne a sa pastille',
+      caseD === true && apresCase.presse === 'disparus' && apresCase.entetes.length >= 1 && apresCase.entetes.every(e => e.pastille), JSON.stringify(apresCase));
+    await cx23.close();
+  }
+
   section('Persistance (même navigateur, page rechargée)');
   await p.click('button[data-trig="fin"]'); await p.waitForTimeout(300);
   /* Débrief 19 : « quand on ouvre, t'es directement sur Tout » — un cadrage
