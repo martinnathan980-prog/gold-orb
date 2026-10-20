@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "49f6716";
+  --suivi-fwd-edition: "d9a8aa6";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -597,7 +597,7 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 /* Deux colonnes alignées : la référence, puis où elle va. Le regard descend
    une colonne au lieu de chercher la flèche au milieu du texte. */
 .journal-ligne {
-  display: grid; grid-template-columns: 150px minmax(0, 260px);
+  display: grid; grid-template-columns: 150px minmax(0, 340px);
   align-items: baseline; gap: 12px; width: 100%;
   background: none; border: none; font: inherit; color: inherit;
   padding: 6px 6px; text-align: left; cursor: pointer; border-radius: 3px;
@@ -617,9 +617,14 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .journal-ligne.recul .ref, .journal-ligne.recul .fleche-etat { color: var(--alerte); }
 /* Le passage : l'état de départ s'efface, seule l'arrivée porte la couleur. */
 .journal-ligne .vers {
-  display: grid; grid-template-columns: 1fr 12px 1fr; align-items: center; gap: 4px;
+  /* Débrief 24 : deux moitiés égales, quelle que soit la longueur des mots —
+     avec 1fr, un « PWD_IN_PROGRESS » élargissait sa moitié et la flèche
+     glissait : les lignes n'étaient plus droites. Un mot trop long passe à
+     la ligne dans sa moitié au lieu de la pousser. */
+  display: grid; grid-template-columns: minmax(0, 1fr) 12px minmax(0, 1fr); align-items: center; gap: 4px;
   font-size: 12px;
 }
+.journal-ligne .vers .etiq-etat { white-space: normal; overflow-wrap: anywhere; min-width: 0; }
 @media (max-width: 720px) { .journal-ligne .vers { justify-self: end; } }
 .fleche-etat { color: var(--filet-fort); text-align: center; }
 .etiq-etat { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; white-space: nowrap; }
@@ -1374,6 +1379,10 @@ table.plans tbody tr[data-plan] { cursor: pointer; }
 .critique-tete {
   font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--encre-3);
   padding-bottom: 6px; border-bottom: 1px solid var(--filet); margin-bottom: 3px;
+  /* Débrief 24 : en descendant la liste, on ne savait plus quelle colonne
+     était laquelle. L'en-tête reste collé en haut du cadre qui défile,
+     comme celui du journal. */
+  position: sticky; top: 0; z-index: 3; background: var(--surface); padding-top: 6px;
 }
 .critique-tete > span { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0; }
 /* Quand d'autres filtres réduisent les lignes, les colonnes tirées de
@@ -1409,6 +1418,16 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
 .critique-nom { font-size: 13px; text-align: left; padding-left: 24px; min-width: 0; white-space: normal; overflow-wrap: anywhere; line-height: 1.3; }
 /* Le temps de la mesure : chaque nom sur une ligne, pour lire sa largeur. */
 #zone-critique.mesure-nom .critique-nom { white-space: nowrap; overflow-wrap: normal; }
+/* Débrief 24 : un nom trop long pour sa colonne passe au-dessus de sa barre,
+   sur toute la largeur de la ligne, en entier ; les chiffres et la barre
+   restent dessous, dans leurs colonnes, alignés sur ceux des autres lignes. */
+.critique-ligne.nom-dessus { grid-template-rows: auto auto; row-gap: 3px; }
+.critique-ligne.nom-dessus .critique-nom { grid-column: 1 / -1; grid-row: 1; }
+.critique-ligne.nom-dessus > .critique-plans { grid-column: 2; grid-row: 2; }
+.critique-ligne.nom-dessus > .critique-barre { grid-column: 3; grid-row: 2; }
+.critique-ligne.nom-dessus > .critique-date { grid-column: 4; grid-row: 2; }
+.critique-ligne.nom-dessus > .critique-effort { grid-column: 5; grid-row: 2; }
+.critique-ligne.nom-dessus .chevron { top: 10px; margin-top: 0; }
 .critique-tete > span:first-child { justify-content: flex-start; padding-left: 24px; }
 .critique-total {
   font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;

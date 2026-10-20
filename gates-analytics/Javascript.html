@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '49f6716';
+  var EDITION = 'd9a8aa6';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -4150,6 +4150,7 @@
     var zone = $('zone-critique');
     if (!zone) return;
     zone.style.removeProperty('--col-nom');
+    [].forEach.call(zone.querySelectorAll('.critique-ligne.nom-dessus'), function (l) { l.classList.remove('nom-dessus'); });
     if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) return;
     var noms = zone.querySelectorAll('.critique-ligne .critique-nom');
     if (!noms.length || !zone.clientWidth) return;
@@ -4157,18 +4158,26 @@
        ligne), plus la place du chevron : scrollWidth ne descend jamais sous
        la largeur de la colonne, il ne dirait pas qu'un nom est court. */
     zone.classList.add('mesure-nom');
-    var large = 0, plage = document.createRange();
+    var largeurs = [], plage = document.createRange();
     var marge = parseFloat(getComputedStyle(noms[0]).paddingLeft) || 0;
     for (var i = 0; i < noms.length; i++) {
       plage.selectNodeContents(noms[i]);
-      large = Math.max(large, plage.getBoundingClientRect().width + marge);
+      largeurs.push(plage.getBoundingClientRect().width + marge);
     }
     zone.classList.remove('mesure-nom');
     var sansJalon = zone.classList.contains('sans-jalon'), base = sansJalon ? 124 : 118;
-    /* Les autres colonnes (plans, fin, rythme) et leurs espaces sont fixes ;
-       la barre garde au moins 200 px, et le nom jamais plus de 40 % du bloc. */
+    /* Débrief 24 : « des fois la ligne ECP est trop large ». La colonne du
+       nom ne s'élargit plus que jusqu'à 240 px (moins sur un écran étroit,
+       pour que la barre garde au moins 220 px). Un nom plus long que ça ne
+       la pousse pas : il passe au-dessus de sa barre, sur toute la largeur,
+       en entier — les barres restent larges et alignées sous leur en-tête. */
     var fixes = (sansJalon ? 62 : 58) + 140 + 160 + 4 * 14;
-    var plafond = Math.max(base, Math.floor(Math.min(zone.clientWidth * 0.4, zone.clientWidth - fixes - 200)));
+    var plafond = Math.max(base, Math.floor(Math.min(240, zone.clientWidth * 0.22, zone.clientWidth - fixes - 220)));
+    var large = 0;
+    largeurs.forEach(function (l, k) {
+      if (l > plafond) noms[k].parentNode.classList.add('nom-dessus');
+      else large = Math.max(large, l);
+    });
     if (large <= base) return;
     zone.style.setProperty('--col-nom', Math.min(plafond, Math.ceil(large) + 2) + 'px');
   }
@@ -7533,5 +7542,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = '49f6716';
+window.SUIVI_FWD_FIN = 'd9a8aa6';
 </script>
