@@ -27,6 +27,10 @@ let totalEcarts = 0;
   const p = await b.newPage({ viewport: { width: 1400, height: 1000 } });
   const erreurs = []; p.on('pageerror', e => erreurs.push(e.message));
   await p.goto('file://' + fichier); await p.waitForTimeout(1500);
+  /* La page s'ouvre en deux temps (débrief 23) : on l'attend prête — et tout
+     ce qu'elle gardait pour la fin, dessiné — avant de la lire. */
+  await p.waitForFunction(() => ['pret', 'panne', null].indexOf(document.documentElement.getAttribute('data-suivi-fwd')) !== -1, null, { timeout: 60000 }).catch(() => {});
+  await p.evaluate(() => { if (window.__finirRendu) window.__finirRendu(); });
   const ecarts = []; let n = 0;
   const types = {};
   const ok = (nom, cond, detail) => { n++; const t = nom.replace(/^.* : /, '').replace(/« [^»]* »/g, '«…»'); types[t] = (types[t] || 0) + 1; if (!cond) ecarts.push(nom + ' — ' + detail); };

@@ -47,7 +47,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = '9280c99';
+const EDITION = '49f6716';
 
 // =====================================================================
 //  CONFIGURATION
@@ -340,13 +340,16 @@ const MAX_CARACTERES_CELLULE = 45000;
 
 /** Déploiement en application web. `?forcer=1` passe outre le contrôle des fichiers. */
 function doGet(e) {
+  nouvellesMesures_('ouverture');
   /* ?frais=1 : tout ce qui est en cache devient caduc — cette ouverture
      relit le classeur et garde ce qu'elle a lu ; les suivantes, et les
-     changements de contrat, en profitent. */
-  if (e && e.parameter && e.parameter.frais) marquerDonneesModifiees_();
-  const page = pageDuTableau(!!(e && e.parameter && e.parameter.forcer))
+     changements de contrat, en profitent. Le pied dit « relu à la
+     demande ». */
+  if (e && e.parameter && e.parameter.frais) { MESURES_.frais = true; marquerDonneesModifiees_(); }
+  const page = mesurer_('page', function () { return pageDuTableau(!!(e && e.parameter && e.parameter.forcer)); })
     .setTitle('Suivi FWD')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  journaliserMesures_();
 
   return CONFIG.AUTORISER_INTEGRATION_EXTERNE
     ? page.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
@@ -355,10 +358,12 @@ function doGet(e) {
 
 /** Ouverture depuis le classeur, en fenêtre. */
 function ouvrirTableauDeBord() {
-  const page = pageDuTableau(false)
+  nouvellesMesures_('ouverture');
+  const page = mesurer_('page', function () { return pageDuTableau(false); })
     .setTitle('Suivi FWD')
     .setWidth(2000)
     .setHeight(1400);
+  journaliserMesures_();
   SpreadsheetApp.getUi().showModalDialog(page, 'Suivi FWD');
 }
 
@@ -367,16 +372,31 @@ function ouvrirTableauDeBord() {
  * ne pourrait pas se construire), une page qui dit lequel recréer. Tout le
  * reste — un fichier coupé, collé deux fois, d'une autre livraison — la page
  * le dit elle-même en tête, sans qu'on bloque sur une supposition : c'en est
- * une qui, au bureau, a bloqué une page entière et saine (débrief 17). Le
- * contrôle ne peut pas empêcher la page : s'il échoue lui-même, elle s'ouvre.
+ * une qui, au bureau, a bloqué une page entière et saine (débrief 17).
+ *
+ * Débrief 23 (« très très long à charger ») : le contrôle ne se fait plus à
+ * chaque ouverture — il relisait les trois fichiers du projet en entier,
+ * avant que la page ne les relise à son tour. Un fichier qui manque fait
+ * échouer l'évaluation du modèle (Index introuvable, ou include() de Styles
+ * ou de Javascript) : c'est alors, et alors seulement, que le contrôle dit
+ * lequel recréer. La page garde son propre contrôle (en tête et en pied), le
+ * Diagnostic le sien, complet. Le contrôle ne peut pas empêcher la page :
+ * s'il échoue lui-même, l'erreur d'origine remonte.
  */
 function pageDuTableau(forcer) {
-  if (!forcer) {
-    let verdict = null;
-    try { verdict = verifierLivraison(lireFichiersDuProjet(), true); } catch (err) { verdict = null; }
-    if (verdict && verdict.manquant) return HtmlService.createHtmlOutput(pageDePanne(verdict.lignes));
+  POUR_INDEX_ = true;
+  try {
+    return HtmlService.createTemplateFromFile('Index').evaluate();
+  } catch (err) {
+    if (!forcer) {
+      let verdict = null;
+      try { verdict = verifierLivraison(lireFichiersDuProjet(), true); } catch (e2) { verdict = null; }
+      if (verdict && verdict.manquant) return HtmlService.createHtmlOutput(pageDePanne(verdict.lignes));
+    }
+    throw err;
+  } finally {
+    POUR_INDEX_ = false;
   }
-  return HtmlService.createTemplateFromFile('Index').evaluate();
 }
 
 /** Le texte des trois fichiers HTML du projet ; un fichier introuvable manque. */
@@ -427,6 +447,10 @@ function onOpen() {
     .addSeparator()
     .addItem('Activer l\'archivage automatique (vendredi 17 h)', 'installerSuiviHebdomadaire')
     .addItem('Désactiver l\'archivage automatique', 'desinstallerSuiviHebdomadaire')
+    .addSeparator()
+    /* Débrief 23 : le tableau de bord préparé d'avance, toutes les dix minutes. */
+    .addItem('Activer l\'ouverture rapide', 'installerOuvertureRapide')
+    .addItem('Désactiver l\'ouverture rapide', 'desinstallerOuvertureRapide')
     .addSeparator()
     .addItem('Diagnostic', 'diagnostic')
     .addToUi();
@@ -563,16 +587,16 @@ function ongletSecondeBase(classeur, contrat) {
   if (!base) return null;
   const b = nomCompact(base);
   const c = contrat ? nomCompact(contrat) : '';
-  const feuilles = classeur.getSheets();
+  const feuilles = ongletsDuClasseur_(classeur);
   if (c) {
     for (let i = 0; i < feuilles.length; i++) {
-      const n = nomCompact(feuilles[i].getName());
+      const n = nomCompact(nomOnglet_(feuilles[i]));
       if (n === b + ' ' + c || n === c + ' ' + b) return feuilles[i];
     }
   }
   let generique = null;
   for (let i = 0; i < feuilles.length && !generique; i++) {
-    if (nomCompact(feuilles[i].getName()) === b) generique = feuilles[i];
+    if (nomCompact(nomOnglet_(feuilles[i])) === b) generique = feuilles[i];
   }
   if (!generique) return null;
   let nbContrats = 1;
@@ -616,11 +640,11 @@ function estOngletInterne(nom) {
  */
 function listerContrats(classeur) {
   if (CONFIG.FEUILLE_DONNEES) {
-    const nommee = classeur.getSheetByName(CONFIG.FEUILLE_DONNEES);
+    const nommee = ongletNomme_(classeur, CONFIG.FEUILLE_DONNEES);
     if (!nommee) {
       throw new Error('L\'onglet « ' + CONFIG.FEUILLE_DONNEES + ' » est introuvable.');
     }
-    return [{ id: nommee.getName(), nom: nommee.getName() }];
+    return [{ id: nomOnglet_(nommee), nom: nomOnglet_(nommee) }];
   }
   /* Un onglet visible et VIDE n'est pas un contrat : c'est la « Feuille 1 »
      d'un classeur neuf, restée en tête quand on a ajouté l'onglet du premier
@@ -630,26 +654,30 @@ function listerContrats(classeur) {
      croisé, compté comme contrat, faisait perdre l'onglet « SEE » et l'ancien
      historique d'un classeur à contrat unique. */
   return ongletsDeDonnees(classeur).contrats
-    .map(function (f) { return { id: f.getName(), nom: f.getName() }; });
+    .map(function (f) { return { id: nomOnglet_(f), nom: nomOnglet_(f) }; });
 }
 
 /** Les onglets candidats, partagés entre contrats et onglets écartés. */
 function ongletsDeDonnees(classeur) {
-  const visibles = classeur.getSheets()
-    .filter(function (f) { return !f.isSheetHidden() && !estOngletInterne(f.getName()) && f.getLastRow() > 0; });
+  /* Le temps d'une lecture, une fois (débrief 23). */
+  if (MEMO_LECTURE && MEMO_LECTURE.donnees) return MEMO_LECTURE.donnees;
+  const visibles = ongletsDuClasseur_(classeur)
+    .filter(function (f) { return !ongletMasque_(f) && !estOngletInterne(nomOnglet_(f)) && derniereLigne_(f) > 0; });
   /* « Copie de HDK » : l'onglet dupliqué pour garder une sauvegarde. Compté
      comme contrat, il s'archivait chaque vendredi dans un historique à lui. */
-  let copies = visibles.filter(function (f) { return estCopieDOnglet(f.getName()); });
+  let copies = visibles.filter(function (f) { return estCopieDOnglet(nomOnglet_(f)); });
   let candidats = visibles.filter(function (f) { return copies.indexOf(f) === -1; });
   /* Seule, une copie est le contrat : on ne l'écarte pas. */
   if (!candidats.length) { candidats = copies; copies = []; }
-  const exports = candidats.filter(aDesEntetes);
-  return {
+  const exports = candidats.filter(function (f) { return aDesEntetes(f); });
+  const rendu = {
     contrats: exports.length ? exports : candidats,
     ecartes: (exports.length ? candidats.filter(function (f) { return exports.indexOf(f) === -1; }) : [])
       .map(function (f) { return { feuille: f, raison: 'export' }; })
       .concat(copies.map(function (f) { return { feuille: f, raison: 'copie' }; }))
   };
+  if (MEMO_LECTURE) MEMO_LECTURE.donnees = rendu;
+  return rendu;
 }
 
 /** « Copie de HDK », « Copy of HDK » : un onglet dupliqué par Sheets. */
@@ -664,22 +692,85 @@ function estCopieDOnglet(nom) {
    classeur pour rien. Le mémo ne vit que le temps d'une lecture (enLecture),
    jamais pendant une écriture ni d'une exécution à l'autre. */
 let MEMO_ENTETES = null;
+/* Débrief 23 : la même lecture demandait aussi la liste des onglets neuf
+   fois, le nom de chaque onglet quatre-vingt-six fois, la liste des contrats
+   cinq fois — deux cents appels au classeur pour une ouverture. Le temps
+   d'une lecture, ce qu'on sait des onglets (leur liste, le nom, masqué ou
+   non, la taille de chacun) et la liste des contrats se gardent ici, avec
+   les en-têtes. Même règle : jamais pendant une écriture (un import, un
+   archivage, une suppression ne passent pas par enLecture), jamais d'une
+   exécution à l'autre. */
+let MEMO_LECTURE = null;
 function enLecture(fn) {
   const dejaOuvert = !!MEMO_ENTETES;
-  if (!dejaOuvert) MEMO_ENTETES = {};
-  try { return fn(); } finally { if (!dejaOuvert) MEMO_ENTETES = null; }
+  if (!dejaOuvert) {
+    MEMO_ENTETES = {};
+    MEMO_LECTURE = { classeur: null, feuilles: null, infos: new Map(), donnees: null, proprietes: null, marque: null };
+  }
+  try { return fn(); } finally { if (!dejaOuvert) { MEMO_ENTETES = null; MEMO_LECTURE = null; } }
+}
+
+/** Le classeur, une fois par lecture. */
+function classeurActif_() {
+  const m = MEMO_LECTURE;
+  if (!m) return SpreadsheetApp.getActiveSpreadsheet();
+  if (!m.classeur) m.classeur = SpreadsheetApp.getActiveSpreadsheet();
+  return m.classeur;
+}
+/** Les onglets du classeur — une fois par lecture. */
+function ongletsDuClasseur_(classeur) {
+  const m = MEMO_LECTURE;
+  if (!m) return classeur.getSheets();
+  if (!m.feuilles) m.feuilles = classeur.getSheets();
+  return m.feuilles;
+}
+/* Le nom, l'état masqué et la taille d'un onglet — chacun lu une fois par
+   lecture, au premier qui le demande. */
+function infoOnglet_(f, quoi) {
+  const m = MEMO_LECTURE;
+  const lire = function () {
+    if (quoi === 'nom') return f.getName();
+    if (quoi === 'masque') return f.isSheetHidden();
+    if (quoi === 'lignes') return f.getLastRow();
+    return f.getLastColumn();
+  };
+  if (!m) return lire();
+  let info = m.infos.get(f);
+  if (!info) { info = {}; m.infos.set(f, info); }
+  if (!Object.prototype.hasOwnProperty.call(info, quoi)) info[quoi] = lire();
+  return info[quoi];
+}
+function nomOnglet_(f) { return infoOnglet_(f, 'nom'); }
+function ongletMasque_(f) { return infoOnglet_(f, 'masque'); }
+function derniereLigne_(f) { return infoOnglet_(f, 'lignes'); }
+function derniereColonne_(f) { return infoOnglet_(f, 'colonnes'); }
+/* L'onglet de ce nom, ou null — pris dans la liste de la lecture quand il
+   y en a une. Pas trouvé à l'identique, c'est Sheets qui tranche
+   (getSheetByName), avec ses règles à lui : rien ne change de sens. */
+function ongletNomme_(classeur, nom) {
+  if (!MEMO_LECTURE) return classeur.getSheetByName(nom);
+  const feuilles = ongletsDuClasseur_(classeur);
+  for (let i = 0; i < feuilles.length; i++) if (nomOnglet_(feuilles[i]) === nom) return feuilles[i];
+  return classeur.getSheetByName(nom);
+}
+/** Les propriétés du classeur, une fois par lecture. */
+function proprietesDuClasseur_() {
+  const m = MEMO_LECTURE;
+  if (!m) return PropertiesService.getDocumentProperties();
+  if (!m.proprietes) m.proprietes = PropertiesService.getDocumentProperties();
+  return m.proprietes;
 }
 
 function aDesEntetes(feuille) {
   if (!MEMO_ENTETES) return aDesEntetesLus(feuille);
-  const k = '\u0001' + feuille.getName();
+  const k = '\u0001' + nomOnglet_(feuille);
   if (!Object.prototype.hasOwnProperty.call(MEMO_ENTETES, k)) MEMO_ENTETES[k] = aDesEntetesLus(feuille);
   return MEMO_ENTETES[k];
 }
 
 function aDesEntetesLus(feuille) {
-  const n = Math.min(CONFIG.LIGNES_SCAN_ENTETE, feuille.getLastRow());
-  const largeur = feuille.getLastColumn();
+  const n = Math.min(CONFIG.LIGNES_SCAN_ENTETE, derniereLigne_(feuille));
+  const largeur = derniereColonne_(feuille);
   if (n < 1 || largeur < 1) return false;
   return feuille.getRange(1, 1, n, largeur).getDisplayValues().some(ligneDEnteteDExport);
 }
@@ -738,10 +829,10 @@ function getFeuilleDonnees(classeur, contrat) {
     throw new Error(messageSansContrat(classeur));
   }
   const voulu = contrat === undefined || contrat === null ? '' : String(contrat).trim();
-  if (!voulu) return classeur.getSheetByName(contrats[0].id);
+  if (!voulu) return ongletNomme_(classeur, contrats[0].id);
   for (let i = 0; i < contrats.length; i++) {
     if (contrats[i].id === voulu || normaliser(contrats[i].id) === normaliser(voulu)) {
-      return classeur.getSheetByName(contrats[i].id);
+      return ongletNomme_(classeur, contrats[i].id);
     }
   }
   throw new Error('Le contrat « ' + voulu + ' » est introuvable : aucun onglet visible de ce nom.');
@@ -951,11 +1042,11 @@ function ligneNonVide(ligne) {
 
 /** Le modèle d'un contrat — le premier si aucun n'est demandé. */
 function construireModele(contrat) {
-  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  const classeur = classeurActif_();
   const feuille = getFeuilleDonnees(classeur, contrat);
   const donnees = feuille.getDataRange().getDisplayValues();
   if (donnees.length === 0) {
-    throw new Error('La feuille « ' + feuille.getName() + ' » est vide.');
+    throw new Error('La feuille « ' + nomOnglet_(feuille) + ' » est vide.');
   }
 
   const indexEntete = detecterLigneEntete(donnees);
@@ -1090,7 +1181,7 @@ function construireModele(contrat) {
   });
 
   return {
-    feuille: feuille.getName(),
+    feuille: nomOnglet_(feuille),
     colonnes: colonnes,
     plans: plans,
     cleDate: cleDate,
@@ -1104,13 +1195,13 @@ function construireModele(contrat) {
     fwdDemandeeAbsente: fwdDemandeeAbsente,
     conceptDemandeAbsent: conceptDemandeAbsent,
     avertissement: fwdDemandeeAbsente
-      ? 'Colonne « ' + CONFIG.COLONNE_FWD + ' » introuvable dans l\'onglet « ' + feuille.getName() +
+      ? 'Colonne « ' + CONFIG.COLONNE_FWD + ' » introuvable dans l\'onglet « ' + nomOnglet_(feuille) +
         ' » : aucun avancement n\'est lu plutôt qu\'un autre, et l\'archivage est refusé. Suivi FWD → Diagnostic montre l\'en-tête lu.'
       : cleFWD === null
         ? 'Aucune colonne d\'avancement FWD n\'a été reconnue dans l\'en-tête.'
         : '',
     avertissementConcept: conceptDemandeAbsent
-      ? 'Colonne « ' + CONFIG.COLONNE_CONCEPT + ' » introuvable dans l\'onglet « ' + feuille.getName() +
+      ? 'Colonne « ' + CONFIG.COLONNE_CONCEPT + ' » introuvable dans l\'onglet « ' + nomOnglet_(feuille) +
         ' » : pas de concept harnais, et l\'archivage est refusé. Suivi FWD → Diagnostic montre l\'en-tête lu.'
       : '',
     lignesIgnorees: lignesBrutes.length - lignes.length,
@@ -1222,14 +1313,14 @@ function getDonneesPourClient(contrat) {
 
 function getDonneesPourClientLues(contrat) {
   try {
-    const classeur = SpreadsheetApp.getActiveSpreadsheet();
+    const classeur = classeurActif_();
     const contrats = listerContrats(classeur);
-    const modele = modeleAOuvrir(contrat, contrats);
+    const modele = mesurer_('gates', function () { return modeleAOuvrir(contrat, contrats); });
     /* L'historique à part : illisible (délai dépassé…), il ne doit pas
        emporter l'extract du jour avec lui. */
     let releves = [], avisHistorique = '';
     try {
-      releves = getHistorique(classeur, modele.feuille);
+      releves = mesurer_('historique', function () { return getHistorique(classeur, modele.feuille); });
     } catch (err) {
       avisHistorique = 'L\'historique de « ' + modele.feuille + ' » n\'a pas pu être lu (' +
         (err && err.message ? err.message : err) + ') : la page montre l\'extract du jour, sans courbe ni journal. Recharger la page.';
@@ -1264,7 +1355,7 @@ function getDonneesPourClientLues(contrat) {
     };
     /* La seconde base, seulement si la configuration en nomme une : la page
        masque la section quand la clé est absente. */
-    const rapprochement = getRapprochement(classeur, modele.feuille);
+    const rapprochement = mesurer_('see', function () { return getRapprochement(classeur, modele.feuille); });
     if (rapprochement) paquet.rapprochement = rapprochement;
     return paquet;
   } catch (err) {
@@ -1300,32 +1391,99 @@ function modeleAOuvrir(contrat, contrats) {
 
 /**
  * Le paquet d'un autre contrat, demandé par la page sans se recharger —
- * compacté comme celui de l'ouverture.
+ * compacté comme celui de l'ouverture, et, depuis le débrief 23, compressé :
+ * l'enveloppe { format: 2, edition, contrat, cle, gz, mesures } que la page
+ * décompresse elle-même (voir donneesJSONPourPage). Rien à relire ni à
+ * décompresser ici quand le paquet est en cache. Un paquet en erreur (un
+ * contrat introuvable…) arrive tel quel, en clair, comme avant.
  */
 function getDonneesCompactes(contrat) {
-  return JSON.parse(paquetCompactJson(contrat));
+  nouvellesMesures_('contrat');
+  const rendu = paquetCompact_(contrat);
+  const sortie = rendu.ok && rendu.gz ? enveloppe_(rendu) : JSON.parse(jsonDuPaquet_(rendu));
+  journaliserMesures_();
+  return sortie;
+}
+
+/**
+ * Le même paquet, en JSON clair : le repli de la page quand son navigateur
+ * ne sait pas décompresser (DecompressionStream : Chrome et Edge 80 et
+ * après), ou quand la décompression échoue.
+ */
+function getDonneesCompactesJson(contrat) {
+  nouvellesMesures_('contrat');
+  const json = jsonDuPaquet_(paquetCompact_(contrat));
+  journaliserMesures_();
+  return json;
+}
+
+/** Le paquet compact d'un contrat, en JSON clair : du cache s'il est à jour, sinon lu et gardé. */
+function paquetCompactJson(contrat) {
+  return jsonDuPaquet_(paquetCompact_(contrat));
 }
 
 /* =====================================================================
-   LE PAQUET EN CACHE (débrief 18 : « le site est très long à charger »)
+   LE PAQUET EN CACHE (débrief 18 : « le site est très long à charger » ;
+   débrief 23 : « beaucoup beaucoup plus rapide »)
    Chaque ouverture relisait tout le classeur : l'extract entier, son
    historique, la seconde base. Le paquet de chaque contrat se garde donc
-   six heures dans le cache du classeur — mais sous une clé qui change dès
-   que quelque chose change : un collage ou une saisie (onEdit), un
-   archivage, une suppression, un dépôt (marquerDonneesModifiees_), un onglet
-   ajouté, renommé, masqué, des lignes ou des colonnes ajoutées ou
+   dans le cache d'Apps Script — mais sous une clé qui change dès que
+   quelque chose change : un collage ou une saisie (onEdit), un archivage,
+   une suppression, un dépôt, un import (marquerDonneesModifiees_), un
+   onglet ajouté, renommé, masqué, des lignes ou des colonnes ajoutées ou
    supprimées (la taille de chaque onglet est dans la clé : onEdit ne voit
-   pas ces gestes-là), la configuration ou la livraison, le jour. Ce que la
-   page montre est donc ce que le classeur contient ; « lus dans le classeur
-   le … », en bas de page, dit quand. Ce qui y échapperait — une version
-   restaurée depuis l'historique de Google — se rattrape par ?frais=1, qui
-   rend caduc tout le cache. Un paquet incomplet (historique illisible le
-   temps d'une panne de Google) ne se garde jamais.
+   pas ces gestes-là), la configuration ou la livraison. Ce que la page
+   montre est donc ce que le classeur contient ; « lus dans le classeur le
+   … », en bas de page, dit quand. Un paquet incomplet (historique illisible
+   le temps d'une panne de Google) ne se garde jamais ; ?frais=1 rend caduc
+   tout le cache.
+
+   Débrief 23 — deux ouvertures sur trois relisaient quand même tout :
+   - la clé changeait chaque jour, et l'ouverture (contrat « ») n'avait pas
+     la même clé que le retour sur HDK. Le jour en sort — rien de ce qu'on
+     lit n'en dépend — et l'ouverture a un alias : « » → le contrat qu'elle
+     montre (modeleAOuvrir), HDK et l'ouverture partagent un seul paquet ;
+   - le cache « du document » n'existe pas pour une application web (lien
+     …/exec) : la fenêtre du menu et le lien n'en partageaient aucun. C'est
+     désormais le cache du script, le même partout — fenêtre, lien,
+     déclencheurs, fenêtre d'import (pour un script lié à un classeur, il
+     ne sert qu'à lui) ;
+   - le paquet s'y range compressé (gzip, puis base64) : un ou deux
+     morceaux au lieu de vingt-quatre, un manifeste écrit en dernier (un
+     paquet ne se lit qu'entier) ;
+   - le préchauffage (prechaufferTableau, menu Activer l'ouverture rapide)
+     le prépare toutes les dix minutes, hors du chemin de la lectrice, et
+     juste après chaque import, archivage, suppression et dépôt ;
+   - la livraison, dans la clé, est celle de la page ET celle du Code (le
+     texte de ses fonctions, empreinteDuCode_) : un correctif de Code recollé
+     seul ne sert pas les paquets de l'ancien.
+   Ce qui échapperait à la clé — une version restaurée depuis l'historique
+   de Google Sheets, un script tiers — est rattrapé le lendemain au plus
+   tard : un paquet préparé il y a plus de vingt heures n'est plus
+   prolongé, le préchauffage le refait, et aucune lecture ne sert un paquet
+   de plus de vingt-six heures.
    ===================================================================== */
 const CACHE_SECONDES = 21600;          // six heures : le plafond de CacheService
-const CACHE_TRANCHE = 30000;           // caractères par clé : moins de 100 Ko même à 3 octets
+const FORMAT_CACHE = 2;                // une autre forme du paquet en cache : d'autres clés
+const CACHE_PREFIXE = 'SFWD' + FORMAT_CACHE + ':';
+/* Caractères par clé : le base64 du paquet compressé n'a que des caractères
+   d'un octet (100 000 < 102 400 octets, la limite d'une valeur) ; le JSON en
+   clair (si la compression manque) peut en avoir de trois. `lus` : les
+   morceaux lus dès la première lecture, avec le manifeste. */
+const CACHE_TAILLES = { gz: 100000, json: 30000, lus: 4 };
+const CACHE_TOUCHE_CONSULTATION = 3 * 3600 * 1000;   // une ouverture prolonge un paquet posé il y a plus de 3 h
+const CACHE_TOUCHE_PRECHAUFFAGE = 4 * 3600 * 1000;   // le préchauffage, plus de 4 h
+const CACHE_VIE_TOUCHE = 20 * 3600 * 1000;           // au-delà, plus prolongé : refait
+const CACHE_VIE_MAX = 26 * 3600 * 1000;              // au-delà, jamais servi
 const CLE_VERSION_DONNEES = 'SUIVI_FWD_VERSION_DONNEES';
+const CLE_CACHE_COMPRESSION = 'SFWD:gz:';            // + EDITION : l'essai de compression, réussi ('1') ou non ('0')
+const CLE_CACHE_MESURE = 'SFWD:mesure';              // la dernière ouverture qui a relu le classeur
+const CLE_CACHE_PRECHAUFFAGE = 'SFWD:prechauffage';  // le dernier passage du préchauffage
+const CLE_CACHE_CONSTRUIT = 'SFWD:construit';        // la version du dernier paquet préparé : pourquoi une ouverture n'a rien trouvé
+const MANQUE_RECENT = 15 * 60000;                    // une marque de moins d'un quart d'heure : le classeur « venait de changer »
 let PAGE_FRAICHE = false;           // le Diagnostic mesure une lecture sans le cache
+let POUR_INDEX_ = false;            // donneesJSONPourPage() évalué par le modèle Index (pageDuTableau)
+let COMPRESSION_SURE_ = null;       // l'essai de compression, une fois par exécution
 
 /**
  * Toute modification du classeur rend caducs les paquets en cache. Le « _ »
@@ -1359,13 +1517,30 @@ function onEdit(e) {
    semaines au plus ; pour les semaines finies, seul le nombre reste. Le
    Diagnostic les montre ; le pied de la page dit que l'ouverture est
    comptée.
+   Débrief 23 : la page y joint ses temps (mesures, voir mesuresRecues_) —
+   serveur, transfert, affichage —, gardés pour les trente dernières
+   ouvertures, sans plus de nom que le compte.
    ===================================================================== */
 const CLE_CONSULTATIONS = 'SUIVI_FWD_CONSULTATIONS';
 const MAX_SEMAINES_CONSULTATIONS = 12;
 const MAX_PERSONNES_SEMAINE = 400;
+const CLE_MESURES = 'SUIVI_FWD_MESURES';
+const MAX_MESURES = 30;
+const MAX_CARACTERES_MESURES = 8500;   // une propriété tient 9 Ko
 
-/** Appelée par la page une fois affichée : compte l'ouverture. Ne lève jamais. */
-function noterConsultation() {
+/**
+ * Appelée par la page une fois affichée : compte l'ouverture, garde ses
+ * temps, et prolonge son paquet en cache. Ne lève jamais.
+ * `mesures` (facultatif, débrief 23) : { quand, contrat, cache, serveur,
+ * transfert, synthese, tout, plans, releves, octets, largeur, cle } — les
+ * durées en millisecondes ; `serveur`, le nombre, ou l'objet reçu dans
+ * l'enveloppe ; `cle`, celle de l'enveloppe.
+ */
+function noterConsultation(mesures) {
+  const recu = mesuresRecues_(mesures);
+  const cache = cacheDuClasseur();
+  let derniere = null;
+  if (cache) { try { derniere = analyserJson(cache.get(CLE_CACHE_MESURE)); } catch (err) { derniere = null; } }
   try {
     const verrou = verrouDuClasseur_();   // le même que les autres gestes : la page servie par …/exec est une application web
     if (!verrou.tryLock(3000)) return false;
@@ -1388,13 +1563,19 @@ function noterConsultation() {
         if (w !== semaine && stats[w] && Array.isArray(stats[w].k)) { stats[w].p = stats[w].k.length; delete stats[w].k; }
       });
       props.setProperty(CLE_CONSULTATIONS, JSON.stringify(stats));
-      return true;
+      /* Les temps : ils ne comptent jamais plus que l'ouverture elle-même. */
+      try { noterMesures_(props, recu, derniere); } catch (err) { /* rien */ }
     } finally {
       verrou.releaseLock();
     }
   } catch (err) {
     return false;
   }
+  /* Débrief 23 : le verrou rendu, le paquet que la page vient de recevoir
+     reprend six heures s'il a été posé il y a plus de trois — un cache servi
+     toute la journée n'expire jamais sous les pieds d'une lectrice. */
+  if (cache) { try { toucherPaquetOuvert_(cache, recu ? recu.cle : ''); } catch (err) { /* rien */ } }
+  return true;
 }
 
 /** Pour le Diagnostic : « S40 : 37 ouvertures, 12 personnes · S39 : … », les plus récentes d'abord.
@@ -1423,67 +1604,417 @@ function empreinte(texte) {
   return (h1 >>> 0).toString(36) + (h2 >>> 0).toString(36) + texte.length.toString(36);
 }
 
-/** Ce qui fait la version des données : la marque, les onglets et leur taille, la configuration, le jour. */
+/**
+ * Ce qui fait la version des données : la marque, les onglets (nom, masqué
+ * ou non, taille), la configuration, la livraison — celle de la page
+ * (EDITION) et le texte du Code lui-même (empreinteDuCode_) — et la forme
+ * du cache. Plus le jour (débrief 23) : rien de ce qu'on lit n'en dépend —
+ * la page calcule elle-même « aujourd'hui ».
+ */
 function versionDonnees(classeur) {
-  const marque = PropertiesService.getDocumentProperties().getProperty(CLE_VERSION_DONNEES) || '0';
-  const onglets = classeur.getSheets().map(function (f) {
-    return f.getName() + (f.isSheetHidden() ? '~' : '') + ':' + f.getLastRow() + 'x' + f.getLastColumn();
+  const marque = proprietesDuClasseur_().getProperty(CLE_VERSION_DONNEES) || '0';
+  if (MEMO_LECTURE) MEMO_LECTURE.marque = marque;
+  const onglets = ongletsDuClasseur_(classeur).map(function (f) {
+    return nomOnglet_(f) + (ongletMasque_(f) ? '~' : '') + ':' + derniereLigne_(f) + 'x' + derniereColonne_(f);
   }).join('\u0001');
-  return [EDITION, marque, onglets, JSON.stringify(CONFIG), Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd')].join('\u0002');
+  return [EDITION, FORMAT_CACHE, empreinteDuCode_(), marque, onglets, JSON.stringify(CONFIG)].join('\u0002');
 }
 
+/*
+ * L'empreinte du Code lui-même (débrief 23, revue). EDITION est celle de la
+ * page — le prototype et Index — : un correctif de Code seul, recollé seul
+ * (MODE-D-EMPLOI), ne la change pas. Sans plus, le cache aurait servi
+ * jusqu'au lendemain les paquets faits par l'ancien Code, et un lien …/exec
+ * resté sur une ancienne version du déploiement — le cache du script est le
+ * même pour tous — aurait rangé les siens sous les clés du nouveau. Le texte
+ * de chaque fonction du projet entre donc dans la clé : un autre Code,
+ * d'autres clés, et la première ouverture qui suit relit le classeur. Une
+ * fois par exécution, sans aucun appel au classeur. Les fonctions sont
+ * celles que l'objet global montre (toutes celles du projet) ; un moteur qui
+ * ne les y montrerait pas prend au moins celles qui font le paquet.
+ */
+let EMPREINTE_CODE_ = null;
+function empreinteDuCode_() {
+  if (EMPREINTE_CODE_ !== null) return EMPREINTE_CODE_;
+  let texte = '';
+  try {
+    const g = typeof globalThis !== 'undefined' ? globalThis : Function('return this')();
+    /* Les valeurs posées seulement (une fonction déclarée en est une) : rien
+       n'est lu par un accesseur, aucun service n'est touché. */
+    const fonctions = {};
+    Object.keys(g).forEach(function (k) {
+      if (k.indexOf('__') === 0) return;
+      let d = null;
+      try { d = Object.getOwnPropertyDescriptor(g, k); } catch (err) { d = null; }
+      if (d && typeof d.value === 'function') fonctions[k] = d.value;
+    });
+    const noms = Object.keys(fonctions).sort();
+    if (noms.indexOf('versionDonnees') !== -1 && noms.indexOf('construireModele') !== -1) {
+      texte = noms.map(function (k) { return k + '\u0001' + Function.prototype.toString.call(fonctions[k]); }).join('\u0002');
+    }
+  } catch (err) { texte = ''; }
+  if (!texte) {
+    texte = [versionDonnees, construireModele, getDonneesPourClient, getDonneesPourClientLues, modeleAOuvrir, getHistorique,
+             getRapprochement, lireSecondeBase, compacterPaquet, paquetCompact_, construireEntree_]
+      .map(function (f) { return Function.prototype.toString.call(f); }).join('\u0002');
+  }
+  EMPREINTE_CODE_ = empreinte(texte);
+  return EMPREINTE_CODE_;
+}
+
+/*
+ * La livraison telle que le cache la voit : la page, le Code, la forme du
+ * cache, la configuration. Gardée avec le dernier paquet préparé
+ * (CLE_CACHE_CONSTRUIT) : une ouverture qui ne trouve rien dit alors
+ * pourquoi — une nouvelle livraison, le classeur qui a changé, ou rien de
+ * prêt (expiré, pas encore préparé).
+ */
+function livraisonDuCache_() {
+  return empreinte([EDITION, FORMAT_CACHE, empreinteDuCode_(), JSON.stringify(CONFIG)].join('\u0002'));
+}
+
+/**
+ * Le cache du script (débrief 23) : le même pour la fenêtre du menu, le
+ * lien …/exec, les déclencheurs et la fenêtre d'import. Celui « du
+ * document » n'existe pas pour une application web (getDocumentCache y rend
+ * null) : la fenêtre et le lien gardaient chacun le leur.
+ */
 function cacheDuClasseur() {
   try {
     if (typeof CacheService === 'undefined') return null;
-    return CacheService.getDocumentCache() || CacheService.getScriptCache();
+    return CacheService.getScriptCache() || null;
   } catch (err) { return null; }
 }
 
-function lireCache(cache, cle) {
+/** La part d'un contrat dans une clé : courte, quels que soient les caractères de son nom. */
+function cleContrat_(id) {
+  return empreinte('\u0003' + String(id));
+}
+/** Les clés du manifeste et des `n` premiers morceaux d'un paquet. */
+function clesEntree_(kbase, n) {
+  const cles = [kbase + ':m'];
+  for (let i = 0; i < n; i++) cles.push(kbase + ':' + i);
+  return cles;
+}
+/** Un texte en morceaux d'au plus `taille` caractères — sans couper un caractère en deux. */
+function trancher_(texte, taille) {
+  const morceaux = [];
+  let debut = 0;
+  while (debut < texte.length) {
+    let fin = Math.min(debut + taille, texte.length);
+    const c = texte.charCodeAt(fin - 1);
+    if (fin < texte.length && fin - 1 > debut && c >= 0xD800 && c <= 0xDBFF) fin--;
+    morceaux.push(texte.slice(debut, fin));
+    debut = fin;
+  }
+  return morceaux.length ? morceaux : [''];
+}
+
+/*
+ * Le contrat que l'ouverture montrera sans doute : le premier onglet
+ * visible qui n'est pas un onglet de service. Seulement pour lire, d'un même
+ * appel au cache, l'alias de l'ouverture et le paquet qu'il désigne le plus
+ * souvent ; une erreur ne coûte qu'un second appel. Rien n'est lu pour lui :
+ * la version des données a déjà tout demandé.
+ */
+function contratProbable_(classeur) {
+  if (CONFIG.FEUILLE_DONNEES) return CONFIG.FEUILLE_DONNEES;
+  const feuilles = ongletsDuClasseur_(classeur);
+  for (let i = 0; i < feuilles.length; i++) {
+    const f = feuilles[i], nom = nomOnglet_(f);
+    if (!ongletMasque_(f) && !estOngletInterne(nom) && !estCopieDOnglet(nom) && derniereLigne_(f) > 0) return nom;
+  }
+  return '';
+}
+
+/**
+ * Un paquet du cache, entier, ou null : son manifeste, puis chacun de ses
+ * morceaux — un morceau manquant (expiré, évincé), un total qui ne tombe
+ * pas juste, un paquet trop vieux, et rien n'est servi. `lu` : ce que le
+ * premier appel a déjà rapporté (null : à lire).
+ */
+function assemblerEntree_(cache, kbase, lu, via) {
   try {
-    const n = Number(cache.get(cle + ':n'));
-    if (!n) return null;
-    const cles = [];
-    for (let i = 0; i < n; i++) cles.push(cle + ':' + i);
-    const lus = cache.getAll(cles);
-    let texte = '';
-    for (let i = 0; i < n; i++) {
-      if (typeof lus[cles[i]] !== 'string') return null;
-      texte += lus[cles[i]];
+    let vus = lu || {};
+    if (typeof vus[kbase + ':m'] !== 'string') {
+      vus = cache.getAll(clesEntree_(kbase, CACHE_TAILLES.lus)) || {};
     }
-    return texte;
+    const m = analyserJson(vus[kbase + ':m']);
+    if (!m || !(m.n >= 1) || m.n > 1000) return null;
+    if (Date.now() - (Number(m.construitLe) || 0) > CACHE_VIE_MAX) return null;
+    const manquants = [];
+    for (let i = 0; i < m.n; i++) if (typeof vus[kbase + ':' + i] !== 'string') manquants.push(kbase + ':' + i);
+    if (manquants.length) {
+      const suite = cache.getAll(manquants) || {};
+      manquants.forEach(function (k) { vus[k] = suite[k]; });
+    }
+    const morceaux = [];
+    for (let i = 0; i < m.n; i++) {
+      if (typeof vus[kbase + ':' + i] !== 'string') return null;
+      morceaux.push(vus[kbase + ':' + i]);
+    }
+    const texte = morceaux.join('');
+    if (texte.length !== m.octets) return null;
+    return { ok: true, contrat: String(m.contrat || ''), cle: kbase, via: via, manifeste: m, morceaux: morceaux,
+             gz: m.format === 'gz' ? texte : null, json: m.format === 'gz' ? null : texte };
   } catch (err) { return null; }
 }
 
-function ecrireCache(cache, cle, texte) {
-  try {
-    const valeurs = {};
-    let n = 0;
-    for (let i = 0; i < texte.length; i += CACHE_TRANCHE) valeurs[cle + ':' + (n++)] = texte.slice(i, i + CACHE_TRANCHE);
-    cache.putAll(valeurs, CACHE_SECONDES);
-    cache.put(cle + ':n', String(n), CACHE_SECONDES);   // en dernier : un paquet n'est lisible qu'entier
-  } catch (err) { /* trop gros, ou cache indisponible : la page se sert sans */ }
+/**
+ * Le paquet en cache d'un contrat demandé (« » : celui de l'ouverture, par
+ * son alias), ou null. Un seul appel au cache le plus souvent : l'alias, le
+ * manifeste et les premiers morceaux du contrat probable, et l'essai de
+ * compression, ensemble. `lus` reçoit ce qui a été lu.
+ */
+function lireEntree_(cache, h, id, lus) {
+  const base = CACHE_PREFIXE + h + ':';
+  const probable = id || contratProbable_(classeurActif_());
+  const cles = [CLE_CACHE_COMPRESSION + EDITION, CLE_CACHE_CONSTRUIT];
+  if (!id) cles.push(base + '*');
+  if (probable) cles.push.apply(cles, clesEntree_(base + cleContrat_(probable), CACHE_TAILLES.lus));
+  let lu = null;
+  try { lu = cache.getAll(cles) || {}; } catch (err) { return null; }
+  Object.keys(lu).forEach(function (k) { lus[k] = lu[k]; });
+  let cible = id, via = 'trouvé';
+  if (!id) {
+    cible = lu[base + '*'];
+    via = 'alias';
+    if (typeof cible !== 'string' || !cible) return null;
+  }
+  return assemblerEntree_(cache, base + cleContrat_(cible), cible === probable ? lu : null, via);
 }
 
-/** Le paquet compact d'un contrat, en JSON : du cache s'il est à jour, sinon lu et gardé. */
-function paquetCompactJson(contrat) {
-  const cache = PAGE_FRAICHE ? null : cacheDuClasseur();
-  let cle = null;
-  if (cache) {
-    try { cle = 'SFWD:' + empreinte(String(contrat || '') + '\u0003' + versionDonnees(SpreadsheetApp.getActiveSpreadsheet())); }
-    catch (err) { cle = null; }
+/**
+ * Range un paquet dans le cache : ses morceaux d'abord, son manifeste (et,
+ * pour l'ouverture, l'alias « » → son contrat) en dernier — un paquet n'est
+ * lisible qu'entier. Rend la base de ses clés (la `cle` de l'enveloppe), ou
+ * « » si rien n'a pu être rangé : trop gros, cache indisponible — la page
+ * se sert sans. Avec le manifeste, la version de ce dernier paquet préparé
+ * (CLE_CACHE_CONSTRUIT, voir raisonDuManque_).
+ */
+function ecrireEntree_(cache, h, id, rendu) {
+  try {
+    const base = CACHE_PREFIXE + h + ':';
+    const cible = id || rendu.contrat;
+    if (!cible) return '';
+    const kbase = base + cleContrat_(cible);
+    const gz = typeof rendu.gz === 'string';
+    const texte = gz ? rendu.gz : rendu.json;
+    const morceaux = trancher_(texte, gz ? CACHE_TAILLES.gz : CACHE_TAILLES.json);
+    const maintenant = Date.now();
+    const manifeste = { n: morceaux.length, octets: texte.length, brut: rendu.json.length, format: gz ? 'gz' : 'json',
+                        contrat: rendu.contrat, plans: rendu.plans || 0, construitLe: maintenant, toucheLe: maintenant };
+    const valeurs = {};
+    morceaux.forEach(function (t, i) { valeurs[kbase + ':' + i] = t; });
+    cache.putAll(valeurs, CACHE_SECONDES);
+    const fin = {};
+    fin[kbase + ':m'] = JSON.stringify(manifeste);
+    if (!id) fin[base + '*'] = rendu.contrat;
+    fin[CLE_CACHE_CONSTRUIT] = versionConstruite_(h);
+    cache.putAll(fin, CACHE_SECONDES);
+    return kbase;
+  } catch (err) { return ''; }
+}
+
+/* La version des données d'un paquet préparé : l'empreinte de la clé, la
+   livraison, la marque du classeur, l'heure. */
+function versionConstruite_(h, marque) {
+  const m = marque !== undefined ? marque : MEMO_LECTURE && MEMO_LECTURE.marque ? MEMO_LECTURE.marque : '';
+  return JSON.stringify({ h: h, livraison: livraisonDuCache_(), marque: String(m || ''), quand: Date.now() });
+}
+
+/*
+ * Pourquoi une ouverture n'a rien trouvé en cache (débrief 23, revue : le
+ * pied disait « il venait de changer » à chaque fois, même un matin où rien
+ * n'avait bougé). Comparé au dernier paquet préparé :
+ *   'modifié'   le classeur a changé depuis (saisie, collage, import,
+ *               onglet…) — `modifie` : l'heure de la marque, si c'est elle ;
+ *   'livraison' un autre Code, une autre page, une autre configuration ;
+ *   'expiré'    rien n'a changé : le paquet de ce contrat n'est plus là, ou
+ *               n'a jamais été préparé ;
+ *   'demandé'   ?frais=1 ;
+ *   ''          on ne sait pas (rien préparé depuis plus de six heures) —
+ *               sauf une marque de moins d'un quart d'heure : 'modifié'.
+ */
+function raisonDuManque_(lus, h) {
+  if (MESURES_ && MESURES_.frais) return { raison: 'demandé', modifie: 0 };
+  const marque = MEMO_LECTURE && MEMO_LECTURE.marque ? String(MEMO_LECTURE.marque) : '';
+  const t = parseInt(marque, 10) > 0 ? parseInt(marque, 10) : 0;
+  const r = analyserJson(lus ? lus[CLE_CACHE_CONSTRUIT] : null);
+  if (r && typeof r === 'object' && r.h) {
+    if (r.h === h) return { raison: 'expiré', modifie: 0 };
+    if (r.livraison !== livraisonDuCache_()) return { raison: 'livraison', modifie: 0 };
+    return { raison: 'modifié', modifie: String(r.marque || '') !== marque ? t : 0 };
   }
-  if (cle) {
-    const lu = lireCache(cache, cle);
-    if (lu) return lu;
+  if (t && Date.now() - t >= 0 && Date.now() - t < MANQUE_RECENT) return { raison: 'modifié', modifie: t };
+  return { raison: '', modifie: 0 };
+}
+
+/** Remet un paquet du cache pour six heures (morceaux, puis manifeste, et l'alias s'il le désigne). */
+function reposerEntree_(cache, kbase, entree, alias) {
+  const valeurs = {};
+  entree.morceaux.forEach(function (t, i) { valeurs[kbase + ':' + i] = t; });
+  cache.putAll(valeurs, CACHE_SECONDES);
+  const m = entree.manifeste;
+  m.toucheLe = Date.now();
+  const fin = {};
+  fin[kbase + ':m'] = JSON.stringify(m);
+  if (alias) fin[kbase.slice(0, kbase.lastIndexOf(':') + 1) + '*'] = alias;
+  cache.putAll(fin, CACHE_SECONDES);
+}
+
+/**
+ * Prolonge le paquet qu'une ouverture vient de servir, s'il a été posé il
+ * y a plus de `age` — sauf s'il a plus de vingt heures : il sera refait.
+ * Rend 'frais', 'touché', 'vieux' ou « » (rien en cache).
+ */
+function toucherEntree_(cache, kbase, age) {
+  const base = kbase.slice(0, kbase.lastIndexOf(':') + 1);
+  const lu = cache.getAll([base + '*'].concat(clesEntree_(kbase, CACHE_TAILLES.lus))) || {};
+  const entree = assemblerEntree_(cache, kbase, lu, 'trouvé');
+  if (!entree) return '';
+  const m = entree.manifeste, maintenant = Date.now();
+  if (maintenant - (Number(m.toucheLe) || 0) < age) return 'frais';
+  if (maintenant - (Number(m.construitLe) || 0) > CACHE_VIE_TOUCHE) return 'vieux';
+  const alias = typeof lu[base + '*'] === 'string' && base + cleContrat_(lu[base + '*']) === kbase ? lu[base + '*'] : null;
+  reposerEntree_(cache, kbase, entree, alias);
+  return 'touché';
+}
+
+/* Le paquet de l'ouverture que la page signale : par la clé de son
+   enveloppe ; une page qui n'en donne pas (d'avant le débrief 23) : celle
+   du contrat de l'ouverture, recalculée. */
+function toucherPaquetOuvert_(cache, cle) {
+  let kbase = /^SFWD\d+:[0-9a-z]+:[0-9a-z]+$/.test(String(cle || '')) ? String(cle) : '';
+  if (!kbase) {
+    const h = enLecture(function () { return empreinte(versionDonnees(classeurActif_())); });
+    const alias = cache.get(CACHE_PREFIXE + h + ':*');
+    if (!alias) return '';
+    kbase = CACHE_PREFIXE + h + ':' + cleContrat_(alias);
   }
-  const paquet = compacterPaquet(getDonneesPourClient(contrat));
-  const json = JSON.stringify(paquet);
-  /* Un paquet en erreur, ou lu à moitié — l'historique illisible le temps
-     d'une panne passagère —, n'est pas gardé : la prochaine ouverture
-     relira, comme la page le conseille. */
-  if (cle && paquet && paquet.ok && !paquet.historiqueIllisible) ecrireCache(cache, cle, json);
-  return json;
+  return toucherEntree_(cache, kbase, CACHE_TOUCHE_CONSULTATION);
+}
+
+/* =====================================================================
+   LA COMPRESSION (débrief 23)
+   Le paquet voyage gzippé, en base64 « web » (A–Z a–z 0–9 - _, sans « = »
+   final) : une page de 1,7 Mo en fait 0,65, et Google, qui recopie la page
+   dans la sienne en échappant chaque caractère spécial, n'a plus rien à
+   échapper. Utilities ne demande aucune autorisation de plus. UTF-8 aux
+   deux bouts, dit en toutes lettres ; un essai aller-retour (accents, « — »,
+   « € », U+2028) décide, une fois par livraison : raté, la page reçoit le
+   paquet en clair, comme avant.
+   ===================================================================== */
+function compresserJson_(json) {
+  const blob = Utilities.newBlob('', 'application/json').setDataFromString(json, 'UTF-8');
+  return Utilities.base64EncodeWebSafe(Utilities.gzip(blob).getBytes()).replace(/=+$/, '');
+}
+function decompresserJson_(b64) {
+  const s = String(b64 || '');
+  const octets = Utilities.base64DecodeWebSafe(s + '===='.slice(0, (4 - s.length % 4) % 4));
+  /* Sans son type, ungzip refuse le blob. */
+  return Utilities.ungzip(Utilities.newBlob(octets, 'application/x-gzip')).getDataAsString('UTF-8');
+}
+const ESSAI_COMPRESSION = '{"essai":"éàç — € \u2028 \u2029 </script> « Référence UD » \ud834\udd1e"}';
+function essaiCompression_() {
+  try { return decompresserJson_(compresserJson_(ESSAI_COMPRESSION)) === ESSAI_COMPRESSION; } catch (err) { return false; }
+}
+/** La compression est-elle sûre ? L'essai, une fois par livraison (gardé six heures ; dix minutes s'il a raté). */
+function compressionSure_(cache, lus) {
+  if (typeof Utilities === 'undefined' || typeof Utilities.gzip !== 'function' ||
+      typeof Utilities.base64EncodeWebSafe !== 'function') return false;
+  const cle = CLE_CACHE_COMPRESSION + EDITION;
+  const connu = lus ? lus[cle] : null;
+  if (connu === '1') return true;
+  if (connu === '0') return false;
+  if (COMPRESSION_SURE_ === null) {
+    COMPRESSION_SURE_ = essaiCompression_();
+    if (cache) { try { cache.put(cle, COMPRESSION_SURE_ ? '1' : '0', COMPRESSION_SURE_ ? CACHE_SECONDES : 600); } catch (err) { /* rien */ } }
+  }
+  return COMPRESSION_SURE_;
+}
+
+/**
+ * LE paquet compact d'un contrat (« » : celui de l'ouverture), du cache
+ * s'il est à jour, sinon lu, compressé et gardé :
+ *   { ok, contrat, cle, gz, json, via, demande }
+ * gz : le base64 du JSON compressé, ou null (compression ratée, paquet en
+ * erreur) ; json : le JSON en clair quand on l'a sous la main (lu à
+ * l'instant, ou gardé sans compression) ; cle : la base de ses clés en
+ * cache (« » s'il n'y est pas) ; via : 'trouvé', 'alias', 'construit'.
+ * `versionConnue` : l'empreinte de la version déjà calculée (le
+ * préchauffage la calcule une fois pour tous les contrats).
+ */
+function paquetCompact_(contrat, versionConnue) {
+  return enLecture(function () {
+    const id = contrat === undefined || contrat === null ? '' : String(contrat);
+    const cache = PAGE_FRAICHE ? null : cacheDuClasseur();
+    let h = versionConnue || null;
+    if (cache && !h) {
+      try { h = mesurer_('version', function () { return empreinte(versionDonnees(classeurActif_())); }); } catch (err) { h = null; }
+    }
+    const lus = {};
+    if (cache && h) {
+      const trouve = mesurer_('cache', function () { return lireEntree_(cache, h, id, lus); });
+      if (trouve) {
+        trouve.demande = id;
+        noterResultatCache_(trouve.via, trouve);
+        return trouve;
+      }
+      noterResultatCache_('manqué', null, raisonDuManque_(lus, h));
+    } else {
+      noterResultatCache_('sans cache', null);
+    }
+    const rendu = construireEntree_(cache && h ? cache : null, h, id, lus);
+    if (MESURES_ && !MESURES_.cle) MESURES_.cle = rendu.cle;
+    return rendu;
+  });
+}
+
+/* Ce que la lecture a trouvé, pour la ligne du journal d'exécution et les
+   mesures de l'enveloppe. Un cache manqué dit pourquoi (raisonDuManque_),
+   et quand le classeur a changé si c'est la raison. */
+function noterResultatCache_(via, trouve, manque) {
+  const m = MESURES_;
+  if (!m) return;
+  const premier = !m.cache;
+  if (premier) m.cache = via;
+  if (trouve) {
+    if (!m.contrat) m.contrat = trouve.contrat;
+    if (!m.cle) m.cle = trouve.cle;
+  }
+  if (premier && via === 'manqué' && manque) {
+    m.raison = manque.raison || '';
+    if (manque.modifie > 0) m.modifie = manque.modifie;
+  }
+}
+
+/** Lit le classeur pour un contrat, compacte, compresse, et range — sauf un paquet en erreur ou incomplet. */
+function construireEntree_(cache, h, id, lus) {
+  const paquet = getDonneesPourClient(id || undefined);
+  const json = mesurer_('compactage', function () { return JSON.stringify(compacterPaquet(paquet)); });
+  const rendu = { ok: !!(paquet && paquet.ok), contrat: (paquet && paquet.contrat) || '', demande: id, json: json, gz: null, cle: '',
+                  via: 'construit', plans: paquet && Array.isArray(paquet.plans) ? paquet.plans.length : 0 };
+  if (MESURES_ && !MESURES_.contrat) MESURES_.contrat = rendu.contrat;
+  /* Un paquet en erreur reste en clair, et ne se garde jamais. */
+  if (!rendu.ok) return rendu;
+  if (compressionSure_(cache, lus)) {
+    try { rendu.gz = mesurer_('compression', function () { return compresserJson_(json); }); } catch (err) { rendu.gz = null; }
+  }
+  /* Lu à moitié — l'historique illisible le temps d'une panne passagère — :
+     pas gardé, la prochaine ouverture relira, comme la page le conseille. */
+  if (cache && h && !paquet.historiqueIllisible) {
+    rendu.cle = mesurer_('ecriture', function () { return ecrireEntree_(cache, h, id, rendu); });
+  }
+  return rendu;
+}
+
+/** Le JSON en clair d'un paquet : tel quel, ou décompressé ; une décompression ratée relit le classeur. */
+function jsonDuPaquet_(rendu) {
+  if (typeof rendu.json === 'string') return rendu.json;
+  try { return decompresserJson_(rendu.gz); } catch (err) {
+    return JSON.stringify(compacterPaquet(getDonneesPourClient(rendu.demande || undefined)));
+  }
 }
 
 /**
@@ -1497,6 +2028,11 @@ function paquetCompactJson(contrat) {
  *   plansTab   : { cles: [...], lignes: [[valeur | null, ...], ...] }
  *   relevesTab : { refs: [...], vals: [...], releves: [{ ..., p: [iRef, iVal, ...], c: [...] }] }
  *   rapprochement.lignesTab : comme plansTab
+ *
+ * Débrief 23 : un relevé qui a gardé sa carte plan par plan voyage sans ses
+ * comptes par groupe — la page les refait toujours sur la carte, avec les
+ * attributs d'aujourd'hui (releveDeCarte) ; seul un relevé sans carte s'en
+ * sert. 86 Ko de moins sur six relevés, 850 sur un an.
  */
 function compacterPaquet(paquet) {
   if (!paquet || !paquet.ok) return paquet;
@@ -1541,9 +2077,11 @@ function compacterPaquet(paquet) {
       refs: refs, vals: vals,
       releves: paquet.releves.map(function (r) {
         const o = {};
+        const avecCarte = !!r.plans && typeof r.plans === 'object';
         Object.keys(r).forEach(function (k) {
           if (k === 'plans') o.p = indexer(r.plans);
           else if (k === 'plansConcept') o.c = indexer(r.plansConcept);
+          else if (k === 'groupes' && avecCarte) return;
           else o[k] = r[k];
         });
         return o;
@@ -1568,13 +2106,547 @@ function compacterPaquet(paquet) {
  * Une cellule du classeur peut contenir n'importe quoi — y compris la chaîne
  * qui ferme une balise script. Sans échappement, une seule ligne de commentaire
  * mal choisie couperait la page en deux et rien ne s'afficherait.
+ *
+ * Débrief 23 : évalué par le modèle Index (pageDuTableau), c'est
+ * l'enveloppe compressée — { "format": 2, "edition", "contrat", "cle",
+ * "mesures": { "serveur": … }, "gz": "…" } —, toujours une expression
+ * JavaScript, que la page décompresse : l'Index et son Javascript viennent
+ * de la même livraison que ce Code (la page le vérifie par `edition`, que
+ * l'enveloppe porte en clair). Appelé d'ailleurs — le chargeur, qui associe
+ * la page du dépôt à ce serveur, chacun gardé six heures de son côté —,
+ * c'est le paquet en clair, que toutes les pages savent lire. Un paquet en
+ * erreur est toujours en clair.
  */
 function donneesJSONPourPage() {
-  return paquetCompactJson()
+  const rendu = paquetCompact_('');
+  if (POUR_INDEX_ && rendu.ok && rendu.gz) return enveloppeLitterale_(rendu);
+  return echapperPourScript_(jsonDuPaquet_(rendu));
+}
+
+function echapperPourScript_(json) {
+  return json
     .replace(/</g, '\\u003c')
     .replace(/>/g, '\\u003e')
     .replace(/\u2028/g, '\\u2028')
     .replace(/\u2029/g, '\\u2029');
+}
+
+/** L'enveloppe d'un paquet compressé : ce que reçoit la page (format 2). */
+function enveloppe_(rendu) {
+  return { format: 2, edition: EDITION, contrat: rendu.contrat, cle: rendu.cle || '',
+           mesures: { serveur: mesuresServeur_(rendu.gz.length) }, gz: rendu.gz };
+}
+/* L'enveloppe écrite pour un <script> : ses champs courts échappés comme
+   tout le reste, le base64 posé tel quel — son alphabet n'a rien à
+   échapper (vérifié tout de même). */
+function enveloppeLitterale_(rendu) {
+  const e = enveloppe_(rendu);
+  const gz = e.gz;
+  delete e.gz;
+  const tete = echapperPourScript_(JSON.stringify(e));
+  const corps = /^[A-Za-z0-9_-]*$/.test(gz) ? '"' + gz + '"' : echapperPourScript_(JSON.stringify(gz));
+  return tete.slice(0, -1) + ',"gz":' + corps + '}';
+}
+
+/* =====================================================================
+   LES TEMPS DE L'OUVERTURE (débrief 23)
+   Chaque exécution qui sert un paquet — l'ouverture (doGet, menu), un
+   changement de contrat — mesure ses étapes : la version des données, le
+   cache (trouvé, alias, manqué, sans cache), et pour une relecture GATES,
+   l'historique, SEE, le compactage, la compression, l'écriture ; puis la
+   page. Une ligne par exécution dans Apps Script → Exécutions :
+     Suivi FWD · ouverture HDK · cache trouvé (alias) · 0,24 s (version 0,09 · cache 0,05 · page 0,10) · 98 Ko
+   L'enveloppe porte ces temps à la page, qui les renvoie avec les siens
+   (noterConsultation) ; le Diagnostic résume les trente dernières
+   ouvertures. Une ouverture qui a relu le classeur se garde aussi en cache
+   (SFWD:mesure) : une page fermée avant d'avoir parlé reste comptée.
+   ===================================================================== */
+let MESURES_ = null;
+const ETAPES_DONNEES = ['version', 'cache', 'gates', 'historique', 'see', 'compactage', 'compression', 'ecriture'];
+
+function nouvellesMesures_(quoi) {
+  MESURES_ = { quoi: quoi, debut: Date.now(), fin: 0, contrat: '', cache: '', raison: '', cle: '', etapes: {}, octets: 0, modifie: 0, frais: false };
+  return MESURES_;
+}
+/** Exécute `fn` en notant sa durée sous `etape` (rien n'est noté hors d'une exécution mesurée). */
+function mesurer_(etape, fn) {
+  const m = MESURES_;
+  if (!m) return fn();
+  const t0 = Date.now();
+  try { return fn(); } finally { m.etapes[etape] = (m.etapes[etape] || 0) + (Date.now() - t0); }
+}
+/** Les temps du serveur, pour l'enveloppe. */
+function mesuresServeur_(octets) {
+  const m = MESURES_, fin = Date.now();
+  const s = { debut: m ? m.debut : fin, fin: fin, cache: m ? m.cache : '', etapes: {}, octets: octets };
+  if (m) {
+    Object.keys(m.etapes).forEach(function (k) { if (k !== 'page') s.etapes[k] = m.etapes[k]; });
+    if (m.cache === 'manqué') s.raison = m.raison || '';   // pourquoi le cache n'avait rien (raisonDuManque_)
+    if (m.modifie) s.modifie = m.modifie;
+    m.octets = octets;
+  }
+  return s;
+}
+function secondesDites_(ms) { return (Math.max(0, ms) / 1000).toFixed(2).replace('.', ','); }
+const MOTS_CACHE = { 'trouvé': 'cache trouvé', alias: 'cache trouvé (alias)', 'manqué': 'cache manqué', 'sans cache': 'sans cache' };
+
+/** La ligne du journal d'exécution ; une ouverture qui a relu le classeur est gardée pour noterConsultation. */
+function journaliserMesures_() {
+  const m = MESURES_;
+  if (!m) return;
+  m.fin = Date.now();
+  const total = m.fin - m.debut;
+  if (m.etapes.page !== undefined) {
+    /* La page : l'évaluation du modèle, sans la lecture du paquet qui s'y fait. */
+    const dedans = ETAPES_DONNEES.reduce(function (s, k) { return s + (m.etapes[k] || 0); }, 0);
+    m.etapes.page = Math.max(0, m.etapes.page - dedans);
+  }
+  const detail = ETAPES_DONNEES.concat(['page']).filter(function (k) { return m.etapes[k] !== undefined; })
+    .map(function (k) { return (k === 'ecriture' ? 'écriture' : k) + ' ' + secondesDites_(m.etapes[k]); }).join(' · ');
+  const ligne = 'Suivi FWD · ' + (m.quoi === 'ouverture' ? 'ouverture' : 'contrat') + (m.contrat ? ' ' + m.contrat : '') +
+    ' · ' + (MOTS_CACHE[m.cache] || 'cache ?') + ' · ' + secondesDites_(total) + ' s' + (detail ? ' (' + detail + ')' : '') +
+    (m.octets ? ' · ' + Math.max(1, Math.round(m.octets / 1024)) + ' Ko' : '');
+  try { console.log(ligne); } catch (err) { /* rien */ }
+  if (m.quoi === 'ouverture' && m.cache === 'manqué') {
+    const cache = cacheDuClasseur();
+    if (cache) {
+      try {
+        cache.put(CLE_CACHE_MESURE, JSON.stringify({ quoi: m.quoi, debut: m.debut, fin: m.fin, serveur: total, cache: m.cache,
+          raison: m.raison || '', contrat: String(m.contrat || '').slice(0, 60), modifie: m.modifie || 0, octets: m.octets || 0,
+          cle: m.cle || '' }), CACHE_SECONDES);
+      } catch (err) { /* rien */ }
+    }
+  }
+}
+
+/** Le résultat du cache dit par la page, ramené aux quatre mots du serveur. */
+function codeCache_(v) {
+  const n = normaliser(v);
+  if (n === 'trouve') return 'trouvé';
+  if (n === 'alias') return 'alias';
+  if (n === 'manque') return 'manqué';
+  if (n === 'sans cache' || n === 'sans') return 'sans cache';
+  return '';
+}
+/** Pourquoi le cache n'avait rien, ramené aux mots du serveur (raisonDuManque_). */
+function codeRaison_(v) {
+  const n = normaliser(v);
+  if (n === 'modifie') return 'modifié';
+  if (n === 'livraison') return 'livraison';
+  if (n === 'expire') return 'expiré';
+  if (n === 'demande') return 'demandé';
+  return '';
+}
+
+/**
+ * Les mesures envoyées par la page, réduites à ce qu'on garde : des
+ * nombres bornés, le contrat, le mot du cache, la clé de l'enveloppe (si
+ * elle a la forme des nôtres). Rien qui nomme quelqu'un ; « quand » est
+ * l'heure du serveur. null si la page n'a rien envoyé.
+ */
+function mesuresRecues_(mesures) {
+  if (!mesures || typeof mesures !== 'object' || Array.isArray(mesures)) return null;
+  const duree = function (v) {
+    const n = Number(v);
+    return v === null || v === undefined || v === '' || !isFinite(n) ? null : Math.min(Math.max(0, Math.round(n)), 3600000);
+  };
+  const entier = function (v) {
+    const n = Number(v);
+    return v === null || v === undefined || v === '' || !isFinite(n) || n < 0 ? null : Math.min(Math.round(n), 1e9);
+  };
+  const instant = function (v) {
+    const n = Number(v);
+    return v === null || v === undefined || v === '' || !isFinite(n) || n <= 0 ? null : Math.round(n);
+  };
+  const r = { quand: Date.now() };
+  const srv = mesures.serveur;
+  if (srv && typeof srv === 'object') {
+    const d = Number(srv.debut), f = Number(srv.fin);
+    if (isFinite(d) && isFinite(f) && f >= d) r.serveur = Math.min(Math.round(f - d), 3600000);
+    if (isFinite(d) && d > 0) r.debut = Math.round(d);
+    if (srv.cache) r.cache = codeCache_(srv.cache);
+    if (srv.raison !== undefined && srv.raison !== null) r.raison = codeRaison_(srv.raison);
+    const mod = Number(srv.modifie);
+    if (isFinite(mod) && mod > 0) r.modifie = Math.round(mod);
+  } else {
+    const s = duree(srv);
+    if (s !== null) r.serveur = s;
+  }
+  /* Le début de l'ouverture au serveur, que la page relit dans l'enveloppe :
+     c'est lui qui reconnaît une ouverture déjà gardée (noterMesures_). */
+  if (r.debut === undefined && instant(mesures.debut) !== null) r.debut = instant(mesures.debut);
+  if (r.modifie === undefined && instant(mesures.modifie) !== null) r.modifie = instant(mesures.modifie);
+  if (r.raison === undefined && mesures.raison !== undefined && mesures.raison !== null) r.raison = codeRaison_(mesures.raison);
+  if (mesures.cache) r.cache = codeCache_(mesures.cache) || r.cache || '';
+  if (r.cache !== 'manqué') { delete r.raison; delete r.modifie; }
+  ['transfert', 'synthese', 'tout'].forEach(function (k) { const v = duree(mesures[k]); if (v !== null) r[k] = v; });
+  ['plans', 'releves', 'octets', 'largeur'].forEach(function (k) { const v = entier(mesures[k]); if (v !== null) r[k] = v; });
+  if (mesures.contrat !== undefined && mesures.contrat !== null) r.contrat = String(mesures.contrat).slice(0, 60);
+  const cle = String(mesures.cle || '');
+  if (/^SFWD\d+:[0-9a-z]{1,40}:[0-9a-z]{1,40}$/.test(cle)) r.cle = cle;
+  return r;
+}
+
+/**
+ * Les trente dernières ouvertures mesurées (SUIVI_FWD_MESURES), sous le
+ * verrou de noterConsultation. La dernière qui a relu le classeur (gardée
+ * en cache par le serveur) y entre aussi, une fois : la page qui la
+ * signale y ajoute ses temps ; une page fermée avant d'avoir parlé y est
+ * quand même, « seule ». Une ouverture se reconnaît à son début au serveur
+ * (la page le renvoie) : gardée « seule » parce qu'une autre page a parlé
+ * avant la sienne, elle est complétée quand la sienne parle — jamais
+ * comptée deux fois.
+ */
+function noterMesures_(props, recu, derniere) {
+  let liste = analyserJson(props.getProperty(CLE_MESURES));
+  if (!Array.isArray(liste)) liste = [];
+  liste = liste.filter(function (x) { return x && typeof x === 'object'; });
+  const rang = function (debut) {
+    if (!debut) return -1;
+    for (let i = 0; i < liste.length; i++) if (Number(liste[i].debut) === debut) return i;
+    return -1;
+  };
+  let change = false;
+  const d = derniere && derniere.quoi === 'ouverture' ? Number(derniere.debut) || 0 : 0;
+  if (d > 0) {
+    /* La même ouverture : le même début au serveur ; à défaut (une page qui
+       ne le renvoie pas), la même clé, un cache manqué des deux côtés. */
+    const sienne = !!recu && (recu.debut ? recu.debut === d
+      : !!recu.cle && recu.cle === derniere.cle && recu.cache === 'manqué');
+    if (sienne) {
+      if (!recu.debut) recu.debut = d;
+      if (!recu.modifie && Number(derniere.modifie) > 0) recu.modifie = Number(derniere.modifie);
+      if (recu.raison === undefined && derniere.raison !== undefined) recu.raison = codeRaison_(derniere.raison);
+    } else if (rang(d) === -1) {
+      liste.push({ quand: Number(derniere.fin) || d, debut: d, contrat: String(derniere.contrat || '').slice(0, 60),
+                   cache: codeCache_(derniere.cache) || 'manqué', raison: codeRaison_(derniere.raison),
+                   serveur: Math.max(0, Number(derniere.serveur) || 0),
+                   modifie: Number(derniere.modifie) || 0, octets: Number(derniere.octets) || 0, seule: 1 });
+      change = true;
+    }
+  }
+  if (recu) {
+    const r = {};
+    Object.keys(recu).forEach(function (k) { if (k !== 'cle') r[k] = recu[k]; });
+    const i = rang(r.debut);
+    if (i === -1) {
+      liste.push(r);
+      change = true;
+    } else if (liste[i].seule) {
+      /* Celle qu'on gardait « seule » en attendant sa page : la voici. */
+      const avant = liste[i];
+      ['contrat', 'cache', 'raison', 'serveur', 'modifie', 'octets'].forEach(function (k) {
+        if (r[k] === undefined && avant[k] !== undefined) r[k] = avant[k];
+      });
+      r.quand = Number(avant.quand) || r.quand;
+      liste[i] = r;
+      change = true;
+    }
+    /* Déjà là, et signalée : un second envoi de la même page, ignoré. */
+  }
+  if (!change) return;
+  liste.sort(function (a, b) { return (Number(a && a.quand) || 0) - (Number(b && b.quand) || 0); });
+  while (liste.length > MAX_MESURES) liste.shift();
+  let texte = JSON.stringify(liste);
+  while (texte.length > MAX_CARACTERES_MESURES && liste.length > 1) { liste.shift(); texte = JSON.stringify(liste); }
+  props.setProperty(CLE_MESURES, texte);
+}
+
+/* =====================================================================
+   L'OUVERTURE RAPIDE : LE TABLEAU DE BORD PRÉPARÉ D'AVANCE (débrief 23)
+   Toutes les dix minutes (menu Suivi FWD → Activer l'ouverture rapide, une
+   fois pour toutes), et juste après chaque import, archivage, suppression
+   ou dépôt, prechaufferTableau prépare ce qui manque au cache : le paquet
+   de l'ouverture et celui de chaque contrat. Les lectrices trouvent tout
+   prêt — le matin compris, et après une saisie à la main, au plus dix
+   minutes plus tard.
+   Sans danger : il ne fait que lire le classeur, ne prépare que ce qui
+   manque, et ne remet pour six heures que ce qui a été posé il y a plus de
+   quatre. Il ne prend jamais le verrou des gestes en lisant : il regarde
+   seulement s'il est libre, et passe son tour si un geste écrit (le
+   vendredi, l'import, le menu n'attendent jamais derrière lui), ou si un
+   import est en cours d'envoi. Quatre minutes au plus par passage ; le reste
+   au suivant. Chaque passage apparaît dans Apps Script → Exécutions.
+   ===================================================================== */
+const CLE_PRECHAUFFAGE = 'SUIVI_FWD_PRECHAUFFAGE';
+const PRECHAUFFAGE_MINUTES = 10;
+const PRECHAUFFAGE_BUDGET = 4 * 60 * 1000;
+
+/** Le préchauffage — le déclencheur, la fenêtre d'import et les gestes l'appellent. Rend son bilan. */
+function prechaufferTableau(e) {
+  nouvellesMesures_('prechauffage');
+  const debut = MESURES_.debut;
+  const bilan = { quand: debut, declencheur: !!(e && typeof e === 'object' && e.triggerUid), prets: [], construits: [], touches: [],
+                  echecs: [], raison: '', restes: '', version: '', marque: '', declencheurAvant: 0,
+                  nonGardes: {}, relusSansGarder: [], enAttente: [] };
+  let cache = null;
+  try {
+    /* Sans cache, rien à préparer — et le verrou n'est même pas regardé. */
+    if (!(cache = cacheDuClasseur())) bilan.raison = 'sans cache';
+    else if (!verrouLibre_()) bilan.raison = 'verrou';
+    else enLecture(function () { prechaufferSous_(cache, bilan, debut); });
+  } catch (err) {
+    bilan.raison = 'erreur : ' + String(err && err.message ? err.message : err).slice(0, 200);
+  }
+  bilan.duree = Date.now() - debut;
+  if (cache) noterPrechauffage_(cache, bilan);
+  try { console.log(lignePrechauffage_(bilan)); } catch (err) { /* rien */ }
+  return bilan;
+}
+
+/* Le verrou des gestes est-il libre ? On le prend et on le rend aussitôt :
+   le préchauffage ne le tient jamais pendant qu'il lit. */
+function verrouLibre_() {
+  try {
+    const verrou = verrouDuClasseur_();
+    if (!verrou.tryLock(0)) return false;
+    verrou.releaseLock();
+    return true;
+  } catch (err) { return false; }
+}
+
+/* Les onglets d'un import en cours d'envoi, « HDK (import 3f2a9c):1200 » :
+   tant qu'ils changent d'un passage à l'autre, le préchauffage attend la fin
+   de l'import ; un reste laissé là (import interrompu, qui ne bouge plus)
+   ne l'arrête qu'un passage. */
+function restesDImportEnCours_(classeur) {
+  return ongletsDuClasseur_(classeur).filter(function (f) { return estOngletImport(nomOnglet_(f)); })
+    .map(function (f) { return nomOnglet_(f) + ':' + derniereLigne_(f); }).join('|');
+}
+
+function prechaufferSous_(cache, bilan, debut) {
+  const classeur = classeurActif_();
+  const restes = restesDImportEnCours_(classeur);
+  bilan.restes = restes;
+  if (restes && restes !== (etatPrechauffage_().restes || '')) { bilan.raison = 'import'; return; }
+  const h = empreinte(versionDonnees(classeur));
+  bilan.version = h;
+  bilan.marque = MEMO_LECTURE && MEMO_LECTURE.marque ? String(MEMO_LECTURE.marque) : '';
+  const base = CACHE_PREFIXE + h + ':';
+  const contrats = listerContrats(classeur);
+  const lus = cache.getAll([base + '*', CLE_CACHE_COMPRESSION + EDITION, CLE_CACHE_PRECHAUFFAGE]
+    .concat(contrats.map(function (c) { return base + cleContrat_(c.id) + ':m'; }))) || {};
+  /* Un contrat qui n'a pas pu se lire pour cette version des données
+     (onglet illisible) n'est pas relu à chaque passage. */
+  const precedent = analyserJson(lus[CLE_CACHE_PRECHAUFFAGE]) || {};
+  bilan.declencheurAvant = Number(precedent.declencheurLe) || (precedent.declencheur ? Number(precedent.quand) || 0 : 0);
+  const echouesAvant = precedent.version === h && Array.isArray(precedent.echecs) ? precedent.echecs : [];
+  /* Lu mais pas gardé — l'historique illisible le temps d'une panne de
+     Google, le cache qui refuse le paquet — : réessayé au passage suivant,
+     puis de plus en plus rarement (vingt, quarante, quatre-vingts minutes,
+     deux heures au plus) tant que les données ne changent pas. Sans cela,
+     chaque passage relisait le contrat entier, toute la journée (débrief
+     23, revue). Des données qui changent : réessayé tout de suite. */
+  const attentesAvant = precedent.version === h && precedent.nonGardes && typeof precedent.nonGardes === 'object' ? precedent.nonGardes : {};
+  /* Les morceaux de ce qui est déjà là, d'un appel : un paquet n'est prêt qu'entier. */
+  const morceaux = [];
+  contrats.forEach(function (c) {
+    const k = base + cleContrat_(c.id), m = analyserJson(lus[k + ':m']);
+    if (m && m.n >= 1 && m.n <= 1000) for (let i = 0; i < m.n; i++) morceaux.push(k + ':' + i);
+  });
+  if (morceaux.length) {
+    const suite = cache.getAll(morceaux) || {};
+    Object.keys(suite).forEach(function (k) { lus[k] = suite[k]; });
+  }
+  const maintenant = Date.now();
+  const pret = function (id) {
+    const k = base + cleContrat_(id);
+    if (typeof lus[k + ':m'] !== 'string') return null;
+    const entree = assemblerEntree_(cache, k, lus, 'trouvé');
+    return entree && maintenant - (Number(entree.manifeste.construitLe) || 0) <= CACHE_VIE_TOUCHE ? entree : null;
+  };
+  const enTemps = function () { return Date.now() - debut < PRECHAUFFAGE_BUDGET; };
+  /* faits[id] : 'pret', ou 'pasGarde' (relu à l'instant sans pouvoir le
+     garder : pas relu une seconde fois dans le même passage). */
+  const faits = {};
+  const enAttente = function (id) {
+    const a = attentesAvant[id];
+    if (!a || !(Number(a.fois) >= 1)) return false;
+    if (maintenant >= (Number(a.depuis) || 0) + attenteApresNonGarde_(Number(a.fois))) return false;
+    bilan.nonGardes[id] = { fois: Number(a.fois), depuis: Number(a.depuis) || 0 };
+    if (id && bilan.enAttente.indexOf(id) === -1) bilan.enAttente.push(id);   // « » : l'ouverture, dite par son contrat
+    return true;
+  };
+  const pasGarde = function (id) {
+    const a = attentesAvant[id];
+    bilan.nonGardes[id] = { fois: (a && Number(a.fois) >= 1 ? Number(a.fois) : 0) + 1, depuis: maintenant };
+    if (id && bilan.relusSansGarder.indexOf(id) === -1) bilan.relusSansGarder.push(id);
+  };
+  /* 1. L'ouverture : l'alias « » et le contrat qu'il désigne. Perdu seul
+     (expiré, évincé), il se retrouve sans rien relire : le premier contrat
+     qui porte des plans, comme modeleAOuvrir — si tous ceux d'avant sont
+     prêts. */
+  let alias = typeof lus[base + '*'] === 'string' ? lus[base + '*'] : '';
+  if (alias && !pret(alias)) alias = '';
+  if (!alias) {
+    let retrouve = '';
+    for (let i = 0; i < contrats.length; i++) {
+      const e = pret(contrats[i].id);
+      if (!e) break;
+      if (Number(e.manifeste.plans) > 0) { retrouve = contrats[i].id; break; }
+      if (i === contrats.length - 1) retrouve = contrats[0].id;
+    }
+    if (retrouve) {
+      try { const pose = {}; pose[base + '*'] = retrouve; cache.putAll(pose, CACHE_SECONDES); alias = retrouve; } catch (err) { alias = ''; }
+    }
+  }
+  if (!alias) {
+    if (echouesAvant.indexOf('') !== -1) bilan.echecs.push('');
+    else if (enAttente('')) { /* relu sans pouvoir le garder au passage d'avant : il attend son tour */ }
+    else if (enTemps()) {
+      const r = construireEntree_(cache, h, '', lus);
+      if (r.ok && r.cle) { faits[r.contrat] = 'pret'; alias = r.contrat; bilan.construits.push(r.contrat); }
+      else if (r.ok) {
+        /* Lu à moitié (historique illisible) ou refusé par le cache : son
+           contrat ne se relit pas une seconde fois dans ce passage. */
+        pasGarde('');
+        if (r.contrat) { faits[r.contrat] = 'pasGarde'; pasGarde(r.contrat); }
+      } else bilan.echecs.push('');
+    }
+  }
+  /* 2. Chaque contrat. */
+  contrats.forEach(function (c) {
+    if (faits[c.id] === 'pret') { bilan.prets.push(c.id); return; }
+    if (faits[c.id] === 'pasGarde') return;
+    const entree = pret(c.id);
+    if (entree) {
+      if (maintenant - (Number(entree.manifeste.toucheLe) || 0) > CACHE_TOUCHE_PRECHAUFFAGE) {
+        try { reposerEntree_(cache, base + cleContrat_(c.id), entree, alias === c.id ? alias : null); bilan.touches.push(c.id); } catch (err) { /* rien */ }
+      }
+      bilan.prets.push(c.id);
+      return;
+    }
+    if (echouesAvant.indexOf(c.id) !== -1) { bilan.echecs.push(c.id); return; }
+    if (enAttente(c.id)) return;
+    if (!enTemps()) return;
+    const r = construireEntree_(cache, h, c.id, lus);
+    if (r.ok && r.cle) { bilan.construits.push(c.id); bilan.prets.push(c.id); }
+    else if (r.ok) pasGarde(c.id);
+    else bilan.echecs.push(c.id);
+  });
+}
+
+/* Le temps avant de relire un paquet qui n'a pas pu se garder `fois` fois
+   de suite : le passage suivant (dix minutes), puis vingt, quarante,
+   quatre-vingts, et deux heures au plus. Une minute de marge : le passage
+   suivant n'arrive jamais tout à fait à l'heure. */
+function attenteApresNonGarde_(fois) {
+  const minutes = Math.min(120, PRECHAUFFAGE_MINUTES * Math.pow(2, Math.max(0, fois - 1)));
+  return (minutes - 1) * 60000;
+}
+
+/* Le bilan d'un passage : dans le cache à chaque fois (le Diagnostic dit
+   « il y a 7 min »), dans les propriétés du classeur au plus une fois par
+   heure, ou quand il a préparé quelque chose. */
+function noterPrechauffage_(cache, bilan) {
+  /* Le dernier passage DU DÉCLENCHEUR suit d'un passage à l'autre : celui
+     d'un geste ou de l'activation (sans déclencheur) ne l'efface pas — le
+     Diagnostic croyait sinon le déclencheur arrêté juste après chaque
+     archivage (débrief 23, revue). */
+  const resume = { quand: bilan.quand, duree: bilan.duree, declencheur: bilan.declencheur,
+                   declencheurLe: bilan.declencheur ? bilan.quand : bilan.declencheurAvant || 0,
+                   prets: bilan.prets, construits: bilan.construits, echecs: bilan.echecs, nonGardes: bilan.nonGardes,
+                   raison: bilan.raison, version: bilan.version };
+  /* Un passage sauté (verrou, import en cours, erreur) ne remplace pas le
+     dernier vrai passage : seul l'import en cours se note, dans les
+     propriétés (le passage suivant doit savoir si l'onglet a bougé). Avec
+     lui, quand un paquet au moins est prêt, la version des données qu'il a
+     préparée (raisonDuManque_). */
+  if (!bilan.raison) {
+    try {
+      const pose = {};
+      pose[CLE_CACHE_PRECHAUFFAGE] = JSON.stringify(resume);
+      if (bilan.prets.length && bilan.version) pose[CLE_CACHE_CONSTRUIT] = versionConstruite_(bilan.version, bilan.marque);
+      cache.putAll(pose, CACHE_SECONDES);
+    } catch (err) { /* rien */ }
+  }
+  if (bilan.raison && bilan.raison !== 'import') return;
+  const etat = etatPrechauffage_();
+  const avant = bilan.declencheur ? Number(etat.dernierDeclencheur) || 0 : Number(etat.dernierPassage) || 0;
+  if (bilan.construits.length || !avant || bilan.quand - avant > 3600000 || (bilan.restes || '') !== (etat.restes || '')) {
+    const pose = { dernierPassage: bilan.quand, prets: bilan.prets.slice(0, 20), restes: bilan.restes || '' };
+    if (bilan.declencheur) pose.dernierDeclencheur = bilan.quand;
+    ecrireEtatPrechauffage_(pose);
+  }
+}
+
+function etatPrechauffage_() {
+  let etat = null;
+  try { etat = analyserJson(proprietesDuClasseur_().getProperty(CLE_PRECHAUFFAGE)); } catch (err) { etat = null; }
+  return etat && typeof etat === 'object' && !Array.isArray(etat) ? etat : {};
+}
+function ecrireEtatPrechauffage_(changements) {
+  try {
+    const etat = etatPrechauffage_();
+    Object.keys(changements).forEach(function (k) { etat[k] = changements[k]; });
+    PropertiesService.getDocumentProperties().setProperty(CLE_PRECHAUFFAGE, JSON.stringify(etat));
+  } catch (err) { /* rien */ }
+}
+
+function lignePrechauffage_(bilan) {
+  const liste = function (l) { return l.map(function (x) { return x || 'ouverture'; }).join(', '); };
+  if (bilan.raison === 'verrou') return 'Suivi FWD · préchauffage · passé : un geste écrit dans le classeur en ce moment';
+  if (bilan.raison === 'sans cache') return 'Suivi FWD · préchauffage · passé : cache d\'Apps Script indisponible';
+  if (bilan.raison === 'import') return 'Suivi FWD · préchauffage · passé : un import est en cours (' + bilan.restes + ')';
+  if (bilan.raison) return 'Suivi FWD · préchauffage · ' + bilan.raison;
+  return 'Suivi FWD · préchauffage · ' + bilan.prets.length + ' contrat' + (bilan.prets.length > 1 ? 's' : '') + ' prêt' +
+    (bilan.prets.length > 1 ? 's' : '') + (bilan.prets.length ? ' (' + liste(bilan.prets) + ')' : '') +
+    (bilan.construits.length ? ', préparé' + (bilan.construits.length > 1 ? 's' : '') + ' : ' + liste(bilan.construits)
+      : bilan.relusSansGarder.length || bilan.enAttente.length ? '' : ', rien à relire') +
+    (bilan.relusSansGarder.length ? ', relu' + (bilan.relusSansGarder.length > 1 ? 's' : '') + ' sans pouvoir le garder en cache : ' +
+      liste(bilan.relusSansGarder) + ' (historique illisible, ou cache plein) — réessayé dans ' +
+      dureeDite_(attenteApresNonGarde_(bilan.nonGardes[bilan.relusSansGarder[0]].fois) + 60000) : '') +
+    (bilan.enAttente.length ? ', en attente : ' + liste(bilan.enAttente) + ' (pas gardé en cache au dernier essai)' : '') +
+    (bilan.touches.length ? ', prolongé' + (bilan.touches.length > 1 ? 's' : '') + ' : ' + liste(bilan.touches) : '') +
+    (bilan.echecs.length ? ', illisible' + (bilan.echecs.length > 1 ? 's' : '') + ' : ' + liste(bilan.echecs) : '') +
+    ' · ' + secondesDites_(bilan.duree || 0) + ' s';
+}
+
+/* Après un geste qui a changé les données : le préchauffage, tout de suite,
+   pour que l'ouverture suivante trouve tout prêt. Il ne change rien au
+   geste, et ne lève jamais. */
+function prechaufferApresGeste_() {
+  try { prechaufferTableau(); } catch (err) { /* le déclencheur rattrapera */ }
+}
+
+/** Menu : l'ouverture rapide, une fois pour toutes (le déclencheur, puis un premier passage). */
+function installerOuvertureRapide() {
+  gesteDuClasseur();
+  retirerPrechauffage_();
+  ScriptApp.newTrigger('prechaufferTableau')
+    .timeBased()
+    .everyMinutes(PRECHAUFFAGE_MINUTES)
+    .create();
+  ecrireEtatPrechauffage_({ active: true, depuis: Date.now() });
+  try {
+    SpreadsheetApp.getUi().alert('Suivi FWD', 'Ouverture rapide activée : toutes les dix minutes, le tableau de bord est préparé ' +
+      'd\'avance, et il s\'ouvre sans relire le classeur — le matin comme après un import. Rien d\'autre à faire : ce geste ne se ' +
+      'refait pas. Chaque passage apparaît dans Apps Script → Exécutions (« prechaufferTableau »). Le premier commence maintenant.',
+      SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch (err) { /* sans interface : rien à montrer */ }
+  prechaufferApresGeste_();
+}
+
+/** Menu : plus de préchauffage. L'ouverture relit alors le classeur quand il a changé. */
+function desinstallerOuvertureRapide() {
+  gesteDuClasseur();
+  retirerPrechauffage_();
+  ecrireEtatPrechauffage_({ active: false, depuis: Date.now() });
+  try {
+    SpreadsheetApp.getUi().alert('Suivi FWD', 'Ouverture rapide désactivée : le tableau de bord n\'est plus préparé d\'avance. ' +
+      'Il relira le classeur à la première ouverture après chaque modification — plus lentement. Menu Suivi FWD → Activer ' +
+      'l\'ouverture rapide la remet.', SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch (err) { /* sans interface : rien à montrer */ }
+}
+
+/* Les déclencheurs du préchauffage de la personne qui le demande (Google ne
+   montre que les siens) : retirés avant d'en poser un, jamais deux. */
+function retirerPrechauffage_() {
+  let n = 0;
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === 'prechaufferTableau') { ScriptApp.deleteTrigger(t); n++; }
+  });
+  return n;
 }
 
 // =====================================================================
@@ -1761,8 +2833,15 @@ function diagnostic() {
     /* Mesuré sans le cache : c'est le coût d'une vraie lecture qu'on veut voir. */
     const etaitFraiche = PAGE_FRAICHE;
     PAGE_FRAICHE = true;
-    let poids = 0;
-    try { poids = donneesJSONPourPage().length; } finally { PAGE_FRAICHE = etaitFraiche; }
+    /* Ce que la page reçoit vraiment : l'enveloppe compressée (débrief 23),
+       et le paquet en clair qu'elle contient. */
+    let poids = 0, clair = 0, compresse = false;
+    try {
+      const r = paquetCompact_('');
+      clair = echapperPourScript_(jsonDuPaquet_(r)).length;
+      compresse = !!(r.ok && r.gz);
+      poids = compresse ? enveloppeLitterale_(r).length : clair;
+    } finally { PAGE_FRAICHE = etaitFraiche; }
     const t4 = Date.now();
     dire('✓ Paquet envoyé à la page : ' + Math.round(poids / 1024) + ' Ko' +
          (contrats.length > 1
@@ -1770,12 +2849,19 @@ function diagnostic() {
              (modele.feuille === contrats[0].id ? 'le premier' : 'le premier qui porte des plans') +
              ' ; les autres se chargent à la demande)'
            : ''));
+    if (compresse) dire('   compressé : ' + Math.round(clair / 1024) + ' Ko de données en clair');
     dire('   préparé en ' + secondes(t4 - t3) + ' — lecture de GATES ' + secondes(t1 - t0) +
          ', de l\'historique ' + secondes(t2 - t1) + ', de la seconde base ' + secondes(t3 - t2));
-    if (cacheDuClasseur()) dire('   ensuite gardé en cache (6 h) : les ouvertures suivantes ne relisent rien, tant que le classeur ne change pas');
+    if (cacheDuClasseur()) dire('   ensuite gardé en cache : les ouvertures suivantes ne relisent rien, tant que le classeur ne change pas');
   } catch (err) {
     dire('✗ Paquet envoyé à la page : ' + (err && err.message ? err.message : err));
     tousLisibles = false;
+  }
+
+  /* Débrief 23 : la vitesse d'ouverture — le préchauffage, le cache, les
+     temps mesurés aux dernières ouvertures, l'essai de compression. */
+  try { direVitesseDOuverture_(classeur, contrats, dire); } catch (err) {
+    dire('– Vitesse d\'ouverture : non mesurée (' + (err && err.message ? err.message : err) + ').');
   }
 
   /* Les consultations de la page, sans nom (débrief 18). */
@@ -1801,6 +2887,186 @@ function diagnostic() {
   }
 
   return terminerDiagnostic(lignes);
+}
+
+/**
+ * Le bloc « Vitesse d'ouverture » du Diagnostic (débrief 23) : si
+ * l'ouverture rapide tourne, ce qui est prêt dans le cache pour la version
+ * actuelle du classeur, les temps des trente dernières ouvertures (serveur,
+ * et affichage tel que la page l'a mesuré), l'essai de compression. Les
+ * temps d'une lecture complète, mesurés juste au-dessus, restent où ils
+ * sont.
+ */
+function direVitesseDOuverture_(classeur, contrats, dire) {
+  const maintenant = Date.now();
+  const cache = cacheDuClasseur();
+  const secondes = function (ms) { return (Math.max(0, ms) / 1000).toFixed(1).replace('.', ',') + ' s'; };
+  const ko = function (n) { return Math.max(1, Math.round((Number(n) || 0) / 1024)).toLocaleString('fr-FR') + ' Ko'; };
+  dire('');
+  dire('Vitesse d\'ouverture :');
+
+  /* (a) L'ouverture rapide : Google ne montre à chacun que ses propres
+     déclencheurs ; le dernier passage, lui, est le même pour tous. Le
+     déclencheur est en vie s'il est passé depuis moins d'une demi-heure — le
+     dernier passage qu'il a fait est gardé dans le cache à chaque passage,
+     et dans les propriétés au plus une fois par heure (d'où une heure et
+     quart de ce côté). Un passage lancé par un geste (import, archivage,
+     dépôt…) ou par l'activation compte comme « dernier préchauffage », pas
+     comme signe de vie du déclencheur ; juste après l'activation, le
+     déclencheur n'a pas encore eu son premier tour : ce n'est pas une
+     panne (débrief 23, revue). */
+  let mien = false;
+  try { mien = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'prechaufferTableau'; }); } catch (err) { mien = false; }
+  const etat = etatPrechauffage_();
+  let dernier = null;
+  if (cache) { try { dernier = analyserJson(cache.get(CLE_CACHE_PRECHAUFFAGE)); } catch (err) { dernier = null; } }
+  const vuCache = dernier ? Number(dernier.declencheurLe) || (dernier.declencheur ? Number(dernier.quand) || 0 : 0) : 0;
+  const vuProprietes = Number(etat.dernierDeclencheur) || 0;
+  const parDeclencheur = Math.max(vuCache, vuProprietes);
+  const enVie = (vuCache > 0 && maintenant - vuCache <= 30 * 60000) || (vuProprietes > 0 && maintenant - vuProprietes <= 75 * 60000);
+  const passage = dernier && Number(dernier.quand) >= (Number(etat.dernierPassage) || 0) ? dernier : null;
+  const dernierPassage = passage ? Number(passage.quand) || 0 : Number(etat.dernierPassage) || 0;
+  const prets = (passage ? passage.prets : etat.prets) || [];
+  const dits = function (l) { return l.map(function (x) { return '« ' + x + ' »'; }).join(', '); };
+  const contratsPrets = prets.length + ' contrat' + (prets.length > 1 ? 's' : '') + ' prêt' + (prets.length > 1 ? 's' : '') +
+    (prets.length ? ' (' + dits(prets) + ')' : '');
+  const activeeLe = etat.active ? Number(etat.depuis) || 0 : 0;
+  const vientDEtreActivee = activeeLe > 0 && maintenant - activeeLe <= 30 * 60000 && parDeclencheur < activeeLe;
+  if (enVie && dernierPassage) {
+    dire('✓ Ouverture rapide : activée — dernier préchauffage il y a ' + dureeDite_(maintenant - dernierPassage) + ', ' + contratsPrets + '.');
+  } else if (vientDEtreActivee) {
+    dire('✓ Ouverture rapide : activée il y a ' + dureeDite_(maintenant - activeeLe) + ' — ' +
+         (dernierPassage >= activeeLe ? 'premier préchauffage fait il y a ' + dureeDite_(maintenant - dernierPassage) + ', ' + contratsPrets +
+           ' ; le déclencheur prend le relais, toutes les dix minutes.'
+         : 'le premier préchauffage vient dans les dix minutes.'));
+  } else if (mien || etat.active) {
+    dire('⚠ Ouverture rapide : activée, mais ' + (parDeclencheur ? 'aucun préchauffage depuis ' + dureeDite_(maintenant - parDeclencheur)
+         : 'aucun préchauffage encore') + ' — Apps Script → Exécutions (« prechaufferTableau ») dit pourquoi ; ' +
+         'menu Suivi FWD → Activer l\'ouverture rapide le remet en route.');
+  } else {
+    dire('– Ouverture rapide : non activée → menu Suivi FWD → Activer l\'ouverture rapide (une fois pour toutes). Sans elle, ' +
+         'la première ouverture après une modification relit tout le classeur.');
+  }
+
+  /* (b) Le cache, pour la version actuelle du classeur. */
+  if (!cache) {
+    dire('– Cache d\'Apps Script indisponible : chaque ouverture relit le classeur.');
+  } else {
+    const h = enLecture(function () { return empreinte(versionDonnees(classeur)); });
+    const base = CACHE_PREFIXE + h + ':';
+    let lus = {};
+    try { lus = cache.getAll([base + '*'].concat(contrats.map(function (c) { return base + cleContrat_(c.id) + ':m'; }))) || {}; } catch (err) { lus = {}; }
+    /* Prêt veut dire entier : chaque morceau est relu, comme l'ouverture le
+       ferait (un morceau évincé, et le paquet ne sert plus). */
+    const morceaux = [];
+    contrats.forEach(function (c) {
+      const m = analyserJson(lus[base + cleContrat_(c.id) + ':m']);
+      if (m && m.n >= 1 && m.n <= 1000) for (let i = 0; i < m.n; i++) morceaux.push(base + cleContrat_(c.id) + ':' + i);
+    });
+    if (morceaux.length) {
+      try { const suite = cache.getAll(morceaux) || {}; Object.keys(suite).forEach(function (k) { lus[k] = suite[k]; }); } catch (err) { /* rien */ }
+    }
+    const lignes = contrats.map(function (c) {
+      const kbase = base + cleContrat_(c.id);
+      const m = analyserJson(lus[kbase + ':m']);
+      if (!m) return '   « ' + c.nom + ' » : absent — la prochaine ouverture de ce contrat relira le classeur (ou le prochain préchauffage).';
+      if (!assemblerEntree_(cache, kbase, lus, 'trouvé')) {
+        return '   « ' + c.nom + ' » : incomplet — une partie du paquet a quitté le cache (ou il a plus de vingt-six heures) : ' +
+          'la prochaine ouverture de ce contrat relira le classeur (ou le prochain préchauffage le refera).';
+      }
+      return '   « ' + c.nom + ' » : prêt — ' + (m.format === 'gz' ? ko(m.octets) + ' compressés (' + ko(m.brut) + ' de données)'
+        : ko(m.octets) + ', sans compression') + ', ' + m.n + ' morceau' + (m.n > 1 ? 'x' : '') +
+        ', préparé ' + heureDite_(Number(m.construitLe) || 0) + (lus[base + '*'] === c.id ? ' — c\'est lui que la page ouvre' : '') + '.';
+    });
+    const nPrets = lignes.filter(function (l) { return / : prêt — /.test(l); }).length;
+    dire((nPrets ? '✓' : '–') + ' En cache, pour le classeur tel qu\'il est : ' + nPrets + ' contrat' + (nPrets > 1 ? 's' : '') + ' sur ' + contrats.length);
+    lignes.forEach(dire);
+  }
+
+  /* (c) Les trente dernières ouvertures. */
+  let liste = null;
+  try { liste = analyserJson(PropertiesService.getDocumentProperties().getProperty(CLE_MESURES)); } catch (err) { liste = null; }
+  liste = Array.isArray(liste) ? liste.filter(function (x) { return x && typeof x === 'object'; }) : [];
+  if (!liste.length) {
+    dire('– Ouvertures mesurées : aucune encore. Chaque ouverture de la page est mesurée, sans nom ; les chiffres viendront.');
+  } else {
+    const n = liste.length;
+    const duCache = liste.filter(function (x) { return x.cache === 'trouvé' || x.cache === 'alias'; }).length;
+    const serveur = liste.filter(function (x) { return typeof x.serveur === 'number'; });
+    let phrase = '✓ ' + (n > 1 ? 'Les ' + n + ' dernières ouvertures' : 'La dernière ouverture') + ' : ' + duCache + ' servie' + (duCache > 1 ? 's' : '') +
+      ' du cache (' + Math.round(100 * duCache / n) + ' %)';
+    if (serveur.length) {
+      const pire = serveur.reduce(function (a, b) { return b.serveur > a.serveur ? b : a; });
+      phrase += ' ; serveur médian ' + secondes(mediane_(serveur.map(function (x) { return x.serveur; }))) + ', au pire ' + secondes(pire.serveur) +
+        ' (' + jourEtHeureDits_(Number(pire.quand) || 0) + ' — ' + causeDOuverture_(pire) + ')';
+    }
+    dire(phrase + '.');
+    const affichees = liste.filter(function (x) { return typeof x.tout === 'number'; });
+    if (affichees.length) {
+      const total = function (x) { return (x.serveur || 0) + (x.transfert || 0) + x.tout; };
+      const lentes = affichees.filter(function (x) { return total(x) > 3000; }).length;
+      const syntheses = affichees.filter(function (x) { return typeof x.synthese === 'number'; }).map(function (x) { return x.synthese; });
+      dire('   à l\'écran : ' + (syntheses.length ? 'synthèse affichée en ' + secondes(mediane_(syntheses)) + ', ' : '') +
+           'tout affiché en ' + secondes(mediane_(affichees.map(function (x) { return x.tout; }))) + ' (médianes) ; ' +
+           lentes + ' ouverture' + (lentes > 1 ? 's' : '') + ' sur ' + affichees.length + ' au-delà de 3 s, serveur et transfert compris.');
+    }
+    const seules = liste.filter(function (x) { return x.seule; }).length;
+    if (seules) dire('   dont ' + seules + ' que la page n\'a pas signalée' + (seules > 1 ? 's' : '') + ' (fermée avant la fin de l\'affichage ?).');
+  }
+
+  /* (d) L'essai de compression, refait ici. */
+  dire(essaiCompression_()
+    ? '✓ Compression du paquet : essai aller-retour réussi (accents, « — », « € », U+2028) — la page le reçoit compressé.'
+    : '⚠ Compression du paquet : l\'essai aller-retour a échoué — la page reçoit le paquet en clair, plus lourd et plus lent ; ' +
+      'les chiffres restent justes.');
+}
+
+/** La médiane d'une liste de nombres. */
+function mediane_(valeurs) {
+  const v = valeurs.slice().sort(function (a, b) { return a - b; });
+  if (!v.length) return 0;
+  return v.length % 2 ? v[(v.length - 1) / 2] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2;
+}
+/** « 7 min », « 2 h », « 3 jours ». */
+function dureeDite_(ms) {
+  const min = Math.round(ms / 60000);
+  if (min < 1) return 'moins d\'une minute';
+  if (min < 60) return min + ' min';
+  const h = Math.round(min / 60);
+  if (h < 48) return h + ' h';
+  return Math.round(h / 24) + ' jours';
+}
+/** L'heure dans le fuseau du projet : « à 09:12 » aujourd'hui, « le 21/10 à 09:12 » sinon. */
+function heureDite_(ms) {
+  if (!ms) return 'à une heure inconnue';
+  let fuseau = 'Europe/Paris';
+  try { fuseau = Session.getScriptTimeZone() || fuseau; } catch (err) { /* Paris */ }
+  try {
+    const d = new Date(ms);
+    const jour = Utilities.formatDate(d, fuseau, 'dd/MM'), heure = Utilities.formatDate(d, fuseau, 'HH:mm');
+    return jour === Utilities.formatDate(new Date(), fuseau, 'dd/MM') ? 'à ' + heure : 'le ' + jour + ' à ' + heure;
+  } catch (err) { return 'le ' + new Date(ms).toISOString().slice(0, 16).replace('T', ' à '); }
+}
+function jourEtHeureDits_(ms) {
+  const t = heureDite_(ms);
+  return t.indexOf('à ') === 0 ? 'aujourd\'hui ' + t : t;
+}
+/** Pourquoi une ouverture a pris ce temps : servie du cache, ou relu le classeur (et depuis quand il avait changé). */
+function causeDOuverture_(x) {
+  if (x.cache === 'manqué') {
+    /* La raison que le serveur a vue (raisonDuManque_) — sans elle, rien de
+       plus que « manqué » : un matin où rien n'a bougé n'est pas un
+       « classeur modifié » (débrief 23, revue). */
+    const raison = codeRaison_(x.raison);
+    if (raison === 'modifié') return 'cache manqué, classeur modifié' + (x.modifie ? ' ' + heureDite_(Number(x.modifie)) : '');
+    if (raison === 'livraison') return 'cache manqué : nouvelle livraison (Code, page ou configuration)';
+    if (raison === 'demandé') return 'relu à la demande (?frais=1)';
+    if (raison === 'expiré') return 'cache manqué : rien de prêt pour ce contrat (expiré, ou pas encore préparé)';
+    return 'cache manqué : rien de prêt en cache';
+  }
+  if (x.cache === 'sans cache') return 'sans cache';
+  if (x.cache === 'trouvé' || x.cache === 'alias') return 'servie du cache';
+  return 'cause inconnue';
 }
 
 /**
@@ -2442,7 +3708,7 @@ function nomFeuilleHistorique(contrat) {
  * d'historique fantôme.
  */
 function idContrat(classeur, contrat) {
-  return getFeuilleDonnees(classeur, contrat).getName();
+  return nomOnglet_(getFeuilleDonnees(classeur, contrat));
 }
 
 /**
@@ -2459,9 +3725,9 @@ function idContrat(classeur, contrat) {
 function getFeuilleHistorique(classeur, contrat, creerSiAbsente) {
   const id = idContrat(classeur, contrat);
   const nom = nomFeuilleHistorique(id);
-  let feuille = classeur.getSheetByName(nom);
+  let feuille = ongletNomme_(classeur, nom);
   if (!feuille && contratUnique(classeur)) {
-    feuille = classeur.getSheetByName(CONFIG.FEUILLE_HISTORIQUE);
+    feuille = ongletNomme_(classeur, CONFIG.FEUILLE_HISTORIQUE);
   }
   if (!feuille && creerSiAbsente) {
     feuille = classeur.insertSheet(nom);
@@ -2485,8 +3751,8 @@ function historiquesOrphelins(classeur, contrats) {
      gardent le leur — ce ne sont pas des renommages. Un onglet vide qui
      reprendrait l'ancien nom ne compte pas. */
   const attendus = {};
-  classeur.getSheets().forEach(function (f) {
-    if (!estOngletHistorique(f.getName()) && f.getLastRow() > 0) attendus[normaliser(nomFeuilleHistorique(f.getName()))] = true;
+  ongletsDuClasseur_(classeur).forEach(function (f) {
+    if (!estOngletHistorique(nomOnglet_(f)) && derniereLigne_(f) > 0) attendus[normaliser(nomFeuilleHistorique(nomOnglet_(f)))] = true;
   });
   contrats.forEach(function (c) { attendus[normaliser(nomFeuilleHistorique(c.id))] = true; });
   /* L'ancien onglet sans suffixe, « Historique_FWD », est celui d'un
@@ -2496,15 +3762,15 @@ function historiquesOrphelins(classeur, contrats) {
      « Historique_FWD_HDK » à côté (l'historique coupé en deux, le renommage
      devenu impossible). */
   const ancien = normaliser(CONFIG.FEUILLE_HISTORIQUE);
-  return classeur.getSheets()
+  return ongletsDuClasseur_(classeur)
     .filter(function (f) {
-      const n = normaliser(f.getName());
+      const n = normaliser(nomOnglet_(f));
       if (n === ancien) return contrats.length > 1;
-      return estOngletHistorique(f.getName()) && !attendus[n];
+      return estOngletHistorique(nomOnglet_(f)) && !attendus[n];
     })
     .map(function (f) {
-      const o = { nom: f.getName(), releves: Math.max(0, f.getLastRow() - 1) };
-      if (normaliser(f.getName()) === ancien) o.ancien = true;
+      const o = { nom: nomOnglet_(f), releves: Math.max(0, derniereLigne_(f) - 1) };
+      if (normaliser(nomOnglet_(f)) === ancien) o.ancien = true;
       return o;
     });
 }
@@ -2541,13 +3807,13 @@ function contratUnique(classeur) {
 /** Lit l'historique d'un contrat : un objet par relevé, trié par semaine. */
 function getHistorique(classeur, contrat) {
   const feuille = getFeuilleHistorique(classeur, contrat, false);
-  if (!feuille || feuille.getLastRow() < 2) return [];
+  if (!feuille || derniereLigne_(feuille) < 2) return [];
 
   /* La carte plan par plan d'un relevé occupe une cellule ou plusieurs, à
      partir de la colonne « Plans » : on lit jusqu'à la dernière colonne
      occupée de l'onglet et on recolle. */
-  const nbColonnes = Math.max(ENTETES_HISTORIQUE.length, feuille.getLastColumn());
-  const valeurs = feuille.getRange(2, 1, feuille.getLastRow() - 1, nbColonnes).getValues();
+  const nbColonnes = Math.max(ENTETES_HISTORIQUE.length, derniereColonne_(feuille));
+  const valeurs = feuille.getRange(2, 1, derniereLigne_(feuille) - 1, nbColonnes).getValues();
   const parSemaine = {};
 
   valeurs.forEach(function (ligne) {
@@ -2943,6 +4209,8 @@ function enregistrerInstantaneHebdo(e) {
   const nonConfirmes = declines.length ? ' Non archivé(s), à votre demande : ' + declines.join(', ') + '.' : '';
 
   if (erreurs.length) {
+    /* Ce qui a été archivé est déjà dans le classeur : le tableau de bord le prépare. */
+    if (detail.length) prechaufferApresGeste_();
     throw new Error('Relevé ' + dite + ' — ' +
       (detail.length ? detail.length + ' contrat(s) archivé(s), ' : '') +
       erreurs.length + ' en erreur : ' + erreurs.join(' ; ') + nonConfirmes);
@@ -2962,6 +4230,10 @@ function enregistrerInstantaneHebdo(e) {
   } catch (e) {
     /* Pas d'interface (déclencheur, test) : rien à montrer. */
   }
+  /* Débrief 23 : le relevé écrit, le tableau de bord se prépare tout de
+     suite — après le OK, le classeur reste utilisable ; le vendredi, à la
+     suite de l'archivage. */
+  if (detail.length) prechaufferApresGeste_();
   return { ok: true, semaine: semaine, contrats: detail, nonConfirmes: declines };
 }
 
@@ -3234,6 +4506,7 @@ function supprimerDernierReleve() {
       '. Importez le bon export (' + cheminImport() + ', qui archive dans la foulée), ou recollez-le puis relancez l\'archivage.';
   }
   ui.alert(message);
+  if (supprimes.length) prechaufferApresGeste_();   // débrief 23 : le tableau de bord se prépare sans le relevé
   return { semaine: semaine, supprimes: supprimes, sans: sans };
 }
 
@@ -3268,6 +4541,7 @@ function archiverSemainePassee() {
   if (ui.alert('Suivi FWD', prevu.question, ui.ButtonSet.YES_NO) !== ui.Button.YES) return null;
   const resultat = archiverPourSemaine_(classeur, onglet, saisie);
   ui.alert('Suivi FWD', resultat.message, ui.ButtonSet.OK);
+  if (resultat.ok) prechaufferApresGeste_();   // débrief 23
   return resultat;
 }
 
@@ -3540,7 +4814,7 @@ function lireSecondeBase(classeur, contrat) {
   if (!cfg || !nomFeuille || !clesVoulues.length) return rendu;
   const feuille = ongletSecondeBase(classeur, contrat);
   if (!feuille) { rendu.etat = 'absent'; rendu.onglet = nomAttenduSecondeBase(classeur, contrat); return rendu; }
-  rendu.onglet = feuille.getName();
+  rendu.onglet = nomOnglet_(feuille);
 
   const donnees = feuille.getDataRange().getDisplayValues();
   const t = lireTableauSecondeBase(donnees, clesVoulues);
@@ -3571,7 +4845,7 @@ function lireSecondeBase(classeur, contrat) {
 
   rendu.etat = 'ok';
   rendu.rapprochement = {
-    nom: String(cfg.NOM || feuille.getName()).trim().slice(0, 80) || feuille.getName(),
+    nom: String(cfg.NOM || nomOnglet_(feuille)).trim().slice(0, 80) || nomOnglet_(feuille),
     cleReference: t.clesReference.length === 1 ? t.clesReference[0] : t.clesReference,
     lignes: lignes,
     colonnes: t.entetes.filter(Boolean),
@@ -3651,7 +4925,7 @@ function listePsn(brut) {
 /** Les PSN gardés par la fenêtre d'import : { contrat: ['4530'] } ({} si rien, ou illisible). */
 function psnEnregistres_() {
   let lu = null;
-  try { lu = analyserJson(PropertiesService.getDocumentProperties().getProperty(CLE_PSN)); } catch (err) { lu = null; }
+  try { lu = analyserJson(proprietesDuClasseur_().getProperty(CLE_PSN)); } catch (err) { lu = null; }
   return lu && typeof lu === 'object' && !Array.isArray(lu) ? lu : {};
 }
 
@@ -4011,6 +5285,8 @@ function deposer_(texte) {
       }
     }
   }
+  /* Débrief 23 : l'onglet déposé, le tableau de bord se prépare. */
+  prechaufferApresGeste_();
   return resultat;
 }
 
@@ -6851,6 +8127,12 @@ function scriptImportSecondeBase_(P) {
     });
   }
   // ------------------------------------------------------------ envoi au classeur
+  /* Débrief 23 : les données viennent de changer — le tableau de bord se
+     prépare tout de suite, dans une exécution à part, sans qu'on l'attende :
+     « Fermer » reste libre, et l'ouverture qui suit le trouve prêt. */
+  function prechauffer() {
+    try { google.script.run.withFailureHandler(function () {}).prechaufferTableau(); } catch (e) { /* hors du classeur */ }
+  }
   function appeler(nom, args) {
     return new Promise(function (ok, ko) {
       var r = google.script.run.withSuccessHandler(ok).withFailureHandler(function (e) {
@@ -7953,6 +9235,7 @@ function scriptImportSecondeBase_(P) {
         echec ? 'erreur' : 'ok' + (alerte ? ' avertissement' : ''));
       $('fermer').classList.add('principal');
       $('importer').classList.remove('principal');
+      if (bilans.some(function (b) { return b.ok && !b.neutre; })) prechauffer();
     }, function (e) {
       dire(ech('Erreur inattendue : ' + (e && e.message ? e.message : e)), 'erreur');
     }).then(function () {

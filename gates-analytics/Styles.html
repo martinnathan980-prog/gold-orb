@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "9280c99";
+  --suivi-fwd-edition: "49f6716";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -1649,4 +1649,29 @@ table.plans thead tr th.col-fige { z-index: 6; }
 .pied { padding: 20px 0 42px; margin-top: 32px; border-top: 1px solid var(--filet); color: var(--encre-3); font-size: 11.5px; line-height: 1.8; }
 .masque { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 @media (prefers-reduced-motion: reduce) { .barre span, .ombre-defile, .poignee { transition: none; } }
+
+/* ---------------------------------------------------- L'ouverture (débrief 23) */
+/* Le squelette, peint avant les chiffres : chaque panneau encore vide garde
+   à peu près sa hauteur et dit « Chargement… », pour que rien ne saute quand
+   il se remplit. Seulement pendant l'ouverture (html[data-suivi-fwd]). */
+html[data-suivi-fwd="chargement"] #zone-graphe:empty { min-height: 300px; }
+html[data-suivi-fwd="chargement"] #zone-journal:empty,
+html[data-suivi-fwd="synthese"] #zone-journal:empty { min-height: 200px; }
+html[data-suivi-fwd="chargement"] #zone-critique:empty,
+html[data-suivi-fwd="synthese"] #zone-critique:empty { min-height: 320px; }
+html[data-suivi-fwd="synthese"] #venn-rapprochement:empty { min-height: 240px; }
+#cadre-tableau[data-a-venir] .defile { min-height: 68vh; }
+html[data-suivi-fwd="chargement"] #zone-graphe:empty::before,
+html[data-suivi-fwd="chargement"] #zone-journal:empty::before,
+html[data-suivi-fwd="synthese"] #zone-journal:empty::before,
+html[data-suivi-fwd="chargement"] #zone-critique:empty::before,
+html[data-suivi-fwd="synthese"] #zone-critique:empty::before,
+html[data-suivi-fwd="synthese"] #venn-rapprochement:empty::before,
+#cadre-tableau[data-a-venir] .defile::before {
+  content: "Chargement\2026"; display: block; padding: 16px 2px; color: var(--encre-3); font-size: 13px;
+}
+/* Un autre contrat en route : la page d'avant reste là, estompée, jusqu'à
+   ce que l'autre arrive. */
+body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity .15s; }
+@media (prefers-reduced-motion: reduce) { body[data-attente="contrat"] .page > section { transition: none; } }
 </style>

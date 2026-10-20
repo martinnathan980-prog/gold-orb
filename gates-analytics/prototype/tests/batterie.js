@@ -49,10 +49,12 @@ async function reinitialiser(pg) {
   /* Sur un gros extract, le tableau ne dessine d'abord qu'une tranche (le
      reste vient en descendant) ; cette batterie vérifie tout le reste sur
      TOUTES les lignes dessinées : elle lève le seuil. Les tranches ont leurs
-     propres tests, côté add-on, sur un extract de 640 plans. */
+     propres tests, côté add-on, sur un extract de 640 plans. Et elle rend la
+     page d'un seul bloc, comme avant le débrief 23 : l'ouverture en deux
+     temps a ses propres tests (prototype/tests/ouverture-page.js). */
   async function contexte(opts = {}) {
     const ctx = await nav.newContext(Object.assign({ viewport: { width: 1280, height: 950 } }, opts));
-    await ctx.addInitScript(() => { window.SUIVI_FWD_BUDGET = 1e9; });
+    await ctx.addInitScript(() => { window.SUIVI_FWD_BUDGET = 1e9; window.SUIVI_FWD_DIFFERER = false; });
     return ctx;
   }
   async function page(ctx, etiquette = 'page') {
@@ -1343,16 +1345,21 @@ async function reinitialiser(pg) {
   /* La dernière semaine porte un changement d'indice : le filtre du journal
      est celui-là, et il n'y en a pas d'autre sorte. Débrief 18 : la rangée
      porte toutes les valeurs de la colonne, dans l'ordre des tuiles, puis
-     les reculs et l'indice. */
+     les reculs et l'indice (débrief 23 : puis les nouveaux et les disparus). */
   const cleReem = 'indice';
-  const domIndice = await p.evaluate(cle => ({
+  const domIndice = await p.evaluate(cle => {
+    /* Débrief 23 : les nouveaux et les disparus ont aussi leur pilule, après l'indice, s'il y en a. */
+    const evts = [].concat(...window.__journalAffiche().map(s => s.evenements));
+    const sortes23 = [].concat(evts.some(e => e.type === 'nouveau') ? ['nouveaux'] : [], evts.some(e => e.type === 'disparu') ? ['disparus'] : []);
+    return {
     pastille: !!document.querySelector('#filtre-journal button[data-journal="' + cle + '"] .pastille.indice'),
     comptes: [...document.querySelectorAll('.compte-passage[data-passage="indice"]')].map(b => b.textContent.replace(/\s+/g, ' ').trim()),
     boutons: !!document.querySelector('#filtre-journal button[data-journal="indice"]') &&
              !document.querySelector('#filtre-journal button[data-journal="solution"]') &&
              [...document.querySelectorAll('#filtre-journal button')].map(b => b.dataset.journal).join() ===
-               ['', ...window.__valeurs().map(v => v.cle), 'reculs', 'indice'].join()
-  }), cleReem);
+               ['', ...window.__valeurs().map(v => v.cle), 'reculs', 'indice', ...sortes23].join()
+    };
+  }, cleReem);
   verifier('le filtre du journal « changement d’indice » est là, avec sa pastille violette', domIndice.pastille);
   verifier('chaque semaine concernée compte son changement d’indice, en bouton',
     domIndice.comptes.length === 6 && domIndice.comptes.every(t => /^1 changement d’indice$/.test(t)),
@@ -1426,6 +1433,9 @@ async function reinitialiser(pg) {
       sousFiltre.lignes === sousFiltre.pilule && sousFiltre.lignes === sousFiltre.resume &&
       (f === 'indice' ? sousFiltre.types === 'indice' && sousFiltre.lignes === sousFiltre.comptes
         : f === 'reculs' ? sousFiltre.types === 'change' && sousFiltre.lignes === sousFiltre.comptes
+        /* Débrief 23 : sous « nouveaux » et « disparus », leur seule case. */
+        : f === 'nouveaux' ? sousFiltre.types === 'nouveau' && sousFiltre.lignes === sousFiltre.comptes
+        : f === 'disparus' ? sousFiltre.types === 'disparu' && sousFiltre.lignes === sousFiltre.comptes
         : /^(change|change,indice|indice)$/.test(sousFiltre.types) && sousFiltre.refs),
       JSON.stringify(sousFiltre));
   }
@@ -3998,7 +4008,9 @@ async function reinitialiser(pg) {
     const fond = e => e ? getComputedStyle(e).backgroundColor + '|' + e.className : null;
     const evts = [].concat(...window.__journalAffiche().map(s => s.evenements));
     const estRecul = e => e.type === 'change' && ((e.avant === 'termine' && e.apres !== 'termine') || (e.avant === 'encours' && e.apres === 'afaire'));
-    const attendu = { reculs: evts.filter(estRecul).length, indice: evts.filter(e => e.type === 'indice').length };
+    const attendu = { reculs: evts.filter(estRecul).length, indice: evts.filter(e => e.type === 'indice').length,
+                      /* Débrief 23 : les nouveaux et les disparus aussi. */
+                      nouveaux: evts.filter(e => e.type === 'nouveau').length, disparus: evts.filter(e => e.type === 'disparu').length };
     evts.forEach(e => { if ((e.type === 'change' || e.type === 'indice') && e.cApres !== e.cAvant) attendu[e.cApres] = (attendu[e.cApres] || 0) + 1; });
     const boutons = [...document.querySelectorAll('#filtre-journal button[data-journal]:not([data-journal=""])')].map(b => ({
       cle: b.dataset.journal, n: b.querySelector('.n') ? b.querySelector('.n').textContent : null, off: b.disabled,
@@ -4072,11 +4084,14 @@ async function reinitialiser(pg) {
     window.__chargerSource(s);
     const cles = [...document.querySelectorAll('#filtre-journal button')].map(b => b.dataset.journal);
     const b = document.querySelector('#filtre-journal button[data-journal="encours"]');
+    /* Débrief 23 : après l'indice viennent les nouveaux et les disparus, s'il y en a. */
+    const evts = [].concat(...window.__journalAffiche().map(s => s.evenements));
+    const suite = (evts.some(e => e.type === 'nouveau') ? ',nouveaux' : '') + (evts.some(e => e.type === 'disparu') ? ',disparus' : '');
     return { dansValeurs: window.__valeurs().some(v => v.cle === 'encours'), cles: cles.join(), off: b ? b.disabled : null,
-             pastille: b ? !!b.querySelector('.pastille') : false };
+             pastille: b ? !!b.querySelector('.pastille') : false, suite: suite };
   });
   verifier('journal : une valeur que plus aucun plan ne porte garde sa pilule, après celles des tuiles, si des plans y sont passés',
-    !hier18.dansValeurs && /,encours,reculs,indice$/.test(hier18.cles) && hier18.off === false && hier18.pastille, JSON.stringify(hier18));
+    !hier18.dansValeurs && hier18.cles.endsWith(',encours,reculs,indice' + hier18.suite) && hier18.off === false && hier18.pastille, JSON.stringify(hier18));
   await p.click('#filtre-journal button[data-journal="encours"]'); await p.waitForTimeout(300);
   await toutDeplier();
   const hierLignes = await p.evaluate(() => [...new Set([...document.querySelectorAll('.journal-ligne .etiq-etat.apres')].map(e => e.textContent.trim()))].join());
@@ -4105,7 +4120,7 @@ async function reinitialiser(pg) {
     const evts = [].concat(...window.__journalAffiche().map(s => s.evenements));
     const arrivees = new Set(evts.filter(e => (e.type === 'change' || e.type === 'indice') && e.cApres !== e.cAvant).map(e => e.cApres));
     const vals = window.__valeurs().map(v => v.cle);
-    const r = { cles: [...document.querySelectorAll('#filtre-journal button')].map(x => x.dataset.journal).filter(Boolean).filter(k => k !== 'reculs' && k !== 'indice').join(),
+    const r = { cles: [...document.querySelectorAll('#filtre-journal button')].map(x => x.dataset.journal).filter(Boolean).filter(k => ['reculs', 'indice', 'nouveaux', 'disparus'].indexOf(k) === -1).join(),
                 attendu: vals.filter(k => arrivees.has(k)).join(),
                 bloc: [...document.querySelectorAll('#filtre-valeur-groupe button')].map(x => x.dataset.valeurBloc).join(),
                 attenduBloc: (vals.length ? [''].concat(vals) : []).join() };
@@ -4486,7 +4501,7 @@ async function reinitialiser(pg) {
     const arrivees = new Set(evts.filter(e => (e.type === 'change' || e.type === 'indice') && e.cApres && e.cApres !== e.cAvant).map(e => e.cApres));
     const cles = (id, a) => [...document.querySelectorAll('#' + id + ' button')].map(b => b.getAttribute('data-' + a)).filter(Boolean);
     const max = k => Math.max(0, ...window.__serieValeur(k).pts.map(x => x.termine));
-    const j = cles('filtre-journal', 'journal').filter(k => k !== 'reculs' && k !== 'indice'), b = cles('filtre-valeur-groupe', 'valeur-bloc'),
+    const j = cles('filtre-journal', 'journal').filter(k => ['reculs', 'indice', 'nouveaux', 'disparus'].indexOf(k) === -1), b = cles('filtre-valeur-groupe', 'valeur-bloc'),
           g = cles('filtre-valeur-graphe', 'valeur-graphe');
     return { indicateur: document.querySelector('#choix-indicateur button[aria-pressed="true"]') ? document.querySelector('#choix-indicateur button[aria-pressed="true"]').dataset.indicateur : '',
       journal: j.every(k => arrivees.has(k)) && [...arrivees].every(k => j.indexOf(k) !== -1),
@@ -6646,8 +6661,15 @@ async function reinitialiser(pg) {
   /* Le bout de la projection : un losange plein du vert du réalisé, plus
      un petit cercle creux qu'on lisait « jalon 5 atteint » ; « fin … » ne
      se pose ni en travers d'un jalon ni sur « 640 plans ». */
-  await pe.click('.segmente button[data-span="jalons"]'); await pe.waitForTimeout(350);
-  const fin20 = await pe.evaluate(() => {
+  /* Le jeu d'exemple a des relevés datés : la projection du rythme tenu ne
+     finit dans la fenêtre « Échéances » qu'à la date où ce test a été écrit
+     (semaine 41). Plus tard, son bout sort à droite, et c'est juste de ne
+     pas le dessiner : l'horloge de cette page est donc arrêtée à cette date. */
+  const ctxFin20 = await contexte({ viewport: { width: 390, height: 900 } });
+  await ctxFin20.clock.setFixedTime(new Date('2026-10-06T09:00:00'));
+  const pf20 = await page(ctxFin20, 'bout de la projection');
+  await pf20.click('.segmente button[data-span="jalons"]'); await pf20.waitForTimeout(350);
+  const fin20 = await pf20.evaluate(() => {
     const svg = document.querySelector('svg.graphe');
     const mot = svg.querySelector('.fin-mot'), bout = svg.querySelector('.fin-projection');
     const b = mot ? mot.getBoundingClientRect() : null;
@@ -6661,6 +6683,7 @@ async function reinitialiser(pg) {
   });
   verifier('débrief 20 : le bout de la projection est un losange plein (vert du réalisé), « fin … » n’est barré par aucun jalon ni posé sur « 640 plans »',
     /^fin S\d+/.test(fin20.mot) && fin20.bout === 'path:var(--fait)' && fin20.cerclesCreux === 0 && !fin20.barre && !fin20.surPlafond, JSON.stringify(fin20));
+  await ctxFin20.close();
 
   /* Tout validé : pas de projection (« fin S40 » s'écrivait sur un groupe
      fini), et le nombre du dernier point s'écrit sous lui, pas sur

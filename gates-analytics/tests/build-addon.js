@@ -11,12 +11,40 @@ const { feuilleGates } = require('./feuille-gates');
 
 const racine = path.join(__dirname, '..');
 
-function chargerServeur(classeur, proprietes, fichiers) {
+/* =====================================================================
+   L'ENVELOPPE (débrief 23)
+   Évalué par le modèle Index (pageDuTableau), donneesJSONPourPage() pose
+   dans la page l'enveloppe compressée { format: 2, edition, contrat, cle,
+   mesures, gz } ; getDonneesCompactes() la rend aussi. Les pages de cette
+   batterie la reçoivent comme au classeur, et la décompressent elles-mêmes :
+   une fois la page ouverte, window.SUIVI_FWD_DONNEES est le paquet décodé.
+   { enveloppe: false } pose à la place le paquet en clair — celui que
+   donneesJSONPourPage() rend quand on l'appelle hors du modèle (comme le
+   chargeur). decoderEnveloppe() la relit ici, avec zlib.
+   ===================================================================== */
+const zlib = require('zlib');
+/** L'enveloppe (objet ou texte JSON) rendue en paquet compact ; un paquet en clair passe tel quel. */
+function decoderEnveloppe(e) {
+  const x = typeof e === 'string' ? JSON.parse(e) : e;
+  if (!x || x.format !== 2 || typeof x.gz !== 'string') return x;
+  const b64 = x.gz.replace(/-/g, '+').replace(/_/g, '/');
+  return JSON.parse(zlib.gunzipSync(Buffer.from(b64 + '===='.slice(0, (4 - b64.length % 4) % 4), 'base64')).toString('utf8'));
+}
+/** Ce que le modèle Index pose dans la page : l'enveloppe (le paquet en clair s'il est en erreur). */
+function donneesPourIndex(contexte) {
+  vm.runInContext('POUR_INDEX_ = true', contexte);
+  try { return contexte.donneesJSONPourPage(); } finally { vm.runInContext('POUR_INDEX_ = false', contexte); }
+}
+
+/* `code` (facultatif) : le texte d'un autre Code.gs à évaluer — un
+   correctif recollé seul, un déploiement resté sur l'ancienne version
+   (tests/ouverture-serveur.js). */
+function chargerServeur(classeur, proprietes, fichiers, code) {
   const muet = { log: function () {} };
   const contexte = vm.createContext(poserEnvironnement(
     { console: muet, JSON: JSON, Date: Date, Math: Math },
     classeur, proprietes, fichiers));
-  vm.runInContext(fs.readFileSync(path.join(racine, 'Code.gs'), 'utf8'), contexte);
+  vm.runInContext(typeof code === 'string' ? code : fs.readFileSync(path.join(racine, 'Code.gs'), 'utf8'), contexte);
   /* La configuration livrée suit une colonne nommée, HDK AA 011 >
      Avancement Définition Electrique, et n'en suit aucune autre si elle
      manque. Les extracts d'essai qui n'ont pas ce bloc (l'exemple simple,
@@ -157,14 +185,20 @@ function construire(options) {
     });
   }
 
+  /* Le cache d'Apps Script allumé avant l'assemblage (débrief 23) : la page
+     reçoit alors la clé de son paquet, comme au classeur. `cache` : true, ou
+     les options de __activerCache. */
+  if (opts.cache) contexte.__activerCache(opts.cache === true ? undefined : opts.cache);
+
   const paquet = contexte.getDonneesPourClient();
 
   let index = fs.readFileSync(path.join(racine, 'Index.html'), 'utf8');
   index = index.replace(/<\?!=\s*include\('(\w+)'\);?\s*\?>/g, function (_, nom) {
     return fs.readFileSync(path.join(racine, nom + '.html'), 'utf8');
   });
-  index = index.replace(/<\?!=\s*donneesJSONPourPage\(\)\s*\?>/,
-    contexte.donneesJSONPourPage());
+  const enveloppe = opts.enveloppe !== false;
+  const donnees = enveloppe ? donneesPourIndex(contexte) : contexte.donneesJSONPourPage();
+  index = index.replace(/<\?!=\s*donneesJSONPourPage\(\)\s*\?>/, function () { return donnees; });
 
   // Les polices locales évitent toute dépendance réseau pendant les tests.
   if (fs.existsSync(path.join(racine, 'prototype', 'fonts', 'local.css'))) {
@@ -173,7 +207,7 @@ function construire(options) {
   }
 
   fs.writeFileSync(path.join(racine, opts.sortie || 'apercu-addon.html'), index);
-  return { paquet: paquet, contexte: contexte, classeur: classeur };
+  return { paquet: paquet, contexte: contexte, classeur: classeur, enveloppe: enveloppe };
 }
 
 /**
@@ -185,19 +219,31 @@ function construire(options) {
  *
  * L'identifiant « __panne__ » fait échouer l'appel, pour éprouver le rappel
  * d'échec du pont. Les identifiants demandés s'accumulent dans
- * window.__appelsClasseur.
+ * window.__appelsClasseur ; les mesures reçues par noterConsultation, dans
+ * window.__mesuresNotees.
+ *
+ * Débrief 23 : getDonneesCompactes rend l'enveloppe compressée, comme au
+ * classeur ; avec { enveloppe: false }, le paquet en clair, celui de
+ * getDonneesCompactesJson.
  */
-async function brancherClasseur(page, contexte) {
+async function brancherClasseur(page, contexte, options) {
+  const opts = options || {};
+  const enveloppe = opts.enveloppe !== false;
   await page.exposeFunction('__classeurGetDonneesPourClient', function (id) {
     if (id === '__panne__') throw new Error('Panne simulée du classeur');
     return JSON.stringify(contexte.getDonneesPourClient(id === null ? undefined : id));
   });
-  await page.exposeFunction('__classeurNoterConsultation', function () {
-    return contexte.noterConsultation();
+  await page.exposeFunction('__classeurNoterConsultation', function (mesures) {
+    return mesures === null ? contexte.noterConsultation() : contexte.noterConsultation(mesures);
   });
   await page.exposeFunction('__classeurGetDonneesCompactes', function (id) {
     if (id === '__panne__') throw new Error('Panne simulée du classeur');
-    return JSON.stringify(contexte.getDonneesCompactes(id === null ? undefined : id));
+    const contrat = id === null ? undefined : id;
+    return enveloppe ? JSON.stringify(contexte.getDonneesCompactes(contrat)) : contexte.getDonneesCompactesJson(contrat);
+  });
+  await page.exposeFunction('__classeurGetDonneesCompactesJson', function (id) {
+    if (id === '__panne__') throw new Error('Panne simulée du classeur');
+    return contexte.getDonneesCompactesJson(id === null ? undefined : id);
   });
   await page.addInitScript(function () {
     function chaine(succes, echec) {
@@ -211,9 +257,17 @@ async function brancherClasseur(page, contexte) {
             function (e) { if (echec) echec(e); });
         },
         // L'ouverture comptée (débrief 18) : compté à part, ce n'est pas un contrat demandé.
-        noterConsultation: function () {
+        noterConsultation: function (mesures) {
           window.__consultations = (window.__consultations || 0) + 1;
-          window.__classeurNoterConsultation().then(function () {}, function (e) { if (echec) echec(e); });
+          if (mesures) window.__mesuresNotees.push(mesures);
+          window.__classeurNoterConsultation(mesures === undefined ? null : mesures).then(function () {}, function (e) { if (echec) echec(e); });
+        },
+        // Le repli en clair (débrief 23) : une chaîne JSON, comme le vrai.
+        getDonneesCompactesJson: function (id) {
+          window.__appelsClasseur.push(id);
+          window.__classeurGetDonneesCompactesJson(id === undefined ? null : id).then(
+            function (json) { if (succes) succes(json); },
+            function (e) { if (echec) echec(e); });
         },
         // Le pont d'Index.html demande le paquet compacté, comme au classeur.
         getDonneesCompactes: function (id) {
@@ -225,6 +279,7 @@ async function brancherClasseur(page, contexte) {
       };
     }
     window.__appelsClasseur = [];
+    window.__mesuresNotees = [];
     window.google = { script: { run: chaine(null, null) } };
   });
 }
@@ -236,4 +291,4 @@ if (require.main === module) {
       ' plans, ' + r.paquet.colonnes.length + ' colonnes, ' + r.paquet.releves.length + ' relevés');
   });
 }
-module.exports = { construire, chargerServeur, brancherClasseur };
+module.exports = { construire, chargerServeur, brancherClasseur, decoderEnveloppe, donneesPourIndex };

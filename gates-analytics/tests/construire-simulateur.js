@@ -35,6 +35,10 @@
       contrat : changer de contrat, la vue d'ensemble, l'interrupteur
       Définition électrique / Concept harnais marchent comme au classeur.
       noterConsultation ne compte rien.
+      Débrief 23 : la page reçoit, comme au classeur, l'enveloppe
+      compressée — à l'ouverture et à chaque changement de contrat — et la
+      décompresse elle-même. getDonneesCompactesJson (le repli) rend le même
+      paquet en clair.
    6. Les polices (prototype/fonts, alphabet latin) sont embarquées en data:
       URI : la page s'affiche juste dans un cadre isolé, sans réseau.
 
@@ -58,7 +62,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const { Feuille, Classeur } = require('./faux-classeur');
-const { chargerServeur } = require('./build-addon');
+const { chargerServeur, decoderEnveloppe } = require('./build-addon');
 const gates = require('./feuille-gates');
 
 const racine = path.join(__dirname, '..');
@@ -489,6 +493,21 @@ const DOUBLE_GOOGLE = [
   '            else if (!p && ko) ko(new Error(\'Contrat inconnu du simulateur : \' + id));',
   '          }, 200);',
   '        },',
+  '        /* Le repli en clair : le paquet tel quel, ou l\'enveloppe décompressée ici. */',
+  '        getDonneesCompactesJson: function (id) {',
+  '          setTimeout(function () {',
+  '            var p = paquet(id);',
+  '            if (!p) { if (ko) ko(new Error(\'Contrat inconnu du simulateur : \' + id)); return; }',
+  '            if (p.format !== 2) { if (ok) ok(JSON.stringify(p)); return; }',
+  '            try {',
+  '              var b = atob(p.gz.replace(/-/g, \'+\').replace(/_/g, \'/\') + \'====\'.slice(0, (4 - p.gz.length % 4) % 4));',
+  '              var o = new Uint8Array(b.length);',
+  '              for (var i = 0; i < b.length; i++) o[i] = b.charCodeAt(i);',
+  '              new Response(new Blob([o]).stream().pipeThrough(new DecompressionStream(\'gzip\'))).text()',
+  '                .then(function (t) { if (ok) ok(t); }, function (e) { if (ko) ko(e); });',
+  '            } catch (e) { if (ko) ko(e); }',
+  '          }, 200);',
+  '        },',
   '        noterConsultation: function () { /* le simulateur ne compte rien */ }',
   '      };',
   '    }',
@@ -566,12 +585,19 @@ function construireSimulateur(options) {
   if (!servie || !servie.source || servie.source.modele !== 'Index') {
     throw new Error('doGet() ne sert pas le tableau de bord :\n' + (servie && servie.getContent ? servie.getContent().replace(/<[^>]+>/g, ' ') : servie));
   }
-  let page = evaluerModele(fs.readFileSync(path.join(racine, 'Index.html'), 'utf8'), contexte);
+  /* Comme pageDuTableau : évalué pour Index, donneesJSONPourPage() pose
+     l'enveloppe compressée. */
+  vm.runInContext('POUR_INDEX_ = true', contexte);
+  let page;
+  try { page = evaluerModele(fs.readFileSync(path.join(racine, 'Index.html'), 'utf8'), contexte); }
+  finally { vm.runInContext('POUR_INDEX_ = false', contexte); }
 
-  /* Les paquets que google.script.run rendra, calculés par le vrai serveur. */
+  /* Les paquets que google.script.run rendra, calculés par le vrai serveur :
+     `paquet` en clair (pour le bandeau), `servi` tel que le pont le rend. */
   const ouverture = JSON.parse(contexte.donneesJSONPourPage());
   const paquets = contexte.listerContrats(classeur).map(function (c) {
-    return { id: c.id, paquet: contexte.getDonneesCompactes(c.id) };
+    const rendu = contexte.getDonneesCompactes(c.id);
+    return { id: c.id, paquet: decoderEnveloppe(rendu), servi: rendu };
   });
   paquets.forEach(function (p) {
     if (!p.paquet || p.paquet.ok === false) throw new Error('Code.gs ne rend pas le contrat ' + p.id + ' : ' + (p.paquet && p.paquet.message));
@@ -580,7 +606,7 @@ function construireSimulateur(options) {
   const memeQueLOuverture = paquets.filter(function (p) { return JSON.stringify(p.paquet) === texteOuverture; })[0];
   const blocsPaquets = paquets.map(function (p) {
     return '<script type="application/json" class="simulateur-paquet" data-contrat="' + echAttr(p.id) + '"' +
-      (p === memeQueLOuverture ? ' data-ouverture' : '') + '>' + jsonPourScript(p.paquet) + '</script>';
+      (p === memeQueLOuverture ? ' data-ouverture' : '') + '>' + jsonPourScript(p.servi) + '</script>';
   }).concat(memeQueLOuverture ? [] : ['<script type="application/json" class="simulateur-paquet" data-ouverture>' + jsonPourScript(ouverture) + '</script>']);
 
   /* Le bandeau, d'après ce que le serveur a réellement rendu. */
@@ -615,7 +641,7 @@ function construireSimulateur(options) {
 
   /* Ce que le simulateur ne sait pas rendre se dit à la construction. */
   const avertissements = [];
-  const servies = { getDonneesCompactes: true, noterConsultation: true };
+  const servies = { getDonneesCompactes: true, getDonneesCompactesJson: true, noterConsultation: true };
   const appels = appelsDeLaPage(['Index', 'Javascript'].map(function (n) { return fs.readFileSync(path.join(racine, n + '.html'), 'utf8'); }).join('\n'));
   appels.filter(function (n) { return !servies[n]; }).forEach(function (n) {
     avertissements.push('la page appelle google.script.run.' + n + '(), que le simulateur ne sert pas : à ajouter dans tests/construire-simulateur.js');

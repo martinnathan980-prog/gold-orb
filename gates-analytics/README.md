@@ -101,7 +101,7 @@ npm install
 npm test
 ```
 
-- `npm run test:addon` — 567 tests. Le vrai `Code.gs` tourne dans Node contre
+- `npm run test:addon` — 577 tests. Le vrai `Code.gs` tourne dans Node contre
   un classeur en mémoire (`tests/faux-classeur.js`), sur un export
   volontairement pénible : lignes de titre, groupes fusionnés, en-têtes
   accentués ou dupliqués, ligne vide au milieu, avancements de toutes les
@@ -134,7 +134,7 @@ npm test
   lire une lettre, puis les repères lus pour de vrai par RapidOCR et corrigés
   par la liste de la base, sur papier gris et page couchée. Sans Chrome ou
   sans RapidOCR sur le poste, ces parties-là sont sautées en le disant.
-- `npm run test:import-see` — 328 tests sur la fenêtre d'import (menu Suivi
+- `npm run test:import-see` — 329 tests sur la fenêtre d'import (menu Suivi
   FWD → Importer les exports GATES et SEE…) : la vraie fenêtre, rendue par le
   vrai `Code.gs`, ouverte dans un vrai navigateur, `google.script.run`
   branché sur le serveur en mémoire. Une case par export (débrief 21) :
@@ -207,12 +207,37 @@ npm test
   vrai `.xls` nommé `.xlsx` (lu), un fichier protégé ou chiffré, tronqué
   ou abîmé au milieu, une formule
   sans valeur, et 120 000 lignes sur 24 colonnes suivies de liens.
+- `npm run test:ouverture` — 105 tests sur l'ouverture côté serveur (débrief
+  23) : le vrai `Code.gs` exécution par exécution, contre un cache aux vraies
+  limites de Google (clés de 250 caractères, valeurs de 100 Ko, 1 000
+  entrées, expiration) et une horloge simulée. Le paquet compressé
+  (aller-retour exact, accents, U+2028, `</script>`, morceaux de 100 000
+  caractères), l'enveloppe posée dans la page, le cache qui sert le lendemain
+  et entre la fenêtre du menu et le lien `…/exec`, jamais un paquet d'avant
+  (saisie, archivage, suppression, dépôt, import, écriture pendant une
+  lecture, `?frais=1`, un correctif de `Code` recollé seul, un lien `…/exec`
+  resté sur l'ancienne version), le préchauffage (verrou, import en cours,
+  panne qui dure, cache qui refuse), les temps (journal d'exécution, page,
+  la raison d'une relecture, deux ouvertures à quelques secondes, Diagnostic
+  juste après l'activation ou un geste, un morceau évincé), le mode d'emploi
+  qui ne promet pas plus, et les cibles du plan : une semaine simulée, le
+  nombre d'appels d'une ouverture.
+- `npm run test:ouverture-page` — 52 tests sur l'ouverture côté page : en deux
+  temps, la page prête est mot pour mot celle d'un seul bloc (640 plans, la
+  démonstration, un an de relevés) ; un geste, le sommaire ou l'impression
+  pendant l'ouverture la finissent d'abord ; le paquet sous toutes ses formes
+  (enveloppe, JSON, objet du chargeur, enveloppe abîmée, navigateur sans
+  décompression) ; la synthèse entière dès sa première image
+  (« À surveiller », le sommaire) ; une erreur pendant l'ouverture (la page répond encore) ou
+  après « pret » (le cadre de panne) ; une page rechargée qui revient où on
+  l'avait laissée ; la ligne du pied et chaque raison d'une relecture ; les
+  temps envoyés avec l'ouverture comptée ; le changement de contrat.
 - `npm run test:chargeur` — 34 tests sur le chargeur : un faux Apps Script en
   mémoire (classeur, UrlFetchApp qui sert le dépôt depuis le disque, cache,
   menus, fenêtres), le vrai `Chargeur.gs` lancé dedans, et la page qu'il
   fabrique ouverte dans un vrai navigateur — les états, les colonnes, le
   graphe et le journal comparés au paquet du classeur.
-- `npm run test:interface` — 869 tests sur l’interface elle-même.
+- `npm run test:interface` — 879 tests sur l’interface elle-même.
   Elle n'essaie pas seulement de vérifier que ça marche : recherches avec
   balises, expressions régulières, 3 000 caractères ou émoji, jalon de
   configuration au texte injecté, `localStorage` corrompu puis inaccessible,

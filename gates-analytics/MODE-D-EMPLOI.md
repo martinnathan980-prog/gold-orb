@@ -27,15 +27,58 @@ est archivé dans la foulée. Le reste est automatique.
    données.
 4. **Plus rapide depuis le débrief 18** : le classeur n'est relu que s'il a
    changé depuis la dernière ouverture (le script garde ce qu'il a lu, et
-   l'oublie dès qu'une cellule change, qu'on archive, qu'on ajoute, supprime
-   ou renomme un onglet, des lignes ou des colonnes — et chaque jour) ; le
-   tableau des plans se dessine par tranches d'une soixantaine de lignes, la
-   suite en descendant. Si un chiffre paraît ne pas suivre le classeur (après
-   avoir restauré une ancienne version du classeur, par exemple) : ajouter
-   `?frais=1` au bout du lien `…/exec` — tout ce qui était gardé est oublié.
+   l'oublie dès qu'une cellule change, qu'on archive, qu'on importe, qu'on
+   ajoute, supprime ou renomme un onglet, des lignes ou des colonnes) ; le
+   tableau des plans se dessine par tranches, la suite en descendant. Si un
+   chiffre paraît ne pas suivre le classeur (après avoir restauré une
+   ancienne version du classeur, par exemple) : ajouter `?frais=1` au bout du
+   lien `…/exec` — tout ce qui était gardé est oublié (le pied dit alors
+   « relu à la demande »). Sinon, c'est rattrapé
+   le lendemain au plus tard.
+   **Encore plus rapide depuis le débrief 23** : une fois pour toutes,
+   **Suivi FWD → Activer l'ouverture rapide** (ci-dessous). La synthèse
+   s'affiche d'abord, le reste de la page suit dans la seconde ; le pied dit,
+   en gris, le temps que l'ouverture a pris — par exemple « Ouverture : 1,9 s
+   — classeur 0,2 s (en cache) · transfert ≈ 0,6 s · affichage 1,1 s ».
+   Quand il a dû relire le classeur, il dit pourquoi : « relu : il venait de
+   changer » juste après une saisie ou un collage, « relu : nouvelle
+   livraison » juste après un recollage, « relu : rien de prêt en cache »
+   sinon (sans l'ouverture rapide, au premier matin par exemple).
 5. Les ouvertures de la page sont **comptées, sans nom ni adresse** (le pied
    de la page le dit) : **Suivi FWD → Diagnostic** donne, par semaine, le
-   nombre d'ouvertures et de personnes distinctes.
+   nombre d'ouvertures et de personnes distinctes — et, depuis le débrief
+   23, le temps qu'elles ont pris (bloc « Vitesse d'ouverture »).
+
+### L'ouverture rapide (un clic, une fois pour toutes)
+
+**Suivi FWD → Activer l'ouverture rapide.** Ce que ça fait : toutes les dix
+minutes, Google prépare le tableau de bord d'avance — il relit le classeur
+s'il a changé, et garde la page prête. Quand vous (ou un collègue, par le lien
+`…/exec`) ouvrez le tableau de bord, il s'ouvre sans relire le classeur —
+le matin, juste après un import ou un archivage, et au plus tard dix minutes
+après une saisie ou un collage (juste après, il relit le classeur, et le pied
+le dit). Juste après un import, un archivage ou une suppression de relevé, la
+préparation se fait d'elle-même, sans attendre les dix minutes.
+
+- **Un seul clic, une seule fois** : rien à refaire ensuite, même après une
+  nouvelle livraison. Le cliquer deux fois ne crée pas deux préparations.
+  C'est vous qui le faites (le déclencheur est à votre nom, comme
+  l'archivage du vendredi) ; les collègues n'ont rien à cliquer.
+- Google ne demande **aucune autorisation nouvelle** : c'est la même que pour
+  l'archivage automatique du vendredi.
+- Chaque préparation apparaît dans **Extensions → Apps Script → Exécutions**
+  (une ligne « prechaufferTableau » toutes les dix minutes, d'une fraction de
+  seconde le plus souvent) : c'est normal. Les ouvertures y ont aussi leur
+  ligne, « Suivi FWD · ouverture HDK · cache trouvé · 0,24 s … ».
+- Elle ne modifie rien dans le classeur et ne gêne aucun geste : si un import
+  ou un archivage est en cours, elle passe son tour.
+- **Suivi FWD → Diagnostic**, bloc « Vitesse d'ouverture », dit si elle
+  tourne (« Ouverture rapide : activée — dernier préchauffage il y a 7 min,
+  2 contrats prêts »), ce qui est prêt, et le temps des trente dernières
+  ouvertures — de quoi me répondre si une ouverture paraît lente.
+- **Suivi FWD → Désactiver l'ouverture rapide** l'arrête : le tableau de
+  bord marche toujours, mais relit le classeur à la première ouverture après
+  chaque modification (plus lentement).
 
 ### Recoller une livraison (quand je vous envoie les fichiers)
 
@@ -56,7 +99,8 @@ livraison d'avant suffit à laisser la page blanche.
    (n'importe qui sur internet, sans connexion).
 3. Vérifier : **en bas de la page, « Livraison xxxxxxx »** — le numéro que je
    donne avec les fichiers. (Quand je ne corrige que `Code`, la livraison ne
-   change pas : on ne recolle que `Code`.) Suivi FWD → **Diagnostic** le confirme :
+   change pas : on ne recolle que `Code` — la première ouverture qui suit
+   relit le classeur avec le nouveau, « relu : nouvelle livraison ».) Suivi FWD → **Diagnostic** le confirme :
    « ✓ Livraison xxxxxxx : Code, Index, Styles et Javascript concordent, et
    sont entiers. »
 4. **Un nouvel article du menu Suivi FWD** n'apparaît qu'une fois le
@@ -767,9 +811,10 @@ aussi. Pour qu'un collègue reprenne :
    Partager → le nommer **propriétaire** (les onglets d'historique suivent :
    ils sont dans le classeur).
 2. Lui, dans le classeur : **Suivi FWD → Activer l'archivage automatique**
-   (le déclencheur est personnel : celui de l'ancien propriétaire s'arrête
-   avec son compte), puis **Déployer → Nouveau déploiement → Application web**
-   et diffuser le **nouveau** lien `…/exec`.
+   et **Suivi FWD → Activer l'ouverture rapide** (les déclencheurs sont
+   personnels : ceux de l'ancien propriétaire s'arrêtent avec son compte),
+   puis **Déployer → Nouveau déploiement → Application web** et diffuser le
+   **nouveau** lien `…/exec`.
 3. Pour une absence courte, rien à transférer : il suffit que quelqu'un fasse
    l'export GATES chaque semaine et le garde, nommé par semaine ; au retour,
    **Archiver l'onglet affiché pour une semaine passée…** (§ 4) remet chaque

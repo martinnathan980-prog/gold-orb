@@ -75,6 +75,7 @@ function monterLeChargeur(options) {
       getScriptCache: function () {
         return {
           get: function (c) { return cache.has(c) ? cache.get(c) : null; },
+          getAll: function (cles) { const o = {}; cles.forEach(function (c) { if (cache.has(c)) o[c] = cache.get(c); }); return o; },
           put: function (c, v) { cache.set(c, v); },
           putAll: function (o) { Object.keys(o).forEach(function (c) { cache.set(c, o[c]); }); },
           removeAll: function (cles) { cles.forEach(function (c) { cache.delete(c); }); }
@@ -199,8 +200,10 @@ function monterLeChargeur(options) {
     return p.plansTab ? p.plansTab.lignes.length : (p.plans || []).length;
   };
   const n0 = compter(frais);
-  verifier('le paquet du classeur est gardé dans le cache du classeur', n0 > 100 && [...frais.cacheClasseur.keys()].some(function (k) { return /^SFWD:/.test(k); }),
-    [n0, frais.cacheClasseur.size]);
+  /* Débrief 23 : le cache du script, le même pour la fenêtre et le lien
+     …/exec (celui du document n'existe pas pour une application web). */
+  verifier('le paquet du classeur est gardé dans le cache du script', n0 > 100 && [...frais.cache.keys()].some(function (k) { return /^SFWD\d*:/.test(k); }),
+    [n0, frais.cache.size]);
   verifier('le chargeur a son propre onEdit, que Google voit', typeof frais.contexte.onEdit === 'function');
   const hdk = frais.classeur.getSheetByName('HDK');
   for (let k = 0; k < 5; k++) hdk.deleteRow(hdk.getLastRow());

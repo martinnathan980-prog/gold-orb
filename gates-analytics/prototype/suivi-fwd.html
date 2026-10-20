@@ -1653,6 +1653,31 @@ table.plans thead tr th.col-fige { z-index: 6; }
 .pied { padding: 20px 0 42px; margin-top: 32px; border-top: 1px solid var(--filet); color: var(--encre-3); font-size: 11.5px; line-height: 1.8; }
 .masque { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 @media (prefers-reduced-motion: reduce) { .barre span, .ombre-defile, .poignee { transition: none; } }
+
+/* ---------------------------------------------------- L'ouverture (débrief 23) */
+/* Le squelette, peint avant les chiffres : chaque panneau encore vide garde
+   à peu près sa hauteur et dit « Chargement… », pour que rien ne saute quand
+   il se remplit. Seulement pendant l'ouverture (html[data-suivi-fwd]). */
+html[data-suivi-fwd="chargement"] #zone-graphe:empty { min-height: 300px; }
+html[data-suivi-fwd="chargement"] #zone-journal:empty,
+html[data-suivi-fwd="synthese"] #zone-journal:empty { min-height: 200px; }
+html[data-suivi-fwd="chargement"] #zone-critique:empty,
+html[data-suivi-fwd="synthese"] #zone-critique:empty { min-height: 320px; }
+html[data-suivi-fwd="synthese"] #venn-rapprochement:empty { min-height: 240px; }
+#cadre-tableau[data-a-venir] .defile { min-height: 68vh; }
+html[data-suivi-fwd="chargement"] #zone-graphe:empty::before,
+html[data-suivi-fwd="chargement"] #zone-journal:empty::before,
+html[data-suivi-fwd="synthese"] #zone-journal:empty::before,
+html[data-suivi-fwd="chargement"] #zone-critique:empty::before,
+html[data-suivi-fwd="synthese"] #zone-critique:empty::before,
+html[data-suivi-fwd="synthese"] #venn-rapprochement:empty::before,
+#cadre-tableau[data-a-venir] .defile::before {
+  content: "Chargement\2026"; display: block; padding: 16px 2px; color: var(--encre-3); font-size: 13px;
+}
+/* Un autre contrat en route : la page d'avant reste là, estompée, jusqu'à
+   ce que l'autre arrive. */
+body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity .15s; }
+@media (prefers-reduced-motion: reduce) { body[data-attente="contrat"] .page > section { transition: none; } }
 </style>
 
 <div class="page">
@@ -1992,6 +2017,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
     <!-- Quand les chiffres ont été lus dans le classeur : une page restée
          ouverte depuis vendredi ne montre pas ceux de lundi. -->
     <div id="lu-le" hidden></div>
+    <!-- Débrief 23 : combien de temps l'ouverture a pris — le classeur, le
+         transfert, l'affichage. Avec ?mesure=1 dans l'adresse, le détail. -->
+    <div id="mesure-ouverture" hidden></div>
     <!-- La livraison qui tourne : le Diagnostic dit laquelle attendre. -->
     <div id="livraison" hidden></div>
     <!-- Dit en clair : l'ouverture est comptée, sans nom ni adresse
@@ -2012,6 +2040,34 @@ table.plans thead tr th.col-fige { z-index: 6; }
   'use strict';
 
   var $ = function (id) { return document.getElementById(id); };
+  /* L'ouverture, chronométrée (débrief 23 : « le site est très très long à
+     charger »). Le premier repère est pris ici, en tête du Javascript ; les
+     suivants après le décodage des données, quand la synthèse est peinte,
+     puis quand tout l'est. Le pied de page en tire une ligne, et le classeur
+     les reçoit avec l'ouverture comptée — sans nom ni adresse. */
+  var CHRONO = window.performance && typeof performance.now === 'function'
+    ? function () { return performance.now(); } : function () { return Date.now(); };
+  var T0 = CHRONO(), D0 = Date.now();
+  var CHRONOS = { debut: T0 };
+  try { performance.mark('suivi-fwd:debut'); } catch (e) { /* sans repères */ }
+  function marquer(nom) {
+    CHRONOS[nom] = CHRONO();
+    try { performance.mark('suivi-fwd:' + nom); } catch (e) { /* un navigateur sans repères : le chrono suffit */ }
+  }
+  /* La plus longue tâche de l'ouverture : celle qui fige l'écran le plus longtemps. */
+  var TACHE_LONGUE = 0, GUETTEUR_TACHES = null;
+  try {
+    if (window.PerformanceObserver) {
+      GUETTEUR_TACHES = new PerformanceObserver(function (liste) {
+        liste.getEntries().forEach(function (e) { if (e.duration > TACHE_LONGUE) TACHE_LONGUE = e.duration; });
+      });
+      GUETTEUR_TACHES.observe({ type: 'longtask', buffered: true });
+    }
+  } catch (e) { GUETTEUR_TACHES = null; /* sans observateur : la mesure n'est pas faite, rien d'autre ne change */ }
+  /* L'ouverture en deux temps — la synthèse d'abord, le reste juste après.
+     window.SUIVI_FWD_DIFFERER = false, posé avant la page, la rend d'un seul
+     bloc, comme avant : c'est ce que la batterie de tests attend. */
+  var DIFFERER = window.SUIVI_FWD_DIFFERER !== false;
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
@@ -2050,17 +2106,82 @@ table.plans thead tr th.col-fige { z-index: 6; }
      classer pareil des deux côtés. L'accentuation ne s'enlève que si le
      navigateur sait le faire : String.prototype.normalize est postérieur à
      ES5, et sans lui la page doit s'afficher quand même. */
+  /* La même valeur donne toujours la même réduction : la colonne suivie n'a
+     qu'une dizaine de valeurs distinctes, et norm() en voyait des centaines
+     de milliers par ouverture (débrief 23). Une valeur courte se retient ;
+     un texte long — une ligne entière, pour la recherche — se calcule. */
+  var MEMO_NORM = Object.create(null), N_MEMO_NORM = 0;
   function norm(v) {
-    var s = String(v == null ? '' : v).toLowerCase();
+    var s = String(v == null ? '' : v);
+    if (s.length > 64) return reduireTexte(s);
+    var r = MEMO_NORM[s];
+    if (r !== undefined) return r;
+    r = reduireTexte(s);
+    if (++N_MEMO_NORM > 50000) { MEMO_NORM = Object.create(null); N_MEMO_NORM = 1; }
+    MEMO_NORM[s] = r;
+    return r;
+  }
+  function reduireTexte(s) {
+    s = s.toLowerCase();
     if (s.normalize) s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     return s.replace(/\s+/g, ' ').trim();
   }
-  function nb(n) { return n.toLocaleString('fr-FR'); }
+  /* Un seul format de nombre, fabriqué une fois : n.toLocaleString('fr-FR')
+     en refaisait un à chaque appel. Le résultat est le même, par définition
+     (ECMA-402 : toLocaleString construit ce même Intl.NumberFormat). */
+  var FORMAT_NOMBRE = window.Intl && Intl.NumberFormat ? new Intl.NumberFormat('fr-FR') : null;
+  function nb(n) { return FORMAT_NOMBRE && typeof n === 'number' ? FORMAT_NOMBRE.format(n) : n.toLocaleString('fr-FR'); }
   /* Faire défiler jusqu'à un élément : le dictionnaire d'options est récent,
      pas la méthode — un navigateur ancien reçoit l'appel d'origine. */
   function defilerVers(el, options) {
     if (!el || !el.scrollIntoView) return;
     try { el.scrollIntoView(options); } catch (e) { el.scrollIntoView(true); }
+  }
+
+  /* ============================================================
+     LES MESURES DE LA PAGE, UNE FOIS PAR IMAGE (débrief 23)
+     Lire une taille juste après avoir écrit dans la page oblige le
+     navigateur à tout remettre en page sur-le-champ : à l'ouverture, sur un
+     poste chargé, près d'une seconde s'y perdait. Les mesures — le sommaire,
+     le fondu des rangées qui débordent, l'ombre et les colonnes figées du
+     tableau, les chiffres sous la barre, la colonne du nom des groupes — se
+     font donc ensemble, juste avant l'image suivante : les lectures
+     d'abord, puis les écritures. Ce qu'elles posent est le même qu'avant.
+     ============================================================ */
+  var MESURES = { prevu: false, travaux: {}, rangees: [] };
+  function aMesurer(travail) {
+    MESURES.travaux[travail] = true;
+    prevoirMesures();
+  }
+  function prevoirMesures() {
+    if (MESURES.prevu) return;
+    MESURES.prevu = true;
+    if (window.requestAnimationFrame) requestAnimationFrame(mesurerMaintenant);
+    else setTimeout(mesurerMaintenant, 16);
+  }
+  /* Appelée par l'image suivante, ou tout de suite par un geste qui relit
+     la page juste après l'avoir redessinée (une ligne du bloc qui garde sa
+     place sous le pointeur). */
+  function mesurerMaintenant() {
+    if (!MESURES.prevu) return;
+    MESURES.prevu = false;
+    var t = MESURES.travaux, rangees = MESURES.rangees;
+    MESURES.travaux = {}; MESURES.rangees = [];
+    /* Les panneaux présents d'abord : ils font la largeur du sommaire. */
+    if (t.chapitres) {
+      poserChapitresPresents();
+      if (rangees.indexOf(LISTE_SOMMAIRE) === -1) rangees.push(LISTE_SOMMAIRE);
+    }
+    var ecritures = [];
+    if (t.hautSommaire) ecritures.push(lireHautSommaire());
+    if (t.ombre) ecritures.push(lireOmbre());
+    rangees.forEach(function (r) { ecritures.push(lireDebord(r)); });
+    ecritures.forEach(function (ecrire) { if (ecrire) ecrire(); });
+    /* Ceux qui mesurent ce qu'ils viennent de poser : chacun à son tour. */
+    if (t.barre) alignerSousBarre('barre', 'filets', 'etats');
+    if (t.sticky) poserColonnesFigees();
+    if (t.colonneNom) poserColonneNom();
+    if (t.chapitres) majSommaire();
   }
   /* Exposée pour la batterie : la même réduction que le serveur, vérifiable
      cas par cas (espace insécable, accents, espaces multiples). */
@@ -2129,7 +2250,22 @@ table.plans thead tr th.col-fige { z-index: 6; }
       .map(function (v) { return sansAccord(norm(v)); }).filter(function (v) { return v !== ''; });
   }
   var VALEURS_FINIES_N = ['valid'], VALEURS_A_FAIRE_N = [], VALEURS_FINIES_DITES = ['Validé'];
+  /* Le classement d'une valeur, retenu (débrief 23) : il ne dépend que de
+     la valeur et des mots déclarés, et chargerSource() l'oublie quand
+     ceux-ci changent. */
+  var MEMO_CLASSER = Object.create(null), N_MEMO_CLASSER = 0;
   function classer(valeur) {
+    var cle = String(valeur == null ? '' : valeur);
+    if (cle.length > 64) return classerBrut(cle);
+    var r = MEMO_CLASSER[cle];
+    if (r !== undefined) return r;
+    r = classerBrut(cle);
+    if (++N_MEMO_CLASSER > 50000) { MEMO_CLASSER = Object.create(null); N_MEMO_CLASSER = 1; }
+    MEMO_CLASSER[cle] = r;
+    return r;
+  }
+  function oublierClassements() { MEMO_CLASSER = Object.create(null); N_MEMO_CLASSER = 0; }
+  function classerBrut(valeur) {
     var s = norm(valeur);
     if (s === '' || s === '-' || s === 'empty') return 'vide';
     /* Un numéro devant l'état (« 3 - Validé », « 1. En cours ») ne compte pas. */
@@ -2196,11 +2332,37 @@ table.plans thead tr th.col-fige { z-index: 6; }
   /** Tolérant aux séparateurs (-, _, espace, point, /) et à la casse. Une
       référence hors format garde sa forme entière — sans espaces autour, en
       capitales — comme racine ; elle n'est jamais appariée à une autre. */
+  /* Une référence se relit des centaines de milliers de fois par ouverture
+     — chaque relevé, chaque comparaison : elle n'est analysée qu'une fois
+     (débrief 23). Chaque appel reçoit sa propre copie : l'appelant peut la
+     modifier sans toucher à celle des autres. */
+  var MEMO_UD = Object.create(null), N_MEMO_UD = 0;
   function analyserUD(ref) {
+    var cle = String(ref == null ? '' : ref), u = MEMO_UD[cle];
+    if (!u) {
+      u = lireUD(cle);
+      if (++N_MEMO_UD > 200000) { MEMO_UD = Object.create(null); N_MEMO_UD = 1; }
+      MEMO_UD[cle] = u;
+    }
+    return { racine: u.racine, solution: u.solution, indice: u.indice, valide: u.valide };
+  }
+  function lireUD(ref) {
     var brut = String(ref == null ? '' : ref).trim().toUpperCase();
     var m = FORME_UD.exec(remettreLeA(brut.replace(/[-_\s.\/]+/g, '')));
     if (!m) return { racine: brut, solution: '', indice: '', valide: false };
     return { racine: m[1] + m[2] + 'A' + m[3], solution: m[4], indice: m[5], valide: true };
+  }
+  /* La clé d'appariement d'une référence, retenue elle aussi :
+     cleAppariement(analyserUD(ref)), sans objet intermédiaire. */
+  var MEMO_CLE_UD = Object.create(null), N_MEMO_CLE_UD = 0;
+  function cleDeRef(ref) {
+    var cle = String(ref == null ? '' : ref), c = MEMO_CLE_UD[cle];
+    if (c === undefined) {
+      c = cleAppariement(analyserUD(cle));
+      if (++N_MEMO_CLE_UD > 200000) { MEMO_CLE_UD = Object.create(null); N_MEMO_CLE_UD = 1; }
+      MEMO_CLE_UD[cle] = c;
+    }
+    return c;
   }
   /* Le rang d'une émission : sert à choisir, entre deux candidates de même
      racine, la plus proche de celle qui a disparu. */
@@ -2364,9 +2526,19 @@ table.plans thead tr th.col-fige { z-index: 6; }
   /* Exposée pour la batterie : une fonction pure se vérifie directement, cas
      par cas, plutôt que devinée à travers l'interface. */
   window.__anneeEtMois = anneeEtMois;
+  /* Le mois d'une date, retenu par valeur (débrief 23) : chaque relevé
+     reclasse tous les plans par mois de création. Le mémo suit l'ordre des
+     dates de la source (MOIS_D_ABORD) : il se vide quand celui-ci change. */
+  var MEMO_MOIS = Object.create(null), MEMO_MOIS_ORDRE = null, N_MEMO_MOIS = 0;
   function moisDe(valeur) {
+    if (MEMO_MOIS_ORDRE !== MOIS_D_ABORD) { MEMO_MOIS = Object.create(null); MEMO_MOIS_ORDRE = MOIS_D_ABORD; N_MEMO_MOIS = 0; }
+    var cle = String(valeur == null ? '' : valeur), m = MEMO_MOIS[cle];
+    if (m !== undefined) return m;
     var v = anneeEtMois(valeur);
-    return v ? MOIS_COURT[v.mois - 1] + ' ' + v.annee : '\u2014';
+    m = v ? MOIS_COURT[v.mois - 1] + ' ' + v.annee : '\u2014';
+    if (++N_MEMO_MOIS > 50000) { MEMO_MOIS = Object.create(null); N_MEMO_MOIS = 1; }
+    MEMO_MOIS[cle] = m;
+    return m;
   }
   function rangMois(nom) {
     if (nom === '\u2014') return -1;
@@ -3477,8 +3649,19 @@ table.plans thead tr th.col-fige { z-index: 6; }
   var VALEURS_COLONNE = [], VALEUR_PAR_CLE = {};
   /* La clé d'une valeur : sans accents, sans espaces, en minuscules — « En
      cours », « en  cours » et « EN COURS » sont la même. Vide ou tiret :
-     « vide ». */
+     « vide ». Retenue par valeur, comme norm() (débrief 23). */
+  var MEMO_CLE_VALEUR = Object.create(null), N_MEMO_CLE_VALEUR = 0;
   function cleValeur(v) {
+    var s = String(v == null ? '' : v);
+    if (s.length > 64) return cleValeurBrute(s);
+    var r = MEMO_CLE_VALEUR[s];
+    if (r !== undefined) return r;
+    r = cleValeurBrute(s);
+    if (++N_MEMO_CLE_VALEUR > 50000) { MEMO_CLE_VALEUR = Object.create(null); N_MEMO_CLE_VALEUR = 1; }
+    MEMO_CLE_VALEUR[s] = r;
+    return r;
+  }
+  function cleValeurBrute(v) {
     var n = norm(v);
     if (n === '' || n === '-' || n === 'empty') return 'vide';
     /* Un pourcentage n'est pas un état à lui seul : « 20 % », « 45 % »… se
@@ -3678,25 +3861,42 @@ table.plans thead tr th.col-fige { z-index: 6; }
   /* Un relevé refait sur sa carte plan par plan, avec le classement du jour :
      comptes par état, et par groupe sur les attributs d'aujourd'hui de
      chaque plan (retrouvé par référence ou par racine). */
+  /* L'index des plans d'aujourd'hui par référence et par racine est fait
+     une fois par source, avant les relevés (chargerSource) : il se refaisait
+     à chaque relevé — cinquante-deux fois pour un an d'archives. */
   function releveDeCarte(r, carte) {
     var e = { termine: 0, encours: 0, afaire: 0, vide: 0 }, g = {};
-    var parRef = {}, parRacine = {};
-    PLANS.forEach(function (p) { parRef[p.reference] = p; parRacine[p._racine] = p; });
+    var parRef = PLAN_PAR_REF, parRacine = PLAN_PAR_RACINE, nd = CLES_DIM.length, seaux = new Array(nd), k;
     CLES_DIM.forEach(function (d) { g[d] = {}; });
-    Object.keys(carte).forEach(function (ref) {
-      var etat = classer(carte[ref]);
+    for (k = 0; k < nd; k++) seaux[k] = g[CLES_DIM[k]];
+    var refs = Object.keys(carte);
+    for (var j = 0; j < refs.length; j++) {
+      var ref = refs[j], etat = classer(carte[ref]);
       e[etat]++;
-      var p = parRef[ref] || parRacine[cleAppariement(analyserUD(ref))];
-      if (!p) return;
-      CLES_DIM.forEach(function (d) {
-        var v = String(valeurDim(p, d) || '\u2014');
-        if (!g[d][v]) g[d][v] = { total: 0, termine: 0 };
-        g[d][v].total++;
-        if (etat === 'termine') g[d][v].termine++;
-      });
-    });
-    return { i: indexDe(r.semaine), total: Object.keys(carte).length, termine: e.termine, encours: e.encours,
+      var p = parRef[ref] || parRacine[cleDeRef(ref)];
+      if (!p) continue;
+      var vals = groupesDuPlan(p), fini = etat === 'termine';
+      for (k = 0; k < nd; k++) {
+        var s = seaux[k], c = s[vals[k]];
+        if (!c) c = s[vals[k]] = { total: 0, termine: 0 };
+        c.total++;
+        if (fini) c.termine++;
+      }
+    }
+    return { i: indexDe(r.semaine), total: refs.length, termine: e.termine, encours: e.encours,
              afaire: e.afaire, vide: e.vide, groupes: g, plans: carte };
+  }
+  /* Les groupes d'un plan, dimension par dimension — le nom de groupe que
+     releveDeCarte() lui donne —, lus une fois par source au lieu d'une fois
+     par relevé (débrief 23 : un an d'archives les relisait cinquante-deux
+     fois). Rangés hors de vue sur le plan (non énumérables). */
+  function groupesDuPlan(p) {
+    var memo = p.__groupes;
+    if (memo && memo.cles === CLES_DIM) return memo.vals;
+    var vals = new Array(CLES_DIM.length);
+    for (var k = 0; k < CLES_DIM.length; k++) vals[k] = String(valeurDim(p, CLES_DIM[k]) || '\u2014');
+    Object.defineProperty(p, '__groupes', { value: { cles: CLES_DIM, vals: vals }, writable: true, configurable: true, enumerable: false });
+    return vals;
   }
   /* ============================================================
      LA VIE D'UN PLAN (débrief 14)
@@ -3711,7 +3911,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     if (INDEX_RELEVES) return INDEX_RELEVES;
     INDEX_RELEVES = RELEVES.map(function (r) {
       var parCle = {};
-      if (r.plans) Object.keys(r.plans).forEach(function (ref) { parCle[cleAppariement(analyserUD(ref))] = ref; });
+      if (r.plans) Object.keys(r.plans).forEach(function (ref) { parCle[cleDeRef(ref)] = ref; });
       return { i: r.i, plans: r.plans, parCle: parCle };
     });
     return INDEX_RELEVES;
@@ -3735,7 +3935,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
      suite ininterrompue de la même valeur. « au moins » quand la suite
      remonte au premier relevé connu : avant, on ne sait pas. */
   function depuisQuand(p, h) {
-    h = h || historiquePlan(p);
+    if (!h) return depuisQuandAuPlusCourt(p);
     var k = h.length - 1;
     if (k < 0 || h[k].inconnu || h[k].absent) return null;
     var brut = h[k].brut, depuis = h[k].i, auMoins = false;
@@ -3746,6 +3946,32 @@ table.plans thead tr th.col-fige { z-index: 6; }
       if (k === 0) auMoins = true;
     }
     if (h.length === 1) auMoins = true;
+    return { depuis: depuis, semaines: AUJ - depuis, auMoins: auMoins };
+  }
+  /* La même réponse, sans refaire toute la vie du plan (débrief 23) : on
+     remonte du dernier relevé et l'on s'arrête au premier changement. Les
+     cases se lisent exactement comme dans historiquePlan(). */
+  function depuisQuandAuPlusCourt(p) {
+    var a = Object.prototype.hasOwnProperty, idx = indexReleves();
+    var lire = function (r) {
+      if (!r.plans) return { inconnu: true };
+      var ref = a.call(r.plans, p.reference) ? p.reference : r.parCle[p._racine];
+      if (ref === undefined) return { absent: true };
+      return { brut: norm(r.plans[ref]) };
+    };
+    var k = idx.length - 1;
+    if (k < 0) return null;
+    var dernier = lire(idx[k]);
+    if (dernier.inconnu || dernier.absent) return null;
+    var depuis = idx[k].i, auMoins = false;
+    for (k = k - 1; k >= 0; k--) {
+      var c = lire(idx[k]);
+      if (c.inconnu) { auMoins = true; break; }
+      if (c.absent || c.brut !== dernier.brut) break;
+      depuis = idx[k].i;
+      if (k === 0) auMoins = true;
+    }
+    if (idx.length === 1) auMoins = true;
     return { depuis: depuis, semaines: AUJ - depuis, auMoins: auMoins };
   }
   /* Les plans à l'arrêt : en cours, et sans changer de valeur depuis
@@ -3809,12 +4035,18 @@ table.plans thead tr th.col-fige { z-index: 6; }
     VALEURS_FINIES_N = formesDeclarees(src.valeursFinies, ['Validé']);
     VALEURS_FINIES_DITES = (Array.isArray(src.valeursFinies) && src.valeursFinies.length ? src.valeursFinies : ['Validé']).map(String);
     VALEURS_A_FAIRE_N = formesDeclarees(src.valeursAFaire, []);
+    oublierClassements();               // d'autres mots déclarés : d'autres classements
 
     PLANS.forEach(function (p) {
       p._etat = classer(p[CLE_SUIVIE]); p._pct = pourcentDe(p);
       p._cle = cleValeur(p[CLE_SUIVIE]);                     // la valeur, pour les rangées de pastilles
-      p._racine = cleAppariement(analyserUD(p.reference));   // racine + solution : l'identité du plan
+      p._racine = cleDeRef(p.reference);                     // racine + solution : l'identité du plan
     });
+    /* Les plans par référence et par racine, une fois pour toute la source :
+       les relevés, le journal et la page entière les y retrouvent. */
+    PLAN_PAR_REF = {};
+    PLAN_PAR_RACINE = {};
+    PLANS.forEach(function (p) { PLAN_PAR_REF[p.reference] = p; PLAN_PAR_RACINE[p._racine] = p; });
     VALEURS_COLONNE = lireValeurs(PLANS);
     rendreAlerteValeurs();
 
@@ -3943,9 +4175,18 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var luLe = SERVEUR && src.genereLe ? new Date(src.genereLe) : null;
     if ($('lu-le')) {
       $('lu-le').hidden = !(luLe && !isNaN(luLe.getTime()));
+      /* Débrief 23 : le classeur garde ses chiffres tant que rien n'y change
+         — un paquet lu hier sert aujourd'hui si le classeur n'a pas bougé.
+         Le pied le dit, plutôt qu'une date qu'on croirait en retard. Un
+         jour d'avant seulement : l'horloge de Google en avance sur celle du
+         PC (autour de minuit) ne fait pas dire « inchangé » d'une lecture
+         fraîche. */
+      var minuit = new Date(); minuit.setHours(0, 0, 0, 0);
+      var inchange = !$('lu-le').hidden && luLe.getTime() < minuit.getTime();
       $('lu-le').textContent = $('lu-le').hidden ? '' : 'Chiffres lus dans le classeur le ' +
         luLe.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) + ' à ' +
-        luLe.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + ' — recharger la page pour les chiffres du moment.';
+        luLe.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + (inchange ? ', classeur inchangé depuis' : '') +
+        ' — recharger la page pour les chiffres du moment.';
     }
 
     /* Ce qui a bougé entre les deux derniers imports, plan par plan. Le
@@ -3960,15 +4201,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
       .filter(function (c) { return c !== '_mois' && PAR_CLE[c]; })
       .map(function (c) { return PAR_CLE[c]; })
       .concat(CLE_DATE ? [{ cle: '_mois', titre: PAR_CLE[CLE_DATE].titre + ' (par mois)' }] : [])
-      .sort(function (a, b) { return a.titre.localeCompare(b.titre, 'fr'); });
+      .sort(function (a, b) { return COMPARER_FR(a.titre, b.titre); });
     TITRE_DIM = {};
     DIMENSIONS.forEach(function (d) { TITRE_DIM[d.cle] = d.titre; });
 
     ORDRE_FEUILLE = COLONNES.map(function (c) { return c.cle; });
 
-    PLAN_PAR_REF = {};
-    PLAN_PAR_RACINE = {};
-    PLANS.forEach(function (p) { PLAN_PAR_REF[p.reference] = p; PLAN_PAR_RACINE[p._racine] = p; });
     MEMO_DERIVE = {}; MEMO_VALEURS = {};
     JOURNAL = construireJournal();
     ORDRE_RESUME = {};
@@ -4659,7 +4897,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var valeurs = Object.keys(comptes).sort(function (a, b) {
       if (a === '\u2014') return 1;
       if (b === '\u2014') return -1;
-      return a.localeCompare(b, 'fr', { numeric: true });
+      return COMPARER_NUM(a, b);
     });
     var titre = PAR_CLE[CLE_DOMAINE].titre;
     var puces = [{ val: '', nom: 'Tout', n: PLANS.length,
@@ -4890,7 +5128,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
         '<span class="etat-pct">' + partDite(parValeur[v.cle] || 0, c.total) + '</span></button>';
     }).join('');
 
-    requestAnimationFrame(function () { alignerSousBarre('barre', 'filets', 'etats'); });
+    aMesurer('barre');                 // à l'image suivante, avec les autres mesures
   }
 
   /* ============================================================ GRAPHIQUE */
@@ -5093,16 +5331,31 @@ table.plans thead tr th.col-fige { z-index: 6; }
      (la police de secours n'a pas tout à fait la même chasse) ; à défaut de
      mesure, 0,6 em par signe, plus large que tout. */
   var mesureMots = null, policeAttendue = false, redessinPolices = false;
+  /* Une police est-elle là ? Demandé une fois par police, jusqu'à l'arrivée
+     des polices (débrief 23) : document.fonts.check() se demandait pour
+     chaque mot du dessin. */
+  var POLICES_VERIFIEES = {};
   function largeurMot(mot, gras) {
     try { if (!mesureMots) mesureMots = document.createElement('canvas').getContext('2d'); } catch (e) { mesureMots = null; }
     if (!mesureMots) return String(mot).length * 6.6;
     var police = (gras ? '500 ' : '') + '11px "IBM Plex Sans", sans-serif';
-    var chargee = true;
-    try { chargee = !document.fonts || document.fonts.check(police); } catch (e) { chargee = false; }
+    var chargee = POLICES_VERIFIEES[police];
+    if (chargee === undefined) {
+      try { chargee = !document.fonts || document.fonts.check(police); } catch (e) { chargee = false; }
+      POLICES_VERIFIEES[police] = chargee;
+    }
     if (!chargee) policeAttendue = true;
+    /* La largeur d'un même mot, dans la même police, se mesure une fois ;
+       l'arrivée des polices oublie tout (POLICES_VERIFIEES aussi). */
+    var cle = police + '\u0001' + chargee + '\u0001' + mot, w = LARGEURS_MOTS[cle];
+    if (w !== undefined) return w;
     mesureMots.font = police;
-    return Math.ceil(mesureMots.measureText(String(mot)).width * (chargee ? 1 : 1.08)) + 1;
+    w = Math.ceil(mesureMots.measureText(String(mot)).width * (chargee ? 1 : 1.08)) + 1;
+    if (++N_LARGEURS_MOTS > 2000) { LARGEURS_MOTS = {}; N_LARGEURS_MOTS = 1; }
+    LARGEURS_MOTS[cle] = w;
+    return w;
   }
+  var LARGEURS_MOTS = {}, N_LARGEURS_MOTS = 0;
 
   /* Débrief 20 : le graphique se dessinait sur 980 unités puis se laissait
      réduire — ses mots tombaient à 3,5 px sur un téléphone, à 7 px dans une
@@ -5112,6 +5365,10 @@ table.plans thead tr th.col-fige { z-index: 6; }
      La hauteur du tracé suit la largeur, dans des bornes : sur un
      téléphone il ne devient pas plus haut que large, sur un grand écran il
      garde à peu près la hauteur qu'il avait une fois agrandi. */
+  /* Un rendu complet mesure le cadre en tête, avant d'écrire quoi que ce
+     soit dans la page (rendreEtat) : lue au milieu, la largeur forçait une
+     mise en page de tout ce qui venait d'être écrit (débrief 23). */
+  var GRAPHE_MESURE = false;
   function mesurerGraphique() {
     var w = $('zone-graphe').clientWidth;
     L = w > 0 ? Math.max(280, Math.round(w)) : 980;
@@ -5127,7 +5384,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
 
   function rendreGraphique(liste) {
     bornerFenetre();
-    mesurerGraphique();
+    if (!GRAPHE_MESURE) mesurerGraphique();
     policeAttendue = false;
     var vg = rendreFiltreValeurGraphe();
     var vueSerie = serieAffichee();
@@ -6154,6 +6411,14 @@ table.plans thead tr th.col-fige { z-index: 6; }
     $('filtre-groupe').setAttribute('aria-label', 'Filtrer les ' + quoi + ' ou chercher un plan dans ce bloc');
   }
 
+  /* Le nom du bloc dans le sommaire : « Par ATA », « Par ECP »… La synthèse
+     le pose aussi (rendreHaut) : le sommaire de la première image de
+     l'ouverture est celui de la page finie (débrief 23, revue). */
+  function libellerSommaireGroupe() {
+    var dim = vue.dimCritique;
+    $('sommaire-groupe').textContent = dim && TITRE_DIM[dim] ? 'Par ' + TITRE_DIM[dim].replace(/ \(.*\)$/, '') : 'Répartition';
+  }
+
   function rendreCritique(liste) {
     var dim = vue.dimCritique;
     /* L'échéance — le jalon qui pilote l'effort demandé sous le périmètre
@@ -6167,7 +6432,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       $('titre-groupe').textContent = motSuivi();
       $('dim-critique').hidden = true;
       ajusterChoixDim();
-      $('sommaire-groupe').textContent = 'Répartition';
+      libellerSommaireGroupe();
       $('indice-dim').textContent = '';
       $('compte-groupes').textContent = '';
       libellerFiltreGroupe(dim);
@@ -6286,11 +6551,11 @@ table.plans thead tr th.col-fige { z-index: 6; }
           // Les codes ATA sont des nombres ecrits en texte : on les compare comme tels.
           var nx = parseFloat(x), ny = parseFloat(y);
           if (!isNaN(nx) && !isNaN(ny) && nx !== ny) return (nx - ny) * signe;
-          return x.localeCompare(y, 'fr', { numeric: true }) * signe;
+          return COMPARER_NUM(x, y) * signe;
         }
-        if (x === y) return a.nom.localeCompare(b.nom, 'fr', { numeric: true });
+        if (x === y) return COMPARER_NUM(a.nom, b.nom);
         // Infinity des deux cotes : egalite, on retombe sur le nom.
-        if (!isFinite(x) && !isFinite(y)) return a.nom.localeCompare(b.nom, 'fr', { numeric: true });
+        if (!isFinite(x) && !isFinite(y)) return COMPARER_NUM(a.nom, b.nom);
         return (x < y ? -1 : 1) * signe;
       });
     }
@@ -6304,7 +6569,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     $('dim-critique').hidden = false;
     ajusterChoixDim();
     // Le sommaire dit la même chose que le titre : « Par ATA », « Par ECP »…
-    $('sommaire-groupe').textContent = 'Par ' + TITRE_DIM[dim].replace(/ \(.*\)$/, '');
+    libellerSommaireGroupe();
     $('indice-dim').textContent = NOTE_DIM(dim);
     libellerFiltreGroupe(dim);
 
@@ -6486,8 +6751,10 @@ table.plans thead tr th.col-fige { z-index: 6; }
   }
   /* La colonne du nom de groupe prend la largeur du plus long nom affiché
      (débrief 23 : un nom d'ECP coupé de « … » ne se lisait plus). Une seule
-     mesure, tous les noms d'un coup ; au téléphone, le nom a toute la ligne. */
-  function ajusterColonneNom() {
+     mesure, tous les noms d'un coup ; au téléphone, le nom a toute la ligne.
+     Elle se fait à l'image suivante, avec les autres mesures de la page. */
+  function ajusterColonneNom() { aMesurer('colonneNom'); }
+  function poserColonneNom() {
     var zone = $('zone-critique');
     if (!zone) return;
     zone.style.removeProperty('--col-nom');
@@ -6643,39 +6910,43 @@ table.plans thead tr th.col-fige { z-index: 6; }
   function tableauHorsEcran(cadre) {
     return CV_AUTO && !!cadre && !cadresVisibles[cadre.id];
   }
-  function ajusterSticky() {
-    requestAnimationFrame(function () {
-      if (tableauHorsEcran($('cadre-tableau'))) return;
-      var g = document.querySelector('.groupes'), t = document.querySelector('.titres'), f = document.querySelector('.filtres');
-      if (!g || !t || !f) return;
-      var hg = g.getBoundingClientRect().height;
-      var ht = t.getBoundingClientRect().height;
-      t.querySelectorAll('th').forEach(function (th) { th.style.top = hg + 'px'; });
-      f.querySelectorAll('th').forEach(function (th) { th.style.top = (hg + ht) + 'px'; });
-
-      /* On mesure les colonnes collees et on les pose les unes apres les
-         autres. Sans ce cumul, la deuxieme viendrait recouvrir la premiere. */
-      var tetes = t.querySelectorAll('th');
-      var gauche = [], cumul = 0;
-      for (var i = 0; i < tetes.length; i++) {
-        if (!tetes[i].classList.contains('col-fige')) break;
-        gauche.push(cumul);
-        cumul += tetes[i].getBoundingClientRect().width;
-      }
-      if (!gauche.length) return;
-      g.querySelectorAll('th.col-fige').forEach(function (th) {
-        var d = parseInt(th.dataset.debut, 10) || 0;
-        th.style.left = (gauche[d] || 0) + 'px';
-      });
-      var lignes = [t, f].concat(Array.prototype.slice.call(document.querySelectorAll('#corps-tableau tr')));
-      lignes.forEach(function (ligne) {
-        var n = 0;
-        ligne.querySelectorAll('.col-fige').forEach(function (c) {
-          c.style.left = (gauche[n] == null ? 0 : gauche[n]) + 'px';
-          n++;
-        });
+  function ajusterSticky() { aMesurer('sticky'); }
+  /* Les cellules figées du corps lisent leur décalage dans une variable du
+     tableau (--fige-0, --fige-1…) : une seule écriture, au lieu d'une par
+     cellule et par ligne à chaque tranche (débrief 23). Les en-têtes, peu
+     nombreux, gardent le leur. On mesure tout d'abord, on pose ensuite. */
+  function styleFige(i, n) { return i < n ? ' style="left:var(--fige-' + i + ',0px)"' : ''; }
+  function poserColonnesFigees() {
+    if (tableauHorsEcran($('cadre-tableau'))) return;
+    var g = document.querySelector('.groupes'), t = document.querySelector('.titres'), f = document.querySelector('.filtres');
+    if (!g || !t || !f) return;
+    var hg = g.getBoundingClientRect().height;
+    var ht = t.getBoundingClientRect().height;
+    /* On mesure les colonnes collees et on les pose les unes apres les
+       autres. Sans ce cumul, la deuxieme viendrait recouvrir la premiere. */
+    var tetes = t.querySelectorAll('th');
+    var gauche = [], cumul = 0;
+    for (var i = 0; i < tetes.length; i++) {
+      if (!tetes[i].classList.contains('col-fige')) break;
+      gauche.push(cumul);
+      cumul += tetes[i].getBoundingClientRect().width;
+    }
+    t.querySelectorAll('th').forEach(function (th) { th.style.top = hg + 'px'; });
+    f.querySelectorAll('th').forEach(function (th) { th.style.top = (hg + ht) + 'px'; });
+    if (!gauche.length) return;
+    g.querySelectorAll('th.col-fige').forEach(function (th) {
+      var d = parseInt(th.dataset.debut, 10) || 0;
+      th.style.left = (gauche[d] || 0) + 'px';
+    });
+    [t, f].forEach(function (ligne) {
+      var n = 0;
+      ligne.querySelectorAll('.col-fige').forEach(function (c) {
+        c.style.left = (gauche[n] == null ? 0 : gauche[n]) + 'px';
+        n++;
       });
     });
+    var corps = $('corps-tableau');
+    gauche.forEach(function (x, k) { corps.style.setProperty('--fige-' + k, x + 'px'); });
   }
   /* Un tableau de dizaines de milliers de cellules ne se dessine pas d'un
      bloc : c'était l'essentiel du temps d'ouverture sur un gros extract. Au-
@@ -6688,9 +6959,14 @@ table.plans thead tr th.col-fige { z-index: 6; }
      chargé. 6 000 cellules, soit 60 lignes de l'extract entier, se posent en
      un clin d'œil ; la suite vient en descendant. */
   var BUDGET_CELLULES = typeof window.SUIVI_FWD_BUDGET === 'number' && window.SUIVI_FWD_BUDGET > 0 ? window.SUIVI_FWD_BUDGET : 6000;
+  /* Débrief 23 : à l'ouverture, le tableau pose d'abord vingt lignes — un
+     instant —, et complète sa première tranche dès que la page a fini de
+     s'afficher : c'est le même tableau qu'avant, en deux fois. Un budget
+     fixé par un test garde la tranche entière d'un coup. */
+  var PREMIERE_TRANCHE = typeof window.SUIVI_FWD_BUDGET === 'number' ? 0 : 20;
   var TRANCHES = {};
-  function trancheHtml(t) {
-    var fin = Math.min(t.total, t.montrees + t.pas), h = '';
+  function trancheHtml(t, combien) {
+    var fin = Math.min(t.total, t.montrees + (combien || t.pas)), h = '';
     for (var i = t.montrees; i < fin; i++) h += t.ligneHtml(i);
     t.montrees = fin;
     var reste = t.total - fin;
@@ -6699,12 +6975,23 @@ table.plans thead tr th.col-fige { z-index: 6; }
         nb(reste) + (reste > 1 ? ' lignes de plus' : ' ligne de plus') + ' — descendez, ou cliquez ici</button></td></tr>'
       : '');
   }
-  function poserTranches(corps, total, nbCols, ligneHtml, apres) {
+  function poserTranches(corps, total, nbCols, ligneHtml, apres, premiere) {
     var t = { id: corps.id, total: total, nbCols: Math.max(1, nbCols), montrees: 0, ligneHtml: ligneHtml, apres: apres,
               pas: Math.max(60, Math.floor(BUDGET_CELLULES / Math.max(1, nbCols))) };
     TRANCHES[corps.id] = t;
-    corps.innerHTML = trancheHtml(t);
+    corps.innerHTML = trancheHtml(t, premiere && premiere < t.pas ? premiere : 0);
     if (apres) apres();
+    return t;
+  }
+  /* La première tranche complétée — les lignes que l'ouverture avait
+     laissées pour plus tard —, si le tableau est toujours celui-là. */
+  function completerPremiereTranche(t) {
+    var corps = t && $(t.id);
+    if (!corps || TRANCHES[t.id] !== t || t.montrees >= Math.min(t.total, t.pas)) return;
+    var suite = corps.querySelector('tr.ligne-suite');
+    if (suite) suite.parentNode.removeChild(suite);
+    corps.insertAdjacentHTML('beforeend', trancheHtml(t, t.pas - t.montrees));
+    if (t.apres) t.apres();
   }
   function trancheSuivante(idCorps) {
     var t = TRANCHES[idCorps], corps = $(idCorps);
@@ -6721,8 +7008,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
     }, { passive: true });
   }
 
-  function rendreCorps(liste) {
+  function rendreCorps(liste, premiere) {
     var cols = visibles();
+    $('cadre-tableau').removeAttribute('data-a-venir');   // l'ouverture lui gardait sa place
     /* Le lot « seulement dans la seconde base » n'a aucun plan ici : le
        tableau de GATES le dit, et propose l'autre côté. La barre du haut, elle,
        montre toujours la sélection — ce lot n'est pas un filtre sur les plans. */
@@ -6738,12 +7026,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
     }
     var rangs = liste.slice().sort(function (a, b) {
       var k = vue.tri.cle, sens = vue.tri.asc ? 1 : -1;
-      if (k === CLE_SUIVIE) return (a._pct - b._pct) * sens || a.reference.localeCompare(b.reference);
+      if (k === CLE_SUIVIE) return (a._pct - b._pct) * sens || COMPARER_LOCAL(a.reference, b.reference);
       var va = String(a[k] == null ? '' : a[k]), vb = String(b[k] == null ? '' : b[k]);
       if (va === '' && vb === '') return 0;
       if (va === '') return 1;
       if (vb === '') return -1;
-      return va.localeCompare(vb, 'fr', { numeric: true, sensitivity: 'base' }) * sens;
+      return COMPARER_REF(va, vb) * sens;
     });
 
     if (!rangs.length) {
@@ -6763,23 +7051,23 @@ table.plans thead tr th.col-fige { z-index: 6; }
           var e = valeurDeCle(p._cle) || ETAT_PAR_CLE[p._etat];
           var past = e.hachure ? '<span class="pastille hachure"></span>'
             : '<span class="pastille" style="background:' + e.couleur + '"></span>';
-          return '<td class="' + fige + '"><span class="etat-cellule">' + past +
+          return '<td class="' + fige + '"' + styleFige(i, nFige) + '><span class="etat-cellule">' + past +
             (String(p[CLE_SUIVIE] == null ? '' : p[CLE_SUIVIE]).trim() ? '<span class="num">' + ech(p[CLE_SUIVIE]) + '</span>' : '<span class="doux">Non renseigné</span>') +
             '</span></td>';
         }
         var val = p[c.cle];
         var classes = (c.classe + ' ' + fige).trim();
-        if (val === '' || val == null) return '<td class="' + classes + ' doux">-</td>';
+        if (val === '' || val == null) return '<td class="' + classes + ' doux"' + styleFige(i, nFige) + '>-</td>';
         var titre = c.classe.indexOf('large') !== -1 ? ' title="' + ech(val) + '"' : '';
         /* La référence se clique : le tableau se réduit à ce plan, et son
            historique s'ouvre au-dessus. */
         if (c.cle === 'reference') {
-          return '<td class="' + classes + '"><button class="ref-plan" type="button" data-ref-plan="' + ech(val) +
+          return '<td class="' + classes + '"' + styleFige(i, nFige) + '><button class="ref-plan" type="button" data-ref-plan="' + ech(val) +
             '" title="Voir l\u2019historique de ce plan">' + ech(val) + '</button></td>';
         }
-        return '<td class="' + classes + '"' + titre + '>' + ech(libelleGroupe(val)) + '</td>';
+        return '<td class="' + classes + '"' + styleFige(i, nFige) + titre + '>' + ech(libelleGroupe(val)) + '</td>';
       }).join('') + '</tr>';
-    }, ajusterSticky);   // chaque tranche ajoutée a ses colonnes figées posées
+    }, ajusterSticky, premiere);   // chaque tranche ajoutée a ses colonnes figées posées
 
     /* « sur N » : N est la population du périmètre, pas la feuille entière. */
     var base = population().length;
@@ -6872,10 +7160,18 @@ table.plans thead tr th.col-fige { z-index: 6; }
   });
   /* Une rangée trop longue pour sa ligne : le fondu du bord droit, tant
      qu'il reste à faire défiler (débrief 19). */
+  /* Mesuré à l'image suivante, avec les autres (voir « LES MESURES DE LA
+     PAGE ») : lu juste après l'écriture de la rangée, il remettait toute la
+     page en page. */
   function marquerDebord(rangee) {
     if (!rangee) return;
-    var reste = rangee.scrollWidth - rangee.clientWidth - rangee.scrollLeft;
-    rangee.classList.toggle('deborde-droite', !rangee.hidden && reste > 2);
+    if (MESURES.rangees.indexOf(rangee) === -1) MESURES.rangees.push(rangee);
+    prevoirMesures();
+  }
+  function lireDebord(rangee) {
+    if (!rangee) return null;
+    var reste = rangee.scrollWidth - rangee.clientWidth - rangee.scrollLeft, deborde = !rangee.hidden && reste > 2;
+    return function () { rangee.classList.toggle('deborde-droite', deborde); };
   }
   function marquerDebords() {
     ['filtre-journal', 'filtre-valeur-groupe', 'filtre-valeur-graphe'].forEach(function (id) { marquerDebord($(id)); });
@@ -7284,12 +7580,15 @@ table.plans thead tr th.col-fige { z-index: 6; }
       var rangEtat = { termine: 0, encours: 1, afaire: 2, vide: 3 };
       var rangType = { indice: -1, nouveau: 5, disparu: 6 };
       var rangEvt = function (e) { return estRecul(e) ? -2 : rangType[e.type] !== undefined ? rangType[e.type] : rangEtat[e.apres]; };
-      evts = evts.slice().sort(function (a, b) {
+      /* Une semaine repliée ne montre ni ses lignes ni son bouton « Copier » :
+         elle ne les range ni ne les écrit (débrief 23) — ils se font quand
+         on la déplie. */
+      if (ouvert) evts = evts.slice().sort(function (a, b) {
         var ra = rangEvt(a), rb = rangEvt(b);
-        return (ra - rb) || a.ref.localeCompare(b.ref, 'fr', { numeric: true });
+        return (ra - rb) || COMPARER_NUM(a.ref, b.ref);
       });
 
-      var lignes = evts.slice(0, limite).map(function (e) {
+      var lignes = !ouvert ? '' : evts.slice(0, limite).map(function (e) {
         /* La référence et son passage, rien d'autre : le libellé du plan
            (« Faisceau 417 ») n'apprenait rien ici. */
         var vers = e.type === 'nouveau'
@@ -7315,9 +7614,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
       /* Copier toutes les références de la semaine — sous une pastille du
          journal ou une recherche, celles qui restent —, même au-delà des
          douze affichées. */
-      lignes = '<li class="journal-copier">' + boutonCopier(evts.map(function (e) { return e.ref; })) + '</li>' + lignes;
+      if (ouvert) lignes = '<li class="journal-copier">' + boutonCopier(evts.map(function (e) { return e.ref; })) + '</li>' + lignes;
       var reste = evts.length - limite;
-      if (reste > 0) {
+      if (ouvert && reste > 0) {
         lignes += '<li><button class="journal-plus" type="button" data-tout="' + sem.i + '">' +
           'voir les ' + nb(reste) + ' autres</button></li>';
       }
@@ -7384,27 +7683,76 @@ table.plans thead tr th.col-fige { z-index: 6; }
     if (!id || id === CONTRAT) return;
     var sel = $('select-contrat'), etat = $('etat-contrat');
     var demande = ++demandeContrat;
-    function poser(paquet) {
+    /* Le paquet reçu passe par obtenirPaquet() : compressé, il se décode
+       d'abord. */
+    function poser(recu) {
       if (demande !== demandeContrat) return;        // une demande plus récente a pris le relais
-      paquet = deballerPaquet(paquet);
-      if (!paquet || !paquet.plans || !paquet.plans.length) {
+      obtenirPaquet(recu, function (paquet) {
+        if (demande !== demandeContrat) return;
+        finAttenteContrat();
+        paquet = deballerPaquet(paquet);
+        if (!paquet || !paquet.plans || !paquet.plans.length) {
+          sel.disabled = false;
+          sel.value = CONTRAT;
+          etat.textContent = paquet && paquet.message ? paquet.message : 'Contrat impossible à charger.';
+          return;
+        }
+        chargerSource(paquet);
+        remplirDims();
+        rendre();
+      }, function () {
+        if (demande !== demandeContrat) return;
+        finAttenteContrat();
         sel.disabled = false;
         sel.value = CONTRAT;
-        etat.textContent = paquet && paquet.message ? paquet.message : 'Contrat impossible à charger.';
-        return;
-      }
-      chargerSource(paquet);
-      remplirDims();
-      rendre();
+        etat.textContent = 'Contrat impossible à charger.';
+      });
     }
     if (API && API.chargerContrat) {
       sel.disabled = true;
       etat.textContent = 'Chargement…';
-      API.chargerContrat(id, poser);
+      /* La page d'avant reste là, estompée, jusqu'à l'arrivée de l'autre :
+         jamais une page blanche (débrief 23). */
+      document.body.setAttribute('data-attente', 'contrat');
+      demanderContrat(id, poser);
     } else {
       poser(jeuDExemple(id));
     }
   }
+  function finAttenteContrat() { document.body.removeAttribute('data-attente'); }
+  /* Débrief 23 : la demande part dès qu'on ouvre le sélecteur — à la souris
+     ou au clavier —, pas une fois le contrat choisi : le classeur a quelques
+     dixièmes de seconde d'avance. Sa réponse ne sert que si l'on choisit ce
+     contrat dans la demi-minute ; au-delà, la page redemande : jamais un
+     paquet d'avant sans savoir s'il est encore le bon. Deux ou trois
+     contrats seulement : au-delà, on ne devine pas lequel viendra. */
+  var AVANCES = {}, AVANCE_VALABLE_MS = 30000;
+  function avancerContrats() {
+    if (!API || !API.chargerContrat || CONTRATS.length < 2 || CONTRATS.length > 3) return;
+    CONTRATS.forEach(function (c) {
+      if (c.id === CONTRAT) return;
+      var a = AVANCES[c.id];
+      if (a && Date.now() - a.debut < AVANCE_VALABLE_MS) return;
+      var avance = AVANCES[c.id] = { debut: Date.now(), recu: false, paquet: null, attente: null };
+      API.chargerContrat(c.id, function (paquet) {
+        avance.recu = true;
+        avance.paquet = paquet || null;
+        if (avance.attente) { var suite = avance.attente; avance.attente = null; suite(avance.paquet); }
+      });
+    });
+  }
+  function demanderContrat(id, rappel) {
+    var a = AVANCES[id];
+    delete AVANCES[id];
+    if (a && Date.now() - a.debut < AVANCE_VALABLE_MS) {
+      var suite = function (paquet) { if (paquet) rappel(paquet); else API.chargerContrat(id, rappel); };
+      if (a.recu) suite(a.paquet); else a.attente = suite;
+      return;
+    }
+    API.chargerContrat(id, rappel);
+  }
+  $('select-contrat').addEventListener('mousedown', avancerContrats);
+  $('select-contrat').addEventListener('focus', avancerContrats);
   $('select-contrat').addEventListener('change', function (e) { changerContrat(e.target.value); });
 
   /* ============================================================
@@ -7552,12 +7900,14 @@ table.plans thead tr th.col-fige { z-index: 6; }
     if (!manquants.length) { finir(); return; }
     var restent = manquants.length;
     manquants.forEach(function (c) {
-      function recevoir(paquet) {
+      function ranger(paquet) {
         paquet = deballerPaquet(paquet);
         if (paquet && paquet.plans && paquet.plans.length) PAQUETS[c.id] = paquet;
         else MESSAGES_ENSEMBLE[c.id] = paquet && paquet.message ? String(paquet.message) : '';
         if (--restent === 0) finir();
       }
+      /* Compressé, le paquet se décode d'abord (obtenirPaquet). */
+      function recevoir(recu) { obtenirPaquet(recu, ranger, function () { ranger(null); }); }
       if (API && API.chargerContrat) API.chargerContrat(c.id, recevoir);
       else recevoir(jeuDExemple(c.id));
     });
@@ -7723,16 +8073,11 @@ table.plans thead tr th.col-fige { z-index: 6; }
      mesures : lue juste après l'écriture du tableau, elle forçait le
      navigateur à tout mettre en page une fois de plus — une seconde entière
      sur un gros extract. */
-  var ombrePrevue = false;
-  function majOmbre() {
-    if (ombrePrevue) return;
-    ombrePrevue = true;
-    requestAnimationFrame(function () {
-      ombrePrevue = false;
-      if (tableauHorsEcran($('cadre-tableau'))) return;
-      var d = $('defile');
-      $('cadre-tableau').dataset.deborde = (d.scrollWidth - d.clientWidth - d.scrollLeft) > 4 ? 'true' : 'false';
-    });
+  function majOmbre() { aMesurer('ombre'); }
+  function lireOmbre() {
+    if (tableauHorsEcran($('cadre-tableau'))) return null;
+    var d = $('defile'), deborde = (d.scrollWidth - d.clientWidth - d.scrollLeft) > 4 ? 'true' : 'false';
+    return function () { $('cadre-tableau').dataset.deborde = deborde; };
   }
 
   /* La section « Comparaison des bases de données » : une phrase, deux
@@ -7842,6 +8187,18 @@ table.plans thead tr th.col-fige { z-index: 6; }
   var COMPARER_REF = (window.Intl && Intl.Collator)
     ? new Intl.Collator('fr', { numeric: true, sensitivity: 'base' }).compare
     : function (a, b) { return a.localeCompare(b, 'fr', { numeric: true, sensitivity: 'base' }); };
+  /* Les autres tris de la page, chacun avec les options exactes de son
+     localeCompare d'avant (débrief 23) : par définition (ECMA-402),
+     a.localeCompare(b, l, o) EST new Intl.Collator(l, o).compare(a, b) —
+     le même ordre, sans refaire le comparateur à chaque paire. */
+  function comparateur(langue, options) {
+    if (window.Intl && Intl.Collator) return new Intl.Collator(langue, options).compare;
+    return function (a, b) { return String(a).localeCompare(String(b), langue, options); };
+  }
+  var COMPARER_NUM = comparateur('fr', { numeric: true });     // le journal, le bloc par groupe, le périmètre
+  var COMPARER_FR = comparateur('fr');                          // les dimensions du bloc
+  var COMPARER_LOCAL = comparateur();                           // la référence, sous un tri par la colonne suivie
+  window.__comparateurs = function () { return { ref: COMPARER_REF, num: COMPARER_NUM, fr: COMPARER_FR, local: COMPARER_LOCAL }; };
   /* Les rangées d'un lot. Pour un plan d'ici : sa référence, son état, et
      ce que la seconde base en dit — absent, présent, ou sous quel indice.
      Pour une ligne seulement là : sa référence recomposée, et la valeur de
@@ -8116,7 +8473,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
         if (va === '' && vb === '') return a.i - b.i;
         if (va === '') return 1;
         if (vb === '') return -1;
-        return va.localeCompare(vb, 'fr', { numeric: true, sensitivity: 'base' }) * sens || a.i - b.i;
+        return COMPARER_REF(va, vb) * sens || a.i - b.i;
       });
     }
     return lignes;
@@ -8140,6 +8497,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     });
   }
   function rendreSeconde() {
+    if (OUVERTURE) OUVERTURE.secondeAFaire = false;   // dessiné : l'ouverture n'a plus à le faire
     if (!RAPPROCHEMENT || !SECONDE) { $('corps-seconde').innerHTML = ''; $('tete-seconde').innerHTML = ''; return; }
     var R = RAPPROCHEMENT, S = vue.seconde, nom = nomSeconde();
     var cols = S.vueTable === 'essentielle' && SECONDE.vautEssentielles ? SECONDE.essentielles : SECONDE.titres;
@@ -8203,7 +8561,58 @@ table.plans thead tr th.col-fige { z-index: 6; }
     }).join('');
   }
 
+  /* Le rendu de la page, en quatre morceaux qui calculent chacun exactement
+     ce qu'ils calculaient (débrief 23) : l'état (rendreEtat), la synthèse et
+     la courbe (le haut), le reste (le bas), puis la fin. Un rendu complet
+     les enchaîne d'un bloc ; l'ouverture peint le haut d'abord, et le bas
+     juste après (voir « L'OUVERTURE EN DEUX TEMPS »). */
   function rendre() {
+    /* Un rendu complet l'emporte sur ce qui restait de l'ouverture : tout est
+       dessiné ici, d'un bloc, comme avant. */
+    var ouverture = OUVERTURE;
+    GENERATION++;
+    OUVERTURE = null;
+    var liste = rendreEtat();
+    rendreAvancement(liste);
+    rendreGraphique(liste);
+    rendreEcheanceTitre();
+    rendreJournal();
+    rendreCritique(liste);
+    rendreEntetes();
+    rendreCorps(liste);
+    rendreFichePlan(liste);
+    rendreASurveiller();
+    rendreRapprochement();
+    rendreSeconde();
+    rendreIncomplets();
+    rendreFiltresActifs();
+    rendreFin();
+    if (ouverture && !DEMARRAGE_FINI) terminerOuverture();
+  }
+  /* Tout ce que montre la première image de l'ouverture : la synthèse
+     entière — « À surveiller » en fait partie, arrivé après il poussait la
+     courbe vers le bas sous les yeux (débrief 23, revue) —, la courbe,
+     l'échéance, les filtres. La comparaison des bases, plus bas, se montre
+     déjà (vide, « Chargement… ») : le sommaire est juste dès la première
+     image, et ne gagne pas d'entrée ensuite. */
+  function rendreHaut(liste) {
+    rendreAvancement(liste);
+    rendreGraphique(liste);
+    rendreEcheanceTitre();
+    rendreASurveiller();
+    rendreFiltresActifs();
+    libellerSommaireGroupe();
+    $('rapprochement').hidden = !RAPPROCHEMENT;
+  }
+  function rendreFin() {
+    GRAPHE_MESURE = false;
+    vue.dernieresCles = clesSelection();
+    planifierSauvegarde();
+  }
+  function rendreEtat() {
+    /* La largeur du graphique, lue avant toute écriture (l'ouverture l'a
+       déjà lue, avant même ses calculs). */
+    if (!GRAPHE_MESURE) { mesurerGraphique(); GRAPHE_MESURE = true; }
     /* SEE ne connaît pas le concept harnais : sous lui, pas de comparaison
        des bases — ni la section, ni l'interrupteur GATES | SEE du tableau. */
     RAPPROCHEMENT = INDICATEUR === 'concept' ? null : rapprocher(SRC.rapprochement, population());
@@ -8241,21 +8650,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     if (vue.fenAuto) vue.fen = cadrageParDefaut();
     var liste = selection();
     refleterBase();                    // avant les tableaux : l'ombre du défilement se mesure sur un cadre visible
-    rendreAvancement(liste);
-    rendreGraphique(liste);
-    rendreEcheanceTitre();
-    rendreJournal();
-    rendreCritique(liste);
-    rendreEntetes();
-    rendreCorps(liste);
-    rendreFichePlan(liste);
-    rendreASurveiller();
-    rendreRapprochement();
-    rendreSeconde();
-    rendreIncomplets();
-    rendreFiltresActifs();
-    vue.dernieresCles = clesSelection();
-    planifierSauvegarde();
+    return liste;
   }
   /* La sélection en une liste de clés — un état, un groupe, une recherche,
      chaque filtre de colonne, chaque « non renseigné », la sélection de
@@ -8567,22 +8962,28 @@ table.plans thead tr th.col-fige { z-index: 6; }
   var LIENS_SOMMAIRE = [].slice.call(LISTE_SOMMAIRE.querySelectorAll('a[data-chapitre]'));
   function chapitreDe(a) { return document.getElementById(a.getAttribute('data-chapitre')); }
   function chapitreVisible(sec) { return !!sec && !sec.hidden && sec.getClientRects().length > 0; }
-  function majChapitresPresents() {
-    LIENS_SOMMAIRE.forEach(function (a) {
-      var li = a.parentNode, montrer = chapitreVisible(chapitreDe(a));
-      if (li.hidden === montrer) li.hidden = !montrer;
+  /* À l'image suivante, avec les autres mesures : les panneaux présents,
+     puis le fondu du sommaire et le panneau courant (mesurerMaintenant). */
+  function majChapitresPresents() { aMesurer('chapitres'); }
+  function poserChapitresPresents() {
+    var montrer = LIENS_SOMMAIRE.map(function (a) { return chapitreVisible(chapitreDe(a)); });
+    LIENS_SOMMAIRE.forEach(function (a, i) {
+      var li = a.parentNode;
+      if (li.hidden === montrer[i]) li.hidden = !montrer[i];
     });
-    marquerDebord(LISTE_SOMMAIRE);
-    majSommaire();
   }
   /* Le bandeau des filtres actifs est collé lui aussi, au-dessus : sa hauteur
      décale le sommaire ; les deux ensemble, l'arrêt des sauts dans la page. */
-  function majHautSommaire() {
+  function majHautSommaire() { aMesurer('hautSommaire'); }
+  function lireHautSommaire() {
     var f = $('filtres-actifs');
     var h = f && !f.hidden ? Math.round(f.getBoundingClientRect().height) : 0;
-    var racine = document.documentElement.style;
-    racine.setProperty('--haut-sommaire', h + 'px');
-    racine.setProperty('--bas-sommaire', (h + Math.round(SOMMAIRE.getBoundingClientRect().height)) + 'px');
+    var s = Math.round(SOMMAIRE.getBoundingClientRect().height);
+    return function () {
+      var racine = document.documentElement.style;
+      racine.setProperty('--haut-sommaire', h + 'px');
+      racine.setProperty('--bas-sommaire', (h + s) + 'px');
+    };
   }
   /* Le panneau courant : le dernier dont le haut est passé sous le sommaire.
      Tout en bas de la page, le dernier panneau, même court. */
@@ -8819,6 +9220,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var zone = $('zone-critique'), val = b.dataset.groupe;
     var avant = b.getBoundingClientRect().top - zone.getBoundingClientRect().top;
     rendre();
+    mesurerMaintenant();               // la colonne des noms posée avant de relire où est la ligne
     var ligne = [].filter.call(zone.querySelectorAll('.critique-ligne'), function (x) { return x.dataset.groupe === val; })[0];
     if (!ligne) return;
     var haut = zone.getBoundingClientRect().top;
@@ -8843,6 +9245,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var val = ouverte ? ouverte.dataset.groupe : null;
     var avant = ouverte ? ouverte.getBoundingClientRect().top - zone.getBoundingClientRect().top : 0;
     rendreCritique(selection());
+    mesurerMaintenant();
     if (val !== null) {
       var ligne = [].filter.call(zone.querySelectorAll('.critique-ligne'), function (x) { return x.dataset.groupe === val; })[0];
       if (ligne) zone.scrollTop += ligne.getBoundingClientRect().top - zone.getBoundingClientRect().top - avant;
@@ -9043,8 +9446,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
   window.addEventListener('resize', function () {
     clearTimeout(minuteurTaille);
     minuteurTaille = setTimeout(function () {
+      if (!vue) return;                // la page attend encore ses données
       rendreGraphique(selection()); ajusterSticky(); majOmbre();
-      alignerSousBarre('barre', 'filets', 'etats');
+      aMesurer('barre');
       ajusterColonneNom();
       marquerDebords();
     }, 160);
@@ -9074,7 +9478,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     veilleRangees.observe(LISTE_SOMMAIRE);
   }
   if (document.fonts) {
-    var remesurer = function () { alignerSousBarre('barre', 'filets', 'etats'); marquerDebords(); ajusterChoixDim(); };
+    var remesurer = function () { POLICES_VERIFIEES = {}; LARGEURS_MOTS = {}; aMesurer('barre'); marquerDebords(); ajusterChoixDim(); };
     if (document.fonts.ready) document.fonts.ready.then(remesurer);
     if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', remesurer);
   }
@@ -9144,6 +9548,487 @@ table.plans thead tr th.col-fige { z-index: 6; }
   };
 
   /* ============================================================
+     LE PAQUET DU CLASSEUR, SOUS SES QUATRE FORMES (débrief 23)
+     Le classeur l'envoie compressé : une enveloppe { format: 2, edition,
+     contrat, cle, gz, mesures }, où gz est le paquet compacté passé par
+     gzip puis écrit en base64 « web » (A–Z a–z 0–9 - _, sans « = »).
+     Google recopie la page entière dans une chaîne échappée avant de la
+     montrer : il y a dix fois moins à recopier, et à relire. La page lit
+     aussi, comme avant, le paquet compacté, le paquet complet (celui du
+     Chargeur) et le paquet écrit en JSON. Sans DecompressionStream, ou s'il
+     échoue, elle redemande le paquet en JSON au classeur
+     (getDonneesCompactesJson) ; sans réponse, elle le dit.
+     ============================================================ */
+  var DECOMPRESSION = typeof window.DecompressionStream === 'function' && typeof window.Response === 'function' &&
+    typeof window.Blob === 'function' && !!Blob.prototype.stream && typeof window.atob === 'function' &&
+    typeof window.Uint8Array === 'function' && typeof window.Promise === 'function';
+  function estEnveloppe(x) { return !!x && typeof x === 'object' && x.format === 2 && typeof x.gz === 'string'; }
+  function octetsDeB64(b64) {
+    var s = b64.replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    var bin = atob(s), n = bin.length, octets = new Uint8Array(n);
+    for (var i = 0; i < n; i++) octets[i] = bin.charCodeAt(i);
+    return octets;
+  }
+  /* Le texte du paquet, en UTF-8, comme le serveur l'a compressé. */
+  function degonfler(b64) {
+    return new Response(new Blob([octetsDeB64(b64)]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  }
+  /* Le paquet en JSON, redemandé au classeur : le secours du décodage. Par
+     le pont d'Index quand il le propose (chargerContratJson, qui rend null
+     en cas d'échec), sinon directement. */
+  function demanderJson(contrat, ok, ko) {
+    if (API && typeof API.chargerContratJson === 'function') {
+      try {
+        API.chargerContratJson(contrat, function (json) {
+          if (json === null || json === undefined || json === '') ko(new Error('Le classeur n’a pas rendu le paquet en clair.'));
+          else ok(json);
+        });
+      } catch (e) { ko(e); }
+      return;
+    }
+    var run = window.google && google.script && google.script.run;
+    if (!run || typeof run.withSuccessHandler !== 'function') {
+      ko(new Error('Le paquet compressé ne se lit pas dans ce navigateur, et le classeur n’est pas joignable pour le redemander.'));
+      return;
+    }
+    try { run.withSuccessHandler(ok).withFailureHandler(ko).getDonneesCompactesJson(contrat); }
+    catch (e) { ko(e); }
+  }
+  /* Une tâche à part, au plus tôt : un rappel tiré d'une promesse en sort,
+     pour que ses erreurs restent des erreurs (le filet du démarrage les
+     voit ; une promesse les avalerait). */
+  var CANAL = null, A_FAIRE_BIENTOT = [];
+  function bientot(f) {
+    if (!window.MessageChannel) { setTimeout(f, 0); return; }
+    if (!CANAL) {
+      CANAL = new MessageChannel();
+      CANAL.port1.onmessage = function () { var g = A_FAIRE_BIENTOT.shift(); if (g) g(); };
+    }
+    A_FAIRE_BIENTOT.push(f);
+    CANAL.port2.postMessage(0);
+  }
+  /* rappel(paquet, enveloppe) : le paquet tel que deballerPaquet() le
+     prend ; enveloppe = { cle, mesures, octets, decodage } quand il est
+     arrivé compressé, null sinon. echec(erreur) quand rien n'a pu être lu. */
+  function obtenirPaquet(x, rappel, echec) {
+    if (typeof x === 'string') {
+      var lu;
+      try { lu = JSON.parse(x); } catch (e) { echec(e); return; }
+      obtenirPaquet(lu, rappel, echec);
+      return;
+    }
+    if (!estEnveloppe(x)) { rappel(x, null); return; }
+    var env = x, t0 = CHRONO(), fini = false;
+    var infos = { cle: env.cle === undefined || env.cle === null ? '' : String(env.cle), mesures: env.mesures || null,
+                  octets: env.gz.length, decodage: null };
+    function livrer(paquet) {
+      if (fini) return;
+      fini = true;
+      infos.decodage = CHRONO() - t0;
+      bientot(function () { rappel(paquet, infos); });
+    }
+    function secours(raison) {
+      if (fini) return;
+      demanderJson(env.contrat, function (json) {
+        var p = json;
+        if (typeof json === 'string') { try { p = JSON.parse(json); } catch (e) { echouer(e); return; } }
+        if (!p || typeof p !== 'object') { echouer(raison); return; }
+        infos.secours = true;
+        livrer(p);
+      }, function (e) { echouer(e || raison); });
+    }
+    function echouer(e) {
+      if (fini) return;
+      fini = true;
+      bientot(function () { echec(e instanceof Error ? e : new Error(String((e && e.message) || e || 'paquet illisible'))); });
+    }
+    if (!DECOMPRESSION) { secours(new Error('DecompressionStream absent')); return; }
+    try {
+      degonfler(env.gz).then(function (texte) {
+        var p;
+        marquer('degonfle');
+        try { p = JSON.parse(texte); } catch (e) { secours(e); return; }
+        livrer(p);
+      }, secours);
+    } catch (e) { secours(e); }
+  }
+
+  /* ============================================================
+     L'OUVERTURE EN DEUX TEMPS (débrief 23)
+     La synthèse d'abord — avancement, courbe, échéance —, peinte dès qu'elle
+     est calculée ; puis, en quelques tâches courtes, le journal, le bloc par
+     groupe, ce qui est à surveiller, la comparaison, et le tableau des plans
+     quand il approche de l'écran ou que la page n'a plus rien d'autre à
+     faire. Chaque morceau calcule exactement ce qu'il calculait : les
+     chiffres de la synthèse sont ceux de la page entière, jamais
+     provisoires. Un geste pendant l'ouverture la finit d'abord, d'un coup :
+     la page n'est jamais à moitié dessinée sous un clic. <html
+     data-suivi-fwd="…"> dit où elle en est : « chargement », « synthese »,
+     « pret ».
+     ============================================================ */
+  var GENERATION = 0, OUVERTURE = null, DERNIERE_ENVELOPPE = null;
+  function poserEtatOuverture(etat) { document.documentElement.setAttribute('data-suivi-fwd', etat); }
+  /* Après l'image qui vient — la page peinte —, au plus tôt. Une page
+     cachée n'a pas d'image : elle ne reste pas en plan pour autant. */
+  function apresImage(f) {
+    var fait = false, lancer = function () { if (fait) return; fait = true; f(); };
+    if (window.requestAnimationFrame) requestAnimationFrame(function () { bientot(lancer); });
+    setTimeout(lancer, 250);
+  }
+  /* Quand la page n'a rien d'autre à faire, sans attendre plus de « delai »
+     millisecondes : un cadre ralenti ne retarde pas la suite indéfiniment. */
+  function auRepos(f, delai) {
+    var fait = false, lancer = function () { if (fait) return; fait = true; f(); };
+    if (window.requestIdleCallback) requestIdleCallback(lancer, { timeout: delai });
+    setTimeout(lancer, window.requestIdleCallback ? delai + 100 : 16);
+  }
+  var ETAPES_OUVERTURE = [
+    function () { rendreJournal(); },
+    function (o) { rendreCritique(o.liste); },
+    function (o) { rendreFichePlan(o.liste); rendreRapprochement(); rendreIncomplets(); },
+    function (o) { poserTableauOuverture(o); },
+    function () { rendreFin(); terminerOuverture(); }
+  ];
+  var ETAPE_TABLEAU = 3;
+  function poserTableauOuverture(o) {
+    if (o.tableauPose) return;
+    o.tableauPose = true;
+    if (o.guetteur) { o.guetteur.disconnect(); o.guetteur = null; }
+    rendreEntetes();
+    rendreCorps(o.liste, PREMIERE_TRANCHE);
+    o.tranche = TRANCHES['corps-tableau'] || null;
+  }
+  function executerEtape(o) {
+    var k = o.prochaine++;
+    ETAPES_OUVERTURE[k](o);
+  }
+  function avancerOuverture(o) {
+    if (o !== OUVERTURE || o.etat !== 'synthese' || o.prochaine >= ETAPES_OUVERTURE.length) return;
+    executerEtape(o);
+    planifierEtape(o);
+  }
+  function planifierEtape(o) {
+    if (o !== OUVERTURE || o.etat !== 'synthese' || o.prochaine >= ETAPES_OUVERTURE.length) return;
+    if (o.prochaine === ETAPE_TABLEAU && !o.tableauPose && !o.tableauProche) auRepos(function () { avancerOuverture(o); }, 150);
+    else bientot(function () { avancerOuverture(o); });
+  }
+  /* Le tableau des plans se pose plus tôt quand on s'en approche (à moins
+     d'un écran) : il n'attend plus que la page soit au repos. */
+  function guetterTableau(o) {
+    var section = $('section-plans');
+    if (!window.IntersectionObserver || !section) return;
+    var obs = null, vu = function (entrees) {
+      if (!entrees.some(function (e) { return e.isIntersecting; })) return;
+      obs.disconnect();
+      if (o !== OUVERTURE || o.etat !== 'synthese' || o.tableauPose) return;
+      o.tableauProche = true;
+      if (o.prochaine === ETAPE_TABLEAU) avancerOuverture(o);
+    };
+    /* La page elle-même pour repère : dans le cadre d'Apps Script, la marge
+       d'un écran ne vaudrait rien sans lui (le cadre vient d'une autre
+       origine). Un navigateur qui ne le connaît pas prend l'écran. */
+    try { obs = new IntersectionObserver(vu, { root: document, rootMargin: '100% 0px 100% 0px' }); }
+    catch (e) { obs = new IntersectionObserver(vu, { rootMargin: '100% 0px 100% 0px' }); }
+    o.guetteur = obs;
+    obs.observe(section);
+  }
+  /* Tout ce que l'ouverture n'a pas encore dessiné, tout de suite, dans
+     l'ordre : avant un geste, l'impression, un saut à une section. « tout »
+     y ajoute ce qui attendait la fin de l'ouverture — la première tranche
+     entière du tableau, la seconde base cachée — et les mesures de la page :
+     c'est alors exactement le rendu d'un bloc. */
+  function finirRendu(tout) {
+    var o = OUVERTURE;
+    if (o && o.etat === 'attente' && o.fabriquer && (o.image || tout)) lancerPhase1(o);
+    while (o && o === OUVERTURE && o.etat === 'synthese' && o.prochaine < ETAPES_OUVERTURE.length) executerEtape(o);
+    if (tout && o && o === OUVERTURE && o.etat === 'pret') finirTardives(o);
+    if (tout) mesurerMaintenant();
+  }
+  /* La fin de la première tranche, le tableau de la seconde base : après
+     « pret », le filet du démarrage ne regarde plus — une erreur ici montre
+     donc elle-même le cadre de panne, comme quand tout se dessinait d'un
+     bloc (débrief 23, revue). L'ouverture est finie dans tous les cas. */
+  function finirTardives(o) {
+    if (o !== OUVERTURE || o.tardivesFaites) return;
+    o.tardivesFaites = true;
+    try {
+      completerPremiereTranche(o.tranche);
+      if (o.secondeAFaire && RAPPROCHEMENT && SECONDE) rendreSeconde();
+    } catch (e) {
+      montrerPanne(e, ecartsDeLivraison(window.SUIVI_FWD_DONNEES));
+    } finally {
+      if (OUVERTURE === o) OUVERTURE = null;
+    }
+  }
+  function terminerOuverture() {
+    if (DEMARRAGE_FINI) return;
+    DEMARRAGE_FINI = true;
+    var o = OUVERTURE;
+    if (o) o.etat = 'pret';
+    if (!CHRONOS.haut) poserEtatOuverture('synthese');      // d'un bloc : les deux à la fois
+    poserEtatOuverture('pret');
+    marquer('pret');
+    releverOuverte();
+    apresImage(function () {
+      if (!CHRONOS.synthese) marquer('synthese');
+      marquer('tout');
+      montrerMesuresOuverture();
+      rendreHauteur();                 // la page entière, pied compris : elle reprend sa hauteur, le défilement reste
+      planifierConsultation();
+      if (o && o === OUVERTURE) auRepos(function () { finirTardives(o); }, 300);
+    });
+  }
+  /* Une page rouverte (rechargée, ou retrouvée par « précédent ») où le
+     navigateur va remettre le défilement : elle se dessine d'un bloc, sinon
+     il le remettrait sur une page encore courte. */
+  function defilementRestaure() {
+    try {
+      var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+      return !!nav && (nav.type === 'reload' || nav.type === 'back_forward') && history.scrollRestoration !== 'manual';
+    } catch (e) { return false; }
+  }
+  /* Le navigateur remet ce défilement au chargement, pendant que la page
+     attend encore ses chiffres (ils se décompressent) : sur le squelette,
+     plus court, il la remettait plus haut qu'on ne l'avait laissée (débrief
+     23, revue). La page se donne donc une grande hauteur le temps de se
+     dessiner, puis reprend la sienne : on la retrouve où on l'avait
+     laissée. Seulement pour une page rouverte ; rien n'est gardé nulle part. */
+  var HAUTEUR_GARDEE = false;
+  function garderHauteur() {
+    if (!defilementRestaure()) return;
+    HAUTEUR_GARDEE = true;
+    document.documentElement.style.minHeight = '200000px';
+  }
+  function rendreHauteur() {
+    if (!HAUTEUR_GARDEE) return;
+    HAUTEUR_GARDEE = false;
+    document.documentElement.style.removeProperty('min-height');
+  }
+  function cibleDeLAdresse() {
+    var h = String(location.hash || '').slice(1);
+    if (!h) return null;
+    try { return document.getElementById(decodeURIComponent(h)); } catch (e) { return null; }
+  }
+  function lancerPhase1(o) {
+    if (o !== OUVERTURE || o.etat !== 'attente') return;
+    o.etat = 'calcul';
+    marquer('calcul');
+    var fabriquer = o.fabriquer;
+    o.fabriquer = null;
+    /* La largeur du graphique, lue sur la page qu'on vient de peindre,
+       avant d'y écrire quoi que ce soit. */
+    if (DIFFERER) { mesurerGraphique(); GRAPHE_MESURE = true; }
+    chargerSource(fabriquer());
+    chargerPrefs();
+    remplirDims();
+    if (!DIFFERER) { rendre(); return; }      // d'un bloc, comme avant
+    o.gen = ++GENERATION;
+    o.liste = rendreEtat();
+    rendreHaut(o.liste);
+    GRAPHE_MESURE = false;
+    o.etat = 'synthese';
+    poserEtatOuverture('synthese');
+    marquer('haut');
+    guetterTableau(o);
+    /* Une page déjà descendue, ou rouverte : elle se dessine tout de suite
+       entière — exactement la page d'un bloc, à la même hauteur. Une adresse
+       qui vise une section : tout ce qui la précède, puis elle. */
+    var cible = cibleDeLAdresse();
+    var rouverte = window.scrollY > 0 || defilementRestaure();
+    if (rouverte || (cible && cible !== document.body)) {
+      finirRendu(rouverte);
+      if (cible) defilerVers(cible, { block: 'start' });
+    }
+    apresImage(function () {
+      if (!CHRONOS.synthese) marquer('synthese');
+      planifierEtape(o);
+    });
+  }
+  function demarrer() {
+    var o = OUVERTURE = { gen: 0, etat: 'attente', fabriquer: null, image: !DIFFERER, liste: null, prochaine: 0,
+                          tableauPose: false, tableauProche: false, tranche: null, secondeAFaire: true, tardivesFaites: false, guetteur: null };
+    marquer('demarrage');
+    garderHauteur();
+    if (DIFFERER) {
+      if ($('cadre-tableau')) $('cadre-tableau').setAttribute('data-a-venir', 'true');
+      /* Le squelette — titre, sommaire, panneaux qui disent « Chargement… » —
+         est peint avant le premier calcul. */
+      apresImage(function () { o.image = true; marquer('squelette'); lancerSiPret(o); });
+    }
+    if (!SERVEUR) { o.fabriquer = function () { return jeuDExemple(); }; lancerSiPret(o); return; }
+    obtenirPaquet(window.SUIVI_FWD_DONNEES, function (paquet, enveloppe) {
+      /* Le paquet décodé prend la place de l'enveloppe : le filet du
+         démarrage et ce qui relit window.SUIVI_FWD_DONNEES y trouvent le
+         paquet, comme avant. */
+      if (paquet !== window.SUIVI_FWD_DONNEES) window.SUIVI_FWD_DONNEES = paquet;
+      DERNIERE_ENVELOPPE = enveloppe;
+      marquer('donnees');
+      o.fabriquer = function () { return sourceDuClasseur(paquet); };
+      lancerSiPret(o);
+    }, function (e) {
+      poserEtatOuverture('panne');
+      montrerPanne(e, ecartsDeLivraison(window.SUIVI_FWD_DONNEES));
+    });
+  }
+  function lancerSiPret(o) {
+    if (o === OUVERTURE && o.etat === 'attente' && o.fabriquer && o.image) lancerPhase1(o);
+  }
+  /* Un geste pendant l'ouverture : elle se finit d'abord. Avant même la
+     synthèse, il n'y a encore rien à manier : le geste ne fait rien. */
+  ['pointerdown', 'mousedown', 'keydown', 'focusin', 'click', 'input', 'change', 'dragstart'].forEach(function (type) {
+    document.addEventListener(type, function (e) {
+      var o = OUVERTURE;
+      if (!o) return;
+      if (o.etat === 'attente' || o.etat === 'calcul') {
+        e.stopPropagation();
+        if (type === 'click') e.preventDefault();
+        return;
+      }
+      if (o.etat === 'synthese') finirRendu(false);
+    }, true);
+  });
+  window.addEventListener('beforeprint', function () { finirRendu(true); });
+  window.addEventListener('hashchange', function () {
+    if (!OUVERTURE || OUVERTURE.etat !== 'synthese') return;
+    finirRendu(false);
+    var cible = cibleDeLAdresse();
+    if (cible) defilerVers(cible, { block: 'start' });
+  });
+  /* Pour les tests : finir l'ouverture, et lire où elle en est. */
+  window.__finirRendu = function () { finirRendu(true); };
+  window.__ouverture = function () {
+    var o = OUVERTURE;
+    return { etat: document.documentElement.getAttribute('data-suivi-fwd'), enCours: !!o, etape: o ? o.prochaine : null,
+             tableauPose: o ? o.tableauPose : null, chronos: CHRONOS, mesures: mesuresOuverture(), tacheLongue: TACHE_LONGUE,
+             enveloppe: DERNIERE_ENVELOPPE ? { cle: DERNIERE_ENVELOPPE.cle, octets: DERNIERE_ENVELOPPE.octets, secours: !!DERNIERE_ENVELOPPE.secours } : null };
+  };
+
+  /* ============================================================
+     LA DURÉE DE L'OUVERTURE, DITE AU PIED (débrief 23)
+     Trois nombres par ouverture : le classeur (le temps du serveur, que
+     l'enveloppe apporte), le transfert (la page de Google et le réseau :
+     l'arrivée ici moins le départ de là-bas — deux horloges, d'où le « ≈ »,
+     jamais sous zéro) et l'affichage (du début de ce Javascript à la page
+     entière peinte). Avec ?mesure=1, le détail. Les mêmes nombres partent
+     au classeur avec l'ouverture comptée, sans nom ni adresse.
+     ============================================================ */
+  function arrondiMs(x) { return typeof x === 'number' && isFinite(x) ? Math.round(x) : null; }
+  /* Le contrat et la taille de la page ouverte, relevés à la fin de
+     l'ouverture : un autre contrat choisi juste après ne s'y mêle pas. */
+  var OUVERTE = null;
+  function releverOuverte() {
+    OUVERTE = { contrat: CONTRAT === undefined || CONTRAT === null ? '' : String(CONTRAT),
+                plans: PLANS ? PLANS.length : 0, releves: RELEVES_SRC ? RELEVES_SRC.length : 0 };
+  }
+  function mesuresOuverture() {
+    var env = DERNIERE_ENVELOPPE, s = env && env.mesures && env.mesures.serveur;
+    var debut = s ? Number(s.debut) : NaN, fin = s ? Number(s.fin) : NaN;
+    var serveur = fin > 0 && debut > 0 && fin >= debut ? fin - debut : null;
+    if (!OUVERTE) releverOuverte();
+    /* `debut` : le début de l'ouverture au serveur — c'est à lui que le
+       classeur reconnaît une ouverture déjà gardée (débrief 23, revue) ;
+       `raison` : pourquoi il a relu, quand il a relu. */
+    return {
+      quand: D0,
+      contrat: OUVERTE.contrat,
+      cache: s && s.cache ? String(s.cache) : '',
+      raison: s && s.raison !== undefined && s.raison !== null ? String(s.raison) : '',
+      debut: debut > 0 ? Math.round(debut) : null,
+      serveur: arrondiMs(serveur),
+      transfert: transfertPlausible(fin),
+      synthese: arrondiMs(CHRONOS.synthese !== undefined ? CHRONOS.synthese - T0 : null),
+      tout: arrondiMs(CHRONOS.tout !== undefined ? CHRONOS.tout - T0 : null),
+      plans: OUVERTE.plans,
+      releves: OUVERTE.releves,
+      octets: env ? env.octets : null,
+      largeur: window.innerWidth || 0,
+      cle: env ? env.cle : ''
+    };
+  }
+  /* Le transfert, l'arrivée ici moins le départ de là-bas : deux horloges.
+     Un léger retard du PC se ramène à zéro ; un écart de plusieurs minutes
+     dit que les horloges ne s'accordent pas (ou une page restée ouverte,
+     rouverte du cache du navigateur) : le pied le tait plutôt que d'afficher
+     un nombre faux. */
+  function transfertPlausible(fin) {
+    if (!(fin > 0)) return null;
+    var ecart = D0 - fin;
+    return ecart > -60000 && ecart < 300000 ? Math.max(0, ecart) : null;
+  }
+  function secondes(ms) {
+    var s = Math.max(0, ms || 0) / 1000;
+    return (s < 0.095 ? s.toFixed(2) : s.toFixed(1)).replace('.', ',') + ' s';
+  }
+  /* Ce que le classeur a fait de sa lecture, en clair — et, quand il a
+     relu, pourquoi : il ne dit « il venait de changer » que si c'est vrai
+     (débrief 23, revue : un matin où rien n'avait bougé, le pied le disait
+     aussi). La raison vient du classeur (raisonDuManque_, dans Code.gs). */
+  function motCache(cache, raison) {
+    var c = norm(cache), r = norm(raison);
+    if (c === 'trouve' || c === 'alias') return ' (en cache)';
+    if (c === 'manque') {
+      if (r === 'modifie') return ' (relu : il venait de changer)';
+      if (r === 'livraison') return ' (relu : nouvelle livraison)';
+      if (r === 'demande') return ' (relu à la demande)';
+      return ' (relu : rien de prêt en cache)';
+    }
+    if (c === 'sans cache') return ' (relu, sans cache)';
+    return '';
+  }
+  /* ?mesure=1 : dans l'adresse de la page, ou — derrière un lien …/exec —
+     dans celle que Google montre, que la page ne voit qu'en la demandant. */
+  var DETAIL_MESURE = /[?&]mesure=1(&|$)/.test(String(location.search || ''));
+  try {
+    if (!DETAIL_MESURE && window.google && google.script && google.script.url && google.script.url.getLocation) {
+      google.script.url.getLocation(function (lieu) {
+        if (lieu && lieu.parameter && String(lieu.parameter.mesure) === '1') { DETAIL_MESURE = true; montrerMesuresOuverture(); }
+      });
+    }
+  } catch (e) { /* hors d'Apps Script : l'adresse de la page suffit */ }
+  function montrerMesuresOuverture() {
+    var z = $('mesure-ouverture');
+    if (!z || !SERVEUR || CHRONOS.tout === undefined) return;
+    var m = mesuresOuverture(), morceaux = [];
+    if (m.serveur !== null) morceaux.push('classeur ' + secondes(m.serveur) + motCache(m.cache, m.raison));
+    if (m.transfert !== null) morceaux.push('transfert ≈ ' + secondes(m.transfert));
+    morceaux.push('affichage ' + secondes(m.tout));
+    var ligne = m.serveur !== null
+      ? 'Ouverture : ' + secondes(m.serveur + (m.transfert || 0) + m.tout) + ' — ' + morceaux.join(' · ')
+      : 'Ouverture : ' + morceaux.join(' · ');
+    var html = ech(ligne);
+    if (DETAIL_MESURE) {
+      var env = DERNIERE_ENVELOPPE, s = env && env.mesures && env.mesures.serveur, etapes = s && s.etapes;
+      var d = [];
+      if (env) d.push('données ' + nb(Math.round(env.octets / 1024)) + ' Ko compressées, ' +
+        (env.secours ? 'redemandées en JSON' : 'décodées en ' + secondes(env.decodage)));
+      d.push('synthèse peinte à ' + secondes(m.synthese), 'tout à ' + secondes(m.tout));
+      if (CHRONOS.donnees !== undefined) d.push('données prêtes à ' + secondes(CHRONOS.donnees - T0));
+      d.push('plus longue tâche ' + (GUETTEUR_TACHES ? secondes(TACHE_LONGUE) : 'non mesurée'));
+      if (etapes && typeof etapes === 'object') {
+        var e = Object.keys(etapes).filter(function (k) { return typeof etapes[k] === 'number'; })
+          .map(function (k) { return k + ' ' + secondes(etapes[k]); });
+        if (e.length) d.push('classeur : ' + e.join(', '));
+      }
+      html += '<br>Détail : ' + ech(d.join(' · '));
+    }
+    z.innerHTML = html;
+    z.hidden = false;
+  }
+  /* L'ouverture comptée (débrief 18), avec ses durées : une seconde et
+     demie après que la synthèse est à l'écran, et jamais avant la fin. */
+  function planifierConsultation() {
+    if (!API || !API.noterConsultation) return;
+    var depuis = CHRONOS.synthese !== undefined ? CHRONO() - CHRONOS.synthese : 0;
+    setTimeout(function () {
+      var m = mesuresOuverture();
+      montrerMesuresOuverture();
+      if (GUETTEUR_TACHES) { try { GUETTEUR_TACHES.disconnect(); } catch (e) { /* déjà arrêté */ } }
+      API.noterConsultation(m);
+    }, Math.max(0, 1500 - depuis));
+  }
+
+  /* ============================================================
      LIVRAISON ET PANNE
      Quatre fichiers collés à la main dans Apps Script : il suffit d'en
      laisser un à la livraison d'avant pour que la page reste blanche, sans
@@ -9198,7 +10083,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     cadre.innerHTML = html;
     /* Plus de « Chargement… » sous un cadre qui dit que rien ne viendra. */
     var phrase = document.getElementById('phrase');
-    if (grave && phrase && phrase.textContent === 'Chargement\u2026') phrase.textContent = '\u2014';
+    if (grave && phrase && /^Chargement/.test(phrase.textContent)) phrase.textContent = '\u2014';
   }
   function signalerLivraison(ecarts) {
     if (!ecarts.length) return;
@@ -9220,6 +10105,13 @@ table.plans thead tr th.col-fige { z-index: 6; }
       '<b>Javascript.html.txt</b> en entier, Ctrl+S. ' + gesteExec() + '</p>', true);
   }
   function montrerPanne(e, ecarts) {
+    poserEtatOuverture('panne');       // l'ouverture s'arrête là : qui l'attend le sait
+    /* Et elle s'arrête vraiment : plus rien n'est retenu en attendant la
+       synthèse — un autre contrat, la vue d'ensemble répondent, comme
+       avant (débrief 23, revue : une erreur dans la synthèse de HDK figeait
+       toute la page). La page reprend aussi sa hauteur. */
+    OUVERTURE = null;
+    rendreHauteur();
     var html = '<p style="margin:0 0 6px"><b>La page n\u2019a pas pu s\u2019afficher.</b> ' +
       (ecarts.length ? 'Cause la plus probable : ' + phraseEcarts(ecarts)
                      : 'Une erreur l\u2019a arrêtée — rien n\u2019est touché dans le classeur. Une capture de ce cadre ' +
@@ -9229,20 +10121,24 @@ table.plans thead tr th.col-fige { z-index: 6; }
   }
 
   /* Le démarrage. Une erreur ici remonte au filet posé en tête du fichier,
-     qui l'affiche avec la cause la plus probable. */
+     qui l'affiche avec la cause la plus probable. L'état de l'ouverture se
+     pose d'abord : il change le style de la page, qu'on lit juste après. */
+  poserEtatOuverture('chargement');
+  /* Le squelette dit qu'il lit les chiffres. Le filet d'Index regarde, à la
+     fin de la lecture du document, si un Javascript a démarré : « Chargement… »
+     encore là, c'est qu'aucun n'a tourné. Les chiffres arrivent désormais un
+     instant après (l'ouverture en deux temps) : la phrase change tout de
+     suite, pour qu'il voie que celui-ci a démarré. */
+  if ($('phrase') && $('phrase').textContent === 'Chargement\u2026') $('phrase').textContent = 'Chargement des chiffres\u2026';
   signalerLivraison(ecartsDeLivraison(window.SUIVI_FWD_DONNEES));
   if ($('livraison') && EDITION !== 'source') {
     $('livraison').textContent = 'Livraison ' + EDITION;
     $('livraison').hidden = false;
   }
   if ($('mention-consultations') && API && API.noterConsultation) $('mention-consultations').hidden = false;
-  chargerSource(SERVEUR ? sourceDuClasseur(window.SUIVI_FWD_DONNEES) : jeuDExemple());
-  chargerPrefs();
-  remplirDims();
-  rendre();
-  DEMARRAGE_FINI = true;
-  /* L'ouverture est comptée, sans nom ni adresse (débrief 18) — une fois la
-     page affichée, pour ne rien retarder. */
-  if (API && API.noterConsultation) setTimeout(API.noterConsultation, 1500);
+  /* Les données (décodées s'il le faut), la synthèse, puis le reste — et
+     l'ouverture comptée, sans nom ni adresse (débrief 18), une fois la page
+     affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
+  demarrer();
 })();
 </script>

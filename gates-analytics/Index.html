@@ -70,7 +70,7 @@
 <script>
   /* La livraison de ce fichier, posée par la construction : la page la compare
      à celles de Code, Styles et Javascript, et nomme celui qui diffère. */
-  window.SUIVI_FWD_LIVRAISON_INDEX = '9280c99';
+  window.SUIVI_FWD_LIVRAISON_INDEX = '49f6716';
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
@@ -88,9 +88,28 @@
           .getDonneesCompactes(id);
       } catch (e) { cb(null); /* page ouverte hors classeur : sans conséquence */ }
     },
-    /* L'ouverture, comptée sans nom (débrief 18) : rien n'attend la réponse. */
-    noterConsultation: function () {
-      try { google.script.run.withFailureHandler(function () {}).noterConsultation(); } catch (e) { /* hors classeur */ }
+    /* Le même paquet, en clair (débrief 23) : le repli de la page quand son
+       navigateur ne sait pas décompresser l'enveloppe. Le rappel reçoit le
+       JSON (une chaîne), ou null. */
+    chargerContratJson: function (id, cb) {
+      try {
+        google.script.run
+          .withSuccessHandler(cb)
+          .withFailureHandler(function (e) {
+            console.error('Contrat non chargé :', e && e.message);
+            cb(null);
+          })
+          .getDonneesCompactesJson(id);
+      } catch (e) { cb(null); /* page ouverte hors classeur : sans conséquence */ }
+    },
+    /* L'ouverture, comptée sans nom (débrief 18), avec ses temps (débrief
+       23 : { serveur, transfert, synthese, tout, …, cle }, en millisecondes)
+       : rien n'attend la réponse. */
+    noterConsultation: function (mesures) {
+      try {
+        if (mesures) google.script.run.withFailureHandler(function () {}).noterConsultation(mesures);
+        else google.script.run.withFailureHandler(function () {}).noterConsultation();
+      } catch (e) { /* hors classeur */ }
     }
   };
 </script>
@@ -432,6 +451,9 @@
     <!-- Quand les chiffres ont été lus dans le classeur : une page restée
          ouverte depuis vendredi ne montre pas ceux de lundi. -->
     <div id="lu-le" hidden></div>
+    <!-- Débrief 23 : combien de temps l'ouverture a pris — le classeur, le
+         transfert, l'affichage. Avec ?mesure=1 dans l'adresse, le détail. -->
+    <div id="mesure-ouverture" hidden></div>
     <!-- La livraison qui tourne : le Diagnostic dit laquelle attendre. -->
     <div id="livraison" hidden></div>
     <!-- Dit en clair : l'ouverture est comptée, sans nom ni adresse

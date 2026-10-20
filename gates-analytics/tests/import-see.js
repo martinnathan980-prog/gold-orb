@@ -309,8 +309,13 @@ const paquetSansDate = o => { const x = JSON.parse(JSON.stringify(o)); delete x.
     page.__cibles = [];
     page.__feuilles = [];
     page.__retard = 0;
+    page.__prechauffages = 0;
     await page.exposeFunction('__appelServeur', async (nom, args) => {
-      page.__appels.push(nom);
+      /* Débrief 23 : le préchauffage du tableau de bord, que la fenêtre lance
+         après un import réussi sans l'attendre, se compte à part : il n'est
+         pas un geste de l'import. */
+      if (nom === 'prechaufferTableau') page.__prechauffages++;
+      else page.__appels.push(nom);
       if (nom === 'importSecondeBaseDebut') page.__cibles.push(JSON.stringify(args[1]));
       if (nom === 'importSecondeBaseLot' && page.__retard) await new Promise(r => setTimeout(r, page.__retard));
       try {
@@ -601,6 +606,8 @@ const paquetSansDate = o => { const x = JSON.parse(JSON.stringify(o)); delete x.
     verifier('la fenêtre n’a appelé que les gestes prévus, en ordre : le début, les lots, la fin, puis la liste des contrats relue — rien pour deviner',
       page.__appels[0] === 'importSecondeBaseDebut' && page.__appels[page.__appels.length - 2] === 'importSecondeBaseFin' &&
       page.__appels[page.__appels.length - 1] === 'importContrats' && page.__appels.slice(1, -2).every(x => x === 'importSecondeBaseLot'), page.__appels.join(','));
+    verifier('débrief 23 : l’import fait, la fenêtre lance une fois le préchauffage du tableau de bord, sans l’attendre (« Fermer » reste libre)',
+      page.__prechauffages === 1 && !(await page.evaluate(() => document.getElementById('fermer').disabled)), String(page.__prechauffages));
     const apresImport = await laCase(page, 'see');
     verifier('la case SEE dit son résultat, base par base, et le fichier ne se retire plus (un autre, choisi, le remplacerait)',
       apresImport.etat === 'fait' && /1 500 lignes dans l’onglet « SEE HDK »/.test(apresImport.resultat) && /« THS » : pas de PSN/.test(apresImport.resultat) &&

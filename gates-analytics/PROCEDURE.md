@@ -1954,21 +1954,85 @@ celle qu'on a pressée.
   hors de l'écran ne se met pas en page tant qu'on ne s'en approche pas.
 - **Le classeur n'est relu que s'il a changé** (débrief 18) : le paquet de
   chaque contrat, une fois calculé, est gardé dans le cache d'Apps Script
-  (`CacheService`, six heures au plus, découpé en morceaux de 30 Ko). Il est
-  **renouvelé dès que le classeur change** : une cellule modifiée (le
-  déclencheur simple `onEdit`), un archivage, une suppression, un dépôt
-  automatique, un onglet ajouté, renommé ou masqué, une modification de la
-  configuration dans `Code`, une nouvelle livraison — et chaque jour. Des
-  lignes ou des colonnes ajoutées ou supprimées (ce que `onEdit` ne voit
-  pas) aussi : la taille de chaque onglet fait partie de la clé. Un paquet
-  en erreur, ou lu à moitié (l'historique illisible le temps d'une panne de
-  Google), n'est jamais gardé. **`?frais=1`** au bout du lien `…/exec` rend
-  tout le cache caduc : cette ouverture relit le classeur, et les suivantes
-  en profitent. Ce qui échapperait encore — une version restaurée depuis
-  l'historique de Google Sheets, un script tiers — est rattrapé le
-  lendemain au plus tard, ou par `?frais=1`. Avec **le chargeur** (un seul
-  fichier, § 1), son propre `onEdit` fait le même travail, et « Recharger
-  le code » oublie aussi les chiffres.
+  (`CacheService`, six heures au plus). Il est **renouvelé dès que le
+  classeur change** : une cellule modifiée (le déclencheur simple `onEdit`),
+  un archivage, une suppression, un import, un dépôt automatique, un onglet
+  ajouté, renommé ou masqué, une modification de la configuration dans
+  `Code`, une nouvelle livraison. Des lignes ou des colonnes ajoutées ou
+  supprimées (ce que `onEdit` ne voit pas) aussi : la taille de chaque
+  onglet fait partie de la clé. Un paquet en erreur, ou lu à moitié
+  (l'historique illisible le temps d'une panne de Google), n'est jamais
+  gardé. **`?frais=1`** au bout du lien `…/exec` rend tout le cache caduc :
+  cette ouverture relit le classeur, et les suivantes en profitent. Ce qui
+  échapperait encore — une version restaurée depuis l'historique de Google
+  Sheets, un script tiers — est rattrapé le lendemain au plus tard : un
+  paquet préparé il y a plus de vingt heures n'est plus prolongé (le
+  préchauffage le refait), aucun de plus de vingt-six heures n'est servi.
+  Avec **le chargeur** (un seul fichier, § 1), son propre `onEdit` fait le
+  même travail, et « Recharger le code » oublie aussi les chiffres.
+- **Le cache qui sert vraiment** (débrief 23 : deux ouvertures sur trois
+  relisaient encore tout) :
+  - le jour n'est plus dans la clé (rien de ce qui est lu n'en dépend) ;
+  - l'ouverture (« le contrat qui s'ouvre ») et le retour sur HDK partagent
+    le même paquet, par un alias ;
+  - c'est le cache **du script**, le même pour la fenêtre du menu, le lien
+    `…/exec` (pour qui le cache « du document » n'existe pas), les
+    déclencheurs et la fenêtre d'import ;
+  - le paquet y est rangé **compressé** (gzip, puis base64 « web ») : un ou
+    deux morceaux de 100 000 caractères au plus, sous un manifeste écrit en
+    dernier — un paquet ne se lit qu'entier, un morceau évincé fait relire ;
+  - une ouverture prolonge de six heures le paquet qu'elle a reçu s'il a été
+    posé il y a plus de trois heures : un cache servi toute la journée
+    n'expire pas sous les pieds d'une lectrice ;
+  - la livraison, dans la clé, est celle de la page (`EDITION`) **et celle
+    du Code** — le texte de toutes ses fonctions (`empreinteDuCode_`) : un
+    correctif de `Code` recollé seul fait relire dès l'ouverture suivante,
+    et un lien `…/exec` resté sur une ancienne version du déploiement range
+    ses paquets à part, sans jamais servir ceux de l'autre ;
+  - une ouverture qui relit le classeur dit pourquoi, au pied de la page et
+    dans le Diagnostic (`raisonDuManque_`, comparé au dernier paquet
+    préparé) : le classeur a changé (« relu : il venait de changer »), une
+    nouvelle livraison, `?frais=1`, ou rien de prêt en cache (expiré, pas
+    encore préparé).
+- **L'ouverture rapide** (menu Suivi FWD → Activer l'ouverture rapide, une
+  fois) : un déclencheur horaire, toutes les dix minutes, appelle
+  `prechaufferTableau`, qui prépare ce qui manque au cache — le paquet de
+  l'ouverture et celui de chaque contrat — et remet pour six heures ce qui a
+  été posé il y a plus de quatre. Il ne fait que lire ; il ne tient jamais
+  le verrou des gestes (il regarde s'il est libre, et passe son tour si un
+  geste écrit) ; il attend la fin d'un import en cours d'envoi ; quatre
+  minutes au plus par passage. Un paquet lu mais qui n'a pas pu se garder
+  (historique illisible le temps d'une panne, cache qui le refuse) est
+  réessayé au passage suivant, puis de plus en plus rarement — vingt,
+  quarante, quatre-vingts minutes, deux heures au plus — tant que les
+  données ne changent pas ; le journal d'exécution le dit (« relu sans
+  pouvoir le garder en cache », « en attente »). Le même déclencheur que celui du vendredi
+  (`ScriptApp`) : aucune autorisation nouvelle. La fenêtre d'import (après
+  un import réussi, sans l'attendre), l'archivage, la suppression du relevé,
+  l'archivage d'une semaine passée et le dépôt l'appellent aussi, tout de
+  suite. Chaque passage a sa ligne dans Apps Script → Exécutions.
+- **Le paquet voyage compressé** (débrief 23) : la page reçoit une enveloppe
+  `{ format: 2, edition, contrat, cle, mesures, gz }` — le paquet compact,
+  gzippé, en base64 —, qu'elle décompresse elle-même ; Google n'a presque
+  plus rien à échapper en recopiant la page dans la sienne (1,7 Mo → 0,65 sur
+  le classeur du bureau). Un essai aller-retour (accents, « — », « € »,
+  U+2028) décide, une fois par livraison : raté, tout repasse en clair. Un
+  paquet en erreur reste en clair ; `getDonneesCompactesJson` rend le paquet
+  en clair à une page dont le navigateur ne sait pas décompresser ; le
+  chargeur, qui associe la page du dépôt à ce serveur, reçoit toujours le
+  paquet en clair. Un relevé qui garde sa carte plan par plan voyage sans
+  ses comptes par groupe : la page les refait toujours sur la carte.
+- **L'ouverture ne relit plus les fichiers du projet pour les contrôler** :
+  c'est l'évaluation du modèle qui échoue quand un fichier manque, et alors
+  seulement la page dit lequel recréer. La page garde son propre contrôle
+  (en tête et en pied), le Diagnostic le sien, complet.
+- **Les temps de chaque ouverture** : une ligne par exécution dans Apps
+  Script → Exécutions (« Suivi FWD · ouverture HDK · cache trouvé · 0,24 s
+  (version 0,09 · cache 0,05 · page 0,10) · 98 Ko ») ; la page renvoie les
+  siens (serveur, transfert, affichage) avec l'ouverture comptée, gardés,
+  sans nom, pour les trente dernières ; le Diagnostic les résume dans son
+  bloc « Vitesse d'ouverture », avec l'état de l'ouverture rapide, ce qui
+  est prêt dans le cache et l'essai de compression.
 - **Une ouverture ne lit les en-têtes de chaque onglet qu'une fois** : les
   trois lectures qui en avaient besoin (contrats, seconde base, historique)
   partagent la même.

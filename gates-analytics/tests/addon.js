@@ -5,7 +5,7 @@ const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
 const vm = require('vm');
-const { construire, chargerServeur, brancherClasseur } = require('./build-addon');
+const { construire, chargerServeur, brancherClasseur, decoderEnveloppe } = require('./build-addon');
 const { Feuille, Classeur } = require('./faux-classeur');
 const { feuilleExemple } = require('./feuille-exemple');
 const { feuilleGates, entetes: entetesGates, colonne: colonneGates } = require('./feuille-gates');
@@ -34,6 +34,10 @@ function vendredi(c) {
   c.__sansInterface = true;
   try { return c.enregistrerInstantaneHebdo({ triggerUid: c.__declencheurs[0].getUniqueId() }); } finally { c.__sansInterface = avant; }
 }
+
+/* Débrief 23 : getDonneesCompactes rend l'enveloppe compressée ; le paquet
+   qu'elle porte, relu ici avec zlib (un paquet en erreur arrive en clair). */
+const compactes = (ctx, id) => decoderEnveloppe(ctx.getDonneesCompactes(id));
 
 function serveurSur(valeurs, proprietes, fichiers) {
   const classeur = new Classeur([new Feuille('Données', valeurs)]);
@@ -763,9 +767,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('aucune fonction de sauvegarde ni de propriété de document ne subsiste',
     typeof j.contexte.sauverJalons === 'undefined' && !/CLE_JALONS/.test(fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8')) &&
     /* Les propriétés du document ne gardent que la version des données, les consultations (débrief 18),
-       le jeton de la fenêtre d'import SEE (débrief 20) et le PSN de chaque contrat tapé dans cette
-       fenêtre (débrief 21). */
-    (fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8').match(/[gs]etProperty\(([A-Z_]+)/g) || []).every(x => /CLE_VERSION_DONNEES|CLE_CONSULTATIONS|CLE_JETON_IMPORT|CLE_PSN/.test(x)));
+       le jeton de la fenêtre d'import SEE (débrief 20), le PSN de chaque contrat tapé dans cette
+       fenêtre (débrief 21), les temps des dernières ouvertures et l'état du préchauffage (débrief 23). */
+    (fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8').match(/[gs]etProperty\(([A-Z_]+)/g) || []).every(x => /CLE_VERSION_DONNEES|CLE_CONSULTATIONS|CLE_JETON_IMPORT|CLE_PSN|CLE_MESURES|CLE_PRECHAUFFAGE/.test(x)));
   configurer([
     { semaine: '2026-s8', texte: '  Revue de définition  ' },
     { semaine: '2026-S02', texte: '' },
@@ -847,7 +851,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
     pqH.ok && pqT.ok && pqH.jalons.length === 5 && pqT.jalons.length === 0,
     pqH.jalons.length + ' / ' + pqT.jalons.length);
   verifier('le paquet compact (changement de contrat dans la page) dit pareil',
-    cJ.getDonneesCompactes('HDK').jalons.length === 5 && cJ.getDonneesCompactes('THS').jalons.length === 0);
+    compactes(cJ, 'HDK').jalons.length === 5 && compactes(cJ, 'THS').jalons.length === 0);
   verifier('la clé contrat ne voyage pas jusqu\'à la page : les jalons de HDK sont ceux d\'avant, tels quels',
     pqH.jalons.every(x => !('contrat' in x)) &&
     pqH.jalons.map(x => x.texte + '@' + x.semaine).join() ===
@@ -1055,7 +1059,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('le vrai déclencheur du vendredi, lui, archive sans interface',
     rVendredi && rVendredi.ok && rVendredi.contrats.length === 2, JSON.stringify(rVendredi && rVendredi.contrats.map(c => c.id)));
   verifier('et la page, elle, se sert toujours : la lecture n\'est pas un geste',
-    cG.getDonneesPourClient('HDK').ok && cG.getDonneesCompactes('THS').ok);
+    cG.getDonneesPourClient('HDK').ok && compactes(cG, 'THS').ok);
   cG.__sansInterface = false;
   cG.desinstallerSuiviHebdomadaire();
   verifier('du menu, couper l\'archivage automatique marche toujours', declencheurs().length === 0);
@@ -1078,36 +1082,41 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const cK = chargerServeur(clK, {});
   cK.enregistrerInstantaneHebdo();
   cK.__activerCache();
-  const sansHeure = o => { const c = JSON.parse(JSON.stringify(o)); delete c.genereLe; return JSON.stringify(c); };
+  /* Débrief 23 : le paquet arrive dans son enveloppe compressée ; on compare
+     ce qu'elle porte. */
+  const sansHeure = o => { const c = JSON.parse(JSON.stringify(decoderEnveloppe(o))); delete c.genereLe; return JSON.stringify(c); };
   const frais = id => { vm.runInContext('PAGE_FRAICHE = true', cK); try { return sansHeure(cK.getDonneesCompactes(id)); } finally { vm.runInContext('PAGE_FRAICHE = false', cK); } };
   const k1 = cK.getDonneesCompactes('HDK');
-  verifier('la première ouverture lit le classeur et garde le paquet en cache',
-    k1.ok && Object.keys(cK.__memoireCache).some(k => /:n$/.test(k)), Object.keys(cK.__memoireCache).join(', '));
+  const manifestes = c => Object.keys(c.__memoireCache).filter(k => /^SFWD2:[0-9a-z]+:[0-9a-z]+:m$/.test(k));
+  verifier('la première ouverture lit le classeur et garde le paquet en cache — compressé, son manifeste écrit à part (débrief 23)',
+    k1.format === 2 && decoderEnveloppe(k1).ok && manifestes(cK).length === 1 &&
+    JSON.parse(cK.__memoireCache[manifestes(cK)[0]]).format === 'gz', Object.keys(cK.__memoireCache).join(', '));
   const ongletK = clK.getSheetByName('HDK');
   const bK = ongletK.valeurs[0].indexOf('HDK AA 011') + 3;
   const ligneK = ongletK.valeurs.filter(l => /^UD-/.test(l[1] || '') && l[bK] !== '100%')[0];
   ligneK[bK] = '100%';          // un plan de plus validé, sans passer par onEdit
   const k2 = cK.getDonneesCompactes('HDK');
   verifier('la seconde ouverture est servie du cache : rien n\'est relu tant que rien ne dit le classeur modifié',
-    JSON.stringify(k2) === JSON.stringify(k1));
+    k2.gz === k1.gz && k2.mesures.serveur.cache === 'trouvé' && JSON.stringify(decoderEnveloppe(k2)) === JSON.stringify(decoderEnveloppe(k1)));
   cK.onEdit({});
   const k3 = cK.getDonneesCompactes('HDK');
   verifier('un collage ou une saisie (onEdit) rend le cache caduc : l\'ouverture suivante voit l\'extract du jour',
-    JSON.stringify(k3) !== JSON.stringify(k1) && sansHeure(k3) === frais('HDK'));
+    k3.gz !== k1.gz && k3.mesures.serveur.cache === 'manqué' && sansHeure(k3) === frais('HDK'));
   cK.enregistrerInstantaneHebdo();
   verifier('un archivage aussi : le paquet suivant porte le relevé tout juste écrit', sansHeure(cK.getDonneesCompactes('HDK')) === frais('HDK') &&
     sansHeure(cK.getDonneesCompactes('HDK')) !== sansHeure(k3));
   clK.getSheetByName('THS').nom = 'THS 2';
-  const k5 = cK.getDonneesCompactes('HDK');
+  const k5 = decoderEnveloppe(cK.getDonneesCompactes('HDK'));
   verifier('un onglet renommé aussi (la liste des contrats change) : « THS 2 » dans le paquet servi',
     k5.contrats.map(c => c.id).join() === 'HDK,THS 2', JSON.stringify(k5.contrats));
   clK.getSheetByName('THS 2').nom = 'THS';
   vm.runInContext('CONFIG.JALONS = []', cK);
   verifier('une configuration changée aussi (Code collé de nouveau) : plus de jalon servi',
-    cK.getDonneesCompactes('HDK').jalons.length === 0);
+    compactes(cK, 'HDK').jalons.length === 0);
   const avantErreur = Object.keys(cK.__memoireCache).length;
   const erreurK = cK.getDonneesCompactes('Nulle part');
-  verifier('un paquet d\'erreur n\'est jamais gardé', erreurK.ok === false && Object.keys(cK.__memoireCache).length === avantErreur);
+  verifier('un paquet d\'erreur n\'est jamais gardé — et voyage en clair, sans enveloppe',
+    erreurK.ok === false && !erreurK.gz && Object.keys(cK.__memoireCache).length === avantErreur);
   /* ?frais=1 (relecture du revue 18) : il rend caduc tout le cache — la
      page ouverte relit, garde ce qu'elle a lu, et les ouvertures suivantes
      (et les changements de contrat) en profitent. */
@@ -1128,25 +1137,38 @@ function serveurSur(valeurs, proprietes, fichiers) {
   // Un historique illisible le temps d'une panne : ce paquet-là ne se garde pas.
   cK.onEdit({});
   vm.runInContext("var __hOrig = getHistorique, __hPannes = 1; getHistorique = function () { if (__hPannes-- > 0) throw new Error('Service Spreadsheets timed out'); return __hOrig.apply(this, arguments); };", cK);
-  const pannee = cK.getDonneesCompactes('HDK');
-  const remise = cK.getDonneesCompactes('HDK');
+  const pannee = decoderEnveloppe(cK.getDonneesCompactes('HDK'));
+  const remise = decoderEnveloppe(cK.getDonneesCompactes('HDK'));
   vm.runInContext('getHistorique = __hOrig', cK);
   const relevesDe = p => (p.relevesTab ? p.relevesTab.releves : p.releves) || [];
   verifier('un historique illisible le temps d\'une panne n\'est pas gardé : l\'ouverture suivante retrouve la courbe',
     pannee.historiqueIllisible === true && !remise.historiqueIllisible && relevesDe(remise).length > 0,
     JSON.stringify([pannee.historiqueIllisible, remise.historiqueIllisible, relevesDe(remise).length]));
-  // Un gros extract : le paquet se découpe sur plusieurs clés et se recolle à l'identique.
+  /* Un gros extract : compressé, le paquet tient en un ou deux morceaux de
+     100 000 caractères au plus (débrief 23 : il en fallait vingt-quatre de
+     30 000) ; des morceaux plus petits se recollent à l'identique. */
   const gG = feuilleGates(640);
   const clG18 = new Classeur([new Feuille('HDK', gG.valeurs, false, gG.fusions)], 'Gros');
   const cG18 = chargerServeur(clG18, {});
   cG18.enregistrerInstantaneHebdo();
   cG18.__activerCache();
   const g1 = cG18.donneesJSONPourPage();
-  const nTranches = Number(Object.keys(cG18.__memoireCache).filter(k => /:n$/.test(k)).map(k => cG18.__memoireCache[k])[0]);
+  const manifesteDe = c => { const m = manifestes(c).map(k => JSON.parse(c.__memoireCache[k])); return m.sort((a, b) => b.construitLe - a.construitLe)[0]; };
+  const mG1 = manifesteDe(cG18);
   const g2 = cG18.donneesJSONPourPage();
-  verifier('un paquet de 640 plans se range sur plusieurs clés (moins de 100 Ko chacune) et se relit à l\'identique',
-    nTranches > 1 && Object.keys(cG18.__memoireCache).filter(k => !/:n$/.test(k)).every(k => cG18.__memoireCache[k].length <= 30000) && g2 === g1,
-    nTranches + ' tranches, ' + g1.length + ' caractères');
+  const morceauxG = Object.keys(cG18.__memoireCache).filter(k => /^SFWD2:[0-9a-z]+:[0-9a-z]+:[0-9]+$/.test(k));
+  verifier('un paquet de 640 plans se range compressé, en morceaux de 100 000 caractères au plus, et se relit à l\'identique',
+    mG1.format === 'gz' && mG1.n >= 1 && mG1.n <= 2 && mG1.octets < mG1.brut / 4 &&
+    morceauxG.every(k => cG18.__memoireCache[k].length <= 100000) && g2 === g1,
+    JSON.stringify(mG1) + ', ' + g1.length + ' caractères');
+  vm.runInContext('CACHE_TAILLES.gz = 7000', cG18);
+  cG18.onEdit({});
+  const g3 = cG18.donneesJSONPourPage();
+  const mG3 = manifesteDe(cG18);
+  const g4 = cG18.donneesJSONPourPage();
+  vm.runInContext('CACHE_TAILLES.gz = 100000', cG18);
+  verifier('… et en morceaux de 7 000 caractères : le paquet se range sur plusieurs clés, et se recolle à l\'identique',
+    mG3.n > 4 && g4 === g3 && JSON.parse(g3).plansTab.lignes.length === JSON.parse(g1).plansTab.lignes.length, JSON.stringify(mG3));
 
   // =================================================================
   section('Débrief 18 : une ouverture ne lit les en-têtes de chaque onglet qu\'une fois');
@@ -2716,6 +2738,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
       vals: vals.map(v => v.cle), portees: vals.filter(v => v.n > 0).map(v => v.cle),
       seule: vals.filter(v => v.famille === 'termine').length === 1 ? vals.filter(v => v.famille === 'termine')[0].cle : null,
       arrivees, reculs: evts.filter(estRecul).length, indice: evts.filter(e => e.type === 'indice').length,
+      nouveaux: evts.filter(e => e.type === 'nouveau').length, disparus: evts.filter(e => e.type === 'disparu').length,
       releves: vals.filter(v => max(v.cle) > 0).map(v => v.cle),
       journal: cles('#filtre-journal', 'data-journal'),
       bloc: cles('#filtre-valeur-groupe', 'data-valeur-bloc'), blocVisible: !document.getElementById('filtre-valeur-groupe').hidden,
@@ -2726,10 +2749,12 @@ function serveurSur(valeurs, proprietes, fichiers) {
     };
   });
   const jAttendu18 = past18.vals.filter(k => past18.arrivees[k]);
-  verifier('journal : seulement les passages qu’il y a — « Tout », les valeurs atteintes dans l’ordre des tuiles, puis reculs et indice s’il y en a ; chacune comptée, aucune à zéro',
+  /* Après les valeurs : reculs et indice, puis (débrief 23) nouveaux et disparus — chacun s'il y en a. */
+  const jSuite18 = ['reculs', 'indice', 'nouveaux', 'disparus'].filter(k => past18[k]);
+  verifier('journal : seulement les passages qu’il y a — « Tout », les valeurs atteintes dans l’ordre des tuiles, puis reculs, indice, nouveaux et disparus s’il y en a ; chacune comptée, aucune à zéro',
     past18.journal[0] === '' && past18.journal.slice(1, jAttendu18.length + 1).join() === jAttendu18.join() &&
-    past18.journal.indexOf('reculs') === (past18.reculs ? past18.journal.length - (past18.indice ? 2 : 1) : -1) &&
-    past18.journal.indexOf('indice') === (past18.indice ? past18.journal.length - 1 : -1) &&
+    past18.journal.slice(past18.journal.length - jSuite18.length).join() === jSuite18.join() &&
+    ['reculs', 'indice', 'nouveaux', 'disparus'].every(k => jSuite18.indexOf(k) !== -1 || past18.journal.indexOf(k) === -1) &&
     past18.comptes.length === past18.journal.length - 1 && past18.comptes.every(n => n > 0), JSON.stringify(past18));
   verifier('bloc : « Tout » puis chaque valeur que portent les plans, et elles seules',
     past18.blocVisible && past18.bloc.join() === ['', ...past18.portees].join(), JSON.stringify([past18.bloc, past18.portees]));
@@ -3380,13 +3405,20 @@ function serveurSur(valeurs, proprietes, fichiers) {
   fs.unlinkSync(path.join(__dirname, '..', 'apercu-compact.html'));
   for (const [nom, ctxS] of [['GATES seul', gates.contexte], ['avec historique et SEE', seeCompact.contexte]]) {
     const attendu = pourComparer(ctxS.getDonneesPourClient());
-    const rendu = await pCompact.evaluate(j => window.__deballerPaquet(JSON.parse(j)), ctxS.donneesJSONPourPage());
+    /* Débrief 23 : un relevé qui a sa carte plan par plan voyage sans ses
+       comptes par groupe — la page les refait toujours sur la carte. */
+    const avecCarte = (attendu.releves || []).filter(r => r.plans && typeof r.plans === 'object');
+    avecCarte.forEach(r => { delete r.groupes; });
+    const json = ctxS.donneesJSONPourPage();
+    const rendu = await pCompact.evaluate(j => window.__deballerPaquet(JSON.parse(j)), json);
     const trie = o => Array.isArray(o) ? o.map(trie) : (o && typeof o === 'object') ? Object.keys(o).sort().reduce((r, k) => (r[k] = trie(o[k]), r), {}) : o;
-    verifier('déballé par la page, le paquet ' + nom + ' est exactement celui du serveur',
-      JSON.stringify(trie(pourComparer(rendu))) === JSON.stringify(trie(attendu)));
+    verifier('déballé par la page, le paquet ' + nom + ' est exactement celui du serveur (moins les comptes par groupe des relevés qui ont leur carte)',
+      JSON.stringify(trie(pourComparer(rendu))) === JSON.stringify(trie(attendu)) &&
+      (JSON.parse(json).relevesTab || { releves: [] }).releves.every(r => !('groupes' in r) || !r.p),
+      avecCarte.length + ' relevé(s) avec carte');
   }
   verifier('un contrat demandé par la page arrive compacté lui aussi',
-    !!gates.contexte.getDonneesCompactes().plansTab && !gates.contexte.getDonneesCompactes().plans);
+    !!compactes(gates.contexte).plansTab && !compactes(gates.contexte).plans);
   await pCompact.context().close();
 
   construire({ lignes: 640, gates: true, sortie: 'apercu-gros.html' });
@@ -3434,6 +3466,64 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const diagTemps = gates.contexte.diagnostic();
   verifier('le diagnostic dit le temps de chaque lecture : GATES, historique, seconde base',
     /préparé en \d+,\d s — lecture de GATES \d+,\d s, de l'historique \d+,\d s, de la seconde base \d+,\d s/.test(diagTemps), diagTemps.slice(-600));
+
+  // =================================================================
+  /* Débrief 23 : la page servie comme par le classeur — l'enveloppe
+     compressée posée dans la page, et rendue par le pont à chaque
+     changement de contrat ; la page la décompresse elle-même. */
+  section('Débrief 23 : la page servie avec l’enveloppe compressée');
+  {
+    construire({ lignes: 640, gates: true, sortie: 'apercu-enveloppe.html' });
+    const htmlEnv = fs.readFileSync(path.join(__dirname, '..', 'apercu-enveloppe.html'), 'utf8');
+    verifier('la page porte l’enveloppe : format 2, la livraison en clair, le paquet en base64 sans rien à échapper',
+      /window\.SUIVI_FWD_DONNEES = \{"format":2,"edition":"[0-9a-f]{7}",/.test(htmlEnv) && /"gz":"[A-Za-z0-9_-]+"\};/.test(htmlEnv));
+    const pEnv = await (await nav.newContext({ viewport: { width: 1400, height: 900 } })).newPage();
+    pEnv.on('pageerror', e => erreursJS.push('enveloppe : ' + e.message));
+    await pEnv.goto('file://' + path.join(__dirname, '..', 'apercu-enveloppe.html'));
+    await pEnv.waitForFunction(() => document.documentElement.getAttribute('data-suivi-fwd') === 'pret', null, { timeout: 15000 }).catch(() => {});
+    await pEnv.waitForTimeout(400);
+    const vuEnv = await pEnv.evaluate(() => ({
+      compte: (document.getElementById('compte') || {}).textContent || '',
+      phrase: (document.getElementById('phrase') || {}).textContent || '',
+      cadre: (document.getElementById('suivi-fwd-panne') || {}).innerText || ''
+    }));
+    verifier('décompressée par la page, l’enveloppe donne les 640 plans, sans cadre de panne',
+      /640 plans/.test(vuEnv.compte.replace(/\s/g, ' ')) && !vuEnv.cadre, JSON.stringify(vuEnv));
+    await pEnv.context().close();
+    fs.unlinkSync(path.join(__dirname, '..', 'apercu-enveloppe.html'));
+
+    /* Le classeur à deux contrats : le pont rend l'enveloppe, et la page
+       envoie ses temps avec la clé de son paquet. */
+    const multiEnv = construire({ contrats: ['X1', 'X2'], cache: true, sortie: 'apercu-contrats-enveloppe.html' });
+    const pme = await (await nav.newContext({ viewport: { width: 1280, height: 1000 } })).newPage();
+    pme.on('pageerror', e => erreursJS.push('contrats, enveloppe : ' + e.message));
+    await brancherClasseur(pme, multiEnv.contexte);
+    await pme.goto('file://' + path.join(__dirname, '..', 'apercu-contrats-enveloppe.html'));
+    await pme.waitForTimeout(1600);
+    await pme.selectOption('#select-contrat', 'X2'); await pme.waitForTimeout(1500);
+    const x2Env = await pme.evaluate(() => ({
+      courant: document.getElementById('select-contrat').value,
+      phrase: document.getElementById('phrase').textContent,
+      appels: window.__appelsClasseur.slice(),
+      mesures: window.__mesuresNotees.slice()
+    }));
+    verifier('changer de contrat : l’enveloppe de X2, décompressée, et la page passe sur ses 93 plans',
+      x2Env.courant === 'X2' && /93 plans/.test(x2Env.phrase) && x2Env.appels.indexOf('X2') !== -1, JSON.stringify(x2Env).slice(0, 400));
+    await pme.waitForTimeout(1200);
+    const notees = await pme.evaluate(() => window.__mesuresNotees.slice());
+    const gardees = JSON.parse(multiEnv.contexte.__proprietes.SUIVI_FWD_MESURES || '[]');
+    verifier('la page envoie ses temps à noterConsultation, avec la clé de son paquet ; le serveur les garde',
+      notees.length >= 1 && /^SFWD2:/.test(String(notees[0].cle || '')) && gardees.length >= 1 && typeof gardees[gardees.length - 1].tout === 'number',
+      JSON.stringify([notees, gardees]).slice(0, 400));
+    /* Débrief 23, revue : le début de l'ouverture au serveur part avec les
+       temps — le classeur y reconnaît une ouverture déjà gardée, et ne la
+       compte pas deux fois. */
+    verifier('… avec le début de l’ouverture au serveur, lu dans l’enveloppe, que le serveur garde tel quel',
+      typeof notees[0].debut === 'number' && notees[0].debut > 0 && gardees.some(g => g.debut === notees[0].debut) &&
+      gardees.filter(g => g.debut === notees[0].debut).length === 1, JSON.stringify([notees, gardees]).slice(0, 400));
+    await pme.context().close();
+    fs.unlinkSync(path.join(__dirname, '..', 'apercu-contrats-enveloppe.html'));
+  }
 
   // =================================================================
   section('Débrief 17 : les quatre fichiers d’une même livraison');
@@ -3693,6 +3783,27 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const cSansFichier = servie({ Index: vrais.Index, Styles: vrais.Styles });
   const pSans = cSansFichier.doGet({ parameter: {} }).source.html || '';
   verifier('ouverture, Javascript introuvable : la page le dit', /« Javascript » est introuvable/.test(pSans), pSans.slice(0, 300));
+  /* Débrief 23 : le contrôle ne se fait plus à chaque ouverture — c'est
+     l'évaluation du modèle qui échoue quand un fichier manque (Index
+     introuvable, ou include() de Styles ou de Javascript), et alors
+     seulement la page dit lequel recréer. */
+  const pSansIndex = servie({ Styles: vrais.Styles, Javascript: vrais.Javascript }).doGet({ parameter: {} }).source.html || '';
+  verifier('ouverture, Index introuvable : la page le dit aussi', /« Index » est introuvable/.test(pSansIndex), pSansIndex.slice(0, 300));
+  const cSansStyles = servie({ Index: vrais.Index, Javascript: vrais.Javascript });
+  cSansStyles.ouvrirTableauDeBord();
+  verifier('ouverture depuis le menu, Styles introuvable : la page le dit', /« Styles » est introuvable/.test(cSansStyles.__dialogue.source.html || ''),
+    (cSansStyles.__dialogue.source.html || '').slice(0, 300));
+  let forcee = '';
+  try { cSansFichier.doGet({ parameter: { forcer: '1' } }); } catch (e) { forcee = e.message; }
+  verifier('?forcer=1 avec un fichier introuvable : pas de page de panne, l’erreur d’Apps Script remonte', /introuvable : Javascript|No HTML file named Javascript/.test(forcee), forcee);
+  const cCompte = servie(vrais);
+  const lusParLaPage = [];
+  const lireFichierHtml = cCompte.HtmlService.createHtmlOutputFromFile;
+  cCompte.HtmlService.createHtmlOutputFromFile = function (nom) { lusParLaPage.push(nom); return lireFichierHtml(nom); };
+  const pCompte = cCompte.doGet({ parameter: {} });
+  verifier('une ouverture ne lit plus que Styles et Javascript, par include() — plus les trois fichiers d’abord pour les contrôler',
+    lusParLaPage.join() === 'Styles,Javascript' && pCompte.source.modele === 'Index' && /window\.SUIVI_FWD_DONNEES = \{"format":2,/.test(pCompte.getContent()),
+    lusParLaPage.join());
   const diagStyles = diagFichiers(Object.assign({}, vrais, { Styles: vrais.Styles.replace('"' + ED + '"', '"abcdef0"') }));
   verifier('et des Styles d’une autre livraison', /✗ « Styles » ne vient pas de la même livraison que Code \(livraison abcdef0, Code : /.test(diagStyles));
 
