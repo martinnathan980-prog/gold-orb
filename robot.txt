@@ -21,7 +21,7 @@ from pathlib import Path
 from collections import deque
 from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
-VERSION = "5.8"
+VERSION = "5.9"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -5276,7 +5276,11 @@ def _raison_pas_lecture(req):
     #  « isEnabled » ; « deleteAll »: true, « enableX »: true restent des ordres)
     def drapeau(m):
         ws = mots(m.group(1)).split()
-        return len(ws) >= 2 and ws[0] not in (VERBES_ACTION | MOTS_ECRITURE | MOTS_TACHE)
+        if len(ws) >= 2:
+            return ws[0] not in (VERBES_ACTION | MOTS_ECRITURE | MOTS_TACHE)
+        # (dans une RECHERCHE — adresse « .../search » — un réglage d'affichage oui/non d'un seul mot, « "hide": true »
+        #  d'une colonne ; jamais « "delete": true », « "complete": true »)
+        return verbe and len(ws) == 1 and ws[0] not in (VERBES_ACTION | MOTS_TACHE)
     corps = re.sub(r'"([A-Za-z][A-Za-z0-9_]{1,40})"\s*:\s*(true|false)\b',
                    lambda m: '"reglage": ' + m.group(2) if drapeau(m) else m.group(0), corps)
     if (VERBES_ACTION | MOTS_ECRITURE) & set(mots(corps).split()):
