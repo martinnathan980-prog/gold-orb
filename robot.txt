@@ -21,7 +21,7 @@ from pathlib import Path
 from collections import deque
 from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
-VERSION = "5.9"
+VERSION = "5.10"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -5131,6 +5131,14 @@ DEBUT_LECTURE = re.compile(r"(get|search|find|list|lookup|fetch)(rows|list|all|d
 SUITE_INTERDITE = {"and", "or", "next", "then", "et", "ou", "suivant", "suivante"}
 # le dernier morceau d'une adresse de lignes de grille (sinon, un verbe de lecture)
 FINS_DE_GRILLE = set("rows row data grid datasource results items records lignes page".split())
+# la fin d'adresse d'une recherche franche (son contenu : des critères, pas des ordres)
+RECHERCHES_FRANCHES = set("search recherche rechercher find list liste lister lookup autocomplete typeahead suggest".split())
+# une clé du contenu qui est un ORDRE (« "delete": [...] », « "validate": true », « "markAsRead": true »)
+ORDRES_EN_CLE = set("""delete remove supprimer suppression update save sauver enregistrer create creer insert upsert archive
+archiver purge validate valider approve approuver reject rejeter release diffuser submit soumettre cancel annuler close cloturer
+lock unlock verrouiller publish publier send envoyer execute run apply commit write ecrire set mark marquer toggle enable
+disable reset clear drop truncate move deplacer copy copier duplicate dupliquer import upload assign affecter transfer
+complete claim sign signer""".split())
 # le premier mot d'une opération de lecture nommée dans le contenu (« "action": "getPlans" »)
 OPERATIONS_DE_LECTURE = set("get search find list lookup fetch load count query recherche rechercher lister charger".split())
 # ce qui peut suivre un verbe de recherche dans l'adresse (« .../search/page », « .../search/advanced »)
@@ -5207,8 +5215,8 @@ def _envoi_de_lecture(req):
 def _raison_pas_lecture(req):
     """Pourquoi cet envoi n'est PAS une lecture sûre ("" : c'en est une). Pour Claude : le genre de raison, et le mot
     (de la liste du robot) qui l'a décidé ; jamais une valeur."""
-    def premier(ensemble):
-        return sorted(ensemble)[0] if ensemble else ""
+    def premier(ensemble):  # (tous les mots qui ont décidé, 5 au plus : un seul réglage d'un coup, pas mot après mot)
+        return ", ".join(sorted(ensemble)[:5])
     try:
         if req.resource_type not in ("xhr", "fetch"):
             return f"pas une demande de l'application ({req.resource_type})"
@@ -5283,13 +5291,25 @@ def _raison_pas_lecture(req):
         return verbe and len(ws) == 1 and ws[0] not in (VERBES_ACTION | MOTS_TACHE)
     corps = re.sub(r'"([A-Za-z][A-Za-z0-9_]{1,40})"\s*:\s*(true|false)\b',
                    lambda m: '"reglage": ' + m.group(2) if drapeau(m) else m.group(0), corps)
-    if (VERBES_ACTION | MOTS_ECRITURE) & set(mots(corps).split()):
+    # une RECHERCHE franche (« .../api/search », « .../plans/search/0 ») : son contenu, ce sont des critères et des
+    # noms de colonnes (« dateValidation », « statutValidation ») ; seuls un ORDRE (« "action": "delete" ») ou une clé
+    # qui est un ordre (« "delete": ..., "validate": true ») la rendent suspecte
+    recherche = any(mots(segments[i]) in RECHERCHES_FRANCHES and all(suite_de_recherche(x) for x in segments[i + 1:])
+                    for i in range(max(0, len(segments) - 3), len(segments)))
+    if not recherche and (VERBES_ACTION | MOTS_ECRITURE) & set(mots(corps).split()):
         return "mot d'action dans le contenu : " + premier((VERBES_ACTION | MOTS_ECRITURE) & set(mots(corps).split()))
     # les noms des clés (« "complete": true ») et la valeur d'une clé d'ordre (« "method": "task.claim" »)
     for cle, valeur in re.findall(r'"([^"\\]{1,60})"\s*:\s*("(?:[^"\\]|\\.){0,200}"|[^,}\]]{0,40})', corps):
         mots_cle = mots(cle).split()
-        if set(mots_cle) & VERBES_ACTION or ("".join(mots_cle) in MOTS_TACHE and mots_cle != ["start"]):
-            return "cle d'action dans le contenu"
+        if recherche:
+            if mots_cle and mots_cle[0] in ORDRES_EN_CLE and (len(mots_cle) == 1 or valeur.strip().lower() in ("true", '"true"', "1")):
+                return "cle d'action dans le contenu : " + cle[:30]
+            if mots(valeur) in ORDRES_EN_CLE:  # (une valeur qui est un ordre à elle seule : « "then": "delete" »)
+                return "ordre dans le contenu : " + mots(valeur)
+        elif set(mots_cle) & VERBES_ACTION:
+            return "cle d'action dans le contenu : " + premier(set(mots_cle) & VERBES_ACTION)
+        if "".join(mots_cle) in MOTS_TACHE and mots_cle != ["start"]:
+            return "cle d'action dans le contenu : " + "".join(mots_cle)
         if "".join(mots_cle) in CLES_D_ORDRE and (set(mots(valeur).split()) & (VERBES_ACTION | MOTS_ECRITURE | MOTS_TACHE) or
                                                  action_en_visite(valeur)):
             return "ordre dans le contenu"
