@@ -21,7 +21,7 @@ from pathlib import Path
 from collections import deque
 from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
-VERSION = "5.7"
+VERSION = "5.8"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -5803,10 +5803,13 @@ def explorer_portail(page, url, garde):
     Renvoie (fichier à envoyer, raison de l'arrêt)."""
     hote, adresse = urlsplit(url).hostname or "", _adresse_carte(url)
     carte = lire_carte(url)
+    # une PARTIE seulement (« Données MK2 ») : le robot va seulement là, et relève cette page et ses onglets
+    revenez_ici()
+    cible = _norme_cible(demander_en_vivant(page, "   Visiter seulement une partie du portail ? Tapez son nom (exemple : "
+                                                  "Donnees MK2), ou Entree pour tout le portail :", ""))
     if carte and carte["pages"]:
-        revenez_ici()
-        if not oui_en_vivant(page, f"   Le robot a deja une carte de ce portail ({len(carte['pages'])} pages). Tapez o pour la "
-                                   "COMPLETER, n pour tout recommencer", "o"):
+        if not cible and not oui_en_vivant(page, f"   Le robot a deja une carte de ce portail ({len(carte['pages'])} pages). "
+                                                 "Tapez o pour la COMPLETER, n pour tout recommencer", "o"):
             carte = None
     elif lire_carte() is not None:
         ecrire("   (La carte deja sur ce poste est celle d'une autre adresse : le robot en fait une nouvelle.)")
@@ -5839,16 +5842,55 @@ def explorer_portail(page, url, garde):
     pages_au_depart, debut, essais, arret, interrompu = len(carte["pages"]), time.time(), 0, "", False
     accueil = [0]
 
+    def dans_la_cible(c):
+        """Le chemin passe par la partie demandée (elle, ou un de ses onglets)."""
+        return any(cible in _norme_cible(e.partition(" : ")[2]) for e in c)
+
+    def la_cible(c):
+        """Le chemin MÈNE à la partie demandée (son dernier élément la nomme)."""
+        return bool(c) and cible in _norme_cible(c[-1].partition(" : ")[2].split(">")[-1])
+    connus, partie = [], set()
+    if cible:
+        tous = list(carte["essais"]) + [" ++ ".join(p["chemin"]) for p in carte["pages"] if p["chemin"]] + \
+            [" ++ ".join(a) for p in carte["pages"] for a in p.get("autres_chemins", [])] + \
+            [" ++ ".join(c) for c in carte.get("sous_a_essayer", [])]
+        for cle in dict.fromkeys(tous):
+            if la_cible(cle.split(" ++ ")):
+                connus.append(cle.split(" ++ "))
+                carte["essais"].pop(cle, None)  # (revisitée, même si elle l'a déjà été)
+        if connus:
+            file = deque(sorted(connus, key=len))
+            ecrire(f"   Partie demandee : {len(connus)} chemin(s) connu(s) dans la carte, le robot y va directement.")
+        else:
+            # pas dans la carte : le robot ouvre les menus de l'accueil pour la trouver
+            ecrire("   Cette partie n'est pas dans la carte : le robot ouvre les menus pour la trouver.")
+            for c in list(file):
+                carte["essais"].pop(" ++ ".join(c), None)
+
     def noter_page(chemin):
         """La page affichée : (son numéro dans la carte, nouvelle ?). Une nouvelle page est relevée, et ses chemins
         (sous-menus, onglets, liens) sont ajoutés à ceux à essayer."""
         t.retirer_bandeaux()
         ident, nom, appli = _identite_complete(t.page)
-        if appli:
+        # la partie demandée : toujours relevée à nouveau, sous le nom de ce qui y mène (même si elle ressemble à une
+        # page déjà connue : « Données MK2 » qui affiche le titre de « Données MK1 »)
+        force = bool(cible) and la_cible(chemin)
+        # (le titre est le nom de l'entrée de menu cliquée : ses chiffres comptent — « Données MK1 » et « Données MK2 »
+        #  sont deux pages, pas deux fiches d'une même page)
+        if chemin and chemin[-1].startswith("MENU : ") and nom and not appli and \
+                _norme_cible(nom) == _norme_cible(chemin[-1].partition(" : ")[2].split(">")[-1]) and re.search(r"\d", nom):
+            ident += " || menu " + _norme_cible(nom)
+        if force:
+            dernier = chemin[-1].partition(" : ")[2].split(">")[-1].strip()
+            if nom and not appli and _norme_cible(nom) != _norme_cible(dernier):
+                dernier += f" (titre affiche : {nom})"
+            ident += " || chemin " + hashlib.sha1(" ++ ".join(chemin).encode("utf-8")).hexdigest()[:10]
+            nom = dernier
+        elif appli:
             # le titre est celui de l'APPLICATION (en-tête, fenêtre) : la page porte le nom de ce qui y mène
             nom = (chemin[-1].partition(" : ")[2].split(">")[-1].strip() if chemin else "Accueil") + " (titre non ecrit)"
         r = menus = None
-        if ident in index:
+        if ident in index and not force:
             connue = carte["pages"][index[ident]]
             if not chemin or "empreinte" not in connue:
                 return index[ident], False
@@ -5861,7 +5903,7 @@ def explorer_portail(page, url, garde):
             if ident in index:
                 return index[ident], False
             nom = chemin[-1].partition(" : ")[2].split(">")[-1].strip()  # (le titre est celui de l'autre écran)
-        elif chemin and " ++ ".join(chemin) in par_lien:
+        elif not force and chemin and " ++ ".join(chemin) in par_lien:
             # page ouverte par un lien du contenu (« Voir », « Ma fiche ») : c'est peut-être une fiche, dont le titre
             # EST une donnée (nom d'un client...) : elle porte le nom du lien
             nom = chemin[-1].partition(" : ")[2].strip() + " (titre non ecrit)"
@@ -5873,10 +5915,22 @@ def explorer_portail(page, url, garde):
                                                 set(carte.get("liens_accueil", [])))
                             if len(chemin) < PROFONDEUR else ([], []))
         carte["par_lien"] = sorted(par_lien)
-        carte["pages"].append({"nom": nom, "id": ident, "chemin": chemin, "releve": r, "a_essayer": nouveaux,
-                               "empreinte": _empreinte(r), "cliquables": _nombre_cliquables(t.page),
-                               "autres_chemins": []})
-        index[ident] = len(carte["pages"]) - 1
+        entree = {"nom": nom, "id": ident, "chemin": chemin, "releve": r, "a_essayer": nouveaux,
+                  "empreinte": _empreinte(r), "cliquables": _nombre_cliquables(t.page), "autres_chemins": []}
+        ancienne = index.get(ident)
+        if force and ancienne is None:  # (la partie demandée, déjà dans la carte par ce chemin : remplacée)
+            ancienne = next((i for i, p in enumerate(carte["pages"]) if p["chemin"] == chemin), None)
+            if ancienne is not None:
+                index.pop(carte["pages"][ancienne]["id"], None)
+                index[ident] = ancienne
+        if ancienne is not None:  # (la partie demandée, déjà relevée une autre fois : remplacée)
+            entree["autres_chemins"] = carte["pages"][ancienne].get("autres_chemins", [])
+            carte["pages"][ancienne] = entree
+        else:
+            carte["pages"].append(entree)
+            index[ident] = len(carte["pages"]) - 1
+        if cible and dans_la_cible(chemin):
+            partie.add(index[ident])
         file.extend(nouveaux)
         for e in evites:
             if e not in carte["evites"]:
@@ -5962,7 +6016,7 @@ def explorer_portail(page, url, garde):
     elif garde["liaison"]:
         ecrire("   (Le portail utilise une liaison directe : elle est BLOQUEE pendant la visite, par prudence. Une partie")
         ecrire("    du portail peut ne pas marcher pendant la visite : c'est normal.)")
-    if len(file) < 5:
+    if len(file) < 5 and not cible:
         # presque rien à visiter depuis l'accueil : la carte décrira le haut et la gauche de l'accueil, pour Claude
         ecrire("   Le robot ne trouve presque rien a visiter depuis l'accueil. Le fichier pour Claude contiendra une")
         ecrire("   description de l'accueil (sans aucun texte de la page) pour qu'il corrige le robot.")
@@ -6018,6 +6072,11 @@ def explorer_portail(page, url, garde):
                 break
             chemin = file.popleft()
             cle = " ++ ".join(chemin)
+            # (une partie seulement : ses chemins ; et, si elle n'est pas dans la carte, les menus de l'accueil pour la
+            #  trouver)
+            if cible and not (dans_la_cible(chemin) or (not connus and len(chemin) == 1 and
+                                                        chemin[0].startswith("MENU : ") and ">" not in chemin[0])):
+                continue
             if cle in carte["essais"]:  # (déjà essayé : la fois d'avant, ou par un autre chemin)
                 continue
             essais += 1
@@ -6084,6 +6143,9 @@ def explorer_portail(page, url, garde):
                      comparaison=garde.get("comparaison"))
         sauver_carte(carte)
     fichier = ecrire_carte(carte)  # (avant tout appel au navigateur : après un Ctrl+C, il peut ne plus répondre)
+    if cible:  # (le fichier à envoyer : seulement la partie demandée)
+        fichier = ecrire_carte(carte, partie, lambda texte: cible in _norme_cible(texte), "A_ENVOYER_partie.txt")
+        ecrire(f"   Partie relevee : {len(partie)} page(s).")
     if not interrompu:
         try:
             if not t.principale.is_closed():
@@ -6098,8 +6160,14 @@ def explorer_portail(page, url, garde):
     return fichier, arret
 
 
-def ecrire_carte(carte):
-    """A_ENVOYER_carte.txt : les pages du portail et comment y aller. Structure seulement (aucune adresse, aucune valeur)."""
+def _norme_cible(texte):
+    """« Données MK2 » -> « donnees mk2 » (pour comparer un nom tapé aux noms des menus)."""
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", sans_accents(str(texte or "")).lower()).split())
+
+
+def ecrire_carte(carte, seules=None, garder=None, nom_fichier="A_ENVOYER_carte.txt"):
+    """A_ENVOYER_carte.txt : les pages du portail et comment y aller. Structure seulement (aucune adresse, aucune valeur).
+    seules, garder, nom_fichier : une partie seulement (les numéros de ses pages, ce qui la nomme, son fichier)."""
     if carte.get("liaison"):
         liaison = "oui, bloquee pendant la visite" if carte.get("liaison_bloquee") else "oui, NON BLOQUEE (visite arretee)"
     else:
@@ -6121,16 +6189,21 @@ def ecrire_carte(carte):
                       + (" (LA PROTECTION EMPECHE UNE PARTIE DU PORTAIL DE S'AFFICHER)" if apres < 0.7 * avant else ""))
     lignes.append("")
     menus_vus = [None]
+    if seules is not None:
+        lignes[0] = f"PARTIE DU PORTAIL - pour Claude - {carte.get('date', '')}"
     for numero, p in enumerate(carte["pages"], 1):
+        if seules is not None and numero - 1 not in seules:
+            continue
         lignes.append(f"PAGE {numero} : « {p['nom'] or '(sans titre)'} »  ({p['cliquables']} elements cliquables)")
         lignes.append("  Chemin : " + _lisible(p["chemin"]))
         for autre in p.get("autres_chemins", []):
             lignes.append("  Autre chemin : " + _lisible(autre))
         lignes += _lignes_releve(p["releve"], menus_vus)
         lignes.append("")
-    if carte.get("evites"):
-        lignes.append("PAS VISITES PAR PRUDENCE : " + " ; ".join(carte["evites"]))
-    if carte.get("diagnostic_accueil"):
+    evites = [e for e in carte.get("evites", []) if garder is None or garder(e)]
+    if evites:
+        lignes.append("PAS VISITES PAR PRUDENCE : " + " ; ".join(evites))
+    if carte.get("diagnostic_accueil") and seules is None:
         lignes.append("")
         lignes.append("DESCRIPTION DE L'ACCUEIL pour Claude (le robot n'y trouve presque rien a visiter) : elements cliquables")
         lignes.append("du haut et de la gauche, structure seulement (balise.classes | role | nombre de mots | icone | ...) :")
@@ -6141,12 +6214,13 @@ def ecrire_carte(carte):
         for cle, (n, raison, champs) in sorted(carte["details_bloquees"].items(), key=lambda x: -x[1][0]):
             lignes.append(f"  {n}x {cle} : {raison}" + (f" ; champs : {champs}" if champs else ""))
         lignes.append("")
-    autres = [(c, s) for c, s in carte.get("essais", {}).items() if not s.startswith("page")]
+    autres = [(c, s) for c, s in carte.get("essais", {}).items() if not s.startswith("page") and
+              (garder is None or garder(_lisible(c.split(" ++ "))))]
     if autres:
         lignes.append("CHEMINS SANS NOUVELLE PAGE :")
         for c, s in autres:
             lignes.append(f"  {_lisible(c.split(' ++ '))} : {s}")
-    for nom in ("A_ENVOYER_carte.txt", "A_ENVOYER_carte_2.txt", "A_ENVOYER_carte_3.txt"):
+    for nom in (nom_fichier, nom_fichier.replace(".txt", "_2.txt"), nom_fichier.replace(".txt", "_3.txt")):
         fichier = dossier_robot() / nom
         try:
             fichier.write_text("\n".join(lignes) + "\n", encoding="utf-8")
@@ -6415,7 +6489,8 @@ def programme_enfant(mode, dossier_echange):
                 fichier = boucle_voir(page)
             elif mode == "explorer":
                 fichier, arret = explorer_portail(page, echange["url"], garde)
-                if "Ctrl+C" not in arret and "liaison directe" not in arret and not page.is_closed():
+                if "Ctrl+C" not in arret and "liaison directe" not in arret and not page.is_closed() and \
+                        not (fichier and fichier.name.startswith("A_ENVOYER_partie")):
                     revenez_ici()
                     if oui_en_vivant(page, "   Voulez-vous essayer tout de suite « aller a une page » (le robot y va tout "
                                            "seul) ?", "n"):
