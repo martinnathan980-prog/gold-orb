@@ -21,7 +21,7 @@ from pathlib import Path
 from collections import deque
 from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
-VERSION = "5.5"
+VERSION = "5.6"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -1458,6 +1458,7 @@ JS_NOUVEAUX = r"""([numero, jeton, clic, dedansSeul]) => {""" + JS_OUTILS_MENUS 
   const survole = document.querySelector('[data-robot-survole]');
   // (après un clic qui a aussi changé la page : seulement le sous-menu DANS l'entrée cliquée, si elle est toujours là)
   if (dedansSeul && !(survole && survole.closest('[data-robot-barre]'))) return [];
+  if (clic && !survole) return [];   // (l'élément cliqué a disparu : on ne sait pas ce qui vient de lui)
   // après un CLIC sur le nom d'une entrée de menu (« GATES » dans « li > ligne + sous-menu ») : son sous-menu est dans
   // l'entrée entière
   const porteur = clic && survole && !entree ? survole.closest('[data-robot-barre]') : null;
@@ -1491,9 +1492,16 @@ JS_NOUVEAUX = r"""([numero, jeton, clic, dedansSeul]) => {""" + JS_OUTILS_MENUS 
     if (vus.has(e) && vus.get(e) === t) continue;
     // (après un clic sur une entrée d'un menu repéré : son sous-menu est dans l'entrée ou dans un panneau de menu, jamais
     //  dans la page — les numéros de page d'un tableau qui vient de s'afficher ne sont pas un sous-menu)
-    const TABLEAU = 'table, [role=grid], [role=table], [role=row], [class*=paginat i], [class*=pager i], [class*=datatable i], [class*=p-table i]';
-    nouveaux.push({ e: e, t: t, dehors: !!porteur && !dedans,
-                    ok: dedans || (porteur ? dansPanneau(e) && !contenu(e) && !e.closest(TABLEAU) : dansPanneau(e) || (pres(e) && !contenu(e))) });
+    // (un tableau de la page — colonnes, filtres, numéros de page, « Chargement... » d'une grille — n'est jamais un
+    //  sous-menu ; après un clic sur une entrée d'un menu repéré, seul compte son sous-menu, dans l'entrée ou dans
+    //  un panneau flottant de menu)
+    const GRILLE = 'table, [role=grid], [role=treegrid], [role=table], [role=row], [role=columnheader], [class*=paginat i], ' +
+                   '[class*=pager i], [class*=datatable i], [class*=p-table i], [class*=ag-root i], [class*=ag-header i], ' +
+                   '[class*=ag-overlay i], [class*=ag-floating i], [class*=ag-body i]';
+    const grille = clic && !dedans && !!e.closest(GRILLE);
+    nouveaux.push({ e: e, t: t, dehors: (!!porteur && !dedans) || grille,
+                    ok: dedans || (!grille && (porteur ? !!e.closest('.cdk-overlay-container, [role=menu], [role=listbox]')
+                                                       : dansPanneau(e) || (pres(e) && !contenu(e)))) });
   }
   if (nouveaux.length > 80) return [];   // la page entière a changé : ce n'est pas un sous-menu
   // les voisins (mêmes parents) d'un élément retenu font partie du même sous-menu
@@ -5191,43 +5199,56 @@ def _envoi_de_lecture(req):
     """Un envoi (POST) de l'application (jamais d'un formulaire de page) qui ne fait que LIRE : demande GraphQL
     « query » (jamais « mutation »), demande de lignes d'une grille, ou adresse qui finit par un verbe de recherche ou
     de liste ; contenu vide ou JSON ; et aucun mot d'action ou d'écriture, ni dans l'adresse ni dans le contenu."""
+    return not _raison_pas_lecture(req)
+
+
+def _raison_pas_lecture(req):
+    """Pourquoi cet envoi n'est PAS une lecture sûre ("" : c'en est une). Pour Claude : le genre de raison, et le mot
+    (de la liste du robot) qui l'a décidé ; jamais une valeur."""
+    def premier(ensemble):
+        return sorted(ensemble)[0] if ensemble else ""
     try:
         if req.resource_type not in ("xhr", "fetch"):
-            return False
+            return f"pas une demande de l'application ({req.resource_type})"
         entetes = {str(k).lower(): str(v).lower() for k, v in (req.headers or {}).items()}
         # (« POST » qui annonce un autre ordre : X-HTTP-Method: DELETE, MERGE... ; formulaire ou fichier envoyé)
         if {"x-http-method", "x-http-method-override", "x-method-override"} & set(entetes) or \
                 re.search(r"multipart|form-urlencoded", entetes.get("content-type", "")):
-            return False
+            return "formulaire ou ordre dans les en-tetes"
         morceaux = urlsplit(req.url)
         chemin, demande = unquote(morceaux.path), unquote(morceaux.query)
         # (« list.do;jsessionid=... » : les paramètres d'un morceau d'adresse sont ôtés)
         segments = [x.split(";")[0] for x in chemin.split("/") if x.split(";")[0]]
         mots_adresse = set(mots(chemin + " " + demande).split())
-        if (action_en_visite(chemin + " " + demande) or mots_adresse & (VERBES_ACTION | MOTS_ECRITURE) or
-                set(mots(chemin).split()) & (MOTS_ETAT | MOTS_TACHE) or
-                _ordre_dans_demande(morceaux.query) or
-                any(ADRESSE_SERVEUR.search(x) for x in segments)):
-            return False
+        if mots_adresse & (VERBES_ACTION | MOTS_ECRITURE):
+            return "mot d'action dans l'adresse : " + premier(mots_adresse & (VERBES_ACTION | MOTS_ECRITURE))
+        if action_en_visite(chemin + " " + demande):
+            return "action dans l'adresse"
+        if set(mots(chemin).split()) & (MOTS_ETAT | MOTS_TACHE):
+            return "etat ou tache dans l'adresse : " + premier(set(mots(chemin).split()) & (MOTS_ETAT | MOTS_TACHE))
+        if _ordre_dans_demande(morceaux.query):
+            return "ordre apres le « ? » de l'adresse"
+        if any(ADRESSE_SERVEUR.search(x) for x in segments):
+            return "page de serveur a l'ancienne"
         corps = req.post_data or ""
     except Exception:
-        return False
+        return "illisible"
     if len(corps) > 20000:
-        return False
+        return "contenu trop long"
     try:
         objet = json.loads(corps) if corps.strip() else None
     except ValueError:
-        return False  # ni vide ni JSON (formulaire, texte, XML) : jamais une lecture sûre
+        return "contenu qui n'est pas du JSON"  # ni vide ni JSON (formulaire, texte, XML) : jamais une lecture sûre
     demandes = objet if isinstance(objet, list) else [objet]
     # GraphQL : par son adresse (« graphql », « gql », « .../query ») ou par son contenu ; seul ce contrôle décide
     chemin_gql = bool(segments) and ({"graphql", "gql"} & {s.lower() for s in segments} or segments[-1].lower() == "query")
     contenu_gql = any(isinstance(d, dict) and ("operationName" in d or (isinstance(d.get("query"), str) and
                       re.match(r"\s*(query|mutation|subscription|fragment)\b|\s*\{", d["query"]))) for d in demandes)
     if chemin_gql or contenu_gql:
-        return bool(objet is not None and demandes and chemin_gql and
-                    all(isinstance(d, dict) and _graphql_lecture(d) for d in demandes))
+        return "" if (objet is not None and demandes and chemin_gql and
+                      all(isinstance(d, dict) and _graphql_lecture(d) for d in demandes)) else "GraphQL pas en lecture"
     if objet is not None and not isinstance(objet, (dict, list)):
-        return False
+        return "contenu JSON inattendu"
     dernier = mots(segments[-1]).split() if segments else []
 
     def lecture(ws):
@@ -5248,18 +5269,32 @@ def _envoi_de_lecture(req):
         if {"startrow", "endrow"} <= cles <= CLES_AG_GRID:
             # lignes d'une grille (de telle ligne à telle ligne, tri, filtre) : rien d'autre dans la demande ; les valeurs
             # (« dateModification », filtre « set ») sont des noms de colonnes, pas des ordres
-            return verbe or bool(dernier) and dernier[-1] in FINS_DE_GRILLE
+            return "" if (verbe or bool(dernier) and dernier[-1] in FINS_DE_GRILLE) else "lignes de grille, adresse inconnue"
     if (VERBES_ACTION | MOTS_ECRITURE) & set(mots(corps).split()):
-        return False
+        return "mot d'action dans le contenu : " + premier((VERBES_ACTION | MOTS_ECRITURE) & set(mots(corps).split()))
     # les noms des clés (« "complete": true ») et la valeur d'une clé d'ordre (« "method": "task.claim" »)
     for cle, valeur in re.findall(r'"([^"\\]{1,60})"\s*:\s*("(?:[^"\\]|\\.){0,200}"|[^,}\]]{0,40})', corps):
         mots_cle = mots(cle).split()
         if set(mots_cle) & VERBES_ACTION or ("".join(mots_cle) in MOTS_TACHE and mots_cle != ["start"]):
-            return False
+            return "cle d'action dans le contenu"
         if "".join(mots_cle) in CLES_D_ORDRE and (set(mots(valeur).split()) & (VERBES_ACTION | MOTS_ECRITURE | MOTS_TACHE) or
                                                  action_en_visite(valeur)):
-            return False
-    return verbe
+            return "ordre dans le contenu"
+    return "" if verbe else "adresse sans verbe de lecture"
+
+
+def _cles_du_contenu(req):
+    """Les NOMS des champs envoyés (« page, size, criteres ») : de la structure, jamais leurs valeurs."""
+    try:
+        objet = json.loads(req.post_data or "")
+    except (ValueError, TypeError, Exception):
+        return ""
+    objet = objet[0] if isinstance(objet, list) and objet else objet
+    if not isinstance(objet, dict):
+        return ""
+    cles = [k for k in objet if isinstance(k, str) and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,30}", k)
+            and not re.search(r"\d{3,}", k) and _structure(k) == k]
+    return ", ".join(cles[:12])
 
 
 def _graphql_lecture(d):
@@ -5286,7 +5321,7 @@ def proteger_en_visite(contexte):
     (Ce contrôle est fait par le robot lui-même : pendant qu'il attend une réponse dans la fenêtre noire, il doit
     continuer à faire vivre le navigateur, sinon la page attendrait ; voir demander_en_vivant et _garde_coupee.)"""
     garde = {"bloquees": 0, "exemples": [], "liaison": False, "contexte": contexte, "liaison_bloquee": False,
-             "lectures": 0, "exemples_lectures": []}
+             "lectures": 0, "exemples_lectures": [], "details": {}}
 
     def filtre(route):
         req, methode = None, "?"
@@ -5315,6 +5350,18 @@ def proteger_en_visite(contexte):
                     exemple = f"{methode} {_chemin_technique(req.url)} ({genre})"
                     if exemple not in garde["exemples"] and len(garde["exemples"]) < 10:
                         garde["exemples"].append(exemple)
+                    # (pour Claude : pourquoi, et les NOMS des champs envoyés ; jamais une valeur)
+                    detail = garde["details"]
+                    cle = f"{methode} {_chemin_technique(req.url)}"
+                    if cle in detail:
+                        detail[cle][0] += 1
+                    elif len(detail) < 15:
+                        if methode == "POST":
+                            raison = _raison_pas_lecture(req) or "?"
+                            champs = _cles_du_contenu(req)
+                        else:
+                            raison, champs = ("adresse d'action" if methode in ("GET", "HEAD") else "envoi"), ""
+                        detail[cle] = [1, raison, champs]
                 route.abort("blockedbyclient")
             else:
                 route.continue_()
@@ -6008,6 +6055,7 @@ def explorer_portail(page, url, garde):
         carte.update(bloquees=garde["bloquees"], exemples=list(garde["exemples"]), liaison=garde["liaison"],
                      liaison_bloquee=garde["liaison_bloquee"], duree=round((time.time() - debut) / 60, 1), arret=arret,
                      lectures=garde.get("lectures", 0), exemples_lectures=list(garde.get("exemples_lectures", [])),
+                     details_bloquees=dict(garde.get("details", {})),
                      comparaison=garde.get("comparaison"))
         sauver_carte(carte)
     fichier = ecrire_carte(carte)  # (avant tout appel au navigateur : après un Ctrl+C, il peut ne plus répondre)
@@ -6062,6 +6110,11 @@ def ecrire_carte(carte):
         lignes.append("DESCRIPTION DE L'ACCUEIL pour Claude (le robot n'y trouve presque rien a visiter) : elements cliquables")
         lignes.append("du haut et de la gauche, structure seulement (balise.classes | role | nombre de mots | icone | ...) :")
         lignes += ["  " + l for l in carte["diagnostic_accueil"]]
+        lignes.append("")
+    if carte.get("details_bloquees"):
+        lignes.append("ENVOIS BLOQUES, LE DETAIL (pour Claude : pourquoi, et les noms des champs envoyes) :")
+        for cle, (n, raison, champs) in sorted(carte["details_bloquees"].items(), key=lambda x: -x[1][0]):
+            lignes.append(f"  {n}x {cle} : {raison}" + (f" ; champs : {champs}" if champs else ""))
         lignes.append("")
     autres = [(c, s) for c, s in carte.get("essais", {}).items() if not s.startswith("page")]
     if autres:
