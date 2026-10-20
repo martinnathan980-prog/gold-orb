@@ -6175,40 +6175,247 @@ async function reinitialiser(pg) {
     verifier('en descendant la liste du bloc, l’en-tête (ATA, Plans, Répartition, Fin estimée, Rythme requis) reste collé en haut du cadre, opaque, au-dessus des lignes',
       tete24.defile && tete24.scroll > 0 && Math.abs(tete24.ecart) <= 1 && tete24.visible && tete24.opaque, JSON.stringify(tete24));
 
+    /* Relecture du débrief 24 : l'en-tête collé ne doit rien cacher. Une
+       ligne ouverte au ras du bas du cadre monte en haut pour montrer ses
+       plans : elle se pose SOUS l'en-tête — sinon on voit la liste dépliée
+       sans savoir quel groupe on vient d'ouvrir. Même chose au téléphone,
+       où la barre « Trier » défile avec la liste. */
+    const ouvrirDuBas24 = async () => {
+      const i = await p24.evaluate(async () => {
+        const attendre = ms => new Promise(r => setTimeout(r, ms));
+        const z = document.getElementById('zone-critique');
+        z.scrollTop = 0; z.scrollIntoView({ block: 'center' }); await attendre(150);
+        const bas = z.getBoundingClientRect().bottom, ls = [...z.querySelectorAll('.critique-ligne')];
+        let k = -1; ls.forEach((l, j) => { if (l.getBoundingClientRect().bottom <= bas) k = j; });
+        return k;
+      });
+      const ligne = p24.locator('#zone-critique .critique-ligne').nth(i);
+      const groupe = await ligne.getAttribute('data-groupe');
+      await ligne.locator('.critique-nom').click(); await p24.waitForTimeout(400);
+      const r = await p24.evaluate(g => {
+        const z = document.getElementById('zone-critique'), t = z.querySelector('.critique-tete');
+        const l = [...z.querySelectorAll('.critique-ligne')].find(x => x.dataset.groupe === g), n = l.querySelector('.critique-nom');
+        const rz = z.getBoundingClientRect(), rt = t.getBoundingClientRect(), rl = l.getBoundingClientRect(), rn = n.getBoundingClientRect();
+        const pt = document.elementFromPoint(rn.left + Math.min(20, rn.width / 2), rn.top + rn.height / 2);
+        return { groupe: g, ouverte: l.getAttribute('aria-pressed') === 'true', defile: z.scrollTop, collee: getComputedStyle(t).position,
+                 basTete: Math.round(rt.bottom - rz.top), hautLigne: Math.round(rl.top - rz.top), nomVu: !!pt && l.contains(pt) };
+      }, groupe);
+      await p24.locator('#zone-critique .critique-ligne').nth(i).locator('.critique-nom').click(); await p24.waitForTimeout(300);   // on la referme
+      return r;
+    };
+    const bas1280 = await ouvrirDuBas24();
+    verifier('ouvrir la dernière ligne visible du bloc : elle monte montrer ses plans et se pose sous l’en-tête collé — son nom reste lisible',
+      bas1280.ouverte && bas1280.defile > 0 && bas1280.collee === 'sticky' && bas1280.hautLigne >= bas1280.basTete - 1 && bas1280.nomVu, JSON.stringify(bas1280));
+
+    /* Au clavier, en remontant (Maj+Tab), le navigateur amène chaque ligne
+       au bord haut du cadre : elle doit s'arrêter sous l'en-tête. */
+    await p24.evaluate(async () => {
+      const attendre = ms => new Promise(r => setTimeout(r, ms));
+      const z = document.getElementById('zone-critique');
+      z.scrollIntoView({ block: 'center' }); z.scrollTop = z.scrollHeight; await attendre(150);
+      const rz = z.getBoundingClientRect();
+      [...z.querySelectorAll('.critique-ligne')].filter(l => l.getBoundingClientRect().top > rz.top + 120)[0].focus();
+    });
+    const clavier24 = [];
+    for (let k = 0; k < 10; k++) {
+      await p24.keyboard.press('Shift+Tab'); await p24.waitForTimeout(60);
+      clavier24.push(await p24.evaluate(() => {
+        const z = document.getElementById('zone-critique'), a = document.activeElement;
+        if (!a || !z.contains(a) || a.closest('.critique-tete')) return null;
+        const l = a.closest('.critique-ligne'), cible = l ? l.querySelector('.critique-nom') : a;
+        const rz = z.getBoundingClientRect(), rt = z.querySelector('.critique-tete').getBoundingClientRect(), rc = cible.getBoundingClientRect();
+        const pt = document.elementFromPoint(rc.left + Math.min(20, rc.width / 2), rc.top + rc.height / 2);
+        return { quoi: l ? l.dataset.groupe : a.className, haut: Math.round(rc.top - rz.top), basTete: Math.round(rt.bottom - rz.top), cache: !!pt && !!pt.closest('.critique-tete') };
+      }));
+    }
+    const vus24 = clavier24.filter(Boolean);
+    verifier('au clavier, en remontant la liste (Maj+Tab), chaque ligne qui prend le focus se pose sous l’en-tête collé, jamais dessous',
+      vus24.length >= 6 && vus24.every(x => !x.cache && x.haut >= x.basTete - 1), JSON.stringify(vus24));
+
+    /* L'en-tête collé se clique la liste descendue : « ? » ouvre l'aide là
+       où on la voit, la refermer ne fait pas sauter les lignes, et un tri
+       montre le classement depuis son premier. */
+    const clics24 = await p24.evaluate(async () => {
+      const attendre = ms => new Promise(r => setTimeout(r, ms));
+      const z = document.getElementById('zone-critique');
+      const tete = () => z.querySelector('.critique-tete').getBoundingClientRect();
+      const premiere = () => [...z.querySelectorAll('.critique-ligne')].findIndex(x => x.getBoundingClientRect().top >= tete().bottom - 1);
+      z.scrollIntoView({ block: 'center' }); z.scrollTop = 600; await attendre(150);
+      const descendu = z.scrollTop;
+      z.querySelector('.critique-tete button[data-aide]').click(); await attendre(300);
+      const pa = document.getElementById('panneau-fin'), rp = pa ? pa.getBoundingClientRect() : null, rz = z.getBoundingClientRect();
+      const aide = { descendu, ouvert: !!pa, haut: rp ? Math.round(rp.top - tete().bottom) : null, bas: rp ? Math.round(rp.top - rz.bottom) : null };
+      /* Juste sous l'aide, hors de vue au-dessus — pas tout en bas, où le
+         cadre, recalé sur sa fin, garderait les lignes en place de lui-même. */
+      if (pa) z.scrollTop += pa.getBoundingClientRect().bottom - tete().bottom + 20;
+      await attendre(150);
+      const l0 = z.querySelectorAll('.critique-ligne')[premiere()], g = l0.dataset.groupe, y0 = l0.getBoundingClientRect().top;
+      const auMilieu = z.scrollTop > 0 && z.scrollTop < z.scrollHeight - z.clientHeight - 20;
+      z.querySelector('.critique-tete button[data-aide]').click(); await attendre(300);
+      const l1 = [...z.querySelectorAll('.critique-ligne')].find(x => x.dataset.groupe === g);
+      const fermer = { auMilieu, ferme: !document.getElementById('panneau-fin'), groupe: g, saut: Math.round(l1.getBoundingClientRect().top - y0) };
+      z.scrollTop = 600; await attendre(150);
+      z.querySelector('.critique-tete button[data-trig="fin"]').click(); await attendre(300);
+      const tri = { actif: z.querySelector('button[data-trig="fin"]').dataset.actif, defile: z.scrollTop, premiere: premiere() };
+      /* Deux clics de plus : retour au classement par défaut. */
+      z.querySelector('.critique-tete button[data-trig="fin"]').click(); await attendre(200);
+      z.querySelector('.critique-tete button[data-trig="fin"]').click(); await attendre(200);
+      z.scrollTop = 0;
+      return { aide, fermer, tri };
+    });
+    verifier('liste descendue, « ? » dans l’en-tête collé : l’aide s’ouvre sous l’en-tête, dans le cadre — pas hors de vue au-dessus',
+      clics24.aide.descendu > 0 && clics24.aide.ouvert && clics24.aide.haut >= -1 && clics24.aide.bas < -100, JSON.stringify(clics24.aide));
+    verifier('liste descendue sous l’aide ouverte, « ? » la referme : les lignes qu’on regardait restent où elles étaient',
+      clics24.fermer.auMilieu && clics24.fermer.ferme && Math.abs(clics24.fermer.saut) <= 1, JSON.stringify(clics24.fermer));
+    verifier('liste descendue, un tri depuis l’en-tête collé montre le classement depuis son premier, juste sous l’en-tête',
+      clics24.tri.actif === 'true' && clics24.tri.defile === 0 && clics24.tri.premiere === 0, JSON.stringify(clics24.tri));
+
+    /* Au téléphone, chaque ligne porte ses libellés : la barre « Trier »
+       ne reste pas collée — elle défilait par-dessus 60 des 380 px du
+       cadre et cachait la ligne qu'on venait d'ouvrir. */
+    await p24.setViewportSize({ width: 390, height: 844 }); await p24.waitForTimeout(400);
+    const tel24 = await p24.evaluate(async () => {
+      const attendre = ms => new Promise(r => setTimeout(r, ms));
+      const z = document.getElementById('zone-critique'), t = z.querySelector('.critique-tete');
+      z.scrollIntoView({ block: 'center' }); z.scrollTop = 300; await attendre(150);
+      const r = { position: getComputedStyle(t).position, ecart: Math.round(t.getBoundingClientRect().top - z.getBoundingClientRect().top) };
+      z.scrollTop = 0; return r;
+    });
+    const bas390 = await ouvrirDuBas24();
+    verifier('au téléphone, la barre « Trier » défile avec la liste au lieu d’en cacher le haut, et une ligne ouverte en bas du cadre garde son nom lisible',
+      tel24.position !== 'sticky' && tel24.ecart < -100 && bas390.ouverte && bas390.nomVu, JSON.stringify({ tel24, bas390 }));
+    await p24.setViewportSize({ width: 1280, height: 950 }); await p24.waitForTimeout(400);
+
+    /* Débrief 23, gardé : un nom MOYEN ne passe pas au-dessus, la colonne
+       s'élargit pour lui (plus de 118 px, 240 au plus) et l'en-tête « ECP »
+       prend sa largeur. Un nom trop long passe au-dessus de sa barre. */
+    const NOMS24 = ['ECP 2207 — Galley avant', 'ECP-31', 'ECP-2100-HARNAIS-COCKPIT-GAUCHE-MODIF-B'];
+    await p24.evaluate(noms => {
+      const s = window.__jeuDExemple('HDK');
+      s.plans.forEach((x, i) => { x.ecp = noms[i % noms.length]; });
+      window.__chargerSource(s);
+    }, NOMS24);
+    await p24.waitForTimeout(400);
+    await p24.selectOption('#dim-critique', 'ecp'); await p24.waitForTimeout(450);
+    const col24 = await p24.evaluate(() => {
+      const z = document.getElementById('zone-critique'), tete = z.querySelector('.critique-tete > span:first-child');
+      const noms = [...z.querySelectorAll('.critique-ligne .critique-nom')].map(n => ({ t: n.textContent, dessus: n.parentNode.classList.contains('nom-dessus'),
+        lignes: Math.round(n.getBoundingClientRect().height / parseFloat(getComputedStyle(n).lineHeight)), large: Math.round(n.getBoundingClientRect().width) }));
+      return { col: z.style.getPropertyValue('--col-nom'), tete: Math.round(tete.getBoundingClientRect().width), noms };
+    });
+    const moyen24 = col24.noms.find(x => x.t === NOMS24[0]) || {}, long24 = col24.noms.find(x => x.t === NOMS24[2]) || {};
+    verifier('par ECP, 1280 px : un nom moyen garde sa place, sur une ligne — la colonne s’élargit pour lui (plus de 118 px, 240 au plus) et l’en-tête « ECP » a sa largeur ; le nom trop long passe au-dessus',
+      !moyen24.dessus && moyen24.lignes === 1 && parseFloat(col24.col) > 118 && parseFloat(col24.col) <= 240 &&
+      Math.abs(col24.tete - moyen24.large) <= 1 && long24.dessus === true, JSON.stringify(col24));
+
+    /* À l'impression A4 (marges par défaut de Chrome), la page fait 717 px :
+       c'est la mise en page du téléphone, et rien ne remesure — la classe
+       « nom-dessus » posée à l'écran reste. Elle ne doit rien y changer :
+       le nom d'un tenant, les cellules empilées dessous, pas en escalier. */
+    await p24.setViewportSize({ width: 717, height: 950 });
+    const impr24 = await p24.evaluate(nom => {
+      const l = [...document.querySelectorAll('#zone-critique .critique-ligne')].find(x => x.querySelector('.critique-nom').textContent === nom);
+      l.classList.add('nom-dessus');
+      const n = l.querySelector('.critique-nom'), cs = getComputedStyle(l);
+      return { colonnes: cs.gridTemplateColumns.split(' ').length, lignesNom: Math.round(n.getBoundingClientRect().height / parseFloat(getComputedStyle(n).lineHeight)),
+               gauches: [...l.children].filter(c => c.offsetWidth && !c.classList.contains('chevron')).map(c => Math.round(c.getBoundingClientRect().left)) };
+    }, NOMS24[2]);
+    verifier('impression A4 (page de 717 px) : une ligne dont le nom est passé au-dessus à l’écran s’imprime d’un tenant — une seule colonne, le nom sur une ligne, les cellules empilées',
+      impr24.colonnes === 1 && impr24.lignesNom === 1 && new Set(impr24.gauches).size === 1, JSON.stringify(impr24));
+    await p24.setViewportSize({ width: 1280, height: 950 }); await p24.waitForTimeout(400);
+
     /* « Les nouveaux sont pas droits » : des plans nouveaux arrivés à des
        valeurs de longueurs différentes, la flèche de chaque ligne au même
-       endroit, « nouveau » aligné, l'arrivée qui commence au même x. */
-    await p24.evaluate(() => {
+       endroit, « nouveau » aligné, l'arrivée qui commence au même x. Deux
+       plans disparus partis d'une valeur longue et d'une courte : le départ
+       finit au même écart de sa flèche, sur une ligne comme sur deux. */
+    const VALEURS24 = ['Terminé', 'En cours', '', 'Un état au nom vraiment très long pour la colonne', 'PWD_IN_PROGRESS', 'FWD_TO_SEIZE_EN_ATTENTE_RETOUR_CLIENT'];
+    await p24.evaluate(valeurs => {
       const s = window.__jeuDExemple('HDK');
       const modele = s.plans[0];
-      ['Terminé', 'En cours', '', 'Un état au nom vraiment très long pour la colonne'].forEach((v, k) => {
+      valeurs.forEach((v, k) => {
         const x = JSON.parse(JSON.stringify(modele));
         x.reference = 'ZZZ' + (900 + k) + 'A600001A';
         x.avancement = v;
         s.plans.push(x);
         s.releves[s.releves.length - 1].plans[x.reference] = v;
       });
+      const avant = s.releves[s.releves.length - 2];
+      avant.plans.ZZZ910A600001A = 'Valeur saisie à la main beaucoup trop longue';
+      avant.plans.ZZZ911A600001A = 'En cours';
+      avant.plans.ZZZ912A600001A = 'PWD_TO_CONTROL';
       window.__chargerSource(s);
-    });
+    }, VALEURS24);
     await p24.waitForTimeout(400);
     await p24.click('#filtre-journal button[data-journal="nouveaux"]'); await p24.waitForTimeout(300);
-    const lignes24 = await p24.evaluate(async () => {
+    /* Chaque ligne d'un type : où tombent le départ, la flèche, l'arrivée ;
+       l'écart entre la fin du texte de départ et la flèche ; les valeurs
+       coupées net (scrollWidth) ; et chaque retour à la ligne à l'intérieur
+       d'une valeur — il doit tomber après un « _ » ou une espace. */
+    const mesurerJournal24 = type => p24.evaluate(async type => {
       const attendre = ms => new Promise(r => setTimeout(r, ms));
-      const plier = document.querySelector('#zone-journal .journal-plier[aria-expanded="false"]');
-      if (plier) { plier.click(); await attendre(300); }
-      const sem = document.querySelector('#zone-journal .journal-plier[aria-expanded="true"]').closest('.journal-semaine');
-      return [...sem.querySelectorAll('.journal-ligne[data-type="nouveau"]')].map(l => {
-        const av = l.querySelector('.etiq-etat.avant').getBoundingClientRect(), f = l.querySelector('.fleche-etat').getBoundingClientRect(),
-          ap = l.querySelector('.etiq-etat.apres').getBoundingClientRect();
-        return { ref: l.dataset.ref, avant: Math.round(av.right), fleche: Math.round(f.left), apres: Math.round(ap.left), droite: Math.round(ap.right),
-                 large: Math.round(l.querySelector('.vers').getBoundingClientRect().right) };
+      for (let k = 0; k < 8; k++) {
+        const b = document.querySelector('#zone-journal .journal-plier[aria-expanded="false"]') || document.querySelector('#zone-journal button[data-tout]');
+        if (!b) break; b.click(); await attendre(200);
+      }
+      const texte = e => { const tw = document.createTreeWalker(e, NodeFilter.SHOW_TEXT), ns = []; let n; while ((n = tw.nextNode())) ns.push(n); return ns; };
+      const coupures = e => {
+        const res = []; let avantTop = null, prec = '';
+        texte(e).forEach(n => { for (let i = 0; i < n.textContent.length; i++) {
+          const rg = document.createRange(); rg.setStart(n, i); rg.setEnd(n, i + 1); const r = rg.getClientRects()[0]; if (!r) continue;
+          if (avantTop !== null && r.top > avantTop + 3) res.push(prec);
+          avantTop = r.top; prec = n.textContent[i];
+        } });
+        return res;
+      };
+      /* Les plans de l'essai : ZZZ90x nouveaux, ZZZ91x disparus (nouveaux, eux, la semaine d'avant). */
+      return [...document.querySelectorAll('#zone-journal .journal-ligne[data-type="' + type + '"]')].filter(l => l.dataset.ref.indexOf(type === 'nouveau' ? 'ZZZ90' : 'ZZZ91') === 0).map(l => {
+        const av = l.querySelector('.etiq-etat.avant'), ap = l.querySelector('.etiq-etat.apres'), f = l.querySelector('.fleche-etat').getBoundingClientRect();
+        const rav = av.getBoundingClientRect(), rap = ap.getBoundingClientRect();
+        const finAvant = Math.max(...texte(av).map(n => { const rg = document.createRange(); rg.selectNodeContents(n); return Math.max(...[...rg.getClientRects()].map(r => r.right)); }));
+        return { ref: l.dataset.ref, valeur: (type === 'nouveau' ? ap : av).textContent,
+                 avant: Math.round(rav.right), fleche: Math.round(f.left), apres: Math.round(rap.left), droite: Math.round(rap.right),
+                 large: Math.round(l.querySelector('.vers').getBoundingClientRect().right), ecartAvant: Math.round(f.left - finAvant),
+                 coupe: ap.scrollWidth > ap.clientWidth + 1 || av.scrollWidth > av.clientWidth + 1, haut: Math.round(rap.height),
+                 lignes: 1 + coupures(type === 'nouveau' ? ap : av).length, coupuresMot: [...coupures(av), ...coupures(ap)].filter(c => c !== '_' && c !== ' ') };
       });
-    });
-    const memes = k => new Set(lignes24.map(x => x[k])).size === 1;
+    }, type);
+    const lignes24 = await mesurerJournal24('nouveau');
+    const memes = (ls, k) => new Set(ls.map(x => x[k])).size === 1;
+    const ligne24 = (ls, v) => ls.find(x => x.valeur === v) || {};
     verifier('journal, plans nouveaux : sur chaque ligne, « nouveau », la flèche et l’arrivée tombent au même endroit, quelle que soit la longueur de la valeur',
-      lignes24.length >= 4 && memes('avant') && memes('fleche') && memes('apres'), JSON.stringify(lignes24));
-    verifier('journal : une valeur au nom très long passe à la ligne dans sa moitié, sans pousser la flèche ni déborder',
-      lignes24.every(x => x.droite <= x.large + 1), JSON.stringify(lignes24.map(x => [x.ref, x.droite, x.large])));
+      lignes24.length === VALEURS24.length && memes(lignes24, 'avant') && memes(lignes24, 'fleche') && memes(lignes24, 'apres'), JSON.stringify(lignes24));
+    /* Relecture : « passe à la ligne », vraiment — pas coupée net sur une
+       ligne, et lisible en entier. Une valeur de GATES tient sur une ligne ;
+       une valeur longue faite de « _ » passe à la ligne après l'un d'eux. */
+    verifier('journal : une valeur au nom très long passe à la ligne dans sa moitié — en entier, jamais coupée net — sans pousser la flèche ni déborder',
+      lignes24.every(x => x.droite <= x.large + 1 && !x.coupe && !x.coupuresMot.length) &&
+      ligne24(lignes24, VALEURS24[3]).haut > 1.5 * ligne24(lignes24, 'Terminé').haut && ligne24(lignes24, VALEURS24[3]).lignes >= 2 &&
+      ligne24(lignes24, 'PWD_IN_PROGRESS').lignes === 1 && ligne24(lignes24, VALEURS24[5]).lignes >= 2,
+      JSON.stringify(lignes24.map(x => [x.valeur, x.droite, x.large, x.coupe, x.haut, x.lignes, x.coupuresMot])));
+
+    /* Sous 720 px (une fenêtre en demi-écran, le téléphone), les lignes
+       restent droites : une seule position de flèche par largeur, aucune
+       valeur coupée au milieu d'un mot ni rognée au bord. */
+    const etroits24 = [];
+    for (const w of [720, 600, 390, 360]) {
+      await p24.setViewportSize({ width: w, height: 900 }); await p24.waitForTimeout(450);
+      const ls = await mesurerJournal24('nouveau');
+      etroits24.push({ w, n: ls.length, fleches: [...new Set(ls.map(x => x.fleche))], apres: [...new Set(ls.map(x => x.apres))],
+        debord: ls.filter(x => x.droite > x.large + 1 || x.coupe).map(x => x.valeur), coupuresMot: ls.filter(x => x.coupuresMot.length).map(x => x.valeur),
+        gates: ligne24(ls, 'PWD_IN_PROGRESS').lignes });
+    }
+    await p24.setViewportSize({ width: 1280, height: 950 }); await p24.waitForTimeout(450);
+    verifier('journal sous 720 px (720, 600, 390, 360) : la flèche et l’arrivée tombent au même endroit sur chaque ligne, rien n’est rogné, aucun mot coupé, PWD_IN_PROGRESS sur une ligne',
+      etroits24.every(x => x.n === VALEURS24.length && x.fleches.length === 1 && x.apres.length === 1 && !x.debord.length && !x.coupuresMot.length && x.gates === 1),
+      JSON.stringify(etroits24));
+
+    await p24.click('#filtre-journal button[data-journal="disparus"]'); await p24.waitForTimeout(300);
+    const disparus24 = await mesurerJournal24('disparu');
+    const longD = ligne24(disparus24, 'Valeur saisie à la main beaucoup trop longue');
+    verifier('journal, plans disparus : une valeur de départ sur deux lignes reste collée à sa flèche, au même écart que les valeurs sur une ligne',
+      disparus24.length === 3 && longD.lignes >= 2 && memes(disparus24, 'fleche') && memes(disparus24, 'ecartAvant') && disparus24[0].ecartAvant <= 6 &&
+      disparus24.every(x => !x.coupe && !x.coupuresMot.length), JSON.stringify(disparus24));
     await cx24.close();
   }
 

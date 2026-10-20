@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "d9a8aa6";
+  --suivi-fwd-edition: "a4fbd58";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -602,8 +602,16 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
   background: none; border: none; font: inherit; color: inherit;
   padding: 6px 6px; text-align: left; cursor: pointer; border-radius: 3px;
 }
+/* Débrief 24 (relecture) : sous 720 px aussi, la flèche tombe au même
+   endroit sur toutes les lignes — les mêmes deux colonnes qu'au bureau
+   (avec « 1fr auto », chaque ligne avait la largeur de ses mots). Sous
+   560 px, « avant → après » passe sous la référence, sur toute la ligne :
+   ses deux moitiés gardent la place d'un PWD_IN_PROGRESS en entier. */
 @media (max-width: 720px) {
-  .journal-ligne { grid-template-columns: 1fr auto; gap: 3px 10px; padding: 8px 4px; }
+  .journal-ligne { gap: 3px 10px; padding: 8px 4px; }
+}
+@media (max-width: 560px) {
+  .journal-ligne { grid-template-columns: minmax(0, 340px); }
 }
 .journal-ligne:hover { background: var(--creux); }
 .journal-ligne .ref { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; }
@@ -624,8 +632,12 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
   display: grid; grid-template-columns: minmax(0, 1fr) 12px minmax(0, 1fr); align-items: center; gap: 4px;
   font-size: 12px;
 }
-.journal-ligne .vers .etiq-etat { white-space: normal; overflow-wrap: anywhere; min-width: 0; }
-@media (max-width: 720px) { .journal-ligne .vers { justify-self: end; } }
+/* Un mot qui ne tient pas passe à la ligne après un « _ » (sur un écran
+   étroit, etiqEtat y glisse une coupure possible), au milieu seulement
+   s'il n'en a pas. */
+.journal-ligne .vers .etiq-etat { white-space: normal; overflow-wrap: break-word; min-width: 0; }
+/* Sur deux lignes, le départ reste collé à sa flèche, comme sur une seule. */
+.journal-ligne .vers .etiq-etat.avant { text-align: right; }
 .fleche-etat { color: var(--filet-fort); text-align: center; }
 .etiq-etat { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; white-space: nowrap; }
 .etiq-etat.avant { color: var(--encre-3); justify-self: end; }
@@ -1379,10 +1391,17 @@ table.plans tbody tr[data-plan] { cursor: pointer; }
 .critique-tete {
   font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--encre-3);
   padding-bottom: 6px; border-bottom: 1px solid var(--filet); margin-bottom: 3px;
-  /* Débrief 24 : en descendant la liste, on ne savait plus quelle colonne
-     était laquelle. L'en-tête reste collé en haut du cadre qui défile,
-     comme celui du journal. */
-  position: sticky; top: 0; z-index: 3; background: var(--surface); padding-top: 6px;
+}
+/* Débrief 24 : en descendant la liste, on ne savait plus quelle colonne
+   était laquelle. L'en-tête reste collé en haut du cadre qui défile, comme
+   celui du journal — dans la mise en page en colonnes seulement : au
+   téléphone, chaque ligne reprend ses libellés, et la barre « Trier » défile
+   avec la liste au lieu d'en cacher le haut. « not all and » est le
+   complément exact de la requête du téléphone (min-width: 721px laisserait
+   un trou aux largeurs fractionnaires). Ce qu'on amène en haut du cadre
+   — ligne ouverte, focus au clavier — se pose sous lui (sousTeteCritique). */
+@media not all and (max-width: 720px) {
+  .critique-tete { position: sticky; top: 0; z-index: 3; background: var(--surface); padding-top: 6px; }
 }
 .critique-tete > span { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0; }
 /* Quand d'autres filtres réduisent les lignes, les colonnes tirées de
@@ -1420,14 +1439,19 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
 #zone-critique.mesure-nom .critique-nom { white-space: nowrap; overflow-wrap: normal; }
 /* Débrief 24 : un nom trop long pour sa colonne passe au-dessus de sa barre,
    sur toute la largeur de la ligne, en entier ; les chiffres et la barre
-   restent dessous, dans leurs colonnes, alignés sur ceux des autres lignes. */
-.critique-ligne.nom-dessus { grid-template-rows: auto auto; row-gap: 3px; }
-.critique-ligne.nom-dessus .critique-nom { grid-column: 1 / -1; grid-row: 1; }
-.critique-ligne.nom-dessus > .critique-plans { grid-column: 2; grid-row: 2; }
-.critique-ligne.nom-dessus > .critique-barre { grid-column: 3; grid-row: 2; }
-.critique-ligne.nom-dessus > .critique-date { grid-column: 4; grid-row: 2; }
-.critique-ligne.nom-dessus > .critique-effort { grid-column: 5; grid-row: 2; }
-.critique-ligne.nom-dessus .chevron { top: 10px; margin-top: 0; }
+   restent dessous, dans leurs colonnes, alignés sur ceux des autres lignes.
+   En colonnes seulement : la classe posée à l'écran reste à l'impression
+   (une page A4 fait moins de 720 px) et le temps d'un redimensionnement ;
+   dans la mise en page du téléphone, elle ne doit rien changer. */
+@media not all and (max-width: 720px) {
+  .critique-ligne.nom-dessus { grid-template-rows: auto auto; row-gap: 3px; }
+  .critique-ligne.nom-dessus .critique-nom { grid-column: 1 / -1; grid-row: 1; }
+  .critique-ligne.nom-dessus > .critique-plans { grid-column: 2; grid-row: 2; }
+  .critique-ligne.nom-dessus > .critique-barre { grid-column: 3; grid-row: 2; }
+  .critique-ligne.nom-dessus > .critique-date { grid-column: 4; grid-row: 2; }
+  .critique-ligne.nom-dessus > .critique-effort { grid-column: 5; grid-row: 2; }
+  .critique-ligne.nom-dessus .chevron { top: 10px; margin-top: 0; }
+}
 .critique-tete > span:first-child { justify-content: flex-start; padding-left: 24px; }
 .critique-total {
   font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;

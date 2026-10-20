@@ -606,8 +606,16 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
   background: none; border: none; font: inherit; color: inherit;
   padding: 6px 6px; text-align: left; cursor: pointer; border-radius: 3px;
 }
+/* Débrief 24 (relecture) : sous 720 px aussi, la flèche tombe au même
+   endroit sur toutes les lignes — les mêmes deux colonnes qu'au bureau
+   (avec « 1fr auto », chaque ligne avait la largeur de ses mots). Sous
+   560 px, « avant → après » passe sous la référence, sur toute la ligne :
+   ses deux moitiés gardent la place d'un PWD_IN_PROGRESS en entier. */
 @media (max-width: 720px) {
-  .journal-ligne { grid-template-columns: 1fr auto; gap: 3px 10px; padding: 8px 4px; }
+  .journal-ligne { gap: 3px 10px; padding: 8px 4px; }
+}
+@media (max-width: 560px) {
+  .journal-ligne { grid-template-columns: minmax(0, 340px); }
 }
 .journal-ligne:hover { background: var(--creux); }
 .journal-ligne .ref { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; }
@@ -628,8 +636,12 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
   display: grid; grid-template-columns: minmax(0, 1fr) 12px minmax(0, 1fr); align-items: center; gap: 4px;
   font-size: 12px;
 }
-.journal-ligne .vers .etiq-etat { white-space: normal; overflow-wrap: anywhere; min-width: 0; }
-@media (max-width: 720px) { .journal-ligne .vers { justify-self: end; } }
+/* Un mot qui ne tient pas passe à la ligne après un « _ » (sur un écran
+   étroit, etiqEtat y glisse une coupure possible), au milieu seulement
+   s'il n'en a pas. */
+.journal-ligne .vers .etiq-etat { white-space: normal; overflow-wrap: break-word; min-width: 0; }
+/* Sur deux lignes, le départ reste collé à sa flèche, comme sur une seule. */
+.journal-ligne .vers .etiq-etat.avant { text-align: right; }
 .fleche-etat { color: var(--filet-fort); text-align: center; }
 .etiq-etat { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; white-space: nowrap; }
 .etiq-etat.avant { color: var(--encre-3); justify-self: end; }
@@ -1383,10 +1395,17 @@ table.plans tbody tr[data-plan] { cursor: pointer; }
 .critique-tete {
   font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--encre-3);
   padding-bottom: 6px; border-bottom: 1px solid var(--filet); margin-bottom: 3px;
-  /* Débrief 24 : en descendant la liste, on ne savait plus quelle colonne
-     était laquelle. L'en-tête reste collé en haut du cadre qui défile,
-     comme celui du journal. */
-  position: sticky; top: 0; z-index: 3; background: var(--surface); padding-top: 6px;
+}
+/* Débrief 24 : en descendant la liste, on ne savait plus quelle colonne
+   était laquelle. L'en-tête reste collé en haut du cadre qui défile, comme
+   celui du journal — dans la mise en page en colonnes seulement : au
+   téléphone, chaque ligne reprend ses libellés, et la barre « Trier » défile
+   avec la liste au lieu d'en cacher le haut. « not all and » est le
+   complément exact de la requête du téléphone (min-width: 721px laisserait
+   un trou aux largeurs fractionnaires). Ce qu'on amène en haut du cadre
+   — ligne ouverte, focus au clavier — se pose sous lui (sousTeteCritique). */
+@media not all and (max-width: 720px) {
+  .critique-tete { position: sticky; top: 0; z-index: 3; background: var(--surface); padding-top: 6px; }
 }
 .critique-tete > span { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0; }
 /* Quand d'autres filtres réduisent les lignes, les colonnes tirées de
@@ -1424,14 +1443,19 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
 #zone-critique.mesure-nom .critique-nom { white-space: nowrap; overflow-wrap: normal; }
 /* Débrief 24 : un nom trop long pour sa colonne passe au-dessus de sa barre,
    sur toute la largeur de la ligne, en entier ; les chiffres et la barre
-   restent dessous, dans leurs colonnes, alignés sur ceux des autres lignes. */
-.critique-ligne.nom-dessus { grid-template-rows: auto auto; row-gap: 3px; }
-.critique-ligne.nom-dessus .critique-nom { grid-column: 1 / -1; grid-row: 1; }
-.critique-ligne.nom-dessus > .critique-plans { grid-column: 2; grid-row: 2; }
-.critique-ligne.nom-dessus > .critique-barre { grid-column: 3; grid-row: 2; }
-.critique-ligne.nom-dessus > .critique-date { grid-column: 4; grid-row: 2; }
-.critique-ligne.nom-dessus > .critique-effort { grid-column: 5; grid-row: 2; }
-.critique-ligne.nom-dessus .chevron { top: 10px; margin-top: 0; }
+   restent dessous, dans leurs colonnes, alignés sur ceux des autres lignes.
+   En colonnes seulement : la classe posée à l'écran reste à l'impression
+   (une page A4 fait moins de 720 px) et le temps d'un redimensionnement ;
+   dans la mise en page du téléphone, elle ne doit rien changer. */
+@media not all and (max-width: 720px) {
+  .critique-ligne.nom-dessus { grid-template-rows: auto auto; row-gap: 3px; }
+  .critique-ligne.nom-dessus .critique-nom { grid-column: 1 / -1; grid-row: 1; }
+  .critique-ligne.nom-dessus > .critique-plans { grid-column: 2; grid-row: 2; }
+  .critique-ligne.nom-dessus > .critique-barre { grid-column: 3; grid-row: 2; }
+  .critique-ligne.nom-dessus > .critique-date { grid-column: 4; grid-row: 2; }
+  .critique-ligne.nom-dessus > .critique-effort { grid-column: 5; grid-row: 2; }
+  .critique-ligne.nom-dessus .chevron { top: 10px; margin-top: 0; }
+}
 .critique-tete > span:first-child { justify-content: flex-start; padding-left: 24px; }
 .critique-total {
   font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
@@ -7375,12 +7399,22 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       : '<span class="pastille" style="background:' + e.couleur + '"></span>';
   }
   /* L'étiquette d'une valeur dans le journal : sa pastille, et la valeur
-     écrite comme dans l'extract (à défaut, le nom de sa famille). */
+     écrite comme dans l'extract (à défaut, le nom de sa famille). Une
+     valeur trop longue pour sa moitié passe à la ligne après un « _ »
+     (PWD_IN_ / PROGRESS), pas au milieu d'un mot ; <wbr> n'ajoute rien au
+     texte. Les valeurs de GATES (15 caractères au plus) tiennent dans leur
+     moitié sauf sur un écran étroit : ailleurs, elles s'écrivent d'un seul
+     tenant, comme avant — une coupure possible change l'approche des
+     lettres autour du « _ ». */
+  var JOURNAL_ETROIT = window.matchMedia ? window.matchMedia('(max-width: 560px)') : null;
+  var journalEtroit = null;            // la largeur du dernier rendu du journal
   function etiqEtat(cle, role, cleV, libelle) {
     var e = ETAT_PAR_CLE[cle];
     if (!e) return '';
+    var texte = ech(libelle || e.court);
+    if (journalEtroit || texte.length > 15) texte = texte.replace(/_/g, '_<wbr>');
     return '<span class="etiq-etat ' + (role || '') + '">' + (cleV ? pastilleValeur(cleV, cle) : pastilleDe(cle)) +
-      ech(libelle || e.court) + '</span>';
+      texte + '</span>';
   }
 
   var MAX_JOURNAL = 12;                // lignes affichées avant « voir tout »
@@ -7495,6 +7529,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
 
   function rendreJournal() {
     var zone = $('zone-journal');
+    journalEtroit = !!(JOURNAL_ETROIT && JOURNAL_ETROIT.matches);
     var journal = JOURNAL.length ? journalAffiche() : [];
     rendreFiltreJournal(journal);
     /* Un message seul n'a rien d'un tableau : la grille d'un rendu d'avant
@@ -9166,6 +9201,40 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     e.target.value = '';
     poserFiltreGroupe('');
   });
+  /* La hauteur que l'en-tête du bloc, collé en haut du cadre qui défile
+     (débrief 24, hors téléphone), prend à la liste : une ligne qu'on y
+     ramène se pose sous lui, pas dessous, sinon on ne voit plus quel groupe
+     on vient d'ouvrir. Au téléphone, il défile avec la liste : rien. */
+  function sousTeteCritique(zone) {
+    var tete = zone && zone.querySelector('.critique-tete');
+    return tete && getComputedStyle(tete).position === 'sticky' ? tete.offsetHeight : 0;
+  }
+  /* La première ligne qu'on voit sous l'en-tête, et où : de quoi la remettre
+     au même endroit après avoir redessiné ce qui est au-dessus d'elle. */
+  function lignePremiereVue(zone) {
+    var haut = zone.getBoundingClientRect().top + sousTeteCritique(zone);
+    var ligne = [].filter.call(zone.querySelectorAll('.critique-ligne'), function (x) { return x.getBoundingClientRect().bottom > haut + 1; })[0];
+    return ligne ? { val: ligne.dataset.groupe, y: ligne.getBoundingClientRect().top - zone.getBoundingClientRect().top } : null;
+  }
+  /* Au clavier, le navigateur amène ce qui prend le focus au bord haut du
+     cadre — ou l'y laisse, s'il y est déjà en entier : sous l'en-tête collé,
+     focus et nom invisibles. Une fois qu'il a défilé (à l'image suivante),
+     la liste descend juste assez pour le poser sous l'en-tête. La souris
+     n'est pas concernée : une ligne cliquée se place elle-même (plus bas).
+     (scroll-padding ne convient pas : l'en-tête lui-même, pris dans la
+     marge, faisait sauter la liste quand ses boutons prenaient le focus.) */
+  $('zone-critique').addEventListener('focusin', function (e) {
+    var zone = this, cible = e.target;
+    if (!cible || !cible.closest || cible.closest('.critique-tete')) return;
+    try { if (!cible.matches(':focus-visible')) return; } catch (err) { /* navigateur sans :focus-visible : on pose quand même */ }
+    var poser = function () {
+      var h = sousTeteCritique(zone);
+      if (!h || document.activeElement !== cible) return;
+      var haut = zone.getBoundingClientRect().top + h, r = cible.getBoundingClientRect();
+      if (r.top < haut) zone.scrollTop -= haut + 4 - r.top;
+    };
+    if (window.requestAnimationFrame) requestAnimationFrame(poser); else setTimeout(poser, 0);
+  });
   $('zone-critique').addEventListener('click', function (e) {
     /* Un en-tete de colonne : premier clic dans le sens naturel, deuxieme dans
        l'autre, troisieme retour au classement par defaut. */
@@ -9180,14 +9249,26 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       else vue.triGroupe = { cle: null, asc: false };
       planifierSauvegarde();
       rendreCritique(selection());
+      /* L'en-tête collé se clique la liste descendue : le classement se lit
+         depuis son premier, pas à partir de son milieu. */
+      $('zone-critique').scrollTop = 0;
       var repris = document.querySelector('button[data-trig="' + cle + '"]');
       if (repris) repris.focus();
       return;
     }
     var boutonAide = e.target.closest('button[data-aide]');
     if (boutonAide) {
+      /* L'aide s'ouvre en haut de la liste, sous l'en-tête : cliquée la liste
+         descendue, on y remonte, sinon elle s'ouvrait hors de vue. Refermée
+         de plus bas, les lignes qu'on regardait restent où elles étaient. */
+      var zoneA = $('zone-critique'), vue1 = vue.aideFin ? lignePremiereVue(zoneA) : null;
       vue.aideFin = !vue.aideFin;
       rendreCritique(selection());
+      if (vue.aideFin) zoneA.scrollTop = 0;
+      else if (vue1) {
+        var memeL = [].filter.call(zoneA.querySelectorAll('.critique-ligne'), function (x) { return x.dataset.groupe === vue1.val; })[0];
+        if (memeL) zoneA.scrollTop += memeL.getBoundingClientRect().top - zoneA.getBoundingClientRect().top - vue1.y;
+      }
       var repris = document.querySelector('button[data-aide]');
       if (repris) repris.focus();
       return;
@@ -9251,13 +9332,15 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     mesurerMaintenant();               // la colonne des noms posée avant de relire où est la ligne
     var ligne = [].filter.call(zone.querySelectorAll('.critique-ligne'), function (x) { return x.dataset.groupe === val; })[0];
     if (!ligne) return;
-    var haut = zone.getBoundingClientRect().top;
-    zone.scrollTop += ligne.getBoundingClientRect().top - haut - avant;
+    /* En haut du cadre, l'en-tête collé : une ligne cliquée à moitié sous
+       lui, ou montée au bord, se pose juste dessous. */
+    var haut = zone.getBoundingClientRect().top, sousTete = sousTeteCritique(zone);
+    zone.scrollTop += ligne.getBoundingClientRect().top - haut - Math.max(avant, sousTete);
     var suivant = ligne.nextElementSibling;
     if (suivant && suivant.classList.contains('critique-arret')) suivant = suivant.nextElementSibling;   // le bouton « à l'arrêt » de la ligne
     var dessous = !meme && suivant && suivant.classList.contains('groupe-refs') ? suivant : null;
     if (dessous && dessous.getBoundingClientRect().top > zone.getBoundingClientRect().bottom - 140) {
-      zone.scrollTop += ligne.getBoundingClientRect().top - haut - 4;
+      zone.scrollTop += ligne.getBoundingClientRect().top - haut - sousTete - 4;
     }
   });
 
@@ -9272,6 +9355,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var zone = $('zone-critique'), ouverte = zone.querySelector('.critique-ligne[aria-pressed="true"]');
     var val = ouverte ? ouverte.dataset.groupe : null;
     var avant = ouverte ? ouverte.getBoundingClientRect().top - zone.getBoundingClientRect().top : 0;
+    /* Encore en vue, mais sous l'en-tête collé : elle se pose juste dessous. */
+    var sousTete = sousTeteCritique(zone);
+    if (ouverte && avant < sousTete && avant + ouverte.offsetHeight > 0) avant = sousTete;
     rendreCritique(selection());
     mesurerMaintenant();
     if (val !== null) {
@@ -9479,6 +9565,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       aMesurer('barre');
       ajusterColonneNom();
       marquerDebords();
+      /* Passé sous 560 px ou revenu au-dessus : le journal se réécrit, avec
+         ou sans les coupures après les « _ » (etiqEtat). */
+      if (journalEtroit !== null && JOURNAL_ETROIT && JOURNAL_ETROIT.matches !== journalEtroit) rendreJournal();
     }, 160);
   });
   /* Le fondu suit le défilement de chaque rangée : il s'efface au bout. La
