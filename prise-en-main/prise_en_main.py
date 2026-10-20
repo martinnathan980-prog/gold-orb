@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # ROBOT - lancement :  python robot.txt   (1 = test, 2 = releve des pages, 3 = lancer une tache, 4 = voir,
-#                                          5 = explorer le portail (carte), 6 = aller a une page)
+#                                          5 = explorer le portail (carte), 6 = aller a une page, 7 = recherche -> Excel)
 # Il ne modifie rien sur le portail sans votre accord ; tout ce qu'il ecrit est dans Bureau > Robot.
 
 import ctypes
@@ -21,7 +21,7 @@ from pathlib import Path
 from collections import deque
 from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
-VERSION = "5.10"
+VERSION = "6.0"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -6460,6 +6460,586 @@ def boucle_gps(page, url, garde):
         ecrire(f"   La protection a bloque {garde['bloquees']} envoi(s) au portail (rien n'a ete modifie).")
 
 
+# ---------------------------------------------------------------------------- choix 7 : recherche -> Excel
+# La recherche du portail (« Que recherchez-vous ? »), faite par le robot en LECTURE SEULE : il tape ce que vous
+# cherchez, ouvre chaque onglet de résultats (UD, Rep. Elec., ...), lit toutes les lignes de chaque liste (toutes les
+# pages) et range tout dans un Excel, sur ce poste (Bureau > Robot > recherches). Rien ne peut être envoyé au portail.
+
+# Le champ de recherche du portail (en haut de la page d'abord). Le marque data-robot-recherche.
+JS_CHAMP_RECHERCHE = r"""() => {
+  document.querySelectorAll('[data-robot-recherche]').forEach(x => x.removeAttribute('data-robot-recherche'));
+  const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
+                     const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  const champs = Array.from(document.querySelectorAll('input:not([type]), input[type=text], input[type=search]'))
+    .filter(e => vis(e) && !e.disabled && !e.readOnly && !e.closest('table, [role=grid], [role=dialog], dialog') &&
+                 /recherch|search|cherch/i.test([e.placeholder, e.getAttribute('aria-label'), e.title, e.name, e.id].join(' ')))
+    .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+  if (!champs.length) return false;
+  champs[0].setAttribute('data-robot-recherche', '1');
+  return true;
+}"""
+
+# Les onglets de RÉSULTATS d'une recherche (« Plan 1 | Croquis 3 | UD 10 | Rep. Elec. (GATES) 13 ») : des éléments
+# frères, chacun fait d'un nom et d'une pastille qui n'est qu'un nombre. Marqués data-robot-resultat.
+JS_ONGLETS_RESULTATS = r"""() => {
+  document.querySelectorAll('[data-robot-resultat]').forEach(x => x.removeAttribute('data-robot-resultat'));
+  const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
+                     const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  const net = x => (x.innerText || '').replace(/\s+/g, ' ').trim();
+  const classe = x => typeof x.className === 'string' ? x.className : '';
+  const ICI = 'table, [role=grid], [class*=paginat i], nav, aside, [role=menu], [role=listbox], [role=dialog], dialog';
+  const vus = new Map();
+  for (const p of document.querySelectorAll('span, b, strong, em, small, sup, div, i')) {
+    if (p.children.length || !/^\d{1,7}$/.test((p.textContent || '').trim()) || !vis(p) || p.closest(ICI)) continue;
+    const n = (p.textContent || '').trim();
+    // l'onglet : le plus grand parent dont le texte est « nom + nombre » (et qui n'a qu'une pastille)
+    let bon = null;
+    for (let x = p.parentElement, k = 0; x && x !== document.body && k < 5; x = x.parentElement, k++) {
+      const t = net(x);
+      if (!t.endsWith(n)) break;
+      const nom = t.slice(0, t.length - n.length).trim();
+      if (!nom || nom.length > 40 || !/[A-Za-zÀ-ÿ]/.test(nom) || /\d{3,}/.test(nom)) break;
+      const pastilles = Array.from(x.querySelectorAll('*')).filter(y => !y.children.length && /^\d{1,7}$/.test((y.textContent || '').trim()));
+      if (pastilles.length !== 1) break;
+      bon = { e: x, nom: nom, n: parseInt(n, 10) };
+    }
+    if (bon && !vus.has(bon.e)) vus.set(bon.e, bon);
+  }
+  const groupes = new Map();
+  for (const o of vus.values()) { const g = o.e.parentElement; if (!groupes.has(g)) groupes.set(g, []); groupes.get(g).push(o); }
+  let choix = [];
+  for (const os of groupes.values())
+    if (os.length >= 2 && (os.length > choix.length ||
+        (os.length === choix.length && os[0].e.getBoundingClientRect().top < choix[0].e.getBoundingClientRect().top))) choix = os;
+  return choix.map((o, i) => { o.e.setAttribute('data-robot-resultat', String(i));
+    const actif = o.e.getAttribute('aria-selected') === 'true' || /(^|[\s_-])(active|actif|selected|highlight|p-highlight)([\s_-]|$)/i.test(classe(o.e)) ||
+                  !!o.e.querySelector('[aria-selected=true], .p-highlight, .active');
+    return { nom: o.nom, n: o.n, actif: actif }; });
+}"""
+
+# La LISTE (tableau) affichée : ses colonnes et ses lignes, valeurs comprises (elles restent sur ce poste, dans
+# l'Excel). Colonnes : les titres « du bas » (pas les titres de groupe, ni la ligne des filtres) ; chaque case est
+# rangée sous le titre qui est au-dessus d'elle (tableaux en deux parties, colonnes figées). Marque le bouton « page
+# suivante » (data-robot-suivant) et la zone qui défile (data-robot-defile).
+JS_GRILLE = r"""() => {
+  const vis = e => { if (!e) return false; const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
+                     const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  const classe = x => typeof x.className === 'string' ? x.className : ((x.className && x.className.baseVal) || '');
+  const net = x => (x.innerText || x.textContent || '').replace(/\s+/g, ' ').trim();
+  ['data-robot-suivant', 'data-robot-defile'].forEach(a => document.querySelectorAll('[' + a + ']').forEach(x => x.removeAttribute(a)));
+  const CADRE = '.p-datatable, .ui-datatable, .p-treetable, .ui-treetable, .ag-root-wrapper, .k-grid, .dx-datagrid, mat-table, .mat-table, .mat-mdc-table';
+  const conteneur = x => { const g = x.closest(CADRE) || x.closest('[role=grid], [role=treegrid]'); if (g) return g;
+    let t = x.closest('table'); while (t && t.parentElement && t.parentElement.closest('table')) t = t.parentElement.closest('table'); return t; };
+  const LIGNE = 'tr, [role=row], .ag-row, mat-row, .mat-mdc-row';
+  const CELLULE = ':scope > td, :scope > [role=gridcell], :scope > .ag-cell, :scope > mat-cell, :scope > .mat-mdc-cell';
+  const enAttente = g => !!Array.from((g || document).querySelectorAll('.p-datatable-loading-overlay, .p-datatable-loading-icon, ' +
+      '.ag-overlay-loading-wrapper, [aria-busy=true], .p-progress-spinner, mat-spinner, mat-progress-spinner, mat-progress-bar, ' +
+      '[class*=spinner i], [class*=loading i], [class*=loader i]')).find(vis);
+  const grilles = new Map();
+  for (const h of document.querySelectorAll('th, [role=columnheader], .ag-header-cell, mat-header-cell, .mat-mdc-header-cell')) {
+    if (h.closest('tbody') || !vis(h)) continue;
+    const g = conteneur(h); if (!g || !vis(g)) continue;
+    if (!grilles.has(g)) grilles.set(g, []);
+    grilles.get(g).push(h);
+  }
+  const estLigne = (g, r) => !r.closest('thead') && conteneur(r) === g && vis(r) && !!r.querySelector(CELLULE);
+  let choix = null, lignes = [];
+  for (const g of grilles.keys()) {
+    const ls = Array.from(g.querySelectorAll(LIGNE)).filter(r => estLigne(g, r));
+    const aire = g.getBoundingClientRect().width * g.getBoundingClientRect().height;
+    if (!choix || ls.length > lignes.length || (ls.length === lignes.length && aire > choix.__aire)) { choix = g; lignes = ls; choix.__aire = aire; }
+  }
+  if (!choix) return { colonnes: [], lignes: [], cles: [], nlignes: 0, vide: false, chargement: enAttente(null), suivant: false,
+                       defile: null, premiere: '', page: '' };
+  const R = x => x.getBoundingClientRect();
+  const nomEntete = h => { const c = h.cloneNode(true);
+    c.querySelectorAll('input, select, textarea, button, svg, i, [class*=sort i], [class*=filter i], [class*=icon i], ' +
+                       '[class*=resizer i], [class*=checkbox i], [class*=dropdown i]').forEach(x => x.remove());
+    return (c.textContent || '').replace(/\s+/g, ' ').trim(); };
+  let tetes = grilles.get(choix).map(h => ({ h: h, r: R(h), nom: nomEntete(h) }))
+    .filter(x => !(x.nom === '' && x.h.querySelector('input:not([type=checkbox]), select, .p-dropdown, p-columnfilter, .p-column-filter, [class*=filter i]')));
+  // un titre de GROUPE (« Informations principales ») a au moins deux titres sous lui
+  tetes = tetes.filter(x => tetes.filter(y => y !== x && y.r.top >= x.r.bottom - 2 &&
+                                              (y.r.left + y.r.right) / 2 > x.r.left && (y.r.left + y.r.right) / 2 < x.r.right).length < 2);
+  tetes.sort((a, b) => ((b.nom ? 1 : 0) - (a.nom ? 1 : 0)) || (b.r.top - a.r.top));
+  const recouvre = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+  const feuilles = [];
+  for (const x of tetes) if (!feuilles.some(f => recouvre(f.r, x.r) > 0.5 * Math.min(f.r.width, x.r.width))) feuilles.push(x);
+  feuilles.sort((a, b) => a.r.left - b.r.left);
+  // la valeur d'une case : son texte ; sinon (colonne qui a un titre) une coche, une croix, une case cochée, une bulle
+  const OUI = /(^|[\s_-])(check|checked|check-circle|ok|valid|valide|success|done|tick)([\s_-]|$)/i;
+  const NON = /(^|[\s_-])(times|times-circle|close|xmark|cross|ban|error|danger|cancel|unchecked|minus)([\s_-]|$)/i;
+  const valeur = c => { const t = net(c); if (t) return { t: t, alt: '' };
+    const cb = c.querySelector('input[type=checkbox]');
+    if (cb) return { t: '', alt: cb.checked ? 'oui' : 'non' };
+    const cls = [c, ...c.querySelectorAll('*')].slice(0, 30).map(classe).join(' ');
+    if (OUI.test(cls)) return { t: '', alt: 'oui' };
+    if (NON.test(cls)) return { t: '', alt: 'non' };
+    const b = [c, ...c.querySelectorAll('[title], [aria-label]')].map(x => x.getAttribute('title') || x.getAttribute('aria-label') || '').find(Boolean);
+    return { t: '', alt: (b || '').replace(/\s+/g, ' ').trim() }; };
+  // les morceaux d'une même ligne (partie figée + partie qui défile) sont à la même hauteur
+  const morceaux = lignes.map(l => ({ l: l, r: R(l) })).sort((a, b) => (a.r.top + a.r.bottom) - (b.r.top + b.r.bottom));
+  const groupes = [];
+  for (const m of morceaux) { const c = (m.r.top + m.r.bottom) / 2, g = groupes[groupes.length - 1];
+    if (g && Math.abs(g.c - c) <= 4) g.ls.push(m.l); else groupes.push({ c: c, ls: [m.l] }); }
+  const vides = /emptymessage|empty-message|no-data|nodata|no-records/i;
+  const sorties = [], cles = [];
+  let vide = lignes.length === 0;
+  for (const g of groupes) {
+    if (g.ls.length === 1 && (vides.test(classe(g.ls[0])) || (g.ls[0].querySelectorAll(CELLULE).length === 1 &&
+        /aucun|aucune|pas de|no data|no record|no result|empty|vide/i.test(net(g.ls[0]))))) { if (groupes.length === 1) vide = true; continue; }
+    const vals = feuilles.map(() => ({ t: '', alt: '' }));
+    let cle = '';
+    for (const l of g.ls) {
+      cle = cle || l.getAttribute('aria-rowindex') || l.getAttribute('row-index') || l.getAttribute('data-p-index') || '';
+      for (const c of l.querySelectorAll(CELLULE)) {
+        const r = R(c); if (!(r.width > 0)) continue;
+        let best = -1, bo = 0;
+        feuilles.forEach((f, i) => { const o = recouvre(f.r, r); if (o > bo) { bo = o; best = i; } });
+        if (best < 0 || bo < 0.4 * Math.min(r.width, feuilles[best].r.width)) continue;
+        const v = valeur(c);
+        if (v.t) vals[best].t = vals[best].t ? vals[best].t + ' ' + v.t : v.t;
+        if (!vals[best].alt) vals[best].alt = v.alt;
+      }
+    }
+    sorties.push(vals.map((v, i) => feuilles[i].nom ? (v.t || v.alt) : v.t));
+    cles.push(cle);
+  }
+  // le bouton « page suivante » : seulement dans la barre de pages de CETTE liste
+  let suivant = false;
+  let zone = choix;
+  for (let k = 0; k < 3 && zone && !suivant; k++, zone = zone.parentElement) {
+    const b = Array.from(zone.querySelectorAll('.p-paginator-next, .ui-paginator-next, [aria-label*="suivant" i], [aria-label*="next" i], ' +
+                                               '[title*="suivant" i], [title*="next" i], .mat-mdc-paginator-navigation-next, ' +
+                                               '.mat-paginator-navigation-next, [ref=btNext]'))
+      .find(x => vis(x) && !!x.closest('[class*=paginat i], [class*=pager i], [class*=paging i], mat-paginator'));
+    if (b) { suivant = true;
+             const bloque = b.disabled || b.getAttribute('aria-disabled') === 'true' || /(^|[\s_-])(p-disabled|ui-state-disabled|disabled)([\s_-]|$)/i.test(classe(b));
+             if (!bloque) b.setAttribute('data-robot-suivant', '1'); else suivant = false; }
+  }
+  const page = (() => { const p = (choix.parentElement || choix).querySelector('.p-paginator-page.p-highlight, .ui-paginator-page.ui-state-active, [aria-current=page]');
+                        return p ? net(p) : ''; })();
+  // la zone qui défile (liste longue, lignes chargées au fur et à mesure)
+  // (tableau en deux parties : la partie figée suit, c'est la partie qui défile qu'on fait défiler)
+  let defile = null;
+  const corps = Array.from(new Set(lignes.map(l => l.parentElement)));
+  for (const b of corps) {
+    for (let x = b; x && x !== choix.parentElement && !defile; x = x.parentElement) {
+      const s = getComputedStyle(x);
+      if (/(auto|scroll)/.test(s.overflowY) && x.scrollHeight > x.clientHeight + 5) {
+        x.setAttribute('data-robot-defile', '1'); defile = { haut: x.scrollTop, max: x.scrollHeight - x.clientHeight }; }
+    }
+    if (defile) break;
+  }
+  return { colonnes: feuilles.map(f => f.nom), lignes: sorties, cles: cles, nlignes: sorties.length, vide: vide && !sorties.length,
+           chargement: enAttente(choix), suivant: suivant, defile: defile, premiere: sorties.length ? sorties[0].join('|') : '', page: page };
+}"""
+
+LIMITE_LIGNES_ONGLET, LIMITE_PAGES_ONGLET, LIMITE_MINUTES_ONGLET = 5000, 300, 8
+
+
+def _grille(page):
+    try:
+        return page.evaluate(JS_GRILLE)
+    except Exception:
+        return {"colonnes": [], "lignes": [], "cles": [], "nlignes": 0, "vide": False, "chargement": True,
+                "suivant": False, "defile": None, "premiere": "", "page": ""}
+
+
+def _attendre_grille(page, secondes=30, avant=None):
+    """La liste affichée, une fois chargée (plus de roue qui tourne, même contenu deux fois de suite).
+    avant : (première ligne, page) d'avant un clic : on attend qu'elle change."""
+    fin, precedent, g = time.time() + secondes, None, None
+    debut = time.time()
+    while True:
+        g = _grille(page)
+        etat = (g["nlignes"], g["premiere"], g["page"], g["vide"])
+        change = avant is None or (g["premiere"], g["page"]) != avant
+        if not g["chargement"] and change and (g["nlignes"] or g["vide"]) and etat == precedent:
+            return g
+        if time.time() > fin or (not g["colonnes"] and time.time() - debut > 12 and avant is None):
+            return g
+        precedent = etat
+        page.wait_for_timeout(600)
+
+
+def _noms_uniques(noms):
+    vus, sortie = {}, []
+    for n in noms:
+        n = n or "(sans titre)"
+        vus[n] = vus.get(n, 0) + 1
+        sortie.append(n if vus[n] == 1 else f"{n} ({vus[n]})")
+    return sortie
+
+
+def _lire_grille_entiere(page, attendus=0):
+    """Toutes les lignes de la liste affichée : page après page (bouton « page suivante »), et en faisant défiler
+    une longue liste. Renvoie (colonnes, lignes, {"pages", "remarque"})."""
+    colonnes, lignes, deja = [], [], set()
+    pages, remarque, debut = 0, "", time.time()
+    g = _attendre_grille(page)
+    while True:
+        pages += 1
+        if g.get("defile"):
+            try:
+                page.evaluate("() => { const x = document.querySelector('[data-robot-defile]'); if (x) x.scrollTop = 0; }")
+                page.wait_for_timeout(300)
+                g = _attendre_grille(page, 10)
+            except Exception:
+                pass
+        haut_avant = None
+        for _ in range(400):
+            noms = _noms_uniques(g["colonnes"])
+            for n in noms:
+                if n not in colonnes:
+                    colonnes.append(n)
+            fois = {}
+            for rang, (valeurs, cle) in enumerate(zip(g["lignes"], g["cles"])):
+                # (une ligne déjà lue : même numéro de ligne ; sans numéro, une liste qui défile se reconnaît à son
+                #  contenu — deux lignes identiques comptent deux fois —, une page entière à sa place dans la page)
+                texte = "|".join(valeurs)
+                fois[texte] = fois.get(texte, 0) + 1
+                marque = f"{pages}:{cle}" if cle else (f"{texte}#{fois[texte]}" if g.get("defile") else f"{pages}@{rang}")
+                if marque in deja:
+                    continue
+                deja.add(marque)
+                lignes.append(dict(zip(noms, valeurs)))
+            d = g.get("defile")
+            if not d or d["haut"] >= d["max"] - 2 or len(lignes) >= LIMITE_LIGNES_ONGLET or d["haut"] == haut_avant:
+                break  # (en bas, ou la liste ne défile plus)
+            haut_avant = d["haut"]
+            try:
+                page.evaluate("() => { const x = document.querySelector('[data-robot-defile]');"
+                              " if (x) x.scrollTop = Math.min(x.scrollTop + x.clientHeight * 0.8, x.scrollHeight); }")
+            except Exception:
+                break
+            page.wait_for_timeout(500)
+            g = _attendre_grille(page, 10)
+        if len(lignes) >= LIMITE_LIGNES_ONGLET:
+            remarque = f"arrete a {LIMITE_LIGNES_ONGLET} lignes"
+            break
+        if not g["suivant"]:
+            break
+        if pages >= LIMITE_PAGES_ONGLET or time.time() - debut > LIMITE_MINUTES_ONGLET * 60:
+            remarque = "arrete avant la derniere page (trop long)"
+            break
+        avant = (g["premiere"], g["page"])
+        try:
+            page.locator('[data-robot-suivant="1"]').first.click(timeout=10000)
+        except Exception:
+            remarque = "page suivante impossible a ouvrir"
+            break
+        g = _attendre_grille(page, 30, avant=avant)
+        if (g["premiere"], g["page"]) == avant:
+            remarque = "la page suivante ne s'affiche pas"
+            break
+    # (les colonnes d'icônes d'action, la case à cocher de sélection : toujours vides, elles ne sont pas gardées)
+    colonnes = [c for c in colonnes if any(l.get(c) for l in lignes)] or colonnes
+    if attendus and len(lignes) < attendus and not remarque:
+        remarque = f"{len(lignes)} lue(s) sur {attendus} annoncee(s)"
+    return colonnes, lignes, {"pages": pages, "remarque": remarque}
+
+
+def _onglets_resultats(page):
+    try:
+        return page.evaluate(JS_ONGLETS_RESULTATS)
+    except Exception:
+        return []
+
+
+def _faire_une_recherche(page, url, terme, garde):
+    """Une recherche : {"onglets": [(nom, annoncés)], "feuilles": [(onglet, colonnes, lignes, info)], "probleme"}."""
+    res = {"onglets": [], "feuilles": [], "probleme": ""}
+    page.goto(url, wait_until="domcontentloaded", timeout=60000)  # (on repart de l'accueil : un état connu)
+    attendre_chargement(page, 3)
+    if _champ_mot_de_passe(page):
+        revenez_ici()
+        _garde_coupee(garde, lambda: attendre_portail(page))
+    fin = time.time() + 25
+    while not page.evaluate(JS_CHAMP_RECHERCHE):
+        if time.time() > fin:
+            res["probleme"] = "champ de recherche introuvable"
+            return res
+        page.wait_for_timeout(700)
+    champ = page.locator('[data-robot-recherche="1"]').first
+    champ.click(timeout=10000)
+    champ.fill(terme, timeout=10000)
+    page.wait_for_timeout(400)
+    champ.press("Enter")
+    fin, onglets = time.time() + 45, []
+    while time.time() < fin:
+        page.wait_for_timeout(800)
+        onglets = _onglets_resultats(page)
+        if onglets and all(o["n"] >= 0 for o in onglets):
+            page.wait_for_timeout(800)
+            onglets = _onglets_resultats(page) or onglets  # (les nombres arrivent parfois l'un après l'autre)
+            break
+    if not onglets:
+        g = _attendre_grille(page, 10)
+        if g["colonnes"] and (g["nlignes"] or g["vide"]):
+            colonnes, lignes, info = _lire_grille_entiere(page)
+            res["onglets"] = [("Resultats", len(lignes))]
+            res["feuilles"].append(("Resultats", colonnes, lignes, info))
+        else:
+            res["probleme"] = "pas de liste de resultats (aucun resultat, ou une fiche ouverte directement)"
+        return res
+    res["onglets"] = [(o["nom"], o["n"]) for o in onglets]
+    for o in onglets:
+        if o["n"] == 0:
+            continue
+        actuels = _onglets_resultats(page)
+        numero = next((i for i, x in enumerate(actuels) if x["nom"] == o["nom"]), None)
+        if numero is None:
+            res["feuilles"].append((o["nom"], [], [], {"pages": 0, "remarque": "onglet introuvable"}))
+            continue
+        avant = None if actuels[numero]["actif"] else (_grille(page)["premiere"], _grille(page)["page"])
+        try:
+            page.locator(f'[data-robot-resultat="{numero}"]').first.click(timeout=10000)
+        except Exception:
+            res["feuilles"].append((o["nom"], [], [], {"pages": 0, "remarque": "onglet impossible a ouvrir"}))
+            continue
+        page.wait_for_timeout(500)
+        _attendre_grille(page, 30, avant=avant if avant and avant[0] else None)
+        colonnes, lignes, info = _lire_grille_entiere(page, o["n"])
+        res["feuilles"].append((o["nom"], colonnes, lignes, info))
+        ecrire(f"      {_structure(o['nom']) or 'onglet'} : {len(lignes)} ligne(s) lue(s) sur {o['n']}"
+               + (f" ({info['pages']} pages)" if info["pages"] > 1 else "") + (f" - {info['remarque']}" if info["remarque"] else ""))
+    return res
+
+
+def _nom_de_feuille(nom, pris):
+    n = re.sub(r"[\[\]:*?/\\]", " ", str(nom or "Onglet")).strip()[:31] or "Onglet"
+    base, i = n, 2
+    while n.lower() in pris:
+        n = f"{base[:27]} ({i})"
+        i += 1
+    pris.add(n.lower())
+    return n
+
+
+def ecrire_excel(chemin, feuilles):
+    """Un fichier Excel (.xlsx) fait à la main (sans module à installer) : une feuille par onglet, la ligne des titres
+    en gras, figée, avec les filtres (pour trier). feuilles : [(nom, colonnes, lignes : [[valeurs]])]."""
+    import zipfile
+    from xml.sax.saxutils import escape
+
+    def propre(v):
+        return escape(re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f￾￿]", "", str(v if v is not None else "")))[:32000]
+
+    def lettre(i):
+        s = ""
+        i += 1
+        while i:
+            i, r = divmod(i - 1, 26)
+            s = chr(65 + r) + s
+        return s
+
+    pris, noms, xml_feuilles, filtres = set(), [], [], []
+    for numero, (nom, colonnes, lignes) in enumerate(feuilles):
+        nom = _nom_de_feuille(nom, pris)
+        noms.append(nom)
+        larg = [min(60, max(8, len(str(c)) + 2)) for c in colonnes]
+        for l in lignes[:300]:
+            for i, v in enumerate(l[:len(larg)]):
+                larg[i] = min(60, max(larg[i], len(str(v)) + 2))
+        rangs = []
+        for r, valeurs in enumerate([colonnes] + lignes, 1):
+            style = ' s="1"' if r == 1 else ""
+            # (un nombre du robot, « Lignes lues », est un nombre ; les valeurs du portail restent du texte : « 005 »)
+            cases = "".join(f'<c r="{lettre(i)}{r}"><v>{v}</v></c>' if isinstance(v, int) and not isinstance(v, bool) else
+                            f'<c r="{lettre(i)}{r}" t="inlineStr"{style}><is><t xml:space="preserve">'
+                            f'{propre(v)}</t></is></c>' for i, v in enumerate(valeurs))
+            rangs.append(f'<row r="{r}">{cases}</row>')
+        fin = f"{lettre(max(len(colonnes), 1) - 1)}{len(lignes) + 1}"
+        cols = "".join(f'<col min="{i + 1}" max="{i + 1}" width="{w}" customWidth="1"/>' for i, w in enumerate(larg))
+        xml_feuilles.append(
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            '<sheetViews><sheetView workbookViewId="0"' + (' tabSelected="1"' if numero == 0 else '') + '>'
+            '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>'
+            + (f"<cols>{cols}</cols>" if cols else "") + f'<sheetData>{"".join(rangs)}</sheetData>'
+            + (f'<autoFilter ref="A1:{fin}"/>' if colonnes else "") + "</worksheet>")
+        if colonnes:
+            filtres.append(f'<definedName name="_xlnm._FilterDatabase" localSheetId="{numero}" hidden="1">'
+                           f"'{propre(nom.replace(chr(39), chr(39) * 2))}'!$A$1:${fin[:len(lettre(len(colonnes) - 1))]}"
+                           f"${len(lignes) + 1}</definedName>")
+    with zipfile.ZipFile(chemin, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("[Content_Types].xml",
+                   '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                   '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+                   '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+                   '<Default Extension="xml" ContentType="application/xml"/>'
+                   '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+                   '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+                   + "".join(f'<Override PartName="/xl/worksheets/sheet{i + 1}.xml" '
+                             'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+                             for i in range(len(noms))) + "</Types>")
+        z.writestr("_rels/.rels",
+                   '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                   '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                   '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" '
+                   'Target="xl/workbook.xml"/></Relationships>')
+        z.writestr("xl/workbook.xml",
+                   '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                   '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+                   'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'
+                   + "".join(f'<sheet name="{propre(n)}" sheetId="{i + 1}" r:id="rId{i + 1}"/>' for i, n in enumerate(noms))
+                   + "</sheets>" + (f"<definedNames>{''.join(filtres)}</definedNames>" if filtres else "") + "</workbook>")
+        z.writestr("xl/_rels/workbook.xml.rels",
+                   '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                   '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                   + "".join(f'<Relationship Id="rId{i + 1}" '
+                             'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" '
+                             f'Target="worksheets/sheet{i + 1}.xml"/>' for i in range(len(noms)))
+                   + f'<Relationship Id="rId{len(noms) + 1}" '
+                     'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+                   "</Relationships>")
+        z.writestr("xl/styles.xml",
+                   '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                   '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+                   '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font>'
+                   '<font><b/><sz val="11"/><name val="Calibri"/></font></fonts>'
+                   '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>'
+                   '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+                   '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+                   '<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+                   '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs>'
+                   '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>')
+        for i, x in enumerate(xml_feuilles):
+            z.writestr(f"xl/worksheets/sheet{i + 1}.xml", x)
+    return chemin
+
+
+FICHIER_LISTE_RECHERCHE = "liste_recherche.txt"
+
+
+def _termes_de_recherche(page):
+    """Ce que vous cherchez : un ou plusieurs (séparés par ; ), ou « liste » (le fichier Bureau > Robot >
+    liste_recherche.txt, un par ligne). [] = fini."""
+    while True:
+        ecrire()
+        reponse = demander_en_vivant(page, "   Que recherchez-vous ? (un repere, un plan, un BG... ; plusieurs : separez-les par ;\n"
+                                           "   « liste » = la liste du fichier Bureau > Robot > liste_recherche.txt ; Entree = fini) :")
+        if not reponse.strip():
+            return []
+        if mots(reponse) == "liste":
+            f = dossier_robot() / FICHIER_LISTE_RECHERCHE
+            if not f.exists():
+                try:
+                    f.write_text("", encoding="utf-8")
+                except OSError:
+                    pass
+            try:
+                termes = [l.strip() for l in f.read_text(encoding="utf-8-sig").splitlines() if l.strip() and not l.startswith("#")]
+            except (OSError, UnicodeDecodeError):
+                termes = []
+            if not termes:
+                ecrire("   Le fichier Bureau > Robot > liste_recherche.txt est vide : mettez-y ce que vous cherchez, UN PAR LIGNE")
+                ecrire("   (vous pouvez coller une colonne copiee d'Excel), enregistrez, puis tapez de nouveau « liste ».")
+                if WINDOWS:
+                    try:
+                        os.startfile(str(f))  # (le Bloc-notes s'ouvre sur le fichier)
+                    except OSError:
+                        pass
+                continue
+        else:
+            termes = [x.strip() for x in reponse.split(";") if x.strip()]
+        termes = list(dict.fromkeys(termes))
+        if len(termes) > 200:
+            ecrire("   Plus de 200 recherches : le robot fait les 200 premieres.")
+        return termes[:200]
+
+
+def ecrire_rapport_recherche(rapports, garde, duree):
+    """A_ENVOYER_recherche.txt : comment s'est passée la recherche (onglets, colonnes, nombres de lignes, problèmes).
+    Aucune valeur, aucune recherche tapée : les résultats sont dans l'Excel, sur ce poste."""
+    lignes = [f"RECHERCHE - pour Claude - {datetime.now().strftime('%d/%m/%Y %H:%M')}",
+              "Faite par le robot (choix 7) en LECTURE SEULE (aucun envoi au portail).",
+              "Structure seulement : ni ce qui a ete cherche, ni aucune valeur (elles sont dans l'Excel, sur ce poste).",
+              "", f"Recherches : {len(rapports)} ; duree : {duree} min",
+              f"Envois bloques par la protection : {garde.get('bloquees', 0)} ; lectures permises : {garde.get('lectures', 0)}", ""]
+    for numero, r in enumerate(rapports, 1):
+        lignes.append(f"RECHERCHE {numero} :" + (f" PROBLEME : {r['probleme']}" if r["probleme"] else ""))
+        if r["onglets"]:
+            lignes.append("  Onglets : " + " ; ".join(f"{_structure(n) or '(masque)'} ({a})" for n, a in r["onglets"]))
+        for nom, colonnes, lus, info in r["feuilles"]:
+            cols = [c for c in (_structure(c) for c in colonnes) if c]
+            lignes.append(f"  {_structure(nom) or '(masque)'} : {len(lus)} ligne(s) lue(s), {info['pages']} page(s)"
+                          + (f" - {info['remarque']}" if info["remarque"] else "") + (" ; colonnes : " + " | ".join(cols) if cols else ""))
+    details = garde.get("details", {})
+    if details:
+        lignes += ["", "ENVOIS BLOQUES, LE DETAIL (pourquoi, et les noms des champs envoyes) :"]
+        for cle, (n, raison, champs) in sorted(details.items(), key=lambda x: -x[1][0]):
+            lignes.append(f"  {n}x {cle} : {raison}" + (f" ; champs : {champs}" if champs else ""))
+    f = dossier_robot() / "A_ENVOYER_recherche.txt"
+    try:
+        f.write_text("\n".join(lignes) + "\n", encoding="utf-8")
+    except OSError:
+        return None
+    return f
+
+
+def boucle_recherche(page, url, garde):
+    """Choix 7. Vous tapez ce que vous cherchez ; le robot fait la recherche du portail, ouvre chaque onglet de
+    résultats, lit toutes les lignes et range tout dans un Excel (Bureau > Robot > recherches). Lecture seule."""
+    debut, rapports, fichier = time.time(), [], None
+    while True:
+        termes = _termes_de_recherche(page)
+        if not termes:
+            break
+        ecrire(f"   {len(termes)} recherche(s). NE TOUCHEZ PAS A LA SOURIS pendant ce temps (bande JAUNE en bas de la fenetre du robot).")
+        par_onglet, resume = {}, []
+        for numero, terme in enumerate(termes, 1):
+            if _liaison_libre(garde):
+                ecrire("   Le portail utilise une liaison directe que ce robot ne sait pas bloquer : arret par prudence.")
+                break
+            ecrire(f"   Recherche {numero}/{len(termes)}...")
+            _bandeau_visite(page, f"RECHERCHE {numero}/{len(termes)}, lecture seule  -  ne touchez pas a la souris")
+            try:
+                r = _faire_une_recherche(page, url, terme, garde)
+            except KeyboardInterrupt:
+                raise
+            except Exception as e:
+                r = {"onglets": [], "feuilles": [], "probleme": "echec : " + _sans_donnee(masquer(premiere_ligne(e)))[:80]}
+            if r["probleme"]:
+                ecrire(f"      -> {r['probleme']}")
+            rapports.append(r)
+            lus = {nom: (len(l), info) for nom, _, l, info in r["feuilles"]}
+            for nom, annonces in r["onglets"] or [("(aucun)", 0)]:
+                n, info = lus.get(nom, (0, {"pages": 0, "remarque": ""}))
+                resume.append([terme, nom, annonces, n, info.get("pages", 0), r["probleme"] or info.get("remarque", "")])
+            for nom, colonnes, lignes, _ in r["feuilles"]:
+                f = par_onglet.setdefault(nom, {"colonnes": [], "lignes": []})
+                for c in colonnes:
+                    if c not in f["colonnes"]:
+                        f["colonnes"].append(c)
+                f["lignes"] += [(terme, l) for l in lignes]
+        _bandeau_visite(page, "")
+        feuilles = [("Resume", ["Recherche", "Onglet", "Nombre annonce", "Lignes lues", "Pages", "Remarque"], resume)]
+        for nom, f in par_onglet.items():
+            feuilles.append((nom, ["Recherche"] + f["colonnes"], [[t] + [l.get(c, "") for c in f["colonnes"]] for t, l in f["lignes"]]))
+        dossier = dossier_robot("recherches")
+        fichier = dossier / f"Recherche_{datetime.now().strftime('%Y-%m-%d_%Hh%M')}.xlsx"
+        try:
+            ecrire_excel(fichier, feuilles)
+        except OSError as e:
+            ecrire(f"   Impossible d'ecrire l'Excel ({erreur_courte(e)}).")
+            continue
+        total = sum(len(f["lignes"]) for f in par_onglet.values())
+        ecrire()
+        ecrire(f"   EXCEL CREE : Bureau > Robot > recherches > {fichier.name}  ({total} ligne(s), {len(par_onglet)} onglet(s))")
+        ecrire("   (Il reste sur ce poste : ne me l'envoyez pas, il contient les vraies donnees.)")
+        if WINDOWS and oui_en_vivant(page, "   L'ouvrir maintenant ?", "o"):
+            try:
+                os.startfile(str(fichier))
+            except OSError:
+                ecrire("   Ouverture impossible : ouvrez-le depuis Bureau > Robot > recherches.")
+    rapport = ecrire_rapport_recherche(rapports, garde, round((time.time() - debut) / 60, 1)) if rapports else None
+    if garde["bloquees"]:
+        ecrire(f"   La protection a bloque {garde['bloquees']} envoi(s) au portail (rien n'a ete modifie).")
+    return rapport
+
+
 # ---------------------------------------------------------------------------- programmes du navigateur (processus enfant)
 def programme_enfant(mode, dossier_echange):
     """Relevé (choix 2), tâche (choix 3), « voir » (choix 4), visite (choix 5) ou « aller à » (choix 6), lancés avec
@@ -6476,7 +7056,7 @@ def programme_enfant(mode, dossier_echange):
         with sync_playwright() as p:
             if mode == "tache":
                 return executer_tache(p, echange["fichier"], echange["url"])
-            visite = mode in ("explorer", "gps")
+            visite = mode in ("explorer", "gps", "recherche")
             navigateur, contexte, page = ouvrir_robot(p, lecture=visite)
             page.goto(echange["url"], wait_until="domcontentloaded", timeout=60000)
             page.bring_to_front()
@@ -6522,6 +7102,10 @@ def programme_enfant(mode, dossier_echange):
             elif mode == "gps":
                 boucle_gps(page, echange["url"], garde)
                 fichier = False
+            elif mode == "recherche":
+                fichier = boucle_recherche(page, echange["url"], garde)
+                if not fichier:
+                    fichier = False
             else:
                 fichier, _ = boucle_releve(page)
             ecrire()
@@ -6602,14 +7186,15 @@ def principal():
         ecrire("   4 = Voir ce que le robot trouve cliquable (et lui montrer ce qu'il rate)")
         ecrire("   5 = Le robot explore le portail tout seul et fait la carte du site (sans rien modifier)")
         ecrire("   6 = Aller a une page : vous dites ou, le robot y va tout seul (avec sa carte)")
-        choix = demander(" Votre choix (1 a 6) :")
+        ecrire("   7 = Recherche : vous tapez un repere, un plan, un BG... ; le robot range tous les resultats dans un Excel")
+        choix = demander(" Votre choix (1 a 7) :")
         if choix == "1":
             test_prise_en_main()
             return 0
-        if choix in ("4", "5", "6"):
+        if choix in ("4", "5", "6", "7"):
             url = adresse_du_portail()
             if url:
-                lancer_programme_enfant({"4": "voir", "5": "explorer", "6": "gps"}[choix], {"url": url})
+                lancer_programme_enfant({"4": "voir", "5": "explorer", "6": "gps", "7": "recherche"}[choix], {"url": url})
             else:
                 ecrire("   Pas d'adresse du portail : rien a faire.")
         elif choix in ("2", "3"):
@@ -6710,6 +7295,6 @@ def test_prise_en_main():
 if __name__ == "__main__":
     if sys.argv[1:2] == ["--navigateur"] and len(sys.argv) >= 3:
         sys.exit(sous_programme_navigateur(sys.argv[2]))
-    if sys.argv[1:2] in (["--releve"], ["--tache"], ["--voir"], ["--explorer"], ["--gps"]) and len(sys.argv) >= 3:
+    if sys.argv[1:2] in (["--releve"], ["--tache"], ["--voir"], ["--explorer"], ["--gps"], ["--recherche"]) and len(sys.argv) >= 3:
         sys.exit(programme_enfant(sys.argv[1][2:], sys.argv[2]))
     sys.exit(principal())
