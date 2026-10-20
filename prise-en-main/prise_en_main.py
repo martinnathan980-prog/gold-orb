@@ -21,7 +21,7 @@ from pathlib import Path
 from collections import deque
 from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
-VERSION = "5.6"
+VERSION = "5.7"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -5131,6 +5131,8 @@ DEBUT_LECTURE = re.compile(r"(get|search|find|list|lookup|fetch)(rows|list|all|d
 SUITE_INTERDITE = {"and", "or", "next", "then", "et", "ou", "suivant", "suivante"}
 # le dernier morceau d'une adresse de lignes de grille (sinon, un verbe de lecture)
 FINS_DE_GRILLE = set("rows row data grid datasource results items records lignes page".split())
+# le premier mot d'une opération de lecture nommée dans le contenu (« "action": "getPlans" »)
+OPERATIONS_DE_LECTURE = set("get search find list lookup fetch load count query recherche rechercher lister charger".split())
 # ce qui peut suivre un verbe de recherche dans l'adresse (« .../search/page », « .../search/advanced »)
 SUITE_DE_RECHERCHE = FINS_DE_GRILLE | set("""pages paged pageable paginated pagination count size all list liste advanced
 avancee avance simple global globale criteria criteres filter filters filtre filtres""".split())
@@ -5270,6 +5272,13 @@ def _raison_pas_lecture(req):
             # lignes d'une grille (de telle ligne à telle ligne, tri, filtre) : rien d'autre dans la demande ; les valeurs
             # (« dateModification », filtre « set ») sont des noms de colonnes, pas des ordres
             return "" if (verbe or bool(dernier) and dernier[-1] in FINS_DE_GRILLE) else "lignes de grille, adresse inconnue"
+    # (un RÉGLAGE oui/non de la demande, nom composé dont le premier mot n'est pas un ordre : « pitEnable »: true,
+    #  « isEnabled » ; « deleteAll »: true, « enableX »: true restent des ordres)
+    def drapeau(m):
+        ws = mots(m.group(1)).split()
+        return len(ws) >= 2 and ws[0] not in (VERBES_ACTION | MOTS_ECRITURE | MOTS_TACHE)
+    corps = re.sub(r'"([A-Za-z][A-Za-z0-9_]{1,40})"\s*:\s*(true|false)\b',
+                   lambda m: '"reglage": ' + m.group(2) if drapeau(m) else m.group(0), corps)
     if (VERBES_ACTION | MOTS_ECRITURE) & set(mots(corps).split()):
         return "mot d'action dans le contenu : " + premier((VERBES_ACTION | MOTS_ECRITURE) & set(mots(corps).split()))
     # les noms des clés (« "complete": true ») et la valeur d'une clé d'ordre (« "method": "task.claim" »)
@@ -5280,6 +5289,16 @@ def _raison_pas_lecture(req):
         if "".join(mots_cle) in CLES_D_ORDRE and (set(mots(valeur).split()) & (VERBES_ACTION | MOTS_ECRITURE | MOTS_TACHE) or
                                                  action_en_visite(valeur)):
             return "ordre dans le contenu"
+    # (une demande « module / action / args » : chaque clé d'ordre nomme une opération de LECTURE, « getPlans »,
+    #  « searchDocuments » ; jamais « getAndLock », « fetchAndClaim »)
+    if not verbe and isinstance(objet, dict):
+        ordres = [v for k, v in objet.items() if isinstance(k, str) and mots(k).replace(" ", "") in CLES_D_ORDRE]
+
+        def operation_de_lecture(v):
+            ws = mots(v).split() if isinstance(v, str) and re.fullmatch(r"[A-Za-z][A-Za-z0-9_.]{1,60}", v) else []
+            return bool(ws) and ws[0] in OPERATIONS_DE_LECTURE and not action_en_visite(v) and \
+                not set(ws) & (VERBES_ACTION | MOTS_ECRITURE | MOTS_TACHE | MOTS_ETAT | SUITE_INTERDITE)
+        verbe = bool(ordres) and all(operation_de_lecture(v) for v in ordres)
     return "" if verbe else "adresse sans verbe de lecture"
 
 
@@ -5294,6 +5313,12 @@ def _cles_du_contenu(req):
         return ""
     cles = [k for k in objet if isinstance(k, str) and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,30}", k)
             and not re.search(r"\d{3,}", k) and _structure(k) == k]
+    # (le NOM de l'opération demandée, « action=getPlans » : de la structure, pas une donnée)
+    for k in cles:
+        v = objet[k]
+        if (mots(k).replace(" ", "") in CLES_D_ORDRE or k.lower() == "module") and isinstance(v, str) and \
+                re.fullmatch(r"[A-Za-z][A-Za-z0-9_.]{1,40}", v) and _structure(v) == v and not re.search(r"\d{3,}", v):
+            cles[cles.index(k)] = f"{k}={v}"
     return ", ".join(cles[:12])
 
 
