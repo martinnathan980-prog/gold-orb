@@ -47,7 +47,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = 'a4fbd58';
+const EDITION = '7347352';
 
 // =====================================================================
 //  CONFIGURATION
@@ -76,6 +76,28 @@ const CONFIG = {
    */
   FEUILLES_INTERNES: ['Historique_FWD', 'Paramètres', 'Parametres', 'Config'],
 
+  /**
+   * L'onglet des jalons (débrief 25) : une ligne par jalon — Contrat, Jalon,
+   * Date, Périmètre, Suivi —, tenu à la main dans le classeur par ceux qui y
+   * ont accès ; la page ne fait que le lire. Présent, il remplace la liste
+   * JALONS ci-dessous ; absent, c'est elle qui vaut. Le menu Suivi FWD →
+   * Créer l'onglet des jalons le crée, rempli de cette liste. Jamais un
+   * contrat.
+   */
+  FEUILLE_JALONS: 'Jalons',
+
+  /**
+   * La colonne « Validité » de l'export (débrief 25) — celle du bloc de la
+   * colonne suivie (HDK AA 011 pour HDK), chaque bloc ayant la sienne : un plan qui y porte
+   * « S » est un ancien plan. Il reste dans l'onglet, dans l'historique et
+   * dans le tableau des plans (grisé, « ancien plan (S) »), mais ne compte
+   * plus nulle part : synthèse, courbe — semaines passées comprises, refaites
+   * avec la validité du jour —, journal, bloc par groupe, comparaison SEE,
+   * rythmes et fins estimées. Vide : rien n'est écarté.
+   */
+  COLONNE_VALIDITE: 'Validité',
+  VALEURS_ANCIEN_PLAN: ['S'],
+
   /** Nombre de lignes scannées en haut de feuille pour trouver la ligne d'en-têtes. */
   LIGNES_SCAN_ENTETE: 8,
 
@@ -85,8 +107,11 @@ const CONFIG = {
   /**
    * Les jalons du programme, affichés sur le graphique et utilisés pour
    * l'« effort demandé » du bloc par groupe (le prochain jalon à venir fait
-   * l'échéance). Ils ne s'éditent pas à l'écran : c'est ici qu'on les
-   * change. Semaine ISO « AAAA-SNN », texte de 60 caractères au plus.
+   * l'échéance). Ils ne s'éditent pas à l'écran. Depuis le débrief 25, ils
+   * se tiennent dans l'onglet FEUILLE_JALONS du classeur (mêmes champs, une
+   * colonne chacun) ; cette liste ne vaut que tant que l'onglet n'existe
+   * pas, et sert à le remplir quand le menu le crée. Semaine ISO
+   * « AAAA-SNN », texte de 60 caractères au plus.
    *
    * perimetre (facultatif) : la valeur de la colonne de domaine à laquelle
    * le jalon s'applique — « BASE/OPTION » ou « PERSO », écrite comme dans
@@ -152,7 +177,11 @@ const CONFIG = {
    *   dans l'ordre voulu. Même syntaxe « Groupe > Colonne » en cas de doublon.
    */
   /* Le FWD se suit dans le bloc HDK AA 011, colonne « Avancement Définition
-     Electrique » — et non plus dans « Réalisation FWD > Avancement ». */
+     Electrique » — et non plus dans « Réalisation FWD > Avancement ».
+     Débrief 25 : ces deux colonnes ne sont plus que le choix par défaut.
+     Chaque contrat (chaque tranche) a les siennes, choisies dans la fenêtre
+     d'import parmi les colonnes de son export, et gardées dans le classeur
+     comme son PSN ; un contrat qui n'en a pas encore choisi suit celles-ci. */
   COLONNE_FWD: 'HDK AA 011 > Avancement Définition Electrique',
   COLONNE_CONCEPT: 'HDK AA 011 > Avancement Concept Harnais',
 
@@ -445,6 +474,9 @@ function onOpen() {
     .addItem('Supprimer le relevé de cette semaine', 'supprimerDernierReleve')
     .addItem('Archiver l\'onglet affiché pour une semaine passée…', 'archiverSemainePassee')
     .addSeparator()
+    /* Débrief 25 : les jalons se tiennent dans un onglet du classeur. */
+    .addItem('Créer l\'onglet des jalons', 'creerOngletJalons')
+    .addSeparator()
     .addItem('Activer l\'archivage automatique (vendredi 17 h)', 'installerSuiviHebdomadaire')
     .addItem('Désactiver l\'archivage automatique', 'desinstallerSuiviHebdomadaire')
     .addSeparator()
@@ -622,6 +654,7 @@ function estOngletInterne(nom) {
      d'un contrat, « SEE HDK ». */
   const internes = CONFIG.FEUILLES_INTERNES
     .concat(feuilleRapprochement() ? [feuilleRapprochement()] : [])
+    .concat(CONFIG.FEUILLE_JALONS ? [CONFIG.FEUILLE_JALONS] : [])
     .map(normaliser);
   if (internes.indexOf(n) !== -1) return true;
   const base = feuilleRapprochement() ? nomCompact(feuilleRapprochement()) : '';
@@ -705,7 +738,7 @@ function enLecture(fn) {
   const dejaOuvert = !!MEMO_ENTETES;
   if (!dejaOuvert) {
     MEMO_ENTETES = {};
-    MEMO_LECTURE = { classeur: null, feuilles: null, infos: new Map(), donnees: null, proprietes: null, marque: null };
+    MEMO_LECTURE = { classeur: null, feuilles: null, infos: new Map(), donnees: null, proprietes: null, marque: null, jalons: null };
   }
   try { return fn(); } finally { if (!dejaOuvert) { MEMO_ENTETES = null; MEMO_LECTURE = null; } }
 }
@@ -946,12 +979,14 @@ function indexParDesignation(designation, entetes, groupes) {
  * Harnais »). Le groupe est donc le critère décisif, et les intitulés qui
  * nomment explicitement un autre sujet sont écartés d'office.
  */
-function trouverIndexFWD(entetes, groupes) {
+function trouverIndexFWD(entetes, groupes, designation) {
   /* Une colonne nommée dans CONFIG.COLONNE_FWD est la seule qu'on suive :
      introuvable, on n'en suit aucune — la page le dit en haut, l'archivage
      refuse. Se rabattre sur une autre colonne (« Réalisation FWD >
-     Avancement ») montrerait des chiffres justes d'allure, mais faux. */
-  if (CONFIG.COLONNE_FWD) return indexParDesignation(CONFIG.COLONNE_FWD, entetes, groupes);
+     Avancement ») montrerait des chiffres justes d'allure, mais faux.
+     Débrief 25 : celle du contrat (colonnesDuContrat) quand elle est donnée. */
+  const voulue = designation === undefined || designation === null ? CONFIG.COLONNE_FWD : designation;
+  if (voulue) return indexParDesignation(voulue, entetes, groupes);
 
   const autreSujet = /(definition|concept|harnais|electrique|ibg|documentaire)/;
   const criteres = [
@@ -968,6 +1003,64 @@ function trouverIndexFWD(entetes, groupes) {
     }
   }
   return -1;
+}
+
+/* Débrief 25 : les colonnes suivies de chaque contrat — chaque tranche en
+   est un —, choisies dans la fenêtre d'import parmi celles de son export :
+   { contrat: { fwd: 'Groupe > Colonne', concept: 'Groupe > Colonne' | '' } }. */
+const CLE_COLONNES = 'SUIVI_FWD_COLONNES';
+
+function colonnesEnregistrees_() {
+  let lu = null;
+  try { lu = analyserJson(proprietesDuClasseur_().getProperty(CLE_COLONNES)); } catch (err) { lu = null; }
+  return lu && typeof lu === 'object' && !Array.isArray(lu) ? lu : {};
+}
+
+/**
+ * Les colonnes suivies d'un contrat : { fwd, concept, source: 'fenetre' |
+ * 'configuration' }. Celles choisies dans la fenêtre l'emportent — concept
+ * vide compris : on a voulu que ce contrat n'en ait pas —, sinon
+ * COLONNE_FWD et COLONNE_CONCEPT. Le contrat se retrouve casse et accents
+ * indifférents, comme son PSN.
+ */
+function colonnesDuContrat(contrat) {
+  const n = normaliser(contrat === undefined || contrat === null ? '' : contrat);
+  const tous = colonnesEnregistrees_();
+  const k = n ? Object.keys(tous).filter(function (x) { return normaliser(x) === n; })[0] : undefined;
+  const c = k !== undefined ? tous[k] : null;
+  if (c && typeof c === 'object' && String(c.fwd || '').trim()) {
+    return { fwd: String(c.fwd).trim(), concept: String(c.concept || '').trim(), source: 'fenetre' };
+  }
+  return { fwd: CONFIG.COLONNE_FWD || '', concept: CONFIG.COLONNE_CONCEPT || '', source: 'configuration' };
+}
+
+/**
+ * La colonne Validité d'un contrat (débrief 25). L'export GATES en porte une
+ * par bloc (HDK AA, HDK AA 011, HDK AA 012…) : c'est celle du bloc de la
+ * colonne suivie qui dit si le plan est ancien. Sans elle, une colonne
+ * Validité seule dans l'export ; plusieurs ailleurs, aucune — rien n'est
+ * écarté plutôt qu'au hasard. « Groupe > Validité » dans la configuration
+ * l'impose.
+ */
+function trouverIndexValidite_(entetes, groupes, iFWD) {
+  const designation = String(CONFIG.COLONNE_VALIDITE || '').trim();
+  if (!designation) return -1;
+  if (designation.indexOf('>') !== -1) return indexParDesignation(designation, entetes, groupes);
+  const voulu = normaliser(designation), toutes = [];
+  for (let i = 0; i < entetes.length; i++) if (normaliser(entetes[i]) === voulu) toutes.push(i);
+  if (iFWD !== -1 && groupes[iFWD]) {
+    const g = normaliser(groupes[iFWD]);
+    const meme = toutes.filter(function (i) { return normaliser(groupes[i] || '') === g; })[0];
+    if (meme !== undefined) return meme;
+  }
+  return toutes.length === 1 ? toutes[0] : -1;
+}
+
+/** Un plan ancien (débrief 25) : « S » — ou une autre de VALEURS_ANCIEN_PLAN — dans sa colonne Validité. */
+function estAncienPlan(p, cleValidite) {
+  if (!cleValidite || !p) return false;
+  const v = normaliser(p[cleValidite]);
+  return !!v && (CONFIG.VALEURS_ANCIEN_PLAN || []).some(function (x) { return normaliser(x) === v; });
 }
 
 /** Index de la colonne qui identifie un plan : elle sera figée à gauche. */
@@ -1056,11 +1149,15 @@ function construireModele(contrat) {
     ? groupesParColonne(feuille, indexEntete, nbColonnes)   // 1-based : la ligne au-dessus
     : new Array(nbColonnes).fill('');
 
-  const iFWD = trouverIndexFWD(entetes, groupes);
-  const fwdDemandeeAbsente = !!CONFIG.COLONNE_FWD && iFWD === -1;
-  let iConcept = CONFIG.COLONNE_CONCEPT ? indexParDesignation(CONFIG.COLONNE_CONCEPT, entetes, groupes) : -1;
+  /* Les colonnes suivies de CE contrat (débrief 25), celles de la
+     configuration tant qu'il n'en a pas choisi. */
+  const suivies = colonnesDuContrat(nomOnglet_(feuille));
+  const iFWD = trouverIndexFWD(entetes, groupes, suivies.fwd);
+  const fwdDemandeeAbsente = !!suivies.fwd && iFWD === -1;
+  let iConcept = suivies.concept ? indexParDesignation(suivies.concept, entetes, groupes) : -1;
   if (iConcept === iFWD) iConcept = -1;
-  const conceptDemandeAbsent = !!CONFIG.COLONNE_CONCEPT && iConcept === -1;
+  const conceptDemandeAbsent = !!suivies.concept && iConcept === -1;
+  const iValidite = trouverIndexValidite_(entetes, groupes, iFWD);
   const iRef = trouverIndexReference(entetes);
   const iDomaine = trouverIndexDomaine(entetes, groupes);
   const lignesBrutes = donnees.slice(indexEntete + 1);
@@ -1117,6 +1214,7 @@ function construireModele(contrat) {
   let cleFWD = null;
   let cleDate = null;
   let cleConcept = null;
+  let cleValidite = null;
 
   for (let i = 0; i < nbColonnes; i++) {
     const titre = entetes[i] || ('Colonne ' + (i + 1));
@@ -1126,6 +1224,7 @@ function construireModele(contrat) {
     if (i === iFWD) cleFWD = cle;
     if (i === iDate) cleDate = cle;
     if (i === iConcept) cleConcept = cle;
+    if (i === iValidite && i !== iFWD && i !== iRef) cleValidite = cle;
 
     const s = stats[i];
     let classe = '';
@@ -1192,16 +1291,21 @@ function construireModele(contrat) {
     clesEssentielles: choisirEssentielles(colonnes, entetes, groupes, cleDate),
     cleDomaine: iDomaine === -1 ? null : colonnes[iDomaine].cle,
     cleConcept: cleConcept,
+    cleValidite: cleValidite,
+    colonneFWD: suivies.fwd,
+    colonneConcept: suivies.concept,
+    colonnesSource: suivies.source,
     fwdDemandeeAbsente: fwdDemandeeAbsente,
     conceptDemandeAbsent: conceptDemandeAbsent,
     avertissement: fwdDemandeeAbsente
-      ? 'Colonne « ' + CONFIG.COLONNE_FWD + ' » introuvable dans l\'onglet « ' + nomOnglet_(feuille) +
-        ' » : aucun avancement n\'est lu plutôt qu\'un autre, et l\'archivage est refusé. Suivi FWD → Diagnostic montre l\'en-tête lu.'
+      ? 'Colonne « ' + suivies.fwd + ' » introuvable dans l\'onglet « ' + nomOnglet_(feuille) +
+        ' » : aucun avancement n\'est lu plutôt qu\'un autre, et l\'archivage est refusé. Suivi FWD → Diagnostic montre l\'en-tête lu.' +
+        ' La colonne suivie se choisit dans ' + cheminImport() + ', case du contrat.'
       : cleFWD === null
         ? 'Aucune colonne d\'avancement FWD n\'a été reconnue dans l\'en-tête.'
         : '',
     avertissementConcept: conceptDemandeAbsent
-      ? 'Colonne « ' + CONFIG.COLONNE_CONCEPT + ' » introuvable dans l\'onglet « ' + nomOnglet_(feuille) +
+      ? 'Colonne « ' + suivies.concept + ' » introuvable dans l\'onglet « ' + nomOnglet_(feuille) +
         ' » : pas de concept harnais, et l\'archivage est refusé. Suivi FWD → Diagnostic montre l\'en-tête lu.'
       : '',
     lignesIgnorees: lignesBrutes.length - lignes.length,
@@ -1342,6 +1446,9 @@ function getDonneesPourClientLues(contrat) {
       clesEssentielles: modele.clesEssentielles,
       cleDomaine: modele.cleDomaine,
       cleConcept: modele.cleConcept,
+      /* Débrief 25 : la colonne Validité, et ce qui y fait un ancien plan. */
+      cleValidite: modele.cleValidite,
+      valeursAncien: CONFIG.VALEURS_ANCIEN_PLAN || [],
       valeursFinies: CONFIG.VALEURS_FINIES,
       valeursAFaire: CONFIG.VALEURS_A_FAIRE || [],
       dimParDefaut: modele.dimParDefaut,
@@ -1350,7 +1457,7 @@ function getDonneesPourClientLues(contrat) {
       plans: modele.plans,
       releves: releves,
       jalons: getJalons(modele.feuille),
-      contrats: contrats,
+      contrats: contratsPourLaPage_(contrats),
       contrat: modele.feuille
     };
     /* La seconde base, seulement si la configuration en nomme une : la page
@@ -1370,6 +1477,38 @@ function getDonneesPourClientLues(contrat) {
       contrats: [], contrat: ''
     };
   }
+}
+
+/**
+ * Débrief 25 : une tranche est un contrat à part entière — son onglet, sa
+ * colonne suivie, son historique, ses jalons, son PSN —, rattaché à son
+ * contrat par son nom : l'onglet « HDK Tranche 2 » (ou « HDK - Tranche 2 »)
+ * est la tranche 2 de HDK. { parent, tranche } ou null.
+ */
+function trancheDe_(nom) {
+  const m = /^(.*?\S)[\s\-\u2013\u2014_:>\u203a]+(tranche\s*\S.*)$/i.exec(String(nom || '').trim());
+  if (!m) return null;
+  const tranche = m[2].replace(/^tranche\s*/i, 'Tranche ');
+  return { parent: m[1].replace(/[\s\-\u2013\u2014_:>\u203a]+$/, ''), tranche: tranche };
+}
+
+/**
+ * Les contrats tels que la page les montre : une tranche s'appelle
+ * « HDK › Tranche 2 » et vient juste après son contrat (ou après la tranche
+ * qui la précède) ; l'identifiant reste le nom de l'onglet.
+ */
+function contratsPourLaPage_(contrats) {
+  const rangs = contrats.map(function (c, i) {
+    const t = trancheDe_(c.id);
+    return { c: c, i: i, t: t, famille: nomCompact(t ? t.parent : c.id) };
+  });
+  const premier = {};
+  rangs.forEach(function (r) { if (premier[r.famille] === undefined) premier[r.famille] = r.i; });
+  return rangs
+    .sort(function (a, b) {
+      return premier[a.famille] - premier[b.famille] || (a.t ? 1 : 0) - (b.t ? 1 : 0) || a.i - b.i;
+    })
+    .map(function (r) { return { id: r.c.id, nom: r.t ? r.t.parent + ' \u203a ' + r.t.tranche : r.c.nom }; });
 }
 
 /**
@@ -2783,7 +2922,10 @@ function diagnostic() {
 
   dire('');
   const jalons = getJalons();
-  dire('✓ Jalons de configuration : ' + jalons.length);
+  const sourceJalons = listeDesJalons_();
+  dire('✓ Jalons ' + (sourceJalons.onglet ? 'de l\'onglet « ' + sourceJalons.onglet + ' »' : 'de configuration') + ' : ' + jalons.length +
+       (sourceJalons.onglet && sourceJalons.liste.length > jalons.length
+         ? ' (' + (sourceJalons.liste.length - jalons.length) + ' ligne(s) sans date ni semaine lisible, écartée(s))' : ''));
   /* Chaque contrat a les siens (débrief 17 : HDK a les jalons du programme,
      THS aucun) : le Diagnostic dit qui voit quoi, et prévient d'un nom de
      contrat qu'aucun onglet ne porte — ce jalon-là n'apparaîtrait nulle part. */
@@ -2796,9 +2938,9 @@ function diagnostic() {
   /* Une ligne par nom de contrat introuvable, pas une par jalon : les cinq
      jalons de HDK, l'onglet renommé, ne font qu'un avertissement. */
   const introuvables = {}, ordreIntrouvables = [];
-  (Array.isArray(CONFIG.JALONS) ? CONFIG.JALONS : []).forEach(function (j) {
+  sourceJalons.liste.forEach(function (j) {
     (contratsDuJalon(j) || []).forEach(function (nom) {
-      if (contrats.some(function (c) { return normaliser(c.id) === normaliser(nom); })) return;
+      if (contrats.some(function (c) { return memeContrat_(c.id, nom); })) return;
       const k = normaliser(nom);
       if (!introuvables[k]) { introuvables[k] = { nom: nom.slice(0, 40), textes: [] }; ordreIntrouvables.push(k); }
       introuvables[k].textes.push(String((j && j.texte) || 'Jalon').trim().slice(0, 60));
@@ -2808,7 +2950,8 @@ function diagnostic() {
     const x = introuvables[k], n = x.textes.length;
     dire('⚠ ' + (n > 1 ? n + ' jalons' : 'Jalon « ' + x.textes[0] + ' »') + ' : contrat « ' + x.nom +
          ' » — aucun contrat ne porte ce nom (onglet absent, masqué ou écarté) : ' + (n > 1 ? 'ils n\'apparaissent' : 'il n\'apparaît') +
-         ' sur aucune page. Corriger contrat dans CONFIG.JALONS, ou l\'onglet.');
+         ' sur aucune page. Corriger le contrat ' + (sourceJalons.onglet ? 'dans l\'onglet « ' + sourceJalons.onglet + ' »' : 'dans CONFIG.JALONS') +
+         ', ou le nom de l\'onglet du contrat.');
   });
   /* Les périmètres se vérifient contre la colonne de domaine du contrat qui
      porte les jalons — chacun le sien. */
@@ -3138,7 +3281,9 @@ function diagnostiquerPerimetresDesJalons(contrat, jalons, dire, nommer) {
     dire('   → ' + valeurs.length + ' valeurs différentes dans « ' + titre + ' » : trop, ou trop longues, pour être des périmètres — rien n\'est recopié.');
   } else {
     dire('   → valeurs vues dans « ' + titre + ' » : ' + (valeurs.length ? valeurs.slice(0, 8).join(', ') : 'aucune') +
-         (valeurs.length > 8 ? ', …' : '') + ' — à recopier dans perimetre (CONFIG.JALONS).');
+         (valeurs.length > 8 ? ', …' : '') + (listeDesJalons_().onglet
+           ? ' — à recopier dans la colonne Périmètre de l\'onglet « ' + listeDesJalons_().onglet + ' ».'
+           : ' — à recopier dans perimetre (CONFIG.JALONS).'));
   }
 }
 
@@ -3404,12 +3549,14 @@ function diagnostiquerContrat(classeur, contrat, dire) {
     if (modele.avertissement) {
       dire('✗ ' + modele.avertissement);
       dire('   → la page s\'affichera, mais tout sera « non renseigné », et rien ne sera archivé.');
-      if (modele.fwdDemandeeAbsente) direColonnesProches(dire, modele.colonnes, CONFIG.COLONNE_FWD);
+      if (modele.fwdDemandeeAbsente) direColonnesProches(dire, modele.colonnes, modele.colonneFWD);
     } else {
       dire('✓ Avancement FWD : colonne « ' + colFWD.titre + ' »' +
            (colFWD.groupe ? ', groupe « ' + colFWD.groupe + ' »' : '') +
-           (CONFIG.COLONNE_FWD ? ' — celle de CONFIG.COLONNE_FWD' : ' — trouvée d\'elle-même (CONFIG.COLONNE_FWD est vide)'));
-      direDoublon(dire, modele.colonnes, CONFIG.COLONNE_FWD);
+           (modele.colonneFWD
+             ? (modele.colonnesSource === 'fenetre' ? ' — choisie pour ce contrat dans la fenêtre d\'import' : ' — celle de CONFIG.COLONNE_FWD')
+             : ' — trouvée d\'elle-même (CONFIG.COLONNE_FWD est vide)'));
+      direDoublon(dire, modele.colonnes, modele.colonneFWD);
       if (!sansPlan) {
         const compte = { termine: 0, encours: 0, afaire: 0, vide: 0 };
         uniques.forEach(function (p) { compte[classerFWD(p.avancement)]++; });
@@ -3418,7 +3565,7 @@ function diagnostiquerContrat(classeur, contrat, dire) {
         direValeurs(dire, uniques, 'avancement');
       }
     }
-    if (CONFIG.COLONNE_CONCEPT) {
+    if (modele.colonneConcept) {
       const colConcept = modele.cleConcept ? modele.colonnes.filter(function (c) { return c.cle === modele.cleConcept; })[0] : null;
       if (colConcept) {
         const compteC = { termine: 0, encours: 0, afaire: 0, vide: 0 };
@@ -3429,11 +3576,22 @@ function diagnostiquerContrat(classeur, contrat, dire) {
                compteC.afaire + ' à faire, ' + compteC.vide + ' non renseignés');
           direValeurs(dire, uniques, modele.cleConcept, true);
         }
-        direDoublon(dire, modele.colonnes, CONFIG.COLONNE_CONCEPT);
+        direDoublon(dire, modele.colonnes, modele.colonneConcept);
       } else {
         dire('✗ ' + modele.avertissementConcept);
-        direColonnesProches(dire, modele.colonnes, CONFIG.COLONNE_CONCEPT);
+        direColonnesProches(dire, modele.colonnes, modele.colonneConcept);
       }
+    }
+    /* Débrief 25 : les anciens plans, « S » dans la colonne Validité. */
+    if (modele.cleValidite) {
+      const anciens = uniques.filter(function (p) { return estAncienPlan(p, modele.cleValidite); }).length;
+      const colV = modele.colonnes.filter(function (c) { return c.cle === modele.cleValidite; })[0] || {};
+      dire((anciens ? '• ' : '✓ ') + 'Validité' + (colV.groupe ? ' (groupe « ' + colV.groupe + ' »)' : '') + ' : ' + (anciens
+        ? anciens + (anciens > 1 ? ' anciens plans' : ' ancien plan') + ' (« ' + (CONFIG.VALEURS_ANCIEN_PLAN || []).join(' », « ') +
+          ' ») — dans le tableau, grisés, mais comptés nulle part'
+        : 'aucun ancien plan (« ' + (CONFIG.VALEURS_ANCIEN_PLAN || []).join(' », « ') + ' »)'));
+    } else if (CONFIG.COLONNE_VALIDITE) {
+      dire('• Pas de colonne « ' + CONFIG.COLONNE_VALIDITE + ' » dans le groupe de la colonne suivie (ni seule dans l\'export) : aucun plan n\'est écarté comme ancien.');
     }
 
     const colRef = modele.colonnes.filter(function (c) { return c.fige; })[0];
@@ -3953,11 +4111,14 @@ function compterAvancements(contrat) {
   /* La colonne suivie vide sur TOUS les plans, alors que le dernier relevé en
      avait des valeurs : un export fait sans elle, pas un contrat qui démarre.
      L'archiver ferait reculer chaque plan. */
-  if (plans.every(function (p) { return classerFWD(p.avancement) === 'vide'; })) {
+  /* Débrief 25 : un ancien plan (« S » dans Validité) reste dans la carte
+     du relevé — l'historique le garde —, mais ne compte nulle part. */
+  const actifs = plans.filter(function (p) { return !estAncienPlan(p, modele.cleValidite); });
+  if (actifs.length && actifs.every(function (p) { return classerFWD(p.avancement) === 'vide'; })) {
     const precedents = getHistorique(SpreadsheetApp.getActiveSpreadsheet(), modele.feuille);
     const dernier = precedents[precedents.length - 1];
     if (dernier && dernier.total - dernier.vide > 0) {
-      throw new Error('La colonne « ' + CONFIG.COLONNE_FWD + ' » est vide sur les ' + plans.length +
+      throw new Error('La colonne « ' + modele.colonneFWD + ' » est vide sur les ' + actifs.length +
         ' plans de « ' + modele.feuille + ' », alors que le relevé ' + dernier.semaine + ' en avait des valeurs : ' +
         'l\'export a-t-il été fait sans elle ? Relevé non archivé.');
     }
@@ -3968,21 +4129,23 @@ function compterAvancements(contrat) {
   const moisDabord = ordreDesDates(plans, modele.cleDate);
 
   const compte = {
-    total: plans.length,
+    total: actifs.length,
     termine: 0, encours: 0, afaire: 0, vide: 0,
+    anciens: plans.length - actifs.length,
     groupes: {}, plans: {}
   };
   clesDim.forEach(function (d) { compte.groupes[d] = {}; });
 
   plans.forEach(function (p) {
-    const etat = classerFWD(p.avancement);
-    compte[etat]++;
     /* Avec le concept harnais, chaque plan garde ses deux avancements :
        [définition électrique, concept harnais]. Les relevés d'avant n'en
        ont qu'un, une chaîne : les deux formes se relisent (separerCartes). */
     compte.plans[p.reference] = modele.cleConcept
       ? [String(p.avancement || ''), String(p[modele.cleConcept] || '')]
       : String(p.avancement || '');
+    if (estAncienPlan(p, modele.cleValidite)) return;
+    const etat = classerFWD(p.avancement);
+    compte[etat]++;
     clesDim.forEach(function (d) {
       const v = String((d === '_anciennete'
         ? ancienneteDepuis(p[modele.cleDate], reference, moisDabord)
@@ -4727,11 +4890,136 @@ function contratsDuJalon(j) {
   return liste.length ? liste : null;
 }
 
+/* Deux noms du même contrat : casse, accents et séparateurs indifférents —
+   « HDK Tranche 2 », « HDK - tranche 2 » et « HDK › Tranche 2 » (le nom que
+   la page montre) se valent. */
+function memeContrat_(a, b) {
+  const k = function (x) { return nomCompact(x).replace(/[>\u203a]+/g, ' ').replace(/\s+/g, ' ').trim(); };
+  return k(a) === k(b);
+}
+
 /** Le jalon vaut-il pour ce contrat ? Sans contrat demandé : oui, tous. */
 function jalonPourContrat(j, contrat) {
   if (contrat === undefined || contrat === null) return true;
   const pour = contratsDuJalon(j);
-  return !pour || pour.some(function (c) { return normaliser(c) === normaliser(contrat); });
+  return !pour || pour.some(function (c) { return memeContrat_(c, contrat); });
+}
+
+/* Les intitulés de l'onglet des jalons, reconnus sans casse ni accents, au
+   début de l'intitulé : « Contrat / tranche », « Jalon », « Date »… */
+const COLONNES_JALONS = [
+  { cle: 'contrat', mots: ['contrat', 'tranche'] },
+  { cle: 'texte', mots: ['jalon', 'texte', 'nom', 'libelle'] },
+  { cle: 'date', mots: ['date', 'echeance'] },
+  { cle: 'semaine', mots: ['semaine'] },
+  { cle: 'perimetre', mots: ['perimetre', 'domaine'] },
+  { cle: 'suivi', mots: ['suivi', 'avancement'] }
+];
+const ENTETES_ONGLET_JALONS = ['Contrat', 'Jalon', 'Date', 'Périmètre', 'Suivi'];
+
+/**
+ * Les jalons à lire (débrief 25) : { liste, onglet } — ceux de l'onglet
+ * FEUILLE_JALONS quand il existe (onglet : son nom), sinon CONFIG.JALONS
+ * (onglet : ''). Chaque ligne de l'onglet devient un jalon de même forme :
+ * Contrat (vide : tous les contrats ; plusieurs, séparés par des virgules),
+ * Jalon, Date (« JJ/MM/AAAA » ou une semaine « AAAA-SNN »), Semaine,
+ * Périmètre, Suivi (« Concept harnais », sinon le FWD). Lu une fois par
+ * lecture.
+ */
+function listeDesJalons_() {
+  if (MEMO_LECTURE && MEMO_LECTURE.jalons) return MEMO_LECTURE.jalons;
+  let rendu = { liste: Array.isArray(CONFIG.JALONS) ? CONFIG.JALONS : [], onglet: '' };
+  try {
+    const classeur = classeurActif_();
+    const nom = String(CONFIG.FEUILLE_JALONS || '').trim();
+    /* Cherché dans la liste des onglets de la lecture, casse et accents
+       indifférents : aucun appel de plus au classeur à l'ouverture. */
+    const voulu = normaliser(nom);
+    const f = nom ? ongletsDuClasseur_(classeur).filter(function (x) { return normaliser(nomOnglet_(x)) === voulu; })[0] || null : null;
+    if (f) {
+      const hauteur = Math.min(derniereLigne_(f), CONFIG.MAX_JALONS * 5 + 1), largeur = Math.min(derniereColonne_(f), 12);
+      const v = hauteur >= 1 && largeur >= 1 ? f.getRange(1, 1, hauteur, largeur).getDisplayValues() : [[]];
+      const tete = v[0].map(normaliser), ou = {};
+      COLONNES_JALONS.forEach(function (c) {
+        for (let i = 0; i < tete.length; i++) {
+          if (c.mots.some(function (m) { return tete[i].indexOf(m) === 0; }) && !Object.keys(ou).some(function (k) { return ou[k] === i; })) { ou[c.cle] = i; break; }
+        }
+      });
+      const lu = function (l, k) { return ou[k] === undefined ? '' : String(l[ou[k]] === undefined ? '' : l[ou[k]]).trim(); };
+      rendu = {
+        onglet: nomOnglet_(f),
+        liste: v.slice(1).map(function (l) {
+          const brutDate = lu(l, 'date');
+          const date = dateDeJalon(brutDate) ? brutDate : '';
+          const contrats = lu(l, 'contrat').split(/\s*[,;]\s*/).filter(Boolean);
+          return {
+            contrat: contrats.length > 1 ? contrats : (contrats[0] || ''),
+            texte: lu(l, 'texte'),
+            date: date,
+            semaine: lu(l, 'semaine') || (date ? '' : brutDate),
+            perimetre: lu(l, 'perimetre'),
+            suivi: lu(l, 'suivi')
+          };
+        }).filter(function (j) { return j.texte || j.date || j.semaine; })
+      };
+    }
+  } catch (err) { /* onglet illisible : la configuration vaut */ }
+  if (MEMO_LECTURE) MEMO_LECTURE.jalons = rendu;
+  return rendu;
+}
+
+/**
+ * Menu Suivi FWD → Créer l'onglet des jalons (débrief 25) : l'onglet
+ * FEUILLE_JALONS, rempli des jalons de CONFIG.JALONS, à tenir ensuite dans
+ * le classeur. Existant, il n'est pas touché : on y va, c'est tout.
+ */
+function creerOngletJalons() {
+  gesteDuClasseur();
+  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  const ui = SpreadsheetApp.getUi();
+  const nom = String(CONFIG.FEUILLE_JALONS || '').trim() || 'Jalons';
+  const deja = classeur.getSheetByName(nom) || ongletNormalise(classeur, nom);
+  if (deja) {
+    classeur.setActiveSheet(deja);
+    ui.alert('Jalons', 'L’onglet « ' + deja.getName() + ' » existe déjà : c’est lui que le tableau de bord lit. ' +
+      'Une ligne par jalon — Contrat, Jalon, Date, Périmètre, Suivi.', ui.ButtonSet.OK);
+    return;
+  }
+  const lignes = (Array.isArray(CONFIG.JALONS) ? CONFIG.JALONS : []).map(function (j) {
+    const date = dateDeJalon(j && j.date);
+    return [
+      (contratsDuJalon(j) || []).join(', '),
+      String((j && j.texte) || '').trim(),
+      /* Écrite « AAAA-MM-JJ », que Sheets lit en date quelle que soit la
+         langue du classeur (05/02 serait le 2 mai en anglais), sans passer
+         par le fuseau du script ; elle s'affiche ensuite en JJ/MM/AAAA. */
+      date ? date.toISOString().slice(0, 10) : String((j && j.semaine) || ''),
+      String((j && j.perimetre) || '').trim(),
+      j && j.suivi && normaliser(j.suivi).indexOf('concept') === 0 ? 'Concept harnais' : 'FWD'
+    ];
+  });
+  const f = classeur.insertSheet(nom, classeur.getSheets().length);
+  f.getRange(1, 1, 1, ENTETES_ONGLET_JALONS.length).setValues([ENTETES_ONGLET_JALONS]);
+  if (lignes.length) f.getRange(2, 1, lignes.length, ENTETES_ONGLET_JALONS.length).setValues(lignes);
+  try {
+    f.getRange(1, 1, 1, ENTETES_ONGLET_JALONS.length).setFontWeight('bold');
+    f.setFrozenRows(1);
+    f.getRange(2, 3, lignes.length + 60, 1).setNumberFormat('dd/MM/yyyy');
+    const contrats = listerContrats(classeur).map(function (c) { return c.id; });
+    if (contrats.length) {
+      f.getRange(2, 1, lignes.length + 60, 1).setDataValidation(SpreadsheetApp.newDataValidation()
+        .requireValueInList(contrats, true).setAllowInvalid(true).build());
+    }
+    f.getRange(2, 5, lignes.length + 60, 1).setDataValidation(SpreadsheetApp.newDataValidation()
+      .requireValueInList(['FWD', 'Concept harnais'], true).setAllowInvalid(true).build());
+    f.setColumnWidth(1, 150); f.setColumnWidth(2, 220); f.setColumnWidth(3, 110); f.setColumnWidth(4, 120); f.setColumnWidth(5, 130);
+  } catch (err) { /* la mise en forme est un confort */ }
+  classeur.setActiveSheet(f);
+  marquerDonneesModifiees_();
+  ui.alert('Jalons', 'L’onglet « ' + nom + ' » est créé avec ' + lignes.length + ' jalon(s) : le tableau de bord le lit désormais, ' +
+    'à la place des jalons écrits dans le code. Une ligne par jalon ; Contrat vide = tous les contrats ; une tranche s’écrit ' +
+    'comme son onglet (« HDK Tranche 2 »). Pour qu’une personne ne modifie que les jalons de son contrat : ' +
+    'Données → Protéger les feuilles et les plages, une plage par contrat.', ui.ButtonSet.OK);
 }
 
 /**
@@ -4740,7 +5028,7 @@ function jalonPourContrat(j, contrat) {
  * page ne reçoit que les jalons du contrat qu'elle montre.
  */
 function getJalons(contrat) {
-  const liste = Array.isArray(CONFIG.JALONS) ? CONFIG.JALONS : [];
+  const liste = listeDesJalons_().liste;
   return liste
     .filter(function (j) { return jalonPourContrat(j, contrat); })
     .map(function (j) {
@@ -5317,6 +5605,7 @@ function ongletProtege(nom) {
   const n = normaliser(nom);
   const seconde = feuilleRapprochement() ? normaliser(feuilleRapprochement()) : '';
   if (seconde && n === seconde) return '';
+  if (CONFIG.FEUILLE_JALONS && n === normaliser(CONFIG.FEUILLE_JALONS)) return 'l\'onglet des jalons';
   const internes = (CONFIG.FEUILLES_INTERNES || []).map(normaliser);
   return internes.indexOf(n) !== -1 ? 'un onglet réservé au script' : '';
 }
@@ -5539,6 +5828,9 @@ function parametresImport_(classeur) {
     pausesReprise: [2000, 6000],
     seuilRecouvrement: IMPORT_SEUIL_RECOUVREMENT,
     contrats: contratsPourImport_(classeur),
+    /* Débrief 25 : les colonnes suivies par défaut, proposées à un contrat
+       qui n'a pas encore choisi les siennes. */
+    colonnesDefaut: { fwd: CONFIG.COLONNE_FWD || '', concept: CONFIG.COLONNE_CONCEPT || '' },
     nouveauPermis: !CONFIG.FEUILLE_DONNEES,
     nomMax: NOM_CONTRAT_MAX,
     semaine: semaineDite(semaine, semaine)
@@ -5562,7 +5854,9 @@ function contratsPourImport_(classeur) {
       let refs = [];
       try { refs = referencesNormalisees(classeur.getSheetByName(c.id)); } catch (err) { refs = []; }
       const p = avecBase ? psnDuContrat(c.id) : { psn: [], source: '' };
-      return { id: c.id, onglet: f ? f.getName() : souchePourImport(c.id), existe: !!f, refs: refs, psn: p.psn, psnSource: p.source };
+      const k = colonnesDuContrat(c.id);
+      return { id: c.id, onglet: f ? f.getName() : souchePourImport(c.id), existe: !!f, refs: refs, psn: p.psn, psnSource: p.source,
+               colonnes: { fwd: k.fwd, concept: k.concept, source: k.source } };
     });
   });
 }
@@ -5869,11 +6163,23 @@ function importSecondeBaseFin(jeton, nomFeuille, cible, lignesAttendues, fusions
     /* Un export où la page ne trouverait pas la colonne suivie ne remplace
        pas un onglet où elle la trouve : ce serait échanger un contrat qui se
        lit contre un contrat muet (un export d'un autre programme, un export
-       sans le bloc suivi). L'ancien reste ; l'onglet temporaire s'en va. */
-    if (c.sorte === 'gates' && existant && CONFIG.COLONNE_FWD &&
-        colonneSuivieLue_(existant) && !colonneSuivieLue_(feuille)) {
+       sans le bloc suivi). L'ancien reste ; l'onglet temporaire s'en va.
+       Débrief 25 : la colonne choisie dans la fenêtre pour ce contrat — elle
+       doit être dans l'export —, sinon celle qu'il suit déjà. */
+    const choisies = c.sorte === 'gates' ? colonnesChoisies_(cible) : null;
+    if (choisies) {
+      const manque = [choisies.fwd].concat(choisies.concept ? [choisies.concept] : [])
+        .filter(function (d) { return !colonneSuivieLue_(feuille, d); })[0];
+      if (manque) {
+        classeur.deleteSheet(feuille);
+        throw new Error('Colonne « ' + manque.replace('>', '›') + ' » introuvable dans cet export : en choisir une autre dans la case de « ' + c.onglet + ' ».');
+      }
+    }
+    const suivieAvant = c.sorte === 'gates' ? colonnesDuContrat(c.contrat).fwd : '';
+    if (c.sorte === 'gates' && existant && suivieAvant && !choisies &&
+        colonneSuivieLue_(existant, suivieAvant) && !colonneSuivieLue_(feuille, suivieAvant)) {
       classeur.deleteSheet(feuille);
-      throw new Error('Colonne suivie absente de cet export : « ' + CONFIG.COLONNE_FWD.replace('>', '›') + ' » n’y est pas, alors que l’onglet « ' +
+      throw new Error('Colonne suivie absente de cet export : « ' + suivieAvant.replace('>', '›') + ' » n’y est pas, alors que l’onglet « ' +
         c.onglet + ' » l’a. Est-ce bien l’export de ce contrat, avec son bloc suivi ?');
     }
     if (c.sorte === 'gates' && c.nouveau) rattacherAuContratUnique_(classeur, renommes);
@@ -5897,6 +6203,7 @@ function importSecondeBaseFin(jeton, nomFeuille, cible, lignesAttendues, fusions
       classeur.moveActiveSheet(position);
     }
     if (existant) classeur.deleteSheet(existant);
+    if (choisies) enregistrerColonnes_(c.onglet, choisies);
     marquerDonneesModifiees_();
   } finally {
     verrou.releaseLock();
@@ -5915,7 +6222,7 @@ function importSecondeBaseFin(jeton, nomFeuille, cible, lignesAttendues, fusions
   }
   const rendu = { sorte: 'gates', onglet: c.onglet, nouveau: c.nouveau, remplace: remplace, lignes: recues, colonnes: derniereColonne,
                   fusions: posees, fusionsRatees: ratees, etat: 'ok', plans: 0, colonneSuivie: null, concept: false,
-                  conceptDemande: !!CONFIG.COLONNE_CONCEPT, renommes: renommes };
+                  conceptDemande: !!colonnesDuContrat(c.onglet).concept, renommes: renommes };
   try {
     enLecture(function () {
       const m = construireModele(c.onglet);
@@ -5966,12 +6273,38 @@ function rattacherAuContratUnique_(classeur, renommes) {
 }
 
 /**
- * La page lirait-elle la colonne suivie (CONFIG.COLONNE_FWD) dans cet
- * onglet ? Les mêmes gestes que construireModele — la ligne d'en-têtes dans
- * les premières lignes, les groupes par leurs fusions —, sur ces seules
- * lignes : de quoi trancher avant d'échanger deux onglets.
+ * Les colonnes choisies dans la fenêtre pour un export GATES (débrief 25) :
+ * cible.colonnes = { fwd, concept } — { fwd, concept } épurés, ou null
+ * quand la fenêtre n'en envoie pas (une fenêtre d'avant).
  */
-function colonneSuivieLue_(feuille) {
+function colonnesChoisies_(cible) {
+  const k = cible && typeof cible === 'object' && cible.colonnes && typeof cible.colonnes === 'object' ? cible.colonnes : null;
+  const epure = function (v) { return String(v === undefined || v === null ? '' : v).trim().slice(0, 300); };
+  if (!k || !epure(k.fwd)) return null;
+  const concept = epure(k.concept);
+  return { fwd: epure(k.fwd), concept: normaliser(concept) === normaliser(k.fwd) ? '' : concept };
+}
+
+/** Les colonnes suivies d'un contrat, gardées dans le classeur — appelé sous le verrou des gestes. */
+function enregistrerColonnes_(idContrat, colonnes) {
+  const props = PropertiesService.getDocumentProperties();
+  let tous = {};
+  try { tous = analyserJson(props.getProperty(CLE_COLONNES)) || {}; } catch (err) { tous = {}; }
+  if (typeof tous !== 'object' || Array.isArray(tous)) tous = {};
+  Object.keys(tous).forEach(function (k) { if (normaliser(k) === normaliser(idContrat)) delete tous[k]; });
+  tous[idContrat] = { fwd: colonnes.fwd, concept: colonnes.concept || '' };
+  props.setProperty(CLE_COLONNES, JSON.stringify(tous));
+  if (MEMO_LECTURE) MEMO_LECTURE.proprietes = null;
+}
+
+/**
+ * La page lirait-elle la colonne suivie (CONFIG.COLONNE_FWD, ou
+ * `designation`) dans cet onglet ? Les mêmes gestes que construireModele —
+ * la ligne d'en-têtes dans les premières lignes, les groupes par leurs
+ * fusions —, sur ces seules lignes : de quoi trancher avant d'échanger deux
+ * onglets.
+ */
+function colonneSuivieLue_(feuille, designation) {
   const n = Math.min(CONFIG.LIGNES_SCAN_ENTETE, feuille.getLastRow());
   const largeur = feuille.getLastColumn();
   if (n < 1 || largeur < 1) return false;
@@ -5979,7 +6312,7 @@ function colonneSuivieLue_(feuille) {
   const i = detecterLigneEntete(tete);
   const entetes = tete[i].map(function (e) { return String(e).trim(); });
   const groupes = i > 0 ? groupesParColonne(feuille, i, entetes.length) : new Array(entetes.length).fill('');
-  return trouverIndexFWD(entetes, groupes) !== -1;
+  return trouverIndexFWD(entetes, groupes, designation) !== -1;
 }
 
 /** Abandon : l'onglet temporaire est retiré, l'onglet visé reste ce qu'il était. */
@@ -6080,6 +6413,11 @@ function pageImportSecondeBase(parametres) {
     '.barre{height:4px;border-radius:2px;background:var(--filet);overflow:hidden;margin:6px 0 2px}' +
     '.barre div{height:100%;width:0;background:var(--fait);transition:width .2s}.see .barre div{background:var(--see)}' +
     '.cible{font-size:13px;color:var(--encre-2);margin-top:3px}' +
+    '.colonnes{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:7px;font-size:12.5px;color:var(--encre-2)}' +
+    '.colonnes label{display:flex;flex-direction:column;gap:2px;flex:1 1 250px;min-width:0;font-weight:600}' +
+    '.colonnes select{font:inherit;font-size:13px;font-weight:400;padding:3px 6px;border:1px solid var(--filet-2);border-radius:6px;background:var(--surface);color:var(--encre);max-width:100%}' +
+    '.colonnes select.refus{border-color:var(--alerte)}.col-aide{flex-basis:100%;color:var(--encre-3)}.col-aide.refus{color:var(--alerte)}' +
+    '.col-aide.attention{color:var(--attention)}.col-aide:empty{display:none}' +
     '.note{font-size:13px;color:var(--attention);background:var(--attention-fond);border-radius:6px;padding:4px 8px;margin-top:6px}' +
     '.note::before{content:"⚠ "}' +
     '.manque{margin-top:6px;font-size:13px;color:var(--alerte)}.sans-tri{display:flex;gap:7px;align-items:flex-start;color:var(--encre);margin-top:4px}' +
@@ -8382,7 +8720,8 @@ function scriptImportSecondeBase_(P) {
     var el = document.createElement(k.sorte === 'see' ? 'div' : 'li');
     el.className = 'case ' + k.sorte + (k.nouveau ? ' nouvelle' : '');
     el.innerHTML = '<div class="tete"><span class="etiquette"></span>' +
-      (k.nouveau ? '<input type="text" class="nom" maxlength="' + P.nomMax + '" placeholder="Nom du contrat (celui de son onglet)" aria-label="Nom du nouveau contrat">' : '') +
+      (k.nouveau ? '<input type="text" class="nom" maxlength="' + P.nomMax + '" placeholder="Nom du contrat (celui de son onglet)" aria-label="Nom du nouveau contrat"' +
+        ' title="Une tranche d’un contrat : « HDK Tranche 2 »">' : '') +
       '<span class="fichier-nom"></span><span class="date"></span><span class="taille"></span>' +
       '<span class="invite"></span>' +
       '<button type="button" class="choisir">Choisir le fichier…</button>' +
@@ -8391,7 +8730,10 @@ function scriptImportSecondeBase_(P) {
       (k.nouveau ? '<div class="verif-nom"></div>' : '') +
       '<div class="lu"></div><div class="barre" hidden><div></div></div>' +
       (k.sorte === 'see' ? '<div class="manque" hidden><div class="manque-texte"></div><label class="sans-tri"><input type="checkbox"> <span></span></label></div>' +
-        '<div class="tri-aide"></div><ul class="porteurs"></ul>' : '<div class="cible"></div>') +
+        '<div class="tri-aide"></div><ul class="porteurs"></ul>' : '<div class="cible"></div>' +
+        /* Débrief 25 : les colonnes que ce contrat suit, choisies parmi celles de son export. */
+        '<div class="colonnes" hidden><label>Colonne suivie — définition électrique (FWD)<select class="col-fwd"></select></label>' +
+        '<label>Concept harnais<select class="col-concept"></select></label><div class="col-aide"></div></div>') +
       '<div class="note" hidden></div><div class="resultat" hidden></div>' +
       '<input type="file" class="fichier" hidden accept="' + EXTENSIONS + '">';
     k.el = el;
@@ -8404,6 +8746,10 @@ function scriptImportSecondeBase_(P) {
       poserFichiers(k, choisis);
     });
     q('.retirer').addEventListener('click', function () { retirerFichier(k); });
+    if (k.sorte === 'gates') {
+      q('.col-fwd').addEventListener('change', function () { if (k.colonnes) { k.colonnes.fwd = this.value; k.colonnes.touche = true; } majTout(); });
+      q('.col-concept').addEventListener('change', function () { if (k.colonnes) { k.colonnes.concept = this.value; k.colonnes.touche = true; } majTout(); });
+    }
     el.addEventListener('dragover', function (e) { e.preventDefault(); e.stopPropagation(); if (!enCours) el.classList.add('survol'); });
     el.addEventListener('dragleave', function () { el.classList.remove('survol'); });
     el.addEventListener('drop', function (e) {
@@ -8536,6 +8882,7 @@ function scriptImportSecondeBase_(P) {
       d.toutes = toutes;
       k.lu = d;
       k.etat = 'lu';
+      if (k.sorte === 'gates') { k.colonnes = colonnesDeLExport(d); remplirColonnes(k); }
     }, function (e) {
       if (k.lecture !== numeroLecture) return;
       k.lu = null;
@@ -8876,7 +9223,9 @@ function scriptImportSecondeBase_(P) {
       v.className = 'verif-nom' + (n.etat === 'refus' ? ' refus' : '');
       v.textContent = n.etat === 'refus' ? n.message : n.etat === 'attente' ? 'Vérification du nom…' :
         n.etat === 'ok' && n.propose && norm(n.propose) === norm(n.valeur) ? 'Nom tiré de ses groupes « ' + n.valeur + ' AA … » : le changer au besoin — c’est celui de son onglet.' :
-        n.etat === 'vide' ? 'Le nom du contrat est celui de son onglet, comme « HDK ».' : '';
+        n.etat === 'vide' ? 'Le nom du contrat est celui de son onglet, comme « HDK ».' :
+        n.etat === 'ok' && trancheVue(n.valeur) ? 'Une tranche de « ' + trancheVue(n.valeur).parent + ' » : montrée « ' + trancheVue(n.valeur).parent + ' › ' +
+          trancheVue(n.valeur).tranche + ' » dans le tableau de bord, avec sa colonne, son historique, ses jalons et son PSN.' : '';
       v.hidden = !v.textContent;
     }
     var avant = k.etat === 'lu' && d, texte = '', note = '';
@@ -8896,10 +9245,107 @@ function scriptImportSecondeBase_(P) {
     }
     q('.cible').innerHTML = texte;
     q('.cible').hidden = !texte;
+    dessinerColonnes(k);
     var zone = q('.note');
     zone.textContent = note;
     zone.hidden = !note;
   }
+  /* Débrief 25 : les colonnes d'un export GATES lu, pour choisir celles que
+     son contrat suit — [{ d (la désignation « Groupe > Colonne » que le
+     serveur relira), titre, groupe, avancement }]. Le groupe d'une colonne
+     se lit comme le serveur le lit (groupesParColonne) : la ligne au-dessus
+     de l'en-tête, par ses cellules fusionnées, sinon de proche en proche. */
+  function colonnesDeLExport(d) {
+    var tete = d.lignes[d.ligneEntete - 1] || [], r = d.ligneEntete - 1, haut = r >= 1 ? (d.lignes[r - 1] || []) : [];
+    var t = function (v) { return String(v === undefined || v === null ? '' : v).trim(); };
+    var n = tete.length, groupes = [], i, options = [];
+    var fus = r >= 1 ? d.fusions.filter(function (f) { return f.ligne === r; }) : [];
+    if (fus.length) {
+      for (i = 0; i < n; i++) groupes[i] = t(haut[i]);
+      fus.forEach(function (f) { var g = t(haut[f.col - 1]); for (var c = f.col - 1; c < f.col - 1 + f.nbCols && c < n; c++) groupes[c] = g; });
+    } else {
+      var dernier = '';
+      for (i = 0; i < n; i++) { if (t(haut[i])) dernier = t(haut[i]); groupes[i] = dernier; }
+    }
+    for (i = 0; i < n; i++) {
+      var titre = t(tete[i]), g = groupes[i] || '';
+      if (!titre) continue;
+      options.push({ d: g && g.indexOf('>') === -1 && titre.indexOf('>') === -1 ? g + ' > ' + titre : titre,
+                     titre: titre, groupe: g, avancement: /avancement/.test(norm(titre)) });
+    }
+    return { options: options, fwd: '', concept: '', touche: false, manque: '', pour: null };
+  }
+  function cleDesignation(x) { return norm(x).replace(/\s*>\s*/g, '>'); }
+  function optionDe(c, designation) {
+    if (!designation) return '';
+    var v = cleDesignation(designation), o = c.options.filter(function (x) { return cleDesignation(x.d) === v; })[0];
+    if (!o && designation.indexOf('>') === -1) o = c.options.filter(function (x) { return norm(x.titre) === norm(designation); })[0];
+    return o ? o.d : '';
+  }
+  function remplirColonnes(k) {
+    var c = k.colonnes, el = k.el;
+    var opt = function (o) { return '<option value="' + ech(o.d) + '">' + ech(o.groupe ? o.groupe + ' › ' + o.titre : o.titre) + '</option>'; };
+    var lots = '<optgroup label="Colonnes d’avancement">' + c.options.filter(function (o) { return o.avancement; }).map(opt).join('') + '</optgroup>' +
+      '<optgroup label="Autres colonnes">' + c.options.filter(function (o) { return !o.avancement; }).map(opt).join('') + '</optgroup>';
+    el.querySelector('.col-fwd').innerHTML = '<option value="">— choisir —</option>' + lots;
+    el.querySelector('.col-concept').innerHTML = '<option value="">— aucune —</option>' + lots;
+  }
+  /* Ce que la case propose tant qu'on n'a rien touché : les colonnes que son
+     contrat suit déjà (choisies à un import d'avant, ou celles de la
+     configuration) ; pour un contrat ajouté ici, celles de la configuration
+     si l'export les a — sauf pour une tranche (« HDK Tranche 2 ») : tirée du
+     même export que son contrat, elle suivrait sinon, sans qu'on le voie, la
+     colonne de celui-ci. On la choisit. */
+  function preparerColonnes(k) {
+    var c = k.colonnes;
+    if (!c || c.touche) return;
+    var contrat = contratDe(k), x = !k.nouveau && contrat ? contratExistant(contrat) : null;
+    var tranche = !x && !!contrat && P.contrats.some(function (o) { return memeFamille(contrat, o.id); });
+    var pour = x ? 'x:' + x.id : (tranche ? 't:' : 'n:') + norm(contrat);
+    if (c.pour === pour) return;
+    c.pour = pour;
+    c.tranche = tranche;
+    var defaut = { fwd: P.colonnesDefaut.fwd, concept: P.colonnesDefaut.concept };
+    var voulues = x ? (x.colonnes || defaut) : tranche ? { fwd: '', concept: '' } : defaut;
+    c.fwd = optionDe(c, voulues.fwd);
+    c.concept = optionDe(c, voulues.concept);
+    if (c.concept === c.fwd) c.concept = '';
+    c.manque = x && voulues.fwd && !c.fwd ? voulues.fwd : '';
+  }
+  function dessinerColonnes(k) {
+    var zone = k.el.querySelector('.colonnes');
+    if (!zone) return;
+    var c = k.colonnes, montrer = !!c && (k.etat === 'lu' || k.etat === 'envoi');
+    zone.hidden = !montrer;
+    if (!montrer) return;
+    preparerColonnes(k);
+    var f = zone.querySelector('.col-fwd'), g = zone.querySelector('.col-concept'), aide = zone.querySelector('.col-aide');
+    if (f.value !== c.fwd) f.value = c.fwd;
+    if (g.value !== c.concept) g.value = c.concept;
+    f.disabled = g.disabled = enCours;
+    /* Seule une tranche attend qu'on choisisse (raisonDAttendre) ; ailleurs,
+       sans colonne, l'import se fait comme avant, et la page dit la colonne
+       suivie introuvable. */
+    f.className = 'col-fwd' + (c.fwd || !c.tranche ? '' : ' refus');
+    aide.className = 'col-aide' + (c.fwd ? '' : c.tranche ? ' refus' : ' attention');
+    aide.textContent = !c.fwd
+      ? (c.manque ? 'La colonne suivie jusqu’ici, « ' + c.manque.replace('>', '›') + ' », n’est pas dans cet export : choisir celle que ce contrat suit.'
+         : c.tranche ? 'Une tranche : choisir la colonne qu’elle suit — la sienne, pas celle de son contrat.'
+         : 'La colonne suivie par défaut n’est pas dans cet export : choisir celle que ce contrat suit, sinon la page n’y lira aucun avancement.')
+      : c.touche ? 'Gardée pour ce contrat aux imports suivants.' : '';
+  }
+  /* Deux contrats de la même famille : un contrat et ses tranches (« HDK »,
+     « HDK Tranche 2 »), qui peuvent venir du même export. */
+  function familleDe(nom) {
+    return norm(nom).replace(/[\s\-\u2013\u2014_:>\u203a]+tranche\s*\S.*$/, '').replace(/[\s_\-\u2013\u2014.:\/]+/g, ' ').trim();
+  }
+  function memeFamille(a, b) { return !!a && !!b && familleDe(a) === familleDe(b); }
+  /* « HDK Tranche 2 » → { parent: 'HDK', tranche: 'Tranche 2' }, comme le serveur la nomme (trancheDe_), ou null. */
+  function trancheVue(nom) {
+    var m = /^(.*?\S)[\s\-\u2013\u2014_:>\u203a]+(tranche\s*\S.*)$/i.exec(String(nom || '').trim());
+    return m ? { parent: m[1], tranche: m[2].replace(/^tranche\s*/i, 'Tranche ') } : null;
+  }
+
   /* Le doute, dit sans bloquer : un export GATES qui partage peu de plans
      avec l'onglet qu'il va remplacer — l'export d'un autre contrat, peut-être
      (« seulement 3 plans sur 186 en commun avec « HDK » : est-ce bien son
@@ -8912,6 +9358,7 @@ function scriptImportSecondeBase_(P) {
     for (i = 0; i < P.contrats.length; i++) {
       var o = P.contrats[i];
       if (!k.nouveau && o.id === k.id) continue;
+      if (memeFamille(contratDe(k), o.id)) continue;   // une tranche partage ses plans avec son contrat
       var no = o.refs.length ? communs(d, o) : 0;
       if (no / d.refs.length >= P.seuilRecouvrement && (!ailleurs || no > ailleurs.n)) ailleurs = { id: o.id, n: no };
     }
@@ -9056,8 +9503,24 @@ function scriptImportSecondeBase_(P) {
       for (var j = i + 1; j < actives.length; j++) {
         var a = actives[i].f, b = actives[j].f;
         if (a.name === b.name && a.size === b.size && a.lastModified === b.lastModified) {
+          /* Débrief 25 : un contrat et sa tranche peuvent venir du même
+             export — chacun suit alors sa colonne. */
+          var ka = actives[i], kb = actives[j];
+          if (ka.sorte === 'gates' && kb.sorte === 'gates' && memeFamille(contratDe(ka), contratDe(kb))) {
+            preparerColonnes(ka); preparerColonnes(kb);
+            if (ka.colonnes && kb.colonnes && ka.colonnes.fwd && cleDesignation(ka.colonnes.fwd) === cleDesignation(kb.colonnes.fwd)) {
+              return 'Les cases « ' + libelleCase(ka) + ' » et « ' + libelleCase(kb) + ' » portent le même export et suivent la même colonne : choisir la colonne de chacune.';
+            }
+            continue;
+          }
           return 'Le même fichier, « ' + a.name + ' », est dans les cases « ' + libelleCase(actives[i]) + ' » et « ' + libelleCase(actives[j]) + ' » : chaque contrat a son propre export.';
         }
+      }
+    }
+    for (i = 0; i < gates.length; i++) {
+      preparerColonnes(gates[i]);
+      if (gates[i].etat === 'lu' && gates[i].colonnes && gates[i].colonnes.tranche && !gates[i].colonnes.fwd) {
+        return 'Choisir la colonne suivie (FWD) de la tranche, dans la case « ' + libelleCase(gates[i]) + ' ».';
       }
     }
     var noms = {};
@@ -9280,6 +9743,9 @@ function scriptImportSecondeBase_(P) {
   function importerGates(k, archiver, rang, nombre) {
     var d = k.lu, contrat = contratDe(k), etat = { fin: false }, nom = '« ' + ech(k.f.name) + ' »';
     var cible = { sorte: 'gates', contrat: contrat, nouveau: k.nouveau };
+    /* Les colonnes ne partent que si on les a choisies : celles proposées
+       d'office sont déjà celles que le serveur suit pour ce contrat. */
+    if (k.colonnes && k.colonnes.touche && k.colonnes.fwd) cible.colonnes = { fwd: k.colonnes.fwd, concept: k.colonnes.concept || '' };
     /* Le pied nomme toujours la case qui part — et son rang quand il y en a plusieurs. */
     var avant = (nombre > 1 ? rang + ' sur ' + nombre + ' — ' : '') + '« ' + libelleCase(k) + ' » : ';
     k.etat = 'envoi';

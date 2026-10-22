@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'a4fbd58';
+  var EDITION = '7347352';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -570,6 +570,10 @@
   /* L'état dérivé de la source courante. Déclaré ici, rempli par chargerSource(). */
   var SRC = null;                  // la source affichée
   var COLONNES, PAR_CLE, CLE_DATE, PLANS, RELEVES_SRC, BASE, AUJ;
+  /* Débrief 25 : les anciens plans — « S » dans la colonne Validité —, à
+     part des PLANS : dans le tableau, grisés, et nulle part ailleurs.
+     ANCIENS_REF : leurs références, retirées de la carte de chaque relevé. */
+  var ANCIENS = [], ANCIENS_REF = Object.create(null);
   /* L'avancement suivi : la définition électrique — la colonne « avancement »
      du paquet, le FWD — ou le concept harnais (SRC.cleConcept). Toute la page
      lit la colonne suivie, jamais une clé en dur : barre, courbe, journal,
@@ -1278,6 +1282,15 @@
     return { i: indexDe(r.semaine), total: refs.length, termine: e.termine, encours: e.encours,
              afaire: e.afaire, vide: e.vide, groupes: g, plans: carte };
   }
+  /* La carte d'un relevé sans les anciens plans d'aujourd'hui (débrief 25),
+     par leur référence exacte : l'indice qui remplace un plan « S » garde
+     sa propre vie. La carte d'origine n'est pas touchée. */
+  function sansAnciens(carte) {
+    if (!carte || !ANCIENS.length) return carte;
+    var garde = {}, refs = Object.keys(carte);
+    for (var i = 0; i < refs.length; i++) if (!ANCIENS_REF[refs[i]]) garde[refs[i]] = carte[refs[i]];
+    return garde;
+  }
   /* Les groupes d'un plan, dimension par dimension — le nom de groupe que
      releveDeCarte() lui donne —, lus une fois par source au lieu d'une fois
      par relevé (débrief 23 : un an d'archives les relisait cinquante-deux
@@ -1405,8 +1418,22 @@
        comme dans la carte des relevés et côté Code.gs (plansUniques). Sinon
        le point du jour comptait les lignes et les semaines archivées les
        références, et la courbe sautait (débrief 17). */
-    PLANS = plansUniques(src.plans || []);
-    LIGNES_EN_DOUBLE = (src.plans || []).length - PLANS.length;
+    var tous = plansUniques(src.plans || []);
+    LIGNES_EN_DOUBLE = (src.plans || []).length - tous.length;
+    /* Débrief 25 : un ancien plan (« S » dans Validité) ne compte nulle part
+       — synthèse, courbe, journal, bloc, SEE, rythmes, fins estimées. Les
+       semaines passées se refont sans lui (sa référence est retirée de leur
+       carte), avec la validité d'aujourd'hui. */
+    var cleValidite = src.cleValidite && (src.colonnes || []).some(function (c) { return c.cle === src.cleValidite; }) ? src.cleValidite : null;
+    var formesAncien = (Array.isArray(src.valeursAncien) ? src.valeursAncien : []).map(norm).filter(Boolean);
+    ANCIENS = [];
+    ANCIENS_REF = Object.create(null);
+    PLANS = tous.filter(function (p) {
+      var ancien = !!cleValidite && formesAncien.indexOf(norm(p[cleValidite])) !== -1;
+      Object.defineProperty(p, '_ancien', { value: ancien ? String(p[cleValidite]).trim() : '', writable: true, configurable: true, enumerable: false });
+      if (ancien) { ANCIENS.push(p); ANCIENS_REF[p.reference] = true; }
+      return !ancien;
+    });
     /* Le tableau est l'extract, à une exception près, décidée par l'utilisateur :
        la première colonne, quand le serveur a dû la nommer lui-même
        (« Colonne 1 », faute d'intitulé) et qu'elle ne porte AUCUNE valeur —
@@ -1429,7 +1456,7 @@
     VALEURS_A_FAIRE_N = formesDeclarees(src.valeursAFaire, []);
     oublierClassements();               // d'autres mots déclarés : d'autres classements
 
-    PLANS.forEach(function (p) {
+    PLANS.concat(ANCIENS).forEach(function (p) {
       p._etat = classer(p[CLE_SUIVIE]); p._pct = pourcentDe(p);
       p._cle = cleValeur(p[CLE_SUIVIE]);                     // la valeur, pour les rangées de pastilles
       p._racine = cleDeRef(p.reference);                     // racine + solution : l'identité du plan
@@ -1491,8 +1518,8 @@
        figés au jour de l'archivage mettaient « 0 terminé » en S39 et 300 en
        S40 — 300 plans par semaine. Sans carte, restent les comptes archivés. */
     RELEVES = RELEVES_SRC.filter(function (r) { return !enConcept || r.plansConcept; }).map(function (r) {
-      if (enConcept) return releveDeCarte(r, r.plansConcept);
-      if (r.plans) return releveDeCarte(r, r.plans);
+      if (enConcept) return releveDeCarte(r, sansAnciens(r.plansConcept));
+      if (r.plans) return releveDeCarte(r, sansAnciens(r.plans));
       return {
         i: indexDe(r.semaine),
         total: r.total, termine: r.termine, encours: r.encours, afaire: r.afaire, vide: r.vide,
@@ -2026,6 +2053,8 @@
        un périmètre, une ligne d'un plan hors périmètre est simplement hors champ. */
     var racinesIci = Object.create(null);
     PLANS.forEach(function (p) { racinesIci[p._racine] = true; });
+    /* Les lignes d'un ancien plan (débrief 25) : hors champ, pas « seulement là ». */
+    ANCIENS.forEach(function (p) { racinesIci[p._racine] = true; });
     lignes.forEach(function (e) {
       if (e.plan || !e.ud.racine) return;
       if (racinesIci[cleAppariement(e.ud)]) { e.cat = 'hors'; return; }
@@ -2140,9 +2169,20 @@
   /* sansGroupe : la sélection sans le groupe choisi dans le bloc « par… » —
      ce que ce bloc liste, pour que ses autres groupes restent à l'écran. */
   function selection(sansGroupe) {
+    return selectionDans(PLANS, sansGroupe);
+  }
+  /* Débrief 25 : les anciens plans que le tableau montre, grisés, sous les
+     autres — ceux que la recherche, les filtres de colonnes et le périmètre
+     gardent. Un état, un groupe ou un lot choisis portent sur ce qui compte :
+     les anciens plans s'effacent alors. */
+  function anciensDuTableau() {
+    if (!ANCIENS.length || vue.etat || vue.groupe || vue.refs) return [];
+    return selectionDans(ANCIENS);
+  }
+  function selectionDans(plans, sansGroupe) {
     var q = norm(vue.recherche);
     var cols = Object.keys(vue.filtres).filter(function (k) { return vue.filtres[k]; });
-    return PLANS.filter(function (p) {
+    return plans.filter(function (p) {
       if (!dansPerimetre(p)) return false;
       if (vue.etat && cleValeur(p[CLE_SUIVIE]) !== vue.etat) return false;
       /* La clé du groupe, écrite comme le bloc l'écrit : « — » pour un plan
@@ -4434,6 +4474,8 @@
       if (vb === '') return -1;
       return COMPARER_REF(va, vb) * sens;
     });
+    var nActifs = rangs.length, anciens = anciensDuTableau();
+    rangs = rangs.concat(anciens.sort(function (a, b) { return COMPARER_REF(a.reference, b.reference); }));
 
     if (!rangs.length) {
       $('corps-tableau').innerHTML = '\x3Ctr>\x3Ctd colspan="' + cols.length + '">\x3Cdiv class="vide-message">Aucun plan ne correspond aux filtres.\x3C/div>\x3C/td>\x3C/tr>';
@@ -4445,8 +4487,8 @@
 
     var nFige = nbFigees(cols);
     poserTranches($('corps-tableau'), rangs.length, cols.length, function (k) {
-      var p = rangs[k];
-      return '\x3Ctr>' + cols.map(function (c, i) {
+      var p = rangs[k], ancien = p._ancien;
+      return (ancien ? '\x3Ctr class="ancien" title="Ancien plan : « ' + ech(ancien) + ' » dans Validité — compté nulle part">' : '\x3Ctr>') + cols.map(function (c, i) {
         var fige = classeFige(i, nFige);
         if (c.cle === CLE_SUIVIE) {
           var e = valeurDeCle(p._cle) || ETAT_PAR_CLE[p._etat];
@@ -4454,6 +4496,7 @@
             : '\x3Cspan class="pastille" style="background:' + e.couleur + '">\x3C/span>';
           return '\x3Ctd class="' + fige + '"' + styleFige(i, nFige) + '>\x3Cspan class="etat-cellule">' + past +
             (String(p[CLE_SUIVIE] == null ? '' : p[CLE_SUIVIE]).trim() ? '\x3Cspan class="num">' + ech(p[CLE_SUIVIE]) + '\x3C/span>' : '\x3Cspan class="doux">Non renseigné\x3C/span>') +
+            (ancien ? '\x3Cspan class="marque-ancien">ancien plan (' + ech(ancien) + ')\x3C/span>' : '') +
             '\x3C/span>\x3C/td>';
         }
         var val = p[c.cle];
@@ -4462,6 +4505,7 @@
         var titre = c.classe.indexOf('large') !== -1 ? ' title="' + ech(val) + '"' : '';
         /* La référence se clique : le tableau se réduit à ce plan, et son
            historique s'ouvre au-dessus. */
+        if (c.cle === 'reference' && ancien) return '\x3Ctd class="' + classes + '"' + styleFige(i, nFige) + '>' + ech(val) + '\x3C/td>';
         if (c.cle === 'reference') {
           return '\x3Ctd class="' + classes + '"' + styleFige(i, nFige) + '>\x3Cbutton class="ref-plan" type="button" data-ref-plan="' + ech(val) +
             '" title="Voir l\u2019historique de ce plan">' + ech(val) + '\x3C/button>\x3C/td>';
@@ -4472,8 +4516,9 @@
 
     /* « sur N » : N est la population du périmètre, pas la feuille entière. */
     var base = population().length;
-    $('compte').textContent = nb(rangs.length) + (rangs.length > 1 ? ' plans' : ' plan') +
-      (rangs.length !== base ? ' sur ' + nb(base) : '');
+    $('compte').textContent = nb(nActifs) + (nActifs > 1 ? ' plans' : ' plan') +
+      (nActifs !== base ? ' sur ' + nb(base) : '') +
+      (anciens.length ? ' · ' + nb(anciens.length) + (anciens.length > 1 ? ' anciens plans (S), grisés, comptés nulle part' : ' ancien plan (S), grisé, compté nulle part') : '');
     ajusterSticky();
     majOmbre();
   }
@@ -7607,5 +7652,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = 'a4fbd58';
+window.SUIVI_FWD_FIN = '7347352';
 </script>

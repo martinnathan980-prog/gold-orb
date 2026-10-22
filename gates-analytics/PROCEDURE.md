@@ -522,6 +522,19 @@ treize blocs HDK AA portent tous les mêmes intitulés, et c'est le groupe
 fusionné au-dessus qui départage — le script lit les **vraies fusions** de
 la feuille.
 
+**Débrief 25 : colonne par contrat, jalons dans le classeur, anciens plans.**
+`CONFIG.COLONNE_FWD` et `CONFIG.COLONNE_CONCEPT` ne sont plus que le choix
+par défaut. Chaque contrat (chaque tranche, `HDK Tranche 2`, qui est un
+contrat montré « HDK › Tranche 2 ») a ses colonnes, choisies dans la
+fenêtre d'import et gardées dans les propriétés du document
+(`SUIVI_FWD_COLONNES`, `colonnesDuContrat`). Les jalons se lisent dans
+l'onglet `Jalons` (`CONFIG.FEUILLE_JALONS`, `listeDesJalons_`) quand il
+existe, sinon dans `CONFIG.JALONS`. Un plan qui porte « S » dans la colonne
+`Validité` du bloc de la colonne suivie (`CONFIG.COLONNE_VALIDITE`,
+`VALEURS_ANCIEN_PLAN`) reste dans la carte du relevé, mais hors de tous les
+comptes. La page retire ces références de la carte de chaque relevé passé,
+selon la validité du jour.
+
 **Cette colonne-là, ou aucune** (débrief 15 : « il ne faut pas qu'on se
 trompe de la source »). Un extract où `HDK AA 011 > Avancement Définition
 Electrique` est introuvable — un groupe renommé, un bloc absent — n'est

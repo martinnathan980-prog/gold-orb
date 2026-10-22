@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "a4fbd58";
+  --suivi-fwd-edition: "7347352";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -1321,6 +1321,10 @@ table.plans td.coche { text-align: center; color: var(--encre-2); }
 table.plans .verdict { display: inline-flex; align-items: center; gap: 8px; }
 table.plans tbody tr.choisie td { background: var(--creux); box-shadow: inset 0 -1px 0 var(--encre); }
 table.plans tbody tr[data-plan] { cursor: pointer; }
+/* Débrief 25 : un ancien plan (« S » dans Validité), grisé, marqué. */
+table.plans tbody tr.ancien td { color: var(--encre-3); }
+table.plans tbody tr.ancien .pastille { opacity: .4; }
+.marque-ancien { margin-left: 8px; padding: 0 6px; border: 1px solid var(--filet-fort); border-radius: 4px; font-size: 11.5px; color: var(--encre-3); white-space: nowrap; }
 /* La référence d'une ligne de là est un bouton : le clavier y arrive aussi. */
 .ref-lien { border: none; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; }
 .ref-lien:hover { text-decoration: underline; }

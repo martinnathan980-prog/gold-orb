@@ -231,6 +231,53 @@ relevé). Le geste : Affichage → Onglets masqués, renommer `Historique_FWD`
 en `Historique_FWD_HDK` (le nom de ce contrat-là — jamais celui du nouveau),
 et `SEE` en `SEE HDK`.
 
+### La colonne suivie, contrat par contrat
+
+Chaque contrat suit **sa** colonne : HDK suit `HDK AA 011 › Avancement
+Définition Electrique` (et `HDK AA 011 › Avancement Concept Harnais` pour le
+concept harnais), un autre contrat la colonne de son propre bloc (`THS AA
+017B › …`). Dans la fenêtre d'import, dès qu'un export GATES est lu, sa case
+montre deux listes tirées de **ses** colonnes : **Colonne suivie —
+définition électrique (FWD)** et **Concept harnais** (« — aucune — » s'il
+n'en a pas). Les colonnes d'avancement viennent en tête de liste. La case
+propose celles que le contrat suit déjà. Si on en choisit une autre, elle
+est **gardée dans le classeur** pour ce contrat, comme son PSN, et vaut aux
+imports suivants (la case le dit : « Gardée pour ce contrat aux imports
+suivants »). Si l'export n'a pas la colonne proposée, la case le dit en
+orange : il suffit de choisir la bonne. Le Diagnostic dit, contrat par
+contrat, quelle colonne est suivie et d'où vient ce choix.
+
+### Une tranche : un contrat dans le contrat
+
+Une tranche (par exemple la tranche 2 de HDK, suivie sur un autre bloc) est
+**un contrat à part entière** : son onglet, sa colonne suivie, son
+historique, ses jalons, son PSN et sa base SEE. Pour la créer : **+ Ajouter
+un contrat…**, et la nommer comme son contrat suivi de « Tranche » —
+`HDK Tranche 2` (ou `HDK - Tranche 2`). Dans le tableau de bord, le
+sélecteur la montre **« HDK › Tranche 2 »**, juste sous HDK. Pour une
+tranche, la case **demande** de choisir la colonne suivie (sinon elle
+suivrait, sans qu'on le voie, celle de son contrat). Elle peut venir de son
+propre export, ou du même export que son contrat : le même fichier peut
+alors aller dans les deux cases, chacune avec sa colonne. Son PSN se tape
+dans la case SEE comme pour tout contrat, et ses jalons s'écrivent dans
+l'onglet Jalons avec son nom (`HDK Tranche 2`).
+
+### Les anciens plans : « S » dans Validité
+
+Un plan qui porte **S** dans la colonne **Validité** de l'export est un
+**ancien plan**. La colonne lue est celle du bloc de la colonne suivie
+(`HDK AA 011 › Validité` pour HDK), car chaque bloc a la sienne. L'ancien
+plan reste dans l'onglet et dans l'historique, et le tableau des plans le
+montre, **grisé**, marqué « ancien plan (S) », sous les autres (« 634 plans
+· 3 anciens plans (S), grisés, comptés nulle part »). Il ne compte **nulle
+part** : synthèse, courbe, journal, bloc par groupe, comparaison SEE,
+rythmes et fins estimées. Les **semaines passées** sont refaites sans lui,
+avec la validité d'aujourd'hui : un plan devenu « S » sort de toute la
+courbe, sans faux « disparu » dans le journal. Le Diagnostic dit combien
+d'anciens plans il a vus. Une limite : un ancien plan qui sortirait ensuite
+de l'export GATES n'est plus reconnu comme ancien dans les semaines où il
+était encore là. Il y compterait de nouveau.
+
 ## 4. Chaque semaine : importer les exports, le relevé suit
 
 C'est le geste qui construit l'historique — la courbe, la fin estimée et le
@@ -735,6 +782,33 @@ classeur. Dans l'ordre d'efficacité :
   cherche que dans la comparaison. Elle n'existe que pour la définition
   électrique : SEE ne connaît pas le concept harnais.
 
+### Les jalons : l'onglet « Jalons » du classeur
+
+Les dates des jalons se tiennent dans le **classeur**, dans l'onglet
+**Jalons**, sans toucher au code ; le tableau de bord ne fait que les lire.
+Pour le créer, une fois : menu **Suivi FWD → Créer l'onglet des jalons**.
+Il est rempli avec les jalons d'aujourd'hui. Une ligne par jalon :
+
+| Contrat | Jalon | Date | Périmètre | Suivi |
+|---|---|---|---|---|
+| HDK | Solde FWD | 15/12/2026 | | FWD |
+| HDK | Diffusion TO Base | 05/02/2027 | BASE/OPTION | Concept harnais |
+| HDK Tranche 2 | Solde FWD T2 | 05/03/2027 | | FWD |
+
+- **Contrat** : le nom de l'onglet du contrat ou de la tranche ; vide, le
+  jalon vaut pour tous les contrats ; plusieurs, séparés par des virgules.
+- **Date** : `JJ/MM/AAAA` (une semaine `2026-S51` marche aussi).
+- **Périmètre** : `BASE/OPTION` ou `PERSO`, vide pour tous les plans.
+- **Suivi** : `Concept harnais` pour un jalon du concept harnais (les TO),
+  sinon `FWD`.
+
+La page suivante ouverte montre les nouvelles dates. Tant que l'onglet
+n'existe pas, ce sont les jalons écrits dans le code qui valent. Pour qu'une
+personne ne change **que les jalons de son contrat** : sélectionner ses
+lignes, **Données → Protéger les feuilles et les plages**, et n'autoriser
+qu'elle (et vous) ; une plage par contrat. Ceux qui ont seulement le lien du
+tableau de bord ne peuvent rien modifier.
+
 ## 7. Si quelque chose ne va pas
 
 D'abord **Suivi FWD → Diagnostic** : il dit ce que le script voit, onglet par
@@ -796,7 +870,7 @@ onglet, et ce qui manque. Puis :
 | Dans une case, ✗ « Le classeur est occupé par un autre geste (archivage…) : l'onglet « HDK » n'a pas été remplacé » | L'archivage du vendredi (ou un autre import) tenait le classeur au moment d'échanger les onglets : l'import a renoncé plutôt que de retirer l'onglet sous ses yeux. L'ancien onglet est intact | Relancer l'import dans une minute |
 | La fenêtre dit « La liste des contrats n'a pas pu être relue après l'import » | Le classeur n'a pas répondu à la fin d'un import : la fenêtre n'importe plus rien avec une liste de contrats périmée | Fermer la fenêtre et la rouvrir (menu Suivi FWD → Importer les exports GATES et SEE…) |
 | « … un autre geste écrit en ce moment dans l'historique de ce classeur … : l'historique n'est pas touché » | Deux archivages en même temps (celui du vendredi et un import, ou le menu) : le second attend trente secondes, puis renonce plutôt que d'écrire deux relevés pour la même semaine | Relancer dans une minute (menu Suivi FWD → Archiver le relevé de cette semaine) |
-| THS n'a pas d'échéance | Voulu : les jalons livrés sont ceux de HDK | Me donner les dates de THS quand elles existent : je les ajoute dans `CONFIG.JALONS` avec `contrat: 'THS'` |
+| THS n'a pas d'échéance | Voulu : les jalons livrés sont ceux de HDK | Ajouter ses lignes dans l'onglet **Jalons** (Contrat `THS`) — § 6, « Les jalons » |
 
 Et dans tous les cas : **le texte du Diagnostic** (copié à la souris dans la
 boîte, ou pris dans Extensions → Apps Script → Exécutions) suffit pour que je
