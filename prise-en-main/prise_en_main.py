@@ -21,7 +21,7 @@ from pathlib import Path
 from collections import deque
 from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
-VERSION = "6.3"
+VERSION = "6.4"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -6911,30 +6911,42 @@ JS_OUTILS = r"""() => {
   const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
                      const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
   const classe = x => typeof x.className === 'string' ? x.className : ((x.className && x.className.baseVal) || '');
-  const grilles = Array.from(document.querySelectorAll('.p-datatable, table, [role=grid]')).filter(vis);
-  if (!grilles.length) return [];
-  grilles.sort((a, b) => b.querySelectorAll('tr, [role=row]').length - a.querySelectorAll('tr, [role=row]').length);
-  const g = grilles[0].getBoundingClientRect();
+  // le tableau affiché (celui qui a le plus de lignes)
+  const tables = Array.from(document.querySelectorAll('table, [role=grid]')).filter(vis)
+    .map(t => ({ t: t, n: t.querySelectorAll('tbody tr, [role=row]').length })).sort((a, b) => b.n - a.n);
+  if (!tables.length) return { outils: [], diag: 'aucun tableau visible' };
+  const t = tables[0].t, rt = t.getBoundingClientRect();
   const BULLE = ['title', 'aria-label', 'ptooltip', 'data-pr-tooltip', 'mattooltip', 'ng-reflect-text', 'data-original-title'];
   const bulleDe = x => { for (const a of BULLE) { const v = x && x.getAttribute && x.getAttribute(a); if (v && v.trim()) return v.trim(); } return ''; };
-  const outils = Array.from(document.querySelectorAll('button, [role=button]')).filter(b => {
-    if (!vis(b) || b.closest('table, [role=grid], nav, aside, header, [role=dialog], [data-robot-barre]')) return false;
-    if (b.querySelectorAll('button, [role=button]').length) return false;
-    const r = b.getBoundingClientRect();
-    // (juste au-dessus de la liste, dans sa largeur, petit bouton d'icône)
-    return r.bottom <= g.top + 5 && g.top - r.bottom < 160 && r.right > g.left && r.left < g.right && r.width < 120 && r.height < 80;
-  }).sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
-  return outils.slice(0, 20).map((b, i) => { b.setAttribute('data-robot-outil', String(i));
-    return { bulle: bulleDe(b) || bulleDe(b.querySelector('[title], [aria-label], [ptooltip]')), texte: (b.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 40),
-             grise: !!(b.disabled || b.getAttribute('aria-disabled') === 'true' || /(^|[\s_-])(p-disabled|disabled)([\s_-]|$)/i.test(classe(b))) }; });
+  const DEHORS = 'thead, tbody, tr, th, td, nav, aside, [role=dialog], [data-robot-barre], [class*=paginat i], [role=tablist]';
+  const candidats = z => Array.from(z.querySelectorAll('button, [role=button]'))
+    .filter(b => vis(b) && !b.closest(DEHORS) && !b.querySelector('button, [role=button]'));
+  // les boutons AUTOUR du tableau (dans son cadre ou juste à côté) : on remonte tant qu'il y en a peu
+  let zone = t, bs = [];
+  const chemin = [];
+  for (let k = 0; k < 9 && zone.parentElement && zone.parentElement !== document.body; k++) {
+    zone = zone.parentElement;
+    chemin.push(zone.tagName.toLowerCase() + classe(zone).split(/\s+/).filter(Boolean).slice(0, 2).map(c => '.' + c).join(''));
+    const c = candidats(zone);
+    if (c.length > 40) break;
+    bs = c;
+  }
+  // les plus proches du haut du tableau d'abord
+  const dist = b => { const r = b.getBoundingClientRect(); return Math.abs(r.bottom - rt.top) + (r.top > rt.bottom ? 1000 : 0); };
+  bs.sort((a, b) => dist(a) - dist(b));
+  return { outils: bs.slice(0, 20).map((b, i) => { b.setAttribute('data-robot-outil', String(i));
+             return { bulle: bulleDe(b) || bulleDe(b.parentElement), texte: (b.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 40),
+                      grise: !!(b.disabled || b.getAttribute('aria-disabled') === 'true' || /(^|[\s_-])(p-disabled|disabled)([\s_-]|$)/i.test(classe(b))),
+                      sorte: b.tagName.toLowerCase() + classe(b).split(/\s+/).filter(Boolean).slice(0, 2).map(c => '.' + c).join('') }; }),
+           diag: 'parents du tableau : ' + chemin.join(' < ') };
 }"""
 
 # La bulle qui s'affiche quand la souris est sur un bouton (PrimeNG, Material...).
 JS_BULLE_AFFICHEE = r"""() => {
   const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
                      const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
-  const b = Array.from(document.querySelectorAll('.p-tooltip-text, .p-tooltip, [role=tooltip], .mat-mdc-tooltip, .mat-tooltip, .tooltip-inner, .tooltip'))
-    .find(vis);
+  const b = Array.from(document.querySelectorAll('.p-tooltip-text, [role=tooltip], .mat-mdc-tooltip, .mat-tooltip, .tooltip-inner, .p-tooltip, .tooltip'))
+    .filter(vis).pop();   // (la dernière apparue : une ancienne bulle peut encore traîner)
   return b ? (b.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 80) : '';
 }"""
 
@@ -7080,24 +7092,29 @@ def _ouvrir_fiche(page, url, terme, garde, onglet, rang, ident):
     page.wait_for_timeout(700)
     # le bouton « Repère électrique(s) » de la barre d'outils : reconnu par sa BULLE (lue en posant la souris dessus,
     # sans cliquer) ; jamais un bouton dont la bulle ressemble à une action (supprimer, dupliquer, exporter...)
-    outils = page.evaluate(JS_OUTILS)
+    trouve = page.evaluate(JS_OUTILS)
+    outils = trouve["outils"]
     choix, bulles = None, []
     for i, o in enumerate(outils):
         bulle = o["bulle"]
         if not bulle:
             try:
-                page.locator(f'[data-robot-outil="{i}"]').first.hover(timeout=5000)
-                page.wait_for_timeout(700)
+                _souris_au_repos(page)  # (l'ancienne bulle disparaît)
+                page.locator(f'[data-robot-outil="{i}"]').first.hover(timeout=3000, force=True)
+                page.wait_for_timeout(800)
                 bulle = page.evaluate(JS_BULLE_AFFICHEE)
             except Exception:
                 bulle = ""
-        bulles.append(bulle or o["texte"] or "?")
+        bulles.append((bulle or o["texte"] or "?", o["sorte"] if rang == 0 else ""))
         if choix is None and BOUTON_FICHE.search(sans_accents(bulle)) and not BULLE_INTERDITE.search(sans_accents(bulle)):
             choix = (i, o, bulle)
+            if rang > 0:  # (les bulles de toute la barre : notées pour la première fiche seulement)
+                break
     _souris_au_repos(page)
     fiche["outils"] = bulles
     if choix is None:
-        fiche["probleme"] = "bouton « Repere electrique » introuvable dans la barre d'outils"
+        fiche["probleme"] = "bouton « Repere electrique » introuvable autour du tableau"
+        fiche["diag"] = f"{len(outils)} bouton(s) trouve(s) autour du tableau ; {trouve.get('diag', '')}"
         return fiche
     i, bouton, fiche["bulle"] = choix
     if bouton["grise"]:
@@ -7373,9 +7390,12 @@ def ecrire_rapport_recherche(rapports, garde, duree, termes=()):
                           + (f" ; bulle du bouton : {_structure(fiches[0]['bulle']) or '(aucune)'}" if fiches[0].get("bulle") is not None else ""))
             for pb in sorted({f["probleme"] for f in fiches if f["probleme"]}):
                 lignes.append(f"    probleme : {pb}")
+            for d in sorted({f["diag"] for f in fiches if f.get("diag")}):
+                lignes.append(f"    structure : {_sans_donnee(d)[:600]}")
             outils = next((f["outils"] for f in fiches if f.get("outils")), [])
             if outils:  # (les bulles des boutons de la barre d'outils : de la structure)
-                lignes.append("    barre d'outils : " + " | ".join(_structure(x) or "(masque)" for x in outils))
+                lignes.append("    barre d'outils : " + " | ".join((_structure(b) or "(masque)") + (f" [{_sans_donnee(t, css=True)}]" if t else "")
+                                                             for b, t in outils))
             vus = set()
             for f in ok:
                 for nom_o, champs, colonnes, lus_o, info in f["onglets"]:
