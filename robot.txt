@@ -21,7 +21,7 @@ from pathlib import Path
 from collections import deque
 from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
-VERSION = "6.2"
+VERSION = "6.3"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -6904,33 +6904,38 @@ JS_ONGLETS_FICHE = r"""(apres) => {
     return { nom: net(e).slice(0, 60), bloque: bloque, actif: actif }; });
 }"""
 
-# Le bouton de la barre d'outils de la liste qui OUVRE la fiche (l'éclair) : jamais dans le menu de gauche ni dans le
-# tableau. Marqué data-robot-eclair ; renvoie sa bulle (pour le contrôler) et s'il est grisé.
-JS_BOUTON_FICHE = r"""() => {
-  document.querySelectorAll('[data-robot-eclair]').forEach(x => x.removeAttribute('data-robot-eclair'));
+# Les BOUTONS de la barre d'outils au-dessus de la liste (jamais le menu de gauche, ni le tableau) : marqués
+# data-robot-outil, avec leur bulle si elle est écrite dans la page et s'ils sont grisés.
+JS_OUTILS = r"""() => {
+  document.querySelectorAll('[data-robot-outil]').forEach(x => x.removeAttribute('data-robot-outil'));
   const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
                      const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
   const classe = x => typeof x.className === 'string' ? x.className : ((x.className && x.className.baseVal) || '');
-  const ECLAIR = /(^|[\s_:#-])(bolt|flash|lightning|zap|eclair|éclair|electric|elec)([\s_-]|$)/i;
-  const grille = Array.from(document.querySelectorAll('.p-datatable, table, [role=grid]')).find(vis);
-  if (!grille) return null;
+  const grilles = Array.from(document.querySelectorAll('.p-datatable, table, [role=grid]')).filter(vis);
+  if (!grilles.length) return [];
+  grilles.sort((a, b) => b.querySelectorAll('tr, [role=row]').length - a.querySelectorAll('tr, [role=row]').length);
+  const g = grilles[0].getBoundingClientRect();
   const BULLE = ['title', 'aria-label', 'ptooltip', 'data-pr-tooltip', 'mattooltip', 'ng-reflect-text', 'data-original-title'];
   const bulleDe = x => { for (const a of BULLE) { const v = x && x.getAttribute && x.getAttribute(a); if (v && v.trim()) return v.trim(); } return ''; };
-  for (let zone = grille.parentElement, k = 0; zone && k < 7; zone = zone.parentElement, k++) {
-    // (l'ICÔNE éclair elle-même, puis le bouton qui la porte : jamais une barre entière ni un bloc)
-    for (const ic of zone.querySelectorAll('i, svg, span, use, img, mat-icon, em')) {
-      const propre = classe(ic) + ' ' + (ic.getAttribute('href') || ic.getAttribute('xlink:href') || ic.getAttribute('data-icon') ||
-                                         ic.getAttribute('icon') || ic.getAttribute('svgicon') || '') + ' ' + (ic.tagName === 'MAT-ICON' ? (ic.textContent || '') : '');
-      if (!ECLAIR.test(propre) || ic.closest('table, [role=grid], nav, aside, header, [data-robot-barre]')) continue;
-      const cliquable = ic.closest('button, [role=button], a');
-      if (!cliquable || !vis(cliquable) || cliquable.querySelectorAll('button, [role=button], a').length) continue;
-      const bulle = bulleDe(cliquable) || bulleDe(ic) || bulleDe(cliquable.parentElement);
-      cliquable.setAttribute('data-robot-eclair', '1');
-      return { bulle: bulle, grise: !!(cliquable.disabled || cliquable.getAttribute('aria-disabled') === 'true' ||
-                                       /(^|[\s_-])(p-disabled|disabled)([\s_-]|$)/i.test(classe(cliquable))) };
-    }
-  }
-  return null;
+  const outils = Array.from(document.querySelectorAll('button, [role=button]')).filter(b => {
+    if (!vis(b) || b.closest('table, [role=grid], nav, aside, header, [role=dialog], [data-robot-barre]')) return false;
+    if (b.querySelectorAll('button, [role=button]').length) return false;
+    const r = b.getBoundingClientRect();
+    // (juste au-dessus de la liste, dans sa largeur, petit bouton d'icône)
+    return r.bottom <= g.top + 5 && g.top - r.bottom < 160 && r.right > g.left && r.left < g.right && r.width < 120 && r.height < 80;
+  }).sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
+  return outils.slice(0, 20).map((b, i) => { b.setAttribute('data-robot-outil', String(i));
+    return { bulle: bulleDe(b) || bulleDe(b.querySelector('[title], [aria-label], [ptooltip]')), texte: (b.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 40),
+             grise: !!(b.disabled || b.getAttribute('aria-disabled') === 'true' || /(^|[\s_-])(p-disabled|disabled)([\s_-]|$)/i.test(classe(b))) }; });
+}"""
+
+# La bulle qui s'affiche quand la souris est sur un bouton (PrimeNG, Material...).
+JS_BULLE_AFFICHEE = r"""() => {
+  const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
+                     const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  const b = Array.from(document.querySelectorAll('.p-tooltip-text, .p-tooltip, [role=tooltip], .mat-mdc-tooltip, .mat-tooltip, .tooltip-inner, .tooltip'))
+    .find(vis);
+  return b ? (b.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 80) : '';
 }"""
 
 # Les CHAMPS d'une fiche : libellé et valeur affichée (champ, liste à choix, case, interrupteur), hors des tableaux.
@@ -7009,6 +7014,7 @@ BULLE_INTERDITE = re.compile(r"suppr|delet|effac|retir|dupliq|duplicat|copi|copy
                              r"envoy|send|reculer|avancer|cloturer|cloture|annul|cancel|nouveau|nouvelle|creer|create|ajout|add",
                              re.I)
 ONGLETS_A_FICHES = re.compile(r"rep\W*\s*elec", re.I)  # (les onglets de résultats dont on ouvre chaque fiche)
+BOUTON_FICHE = re.compile(r"rep[eè]?re?s?\W*\s*(elec|électrique)|rep\W*\s*elec", re.I)  # (sa bulle : « Repère électrique(s) »)
 
 
 def _onglets_fiche(page, apres=True):
@@ -7072,18 +7078,33 @@ def _ouvrir_fiche(page, url, terme, garde, onglet, rang, ident):
         return fiche
     case.first.click(timeout=10000)
     page.wait_for_timeout(700)
-    bouton = page.evaluate(JS_BOUTON_FICHE)
-    if not bouton:
-        fiche["probleme"] = "bouton qui ouvre la fiche (eclair) introuvable"
+    # le bouton « Repère électrique(s) » de la barre d'outils : reconnu par sa BULLE (lue en posant la souris dessus,
+    # sans cliquer) ; jamais un bouton dont la bulle ressemble à une action (supprimer, dupliquer, exporter...)
+    outils = page.evaluate(JS_OUTILS)
+    choix, bulles = None, []
+    for i, o in enumerate(outils):
+        bulle = o["bulle"]
+        if not bulle:
+            try:
+                page.locator(f'[data-robot-outil="{i}"]').first.hover(timeout=5000)
+                page.wait_for_timeout(700)
+                bulle = page.evaluate(JS_BULLE_AFFICHEE)
+            except Exception:
+                bulle = ""
+        bulles.append(bulle or o["texte"] or "?")
+        if choix is None and BOUTON_FICHE.search(sans_accents(bulle)) and not BULLE_INTERDITE.search(sans_accents(bulle)):
+            choix = (i, o, bulle)
+    _souris_au_repos(page)
+    fiche["outils"] = bulles
+    if choix is None:
+        fiche["probleme"] = "bouton « Repere electrique » introuvable dans la barre d'outils"
         return fiche
-    fiche["bulle"] = bouton["bulle"]
-    if BULLE_INTERDITE.search(sans_accents(bouton["bulle"])) or _a_eviter(bouton["bulle"]) and \
-            not re.search(r"ouvr|voir|consult|detail|fiche|modif|edit|open|view", sans_accents(bouton["bulle"]), re.I):
-        fiche["probleme"] = "bouton eclair pas clique par prudence (sa bulle ressemble a une action)"
-        return fiche
+    i, bouton, fiche["bulle"] = choix
     if bouton["grise"]:
-        fiche["probleme"] = "bouton eclair grise (la ligne n'est pas selectionnee ?)"
+        fiche["probleme"] = "bouton « Repere electrique » grise (la ligne n'est pas selectionnee ?)"
         return fiche
+    page.evaluate(f"() => {{ const b = document.querySelector('[data-robot-outil=\"{i}\"]'); "
+                  "if (b) b.setAttribute('data-robot-eclair', '1'); }")
     _onglets_fiche(page, apres=False)
     pages_avant = len(page.context.pages)
     page.locator('[data-robot-eclair="1"]').first.click(timeout=10000)
@@ -7352,6 +7373,9 @@ def ecrire_rapport_recherche(rapports, garde, duree, termes=()):
                           + (f" ; bulle du bouton : {_structure(fiches[0]['bulle']) or '(aucune)'}" if fiches[0].get("bulle") is not None else ""))
             for pb in sorted({f["probleme"] for f in fiches if f["probleme"]}):
                 lignes.append(f"    probleme : {pb}")
+            outils = next((f["outils"] for f in fiches if f.get("outils")), [])
+            if outils:  # (les bulles des boutons de la barre d'outils : de la structure)
+                lignes.append("    barre d'outils : " + " | ".join(_structure(x) or "(masque)" for x in outils))
             vus = set()
             for f in ok:
                 for nom_o, champs, colonnes, lus_o, info in f["onglets"]:
