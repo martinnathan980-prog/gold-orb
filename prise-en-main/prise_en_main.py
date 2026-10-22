@@ -21,7 +21,7 @@ from pathlib import Path
 from collections import deque
 from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
-VERSION = "6.1"
+VERSION = "6.2"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -6516,7 +6516,7 @@ JS_ONGLETS_RESULTATS = r"""(avant) => {
   const onglet = os => os.some(o => o.e.matches('[role=tab], li') || !!o.e.closest('[role=tablist], [class*=tab i]'));
   let choix = [];
   for (const [g, os] of groupes) {
-    if (os.length < 2) continue;
+    if (os.length < 2 && !onglet(os)) continue;   // (un seul onglet de résultats : seulement dans une barre d'onglets)
     if (avant && os.some(o => o.e.hasAttribute('data-robot-avant'))) continue;
     if (!avant) { os.forEach(o => o.e.setAttribute('data-robot-avant', '1')); continue; }
     const mieux = !choix.length || (onglet(os) && !onglet(choix)) ||
@@ -6539,7 +6539,11 @@ JS_ONGLETS_RESULTATS = r"""(avant) => {
 # l'Excel). Colonnes : les titres « du bas » (pas les titres de groupe, ni la ligne des filtres) ; chaque case est
 # rangée sous le titre qui est au-dessus d'elle (tableaux en deux parties, colonnes figées). Marque le bouton « page
 # suivante » (data-robot-suivant) et la zone qui défile (data-robot-defile).
-JS_GRILLE = r"""() => {
+JS_GRILLE = r"""(arg) => {
+  // arg : { portee : sélecteur de la zone à lire (une fiche ouverte), coche : numéro de la ligne dont on marque la case }
+  const portee = arg && arg.portee, coche = arg && Number.isInteger(arg.coche) ? arg.coche : -1;
+  const racine = (portee && document.querySelector(portee)) || document;
+  document.querySelectorAll('[data-robot-coche]').forEach(x => x.removeAttribute('data-robot-coche'));
   const vis = e => { if (!e) return false; const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
                      const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
   const classe = x => typeof x.className === 'string' ? x.className : ((x.className && x.className.baseVal) || '');
@@ -6557,7 +6561,7 @@ JS_GRILLE = r"""() => {
       !!Array.from(document.querySelectorAll('.p-blockui, .p-blockui-document, .p-progressbar-indeterminate, .cdk-overlay-backdrop-showing, ' +
                                              '.p-progress-spinner, mat-spinner, [class*=spinner i], [class*=loader i]')).find(vis);
   const grilles = new Map();
-  for (const h of document.querySelectorAll('th, [role=columnheader], .ag-header-cell, mat-header-cell, .mat-mdc-header-cell')) {
+  for (const h of racine.querySelectorAll('th, [role=columnheader], .ag-header-cell, mat-header-cell, .mat-mdc-header-cell')) {
     if (h.closest('tbody') || !vis(h)) continue;
     const g = conteneur(h); if (!g || !vis(g)) continue;
     if (!grilles.has(g)) grilles.set(g, []);
@@ -6618,14 +6622,20 @@ JS_GRILLE = r"""() => {
                                         bl > r + 40 && bl > v ? 'bleu' : Math.max(r, v, bl) - Math.min(r, v, bl) < 25 ? 'gris' : '');
     return { t: '', alt: ('icone ' + nomIc + (teinte ? ' ' + teinte : '')).trim() }; };
   // les morceaux d'une même ligne (partie figée + partie qui défile) sont à la même hauteur
+  // (même ligne : les morceaux se recouvrent en hauteur sur plus de la moitié)
   const morceaux = lignes.map(l => ({ l: l, r: R(l) })).sort((a, b) => (a.r.top + a.r.bottom) - (b.r.top + b.r.bottom));
   const groupes = [];
-  for (const m of morceaux) { const c = (m.r.top + m.r.bottom) / 2, g = groupes[groupes.length - 1];
-    if (g && Math.abs(g.c - c) <= 4) g.ls.push(m.l); else groupes.push({ c: c, ls: [m.l] }); }
+  for (const m of morceaux) { const g = groupes[groupes.length - 1];
+    const v = g ? Math.min(g.r.bottom, m.r.bottom) - Math.max(g.r.top, m.r.top) : 0;
+    if (g && v > 0.5 * Math.min(g.r.height, m.r.height)) g.ls.push(m.l); else groupes.push({ r: m.r, ls: [m.l] }); }
+  // (une ligne de FILTRES placée dans le corps du tableau : des champs, pas de texte)
+  const FILTRE = 'input:not([type=checkbox]), select, .p-dropdown, .p-multiselect, .p-inputtext, [role=combobox]';
+  const deFiltre = g => !g.ls.some(l => net(l)) && g.ls.some(l => l.querySelector(FILTRE));
   const vides = /emptymessage|empty-message|no-data|nodata|no-records/i;
   const sorties = [], cles = [];
   let vide = lignes.length === 0;
   for (const g of groupes) {
+    if (deFiltre(g)) continue;
     if (g.ls.length === 1 && (vides.test(classe(g.ls[0])) || (g.ls[0].querySelectorAll(CELLULE).length === 1 &&
         /aucun|aucune|pas de|no data|no record|no result|empty|vide/i.test(net(g.ls[0]))))) { if (groupes.length === 1) vide = true; continue; }
     const vals = feuilles.map(() => ({ t: '', alt: '' }));
@@ -6643,7 +6653,16 @@ JS_GRILLE = r"""() => {
         if (!vals[best].alt) vals[best].alt = v.alt;
       }
     }
-    sorties.push(vals.map((v, i) => feuilles[i].nom ? (v.t || v.alt) : v.t));
+    const ligne = vals.map((v, i) => feuilles[i].nom ? (v.t || v.alt) : v.t);
+    if (!ligne.some(Boolean)) continue;   // (ligne sans rien : pas une donnée)
+    if (sorties.length === coche) {   // (la case à cocher de cette ligne : marquée pour la sélectionner)
+      // (la case elle-même — la petite boîte qu'on voit —, pas le bloc autour ni le champ caché)
+      let b = null;
+      for (const sel of ['.p-checkbox-box', '[role=checkbox]', 'input[type=checkbox]', '.p-checkbox', 'mat-checkbox', '.mat-mdc-checkbox'])
+        if (!b) b = g.ls.map(l => Array.from(l.querySelectorAll(sel)).find(vis)).find(Boolean) || null;
+      if (b) b.setAttribute('data-robot-coche', '1');
+    }
+    sorties.push(ligne);
     cles.push(cle);
   }
   // le bouton « page suivante » : seulement dans la barre de pages de CETTE liste
@@ -6681,22 +6700,22 @@ JS_GRILLE = r"""() => {
 LIMITE_LIGNES_ONGLET, LIMITE_PAGES_ONGLET, LIMITE_MINUTES_ONGLET = 5000, 300, 8
 
 
-def _grille(page):
+def _grille(page, portee=None, coche=None):
     try:
-        return page.evaluate(JS_GRILLE)
+        return page.evaluate(JS_GRILLE, {"portee": portee, "coche": coche})
     except Exception:
         return {"colonnes": [], "lignes": [], "cles": [], "nlignes": 0, "vide": False, "chargement": True,
                 "suivant": False, "defile": None, "premiere": "", "page": ""}
 
 
-def _attendre_grille(page, secondes=30, avant=None, attendus=0):
+def _attendre_grille(page, secondes=30, avant=None, attendus=0, portee=None):
     """La liste affichée, une fois chargée (plus de roue qui tourne, même contenu deux fois de suite).
     avant : (lignes, page) d'avant un clic : on attend que les LIGNES changent (la barre de pages change avant elles).
     attendus : le nombre annoncé ; une liste « Aucun résultat » n'est alors acceptée qu'au bout de l'attente."""
     fin, precedent, g = time.time() + secondes, None, None
     debut = time.time()
     while True:
-        g = _grille(page)
+        g = _grille(page, portee)
         etat = (g["nlignes"], g["premiere"], g["page"], g["vide"])
         change = avant is None or g["premiere"] != avant[0]
         pret = g["nlignes"] or (g["vide"] and not attendus)
@@ -6717,19 +6736,19 @@ def _noms_uniques(noms):
     return sortie
 
 
-def _lire_grille_entiere(page, attendus=0):
+def _lire_grille_entiere(page, attendus=0, portee=None):
     """Toutes les lignes de la liste affichée : page après page (bouton « page suivante »), et en faisant défiler
     une longue liste. Renvoie (colonnes, lignes, {"pages", "remarque"})."""
     colonnes, lignes, deja = [], [], set()
     pages, remarque, debut = 0, "", time.time()
-    g = _attendre_grille(page, 30, attendus=attendus)
+    g = _attendre_grille(page, 30, attendus=attendus, portee=portee)
     while True:
         pages += 1
         if g.get("defile"):
             try:
                 page.evaluate("() => { const x = document.querySelector('[data-robot-defile]'); if (x) x.scrollTop = 0; }")
                 page.wait_for_timeout(300)
-                g = _attendre_grille(page, 10)
+                g = _attendre_grille(page, 10, portee=portee)
             except Exception:
                 pass
         haut_avant = None
@@ -6759,7 +6778,7 @@ def _lire_grille_entiere(page, attendus=0):
             except Exception:
                 break
             page.wait_for_timeout(500)
-            g = _attendre_grille(page, 10)
+            g = _attendre_grille(page, 10, portee=portee)
         if len(lignes) >= LIMITE_LIGNES_ONGLET:
             remarque = f"arrete a {LIMITE_LIGNES_ONGLET} lignes"
             break
@@ -6774,8 +6793,8 @@ def _lire_grille_entiere(page, attendus=0):
         except Exception:
             remarque = "page suivante impossible a ouvrir"
             break
-        g = _attendre_grille(page, 30, avant=avant)
-        if (g["premiere"], g["page"]) == avant:
+        g = _attendre_grille(page, 30, avant=avant, portee=portee)
+        if g["premiere"] == avant[0]:
             remarque = "la page suivante ne s'affiche pas"
             break
     # (les colonnes d'icônes d'action, la case à cocher de sélection : toujours vides, elles ne sont pas gardées)
@@ -6793,9 +6812,8 @@ def _onglets_resultats(page, apres=True):
         return []
 
 
-def _faire_une_recherche(page, url, terme, garde):
-    """Une recherche : {"onglets": [(nom, annoncés)], "feuilles": [(onglet, colonnes, lignes, info)], "probleme"}."""
-    res = {"onglets": [], "feuilles": [], "probleme": ""}
+def _lancer_recherche(page, url, terme, garde):
+    """Depuis l'accueil, tape la recherche et attend ses onglets de résultats. Renvoie (onglets, problème)."""
     page.goto(url, wait_until="domcontentloaded", timeout=60000)  # (on repart de l'accueil : un état connu)
     attendre_chargement(page, 3)
     if _champ_mot_de_passe(page):
@@ -6804,8 +6822,7 @@ def _faire_une_recherche(page, url, terme, garde):
     fin = time.time() + 25
     while not page.evaluate(JS_CHAMP_RECHERCHE):
         if time.time() > fin:
-            res["probleme"] = "champ de recherche introuvable"
-            return res
+            return [], "champ de recherche introuvable"
         page.wait_for_timeout(700)
     _onglets_resultats(page, apres=False)  # (barre du haut, onglets de l'application : déjà là, ce ne sont pas des résultats)
     champ = page.locator('[data-robot-recherche="1"]').first
@@ -6824,6 +6841,298 @@ def _faire_une_recherche(page, url, terme, garde):
                 break
         else:
             onglets, stable_depuis = actuels, time.time()
+    return onglets, ""
+
+
+def _ouvrir_onglet_resultat(page, nom, attendus=0):
+    """Clique l'onglet de résultats « nom » et attend sa liste. Renvoie (nombre annoncé, problème)."""
+    actuels = _onglets_resultats(page)
+    numero = next((i for i, x in enumerate(actuels) if x["nom"] == nom), None)
+    if numero is None:
+        return 0, "onglet introuvable"
+    n = max(attendus, actuels[numero]["n"])  # (un nombre arrivé tard)
+    if n == 0:
+        return 0, ""
+    if _a_eviter(nom):  # (un nom d'action n'est jamais cliqué, même pris pour un onglet)
+        return n, "pas ouvert par prudence"
+    avant = None if actuels[numero]["actif"] else (_grille(page)["premiere"], "")
+    cible = page.locator(f'[data-robot-resultat-nom="{numero}"]')
+    try:
+        (cible.first if cible.count() else page.locator(f'[data-robot-resultat="{numero}"]').first).click(timeout=10000)
+    except Exception:
+        return n, "onglet impossible a ouvrir"
+    page.wait_for_timeout(500)
+    _attendre_grille(page, 30, avant=avant if avant and avant[0] != "0:0" else None, attendus=n)
+    return n, ""
+
+
+# ---------------------------------------------------------------------------- la FICHE d'un résultat
+# (repère électrique : on coche sa ligne, puis l'éclair de la barre d'outils ouvre sa fiche, avec ses onglets :
+#  Client, Définition du repère électrique, Liste des plans...)
+
+# Les onglets d'une fiche qui vient de s'ouvrir. avant=false : les onglets déjà là sont notés (barre de l'application,
+# onglets de résultats) ; avant=true : le NOUVEAU groupe d'onglets, marqué data-robot-fiche-onglet, et la zone de la
+# fiche marquée data-robot-fiche.
+JS_ONGLETS_FICHE = r"""(apres) => {
+  const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
+                     const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  const net = x => (x.innerText || '').replace(/\s+/g, ' ').trim();
+  const classe = x => typeof x.className === 'string' ? x.className : '';
+  const SEL = '[role=tab], .p-tabview-nav > li, .p-tabmenu-nav > li, .p-tabmenuitem, .mat-mdc-tab, .mat-tab-label, ' +
+              '[class*=tab i] > li, [class*=onglet i] > li, [class*=tab-item i], [class*=tabitem i]';
+  const tous = Array.from(document.querySelectorAll(SEL)).filter(e => !e.parentElement.closest(SEL) && vis(e) &&
+               !e.closest('nav, aside, header, [role=menu], [data-robot-resultat]'));
+  if (!apres) { tous.forEach(e => e.setAttribute('data-robot-avant-fiche', '1')); return []; }
+  document.querySelectorAll('[data-robot-fiche-onglet]').forEach(x => x.removeAttribute('data-robot-fiche-onglet'));
+  document.querySelectorAll('[data-robot-fiche]').forEach(x => x.removeAttribute('data-robot-fiche'));
+  const groupes = new Map();
+  for (const e of tous) { const g = e.parentElement; if (!groupes.has(g)) groupes.set(g, []); groupes.get(g).push(e); }
+  let choix = [];
+  for (const os of groupes.values()) {
+    if (os.some(e => e.hasAttribute('data-robot-avant-fiche'))) continue;   // (groupe déjà là : pas la fiche)
+    if (os.length > choix.length) choix = os;
+  }
+  if (!choix.length) return [];
+  // la zone de la fiche : le premier parent assez grand pour contenir aussi le contenu des onglets
+  let z = choix[0].parentElement;
+  while (z.parentElement && z !== document.body && z.getBoundingClientRect().height < 250) z = z.parentElement;
+  z.setAttribute('data-robot-fiche', '1');
+  return choix.map((e, i) => { e.setAttribute('data-robot-fiche-onglet', String(i));
+    const bloque = e.getAttribute('aria-disabled') === 'true' || /(^|[\s_-])(p-disabled|disabled)([\s_-]|$)/i.test(classe(e)) ||
+                   !!e.querySelector('[aria-disabled=true], .p-disabled');
+    const actif = e.getAttribute('aria-selected') === 'true' || /(^|[\s_-])(active|selected|highlight|p-highlight)([\s_-]|$)/i.test(classe(e));
+    return { nom: net(e).slice(0, 60), bloque: bloque, actif: actif }; });
+}"""
+
+# Le bouton de la barre d'outils de la liste qui OUVRE la fiche (l'éclair) : jamais dans le menu de gauche ni dans le
+# tableau. Marqué data-robot-eclair ; renvoie sa bulle (pour le contrôler) et s'il est grisé.
+JS_BOUTON_FICHE = r"""() => {
+  document.querySelectorAll('[data-robot-eclair]').forEach(x => x.removeAttribute('data-robot-eclair'));
+  const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
+                     const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  const classe = x => typeof x.className === 'string' ? x.className : ((x.className && x.className.baseVal) || '');
+  const ECLAIR = /(^|[\s_:#-])(bolt|flash|lightning|zap|eclair|éclair|electric|elec)([\s_-]|$)/i;
+  const grille = Array.from(document.querySelectorAll('.p-datatable, table, [role=grid]')).find(vis);
+  if (!grille) return null;
+  const BULLE = ['title', 'aria-label', 'ptooltip', 'data-pr-tooltip', 'mattooltip', 'ng-reflect-text', 'data-original-title'];
+  const bulleDe = x => { for (const a of BULLE) { const v = x && x.getAttribute && x.getAttribute(a); if (v && v.trim()) return v.trim(); } return ''; };
+  for (let zone = grille.parentElement, k = 0; zone && k < 7; zone = zone.parentElement, k++) {
+    // (l'ICÔNE éclair elle-même, puis le bouton qui la porte : jamais une barre entière ni un bloc)
+    for (const ic of zone.querySelectorAll('i, svg, span, use, img, mat-icon, em')) {
+      const propre = classe(ic) + ' ' + (ic.getAttribute('href') || ic.getAttribute('xlink:href') || ic.getAttribute('data-icon') ||
+                                         ic.getAttribute('icon') || ic.getAttribute('svgicon') || '') + ' ' + (ic.tagName === 'MAT-ICON' ? (ic.textContent || '') : '');
+      if (!ECLAIR.test(propre) || ic.closest('table, [role=grid], nav, aside, header, [data-robot-barre]')) continue;
+      const cliquable = ic.closest('button, [role=button], a');
+      if (!cliquable || !vis(cliquable) || cliquable.querySelectorAll('button, [role=button], a').length) continue;
+      const bulle = bulleDe(cliquable) || bulleDe(ic) || bulleDe(cliquable.parentElement);
+      cliquable.setAttribute('data-robot-eclair', '1');
+      return { bulle: bulle, grise: !!(cliquable.disabled || cliquable.getAttribute('aria-disabled') === 'true' ||
+                                       /(^|[\s_-])(p-disabled|disabled)([\s_-]|$)/i.test(classe(cliquable))) };
+    }
+  }
+  return null;
+}"""
+
+# Les CHAMPS d'une fiche : libellé et valeur affichée (champ, liste à choix, case, interrupteur), hors des tableaux.
+JS_CHAMPS = r"""(portee) => {
+  const racine = (portee && document.querySelector(portee)) || document;
+  const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
+                     const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  const classe = x => typeof x.className === 'string' ? x.className : '';
+  const net = t => (t || '').replace(/\s+/g, ' ').trim();
+  const ENVELOPPE = '.p-dropdown, .p-multiselect, .p-autocomplete, .p-calendar, .p-inputswitch, .p-checkbox, .p-radiobutton, .p-chips, mat-select, .p-inputnumber';
+  const CTRL = 'input:not([type=hidden]):not([type=button]):not([type=submit]):not([type=image]), textarea, select, ' + ENVELOPPE + ', [role=combobox], [role=switch]';
+  const DEHORS = 'table, [role=grid], [role=row], header, nav, aside, [data-robot-recherche], [role=dialog] [role=listbox], .p-dropdown-panel, .p-multiselect-panel';
+  const valeur = c => {
+    if (c.matches('.p-checkbox, .p-radiobutton, [role=switch], .p-inputswitch'))
+      return /checked|highlight/.test(classe(c) + ' ' + Array.from(c.querySelectorAll('*')).map(classe).join(' ')) ||
+             c.getAttribute('aria-checked') === 'true' || !!c.querySelector('input:checked') ? 'oui' : 'non';
+    if (c.matches('input[type=checkbox], input[type=radio]')) return c.checked ? 'oui' : 'non';
+    if (c.matches('select')) return c.selectedIndex >= 0 ? net(c.options[c.selectedIndex].text) : '';
+    if (c.matches('.p-dropdown, .p-multiselect, mat-select, [role=combobox]')) {
+      const l = c.querySelector('.p-dropdown-label, .p-multiselect-label, .mat-mdc-select-value, .mat-select-value');
+      if (l && /placeholder/.test(classe(l))) return '';
+      if (l) return net(l.innerText);
+      const i = c.querySelector('input'); return i ? net(i.value) : net(c.innerText);
+    }
+    if (c.matches('.p-autocomplete, .p-chips')) {
+      const jetons = Array.from(c.querySelectorAll('.p-autocomplete-token-label, .p-chips-token-label, .p-autocomplete-token, .p-chips-token')).map(x => net(x.innerText)).filter(Boolean);
+      const i = c.querySelector('input'); return jetons.length ? jetons.join(' ; ') : (i ? net(i.value) : '');
+    }
+    if (c.matches('.p-calendar, .p-inputnumber')) { const i = c.querySelector('input'); return i ? net(i.value) : ''; }
+    return net(c.value);
+  };
+  const libelleDe = c => {
+    // (une case : son petit libellé juste après elle, « N/A », précédé du libellé de la ligne)
+    if (c.matches('.p-checkbox, .p-radiobutton, input[type=checkbox], input[type=radio], .p-inputswitch')) {
+      const apres = c.nextElementSibling && !c.nextElementSibling.matches(CTRL) ? net(c.nextElementSibling.innerText) : '';
+      if (apres && apres.length <= 30) { const ligne = libelleLigne(c); return ligne && ligne !== apres ? ligne + ' - ' + apres : apres; }
+    }
+    const i = c.matches('input, textarea, select') ? c : c.querySelector('input, textarea, select');
+    const id = (i && i.id) || c.id;
+    if (id) { const l = document.querySelector('label[for="' + CSS.escape(id) + '"]'); if (l && net(l.innerText)) return net(l.innerText); }
+    const l = c.closest('label'); if (l) { const t = net(l.innerText.replace(net(c.innerText || ''), '')); if (t) return t; }
+    return libelleLigne(c) || net(c.getAttribute('aria-label') || (i && i.getAttribute('aria-label')) || (i && i.placeholder) || '');
+  };
+  // (le texte court juste avant, dans la même ligne du formulaire)
+  const libelleLigne = c => {
+    for (let a = c.parentElement, k = 0; a && k < 4 && a !== racine; a = a.parentElement, k++) {
+      const textes = Array.from(a.querySelectorAll('label, span, div, p, b, strong, dt, th, td, h4, h5, h6'))
+        .filter(x => !x.children.length || x.matches('label'))
+        .filter(x => (x.compareDocumentPosition(c) & Node.DOCUMENT_POSITION_FOLLOWING) && !x.closest(CTRL) && vis(x))
+        .map(x => net(x.innerText).replace(/\s*[*:]+\s*$/, '')).filter(t => t && t.length <= 60 && /[A-Za-zÀ-ÿ]/.test(t));
+      if (textes.length) return textes[textes.length - 1];
+    }
+    return '';
+  };
+  const sortie = [], radios = new Set();
+  for (const c of racine.querySelectorAll(CTRL)) {
+    if (!vis(c) || c.closest(DEHORS)) continue;
+    if (c.parentElement && c.parentElement.closest(ENVELOPPE)) continue;   // (le champ caché d'une liste à choix)
+    if (c.matches('input[type=radio]')) { if (radios.has(c.name)) continue; radios.add(c.name);
+      const coche = racine.querySelector('input[type=radio][name="' + CSS.escape(c.name) + '"]:checked');
+      sortie.push([libelleDe(c), coche ? libelleDe(coche) : '']); continue; }
+    let lib = libelleDe(c).replace(/\s*[*:]+\s*$/, '').trim();
+    sortie.push([lib, valeur(c)]);
+    if (sortie.length >= 200) break;
+  }
+  // (une case « N/A » à côté d'un champ : « Champ - N/A »)
+  for (let i = 1; i < sortie.length; i++) if (/^(n\/?a|na|oui|non)$/i.test(sortie[i][0]) && sortie[i - 1][0])
+    sortie[i][0] = sortie[i - 1][0] + ' - ' + sortie[i][0];
+  return sortie;
+}"""
+
+LIMITE_FICHES = 30
+# une fiche s'ouvre par un bouton dont la bulle n'a rien d'une action qui modifie (la protection bloque de toute façon
+# tout envoi au portail)
+BULLE_INTERDITE = re.compile(r"suppr|delet|effac|retir|dupliq|duplicat|copi|copy|export|import|valid|diffus|releas|archiv|"
+                             r"envoy|send|reculer|avancer|cloturer|cloture|annul|cancel|nouveau|nouvelle|creer|create|ajout|add",
+                             re.I)
+ONGLETS_A_FICHES = re.compile(r"rep\W*\s*elec", re.I)  # (les onglets de résultats dont on ouvre chaque fiche)
+
+
+def _onglets_fiche(page, apres=True):
+    try:
+        return page.evaluate(JS_ONGLETS_FICHE, apres)
+    except Exception:
+        return []
+
+
+def _champs(page, portee=None):
+    try:
+        return page.evaluate(JS_CHAMPS, portee)
+    except Exception:
+        return []
+
+
+def _lire_zone_fiche(page, portee):
+    """Les champs et la liste (s'il y en a une) de ce qui est affiché dans la fiche."""
+    fin, g, champs = time.time() + 6, None, []
+    while time.time() < fin:  # (le contenu de l'onglet arrive)
+        page.wait_for_timeout(700)
+        g2, champs2 = _grille(page, portee), _champs(page, portee)
+        etat = (g2["nlignes"], g2["premiere"], len(champs2), g2["chargement"])
+        if g is not None and etat == (g["nlignes"], g["premiere"], len(champs), g["chargement"]) and not g2["chargement"] and \
+                (g2["colonnes"] or champs2):
+            break
+        g, champs = g2, champs2
+    colonnes, lignes, info = [], [], {"pages": 0, "remarque": ""}
+    if g and g["colonnes"]:
+        colonnes, lignes, info = _lire_grille_entiere(page, 0, portee)
+    return champs, colonnes, lignes, info
+
+
+def _ouvrir_fiche(page, url, terme, garde, onglet, rang, ident):
+    """La fiche de la ligne « rang » de l'onglet de résultats « onglet » : recherche à nouveau, coche la ligne, clique
+    l'éclair, lit chaque onglet de la fiche. Renvoie {"ident", "onglets": [(nom, champs, colonnes, lignes, info)],
+    "probleme", "bulle"}."""
+    fiche = {"ident": ident, "onglets": [], "probleme": "", "bulle": ""}
+    onglets, probleme = _lancer_recherche(page, url, terme, garde)
+    if probleme or not onglets:
+        fiche["probleme"] = probleme or "resultats introuvables"
+        return fiche
+    _, probleme = _ouvrir_onglet_resultat(page, onglet)
+    if probleme:
+        fiche["probleme"] = probleme
+        return fiche
+    g = _grille(page)
+    par_page = max(1, g["nlignes"])
+    for _ in range(rang // par_page):  # (la ligne est sur une page suivante)
+        avant = (g["premiere"], g["page"])
+        try:
+            page.locator('[data-robot-suivant="1"]').first.click(timeout=10000)
+        except Exception:
+            fiche["probleme"] = "page de la ligne introuvable"
+            return fiche
+        g = _attendre_grille(page, 30, avant=avant)
+    g = _grille(page, coche=rang % par_page)
+    case = page.locator('[data-robot-coche="1"]')
+    if not case.count():
+        fiche["probleme"] = "case a cocher de la ligne introuvable"
+        return fiche
+    case.first.click(timeout=10000)
+    page.wait_for_timeout(700)
+    bouton = page.evaluate(JS_BOUTON_FICHE)
+    if not bouton:
+        fiche["probleme"] = "bouton qui ouvre la fiche (eclair) introuvable"
+        return fiche
+    fiche["bulle"] = bouton["bulle"]
+    if BULLE_INTERDITE.search(sans_accents(bouton["bulle"])) or _a_eviter(bouton["bulle"]) and \
+            not re.search(r"ouvr|voir|consult|detail|fiche|modif|edit|open|view", sans_accents(bouton["bulle"]), re.I):
+        fiche["probleme"] = "bouton eclair pas clique par prudence (sa bulle ressemble a une action)"
+        return fiche
+    if bouton["grise"]:
+        fiche["probleme"] = "bouton eclair grise (la ligne n'est pas selectionnee ?)"
+        return fiche
+    _onglets_fiche(page, apres=False)
+    pages_avant = len(page.context.pages)
+    page.locator('[data-robot-eclair="1"]').first.click(timeout=10000)
+    ici, fin, onglets_fiche = page, time.time() + 25, []
+    while time.time() < fin:
+        page.wait_for_timeout(800)
+        if len(page.context.pages) > pages_avant:  # (la fiche s'ouvre dans un nouvel onglet du navigateur)
+            ici = page.context.pages[-1]
+            attendre_chargement(ici, 10)
+        actuels = _onglets_fiche(ici)
+        if actuels and actuels == onglets_fiche:
+            break
+        onglets_fiche = actuels
+    try:
+        if not onglets_fiche:  # (une fiche sans onglets : tout ce qui est affiché)
+            champs, colonnes, lignes, info = _lire_zone_fiche(ici, None)
+            fiche["onglets"].append(("Fiche", champs, colonnes, lignes, info))
+            if not champs and not colonnes:
+                fiche["probleme"] = "la fiche ne s'est pas ouverte (ou rien a lire)"
+            return fiche
+        for i, o in enumerate(onglets_fiche):
+            if o["bloque"] or not o["nom"] or _a_eviter(o["nom"]):
+                continue
+            if not o["actif"]:
+                try:
+                    ici.locator(f'[data-robot-fiche-onglet="{i}"]').first.click(timeout=10000)
+                except Exception:
+                    fiche["onglets"].append((o["nom"], [], [], [], {"pages": 0, "remarque": "onglet impossible a ouvrir"}))
+                    continue
+            champs, colonnes, lignes, info = _lire_zone_fiche(ici, '[data-robot-fiche="1"]')
+            fiche["onglets"].append((o["nom"], champs, colonnes, lignes, info))
+            _onglets_fiche(ici)  # (les marques sont remises : la page a pu redessiner les onglets)
+    finally:
+        if ici is not page:
+            try:
+                ici.close()
+            except Exception:
+                pass
+    return fiche
+
+
+def _faire_une_recherche(page, url, terme, garde):
+    """Une recherche : {"onglets": [(nom, annoncés)], "feuilles": [(onglet, colonnes, lignes, info)], "fiches": [...],
+    "probleme"}."""
+    res = {"onglets": [], "feuilles": [], "fiches": [], "probleme": ""}
+    onglets, probleme = _lancer_recherche(page, url, terme, garde)
+    if probleme:
+        res["probleme"] = probleme
+        return res
     if not onglets:
         g = _attendre_grille(page, 10)
         if g["colonnes"] and (g["nlignes"] or g["vide"]):
@@ -6836,31 +7145,40 @@ def _faire_une_recherche(page, url, terme, garde):
         return res
     res["onglets"] = [(o["nom"], o["n"]) for o in onglets]
     for k, o in enumerate(onglets):
-        actuels = _onglets_resultats(page)
-        numero = next((i for i, x in enumerate(actuels) if x["nom"] == o["nom"]), None)
-        if numero is None:
-            res["feuilles"].append((o["nom"], [], [], {"pages": 0, "remarque": "onglet introuvable"}))
-            continue
-        n = max(o["n"], actuels[numero]["n"])  # (un nombre arrivé tard)
+        n, probleme = _ouvrir_onglet_resultat(page, o["nom"], o["n"])
         res["onglets"][k] = (o["nom"], n)
+        if probleme:
+            res["feuilles"].append((o["nom"], [], [], {"pages": 0, "remarque": probleme}))
+            continue
         if n == 0:
             continue
-        if _a_eviter(o["nom"]):  # (un nom d'action n'est jamais cliqué, même pris pour un onglet)
-            res["feuilles"].append((o["nom"], [], [], {"pages": 0, "remarque": "pas ouvert par prudence"}))
-            continue
-        avant = None if actuels[numero]["actif"] else (_grille(page)["premiere"], "")
-        cible = page.locator(f'[data-robot-resultat-nom="{numero}"]')
-        try:
-            (cible.first if cible.count() else page.locator(f'[data-robot-resultat="{numero}"]').first).click(timeout=10000)
-        except Exception:
-            res["feuilles"].append((o["nom"], [], [], {"pages": 0, "remarque": "onglet impossible a ouvrir"}))
-            continue
-        page.wait_for_timeout(500)
-        _attendre_grille(page, 30, avant=avant if avant and avant[0] != "0:0" else None, attendus=n)
         colonnes, lignes, info = _lire_grille_entiere(page, n)
         res["feuilles"].append((o["nom"], colonnes, lignes, info))
         ecrire(f"      {_structure(o['nom']) or 'onglet'} : {len(lignes)} ligne(s) lue(s) sur {n}"
                + (f" ({info['pages']} pages)" if info["pages"] > 1 else "") + (f" - {info['remarque']}" if info["remarque"] else ""))
+    # la FICHE de chaque repère électrique trouvé (ses onglets : client, définition, liste des plans...)
+    for nom, colonnes, lignes, _ in list(res["feuilles"]):
+        if not ONGLETS_A_FICHES.search(sans_accents(nom)) or not lignes:
+            continue
+        cle = next((c for c in colonnes if re.search(r"rep[eè]re", sans_accents(c), re.I)), colonnes[0] if colonnes else "")
+        a_ouvrir = min(len(lignes), LIMITE_FICHES)
+        ecrire(f"      {_structure(nom) or 'onglet'} : ouverture de {a_ouvrir} fiche(s) (environ {a_ouvrir // 2 + 1} min)..."
+               + (f" (les {LIMITE_FICHES} premieres)" if len(lignes) > LIMITE_FICHES else ""))
+        for rang in range(a_ouvrir):
+            ident = lignes[rang].get(cle, "") or f"ligne {rang + 1}"
+            try:
+                f = _ouvrir_fiche(page, url, terme, garde, nom, rang, ident)
+            except KeyboardInterrupt:
+                raise
+            except Exception as e:
+                f = {"ident": ident, "onglets": [], "probleme": "echec : " + _sans_donnee(masquer(premiere_ligne(e)))[:80], "bulle": ""}
+            f["onglet"] = nom
+            res["fiches"].append(f)
+            lus = sum(1 for o in f["onglets"] if o[1] or o[2])
+            ecrire(f"         fiche {rang + 1}/{a_ouvrir} : " + (f"PROBLEME : {f['probleme']}" if f["probleme"] else
+                                                                f"{lus} onglet(s) lu(s)"))
+            if f["probleme"] and rang == 0:  # (la première ne s'ouvre pas : les autres non plus, inutile d'insister)
+                break
     return res
 
 
@@ -7027,6 +7345,24 @@ def ecrire_rapport_recherche(rapports, garde, duree, termes=()):
             cols = [c for c in (_structure(c) for c in colonnes) if c]
             lignes.append(f"  {_structure(nom) or '(masque)'} : {len(lus)} ligne(s) lue(s), {info['pages']} page(s)"
                           + (f" - {info['remarque']}" if info["remarque"] else "") + (" ; colonnes : " + " | ".join(cols) if cols else ""))
+        fiches = r.get("fiches", [])
+        if fiches:
+            ok = [f for f in fiches if not f["probleme"]]
+            lignes.append(f"  FICHES : {len(ok)} ouverte(s) sur {len(fiches)} essayee(s)"
+                          + (f" ; bulle du bouton : {_structure(fiches[0]['bulle']) or '(aucune)'}" if fiches[0].get("bulle") is not None else ""))
+            for pb in sorted({f["probleme"] for f in fiches if f["probleme"]}):
+                lignes.append(f"    probleme : {pb}")
+            vus = set()
+            for f in ok:
+                for nom_o, champs, colonnes, lus_o, info in f["onglets"]:
+                    if nom_o in vus:
+                        continue
+                    vus.add(nom_o)
+                    libs = [x for x in (_structure(c[0]) for c in champs) if x][:40]
+                    cols = [x for x in (_structure(c) for c in colonnes) if x]
+                    lignes.append(f"    onglet {_structure(nom_o) or '(masque)'} : {len(champs)} champ(s), {len(lus_o)} ligne(s)"
+                                  + (f" - {info['remarque']}" if info.get("remarque") else "")
+                                  + (" ; libelles : " + " | ".join(libs) if libs else "") + (" ; colonnes : " + " | ".join(cols) if cols else ""))
     details = garde.get("details", {})
     if details:
         lignes += ["", "ENVOIS BLOQUES, LE DETAIL (pourquoi, et les noms des champs envoyes) :"]
@@ -7055,7 +7391,7 @@ def boucle_recherche(page, url, garde):
             break
         cherches += termes
         ecrire(f"   {len(termes)} recherche(s). NE TOUCHEZ PAS A LA SOURIS pendant ce temps (bande JAUNE en bas de la fenetre du robot).")
-        par_onglet, resume = {}, []
+        par_onglet, resume, fiches = {}, [], {}
         for numero, terme in enumerate(termes, 1):
             if _liaison_libre(garde):
                 ecrire("   Le portail utilise une liaison directe que ce robot ne sait pas bloquer : arret par prudence.")
@@ -7067,7 +7403,7 @@ def boucle_recherche(page, url, garde):
             except KeyboardInterrupt:
                 raise
             except Exception as e:
-                r = {"onglets": [], "feuilles": [], "probleme": "echec : " + _sans_donnee(masquer(premiere_ligne(e)))[:80]}
+                r = {"onglets": [], "feuilles": [], "fiches": [], "probleme": "echec : " + _sans_donnee(masquer(premiere_ligne(e)))[:80]}
             if r["probleme"]:
                 ecrire(f"      -> {r['probleme']}")
             rapports.append(r)
@@ -7081,10 +7417,36 @@ def boucle_recherche(page, url, garde):
                     if c not in f["colonnes"]:
                         f["colonnes"].append(c)
                 f["lignes"] += [(terme, l) for l in lignes]
+            # les fiches : une feuille par onglet de fiche (ses champs : une ligne par fiche ; sa liste : ses lignes)
+            for fi in r.get("fiches", []):
+                lus = [o for o in fi["onglets"] if o[1] or o[2]]
+                resume.append([terme, f"Fiche ({fi['onglet']})", "", len(lus), "", fi["probleme"] or ", ".join(o[0] for o in lus)])
+                for nom_o, champs, colonnes, lignes_o, _ in fi["onglets"]:
+                    if champs:
+                        f = fiches.setdefault(("champs", nom_o), {"colonnes": [], "lignes": []})
+                        vus, ligne = {}, {}
+                        for lib, val in champs:
+                            lib = lib or "(sans libelle)"
+                            vus[lib] = vus.get(lib, 0) + 1
+                            lib = lib if vus[lib] == 1 else f"{lib} ({vus[lib]})"
+                            ligne[lib] = val
+                            if lib not in f["colonnes"]:
+                                f["colonnes"].append(lib)
+                        f["lignes"].append((terme, fi["ident"], ligne))
+                    if colonnes:
+                        f = fiches.setdefault(("liste", nom_o), {"colonnes": [], "lignes": []})
+                        for c in colonnes:
+                            if c not in f["colonnes"]:
+                                f["colonnes"].append(c)
+                        f["lignes"] += [(terme, fi["ident"], l) for l in lignes_o]
         _bandeau_visite(page, "")
         feuilles = [("Resume", ["Recherche", "Onglet", "Nombre annonce", "Lignes lues", "Pages", "Remarque"], resume)]
         for nom, f in par_onglet.items():
             feuilles.append((nom, ["Recherche"] + f["colonnes"], [[t] + [l.get(c, "") for c in f["colonnes"]] for t, l in f["lignes"]]))
+        for (genre, nom), f in fiches.items():
+            double = ("champs", nom) in fiches and ("liste", nom) in fiches
+            feuilles.append((nom + (" (liste)" if genre == "liste" and double else ""), ["Recherche", "Fiche"] + f["colonnes"],
+                             [[t, i] + [l.get(c, "") for c in f["colonnes"]] for t, i, l in f["lignes"]]))
         dossier = dossier_robot("recherches")
         fichier = dossier / f"Recherche_{datetime.now().strftime('%Y-%m-%d_%Hh%M')}.xlsx"
         try:
