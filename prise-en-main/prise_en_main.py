@@ -21,7 +21,7 @@ from pathlib import Path
 from collections import deque
 from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
-VERSION = "6.4"
+VERSION = "6.5"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -7484,6 +7484,10 @@ def boucle_recherche(page, url, garde):
                                 f["colonnes"].append(c)
                         f["lignes"] += [(terme, fi["ident"], l) for l in lignes_o]
         _bandeau_visite(page, "")
+        # (le rapport tout de suite : la fenêtre est souvent fermée avant la fin de la boucle)
+        rapport = ecrire_rapport_recherche(rapports, garde, round((time.time() - debut) / 60, 1), cherches)
+        if rapport:
+            ecrire(f"   RAPPORT POUR CLAUDE : Bureau > Robot > {rapport.name}  (a relire, puis a m'envoyer)")
         feuilles = [("Resume", ["Recherche", "Onglet", "Nombre annonce", "Lignes lues", "Pages", "Remarque"], resume)]
         for nom, f in par_onglet.items():
             feuilles.append((nom, ["Recherche"] + f["colonnes"], [[t] + [l.get(c, "") for c in f["colonnes"]] for t, l in f["lignes"]]))
