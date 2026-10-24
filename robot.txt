@@ -21,7 +21,7 @@ from pathlib import Path
 from collections import deque
 from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
-VERSION = "6.5"
+VERSION = "6.6"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -6567,7 +6567,9 @@ JS_GRILLE = r"""(arg) => {
     if (!grilles.has(g)) grilles.set(g, []);
     grilles.get(g).push(h);
   }
-  const estLigne = (g, r) => !r.closest('thead') && conteneur(r) === g && vis(r) && !!r.querySelector(CELLULE);
+  // (ag-grid : ses lignes de titres et de filtres, dans .ag-header, ne sont pas des lignes de données — une ligne sortie
+  //  par le haut en défilant passe sous elles)
+  const estLigne = (g, r) => !r.closest('thead, .ag-header') && conteneur(r) === g && vis(r) && !!r.querySelector(CELLULE);
   let choix = null, lignes = [];
   for (const g of grilles.keys()) {
     const ls = Array.from(g.querySelectorAll(LIGNE)).filter(r => estLigne(g, r));
@@ -6577,7 +6579,10 @@ JS_GRILLE = r"""(arg) => {
   if (!choix) return { colonnes: [], lignes: [], cles: [], nlignes: 0, vide: false, chargement: enAttente(null), suivant: false,
                        defile: null, premiere: '', page: '' };
   const R = x => x.getBoundingClientRect();
-  const nomEntete = h => { const c = h.cloneNode(true);
+  // (le titre écrit dans son emplacement à lui, quand la grille en a un — ag-grid : .ag-header-cell-text)
+  const TITRE = '.ag-header-cell-text, .ag-header-group-text, .p-column-title, .k-column-title, .dx-datagrid-text-content, .mat-sort-header-content';
+  const nomEntete = h => { const t = Array.from(h.querySelectorAll(TITRE)).map(net).find(Boolean); if (t) return t;
+    const c = h.cloneNode(true);
     c.querySelectorAll('input, select, textarea, button, svg, i, [class*=sort i], [class*=filter i], [class*=icon i], ' +
                        '[class*=resizer i], [class*=checkbox i], [class*=dropdown i], [class*=label i], [class*=token i], ' +
                        '[class*=placeholder i]').forEach(x => x.remove());
@@ -6671,13 +6676,14 @@ JS_GRILLE = r"""(arg) => {
   for (let k = 0; k < 3 && zone && !suivant; k++, zone = zone.parentElement) {
     const b = Array.from(zone.querySelectorAll('.p-paginator-next, .ui-paginator-next, [aria-label*="suivant" i], [aria-label*="next" i], ' +
                                                '[title*="suivant" i], [title*="next" i], .mat-mdc-paginator-navigation-next, ' +
-                                               '.mat-paginator-navigation-next, [ref=btNext]'))
+                                               '.mat-paginator-navigation-next, [ref=btNext], [data-ref=btNext]'))
       .find(x => vis(x) && !!x.closest('[class*=paginat i], [class*=pager i], [class*=paging i], mat-paginator'));
     if (b) { suivant = true;
              const bloque = b.disabled || b.getAttribute('aria-disabled') === 'true' || /(^|[\s_-])(p-disabled|ui-state-disabled|disabled)([\s_-]|$)/i.test(classe(b));
              if (!bloque) b.setAttribute('data-robot-suivant', '1'); else suivant = false; }
   }
-  const page = (() => { const p = (choix.parentElement || choix).querySelector('.p-paginator-page.p-highlight, .ui-paginator-page.ui-state-active, [aria-current=page]');
+  const page = (() => { const p = (choix.parentElement || choix).querySelector('.p-paginator-page.p-highlight, .ui-paginator-page.ui-state-active, [aria-current=page], ' +
+                                                                               '[data-ref=lbCurrent]');
                         return p ? net(p) : ''; })();
   // la zone qui défile (liste longue, lignes chargées au fur et à mesure)
   // (tableau en deux parties : la partie figée suit, c'est la partie qui défile qu'on fait défiler)
@@ -6698,6 +6704,45 @@ JS_GRILLE = r"""(arg) => {
 }"""
 
 LIMITE_LIGNES_ONGLET, LIMITE_PAGES_ONGLET, LIMITE_MINUTES_ONGLET = 5000, 300, 8
+
+# ag-grid n'affiche que les colonnes qui tiennent dans sa largeur (les autres n'existent pas dans la page) : pendant la
+# lecture, la grille est rendue assez large pour toutes les montrer (comme une très grande fenêtre), puis remise comme
+# avant. arg.large=false : remise comme avant. Rien n'est envoyé au portail.
+JS_ELARGIR = r"""(arg) => {
+  if (!arg.large) {
+    document.querySelectorAll('[data-robot-large]').forEach(x => { x.style.cssText = x.getAttribute('data-robot-large'); x.removeAttribute('data-robot-large'); });
+    return 0;
+  }
+  const racine = (arg.portee && document.querySelector(arg.portee)) || document;
+  const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
+                     const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  let n = 0;
+  for (const g of racine.querySelectorAll('.ag-root-wrapper')) {
+    const hote = g.parentElement;
+    if (!hote || !vis(g) || hote.hasAttribute('data-robot-large')) continue;
+    const h = g.querySelector('.ag-body-horizontal-scroll-viewport') || g.querySelector('.ag-center-cols-viewport');
+    if (!h) continue;
+    const manque = h.scrollWidth - h.clientWidth;
+    if (manque <= 2) continue;   // (tout est déjà affiché)
+    hote.setAttribute('data-robot-large', hote.style.cssText);
+    const large = Math.ceil(hote.getBoundingClientRect().width + manque + 60);
+    hote.style.setProperty('width', large + 'px', 'important');
+    hote.style.setProperty('min-width', large + 'px', 'important');
+    hote.style.setProperty('max-width', 'none', 'important');
+    hote.style.setProperty('flex', 'none', 'important');
+    n++;
+  }
+  return n;
+}"""
+
+
+def _elargir(page, portee=None, large=True):
+    """Toutes les colonnes d'une grille ag-grid affichées (large=False : remise comme avant). Renvoie le nombre de
+    grilles élargies."""
+    try:
+        return page.evaluate(JS_ELARGIR, {"large": large, "portee": portee})
+    except Exception:
+        return 0
 
 
 def _grille(page, portee=None, coche=None):
@@ -6742,61 +6787,75 @@ def _lire_grille_entiere(page, attendus=0, portee=None):
     colonnes, lignes, deja = [], [], set()
     pages, remarque, debut = 0, "", time.time()
     g = _attendre_grille(page, 30, attendus=attendus, portee=portee)
-    while True:
-        pages += 1
-        if g.get("defile"):
-            try:
-                page.evaluate("() => { const x = document.querySelector('[data-robot-defile]'); if (x) x.scrollTop = 0; }")
-                page.wait_for_timeout(300)
+    large = _elargir(page, portee)  # (ag-grid : toutes ses colonnes affichées pendant la lecture)
+    if large:
+        page.wait_for_timeout(800)
+        g = _attendre_grille(page, 10, portee=portee)
+    try:
+        while True:
+            pages += 1
+            if g.get("defile"):
+                try:
+                    page.evaluate("() => { const x = document.querySelector('[data-robot-defile]'); if (x) x.scrollTop = 0; }")
+                    page.wait_for_timeout(300)
+                    g = _attendre_grille(page, 10, portee=portee)
+                except Exception:
+                    pass
+            haut_avant = None
+            for _ in range(400):
+                noms = _noms_uniques(g["colonnes"])
+                for n in noms:
+                    if n not in colonnes:
+                        colonnes.append(n)
+                fois = {}
+                for rang, (valeurs, cle) in enumerate(zip(g["lignes"], g["cles"])):
+                    # (une ligne déjà lue : même numéro de ligne ; sans numéro, une liste qui défile se reconnaît à son
+                    #  contenu — deux lignes identiques comptent deux fois —, une page entière à sa place dans la page)
+                    texte = "|".join(valeurs)
+                    fois[texte] = fois.get(texte, 0) + 1
+                    marque = f"{pages}:{cle}" if cle else (f"{texte}#{fois[texte]}" if g.get("defile") else f"{pages}@{rang}")
+                    if marque in deja:
+                        continue
+                    deja.add(marque)
+                    lignes.append(dict(zip(noms, valeurs)))
+                d = g.get("defile")
+                if not d or d["haut"] >= d["max"] - 2 or len(lignes) >= LIMITE_LIGNES_ONGLET or d["haut"] == haut_avant:
+                    break  # (en bas, ou la liste ne défile plus)
+                haut_avant = d["haut"]
+                try:
+                    page.evaluate("() => { const x = document.querySelector('[data-robot-defile]');"
+                                  " if (x) x.scrollTop = Math.min(x.scrollTop + x.clientHeight * 0.8, x.scrollHeight); }")
+                except Exception:
+                    break
+                page.wait_for_timeout(500)
                 g = _attendre_grille(page, 10, portee=portee)
-            except Exception:
-                pass
-        haut_avant = None
-        for _ in range(400):
-            noms = _noms_uniques(g["colonnes"])
-            for n in noms:
-                if n not in colonnes:
-                    colonnes.append(n)
-            fois = {}
-            for rang, (valeurs, cle) in enumerate(zip(g["lignes"], g["cles"])):
-                # (une ligne déjà lue : même numéro de ligne ; sans numéro, une liste qui défile se reconnaît à son
-                #  contenu — deux lignes identiques comptent deux fois —, une page entière à sa place dans la page)
-                texte = "|".join(valeurs)
-                fois[texte] = fois.get(texte, 0) + 1
-                marque = f"{pages}:{cle}" if cle else (f"{texte}#{fois[texte]}" if g.get("defile") else f"{pages}@{rang}")
-                if marque in deja:
-                    continue
-                deja.add(marque)
-                lignes.append(dict(zip(noms, valeurs)))
-            d = g.get("defile")
-            if not d or d["haut"] >= d["max"] - 2 or len(lignes) >= LIMITE_LIGNES_ONGLET or d["haut"] == haut_avant:
-                break  # (en bas, ou la liste ne défile plus)
-            haut_avant = d["haut"]
-            try:
-                page.evaluate("() => { const x = document.querySelector('[data-robot-defile]');"
-                              " if (x) x.scrollTop = Math.min(x.scrollTop + x.clientHeight * 0.8, x.scrollHeight); }")
-            except Exception:
+            if len(lignes) >= LIMITE_LIGNES_ONGLET:
+                remarque = f"arrete a {LIMITE_LIGNES_ONGLET} lignes"
                 break
-            page.wait_for_timeout(500)
-            g = _attendre_grille(page, 10, portee=portee)
-        if len(lignes) >= LIMITE_LIGNES_ONGLET:
-            remarque = f"arrete a {LIMITE_LIGNES_ONGLET} lignes"
-            break
-        if not g["suivant"]:
-            break
-        if pages >= LIMITE_PAGES_ONGLET or time.time() - debut > LIMITE_MINUTES_ONGLET * 60:
-            remarque = "arrete avant la derniere page (trop long)"
-            break
-        avant = (g["premiere"], g["page"])
-        try:
-            page.locator('[data-robot-suivant="1"]').first.click(timeout=10000)
-        except Exception:
-            remarque = "page suivante impossible a ouvrir"
-            break
-        g = _attendre_grille(page, 30, avant=avant, portee=portee)
-        if g["premiere"] == avant[0]:
-            remarque = "la page suivante ne s'affiche pas"
-            break
+            if not g["suivant"]:
+                break
+            if pages >= LIMITE_PAGES_ONGLET or time.time() - debut > LIMITE_MINUTES_ONGLET * 60:
+                remarque = "arrete avant la derniere page (trop long)"
+                break
+            if large:  # (la grille remise comme avant : son bouton de page, à droite, revient dans la fenêtre)
+                _elargir(page, large=False)
+                page.wait_for_timeout(800)
+                g = _attendre_grille(page, 10, portee=portee)
+            avant = (g["premiere"], g["page"])
+            try:
+                page.locator('[data-robot-suivant="1"]').first.click(timeout=10000)
+            except Exception:
+                remarque = "page suivante impossible a ouvrir"
+                break
+            g = _attendre_grille(page, 30, avant=avant, portee=portee)
+            if g["premiere"] == avant[0]:
+                remarque = "la page suivante ne s'affiche pas"
+                break
+            if large and _elargir(page, portee):
+                page.wait_for_timeout(800)
+                g = _attendre_grille(page, 10, portee=portee)
+    finally:
+        _elargir(page, large=False)
     # (les colonnes d'icônes d'action, la case à cocher de sélection : toujours vides, elles ne sont pas gardées)
     colonnes = [c for c in colonnes if any(l.get(c) for l in lignes)] or colonnes
     if attendus and len(lignes) != attendus and not remarque:
@@ -6911,34 +6970,50 @@ JS_OUTILS = r"""() => {
   const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
                      const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
   const classe = x => typeof x.className === 'string' ? x.className : ((x.className && x.className.baseVal) || '');
-  // le tableau affiché (celui qui a le plus de lignes)
-  const tables = Array.from(document.querySelectorAll('table, [role=grid]')).filter(vis)
-    .map(t => ({ t: t, n: t.querySelectorAll('tbody tr, [role=row]').length })).sort((a, b) => b.n - a.n);
-  if (!tables.length) return { outils: [], diag: 'aucun tableau visible' };
-  const t = tables[0].t, rt = t.getBoundingClientRect();
+  const sorte = x => x.tagName.toLowerCase() + classe(x).split(/\s+/).filter(Boolean).slice(0, 2).map(c => '.' + c).join('') +
+                     (x.getAttribute('role') ? '[role=' + x.getAttribute('role') + ']' : '');
+  // la liste : celle de la case qui vient d'être cochée ; sinon la plus grande liste affichée
+  // (pas seulement un <table> : ag-grid est fait de blocs, rôle « treegrid »)
+  const CADRE = '.p-datatable, .ui-datatable, .p-treetable, .ui-treetable, .ag-root-wrapper, .k-grid, .dx-datagrid, mat-table, .mat-table, .mat-mdc-table';
+  const cadreDe = x => { const g = x.closest(CADRE) || x.closest('[role=grid], [role=treegrid]'); if (g) return g;
+    let t = x.closest('table'); while (t && t.parentElement && t.parentElement.closest('table')) t = t.parentElement.closest('table'); return t; };
+  const coche = document.querySelector('[data-robot-coche]');
+  let t = coche ? cadreDe(coche) : null;
+  if (!t || !vis(t)) {
+    const tous = Array.from(document.querySelectorAll(CADRE + ', [role=grid], [role=treegrid], table')).filter(vis).map(cadreDe).filter(Boolean);
+    t = Array.from(new Set(tous)).map(x => ({ x: x, n: x.querySelectorAll('tbody tr, [role=row]').length }))
+      .sort((a, b) => b.n - a.n).map(a => a.x)[0] || null;
+  }
+  if (!t) return { outils: [], liste: '', par_case: false, parents: [] };
+  const rt = t.getBoundingClientRect();
   const BULLE = ['title', 'aria-label', 'ptooltip', 'data-pr-tooltip', 'mattooltip', 'ng-reflect-text', 'data-original-title'];
   const bulleDe = x => { for (const a of BULLE) { const v = x && x.getAttribute && x.getAttribute(a); if (v && v.trim()) return v.trim(); } return ''; };
-  const DEHORS = 'thead, tbody, tr, th, td, nav, aside, [role=dialog], [data-robot-barre], [class*=paginat i], [role=tablist]';
+  // (jamais un bouton DANS la liste — titres, lignes, cases —, ni un menu, une barre de pages, des onglets)
+  const DEHORS = 'thead, tbody, tr, th, td, [role=row], [role=columnheader], [role=gridcell], nav, aside, [role=dialog], [data-robot-barre], ' +
+                 '[class*=paginat i], [class*=paging i], [class*=pager i], [role=tablist]';
   const candidats = z => Array.from(z.querySelectorAll('button, [role=button]'))
     .filter(b => vis(b) && !b.closest(DEHORS) && !b.querySelector('button, [role=button]'));
-  // les boutons AUTOUR du tableau (dans son cadre ou juste à côté) : on remonte tant qu'il y en a peu
+  // les boutons AUTOUR de la liste (dans son cadre ou juste à côté) : on remonte tant qu'il y en a peu
   let zone = t, bs = [];
   const chemin = [];
-  for (let k = 0; k < 9 && zone.parentElement && zone.parentElement !== document.body; k++) {
+  for (let k = 0; k < 14 && zone.parentElement && zone.parentElement !== document.body; k++) {
     zone = zone.parentElement;
-    chemin.push(zone.tagName.toLowerCase() + classe(zone).split(/\s+/).filter(Boolean).slice(0, 2).map(c => '.' + c).join(''));
+    chemin.push(sorte(zone));
     const c = candidats(zone);
-    if (c.length > 40) break;
+    if (c.length > 40) { if (!bs.length) bs = c; break; }   // (la barre arrive avec beaucoup d'autres : les plus proches)
     bs = c;
   }
-  // les plus proches du haut du tableau d'abord
-  const dist = b => { const r = b.getBoundingClientRect(); return Math.abs(r.bottom - rt.top) + (r.top > rt.bottom ? 1000 : 0); };
+  // les plus proches du haut de la liste d'abord ; un bouton à icône d'éclair passe devant (sa bulle est vérifiée)
+  const ECLAIR = /(^|[\s_-])(bolt|flash|lightning|eclair|zap)([\s_-]|$)/i;
+  const dist = b => { const r = b.getBoundingClientRect();
+    return Math.abs(r.bottom - rt.top) + (r.top > rt.bottom ? 1000 : 0) -
+           ([b, ...b.querySelectorAll('*')].slice(0, 6).some(x => ECLAIR.test(classe(x))) ? 5000 : 0); };
   bs.sort((a, b) => dist(a) - dist(b));
   return { outils: bs.slice(0, 20).map((b, i) => { b.setAttribute('data-robot-outil', String(i));
              return { bulle: bulleDe(b) || bulleDe(b.parentElement), texte: (b.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 40),
                       grise: !!(b.disabled || b.getAttribute('aria-disabled') === 'true' || /(^|[\s_-])(p-disabled|disabled)([\s_-]|$)/i.test(classe(b))),
-                      sorte: b.tagName.toLowerCase() + classe(b).split(/\s+/).filter(Boolean).slice(0, 2).map(c => '.' + c).join('') }; }),
-           diag: 'parents du tableau : ' + chemin.join(' < ') };
+                      sorte: sorte(b) }; }),
+           liste: sorte(t), par_case: !!coche && cadreDe(coche) === t, parents: chemin };
 }"""
 
 # La bulle qui s'affiche quand la souris est sur un bouton (PrimeNG, Material...).
@@ -7060,10 +7135,64 @@ def _lire_zone_fiche(page, portee):
     return champs, colonnes, lignes, info
 
 
-def _ouvrir_fiche(page, url, terme, garde, onglet, rang, ident):
-    """La fiche de la ligne « rang » de l'onglet de résultats « onglet » : recherche à nouveau, coche la ligne, clique
-    l'éclair, lit chaque onglet de la fiche. Renvoie {"ident", "onglets": [(nom, champs, colonnes, lignes, info)],
-    "probleme", "bulle"}."""
+def _cocher_ligne(page, voulue):
+    """Coche la case de la ligne dont les valeurs, lues avant, sont « voulue » ({colonne: valeur}) : cherchée page
+    après page, en faisant défiler une longue liste (ses lignes n'existent qu'une fois affichées). Renvoie le
+    problème ('' : cochée)."""
+    large = _elargir(page)  # (les mêmes colonnes qu'à la lecture)
+    try:
+        if large:
+            page.wait_for_timeout(800)
+        g = _attendre_grille(page, 10)
+        pages, haut_avant = 1, None
+        if g.get("defile"):
+            page.evaluate("() => { const x = document.querySelector('[data-robot-defile]'); if (x) x.scrollTop = 0; }")
+            page.wait_for_timeout(300)
+            g = _attendre_grille(page, 10)
+        while True:
+            noms = _noms_uniques(g["colonnes"])
+            communs = [c for c in voulue if c in noms]
+            numero = next((i for i, valeurs in enumerate(g["lignes"])
+                           if communs and all(dict(zip(noms, valeurs)).get(c, "") == voulue[c] for c in communs)), None)
+            if numero is not None:
+                _grille(page, coche=numero)  # (rien n'a bougé depuis : la même ligne au même rang)
+                case = page.locator('[data-robot-coche="1"]')
+                if not case.count():
+                    return "case a cocher de la ligne introuvable"
+                case.first.click(timeout=10000)
+                return ""
+            d = g.get("defile")
+            if d and d["haut"] < d["max"] - 2 and d["haut"] != haut_avant:  # (plus bas dans la liste)
+                haut_avant = d["haut"]
+                page.evaluate("() => { const x = document.querySelector('[data-robot-defile]');"
+                              " if (x) x.scrollTop = Math.min(x.scrollTop + x.clientHeight * 0.8, x.scrollHeight); }")
+                page.wait_for_timeout(500)
+                g = _attendre_grille(page, 10)
+                continue
+            if not g["suivant"] or pages >= LIMITE_PAGES_ONGLET:
+                return "ligne introuvable dans la liste"
+            if large:  # (le bouton de page, à droite, revient dans la fenêtre)
+                _elargir(page, large=False)
+                page.wait_for_timeout(800)
+                g = _attendre_grille(page, 10)
+            avant = (g["premiere"], g["page"])
+            try:
+                page.locator('[data-robot-suivant="1"]').first.click(timeout=10000)
+            except Exception:
+                return "page de la ligne introuvable"
+            g = _attendre_grille(page, 30, avant=avant)
+            pages, haut_avant = pages + 1, None
+            if large and _elargir(page):
+                page.wait_for_timeout(800)
+                g = _attendre_grille(page, 10)
+    finally:
+        _elargir(page, large=False)
+
+
+def _ouvrir_fiche(page, url, terme, garde, onglet, rang, ident, voulue):
+    """La fiche de la ligne « rang » (ses valeurs : voulue) de l'onglet de résultats « onglet » : recherche à nouveau,
+    coche la ligne, clique l'éclair, lit chaque onglet de la fiche. Renvoie {"ident", "onglets": [(nom, champs,
+    colonnes, lignes, info)], "probleme", "bulle"}."""
     fiche = {"ident": ident, "onglets": [], "probleme": "", "bulle": ""}
     onglets, probleme = _lancer_recherche(page, url, terme, garde)
     if probleme or not onglets:
@@ -7073,22 +7202,10 @@ def _ouvrir_fiche(page, url, terme, garde, onglet, rang, ident):
     if probleme:
         fiche["probleme"] = probleme
         return fiche
-    g = _grille(page)
-    par_page = max(1, g["nlignes"])
-    for _ in range(rang // par_page):  # (la ligne est sur une page suivante)
-        avant = (g["premiere"], g["page"])
-        try:
-            page.locator('[data-robot-suivant="1"]').first.click(timeout=10000)
-        except Exception:
-            fiche["probleme"] = "page de la ligne introuvable"
-            return fiche
-        g = _attendre_grille(page, 30, avant=avant)
-    g = _grille(page, coche=rang % par_page)
-    case = page.locator('[data-robot-coche="1"]')
-    if not case.count():
-        fiche["probleme"] = "case a cocher de la ligne introuvable"
+    probleme = _cocher_ligne(page, voulue)
+    if probleme:
+        fiche["probleme"] = probleme
         return fiche
-    case.first.click(timeout=10000)
     page.wait_for_timeout(700)
     # le bouton « Repère électrique(s) » de la barre d'outils : reconnu par sa BULLE (lue en posant la souris dessus,
     # sans cliquer) ; jamais un bouton dont la bulle ressemble à une action (supprimer, dupliquer, exporter...)
@@ -7112,9 +7229,13 @@ def _ouvrir_fiche(page, url, terme, garde, onglet, rang, ident):
                 break
     _souris_au_repos(page)
     fiche["outils"] = bulles
+    # (la liste où est la ligne cochée, et ses parents : de la structure, pour comprendre un échec)
+    fiche["liste"] = (_sans_donnee(trouve.get("liste"), css=True) + (" (par la case cochee)" if trouve.get("par_case") else "")
+                      if trouve.get("liste") else "aucune liste visible")
     if choix is None:
-        fiche["probleme"] = "bouton « Repere electrique » introuvable autour du tableau"
-        fiche["diag"] = f"{len(outils)} bouton(s) trouve(s) autour du tableau ; {trouve.get('diag', '')}"
+        fiche["probleme"] = "bouton « Repere electrique » introuvable autour de la liste"
+        fiche["diag"] = f"{len(outils)} bouton(s) trouve(s) ; liste : {fiche['liste']}" + \
+            (" ; ses parents : " + " < ".join(_sans_donnee(c, css=True) for c in trouve.get("parents", [])) if trouve.get("liste") else "")
         return fiche
     i, bouton, fiche["bulle"] = choix
     if bouton["grise"]:
@@ -7205,7 +7326,7 @@ def _faire_une_recherche(page, url, terme, garde):
         for rang in range(a_ouvrir):
             ident = lignes[rang].get(cle, "") or f"ligne {rang + 1}"
             try:
-                f = _ouvrir_fiche(page, url, terme, garde, nom, rang, ident)
+                f = _ouvrir_fiche(page, url, terme, garde, nom, rang, ident, lignes[rang])
             except KeyboardInterrupt:
                 raise
             except Exception as e:
@@ -7390,8 +7511,10 @@ def ecrire_rapport_recherche(rapports, garde, duree, termes=()):
                           + (f" ; bulle du bouton : {_structure(fiches[0]['bulle']) or '(aucune)'}" if fiches[0].get("bulle") is not None else ""))
             for pb in sorted({f["probleme"] for f in fiches if f["probleme"]}):
                 lignes.append(f"    probleme : {pb}")
-            for d in sorted({f["diag"] for f in fiches if f.get("diag")}):
-                lignes.append(f"    structure : {_sans_donnee(d)[:600]}")
+            if fiches[0].get("liste"):
+                lignes.append(f"    liste : {fiches[0]['liste']}")
+            for d in sorted({f["diag"] for f in fiches if f.get("diag")}):  # (déjà réduite à la structure)
+                lignes.append(f"    structure : {d[:700]}")
             outils = next((f["outils"] for f in fiches if f.get("outils")), [])
             if outils:  # (les bulles des boutons de la barre d'outils : de la structure)
                 lignes.append("    barre d'outils : " + " | ".join((_structure(b) or "(masque)") + (f" [{_sans_donnee(t, css=True)}]" if t else "")
