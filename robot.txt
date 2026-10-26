@@ -21,7 +21,7 @@ from pathlib import Path
 from collections import deque
 from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
-VERSION = "6.7"
+VERSION = "6.8"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -7114,11 +7114,19 @@ ONGLET_UD = re.compile(r"^\W*ud\W*$", re.I)  # (l'onglet « UD » : des plans)
 BOUTON_UD = re.compile(r"^\W*(ud\W*s?\W*|(ouvrir|voir|afficher|consulter)\b.*\bud\b.*)$", re.I)  # (sa bulle : « UD(s) »...)
 
 
+CODE_UD = re.compile(r"[a-z]{3}\d{4}a\d{6}")  # (une UD : 3 lettres, 4 chiffres, A, 6 chiffres — « SPE9934A611004 »)
+
+
+def _genre_de_recherche(terme):
+    """« ud » pour un code d'UD, sinon « rep » (un repère électrique : « 930VC », « 1266VT 1 »...)."""
+    return "ud" if CODE_UD.fullmatch(re.sub(r"[^a-z0-9]", "", sans_accents(terme or "").lower())) else "rep"
+
+
 def _sorte_de_fiche(onglet):
     """(sorte, bulle du bouton qui ouvre la fiche, ce qu'on dit de ce bouton) pour un onglet de résultats, ou None :
-    repère électrique (l'éclair) ou UD."""
+    repère électrique (l'éclair) ou UD. Les autres onglets (plan, croquis, élément, repères NTDB...) ne comptent pas."""
     nom = sans_accents(onglet or "")
-    if ONGLETS_A_FICHES.search(nom):
+    if ONGLETS_A_FICHES.search(nom) and not re.search(r"ntdb", nom, re.I):
         return "rep", BOUTON_FICHE, "« Repere electrique »"
     if ONGLET_UD.match(nom):
         return "ud", BOUTON_UD, "« UD(s) »"
@@ -7327,6 +7335,9 @@ def _faire_une_recherche(page, url, terme, garde):
         return res
     res["onglets"] = [(o["nom"], o["n"]) for o in onglets]
     for k, o in enumerate(onglets):
+        if not _sorte_de_fiche(o["nom"]):  # (ni UD ni repère électrique : pas lu)
+            res.setdefault("ignores", []).append(o["nom"])
+            continue
         n, probleme = _ouvrir_onglet_resultat(page, o["nom"], o["n"])
         res["onglets"][k] = (o["nom"], n)
         if probleme:
@@ -7338,10 +7349,12 @@ def _faire_une_recherche(page, url, terme, garde):
         res["feuilles"].append((o["nom"], colonnes, lignes, info))
         ecrire(f"      {_structure(o['nom']) or 'onglet'} : {len(lignes)} ligne(s) lue(s) sur {n}"
                + (f" ({info['pages']} pages)" if info["pages"] > 1 else "") + (f" - {info['remarque']}" if info["remarque"] else ""))
-    # la FICHE de chaque repère électrique trouvé (ses onglets : client, définition, liste des plans...), de chaque UD
+    # la FICHE de chaque repère électrique trouvé (ses onglets : client, définition, liste des plans...) si c'est un
+    # repère qui est cherché ; de chaque UD si c'est une UD
+    genre = _genre_de_recherche(terme)
     for nom, colonnes, lignes, _ in list(res["feuilles"]):
         sorte = _sorte_de_fiche(nom)
-        if not sorte or not lignes:
+        if not sorte or not lignes or sorte[0] != genre:
             continue
         sorte, bouton, nom_bouton = sorte
         cle = next((c for c in colonnes if re.search(r"rep[eè]re" if sorte == "rep" else r"ref.*\bud\b|\bud\b", sans_accents(c), re.I)),
@@ -7545,7 +7558,7 @@ h2{font-size:20px;margin:18px 0 6px} h3{font-size:16px;margin:22px 0 8px;color:v
 .cle.client{background:#eef3ff} .cle.client h4{color:var(--bleu)} .cle.plan{background:#eaf7f0} .cle.plan h4{color:var(--vert)}
 .cle.ref{background:#fff6e6} .cle.ref h4{color:var(--ambre)} .cle .gros{font-size:16px;font-weight:600}
 .cle .vide{color:var(--doux);font-style:italic}
-table{border-collapse:collapse;width:100%;font-size:13px;overflow-wrap:anywhere} th,td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--trait);vertical-align:top}
+table{border-collapse:collapse;width:100%;font-size:13px} th,td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--trait);vertical-align:top}
 th{color:var(--doux);font-weight:600} td.diff,span.diff,div.diff,tr.diff td{background:var(--diff);font-weight:600}
 details{margin-top:8px} summary{cursor:pointer;color:var(--bleu);font-weight:600}
 details h5{margin:12px 0 4px;font-size:13px} .kv td:first-child{color:var(--doux);width:42%}
@@ -7649,9 +7662,14 @@ def _html_carte(k, numero, total, diff, communes):
         h.append('<div class="distingue">' + "<br>".join(f"<b>{e(c)}</b> : {e(k['comparer'].get(c, '') or '(vide)')}" for c in diff[:4]) +
                  ("<br>…" if len(diff) > 4 else "") + "</div>")
     f = k["fiche"]
-    if f is None:
-        h.append('<div class="probleme">Fiche non ouverte (au-delà de la limite du robot) : seule la ligne de la liste est connue.</div>')
-    elif f.get("probleme"):
+    if f is None:  # (fiche pas ouverte : la ligne de la liste, c'est tout ce qu'on sait)
+        h.append('<div class="vide">' + ("Fiche ouverte seulement quand on cherche " + ("un repère" if k["sorte"] == "rep" else "le code de l'UD")
+                                         if k.get("genre") and k["genre"] != k["sorte"] else "Fiche non ouverte (au-delà de 30 fiches)") +
+                 " : voici sa ligne dans la liste.</div>")
+        h.append(_kv([(c, k["ligne"].get(c, "")) for c in k["colonnes"] if str(k["ligne"].get(c, "")).strip() and not SANS_INTERET.match(c)], diff))
+        h.append("</div>")
+        return "".join(h)
+    if f.get("probleme"):
         h.append(f'<div class="probleme">Fiche non lue : {e(f["probleme"])}</div>')
     onglet_de = lambda motif: next((o for o in k["onglets"] if re.search(motif, sans_accents(o[0]).lower())), None)
 
@@ -7754,7 +7772,7 @@ def ecrire_page_recherche(chemin, recherches):
     corps = []
     for terme, r in recherches:
         corps.append(f'<section class="recherche"><h2>Recherche « {e(terme)} »</h2><div class="compte">' +
-                     "".join(f"<span>{e(n)} : {e(a)}</span>" for n, a in r["onglets"]) + "</div>")
+                     "".join(f"<span>{e(n)} : {e(a)}</span>" for n, a in r["onglets"] if _sorte_de_fiche(n)) + "</div>")
         if r["probleme"]:
             corps.append(f'<div class="probleme">{e(r["probleme"])}</div>')
         fiches = {(f.get("onglet"), f.get("rang")): f for f in r.get("fiches", [])}
@@ -7764,8 +7782,11 @@ def ecrire_page_recherche(chemin, recherches):
             if not sorte:
                 simples.append((nom, colonnes, lignes))
                 continue
-            cartes[sorte[0]] += [_carte_de(sorte[0], nom, colonnes, ligne, fiches.get((nom, rang))) for rang, ligne in enumerate(lignes)]
-        for sorte, titre in (("rep", "Repères électriques"), ("ud", "UD (plans)")):
+            cartes[sorte[0]] += [dict(_carte_de(sorte[0], nom, colonnes, ligne, fiches.get((nom, rang))), genre=_genre_de_recherche(terme))
+                                 for rang, ligne in enumerate(lignes)]
+        ordre = (("ud", "UD (plans)"), ("rep", "Repères électriques")) if _genre_de_recherche(terme) == "ud" else \
+            (("rep", "Repères électriques"), ("ud", "UD (plans)"))
+        for sorte, titre in ordre:  # (ce qui est cherché d'abord)
             if cartes[sorte]:
                 corps.append(_html_resultats(terme, cartes[sorte], titre))
         for nom, colonnes, lignes in simples:
@@ -7867,7 +7888,8 @@ def boucle_recherche(page, url, garde):
             if _liaison_libre(garde):
                 ecrire("   Le portail utilise une liaison directe que ce robot ne sait pas bloquer : arret par prudence.")
                 break
-            ecrire(f"   Recherche {numero}/{len(termes)}...")
+            ecrire(f"   Recherche {numero}/{len(termes)} : " + ("une UD : les fiches des UD seront ouvertes" if _genre_de_recherche(terme) == "ud"
+                                                         else "un repere electrique : les fiches des reperes seront ouvertes") + "...")
             _bandeau_visite(page, f"RECHERCHE {numero}/{len(termes)}, lecture seule  -  ne touchez pas a la souris")
             try:
                 r = _faire_une_recherche(page, url, terme, garde)
@@ -7881,7 +7903,8 @@ def boucle_recherche(page, url, garde):
             faites.append((terme, r))
             lus = {nom: (len(l), info) for nom, _, l, info in r["feuilles"]}
             for nom, annonces in r["onglets"] or [("(aucun)", 0)]:
-                n, info = lus.get(nom, (0, {"pages": 0, "remarque": ""}))
+                n, info = lus.get(nom, (0, {"pages": 0, "remarque": "pas lu (ni UD ni repere electrique)"
+                                            if nom in r.get("ignores", ()) else ""}))
                 resume.append([terme, nom, annonces, n, info.get("pages", 0), r["probleme"] or info.get("remarque", "")])
             for nom, colonnes, lignes, _ in r["feuilles"]:
                 f = par_onglet.setdefault(nom, {"colonnes": [], "lignes": []})
