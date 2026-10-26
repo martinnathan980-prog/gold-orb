@@ -7919,8 +7919,15 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
           /* Des espaces insécables dans « passés à « En cours » » : entre 768
              et 900 px de large, l'en-tête se coupait mot à mot sur quatre
              lignes ; il ne se coupe plus qu'avant le guillemet, en deux. */
+          /* Débrief 26 : et une coupure possible après chaque « _ »
+             (PWD_IN_ / PROGRESS) : avec sept valeurs de GATES, plus les
+             indices, nouveaux, disparus et reculs, les en-têtes d'un seul
+             tenant faisaient 1 344 px pour 1 140 de cadre — « disparus » et
+             « reculs » étaient coupés au bord, même sur un grand écran. Les
+             colonnes ne se resserrent que s'il le faut. */
           var nom = ech(l.des).replace(/^(pass\S+) à /, '$1\u00a0à ')
-            .replace(/« [^»]* »/g, function (m) { return m.replace(/ /g, '\u00a0'); });
+            .replace(/« [^»]* »/g, function (m) { return m.replace(/ /g, '\u00a0'); })
+            .replace(/_/g, '_<wbr>');
           return '<span class="entete-col">' + pastilleResume(l) + nom + '</span>';
         }).join('') + '<span></span></div>'
       : '';
