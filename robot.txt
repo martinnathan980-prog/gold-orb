@@ -21,7 +21,7 @@ from pathlib import Path
 from collections import deque
 from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
-VERSION = "6.6"
+VERSION = "6.7"
 WINDOWS = os.name == "nt"
 # pour les essais automatiques du programme seulement (navigateur caché)
 INVISIBLE = os.environ.get("PRISE_EN_MAIN_INVISIBLE") == "1"
@@ -6856,8 +6856,10 @@ def _lire_grille_entiere(page, attendus=0, portee=None):
                 g = _attendre_grille(page, 10, portee=portee)
     finally:
         _elargir(page, large=False)
-    # (les colonnes d'icônes d'action, la case à cocher de sélection : toujours vides, elles ne sont pas gardées)
-    colonnes = [c for c in colonnes if any(l.get(c) for l in lignes)] or colonnes
+    # (les colonnes d'icônes d'action, la case à cocher de sélection : toujours vides, elles ne sont pas gardées ; une
+    #  colonne « Actions » qui n'a que des icônes non plus)
+    colonnes = [c for c in colonnes if any(l.get(c) for l in lignes) and
+                not (re.fullmatch(r"actions?", c.strip(), re.I) and all(not l.get(c) or str(l[c]).startswith("icone") for l in lignes))] or colonnes
     if attendus and len(lignes) != attendus and not remarque:
         remarque = f"{len(lignes)} lue(s) sur {attendus} annoncee(s)"
     return colonnes, lignes, {"pages": pages, "remarque": remarque}
@@ -7032,31 +7034,35 @@ JS_CHAMPS = r"""(portee) => {
                      const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
   const classe = x => typeof x.className === 'string' ? x.className : '';
   const net = t => (t || '').replace(/\s+/g, ' ').trim();
-  const ENVELOPPE = '.p-dropdown, .p-multiselect, .p-autocomplete, .p-calendar, .p-inputswitch, .p-checkbox, .p-radiobutton, .p-chips, mat-select, .p-inputnumber';
+  // (PrimeNG 18 : p-select, p-datepicker, p-toggleswitch remplacent p-dropdown, p-calendar, p-inputswitch)
+  const ENVELOPPE = '.p-dropdown, .p-select, .p-multiselect, .p-autocomplete, .p-calendar, .p-datepicker, .p-inputswitch, .p-toggleswitch, ' +
+                    '.p-checkbox, .p-radiobutton, .p-chips, mat-select, .p-inputnumber';
   const CTRL = 'input:not([type=hidden]):not([type=button]):not([type=submit]):not([type=image]), textarea, select, ' + ENVELOPPE + ', [role=combobox], [role=switch]';
   const DEHORS = 'table, [role=grid], [role=row], header, nav, aside, [data-robot-recherche], [role=dialog] [role=listbox], .p-dropdown-panel, .p-multiselect-panel';
   const valeur = c => {
-    if (c.matches('.p-checkbox, .p-radiobutton, [role=switch], .p-inputswitch'))
+    if (c.matches('.p-checkbox, .p-radiobutton, [role=switch], .p-inputswitch, .p-toggleswitch'))
       return /checked|highlight/.test(classe(c) + ' ' + Array.from(c.querySelectorAll('*')).map(classe).join(' ')) ||
              c.getAttribute('aria-checked') === 'true' || !!c.querySelector('input:checked') ? 'oui' : 'non';
     if (c.matches('input[type=checkbox], input[type=radio]')) return c.checked ? 'oui' : 'non';
     if (c.matches('select')) return c.selectedIndex >= 0 ? net(c.options[c.selectedIndex].text) : '';
-    if (c.matches('.p-dropdown, .p-multiselect, mat-select, [role=combobox]')) {
-      const l = c.querySelector('.p-dropdown-label, .p-multiselect-label, .mat-mdc-select-value, .mat-select-value');
+    if (c.matches('.p-dropdown, .p-select, .p-multiselect, mat-select, [role=combobox]')) {
+      if (/placeholder/.test(classe(c))) return '';   // (le texte « -- Veuillez sélectionner -- » : rien de choisi)
+      const l = c.querySelector('.p-dropdown-label, .p-select-label, .p-multiselect-label, .mat-mdc-select-value, .mat-select-value');
       if (l && /placeholder/.test(classe(l))) return '';
       if (l) return net(l.innerText);
       const i = c.querySelector('input'); return i ? net(i.value) : net(c.innerText);
     }
     if (c.matches('.p-autocomplete, .p-chips')) {
-      const jetons = Array.from(c.querySelectorAll('.p-autocomplete-token-label, .p-chips-token-label, .p-autocomplete-token, .p-chips-token')).map(x => net(x.innerText)).filter(Boolean);
+      const jetons = Array.from(c.querySelectorAll('.p-autocomplete-token-label, .p-chips-token-label, .p-autocomplete-chip-label, .p-chip-label'))
+        .map(x => net(x.innerText)).filter(Boolean);
       const i = c.querySelector('input'); return jetons.length ? jetons.join(' ; ') : (i ? net(i.value) : '');
     }
-    if (c.matches('.p-calendar, .p-inputnumber')) { const i = c.querySelector('input'); return i ? net(i.value) : ''; }
+    if (c.matches('.p-calendar, .p-datepicker, .p-inputnumber')) { const i = c.querySelector('input'); return i ? net(i.value) : ''; }
     return net(c.value);
   };
   const libelleDe = c => {
     // (une case : son petit libellé juste après elle, « N/A », précédé du libellé de la ligne)
-    if (c.matches('.p-checkbox, .p-radiobutton, input[type=checkbox], input[type=radio], .p-inputswitch')) {
+    if (c.matches('.p-checkbox, .p-radiobutton, input[type=checkbox], input[type=radio], .p-inputswitch, .p-toggleswitch')) {
       const apres = c.nextElementSibling && !c.nextElementSibling.matches(CTRL) ? net(c.nextElementSibling.innerText) : '';
       if (apres && apres.length <= 30) { const ligne = libelleLigne(c); return ligne && ligne !== apres ? ligne + ' - ' + apres : apres; }
     }
@@ -7088,9 +7094,10 @@ JS_CHAMPS = r"""(portee) => {
     sortie.push([lib, valeur(c)]);
     if (sortie.length >= 200) break;
   }
-  // (une case « N/A » à côté d'un champ : « Champ - N/A »)
-  for (let i = 1; i < sortie.length; i++) if (/^(n\/?a|na|oui|non)$/i.test(sortie[i][0]) && sortie[i - 1][0])
-    sortie[i][0] = sortie[i - 1][0] + ' - ' + sortie[i][0];
+  // (une case « N/A » à côté d'un champ : « Champ - N/A » ; le libellé d'avant tel qu'il était, sans « - N/A » qui s'empile)
+  const bruts = sortie.map(x => x[0]);
+  for (let i = 1; i < sortie.length; i++) if (/^(n\/?a|na|oui|non)$/i.test(bruts[i]) && bruts[i - 1] && !/^(n\/?a|na|oui|non)$/i.test(bruts[i - 1]))
+    sortie[i][0] = bruts[i - 1] + ' - ' + bruts[i];
   return sortie;
 }"""
 
@@ -7098,10 +7105,24 @@ LIMITE_FICHES = 30
 # une fiche s'ouvre par un bouton dont la bulle n'a rien d'une action qui modifie (la protection bloque de toute façon
 # tout envoi au portail)
 BULLE_INTERDITE = re.compile(r"suppr|delet|effac|retir|dupliq|duplicat|copi|copy|export|import|valid|diffus|releas|archiv|"
-                             r"envoy|send|reculer|avancer|cloturer|cloture|annul|cancel|nouveau|nouvelle|creer|create|ajout|add",
+                             r"envoy|send|reculer|avancer|cloturer|cloture|annul|cancel|nouveau|nouvelle|creer|create|ajout|add|"
+                             r"telecharg|download|imprim|print|lier|link|associ|affect|modif|edit|enregistr|save|workflow",
                              re.I)
 ONGLETS_A_FICHES = re.compile(r"rep\W*\s*elec", re.I)  # (les onglets de résultats dont on ouvre chaque fiche)
 BOUTON_FICHE = re.compile(r"rep[eè]?re?s?\W*\s*(elec|électrique)|rep\W*\s*elec", re.I)  # (sa bulle : « Repère électrique(s) »)
+ONGLET_UD = re.compile(r"^\W*ud\W*$", re.I)  # (l'onglet « UD » : des plans)
+BOUTON_UD = re.compile(r"^\W*(ud\W*s?\W*|(ouvrir|voir|afficher|consulter)\b.*\bud\b.*)$", re.I)  # (sa bulle : « UD(s) »...)
+
+
+def _sorte_de_fiche(onglet):
+    """(sorte, bulle du bouton qui ouvre la fiche, ce qu'on dit de ce bouton) pour un onglet de résultats, ou None :
+    repère électrique (l'éclair) ou UD."""
+    nom = sans_accents(onglet or "")
+    if ONGLETS_A_FICHES.search(nom):
+        return "rep", BOUTON_FICHE, "« Repere electrique »"
+    if ONGLET_UD.match(nom):
+        return "ud", BOUTON_UD, "« UD(s) »"
+    return None
 
 
 def _onglets_fiche(page, apres=True):
@@ -7113,9 +7134,11 @@ def _onglets_fiche(page, apres=True):
 
 def _champs(page, portee=None):
     try:
-        return page.evaluate(JS_CHAMPS, portee)
+        champs = page.evaluate(JS_CHAMPS, portee)
     except Exception:
         return []
+    # (« -- Veuillez selectionner une installation -- » : le texte d'une liste où rien n'est choisi)
+    return [[lib, "" if re.fullmatch(r"\s*-*\s*veuillez\s+s[eé]lectionner\b.*", val or "", re.I | re.S) else val] for lib, val in champs]
 
 
 def _lire_zone_fiche(page, portee):
@@ -7189,7 +7212,7 @@ def _cocher_ligne(page, voulue):
         _elargir(page, large=False)
 
 
-def _ouvrir_fiche(page, url, terme, garde, onglet, rang, ident, voulue):
+def _ouvrir_fiche(page, url, terme, garde, onglet, rang, ident, voulue, bouton=BOUTON_FICHE, nom_bouton="« Repere electrique »"):
     """La fiche de la ligne « rang » (ses valeurs : voulue) de l'onglet de résultats « onglet » : recherche à nouveau,
     coche la ligne, clique l'éclair, lit chaque onglet de la fiche. Renvoie {"ident", "onglets": [(nom, champs,
     colonnes, lignes, info)], "probleme", "bulle"}."""
@@ -7223,7 +7246,7 @@ def _ouvrir_fiche(page, url, terme, garde, onglet, rang, ident, voulue):
             except Exception:
                 bulle = ""
         bulles.append((bulle or o["texte"] or "?", o["sorte"] if rang == 0 else ""))
-        if choix is None and BOUTON_FICHE.search(sans_accents(bulle)) and not BULLE_INTERDITE.search(sans_accents(bulle)):
+        if choix is None and bouton.search(sans_accents(bulle)) and not BULLE_INTERDITE.search(sans_accents(bulle)):
             choix = (i, o, bulle)
             if rang > 0:  # (les bulles de toute la barre : notées pour la première fiche seulement)
                 break
@@ -7233,13 +7256,13 @@ def _ouvrir_fiche(page, url, terme, garde, onglet, rang, ident, voulue):
     fiche["liste"] = (_sans_donnee(trouve.get("liste"), css=True) + (" (par la case cochee)" if trouve.get("par_case") else "")
                       if trouve.get("liste") else "aucune liste visible")
     if choix is None:
-        fiche["probleme"] = "bouton « Repere electrique » introuvable autour de la liste"
+        fiche["probleme"] = f"bouton {nom_bouton} introuvable autour de la liste"
         fiche["diag"] = f"{len(outils)} bouton(s) trouve(s) ; liste : {fiche['liste']}" + \
             (" ; ses parents : " + " < ".join(_sans_donnee(c, css=True) for c in trouve.get("parents", [])) if trouve.get("liste") else "")
         return fiche
     i, bouton, fiche["bulle"] = choix
     if bouton["grise"]:
-        fiche["probleme"] = "bouton « Repere electrique » grise (la ligne n'est pas selectionnee ?)"
+        fiche["probleme"] = f"bouton {nom_bouton} grise (la ligne n'est pas selectionnee ?)"
         return fiche
     page.evaluate(f"() => {{ const b = document.querySelector('[data-robot-outil=\"{i}\"]'); "
                   "if (b) b.setAttribute('data-robot-eclair', '1'); }")
@@ -7315,23 +7338,26 @@ def _faire_une_recherche(page, url, terme, garde):
         res["feuilles"].append((o["nom"], colonnes, lignes, info))
         ecrire(f"      {_structure(o['nom']) or 'onglet'} : {len(lignes)} ligne(s) lue(s) sur {n}"
                + (f" ({info['pages']} pages)" if info["pages"] > 1 else "") + (f" - {info['remarque']}" if info["remarque"] else ""))
-    # la FICHE de chaque repère électrique trouvé (ses onglets : client, définition, liste des plans...)
+    # la FICHE de chaque repère électrique trouvé (ses onglets : client, définition, liste des plans...), de chaque UD
     for nom, colonnes, lignes, _ in list(res["feuilles"]):
-        if not ONGLETS_A_FICHES.search(sans_accents(nom)) or not lignes:
+        sorte = _sorte_de_fiche(nom)
+        if not sorte or not lignes:
             continue
-        cle = next((c for c in colonnes if re.search(r"rep[eè]re", sans_accents(c), re.I)), colonnes[0] if colonnes else "")
+        sorte, bouton, nom_bouton = sorte
+        cle = next((c for c in colonnes if re.search(r"rep[eè]re" if sorte == "rep" else r"ref.*\bud\b|\bud\b", sans_accents(c), re.I)),
+                   colonnes[0] if colonnes else "")
         a_ouvrir = min(len(lignes), LIMITE_FICHES)
         ecrire(f"      {_structure(nom) or 'onglet'} : ouverture de {a_ouvrir} fiche(s) (environ {a_ouvrir // 2 + 1} min)..."
                + (f" (les {LIMITE_FICHES} premieres)" if len(lignes) > LIMITE_FICHES else ""))
         for rang in range(a_ouvrir):
             ident = lignes[rang].get(cle, "") or f"ligne {rang + 1}"
             try:
-                f = _ouvrir_fiche(page, url, terme, garde, nom, rang, ident, lignes[rang])
+                f = _ouvrir_fiche(page, url, terme, garde, nom, rang, ident, lignes[rang], bouton, nom_bouton)
             except KeyboardInterrupt:
                 raise
             except Exception as e:
                 f = {"ident": ident, "onglets": [], "probleme": "echec : " + _sans_donnee(masquer(premiere_ligne(e)))[:80], "bulle": ""}
-            f["onglet"] = nom
+            f["onglet"], f["sorte"], f["rang"] = nom, sorte, rang
             res["fiches"].append(f)
             lus = sum(1 for o in f["onglets"] if o[1] or o[2])
             ecrire(f"         fiche {rang + 1}/{a_ouvrir} : " + (f"PROBLEME : {f['probleme']}" if f["probleme"] else
@@ -7488,6 +7514,282 @@ def _termes_de_recherche(page):
         return termes[:200]
 
 
+# ---------------------------------------------------------------------------- la PAGE de résultats (choix 7)
+# Une page à ouvrir dans le navigateur (un fichier sur ce poste, rien n'est envoyé) : une carte par repère électrique
+# ou par UD, avec en gros ce qui compte (client, plans, référence électrique) ; les repères qui portent le même nom
+# côte à côte, ce qui les distingue en couleur ; ceux qui correspondent exactement à la recherche d'abord.
+
+STYLE_PAGE = """
+:root{--fond:#f3f5f9;--carte:#fff;--texte:#1d2433;--doux:#5b6475;--trait:#dfe3ea;--bleu:#1f4fd1;--vert:#137a4b;
+--ambre:#9a5b00;--diff:#fff1a8;--rouge:#b42318}
+*{box-sizing:border-box} body{margin:0;background:var(--fond);color:var(--texte);font:14px/1.45 "Segoe UI",Arial,sans-serif}
+header{background:#14213d;color:#fff;padding:18px 24px} header h1{margin:0;font-size:22px}
+header p{margin:4px 0 0;color:#c9d2e3}
+.outils{position:sticky;top:0;z-index:5;background:var(--fond);padding:12px 24px;border-bottom:1px solid var(--trait)}
+.outils input{width:min(520px,100%);padding:9px 12px;font-size:15px;border:1px solid #b8c0cf;border-radius:8px}
+main{padding:8px 24px 40px} section.recherche{margin-top:18px}
+h2{font-size:20px;margin:18px 0 6px} h3{font-size:16px;margin:22px 0 8px;color:var(--doux)}
+.compte{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px}
+.compte span{background:#e6ebf5;border-radius:999px;padding:3px 10px;font-size:13px}
+.groupe{margin:14px 0 22px} .bandeau{padding:8px 12px;border-radius:8px;margin-bottom:8px;font-weight:600}
+.bandeau.exact{background:#dff3e8;color:var(--vert)} .bandeau.proche{background:#e5ecff;color:var(--bleu)}
+.bandeau.autre{background:#eceef2;color:var(--doux)} .bandeau.jumeaux{background:#ffe9cc;color:#8a4300}
+.bandeau small{font-weight:400;display:block;margin-top:2px} .jumeaux{margin:12px 0 18px} .cartes+.jumeaux,.jumeaux+.cartes{margin-top:14px}
+.cartes{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px}
+.carte{background:var(--carte);border:1px solid var(--trait);border-radius:12px;padding:14px 16px;box-shadow:0 1px 3px #0000000d}
+.carte .titre{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.carte .titre b{font-size:22px;letter-spacing:.3px} .numero{background:#8a4300;color:#fff;border-radius:6px;padding:1px 8px;font-size:13px}
+.puces{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px} .puces span{background:#eef1f6;border-radius:6px;padding:2px 8px;font-size:13px}
+.distingue{background:var(--diff);border-radius:6px;padding:6px 10px;margin:4px 0 10px;font-size:13px}
+.cle{border-radius:10px;padding:8px 10px;margin:8px 0;overflow-x:auto} .cle h4{margin:0 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.6px}
+.cle.client{background:#eef3ff} .cle.client h4{color:var(--bleu)} .cle.plan{background:#eaf7f0} .cle.plan h4{color:var(--vert)}
+.cle.ref{background:#fff6e6} .cle.ref h4{color:var(--ambre)} .cle .gros{font-size:16px;font-weight:600}
+.cle .vide{color:var(--doux);font-style:italic}
+table{border-collapse:collapse;width:100%;font-size:13px;overflow-wrap:anywhere} th,td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--trait);vertical-align:top}
+th{color:var(--doux);font-weight:600} td.diff,span.diff,div.diff,tr.diff td{background:var(--diff);font-weight:600}
+details{margin-top:8px} summary{cursor:pointer;color:var(--bleu);font-weight:600}
+details h5{margin:12px 0 4px;font-size:13px} .kv td:first-child{color:var(--doux);width:42%}
+.probleme{color:var(--rouge);font-size:13px;margin:6px 0} .simple{background:var(--carte);border-radius:10px;padding:8px;overflow-x:auto}
+.cache{display:none!important} footer{color:var(--doux);font-size:12px;padding:0 24px 24px}
+@media print{.outils{display:none} details{display:block} .carte{break-inside:avoid}}
+"""
+
+SCRIPT_PAGE = """
+const net = t => t.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();
+document.getElementById('filtre').addEventListener('input', ev => {
+  const q = net(ev.target.value.trim());
+  document.querySelectorAll('.carte, .simple tr.ligne').forEach(c => c.classList.toggle('cache', !!q && !net(c.textContent).includes(q)));
+  document.querySelectorAll('.groupe').forEach(g => g.classList.toggle('cache', !!q && !g.querySelector('.carte:not(.cache)')));
+});
+"""
+
+
+def _serre(t):
+    """Pour comparer deux noms : sans accents, sans espaces ni ponctuation, en minuscules (« 1266VT 1 » = « 1266vt1 »)."""
+    return re.sub(r"[^a-z0-9]", "", sans_accents(str(t or "")).lower())
+
+
+def _ordre_naturel(t):
+    """« VT2 » avant « VT10 »."""
+    return [int(x) if x.isdigit() else x for x in re.split(r"(\d+)", _serre(t))]
+
+
+def _colonne(colonnes, motif):
+    return next((c for c in colonnes if re.search(motif, sans_accents(c), re.I)), None)
+
+
+SANS_INTERET = re.compile(r"^(recherche|fiche|actions?)$", re.I)  # (colonnes ajoutées par le robot, icônes d'action)
+
+
+def _utiles(colonnes, lignes):
+    return [c for c in colonnes if not SANS_INTERET.match(c) and any(str(l.get(c, "")).strip() for l in lignes)]
+
+
+def _signature(colonnes, ligne):
+    return tuple(str(ligne.get(c, "")).strip() for c in colonnes if not SANS_INTERET.match(c))
+
+
+def _carte_de(sorte, onglet, colonnes, ligne, fiche):
+    """Ce qu'on montre d'un résultat (repère électrique ou UD) et ses valeurs à comparer avec ses homonymes."""
+    if sorte == "rep":
+        col_titre = _colonne(colonnes, r"repere\s*elec") or _colonne(colonnes, r"repere")
+        puces = [_colonne(colonnes, m) for m in (r"^version$", r"^installation$", r"^equipement$", r"^type$")]
+    else:
+        col_titre = _colonne(colonnes, r"ref.*\bud\b") or _colonne(colonnes, r"\bud\b")
+        puces = [_colonne(colonnes, m) for m in (r"^libelle$", r"^domaine$", r"installation", r"^ecp$")]
+    col_titre = col_titre or next((c for c in colonnes if ligne.get(c)), "")
+    onglets = (fiche or {}).get("onglets", [])
+    comparer = {"Source": onglet}
+    for c in colonnes:
+        if not SANS_INTERET.match(c):
+            comparer[c] = ligne.get(c, "")
+    for nom_o, champs, cols_o, lignes_o, _ in onglets:
+        for lib, val in champs:
+            comparer[f"{nom_o} › {lib or '(sans libelle)'}"] = val
+        if cols_o:
+            comparer[nom_o] = " / ".join(" ; ".join(_signature(cols_o, l)) for l in lignes_o)
+    return {"titre": ligne.get(col_titre, "") or (fiche or {}).get("ident", "") or "(sans nom)", "onglet": onglet, "sorte": sorte,
+            "puces": [(c, ligne.get(c, "")) for c in puces if c and ligne.get(c)], "colonnes": colonnes, "ligne": ligne,
+            "fiche": fiche, "onglets": onglets, "comparer": comparer}
+
+
+def _table(colonnes, lignes, surligne=lambda l: False):
+    from html import escape
+    cols = _utiles(colonnes, lignes)
+    if not cols:
+        return '<div class="vide">(vide)</div>'
+    return ("<table><tr>" + "".join(f"<th>{escape(c)}</th>" for c in cols) + "</tr>" +
+            "".join("<tr" + (' class="diff"' if surligne(l) else "") + ">" + "".join(f"<td>{escape(str(l.get(c, '')))}</td>" for c in cols) +
+                    "</tr>" for l in lignes) + "</table>")
+
+
+def _kv(paires, diff=(), prefixe=""):
+    from html import escape
+    if not paires:
+        return '<div class="vide">(vide)</div>'
+    return '<table class="kv">' + "".join(
+        f"<tr><td>{escape(str(lib or '(sans libelle)'))}</td><td" +
+        (' class="diff"' if (prefixe + str(lib or '(sans libelle)')) in diff or (not prefixe and lib in diff) else "") +
+        ">" + (escape(str(v)) if str(v).strip() else '<span class="vide">(vide)</span>') + "</td></tr>" for lib, v in paires) + "</table>"
+
+
+def _html_carte(k, numero, total, diff, communes):
+    """Une carte. numero/total : sa place parmi les résultats de même nom ; diff : ce qui les distingue ; communes :
+    par onglet de la fiche, les lignes que tous ont (les autres sont surlignées)."""
+    from html import escape
+    e = lambda t: escape(str(t if t is not None else ""))
+    surligne = lambda nom_o: (lambda l: total > 1 and _signature(cols_de[nom_o], l) not in communes.get(nom_o, set()))
+    cols_de = {o[0]: o[2] for o in k["onglets"]}
+    h = ['<div class="carte">', '<div class="titre"><b>' + e(k["titre"]) + "</b>"]
+    if total > 1:
+        h.append(f'<span class="numero">{numero}/{total}</span>')
+    h.append('</div><div class="puces">' + f'<span{" class=diff" if "Source" in diff else ""}>{e(k["onglet"])}</span>' +
+             "".join(f'<span title="{e(c)}"' + (' class="diff"' if c in diff else "") + f">{e(v)}</span>" for c, v in k["puces"]) + "</div>")
+    if total > 1 and diff:  # (ce qui distingue ce résultat de ses homonymes, en clair)
+        h.append('<div class="distingue">' + "<br>".join(f"<b>{e(c)}</b> : {e(k['comparer'].get(c, '') or '(vide)')}" for c in diff[:4]) +
+                 ("<br>…" if len(diff) > 4 else "") + "</div>")
+    f = k["fiche"]
+    if f is None:
+        h.append('<div class="probleme">Fiche non ouverte (au-delà de la limite du robot) : seule la ligne de la liste est connue.</div>')
+    elif f.get("probleme"):
+        h.append(f'<div class="probleme">Fiche non lue : {e(f["probleme"])}</div>')
+    onglet_de = lambda motif: next((o for o in k["onglets"] if re.search(motif, sans_accents(o[0]).lower())), None)
+
+    def case(classe, titre, motif):
+        o = onglet_de(motif)
+        h.append(f'<div class="cle {classe}"><h4>{e(titre)}</h4>')
+        if o is None:
+            h.append('<div class="vide">' + ("non lu" if f is None or f.get("probleme") else "pas dans la fiche") + "</div>")
+        else:
+            nom_o, champs, cols_o, lignes_o, _ = o
+            remplis = [(lib, v) for lib, v in champs if str(v).strip()]
+            if cols_o and lignes_o:
+                h.append(_table(cols_o, lignes_o, surligne(nom_o)))
+            if remplis:
+                h.append(_kv(remplis, diff, nom_o + " › "))
+            if not remplis and not (cols_o and lignes_o):
+                h.append('<div class="vide">aucun</div>')
+        h.append("</div>")
+
+    if k["sorte"] == "rep":
+        case("client", "Client / contrat", r"client")
+        case("plan", "Plan(s)", r"liste des plans|\bplans?\b")
+        col_ref, col_ecp = _colonne(k["colonnes"], r"references?\s*elec"), _colonne(k["colonnes"], r"^ecp$")
+        h.append('<div class="cle ref"><h4>Référence électrique</h4>')
+        if col_ref and k["ligne"].get(col_ref):
+            h.append(f'<div class="gros{" diff" if col_ref in diff else ""}">{e(k["ligne"][col_ref])}</div>')
+        else:
+            h.append('<div class="vide">(vide)</div>')
+        if col_ecp and k["ligne"].get(col_ecp):
+            h.append(f'<div{" class=diff" if col_ecp in diff else ""}>ECP : {e(k["ligne"][col_ecp])}</div>')
+        h.append("</div>")
+    else:
+        case("client", "Client", r"client")
+        case("plan", "Appareils impactés", r"appareil")
+        case("ref", "Plan", r"^\W*plan\W*$")
+    # tout le reste, à déplier
+    h.append("<details><summary>Toutes les informations</summary><h5>Dans la liste des résultats</h5>")
+    h.append(_kv([(c, k["ligne"].get(c, "")) for c in k["colonnes"] if str(k["ligne"].get(c, "")).strip() and not SANS_INTERET.match(c)], diff))
+    for nom_o, champs, cols_o, lignes_o, info in k["onglets"]:
+        h.append(f"<h5>{e(nom_o)}</h5>")
+        if champs:
+            h.append(_kv(champs, diff, nom_o + " › "))
+        if cols_o:
+            h.append(_table(cols_o, lignes_o, surligne(nom_o)))
+        if not champs and not cols_o:
+            h.append('<div class="vide">(vide)</div>')
+    h.append("</details></div>")
+    return "".join(h)
+
+
+def _html_resultats(terme, cartes, titre):
+    """Les cartes d'une sorte (repères ou UD) : celles qui portent exactement le nom cherché, puis les noms proches,
+    puis le reste ; les homonymes ensemble, avec ce qui les distingue."""
+    from html import escape
+    e = lambda t: escape(str(t if t is not None else ""))
+    cible, groupes = _serre(terme), {}
+    for k in cartes:
+        groupes.setdefault(_serre(k["titre"]), []).append(k)
+    niveau = lambda g: 0 if g == cible else 1 if cible and g.startswith(cible) else 2
+    h = [f"<h3>{titre} : {len(cartes)} trouvé(s)" + (f", {len(groupes)} nom(s) différent(s)" if len(groupes) != len(cartes) else "") + "</h3>"]
+    for n, texte, classe in ((0, f"Correspond exactement à « {e(terme)} »", "exact"), (1, f"Noms proches : commencent par « {e(terme)} »", "proche"),
+                             (2, "Autres résultats trouvés par le portail pour cette recherche", "autre")):
+        gs = sorted((g for g in groupes if niveau(g) == n), key=_ordre_naturel)
+        if not gs:
+            continue
+        h.append(f'<div class="groupe"><div class="bandeau {classe}">{texte} — {sum(len(groupes[g]) for g in gs)} résultat(s)</div>')
+        seuls = []
+        for g in gs + [None]:
+            ks = groupes.get(g, [])
+            if len(ks) == 1:
+                seuls.append(ks[0])
+                continue
+            if seuls:
+                h.append('<div class="cartes">' + "".join(_html_carte(k, 1, 1, [], {}) for k in seuls) + "</div>")
+                seuls = []
+            if not ks:
+                continue
+            # ce qui distingue des résultats de même nom : les valeurs qui ne sont pas les mêmes pour tous
+            cles = []
+            for k in ks:
+                cles += [c for c in k["comparer"] if c not in cles]
+            diff = [c for c in cles if len({str(k["comparer"].get(c, "")).strip() for k in ks}) > 1]
+            communes = {}
+            for k in ks:
+                for nom_o, _, cols_o, lignes_o, _ in k["onglets"]:
+                    sigs = {_signature(cols_o, l) for l in lignes_o}
+                    communes[nom_o] = communes[nom_o] & sigs if nom_o in communes else sigs
+            h.append(f'<div class="jumeaux"><div class="bandeau jumeaux">{len(ks)} résultats portent le même nom « {e(ks[0]["titre"])} »<small>' +
+                     (("Ce qui les distingue (en jaune) : " + ", ".join(e(c) for c in diff[:8]) + (" …" if len(diff) > 8 else ""))
+                      if diff else "Aucune différence dans ce que le robot a lu.") + "</small></div>" +
+                     '<div class="cartes">' + "".join(_html_carte(k, i + 1, len(ks), diff, communes) for i, k in enumerate(ks)) + "</div></div>")
+        h.append("</div>")
+    return "".join(h)
+
+
+def ecrire_page_recherche(chemin, recherches):
+    """La page de résultats : recherches = [(ce qui a été cherché, résultat de _faire_une_recherche)]."""
+    from html import escape
+    e = lambda t: escape(str(t if t is not None else ""))
+    corps = []
+    for terme, r in recherches:
+        corps.append(f'<section class="recherche"><h2>Recherche « {e(terme)} »</h2><div class="compte">' +
+                     "".join(f"<span>{e(n)} : {e(a)}</span>" for n, a in r["onglets"]) + "</div>")
+        if r["probleme"]:
+            corps.append(f'<div class="probleme">{e(r["probleme"])}</div>')
+        fiches = {(f.get("onglet"), f.get("rang")): f for f in r.get("fiches", [])}
+        cartes, simples = {"rep": [], "ud": []}, []
+        for nom, colonnes, lignes, info in r["feuilles"]:
+            sorte = _sorte_de_fiche(nom)
+            if not sorte:
+                simples.append((nom, colonnes, lignes))
+                continue
+            cartes[sorte[0]] += [_carte_de(sorte[0], nom, colonnes, ligne, fiches.get((nom, rang))) for rang, ligne in enumerate(lignes)]
+        for sorte, titre in (("rep", "Repères électriques"), ("ud", "UD (plans)")):
+            if cartes[sorte]:
+                corps.append(_html_resultats(terme, cartes[sorte], titre))
+        for nom, colonnes, lignes in simples:
+            if lignes:
+                cols = _utiles(colonnes, lignes)
+                corps.append(f'<h3>{e(nom)} : {len(lignes)}</h3><div class="simple"><table><tr>' + "".join(f"<th>{e(c)}</th>" for c in cols) +
+                             "</tr>" + "".join('<tr class="ligne">' + "".join(f"<td>{e(l.get(c, ''))}</td>" for c in cols) + "</tr>" for l in lignes) +
+                             "</table></div>")
+        if not any(lignes for _, _, lignes, _ in r["feuilles"]):
+            corps.append('<div class="vide">Aucun résultat.</div>')
+        corps.append("</section>")
+    titre = "Recherche : " + ", ".join(t for t, _ in recherches)
+    page = ('<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
+            f"<title>{e(titre)}</title><style>{STYLE_PAGE}</style></head><body>"
+            f"<header><h1>{e(titre)}</h1><p>Lu par le robot le {datetime.now().strftime('%d/%m/%Y à %H:%M')} — "
+            "en lecture seule, rien n'a été modifié. Ce fichier reste sur ce poste.</p></header>"
+            '<div class="outils"><input id="filtre" placeholder="Filtrer : un client, un plan, une référence, MK1..." '
+            'autocomplete="off"></div><main>' + "".join(corps) + "</main>"
+            "<footer>Tout le détail est aussi dans l'Excel du même nom (Bureau > Robot > recherches).</footer>"
+            f"<script>{SCRIPT_PAGE}</script></body></html>")
+    chemin.write_text(page, encoding="utf-8")
+    return chemin
+
+
 def ecrire_rapport_recherche(rapports, garde, duree, termes=()):
     """A_ENVOYER_recherche.txt : comment s'est passée la recherche (onglets, colonnes, nombres de lignes, problèmes).
     Aucune valeur, aucune recherche tapée : les résultats sont dans l'Excel, sur ce poste."""
@@ -7504,10 +7806,12 @@ def ecrire_rapport_recherche(rapports, garde, duree, termes=()):
             cols = [c for c in (_structure(c) for c in colonnes) if c]
             lignes.append(f"  {_structure(nom) or '(masque)'} : {len(lus)} ligne(s) lue(s), {info['pages']} page(s)"
                           + (f" - {info['remarque']}" if info["remarque"] else "") + (" ; colonnes : " + " | ".join(cols) if cols else ""))
-        fiches = r.get("fiches", [])
-        if fiches:
+        par_onglet = {}
+        for f in r.get("fiches", []):
+            par_onglet.setdefault(f.get("onglet", ""), []).append(f)
+        for nom_f, fiches in par_onglet.items():
             ok = [f for f in fiches if not f["probleme"]]
-            lignes.append(f"  FICHES : {len(ok)} ouverte(s) sur {len(fiches)} essayee(s)"
+            lignes.append(f"  FICHES de {_structure(nom_f) or '(masque)'} : {len(ok)} ouverte(s) sur {len(fiches)} essayee(s)"
                           + (f" ; bulle du bouton : {_structure(fiches[0]['bulle']) or '(aucune)'}" if fiches[0].get("bulle") is not None else ""))
             for pb in sorted({f["probleme"] for f in fiches if f["probleme"]}):
                 lignes.append(f"    probleme : {pb}")
@@ -7558,7 +7862,7 @@ def boucle_recherche(page, url, garde):
             break
         cherches += termes
         ecrire(f"   {len(termes)} recherche(s). NE TOUCHEZ PAS A LA SOURIS pendant ce temps (bande JAUNE en bas de la fenetre du robot).")
-        par_onglet, resume, fiches = {}, [], {}
+        par_onglet, resume, fiches, faites = {}, [], {}, []
         for numero, terme in enumerate(termes, 1):
             if _liaison_libre(garde):
                 ecrire("   Le portail utilise une liaison directe que ce robot ne sait pas bloquer : arret par prudence.")
@@ -7574,6 +7878,7 @@ def boucle_recherche(page, url, garde):
             if r["probleme"]:
                 ecrire(f"      -> {r['probleme']}")
             rapports.append(r)
+            faites.append((terme, r))
             lus = {nom: (len(l), info) for nom, _, l, info in r["feuilles"]}
             for nom, annonces in r["onglets"] or [("(aucun)", 0)]:
                 n, info = lus.get(nom, (0, {"pages": 0, "remarque": ""}))
@@ -7626,12 +7931,19 @@ def boucle_recherche(page, url, garde):
             ecrire("   Impossible d'ecrire l'Excel (" + (erreur_courte(e) if isinstance(e, OSError) else type(e).__name__) + ").")
             continue
         total = sum(len(f["lignes"]) for f in par_onglet.values())
+        try:  # (la page claire, à côté de l'Excel)
+            vue = ecrire_page_recherche(fichier.with_suffix(".html"), faites)
+        except Exception as e:
+            vue = None
+            ecrire("   Page de resultats impossible a ecrire (" + type(e).__name__ + ").")
         ecrire()
         ecrire(f"   EXCEL CREE : Bureau > Robot > recherches > {fichier.name}  ({total} ligne(s), {len(par_onglet)} onglet(s))")
-        ecrire("   (Il reste sur ce poste : ne me l'envoyez pas, il contient les vraies donnees.)")
-        if WINDOWS and oui_en_vivant(page, "   L'ouvrir maintenant ?", "o"):
+        if vue:
+            ecrire(f"   PAGE CLAIRE : Bureau > Robot > recherches > {vue.name}  (s'ouvre dans le navigateur)")
+        ecrire("   (Ils restent sur ce poste : ne me les envoyez pas, ils contiennent les vraies donnees.)")
+        if WINDOWS and oui_en_vivant(page, "   Ouvrir " + ("la page claire" if vue else "l'Excel") + " maintenant ?", "o"):
             try:
-                os.startfile(str(fichier))
+                os.startfile(str(vue or fichier))
             except OSError:
                 ecrire("   Ouverture impossible : ouvrez-le depuis Bureau > Robot > recherches.")
     rapport = ecrire_rapport_recherche(rapports, garde, round((time.time() - debut) / 60, 1), cherches) if rapports else None
