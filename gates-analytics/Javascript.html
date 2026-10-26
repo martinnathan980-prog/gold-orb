@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'c387d46';
+  var EDITION = '2a70bb8';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -3115,7 +3115,15 @@
       /* D'où partent les projections, dit sous le point : la semaine en
          cours, que le dernier relevé n'a pas encore rattrapée. */
       if (depart >= d0 && depart <= d1) {
-        var cDep = placerMot([{ lignes: ['aujourd’hui'], x: x(depart) + 3, base: y(atteint) + 15, ancre: 'start' }], L - 2);
+        /* Débrief 26 : près de zéro, « aujourd'hui » sous le point tombait
+           sur le nom de la bande des semaines (« validés par semaine »),
+           posé plus tard : sa ligne est réservée le temps de choisir, et le
+           mot passe au-dessus du point s'il le faut. */
+        var zoneBande = { g: mG - 11, d: L - 2, h: yBande - 14, b: yBande + 1 };
+        boites.push(zoneBande);
+        var cDep = placerMot([{ lignes: ['aujourd’hui'], x: x(depart) + 3, base: y(atteint) + 15, ancre: 'start' },
+                              { lignes: ['aujourd’hui'], x: x(depart) + 3, base: y(atteint) - 8, ancre: 'start', malus: 1 }], L - 2);
+        boites.splice(boites.indexOf(zoneBande), 1);
         if (cDep.gene >= 10) horsClip.push(fondMot(cDep));
         horsClip.push(texteMot(cDep, { cls: 'repere-depart' }));
       }
@@ -8026,5 +8034,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = 'c387d46';
+window.SUIVI_FWD_FIN = '2a70bb8';
 </script>

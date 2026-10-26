@@ -47,7 +47,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = 'c387d46';
+const EDITION = '2a70bb8';
 
 // =====================================================================
 //  CONFIGURATION
@@ -7014,7 +7014,9 @@ function pageImportSecondeBase(parametres) {
     '--see:#3f51a3;--teinte:#191915;--ombre:0 1px 2px rgba(25,25,21,.06)}' +
     '@media (prefers-color-scheme:dark){:root{--papier:#1b1b18;--surface:#23231f;--case:#292924;--survol:#31312b;--encre:#efede6;--encre-2:#c4c1b6;' +
     '--encre-3:#a19e93;--filet:#3a3933;--filet-2:#4d4c45;--fait:#6fbf94;--fait-fond:#1f2c25;--alerte:#e8907a;--alerte-fond:#36221e;' +
-    '--attention:#e0b25a;--attention-fond:#352b17;--see:#9aa8ec;--teinte:#efede6;--ombre:none}}' +
+    '--attention:#e0b25a;--attention-fond:#352b17;--see:#9aa8ec;--teinte:#efede6;--ombre:none;' +
+    /* Débrief 26 : barre de défilement, cases à cocher et listes en sombre aussi. */
+    'color-scheme:dark;accent-color:var(--fait)}}' +
     'html,body{margin:0;background:var(--papier);color:var(--encre);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}' +
     'body{padding:6px 18px 0}p{margin:0 0 10px}b{font-weight:600}' +
     'input[type=text]{font:inherit;font-size:13px;padding:3px 7px;border:1px solid var(--filet-2);border-radius:6px;background:var(--surface);color:var(--encre)}' +

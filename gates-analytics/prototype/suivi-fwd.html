@@ -12,14 +12,14 @@
   --creux:      #faf9f6;
   --encre:      #191915;
   --encre-2:    #57564e;
-  --encre-3:    #86847a;
+  --encre-3:    #6f6d64;   /* débrief 26 : 4,6:1 au moins sur le papier et les têtes (3,35 avant) */
   --filet:      #e5e3dc;
   --filet-fort: #cfccc2;
 
   --fait:   #286b45;
   /* L'ambre ne peint plus aucune valeur (débrief 22) : il reste à « à
      l'arrêt », au verdict SEE « avance », au mot « Démonstration ». */
-  --cours:  #bf7f14;
+  --cours:  #946210;        /* débrief 26 : 4,7:1 sur le papier (3,0 avant) */
   --alerte: #a13b2a;
   /* Le changement d'indice : ni un état ni une alerte, une couleur à lui —
      un violet, distinct des trois états et du rouge, validé sur les deux
@@ -53,6 +53,21 @@
   --voile-ecart: rgba(191, 127, 20, .14);
   /* Le voile qui pâlit la pastille « avant » du journal : le fond, à 60 %. */
   --voile-avant: rgba(255, 255, 255, .6);
+  /* Débrief 26 — la profondeur et les états, en jetons : le clair garde ses
+     valeurs, le sombre a les siennes (audit du thème sombre, contrastes
+     mesurés). --releve : une surface posée au-dessus (bulle, bouton ↑,
+     tuiles) ; --puits : un fond creusé (panneau d'aide) ; --presse-* : un
+     bouton enfoncé ; --trait-donnee : un trait qui porte du sens (flèche du
+     journal, mini-jauges, pastille hachurée), à 3:1 au moins. */
+  --releve: var(--surface); --releve-bord: var(--filet-fort);
+  --bulle-ombre: none; --flottant-ombre: 0 6px 18px rgba(0, 0, 0, .12);
+  --puits: var(--creux); --tete-survol: var(--surface);
+  --presse-fond: var(--encre); --presse-encre: var(--surface); --presse-anneau: transparent;
+  --jeton-fond: var(--encre); --jeton-bord: var(--encre); --jeton-encre: var(--papier);
+  --trait-donnee: #8f8c82; --pastille-attente: #8f8c82; --hachure-pastille: #8f8c82;
+  --filtre-invite: var(--encre-3);
+  --t-une: var(--encre);
+  --n-opacite: .72; --attenue: .26;
 
   /* Les panneaux des sections (débrief 20) : chaque section est une feuille
      posée sur le papier, bordée d'un filet et d'une ombre à peine marquée.
@@ -134,6 +149,24 @@
     --tete-groupe: #231b21;   --tete-groupe-filet: #46343f;
     --tete-plans: #1e2017;    --tete-plans-filet: #3a3f27;
     --tete-ardoise: #1a1f27;  --tete-ardoise-filet: #34404f;
+    /* Débrief 26 : l'audit du thème sombre — un gris tertiaire lisible
+       (4,6 à 5,9:1), des boutons enfoncés sombres et cernés plutôt que des
+       pavés blancs, des surfaces posées plus claires que ce qu'elles
+       recouvrent, des teintes atténuées qui restent des teintes. */
+    --encre-3: #908e84;
+    --panneau-bord: #303036;
+    --panneau-ombre: 0 1px 0 rgba(255, 255, 255, .05) inset, 0 16px 36px -16px rgba(0, 0, 0, .85);
+    --voile-avant: rgba(22, 22, 26, .4);
+    --releve: #222227; --releve-bord: #4a4943;
+    --bulle-ombre: 0 10px 28px -8px rgba(0, 0, 0, .7); --flottant-ombre: 0 8px 22px -6px rgba(0, 0, 0, .8);
+    --puits: #101013; --tete-survol: rgba(255, 255, 255, .07);
+    --presse-fond: #2c2c33; --presse-encre: var(--encre); --presse-anneau: var(--encre-2);
+    --jeton-fond: #2c2c33; --jeton-bord: var(--encre-2); --jeton-encre: var(--encre);
+    --trait-donnee: #6a6860; --pastille-attente: #6b6a63; --hachure-pastille: #77756c;
+    --t-une: var(--encre-2);
+    --n-opacite: .85; --attenue: .42;
+    --panne-fond: #2b1f14; --panne-bord: #e0894a;
+    --selection: #3a4a63;
   }
 }
 :root[data-theme="dark"] {
@@ -170,6 +203,24 @@
   --tete-groupe: #231b21;   --tete-groupe-filet: #46343f;
   --tete-plans: #1e2017;    --tete-plans-filet: #3a3f27;
   --tete-ardoise: #1a1f27;  --tete-ardoise-filet: #34404f;
+  /* Débrief 26 : l'audit du thème sombre — un gris tertiaire lisible
+     (4,6 à 5,9:1), des boutons enfoncés sombres et cernés plutôt que des
+     pavés blancs, des surfaces posées plus claires que ce qu'elles
+     recouvrent, des teintes atténuées qui restent des teintes. */
+  --encre-3: #908e84;
+  --panneau-bord: #303036;
+  --panneau-ombre: 0 1px 0 rgba(255, 255, 255, .05) inset, 0 16px 36px -16px rgba(0, 0, 0, .85);
+  --voile-avant: rgba(22, 22, 26, .4);
+  --releve: #222227; --releve-bord: #4a4943;
+  --bulle-ombre: 0 10px 28px -8px rgba(0, 0, 0, .7); --flottant-ombre: 0 8px 22px -6px rgba(0, 0, 0, .8);
+  --puits: #101013; --tete-survol: rgba(255, 255, 255, .07);
+  --presse-fond: #2c2c33; --presse-encre: var(--encre); --presse-anneau: var(--encre-2);
+  --jeton-fond: #2c2c33; --jeton-bord: var(--encre-2); --jeton-encre: var(--encre);
+  --trait-donnee: #6a6860; --pastille-attente: #6b6a63; --hachure-pastille: #77756c;
+  --t-une: var(--encre-2);
+  --n-opacite: .85; --attenue: .42;
+  --panne-fond: #2b1f14; --panne-bord: #e0894a;
+  --selection: #3a4a63;
 }
 
 /* Les contrôles du navigateur — la liste d'un menu déroulant, les barres de
@@ -179,6 +230,16 @@
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] { color-scheme: dark; }
 select option { background-color: var(--surface); color: var(--encre); }
+/* Débrief 26 : en sombre, la sélection et le cadre de panne suivent la page
+   (le bleu de Chrome et un cadre crème y éblouissaient). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) ::selection { background: var(--selection); color: var(--encre); }
+  :root:not([data-theme="light"]) #suivi-fwd-panne { background: var(--panne-fond) !important; color: var(--encre) !important; border-left-color: var(--panne-bord) !important; }
+  :root:not([data-theme="light"]) #suivi-fwd-panne [style*="color"] { color: var(--encre-2) !important; }
+}
+:root[data-theme="dark"] ::selection { background: var(--selection); color: var(--encre); }
+:root[data-theme="dark"] #suivi-fwd-panne { background: var(--panne-fond) !important; color: var(--encre) !important; border-left-color: var(--panne-bord) !important; }
+:root[data-theme="dark"] #suivi-fwd-panne [style*="color"] { color: var(--encre-2) !important; }
 
 * { box-sizing: border-box; }
 /* Un élément caché l'est toujours, quel que soit son display : la puce
@@ -282,6 +343,11 @@ body {
 .hachure {
   background-image: repeating-linear-gradient(45deg, var(--filet-fort) 0 1.5px, transparent 1.5px 5px);
   border: 1px solid var(--filet-fort);
+}
+/* Une pastille hachurée (« Non renseigné ») reste un repère : 3:1 au moins. */
+.pastille.hachure {
+  border-color: var(--hachure-pastille);
+  background-image: repeating-linear-gradient(45deg, var(--hachure-pastille) 0 1.5px, transparent 1.5px 5px);
 }
 
 .etats { position: relative; height: 64px; }
@@ -441,7 +507,7 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .filtres-actifs .mot { font-size: 12px; color: var(--encre-3); letter-spacing: .05em; text-transform: uppercase; }
 .jeton {
   display: inline-flex; align-items: center; gap: 7px;
-  border: 1px solid var(--encre); background: var(--encre); color: var(--papier);
+  border: 1px solid var(--jeton-bord); background: var(--jeton-fond); color: var(--jeton-encre);
   border-radius: 999px; padding: 4px 6px 4px 12px; font: inherit; font-size: 12.5px;
 }
 .jeton b { font-weight: 500; }
@@ -517,7 +583,7 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
    qu'il y a — rien à montrer, pas de pastille. */
 .filtre-journal .n {
   font-family: "IBM Plex Mono", monospace; font-size: 11.5px;
-  font-variant-numeric: tabular-nums; opacity: .72;
+  font-variant-numeric: tabular-nums; opacity: var(--n-opacite);
 }
 .rangee-valeurs { display: flex; }
 .journal-semaine {
@@ -549,9 +615,9 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 }
 .journal-tete .mini-jauge span { display: block; min-width: 2px; }
 .journal-tete .mini-jauge .indice { background: var(--indice); }   /* le changement d'indice, en violet ici aussi */
-.journal-tete .mini-jauge .nouveau { background: var(--filet-fort); }
+.journal-tete .mini-jauge .nouveau { background: var(--trait-donnee); }
 .journal-tete .mini-jauge .recul { background: var(--alerte); }
-.journal-tete .mini-jauge .disparu { background: transparent; box-shadow: inset 0 0 0 1.5px var(--filet-fort); }
+.journal-tete .mini-jauge .disparu { background: transparent; box-shadow: inset 0 0 0 1.5px var(--trait-donnee); }
 .journal-tete .mini-jauge .vide {
   background-image: repeating-linear-gradient(45deg, var(--filet-fort) 0 1.5px, transparent 1.5px 4px);
   box-shadow: inset 0 0 0 1px var(--filet-fort);
@@ -645,7 +711,7 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .journal-ligne .vers .etiq-etat { white-space: normal; overflow-wrap: break-word; min-width: 0; }
 /* Sur deux lignes, le départ reste collé à sa flèche, comme sur une seule. */
 .journal-ligne .vers .etiq-etat.avant { text-align: right; }
-.fleche-etat { color: var(--filet-fort); text-align: center; }
+.fleche-etat { color: var(--trait-donnee); text-align: center; }
 .etiq-etat { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; white-space: nowrap; }
 .etiq-etat.avant { color: var(--encre-3); justify-self: end; }
 /* La pastille « avant » est pâlie par un voile du fond posé SOUS son liseré
@@ -757,7 +823,7 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 /* La teinte du panneau (voir :root) : la classe remplace l'accent ardoise
    pour tout ce qui le porte dans le panneau — numéro, amorce du filet, mot
    à choisir — et pour son entrée du sommaire. Sans classe, l'ardoise. */
-.teinte-une { --accent: var(--encre); --tete: var(--tete-une); --tete-filet: var(--tete-une-filet); }
+.teinte-une { --accent: var(--t-une); --tete: var(--tete-une); --tete-filet: var(--tete-une-filet); }
 .teinte-temps { --accent: var(--t-temps); --tete: var(--tete-temps); --tete-filet: var(--tete-temps-filet); }
 .teinte-journal { --accent: var(--t-journal); --tete: var(--tete-journal); --tete-filet: var(--tete-journal-filet); }
 .teinte-groupe { --accent: var(--t-groupe); --accent-trait: var(--t-groupe-trait); --accent-voile: var(--t-groupe-voile); --chevron-accent: var(--chevron-groupe);
@@ -781,7 +847,7 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 }
 /* Sur la tête teintée, le survol du mot à choisir s'éclaire en blanc : son
    voile habituel s'y confondrait avec le fond. */
-.panneau-tete select.choix-titre:hover, .panneau-tete select.choix-titre:focus-visible { background-color: var(--surface); }
+.panneau-tete select.choix-titre:hover, .panneau-tete select.choix-titre:focus-visible { background-color: var(--tete-survol); }
 @media (max-width: 720px) {
   .panneau-tete { margin: -16px -14px 16px; padding: 12px 14px 13px; border-radius: 7px 7px 0 0 / 5px 5px 0 0; }
 }
@@ -942,6 +1008,8 @@ select.select {
   background-repeat: no-repeat; background-position: right center;
 }
 select.select:focus { outline: none; border-bottom-color: var(--focus); }
+/* Au clavier, le menu Contrat (et Tranche) a un vrai anneau, comme ses voisins. */
+select.select:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 2px; }
 
 /* ---------------------------------------------------- Graphique */
 .commandes-graphe { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-left: auto; }
@@ -953,7 +1021,7 @@ select.select:focus { outline: none; border-bottom-color: var(--focus); }
 }
 .segmente button:first-child { border-left: none; }
 .segmente button:hover { background: var(--creux); color: var(--encre); }
-.segmente button[aria-pressed="true"] { background: var(--encre); color: var(--surface); }
+.segmente button[aria-pressed="true"] { background: var(--presse-fond); color: var(--presse-encre); box-shadow: inset 0 0 0 1px var(--presse-anneau); }
 /* Cinq boutons ne tiennent pas sur un téléphone : le filtre du journal passe
    sur deux lignes plutôt que de faire déborder la page. */
 
@@ -962,6 +1030,12 @@ select.select:focus { outline: none; border-bottom-color: var(--focus); }
 svg.graphe { width: 100%; height: auto; display: block; overflow: visible; }
 svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .grad { font-size: 11px; fill: var(--encre-3); font-family: "IBM Plex Mono", monospace; }
+/* Débrief 26 : la règle .grad l'emportait sur leur couleur — « manque 535 »
+   et le nombre du jour s'écrivaient en gris. Et les semaines à venir de
+   l'axe, pâlies, restent lisibles (4,5:1). */
+.grad.manque-jalon { fill: var(--alerte); }
+.grad.nombre-point { fill: var(--encre); }
+svg.graphe text.grad[opacity] { opacity: .93; }
 .cadre-graphe {
   cursor: grab;
   user-select: none; -webkit-user-select: none;
@@ -1032,7 +1106,7 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 }
 .fiche-echeance-fermer:hover { color: var(--encre); border-color: var(--encre-3); }
 .fiche-echeance-chiffres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.fiche-echeance-chiffres > div { background: var(--surface); border: 1px solid var(--filet); border-radius: 8px; padding: 10px 13px 9px; min-width: 0; }
+.fiche-echeance-chiffres > div { background: var(--releve); border: 1px solid var(--filet); border-radius: 8px; padding: 10px 13px 9px; min-width: 0; }
 .fiche-echeance-chiffres b {
   display: block; font-family: "IBM Plex Mono", monospace; font-size: 27px; font-weight: 500; line-height: 1.15;
   font-variant-numeric: tabular-nums; color: var(--encre);
@@ -1095,8 +1169,8 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .haut-de-page {
   position: fixed; right: 22px; bottom: 22px; z-index: 40; width: 40px; height: 40px; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
-  border: 1px solid var(--filet-fort); background: var(--surface); color: var(--encre-2);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, .12); transition: color .15s, border-color .15s, transform .15s;
+  border: 1px solid var(--releve-bord); background: var(--releve); color: var(--encre-2);
+  box-shadow: var(--flottant-ombre); transition: color .15s, border-color .15s, transform .15s;
 }
 .haut-de-page:hover { color: var(--encre); border-color: var(--encre-3); transform: translateY(-2px); }
 @media print { .haut-de-page, .echeance-titre { display: none !important; } }
@@ -1320,7 +1394,7 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .pastille.accord { background: var(--fait); }
 .pastille.avance { background: var(--cours); }
 .pastille.manque { background: var(--alerte); }
-.pastille.attente { background: var(--filet-fort); }
+.pastille.attente { background: var(--pastille-attente); }
 .pastille.seul { background: transparent; border: 2px solid var(--encre-2); box-sizing: border-box; }
 /* Le tableau de la seconde base : le verdict en pastille dans la cellule de
    la référence, les cases à cocher de l'extract en ✓ / –. */
@@ -1353,8 +1427,8 @@ table.plans tbody tr.ancien .pastille { opacity: .4; }
 .legende-item span { border-bottom: 1px dotted var(--filet-fort); cursor: help; }
 
 .bulle {
-  position: fixed; z-index: 40; pointer-events: none; background: var(--surface);
-  border: 1px solid var(--filet-fort); padding: 8px 10px; font-size: 12.5px; min-width: 160px;
+  position: fixed; z-index: 40; pointer-events: none; background: var(--releve);
+  border: 1px solid var(--releve-bord); box-shadow: var(--bulle-ombre); padding: 8px 10px; font-size: 12.5px; min-width: 160px;
   opacity: 0; transition: opacity .1s;
 }
 .bulle[data-visible="true"] { opacity: 1; }
@@ -1490,7 +1564,7 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
 .critique-plans .sur-n b { font-weight: 500; color: var(--encre-2); }
 .critique-ligne.sans-valeur .critique-nom, .critique-ligne.sans-valeur .critique-plans,
 .critique-ligne.sans-valeur .critique-barre { opacity: .5; }
-.critique-barre.focalise span { opacity: .26; }
+.critique-barre.focalise span { opacity: var(--attenue); }
 .critique-barre.focalise span.eclaire { opacity: 1; }
 .critique-effort, .critique-date { text-align: center; min-width: 0; }
 .critique-effort .v, .critique-date .v { display: block; }
@@ -1501,7 +1575,7 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
 /* Le panneau d'explication : la formule, puis la meme formule avec les chiffres
    d'une ligne reelle, pour qu'on puisse la refaire de tete. */
 .aide-panneau {
-  margin: 10px 0 14px; padding: 15px 17px; background: var(--creux);
+  margin: 10px 0 14px; padding: 15px 17px; background: var(--puits);
   border-left: 2px solid var(--filet-fort); font-size: 13px; line-height: 1.55;
 }
 .aide-panneau h3 { margin: 0 0 8px; font: 500 13px/1.3 "IBM Plex Sans", system-ui, sans-serif; }
@@ -1738,7 +1812,7 @@ table.plans thead .filtres input {
   width: 100%; min-width: 78px; border: none; border-bottom: 1px solid var(--filet);
   background: none; color: var(--encre); font: inherit; font-size: 12px; padding: 2px 0;
 }
-table.plans thead .filtres input::placeholder { color: var(--filet-fort); }
+table.plans thead .filtres input::placeholder { color: var(--filtre-invite); }
 table.plans thead .filtres input:focus { outline: none; border-bottom-color: var(--focus); }
 table.plans thead .filtres input[data-actif="true"] { border-bottom-color: var(--encre); color: var(--encre); }
 
@@ -1773,6 +1847,15 @@ table.plans thead tr th.col-fige { z-index: 6; }
 .vide-message { padding: 44px 16px; color: var(--encre-3); }
 .compte { color: var(--encre-3); font-size: 12.5px; }
 .pied { padding: 20px 0 42px; margin-top: 32px; border-top: 1px solid var(--filet); color: var(--encre-3); font-size: 11.5px; line-height: 1.8; }
+/* Débrief 26, téléphone : le bouton ↑ ne cache plus la dernière ligne du pied ;
+   la ligne de groupe choisie garde sa lettre hors de la barre ; le résumé
+   d'une semaine du journal passe sous la semaine, sans rien couper. */
+@media (max-width: 720px) {
+  .pied { padding-bottom: 72px; }
+  .critique-ligne[aria-pressed="true"] { padding-left: 12px; }
+  .journal-grille .mot-case { white-space: normal; }
+  .journal-grille .journal-tete .resume { flex: 1 1 100%; padding-left: 22px; }
+}
 .masque { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 @media (prefers-reduced-motion: reduce) { .barre span, .ombre-defile, .poignee { transition: none; } }
 
@@ -5875,7 +5958,15 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       /* D'où partent les projections, dit sous le point : la semaine en
          cours, que le dernier relevé n'a pas encore rattrapée. */
       if (depart >= d0 && depart <= d1) {
-        var cDep = placerMot([{ lignes: ['aujourd’hui'], x: x(depart) + 3, base: y(atteint) + 15, ancre: 'start' }], L - 2);
+        /* Débrief 26 : près de zéro, « aujourd'hui » sous le point tombait
+           sur le nom de la bande des semaines (« validés par semaine »),
+           posé plus tard : sa ligne est réservée le temps de choisir, et le
+           mot passe au-dessus du point s'il le faut. */
+        var zoneBande = { g: mG - 11, d: L - 2, h: yBande - 14, b: yBande + 1 };
+        boites.push(zoneBande);
+        var cDep = placerMot([{ lignes: ['aujourd’hui'], x: x(depart) + 3, base: y(atteint) + 15, ancre: 'start' },
+                              { lignes: ['aujourd’hui'], x: x(depart) + 3, base: y(atteint) - 8, ancre: 'start', malus: 1 }], L - 2);
+        boites.splice(boites.indexOf(zoneBande), 1);
         if (cDep.gene >= 10) horsClip.push(fondMot(cDep));
         horsClip.push(texteMot(cDep, { cls: 'repere-depart' }));
       }

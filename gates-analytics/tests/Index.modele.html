@@ -116,8 +116,9 @@
        message, en clair, se montre tel quel. Le classeur revérifie toujours
        qui appelle. */
     appeler: function (nom, args, ok, ko) {
+      var echec = function (e) { ko(e || new Error('Le classeur n’a pas répondu.')); };
       try {
-        var r = google.script.run.withSuccessHandler(ok).withFailureHandler(function (e) { ko(e || new Error('Le classeur n’a pas répondu.')); });
+        var run = google.script.run, r = run.withSuccessHandler(ok).withFailureHandler(echec);
         r[nom].apply(r, args || []);
       } catch (e) { ko(e); }
     }
