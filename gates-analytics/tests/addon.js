@@ -770,9 +770,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
     /* Les propriétés du document ne gardent que la version des données, les consultations (débrief 18),
        le jeton de la fenêtre d'import SEE (débrief 20), le PSN de chaque contrat tapé dans cette
        fenêtre (débrief 21), les temps des dernières ouvertures et l'état du préchauffage (débrief 23), les
-       colonnes suivies choisies pour chaque contrat (débrief 25), les administrateurs et l'archivage coupé
-       au menu (débrief 26). */
-    (fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8').match(/[gs]etProperty\(([A-Z_]+)/g) || []).every(x => /CLE_VERSION_DONNEES|CLE_CONSULTATIONS|CLE_JETON_IMPORT|CLE_PSN|CLE_MESURES|CLE_PRECHAUFFAGE|CLE_COLONNES|CLE_ROLES|CLE_ARCHIVAGE/.test(x)));
+       colonnes suivies choisies pour chaque contrat (débrief 25), les administrateurs, le responsable épinglé,
+       le journal des modifications et l'archivage coupé au menu (débrief 26). */
+    (fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8').match(/[gs]etProperty\(([A-Z_]+)/g) || []).every(x => /CLE_VERSION_DONNEES|CLE_CONSULTATIONS|CLE_JETON_IMPORT|CLE_PSN|CLE_MESURES|CLE_PRECHAUFFAGE|CLE_COLONNES|CLE_ROLES|CLE_ARCHIVAGE|CLE_PROPRIETAIRE|CLE_JOURNAL_ADMIN/.test(x)));
   configurer([
     { semaine: '2026-s8', texte: '  Revue de définition  ' },
     { semaine: '2026-S02', texte: '' },

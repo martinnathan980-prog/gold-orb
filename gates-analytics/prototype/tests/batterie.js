@@ -5964,12 +5964,14 @@ async function reinitialiser(pg) {
       verifier(nom + ' : journal : le liseré de chaque pastille « avant » se voit à 3:1 au moins sur le fond — FWD_TO_SEIZE compris',
         avant22.some(m => m.mot === 'FWD_TO_SEIZE') && !avantFaibles.length, JSON.stringify({ avantFaibles, mots: avant22.map(m => m.mot) }));
       /* Et la pastille reste aussi pâle qu'au débrief 22 : sa couleur à 40 %
-         sur le fond (à 3 près par canal). */
+         sur le fond (à 3 près par canal). Débrief 26 : à 60 % en sombre —
+         mêlée au noir, à 40 % elle perdait sa teinte (marine, prune, brun). */
+      const part = /sombre/i.test(nom) ? 0.6 : 0.4;
       const avantPales = avant22.filter(m => !m.hachure).filter(m => {
         const c = m.couleur.match(/[\d.]+/g).map(Number);
-        return m.centre.some((v, i) => Math.abs(v - (0.4 * c[i] + 0.6 * m.fond[i])) > 3);
+        return m.centre.some((v, i) => Math.abs(v - (part * c[i] + (1 - part) * m.fond[i])) > 3);
       }).map(m => m.mot + ' centre ' + m.centre + ' couleur ' + m.couleur + ' fond ' + m.fond);
-      verifier(nom + ' : journal : la pastille « avant » reste pâle — sa couleur à 40 % sur le fond',
+      verifier(nom + ' : journal : la pastille « avant » reste pâle — sa couleur à ' + Math.round(part * 100) + ' % sur le fond',
         avant22.length > 1 && !avantPales.length, JSON.stringify(avantPales));
       await ctx22.close();
     }
