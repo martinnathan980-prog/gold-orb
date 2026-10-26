@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0d1a30">
+<title>Embarquement OC1996</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@500;700&display=swap">
+<style>
+/* Mise en page : une porte d'embarquement de nuit. Un hublot au centre (la photo d'OC qui s'anime),
+   le panneau à palettes du siège dessous, le tampon de validation pour finir. Un seul thème, sombre, voulu. */
+:root {
+  --nuit: #0d1a30;
+  --nuit-2: #16284a;
+  --marine: #162848;
+  --orange: #f0911c;
+  --creme: #fbf6ea;
+  --texte: #e9eef7;
+  --texte-doux: #9fb0cc;
+  --vert: #1f7a4a;
+  --bord: #c9d1de;
+  --affichage: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: radial-gradient(120% 80% at 50% 0%, var(--nuit-2) 0%, var(--nuit) 60%);
+  background-color: var(--nuit);
+  color: var(--texte);
+  font-family: var(--affichage);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.porte {
+  max-width: 420px; margin: 0 auto; min-height: 100%;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  padding-block: 18px 22px;
+}
+.entete { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.logo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 1.45rem; letter-spacing: .02em; }
+.logo .rond {
+  width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--orange);
+  display: grid; place-items: center; font-size: .95rem; color: var(--texte);
+}
+.logo b { color: var(--orange); font-weight: 600; }
+.vol { font-family: var(--mono); font-size: .72rem; color: var(--texte-doux); text-align: right; line-height: 1.35; letter-spacing: .04em; }
+
+/* le hublot */
+.hublot {
+  position: relative; width: min(78vw, 330px); aspect-ratio: 4 / 5; max-width: 100%;
+  border-radius: 46% / 38%;
+  padding: 14px;
+  background: linear-gradient(160deg, #eef2f8 0%, #c7cfdc 45%, #9aa6b8 100%);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .45), inset 0 2px 0 rgba(255, 255, 255, .7);
+}
+.vitre {
+  position: relative; width: 100%; height: 100%; border-radius: 44% / 36%; overflow: hidden;
+  background: #1b2a44;
+  box-shadow: inset 0 0 0 3px rgba(20, 30, 50, .35), inset 0 8px 18px rgba(0, 0, 0, .45);
+}
+.vitre img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: 50% 40%; }
+.joue .vitre img { animation: kenburns 7s ease-in-out infinite alternate; }
+@keyframes kenburns {
+  from { transform: scale(1.16) translate(2%, 2%); }
+  to   { transform: scale(1.02) translate(-1.5%, -1%); }
+}
+.reflet {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, .28) 42%, transparent 52%);
+  transform: translateX(-120%);
+}
+.joue .reflet { animation: reflet 1.4s .3s ease-out both; }
+@keyframes reflet { to { transform: translateX(120%); } }
+
+/* les gags */
+.gag { position: absolute; pointer-events: none; opacity: 0; }
+.emoji { font-size: 4.6rem; line-height: 1; right: 6%; bottom: 7%; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .45)); }
+.emoji.gauche { right: auto; left: 6%; }
+.joue .emoji { animation: pop .9s 1.6s cubic-bezier(.2, 1.6, .4, 1) both, frime 1.6s 2.6s ease-in-out infinite; }
+@keyframes pop { from { opacity: 0; transform: translateY(80%) scale(.3) rotate(-25deg); } to { opacity: 1; transform: none; } }
+@keyframes frime { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-10deg) scale(1.06); } }
+.pancarte {
+  left: 50%; bottom: -2%; width: 62%; transform-origin: 50% 100%;
+  background: var(--creme); color: var(--marine); border-radius: 8px; text-align: center;
+  padding: 8px 6px 10px; box-shadow: 0 10px 22px rgba(0, 0, 0, .4);
+}
+.pancarte small { display: block; font-size: .8rem; letter-spacing: .14em; font-weight: 600; color: #6b7686; }
+.pancarte strong { display: block; font-size: 3.4rem; line-height: .95; font-weight: 700; }
+.joue .pancarte { animation: leve 1s 1.6s cubic-bezier(.2, 1.3, .4, 1) both, balance 2.4s 2.6s ease-in-out infinite; }
+@keyframes leve { from { opacity: 0; transform: translate(-50%, 110%) rotate(-6deg); } to { opacity: 1; transform: translate(-50%, 0) rotate(-3deg); } }
+@keyframes balance { 0%, 100% { opacity: 1; transform: translate(-50%, 0) rotate(-3deg); } 50% { opacity: 1; transform: translate(-50%, -2%) rotate(3deg); } }
+.tampon {
+  left: 50%; top: 58%; transform: translate(-50%, -50%) rotate(-14deg);
+  border: 4px solid #c8102e; color: #c8102e; border-radius: 10px; padding: 4px 12px;
+  font-weight: 700; font-size: 1.7rem; letter-spacing: .08em; background: rgba(255, 255, 255, .78);
+}
+.joue .tampon { animation: tamponne .5s 1.7s cubic-bezier(.3, 1.8, .5, 1) both; }
+@keyframes tamponne { from { opacity: 0; transform: translate(-50%, -50%) rotate(-14deg) scale(3); } to { opacity: 1; transform: translate(-50%, -50%) rotate(-14deg) scale(1); } }
+.joue .secoue { animation: secoue .35s 2.1s ease-in-out both; }
+@keyframes secoue { 25% { transform: translate(3px, -2px); } 50% { transform: translate(-3px, 2px); } 75% { transform: translate(2px, 1px); } }
+.pluie { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.pluie span { position: absolute; top: -12%; opacity: 0; font-size: 1.4rem; }
+.joue .pluie span { animation: tombe var(--d, 4s) var(--r, 1.6s) linear infinite; }
+@keyframes tombe {
+  0% { opacity: 0; transform: translateY(0) rotate(0); }
+  10% { opacity: 1; }
+  100% { opacity: .9; transform: translateY(125%) rotate(var(--t, 180deg)); }
+}
+.pluie.monte span { top: auto; bottom: -12%; }
+.joue .pluie.monte span { animation-name: monte; }
+@keyframes monte {
+  0% { opacity: 0; transform: translateY(0) scale(.6); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-120%) scale(1.2); }
+}
+canvas.confettis { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+/* la bulle */
+.bulle {
+  position: relative; width: 100%; background: var(--creme); color: var(--marine);
+  border-radius: 14px; padding: 12px 16px; font-size: 1.32rem; font-weight: 600; line-height: 1.2;
+  text-align: center; text-wrap: balance; opacity: 0;
+}
+.bulle::before {
+  content: ""; position: absolute; top: -9px; left: 50%; width: 18px; height: 18px; background: var(--creme);
+  transform: translateX(-50%) rotate(45deg); border-radius: 3px;
+}
+.joue .bulle { animation: bulle .5s 2.3s cubic-bezier(.2, 1.4, .4, 1) both; }
+@keyframes bulle { from { opacity: 0; transform: scale(.7) translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* le panneau à palettes */
+.panneau { display: flex; align-items: center; gap: 10px; }
+.panneau .etiquette { font-family: var(--mono); font-size: .8rem; color: var(--texte-doux); letter-spacing: .14em; }
+.palettes { display: flex; gap: 5px; }
+.palette {
+  position: relative; width: 52px; height: 70px; border-radius: 7px;
+  background: linear-gradient(#1c1f24 0 49%, #0f1114 51% 100%);
+  color: #f4f1e6; font-family: var(--mono); font-weight: 700; font-size: 2.9rem;
+  display: grid; place-items: center; font-variant-numeric: tabular-nums;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .08);
+}
+.palette::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: #05070a; }
+.palette.tourne { animation: claque .07s linear; }
+@keyframes claque { 50% { transform: scaleY(.86); } }
+
+.valide {
+  font-family: var(--mono); font-weight: 700; letter-spacing: .12em; font-size: .95rem;
+  color: var(--creme); border: 2px solid var(--orange); border-radius: 8px; padding: 6px 12px; opacity: 0;
+}
+.joue .valide { animation: tamponne2 .45s 3.1s cubic-bezier(.3, 1.8, .5, 1) both; }
+@keyframes tamponne2 { from { opacity: 0; transform: scale(2.2) rotate(-6deg); } to { opacity: 1; transform: rotate(-2deg); } }
+.pied { text-align: center; color: var(--texte-doux); font-size: 1rem; line-height: 1.35; max-width: 34ch; }
+.pied strong { color: var(--orange); font-weight: 600; }
+button {
+  font: inherit; font-weight: 600; font-size: 1.05rem; letter-spacing: .06em; cursor: pointer;
+  color: var(--nuit); background: var(--orange); border: 0; border-radius: 999px; padding: 10px 22px;
+}
+button:focus-visible { outline: 3px solid var(--creme); outline-offset: 3px; }
+
+/* le choix du siège, si le lien n'en donne pas */
+.choix { width: 100%; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.choix h1 { margin: 6px 0 0; font-size: 1.9rem; font-weight: 700; text-align: center; }
+.choix p { margin: 0; color: var(--texte-doux); text-align: center; font-size: 1.05rem; }
+.grille { display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px; width: 100%; }
+.grille button {
+  padding: 10px 0; border-radius: 8px; background: var(--nuit-2); color: var(--texte);
+  font-family: var(--mono); font-size: 1rem; letter-spacing: 0; box-shadow: inset 0 0 0 1px rgba(201, 209, 222, .25);
+}
+.grille button:hover { background: var(--vert); }
+
+@media (prefers-reduced-motion: reduce) {
+  .joue *, .joue .vitre img { animation-duration: .01s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
+}
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main class="porte" id="porte">
+  <header class="entete">
+    <div class="logo"><span class="rond" aria-hidden="true">✈</span><span>OCÉANE <b>AIRLINES</b></span></div>
+    <div class="vol">VOL OC1996<br>PORTE A30</div>
+  </header>
+
+  <section class="choix" id="choix" hidden>
+    <h1>Votre siège, s’il vous plaît</h1>
+    <p>Le numéro est sur votre carte d’embarquement.</p>
+    <div class="grille" id="grille"></div>
+  </section>
+
+  <section class="choix" id="attente" hidden>
+    <h1>Bienvenue à bord</h1>
+    <p>Scannez le QR code de votre carte d’embarquement pour découvrir votre siège.</p>
+  </section>
+
+  <section id="scene" class="choix" hidden>
+    <div class="hublot secoue" id="hublot">
+      <div class="vitre" id="vitre">
+        <img id="photo" alt="">
+        <div class="reflet"></div>
+      </div>
+    </div>
+    <div class="bulle" id="bulle"></div>
+    <div class="panneau" aria-label="Siège">
+      <span class="etiquette">SIÈGE</span>
+      <div class="palettes"><div class="palette" id="d1">0</div><div class="palette" id="d2">0</div></div>
+    </div>
+    <div class="valide">EMBARQUEMENT VALIDÉ ✓</div>
+    <p class="pied" id="pied"></p>
+    <button type="button" id="rejouer">Rejouer ✈</button>
+  </section>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  var NB_SIEGES = 54;
+  // Une photo d'OC par siège, à tour de rôle, chacune avec son petit numéro.
+  var SCENES = [
+    { photo: 1, alt: "Océane bébé", gag: "coeurs", texte: "Passagère du vol OC depuis 1996. Siège {n} : bienvenue à bord !" },
+    { photo: 2, alt: "Océane à 2 ans devant son gâteau", gag: "confettis", texte: "Deux bougies, zéro retard. Siège {n} : c’est validé !" },
+    { photo: 3, alt: "Océane petite, sous une fleur", gag: "fleurs", texte: "Une fleur parmi les fleurs… et toi, au siège {n}." },
+    { photo: 4, alt: "Océane petite, la langue toute noire", gag: "tampon", texte: "Contrôle sanitaire : langue noire autorisée. Siège {n}, vous pouvez embarquer." },
+    { photo: 5, alt: "Océane à 3 ans", gag: "pancarte", texte: "Ton siège ? Le {n}. Je l’ai noté moi-même." },
+    { photo: 6, alt: "Océane qui rit", gag: "pouce", texte: "Siège {n} ? Validé par la commandante !" },
+    { photo: 7, alt: "Océane et une gaufre", gag: "gaufre", texte: "Service à bord : le siège {n} a droit à une gaufre. Enfin… presque." },
+    { photo: 8, alt: "Océane au ski", gag: "neige", texte: "Siège {n}, prêt pour le décollage ? OK !" }
+  ];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var porte = $("porte"), vitre = $("vitre"), photo = $("photo");
+  var siege = 0, minuteurs = [];
+
+  var CLE = "";
+  function lireSiege() {
+    var h = (location.hash || "").replace(/^#/, "");
+    var m = /^s?(\d{1,2})(?:\.([A-Za-z0-9_-]{22}))?$/i.exec(h);
+    if (m && m[2]) CLE = m[2];
+    var n = m ? parseInt(m[1], 10) : 0;
+    return n >= 1 && n <= NB_SIEGES ? n : 0;
+  }
+
+  function nettoyer() {
+    minuteurs.forEach(clearTimeout); minuteurs = [];
+    Array.prototype.slice.call(vitre.querySelectorAll(".gag, .pluie, canvas")).forEach(function (el) { el.remove(); });
+  }
+
+  function pluie(symboles, monte) {
+    var p = document.createElement("div"); p.className = "pluie" + (monte ? " monte" : "");
+    for (var i = 0; i < 16; i++) {
+      var s = document.createElement("span");
+      s.textContent = symboles[i % symboles.length];
+      s.style.left = (4 + Math.random() * 88) + "%";
+      s.style.setProperty("--d", (3 + Math.random() * 3).toFixed(2) + "s");
+      s.style.setProperty("--r", (1.6 + Math.random() * 2.5).toFixed(2) + "s");
+      s.style.setProperty("--t", (Math.random() * 360 - 180).toFixed(0) + "deg");
+      s.style.fontSize = (1 + Math.random() * .9).toFixed(2) + "rem";
+      p.appendChild(s);
+    }
+    vitre.appendChild(p);
+  }
+
+  function emoji(car, gauche) {
+    var e = document.createElement("div"); e.className = "gag emoji" + (gauche ? " gauche" : ""); e.textContent = car;
+    vitre.appendChild(e);
+  }
+
+  function confettis() {
+    var c = document.createElement("canvas"); c.className = "confettis"; vitre.appendChild(c);
+    var r = vitre.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    c.width = r.width * dpr; c.height = r.height * dpr;
+    var g = c.getContext("2d"); g.scale(dpr, dpr);
+    var couleurs = ["#f0911c", "#fbf6ea", "#1f7a4a", "#5aa3ff", "#ff5d73"];
+    var bouts = [];
+    for (var i = 0; i < 90; i++) bouts.push({ x: r.width / 2, y: r.height * .55, vx: (Math.random() - .5) * 9, vy: -4 - Math.random() * 7,
+      w: 5 + Math.random() * 5, h: 8 + Math.random() * 6, a: Math.random() * 6, va: (Math.random() - .5) * .4, c: couleurs[i % couleurs.length] });
+    var t0 = null;
+    function pas(t) {
+      if (!c.isConnected) return;
+      if (t0 === null) t0 = t;
+      g.clearRect(0, 0, r.width, r.height);
+      bouts.forEach(function (b) {
+        b.vy += .22; b.vx *= .99; b.x += b.vx; b.y += b.vy; b.a += b.va;
+        g.save(); g.translate(b.x, b.y); g.rotate(b.a); g.fillStyle = b.c; g.fillRect(-b.w / 2, -b.h / 2, b.w, b.h); g.restore();
+      });
+      if (t - t0 < 4500) requestAnimationFrame(pas);
+    }
+    requestAnimationFrame(pas);
+  }
+
+  function gag(type, n) {
+    if (type === "pouce") emoji("👍");
+    else if (type === "coeurs") { pluie(["💛", "🤍", "🧡"], true); emoji("👶", true); }
+    else if (type === "fleurs") { pluie(["🌸", "🌺", "🌼"], false); }
+    else if (type === "gaufre") { emoji("🧇"); }
+    else if (type === "neige") { pluie(["❄", "❅", "❆"], false); emoji("👌"); }
+    else if (type === "tampon") {
+      var t = document.createElement("div"); t.className = "gag tampon"; t.textContent = "CONTRÔLÉ"; vitre.appendChild(t);
+    } else if (type === "pancarte") {
+      var p = document.createElement("div"); p.className = "gag pancarte";
+      p.innerHTML = "<small>SIÈGE</small><strong>" + n + "</strong>"; vitre.appendChild(p);
+    } else if (type === "confettis") {
+      emoji("🎂", true);
+      minuteurs.push(setTimeout(confettis, 1700));
+    }
+  }
+
+  function palettes(n) {
+    var cible = (n < 10 ? "0" : "") + n, d1 = $("d1"), d2 = $("d2"), tours = 0;
+    function tour() {
+      tours++;
+      [[d1, cible[0]], [d2, cible[1]]].forEach(function (x, i) {
+        var fini = tours > 14 + i * 5;
+        x[0].textContent = fini ? x[1] : String(Math.floor(Math.random() * 10));
+        if (!fini) { x[0].classList.remove("tourne"); void x[0].offsetWidth; x[0].classList.add("tourne"); }
+      });
+      if (tours <= 20) minuteurs.push(setTimeout(tour, 70));
+    }
+    minuteurs.push(setTimeout(tour, 500));
+  }
+
+  var cleWeb = null, urls = {};
+  function b64url(s) {
+    s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "=";
+    var b = atob(s), o = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) o[i] = b.charCodeAt(i); return o;
+  }
+  function dechiffrer(i) {
+    if (urls[i]) return urls[i];
+    urls[i] = fetch("p/" + i + ".bin").then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+      .then(function (buf) { return crypto.subtle.decrypt({ name: "AES-GCM", iv: new Uint8Array(buf, 0, 12) }, cleWeb, new Uint8Array(buf, 12)); })
+      .then(function (jpg) { return URL.createObjectURL(new Blob([jpg], { type: "image/jpeg" })); });
+    return urls[i];
+  }
+  function attente() { $("choix").hidden = true; $("scene").hidden = true; $("attente").hidden = false; }
+
+  function jouer(n) {
+    var s = SCENES[(n - 1) % SCENES.length];
+    dechiffrer(s.photo).then(function (u) {
+      photo.src = u;
+      return photo.decode ? photo.decode().catch(function () {}) : null;
+    }).then(function () { lancer(n, s); }, attente);
+  }
+
+  function lancer(n, s) {
+    siege = n;
+    $("choix").hidden = true; $("scene").hidden = false;
+    nettoyer();
+    porte.classList.remove("joue"); void porte.offsetWidth;
+    photo.alt = s.alt;
+    $("bulle").textContent = s.texte.replace("{n}", n);
+    $("pied").innerHTML = "Gardez bien votre carte : ce soir, le <strong>siège " + n + "</strong> peut être surclassé en première classe.";
+    gag(s.gag, n);
+    palettes(n);
+    porte.classList.add("joue");
+    document.title = "Siège " + n + " · Embarquement OC1996";
+  }
+
+  function choix() {
+    $("scene").hidden = true; $("choix").hidden = false;
+    var g = $("grille"); g.innerHTML = "";
+    for (var i = 1; i <= NB_SIEGES; i++) {
+      var b = document.createElement("button"); b.type = "button"; b.id = "siege-" + i;
+      b.textContent = (i < 10 ? "0" : "") + i;
+      b.addEventListener("click", (function (n) { return function () { jouer(n); }; })(i));
+      g.appendChild(b);
+    }
+  }
+
+  $("rejouer").addEventListener("click", function () { jouer(siege); });
+  window.addEventListener("hashchange", function () { var n = lireSiege(); if (n) jouer(n); });
+  var n = lireSiege();
+  if (!CLE || !window.crypto || !crypto.subtle) { attente(); return; }
+  crypto.subtle.importKey("raw", b64url(CLE), "AES-GCM", false, ["decrypt"]).then(function (k) {
+    cleWeb = k;
+    if (n) jouer(n); else choix();
+    // puis les autres photos en arrière-plan, pour que le rejeu et le choix d'un autre siège soient instantanés
+    setTimeout(function () { SCENES.forEach(function (s) { dechiffrer(s.photo).catch(function () {}); }); }, 1500);
+  }, attente);
+})();
+</script>
+</body>
+</html>
