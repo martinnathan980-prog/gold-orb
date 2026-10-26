@@ -86,6 +86,15 @@ rendu doit dire exactement cela.
 
 ## 2. Préparer Chrome (une seule fois)
 
+> **⚠ Débrief 26 — à revoir avant toute automatisation.** Depuis Chrome 136,
+> l'option `--remote-debugging-port` est ignorée sur le profil habituel : il
+> faut un profil à part (`--user-data-dir=…`), dans lequel on se connecte une
+> fois à GATES et à SEE ([annonce de Chrome](https://developer.chrome.com/blog/remote-debugging-port)).
+> « Le profil reste le vôtre », plus bas, n'est donc plus vrai. Et le dépôt
+> par `deposer.py` → `doPost` demande une application web ouverte à « Tout
+> le monde » : à abandonner au profit d'un dossier Google Drive synchronisé.
+> Le plan d'automatisation du débrief 26 reprend tout cela.
+
 Chrome sait obéir à des ordres, à condition d'avoir été lancé avec une option
 de débogage. **Fermer Chrome entièrement**, puis le relancer ainsi :
 
