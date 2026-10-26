@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "2a70bb8";
+  --suivi-fwd-edition: "cb1bf60";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -64,6 +64,9 @@
   --filtre-invite: var(--encre-3);
   --t-une: var(--encre);
   --n-opacite: .72; --attenue: .26;
+  --voile-dialogue: rgba(25, 25, 21, .38);
+  --principal-fond: var(--encre); --principal-bord: var(--encre); --principal-encre: var(--surface);
+  --principal-survol: var(--encre-2); --principal-survol-bord: var(--encre-2);
 
   /* Les panneaux des sections (débrief 20) : chaque section est une feuille
      posée sur le papier, bordée d'un filet et d'une ombre à peine marquée.
@@ -131,7 +134,6 @@
     --voile-avant: rgba(22, 22, 26, .6);
     --panneau-bord: #2a2a2e;
     --panneau-ombre: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 16px 36px -16px rgba(0, 0, 0, .85);
-    --voile-dialogue: rgba(0, 0, 0, .62);
     --accent: #a9bedb; --accent-trait: #4a5a72; --accent-voile: #1f2530;
     --chevron-accent: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5 6 8 9.5 4.5' fill='none' stroke='%23a9bedb' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
     --t-temps: #7db9c4;
@@ -163,6 +165,9 @@
     --n-opacite: .85; --attenue: .42;
     --panne-fond: #2b1f14; --panne-bord: #e0894a;
     --selection: #3a4a63;
+    --voile-dialogue: rgba(0, 0, 0, .62);
+    --principal-fond: #26303f; --principal-bord: var(--accent); --principal-encre: var(--encre);
+    --principal-survol: #313d50; --principal-survol-bord: var(--accent);
   }
 }
 :root[data-theme="dark"] {
@@ -217,6 +222,9 @@
   --n-opacite: .85; --attenue: .42;
   --panne-fond: #2b1f14; --panne-bord: #e0894a;
   --selection: #3a4a63;
+  --voile-dialogue: rgba(0, 0, 0, .62);
+  --principal-fond: #26303f; --principal-bord: var(--accent); --principal-encre: var(--encre);
+  --principal-survol: #313d50; --principal-survol-bord: var(--accent);
 }
 
 /* Les contrôles du navigateur — la liste d'un menu déroulant, les barres de
@@ -462,6 +470,12 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .bandeau-mode .choix-contrat select { font-size: 13px; min-width: 64px; }
 .bandeau-mode .choix-tranche { display: inline-flex; align-items: baseline; gap: 10px; }
 .bandeau-mode .choix-tranche[hidden] { display: none; }
+@media (max-width: 720px) {
+  .bandeau-mode .reglages { min-width: 0; max-width: 100%; }
+  .bandeau-mode .choix-contrat { flex-wrap: wrap; row-gap: 6px; max-width: 100%; }
+  .bandeau-mode .choix-contrat .controle { min-width: 0; max-width: 100%; }
+  .bandeau-mode .choix-contrat select { min-width: 0; max-width: 100%; text-overflow: ellipsis; }
+}
 .bandeau-mode .choix-contrat select:disabled { color: var(--encre-3); cursor: progress; }
 .bandeau-mode .attente { font-size: 12px; color: var(--encre-3); }
 .bandeau-mode .choix-indicateur[hidden] { display: none; }
@@ -1031,7 +1045,7 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
    l'axe, pâlies, restent lisibles (4,5:1). */
 .grad.manque-jalon { fill: var(--alerte); }
 .grad.nombre-point { fill: var(--encre); }
-svg.graphe text.grad[opacity] { opacity: .93; }
+svg.graphe text.grad[opacity] { opacity: .95; }
 .cadre-graphe {
   cursor: grab;
   user-select: none; -webkit-user-select: none;
@@ -1153,7 +1167,8 @@ svg.graphe text.grad[opacity] { opacity: .93; }
      jours, alignés sous « Prochaine échéance » — le point se pose dans la
      marge, la coupure est voulue (un élément pleine largeur entre les
      deux), et le « · » n'a plus rien à séparer. */
-  .echeance-titre { flex-wrap: wrap; row-gap: 0; margin-left: 0; font-size: 12.5px; position: relative; padding-left: 28px; }
+  .echeance-titre { flex-wrap: wrap; row-gap: 0; margin-left: 0; font-size: 12.5px; position: relative; padding-left: 28px; max-width: 100%; text-align: left; }
+  .echeance-titre > b { white-space: normal; overflow-wrap: anywhere; min-width: 0; }
   .echeance-titre .point { position: absolute; left: 11px; top: 12px; }
   .echeance-titre::before { content: ""; order: 1; flex-basis: 100%; height: 0; }
   .echeance-titre .portee, .echeance-titre .jours { order: 2; }
@@ -1419,7 +1434,7 @@ table.plans tbody tr.ancien .pastille { opacity: .4; }
   margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--filet);
   font-size: 12.5px; color: var(--encre-2);
 }
-.legende-item { display: inline-flex; align-items: center; gap: 7px; }
+.legende-item { display: inline-flex; align-items: center; gap: 7px; min-width: 0; overflow-wrap: anywhere; }
 .legende-item span { border-bottom: 1px dotted var(--filet-fort); cursor: help; }
 
 .bulle {
@@ -1684,7 +1699,7 @@ dialog.admin {
   box-shadow: var(--panneau-ombre); overflow: hidden;
 }
 dialog.admin[open] { display: flex; flex-direction: column; }
-dialog.admin::backdrop { background: var(--voile-dialogue, rgba(25, 25, 21, .38)); }
+dialog.admin::backdrop { background: var(--voile-dialogue); }
 .admin-tete { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 24px 14px; border-bottom: 1px solid var(--filet); }
 .admin-tete h2 { margin: 0; font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 26px; line-height: 1.15; }
 .admin-qui { margin: 4px 0 0; font-size: 13px; color: var(--encre-2); }
@@ -1707,6 +1722,7 @@ dialog.admin::backdrop { background: var(--voile-dialogue, rgba(25, 25, 21, .38)
 .admin-table td.actions { text-align: right; white-space: nowrap; }
 .admin-table td.actions .lien-doux + .lien-doux { margin-left: 14px; }
 .admin-table .num { white-space: nowrap; }
+.admin-table td.nom { overflow-wrap: anywhere; }
 .admin-table .doux { color: var(--encre-3); }
 .admin-table tr.passe td { color: var(--encre-3); }
 .admin-vide { padding: 18px 0; color: var(--encre-3); font-size: 14px; }
@@ -1722,9 +1738,10 @@ dialog.admin::backdrop { background: var(--voile-dialogue, rgba(25, 25, 21, .38)
 }
 .admin-champ input:focus, .admin-champ select:focus { outline: none; border-color: var(--encre); box-shadow: 0 0 0 3px var(--creux); }
 .admin-champ input[aria-invalid="true"] { border-color: var(--alerte); }
+.admin-champ input:focus-visible, .admin-champ select:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 .admin-form-boutons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
-.bouton.principal { background: var(--encre); border-color: var(--encre); color: var(--surface); }
-.bouton.principal:hover { background: var(--encre-2); border-color: var(--encre-2); }
+.bouton.principal { background: var(--principal-fond); border-color: var(--principal-bord); color: var(--principal-encre); }
+.bouton.principal:hover { background: var(--principal-survol); border-color: var(--principal-survol-bord); }
 .bouton.danger { color: var(--alerte); }
 .admin-note { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--filet); font-size: 13px; color: var(--encre-3); line-height: 1.55; }
 dialog.admin[aria-busy="true"] .admin-corps { opacity: .6; pointer-events: none; }

@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '2a70bb8';
+  var EDITION = 'cb1bf60';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -1774,14 +1774,20 @@
   function afficherMode() {
     $('mot-mode').innerHTML = SERVEUR ? '' : '\x3Cb>Démonstration\x3C/b> — trois contrats fictifs ; devant votre classeur, la page montre vos données.';
     var message = SRC && SRC.message ? String(SRC.message) : '';
+    /* Débrief 26 : des plans, mais tous à part (« S » ou quantité 0) : on
+       le dit, et le tableau les montre — ce n'est pas un classeur vide. */
+    if (!message && SERVEUR && !PLANS.length && ANCIENS.length) {
+      message = 'Tous les plans de cet onglet sont écartés (anciens « S » ou quantité 0) : aucun ne compte. Ils restent visibles, grisés, dans le tableau des plans.';
+    }
     $('alerte-source').hidden = !message;
     $('alerte-source').textContent = message;
     /* Un classeur sans plans : la page le dit, et dit le geste, au lieu
        d'afficher des sections vides. */
-    document.body.dataset.vide = String(SERVEUR && !PLANS.length);
+    var vide = SERVEUR && !PLANS.length && !ANCIENS.length;
+    document.body.dataset.vide = String(vide);
     /* Le panneau est masqué dans le balisage : sans le Javascript, il ne
        doit pas se lire (débrief 17). Ici seulement, il se montre. */
-    if ($('classeur-vide')) $('classeur-vide').hidden = !(SERVEUR && !PLANS.length);
+    if ($('classeur-vide')) $('classeur-vide').hidden = !vide;
   }
 
   /* Le sélecteur de contrat et le rappel du contrat courant sous le titre.
@@ -1823,7 +1829,8 @@
       return '\x3Coption value="' + ech(f === courante ? CONTRAT : f.membres[0].id) + '">' + ech(f.nom) + '\x3C/option>';
     }).join('');
     sel.value = CONTRAT;
-    var tranches = courante && courante.membres.length > 1;
+    /* Une famille d'une seule tranche nommée (« HDK Tranche 2 » sans « HDK ») le dit aussi. */
+    var tranches = !!courante && (courante.membres.length > 1 || !!courante.membres[0].tranche);
     $('choix-tranche').hidden = !tranches;
     selT.innerHTML = tranches ? courante.membres.map(function (m) {
       return '\x3Coption value="' + ech(m.id) + '">' + ech(m.libelle) + '\x3C/option>';
@@ -3124,7 +3131,7 @@
         var cDep = placerMot([{ lignes: ['aujourd’hui'], x: x(depart) + 3, base: y(atteint) + 15, ancre: 'start' },
                               { lignes: ['aujourd’hui'], x: x(depart) + 3, base: y(atteint) - 8, ancre: 'start', malus: 1 }], L - 2);
         boites.splice(boites.indexOf(zoneBande), 1);
-        if (cDep.gene >= 10) horsClip.push(fondMot(cDep));
+        if (cDep.gene >= 10 || cDep.base < y(atteint)) horsClip.push(fondMot(cDep));
         horsClip.push(texteMot(cDep, { cls: 'repere-depart' }));
       }
     }
@@ -5237,6 +5244,7 @@
         chargerSource(paquet);
         remplirDims();
         rendre();
+        if ($('admin').open && ADMIN.onglet === 'contrats' && ADMIN.contrats && !ADMIN.occupe) rendreAdmin();
       }, function () {
         if (demande !== demandeContrat) return;
         finAttenteContrat();
@@ -7632,8 +7640,16 @@
   }
   function estAdmin() { return !!(DROITS && (DROITS.role === 'responsable' || DROITS.role === 'administrateur')); }
   function montrerBoutonAdmin() {
-    $('choix-admin').hidden = !estAdmin();
-    if (!estAdmin()) fermerAdmin();
+    var admin = estAdmin();
+    $('choix-admin').hidden = !admin;
+    $('admin-onglets').hidden = !admin;
+    /* Les droits tombés panneau ouvert : il ne garde que le refus, que la
+       personne lit avant de le fermer. */
+    if (!admin && $('admin').open) {
+      ADMIN.edition = null; ADMIN.confirmer = '';
+      $('admin-corps').innerHTML = '';
+      if (!$('admin-message').textContent) messageAdmin('Vous n’êtes plus administrateur de ce tableau de bord.', 'erreur');
+    }
   }
   /* Ce que le serveur permettra — pour ne proposer que cela ; il revérifie. */
   function familleDe(id) { var c = CONTRATS.filter(function (x) { return x.id === id; })[0]; return c ? c.contrat : id; }
@@ -7678,13 +7694,22 @@
       messageAdmin(e.message, 'erreur');
     });
   }
+  /* Le redessin garde le clavier où il était : sur la confirmation qui
+     vient d'apparaître, sur le formulaire ouvert, sur le même bouton, et
+     seulement au premier rendu d'un onglet sur son premier champ. */
+  function cleDe(b) { return b.getAttribute('data-cle') || b.getAttribute('data-id') || b.getAttribute('data-email') || ''; }
   function rendreAdmin() {
-    var z = $('admin-corps');
+    var z = $('admin-corps'), avant = document.activeElement, dedans = !!avant && avant !== z && z.contains(avant);
+    var quoi = dedans ? avant.getAttribute('data-admin') || '' : '', cle = dedans ? cleDe(avant) : '';
     if (ADMIN.onglet === 'jalons') z.innerHTML = htmlAdminJalons();
     else if (ADMIN.onglet === 'contrats') z.innerHTML = htmlAdminContrats();
     else z.innerHTML = htmlAdminAdmins();
-    var premier = z.querySelector('[data-autofocus]');
-    if (premier) premier.focus();
+    var cible = z.querySelector('[data-admin$="-oui"]') ||
+      (ADMIN.edition && z.querySelector('form[data-form="jalon"] [data-autofocus]')) ||
+      (quoi && [].filter.call(z.querySelectorAll('[data-admin="' + quoi + '"]'), function (b) { return cleDe(b) === cle; })[0]) ||
+      (!dedans && z.querySelector('[data-autofocus]')) ||
+      (dedans && z.querySelector('[data-admin="ajouter"],[data-autofocus]'));
+    if (cible) cible.focus();
   }
   function dateDite(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; }
 
@@ -7698,11 +7723,24 @@
     return liste.sort(COMPARER_FR);
   }
   function htmlFormJalon() {
-    var e = ADMIN.edition, j = e.jalon || { contrats: [CONTRAT], texte: '', date: '', perimetre: '', suivi: '' };
+    /* Un nouveau jalon vise d'emblée un contrat que le lecteur gère. */
+    var gerable = peutGererContrat(CONTRAT) ? CONTRAT : (CONTRATS.filter(function (c) { return peutGererContrat(c.id); })[0] || { id: CONTRAT }).id;
+    var e = ADMIN.edition, j = e.jalon || { contrats: [gerable], texte: '', date: '', perimetre: '', suivi: '' };
     var pour = j.contrats.length > 1 ? '__plusieurs' : (j.contrats[0] || '');
+    /* Un contrat écrit autrement que son onglet (« HDK - Tranche 2 ») est
+       rendu à son onglet ; un contrat retiré reste lui-même, choisi — jamais
+       remplacé en silence par le premier de la liste. */
+    var cleC = function (x) { return norm(x).replace(/[\s_\-\u2013\u2014.:\/>\u203a]+/g, ' ').trim(); };
+    if (pour && pour !== '__plusieurs') {
+      var k = CONTRATS.filter(function (c) { return c.id === pour; })[0] || CONTRATS.filter(function (c) { return cleC(c.id) === cleC(pour); })[0];
+      if (k) pour = k.id;
+    }
     var options = CONTRATS.filter(function (c) { return peutGererContrat(c.id) || c.id === pour; }).map(function (c) {
       return '\x3Coption value="' + ech(c.id) + '"' + (c.id === pour ? ' selected' : '') + '>' + ech(c.nom) + (c.id === CONTRAT ? ' (affiché)' : '') + '\x3C/option>';
     }).join('');
+    if (pour && pour !== '__plusieurs' && !CONTRATS.some(function (c) { return c.id === pour; })) {
+      options = '\x3Coption value="' + ech(pour) + '" selected>' + ech(pour) + ' (onglet introuvable)\x3C/option>' + options;
+    }
     if (pour === '__plusieurs') options = '\x3Coption value="__plusieurs" selected>' + ech(j.contrats.join(', ')) + '\x3C/option>' + options;
     if (DROITS.role === 'responsable' || DROITS.tous || !pour) options += '\x3Coption value=""' + (!pour ? ' selected' : '') + '>Tous les contrats\x3C/option>';
     var perim = valeursDePerimetre();
@@ -7724,14 +7762,14 @@
     var r = ADMIN.jalons;
     if (!r) return '';
     var liste = r.jalons.filter(function (j) { return ADMIN.tousLesJalons || jalonDuContratAffiche(j); })
-      .sort(function (a, b) { return (a.date || a.semaine) < (b.date || b.semaine) ? -1 : (a.date || a.semaine) > (b.date || b.semaine) ? 1 : 0; });
+      .sort(function (a, b) { return a.semaine < b.semaine ? -1 : a.semaine > b.semaine ? 1 : a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
     var aujourdhui = etiquetteISO(aujourdhuiCivil());
     var lignes = liste.map(function (j) {
       var cle = j.ligne + ':' + j.signature, passe = j.semaine && j.semaine < aujourdhui;
       var actions = !j.modifiable ? '\x3Cspan class="doux">—\x3C/span>' : ADMIN.confirmer === cle
         ? '\x3Cbutton type="button" class="lien-doux" data-admin="supprimer-oui" data-cle="' + ech(cle) + '">Confirmer la suppression\x3C/button>\x3Cbutton type="button" class="lien-doux" data-admin="supprimer-non">Garder\x3C/button>'
         : '\x3Cbutton type="button" class="lien-doux" data-admin="modifier" data-cle="' + ech(cle) + '">Modifier\x3C/button>\x3Cbutton type="button" class="lien-doux" data-admin="supprimer" data-cle="' + ech(cle) + '">Supprimer\x3C/button>';
-      return '\x3Ctr' + (passe ? ' class="passe"' : '') + '>\x3Ctd class="num">' + ech(dateDite(j.date) || j.semaine) + '\x3C/td>\x3Ctd>' + ech(j.texte) + '\x3C/td>' +
+      return '\x3Ctr' + (passe ? ' class="passe"' : '') + '>\x3Ctd class="num">' + ech(dateDite(j.date) || j.semaine) + '\x3C/td>\x3Ctd class="nom">' + ech(j.texte) + '\x3C/td>' +
         '\x3Ctd data-titre="Pour">' + (j.contrats.length ? j.contrats.map(function (c) { return '\x3Cspan class="etiquette-admin">' + ech(nomDuContrat(c)) + '\x3C/span>'; }).join('') : '\x3Cspan class="doux">Tous les contrats\x3C/span>') + '\x3C/td>' +
         '\x3Ctd data-titre="Plans">' + (j.perimetre ? ech(j.perimetre) : '\x3Cspan class="doux">Tous les plans\x3C/span>') + '\x3C/td>' +
         '\x3Ctd data-titre="Avancement">' + (j.suivi === 'concept' ? 'Concept harnais' : 'FWD') + '\x3C/td>\x3Ctd class="actions">' + actions + '\x3C/td>\x3C/tr>';
@@ -7776,7 +7814,7 @@
       SRC.jalons = r.jalons;
       jalons = jalonsDe(SRC.jalons);
       MEMO_DERIVE = {};
-      PAQUETS = {};
+      PAQUETS = {}; AVANCES = {};          // un paquet gardé n'a pas le jalon
       rendre();
     }
     if (ADMIN.onglet === 'jalons') rendreAdmin();
@@ -7808,6 +7846,7 @@
     appelerServeur('adminRetirerContrat', [id, retirer], function (r) {
       occuperAdmin(false);
       ADMIN.contrats = r; ADMIN.confirmer = '';
+      PAQUETS = {}; AVANCES = {}; MESSAGES_ENSEMBLE = {};       // gardés avec l'ancienne liste de contrats
       rendreAdmin();
       messageAdmin('« ' + id + ' » ' + (retirer ? 'est retiré du tableau de bord.' : 'est de retour au tableau de bord.'), 'ok');
       /* La liste des contrats de la page suit : le contrat affiché, relu —
@@ -7855,6 +7894,10 @@
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { form.elements.email.setAttribute('aria-invalid', 'true'); messageAdmin('Adresse illisible.', 'erreur'); return; }
     var liste = ADMIN.admins.admins.map(function (a) { return { email: a.email, contrats: a.contrats.slice() }; });
     var deja = liste.filter(function (a) { return a.email === email; })[0];
+    if (deja && contrat && !deja.contrats.length) {
+      messageAdmin(email + ' administre déjà tous les contrats : pour la limiter à « ' + contrat + ' », retirer ses droits, puis la nommer sur ce contrat.', 'erreur');
+      return;
+    }
     if (!deja) liste.push({ email: email, contrats: contrat ? [contrat] : [] });
     else if (!contrat) deja.contrats = [];
     else if (deja.contrats.length && deja.contrats.map(norm).indexOf(norm(contrat)) === -1) deja.contrats.push(contrat);
@@ -7863,7 +7906,16 @@
 
   $('ouvrir-admin').addEventListener('click', ouvrirAdmin);
   $('admin-fermer').addEventListener('click', fermerAdmin);
-  $('admin').addEventListener('click', function (e) { if (e.target === $('admin')) fermerAdmin(); });   // un clic sur le voile
+  /* Un clic sur le voile ferme le panneau — appuyé et relâché hors de son
+     cadre : un blanc à l'intérieur, ou un glissé depuis un champ, ne fait
+     pas perdre une saisie. */
+  function horsDuCadre(e) {
+    var d = $('admin'), r = d.getBoundingClientRect();
+    return e.target === d && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom);
+  }
+  var appuiDehors = false;
+  $('admin').addEventListener('mousedown', function (e) { appuiDehors = horsDuCadre(e); });
+  $('admin').addEventListener('click', function (e) { if (appuiDehors && horsDuCadre(e)) fermerAdmin(); appuiDehors = false; });
   $('admin-onglets').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-onglet]');
     if (b && !ADMIN.occupe) { messageAdmin(''); choisirOngletAdmin(b.getAttribute('data-onglet')); }
@@ -8034,5 +8086,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = '2a70bb8';
+window.SUIVI_FWD_FIN = 'cb1bf60';
 </script>

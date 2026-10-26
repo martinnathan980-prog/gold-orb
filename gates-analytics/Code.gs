@@ -47,7 +47,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = '2a70bb8';
+const EDITION = 'cb1bf60';
 
 // =====================================================================
 //  CONFIGURATION
@@ -1538,9 +1538,9 @@ function getDonneesPourClientLues(contrat) {
  * est la tranche 2 de HDK. { parent, tranche } ou null.
  */
 function trancheDe_(nom) {
-  const m = /^(.*?\S)[\s\-\u2013\u2014_:>\u203a]+(tranche\s*\S.*)$/i.exec(String(nom || '').trim());
+  const m = /^(.*?\S)[\s\-\u2013\u2014_:>\u203a]+(tranche(?![a-z\u00e0-\u00ff])[\s\-\u2013\u2014_:.]*[^\s\-\u2013\u2014_:.].*)$/i.exec(String(nom || '').trim());
   if (!m) return null;
-  const tranche = m[2].replace(/^tranche\s*/i, 'Tranche ');
+  const tranche = m[2].replace(/^tranche[\s\-\u2013\u2014_:.]*/i, 'Tranche ');
   return { parent: m[1].replace(/[\s\-\u2013\u2014_:>\u203a]+$/, ''), tranche: tranche };
 }
 
@@ -1554,8 +1554,12 @@ function contratsPourLaPage_(contrats) {
     const t = trancheDe_(c.id);
     return { c: c, i: i, t: t, famille: nomCompact(t ? t.parent : c.id) };
   });
-  const premier = {};
+  const premier = {}, libelle = {};
   rangs.forEach(function (r) { if (premier[r.famille] === undefined) premier[r.famille] = r.i; });
+  /* Un seul nom par famille (« HDK-AA » et « HDK AA Tranche 2 » sont la
+     même) : celui du contrat de base, sinon le parent de sa première tranche. */
+  rangs.forEach(function (r) { if (!r.t && libelle[r.famille] === undefined) libelle[r.famille] = r.c.nom; });
+  rangs.forEach(function (r) { if (libelle[r.famille] === undefined) libelle[r.famille] = r.t.parent; });
   return rangs
     .sort(function (a, b) {
       return premier[a.famille] - premier[b.famille] || (a.t ? 1 : 0) - (b.t ? 1 : 0) || a.i - b.i;
@@ -1563,8 +1567,9 @@ function contratsPourLaPage_(contrats) {
     /* Débrief 26 : la page choisit le contrat, puis la tranche — chaque
        entrée dit les deux (tranche vide : le contrat lui-même). */
     .map(function (r) {
-      return { id: r.c.id, nom: r.t ? r.t.parent + ' \u203a ' + r.t.tranche : r.c.nom,
-               contrat: r.t ? r.t.parent : r.c.nom, tranche: r.t ? r.t.tranche : '' };
+      const famille = r.t ? libelle[r.famille] : r.c.nom;
+      return { id: r.c.id, nom: r.t ? famille + ' \u203a ' + r.t.tranche : r.c.nom,
+               contrat: famille, tranche: r.t ? r.t.tranche : '' };
     });
 }
 
@@ -1807,10 +1812,14 @@ function etatArchivage_() {
 function assurerAutomatismes_(forcer) {
   let cache = null;
   try { cache = CacheService.getScriptCache(); } catch (err) { cache = null; }
-  if (!forcer && cache) { const vu = cache.get(CLE_CACHE_AUTOMATISMES); if (vu) return { etat: 'deja', vu: vu }; }
+  /* Le verdict gardé ne vaut que pour ce compte et ce responsable : après
+     une passation, le nouveau responsable pose les siens aussitôt, et le
+     refus écrit par l'exécution d'un éditeur ne bloque pas le responsable. */
   const id = identite_();
+  const cle = cleAutomatismes_(id);
+  if (!forcer && cache) { const vu = cache.get(cle); if (vu) return { etat: 'deja', vu: vu }; }
   if (!id.coherent) {
-    if (cache) { try { cache.put(CLE_CACHE_AUTOMATISMES, 'pas-responsable', 3600); } catch (err) { /* rien */ } }
+    if (cache) { try { cache.put(cle, 'pas-responsable', 3600); } catch (err) { /* rien */ } }
     return { etat: 'pas-responsable', robot: id.robot, responsable: id.responsable };
   }
   const verrou = LockService.getScriptLock();
@@ -1827,15 +1836,41 @@ function assurerAutomatismes_(forcer) {
     ];
     automatismes.forEach(function (a) {
       const l = par[a.fonction] || [];
-      l.slice(1).forEach(function (t) { ScriptApp.deleteTrigger(t); retires.push(a.fonction); });
+      /* Coupé par le menu : retiré, pas seulement « pas posé ». */
+      (a.coupe ? l : l.slice(1)).forEach(function (t) { ScriptApp.deleteTrigger(t); retires.push(a.fonction); });
       if (!l.length && !a.coupe) { a.poser(); poses.push(a.fonction); }
     });
     if (poses.indexOf('prechaufferTableau') !== -1) ecrireEtatPrechauffage_({ active: true, depuis: Date.now(), automatique: true });
-    if (cache) { try { cache.put(CLE_CACHE_AUTOMATISMES, 'ok', 21600); } catch (err) { /* rien */ } }
+    if (cache) { try { cache.put(cle, 'ok', 21600); } catch (err) { /* rien */ } }
     return { etat: 'ok', poses: poses, retires: retires };
   } finally {
     verrou.releaseLock();
   }
+}
+
+function cleAutomatismes_(id) { return CLE_CACHE_AUTOMATISMES + ':' + empreinte(id.robot + '|' + id.responsable); }
+/* Les automatismes se revérifient au prochain passage (un menu Activer ou
+   Désactiver vient d'en décider). */
+function oublierAutomatismes_() {
+  try {
+    const id = identite_(), cache = CacheService.getScriptCache();
+    /* Celle de qui clique, et celle du responsable : c'est sous son nom que
+       tournent les déclencheurs à revoir. */
+    cache.remove(cleAutomatismes_(id));
+    if (id.responsable) cache.remove(cleAutomatismes_({ robot: id.responsable, responsable: id.responsable }));
+  } catch (err) { /* rien */ }
+}
+
+/**
+ * Un déclencheur que le menu a coupé (« Désactiver… ») se retire lui-même à
+ * son passage — il tourne au nom de son titulaire, qui peut le retirer.
+ */
+function retireSiCoupe_(e, coupe) {
+  if (!coupe || !(e && typeof e === 'object' && e.triggerUid)) return false;
+  try {
+    ScriptApp.getProjectTriggers().forEach(function (t) { if (String(t.getUniqueId()) === String(e.triggerUid)) ScriptApp.deleteTrigger(t); });
+  } catch (err) { /* rien */ }
+  return true;
 }
 
 /**
@@ -1873,9 +1908,10 @@ function reprendreLaMain() {
   const avant = proprietaireEpingle_();
   if (avant && avant !== moi &&
       ui.alert('Suivi FWD', 'Le responsable est aujourd’hui ' + avant + '. Devenir responsable à sa place ?', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
-  epinglerProprietaire_(moi, 'reprendre-la-main');
+  let possesseur = '';
+  try { const o = SpreadsheetApp.getActiveSpreadsheet().getOwner(); possesseur = o ? emailPropre_(o.getEmail()) : ''; } catch (err) { possesseur = ''; }
+  epinglerProprietaire_(moi, 'reprendre-la-main', possesseur);
   journaliserAdmin_(moi, 'reprend la main' + (avant && avant !== moi ? ' (avant : ' + avant + ')' : ''));
-  try { CacheService.getScriptCache().remove(CLE_CACHE_AUTOMATISMES); } catch (err) { /* rien */ }
   const r = assurerAutomatismes_(true);
   ui.alert('Suivi FWD', 'Vous êtes le responsable (' + moi + ').' +
     (r && r.etat === 'ok' ? ' Ouverture rapide et archivage du vendredi posés sous votre compte.' : '') +
@@ -2684,6 +2720,7 @@ function prechaufferTableau(e) {
      cache : presque toujours un seul accès). */
   if (declencheurEtranger_(e)) return { raison: 'déclencheur d’un autre compte, retiré' };
   try { assurerAutomatismes_(); } catch (err) { /* rien */ }
+  if (retireSiCoupe_(e, etatPrechauffage_().active === false)) return { raison: 'désactivée par le menu, déclencheur retiré' };
   nouvellesMesures_('prechauffage');
   const debut = MESURES_.debut;
   const bilan = { quand: debut, declencheur: !!(e && typeof e === 'object' && e.triggerUid), prets: [], construits: [], touches: [],
@@ -2928,6 +2965,7 @@ function installerOuvertureRapide() {
     .everyMinutes(PRECHAUFFAGE_MINUTES)
     .create();
   ecrireEtatPrechauffage_({ active: true, depuis: Date.now() });
+  oublierAutomatismes_();
   try {
     SpreadsheetApp.getUi().alert('Suivi FWD', 'Ouverture rapide activée : toutes les dix minutes, le tableau de bord est préparé ' +
       'd\'avance, et il s\'ouvre sans relire le classeur — le matin comme après un import. Rien d\'autre à faire : ce geste ne se ' +
@@ -2942,6 +2980,7 @@ function desinstallerOuvertureRapide() {
   gesteDuClasseur();
   retirerPrechauffage_();
   ecrireEtatPrechauffage_({ active: false, depuis: Date.now() });
+  oublierAutomatismes_();
   try {
     SpreadsheetApp.getUi().alert('Suivi FWD', 'Ouverture rapide désactivée : le tableau de bord n\'est plus préparé d\'avance. ' +
       'Il relira le classeur à la première ouverture après chaque modification — plus lentement. Menu Suivi FWD → Activer ' +
@@ -2969,6 +3008,18 @@ function retirerPrechauffage_() {
  * deviner.
  */
 function diagnostic() {
+  /* Débrief 26 : appelé par la page (google.script.run, au nom du
+     responsable), il livrerait à n'importe quel lecteur la liste des
+     administrateurs et le journal : depuis le menu ou l'éditeur seulement,
+     ou par le responsable lui-même. */
+  let menu = false;
+  try { SpreadsheetApp.getUi(); menu = true; } catch (err) { menu = false; }
+  if (!menu) {
+    const qui = identite_();
+    if (qui.lecteur !== qui.robot && droitsDe_(qui.lecteur, qui.responsable).role !== 'responsable') {
+      refuser_(droitsDeLAppelant_(), 'au responsable du tableau de bord — le Diagnostic se lance depuis le menu Suivi FWD du classeur');
+    }
+  }
   const lignes = [];
   function dire(texte) { lignes.push(texte); }
 
@@ -2999,7 +3050,10 @@ function diagnostic() {
       (id.coherent ? ' (le responsable)' : ' — pas le responsable : vos automatismes ne sont pas ceux du tableau de bord'));
     const journal = analyserJson(PropertiesService.getDocumentProperties().getProperty(CLE_JOURNAL_ADMIN));
     if (Array.isArray(journal) && journal.length) {
-      dire('• Dernières modifications depuis la page : ' + journal.slice(0, 5).map(function (x) { return x.t.replace('T', ' ') + ' ' + x.qui + ' — ' + x.quoi; }).join(' · '));
+      let fz = 'Europe/Paris';
+      try { fz = Session.getScriptTimeZone() || fz; } catch (err) { /* Paris */ }
+      const quand = function (t) { try { return Utilities.formatDate(new Date(t + 'Z'), fz, 'dd/MM/yyyy HH:mm'); } catch (err) { return String(t).replace('T', ' ') + ' UTC'; } };
+      dire('• Dernières modifications depuis la page : ' + journal.slice(0, 5).map(function (x) { return quand(x.t) + ' ' + x.qui + ' — ' + x.quoi; }).join(' · '));
     }
     const poses = ScriptApp.getProjectTriggers().map(function (t) { return t.getHandlerFunction(); });
     dire((poses.indexOf('prechaufferTableau') !== -1 && poses.indexOf('enregistrerInstantaneHebdo') !== -1 ? '✓ ' : '• ') +
@@ -3787,6 +3841,8 @@ function diagnostiquerContrat(classeur, contrat, dire) {
       dire((nulles ? '• ' : '✓ ') + 'Quantité' + (colQ.groupe ? ' (groupe « ' + colQ.groupe + ' »)' : '') + ' : ' + (nulles
         ? nulles + (nulles > 1 ? ' plans à quantité 0' : ' plan à quantité 0') + ' — dans le tableau, grisés, mais comptés nulle part'
         : 'aucun plan à quantité 0'));
+    } else if (CONFIG.COLONNE_QUANTITE) {
+      dire('• Pas de colonne « ' + CONFIG.COLONNE_QUANTITE + ' » dans le groupe de la colonne suivie (ni seule dans l\'export) : aucun plan n\'est écarté pour quantité 0.');
     }
 
     const colRef = modele.colonnes.filter(function (c) { return c.fige; })[0];
@@ -4309,7 +4365,9 @@ function compterAvancements(contrat) {
   /* Débrief 25 : un ancien plan (« S » dans Validité) reste dans la carte
      du relevé — l'historique le garde —, mais ne compte nulle part. */
   const actifs = plans.filter(function (p) { return !planEcarte(p, modele); });
-  if (actifs.length && actifs.every(function (p) { return classerFWD(p.avancement) === 'vide'; })) {
+  /* La colonne vidée se juge sur tous les plans, écartés compris : une
+     colonne absente de l'export les viderait tous. */
+  if (actifs.length && plans.every(function (p) { return classerFWD(p.avancement) === 'vide'; })) {
     const precedents = getHistorique(SpreadsheetApp.getActiveSpreadsheet(), modele.feuille);
     const dernier = precedents[precedents.length - 1];
     if (dernier && dernier.total - dernier.vide > 0) {
@@ -4494,6 +4552,7 @@ function sousVerrou_(fn) {
  */
 function enregistrerInstantaneHebdo(e) {
   if (declencheurEtranger_(e)) return [];
+  if (retireSiCoupe_(e, !!etatArchivage_().coupe)) return [];
   gesteDuClasseur(e);
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
   const semaine = numeroSemaineISO(new Date());
@@ -5036,6 +5095,7 @@ function installerSuiviHebdomadaire() {
   gesteDuClasseur();
   retirerArchivage_();
   try { PropertiesService.getDocumentProperties().deleteProperty(CLE_ARCHIVAGE); } catch (err) { /* rien */ }
+  oublierAutomatismes_();
   ScriptApp.newTrigger('enregistrerInstantaneHebdo')
     .timeBased()
     .onWeekDay(ScriptApp.WeekDay.FRIDAY)
@@ -5049,6 +5109,7 @@ function desinstallerSuiviHebdomadaire() {
   retirerArchivage_();
   /* Voulu : les automatismes (débrief 26) ne le reposent pas d'eux-mêmes. */
   try { PropertiesService.getDocumentProperties().setProperty(CLE_ARCHIVAGE, JSON.stringify({ coupe: true, depuis: Date.now() })); } catch (err) { /* rien */ }
+  oublierAutomatismes_();
 }
 
 function retirerArchivage_() {
@@ -5267,7 +5328,7 @@ function creerOngletJalons() {
  */
 function getJalons(contrat) {
   const liste = listeDesJalons_().liste;
-  return liste
+  const tries = liste
     .filter(function (j) { return jalonPourContrat(j, contrat); })
     .map(function (j) {
       const date = dateDeJalon(j && j.date);
@@ -5284,8 +5345,16 @@ function getJalons(contrat) {
       return jalon;
     })
     .filter(function (j) { return j !== null; })
-    .sort(function (a, b) { return a.semaine < b.semaine ? -1 : (a.semaine > b.semaine ? 1 : 0); })
-    .slice(0, CONFIG.MAX_JALONS);
+    .sort(function (a, b) { return a.semaine < b.semaine ? -1 : (a.semaine > b.semaine ? 1 : 0); });
+  /* Au-delà du plafond, les plus anciens jalons passés tombent d'abord :
+     les échéances à venir restent (débrief 26 : un jalon ajouté de la page
+     ne doit pas disparaître derrière de vieux jalons). */
+  if (tries.length <= CONFIG.MAX_JALONS) return tries;
+  const courante = numeroSemaineISO(new Date());
+  let aVenir = tries.findIndex(function (j) { return j.semaine >= courante; });
+  if (aVenir < 0) aVenir = tries.length;
+  const debut = Math.max(0, Math.min(aVenir, tries.length - CONFIG.MAX_JALONS));
+  return tries.slice(debut, debut + CONFIG.MAX_JALONS);
 }
 
 // =====================================================================
@@ -5311,18 +5380,24 @@ function emailDuLecteur_() {
   try { return emailPropre_(Session.getActiveUser().getEmail()); } catch (err) { return ''; }
 }
 
+/* L'épinglage gardé dans le classeur : { email, par, proprietaire (le
+   propriétaire du fichier à ce moment-là) } — ou null. */
+function epinglage_() {
+  try {
+    const p = analyserJson(PropertiesService.getDocumentProperties().getProperty(CLE_PROPRIETAIRE));
+    return p && typeof p === 'object' && FORME_EMAIL.test(emailPropre_(p.email)) ? p : null;
+  } catch (err) { return null; }
+}
 /* Le responsable épinglé : CONFIG.RESPONSABLE, sinon celui gardé dans le classeur. */
 function proprietaireEpingle_() {
   const c = emailPropre_(CONFIG.RESPONSABLE);
   if (c) return c;
-  try {
-    const p = analyserJson(PropertiesService.getDocumentProperties().getProperty(CLE_PROPRIETAIRE));
-    return p && FORME_EMAIL.test(emailPropre_(p.email)) ? emailPropre_(p.email) : '';
-  } catch (err) { return ''; }
+  const p = epinglage_();
+  return p ? emailPropre_(p.email) : '';
 }
-function epinglerProprietaire_(email, par) {
+function epinglerProprietaire_(email, par, possesseur) {
   PropertiesService.getDocumentProperties().setProperty(CLE_PROPRIETAIRE,
-    JSON.stringify({ email: emailPropre_(email), depuis: new Date().toISOString(), par: par }));
+    JSON.stringify({ email: emailPropre_(email), depuis: new Date().toISOString(), par: par, proprietaire: emailPropre_(possesseur) }));
 }
 
 /**
@@ -5348,8 +5423,12 @@ function identite_() {
   if (robot && responsable !== robot && !emailPropre_(CONFIG.RESPONSABLE)) {
     let possesseur = '';
     try { const o = SpreadsheetApp.getActiveSpreadsheet().getOwner(); possesseur = o ? emailPropre_(o.getEmail()) : ''; } catch (err) { possesseur = ''; }
-    if (possesseur && possesseur === robot) {
-      try { epinglerProprietaire_(robot, responsable ? 'passation-du-fichier' : 'proprietaire-du-fichier'); responsable = robot; } catch (err) { /* réessayé plus tard */ }
+    /* Seulement si le fichier a changé de propriétaire depuis l'épinglage :
+       un « Reprendre la main » ne doit pas être défait par la première
+       exécution de l'ancien responsable, resté propriétaire. */
+    const ep = epinglage_();
+    if (possesseur && possesseur === robot && possesseur !== emailPropre_(ep && ep.proprietaire)) {
+      try { epinglerProprietaire_(robot, responsable ? 'passation-du-fichier' : 'proprietaire-du-fichier', possesseur); responsable = robot; } catch (err) { /* réessayé plus tard */ }
     }
   }
   return { lecteur: lecteur, robot: robot, responsable: responsable, coherent: !!robot && robot === responsable };
@@ -5484,11 +5563,15 @@ function adminJalons() {
 }
 
 function listeAdminJalons_(classeur, f, d) {
+  const onglets = listerContrats(classeur).map(function (c) { return c.id; });
   const t = lireOngletJalons_(f, f.getLastRow(), Math.max(ENTETES_ONGLET_JALONS.length, Math.min(f.getLastColumn(), 12)));
   return {
     onglet: f.getName(),
     jalons: t.lignes.map(function (x) {
-      const j = x.jalon, contrats = contratsDeLaLigne_(j), date = dateDeJalon(j.date);
+      const j = x.jalon, date = dateDeJalon(j.date);
+      /* Chaque contrat écrit à la main (« HDK - Tranche 2 », casse) rendu
+         sous le nom de son onglet ; un contrat retiré garde son texte. */
+      const contrats = contratsDeLaLigne_(j).map(function (c) { return (onglets.filter(function (o) { return memeContrat_(o, c); })[0]) || c; });
       return {
         ligne: x.ligne, signature: signatureLigne_(x.valeurs),
         contrats: contrats, texte: j.texte, date: date ? date.toISOString().slice(0, 10) : '',
@@ -5554,11 +5637,10 @@ function adminEnregistrerJalon(j, contratAffiche) {
         throw new Error('Ce jalon a été modifié ou supprimé entre-temps (par quelqu’un d’autre, ou dans le classeur) : la liste est rechargée, recommencer.');
       }
       if (!permis(contratsDeLaLigne_(avant.jalon))) refuser_(d, 'aux administrateurs de ses contrats');
-      valeurs = f.getRange(ligne, 1, 1, t.largeur).getValues()[0];
     } else {
       ligne = Math.max(f.getLastRow(), 1) + 1;
-      valeurs = new Array(t.largeur).fill('');
     }
+    valeurs = {};
     const poser = function (k, v) { if (t.ou[k] !== undefined) valeurs[t.ou[k]] = v; };
     poser('contrat', texteSur_(propre.contrats.join(', '), 200));
     poser('texte', texteSur_(propre.texte, 60));
@@ -5566,7 +5648,9 @@ function adminEnregistrerJalon(j, contratAffiche) {
     poser('semaine', '');
     poser('perimetre', texteSur_(propre.perimetre, 40));
     poser('suivi', propre.suivi === 'concept' ? 'Concept harnais' : 'FWD');
-    f.getRange(ligne, 1, 1, t.largeur).setValues([valeurs]);
+    /* Seules les cellules reconnues sont écrites : les colonnes ajoutées à
+       la main gardent leurs formules et leurs liens. */
+    Object.keys(valeurs).forEach(function (c) { f.getRange(ligne, Number(c) + 1).setValue(valeurs[c]); });
     try { f.getRange(ligne, t.ou.date + 1).setNumberFormat('dd/MM/yyyy'); } catch (err) { /* un confort */ }
     marquerDonneesModifiees_();
     journaliserAdmin_(d.email, (Number(j && j.ligne) ? 'jalon modifié : ' : 'jalon ajouté : ') + propre.texte + ' (' + propre.date.toISOString().slice(0, 10) +
@@ -5614,7 +5698,8 @@ function adminEnregistrerAdmins(liste) {
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
   const tous = listerContrats(classeur).map(function (c) { return c.id; });
   const familles = contratsPourLaPage_(listerContrats(classeur)).map(function (c) { return c.contrat; });
-  const vus = {}, admins = [];
+  const vus = {}, admins = [], deja = {};
+  rolesEnregistres_().admins.forEach(function (a) { deja[a.email] = a.contrats; });
   (Array.isArray(liste) ? liste : []).forEach(function (a) {
     const email = String(a && a.email || '').trim().toLowerCase();
     if (!email) return;
@@ -5623,6 +5708,8 @@ function adminEnregistrerAdmins(liste) {
     vus[email] = true;
     const contrats = (a && Array.isArray(a.contrats) ? a.contrats : []).map(function (c) { return String(c).trim(); }).filter(Boolean);
     contrats.forEach(function (c) {
+      /* Une portée déjà gardée reste valable (un contrat retiré depuis). */
+      if ((deja[email] || []).some(function (x) { return memeContrat_(x, c); })) return;
       if (!tous.concat(familles).some(function (x) { return memeContrat_(x, c); })) throw new Error('Contrat inconnu : « ' + c.slice(0, 40) + ' ».');
     });
     admins.push({ email: email, contrats: contrats });
@@ -9974,13 +10061,13 @@ function scriptImportSecondeBase_(P) {
   /* Deux contrats de la même famille : un contrat et ses tranches (« HDK »,
      « HDK Tranche 2 »), qui peuvent venir du même export. */
   function familleDe(nom) {
-    return norm(nom).replace(/[\s\-\u2013\u2014_:>\u203a]+tranche\s*\S.*$/, '').replace(/[\s_\-\u2013\u2014.:\/]+/g, ' ').trim();
+    return norm(nom).replace(/[\s\-\u2013\u2014_:>\u203a]+tranche(?![a-z\u00e0-\u00ff])[\s\-\u2013\u2014_:.]*[^\s\-\u2013\u2014_:.].*$/, '').replace(/[\s_\-\u2013\u2014.:\/]+/g, ' ').trim();
   }
   function memeFamille(a, b) { return !!a && !!b && familleDe(a) === familleDe(b); }
   /* « HDK Tranche 2 » → { parent: 'HDK', tranche: 'Tranche 2' }, comme le serveur la nomme (trancheDe_), ou null. */
   function trancheVue(nom) {
-    var m = /^(.*?\S)[\s\-\u2013\u2014_:>\u203a]+(tranche\s*\S.*)$/i.exec(String(nom || '').trim());
-    return m ? { parent: m[1], tranche: m[2].replace(/^tranche\s*/i, 'Tranche ') } : null;
+    var m = /^(.*?\S)[\s\-\u2013\u2014_:>\u203a]+(tranche(?![a-z\u00e0-\u00ff])[\s\-\u2013\u2014_:.]*[^\s\-\u2013\u2014_:.].*)$/i.exec(String(nom || '').trim());
+    return m ? { parent: m[1], tranche: m[2].replace(/^tranche[\s\-\u2013\u2014_:.]*/i, 'Tranche ') } : null;
   }
 
   /* Le doute, dit sans bloquer : un export GATES qui partage peu de plans

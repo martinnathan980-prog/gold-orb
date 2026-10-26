@@ -184,9 +184,13 @@ Feuille.prototype.getRange = function (ligne, colonne, nbLignes, nbColonnes) {
       donnees.forEach(function (l, i) {
         const cible = ligne - 1 + i;
         if (!self.valeurs[cible]) self.valeurs[cible] = [];
+        for (let k = 0; k < colonne - 1; k++) if (self.valeurs[cible][k] === undefined) self.valeurs[cible][k] = '';
         l.forEach(function (v, j) { self.valeurs[cible][colonne - 1 + j] = v; });
       });
+      return this;
     },
+    /* Une seule cellule (débrief 26 : l'administration n'écrit que les cases qu'elle connaît). */
+    setValue: function (v) { return this.setValues([[v]]); },
     setFontWeight: function () { return this; },
     /* Le format d'une plage : la batterie vérifie qu'un dépôt passe bien
        l'onglet en texte, pour qu'une cellule « =… » ne devienne pas formule. */
