@@ -2059,6 +2059,51 @@ celle qu'on a pressée.
   menu blanc écrit en clair.
 - Un bouton **↑** en bas à droite ramène en haut de la page.
 
+## 13 decies. Droits, administration et automatismes (débrief 26)
+
+**Qui regarde.** L'application web s'exécute au nom de son responsable
+(« Exécuter en tant que : moi », accès « utilisateurs de l'organisation ») ;
+`Session.getActiveUser().getEmail()` y donne l'adresse du lecteur quand il
+est du même domaine Google Workspace — sinon `''`, et il n'est que lecteur.
+L'adresse n'est jamais gardée : elle est comparée, c'est tout.
+
+**Le responsable** n'est jamais « celui au nom de qui le script tourne » tout
+court (déployée par erreur en « utilisateur qui y accède », l'application
+ferait de chaque lecteur un responsable). Il est épinglé
+(`SUIVI_FWD_PROPRIETAIRE`) quand le propriétaire du classeur est aussi celui
+au nom de qui le script tourne, ou par le menu Reprendre la main ;
+`CONFIG.RESPONSABLE` l'impose. `identite_()` rend `{ lecteur, robot,
+responsable, coherent }` ; rien ne s'écrit si `coherent` est faux.
+
+**Les rôles** (`SUIVI_FWD_ROLES = { admins: [{ email, contrats }] }`,
+`contrats` vide : tous) : responsable (tout, nomme les administrateurs) ;
+administrateur de tous les contrats (jalons de tous, retirer ou remettre un
+contrat) ; administrateur de contrats (jalons de ces contrats et de leurs
+tranches) ; lecteur. Chaque fonction `admin…` revérifie l'appelant en
+première ligne (`exigerAdmin_`) ; les refus commencent par `[droits]`, et la
+page relit alors les droits. Les droits ne sont jamais dans le paquet en
+cache, partagé entre tous : `mesDroits()` est appelé à part, après
+l'ouverture.
+
+**Les écritures** passent sous le verrou des gestes ; le texte tapé est
+écrit en texte (`texteSur_` : jamais une formule) ; une ligne de jalon
+modifiée entre-temps n'est pas écrasée (signature de la ligne). Les quarante
+dernières modifications sont gardées (`SUIVI_FWD_JOURNAL_ADMIN`) et le
+Diagnostic les montre. Retirer un contrat masque son onglet : rien n'est
+effacé.
+
+**Les automatismes.** `assurerAutomatismes_()` pose l'ouverture rapide et
+l'archivage du vendredi s'ils manquent, et retire les doubles — appelé après
+chaque ouverture (`noterConsultation`) et à chaque préchauffage, au nom du
+responsable seulement, six heures de cache. Un « Désactiver… » du menu est
+respecté. Un déclencheur posé sous un autre compte se retire à son passage
+(`declencheurEtranger_`).
+
+**Les plans écartés.** « S » dans Validité et « 0 » dans Quantité — les
+colonnes du bloc de la colonne suivie (`trouverIndexDuBloc_`) — restent
+dans la carte des relevés et au tableau, grisés, mais hors de tous les
+comptes ; la page retire leurs références des cartes passées.
+
 ## 14. Ce qui reste local à chaque personne
 
 La dimension ouverte, l'ordre des colonnes et les tris sont retenus dans le

@@ -110,6 +110,16 @@
         if (mesures) google.script.run.withFailureHandler(function () {}).noterConsultation(mesures);
         else google.script.run.withFailureHandler(function () {}).noterConsultation();
       } catch (e) { /* hors classeur */ }
+    },
+    /* Débrief 26 : les appels de l'administration (mesDroits, adminJalons,
+       adminEnregistrerJalon…). ok reçoit la réponse, ko l'erreur — dont le
+       message, en clair, se montre tel quel. Le classeur revérifie toujours
+       qui appelle. */
+    appeler: function (nom, args, ok, ko) {
+      try {
+        var r = google.script.run.withSuccessHandler(ok).withFailureHandler(function (e) { ko(e || new Error('Le classeur n’a pas répondu.')); });
+        r[nom].apply(r, args || []);
+      } catch (e) { ko(e); }
     }
   };
 </script>

@@ -782,7 +782,64 @@ classeur. Dans l'ordre d'efficacité :
   cherche que dans la comparaison. Elle n'existe que pour la définition
   électrique : SEE ne connaît pas le concept harnais.
 
+### L'administration, depuis le tableau de bord (débrief 26)
+
+En haut à droite de la page, **⚙ Administration** n'apparaît qu'aux
+administrateurs. Les autres voient tout, mais ne changent rien. Google dit
+au tableau de bord qui le regarde, par le compte avec lequel la personne est
+connectée (il faut qu'elle soit du même domaine que le classeur).
+
+| Qui | Ce qu'il peut faire |
+|---|---|
+| **Le responsable** (vous : le propriétaire du classeur) | Tout, et lui seul nomme ou retire les administrateurs |
+| **Un administrateur de tous les contrats** | Ajouter, modifier, supprimer les jalons de tous les contrats ; retirer un contrat du tableau de bord, ou l'y remettre |
+| **Un administrateur d'un contrat** (« HDK seulement ») | Les jalons de ce contrat et de ses tranches, et rien d'autre |
+| **Tout le monde** | Lire le tableau de bord |
+
+Le panneau a trois onglets :
+
+- **Jalons** : la liste des jalons du contrat affiché, ou de tous les
+  contrats (case à cocher). **+ Ajouter un jalon** : un nom, une date, pour
+  quel contrat (ou tous), quels plans (tous, `BASE/OPTION`, `PERSO`…), et
+  l'avancement suivi (FWD ou concept harnais). Enregistré, il est aussitôt
+  sur le graphique. **Modifier** et **Supprimer** sur chaque ligne.
+- **Contrats** : **Retirer du tableau de bord** cache un contrat (ou une
+  tranche) pour tout le monde. Rien n'est effacé, son historique reste, et
+  **Remettre au tableau de bord** le fait revenir. Le dernier contrat
+  affiché ne se retire pas.
+- **Administrateurs** (le responsable seul) : l'adresse Google de la
+  personne et ses contrats (« Tous les contrats » ou « HDK seulement »),
+  puis **Nommer**. **Retirer ses droits** sur chaque ligne.
+
+Le serveur revérifie chaque modification. Ce n'est pas la page qui décide :
+quelqu'un qui n'en a pas le droit est refusé, avec le nom de la personne à
+qui le demander.
+
+### Contrat, puis tranche
+
+Dans le bandeau, **Contrat** (HDK, THS…) puis, si ce contrat a des
+tranches, **Tranche** (Tranche 1, Tranche 2…). Le contrat lui-même est la
+« Tranche 1 ». Un contrat sans tranche n'a qu'une liste.
+
+### Les plans à quantité 0
+
+Comme un plan « S » (ancien plan), un plan dont la **Quantité** vaut **0**
+dans le bloc suivi (`HDK AA 011 › Quantité` pour HDK) ne compte nulle part.
+Il reste visible, grisé, marqué « quantité 0 », sous les autres plans du
+tableau. Une quantité vide ou « - » ne l'écarte pas.
+
+### Plus rien à activer
+
+L'**ouverture rapide** et l'**archivage du vendredi** se posent d'eux-mêmes,
+à la première ouverture du tableau de bord par son lien `…/exec`. Les menus
+« Activer… » ne servent plus. « Désactiver… » reste possible, et il est
+respecté jusqu'à ce que vous le réactiviez. Le Diagnostic dit s'ils sont
+posés.
+
 ### Les jalons : l'onglet « Jalons » du classeur
+
+Depuis le débrief 26, le plus simple est le bouton **Administration** de la
+page (ci-dessus). L'onglet reste là, rangé dans le classeur :
 
 Les dates des jalons se tiennent dans le **classeur**, dans l'onglet
 **Jalons**, sans toucher au code ; le tableau de bord ne fait que les lire.
@@ -884,11 +941,17 @@ aussi. Pour qu'un collègue reprenne :
 1. Partager le classeur avec lui en **modification**, puis Fichier →
    Partager → le nommer **propriétaire** (les onglets d'historique suivent :
    ils sont dans le classeur).
-2. Lui, dans le classeur : **Suivi FWD → Activer l'archivage automatique**
-   et **Suivi FWD → Activer l'ouverture rapide** (les déclencheurs sont
-   personnels : ceux de l'ancien propriétaire s'arrêtent avec son compte),
-   puis **Déployer → Nouveau déploiement → Application web** et diffuser le
-   **nouveau** lien `…/exec`.
+2. Lui : **Déployer → Nouveau déploiement → Application web** (« Exécuter
+   en tant que : moi », « Accès : les utilisateurs de votre organisation »),
+   puis diffuser le **nouveau** lien `…/exec`. À la première ouverture, il
+   devient le responsable de lui-même (il est le propriétaire du classeur,
+   et la page tourne à son nom). L'ouverture rapide et l'archivage se posent
+   sous son compte, et ceux de l'ancien responsable se retirent d'eux-mêmes
+   à leur prochain passage.
+   Classeur dans un **Drive partagé** (sans propriétaire), ou pour devenir
+   responsable sans transfert : dans le classeur, **Suivi FWD → Reprendre la
+   main**, puis le nouveau déploiement. Le Diagnostic dit qui est
+   responsable, et au nom de qui tourne le tableau de bord.
 3. Pour une absence courte, rien à transférer : il suffit que quelqu'un fasse
    l'export GATES chaque semaine et le garde, nommé par semaine ; au retour,
    **Archiver l'onglet affiché pour une semaine passée…** (§ 4) remet chaque

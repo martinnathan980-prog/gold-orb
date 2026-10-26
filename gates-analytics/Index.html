@@ -70,7 +70,7 @@
 <script>
   /* La livraison de ce fichier, posée par la construction : la page la compare
      à celles de Code, Styles et Javascript, et nomme celui qui diffère. */
-  window.SUIVI_FWD_LIVRAISON_INDEX = '7347352';
+  window.SUIVI_FWD_LIVRAISON_INDEX = 'e9f51ba';
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
@@ -110,6 +110,16 @@
         if (mesures) google.script.run.withFailureHandler(function () {}).noterConsultation(mesures);
         else google.script.run.withFailureHandler(function () {}).noterConsultation();
       } catch (e) { /* hors classeur */ }
+    },
+    /* Débrief 26 : les appels de l'administration (mesDroits, adminJalons,
+       adminEnregistrerJalon…). ok reçoit la réponse, ko l'erreur — dont le
+       message, en clair, se montre tel quel. Le classeur revérifie toujours
+       qui appelle. */
+    appeler: function (nom, args, ok, ko) {
+      try {
+        var r = google.script.run.withSuccessHandler(ok).withFailureHandler(function (e) { ko(e || new Error('Le classeur n’a pas répondu.')); });
+        r[nom].apply(r, args || []);
+      } catch (e) { ko(e); }
     }
   };
 </script>
@@ -128,12 +138,24 @@
     <!-- Les deux réglages de la page, l'un sous l'autre, calés à droite : le
          contrat, puis l'avancement suivi, chacun son mot juste devant lui. -->
     <div class="reglages" id="reglages">
+      <!-- Débrief 26 : seuls les administrateurs voient ce bouton. -->
+      <span class="choix-admin" id="choix-admin" hidden>
+        <button type="button" class="lien-doux bouton-admin" id="ouvrir-admin" aria-haspopup="dialog">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 10.2a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4Z" stroke="currentColor" stroke-width="1.4"/><path d="M13.1 9.6l1.1.9-1.3 2.3-1.4-.5a5.3 5.3 0 0 1-1.4.8L9.8 14.5H7.2l-.3-1.4a5.3 5.3 0 0 1-1.4-.8l-1.4.5-1.3-2.3 1.1-.9a5.4 5.4 0 0 1 0-1.6l-1.1-.9 1.3-2.3 1.4.5a5.3 5.3 0 0 1 1.4-.8l.3-1.4h2.6l.3 1.4c.5.2 1 .5 1.4.8l1.4-.5 1.3 2.3-1.1.9c.1.5.1 1.1 0 1.6Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+          Administration
+        </button>
+      </span>
       <span class="choix-contrat" id="choix-contrat" hidden>
         <button type="button" class="lien-doux lien-ensemble" id="voir-ensemble" aria-expanded="false" aria-controls="ensemble">Vue d’ensemble</button>
         <label for="select-contrat">Contrat</label>
         <span class="controle">
           <select class="select" id="select-contrat"></select>
           <span class="attente" id="etat-contrat" role="status" aria-live="polite"></span>
+        </span>
+        <!-- Débrief 26 : la tranche du contrat, quand il en a plusieurs. -->
+        <span class="choix-tranche" id="choix-tranche" hidden>
+          <label for="select-tranche">Tranche</label>
+          <select class="select" id="select-tranche"></select>
         </span>
       </span>
       <!-- L'avancement suivi, lu dans le bloc HDK AA 011 de l'extract : la
@@ -463,6 +485,24 @@
 </div>
 
 <div class="bulle" id="bulle" role="status" aria-live="polite"></div>
+<!-- Débrief 26 : le panneau d'administration — les jalons, les contrats, les
+     administrateurs. Vide tant qu'un administrateur ne l'ouvre pas. -->
+<dialog class="admin" id="admin" aria-labelledby="admin-titre">
+  <div class="admin-tete">
+    <div>
+      <h2 id="admin-titre">Administration</h2>
+      <p class="admin-qui" id="admin-qui"></p>
+    </div>
+    <button type="button" class="admin-fermer" id="admin-fermer" aria-label="Fermer l’administration">×</button>
+  </div>
+  <div class="segmente admin-onglets" id="admin-onglets" role="group" aria-label="Ce qu’on administre">
+    <button type="button" data-onglet="jalons" aria-pressed="true">Jalons</button>
+    <button type="button" data-onglet="contrats" aria-pressed="false">Contrats</button>
+    <button type="button" data-onglet="admins" aria-pressed="false" hidden>Administrateurs</button>
+  </div>
+  <div class="admin-message" id="admin-message" role="status" aria-live="polite"></div>
+  <div class="admin-corps" id="admin-corps"></div>
+</dialog>
 <!-- Une page longue : un bouton discret ramène en haut, là où sont le
      périmètre et l'avancement suivi. -->
 <button type="button" class="haut-de-page" id="haut-de-page" aria-label="Revenir en haut de la page" hidden>

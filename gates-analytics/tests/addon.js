@@ -607,7 +607,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
     JSON.stringify(cM.listerContrats(clM)));
   verifier('le paquet d\'ouverture est celui du premier, et porte les deux',
     pM.ok === true && pM.contrat === 'X1' && pM.feuille === 'X1' && pM.plans.length === 186 &&
-    JSON.stringify(pM.contrats) === JSON.stringify([{ id: 'X1', nom: 'X1' }, { id: 'X2', nom: 'X2' }]),
+    /* Débrief 26 : chacun dit aussi son contrat et sa tranche (vide : le contrat lui-même). */
+    JSON.stringify(pM.contrats) === JSON.stringify([{ id: 'X1', nom: 'X1', contrat: 'X1', tranche: '' }, { id: 'X2', nom: 'X2', contrat: 'X2', tranche: '' }]),
     pM.contrat + ' / ' + pM.plans.length);
   const pX2 = cM.getDonneesPourClient('X2');
   verifier('le paquet de X2 est un autre paquet : son onglet, ses plans, ses relevés',
@@ -615,7 +616,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
     pX2.contrats.length === 2 && pX2.releves.length === 5 && pX2.releves[4].total === 93 && pM.releves[4].total === 186,
     pX2.contrat + ' / ' + pX2.plans.length + ' plans, ' + pX2.releves.length + ' relevés');
   verifier('le paquet posé dans la page est celui du premier contrat',
-    /"contrat":"X1"/.test(cM.donneesJSONPourPage()) && /"contrats":\[\{"id":"X1","nom":"X1"\},\{"id":"X2","nom":"X2"\}\]/.test(cM.donneesJSONPourPage()));
+    /"contrat":"X1"/.test(cM.donneesJSONPourPage()) && /"contrats":\[\{"id":"X1","nom":"X1","contrat":"X1","tranche":""\},\{"id":"X2","nom":"X2","contrat":"X2","tranche":""\}\]/.test(cM.donneesJSONPourPage()));
   verifier('un identifiant se retrouve sans tenir compte de la casse ni des accents',
     cM.getDonneesPourClient('x2').contrat === 'X2' && cM.getDonneesPourClient(' X1 ').contrat === 'X1');
   /* L'historique suit la même résolution : « x1 » est bien l'historique de
@@ -769,8 +770,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
     /* Les propriétés du document ne gardent que la version des données, les consultations (débrief 18),
        le jeton de la fenêtre d'import SEE (débrief 20), le PSN de chaque contrat tapé dans cette
        fenêtre (débrief 21), les temps des dernières ouvertures et l'état du préchauffage (débrief 23), les
-       colonnes suivies choisies pour chaque contrat (débrief 25). */
-    (fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8').match(/[gs]etProperty\(([A-Z_]+)/g) || []).every(x => /CLE_VERSION_DONNEES|CLE_CONSULTATIONS|CLE_JETON_IMPORT|CLE_PSN|CLE_MESURES|CLE_PRECHAUFFAGE|CLE_COLONNES/.test(x)));
+       colonnes suivies choisies pour chaque contrat (débrief 25), les administrateurs et l'archivage coupé
+       au menu (débrief 26). */
+    (fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8').match(/[gs]etProperty\(([A-Z_]+)/g) || []).every(x => /CLE_VERSION_DONNEES|CLE_CONSULTATIONS|CLE_JETON_IMPORT|CLE_PSN|CLE_MESURES|CLE_PRECHAUFFAGE|CLE_COLONNES|CLE_ROLES|CLE_ARCHIVAGE/.test(x)));
   configurer([
     { semaine: '2026-s8', texte: '  Revue de définition  ' },
     { semaine: '2026-S02', texte: '' },

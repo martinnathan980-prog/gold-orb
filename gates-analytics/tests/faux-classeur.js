@@ -204,6 +204,8 @@ function Classeur(feuilles, nom) {
   feuilles.forEach(function (f) { f.classeur = self; });
 }
 Classeur.prototype.getName = function () { return this.nom; };
+/* Le propriétaire du classeur (débrief 26) : celui que pose le test, sinon aucun (un Drive partagé). */
+Classeur.prototype.getOwner = function () { const e = this.proprietaire; return e ? { getEmail: function () { return e; } } : null; };
 Classeur.prototype.cellulesGrille = function () {
   return this.feuilles.reduce(function (s, f) { return s + f.getMaxRows() * f.getMaxColumns(); }, 0);
 };
@@ -436,9 +438,15 @@ function poserEnvironnement(contexte, classeur, proprietes, fichiers) {
   /* La session : le fuseau du projet, et la clé temporaire du lecteur (celle
      que posent les tests, sinon vide — un lecteur que Google ne nomme pas). */
   contexte.__cleLecteur = '';
+  /* Débrief 26 : l'adresse du lecteur (celle que posent les tests, sinon
+     vide — Google ne le nomme pas) et celle au nom de qui le script tourne. */
+  contexte.__emailLecteur = '';
+  contexte.__emailScript = 'responsable@exemple.fr';
   contexte.Session = {
     getScriptTimeZone: function () { return 'Europe/Paris'; },
-    getTemporaryActiveUserKey: function () { return contexte.__cleLecteur; }
+    getTemporaryActiveUserKey: function () { return contexte.__cleLecteur; },
+    getActiveUser: function () { return { getEmail: function () { return contexte.__emailLecteur; } }; },
+    getEffectiveUser: function () { return { getEmail: function () { return contexte.__emailScript; } }; }
   };
   /* Le verrou du script est celui que prennent les gestes (verrouDuClasseur_) ;
      celui du document reste là, comme dans Apps Script, mais personne ne

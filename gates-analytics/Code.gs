@@ -47,7 +47,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = '7347352';
+const EDITION = 'e9f51ba';
 
 // =====================================================================
 //  CONFIGURATION
@@ -87,6 +87,14 @@ const CONFIG = {
   FEUILLE_JALONS: 'Jalons',
 
   /**
+   * Débrief 26 — le responsable du tableau de bord : l'adresse Google de
+   * celui qui nomme les administrateurs (bouton Administration de la page).
+   * Vide : le propriétaire du classeur. Les administrateurs, eux, se
+   * nomment dans la page et sont gardés dans le classeur, pas ici.
+   */
+  RESPONSABLE: '',
+
+  /**
    * La colonne « Validité » de l'export (débrief 25) — celle du bloc de la
    * colonne suivie (HDK AA 011 pour HDK), chaque bloc ayant la sienne : un plan qui y porte
    * « S » est un ancien plan. Il reste dans l'onglet, dans l'historique et
@@ -97,6 +105,16 @@ const CONFIG = {
    */
   COLONNE_VALIDITE: 'Validité',
   VALEURS_ANCIEN_PLAN: ['S'],
+
+  /**
+   * La colonne « Quantité » de l'export (débrief 26), elle aussi celle du
+   * bloc de la colonne suivie : un plan à quantité 0 (« 0 », « 0,0 ») n'est
+   * pas posé sur cette configuration. Comme un ancien plan, il reste dans
+   * l'onglet, l'historique et le tableau (grisé, « quantité 0 »), et ne
+   * compte nulle part. Une quantité vide ou « - » ne l'écarte pas. Vide : rien
+   * n'est écarté.
+   */
+  COLONNE_QUANTITE: 'Quantité',
 
   /** Nombre de lignes scannées en haut de feuille pour trouver la ligne d'en-têtes. */
   LIGNES_SCAN_ENTETE: 8,
@@ -476,6 +494,7 @@ function onOpen() {
     .addSeparator()
     /* Débrief 25 : les jalons se tiennent dans un onglet du classeur. */
     .addItem('Créer l\'onglet des jalons', 'creerOngletJalons')
+    .addItem('Reprendre la main (devenir responsable)', 'reprendreLaMain')
     .addSeparator()
     .addItem('Activer l\'archivage automatique (vendredi 17 h)', 'installerSuiviHebdomadaire')
     .addItem('Désactiver l\'archivage automatique', 'desinstallerSuiviHebdomadaire')
@@ -1043,7 +1062,18 @@ function colonnesDuContrat(contrat) {
  * l'impose.
  */
 function trouverIndexValidite_(entetes, groupes, iFWD) {
-  const designation = String(CONFIG.COLONNE_VALIDITE || '').trim();
+  return trouverIndexDuBloc_(CONFIG.COLONNE_VALIDITE, entetes, groupes, iFWD);
+}
+
+/** La colonne Quantité d'un contrat (débrief 26) : même règle, celle du bloc de la colonne suivie. */
+function trouverIndexQuantite_(entetes, groupes, iFWD) {
+  return trouverIndexDuBloc_(CONFIG.COLONNE_QUANTITE, entetes, groupes, iFWD);
+}
+
+/* La colonne d'un intitulé répété par bloc — celle du bloc de la colonne
+   suivie, sinon la seule de l'export, sinon aucune. */
+function trouverIndexDuBloc_(designationBrute, entetes, groupes, iFWD) {
+  const designation = String(designationBrute || '').trim();
   if (!designation) return -1;
   if (designation.indexOf('>') !== -1) return indexParDesignation(designation, entetes, groupes);
   const voulu = normaliser(designation), toutes = [];
@@ -1061,6 +1091,22 @@ function estAncienPlan(p, cleValidite) {
   if (!cleValidite || !p) return false;
   const v = normaliser(p[cleValidite]);
   return !!v && (CONFIG.VALEURS_ANCIEN_PLAN || []).some(function (x) { return normaliser(x) === v; });
+}
+
+/** Une quantité nulle (débrief 26) : « 0 », « 0,0 », « 0.00 » — pas une cellule vide, ni « - ». */
+function estQuantiteNulle(p, cleQuantite) {
+  if (!cleQuantite || !p) return false;
+  return /^[+-]?0+(?:[.,]0*)?$/.test(String(p[cleQuantite] === undefined || p[cleQuantite] === null ? '' : p[cleQuantite]).trim());
+}
+
+/**
+ * Pourquoi un plan est écarté de tous les calculs (débriefs 25 et 26) :
+ * 'S' (ancien plan), 'quantité 0', ou '' s'il compte.
+ */
+function planEcarte(p, modele) {
+  if (estAncienPlan(p, modele.cleValidite)) return 'S';
+  if (estQuantiteNulle(p, modele.cleQuantite)) return 'quantité 0';
+  return '';
 }
 
 /** Index de la colonne qui identifie un plan : elle sera figée à gauche. */
@@ -1158,6 +1204,7 @@ function construireModele(contrat) {
   if (iConcept === iFWD) iConcept = -1;
   const conceptDemandeAbsent = !!suivies.concept && iConcept === -1;
   const iValidite = trouverIndexValidite_(entetes, groupes, iFWD);
+  const iQuantite = trouverIndexQuantite_(entetes, groupes, iFWD);
   const iRef = trouverIndexReference(entetes);
   const iDomaine = trouverIndexDomaine(entetes, groupes);
   const lignesBrutes = donnees.slice(indexEntete + 1);
@@ -1215,6 +1262,7 @@ function construireModele(contrat) {
   let cleDate = null;
   let cleConcept = null;
   let cleValidite = null;
+  let cleQuantite = null;
 
   for (let i = 0; i < nbColonnes; i++) {
     const titre = entetes[i] || ('Colonne ' + (i + 1));
@@ -1225,6 +1273,7 @@ function construireModele(contrat) {
     if (i === iDate) cleDate = cle;
     if (i === iConcept) cleConcept = cle;
     if (i === iValidite && i !== iFWD && i !== iRef) cleValidite = cle;
+    if (i === iQuantite && i !== iFWD && i !== iRef) cleQuantite = cle;
 
     const s = stats[i];
     let classe = '';
@@ -1292,6 +1341,7 @@ function construireModele(contrat) {
     cleDomaine: iDomaine === -1 ? null : colonnes[iDomaine].cle,
     cleConcept: cleConcept,
     cleValidite: cleValidite,
+    cleQuantite: cleQuantite,
     colonneFWD: suivies.fwd,
     colonneConcept: suivies.concept,
     colonnesSource: suivies.source,
@@ -1449,6 +1499,8 @@ function getDonneesPourClientLues(contrat) {
       /* Débrief 25 : la colonne Validité, et ce qui y fait un ancien plan. */
       cleValidite: modele.cleValidite,
       valeursAncien: CONFIG.VALEURS_ANCIEN_PLAN || [],
+      /* Débrief 26 : la colonne Quantité ; un plan à quantité 0 est écarté comme un ancien plan. */
+      cleQuantite: modele.cleQuantite,
       valeursFinies: CONFIG.VALEURS_FINIES,
       valeursAFaire: CONFIG.VALEURS_A_FAIRE || [],
       dimParDefaut: modele.dimParDefaut,
@@ -1508,7 +1560,12 @@ function contratsPourLaPage_(contrats) {
     .sort(function (a, b) {
       return premier[a.famille] - premier[b.famille] || (a.t ? 1 : 0) - (b.t ? 1 : 0) || a.i - b.i;
     })
-    .map(function (r) { return { id: r.c.id, nom: r.t ? r.t.parent + ' \u203a ' + r.t.tranche : r.c.nom }; });
+    /* Débrief 26 : la page choisit le contrat, puis la tranche — chaque
+       entrée dit les deux (tranche vide : le contrat lui-même). */
+    .map(function (r) {
+      return { id: r.c.id, nom: r.t ? r.t.parent + ' \u203a ' + r.t.tranche : r.c.nom,
+               contrat: r.t ? r.t.parent : r.c.nom, tranche: r.t ? r.t.tranche : '' };
+    });
 }
 
 /**
@@ -1714,7 +1771,116 @@ function noterConsultation(mesures) {
      reprend six heures s'il a été posé il y a plus de trois — un cache servi
      toute la journée n'expire jamais sous les pieds d'une lectrice. */
   if (cache) { try { toucherPaquetOuvert_(cache, recu ? recu.cle : ''); } catch (err) { /* rien */ } }
+  /* Débrief 26 : l'ouverture rapide et l'archivage du vendredi se posent
+     d'eux-mêmes — après l'ouverture, jamais sur son chemin. */
+  try { assurerAutomatismes_(); } catch (err) { /* rien : réessayé à la prochaine ouverture */ }
   return true;
+}
+
+/* =====================================================================
+   LES AUTOMATISMES, POSÉS D'EUX-MÊMES (débrief 26 : « tout doit être
+   automatique, je n'ai plus rien à faire »)
+   L'ouverture rapide (prechaufferTableau, toutes les dix minutes) et
+   l'archivage du vendredi (enregistrerInstantaneHebdo) ne demandent plus de
+   menu : la première ouverture de la page par l'application web les pose.
+   Seulement au nom du responsable — l'application web s'exécute au sien —,
+   jamais sous le compte d'un éditeur qui ouvrirait la page depuis le
+   classeur (les déclencheurs seraient en double, et partiraient avec lui).
+   Une fois vérifiés, rien n'est relu pendant six heures. Les menus
+   « Désactiver… » restent la volonté de quelqu'un : respectée, jusqu'à ce
+   que le menu « Activer… » la change.
+   ===================================================================== */
+const CLE_CACHE_AUTOMATISMES = 'SFWD' + FORMAT_CACHE + '-automatismes';
+const CLE_ARCHIVAGE = 'SUIVI_FWD_ARCHIVAGE';   // { coupe: true } quand le menu l'a désactivé
+
+function etatArchivage_() {
+  let e = null;
+  try { e = analyserJson(PropertiesService.getDocumentProperties().getProperty(CLE_ARCHIVAGE)); } catch (err) { e = null; }
+  return e && typeof e === 'object' && !Array.isArray(e) ? e : {};
+}
+
+/**
+ * Pose ce qui manque, retire les doubles : { etat: 'ok', poses, retires }, ou
+ * { etat } quand rien n'est fait ('deja' vérifié il y a peu,
+ * 'pas-responsable', 'occupe'). forcer : vérifier même si c'est récent.
+ */
+function assurerAutomatismes_(forcer) {
+  let cache = null;
+  try { cache = CacheService.getScriptCache(); } catch (err) { cache = null; }
+  if (!forcer && cache) { const vu = cache.get(CLE_CACHE_AUTOMATISMES); if (vu) return { etat: 'deja', vu: vu }; }
+  const id = identite_();
+  if (!id.coherent) {
+    if (cache) { try { cache.put(CLE_CACHE_AUTOMATISMES, 'pas-responsable', 3600); } catch (err) { /* rien */ } }
+    return { etat: 'pas-responsable', robot: id.robot, responsable: id.responsable };
+  }
+  const verrou = LockService.getScriptLock();
+  if (!verrou.tryLock(forcer ? 10000 : 0)) return { etat: 'occupe' };
+  try {
+    const par = {};
+    ScriptApp.getProjectTriggers().forEach(function (t) { const f = t.getHandlerFunction(); (par[f] = par[f] || []).push(t); });
+    const poses = [], retires = [];
+    const automatismes = [
+      { fonction: 'prechaufferTableau', coupe: etatPrechauffage_().active === false,
+        poser: function () { ScriptApp.newTrigger('prechaufferTableau').timeBased().everyMinutes(PRECHAUFFAGE_MINUTES).create(); } },
+      { fonction: 'enregistrerInstantaneHebdo', coupe: !!etatArchivage_().coupe,
+        poser: function () { ScriptApp.newTrigger('enregistrerInstantaneHebdo').timeBased().onWeekDay(ScriptApp.WeekDay.FRIDAY).atHour(17).create(); } }
+    ];
+    automatismes.forEach(function (a) {
+      const l = par[a.fonction] || [];
+      l.slice(1).forEach(function (t) { ScriptApp.deleteTrigger(t); retires.push(a.fonction); });
+      if (!l.length && !a.coupe) { a.poser(); poses.push(a.fonction); }
+    });
+    if (poses.indexOf('prechaufferTableau') !== -1) ecrireEtatPrechauffage_({ active: true, depuis: Date.now(), automatique: true });
+    if (cache) { try { cache.put(CLE_CACHE_AUTOMATISMES, 'ok', 21600); } catch (err) { /* rien */ } }
+    return { etat: 'ok', poses: poses, retires: retires };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
+/**
+ * Un déclencheur posé sous un autre compte que celui du responsable — un
+ * ancien responsable, un éditeur qui a cliqué l'ancien menu — tourne en
+ * parallèle, invisible pour lui. À son passage, il se retire lui-même et
+ * ne fait rien. Rien n'est retiré tant qu'aucun responsable n'est connu.
+ */
+function declencheurEtranger_(e) {
+  if (!(e && typeof e === 'object' && e.triggerUid)) return false;
+  const id = identite_();
+  if (!id.responsable || !id.robot || id.robot === id.responsable) return false;
+  try {
+    ScriptApp.getProjectTriggers().forEach(function (t) { if (String(t.getUniqueId()) === String(e.triggerUid)) ScriptApp.deleteTrigger(t); });
+  } catch (err) { /* rien */ }
+  return true;
+}
+
+/**
+ * Menu Suivi FWD → Reprendre la main : celui qui clique (un éditeur du
+ * classeur) devient le responsable — un classeur de Drive partagé, une
+ * passation, un responsable parti. Ses automatismes se posent sous son
+ * compte ; il reste à redéployer l'application web à son nom.
+ */
+function reprendreLaMain() {
+  gesteDuClasseur();
+  const ui = SpreadsheetApp.getUi();
+  let moi = '';
+  try { moi = emailPropre_(Session.getEffectiveUser().getEmail()); } catch (err) { moi = ''; }
+  if (!moi) { ui.alert('Suivi FWD', 'Google ne donne pas votre adresse : impossible de vous désigner responsable.', ui.ButtonSet.OK); return; }
+  if (emailPropre_(CONFIG.RESPONSABLE) && emailPropre_(CONFIG.RESPONSABLE) !== moi) {
+    ui.alert('Suivi FWD', 'Le responsable est fixé dans le code (CONFIG.RESPONSABLE : ' + CONFIG.RESPONSABLE + ') : le changer là.', ui.ButtonSet.OK);
+    return;
+  }
+  const avant = proprietaireEpingle_();
+  if (avant && avant !== moi &&
+      ui.alert('Suivi FWD', 'Le responsable est aujourd’hui ' + avant + '. Devenir responsable à sa place ?', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
+  epinglerProprietaire_(moi, 'reprendre-la-main');
+  journaliserAdmin_(moi, 'reprend la main' + (avant && avant !== moi ? ' (avant : ' + avant + ')' : ''));
+  try { CacheService.getScriptCache().remove(CLE_CACHE_AUTOMATISMES); } catch (err) { /* rien */ }
+  const r = assurerAutomatismes_(true);
+  ui.alert('Suivi FWD', 'Vous êtes le responsable (' + moi + ').' +
+    (r && r.etat === 'ok' ? ' Ouverture rapide et archivage du vendredi posés sous votre compte.' : '') +
+    ' Dernier geste : Déployer → Nouveau déploiement → Application web, « Exécuter en tant que : moi », « Accès : les utilisateurs de votre organisation » — puis donner le nouveau lien.',
+    ui.ButtonSet.OK);
 }
 
 /** Pour le Diagnostic : « S40 : 37 ouvertures, 12 personnes · S39 : … », les plus récentes d'abord.
@@ -2513,6 +2679,11 @@ const PRECHAUFFAGE_BUDGET = 4 * 60 * 1000;
 
 /** Le préchauffage — le déclencheur, la fenêtre d'import et les gestes l'appellent. Rend son bilan. */
 function prechaufferTableau(e) {
+  /* Débrief 26 : posé sous un autre compte que celui du responsable, il se
+     retire ; sinon il vérifie au passage les automatismes (six heures de
+     cache : presque toujours un seul accès). */
+  if (declencheurEtranger_(e)) return { raison: 'déclencheur d’un autre compte, retiré' };
+  try { assurerAutomatismes_(); } catch (err) { /* rien */ }
   nouvellesMesures_('prechauffage');
   const debut = MESURES_.debut;
   const bilan = { quand: debut, declencheur: !!(e && typeof e === 'object' && e.triggerUid), prets: [], construits: [], touches: [],
@@ -2819,6 +2990,23 @@ function diagnostic() {
     return terminerDiagnostic(lignes);
   }
   dire('✓ Classeur : ' + classeur.getName());
+  /* Débrief 26 : qui administre, et les automatismes. */
+  try {
+    const admins = rolesEnregistres_().admins, id = identite_();
+    dire((id.responsable ? '• ' : '⚠ ') + 'Responsable : ' + (id.responsable || 'aucun — menu Suivi FWD → Reprendre la main') + ' · administrateurs : ' + (admins.length
+      ? admins.map(function (a) { return a.email + (a.contrats.length ? ' (' + a.contrats.join(', ') + ')' : ''); }).join(', ') : 'aucun'));
+    dire('• Vous : ' + (id.lecteur || 'adresse inconnue') + ' · ce Diagnostic tourne au nom de ' + (id.robot || '?') +
+      (id.coherent ? ' (le responsable)' : ' — pas le responsable : vos automatismes ne sont pas ceux du tableau de bord'));
+    const journal = analyserJson(PropertiesService.getDocumentProperties().getProperty(CLE_JOURNAL_ADMIN));
+    if (Array.isArray(journal) && journal.length) {
+      dire('• Dernières modifications depuis la page : ' + journal.slice(0, 5).map(function (x) { return x.t.replace('T', ' ') + ' ' + x.qui + ' — ' + x.quoi; }).join(' · '));
+    }
+    const poses = ScriptApp.getProjectTriggers().map(function (t) { return t.getHandlerFunction(); });
+    dire((poses.indexOf('prechaufferTableau') !== -1 && poses.indexOf('enregistrerInstantaneHebdo') !== -1 ? '✓ ' : '• ') +
+      'Automatismes de votre compte : ouverture rapide ' + (poses.indexOf('prechaufferTableau') !== -1 ? 'posée' : 'absente') +
+      ', archivage du vendredi ' + (poses.indexOf('enregistrerInstantaneHebdo') !== -1 ? 'posé' : 'absent') +
+      ' — ils se posent d’eux-mêmes à l’ouverture de la page par son lien …/exec, au nom du responsable.');
+  } catch (err) { /* sans droits sur les déclencheurs : rien à dire */ }
   /* Les semaines se comptent dans le fuseau du projet : hors de Paris, un
      archivage du lundi matin peut tomber dans la semaine d'avant et remplacer
      son relevé (débrief 17). */
@@ -3593,6 +3781,13 @@ function diagnostiquerContrat(classeur, contrat, dire) {
     } else if (CONFIG.COLONNE_VALIDITE) {
       dire('• Pas de colonne « ' + CONFIG.COLONNE_VALIDITE + ' » dans le groupe de la colonne suivie (ni seule dans l\'export) : aucun plan n\'est écarté comme ancien.');
     }
+    if (modele.cleQuantite) {
+      const nulles = uniques.filter(function (p) { return !estAncienPlan(p, modele.cleValidite) && estQuantiteNulle(p, modele.cleQuantite); }).length;
+      const colQ = modele.colonnes.filter(function (c) { return c.cle === modele.cleQuantite; })[0] || {};
+      dire((nulles ? '• ' : '✓ ') + 'Quantité' + (colQ.groupe ? ' (groupe « ' + colQ.groupe + ' »)' : '') + ' : ' + (nulles
+        ? nulles + (nulles > 1 ? ' plans à quantité 0' : ' plan à quantité 0') + ' — dans le tableau, grisés, mais comptés nulle part'
+        : 'aucun plan à quantité 0'));
+    }
 
     const colRef = modele.colonnes.filter(function (c) { return c.fige; })[0];
     dire('✓ Référence figée : colonne « ' + (colRef ? colRef.titre : '?') + ' »');
@@ -4113,7 +4308,7 @@ function compterAvancements(contrat) {
      L'archiver ferait reculer chaque plan. */
   /* Débrief 25 : un ancien plan (« S » dans Validité) reste dans la carte
      du relevé — l'historique le garde —, mais ne compte nulle part. */
-  const actifs = plans.filter(function (p) { return !estAncienPlan(p, modele.cleValidite); });
+  const actifs = plans.filter(function (p) { return !planEcarte(p, modele); });
   if (actifs.length && actifs.every(function (p) { return classerFWD(p.avancement) === 'vide'; })) {
     const precedents = getHistorique(SpreadsheetApp.getActiveSpreadsheet(), modele.feuille);
     const dernier = precedents[precedents.length - 1];
@@ -4143,7 +4338,7 @@ function compterAvancements(contrat) {
     compte.plans[p.reference] = modele.cleConcept
       ? [String(p.avancement || ''), String(p[modele.cleConcept] || '')]
       : String(p.avancement || '');
-    if (estAncienPlan(p, modele.cleValidite)) return;
+    if (planEcarte(p, modele)) return;
     const etat = classerFWD(p.avancement);
     compte[etat]++;
     clesDim.forEach(function (d) {
@@ -4298,6 +4493,7 @@ function sousVerrou_(fn) {
  * hebdomadaire la signale. Renvoie le détail, contrat par contrat.
  */
 function enregistrerInstantaneHebdo(e) {
+  if (declencheurEtranger_(e)) return [];
   gesteDuClasseur(e);
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
   const semaine = numeroSemaineISO(new Date());
@@ -4838,7 +5034,8 @@ function archiverPourSemaine_(classeur, nomOnglet, saisie) {
 
 function installerSuiviHebdomadaire() {
   gesteDuClasseur();
-  desinstallerSuiviHebdomadaire();
+  retirerArchivage_();
+  try { PropertiesService.getDocumentProperties().deleteProperty(CLE_ARCHIVAGE); } catch (err) { /* rien */ }
   ScriptApp.newTrigger('enregistrerInstantaneHebdo')
     .timeBased()
     .onWeekDay(ScriptApp.WeekDay.FRIDAY)
@@ -4849,6 +5046,12 @@ function installerSuiviHebdomadaire() {
 
 function desinstallerSuiviHebdomadaire() {
   gesteDuClasseur();
+  retirerArchivage_();
+  /* Voulu : les automatismes (débrief 26) ne le reposent pas d'eux-mêmes. */
+  try { PropertiesService.getDocumentProperties().setProperty(CLE_ARCHIVAGE, JSON.stringify({ coupe: true, depuis: Date.now() })); } catch (err) { /* rien */ }
+}
+
+function retirerArchivage_() {
   ScriptApp.getProjectTriggers().forEach(function (t) {
     if (t.getHandlerFunction() === 'enregistrerInstantaneHebdo') ScriptApp.deleteTrigger(t);
   });
@@ -4937,54 +5140,68 @@ function listeDesJalons_() {
     const voulu = normaliser(nom);
     const f = nom ? ongletsDuClasseur_(classeur).filter(function (x) { return normaliser(nomOnglet_(x)) === voulu; })[0] || null : null;
     if (f) {
-      const hauteur = Math.min(derniereLigne_(f), CONFIG.MAX_JALONS * 5 + 1), largeur = Math.min(derniereColonne_(f), 12);
-      const v = hauteur >= 1 && largeur >= 1 ? f.getRange(1, 1, hauteur, largeur).getDisplayValues() : [[]];
-      const tete = v[0].map(normaliser), ou = {};
-      COLONNES_JALONS.forEach(function (c) {
-        for (let i = 0; i < tete.length; i++) {
-          if (c.mots.some(function (m) { return tete[i].indexOf(m) === 0; }) && !Object.keys(ou).some(function (k) { return ou[k] === i; })) { ou[c.cle] = i; break; }
-        }
-      });
-      const lu = function (l, k) { return ou[k] === undefined ? '' : String(l[ou[k]] === undefined ? '' : l[ou[k]]).trim(); };
-      rendu = {
-        onglet: nomOnglet_(f),
-        liste: v.slice(1).map(function (l) {
-          const brutDate = lu(l, 'date');
-          const date = dateDeJalon(brutDate) ? brutDate : '';
-          const contrats = lu(l, 'contrat').split(/\s*[,;]\s*/).filter(Boolean);
-          return {
-            contrat: contrats.length > 1 ? contrats : (contrats[0] || ''),
-            texte: lu(l, 'texte'),
-            date: date,
-            semaine: lu(l, 'semaine') || (date ? '' : brutDate),
-            perimetre: lu(l, 'perimetre'),
-            suivi: lu(l, 'suivi')
-          };
-        }).filter(function (j) { return j.texte || j.date || j.semaine; })
-      };
+      const t = lireOngletJalons_(f, Math.min(derniereLigne_(f), CONFIG.MAX_JALONS * 5 + 1), Math.min(derniereColonne_(f), 12));
+      rendu = { onglet: nomOnglet_(f), liste: t.lignes.map(function (x) { return x.jalon; }) };
     }
   } catch (err) { /* onglet illisible : la configuration vaut */ }
   if (MEMO_LECTURE) MEMO_LECTURE.jalons = rendu;
   return rendu;
 }
 
+/* Où sont, dans la ligne d'en-têtes de l'onglet des jalons, ses colonnes :
+   { contrat: 0, texte: 1, … } — reconnues au début de leur intitulé. */
+function colonnesDeLOngletJalons_(entetes) {
+  const tete = (entetes || []).map(normaliser), ou = {};
+  COLONNES_JALONS.forEach(function (c) {
+    for (let i = 0; i < tete.length; i++) {
+      if (c.mots.some(function (m) { return tete[i].indexOf(m) === 0; }) && !Object.keys(ou).some(function (k) { return ou[k] === i; })) { ou[c.cle] = i; break; }
+    }
+  });
+  return ou;
+}
+
+/* Un jalon lu dans une ligne de l'onglet, de la forme de CONFIG.JALONS. */
+function jalonDeLaLigne_(l, ou) {
+  const lu = function (k) { return ou[k] === undefined ? '' : String(l[ou[k]] === undefined ? '' : l[ou[k]]).trim(); };
+  const brutDate = lu('date');
+  const date = dateDeJalon(brutDate) ? brutDate : '';
+  const contrats = lu('contrat').split(/\s*[,;]\s*/).filter(Boolean);
+  return {
+    contrat: contrats.length > 1 ? contrats : (contrats[0] || ''),
+    texte: lu('texte'),
+    date: date,
+    semaine: lu('semaine') || (date ? '' : brutDate),
+    perimetre: lu('perimetre'),
+    suivi: lu('suivi')
+  };
+}
+
 /**
- * Menu Suivi FWD → Créer l'onglet des jalons (débrief 25) : l'onglet
- * FEUILLE_JALONS, rempli des jalons de CONFIG.JALONS, à tenir ensuite dans
- * le classeur. Existant, il n'est pas touché : on y va, c'est tout.
+ * L'onglet des jalons lu ligne à ligne : { ou, largeur, lignes: [{ ligne
+ * (son numéro dans l'onglet), valeurs, jalon }] } — les lignes vides
+ * écartées. `hauteur` et `largeur` bornent la lecture.
  */
-function creerOngletJalons() {
-  gesteDuClasseur();
-  const classeur = SpreadsheetApp.getActiveSpreadsheet();
-  const ui = SpreadsheetApp.getUi();
-  const nom = String(CONFIG.FEUILLE_JALONS || '').trim() || 'Jalons';
+function lireOngletJalons_(f, hauteur, largeur) {
+  const v = hauteur >= 1 && largeur >= 1 ? f.getRange(1, 1, hauteur, largeur).getDisplayValues() : [[]];
+  const ou = colonnesDeLOngletJalons_(v[0]);
+  return {
+    ou: ou, largeur: Math.max(1, largeur),
+    lignes: v.slice(1).map(function (l, i) { return { ligne: i + 2, valeurs: l, jalon: jalonDeLaLigne_(l, ou) }; })
+      .filter(function (x) { return x.jalon.texte || x.jalon.date || x.jalon.semaine; })
+  };
+}
+
+/**
+ * L'onglet des jalons, créé s'il manque, rempli des jalons de
+ * CONFIG.JALONS et mis en forme — sans rien montrer : le menu et la page
+ * d'administration s'en servent. { feuille, cree, jalons } ; null quand
+ * FEUILLE_JALONS est vide (les jalons restent ceux du code).
+ */
+function assurerOngletJalons_(classeur) {
+  const nom = String(CONFIG.FEUILLE_JALONS || '').trim();
+  if (!nom) return null;
   const deja = classeur.getSheetByName(nom) || ongletNormalise(classeur, nom);
-  if (deja) {
-    classeur.setActiveSheet(deja);
-    ui.alert('Jalons', 'L’onglet « ' + deja.getName() + ' » existe déjà : c’est lui que le tableau de bord lit. ' +
-      'Une ligne par jalon — Contrat, Jalon, Date, Périmètre, Suivi.', ui.ButtonSet.OK);
-    return;
-  }
+  if (deja) return { feuille: deja, cree: false, jalons: 0 };
   const lignes = (Array.isArray(CONFIG.JALONS) ? CONFIG.JALONS : []).map(function (j) {
     const date = dateDeJalon(j && j.date);
     return [
@@ -5014,12 +5231,33 @@ function creerOngletJalons() {
       .requireValueInList(['FWD', 'Concept harnais'], true).setAllowInvalid(true).build());
     f.setColumnWidth(1, 150); f.setColumnWidth(2, 220); f.setColumnWidth(3, 110); f.setColumnWidth(4, 120); f.setColumnWidth(5, 130);
   } catch (err) { /* la mise en forme est un confort */ }
-  classeur.setActiveSheet(f);
   marquerDonneesModifiees_();
-  ui.alert('Jalons', 'L’onglet « ' + nom + ' » est créé avec ' + lignes.length + ' jalon(s) : le tableau de bord le lit désormais, ' +
+  return { feuille: f, cree: true, jalons: lignes.length };
+}
+
+/**
+ * Menu Suivi FWD → Créer l'onglet des jalons (débrief 25) : l'onglet
+ * FEUILLE_JALONS, rempli des jalons de CONFIG.JALONS, à tenir ensuite dans
+ * le classeur. Existant, il n'est pas touché : on y va, c'est tout.
+ */
+function creerOngletJalons() {
+  gesteDuClasseur();
+  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  const ui = SpreadsheetApp.getUi();
+  const r = assurerOngletJalons_(classeur);
+  if (!r) {
+    ui.alert('Jalons', 'CONFIG.FEUILLE_JALONS est vide : les jalons restent ceux écrits dans le code (CONFIG.JALONS).', ui.ButtonSet.OK);
+    return;
+  }
+  classeur.setActiveSheet(r.feuille);
+  if (!r.cree) {
+    ui.alert('Jalons', 'L’onglet « ' + r.feuille.getName() + ' » existe déjà : c’est lui que le tableau de bord lit. ' +
+      'Une ligne par jalon — Contrat, Jalon, Date, Périmètre, Suivi.', ui.ButtonSet.OK);
+    return;
+  }
+  ui.alert('Jalons', 'L’onglet « ' + r.feuille.getName() + ' » est créé avec ' + r.jalons + ' jalon(s) : le tableau de bord le lit désormais, ' +
     'à la place des jalons écrits dans le code. Une ligne par jalon ; Contrat vide = tous les contrats ; une tranche s’écrit ' +
-    'comme son onglet (« HDK Tranche 2 »). Pour qu’une personne ne modifie que les jalons de son contrat : ' +
-    'Données → Protéger les feuilles et les plages, une plage par contrat.', ui.ButtonSet.OK);
+    'comme son onglet (« HDK Tranche 2 »). Les administrateurs les modifient aussi depuis le tableau de bord (bouton Administration).', ui.ButtonSet.OK);
 }
 
 /**
@@ -5048,6 +5286,403 @@ function getJalons(contrat) {
     .filter(function (j) { return j !== null; })
     .sort(function (a, b) { return a.semaine < b.semaine ? -1 : (a.semaine > b.semaine ? 1 : 0); })
     .slice(0, CONFIG.MAX_JALONS);
+}
+
+// =====================================================================
+//  DROITS ET ADMINISTRATION (débrief 26)
+//  Tout le monde lit le tableau de bord ; seuls les administrateurs y
+//  changent quelque chose — les jalons, les contrats retirés —, et seul le
+//  responsable nomme les administrateurs. La page n'est jamais crue : chaque
+//  fonction admin… revérifie ici qui l'appelle, par son adresse Google
+//  (Session.getActiveUser), que Google donne quand le lecteur est du même
+//  domaine que le classeur. Inconnue, le lecteur n'est qu'un lecteur.
+// =====================================================================
+const CLE_ROLES = 'SUIVI_FWD_ROLES';       // { admins: [{ email, contrats: [] }] } — contrats vide : tous
+const MAX_ADMINS = 60;
+const FORME_EMAIL = /^[^\s@<>"',;]+@[^\s@<>"',;]+\.[^\s@<>"',;]+$/;
+
+const CLE_PROPRIETAIRE = 'SUIVI_FWD_PROPRIETAIRE';    // { email, depuis, par } : le responsable, épinglé
+const CLE_JOURNAL_ADMIN = 'SUIVI_FWD_JOURNAL_ADMIN';  // les dernières modifications faites depuis la page
+
+function emailPropre_(v) { return String(v === undefined || v === null ? '' : v).trim().toLowerCase(); }
+
+/** L'adresse de celui qui regarde la page, en minuscules — '' si Google ne la donne pas. */
+function emailDuLecteur_() {
+  try { return emailPropre_(Session.getActiveUser().getEmail()); } catch (err) { return ''; }
+}
+
+/* Le responsable épinglé : CONFIG.RESPONSABLE, sinon celui gardé dans le classeur. */
+function proprietaireEpingle_() {
+  const c = emailPropre_(CONFIG.RESPONSABLE);
+  if (c) return c;
+  try {
+    const p = analyserJson(PropertiesService.getDocumentProperties().getProperty(CLE_PROPRIETAIRE));
+    return p && FORME_EMAIL.test(emailPropre_(p.email)) ? emailPropre_(p.email) : '';
+  } catch (err) { return ''; }
+}
+function epinglerProprietaire_(email, par) {
+  PropertiesService.getDocumentProperties().setProperty(CLE_PROPRIETAIRE,
+    JSON.stringify({ email: emailPropre_(email), depuis: new Date().toISOString(), par: par }));
+}
+
+/**
+ * Qui est là : { lecteur (qui regarde), robot (au nom de qui le script
+ * tourne : celui qui a déployé l'application web, ou le titulaire d'un
+ * déclencheur), responsable, coherent (le script tourne au nom du
+ * responsable) }.
+ *
+ * Le responsable n'est jamais « celui au nom de qui ça tourne » tout court :
+ * une application déployée par erreur en « utilisateur qui y accède » ferait
+ * de chaque lecteur un responsable. Il est épinglé une fois — quand le
+ * propriétaire du classeur est aussi celui au nom de qui le script tourne,
+ * le cas normal (le classeur à lui, l'application déployée « en tant que
+ * moi ») —, et réépinglé de même après un transfert du fichier suivi d'un
+ * nouveau déploiement. Dans un Drive partagé (pas de propriétaire) :
+ * CONFIG.RESPONSABLE, ou le menu Suivi FWD → Reprendre la main.
+ */
+function identite_() {
+  const lecteur = emailDuLecteur_();
+  let robot = '';
+  try { robot = emailPropre_(Session.getEffectiveUser().getEmail()); } catch (err) { robot = ''; }
+  let responsable = proprietaireEpingle_();
+  if (robot && responsable !== robot && !emailPropre_(CONFIG.RESPONSABLE)) {
+    let possesseur = '';
+    try { const o = SpreadsheetApp.getActiveSpreadsheet().getOwner(); possesseur = o ? emailPropre_(o.getEmail()) : ''; } catch (err) { possesseur = ''; }
+    if (possesseur && possesseur === robot) {
+      try { epinglerProprietaire_(robot, responsable ? 'passation-du-fichier' : 'proprietaire-du-fichier'); responsable = robot; } catch (err) { /* réessayé plus tard */ }
+    }
+  }
+  return { lecteur: lecteur, robot: robot, responsable: responsable, coherent: !!robot && robot === responsable };
+}
+
+function emailDuResponsable_() { return identite_().responsable; }
+
+/* Ce qu'on tape dans la page reste du texte dans le classeur, jamais une
+   formule (« =IMPORTXML(…) » serait exécuté au nom du responsable). */
+function texteSur_(v, max) {
+  const t = String(v === undefined || v === null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max || 80);
+  return /^[=+\-@]/.test(t) ? '\'' + t : t;
+}
+
+/* Les quarante dernières modifications faites depuis la page : qui, quoi,
+   quand — le Diagnostic les montre. */
+function journaliserAdmin_(email, quoi) {
+  try {
+    const props = PropertiesService.getDocumentProperties();
+    let j = analyserJson(props.getProperty(CLE_JOURNAL_ADMIN));
+    if (!Array.isArray(j)) j = [];
+    j.unshift({ t: new Date().toISOString().slice(0, 16), qui: email, quoi: String(quoi).slice(0, 120) });
+    props.setProperty(CLE_JOURNAL_ADMIN, JSON.stringify(j.slice(0, 40)));
+  } catch (err) { /* le journal est un confort */ }
+}
+
+/** Les administrateurs gardés dans le classeur : { admins: [{ email, contrats }] }, épurés. */
+function rolesEnregistres_() {
+  let lu = null;
+  try { lu = analyserJson(PropertiesService.getDocumentProperties().getProperty(CLE_ROLES)); } catch (err) { lu = null; }
+  const vus = {};
+  const admins = (lu && Array.isArray(lu.admins) ? lu.admins : []).map(function (a) {
+    return {
+      email: String(a && a.email || '').trim().toLowerCase(),
+      contrats: (a && Array.isArray(a.contrats) ? a.contrats : []).map(function (c) { return String(c).trim(); }).filter(Boolean)
+    };
+  }).filter(function (a) {
+    if (!FORME_EMAIL.test(a.email) || vus[a.email]) return false;
+    vus[a.email] = true;
+    return true;
+  });
+  return { admins: admins };
+}
+
+/**
+ * Les droits d'une adresse : { role: 'responsable' | 'administrateur' |
+ * 'lecteur', email, identifie, tous (tous les contrats), contrats }.
+ */
+function droitsDe_(email, responsable) {
+  const e = emailPropre_(email);
+  const r = responsable === undefined ? emailDuResponsable_() : responsable;
+  if (!e) return { role: 'lecteur', email: '', identifie: false, tous: false, contrats: [] };
+  if (r && e === r) return { role: 'responsable', email: e, identifie: true, tous: true, contrats: [] };
+  const a = rolesEnregistres_().admins.filter(function (x) { return x.email === e; })[0];
+  return a ? { role: 'administrateur', email: e, identifie: true, tous: !a.contrats.length, contrats: a.contrats }
+           : { role: 'lecteur', email: e, identifie: true, tous: false, contrats: [] };
+}
+
+/**
+ * Ces droits permettent-ils de gérer ce contrat ? Un administrateur de
+ * « HDK » gère aussi ses tranches (« HDK Tranche 2 »). contrat '' : ce qui
+ * vaut pour tous les contrats — réservé aux administrateurs de tous.
+ */
+function peutGerer_(d, contrat) {
+  if (d.role === 'responsable') return true;
+  if (d.role !== 'administrateur') return false;
+  if (d.tous) return true;
+  if (!contrat) return false;
+  const t = trancheDe_(contrat);
+  return d.contrats.some(function (c) { return memeContrat_(c, contrat) || (t && memeContrat_(c, t.parent)); });
+}
+
+/* Les droits de celui qui appelle, et si le script tourne bien au nom du
+   responsable (sinon rien ne s'écrit : coherent). */
+function droitsDeLAppelant_() {
+  const id = identite_();
+  const d = droitsDe_(id.lecteur, id.responsable);
+  d.coherent = id.coherent; d.robot = id.robot; d.responsable = id.responsable;
+  return d;
+}
+
+/* Les refus commencent par « [droits] » : la page relit alors les droits du lecteur. */
+function refuser_(d, quoi) {
+  throw new Error('[droits] ' + (d.identifie
+    ? 'Réservé ' + quoi + ' : votre compte (' + d.email + ') n’en a pas le droit. Le demander à ' + (d.responsable || emailDuResponsable_() || 'au responsable du tableau de bord') + '.'
+    : 'Réservé ' + quoi + ' : Google ne dit pas qui vous êtes (compte hors du domaine du classeur, plusieurs comptes Google ouverts, ou page ouverte sans être connecté) : ouvrir le tableau de bord avec votre seul compte de l’entreprise.'));
+}
+
+/* La première ligne de chaque fonction admin… qui écrit. */
+function exigerAdmin_(condition, quoi) {
+  const d = droitsDeLAppelant_();
+  if (d.role === 'lecteur' || !condition(d)) refuser_(d, quoi);
+  if (!d.coherent) {
+    throw new Error('[droits] Modifications suspendues : le tableau de bord tourne au nom de ' + (d.robot || 'personne') + ', pas de son responsable (' +
+      (d.responsable || 'aucun') + '). Le responsable : menu Suivi FWD → Reprendre la main, puis Déployer → Nouveau déploiement.');
+  }
+  return d;
+}
+
+/**
+ * Ce que la page sait du lecteur, pour montrer — ou non — le bouton
+ * Administration. Jamais une permission : chaque fonction admin… revérifie.
+ * Appelé à part, après l'ouverture : le paquet des données, gardé en cache
+ * et partagé entre tous, ne dit rien de personne.
+ */
+function mesDroits() {
+  const d = droitsDeLAppelant_();
+  return { role: d.role, identifie: d.identifie, email: d.email, tous: d.tous, contrats: d.contrats, coherent: d.coherent,
+           responsable: d.role !== 'lecteur' ? d.responsable : '', jalonsEditables: !!String(CONFIG.FEUILLE_JALONS || '').trim() };
+}
+
+/* La signature d'une ligne de l'onglet des jalons, telle que la page l'a vue :
+   modifiée entre-temps par quelqu'un d'autre, elle n'est pas écrasée. */
+function signatureLigne_(valeurs) { return empreinte(JSON.stringify((valeurs || []).map(function (v) { return String(v); }))); }
+
+/* Les contrats d'un jalon, en liste ([] : tous). */
+function contratsDeLaLigne_(jalon) { return contratsDuJalon(jalon) || []; }
+
+/**
+ * Les jalons tels que la page d'administration les montre : ceux de
+ * l'onglet (créé ici s'il manque), chacun avec sa ligne, sa signature, et
+ * s'il est modifiable par l'appelant. { onglet, jalons, contrats, droits }.
+ */
+function adminJalons() {
+  const d = droitsDeLAppelant_();
+  if (d.role === 'lecteur') refuser_(d, 'aux administrateurs');
+  if (!d.coherent) exigerAdmin_(function () { return true; }, 'aux administrateurs');
+  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  const r = sousVerrou_(function () { return assurerOngletJalons_(classeur); });
+  if (!r) throw new Error('Les jalons sont écrits dans le code (CONFIG.FEUILLE_JALONS vide) : ils ne se modifient pas depuis la page.');
+  return listeAdminJalons_(classeur, r.feuille, d);
+}
+
+function listeAdminJalons_(classeur, f, d) {
+  const t = lireOngletJalons_(f, f.getLastRow(), Math.max(ENTETES_ONGLET_JALONS.length, Math.min(f.getLastColumn(), 12)));
+  return {
+    onglet: f.getName(),
+    jalons: t.lignes.map(function (x) {
+      const j = x.jalon, contrats = contratsDeLaLigne_(j), date = dateDeJalon(j.date);
+      return {
+        ligne: x.ligne, signature: signatureLigne_(x.valeurs),
+        contrats: contrats, texte: j.texte, date: date ? date.toISOString().slice(0, 10) : '',
+        semaine: date ? numeroSemaineISO(date) : normaliserSemaine(j.semaine) || '',
+        perimetre: j.perimetre, suivi: j.suivi && normaliser(j.suivi).indexOf('concept') === 0 ? 'concept' : '',
+        modifiable: contrats.length ? contrats.every(function (c) { return peutGerer_(d, c); }) : peutGerer_(d, '')
+      };
+    }),
+    contrats: contratsPourLaPage_(listerContrats(classeur)),
+    droits: { role: d.role, tous: d.tous, contrats: d.contrats }
+  };
+}
+
+/* Un jalon venu de la page, vérifié : { contrats, texte, date, perimetre, suivi }. */
+function jalonSaisi_(j, classeur) {
+  const x = j && typeof j === 'object' ? j : {};
+  const texte = String(x.texte === undefined || x.texte === null ? '' : x.texte).replace(/\s+/g, ' ').trim();
+  if (!texte) throw new Error('Le jalon n’a pas de nom.');
+  if (texte.length > 60) throw new Error('Nom trop long : ' + texte.length + ' caractères (60 au plus).');
+  const date = dateDeJalon(String(x.date || '').trim());
+  if (!date) throw new Error('Date illisible : « ' + String(x.date || '').slice(0, 20) + ' » (attendu : un jour du calendrier).');
+  const an = date.getUTCFullYear();
+  if (an < 2000 || an > 2100) throw new Error('Date hors de portée : ' + an + '.');
+  const tous = listerContrats(classeur);
+  const contrats = (Array.isArray(x.contrats) ? x.contrats : []).map(function (c) { return String(c).trim(); }).filter(Boolean).map(function (c) {
+    const k = tous.filter(function (t) { return memeContrat_(t.id, c); })[0];
+    if (!k) throw new Error('Contrat inconnu : « ' + c.slice(0, 40) + ' ».');
+    return k.id;
+  });
+  const perimetre = String(x.perimetre || '').trim().slice(0, 40);
+  return { contrats: contrats, texte: texte, date: date, perimetre: perimetre, suivi: x.suivi === 'concept' ? 'concept' : '' };
+}
+
+/* La réponse d'une écriture : les jalons du contrat affiché, tels que la page
+   les lit, et la liste d'administration à jour. */
+function reponseJalons_(classeur, f, d, contratAffiche) {
+  return { ok: true, jalons: getJalons(contratAffiche ? String(contratAffiche) : undefined), admin: listeAdminJalons_(classeur, f, d) };
+}
+
+/**
+ * Ajoute (j.ligne vide) ou modifie (j.ligne + j.signature) un jalon de
+ * l'onglet. Un administrateur d'un contrat ne touche qu'aux jalons de ses
+ * contrats ; un jalon de tous les contrats est aux administrateurs de tous.
+ */
+function adminEnregistrerJalon(j, contratAffiche) {
+  const d = exigerAdmin_(function () { return true; }, 'aux administrateurs');
+  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  const propre = jalonSaisi_(j, classeur);
+  const permis = function (contrats) { return contrats.length ? contrats.every(function (c) { return peutGerer_(d, c); }) : peutGerer_(d, ''); };
+  if (!permis(propre.contrats)) refuser_(d, propre.contrats.length ? 'aux administrateurs de ' + propre.contrats.join(', ') : 'aux administrateurs de tous les contrats');
+  return sousVerrou_(function () {
+    const r = assurerOngletJalons_(classeur);
+    if (!r) throw new Error('Les jalons sont écrits dans le code (CONFIG.FEUILLE_JALONS vide).');
+    const f = r.feuille;
+    const t = lireOngletJalons_(f, f.getLastRow(), Math.max(ENTETES_ONGLET_JALONS.length, Math.min(f.getLastColumn(), 12)));
+    ['contrat', 'texte', 'date'].forEach(function (k) {
+      if (t.ou[k] === undefined) throw new Error('L’onglet « ' + f.getName() + ' » n’a plus sa colonne « ' + k + ' » en ligne 1 : la remettre (Contrat, Jalon, Date, Périmètre, Suivi).');
+    });
+    let ligne = Number(j && j.ligne) || 0, valeurs;
+    if (ligne) {
+      const avant = t.lignes.filter(function (x) { return x.ligne === ligne; })[0];
+      if (!avant || signatureLigne_(avant.valeurs) !== String(j.signature || '')) {
+        throw new Error('Ce jalon a été modifié ou supprimé entre-temps (par quelqu’un d’autre, ou dans le classeur) : la liste est rechargée, recommencer.');
+      }
+      if (!permis(contratsDeLaLigne_(avant.jalon))) refuser_(d, 'aux administrateurs de ses contrats');
+      valeurs = f.getRange(ligne, 1, 1, t.largeur).getValues()[0];
+    } else {
+      ligne = Math.max(f.getLastRow(), 1) + 1;
+      valeurs = new Array(t.largeur).fill('');
+    }
+    const poser = function (k, v) { if (t.ou[k] !== undefined) valeurs[t.ou[k]] = v; };
+    poser('contrat', texteSur_(propre.contrats.join(', '), 200));
+    poser('texte', texteSur_(propre.texte, 60));
+    poser('date', propre.date.toISOString().slice(0, 10));
+    poser('semaine', '');
+    poser('perimetre', texteSur_(propre.perimetre, 40));
+    poser('suivi', propre.suivi === 'concept' ? 'Concept harnais' : 'FWD');
+    f.getRange(ligne, 1, 1, t.largeur).setValues([valeurs]);
+    try { f.getRange(ligne, t.ou.date + 1).setNumberFormat('dd/MM/yyyy'); } catch (err) { /* un confort */ }
+    marquerDonneesModifiees_();
+    journaliserAdmin_(d.email, (Number(j && j.ligne) ? 'jalon modifié : ' : 'jalon ajouté : ') + propre.texte + ' (' + propre.date.toISOString().slice(0, 10) +
+      ', ' + (propre.contrats.join(', ') || 'tous les contrats') + ')');
+    return reponseJalons_(classeur, f, d, contratAffiche);
+  });
+}
+
+/** Supprime un jalon de l'onglet — s'il n'a pas changé depuis que la page l'a lu. */
+function adminSupprimerJalon(ligne, signature, contratAffiche) {
+  const d = exigerAdmin_(function () { return true; }, 'aux administrateurs');
+  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  return sousVerrou_(function () {
+    const r = assurerOngletJalons_(classeur);
+    if (!r) throw new Error('Les jalons sont écrits dans le code (CONFIG.FEUILLE_JALONS vide).');
+    const f = r.feuille;
+    const t = lireOngletJalons_(f, f.getLastRow(), Math.max(ENTETES_ONGLET_JALONS.length, Math.min(f.getLastColumn(), 12)));
+    const n = Number(ligne) || 0, avant = t.lignes.filter(function (x) { return x.ligne === n; })[0];
+    if (!avant || signatureLigne_(avant.valeurs) !== String(signature || '')) {
+      throw new Error('Ce jalon a été modifié ou supprimé entre-temps : la liste est rechargée, recommencer.');
+    }
+    const contrats = contratsDeLaLigne_(avant.jalon);
+    if (!(contrats.length ? contrats.every(function (c) { return peutGerer_(d, c); }) : peutGerer_(d, ''))) refuser_(d, 'aux administrateurs de ses contrats');
+    f.deleteRow(n);
+    marquerDonneesModifiees_();
+    journaliserAdmin_(d.email, 'jalon supprimé : ' + avant.jalon.texte + ' (' + (contrats.join(', ') || 'tous les contrats') + ')');
+    return reponseJalons_(classeur, f, d, contratAffiche);
+  });
+}
+
+/** Le responsable voit et change la liste des administrateurs : { responsable, admins, contrats }. */
+function adminListeAdmins() {
+  const d = droitsDeLAppelant_();
+  if (d.role !== 'responsable') refuser_(d, 'au responsable du tableau de bord');
+  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  return { responsable: d.responsable, admins: rolesEnregistres_().admins, contrats: contratsPourLaPage_(listerContrats(classeur)) };
+}
+
+/**
+ * Enregistre la liste des administrateurs : [{ email, contrats }] —
+ * contrats vide : tous. Le responsable n'y figure pas : il a tous les droits.
+ */
+function adminEnregistrerAdmins(liste) {
+  const d = exigerAdmin_(function (x) { return x.role === 'responsable'; }, 'au responsable du tableau de bord');
+  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  const tous = listerContrats(classeur).map(function (c) { return c.id; });
+  const familles = contratsPourLaPage_(listerContrats(classeur)).map(function (c) { return c.contrat; });
+  const vus = {}, admins = [];
+  (Array.isArray(liste) ? liste : []).forEach(function (a) {
+    const email = String(a && a.email || '').trim().toLowerCase();
+    if (!email) return;
+    if (!FORME_EMAIL.test(email)) throw new Error('Adresse illisible : « ' + email.slice(0, 60) + ' ».');
+    if (email === d.responsable || vus[email]) return;
+    vus[email] = true;
+    const contrats = (a && Array.isArray(a.contrats) ? a.contrats : []).map(function (c) { return String(c).trim(); }).filter(Boolean);
+    contrats.forEach(function (c) {
+      if (!tous.concat(familles).some(function (x) { return memeContrat_(x, c); })) throw new Error('Contrat inconnu : « ' + c.slice(0, 40) + ' ».');
+    });
+    admins.push({ email: email, contrats: contrats });
+  });
+  if (admins.length > MAX_ADMINS) throw new Error('Trop d’administrateurs : ' + admins.length + ' (au plus ' + MAX_ADMINS + ').');
+  const avant = rolesEnregistres_().admins.map(function (a) { return a.email; });
+  sousVerrou_(function () { PropertiesService.getDocumentProperties().setProperty(CLE_ROLES, JSON.stringify({ admins: admins })); });
+  const apres = admins.map(function (a) { return a.email; });
+  journaliserAdmin_(d.email, 'administrateurs : ' + (apres.filter(function (e) { return avant.indexOf(e) === -1; }).map(function (e) { return '+' + e; })
+    .concat(avant.filter(function (e) { return apres.indexOf(e) === -1; }).map(function (e) { return '−' + e; })).join(' ') || 'portées changées'));
+  return adminListeAdmins();
+}
+
+/* Les onglets de contrat retirés du tableau de bord : masqués, avec la ligne
+   d'en-têtes d'un export — ni historique, ni SEE, ni service. */
+function contratsRetires_(classeur) {
+  return classeur.getSheets().filter(function (f) {
+    return f.isSheetHidden() && !estOngletInterne(f.getName()) && !estCopieDOnglet(f.getName()) && f.getLastRow() > 0 && aDesEntetesLus(f);
+  }).map(function (f) { return f.getName(); });
+}
+
+/** Les contrats, affichés et retirés, pour la page d'administration. */
+function adminContrats() {
+  const d = droitsDeLAppelant_();
+  if (d.role === 'lecteur') refuser_(d, 'aux administrateurs');
+  if (!d.coherent) exigerAdmin_(function () { return true; }, 'aux administrateurs');
+  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  const retires = contratsRetires_(classeur);
+  return {
+    actifs: contratsPourLaPage_(listerContrats(classeur)).map(function (c) { c.gerable = peutGerer_(d, c.id) && d.tous; return c; }),
+    retires: contratsPourLaPage_(retires.map(function (n) { return { id: n, nom: n }; })).map(function (c) { c.gerable = d.tous; return c; })
+  };
+}
+
+/**
+ * Retire un contrat du tableau de bord, ou l'y remet : son onglet est
+ * masqué, ou démasqué — rien n'est effacé, son historique reste. Réservé au
+ * responsable et aux administrateurs de tous les contrats ; le dernier
+ * contrat affiché ne se retire pas.
+ */
+function adminRetirerContrat(id, retirer) {
+  const d = exigerAdmin_(function (x) { return x.role === 'responsable' || (x.role === 'administrateur' && x.tous); },
+    'au responsable et aux administrateurs de tous les contrats');
+  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  sousVerrou_(function () {
+    const nom = String(id === undefined || id === null ? '' : id);
+    if (retirer !== false) {
+      const contrats = listerContrats(classeur);
+      const c = contrats.filter(function (k) { return k.id === nom; })[0];
+      if (!c) throw new Error('Contrat introuvable : « ' + nom.slice(0, 60) + ' ».');
+      if (contrats.length < 2) throw new Error('C’est le seul contrat affiché : il ne se retire pas.');
+      classeur.getSheetByName(c.id).hideSheet();
+    } else {
+      if (contratsRetires_(classeur).indexOf(nom) === -1) throw new Error('Contrat retiré introuvable : « ' + nom.slice(0, 60) + ' ».');
+      classeur.getSheetByName(nom).showSheet();
+    }
+    marquerDonneesModifiees_();
+    journaliserAdmin_(d.email, (retirer !== false ? 'contrat retiré : ' : 'contrat remis : ') + nom);
+  });
+  return adminContrats();
 }
 
 // =====================================================================
