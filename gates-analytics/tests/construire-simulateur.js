@@ -581,6 +581,8 @@ function construireSimulateur(options) {
 
   /* L'ouverture de la page, à 13 h 15 le jour de construction. */
   temps.regler(lecture);
+  /* Un banc d'essai peut compléter le classeur avant que la page soit servie. */
+  if (typeof opts.avantPage === 'function') opts.avantPage(contexte, classeur);
   const servie = contexte.doGet({ parameter: {} });
   if (!servie || !servie.source || servie.source.modele !== 'Index') {
     throw new Error('doGet() ne sert pas le tableau de bord :\n' + (servie && servie.getContent ? servie.getContent().replace(/<[^>]+>/g, ' ') : servie));
@@ -655,6 +657,10 @@ function construireSimulateur(options) {
 
   return {
     page: page,
+    /* Le serveur et son classeur, vivants : un banc d'essai peut servir la page
+       par le vrai google.script.run (droits, jalons, administration). */
+    contexte: contexte,
+    classeur: classeur,
     edition: edition,
     vendredis: vendredis,
     lecture: lecture,
