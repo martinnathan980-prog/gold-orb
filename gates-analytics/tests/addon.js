@@ -3038,8 +3038,10 @@ function serveurSur(valeurs, proprietes, fichiers) {
     derniere: [...document.querySelectorAll('.critique-tete button[data-trig]')].slice(-1)[0].textContent.trim()
   }));
   verifier('chaque colonne calculée porte son « ? »', reperes.aides === 2, reperes.aides + ' « ? »');
+  /* Débrief 27 (D4) : les en-têtes du bloc s'écrivent en minuscules avec
+     leur majuscule (« Rythme requis », plus de capitales par le style). */
   verifier('avec un jalon de configuration à venir, la dernière colonne est le rythme requis',
-    reperes.avecJalon && /rythme requis/.test(reperes.derniere), JSON.stringify(reperes));
+    reperes.avecJalon && /rythme requis/i.test(reperes.derniere), JSON.stringify(reperes));
   await pg.selectOption('#dim-critique', 'ata'); await pg.waitForTimeout(500);
   const noteA = await pg.textContent('#indice-dim');
   await pg.selectOption('#dim-critique', '_mois'); await pg.waitForTimeout(500);
@@ -3373,11 +3375,11 @@ function serveurSur(valeurs, proprietes, fichiers) {
   /* Tant qu'un jalon de HDK est à venir (jusqu'en février 2027). */
   const avenir17 = ht17.contexte.getJalons('HDK').some(j => j.semaine >= ht17.contexte.numeroSemaineISO(new Date()));
   verifier('HDK : la puce de la prochaine échéance, les cinq jalons en légende, le rythme requis par groupe',
-    hdk17.contrat === 'HDK' && hdk17.legende === 5 && (!avenir17 || (/^Prochaine échéance/.test(hdk17.puce) && /rythme requis/.test(hdk17.tete))), JSON.stringify(hdk17));
+    hdk17.contrat === 'HDK' && hdk17.legende === 5 && (!avenir17 || (/^Prochaine échéance/.test(hdk17.puce) && /rythme requis/i.test(hdk17.tete))), JSON.stringify(hdk17));
   await pht.selectOption('#select-contrat', 'THS'); await pht.waitForTimeout(1500);
   const ths17 = await etatHT();
   verifier('THS : aucune échéance à l’écran — ni puce, ni légende — et le rythme tenu à la place du rythme requis',
-    ths17.contrat === 'THS' && ths17.puce === '' && ths17.legende === 0 && /rythme tenu/.test(ths17.tete) && !/rythme requis/.test(ths17.tete),
+    ths17.contrat === 'THS' && ths17.puce === '' && ths17.legende === 0 && /rythme tenu/i.test(ths17.tete) && !/rythme requis/i.test(ths17.tete),
     JSON.stringify(ths17));
   await pht.click('#voir-ensemble'); await pht.waitForTimeout(2000);
   const ensHT = await pht.evaluate(() => [...document.querySelectorAll('#ensemble tbody tr')].map(tr =>

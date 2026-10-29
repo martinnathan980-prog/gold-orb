@@ -4551,13 +4551,16 @@ async function reinitialiser(pg) {
       const bs = [...document.querySelectorAll('#etats .etat-btn')];
       return { n: bs.length, rangs: new Set(bs.map(b => Math.round(b.getBoundingClientRect().top))).size,
                coupes: bs.filter(b => { const l = b.querySelector('.libelle'); return l.scrollWidth > l.clientWidth + 1; }).map(b => b.querySelector('.libelle').textContent),
-               titres: bs.every(b => b.querySelector('.libelle').getAttribute('title') === b.querySelector('.libelle').textContent),
+               parRang: Object.values(bs.reduce((m, b) => { const y = Math.round(b.getBoundingClientRect().top); m[y] = (m[y] || 0) + 1; return m; }, {})),
+               points: bs.some(b => getComputedStyle(b.querySelector('.libelle')).textOverflow === 'ellipsis'),
                page: document.documentElement.scrollWidth <= window.innerWidth };
     });
-    /* Dès 1280 px, chaque nom en entier ; plus étroit, un nom trop long
-       s'abrège, entier au survol — la ligne, elle, ne se casse pas. */
-    verifier('à ' + w + ' px, les sept valeurs de GATES : sept tuiles sur une seule ligne, ' + (w >= 1280 ? 'aucun libellé coupé' : 'chaque nom entier au survol') + ', sans débord de la page',
-      t.n === 7 && t.rangs === 1 && (w < 1280 || !t.coupes.length) && t.titres && t.page, JSON.stringify(t));
+    /* Dès 1280 px, sept tuiles sur une ligne. Débrief 27 (B10, D7) : plus
+       étroit, plus de nom abrégé « entier au survol » (PWD_IN_PR… à 1024 px) —
+       les tuiles passent en rangées équilibrées (4 + 3), et un code GATES
+       n'est jamais coupé, à aucune largeur. */
+    verifier('à ' + w + ' px, les sept valeurs de GATES : ' + (w >= 1280 ? 'sept tuiles sur une seule ligne' : 'deux rangées équilibrées (4 + 3)') + ', aucun libellé coupé, sans débord de la page',
+      t.n === 7 && (w >= 1280 ? t.rangs === 1 : t.parRang.join() === '4,3') && !t.coupes.length && !t.points && t.page, JSON.stringify(t));
   }
   await p.setViewportSize({ width: 1280, height: 950 }); await p.waitForTimeout(300);
 
@@ -5456,7 +5459,9 @@ async function reinitialiser(pg) {
           pleineLargeur: Math.abs(rt.left - (r.left + parseFloat(csec.borderLeftWidth))) <= 1 && Math.abs(rt.right - (r.right - parseFloat(csec.borderRightWidth))) <= 1 &&
                          Math.abs(rt.top - (r.top + parseFloat(csec.borderTopWidth))) <= 1,
           filet: parseFloat(ct.borderBottomWidth) >= 1,
-          liseré: parseFloat(csec.borderTopWidth) >= 3 && csec.borderTopColor === numero,
+          /* Débrief 27 (D6) : le liseré passe de 3 à 2 px — avec le numéro et son
+             trait, la seule trace de la teinte du panneau. */
+          liseré: parseFloat(csec.borderTopWidth) === 2 && csec.borderTopColor === numero,
           cTitre: contraste(cs(titre).color, ct.backgroundColor), cNumero: contraste(numero, ct.backgroundColor),
           cSurtitre: contraste(cs(sur).color, ct.backgroundColor), ombre: csec.boxShadow !== 'none',
           haut: r.top, bas: r.bottom
@@ -5473,11 +5478,13 @@ async function reinitialiser(pg) {
       verifier(theme + ', ' + largeur + ' px : le sommaire suit le titre, sur le papier, sans cadre autour — rien ne fait de l’en-tête un bloc à part',
         B.sousTitre && B.navFond && B.navSansCadre, JSON.stringify(B));
       const P = b.panneaux;
-      verifier(theme + ', ' + largeur + ' px : chaque panneau ouvre sur sa tête teintée (surtitre et titre), d’un bord à l’autre, fermée d’un filet, sous un liseré de sa teinte',
+      verifier(theme + ', ' + largeur + ' px : chaque panneau ouvre sur sa tête (surtitre et titre), d’un bord à l’autre, fermée d’un filet, sous un liseré de 2 px de sa teinte',
         P.every(x => x.tete && x.pleineLargeur && x.filet && x.liseré && x.fondTete !== x.fond && x.fond === b.surface),
         JSON.stringify(P.filter(x => !(x.tete && x.pleineLargeur && x.filet && x.liseré && x.fondTete !== x.fond))));
-      verifier(theme + ', ' + largeur + ' px : six têtes, six fonds différents, et tout s’y lit (titre, numéro, surtitre à 4,5:1 au moins)',
-        new Set(P.map(x => x.fondTete)).size === 6 && P.every(x => x.cTitre >= 4.5 && x.cNumero >= 4.5 && x.cSurtitre >= 4.5),
+      /* Débrief 27 (D6) : six têtes teintées faisaient un patchwork avec les
+         six couleurs d'état — une seule tête neutre pour tous les panneaux. */
+      verifier(theme + ', ' + largeur + ' px : six têtes, une seule tête neutre (le même fond partout), et tout s’y lit (titre, numéro, surtitre à 4,5:1 au moins)',
+        new Set(P.map(x => x.fondTete)).size === 1 && P.length === 6 && P.every(x => x.cTitre >= 4.5 && x.cNumero >= 4.5 && x.cSurtitre >= 4.5),
         JSON.stringify(P.map(x => x.id + ' ' + x.fondTete + ' ' + x.cTitre.toFixed(1) + '/' + x.cNumero.toFixed(1) + '/' + x.cSurtitre.toFixed(1))));
       verifier(theme + ', ' + largeur + ' px : un vrai blanc entre deux panneaux (' + (largeur < 720 ? 24 : 36) + ' px au moins), chacun avec son ombre',
         b.ecarts.every(e => e >= (largeur < 720 ? 24 : 36)) && P.every(x => x.ombre), JSON.stringify(b.ecarts));
@@ -6884,8 +6891,10 @@ async function reinitialiser(pg) {
   verifier('débrief 20 : le graphique se dessine à la largeur de son cadre — une unité pour un pixel, redessiné quand la fenêtre change',
     largeurs20.every(x => Math.abs(x.vb - x.largeur) <= 1) && new Set(largeurs20.map(x => x.vb)).size >= 4,
     JSON.stringify(largeurs20.map(x => [x.theme, x.w, x.vb, x.largeur])));
-  verifier('débrief 20 : ses mots gardent leur taille (10 à 11 px) à 360, 768, 1024, 1440 et 1920 px',
-    largeurs20.every(x => x.tailles && x.pxMin >= 9.9), JSON.stringify(largeurs20.map(x => [x.theme, x.w, x.pxMin.toFixed(1)])));
+  /* Débrief 27 (D2) : plus aucun mot du graphique sous 11 px (l'année
+     faisait 10 px). */
+  verifier('débrief 20 : ses mots gardent leur taille (11 px au moins) à 360, 768, 1024, 1440 et 1920 px',
+    largeurs20.every(x => x.tailles && x.pxMin >= 10.9), JSON.stringify(largeurs20.map(x => [x.theme, x.w, x.pxMin.toFixed(1)])));
   verifier('débrief 20 : aucun mot n’en chevauche un autre, aucun ne sort du cadre, à toutes les largeurs et dans les deux thèmes',
     largeurs20.every(x => !x.chevauchements.length && !x.dehors.length),
     JSON.stringify(largeurs20.filter(x => x.chevauchements.length || x.dehors.length).map(x => [x.theme, x.w, x.chevauchements, x.dehors])));
@@ -7140,6 +7149,181 @@ async function reinitialiser(pg) {
   verifier('en clair aussi, les pourcentages dépassent 4,5:1',
     clair.every(c => c >= 4.5), JSON.stringify(clair.map(c => c.toFixed(1))));
   await ctxClair.close();
+
+  // =================================================================
+  /* Débrief 27, lot 0 — les fondations visuelles : un seul contrôle
+     segmenté, une seule tête de panneau, le surtitre qui dit le nom du
+     sommaire, l'échelle typographique, l'anneau du focus en ardoise, les
+     champs à 3:1, la hachure calme, le bord du contenu, les deux aides
+     communes (garderFocus, annoncer) et le thème sombre aux feuilles
+     chaudes. */
+  section('Débrief 27 : fondations visuelles (lot 0)');
+  {
+    const outilsCouleur = () => {
+      window.__lum = c => {
+        const m = c.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+        return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2];
+      };
+      window.__contraste = (a, b) => { const x = window.__lum(a), y = window.__lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+    };
+    for (const schema of ['light', 'dark']) {
+      const c27 = await contexte({ colorScheme: schema });
+      const q = await page(c27, 'lot 0 ' + schema);
+      await q.evaluate(outilsCouleur);
+      const r = await q.evaluate(() => {
+        const cs = e => getComputedStyle(e);
+        const vus = [...document.querySelectorAll('.segmente')].filter(s => s.getClientRects().length && !s.closest('dialog'));
+        const surface = cs(document.getElementById('section-plans')).backgroundColor;
+        const segs = vus.map(s => {
+          const presse = s.querySelector('button[aria-pressed="true"]');
+          const autre = s.querySelector('button[aria-pressed="false"]:not([hidden])');
+          return {
+            id: s.id || s.getAttribute('aria-label'), piste: cs(s).backgroundColor, rayon: cs(s).borderTopLeftRadius,
+            haut: Math.round(s.getBoundingClientRect().height),
+            bordsBoutons: [...s.querySelectorAll('button')].every(b => parseFloat(cs(b).borderLeftWidth) === 0 && parseFloat(cs(b).borderRightWidth) === 0),
+            presseFond: presse ? cs(presse).backgroundColor : null, presseGras: presse ? cs(presse).fontWeight : null,
+            presseEncre: presse ? window.__contraste(cs(presse).color, cs(presse).backgroundColor) : 0,
+            autreEncre: autre ? window.__contraste(cs(autre).color, cs(s).backgroundColor) : 99,
+            ombre: presse ? cs(presse).boxShadow !== 'none' : false
+          };
+        });
+        const ids = ['section-synthese', 'section-tendance', 'section-journal', 'section-repartition', 'section-plans', 'rapprochement'];
+        const secs = ids.map(id => document.getElementById(id)).filter(s => s && s.getClientRects().length);
+        const tetes = secs.map(s => cs(s.querySelector('.panneau-tete')).backgroundColor);
+        const liseres = secs.map(s => ({ l: parseFloat(cs(s).borderTopWidth), c: cs(s).borderTopColor, n: getComputedStyle(s.querySelector('.surtitre'), '::before').color }));
+        const n = document.querySelector('#etats .etat-n');
+        const pastille = document.querySelector('#etats .pastille[style*="background"]');
+        const champ = document.getElementById('recherche');
+        const tuileLib = [...document.querySelectorAll('#etats .libelle')];
+        return {
+          segs, tetes, liseres,
+          chiffre: { police: cs(n).fontFamily.split(',')[0].replace(/"/g, ''), taille: parseFloat(cs(n).fontSize), poids: cs(n).fontWeight,
+                     encre: window.__contraste(cs(n).color, cs(n.closest('.etat-btn')).backgroundColor === 'rgba(0, 0, 0, 0)' ? surface : cs(n.closest('.etat-btn')).backgroundColor) },
+          lisere: pastille ? cs(pastille).boxShadow : '',
+          champ: { haut: Math.round(champ.getBoundingClientRect().height), bord: window.__contraste(cs(champ).borderTopColor, surface) },
+          champGroupe: Math.round(document.getElementById('filtre-groupe').getBoundingClientRect().height),
+          tronque: tuileLib.filter(l => cs(l).textOverflow === 'ellipsis' || l.scrollWidth > l.clientWidth + 1).map(l => l.textContent),
+          surface, papier: cs(document.body).backgroundColor,
+          tiret: !!document.querySelector('style') && [...document.styleSheets].some(f => { try { return [...f.cssRules].some(x => x.selectorText === '.tiret-vide'); } catch (e) { return false; } })
+        };
+      });
+      verifier(schema + ' : chaque contrôle segmenté de la page est une piste de 28 px, rayon 7, sans filet entre les boutons ; le choix est une pastille levée en graisse 500, lisible (≥ 7:1), les autres choix ≥ 4,5:1',
+        r.segs.length >= 3 && r.segs.every(s => Math.abs(s.haut - 28) <= 1 && s.rayon === '7px' && s.bordsBoutons && s.presseGras === '500' && s.ombre && s.presseEncre >= 7 && s.autreEncre >= 4.5),
+        JSON.stringify(r.segs));
+      verifier(schema + ' : plus de pavé noir — la pastille choisie est claire en clair (blanche), sombre en sombre',
+        r.segs.every(s => s.presseFond === (schema === 'light' ? 'rgb(255, 255, 255)' : 'rgb(44, 44, 51)')),
+        JSON.stringify(r.segs.map(s => s.presseFond)));
+      verifier(schema + ' : une seule tête neutre pour tous les panneaux ; la teinte ne reste qu\'au liseré de 2 px, de la couleur du numéro',
+        r.tetes.length >= 5 && r.tetes.every(t => t === r.tetes[0]) && r.tetes[0] === (schema === 'light' ? 'rgb(248, 247, 243)' : 'rgb(27, 27, 31)') &&
+        r.liseres.every(l => l.l === 2 && l.c === l.n), JSON.stringify({ tetes: r.tetes, liseres: r.liseres }));
+      verifier(schema + ' : le chiffre d\'une tuile est le texte le plus net de sa carte — Plex Sans 24/500, à l\'encre (≥ 12:1)',
+        r.chiffre.police === 'IBM Plex Sans' && r.chiffre.taille === 24 && r.chiffre.poids === '500' && r.chiffre.encre >= 12, JSON.stringify(r.chiffre));
+      verifier(schema + ' : la recherche du tableau fait 36 px, celle d\'un bloc 28 px ; leur bord tient 3:1 sur la surface',
+        r.champ.haut === 36 && r.champGroupe === 28 && r.champ.bord >= 3, JSON.stringify({ champ: r.champ, groupe: r.champGroupe }));
+      verifier(schema + ' : aucun nom de tuile n\'est coupé de points de suspension', r.tronque.length === 0, JSON.stringify(r.tronque));
+      if (schema === 'light') {
+        verifier('clair : les pastilles de couleur portent un liseré intérieur (TO_CONFIRM, vert clair à 3:1 sur le blanc)', /inset/.test(r.lisere), r.lisere);
+        verifier('la classe commune du tiret de case vide (.tiret-vide) existe', r.tiret);
+      } else {
+        verifier('sombre : les feuilles sont chaudes comme le papier (surface #171716)', r.surface === 'rgb(23, 23, 22)', r.surface);
+        const sombre27 = await q.evaluate(() => ({
+          afaire: getComputedStyle(document.documentElement).getPropertyValue('--v-afaire-2').trim(),
+          encre3: window.__contraste(getComputedStyle(document.documentElement).getPropertyValue('--encre-3').trim().replace(/^#(..)(..)(..)$/, (m, a, b, c) => 'rgb(' + [a, b, c].map(h => parseInt(h, 16)).join(',') + ')'), getComputedStyle(document.getElementById('section-plans')).backgroundColor)
+        }));
+        verifier('sombre : TO_TREAT (#9d9990) n\'est plus la marque la plus claire de la barre, et le gris tertiaire tient 4,5:1 sur la surface',
+          sombre27.afaire === '#9d9990' && sombre27.encre3 >= 4.5, JSON.stringify(sombre27));
+      }
+      /* L'anneau du focus clavier : l'ardoise, sur un bouton comme sur un champ. */
+      await q.evaluate(() => { window.scrollTo(0, 0); document.getElementById('titre-page').setAttribute('tabindex', '-1'); document.getElementById('titre-page').focus(); });
+      await q.keyboard.press('Tab'); await q.waitForTimeout(80);
+      const anneau = await q.evaluate(() => { const a = document.activeElement, s = getComputedStyle(a); return { quoi: a.tagName + '.' + a.className, style: s.outlineStyle, l: s.outlineWidth, c: s.outlineColor }; });
+      await q.focus('#recherche'); await q.waitForTimeout(80);
+      const anneauChamp = await q.evaluate(() => { const s = getComputedStyle(document.activeElement); return { style: s.outlineStyle, l: s.outlineWidth, c: s.outlineColor }; });
+      const ardoise = schema === 'light' ? 'rgb(52, 80, 122)' : 'rgb(169, 190, 219)';
+      verifier(schema + ' : l\'anneau du focus est en ardoise (plus le vert de VALIDATED), 2 px, sur un bouton comme sur un champ',
+        anneau.style === 'solid' && anneau.l === '2px' && anneau.c === ardoise && anneauChamp.style === 'solid' && anneauChamp.c === ardoise,
+        JSON.stringify({ anneau, anneauChamp }));
+      await c27.close();
+    }
+
+    const c0 = await contexte();
+    const q = await page(c0, 'lot 0');
+    await q.evaluate(outilsCouleur);
+    /* Le surtitre de chaque panneau dit le nom de son entrée du sommaire —
+       et le suit quand le regroupement change. */
+    const surtitres = () => q.evaluate(() => [...document.querySelectorAll('#sommaire-liste a[data-chapitre]')]
+      .filter(a => a.getClientRects().length)
+      .map(a => { const s = document.getElementById(a.dataset.chapitre); return { nav: a.textContent.trim(), surtitre: s ? s.querySelector('.surtitre').textContent.trim() : null }; }));
+    const avant = await surtitres();
+    verifier('chaque surtitre dit le nom de son entrée du sommaire (« 04 Par ATA » mène à « 04 · Par ATA »)',
+      avant.length >= 5 && avant.every(x => x.nav === x.surtitre), JSON.stringify(avant));
+    const autreDim = await q.evaluate(() => { const s = document.getElementById('dim-critique'); const o = [...s.options].find(x => x.value !== s.value && !x.disabled); return o ? o.value : null; });
+    if (autreDim) {
+      await q.selectOption('#dim-critique', autreDim); await q.waitForTimeout(500);
+      const apres = await surtitres();
+      verifier('le regroupement changé, le surtitre du bloc suit le sommaire', apres.every(x => x.nav === x.surtitre), JSON.stringify(apres));
+      await q.selectOption('#dim-critique', 'ata'); await q.waitForTimeout(400);
+    }
+    /* Les comptes des segments et des pastilles : en gris tertiaire plein,
+       plus en opacité (3,7:1 avant). */
+    const comptes = await q.evaluate(() => {
+      const fond = e => { for (let x = e; x; x = x.parentElement) { const f = getComputedStyle(x).backgroundColor; if (f && !/rgba\(.*,\s*0\)$/.test(f) && f !== 'transparent') return f; } return 'rgb(255,255,255)'; };
+      return [...document.querySelectorAll('#choix-perimetre .n, .filtre-journal .n')].filter(n => n.getClientRects().length)
+        .map(n => ({ t: n.textContent, c: +window.__contraste(getComputedStyle(n).color, fond(n)).toFixed(2), o: getComputedStyle(n).opacity }));
+    });
+    verifier('les comptes du périmètre et des pastilles tiennent 4,5:1, sans opacité', comptes.length > 0 && comptes.every(x => x.c >= 4.5 && x.o === '1'), JSON.stringify(comptes.slice(0, 6)));
+    /* La hachure « Non renseigné » : un trait fin sur le fond creusé, et sa
+       part posée sur une pastille de la surface. */
+    const hachure = await q.evaluate(() => {
+      const h = document.querySelector('#barre .hachure'); if (!h) return null;
+      const e = h.querySelector('.etiq-part'), s = getComputedStyle(h);
+      return { fond: s.backgroundColor, motif: s.backgroundImage, etiquette: e ? getComputedStyle(e).backgroundColor : null, surface: getComputedStyle(document.getElementById('section-plans')).backgroundColor, vide: !h.textContent.trim() };
+    });
+    verifier('la hachure « Non renseigné » est fine (1 px tous les 6 px) sur le fond creusé, et sa part se lit sur une pastille de la surface',
+      !hachure || (/1px/.test(hachure.motif) && /6px/.test(hachure.motif) && hachure.fond !== 'rgba(0, 0, 0, 0)' && (hachure.vide || hachure.etiquette === hachure.surface)), JSON.stringify(hachure));
+    /* Le bord du contenu : le bandeau, le pied et la marque collée
+       s'alignent sur le contenu des panneaux. */
+    const bords = await q.evaluate(() => {
+      const sec = document.getElementById('section-synthese').getBoundingClientRect();
+      const pied = document.querySelector('footer.pied'), pp = parseFloat(getComputedStyle(pied).paddingLeft), rp = pied.getBoundingClientRect();
+      const reg = document.getElementById('reglages').getBoundingClientRect();
+      const tete = document.querySelector('#section-synthese .panneau-tete .surtitre').getBoundingClientRect();
+      return { contenuG: tete.left, contenuD: tete.right, pied: rp.left + pp, reglagesD: reg.right, largeurPage: sec.width };
+    });
+    verifier('le pied et les réglages du haut s\'alignent sur le bord du contenu des panneaux (plus sur leur bord extérieur)',
+      Math.abs(bords.pied - bords.contenuG) <= 1 && Math.abs(bords.reglagesD - bords.contenuD) <= 1, JSON.stringify(bords));
+    /* garderFocus : un rendu qui remplace l'élément focalisé rend le focus
+       au même élément ; s'il n'existe plus, au titre de la section — jamais
+       au corps de la page. */
+    const focus27 = await q.evaluate(() => {
+      const zone = document.getElementById('etats');
+      const b = zone.querySelector('.etat-btn[data-etat]'); const cle = b.dataset.etat;
+      b.focus();
+      window.__garderFocus(function () { zone.innerHTML = zone.innerHTML; }, 'etats');
+      const a = document.activeElement;
+      const meme = a !== b && a.classList.contains('etat-btn') && a.dataset.etat === cle;
+      const jour = document.getElementById('section-journal');
+      const tmp = document.createElement('div'); tmp.innerHTML = '<button type="button" class="essai-focus">essai</button>';
+      jour.appendChild(tmp); tmp.firstChild.focus();
+      const rendu = window.__garderFocus(function () { tmp.remove(); return 'rendu'; });
+      const b2 = document.activeElement;
+      return { meme, rendu, apres: b2 === document.body ? 'body' : b2.tagName + '.' + b2.className, dansSection: jour.contains(b2) };
+    });
+    verifier('garderFocus rend le focus au même élément redessiné, ou au titre de sa section — jamais au corps de la page',
+      focus27.meme && focus27.rendu === 'rendu' && focus27.apres !== 'body' && focus27.dansSection, JSON.stringify(focus27));
+    /* annoncer : une seule zone polie, les appels rapprochés regroupés. */
+    await q.evaluate(() => { window.__annoncer('premier'); window.__annoncer('12 plans affichés sur 634'); });
+    await q.waitForFunction(() => (document.getElementById('annonce') || {}).textContent, null, { timeout: 4000 }).catch(() => {});
+    const annonce = await q.evaluate(() => {
+      const z = document.getElementById('annonce');
+      return { role: z && z.getAttribute('role'), live: z && z.getAttribute('aria-live'), texte: z && z.textContent, masque: z && z.getBoundingClientRect().width <= 1,
+               copierParle: document.querySelectorAll('.copier[aria-live]').length, zones: document.querySelectorAll('#annonce').length };
+    });
+    verifier('annoncer dit le dernier message dans une seule zone polie et masquée ; « Copier (n) » ne parle plus de lui-même',
+      annonce.role === 'status' && annonce.live === 'polite' && annonce.texte === '12 plans affichés sur 634' && annonce.masque && annonce.copierParle === 0 && annonce.zones === 1,
+      JSON.stringify(annonce));
+    await c0.close();
+  }
 
   await ctx.close();
   await nav.close();

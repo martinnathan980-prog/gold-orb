@@ -70,7 +70,7 @@
 <script>
   /* La livraison de ce fichier, posée par la construction : la page la compare
      à celles de Code, Styles et Javascript, et nomme celui qui diffère. */
-  window.SUIVI_FWD_LIVRAISON_INDEX = 'cb1bf60';
+  window.SUIVI_FWD_LIVRAISON_INDEX = '8d83704';
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
@@ -317,7 +317,7 @@
 
   <section class="bloc panneau teinte-groupe" id="section-repartition">
     <div class="panneau-tete">
-      <p class="surtitre" aria-hidden="true">Répartition</p>
+      <p class="surtitre" id="surtitre-groupe" aria-hidden="true">Répartition</p>
       <!-- Débrief 20 : le choix ATA / ECP / Séquence… n'est plus un menu isolé
            au-dessus de la recherche : c'est le dernier mot du titre lui-même,
            « Avancement FWD par [ATA ▾] ». Le titre (h2) garde la phrase entière
@@ -364,7 +364,7 @@
        si la source décrit une seconde base ; sinon l'interrupteur s'efface. -->
   <section class="bloc panneau teinte-plans" id="section-plans">
     <div class="panneau-tete">
-      <p class="surtitre" aria-hidden="true">Détail</p>
+      <p class="surtitre" aria-hidden="true">Plans</p>
       <div class="section-tete">
         <h2>Plans</h2>
         <span class="segmente" id="choix-base" role="group" aria-label="Base affichée" hidden>
@@ -439,7 +439,7 @@
        Présent seulement quand la source décrit une seconde base. -->
   <section class="bloc rapprochement panneau" id="rapprochement" hidden>
     <div class="panneau-tete">
-      <p class="surtitre" aria-hidden="true">Contrôle</p>
+      <p class="surtitre" aria-hidden="true">Comparaison</p>
       <div class="section-tete">
         <h2 id="titre-rapprochement">Comparaison des bases de données</h2>
         <!-- Chercher un plan dans la comparaison seulement : les lots qui le
@@ -486,6 +486,9 @@
 </div>
 
 <div class="bulle" id="bulle" role="status" aria-live="polite"></div>
+<!-- Débrief 27 : la seule zone d'annonce de la page (voir annoncer()) :
+     les lecteurs d'écran y entendent les changements de résultat. -->
+<div class="masque" id="annonce" role="status" aria-live="polite" aria-atomic="true"></div>
 <!-- Débrief 26 : le panneau d'administration — les jalons, les contrats, les
      administrateurs. Vide tant qu'un administrateur ne l'ouvre pas. -->
 <dialog class="admin" id="admin" aria-labelledby="admin-titre">

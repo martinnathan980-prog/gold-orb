@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'cb1bf60';
+  var EDITION = '8d83704';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -100,6 +100,132 @@
     if (!el || !el.scrollIntoView) return;
     try { el.scrollIntoView(options); } catch (e) { el.scrollIntoView(true); }
   }
+
+  /* ============================================================
+     DÉBRIEF 27 — TROIS AIDES COMMUNES À TOUTES LES SECTIONS
+     garderFocus, annoncer, TIRET_VIDE. Chaque section s'en sert pour ses
+     propres commandes (voir le cahier du débrief 27).
+     ============================================================ */
+
+  /* garderFocus(redessiner, zone) — redessiner une partie de la page sans
+     jeter le focus clavier (un tri, une semaine dépliée, une tuile pressée
+     le renvoyaient tout en haut de la page).
+     Avant : on note l'élément qui a le focus, s'il est dans « zone » (un
+     élément ou son id ; toute la page si elle est omise). On appelle
+     redessiner(). Après : si le focus est tombé sur le corps de la page
+     (l'élément a été remplacé ou caché), on le rend au « même » élément du
+     nouveau rendu — retrouvé par son id, sinon par une clé stable (voir
+     CLES_FOCUS : data-cle, data-etat, data-semaine, data-trig…), de même
+     balise et de même classe, dans la même partie de la page ; sinon au
+     plus proche équivalent : un élément de même sorte dans le plus proche
+     ancêtre resté dans la page (la croix du filtre suivant), à défaut le
+     titre de la section (rendu focalisable, tabindex=-1). Jamais le corps
+     de la page. Si redessiner() a posé le focus ailleurs exprès (une fiche
+     qui s'ouvre sur son titre), on n'y touche pas.
+     Renvoie ce que renvoie redessiner(). Exemple :
+       garderFocus(function () { rendreCritique(liste); }, 'zone-critique'); */
+  var CLES_FOCUS = ['data-trig', 'data-tri', 'data-tri-seconde', 'data-filtre', 'data-etat', 'data-semaine',
+    'data-ata', 'data-col', 'data-groupe', 'data-passage', 'data-perimetre', 'data-retirer', 'data-plan-rapp',
+    'data-ref-plan', 'data-plan', 'data-ud', 'data-vide', 'data-lot', 'data-jalon', 'data-span', 'data-indicateur',
+    'data-base', 'data-vue', 'data-onglet', 'data-chapitre', 'data-aide', 'data-arret-groupe', 'data-aller-contrat',
+    'data-ref', 'data-id', 'data-email', 'data-admin', 'data-cle', 'data-i'];
+  function focusVisible(el) {
+    return !!el && !el.disabled && el.getClientRects().length > 0 && !el.closest('[hidden], [inert]');
+  }
+  function echAttr(v) { return String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"'); }
+  function empreinteFocus(el) {
+    var g = { el: el, id: el.id || '', tag: el.tagName.toLowerCase(), classe: el.classList[0] || '', cle: null, ancetres: [] };
+    for (var i = 0; i < CLES_FOCUS.length; i++) {
+      if (el.hasAttribute(CLES_FOCUS[i])) { g.cle = [CLES_FOCUS[i], el.getAttribute(CLES_FOCUS[i])]; break; }
+    }
+    for (var a = el.parentElement; a && a !== document.body; a = a.parentElement) g.ancetres.push(a);
+    return g;
+  }
+  /* Le titre d'une section, rendu focalisable : là où va le focus quand
+     plus rien de semblable n'existe. */
+  function titreFocalisable(sec) {
+    var t = sec && (sec.querySelector('h2') || sec.querySelector('.phrase') || sec.querySelector('.surtitre:not([aria-hidden="true"])'));
+    if (t && !t.hasAttribute('tabindex')) t.setAttribute('tabindex', '-1');
+    return t && focusVisible(t) ? t : null;
+  }
+  function retrouverFocus(g, racine) {
+    var dans = racine || document;
+    if (g.id) { var parId = document.getElementById(g.id); if (focusVisible(parId)) return parId; }
+    var vivants = g.ancetres.filter(function (a) { return document.contains(a); });
+    if (g.cle) {
+      var memes = [].filter.call(dans.querySelectorAll(g.tag + '[' + g.cle[0] + '="' + echAttr(g.cle[1]) + '"]'), function (c) {
+        return focusVisible(c) && (!g.classe || c.classList.contains(g.classe));
+      });
+      for (var i = 0; i < vivants.length && memes.length > 1; i++) {
+        for (var k = 0; k < memes.length; k++) if (vivants[i].contains(memes[k])) return memes[k];
+      }
+      if (memes.length) return memes[0];
+    }
+    var sorte = g.tag + (g.classe ? '.' + g.classe : '');
+    for (var j = 0; j < vivants.length; j++) {
+      var a = vivants[j];
+      var pareil = [].filter.call(a.querySelectorAll(sorte), focusVisible)[0];
+      if (pareil) return pareil;
+      /* On ne cherche pas « un bouton pareil » au-delà de sa section : il
+         serait n'importe où dans la page. */
+      if (a.matches('section, dialog, nav, .panneau, .filtres-actifs, .bandeau-mode')) {
+        var t = a.matches('section, .panneau') ? titreFocalisable(a) : null;
+        if (t) return t;
+        break;
+      }
+    }
+    /* Plus rien de la section : le titre de celle que le sommaire marque
+       comme lue, ou de la première. */
+    var lu = document.querySelector('#sommaire-liste a[aria-current]');
+    var sec = lu ? document.getElementById((lu.getAttribute('href') || '').slice(1)) : document.querySelector('section.panneau');
+    return titreFocalisable(sec) || titreFocalisable(document.querySelector('section.panneau'));
+  }
+  function garderFocus(redessiner, zone) {
+    var racine = typeof zone === 'string' ? $(zone) : (zone || null);
+    var actif = document.activeElement;
+    var g = actif && actif !== document.body && actif !== document.documentElement &&
+      (!racine || racine.contains(actif)) ? empreinteFocus(actif) : null;
+    var res = redessiner();
+    var maintenant = document.activeElement;
+    if (g && (!maintenant || maintenant === document.body || (maintenant === g.el && !focusVisible(g.el)))) {
+      var cible = retrouverFocus(g, racine && document.contains(racine) ? racine : null);
+      if (cible) { try { cible.focus({ preventScroll: true }); } catch (e) { cible.focus(); } }
+    }
+    return res;
+  }
+
+  /* annoncer(texte) — dire un changement de résultat aux lecteurs d'écran,
+     poliment, sans rien montrer : « 12 plans affichés sur 634 », « Contrat
+     THS chargé », « Tableau trié par RPT, ordre croissant ». Une seule zone
+     pour toute la page (#annonce : role="status", visuellement masquée,
+     posée dans la page dès l'ouverture). Les appels rapprochés — chaque
+     frappe d'une recherche — se regroupent : seul le dernier est dit,
+     400 ms après le dernier appel. Le texte est vidé puis réécrit, pour
+     qu'un même message répété soit redit. annoncer('') annule ce qui
+     attendait. */
+  var ANNONCE = { minuteur: 0 };
+  function annoncer(texte) {
+    var zone = $('annonce');
+    if (!zone) {
+      zone = document.createElement('div');
+      zone.id = 'annonce'; zone.className = 'masque';
+      zone.setAttribute('role', 'status'); zone.setAttribute('aria-live', 'polite'); zone.setAttribute('aria-atomic', 'true');
+      document.body.appendChild(zone);
+    }
+    clearTimeout(ANNONCE.minuteur);
+    if (!texte) return;
+    ANNONCE.minuteur = setTimeout(function () {
+      zone.textContent = '';
+      ANNONCE.minuteur = setTimeout(function () { zone.textContent = String(texte); }, 60);
+    }, 400);
+  }
+  /* Pour la batterie de tests : les mêmes aides, appelées de l'extérieur. */
+  window.__garderFocus = garderFocus;
+  window.__annoncer = annoncer;
+
+  /* Une case sans valeur (débrief 27, B22) : « — » en gris tertiaire, la
+     même partout (voir .tiret-vide). */
+  var TIRET_VIDE = '\x3Cspan class="tiret-vide">\u2014\x3C/span>';
 
   /* ============================================================
      LES MESURES DE LA PAGE, UNE FOIS PAR IMAGE (débrief 23)
@@ -2517,11 +2643,14 @@
       zone.classList.add('en-legende');
       boutons.forEach(function (b) { b.style.left = ''; });
       /* Débrief 19 : toutes les cartes sur une seule ligne — les sept valeurs
-         de GATES tiennent dans la largeur de la page —, tant que chacune garde
-         au moins 112 px (un nom trop long s'abrège, entier au survol). Au-delà,
-         la grille passe à la ligne. */
+         de GATES tiennent dans la largeur de la page. Débrief 27 (B10) : tant
+         que chacune garde 150 px, de quoi écrire PWD_IN_PROGRESS en entier ;
+         au-delà, des rangées équilibrées (4 + 3 à 1024 px, plutôt que 5 + 2),
+         et un code trop long passe à la ligne après un « _ », jamais coupé. */
       var n = boutons.length;
-      if ((largeur - 8 * (n - 1)) / n >= 112) zone.style.gridTemplateColumns = 'repeat(' + n + ', minmax(0, 1fr))';
+      var parLigne = Math.max(1, Math.min(n, Math.floor((largeur + 8) / (150 + 8))));
+      var rangs = Math.ceil(n / parLigne);
+      zone.style.gridTemplateColumns = 'repeat(' + Math.ceil(n / rangs) + ', minmax(0, 1fr))';
       return;
     }
     /* Un filet par coupure — sauf après un segment trop étroit pour que le
@@ -2599,7 +2728,7 @@
       var part = (n / (c.total || 1)) * 100;
       var texte = part >= 6 ? Math.round(part) + '\u202f%' : '';
       return v.hachure
-        ? '\x3Cspan class="hachure" data-cle="' + ech(v.cle) + '" style="width:' + part.toFixed(2) + '%;color:var(--encre-2)" title="' + ech(v.libelle) + '">' + texte + '\x3C/span>'
+        ? '\x3Cspan class="hachure" data-cle="' + ech(v.cle) + '" style="width:' + part.toFixed(2) + '%;color:var(--encre-2)" title="' + ech(v.libelle) + '">' + (texte ? '\x3Ci class="etiq-part">' + texte + '\x3C/i>' : '') + '\x3C/span>'
         : '\x3Cspan data-cle="' + ech(v.cle) + '" style="width:' + part.toFixed(2) + '%;background:' + v.couleur +
           ';color:' + v.encre + '" title="' + ech(v.libelle) + '">' + texte + '\x3C/span>';
     }).join('');
@@ -2624,7 +2753,7 @@
       return '\x3Cbutton class="etat-btn" type="button" data-etat="' + ech(v.cle) + '" data-cle="' + ech(v.cle) + '" data-famille="' + v.famille +
         '" style="--teinte:' + v.teinte +
         '" aria-pressed="' + actif + '" title="' + (actif ? 'Retirer le filtre' : 'N\u2019afficher que ces plans') + '">' +
-        '\x3Cspan class="etat-haut">' + pastille + '\x3Cspan class="libelle" title="' + ech(v.libelle) + '">' + ech(v.libelle) + '\x3C/span>\x3C/span>' +
+        '\x3Cspan class="etat-haut">' + pastille + '\x3Cspan class="libelle">' + ech(v.libelle).replace(/_/g, '_\x3Cwbr>') + '\x3C/span>\x3C/span>' +
         '\x3Cspan class="etat-n">' + nb(parValeur[v.cle] || 0) + '\x3C/span>' +
         '\x3Cspan class="etat-pct">' + partDite(parValeur[v.cle] || 0, c.total) + '\x3C/span>\x3C/button>';
     }).join('');
@@ -3393,7 +3522,9 @@
       /* L'année n'encombre pas chaque graduation : une fois, puis à chaque
          changement. */
       if (annee !== anneeEcrite) {
-        s.push('\x3Ctext class="annee" x="' + x(k3).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">' + annee + '\x3C/text>');
+        /* Débrief 27 : l'année passe de 10 à 11 px (jamais moins de 11 px
+           rendus) ; un pixel plus bas, elle ne touche pas la semaine. */
+        s.push('\x3Ctext class="annee" x="' + x(k3).toFixed(1) + '" y="' + (H - 5) + '" text-anchor="middle">' + annee + '\x3C/text>');
         anneeEcrite = annee;
       }
     }
@@ -3923,9 +4054,14 @@
   /* Le nom du bloc dans le sommaire : « Par ATA », « Par ECP »… La synthèse
      le pose aussi (rendreHaut) : le sommaire de la première image de
      l'ouverture est celui de la page finie (débrief 23, revue). */
+  /* Débrief 27 (D6) : le surtitre du panneau dit la même chose que son
+     entrée du sommaire — on clique « 04 Par ATA », on arrive sur
+     « 04 · Par ATA » (il disait « Répartition »). */
   function libellerSommaireGroupe() {
     var dim = vue.dimCritique;
-    $('sommaire-groupe').textContent = dim && TITRE_DIM[dim] ? 'Par ' + TITRE_DIM[dim].replace(/ \(.*\)$/, '') : 'Répartition';
+    var mot = dim && TITRE_DIM[dim] ? 'Par ' + TITRE_DIM[dim].replace(/ \(.*\)$/, '') : 'Répartition';
+    $('sommaire-groupe').textContent = mot;
+    if ($('surtitre-groupe')) $('surtitre-groupe').textContent = mot;
   }
 
   function rendreCritique(liste) {
@@ -4107,7 +4243,7 @@
       var actif = !!(tg && tg.cle === cle);
       return '\x3Cspan class="' + (classe || '') + '">\x3Cbutton type="button" class="tri-groupe" data-trig="' + cle +
         '" data-actif="' + actif + '" aria-label="Trier par ' + ech(libelle) + '"' +
-        (titre ? ' title="' + ech(titre) + '"' : '') + '>' + (avant || '') + ech(libelle) + fleche(cle) + '\x3C/button>';
+        (titre ? ' title="' + ech(titre) + '"' : '') + '>' + (avant || '') + ech(majuscule(libelle)) + fleche(cle) + '\x3C/button>';
     }
 
     function aide(quoi) {
@@ -4182,7 +4318,7 @@
            barre du haut — les fins segments n'ont pas d'autre texte. */
         var titre = ' title="' + ech(v.libelle + ' : ' + nb(nV) + ' sur ' + nb(r.total)) + '"';
         return v.hachure
-          ? '\x3Cspan class="hachure' + (eclaire ? ' eclaire' : '') + '" data-cle="' + ech(v.cle) + '"' + titre + ' style="width:' + part.toFixed(2) + '%;color:var(--encre-2)">' + texte + '\x3C/span>'
+          ? '\x3Cspan class="hachure' + (eclaire ? ' eclaire' : '') + '" data-cle="' + ech(v.cle) + '"' + titre + ' style="width:' + part.toFixed(2) + '%;color:var(--encre-2)">' + (texte ? '\x3Ci class="etiq-part">' + texte + '\x3C/i>' : '') + '\x3C/span>'
           : '\x3Cspan' + (eclaire ? ' class="eclaire"' : '') + ' data-cle="' + ech(v.cle) + '"' + titre + ' style="width:' + part.toFixed(2) + '%;background:' + v.couleur + ';color:' + v.encre + '">' + texte + '\x3C/span>';
       }).join('');
       /* L'infobulle de la ligne (sa description pour un lecteur d'écran)
@@ -4641,7 +4777,7 @@
      même : le clic copie exactement ce que la liste montre. */
   function boutonCopier(refs) {
     if (!refs || !refs.length) return '';
-    return '\x3Cbutton type="button" class="copier" data-copier="' + ech(refs.join('\n')) + '" aria-live="polite" title="' +
+    return '\x3Cbutton type="button" class="copier" data-copier="' + ech(refs.join('\n')) + '" title="' +
       ech('Copier ' + (refs.length > 1 ? 'ces ' + nb(refs.length) + ' références' : 'cette référence') + ', une par ligne, pour les coller ailleurs') +
       '">Copier (' + nb(refs.length) + ')\x3C/button>';
   }
@@ -4676,6 +4812,11 @@
     if (!b) return;
     var mot = b.__mot || (b.__mot = b.textContent);
     copierTexte(b.getAttribute('data-copier'), function (ok) {
+      /* Débrief 27 : le bouton ne parle plus de lui-même (aria-live disait
+         « Copier (41) » à chaque semaine ouverte) ; la page dit ce qui s'est
+         passé, une fois. */
+      var n = b.getAttribute('data-copier').split('\n').length;
+      annoncer(ok ? (n > 1 ? nb(n) + ' références copiées' : '1 référence copiée') : 'Copie refusée par le navigateur');
       b.textContent = ok ? 'Copié' : 'Copie refusée';
       b.setAttribute('data-copie', ok ? 'faite' : 'refusee');
       clearTimeout(b.__minuteur);
@@ -5395,10 +5536,10 @@
           (courant ? '\x3Csmall>affiché\x3C/small>' : '') + '\x3C/th>' +
         '\x3Ctd>\x3Cspan class="v">' + nb(r.termines) + ' / ' + nb(r.total) + '\x3C/span>\x3Csmall' + (r.aucunFini ? ' class="alerte-ligne" title="Aucune valeur de la colonne n\u2019est comptée comme « validé » : voir le haut de la page de ce contrat"' : '') + '>' +
           (r.aucunFini ? 'aucun mot « validé » reconnu' : r.pct + ' %') + '\x3C/small>\x3C/td>' +
-        '\x3Ctd>\x3Cspan class="v">' + (r.gain === null ? '\u2014' : (r.gain > 0 ? '+' : '') + nb(r.gain)) + '\x3C/span>' +
+        '\x3Ctd>\x3Cspan class="v">' + (r.gain === null ? TIRET_VIDE : (r.gain > 0 ? '+' : '') + nb(r.gain)) + '\x3C/span>' +
           (r.reculs ? '\x3Csmall class="recul">' + nb(r.reculs) + (r.reculs > 1 ? ' reculs' : ' recul') + '\x3C/small>' : '') + '\x3C/td>' +
-        '\x3Ctd>\x3Cspan class="v">' + (r.rythme === null ? '\u2014' : virgule(r.rythme) + '/sem.') + '\x3C/span>\x3C/td>' +
-        '\x3Ctd>\x3Cspan class="v' + (r.arret ? ' arret' : '') + '">' + (r.arret ? nb(r.arret) : '\u2014') + '\x3C/span>\x3C/td>' +
+        '\x3Ctd>\x3Cspan class="v">' + (r.rythme === null ? TIRET_VIDE : virgule(r.rythme) + '/sem.') + '\x3C/span>\x3C/td>' +
+        '\x3Ctd>\x3Cspan class="v' + (r.arret ? ' arret' : '') + '">' + (r.arret ? nb(r.arret) : TIRET_VIDE) + '\x3C/span>\x3C/td>' +
         '\x3Ctd>' + (e ? '\x3Cspan class="v">' + ech(e.texte) + '\x3C/span>\x3Csmall>' + ech(e.quand) + ' · ' + ech(motJours(e.jours)) + '\x3C/small>' : '\x3Cspan class="doux">' + (r.sansJalon ? 'aucun jalon' : 'aucune à venir') + '\x3C/span>') + '\x3C/td>' +
         '\x3Ctd>' + (e ? (e.enRetard
             ? '\x3Cspan class="v tard">manque ' + nb(e.manque) + '\x3C/span>\x3Csmall>il faut ' + virgule(e.requis) + '/sem.\x3C/small>'
@@ -5406,7 +5547,7 @@
                 : 'au rythme global' + (e.domaine ? ' de ' + ech(e.domaine) : '') + ', la fin serait en ' + ech(e.fin)) + '\x3C/small>' +
               (e.dernier ? '\x3Csmall>' + ech(e.dernier) + '\x3C/small>' : ''))
           : (r.fin === 'validé' ? '\x3Cspan class="v bon">tout est validé\x3C/span>'
-            : r.fin ? '\x3Cspan class="v">fin ' + ech(r.fin) + '\x3C/span>' : '\x3Cspan class="doux">\u2014\x3C/span>')) + '\x3C/td>' +
+            : r.fin ? '\x3Cspan class="v">fin ' + ech(r.fin) + '\x3C/span>' : TIRET_VIDE)) + '\x3C/td>' +
         '\x3C/tr>';
     }).join('');
     zone.innerHTML = '\x3Cp class="surtitre" aria-hidden="true">Tous les contrats\x3C/p>' +
@@ -8086,5 +8227,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = 'cb1bf60';
+window.SUIVI_FWD_FIN = '8d83704';
 </script>

@@ -48,7 +48,10 @@
   /* Rampe séquentielle (clair → foncé), luminance strictement décroissante */
   --r1: #eef4f0; --r2: #d6e6dc; --r3: #b3d2c1; --r4: #86b8a0; --r5: #52997a; --r6: #286b45;
 
-  --focus: #286b45;
+  /* Débrief 27 (D5) : l'anneau du focus clavier en ardoise, la couleur de
+     l'interaction — en vert, il se lisait comme l'état « VALIDATED ».
+     8,2:1 sur le blanc, 7,1:1 sur la piste des segmentés. */
+  --focus: #34507a;
   /* Le voile ambre d'une cellule qui diffère de l'autre base. */
   --voile-ecart: rgba(191, 127, 20, .14);
   /* Le voile qui pâlit la pastille « avant » du journal : le fond, à 60 %. */
@@ -62,15 +65,38 @@
   --releve: var(--surface); --releve-bord: var(--filet-fort);
   --bulle-ombre: none; --flottant-ombre: 0 6px 18px rgba(0, 0, 0, .12);
   --puits: var(--creux); --tete-survol: var(--surface);
-  --presse-fond: var(--encre); --presse-encre: var(--surface); --presse-anneau: transparent;
   --jeton-fond: var(--encre); --jeton-bord: var(--encre); --jeton-encre: var(--papier);
   --trait-donnee: #8f8c82; --pastille-attente: #8f8c82; --hachure-pastille: #8f8c82;
   --filtre-invite: var(--encre-3);
   --t-une: var(--encre);
-  --n-opacite: .72; --attenue: .26;
+  --attenue: .26;
   --voile-dialogue: rgba(25, 25, 21, .38);
   --principal-fond: var(--encre); --principal-bord: var(--encre); --principal-encre: var(--surface);
   --principal-survol: var(--encre-2); --principal-survol-bord: var(--encre-2);
+  /* Débrief 27 — le système de dessin commun (cahier D1 à D12), en jetons
+     que toutes les sections reprennent :
+     --seg-* : le contrôle segmenté (.segmente) — une piste claire, le choix
+       courant posé dessus comme une pastille levée ; --seg-survol, le voile
+       d'un bouton survolé.
+     --tete-neutre : la tête de TOUS les panneaux ; la teinte de la section
+       ne reste qu'au numéro, à son trait et au liseré du haut (D6).
+     --bord-champ : le bord d'un champ de saisie, 3:1 au moins sur la
+       surface (3,4:1 ; le --filet-fort d'avant faisait 1,6:1).
+     --lisere-donnee : un liseré intérieur posé sous les pastilles et les
+       segments de couleur trop claire pour 3:1 sur le blanc (TO_CONFIRM
+       #1fbfbf faisait 2,3:1, le vert clair 1,7:1) — transparent en sombre,
+       où toutes les couleurs tiennent 3:1.
+     --retrait-panneau : le bord du contenu des panneaux (30 px de marge et
+       1 px de bord) : l'en-tête, le pied et la barre collée s'y alignent. */
+  --seg-piste: #f1efe9; --seg-puce: #ffffff; --seg-anneau: var(--filet-fort);
+  --seg-ombre: 0 0 0 1px var(--seg-anneau), 0 1px 2px rgba(25, 25, 21, .10);
+  --seg-survol: rgba(127, 127, 127, .08);
+  --tete-neutre: #f8f7f3; --tete-neutre-filet: #e7e4dc;
+  --bord-champ: #8f8c82;
+  --lisere-donnee: rgba(25, 25, 21, .32);
+  --retrait-panneau: 31px;
+  /* --alerte-fond : le fond d'un bandeau d'erreur (D8, .bandeau-alerte). */
+  --alerte-fond: #fbeeea;
 
   /* Les panneaux des sections (débrief 20) : chaque section est une feuille
      posée sur le papier, bordée d'un filet et d'une ombre à peine marquée.
@@ -94,7 +120,7 @@
      ne peignent que le numéro du panneau, l'amorce de son filet, son entrée
      du sommaire, le liseré du haut du panneau (débrief 21) et, au panneau
      « par ATA », le mot qu'on change — jamais un titre, jamais un chiffre ;
-     pour fond, seulement la tête du panneau, à peine teintée (--tete-*).
+     plus jamais un fond (débrief 27 : têtes neutres, --tete-neutre).
      Toutes au-dessus de 4,5:1 sur le blanc des panneaux et sur le papier. Pour le mot à choisir du panneau
      « par ATA » : -trait, son soulignement ; -voile, son fond au survol. */
   --t-temps: #2d6873;
@@ -105,20 +131,14 @@
      terre d'ombre, loin du vert, de l'ambre, du rouge et du violet des
      données, distincte des quatre autres. */
   --t-journal: #7a5434;
-  /* Débrief 21, « aller encore plus loin pour les séparer » : chaque panneau
-     ouvre sur une tête teintée — un fond à peine coloré de sa teinte, un
-     filet de la même famille dessous — où vivent son surtitre et son titre.
-     Des fonds très clairs : l'encre et les numéros y gardent plus de 4,5:1. */
-  --tete-une: #f5f4f0;      --tete-une-filet: #e4e1d8;
-  --tete-temps: #eef5f6;    --tete-temps-filet: #cfe0e3;
-  --tete-journal: #f8f3ed;  --tete-journal-filet: #e8dccd;
-  --tete-groupe: #f8f2f5;   --tete-groupe-filet: #e8d8e1;
-  --tete-plans: #f3f4ec;    --tete-plans-filet: #dcdfca;
-  --tete-ardoise: #f0f3f8;  --tete-ardoise-filet: #d5dce8;
+  /* Débrief 27 (D6) : les têtes teintées du débrief 21 (--tete-une…
+     --tete-ardoise) laissent place à une seule tête neutre (--tete-neutre,
+     plus haut) : cinq fonds teintés en plus des six couleurs d'état
+     faisaient un patchwork. */
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --papier: #0d0d0c; --surface: #16161a; --creux: #1c1c20;
+    --papier: #0d0d0c; --surface: #171716; --creux: #1d1d1b;   /* débrief 27 (D12) : des feuilles chaudes comme le papier (#16161a bleuissait) */
     --encre: #f1f0ea; --encre-2: #a6a49a; --encre-3: #7b7970;
     --filet: #272725; --filet-fort: #3d3c37;
     --fait: #6fae82; --cours: #dda434; --alerte: #e0745c; --indice: #9d8cff;
@@ -131,11 +151,11 @@
     --v-cours-5: #9a73b8; --v-cours-5-encre: var(--sur-plein);
     --v-cours-6: #6cd9d8; --v-cours-6-encre: var(--sur-plein);
     --v-afaire-1: #696458; --v-afaire-1-encre: var(--encre);
-    --v-afaire-2: #c8c5c0; --v-afaire-2-encre: var(--sur-plein);
+    --v-afaire-2: #9d9990; --v-afaire-2-encre: var(--sur-plein);   /* débrief 27 : TO_TREAT n'est plus la marque la plus claire de la barre ; encre 6,7:1 */
     --r1: #1a241e; --r2: #23382c; --r3: #2e4f3c; --r4: #3d6b51; --r5: #558a6b; --r6: #6fae82;
-    --focus: #6fae82;
+    --focus: #a9bedb;   /* débrief 27 (D5) : l'ardoise claire, 9,5:1 sur la surface */
     --voile-ecart: rgba(221, 164, 52, .2);
-    --voile-avant: rgba(22, 22, 26, .6);
+    --voile-avant: rgba(23, 23, 22, .6);
     --panneau-bord: #2a2a2e;
     --panneau-ombre: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 16px 36px -16px rgba(0, 0, 0, .85);
     --accent: #a9bedb; --accent-trait: #4a5a72; --accent-voile: #1f2530;
@@ -145,12 +165,6 @@
     --t-plans: #b3bb7d;
     --chevron-groupe: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5 6 8 9.5 4.5' fill='none' stroke='%23d19dbb' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
     --t-journal: #d3b08c;
-    --tete-une: #1c1c21;      --tete-une-filet: #2d2d33;
-    --tete-temps: #172427;    --tete-temps-filet: #284047;
-    --tete-journal: #221d17;  --tete-journal-filet: #44372a;
-    --tete-groupe: #231b21;   --tete-groupe-filet: #46343f;
-    --tete-plans: #1e2017;    --tete-plans-filet: #3a3f27;
-    --tete-ardoise: #1a1f27;  --tete-ardoise-filet: #34404f;
     /* Débrief 26 : l'audit du thème sombre — un gris tertiaire lisible
        (4,6 à 5,9:1), des boutons enfoncés sombres et cernés plutôt que des
        pavés blancs, des surfaces posées plus claires que ce qu'elles
@@ -158,24 +172,31 @@
     --encre-3: #908e84;
     --panneau-bord: #303036;
     --panneau-ombre: 0 1px 0 rgba(255, 255, 255, .05) inset, 0 16px 36px -16px rgba(0, 0, 0, .85);
-    --voile-avant: rgba(22, 22, 26, .4);
+    --voile-avant: rgba(23, 23, 22, .4);
     --releve: #222227; --releve-bord: #4a4943;
     --bulle-ombre: 0 10px 28px -8px rgba(0, 0, 0, .7); --flottant-ombre: 0 8px 22px -6px rgba(0, 0, 0, .8);
     --puits: #101013; --tete-survol: rgba(255, 255, 255, .07);
-    --presse-fond: #2c2c33; --presse-encre: var(--encre); --presse-anneau: var(--encre-2);
     --jeton-fond: #2c2c33; --jeton-bord: var(--encre-2); --jeton-encre: var(--encre);
     --trait-donnee: #6a6860; --pastille-attente: #6b6a63; --hachure-pastille: #77756c;
     --t-une: var(--encre-2);
-    --n-opacite: .85; --attenue: .42;
+    --attenue: .42;
     --panne-fond: #2b1f14; --panne-bord: #e0894a;
     --selection: #3a4a63;
     --voile-dialogue: rgba(0, 0, 0, .62);
     --principal-fond: #26303f; --principal-bord: var(--accent); --principal-encre: var(--encre);
     --principal-survol: #313d50; --principal-survol-bord: var(--accent);
+    /* Débrief 27 : segmenté, tête neutre, bord des champs (3,2:1) ; pas de
+       liseré sous les pastilles, toutes à 3:1 au moins sur la surface. */
+    --seg-piste: #101013; --seg-puce: #2c2c33; --seg-anneau: #4a4943;
+    --seg-ombre: 0 0 0 1px var(--seg-anneau), 0 1px 2px rgba(0, 0, 0, .5);
+    --tete-neutre: #1b1b1f; --tete-neutre-filet: #2d2d33;
+    --bord-champ: #6a6860;
+    --lisere-donnee: transparent;
+    --alerte-fond: #2b1f14;
   }
 }
 :root[data-theme="dark"] {
-  --papier: #0d0d0c; --surface: #16161a; --creux: #1c1c20;
+  --papier: #0d0d0c; --surface: #171716; --creux: #1d1d1b;   /* débrief 27 (D12) : des feuilles chaudes comme le papier (#16161a bleuissait) */
   --encre: #f1f0ea; --encre-2: #a6a49a; --encre-3: #7b7970;
   --filet: #272725; --filet-fort: #3d3c37;
   --fait: #6fae82; --cours: #dda434; --alerte: #e0745c; --indice: #9d8cff;
@@ -188,11 +209,11 @@
   --v-cours-5: #9a73b8; --v-cours-5-encre: var(--sur-plein);
   --v-cours-6: #6cd9d8; --v-cours-6-encre: var(--sur-plein);
   --v-afaire-1: #696458; --v-afaire-1-encre: var(--encre);
-  --v-afaire-2: #c8c5c0; --v-afaire-2-encre: var(--sur-plein);
+  --v-afaire-2: #9d9990; --v-afaire-2-encre: var(--sur-plein);   /* débrief 27 : TO_TREAT n'est plus la marque la plus claire de la barre ; encre 6,7:1 */
   --r1: #1a241e; --r2: #23382c; --r3: #2e4f3c; --r4: #3d6b51; --r5: #558a6b; --r6: #6fae82;
-  --focus: #6fae82;
+  --focus: #a9bedb;   /* débrief 27 (D5) : l'ardoise claire, 9,5:1 sur la surface */
   --voile-ecart: rgba(221, 164, 52, .2);
-  --voile-avant: rgba(22, 22, 26, .6);
+  --voile-avant: rgba(23, 23, 22, .6);
   --panneau-bord: #2a2a2e;
   --panneau-ombre: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 16px 36px -16px rgba(0, 0, 0, .85);
   --accent: #a9bedb; --accent-trait: #4a5a72; --accent-voile: #1f2530;
@@ -202,12 +223,6 @@
   --t-plans: #b3bb7d;
   --chevron-groupe: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5 6 8 9.5 4.5' fill='none' stroke='%23d19dbb' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   --t-journal: #d3b08c;
-  --tete-une: #1c1c21;      --tete-une-filet: #2d2d33;
-  --tete-temps: #172427;    --tete-temps-filet: #284047;
-  --tete-journal: #221d17;  --tete-journal-filet: #44372a;
-  --tete-groupe: #231b21;   --tete-groupe-filet: #46343f;
-  --tete-plans: #1e2017;    --tete-plans-filet: #3a3f27;
-  --tete-ardoise: #1a1f27;  --tete-ardoise-filet: #34404f;
   /* Débrief 26 : l'audit du thème sombre — un gris tertiaire lisible
      (4,6 à 5,9:1), des boutons enfoncés sombres et cernés plutôt que des
      pavés blancs, des surfaces posées plus claires que ce qu'elles
@@ -215,20 +230,27 @@
   --encre-3: #908e84;
   --panneau-bord: #303036;
   --panneau-ombre: 0 1px 0 rgba(255, 255, 255, .05) inset, 0 16px 36px -16px rgba(0, 0, 0, .85);
-  --voile-avant: rgba(22, 22, 26, .4);
+  --voile-avant: rgba(23, 23, 22, .4);
   --releve: #222227; --releve-bord: #4a4943;
   --bulle-ombre: 0 10px 28px -8px rgba(0, 0, 0, .7); --flottant-ombre: 0 8px 22px -6px rgba(0, 0, 0, .8);
   --puits: #101013; --tete-survol: rgba(255, 255, 255, .07);
-  --presse-fond: #2c2c33; --presse-encre: var(--encre); --presse-anneau: var(--encre-2);
   --jeton-fond: #2c2c33; --jeton-bord: var(--encre-2); --jeton-encre: var(--encre);
   --trait-donnee: #6a6860; --pastille-attente: #6b6a63; --hachure-pastille: #77756c;
   --t-une: var(--encre-2);
-  --n-opacite: .85; --attenue: .42;
+  --attenue: .42;
   --panne-fond: #2b1f14; --panne-bord: #e0894a;
   --selection: #3a4a63;
   --voile-dialogue: rgba(0, 0, 0, .62);
   --principal-fond: #26303f; --principal-bord: var(--accent); --principal-encre: var(--encre);
   --principal-survol: #313d50; --principal-survol-bord: var(--accent);
+  /* Débrief 27 : segmenté, tête neutre, bord des champs (3,2:1) ; pas de
+     liseré sous les pastilles, toutes à 3:1 au moins sur la surface. */
+  --seg-piste: #101013; --seg-puce: #2c2c33; --seg-anneau: #4a4943;
+  --seg-ombre: 0 0 0 1px var(--seg-anneau), 0 1px 2px rgba(0, 0, 0, .5);
+  --tete-neutre: #1b1b1f; --tete-neutre-filet: #2d2d33;
+  --bord-champ: #6a6860;
+  --lisere-donnee: transparent;
+  --alerte-fond: #2b1f14;
 }
 
 /* Les contrôles du navigateur — la liste d'un menu déroulant, les barres de
@@ -260,13 +282,37 @@ body {
   font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased;
 }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* Débrief 27 (D2) — l'échelle typographique de toute la page :
+   11 · 12 · 13 · 14 · 16 · 20 · 24 · 28 · 48 px (le texte des graphiques
+   SVG peut s'en écarter, jamais sous 11 px) ; graisses 400 et 500 (600
+   seulement pour « Semaine NN »). Les familles par rôle :
+   — Newsreader : le titre, les h2, la phrase de tête, les titres de fenêtre ;
+   — IBM Plex Sans, chiffres alignés (tabular-nums) : tout le texte de
+     l'interface, les dates, les rythmes, les chiffres ;
+   — IBM Plex Mono : seulement les références de plans, les codes GATES
+     dans une cellule ou une puce, les surtitres et le sommaire.
+   Les libellés ont trois rôles (D4) : le surtitre (.surtitre, Mono 11/500,
+   capitales, .14em), l'étiquette dans une carte (.etiquette-carte, Sans
+   11/500, capitales, .08em, --encre-3) et l'en-tête de tableau (Sans
+   12/500, en minuscules, --encre-2, filet --filet-fort dessous). */
 .num { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+/* L'étiquette dans une carte (D4) : « PÉRIMÈTRE », « JALONS », « HISTORIQUE
+   DU PLAN »… Les sélecteurs qui la reprennent sont groupés ici. */
+.etiquette-carte, .perimetre .mot-perimetre, .legende-jalons-mot, .groupe-refs .sous-titre, .groupe-refs .titre-arret,
+.fiche-plan-tete .mot, .admin-corps h3, .aide-panneau .exemple, .filtres-actifs .mot {
+  font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 11px; font-weight: 500; line-height: 1.4;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--encre-3);
+}
+/* Débrief 27 (B22) : une case sans valeur s'écrit « — », en gris tertiaire,
+   partout pareil (et jamais « - »). Un lecteur d'écran lit le mot posé en
+   aria-label ou en title par la section qui l'emploie. */
+.tiret-vide { color: var(--encre-3); font-family: "IBM Plex Sans", system-ui, sans-serif; }
 
 /* 1262 = 1200 + le retrait des panneaux (30 px de marge intérieure et 1 px de
    bord de chaque côté) : leur contenu garde la largeur d'avant le débrief 20,
    les sept tuiles de GATES tiennent toujours sur une ligne à 1280 px. */
 .page { max-width: 1262px; margin: 0 auto; padding-inline: 30px; padding-block: 0 0; }
-@media (max-width: 720px) { .page { padding-inline: 15px; } }
+@media (max-width: 720px) { .page { padding-inline: 15px; } :root { --retrait-panneau: 15px; } }
 
 /* Le cadre d'un graphique ou d'une liste. Dans un panneau, la feuille est
    déjà là : plus de seconde boîte dans la boîte, un simple filet au-dessus
@@ -284,11 +330,11 @@ body {
 @media (max-width: 720px) { .masthead { padding-block: 26px 20px; } }
 .masthead h1 {
   font-family: Newsreader, Georgia, serif;
-  font-weight: 300; font-size: clamp(34px, 6vw, 52px);
+  font-weight: 300; font-size: clamp(34px, 6vw, 48px);
   letter-spacing: .015em; margin: 0 0 12px; line-height: 1.05;
 }
 .semaine {
-  font-size: 15px; color: var(--encre-2);
+  font-size: 16px; color: var(--encre-2); font-variant-numeric: tabular-nums;
   display: flex; justify-content: center; align-items: baseline; gap: 9px; flex-wrap: wrap;
 }
 /* Sur un téléphone, les dates passent sous la semaine : le point qui les
@@ -296,7 +342,7 @@ body {
 @media (max-width: 420px) { .semaine > span[aria-hidden="true"] { display: none; } .semaine { row-gap: 2px; } }
 .masthead .semaine b { font-weight: 600; color: var(--encre); }
 .masthead .import {
-  margin-top: 7px; font-size: 12.5px; color: var(--encre-3);
+  margin-top: 7px; font-size: 12px; color: var(--encre-3);
   display: inline-flex; align-items: center; gap: 7px;
 }
 .point-frais { width: 6px; height: 6px; border-radius: 50%; background: var(--fait); flex: none; }
@@ -333,8 +379,8 @@ body {
   min-width: 4px;                 /* 3 plans sur 640 restent visibles, en haut comme au rapprochement */
   transition: width .3s ease;
   display: flex; align-items: center; justify-content: center; overflow: hidden;
-  font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
-  font-size: 11.5px; line-height: 1; white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px; line-height: 1; white-space: nowrap;
 }
 /* Filets pointilles : ils prolongent les coupures de la barre pour delimiter
    les quatre zones de chiffres sans passer derriere les etiquettes. */
@@ -348,10 +394,17 @@ body {
   opacity: .5;
 }
 @media (max-width: 680px) { .filets { display: none; } }
+/* Débrief 27 (B8) : « Non renseigné », la plus grande surface de la page,
+   en était la plus bruyante (des traits de 1,5 px tous les 5 px : moiré).
+   Un trait de 1 px tous les 6 px, sur le fond creusé ; la part écrite
+   dedans se pose sur une pastille de la surface (.etiq-part) : aucun trait
+   ne traverse un chiffre. */
 .hachure {
-  background-image: repeating-linear-gradient(45deg, var(--filet-fort) 0 1.5px, transparent 1.5px 5px);
+  background-color: var(--creux);
+  background-image: repeating-linear-gradient(45deg, var(--filet-fort) 0 1px, transparent 1px 6px);
   border: 1px solid var(--filet-fort);
 }
+.hachure .etiq-part { font-style: normal; background: var(--surface); color: var(--encre-2); padding: 2px 4px; border-radius: 3px; line-height: 1; }
 /* Une pastille hachurée (« Non renseigné ») reste un repère : 3:1 au moins. */
 .pastille.hachure {
   border-color: var(--hachure-pastille);
@@ -364,19 +417,27 @@ body {
   background: var(--surface); border: none; padding: 3px 11px; font: inherit;
   text-align: center; cursor: pointer; display: grid; gap: 1px; white-space: nowrap;
 }
-.etat-haut { display: flex; align-items: center; gap: 7px; color: var(--encre-2); font-size: 12.5px; }
+/* Débrief 27 (D7) : le chiffre, la chose qu'on vient lire, est le texte le
+   plus foncé de la tuile — Sans 24/500 à l'encre, chiffres alignés (il
+   était en Mono, gris tertiaire). Le même dessin que les chiffres de la
+   fiche d'une échéance : l'étiquette au-dessus (12 px, --encre-2), le
+   nombre, la part à droite (12 px, --encre-3). */
+.etat-haut { display: flex; align-items: center; gap: 7px; color: var(--encre-2); font-size: 12px; }
 .etat-n {
-  font-family: "IBM Plex Mono", monospace; font-size: 26px; font-variant-numeric: tabular-nums;
-  line-height: 1.15; font-weight: 400; color: var(--encre-3); transition: color .12s;
+  font-size: 24px; font-variant-numeric: tabular-nums;
+  line-height: 1.2; font-weight: 500; color: var(--encre);
 }
-.etat-btn:hover .etat-n { color: var(--encre); }
-.etat-btn[aria-pressed="true"] .etat-n { color: var(--encre); }
 .etat-btn[aria-pressed="true"] .etat-haut { color: var(--encre); font-weight: 500; }
 .etat-haut { justify-content: center; }
 .etat-btn[aria-pressed="true"]::after {
   content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--teinte);
 }
 .pastille { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+/* Débrief 27 (X-A12) : sous les pastilles et les segments de couleur, un
+   liseré intérieur (--lisere-donnee) — TO_CONFIRM (#1fbfbf, 2,3:1) et le
+   vert clair passent 3:1 sur le blanc. Seulement ceux que le script
+   peint d'une couleur (style="background…") ; transparent en sombre. */
+.pastille[style*="background"], .barre span[style*="background"], .critique-barre span[style*="background"] { box-shadow: inset 0 0 0 1px var(--lisere-donnee); }
 /* Un changement d'indice n'est pas un état : sa pastille est un anneau, pas
    un aplat. « sans » tient la place d'une pastille pour garder l'alignement. */
 .pastille.indice { background: var(--indice); }
@@ -393,10 +454,21 @@ body {
 .pastille.sans { background: transparent; }
 /* Sous 680 px les segments sont trop étroits pour porter une étiquette :
    on repasse à une grille régulière. */
+/* Débrief 27 (D7) : au téléphone aussi, chaque valeur est une tuile —
+   le même dessin que la légende en cartes, deux par ligne. */
 @media (max-width: 680px) {
-  .etats { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px 0; height: auto; }
-  .etat-btn { position: relative; text-align: left; padding: 3px 0; background: none; white-space: normal; }
-  .etat-haut { justify-content: flex-start; }
+  .etats { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; height: auto; margin-top: 14px; }
+  .etat-btn {
+    position: relative; text-align: left; white-space: normal; padding: 10px 12px;
+    border: 1px solid var(--filet); border-radius: 6px;
+    grid-template-columns: 1fr auto; align-items: baseline; align-content: space-between; column-gap: 8px; row-gap: 2px;
+  }
+  .etat-haut { justify-content: flex-start; align-items: flex-start; grid-column: 1 / -1; min-width: 0; gap: 6px; line-height: 1.35; }
+  .etat-haut .pastille { margin-top: 3px; }
+  .etat-haut .libelle { min-width: 0; overflow-wrap: anywhere; }
+  .etats .etat-pct { display: inline; text-align: right; }
+  .etat-btn[aria-pressed="true"] { border-color: var(--encre); box-shadow: inset 0 -2px 0 var(--teinte); }
+  .etat-btn[aria-pressed="true"]::after { display: none; }
 }
 /* La même grille quand les boutons ne tiennent pas bout à bout dans la rangée. */
 /* La légende, quand la barre porte beaucoup de valeurs ou de très petites :
@@ -407,21 +479,65 @@ body {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 8px; height: auto; margin-top: 14px;
 }
 .etats.en-legende .etat-btn {
-  position: relative; text-align: left; white-space: normal; padding: 9px 10px 8px;
-  background: var(--surface); border: 1px solid var(--filet); border-radius: 8px;
-  grid-template-columns: 1fr auto; align-items: baseline; column-gap: 8px;
+  position: relative; text-align: left; white-space: normal; padding: 10px 12px;
+  background: var(--surface); border: 1px solid var(--filet); border-radius: 6px;
+  grid-template-columns: 1fr auto; align-items: baseline; align-content: space-between; column-gap: 8px; row-gap: 2px;
   transition: border-color .15s, box-shadow .15s;
 }
-.etats.en-legende .etat-haut { justify-content: flex-start; grid-column: 1 / -1; min-width: 0; gap: 6px; font-size: 12px; }
-.etats.en-legende .etat-haut .libelle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.etats.en-legende .etat-n { font-size: 22px; }
-.etats.en-legende .etat-pct { display: inline; }
-.etats.en-legende .etat-btn:hover, .etats.en-legende .etat-btn.eclaire { border-color: var(--encre-3); }
+/* Débrief 27 (B10, X-A14) : un code GATES n'est jamais coupé de points de
+   suspension — il passe à la ligne après un « _ » (le script y glisse une
+   coupure possible), et tient même avec un espacement du texte agrandi. */
+.etats.en-legende .etat-haut { justify-content: flex-start; align-items: flex-start; grid-column: 1 / -1; min-width: 0; gap: 6px; font-size: 12px; line-height: 1.35; }
+.etats.en-legende .etat-haut .pastille { margin-top: 3px; }
+.etats.en-legende .etat-haut .libelle { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+.etats.en-legende .etat-pct { display: inline; text-align: right; }
+.etats.en-legende .etat-btn:hover, .etats.en-legende .etat-btn.eclaire { border-color: var(--filet-fort); }
 .etats.en-legende .etat-btn[aria-pressed="true"] { border-color: var(--encre); box-shadow: inset 0 -2px 0 var(--teinte); }
 .etats.en-legende .etat-btn[aria-pressed="true"]::after { display: none; }
+
+/* ---------------------------------------------------- Composants communs (débrief 27)
+   Le dessin décidé une fois (cahier D7, D8), prêt pour toutes les sections :
+   — .tuile-chiffre : un chiffre-clé, comme les tuiles de la synthèse et la
+     fiche d'une échéance —
+       <div class="tuile-chiffre"><span class="tuile-mot">jours restants</span>
+       <b class="tuile-n">47</b><span class="tuile-part">8 %</span></div>
+   — .bandeau-alerte : ce qui a échoué, ce qu'on voit encore, et un bouton
+     « Réessayer » (.bouton) ; role="alert" côté script ;
+   — .etat-vide : une section sans rien à montrer — une phrase (Newsreader),
+     puis une explication ; la section cache les commandes qui n'agiraient
+     sur rien ;
+   — .barre-chargement : un trait de 2 px en haut de l'écran pendant un
+     chargement (sans mouvement si l'on préfère moins d'animation) ; la page
+     ne bouge pas, rien ne s'insère dans le texte. */
+.tuile-chiffre {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; align-content: space-between;
+  column-gap: 8px; row-gap: 2px; min-width: 0; padding: 10px 12px;
+  background: var(--releve); border: 1px solid var(--filet); border-radius: 6px;
+}
+.tuile-chiffre .tuile-mot { grid-column: 1 / -1; font-size: 12px; line-height: 1.35; color: var(--encre-2); overflow-wrap: anywhere; }
+.tuile-chiffre .tuile-n { font-size: 24px; font-weight: 500; line-height: 1.2; color: var(--encre); font-variant-numeric: tabular-nums; }
+.tuile-chiffre .tuile-part { font-size: 12px; color: var(--encre-3); text-align: right; font-variant-numeric: tabular-nums; }
+.bandeau-alerte {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 14px;
+  padding: 10px 14px; border-left: 3px solid var(--alerte); border-radius: 6px;
+  background: var(--alerte-fond); color: var(--encre); font-size: 13px; line-height: 1.5;
+}
+.bandeau-alerte[hidden] { display: none; }
+.bandeau-alerte .bouton { margin-left: auto; min-height: 28px; padding: 3px 12px; line-height: 20px; }
+.etat-vide { display: grid; place-content: center; gap: 6px; min-height: 160px; padding: 20px; text-align: center; }
+.etat-vide .etat-vide-phrase { margin: 0; font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.3; color: var(--encre); }
+.etat-vide .etat-vide-detail { margin: 0 auto; max-width: 56ch; font-size: 13px; color: var(--encre-2); }
+.barre-chargement { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 60; overflow: hidden; pointer-events: none; }
+.barre-chargement[hidden] { display: none; }
+.barre-chargement::before {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 30%;
+  background: var(--accent); animation: barre-chargement 1.1s ease-in-out infinite;
+}
+@keyframes barre-chargement { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
+@media (prefers-reduced-motion: reduce) { .barre-chargement::before { animation: none; width: 100%; opacity: .6; } }
 .barre.focalise span { opacity: .3; transition: opacity .15s; }
 .barre.focalise span.eclaire { opacity: 1; box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--encre); position: relative; z-index: 1; }
-@media (prefers-reduced-motion: reduce) { .barre.focalise span { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .barre.focalise span, .etats.en-legende .etat-btn { transition: none; } }
 /* Le contraste élevé de Windows repeint tout aux couleurs du système : la
    barre et les pastilles, qui ne sont QUE de la couleur, disparaîtraient, et
    un bouton pressé ne se distinguerait plus des autres. */
@@ -444,11 +560,14 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 
 /* ---------------------------------------------------- Bandeau du haut */
 /* Le contrat et l'avancement suivi, tout en haut, discrets. */
+/* Débrief 27 (B21) : le contenu du bandeau, du pied et de la barre collée
+   s'aligne sur le bord du contenu des panneaux (--retrait-panneau), plus
+   sur leur bord extérieur : une seule ligne verticale à gauche et à droite. */
 .bandeau-mode {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-  padding: 12px 0 0;
+  padding: 12px var(--retrait-panneau) 0;
 }
-.bandeau-mode .mot-mode { font-size: 12.5px; color: var(--encre-3); }
+.bandeau-mode .mot-mode { font-size: 12px; color: var(--encre-3); }
 .bandeau-mode .mot-mode b { color: var(--cours); font-weight: 500; }
 /* Ce que le classeur a à dire quand il n'a rien pu rendre : en rouge, à la
    place du mot de mode, et annoncé aux lecteurs d'écran. */
@@ -461,7 +580,7 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
    choisir ; l'avancement, que si l'extract porte le concept harnais. */
 .bandeau-mode .reglages {
   margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
-  font-size: 12.5px; color: var(--encre-3);
+  font-size: 12px; color: var(--encre-3);
 }
 .bandeau-mode .choix-contrat, .bandeau-mode .choix-avancement { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
 /* « Chargement… » s'écrit à gauche du sélecteur : le sélecteur reste
@@ -496,14 +615,13 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
   display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px 10px;
   font-size: 12px; color: var(--encre-3); min-width: 0; max-width: 100%; margin-left: auto;
 }
-.perimetre .mot-perimetre { letter-spacing: .08em; text-transform: uppercase; font-size: 10.5px; font-weight: 500; }
 @media (max-width: 720px) { .perimetre { justify-content: flex-start; margin-left: 0; } }
 .perimetre[hidden] { display: none; }
 #choix-perimetre button { white-space: nowrap; }
-#choix-perimetre .n {
-  margin-left: 6px; font-family: "IBM Plex Mono", monospace;
-  font-variant-numeric: tabular-nums; opacity: .75;
-}
+/* Débrief 27 : le compte en gris tertiaire plein, en chiffres alignés —
+   en opacité, il tombait à 3,7:1. */
+#choix-perimetre .n { margin-left: 6px; font-variant-numeric: tabular-nums; color: var(--encre-3); }
+#choix-perimetre button:hover .n, #choix-perimetre button[aria-pressed="true"] .n { color: var(--encre-2); }
 /* Trois puces et leurs comptes ne tiennent pas sur un téléphone : le groupe
    passe sur deux lignes plutôt que de faire déborder la page. */
 #choix-perimetre { flex-wrap: wrap; justify-content: flex-end; }
@@ -514,15 +632,14 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .filtres-actifs {
   position: sticky; top: 0; z-index: 30;
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  margin: 0 0 4px; padding: 9px 0;
+  margin: 0 0 4px; padding: 9px var(--retrait-panneau);
   background: var(--papier); border-bottom: 1px solid var(--filet-fort);
 }
 .filtres-actifs[hidden] { display: none; }
-.filtres-actifs .mot { font-size: 12px; color: var(--encre-3); letter-spacing: .05em; text-transform: uppercase; }
 .jeton {
   display: inline-flex; align-items: center; gap: 7px;
   border: 1px solid var(--jeton-bord); background: var(--jeton-fond); color: var(--jeton-encre);
-  border-radius: 999px; padding: 4px 6px 4px 12px; font: inherit; font-size: 12.5px;
+  border-radius: 999px; padding: 4px 6px 4px 12px; font: inherit; font-size: 13px; line-height: 18px;
 }
 .jeton b { font-weight: 500; }
 .jeton .x {
@@ -535,12 +652,12 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .jeton .x:hover { background: rgba(255, 255, 255, .35); }
 .tout-effacer {
   border: 1px solid var(--filet-fort); background: none; color: var(--encre-2);
-  border-radius: 999px; padding: 4px 13px; font: inherit; font-size: 12.5px; cursor: pointer;
+  border-radius: 999px; padding: 4px 13px; font: inherit; font-size: 13px; line-height: 18px; cursor: pointer;
 }
 .tout-effacer:hover { border-color: var(--encre); color: var(--encre); }
 
 /* ---------------------------------------------------- Journal */
-.indice-dim { margin: -6px 0 12px; font-size: 12.5px; color: var(--encre-3); max-width: 76ch; }
+.indice-dim { margin: -6px 0 12px; font-size: 12px; color: var(--encre-3); max-width: 76ch; }
 .indice-dim:empty { display: none; }
 /* Deux listes qui peuvent s'allonger sans fin : on leur donne une hauteur et
    un défilement, plutôt que de laisser la page grandir jusqu'à l'illisible. */
@@ -586,7 +703,7 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 }
 .filtre-journal button {
   display: inline-flex; align-items: center; gap: 6px; border: 1px solid transparent; background: none;
-  padding: 4px 10px; font: inherit; font-size: 12.5px; color: var(--encre-2); cursor: pointer; border-radius: 999px;
+  padding: 4px 11px; font: inherit; font-size: 13px; line-height: 18px; color: var(--encre-2); cursor: pointer; border-radius: 999px;
   white-space: nowrap;
 }
 .filtre-journal button:hover { background: var(--creux); color: var(--encre); }
@@ -595,10 +712,12 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 /* Débrief 18 : la même rangée sert au journal, au bloc par groupe et au
    graphique, dans l'ordre des tuiles. Débrief 19 : seulement les valeurs
    qu'il y a — rien à montrer, pas de pastille. */
+/* Débrief 27 : le compte en gris tertiaire plein (en opacité, il tombait à
+   3,7:1), en chiffres alignés de la police du texte. */
 .filtre-journal .n {
-  font-family: "IBM Plex Mono", monospace; font-size: 11.5px;
-  font-variant-numeric: tabular-nums; opacity: var(--n-opacite);
+  font-size: 12px; font-variant-numeric: tabular-nums; color: var(--encre-3);
 }
+.filtre-journal button:hover .n, .filtre-journal button[aria-pressed="true"] .n { color: var(--encre-2); }
 .rangee-valeurs { display: flex; }
 .journal-semaine {
   border-bottom: 1px solid var(--filet);
@@ -615,8 +734,8 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 }
 .journal-plier:hover { background: var(--creux); }
 .journal-tete .sem {
-  font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
-  font-size: 13.5px; font-weight: 500; min-width: 72px; text-align: left; color: var(--encre);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px; font-weight: 500; min-width: 72px; text-align: left; color: var(--encre);
 }
 .journal-tete .resume {
   color: var(--encre-2); font-size: 13px; flex: 1; min-width: 0;
@@ -656,7 +775,7 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
   grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: end;
   position: sticky; top: 0; z-index: 1; background: var(--surface);
   padding: 8px 2px 7px; border-bottom: 1px solid var(--filet-fort);
-  font-size: 11.5px; color: var(--encre-3); line-height: 1.3;
+  font-size: 12px; font-weight: 500; color: var(--encre-2); line-height: 1.3;
 }
 .journal-grille .entete-col { display: flex; align-items: center; gap: 6px; }
 .journal-grille .entete-col .pastille { width: 7px; height: 7px; flex: none; }
@@ -701,7 +820,7 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
   .journal-ligne { grid-template-columns: minmax(0, 340px); }
 }
 .journal-ligne:hover { background: var(--creux); }
-.journal-ligne .ref { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; }
+.journal-ligne .ref { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
 /* Une réémission : l'ancienne référence au-dessus, effacée, la nouvelle dessous. */
 .journal-ligne .ref-indice { display: grid; gap: 1px; }
 .journal-ligne .ref-indice .ancienne { color: var(--encre-3); }
@@ -742,11 +861,11 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
   color: inherit; cursor: pointer; border-radius: 999px; white-space: nowrap;
 }
 .compte-passage .pastille { width: 8px; height: 8px; }
-.compte-passage b { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; color: var(--encre); }
+.compte-passage b { font-variant-numeric: tabular-nums; font-weight: 500; color: var(--encre); }
 .compte-passage:hover { background: var(--creux); color: var(--encre); }
 .compte-passage[aria-pressed="true"] { border-color: var(--filet-fort); background: var(--surface); color: var(--encre); font-weight: 500; }
 .journal-tete .resume .doux-compte { display: inline-flex; align-items: center; gap: 6px; color: var(--encre-2); white-space: nowrap; }
-.journal-tete .resume .doux-compte b { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; }
+.journal-tete .resume .doux-compte b { font-variant-numeric: tabular-nums; font-weight: 500; }
 @media (max-width: 480px) { .compte-passage, .journal-tete .resume .doux-compte { white-space: normal; text-align: left; } }
 
 /* La liste des UD d'un groupe, dépliée sous sa ligne : TOUTES les références,
@@ -758,20 +877,18 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
   margin: 2px 0 8px 14px;
 }
 .groupe-refs .entete {
-  font-size: 11.5px; color: var(--encre-3); margin-bottom: 4px;
+  font-size: 12px; color: var(--encre-3); margin-bottom: 4px;
   display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
 }
 .groupe-refs .sous-groupe, .groupe-refs .sous-arret { margin-top: 10px; }
 .groupe-refs .sous-titre, .groupe-refs .titre-arret {
-  margin: 0 0 7px; font: 500 10.5px/1.4 "IBM Plex Sans", system-ui, sans-serif;
-  letter-spacing: .09em; text-transform: uppercase; color: var(--encre-2);
+  margin: 0 0 7px;
   display: flex; align-items: center; gap: 7px;
 }
 .groupe-refs .sous-titre .pastille, .groupe-refs .titre-arret .pastille { width: 8px; height: 8px; }
 .groupe-refs .titre-arret { color: var(--cours); }
 .groupe-refs .sous-titre .n, .groupe-refs .titre-arret .n {
-  font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
-  letter-spacing: 0; color: var(--encre-3);
+  font-variant-numeric: tabular-nums; letter-spacing: 0; color: var(--encre-3);
 }
 /* Les références en colonnes régulières : même largeur, alignées de ligne
    en ligne, qu'on parcourt du regard comme une liste. */
@@ -784,12 +901,12 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .groupe-refs .grille-arret {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(214px, 1fr)); gap: 6px 7px;
 }
-.jeton-ud .depuis { margin-left: auto; padding-left: 8px; font: 10.5px/1.2 "IBM Plex Sans", system-ui, sans-serif; color: var(--cours); }
+.jeton-ud .depuis { margin-left: auto; padding-left: 8px; font: 11px/1.2 "IBM Plex Sans", system-ui, sans-serif; color: var(--cours); }
 .jeton-ud {
   display: inline-flex; align-items: center; gap: 6px;
   border: 1px solid var(--filet); background: var(--surface); color: var(--encre-2);
-  border-radius: 3px; padding: 3px 9px 3px 8px; font-family: "IBM Plex Mono", monospace;
-  font-size: 11.5px; line-height: 1.3; cursor: pointer; white-space: nowrap;
+  border-radius: 4px; padding: 3px 9px 3px 8px; font-family: "IBM Plex Mono", monospace;
+  font-size: 12px; line-height: 1.3; cursor: pointer; white-space: nowrap;
 }
 .jeton-ud:hover { border-color: var(--encre-3); color: var(--encre); background: var(--creux); }
 /* Un plan à l'arrêt : bord ambre, comme la puce « À surveiller ». */
@@ -800,7 +917,7 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .journal-vide { color: var(--encre-3); font-size: 13px; padding: 14px 2px; }
 .journal-grille .journal-vide { grid-column: 1 / -1; }
 .journal-plus {
-  background: none; border: none; font: inherit; font-size: 12.5px; color: var(--encre-3);
+  background: none; border: none; font: inherit; font-size: 13px; color: var(--encre-2);
   cursor: pointer; padding: 5px 2px; text-decoration: underline; text-underline-offset: 3px;
 }
 .journal-plus:hover { color: var(--encre); }
@@ -822,10 +939,11 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
   counter-increment: panneau;
 }
 /* Débrief 21 : « aller encore plus loin pour les séparer ». Plus de blanc
-   entre deux panneaux, un liseré de sa teinte en haut de chacun, et une
-   tête teintée (plus bas) : on voit d'un coup d'œil où une étape finit et
-   où la suivante commence. */
-.panneau:not(.panneau-hors-suite) { border-top: 3px solid var(--accent); }
+   entre deux panneaux, un liseré de sa teinte en haut de chacun : on voit
+   d'un coup d'œil où une étape finit et où la suivante commence.
+   Débrief 27 (D6) : un liseré de 2 px (3 avant), seule trace de la teinte
+   avec le numéro, son trait et l'entrée du sommaire. */
+.panneau:not(.panneau-hors-suite) { border-top: 2px solid var(--accent); }
 .panneau.bloc { margin-top: 40px; }
 /* La vue d'ensemble s'ouvre à la demande : elle n'entre pas dans la suite
    numérotée, et elle colle au bandeau qui l'ouvre. */
@@ -837,39 +955,41 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 /* La teinte du panneau (voir :root) : la classe remplace l'accent ardoise
    pour tout ce qui le porte dans le panneau — numéro, amorce du filet, mot
    à choisir — et pour son entrée du sommaire. Sans classe, l'ardoise. */
-.teinte-une { --accent: var(--t-une); --tete: var(--tete-une); --tete-filet: var(--tete-une-filet); }
-.teinte-temps { --accent: var(--t-temps); --tete: var(--tete-temps); --tete-filet: var(--tete-temps-filet); }
-.teinte-journal { --accent: var(--t-journal); --tete: var(--tete-journal); --tete-filet: var(--tete-journal-filet); }
-.teinte-groupe { --accent: var(--t-groupe); --accent-trait: var(--t-groupe-trait); --accent-voile: var(--t-groupe-voile); --chevron-accent: var(--chevron-groupe);
-  --tete: var(--tete-groupe); --tete-filet: var(--tete-groupe-filet); }
-.teinte-plans { --accent: var(--t-plans); --tete: var(--tete-plans); --tete-filet: var(--tete-plans-filet); }
+.teinte-une { --accent: var(--t-une); }
+.teinte-temps { --accent: var(--t-temps); }
+.teinte-journal { --accent: var(--t-journal); }
+.teinte-groupe { --accent: var(--t-groupe); --accent-trait: var(--t-groupe-trait); --accent-voile: var(--t-groupe-voile); --chevron-accent: var(--chevron-groupe); }
+.teinte-plans { --accent: var(--t-plans); }
 /* La tête du panneau (débrief 21) : son surtitre et son titre sur un fond
-   à peine teinté, d'un bord à l'autre du panneau, fermé d'un filet de la
-   même famille. Le contenu commence dessous, sur le blanc. Les rayons
-   suivent l'intérieur du cadre (1 px de côté, 3 px de liseré en haut). */
+   à part, d'un bord à l'autre du panneau, fermé d'un filet. Le contenu
+   commence dessous, sur le blanc. Débrief 27 (D6) : la même tête neutre
+   pour tous les panneaux. Les rayons suivent l'intérieur du cadre (1 px de
+   côté, 2 px de liseré en haut). */
 .panneau-tete {
   margin: -22px -30px 20px; padding: 16px 30px 17px;
-  background: var(--tete, var(--tete-ardoise));
-  border-bottom: 1px solid var(--tete-filet, var(--tete-ardoise-filet));
-  border-radius: 9px 9px 0 0 / 7px 7px 0 0;
+  background: var(--tete-neutre);
+  border-bottom: 1px solid var(--tete-neutre-filet);
+  border-radius: 9px 9px 0 0 / 8px 8px 0 0;
 }
 .panneau-tete > .surtitre { margin-bottom: 9px; }
 .panneau-tete > .section-tete, .panneau-tete > .avancement-ligne { margin-bottom: 0; }
 .panneau-tete .surtitre::after {
-  background: linear-gradient(var(--accent), var(--accent)) left center / 32px 2px no-repeat,
-              linear-gradient(var(--tete-filet, var(--filet)), var(--tete-filet, var(--filet))) left center / 100% 1px no-repeat;
+  background: linear-gradient(var(--accent), var(--accent)) left center / 24px 2px no-repeat,
+              linear-gradient(var(--tete-neutre-filet), var(--tete-neutre-filet)) left center / 100% 1px no-repeat;
 }
 /* Sur la tête teintée, le survol du mot à choisir s'éclaire en blanc : son
    voile habituel s'y confondrait avec le fond. */
 .panneau-tete select.choix-titre:hover, .panneau-tete select.choix-titre:focus-visible { background-color: var(--tete-survol); }
 @media (max-width: 720px) {
-  .panneau-tete { margin: -16px -14px 16px; padding: 12px 14px 13px; border-radius: 7px 7px 0 0 / 5px 5px 0 0; }
+  .panneau-tete { margin: -16px -14px 16px; padding: 12px 14px 13px; border-radius: 7px 7px 0 0 / 6px 6px 0 0; }
 }
 @media print { .panneau-tete { background: none; } }
 /* Le surtitre : « 01 · SYNTHÈSE », en petites capitales espacées, le numéro
    dans la teinte du panneau, puis un filet qui court jusqu'au bord — ses
-   premiers millimètres, un peu plus épais, dans la teinte. C'est lui qu'on
-   repère en faisant défiler. */
+   24 premiers pixels, un peu plus épais, dans la teinte. C'est lui qu'on
+   repère en faisant défiler. Débrief 27 (D4, D6) : le « kicker » de la page
+   (Mono 11/500, capitales, .14em) ; son texte est celui de l'entrée du
+   sommaire, mot pour mot (« 04 · Par ATA » suit le regroupement choisi). */
 .surtitre {
   display: flex; align-items: center; gap: 10px; margin: 0 0 12px;
   font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 500; line-height: 1.4;
@@ -882,7 +1002,7 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .panneau-hors-suite .surtitre::before { content: "—"; }
 .surtitre::after {
   content: ""; flex: 1 1 auto; height: 2px; min-width: 24px;
-  background: linear-gradient(var(--accent), var(--accent)) left center / 32px 2px no-repeat,
+  background: linear-gradient(var(--accent), var(--accent)) left center / 24px 2px no-repeat,
               linear-gradient(var(--filet), var(--filet)) left center / 100% 1px no-repeat;
 }
 .panneau > .section-tete { margin-bottom: 16px; }
@@ -920,7 +1040,7 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .sommaire a {
   display: inline-flex; align-items: baseline; white-space: nowrap;
   padding: 11px 1px 9px; margin-bottom: -1px; border-bottom: 2px solid transparent;
-  font: 500 11px/1.4 "IBM Plex Mono", monospace; letter-spacing: .12em; text-transform: uppercase;
+  font: 500 11px/1.4 "IBM Plex Mono", monospace; letter-spacing: .14em; text-transform: uppercase;
   color: var(--encre-2); text-decoration: none;
   transition: color .15s, border-color .15s;
 }
@@ -934,11 +1054,11 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 /* Collé en haut, le nom de la page et du contrat se rappellent à gauche —
    posés par-dessus, sans rien pousser. Seulement quand la place est là. */
 .sommaire-marque {
-  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  position: absolute; left: var(--retrait-panneau); top: 50%; transform: translateY(-50%);
   font: 400 16px Newsreader, Georgia, serif; color: var(--encre); white-space: nowrap;
   opacity: 0; pointer-events: none; transition: opacity .2s;
 }
-.sommaire-contrat { margin-left: 8px; font: 500 11.5px "IBM Plex Mono", monospace; color: var(--encre-2); }
+.sommaire-contrat { margin-left: 8px; font: 500 12px "IBM Plex Mono", monospace; color: var(--encre-2); }
 .sommaire-contrat:empty { display: none; }
 .sommaire[data-colle="true"] .sommaire-marque { opacity: 1; }
 @media (max-width: 1180px) { .sommaire-marque { display: none; } }
@@ -997,7 +1117,7 @@ select.choix-titre:focus-visible { outline: 2px solid var(--focus); outline-offs
 select.choix-titre[hidden] { display: none; }
 /* La liste ouverte reprend la police du texte courant, à sa taille. */
 select.choix-titre option { font: 14px "IBM Plex Sans", system-ui, sans-serif; color: var(--encre); }
-@media (max-width: 720px) { .titre-choix { font-size: 22px; } }
+@media (max-width: 720px) { .titre-choix { font-size: 20px; } }
 @media (prefers-reduced-motion: reduce) { select.choix-titre { transition: none; } }
 /* À l'impression, des cadres nets : pas d'ombre, et un surtitre jamais seul
    en bas de page, séparé de sa section. */
@@ -1011,31 +1131,56 @@ select.choix-titre option { font: 14px "IBM Plex Sans", system-ui, sans-serif; c
 #choix-base[hidden] { display: none; }
 #section-plans [data-base][hidden] { display: none; }
 h2 { font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 24px; line-height: 1.3; margin: 0; }
-@media (max-width: 720px) { h2 { font-size: 22px; } }
-.indice { color: var(--encre-3); font-size: 12.5px; }
+@media (max-width: 720px) { h2 { font-size: 20px; } }
+.indice { color: var(--encre-3); font-size: 12px; }
 
+/* Débrief 27 (D3) : 28 px de haut, son filet à 3:1 (--bord-champ). */
 select.select {
-  border: none; border-bottom: 1px solid var(--filet-fort); background: none;
-  color: var(--encre); font: inherit; font-size: 13px; padding: 2px 18px 3px 0; cursor: pointer;
+  border: none; border-bottom: 1px solid var(--bord-champ); background: none;
+  color: var(--encre); font: inherit; font-size: 13px; line-height: 19px; padding: 4px 20px 4px 0; cursor: pointer;
   appearance: none;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'><path d='M2 4.5 6 8.5 10 4.5' fill='none' stroke='%2386847a' stroke-width='1.5' stroke-linecap='round'/></svg>");
   background-repeat: no-repeat; background-position: right center;
 }
-select.select:focus { outline: none; border-bottom-color: var(--focus); }
+select.select:focus { outline: none; }
 /* Au clavier, le menu Contrat (et Tranche) a un vrai anneau, comme ses voisins. */
-select.select:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 2px; }
+select.select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
 
 /* ---------------------------------------------------- Graphique */
 .commandes-graphe { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-left: auto; }
-.segmente { display: inline-flex; border: 1px solid var(--filet-fort); }
+/* Débrief 27 (D1) : le contrôle segmenté, partout le même — une piste
+   claire (--seg-piste), des boutons sans bord, et le choix courant posé
+   dessus comme une pastille levée (--seg-puce, --seg-ombre), en encre
+   pleine. 28 px de haut (D3). Plus de pavé noir : l'aplat sombre
+   (--principal-*) reste à la seule action principale d'un formulaire. Sans
+   filet entre les boutons, un bouton caché (« Échéances » sur THS) ne
+   laisse plus de double trait au bord. */
+.segmente {
+  display: inline-flex; align-items: center; gap: 2px; padding: 2px;
+  border: 1px solid var(--filet); border-radius: 7px; background: var(--seg-piste);
+}
 .segmente[hidden], .segmente button[hidden] { display: none; }
 .segmente button {
-  border: none; border-left: 1px solid var(--filet-fort); background: none;
-  font: inherit; font-size: 12px; padding: 3px 10px; color: var(--encre-2); cursor: pointer;
+  border: 0; border-radius: 5px; background: none; margin: 0; white-space: nowrap;
+  font: inherit; font-size: 13px; line-height: 18px; padding: 2px 11px; color: var(--encre-2); cursor: pointer;
+  transition: background-color .12s, color .12s, box-shadow .12s;
 }
-.segmente button:first-child { border-left: none; }
-.segmente button:hover { background: var(--creux); color: var(--encre); }
-.segmente button[aria-pressed="true"] { background: var(--presse-fond); color: var(--presse-encre); box-shadow: inset 0 0 0 1px var(--presse-anneau); }
+/* Au téléphone, un mot de segment ne passe jamais sur deux lignes : les
+   boutons se resserrent. */
+@media (max-width: 480px) { .segmente button { padding-inline: 8px; } }
+/* Débrief 27 (D11) : au doigt, chaque segment, chaque puce, chaque menu et
+   chaque champ offre 44 px de haut à toucher — le bouton grandit un peu, une
+   zone invisible (::after) fait le reste ; à la souris rien ne change. Les
+   champs et menus passent à 16 px : iOS ne zoome plus en y entrant. */
+@media (pointer: coarse) {
+  .segmente button, .filtre-journal button, .tout-effacer, .echeance-titre { position: relative; min-height: 36px; }
+  .segmente button::after, .filtre-journal button::after, .tout-effacer::after, .echeance-titre::after { content: ""; position: absolute; inset: -4px 0; }
+  select.select { min-height: 44px; font-size: 16px; }
+  .recherche input, .recherche.recherche-groupe input { min-height: 44px; font-size: 16px; }
+}
+.segmente button:hover { background: var(--seg-survol); color: var(--encre); }
+.segmente button[aria-pressed="true"] { background: var(--seg-puce); color: var(--encre); font-weight: 500; box-shadow: var(--seg-ombre); }
+@media (prefers-reduced-motion: reduce) { .segmente button { transition: none; } }
 /* Cinq boutons ne tiennent pas sur un téléphone : le filtre du journal passe
    sur deux lignes plutôt que de faire déborder la page. */
 
@@ -1043,7 +1188,7 @@ select.select:focus-visible { outline: 2px solid var(--focus); outline-offset: 3
 .cadre-graphe { position: relative; }
 svg.graphe { width: 100%; height: auto; display: block; overflow: visible; }
 svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
-.grad { font-size: 11px; fill: var(--encre-3); font-family: "IBM Plex Mono", monospace; }
+.grad { font-size: 11px; fill: var(--encre-3); font-variant-numeric: tabular-nums; }
 /* Débrief 26 : la règle .grad l'emportait sur leur couleur — « manque 535 »
    et le nombre du jour s'écrivaient en gris. Et les semaines à venir de
    l'axe, pâlies, restent lisibles (4,5:1). */
@@ -1060,13 +1205,13 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 .zone-clic { cursor: inherit; }
 /* Survoler une semaine l'éclaire d'une bande discrète, sous la bulle. */
 .zone-clic:hover { fill: var(--filet); fill-opacity: .55; }
-.annee { font-size: 10px; fill: var(--encre-3); font-family: "IBM Plex Mono", monospace; letter-spacing: .04em; }
+.annee { font-size: 11px; fill: var(--encre-3); font-variant-numeric: tabular-nums; letter-spacing: .04em; }
 .jalon-texte {
-  font-size: 11.5px; fill: var(--encre-2); font-weight: 500;
+  font-size: 12px; fill: var(--encre-2); font-weight: 500;
   paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round;   /* un halo : lisible sur un trait ou un marqueur voisin */
 }
 .jalon-texte.masque { display: none; }
-.jalon-num { font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600; fill: var(--surface); pointer-events: none; }
+.jalon-num { font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; fill: var(--surface); pointer-events: none; }
 .jalon.survole line { stroke-width: 2; opacity: 1; }
 .jalon.survole .jalon-marque { stroke: var(--encre); stroke-width: 2; }
 .jalon.survole .jalon-texte.masque { display: block; transform: translateY(26px); }   /* révélé sous la rangée des numéros, pas par-dessus les voisins */
@@ -1074,9 +1219,9 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 /* Les jalons se lisent sous la légende des courbes, en colonnes : un jalon
    par case, son numéro, son nom, et dessous sa semaine — plutôt qu'une
    longue ligne où tout se touche. */
-.legende-jalons { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--filet); font-size: 12.5px; color: var(--encre-2); }
+.legende-jalons { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--filet); font-size: 13px; color: var(--encre-2); }
 .legende-jalons:empty { display: none; }
-.legende-jalons-mot { display: block; color: var(--encre-3); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px; }
+.legende-jalons-mot { display: block; margin-bottom: 8px; }
 .legende-jalons-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); gap: 10px 18px; }
 .legende-jalon {
   display: grid; grid-template-columns: 18px 1fr; grid-template-rows: auto auto;
@@ -1084,10 +1229,10 @@ svg.graphe text.grad[opacity] { opacity: .95; }
   transition: background-color .15s, box-shadow .15s;
 }
 .legende-jalon:hover, .legende-jalon[aria-expanded="true"] { background: var(--creux); box-shadow: 0 0 0 6px var(--creux); }
-.legende-jalon:focus-visible { outline: 2px solid var(--encre); outline-offset: 2px; }
+.legende-jalon:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .legende-jalon .num {
   display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%;
-  background: var(--encre-2); color: var(--surface); font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600;
+  background: var(--encre-2); color: var(--surface); font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums;
   grid-row: span 2; align-self: center;
 }
 .legende-jalon .mot { color: var(--encre); align-self: end; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1103,30 +1248,37 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 /* ---------------------------------------------------- Fiche d'une échéance */
 .fiche-echeance {
   margin-top: 16px; border: 1px solid var(--filet); background: var(--creux); border-radius: 10px;
-  padding: 16px 18px 15px; display: grid; gap: 13px; color: var(--encre); font-size: 13.5px;
+  padding: 16px 18px 15px; display: grid; gap: 13px; color: var(--encre); font-size: 13px;
   animation: apparaitre .2s ease-out;
 }
 @keyframes apparaitre { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 .fiche-echeance-tete { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .fiche-echeance-tete .num {
   display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%;
-  background: var(--encre-2); color: var(--surface); font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600;
+  background: var(--encre-2); color: var(--surface); font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums;
 }
-.fiche-echeance-tete h3 { margin: 0; font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 21px; line-height: 1.2; }
+.fiche-echeance-tete h3 { margin: 0; font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 20px; line-height: 1.2; }
 .fiche-echeance-tete .quand { color: var(--encre-2); }
 .fiche-echeance-fermer {
-  margin-left: auto; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--filet-fort);
+  margin-left: auto; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--filet-fort); padding: 0;
   background: var(--surface); color: var(--encre-2); font: inherit; font-size: 16px; line-height: 1; cursor: pointer;
 }
 .fiche-echeance-fermer:hover { color: var(--encre); border-color: var(--encre-3); }
-.fiche-echeance-chiffres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.fiche-echeance-chiffres > div { background: var(--releve); border: 1px solid var(--filet); border-radius: 8px; padding: 10px 13px 9px; min-width: 0; }
+/* Débrief 27 (D7) : les trois chiffres prennent le dessin des tuiles de la
+   synthèse — l'étiquette au-dessus (12 px, --encre-2), le nombre en Sans
+   24/500, tuile de rayon 6. L'ordre du texte ne change pas (le nombre, puis
+   son mot) : seule la mise en page pose le mot au-dessus. */
+.fiche-echeance-chiffres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.fiche-echeance-chiffres > div {
+  display: flex; flex-direction: column; gap: 2px;
+  background: var(--releve); border: 1px solid var(--filet); border-radius: 6px; padding: 10px 12px; min-width: 0;
+}
 .fiche-echeance-chiffres b {
-  display: block; font-family: "IBM Plex Mono", monospace; font-size: 27px; font-weight: 500; line-height: 1.15;
+  display: block; font-size: 24px; font-weight: 500; line-height: 1.2;
   font-variant-numeric: tabular-nums; color: var(--encre);
 }
-.fiche-echeance-chiffres span { color: var(--encre-2); font-size: 12.5px; }
-.fiche-echeance-jauge { display: flex; align-items: center; gap: 12px; color: var(--encre-2); font-size: 12.5px; }
+.fiche-echeance-chiffres span { order: -1; color: var(--encre-2); font-size: 12px; line-height: 1.35; }
+.fiche-echeance-jauge { display: flex; align-items: center; gap: 12px; color: var(--encre-2); font-size: 12px; font-variant-numeric: tabular-nums; }
 .fiche-echeance-jauge .piste { flex: 1 1 auto; height: 6px; border-radius: 3px; background: var(--filet); overflow: hidden; }
 .fiche-echeance-jauge .piste span { display: block; height: 100%; background: var(--fait); border-radius: 3px; }
 .fiche-echeance-rythme { color: var(--encre-2); }
@@ -1136,12 +1288,12 @@ svg.graphe text.grad[opacity] { opacity: .95; }
    celui du rythme tenu. */
 .fiche-echeance-verdict::before {
   flex: none; display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%;
-  font-size: 11px; font-weight: 700; color: var(--sur-plein); transform: translateY(3px);
+  font-size: 11px; font-weight: 500; color: var(--sur-plein); transform: translateY(3px);
 }
 .fiche-echeance-verdict.bon::before { content: '\2713'; background: var(--fait); }
 .fiche-echeance-verdict.mal::before { content: '!'; background: var(--alerte); }
 @media (max-width: 560px) {
-  .fiche-echeance-chiffres b { font-size: 21px; }
+  .fiche-echeance-chiffres b { font-size: 20px; }
   .fiche-echeance { padding: 14px 13px 13px; }
 }
 @media (prefers-reduced-motion: reduce) { .fiche-echeance { animation: none; } }
@@ -1150,13 +1302,13 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 .echeance-titre {
   margin: 0 auto 0 4px; align-self: center; display: inline-flex; align-items: center; gap: 9px;
   border: 1px solid var(--filet-fort); background: var(--surface); color: var(--encre-2);
-  border-radius: 999px; padding: 6px 15px 6px 11px; font: inherit; font-size: 13px; cursor: pointer;
+  border-radius: 999px; padding: 4px 14px 4px 11px; font: inherit; font-size: 13px; line-height: 18px; cursor: pointer;
   transition: border-color .15s, color .15s, transform .15s;
 }
 .echeance-titre:hover { border-color: var(--encre-3); color: var(--encre); }
 .echeance-titre:active { transform: scale(.98); }
 .echeance-titre b { color: var(--encre); font-weight: 500; }
-.echeance-titre .jours { font-family: "IBM Plex Mono", monospace; color: var(--encre); font-variant-numeric: tabular-nums; }
+.echeance-titre .jours { color: var(--encre); font-variant-numeric: tabular-nums; }
 .echeance-titre .point { width: 8px; height: 8px; border-radius: 50%; background: var(--fait); flex: none; }
 .echeance-titre.en-retard .point { background: var(--alerte); }
 /* Chaque morceau reste d'un bloc : sur un téléphone, « Prochaine échéance »
@@ -1171,7 +1323,7 @@ svg.graphe text.grad[opacity] { opacity: .95; }
      jours, alignés sous « Prochaine échéance » — le point se pose dans la
      marge, la coupure est voulue (un élément pleine largeur entre les
      deux), et le « · » n'a plus rien à séparer. */
-  .echeance-titre { flex-wrap: wrap; row-gap: 0; margin-left: 0; font-size: 12.5px; position: relative; padding-left: 28px; max-width: 100%; text-align: left; }
+  .echeance-titre { flex-wrap: wrap; row-gap: 0; margin-left: 0; font-size: 12px; position: relative; padding-left: 28px; max-width: 100%; text-align: left; }
   .echeance-titre > b { white-space: normal; overflow-wrap: anywhere; min-width: 0; }
   .echeance-titre .point { position: absolute; left: 11px; top: 12px; }
   .echeance-titre::before { content: ""; order: 1; flex-basis: 100%; height: 0; }
@@ -1209,9 +1361,9 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 }
 .puce-delta:hover { color: var(--encre); border-bottom-color: var(--encre); }
 .puce-delta[aria-pressed="true"] { color: var(--encre); font-weight: 500; border-bottom: 1px solid var(--encre); }
-.puce-delta b { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; }
+.puce-delta b { font-variant-numeric: tabular-nums; font-weight: 500; }
 /* La vue d'ensemble des contrats, sous le bandeau. */
-.lien-ensemble { font-size: 12.5px; }
+.lien-ensemble { font-size: 13px; }
 .ensemble { margin: 14px 0 0; padding: 14px 18px 12px; background: var(--surface); border: 1px solid var(--filet); border-radius: 4px; }
 .ensemble.panneau { padding: 20px 26px 18px; border-color: var(--panneau-bord); border-radius: 10px; }
 @media (max-width: 720px) { .ensemble.panneau { padding: 16px 14px 14px; } }
@@ -1222,10 +1374,10 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 .defile-ensemble { overflow-x: auto; }
 .ensemble-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .ensemble-table th, .ensemble-table td { padding: 8px 10px; text-align: left; vertical-align: top; border-top: 1px solid var(--filet); }
-.ensemble-table thead th { border-top: none; font-size: 10.5px; font-weight: 400; letter-spacing: .09em; text-transform: uppercase; color: var(--encre-3); }
+.ensemble-table thead th { border-top: none; border-bottom: 1px solid var(--filet-fort); font-size: 12px; font-weight: 500; color: var(--encre-2); }
 .ensemble-table tbody th .lien-doux { font: 500 14px "IBM Plex Sans", system-ui, sans-serif; color: var(--encre); }
 .ensemble-table tr.courant { background: var(--creux); }
-.ensemble-table .v { display: block; font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; color: var(--encre); }
+.ensemble-table .v { display: block; font-variant-numeric: tabular-nums; color: var(--encre); }
 .ensemble-table small { display: block; margin-top: 2px; font-size: 11px; color: var(--encre-3); }
 .ensemble-table .v.tard, .ensemble-table small.recul { color: var(--alerte); }
 .ensemble-table .v.bon { color: var(--fait); }
@@ -1237,7 +1389,7 @@ svg.graphe text.grad[opacity] { opacity: .95; }
    droit, comme les lignes « par ATA ». La croix reste à côté du titre. */
 @media (max-width: 720px) {
   .ensemble-tete { align-items: flex-start; }
-  .ensemble-tete h2 { flex: 1 1 0; min-width: 0; font-size: 22px; }
+  .ensemble-tete h2 { flex: 1 1 0; min-width: 0; font-size: 20px; }
   .ensemble-tete .fiche-plan-fermer { flex: none; margin-top: 2px; }
   .ensemble-tete .indice { order: 3; flex-basis: 100%; }
   .defile-ensemble { overflow-x: visible; }
@@ -1253,19 +1405,24 @@ svg.graphe text.grad[opacity] { opacity: .95; }
   .ensemble-table td[data-libelle] { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: baseline; }
   .ensemble-table td[data-libelle]::before {
     content: attr(data-libelle); grid-column: 1; grid-row: 1 / span 2;
-    font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--encre-3);
+    font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--encre-3);
   }
   .ensemble-table td[data-libelle] > * { grid-column: 2; text-align: right; }
   .ensemble-table td:not([data-libelle]) { display: block; }
 }
 /* L'historique d'un plan, au-dessus du tableau. */
-.fiche-plan { margin: 0 0 12px; padding: 12px 16px 12px; background: var(--surface); border: 1px solid var(--filet); border-radius: 4px; }
+.fiche-plan { margin: 0 0 12px; padding: 12px 16px 12px; background: var(--surface); border: 1px solid var(--filet); border-radius: 6px; }
 .fiche-plan[hidden] { display: none; }
 .fiche-plan-tete { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.fiche-plan-tete .mot { font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--encre-3); }
 .fiche-plan-tete .ref { font: 500 14px "IBM Plex Mono", monospace; }
 .fiche-plan-tete .etat { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
-.fiche-plan-fermer { margin-left: auto; border: 1px solid var(--filet-fort); background: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; color: var(--encre-2); font: inherit; line-height: 1; }
+.fiche-plan-fermer { margin-left: auto; border: 1px solid var(--filet-fort); background: none; border-radius: 50%; width: 28px; height: 28px; padding: 0; cursor: pointer; color: var(--encre-2); font: inherit; font-size: 16px; line-height: 1; }
+/* Débrief 27 (D3, D11) : les croix de fermeture, des ronds de 28 px ; au
+   doigt, une cible de 44 px autour, sans rien changer au dessin. */
+@media (pointer: coarse) {
+  .fiche-plan-fermer, .fiche-echeance-fermer, .admin-fermer { position: relative; }
+  .fiche-plan-fermer::after, .fiche-echeance-fermer::after, .admin-fermer::after { content: ""; position: absolute; inset: -9px; }
+}
 .fiche-plan-fermer:hover { border-color: var(--encre); color: var(--encre); }
 /* La frise : une case par relevé, de la couleur de la valeur ce jour-là ;
    la semaine n'est écrite qu'aux changements, au premier et au dernier. */
@@ -1275,15 +1432,15 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 .fiche-plan-frise .bande.absent { background: none; border: 1px dashed var(--filet-fort); }
 .fiche-plan-frise .bande.inconnu { background: var(--creux); }
 .fiche-plan-frise .case.reemis .bande { box-shadow: inset 2px 0 0 var(--indice); }
-.fiche-plan-frise .sem { font: 10.5px "IBM Plex Mono", monospace; color: var(--encre-3); white-space: nowrap; overflow: visible; }
+.fiche-plan-frise .sem { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--encre-3); white-space: nowrap; overflow: visible; }
 .fiche-plan-resume { font-size: 13px; color: var(--encre); }
 .fiche-plan-resume.arret b { color: var(--cours); }
 .fiche-plan-resume.doux { color: var(--encre-3); }
-.fiche-plan-etapes { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 12.5px; color: var(--encre-2); }
-.fiche-plan-etapes .sem { display: inline-block; min-width: 130px; font: 11.5px "IBM Plex Mono", monospace; color: var(--encre-3); }
+.fiche-plan-etapes { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 12px; color: var(--encre-2); }
+.fiche-plan-etapes .sem { display: inline-block; min-width: 130px; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--encre-3); }
 .fiche-plan-etapes .indice { color: var(--indice); }
 .fiche-plan-etapes .recul, .fiche-plan-etapes .mot-recul { color: var(--alerte); }
-.fiche-plan-etapes .mot-recul { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+.fiche-plan-etapes .mot-recul { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; }
 /* La référence du tableau se clique comme un lien discret. */
 .ref-plan { border: none; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
 .ref-plan:hover { text-decoration: underline; text-underline-offset: 3px; }
@@ -1311,7 +1468,7 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 .rapp-reponse[hidden] { display: none; }
 .rapp-reponse button {
   border: none; background: none; padding: 0 1px; cursor: pointer; color: var(--encre);
-  font: 500 14px "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+  font: 500 14px "IBM Plex Sans", system-ui, sans-serif; font-variant-numeric: tabular-nums;
   text-decoration: underline; text-underline-offset: 3px;
 }
 .rapp-reponse button:hover, .rapp-reponse button[aria-pressed="true"] { text-decoration-thickness: 2px; }
@@ -1328,13 +1485,13 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 .rapp-figure .base-compte { font-size: 12px; fill: var(--encre-2); }
 .rapp-figure .cercle-ici { fill: var(--r2); fill-opacity: .5; stroke: var(--fait); stroke-width: 1.5; }
 .rapp-figure .cercle-la { fill: none; stroke: var(--encre-3); stroke-width: 1.5; stroke-dasharray: 5 4; }
-.rapp-figure .grand { font-family: "IBM Plex Mono", monospace; font-size: 30px; font-variant-numeric: tabular-nums; fill: var(--encre); }
+.rapp-figure .grand { font-size: 30px; font-weight: 500; font-variant-numeric: tabular-nums; fill: var(--encre); }
 .rapp-figure .petit { font-size: 12px; fill: var(--encre-2); }
 .rapp-figure .commun-n { font-size: 34px; }
 .rapp-figure .commun-n.serre { font-size: 24px; }
 .rapp-figure .cote-manque .grand { fill: var(--alerte); }
 .rapp-figure .cote-manque.zero .grand { fill: var(--encre-3); }
-.rapp-figure .cote-attente .moyen { font-family: "IBM Plex Mono", monospace; font-size: 14px; font-variant-numeric: tabular-nums; fill: var(--encre); }
+.rapp-figure .cote-attente .moyen { font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; fill: var(--encre); }
 .rapp-figure .cote-seul .grand { fill: var(--encre-2); }
 .rapp-figure .donut-fond { fill: none; stroke: var(--filet); stroke-width: 14; }
 .rapp-figure .donut-seg { fill: none; stroke-width: 14; stroke-linecap: butt; transition: stroke-width .12s; }
@@ -1360,7 +1517,7 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 .verdicts { display: grid; gap: 6px; }
 .verdict {
   display: grid; grid-template-columns: 14px 62px minmax(0, 1fr) 10px; align-items: center; column-gap: 10px;
-  width: 100%; text-align: left; background: none; border: 1px solid transparent; border-radius: 4px; padding: 6px 10px 6px 8px;
+  width: 100%; text-align: left; background: none; border: 1px solid transparent; border-radius: 6px; padding: 6px 10px 6px 8px;
   font: inherit; color: var(--encre-2); cursor: pointer;
 }
 /* Le chevron dit que la ligne se déplie, comme partout ailleurs sur la
@@ -1384,7 +1541,7 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 .verdict:disabled { cursor: default; opacity: .5; }
 .verdict:disabled:hover { background: none; }
 .verdict .verdict-n {
-  font-family: "IBM Plex Mono", monospace; font-size: 22px; font-variant-numeric: tabular-nums;
+  font-size: 24px; font-weight: 500; font-variant-numeric: tabular-nums;
   color: var(--encre); text-align: right; line-height: 1.1;
 }
 .verdict .verdict-mot { font-size: 13px; line-height: 1.35; color: var(--encre); }
@@ -1400,12 +1557,12 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 .rapp-puce {
   display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--filet-fort); border-radius: 999px;
   background: var(--surface); padding: 4px 11px 4px 9px; font-family: "IBM Plex Mono", monospace; font-size: 12px;
-  color: var(--encre); cursor: pointer; line-height: 1.2;
+  color: var(--encre); cursor: pointer; line-height: 18px;
 }
 .rapp-puce:hover { border-color: var(--encre); background: var(--creux); }
-.rapp-puce:focus-visible { outline: 2px solid var(--encre); outline-offset: 2px; }
+.rapp-puce:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .rapp-puce .pastille { width: 8px; height: 8px; }
-.rapp-puce-vers { color: var(--indice); font-weight: 600; }
+.rapp-puce-vers { color: var(--indice); font-weight: 500; }
 .pastille.accord { background: var(--fait); }
 .pastille.avance { background: var(--cours); }
 .pastille.manque { background: var(--alerte); }
@@ -1420,7 +1577,7 @@ table.plans tbody tr[data-plan] { cursor: pointer; }
 /* Débrief 25 : un ancien plan (« S » dans Validité), grisé, marqué. */
 table.plans tbody tr.ancien td { color: var(--encre-3); }
 table.plans tbody tr.ancien .pastille { opacity: .4; }
-.marque-ancien { margin-left: 8px; padding: 0 6px; border: 1px solid var(--filet-fort); border-radius: 4px; font-size: 11.5px; color: var(--encre-3); white-space: nowrap; }
+.marque-ancien { margin-left: 8px; padding: 0 6px; border: 1px solid var(--filet-fort); border-radius: 4px; font-size: 11px; color: var(--encre-3); white-space: nowrap; }
 /* La référence d'une ligne de là est un bouton : le clavier y arrive aussi. */
 .ref-lien { border: none; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; }
 .ref-lien:hover { text-decoration: underline; }
@@ -1430,20 +1587,21 @@ table.plans tbody tr.ancien .pastille { opacity: .4; }
 /* Les paires « ancienne → nouvelle » d'un changement d'indice : jamais
    coupées à mi-ligne — la bulle ne liste rien d'autre. */
 .bulle .liste-refs {
-  font-family: "IBM Plex Mono", monospace; font-size: 11.5px; line-height: 1.6;
+  font-family: "IBM Plex Mono", monospace; font-size: 12px; line-height: 1.6;
 }
 
 .legende {
   display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 24px;
   margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--filet);
-  font-size: 12.5px; color: var(--encre-2);
+  font-size: 12px; color: var(--encre-2);
 }
 .legende-item { display: inline-flex; align-items: center; gap: 7px; min-width: 0; overflow-wrap: anywhere; }
 .legende-item span { border-bottom: 1px dotted var(--filet-fort); cursor: help; }
 
 .bulle {
   position: fixed; z-index: 40; pointer-events: none; background: var(--releve);
-  border: 1px solid var(--releve-bord); box-shadow: var(--bulle-ombre); padding: 8px 10px; font-size: 12.5px; min-width: 160px;
+  border: 1px solid var(--releve-bord); box-shadow: var(--bulle-ombre); padding: 8px 10px; font-size: 12px; min-width: 160px;
+  border-radius: 6px; font-variant-numeric: tabular-nums;
   opacity: 0; transition: opacity .1s;
 }
 .bulle[data-visible="true"] { opacity: 1; }
@@ -1452,7 +1610,7 @@ table.plans tbody tr.ancien .pastille { opacity: .4; }
    qu'elles — une pastille, un mot, un nombre à droite. */
 .bulle-comptes { margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--filet); display: grid; gap: 1px; }
 .bulle-ligne { display: flex; align-items: center; gap: 7px; }
-.bulle-ligne .n { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+.bulle-ligne .n { margin-left: auto; font-variant-numeric: tabular-nums; }
 
 /* ---------------------------------------------------- Avancement par groupe */
 
@@ -1461,11 +1619,13 @@ table.plans tbody tr.ancien .pastille { opacity: .4; }
    mais plus bas et plus court, et son compte « n sur m » quand il agit. */
 .commandes-groupe { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; min-width: 0; }
 .recherche.recherche-groupe { flex: none; width: 200px; min-width: 0; }
-.recherche-groupe input {
-  height: 30px; padding: 4px 10px 4px 30px; font-size: 13px; border-radius: 15px;
+/* Débrief 27 (D3) : le champ des barres d'outils fait 28 px (la recherche
+   du tableau, 36) ; deux classes, pour passer devant .recherche input. */
+.recherche.recherche-groupe input {
+  height: 28px; padding: 0 10px 0 30px; font-size: 13px; border-radius: 4px;
 }
 .recherche-groupe input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
-.recherche-groupe svg { left: 11px; margin-top: -7px; }
+.recherche.recherche-groupe svg { left: 10px; margin-top: -7px; }
 .compte-groupes {
   font-size: 12px; color: var(--encre-3); white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -1488,9 +1648,12 @@ table.plans tbody tr.ancien .pastille { opacity: .4; }
   display: grid; grid-template-columns: var(--cols);
   gap: 14px; align-items: center;
 }
+/* Débrief 27 (D4) : l'en-tête de tableau de toute la page — Sans 12/500,
+   en minuscules (la première lettre posée par le script), --encre-2, un
+   filet --filet-fort dessous. */
 .critique-tete {
-  font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--encre-3);
-  padding-bottom: 6px; border-bottom: 1px solid var(--filet); margin-bottom: 3px;
+  font-size: 12px; font-weight: 500; color: var(--encre-2);
+  padding-bottom: 6px; border-bottom: 1px solid var(--filet-fort); margin-bottom: 3px;
 }
 /* Débrief 24 : en descendant la liste, on ne savait plus quelle colonne
    était laquelle. L'en-tête reste collé en haut du cadre qui défile, comme
@@ -1506,7 +1669,7 @@ table.plans tbody tr.ancien .pastille { opacity: .4; }
 .critique-tete > span { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0; }
 /* Quand d'autres filtres réduisent les lignes, les colonnes tirées de
    l'historique le disent : elles portent sur tout le groupe. */
-.critique-note { font-size: 11.5px; color: var(--encre-3); margin: 0 0 6px; line-height: 1.4; }
+.critique-note { font-size: 12px; color: var(--encre-3); margin: 0 0 6px; line-height: 1.4; }
 .critique-note.note-arret, .critique-note.note-valeur { display: flex; align-items: baseline; gap: 6px; color: var(--encre-2); }
 .critique-note.note-arret .pastille, .critique-note.note-valeur .pastille { flex: none; width: 8px; height: 8px; align-self: center; }
 .critique-note.note-arret b { color: var(--cours); font-weight: 500; }
@@ -1522,7 +1685,7 @@ button.tri-groupe[data-actif="true"] { color: var(--encre); }
 button.aide {
   border: 1px solid var(--filet-fort); background: none; color: var(--encre-3);
   width: 15px; height: 15px; border-radius: 50%; padding: 0; flex: none; cursor: pointer;
-  font: 500 10px/1 "IBM Plex Sans", system-ui, sans-serif; letter-spacing: 0;
+  font: 500 11px/1 "IBM Plex Sans", system-ui, sans-serif; letter-spacing: 0;
 }
 button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre); color: var(--encre); }
 
@@ -1554,11 +1717,11 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
 }
 .critique-tete > span:first-child { justify-content: flex-start; padding-left: 24px; }
 .critique-total {
-  font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums;
   font-size: 13px; color: var(--encre-2); text-align: center;
 }
 .critique-plans { display: grid; justify-items: center; min-width: 0; }
-.critique-plans .arret-n { display: block; margin-top: 3px; font: 10.5px/1.2 "IBM Plex Sans", system-ui, sans-serif; color: var(--cours); white-space: nowrap; }
+.critique-plans .arret-n { display: block; margin-top: 3px; font: 11px/1.2 "IBM Plex Sans", system-ui, sans-serif; color: var(--cours); white-space: nowrap; }
 /* « 3 à l'arrêt » est un bouton (il montre ces plans dans le tableau), et
    un bouton ne peut pas en contenir un autre : la ligne lui garde sa place
    sous le compte, et le bouton, posé juste après la ligne, remonte s'y
@@ -1568,14 +1731,14 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
 .arret-groupe {
   grid-column: 2; justify-self: center; position: relative; transform: translateY(-100%); margin-top: -7px;
   border: none; background: none; padding: 0; cursor: pointer; white-space: nowrap;
-  font: 10.5px/1.2 "IBM Plex Sans", system-ui, sans-serif; color: var(--cours);
+  font: 11px/1.2 "IBM Plex Sans", system-ui, sans-serif; color: var(--cours);
   text-decoration: underline dotted; text-underline-offset: 2px;
 }
 .arret-groupe:hover { text-decoration-style: solid; }
-.arret-groupe[aria-pressed="true"] { font-weight: 600; text-decoration-style: solid; }
+.arret-groupe[aria-pressed="true"] { font-weight: 500; text-decoration-style: solid; }
 /* Sous une valeur choisie (débrief 18) : « 12 », puis « sur 40 » et ce qui
    y est arrivé au dernier relevé. */
-.critique-plans .sur-n { display: block; margin-top: 3px; font: 10.5px/1.2 "IBM Plex Sans", system-ui, sans-serif; color: var(--encre-3); white-space: nowrap; }
+.critique-plans .sur-n { display: block; margin-top: 3px; font: 11px/1.2 "IBM Plex Sans", system-ui, sans-serif; color: var(--encre-3); white-space: nowrap; }
 .critique-plans .sur-n b { font-weight: 500; color: var(--encre-2); }
 .critique-ligne.sans-valeur .critique-nom, .critique-ligne.sans-valeur .critique-plans,
 .critique-ligne.sans-valeur .critique-barre { opacity: .5; }
@@ -1584,7 +1747,7 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
 .critique-effort, .critique-date { text-align: center; min-width: 0; }
 .critique-effort .v, .critique-date .v { display: block; }
 .critique-date .v {
-  font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-size: 12.5px;
+  font-variant-numeric: tabular-nums; font-size: 13px;
 }
 
 /* Le panneau d'explication : la formule, puis la meme formule avec les chiffres
@@ -1602,21 +1765,21 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
   margin: 0 0 11px; overflow-x: auto; white-space: pre; color: var(--encre);
 }
 .aide-formule b { font-weight: 500; color: var(--fait); }
-.aide-panneau .exemple { color: var(--encre-3); font-size: 11px; letter-spacing: .07em; text-transform: uppercase; display: block; margin-bottom: 5px; }
+.aide-panneau .exemple { display: block; margin-bottom: 5px; }
 /* Meme langage visuel que la barre du haut : les quatre etats, decoupes par groupe. */
 .critique-barre { display: flex; gap: 2px; height: 17px; }
 .critique-barre span {
   display: flex; align-items: center; justify-content: center; overflow: hidden;
-  font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
-  font-size: 10.5px; line-height: 1; white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px; line-height: 1; white-space: nowrap;
 }
 .critique-fin {
-  font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums;
   text-align: center; font-size: 14px; color: var(--encre);
 }
 .critique-ecart { font-size: 13px; color: var(--encre); line-height: 1.25; font-variant-numeric: tabular-nums; }
-.critique-ecart small { display: block; font-size: 10.5px; color: var(--encre-3); margin-top: 3px; font-weight: 400; letter-spacing: .01em; }
-.critique-ecart b.tard { color: var(--alerte); font-weight: 600; }
+.critique-ecart small { display: block; font-size: 11px; color: var(--encre-3); margin-top: 3px; font-weight: 400; letter-spacing: .01em; }
+.critique-ecart b.tard { color: var(--alerte); font-weight: 500; }
 .critique-ecart.arret { color: var(--alerte); font-weight: 500; font-size: 12px; }
 .critique-fin.doux, .critique-date.doux .v { color: var(--encre-3); }
 @media (max-width: 720px) {
@@ -1638,7 +1801,7 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
   .critique-plans .arret-n.place { display: none; }
   .critique-arret { display: block; height: auto; text-align: right; padding: 5px 0 9px; }
   .arret-groupe { transform: none; margin: 0; }
-  .critique-nom { text-align: left; font-weight: 600; font-size: 15px; padding-left: 0; padding-right: 22px; }
+  .critique-nom { text-align: left; font-weight: 500; font-size: 16px; padding-left: 0; padding-right: 22px; }
   .critique-tete > span:first-child { padding-left: 0; }
   /* En colonne, la ligne est haute : centré verticalement, le chevron
      tombait sur la barre. Il se range au bout de la ligne du nom. */
@@ -1651,8 +1814,8 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
   }
   .critique-total::before, .critique-fin::before, .critique-effort::before, .critique-date::before {
     content: attr(data-libelle); flex: none;
-    font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 11px;
-    letter-spacing: .06em; text-transform: uppercase; color: var(--encre-3);
+    font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 11px; font-weight: 500;
+    letter-spacing: .08em; text-transform: uppercase; color: var(--encre-3);
   }
   .critique-effort .v, .critique-date .v { text-align: right; }
   .critique-ecart { text-align: right; }
@@ -1664,9 +1827,10 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
   border: 1px solid var(--filet); font-size: 14px; line-height: 1.65; white-space: pre-wrap;
 }
 .point-corps[hidden] { display: none; }
+/* Débrief 27 (D3) : un bouton fait 36 px de haut, rayon 6. */
 .bouton {
   border: 1px solid var(--filet-fort); background: var(--surface); color: var(--encre);
-  font: inherit; font-size: 13px; padding: 7px 14px; cursor: pointer;
+  font: inherit; font-size: 13px; line-height: 20px; min-height: 36px; padding: 7px 14px; border-radius: 6px; cursor: pointer;
 }
 .bouton:hover { background: var(--creux); }
 .bouton:disabled { color: var(--encre-3); cursor: default; }
@@ -1674,15 +1838,19 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
 /* ---------------------------------------------------- Tableau */
 .outils { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding-bottom: 12px; }
 .recherche { position: relative; flex: 1 1 320px; min-width: 200px; }
+/* Débrief 27 (D3, D5, X-A12) : la recherche du tableau fait 36 px de haut,
+   son bord tient 3:1 (--bord-champ) et le focus est l'anneau de toute la
+   page — un filet qui fonçait et une ombre #faf9f6 sur du blanc ne se
+   voyaient pas. */
 .recherche input {
-  width: 100%; border: 1px solid var(--filet-fort); border-radius: 4px;
+  width: 100%; height: 36px; border: 1px solid var(--bord-champ); border-radius: 4px;
   background: var(--surface); color: var(--encre); font: inherit; font-size: 14px;
-  padding: 9px 12px 9px 36px;
+  padding: 0 12px 0 34px;
 }
 .recherche input::placeholder { color: var(--encre-3); }
-.recherche input:hover { border-color: var(--encre-3); }
-.recherche input:focus { outline: none; border-color: var(--encre); box-shadow: 0 0 0 3px var(--creux); }
-.recherche svg { position: absolute; left: 12px; top: 50%; margin-top: -8px; color: var(--encre-3); }
+.recherche input:hover { border-color: var(--encre-2); }
+.recherche input:focus { outline: 2px solid var(--focus); outline-offset: 2px; }
+.recherche svg { position: absolute; left: 11px; top: 50%; margin-top: -8px; color: var(--encre-3); }
 .recherche input:focus + svg, .recherche input:not(:placeholder-shown) + svg { color: var(--encre); }
 
 .lien-doux { border: none; background: none; padding: 3px 0; font: inherit; cursor: pointer; color: var(--encre-3); text-decoration: underline; text-underline-offset: 3px; }
@@ -1705,27 +1873,26 @@ dialog.admin {
 dialog.admin[open] { display: flex; flex-direction: column; }
 dialog.admin::backdrop { background: var(--voile-dialogue); }
 .admin-tete { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 24px 14px; border-bottom: 1px solid var(--filet); }
-.admin-tete h2 { margin: 0; font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 26px; line-height: 1.15; }
+.admin-tete h2 { margin: 0; font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 24px; line-height: 1.15; }
 .admin-qui { margin: 4px 0 0; font-size: 13px; color: var(--encre-2); }
-.admin-fermer { flex: none; width: 34px; height: 34px; border: 1px solid var(--filet-fort); border-radius: 50%; background: none; color: var(--encre-2); font-size: 20px; line-height: 1; cursor: pointer; }
+.admin-fermer { flex: none; width: 28px; height: 28px; border: 1px solid var(--filet-fort); border-radius: 50%; background: none; color: var(--encre-2); font-size: 18px; line-height: 1; padding: 0; cursor: pointer; }
 .admin-fermer:hover { color: var(--encre); border-color: var(--encre-3); }
 .admin-onglets { margin: 14px 24px 0; align-self: flex-start; }
-.admin-onglets button { font-size: 13px; padding: 6px 14px; }
-.admin-message { margin: 12px 24px 0; font-size: 13.5px; }
+.admin-message { margin: 12px 24px 0; font-size: 13px; }
 .admin-message:empty { display: none; }
 .admin-message.ok { color: var(--fait); }
 .admin-message.erreur { color: var(--alerte); }
 .admin-corps { padding: 14px 24px 24px; overflow: auto; flex: 1 1 auto; }
-.admin-corps h3 { margin: 6px 0 10px; font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--encre-3); }
+.admin-corps h3 { margin: 6px 0 10px; }
 .admin-corps p { margin: 0 0 12px; font-size: 14px; color: var(--encre-2); line-height: 1.55; }
 .admin-ligne-outils { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
 .admin-ligne-outils label { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--encre-2); cursor: pointer; }
-.admin-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-.admin-table th { text-align: left; font-weight: 500; font-size: 12px; color: var(--encre-3); padding: 0 10px 8px 0; border-bottom: 1px solid var(--filet-fort); white-space: nowrap; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.admin-table th { text-align: left; font-weight: 500; font-size: 12px; color: var(--encre-2); padding: 0 10px 8px 0; border-bottom: 1px solid var(--filet-fort); white-space: nowrap; }
 .admin-table td { padding: 10px 10px 10px 0; border-bottom: 1px solid var(--filet); vertical-align: middle; }
 .admin-table td.actions { text-align: right; white-space: nowrap; }
 .admin-table td.actions .lien-doux + .lien-doux { margin-left: 14px; }
-.admin-table .num { white-space: nowrap; }
+.admin-table .num { white-space: nowrap; font-family: inherit; }
 .admin-table td.nom { overflow-wrap: anywhere; }
 .admin-table .doux { color: var(--encre-3); }
 .admin-table tr.passe td { color: var(--encre-3); }
@@ -1735,14 +1902,13 @@ dialog.admin::backdrop { background: var(--voile-dialogue); }
 .admin-form h3 { margin-top: 0; }
 .admin-champs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
 .admin-champs .pleine { grid-column: 1 / -1; }
-.admin-champ { display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; color: var(--encre-2); }
+.admin-champ { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--encre-2); }
 .admin-champ input, .admin-champ select {
   font: inherit; font-size: 14px; color: var(--encre); background: var(--surface);
-  border: 1px solid var(--filet-fort); border-radius: 4px; padding: 7px 9px; min-width: 0; width: 100%;
+  border: 1px solid var(--bord-champ); border-radius: 4px; padding: 7px 9px; min-width: 0; width: 100%;
 }
-.admin-champ input:focus, .admin-champ select:focus { outline: none; border-color: var(--encre); box-shadow: 0 0 0 3px var(--creux); }
+.admin-champ input:focus, .admin-champ select:focus { outline: 2px solid var(--focus); outline-offset: 2px; }
 .admin-champ input[aria-invalid="true"] { border-color: var(--alerte); }
-.admin-champ input:focus-visible, .admin-champ select:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 .admin-form-boutons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
 .bouton.principal { background: var(--principal-fond); border-color: var(--principal-bord); color: var(--principal-encre); }
 .bouton.principal:hover { background: var(--principal-survol); border-color: var(--principal-survol-bord); }
@@ -1760,14 +1926,14 @@ dialog.admin[aria-busy="true"] .admin-corps { opacity: .6; pointer-events: none;
   .admin-table tr { padding: 10px 0; border-bottom: 1px solid var(--filet); }
   .admin-table td { border: none; padding: 2px 0; }
   .admin-table td.actions { text-align: left; padding-top: 6px; }
-  .admin-table td[data-titre]::before { content: attr(data-titre) " · "; color: var(--encre-3); font-size: 12.5px; }
+  .admin-table td[data-titre]::before { content: attr(data-titre) " · "; color: var(--encre-3); font-size: 12px; }
 }
 /* « Copier (12) » : sur chaque liste de références de la page (verdict de
    la comparaison, semaine du journal, groupe déplié). Un petit bouton à
    part, jamais dans un autre bouton ; il dit « Copié » deux secondes. */
 .copier {
-  border: 1px solid var(--filet); background: var(--surface); color: var(--encre-2); border-radius: 3px;
-  padding: 1px 8px; font: 11.5px/1.5 "IBM Plex Sans", system-ui, sans-serif; cursor: pointer; white-space: nowrap;
+  border: 1px solid var(--filet); background: var(--surface); color: var(--encre-2); border-radius: 4px;
+  padding: 1px 8px; font: 12px/1.5 "IBM Plex Sans", system-ui, sans-serif; cursor: pointer; white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 .copier:hover { border-color: var(--encre-3); color: var(--encre); }
@@ -1777,7 +1943,7 @@ dialog.admin[aria-busy="true"] .admin-corps { opacity: .6; pointer-events: none;
 
 .incomplets {
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px;
-  font-size: 12.5px; color: var(--encre-3); padding-bottom: 12px;
+  font-size: 13px; color: var(--encre-3); padding-bottom: 12px;
 }
 .incomplets:empty { display: none; }
 .incomplets > span:first-child { color: var(--encre-2); }
@@ -1788,7 +1954,7 @@ dialog.admin[aria-busy="true"] .admin-corps { opacity: .6; pointer-events: none;
 }
 .puce-vide:hover { color: var(--encre); border-bottom-color: var(--encre); }
 .puce-vide[aria-pressed="true"] { color: var(--encre); font-weight: 500; border-bottom: 1px solid var(--encre); }
-.puce-vide b { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; }
+.puce-vide b { font-variant-numeric: tabular-nums; font-weight: 500; }
 
 .cadre-tableau { position: relative; border: 1px solid var(--filet); background: var(--surface); }
 /* Sous la ligne de flottaison à l'ouverture, un tableau de milliers de
@@ -1803,13 +1969,15 @@ dialog.admin[aria-busy="true"] .admin-corps { opacity: .6; pointer-events: none;
 
 table.plans { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13px; }
 table.plans thead th { background: var(--surface); text-align: left; }
+/* Débrief 27 (D4) : les en-têtes du tableau en Sans 12/500, en minuscules
+   — les noms de colonnes de GATES restent écrits tels quels. */
 table.plans thead .groupes th {
-  font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--encre-3);
+  font-size: 12px; color: var(--encre-3);
   font-weight: 500; padding: 9px 14px 5px; white-space: nowrap;
   position: sticky; top: 0; z-index: 4; border-bottom: 1px solid var(--filet);
 }
 table.plans thead .titres th, table.plans thead .titres-la th {
-  font-weight: 500; font-size: 12.5px; color: var(--encre-2); padding: 6px 14px 7px;
+  font-weight: 500; font-size: 12px; color: var(--encre-2); padding: 6px 14px 7px;
   white-space: nowrap; border-bottom: 1px solid var(--filet-fort); position: sticky; z-index: 4;
 }
 /* Le tableau de la seconde base : mêmes en-têtes, mais sous d'autres noms de
@@ -1824,13 +1992,13 @@ table.plans thead .titres-la th button:hover { color: var(--encre); }
 .col-fige-la { position: sticky; left: 0; background: var(--surface); z-index: 2; box-shadow: inset -1px 0 0 var(--filet-fort); }
 table.plans tbody tr:hover .col-fige-la { background: var(--creux); }
 table.plans thead tr th.col-fige-la { z-index: 6; }
-table.plans thead .filtres th { padding: 0 14px 7px; position: sticky; z-index: 4; border-bottom: 1px solid var(--filet); }
+table.plans thead .filtres th { padding: 0 14px 7px; position: sticky; z-index: 4; border-bottom: 1px solid var(--filet); font-weight: 400; }
 table.plans thead .filtres input {
   width: 100%; min-width: 78px; border: none; border-bottom: 1px solid var(--filet);
   background: none; color: var(--encre); font: inherit; font-size: 12px; padding: 2px 0;
 }
 table.plans thead .filtres input::placeholder { color: var(--filtre-invite); }
-table.plans thead .filtres input:focus { outline: none; border-bottom-color: var(--focus); }
+table.plans thead .filtres input:focus { outline: 2px solid var(--focus); outline-offset: 1px; border-bottom-color: var(--bord-champ); }
 table.plans thead .filtres input[data-actif="true"] { border-bottom-color: var(--encre); color: var(--encre); }
 
 table.plans thead .titres th.glisse { opacity: .4; }
@@ -1856,14 +2024,14 @@ table.plans tbody tr:hover .col-fige { background: var(--creux); }
 table.plans thead tr th.col-fige { z-index: 6; }
 .fige-fin { box-shadow: inset -1px 0 0 var(--filet-fort); }
 
-.ref { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; }
+.ref { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
 .large { max-width: 230px; overflow: hidden; text-overflow: ellipsis; }
 .doux { color: var(--encre-3); }
 .etat-cellule { display: inline-flex; align-items: center; gap: 8px; }
 
 .vide-message { padding: 44px 16px; color: var(--encre-3); }
-.compte { color: var(--encre-3); font-size: 12.5px; }
-.pied { padding: 20px 0 42px; margin-top: 32px; border-top: 1px solid var(--filet); color: var(--encre-3); font-size: 11.5px; line-height: 1.8; }
+.compte { color: var(--encre-3); font-size: 12px; font-variant-numeric: tabular-nums; }
+.pied { padding: 20px var(--retrait-panneau) 42px; margin-top: 32px; border-top: 1px solid var(--filet); color: var(--encre-3); font-size: 12px; line-height: 1.8; }
 /* Débrief 26, téléphone : le bouton ↑ ne cache plus la dernière ligne du pied ;
    la ligne de groupe choisie garde sa lettre hors de la barre ; le résumé
    d'une semaine du journal passe sous la semaine, sans rien couper. */
@@ -2094,7 +2262,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
 
   <section class="bloc panneau teinte-groupe" id="section-repartition">
     <div class="panneau-tete">
-      <p class="surtitre" aria-hidden="true">Répartition</p>
+      <p class="surtitre" id="surtitre-groupe" aria-hidden="true">Répartition</p>
       <!-- Débrief 20 : le choix ATA / ECP / Séquence… n'est plus un menu isolé
            au-dessus de la recherche : c'est le dernier mot du titre lui-même,
            « Avancement FWD par [ATA ▾] ». Le titre (h2) garde la phrase entière
@@ -2141,7 +2309,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        si la source décrit une seconde base ; sinon l'interrupteur s'efface. -->
   <section class="bloc panneau teinte-plans" id="section-plans">
     <div class="panneau-tete">
-      <p class="surtitre" aria-hidden="true">Détail</p>
+      <p class="surtitre" aria-hidden="true">Plans</p>
       <div class="section-tete">
         <h2>Plans</h2>
         <span class="segmente" id="choix-base" role="group" aria-label="Base affichée" hidden>
@@ -2216,7 +2384,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        Présent seulement quand la source décrit une seconde base. -->
   <section class="bloc rapprochement panneau" id="rapprochement" hidden>
     <div class="panneau-tete">
-      <p class="surtitre" aria-hidden="true">Contrôle</p>
+      <p class="surtitre" aria-hidden="true">Comparaison</p>
       <div class="section-tete">
         <h2 id="titre-rapprochement">Comparaison des bases de données</h2>
         <!-- Chercher un plan dans la comparaison seulement : les lots qui le
@@ -2263,6 +2431,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
 </div>
 
 <div class="bulle" id="bulle" role="status" aria-live="polite"></div>
+<!-- Débrief 27 : la seule zone d'annonce de la page (voir annoncer()) :
+     les lecteurs d'écran y entendent les changements de résultat. -->
+<div class="masque" id="annonce" role="status" aria-live="polite" aria-atomic="true"></div>
 <!-- Débrief 26 : le panneau d'administration — les jalons, les contrats, les
      administrateurs. Vide tant qu'un administrateur ne l'ouvre pas. -->
 <dialog class="admin" id="admin" aria-labelledby="admin-titre">
@@ -2389,6 +2560,132 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if (!el || !el.scrollIntoView) return;
     try { el.scrollIntoView(options); } catch (e) { el.scrollIntoView(true); }
   }
+
+  /* ============================================================
+     DÉBRIEF 27 — TROIS AIDES COMMUNES À TOUTES LES SECTIONS
+     garderFocus, annoncer, TIRET_VIDE. Chaque section s'en sert pour ses
+     propres commandes (voir le cahier du débrief 27).
+     ============================================================ */
+
+  /* garderFocus(redessiner, zone) — redessiner une partie de la page sans
+     jeter le focus clavier (un tri, une semaine dépliée, une tuile pressée
+     le renvoyaient tout en haut de la page).
+     Avant : on note l'élément qui a le focus, s'il est dans « zone » (un
+     élément ou son id ; toute la page si elle est omise). On appelle
+     redessiner(). Après : si le focus est tombé sur le corps de la page
+     (l'élément a été remplacé ou caché), on le rend au « même » élément du
+     nouveau rendu — retrouvé par son id, sinon par une clé stable (voir
+     CLES_FOCUS : data-cle, data-etat, data-semaine, data-trig…), de même
+     balise et de même classe, dans la même partie de la page ; sinon au
+     plus proche équivalent : un élément de même sorte dans le plus proche
+     ancêtre resté dans la page (la croix du filtre suivant), à défaut le
+     titre de la section (rendu focalisable, tabindex=-1). Jamais le corps
+     de la page. Si redessiner() a posé le focus ailleurs exprès (une fiche
+     qui s'ouvre sur son titre), on n'y touche pas.
+     Renvoie ce que renvoie redessiner(). Exemple :
+       garderFocus(function () { rendreCritique(liste); }, 'zone-critique'); */
+  var CLES_FOCUS = ['data-trig', 'data-tri', 'data-tri-seconde', 'data-filtre', 'data-etat', 'data-semaine',
+    'data-ata', 'data-col', 'data-groupe', 'data-passage', 'data-perimetre', 'data-retirer', 'data-plan-rapp',
+    'data-ref-plan', 'data-plan', 'data-ud', 'data-vide', 'data-lot', 'data-jalon', 'data-span', 'data-indicateur',
+    'data-base', 'data-vue', 'data-onglet', 'data-chapitre', 'data-aide', 'data-arret-groupe', 'data-aller-contrat',
+    'data-ref', 'data-id', 'data-email', 'data-admin', 'data-cle', 'data-i'];
+  function focusVisible(el) {
+    return !!el && !el.disabled && el.getClientRects().length > 0 && !el.closest('[hidden], [inert]');
+  }
+  function echAttr(v) { return String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"'); }
+  function empreinteFocus(el) {
+    var g = { el: el, id: el.id || '', tag: el.tagName.toLowerCase(), classe: el.classList[0] || '', cle: null, ancetres: [] };
+    for (var i = 0; i < CLES_FOCUS.length; i++) {
+      if (el.hasAttribute(CLES_FOCUS[i])) { g.cle = [CLES_FOCUS[i], el.getAttribute(CLES_FOCUS[i])]; break; }
+    }
+    for (var a = el.parentElement; a && a !== document.body; a = a.parentElement) g.ancetres.push(a);
+    return g;
+  }
+  /* Le titre d'une section, rendu focalisable : là où va le focus quand
+     plus rien de semblable n'existe. */
+  function titreFocalisable(sec) {
+    var t = sec && (sec.querySelector('h2') || sec.querySelector('.phrase') || sec.querySelector('.surtitre:not([aria-hidden="true"])'));
+    if (t && !t.hasAttribute('tabindex')) t.setAttribute('tabindex', '-1');
+    return t && focusVisible(t) ? t : null;
+  }
+  function retrouverFocus(g, racine) {
+    var dans = racine || document;
+    if (g.id) { var parId = document.getElementById(g.id); if (focusVisible(parId)) return parId; }
+    var vivants = g.ancetres.filter(function (a) { return document.contains(a); });
+    if (g.cle) {
+      var memes = [].filter.call(dans.querySelectorAll(g.tag + '[' + g.cle[0] + '="' + echAttr(g.cle[1]) + '"]'), function (c) {
+        return focusVisible(c) && (!g.classe || c.classList.contains(g.classe));
+      });
+      for (var i = 0; i < vivants.length && memes.length > 1; i++) {
+        for (var k = 0; k < memes.length; k++) if (vivants[i].contains(memes[k])) return memes[k];
+      }
+      if (memes.length) return memes[0];
+    }
+    var sorte = g.tag + (g.classe ? '.' + g.classe : '');
+    for (var j = 0; j < vivants.length; j++) {
+      var a = vivants[j];
+      var pareil = [].filter.call(a.querySelectorAll(sorte), focusVisible)[0];
+      if (pareil) return pareil;
+      /* On ne cherche pas « un bouton pareil » au-delà de sa section : il
+         serait n'importe où dans la page. */
+      if (a.matches('section, dialog, nav, .panneau, .filtres-actifs, .bandeau-mode')) {
+        var t = a.matches('section, .panneau') ? titreFocalisable(a) : null;
+        if (t) return t;
+        break;
+      }
+    }
+    /* Plus rien de la section : le titre de celle que le sommaire marque
+       comme lue, ou de la première. */
+    var lu = document.querySelector('#sommaire-liste a[aria-current]');
+    var sec = lu ? document.getElementById((lu.getAttribute('href') || '').slice(1)) : document.querySelector('section.panneau');
+    return titreFocalisable(sec) || titreFocalisable(document.querySelector('section.panneau'));
+  }
+  function garderFocus(redessiner, zone) {
+    var racine = typeof zone === 'string' ? $(zone) : (zone || null);
+    var actif = document.activeElement;
+    var g = actif && actif !== document.body && actif !== document.documentElement &&
+      (!racine || racine.contains(actif)) ? empreinteFocus(actif) : null;
+    var res = redessiner();
+    var maintenant = document.activeElement;
+    if (g && (!maintenant || maintenant === document.body || (maintenant === g.el && !focusVisible(g.el)))) {
+      var cible = retrouverFocus(g, racine && document.contains(racine) ? racine : null);
+      if (cible) { try { cible.focus({ preventScroll: true }); } catch (e) { cible.focus(); } }
+    }
+    return res;
+  }
+
+  /* annoncer(texte) — dire un changement de résultat aux lecteurs d'écran,
+     poliment, sans rien montrer : « 12 plans affichés sur 634 », « Contrat
+     THS chargé », « Tableau trié par RPT, ordre croissant ». Une seule zone
+     pour toute la page (#annonce : role="status", visuellement masquée,
+     posée dans la page dès l'ouverture). Les appels rapprochés — chaque
+     frappe d'une recherche — se regroupent : seul le dernier est dit,
+     400 ms après le dernier appel. Le texte est vidé puis réécrit, pour
+     qu'un même message répété soit redit. annoncer('') annule ce qui
+     attendait. */
+  var ANNONCE = { minuteur: 0 };
+  function annoncer(texte) {
+    var zone = $('annonce');
+    if (!zone) {
+      zone = document.createElement('div');
+      zone.id = 'annonce'; zone.className = 'masque';
+      zone.setAttribute('role', 'status'); zone.setAttribute('aria-live', 'polite'); zone.setAttribute('aria-atomic', 'true');
+      document.body.appendChild(zone);
+    }
+    clearTimeout(ANNONCE.minuteur);
+    if (!texte) return;
+    ANNONCE.minuteur = setTimeout(function () {
+      zone.textContent = '';
+      ANNONCE.minuteur = setTimeout(function () { zone.textContent = String(texte); }, 60);
+    }, 400);
+  }
+  /* Pour la batterie de tests : les mêmes aides, appelées de l'extérieur. */
+  window.__garderFocus = garderFocus;
+  window.__annoncer = annoncer;
+
+  /* Une case sans valeur (débrief 27, B22) : « — » en gris tertiaire, la
+     même partout (voir .tiret-vide). */
+  var TIRET_VIDE = '<span class="tiret-vide">\u2014</span>';
 
   /* ============================================================
      LES MESURES DE LA PAGE, UNE FOIS PAR IMAGE (débrief 23)
@@ -5377,11 +5674,14 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       zone.classList.add('en-legende');
       boutons.forEach(function (b) { b.style.left = ''; });
       /* Débrief 19 : toutes les cartes sur une seule ligne — les sept valeurs
-         de GATES tiennent dans la largeur de la page —, tant que chacune garde
-         au moins 112 px (un nom trop long s'abrège, entier au survol). Au-delà,
-         la grille passe à la ligne. */
+         de GATES tiennent dans la largeur de la page. Débrief 27 (B10) : tant
+         que chacune garde 150 px, de quoi écrire PWD_IN_PROGRESS en entier ;
+         au-delà, des rangées équilibrées (4 + 3 à 1024 px, plutôt que 5 + 2),
+         et un code trop long passe à la ligne après un « _ », jamais coupé. */
       var n = boutons.length;
-      if ((largeur - 8 * (n - 1)) / n >= 112) zone.style.gridTemplateColumns = 'repeat(' + n + ', minmax(0, 1fr))';
+      var parLigne = Math.max(1, Math.min(n, Math.floor((largeur + 8) / (150 + 8))));
+      var rangs = Math.ceil(n / parLigne);
+      zone.style.gridTemplateColumns = 'repeat(' + Math.ceil(n / rangs) + ', minmax(0, 1fr))';
       return;
     }
     /* Un filet par coupure — sauf après un segment trop étroit pour que le
@@ -5459,7 +5759,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       var part = (n / (c.total || 1)) * 100;
       var texte = part >= 6 ? Math.round(part) + '\u202f%' : '';
       return v.hachure
-        ? '<span class="hachure" data-cle="' + ech(v.cle) + '" style="width:' + part.toFixed(2) + '%;color:var(--encre-2)" title="' + ech(v.libelle) + '">' + texte + '</span>'
+        ? '<span class="hachure" data-cle="' + ech(v.cle) + '" style="width:' + part.toFixed(2) + '%;color:var(--encre-2)" title="' + ech(v.libelle) + '">' + (texte ? '<i class="etiq-part">' + texte + '</i>' : '') + '</span>'
         : '<span data-cle="' + ech(v.cle) + '" style="width:' + part.toFixed(2) + '%;background:' + v.couleur +
           ';color:' + v.encre + '" title="' + ech(v.libelle) + '">' + texte + '</span>';
     }).join('');
@@ -5484,7 +5784,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       return '<button class="etat-btn" type="button" data-etat="' + ech(v.cle) + '" data-cle="' + ech(v.cle) + '" data-famille="' + v.famille +
         '" style="--teinte:' + v.teinte +
         '" aria-pressed="' + actif + '" title="' + (actif ? 'Retirer le filtre' : 'N\u2019afficher que ces plans') + '">' +
-        '<span class="etat-haut">' + pastille + '<span class="libelle" title="' + ech(v.libelle) + '">' + ech(v.libelle) + '</span></span>' +
+        '<span class="etat-haut">' + pastille + '<span class="libelle">' + ech(v.libelle).replace(/_/g, '_<wbr>') + '</span></span>' +
         '<span class="etat-n">' + nb(parValeur[v.cle] || 0) + '</span>' +
         '<span class="etat-pct">' + partDite(parValeur[v.cle] || 0, c.total) + '</span></button>';
     }).join('');
@@ -6253,7 +6553,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       /* L'année n'encombre pas chaque graduation : une fois, puis à chaque
          changement. */
       if (annee !== anneeEcrite) {
-        s.push('<text class="annee" x="' + x(k3).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">' + annee + '</text>');
+        /* Débrief 27 : l'année passe de 10 à 11 px (jamais moins de 11 px
+           rendus) ; un pixel plus bas, elle ne touche pas la semaine. */
+        s.push('<text class="annee" x="' + x(k3).toFixed(1) + '" y="' + (H - 5) + '" text-anchor="middle">' + annee + '</text>');
         anneeEcrite = annee;
       }
     }
@@ -6783,9 +7085,14 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   /* Le nom du bloc dans le sommaire : « Par ATA », « Par ECP »… La synthèse
      le pose aussi (rendreHaut) : le sommaire de la première image de
      l'ouverture est celui de la page finie (débrief 23, revue). */
+  /* Débrief 27 (D6) : le surtitre du panneau dit la même chose que son
+     entrée du sommaire — on clique « 04 Par ATA », on arrive sur
+     « 04 · Par ATA » (il disait « Répartition »). */
   function libellerSommaireGroupe() {
     var dim = vue.dimCritique;
-    $('sommaire-groupe').textContent = dim && TITRE_DIM[dim] ? 'Par ' + TITRE_DIM[dim].replace(/ \(.*\)$/, '') : 'Répartition';
+    var mot = dim && TITRE_DIM[dim] ? 'Par ' + TITRE_DIM[dim].replace(/ \(.*\)$/, '') : 'Répartition';
+    $('sommaire-groupe').textContent = mot;
+    if ($('surtitre-groupe')) $('surtitre-groupe').textContent = mot;
   }
 
   function rendreCritique(liste) {
@@ -6967,7 +7274,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       var actif = !!(tg && tg.cle === cle);
       return '<span class="' + (classe || '') + '"><button type="button" class="tri-groupe" data-trig="' + cle +
         '" data-actif="' + actif + '" aria-label="Trier par ' + ech(libelle) + '"' +
-        (titre ? ' title="' + ech(titre) + '"' : '') + '>' + (avant || '') + ech(libelle) + fleche(cle) + '</button>';
+        (titre ? ' title="' + ech(titre) + '"' : '') + '>' + (avant || '') + ech(majuscule(libelle)) + fleche(cle) + '</button>';
     }
 
     function aide(quoi) {
@@ -7042,7 +7349,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
            barre du haut — les fins segments n'ont pas d'autre texte. */
         var titre = ' title="' + ech(v.libelle + ' : ' + nb(nV) + ' sur ' + nb(r.total)) + '"';
         return v.hachure
-          ? '<span class="hachure' + (eclaire ? ' eclaire' : '') + '" data-cle="' + ech(v.cle) + '"' + titre + ' style="width:' + part.toFixed(2) + '%;color:var(--encre-2)">' + texte + '</span>'
+          ? '<span class="hachure' + (eclaire ? ' eclaire' : '') + '" data-cle="' + ech(v.cle) + '"' + titre + ' style="width:' + part.toFixed(2) + '%;color:var(--encre-2)">' + (texte ? '<i class="etiq-part">' + texte + '</i>' : '') + '</span>'
           : '<span' + (eclaire ? ' class="eclaire"' : '') + ' data-cle="' + ech(v.cle) + '"' + titre + ' style="width:' + part.toFixed(2) + '%;background:' + v.couleur + ';color:' + v.encre + '">' + texte + '</span>';
       }).join('');
       /* L'infobulle de la ligne (sa description pour un lecteur d'écran)
@@ -7501,7 +7808,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      même : le clic copie exactement ce que la liste montre. */
   function boutonCopier(refs) {
     if (!refs || !refs.length) return '';
-    return '<button type="button" class="copier" data-copier="' + ech(refs.join('\n')) + '" aria-live="polite" title="' +
+    return '<button type="button" class="copier" data-copier="' + ech(refs.join('\n')) + '" title="' +
       ech('Copier ' + (refs.length > 1 ? 'ces ' + nb(refs.length) + ' références' : 'cette référence') + ', une par ligne, pour les coller ailleurs') +
       '">Copier (' + nb(refs.length) + ')</button>';
   }
@@ -7536,6 +7843,11 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if (!b) return;
     var mot = b.__mot || (b.__mot = b.textContent);
     copierTexte(b.getAttribute('data-copier'), function (ok) {
+      /* Débrief 27 : le bouton ne parle plus de lui-même (aria-live disait
+         « Copier (41) » à chaque semaine ouverte) ; la page dit ce qui s'est
+         passé, une fois. */
+      var n = b.getAttribute('data-copier').split('\n').length;
+      annoncer(ok ? (n > 1 ? nb(n) + ' références copiées' : '1 référence copiée') : 'Copie refusée par le navigateur');
       b.textContent = ok ? 'Copié' : 'Copie refusée';
       b.setAttribute('data-copie', ok ? 'faite' : 'refusee');
       clearTimeout(b.__minuteur);
@@ -8255,10 +8567,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
           (courant ? '<small>affiché</small>' : '') + '</th>' +
         '<td><span class="v">' + nb(r.termines) + ' / ' + nb(r.total) + '</span><small' + (r.aucunFini ? ' class="alerte-ligne" title="Aucune valeur de la colonne n\u2019est comptée comme « validé » : voir le haut de la page de ce contrat"' : '') + '>' +
           (r.aucunFini ? 'aucun mot « validé » reconnu' : r.pct + ' %') + '</small></td>' +
-        '<td><span class="v">' + (r.gain === null ? '\u2014' : (r.gain > 0 ? '+' : '') + nb(r.gain)) + '</span>' +
+        '<td><span class="v">' + (r.gain === null ? TIRET_VIDE : (r.gain > 0 ? '+' : '') + nb(r.gain)) + '</span>' +
           (r.reculs ? '<small class="recul">' + nb(r.reculs) + (r.reculs > 1 ? ' reculs' : ' recul') + '</small>' : '') + '</td>' +
-        '<td><span class="v">' + (r.rythme === null ? '\u2014' : virgule(r.rythme) + '/sem.') + '</span></td>' +
-        '<td><span class="v' + (r.arret ? ' arret' : '') + '">' + (r.arret ? nb(r.arret) : '\u2014') + '</span></td>' +
+        '<td><span class="v">' + (r.rythme === null ? TIRET_VIDE : virgule(r.rythme) + '/sem.') + '</span></td>' +
+        '<td><span class="v' + (r.arret ? ' arret' : '') + '">' + (r.arret ? nb(r.arret) : TIRET_VIDE) + '</span></td>' +
         '<td>' + (e ? '<span class="v">' + ech(e.texte) + '</span><small>' + ech(e.quand) + ' · ' + ech(motJours(e.jours)) + '</small>' : '<span class="doux">' + (r.sansJalon ? 'aucun jalon' : 'aucune à venir') + '</span>') + '</td>' +
         '<td>' + (e ? (e.enRetard
             ? '<span class="v tard">manque ' + nb(e.manque) + '</span><small>il faut ' + virgule(e.requis) + '/sem.</small>'
@@ -8266,7 +8578,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
                 : 'au rythme global' + (e.domaine ? ' de ' + ech(e.domaine) : '') + ', la fin serait en ' + ech(e.fin)) + '</small>' +
               (e.dernier ? '<small>' + ech(e.dernier) + '</small>' : ''))
           : (r.fin === 'validé' ? '<span class="v bon">tout est validé</span>'
-            : r.fin ? '<span class="v">fin ' + ech(r.fin) + '</span>' : '<span class="doux">\u2014</span>')) + '</td>' +
+            : r.fin ? '<span class="v">fin ' + ech(r.fin) + '</span>' : TIRET_VIDE)) + '</td>' +
         '</tr>';
     }).join('');
     zone.innerHTML = '<p class="surtitre" aria-hidden="true">Tous les contrats</p>' +
