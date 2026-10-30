@@ -70,7 +70,7 @@
 <script>
   /* La livraison de ce fichier, posée par la construction : la page la compare
      à celles de Code, Styles et Javascript, et nomme celui qui diffère. */
-  window.SUIVI_FWD_LIVRAISON_INDEX = 'd2a004a';
+  window.SUIVI_FWD_LIVRAISON_INDEX = 'c513f1d';
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
@@ -289,8 +289,10 @@
   <!-- Débrief 27 (lot H, P-F6, M5) : les filtres posés, sous le sommaire et
        collés avec lui. Le bandeau ne prend aucune place dans la page (hauteur
        nulle, sa ligne posée par-dessus) : rien ne saute quand un filtre
-       s'ajoute ou s'enlève. -->
-  <div class="filtres-actifs" id="filtres-actifs" hidden></div>
+       s'ajoute ou s'enlève. Débrief 29 (X-A10) : entre le sommaire et le
+       contenu, hors de tout repère, il est une région nommée — un lecteur
+       d'écran le trouve dans la liste des repères, comme le reste. -->
+  <div class="filtres-actifs" id="filtres-actifs" role="region" aria-label="Filtres posés" hidden></div>
 
   <!-- Débrief 27, lot G : le contenu de la page, de la synthèse à la
        comparaison, dans sa région principale — la cible de « Aller au

@@ -11155,6 +11155,238 @@ async function deplierFiltresColonne(pg) {
   //  dans un bloc { … } qui ouvre et ferme ses propres pages.
   // =================================================================
   /* (début du lot I) */
+  section('Débrief 29 : impression, haut de page, couche tactile, téléphone (lot I)');
+  {
+    /* La page vivante, servie par le vrai serveur sur le classeur du
+       simulateur (comme la section du lot F) : HDK, sa tranche, son
+       périmètre, sa base SEE — les vrais réglages du bandeau. */
+    const fsI = require('fs'), osI = require('os');
+    const { construireSimulateur } = require(path.join(__dirname, '..', '..', 'tests', 'construire-simulateur.js'));
+    const { Feuille } = require(path.join(__dirname, '..', '..', 'tests', 'faux-classeur.js'));
+    const simI = construireSimulateur({ date: '2026-10-29', avantPage: function (c, classeur) {
+      const ths = classeur.getSheetByName('THS');
+      classeur.feuilles.splice(1, 0, new Feuille('HDK Tranche 2', ths.valeurs.map(l => l.slice()), false, ths.fusions.map(f => Object.assign({}, f))));
+    } });
+    const srvI = simI.contexte;
+    simI.classeur.proprietaire = 'nathan@airbus.com';
+    srvI.__emailScript = 'nathan@airbus.com';
+    const fichierI = path.join(osI.tmpdir(), 'suivi-fwd-lot-i-' + process.pid + '.html');
+    fsI.writeFileSync(fichierI, simI.page.replace(/<script>\s*\/\* Simulateur : google\.script\.run[\s\S]*?<\/script>/, ''));
+    const vivanteI = async (o) => {
+      const email = o.email || 'lecteur@airbus.com';
+      const c = await nav.newContext({ viewport: { width: o.largeur || 1280, height: o.hauteur || 900 }, colorScheme: o.schema || 'light',
+        isMobile: !!o.mobile, hasTouch: !!o.mobile, locale: 'en-US' });
+      const pg = await c.newPage();
+      brancher(pg, 'lot I ' + (o.largeur || 1280) + (o.mobile ? ' tactile' : ''));
+      await pg.exposeFunction('__appel', (nom, args) => {
+        if (typeof srvI[nom] !== 'function' || /_$/.test(nom)) throw new Error('fonction inconnue ' + nom);
+        const avant = srvI.__emailLecteur; srvI.__emailLecteur = email;
+        try { const r = srvI[nom].apply(null, JSON.parse(args)); return JSON.stringify(r === undefined ? null : r); } finally { srvI.__emailLecteur = avant; }
+      });
+      await pg.addInitScript(() => {
+        window.SUIVI_FWD_BUDGET = 1e9;
+        function chaine(ok, ko) {
+          const c = { withSuccessHandler: f => chaine(f, ko), withFailureHandler: f => chaine(ok, f), withUserObject: () => chaine(ok, ko) };
+          return new Proxy(c, { get(t, nom) {
+            if (nom in t) return t[nom];
+            if (typeof nom !== 'string') return undefined;
+            return function () {
+              const args = Array.prototype.slice.call(arguments);
+              setTimeout(() => window.__appel(nom, JSON.stringify(args)).then(j => { if (ok) ok(JSON.parse(j)); },
+                e => { if (ko) ko({ message: String(e.message || e).replace(/^Error: /, '') }); }), 40);
+            };
+          } });
+        }
+        window.google = { script: { run: chaine(null, null) } };
+      });
+      await pg.goto('file://' + fichierI);
+      await pg.waitForFunction(() => document.documentElement.getAttribute('data-suivi-fwd') === 'pret', null, { timeout: 30000 });
+      /* Les droits arrivent après l'ouverture : le pied nomme le responsable. */
+      await pg.waitForFunction(() => (document.getElementById('pied-responsable') || {}).textContent ||
+        getComputedStyle(document.getElementById('choix-admin')).visibility !== 'hidden', null, { timeout: 20000 }).catch(() => {});
+      /* Le bandeau du simulateur, posé au-dessus de la page, n'existe pas
+         devant le classeur : on le retire pour mesurer la vraie page. */
+      await pg.evaluate(() => { const x = document.querySelector('.simulateur-bandeau'); if (x) x.remove(); window.scrollTo(0, 0); });
+      await pg.waitForTimeout(600);
+      pg.__ctx = c;
+      return pg;
+    };
+    const boite = (pg, s) => pg.evaluate(s => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect();
+      return { x: Math.round(r.left), y: Math.round(r.top + scrollY), w: Math.round(r.width), h: Math.round(r.height), b: Math.round(r.bottom + scrollY), r: Math.round(r.right) }; }, s);
+    const lumI = c => { const m = c.match(/[\d.]+/g).slice(0, 3).map(Number); return (m[0] + m[1] + m[2]) / 3; };
+
+    // --- P-F9 : l'impression. Chrome lit les règles de largeur sur la feuille en portrait (moins de 860 px)
+    //     même quand la page sort à l'italienne : on l'imite par une fenêtre de 800 px en média « print ».
+    for (const schema of ['light', 'dark']) {
+      const gi = await vivanteI({ largeur: 1440, hauteur: 900, schema });
+      await gi.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+      await gi.emulateMedia({ media: 'print', colorScheme: schema });
+      const lireImp = () => gi.evaluate(() => {
+        const e = document.querySelector('header.entete'), cs = getComputedStyle(e), h1 = document.querySelector('.masthead h1');
+        const face = getComputedStyle(document.querySelector('.rapp-face')).gridTemplateColumns.split(' ').filter(Boolean).length;
+        const f = document.getElementById('venn-rapprochement').getBoundingClientRect(), v = document.getElementById('verdicts-rapprochement').getBoundingClientRect();
+        return { bordure: cs.borderImageSource, fond: cs.backgroundColor, titre: getComputedStyle(h1).color, semaine: getComputedStyle(document.getElementById('num-semaine')).color,
+                 colonnes: face, coteACote: v.left >= f.right - 1 && v.top < f.bottom, hauteur: Math.round(document.getElementById('rapprochement').getBoundingClientRect().height) };
+      });
+      await redimensionner(gi, 800, 900);
+      const etroite = await lireImp();
+      /* A4 à l'italienne, 10 mm de marge : 1 047 × 718 px. */
+      await redimensionner(gi, 1047, 718);
+      const a4 = await lireImp();
+      verifier('imprimée (' + schema + ') : le bandeau du titre sans aplat marine — ni bordure peinte ni fond —, le titre et la semaine à l’encre sombre (P-F9)',
+        a4.bordure === 'none' && /rgba\(0, 0, 0, 0\)|transparent/.test(a4.fond) && lumI(a4.titre) < 80 && lumI(a4.semaine) < 80, JSON.stringify(a4));
+      verifier('imprimée (' + schema + ') : la comparaison garde sa figure et ses verdicts côte à côte, même quand Chrome lit la largeur d’une feuille en portrait (P-F9)',
+        etroite.colonnes === 2 && etroite.coteACote && a4.colonnes === 2 && a4.coteACote, JSON.stringify([etroite, a4]));
+      verifier('imprimée (' + schema + ') : la comparaison tient sur une page A4 à l’italienne (moins de 718 px de haut)',
+        a4.hauteur > 200 && a4.hauteur <= 718, JSON.stringify(a4));
+      await gi.emulateMedia({ media: 'screen', colorScheme: schema });
+      await gi.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+      await gi.__ctx.close();
+    }
+
+    // --- B15 : de 721 à 1 329 px, le bouton « haut de page » tient dans la marge, sans toucher les cartes.
+    {
+      const gb = await vivanteI({ largeur: 1024, hauteur: 768 });
+      const res = [];
+      for (const [l, h] of [[1024, 768], [1180, 800], [1280, 800], [800, 900]]) {
+        await redimensionner(gb, l, h);
+        await gb.evaluate(() => window.scrollTo(0, document.getElementById('section-plans').getBoundingClientRect().top + scrollY - 200));
+        await gb.waitForTimeout(300);
+        res.push(await gb.evaluate(() => {
+          const bt = document.getElementById('haut-de-page'), r = bt.getBoundingClientRect();
+          let bord = 0;
+          for (const s of document.querySelectorAll('.panneau, footer.pied')) { const q = s.getBoundingClientRect(); if (q.width) bord = Math.max(bord, q.right); }
+          return { l: innerWidth, vu: !bt.hidden, gauche: Math.round(r.left), droite: Math.round(r.right), taille: Math.round(r.width), bord: Math.round(bord), ecran: document.documentElement.clientWidth };
+        }));
+      }
+      verifier('de 800 à 1 280 px, le bouton « haut de page » paraît dans la marge à droite des cartes : il ne touche ni leur bord ni leur marge intérieure (B15)',
+        res.every(x => x.vu && x.taille === 28 && x.gauche > x.bord && x.droite <= x.ecran), JSON.stringify(res));
+      await gb.__ctx.close();
+    }
+
+    // --- Au téléphone (390 × 844, tactile) : M16, M6, M15, X-A10.
+    for (const schema of ['light', 'dark']) {
+      const gt = await vivanteI({ largeur: 390, hauteur: 844, mobile: true, schema });
+      if (schema === 'light') {
+        // M16 : le bouton reste fixé à l'écran, là où l'on est ; la page ne s'allonge pas.
+        const h0 = await gt.evaluate(() => document.documentElement.scrollHeight);
+        await gt.evaluate(() => window.scrollTo(0, 4000)); await gt.waitForTimeout(300);
+        await gt.evaluate(() => window.scrollBy(0, -200)); await gt.waitForTimeout(400);
+        const bt = await gt.evaluate(h0 => {
+          const b = document.getElementById('haut-de-page'), r = b.getBoundingClientRect();
+          return { vu: !b.hidden, position: getComputedStyle(b).position, haut: Math.round(r.top), bas: Math.round(r.bottom), gauche: Math.round(r.left), droite: Math.round(r.right),
+                   h0, h1: document.documentElement.scrollHeight, iw: innerWidth, ih: innerHeight };
+        }, h0);
+        verifier('au doigt, en remontant : le bouton « haut de page » est fixé à l’écran, en entier dans la fenêtre, et la page ne s’allonge pas (M16)',
+          bt.vu && bt.position === 'fixed' && bt.haut >= 0 && bt.bas <= bt.ih && bt.gauche >= 0 && bt.droite <= bt.iw && bt.h1 === bt.h0, JSON.stringify(bt));
+        await gt.evaluate(() => window.scrollTo(0, 0)); await gt.waitForTimeout(300);
+
+        // M6 : les dernières cibles au doigt (la zone ::after comptée).
+        const zone = (sel) => gt.evaluate(sel => [...document.querySelectorAll(sel)].filter(e => e.getClientRects().length).map(e => {
+          const r = e.getBoundingClientRect(), a = getComputedStyle(e, '::after');
+          let w = r.width, h = r.height, t = r.top, bo = r.bottom, l = r.left, ri = r.right;
+          if (a.content && a.content !== 'none' && a.position === 'absolute') {
+            if (a.top !== 'auto' && a.bottom !== 'auto') { t = r.top + parseFloat(a.top); bo = r.bottom - parseFloat(a.bottom); h = Math.max(h, bo - t); }
+            if (a.left !== 'auto' && a.right !== 'auto') { l = r.left + parseFloat(a.left); ri = r.right - parseFloat(a.right); w = Math.max(w, ri - l); }
+          }
+          return { w: Math.round(w), h: Math.round(h), t, b: bo, l, r: ri, nom: (e.textContent || e.getAttribute('aria-label') || '').trim().slice(0, 24) };
+        }), sel);
+        const comptes = await zone('#zone-journal .compte-passage');
+        let chevauchent = 0;
+        for (let i = 0; i < comptes.length; i++) for (let j = i + 1; j < comptes.length; j++) {
+          const a = comptes[i], z = comptes[j];
+          if (a.l < z.r - 0.5 && z.l < a.r - 0.5 && a.t < z.b - 0.5 && z.t < a.b - 0.5) chevauchent++;
+        }
+        verifier('au doigt : chaque compte d’une semaine du journal offre 44 px à toucher, sans empiéter sur son voisin (M6)',
+          comptes.length > 5 && comptes.every(x => x.h >= 44) && chevauchent === 0, JSON.stringify({ n: comptes.length, petits: comptes.filter(x => x.h < 44).slice(0, 3), chevauchent }));
+        const petites = {};
+        for (const [nom, sel, dim] of [['menu du titre « Par ATA »', 'select#dim-critique', 'h'], ['entrées du sommaire', '#sommaire-liste a', 'h'],
+          ['champs « filtrer » des colonnes', 'table.plans thead .filtres input', 'h'], ['en-têtes de tri des plans', 'table.plans thead .titres th button:not(.poignee)', 'w'],
+          ['en-têtes de tri de « Par ATA »', 'button.tri-groupe', 'w'], ['adresse du responsable, au pied', '#pied-responsable a', 'h']]) {
+          const z = await zone(sel);
+          const trop = z.filter(x => x[dim] < 44 || x.h < 44);
+          if (!z.length || trop.length) petites[nom] = z.length ? trop.slice(0, 3) : 'absent';
+        }
+        verifier('au doigt : le menu du titre « Par ATA », le sommaire, les champs et les en-têtes de tri des colonnes, l’adresse du pied offrent tous 44 px (M6)',
+          Object.keys(petites).length === 0, JSON.stringify(petites));
+        const trait = await gt.evaluate(() => { const s = document.getElementById('dim-critique'), r = s.getBoundingClientRect(), cs = getComputedStyle(s);
+          return { h: Math.round(r.height), ombre: cs.boxShadow, couches: cs.backgroundImage.split('),').length }; });
+        verifier('au doigt : le menu du titre grandit à 44 px, son trait reste sous le mot (un trait peint, plus le bas de la case)',
+          trait.h >= 44 && trait.ombre === 'none' && trait.couches >= 2, JSON.stringify(trait));
+      }
+      // M15 : un bandeau plus serré, des tuiles d'une ligne — toute la synthèse au premier écran.
+      const m = {
+        entete: await boite(gt, 'header.entete'), phrase: await boite(gt, '#phrase'), etats: await boite(gt, '#etats'),
+        motAv: await boite(gt, '#choix-avancement .mot-reglage'), segAv: await boite(gt, '#choix-indicateur')
+      };
+      const tuiles = await gt.evaluate(() => [...document.querySelectorAll('#etats .etat-btn')].map(b => {
+        const r = b.getBoundingClientRect(), n = b.querySelector('.etat-n').getBoundingClientRect(), lib = b.querySelector('.libelle'), l = lib.getBoundingClientRect(), pct = b.querySelector('.etat-pct');
+        return { h: Math.round(r.height), uneLigne: n.left >= l.right - 1 && n.top < l.bottom && n.bottom > l.top, entier: lib.scrollWidth <= lib.clientWidth + 1 && getComputedStyle(lib).textOverflow !== 'ellipsis',
+                 part: pct.textContent.trim() !== '' && pct.getBoundingClientRect().width <= 1, colonnes: getComputedStyle(b.parentNode).gridTemplateColumns.split(' ').length };
+      }));
+      verifier('téléphone (' + schema + ') : les tuiles des états tiennent sur une ligne — la valeur, son nombre à droite —, 44 px chacune, deux par rangée, les codes entiers (M15)',
+        tuiles.length >= 5 && tuiles.every(t => t.h >= 44 && t.h <= 60 && t.uneLigne && t.entier && t.colonnes === 2) && m.etats.h <= 210, JSON.stringify({ etats: m.etats, tuiles: tuiles.slice(0, 3) }));
+      verifier('téléphone (' + schema + ') : la part de chaque tuile s’efface à l’œil, mais reste écrite pour les lecteurs d’écran (M15)',
+        tuiles.every(t => t.part), JSON.stringify(tuiles.map(t => t.part)));
+      verifier('téléphone (' + schema + ') : le bandeau fait moins de 295 px (337 avant), la phrase de tête paraît avant 410 px (443 avant) et les sept tuiles finissent dans le premier écran (M15)',
+        m.entete.h <= 295 && m.phrase.y <= 410 && m.etats.b <= 844, JSON.stringify(m));
+      verifier('téléphone (' + schema + ') : à 390 px, le mot « Avancement » reste devant ses puces, sur leur ligne',
+        m.motAv && m.segAv && m.motAv.r <= m.segAv.x && Math.abs((m.motAv.y + m.motAv.h / 2) - (m.segAv.y + m.segAv.h / 2)) <= 4, JSON.stringify(m));
+      if (schema === 'light') {
+        // X-A10 : le bandeau des filtres posés est une région nommée, hors du sommaire et du contenu.
+        await gt.click('#etats .etat-btn'); await gt.waitForTimeout(600);
+        const region = await gt.evaluate(() => {
+          const f = document.getElementById('filtres-actifs'), j = document.getElementById('filtres-jetons');
+          return { vu: !f.hidden, role: f.getAttribute('role'), nom: f.getAttribute('aria-label'), dedans: !!j && f.contains(j) && f.contains(document.getElementById('tout-effacer')),
+                   ailleurs: !f.closest('main, nav, header, footer') };
+        });
+        verifier('un filtre posé : son bandeau est une région nommée « Filtres posés », qui tient les jetons et « Tout effacer » (X-A10)',
+          region.vu && region.role === 'region' && region.nom === 'Filtres posés' && region.dedans && region.ailleurs, JSON.stringify(region));
+        // M15, D7 : un code ne se coupe qu'après un « _ » ou une espace — à 390 px comme à 320 (le nombre repasse alors sous la valeur).
+        const coupures = () => gt.evaluate(() => [...document.querySelectorAll('#etats .libelle')].map(lib => {
+          const r = document.createRange(), tw = document.createTreeWalker(lib, NodeFilter.SHOW_TEXT), mauvaises = [];
+          let n, haut = null, avant = '';
+          while ((n = tw.nextNode())) for (let i = 0; i < n.length; i++) {
+            r.setStart(n, i); r.setEnd(n, i + 1);
+            const q = r.getClientRects()[0], ch = n.data[i];
+            if (!q) continue;
+            if (haut !== null && q.top > haut + 4 && !/[_\s]/.test(avant) && !/\s/.test(ch)) mauvaises.push(avant + '|' + ch);
+            haut = q.top; avant = ch;
+          }
+          return mauvaises.length ? lib.textContent + ' (' + mauvaises.join(', ') + ')' : '';
+        }).filter(Boolean));
+        const coupe390 = await coupures();
+        await redimensionner(gt, 320, 640);
+        const coupe320 = await coupures();
+        const pile320 = await gt.evaluate(() => [...document.querySelectorAll('#etats .etat-btn')].every(b => b.querySelector('.etat-n').getBoundingClientRect().top >= b.querySelector('.libelle').getBoundingClientRect().bottom - 1));
+        verifier('téléphone : les codes des tuiles ne se coupent jamais au milieu d’un mot, à 390 px comme à 320 px (où le nombre passe sous la valeur) (M15, D7)',
+          coupe390.length === 0 && coupe320.length === 0 && pile320, JSON.stringify({ coupe390, coupe320, pile320 }));
+      }
+      await gt.__ctx.close();
+    }
+
+    // --- M7 : le téléphone à l'italienne — la barre des états au premier écran.
+    for (const [l, h, schema] of [[844, 390, 'light'], [844, 390, 'dark'], [667, 375, 'light']]) {
+      const gl = await vivanteI({ largeur: l, hauteur: h, mobile: true, schema });
+      const m = await gl.evaluate(() => {
+        const r = s => { const e = document.querySelector(s); const q = e.getBoundingClientRect(); return { y: Math.round(q.top + scrollY), h: Math.round(q.height), b: Math.round(q.bottom + scrollY) }; };
+        const mot = document.getElementById('mot-perimetre'), motR = mot.getBoundingClientRect();
+        const t = document.querySelector('.masthead h1').getBoundingClientRect(), s = document.querySelector('.semaine').getBoundingClientRect();
+        /* Les rangées des réglages : leurs hauts, regroupés à 15 px près. */
+        const hauts = [...document.querySelectorAll('#portee .reglage')].filter(e => e.getClientRects().length).map(e => e.getBoundingClientRect().top).sort((a, b) => a - b);
+        const rangees = hauts.reduce((n, y, i) => n + (i === 0 || y - hauts[i - 1] > 15 ? 1 : 0), 0);
+        return { entete: r('header.entete'), barre: r('#barre'), rangees,
+                 motCache: motR.width <= 1 && mot.textContent.trim() === 'Périmètre' && document.getElementById('choix-perimetre').getAttribute('aria-labelledby') === 'mot-perimetre',
+                 uneLigne: Math.abs(t.bottom - s.bottom) < 12 && s.left >= t.right, defile: document.documentElement.scrollWidth - innerWidth };
+      });
+      verifier('à l’italienne (' + l + ' × ' + h + ', ' + schema + ') : le bandeau fait moins de 160 px (207 avant), les réglages sur deux rangées au plus, le titre et la semaine sur une ligne, et la barre des états finit dans le premier écran (M7)',
+        m.entete.h <= 160 && m.rangees <= 2 && m.uneLigne && m.barre.b <= h && m.defile <= 0, JSON.stringify(m));
+      verifier('à l’italienne (' + l + ' × ' + h + ', ' + schema + ') : « Périmètre » se tait à l’œil, mais nomme toujours ses puces pour les lecteurs d’écran',
+        m.motCache, JSON.stringify(m));
+      await gl.__ctx.close();
+    }
+    try { fsI.unlinkSync(fichierI); } catch (e) { /* déjà parti */ }
+  }
   /* (fin du lot I) */
 
   await ctx.close();
