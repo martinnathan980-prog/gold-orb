@@ -1755,76 +1755,151 @@ dialog.ensemble::backdrop { background: var(--voile-dialogue); }
    phrase ; chaque nombre fait ce que fait sa ligne de verdict. */
 .rapp-reponse { margin: 0 0 16px; font-size: 14px; line-height: 1.5; color: var(--encre-2); }
 .rapp-reponse[hidden] { display: none; }
+/* Débrief 27 (lot E, X, M6) : le nombre est un vrai bouton de 24 px au
+   moins (44 au doigt) sans rien changer à la ligne : la marge négative rend
+   à la phrase la place que le rembourrage prend. */
 .rapp-reponse button {
-  border: none; background: none; padding: 0 1px; cursor: pointer; color: var(--encre);
-  font: 500 14px "IBM Plex Sans", system-ui, sans-serif; font-variant-numeric: tabular-nums;
+  display: inline-block; min-width: 24px; min-height: 24px; margin: -2px -4px; padding: 2px 4px; border-radius: 4px;
+  border: none; background: none; cursor: pointer; color: var(--encre); text-align: center; vertical-align: baseline;
+  font: 500 14px/20px "IBM Plex Sans", system-ui, sans-serif; font-variant-numeric: tabular-nums;
   text-decoration: underline; text-underline-offset: 3px;
 }
-.rapp-reponse button:hover, .rapp-reponse button[aria-pressed="true"] { text-decoration-thickness: 2px; }
+.rapp-reponse button:hover { background: var(--seg-survol); text-decoration-thickness: 2px; }
+.rapp-reponse button[aria-pressed="true"] { text-decoration-thickness: 2px; }
+@media (pointer: coarse) {
+  .rapp-reponse button { position: relative; }
+  .rapp-reponse button::after { content: ""; position: absolute; inset: -10px; }
+}
 @media (max-width: 860px) { .rapp-face { grid-template-columns: 1fr; } }
 .rapp-figure { min-width: 0; }
-.rapp-figure svg { width: 100%; height: auto; display: block; overflow: visible; }
-.rapp-figure text { font-family: "IBM Plex Sans", system-ui, sans-serif; pointer-events: none; }
-/* Seuls les côtés et les parts de l'anneau répondent au pointeur ; le texte
-   au centre les laisse passer. */
-.rapp-figure .cote { pointer-events: all; cursor: default; }
-.rapp-figure .cote text { pointer-events: all; }
-.rapp-figure .donut-seg { pointer-events: stroke; }
-.rapp-figure .base-nom { font-size: 14px; font-weight: 500; fill: var(--encre); letter-spacing: .05em; }
-.rapp-figure .base-compte { font-size: 12px; fill: var(--encre-2); }
+/* Débrief 27 (lot E — P-F20, M3, M9, B24) : la figure en deux couches
+   (figureRapprochement). Dessous, le dessin en SVG, qui suit la largeur ;
+   dessus, ses mots en HTML, posés en pourcentage de la figure mais écrits
+   à taille fixe — 12 px au moins, à toute largeur (ils tombaient à 7 px au
+   téléphone). Les trois côtés sont des boutons ; les parts de l'anneau
+   répondent au pointeur par leur trait invisible élargi (.donut-cible). */
+.venn { position: relative; }
+.venn svg { width: 100%; height: auto; display: block; overflow: visible; }
+.venn .donut-seg { pointer-events: none; }
+.venn .donut-cible { fill: none; stroke: transparent; pointer-events: stroke; cursor: pointer; }
+.venn-base {
+  position: absolute; margin: 0; transform: translate(-50%, -100%);
+  display: flex; flex-direction: column; align-items: center; gap: 1px; white-space: nowrap; text-align: center;
+}
+.venn .base-nom { font: 500 14px/1.3 "IBM Plex Sans", system-ui, sans-serif; color: var(--encre); letter-spacing: .05em; }
+.venn .base-compte { font-size: 12px; line-height: 1.35; color: var(--encre-2); font-variant-numeric: tabular-nums; }
+.venn .cote {
+  position: absolute; transform: translate(-50%, -50%); margin: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  border: 0; border-radius: 6px; background: none; padding: 6px 10px;
+  font: inherit; color: var(--encre-2); text-align: center; white-space: nowrap; cursor: pointer;
+}
+.venn .cote:hover, .venn .cote.survole { background: var(--seg-survol); }
+/* Pressé : son lot filtre le tableau — la pastille levée des contrôles
+   segmentés, avec le filet encre des verdicts pressés. */
+.venn .cote[aria-pressed="true"] { background: var(--surface); box-shadow: 0 0 0 1px var(--encre), 0 1px 2px rgba(25, 25, 21, .10); }
+.venn .cote:disabled { cursor: default; background: none; }
+.venn .grand { font-size: 28px; font-weight: 500; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--encre); }
+.venn .petit { font-size: 13px; line-height: 1.3; color: var(--encre-2); }
+.venn .moyen { font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--encre); }
+.venn .cote-manque .grand { color: var(--alerte); }
+.venn .cote-manque.zero .grand { color: var(--encre-3); }
+.venn .cote-seul .grand { color: var(--encre-2); }
+.venn .cote.survole .grand, .venn .cote.survole .moyen { text-decoration: underline; text-underline-offset: 3px; }
+.venn .cote.survole .petit { color: var(--encre); }
+.venn .commun-n, .venn .commun-mot { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; }
+.venn .commun-n.serre { font-size: 24px; }
+.venn .commun-n.tres-serre { font-size: 20px; }
+/* Le tracé étroit (figure de moins de 470 px) : les cercles prennent toute
+   la largeur, les mots passent à 12 px (sous 380 px), le compte des « pas
+   encore » sur sa ligne ; les noms des bases se calent aux coins du haut
+   et peuvent passer à la ligne au « · ». */
+.venn-etroit .grand { font-size: 24px; }
+.venn-etroit .petit { font-size: 12px; }
+.venn-etroit .cote { padding: 4px 6px; }
+.venn-etroit .cote-attente .moyen { display: block; }
+.venn-etroit .commun-n.serre { font-size: 20px; }
+.venn-etroit .commun-n.tres-serre { font-size: 16px; }
+.venn-ample .grand { font-size: 28px; }
+.venn-ample .petit { font-size: 13px; }
+.venn-ample .commun-n.serre { font-size: 24px; }
+.venn-ample .commun-n.tres-serre { font-size: 20px; }
+.venn-etroit .venn-base { white-space: normal; max-width: 47%; }
+.venn-etroit .venn-base-ici { transform: none; align-items: flex-start; text-align: left; }
+.venn-etroit .venn-base-la { transform: none; align-items: flex-end; text-align: right; }
+.venn-base .sans-coupure { white-space: nowrap; }
 .rapp-figure .cercle-ici { fill: var(--r2); fill-opacity: .5; stroke: var(--fait); stroke-width: 1.5; }
 .rapp-figure .cercle-la { fill: none; stroke: var(--encre-3); stroke-width: 1.5; stroke-dasharray: 5 4; }
-.rapp-figure .grand { font-size: 30px; font-weight: 500; font-variant-numeric: tabular-nums; fill: var(--encre); }
-.rapp-figure .petit { font-size: 12px; fill: var(--encre-2); }
-.rapp-figure .commun-n { font-size: 34px; }
-.rapp-figure .commun-n.serre { font-size: 24px; }
-.rapp-figure .cote-manque .grand { fill: var(--alerte); }
-.rapp-figure .cote-manque.zero .grand { fill: var(--encre-3); }
-.rapp-figure .cote-attente .moyen { font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; fill: var(--encre); }
-.rapp-figure .cote-seul .grand { fill: var(--encre-2); }
 .rapp-figure .donut-fond { fill: none; stroke: var(--filet); stroke-width: 14; }
 .rapp-figure .donut-seg { fill: none; stroke-width: 14; stroke-linecap: butt; transition: stroke-width .12s; }
-/* À l'apparition : les cercles s'installent, l'anneau se trace. Rien de tout
-   cela si le lecteur préfère moins de mouvement. */
-.rapp-figure svg.anime .cercle-ici, .rapp-figure svg.anime .cercle-la { animation: rapp-arrive .55s ease-out both; transform-origin: center; transform-box: fill-box; }
-.rapp-figure svg.anime .donut-seg { stroke-dasharray: 400; stroke-dashoffset: 400; animation: rapp-trace .9s cubic-bezier(.2, .7, .2, 1) .25s forwards; }
-.rapp-figure svg.anime .grand, .rapp-figure svg.anime .petit, .rapp-figure svg.anime .base-nom, .rapp-figure svg.anime .base-compte { animation: rapp-fondu .5s ease-out .45s both; }
+.venn-etroit .donut-fond, .venn-etroit .donut-seg { stroke-width: 11; }
+/* À l'apparition : les cercles s'installent, l'anneau se trace, les mots
+   paraissent — le tout en 300 ms au plus (débrief 27, B24 : en sautant
+   droit au 06, on voyait longtemps un anneau pâle). Rien de tout cela si
+   le lecteur préfère moins de mouvement. */
+.venn.anime .cercle-ici, .venn.anime .cercle-la { animation: rapp-arrive .2s ease-out both; transform-origin: center; transform-box: fill-box; }
+.venn.anime .donut-seg { stroke-dasharray: 400; stroke-dashoffset: 400; animation: rapp-trace .25s cubic-bezier(.2, .7, .2, 1) .05s forwards; }
+.venn.anime .venn-base, .venn.anime .cote, .venn.anime .commun-n, .venn.anime .commun-mot { animation: rapp-fondu .2s ease-out .1s both; }
 @keyframes rapp-arrive { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: scale(1); } }
 @keyframes rapp-trace { to { stroke-dashoffset: 0; } }
 @keyframes rapp-fondu { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
-  .rapp-figure svg.anime * { animation: none !important; stroke-dashoffset: 0 !important; }
+  .venn.anime * { animation: none !important; stroke-dashoffset: 0 !important; }
+  .rapp-figure .donut-seg { transition: none; }
 }
 .rapp-figure .donut-seg.accord { stroke: var(--fait); }
 .rapp-figure .donut-seg.emission { stroke: var(--indice); }
 .rapp-figure .donut-seg.avance { stroke: var(--cours); }
 /* Survoler un verdict éclaire sa part de la figure. */
 .rapp-figure .donut-seg.survole { stroke-width: 20; }
-.rapp-figure .cote.survole .grand { text-decoration: underline; text-underline-offset: 3px; }
-.rapp-figure .cote.survole .petit { fill: var(--encre); }
-.rapp-figure .cote.survole .moyen { text-decoration: underline; text-underline-offset: 3px; }
+.venn-etroit .donut-seg.survole { stroke-width: 16; }
 .verdicts { display: grid; gap: 6px; }
+/* Débrief 27 (B24) : pastille, nombre, phrase, chevron — 12 | 52 | 1fr | 16,
+   10 px entre chaque : la pastille touche presque son nombre (elle en
+   était à 55–90 px) ; un compte à quatre chiffres élargit la colonne du
+   nombre pour toutes les lignes (.larges). */
 .verdict {
-  display: grid; grid-template-columns: 14px 62px minmax(0, 1fr) 10px; align-items: center; column-gap: 10px;
+  display: grid; grid-template-columns: 12px 52px minmax(0, 1fr) 16px; align-items: center; column-gap: 10px;
   width: 100%; text-align: left; background: none; border: 1px solid transparent; border-radius: 6px; padding: 6px 10px 6px 8px;
   font: inherit; color: var(--encre-2); cursor: pointer;
 }
+.verdicts.larges .verdict { grid-template-columns: 12px 68px minmax(0, 1fr) 16px; }
+.verdict .pastille, .verdict .chevron { justify-self: center; }
+.verdict .sans-coupure { white-space: nowrap; }
+@media (pointer: coarse) { .verdict { min-height: 44px; } }
 /* Le chevron dit que la ligne se déplie, comme partout ailleurs sur la
    page : vers la droite fermée, vers le bas ouverte. */
 .verdict .chevron { color: var(--encre-3); transition: transform .12s; }
+@media (prefers-reduced-motion: reduce) { .verdict .chevron { transition: none; } }
 .verdict[aria-expanded="true"] .chevron { transform: rotate(90deg); color: var(--encre); }
 .verdict-bloc.sans-trouve { opacity: .45; }
 /* Les plans d'un verdict, dépliés sous sa ligne : un filet à gauche les
-   rattache à elle ; au-delà d'une hauteur, la zone défile plutôt que de
-   pousser la page — comme le journal et le bloc par groupe. */
-.verdict-corps {
-  margin: 4px 0 8px 18px; padding: 6px 4px 2px 12px; border-left: 2px solid var(--filet-fort);
-  max-height: 46vh; overflow-y: auto; overscroll-behavior: contain;
+   rattache à elle. Débrief 27 (D10, M2) : à leur hauteur naturelle — plus
+   de zone qui défile et retient la molette ou le doigt ; un gros lot
+   montre ses premières puces puis « Voir les N autres ». */
+.verdict-corps { margin: 4px 0 8px 18px; padding: 6px 4px 2px 12px; border-left: 2px solid var(--filet-fort); }
+.verdict-corps-tete { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 0 4px 8px; }
+/* Ce que le lot veut dire et ce que fait un clic : la bulle du survol, à
+   portée du doigt et du clavier (D9). */
+.rapp-detail { margin: 0 4px 8px; font-size: 13px; line-height: 1.45; color: var(--encre-2); max-width: 60ch; }
+.rapp-puces-legende .n { font-weight: 500; color: var(--encre); font-variant-numeric: tabular-nums; }
+.rapp-voir-plus {
+  display: inline-flex; align-items: center; min-height: 28px; margin: 0 4px 10px; padding: 3px 10px;
+  border: 1px solid var(--filet-fort); border-radius: 999px; background: var(--surface); color: var(--encre);
+  font: 500 13px "IBM Plex Sans", system-ui, sans-serif; font-variant-numeric: tabular-nums; cursor: pointer;
 }
-.verdict-corps::-webkit-scrollbar { width: 9px; }
-.verdict-corps::-webkit-scrollbar-thumb { background: var(--filet-fort); border-radius: 5px; }
-.verdict-corps::-webkit-scrollbar-track { background: transparent; }
-.verdict-corps-tete { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0 4px 8px; }
+.rapp-voir-plus:hover { border-color: var(--encre); background: var(--creux); }
+@media (pointer: coarse) {
+  .rapp-voir-plus { min-height: 44px; }
+  /* Les puces : 36 px, 8 px entre les rangées, et une cible invisible qui
+     déborde de 4 px en haut et en bas — 44 px chacune, sans empiéter sur
+     la voisine. */
+  .rapp-puces { row-gap: 8px; }
+  .rapp-puce { position: relative; min-height: 36px; }
+  .rapp-puce::after { content: ""; position: absolute; inset: -4px 0; }
+  .verdict-corps-tete .copier { position: relative; min-height: 32px; }
+  .verdict-corps-tete .copier::after { content: ""; position: absolute; inset: -6px 0; }
+}
 .verdict:hover { background: var(--creux); color: var(--encre); }
 .verdict[aria-pressed="true"] { border-color: var(--encre); background: var(--surface); color: var(--encre); }
 .verdict:disabled { cursor: default; opacity: .5; }
@@ -1852,6 +1927,17 @@ dialog.ensemble::backdrop { background: var(--voile-dialogue); }
 .rapp-puce:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .rapp-puce .pastille { width: 8px; height: 8px; }
 .rapp-puce-vers { color: var(--indice); font-weight: 500; }
+/* Débrief 27 (lot E) : au téléphone, deux puces par rangée plutôt qu'une
+   (dès 360 px) — le retrait du lot et le rembourrage des puces se
+   resserrent. */
+@media (max-width: 480px) {
+  .verdict-corps { margin-left: 0; padding: 6px 0 2px 8px; }
+  .rapp-puces { padding-inline: 0; }
+  .verdict-corps-tete, .rapp-detail { margin-inline: 0; }
+  .rapp-voir-plus { margin-left: 0; }
+  .rapp-puce { padding-inline: 8px; gap: 6px; }
+  .rapp-puces { column-gap: 6px; }
+}
 .pastille.accord { background: var(--fait); }
 .pastille.avance { background: var(--cours); }
 .pastille.manque { background: var(--alerte); }
@@ -3634,7 +3720,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
          comme leur ligne de verdict. Absente quand il n'y a rien. -->
     <p class="rapp-reponse" id="reponse-rapprochement" hidden></p>
     <div class="rapp-face">
-      <div class="rapp-figure" id="venn-rapprochement" role="img" aria-label="Comparaison GATES / seconde base"></div>
+      <!-- Débrief 27 (lot E) : un groupe, plus une image — ses côtés sont des
+           boutons ; son nom résume toute la figure. -->
+      <div class="rapp-figure" id="venn-rapprochement" role="group" aria-label="Comparaison GATES / seconde base"></div>
       <div class="verdicts" id="verdicts-rapprochement" role="group" aria-label="Filtrer le tableau des plans par verdict de la comparaison"></div>
     </div>
   </section>
@@ -5131,13 +5219,14 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   /* La figure de la comparaison s'anime une fois par source : le drapeau se
      lève au chargement, le premier rendu le consomme. */
   var ANIMER_FIGURE = false, GUETTEUR_FIGURE = null;
-  /* On guette le cadre de la figure, pas son SVG : un filtre ou un
-     périmètre touché avant d'arriver là redessine le SVG, et le cadre, lui,
-     demeure. À l'apparition, c'est le SVG du moment qui s'anime. */
+  /* On guette le cadre de la figure, pas son dessin : un filtre ou un
+     périmètre touché avant d'arriver là redessine la figure, et le cadre,
+     lui, demeure. À l'apparition, c'est la figure du moment qui s'anime —
+     débrief 27 : son dessin et ses mots, posés en HTML par-dessus (.venn). */
   function animerALApparition(cadre) {
     if (!cadre) return;
     if (GUETTEUR_FIGURE) { GUETTEUR_FIGURE.disconnect(); GUETTEUR_FIGURE = null; }
-    var animer = function () { var svg = cadre.querySelector('svg'); if (svg) svg.classList.add('anime'); };
+    var animer = function () { var fig = cadre.querySelector('.venn'); if (fig) fig.classList.add('anime'); };
     if (!window.IntersectionObserver) { animer(); return; }
     var obs = new IntersectionObserver(function (entrees) {
       entrees.forEach(function (en) {
@@ -6373,6 +6462,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
          Pendant une recherche, ce sont les verdicts qui ont le plan cherché
          qui se déplient. */
       lotRappOuvert: null,
+      /* Débrief 27 (lot E) : les lots dont « Voir les N autres » a déplié
+         toutes les puces ; repliés dès que le lot se referme. */
+      lotRappTout: {},
       /* Le rapprochement : le lot « seulement là » posé sur le tableau de
          là. Rien n'est mémorisé. */
       lotLa: null,
@@ -11419,6 +11511,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     vue.lotLa = null;
     vue.lotRappOuvert = null;         // tout effacer, c'est aussi replier la comparaison
     vue.groupeOuvert = null;          // débrief 27 (lot C) : … et la ligne dépliée du bloc par groupe
+    vue.lotRappTout = {};
     vue.base = 'ici';
     vue.seconde.recherche = ''; $('recherche-seconde').value = '';
     $('recherche').value = '';
@@ -11534,10 +11627,17 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        pas validés. Une part à 0 se tait ; les deux à 0, la phrase aussi. */
     var actifLot = lotRappActif();
     var morceaux = [];
-    if (comptes.manque) morceaux.push('<button type="button" data-rapp="manque" aria-pressed="' + (actifLot === 'manque') + '">' + nb(comptes.manque) + '</button> ' +
-      (comptes.manque > 1 ? 'plans validés absents de ' : 'plan validé absent de ') + ech(nom));
-    if (comptes.avance) morceaux.push('<button type="button" data-rapp="avance" aria-pressed="' + (actifLot === 'avance') + '">' + nb(comptes.avance) + '</button> ' +
-      (comptes.avance > 1 ? 'plans' : 'plan') + ' dans ' + ech(nom) + ' que GATES ne dit pas ' + (comptes.avance > 1 ? 'validés' : 'validé'));
+    /* Débrief 27 (X, lot E) : le bouton ne montre que le nombre, mais il se
+       nomme par toute sa phrase — « 4 plans validés absents de SEE », pas
+       « 4 » — et offre une cible d'au moins 24 px (44 au doigt). */
+    var lienAtraiter = function (cle, n, suite) {
+      return '<button type="button" data-rapp="' + cle + '" aria-pressed="' + (actifLot === cle) + '" aria-label="' +
+        ech(nb(n) + ' ' + suite) + '">' + nb(n) + '</button> ' + ech(suite);
+    };
+    if (comptes.manque) morceaux.push(lienAtraiter('manque', comptes.manque,
+      (comptes.manque > 1 ? 'plans validés absents de ' : 'plan validé absent de ') + nom));
+    if (comptes.avance) morceaux.push(lienAtraiter('avance', comptes.avance,
+      (comptes.avance > 1 ? 'plans' : 'plan') + ' dans ' + nom + ' que GATES ne dit pas ' + (comptes.avance > 1 ? 'validés' : 'validé')));
     var reponse = $('reponse-rapprochement');
     if (reponse) {
       reponse.hidden = !morceaux.length;
@@ -11567,16 +11667,17 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        Un lot à 0 se lit mais ne se clique pas — la colonne sert aussi de
        légende à la figure. */
     var zone = $('verdicts-rapprochement');
-    /* La liste se refait entière à chaque rendu : on retient où en était
-       chaque lot déplié pour l'y remettre — sur 251 puces, un clic ne doit
-       pas tout faire remonter. */
-    var defilements = {};
-    [].slice.call(zone.querySelectorAll('.verdict-corps[data-lot]')).forEach(function (c) {
-      if (c.scrollTop) defilements[c.dataset.lot] = c.scrollTop;
-    });
+    /* Débrief 27 (lot E, D10) : plus de zone qui défile dans la liste — un
+       lot déplié prend sa hauteur naturelle, et un gros lot montre ses
+       premiers plans puis « Voir les N autres » (corpsLotRapp) : il n'y a
+       plus de défilement intérieur à retenir d'un rendu à l'autre. */
     var actif = lotRappActif();
     var q = motCherche(vue.rechercheRapp), trouvesTotal = 0;
     if (vue.lotRappOuvert && !comptes[vue.lotRappOuvert]) vue.lotRappOuvert = null;
+    /* Débrief 27 (B24) : le nombre a sa colonne de 52 px, alignée à droite
+       contre la pastille ; un compte à quatre chiffres l'élargit pour toutes
+       les lignes, qui restent alignées. */
+    zone.classList.toggle('larges', LOTS_RAPPROCHEMENT.some(function (l) { return comptes[l.cle] >= 1000; }));
     zone.innerHTML = LOTS_RAPPROCHEMENT.map(function (l) {
       var n = comptes[l.cle], presse = !!n && actif === l.cle;
       var rangees = n ? rangeesLotRapp(l.cle) : [];
@@ -11587,7 +11688,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         '<button class="verdict" type="button" data-cle="' + l.cle + '" data-rapp="' + l.cle + '" data-atterrit="' + l.atterrit +
         '" aria-pressed="' + presse + '" aria-expanded="' + ouvert + '"' + (n ? '' : ' disabled') + '>' +
         pastilleVerdict(l.segment) + '<span class="verdict-n">' + nb(n) + '</span>' +
-        '<span class="verdict-mot">' + ech(phraseLot(l.cle, n, nom)) + '</span>' +
+        '<span class="verdict-mot">' + phraseInsecable(phraseLot(l.cle, n, nom)) + '</span>' +
         (n ? '<svg class="chevron" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">' +
           '<path d="m3.5 1.5 3.5 3.5-3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '') +
         '</button>' +
@@ -11595,10 +11696,12 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     }).join('') +
       (q && !trouvesTotal ? '<div class="vide-message">Aucun plan de la comparaison ne contient « ' +
         ech(vue.rechercheRapp.trim()) + ' ». Échap vide la recherche.</div>' : '');
-    Object.keys(defilements).forEach(function (cle) {
-      var corps = zone.querySelector('.verdict-corps[data-lot="' + cle + '"]');
-      if (corps) corps.scrollTop = defilements[cle];
-    });
+    return { q: q, trouves: trouvesTotal };
+  }
+  /* Débrief 27 (B10) : « (rien d'anormal) » ne se coupe jamais en deux, ni
+     loin de sa phrase — à 1024 px la ligne cassait juste avant. */
+  function phraseInsecable(phrase) {
+    return ech(phrase).replace(/\((rien d’anormal)\)/, '<span class="sans-coupure">($1)</span>');
   }
 
   /* Le tri des références se rejoue à chaque rendu : un comparateur
@@ -11640,38 +11743,54 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var see = cle === 'manque' || cle === 'attente' ? 'absent' : 'présent';
     return R[cle].map(function (p) { return { ref: p.reference, plan: p, see: see }; });
   }
-  /* Les plans d'un lot, dépliés sous sa ligne : une puce par plan — tous,
-     sans coupure. Sa pastille d'état dans GATES, sa référence, et pour une
-     réémission la lettre sous laquelle la seconde base le connaît. En tête,
-     la légende des pastilles (ou, pendant une recherche, combien sont
-     trouvés) ; le détail tient dans la bulle du survol, un clic mène au
-     tableau. Au-delà d'une hauteur, la zone défile plutôt que de pousser
-     la page. */
+  /* Les plans d'un lot, dépliés sous sa ligne : une puce par plan. Sa
+     pastille d'état dans GATES, sa référence, et pour une réémission la
+     lettre sous laquelle la seconde base le connaît. En tête, une phrase
+     qui dit ce que le lot veut dire et ce que fait un clic, puis la légende
+     des pastilles avec leurs comptes (ou, pendant une recherche, combien
+     sont trouvés) ; un clic sur une puce mène au tableau.
+     Débrief 27 (lot E) : ce que la bulle du survol était seule à dire — la
+     part des validés, la répartition par état, le sens du lot — se lit
+     aussi ici, au doigt et au clavier (D9). Et le lot prend sa hauteur
+     naturelle (D10) : plus de zone qui défile et retient le doigt ; au-delà
+     de MAX_PUCES_RAPP puces, « Voir les N autres » les déplie sur place. */
+  var MAX_PUCES_RAPP = 24;
   function corpsLotRapp(cle, rangees, n, nom, cherche) {
     rangees = rangees.slice().sort(function (a, b) { return COMPARER_REF(a.ref, b.ref); });
     /* La légende des pastilles : seulement les valeurs de la liste, écrites
-       comme dans la colonne, dans l'ordre de la barre — et aucune quand il
-       n'y en a qu'une (elle disait toujours « Validé · En cours · À faire ·
-       Non renseigné », même sous « validés, absents de SEE »). */
-    var vues = {};
-    rangees.forEach(function (r) { if (r.plan) vues[cleValeur(r.plan[CLE_SUIVIE])] = r.plan; });
+       comme dans la colonne, dans l'ordre de la barre, chacune avec son
+       compte — et aucune quand il n'y en a qu'une (elle disait toujours
+       « Validé · En cours · À faire · Non renseigné », même sous « validés,
+       absents de SEE »). */
+    var vues = {}, parValeur = {};
+    rangees.forEach(function (r) {
+      if (!r.plan) return;
+      var k = cleValeur(r.plan[CLE_SUIVIE]);
+      vues[k] = r.plan; parValeur[k] = (parValeur[k] || 0) + 1;
+    });
     var valeursListe = VALEURS_COLONNE.filter(function (v) { return vues[v.cle]; });
     var legende = valeursListe.length > 1
       ? '<span class="rapp-puces-legende" aria-label="Pastilles : valeur du plan dans GATES">' + valeursListe.map(function (v) {
-          return '<span>' + pastilleValeur(v.cle, v.famille) + ech(libelleValeur(vues[v.cle][CLE_SUIVIE])) + '</span>';
+          return '<span>' + pastilleValeur(v.cle, v.famille) + ech(libelleValeur(vues[v.cle][CLE_SUIVIE])) +
+            ' <b class="n">' + nb(parValeur[v.cle]) + '</b></span>';
         }).join('') + '</span>'
       : '';
     /* Copier les références de la liste, telle qu'elle s'affiche (une
-       recherche n'en garde que les trouvées). */
+       recherche n'en garde que les trouvées) — toutes, même celles qu'un
+       « Voir les N autres » cache encore. */
     var copier = boutonCopier(rangees.map(function (r) { return r.ref; }));
     var tete = cherche
       ? '<span class="rapp-sur">' + nb(rangees.length) + (rangees.length > 1 ? ' trouvés' : ' trouvé') + ' sur ' + nb(n) + '</span>'
-      : (cle === 'seul'
-          ? '<span class="rapp-sur">un clic sur une ligne la montre dans le tableau de ' + ech(nom) + '</span>'
-          : legende);
+      : legende;
     tete += copier;
-    return '<div class="verdict-corps" data-lot="' + cle + '"><div class="verdict-corps-tete">' + tete + '</div><div class="rapp-puces">' +
-      rangees.map(function (r) {
+    /* Les premières puces ; le reste sur demande. Quelques-unes de plus ne
+       valent pas un bouton : elles s'affichent d'emblée. */
+    var tout = !!(vue.lotRappTout && vue.lotRappTout[cle]) || rangees.length <= MAX_PUCES_RAPP + 4;
+    var montrees = tout ? rangees : rangees.slice(0, MAX_PUCES_RAPP), reste = rangees.length - montrees.length;
+    return '<div class="verdict-corps" data-lot="' + cle + '">' +
+      (cherche ? '' : '<p class="rapp-detail">' + ech(detailLotRapp(cle, n, nom)) + '</p>') +
+      '<div class="verdict-corps-tete">' + tete + '</div><div class="rapp-puces">' +
+      montrees.map(function (r) {
         var etat = r.plan ? r.plan._etat : '';
         var motEtat = r.plan ? (ETAT_PAR_CLE[etat] ? ETAT_PAR_CLE[etat].court : '\u2014') + ' dans GATES' : 'aucun plan dans GATES';
         var bulle = motEtat + ' \u00b7 ' + r.see + ' dans ' + nom +
@@ -11679,11 +11798,33 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         var attrs = r.plan
           ? ' data-plan-rapp="' + ech(r.ref) + '" data-etat="' + ech(etat) + '"'
           : ' data-ligne-la="' + ech(r.la) + '"';
-        return '<button class="rapp-puce" type="button"' + attrs + ' data-see="' + ech(r.see) + '" title="' + ech(bulle) + '">' +
+        /* Le nom de la puce commence par ce qu'elle montre, puis dit ce que
+           sa pastille montre en couleur : la valeur du plan dans GATES. */
+        var nomPuce = r.ref + (r.vers ? ' \u2192 ' + r.vers : '') + ', ' +
+          (r.plan ? libelleValeur(r.plan[CLE_SUIVIE]) + ' dans GATES' : 'aucun plan dans GATES');
+        return '<button class="rapp-puce" type="button"' + attrs + ' data-see="' + ech(r.see) + '" title="' + ech(bulle) +
+          '" aria-label="' + ech(nomPuce) + '">' +
           (r.plan ? pastilleValeur(cleValeur(r.plan[CLE_SUIVIE]), etat) : '') +
           '<span class="rapp-puce-ref">' + ech(r.ref) + '</span>' +
           (r.vers ? '<span class="rapp-puce-vers">\u2192 ' + ech(r.vers) + '</span>' : '') + '</button>';
-      }).join('') + '</div></div>';
+      }).join('') + '</div>' +
+      (reste ? '<button type="button" class="rapp-voir-plus" data-rapp-plus="' + cle + '">Voir ' +
+        (reste > 1 ? 'les ' + nb(reste) + ' autres' : 'l\u2019autre') + '</button>' : '') +
+      '</div>';
+  }
+  /* La phrase en tête d'un lot déplié : ce qu'il veut dire, puis ce que
+     fait un clic sur une puce. Les mêmes mots que la bulle du survol. */
+  function detailLotRapp(cle, n, nom) {
+    var R = RAPPROCHEMENT, pl = n > 1, sens;
+    if (cle === 'accord') sens = (R.nbTermines ? Math.round(100 * n / R.nbTermines) : 0) + '\u202f% des validés de GATES, sous le même indice des deux côtés.';
+    else if (cle === 'emission') sens = 'Le même plan, sous une autre lettre d\u2019indice dans ' + nom + ' : la lettre de ' + nom + ' suit la flèche.';
+    else if (cle === 'avance') sens = nom + (pl ? ' les connaît' : ' le connaît') + ' : l\u2019avancement GATES est peut-être en retard.';
+    else if (cle === 'manque') sens = 'À vérifier des deux côtés : un plan validé devrait être dans ' + nom + '.';
+    else if (cle === 'attente') sens = 'Rien d\u2019anormal : un plan entre dans ' + nom + ' une fois validé.';
+    else sens = 'Aucun plan de GATES sous ' + (pl ? 'leur racine' : 'sa racine') + '.';
+    return sens + (cle === 'seul'
+      ? ' Un clic sur une ligne la montre dans le tableau de ' + nom + '.'
+      : ' Un clic sur un plan le montre seul dans le tableau.');
   }
 
   /* La bulle d'un lot : ce que c'est, combien, le détail qui aide — la part
@@ -11763,7 +11904,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if (cle === 'emission') return 'dans ' + nom + ' sous une autre lettre d’indice';
     if (cle === 'avance') return 'dans ' + nom + ', mais GATES ne ' + (pl ? 'les' : 'le') + ' dit pas ' + (pl ? 'validés' : 'validé');
     if (cle === 'manque') return (pl ? 'validés' : 'validé') + ' dans GATES, mais ' + nom + ' ne ' + (pl ? 'les' : 'le') + ' connaît pas';
-    if (cle === 'attente') return (pl ? 'pas validés' : 'pas validé') + ', et pas encore dans ' + nom + ' : rien d’anormal';
+    /* Débrief 27 (B10) : la remarque entre parenthèses, plus le deux-points
+       qui la faisait passer pour la réponse. */
+    if (cle === 'attente') return (pl ? 'pas validés' : 'pas validé') + ', et pas encore dans ' + nom + ' (rien d’anormal)';
     return (pl ? 'lignes de ' : 'ligne de ') + nom + ' sans plan dans GATES' + tout;
   }
   /* Un arc d'anneau, de l'angle a0 à l'angle a1 (en degrés, 0 en haut, sens
@@ -11780,39 +11923,53 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      que la base est seule à connaître — à gauche, les terminés que la seconde
      base ignore, et dessous, plus discret, ce qui n'est pas encore créé. Les
      cercles ne sont pas à l'échelle : c'est la structure qu'on lit, les
-     nombres disent le reste. */
+     nombres disent le reste.
+     Débrief 27 (lot E — P-F20, M3, M9, B24) : deux couches. Le dessin
+     (cercles, anneau) reste un SVG qui suit la largeur ; ses mots passent
+     en HTML par-dessus, à taille fixe — ils ne fondent plus avec la figure
+     (7 px au téléphone, 10 px à 1024) et ne descendent jamais sous 12 px.
+     Les trois côtés qui comptent des plans sont des boutons : un clic, une
+     touche ou un doigt y font ce que fait leur ligne de verdict ; les parts
+     de l'anneau aussi, au pointeur (au clavier, leurs lignes de verdict sont
+     juste à côté). Une figure étroite (moins de 470 px : un téléphone, ou
+     la colonne de gauche vers 900 px) prend un second tracé : les cercles y
+     occupent toute la largeur, pour que les mots tiennent dans leurs
+     croissants. La largeur se lit après la mise en page (ResizeObserver,
+     plus bas) ; avant la première mesure, ou sans ResizeObserver, c'est la
+     largeur de l'écran qui décide. */
+  var VENN_ETROIT = window.matchMedia ? window.matchMedia('(max-width: 480px)') : null;
+  var traceVennRendu = null;           // le tracé du dernier rendu (null : pas encore dessinée)
+  var largeurVenn = 0;                 // la largeur de la figure, mesurée (0 : pas encore)
+  /* 'large' dès 470 px ; en deçà le tracé étroit, à mots de 12 px sous
+     380 px, et aux tailles du tracé large entre les deux ('ample'). */
+  function traceVenn() {
+    if (!largeurVenn) return VENN_ETROIT && VENN_ETROIT.matches ? 'etroit' : 'large';
+    return largeurVenn < 380 ? 'etroit' : largeurVenn < 470 ? 'ample' : 'large';
+  }
+  /* Les deux tracés, en unités du viewBox : centres et rayon des cercles,
+     rayon et épaisseur de l'anneau, et où se posent les mots — le bas des
+     noms de base, le centre de chaque côté (au milieu de son croissant, à
+     sa hauteur), le mot « en commun » sous l'anneau. */
+  var TRACES_VENN = {
+    large: { l: 550, h: 368, cx1: 206, cx2: 344, cy: 186, r: 132, ra: 40, cible: 30,
+             ici: [150, 46], la: [400, 46], manque: [146, 182], attente: [154, 264], seul: [404, 186], mot: 124 },
+    etroit: { l: 340, h: 300, cx1: 120, cx2: 220, cy: 186, r: 106, ra: 30, cible: 26,
+              ici: [8, 6], la: [332, 6], manque: [68, 156], attente: [82, 238], seul: [274, 186], mot: 134 }
+  };
   function figureRapprochement(c, R, nom, perimetre) {
+    var trace = traceVenn(), etroit = trace !== 'large';
+    traceVennRendu = trace;
+    var T = etroit ? TRACES_VENN.etroit : TRACES_VENN.large;
     var nP = R.nbPlans, nT = R.nbTermines, nL = R.nbLignes, nCommun = c.accord + c.emission + c.avance;
-    var cx1 = 206, cx2 = 344, cy = 186, r = 132, cxm = (cx1 + cx2) / 2, ra = 40;
-    var s = ['<svg viewBox="0 0 550 368" aria-hidden="true">'];
-    s.push('<text class="base-nom" x="' + (cx1 - 56) + '" y="26" text-anchor="middle">GATES</text>');
-    s.push('<text class="base-compte" x="' + (cx1 - 56) + '" y="42" text-anchor="middle">' + nb(nP) + (nP > 1 ? ' plans' : ' plan') + (perimetre ? ' du périmètre' : '') +
-      ' · ' + nb(nT) + (nT > 1 ? ' validés' : ' validé') + '</text>');
-    s.push('<text class="base-nom" x="' + (cx2 + 56) + '" y="26" text-anchor="middle">' + ech(nom) + '</text>');
-    s.push('<text class="base-compte" x="' + (cx2 + 56) + '" y="42" text-anchor="middle">' + nb(nL) + (nL > 1 ? ' lignes' : ' ligne') +
-      (perimetre ? ' · tout le contrat' : '') + '</text>');
+    var cx1 = T.cx1, cx2 = T.cx2, cy = T.cy, r = T.r, cxm = (cx1 + cx2) / 2, ra = T.ra;
+    var actif = lotRappActif();
+    /* Un point du viewBox, en pourcentage de la figure : le SVG garde ses
+       proportions, les mots restent à leur place à toute largeur. */
+    var ou = function (p) { return 'left:' + (100 * p[0] / T.l).toFixed(2) + '%;top:' + (100 * p[1] / T.h).toFixed(2) + '%'; };
+    var s = ['<div class="venn venn-' + (etroit ? 'etroit' : 'large') + (trace === 'ample' ? ' venn-ample' : '') + '">',
+      '<svg viewBox="0 0 ' + T.l + ' ' + T.h + '" aria-hidden="true" focusable="false">'];
     s.push('<circle class="cercle-ici" cx="' + cx1 + '" cy="' + cy + '" r="' + r + '"/>');
     s.push('<circle class="cercle-la" cx="' + cx2 + '" cy="' + cy + '" r="' + r + '"/>');
-    /* Les côtés : ce que chaque base est seule à connaître. À gauche, le
-       nombre qui compte — des terminés sans plan là — et, dessous, ceux qui
-       attendent simplement leur tour. */
-    /* Les mots des côtés tiennent sur deux lignes, pour rester dans le
-       croissant de leur cercle sans en toucher les bords. */
-    s.push('<g class="cote cote-manque' + (c.manque ? '' : ' zero') + '" data-cle="manque">' +
-      '<text class="grand" x="' + (cx1 - 60) + '" y="' + (cy - 4) + '" text-anchor="middle">' + nb(c.manque) + '</text>' +
-      '<text class="petit" x="' + (cx1 - 60) + '" y="' + (cy + 16) + '" text-anchor="middle"><tspan>' + (c.manque > 1 ? 'validés ' : 'validé ') + '</tspan>' +
-      '<tspan x="' + (cx1 - 60) + '" dy="15">sans ' + ech(nom) + '</tspan></text></g>');
-    /* Ce qui attend son tour se lit dans le cercle aussi — ces plans sont
-       de GATES —, sous les terminés sans SEE, plus discret : un
-       renseignement, pas un écart. */
-    s.push('<g class="cote cote-attente" data-cle="attente">' +
-      '<text class="petit" x="' + (cx1 - 60) + '" y="' + (cy + 62) + '" text-anchor="middle"><tspan class="moyen">' + nb(c.attente) + '</tspan><tspan> pas encore </tspan>' +
-      '<tspan x="' + (cx1 - 60) + '" dy="15">dans ' + ech(nom) + '</tspan></text></g>');
-    s.push('<g class="cote cote-seul" data-cle="seul">' +
-      '<text class="grand" x="' + (cx2 + 60) + '" y="' + (cy - 4) + '" text-anchor="middle">' + nb(c.seul) + '</text>' +
-      '<text class="petit" x="' + (cx2 + 60) + '" y="' + (cy + 16) + '" text-anchor="middle"><tspan>seulement </tspan>' +
-      '<tspan x="' + (cx2 + 60) + '" dy="15">dans ' + ech(nom) + '</tspan></text>' +
-      (perimetre ? '<text class="petit" x="' + (cx2 + 60) + '" y="' + (cy + 47) + '" text-anchor="middle">tout le contrat</text>' : '') + '</g>');
     /* Le milieu : l'anneau des plans en commun, en trois parts. */
     s.push('<circle class="donut-fond" cx="' + cxm + '" cy="' + cy + '" r="' + ra + '"/>');
     var parts = [['accord', 'accord'], ['emission', 'emission'], ['avance', 'avance']]
@@ -11825,15 +11982,67 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     portions.forEach(function (q) { if (q < MIN) manque += MIN - q; else grandes += q; });
     if (manque > 0 && grandes > 0) portions = portions.map(function (q) { return q < MIN ? MIN : q - manque * q / grandes; });
     var trou = parts.length > 1 ? 3 : 0, angle = 0;          // un blanc entre les parts, comme entre les segments d'une barre
+    /* Débrief 27 : sur chaque part, un trait invisible plus large la rend
+       facile à toucher ; il porte data-cible (pas data-cle : seule la part
+       visible s'éclaire). */
+    var cibles = [];
     parts.forEach(function (p, i) {
       var portion = portions[i], a0 = angle + trou / 2, a1 = angle + portion - trou / 2;
-      if (a1 - a0 >= 359.9) s.push('<circle class="donut-seg ' + p[1] + '" data-cle="' + p[0] + '" data-n="' + c[p[0]] + '" cx="' + cxm + '" cy="' + cy + '" r="' + ra + '"/>');
-      else if (a1 > a0) s.push('<path class="donut-seg ' + p[1] + '" data-cle="' + p[0] + '" data-n="' + c[p[0]] + '" d="' + arcAnneau(cxm, cy, ra, a0, a1) + '"/>');
+      if (a1 - a0 >= 359.9) {
+        s.push('<circle class="donut-seg ' + p[1] + '" data-cle="' + p[0] + '" data-n="' + c[p[0]] + '" cx="' + cxm + '" cy="' + cy + '" r="' + ra + '"/>');
+        cibles.push('<circle class="donut-cible" data-cible="' + p[0] + '" cx="' + cxm + '" cy="' + cy + '" r="' + ra + '" style="stroke-width:' + T.cible + 'px"/>');
+      } else if (a1 > a0) {
+        var d = arcAnneau(cxm, cy, ra, a0, a1);
+        s.push('<path class="donut-seg ' + p[1] + '" data-cle="' + p[0] + '" data-n="' + c[p[0]] + '" d="' + d + '"/>');
+        cibles.push('<path class="donut-cible" data-cible="' + p[0] + '" d="' + d + '" style="stroke-width:' + T.cible + 'px"/>');
+      }
       angle += portion;
     });
-    s.push('<text class="grand commun-n' + (nb(nCommun).length > 3 ? ' serre' : '') + '" x="' + cxm + '" y="' + (cy + (nb(nCommun).length > 3 ? 7 : 9)) + '" text-anchor="middle">' + nb(nCommun) + '</text>');
-    s.push('<text class="petit commun-mot" x="' + cxm + '" y="' + (cy + ra + 26) + '" text-anchor="middle">en commun</text>');
+    s.push(cibles.join(''));
     s.push('</svg>');
+    /* Le nom et le compte de chaque base, au-dessus de son cercle. Au
+       tracé étroit, un compte trop long passe à la ligne après le « · »,
+       jamais au milieu d'un morceau (« 21 / validés »). */
+    var morceau = function (t) { return '<span class="sans-coupure">' + t + '</span>'; };
+    s.push('<p class="venn-base venn-base-ici" style="' + ou(T.ici) + '"><span class="base-nom">GATES</span>' +
+      '<span class="base-compte">' + morceau(nb(nP) + (nP > 1 ? ' plans' : ' plan') + (perimetre ? ' du périmètre' : '')) +
+      '\u00a0· ' + morceau(nb(nT) + (nT > 1 ? ' validés' : ' validé')) + '</span></p>');
+    /* Au tracé étroit, le nom de la seconde base se cale au coin droit :
+       ancré par la droite, il garde toute la place pour passer à la ligne. */
+    var styleLa = etroit ? 'right:' + (100 - 100 * T.la[0] / T.l).toFixed(2) + '%;top:' + (100 * T.la[1] / T.h).toFixed(2) + '%' : ou(T.la);
+    s.push('<p class="venn-base venn-base-la" style="' + styleLa + '"><span class="base-nom">' + ech(nom) + '</span>' +
+      '<span class="base-compte">' + morceau(nb(nL) + (nL > 1 ? ' lignes' : ' ligne')) + (perimetre ? '\u00a0· ' + morceau('tout le contrat') : '') + '</span></p>');
+    /* Les côtés : ce que chaque base est seule à connaître, chacun un bouton
+       (data-rapp, comme sa ligne de verdict ; pressé quand son lot filtre
+       le tableau ; inactif à zéro). Les mots tiennent sur deux lignes, pour
+       rester dans le croissant de leur cercle ; une espace sépare le nombre
+       des mots, pour que le bouton se nomme « 3 validés sans SEE », pas
+       « 3validés ». */
+    var cote = function (cle, n, classes, contenu, p) {
+      return '<button type="button" class="cote cote-' + cle + (classes || '') + '" data-cle="' + cle + '" data-rapp="' + cle +
+        '" aria-pressed="' + (!!n && actif === cle) + '"' + (n ? '' : ' disabled') + ' style="' + ou(p) + '">' + contenu + '</button>';
+    };
+    /* À gauche, le nombre qui compte — des terminés sans plan là. */
+    s.push(cote('manque', c.manque, c.manque ? '' : ' zero',
+      '<span class="grand">' + nb(c.manque) + '</span> ' +
+      '<span class="petit">' + (c.manque > 1 ? 'validés ' : 'validé ') + '<br>sans ' + ech(nom) + '</span>', T.manque));
+    /* Ce qui attend son tour se lit dans le cercle aussi — ces plans sont
+       de GATES —, sous les terminés sans SEE, plus discret : un
+       renseignement, pas un écart. */
+    s.push(cote('attente', c.attente, '',
+      '<span class="petit"><span class="moyen">' + nb(c.attente) + '</span> pas encore <br>dans ' + ech(nom) + '</span>', T.attente));
+    s.push(cote('seul', c.seul, '',
+      '<span class="grand">' + nb(c.seul) + '</span> ' +
+      '<span class="petit">seulement <br>dans ' + ech(nom) + '</span>' +
+      (perimetre ? ' <span class="petit">tout le contrat</span>' : ''), T.seul));
+    /* Le nombre en commun, au cœur de l'anneau : plus serré s'il est long.
+       Son mot « en commun » au-dessus de l'anneau, comme le nom de chaque
+       base au-dessus de son cercle — dessous, il se lisait d'une traite
+       avec « 569 pas encore », sur la même ligne. */
+    var chiffres = nb(nCommun).length;
+    s.push('<span class="grand commun-n' + (chiffres > 3 ? ' tres-serre' : chiffres > 2 ? ' serre' : '') + '" style="' + ou([cxm, cy]) + '">' + nb(nCommun) + '</span>');
+    s.push('<span class="petit commun-mot" style="' + ou([cxm, T.mot]) + '">en commun</span>');
+    s.push('</div>');
     return s.join('');
   }
 
@@ -12209,26 +12418,76 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       allerAuTableau();
       return;
     }
-    var b = e.target.closest('button[data-rapp]');
-    if (b && RAPPROCHEMENT) {
-      /* Un clic pose le lot sur les tableaux et le déplie ; un second clic
-         sur le lot posé et déplié retire l'un et l'autre. Pendant une
-         recherche, les lots trouvés sont déjà dépliés : le clic ne fait que
-         poser ou retirer le filtre. */
-      var cleLot = b.dataset.rapp;
-      var depuisReponse = !!b.closest('#reponse-rapprochement');
-      if (motCherche(vue.rechercheRapp)) poserLotRapp(cleLot);
-      else if (vue.lotRappOuvert === cleLot && lotRappActif() === cleLot) { poserLotRapp(cleLot); vue.lotRappOuvert = null; }
-      else { if (lotRappActif() !== cleLot) poserLotRapp(cleLot); vue.lotRappOuvert = cleLot; }
-      rendre();
-      /* Les boutons viennent d'être refaits : le focus revient sur le même,
-         la bulle et l'éclairage repartent de zéro. */
-      $('bulle').dataset.visible = 'false'; eclairerSegment(null);
-      var repris = document.querySelector((depuisReponse ? '#reponse-rapprochement' : '#verdicts-rapprochement') + ' button[data-rapp="' + b.dataset.rapp + '"]');
-      if (repris) repris.focus();
+    /* Débrief 27 (lot E) : « Voir les N autres » sous un gros lot déplie
+       le reste sur place ; le focus passe à la première puce révélée. */
+    var plus = e.target.closest('button[data-rapp-plus]');
+    if (plus && RAPPROCHEMENT) {
+      var clePlus = plus.dataset.rappPlus;
+      vue.lotRappTout = vue.lotRappTout || {};
+      vue.lotRappTout[clePlus] = true;
+      rendreRapprochement();
+      var revelee = document.querySelectorAll('#verdicts-rapprochement .verdict-corps[data-lot="' + clePlus + '"] .rapp-puce')[MAX_PUCES_RAPP];
+      if (revelee) revelee.focus();
+      var nPlus = document.querySelectorAll('#verdicts-rapprochement .verdict-corps[data-lot="' + clePlus + '"] .rapp-puce').length - MAX_PUCES_RAPP;
+      if (nPlus > 0) annoncer(nb(nPlus) + (nPlus > 1 ? ' autres plans affichés' : ' autre plan affiché'));
       return;
     }
+    var b = e.target.closest('button[data-rapp]');
+    if (b && RAPPROCHEMENT) {
+      /* D'où vient le clic : la phrase « À traiter », la figure ou la liste
+         des verdicts — le focus revient sur le même bouton, refait. */
+      basculerLotRapp(b.dataset.rapp, b.closest('#reponse-rapprochement') ? '#reponse-rapprochement'
+        : b.closest('#venn-rapprochement') ? '#venn-rapprochement' : '#verdicts-rapprochement');
+      return;
+    }
+    /* Débrief 27 (P-F20, M3) : une part de l'anneau, au pointeur ou au
+       doigt, fait ce que fait sa ligne de verdict. */
+    var part = e.target.closest('#venn-rapprochement [data-cible]');
+    if (part && RAPPROCHEMENT) basculerLotRapp(part.getAttribute('data-cible'), null);
   });
+  /* Poser, déplier, replier un lot — le même geste depuis la ligne de
+     verdict, le nombre de « À traiter » ou la figure.
+     Un clic pose le lot sur les tableaux et le déplie ; un second clic sur
+     le lot posé et déplié retire l'un et l'autre. Pendant une recherche,
+     les lots trouvés sont déjà dépliés : le clic ne fait que poser ou
+     retirer le filtre. */
+  function basculerLotRapp(cleLot, origine) {
+    var ouvertAvant = vue.lotRappOuvert;
+    if (motCherche(vue.rechercheRapp)) poserLotRapp(cleLot);
+    else if (vue.lotRappOuvert === cleLot && lotRappActif() === cleLot) { poserLotRapp(cleLot); vue.lotRappOuvert = null; }
+    else { if (lotRappActif() !== cleLot) poserLotRapp(cleLot); vue.lotRappOuvert = cleLot; }
+    /* Un lot replié, puis rouvert, repart de ses premières puces. */
+    if (vue.lotRappOuvert !== ouvertAvant) vue.lotRappTout = {};
+    rendre();
+    /* Les boutons viennent d'être refaits : le focus revient sur le même,
+       la bulle et l'éclairage repartent de zéro. */
+    $('bulle').dataset.visible = 'false'; eclairerSegment(null);
+    var repris = origine && document.querySelector(origine + ' button[data-rapp="' + cleLot + '"]');
+    if (repris) { try { repris.focus({ preventScroll: true }); } catch (err) { repris.focus(); } }
+    /* Débrief 27 (X-A5) : dit ce qui a changé. */
+    var nom = nomSeconde();
+    annoncer(lotRappActif() === cleLot
+      ? 'Comparaison : ' + motLotRapp(cleLot, compteLotRapp(cleLot), nom) +
+        (cleLot === 'seul' ? '. Le tableau de ' + nom + ' ne montre plus que celles-là.' : '. Le tableau des plans ne montre plus que ceux-là.')
+      : 'Filtre de la comparaison retiré.');
+    /* Depuis la figure ou la phrase, le lot se déplie dans la liste des
+       verdicts, parfois hors de l'écran (au téléphone, sous la figure) :
+       on l'y amène, sans bouger si on le voit déjà. */
+    /* À l'image suivante : le bandeau des filtres vient peut-être de
+       paraître, et l'arrêt sous le sommaire (--bas-sommaire) d'être remesuré. */
+    if (origine !== '#verdicts-rapprochement' && vue.lotRappOuvert === cleLot) {
+      requestAnimationFrame(function () { amenerVerdictRapp(cleLot); });
+    }
+  }
+  function amenerVerdictRapp(cle) {
+    var bloc = document.querySelector('#verdicts-rapprochement .verdict-bloc[data-lot="' + cle + '"]');
+    if (!bloc) return;
+    var haut = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bas-sommaire')) || 0;
+    var r = bloc.getBoundingClientRect();
+    if (r.top >= haut + 8 && r.top <= window.innerHeight * 0.6) return;
+    var reduit = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    defilerVers(bloc, { block: 'start', behavior: reduit ? 'auto' : 'smooth' });
+  }
 
   /* Le tableau de la seconde base : sa recherche, ses deux vues et son tri ne
      touchent qu'à lui ; cliquer une ligne appariée réduit le tableau d'ici
@@ -12422,7 +12681,12 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   brancherRechercheSection('recherche-rapp', function (v) {
     if (v === vue.rechercheRapp) return;
     vue.rechercheRapp = v;
-    if (RAPPROCHEMENT) rendreRapprochement();
+    vue.lotRappTout = {};
+    if (!RAPPROCHEMENT) return;
+    /* Débrief 27 (X-A5) : le résultat se dit, comme il se voit. */
+    var res = garderFocus(rendreRapprochement, 'rapprochement');
+    if (res && res.q) annoncer(res.trouves ? nb(res.trouves) + (res.trouves > 1 ? ' plans trouvés' : ' plan trouvé') + ' dans la comparaison'
+      : 'Aucun plan de la comparaison ne contient « ' + v.trim() + ' »');
   });
   $('choix-base').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-base]');
@@ -13284,8 +13548,8 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   });
 
   $('rapprochement').addEventListener('mousemove', function (e) {
-    var cible = e.target.closest && e.target.closest('#venn-rapprochement [data-cle], #verdicts-rapprochement button[data-cle]:not([disabled])');
-    var cle = cible ? cible.getAttribute('data-cle') : null;
+    var cible = e.target.closest && e.target.closest('#venn-rapprochement [data-cle], #venn-rapprochement [data-cible], #verdicts-rapprochement button[data-cle]:not([disabled])');
+    var cle = cible ? cible.getAttribute('data-cle') || cible.getAttribute('data-cible') : null;
     var bulle = $('bulle');
     eclairerSegment(cle);
     if (!cle || !RAPPROCHEMENT) { bulle.dataset.visible = 'false'; return; }
@@ -13298,11 +13562,26 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     eclairerSegment(null);
     $('bulle').dataset.visible = 'false';
   });
-  $('verdicts-rapprochement').addEventListener('focusin', function (e) {
-    var b = e.target.closest && e.target.closest('button[data-cle]');
-    eclairerSegment(b ? b.dataset.cle : null);
+  /* Débrief 27 (lot E) : la figure change de tracé quand sa propre largeur
+     passe 470 px — lue après la mise en page, sans forcer de calcul. Une
+     section cachée (largeur 0) ne compte pas. */
+  if (window.ResizeObserver) {
+    new ResizeObserver(function (entrees) {
+      var l = entrees[entrees.length - 1].contentRect.width;
+      if (!l) return;
+      largeurVenn = l;
+      if (RAPPROCHEMENT && traceVennRendu !== null && traceVenn() !== traceVennRendu) garderFocus(rendreRapprochement, 'rapprochement');
+    }).observe($('venn-rapprochement'));
+  }
+  /* Le focus clavier sur un verdict ou sur un côté de la figure éclaire sa
+     part de la figure. */
+  ['verdicts-rapprochement', 'venn-rapprochement'].forEach(function (id) {
+    $(id).addEventListener('focusin', function (e) {
+      var b = e.target.closest && e.target.closest('button[data-cle]');
+      eclairerSegment(b ? b.dataset.cle : null);
+    });
+    $(id).addEventListener('focusout', function () { eclairerSegment(null); });
   });
-  $('verdicts-rapprochement').addEventListener('focusout', function () { eclairerSegment(null); });
 
   $('incomplets').addEventListener('click', function (e) {
     var b = e.target.closest('.puce-vide');
@@ -14357,6 +14636,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       /* Passé sous 560 px ou revenu au-dessus : le journal se réécrit, avec
          ou sans les coupures après les « _ » (etiqEtat). */
       if (journalEtroit !== null && JOURNAL_ETROIT && JOURNAL_ETROIT.matches !== journalEtroit) rendreJournal();
+      /* Débrief 27 (lot E) : la figure de la comparaison change de tracé
+         quand elle passe 470 px (sans ResizeObserver : l'écran, 480 px). */
+      if (RAPPROCHEMENT && traceVennRendu !== null && traceVenn() !== traceVennRendu) garderFocus(rendreRapprochement, 'rapprochement');
     }, 160);
   });
   /* Le fondu suit le défilement de chaque rangée : il s'efface au bout. La

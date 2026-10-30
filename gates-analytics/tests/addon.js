@@ -3165,12 +3165,15 @@ function serveurSur(valeurs, proprietes, fichiers) {
     titre: document.getElementById('titre-rapprochement').textContent,
     phrase: !!document.getElementById('phrase-rapprochement'),
     puces: [...document.querySelectorAll('#verdicts-rapprochement button[data-rapp]')].map(b => b.dataset.rapp + '=' + b.querySelector('.verdict-n').textContent),
-    figure: (() => { const svg = document.querySelector('#venn-rapprochement svg'); return svg && {
+    /* Débrief 27 (lot E) : les mots de la figure — noms des bases, nombre en
+       commun, côtés (des boutons) — sont en HTML par-dessus le dessin ; le
+       SVG ne garde que les cercles et l'anneau. */
+    figure: (() => { const fig = document.getElementById('venn-rapprochement'), svg = fig.querySelector('svg'); return svg && {
       cercles: svg.querySelectorAll('circle.cercle-ici, circle.cercle-la').length,
-      bases: [...svg.querySelectorAll('.base-nom')].map(t => t.textContent).join(),
-      commun: +svg.querySelector('.commun-n').textContent,
+      bases: [...fig.querySelectorAll('.base-nom')].map(t => t.textContent).join(),
+      commun: +fig.querySelector('.commun-n').textContent,
       parts: [...svg.querySelectorAll('.donut-seg')].map(x => x.getAttribute('data-cle') + '=' + x.getAttribute('data-n')).join(),
-      cotes: [...svg.querySelectorAll('.cote')].map(g => g.getAttribute('data-cle') + '=' + (g.querySelector('.grand') || g.querySelector('.moyen')).textContent).join() }; })(),
+      cotes: [...fig.querySelectorAll('.cote')].map(g => g.getAttribute('data-cle') + '=' + (g.querySelector('.grand') || g.querySelector('.moyen')).textContent).join() }; })(),
     sousLeTableau: document.getElementById('rapprochement').getBoundingClientRect().top >= document.getElementById('cadre-tableau').getBoundingClientRect().bottom,
     sous: !!document.getElementById('sous-rapprochement'),
     plans: document.querySelectorAll('#corps-tableau tr').length,
