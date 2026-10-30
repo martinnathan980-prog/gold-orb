@@ -618,11 +618,12 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .bandeau-mode .choix-contrat[hidden], .bandeau-mode .reglage[hidden] { display: none; }
 .reglage > label, .reglage > .mot-reglage { font-size: 12px; color: var(--encre-3); white-space: nowrap; }
 .reglage-contrat .controle { display: inline-flex; min-width: 0; }
-/* Une largeur fixe : HDK, THS ou « Tranche 2 », la barre ne bouge pas. */
-.portee select.select { font-size: 13px; font-weight: 500; width: 88px; min-width: 0; text-overflow: ellipsis; }
+/* Une largeur stable : celle de la plus longue option (88 px au moins) —
+   HDK, THS ou « Tranche 2 », la barre ne bouge pas quand le choix change. */
+.portee select.select { font-size: 13px; font-weight: 500; width: auto; min-width: 88px; max-width: 240px; }
 .portee select.select:disabled { color: var(--encre-3); cursor: progress; }
 .portee select.select[hidden], .tranche-unique[hidden] { display: none; }
-.tranche-unique { display: inline-block; width: 88px; padding: 4px 0; font-size: 13px; line-height: 19px; color: var(--encre-2); }
+.tranche-unique { display: inline-block; min-width: 88px; padding: 4px 0; font-size: 13px; line-height: 19px; color: var(--encre-2); }
 /* Sans l'interrupteur, son mot se tait aussi. */
 .bandeau-mode .choix-indicateur[hidden] { display: none; }
 /* Les outils de la page : une icône de 14 px et un mot, sans soulignement. */
@@ -658,7 +659,7 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
   .portee .choix-tranche { grid-column: 2; }
   .portee .choix-avancement, .portee .perimetre { grid-column: 1 / -1; }
   .reglage-contrat .controle { display: flex; flex: 1 1 0; min-width: 0; }
-  .portee select.select, .tranche-unique { flex: 1 1 0; width: auto; }
+  .portee select.select, .tranche-unique { flex: 1 1 0; width: auto; min-width: 0; max-width: none; }
   .portee .segmente { display: flex; flex: 1 1 auto; }
   .portee .segmente button { flex: 1 1 auto; }
 }
@@ -5856,8 +5857,11 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var b = $('choix-indicateur');
     b.hidden = !(SRC && SRC.cleConcept && PAR_CLE[SRC.cleConcept]);
     $('choix-avancement').hidden = b.hidden;
+    /* Débrief 27 (lot H) : un choix gardé pendant l'attente d'un contrat
+       reste pressé, même si la page d'avant se redessine. */
+    var presse = ATTENTE_CONTRAT && GESTES_EN_ATTENTE.indicateur ? GESTES_EN_ATTENTE.indicateur : INDICATEUR;
     [].forEach.call(b.querySelectorAll('button[data-indicateur]'), function (x) {
-      x.setAttribute('aria-pressed', String(x.dataset.indicateur === INDICATEUR));
+      x.setAttribute('aria-pressed', String(x.dataset.indicateur === presse));
       x.title = 'Colonne lue : ' + colonneDite(x.dataset.indicateur === 'concept' ? SRC && SRC.cleConcept : 'avancement');
     });
   }
@@ -5904,8 +5908,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   });
 
   function refleterPerimetre() {
+    var presse = ATTENTE_CONTRAT && GESTES_EN_ATTENTE.perimetre !== null ? GESTES_EN_ATTENTE.perimetre : vue.perimetre;
     document.querySelectorAll('#choix-perimetre button').forEach(function (b) {
-      b.setAttribute('aria-pressed', String(b.dataset.perimetre === vue.perimetre));
+      b.setAttribute('aria-pressed', String(b.dataset.perimetre === presse));
     });
   }
 

@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '0f04aaa';
+  var EDITION = '3d463a1';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -2640,8 +2640,11 @@
     var b = $('choix-indicateur');
     b.hidden = !(SRC && SRC.cleConcept && PAR_CLE[SRC.cleConcept]);
     $('choix-avancement').hidden = b.hidden;
+    /* Débrief 27 (lot H) : un choix gardé pendant l'attente d'un contrat
+       reste pressé, même si la page d'avant se redessine. */
+    var presse = ATTENTE_CONTRAT && GESTES_EN_ATTENTE.indicateur ? GESTES_EN_ATTENTE.indicateur : INDICATEUR;
     [].forEach.call(b.querySelectorAll('button[data-indicateur]'), function (x) {
-      x.setAttribute('aria-pressed', String(x.dataset.indicateur === INDICATEUR));
+      x.setAttribute('aria-pressed', String(x.dataset.indicateur === presse));
       x.title = 'Colonne lue : ' + colonneDite(x.dataset.indicateur === 'concept' ? SRC && SRC.cleConcept : 'avancement');
     });
   }
@@ -2688,8 +2691,9 @@
   });
 
   function refleterPerimetre() {
+    var presse = ATTENTE_CONTRAT && GESTES_EN_ATTENTE.perimetre !== null ? GESTES_EN_ATTENTE.perimetre : vue.perimetre;
     document.querySelectorAll('#choix-perimetre button').forEach(function (b) {
-      b.setAttribute('aria-pressed', String(b.dataset.perimetre === vue.perimetre));
+      b.setAttribute('aria-pressed', String(b.dataset.perimetre === presse));
     });
   }
 
@@ -8640,5 +8644,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = '0f04aaa';
+window.SUIVI_FWD_FIN = '3d463a1';
 </script>
