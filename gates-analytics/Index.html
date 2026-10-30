@@ -70,7 +70,7 @@
 <script>
   /* La livraison de ce fichier, posée par la construction : la page la compare
      à celles de Code, Styles et Javascript, et nomme celui qui diffère. */
-  window.SUIVI_FWD_LIVRAISON_INDEX = '499a4e4';
+  window.SUIVI_FWD_LIVRAISON_INDEX = '3b6f071';
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
@@ -469,8 +469,12 @@
         </svg>
       </div>
     </div>
+    <!-- Débrief 27 (lot C) : la liste prend sa hauteur naturelle — plus de
+         cadre qui défile (une ligne coupée en deux, la molette prisonnière) ;
+         au-delà d'une quinzaine de groupes, « Voir les N autres » la déplie
+         sur place. -->
     <div class="feuille">
-      <div class="defile-liste" id="zone-critique"></div>
+      <div id="zone-critique"></div>
     </div>
   </section>
 

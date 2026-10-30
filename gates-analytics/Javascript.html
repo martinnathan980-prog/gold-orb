@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '499a4e4';
+  var EDITION = '3b6f071';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -1980,7 +1980,15 @@
       recherche: '', etat: '', filtres: {},
       groupe: null, refs: null, refsLibelle: '',
       vides: {}, perimetre: '',
-      journal: '', journalOuverts: {}, groupesTout: false,
+      journal: '', journalOuverts: {},
+      /* Débrief 27 (lot C) : le bloc par groupe. groupeOuvert, la ligne
+         dépliée — locale au bloc, elle ne filtre plus la page (le filtre de
+         la page, c'est vue.groupe, posé par le bouton « Filtrer la page sur
+         ATA 39 » de la liste dépliée) ; groupesTout, « Voir les N autres »
+         déplié ; refsTout, toutes les références d'un gros groupe déplié ;
+         groupeParArret, le filtre de groupe posé par un clic sur « N à
+         l'arrêt » (son second clic le retire). Rien n'est mémorisé. */
+      groupeOuvert: null, groupesTout: false, refsTout: false, groupeParArret: false,
       /* Les petites barres de recherche des sections : chacune ne cherche
          que dans la sienne. Rien n'en est mémorisé. */
       rechercheJournal: '', rechercheRapp: '',
@@ -4529,7 +4537,10 @@
     }
     var depart = semaineDepart();
     var h = '\x3Cdiv class="aide-panneau" id="panneau-fin" role="region" aria-label="Comment se calculent la fin estimée et les rythmes">';
-    h += '\x3Ch3>D’où viennent ces chiffres ?\x3C/h3>';
+    /* Débrief 27 (lot C) : une croix le referme, et Échap aussi ; le focus
+       revient au « ? » qui l'a ouvert. */
+    h += '\x3Cdiv class="aide-panneau-tete">\x3Ch3>D’où viennent ces chiffres ?\x3C/h3>' +
+         '\x3Cbutton type="button" class="fiche-plan-fermer" data-fermer-aide="1" aria-label="Fermer l’explication">×\x3C/button>\x3C/div>';
     h += '\x3Cp>GATES ne donne qu’une photo du jour, sans historique. Chaque semaine, on archive un relevé ; la page compare ' +
          'le premier relevé au dernier et prolonge la pente en ligne droite. Les semaines se comptent à partir de la ' +
          'semaine en cours, ' + ech(semaineDite(depart)) + '.\x3C/p>';
@@ -4565,7 +4576,7 @@
            'il faut au moins deux relevés et un plan validé entre les deux.\x3C/p>';
     }
 
-    h += '\x3Cp>Un groupe qui n’a rien validé depuis le premier relevé n’a pas de rythme : sa fin reste « — ». ' +
+    h += '\x3Cp>Un groupe qui n’a rien validé depuis le premier relevé n’a pas de rythme : sa fin reste «\u00a0—\u00a0». ' +
          'Les dates se recalculent à chaque relevé et peuvent reculer — ce n’est pas un engagement, ' +
          'c’est ce que dit le rythme tenu jusqu’ici.\x3C/p>';
     return h + '\x3C/div>';
@@ -4574,17 +4585,25 @@
   /* « Plus de 6 mois : 42 » ne dit pas lesquels. Choisir une ligne déplie donc
      TOUTES ses références. Rien n'est tronqué : un « et N autres » qui ne
      s'ouvre pas ne sert à personne. */
-  function listeUD(r, vb) {
+  /* Débrief 27 (lot C) : o = { id, nom, filtre, limite } — l'id de la liste
+     (aria-controls de sa ligne), le nom du groupe en clair (« ATA 39 »),
+     si son filtre est posé sur la page, et combien de puces montrer avant
+     « Voir les N autres plans ». */
+  function listeUD(r, vb, o) {
+    o = o || {};
     var plans = (r.plans || []).slice();
     if (!plans.length) return '';
+    var totalGroupe = plans.length;
+    var ouverture = '\x3Cdiv class="groupe-refs"' + (o.id ? ' id="' + o.id + '"' : '') + '>';
+    var filtrer = o.nom ? boutonFiltrerPage(r.nom, o.nom, o.filtre) : '';
     /* Sous une valeur choisie dans la rangée du bloc, le groupe ne montre
        qu'elle : une seule sous-liste, et l'en-tête dit sur combien. */
     if (vb) {
       var v0 = valeurDeCle(vb), nom = v0 ? v0.libelle : vb, tous = plans.length;
       plans = plans.filter(function (p) { return p._cle === vb; });
       if (!plans.length) {
-        return '\x3Cdiv class="groupe-refs">\x3Cdiv class="entete">\x3Cspan>Aucun plan « ' + ech(nom) + ' » dans ce groupe (' + nb(tous) +
-          ' plan' + (tous > 1 ? 's' : '') + ' en tout) — « Tout » les montre.\x3C/span>\x3C/div>\x3C/div>';
+        return ouverture + '\x3Cdiv class="entete">\x3Cspan>Aucun plan « ' + ech(nom) + ' » dans ce groupe (' + nb(tous) +
+          ' plan' + (tous > 1 ? 's' : '') + ' en tout) — « Tout » les montre.\x3C/span>' + filtrer + '\x3C/div>\x3C/div>';
       }
     }
     /* Une sous-liste par valeur de la colonne, dans l'ordre de la barre du
@@ -4607,24 +4626,61 @@
       var k = cleValeur(p[CLE_SUIVIE]);
       (parValeur[k] = parValeur[k] || []).push(p);
     });
-    var html = (nArret ? '\x3Cdiv class="sous-arret">\x3Ch4 class="titre-arret">\x3Cspan class="pastille arret">\x3C/span>À l\u2019arrêt' +
-        '\x3Cspan class="n">' + nb(nArret) + '\x3C/span>\x3C/h4>' +
-        '\x3Cdiv class="grille-arret">' + arrets.map(function (x) { return jetonUD(x.plan); }).join('') + '\x3C/div>\x3C/div>' : '') +
-      VALEURS_COLONNE.filter(function (v) { return parValeur[v.cle]; }).map(function (v) {
+    /* Débrief 27 (lot C, D10) : la liste dépliée prend sa hauteur dans la
+       page ; un gros groupe (« Domaine BASE/OPTION », 424 plans) montre une
+       douzaine de rangées de puces, puis « Voir les N autres plans » — les
+       autres sont là, cachées, et « Copier » les prend toutes. */
+    var limite = o.limite && plans.length > o.limite * 1.25 ? o.limite : 0;
+    var coupe = limite && !vue.refsTout ? limite : 0;
+    var rang = 0;
+    function jeton(p) {
+      var h = jetonUD(p);
+      if (coupe && rang >= coupe) h = h.replace('\x3Cbutton ', '\x3Cbutton hidden ');
+      rang++;
+      return h;
+    }
+    function cache() { return coupe && rang >= coupe ? ' hidden' : ''; }
+    function partDe(n) { return '\x3Cspan class="part">' + Math.round(100 * n / totalGroupe) + '\u202f%\x3C/span>'; }
+    var html = '';
+    if (nArret) {
+      html += '\x3Cdiv class="sous-arret"' + cache() + '>\x3Ch3 class="titre-arret">\x3Cspan class="pastille arret">\x3C/span>À l\u2019arrêt' +
+        '\x3Cspan class="n">' + nb(nArret) + '\x3C/span>' + partDe(nArret) + '\x3C/h3>' +
+        '\x3Cdiv class="grille-arret">' + arrets.map(function (x) { return jeton(x.plan); }).join('') + '\x3C/div>\x3C/div>';
+    }
+    html += VALEURS_COLONNE.filter(function (v) { return parValeur[v.cle]; }).map(function (v) {
       var liste = parValeur[v.cle].sort(function (a, b) { return COMPARER_REF(a.reference, b.reference); });
-      return '\x3Cdiv class="sous-groupe">\x3Ch4 class="sous-titre">' + pastilleValeur(v.cle, v.famille) + ech(v.libelle) +
-        '\x3Cspan class="n">' + nb(liste.length) + '\x3C/span>\x3C/h4>' +
-        '\x3Cdiv class="grille">' + liste.map(jetonUD).join('') + '\x3C/div>\x3C/div>';
+      /* La part de la sous-liste dans le groupe (débrief 27, B25) : la
+         barre ne l'écrit plus que pour les validés ; ici, toutes les parts
+         se lisent, au doigt comme au clavier, et s'additionnent avec celle
+         des plans à l'arrêt. */
+      return '\x3Cdiv class="sous-groupe"' + cache() + '>\x3Ch3 class="sous-titre">' + pastilleValeur(v.cle, v.famille) + ech(v.libelle) +
+        '\x3Cspan class="n">' + nb(liste.length) + '\x3C/span>' + partDe(liste.length) + '\x3C/h3>' +
+        '\x3Cdiv class="grille">' + liste.map(jeton).join('') + '\x3C/div>\x3C/div>';
     }).join('');
+    var plus = '';
+    if (limite) {
+      plus = '\x3Cbutton type="button" class="plus-liste" data-plus-refs="1"' + (o.id ? ' aria-controls="' + o.id + '"' : '') +
+        ' aria-expanded="' + !coupe + '">' + (coupe ? 'Voir les ' + nb(rang - coupe) + ' autres plans de ce groupe' : 'Réduire la liste des plans') +
+        iconeDeplier() + '\x3C/button>';
+    }
     /* Copier les références du groupe déplié, dans l'ordre affiché. */
     var copie = arrets.map(function (x) { return x.plan.reference; });
     VALEURS_COLONNE.forEach(function (v) { (parValeur[v.cle] || []).forEach(function (p) { copie.push(p.reference); }); });
-    return '\x3Cdiv class="groupe-refs">\x3Cdiv class="entete">' +
+    return ouverture + '\x3Cdiv class="entete">' +
       '\x3Cspan>' + nb(plans.length) + ' plan' + (plans.length > 1 ? 's' : '') +
       (vb ? ' « ' + ech(valeurDeCle(vb) ? valeurDeCle(vb).libelle : vb) + ' » sur ' + nb((r.plans || []).length)
           : (restants ? ' · \x3Cb>' + nb(restants) + '\x3C/b> pas encore validé' + (restants > 1 ? 's' : '') : ' · tout est validé')) +
       (nArret ? ' · \x3Cspan class="arret-n">\x3Cspan class="pastille arret">\x3C/span>' + nb(nArret) + ' à l\u2019arrêt\x3C/span>' : '') +
-      '\x3C/span>' + boutonCopier(copie) + '\x3Cspan>cliquez une référence pour la retrouver dans le tableau\x3C/span>\x3C/div>' + html + '\x3C/div>';
+      '\x3C/span>' + filtrer + boutonCopier(copie) + '\x3Cspan>cliquez une référence pour la retrouver dans le tableau\x3C/span>\x3C/div>' + html + plus + '\x3C/div>';
+  }
+  /* Débrief 27 (lot C, P-F5) : « j'ai cliqué ATA 39 pour voir lesquels, et
+     toute la page est devenue 6 sur 80 ». Ouvrir une ligne ne fait plus que
+     la déplier ; filtrer toute la page sur ce groupe est ce bouton-ci, dit
+     en toutes lettres — posé, il dit comment le retirer. */
+  function boutonFiltrerPage(val, nomG, pose) {
+    return '\x3Cbutton type="button" class="filtrer-page' + (pose ? ' pose' : '') + '" id="filtrer-groupe-page" data-filtrer-groupe="' + ech(val) +
+      '" title="' + ech(pose ? 'La page entière revient à tous les plans' : 'Synthèse, courbe, tableau : toute la page ne montrera que les plans de ' + nomG) + '">' +
+      iconeEntonnoir() + ech(pose ? 'Retirer le filtre ' + nomG + ' de la page' : 'Filtrer la page sur ' + nomG) + '\x3C/button>';
   }
 
   function jetonUD(p) {
@@ -4775,7 +4831,11 @@
       libellerFiltreGroupe(dim);
       rendreFiltreValeurBloc(null);
       $('zone-critique').classList.remove('sans-jalon');
-      $('zone-critique').innerHTML = '\x3Cdiv class="vide-message">Aucune colonne à analyser dans cette source.\x3C/div>';
+      /* Débrief 27 (lot C, D8) : un bloc vide le dit calmement, et ses
+         commandes, qui n'agiraient sur rien, s'effacent. */
+      blocCritiqueVide(true);
+      $('zone-critique').innerHTML = etatVideCritique('Aucune colonne à analyser dans cette source.',
+        'Le bloc répartit les plans par ATA, ECP, séquence… ; cette feuille n’en a aucune.');
       return;
     }
 
@@ -4912,10 +4972,15 @@
 
     if (!rangs.length) {
       $('zone-critique').classList.remove('sans-jalon');
-      $('zone-critique').innerHTML = '\x3Cdiv class="vide-message">Aucun plan dans la sélection.\x3C/div>';
+      blocCritiqueVide(!vue.filtreGroupe);
+      $('zone-critique').innerHTML = filtreLibre() || vue.perimetre
+        ? etatVideCritique('Aucun plan dans la sélection.',
+            'Les filtres posés sur la page ne laissent aucun plan à répartir ; « Tout effacer », en haut de la page, les retire.')
+        : etatVideCritique('Aucun plan à répartir.', 'Cette source n’a encore aucun plan.');
       $('compte-groupes').textContent = '';
       return;
     }
+    blocCritiqueVide(false);
 
     /* Le filtre de la colonne de gauche ne touche qu'à ce bloc : les lignes
        qu'il écarte restent comptées partout ailleurs. Le compte dit combien
@@ -4925,42 +4990,58 @@
     $('compte-groupes').textContent = rangs.length === tous ? '' : nb(rangs.length) + ' sur ' + nb(tous);
     marquerDebord($('filtre-valeur-groupe'));     // le compte prend sa place sur la ligne
 
+    var motDim = TITRE_DIM[dim].replace(/ \(.*\)$/, '');
+    /* Débrief 27 (lot C, P-F17) : chaque en-tête dit qu'il trie — une double
+       flèche pâle au repos, ↑ ou ↓ à l'encre sur la colonne active — et le
+       dit aux lecteurs d'écran : aria-sort sur l'en-tête de colonne. */
     function fleche(cle) {
-      if (!tg || tg.cle !== cle) return '';
-      return '\x3Csvg class="fleche" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">\x3Cpath d="' +
-        (tg.asc ? 'M5 8.5V1.5M2 4.5 5 1.5l3 3' : 'M5 1.5v7M2 5.5 5 8.5l3-3') +
-        '" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>\x3C/svg>';
+      var actif = !!(tg && tg.cle === cle);
+      var trace = !actif ? 'M3 4 5 1.8 7 4M3 6l2 2.2L7 6' : (tg.asc ? 'M5 8.5V1.5M2 4.5 5 1.5l3 3' : 'M5 1.5v7M2 5.5 5 8.5l3-3');
+      return '\x3Csvg class="fleche' + (actif ? '' : ' repos') + '" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">\x3Cpath d="' +
+        trace + '" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>\x3C/svg>';
     }
     function entete(cle, libelle, titre, classe, avant) {
       var actif = !!(tg && tg.cle === cle);
-      return '\x3Cspan class="' + (classe || '') + '">\x3Cbutton type="button" class="tri-groupe" data-trig="' + cle +
+      return '\x3Cspan role="columnheader" class="' + (classe || '') + '"' +
+        (actif ? ' aria-sort="' + (tg.asc ? 'ascending' : 'descending') + '"' : '') +
+        '>\x3Cbutton type="button" class="tri-groupe" data-trig="' + cle +
         '" data-actif="' + actif + '" aria-label="Trier par ' + ech(libelle) + '"' +
         (titre ? ' title="' + ech(titre) + '"' : '') + '>' + (avant || '') + ech(majuscule(libelle)) + fleche(cle) + '\x3C/button>';
     }
 
-    function aide(quoi) {
-      return '\x3Cbutton type="button" class="aide" data-aide="1" aria-expanded="' + (!!vue.aideFin) +
-        '" aria-controls="panneau-fin" title="Comment ' + ech(quoi) + ' se calcule">?\x3C/button>';
+    /* Débrief 27 (lot C, X-A13) : le « ? » dit ce qu'il explique — un
+       lecteur d'écran entendait « point d'interrogation ». Chacun a sa clé
+       (data-aide), pour que le focus revienne au bon après un rendu. */
+    function aide(quoi, cle) {
+      var nom = 'Aide : comment ' + quoi + ' est calculé' + (/^la /.test(quoi) ? 'e' : '');
+      return '\x3Cbutton type="button" class="aide" data-aide="' + cle + '" aria-expanded="' + (!!vue.aideFin) +
+        '" aria-controls="panneau-fin" aria-label="' + ech(nom) + '" title="' + ech(nom) + '">?\x3C/button>';
     }
 
-    var html = '\x3Cdiv class="critique-tete">' +
-      entete('nom', TITRE_DIM[dim].replace(/ \(.*\)$/, ''), TITRE_DIM[dim]) + '\x3C/span>' +
+    var tete = '\x3Cdiv class="critique-tete" role="row">' +
+      entete('nom', motDim, TITRE_DIM[dim]) + '\x3C/span>' +
       (vVal
         ? entete('total', 'plans', 'Plans « ' + vVal.libelle + ' » du groupe dans la sélection, sur son total.', '', pastilleValeur(vb, vVal.famille)) + '\x3C/span>' +
           entete('pct', 'répartition', 'Trier par part de « ' + vVal.libelle + ' ».', 'a-gauche') + '\x3C/span>'
         : entete('total', 'plans', 'Nombre de plans du groupe dans la sélection courante.') + '\x3C/span>' +
           entete('pct', 'répartition', 'Trier par part de plans validés.', 'a-gauche') + '\x3C/span>') +
-      entete('fin', 'fin estimée', 'Semaine où tout le groupe serait validé si le rythme tenu se maintient.') + aide('la fin estimée') + '\x3C/span>' +
+      entete('fin', 'fin estimée', 'Semaine où tout le groupe serait validé si le rythme tenu se maintient.') + aide('la fin estimée', 'fin') + '\x3C/span>' +
       (prochain
-        ? entete('requis', 'rythme requis', 'Plans à valider chaque semaine pour tenir \u00ab\u00a0' + prochain.texte + '\u00a0\u00bb (' +
-            semaineDite(prochain.i) + ') ; dessous, le rythme tenu. En rouge quand le rythme tenu ne suffit pas.') + aide('le rythme requis') + '\x3C/span>'
-        : entete('vitesse', 'rythme tenu', 'Plans validés par semaine, du premier au dernier relevé.') + aide('le rythme tenu') + '\x3C/span>') +
+        ? entete('requis', 'rythme requis', 'Plans à valider chaque semaine pour tenir « ' + prochain.texte + ' » (' +
+            semaineDite(prochain.i) + ') ; dessous, le rythme tenu et sa jauge — la part du rythme requis qu’il atteint, en rouge quand il ne suffit pas.') + aide('le rythme requis', 'requis') + '\x3C/span>'
+        : entete('vitesse', 'rythme tenu', 'Plans validés par semaine, du premier au dernier relevé.') + aide('le rythme tenu', 'tenu') + '\x3C/span>') +
       '\x3C/div>';
+
+    /* Au-dessus de la liste (débrief 27, P-F4) : les notes qui expliquent
+       ses colonnes, puis le panneau « D'où viennent ces chiffres ? » quand
+       un « ? » l'ouvre — il ne remplace plus la liste dans un cadre de
+       430 px, il se pose devant elle, et l'en-tête reste juste dessous. */
+    var html = '';
     /* Un jalon d'un seul périmètre, lu sur « Tout » : son rythme requis ne
        compte que ses plans à lui, et le bloc le dit. */
     var perJ = prochain ? perimetreEcheance(prochain) : '';
     if (prochain && perJ && perJ !== per) {
-      html += '\x3Cdiv class="critique-note">Rythme requis pour \u00ab\u00a0' + ech(prochain.texte) + '\u00a0\u00bb : sur les plans ' +
+      html += '\x3Cdiv class="critique-note">Rythme requis pour « ' + ech(prochain.texte) + ' » : sur les plans ' +
         ech(perJ) + ' de chaque groupe.\x3C/div>';
     }
     /* « 1 à l'arrêt », sous le compte d'un groupe, ne s'explique pas tout
@@ -4970,8 +5051,8 @@
        comptée avant sur la sélection (vide de plans en cours), disparaissait
        en laissant le mot sans définition (relecture du débrief 20). */
     if (rangs.some(function (r) { return r.arretClic; })) {
-      html += '\x3Cdiv class="critique-note note-arret">\x3Cspan class="pastille arret">\x3C/span>\x3Cspan>\x3Cb>à l\u2019arrêt\x3C/b> = en cours, sans changement depuis ' +
-        SEMAINES_ARRET + ' semaines ou plus. Un clic sur « à l\u2019arrêt » ne montre qu\u2019eux dans le tableau ; le groupe ouvert les met en tête de sa liste.\x3C/span>\x3C/div>';
+      html += '\x3Cdiv class="critique-note note-arret">\x3Cspan class="pastille arret">\x3C/span>\x3Cspan>\x3Cb>à l’arrêt\x3C/b> = en cours, sans changement depuis ' +
+        SEMAINES_ARRET + ' semaines ou plus. Un clic sur « à l’arrêt » ne montre qu’eux dans le tableau ; le groupe ouvert les met en tête de sa liste.\x3C/span>\x3C/div>';
     }
     /* Sous une valeur, ce que comptent les colonnes : « plans » et la
        barre suivent la valeur, la fin estimée et les rythmes restent ceux
@@ -4987,25 +5068,51 @@
 
     if (vue.aideFin) html += panneauAide(rangs, prochain);
 
-    /* Toutes les lignes sont là — « Date création par mois » peut en faire
-       quatre-vingts — mais le bloc a une hauteur : on descend dedans au lieu
-       de pousser le reste de la page vers le bas. */
-    html += rangs.map(function (r) {
-      var actif = vue.groupe && vue.groupe.dim === dim && vue.groupe.val === r.nom;
-      var trouves = plansTrouvesDans(r);
+    /* Débrief 27 (lot C, D10) : plus de cadre qui défile — la liste prend
+       sa hauteur dans la page. Au-delà d'une quinzaine de groupes (huit au
+       téléphone, où chaque groupe est une carte), les suivants attendent,
+       cachés, derrière « Voir les N autres » ; la ligne dépliée reste
+       toujours en vue. Les lignes cachées sont là (hidden) : rien ne se
+       recalcule quand on les montre. */
+    function estOuvert(r) { return !!(vue.groupeOuvert && vue.groupeOuvert.dim === dim && vue.groupeOuvert.val === r.nom); }
+    var etroit = !!(window.matchMedia && window.matchMedia('(max-width: 720px)').matches);
+    var limiteG = etroit ? 8 : 15, montres = rangs.length;
+    var repliable = rangs.length > limiteG + (etroit ? 2 : 3);
+    if (repliable && !vue.groupesTout) {
+      montres = limiteG;
+      rangs.forEach(function (r, i) { if (estOuvert(r)) montres = Math.max(montres, i + 1); });
+    }
+    /* Les références d'un gros groupe déplié : une douzaine de rangées de
+       puces, puis « Voir les N autres plans » (D10). La rangée de puces
+       compte autant de puces que la largeur en loge (colonnes de 150 px). */
+    /* La largeur vient de la dernière mesure de la page (poserColonneNom,
+       à l'image d'avant) : la lire ici forcerait une mise en page entière,
+       tableau de 640 lignes compris, au milieu du rendu. */
+    var limiteRefs = LARGEUR_LISTE ? Math.max(1, Math.floor((LARGEUR_LISTE - 32 + 7) / 157)) * 12 : 0;
 
-      /* Le pourcentage s'ecrit dans le segment quand il y tient ; en dessous
-         il reste dans l'infobulle plutot que d'etre rogne. Débrief 22 : la
-         barre se découpe par valeur, comme la barre du haut — chaque valeur
-         a sa couleur, et un segment « en cours » d'un seul bleu dirait
-         PWD_IN_PROGRESS pour des PWD_TO_CONTROL. Sous une valeur choisie,
-         seule la sienne s'éclaire et porte sa part. */
+    var lignes = rangs.map(function (r, i) {
+      var ouvert = estOuvert(r);
+      var filtrePage = !!(vue.groupe && vue.groupe.dim === dim && vue.groupe.val === r.nom);
+      var trouves = plansTrouvesDans(r);
+      var nomG = nomDuGroupe(dim, r.nom);
+      var idListe = 'liste-groupe-' + i;
+
+      /* Débrief 22 : la barre se découpe par valeur, comme la barre du
+         haut — chaque valeur a sa couleur, et un segment « en cours » d'un
+         seul bleu dirait PWD_IN_PROGRESS pour des PWD_TO_CONTROL.
+         Débrief 27 (lot C, B25) : seule la part des validés s'écrit dans la
+         barre — sous une valeur choisie, la sienne — quand elle y tient ;
+         vingt-six petits pourcentages se disputaient l'œil. Les autres parts
+         se lisent au survol d'un segment, dans la phrase de la ligne (lecteur
+         d'écran) et, au doigt comme au clavier, en tête des sous-listes de la
+         ligne dépliée. */
       var barre = VALEURS_COLONNE.map(function (v) {
         var nV = r.parValeur[v.cle];
         if (!nV) return '';
         var part = (nV / r.total) * 100;
         var eclaire = !!vVal && v.cle === vb;
-        var texte = (!vVal || eclaire) && part >= 11 ? Math.round(part) + '\u202f%' : '';
+        var ecrite = vVal ? eclaire : v.famille === 'termine';
+        var texte = ecrite && part >= 11 ? Math.round(part) + ' %' : '';
         /* Chaque segment dit au survol sa valeur et son compte, comme la
            barre du haut — les fins segments n'ont pas d'autre texte. */
         var titre = ' title="' + ech(v.libelle + ' : ' + nb(nV) + ' sur ' + nb(r.total)) + '"';
@@ -5013,85 +5120,181 @@
           ? '\x3Cspan class="hachure' + (eclaire ? ' eclaire' : '') + '" data-cle="' + ech(v.cle) + '"' + titre + ' style="width:' + part.toFixed(2) + '%;color:var(--encre-2)">' + (texte ? '\x3Ci class="etiq-part">' + texte + '\x3C/i>' : '') + '\x3C/span>'
           : '\x3Cspan' + (eclaire ? ' class="eclaire"' : '') + ' data-cle="' + ech(v.cle) + '"' + titre + ' style="width:' + part.toFixed(2) + '%;background:' + v.couleur + ';color:' + v.encre + '">' + texte + '\x3C/span>';
       }).join('');
-      /* L'infobulle de la ligne (sa description pour un lecteur d'écran)
-         reprend la barre valeur par valeur, dans son ordre : le « 35 % »
-         écrit dans le bleu s'y retrouve, à côté de son mot. */
-      var detail = VALEURS_COLONNE.filter(function (v) { return r.parValeur[v.cle]; }).map(function (v) {
-        return nb(r.parValeur[v.cle]) + ' « ' + v.libelle + ' » (' + Math.round(100 * r.parValeur[v.cle] / r.total) + '\u202f%)';
-      }).join(', ');
 
       /* Une seule colonne d'appoint : le rythme requis quand un jalon fixe
-         une échéance — en plans par semaine, avec le rythme tenu dessous —,
-         le rythme tenu seul sinon. */
-      var col2, b = r.bilan;
+         une échéance — en plans par semaine, avec le rythme tenu dessous et
+         sa jauge (débrief 27, B13) —, le rythme tenu seul sinon. */
+      var col2, b = r.bilan, rythmeDit;
       if (!prochain) {
-        col2 = '\x3Cspan class="critique-effort" data-libelle="rythme tenu">\x3Cspan class="v critique-ecart' +
+        col2 = '\x3Cspan class="critique-effort" data-libelle="rythme tenu" aria-hidden="true">\x3Cspan class="v critique-ecart' +
           (r.vitesse > 0 ? '' : ' arret') + '">' +
           (r.vitesse > 0 ? virgule(r.vitesse) + '/sem.' : 'rien de validé') +
           '\x3C/span>\x3C/span>';
+        rythmeDit = 'Rythme tenu : ' + (r.vitesse > 0 ? virgule(r.vitesse) + ' plans par semaine.' : 'rien de validé.');
       } else if (!b.total) {
-        col2 = '\x3Cspan class="critique-effort" data-libelle="rythme requis" title="Aucun plan de ce groupe dans ' +
-          ech(b.domaine) + ' : \u00ab\u00a0' + ech(prochain.texte) + '\u00a0\u00bb ne lui demande rien.">\x3Cspan class="v critique-ecart doux">\u2014\x3C/span>\x3C/span>';
+        col2 = '\x3Cspan class="critique-effort" data-libelle="rythme requis" aria-hidden="true" title="Aucun plan de ce groupe dans ' +
+          ech(b.domaine) + ' : « ' + ech(prochain.texte) + ' » ne lui demande rien.">\x3Cspan class="v critique-ecart doux">—\x3C/span>\x3C/span>';
+        rythmeDit = 'Rythme requis : rien, aucun plan de ce groupe dans ' + b.domaine + '.';
       } else if (!b.restants) {
-        col2 = '\x3Cspan class="critique-effort" data-libelle="rythme requis">\x3Cspan class="v critique-ecart">tout est validé\x3C/span>\x3C/span>';
+        col2 = '\x3Cspan class="critique-effort" data-libelle="rythme requis" aria-hidden="true">\x3Cspan class="v critique-ecart">tout est validé\x3C/span>\x3C/span>';
+        rythmeDit = 'Rythme requis : tout est validé.';
       } else {
-        col2 = '\x3Cspan class="critique-effort" data-libelle="rythme requis" title="' + ech(nb(b.restants) + (b.restants > 1 ? ' plans' : ' plan') +
+        var atteint = b.rythme > 0 ? Math.min(1, b.rythme / b.requis) : 0;
+        col2 = '\x3Cspan class="critique-effort" data-libelle="rythme requis" aria-hidden="true" title="' + ech(nb(b.restants) + (b.restants > 1 ? ' plans' : ' plan') +
           ' à valider' + (b.domaine && b.domaine !== per ? ' dans ' + b.domaine : '') + ' en ' + b.semaines + (b.semaines > 1 ? ' semaines' : ' semaine') +
-          ' : ' + virgule(b.requis) + ' par semaine ; rythme tenu : ' + (b.rythme > 0 ? virgule(b.rythme) + ' par semaine.' : 'aucun plan validé.')) +
-          '">\x3Cspan class="v critique-ecart">' +
-          (b.enRetard ? '\x3Cb class="tard">' + virgule(b.requis) + '/sem.\x3C/b>' : virgule(b.requis) + '/sem.') +
-          '\x3Csmall>' + (b.rythme > 0 ? 'tenu ' + virgule(b.rythme) + '/sem.' : 'rien de validé') + '\x3C/small>\x3C/span>\x3C/span>';
+          ' : ' + virgule(b.requis) + ' par semaine ; rythme tenu : ' + (b.rythme > 0 ? virgule(b.rythme) + ' par semaine' : 'aucun plan validé') +
+          (b.enRetard ? ', il ne suffit pas.' : ', il suffit.')) +
+          '">\x3Cspan class="v critique-ecart">\x3Cspan class="requis">' + virgule(b.requis) + '/sem.\x3C/span>' +
+          '\x3Csmall>\x3Cspan class="jauge-rythme' + (b.enRetard ? '' : ' suffit') + '">\x3Ci style="width:' + (b.enRetard ? (100 * atteint).toFixed(1) : '100') + '%">\x3C/i>\x3C/span>' +
+          (b.rythme > 0 ? 'tenu ' + virgule(b.rythme) + '/sem.' : 'rien de validé') + '\x3C/small>\x3C/span>\x3C/span>';
+        rythmeDit = 'Rythme requis : ' + virgule(b.requis) + ' plans par semaine ; tenu : ' + (b.rythme > 0 ? virgule(b.rythme) : 'aucun') +
+          (b.enRetard ? ', en retard.' : ', suffisant.');
       }
 
       // --- colonne chiffree 3 : la semaine d'arrivee au rythme tenu
       var texteFin = r.restantsGroupe === 0 ? 'validé' : (r.fin === null ? '—' : semaineDite(r.fin));
       var col3 = '\x3Cspan class="critique-date' + (r.fin === null && r.restantsGroupe !== 0 ? ' doux' : '') +
-        '" data-libelle="fin estimée" title="' +
+        '" data-libelle="fin estimée" aria-hidden="true" title="' +
         (r.restantsGroupe === 0 ? 'Plus rien à valider dans ce groupe.'
           : r.fin === null ? 'Aucun plan validé depuis le premier relevé : pas de rythme, donc pas de date.'
           : ech(nb(r.restantsGroupe) + ' plans à valider à ' + virgule(r.vitesse) + ' par semaine : ' + (r.fin - depart) + ' semaines, fin ' + semaineDite(r.fin) + '.')) +
         '">\x3Cspan class="v">' + texteFin + '\x3C/span>\x3C/span>';
 
-      return '\x3Cbutton class="critique-ligne' + (vVal && !r.nValeur ? ' sans-valeur' : '') + '" type="button" data-groupe="' + ech(r.nom) + '" aria-pressed="' + !!actif +
-        '" title="' + (vVal ? ech(nb(r.nValeur) + ' « ' + vVal.libelle + ' » sur ' + nb(r.total)) + ' \u2014 ' : '') +
-        ech(detail) + ' — cliquez pour voir lesquels">' +
+      /* Débrief 27 (lot C, X-A6) : un lecteur d'écran entendait « 21 65
+         12 % 34 % 48 % S48… ». La ligne se dit maintenant en une phrase
+         (masquée à l'œil), les cellules visibles lui sont cachées. */
+      var detailDit = VALEURS_COLONNE.filter(function (v) { return r.parValeur[v.cle]; }).map(function (v) {
+        return nb(r.parValeur[v.cle]) + ' ' + v.libelle + ' (' + Math.round(100 * r.parValeur[v.cle] / r.total) + ' %)';
+      }).join(', ');
+      var phrase = nomG + ', ' +
+        (vVal ? nb(r.nValeur) + ' ' + vVal.libelle + ' sur ' : '') + nb(r.total) + ' plan' + (r.total > 1 ? 's' : '') +
+        (vVal && r.gain ? ' (' + nb(r.gain) + (r.gain > 1 ? ' arrivés' : ' arrivé') + ' au dernier relevé)' : '') +
+        ' : ' + detailDit + '. Fin estimée : ' +
+        (r.restantsGroupe === 0 ? 'tout est validé' : r.fin === null ? 'aucune, rien de validé depuis le premier relevé' : semaineEnClair(r.fin)) + '. ' +
+        rythmeDit + (filtrePage ? ' Filtre posé sur toute la page.' : '');
+
+      return '\x3Cdiv class="critique-rangee" role="row"' + (i >= montres ? ' hidden' : '') + '>' +
+        '\x3Cdiv class="critique-cellule" role="cell" aria-colspan="5">' +
+        '\x3Cbutton class="critique-ligne' + (vVal && !r.nValeur ? ' sans-valeur' : '') + (filtrePage ? ' filtre-page' : '') + '" type="button" data-groupe="' + ech(r.nom) +
+        '" aria-expanded="' + ouvert + '"' + (ouvert ? ' aria-controls="' + idListe + '"' : '') + '>' +
+        '\x3Cspan class="masque">' + ech(phrase) + '\x3C/span>' +
         '\x3Csvg class="chevron" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">' +
         '\x3Cpath d="m3.5 1.5 3.5 3.5-3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>\x3C/svg>' +
-        '\x3Cspan class="critique-nom">' + ech(libelleGroupe(r.nom)) + '\x3C/span>' +
-        '\x3Cspan class="critique-plans">\x3Cspan class="critique-total" data-libelle="plans">' + (vVal ? r.nValeur : r.total) + '\x3C/span>' +
+        '\x3Cspan class="critique-nom" aria-hidden="true">' + ech(libelleGroupe(r.nom)) + (filtrePage ? iconeEntonnoir('marque-filtre') : '') + '\x3C/span>' +
+        '\x3Cspan class="critique-plans" aria-hidden="true">\x3Cspan class="critique-total" data-libelle="plans">' + (vVal ? r.nValeur : r.total) + '\x3C/span>' +
         (vVal ? '\x3Csmall class="sur-n">sur ' + nb(r.total) + (r.gain ? ' · \x3Cb title="' + ech(nb(r.gain) + (r.gain > 1 ? ' plans arrivés' : ' plan arrivé') + ' à « ' +
           vVal.libelle + ' » ' + quandDesGains(gains.sem)) + '">+' + nb(r.gain) + '\x3C/b>' : '') + '\x3C/small>' : '') +
         /* Les plans à l'arrêt du groupe, sous son compte : en ambre, comme
            la puce « À surveiller » du haut. La ligne leur garde la place ;
            le bouton, posé juste après elle (un bouton n'en contient pas un
            autre), vient s'y loger. */
-        (r.arretClic ? '\x3Csmall class="arret-n place" aria-hidden="true">' + r.arretClic + ' à l\u2019arrêt\x3C/small>' : '') + '\x3C/span>' +
-        '\x3Cspan class="critique-barre' + (vVal ? ' focalise' : '') + '">' + barre + '\x3C/span>' +
+        (r.arretClic ? '\x3Csmall class="arret-n place" aria-hidden="true">' + r.arretClic + ' à l’arrêt\x3C/small>' : '') + '\x3C/span>' +
+        '\x3Cspan class="critique-barre' + (vVal ? ' focalise' : '') + '" aria-hidden="true">' + barre + '\x3C/span>' +
         col3 + col2 + '\x3C/button>' +
         (r.arretClic ? '\x3Cdiv class="critique-arret">\x3Cbutton type="button" class="arret-groupe" data-arret-groupe="' + ech(r.nom) +
-          '" aria-pressed="' + (arretPresse === r.nom) + '" title="' + ech(r.arretClic + (r.arretClic > 1 ? ' plans en cours n\u2019ont pas bougé' : ' plan en cours n\u2019a pas bougé') +
-          ' depuis ' + SEMAINES_ARRET + ' semaines ou plus \u2014 ' + (arretPresse === r.nom ? 'cliquez pour retirer le filtre' : 'cliquez pour ne voir qu\u2019eux dans le tableau')) +
-          '">' + r.arretClic + ' à l\u2019arrêt\x3C/button>\x3C/div>' : '') +
-        (actif ? listeUD(r, vb) : (trouves.length ? listeTrouves(trouves) : ''));
+          '" aria-pressed="' + (arretPresse === r.nom) + '" aria-label="' + ech(nomG + ' : ' + r.arretClic + ' à l’arrêt — ne montrer qu’eux dans la page') +
+          '" title="' + ech(r.arretClic + (r.arretClic > 1 ? ' plans en cours n’ont pas bougé' : ' plan en cours n’a pas bougé') +
+          ' depuis ' + SEMAINES_ARRET + ' semaines ou plus — ' + (arretPresse === r.nom ? 'cliquez pour retirer le filtre' : 'cliquez pour ne voir qu’eux dans le tableau')) +
+          '">' + r.arretClic + ' à l’arrêt\x3C/button>\x3C/div>' : '') +
+        (ouvert ? listeUD(r, vb, { id: idListe, nom: nomG, filtre: filtrePage, limite: limiteRefs })
+                : (trouves.length ? listeTrouves(trouves) : '')) +
+        '\x3C/div>\x3C/div>';
     }).join('');
 
-    if (!rangs.length) {
-      html += '\x3Cdiv class="vide-message">Ni groupe ni plan' + (vVal ? ' « ' + ech(vVal.libelle) + ' »' : '') + ' ne contient « ' + ech(vue.filtreGroupe.trim()) +
-        ' ». Échap vide le filtre.\x3C/div>';
+    html += '\x3Cdiv class="critique-table" id="table-groupes" role="table" aria-labelledby="titre-groupe">' + tete + lignes + '\x3C/div>';
+    var caches = rangs.length - montres;
+    if (repliable && (caches > 0 || vue.groupesTout)) {
+      var motListe = motPluriel(dim);
+      html += '\x3Cbutton type="button" class="plus-liste" id="plus-groupes" aria-controls="table-groupes" aria-expanded="' + !!vue.groupesTout + '">' +
+        (vue.groupesTout ? 'Réduire la liste aux ' + limiteG + ' premiers ' + motListe
+                         : 'Voir ' + (caches > 1 ? 'les ' + nb(caches) + ' autres ' + motListe : 'l’autre ' + motListe.replace(/^(groupe|tranche)s$/, '$1'))) +
+        iconeDeplier() + '\x3C/button>';
     }
 
-    /* toggle et non className : le conteneur porte aussi « defile-liste »,
-       qui lui donne sa hauteur et sa barre de défilement. */
+    if (!rangs.length) {
+      html += '\x3Cdiv class="vide-message">Ni groupe ni plan' + (vVal ? ' « ' + ech(vVal.libelle) + ' »' : '') + ' ne contient « ' + ech(vue.filtreGroupe.trim()) +
+        ' ». Échap vide le filtre.\x3C/div>';
+    }
+
     $('zone-critique').classList.toggle('sans-jalon', !prochain);
     $('zone-critique').innerHTML = html;
     ajusterColonneNom();
+  }
+  /* Débrief 27 (lot C, D8) : le bloc vide — une phrase calme et son
+     explication ; la ligne des pastilles et de la recherche, qui n'agirait
+     sur rien, s'efface (sauf si on y a tapé un texte). */
+  function etatVideCritique(phrase, detail) {
+    return '\x3Cdiv class="etat-vide">\x3Cp class="etat-vide-phrase">' + ech(phrase) + '\x3C/p>' +
+      (detail ? '\x3Cp class="etat-vide-detail">' + ech(detail) + '\x3C/p>' : '') + '\x3C/div>';
+  }
+  function blocCritiqueVide(vide) {
+    var sec = $('section-repartition');
+    if (sec && sec.classList.contains('bloc-vide') !== vide) sec.classList.toggle('bloc-vide', vide);
+  }
+  /* Débrief 27 (lot C) : le nom d'un groupe en clair — « ATA 39 »,
+     « ECP-2108 » (le mot de la dimension n'est pas répété quand la valeur
+     le porte déjà), « Date création avr. 2024 ». */
+  function nomDuGroupe(dim, val) {
+    var mot = TITRE_DIM[dim] ? TITRE_DIM[dim].replace(/ \(.*\)$/, '') : 'Groupe';
+    var lib = libelleGroupe(val);
+    if (lib === '—') return mot + ' (sans valeur)';
+    return norm(lib).indexOf(norm(mot)) === 0 ? lib : mot + ' ' + lib;
+  }
+  /* Le mot de la liste pour « Voir les 7 autres ATA » : un sigle reste tel
+     quel (ATA, ECP, CC), le reste se dit « groupes » — « mois » et
+     « tranches » pour les deux dimensions tirées de la date. */
+  function motPluriel(dim) {
+    if (dim === '_mois') return 'mois';
+    if (dim === '_anciennete') return 'tranches';
+    var mot = TITRE_DIM[dim] ? TITRE_DIM[dim].replace(/ \(.*\)$/, '') : '';
+    return mot && mot === mot.toUpperCase() && mot.length <= 5 ? mot : 'groupes';
+  }
+  /* « S48 · déc. 2027 » se lit « semaine 48, décembre 2027 » (phrase d'une
+     ligne, pour un lecteur d'écran). */
+  function semaineEnClair(i) {
+    var jeudi = new Date(dateDe(i).getTime());
+    jeudi.setUTCDate(jeudi.getUTCDate() + 3);
+    return 'semaine ' + numeroSemaine(i) + ', ' + MOIS[jeudi.getUTCMonth()] + ' ' + jeudi.getUTCFullYear();
+  }
+  /* Les deux petits dessins du bloc : l'entonnoir du filtre de la page,
+     le chevron de « Voir les N autres ». */
+  function iconeEntonnoir(classe) {
+    return '\x3Csvg' + (classe ? ' class="' + classe + '"' : '') + ' width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">' +
+      '\x3Cpath d="M1.5 2h9L7 6.2V10l-2-1.1V6.2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>\x3C/svg>';
+  }
+  function iconeDeplier() {
+    return '\x3Csvg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">' +
+      '\x3Cpath d="M2 3.5 5 6.5l3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>\x3C/svg>';
   }
   /* La colonne du nom de groupe prend la largeur du plus long nom affiché
      (débrief 23 : un nom d'ECP coupé de « … » ne se lisait plus). Une seule
      mesure, tous les noms d'un coup ; au téléphone, le nom a toute la ligne.
      Elle se fait à l'image suivante, avec les autres mesures de la page. */
   function ajusterColonneNom() { aMesurer('colonneNom'); }
+  /* Débrief 27 (lot C) : la largeur de la liste, relevée avec les autres
+     mesures de la page ; le rendu du bloc s'en sert sans rien remesurer. */
+  var LARGEUR_LISTE = 0;
   function poserColonneNom() {
+    LARGEUR_LISTE = $('zone-critique') ? $('zone-critique').clientWidth : 0;
+    largeurColonneNom();
+    poserPartsBarre();
+  }
+  /* Débrief 27 (lot C, B25) : la part des validés ne s'écrit dans sa barre
+     que si elle y tient en entier — à 768 px, « 12 % » se coupait en
+     « 2% » dans un segment de 14 px. Sinon elle reste dans la phrase de la
+     ligne, au survol et en tête de sa sous-liste. */
+  function poserPartsBarre() {
+    var zone = $('zone-critique');
+    if (!zone) return;
+    var segs = [].filter.call(zone.querySelectorAll('.critique-barre span[data-cle]'), function (x) { return !!x.textContent; });
+    segs.forEach(function (x) { x.classList.remove('part-cachee'); });
+    var plage = document.createRange();
+    segs.filter(function (x) {
+      plage.selectNodeContents(x);
+      return x.clientWidth > 0 && plage.getBoundingClientRect().width + 4 > x.clientWidth;
+    }).forEach(function (x) { x.classList.add('part-cachee'); });
+  }
+  function largeurColonneNom() {
     var zone = $('zone-critique');
     if (!zone) return;
     zone.style.removeProperty('--col-nom');
@@ -6841,6 +7044,7 @@
     vue.perimetre = '';
     vue.lotLa = null;
     vue.lotRappOuvert = null;         // tout effacer, c'est aussi replier la comparaison
+    vue.groupeOuvert = null;          // débrief 27 (lot C) : … et la ligne dépliée du bloc par groupe
     vue.base = 'ici';
     vue.seconde.recherche = ''; $('recherche-seconde').value = '';
     $('recherche').value = '';
@@ -8737,7 +8941,12 @@
   $('dim-critique').addEventListener('change', function (e) {
     /* Une autre dimension, d'autres noms : le filtre de la colonne de gauche
        n'aurait plus de sens, il repart à blanc. */
-    vue.dimCritique = e.target.value; vue.groupe = null;
+    /* Débrief 27 (lot C) : le filtre de la page posé sur un groupe (« ATA :
+       39 » au bandeau) reste posé — c'est un filtre de la page, retiré par
+       sa croix ou par son bouton ; seules les lignes dépliées du bloc
+       repartent à zéro. */
+    vue.dimCritique = e.target.value;
+    vue.groupeOuvert = null; vue.groupesTout = false; vue.refsTout = false;
     vue.filtreGroupe = ''; $('filtre-groupe').value = '';
     ajusterChoixDim();
     rendre();
@@ -8765,39 +8974,107 @@
     e.target.value = '';
     poserFiltreGroupe('');
   });
-  /* La hauteur que l'en-tête du bloc, collé en haut du cadre qui défile
-     (débrief 24, hors téléphone), prend à la liste : une ligne qu'on y
-     ramène se pose sous lui, pas dessous, sinon on ne voit plus quel groupe
-     on vient d'ouvrir. Au téléphone, il défile avec la liste : rien. */
-  function sousTeteCritique(zone) {
-    var tete = zone && zone.querySelector('.critique-tete');
-    return tete && getComputedStyle(tete).position === 'sticky' ? tete.offsetHeight : 0;
+  /* ============================================================
+     Débrief 27 (lot C) — LE BLOC PAR GROUPE DANS LA PAGE
+     Plus de cadre qui défile (débrief 24 : 430 px, une ligne coupée en deux,
+     la molette prisonnière) : la liste prend sa hauteur dans la page, et son
+     en-tête colle sous le sommaire tant qu'on la lit. Ce que la page amène
+     sous les yeux — une ligne ouverte, un focus au clavier, le début d'un
+     classement — se pose sous cet en-tête collé, jamais dessous.
+     ============================================================ */
+  /* Le haut de ce qu'on voit de la liste : sous le sommaire collé et, hors
+     téléphone, sous l'en-tête de la liste qui colle avec lui. */
+  /* Mesuré sur la page, pas lu dans --bas-sommaire : le bandeau FILTRES
+     qu'un clic vient de faire paraître n'y est compté qu'à l'image
+     suivante (MutationObserver). */
+  function hautSommaire() {
+    var f = $('filtres-actifs'), s = $('sommaire');
+    return (f && !f.hidden ? f.getBoundingClientRect().height : 0) +
+      (s && s.getClientRects().length ? s.getBoundingClientRect().height : 0);
   }
-  /* La première ligne qu'on voit sous l'en-tête, et où : de quoi la remettre
-     au même endroit après avoir redessiné ce qui est au-dessus d'elle. */
-  function lignePremiereVue(zone) {
-    var haut = zone.getBoundingClientRect().top + sousTeteCritique(zone);
-    var ligne = [].filter.call(zone.querySelectorAll('.critique-ligne'), function (x) { return x.getBoundingClientRect().bottom > haut + 1; })[0];
-    return ligne ? { val: ligne.dataset.groupe, y: ligne.getBoundingClientRect().top - zone.getBoundingClientRect().top } : null;
+  function hautLibreCritique() {
+    var tete = $('zone-critique').querySelector('.critique-tete');
+    return hautSommaire() + (tete && getComputedStyle(tete).position === 'sticky' ? tete.offsetHeight : 0);
   }
-  /* Au clavier, le navigateur amène ce qui prend le focus au bord haut du
-     cadre — ou l'y laisse, s'il y est déjà en entier : sous l'en-tête collé,
-     focus et nom invisibles. Une fois qu'il a défilé (à l'image suivante),
-     la liste descend juste assez pour le poser sous l'en-tête. La souris
-     n'est pas concernée : une ligne cliquée se place elle-même (plus bas).
-     (scroll-padding ne convient pas : l'en-tête lui-même, pris dans la
-     marge, faisait sauter la liste quand ses boutons prenaient le focus.) */
+  function ligneDuBloc(val) {
+    return [].filter.call($('zone-critique').querySelectorAll('.critique-ligne'), function (x) { return x.dataset.groupe === val; })[0] || null;
+  }
+  /* La première ligne qu'on voit sous l'en-tête collé, si elle est à l'écran. */
+  function lignePremiereVue() {
+    var haut = hautLibreCritique();
+    return [].filter.call($('zone-critique').querySelectorAll('.critique-ligne'), function (x) {
+      var r = x.getBoundingClientRect();
+      return r.height > 0 && r.bottom > haut + 1 && r.top < window.innerHeight;
+    })[0] || null;
+  }
+  /* Redessiner le bloc sans que ce qu'on regarde bouge à l'écran : un
+     repère (une ligne, un bouton), retrouvé après le rendu, garde sa place ;
+     la page défile d'autant. Rend le repère redessiné. */
+  function garderEnPlace(trouver, redessiner) {
+    var avant = trouver(), y = avant ? avant.getBoundingClientRect().top : null;
+    redessiner();
+    mesurerMaintenant();
+    var apres = trouver();
+    if (apres && y !== null) {
+      var dy = apres.getBoundingClientRect().top - y;
+      if (Math.abs(dy) >= 1) window.scrollBy(0, dy);
+    }
+    return apres;
+  }
+  /* Une ligne passée sous l'en-tête collé (le bandeau FILTRES qui
+     apparaît le fait descendre) se pose juste dessous. */
+  function poserSousTete(el) {
+    if (!el) return;
+    var ecart = el.getBoundingClientRect().top - hautLibreCritique();
+    if (ecart < 0) window.scrollBy(0, ecart - 4);
+  }
+  function focaliser(el) {
+    if (!el) return;
+    try { el.focus({ preventScroll: true }); } catch (err) { el.focus(); }
+  }
+  /* Le panneau « D'où viennent ces chiffres ? » : il s'ouvre au-dessus de
+     l'en-tête de la liste (débrief 27, P-F4). Ouvert la liste descendue,
+     la page remonte jusqu'à lui ; refermé de plus bas, les lignes qu'on
+     regardait restent où elles étaient. Le focus reste sur — ou revient
+     à — le « ? » qui l'a ouvert. */
+  var aideOuvertePar = 'fin';
+  function basculerAide(cle) {
+    var ouvrir = !vue.aideFin;
+    if (cle) aideOuvertePar = cle;
+    var panneau = $('panneau-fin');
+    var repere = !ouvrir && panneau && panneau.getBoundingClientRect().bottom <= hautLibreCritique() ? lignePremiereVue() : null;
+    var valR = repere ? repere.dataset.groupe : null;
+    vue.aideFin = ouvrir;
+    garderEnPlace(function () { return valR !== null ? ligneDuBloc(valR) : null; }, function () { rendreCritique(selection()); });
+    if (ouvrir && $('panneau-fin')) {
+      var haut = $('panneau-fin').getBoundingClientRect().top - hautSommaire() - 8;
+      if (haut < 0) window.scrollBy(0, haut);
+    }
+    focaliser($('zone-critique').querySelector('button[data-aide="' + aideOuvertePar + '"]') || $('zone-critique').querySelector('button[data-aide]'));
+  }
+  /* Au clavier, le navigateur amène ce qui prend le focus au bord haut de
+     l'écran — sous l'en-tête collé de la liste, focus et nom invisibles.
+     Une fois qu'il a défilé (à l'image suivante), la page remonte juste
+     assez pour le poser sous l'en-tête. La souris n'est pas concernée. */
   $('zone-critique').addEventListener('focusin', function (e) {
-    var zone = this, cible = e.target;
-    if (!cible || !cible.closest || cible.closest('.critique-tete')) return;
+    var cible = e.target;
+    if (!cible || !cible.closest || !cible.closest('.critique-rangee')) return;
     try { if (!cible.matches(':focus-visible')) return; } catch (err) { /* navigateur sans :focus-visible : on pose quand même */ }
     var poser = function () {
-      var h = sousTeteCritique(zone);
-      if (!h || document.activeElement !== cible) return;
-      var haut = zone.getBoundingClientRect().top + h, r = cible.getBoundingClientRect();
-      if (r.top < haut) zone.scrollTop -= haut + 4 - r.top;
+      if (document.activeElement !== cible) return;
+      var tete = $('zone-critique').querySelector('.critique-tete');
+      if (!tete || getComputedStyle(tete).position !== 'sticky') return;
+      var bas = tete.getBoundingClientRect().bottom, r = cible.getBoundingClientRect();
+      if (r.top < bas) window.scrollBy(0, r.top - bas - 4);
     };
     if (window.requestAnimationFrame) requestAnimationFrame(poser); else setTimeout(poser, 0);
+  });
+  /* Échap dans le panneau d'explication (ou sur son « ? ») le referme. */
+  $('zone-critique').addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' || !vue.aideFin || !e.target.closest) return;
+    if (!e.target.closest('#panneau-fin') && !e.target.closest('button[data-aide]')) return;
+    e.preventDefault();
+    basculerAide(null);
   });
   $('zone-critique').addEventListener('click', function (e) {
     /* Un en-tete de colonne : premier clic dans le sens naturel, deuxieme dans
@@ -8807,34 +9084,88 @@
       /* Le classement par défaut est « par nom, dans l'ordre » : un clic
          sur le nom le renverse d'abord. */
       var cle = t.dataset.trig, naturel = (cle === 'nom');
+      var libelleTri = (t.getAttribute('aria-label') || '').replace(/^Trier par /, '');
       var courant = vue.triGroupe.cle ? vue.triGroupe : { cle: 'nom', asc: true };
       if (courant.cle !== cle) vue.triGroupe = { cle: cle, asc: naturel };
       else if (courant.asc === naturel) vue.triGroupe = { cle: cle, asc: !naturel };
       else vue.triGroupe = { cle: null, asc: false };
       planifierSauvegarde();
       rendreCritique(selection());
+      mesurerMaintenant();
       /* L'en-tête collé se clique la liste descendue : le classement se lit
-         depuis son premier, pas à partir de son milieu. */
-      $('zone-critique').scrollTop = 0;
-      var repris = document.querySelector('button[data-trig="' + cle + '"]');
-      if (repris) repris.focus();
+         depuis son premier — la page remonte juste assez pour le poser sous
+         l'en-tête. */
+      var l0 = $('zone-critique').querySelector('.critique-ligne');
+      if (l0) {
+        var ecart = l0.getBoundingClientRect().top - hautLibreCritique();
+        if (ecart < 0) window.scrollBy(0, ecart);
+      }
+      focaliser(document.querySelector('button[data-trig="' + cle + '"]'));
+      annoncer(vue.triGroupe.cle
+        ? 'Liste triée par ' + libelleTri + ', ordre ' + (vue.triGroupe.asc ? 'croissant' : 'décroissant') + '.'
+        : 'Liste dans son ordre par défaut, par ' + TITRE_DIM[vue.dimCritique].replace(/ \(.*\)$/, '') + '.');
       return;
     }
     var boutonAide = e.target.closest('button[data-aide]');
-    if (boutonAide) {
-      /* L'aide s'ouvre en haut de la liste, sous l'en-tête : cliquée la liste
-         descendue, on y remonte, sinon elle s'ouvrait hors de vue. Refermée
-         de plus bas, les lignes qu'on regardait restent où elles étaient. */
-      var zoneA = $('zone-critique'), vue1 = vue.aideFin ? lignePremiereVue(zoneA) : null;
-      vue.aideFin = !vue.aideFin;
-      rendreCritique(selection());
-      if (vue.aideFin) zoneA.scrollTop = 0;
-      else if (vue1) {
-        var memeL = [].filter.call(zoneA.querySelectorAll('.critique-ligne'), function (x) { return x.dataset.groupe === vue1.val; })[0];
-        if (memeL) zoneA.scrollTop += memeL.getBoundingClientRect().top - zoneA.getBoundingClientRect().top - vue1.y;
+    if (boutonAide || e.target.closest('button[data-fermer-aide]')) {
+      basculerAide(boutonAide ? boutonAide.getAttribute('data-aide') : null);
+      return;
+    }
+    /* « Voir les N autres ATA » : les lignes cachées se montrent à la place
+       du bouton, le focus va à la première ; « Réduire la liste » garde le
+       bouton sous le pointeur. */
+    if (e.target.closest('#plus-groupes')) {
+      var deplier = !vue.groupesTout;
+      var cachees = $('zone-critique').querySelectorAll('.critique-rangee[hidden]');
+      var premiere = deplier && cachees.length ? cachees[0].querySelector('.critique-ligne') : null;
+      var valP = premiere ? premiere.dataset.groupe : null, nCachees = cachees.length;
+      vue.groupesTout = deplier;
+      garderEnPlace(function () { return deplier ? null : $('plus-groupes'); }, function () { rendreCritique(selection()); });
+      var motP = motPluriel(vue.dimCritique);
+      if (deplier) {
+        focaliser(valP !== null ? ligneDuBloc(valP) : null);
+        annoncer(nCachees + ' autres ' + motP + ' affichés.');
+      } else {
+        focaliser($('plus-groupes'));
+        annoncer('Liste réduite à ses premiers ' + motP + '.');
       }
-      var repris = document.querySelector('button[data-aide]');
-      if (repris) repris.focus();
+      return;
+    }
+    /* « Voir les N autres plans de ce groupe » : de même, dans la liste dépliée. */
+    var plusR = e.target.closest('button[data-plus-refs]');
+    if (plusR) {
+      var deplierR = !vue.refsTout;
+      var listeR = plusR.closest('.groupe-refs');
+      var cachesR = listeR ? listeR.querySelectorAll('.jeton-ud[hidden]') : [];
+      var refP = deplierR && cachesR.length ? cachesR[0].getAttribute('data-ud') : null, nR = cachesR.length;
+      var boutonR = function () { return $('zone-critique').querySelector('button[data-plus-refs]'); };
+      vue.refsTout = deplierR;
+      garderEnPlace(function () { return deplierR ? null : boutonR(); }, function () { rendreCritique(selection()); });
+      if (deplierR) {
+        focaliser(refP !== null ? $('zone-critique').querySelector('.jeton-ud[data-ud="' + echAttr(refP) + '"]') : null);
+        annoncer(nR + ' autres plans affichés.');
+      } else {
+        focaliser(boutonR());
+        annoncer('Liste des plans réduite.');
+      }
+      return;
+    }
+    /* « Filtrer la page sur ATA 39 » (débrief 27, P-F5) : le seul geste du
+       bloc qui filtre toute la page — synthèse, courbe, tableau. Un second
+       clic le retire ; la ligne reste dépliée et à sa place. */
+    var filtreG = e.target.closest('button[data-filtrer-groupe]');
+    if (filtreG) {
+      var valF = filtreG.getAttribute('data-filtrer-groupe'), dimF = vue.dimCritique;
+      var dejaF = !!(vue.groupe && vue.groupe.dim === dimF && vue.groupe.val === valF);
+      vue.groupe = dejaF ? null : { dim: dimF, val: valF };
+      vue.groupeParArret = false;
+      vue.groupeOuvert = { dim: dimF, val: valF };
+      garderFocus(function () {
+        poserSousTete(garderEnPlace(function () { return ligneDuBloc(valF); }, rendre));
+      }, 'zone-critique');
+      var nomF = nomDuGroupe(dimF, valF), nF = selection().length;
+      annoncer(dejaF ? 'Filtre ' + nomF + ' retiré : la page montre ' + nb(nF) + ' plan' + (nF > 1 ? 's' : '') + '.'
+                     : 'Page filtrée sur ' + nomF + ' : ' + nb(nF) + ' plan' + (nF > 1 ? 's' : '') + '.');
       return;
     }
     var arretG = e.target.closest('button[data-arret-groupe]');
@@ -8846,17 +9177,27 @@
       var dejaA = arretG.getAttribute('aria-pressed') === 'true';
       /* Le second clic défait tout ce que le premier a posé : la sélection,
          et la tuile qu'il avait pressée lui-même (relecture du débrief 20 :
-         restait « État : En cours », que Nathan n'avait jamais choisi). */
+         restait « État : En cours », que Nathan n'avait jamais choisi) —
+         débrief 27 (lot C) : et le filtre de la page sur le groupe, s'il
+         l'avait posé lui-même ; le groupe reste déplié. */
       if (dejaA) {
         vue.refs = null; vue.refsLibelle = '';
         if (vue.etatParArret && vue.etat === vue.etatParArret) vue.etat = '';
         vue.etatParArret = '';
+        if (vue.groupeParArret) vue.groupe = null;
+        vue.groupeParArret = false;
       }
       else {
         /* La tuile reste « posée par le clic » si un clic d'un autre groupe
            l'avait déjà posée ; pressée à la main, elle n'est pas à lui. */
         var posee = vue.etatParArret && vue.etat === vue.etatParArret ? vue.etat : '';
+        /* Le filtre de groupe est « à lui » sauf si on l'avait posé à la
+           main, sur ce même groupe, par « Filtrer la page sur … ». */
+        var aLaMain = !!(vue.groupe && vue.groupe.dim === vue.dimCritique && vue.groupe.val === valA && !vue.groupeParArret);
         vue.groupe = { dim: vue.dimCritique, val: valA };
+        vue.groupeParArret = !aLaMain;
+        if (!(vue.groupeOuvert && vue.groupeOuvert.dim === vue.dimCritique && vue.groupeOuvert.val === valA)) vue.refsTout = false;
+        vue.groupeOuvert = { dim: vue.dimCritique, val: valA };
         vue.refs = {};
         plansALArret().liste.forEach(function (x) { vue.refs[x.plan.reference] = true; });
         vue.refsLibelle = SEL_ARRET;
@@ -8868,9 +9209,9 @@
         } else if (etatContraireALArret()) { vue.etat = ''; posee = ''; }
         vue.etatParArret = posee;
       }
-      rendre();
+      poserSousTete(garderEnPlace(function () { return ligneDuBloc(valA); }, rendre));
       var reprisA = [].filter.call($('zone-critique').querySelectorAll('button[data-arret-groupe]'), function (x) { return x.getAttribute('data-arret-groupe') === valA; })[0];
-      if (reprisA) reprisA.focus({ preventScroll: true });
+      focaliser(reprisA);
       return;
     }
     var ud = e.target.closest('button[data-ud]');
@@ -8884,28 +9225,30 @@
       defilerVers(cadre, { behavior: 'smooth', block: 'center' });
       return;
     }
+    /* Débrief 27 (lot C, P-F5) : une ligne cliquée se déplie sur place,
+       et c'est tout — la page ne change pas (le filtre de la page est le
+       bouton « Filtrer la page sur … » de la liste dépliée). Seul le bloc
+       se redessine ; la ligne ne bouge pas sous le pointeur, le focus reste
+       sur elle (X-A1). */
     var b = e.target.closest('.critique-ligne');
     if (!b) return;
-    var meme = vue.groupe && vue.groupe.dim === vue.dimCritique && vue.groupe.val === b.dataset.groupe;
-    vue.groupe = meme ? null : { dim: vue.dimCritique, val: b.dataset.groupe };
-    /* La ligne cliquée ne bouge pas sous le pointeur ; quand elle s'ouvre
-       au ras du bord du bloc, ses plans cachés dessous, elle monte en haut. */
-    var zone = $('zone-critique'), val = b.dataset.groupe;
-    var avant = b.getBoundingClientRect().top - zone.getBoundingClientRect().top;
-    rendre();
-    mesurerMaintenant();               // la colonne des noms posée avant de relire où est la ligne
-    var ligne = [].filter.call(zone.querySelectorAll('.critique-ligne'), function (x) { return x.dataset.groupe === val; })[0];
+    var val = b.dataset.groupe, dimC = vue.dimCritique;
+    var meme = !!(vue.groupeOuvert && vue.groupeOuvert.dim === dimC && vue.groupeOuvert.val === val);
+    vue.groupeOuvert = meme ? null : { dim: dimC, val: val };
+    vue.refsTout = false;
+    var ligne = null;
+    garderFocus(function () {
+      ligne = garderEnPlace(function () { return ligneDuBloc(val); }, function () { rendreCritique(selection()); });
+    }, 'zone-critique');
     if (!ligne) return;
-    /* En haut du cadre, l'en-tête collé : une ligne cliquée à moitié sous
-       lui, ou montée au bord, se pose juste dessous. */
-    var haut = zone.getBoundingClientRect().top, sousTete = sousTeteCritique(zone);
-    zone.scrollTop += ligne.getBoundingClientRect().top - haut - Math.max(avant, sousTete);
-    var suivant = ligne.nextElementSibling;
-    if (suivant && suivant.classList.contains('critique-arret')) suivant = suivant.nextElementSibling;   // le bouton « à l'arrêt » de la ligne
-    var dessous = !meme && suivant && suivant.classList.contains('groupe-refs') ? suivant : null;
-    if (dessous && dessous.getBoundingClientRect().top > zone.getBoundingClientRect().bottom - 140) {
-      zone.scrollTop += ligne.getBoundingClientRect().top - haut - sousTete - 4;
-    }
+    /* À moitié sous l'en-tête collé, elle se pose dessous ; ouverte au ras
+       du bas de l'écran, ses plans cachés dessous, elle monte juste sous
+       l'en-tête. */
+    var listeL = meme ? null : document.getElementById(ligne.getAttribute('aria-controls') || '');
+    if (listeL && listeL.getBoundingClientRect().top > window.innerHeight - 140) window.scrollBy(0, ligne.getBoundingClientRect().top - hautLibreCritique() - 4);
+    else poserSousTete(ligne);
+    var nomL = nomDuGroupe(dimC, val), nL = listeL ? listeL.querySelectorAll('.jeton-ud').length : 0;
+    annoncer(meme ? nomL + ' replié.' : nomL + ' déplié : ' + nb(nL) + ' plan' + (nL > 1 ? 's' : '') + '.');
   });
 
   /* Les rangées de pastilles du bloc et du graphique (débrief 18) : elles
@@ -8914,21 +9257,18 @@
   if ($('filtre-valeur-groupe')) $('filtre-valeur-groupe').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-valeur-bloc]');
     if (!b || b.disabled) return;
-    vue.valeurBloc = b.dataset.valeurBloc;
-    /* La ligne dépliée reste à sa hauteur sous les yeux. */
-    var zone = $('zone-critique'), ouverte = zone.querySelector('.critique-ligne[aria-pressed="true"]');
-    var val = ouverte ? ouverte.dataset.groupe : null;
-    var avant = ouverte ? ouverte.getBoundingClientRect().top - zone.getBoundingClientRect().top : 0;
-    /* Encore en vue, mais sous l'en-tête collé : elle se pose juste dessous. */
-    var sousTete = sousTeteCritique(zone);
-    if (ouverte && avant < sousTete && avant + ouverte.offsetHeight > 0) avant = sousTete;
-    rendreCritique(selection());
-    mesurerMaintenant();
-    if (val !== null) {
-      var ligne = [].filter.call(zone.querySelectorAll('.critique-ligne'), function (x) { return x.dataset.groupe === val; })[0];
-      if (ligne) zone.scrollTop += ligne.getBoundingClientRect().top - zone.getBoundingClientRect().top - avant;
-    }
-    rendreFocus($('filtre-valeur-groupe'), 'valeur-bloc', vue.valeurBloc);
+    var cle = b.dataset.valeurBloc;
+    /* Débrief 27 (lot C, P-F19) : un second clic sur la pastille choisie
+       rend « Tout ». */
+    vue.valeurBloc = cle && cle === vue.valeurBloc ? '' : cle;
+    /* La ligne dépliée, si on la voit, reste à sa place sous les yeux. */
+    var ouverte = $('zone-critique').querySelector('.critique-ligne[aria-expanded="true"]');
+    var ro = ouverte ? ouverte.getBoundingClientRect() : null;
+    var val = ro && ro.bottom > hautLibreCritique() && ro.top < window.innerHeight ? ouverte.dataset.groupe : null;
+    garderEnPlace(function () { return val !== null ? ligneDuBloc(val) : null; }, function () { rendreCritique(selection()); });
+    rendreFocus($('filtre-valeur-groupe'), 'valeur-bloc', cle);
+    var vB = vue.valeurBloc ? valeurDeCle(vue.valeurBloc) : null;
+    annoncer(vB ? 'Le bloc ne compte que les plans ' + vB.libelle + '.' : 'Le bloc compte tous les plans.');
   });
   if ($('filtre-valeur-graphe')) $('filtre-valeur-graphe').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-valeur-graphe]');
@@ -11322,5 +11662,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = '499a4e4';
+window.SUIVI_FWD_FIN = '3b6f071';
 </script>
