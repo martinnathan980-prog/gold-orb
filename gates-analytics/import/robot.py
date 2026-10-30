@@ -99,7 +99,10 @@ GUETTEUR = r"""
 (function () {
   if (window.__suiviFwdGuette) return; window.__suiviFwdGuette = true;
   var dire = function (o) { try { window.__suiviFwd(JSON.stringify(o)); } catch (e) {} };
-  var texte = function (e) { return String(e.innerText || e.value || '').replace(/\s+/g, ' ').trim().slice(0, 90); };
+  /* La première ligne seulement : un menu « GATES » qui contient ses sous-menus
+     se décrit « GATES », pas « GATES Données MK1 Données MK2… ». */
+  var premiere = function (s) { return String(s || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean)[0] || ''; };
+  var texte = function (e) { return premiere(e.innerText || e.value).replace(/\s+/g, ' ').slice(0, 90); };
   var stable = function (id) { return id && !/\d{3,}|[:.]|^(mat|ng|ui|ext|gwt|react|ember|cdk|mui)[-_]/i.test(id); };
   var chemin = function (e) {
     var p = [];
@@ -117,12 +120,22 @@ GUETTEUR = r"""
              label: a('aria-label'), titre: a('title'), texte: texte(e), placeholder: a('placeholder'), href: a('href'),
              chemin: chemin(e), page: location.host + location.pathname };
   };
-  var ACTIF = 'a,button,input,select,textarea,label,summary,option,[role=button],[role=link],[role=menuitem],[role=option],' +
-              '[role=tab],[role=checkbox],[role=radio],[role=gridcell],[role=row],[onclick],td,th,li';
+  var FORT = 'a,button,input,select,textarea,label,summary,option,[role=button],[role=link],[role=menuitem],[role=option],' +
+             '[role=tab],[role=checkbox],[role=radio],[role=treeitem]';
+  var FAIBLE = '[onclick],[role=gridcell],[role=row],td,th,li';
+  /* Ce qu'on a cliqué : un bouton, un lien… ; sinon le mot lui-même s'il est
+     court (un intitulé de menu) ; sinon sa case, sa ligne. */
+  var cliquable = function (t) {
+    var fort = t.closest && t.closest(FORT);
+    if (fort) return fort;
+    var mot = String(t.innerText || '').trim();
+    if (mot && mot.length <= 40 && mot.indexOf('\n') === -1) return t;
+    return (t.closest && t.closest(FAIBLE)) || t;
+  };
   var champ = function (e) { return e.matches && e.matches('input:not([type]),input[type=text],input[type=search],input[type=email],input[type=number],input[type=date],textarea'); };
   document.addEventListener('click', function (ev) {
     if (!ev.isTrusted) return;            // un clic de la page elle-même (lien de téléchargement…)
-    var e = (ev.target.closest && ev.target.closest(ACTIF)) || ev.target;
+    var e = cliquable(ev.target);
     var a = ev.target.closest && ev.target.closest('a[target]');
     if (a && a.target !== '_self') a.target = '_self';
     if (champ(e) || (e.matches && e.matches('select,input[type=password]'))) return;
@@ -146,6 +159,7 @@ GUETTEUR = r"""
 TROUVER = r"""
 (function (d) {
   var norm = function (s) { return String(s || '').replace(/\s+/g, ' ').trim().toLowerCase(); };
+  var premiere = function (s) { return String(s || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean)[0] || ''; };
   var vus = [];
   var visible = function (e) { var r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden'; };
   var parcourir = function (doc, dx, dy) {
@@ -165,7 +179,9 @@ TROUVER = r"""
     if (d.id && e.id === d.id) n += 10;
     if (d.nom && a('name') === d.nom) n += 6;
     if (d.label && a('aria-label') === d.label) n += 6;
-    if (d.texte && norm(e.innerText || e.value) === norm(d.texte)) n += 6;
+    var lu = norm(premiere(e.innerText || e.value));
+    if (d.texte && lu === norm(d.texte)) n += 6;
+    else if (d.texte && lu && norm(d.texte).indexOf(lu) === 0) n += 3;   // appris avec ses sous-menus ouverts
     if (d.titre && a('title') === d.titre) n += 3;
     if (d.placeholder && a('placeholder') === d.placeholder) n += 3;
     if (d.href && a('href') === d.href) n += 3;
@@ -174,7 +190,7 @@ TROUVER = r"""
     if (parChemin === e) n += 4;
     if (n > note) { note = n; meilleur = v; }
   });
-  if (!meilleur || note < 5) return null;
+  if (!meilleur || note < 4) return null;
   var e = meilleur.e; e.scrollIntoView({ block: 'center', inline: 'center' });
   var r = e.getBoundingClientRect();
   window.__suiviCible = e;

@@ -1949,7 +1949,17 @@ function reprendreLaMain() {
   const ui = SpreadsheetApp.getUi();
   let moi = '';
   try { moi = emailPropre_(Session.getEffectiveUser().getEmail()); } catch (err) { moi = ''; }
-  if (!moi) { ui.alert('Suivi FWD', 'Google ne donne pas votre adresse : impossible de vous désigner responsable.', ui.ButtonSet.OK); return; }
+  if (!moi) { try { moi = emailPropre_(Session.getActiveUser().getEmail()); } catch (err) { moi = ''; } }
+  /* Débrief 28 : Google ne donne l'adresse qu'une fois l'autorisation « voir
+     votre adresse e-mail » accordée au script — elle se demande en lançant une
+     fonction depuis l'éditeur, pas depuis ce menu. */
+  if (!moi) {
+    ui.alert('Suivi FWD', 'Google ne donne pas encore votre adresse au script : il lui manque une autorisation.\n\n' +
+      '1. Menu Extensions → Apps Script.\n2. En haut, dans la liste des fonctions, choisir « diagnostic ».\n' +
+      '3. Cliquer ▶ Exécuter, puis « Examiner les autorisations », votre compte, et « Autoriser ».\n' +
+      '4. Revenir ici et refaire Suivi FWD → Reprendre la main.', ui.ButtonSet.OK);
+    return;
+  }
   if (emailPropre_(CONFIG.RESPONSABLE) && emailPropre_(CONFIG.RESPONSABLE) !== moi) {
     ui.alert('Suivi FWD', 'Le responsable est fixé dans le code (CONFIG.RESPONSABLE : ' + CONFIG.RESPONSABLE + ') : le changer là.', ui.ButtonSet.OK);
     return;
