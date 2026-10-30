@@ -2722,7 +2722,12 @@ async function reinitialiser(pg) {
     dessinJ.aria.every((a, i) => new RegExp('^Jalon ' + (i + 1) + ', ').test(a)), JSON.stringify([dessinJ.nums, dessinJ.titres]));
   verifier('les cinq numéros sur une seule rangée, sans étage, aucun ne touche l’autre, et aucun nom écrit sur le dessin — la légende les porte',
     dessinJ.chev.length === 0 && dessinJ.visibles === 0 && dessinJ.rangs === 1, JSON.stringify([dessinJ.chev, dessinJ.visibles, dessinJ.rangs]));
-  /* Le panoramique et la molette marchent toujours, jalons compris. */
+  /* Le panoramique et la molette marchent toujours, jalons compris.
+     Débrief 27 (lot H, P-F5) : le périmètre cliqué plus haut est monté dans
+     la barre du haut de la page ; y aller fait défiler la page — le cadre du
+     graphique est donc remis à l'écran et remesuré avant d'y glisser. */
+  await p.evaluate(() => document.getElementById('cadre-graphe').scrollIntoView({ block: 'center' })); await p.waitForTimeout(300);
+  Object.assign(cadre, await (await p.$('#cadre-graphe')).boundingBox());
   const avantPan = await derniereSemaine();
   await balayer(0.5, -1);
   verifier('le panoramique fonctionne toujours', (await derniereSemaine()) !== avantPan);

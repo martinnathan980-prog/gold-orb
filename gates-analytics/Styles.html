@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "0e5f128";
+  --suivi-fwd-edition: "994bfe1";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -604,9 +604,9 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
   margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
   min-width: 0; max-width: 100%; font-size: 12px; color: var(--encre-3);
 }
-.outils-page, .portee { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; min-height: 28px; max-width: 100%; }
+.outils-page, .reglages-portee { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; min-height: 28px; max-width: 100%; }
 .outils-page { gap: 4px 20px; }
-.portee { gap: 10px 22px; }
+.reglages-portee { gap: 10px 22px; }
 /* Un réglage : son mot, puis sa commande. Le contrat et sa tranche sont deux
    réglages de la même ligne (.choix-contrat ne fait que les grouper). */
 .reglage { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; }
@@ -616,9 +616,9 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .reglage-contrat .controle { display: inline-flex; min-width: 0; }
 /* Une largeur stable : celle de la plus longue option (88 px au moins) —
    HDK, THS ou « Tranche 2 », la barre ne bouge pas quand le choix change. */
-.portee select.select { font-size: 13px; font-weight: 500; width: auto; min-width: 88px; max-width: 240px; }
-.portee select.select:disabled { color: var(--encre-3); cursor: progress; }
-.portee select.select[hidden], .tranche-unique[hidden] { display: none; }
+.reglages-portee select.select { font-size: 13px; font-weight: 500; width: auto; min-width: 88px; max-width: 240px; }
+.reglages-portee select.select:disabled { color: var(--encre-3); cursor: progress; }
+.reglages-portee select.select[hidden], .tranche-unique[hidden] { display: none; }
 .tranche-unique { display: inline-block; min-width: 88px; padding: 4px 0; font-size: 13px; line-height: 19px; color: var(--encre-2); }
 /* Sans l'interrupteur, son mot se tait aussi. */
 .bandeau-mode .choix-indicateur[hidden] { display: none; }
@@ -649,15 +649,15 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 @media (max-width: 720px) {
   .bandeau-mode .reglages { width: 100%; margin-left: 0; align-items: stretch; gap: 8px; }
   .outils-page { gap: 4px 18px; }
-  .portee { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 14px; }
-  .portee .reglage { display: flex; flex-wrap: wrap; gap: 2px 8px; }
-  .portee .reglage-contrat { grid-column: 1; }
-  .portee .choix-tranche { grid-column: 2; }
-  .portee .choix-avancement, .portee .perimetre { grid-column: 1 / -1; }
+  .reglages-portee { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 14px; }
+  .reglages-portee .reglage { display: flex; flex-wrap: wrap; gap: 2px 8px; }
+  .reglages-portee .reglage-contrat { grid-column: 1; }
+  .reglages-portee .choix-tranche { grid-column: 2; }
+  .reglages-portee .choix-avancement, .reglages-portee .perimetre { grid-column: 1 / -1; }
   .reglage-contrat .controle { display: flex; flex: 1 1 0; min-width: 0; }
-  .portee select.select, .tranche-unique { flex: 1 1 0; width: auto; min-width: 0; max-width: none; }
-  .portee .segmente { display: flex; flex: 1 1 auto; }
-  .portee .segmente button { flex: 1 1 auto; }
+  .reglages-portee select.select, .tranche-unique { flex: 1 1 0; width: auto; min-width: 0; max-width: none; }
+  .reglages-portee .segmente { display: flex; flex: 1 1 auto; }
+  .reglages-portee .segmente button { flex: 1 1 auto; }
 }
 /* Le périmètre : « Tout », puis une puce par valeur de la colonne de domaine,
    chacune avec son compte de plans. Sans colonne de domaine, il n'a rien à
