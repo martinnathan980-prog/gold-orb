@@ -1304,13 +1304,23 @@ les verdicts disent tout.
   bases connaissent, en trois parts à l'échelle — vert d'accord, violet autre
   indice, ambre connus de SEE mais pas validés ici ; une part, même d'un seul
   plan, reste visible. À la première apparition d'une source, quand la section
-  entre dans l'écran, les cercles s'installent et l'anneau se trace (rien de
-  tout cela si le système demande moins de mouvement). À gauche du cercle
+  entre dans l'écran, les cercles s'installent et l'anneau se trace, en
+  300 ms au plus (rien de tout cela si le système demande moins de
+  mouvement). À gauche du cercle
   GATES, en rouge, les **validés que SEE ignore** — le nombre qui compte —,
   et dessous, dans le cercle, plus discret, ce qui n'est **pas encore** dans
   SEE (rien d'anormal : ces plans ne sont pas validés). À droite, ce que SEE
   est seul à connaître (« tout le contrat » sous un périmètre, car ces lignes
-  n'ont pas de domaine) ;
+  n'ont pas de domaine). Débrief 27 : les mots de la figure sont écrits
+  par-dessus le dessin, à taille fixe — 12 px au moins à toute largeur ; une
+  figure étroite (téléphone) prend un tracé où les cercles occupent toute la
+  largeur, « en commun » au-dessus de l'anneau. Ses trois côtés sont des
+  **boutons**, et les parts de l'anneau répondent au clic : un clic, Entrée
+  ou Espace, ou un doigt y font exactement ce que fait la ligne de verdict ;
+  le côté se presse comme elle. Dans la phrase « À traiter : 4 … · 12 … »,
+  chaque nombre est un bouton nommé par toute sa phrase (« 4 plans validés
+  absents de SEE »), de 24 px au moins (44 au doigt). Depuis la figure ou
+  cette phrase, si le verdict déplié n'est pas à l'écran, la page l'y amène ;
 - à droite, six **verdicts**, un par ligne : la pastille, le grand nombre,
   puis une phrase de tous les jours qui se suffit à elle-même — plus de mot
   court en gras devant, il ne disait rien de plus. Un verdict à 0 se lit mais
@@ -1322,7 +1332,7 @@ les verdicts disent tout.
 | dans SEE sous une autre lettre d'indice | validé ici, présent là sous une autre lettre | une réémission d'un côté seulement |
 | dans SEE, mais GATES ne les dit pas validés | présent là, mais GATES ne le dit pas validé | l'avancement GATES est peut-être en retard |
 | validés dans GATES, mais SEE ne les connaît pas | validé ici, inconnu de SEE | à vérifier des deux côtés — c'est le lot qui compte |
-| pas validés, et pas encore dans SEE : rien d'anormal | pas validé ici, pas encore créé là | rien d'anormal |
+| pas validés, et pas encore dans SEE (rien d'anormal) | pas validé ici, pas encore créé là | rien d'anormal |
 | lignes de SEE sans plan dans GATES | une ligne de là dont aucun plan du contrat n'a la racine et la solution | à regarder de près |
 
 Le bandeau des filtres redit la même phrase (« Comparaison : validés dans
@@ -1346,12 +1356,18 @@ GATES, et où mène le clic.
 **Les plans d'un verdict**, dépliés sous sa ligne (il n'y a plus de liste
 « plan par plan » qui répétait les six verdicts dessous) : **une puce par
 plan** — sa pastille d'état GATES, sa référence, et pour une réémission la
-lettre sous laquelle SEE le connaît (« → B », en violet). En tête, la légende
-des pastilles (Validé, En cours, À faire, Non renseigné). La bulle du survol
-dit le reste (« Validé dans GATES · absent dans SEE »). Pour « seulement dans
-SEE », la référence recomposée, sans pastille. Les références sont triées, et
-un verdict déplié montre **tous** ses plans — aucune coupure : au-delà de la
-hauteur d'un demi-écran, c'est sa zone qui défile. À l'ouverture, tout est
+lettre sous laquelle SEE le connaît (« → B », en violet). En tête, une
+phrase dit ce que veut dire le lot et ce que fait un clic (« À vérifier des
+deux côtés : un plan validé devrait être dans SEE. Un clic sur un plan le
+montre seul dans le tableau. ») — ce que la bulle du survol était seule à
+dire, désormais au doigt et au clavier —, puis la légende des pastilles,
+chaque valeur avec son compte. La bulle du survol reste (« Validé dans
+GATES · absent dans SEE »). Pour « seulement dans SEE », la référence
+recomposée, sans pastille. Les références sont triées ; un verdict déplié
+prend sa hauteur naturelle (débrief 27 : plus de zone qui défile et retient
+la molette ou le doigt) et montre ses 24 premiers plans, puis « Voir les N
+autres » déplie le reste sur place — aucun renvoi au tableau ; « Copier (n) »
+copie toujours tout le lot. À l'ouverture, tout est
 replié ; « Tout effacer » replie aussi. Pendant une recherche dans la
 comparaison, les verdicts qui ont le plan cherché se déplient sur lui
 (« 1 trouvé sur 251 »), les autres s'effacent.
