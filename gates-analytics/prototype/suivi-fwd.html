@@ -1602,9 +1602,10 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 .rapp-voir-plus:hover { border-color: var(--encre); background: var(--creux); }
 @media (pointer: coarse) {
   .rapp-voir-plus { min-height: 44px; }
-  /* Les puces : 36 px, 8 px d'écart, et une cible invisible qui déborde de
-     4 px en haut et en bas — 44 px chacune, sans empiéter sur la voisine. */
-  .rapp-puces { gap: 8px; }
+  /* Les puces : 36 px, 8 px entre les rangées, et une cible invisible qui
+     déborde de 4 px en haut et en bas — 44 px chacune, sans empiéter sur
+     la voisine. */
+  .rapp-puces { row-gap: 8px; }
   .rapp-puce { position: relative; min-height: 36px; }
   .rapp-puce::after { content: ""; position: absolute; inset: -4px 0; }
   .verdict-corps-tete .copier { position: relative; min-height: 32px; }
@@ -1637,6 +1638,17 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 .rapp-puce:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .rapp-puce .pastille { width: 8px; height: 8px; }
 .rapp-puce-vers { color: var(--indice); font-weight: 500; }
+/* Débrief 27 (lot E) : au téléphone, deux puces par rangée plutôt qu'une
+   (dès 360 px) — le retrait du lot et le rembourrage des puces se
+   resserrent. */
+@media (max-width: 480px) {
+  .verdict-corps { margin-left: 0; padding: 6px 0 2px 8px; }
+  .rapp-puces { padding-inline: 0; }
+  .verdict-corps-tete, .rapp-detail { margin-inline: 0; }
+  .rapp-voir-plus { margin-left: 0; }
+  .rapp-puce { padding-inline: 8px; gap: 6px; }
+  .rapp-puces { column-gap: 6px; }
+}
 .pastille.accord { background: var(--fait); }
 .pastille.avance { background: var(--cours); }
 .pastille.manque { background: var(--alerte); }
