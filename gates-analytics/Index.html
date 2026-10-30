@@ -70,7 +70,7 @@
 <script>
   /* La livraison de ce fichier, posée par la construction : la page la compare
      à celles de Code, Styles et Javascript, et nomme celui qui diffère. */
-  window.SUIVI_FWD_LIVRAISON_INDEX = '8d83704';
+  window.SUIVI_FWD_LIVRAISON_INDEX = '8dbc4ac';
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
@@ -83,7 +83,8 @@
           .withSuccessHandler(cb)
           .withFailureHandler(function (e) {
             console.error('Contrat non chargé :', e && e.message);
-            cb(null);
+            /* Débrief 27 : la raison suit, pour que la page la dise. */
+            cb(null, e && e.message ? String(e.message) : '');
           })
           .getDonneesCompactes(id);
       } catch (e) { cb(null); /* page ouverte hors classeur : sans conséquence */ }
@@ -127,8 +128,10 @@
 
 <div class="page">
 
-  <div class="filtres-actifs" id="filtres-actifs" hidden></div>
-
+  <!-- Débrief 27 (lot H, X-A10) : l'en-tête de la page — la barre des
+       réglages, puis le titre et ce qu'il regarde — est un seul repère
+       « bannière » pour les lecteurs d'écran. -->
+  <header class="entete" id="entete">
   <div class="bandeau-mode" id="bandeau-mode">
     <!-- Hors du classeur seulement — la page ouverte seule, sur son jeu de
          démonstration — le bandeau le dit. Devant le classeur, rien. -->
@@ -136,55 +139,96 @@
     <!-- Le message du classeur quand il n'a rien pu rendre — feuille vide,
          contrat introuvable, colonne d'avancement absente. -->
     <span class="mot-mode alerte-source" id="alerte-source" role="alert" hidden></span>
-    <!-- Les deux réglages de la page, l'un sous l'autre, calés à droite : le
-         contrat, puis l'avancement suivi, chacun son mot juste devant lui. -->
-    <div class="reglages" id="reglages">
-      <!-- Débrief 26 : seuls les administrateurs voient ce bouton. -->
-      <span class="choix-admin" id="choix-admin" hidden>
-        <button type="button" class="lien-doux bouton-admin" id="ouvrir-admin" aria-haspopup="dialog">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 10.2a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4Z" stroke="currentColor" stroke-width="1.4"/><path d="M13.1 9.6l1.1.9-1.3 2.3-1.4-.5a5.3 5.3 0 0 1-1.4.8L9.8 14.5H7.2l-.3-1.4a5.3 5.3 0 0 1-1.4-.8l-1.4.5-1.3-2.3 1.1-.9a5.4 5.4 0 0 1 0-1.6l-1.1-.9 1.3-2.3 1.4.5a5.3 5.3 0 0 1 1.4-.8l.3-1.4h2.6l.3 1.4c.5.2 1 .5 1.4.8l1.4-.5 1.3 2.3-1.1.9c.1.5.1 1.1 0 1.6Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
-          Administration
+    <!-- Débrief 27 (lot H, B1) : une seule barre de réglages, calée à droite,
+         une seule voix : en haut, les outils de la page (Administration, Vue
+         d'ensemble, Aide) ; dessous, ce qu'on regarde — Contrat, Tranche,
+         Avancement, Périmètre —, chaque mot juste devant sa commande. Le
+         périmètre y monte (P-F5) : il porte sur toute la page. -->
+    <div class="reglages" id="reglages" role="group" aria-label="Réglages de la page">
+      <div class="outils-page" id="outils-page">
+        <!-- Débrief 26 : seuls les administrateurs voient ce bouton. Débrief
+             27 : sa place est gardée dès la première image (invisible tant
+             que les droits ne sont pas lus) : rien ne bouge quand ils
+             arrivent. -->
+        <span class="choix-admin" id="choix-admin" data-droits="attente">
+          <button type="button" class="outil-page bouton-admin" id="ouvrir-admin" aria-haspopup="dialog">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 10.2a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4Z" stroke="currentColor" stroke-width="1.4"/><path d="M13.1 9.6l1.1.9-1.3 2.3-1.4-.5a5.3 5.3 0 0 1-1.4.8L9.8 14.5H7.2l-.3-1.4a5.3 5.3 0 0 1-1.4-.8l-1.4.5-1.3-2.3 1.1-.9a5.4 5.4 0 0 1 0-1.6l-1.1-.9 1.3-2.3 1.4.5a5.3 5.3 0 0 1 1.4-.8l.3-1.4h2.6l.3 1.4c.5.2 1 .5 1.4.8l1.4-.5 1.3 2.3-1.1.9c.1.5.1 1.1 0 1.6Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+            Administration
+          </button>
+        </span>
+        <button type="button" class="outil-page" id="voir-ensemble" aria-haspopup="dialog" aria-expanded="false" aria-controls="ensemble" hidden>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
+          Vue d’ensemble
         </button>
-      </span>
-      <span class="choix-contrat" id="choix-contrat" hidden>
-        <button type="button" class="lien-doux lien-ensemble" id="voir-ensemble" aria-expanded="false" aria-controls="ensemble">Vue d’ensemble</button>
-        <label for="select-contrat">Contrat</label>
-        <span class="controle">
-          <select class="select" id="select-contrat"></select>
-          <span class="attente" id="etat-contrat" role="status" aria-live="polite"></span>
+        <!-- Débrief 27 : l'aide de la page (le lot G y branche sa fenêtre). -->
+        <button type="button" class="outil-page" id="ouvrir-aide" aria-haspopup="dialog">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.3" stroke="currentColor" stroke-width="1.3"/><path d="M6.2 6.3a1.9 1.9 0 0 1 3.7.5c0 1.3-1.9 1.6-1.9 2.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.6" r=".85" fill="currentColor"/></svg>
+          Aide
+        </button>
+      </div>
+      <div class="portee" id="portee">
+        <span class="choix-contrat" id="choix-contrat" hidden>
+          <span class="reglage reglage-contrat">
+            <label for="select-contrat">Contrat</label>
+            <span class="controle">
+              <select class="select" id="select-contrat"></select>
+              <!-- Débrief 27 (B7, A-F14) : plus rien ne s'écrit à côté du
+                   sélecteur — « Chargement… » y poussait toute la barre. Le
+                   mot reste ici pour les lecteurs d'écran ; l'attente se
+                   voit au trait du haut de l'écran et au voile. -->
+              <span class="attente masque" id="etat-contrat"></span>
+            </span>
+          </span>
+          <!-- Débrief 26 : la tranche du contrat, quand il en a plusieurs. -->
+          <span class="reglage choix-tranche" id="choix-tranche" hidden>
+            <label for="select-tranche">Tranche</label>
+            <select class="select" id="select-tranche"></select>
+            <!-- Débrief 27 (lot H, B7) : un contrat sans tranche garde la case. -->
+            <span class="tranche-unique" id="tranche-unique" hidden>unique</span>
+          </span>
         </span>
-        <!-- Débrief 26 : la tranche du contrat, quand il en a plusieurs. -->
-        <span class="choix-tranche" id="choix-tranche" hidden>
-          <label for="select-tranche">Tranche</label>
-          <select class="select" id="select-tranche"></select>
+        <!-- L'avancement suivi, lu dans le bloc HDK AA 011 de l'extract : la
+             définition électrique (le FWD) ou le concept harnais. Toute la page
+             suit — barre, courbe, journal, groupes, tableau, comparaison. -->
+        <span class="reglage choix-avancement" id="choix-avancement">
+          <span class="mot-reglage" aria-hidden="true">Avancement</span>
+          <span class="segmente choix-indicateur" id="choix-indicateur" role="group" aria-label="Avancement suivi" hidden>
+            <button type="button" data-indicateur="def" aria-pressed="true">Définition électrique</button>
+            <button type="button" data-indicateur="concept" aria-pressed="false">Concept harnais</button>
+          </span>
         </span>
-      </span>
-      <!-- L'avancement suivi, lu dans le bloc HDK AA 011 de l'extract : la
-           définition électrique (le FWD) ou le concept harnais. Toute la page
-           suit — barre, courbe, journal, groupes, tableau, comparaison. -->
-      <span class="choix-avancement" id="choix-avancement">
-        <span class="mot-reglage" aria-hidden="true">Avancement</span>
-        <span class="segmente choix-indicateur" id="choix-indicateur" role="group" aria-label="Avancement suivi" hidden>
-          <button type="button" data-indicateur="def" aria-pressed="true">Définition électrique</button>
-          <button type="button" data-indicateur="concept" aria-pressed="false">Concept harnais</button>
-        </span>
-      </span>
+        <!-- Le périmètre — ce qu'on regarde — porte sur toute la page : « Tout »,
+             puis une puce par valeur de la colonne de domaine. -->
+        <div class="reglage perimetre" id="perimetre" hidden>
+          <span class="mot-reglage mot-perimetre" id="mot-perimetre">Périmètre</span>
+          <span class="segmente" id="choix-perimetre" role="group" aria-labelledby="mot-perimetre"></span>
+        </div>
+      </div>
+    </div>
+    <!-- Débrief 27 (lot H, D8, A-F5) : un contrat qui n'a pas pu se charger
+         le dit ici — ce qui a échoué, ce qu'on voit encore, et « Réessayer ».
+         Posé sous la barre, par-dessus le haut du titre : rien ne descend
+         dans la page. -->
+    <div class="bandeau-alerte alerte-contrat" id="alerte-contrat" role="alert" hidden>
+      <span class="alerte-contrat-texte" id="alerte-contrat-texte"></span>
+      <button type="button" class="bouton" id="reessayer-contrat">Réessayer</button>
+      <button type="button" class="fiche-plan-fermer" id="fermer-alerte-contrat" aria-label="Fermer ce message">×</button>
     </div>
   </div>
 
-  <!-- La vue d'ensemble des contrats : une ligne par contrat, ouverte à la
-       demande depuis le bandeau. -->
-  <section class="ensemble panneau panneau-hors-suite" id="ensemble" hidden aria-label="Vue d’ensemble des contrats"></section>
-
-  <!-- Le titre, seul, au centre : rien ne lui vole sa zone. Le contrat n'est
-       pas répété, il est déjà choisi en haut. -->
-  <header class="masthead">
+  <!-- Le titre, seul, au centre. Débrief 27 (lot H, B1, P-F10, P-F11) :
+       au-dessus, ce qu'il regarde — « HDK · Tranche 1 · Définition
+       électrique » ; dessous, la semaine, puis l'âge des chiffres. -->
+  <div class="masthead">
+    <p class="contexte-page" id="contexte-page"></p>
     <h1 id="titre-page">Suivi FWD</h1>
     <div class="semaine">
       <span><b id="num-semaine">—</b></span>
       <span aria-hidden="true">·</span>
       <span id="dates-semaine">—</span>
     </div>
+    <p class="fraicheur" id="fraicheur"></p>
+  </div>
   </header>
 
   <!-- Le sommaire (débrief 20) : les panneaux de la page, chacun avec son
@@ -204,6 +248,11 @@
       <li><a href="#rapprochement" data-chapitre="rapprochement">Comparaison</a></li>
     </ol>
   </nav>
+  <!-- Débrief 27 (lot H, P-F6, M5) : les filtres posés, sous le sommaire et
+       collés avec lui. Le bandeau ne prend aucune place dans la page (hauteur
+       nulle, sa ligne posée par-dessus) : rien ne saute quand un filtre
+       s'ajoute ou s'enlève. -->
+  <div class="filtres-actifs" id="filtres-actifs" hidden></div>
 
   <!-- Un classeur sans plans : ce qu'il faut faire, au lieu de sections vides. -->
   <section class="classeur-vide" id="classeur-vide" hidden>
@@ -230,14 +279,11 @@
   <section class="avancement panneau teinte-une" id="section-synthese" aria-labelledby="surtitre-synthese">
     <div class="panneau-tete">
       <p class="surtitre" id="surtitre-synthese">Synthèse</p>
-      <!-- Le périmètre — ce qu'on regarde — à droite de la phrase qu'il
-           gouverne, juste au-dessus de la barre. -->
+      <!-- Débrief 27 (lot H, P-F5) : le périmètre est monté dans la barre
+           des réglages, avec le contrat et l'avancement : il porte sur toute
+           la page, pas sur ce seul panneau. -->
       <div class="avancement-ligne">
         <div class="phrase" id="phrase">Chargement…</div>
-        <div class="perimetre" id="perimetre" hidden>
-          <span class="mot-perimetre" id="mot-perimetre">Périmètre</span>
-          <span class="segmente" id="choix-perimetre" role="group" aria-labelledby="mot-perimetre"></span>
-        </div>
       </div>
     </div>
     <div class="alerte-valeurs" id="alerte-valeurs" role="status" hidden></div>
@@ -489,6 +535,14 @@
 <!-- Débrief 27 : la seule zone d'annonce de la page (voir annoncer()) :
      les lecteurs d'écran y entendent les changements de résultat. -->
 <div class="masque" id="annonce" role="status" aria-live="polite" aria-atomic="true"></div>
+<!-- La vue d'ensemble des contrats : une ligne par contrat, ouverte à la
+     demande depuis la barre des réglages. Débrief 27 (lot H, B18, P-F16) :
+     une fenêtre, posée en haut de l'écran par-dessus la page — Échap ou un
+     clic à côté la ferment, le focus revient au bouton. -->
+<dialog class="ensemble" id="ensemble" aria-labelledby="ensemble-titre" hidden></dialog>
+<!-- Débrief 27 (lot H, D8) : le trait d'attente, en haut de l'écran, pendant
+     qu'un contrat se charge. -->
+<div class="barre-chargement" id="barre-chargement" hidden></div>
 <!-- Débrief 26 : le panneau d'administration — les jalons, les contrats, les
      administrateurs. Vide tant qu'un administrateur ne l'ouvre pas. -->
 <dialog class="admin" id="admin" aria-labelledby="admin-titre">

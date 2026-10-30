@@ -83,7 +83,8 @@
           .withSuccessHandler(cb)
           .withFailureHandler(function (e) {
             console.error('Contrat non chargé :', e && e.message);
-            cb(null);
+            /* Débrief 27 : la raison suit, pour que la page la dise. */
+            cb(null, e && e.message ? String(e.message) : '');
           })
           .getDonneesCompactes(id);
       } catch (e) { cb(null); /* page ouverte hors classeur : sans conséquence */ }

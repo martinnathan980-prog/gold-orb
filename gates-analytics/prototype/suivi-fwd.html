@@ -296,9 +296,11 @@ body {
    11/500, capitales, .08em, --encre-3) et l'en-tête de tableau (Sans
    12/500, en minuscules, --encre-2, filet --filet-fort dessous). */
 .num { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
-/* L'étiquette dans une carte (D4) : « PÉRIMÈTRE », « JALONS », « HISTORIQUE
-   DU PLAN »… Les sélecteurs qui la reprennent sont groupés ici. */
-.etiquette-carte, .perimetre .mot-perimetre, .legende-jalons-mot, .groupe-refs .sous-titre, .groupe-refs .titre-arret,
+/* L'étiquette dans une carte (D4) : « JALONS », « HISTORIQUE DU PLAN »…
+   Les sélecteurs qui la reprennent sont groupés ici. (Débrief 27, lot H :
+   « Périmètre » est monté dans la barre des réglages, où il parle comme
+   « Contrat » et « Avancement ».) */
+.etiquette-carte, .legende-jalons-mot, .groupe-refs .sous-titre, .groupe-refs .titre-arret,
 .fiche-plan-tete .mot, .admin-corps h3, .aide-panneau .exemple, .filtres-actifs .mot {
   font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 11px; font-weight: 500; line-height: 1.4;
   letter-spacing: .08em; text-transform: uppercase; color: var(--encre-3);
@@ -326,8 +328,28 @@ body {
    aplat (débrief 22 : la bande d'encre du débrief 21 faisait « un bloc à
    part » — retour au titre du débrief 20). Le contrat n'y est pas répété
    (débrief 3) : il est choisi juste au-dessus. */
-.masthead { text-align: center; padding-block: 40px 30px; }
-@media (max-width: 720px) { .masthead { padding-block: 26px 20px; } }
+.masthead { text-align: center; padding-block: 32px 26px; }
+@media (max-width: 720px) { .masthead { padding-block: 22px 18px; } }
+/* Débrief 27 (lot H, B1, P-F11) : au-dessus du titre, ce qu'il regarde —
+   « HDK · TRANCHE 1 · DÉFINITION ÉLECTRIQUE » —, dans la voix des surtitres :
+   une capture ou une impression dit d'elle-même quel contrat elle montre.
+   Sa ligne est gardée vide dès la première image. */
+.contexte-page {
+  margin: 0 0 14px; min-height: 15px;
+  font: 500 11px/1.4 "IBM Plex Mono", monospace; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--encre-3); overflow-wrap: anywhere;
+}
+@media (max-width: 720px) { .contexte-page { margin-bottom: 10px; } }
+/* Débrief 27 (lot H, P-F10, A-F13) : sous la semaine, l'âge des chiffres —
+   quand le classeur a été lu, et le dernier relevé archivé ; en ambre quand
+   ce relevé a plus de huit jours. */
+.fraicheur {
+  margin: 8px auto 0; min-height: 18px; max-width: 100%;
+  font-size: 13px; line-height: 18px; color: var(--encre-3); font-variant-numeric: tabular-nums;
+}
+.fraicheur .morceau { white-space: nowrap; }
+@media (max-width: 420px) { .fraicheur .morceau { white-space: normal; } }
+.fraicheur .vieux { color: var(--cours); }
 .masthead h1 {
   font-family: Newsreader, Georgia, serif;
   font-weight: 300; font-size: clamp(34px, 6vw, 48px);
@@ -559,13 +581,22 @@ body[data-vide="true"] section.avancement, body[data-vide="true"] section.bloc,
 body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement, body[data-vide="true"] .pied { display: none !important; }
 
 /* ---------------------------------------------------- Bandeau du haut */
-/* Le contrat et l'avancement suivi, tout en haut, discrets. */
 /* Débrief 27 (B21) : le contenu du bandeau, du pied et de la barre collée
    s'aligne sur le bord du contenu des panneaux (--retrait-panneau), plus
    sur leur bord extérieur : une seule ligne verticale à gauche et à droite. */
+/* Débrief 27 (lot H, B1) : une seule barre de réglages, une seule voix —
+   chaque mot (12 px, gris tertiaire) juste devant sa commande, les valeurs
+   à l'encre, plus de lien souligné. Deux lignes calées à droite (débrief
+   14 : « tout centré sur la droite ») : les outils de la page en haut,
+   discrets ; dessous, ce qu'on regarde (Contrat, Tranche, Avancement,
+   Périmètre). Un filet sous la barre la sépare du titre. Chaque ligne a sa
+   hauteur dès la première image : rien ne descend quand la page se remplit
+   ou quand les droits arrivent. */
 .bandeau-mode {
-  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-  padding: 12px var(--retrait-panneau) 0;
+  position: relative;
+  display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap;
+  padding: 12px var(--retrait-panneau);
+  border-bottom: 1px solid var(--filet);
 }
 .bandeau-mode .mot-mode { font-size: 12px; color: var(--encre-3); }
 .bandeau-mode .mot-mode b { color: var(--cours); font-weight: 500; }
@@ -573,75 +604,118 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
    place du mot de mode, et annoncé aux lecteurs d'écran. */
 .bandeau-mode .alerte-source { color: var(--alerte); font-weight: 500; }
 .bandeau-mode .alerte-source[hidden] { display: none; }
-/* Les réglages, à droite du bandeau : le contrat au-dessus, l'avancement
-   dessous, chaque ligne calée sur le bord droit de la page, son mot juste
-   devant sa commande (débrief 14 : « tout centré sur la droite »). Le
-   contrat n'apparaît que s'il y a vraiment plusieurs contrats entre lesquels
-   choisir ; l'avancement, que si l'extract porte le concept harnais. */
 .bandeau-mode .reglages {
-  margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
-  font-size: 12px; color: var(--encre-3);
+  margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+  min-width: 0; max-width: 100%; font-size: 12px; color: var(--encre-3);
 }
-.bandeau-mode .choix-contrat, .bandeau-mode .choix-avancement { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
-/* « Chargement… » s'écrit à gauche du sélecteur : le sélecteur reste
-   collé au bord droit pendant qu'un contrat se charge. */
-.bandeau-mode .choix-contrat .controle { display: inline-flex; flex-direction: row-reverse; align-items: baseline; gap: 8px; }
-.bandeau-mode .choix-contrat[hidden] { display: none; }
+.outils-page, .portee { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; min-height: 28px; max-width: 100%; }
+.outils-page { gap: 4px 20px; }
+.portee { gap: 10px 22px; }
+/* Un réglage : son mot, puis sa commande. Le contrat et sa tranche sont deux
+   réglages de la même ligne (.choix-contrat ne fait que les grouper). */
+.reglage { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; }
+.bandeau-mode .choix-contrat { display: contents; }
+.bandeau-mode .choix-contrat[hidden], .bandeau-mode .reglage[hidden] { display: none; }
+.reglage > label, .reglage > .mot-reglage { font-size: 12px; color: var(--encre-3); white-space: nowrap; }
+.reglage-contrat .controle { display: inline-flex; min-width: 0; }
+/* Une largeur fixe : HDK, THS ou « Tranche 2 », la barre ne bouge pas. */
+.portee select.select { font-size: 13px; font-weight: 500; width: 88px; min-width: 0; text-overflow: ellipsis; }
+.portee select.select:disabled { color: var(--encre-3); cursor: progress; }
+.portee select.select[hidden], .tranche-unique[hidden] { display: none; }
+.tranche-unique { display: inline-block; width: 88px; padding: 4px 0; font-size: 13px; line-height: 19px; color: var(--encre-2); }
 /* Sans l'interrupteur, son mot se tait aussi. */
-.bandeau-mode .choix-avancement[hidden] { display: none; }
-.bandeau-mode .reglages:empty { display: none; }
-.bandeau-mode .choix-contrat select { font-size: 13px; min-width: 64px; }
-.bandeau-mode .choix-tranche { display: inline-flex; align-items: baseline; gap: 10px; }
-.bandeau-mode .choix-tranche[hidden] { display: none; }
-@media (max-width: 720px) {
-  .bandeau-mode .reglages { min-width: 0; max-width: 100%; }
-  .bandeau-mode .choix-contrat { flex-wrap: wrap; row-gap: 6px; max-width: 100%; }
-  .bandeau-mode .choix-contrat .controle { min-width: 0; max-width: 100%; }
-  .bandeau-mode .choix-contrat select { min-width: 0; max-width: 100%; text-overflow: ellipsis; }
-}
-.bandeau-mode .choix-contrat select:disabled { color: var(--encre-3); cursor: progress; }
-.bandeau-mode .attente { font-size: 12px; color: var(--encre-3); }
 .bandeau-mode .choix-indicateur[hidden] { display: none; }
-.bandeau-mode .attente:empty { display: none; }
-/* Le périmètre : tout en haut, à côté du mode, parce qu'il porte sur toute la
-   page — barre, courbe, journal, bloc par groupe, tableau. « Tout », puis une
-   puce par valeur de la colonne de domaine, chacune avec son compte de plans.
-   Sans colonne de domaine, il n'a rien à proposer et reste caché. */
-/* Le périmètre vit sous le titre, au-dessus de la barre : c'est de là qu'on
-   choisit ce qu'on regarde, et le bandeau du haut garde sa sobriété. */
-/* Le périmètre, à droite de la phrase qu'il gouverne : le mot, puis le
-   choix. Quand la ligne manque de place, il passe dessous, à gauche. */
-.perimetre {
-  display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px 10px;
-  font-size: 12px; color: var(--encre-3); min-width: 0; max-width: 100%; margin-left: auto;
+/* Les outils de la page : une icône de 14 px et un mot, sans soulignement. */
+.outil-page {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 2px; margin: 0;
+  border: 0; border-radius: 4px; background: none; font: inherit; font-size: 13px; line-height: 18px;
+  color: var(--encre-2); cursor: pointer; white-space: nowrap;
 }
-@media (max-width: 720px) { .perimetre { justify-content: flex-start; margin-left: 0; } }
-.perimetre[hidden] { display: none; }
+.outil-page:hover { color: var(--encre); }
+.outil-page svg { flex: none; }
+.outil-page[hidden] { display: none; }
+.outil-page[aria-expanded="true"] { color: var(--encre); }
+/* Administration : sa place est gardée, invisible, tant que les droits ne
+   sont pas lus ; puis elle paraît (administrateur) ou s'efface — elle est la
+   première de sa ligne calée à droite : rien ne bouge à côté. */
+.choix-admin { display: inline-flex; }
+.choix-admin[data-droits="attente"] { visibility: hidden; }
+.choix-admin[hidden] { display: none; }
+@media (pointer: coarse) {
+  .outil-page { position: relative; }
+  .outil-page::after { content: ""; position: absolute; inset: -8px -6px; }
+}
+/* Le téléphone : une grille compacte — le contrat et la tranche côte à côte,
+   leurs menus sur le reste de leur case ; l'avancement, puis le périmètre,
+   chacun sur sa ligne, son mot devant lui (au-dessus si la ligne manque de
+   place). */
+@media (max-width: 720px) {
+  .bandeau-mode .reglages { width: 100%; margin-left: 0; align-items: stretch; gap: 8px; }
+  .outils-page { gap: 4px 18px; }
+  .portee { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 14px; }
+  .portee .reglage { display: flex; flex-wrap: wrap; gap: 2px 8px; }
+  .portee .reglage-contrat { grid-column: 1; }
+  .portee .choix-tranche { grid-column: 2; }
+  .portee .choix-avancement, .portee .perimetre { grid-column: 1 / -1; }
+  .reglage-contrat .controle { display: flex; flex: 1 1 0; min-width: 0; }
+  .portee select.select, .tranche-unique { flex: 1 1 0; width: auto; }
+  .portee .segmente { display: flex; flex: 1 1 auto; }
+  .portee .segmente button { flex: 1 1 auto; }
+}
+/* Le périmètre : « Tout », puis une puce par valeur de la colonne de domaine,
+   chacune avec son compte de plans. Sans colonne de domaine, il n'a rien à
+   proposer et reste caché. */
 #choix-perimetre button { white-space: nowrap; }
 /* Débrief 27 : le compte en gris tertiaire plein, en chiffres alignés —
    en opacité, il tombait à 3,7:1. */
-#choix-perimetre .n { margin-left: 6px; font-variant-numeric: tabular-nums; color: var(--encre-3); }
+#choix-perimetre .n { margin-left: 2px; font-variant-numeric: tabular-nums; color: var(--encre-3); display: inline-block; min-width: 3ch; text-align: left; }
 #choix-perimetre button:hover .n, #choix-perimetre button[aria-pressed="true"] .n { color: var(--encre-2); }
-/* Trois puces et leurs comptes ne tiennent pas sur un téléphone : le groupe
-   passe sur deux lignes plutôt que de faire déborder la page. */
-#choix-perimetre { flex-wrap: wrap; justify-content: flex-end; }
 
+/* Débrief 27 (lot H, D8, A-F5) : un contrat qui n'a pas pu se charger — le
+   bandeau d'erreur, posé sous la barre et par-dessus le haut du titre (rien
+   ne descend), calé à droite sous les menus. */
+.alerte-contrat {
+  position: absolute; z-index: 31; top: calc(100% + 10px); right: var(--retrait-panneau);
+  width: min(600px, calc(100% - 2 * var(--retrait-panneau))); align-items: center;
+  box-shadow: var(--flottant-ombre); text-align: left;
+}
+.alerte-contrat-texte { flex: 1 1 260px; min-width: 0; }
+.alerte-contrat .bouton { margin-left: 0; }
+.alerte-contrat .fiche-plan-fermer { margin-left: 0; flex: none; }
+@media print { .barre-chargement, .alerte-contrat, .raison-indispo { display: none !important; } }
 
 /* ---------------------------------------------------- Filtres actifs */
-/* Un bandeau qui suit la page : quoi qu'on ait cliqué, la sortie est visible. */
+/* Un bandeau qui suit la page : quoi qu'on ait cliqué, la sortie est visible.
+   Débrief 27 (lot H, P-F6) : il ne prend aucune place dans la page — une
+   hauteur nulle, collée juste sous le sommaire, et sa ligne posée par-dessus
+   ce qui suit : rien ne saute sous le pointeur quand un filtre s'ajoute ou
+   s'enlève. Une seule ligne, toujours de la même hauteur : les jetons
+   défilent de côté s'ils ne tiennent pas (un fondu le dit), « Tout effacer »
+   reste au bout. */
 .filtres-actifs {
-  position: sticky; top: 0; z-index: 30;
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  margin: 0 0 4px; padding: 9px var(--retrait-panneau);
-  background: var(--papier); border-bottom: 1px solid var(--filet-fort);
+  position: sticky; top: var(--h-sommaire, 37px); z-index: 30;
+  height: 0; margin: 0;
 }
 .filtres-actifs[hidden] { display: none; }
+.filtres-ligne {
+  position: absolute; left: 0; right: 0; top: 0;
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px var(--retrait-panneau);
+  background: var(--papier); border-bottom: 1px solid var(--filet-fort);
+}
+.filtres-jetons {
+  display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0;
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: none; padding: 3px; margin: -3px;
+}
+.filtres-jetons::-webkit-scrollbar { display: none; }
+.filtres-jetons.deborde-droite { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); }
+.filtres-ligne .mot, .filtres-ligne .tout-effacer { flex: none; }
 .jeton {
-  display: inline-flex; align-items: center; gap: 7px;
+  display: inline-flex; align-items: center; gap: 7px; flex: none; white-space: nowrap; max-width: 100%;
   border: 1px solid var(--jeton-bord); background: var(--jeton-fond); color: var(--jeton-encre);
   border-radius: 999px; padding: 4px 6px 4px 12px; font: inherit; font-size: 13px; line-height: 18px;
 }
-.jeton b { font-weight: 500; }
+.jeton b { font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .jeton .x {
   /* flex: none : la phrase du verdict est longue ; sans cela elle comprime la
      croix, qui devient une ellipse de 10 px sur un écran étroit. */
@@ -652,9 +726,24 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .jeton .x:hover { background: rgba(255, 255, 255, .35); }
 .tout-effacer {
   border: 1px solid var(--filet-fort); background: none; color: var(--encre-2);
-  border-radius: 999px; padding: 4px 13px; font: inherit; font-size: 13px; line-height: 18px; cursor: pointer;
+  border-radius: 999px; padding: 4px 13px; font: inherit; font-size: 13px; line-height: 18px; cursor: pointer; white-space: nowrap;
 }
 .tout-effacer:hover { border-color: var(--encre); color: var(--encre); }
+.tout-effacer .court { display: none; }
+/* Au téléphone (M5) : le mot « Filtres » se tait, un jeton tient en 70 % de
+   l'écran (sa valeur finit en « … », le nom entier reste dans son titre et
+   dans le nom de sa croix), « Effacer » au bout. */
+@media (max-width: 720px) {
+  .filtres-ligne { gap: 8px; }
+  .filtres-ligne .mot { display: none; }
+  .jeton { max-width: min(70vw, 100%); }
+  .tout-effacer .long { display: none; }
+  .tout-effacer .court { display: inline; }
+}
+@media (pointer: coarse) {
+  .jeton .x { position: relative; }
+  .jeton .x::after { content: ""; position: absolute; inset: -13px -10px; }
+}
 
 /* ---------------------------------------------------- Journal */
 .indice-dim { margin: -6px 0 12px; font-size: 12px; color: var(--encre-3); max-width: 76ch; }
@@ -1012,11 +1101,11 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 /* ---------------------------------------------------- Sommaire (débrief 20) */
 /* Sous le titre, une ligne d'index dans la police des surtitres : chaque
    panneau, son numéro dans sa teinte. Dès qu'on descend, il reste collé en
-   haut de l'écran (sous le bandeau des filtres actifs s'il est là :
-   --haut-sommaire, posé par le script), d'un filet souligné ; le panneau
-   qu'on lit est écrit à l'encre et souligné de sa teinte. */
+   haut de l'écran, d'un filet souligné ; le panneau qu'on lit est écrit à
+   l'encre et souligné de sa teinte. Débrief 27 (lot H) : le bandeau des
+   filtres actifs colle juste dessous (--h-sommaire, posé par le script). */
 .sommaire {
-  position: sticky; top: var(--haut-sommaire, 0px); z-index: 29;
+  position: sticky; top: 0; z-index: 29;
   display: flex; align-items: center; min-width: 0; margin-top: -10px;
   background: var(--papier); border-bottom: 1px solid transparent;
   transition: border-color .2s;
@@ -1051,6 +1140,21 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .sommaire a:hover { color: var(--encre); }
 .sommaire a:focus-visible { outline-offset: -2px; }
 .sommaire a[aria-current] { color: var(--encre); border-bottom-color: var(--accent); }
+/* Débrief 27 (lot H, P-F12) : un panneau absent pour ce contrat (pas de
+   base SEE, concept harnais…) garde son entrée, grisée : un clic ou Entrée
+   dit pourquoi au lieu de mener nulle part. */
+.sommaire li[data-absent] a, .sommaire li[data-absent] a::before { color: var(--encre-3); }
+.sommaire li[data-absent] a { cursor: help; }
+.sommaire li[data-absent] a:hover { color: var(--encre-2); }
+/* La raison d'une commande ou d'une entrée indisponible, montrée au clic,
+   au toucher ou au clavier (D9 : jamais au seul survol), dite aussi aux
+   lecteurs d'écran. */
+.raison-indispo {
+  position: fixed; z-index: 70; max-width: min(320px, calc(100vw - 32px)); padding: 8px 12px;
+  border: 1px solid var(--releve-bord); border-radius: 6px; background: var(--releve); color: var(--encre);
+  box-shadow: var(--flottant-ombre); font-size: 13px; line-height: 1.45; text-align: left;
+}
+.raison-indispo[hidden] { display: none; }
 /* Collé en haut, le nom de la page et du contrat se rappellent à gauche —
    posés par-dessus, sans rien pousser. Seulement quand la place est là. */
 .sommaire-marque {
@@ -1180,6 +1284,9 @@ select.select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2
 }
 .segmente button:hover { background: var(--seg-survol); color: var(--encre); }
 .segmente button[aria-pressed="true"] { background: var(--seg-puce); color: var(--encre); font-weight: 500; box-shadow: var(--seg-ombre); }
+/* Débrief 27 (lot H, P-F12) : un choix sans objet pour ce contrat (« Échéances »
+   sans jalon à venir) reste à sa place, grisé ; un clic dit pourquoi. */
+.segmente button[aria-disabled="true"], .segmente button[aria-disabled="true"]:hover { background: none; color: var(--encre-3); cursor: help; box-shadow: none; font-weight: 400; }
 @media (prefers-reduced-motion: reduce) { .segmente button { transition: none; } }
 /* Cinq boutons ne tiennent pas sur un téléphone : le filtre du journal passe
    sur deux lignes plutôt que de faire déborder la page. */
@@ -1362,53 +1469,80 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 .puce-delta:hover { color: var(--encre); border-bottom-color: var(--encre); }
 .puce-delta[aria-pressed="true"] { color: var(--encre); font-weight: 500; border-bottom: 1px solid var(--encre); }
 .puce-delta b { font-variant-numeric: tabular-nums; font-weight: 500; }
-/* La vue d'ensemble des contrats, sous le bandeau. */
-.lien-ensemble { font-size: 13px; }
-.ensemble { margin: 14px 0 0; padding: 14px 18px 12px; background: var(--surface); border: 1px solid var(--filet); border-radius: 4px; }
-.ensemble.panneau { padding: 20px 26px 18px; border-color: var(--panneau-bord); border-radius: 10px; }
-@media (max-width: 720px) { .ensemble.panneau { padding: 16px 14px 14px; } }
-.ensemble[hidden] { display: none; }
-.ensemble-tete { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+/* La vue d'ensemble des contrats. Débrief 27 (lot H, B18, P-F16) : une
+   fenêtre posée en haut de l'écran (pas au centre : elle ne saute pas quand
+   les chiffres arrivent), par-dessus la page, dans le dessin des panneaux ;
+   au téléphone, tout l'écran. */
+dialog.ensemble {
+  width: min(1140px, calc(100vw - 32px)); max-width: none; max-height: calc(100vh - 48px);
+  margin: 24px auto auto; padding: 0;
+  border: 1px solid var(--panneau-bord); border-radius: 10px; background: var(--surface); color: var(--encre);
+  box-shadow: var(--panneau-ombre); overflow: hidden;
+}
+dialog.ensemble[open] { display: flex; flex-direction: column; }
+dialog.ensemble::backdrop { background: var(--voile-dialogue); }
+.ensemble-tete { display: flex; align-items: baseline; gap: 6px 14px; flex-wrap: wrap; padding: 20px 24px 14px; border-bottom: 1px solid var(--filet); }
 .ensemble-tete h2 { font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 24px; margin: 0; }
+.ensemble-tete h2:focus { outline: none; }
+.ensemble-tete h2:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .ensemble-tete .indice { font-size: 12px; color: var(--encre-3); }
-.defile-ensemble { overflow-x: auto; }
-.ensemble-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.ensemble-table th, .ensemble-table td { padding: 8px 10px; text-align: left; vertical-align: top; border-top: 1px solid var(--filet); }
-.ensemble-table thead th { border-top: none; border-bottom: 1px solid var(--filet-fort); font-size: 12px; font-weight: 500; color: var(--encre-2); }
-.ensemble-table tbody th .lien-doux { font: 500 14px "IBM Plex Sans", system-ui, sans-serif; color: var(--encre); }
+.ensemble-tete .fiche-plan-fermer { flex: none; align-self: flex-start; }
+.defile-ensemble { overflow: auto; overscroll-behavior: contain; padding: 4px 24px 0; flex: 1 1 auto; min-height: 0; }
+/* Des colonnes de largeur fixe et des lignes de deux lignes : rien ne
+   bouge quand un contrat passe de « chargement… » à ses chiffres. */
+.ensemble-table { width: 100%; min-width: 860px; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
+.ensemble-table th, .ensemble-table td { padding: 8px 10px; text-align: left; vertical-align: top; border-top: 1px solid var(--filet); overflow-wrap: anywhere; }
+.ensemble-table tbody th, .ensemble-table tbody td { height: 58px; }
+.ensemble-table thead th { border-top: none; border-bottom: 1px solid var(--filet-fort); font-size: 12px; font-weight: 500; color: var(--encre-2); vertical-align: bottom; }
+.ensemble-table tbody th .lien-doux { font: 500 14px "IBM Plex Sans", system-ui, sans-serif; color: var(--encre); text-align: left; }
 .ensemble-table tr.courant { background: var(--creux); }
 .ensemble-table .v { display: block; font-variant-numeric: tabular-nums; color: var(--encre); }
-.ensemble-table small { display: block; margin-top: 2px; font-size: 11px; color: var(--encre-3); }
+.ensemble-table small { display: block; margin-top: 2px; font-size: 11px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
 .ensemble-table .v.tard, .ensemble-table small.recul { color: var(--alerte); }
 .ensemble-table .v.bon { color: var(--fait); }
 .ensemble-table .v.arret { color: var(--cours); }
 .ensemble-table .alerte-ligne { color: var(--alerte); }
+/* Sous « 53 / 634 », la part validée en une petite jauge de 60 × 4 px. */
+.jauge-ensemble { display: block; width: 60px; height: 4px; margin-top: 5px; border-radius: 2px; background: var(--filet); overflow: hidden; }
+.jauge-ensemble i { display: block; height: 100%; background: var(--fait); }
+/* Les deux colonnes qui demandent un mot d'explication, dites en clair sous
+   le tableau (« À l'arrêt » ne s'expliquait que dans une bulle). */
+.ensemble-note { margin: 0; padding: 10px 24px 18px; font-size: 12px; line-height: 1.55; color: var(--encre-2); }
+.ensemble-note b { font-weight: 500; color: var(--encre); }
 /* Au téléphone, sept colonnes ne tiennent pas : trois restaient cachées à
    droite, sans le dire. Chaque contrat devient une carte — son nom, puis
    une ligne par valeur, le nom de la colonne à gauche et la valeur au bord
    droit, comme les lignes « par ATA ». La croix reste à côté du titre. */
 @media (max-width: 720px) {
-  .ensemble-tete { align-items: flex-start; }
+  .ensemble-tete { align-items: flex-start; padding: 16px 16px 12px; }
   .ensemble-tete h2 { flex: 1 1 0; min-width: 0; font-size: 20px; }
   .ensemble-tete .fiche-plan-fermer { flex: none; margin-top: 2px; }
   .ensemble-tete .indice { order: 3; flex-basis: 100%; }
-  .defile-ensemble { overflow-x: visible; }
+  .defile-ensemble { overflow-x: visible; overflow-y: auto; padding: 0 16px; }
+  .ensemble-note { padding: 10px 16px 16px; }
+  .ensemble-table { min-width: 0; table-layout: auto; }
   .ensemble-table, .ensemble-table tbody, .ensemble-table tr { display: block; }
+  .ensemble-table colgroup { display: none; }
   .ensemble-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .ensemble-table tr { padding: 10px 0 8px; border-top: 1px solid var(--filet); }
   /* Le fond du contrat affiché déborde de 10 px de chaque côté sans rien
      élargir (une ombre ne compte pas dans la largeur). */
   .ensemble-table tr.courant { box-shadow: -10px 0 var(--creux), 10px 0 var(--creux); }
   .ensemble-table th, .ensemble-table td { border-top: none; padding: 3px 0; }
+  .ensemble-table tbody th, .ensemble-table tbody td { height: auto; }
   .ensemble-table tbody th { display: flex; align-items: baseline; gap: 10px; padding-bottom: 6px; }
   .ensemble-table tbody th small { margin-top: 0; }
   .ensemble-table td[data-libelle] { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: baseline; }
   .ensemble-table td[data-libelle]::before {
-    content: attr(data-libelle); grid-column: 1; grid-row: 1 / span 2;
+    content: attr(data-libelle); grid-column: 1; grid-row: 1 / span 3;
     font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--encre-3);
   }
   .ensemble-table td[data-libelle] > * { grid-column: 2; text-align: right; }
+  .ensemble-table td[data-libelle] > .jauge-ensemble { justify-self: end; }
   .ensemble-table td:not([data-libelle]) { display: block; }
+}
+@media (max-width: 560px) {
+  dialog.ensemble { width: 100vw; height: 100vh; height: 100dvh; max-height: none; margin: 0; border: 0; border-radius: 0; }
 }
 /* L'historique d'un plan, au-dessus du tableau. */
 .fiche-plan { margin: 0 0 12px; padding: 12px 16px 12px; background: var(--surface); border: 1px solid var(--filet); border-radius: 6px; }
@@ -2072,8 +2206,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
 
 <div class="page">
 
-  <div class="filtres-actifs" id="filtres-actifs" hidden></div>
-
+  <!-- Débrief 27 (lot H, X-A10) : l'en-tête de la page — la barre des
+       réglages, puis le titre et ce qu'il regarde — est un seul repère
+       « bannière » pour les lecteurs d'écran. -->
+  <header class="entete" id="entete">
   <div class="bandeau-mode" id="bandeau-mode">
     <!-- Hors du classeur seulement — la page ouverte seule, sur son jeu de
          démonstration — le bandeau le dit. Devant le classeur, rien. -->
@@ -2081,55 +2217,96 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     <!-- Le message du classeur quand il n'a rien pu rendre — feuille vide,
          contrat introuvable, colonne d'avancement absente. -->
     <span class="mot-mode alerte-source" id="alerte-source" role="alert" hidden></span>
-    <!-- Les deux réglages de la page, l'un sous l'autre, calés à droite : le
-         contrat, puis l'avancement suivi, chacun son mot juste devant lui. -->
-    <div class="reglages" id="reglages">
-      <!-- Débrief 26 : seuls les administrateurs voient ce bouton. -->
-      <span class="choix-admin" id="choix-admin" hidden>
-        <button type="button" class="lien-doux bouton-admin" id="ouvrir-admin" aria-haspopup="dialog">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 10.2a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4Z" stroke="currentColor" stroke-width="1.4"/><path d="M13.1 9.6l1.1.9-1.3 2.3-1.4-.5a5.3 5.3 0 0 1-1.4.8L9.8 14.5H7.2l-.3-1.4a5.3 5.3 0 0 1-1.4-.8l-1.4.5-1.3-2.3 1.1-.9a5.4 5.4 0 0 1 0-1.6l-1.1-.9 1.3-2.3 1.4.5a5.3 5.3 0 0 1 1.4-.8l.3-1.4h2.6l.3 1.4c.5.2 1 .5 1.4.8l1.4-.5 1.3 2.3-1.1.9c.1.5.1 1.1 0 1.6Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
-          Administration
+    <!-- Débrief 27 (lot H, B1) : une seule barre de réglages, calée à droite,
+         une seule voix : en haut, les outils de la page (Administration, Vue
+         d'ensemble, Aide) ; dessous, ce qu'on regarde — Contrat, Tranche,
+         Avancement, Périmètre —, chaque mot juste devant sa commande. Le
+         périmètre y monte (P-F5) : il porte sur toute la page. -->
+    <div class="reglages" id="reglages" role="group" aria-label="Réglages de la page">
+      <div class="outils-page" id="outils-page">
+        <!-- Débrief 26 : seuls les administrateurs voient ce bouton. Débrief
+             27 : sa place est gardée dès la première image (invisible tant
+             que les droits ne sont pas lus) : rien ne bouge quand ils
+             arrivent. -->
+        <span class="choix-admin" id="choix-admin" data-droits="attente">
+          <button type="button" class="outil-page bouton-admin" id="ouvrir-admin" aria-haspopup="dialog">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 10.2a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4Z" stroke="currentColor" stroke-width="1.4"/><path d="M13.1 9.6l1.1.9-1.3 2.3-1.4-.5a5.3 5.3 0 0 1-1.4.8L9.8 14.5H7.2l-.3-1.4a5.3 5.3 0 0 1-1.4-.8l-1.4.5-1.3-2.3 1.1-.9a5.4 5.4 0 0 1 0-1.6l-1.1-.9 1.3-2.3 1.4.5a5.3 5.3 0 0 1 1.4-.8l.3-1.4h2.6l.3 1.4c.5.2 1 .5 1.4.8l1.4-.5 1.3 2.3-1.1.9c.1.5.1 1.1 0 1.6Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+            Administration
+          </button>
+        </span>
+        <button type="button" class="outil-page" id="voir-ensemble" aria-haspopup="dialog" aria-expanded="false" aria-controls="ensemble" hidden>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
+          Vue d’ensemble
         </button>
-      </span>
-      <span class="choix-contrat" id="choix-contrat" hidden>
-        <button type="button" class="lien-doux lien-ensemble" id="voir-ensemble" aria-expanded="false" aria-controls="ensemble">Vue d’ensemble</button>
-        <label for="select-contrat">Contrat</label>
-        <span class="controle">
-          <select class="select" id="select-contrat"></select>
-          <span class="attente" id="etat-contrat" role="status" aria-live="polite"></span>
+        <!-- Débrief 27 : l'aide de la page (le lot G y branche sa fenêtre). -->
+        <button type="button" class="outil-page" id="ouvrir-aide" aria-haspopup="dialog">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.3" stroke="currentColor" stroke-width="1.3"/><path d="M6.2 6.3a1.9 1.9 0 0 1 3.7.5c0 1.3-1.9 1.6-1.9 2.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.6" r=".85" fill="currentColor"/></svg>
+          Aide
+        </button>
+      </div>
+      <div class="portee" id="portee">
+        <span class="choix-contrat" id="choix-contrat" hidden>
+          <span class="reglage reglage-contrat">
+            <label for="select-contrat">Contrat</label>
+            <span class="controle">
+              <select class="select" id="select-contrat"></select>
+              <!-- Débrief 27 (B7, A-F14) : plus rien ne s'écrit à côté du
+                   sélecteur — « Chargement… » y poussait toute la barre. Le
+                   mot reste ici pour les lecteurs d'écran ; l'attente se
+                   voit au trait du haut de l'écran et au voile. -->
+              <span class="attente masque" id="etat-contrat"></span>
+            </span>
+          </span>
+          <!-- Débrief 26 : la tranche du contrat, quand il en a plusieurs. -->
+          <span class="reglage choix-tranche" id="choix-tranche" hidden>
+            <label for="select-tranche">Tranche</label>
+            <select class="select" id="select-tranche"></select>
+            <!-- Débrief 27 (lot H, B7) : un contrat sans tranche garde la case. -->
+            <span class="tranche-unique" id="tranche-unique" hidden>unique</span>
+          </span>
         </span>
-        <!-- Débrief 26 : la tranche du contrat, quand il en a plusieurs. -->
-        <span class="choix-tranche" id="choix-tranche" hidden>
-          <label for="select-tranche">Tranche</label>
-          <select class="select" id="select-tranche"></select>
+        <!-- L'avancement suivi, lu dans le bloc HDK AA 011 de l'extract : la
+             définition électrique (le FWD) ou le concept harnais. Toute la page
+             suit — barre, courbe, journal, groupes, tableau, comparaison. -->
+        <span class="reglage choix-avancement" id="choix-avancement">
+          <span class="mot-reglage" aria-hidden="true">Avancement</span>
+          <span class="segmente choix-indicateur" id="choix-indicateur" role="group" aria-label="Avancement suivi" hidden>
+            <button type="button" data-indicateur="def" aria-pressed="true">Définition électrique</button>
+            <button type="button" data-indicateur="concept" aria-pressed="false">Concept harnais</button>
+          </span>
         </span>
-      </span>
-      <!-- L'avancement suivi, lu dans le bloc HDK AA 011 de l'extract : la
-           définition électrique (le FWD) ou le concept harnais. Toute la page
-           suit — barre, courbe, journal, groupes, tableau, comparaison. -->
-      <span class="choix-avancement" id="choix-avancement">
-        <span class="mot-reglage" aria-hidden="true">Avancement</span>
-        <span class="segmente choix-indicateur" id="choix-indicateur" role="group" aria-label="Avancement suivi" hidden>
-          <button type="button" data-indicateur="def" aria-pressed="true">Définition électrique</button>
-          <button type="button" data-indicateur="concept" aria-pressed="false">Concept harnais</button>
-        </span>
-      </span>
+        <!-- Le périmètre — ce qu'on regarde — porte sur toute la page : « Tout »,
+             puis une puce par valeur de la colonne de domaine. -->
+        <div class="reglage perimetre" id="perimetre" hidden>
+          <span class="mot-reglage mot-perimetre" id="mot-perimetre">Périmètre</span>
+          <span class="segmente" id="choix-perimetre" role="group" aria-labelledby="mot-perimetre"></span>
+        </div>
+      </div>
+    </div>
+    <!-- Débrief 27 (lot H, D8, A-F5) : un contrat qui n'a pas pu se charger
+         le dit ici — ce qui a échoué, ce qu'on voit encore, et « Réessayer ».
+         Posé sous la barre, par-dessus le haut du titre : rien ne descend
+         dans la page. -->
+    <div class="bandeau-alerte alerte-contrat" id="alerte-contrat" role="alert" hidden>
+      <span class="alerte-contrat-texte" id="alerte-contrat-texte"></span>
+      <button type="button" class="bouton" id="reessayer-contrat">Réessayer</button>
+      <button type="button" class="fiche-plan-fermer" id="fermer-alerte-contrat" aria-label="Fermer ce message">×</button>
     </div>
   </div>
 
-  <!-- La vue d'ensemble des contrats : une ligne par contrat, ouverte à la
-       demande depuis le bandeau. -->
-  <section class="ensemble panneau panneau-hors-suite" id="ensemble" hidden aria-label="Vue d’ensemble des contrats"></section>
-
-  <!-- Le titre, seul, au centre : rien ne lui vole sa zone. Le contrat n'est
-       pas répété, il est déjà choisi en haut. -->
-  <header class="masthead">
+  <!-- Le titre, seul, au centre. Débrief 27 (lot H, B1, P-F10, P-F11) :
+       au-dessus, ce qu'il regarde — « HDK · Tranche 1 · Définition
+       électrique » ; dessous, la semaine, puis l'âge des chiffres. -->
+  <div class="masthead">
+    <p class="contexte-page" id="contexte-page"></p>
     <h1 id="titre-page">Suivi FWD</h1>
     <div class="semaine">
       <span><b id="num-semaine">—</b></span>
       <span aria-hidden="true">·</span>
       <span id="dates-semaine">—</span>
     </div>
+    <p class="fraicheur" id="fraicheur"></p>
+  </div>
   </header>
 
   <!-- Le sommaire (débrief 20) : les panneaux de la page, chacun avec son
@@ -2149,6 +2326,11 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       <li><a href="#rapprochement" data-chapitre="rapprochement">Comparaison</a></li>
     </ol>
   </nav>
+  <!-- Débrief 27 (lot H, P-F6, M5) : les filtres posés, sous le sommaire et
+       collés avec lui. Le bandeau ne prend aucune place dans la page (hauteur
+       nulle, sa ligne posée par-dessus) : rien ne saute quand un filtre
+       s'ajoute ou s'enlève. -->
+  <div class="filtres-actifs" id="filtres-actifs" hidden></div>
 
   <!-- Un classeur sans plans : ce qu'il faut faire, au lieu de sections vides. -->
   <section class="classeur-vide" id="classeur-vide" hidden>
@@ -2175,14 +2357,11 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   <section class="avancement panneau teinte-une" id="section-synthese" aria-labelledby="surtitre-synthese">
     <div class="panneau-tete">
       <p class="surtitre" id="surtitre-synthese">Synthèse</p>
-      <!-- Le périmètre — ce qu'on regarde — à droite de la phrase qu'il
-           gouverne, juste au-dessus de la barre. -->
+      <!-- Débrief 27 (lot H, P-F5) : le périmètre est monté dans la barre
+           des réglages, avec le contrat et l'avancement : il porte sur toute
+           la page, pas sur ce seul panneau. -->
       <div class="avancement-ligne">
         <div class="phrase" id="phrase">Chargement…</div>
-        <div class="perimetre" id="perimetre" hidden>
-          <span class="mot-perimetre" id="mot-perimetre">Périmètre</span>
-          <span class="segmente" id="choix-perimetre" role="group" aria-labelledby="mot-perimetre"></span>
-        </div>
       </div>
     </div>
     <div class="alerte-valeurs" id="alerte-valeurs" role="status" hidden></div>
@@ -2434,6 +2613,14 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
 <!-- Débrief 27 : la seule zone d'annonce de la page (voir annoncer()) :
      les lecteurs d'écran y entendent les changements de résultat. -->
 <div class="masque" id="annonce" role="status" aria-live="polite" aria-atomic="true"></div>
+<!-- La vue d'ensemble des contrats : une ligne par contrat, ouverte à la
+     demande depuis la barre des réglages. Débrief 27 (lot H, B18, P-F16) :
+     une fenêtre, posée en haut de l'écran par-dessus la page — Échap ou un
+     clic à côté la ferment, le focus revient au bouton. -->
+<dialog class="ensemble" id="ensemble" aria-labelledby="ensemble-titre" hidden></dialog>
+<!-- Débrief 27 (lot H, D8) : le trait d'attente, en haut de l'écran, pendant
+     qu'un contrat se charge. -->
+<div class="barre-chargement" id="barre-chargement" hidden></div>
 <!-- Débrief 26 : le panneau d'administration — les jalons, les contrats, les
      administrateurs. Vide tant qu'un administrateur ne l'ouvre pas. -->
 <dialog class="admin" id="admin" aria-labelledby="admin-titre">
@@ -2686,6 +2873,39 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   /* Une case sans valeur (débrief 27, B22) : « — » en gris tertiaire, la
      même partout (voir .tiret-vide). */
   var TIRET_VIDE = '<span class="tiret-vide">\u2014</span>';
+
+  /* Débrief 27 (lot H, P-F12, D9) : la raison d'une commande ou d'une entrée
+     indisponible (aria-disabled), montrée juste sous elle au clic, au
+     toucher ou au clavier — jamais au seul survol — et dite aux lecteurs
+     d'écran. Elle s'en va au geste suivant, à Échap, au défilement ou après
+     six secondes. */
+  var RAISON = { el: null, minuteur: 0 };
+  function montrerRaison(cible, texte) {
+    if (!cible || !texte) return;
+    var b = RAISON.el;
+    if (!b) {
+      b = RAISON.el = document.createElement('div');
+      b.className = 'raison-indispo'; b.id = 'raison-indispo';
+      document.body.appendChild(b);
+    }
+    b.textContent = texte;
+    b.hidden = false;
+    var r = cible.getBoundingClientRect();
+    b.style.left = Math.max(16, Math.min(r.left, window.innerWidth - b.offsetWidth - 16)) + 'px';
+    b.style.top = Math.round(r.bottom + 8) + 'px';
+    annoncer(texte);
+    clearTimeout(RAISON.minuteur);
+    RAISON.minuteur = setTimeout(cacherRaison, 6000);
+  }
+  function cacherRaison() {
+    clearTimeout(RAISON.minuteur);
+    if (RAISON.el && !RAISON.el.hidden) RAISON.el.hidden = true;
+  }
+  document.addEventListener('pointerdown', function (e) {
+    if (RAISON.el && !RAISON.el.hidden && !(e.target.closest && e.target.closest('[aria-disabled="true"]'))) cacherRaison();
+  }, true);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cacherRaison(); });
+  window.addEventListener('scroll', function () { if (RAISON.el && !RAISON.el.hidden) cacherRaison(); }, { passive: true });
 
   /* ============================================================
      LES MESURES DE LA PAGE, UNE FOIS PAR IMAGE (débrief 23)
@@ -3887,6 +4107,35 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     $('num-semaine').textContent = 'Semaine ' + numeroSemaine(iAuj);
   }
 
+  /* Débrief 27 (lot H, P-F10, A-F13) : sous la semaine, l'âge des chiffres
+     — « Chiffres du jeudi 29 octobre à 13:15 · dernier relevé archivé : S43
+     (vendredi 23 octobre) ». Le classeur ne dit pas l'heure de l'import :
+     on dit ce que la page sait (la lecture du classeur, le dernier relevé
+     archivé). Un relevé de plus de huit jours s'écrit en ambre, avec son
+     âge : l'archivage du vendredi n'a peut-être pas tourné. */
+  function rendreFraicheur(luLe) {
+    var zone = $('fraicheur');
+    if (!zone) return;
+    var morceaux = [];
+    if (luLe && !isNaN(luLe.getTime())) {
+      morceaux.push(ech('Chiffres du ' + luLe.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) +
+        ' à ' + luLe.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })));
+    }
+    var der = RELEVES_SRC.length ? RELEVES_SRC[RELEVES_SRC.length - 1] : null;
+    var i = der ? indexDe(der.semaine) : null;
+    var majuscule = function (t) { return morceaux.length ? t : t.charAt(0).toUpperCase() + t.slice(1); };
+    if (i === null) {
+      morceaux.push(majuscule('aucun relevé archivé pour l\u2019instant'));
+    } else {
+      var lu = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(der.date || ''));
+      var jour = lu ? new Date(Date.UTC(+lu[1], +lu[2] - 1, +lu[3])) : new Date(dateDe(i).getTime() + 4 * 864e5);
+      var age = Math.round((aujourdhuiCivil().getTime() - jour.getTime()) / 864e5);
+      var mot = majuscule('dernier relevé archivé : S') + numeroSemaine(i) + ' (' + JOURS_SEMAINE[jour.getUTCDay()] + ' ' + jour.getUTCDate() + ' ' + MOIS[jour.getUTCMonth()] + ')';
+      morceaux.push(age > 8 ? '<span class="vieux">' + ech(mot) + ', il y a ' + age + ' jours</span>' : ech(mot));
+    }
+    zone.innerHTML = morceaux.map(function (m) { return '<span class="morceau">' + m + '</span>'; }).join(' \u00b7 ');
+  }
+
   function valeurDim(p, cle) {
     if (cle === '_anciennete') return ancienneteDepuis(p[CLE_DATE], aujourdhuiCivil());
     if (cle === '_mois') return moisDe(p[CLE_DATE]);
@@ -4769,6 +5018,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         luLe.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + (inchange ? ', classeur inchangé depuis' : '') +
         ' — recharger la page pour les chiffres du moment.';
     }
+    rendreFraicheur(luLe);
 
     /* Ce qui a bougé entre les deux derniers imports, plan par plan. Le
        comparatif affiché en découle, restreint au périmètre courant. */
@@ -4988,20 +5238,46 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     sel.value = CONTRAT;
     /* Une famille d'une seule tranche nommée (« HDK Tranche 2 » sans « HDK ») le dit aussi. */
     var tranches = !!courante && (courante.membres.length > 1 || !!courante.membres[0].tranche);
-    $('choix-tranche').hidden = !tranches;
+    /* Débrief 27 (lot H, B7) : dès qu'un contrat du classeur a des tranches,
+       la case « Tranche » garde sa place pour tous — un contrat sans tranche
+       y lit « unique », son menu (qui n'aurait rien à proposer) caché : la
+       barre ne glisse plus de 170 px sous le pointeur entre HDK et THS. */
+    $('choix-tranche').hidden = !familles.some(function (f) { return f.membres.length > 1 || !!f.membres[0].tranche; });
+    selT.hidden = !tranches;
+    $('tranche-unique').hidden = tranches;
     selT.innerHTML = tranches ? courante.membres.map(function (m) {
       return '<option value="' + ech(m.id) + '">' + ech(m.libelle) + '</option>';
     }).join('') : '';
     if (tranches) selT.value = CONTRAT;
+    /* Débrief 27 (lot H) : la vue d'ensemble n'a de sens qu'avec plusieurs
+       contrats. */
+    $('voir-ensemble').hidden = !plusieurs;
+    /* Débrief 27 (lot H, A-F4) : un contrat en route — la page se réécrit
+       pendant l'attente (avancement, vue d'ensemble) : les menus gardent le
+       contrat demandé, jamais celui d'avant. */
+    if (ATTENTE_CONTRAT) { refleterAttenteMenus(); return; }
     sel.disabled = selT.disabled = false;
     $('etat-contrat').textContent = '';
+  }
+  /* Débrief 27 (lot H, A-F10, P-F11) : le nom d'un contrat partout où une
+     seule tranche est en jeu — « HDK › Tranche 1 » quand le contrat a
+     plusieurs tranches, « THS » sinon. */
+  function nomAffiche(id) {
+    var familles = famillesDeContrats();
+    for (var i = 0; i < familles.length; i++) {
+      for (var k = 0; k < familles[i].membres.length; k++) {
+        var m = familles[i].membres[k];
+        if (m.id === id) return familles[i].membres.length > 1 || m.tranche ? familles[i].nom + ' \u203a ' + m.libelle : familles[i].nom;
+      }
+    }
+    return id === undefined || id === null ? '' : String(id);
   }
   /* Les deux listes grisées pendant un chargement, puis remises au contrat affiché. */
   function griserContrat(oui) { $('select-contrat').disabled = $('select-tranche').disabled = !!oui; }
   function remettreContrat() {
     griserContrat(false);
     $('select-contrat').value = CONTRAT;
-    if (!$('choix-tranche').hidden) $('select-tranche').value = CONTRAT;
+    if (!$('choix-tranche').hidden && !$('select-tranche').hidden) $('select-tranche').value = CONTRAT;
   }
 
   /* ------------------------------------------------------------
@@ -5567,7 +5843,11 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     $('choix-perimetre').innerHTML = puces.map(function (x) {
       return '<button type="button" data-perimetre="' + ech(x.val) + '" aria-pressed="' +
         (vue.perimetre === x.val) + '" title="' + ech(x.aide) + '">' +
-        ech(x.nom) + '<span class="n">' + nb(x.n) + '</span></button>';
+        /* Débrief 27 (lot H, X-A13) : « Tout 634 plans » pour les lecteurs
+           d'écran (ils entendaient « Tout634 ») — un vrai espace avant le
+           compte, et le mot « plans » dit sans être montré. */
+        ech(x.nom) + ' <span class="n">' + nb(x.n) + '</span><span class="masque">' +
+        (x.n > 1 ? ' plans' : ' plan') + '</span></button>';
     }).join('');
     zone.hidden = false;
   }
@@ -5615,7 +5895,14 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   }
   $('choix-indicateur').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-indicateur]');
-    if (b) changerIndicateur(b.dataset.indicateur);
+    if (!b) return;
+    /* Débrief 27 (lot H, A-F4) : un contrat en route — le choix est gardé
+       et appliqué à son arrivée ; le menu du contrat ne revient plus en
+       arrière. */
+    if (ATTENTE_CONTRAT) { garderGeste('indicateur', b.dataset.indicateur); return; }
+    if (b.dataset.indicateur === INDICATEUR) return;
+    changerIndicateur(b.dataset.indicateur);
+    annoncerPortee(INDICATEUR === 'concept' ? 'Concept harnais' : 'Définition électrique');
   });
 
   function refleterPerimetre() {
@@ -6685,7 +6972,19 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var fixe = !surEch && boutons.some(function (b) { return Number(b.dataset.span) > 0 && Number(b.dataset.span) === vue.fen.span; });
     boutons.forEach(function (b) {
       var d = b.dataset.span, v = Number(d), presse;
-      if (d === 'jalons') { b.hidden = !ech; presse = surEch; }
+      if (d === 'jalons') {
+        /* Débrief 27 (lot H, P-F12) : sans échéance à venir, le bouton reste
+           à sa place, grisé, et dit pourquoi (au clic, au toucher, au
+           clavier) — il disparaissait sans un mot. */
+        if (!b.hasAttribute('data-titre')) b.setAttribute('data-titre', b.title);
+        if (ech) { b.removeAttribute('aria-disabled'); b.title = b.getAttribute('data-titre'); }
+        else {
+          b.setAttribute('aria-disabled', 'true');
+          b.title = jalons.length ? 'Plus d\u2019échéance à venir pour ' + (nomAffiche(CONTRAT) || 'ce contrat') + ' : ses jalons sont passés.'
+            : 'Aucun jalon pour ' + (nomAffiche(CONTRAT) || 'ce contrat') + ' : pas d\u2019échéance à montrer.';
+        }
+        presse = surEch;
+      }
       else if (v) presse = !surEch && v === vue.fen.span;
       else presse = !surEch && !fixe && vue.fen.span === spanTout();
       b.setAttribute('aria-pressed', String(presse));
@@ -6848,6 +7147,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
 
   document.querySelector('.commandes-graphe .segmente').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-span]');
+    if (b && b.getAttribute('aria-disabled') === 'true') { montrerRaison(b, b.title); return; }
     if (b) reglerSpan(b.dataset.span === 'jalons' ? 'jalons' : Number(b.dataset.span));
   });
 
@@ -8380,9 +8680,14 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   });
   $('choix-perimetre').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-perimetre]');
-    if (!b || b.dataset.perimetre === vue.perimetre) return;
+    if (!b) return;
+    /* Débrief 27 (lot H, A-F4) : un contrat en route — le choix est gardé,
+       et appliqué à son arrivée (jamais perdu). */
+    if (ATTENTE_CONTRAT) { garderGeste('perimetre', b.dataset.perimetre); return; }
+    if (b.dataset.perimetre === vue.perimetre) return;
     vue.perimetre = b.dataset.perimetre;
     rendre();
+    annoncerPortee(vue.perimetre ? 'Périmètre ' + vue.perimetre : 'Tous les plans');
   });
 
   /* ============================================================
@@ -8391,51 +8696,204 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      SUIVI_FWD_API ; seule, la page fabrique le jeu d'exemple correspondant.
      Dans les deux cas la nouvelle source passe par chargerSource() : le
      cadrage et les filtres repartent de zéro, la disposition est conservée.
+
+     Débrief 27 (lot H — A-F4, A-F5, A-F14, B7, M12, X-A4) : pendant
+     l'attente, rien ne s'écrit à côté du menu (« Chargement… » poussait
+     toute la barre) : un trait court en haut de l'écran, le voile sur la
+     page d'avant, aria-busy sur le contenu. Le menu garde le contrat
+     demandé, reste à portée et garde le focus clavier ; la tranche se vide
+     quand on change de contrat. Un clic sur l'avancement ou le périmètre
+     pendant l'attente est gardé et appliqué à l'arrivée. Un échec se dit
+     dans un bandeau (ce qui a échoué, ce qu'on voit encore, « Réessayer »),
+     qui s'efface au prochain chargement réussi. À la fin, la page le dit
+     aux lecteurs d'écran (« THS affiché : 19 sur 180 plans validés »).
      ============================================================ */
   var demandeContrat = 0;
+  /* L'attente en cours : { id, forcer }, ou null. */
+  var ATTENTE_CONTRAT = null;
+  /* Ce que le lecteur a choisi pendant l'attente : appliqué à l'arrivée. */
+  var GESTES_EN_ATTENTE = { indicateur: null, perimetre: null };
+  /* Le dernier échec, que « Réessayer » relance tel quel. */
+  var ECHEC_CONTRAT = null;
   /* forcer : relire le contrat affiché lui-même (débrief 26 : après un
      changement fait dans l'administration). */
   function changerContrat(id, forcer) {
-    if (!id || (id === CONTRAT && !forcer)) return;
+    if (!id) return;
+    if (id === CONTRAT && !forcer) {
+      /* Revenir au contrat affiché pendant une attente : elle est annulée
+         (la réponse d'avant ne remplacera plus la page). */
+      if (ATTENTE_CONTRAT) { demandeContrat++; finAttenteContrat(); remettreContrat(); appliquerGestesEnAttente(); }
+      return;
+    }
     if (forcer) delete AVANCES[id];
-    var etat = $('etat-contrat');
     var demande = ++demandeContrat;
+    masquerAlerteContrat();
     /* Le paquet reçu passe par obtenirPaquet() : compressé, il se décode
-       d'abord. */
-    function poser(recu) {
+       d'abord. raison : ce que le pont a su de l'échec. */
+    function poser(recu, raison) {
       if (demande !== demandeContrat) return;        // une demande plus récente a pris le relais
       obtenirPaquet(recu, function (paquet) {
         if (demande !== demandeContrat) return;
-        finAttenteContrat();
         paquet = deballerPaquet(paquet);
         if (!paquet || !paquet.plans || !paquet.plans.length) {
-          remettreContrat();
-          etat.textContent = paquet && paquet.message ? paquet.message : 'Contrat impossible à charger.';
+          echecContrat(id, forcer, paquet && paquet.message ? String(paquet.message) : raison);
           return;
         }
-        chargerSource(paquet);
-        remplirDims();
-        rendre();
-        if ($('admin').open && ADMIN.onglet === 'contrats' && ADMIN.contrats && !ADMIN.occupe) rendreAdmin();
-      }, function () {
+        afficherPaquetContrat(paquet);
+      }, function (e) {
         if (demande !== demandeContrat) return;
-        finAttenteContrat();
-        remettreContrat();
-        etat.textContent = 'Contrat impossible à charger.';
+        echecContrat(id, forcer, e && e.message);
       });
     }
     if (API && API.chargerContrat) {
-      griserContrat(true);
-      etat.textContent = 'Chargement…';
-      /* La page d'avant reste là, estompée, jusqu'à l'arrivée de l'autre :
-         jamais une page blanche (débrief 23). */
-      document.body.setAttribute('data-attente', 'contrat');
+      debutAttenteContrat(id, forcer);
       demanderContrat(id, poser);
     } else {
       poser(jeuDExemple(id));
     }
   }
-  function finAttenteContrat() { document.body.removeAttribute('data-attente'); }
+  /* Le paquet d'un contrat arrivé (du classeur, ou déjà là pour la vue
+     d'ensemble) : la page passe dessus, avec ce qui a été choisi pendant
+     l'attente ; le focus reste au menu, et la fin est dite. */
+  function afficherPaquetContrat(paquet) {
+    var gestes = prendreGestes();
+    var menu = menuFocalise();
+    finAttenteContrat();
+    masquerAlerteContrat();
+    if (gestes.indicateur) INDICATEUR = gestes.indicateur;
+    chargerSource(paquet);
+    var perdu = '';
+    if (gestes.perimetre !== null) {
+      var existe = [].some.call($('choix-perimetre').querySelectorAll('button[data-perimetre]'), function (b) { return b.dataset.perimetre === gestes.perimetre; });
+      if (existe) { vue.perimetre = gestes.perimetre; refleterPerimetre(); }
+      else perdu = ' Le périmètre ' + gestes.perimetre + ' n\u2019existe pas pour ce contrat : tous ses plans sont affichés.';
+    }
+    remplirDims();
+    rendre();
+    if ($('admin').open && ADMIN.onglet === 'contrats' && ADMIN.contrats && !ADMIN.occupe) rendreAdmin();
+    rendreFocusMenu(menu);
+    annoncerPortee(nomAffiche(CONTRAT) + ' affiché', perdu);
+  }
+  function finAttenteContrat() {
+    ATTENTE_CONTRAT = null;
+    document.body.removeAttribute('data-attente');
+    $('barre-chargement').hidden = true;
+    zonesOccupees(false);
+    $('etat-contrat').textContent = '';
+    $('select-tranche').disabled = false;
+  }
+  function debutAttenteContrat(id, forcer) {
+    ATTENTE_CONTRAT = { id: id, forcer: !!forcer };
+    /* La page d'avant reste là, estompée, jusqu'à l'arrivée de l'autre :
+       jamais une page blanche (débrief 23). */
+    document.body.setAttribute('data-attente', 'contrat');
+    $('barre-chargement').hidden = false;
+    zonesOccupees(true);
+    $('etat-contrat').textContent = 'Chargement\u2026';
+    refleterAttenteMenus();
+  }
+  /* aria-busy sur le contenu de la page (le <main> s'il y en a un, sinon ses
+     panneaux) : les lecteurs d'écran attendent la fin pour le relire. */
+  function zonesOccupees(oui) {
+    var main = document.querySelector('main');
+    var zones = main ? [main] : [].slice.call(document.querySelectorAll('.page > section'));
+    zones.forEach(function (z) { if (oui) z.setAttribute('aria-busy', 'true'); else z.removeAttribute('aria-busy'); });
+  }
+  /* Pendant l'attente, les menus disent le contrat demandé — jamais celui
+     d'avant (A-F4) ; changer de contrat vide et grise la tranche, qui ne
+     dirait plus rien de vrai (A-F14). */
+  function refleterAttenteMenus() {
+    var a = ATTENTE_CONTRAT;
+    if (!a) return;
+    var familles = famillesDeContrats(), courante = familleCourante(familles), cible = null, k;
+    for (k = 0; k < familles.length && !cible; k++) {
+      if (familles[k].membres.some(function (m) { return m.id === a.id; })) cible = familles[k];
+    }
+    var sel = $('select-contrat'), selT = $('select-tranche');
+    if (cible) sel.selectedIndex = familles.indexOf(cible);
+    if (cible && cible === courante) { selT.disabled = false; selT.value = a.id; }
+    else { selT.disabled = true; selT.selectedIndex = -1; }
+  }
+  /* Un geste fait pendant l'attente : gardé, et montré tout de suite
+     (le bouton choisi est pressé) ; il s'applique à l'arrivée. */
+  function garderGeste(sorte, valeur) {
+    GESTES_EN_ATTENTE[sorte] = valeur;
+    var zone = sorte === 'indicateur' ? $('choix-indicateur') : $('choix-perimetre');
+    [].forEach.call(zone.querySelectorAll('button'), function (b) {
+      b.setAttribute('aria-pressed', String((sorte === 'indicateur' ? b.dataset.indicateur : b.dataset.perimetre) === valeur));
+    });
+    annoncer('Choix gardé : appliqué dès l\u2019arrivée du contrat.');
+  }
+  function prendreGestes() {
+    var g = GESTES_EN_ATTENTE;
+    GESTES_EN_ATTENTE = { indicateur: null, perimetre: null };
+    return g;
+  }
+  /* L'attente finie sans nouveau contrat (échec, ou retour au contrat
+     affiché) : les gestes gardés s'appliquent à la page qu'on voit. */
+  function appliquerGestesEnAttente() {
+    var g = prendreGestes();
+    var autrePerimetre = g.perimetre !== null && g.perimetre !== vue.perimetre;
+    if (autrePerimetre) vue.perimetre = g.perimetre;
+    if (g.indicateur && g.indicateur !== INDICATEUR) changerIndicateur(g.indicateur);
+    else if (autrePerimetre) rendre();
+    refleterIndicateur();
+    refleterPerimetre();
+  }
+  function echecContrat(id, forcer, raison) {
+    var menu = menuFocalise();
+    finAttenteContrat();
+    remettreContrat();
+    var r = String(raison || '').trim();
+    $('etat-contrat').textContent = r || 'Contrat impossible à charger.';
+    var fin = r ? ' : ' + r.replace(/[\s.]+$/, '') + '.' : ' : le classeur n\u2019a pas répondu.';
+    var texte = forcer && id === CONTRAT
+      ? 'Les chiffres de ' + nomAffiche(id) + ' n\u2019ont pas pu être relus' + fin + ' La page montre ceux d\u2019avant.'
+      : nomAffiche(id) + ' n\u2019a pas pu être chargé' + fin + ' La page montre toujours ' + nomAffiche(CONTRAT) + '.';
+    ECHEC_CONTRAT = { id: id, forcer: !!forcer };
+    montrerAlerteContrat(texte);
+    appliquerGestesEnAttente();
+    rendreFocusMenu(menu);
+  }
+  function montrerAlerteContrat(texte) {
+    var z = $('alerte-contrat');
+    z.hidden = false;
+    $('alerte-contrat-texte').textContent = texte;
+  }
+  function masquerAlerteContrat() {
+    $('alerte-contrat').hidden = true;
+    $('alerte-contrat-texte').textContent = '';
+  }
+  /* Le menu qui avait le focus clavier le garde : un menu grisé, ou
+     réécrit, le jetait sur le corps de la page (X-A1, X-A4). */
+  function menuFocalise() {
+    var a = document.activeElement;
+    return a && (a.id === 'select-contrat' || a.id === 'select-tranche') ? a.id : null;
+  }
+  function rendreFocusMenu(id) {
+    if (!id) return;
+    var cible = $(id);
+    if (!focusVisible(cible)) cible = $('select-contrat');
+    if (focusVisible(cible) && document.activeElement !== cible) { try { cible.focus({ preventScroll: true }); } catch (e) { cible.focus(); } }
+  }
+  /* Ce que montre maintenant la page, dit aux lecteurs d'écran : « THS
+     affiché : 19 sur 180 plans validés ». */
+  function annoncerPortee(debut, suite) {
+    var c = compte(selection());
+    var mot = INDICATEUR === 'concept' ? (c.total > 1 ? 'plans traités' : 'plan traité') : (c.total > 1 ? 'plans validés' : 'plan validé');
+    annoncer(debut + ' : ' + nb(c.termine) + ' sur ' + nb(c.total) + ' ' + mot + '.' + (suite || ''));
+  }
+  $('reessayer-contrat').addEventListener('click', function () {
+    var e = ECHEC_CONTRAT;
+    /* Le bouton va disparaître : le focus passe au menu du contrat. */
+    $('select-contrat').focus();
+    masquerAlerteContrat();
+    if (e) changerContrat(e.id, e.forcer || e.id === CONTRAT);
+  });
+  $('fermer-alerte-contrat').addEventListener('click', function () {
+    $('select-contrat').focus();
+    masquerAlerteContrat();
+  });
   /* Débrief 23 : la demande part dès qu'on ouvre le sélecteur — à la souris
      ou au clavier —, pas une fois le contrat choisi : le classeur a quelques
      dixièmes de seconde d'avance. Sa réponse ne sert que si l'on choisit ce
@@ -8467,10 +8925,36 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     }
     API.chargerContrat(id, rappel);
   }
+  /* Débrief 27 (lot H, X-A4) : au clavier, sur un menu fermé, chaque flèche
+     déclenche « change » (Chrome sous Windows et Linux) : on attend une
+     pause de 600 ms, Entrée ou la sortie du menu avant de charger. À la
+     souris, au doigt, ou menu ouvert, le choix part tout de suite. */
+  var MENU_CLAVIER = { quand: 0, valeur: null, minuteur: 0 };
+  function appliquerMenuEnSuspens() {
+    clearTimeout(MENU_CLAVIER.minuteur);
+    if (MENU_CLAVIER.valeur === null) return;
+    var v = MENU_CLAVIER.valeur;
+    MENU_CLAVIER.valeur = null;
+    changerContrat(v);
+  }
   ['select-contrat', 'select-tranche'].forEach(function (id) {
     $(id).addEventListener('mousedown', avancerContrats);
     $(id).addEventListener('focus', avancerContrats);
-    $(id).addEventListener('change', function (e) { changerContrat(e.target.value); });
+    $(id).addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { appliquerMenuEnSuspens(); return; }
+      if (/^(Arrow|Page|Home|End)/.test(e.key) || (e.key && e.key.length === 1)) MENU_CLAVIER.quand = Date.now();
+    });
+    $(id).addEventListener('blur', appliquerMenuEnSuspens);
+    $(id).addEventListener('change', function (e) {
+      clearTimeout(MENU_CLAVIER.minuteur);
+      if (Date.now() - MENU_CLAVIER.quand < 150) {
+        MENU_CLAVIER.valeur = e.target.value;
+        MENU_CLAVIER.minuteur = setTimeout(appliquerMenuEnSuspens, 600);
+        return;
+      }
+      MENU_CLAVIER.valeur = null;
+      changerContrat(e.target.value);
+    });
   });
 
   /* ============================================================
@@ -8524,9 +9008,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   }
   function calculerEnsemble(paquets) {
     var garde = { src: SRC, vue: vue, indicateur: INDICATEUR, animer: ANIMER_FIGURE, contrat: CONTRAT,
-                  /* Un chargement de contrat peut être en cours : le sélecteur
-                     reste grisé, et « Chargement… » reste écrit. */
-                  selectGrise: $('select-contrat').disabled, attente: $('etat-contrat').textContent };
+                  /* Un chargement de contrat peut être en cours : « Chargement… »
+                     reste écrit (débrief 27 : les menus, eux, gardent le
+                     contrat demandé — voir afficherContrat). */
+                  attente: $('etat-contrat').textContent };
     var resumes = {};
     try {
       Object.keys(paquets).forEach(function (id) {
@@ -8541,87 +9026,118 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       /* chargerSource() a vidé les champs de recherche pour une vue neuve :
          on y remet ceux du lecteur, qui filtrent toujours. */
       refleterVue();
-      griserContrat(garde.selectGrise);
       $('etat-contrat').textContent = garde.attente;
       ANIMER_FIGURE = garde.animer;
       remplirDims();
     }
     return resumes;
   }
-  function rendreEnsemble(resumes) {
+  /* Débrief 27 (lot H, B18, P-F16, P-F18, A-F25, X-A19) : une fenêtre
+     (dialog) — son titre, la croix, puis le tableau. Les colonnes ont des
+     noms clairs : « Au rythme tenu », qui mêlait deux réponses, devient
+     « À l'échéance » (manque N, ou tenue) et « Fin au rythme actuel » ; « À
+     l'arrêt » et ces deux-là s'expliquent en clair sous le tableau. Le
+     squelette s'écrit une fois, à l'ouverture ; seules les lignes se
+     réécrivent quand les chiffres arrivent (le focus y reste). */
+  var ENSEMBLE_EN_COURS = {};
+  var COLONNES_ENSEMBLE = [
+    ['Contrat', 13], ['Validés', 11], ['Depuis le relevé précédent', 12], ['Rythme tenu', 10], ['À l\u2019arrêt', 8],
+    ['Prochaine échéance', 16], ['À l\u2019échéance', 13], ['Fin au rythme actuel', 17]
+  ];
+  function preparerEnsemble() {
     var zone = $('ensemble');
+    zone.innerHTML = '<div class="ensemble-tete"><h2 id="ensemble-titre" tabindex="-1">Vue d’ensemble des contrats</h2>' +
+      '<span class="indice">tout le contrat, ' + (INDICATEUR === 'concept' ? 'concept harnais' : 'définition électrique') +
+        ', au dernier relevé \u2014 un clic sur un contrat l’affiche</span>' +
+      '<button type="button" class="fiche-plan-fermer" data-fermer-ensemble="1" aria-label="Fermer la vue d’ensemble">×</button></div>' +
+      '<div class="defile-ensemble"><table class="ensemble-table"><colgroup>' +
+        COLONNES_ENSEMBLE.map(function (c) { return '<col style="width:' + c[1] + '%">'; }).join('') + '</colgroup>' +
+      '<thead><tr>' + COLONNES_ENSEMBLE.map(function (c) { return '<th scope="col">' + c[0] + '</th>'; }).join('') + '</tr></thead>' +
+      '<tbody id="ensemble-lignes"></tbody></table></div>' +
+      '<p class="ensemble-note"><b>À l’arrêt</b> : plans en cours sans aucun changement depuis ' + SEMAINES_ARRET +
+        ' semaines ou plus. <b>À l’échéance</b> : ce qui manquerait le jour de la prochaine échéance si le rythme tenu continue. ' +
+        '<b>Fin au rythme actuel</b> : la semaine où tout serait validé à ce rythme.</p>';
+  }
+  function rendreEnsemble(resumes) {
+    var corps = $('ensemble-lignes');
+    if (!corps) return;
     var lignes = CONTRATS.map(function (c) {
       var r = resumes && resumes[c.id];
       var courant = c.id === CONTRAT;
+      var tete = '<tr' + (courant ? ' class="courant"' : '') + '><th scope="row"><button type="button" class="lien-doux" data-aller-contrat="' + ech(c.id) + '"' +
+        (r && !r.message ? ' title="Passer à ce contrat"' : '') + '>' + ech(c.nom) + '</button>' + (courant ? '<small>affiché</small>' : '') + '</th>';
       if (!r) {
-        return '<tr' + (courant ? ' class="courant"' : '') + '><th scope="row"><button type="button" class="lien-doux" data-aller-contrat="' + ech(c.id) + '">' +
-          ech(c.nom) + '</button></th><td colspan="6" class="doux">' + (resumes === null ? 'chargement…' : ech(MESSAGES_ENSEMBLE[c.id] || 'contrat impossible à charger')) + '</td></tr>';
+        return tete + '<td colspan="7" class="doux">' + (!resumes || ENSEMBLE_EN_COURS[c.id] ? 'chargement…' : ech(MESSAGES_ENSEMBLE[c.id] || 'contrat impossible à charger')) + '</td></tr>';
       }
+      if (r.message) return tete + '<td colspan="7" class="alerte-ligne">' + ech(r.message) + '</td></tr>';
       var e = r.echeance;
-      if (r.message) {
-        return '<tr' + (courant ? ' class="courant"' : '') + '><th scope="row"><button type="button" class="lien-doux" data-aller-contrat="' + ech(c.id) + '">' +
-          ech(c.nom) + '</button>' + (courant ? '<small>affiché</small>' : '') + '</th><td colspan="6" class="alerte-ligne">' + ech(r.message) + '</td></tr>';
-      }
-      return '<tr' + (courant ? ' class="courant"' : '') + '>' +
-        '<th scope="row"><button type="button" class="lien-doux" data-aller-contrat="' + ech(c.id) + '" title="Passer à ce contrat">' + ech(c.nom) + '</button>' +
-          (courant ? '<small>affiché</small>' : '') + '</th>' +
+      var aLEcheance = !e ? TIRET_VIDE
+        : e.enRetard ? '<span class="v tard">manque ' + nb(e.manque) + '</span><small>il faut ' + virgule(e.requis) + '/sem.</small>'
+        : '<span class="v bon">tenue</span>' + (e.fin === 'validé' ? '<small>tout est validé' + (e.domaine ? ' dans ' + ech(e.domaine) : '') + '</small>' : '');
+      var finActuelle = e
+        ? (e.fin === 'validé' ? '<span class="v bon">tout est validé</span>'
+          : '<span class="v">' + ech(e.fin) + '</span>' + (e.domaine ? '<small>pour ' + ech(e.domaine) + '</small>' : '') +
+            (e.dernier ? '<small>' + ech(e.dernier) + '</small>' : ''))
+        : (r.fin === 'validé' ? '<span class="v bon">tout est validé</span>' : r.fin ? '<span class="v">' + ech(r.fin) + '</span>' : TIRET_VIDE);
+      return tete +
         '<td><span class="v">' + nb(r.termines) + ' / ' + nb(r.total) + '</span><small' + (r.aucunFini ? ' class="alerte-ligne" title="Aucune valeur de la colonne n\u2019est comptée comme « validé » : voir le haut de la page de ce contrat"' : '') + '>' +
-          (r.aucunFini ? 'aucun mot « validé » reconnu' : r.pct + ' %') + '</small></td>' +
+          (r.aucunFini ? 'aucun mot « validé » reconnu' : r.pct + ' %') + '</small>' +
+          '<span class="jauge-ensemble" aria-hidden="true"><i style="width:' + Math.max(0, Math.min(100, r.pct)) + '%"></i></span></td>' +
         '<td><span class="v">' + (r.gain === null ? TIRET_VIDE : (r.gain > 0 ? '+' : '') + nb(r.gain)) + '</span>' +
           (r.reculs ? '<small class="recul">' + nb(r.reculs) + (r.reculs > 1 ? ' reculs' : ' recul') + '</small>' : '') + '</td>' +
         '<td><span class="v">' + (r.rythme === null ? TIRET_VIDE : virgule(r.rythme) + '/sem.') + '</span></td>' +
         '<td><span class="v' + (r.arret ? ' arret' : '') + '">' + (r.arret ? nb(r.arret) : TIRET_VIDE) + '</span></td>' +
         '<td>' + (e ? '<span class="v">' + ech(e.texte) + '</span><small>' + ech(e.quand) + ' · ' + ech(motJours(e.jours)) + '</small>' : '<span class="doux">' + (r.sansJalon ? 'aucun jalon' : 'aucune à venir') + '</span>') + '</td>' +
-        '<td>' + (e ? (e.enRetard
-            ? '<span class="v tard">manque ' + nb(e.manque) + '</span><small>il faut ' + virgule(e.requis) + '/sem.</small>'
-            : '<span class="v bon">tenue</span><small>' + (e.fin === 'validé' ? 'tout est validé' + (e.domaine ? ' dans ' + ech(e.domaine) : '')
-                : 'au rythme global' + (e.domaine ? ' de ' + ech(e.domaine) : '') + ', la fin serait en ' + ech(e.fin)) + '</small>' +
-              (e.dernier ? '<small>' + ech(e.dernier) + '</small>' : ''))
-          : (r.fin === 'validé' ? '<span class="v bon">tout est validé</span>'
-            : r.fin ? '<span class="v">fin ' + ech(r.fin) + '</span>' : TIRET_VIDE)) + '</td>' +
-        '</tr>';
+        '<td>' + aLEcheance + '</td><td>' + finActuelle + '</td></tr>';
     }).join('');
-    zone.innerHTML = '<p class="surtitre" aria-hidden="true">Tous les contrats</p>' +
-      '<div class="ensemble-tete"><h2>Vue d’ensemble des contrats</h2>' +
-      '<span class="indice">tout le contrat, ' + (INDICATEUR === 'concept' ? 'concept harnais' : 'définition électrique') +
-        ', au dernier relevé \u2014 un clic sur un contrat l’affiche</span>' +
-      '<button type="button" class="fiche-plan-fermer" data-fermer-ensemble="1" aria-label="Fermer la vue d’ensemble">×</button></div>' +
-      '<div class="defile-ensemble"><table class="ensemble-table"><thead><tr><th scope="col">Contrat</th><th scope="col">Validés</th>' +
-      '<th scope="col">Depuis le relevé précédent</th><th scope="col">Rythme tenu</th><th scope="col" title="' + ech('Plans en cours sans changement depuis ' + SEMAINES_ARRET + ' semaines ou plus') + '">À l’arrêt</th>' +
-      '<th scope="col">Prochaine échéance</th><th scope="col">Au rythme tenu</th></tr></thead><tbody>' + lignes + '</tbody></table></div>';
+    garderFocus(function () { corps.innerHTML = lignes; }, 'ensemble');
     /* Au téléphone, chaque contrat devient une carte : chaque valeur y
-       reprend le nom de sa colonne à gauche (voir la feuille de style), lu
-       ici dans l'en-tête pour ne l'écrire qu'une fois. */
-    var titres = zone.querySelectorAll('.ensemble-table thead th');
-    [].forEach.call(zone.querySelectorAll('.ensemble-table tbody tr'), function (tr) {
+       reprend le nom de sa colonne à gauche (voir la feuille de style). */
+    [].forEach.call(corps.querySelectorAll('tr'), function (tr) {
       [].forEach.call(tr.children, function (c, k) {
-        if (c.tagName === 'TD' && c.colSpan === 1 && titres[k]) c.setAttribute('data-libelle', titres[k].textContent);
+        if (c.tagName === 'TD' && c.colSpan === 1 && COLONNES_ENSEMBLE[k]) c.setAttribute('data-libelle', COLONNES_ENSEMBLE[k][0]);
       });
     });
   }
   function ouvrirEnsemble() {
     var zone = $('ensemble');
+    preparerEnsemble();
     zone.hidden = false;
+    if (typeof zone.showModal === 'function') { if (!zone.open) zone.showModal(); } else zone.setAttribute('open', '');
     $('voir-ensemble').setAttribute('aria-expanded', 'true');
+    /* Le focus sur le titre : un lecteur d'écran dit où l'on est. */
+    try { $('ensemble-titre').focus({ preventScroll: true }); } catch (e) { $('ensemble-titre').focus(); }
     var demande = ++demandeEnsemble;
     PAQUETS[CONTRAT] = SRC;
     var manquants = CONTRATS.filter(function (c) { return !PAQUETS[c.id]; });
+    ENSEMBLE_EN_COURS = {};
+    manquants.forEach(function (c) { ENSEMBLE_EN_COURS[c.id] = true; });
     rendreEnsemble(null);
-    function finir() {
-      if (demande !== demandeEnsemble || zone.hidden) return;
+    function calculerDispo() {
       var dispo = {};
       CONTRATS.forEach(function (c) { if (PAQUETS[c.id]) dispo[c.id] = PAQUETS[c.id]; });
       var resumes = calculerEnsemble(dispo);
       rendre();
-      rendreEnsemble(resumes);
+      return resumes;
+    }
+    function finir() {
+      if (demande !== demandeEnsemble || zone.hidden) return;
+      rendreEnsemble(calculerDispo());
     }
     if (!manquants.length) { finir(); return; }
     var restent = manquants.length;
+    /* A-F25 : un réseau lent — les contrats déjà là (celui qu'on regarde)
+       s'écrivent sans attendre les autres. */
+    setTimeout(function () {
+      if (demande !== demandeEnsemble || zone.hidden || !restent) return;
+      rendreEnsemble(calculerDispo());
+    }, 400);
     manquants.forEach(function (c) {
       function ranger(paquet) {
         paquet = deballerPaquet(paquet);
         if (paquet && paquet.plans && paquet.plans.length) PAQUETS[c.id] = paquet;
         else MESSAGES_ENSEMBLE[c.id] = paquet && paquet.message ? String(paquet.message) : '';
+        delete ENSEMBLE_EN_COURS[c.id];
         if (--restent === 0) finir();
       }
       /* Compressé, le paquet se décode d'abord (obtenirPaquet). */
@@ -8630,25 +9146,42 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       else recevoir(jeuDExemple(c.id));
     });
   }
-  function fermerEnsemble() {
+  /* Fermer : la croix, Échap (l'événement « close » de la fenêtre), un clic
+     à côté, ou un contrat choisi. Le focus revient au bouton. */
+  function fermerEnsemble(sansFocus) {
     demandeEnsemble++;
-    $('ensemble').hidden = true;
-    $('ensemble').innerHTML = '';
+    var zone = $('ensemble');
+    if (zone.open) { if (typeof zone.close === 'function') zone.close(); else zone.removeAttribute('open'); }
+    zone.hidden = true;
+    zone.innerHTML = '';
     $('voir-ensemble').setAttribute('aria-expanded', 'false');
+    if (!sansFocus && focusVisible($('voir-ensemble'))) { try { $('voir-ensemble').focus({ preventScroll: true }); } catch (e) { $('voir-ensemble').focus(); } }
   }
   $('voir-ensemble').addEventListener('click', function () {
     if ($('ensemble').hidden) ouvrirEnsemble(); else fermerEnsemble();
   });
+  $('ensemble').addEventListener('close', function () { if (!$('ensemble').hidden) fermerEnsemble(); });
+  /* Un clic sur le voile ferme la fenêtre — appuyé et relâché hors de son
+     cadre (comme l'administration). */
+  function horsDeLEnsemble(e) {
+    var d = $('ensemble'), r = d.getBoundingClientRect();
+    return e.target === d && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom);
+  }
+  var appuiHorsEnsemble = false;
+  $('ensemble').addEventListener('mousedown', function (e) { appuiHorsEnsemble = horsDeLEnsemble(e); });
   $('ensemble').addEventListener('click', function (e) {
+    if (appuiHorsEnsemble && horsDeLEnsemble(e)) { appuiHorsEnsemble = false; fermerEnsemble(); return; }
+    appuiHorsEnsemble = false;
     if (e.target.closest('button[data-fermer-ensemble]')) { fermerEnsemble(); return; }
     var b = e.target.closest('button[data-aller-contrat]');
     if (!b) return;
+    var id = b.dataset.allerContrat;
     fermerEnsemble();
-    if (b.dataset.allerContrat !== CONTRAT) {
+    if (id !== CONTRAT || ATTENTE_CONTRAT) {
       /* Le paquet est déjà là : pas de second aller-retour au classeur. */
-      var paquet = PAQUETS[b.dataset.allerContrat];
-      if (paquet) { demandeContrat++; chargerSource(paquet); remplirDims(); rendre(); }
-      else changerContrat(b.dataset.allerContrat);
+      var paquet = PAQUETS[id];
+      if (paquet && id !== CONTRAT) { demandeContrat++; afficherPaquetContrat(paquet); }
+      else changerContrat(id);
     }
   });
 
@@ -8753,18 +9286,36 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   }
 
   function rendreFiltresActifs() {
+    rendreEntete();
     var zone = $('filtres-actifs');
     var poses = filtresPoses();
     zone.hidden = !poses.length;
     if (!poses.length) { zone.innerHTML = ''; return; }
-    zone.innerHTML = '<span class="mot">Filtres</span>' +
+    /* Débrief 27 (lot H, P-F6, M5, X-A13) : une ligne (voir la feuille de
+       style) ; chaque croix dit quel filtre elle retire ; le jeton dit son
+       filtre entier au survol quand sa valeur est coupée (téléphone). */
+    zone.innerHTML = '<div class="filtres-ligne"><span class="mot">Filtres</span><div class="filtres-jetons" id="filtres-jetons">' +
       poses.map(function (f) {
-        return '<span class="jeton">' + (f.mot ? ech(f.mot) + ' : ' : '') +
+        var nom = (f.mot ? f.mot + ' : ' : '') + f.valeur;
+        return '<span class="jeton" title="' + ech(nom) + '">' + (f.mot ? ech(f.mot) + ' : ' : '') +
           '<b>' + ech(f.valeur) + '</b>' +
           '<button class="x" type="button" data-retirer="' + ech(f.cle) +
-          '" aria-label="Retirer ce filtre" title="Retirer ce filtre">×</button></span>';
-      }).join('') +
-      '<button class="tout-effacer" type="button" id="tout-effacer">Tout effacer</button>';
+          '" aria-label="' + ech('Retirer le filtre ' + nom) + '" title="Retirer ce filtre">×</button></span>';
+      }).join('') + '</div>' +
+      '<button class="tout-effacer" type="button" id="tout-effacer"><span class="long">Tout effacer</span><span class="court">Effacer</span></button></div>';
+    marquerDebord($('filtres-jetons'));
+  }
+  /* Débrief 27 (lot H, B1, P-F11) : le surtitre du titre — le contrat et
+     sa tranche, l'avancement suivi, le périmètre s'il en est un — et le
+     rappel du contrat dans le sommaire collé. */
+  function rendreEntete() {
+    var nom = CONTRATS.length ? nomAffiche(CONTRAT) : '';
+    var morceaux = nom ? [nom.replace(' \u203a ', ' \u00b7 ')] : [];
+    morceaux.push(INDICATEUR === 'concept' ? 'Concept harnais' : 'Définition électrique');
+    if (vue.perimetre) morceaux.push('Périmètre ' + vue.perimetre);
+    var texte = morceaux.join(' \u00b7 ');
+    if ($('contexte-page').textContent !== texte) $('contexte-page').textContent = texte;
+    majChapitresPresents();
   }
 
   function rendreIncomplets() {
@@ -9683,23 +10234,51 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   /* À l'image suivante, avec les autres mesures : les panneaux présents,
      puis le fondu du sommaire et le panneau courant (mesurerMaintenant). */
   function majChapitresPresents() { aMesurer('chapitres'); }
+  /* Débrief 27 (lot H, P-F12) : un panneau absent pour ce contrat garde son
+     entrée, grisée, avec sa raison (« Pas de base SEE pour HDK › Tranche
+     2 ») : « Où est passée la comparaison ? » trouve sa réponse. Sans raison
+     connue (classeur vide…), l'entrée s'efface comme avant. */
+  function raisonAbsence(sec) {
+    if (!sec || document.body.dataset.vide === 'true' || !SRC) return '';
+    if (sec.id === 'rapprochement') {
+      var nom = nomAffiche(CONTRAT) || 'ce contrat';
+      if (INDICATEUR === 'concept') return 'Pas de comparaison sous le concept harnais : SEE ne suit que la définition électrique.';
+      return SRC.rapprochement ? 'Pas de comparaison avec SEE pour ' + nom + '.' : 'Pas de base SEE pour ' + nom + ' : rien à comparer.';
+    }
+    return '';
+  }
   function poserChapitresPresents() {
     var montrer = LIENS_SOMMAIRE.map(function (a) { return chapitreVisible(chapitreDe(a)); });
     LIENS_SOMMAIRE.forEach(function (a, i) {
       var li = a.parentNode;
-      if (li.hidden === montrer[i]) li.hidden = !montrer[i];
+      var raison = montrer[i] ? '' : raisonAbsence(chapitreDe(a));
+      var cache = !montrer[i] && !raison;
+      if (li.hidden !== cache) li.hidden = cache;
+      if (raison) {
+        li.setAttribute('data-absent', '');
+        a.setAttribute('aria-disabled', 'true');
+        a.title = raison;
+      } else if (li.hasAttribute('data-absent')) {
+        li.removeAttribute('data-absent');
+        a.removeAttribute('aria-disabled');
+        a.removeAttribute('title');
+      }
     });
   }
-  /* Le bandeau des filtres actifs est collé lui aussi, au-dessus : sa hauteur
-     décale le sommaire ; les deux ensemble, l'arrêt des sauts dans la page. */
+  /* Le bandeau des filtres actifs est collé lui aussi, juste sous le
+     sommaire (débrief 27, lot H : --h-sommaire, la hauteur du sommaire) ;
+     les deux ensemble, l'arrêt des sauts dans la page (--bas-sommaire). */
   function majHautSommaire() { aMesurer('hautSommaire'); }
+  function hauteurFiltres() {
+    var f = $('filtres-actifs'), ligne = f && !f.hidden ? f.querySelector('.filtres-ligne') : null;
+    return ligne ? Math.round(ligne.getBoundingClientRect().height) : 0;
+  }
   function lireHautSommaire() {
-    var f = $('filtres-actifs');
-    var h = f && !f.hidden ? Math.round(f.getBoundingClientRect().height) : 0;
+    var h = hauteurFiltres();
     var s = Math.round(SOMMAIRE.getBoundingClientRect().height);
     return function () {
       var racine = document.documentElement.style;
-      racine.setProperty('--haut-sommaire', h + 'px');
+      racine.setProperty('--h-sommaire', s + 'px');
       racine.setProperty('--bas-sommaire', (h + s) + 'px');
     };
   }
@@ -9712,11 +10291,14 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var colle = window.scrollY > 0 && boite.top <= parseFloat(getComputedStyle(SOMMAIRE).top) + 0.5;
     if ((SOMMAIRE.getAttribute('data-colle') === 'true') !== colle) SOMMAIRE.setAttribute('data-colle', colle ? 'true' : 'false');
     // Le contrat peut changer pendant qu'on lit : relu à chaque passage.
-    var contrat = colle && !$('choix-contrat').hidden ? ((CONTRATS.filter(function (c) { return c.id === CONTRAT; })[0] || {}).nom || CONTRAT) : '';
+    /* Débrief 27 (lot H) : « HDK › Tranche 1 », comme le surtitre du titre —
+       la tranche 1 s'écrivait « HDK » tout court. */
+    var contrat = colle && CONTRATS.length ? nomAffiche(CONTRAT) : '';
     if ($('sommaire-contrat').textContent !== contrat) $('sommaire-contrat').textContent = contrat;
-    var courant = null, presents = LIENS_SOMMAIRE.filter(function (a) { return !a.parentNode.hidden; });
+    var courant = null, presents = LIENS_SOMMAIRE.filter(function (a) { return !a.parentNode.hidden && !a.hasAttribute('aria-disabled'); });
+    var seuil = boite.bottom + hauteurFiltres() + 40;   // débrief 27 : sous le sommaire ET les filtres collés
     presents.forEach(function (a) {
-      if (chapitreDe(a).getBoundingClientRect().top <= boite.bottom + 40) courant = a;
+      if (chapitreDe(a).getBoundingClientRect().top <= seuil) courant = a;
     });
     var fond = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
     if (fond && presents.length && window.scrollY > 0) courant = presents[presents.length - 1];
@@ -9750,11 +10332,12 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var a = e.target.closest('a[data-chapitre]');
     if (!a) return;
     e.preventDefault();
+    if (a.getAttribute('aria-disabled') === 'true') { montrerRaison(a, a.title); return; }
     var sec = chapitreDe(a);
     if (!chapitreVisible(sec)) return;
     var doux = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     var haut = sec.getBoundingClientRect().top + window.scrollY - SOMMAIRE.getBoundingClientRect().height -
-      parseFloat(getComputedStyle(SOMMAIRE).top) - 14;
+      hauteurFiltres() - 14;
     window.scrollTo({ top: Math.max(0, haut), behavior: doux ? 'smooth' : 'auto' });
     /* Le titre du panneau ; la synthèse n'a pas de h2 : son surtitre, qui
        nomme la section pour les lecteurs d'écran. */
@@ -10093,11 +10676,24 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     rendreFocus($('filtre-journal'), 'journal', vue.journal);
   });
 
+  /* Débrief 27 (lot H, X-A1, X-A5) : le focus passe à la croix suivante,
+     sinon au titre de la section lue — jamais au corps de la page —, et le
+     résultat est dit. */
   $('filtres-actifs').addEventListener('click', function (e) {
-    if (e.target.closest('#tout-effacer')) { toutEffacer(); rendre(); return; }
+    if (e.target.closest('#tout-effacer')) {
+      garderFocus(function () { toutEffacer(); rendre(); });
+      annoncerPortee('Filtres effacés');
+      return;
+    }
     var x = e.target.closest('button[data-retirer]');
-    if (x) { retirerFiltre(x.dataset.retirer); rendre(); }
+    if (x) {
+      garderFocus(function () { retirerFiltre(x.dataset.retirer); rendre(); });
+      annoncerPortee('Filtre retiré');
+    }
   });
+  $('filtres-actifs').addEventListener('scroll', function (e) {
+    if (e.target && e.target.id === 'filtres-jetons') marquerDebord(e.target);
+  }, true);
 
   document.querySelector('#vue-tableau').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-vue]');
@@ -10808,11 +11404,15 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   }
   function lireDroits() {
     if (!API || !API.appeler) return;
-    appelerServeur('mesDroits', [], function (d) { DROITS = d && typeof d === 'object' ? d : null; montrerBoutonAdmin(); }, function () { /* sans droits */ });
+    appelerServeur('mesDroits', [], function (d) { DROITS = d && typeof d === 'object' ? d : null; montrerBoutonAdmin(); }, function () { /* sans droits */ montrerBoutonAdmin(); });
   }
   function estAdmin() { return !!(DROITS && (DROITS.role === 'responsable' || DROITS.role === 'administrateur')); }
   function montrerBoutonAdmin() {
     var admin = estAdmin();
+    /* Débrief 27 (lot H, B1) : sa place était gardée, invisible ; les droits
+       lus, il paraît ou s'efface (il ouvre sa ligne calée à droite : rien
+       d'autre ne bouge). */
+    $('choix-admin').removeAttribute('data-droits');
     $('choix-admin').hidden = !admin;
     $('admin-onglets').hidden = !admin;
     /* Les droits tombés panneau ouvert : il ne garde que le refus, que la
