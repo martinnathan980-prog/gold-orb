@@ -10529,10 +10529,15 @@ async function deplierFiltresColonne(pg) {
       const source = await pv.evaluate(() => {
         const a = document.getElementById('alerte-source'), ent = document.querySelector('header.entete'), ce = getComputedStyle(ent);
         const hex = h => 'rgb(' + h.trim().replace('#', '').match(/../g).map(x => parseInt(x, 16)).join(', ') + ')';
-        return { vu: !a.hidden && a.getClientRects().length > 0, texte: a.textContent, haut: window.__crE1(getComputedStyle(a).color, hex(ce.getPropertyValue('--bandeau-fond'))),
-                 bas: window.__crE1(getComputedStyle(a).color, hex(ce.getPropertyValue('--bandeau-fond-2'))), taille: parseFloat(getComputedStyle(a).fontSize) };
+        /* Débrief 29 (fusion des lots E1 et E2) : le message prend le dessin du
+           bandeau d'erreur (D8, lot E2) — son texte se mesure alors sur son
+           propre fond ; sans fond, sur le dégradé marine. */
+        const propre = getComputedStyle(a).backgroundColor, opaque = propre !== 'rgba(0, 0, 0, 0)' && propre !== 'transparent';
+        return { vu: !a.hidden && a.getClientRects().length > 0, texte: a.textContent, fond: opaque ? propre : 'bandeau',
+                 haut: window.__crE1(getComputedStyle(a).color, opaque ? propre : hex(ce.getPropertyValue('--bandeau-fond'))),
+                 bas: window.__crE1(getComputedStyle(a).color, opaque ? propre : hex(ce.getPropertyValue('--bandeau-fond-2'))), taille: parseFloat(getComputedStyle(a).fontSize) };
       });
-      verifier('admin/NOUVEAU-2, ' + schema + ' : le message du classeur se lit sur le bandeau marine (≥ 4,5:1 sur tout le dégradé ; 2:1 en clair et 3,4:1 en sombre avant)',
+      verifier('admin/NOUVEAU-2, ' + schema + ' : le message du classeur se lit dans le bandeau marine (≥ 4,5:1 sur son fond d’alerte, ou sur tout le dégradé ; 2:1 en clair et 3,4:1 en sombre avant)',
         source.vu && /introuvable/.test(source.texte) && source.haut >= 4.5 && source.bas >= 4.5, JSON.stringify(source));
       if (schema === 'light') {
         /* B4 : la page vide garde l'Aide au bout du sommaire, qui l'ouvre. */
