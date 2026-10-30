@@ -5014,11 +5014,13 @@ async function deplierFiltresColonne(pg) {
   /* Débrief 27 : la rangée du journal ne défile plus — rien à rogner,
      l'anneau du focus a toute sa place (lot B) ; au large, les pastilles du
      bloc par groupe passent à la ligne au lieu de défiler sous un fondu
-     (lot C, X-A3) ; celles du graphique, inchangées. */
+     (lot C, X-A3) ; celles du graphique, inchangées. Débrief 29 (lot T,
+     B10) : celles du graphique aussi passent à la ligne au large (à 1024 px
+     la rangée « Courbe : » coupait « Non r… ») — plus rien n'y est rogné. */
   const styleJ27 = await p.evaluate(() => { const r = document.getElementById('filtre-journal'), g = r.querySelector('.puces-rang');
     return { x: getComputedStyle(r).overflowX, y: getComputedStyle(r).overflowY, ecart: g ? getComputedStyle(g).columnGap : null }; });
-  verifier('les trois rangées : le même écart entre pastilles, 4 px autour pour l’anneau du focus (le journal et le bloc par groupe : rien de rogné), sans barre de défilement',
-    style19.filter(x => !/^filtre-journal:/.test(x)).every(x => { const id = x.split(':')[0]; return (id === 'filtre-valeur-groupe' ? /^:4px\/4px\/none\/visible$/ : /^:4px\/4px\/none\/hidden$/).test(x.slice(id.length)); }) &&
+  verifier('les trois rangées : le même écart entre pastilles, 4 px autour pour l’anneau du focus (le journal, le bloc par groupe et la courbe : rien de rogné), sans barre de défilement',
+    style19.filter(x => !/^filtre-journal:/.test(x)).every(x => { const id = x.split(':')[0]; return /^:4px\/4px\/none\/visible$/.test(x.slice(id.length)); }) &&
     styleJ27.x === 'visible' && styleJ27.y === 'visible' && styleJ27.ecart === '4px', JSON.stringify([style19, styleJ27]));
 
   // Une valeur que seul PERSO porte : sous BASE/OPTION, ni tuile, ni pastille au bloc, ni pilule au graphique ; pressée, sa tuile reste.
@@ -10209,6 +10211,343 @@ async function deplierFiltresColonne(pg) {
   //  dans un bloc { … } qui ouvre et ferme ses propres pages.
   // =================================================================
   /* (début du lot T) */
+  /* Débrief 29, lot T — sur la page VIVANTE (le vrai Code.gs du simulateur,
+     HDK : 634 plans, six relevés, cinq jalons), comme au banc d'essai où les
+     regards humains ont vu ces défauts : les tuiles qui ne disaient pas
+     qu'elles filtrent (P-F17), les en-têtes du tableau sans flèche au repos,
+     « manque 535 » barré par la droite « requis » au téléphone (B3), la
+     rangée « Courbe : » coupée et les jalons en 4 + 1 à 1024 px (B10), des
+     marques d'état sous 3:1 (TO_TREAT en sombre, barres d'une seule valeur),
+     la fiche d'échéance ouverte sans que le focus la suive. */
+  section('Débrief 29 : Synthèse, Tendance, couleurs (lot T)');
+  {
+    const fsT = require('fs'), osT = require('os');
+    const { construireSimulateur } = require(path.join(__dirname, '..', '..', 'tests', 'construire-simulateur.js'));
+    const { Feuille } = require(path.join(__dirname, '..', '..', 'tests', 'faux-classeur.js'));
+    const simT = construireSimulateur({ date: '2026-10-29', avantPage: function (c, classeur) {
+      const ths = classeur.getSheetByName('THS');
+      classeur.feuilles.splice(1, 0, new Feuille('HDK Tranche 2', ths.valeurs.map(l => l.slice()), false, ths.fusions.map(f => Object.assign({}, f))));
+    } });
+    const srvT = simT.contexte;
+    simT.classeur.proprietaire = 'nathan@airbus.com';
+    srvT.__emailScript = 'nathan@airbus.com';
+    srvT.__emailLecteur = 'nathan@airbus.com';
+    const fichierT = path.join(osT.tmpdir(), 'suivi-fwd-lot-t-' + process.pid + '.html');
+    fsT.writeFileSync(fichierT, simT.page.replace(/<script>\s*\/\* Simulateur : google\.script\.run[\s\S]*?<\/script>/, ''));
+    const vivanteT = async (o) => {
+      const c = await nav.newContext({ viewport: { width: o.largeur || 1440, height: o.hauteur || 900 }, colorScheme: o.schema || 'light',
+        isMobile: !!o.mobile, hasTouch: !!o.mobile, reducedMotion: o.reducedMotion || 'no-preference' });
+      const pg = await c.newPage();
+      brancher(pg, 'lot T ' + (o.largeur || 1440) + ' ' + (o.schema || 'light'));
+      await pg.exposeFunction('__appel', (nom, args) => {
+        if (typeof srvT[nom] !== 'function' || /_$/.test(nom)) throw new Error('fonction inconnue ' + nom);
+        srvT.__emailLecteur = 'nathan@airbus.com';
+        const r = srvT[nom].apply(null, JSON.parse(args));
+        return JSON.stringify(r === undefined ? null : r);
+      });
+      await pg.addInitScript(() => {
+        window.SUIVI_FWD_BUDGET = 1e9;
+        function chaine(ok, ko) {
+          const c = { withSuccessHandler: f => chaine(f, ko), withFailureHandler: f => chaine(ok, f), withUserObject: () => chaine(ok, ko) };
+          return new Proxy(c, { get(t, nom) {
+            if (nom in t) return t[nom];
+            if (typeof nom !== 'string') return undefined;
+            return function () {
+              const args = Array.prototype.slice.call(arguments);
+              setTimeout(() => window.__appel(nom, JSON.stringify(args)).then(j => { if (ok) ok(JSON.parse(j)); },
+                e => { if (ko) ko({ message: String(e.message || e).replace(/^Error: /, '') }); }), 40);
+            };
+          } });
+        }
+        window.google = { script: { run: chaine(null, null) } };
+        /* Les mesures de couleur, posées dans la page. */
+        window.__rgbaT = c => { const m = String(c).match(/[\d.]+/g); return m ? { r: +m[0], g: +m[1], b: +m[2], a: m.length > 3 ? +m[3] : 1 } : null; };
+        window.__lumT = c => [c.r, c.g, c.b].map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }).reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);
+        window.__crT = (a, b) => { const x = window.__lumT(a), y = window.__lumT(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+        window.__surT = (fg, a, bg) => ({ r: fg.r * a + bg.r * (1 - a), g: fg.g * a + bg.g * (1 - a), b: fg.b * a + bg.b * (1 - a) });
+      });
+      await pg.goto('file://' + fichierT);
+      await pg.waitForFunction(() => document.documentElement.getAttribute('data-suivi-fwd') === 'pret', null, { timeout: 30000 });
+      await pg.waitForTimeout(800);
+      pg.__ctx = c;
+      return pg;
+    };
+    /* Les mots du graphique (« manque N », « fin … », « requis … ») barrés
+       par une droite tracée (« requis », la projection) sans fond plein. */
+    const motsBarres = pg => pg.evaluate(() => {
+      const svg = document.querySelector('svg.graphe');
+      if (!svg) return { mots: [], barres: ['pas de graphique'], requisCroise: [] };
+      const rq = svg.querySelector('.droite-requis');
+      const segs = [...svg.querySelectorAll('.droite-requis, path[stroke-dasharray="5 4"]')]
+        .map(pa => ({ requis: pa === rq, c: (pa.getAttribute('d').match(/-?[\d.]+/g) || []).map(Number) }));
+      const barres = [], requisCroise = [], mots = [];
+      [...svg.querySelectorAll('.manque-jalon, .fin-mot, .requis-mot')].forEach(m => {
+        const bb = m.getBBox(), fond = !!(m.previousElementSibling && m.previousElementSibling.classList.contains('fond-mot'));
+        const nom = m.textContent.replace(m.querySelector('title') ? m.querySelector('title').textContent : '', '').trim();
+        mots.push(nom);
+        segs.forEach(s => {
+          for (let t = 0; t <= 200; t++) {
+            const x = s.c[0] + (s.c[2] - s.c[0]) * t / 200, y = s.c[1] + (s.c[3] - s.c[1]) * t / 200;
+            if (x > bb.x && x < bb.x + bb.width && y > bb.y + 2 && y < bb.y + bb.height - 1) {
+              if (s.requis) requisCroise.push(nom);
+              if (!fond) barres.push(nom + ' × ' + (s.requis ? 'requis' : 'projection'));
+              break;
+            }
+          }
+        });
+      });
+      return { mots, barres, requisCroise };
+    });
+    /* Pour la courbe d'une valeur : le contraste, sur la surface, de la
+       courbe (son liseré compris), des barres et des barres de baisse — le
+       trait ou l'aplat le plus net de chacune. */
+    const contrastesCourbe = pg => pg.evaluate(() => {
+      const svg = document.querySelector('svg.graphe');
+      const surf = window.__rgbaT(getComputedStyle(document.getElementById('section-tendance')).backgroundColor);
+      const eff = (el, prop) => {
+        const cs = getComputedStyle(el), c = window.__rgbaT(cs[prop]);
+        if (!c || cs[prop] === 'none' || (prop === 'stroke' && !(parseFloat(cs.strokeWidth) > 0))) return 0;
+        const a = c.a * (+cs.opacity) * (+(prop === 'fill' ? cs.fillOpacity : cs.strokeOpacity));
+        return window.__crT(window.__surT(c, a, surf), surf);
+      };
+      const bord = el => Math.max(eff(el, 'fill'), eff(el, 'stroke'));
+      const courbe = svg.querySelector('path.courbe'), lis = svg.querySelector('path.courbe-lisere');
+      const gains = [...svg.querySelectorAll('path.barre-semaine:not(.perte)')], pertes = [...svg.querySelectorAll('path.barre-semaine.perte')];
+      return { courbe: courbe ? +Math.max(eff(courbe, 'stroke'), lis ? eff(lis, 'stroke') : 0).toFixed(2) : null,
+               barres: gains.length ? +Math.min(...gains.map(bord)).toFixed(2) : null,
+               baisses: pertes.length ? +Math.min(...pertes.map(bord)).toFixed(2) : null,
+               lisere: !!lis, opacite50: pertes.some(x => x.getAttribute('opacity') === '.5') };
+    });
+    const pilulesCourbe = pg => pg.evaluate(() => [...document.querySelectorAll('#filtre-valeur-graphe button')].map(x => x.dataset.valeurGraphe || '').filter(Boolean));
+    const choisirCourbe = async (pg, v) => {
+      await pg.evaluate(v => document.querySelector('#filtre-valeur-graphe button[data-valeur-graphe="' + v + '"]').click(), v);
+      await pg.waitForTimeout(250);
+    };
+
+    // ---- 1440, clair : tuiles, en-têtes du tableau, couleurs, échéance.
+    const pT = await vivanteT({ largeur: 1440, hauteur: 900 });
+    const lireTuiles = (pg = pT) => pg.evaluate(() => [...document.querySelectorAll('#etats .etat-btn')].map(b => {
+      const r = b.getBoundingClientRect(), i = b.querySelector('.indice-tuile'), ir = i ? i.getBoundingClientRect() : null;
+      return { cle: b.dataset.cle, presse: b.getAttribute('aria-pressed'), rect: [r.x, r.y, r.width, r.height].map(Math.round).join(','),
+               vis: i ? getComputedStyle(i).visibility : 'absent', aff: i ? getComputedStyle(i).display : 'absent',
+               pos: i ? getComputedStyle(i).position : '', txt: i ? i.textContent : '', cache: i ? i.getAttribute('aria-hidden') : null,
+               icone: !!(i && i.querySelector('svg')), transition: i ? getComputedStyle(i).transitionDuration : '',
+               dedans: !!ir && ir.left >= r.left - 0.5 && ir.right <= r.right + 0.5 && ir.top >= r.top - 0.5 && ir.bottom <= r.bottom + 0.5,
+               dessous: !!ir && ir.top >= r.bottom - 1,
+               encre: i ? +window.__crT(window.__rgbaT(getComputedStyle(i).color), window.__rgbaT(getComputedStyle(b).backgroundColor)).toFixed(2) : 0 };
+    }));
+    await pT.locator('#etats').scrollIntoViewIfNeeded();
+    await pT.mouse.move(2, 2); await pT.waitForTimeout(200);
+    const repos = await lireTuiles();
+    const enLegende = await pT.evaluate(() => document.getElementById('etats').classList.contains('en-legende'));
+    verifier('tuiles (P-F17) : au repos, chaque tuile garde la place d’un indice « Filtrer la page » (entonnoir), caché, et muet pour les lecteurs d’écran (le title le dit)',
+      enLegende && repos.length === 7 && repos.every(t => t.vis === 'hidden' && t.txt === 'Filtrer la page' && t.icone && t.cache === 'true' && t.aff !== 'none'),
+      JSON.stringify(repos.map(t => [t.cle, t.vis, t.txt, t.icone, t.cache])));
+    await pT.hover('#etats .etat-btn:nth-child(2)'); await pT.waitForTimeout(300);
+    const survol = await lireTuiles();
+    verifier('tuiles : au survol, la tuile survolée montre « Filtrer la page » dans sa carte, lisible (4,5:1), les autres non — et rien ne bouge',
+      survol[1].vis === 'visible' && survol[1].dedans && survol[1].encre >= 4.5 && survol.every((t, i) => i === 1 || t.vis === 'hidden') &&
+      survol.map(t => t.rect).join('|') === repos.map(t => t.rect).join('|'),
+      JSON.stringify({ survol: survol.map(t => [t.cle, t.vis, t.dedans, t.encre, t.rect]), repos: repos.map(t => t.rect) }));
+    await pT.click('#etats .etat-btn:nth-child(2)'); await pT.waitForTimeout(450);
+    const presse = await lireTuiles();
+    verifier('tuiles : pressée et toujours survolée, la tuile dit « Retirer le filtre »',
+      presse[1].presse === 'true' && presse[1].vis === 'visible' && presse[1].txt === 'Retirer le filtre', JSON.stringify(presse[1]));
+    await pT.click('#etats .etat-btn:nth-child(2)'); await pT.waitForTimeout(450);
+    await pT.mouse.move(2, 2);
+    await pT.focus('#etats .etat-btn:nth-child(3)'); await pT.keyboard.press('Shift+Tab'); await pT.waitForTimeout(250);
+    const clavier = await lireTuiles();
+    const focusTuile = await pT.evaluate(() => document.activeElement.classList.contains('etat-btn') ? document.activeElement.dataset.cle : null);
+    verifier('tuiles : au focus clavier (Tab), l’indice paraît aussi — pas seulement au survol',
+      !!focusTuile && clavier.find(t => t.cle === focusTuile).vis === 'visible' && clavier.filter(t => t.vis === 'visible').length === 1,
+      JSON.stringify({ focusTuile, vis: clavier.map(t => t.cle + ':' + t.vis) }));
+    await pT.emulateMedia({ reducedMotion: 'reduce' });
+    const sansMouvement = await lireTuiles();
+    await pT.emulateMedia({ reducedMotion: 'no-preference' });
+    verifier('tuiles : moins d’animation demandé — l’indice paraît sans transition',
+      sansMouvement.every(t => /^0s(, 0s)*$/.test(t.transition)), JSON.stringify(sansMouvement.map(t => t.transition)));
+    await pT.evaluate(() => document.activeElement && document.activeElement.blur());
+
+    // En-têtes du tableau des plans : la double flèche du repos.
+    await pT.locator('#section-plans').scrollIntoViewIfNeeded(); await pT.waitForTimeout(300);
+    const lireTete = () => pT.evaluate(() => {
+      const surf = window.__rgbaT(getComputedStyle(document.getElementById('section-plans')).backgroundColor);
+      return [...document.querySelectorAll('#tete-tableau tr.titres th')].map(th => {
+        const f = th.querySelector('button[data-tri] .fleche');
+        return { cle: th.dataset.cle, tri: th.getAttribute('aria-sort'), repos: !!(f && f.classList.contains('repos')), fleche: !!f,
+                 cr: f ? +window.__crT(window.__rgbaT(getComputedStyle(f).color), surf).toFixed(2) : 0 };
+      });
+    });
+    const tete = await lireTete();
+    const actives = tete.filter(t => t.tri !== 'none');
+    verifier('tableau (P-F17) : chaque en-tête porte une flèche — la double flèche pâle au repos (3:1 au moins), ↑ ou ↓ sur la seule colonne triée',
+      tete.length > 5 && tete.every(t => t.fleche) && actives.length === 1 && !actives[0].repos &&
+      tete.filter(t => t.tri === 'none').every(t => t.repos && t.cr >= 3), JSON.stringify(tete));
+    const autreCle = tete.find(t => t.tri === 'none' && t.cle !== 'reference').cle;
+    await pT.hover('#tete-tableau button[data-tri="' + autreCle + '"]'); await pT.waitForTimeout(250);
+    const survolTete = await pT.evaluate(k => {
+      const f = document.querySelector('#tete-tableau button[data-tri="' + k + '"] .fleche');
+      return { fleche: getComputedStyle(f).color, encre: getComputedStyle(document.querySelector('#tete-tableau button[data-tri="' + k + '"]')).color };
+    }, autreCle);
+    await pT.click('#tete-tableau button[data-tri="' + autreCle + '"]'); await pT.waitForTimeout(400);
+    const apresTri = await lireTete();
+    verifier('tableau : au survol, la double flèche passe à l’encre ; un clic trie la colonne — elle prend ↑, l’ancienne reprend la double flèche',
+      survolTete.fleche === survolTete.encre && apresTri.find(t => t.cle === autreCle).tri === 'ascending' && !apresTri.find(t => t.cle === autreCle).repos &&
+      apresTri.find(t => t.cle === actives[0].cle).repos, JSON.stringify({ survolTete, apresTri: apresTri.filter(t => t.cle === autreCle || t.cle === actives[0].cle) }));
+    await pT.click('#tete-tableau button[data-tri="' + actives[0].cle + '"]'); await pT.waitForTimeout(400);
+
+    // Échéance : Entrée sur la puce, le focus suit la fiche.
+    await pT.evaluate(() => window.scrollTo(0, 0));
+    await pT.focus('#echeance-titre'); await pT.keyboard.press('Enter');
+    await pT.waitForFunction(() => !!document.getElementById('fiche-echeance'), null, { timeout: 3000 }).catch(() => {});
+    await pT.waitForTimeout(900);
+    const lireFocusFiche = pg => pg.evaluate(() => {
+      const a = document.activeElement, r = a.getBoundingClientRect();
+      const bas = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bas-sommaire')) || 0;
+      return { tag: a.tagName, texte: a.textContent.trim(), dansFiche: !!a.closest('#fiche-echeance'), haut: Math.round(r.top), bas: Math.round(r.bottom),
+               sommaire: Math.round(bas), ecran: innerHeight, anneau: getComputedStyle(a).outlineStyle };
+    });
+    const ficheT = await lireFocusFiche(pT);
+    await pT.keyboard.press('Tab');
+    const apresTab = await pT.evaluate(() => document.activeElement.getAttribute('aria-label') || document.activeElement.textContent.trim().slice(0, 30));
+    await pT.keyboard.press('Shift+Tab');
+    await pT.keyboard.press('Escape'); await pT.waitForTimeout(400);
+    const apresEchapT = await pT.evaluate(() => ({ fiche: !!document.getElementById('fiche-echeance'), focus: document.activeElement.id }));
+    verifier('échéance (X) : Entrée sur la puce ouvre la fiche, la page y descend et le focus la suit — sur son titre, visible à l’écran, cerclé',
+      ficheT.tag === 'H3' && ficheT.dansFiche && ficheT.texte === 'Solde FWD' && ficheT.haut >= ficheT.sommaire && ficheT.bas <= ficheT.ecran && ficheT.anneau === 'solid',
+      JSON.stringify(ficheT));
+    verifier('échéance : le Tab suivant atteint la croix de la fiche (« Fermer la fiche de l’échéance ») ; Échap la ferme et rend le focus à la puce',
+      apresTab === 'Fermer la fiche de l’échéance' && !apresEchapT.fiche && apresEchapT.focus === 'echeance-titre', JSON.stringify({ apresTab, apresEchapT }));
+
+    // Couleurs : chaque « Courbe : <valeur> », en clair puis en sombre (le thème du système change, page ouverte).
+    await pT.locator('#section-tendance').scrollIntoViewIfNeeded();
+    const valeursT = await pilulesCourbe(pT);
+    const mesuresT = {};
+    for (const schema of ['light', 'dark']) {
+      if (schema === 'dark') {
+        await choisirCourbe(pT, 'to_confirm');
+        const avant = await contrastesCourbe(pT);
+        await pT.emulateMedia({ colorScheme: 'dark' }); await pT.waitForTimeout(400);
+        const apres = await contrastesCourbe(pT);
+        verifier('thème du système changé page ouverte : le graphique se redessine — le liseré de TO_CONFIRM (trop pâle sur le blanc) part en sombre, où sa couleur tient seule',
+          avant.lisere && !apres.lisere && apres.courbe >= 3, JSON.stringify({ avant, apres }));
+      }
+      for (const v of valeursT) {
+        await choisirCourbe(pT, v);
+        mesuresT[schema + ' ' + v] = await contrastesCourbe(pT);
+      }
+    }
+    const faiblesT = Object.keys(mesuresT).filter(k => ['courbe', 'barres', 'baisses'].some(m => mesuresT[k][m] !== null && mesuresT[k][m] < 3) || mesuresT[k].opacite50);
+    verifier('couleurs (X, 1.4.11) : pour chaque « Courbe : <valeur> », en clair et en sombre, la courbe, ses barres et ses barres de baisse se voient à 3:1 au moins sur la surface (plus de baisses à 50 %)',
+      valeursT.length >= 5 && valeursT.includes('to_treat') && valeursT.includes('to_confirm') && !faiblesT.length && Object.values(mesuresT).some(m => m.baisses !== null),
+      JSON.stringify({ faiblesT: faiblesT.map(k => k + ' ' + JSON.stringify(mesuresT[k])), valeursT }));
+    const pastillesT = await pT.evaluate(() => {
+      const out = [];
+      document.querySelectorAll('.pastille[style*="v-afaire-2"]').forEach(x => {
+        if (!x.getClientRects().length) return;
+        let el = x.parentElement, bg = null;
+        while (el) { const c = getComputedStyle(el).backgroundColor; if (c && c !== 'rgba(0, 0, 0, 0)') { bg = c; break; } el = el.parentElement; }
+        out.push({ zone: (x.closest('[id]') || {}).id, cr: +window.__crT(window.__rgbaT(getComputedStyle(x).backgroundColor), window.__rgbaT(bg)).toFixed(2) });
+      });
+      const rac = getComputedStyle(document.documentElement);
+      return { pastilles: out, a2: rac.getPropertyValue('--v-afaire-2').trim(), a1: rac.getPropertyValue('--v-afaire-1').trim() };
+    });
+    verifier('sombre : les pastilles TO_TREAT (tuiles, rangées, journal, tableau) se voient à 3:1 au moins sur leur fond, et restent distinctes de FWD_TO_SEIZE',
+      pastillesT.pastilles.length >= 3 && pastillesT.pastilles.every(x => x.cr >= 3) && pastillesT.a1 !== pastillesT.a2,
+      JSON.stringify(pastillesT));
+    await pT.emulateMedia({ colorScheme: 'light' }); await pT.waitForTimeout(300);
+    await pT.evaluate(() => document.querySelector('#filtre-valeur-graphe button:not([data-valeur-graphe]), #filtre-valeur-graphe button[data-valeur-graphe=""]') &&
+      document.querySelector('#filtre-valeur-graphe button:not([data-valeur-graphe]), #filtre-valeur-graphe button[data-valeur-graphe=""]').click());
+    await pT.waitForTimeout(300);
+
+    // 1024, 800, 1280 : la rangée « Courbe : » passe à la ligne, les jalons en rangées équilibrées.
+    const lireRangees = () => pT.evaluate(() => {
+      const z = document.getElementById('filtre-valeur-graphe'), zr = z.getBoundingClientRect(), bs = [...z.querySelectorAll('button')];
+      const g = document.querySelector('.legende-jalons-grille');
+      const rangs = Object.values([...g.querySelectorAll('.legende-jalon')].reduce((m, e) => { const y = Math.round(e.getBoundingClientRect().top); m[y] = (m[y] || 0) + 1; return m; }, {}));
+      const retard = document.querySelector('.legende-jalon .retard');
+      return { lignes: new Set(bs.map(x => Math.round(x.getBoundingClientRect().top))).size, deborde: z.scrollWidth > z.clientWidth + 1, retour: getComputedStyle(z).flexWrap,
+               fondu: z.classList.contains('deborde-droite'), dehors: bs.filter(x => x.getBoundingClientRect().right > zr.right + 1).map(x => x.textContent),
+               jalons: rangs.join('+'), coupes: [...g.querySelectorAll('.mot')].filter(m => m.scrollWidth > m.clientWidth + 1).map(m => m.textContent),
+               retard: retard ? retard.getClientRects().length : 0, page: document.documentElement.scrollWidth <= innerWidth };
+    });
+    await redimensionner(pT, 1024, 900);
+    const r1024 = await lireRangees();
+    verifier('à 1024 px (B10) : la rangée « Courbe : » passe à la ligne au lieu de défiler sous un fondu — aucune pilule coupée ; les cinq jalons sur une seule ligne',
+      r1024.retour === 'wrap' && !r1024.deborde && !r1024.fondu && !r1024.dehors.length && r1024.jalons === '5' && !r1024.coupes.length && r1024.page, JSON.stringify(r1024));
+    await redimensionner(pT, 800, 900);
+    const r800 = await lireRangees();
+    verifier('à 800 px : les jalons en 3 + 2 (pas 4 + 1), aucun nom coupé, « en retard » d’un seul tenant',
+      r800.jalons === '3+2' && !r800.coupes.length && r800.retard === 1 && !r800.deborde && r800.page, JSON.stringify(r800));
+    await redimensionner(pT, 1280, 900);
+    const r1280 = await lireRangees();
+    verifier('à 1280 px : la rangée « Courbe : » tient sur une ligne, les cinq jalons aussi',
+      r1280.lignes === 1 && !r1280.deborde && r1280.jalons === '5' && r1280.page, JSON.stringify(r1280));
+
+    // « manque N » et les droites, à 720 et 1024, pour chaque période.
+    const barresPeriodes = [];
+    for (const w of [720, 1024]) {
+      await redimensionner(pT, w, 900);
+      for (const span of ['jalons', '13', '26', '52', '0']) {
+        await pT.click('.segmente button[data-span="' + span + '"]'); await pT.waitForTimeout(200);
+        const m = await motsBarres(pT);
+        if (m.barres.length) barresPeriodes.push(w + ' ' + span + ' ' + JSON.stringify(m));
+      }
+      await pT.click('.segmente button[data-span="jalons"]'); await pT.waitForTimeout(200);
+    }
+    verifier('graphique (B3) : à 720 et 1024 px, pour chaque période, aucun mot (« manque N », « fin … », « requis … ») n’est barré par une droite tracée sans son fond plein',
+      !barresPeriodes.length, JSON.stringify(barresPeriodes));
+
+    await pT.__ctx.close();
+
+    // Tuiles libres (quatre valeurs, alignées sous la barre — l'exemple de l'aperçu) : l'indice se pose sous la tuile, par-dessus le blanc.
+    const ctxLibres = await contexte({ viewport: { width: 1280, height: 950 } });
+    const pL = await page(ctxLibres, 'lot T tuiles libres');
+    await pL.addScriptTag({ content: "window.__rgbaT = c => { const m = String(c).match(/[\\d.]+/g); return m ? { r: +m[0], g: +m[1], b: +m[2], a: m.length > 3 ? +m[3] : 1 } : null; };" +
+      "window.__lumT = c => [c.r, c.g, c.b].map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }).reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);" +
+      "window.__crT = (a, b) => { const x = window.__lumT(a), y = window.__lumT(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };" });
+    await pL.locator('#etats').scrollIntoViewIfNeeded(); await pL.mouse.move(2, 2); await pL.waitForTimeout(200);
+    const libresRepos = await lireTuiles(pL);
+    await pL.hover('#etats .etat-btn:nth-child(2)'); await pL.waitForTimeout(300);
+    const libresSurvol = await lireTuiles(pL);
+    const libre = await pL.evaluate(() => !document.getElementById('etats').classList.contains('en-legende'));
+    verifier('tuiles libres, sous la barre : l’indice se pose sous la tuile survolée (sans l’agrandir ni pousser la page)',
+      libre && libresSurvol.length >= 2 && libresSurvol[1].vis === 'visible' && libresSurvol[1].pos === 'absolute' && libresSurvol[1].dessous &&
+      libresSurvol.map(t => t.rect).join('|') === libresRepos.map(t => t.rect).join('|'), JSON.stringify({ libre, survol: libresSurvol[1], repos: libresRepos[1] }));
+    await ctxLibres.close();
+
+    // ---- Téléphone (390), clair et sombre : « manque N », pas de place vide sous les tuiles, l'échéance.
+    for (const schema of ['light', 'dark']) {
+      const pM = await vivanteT({ largeur: 390, hauteur: 844, mobile: true, schema });
+      const tuilesM = await pM.evaluate(() => [...document.querySelectorAll('#etats .indice-tuile')].map(i => getComputedStyle(i).display));
+      verifier(schema + ', téléphone : sans survol (un doigt), pas de place vide gardée sous le nombre des tuiles',
+        tuilesM.length >= 2 && tuilesM.every(d => d === 'none'), JSON.stringify(tuilesM));
+      await pM.locator('#cadre-graphe').scrollIntoViewIfNeeded(); await pM.waitForTimeout(300);
+      const defaut = await motsBarres(pM);
+      verifier(schema + ', téléphone (B3) : « manque N » se pose à l’écart de la droite « requis » — elle ne le traverse plus',
+        defaut.mots.some(m => /^manque \d/.test(m)) && !defaut.requisCroise.length && !defaut.barres.length, JSON.stringify(defaut));
+      const periodesM = [];
+      for (const span of ['13', '26', '52', '0']) {
+        await pM.click('.segmente button[data-span="' + span + '"]'); await pM.waitForTimeout(250);
+        const m = await motsBarres(pM);
+        if (m.barres.length) periodesM.push(span + ' ' + JSON.stringify(m));
+      }
+      verifier(schema + ', téléphone : pour chaque période, aucun mot du graphique barré par une droite sans son fond plein', !periodesM.length, JSON.stringify(periodesM));
+      const jalonsM = await pM.evaluate(() => [...document.querySelectorAll('.legende-jalons-grille .mot')].filter(m => m.scrollWidth > m.clientWidth + 1).map(m => m.textContent));
+      verifier(schema + ', téléphone : aucun nom de jalon coupé dans la légende', !jalonsM.length, JSON.stringify(jalonsM));
+      if (schema === 'light') {
+        await pM.evaluate(() => window.scrollTo(0, 0));
+        await pM.focus('#echeance-titre'); await pM.keyboard.press('Enter');
+        await pM.waitForFunction(() => !!document.getElementById('fiche-echeance'), null, { timeout: 3000 }).catch(() => {});
+        await pM.waitForTimeout(900);
+        const ficheM = await lireFocusFiche(pM);
+        verifier('téléphone : la fiche d’échéance ouverte de la puce est à l’écran, le focus sur son titre',
+          ficheM.tag === 'H3' && ficheM.dansFiche && ficheM.haut >= ficheM.sommaire && ficheM.bas <= ficheM.ecran, JSON.stringify(ficheM));
+      }
+      await pM.__ctx.close();
+    }
+    try { fsT.unlinkSync(fichierT); } catch (e) { /* déjà parti */ }
+  }
   /* (fin du lot T) */
 
 
