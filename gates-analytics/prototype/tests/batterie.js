@@ -1354,17 +1354,19 @@ async function reinitialiser(pg) {
     return {
     pastille: !!document.querySelector('#filtre-journal button[data-journal="' + cle + '"] .pastille.indice'),
     comptes: [...document.querySelectorAll('.compte-passage[data-passage="indice"]')].map(b => b.textContent.replace(/\s+/g, ' ').trim()),
+    /* Débrief 27 (lot B) : la rangée « Mouvements » range les reculs, puis
+       les nouveaux, les disparus, et les changements d'indice en dernier. */
     boutons: !!document.querySelector('#filtre-journal button[data-journal="indice"]') &&
              !document.querySelector('#filtre-journal button[data-journal="solution"]') &&
              [...document.querySelectorAll('#filtre-journal button')].map(b => b.dataset.journal).join() ===
-               ['', ...window.__valeurs().map(v => v.cle), 'reculs', 'indice', ...sortes23].join()
+               ['', ...window.__valeurs().map(v => v.cle), 'reculs', ...sortes23, 'indice'].join()
     };
   }, cleReem);
   verifier('le filtre du journal « changement d’indice » est là, avec sa pastille violette', domIndice.pastille);
   verifier('chaque semaine concernée compte son changement d’indice, en bouton',
     domIndice.comptes.length === 6 && domIndice.comptes.every(t => /^1 changement d’indice$/.test(t)),
     lu(domIndice.comptes));
-  verifier('et la rangée du journal : Tout, chaque valeur de la colonne dans l’ordre des tuiles, les reculs, l’indice',
+  verifier('et la rangée du journal : Tout, chaque valeur de la colonne dans l’ordre des tuiles, les reculs, (nouveaux, disparus,) l’indice',
     domIndice.boutons && await p.evaluate(() => !!document.querySelector('#filtre-journal button[data-journal="reculs"]')));
   const violet = await p.evaluate(() => {
     const fond = el => el && getComputedStyle(el).backgroundColor;
@@ -1470,6 +1472,10 @@ async function reinitialiser(pg) {
     lignesIndice.indice.every(l => !l.libelle));
   verifier('le filtre du journal reflète le choix',
     lignesIndice.presse.split(' ').filter(x => /:true$/.test(x)).join() === 'indice:true' && /^:false /.test(lignesIndice.presse), lignesIndice.presse);
+  /* Débrief 27 (lot B) : le compte a déjà pressé « Changement d'indice » ; un
+     second clic sur la pastille pressée reviendrait à « Tout ». On repart de
+     « Tout » pour que la pastille, seule, donne ses lignes. */
+  await p.click('#filtre-journal button[data-journal=""]'); await p.waitForTimeout(300);
   await p.click('#filtre-journal button[data-journal="indice"]'); await p.waitForTimeout(400);
   // Le journal se replie à chaque rendu : seule la première semaine reste ouverte.
   for (let garde = 0; garde < 20; garde++) {
@@ -3294,10 +3300,16 @@ async function reinitialiser(pg) {
       legende: [...document.querySelectorAll('.legende-jalon .quand')].map(q => q.textContent)
     }));
     const SEM = /S\d{1,2} · (janv\.|févr\.|mars|avr\.|mai|juin|juil\.|août|sept\.|oct\.|nov\.|déc\.) \d{4}/;
-    verifier('pied, note du graphique, journal et jalons écrivent la semaine de la même façon',
+    /* Débrief 27 (lot B, P-F10) : le journal dit en plus les dates des deux
+       relevés qu'il compare — « S38 · du ven. 11 au ven. 18 sept. » ; son
+       numéro de semaine reste celui du pied. */
+    const MOIS27 = '(janv\\.|févr\\.|mars|avr\\.|mai|juin|juil\\.|août|sept\\.|oct\\.|nov\\.|déc\\.)';
+    const SEM_JOURNAL = new RegExp('^S\\d{1,2} · du (lun|mar|mer|jeu|ven|sam|dim)\\. \\d{1,2}( ' + MOIS27 + ')? au (lun|mar|mer|jeu|ven|sam|dim)\\. \\d{1,2} ' + MOIS27 + '( \\d{4})?$');
+    verifier('pied, note du graphique, journal et jalons écrivent la semaine de la même façon (le journal, avec les dates des deux relevés)',
       /^Dernier relevé : S\d{1,2} · \S+ \d{4} · \d+ relevés$/.test(esp(lieux.pied)) &&
       /^\d+ relevés, de S\d{1,2} · \S+ \d{4} à S\d{1,2} · \S+ \d{4}$/.test(esp(lieux.note)) &&
-      SEM.test(esp(lieux.journal)) && lieux.legende.every(q => SEM.test(esp(q))), JSON.stringify(lieux));
+      SEM_JOURNAL.test(esp(lieux.journal)) && esp(lieux.journal).split(' ')[0] === esp(lieux.pied).replace(/^Dernier relevé : /, '').split(' ')[0] &&
+      lieux.legende.every(q => SEM.test(esp(q))), JSON.stringify(lieux));
     // Le pied et la note disent le même dernier relevé.
     verifier('le pied et la note du graphique nomment le même dernier relevé',
       esp(lieux.note).split(' à ')[1] === esp(lieux.pied).replace(/^Dernier relevé : /, '').replace(/ · \d+ relevés$/, ''), JSON.stringify(lieux));
@@ -3507,7 +3519,8 @@ async function reinitialiser(pg) {
       ecartJauges: jauges.length ? Math.max(...jauges) - Math.min(...jauges) : 0,
       ecartSemaines: Math.max(...semLeft) - Math.min(...semLeft),
       deborde: zone.scrollWidth > zone.clientWidth + 1,
-      collant: getComputedStyle(zone.querySelector('.journal-entetes')).position
+      collant: getComputedStyle(zone.querySelector('.journal-entetes')).position,
+      groupes: [...zone.querySelectorAll('.journal-entetes .entete-groupe')].map(g => g.textContent)
     };
   });
   verifier('le journal est un tableau : une case par colonne dans chaque semaine, vide quand la semaine n’a pas cette sorte de passage',
@@ -3515,9 +3528,13 @@ async function reinitialiser(pg) {
     carre.remplies.every(n => n >= 1), JSON.stringify(carre));
   verifier('chaque sorte de passage tombe dans sa colonne, au pixel près, d’une semaine à l’autre',
     carre.ecartsColonnes.every(e => e <= 1), JSON.stringify(carre.ecartsColonnes));
+  /* Débrief 27 (lot B, B9) : « passés à » n'est plus répété dans chaque
+     colonne — un étage « Passés à » les coiffe toutes, et chacune ne porte
+     que le nom de sa valeur. */
   verifier('l’en-tête nomme chaque colonne une fois, exactement au-dessus de ses cases, et reste collé en haut',
     carre.entetesX.every((x, k) => carre.premieresX[k] === null || Math.abs(x - carre.premieresX[k]) <= 1) &&
-    carre.entetesTextes.some(t => /^passés à « [^»]+ »$/.test(t)) && carre.collant === 'sticky', JSON.stringify([carre.entetesX, carre.premieresX, carre.entetesTextes]));
+    carre.groupes[0] === 'Passés à' && carre.entetesTextes.length > 0 && !carre.entetesTextes.some(t => /passés? à/i.test(t)) && carre.collant === 'sticky',
+    JSON.stringify([carre.entetesX, carre.premieresX, carre.entetesTextes, carre.groupes]));
   verifier('dans les cases, le nombre et la pastille : les mots sont dans l’en-tête (et pour les lecteurs d’écran)',
     carre.motsVisibles === 0, String(carre.motsVisibles));
   verifier('les semaines et les jauges sont alignées elles aussi, et rien ne déborde',
@@ -3572,7 +3589,8 @@ async function reinitialiser(pg) {
   verifier('plus de bande « Depuis le relevé précédent » sous la barre : le journal et la courbe le disent',
     await p.evaluate(() => !document.getElementById('comparatif') && !/Depuis le relevé précédent/.test(document.querySelector('section.avancement').textContent)));
   verifier('dans le journal, une colonne « reculs », un filtre « Reculs » ; chaque semaine compte tous ses événements, une fois chacun',
-    rec.entetes.includes('reculs') && rec.filtre && totRec >= 2 &&
+    /* Débrief 27 (lot B) : les en-têtes prennent la majuscule (« Reculs »). */
+    rec.entetes.includes('Reculs') && rec.filtre && totRec >= 2 &&
     rec.semaines.every((s, k) => s.somme === rec.parSemaine[k].total), JSON.stringify([rec.entetes, rec.semaines.map(s => s.somme), rec.parSemaine.map(s => s.total)]));
   verifier('un recul ne se range plus parmi les « passés à … » : la semaine qui a 2 reculs ne dit plus « passés à « À faire » »',
     rec.semaines.every((s, k) => rec.parSemaine[k].reculs === 0 || s.cases.some(c => new RegExp('^' + rec.parSemaine[k].reculs + ' reculs?$').test(c))) &&
@@ -3587,15 +3605,23 @@ async function reinitialiser(pg) {
     new Set(lignesRecul.map(l => l.rouge)).size === 1, JSON.stringify(lignesRecul));
   await p.click('#filtre-journal button[data-journal=""]'); await p.waitForTimeout(300);
   await p.click('.journal-semaine .journal-plier >> nth=0'); await p.waitForTimeout(200);
-  // --- L'ordre : de la sorte la plus fréquente à la plus rare, partout pareil.
+  /* --- L'ordre. Débrief 27 (lot B, B9) : plus « de la sorte la plus
+     fréquente à la plus rare » (débrief 14) mais l'ordre de la légende et
+     des pastilles du dessus — les valeurs dans l'ordre des tuiles, puis les
+     mouvements : reculs, nouveaux, disparus, changements d'indice. L'œil
+     passe de la pastille à sa colonne sans chercher. */
   const ordre = await p.evaluate(() => {
     const entetes = [...document.querySelectorAll('.journal-entetes .entete-col')].map(e => e.textContent.trim());
-    const pleines = entetes.map((_, k) => [...document.querySelectorAll('.journal-semaine .resume')].filter(r => r.children[k] && !r.children[k].classList.contains('case-vide')).length);
-    const filtres = [...document.querySelectorAll('#filtre-journal button[data-journal]:not([data-journal=""])')].map(b => b.dataset.journal);
-    return { entetes, pleines, filtres };
+    const vals = window.__valeurs().map(v => v.libelle);
+    const filtres = [...document.querySelectorAll('#filtre-journal button[data-journal]:not([data-journal=""])')].map(b => b.querySelector('.libelle').textContent);
+    return { entetes, vals, filtres };
   });
-  verifier('les colonnes du journal vont de la plus remplie à la plus rare — la colonne d’une seule case n’est plus au milieu',
-    ordre.pleines.every((n, k) => k === 0 || ordre.pleines[k - 1] >= n), JSON.stringify(ordre));
+  const passes27 = ordre.entetes.filter(t => ordre.vals.indexOf(t) !== -1);
+  const mouv27 = ['Reculs', 'Nouveaux', 'Disparus', 'Changements d’indice'];
+  verifier('les colonnes du journal suivent la légende : les valeurs dans l’ordre des tuiles, puis reculs, nouveaux, disparus, changements d’indice — l’ordre des pastilles du dessus',
+    passes27.length >= 2 && passes27.join() === ordre.vals.filter(v => passes27.indexOf(v) !== -1).join() &&
+    ordre.entetes.slice(passes27.length).join() === mouv27.filter(m => ordre.entetes.indexOf(m) !== -1).join() &&
+    ordre.entetes.join() === ordre.filtres.filter(f => ordre.entetes.indexOf(f) !== -1).join(), JSON.stringify(ordre));
   // --- Débrief 15 : un seul rythme, le rythme tenu — plus « les 4 dernières semaines » nulle part.
   const ryt = await p.evaluate(() => {
     const pts = window.__serieAffichee().pts, der = pts[pts.length - 1];
@@ -3845,7 +3871,11 @@ async function reinitialiser(pg) {
   verifier('le pied, la note du graphique et le journal le disent : l’extract du jour, pas encore archivé',
     /· l’extract du jour, pas encore archivé, compte pour S\d{1,2} · \S+ \d{4}$/.test(esp15(bouge15.pied)) &&
     /, puis l’extract du jour en S\d{1,2} · \S+ \d{4}, pas encore archivé$/.test(esp15(bouge15.note)) &&
-    esp15(bouge15.journal) === esp15(bouge15.pied).replace(/^.*compte pour /, ''), JSON.stringify([bouge15.pied, bouge15.note, bouge15.journal]));
+    /* Débrief 27 (lot B, P-F10) : la ligne du journal dit « S40 · depuis le
+       ven. … » — l'extract du jour comparé au dernier relevé archivé —, sous
+       le même numéro de semaine que le pied. */
+    esp15(bouge15.journal).split(' · ')[0] === esp15(bouge15.pied).replace(/^.*compte pour /, '').split(' · ')[0] &&
+    /^S\d{1,2} · depuis le (lun|mar|mer|jeu|ven|sam|dim)\. \d{1,2} \S+/.test(esp15(bouge15.journal)), JSON.stringify([bouge15.pied, bouge15.note, bouge15.journal]));
   await p.evaluate(() => { window.__chargerSource(window.__jeuDExemple('HDK')); });
   await p.waitForTimeout(500);
 
@@ -4075,8 +4105,11 @@ async function reinitialiser(pg) {
              message: !!document.querySelector('#zone-journal .journal-vide'),
              recherche: !!document.getElementById('recherche-journal').offsetParent };
   });
-  verifier('journal vide : aucune pastille, pas même « Tout » — rien de la source d’avant ; la recherche et le message restent',
-    perime18.boutons === 0 && perime18.cachee && perime18.journal === '' && perime18.message && perime18.recherche, JSON.stringify(perime18));
+  /* Débrief 27 (lot B, D8) : un journal vide efface aussi sa recherche, qui
+     n'agirait sur rien ; le message reste (un bloc calme, voir la section
+     du lot B). */
+  verifier('journal vide : aucune pastille, pas même « Tout » — rien de la source d’avant ; le message reste, la recherche (qui n’agirait sur rien) s’efface',
+    perime18.boutons === 0 && perime18.cachee && perime18.journal === '' && perime18.message && !perime18.recherche, JSON.stringify(perime18));
   // Une valeur d'hier : plus personne ne la porte, mais des plans y sont passés.
   const hier18 = await p.evaluate(() => {
     const s = window.__jeuDExemple('HDK');
@@ -4091,7 +4124,8 @@ async function reinitialiser(pg) {
              pastille: b ? !!b.querySelector('.pastille') : false, suite: suite };
   });
   verifier('journal : une valeur que plus aucun plan ne porte garde sa pilule, après celles des tuiles, si des plans y sont passés',
-    !hier18.dansValeurs && hier18.cles.endsWith(',encours,reculs,indice' + hier18.suite) && hier18.off === false && hier18.pastille, JSON.stringify(hier18));
+    /* Débrief 27 (lot B) : « Mouvements » range les reculs, les nouveaux, les disparus, puis l'indice. */
+    !hier18.dansValeurs && hier18.cles.endsWith(',encours,reculs' + hier18.suite + ',indice') && hier18.off === false && hier18.pastille, JSON.stringify(hier18));
   await p.click('#filtre-journal button[data-journal="encours"]'); await p.waitForTimeout(300);
   await toutDeplier();
   const hierLignes = await p.evaluate(() => [...new Set([...document.querySelectorAll('.journal-ligne .etiq-etat.apres')].map(e => e.textContent.trim()))].join());
@@ -4463,6 +4497,13 @@ async function reinitialiser(pg) {
         const sr = rech.getBoundingClientRect();
         Object.assign(o, { droite: Math.round(lr.right - sr.right), centres: Math.round(Math.abs((sr.top + sr.bottom) / 2 - (rr.top + rr.bottom) / 2)),
                            chevauche: rr.right > sr.left + 1, hauteur: Math.round(lr.height) });
+        /* Débrief 27 (lot B) : les pastilles hors de leur cadre (cachées
+           sous le bord), et où tombe la recherche par rapport à la première
+           ligne de pastilles. */
+        const prem = r.querySelector('.puces-rang button') || r.querySelector('button');
+        Object.assign(o, { caches: [...r.querySelectorAll('button')].filter(b => { const x = b.getBoundingClientRect(); return x.right > rr.right + 1 || x.left < rr.left - 1 || x.width < 2; }).length,
+                           premiereLigne: !!prem && Math.abs(sr.top - prem.getBoundingClientRect().top) <= 6, dessous: sr.top >= rr.bottom - 1,
+                           titres: [...r.querySelectorAll('.mot-rang')].map(m => m.textContent).join() });
       }
       return o;
     };
@@ -4470,27 +4511,35 @@ async function reinitialiser(pg) {
              page: document.documentElement.scrollWidth <= window.innerWidth };
   });
   const bienAligne19 = o => o.visible && o.rangs === 1 && o.gauche <= 2 && o.droite <= 1 && o.centres <= 3 && !o.chevauche && o.hauteur <= 52 && o.fondu === o.deborde;
+  /* Débrief 27 (lot B, P-F3, X-A3) : la rangée du journal ne défile plus
+     sous un fondu (« Reculs » y était caché) : ses pastilles passent à la
+     ligne, en deux rangées titrées, « Passés à » et « Mouvements » ; la
+     recherche reste au bout de la première ligne, et passe dessous sous
+     1 180 px. Aucune pastille hors du cadre, aucun fondu. */
+  const journalRange27 = (o, w, souple) => o.visible && o.gauche <= 2 && o.droite <= 1 && !o.chevauche && !o.deborde && !o.fondu && o.caches === 0 &&
+    (souple ? /^(Passés à,Mouvements|Passés à|Mouvements)$/ : /^Passés à,Mouvements$/).test(o.titres) && (w >= 1180 ? o.premiereLigne : o.dessous);
   for (const w of [1440, 1280, 1024]) {
     await p.setViewportSize({ width: w, height: 950 }); await p.waitForTimeout(450);
     const l = await ligne19();
-    verifier('à ' + w + ' px, journal : les pastilles sur une seule ligne à gauche, « Chercher un plan » au bout à droite, sur la même ligne',
-      bienAligne19(l.journal), JSON.stringify(l.journal));
+    verifier('à ' + w + ' px, journal : les pastilles à gauche, en deux rangées titrées qui passent à la ligne — aucune cachée —, « Chercher un plan » au bout à droite' + (w >= 1180 ? ', sur la première ligne' : ', dessous'),
+      journalRange27(l.journal, w), JSON.stringify(l.journal));
     verifier('à ' + w + ' px, bloc par groupe : la même ligne — pastilles à gauche, compte et recherche à droite',
       bienAligne19(l.bloc), JSON.stringify(l.bloc));
     verifier('à ' + w + ' px, graphique : les pilules sur une seule ligne, sans débord de la page',
       l.graphe.visible && l.graphe.rangs === 1 && l.graphe.fondu === l.graphe.deborde && l.page, JSON.stringify(l.graphe));
   }
-  // Une ligne trop longue défile, avec un fondu au bord droit tant qu'il en reste.
+  /* Une ligne trop longue défilait, avec un fondu au bord droit. Débrief 27
+     (lot B) : à 800 px aussi, les pastilles du journal passent à la ligne —
+     toutes en vue, sans fondu ni défilement. */
   await p.setViewportSize({ width: 800, height: 950 }); await p.waitForTimeout(450);
   const fondu19 = await p.evaluate(async () => {
-    const r = document.getElementById('filtre-journal');
-    const avant = { deborde: r.scrollWidth > r.clientWidth + 2, fondu: r.classList.contains('deborde-droite') };
-    r.scrollLeft = r.scrollWidth; r.dispatchEvent(new Event('scroll'));
-    await new Promise(f => setTimeout(f, 100));
-    return { avant, auBout: r.classList.contains('deborde-droite'), page: document.documentElement.scrollWidth <= window.innerWidth };
+    const r = document.getElementById('filtre-journal'), rr = r.getBoundingClientRect();
+    return { deborde: r.scrollWidth > r.clientWidth + 2, fondu: r.classList.contains('deborde-droite'),
+             caches: [...r.querySelectorAll('button')].filter(b => { const x = b.getBoundingClientRect(); return x.right > rr.right + 1 || x.width < 2; }).length,
+             page: document.documentElement.scrollWidth <= window.innerWidth };
   });
-  verifier('à 800 px, la ligne du journal qui déborde défile, avec un fondu à droite qui s’efface au bout',
-    fondu19.avant.deborde && fondu19.avant.fondu && !fondu19.auBout && fondu19.page, JSON.stringify(fondu19));
+  verifier('à 800 px, les pastilles du journal passent à la ligne : toutes en vue, ni fondu ni défilement',
+    !fondu19.deborde && !fondu19.fondu && fondu19.caches === 0 && fondu19.page, JSON.stringify(fondu19));
   await p.setViewportSize({ width: 1280, height: 950 }); await p.waitForTimeout(450);
 
   // Seulement les valeurs qu'il y a — à la définition comme au concept, dans les trois rangées.
@@ -4521,7 +4570,7 @@ async function reinitialiser(pg) {
       con19.indicateur === 'concept' && con19.journal && con19.bloc && con19.graphe && con19.grises === 0, JSON.stringify(con19));
     const lc19 = await ligne19();
     verifier('concept harnais : la même ligne qu’à la définition — pastilles à gauche, recherche à droite',
-      bienAligne19(lc19.journal) && bienAligne19(lc19.bloc), JSON.stringify(lc19));
+      journalRange27(lc19.journal, 1280, true) && bienAligne19(lc19.bloc), JSON.stringify(lc19));
     await p.click('#choix-indicateur button[data-indicateur="def"]'); await p.waitForTimeout(700);
   } else verifier('la démonstration a un concept harnais', false);
 
@@ -4569,8 +4618,14 @@ async function reinitialiser(pg) {
     const c = getComputedStyle(document.getElementById(id));
     return id + ':' + c.columnGap + '/' + c.paddingTop + '/' + c.scrollbarWidth + '/' + c.overflowY;
   }));
-  verifier('les trois rangées : le même écart entre pastilles, 4 px autour pour l’anneau du focus, sans barre de défilement',
-    style19.every(x => / ?:4px\/4px\/none\/hidden$/.test(x.replace(/^[^:]+/, ''))), JSON.stringify(style19));
+  /* Débrief 27 (lot B) : la rangée du journal ne défile plus — rien à
+     rogner, l'anneau du focus a toute sa place (overflow visible) ; ses
+     pastilles gardent 4 px d'écart. Les deux autres rangées, inchangées. */
+  const styleJ27 = await p.evaluate(() => { const r = document.getElementById('filtre-journal'), g = r.querySelector('.puces-rang');
+    return { x: getComputedStyle(r).overflowX, y: getComputedStyle(r).overflowY, ecart: g ? getComputedStyle(g).columnGap : null }; });
+  verifier('les trois rangées : le même écart entre pastilles, 4 px autour pour l’anneau du focus (le journal : rien de rogné), sans barre de défilement',
+    style19.filter(x => !/^filtre-journal:/.test(x)).every(x => / ?:4px\/4px\/none\/hidden$/.test(x.replace(/^[^:]+/, ''))) &&
+    styleJ27.x === 'visible' && styleJ27.y === 'visible' && styleJ27.ecart === '4px', JSON.stringify([style19, styleJ27]));
 
   // Une valeur que seul PERSO porte : sous BASE/OPTION, ni tuile, ni pastille au bloc, ni pilule au graphique ; pressée, sa tuile reste.
   const perso19 = await p.evaluate(() => {
@@ -7323,6 +7378,321 @@ async function reinitialiser(pg) {
       annonce.role === 'status' && annonce.live === 'polite' && annonce.texte === '12 plans affichés sur 634' && annonce.masque && annonce.copierParle === 0 && annonce.zones === 1,
       JSON.stringify(annonce));
     await c0.close();
+  }
+
+  // =================================================================
+  /* Débrief 27, lot B — le journal des changements : deux rangées de
+     pastilles titrées qui passent à la ligne (plus rien de caché sous un
+     fondu), « Tout » au second clic, un en-tête à deux étages dans l'ordre
+     de la légende, des semaines qui disent leurs dates, la hauteur
+     naturelle (plus de cadre qui défile), la ligne de la semaine ouverte
+     collée pendant qu'on lit, un compte touché qui déplie sa semaine, un
+     état vide calme, et le doigt (44 px). */
+  section('Débrief 27 : le journal des changements (lot B)');
+  {
+    /* Le journal de la démonstration écrit avec les mots de GATES : sept
+       valeurs, comme chez Nathan (les valeurs « en cours » et « à faire »
+       réparties par référence), VALIDATED déclarée finie. */
+    const versGATES = () => {
+      const s = window.__jeuDExemple('HDK');
+      const h = ref => { let x = 0; for (const ch of ref) x = (x * 31 + ch.charCodeAt(0)) % 997; return x; };
+      const code = (ref, v) => v === 'Terminé' ? 'VALIDATED' : v === 'En cours' ? ['PWD_IN_PROGRESS', 'PWD_TO_CONTROL', 'TO_CONFIRM'][h(ref) % 3]
+        : v === 'À faire' ? ['FWD_TO_SEIZE', 'TO_TREAT'][h(ref) % 2] : v;
+      s.valeursFinies = ['VALIDATED']; s.valeursAFaire = ['FWD_TO_SEIZE', 'TO_TREAT'];
+      s.plans.forEach(x => { x.avancement = code(x.reference, x.avancement); });
+      s.releves.forEach(r => { Object.keys(r.plans).forEach(ref => { r.plans[ref] = code(ref, r.plans[ref]); }); });
+      /* Au dernier relevé, des plans non renseignés passent à FWD_TO_SEIZE
+         et à TO_TREAT, et trois plans sortent de l'extract : les onze
+         colonnes de chez Nathan (six valeurs, quatre mouvements). */
+      const dernier = s.releves[s.releves.length - 1];
+      s.plans.filter(x => x.avancement === '').slice(0, 8).forEach((x, i) => { x.avancement = dernier.plans[x.reference] = i % 2 ? 'TO_TREAT' : 'FWD_TO_SEIZE'; });
+      const partis = Object.keys(dernier.plans).slice(0, 3);
+      partis.forEach(ref => { delete dernier.plans[ref]; });
+      s.plans = s.plans.filter(x => partis.indexOf(x.reference) === -1);
+      window.__chargerSource(s);
+    };
+    const outils = () => {
+      window.__lum = c => {
+        const m = c.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+        return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2];
+      };
+      window.__contraste = (a, b) => { const x = window.__lum(a), y = window.__lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+    };
+    const cB = await contexte({ viewport: { width: 1440, height: 950 } });
+    const qB = await page(cB, 'lot B');
+    await qB.evaluate(outils);
+    await qB.evaluate(versGATES);
+    await qB.waitForTimeout(500);
+
+    // --- 1. La rangée : « Tout », puis « Passés à » et « Mouvements », tout visible, à toute largeur.
+    const rangee = () => qB.evaluate(() => {
+      const r = document.getElementById('filtre-journal'), l = r.closest('.ligne-filtres'), rech = l.querySelector('.recherche-groupe');
+      const rr = r.getBoundingClientRect(), lr = l.getBoundingClientRect(), sr = rech.getBoundingClientRect();
+      const boutons = [...r.querySelectorAll('button')];
+      const premier = r.querySelector('.rang-journal .puces-rang button');
+      const mouv = [...r.querySelectorAll('.rang-journal')].find(g => /Mouvements/.test(g.textContent));
+      return {
+        tout: boutons[0] && boutons[0].dataset.journal === '' && boutons[0].textContent.trim() === 'Tout',
+        titres: [...r.querySelectorAll('.rang-journal')].map(g => g.querySelector('.mot-rang').textContent + ':' + g.getAttribute('role') + ':' + !!document.getElementById(g.getAttribute('aria-labelledby'))),
+        mouvements: mouv ? [...mouv.querySelectorAll('button')].map(b => b.dataset.journal) : [],
+        caches: boutons.filter(b => { const x = b.getBoundingClientRect(); return x.width < 2 || x.right > rr.right + 1 || x.left < rr.left - 1 || x.bottom > rr.bottom + 1; }).map(b => b.dataset.journal),
+        deborde: r.scrollWidth > r.clientWidth + 1, fondu: r.classList.contains('deborde-droite'), defile: getComputedStyle(r).overflowX,
+        droite: Math.round(lr.right - sr.right), memeLigne: !!premier && Math.abs(sr.top - premier.getBoundingClientRect().top) <= 6,
+        dessous: sr.top >= rr.bottom - 1, page: document.documentElement.scrollWidth <= window.innerWidth
+      };
+    });
+    for (const w of [1440, 1280, 1024, 800]) {
+      await qB.setViewportSize({ width: w, height: 950 }); await qB.waitForTimeout(450);
+      const r = await rangee();
+      verifier('à ' + w + ' px, la rangée du journal : « Tout », puis « Passés à » et « Mouvements » (deux groupes nommés) ; chaque pastille en vue, rien sous un fondu ni hors du cadre ; la recherche ' +
+        (w >= 1180 ? 'au bout de la première rangée' : 'sur sa ligne, dessous'),
+        r.tout && r.titres.join() === 'Passés à:group:true,Mouvements:group:true' && !r.caches.length && !r.deborde && !r.fondu && r.defile === 'visible' &&
+        r.droite <= 1 && (w >= 1180 ? r.memeLigne : r.dessous) && r.page, JSON.stringify(r));
+      if (w === 1440) {
+        verifier('« Mouvements » : les reculs d’abord, puis les nouveaux, les disparus, les changements d’indice',
+          r.mouvements[0] === 'reculs' && r.mouvements.join() === ['reculs', 'nouveaux', 'disparus', 'indice'].filter(k => r.mouvements.indexOf(k) !== -1).join(), JSON.stringify(r.mouvements));
+      }
+    }
+    await qB.setViewportSize({ width: 1440, height: 950 }); await qB.waitForTimeout(400);
+    const recul = await qB.evaluate(() => {
+      const b = document.querySelector('#filtre-journal button[data-journal="reculs"]');
+      const t = document.createElement('span'); t.style.color = 'var(--alerte)'; document.body.appendChild(t); const alerte = getComputedStyle(t).color; t.remove();
+      const fond = getComputedStyle(document.getElementById('section-journal')).backgroundColor;
+      return b ? { encre: getComputedStyle(b).color, n: getComputedStyle(b.querySelector('.n')).color, alerte, c: +window.__contraste(getComputedStyle(b.querySelector('.n')).color, fond).toFixed(2),
+                   nom: (b.textContent.replace(/\s+/g, ' ').trim()) } : null;
+    });
+    verifier('la pastille « Reculs » est en rouge (--alerte), son compte aussi, à 4,5:1 au moins',
+      !!recul && recul.encre === recul.alerte && recul.n === recul.alerte && recul.c >= 4.5, JSON.stringify(recul));
+    /* Pressée, une pastille ne s'élargit pas (sa version grasse est en
+       réserve) : la rangée ne bouge pas sous le pointeur. */
+    const largeurs = await qB.evaluate(async () => {
+      const lire = () => [...document.querySelectorAll('#filtre-journal button')].map(b => Math.round(b.getBoundingClientRect().width));
+      const avant = lire();
+      document.querySelector('#filtre-journal .puces-rang button').click();
+      await new Promise(f => setTimeout(f, 200));
+      const apres = lire();
+      return { avant, apres };
+    });
+    verifier('choisir une pastille ne change la largeur d’aucune pastille (la rangée reste en place)',
+      largeurs.avant.join() === largeurs.apres.join(), JSON.stringify(largeurs));
+
+    // --- 2. Un second clic sur la pastille pressée revient à « Tout » ; le focus reste ; la page le dit.
+    await qB.click('#filtre-journal button[data-journal=""]'); await qB.waitForTimeout(250);
+    await qB.click('#filtre-journal button[data-journal="reculs"]'); await qB.waitForTimeout(250);
+    const un = await qB.evaluate(() => window.__vueValeurs().journal);
+    await qB.click('#filtre-journal button[data-journal="reculs"]'); await qB.waitForTimeout(250);
+    await qB.waitForFunction(() => /^Journal : /.test((document.getElementById('annonce') || {}).textContent || ''), null, { timeout: 4000 }).catch(() => {});
+    const deux = await qB.evaluate(() => ({ journal: window.__vueValeurs().journal, focus: (document.activeElement || {}).dataset ? document.activeElement.dataset.journal : null,
+      tout: document.querySelector('#filtre-journal button[data-journal=""]').getAttribute('aria-pressed'), annonce: document.getElementById('annonce').textContent }));
+    verifier('un second clic sur « Reculs » pressée revient à « Tout » ; le focus reste sur la pastille, et la page annonce « Journal : tous les changements… »',
+      un === 'reculs' && deux.journal === '' && deux.tout === 'true' && deux.focus === 'reculs' && /^Journal : tous les changements, \d+/.test(deux.annonce), JSON.stringify([un, deux]));
+
+    // --- 3. L'en-tête : deux étages, l'ordre de la légende, les codes en Plex Mono 11, « Répartition ».
+    const tete = await qB.evaluate(() => {
+      const z = document.getElementById('zone-journal'), e = z.querySelector('.journal-entetes');
+      const cols = [...e.querySelectorAll(':scope > span')], groupes = [...e.querySelectorAll('.entete-groupe')];
+      const x = el => { const r = el.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.right)]; };
+      const codes = [...e.querySelectorAll('.code-entete')].map(c => {
+        const cs = getComputedStyle(c), lh = parseFloat(cs.lineHeight);
+        /* Où le code passe à la ligne : jamais au milieu d'un mot. */
+        const coupes = [];
+        let haut = null;
+        const texte = [...c.childNodes].filter(t => t.nodeType === 3);
+        let prec = '';
+        texte.forEach(t => { for (let i = 0; i < t.textContent.length; i++) {
+          const rg = document.createRange(); rg.setStart(t, i); rg.setEnd(t, i + 1); const r = rg.getClientRects()[0]; if (!r) continue;
+          if (haut !== null && r.top > haut + 3) coupes.push(prec);
+          haut = r.top; prec = t.textContent[i];
+        } });
+        return { t: c.textContent, police: cs.fontFamily.split(',')[0].replace(/"/g, ''), taille: parseFloat(cs.fontSize), lignes: Math.round(c.getBoundingClientRect().height / lh), coupes };
+      });
+      const vals = window.__valeurs().map(v => v.libelle);
+      const noms = cols.slice(1, -1).map(c => c.textContent.trim());
+      const passes = noms.filter(t => vals.indexOf(t) !== -1);
+      return {
+        groupes: groupes.map(g => ({ t: g.textContent, x: x(g) })), noms, passes, vals,
+        premierPasse: x(cols[1]), dernierPasse: x(cols[passes.length]), premierMouv: cols[passes.length + 1] ? x(cols[passes.length + 1]) : null, dernierMouv: x(cols[cols.length - 2]),
+        semaine: cols[0].textContent, jauge: cols[cols.length - 1].textContent, jaugeVue: cols[cols.length - 1].getClientRects().length > 0, codes,
+        colle: getComputedStyle(e).position, deborde: z.scrollWidth > z.clientWidth + 1, serre: z.classList.contains('journal-serre')
+      };
+    });
+    const ordreMouv = ['Reculs', 'Nouveaux', 'Disparus', 'Changements d’indice'];
+    verifier('l’en-tête du journal sur deux étages : « Passés à » au-dessus des seules colonnes des valeurs, « Mouvements » au-dessus des autres',
+      tete.groupes.length === 2 && tete.groupes[0].t === 'Passés à' && tete.groupes[1].t === 'Mouvements' &&
+      Math.abs(tete.groupes[0].x[0] - tete.premierPasse[0]) <= 1 && tete.groupes[0].x[1] <= tete.premierMouv[0] && tete.groupes[0].x[1] >= tete.dernierPasse[0] &&
+      Math.abs(tete.groupes[1].x[0] - tete.premierMouv[0]) <= 1 && tete.groupes[1].x[1] >= tete.dernierMouv[0], JSON.stringify(tete.groupes) + JSON.stringify([tete.premierPasse, tete.dernierPasse, tete.premierMouv, tete.dernierMouv]));
+    verifier('les colonnes dans l’ordre de la légende : VALIDATED, PWD_IN_PROGRESS, PWD_TO_CONTROL, TO_CONFIRM, FWD_TO_SEIZE, TO_TREAT…, puis reculs, nouveaux, disparus, changements d’indice',
+      tete.passes.join() === tete.vals.filter(v => tete.passes.indexOf(v) !== -1).join() && tete.passes[0] === 'VALIDATED' && tete.passes.length >= 5 &&
+      tete.noms.slice(tete.passes.length).join() === ordreMouv.filter(m => tete.noms.indexOf(m) !== -1).join() && tete.noms.length > tete.passes.length, JSON.stringify(tete.noms));
+    verifier('sous « Passés à », le code seul, en Plex Mono 11 px — coupé une fois au plus, et seulement après un « _ » ; la semaine a son mot, la jauge « Répartition » ; l’en-tête reste collé',
+      tete.codes.length >= 5 && tete.codes.every(c => c.police === 'IBM Plex Mono' && c.taille === 11 && c.lignes <= 2 && c.coupes.every(k => k === '_')) &&
+      tete.semaine === 'Semaine' && tete.jauge === 'Répartition' && tete.jaugeVue && tete.colle === 'sticky' && !tete.deborde && !tete.serre, JSON.stringify(tete.codes));
+    // À 1 024 px : plus de jauge ; les onze colonnes ne tiennent pas — chaque compte prend ses mots, rien n'est coupé.
+    await qB.setViewportSize({ width: 1024, height: 900 }); await qB.waitForTimeout(500);
+    const etroit = await qB.evaluate(() => {
+      const z = document.getElementById('zone-journal'), zr = z.getBoundingClientRect();
+      return { serre: z.classList.contains('journal-serre'), deborde: z.scrollWidth > z.clientWidth + 1,
+               jauges: [...z.querySelectorAll('.mini-jauge')].filter(j => j.getClientRects().length).length,
+               hors: [...z.querySelectorAll('.journal-tete button, .journal-tete .mot-case')].filter(b => b.getClientRects().length && b.getBoundingClientRect().right > zr.right + 1).length,
+               mots: [...z.querySelectorAll('.journal-tete .mot-case')].filter(m => m.getBoundingClientRect().width > 2).length };
+    });
+    verifier('à 1 024 px, le journal ne coupe plus « Reculs » ni « Disparus » au bord : trop de colonnes pour la carte, chaque compte porte ses mots ; plus de jauge',
+      !etroit.deborde && etroit.hors === 0 && (etroit.serre ? etroit.mots > 5 : true) && etroit.jauges === 0, JSON.stringify(etroit));
+    await qB.setViewportSize({ width: 1440, height: 950 }); await qB.waitForTimeout(500);
+    verifier('revenu à 1 440 px, le journal redevient un tableau',
+      await qB.evaluate(() => { const z = document.getElementById('zone-journal'); return z.classList.contains('journal-grille') && !z.classList.contains('journal-serre'); }));
+
+    // --- 4. Les semaines disent leurs dates.
+    const dates = await qB.evaluate(() => [...document.querySelectorAll('#zone-journal .journal-plier')].map(b => ({ t: b.querySelector('.sem').textContent.replace(/[  ]/g, ' '), nom: b.getAttribute('aria-label') })));
+    verifier('chaque semaine dit ses dates — « S38 · du ven. 11 au ven. 18 sept. » —, en toutes lettres pour un lecteur d’écran',
+      dates.length >= 5 && dates.every(d => /^S\d{1,2} · du ven\. \d{1,2}( [a-zéû]+\.?)? au ven\. \d{1,2} [a-zéû]+\.?$/.test(d.t) && /^S\d{1,2}, semaine du vendredi \d{1,2}( [a-zéû]+)? au vendredi \d{1,2} [a-zéû]+$/.test(d.nom)) &&
+      dates.some(d => / au ven\. \d{1,2} (sept|août|juil)/.test(d.t)), JSON.stringify(dates.slice(0, 3)));
+
+    // --- 5. La hauteur naturelle : plus de cadre qui défile, la molette fait défiler la page.
+    const naturel = await qB.evaluate(() => { const z = document.getElementById('zone-journal'), cs = getComputedStyle(z);
+      return { y: cs.overflowY, max: cs.maxHeight, classe: z.classList.contains('defile-liste') }; });
+    await qB.evaluate(() => { const z = document.getElementById('zone-journal'); window.scrollTo(0, z.getBoundingClientRect().top + scrollY - 200); });
+    await qB.waitForTimeout(200);
+    const yAvant = await qB.evaluate(() => scrollY);
+    const zb = await qB.evaluate(() => { const r = document.getElementById('zone-journal').getBoundingClientRect(); return { x: r.left + r.width / 2, y: Math.min(r.top + 120, innerHeight - 40) }; });
+    await qB.mouse.move(zb.x, zb.y);
+    for (let i = 0; i < 4; i++) { await qB.mouse.wheel(0, 120); await qB.waitForTimeout(60); }
+    await qB.waitForTimeout(200);
+    const yApres = await qB.evaluate(() => scrollY);
+    verifier('le journal prend sa hauteur : pas de cadre qui défile, la molette au-dessus de lui fait défiler la page',
+      naturel.y === 'visible' && naturel.max === 'none' && !naturel.classe && yApres - yAvant >= 300, JSON.stringify([naturel, yAvant, yApres]));
+
+    // --- 6. Une semaine ouverte : douze lignes puis « Voir les N autres » ; le focus passe à la treizième.
+    await qB.evaluate(() => { const z = document.getElementById('zone-journal'); window.scrollTo(0, z.getBoundingClientRect().top + scrollY - 200); });
+    await qB.click('#zone-journal .journal-semaine .journal-plier >> nth=0'); await qB.waitForTimeout(300);
+    const ouverte = await qB.evaluate(() => { const s = document.querySelector('#zone-journal .journal-semaine'), p = s.querySelector('.journal-plus');
+      return { lignes: s.querySelectorAll('.journal-ligne').length, plus: p ? p.textContent : null, focus: document.activeElement.dataset.semaine === s.querySelector('.journal-plier').dataset.semaine }; });
+    await qB.focus('#zone-journal .journal-semaine .journal-plus'); await qB.keyboard.press('Enter'); await qB.waitForTimeout(300);
+    const toutes = await qB.evaluate(() => { const s = document.querySelector('#zone-journal .journal-semaine'), ls = [...s.querySelectorAll('.journal-ligne')];
+      return { lignes: ls.length, rang: ls.indexOf(document.activeElement), plus: !!s.querySelector('.journal-plus') }; });
+    verifier('une semaine ouverte montre douze lignes puis « Voir les N autres » ; Entrée les déplie sur place et le focus passe à la treizième',
+      ouverte.lignes === 12 && /^Voir les \d+ autres$/.test(ouverte.plus || '') && ouverte.focus && toutes.lignes > 12 && toutes.rang === 12 && !toutes.plus, JSON.stringify([ouverte, toutes]));
+
+    // --- 7. La ligne de la semaine ouverte reste en vue pendant qu'on lit ses plans.
+    await qB.evaluate(() => { const s = document.querySelector('#zone-journal .journal-semaine'); window.scrollTo(0, s.getBoundingClientRect().top + scrollY + 300); });
+    await qB.waitForTimeout(300);
+    const colle = await qB.evaluate(() => {
+      const s = document.querySelector('#zone-journal .journal-semaine'), t = s.querySelector('.journal-tete'), e = document.querySelector('#zone-journal .journal-entetes');
+      const bas = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bas-sommaire')) || 0;
+      const som = document.getElementById('sommaire').getBoundingClientRect();
+      return { bas, sommaire: Math.round(som.bottom), entetesHaut: Math.round(e.getBoundingClientRect().top), entetesBas: Math.round(e.getBoundingClientRect().bottom),
+               tete: Math.round(t.getBoundingClientRect().top), debutSemaine: Math.round(s.getBoundingClientRect().top) };
+    });
+    verifier('en lisant les plans d’une semaine ouverte, l’en-tête du tableau reste collé sous le sommaire, et la ligne de la semaine juste dessous',
+      colle.debutSemaine < colle.entetesBas - 100 && Math.abs(colle.entetesHaut - colle.bas) <= 1 && Math.abs(colle.tete - colle.entetesBas) <= 1, JSON.stringify(colle));
+    // Au clavier, en remontant ses lignes (Maj+Tab) : aucune ne passe sous ce qui est collé (2.4.11).
+    await qB.evaluate(() => { const ls = document.querySelector('#zone-journal .journal-semaine').querySelectorAll('.journal-ligne'); ls[ls.length - 1].focus(); });
+    let cachees = 0, vues = 0;
+    for (let i = 0; i < 16; i++) {
+      await qB.keyboard.press('Shift+Tab'); await qB.waitForTimeout(40);
+      const r = await qB.evaluate(() => {
+        const a = document.activeElement; if (!a.classList.contains('journal-ligne')) return null;
+        const bas = Math.max(0, ...[...document.querySelectorAll('#sommaire, #zone-journal .journal-entetes, #zone-journal .journal-semaine.ouverte > .journal-tete')]
+          .filter(e => e.getClientRects().length && getComputedStyle(e).position === 'sticky').map(e => e.getBoundingClientRect().bottom));
+        return a.getBoundingClientRect().top < bas - 1;
+      });
+      if (r !== null) { vues++; if (r) cachees++; }
+    }
+    verifier('au clavier, en remontant les plans d’une semaine ouverte, aucune ligne focalisée ne passe sous l’en-tête collé ni sous la ligne de sa semaine',
+      vues >= 10 && cachees === 0, JSON.stringify({ vues, cachees }));
+    // Au clavier, la replier garde le focus sur elle ; la ligne revient sous le pointeur.
+    await qB.focus('#zone-journal .journal-semaine .journal-plier'); await qB.keyboard.press('Enter'); await qB.waitForTimeout(300);
+    const replie = await qB.evaluate(() => { const a = document.activeElement, t = document.querySelector('#zone-journal .journal-semaine .journal-tete');
+      return { cls: a.className, ouvert: a.getAttribute('aria-expanded'), haut: Math.round(t.getBoundingClientRect().top), vue: t.getBoundingClientRect().top >= 0 && t.getBoundingClientRect().bottom <= innerHeight }; });
+    verifier('replier au clavier une semaine lue de loin : le focus reste sur sa ligne, qui revient à l’écran (pas en haut de la page)',
+      replie.cls === 'journal-plier' && replie.ouvert === 'false' && replie.vue, JSON.stringify(replie));
+
+    // --- 8. Toucher un compte : le filtre, et sa semaine dépliée, à l'écran ; le focus reste sur le compte.
+    await qB.evaluate(() => { const z = document.getElementById('zone-journal'); window.scrollTo(0, z.getBoundingClientRect().top + scrollY - 150); });
+    await qB.waitForTimeout(200);
+    const cible = await qB.evaluate(() => { const s = document.querySelectorAll('#zone-journal .journal-semaine')[2]; const b = s.querySelector('button[data-passage]');
+      return { sem: s.querySelector('.journal-plier').dataset.semaine, passage: b.dataset.passage }; });
+    await qB.click('#zone-journal .journal-semaine >> nth=2 >> button[data-passage] >> nth=0'); await qB.waitForTimeout(400);
+    const compte = await qB.evaluate(c => {
+      const t = [...document.querySelectorAll('#zone-journal .journal-plier')].find(b => b.dataset.semaine === c.sem), s = t.closest('.journal-semaine');
+      const a = document.activeElement, e = document.querySelector('#zone-journal .journal-entetes');
+      return { filtre: window.__vueValeurs().journal, ouverte: t.getAttribute('aria-expanded'), lignes: s.querySelectorAll('.journal-ligne').length,
+               focus: a.dataset.passage === c.passage && s.contains(a), haut: Math.round(s.getBoundingClientRect().top), bas: Math.round(e.getBoundingClientRect().bottom), vh: innerHeight };
+    }, cible);
+    verifier('toucher un compte d’une semaine filtre le journal ET déplie cette semaine sur ses plans, à l’écran ; le focus reste sur le compte',
+      compte.filtre === cible.passage && compte.ouverte === 'true' && compte.lignes > 0 && compte.focus && compte.haut >= compte.bas - 2 && compte.haut < compte.vh - 80, JSON.stringify([cible, compte]));
+    // Toute la ligne d'une semaine la déplie : un clic dans une case vide.
+    await qB.click('#filtre-journal button[data-journal=""]'); await qB.waitForTimeout(250);
+    const caseVide = await qB.evaluate(async () => {
+      const s = [...document.querySelectorAll('#zone-journal .journal-semaine')].find(x => x.querySelector('.case-vide') && x.querySelector('.journal-plier').getAttribute('aria-expanded') === 'false');
+      if (!s) return null;
+      const i = s.querySelector('.journal-plier').dataset.semaine, c = s.querySelector('.case-vide');
+      c.scrollIntoView({ block: 'center' });
+      const r = c.getBoundingClientRect();
+      return { i, x: r.left + r.width / 2, y: r.top + r.height / 2, tiret: c.textContent.trim() };
+    });
+    if (caseVide) {
+      await qB.mouse.click(caseVide.x, caseVide.y); await qB.waitForTimeout(300);
+      const apres = await qB.evaluate(i => [...document.querySelectorAll('#zone-journal .journal-plier')].find(b => b.dataset.semaine === i).getAttribute('aria-expanded'), caseVide.i);
+      verifier('un clic n’importe où sur la ligne d’une semaine (ici une case vide, « — ») la déplie', apres === 'true' && caseVide.tiret === '—', JSON.stringify([caseVide, apres]));
+    } else verifier('la démonstration a une semaine avec une case vide', false);
+    await cB.close();
+
+    // --- 9. Le journal vide : un bloc calme, sa phrase et son explication ; la recherche s'efface.
+    const cV = await contexte();
+    const qV = await page(cV, 'lot B vide');
+    const vide = await qV.evaluate(() => {
+      const s = window.__jeuDExemple('HDK'); s.releves = s.releves.slice(-1); window.__chargerSource(s);
+      const z = document.getElementById('zone-journal'), e = z.querySelector('.etat-vide'), ph = e && e.querySelector('.etat-vide-phrase');
+      return { bloc: !!e, phrase: ph ? ph.textContent : '', police: ph ? getComputedStyle(ph).fontFamily.split(',')[0].replace(/"/g, '') : '', taille: ph ? parseFloat(getComputedStyle(ph).fontSize) : 0,
+               detail: (z.querySelector('.etat-vide .journal-vide') || {}).textContent || '', recherche: !!document.getElementById('recherche-journal').offsetParent,
+               pastilles: document.querySelectorAll('#filtre-journal button').length };
+    });
+    verifier('journal vide (un seul relevé) : « Le journal commence au deuxième relevé » en Newsreader 18 px, l’explication dessous ; ni pastille ni recherche, qui n’agiraient sur rien',
+      vide.bloc && vide.phrase === 'Le journal commence au deuxième relevé' && vide.police === 'Newsreader' && vide.taille === 18 && /^Un seul relevé archivé/.test(vide.detail) &&
+      !vide.recherche && vide.pastilles === 0, JSON.stringify(vide));
+    const revient = await qV.evaluate(() => { window.__chargerSource(window.__jeuDExemple('HDK')); return !!document.getElementById('recherche-journal').offsetParent && document.querySelectorAll('#filtre-journal button').length > 3; });
+    verifier('l’historique revenu, la recherche et les pastilles reviennent', revient);
+    await cV.close();
+
+    // --- 10. Au doigt (téléphone) : 44 px, et seule la semaine se colle.
+    const cT = await contexte({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const qT = await page(cT, 'lot B téléphone');
+    await qT.evaluate(() => document.querySelector('#zone-journal .journal-plier').click());
+    await qT.waitForTimeout(300);
+    const doigt = await qT.evaluate(() => {
+      const t = document.querySelector('#zone-journal .journal-plier'), p = document.querySelector('#zone-journal .journal-plus');
+      const puce = document.querySelector('#filtre-journal .puces-rang button');
+      const zone = puce ? parseFloat(getComputedStyle(puce, '::after').top) : 0;
+      return { plier: Math.round(t.getBoundingClientRect().height), plus: p ? Math.round(p.getBoundingClientRect().height) : null,
+               puce: puce ? Math.round(puce.getBoundingClientRect().height - 2 * zone) : 0 };
+    });
+    await qT.evaluate(() => { const s = document.querySelector('#zone-journal .journal-semaine'); window.scrollTo(0, s.getBoundingClientRect().top + scrollY + 600); });
+    await qT.waitForTimeout(300);
+    const colleT = await qT.evaluate(() => {
+      const s = document.querySelector('#zone-journal .journal-semaine'), b = s.querySelector('.journal-plier');
+      const bas = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bas-sommaire')) || 0;
+      return { haut: Math.round(b.getBoundingClientRect().top), bas, hauteur: Math.round(b.getBoundingClientRect().height), page: document.documentElement.scrollWidth <= innerWidth };
+    });
+    verifier('au téléphone : la ligne d’une semaine et « Voir les N autres » font 44 px, chaque pastille offre 44 px à toucher',
+      doigt.plier >= 44 && (doigt.plus === null || doigt.plus >= 44) && doigt.puce >= 44, JSON.stringify(doigt));
+    verifier('au téléphone, en lisant une semaine ouverte : seul son nom reste collé sous le sommaire (une ligne, pas ses sept comptes), sans débord de la page',
+      Math.abs(colleT.haut - colleT.bas) <= 1 && colleT.hauteur <= 60 && colleT.page, JSON.stringify(colleT));
+    await cT.close();
+
+    // --- 11. Sombre : les dates, les étages de l'en-tête et les reculs se lisent (4,5:1).
+    const cS = await contexte({ colorScheme: 'dark', viewport: { width: 1440, height: 950 } });
+    const qS = await page(cS, 'lot B sombre');
+    await qS.evaluate(outils);
+    const sombre = await qS.evaluate(() => {
+      const fond = getComputedStyle(document.getElementById('section-journal')).backgroundColor;
+      const c = sel => { const e = document.querySelector(sel); return e ? +window.__contraste(getComputedStyle(e).color, fond).toFixed(2) : 0; };
+      return { dates: c('#zone-journal .sem-dates'), groupe: c('#zone-journal .entete-groupe'), mot: c('#filtre-journal .mot-rang'), reculs: c('#filtre-journal button[data-journal="reculs"] .n'),
+               tiret: c('#zone-journal .case-vide .tiret-vide'), code: c('#zone-journal .entete-col') };
+    });
+    verifier('en sombre, dates des semaines, étages de l’en-tête, titres des rangées, reculs et tirets se lisent à 4,5:1 au moins',
+      Object.values(sombre).every(v => v >= 4.5), JSON.stringify(sombre));
+    await cS.close();
   }
 
   await ctx.close();

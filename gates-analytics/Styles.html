@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "8d83704";
+  --suivi-fwd-edition: "70fec91";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -658,7 +658,6 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 /* Deux listes qui peuvent s'allonger sans fin : on leur donne une hauteur et
    un défilement, plutôt que de laisser la page grandir jusqu'à l'illisible. */
 .defile-liste { max-height: 430px; overflow-y: auto; overscroll-behavior: contain; }
-#zone-journal.defile-liste { max-height: 330px; }
 .defile-liste::-webkit-scrollbar { width: 9px; }
 .defile-liste::-webkit-scrollbar-thumb { background: var(--filet-fort); border-radius: 5px; }
 .defile-liste::-webkit-scrollbar-track { background: transparent; }
@@ -715,6 +714,60 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 }
 .filtre-journal button:hover .n, .filtre-journal button[aria-pressed="true"] .n { color: var(--encre-2); }
 .rangee-valeurs { display: flex; }
+/* Débrief 27 (P-F3, X-A3) — la rangée du journal ne défile plus sous un
+   fondu (« Reculs », « Disparus » étaient hors du cadre, leur anneau du
+   focus avec eux) : « Tout » à gauche, puis deux rangées titrées qui
+   passent à la ligne — « Passés à » (les valeurs) et « Mouvements » (les
+   reculs d'abord). Les deux titres tombent l'un sous l'autre (sous-grille),
+   leurs pastilles aussi. La recherche reste au bout de la première. */
+.ligne-filtres.ligne-journal { align-items: flex-start; }
+.ligne-filtres.ligne-journal[hidden] { display: none; }
+.ligne-journal[hidden] + .feuille { border-top: 0; padding-top: 0; }
+.ligne-journal > .recherche-groupe { margin-top: 2px; }
+/* Sous 1 180 px, la recherche passe sur sa ligne, sous les pastilles (B10) :
+   les rangées gardent la largeur. */
+@media (max-width: 1179px) {
+  .ligne-filtres.ligne-journal { flex-wrap: wrap; }
+  .ligne-journal > #filtre-journal { flex-basis: 100%; }
+}
+#filtre-journal {
+  display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 6px 12px;
+  flex: 1 1 auto; min-width: 0; margin: 0; padding: 0; overflow: visible;
+  -webkit-mask-image: none; mask-image: none;
+}
+#filtre-journal[hidden] { display: none; }
+#filtre-journal .tout-journal {
+  grid-column: 1; grid-row: 1 / span var(--rangs-journal, 2); align-self: stretch;
+  display: flex; align-items: center; padding-right: 12px; border-right: 1px solid var(--filet);
+}
+#filtre-journal .rang-journal { grid-column: 2 / -1; display: grid; grid-template-columns: subgrid; align-items: start; min-width: 0; }
+@supports not (grid-template-columns: subgrid) {
+  #filtre-journal .rang-journal { grid-template-columns: 90px minmax(0, 1fr); column-gap: 12px; }
+}
+/* Le titre tombe sur la première ligne de pastilles, même si elles
+   passent à la ligne. */
+#filtre-journal .mot-rang { white-space: nowrap; line-height: 28px; }
+@media (pointer: coarse) { #filtre-journal .mot-rang { line-height: 36px; } }
+#filtre-journal .puces-rang { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+/* Le nom et le compte gardent la place de leur version grasse : pressée,
+   une pastille ne s'élargit pas, et sa rangée ne repasse pas à la ligne
+   autrement sous le pointeur. */
+#filtre-journal .libelle, #filtre-journal .n { display: inline-grid; }
+#filtre-journal .libelle::after, #filtre-journal .n::after {
+  content: attr(data-texte); font-weight: 500; height: 0; overflow: hidden; visibility: hidden;
+}
+/* Les reculs, la pastille qu'on vient chercher : en rouge, compte compris
+   (6,6:1 en clair, 5,8:1 en sombre). */
+#filtre-journal button.puce-recul, #filtre-journal button.puce-recul .n,
+#filtre-journal button.puce-recul:hover .n, #filtre-journal button.puce-recul[aria-pressed="true"] .n { color: var(--alerte); }
+#filtre-journal button.puce-recul[aria-pressed="true"] { border-color: var(--alerte); }
+@media (max-width: 560px) {
+  /* Au téléphone : « Tout », puis chaque titre au-dessus de ses pastilles. */
+  #filtre-journal { grid-template-columns: minmax(0, 1fr); row-gap: 8px; }
+  #filtre-journal .tout-journal { grid-row: auto; padding-right: 0; border-right: 0; }
+  #filtre-journal .rang-journal { grid-column: 1; grid-template-columns: minmax(0, 1fr); row-gap: 2px; }
+}
+@media (pointer: coarse) { #filtre-journal .puces-rang { row-gap: 8px; } }
 .journal-semaine {
   border-bottom: 1px solid var(--filet);
 }
@@ -722,16 +775,54 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .journal-tete {
   display: flex; align-items: center; gap: 12px; width: 100%;
   padding: 11px 2px;
+  /* Débrief 27 (M10) : toute la ligne plie et déplie la semaine. */
+  cursor: pointer;
 }
+/* Le survol, seulement là où un pointeur survole : au doigt, le gris
+   restait sur la ligne touchée. */
+@media (hover: hover) { .journal-tete:hover { background: var(--creux); } }
 .journal-plier {
   display: flex; align-items: baseline; gap: 10px; flex: none;
   background: none; border: none; font: inherit; color: var(--encre);
   padding: 2px 4px 2px 2px; cursor: pointer; border-radius: 3px;
+  text-align: left;
 }
-.journal-plier:hover { background: var(--creux); }
+/* Débrief 27 (P-F10) : « S43 · du ven. 16 au ven. 23 oct. » — le numéro à
+   l'encre, les dates en gris secondaire, en chiffres alignés. */
 .journal-tete .sem {
   font-variant-numeric: tabular-nums;
   font-size: 13px; font-weight: 500; min-width: 72px; text-align: left; color: var(--encre);
+}
+.journal-tete .sem-dates { font-weight: 400; color: var(--encre-2); }
+/* Au doigt (D11, M10) : la ligne d'une semaine offre 44 px de haut. */
+@media (pointer: coarse) {
+  .journal-plier { min-height: 44px; align-items: center; }
+  .journal-tete { padding-block: 0; }
+  .journal-plus { min-height: 44px; }
+}
+/* Débrief 27 (D10) : une semaine ouverte garde sa ligne en vue pendant
+   qu'on lit ses plans — collée sous le sommaire et l'en-tête du tableau
+   (--haut-entetes-journal, mesuré), jusqu'à la fin de la semaine. */
+.journal-semaine.ouverte > .journal-tete {
+  position: sticky; top: calc(var(--bas-sommaire, 40px) + var(--haut-entetes-journal, 0px)); z-index: 1;
+  background: var(--surface); box-shadow: 0 1px 0 var(--filet);
+}
+@media (hover: hover) { .journal-semaine.ouverte > .journal-tete:hover { background: var(--creux); } }
+/* Au clavier (2.4.11) : une ligne qui reçoit le focus s'arrête sous ce qui
+   est collé au-dessus d'elle — l'en-tête du tableau et la ligne de sa
+   semaine —, pas dessous (le sommaire, lui, est dans scroll-padding). */
+.journal-liste button { scroll-margin-top: calc(var(--haut-entetes-journal, 0px) + 56px); scroll-margin-bottom: 12px; }
+/* Au téléphone, la ligne d'une semaine porte aussi ses comptes, un par
+   ligne : collée entière, elle prendrait un tiers de l'écran. Seul le nom
+   de la semaine se colle (la ligne s'efface — display: contents —, son
+   bouton se colle alors dans toute la semaine) ; les comptes défilent. */
+@media (max-width: 720px) {
+  .journal-semaine.ouverte > .journal-tete { display: contents; }
+  .journal-semaine.ouverte .journal-plier {
+    position: sticky; top: var(--bas-sommaire, 40px); z-index: 1; width: 100%; box-sizing: border-box;
+    padding: 11px 2px; border-radius: 0; background: var(--surface); box-shadow: 0 1px 0 var(--filet);
+  }
+  .journal-semaine.ouverte .journal-tete > .resume { padding: 0 2px 10px 22px; }
 }
 .journal-tete .resume {
   color: var(--encre-2); font-size: 13px; flex: 1; min-width: 0;
@@ -752,29 +843,49 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
   box-shadow: inset 0 0 0 1px var(--filet-fort);
 }
 @media (max-width: 720px) { .journal-tete .mini-jauge { display: none; } }
+/* Débrief 27 (B9, B10) : sous 1 100 px, la jauge et sa colonne
+   (« Répartition ») s'effacent — la place va aux comptes. */
+@media (max-width: 1099px) {
+  #zone-journal { --col-jauge-journal: minmax(0, 1fr); }
+  .journal-tete .mini-jauge, .journal-entetes .entete-jauge { display: none; }
+}
 /* Les semaines sur une même grille : la semaine, puis une colonne par sorte
    de passage — alignées d'une semaine à l'autre, une case vide quand une
    semaine n'en a pas —, puis la mini-jauge au bord droit. */
 /* « position: relative » : le cadre qui défile tient aussi les mots lus à
    voix haute (.mot-case, hors flux) — sans lui, un journal plus large que la
    page (les sept colonnes de GATES) la faisait défiler de côté. */
-#zone-journal.journal-grille { display: grid; column-gap: 14px; align-content: start; position: relative; }
+/* Débrief 27 : 10 px entre colonnes (14 avant) — avec les dates de la
+   semaine et les deux étages de l'en-tête, la place compte. */
+#zone-journal.journal-grille { display: grid; column-gap: 10px; align-content: start; position: relative; }
 .journal-grille .journal-semaine { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
 .journal-grille .journal-tete { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center; }
 .journal-grille .journal-tete .resume { display: contents; }
 .journal-grille .journal-liste { grid-column: 1 / -1; }
-.journal-grille .journal-tete .mini-jauge { margin-left: 0; justify-self: end; }
+.journal-grille .journal-tete .mini-jauge { margin-left: 0; justify-self: end; width: 100%; max-width: 96px; }
 /* L'en-tête du tableau : chaque colonne nommée une fois, collée en haut du
    cadre qui défile ; dessous, les cases ne portent que pastille et nombre. */
 .journal-entetes { display: none; }
+/* Débrief 27 (B9) : deux étages — « Passés à » et « Mouvements » au-dessus
+   de leurs colonnes, puis la pastille et le nom seul, le code de GATES en
+   Plex Mono 11 d'un seul tenant (au pire coupé une fois, après son dernier
+   « _ »). Collé sous le sommaire (le journal n'a plus son cadre à lui). */
 .journal-grille .journal-entetes {
-  grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: end;
-  position: sticky; top: 0; z-index: 1; background: var(--surface);
+  grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; grid-template-rows: auto auto; align-items: end;
+  position: sticky; top: var(--bas-sommaire, 0px); z-index: 2; background: var(--surface);
   padding: 8px 2px 7px; border-bottom: 1px solid var(--filet-fort);
   font-size: 12px; font-weight: 500; color: var(--encre-2); line-height: 1.3;
 }
+.journal-grille .journal-entetes > span { grid-row: 2; }
+.journal-grille .journal-entetes > .entete-groupe {
+  grid-row: 1; align-self: end; margin: 0 0 6px; padding: 0 0 3px 4px; border-bottom: 1px solid var(--filet);
+  font-size: 11px; font-weight: 500; line-height: 1.4; letter-spacing: .08em; text-transform: uppercase; color: var(--encre-3);
+}
 .journal-grille .entete-col { display: flex; align-items: center; gap: 6px; }
 .journal-grille .entete-col .pastille { width: 7px; height: 7px; flex: none; }
+.journal-grille .entete-col .code-entete { font: 500 11px/1.3 "IBM Plex Mono", monospace; }
+.journal-grille .entete-semaine { padding-left: 21px; }
+.journal-grille .entete-jauge { justify-self: end; width: 100%; max-width: 96px; }
 .journal-grille .mot-case { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .journal-grille .compte-passage, .journal-grille .doux-compte { justify-self: start; }
 /* Le contenu d'une case bouton commence 5 px après le bord de sa colonne
@@ -783,6 +894,23 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
    le nom de leur colonne. */
 .journal-grille .entete-col { padding-left: 4px; }
 .journal-grille .journal-tete .resume .doux-compte { padding-left: 5px; }
+/* Débrief 27 (B10, X-A14) : un tableau qui ne tient pas dans la carte —
+   1 024 px avec les sept valeurs de GATES et les quatre mouvements, ou un
+   texte espacé par la lectrice — prend la forme des petits écrans (chaque
+   compte avec ses mots), plutôt que de couper « Reculs » et « Disparus »
+   au bord. Le script le mesure (journal-serre, voir poserJournal). */
+#zone-journal.journal-grille.journal-serre { display: block; }
+#zone-journal.journal-serre .journal-semaine { display: block; }
+#zone-journal.journal-serre .journal-tete { display: flex; flex-wrap: wrap; align-items: baseline; }
+#zone-journal.journal-serre .journal-tete .mini-jauge { align-self: center; }
+#zone-journal.journal-serre .journal-tete .resume { display: flex; flex-wrap: wrap; }
+#zone-journal.journal-serre .journal-tete .case-vide, #zone-journal.journal-serre .journal-entetes { display: none; }
+#zone-journal.journal-serre .mot-case { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+#zone-journal.journal-serre .journal-tete .mini-jauge { margin-left: auto; width: 96px; }
+/* En ligne, le compte garde son retrait à gauche (sa pastille sous celle
+   d'au-dessus) mais pas à droite : il ne dépasse plus du bord. */
+#zone-journal.journal-serre .compte-passage { margin-right: 0; }
+@media (max-width: 720px) { .journal-tete .compte-passage { margin-right: 0; } }
 @media (max-width: 720px) {
   #zone-journal.journal-grille { display: block; }
   .journal-grille .journal-semaine { display: block; }
@@ -794,6 +922,7 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 }
 .journal-tete .chevron { color: var(--encre-3); transition: transform .12s; flex: none; }
 .journal-plier[aria-expanded="true"] .chevron { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { .journal-tete .chevron { transition: none; } }
 .journal-liste { margin: 0 0 12px; padding: 0 0 0 78px; list-style: none; }
 @media (max-width: 720px) { .journal-liste { padding-left: 0; } }
 /* Deux colonnes alignées : la référence, puis où elle va. Le regard descend
@@ -912,6 +1041,10 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .jeton-ud .pastille { width: 7px; height: 7px; margin: 0; flex: none; }
 .journal-vide { color: var(--encre-3); font-size: 13px; padding: 14px 2px; }
 .journal-grille .journal-vide { grid-column: 1 / -1; }
+/* Débrief 27 (D8) : le journal vide est un bloc calme au centre (.etat-vide) ;
+   son explication garde la classe journal-vide, au gris secondaire. */
+.journal-etat-vide .journal-vide { padding: 0; color: var(--encre-2); }
+.journal-tete .case-vide { color: var(--encre-3); padding-left: 5px; }
 .journal-plus {
   background: none; border: none; font: inherit; font-size: 13px; color: var(--encre-2);
   cursor: pointer; padding: 5px 2px; text-decoration: underline; text-underline-offset: 3px;

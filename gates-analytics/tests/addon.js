@@ -2752,9 +2752,10 @@ function serveurSur(valeurs, proprietes, fichiers) {
     };
   });
   const jAttendu18 = past18.vals.filter(k => past18.arrivees[k]);
-  /* Après les valeurs : reculs et indice, puis (débrief 23) nouveaux et disparus — chacun s'il y en a. */
-  const jSuite18 = ['reculs', 'indice', 'nouveaux', 'disparus'].filter(k => past18[k]);
-  verifier('journal : seulement les passages qu’il y a — « Tout », les valeurs atteintes dans l’ordre des tuiles, puis reculs, indice, nouveaux et disparus s’il y en a ; chacune comptée, aucune à zéro',
+  /* Après les valeurs : reculs et indice, puis (débrief 23) nouveaux et disparus — chacun s'il y en a.
+     Débrief 27 (lot B) : la rangée « Mouvements » range les reculs, les nouveaux, les disparus, puis l'indice. */
+  const jSuite18 = ['reculs', 'nouveaux', 'disparus', 'indice'].filter(k => past18[k]);
+  verifier('journal : seulement les passages qu’il y a — « Tout », les valeurs atteintes dans l’ordre des tuiles, puis reculs, nouveaux, disparus et indice s’il y en a ; chacune comptée, aucune à zéro',
     past18.journal[0] === '' && past18.journal.slice(1, jAttendu18.length + 1).join() === jAttendu18.join() &&
     past18.journal.slice(past18.journal.length - jSuite18.length).join() === jSuite18.join() &&
     ['reculs', 'indice', 'nouveaux', 'disparus'].every(k => jSuite18.indexOf(k) !== -1 || past18.journal.indexOf(k) === -1) &&
@@ -3206,13 +3207,17 @@ function serveurSur(valeurs, proprietes, fichiers) {
     plans: document.querySelectorAll('#corps-tableau tr:not(.ligne-suite)').length +
       (Number(((document.querySelector('#corps-tableau tr.ligne-suite') || {}).textContent || '').replace(/[\s\u202f\u00a0]/g, '').replace(/^(\d+).*$/, '$1')) || 0),
     phrase: document.getElementById('phrase').textContent,
-    journal: document.getElementById('zone-journal').textContent,
+    /* Débrief 27 (lot B, D8) : le journal vide est un bloc calme — une phrase,
+       puis l'explication d'avant, mot pour mot (.journal-vide). */
+    journal: (document.querySelector('#zone-journal .journal-vide') || { textContent: '' }).textContent,
+    phraseJournal: (document.querySelector('#zone-journal .etat-vide-phrase') || { textContent: '' }).textContent,
     pied: document.getElementById('avertissement-demo').hidden
   }));
   verifier('plus d\'interrupteur « Exemple » ni de mot de démonstration devant le classeur',
     !premier.interrupteur && premier.mot === '' && premier.pied && premier.vide === 'false', JSON.stringify(premier));
   verifier('les plans affichés sont ceux de la feuille', premier.plans === 186 && /186 plans/.test(premier.phrase), premier.phrase);
   verifier('le journal explique pourquoi il est vide : un seul relevé, nommé, et le suivant le remplira',
+    premier.phraseJournal === 'Le journal commence au deuxième relevé' &&
     /^Un seul relevé archivé pour l’instant \(S\d{1,2} · \S+ \d{4}\) : le journal se remplira au suivant\./.test(premier.journal.replace(/[\u00a0\u202f]/g, ' ')), premier.journal.slice(0, 160));
   await ctxPremier.close();
 
