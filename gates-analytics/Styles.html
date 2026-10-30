@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "cfd7e43";
+  --suivi-fwd-edition: "3d6ac5c";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -708,6 +708,30 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .outil-page svg { flex: none; }
 .outil-page[hidden] { display: none; }
 .outil-page[aria-expanded="true"] { color: var(--encre); }
+/* Débrief 28 : le haut de la page se détache du papier — un bandeau clair,
+   d'un bord à l'autre de l'écran, fermé d'un filet ; pas d'aplat d'encre
+   (débrief 22). La peinture déborde sur les côtés sans élargir la page
+   (border-image : un débordement d'encre, pas de défilement). */
+header.entete {
+  border-image: linear-gradient(to bottom, var(--surface) calc(100% - 1px), var(--panneau-bord) 0) fill 0 / 0 / 0 100vmax;
+  margin-bottom: 10px;
+}
+/* Les outils de la page : trois icônes rondes à droite du titre — leur nom
+   au survol (title) et pour les lecteurs d'écran (texte masqué). */
+.masthead { position: relative; }
+.masthead .outils-page { position: absolute; right: 0; top: 39px; gap: 8px; min-height: 0; }
+.masthead .outil-page {
+  width: 36px; height: 36px; min-height: 0; padding: 0; justify-content: center;
+  border: 1px solid var(--filet); border-radius: 50%; color: var(--encre-2); background: var(--surface);
+}
+.masthead .outil-page:hover, .masthead .outil-page[aria-expanded="true"] { color: var(--encre); border-color: var(--filet-fort); background: var(--creux); }
+.masthead .outil-page svg { width: 16px; height: 16px; }
+@media (max-width: 720px) {
+  .masthead .outils-page { position: static; justify-content: center; margin-top: 14px; }
+}
+/* Débrief 28 : le tableau des plans sans « Filtrer par colonne » (les
+   filtres sont toujours là), ni « Copier le tableau », ni « Télécharger ». */
+.actions-tableau [hidden] { display: none !important; }
 /* Administration : sa place est gardée, invisible, tant que les droits ne
    sont pas lus ; puis elle paraît (administrateur) ou s'efface — elle est la
    première de sa ligne calée à droite : rien ne bouge à côté. */
@@ -1142,8 +1166,9 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
    étroit, etiqEtat y glisse une coupure possible), au milieu seulement
    s'il n'en a pas. */
 .journal-ligne .vers .etiq-etat { white-space: normal; overflow-wrap: break-word; min-width: 0; }
-/* Sur deux lignes, le départ reste collé à sa flèche, comme sur une seule. */
-.journal-ligne .vers .etiq-etat.avant { text-align: right; }
+/* Débrief 28 : les départs en colonne, alignés à gauche comme les arrivées
+   (calés contre la flèche, « nouveau » ou « TO_TREAT » semblaient décalés). */
+.journal-ligne .vers .etiq-etat.avant { text-align: left; justify-self: start; }
 .fleche-etat { color: var(--trait-donnee); text-align: center; }
 .etiq-etat { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; white-space: nowrap; }
 .etiq-etat.avant { color: var(--encre-3); justify-self: end; }

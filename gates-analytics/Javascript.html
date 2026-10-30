@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'cfd7e43';
+  var EDITION = '3d6ac5c';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -5441,7 +5441,8 @@
   /* La rangée des filtres de colonne : dépliée à la demande, et toujours
      quand un filtre de colonne est posé — on voit ce qui filtre. */
   function filtresColonneVisibles() {
-    return vue.filtresOuverts || Object.keys(vue.filtres).some(function (k) { return vue.filtres[k]; });
+    /* Débrief 28 : la rangée des filtres de colonne est toujours là (Nathan). */
+    return true;
   }
   function refleterOutilsTableau() {
     var b = $('ouvrir-filtres');
@@ -6128,10 +6129,22 @@
   /* Le journal affiché : sous un périmètre, seuls les événements des plans
      qui en font partie ; une semaine qui n'en a plus disparaît. */
   function journalAffiche() {
-    if (!vue.perimetre) return JOURNAL;
+    if (!vue.perimetre && !vue.groupe && !vue.refs) return JOURNAL;
     return JOURNAL.map(function (sem) {
-      return { i: sem.i, avant: sem.avant, evenements: sem.evenements.filter(dansPerimetreEvt) };
+      return { i: sem.i, avant: sem.avant, evenements: sem.evenements.filter(function (e) { return dansPerimetreEvt(e) && dansFiltresPageEvt(e); }) };
     }).filter(function (sem) { return sem.evenements.length > 0; });
+  }
+  /* Débrief 28 : le journal suit aussi les filtres de la page qui portent sur
+     des plans — un groupe (« Filtrer la page sur ECP-2108 », un ATA…) ou une
+     liste de plans : comme le reste de la page, il ne montre que leurs
+     changements (Nathan : « ça filtre tout, sauf semaine par semaine »). */
+  function dansFiltresPageEvt(e) {
+    if (vue.refs && !vue.refs[e.ref]) return false;
+    if (vue.groupe) {
+      var p = planDeRef(e.ref);
+      if (!p || String(valeurDim(p, vue.groupe.dim) || '\u2014') !== vue.groupe.val) return false;
+    }
+    return true;
   }
 
   /* Un journal vide, et pourquoi — la vraie raison, pas toujours « il faut
@@ -7271,7 +7284,7 @@
     morceaux.push(INDICATEUR === 'concept' ? 'Concept harnais' : 'Définition électrique');
     if (vue.perimetre) morceaux.push('Périmètre ' + vue.perimetre);
     var texte = morceaux.join(' \u00b7 ');
-    if ($('contexte-page').textContent !== texte) $('contexte-page').textContent = texte;
+    if ($('contexte-page') && $('contexte-page').textContent !== texte) $('contexte-page').textContent = texte;
     majChapitresPresents();
   }
 
@@ -8498,7 +8511,7 @@
   });
   /* Débrief 27 : « Détail » du verdict de la Synthèse ouvre la même fiche ;
      Échap y ramène le focus. */
-  $('verdict-synthese').addEventListener('click', function (e) {
+  if ($('verdict-synthese')) $('verdict-synthese').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-jalon]');
     if (!b) return;
     vue.ouvreurEcheance = 'verdict-synthese';
@@ -8508,7 +8521,7 @@
      journal filtré sur les reculs, la semaine du dernier relevé dépliée ; la
      case « validés, absents de SEE » de la comparaison, posée et dépliée
      comme le « 4 » de sa réponse. Le focus suit, pour le clavier. */
-  $('signaux-synthese').addEventListener('click', function (e) {
+  if ($('signaux-synthese')) $('signaux-synthese').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-signal]');
     if (!b) return;
     if (b.dataset.signal === 'reculs') {
@@ -12115,5 +12128,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = 'cfd7e43';
+window.SUIVI_FWD_FIN = '3d6ac5c';
 </script>
