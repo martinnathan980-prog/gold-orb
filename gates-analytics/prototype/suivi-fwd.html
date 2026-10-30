@@ -10206,7 +10206,8 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   function majEvitements() {
     [].forEach.call(document.querySelectorAll('.evitement[data-evitement]'), function (a) {
       var id = a.getAttribute('data-evitement'), cible = $(id);
-      var absent = !cible || (id !== 'contenu' && (!chapitreVisible(cible) || document.body.dataset.vide === 'true'));
+      /* Sans mesure (après chaque rendu) : l'attribut hidden suffit. */
+      var absent = !cible || (id !== 'contenu' && (cible.hidden || document.body.dataset.vide === 'true'));
       if (a.hidden !== absent) a.hidden = absent;
     });
   }
@@ -10308,7 +10309,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     { nom: 'ensemble', zone: function () { var z = $('ensemble'); return z && !z.hidden && z.tagName !== 'DIALOG' ? z : null; }, croix: '[data-fermer-ensemble]' }
   ];
   var ECHAP = { ordre: [], ouvreurs: {}, geste: null, avant: null, champ: false };
-  function panneauxOuverts() { return PANNEAUX_ECHAP.filter(function (p) { var z = p.zone(); return !!z && z.getClientRects().length > 0; }); }
+  /* Sans mesure : relu à chaque clic et à chaque frappe, il ne doit jamais
+     forcer la mise en page (un tableau de 87 000 cases). */
+  function panneauxOuverts() { return PANNEAUX_ECHAP.filter(function (p) { var z = p.zone(); return !!z && !z.hidden && !z.closest('[hidden]'); }); }
   /* Qui s'est ouvert depuis la dernière fois, et par quel geste : l'ordre
      d'ouverture et le bouton où rendre le focus. */
   function releverPanneaux() {

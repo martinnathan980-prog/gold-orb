@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'b978b16';
+  var EDITION = '1999aa8';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -6833,7 +6833,8 @@
   function majEvitements() {
     [].forEach.call(document.querySelectorAll('.evitement[data-evitement]'), function (a) {
       var id = a.getAttribute('data-evitement'), cible = $(id);
-      var absent = !cible || (id !== 'contenu' && (!chapitreVisible(cible) || document.body.dataset.vide === 'true'));
+      /* Sans mesure (après chaque rendu) : l'attribut hidden suffit. */
+      var absent = !cible || (id !== 'contenu' && (cible.hidden || document.body.dataset.vide === 'true'));
       if (a.hidden !== absent) a.hidden = absent;
     });
   }
@@ -6935,7 +6936,9 @@
     { nom: 'ensemble', zone: function () { var z = $('ensemble'); return z && !z.hidden && z.tagName !== 'DIALOG' ? z : null; }, croix: '[data-fermer-ensemble]' }
   ];
   var ECHAP = { ordre: [], ouvreurs: {}, geste: null, avant: null, champ: false };
-  function panneauxOuverts() { return PANNEAUX_ECHAP.filter(function (p) { var z = p.zone(); return !!z && z.getClientRects().length > 0; }); }
+  /* Sans mesure : relu à chaque clic et à chaque frappe, il ne doit jamais
+     forcer la mise en page (un tableau de 87 000 cases). */
+  function panneauxOuverts() { return PANNEAUX_ECHAP.filter(function (p) { var z = p.zone(); return !!z && !z.hidden && !z.closest('[hidden]'); }); }
   /* Qui s'est ouvert depuis la dernière fois, et par quel geste : l'ordre
      d'ouverture et le bouton où rendre le focus. */
   function releverPanneaux() {
@@ -8816,5 +8819,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = 'b978b16';
+window.SUIVI_FWD_FIN = '1999aa8';
 </script>
