@@ -1215,6 +1215,10 @@ header.entete .alerte-source {
   .journal-semaine.ouverte .journal-plier {
     position: sticky; top: var(--bas-sommaire, 40px); z-index: 1; width: 100%; box-sizing: border-box;
     padding: 11px 2px; border-radius: 0; background: var(--surface); box-shadow: 0 1px 0 var(--filet);
+    /* Débrief 29 (M10) : 2 px au-dessus, comme quand la semaine est
+       pliée — son nom ne remonte pas en s'ouvrant. Collé, le bouton reste
+       au ras du sommaire (la marge ne compte pas). */
+    margin-top: 2px;
   }
   .journal-semaine.ouverte .journal-tete > .resume { padding: 0 2px 10px 24px; }
 }
@@ -10177,30 +10181,34 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       /* Une seule colonne d'appoint : le rythme requis quand un jalon fixe
          une échéance — en plans par semaine, avec le rythme tenu dessous et
          sa jauge (débrief 27, B13) —, le rythme tenu seul sinon. */
-      var col2, b = r.bilan, rythmeDit;
+      /* Débrief 29 (S2) : la phrase lue s'appelle rythmeLu — nommée
+         rythmeDit, elle masquait la fonction rythmeDit(), et le rythme
+         requis s'écrivait « 38,1/sem. » ici, « 38 » partout ailleurs (la
+         fiche de l'échéance, le graphique, la Vue d'ensemble). */
+      var col2, b = r.bilan, rythmeLu;
       if (!prochain) {
         col2 = '<span class="critique-effort" data-libelle="rythme tenu" aria-hidden="true"><span class="v critique-ecart' +
           (r.vitesse > 0 ? '' : ' arret') + '">' +
           (r.vitesse > 0 ? virgule(r.vitesse) + '/sem.' : 'rien de validé') +
           '</span></span>';
-        rythmeDit = 'Rythme tenu : ' + (r.vitesse > 0 ? virgule(r.vitesse) + ' plans par semaine.' : 'rien de validé.');
+        rythmeLu = 'Rythme tenu : ' + (r.vitesse > 0 ? virgule(r.vitesse) + ' plans par semaine.' : 'rien de validé.');
       } else if (!b.total) {
         col2 = '<span class="critique-effort" data-libelle="rythme requis" aria-hidden="true" title="Aucun plan de ce groupe dans ' +
           ech(b.domaine) + ' : « ' + ech(prochain.texte) + ' » ne lui demande rien."><span class="v critique-ecart doux">—</span></span>';
-        rythmeDit = 'Rythme requis : rien, aucun plan de ce groupe dans ' + b.domaine + '.';
+        rythmeLu = 'Rythme requis : rien, aucun plan de ce groupe dans ' + b.domaine + '.';
       } else if (!b.restants) {
         col2 = '<span class="critique-effort" data-libelle="rythme requis" aria-hidden="true"><span class="v critique-ecart">tout est validé</span></span>';
-        rythmeDit = 'Rythme requis : tout est validé.';
+        rythmeLu = 'Rythme requis : tout est validé.';
       } else {
         var atteint = b.rythme > 0 ? Math.min(1, b.rythme / b.requis) : 0;
         col2 = '<span class="critique-effort" data-libelle="rythme requis" aria-hidden="true" title="' + ech(nb(b.restants) + (b.restants > 1 ? ' plans' : ' plan') +
           ' à valider' + (b.domaine && b.domaine !== per ? ' dans ' + b.domaine : '') + ' en ' + b.semaines + (b.semaines > 1 ? ' semaines' : ' semaine') +
-          ' : ' + virgule(b.requis) + ' par semaine ; rythme tenu : ' + (b.rythme > 0 ? virgule(b.rythme) + ' par semaine' : 'aucun plan validé') +
+          ' : ' + rythmeDit(b.requis) + ' par semaine ; rythme tenu : ' + (b.rythme > 0 ? virgule(b.rythme) + ' par semaine' : 'aucun plan validé') +
           (b.enRetard ? ', il ne suffit pas.' : ', il suffit.')) +
-          '"><span class="v critique-ecart"><span class="requis">' + virgule(b.requis) + '/sem.</span>' +
+          '"><span class="v critique-ecart"><span class="requis">' + rythmeDit(b.requis) + '/sem.</span>' +
           '<small><span class="jauge-rythme' + (b.enRetard ? '' : ' suffit') + '"><i style="width:' + (b.enRetard ? (100 * atteint).toFixed(1) : '100') + '%"></i></span>' +
           (b.rythme > 0 ? 'tenu ' + virgule(b.rythme) + '/sem.' : 'rien de validé') + '</small></span></span>';
-        rythmeDit = 'Rythme requis : ' + virgule(b.requis) + ' plans par semaine ; tenu : ' + (b.rythme > 0 ? virgule(b.rythme) : 'aucun') +
+        rythmeLu = 'Rythme requis : ' + rythmeDit(b.requis) + ' plans par semaine ; tenu : ' + (b.rythme > 0 ? virgule(b.rythme) : 'aucun') +
           (b.enRetard ? ', en retard.' : ', suffisant.');
       }
 
@@ -10224,7 +10232,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         (vVal && r.gain ? ' (' + nb(r.gain) + (r.gain > 1 ? ' arrivés' : ' arrivé') + ' au dernier relevé)' : '') +
         ' : ' + detailDit + '. Fin estimée : ' +
         (r.restantsGroupe === 0 ? 'tout est validé' : r.fin === null ? 'aucune, rien de validé depuis le premier relevé' : semaineEnClair(r.fin)) + '. ' +
-        rythmeDit + (filtrePage ? ' Filtre posé sur toute la page.' : '');
+        rythmeLu + (filtrePage ? ' Filtre posé sur toute la page.' : '');
 
       return '<div class="critique-rangee" role="row"' + (i >= montres ? ' hidden' : '') + '>' +
         '<div class="critique-cellule" role="cell" aria-colspan="5">' +
@@ -11693,19 +11701,40 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   function teteSemaineJournal(i) {
     return [].filter.call($('zone-journal').querySelectorAll('button[data-semaine]'), function (x) { return x.dataset.semaine === String(i); })[0] || null;
   }
+  /* Débrief 29 (M10) : ce qu'on garde sous le doigt quand une semaine se
+     plie, se déplie ou se filtre — son nom, « S43 · du … ». On mesurait sa
+     ligne (.journal-tete) ; au téléphone, la ligne d'une semaine ouverte
+     s'efface (display: contents) : sa boîte est vide, son haut vaut 0, et
+     la page sautait de toute sa hauteur. Le nom, lui, est toujours dessiné,
+     pliée ou ouverte, collée ou non. t : le bouton de la semaine. */
+  function boiteSemaine(t) {
+    return t.querySelector('.sem') || t;
+  }
+  /* Au téléphone (720 px et moins, là où la ligne d'une semaine ouverte
+     s'efface), toucher un compte amène sa semaine en haut de l'écran. */
+  var JOURNAL_TELEPHONE = window.matchMedia ? window.matchMedia('(max-width: 720px)') : null;
   /* Après un rendu du journal : la ligne de la semaine touchée reste sous
      le doigt (« avant », sa position d'avant le rendu) ; si le haut de la
      semaine passe alors sous les bandeaux collés, la page remonte jusqu'à
-     lui — on voit la semaine depuis son début. */
+     lui — on voit la semaine depuis son début.
+     Débrief 29 (M10) : au téléphone, ses comptes prennent une ligne
+     chacun — sous le doigt, ses plans restaient sous le bord de l'écran.
+     La semaine monte alors juste sous le sommaire : son nom, ses comptes,
+     puis ses premiers plans sont à l'écran. */
   function amenerSemaineJournal(i, avant) {
     var tete = teteSemaineJournal(i);
     if (!tete) return;
-    var ligne = tete.closest('.journal-tete'), bloc = tete.closest('.journal-semaine');
+    var bloc = tete.closest('.journal-semaine'), haut = basCollesJournal();
+    if (JOURNAL_TELEPHONE && JOURNAL_TELEPHONE.matches) {
+      var ecart = bloc.getBoundingClientRect().top - (haut + 4);
+      if (Math.abs(ecart) > 1) window.scrollBy(0, ecart);
+      return;
+    }
     if (avant !== null && avant !== undefined) {
-      var d = ligne.getBoundingClientRect().top - avant;
+      var d = boiteSemaine(tete).getBoundingClientRect().top - avant;
       if (Math.abs(d) > 1) window.scrollBy(0, d);
     }
-    var haut = basCollesJournal(), top = bloc.getBoundingClientRect().top;
+    var top = bloc.getBoundingClientRect().top;
     if (top < haut - 1) window.scrollBy(0, top - haut - 4);
   }
 
@@ -14839,12 +14868,14 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var ud = e.target.closest('button[data-ud]');
     if (ud) {
       /* Une référence choisie dans la liste : le tableau se réduit à elle et
-         on y descend, plutôt que de la chercher à la main. */
-      vue.refs = {}; vue.refs[ud.dataset.ud] = true;
-      vue.refsLibelle = 'plan ' + ud.dataset.ud; vue.etatParArret = '';
-      rendre();
-      var cadre = $('cadre-tableau');
-      defilerVers(cadre, { behavior: 'smooth', block: 'center' });
+         on y descend, plutôt que de la chercher à la main.
+         Débrief 29 (S10) : comme depuis la comparaison et la recherche du
+         sommaire (montrerCePlan) — la fiche du plan s'ouvre, le focus va à
+         son titre, et sa croix ou Échap le rendent à cette référence de la
+         liste (il tombait sur le corps de la page, puis sur le tableau). Les
+         autres filtres de la page s'effacent, sinon un plan hors du filtre
+         donnerait un tableau vide. */
+      montrerCePlan(ud.dataset.ud);
       return;
     }
     /* Débrief 27 (lot C, P-F5) : une ligne cliquée se déplie sur place,
@@ -14914,7 +14945,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      clavier. */
   function basculerSemaineJournal(tete) {
     var i = tete.dataset.semaine;
-    var avant = tete.closest('.journal-tete').getBoundingClientRect().top;
+    /* Débrief 29 (M10) : son nom, avant comme après (boiteSemaine) — au
+       téléphone, la ligne d'une semaine ouverte n'a plus de boîte. */
+    var avant = boiteSemaine(tete).getBoundingClientRect().top;
     vue.journalOuverts[i] = tete.getAttribute('aria-expanded') !== 'true';
     garderFocus(rendreJournal, 'zone-journal');
     /* Replier une semaine dont la ligne était collée en haut : la ligne
@@ -14922,7 +14955,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        l'écran avec tout ce qu'on lisait. */
     var t = teteSemaineJournal(i);
     if (t) {
-      var d = t.closest('.journal-tete').getBoundingClientRect().top - avant;
+      var d = boiteSemaine(t).getBoundingClientRect().top - avant;
       if (d < -1) window.scrollBy(0, d);
     }
   }
@@ -14944,7 +14977,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       var cible = passage.dataset.passage;
       var semaine = passage.closest('.journal-semaine'), tetePassage = semaine && semaine.querySelector('button[data-semaine]');
       var iSem = tetePassage ? tetePassage.dataset.semaine : null;
-      var avantPassage = semaine ? semaine.querySelector('.journal-tete').getBoundingClientRect().top : null;
+      var avantPassage = tetePassage ? boiteSemaine(tetePassage).getBoundingClientRect().top : null;
       vue.journal = (vue.journal === cible) ? '' : cible;
       /* Débrief 27 (M10) : toucher « 9 » sous S43, c'est vouloir voir ces
          neuf plans — la semaine se déplie (et le reste, si l'on retire le
