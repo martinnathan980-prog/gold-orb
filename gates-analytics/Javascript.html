@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '1bbcd1e';
+  var EDITION = 'b87ba6a';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -304,6 +304,7 @@
     if (t.sticky) poserColonnesFigees();
     if (t.colonneNom) poserColonneNom();
     if (t.chapitres) majSommaire();
+    if (t.journal) poserJournal();
   }
   /* Exposée pour la batterie : la même réduction que le serveur, vérifiable
      cas par cas (espace insécable, accents, espaces multiples). */
@@ -1921,7 +1922,6 @@
 
     MEMO_DERIVE = {}; MEMO_VALEURS = {};
     JOURNAL = construireJournal();
-    ORDRE_RESUME = {};
     INDEX_RELEVES = null; MEMO_ARRET = {};
 
 
@@ -2271,36 +2271,23 @@
   /* La clé d'une sorte de ligne, la même d'une semaine à l'autre : c'est elle
      qui donne sa colonne dans le journal. */
   function cleResume(l) { return l.passage ? 'v:' + l.cle : l.cle; }
-  /* L'ordre des lignes, le même partout — comparatif, journal, bulle — : de
-     la sorte la plus fréquente à la plus rare, sur tout l'historique du
-     périmètre (débrief 14 : « de gauche à droite, de là où il y en a le
-     plus ») — le nombre de semaines où elle apparaît, puis le nombre de
-     plans. Le journal range ainsi ses colonnes pleines à gauche et les
-     rares à droite ; une ligne qui n'a qu'une case ne coupe plus le tableau
-     en deux. À égalité, l'ordre des familles : les passages (terminé, en
-     cours, à faire, non renseigné), les reculs, les changements d'indice,
-     les nouveaux, les disparus. */
-  var ORDRE_RESUME = {};
-  var RANG_BASE_LIGNE = { reculs: 4, indice: 5, nouveaux: 6, disparus: 7 };
-  function rangBaseLigne(l) { return l.passage ? RANG_FAMILLE[l.famille] : RANG_BASE_LIGNE[l.cle]; }
-  function frequencesResume() {
-    var cle = (vue && vue.perimetre) || '';
-    if (ORDRE_RESUME[cle]) return ORDRE_RESUME[cle];
-    var f = {};
-    journalAffiche().forEach(function (sem) {
-      lignesResume(sem.evenements).forEach(function (l) {
-        var k = cleResume(l);
-        f[k] = f[k] || { semaines: 0, plans: 0 };
-        f[k].semaines++;
-        f[k].plans += l.n;
-      });
-    });
-    return (ORDRE_RESUME[cle] = f);
+  /* L'ordre des lignes, le même partout — comparatif, journal, bulle.
+     Débrief 27 (B9) : celui de la légende et des pastilles — les valeurs
+     dans l'ordre des tuiles, celles d'hier ensuite (par famille, puis par
+     nom), puis les mouvements : reculs, nouveaux, disparus, changements
+     d'indice. L'œil passe d'une pastille à sa colonne du journal, ou à sa
+     ligne de la bulle, sans chercher. (Des débriefs 14 à 26 : de la sorte
+     la plus fréquente à la plus rare — le journal rangeait alors ses
+     colonnes dans un autre ordre que ses pastilles.) */
+  var RANG_MOUVEMENT = { reculs: 0, nouveaux: 1, disparus: 2, indice: 3 };
+  function rangLigne(l) {
+    if (!l.passage) return [2, RANG_MOUVEMENT[l.cle] || 0, ''];
+    var i = VALEURS_COLONNE.indexOf(valeurDeCle(l.cle));
+    return i !== -1 ? [0, i, ''] : [1, RANG_FAMILLE[l.famille] || 0, l.libelle || ''];
   }
   function comparerLignes(la, lb) {
-    var f = frequencesResume(), fa = f[cleResume(la)] || { semaines: 0, plans: 0 }, fb = f[cleResume(lb)] || { semaines: 0, plans: 0 };
-    return (fb.semaines - fa.semaines) || (fb.plans - fa.plans) || (rangBaseLigne(la) - rangBaseLigne(lb)) ||
-      COMPARER_REF(la.libelle || la.cle, lb.libelle || lb.cle);
+    var a = rangLigne(la), b = rangLigne(lb);
+    return (a[0] - b[0]) || (a[1] - b[1]) || COMPARER_REF(a[2], b[2]);
   }
   function resumeEvenements(evts) {
     return lignesResume(evts).sort(comparerLignes);
@@ -6051,7 +6038,9 @@
       var avant = RELEVES[k - 1].plans, apres = RELEVES[k].plans;
       if (!avant || !apres) continue;
       var evenements = apparier(avant, apres);
-      if (evenements.length) journal.push({ i: RELEVES[k].i, evenements: evenements });
+      /* Débrief 27 (P-F10) : « avant », la semaine du relevé comparé — la
+         ligne de la semaine en dit les deux dates. */
+      if (evenements.length) journal.push({ i: RELEVES[k].i, avant: RELEVES[k - 1].i, evenements: evenements });
       else RELEVES_IDENTIQUES.push(RELEVES[k].i);
     }
     return journal.reverse();          // la semaine la plus récente en tête
@@ -6140,24 +6129,29 @@
   function journalAffiche() {
     if (!vue.perimetre) return JOURNAL;
     return JOURNAL.map(function (sem) {
-      return { i: sem.i, evenements: sem.evenements.filter(dansPerimetreEvt) };
+      return { i: sem.i, avant: sem.avant, evenements: sem.evenements.filter(dansPerimetreEvt) };
     }).filter(function (sem) { return sem.evenements.length > 0; });
   }
 
   /* Un journal vide, et pourquoi — la vraie raison, pas toujours « il faut
      deux relevés » (débrief 16 : deux semaines archivées, et la page disait
-     encore d'attendre le deuxième relevé). */
+     encore d'attendre le deuxième relevé). Débrief 27 (D8) : en deux temps,
+     comme tous les états vides de la page — une phrase courte (« phrase »),
+     puis l'explication (« detail », le texte d'avant, mot pour mot). */
   function pourquoiJournalVide() {
     var enConcept = CLE_SUIVIE !== 'avancement';
     var archives = RELEVES_SRC.length, avecConcept = RELEVES_SRC.filter(function (r) { return r.plansConcept; }).length;
+    var commence = 'Le journal commence au deuxième relevé';
     if (RELEVES.length < 2) {
-      if (!archives) return 'Le journal se remplira au deuxième relevé archivé : il faut deux relevés pour savoir ce qui a bougé entre les deux.';
+      if (!archives) return { phrase: commence, detail: 'Le journal se remplira au deuxième relevé archivé : il faut deux relevés pour savoir ce qui a bougé entre les deux.' };
       if (enConcept && avecConcept < archives && avecConcept < 2) {
-        return 'Les relevés archivés avant le suivi du concept harnais n\u2019en gardent pas la valeur : le journal du concept se remplira à partir du deuxième relevé qui l\u2019a gardée.';
+        return { phrase: 'Le journal du concept harnais commence au deuxième relevé qui l\u2019a gardé',
+                 detail: 'Les relevés archivés avant le suivi du concept harnais n\u2019en gardent pas la valeur : le journal du concept se remplira à partir du deuxième relevé qui l\u2019a gardée.' };
       }
-      return 'Un seul relevé archivé pour l\u2019instant (' + semaineDite(RELEVES[0].i) + ') : le journal se remplira au suivant. ' +
+      return { phrase: commence,
+               detail: 'Un seul relevé archivé pour l\u2019instant (' + semaineDite(RELEVES[0].i) + ') : le journal se remplira au suivant. ' +
         'Deux archivages dans la même semaine n\u2019en font qu\u2019un — le second remplace le premier. Si l\u2019onglet du contrat ' +
-        'a été renommé depuis un archivage, son historique porte encore l\u2019ancien nom : Suivi FWD → Diagnostic le signale.';
+        'a été renommé depuis un archivage, son historique porte encore l\u2019ancien nom : Suivi FWD → Diagnostic le signale.' };
     }
     var comparees = 0, sansCarte = [];
     for (var k = 1; k < RELEVES.length; k++) {
@@ -6165,14 +6159,65 @@
       else sansCarte.push(semaineDite(RELEVES[(RELEVES[k - 1].plans ? k : k - 1)].i));
     }
     if (!comparees) {
-      return 'Les relevés de ' + sansCarte.filter(function (x, i, t) { return t.indexOf(x) === i; }).join(', ') +
-        ' n\u2019ont pas le détail plan par plan : le journal ne peut pas dire ce qui a changé. Le prochain archivage l\u2019aura.';
+      return { phrase: 'Ces relevés n\u2019ont pas le détail plan par plan',
+               detail: 'Les relevés de ' + sansCarte.filter(function (x, i, t) { return t.indexOf(x) === i; }).join(', ') +
+        ' n\u2019ont pas le détail plan par plan : le journal ne peut pas dire ce qui a changé. Le prochain archivage l\u2019aura.' };
     }
     var a = RELEVES[0], b = RELEVES[RELEVES.length - 1];
-    return 'Aucun plan n\u2019a changé de valeur ' + (RELEVES.length > 2 ? 'd\u2019un relevé à l\u2019autre, de ' : 'entre ') +
+    return { phrase: 'Aucun plan n\u2019a changé d\u2019un relevé à l\u2019autre',
+             detail: 'Aucun plan n\u2019a changé de valeur ' + (RELEVES.length > 2 ? 'd\u2019un relevé à l\u2019autre, de ' : 'entre ') +
       semaineDite(a.i) + (RELEVES.length > 2 ? ' à ' : ' et ') + semaineDite(b.i) + ' (' + nb(Object.keys(b.plans || {}).length) +
       ' plans comparés). Si des plans ont avancé entre-temps, c\u2019est sans doute le même export qui a été archivé deux fois : ' +
-      'importer le dernier export de GATES (' + MENU_IMPORT + ', qui archive dans la foulée), ou le recoller puis archiver.';
+      'importer le dernier export de GATES (' + MENU_IMPORT + ', qui archive dans la foulée), ou le recoller puis archiver.' };
+  }
+
+  /* Débrief 27 (P-F10) — les dates d'une semaine du journal : « S43 · du
+     ven. 16 au ven. 23 oct. ». Une ligne compare deux relevés : le jour où
+     chacun a été archivé (la colonne « Date » de l'historique), pas le lundi
+     ou le dimanche de la semaine. L'année ne s'écrit que si elle n'est pas
+     celle d'aujourd'hui (ou si la semaine passe d'une année à l'autre).
+     L'extract du jour, pas encore archivé, se dit « depuis le … » ; un
+     relevé dont on n'a pas la date garde l'écriture d'avant, « S43 · oct.
+     2026 » — on n'invente pas un jour. */
+  var JOURS_COURTS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+  function lireJourReleve(t) {
+    var s = String(t || ''), m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s) || null, d = null;
+    if (m) d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+    else if ((m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s))) d = new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));
+    return d && !isNaN(d.getTime()) ? d : null;
+  }
+  function joursDesReleves() {
+    var parSemaine = {};
+    RELEVES_SRC.forEach(function (r) { var j = lireJourReleve(r.date); if (j) parSemaine[indexDe(r.semaine)] = j; });
+    return parSemaine;
+  }
+  function datesSemaineJournal(sem, jours) {
+    var num = 'S' + numeroSemaine(sem.i);
+    var extrait = EXTRAIT_EN_PLUS && DERNIER && sem.i === DERNIER.i;
+    var fin = extrait ? null : jours[sem.i], debut = sem.avant !== undefined ? jours[sem.avant] : null;
+    var annee = aujourdhuiCivil().getUTCFullYear();
+    var court = function (d, mois, an) {
+      return JOURS_COURTS[d.getUTCDay()] + '\u00a0' + d.getUTCDate() + (mois ? '\u00a0' + MOIS_COURT[d.getUTCMonth()] : '') + (an ? '\u00a0' + d.getUTCFullYear() : '');
+    };
+    var enLettres = function (d, mois, an) {
+      return JOURS_SEMAINE[d.getUTCDay()] + ' ' + d.getUTCDate() + (mois ? ' ' + MOIS[d.getUTCMonth()] : '') + (an ? ' ' + d.getUTCFullYear() : '');
+    };
+    if (extrait && debut) {
+      var anD = debut.getUTCFullYear() !== annee;
+      return { num: num, dates: 'depuis le ' + court(debut, true, anD), dit: 'semaine en cours, l\u2019extract du jour comparé au relevé du ' + enLettres(debut, true, anD) };
+    }
+    if (!fin) {
+      var jeudi = new Date(dateDe(sem.i).getTime() + 3 * 86400000);
+      return { num: num, dates: semaineDite(sem.i).replace(/^S\d+\u00a0\u00b7 /, ''),
+               dit: 'semaine ' + numeroSemaine(sem.i) + ', ' + MOIS[jeudi.getUTCMonth()] + ' ' + jeudi.getUTCFullYear() };
+    }
+    var anF = fin.getUTCFullYear() !== annee;
+    if (!debut) return { num: num, dates: 'jusqu\u2019au ' + court(fin, true, anF), dit: 'semaine jusqu\u2019au ' + enLettres(fin, true, anF) };
+    var autreAn = debut.getUTCFullYear() !== fin.getUTCFullYear();
+    var autreMois = autreAn || debut.getUTCMonth() !== fin.getUTCMonth();
+    return { num: num,
+             dates: 'du ' + court(debut, autreMois, autreAn) + ' au ' + court(fin, true, anF || autreAn),
+             dit: 'semaine du ' + enLettres(debut, autreMois, autreAn) + ' au ' + enLettres(fin, true, anF || autreAn) };
   }
 
   /* La rangée du journal (débrief 18) : les valeurs de la colonne, dans
@@ -6182,7 +6227,13 @@
      toutes semaines du périmètre confondues : exactement les lignes qu'elle
      montre. À zéro, pas de pastille (débrief 19). Réécrite à chaque rendu,
      journal vide compris : elle ne garde jamais les boutons d'un autre
-     contrat ni de l'autre avancement. */
+     contrat ni de l'autre avancement.
+     Débrief 27 (P-F3, X-A3) : deux rangées titrées qui passent à la ligne
+     — « Passés à » (les valeurs) et « Mouvements » (les reculs d'abord, en
+     rouge, puis les nouveaux, les disparus, les changements d'indice) —,
+     « Tout » à gauche des deux. Plus rien ne se cache au bout d'une rangée
+     qui défile : « Reculs », la pastille qu'on vient chercher, était hors
+     du cadre, son anneau du focus avec elle. */
   function rendreFiltreJournal(journal) {
     /* Deux comptes : sur tout le journal du périmètre (il décide si le
        choix tient encore), et sous la recherche du journal — celui qui
@@ -6211,32 +6262,91 @@
       return { cle: v.cle, famille: v.famille, libelle: v.libelle, n: n, absente: !n, total: total[v.cle] || 0,
                titre: n ? (n > 1 ? nb(n) + ' arrivées' : '1 arrivée') + ' à « ' + v.libelle + ' »' + pour + ', toutes semaines confondues' +
                           ' — passages, reculs et réémissions sous un autre indice ; un plan arrivé deux fois compte deux fois'
-                        : 'Aucun plan n\u2019est arrivé à « ' + v.libelle + ' »' + pour + dans + ' d\u2019un relevé à l\u2019autre' };
+                        : 'Aucun plan n’est arrivé à « ' + v.libelle + ' »' + pour + dans + ' d’un relevé à l’autre' };
     };
-    var items = VALEURS_COLONNE.map(item).concat(Object.keys(hier).map(function (k) { return hier[k]; })
+    var valeurs = VALEURS_COLONNE.map(item).concat(Object.keys(hier).map(function (k) { return hier[k]; })
       .sort(function (a, b) { return RANG_FAMILLE[a.famille] - RANG_FAMILLE[b.famille] || COMPARER_REF(a.libelle, b.libelle); })
       .map(item));
     var nR = vu['\u0001reculs'] || 0, nI = vu['\u0001indice'] || 0, nN = vu['\u0001nouveaux'] || 0, nD = vu['\u0001disparus'] || 0;
-    items.push({ cle: 'reculs', libelle: 'Reculs', pastille: '\x3Cspan class="pastille recul">\x3C/span>', n: nR, absente: !nR, total: total['\u0001reculs'] || 0,
-                 titre: nR ? 'Les plans qui ont reculé' + pour + ' : validés qui ne le sont plus, en cours revenus « à faire »' : 'Aucun recul' + pour + dans },
-               { cle: 'indice', libelle: 'Changement d\u2019indice', pastille: '\x3Cspan class="pastille indice">\x3C/span>', n: nI, absente: !nI, total: total['\u0001indice'] || 0,
-                 titre: nI ? 'Les plans réémis sous un autre indice' + pour : 'Aucun changement d\u2019indice' + pour + dans },
-               /* Débrief 23 : « nouveaux, supprimés… il faut un peu pour tous les filtres ». */
-               { cle: 'nouveaux', libelle: 'Nouveaux', pastille: '\x3Cspan class="pastille nouveau">\x3C/span>', n: nN, absente: !nN, total: total['\u0001nouveaux'] || 0,
-                 titre: nN ? 'Les plans apparus dans l\u2019extract' + pour + ' : absents du relevé précédent' : 'Aucun nouveau plan' + pour + dans },
-               { cle: 'disparus', libelle: 'Disparus', pastille: '\x3Cspan class="pastille disparu">\x3C/span>', n: nD, absente: !nD, total: total['\u0001disparus'] || 0,
-                 titre: nD ? 'Les plans sortis de l\u2019extract' + pour + ' : présents au relevé précédent, absents de celui-ci' : 'Aucun plan disparu' + pour + dans });
+    var mouvements = [
+      { cle: 'reculs', libelle: 'Reculs', pastille: '\x3Cspan class="pastille recul">\x3C/span>', n: nR, absente: !nR, total: total['\u0001reculs'] || 0,
+        titre: nR ? 'Les plans qui ont reculé' + pour + ' : validés qui ne le sont plus, en cours revenus « à faire »' : 'Aucun recul' + pour + dans },
+      /* Débrief 23 : « nouveaux, supprimés… il faut un peu pour tous les filtres ». */
+      { cle: 'nouveaux', libelle: 'Nouveaux', pastille: '\x3Cspan class="pastille nouveau">\x3C/span>', n: nN, absente: !nN, total: total['\u0001nouveaux'] || 0,
+        titre: nN ? 'Les plans apparus dans l’extract' + pour + ' : absents du relevé précédent' : 'Aucun nouveau plan' + pour + dans },
+      { cle: 'disparus', libelle: 'Disparus', pastille: '\x3Cspan class="pastille disparu">\x3C/span>', n: nD, absente: !nD, total: total['\u0001disparus'] || 0,
+        titre: nD ? 'Les plans sortis de l’extract' + pour + ' : présents au relevé précédent, absents de celui-ci' : 'Aucun plan disparu' + pour + dans },
+      { cle: 'indice', libelle: 'Changements d’indice', pastille: '\x3Cspan class="pastille indice">\x3C/span>', n: nI, absente: !nI, total: total['\u0001indice'] || 0,
+        titre: nI ? 'Les plans réémis sous un autre indice' + pour : 'Aucun changement d’indice' + pour + dans }
+    ];
     /* Un choix qui n'a plus rien à montrer dans tout le journal — l'autre
        périmètre, une valeur disparue — revient à « Tout ». La recherche,
        elle, ne le retire pas : on le garde pendant la frappe. */
-    if (vue.journal && !items.some(function (x) { return x.cle === vue.journal && x.total; })) vue.journal = '';
+    if (vue.journal && !valeurs.concat(mouvements).some(function (x) { return x.cle === vue.journal && x.total; })) vue.journal = '';
     /* Seulement les passages qu'il y a (débrief 19) : un journal vide n'a
        pas de pastille du tout, un journal de validations seules n'a que
-       « Tout » et « VALIDATED ». */
+       « Tout » et « VALIDATED » (et pas de rangée « Mouvements »). Le choix
+       en cours reste, même à zéro sous la recherche : on ne le retire pas
+       en douce. */
+    var montres = function (liste) { return liste.filter(function (x) { return !x.absente || x.cle === vue.journal; }); };
+    var passes = montres(valeurs), bouges = montres(mouvements);
     var rangee = $('filtre-journal');
-    rangee.innerHTML = boutonsPastilles('journal', vue.journal, items, { libelle: 'Tout' });
-    rangee.hidden = !rangee.innerHTML;
-    marquerDebord(rangee);
+    if (!passes.length && !bouges.length) {
+      rangee.innerHTML = '';
+      rangee.hidden = true;
+      return;
+    }
+    /* Une pastille : sa couleur, son nom, son compte. Le nom et le compte
+       portent leur version grasse en réserve (data-texte, voir la feuille de
+       style) : pressée, la pastille ne s'élargit pas, et la rangée ne
+       repasse pas à la ligne autrement sous le pointeur. Le lecteur d'écran
+       lit « VALIDATED, 34 », pas « VALIDATED34 ». */
+    var puce = function (x) {
+      var n = x.n !== undefined ? nb(x.n) : '';
+      return '\x3Cbutton type="button" data-journal="' + ech(x.cle) + '"' + (x.famille ? ' data-famille="' + x.famille + '"' : '') +
+        (x.cle === 'reculs' && x.n ? ' class="puce-recul"' : '') +
+        ' aria-pressed="' + (x.cle === vue.journal) + '"' + (x.titre ? ' title="' + ech(x.titre) + '"' : '') + '>' +
+        (x.pastille === undefined ? pastilleValeur(x.cle, x.famille) : x.pastille) +
+        '\x3Cspan class="libelle" data-texte="' + ech(x.libelle) + '">' + ech(x.libelle) + '\x3C/span>' +
+        (n !== '' ? '\x3Cspan class="masque">, \x3C/span>\x3Cspan class="n" data-texte="' + n + '">' + n + '\x3C/span>' : '') + '\x3C/button>';
+    };
+    var rang = function (id, mot, liste) {
+      if (!liste.length) return '';
+      return '\x3Cdiv class="rang-journal" role="group" aria-labelledby="' + id + '">' +
+        '\x3Cspan class="mot-rang etiquette-carte" id="' + id + '">' + mot + '\x3C/span>' +
+        '\x3Cspan class="puces-rang">' + liste.map(puce).join('') + '\x3C/span>\x3C/div>';
+    };
+    rangee.innerHTML = '\x3Cspan class="tout-journal" style="--rangs-journal:' + ((passes.length ? 1 : 0) + (bouges.length ? 1 : 0)) + '">' +
+        puce({ cle: '', libelle: 'Tout', pastille: '', titre: 'Montrer tous les changements' }) + '\x3C/span>' +
+      rang('rang-journal-passes', 'Passés à', passes) + rang('rang-journal-mouvements', 'Mouvements', bouges);
+    rangee.hidden = false;
+  }
+
+  /* Débrief 27 (X-A5) — dire le résultat d'un filtre du journal, une fois :
+     « Journal : 34 arrivées à « VALIDATED », sur 5 semaines ». */
+  var JOURNAL_VU = { lignes: 0, semaines: 0 };
+  function annoncerJournal() {
+    var f = vue.journal, n = JOURNAL_VU.lignes, s = JOURNAL_VU.semaines;
+    var b = f ? [].filter.call($('filtre-journal').querySelectorAll('button[data-journal]'), function (x) { return x.getAttribute('data-journal') === f; })[0] : null;
+    var nom = b ? b.querySelector('.libelle').textContent : '';
+    var quoi = f === 'reculs' ? (n > 1 ? 'reculs' : 'recul')
+      : f === 'nouveaux' ? (n > 1 ? 'nouveaux plans' : 'nouveau plan')
+      : f === 'disparus' ? (n > 1 ? 'plans disparus' : 'plan disparu')
+      : f === 'indice' ? (n > 1 ? 'changements d’indice' : 'changement d’indice')
+      : (n > 1 ? 'arrivées à « ' : 'arrivée à « ') + nom + ' »';
+    var pour = vue.rechercheJournal && motCherche(vue.rechercheJournal) ? ' pour « ' + vue.rechercheJournal.trim() + ' »' : '';
+    var sur = s > 1 ? ', sur ' + s + ' semaines' : '';
+    annoncer('Journal : ' + (!n ? 'aucun changement' + (f ? ' de ce type' : '') + pour
+      : !f ? 'tous les changements, ' + nb(n) + pour + sur
+      : nb(n) + ' ' + quoi + pour + sur));
+  }
+
+  /* Débrief 27 (D8) — un journal sans rien à montrer : un bloc calme au
+     centre, une phrase puis son explication (la classe journal-vide reste
+     à l'explication, mot pour mot celle d'avant). */
+  function etatVideJournal(v) {
+    return '\x3Cdiv class="etat-vide journal-etat-vide">\x3Cp class="etat-vide-phrase">' + ech(v.phrase) + '\x3C/p>' +
+      '\x3Cp class="etat-vide-detail journal-vide">' + ech(v.detail) + '\x3C/p>\x3C/div>';
   }
 
   function rendreJournal() {
@@ -6244,6 +6354,12 @@
     journalEtroit = !!(JOURNAL_ETROIT && JOURNAL_ETROIT.matches);
     var journal = JOURNAL.length ? journalAffiche() : [];
     rendreFiltreJournal(journal);
+    /* Débrief 27 (D8) : sans rien à montrer, les commandes qui
+       n'agiraient sur rien s'effacent — la recherche du journal aussi. */
+    var ligneCommandes = $('filtre-journal').closest('.ligne-filtres');
+    if (ligneCommandes) ligneCommandes.hidden = !JOURNAL.length || !journal.length;
+    JOURNAL_VU = { lignes: 0, semaines: 0 };
+    aMesurer('journal');
     /* Un message seul n'a rien d'un tableau : la grille d'un rendu d'avant
        (l'autre avancement) le coupait au bord de la carte. */
     if (!JOURNAL.length || !journal.length) {
@@ -6251,12 +6367,12 @@
       zone.style.gridTemplateColumns = '';
     }
     if (!JOURNAL.length) {
-      zone.innerHTML = '\x3Cdiv class="journal-vide">' + ech(pourquoiJournalVide()) + '\x3C/div>';
+      zone.innerHTML = etatVideJournal(pourquoiJournalVide());
       return;
     }
     if (!journal.length) {
-      zone.innerHTML = '\x3Cdiv class="journal-vide">Aucun changement dans le périmètre ' +
-        ech(vue.perimetre) + '.\x3C/div>';
+      zone.innerHTML = etatVideJournal({ phrase: 'Aucun changement dans le périmètre ' + vue.perimetre,
+        detail: 'Aucun plan du périmètre ' + vue.perimetre + ' n’a changé de valeur d’un relevé à l’autre. « Tout », dans Périmètre, montre le journal entier.' });
       return;
     }
     var filtre = vue.journal;
@@ -6269,10 +6385,14 @@
     };
     /* Les colonnes du résumé : chaque sorte de ligne des semaines affichées
        a la sienne — « passés à « Terminé » », reculs, changements d'indice,
-       nouveaux… —, dans l'ordre du résumé commun (la plus fréquente à
-       gauche), et une semaine qui n'en a pas laisse sa case vide : les
+       nouveaux… —, et une semaine qui n'en a pas laisse sa case vide : les
        pastilles d'une même sorte tombent l'une sous l'autre, de semaine en
-       semaine. */
+       semaine. Débrief 27 (B9) : dans l'ordre de la légende et des
+       pastilles du dessus — les valeurs dans l'ordre des tuiles (VALIDATED,
+       PWD_IN_PROGRESS, PWD_TO_CONTROL, TO_CONFIRM, FWD_TO_SEIZE, TO_TREAT),
+       celles d'hier ensuite, puis les mouvements (reculs, nouveaux,
+       disparus, changements d'indice) —, et non plus de la plus fréquente à
+       la plus rare : l'œil passe de la pastille à sa colonne sans chercher. */
     var colonnes = [], vuesCol = {};
     journal.forEach(function (sem) {
       lignesResume(retenus(sem)).forEach(function (l) {
@@ -6281,34 +6401,44 @@
       });
     });
     colonnes.sort(function (a, b) { return comparerLignes(vuesCol[a], vuesCol[b]); });
+    var rangTuile = {};
+    VALEURS_COLONNE.forEach(function (v, i) { rangTuile[v.cle] = i; });
+    var nPasses = colonnes.filter(function (k) { return vuesCol[k].passage; }).length;
     var enGrille = GRILLE_JOURNAL && colonnes.length > 0;
     zone.classList.toggle('journal-grille', enGrille);
+    /* La dernière colonne tient la mini-jauge (72 à 96 px) ; sous 1 100 px, la
+       jauge s'efface et sa colonne avec (--col-jauge-journal). */
     zone.style.gridTemplateColumns = enGrille
-      ? 'max-content repeat(' + colonnes.length + ', minmax(min-content, max-content)) minmax(96px, 1fr)' : '';
+      ? 'max-content repeat(' + colonnes.length + ', minmax(min-content, max-content)) var(--col-jauge-journal, minmax(72px, 1fr))' : '';
+    var jours = joursDesReleves();
     var html = journal.map(function (sem) {
       var evts = retenus(sem);
       if (!evts.length) return '';
+      JOURNAL_VU.lignes += evts.length;
+      JOURNAL_VU.semaines++;
 
       var parType = comptesEvenements(evts);
       /* Le résumé de la semaine : les lignes du résumé commun, les mêmes que
          la bulle du graphique. Chaque passage et les
          changements d'indice sont des boutons : cliquer « 4 passés à
          « Validé » » n'affiche plus que ceux-là, pour toutes les semaines à
-         la fois. Les nouveaux et les disparus aussi (débrief 23). */
+         la fois — et déplie cette semaine-là (débrief 27, M10). Les
+         nouveaux et les disparus aussi (débrief 23). */
       var parCle = {};
       lignesResume(evts).forEach(function (l) { parCle[cleResume(l)] = l; });
       var resume = colonnes.map(function (k) {
         var l = parCle[k];
-        if (!l) return '\x3Cspan class="case-vide" aria-hidden="true">\x3C/span>';
+        /* Débrief 27 (B22) : une case sans passage dit « — », en gris. */
+        if (!l) return '\x3Cspan class="case-vide" aria-hidden="true">' + TIRET_VIDE + '\x3C/span>';
         /* Dans le tableau, l'en-tête nomme la colonne : la case ne porte
            que la pastille et le nombre ; les mots restent là pour les
            lecteurs d'écran et pour l'affichage en ligne des petits écrans. */
         var mot = '\x3Cspan class="mot-case"> ' + ech(libelleLot(l, l.n)) + '\x3C/span>';
         var cle = l.cle;
         return '\x3Cbutton class="compte-passage' + (cle === 'reculs' ? ' recul' : '') + '" type="button" data-passage="' + ech(cle) +
-          '" aria-pressed="' + (vue.journal === cle) + '" title="' + ech(nb(l.n) + ' ' + libelleLot(l, l.n)) + ' \u2014 n\u2019afficher que ' +
+          '" aria-pressed="' + (vue.journal === cle) + '" title="' + ech(nb(l.n) + ' ' + libelleLot(l, l.n)) + ' — n’afficher que ' +
           (l.passage ? ech('les plans arrivés à « ' + l.libelle + ' », réémis et reculs compris') : cle === 'reculs' ? 'les reculs'
-            : cle === 'nouveaux' ? 'les nouveaux plans' : cle === 'disparus' ? 'les plans disparus' : 'les changements d\u2019indice') + ', sur toutes les semaines">' +
+            : cle === 'nouveaux' ? 'les nouveaux plans' : cle === 'disparus' ? 'les plans disparus' : 'les changements d’indice') + ', sur toutes les semaines">' +
           pastilleResume(l) + '\x3Cb>' + nb(l.n) + '\x3C/b>' + mot + '\x3C/button>';
       });
       /* La ligne de couleur de la semaine : une part par compte, dans l'ordre
@@ -6318,8 +6448,6 @@
       /* Débrief 22 : les passages s'y découpent par valeur d'arrivée, dans
          l'ordre des tuiles et à la couleur de leur pilule — quatre
          PWD_TO_CONTROL n'y sont plus peints du bleu de PWD_IN_PROGRESS. */
-      var rangTuile = {};
-      VALEURS_COLONNE.forEach(function (v, i) { rangTuile[v.cle] = i; });
       var passages = lignesResume(evts).filter(function (l) { return l.passage; }).sort(function (a, b) {
         var ra = rangTuile[a.cle] === undefined ? 999 : rangTuile[a.cle], rb = rangTuile[b.cle] === undefined ? 999 : rangTuile[b.cle];
         return ra - rb || ordreDesCles(a, b);
@@ -6368,17 +6496,17 @@
            (« Faisceau 417 ») n'apprenait rien ici. */
         var vers = e.type === 'nouveau'
           ? '\x3Cspan class="vers">\x3Cspan class="etiq-etat avant">nouveau\x3C/span>' +
-            '\x3Cspan class="fleche-etat">\u2192\x3C/span>' + etiqEtat(e.apres, 'apres', e.cApres, e.vApres) + '\x3C/span>'
+            '\x3Cspan class="fleche-etat">→\x3C/span>' + etiqEtat(e.apres, 'apres', e.cApres, e.vApres) + '\x3C/span>'
           : e.type === 'disparu'
             ? '\x3Cspan class="vers">' + etiqEtat(e.avant, 'avant', e.cAvant, e.vAvant) +
-              '\x3Cspan class="fleche-etat">\u2192\x3C/span>\x3Cspan class="etiq-etat apres">disparu\x3C/span>\x3C/span>'
+              '\x3Cspan class="fleche-etat">→\x3C/span>\x3Cspan class="etiq-etat apres">disparu\x3C/span>\x3C/span>'
             : '\x3Cspan class="vers">' + etiqEtat(e.avant, 'avant', e.cAvant, e.vAvant) +
-              '\x3Cspan class="fleche-etat">\u2192\x3C/span>' + etiqEtat(e.apres, 'apres', e.cApres, e.vApres) + '\x3C/span>';
+              '\x3Cspan class="fleche-etat">→\x3C/span>' + etiqEtat(e.apres, 'apres', e.cApres, e.vApres) + '\x3C/span>';
         /* Une réémission se lit « ANCIENNE → NOUVELLE », puis l'état avant et
            après : le même plan sous deux références, et ce qu'il est devenu. */
         var reference = estReemission(e)
           ? '\x3Cspan class="ref ref-indice">\x3Cspan class="ancienne">' + ech(e.ancienne) + '\x3C/span>' +
-            '\x3Cspan class="nouvelle">\u2192 ' + ech(e.ref) + '\x3C/span>\x3C/span>'
+            '\x3Cspan class="nouvelle">→ ' + ech(e.ref) + '\x3C/span>\x3C/span>'
           : '\x3Cspan class="ref">' + ech(e.ref) + '\x3C/span>';
         return '\x3Cli>\x3Cbutton class="journal-ligne' + (estReemission(e) ? ' reemission ' + e.type : '') + (estRecul(e) ? ' recul' : '') +
           '" type="button" data-ref="' + ech(e.ref) + '" data-type="' + e.type +
@@ -6391,50 +6519,105 @@
          douze affichées. */
       if (ouvert) lignes = '\x3Cli class="journal-copier">' + boutonCopier(evts.map(function (e) { return e.ref; })) + '\x3C/li>' + lignes;
       var reste = evts.length - limite;
+      /* Débrief 27 (D10) : la semaine montre ses douze premières lignes, puis
+         « Voir les N autres », qui les déplie sur place, dans la page. */
       if (ouvert && reste > 0) {
         lignes += '\x3Cli>\x3Cbutton class="journal-plus" type="button" data-tout="' + sem.i + '">' +
-          'voir les ' + nb(reste) + ' autres\x3C/button>\x3C/li>';
+          'Voir les ' + nb(reste) + ' autres\x3C/button>\x3C/li>';
       }
 
-      return '\x3Cdiv class="journal-semaine">' +
+      /* Débrief 27 (P-F10) : la semaine dit ses dates — « S43 · du ven. 16
+         au ven. 23 oct. » —, en toutes lettres pour un lecteur d'écran. */
+      var d = datesSemaineJournal(sem, jours);
+      return '\x3Cdiv class="journal-semaine' + (ouvert ? ' ouverte' : '') + '">' +
         '\x3Cspan class="journal-tete">' +
         '\x3Cbutton class="journal-plier" type="button" data-semaine="' + sem.i + '" aria-expanded="' + ouvert +
-        '" aria-label="Plier ou d\u00e9plier la semaine ' + semaineDite(sem.i) + '">' +
+        '" aria-label="' + ech(d.num + ', ' + d.dit) + '">' +
         '\x3Csvg class="chevron" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">' +
         '\x3Cpath d="m3.5 1.5 3.5 3.5-3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>\x3C/svg>' +
-        '\x3Cspan class="sem">' + semaineDite(sem.i) + '\x3C/span>\x3C/button>' +
+        '\x3Cspan class="sem">\x3Cspan class="sem-num">' + d.num + '\x3C/span> · \x3Cspan class="sem-dates">' + d.dates + '\x3C/span>\x3C/span>\x3C/button>' +
         '\x3Cspan class="resume">' + resume.join('') + '\x3C/span>' + jauge + '\x3C/span>' +
         (ouvert ? '\x3Cul class="journal-liste">' + lignes + '\x3C/ul>' : '') +
         '\x3C/div>';
     }).join('');
 
+    /* Débrief 27 (B9) : l'en-tête du tableau sur deux étages — « Passés à »
+       au-dessus des colonnes des valeurs, « Mouvements » au-dessus des
+       autres —, et sous chacun, la pastille et le nom seul : le code de
+       GATES en Plex Mono 11, d'un seul tenant tant que la place le permet
+       (une seule coupure possible, après son dernier « _ » : deux lignes
+       au plus, jamais trois ou quatre). La semaine a son mot, la jauge
+       aussi (« Répartition »). */
+    var MOT_MOUVEMENT = { reculs: 'Reculs', nouveaux: 'Nouveaux', disparus: 'Disparus', indice: 'Changements d’indice' };
     var entetes = enGrille && html
-      ? '\x3Cdiv class="journal-entetes" aria-hidden="true">\x3Cspan>\x3C/span>' + colonnes.map(function (k) {
+      ? '\x3Cdiv class="journal-entetes" aria-hidden="true">\x3Cspan class="entete-semaine">Semaine\x3C/span>' + colonnes.map(function (k) {
           var l = vuesCol[k];
-          /* Des espaces insécables dans « passés à « En cours » » : entre 768
-             et 900 px de large, l'en-tête se coupait mot à mot sur quatre
-             lignes ; il ne se coupe plus qu'avant le guillemet, en deux. */
-          /* Débrief 26 : et une coupure possible après chaque « _ »
-             (PWD_IN_ / PROGRESS) : avec sept valeurs de GATES, plus les
-             indices, nouveaux, disparus et reculs, les en-têtes d'un seul
-             tenant faisaient 1 344 px pour 1 140 de cadre — « disparus » et
-             « reculs » étaient coupés au bord, même sur un grand écran. Les
-             colonnes ne se resserrent que s'il le faut. */
-          var nom = ech(l.des).replace(/^(pass\S+) à /, '$1\u00a0à ')
-            .replace(/« [^»]* »/g, function (m) { return m.replace(/ /g, '\u00a0'); })
-            .replace(/_/g, '_\x3Cwbr>');
-          return '\x3Cspan class="entete-col">' + pastilleResume(l) + nom + '\x3C/span>';
-        }).join('') + '\x3Cspan>\x3C/span>\x3C/div>'
+          if (!l.passage) return '\x3Cspan class="entete-col">' + pastilleResume(l) + '\x3Cspan class="mot-entete">' + MOT_MOUVEMENT[l.cle] + '\x3C/span>\x3C/span>';
+          var nom = ech(l.libelle || '');
+          var code = /^[A-Z0-9_]+$/.test(l.libelle || '');
+          if (code) nom = nom.replace(/_(?=[^_]*$)/, '_\x3Cwbr>');
+          return '\x3Cspan class="entete-col">' + pastilleResume(l) + '\x3Cspan class="' + (code ? 'code-entete' : 'mot-entete') + '">' + nom + '\x3C/span>\x3C/span>';
+        }).join('') + '\x3Cspan class="entete-jauge">Répartition\x3C/span>' +
+        (nPasses ? '\x3Cdiv class="entete-groupe" style="grid-column:2 / span ' + nPasses + '">Passés à\x3C/div>' : '') +
+        (colonnes.length > nPasses ? '\x3Cdiv class="entete-groupe" style="grid-column:' + (2 + nPasses) + ' / span ' + (colonnes.length - nPasses) + '">Mouvements\x3C/div>' : '') +
+        '\x3C/div>'
       : '';
     /* Sous une pastille, « aucun changement pour X » ferait croire le plan
        immobile : on dit parmi quoi on a cherché. */
     var choisi = filtre ? [].filter.call($('filtre-journal').querySelectorAll('button'), function (b) { return b.getAttribute('data-journal') === filtre; })[0] : null;
-    var parmi = !choisi ? '' : filtre === 'reculs' ? ' parmi les reculs' : filtre === 'indice' ? ' parmi les changements d\u2019indice'
+    var parmi = !choisi ? '' : filtre === 'reculs' ? ' parmi les reculs' : filtre === 'indice' ? ' parmi les changements d’indice'
+      : filtre === 'nouveaux' ? ' parmi les nouveaux plans' : filtre === 'disparus' ? ' parmi les plans disparus'
       : ' parmi les arrivées à « ' + choisi.querySelector('.libelle').textContent + ' »';
     zone.innerHTML = entetes + html || (q
-      ? '\x3Cdiv class="journal-vide">Aucun changement pour « ' + ech(vue.rechercheJournal.trim()) + ' »' + ech(parmi) + ' dans l’historique' +
+      ? '\x3Cdiv class="journal-vide">Aucun changement pour « ' + ech(vue.rechercheJournal.trim()) + ' »' + ech(parmi) + ' dans l’historique' +
         (parmi ? ' — « Tout » les cherche tous' : '') + '. Échap vide la recherche.\x3C/div>'
       : '\x3Cdiv class="journal-vide">Aucun changement de ce type dans l’historique.\x3C/div>');
+  }
+
+  /* Débrief 27 — mesuré à l'image suivante, avec les autres mesures :
+     1. le tableau tient-il dans la carte ? Sinon (1 024 px avec les onze
+        colonnes, un texte espacé par la lectrice), il prend la forme des
+        petits écrans (journal-serre) au lieu de couper ses dernières
+        colonnes au bord. On réessaie le tableau à chaque mesure : un
+        filtre qui retire des colonnes, une fenêtre élargie le ramènent.
+     2. la hauteur de son en-tête collé (D10) : la ligne d'une semaine
+        ouverte se colle juste dessous pendant qu'on lit ses plans. */
+  function poserJournal() {
+    var zone = $('zone-journal');
+    if (!zone) return;
+    if (zone.classList.contains('journal-grille') && zone.getClientRects().length) {
+      zone.classList.remove('journal-serre');
+      if (zone.scrollWidth > zone.clientWidth + 1) zone.classList.add('journal-serre');
+    } else zone.classList.remove('journal-serre');
+    var e = zone.querySelector('.journal-entetes');
+    var h = e && e.getClientRects().length ? Math.round(e.getBoundingClientRect().height) : 0;
+    if (zone.style.getPropertyValue('--haut-entetes-journal') !== h + 'px') zone.style.setProperty('--haut-entetes-journal', h + 'px');
+  }
+  /* Le bas de ce qui est collé en haut de l'écran au-dessus d'une semaine
+     du journal : le sommaire (et les filtres actifs), puis l'en-tête du
+     tableau. */
+  function basCollesJournal() {
+    var racine = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bas-sommaire')) || 0;
+    var e = $('zone-journal').querySelector('.journal-entetes');
+    return racine + (e && e.getClientRects().length && getComputedStyle(e).position === 'sticky' ? e.getBoundingClientRect().height : 0);
+  }
+  function teteSemaineJournal(i) {
+    return [].filter.call($('zone-journal').querySelectorAll('button[data-semaine]'), function (x) { return x.dataset.semaine === String(i); })[0] || null;
+  }
+  /* Après un rendu du journal : la ligne de la semaine touchée reste sous
+     le doigt (« avant », sa position d'avant le rendu) ; si le haut de la
+     semaine passe alors sous les bandeaux collés, la page remonte jusqu'à
+     lui — on voit la semaine depuis son début. */
+  function amenerSemaineJournal(i, avant) {
+    var tete = teteSemaineJournal(i);
+    if (!tete) return;
+    var ligne = tete.closest('.journal-tete'), bloc = tete.closest('.journal-semaine');
+    if (avant !== null && avant !== undefined) {
+      var d = ligne.getBoundingClientRect().top - avant;
+      if (Math.abs(d) > 1) window.scrollBy(0, d);
+    }
+    var haut = basCollesJournal(), top = bloc.getBoundingClientRect().top;
+    if (top < haut - 1) window.scrollBy(0, top - haut - 4);
   }
 
 
@@ -8215,6 +8398,8 @@
     vue.rechercheJournal = v;
     vue.journalOuverts = {};
     rendreJournal();
+    /* Débrief 27 : ce que la recherche garde, dit une fois la frappe finie. */
+    if (motCherche(v) || !v) annoncerJournal();
   });
   brancherRechercheSection('recherche-rapp', function (v) {
     if (v === vue.rechercheRapp) return;
@@ -9476,11 +9661,36 @@
     annoncer('Courbe : ' + (vA ? vA.libelle : 'plans ' + motFini(2)));   // débrief 27 (X-A5)
   });
 
+  /* Débrief 27 — les gestes du journal. Une semaine pliée ou dépliée garde
+     le focus sur sa ligne (garderFocus) et reste sous le pointeur ; toute la
+     ligne d'une semaine la plie et la déplie (M10 : au doigt, la petite
+     flèche ne suffisait pas) — le bouton de la semaine reste la commande du
+     clavier. */
+  function basculerSemaineJournal(tete) {
+    var i = tete.dataset.semaine;
+    var avant = tete.closest('.journal-tete').getBoundingClientRect().top;
+    vue.journalOuverts[i] = tete.getAttribute('aria-expanded') !== 'true';
+    garderFocus(rendreJournal, 'zone-journal');
+    /* Replier une semaine dont la ligne était collée en haut : la ligne
+       revient à sa place sous le pointeur, au lieu de filer au-dessus de
+       l'écran avec tout ce qu'on lisait. */
+    var t = teteSemaineJournal(i);
+    if (t) {
+      var d = t.closest('.journal-tete').getBoundingClientRect().top - avant;
+      if (d < -1) window.scrollBy(0, d);
+    }
+  }
   $('zone-journal').addEventListener('click', function (e) {
     var tout = e.target.closest('button[data-tout]');
     if (tout) {
-      vue.journalOuverts['tout' + tout.dataset.tout] = true;
+      var iTout = tout.dataset.tout;
+      vue.journalOuverts['tout' + iTout] = true;
       rendreJournal();
+      /* « Voir les N autres » s'efface : le focus passe à la première des
+         lignes qu'il vient de montrer, pas en haut de la page. */
+      var semTout = teteSemaineJournal(iTout), lignesTout = semTout ? semTout.closest('.journal-semaine').querySelectorAll('.journal-ligne') : [];
+      var premiere = lignesTout[Math.min(MAX_JOURNAL, lignesTout.length - 1)];
+      if (premiere) premiere.focus({ preventScroll: true });
       return;
     }
     var passage = e.target.closest('button[data-passage]');
@@ -9488,22 +9698,27 @@
       var cible = passage.dataset.passage;
       var semaine = passage.closest('.journal-semaine'), tetePassage = semaine && semaine.querySelector('button[data-semaine]');
       var iSem = tetePassage ? tetePassage.dataset.semaine : null;
+      var avantPassage = semaine ? semaine.querySelector('.journal-tete').getBoundingClientRect().top : null;
       vue.journal = (vue.journal === cible) ? '' : cible;
+      /* Débrief 27 (M10) : toucher « 9 » sous S43, c'est vouloir voir ces
+         neuf plans — la semaine se déplie (et le reste, si l'on retire le
+         filtre d'un second toucher), et vient à l'écran. */
+      if (iSem !== null) vue.journalOuverts[iSem] = true;
       rendreJournal();
       /* Le journal est réécrit : le focus revient sur le même compte, dans
          la même semaine, sans faire défiler. */
-      var teteN = [].filter.call($('zone-journal').querySelectorAll('button[data-semaine]'), function (x) { return x.dataset.semaine === iSem; })[0];
+      var teteN = teteSemaineJournal(iSem);
       var semN = teteN && teteN.closest('.journal-semaine');
       var repris = semN && [].filter.call(semN.querySelectorAll('button[data-passage]'), function (x) { return x.dataset.passage === cible; })[0];
       if (repris) repris.focus({ preventScroll: true });
+      else if (teteN) teteN.focus({ preventScroll: true });
+      amenerSemaineJournal(iSem, avantPassage);
+      annoncerJournal();
       return;
     }
     var tete = e.target.closest('button[data-semaine]');
     if (tete) {
-      var i = tete.dataset.semaine;
-      var ouvert = tete.getAttribute('aria-expanded') === 'true';
-      vue.journalOuverts[i] = !ouvert;
-      rendreJournal();
+      basculerSemaineJournal(tete);
       return;
     }
     var ligne = e.target.closest('button[data-ref]');
@@ -9526,14 +9741,41 @@
       if (!meme) defilerVers(cadre, { behavior: 'smooth', block: 'center' });
       return;
     }
+    /* Ailleurs sur la ligne d'une semaine (hors de ses comptes) : on la plie
+       ou la déplie, comme avec son bouton. */
+    var rangeeSem = !e.target.closest('button, a') && e.target.closest('.journal-tete');
+    if (rangeeSem) {
+      var bouton = rangeeSem.querySelector('button[data-semaine]');
+      if (bouton) basculerSemaineJournal(bouton);
+    }
+  });
+
+  /* Débrief 27 (2.4.11) : au clavier, une ligne du journal qui reçoit le
+     focus n'est jamais cachée sous ce qui est collé au-dessus d'elle — le
+     sommaire, l'en-tête du tableau, la ligne de sa semaine. Le navigateur
+     la croit visible (elle est dans la fenêtre) : on la dégage. */
+  $('zone-journal').addEventListener('focusin', function (e) {
+    var b = e.target;
+    if (!b || !b.closest || !b.closest('.journal-liste')) return;
+    var sem = b.closest('.journal-semaine'), tete = sem && sem.querySelector('.journal-tete');
+    /* Au téléphone, la ligne s'efface (display: contents) : c'est son bouton qui se colle. */
+    var colle = tete && getComputedStyle(tete).display !== 'contents' ? tete : sem && sem.querySelector('.journal-plier');
+    var h = colle && getComputedStyle(colle).position === 'sticky' ? colle.getBoundingClientRect().height : 0;
+    var haut = basCollesJournal() + h, r = b.getBoundingClientRect();
+    if (r.top < haut + 2) window.scrollBy(0, r.top - haut - 8);
   });
 
   document.querySelector('#filtre-journal').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-journal]');
     if (!b || b.disabled) return;
-    vue.journal = b.dataset.journal;
+    var cle = b.dataset.journal;
+    /* Débrief 27 (P-F19) : un second clic sur la pastille pressée revient à
+       « Tout » — on n'a plus à chercher « Tout » pour défaire un choix. Le
+       focus reste sur la pastille touchée. */
+    vue.journal = cle && cle === vue.journal ? '' : cle;
     rendreJournal();
-    rendreFocus($('filtre-journal'), 'journal', vue.journal);
+    rendreFocus($('filtre-journal'), 'journal', cle);
+    annoncerJournal();
   });
 
   /* Débrief 27 (lot H, X-A1, X-A5) : le focus passe à la croix suivante,
@@ -10177,6 +10419,8 @@
       /* Débrief 27 (lot E) : la figure de la comparaison change de tracé
          quand elle passe 470 px (sans ResizeObserver : l'écran, 480 px). */
       if (RAPPROCHEMENT && traceVennRendu !== null && traceVenn() !== traceVennRendu) garderFocus(rendreRapprochement, 'rapprochement');
+      /* Débrief 27 : l'en-tête collé du journal change de hauteur avec la largeur. */
+      aMesurer('journal');
     }, 160);
   });
   /* Le fondu suit le défilement de chaque rangée : il s'efface au bout. La
@@ -10202,9 +10446,13 @@
     /* Le sommaire aussi : la fenêtre élargie ou rétrécie sans nouveau rendu
        laissait son fondu tel qu'au dernier dessin. */
     veilleRangees.observe(LISTE_SOMMAIRE);
+    /* Débrief 27 : le journal se remesure quand sa taille change sans
+       nouveau rendu — un texte espacé par la lectrice (1.4.12), les polices
+       arrivées : son tableau tient-il encore dans la carte ? */
+    new ResizeObserver(function () { aMesurer('journal'); }).observe($('zone-journal'));
   }
   if (document.fonts) {
-    var remesurer = function () { POLICES_VERIFIEES = {}; LARGEURS_MOTS = {}; aMesurer('barre'); marquerDebords(); ajusterChoixDim(); };
+    var remesurer = function () { POLICES_VERIFIEES = {}; LARGEURS_MOTS = {}; aMesurer('barre'); aMesurer('journal'); marquerDebords(); ajusterChoixDim(); };
     if (document.fonts.ready) document.fonts.ready.then(remesurer);
     if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', remesurer);
   }
@@ -11856,5 +12104,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = '1bbcd1e';
+window.SUIVI_FWD_FIN = 'b87ba6a';
 </script>
