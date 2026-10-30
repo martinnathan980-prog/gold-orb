@@ -139,7 +139,10 @@
      plus haut) : cinq fonds teintés en plus des six couleurs d'état
      faisaient un patchwork. */
 }
-@media (prefers-color-scheme: dark) {
+/* Débrief 27, lot G : à l'écran seulement — imprimée, la page garde ses
+   couleurs claires (le texte clair d'un thème sombre ne se lit pas sur le
+   papier blanc). */
+@media screen and (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --papier: #0d0d0c; --surface: #171716; --creux: #1d1d1b;   /* débrief 27 (D12) : des feuilles chaudes comme le papier (#16161a bleuissait) */
     --encre: #f1f0ea; --encre-2: #a6a49a; --encre-3: #7b7970;
@@ -1340,17 +1343,27 @@ svg.graphe text.grad[opacity] { opacity: .95; }
   .echeance-titre::before { content: ""; order: 1; flex-basis: 100%; height: 0; }
   .echeance-titre .portee, .echeance-titre .jours { order: 2; }
   .echeance-titre .portee::before { content: none; }
-  .haut-de-page { right: 12px; bottom: 12px; width: 36px; height: 36px; }
 }
 
 /* ---------------------------------------------------- Haut de page */
+/* Débrief 27, lot G (B15, M16) : le bouton ne couvre plus rien. Quand la
+   marge à droite des panneaux le tient (1330 px et plus), il s'y pose, à
+   16 px du panneau, et reste là. Plus étroit, il ne paraît qu'en remontant
+   la page — on cherche le haut — et s'efface dès qu'on redescend ou qu'on
+   tape dans un champ (majBoutonHaut) ; le pied lui garde sa place tout en
+   bas. Les règles étroites viennent après la règle de base : avant, celle
+   du téléphone (36 px) était déclarée avant elle, et perdait. */
 .haut-de-page {
-  position: fixed; right: 22px; bottom: 22px; z-index: 40; width: 40px; height: 40px; border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+  position: fixed; right: 14px; bottom: 16px; z-index: 40; width: 36px; height: 36px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
   border: 1px solid var(--releve-bord); background: var(--releve); color: var(--encre-2);
   box-shadow: var(--flottant-ombre); transition: color .15s, border-color .15s, transform .15s;
 }
 .haut-de-page:hover { color: var(--encre); border-color: var(--encre-3); transform: translateY(-2px); }
+@media (min-width: 1330px) {
+  .haut-de-page { right: calc((100% - 1202px) / 2 - 56px); bottom: 22px; width: 40px; height: 40px; }
+}
+@media (prefers-reduced-motion: reduce) { .haut-de-page { transition: none; } .haut-de-page:hover { transform: none; } }
 @media print { .haut-de-page, .echeance-titre { display: none !important; } }
 .legende-jalon.critique .mot { color: var(--alerte); }
 .legende-jalon:hover .mot, .legende-jalon:focus-visible .mot { text-decoration: underline; text-underline-offset: 3px; }
@@ -2227,6 +2240,221 @@ table.plans thead tr th.col-fige { z-index: 6; }
 .masque { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 @media (prefers-reduced-motion: reduce) { .barre span, .ombre-defile, .poignee { transition: none; } }
 
+/* ---------------------------------------------------- Débrief 27, lot G
+   L'accessibilité de toute la page (liens d'évitement, région principale),
+   l'aide, le pied, l'impression, et la couche tactile commune. */
+
+/* Les liens d'évitement : hors de vue tant qu'on ne les atteint pas au
+   clavier ; au focus, une étiquette nette en haut à gauche, au-dessus de
+   tout, le sommaire collé compris. */
+.evitement { position: absolute; left: -10000px; top: 0; width: 1px; height: 1px; overflow: hidden; }
+.evitement:focus {
+  position: fixed; left: 16px; top: 12px; z-index: 80; width: auto; height: auto; overflow: visible;
+  padding: 9px 16px; border: 1px solid var(--encre); border-radius: 6px;
+  background: var(--surface); color: var(--encre); box-shadow: var(--flottant-ombre);
+  font: 500 14px/20px "IBM Plex Sans", system-ui, sans-serif; text-decoration: underline; text-underline-offset: 3px;
+}
+/* La région principale prend le focus de « Aller au contenu » : pas
+   d'anneau autour de toute la page, le Tab suivant va au premier bouton. */
+.contenu:focus { outline: none; }
+/* Le voile d'un contrat en route (body[data-attente]) : les sections sont
+   désormais dans <main>, plus enfants directs de .page. */
+body[data-attente="contrat"] .contenu > section { opacity: .5; transition: opacity .15s; }
+@media (prefers-reduced-motion: reduce) { body[data-attente="contrat"] .contenu > section { transition: none; } }
+
+/* L'aide (D2, D3 : Newsreader pour le titre, cercle de 28 px pour fermer).
+   Posée en haut de l'écran, comme l'administration : rien ne saute quand
+   on la fait défiler. Au téléphone, plein écran. */
+dialog.aide-page {
+  width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px);
+  margin: 20px auto auto; padding: 0;
+  border: 1px solid var(--panneau-bord); border-radius: 10px; background: var(--surface); color: var(--encre);
+  box-shadow: var(--panneau-ombre); overflow: hidden;
+}
+dialog.aide-page[open] { display: flex; flex-direction: column; }
+dialog.aide-page::backdrop { background: var(--voile-dialogue); }
+.aide-tete { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px 14px; border-bottom: 1px solid var(--filet); }
+.aide-tete h2 { margin: 0; font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 24px; line-height: 1.2; }
+/* Le titre prend le focus à l'ouverture (pour être lu d'abord) : ce n'est
+   pas une commande, il ne s'encadre pas. */
+.aide-tete h2:focus { outline: none; }
+.aide-intro { margin: 16px 0 0; font-size: 14px; line-height: 1.6; color: var(--encre-2); max-width: 66ch; }
+.aide-fermer { flex: none; width: 28px; height: 28px; border: 1px solid var(--filet-fort); border-radius: 50%; background: none; color: var(--encre-2); font-size: 18px; line-height: 1; padding: 0; cursor: pointer; }
+.aide-fermer:hover { color: var(--encre); border-color: var(--encre-3); }
+.aide-corps { padding: 0 24px 24px; overflow: auto; overscroll-behavior: contain; flex: 1 1 auto; }
+.aide-bloc { padding: 18px 0 6px; }
+.aide-bloc + .aide-bloc { border-top: 1px solid var(--filet); }
+.aide-bloc h3 { margin: 0 0 12px; }
+.aide-bloc p { margin: 0 0 10px; font-size: 14px; line-height: 1.6; color: var(--encre-2); max-width: 66ch; }
+.aide-bloc p b { color: var(--encre); font-weight: 500; }
+.aide-bloc a { color: var(--encre); text-underline-offset: 3px; }
+.aide-liste { margin: 0; display: grid; gap: 10px; }
+.aide-liste > div { display: grid; grid-template-columns: 10em minmax(0, 1fr); gap: 2px 18px; align-items: baseline; }
+.aide-liste dt { font-size: 14px; font-weight: 500; line-height: 1.55; color: var(--encre); }
+.aide-liste dd { margin: 0; font-size: 14px; line-height: 1.55; color: var(--encre-2); }
+.aide-num { font: 500 11px/1 "IBM Plex Mono", monospace; letter-spacing: .14em; color: var(--accent); margin-right: 6px; }
+.aide-glossaire abbr { text-decoration: none; }
+kbd {
+  display: inline-block; min-width: 20px; padding: 0 5px; border: 1px solid var(--filet-fort); border-bottom-width: 2px; border-radius: 4px;
+  background: var(--creux); color: var(--encre); font: 500 12px/18px "IBM Plex Mono", monospace; text-align: center; white-space: nowrap;
+}
+.aide-option { display: inline-flex; align-items: center; gap: 9px; margin: 16px 0 6px; font-size: 14px; color: var(--encre); cursor: pointer; }
+.aide-option input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+.aide-bloc p.aide-note { font-size: 13px; color: var(--encre-3); }
+.aide-actions { margin-top: 4px !important; }
+@media (max-width: 560px) {
+  dialog.aide-page { width: 100vw; max-width: none; height: 100vh; height: 100dvh; max-height: none; margin: 0; border: 0; border-radius: 0; }
+  .aide-tete { padding: 16px 16px 12px; }
+  .aide-corps { padding: 0 16px 28px; }
+  .aide-liste > div { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Le pied (B14) : deux colonnes au bord du contenu des panneaux. À gauche
+   les chiffres (13 px), à droite l'aide, le lien de la vue et les infos
+   techniques repliées (12 px). */
+.pied { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto); gap: 14px 48px; align-items: start; }
+.pied p { margin: 0; }
+.pied-releve { font-size: 13px; line-height: 1.7; color: var(--encre-2); }
+#lu-le { margin-top: 6px; line-height: 1.6; }
+.pied-droite { justify-self: end; text-align: right; max-width: 400px; }
+.pied-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: baseline; gap: 0 10px; font-size: 13px; line-height: 1.6; }
+.pied-actions .lien-doux { color: var(--encre-2); }
+.pied-actions .lien-doux:hover { color: var(--encre); }
+.pied-point { color: var(--encre-3); }
+#mention-consultations { margin-top: 4px; line-height: 1.6; }
+.pied-technique { margin-top: 6px; }
+/* Rien à y lire (ni temps d'ouverture ni livraison) : pas de « Infos techniques ». */
+.pied-technique:not(:has(#mesure-ouverture:not([hidden]), #livraison:not([hidden]))) { display: none; }
+.pied-technique summary { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; color: var(--encre-3); line-height: 24px; }
+.pied-technique summary::-webkit-details-marker { display: none; }
+.pied-technique summary::before { content: ""; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform .15s; }
+.pied-technique[open] summary::before { transform: rotate(45deg); }
+.pied-technique summary:hover { color: var(--encre); }
+.pied-technique > div { text-align: left; line-height: 1.6; overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) { .pied-technique summary::before { transition: none; } }
+/* Sous 1330 px, le bouton « haut de page » vient au-dessus du coin bas à
+   droite : le pied lui garde sa place, il ne cache jamais sa dernière ligne. */
+@media (max-width: 1329px) { .pied { padding-bottom: 72px; } }
+@media (max-width: 860px) {
+  .pied { grid-template-columns: minmax(0, 1fr); }
+  .pied-droite { justify-self: start; text-align: left; }
+  .pied-actions { justify-content: flex-start; }
+}
+/* Au téléphone, les deux gestes l'un sous l'autre : le « · » restait seul
+   au bout de la première ligne. */
+@media (max-width: 560px) {
+  .pied-actions { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .pied-point { display: none; }
+}
+/* Le sigle du titre se lit au survol et à la voix ; il ne se souligne pas. */
+#titre-page abbr { text-decoration: none; cursor: help; }
+/* Le lien copié : le bouton le dit, le temps de le lire. */
+[data-copier-lien][data-copie="ok"] { color: var(--fait) !important; }
+.lien-etat { display: block; flex-basis: 100%; margin-top: 4px; font-size: 12px; color: var(--encre-2); }
+.lien-a-copier { display: block; width: 100%; margin-top: 8px; padding: 6px 8px; border: 1px solid var(--bord-champ); border-radius: 4px; background: var(--surface); color: var(--encre); font: 12px/1.4 "IBM Plex Mono", monospace; }
+
+/* La couche tactile commune (D11, M6, M14) : au doigt, ce que les sections
+   ne règlent pas elles-mêmes offre 44 px à toucher — le bouton grandit, ou
+   une zone invisible (::after) l'entoure sans rien changer au dessin ; à la
+   souris rien ne bouge. Tous les champs passent à 16 px : iOS ne zoome
+   plus en y entrant (le pincement reste permis). */
+@media (pointer: coarse) {
+  .segmente button { min-width: 44px; }
+  .bouton, .copier, .rapp-puce, .puce-vide, .legende-jalon, .pied-technique summary, .aide-option { min-height: 44px; }
+  .copier, .rapp-puce, .puce-vide { display: inline-flex; align-items: center; }
+  .lien-doux, .jeton .x, .haut-de-page, .aide-fermer { position: relative; }
+  .lien-doux::after { content: ""; position: absolute; inset: -10px -4px; }
+  .jeton .x::after { content: ""; position: absolute; inset: -14px -10px; }
+  .haut-de-page::after { content: ""; position: absolute; inset: -6px; }
+  .aide-fermer::after { content: ""; position: absolute; inset: -9px; }
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea,
+  select:not(.choix-titre) { font-size: 16px !important; }
+}
+/* Une rangée qui défile de côté (pastilles, sommaire au téléphone) :
+   l'élément atteint au clavier s'arrête avant le fondu du bord (M13,
+   X-A3 ; voir aussi le focusin du lot G). Les formules de l'aide « ? » se
+   replient au téléphone au lieu d'être coupées. */
+.filtre-journal, .rangee-valeurs, .sommaire-liste { scroll-padding-inline: 40px; }
+/* Zoom et espacement du texte (WCAG 1.4.10, 1.4.12) : à 320 px (un écran
+   de 1280 zoomé à 400 %) avec un texte espacé, « Échéances · 3 mois · … ·
+   Tout » et « Toutes les colonnes · Vue essentielle » débordaient de la
+   page de 49 px. Sous 360 px, un contrôle segmenté passe à la ligne dans sa
+   piste plutôt que de déborder ; au-delà, rien ne change. */
+@media (max-width: 359px) { .segmente { flex-wrap: wrap; max-width: 100%; } }
+@media (max-width: 560px) { .aide-formule { white-space: pre-wrap; overflow-x: visible; overflow-wrap: anywhere; } }
+/* Le téléphone à l'italienne (M7 : 844 × 390) : le titre se resserre pour
+   que la phrase de tête et la barre paraissent dès le premier écran, et
+   l'aide prend tout l'écran. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .masthead { padding-block: 10px 8px; }
+  .masthead h1 { font-size: 28px; margin-bottom: 4px; }
+  .semaine { font-size: 14px; }
+  .panneau, .panneau.bloc { margin-top: 20px; }
+  dialog.aide-page { width: 100vw; max-width: none; height: 100vh; height: 100dvh; max-height: none; margin: 0; border: 0; border-radius: 0; }
+  .aide-tete { padding: 10px 16px 8px; }
+}
+
+/* L'en-tête des pages imprimées : rien à l'écran. */
+.entete-impression { display: none; }
+
+/* L'impression (P-F9) : la page pour une réunion. Les couleurs claires
+   (le thème sombre est réservé à l'écran, voir plus haut), aucune commande
+   — réglages, sommaire, filtres, champs, pastilles de filtre, boutons de
+   copie —, rien de collé ni de coupé dans une boîte qui défile, les petits
+   panneaux d'un seul tenant, les titres jamais seuls en bas de page, et en
+   tête le contrat, les filtres et l'heure des chiffres. Le tableau des
+   plans s'imprime en vue essentielle, toutes ses lignes (voir
+   « beforeprint » dans le lot G du script). */
+@media print {
+  /* À l'italienne : la page garde sa mise en page de bureau (en portrait,
+     718 px de large, elle prenait celle du téléphone — groupes en cartes,
+     tuiles coupées) ; le tableau et la courbe y tiennent en largeur. */
+  @page { size: landscape; margin: 10mm; }
+  :root { color-scheme: light; }
+  html, body { background: #fff !important; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page { max-width: none; padding-inline: 0; }
+  .entete-impression {
+    display: block; margin: 0 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--filet-fort);
+    font: 12px/1.5 "IBM Plex Sans", system-ui, sans-serif; color: var(--encre-2); font-variant-numeric: tabular-nums;
+  }
+  .entete-impression b { color: var(--encre); font-weight: 500; }
+  .evitements, .filtres-actifs, .reglages, .sommaire, .haut-de-page, dialog, .bulle,
+  .ligne-filtres, .recherche, .segmente, .commandes-graphe, #choix-base, .outils, .incomplets,
+  .copier, .pied-actions, .pied-technique, .ombre-defile, thead .filtres, .poignee, tr.ligne-suite,
+  .aide, .aide-panneau, .lien-a-copier, .lien-etat { display: none !important; }
+  /* Un panneau qui tient sur une page n'y est jamais coupé (il passe à la
+     suivante) ; le tableau des plans, plus long qu'une page, se coupe entre
+     deux lignes, son en-tête répété. */
+  .panneau { box-shadow: none; border-color: var(--filet-fort); break-inside: avoid; margin-top: 14px; }
+  #section-plans { break-inside: auto; }
+  .fiche-plan, .fiche-echeance { break-inside: avoid; }
+  h2, .panneau-tete, .surtitre { break-after: avoid; }
+  .journal-semaine, .critique-ligne, table.plans tr { break-inside: avoid; }
+  .defile, .defile-liste, .cadre-tableau, .cadre-graphe { max-height: none !important; height: auto !important; overflow: visible !important; content-visibility: visible !important; }
+  #cadre-tableau[data-a-venir] .defile { min-height: 0; }
+  table.plans { width: 100%; font-size: 10px; }
+  table.plans thead { display: table-header-group; }
+  table.plans th, table.plans td { position: static !important; min-width: 0 !important; padding-inline: 5px !important; }
+  table.plans th, table.plans td, table.plans th *, table.plans td * { white-space: normal !important; }
+  table.plans td, table.plans td * { overflow-wrap: anywhere; }
+  table.plans td { padding-block: 2px !important; line-height: 1.3; }
+  /* Chrome ne repeint pas un <button> dans l'en-tête répété en haut de
+     chaque page : le nom de la colonne s'y écrit en texte (data-imprime,
+     posé par « beforeprint »). */
+  table.plans thead th[data-imprime] > button { display: none !important; }
+  table.plans thead th[data-imprime]::after { content: attr(data-imprime); }
+  table.plans td .ref-plan, table.plans td.ref, table.plans td .etat-cellule, table.plans td .etat-cellule * { white-space: nowrap !important; overflow-wrap: normal; }
+  /* Le journal, empilé comme au téléphone : sa grille de colonnes ne
+     tient pas toujours dans la largeur d'une page. */
+  #zone-journal.journal-grille, .journal-grille .journal-semaine { display: block; }
+  .journal-grille .journal-tete, .journal-grille .journal-tete .resume { display: flex; flex-wrap: wrap; gap: 2px 12px; }
+  .journal-grille .journal-entetes, .journal-tete .case-vide, .journal-tete .mini-jauge { display: none; }
+  .journal-grille .mot-case { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+  .journal-liste { padding-left: 0; }
+  .pied { margin-top: 16px; padding-bottom: 0; grid-template-columns: minmax(0, 1fr); }
+}
+
 /* ---------------------------------------------------- L'ouverture (débrief 23) */
 /* Le squelette, peint avant les chiffres : chaque panneau encore vide garde
    à peu près sa hauteur et dit « Chargement… », pour que rien ne saute quand
@@ -2253,7 +2481,21 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
 @media (prefers-reduced-motion: reduce) { body[data-attente="contrat"] .page > section { transition: none; } }
 </style>
 
+<!-- Débrief 27, lot G : les liens d'évitement. Invisibles à la souris, le
+     premier Tab les montre en haut à gauche : on saute l'en-tête, ou droit
+     au tableau des plans, ou à la comparaison (un lien vers une section
+     absente s'efface, voir majEvitements). -->
+<div class="evitements" id="evitements">
+  <a class="evitement" href="#contenu" data-evitement="contenu">Aller au contenu</a>
+  <a class="evitement" href="#section-plans" data-evitement="section-plans">Aller au tableau des plans</a>
+  <a class="evitement" href="#rapprochement" data-evitement="rapprochement">Aller à la comparaison</a>
+</div>
 <div class="page">
+
+  <!-- Débrief 27, lot G : l'en-tête des pages imprimées — le contrat, la
+       tranche, l'avancement, les filtres et l'heure des chiffres. Rien à
+       l'écran (voir poserEnteteImpression). -->
+  <div class="entete-impression" id="entete-impression" aria-hidden="true"></div>
 
   <div class="filtres-actifs" id="filtres-actifs" hidden></div>
 
@@ -2332,6 +2574,12 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       <li><a href="#rapprochement" data-chapitre="rapprochement">Comparaison</a></li>
     </ol>
   </nav>
+
+  <!-- Débrief 27, lot G : le contenu de la page, de la synthèse à la
+       comparaison, dans sa région principale — la cible de « Aller au
+       contenu ». Chaque section y est une région nommée par son titre
+       (nommerSections). -->
+  <main class="contenu" id="contenu">
 
   <!-- Un classeur sans plans : ce qu'il faut faire, au lieu de sections vides. -->
   <section class="classeur-vide" id="classeur-vide" hidden>
@@ -2591,27 +2839,48 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     </div>
   </section>
 
+  </main>
+
+  <!-- Débrief 27, lot G (B14) : le pied en deux colonnes. À gauche, ce que
+       disent les chiffres : le dernier relevé, la colonne suivie, l'heure
+       de leur lecture. À droite, l'aide, le lien de cette vue, la mention
+       des consultations, et les infos techniques repliées (les temps de
+       l'ouverture, la livraison) — plus une console de débogage. -->
   <footer class="pied">
-    <span id="import"></span><br>
-    <!-- La colonne lue, nommée comme dans l'export : on voit d'un coup d'œil
-         que la page suit la bonne. -->
-    <span id="colonne-suivie"></span><br id="colonne-suivie-fin">
-    <!-- La démonstration seule le dit : sur le classeur, ces chiffres SONT
-         ceux du tableur. Masqué dès qu'un classeur est derrière la page. -->
-    <span id="avertissement-demo" hidden>Démonstration — les chiffres de cette page sont fictifs, aucun ne vient d'un classeur.</span>
-    <!-- Quand les chiffres ont été lus dans le classeur : une page restée
-         ouverte depuis vendredi ne montre pas ceux de lundi. -->
-    <div id="lu-le" hidden></div>
-    <!-- Débrief 23 : combien de temps l'ouverture a pris — le classeur, le
-         transfert, l'affichage. Avec ?mesure=1 dans l'adresse, le détail. -->
-    <div id="mesure-ouverture" hidden></div>
-    <!-- La livraison qui tourne : le Diagnostic dit laquelle attendre. -->
-    <div id="livraison" hidden></div>
-    <!-- Dit en clair : l'ouverture est comptée, sans nom ni adresse
-         (débrief 18). Seulement quand un classeur est derrière la page. -->
-    <div id="mention-consultations" hidden>Les ouvertures de cette page sont comptées, sans nom ni adresse.</div>
-    <!-- Débrief 27 (A-F23) : aux lecteurs, qui gère les jalons et les droits, et comment le joindre. -->
-    <div id="pied-responsable" hidden></div>
+    <div class="pied-gauche">
+      <p class="pied-releve">
+        <span id="import"></span><br>
+        <!-- La colonne lue, nommée comme dans l'export : on voit d'un coup d'œil
+             que la page suit la bonne. -->
+        <span id="colonne-suivie"></span><br id="colonne-suivie-fin">
+        <!-- La démonstration seule le dit : sur le classeur, ces chiffres SONT
+             ceux du tableur. Masqué dès qu'un classeur est derrière la page. -->
+        <span id="avertissement-demo" hidden>Démonstration — les chiffres de cette page sont fictifs, aucun ne vient d'un classeur.</span>
+      </p>
+      <!-- Quand les chiffres ont été lus dans le classeur : une page restée
+           ouverte depuis vendredi ne montre pas ceux de lundi. -->
+      <div id="lu-le" hidden></div>
+    </div>
+    <div class="pied-droite">
+      <p class="pied-actions">
+        <button type="button" class="lien-doux" id="ouvrir-aide-pied" data-ouvrir-aide aria-haspopup="dialog">Aide : comment lire cette page</button>
+        <span class="pied-point" aria-hidden="true">·</span>
+        <button type="button" class="lien-doux" data-copier-lien>Copier le lien de cette vue</button>
+      </p>
+      <!-- Dit en clair : l'ouverture est comptée, sans nom ni adresse
+           (débrief 18). Seulement quand un classeur est derrière la page. -->
+      <div id="mention-consultations" hidden>Les ouvertures de cette page sont comptées, sans nom ni adresse.</div>
+      <!-- Débrief 27 (A-F23) : aux lecteurs, qui gère les jalons et les droits, et comment le joindre. -->
+      <div id="pied-responsable" hidden></div>
+      <details class="pied-technique" id="pied-technique">
+        <summary>Infos techniques</summary>
+        <!-- Débrief 23 : combien de temps l'ouverture a pris — le classeur, le
+             transfert, l'affichage. Avec ?mesure=1 dans l'adresse, le détail. -->
+        <div id="mesure-ouverture" hidden></div>
+        <!-- La livraison qui tourne : le Diagnostic dit laquelle attendre. -->
+        <div id="livraison" hidden></div>
+      </details>
+    </div>
   </footer>
 </div>
 
@@ -2646,6 +2915,79 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
 <button type="button" class="haut-de-page" id="haut-de-page" aria-label="Revenir en haut de la page" hidden>
   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
 </button>
+<!-- Débrief 27, lot G : l'aide, « Comment lire cette page ». Une fenêtre
+     native : Échap la ferme, le clavier y reste, le focus revient au bouton
+     qui l'a ouverte. Elle s'ouvre par « Aide » dans le bandeau
+     (#ouvrir-aide) et dans le pied. Les états de GATES n'y sont pas
+     définis — personne n'en a la définition officielle : ce sont ceux de
+     GATES, tels quels. Ce qui change (l'heure des chiffres, le
+     responsable), majAide le pose à l'ouverture. -->
+<dialog class="aide-page" id="aide" aria-labelledby="aide-titre" aria-describedby="aide-intro">
+  <div class="aide-tete">
+    <h2 id="aide-titre">Comment lire cette page</h2>
+    <button type="button" class="aide-fermer" id="aide-fermer" aria-label="Fermer l’aide">×</button>
+  </div>
+  <div class="aide-corps" id="aide-corps">
+    <p class="aide-intro" id="aide-intro">Le suivi des plans d’un contrat, du plus général au plus détaillé. Rien ne s’écrit d’ici : la page ne fait que lire le classeur.</p>
+    <section class="aide-bloc" aria-labelledby="aide-parties">
+      <h3 class="etiquette-carte" id="aide-parties">Les six parties, de haut en bas</h3>
+      <dl class="aide-liste">
+        <div class="teinte-une"><dt><span class="aide-num">01</span> Synthèse</dt><dd>Combien de plans sont validés sur le total, et tous les plans répartis par état. Un clic sur un état ne montre que ses plans, dans toute la page.</dd></div>
+        <div class="teinte-temps"><dt><span class="aide-num">02</span> Tendance</dt><dd>La courbe des plans validés, relevé après relevé, avec les jalons du programme (numérotés) et la fin estimée au rythme tenu. « Prochaine échéance » ouvre la fiche de l’échéance : combien de plans valider chaque semaine pour la tenir.</dd></div>
+        <div class="teinte-journal"><dt><span class="aide-num">03</span> Changements</dt><dd>Semaine par semaine, les plans qui ont changé d’état ou d’indice, et ceux qui sont apparus ou ont disparu de l’export. Les reculs sont en rouge. Un clic déplie une semaine.</dd></div>
+        <div class="teinte-groupe"><dt><span class="aide-num">04</span> Par ATA</dt><dd>Le même avancement, chapitre ATA par chapitre ATA — ou par séquence, CC, ECP… avec le menu du titre —, et pour chaque groupe sa fin estimée et le rythme requis. Un clic déplie les plans du groupe.</dd></div>
+        <div class="teinte-plans"><dt><span class="aide-num">05</span> Plans</dt><dd>L’export GATES tel quel : une ligne par plan, avec recherche, tri et filtres. « Vue essentielle » ne garde que les colonnes utiles. Un clic sur une référence ouvre l’historique du plan.</dd></div>
+        <div><dt><span class="aide-num">06</span> Comparaison</dt><dd>GATES face à SEE : les plans validés que SEE connaît, et les écarts à traiter. Seulement quand le contrat a une base SEE, et pour la définition électrique.</dd></div>
+      </dl>
+    </section>
+    <section class="aide-bloc" aria-labelledby="aide-filtres">
+      <h3 class="etiquette-carte" id="aide-filtres">Les filtres : toute la page, ou une seule partie</h3>
+      <p><b>Toute la page</b> suit le contrat, la tranche et l’avancement choisis en haut, puis le périmètre, un état cliqué dans la synthèse, un groupe filtré dans Par ATA, une référence ou une ligne de la comparaison. Ces filtres s’affichent dans la barre « Filtres », en haut de l’écran : chaque × en retire un, « Tout effacer » les retire tous.</p>
+      <p><b>Une seule partie</b> change avec les pastilles et le petit champ de recherche des parties Tendance, Changements, Par ATA et Comparaison. Le reste de la page ne bouge pas.</p>
+    </section>
+    <section class="aide-bloc" aria-labelledby="aide-clavier">
+      <h3 class="etiquette-carte" id="aide-clavier">Au clavier</h3>
+      <dl class="aide-liste aide-touches">
+        <div><dt><kbd>Tab</kbd> <kbd>Maj</kbd>+<kbd>Tab</kbd></dt><dd>Passer d’un bouton, d’un lien ou d’un champ à l’autre. Au premier <kbd>Tab</kbd>, « Aller au contenu » saute l’en-tête.</dd></div>
+        <div><dt><kbd>Entrée</kbd> <kbd>Espace</kbd></dt><dd>Activer le bouton qui a le focus.</dd></div>
+        <div><dt><kbd>Échap</kbd></dt><dd>Fermer ce qui est ouvert : cette aide, une fiche, la vue d’ensemble, une bulle. Dans un champ de recherche : l’effacer.</dd></div>
+        <div><dt><kbd>/</kbd></dt><dd>Aller à la recherche du tableau des plans, quand aucun champ n’est en cours de saisie.</dd></div>
+        <div><dt><kbd>Ctrl</kbd> + molette</dt><dd>Zoomer dans le graphique (<kbd>⌘</kbd> + molette sur un Mac). La molette seule fait défiler la page.</dd></div>
+      </dl>
+      <label class="aide-option"><input type="checkbox" id="raccourcis-clavier" checked> Raccourcis clavier d’une seule touche : <kbd>/</kbd></label>
+      <p class="aide-note">À décocher quand un logiciel de dictée ou d’aide tape « / » sans le vouloir. Le choix est gardé sur ce poste.</p>
+    </section>
+    <section class="aide-bloc" aria-labelledby="aide-sigles">
+      <h3 class="etiquette-carte" id="aide-sigles">Sigles et mots de la page</h3>
+      <dl class="aide-liste aide-glossaire">
+        <div><dt><abbr title="semaine 43">S43</abbr></dt><dd>La semaine 43 de l’année, du lundi au dimanche (numérotation ISO). « S43 · oct. 2026 » : la semaine et son mois.</dd></div>
+        <div><dt>Relevé</dt><dd>La photo des états de tous les plans, archivée chaque vendredi. La courbe et le journal comparent les relevés entre eux.</dd></div>
+        <div><dt>GATES</dt><dd>La base d’où vient l’export des plans et de leur avancement. Les états (<span lang="en">VALIDATED</span>, <span lang="en">PWD_IN_PROGRESS</span>…) sont ceux de GATES, tels quels : la page ne les traduit pas. « Non renseigné » : un plan sans état dans GATES (<span lang="en">EMPTY</span>).</dd></div>
+        <div><dt>SEE</dt><dd>La seconde base, celle des schémas créés. Un plan connu de SEE est un plan terminé : la comparaison croise cette présence avec l’avancement de GATES.</dd></div>
+        <div><dt>FWD</dt><dd>La définition électrique des plans : l’avancement que la page suit d’abord. L’autre, le concept harnais, se choisit en haut de la page.</dd></div>
+        <div><dt>ATA</dt><dd>Le chapitre ATA (<span lang="en">Air Transport Association</span>) : la numérotation standard des systèmes de l’avion — 21, 24, 92…</dd></div>
+        <div><dt>TO</dt><dd>Table outil. Les jalons TO suivent le concept harnais.</dd></div>
+        <div><dt>PSN</dt><dd>Le numéro de la machine d’un contrat dans SEE : c’est lui qui trie les lignes de SEE qui reviennent au contrat.</dd></div>
+        <div><dt>PH, CC, ECP, RPT…</dt><dd>Les noms des colonnes de l’export GATES, gardés tels quels.</dd></div>
+      </dl>
+    </section>
+    <section class="aide-bloc" aria-labelledby="aide-source">
+      <h3 class="etiquette-carte" id="aide-source">D’où viennent les chiffres</h3>
+      <p>De l’export GATES de chaque contrat et de l’extract SEE, déposés chaque semaine dans le classeur Google Sheets du suivi. Chaque vendredi, l’état de tous les plans y est archivé : c’est le relevé de la semaine, celui que comparent la courbe et le journal.</p>
+      <p id="aide-fraicheur"></p>
+    </section>
+    <section class="aide-bloc" aria-labelledby="aide-partage">
+      <h3 class="etiquette-carte" id="aide-partage">Partager, imprimer</h3>
+      <p>Le lien rouvre la page sur le même contrat, la même tranche, le même avancement, le même périmètre, la même recherche dans le tableau des plans et la même partie.</p>
+      <p class="aide-actions"><button type="button" class="bouton" data-copier-lien>Copier le lien de cette vue</button></p>
+      <p><kbd>Ctrl</kbd>+<kbd>P</kbd> imprime la page sans ses boutons, avec le contrat et les filtres en tête, et le tableau des plans en vue essentielle.</p>
+    </section>
+    <section class="aide-bloc" aria-labelledby="aide-qui">
+      <h3 class="etiquette-carte" id="aide-qui">Une question, une erreur ?</h3>
+      <p id="aide-responsable">Le responsable du tableau de bord, propriétaire du classeur du suivi, peut répondre.</p>
+    </section>
+  </div>
+</dialog>
 
 <script>
 (function () {
@@ -9515,6 +9857,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     GRAPHE_MESURE = false;
     vue.dernieresCles = clesSelection();
     planifierSauvegarde();
+    apresRenduG();                     // débrief 27, lot G : annonce, adresse, évitements
   }
   function rendreEtat() {
     /* La largeur du graphique, lue avant toute écriture (l'ouverture l'a
@@ -9893,7 +10236,11 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     };
   }
   /* Le panneau courant : le dernier dont le haut est passé sous le sommaire.
-     Tout en bas de la page, le dernier panneau, même court. */
+     Tout en bas de la page, le dernier panneau, même court. Débrief 27,
+     lot G (P-F13) : « passé » se lit à 35 % de la hauteur de l'écran — le
+     panneau qui traverse cette ligne est celui qu'on lit ; le sommaire
+     restait d'un panneau en retard tant que la tête du suivant n'avait pas
+     atteint le haut. */
   var chapitreCourant = null;
   function majSommaire() {
     var boite = SOMMAIRE.getBoundingClientRect();
@@ -9905,7 +10252,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if ($('sommaire-contrat').textContent !== contrat) $('sommaire-contrat').textContent = contrat;
     var courant = null, presents = LIENS_SOMMAIRE.filter(function (a) { return !a.parentNode.hidden; });
     presents.forEach(function (a) {
-      if (chapitreDe(a).getBoundingClientRect().top <= boite.bottom + 40) courant = a;
+      if (chapitreDe(a).getBoundingClientRect().top <= Math.max(boite.bottom + 40, window.innerHeight * 0.35)) courant = a;
     });
     var fond = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
     if (fond && presents.length && window.scrollY > 0) courant = presents[presents.length - 1];
@@ -9963,14 +10310,593 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   }
   majHautSommaire(); majChapitresPresents();
 
+  /* ============================================================
+     DÉBRIEF 27, LOT G — L'ACCESSIBILITÉ DE TOUTE LA PAGE, L'AIDE, LE
+     PARTAGE, L'IMPRESSION
+     Les liens d'évitement et les régions, le bouton « haut de page », la
+     fenêtre d'aide, Échap qui ferme le panneau du dessus, le lien de la vue
+     (adresse tenue à jour), les annonces des changements de la page, et la
+     page imprimée.
+     ============================================================ */
+
+  /* Le bouton « haut de page » (B15, M16). Dans la marge des panneaux
+     (1330 px et plus) ou au-dessus de leur bord intérieur (jusqu'à 721 px),
+     il ne couvre rien : il paraît dès qu'on est descendu d'un écran et
+     quart. Au téléphone, il couvrirait le bord du contenu : il ne paraît
+     qu'en remontant — on cherche le haut —, s'efface dès qu'on redescend, et
+     jamais pendant une saisie (il cachait le bout des champs). */
   var boutonHaut = $('haut-de-page');
-  window.addEventListener('scroll', function () {
-    var montrer = window.scrollY > window.innerHeight * 1.2;
+  var HAUT = { y: window.scrollY || 0, remonte: false };
+  var TELEPHONE_HAUT = window.matchMedia ? window.matchMedia('(max-width: 720px)') : null;
+  function champEnSaisie() {
+    var a = document.activeElement;
+    return !!a && (a.isContentEditable || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' ||
+      (a.tagName === 'INPUT' && !/^(button|checkbox|radio|range|submit|reset|color|file)$/i.test(a.type || '')));
+  }
+  function majBoutonHaut() {
+    var y = window.scrollY, loin = y > window.innerHeight * 1.2, montrer = loin;
+    if (TELEPHONE_HAUT && TELEPHONE_HAUT.matches) {
+      if (y < HAUT.y - 2) HAUT.remonte = true; else if (y > HAUT.y + 2) HAUT.remonte = false;
+      montrer = loin && HAUT.remonte && !champEnSaisie();
+    }
+    HAUT.y = y;
+    /* Celui qui l'a sous le clavier le garde. */
+    if (!montrer && document.activeElement === boutonHaut && loin) montrer = true;
     if (boutonHaut.hidden === montrer) boutonHaut.hidden = !montrer;
-  }, { passive: true });
+  }
+  window.addEventListener('scroll', majBoutonHaut, { passive: true });
+  document.addEventListener('focusin', majBoutonHaut);
+  document.addEventListener('focusout', function () { setTimeout(majBoutonHaut, 0); });
   boutonHaut.addEventListener('click', function () {
     window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    /* Le clavier remonte avec la page : sur le titre, pas sur un bouton qui
+       va s'effacer. */
+    var titre = $('titre-page');
+    if (titre) {
+      if (!titre.hasAttribute('tabindex')) titre.setAttribute('tabindex', '-1');
+      try { titre.focus({ preventScroll: true }); } catch (e) { titre.focus(); }
+    }
   });
+
+  /* Les régions (X-A10) : chaque section de <main> est nommée par son titre
+     (h2) — un lecteur d'écran les liste et y saute. La synthèse a déjà son
+     nom. */
+  function nommerSections() {
+    [].forEach.call(document.querySelectorAll('#contenu > section'), function (sec) {
+      if (sec.hasAttribute('aria-labelledby') || sec.hasAttribute('aria-label')) return;
+      var h = sec.querySelector('h2');
+      if (!h) return;
+      if (!h.id) h.id = 'titre-' + sec.id;
+      sec.setAttribute('aria-labelledby', h.id);
+    });
+  }
+  nommerSections();
+
+  /* Mener à une section — ou au contenu — comme le sommaire : son haut
+     juste sous le sommaire collé, en douceur si le système le permet, et
+     le focus clavier sur son titre. */
+  function mener(cible, titre) {
+    if (!cible) return;
+    var doux = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    var haut = cible.getBoundingClientRect().top + window.scrollY - SOMMAIRE.getBoundingClientRect().height -
+      (parseFloat(getComputedStyle(SOMMAIRE).top) || 0) - 14;
+    window.scrollTo({ top: Math.max(0, haut), behavior: doux ? 'smooth' : 'auto' });
+    var f = titre || cible;
+    if (!f.hasAttribute('tabindex') && !/^(A|BUTTON|INPUT|SELECT|TEXTAREA)$/.test(f.tagName)) {
+      f.setAttribute('tabindex', '-1');
+      /* <main> ne reste pas focalisable : un clic dans la page le prendrait
+         pour point de départ, et le Tab suivant remonterait à la synthèse. */
+      if (f.id === 'contenu') f.addEventListener('blur', function oter() { f.removeAttribute('tabindex'); f.removeEventListener('blur', oter); });
+    }
+    try { f.focus({ preventScroll: true }); } catch (e) { f.focus(); }
+  }
+  /* Les liens d'évitement : un lien vers une section absente (pas de
+     comparaison sans SEE, un classeur vide) s'efface. */
+  function majEvitements() {
+    [].forEach.call(document.querySelectorAll('.evitement[data-evitement]'), function (a) {
+      var id = a.getAttribute('data-evitement'), cible = $(id);
+      /* Sans mesure (après chaque rendu) : l'attribut hidden suffit. */
+      var absent = !cible || (id !== 'contenu' && (cible.hidden || document.body.dataset.vide === 'true'));
+      if (a.hidden !== absent) a.hidden = absent;
+    });
+  }
+  $('evitements').addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a.evitement');
+    if (!a) return;
+    e.preventDefault();
+    var id = a.getAttribute('data-evitement'), cible = $(id);
+    if (!cible) return;
+    if (id === 'contenu') { mener(cible, cible); return; }
+    finirRendu(true);                  // une ouverture en deux temps : la section est dessinée d'abord
+    mener(cible, cible.querySelector('h2') || cible.querySelector('.surtitre'));
+  });
+
+  /* ---------- L'aide, « Comment lire cette page » ---------- */
+  /* Les raccourcis d'une seule touche (« / ») se coupent (WCAG 2.1.4) : le
+     choix est gardé sur ce poste, et vaut aussi sans stockage pour la
+     visite. */
+  var CLE_RACCOURCIS = 'suivi-fwd:raccourcis';
+  var RACCOURCIS = true;
+  try { RACCOURCIS = localStorage.getItem(CLE_RACCOURCIS) !== 'non'; } catch (e) { RACCOURCIS = true; }
+  function raccourcisActifs() { return RACCOURCIS; }
+  var AIDE = { retour: null };
+  /* Ce qui change d'une ouverture à l'autre : l'heure des chiffres, le
+     responsable (connu par mesDroits), l'état des raccourcis. */
+  function majAide() {
+    var f = $('aide-fraicheur');
+    if (f) {
+      var morceaux = [];
+      if (!$('avertissement-demo').hidden) morceaux.push($('avertissement-demo').textContent);
+      if ($('import').textContent) morceaux.push($('import').textContent.replace(/\.?$/, '.'));
+      if (!$('lu-le').hidden && $('lu-le').textContent) morceaux.push($('lu-le').textContent);
+      f.textContent = morceaux.join(' ');
+      f.hidden = !morceaux.length;
+    }
+    var r = $('aide-responsable'), qui = DROITS && DROITS.responsable ? String(DROITS.responsable) : '';
+    if (r) {
+      r.innerHTML = qui && /^[^\s@<>"]+@[^\s@<>"]+$/.test(qui)
+        ? 'Le responsable du tableau de bord : <a href="mailto:' + ech(qui) + '">' + ech(qui) + '</a>.'
+        : 'Le responsable du tableau de bord, propriétaire du classeur du suivi, peut répondre.';
+    }
+    var c = $('raccourcis-clavier');
+    if (c) c.checked = RACCOURCIS;
+  }
+  function ouvrirAide(depuis) {
+    var d = $('aide');
+    if (!d) return;
+    majAide();
+    AIDE.retour = depuis && depuis.focus ? depuis : document.activeElement;
+    if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
+    $('aide-corps').scrollTop = 0;
+    /* Le titre d'abord, pas la croix : le lecteur d'écran lit la fenêtre
+       depuis son début, et un Entrée de trop ne la referme pas. */
+    var t = $('aide-titre');
+    t.setAttribute('tabindex', '-1');
+    try { t.focus({ preventScroll: true }); } catch (e) { t.focus(); }
+  }
+  function fermerAide() {
+    var d = $('aide');
+    if (d && d.open) { if (typeof d.close === 'function') d.close(); else { d.removeAttribute('open'); rendreFocusAide(); } }
+  }
+  function rendreFocusAide() {
+    var b = AIDE.retour;
+    AIDE.retour = null;
+    if (b && document.contains(b) && focusVisible(b)) { try { b.focus({ preventScroll: true }); } catch (e) { b.focus(); } }
+  }
+  /* « Aide » dans le bandeau (#ouvrir-aide, posé par l'en-tête) ou dans le
+     pied : une délégation, qui vaut pour un bouton redessiné. */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('#ouvrir-aide, [data-ouvrir-aide]');
+    if (!b) return;
+    e.preventDefault();
+    ouvrirAide(b);
+  });
+  $('aide-fermer').addEventListener('click', fermerAide);
+  $('aide').addEventListener('close', rendreFocusAide);
+  /* Un clic sur le voile, autour de la fenêtre, la ferme aussi. */
+  $('aide').addEventListener('click', function (e) { if (e.target === $('aide')) fermerAide(); });
+  $('raccourcis-clavier').addEventListener('change', function () {
+    RACCOURCIS = !!this.checked;
+    try { localStorage.setItem(CLE_RACCOURCIS, RACCOURCIS ? 'oui' : 'non'); } catch (e) { /* gardé pour la visite seulement */ }
+    annoncer(RACCOURCIS ? 'Raccourci « / » activé' : 'Raccourci « / » coupé');
+  });
+
+  /* ---------- Échap ferme le panneau du dessus ----------
+     Chaque panneau garde sa propre façon de se fermer : on clique sa croix
+     (ou on cache la bulle, comme le fait la page). Ce n'est qu'un filet :
+     si un autre écouteur a déjà fermé quelque chose (la fiche d'échéance a
+     le sien), ou vidé un champ, on ne ferme rien de plus. Le panneau du
+     dessus : la bulle, puis celui qui a le focus, puis le dernier ouvert.
+     Le focus revient au bouton qui l'avait ouvert. Une fenêtre (aide,
+     administration) se ferme d'elle-même. */
+  var PANNEAUX_ECHAP = [
+    { nom: 'bulle', zone: function () { var b = $('bulle'); return b && b.dataset.visible === 'true' ? b : null; },
+      fermer: function () { $('bulle').dataset.visible = 'false'; } },
+    { nom: 'echeance', zone: function () { return $('fiche-echeance'); }, croix: '[data-fermer-echeance]' },
+    { nom: 'aide-fin', zone: function () { return $('panneau-fin'); }, croix: 'button[data-aide][aria-expanded="true"]' },
+    { nom: 'plan', zone: function () { var f = $('fiche-plan'); return f && !f.hidden && f.querySelector('[data-fermer-plan]') ? f : null; }, croix: '[data-fermer-plan]' },
+    { nom: 'ensemble', zone: function () { var z = $('ensemble'); return z && !z.hidden && z.tagName !== 'DIALOG' ? z : null; }, croix: '[data-fermer-ensemble]' }
+  ];
+  var ECHAP = { ordre: [], ouvreurs: {}, geste: null, avant: null, champ: false };
+  /* Sans mesure : relu à chaque clic et à chaque frappe, il ne doit jamais
+     forcer la mise en page (un tableau de 87 000 cases). */
+  function panneauxOuverts() { return PANNEAUX_ECHAP.filter(function (p) { var z = p.zone(); return !!z && !z.hidden && !z.closest('[hidden]'); }); }
+  /* Qui s'est ouvert depuis la dernière fois, et par quel geste : l'ordre
+     d'ouverture et le bouton où rendre le focus. */
+  function releverPanneaux() {
+    var ouverts = panneauxOuverts().map(function (p) { return p.nom; });
+    ECHAP.ordre = ECHAP.ordre.filter(function (n) { return ouverts.indexOf(n) !== -1; });
+    ouverts.forEach(function (n) {
+      if (ECHAP.ordre.indexOf(n) !== -1) return;
+      ECHAP.ordre.push(n);
+      var g = ECHAP.geste && document.contains(ECHAP.geste) ? ECHAP.geste : document.activeElement;
+      ECHAP.ouvreurs[n] = g && g !== document.body ? (g.closest('button, a, [tabindex], input, select') || g) : null;
+    });
+  }
+  ['pointerdown', 'keydown'].forEach(function (type) {
+    document.addEventListener(type, function (e) { ECHAP.geste = e.target && e.target.nodeType === 1 ? e.target : null; }, true);
+  });
+  ['click', 'keyup', 'input'].forEach(function (type) {
+    document.addEventListener(type, function () { setTimeout(releverPanneaux, 0); }, true);
+  });
+  window.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' && e.key !== 'Esc') return;
+    releverPanneaux();
+    ECHAP.avant = panneauxOuverts().map(function (p) { return p.nom; });
+    var t = e.target;
+    ECHAP.champ = !!(t && t.tagName && (t.tagName === 'SELECT' || ((t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') && t.value)));
+  }, true);
+  window.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' && e.key !== 'Esc') return;
+    var avant = ECHAP.avant;
+    ECHAP.avant = null;
+    if (!avant || !avant.length || e.defaultPrevented || ECHAP.champ) return;
+    if (document.querySelector('dialog[open]')) return;
+    var ouverts = panneauxOuverts();
+    /* Un autre écouteur a déjà fermé un panneau : ce coup d'Échap est pris. */
+    if (avant.some(function (n) { return !ouverts.some(function (p) { return p.nom === n; }); })) return;
+    if (!ouverts.length) return;
+    var actif = document.activeElement;
+    var cible = ouverts.filter(function (p) { return p.nom === 'bulle'; })[0] ||
+      ouverts.filter(function (p) { var z = p.zone(); return actif && actif !== document.body && z.contains(actif); })[0] ||
+      ouverts.filter(function (p) { return p.nom === ECHAP.ordre[ECHAP.ordre.length - 1]; })[0] ||
+      ouverts[ouverts.length - 1];
+    e.preventDefault();
+    fermerPanneau(cible);
+  });
+  function fermerPanneau(p) {
+    var zone = p.zone(), actif = document.activeElement;
+    var dedans = !!zone && !!actif && zone.contains(actif);
+    var retour = ECHAP.ouvreurs[p.nom];
+    if (p.fermer) p.fermer();
+    else {
+      var croix = (zone && zone.querySelector(p.croix)) || document.querySelector(p.croix);
+      if (croix) croix.click();
+    }
+    releverPanneaux();
+    var maintenant = document.activeElement;
+    if (dedans || !maintenant || maintenant === document.body || !document.contains(maintenant)) {
+      if (retour && document.contains(retour) && focusVisible(retour)) { try { retour.focus({ preventScroll: true }); } catch (e) { retour.focus(); } }
+    }
+  }
+
+  /* ---------- Le lien de cette vue (P-F8) ----------
+     L'adresse dit ce qu'on regarde : le contrat, la tranche, l'avancement,
+     le périmètre, la recherche du tableau et la section lue. Lue à
+     l'ouverture — dans le classeur, par google.script.url (le serveur a
+     déjà servi le bon contrat, doGet) ; seule, dans le # de l'adresse —,
+     puis tenue à jour (google.script.history.replace, ou le #). « Copier le
+     lien de cette vue » la copie, sur le lien …/exec que donne le serveur. */
+  var CLES_ADRESSE = ['contrat', 'tranche', 'avancement', 'perimetre', 'recherche', 'section'];
+  var SECTIONS_ADRESSE = { synthese: 'section-synthese', tendance: 'section-tendance', changements: 'section-journal',
+                           repartition: 'section-repartition', plans: 'section-plans', comparaison: 'rapprochement' };
+  var ADRESSE = { lue: false, voulu: null, autres: {}, appliquee: false, contratDemande: false, enRetard: false,
+                  section: null, derniere: null, minuteur: 0 };
+  function dansAppsScript() { return !!(window.google && google.script && google.script.url && google.script.url.getLocation); }
+  function lireAdresse(p) {
+    var v = {}, n = 0;
+    CLES_ADRESSE.forEach(function (k) {
+      var x = p[k];
+      if (Array.isArray(x)) x = x[0];
+      if (x !== undefined && x !== null && String(x).trim()) { v[k] = String(x).trim().slice(0, 200); n++; }
+    });
+    /* Les autres paramètres (mesure=1…) restent dans l'adresse ; frais=1
+       ne vaut que pour une ouverture. */
+    Object.keys(p).forEach(function (k) {
+      if (CLES_ADRESSE.indexOf(k) === -1 && k !== 'frais') ADRESSE.autres[k] = String(Array.isArray(p[k]) ? p[k][0] : p[k]);
+    });
+    ADRESSE.voulu = n ? v : null;
+    ADRESSE.lue = true;
+  }
+  function parametresDuDiese() {
+    var h = String(location.hash || '').replace(/^#/, ''), p = {};
+    if (h.indexOf('=') === -1) return p;           // « #section-plans » : une ancre, pas une vue
+    h.split('&').forEach(function (x) {
+      var i = x.indexOf('=');
+      if (i <= 0) return;
+      try { p[decodeURIComponent(x.slice(0, i))] = decodeURIComponent(x.slice(i + 1).replace(/\+/g, ' ')); } catch (e) { /* morceau illisible : ignoré */ }
+    });
+    return p;
+  }
+  function chaineAdresse(p) {
+    return Object.keys(p).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(p[k]); }).join('&');
+  }
+  try {
+    if (dansAppsScript()) {
+      google.script.url.getLocation(function (lieu) {
+        lireAdresse((lieu && lieu.parameter) || {});
+        /* L'ouverture est déjà passée : la vue se pose maintenant. */
+        if (ADRESSE.enRetard) appliquerVoulu(false);
+      });
+    } else {
+      lireAdresse(parametresDuDiese());
+    }
+  } catch (e) { lireAdresse({}); }
+  /* Le contrat demandé : son nom et sa tranche (« HDK », « Tranche 2 »),
+     ou l'identifiant de son onglet. */
+  function idContratVoulu(v) {
+    if (!v || !v.contrat || !CONTRATS) return null;
+    var cle = norm(v.contrat);
+    var fam = famillesDeContrats().filter(function (f) { return f.cle === cle; })[0];
+    if (fam) {
+      var t = v.tranche ? norm(v.tranche) : '';
+      var m = t ? fam.membres.filter(function (x) { return norm(x.libelle) === t || norm(x.tranche) === t; })[0] : null;
+      return (m || fam.membres.filter(function (x) { return !x.tranche; })[0] || fam.membres[0]).id;
+    }
+    var direct = CONTRATS.filter(function (c) { return norm(c.id) === cle || norm(c.nom) === cle; })[0];
+    return direct ? direct.id : null;
+  }
+  /* L'avancement demandé, posé avant que la source ne soit lue (lancerPhase1). */
+  function indicateurVoulu(actuel) {
+    var v = ADRESSE.voulu;
+    if (!v || !v.avancement) return actuel;
+    return /concept/i.test(v.avancement) ? 'concept' : /^(def|definition|fwd)/i.test(norm(v.avancement)) ? 'def' : actuel;
+  }
+  /* La vue demandée par l'adresse, une fois : avant le premier rendu si le
+     contrat est déjà le bon (rien ne saute), sinon après l'arrivée du bon
+     contrat. Une valeur inconnue (un périmètre qui n'existe plus) est
+     ignorée sans bruit. */
+  function appliquerVoulu(avantRendu) {
+    var v = ADRESSE.voulu;
+    if (ADRESSE.appliquee) return;
+    if (!ADRESSE.lue) { ADRESSE.enRetard = true; return; }
+    if (!v || !SRC || !vue) { ADRESSE.appliquee = !!SRC; return; }
+    var id = idContratVoulu(v);
+    if (id && id !== CONTRAT) {
+      if (avantRendu || ADRESSE.contratDemande) return;
+      ADRESSE.contratDemande = true;
+      changerContrat(id);
+      return;
+    }
+    ADRESSE.appliquee = true;
+    var change = false;
+    var ind = indicateurVoulu(INDICATEUR);
+    if (ind !== INDICATEUR && !avantRendu) { changerIndicateur(ind); }
+    if (v.perimetre && CLE_DOMAINE) {
+      var cle = norm(v.perimetre), trouve = null;
+      for (var i = 0; i < PLANS.length && !trouve; i++) if (norm(domaineDe(PLANS[i])) === cle) trouve = domaineDe(PLANS[i]);
+      if (trouve && trouve !== vue.perimetre) { vue.perimetre = trouve; change = true; }
+    }
+    if (v.recherche && v.recherche !== vue.recherche) { vue.recherche = v.recherche; $('recherche').value = v.recherche; change = true; }
+    if (v.section && SECTIONS_ADRESSE[norm(v.section)]) ADRESSE.section = SECTIONS_ADRESSE[norm(v.section)];
+    if (!avantRendu && change) rendre();
+  }
+  /* La section demandée, quand la page est entière — pas pour une page
+     rouverte, que le navigateur remet là où on l'avait laissée. */
+  function allerSectionVoulue() {
+    var id = ADRESSE.section;
+    if (!id || !DEMARRAGE_FINI) return;
+    ADRESSE.section = null;
+    if (window.scrollY > 0 || defilementRestaure()) return;
+    var sec = $(id);
+    if (!chapitreVisible(sec)) return;
+    finirRendu(true);
+    var haut = sec.getBoundingClientRect().top + window.scrollY - SOMMAIRE.getBoundingClientRect().height - 14;
+    window.scrollTo(0, Math.max(0, haut));
+  }
+  function sectionLue() {
+    var a = chapitreCourant, id = a ? a.getAttribute('data-chapitre') : '';
+    for (var k in SECTIONS_ADRESSE) if (SECTIONS_ADRESSE[k] === id) return k;
+    return '';
+  }
+  function parametresDeLaVue() {
+    var p = {};
+    if (!SRC || !vue) return p;
+    var f = familleCourante(), m = f ? f.membres.filter(function (x) { return x.id === CONTRAT; })[0] : null;
+    if (f && m) {
+      p.contrat = f.nom;
+      if (f.membres.length > 1 || m.tranche) p.tranche = m.libelle;
+    } else if (CONTRAT) p.contrat = String(CONTRAT);
+    if (INDICATEUR === 'concept') p.avancement = 'concept';
+    if (vue.perimetre) p.perimetre = vue.perimetre;
+    if (vue.recherche) p.recherche = vue.recherche;
+    var s = sectionLue();
+    if (s && s !== 'synthese') p.section = s;
+    return p;
+  }
+  /* L'adresse suit la vue, un instant après le dernier geste — jamais
+     avant que la vue demandée par l'adresse ne soit posée. */
+  function synchroniserAdresse() {
+    clearTimeout(ADRESSE.minuteur);
+    ADRESSE.minuteur = setTimeout(function () {
+      if (!ADRESSE.lue || !ADRESSE.appliquee || !SRC || !vue) return;
+      var p = parametresDeLaVue(), cle = chaineAdresse(p);
+      if (cle === ADRESSE.derniere) return;
+      ADRESSE.derniere = cle;
+      try {
+        if (dansAppsScript()) {
+          if (google.script.history && google.script.history.replace) {
+            var tout = {};
+            Object.keys(ADRESSE.autres).forEach(function (k) { tout[k] = ADRESSE.autres[k]; });
+            Object.keys(p).forEach(function (k) { tout[k] = p[k]; });
+            google.script.history.replace(null, tout, '');
+          }
+        } else if (window.history && history.replaceState) {
+          history.replaceState(history.state, '', String(location.href).replace(/#.*$/, '') + (cle ? '#' + cle : ''));
+        }
+      } catch (e) { /* adresse figée (cadre, fichier) : sans conséquence */ }
+    }, 400);
+  }
+  function lienDeLaVue() {
+    var q = chaineAdresse(parametresDeLaVue());
+    var exec = DROITS && DROITS.adresse ? String(DROITS.adresse) : '';
+    if (exec) return exec + (q ? (exec.indexOf('?') === -1 ? '?' : '&') + q : '');
+    /* Servie par le classeur sans lien …/exec (la fenêtre du menu, une
+       application web pas encore déployée), l'adresse de ce cadre ne mène
+       nulle part : rien à copier. */
+    if (SERVEUR || dansAppsScript()) return '';
+    return String(location.href).replace(/#.*$/, '') + (q ? '#' + q : '');
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-copier-lien]');
+    if (!b) return;
+    var lien = lienDeLaVue(), parent = b.parentNode;
+    [].forEach.call(parent.querySelectorAll('.lien-a-copier, .lien-etat'), function (x) { x.parentNode.removeChild(x); });
+    if (!lien) {
+      var mot = document.createElement('span');
+      mot.className = 'lien-etat';
+      mot.textContent = 'Pas de lien à copier ici : ouvrir le tableau de bord par son lien …/exec.';
+      parent.appendChild(mot);
+      annoncer(mot.textContent);
+      setTimeout(function () { if (mot.parentNode) mot.parentNode.removeChild(mot); }, 6000);
+      return;
+    }
+    copierTexte(lien, function (ok) {
+      if (ok) {
+        if (!b.__mot) b.__mot = b.textContent;
+        b.style.minWidth = b.getBoundingClientRect().width + 'px';
+        b.textContent = 'Lien copié';
+        b.setAttribute('data-copie', 'ok');
+        clearTimeout(b.__minuteur);
+        b.__minuteur = setTimeout(function () { b.textContent = b.__mot; b.removeAttribute('data-copie'); b.style.minWidth = ''; }, 2500);
+        annoncer('Lien de cette vue copié');
+      } else {
+        /* Le navigateur refuse : le lien s'affiche, prêt à copier. */
+        var z = document.createElement('input');
+        z.type = 'text'; z.readOnly = true; z.className = 'lien-a-copier'; z.value = lien;
+        z.setAttribute('aria-label', 'Lien de cette vue, à copier (Ctrl+C)');
+        parent.appendChild(z);
+        z.focus(); z.select();
+        annoncer('Copie refusée par le navigateur : le lien est sélectionné, Ctrl+C pour le copier');
+      }
+    });
+  });
+
+  /* ---------- Les annonces des changements de la page (X-A5) ----------
+     Après chaque rendu complet : ce qui a changé pour toute la page — le
+     contrat, l'avancement, le périmètre, un filtre posé ou retiré —, dit en
+     une phrase avec son résultat, dans la zone d'annonce commune. Rien à
+     l'ouverture. Les sections annoncent elles-mêmes leurs propres gestes
+     (tri, semaine dépliée…). */
+  var VUE_ANNONCEE = null;
+  function texteDe(el) { return el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : ''; }
+  function etatAnnonce() {
+    var poses = filtresPoses().filter(function (f) { return f.cle !== 'perimetre'; });
+    return { contrat: CONTRAT, ind: INDICATEUR, per: vue.perimetre, poses: poses,
+             cles: poses.map(function (f) { return f.cle + '=' + f.valeur; }) };
+  }
+  function annoncerVue() {
+    if (!vue || !SRC) return;
+    var e = etatAnnonce(), a = VUE_ANNONCEE;
+    VUE_ANNONCEE = e;
+    if (!a) return;
+    var phrase = texteDe($('phrase'));
+    if (e.contrat !== a.contrat) {
+      var c = (CONTRATS || []).filter(function (x) { return x.id === CONTRAT; })[0];
+      annoncer((c ? c.nom : String(CONTRAT)) + ' affiché : ' + phrase + '.');
+      return;
+    }
+    if (e.ind !== a.ind) { annoncer((e.ind === 'concept' ? 'Concept harnais' : 'Définition électrique') + ' : ' + phrase + '.'); return; }
+    var memesFiltres = e.cles.join('|') === a.cles.join('|');
+    /* Le périmètre seul : la phrase de tête, sans redire le périmètre. */
+    if (e.per !== a.per && memesFiltres) {
+      annoncer((e.per ? 'Périmètre ' + e.per : 'Tous les plans') + ' : ' + phrase.replace(/ dans le périmètre .*$/, '') + '.');
+      return;
+    }
+    if (memesFiltres) return;
+    var n = selection().length, base = population().length;
+    var compte = n ? nb(n) + (n > 1 ? ' plans' : ' plan') + (n !== base ? ' sur ' + nb(base) : '') : 'aucun plan';
+    var ajout = e.poses.filter(function (f) { return a.cles.indexOf(f.cle + '=' + f.valeur) === -1; })[0];
+    if (ajout) annoncer((ajout.mot ? ajout.mot + ' ' : '') + ajout.valeur + ' : ' + compte + '.');
+    else annoncer((!e.poses.length && !e.per && (a.poses.length + (a.per ? 1 : 0)) > 1 ? 'Filtres retirés : ' : 'Filtre retiré : ') + compte + '.');
+  }
+
+  /* ---------- La page imprimée (P-F9) ---------- */
+  function deuxChiffres(n) { return (n < 10 ? '0' : '') + n; }
+  function poserEnteteImpression() {
+    var z = $('entete-impression');
+    if (!z || !SRC || !vue) return;
+    var f = familleCourante(), m = f ? f.membres.filter(function (x) { return x.id === CONTRAT; })[0] : null;
+    var morceaux = [f && m ? f.nom + (f.membres.length > 1 || m.tranche ? ' · ' + m.libelle : '') : String(CONTRAT || '')];
+    morceaux.push(INDICATEUR === 'concept' ? 'Concept harnais' : 'Définition électrique');
+    var filtres = filtresPoses().map(function (x) { return (x.mot ? x.mot + ' ' : '') + x.valeur; });
+    morceaux.push(filtres.length ? 'filtres : ' + filtres.join(', ') : 'sans filtre');
+    var lu = SERVEUR && SRC.genereLe ? new Date(SRC.genereLe) : null;
+    if (lu && !isNaN(lu.getTime())) {
+      morceaux.push('chiffres du ' + deuxChiffres(lu.getDate()) + '/' + deuxChiffres(lu.getMonth() + 1) + ' ' +
+        deuxChiffres(lu.getHours()) + ':' + deuxChiffres(lu.getMinutes()));
+    } else if (!SERVEUR) morceaux.push('démonstration, chiffres fictifs');
+    z.innerHTML = '<b>' + ech(texteDe($('titre-page')) || 'Suivi FWD') + '</b> — ' + ech(morceaux.filter(Boolean).join(' · '));
+  }
+  /* Toutes les lignes d'un tableau dessiné par tranches. */
+  function toutesLesLignes(idCorps) {
+    var t = TRANCHES[idCorps], garde = 0;
+    while (t && TRANCHES[idCorps] === t && t.montrees < t.total && garde++ < 500) trancheSuivante(idCorps);
+  }
+  /* Le tableau s'imprime en vue essentielle (une poignée de colonnes tient
+     sur la page), toutes ses lignes ; il revient ensuite tel qu'il était. */
+  var IMPRESSION = null;
+  window.addEventListener('beforeprint', function () {
+    if (!SRC || !vue) return;
+    poserEnteteImpression();
+    if (!IMPRESSION) IMPRESSION = { vueTable: vue.vueTable, ordre: vue.ordre.slice(), cachees: JSON.parse(JSON.stringify(vue.cachees)) };
+    if (vue.vueTable !== 'essentielle' && CLES_ESSENTIELLES.length) {
+      vue.vueTable = 'essentielle';
+      appliquerVueTable();
+      rendreEntetes(); rendreCorps(selection());
+    }
+    toutesLesLignes('corps-tableau');
+    toutesLesLignes('corps-seconde');
+    [].forEach.call(document.querySelectorAll('table.plans thead th'), function (th) {
+      var b = th.querySelector('button');
+      if (b) th.setAttribute('data-imprime', texteDe(b));
+    });
+  });
+  window.addEventListener('afterprint', function () {
+    var i = IMPRESSION;
+    IMPRESSION = null;
+    if (!i || !vue || vue.vueTable === i.vueTable) return;
+    vue.vueTable = i.vueTable; vue.ordre = i.ordre; vue.cachees = i.cachees;
+    rendreEntetes(); rendreCorps(selection());
+  });
+
+  /* ---------- Une rangée qui défile de côté : l'élément atteint au clavier
+     sort du fondu (X-A3, M13) ---------- */
+  document.addEventListener('focusin', function (e) {
+    var el = e.target;
+    if (!el || !el.closest) return;
+    var rangee = el.closest('.filtre-journal, .rangee-valeurs, .sommaire-liste');
+    if (!rangee || rangee.scrollWidth <= rangee.clientWidth + 1) return;
+    var r = el.getBoundingClientRect(), b = rangee.getBoundingClientRect(), marge = 40;
+    if (r.right > b.right - marge) rangee.scrollLeft += r.right - (b.right - marge);
+    else if (r.left < b.left + marge && rangee.scrollLeft > 0) rangee.scrollLeft -= (b.left + marge) - r.left;
+  });
+
+  /* Après chaque rendu complet (rendreFin) : les liens d'évitement, la vue
+     demandée par l'adresse, l'adresse elle-même, l'annonce, l'en-tête
+     imprimé, les panneaux ouverts. Un instant après : le rendu a fini. */
+  var minuteurApresRendu = 0;
+  function apresRenduG() {
+    clearTimeout(minuteurApresRendu);
+    minuteurApresRendu = setTimeout(function () {
+      if (!vue || !SRC) return;
+      majEvitements();
+      if (!ADRESSE.appliquee && DEMARRAGE_FINI) appliquerVoulu(false);
+      allerSectionVoulue();
+      annoncerVue();
+      synchroniserAdresse();
+      poserEnteteImpression();
+      releverPanneaux();
+      poserSigles();
+    }, 0);
+  }
+  /* Les sigles expliqués là où on les rencontre d'abord (X-A20) : « FWD »
+     dans le titre, la semaine « S43 » au pied — le texte ne change pas,
+     le sigle porte son mot (abbr title) ; l'aide les explique tous. */
+  function poserSigles() {
+    var t = $('titre-page');
+    if (t && !t.querySelector('abbr') && texteDe(t) === 'Suivi FWD') t.innerHTML = 'Suivi <abbr title="définition électrique">FWD</abbr>';
+    var i = $('import');
+    if (i && !i.querySelector('abbr') && /\bS\d{1,2}\b/.test(i.textContent)) {
+      i.innerHTML = ech(i.textContent).replace(/\bS(\d{1,2})\b/g, '<abbr title="semaine $1">S$1</abbr>');
+    }
+  }
+  /* La section lue change : l'adresse suit (la section en fait partie). */
+  window.addEventListener('scroll', function () { if (ADRESSE.appliquee) synchroniserAdresse(); }, { passive: true });
+
+  /* Pour la batterie de tests. */
+  window.__lienDeLaVue = lienDeLaVue;
+  window.__parametresDeLaVue = parametresDeLaVue;
 
   ['mouseover', 'focusin'].forEach(function (ev) {
     $('legende-jalons').addEventListener(ev, function (e) {
@@ -10398,6 +11324,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        lieu d'emmener la frappe dans la recherche du tableau. */
     var actif = document.activeElement;
     if (actif && (actif.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(actif.tagName))) return;
+    /* Débrief 27, lot G (WCAG 2.1.4) : un raccourci d'une seule touche se
+       coupe, dans l'aide (« Raccourcis d'une seule touche »). */
+    if (!raccourcisActifs() || e.ctrlKey || e.metaKey || e.altKey || document.querySelector('dialog[open]')) return;
     e.preventDefault(); champ.focus(); champ.select();
   });
   var minuteurTaille = null;
@@ -10780,8 +11709,13 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     /* La largeur du graphique, lue sur la page qu'on vient de peindre,
        avant d'y écrire quoi que ce soit. */
     if (DIFFERER) { mesurerGraphique(); GRAPHE_MESURE = true; }
+    /* Débrief 27, lot G : l'avancement, le périmètre et la recherche
+       demandés par l'adresse (un lien partagé) se posent avant le premier
+       rendu : rien ne saute. */
+    INDICATEUR = indicateurVoulu(INDICATEUR);
     chargerSource(fabriquer());
     chargerPrefs();
+    appliquerVoulu(true);
     remplirDims();
     if (!DIFFERER) { rendre(); return; }      // d'un bloc, comme avant
     o.gen = ++GENERATION;

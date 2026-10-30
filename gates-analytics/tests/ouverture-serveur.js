@@ -914,6 +914,38 @@ function cellule(classeur, onglet, ligne, col) { return classeur.getSheetByName(
   }
 
   // =================================================================
+  /* Débrief 27, lot G : « Copier le lien de cette vue » — le lien porte son
+     contrat et sa tranche (?contrat=HDK&tranche=Tranche%202) et doGet sert
+     ce contrat d'emblée ; un contrat inconnu ou retiré, le premier, comme
+     avant ; mesDroits donne à la page le lien …/exec qu'elle ne voit pas. */
+  section('Débrief 27 : le lien de la vue ouvre son contrat');
+  {
+    const classeur = new Classeur([ongletGates('HDK', 40, null, 7), ongletGates('HDK Tranche 2', 20, 'TDE', 13), ongletGates('THS', 20, 'THS', 11),
+                                   ongletGates('VIEUX', 10, 'VX', 17)], 'Suivi FWD lien');
+    classeur.getSheetByName('VIEUX').cachee = true;
+    const m = monde(classeur, {});
+    const servi = function (p) {
+      return m.executer(function (ctx) {
+        const x = /window\.SUIVI_FWD_DONNEES = (.*);\n/.exec(ctx.doGet({ parameter: p }).getContent());
+        return x ? JSON.parse(x[1]).contrat : null;
+      });
+    };
+    verifier('?contrat=THS : la page s’ouvre sur THS ; « ths », sans casse, aussi', servi({ contrat: 'THS' }) === 'THS' && servi({ contrat: 'ths' }) === 'THS');
+    verifier('?contrat=HDK&tranche=Tranche 2 : la tranche ; « Tranche 1 » ou sans tranche : le contrat lui-même ; l’onglet nommé tel quel aussi',
+      servi({ contrat: 'HDK', tranche: 'Tranche 2' }) === 'HDK Tranche 2' && servi({ contrat: 'HDK', tranche: 'Tranche 1' }) === 'HDK' &&
+      servi({ contrat: 'HDK' }) === 'HDK' && servi({ contrat: 'HDK Tranche 2' }) === 'HDK Tranche 2');
+    verifier('un contrat inconnu, ou retiré du tableau de bord (onglet masqué) : le premier, comme sans paramètre',
+      servi({ contrat: 'Nulle part' }) === 'HDK' && servi({ contrat: 'VIEUX' }) === 'HDK' && servi({}) === 'HDK');
+    const droits = m.executer(function (ctx) {
+      ctx.ScriptApp.getService = function () { return { getUrl: function () { return 'https://script.google.com/macros/s/ABC/exec'; } }; };
+      return ctx.mesDroits();
+    });
+    const sansService = m.executer(function (ctx) { return ctx.mesDroits(); });
+    verifier('mesDroits donne le lien …/exec de l’application web (et rien, sans service), pour « Copier le lien de cette vue »',
+      droits.adresse === 'https://script.google.com/macros/s/ABC/exec' && sansService.adresse === '', JSON.stringify([droits.adresse, sansService.adresse]));
+  }
+
+  // =================================================================
   section('Le mode d’emploi dit ce que fait l’ouverture rapide, sans promettre plus');
   {
     const doc = fs.readFileSync(path.join(racine, 'MODE-D-EMPLOI.md'), 'utf8').replace(/\s+/g, ' ');

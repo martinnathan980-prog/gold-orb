@@ -168,7 +168,9 @@ function lireEtat() {
     corps: h('corps-tableau'), tete: h('tete-tableau').replace(/ style="[^"]*"/g, ''), seconde: h('corps-seconde'),
     zoneJournal: h('zone-journal'), zoneCritique: h('zone-critique'), barre: h('barre'), etats: h('etats'),
     cellules: document.querySelectorAll('#corps-tableau td').length, see: document.querySelectorAll('#corps-seconde td').length,
-    pied: [...document.querySelectorAll('.pied > :not(#mesure-ouverture)')].map(e => e.hidden ? '' : e.textContent).join('|'),
+    /* Débrief 27, lot G : le pied a deux colonnes, les temps de l'ouverture
+       repliés dans « Infos techniques » : on compare ses morceaux nommés. */
+    pied: [...document.querySelectorAll('.pied [id]:not(#mesure-ouverture):not(#pied-technique)')].map(e => e.hidden ? '' : e.textContent).join('|'),
     sommaire: [...document.querySelectorAll('#sommaire-liste li')].map(li => li.hidden ? '-' : li.textContent.trim()).join('|')
   };
 }
@@ -357,8 +359,10 @@ function photoDeLaSynthese() {
   await attendre(pI);
   const vuI = await pI.evaluate(() => window.__impression);
   await fermer(pI);
-  verifier('avant l’impression, tout se dessine : tableau entier (première tranche), seconde base, journal, groupes, comparaison',
-    !!vuI && vuI.lignes === 60 && vuI.see > 0 && vuI.journal > 0 && vuI.critique > 0 && vuI.comparaison && !vuI.ouverture, JSON.stringify(vuI));
+  /* Débrief 27, lot G : la page imprimée porte le tableau entier — toutes
+     ses lignes, en vue essentielle —, plus seulement sa première tranche. */
+  verifier('avant l’impression, tout se dessine : tableau entier (toutes ses lignes), seconde base, journal, groupes, comparaison',
+    !!vuI && vuI.lignes === 640 && vuI.see > 0 && vuI.journal > 0 && vuI.critique > 0 && vuI.comparaison && !vuI.ouverture, JSON.stringify(vuI));
 
   // =================================================================
   section('La démonstration, en deux temps et d’un bloc');
@@ -476,7 +480,11 @@ function photoDeLaSynthese() {
 
   // =================================================================
   section('Le pied dit la durée de l’ouverture');
+  /* Débrief 27, lot G : les temps sont repliés dans « Infos techniques » —
+     on la déplie pour les lire comme on les lit à l'écran. */
   const lirePied = pg => pg.evaluate(() => {
+    const d = document.getElementById('pied-technique');
+    if (d) d.open = true;
     const z = document.getElementById('mesure-ouverture');
     return { cache: z.hidden, texte: z.innerText, luLe: document.getElementById('lu-le').textContent };
   });

@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'a52b439';
+  var EDITION = '258256b';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -6295,6 +6295,7 @@
     GRAPHE_MESURE = false;
     vue.dernieresCles = clesSelection();
     planifierSauvegarde();
+    apresRenduG();                     // débrief 27, lot G : annonce, adresse, évitements
   }
   function rendreEtat() {
     /* La largeur du graphique, lue avant toute écriture (l'ouverture l'a
@@ -6673,7 +6674,11 @@
     };
   }
   /* Le panneau courant : le dernier dont le haut est passé sous le sommaire.
-     Tout en bas de la page, le dernier panneau, même court. */
+     Tout en bas de la page, le dernier panneau, même court. Débrief 27,
+     lot G (P-F13) : « passé » se lit à 35 % de la hauteur de l'écran — le
+     panneau qui traverse cette ligne est celui qu'on lit ; le sommaire
+     restait d'un panneau en retard tant que la tête du suivant n'avait pas
+     atteint le haut. */
   var chapitreCourant = null;
   function majSommaire() {
     var boite = SOMMAIRE.getBoundingClientRect();
@@ -6685,7 +6690,7 @@
     if ($('sommaire-contrat').textContent !== contrat) $('sommaire-contrat').textContent = contrat;
     var courant = null, presents = LIENS_SOMMAIRE.filter(function (a) { return !a.parentNode.hidden; });
     presents.forEach(function (a) {
-      if (chapitreDe(a).getBoundingClientRect().top <= boite.bottom + 40) courant = a;
+      if (chapitreDe(a).getBoundingClientRect().top <= Math.max(boite.bottom + 40, window.innerHeight * 0.35)) courant = a;
     });
     var fond = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
     if (fond && presents.length && window.scrollY > 0) courant = presents[presents.length - 1];
@@ -6743,14 +6748,593 @@
   }
   majHautSommaire(); majChapitresPresents();
 
+  /* ============================================================
+     DÉBRIEF 27, LOT G — L'ACCESSIBILITÉ DE TOUTE LA PAGE, L'AIDE, LE
+     PARTAGE, L'IMPRESSION
+     Les liens d'évitement et les régions, le bouton « haut de page », la
+     fenêtre d'aide, Échap qui ferme le panneau du dessus, le lien de la vue
+     (adresse tenue à jour), les annonces des changements de la page, et la
+     page imprimée.
+     ============================================================ */
+
+  /* Le bouton « haut de page » (B15, M16). Dans la marge des panneaux
+     (1330 px et plus) ou au-dessus de leur bord intérieur (jusqu'à 721 px),
+     il ne couvre rien : il paraît dès qu'on est descendu d'un écran et
+     quart. Au téléphone, il couvrirait le bord du contenu : il ne paraît
+     qu'en remontant — on cherche le haut —, s'efface dès qu'on redescend, et
+     jamais pendant une saisie (il cachait le bout des champs). */
   var boutonHaut = $('haut-de-page');
-  window.addEventListener('scroll', function () {
-    var montrer = window.scrollY > window.innerHeight * 1.2;
+  var HAUT = { y: window.scrollY || 0, remonte: false };
+  var TELEPHONE_HAUT = window.matchMedia ? window.matchMedia('(max-width: 720px)') : null;
+  function champEnSaisie() {
+    var a = document.activeElement;
+    return !!a && (a.isContentEditable || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' ||
+      (a.tagName === 'INPUT' && !/^(button|checkbox|radio|range|submit|reset|color|file)$/i.test(a.type || '')));
+  }
+  function majBoutonHaut() {
+    var y = window.scrollY, loin = y > window.innerHeight * 1.2, montrer = loin;
+    if (TELEPHONE_HAUT && TELEPHONE_HAUT.matches) {
+      if (y < HAUT.y - 2) HAUT.remonte = true; else if (y > HAUT.y + 2) HAUT.remonte = false;
+      montrer = loin && HAUT.remonte && !champEnSaisie();
+    }
+    HAUT.y = y;
+    /* Celui qui l'a sous le clavier le garde. */
+    if (!montrer && document.activeElement === boutonHaut && loin) montrer = true;
     if (boutonHaut.hidden === montrer) boutonHaut.hidden = !montrer;
-  }, { passive: true });
+  }
+  window.addEventListener('scroll', majBoutonHaut, { passive: true });
+  document.addEventListener('focusin', majBoutonHaut);
+  document.addEventListener('focusout', function () { setTimeout(majBoutonHaut, 0); });
   boutonHaut.addEventListener('click', function () {
     window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    /* Le clavier remonte avec la page : sur le titre, pas sur un bouton qui
+       va s'effacer. */
+    var titre = $('titre-page');
+    if (titre) {
+      if (!titre.hasAttribute('tabindex')) titre.setAttribute('tabindex', '-1');
+      try { titre.focus({ preventScroll: true }); } catch (e) { titre.focus(); }
+    }
   });
+
+  /* Les régions (X-A10) : chaque section de <main> est nommée par son titre
+     (h2) — un lecteur d'écran les liste et y saute. La synthèse a déjà son
+     nom. */
+  function nommerSections() {
+    [].forEach.call(document.querySelectorAll('#contenu > section'), function (sec) {
+      if (sec.hasAttribute('aria-labelledby') || sec.hasAttribute('aria-label')) return;
+      var h = sec.querySelector('h2');
+      if (!h) return;
+      if (!h.id) h.id = 'titre-' + sec.id;
+      sec.setAttribute('aria-labelledby', h.id);
+    });
+  }
+  nommerSections();
+
+  /* Mener à une section — ou au contenu — comme le sommaire : son haut
+     juste sous le sommaire collé, en douceur si le système le permet, et
+     le focus clavier sur son titre. */
+  function mener(cible, titre) {
+    if (!cible) return;
+    var doux = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    var haut = cible.getBoundingClientRect().top + window.scrollY - SOMMAIRE.getBoundingClientRect().height -
+      (parseFloat(getComputedStyle(SOMMAIRE).top) || 0) - 14;
+    window.scrollTo({ top: Math.max(0, haut), behavior: doux ? 'smooth' : 'auto' });
+    var f = titre || cible;
+    if (!f.hasAttribute('tabindex') && !/^(A|BUTTON|INPUT|SELECT|TEXTAREA)$/.test(f.tagName)) {
+      f.setAttribute('tabindex', '-1');
+      /* <main> ne reste pas focalisable : un clic dans la page le prendrait
+         pour point de départ, et le Tab suivant remonterait à la synthèse. */
+      if (f.id === 'contenu') f.addEventListener('blur', function oter() { f.removeAttribute('tabindex'); f.removeEventListener('blur', oter); });
+    }
+    try { f.focus({ preventScroll: true }); } catch (e) { f.focus(); }
+  }
+  /* Les liens d'évitement : un lien vers une section absente (pas de
+     comparaison sans SEE, un classeur vide) s'efface. */
+  function majEvitements() {
+    [].forEach.call(document.querySelectorAll('.evitement[data-evitement]'), function (a) {
+      var id = a.getAttribute('data-evitement'), cible = $(id);
+      /* Sans mesure (après chaque rendu) : l'attribut hidden suffit. */
+      var absent = !cible || (id !== 'contenu' && (cible.hidden || document.body.dataset.vide === 'true'));
+      if (a.hidden !== absent) a.hidden = absent;
+    });
+  }
+  $('evitements').addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a.evitement');
+    if (!a) return;
+    e.preventDefault();
+    var id = a.getAttribute('data-evitement'), cible = $(id);
+    if (!cible) return;
+    if (id === 'contenu') { mener(cible, cible); return; }
+    finirRendu(true);                  // une ouverture en deux temps : la section est dessinée d'abord
+    mener(cible, cible.querySelector('h2') || cible.querySelector('.surtitre'));
+  });
+
+  /* ---------- L'aide, « Comment lire cette page » ---------- */
+  /* Les raccourcis d'une seule touche (« / ») se coupent (WCAG 2.1.4) : le
+     choix est gardé sur ce poste, et vaut aussi sans stockage pour la
+     visite. */
+  var CLE_RACCOURCIS = 'suivi-fwd:raccourcis';
+  var RACCOURCIS = true;
+  try { RACCOURCIS = localStorage.getItem(CLE_RACCOURCIS) !== 'non'; } catch (e) { RACCOURCIS = true; }
+  function raccourcisActifs() { return RACCOURCIS; }
+  var AIDE = { retour: null };
+  /* Ce qui change d'une ouverture à l'autre : l'heure des chiffres, le
+     responsable (connu par mesDroits), l'état des raccourcis. */
+  function majAide() {
+    var f = $('aide-fraicheur');
+    if (f) {
+      var morceaux = [];
+      if (!$('avertissement-demo').hidden) morceaux.push($('avertissement-demo').textContent);
+      if ($('import').textContent) morceaux.push($('import').textContent.replace(/\.?$/, '.'));
+      if (!$('lu-le').hidden && $('lu-le').textContent) morceaux.push($('lu-le').textContent);
+      f.textContent = morceaux.join(' ');
+      f.hidden = !morceaux.length;
+    }
+    var r = $('aide-responsable'), qui = DROITS && DROITS.responsable ? String(DROITS.responsable) : '';
+    if (r) {
+      r.innerHTML = qui && /^[^\s@\x3C>"]+@[^\s@\x3C>"]+$/.test(qui)
+        ? 'Le responsable du tableau de bord : \x3Ca href="mailto:' + ech(qui) + '">' + ech(qui) + '\x3C/a>.'
+        : 'Le responsable du tableau de bord, propriétaire du classeur du suivi, peut répondre.';
+    }
+    var c = $('raccourcis-clavier');
+    if (c) c.checked = RACCOURCIS;
+  }
+  function ouvrirAide(depuis) {
+    var d = $('aide');
+    if (!d) return;
+    majAide();
+    AIDE.retour = depuis && depuis.focus ? depuis : document.activeElement;
+    if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
+    $('aide-corps').scrollTop = 0;
+    /* Le titre d'abord, pas la croix : le lecteur d'écran lit la fenêtre
+       depuis son début, et un Entrée de trop ne la referme pas. */
+    var t = $('aide-titre');
+    t.setAttribute('tabindex', '-1');
+    try { t.focus({ preventScroll: true }); } catch (e) { t.focus(); }
+  }
+  function fermerAide() {
+    var d = $('aide');
+    if (d && d.open) { if (typeof d.close === 'function') d.close(); else { d.removeAttribute('open'); rendreFocusAide(); } }
+  }
+  function rendreFocusAide() {
+    var b = AIDE.retour;
+    AIDE.retour = null;
+    if (b && document.contains(b) && focusVisible(b)) { try { b.focus({ preventScroll: true }); } catch (e) { b.focus(); } }
+  }
+  /* « Aide » dans le bandeau (#ouvrir-aide, posé par l'en-tête) ou dans le
+     pied : une délégation, qui vaut pour un bouton redessiné. */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('#ouvrir-aide, [data-ouvrir-aide]');
+    if (!b) return;
+    e.preventDefault();
+    ouvrirAide(b);
+  });
+  $('aide-fermer').addEventListener('click', fermerAide);
+  $('aide').addEventListener('close', rendreFocusAide);
+  /* Un clic sur le voile, autour de la fenêtre, la ferme aussi. */
+  $('aide').addEventListener('click', function (e) { if (e.target === $('aide')) fermerAide(); });
+  $('raccourcis-clavier').addEventListener('change', function () {
+    RACCOURCIS = !!this.checked;
+    try { localStorage.setItem(CLE_RACCOURCIS, RACCOURCIS ? 'oui' : 'non'); } catch (e) { /* gardé pour la visite seulement */ }
+    annoncer(RACCOURCIS ? 'Raccourci « / » activé' : 'Raccourci « / » coupé');
+  });
+
+  /* ---------- Échap ferme le panneau du dessus ----------
+     Chaque panneau garde sa propre façon de se fermer : on clique sa croix
+     (ou on cache la bulle, comme le fait la page). Ce n'est qu'un filet :
+     si un autre écouteur a déjà fermé quelque chose (la fiche d'échéance a
+     le sien), ou vidé un champ, on ne ferme rien de plus. Le panneau du
+     dessus : la bulle, puis celui qui a le focus, puis le dernier ouvert.
+     Le focus revient au bouton qui l'avait ouvert. Une fenêtre (aide,
+     administration) se ferme d'elle-même. */
+  var PANNEAUX_ECHAP = [
+    { nom: 'bulle', zone: function () { var b = $('bulle'); return b && b.dataset.visible === 'true' ? b : null; },
+      fermer: function () { $('bulle').dataset.visible = 'false'; } },
+    { nom: 'echeance', zone: function () { return $('fiche-echeance'); }, croix: '[data-fermer-echeance]' },
+    { nom: 'aide-fin', zone: function () { return $('panneau-fin'); }, croix: 'button[data-aide][aria-expanded="true"]' },
+    { nom: 'plan', zone: function () { var f = $('fiche-plan'); return f && !f.hidden && f.querySelector('[data-fermer-plan]') ? f : null; }, croix: '[data-fermer-plan]' },
+    { nom: 'ensemble', zone: function () { var z = $('ensemble'); return z && !z.hidden && z.tagName !== 'DIALOG' ? z : null; }, croix: '[data-fermer-ensemble]' }
+  ];
+  var ECHAP = { ordre: [], ouvreurs: {}, geste: null, avant: null, champ: false };
+  /* Sans mesure : relu à chaque clic et à chaque frappe, il ne doit jamais
+     forcer la mise en page (un tableau de 87 000 cases). */
+  function panneauxOuverts() { return PANNEAUX_ECHAP.filter(function (p) { var z = p.zone(); return !!z && !z.hidden && !z.closest('[hidden]'); }); }
+  /* Qui s'est ouvert depuis la dernière fois, et par quel geste : l'ordre
+     d'ouverture et le bouton où rendre le focus. */
+  function releverPanneaux() {
+    var ouverts = panneauxOuverts().map(function (p) { return p.nom; });
+    ECHAP.ordre = ECHAP.ordre.filter(function (n) { return ouverts.indexOf(n) !== -1; });
+    ouverts.forEach(function (n) {
+      if (ECHAP.ordre.indexOf(n) !== -1) return;
+      ECHAP.ordre.push(n);
+      var g = ECHAP.geste && document.contains(ECHAP.geste) ? ECHAP.geste : document.activeElement;
+      ECHAP.ouvreurs[n] = g && g !== document.body ? (g.closest('button, a, [tabindex], input, select') || g) : null;
+    });
+  }
+  ['pointerdown', 'keydown'].forEach(function (type) {
+    document.addEventListener(type, function (e) { ECHAP.geste = e.target && e.target.nodeType === 1 ? e.target : null; }, true);
+  });
+  ['click', 'keyup', 'input'].forEach(function (type) {
+    document.addEventListener(type, function () { setTimeout(releverPanneaux, 0); }, true);
+  });
+  window.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' && e.key !== 'Esc') return;
+    releverPanneaux();
+    ECHAP.avant = panneauxOuverts().map(function (p) { return p.nom; });
+    var t = e.target;
+    ECHAP.champ = !!(t && t.tagName && (t.tagName === 'SELECT' || ((t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') && t.value)));
+  }, true);
+  window.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' && e.key !== 'Esc') return;
+    var avant = ECHAP.avant;
+    ECHAP.avant = null;
+    if (!avant || !avant.length || e.defaultPrevented || ECHAP.champ) return;
+    if (document.querySelector('dialog[open]')) return;
+    var ouverts = panneauxOuverts();
+    /* Un autre écouteur a déjà fermé un panneau : ce coup d'Échap est pris. */
+    if (avant.some(function (n) { return !ouverts.some(function (p) { return p.nom === n; }); })) return;
+    if (!ouverts.length) return;
+    var actif = document.activeElement;
+    var cible = ouverts.filter(function (p) { return p.nom === 'bulle'; })[0] ||
+      ouverts.filter(function (p) { var z = p.zone(); return actif && actif !== document.body && z.contains(actif); })[0] ||
+      ouverts.filter(function (p) { return p.nom === ECHAP.ordre[ECHAP.ordre.length - 1]; })[0] ||
+      ouverts[ouverts.length - 1];
+    e.preventDefault();
+    fermerPanneau(cible);
+  });
+  function fermerPanneau(p) {
+    var zone = p.zone(), actif = document.activeElement;
+    var dedans = !!zone && !!actif && zone.contains(actif);
+    var retour = ECHAP.ouvreurs[p.nom];
+    if (p.fermer) p.fermer();
+    else {
+      var croix = (zone && zone.querySelector(p.croix)) || document.querySelector(p.croix);
+      if (croix) croix.click();
+    }
+    releverPanneaux();
+    var maintenant = document.activeElement;
+    if (dedans || !maintenant || maintenant === document.body || !document.contains(maintenant)) {
+      if (retour && document.contains(retour) && focusVisible(retour)) { try { retour.focus({ preventScroll: true }); } catch (e) { retour.focus(); } }
+    }
+  }
+
+  /* ---------- Le lien de cette vue (P-F8) ----------
+     L'adresse dit ce qu'on regarde : le contrat, la tranche, l'avancement,
+     le périmètre, la recherche du tableau et la section lue. Lue à
+     l'ouverture — dans le classeur, par google.script.url (le serveur a
+     déjà servi le bon contrat, doGet) ; seule, dans le # de l'adresse —,
+     puis tenue à jour (google.script.history.replace, ou le #). « Copier le
+     lien de cette vue » la copie, sur le lien …/exec que donne le serveur. */
+  var CLES_ADRESSE = ['contrat', 'tranche', 'avancement', 'perimetre', 'recherche', 'section'];
+  var SECTIONS_ADRESSE = { synthese: 'section-synthese', tendance: 'section-tendance', changements: 'section-journal',
+                           repartition: 'section-repartition', plans: 'section-plans', comparaison: 'rapprochement' };
+  var ADRESSE = { lue: false, voulu: null, autres: {}, appliquee: false, contratDemande: false, enRetard: false,
+                  section: null, derniere: null, minuteur: 0 };
+  function dansAppsScript() { return !!(window.google && google.script && google.script.url && google.script.url.getLocation); }
+  function lireAdresse(p) {
+    var v = {}, n = 0;
+    CLES_ADRESSE.forEach(function (k) {
+      var x = p[k];
+      if (Array.isArray(x)) x = x[0];
+      if (x !== undefined && x !== null && String(x).trim()) { v[k] = String(x).trim().slice(0, 200); n++; }
+    });
+    /* Les autres paramètres (mesure=1…) restent dans l'adresse ; frais=1
+       ne vaut que pour une ouverture. */
+    Object.keys(p).forEach(function (k) {
+      if (CLES_ADRESSE.indexOf(k) === -1 && k !== 'frais') ADRESSE.autres[k] = String(Array.isArray(p[k]) ? p[k][0] : p[k]);
+    });
+    ADRESSE.voulu = n ? v : null;
+    ADRESSE.lue = true;
+  }
+  function parametresDuDiese() {
+    var h = String(location.hash || '').replace(/^#/, ''), p = {};
+    if (h.indexOf('=') === -1) return p;           // « #section-plans » : une ancre, pas une vue
+    h.split('&').forEach(function (x) {
+      var i = x.indexOf('=');
+      if (i <= 0) return;
+      try { p[decodeURIComponent(x.slice(0, i))] = decodeURIComponent(x.slice(i + 1).replace(/\+/g, ' ')); } catch (e) { /* morceau illisible : ignoré */ }
+    });
+    return p;
+  }
+  function chaineAdresse(p) {
+    return Object.keys(p).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(p[k]); }).join('&');
+  }
+  try {
+    if (dansAppsScript()) {
+      google.script.url.getLocation(function (lieu) {
+        lireAdresse((lieu && lieu.parameter) || {});
+        /* L'ouverture est déjà passée : la vue se pose maintenant. */
+        if (ADRESSE.enRetard) appliquerVoulu(false);
+      });
+    } else {
+      lireAdresse(parametresDuDiese());
+    }
+  } catch (e) { lireAdresse({}); }
+  /* Le contrat demandé : son nom et sa tranche (« HDK », « Tranche 2 »),
+     ou l'identifiant de son onglet. */
+  function idContratVoulu(v) {
+    if (!v || !v.contrat || !CONTRATS) return null;
+    var cle = norm(v.contrat);
+    var fam = famillesDeContrats().filter(function (f) { return f.cle === cle; })[0];
+    if (fam) {
+      var t = v.tranche ? norm(v.tranche) : '';
+      var m = t ? fam.membres.filter(function (x) { return norm(x.libelle) === t || norm(x.tranche) === t; })[0] : null;
+      return (m || fam.membres.filter(function (x) { return !x.tranche; })[0] || fam.membres[0]).id;
+    }
+    var direct = CONTRATS.filter(function (c) { return norm(c.id) === cle || norm(c.nom) === cle; })[0];
+    return direct ? direct.id : null;
+  }
+  /* L'avancement demandé, posé avant que la source ne soit lue (lancerPhase1). */
+  function indicateurVoulu(actuel) {
+    var v = ADRESSE.voulu;
+    if (!v || !v.avancement) return actuel;
+    return /concept/i.test(v.avancement) ? 'concept' : /^(def|definition|fwd)/i.test(norm(v.avancement)) ? 'def' : actuel;
+  }
+  /* La vue demandée par l'adresse, une fois : avant le premier rendu si le
+     contrat est déjà le bon (rien ne saute), sinon après l'arrivée du bon
+     contrat. Une valeur inconnue (un périmètre qui n'existe plus) est
+     ignorée sans bruit. */
+  function appliquerVoulu(avantRendu) {
+    var v = ADRESSE.voulu;
+    if (ADRESSE.appliquee) return;
+    if (!ADRESSE.lue) { ADRESSE.enRetard = true; return; }
+    if (!v || !SRC || !vue) { ADRESSE.appliquee = !!SRC; return; }
+    var id = idContratVoulu(v);
+    if (id && id !== CONTRAT) {
+      if (avantRendu || ADRESSE.contratDemande) return;
+      ADRESSE.contratDemande = true;
+      changerContrat(id);
+      return;
+    }
+    ADRESSE.appliquee = true;
+    var change = false;
+    var ind = indicateurVoulu(INDICATEUR);
+    if (ind !== INDICATEUR && !avantRendu) { changerIndicateur(ind); }
+    if (v.perimetre && CLE_DOMAINE) {
+      var cle = norm(v.perimetre), trouve = null;
+      for (var i = 0; i < PLANS.length && !trouve; i++) if (norm(domaineDe(PLANS[i])) === cle) trouve = domaineDe(PLANS[i]);
+      if (trouve && trouve !== vue.perimetre) { vue.perimetre = trouve; change = true; }
+    }
+    if (v.recherche && v.recherche !== vue.recherche) { vue.recherche = v.recherche; $('recherche').value = v.recherche; change = true; }
+    if (v.section && SECTIONS_ADRESSE[norm(v.section)]) ADRESSE.section = SECTIONS_ADRESSE[norm(v.section)];
+    if (!avantRendu && change) rendre();
+  }
+  /* La section demandée, quand la page est entière — pas pour une page
+     rouverte, que le navigateur remet là où on l'avait laissée. */
+  function allerSectionVoulue() {
+    var id = ADRESSE.section;
+    if (!id || !DEMARRAGE_FINI) return;
+    ADRESSE.section = null;
+    if (window.scrollY > 0 || defilementRestaure()) return;
+    var sec = $(id);
+    if (!chapitreVisible(sec)) return;
+    finirRendu(true);
+    var haut = sec.getBoundingClientRect().top + window.scrollY - SOMMAIRE.getBoundingClientRect().height - 14;
+    window.scrollTo(0, Math.max(0, haut));
+  }
+  function sectionLue() {
+    var a = chapitreCourant, id = a ? a.getAttribute('data-chapitre') : '';
+    for (var k in SECTIONS_ADRESSE) if (SECTIONS_ADRESSE[k] === id) return k;
+    return '';
+  }
+  function parametresDeLaVue() {
+    var p = {};
+    if (!SRC || !vue) return p;
+    var f = familleCourante(), m = f ? f.membres.filter(function (x) { return x.id === CONTRAT; })[0] : null;
+    if (f && m) {
+      p.contrat = f.nom;
+      if (f.membres.length > 1 || m.tranche) p.tranche = m.libelle;
+    } else if (CONTRAT) p.contrat = String(CONTRAT);
+    if (INDICATEUR === 'concept') p.avancement = 'concept';
+    if (vue.perimetre) p.perimetre = vue.perimetre;
+    if (vue.recherche) p.recherche = vue.recherche;
+    var s = sectionLue();
+    if (s && s !== 'synthese') p.section = s;
+    return p;
+  }
+  /* L'adresse suit la vue, un instant après le dernier geste — jamais
+     avant que la vue demandée par l'adresse ne soit posée. */
+  function synchroniserAdresse() {
+    clearTimeout(ADRESSE.minuteur);
+    ADRESSE.minuteur = setTimeout(function () {
+      if (!ADRESSE.lue || !ADRESSE.appliquee || !SRC || !vue) return;
+      var p = parametresDeLaVue(), cle = chaineAdresse(p);
+      if (cle === ADRESSE.derniere) return;
+      ADRESSE.derniere = cle;
+      try {
+        if (dansAppsScript()) {
+          if (google.script.history && google.script.history.replace) {
+            var tout = {};
+            Object.keys(ADRESSE.autres).forEach(function (k) { tout[k] = ADRESSE.autres[k]; });
+            Object.keys(p).forEach(function (k) { tout[k] = p[k]; });
+            google.script.history.replace(null, tout, '');
+          }
+        } else if (window.history && history.replaceState) {
+          history.replaceState(history.state, '', String(location.href).replace(/#.*$/, '') + (cle ? '#' + cle : ''));
+        }
+      } catch (e) { /* adresse figée (cadre, fichier) : sans conséquence */ }
+    }, 400);
+  }
+  function lienDeLaVue() {
+    var q = chaineAdresse(parametresDeLaVue());
+    var exec = DROITS && DROITS.adresse ? String(DROITS.adresse) : '';
+    if (exec) return exec + (q ? (exec.indexOf('?') === -1 ? '?' : '&') + q : '');
+    /* Servie par le classeur sans lien …/exec (la fenêtre du menu, une
+       application web pas encore déployée), l'adresse de ce cadre ne mène
+       nulle part : rien à copier. */
+    if (SERVEUR || dansAppsScript()) return '';
+    return String(location.href).replace(/#.*$/, '') + (q ? '#' + q : '');
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-copier-lien]');
+    if (!b) return;
+    var lien = lienDeLaVue(), parent = b.parentNode;
+    [].forEach.call(parent.querySelectorAll('.lien-a-copier, .lien-etat'), function (x) { x.parentNode.removeChild(x); });
+    if (!lien) {
+      var mot = document.createElement('span');
+      mot.className = 'lien-etat';
+      mot.textContent = 'Pas de lien à copier ici : ouvrir le tableau de bord par son lien …/exec.';
+      parent.appendChild(mot);
+      annoncer(mot.textContent);
+      setTimeout(function () { if (mot.parentNode) mot.parentNode.removeChild(mot); }, 6000);
+      return;
+    }
+    copierTexte(lien, function (ok) {
+      if (ok) {
+        if (!b.__mot) b.__mot = b.textContent;
+        b.style.minWidth = b.getBoundingClientRect().width + 'px';
+        b.textContent = 'Lien copié';
+        b.setAttribute('data-copie', 'ok');
+        clearTimeout(b.__minuteur);
+        b.__minuteur = setTimeout(function () { b.textContent = b.__mot; b.removeAttribute('data-copie'); b.style.minWidth = ''; }, 2500);
+        annoncer('Lien de cette vue copié');
+      } else {
+        /* Le navigateur refuse : le lien s'affiche, prêt à copier. */
+        var z = document.createElement('input');
+        z.type = 'text'; z.readOnly = true; z.className = 'lien-a-copier'; z.value = lien;
+        z.setAttribute('aria-label', 'Lien de cette vue, à copier (Ctrl+C)');
+        parent.appendChild(z);
+        z.focus(); z.select();
+        annoncer('Copie refusée par le navigateur : le lien est sélectionné, Ctrl+C pour le copier');
+      }
+    });
+  });
+
+  /* ---------- Les annonces des changements de la page (X-A5) ----------
+     Après chaque rendu complet : ce qui a changé pour toute la page — le
+     contrat, l'avancement, le périmètre, un filtre posé ou retiré —, dit en
+     une phrase avec son résultat, dans la zone d'annonce commune. Rien à
+     l'ouverture. Les sections annoncent elles-mêmes leurs propres gestes
+     (tri, semaine dépliée…). */
+  var VUE_ANNONCEE = null;
+  function texteDe(el) { return el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : ''; }
+  function etatAnnonce() {
+    var poses = filtresPoses().filter(function (f) { return f.cle !== 'perimetre'; });
+    return { contrat: CONTRAT, ind: INDICATEUR, per: vue.perimetre, poses: poses,
+             cles: poses.map(function (f) { return f.cle + '=' + f.valeur; }) };
+  }
+  function annoncerVue() {
+    if (!vue || !SRC) return;
+    var e = etatAnnonce(), a = VUE_ANNONCEE;
+    VUE_ANNONCEE = e;
+    if (!a) return;
+    var phrase = texteDe($('phrase'));
+    if (e.contrat !== a.contrat) {
+      var c = (CONTRATS || []).filter(function (x) { return x.id === CONTRAT; })[0];
+      annoncer((c ? c.nom : String(CONTRAT)) + ' affiché : ' + phrase + '.');
+      return;
+    }
+    if (e.ind !== a.ind) { annoncer((e.ind === 'concept' ? 'Concept harnais' : 'Définition électrique') + ' : ' + phrase + '.'); return; }
+    var memesFiltres = e.cles.join('|') === a.cles.join('|');
+    /* Le périmètre seul : la phrase de tête, sans redire le périmètre. */
+    if (e.per !== a.per && memesFiltres) {
+      annoncer((e.per ? 'Périmètre ' + e.per : 'Tous les plans') + ' : ' + phrase.replace(/ dans le périmètre .*$/, '') + '.');
+      return;
+    }
+    if (memesFiltres) return;
+    var n = selection().length, base = population().length;
+    var compte = n ? nb(n) + (n > 1 ? ' plans' : ' plan') + (n !== base ? ' sur ' + nb(base) : '') : 'aucun plan';
+    var ajout = e.poses.filter(function (f) { return a.cles.indexOf(f.cle + '=' + f.valeur) === -1; })[0];
+    if (ajout) annoncer((ajout.mot ? ajout.mot + ' ' : '') + ajout.valeur + ' : ' + compte + '.');
+    else annoncer((!e.poses.length && !e.per && (a.poses.length + (a.per ? 1 : 0)) > 1 ? 'Filtres retirés : ' : 'Filtre retiré : ') + compte + '.');
+  }
+
+  /* ---------- La page imprimée (P-F9) ---------- */
+  function deuxChiffres(n) { return (n < 10 ? '0' : '') + n; }
+  function poserEnteteImpression() {
+    var z = $('entete-impression');
+    if (!z || !SRC || !vue) return;
+    var f = familleCourante(), m = f ? f.membres.filter(function (x) { return x.id === CONTRAT; })[0] : null;
+    var morceaux = [f && m ? f.nom + (f.membres.length > 1 || m.tranche ? ' · ' + m.libelle : '') : String(CONTRAT || '')];
+    morceaux.push(INDICATEUR === 'concept' ? 'Concept harnais' : 'Définition électrique');
+    var filtres = filtresPoses().map(function (x) { return (x.mot ? x.mot + ' ' : '') + x.valeur; });
+    morceaux.push(filtres.length ? 'filtres : ' + filtres.join(', ') : 'sans filtre');
+    var lu = SERVEUR && SRC.genereLe ? new Date(SRC.genereLe) : null;
+    if (lu && !isNaN(lu.getTime())) {
+      morceaux.push('chiffres du ' + deuxChiffres(lu.getDate()) + '/' + deuxChiffres(lu.getMonth() + 1) + ' ' +
+        deuxChiffres(lu.getHours()) + ':' + deuxChiffres(lu.getMinutes()));
+    } else if (!SERVEUR) morceaux.push('démonstration, chiffres fictifs');
+    z.innerHTML = '\x3Cb>' + ech(texteDe($('titre-page')) || 'Suivi FWD') + '\x3C/b> — ' + ech(morceaux.filter(Boolean).join(' · '));
+  }
+  /* Toutes les lignes d'un tableau dessiné par tranches. */
+  function toutesLesLignes(idCorps) {
+    var t = TRANCHES[idCorps], garde = 0;
+    while (t && TRANCHES[idCorps] === t && t.montrees < t.total && garde++ < 500) trancheSuivante(idCorps);
+  }
+  /* Le tableau s'imprime en vue essentielle (une poignée de colonnes tient
+     sur la page), toutes ses lignes ; il revient ensuite tel qu'il était. */
+  var IMPRESSION = null;
+  window.addEventListener('beforeprint', function () {
+    if (!SRC || !vue) return;
+    poserEnteteImpression();
+    if (!IMPRESSION) IMPRESSION = { vueTable: vue.vueTable, ordre: vue.ordre.slice(), cachees: JSON.parse(JSON.stringify(vue.cachees)) };
+    if (vue.vueTable !== 'essentielle' && CLES_ESSENTIELLES.length) {
+      vue.vueTable = 'essentielle';
+      appliquerVueTable();
+      rendreEntetes(); rendreCorps(selection());
+    }
+    toutesLesLignes('corps-tableau');
+    toutesLesLignes('corps-seconde');
+    [].forEach.call(document.querySelectorAll('table.plans thead th'), function (th) {
+      var b = th.querySelector('button');
+      if (b) th.setAttribute('data-imprime', texteDe(b));
+    });
+  });
+  window.addEventListener('afterprint', function () {
+    var i = IMPRESSION;
+    IMPRESSION = null;
+    if (!i || !vue || vue.vueTable === i.vueTable) return;
+    vue.vueTable = i.vueTable; vue.ordre = i.ordre; vue.cachees = i.cachees;
+    rendreEntetes(); rendreCorps(selection());
+  });
+
+  /* ---------- Une rangée qui défile de côté : l'élément atteint au clavier
+     sort du fondu (X-A3, M13) ---------- */
+  document.addEventListener('focusin', function (e) {
+    var el = e.target;
+    if (!el || !el.closest) return;
+    var rangee = el.closest('.filtre-journal, .rangee-valeurs, .sommaire-liste');
+    if (!rangee || rangee.scrollWidth <= rangee.clientWidth + 1) return;
+    var r = el.getBoundingClientRect(), b = rangee.getBoundingClientRect(), marge = 40;
+    if (r.right > b.right - marge) rangee.scrollLeft += r.right - (b.right - marge);
+    else if (r.left < b.left + marge && rangee.scrollLeft > 0) rangee.scrollLeft -= (b.left + marge) - r.left;
+  });
+
+  /* Après chaque rendu complet (rendreFin) : les liens d'évitement, la vue
+     demandée par l'adresse, l'adresse elle-même, l'annonce, l'en-tête
+     imprimé, les panneaux ouverts. Un instant après : le rendu a fini. */
+  var minuteurApresRendu = 0;
+  function apresRenduG() {
+    clearTimeout(minuteurApresRendu);
+    minuteurApresRendu = setTimeout(function () {
+      if (!vue || !SRC) return;
+      majEvitements();
+      if (!ADRESSE.appliquee && DEMARRAGE_FINI) appliquerVoulu(false);
+      allerSectionVoulue();
+      annoncerVue();
+      synchroniserAdresse();
+      poserEnteteImpression();
+      releverPanneaux();
+      poserSigles();
+    }, 0);
+  }
+  /* Les sigles expliqués là où on les rencontre d'abord (X-A20) : « FWD »
+     dans le titre, la semaine « S43 » au pied — le texte ne change pas,
+     le sigle porte son mot (abbr title) ; l'aide les explique tous. */
+  function poserSigles() {
+    var t = $('titre-page');
+    if (t && !t.querySelector('abbr') && texteDe(t) === 'Suivi FWD') t.innerHTML = 'Suivi \x3Cabbr title="définition électrique">FWD\x3C/abbr>';
+    var i = $('import');
+    if (i && !i.querySelector('abbr') && /\bS\d{1,2}\b/.test(i.textContent)) {
+      i.innerHTML = ech(i.textContent).replace(/\bS(\d{1,2})\b/g, '\x3Cabbr title="semaine $1">S$1\x3C/abbr>');
+    }
+  }
+  /* La section lue change : l'adresse suit (la section en fait partie). */
+  window.addEventListener('scroll', function () { if (ADRESSE.appliquee) synchroniserAdresse(); }, { passive: true });
+
+  /* Pour la batterie de tests. */
+  window.__lienDeLaVue = lienDeLaVue;
+  window.__parametresDeLaVue = parametresDeLaVue;
 
   ['mouseover', 'focusin'].forEach(function (ev) {
     $('legende-jalons').addEventListener(ev, function (e) {
@@ -7178,6 +7762,9 @@
        lieu d'emmener la frappe dans la recherche du tableau. */
     var actif = document.activeElement;
     if (actif && (actif.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(actif.tagName))) return;
+    /* Débrief 27, lot G (WCAG 2.1.4) : un raccourci d'une seule touche se
+       coupe, dans l'aide (« Raccourcis d'une seule touche »). */
+    if (!raccourcisActifs() || e.ctrlKey || e.metaKey || e.altKey || document.querySelector('dialog[open]')) return;
     e.preventDefault(); champ.focus(); champ.select();
   });
   var minuteurTaille = null;
@@ -7560,8 +8147,13 @@
     /* La largeur du graphique, lue sur la page qu'on vient de peindre,
        avant d'y écrire quoi que ce soit. */
     if (DIFFERER) { mesurerGraphique(); GRAPHE_MESURE = true; }
+    /* Débrief 27, lot G : l'avancement, le périmètre et la recherche
+       demandés par l'adresse (un lien partagé) se posent avant le premier
+       rendu : rien ne saute. */
+    INDICATEUR = indicateurVoulu(INDICATEUR);
     chargerSource(fabriquer());
     chargerPrefs();
+    appliquerVoulu(true);
     remplirDims();
     if (!DIFFERER) { rendre(); return; }      // d'un bloc, comme avant
     o.gen = ++GENERATION;
@@ -8850,5 +9442,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = 'a52b439';
+window.SUIVI_FWD_FIN = '258256b';
 </script>
