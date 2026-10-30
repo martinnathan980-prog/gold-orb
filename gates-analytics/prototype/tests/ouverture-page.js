@@ -583,15 +583,22 @@ function photoDeLaSynthese() {
   await pC.selectOption('#select-contrat', 'THS');
   await pC.waitForTimeout(250);
   const pendant = await pC.evaluate(() => ({ attente: document.body.getAttribute('data-attente'), etat: document.getElementById('etat-contrat').textContent,
-    opacite: getComputedStyle(document.getElementById('section-synthese')).opacity, grise: document.getElementById('select-contrat').disabled }));
+    opacite: getComputedStyle(document.getElementById('section-synthese')).opacity, grise: document.getElementById('select-contrat').disabled,
+    valeur: document.getElementById('select-contrat').value, barre: !document.getElementById('barre-chargement').hidden,
+    masque: document.getElementById('etat-contrat').getBoundingClientRect().width <= 1 }));
   await pC.waitForFunction(() => document.getElementById('select-contrat').value === 'THS' && !document.body.hasAttribute('data-attente') &&
     /sur 30 plans/.test(document.getElementById('phrase').textContent), null, { timeout: 10000 }).catch(() => {});
   const apresC = await pC.evaluate(() => ({ appels: window.__appels.slice(), phrase: document.getElementById('phrase').textContent, attente: document.body.getAttribute('data-attente'),
     etat: document.getElementById('etat-contrat').textContent, valeur: document.getElementById('select-contrat').value }));
   verifier('à l’ouverture, rien n’est demandé au classeur', appels0.length === 0, JSON.stringify(appels0));
   verifier('le sélecteur ouvert (mousedown) : le paquet de THS est demandé tout de suite, avant le choix', appels1.join() === 'THS', JSON.stringify(appels1));
-  verifier('pendant l’attente : « Chargement… », le sélecteur grisé, la page d’avant estompée (jamais blanche)',
-    pendant.attente === 'contrat' && pendant.etat === 'Chargement…' && pendant.grise && Number(pendant.opacite) < 1, JSON.stringify(pendant));
+  /* Débrief 27 (lot H, A-F4, X-A4) : le menu n'est plus grisé pendant
+     l'attente — il garde le contrat demandé et le focus clavier ; l'attente
+     se voit au trait du haut de l'écran (et « Chargement… » reste dit aux
+     lecteurs d'écran, sans s'écrire à côté du menu). */
+  verifier('pendant l’attente : « Chargement… » (pour les lecteurs d’écran), le sélecteur à portée sur THS, le trait d’attente, la page d’avant estompée (jamais blanche)',
+    pendant.attente === 'contrat' && pendant.etat === 'Chargement…' && !pendant.grise && pendant.valeur === 'THS' && pendant.barre && pendant.masque &&
+    Number(pendant.opacite) < 1, JSON.stringify(pendant));
   verifier('THS choisi : la réponse déjà demandée sert (une seule demande), décodée, la page passe sur THS et retrouve sa clarté',
     apresC.appels.join() === 'THS' && /sur 30 plans/.test(apresC.phrase) && apresC.attente === null && apresC.etat === '' && apresC.valeur === 'THS', JSON.stringify(apresC));
   /* Une demande d'avance trop ancienne ne sert pas : la page redemande. */

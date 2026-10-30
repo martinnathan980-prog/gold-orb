@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "258256b";
+  --suivi-fwd-edition: "c5df943";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -306,9 +306,11 @@ body {
    11/500, capitales, .08em, --encre-3) et l'en-tête de tableau (Sans
    12/500, en minuscules, --encre-2, filet --filet-fort dessous). */
 .num { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
-/* L'étiquette dans une carte (D4) : « PÉRIMÈTRE », « JALONS », « HISTORIQUE
-   DU PLAN »… Les sélecteurs qui la reprennent sont groupés ici. */
-.etiquette-carte, .perimetre .mot-perimetre, .legende-jalons-mot, .groupe-refs .sous-titre, .groupe-refs .titre-arret,
+/* L'étiquette dans une carte (D4) : « JALONS », « HISTORIQUE DU PLAN »…
+   Les sélecteurs qui la reprennent sont groupés ici. (Débrief 27, lot H :
+   « Périmètre » est monté dans la barre des réglages, où il parle comme
+   « Contrat » et « Avancement ».) */
+.etiquette-carte, .legende-jalons-mot, .groupe-refs .sous-titre, .groupe-refs .titre-arret,
 .fiche-plan-tete .mot, .admin-corps h3, .aide-panneau .exemple, .filtres-actifs .mot {
   font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 11px; font-weight: 500; line-height: 1.4;
   letter-spacing: .08em; text-transform: uppercase; color: var(--encre-3);
@@ -336,8 +338,28 @@ body {
    aplat (débrief 22 : la bande d'encre du débrief 21 faisait « un bloc à
    part » — retour au titre du débrief 20). Le contrat n'y est pas répété
    (débrief 3) : il est choisi juste au-dessus. */
-.masthead { text-align: center; padding-block: 40px 30px; }
-@media (max-width: 720px) { .masthead { padding-block: 26px 20px; } }
+.masthead { text-align: center; padding-block: 32px 26px; }
+@media (max-width: 720px) { .masthead { padding-block: 22px 18px; } }
+/* Débrief 27 (lot H, B1, P-F11) : au-dessus du titre, ce qu'il regarde —
+   « HDK · TRANCHE 1 · DÉFINITION ÉLECTRIQUE » —, dans la voix des surtitres :
+   une capture ou une impression dit d'elle-même quel contrat elle montre.
+   Sa ligne est gardée vide dès la première image. */
+.contexte-page {
+  margin: 0 0 14px; min-height: 15px;
+  font: 500 11px/1.4 "IBM Plex Mono", monospace; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--encre-3); overflow-wrap: anywhere;
+}
+@media (max-width: 720px) { .contexte-page { margin-bottom: 10px; } }
+/* Débrief 27 (lot H, P-F10, A-F13) : sous la semaine, l'âge des chiffres —
+   quand le classeur a été lu, et le dernier relevé archivé ; en ambre quand
+   ce relevé a plus de huit jours. */
+.fraicheur {
+  margin: 8px auto 0; min-height: 18px; max-width: 100%;
+  font-size: 13px; line-height: 18px; color: var(--encre-3); font-variant-numeric: tabular-nums;
+}
+.fraicheur .morceau { white-space: nowrap; }
+@media (max-width: 420px) { .fraicheur .morceau { white-space: normal; } }
+.fraicheur .vieux { color: var(--cours); }
 .masthead h1 {
   font-family: Newsreader, Georgia, serif;
   font-weight: 300; font-size: clamp(34px, 6vw, 48px);
@@ -569,13 +591,22 @@ body[data-vide="true"] section.avancement, body[data-vide="true"] section.bloc,
 body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement, body[data-vide="true"] .pied { display: none !important; }
 
 /* ---------------------------------------------------- Bandeau du haut */
-/* Le contrat et l'avancement suivi, tout en haut, discrets. */
 /* Débrief 27 (B21) : le contenu du bandeau, du pied et de la barre collée
    s'aligne sur le bord du contenu des panneaux (--retrait-panneau), plus
    sur leur bord extérieur : une seule ligne verticale à gauche et à droite. */
+/* Débrief 27 (lot H, B1) : une seule barre de réglages, une seule voix —
+   chaque mot (12 px, gris tertiaire) juste devant sa commande, les valeurs
+   à l'encre, plus de lien souligné. Deux lignes calées à droite (débrief
+   14 : « tout centré sur la droite ») : les outils de la page en haut,
+   discrets ; dessous, ce qu'on regarde (Contrat, Tranche, Avancement,
+   Périmètre). Un filet sous la barre la sépare du titre. Chaque ligne a sa
+   hauteur dès la première image : rien ne descend quand la page se remplit
+   ou quand les droits arrivent. */
 .bandeau-mode {
-  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-  padding: 12px var(--retrait-panneau) 0;
+  position: relative;
+  display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap;
+  padding: 12px var(--retrait-panneau);
+  border-bottom: 1px solid var(--filet);
 }
 .bandeau-mode .mot-mode { font-size: 12px; color: var(--encre-3); }
 .bandeau-mode .mot-mode b { color: var(--cours); font-weight: 500; }
@@ -583,75 +614,122 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
    place du mot de mode, et annoncé aux lecteurs d'écran. */
 .bandeau-mode .alerte-source { color: var(--alerte); font-weight: 500; }
 .bandeau-mode .alerte-source[hidden] { display: none; }
-/* Les réglages, à droite du bandeau : le contrat au-dessus, l'avancement
-   dessous, chaque ligne calée sur le bord droit de la page, son mot juste
-   devant sa commande (débrief 14 : « tout centré sur la droite »). Le
-   contrat n'apparaît que s'il y a vraiment plusieurs contrats entre lesquels
-   choisir ; l'avancement, que si l'extract porte le concept harnais. */
 .bandeau-mode .reglages {
-  margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
-  font-size: 12px; color: var(--encre-3);
+  margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+  min-width: 0; max-width: 100%; font-size: 12px; color: var(--encre-3);
 }
-.bandeau-mode .choix-contrat, .bandeau-mode .choix-avancement { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
-/* « Chargement… » s'écrit à gauche du sélecteur : le sélecteur reste
-   collé au bord droit pendant qu'un contrat se charge. */
-.bandeau-mode .choix-contrat .controle { display: inline-flex; flex-direction: row-reverse; align-items: baseline; gap: 8px; }
-.bandeau-mode .choix-contrat[hidden] { display: none; }
+.outils-page, .reglages-portee { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; min-height: 28px; max-width: 100%; }
+.outils-page { gap: 4px 20px; }
+.reglages-portee { gap: 10px 22px; }
+/* Un réglage : son mot, puis sa commande. Le contrat et sa tranche sont deux
+   réglages de la même ligne (.choix-contrat ne fait que les grouper). */
+.reglage { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; }
+.bandeau-mode .choix-contrat { display: contents; }
+.bandeau-mode .choix-contrat[hidden], .bandeau-mode .reglage[hidden] { display: none; }
+.reglage > label, .reglage > .mot-reglage { font-size: 12px; color: var(--encre-3); white-space: nowrap; }
+.reglage-contrat .controle { display: inline-flex; min-width: 0; }
+/* Une largeur stable : celle de la plus longue option (88 px au moins) —
+   HDK, THS ou « Tranche 2 », la barre ne bouge pas quand le choix change. */
+.reglages-portee select.select { font-size: 13px; font-weight: 500; width: auto; min-width: 88px; max-width: 240px; }
+.reglages-portee select.select:disabled { color: var(--encre-3); cursor: progress; }
+.reglages-portee select.select[hidden], .tranche-unique[hidden] { display: none; }
+.tranche-unique { display: inline-block; min-width: 88px; padding: 4px 0; font-size: 13px; line-height: 19px; color: var(--encre-2); }
 /* Sans l'interrupteur, son mot se tait aussi. */
-.bandeau-mode .choix-avancement[hidden] { display: none; }
-.bandeau-mode .reglages:empty { display: none; }
-.bandeau-mode .choix-contrat select { font-size: 13px; min-width: 64px; }
-.bandeau-mode .choix-tranche { display: inline-flex; align-items: baseline; gap: 10px; }
-.bandeau-mode .choix-tranche[hidden] { display: none; }
-@media (max-width: 720px) {
-  .bandeau-mode .reglages { min-width: 0; max-width: 100%; }
-  .bandeau-mode .choix-contrat { flex-wrap: wrap; row-gap: 6px; max-width: 100%; }
-  .bandeau-mode .choix-contrat .controle { min-width: 0; max-width: 100%; }
-  .bandeau-mode .choix-contrat select { min-width: 0; max-width: 100%; text-overflow: ellipsis; }
-}
-.bandeau-mode .choix-contrat select:disabled { color: var(--encre-3); cursor: progress; }
-.bandeau-mode .attente { font-size: 12px; color: var(--encre-3); }
 .bandeau-mode .choix-indicateur[hidden] { display: none; }
-.bandeau-mode .attente:empty { display: none; }
-/* Le périmètre : tout en haut, à côté du mode, parce qu'il porte sur toute la
-   page — barre, courbe, journal, bloc par groupe, tableau. « Tout », puis une
-   puce par valeur de la colonne de domaine, chacune avec son compte de plans.
-   Sans colonne de domaine, il n'a rien à proposer et reste caché. */
-/* Le périmètre vit sous le titre, au-dessus de la barre : c'est de là qu'on
-   choisit ce qu'on regarde, et le bandeau du haut garde sa sobriété. */
-/* Le périmètre, à droite de la phrase qu'il gouverne : le mot, puis le
-   choix. Quand la ligne manque de place, il passe dessous, à gauche. */
-.perimetre {
-  display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px 10px;
-  font-size: 12px; color: var(--encre-3); min-width: 0; max-width: 100%; margin-left: auto;
+/* Les outils de la page : une icône de 14 px et un mot, sans soulignement. */
+.outil-page {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 2px; margin: 0;
+  border: 0; border-radius: 4px; background: none; font: inherit; font-size: 13px; line-height: 18px;
+  color: var(--encre-2); cursor: pointer; white-space: nowrap;
 }
-@media (max-width: 720px) { .perimetre { justify-content: flex-start; margin-left: 0; } }
-.perimetre[hidden] { display: none; }
+.outil-page:hover { color: var(--encre); }
+.outil-page svg { flex: none; }
+.outil-page[hidden] { display: none; }
+.outil-page[aria-expanded="true"] { color: var(--encre); }
+/* Administration : sa place est gardée, invisible, tant que les droits ne
+   sont pas lus ; puis elle paraît (administrateur) ou s'efface — elle est la
+   première de sa ligne calée à droite : rien ne bouge à côté. */
+.choix-admin { display: inline-flex; }
+.choix-admin[data-droits="attente"] { visibility: hidden; }
+.choix-admin[hidden] { display: none; }
+@media (pointer: coarse) {
+  .outil-page { position: relative; }
+  .outil-page::after { content: ""; position: absolute; inset: -8px -6px; }
+}
+/* Le téléphone : une grille compacte — le contrat et la tranche côte à côte,
+   leurs menus sur le reste de leur case ; l'avancement, puis le périmètre,
+   chacun sur sa ligne, son mot devant lui (au-dessus si la ligne manque de
+   place). */
+@media (max-width: 720px) {
+  .bandeau-mode .reglages { width: 100%; margin-left: 0; align-items: stretch; gap: 8px; }
+  .outils-page { gap: 4px 18px; }
+  .reglages-portee { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 14px; }
+  .reglages-portee .reglage { display: flex; flex-wrap: wrap; gap: 2px 8px; }
+  .reglages-portee .reglage-contrat { grid-column: 1; }
+  .reglages-portee .choix-tranche { grid-column: 2; }
+  .reglages-portee .choix-avancement, .reglages-portee .perimetre { grid-column: 1 / -1; }
+  .reglage-contrat .controle { display: flex; flex: 1 1 0; min-width: 0; }
+  .reglages-portee select.select, .tranche-unique { flex: 1 1 0; width: auto; min-width: 0; max-width: none; }
+  .reglages-portee .segmente { display: flex; flex: 1 1 auto; }
+  .reglages-portee .segmente button { flex: 1 1 auto; }
+  /* Trois puces et leurs comptes ne tiennent pas à 320 px : le périmètre
+     passe sur deux lignes plutôt que de faire déborder la page. */
+  .reglages-portee #choix-perimetre { flex-wrap: wrap; }
+}
+/* Le périmètre : « Tout », puis une puce par valeur de la colonne de domaine,
+   chacune avec son compte de plans. Sans colonne de domaine, il n'a rien à
+   proposer et reste caché. */
 #choix-perimetre button { white-space: nowrap; }
 /* Débrief 27 : le compte en gris tertiaire plein, en chiffres alignés —
    en opacité, il tombait à 3,7:1. */
-#choix-perimetre .n { margin-left: 6px; font-variant-numeric: tabular-nums; color: var(--encre-3); }
+#choix-perimetre .n { margin-left: 2px; font-variant-numeric: tabular-nums; color: var(--encre-3); display: inline-block; min-width: 3ch; text-align: left; }
 #choix-perimetre button:hover .n, #choix-perimetre button[aria-pressed="true"] .n { color: var(--encre-2); }
-/* Trois puces et leurs comptes ne tiennent pas sur un téléphone : le groupe
-   passe sur deux lignes plutôt que de faire déborder la page. */
-#choix-perimetre { flex-wrap: wrap; justify-content: flex-end; }
 
+/* Débrief 27 (lot H, D8, A-F5) : un contrat qui n'a pas pu se charger — le
+   bandeau d'erreur, posé sous la barre et par-dessus le haut du titre (rien
+   ne descend), calé à droite sous les menus. */
+.alerte-contrat {
+  position: absolute; z-index: 31; top: calc(100% + 10px); right: var(--retrait-panneau);
+  width: min(600px, calc(100% - 2 * var(--retrait-panneau))); align-items: center;
+  box-shadow: var(--flottant-ombre); text-align: left;
+}
+.alerte-contrat-texte { flex: 1 1 260px; min-width: 0; }
+.alerte-contrat .bouton { margin-left: 0; }
+.alerte-contrat .fiche-plan-fermer { margin-left: 0; flex: none; }
+@media print { .barre-chargement, .alerte-contrat, .raison-indispo { display: none !important; } }
 
 /* ---------------------------------------------------- Filtres actifs */
-/* Un bandeau qui suit la page : quoi qu'on ait cliqué, la sortie est visible. */
+/* Un bandeau qui suit la page : quoi qu'on ait cliqué, la sortie est visible.
+   Débrief 27 (lot H, P-F6) : il ne prend aucune place dans la page — une
+   hauteur nulle, collée juste sous le sommaire, et sa ligne posée par-dessus
+   ce qui suit : rien ne saute sous le pointeur quand un filtre s'ajoute ou
+   s'enlève. Une seule ligne, toujours de la même hauteur : les jetons
+   défilent de côté s'ils ne tiennent pas (un fondu le dit), « Tout effacer »
+   reste au bout. */
 .filtres-actifs {
-  position: sticky; top: 0; z-index: 30;
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  margin: 0 0 4px; padding: 9px var(--retrait-panneau);
-  background: var(--papier); border-bottom: 1px solid var(--filet-fort);
+  position: sticky; top: var(--h-sommaire, 37px); z-index: 30;
+  height: 0; margin: 0;
 }
 .filtres-actifs[hidden] { display: none; }
+.filtres-ligne {
+  position: absolute; left: 0; right: 0; top: 0;
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px var(--retrait-panneau);
+  background: var(--papier); border-bottom: 1px solid var(--filet-fort);
+}
+.filtres-jetons {
+  display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0;
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: none; padding: 3px; margin: -3px;
+}
+.filtres-jetons::-webkit-scrollbar { display: none; }
+.filtres-jetons.deborde-droite { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); }
+.filtres-ligne .mot, .filtres-ligne .tout-effacer { flex: none; }
 .jeton {
-  display: inline-flex; align-items: center; gap: 7px;
+  display: inline-flex; align-items: center; gap: 7px; flex: none; white-space: nowrap; max-width: 100%;
   border: 1px solid var(--jeton-bord); background: var(--jeton-fond); color: var(--jeton-encre);
   border-radius: 999px; padding: 4px 6px 4px 12px; font: inherit; font-size: 13px; line-height: 18px;
 }
-.jeton b { font-weight: 500; }
+.jeton b { font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .jeton .x {
   /* flex: none : la phrase du verdict est longue ; sans cela elle comprime la
      croix, qui devient une ellipse de 10 px sur un écran étroit. */
@@ -662,9 +740,24 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .jeton .x:hover { background: rgba(255, 255, 255, .35); }
 .tout-effacer {
   border: 1px solid var(--filet-fort); background: none; color: var(--encre-2);
-  border-radius: 999px; padding: 4px 13px; font: inherit; font-size: 13px; line-height: 18px; cursor: pointer;
+  border-radius: 999px; padding: 4px 13px; font: inherit; font-size: 13px; line-height: 18px; cursor: pointer; white-space: nowrap;
 }
 .tout-effacer:hover { border-color: var(--encre); color: var(--encre); }
+.tout-effacer .court { display: none; }
+/* Au téléphone (M5) : le mot « Filtres » se tait, un jeton tient en 70 % de
+   l'écran (sa valeur finit en « … », le nom entier reste dans son titre et
+   dans le nom de sa croix), « Effacer » au bout. */
+@media (max-width: 720px) {
+  .filtres-ligne { gap: 8px; }
+  .filtres-ligne .mot { display: none; }
+  .jeton { max-width: min(70vw, 100%); }
+  .tout-effacer .long { display: none; }
+  .tout-effacer .court { display: inline; }
+}
+@media (pointer: coarse) {
+  .jeton .x { position: relative; }
+  .jeton .x::after { content: ""; position: absolute; inset: -13px -10px; }
+}
 
 /* ---------------------------------------------------- Journal */
 .indice-dim { margin: -6px 0 12px; font-size: 12px; color: var(--encre-3); max-width: 76ch; }
@@ -1022,11 +1115,11 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 /* ---------------------------------------------------- Sommaire (débrief 20) */
 /* Sous le titre, une ligne d'index dans la police des surtitres : chaque
    panneau, son numéro dans sa teinte. Dès qu'on descend, il reste collé en
-   haut de l'écran (sous le bandeau des filtres actifs s'il est là :
-   --haut-sommaire, posé par le script), d'un filet souligné ; le panneau
-   qu'on lit est écrit à l'encre et souligné de sa teinte. */
+   haut de l'écran, d'un filet souligné ; le panneau qu'on lit est écrit à
+   l'encre et souligné de sa teinte. Débrief 27 (lot H) : le bandeau des
+   filtres actifs colle juste dessous (--h-sommaire, posé par le script). */
 .sommaire {
-  position: sticky; top: var(--haut-sommaire, 0px); z-index: 29;
+  position: sticky; top: 0; z-index: 29;
   display: flex; align-items: center; min-width: 0; margin-top: -10px;
   background: var(--papier); border-bottom: 1px solid transparent;
   transition: border-color .2s;
@@ -1061,6 +1154,21 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .sommaire a:hover { color: var(--encre); }
 .sommaire a:focus-visible { outline-offset: -2px; }
 .sommaire a[aria-current] { color: var(--encre); border-bottom-color: var(--accent); }
+/* Débrief 27 (lot H, P-F12) : un panneau absent pour ce contrat (pas de
+   base SEE, concept harnais…) garde son entrée, grisée : un clic ou Entrée
+   dit pourquoi au lieu de mener nulle part. */
+.sommaire li[data-absent] a, .sommaire li[data-absent] a::before { color: var(--encre-3); }
+.sommaire li[data-absent] a { cursor: help; }
+.sommaire li[data-absent] a:hover { color: var(--encre-2); }
+/* La raison d'une commande ou d'une entrée indisponible, montrée au clic,
+   au toucher ou au clavier (D9 : jamais au seul survol), dite aussi aux
+   lecteurs d'écran. */
+.raison-indispo {
+  position: fixed; z-index: 70; max-width: min(320px, calc(100vw - 32px)); padding: 8px 12px;
+  border: 1px solid var(--releve-bord); border-radius: 6px; background: var(--releve); color: var(--encre);
+  box-shadow: var(--flottant-ombre); font-size: 13px; line-height: 1.45; text-align: left;
+}
+.raison-indispo[hidden] { display: none; }
 /* Collé en haut, le nom de la page et du contrat se rappellent à gauche —
    posés par-dessus, sans rien pousser. Seulement quand la place est là. */
 .sommaire-marque {
@@ -1190,6 +1298,9 @@ select.select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2
 }
 .segmente button:hover { background: var(--seg-survol); color: var(--encre); }
 .segmente button[aria-pressed="true"] { background: var(--seg-puce); color: var(--encre); font-weight: 500; box-shadow: var(--seg-ombre); }
+/* Débrief 27 (lot H, P-F12) : un choix sans objet pour ce contrat (« Échéances »
+   sans jalon à venir) reste à sa place, grisé ; un clic dit pourquoi. */
+.segmente button[aria-disabled="true"], .segmente button[aria-disabled="true"]:hover { background: none; color: var(--encre-3); cursor: help; box-shadow: none; font-weight: 400; }
 @media (prefers-reduced-motion: reduce) { .segmente button { transition: none; } }
 /* Cinq boutons ne tiennent pas sur un téléphone : le filtre du journal passe
    sur deux lignes plutôt que de faire déborder la page. */
@@ -1382,53 +1493,80 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 .puce-delta:hover { color: var(--encre); border-bottom-color: var(--encre); }
 .puce-delta[aria-pressed="true"] { color: var(--encre); font-weight: 500; border-bottom: 1px solid var(--encre); }
 .puce-delta b { font-variant-numeric: tabular-nums; font-weight: 500; }
-/* La vue d'ensemble des contrats, sous le bandeau. */
-.lien-ensemble { font-size: 13px; }
-.ensemble { margin: 14px 0 0; padding: 14px 18px 12px; background: var(--surface); border: 1px solid var(--filet); border-radius: 4px; }
-.ensemble.panneau { padding: 20px 26px 18px; border-color: var(--panneau-bord); border-radius: 10px; }
-@media (max-width: 720px) { .ensemble.panneau { padding: 16px 14px 14px; } }
-.ensemble[hidden] { display: none; }
-.ensemble-tete { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+/* La vue d'ensemble des contrats. Débrief 27 (lot H, B18, P-F16) : une
+   fenêtre posée en haut de l'écran (pas au centre : elle ne saute pas quand
+   les chiffres arrivent), par-dessus la page, dans le dessin des panneaux ;
+   au téléphone, tout l'écran. */
+dialog.ensemble {
+  width: min(1140px, calc(100vw - 32px)); max-width: none; max-height: calc(100vh - 48px);
+  margin: 24px auto auto; padding: 0;
+  border: 1px solid var(--panneau-bord); border-radius: 10px; background: var(--surface); color: var(--encre);
+  box-shadow: var(--panneau-ombre); overflow: hidden;
+}
+dialog.ensemble[open] { display: flex; flex-direction: column; }
+dialog.ensemble::backdrop { background: var(--voile-dialogue); }
+.ensemble-tete { display: flex; align-items: baseline; gap: 6px 14px; flex-wrap: wrap; padding: 20px 24px 14px; border-bottom: 1px solid var(--filet); }
 .ensemble-tete h2 { font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 24px; margin: 0; }
+.ensemble-tete h2:focus { outline: none; }
+.ensemble-tete h2:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .ensemble-tete .indice { font-size: 12px; color: var(--encre-3); }
-.defile-ensemble { overflow-x: auto; }
-.ensemble-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.ensemble-table th, .ensemble-table td { padding: 8px 10px; text-align: left; vertical-align: top; border-top: 1px solid var(--filet); }
-.ensemble-table thead th { border-top: none; border-bottom: 1px solid var(--filet-fort); font-size: 12px; font-weight: 500; color: var(--encre-2); }
-.ensemble-table tbody th .lien-doux { font: 500 14px "IBM Plex Sans", system-ui, sans-serif; color: var(--encre); }
+.ensemble-tete .fiche-plan-fermer { flex: none; align-self: flex-start; }
+.defile-ensemble { overflow: auto; overscroll-behavior: contain; padding: 4px 24px 0; flex: 1 1 auto; min-height: 0; }
+/* Des colonnes de largeur fixe et des lignes de deux lignes : rien ne
+   bouge quand un contrat passe de « chargement… » à ses chiffres. */
+.ensemble-table { width: 100%; min-width: 860px; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
+.ensemble-table th, .ensemble-table td { padding: 8px 10px; text-align: left; vertical-align: top; border-top: 1px solid var(--filet); overflow-wrap: anywhere; }
+.ensemble-table tbody th, .ensemble-table tbody td { height: 58px; }
+.ensemble-table thead th { border-top: none; border-bottom: 1px solid var(--filet-fort); font-size: 12px; font-weight: 500; color: var(--encre-2); vertical-align: bottom; }
+.ensemble-table tbody th .lien-doux { font: 500 14px "IBM Plex Sans", system-ui, sans-serif; color: var(--encre); text-align: left; }
 .ensemble-table tr.courant { background: var(--creux); }
 .ensemble-table .v { display: block; font-variant-numeric: tabular-nums; color: var(--encre); }
-.ensemble-table small { display: block; margin-top: 2px; font-size: 11px; color: var(--encre-3); }
+.ensemble-table small { display: block; margin-top: 2px; font-size: 11px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
 .ensemble-table .v.tard, .ensemble-table small.recul { color: var(--alerte); }
 .ensemble-table .v.bon { color: var(--fait); }
 .ensemble-table .v.arret { color: var(--cours); }
 .ensemble-table .alerte-ligne { color: var(--alerte); }
+/* Sous « 53 / 634 », la part validée en une petite jauge de 60 × 4 px. */
+.jauge-ensemble { display: block; width: 60px; height: 4px; margin-top: 5px; border-radius: 2px; background: var(--filet); overflow: hidden; }
+.jauge-ensemble i { display: block; height: 100%; background: var(--fait); }
+/* Les deux colonnes qui demandent un mot d'explication, dites en clair sous
+   le tableau (« À l'arrêt » ne s'expliquait que dans une bulle). */
+.ensemble-note { margin: 0; padding: 10px 24px 18px; font-size: 12px; line-height: 1.55; color: var(--encre-2); }
+.ensemble-note b { font-weight: 500; color: var(--encre); }
 /* Au téléphone, sept colonnes ne tiennent pas : trois restaient cachées à
    droite, sans le dire. Chaque contrat devient une carte — son nom, puis
    une ligne par valeur, le nom de la colonne à gauche et la valeur au bord
    droit, comme les lignes « par ATA ». La croix reste à côté du titre. */
 @media (max-width: 720px) {
-  .ensemble-tete { align-items: flex-start; }
+  .ensemble-tete { align-items: flex-start; padding: 16px 16px 12px; }
   .ensemble-tete h2 { flex: 1 1 0; min-width: 0; font-size: 20px; }
   .ensemble-tete .fiche-plan-fermer { flex: none; margin-top: 2px; }
   .ensemble-tete .indice { order: 3; flex-basis: 100%; }
-  .defile-ensemble { overflow-x: visible; }
+  .defile-ensemble { overflow-x: visible; overflow-y: auto; padding: 0 16px; }
+  .ensemble-note { padding: 10px 16px 16px; }
+  .ensemble-table { min-width: 0; table-layout: auto; }
   .ensemble-table, .ensemble-table tbody, .ensemble-table tr { display: block; }
+  .ensemble-table colgroup { display: none; }
   .ensemble-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .ensemble-table tr { padding: 10px 0 8px; border-top: 1px solid var(--filet); }
   /* Le fond du contrat affiché déborde de 10 px de chaque côté sans rien
      élargir (une ombre ne compte pas dans la largeur). */
   .ensemble-table tr.courant { box-shadow: -10px 0 var(--creux), 10px 0 var(--creux); }
   .ensemble-table th, .ensemble-table td { border-top: none; padding: 3px 0; }
+  .ensemble-table tbody th, .ensemble-table tbody td { height: auto; }
   .ensemble-table tbody th { display: flex; align-items: baseline; gap: 10px; padding-bottom: 6px; }
   .ensemble-table tbody th small { margin-top: 0; }
   .ensemble-table td[data-libelle] { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: baseline; }
   .ensemble-table td[data-libelle]::before {
-    content: attr(data-libelle); grid-column: 1; grid-row: 1 / span 2;
+    content: attr(data-libelle); grid-column: 1; grid-row: 1 / span 3;
     font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--encre-3);
   }
   .ensemble-table td[data-libelle] > * { grid-column: 2; text-align: right; }
+  .ensemble-table td[data-libelle] > .jauge-ensemble { justify-self: end; }
   .ensemble-table td:not([data-libelle]) { display: block; }
+}
+@media (max-width: 560px) {
+  dialog.ensemble { width: 100vw; height: 100vh; height: 100dvh; max-height: none; margin: 0; border: 0; border-radius: 0; }
 }
 /* L'historique d'un plan, au-dessus du tableau. */
 .fiche-plan { margin: 0 0 12px; padding: 12px 16px 12px; background: var(--surface); border: 1px solid var(--filet); border-radius: 6px; }
@@ -1881,10 +2019,8 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
    Un bouton que seuls les administrateurs voient, et un panneau : les
    jalons, les contrats retirés ou remis, les administrateurs. Tout passe par
    le classeur, qui revérifie qui écrit. */
-.bandeau-mode .choix-admin { display: flex; justify-content: flex-end; }
-.bandeau-mode .choix-admin[hidden] { display: none; }
-.bouton-admin { display: inline-flex; align-items: center; gap: 6px; }
-.bouton-admin svg { flex: none; }
+/* Le bouton lui-même est un outil de la barre des réglages (.outil-page,
+   débrief 27). */
 /* Débrief 27 (lot F, rapport « flux admin » A-F1…A-F25, B17, M7, M8) : le
    panneau refait pour qu'on s'y fie —
    — calé en haut (A-F16) : il ne saute plus d'un onglet à l'autre ni quand
