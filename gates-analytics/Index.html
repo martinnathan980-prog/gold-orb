@@ -70,7 +70,7 @@
 <script>
   /* La livraison de ce fichier, posée par la construction : la page la compare
      à celles de Code, Styles et Javascript, et nomme celui qui diffère. */
-  window.SUIVI_FWD_LIVRAISON_INDEX = 'd825856';
+  window.SUIVI_FWD_LIVRAISON_INDEX = '7bba6dd';
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
@@ -510,7 +510,13 @@
           <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
         </svg>
         <label class="masque" for="recherche">Rechercher dans toutes les colonnes</label>
-        <input id="recherche" type="search" placeholder="Rechercher dans toutes les colonnes…" autocomplete="off">
+        <input id="recherche" type="search" placeholder="Rechercher dans toutes les colonnes…" autocomplete="off" aria-describedby="portee-recherche">
+        <!-- Débrief 29 (F5) : la recherche filtre toute la page (Synthèse,
+             courbe, journal…), pas seulement le tableau : le champ le dit
+             avant qu'on tape — l'entonnoir des filtres de la page
+             (iconeEntonnoir) et trois mots, posés dans le champ, sans rien
+             pousser. -->
+        <span class="portee-recherche" id="portee-recherche"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M1.5 2h9L7 6.2V10l-2-1.1V6.2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>filtre toute la page</span>
       </div>
       <div class="recherche" data-base="la" hidden>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -532,20 +538,17 @@
     </div>
     <!-- Débrief 27, lot D : une seule rangée d'outils sous la recherche — à
          gauche ce qui filtre ou masque, à droite ce qu'on fait du tableau.
-         Les colonnes vides de la sélection sont masquées, et le disent ; les
-         filtres de colonne ne se déplient qu'à la demande (X-A2) ; « Copier
-         le tableau » et « Télécharger (CSV) » prennent ce que le tableau
-         montre — filtres, tri et colonnes affichées (P-F21). -->
+         Les colonnes vides de la sélection sont masquées, et le disent.
+         Débrief 28 : la rangée des filtres de colonne est toujours là, sans
+         bouton pour la plier ; « Copier le tableau » et « Télécharger (CSV) »
+         sont retirés. Débrief 29 : le bouton « Filtrer par colonne », qui
+         revenait à chaque changement de base (refleterBase) et ne faisait
+         plus rien, est supprimé ; la zone des actions, vide, reste cachée —
+         ni trou ni marge à droite de la puce « non renseigné ». -->
     <div class="barre-tableau" id="barre-tableau">
       <div class="incomplets" id="incomplets" data-base="ici"></div>
       <span class="colonnes-vides" id="colonnes-vides" hidden></span>
-      <span class="actions-tableau" id="actions-tableau">
-        <span class="outil-ici" data-base="ici" hidden>
-          <button type="button" class="bouton-outil" id="ouvrir-filtres" aria-expanded="false" aria-controls="tete-tableau">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 3.5h11l-4.2 5v4l-2.6 1.2V8.5l-4.2-5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
-            <span class="mot-outil">Filtrer<span class="mot-long"> par colonne</span></span>
-          </button>
-        </span>
+      <span class="actions-tableau" id="actions-tableau" hidden>
         <button type="button" class="bouton-outil" id="copier-tableau" hidden>
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5.2" y="5.2" width="8.3" height="8.3" rx="1.3" stroke="currentColor" stroke-width="1.4"/><path d="M10.8 3.2V3a1 1 0 0 0-1-1H3.4a1 1 0 0 0-1 1v6.4a1 1 0 0 0 1 1h.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
           <span class="mot-outil">Copier<span class="mot-long"> le tableau</span></span>

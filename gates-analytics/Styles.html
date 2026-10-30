@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "d825856";
+  --suivi-fwd-edition: "7bba6dd";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -2609,6 +2609,23 @@ button.aide[aria-expanded="true"]::before { border-color: var(--encre); backgrou
 .recherche input:focus { outline: 2px solid var(--focus); outline-offset: 2px; }
 .recherche svg { position: absolute; left: 11px; top: 50%; margin-top: -8px; color: var(--encre-3); }
 .recherche input:focus + svg, .recherche input:not(:placeholder-shown) + svg { color: var(--encre); }
+/* Débrief 29 (F5) : « filtre toute la page », au bout du champ de la
+   recherche des plans — la place lui est gardée (padding-right), il ne
+   prend pas le clic. Au téléphone, sous le champ. */
+.portee-recherche {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; line-height: 1; color: var(--encre-3); white-space: nowrap; pointer-events: none;
+}
+.recherche .portee-recherche svg { position: static; margin: 0; color: currentColor; flex: none; }
+#recherche { padding-right: 148px; }
+@media (max-width: 480px) {
+  /* Sous le champ, hors du flux : la loupe reste centrée sur le champ ; la
+     place est gardée par la marge du bloc. */
+  .portee-recherche { top: 100%; left: 0; right: auto; transform: none; margin-top: 6px; }
+  .recherche[data-base="ici"] { margin-bottom: 18px; }
+  #recherche { padding-right: 12px; }
+}
 
 .lien-doux { border: none; background: none; padding: 3px 0; font: inherit; cursor: pointer; color: var(--encre-3); text-decoration: underline; text-underline-offset: 3px; }
 .lien-doux:hover { color: var(--encre); }
@@ -2954,7 +2971,17 @@ table.plans thead .titres th button {
   display: inline-flex; align-items: center; gap: 5px;
 }
 table.plans thead .titres th button:hover { color: var(--encre); }
-.poignee { color: var(--filet-fort); cursor: grab; margin-right: 6px; opacity: 0; transition: opacity .12s; }
+.poignee { color: var(--filet-fort); cursor: grab; opacity: 0; transition: opacity .12s; }
+/* Débrief 29 (beauté NOUVEAU-3) : la poignée sort du flux — posée dans la
+   marge intérieure gauche de l'en-tête (et un peu sur celle de la colonne
+   d'avant), elle ne pousse plus l'intitulé : intitulé, champ « filtrer » et
+   cases partagent le même bord gauche. Les en-têtes sont collés (sticky) :
+   ils servent déjà de repère à la position absolue. Zone de saisie 19 × 24
+   px (elle s'arrête au bord de l'intitulé), 25 × 44 au doigt. */
+table.plans thead .titres th .poignee {
+  position: absolute; left: -5px; top: 50%; transform: translateY(-50%);
+  width: 19px; height: 24px; display: inline-flex; align-items: center; justify-content: center;
+}
 table.plans thead .titres:hover .poignee, table.plans thead .titres:focus-within .poignee { opacity: 1; }
 .fleche { color: var(--encre); }
 
@@ -2971,6 +2998,10 @@ table.plans thead tr th.col-fige { z-index: 6; }
 .fige-fin { box-shadow: inset -1px 0 0 var(--filet-fort); }
 
 .ref { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+/* Débrief 29 (B5) : dates, nombres, Oui/Non… en Plex Sans à chiffres
+   alignés ; la Mono reste à la référence, à l'ECP et aux codes de GATES
+   (voir marquerChiffres). */
+table.plans td.chiffre { font-family: "IBM Plex Sans", system-ui, sans-serif; font-variant-numeric: tabular-nums; }
 .large { max-width: 230px; overflow: hidden; text-overflow: ellipsis; }
 .doux { color: var(--encre-3); }
 .etat-cellule { display: inline-flex; align-items: center; gap: 8px; }
@@ -3097,6 +3128,8 @@ button.poignee:hover, button.poignee:focus-visible { color: var(--encre-2); opac
   .bouton-outil::after { content: ""; position: absolute; inset: -9px -2px; }
   .colonnes-vides button::after, tr.ligne-suite button::after { content: ""; position: absolute; inset: -12px -6px; }
   table.plans thead .titres th button, table.plans thead .titres-la th button { min-height: 44px; }
+  table.plans thead .titres th .poignee { height: 44px; }
+  table.plans thead .titres th .poignee::after { content: ""; position: absolute; top: 0; bottom: 0; left: -6px; right: 0; }
   table.plans thead .filtres input { font-size: 16px; min-height: 40px; }
   .menu-colonne button { min-height: 44px; }
 }

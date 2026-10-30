@@ -8517,8 +8517,13 @@ async function deplierFiltresColonne(pg) {
       };
     });
     verifier('un nouveau venu ouvre sur la « Vue essentielle » (P-F15)', neuf.presse === 'toutes:false essentielle:true' && neuf.n > 1 && neuf.n <= 9, JSON.stringify([neuf.presse, neuf.n]));
-    verifier('le groupe de la colonne suivie dit « Avancement (GATES · HDK AA 011) », et aucune case d’en-tête de groupe n’est vide (X-A11)',
-      neuf.groupes.indexOf('Avancement (GATES · HDK AA 011)') !== -1 && neuf.groupes.every(g => g.length > 0) && neuf.groupes.indexOf('HDK AA 011') === -1, JSON.stringify(neuf.groupes));
+    /* Débrief 29 (P-F15) : la vue essentielle n'a plus de rangée de groupes
+       (« Informations principales » s'y répétait trois fois) ; le libellé
+       « Avancement (GATES · HDK AA 011) » et les cases jamais vides se
+       vérifient en « Toutes les colonnes » (section « Débrief 29 : le
+       tableau des plans (lot PL) »). */
+    verifier('en vue essentielle, plus de rangée de groupes au-dessus des en-têtes (débrief 29, P-F15)',
+      neuf.groupes.length === 0, JSON.stringify(neuf.groupes));
     verifier('le tableau a un nom (légende) qui dit ce qu’il montre, et plus de content-visibility qui cache ses lignes (X-A11)',
       /^Plans GATES de HDK : \d+ lignes, triées par Référence UD, ordre croissant/.test(neuf.caption) && neuf.cv !== 'auto', JSON.stringify([neuf.caption, neuf.cv]));
     verifier('une case vide s’écrit « — » (B22), plus jamais « - »', neuf.tirets > 0 && neuf.traits === 0, JSON.stringify([neuf.tirets, neuf.traits]));
@@ -10225,6 +10230,254 @@ async function deplierFiltresColonne(pg) {
   //  dans un bloc { … } qui ouvre et ferme ses propres pages.
   // =================================================================
   /* (début du lot PL) */
+  /* Débrief 29, lot PL — le tableau des plans : le bouton mort « Filtrer
+     par colonne » supprimé pour de bon, la vue essentielle sans rangée de
+     groupes, les intitulés au bord gauche de leurs cases (poignée hors du
+     flux), la Mono gardée aux références et aux codes, « - » écrit « — »,
+     la portée des filtres de la page dite avant l'usage (recherche, tuiles
+     de la Synthèse), le focus gardé sur la puce « non renseigné », le
+     changement de base annoncé, une case atteinte au clavier jamais
+     couverte. Sur l'aperçu (jeu d'exemple, seconde base SEE), un nouveau
+     venu (vue essentielle). */
+  section('Débrief 29 : le tableau des plans (lot PL)');
+  {
+    const lum29 = () => {
+      window.__lum29 = c => { const m = c.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]; };
+      window.__cr29 = (a, b) => { const x = window.__lum29(a), y = window.__lum29(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+    };
+    const versPlans = async pg => { await pg.evaluate(() => document.getElementById('section-plans').scrollIntoView()); await pg.waitForTimeout(300); };
+    /* Aucun bouton « Filtrer » / « Filtrer par colonne » nulle part dans la section. */
+    const boutonFiltrer = pg => pg.evaluate(() => ({
+      element: !!document.getElementById('ouvrir-filtres'),
+      vus: [...document.querySelectorAll('#section-plans button')].filter(b => b.getClientRects().length && /^Filtrer( par colonne)?\b/.test(b.textContent.trim()) && !/^Filtrer la page/.test(b.textContent.trim())).map(b => b.textContent.trim()),
+      actions: (a => !!a && a.getClientRects().length > 0)(document.getElementById('actions-tableau'))
+    }));
+    /* Le bord gauche de l'intitulé, du champ « filtrer » et des cases de chaque colonne. */
+    const alignement = pg => pg.evaluate(() => {
+      const ths = [...document.querySelectorAll('#tete-tableau tr.titres th')];
+      const fils = [...document.querySelectorAll('#tete-tableau tr.filtres th')];
+      const ligne = document.querySelector('#corps-tableau tr');
+      const ecarts = [], poignees = [];
+      ths.forEach((th, i) => {
+        const b = th.querySelector('button[data-tri]'), inp = fils[i] && fils[i].querySelector('input'), td = ligne && ligne.cells[i];
+        if (!b || !inp || !td || td.getClientRects().length === 0) return;
+        const bord = td.getBoundingClientRect().left + parseFloat(getComputedStyle(td).paddingLeft);
+        const e = Math.max(Math.abs(b.getBoundingClientRect().left - bord), Math.abs(inp.getBoundingClientRect().left - bord));
+        if (e > 1) ecarts.push(th.dataset.cle + ':' + Math.round(e));
+        const p = th.querySelector('.poignee');
+        if (p) { const r = p.getBoundingClientRect(); poignees.push({ cle: th.dataset.cle, l: r.width, h: r.height, empiete: r.right - b.getBoundingClientRect().left }); }
+      });
+      return { n: ths.length, ecarts, poignees };
+    });
+    /* La police des cases d'une colonne (la première case non vide). */
+    const police = (pg, cle) => pg.evaluate(cle => {
+      const ths = [...document.querySelectorAll('#tete-tableau tr.titres th')];
+      const i = ths.findIndex(t => t.dataset.cle === cle);
+      if (i < 0) return null;
+      const td = [...document.querySelectorAll('#corps-tableau tr')].map(tr => tr.cells[i]).find(c => c && !c.classList.contains('tiret-vide'));
+      if (!td) return null;
+      const el = td.querySelector('.num, .ref-plan') || td;
+      return { famille: getComputedStyle(el).fontFamily.split(',')[0].replace(/["']/g, '').trim(), chiffres: getComputedStyle(el).fontVariantNumeric, texte: td.textContent.trim() };
+    }, cle);
+    /* La case qui a le focus est-elle entièrement visible (coins et centre) ? */
+    const caseVue = pg => pg.evaluate(() => {
+      const a = document.activeElement, td = a && a.closest ? a.closest('#corps-tableau td') : null;
+      if (!td) return { ok: false, quoi: a ? a.tagName : null };
+      const r = td.getBoundingClientRect();
+      const ok = [[r.left + 3, r.top + 3], [r.right - 3, r.bottom - 3], [r.left + r.width / 2, r.top + r.height / 2]]
+        .every(([x, y]) => { const e = document.elementFromPoint(x, y); return !!e && (e === td || td.contains(e)); });
+      const th = document.querySelectorAll('#tete-tableau tr.titres th')[td.cellIndex];
+      return { ok, cle: th ? th.dataset.cle : '?', r: [r.left, r.top, r.right, r.bottom].map(Math.round) };
+    });
+    const parcourir = async (pg, touches, cachees) => {
+      for (const [touche, n] of touches) for (let k = 0; k < n; k++) {
+        await pg.keyboard.press(touche);
+        const v = await caseVue(pg);
+        if (!v.ok) cachees.push(touche + ' ' + v.cle + ' ' + JSON.stringify(v.r || v.quoi));
+      }
+    };
+
+    // --- 1. Le nouveau venu, 1440 × 900, clair.
+    const c29 = await contexte({ prefsVierges: true, viewport: { width: 1440, height: 900 } });
+    const q = await page(c29, 'lot PL');
+    await q.evaluate(lum29);
+    await versPlans(q);
+    const ouvert = await q.evaluate(() => {
+      const barre = document.getElementById('barre-tableau');
+      const vus = [...barre.children].filter(e => e.getClientRects().length > 0 && e.getBoundingClientRect().width > 0).map(e => e.id || e.className);
+      return { vus, groupes: document.querySelectorAll('#tete-tableau tr.groupes').length, haut: (document.querySelector('#tete-tableau tr.titres th') || {}).style.top,
+        puce: !!document.querySelector('#incomplets .puce-vide'), vue: [...document.querySelectorAll('#vue-tableau button[aria-pressed="true"]')].map(b => b.dataset.vue).join() };
+    });
+    const f0 = await boutonFiltrer(q);
+    verifier('plus de bouton « Filtrer par colonne » : ni dans la page, ni visible, et la zone des actions vide ne prend aucune place (débrief 29)',
+      !f0.element && f0.vus.length === 0 && !f0.actions, JSON.stringify(f0));
+    verifier('sous la recherche, la puce « … non renseigné » est seule sur sa rangée : ni trou, ni bouton à droite (débrief 29)',
+      ouvert.puce && ouvert.vus.length === 1 && ouvert.vus[0] === 'incomplets', JSON.stringify(ouvert.vus));
+    verifier('vue essentielle : pas de rangée de groupes, les intitulés collent en haut du cadre (P-F15)',
+      ouvert.vue === 'essentielle' && ouvert.groupes === 0 && ouvert.haut === '0px', JSON.stringify(ouvert));
+
+    const al1 = await alignement(q);
+    verifier('vue essentielle : intitulé, champ « filtrer » et cases de chaque colonne partagent le même bord gauche, à 1 px près (beauté NOUVEAU-3)',
+      al1.n > 4 && al1.ecarts.length === 0 && al1.poignees.length > 0, JSON.stringify(al1.ecarts));
+    verifier('la poignée de déplacement, hors du flux, garde sa zone (19 × 24 px au moins) sans empiéter sur l’intitulé',
+      al1.poignees.every(p => p.l >= 19 && p.h >= 24 && p.empiete <= 0.5), JSON.stringify(al1.poignees.slice(0, 3)));
+
+    const pol = {};
+    for (const k of ['reference', 'avancement', 'ecp', 'ata', 'sequence', 'date_creation', 'validation_definition_electrique', 'avancement_concept_harnais_2']) pol[k] = await police(q, k);
+    const sans = k => pol[k] && pol[k].famille === 'IBM Plex Sans' && /tabular-nums/.test(pol[k].chiffres);
+    const mono = k => pol[k] && pol[k].famille === 'IBM Plex Mono';
+    verifier('dates, nombres et Oui/Non en Plex Sans à chiffres alignés ; la Mono reste à la référence, à l’ECP et aux codes de GATES (B5, D2)',
+      sans('ata') && sans('sequence') && sans('date_creation') && sans('validation_definition_electrique') && sans('avancement_concept_harnais_2') &&
+      mono('reference') && mono('avancement') && mono('ecp'), JSON.stringify(pol));
+
+    // La recherche dit sa portée avant qu'on tape.
+    const portee = await q.evaluate(() => {
+      const inp = document.getElementById('recherche'), id = inp.getAttribute('aria-describedby'), p = id && document.getElementById(id);
+      if (!p) return { id };
+      const ri = inp.getBoundingClientRect(), rp = p.getBoundingClientRect();
+      const fin = document.elementFromPoint(rp.left + rp.width / 2, rp.top + rp.height / 2);
+      return { id, texte: p.textContent.trim(), vu: rp.width > 0 && rp.height > 0, dedans: rp.left >= ri.left && rp.right <= ri.right && rp.top >= ri.top && rp.bottom <= ri.bottom,
+        entonnoir: !!p.querySelector('svg[aria-hidden="true"]'), clic: fin === inp, place: parseFloat(getComputedStyle(inp).paddingRight) >= ri.right - rp.left,
+        cr: window.__cr29(getComputedStyle(p).color, getComputedStyle(inp).backgroundColor) };
+    });
+    verifier('la recherche des plans dit « filtre toute la page » (entonnoir), dans le champ, sans prendre le clic, et le champ la nomme (aria-describedby) (F5)',
+      portee.texte === 'filtre toute la page' && portee.vu && portee.dedans && portee.entonnoir && portee.clic && portee.place, JSON.stringify(portee));
+    verifier('« filtre toute la page » se lit : 4,5:1 au moins sur le champ, en clair', portee.cr >= 4.5, String(portee.cr));
+
+    // Les tuiles de la Synthèse disent aussi qu'elles filtrent toute la page.
+    const tuiles = await q.evaluate(() => [...document.querySelectorAll('#etats .etat-btn')].map(b => ({
+      code: b.querySelector('.libelle').textContent.trim(), titre: b.title, nom: b.getAttribute('aria-label'), n: b.querySelector('.etat-n').textContent.trim(), presse: b.getAttribute('aria-pressed') })));
+    const plansDe = n => n + (parseInt(n.replace(/\s/g, ''), 10) > 1 ? ' plans' : ' plan');
+    verifier('chaque tuile de la Synthèse dit « Filtrer toute la page sur CODE » (survol) et « …, N plans » aux lecteurs d’écran (F5)',
+      tuiles.length > 2 && tuiles.every(t => t.presse === 'false' && t.titre === 'Filtrer toute la page sur ' + t.code && t.nom === 'Filtrer toute la page sur ' + t.code + ', ' + plansDe(t.n)),
+      JSON.stringify(tuiles.slice(0, 3)));
+    await q.click('#etats .etat-btn >> nth=1'); await q.waitForTimeout(500);
+    const presse = await q.evaluate(() => { const b = document.querySelector('#etats .etat-btn[aria-pressed="true"]'); return b ? { titre: b.title, nom: b.getAttribute('aria-label') } : null; });
+    verifier('la tuile pressée dit « Retirer le filtre », sans nom imposé (son texte se lit)', !!presse && presse.titre === 'Retirer le filtre' && presse.nom === null, JSON.stringify(presse));
+    await reinitialiser(q);
+    await versPlans(q);
+
+    // X-A1 : la puce « non renseigné » garde le focus.
+    await q.focus('#incomplets .puce-vide');
+    await q.keyboard.press('Enter'); await q.waitForTimeout(400);
+    const pu1 = await q.evaluate(() => { const a = document.activeElement; return { classe: a.className, vide: a.dataset && a.dataset.vide, presse: a.getAttribute('aria-pressed') }; });
+    await q.keyboard.press('Enter'); await q.waitForTimeout(400);
+    const pu2 = await q.evaluate(() => { const a = document.activeElement; return { classe: a.className, vide: a.dataset && a.dataset.vide, presse: a.getAttribute('aria-pressed') }; });
+    verifier('Entrée sur la puce « … non renseigné » : le focus reste sur la puce redessinée, pressée puis relâchée (X-A1)',
+      pu1.classe === 'puce-vide' && !!pu1.vide && pu1.presse === 'true' && pu2.classe === 'puce-vide' && pu2.presse === 'false', JSON.stringify([pu1, pu2]));
+
+    // X-A5 : changer de base se dit ; toujours aucun bouton « Filtrer ».
+    await q.evaluate(() => {
+      window.__annoncer(''); window.__annonces29 = [];
+      new MutationObserver(() => { const t = document.getElementById('annonce').textContent; if (t) window.__annonces29.push(t); })
+        .observe(document.getElementById('annonce'), { childList: true, characterData: true, subtree: true });
+    });
+    await q.click('#choix-base button[data-base="la"]');
+    await q.waitForFunction(() => window.__annonces29.length > 0, null, { timeout: 4000 }).catch(() => {});
+    const base1 = await q.evaluate(() => ({ dit: window.__annonces29.slice(), compte: document.getElementById('compte').textContent }));
+    const f1 = await boutonFiltrer(q);
+    await q.click('#choix-base button[data-base="ici"]');
+    await q.waitForFunction(() => window.__annonces29.length > 1, null, { timeout: 4000 }).catch(() => {});
+    const base2 = await q.evaluate(() => ({ dit: window.__annonces29.slice(), compte: document.getElementById('compte').textContent }));
+    const f2 = await boutonFiltrer(q);
+    verifier('passer à la base SEE se dit : « Base SEE affichée : N lignes », le compte affiché (X-A5)',
+      base1.dit.length === 1 && base1.dit[0] === 'Base SEE affichée : ' + base1.compte && /lignes?$/.test(base1.compte), JSON.stringify(base1));
+    verifier('revenir à GATES se dit : « Base GATES affichée : N plans » (X-A5)',
+      base2.dit.length === 2 && base2.dit[1] === 'Base GATES affichée : ' + base2.compte && /plans?$/.test(base2.compte), JSON.stringify(base2));
+    // Une fiche de plan ouverte : toujours pas de bouton.
+    await q.click('#corps-tableau .ref-plan >> nth=2'); await q.waitForTimeout(600);
+    const f3 = await boutonFiltrer(q);
+    verifier('ni sur SEE, ni de retour sur GATES, ni fiche de plan ouverte : aucun bouton « Filtrer » ne revient (débrief 29)',
+      [f1, f2, f3].every(f => !f.element && f.vus.length === 0 && !f.actions), JSON.stringify([f1, f2, f3]));
+    await q.keyboard.press('Escape'); await q.waitForTimeout(500);
+
+    // --- 2. « Toutes les colonnes » : sa rangée de groupes, « - » écrit « — ».
+    await q.click('#vue-tableau button[data-vue="toutes"]'); await q.waitForTimeout(800);
+    await versPlans(q);
+    const toutes29 = await q.evaluate(() => {
+      const ths = [...document.querySelectorAll('#tete-tableau tr.titres th')];
+      const iv = ths.findIndex(t => t.dataset.cle === 'validite');
+      const tiret = document.querySelector('#corps-tableau td.tiret-vide[title]');
+      return { groupes: [...document.querySelectorAll('#tete-tableau tr.groupes th')].map(t => t.textContent.trim()),
+        traits: [...document.querySelectorAll('#corps-tableau td')].filter(td => td.textContent.trim() === '-').length,
+        tirets: document.querySelectorAll('#corps-tableau td.tiret-vide[title="« - » dans GATES"]').length,
+        tiret: tiret ? { texte: tiret.textContent, police: getComputedStyle(tiret).fontFamily.split(',')[0].replace(/["']/g, ''), doux: tiret.classList.contains('doux') } : null, iv };
+    });
+    verifier('« Toutes les colonnes » garde sa rangée de groupes : le groupe suivi dit « Avancement (GATES · HDK AA 011) », aucune case vide (X-A11)',
+      toutes29.groupes.indexOf('Avancement (GATES · HDK AA 011)') !== -1 && toutes29.groupes.every(g => g.length > 0) && toutes29.groupes.indexOf('HDK AA 011') === -1,
+      JSON.stringify(toutes29.groupes.slice(0, 8)));
+    verifier('« - » de l’extract s’écrit « — » en gris, en Plex Sans, et dit sa valeur brute au survol (B22)',
+      toutes29.traits === 0 && toutes29.tirets > 0 && !!toutes29.tiret && toutes29.tiret.texte === '—' && toutes29.tiret.police === 'IBM Plex Sans' && toutes29.tiret.doux,
+      JSON.stringify(toutes29));
+    const polT = { validite: await police(q, 'validite'), a_traiter_par: await police(q, 'a_traiter_par'), quantite: await police(q, 'quantite'), cc: await police(q, 'cc') };
+    verifier('« Toutes les colonnes » : Validité et A traiter par (codes de GATES) en Mono, Quantité et CC en Sans (B5)',
+      !!polT.validite && polT.validite.famille === 'IBM Plex Mono' && !!polT.a_traiter_par && polT.a_traiter_par.famille === 'IBM Plex Mono' &&
+      !!polT.quantite && polT.quantite.famille === 'IBM Plex Sans' && !!polT.cc && polT.cc.famille === 'IBM Plex Sans', JSON.stringify(polT));
+    // Le filtre de colonne garde la valeur brute : « - » trouve les cases « — ».
+    await q.fill('tr.filtres input[data-filtre="validite"]', '-'); await q.waitForTimeout(600);
+    const filtre29 = await q.evaluate(iv => {
+      const lignes = [...document.querySelectorAll('#corps-tableau tr')].filter(tr => tr.cells.length > iv && !tr.querySelector('.vide-message'));
+      return { n: lignes.length, tous: lignes.every(tr => tr.cells[iv].textContent.trim() === '—' && tr.cells[iv].title === '« - » dans GATES') };
+    }, toutes29.iv);
+    verifier('le filtre de colonne lit toujours « - » : il garde les cases écrites « — » (B22)', filtre29.n > 0 && filtre29.tous, JSON.stringify(filtre29));
+    await reinitialiser(q);
+    const al2 = await alignement(q);
+    verifier('« Toutes les colonnes » : intitulés, champs et cases au même bord gauche, à 1 px près', al2.n > 50 && al2.ecarts.length === 0, JSON.stringify(al2.ecarts.slice(0, 6)));
+
+    // X-A3 à 1440 : ← → le long d'une ligne, ↓ ↑ sur 25 lignes.
+    await versPlans(q);
+    await q.evaluate(() => document.querySelectorAll('#corps-tableau .ref-plan')[4].focus());
+    const cachees1440 = [];
+    await parcourir(q, [['ArrowRight', 30], ['ArrowLeft', 30], ['ArrowDown', 25], ['ArrowUp', 25]], cachees1440);
+    verifier('à 1440 × 900, 110 arrêts au clavier dans le tableau : aucune case couverte par les colonnes figées ni par les en-têtes collés (X-A3)',
+      cachees1440.length === 0, JSON.stringify(cachees1440.slice(0, 5)));
+    await c29.close();
+
+    // --- 3. 720 × 450, filtre de la page posé (bandeau collé) : la case Séquence passe sous « Référence UD ».
+    const c29b = await contexte({ prefsVierges: true, viewport: { width: 720, height: 450 } });
+    const q2 = await page(c29b, 'lot PL 720');
+    await q2.click('#etats .etat-btn >> nth=1'); await q2.waitForTimeout(500);
+    await versPlans(q2);
+    await q2.evaluate(() => document.querySelectorAll('#corps-tableau .ref-plan')[0].focus());
+    const cachees720 = [];
+    await parcourir(q2, [['ArrowDown', 3], ['ArrowRight', 8], ['ArrowLeft', 8], ['ArrowRight', 6], ['ArrowLeft', 2], ['ArrowDown', 25], ['ArrowUp', 25]], cachees720);
+    await q2.click('#vue-tableau button[data-vue="toutes"]'); await q2.waitForTimeout(800);
+    await versPlans(q2);
+    await q2.evaluate(() => document.querySelectorAll('#corps-tableau .ref-plan')[2].focus());
+    await parcourir(q2, [['ArrowRight', 20], ['ArrowLeft', 20]], cachees720);
+    verifier('à 720 × 450, ← → et ↑ ↓ (vue essentielle filtrée, puis toutes les colonnes) : chaque case atteinte est entièrement visible (X-A3)',
+      cachees720.length === 0, JSON.stringify(cachees720.slice(0, 5)));
+    await c29b.close();
+
+    // --- 4. Sombre : la portée de la recherche se lit.
+    const c29c = await contexte({ prefsVierges: true, colorScheme: 'dark', viewport: { width: 1024, height: 768 } });
+    const q3 = await page(c29c, 'lot PL sombre');
+    await q3.evaluate(lum29);
+    const sombre29 = await q3.evaluate(() => { const p = document.getElementById('portee-recherche'), inp = document.getElementById('recherche');
+      return { cr: window.__cr29(getComputedStyle(p).color, getComputedStyle(inp).backgroundColor), bouton: !!document.getElementById('ouvrir-filtres') }; });
+    verifier('en sombre, « filtre toute la page » tient 4,5:1 sur le champ ; pas de bouton « Filtrer par colonne »', sombre29.cr >= 4.5 && !sombre29.bouton, JSON.stringify(sombre29));
+    await c29c.close();
+
+    // --- 5. Téléphone 390 : la portée sous le champ, la loupe centrée, aucun « Filtrer ».
+    const c29d = await contexte({ prefsVierges: true, viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const q4 = await page(c29d, 'lot PL téléphone');
+    await versPlans(q4);
+    const tel29 = await q4.evaluate(() => {
+      const inp = document.getElementById('recherche'), p = document.getElementById('portee-recherche'), loupe = inp.parentNode.querySelector('svg');
+      const ri = inp.getBoundingClientRect(), rp = p.getBoundingClientRect(), rl = loupe.getBoundingClientRect();
+      const puce = document.querySelector('#incomplets').getBoundingClientRect();
+      const poignee = document.querySelector('#tete-tableau tr.titres th .poignee');
+      return { dessous: rp.top >= ri.bottom && rp.left >= ri.left - 1, loupe: Math.abs((rl.top + rl.height / 2) - (ri.top + ri.height / 2)), pasDeChevauchement: puce.top >= rp.bottom,
+        police: parseFloat(getComputedStyle(inp).fontSize), large: document.documentElement.scrollWidth <= 390,
+        poignee: poignee ? Math.round(poignee.getBoundingClientRect().height) : 0 };
+    });
+    const f4 = await boutonFiltrer(q4);
+    verifier('au téléphone : « filtre toute la page » sous le champ, la loupe centrée sur le champ, rien ne chevauche, pas de défilement de côté',
+      tel29.dessous && tel29.loupe <= 2 && tel29.pasDeChevauchement && tel29.police >= 16 && tel29.large, JSON.stringify(tel29));
+    verifier('au téléphone : aucun bouton « Filtrer », et la poignée d’une colonne offre 44 px de haut au doigt',
+      !f4.element && f4.vus.length === 0 && tel29.poignee >= 44, JSON.stringify([f4, tel29.poignee]));
+    await c29d.close();
+  }
   /* (fin du lot PL) */
 
 

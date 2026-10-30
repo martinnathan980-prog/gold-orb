@@ -2613,6 +2613,23 @@ button.aide[aria-expanded="true"]::before { border-color: var(--encre); backgrou
 .recherche input:focus { outline: 2px solid var(--focus); outline-offset: 2px; }
 .recherche svg { position: absolute; left: 11px; top: 50%; margin-top: -8px; color: var(--encre-3); }
 .recherche input:focus + svg, .recherche input:not(:placeholder-shown) + svg { color: var(--encre); }
+/* Débrief 29 (F5) : « filtre toute la page », au bout du champ de la
+   recherche des plans — la place lui est gardée (padding-right), il ne
+   prend pas le clic. Au téléphone, sous le champ. */
+.portee-recherche {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; line-height: 1; color: var(--encre-3); white-space: nowrap; pointer-events: none;
+}
+.recherche .portee-recherche svg { position: static; margin: 0; color: currentColor; flex: none; }
+#recherche { padding-right: 148px; }
+@media (max-width: 480px) {
+  /* Sous le champ, hors du flux : la loupe reste centrée sur le champ ; la
+     place est gardée par la marge du bloc. */
+  .portee-recherche { top: 100%; left: 0; right: auto; transform: none; margin-top: 6px; }
+  .recherche[data-base="ici"] { margin-bottom: 18px; }
+  #recherche { padding-right: 12px; }
+}
 
 .lien-doux { border: none; background: none; padding: 3px 0; font: inherit; cursor: pointer; color: var(--encre-3); text-decoration: underline; text-underline-offset: 3px; }
 .lien-doux:hover { color: var(--encre); }
@@ -2958,7 +2975,17 @@ table.plans thead .titres th button {
   display: inline-flex; align-items: center; gap: 5px;
 }
 table.plans thead .titres th button:hover { color: var(--encre); }
-.poignee { color: var(--filet-fort); cursor: grab; margin-right: 6px; opacity: 0; transition: opacity .12s; }
+.poignee { color: var(--filet-fort); cursor: grab; opacity: 0; transition: opacity .12s; }
+/* Débrief 29 (beauté NOUVEAU-3) : la poignée sort du flux — posée dans la
+   marge intérieure gauche de l'en-tête (et un peu sur celle de la colonne
+   d'avant), elle ne pousse plus l'intitulé : intitulé, champ « filtrer » et
+   cases partagent le même bord gauche. Les en-têtes sont collés (sticky) :
+   ils servent déjà de repère à la position absolue. Zone de saisie 19 × 24
+   px (elle s'arrête au bord de l'intitulé), 25 × 44 au doigt. */
+table.plans thead .titres th .poignee {
+  position: absolute; left: -5px; top: 50%; transform: translateY(-50%);
+  width: 19px; height: 24px; display: inline-flex; align-items: center; justify-content: center;
+}
 table.plans thead .titres:hover .poignee, table.plans thead .titres:focus-within .poignee { opacity: 1; }
 .fleche { color: var(--encre); }
 
@@ -2975,6 +3002,10 @@ table.plans thead tr th.col-fige { z-index: 6; }
 .fige-fin { box-shadow: inset -1px 0 0 var(--filet-fort); }
 
 .ref { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+/* Débrief 29 (B5) : dates, nombres, Oui/Non… en Plex Sans à chiffres
+   alignés ; la Mono reste à la référence, à l'ECP et aux codes de GATES
+   (voir marquerChiffres). */
+table.plans td.chiffre { font-family: "IBM Plex Sans", system-ui, sans-serif; font-variant-numeric: tabular-nums; }
 .large { max-width: 230px; overflow: hidden; text-overflow: ellipsis; }
 .doux { color: var(--encre-3); }
 .etat-cellule { display: inline-flex; align-items: center; gap: 8px; }
@@ -3101,6 +3132,8 @@ button.poignee:hover, button.poignee:focus-visible { color: var(--encre-2); opac
   .bouton-outil::after { content: ""; position: absolute; inset: -9px -2px; }
   .colonnes-vides button::after, tr.ligne-suite button::after { content: ""; position: absolute; inset: -12px -6px; }
   table.plans thead .titres th button, table.plans thead .titres-la th button { min-height: 44px; }
+  table.plans thead .titres th .poignee { height: 44px; }
+  table.plans thead .titres th .poignee::after { content: ""; position: absolute; top: 0; bottom: 0; left: -6px; right: 0; }
   table.plans thead .filtres input { font-size: 16px; min-height: 40px; }
   .menu-colonne button { min-height: 44px; }
 }
@@ -3836,7 +3869,13 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
           <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
         </svg>
         <label class="masque" for="recherche">Rechercher dans toutes les colonnes</label>
-        <input id="recherche" type="search" placeholder="Rechercher dans toutes les colonnes…" autocomplete="off">
+        <input id="recherche" type="search" placeholder="Rechercher dans toutes les colonnes…" autocomplete="off" aria-describedby="portee-recherche">
+        <!-- Débrief 29 (F5) : la recherche filtre toute la page (Synthèse,
+             courbe, journal…), pas seulement le tableau : le champ le dit
+             avant qu'on tape — l'entonnoir des filtres de la page
+             (iconeEntonnoir) et trois mots, posés dans le champ, sans rien
+             pousser. -->
+        <span class="portee-recherche" id="portee-recherche"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M1.5 2h9L7 6.2V10l-2-1.1V6.2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>filtre toute la page</span>
       </div>
       <div class="recherche" data-base="la" hidden>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -3858,20 +3897,17 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     </div>
     <!-- Débrief 27, lot D : une seule rangée d'outils sous la recherche — à
          gauche ce qui filtre ou masque, à droite ce qu'on fait du tableau.
-         Les colonnes vides de la sélection sont masquées, et le disent ; les
-         filtres de colonne ne se déplient qu'à la demande (X-A2) ; « Copier
-         le tableau » et « Télécharger (CSV) » prennent ce que le tableau
-         montre — filtres, tri et colonnes affichées (P-F21). -->
+         Les colonnes vides de la sélection sont masquées, et le disent.
+         Débrief 28 : la rangée des filtres de colonne est toujours là, sans
+         bouton pour la plier ; « Copier le tableau » et « Télécharger (CSV) »
+         sont retirés. Débrief 29 : le bouton « Filtrer par colonne », qui
+         revenait à chaque changement de base (refleterBase) et ne faisait
+         plus rien, est supprimé ; la zone des actions, vide, reste cachée —
+         ni trou ni marge à droite de la puce « non renseigné ». -->
     <div class="barre-tableau" id="barre-tableau">
       <div class="incomplets" id="incomplets" data-base="ici"></div>
       <span class="colonnes-vides" id="colonnes-vides" hidden></span>
-      <span class="actions-tableau" id="actions-tableau">
-        <span class="outil-ici" data-base="ici" hidden>
-          <button type="button" class="bouton-outil" id="ouvrir-filtres" aria-expanded="false" aria-controls="tete-tableau">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 3.5h11l-4.2 5v4l-2.6 1.2V8.5l-4.2-5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
-            <span class="mot-outil">Filtrer<span class="mot-long"> par colonne</span></span>
-          </button>
-        </span>
+      <span class="actions-tableau" id="actions-tableau" hidden>
         <button type="button" class="bouton-outil" id="copier-tableau" hidden>
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5.2" y="5.2" width="8.3" height="8.3" rx="1.3" stroke="currentColor" stroke-width="1.4"/><path d="M10.8 3.2V3a1 1 0 0 0-1-1H3.4a1 1 0 0 0-1 1v6.4a1 1 0 0 0 1 1h.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
           <span class="mot-outil">Copier<span class="mot-long"> le tableau</span></span>
@@ -6008,6 +6044,33 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     return true;
   }
 
+  /* Débrief 29 (B5, D2) : la Mono est pour les références et les codes de
+     GATES. Une colonne courte (classe « num ») se lit en Plex Sans à
+     chiffres alignés (c.chiffre : classe « chiffre » des cases) — dates,
+     nombres, Oui/Non, ATA, Séquence, Domaine, « Traité »… —, sauf l'ECP et
+     les colonnes d'état des blocs de GATES (Avancement…, Validité, A
+     traiter par, Configuration officielle, Commentaire) tant qu'elles ne
+     portent que des codes (V, NV, MR, EMPTY, 100 %) : un seul mot en
+     minuscules (« Traité », « À faire ») et la colonne passe en Sans. */
+  var TITRE_ETAT_GATES = /^(avancement|validite|a traiter par|configuration officielle|commentaire)\b/;
+  function marquerChiffres(colonnes, plans) {
+    colonnes.forEach(function (c) {
+      c.chiffre = false;
+      if (!/(^|\s)num(\s|$)/.test(c.classe || '')) return;
+      var titre = reduireTexte(String(c.titre || ''));
+      if (/^ecp\b/.test(titre)) return;
+      if (TITRE_ETAT_GATES.test(titre)) {
+        var mots = false;
+        for (var i = 0; i < plans.length && !mots; i++) {
+          var v = plans[i][c.cle];
+          if (v != null && /[a-z\u00e0-\u00ff]/.test(String(v))) mots = true;
+        }
+        if (!mots) return;
+      }
+      c.chiffre = true;
+    });
+  }
+
   /**
    * Dérive tout l'état de la page d'une source. Rejouable : la source
    * initiale et chaque contrat passent par ici.
@@ -6429,6 +6492,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        « constructor » ou « __proto__ » et passer pour une colonne. */
     PAR_CLE = Object.create(null);
     COLONNES.forEach(function (c) { PAR_CLE[c.cle] = c; });
+    marquerChiffres(COLONNES, PLANS.concat(ANCIENS));
     CLE_DATE = src.cleDate || null;
     MOIS_D_ABORD = ordreDesDates(PLANS, CLE_DATE);
     /* Le concept harnais ne se suit que si la source en nomme la colonne ;
@@ -6739,9 +6803,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       vueTable: VAUT_ESSENTIELLES ? 'essentielle' : 'toutes',
       /* Débrief 27 : les colonnes vides de bout en bout dans la sélection
          sont masquées (colonnesVides) ; « Afficher » les remet — un choix
-         retenu lui aussi. La rangée des filtres de colonne, elle, ne se
-         déplie qu'à la demande et le temps de la visite (X-A2). */
-      videsMontrees: false, filtresOuverts: false,
+         retenu lui aussi. (La rangée des filtres de colonne est toujours
+         là : débrief 28.) */
+      videsMontrees: false,
       /* La case du tableau, et l'en-tête, qui portent l'arrêt de tabulation
          (X-A2 : un seul arrêt pour les en-têtes, un pour les lignes). */
       repereTete: '', repereCorps: null
@@ -6749,7 +6813,6 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     vue.fen = cadrageParDefaut();
     if (!avant) { if (vue.vueTable === 'essentielle') appliquerVueTable(); return; }
     appliquerDisposition(avant);
-    vue.filtresOuverts = !!avant.filtresOuverts;
   }
 
   /* Les commandes fixes de la page reflètent la vue : le champ de recherche,
@@ -7708,9 +7771,16 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         ? '<span class="pastille hachure"></span>'
         : '<span class="pastille" style="background:' + v.couleur + '"></span>';
       var actif = vue.etat === v.cle;
+      /* Débrief 29 (F5) : la tuile filtre toute la page, pas seulement la
+         Synthèse — elle le dit avant le clic (au survol, et en clair aux
+         lecteurs d'écran : « Filtrer toute la page sur PWD_IN_PROGRESS,
+         220 plans »). */
+      var nV = parValeur[v.cle] || 0;
+      var dit = 'Filtrer toute la page sur ' + v.libelle;
       return '<button class="etat-btn" type="button" data-etat="' + ech(v.cle) + '" data-cle="' + ech(v.cle) + '" data-famille="' + v.famille +
         '" style="--teinte:' + v.teinte +
-        '" aria-pressed="' + actif + '" title="' + (actif ? 'Retirer le filtre' : 'N\u2019afficher que ces plans') + '">' +
+        '" aria-pressed="' + actif + '" title="' + ech(actif ? 'Retirer le filtre' : dit) + '"' +
+        (actif ? '' : ' aria-label="' + ech(dit + ', ' + nb(nV) + (nV > 1 ? ' plans' : ' plan')) + '"') + '>' +
         '<span class="etat-haut">' + pastille + '<span class="libelle">' + ech(v.libelle).replace(/_/g, '_<wbr>') + '</span></span>' +
         '<span class="etat-n">' + nb(parValeur[v.cle] || 0) + '</span>' +
         '<span class="etat-pct">' + partDite(parValeur[v.cle] || 0, c.total) + '</span></button>';
@@ -10130,20 +10200,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         '<span class="masque"> (' + ech(noms) + ')</span></span>' +
         '<button type="button" data-vides="afficher" title="' + ech('Afficher : ' + noms) + '">Afficher</button>';
   }
-  /* La rangée des filtres de colonne : dépliée à la demande, et toujours
-     quand un filtre de colonne est posé — on voit ce qui filtre. */
+  /* La rangée des filtres de colonne. Débrief 28 : elle est toujours là
+     (Nathan) ; débrief 29 : le bouton qui la pliait est supprimé. */
   function filtresColonneVisibles() {
-    /* Débrief 28 : la rangée des filtres de colonne est toujours là (Nathan). */
     return true;
-  }
-  function refleterOutilsTableau() {
-    var b = $('ouvrir-filtres');
-    if (!b) return;
-    var ouverts = filtresColonneVisibles();
-    var n = Object.keys(vue.filtres).filter(function (k) { return vue.filtres[k]; }).length;
-    b.setAttribute('aria-expanded', String(ouverts));
-    b.querySelector('.mot-outil').innerHTML = 'Filtrer<span class="mot-long"> par colonne</span>' + (n ? ' (' + nb(n) + ')' : '');
-    b.title = ouverts ? (n ? 'Les filtres de colonne posés restent affichés' : 'Replier les filtres de colonne') : 'Un champ « filtrer » sous chaque en-tête';
   }
   /* Le libellé d'un groupe d'en-têtes : celui de la colonne suivie dit ce
      qu'il est (« Avancement (GATES · HDK AA 011) » — « HDK AA 011 » seul ne
@@ -10172,11 +10232,17 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       else groupes.push(d = { nom: c.groupe, n: 1, fige: colle, debut: i, suite: !!(d && d.nom === c.groupe) });
       if (c.cle === CLE_SUIVIE) d.suivie = true;
     });
-    var html = '<tr class="groupes">' + groupes.map(function (g) {
+    /* Débrief 29 (P-F15) : la vue essentielle garde une poignée de colonnes
+       prises dans des groupes différents — sa rangée de groupes répétait
+       « Informations principales » trois fois, coupée par les autres. Elle
+       n'a plus de rangée de groupes ; « Toutes les colonnes » garde la
+       sienne, telle quelle. */
+    var sansGroupes = vue.vueTable === 'essentielle';
+    var html = (sansGroupes ? '' : '<tr class="groupes">' + groupes.map(function (g) {
       var cl = g.fige ? (g.debut + g.n === nFige ? 'col-fige fige-fin' : 'col-fige') : '';
       return '<th colspan="' + g.n + '" data-debut="' + g.debut + '"' + (cl ? ' class="' + cl + '"' : '') +
         '>' + libelleGroupeTete(g, nomSuivi) + '</th>';
-    }).join('') + '</tr><tr class="titres">' + cols.map(function (c, i) {
+    }).join('') + '</tr>') + '<tr class="titres">' + cols.map(function (c, i) {
       var actif = vue.tri.cle === c.cle;
       var fleche = actif ? '<svg class="fleche" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="' +
         (vue.tri.asc ? 'M5 8.5V1.5M2 4.5 5 1.5l3 3' : 'M5 1.5v7M2 5.5 5 8.5l3-3') +
@@ -10200,7 +10266,6 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         '" placeholder="filtrer" data-actif="' + (!!val) + '" aria-label="Filtrer ' + ech(c.titre) + '"></th>';
     }).join('') + '</tr>';
     $('tete-tableau').innerHTML = html;
-    refleterOutilsTableau();
     ajusterSticky();
   }
   /* Un tableau encore hors de l'écran n'est pas mis en page (content-
@@ -10237,9 +10302,11 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   function styleFige(i, n) { return i < n ? ' style="left:var(--fige-' + i + ',0px)"' : ''; }
   function poserColonnesFigees() {
     if (tableauHorsEcran($('cadre-tableau'))) return;
-    var g = document.querySelector('.groupes'), t = document.querySelector('.titres'), f = document.querySelector('.filtres');
-    if (!g || !t || !f) return;
-    var hg = g.getBoundingClientRect().height;
+    /* Débrief 29 : la vue essentielle n'a pas de rangée de groupes (hg = 0). */
+    var tete = $('tete-tableau');
+    var g = tete.querySelector('tr.groupes'), t = tete.querySelector('tr.titres'), f = tete.querySelector('tr.filtres');
+    if (!t || !f) return;
+    var hg = g ? g.getBoundingClientRect().height : 0;
     var ht = t.getBoundingClientRect().height;
     /* On mesure les colonnes collees et on les pose les unes apres les
        autres. Sans ce cumul, la deuxieme viendrait recouvrir la premiere. */
@@ -10253,7 +10320,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     t.querySelectorAll('th').forEach(function (th) { th.style.top = hg + 'px'; });
     f.querySelectorAll('th').forEach(function (th) { th.style.top = (hg + ht) + 'px'; });
     if (!gauche.length) return;
-    g.querySelectorAll('th.col-fige').forEach(function (th) {
+    if (g) g.querySelectorAll('th.col-fige').forEach(function (th) {
       var d = parseInt(th.dataset.debut, 10) || 0;
       th.style.left = (gauche[d] || 0) + 'px';
     });
@@ -10452,11 +10519,15 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
             '</span></td>';
         }
         var val = p[c.cle];
-        var classes = (c.classe + ' ' + fige + (c.cle === 'reference' ? ' col-ref' : '')).trim();
+        var classes = (c.classe + (c.chiffre ? ' chiffre' : '') + ' ' + fige + (c.cle === 'reference' ? ' col-ref' : '')).trim();
         /* « — » posé sur la case elle-même (classe tiret-vide), sans élément
            de plus : sur l'extract entier, ce sont des dizaines de milliers
            de cases. */
         if (val === '' || val == null) return '<td class="' + classes + ' doux tiret-vide"' + styleFige(i, nFige) + '>\u2014</td>';
+        /* Débrief 29 (B22) : « - », que l'extract écrit dans les blocs sans
+           valeur, se lit comme une case vide — « — » en gris, la valeur
+           brute dite au survol. Le tri et les filtres gardent « - ». */
+        if (String(val).trim() === '-') return '<td class="' + classes + ' doux tiret-vide"' + styleFige(i, nFige) + ' title="« - » dans GATES">\u2014</td>';
         var titre = c.classe.indexOf('large') !== -1 ? ' title="' + ech(val) + '"' : '';
         /* La référence se clique : le tableau se réduit à ce plan, et son
            historique s'ouvre au-dessus. */
@@ -13117,11 +13188,18 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if (res && res.q) annoncer(res.trouves ? nb(res.trouves) + (res.trouves > 1 ? ' plans trouvés' : ' plan trouvé') + ' dans la comparaison'
       : 'Aucun plan de la comparaison ne contient « ' + v.trim() + ' »');
   });
+  /* Débrief 29 (X-A5) : changer de base change tout le tableau — cela se
+     dit, avec le compte que la page affiche (« Base SEE affichée : 1 204
+     lignes », « Base GATES affichée : 634 plans »). */
+  function annoncerBase() {
+    annoncer('Base ' + (vue.base === 'la' ? nomSeconde() : 'GATES') + ' affichée : ' + $('compte').textContent);
+  }
   $('choix-base').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-base]');
     if (!b || b.dataset.base === vue.base) return;
     vue.base = b.dataset.base;
     rendre();
+    annoncerBase();
   });
   /* « Les voir dans GATES / SEE » : on change de côté sans toucher aux filtres. */
   $('section-plans').addEventListener('click', function (e) {
@@ -13131,6 +13209,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     rendre();
     var cible = document.querySelector('#choix-base button[data-base="' + vue.base + '"]');
     if (cible) cible.focus();
+    annoncerBase();
   });
 
   /* Survoler un bouton ou un segment du rapprochement éclaire le segment et
@@ -14027,7 +14106,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if (!b) return;
     var k = b.dataset.vide;
     if (vue.vides[k]) delete vue.vides[k]; else vue.vides[k] = true;
-    rendre();
+    /* Débrief 29 (X-A1) : la puce est redessinée ; le focus revient sur la
+       nouvelle (data-vide), pas sur le corps de la page. */
+    garderFocus(rendre, 'barre-tableau');
   });
 
   $('dim-critique').addEventListener('change', function (e) {
@@ -14674,7 +14755,49 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if (!cible) return;
     if (cible.tagName === 'TD' && !cible.hasAttribute('tabindex')) cible.setAttribute('tabindex', '-1');
     prendreRepere(cible);
-    cible.focus();
+    /* Débrief 29 (X-A3) : Chrome jugeait « visible » une case couverte par
+       la colonne figée à 1 px près, et ne défilait pas — le scroll-padding
+       du cadre restait lettre morte. Le focus ne fait plus défiler ; la case
+       est amenée à vue à la main (montrerCase). */
+    try { cible.focus({ preventScroll: true }); } catch (e) { cible.focus(); }
+    montrerCase(caseDe(cible) || cible);
+  }
+  /* Une case atteinte au clavier ne reste jamais sous ce qui la couvre :
+     à droite des colonnes figées réellement collées, sous les en-têtes
+     collés, au-dessus du fondu du bas du cadre ; puis, dans la page, sous
+     le sommaire collé et dans la fenêtre. */
+  function montrerCase(td) {
+    var defile = $('defile');
+    if (!td || !defile) return;
+    var d = defile.getBoundingClientRect();
+    var gauche = d.left + defile.clientLeft, droite = gauche + defile.clientWidth;
+    var haut = d.top + defile.clientTop, bas = haut + defile.clientHeight;
+    var colle = function (el) { return getComputedStyle(el).position === 'sticky' && getComputedStyle(el).left !== 'auto'; };
+    var figR = gauche;
+    [].forEach.call(tete.querySelectorAll('tr.titres th.col-fige'), function (th) {
+      if (!colle(th)) return;
+      var x = th.getBoundingClientRect().right;
+      if (x > figR) figR = x;
+    });
+    var r = td.getBoundingClientRect();
+    if (!(td.classList.contains('col-fige') && colle(td))) {
+      if (r.left < figR + 4) defile.scrollLeft -= Math.ceil(figR + 4 - r.left);
+      else if (r.right > droite - 4) defile.scrollLeft += Math.ceil(Math.min(r.right - (droite - 4), r.left - (figR + 4)));
+    }
+    if (defile.scrollHeight > defile.clientHeight + 1) {
+      /* Le bas des en-têtes collés : celui de leurs cases (sticky), pas du
+         thead, qui défile avec le tableau. */
+      var basTete = tete.querySelector('tr.filtres th') || tete.querySelector('tr.titres th');
+      var hautT = Math.max(haut, basTete ? basTete.getBoundingClientRect().bottom : haut);
+      var fondu = $('cadre-tableau').getAttribute('data-plus-bas') === 'true' ? 32 : 2;
+      r = td.getBoundingClientRect();
+      if (r.top < hautT + 2) defile.scrollTop -= Math.ceil(hautT + 2 - r.top);
+      else if (r.bottom > bas - fondu) defile.scrollTop += Math.ceil(Math.min(r.bottom - (bas - fondu), r.top - (hautT + 2)));
+    }
+    var hautPage = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+    r = td.getBoundingClientRect();
+    if (r.top < hautPage) window.scrollBy(0, Math.floor(r.top - hautPage));
+    else if (r.bottom > window.innerHeight - 8) window.scrollBy(0, Math.ceil(Math.min(r.bottom - window.innerHeight + 8, r.top - hautPage)));
   }
   $('corps-tableau').addEventListener('keydown', function (e) {
     var td = caseDe(e.target);
@@ -14812,18 +14935,6 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     fermerMenuColonne(false);
   });
   $('defile').addEventListener('scroll', function () { fermerMenuColonne(false); }, { passive: true });
-  /* « Filtrer par colonne » : la rangée des champs se déplie (le focus va au
-     premier), ou se replie — sauf si un filtre est posé : il reste à vue. */
-  $('ouvrir-filtres').addEventListener('click', function () {
-    var ouvrir = !filtresColonneVisibles();
-    vue.filtresOuverts = ouvrir;
-    rendreEntetes();
-    if (ouvrir) {
-      var champ = tete.querySelector('tr.filtres input');
-      if (champ) champ.focus({ preventScroll: true });
-      annoncer('Filtres de colonne affichés : un champ sous chaque en-tête');
-    } else annoncer(filtresColonneVisibles() ? 'Des filtres de colonne sont posés : ils restent affichés' : 'Filtres de colonne repliés');
-  });
   /* ============================================================
      DÉBRIEF 27, LOT D — EXPORTER LE TABLEAU (P-F21)
      « Copier le tableau » : ce que le tableau montre — filtres, tri,
