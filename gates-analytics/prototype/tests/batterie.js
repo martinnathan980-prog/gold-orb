@@ -7461,7 +7461,9 @@ async function reinitialiser(pg) {
     await c.click('#zone-critique button[data-trig="fin"]'); await c.waitForTimeout(300);
     const tri = await c.evaluate(() => ({ tries: [...document.querySelectorAll('#zone-critique [role="columnheader"][aria-sort]')].map(e => e.querySelector('button').dataset.trig + ':' + e.getAttribute('aria-sort')),
       focus: document.activeElement && document.activeElement.dataset.trig }));
-    await c.waitForTimeout(500);
+    /* annoncer attend 400 ms après le dernier appel : on attend la phrase. */
+    const attendreAnnonce = motif => c.waitForFunction(m => new RegExp(m).test((document.getElementById('annonce') || {}).textContent || ''), motif, { timeout: 5000 }).catch(() => {});
+    await attendreAnnonce('^Liste triée');
     const annonceTri = await c.evaluate(() => document.getElementById('annonce').textContent);
     verifier('C — trier par fin estimée : aria-sort passe à cette colonne, le focus y reste, et le tri est annoncé',
       tri.tries.join() === 'fin:descending' && tri.focus === 'fin' && /^Liste triée par fin estimée, ordre décroissant\./.test(annonceTri), JSON.stringify([tri, annonceTri]));
@@ -7519,6 +7521,13 @@ async function reinitialiser(pg) {
     });
     verifier('C — dans les barres, seule la part des validés s’écrit ; chaque segment garde son infobulle',
       barres.ecrits > 0 && barres.familles.join() === 'termine' && barres.titres, JSON.stringify(barres));
+    /* À 768 px, la barre n'a plus que ~115 px : « 12 % » se coupait en « 2% ». */
+    await c.setViewportSize({ width: 768, height: 900 }); await c.waitForTimeout(500);
+    const coupees = await c.evaluate(() => [...document.querySelectorAll('#zone-critique .critique-barre span[data-cle]')].filter(s => {
+      if (!s.textContent || getComputedStyle(s).fontSize === '0px') return false;
+      const r = document.createRange(); r.selectNodeContents(s); return r.getBoundingClientRect().width > s.clientWidth + 0.5; }).map(s => s.textContent));
+    verifier('C — à 768 px, aucune part n’est coupée dans une barre trop étroite : elle s’écrit en entier, ou pas du tout', coupees.length === 0, JSON.stringify(coupees));
+    await c.setViewportSize({ width: 1440, height: 900 }); await c.waitForTimeout(500);
 
     // 6. La molette au-dessus de la liste descend la page (P-F1).
     await c.evaluate(() => document.getElementById('section-repartition').scrollIntoView());
@@ -7550,11 +7559,13 @@ async function reinitialiser(pg) {
       JSON.stringify([aideC, croixC, echapC]));
 
     // 8. Déplier n'annonce que le dépliage ; le filtre de la page s'annonce.
-    await c.click('#zone-critique .critique-ligne >> nth=1'); await c.waitForTimeout(600);
+    await c.click('#zone-critique .critique-ligne >> nth=1'); await c.waitForTimeout(300);
+    await attendreAnnonce('déplié');
     const annonceDeplie = await c.evaluate(() => document.getElementById('annonce').textContent);
     const g1 = await c.evaluate(() => document.querySelectorAll('#zone-critique .critique-ligne')[1].dataset.groupe);
     const controle = await c.evaluate(() => { const l = document.querySelectorAll('#zone-critique .critique-ligne')[1]; const id = l.getAttribute('aria-controls'); return !!id && !!document.getElementById(id) && document.getElementById(id).classList.contains('groupe-refs'); });
-    await c.click('#filtrer-groupe-page'); await c.waitForTimeout(600);
+    await c.click('#filtrer-groupe-page'); await c.waitForTimeout(300);
+    await attendreAnnonce('^Page filtrée');
     const annonceFiltre = await c.evaluate(() => document.getElementById('annonce').textContent);
     verifier('C — déplier une ligne l’annonce (« ATA … déplié : N plans. »), sa ligne pointe vers sa liste (aria-controls) ; filtrer la page s’annonce aussi',
       new RegExp('^ATA ' + g1 + ' déplié : \\d+ plans?\\.$').test(annonceDeplie) && controle && new RegExp('^Page filtrée sur ATA ' + g1 + ' : \\d+ plans?\\.$').test(annonceFiltre),

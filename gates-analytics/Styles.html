@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "83d97fa";
+  --suivi-fwd-edition: "bb0a7fb";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -1826,6 +1826,8 @@ button.aide[aria-expanded="true"]::before { border-color: var(--encre); backgrou
    le bouton de la ligne, son « à l'arrêt » et sa liste dépliée. Pour
    l'œil, rien ne change : de simples blocs. */
 .critique-rangee[hidden] { display: none; }
+.critique-barre span.part-cachee { font-size: 0; }
+.critique-barre span.part-cachee .etiq-part { display: none; }
 #section-repartition.bloc-vide .ligne-filtres, #section-repartition.bloc-vide .indice-dim { display: none; }
 /* À l'impression, toute la liste : les groupes et les plans qui
    attendaient derrière « Voir les N autres » s'impriment aussi. */

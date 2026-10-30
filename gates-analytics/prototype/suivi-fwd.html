@@ -1830,6 +1830,8 @@ button.aide[aria-expanded="true"]::before { border-color: var(--encre); backgrou
    le bouton de la ligne, son « à l'arrêt » et sa liste dépliée. Pour
    l'œil, rien ne change : de simples blocs. */
 .critique-rangee[hidden] { display: none; }
+.critique-barre span.part-cachee { font-size: 0; }
+.critique-barre span.part-cachee .etiq-part { display: none; }
 #section-repartition.bloc-vide .ligne-filtres, #section-repartition.bloc-vide .indice-dim { display: none; }
 /* À l'impression, toute la liste : les groupes et les plans qui
    attendaient derrière « Voir les N autres » s'impriment aussi. */
@@ -7044,7 +7046,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
            'il faut au moins deux relevés et un plan validé entre les deux.</p>';
     }
 
-    h += '<p>Un groupe qui n’a rien validé depuis le premier relevé n’a pas de rythme : sa fin reste « — ». ' +
+    h += '<p>Un groupe qui n’a rien validé depuis le premier relevé n’a pas de rythme : sa fin reste «\u00a0—\u00a0». ' +
          'Les dates se recalculent à chaque relevé et peuvent reculer — ce n’est pas un engagement, ' +
          'c’est ce que dit le rythme tenu jusqu’ici.</p>';
     return h + '</div>';
@@ -7111,8 +7113,8 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     function partDe(n) { return '<span class="part">' + Math.round(100 * n / totalGroupe) + '\u202f%</span>'; }
     var html = '';
     if (nArret) {
-      html += '<div class="sous-arret"' + cache() + '><h4 class="titre-arret"><span class="pastille arret"></span>À l\u2019arrêt' +
-        '<span class="n">' + nb(nArret) + '</span>' + partDe(nArret) + '</h4>' +
+      html += '<div class="sous-arret"' + cache() + '><h3 class="titre-arret"><span class="pastille arret"></span>À l\u2019arrêt' +
+        '<span class="n">' + nb(nArret) + '</span>' + partDe(nArret) + '</h3>' +
         '<div class="grille-arret">' + arrets.map(function (x) { return jeton(x.plan); }).join('') + '</div></div>';
     }
     html += VALEURS_COLONNE.filter(function (v) { return parValeur[v.cle]; }).map(function (v) {
@@ -7121,8 +7123,8 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
          barre ne l'écrit plus que pour les validés ; ici, toutes les parts
          se lisent, au doigt comme au clavier, et s'additionnent avec celle
          des plans à l'arrêt. */
-      return '<div class="sous-groupe"' + cache() + '><h4 class="sous-titre">' + pastilleValeur(v.cle, v.famille) + ech(v.libelle) +
-        '<span class="n">' + nb(liste.length) + '</span>' + partDe(liste.length) + '</h4>' +
+      return '<div class="sous-groupe"' + cache() + '><h3 class="sous-titre">' + pastilleValeur(v.cle, v.famille) + ech(v.libelle) +
+        '<span class="n">' + nb(liste.length) + '</span>' + partDe(liste.length) + '</h3>' +
         '<div class="grille">' + liste.map(jeton).join('') + '</div></div>';
     }).join('');
     var plus = '';
@@ -7738,6 +7740,25 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      Elle se fait à l'image suivante, avec les autres mesures de la page. */
   function ajusterColonneNom() { aMesurer('colonneNom'); }
   function poserColonneNom() {
+    largeurColonneNom();
+    poserPartsBarre();
+  }
+  /* Débrief 27 (lot C, B25) : la part des validés ne s'écrit dans sa barre
+     que si elle y tient en entier — à 768 px, « 12 % » se coupait en
+     « 2% » dans un segment de 14 px. Sinon elle reste dans la phrase de la
+     ligne, au survol et en tête de sa sous-liste. */
+  function poserPartsBarre() {
+    var zone = $('zone-critique');
+    if (!zone) return;
+    var segs = [].filter.call(zone.querySelectorAll('.critique-barre span[data-cle]'), function (x) { return !!x.textContent; });
+    segs.forEach(function (x) { x.classList.remove('part-cachee'); });
+    var plage = document.createRange();
+    segs.filter(function (x) {
+      plage.selectNodeContents(x);
+      return x.clientWidth > 0 && plage.getBoundingClientRect().width + 4 > x.clientWidth;
+    }).forEach(function (x) { x.classList.add('part-cachee'); });
+  }
+  function largeurColonneNom() {
     var zone = $('zone-critique');
     if (!zone) return;
     zone.style.removeProperty('--col-nom');
@@ -10391,6 +10412,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         var aLaMain = !!(vue.groupe && vue.groupe.dim === vue.dimCritique && vue.groupe.val === valA && !vue.groupeParArret);
         vue.groupe = { dim: vue.dimCritique, val: valA };
         vue.groupeParArret = !aLaMain;
+        if (!(vue.groupeOuvert && vue.groupeOuvert.dim === vue.dimCritique && vue.groupeOuvert.val === valA)) vue.refsTout = false;
         vue.groupeOuvert = { dim: vue.dimCritique, val: valA };
         vue.refs = {};
         plansALArret().liste.forEach(function (x) { vue.refs[x.plan.reference] = true; });

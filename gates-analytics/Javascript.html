@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '83d97fa';
+  var EDITION = 'bb0a7fb';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -3884,7 +3884,7 @@
            'il faut au moins deux relevés et un plan validé entre les deux.\x3C/p>';
     }
 
-    h += '\x3Cp>Un groupe qui n’a rien validé depuis le premier relevé n’a pas de rythme : sa fin reste « — ». ' +
+    h += '\x3Cp>Un groupe qui n’a rien validé depuis le premier relevé n’a pas de rythme : sa fin reste «\u00a0—\u00a0». ' +
          'Les dates se recalculent à chaque relevé et peuvent reculer — ce n’est pas un engagement, ' +
          'c’est ce que dit le rythme tenu jusqu’ici.\x3C/p>';
     return h + '\x3C/div>';
@@ -3951,8 +3951,8 @@
     function partDe(n) { return '\x3Cspan class="part">' + Math.round(100 * n / totalGroupe) + '\u202f%\x3C/span>'; }
     var html = '';
     if (nArret) {
-      html += '\x3Cdiv class="sous-arret"' + cache() + '>\x3Ch4 class="titre-arret">\x3Cspan class="pastille arret">\x3C/span>À l\u2019arrêt' +
-        '\x3Cspan class="n">' + nb(nArret) + '\x3C/span>' + partDe(nArret) + '\x3C/h4>' +
+      html += '\x3Cdiv class="sous-arret"' + cache() + '>\x3Ch3 class="titre-arret">\x3Cspan class="pastille arret">\x3C/span>À l\u2019arrêt' +
+        '\x3Cspan class="n">' + nb(nArret) + '\x3C/span>' + partDe(nArret) + '\x3C/h3>' +
         '\x3Cdiv class="grille-arret">' + arrets.map(function (x) { return jeton(x.plan); }).join('') + '\x3C/div>\x3C/div>';
     }
     html += VALEURS_COLONNE.filter(function (v) { return parValeur[v.cle]; }).map(function (v) {
@@ -3961,8 +3961,8 @@
          barre ne l'écrit plus que pour les validés ; ici, toutes les parts
          se lisent, au doigt comme au clavier, et s'additionnent avec celle
          des plans à l'arrêt. */
-      return '\x3Cdiv class="sous-groupe"' + cache() + '>\x3Ch4 class="sous-titre">' + pastilleValeur(v.cle, v.famille) + ech(v.libelle) +
-        '\x3Cspan class="n">' + nb(liste.length) + '\x3C/span>' + partDe(liste.length) + '\x3C/h4>' +
+      return '\x3Cdiv class="sous-groupe"' + cache() + '>\x3Ch3 class="sous-titre">' + pastilleValeur(v.cle, v.famille) + ech(v.libelle) +
+        '\x3Cspan class="n">' + nb(liste.length) + '\x3C/span>' + partDe(liste.length) + '\x3C/h3>' +
         '\x3Cdiv class="grille">' + liste.map(jeton).join('') + '\x3C/div>\x3C/div>';
     }).join('');
     var plus = '';
@@ -4578,6 +4578,25 @@
      Elle se fait à l'image suivante, avec les autres mesures de la page. */
   function ajusterColonneNom() { aMesurer('colonneNom'); }
   function poserColonneNom() {
+    largeurColonneNom();
+    poserPartsBarre();
+  }
+  /* Débrief 27 (lot C, B25) : la part des validés ne s'écrit dans sa barre
+     que si elle y tient en entier — à 768 px, « 12 % » se coupait en
+     « 2% » dans un segment de 14 px. Sinon elle reste dans la phrase de la
+     ligne, au survol et en tête de sa sous-liste. */
+  function poserPartsBarre() {
+    var zone = $('zone-critique');
+    if (!zone) return;
+    var segs = [].filter.call(zone.querySelectorAll('.critique-barre span[data-cle]'), function (x) { return !!x.textContent; });
+    segs.forEach(function (x) { x.classList.remove('part-cachee'); });
+    var plage = document.createRange();
+    segs.filter(function (x) {
+      plage.selectNodeContents(x);
+      return x.clientWidth > 0 && plage.getBoundingClientRect().width + 4 > x.clientWidth;
+    }).forEach(function (x) { x.classList.add('part-cachee'); });
+  }
+  function largeurColonneNom() {
     var zone = $('zone-critique');
     if (!zone) return;
     zone.style.removeProperty('--col-nom');
@@ -7231,6 +7250,7 @@
         var aLaMain = !!(vue.groupe && vue.groupe.dim === vue.dimCritique && vue.groupe.val === valA && !vue.groupeParArret);
         vue.groupe = { dim: vue.dimCritique, val: valA };
         vue.groupeParArret = !aLaMain;
+        if (!(vue.groupeOuvert && vue.groupeOuvert.dim === vue.dimCritique && vue.groupeOuvert.val === valA)) vue.refsTout = false;
         vue.groupeOuvert = { dim: vue.dimCritique, val: valA };
         vue.refs = {};
         plansALArret().liste.forEach(function (x) { vue.refs[x.plan.reference] = true; });
@@ -8541,5 +8561,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = '83d97fa';
+window.SUIVI_FWD_FIN = 'bb0a7fb';
 </script>
