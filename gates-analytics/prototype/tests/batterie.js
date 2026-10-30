@@ -10187,6 +10187,54 @@ async function deplierFiltresColonne(pg) {
     try { fs27.unlinkSync(fichier27); } catch (e) { /* déjà parti */ }
   }
 
+
+  // =================================================================
+  //  Débrief 29, lot E1 — en-tête, sommaire, recherche : ses vérifications se placent ici,
+  //  dans un bloc { … } qui ouvre et ferme ses propres pages.
+  // =================================================================
+  /* (début du lot E1) */
+  /* (fin du lot E1) */
+
+
+  // =================================================================
+  //  Débrief 29, lot E2 — états, Vue d’ensemble, contrats : ses vérifications se placent ici,
+  //  dans un bloc { … } qui ouvre et ferme ses propres pages.
+  // =================================================================
+  /* (début du lot E2) */
+  /* (fin du lot E2) */
+
+
+  // =================================================================
+  //  Débrief 29, lot T — Synthèse, Tendance, couleurs : ses vérifications se placent ici,
+  //  dans un bloc { … } qui ouvre et ferme ses propres pages.
+  // =================================================================
+  /* (début du lot T) */
+  /* (fin du lot T) */
+
+
+  // =================================================================
+  //  Débrief 29, lot J — journal et Par ATA : ses vérifications se placent ici,
+  //  dans un bloc { … } qui ouvre et ferme ses propres pages.
+  // =================================================================
+  /* (début du lot J) */
+  /* (fin du lot J) */
+
+
+  // =================================================================
+  //  Débrief 29, lot PL — le tableau des plans : ses vérifications se placent ici,
+  //  dans un bloc { … } qui ouvre et ferme ses propres pages.
+  // =================================================================
+  /* (début du lot PL) */
+  /* (fin du lot PL) */
+
+
+  // =================================================================
+  //  Débrief 29, lot I — impression, pied, téléphone : ses vérifications se placent ici,
+  //  dans un bloc { … } qui ouvre et ferme ses propres pages.
+  // =================================================================
+  /* (début du lot I) */
+  /* (fin du lot I) */
+
   await ctx.close();
   await nav.close();
 
