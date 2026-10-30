@@ -3190,7 +3190,7 @@ async function reinitialiser(pg) {
     const b = document.getElementById('echeance-titre');
     return { visible: !b.hidden && b.offsetParent !== null, texte: b.textContent, jalon: b.dataset.jalon,
              /* Pas sous le titre — il ne dit que la semaine — : en tête du graphique. */
-             place: !b.closest('header.masthead') && !!b.closest('.section-tete') &&
+             place: !b.closest('.masthead') && !!b.closest('.section-tete') &&
                     b.closest('.section-tete').querySelector('h2').textContent === 'Avancement dans le temps' };
   });
   const prochainAttendu = joursAttendus.filter(j => j.jours > 0)[0];
@@ -5467,7 +5467,9 @@ async function reinitialiser(pg) {
       }
       const contraste = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
       const cs = el => getComputedStyle(el);
-      const mh = document.querySelector('header.masthead'), h1 = mh.querySelector('h1'), sem = mh.querySelector('.semaine');
+      /* Débrief 27 (lot H) : le bandeau du titre est dans l'en-tête de la page
+         (header#entete, avec la barre des réglages) : c'est un div.masthead. */
+      const mh = document.querySelector('header#entete .masthead'), h1 = mh.querySelector('h1'), sem = mh.querySelector('.semaine');
       const nav = document.getElementById('sommaire'), syn = document.getElementById('section-synthese');
       const rm = mh.getBoundingClientRect(), rn = nav.getBoundingClientRect(), rs = syn.getBoundingClientRect();
       const papier = cs(document.body).backgroundColor, surface = cs(document.getElementById('section-plans')).backgroundColor;

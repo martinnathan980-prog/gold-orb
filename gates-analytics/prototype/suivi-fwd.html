@@ -662,6 +662,9 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
   .reglages-portee select.select, .tranche-unique { flex: 1 1 0; width: auto; min-width: 0; max-width: none; }
   .reglages-portee .segmente { display: flex; flex: 1 1 auto; }
   .reglages-portee .segmente button { flex: 1 1 auto; }
+  /* Trois puces et leurs comptes ne tiennent pas à 320 px : le périmètre
+     passe sur deux lignes plutôt que de faire déborder la page. */
+  .reglages-portee #choix-perimetre { flex-wrap: wrap; }
 }
 /* Le périmètre : « Tout », puis une puce par valeur de la colonne de domaine,
    chacune avec son compte de plans. Sans colonne de domaine, il n'a rien à
