@@ -31,17 +31,63 @@ async function reinitialiser(pg) {
   if (bouton && await bouton.isVisible()) { await bouton.click(); }
   else {
     await pg.fill('#recherche', '');
-    /* Débrief 27, lot D : la rangée des filtres de colonne est repliée tant
-       qu'aucun filtre n'est posé — ses champs cachés n'ont rien à vider. */
-    for (const i of await pg.$$('input[data-filtre]')) if (await i.isVisible()) await i.fill('');
+    /* Débrief 27, lot D : la rangée des filtres de colonne était repliée tant
+       qu'aucun filtre n'est posé. Débrief 28 : elle est toujours là, et vider
+       un champ redessine les en-têtes (les autres champs sont remplacés) : on
+       reprend à chaque fois le premier champ visible encore rempli, plutôt
+       qu'une liste de champs relevée d'avance. */
+    for (let k = 0; k < 20; k++) {
+      const cle = await pg.evaluate(() => { const i = [...document.querySelectorAll('input[data-filtre]')].find(x => x.value !== '' && x.getClientRects().length > 0); return i ? i.dataset.filtre : null; });
+      if (!cle) break;
+      await pg.fill('input[data-filtre="' + cle + '"]', '').catch(() => {});
+      await pg.waitForTimeout(50);
+    }
   }
   await pg.waitForTimeout(400);
 }
-/* Débrief 27, lot D : les filtres de colonne se déplient d'un bouton
-   (« Filtrer par colonne », X-A2) avant qu'on y tape. */
+/* Débrief 29 (batterie) : après un changement de largeur, on attendait un
+   délai fixe (300 à 600 ms) — trop court sur une machine chargée (le
+   journal, les colonnes figées, la figure de la comparaison se remettent
+   en page après coup), du temps perdu ailleurs. On attend maintenant ce que
+   la page fait vraiment : son travail du « resize » (regroupé 160 ms), ses
+   mesures à l'image suivante (ResizeObserver compris : deux images), et la
+   fin de ses transitions. Au plus 5 s ; une largeur inchangée n'attend pas. */
+async function redimensionner(pg, largeur, hauteur) {
+  await pg.evaluate(([w, h]) => {
+    if (!window.__veilleRedim) {
+      window.__veilleRedim = true;
+      let m = null;
+      window.addEventListener('resize', () => {
+        window.__redimFini = false; clearTimeout(m);
+        m = setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => { window.__redimFini = true; })), 200);
+      });
+    }
+    window.__redimFini = window.innerWidth === w && window.innerHeight === h;
+  }, [largeur, hauteur]);
+  await pg.setViewportSize({ width: largeur, height: hauteur });
+  await pg.waitForFunction(w => window.innerWidth === w && window.__redimFini === true &&
+    !document.getAnimations().some(a => a.playState === 'running' && isFinite(a.effect.getComputedTiming().endTime)),
+    largeur, { timeout: 5000, polling: 'raf' }).catch(() => {});
+}
+/* Débrief 29 (batterie) : une page ouverte ou rechargée attendait un délai
+   fixe (1,3 à 1,4 s) — sur une machine chargée, elle n'avait pas toujours
+   fini de s'ouvrir (« après Vue essentielle puis rechargement » lisait la
+   vue par défaut). On attend qu'elle se dise prête (data-suivi-fwd="pret",
+   l'ouverture finie), 15 s au plus, et au moins le délai d'avant, que le
+   reste de la batterie suppose (polices, mesures d'après l'image). */
+async function attendrePrete(pg, minimum) {
+  const t0 = Date.now();
+  await pg.waitForFunction(() => document.documentElement.getAttribute('data-suivi-fwd') === 'pret' &&
+    !(window.__ouverture && window.__ouverture().enCours), null, { timeout: 15000 }).catch(() => {});
+  const reste = minimum - (Date.now() - t0);
+  if (reste > 0) await pg.waitForTimeout(reste);
+}
+/* Débrief 27, lot D : les filtres de colonne se dépliaient d'un bouton
+   (« Filtrer par colonne », X-A2). Débrief 28 : la rangée est toujours
+   affichée et le bouton est retiré — on attend seulement qu'elle soit là. */
 async function deplierFiltresColonne(pg) {
-  const b = await pg.$('#ouvrir-filtres');
-  if (b && await b.isVisible() && (await b.getAttribute('aria-expanded')) !== 'true') { await b.click(); await pg.waitForTimeout(250); }
+  await pg.waitForFunction(() => { const r = document.querySelector('tr.filtres'); return !!r && !r.hidden && r.getClientRects().length > 0; },
+    null, { timeout: 5000 }).catch(() => {});
 }
 
 (async () => {
@@ -83,7 +129,7 @@ async function deplierFiltresColonne(pg) {
     const pg = await ctx.newPage();
     brancher(pg, etiquette);
     await pg.goto(URL);
-    await pg.waitForTimeout(1300);
+    await attendrePrete(pg, 1300);
     return pg;
   }
 
@@ -272,17 +318,24 @@ async function deplierFiltresColonne(pg) {
     /* Débrief 27 (lot H, P-F12) : sans échéance à venir, « Échéances »
        reste à sa place, grisé (aria-disabled), au lieu de disparaître. */
     echeances: ((b) => !b.hidden && b.getAttribute('aria-disabled') !== 'true')(document.querySelector('.commandes-graphe .segmente button[data-span="jalons"]')),
-    contexte: document.getElementById('contexte-page').textContent
+    /* Débrief 28 : plus de surtitre au-dessus du titre (#contexte-page) ; le
+       contrat montré se lit au menu du contrat et à la légende du tableau
+       (« Plans GATES de THS : … »). */
+    surtitre: !!document.getElementById('contexte-page'),
+    option: (document.getElementById('select-contrat').selectedOptions[0] || {}).textContent || '',
+    legende: (document.getElementById('legende-tableau') || {}).textContent || ''
   }));
   await p.selectOption('#select-contrat', 'THS'); await p.waitForTimeout(1200);
   const x2 = await lireContrat();
   verifier('changer de contrat change le nombre de plans', x2.plans > 0 && x2.plans !== TOTAL, String(x2.plans));
   verifier('et le pied de page', x2.pied !== pied0, x2.pied);
-  /* Débrief 27 (lot H, B1, P-F11) : le titre ne dit toujours pas « contrat »,
-     mais son surtitre nomme ce qu'il montre (« THS · Définition électrique ») :
-     une capture dit d'elle-même quel contrat elle montre. */
-  verifier('le contrat courant est celui du sélecteur, et le surtitre du titre le nomme',
-    x2.nom === 'THS' && x2.courant === 'THS' && !/contrat/i.test(x2.masthead) && /^THS · /.test(x2.contexte), x2.nom + ' / ' + x2.contexte);
+  /* Débrief 27 (lot H, B1, P-F11) : le titre ne dit toujours pas « contrat ».
+     Débrief 28 : le surtitre (« THS · Définition électrique ») est retiré ;
+     une capture dit encore quel contrat elle montre — le menu du contrat,
+     dans le bandeau, et la légende du tableau le nomment. */
+  verifier('le contrat courant est celui du sélecteur, que le menu et la légende du tableau nomment ; plus de surtitre au-dessus du titre (débrief 28)',
+    x2.nom === 'THS' && x2.courant === 'THS' && !/contrat/i.test(x2.masthead) && !x2.surtitre && x2.option === 'THS' && /^Plans GATES de THS : /.test(x2.legende),
+    JSON.stringify([x2.nom, x2.option, x2.surtitre, x2.legende]));
   verifier('les filtres et le cadrage repartent de zero : « Échéances » (ou six mois sans jalon à venir), le repère du dernier relevé',
     x2.filtres && x2.presse === 0 && x2.cadrage === (x2.echeances ? 'jalons' : '26') && x2.aujourdhui, JSON.stringify(x2));
   verifier('le bloc par groupe et le journal suivent le nouveau contrat',
@@ -408,12 +461,14 @@ async function deplierFiltresColonne(pg) {
   const animAvant = await p.evaluate(() => document.querySelector('#venn-rapprochement .venn').classList.contains('anime'));
   await p.click('#etats .etat-btn[data-etat="termine"]'); await p.waitForTimeout(400);
   await p.click('#etats .etat-btn[data-etat="termine"]'); await p.waitForTimeout(400);
-  await p.evaluate(() => document.getElementById('venn-rapprochement').scrollIntoView({ block: 'center' })); await p.waitForTimeout(700);
+  await p.evaluate(() => document.getElementById('venn-rapprochement').scrollIntoView({ block: 'center' }));
+  /* Débrief 29 (batterie) : plus de délai fixe — on attend que la figure,
+     parue, porte « anime » (5 s au plus) ; sa fin s'attend juste dessous. */
+  await p.waitForFunction(() => document.querySelector('#venn-rapprochement .venn').classList.contains('anime'), null, { timeout: 5000, polling: 'raf' }).catch(() => {});
   const animApres = await p.evaluate(() => {
     const fig = document.querySelector('#venn-rapprochement .venn');
     return { anime: fig.classList.contains('anime'), texteVisible: parseFloat(getComputedStyle(fig.querySelector('.commun-n')).opacity) };
   });
-  await p.waitForTimeout(1200);
   /* Débrief 27 : sur une machine chargée, l'animation tarde parfois à
      démarrer (le premier dessin après le défilement se fait attendre) : on
      attend qu'elle ait fini — 5 s au plus — avant de lire l'opacité. */
@@ -1023,7 +1078,7 @@ async function deplierFiltresColonne(pg) {
      le périmètre à sa droite, tient elle aussi. */
   section('La figure et les verdicts à toutes les largeurs');
   for (const largeur of [360, 681, 700, 740, 800, 860, 960, 1280]) {
-    await p.setViewportSize({ width: largeur, height: 900 }); await p.waitForTimeout(350);
+    await redimensionner(p, largeur, 900);
     await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(600);
     const mesure = await p.evaluate(() => {
       const sec = document.getElementById('rapprochement').getBoundingClientRect();
@@ -1042,7 +1097,7 @@ async function deplierFiltresColonne(pg) {
       (mesure.coteACote || mesure.dessous) && !mesure.recouvre && mesure.dedans && mesure.figureVisible && mesure.phraseOk && mesure.page, JSON.stringify(mesure));
     await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(400);
   }
-  await p.setViewportSize({ width: 1280, height: 1000 }); await p.waitForTimeout(400);
+  await redimensionner(p, 1280, 1000);
 
   // =================================================================
   /* Le graphique, plus aérien : une échelle à valeurs rondes (0, 200, 400,
@@ -1277,7 +1332,7 @@ async function deplierFiltresColonne(pg) {
      page ouverte par son adresse nue (le lien du classeur, un nouvel onglet)
      rouvre sur Tout. */
   await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(900);
-  await p.reload(); await p.waitForTimeout(1400);
+  await p.reload(); await attendrePrete(p, 1400);
   verifier('débrief 27 : rechargée, la page garde le périmètre de son adresse (PERSO)',
     await p.evaluate(() => /perimetre=PERSO/.test(location.hash) &&
       document.querySelector('#choix-perimetre button[data-perimetre="PERSO"]').getAttribute('aria-pressed') === 'true'));
@@ -1667,11 +1722,12 @@ async function deplierFiltresColonne(pg) {
     const t = window.__semaineDuTitre();
     t.repere = ([...document.querySelectorAll('svg.graphe .repere-auj')].map(x => x.textContent)[0]) || '';
     t.sansMention = !document.getElementById('releve-semaine');
-    /* Débrief 27 (lot H, P-F10) : la ligne de la semaine seule ; l'âge des
-       chiffres a sa propre ligne dessous (#fraicheur). */
+    /* Débrief 27 (lot H, P-F10) : la ligne de la semaine seule. Débrief 28 :
+       la ligne de l'âge des chiffres (#fraicheur, « Chiffres du … · dernier
+       relevé archivé … ») est retirée de l'en-tête. */
     t.ligne = document.querySelector('.masthead .semaine').textContent.replace(/\s+/g, ' ');
-    t.fraicheur = document.getElementById('fraicheur').textContent;
-    t.ambre = !!document.querySelector('#fraicheur .vieux');
+    t.fraicheur = !!document.getElementById('fraicheur');
+    t.masthead = document.querySelector('.masthead').textContent.replace(/\s+/g, ' ');
     return t;
   });
   const attApres = attenduDuJour();   // la batterie dure : minuit peut tomber entre les deux
@@ -1680,10 +1736,12 @@ async function deplierFiltresColonne(pg) {
     (semaineTitre.num === attApres.num && semaineTitre.dates === attApres.dates),
     JSON.stringify([semaineTitre.num, semaineTitre.dates, attAvant, attApres]));
   /* Débrief 27 (lot H, P-F10, A-F13) : la ligne de la semaine reste muette
-     sur le relevé ; dessous, une ligne à part dit le dernier relevé archivé
-     — en ambre, avec son âge, quand il a plus de huit jours. */
-  verifier('la ligne de la semaine ne porte que la semaine d’aujourd’hui ; le dernier relevé archivé a sa ligne à lui, dessous',
-    !/dernier relevé|il y a/i.test(semaineTitre.ligne) && semaineTitre.sansMention && /Dernier relevé archivé : S\d+/.test(semaineTitre.fraicheur),
+     sur le relevé. Débrief 28 : la ligne à part du dernier relevé archivé
+     est retirée — l'en-tête ne dit plus ni « Chiffres du … » ni « dernier
+     relevé archivé ». */
+  verifier('la ligne de la semaine ne porte que la semaine d’aujourd’hui ; plus de ligne « Chiffres du … · dernier relevé archivé » sous elle (débrief 28)',
+    !/dernier relevé|il y a/i.test(semaineTitre.ligne) && semaineTitre.sansMention && !semaineTitre.fraicheur &&
+    !/Chiffres du|relevé archivé/i.test(semaineTitre.masthead),
     JSON.stringify(semaineTitre));
   /* Débrief 27 (B3) : un seul « maintenant » sur la courbe — le trait
      d'aujourd'hui, toujours nommé « aujourd'hui » ; le trait plein du
@@ -1713,8 +1771,11 @@ async function deplierFiltresColonne(pg) {
     };
     const attendre = ms => new Promise(r => setTimeout(r, ms));
     poser(0); await attendre(600);
+    /* Débrief 28 : plus de ligne de fraîcheur (#fraicheur) — ni son texte ni
+       son ambre ne s'écrivent nulle part dans l'en-tête. */
     const ligne = () => ({ ligne: document.querySelector('.masthead .semaine').textContent.replace(/\s+/g, ' '),
-      fraicheur: document.getElementById('fraicheur').textContent, ambre: !!document.querySelector('#fraicheur .vieux') });
+      fraicheur: !!document.getElementById('fraicheur'), ambre: !!document.querySelector('.masthead .vieux'),
+      entete: document.querySelector('.masthead').textContent.replace(/\s+/g, ' ') });
     const ajour = Object.assign(lu(), ligne());
     ajour.repere = ([...document.querySelectorAll('svg.graphe .repere-auj')].map(x => x.textContent)[0]) || '';
     poser(3); await attendre(600);
@@ -1727,13 +1788,14 @@ async function deplierFiltresColonne(pg) {
   verifier('un historique archivé cette semaine : le titre dit la semaine, la courbe dit « aujourd’hui »',
     deuxCas.ajour.iAuj === deuxCas.ajour.auj && !/dernier relevé/i.test(deuxCas.ajour.ligne) && !deuxCas.ajour.ambre && deuxCas.ajour.repere === 'aujourd’hui',
     JSON.stringify(deuxCas.ajour));
-  /* Débrief 27 : la ligne de la semaine reste muette ; celle de la
-     fraîcheur, dessous, dit l'âge du relevé, en ambre (lot H, P-F10) ; la
-     courbe garde un seul repère, « aujourd'hui », à la semaine où l'on est,
-     et le pointillé plat relie le dernier point à aujourd'hui (lot A, B3). */
-  verifier('le même reculé de trois semaines : la ligne de la semaine reste muette, la ligne de fraîcheur dit son âge en ambre ; la courbe dit « aujourd’hui » à la semaine en cours, le pointillé plat montre l’écart',
+  /* Débrief 27 : la ligne de la semaine reste muette ; la courbe garde un
+     seul repère, « aujourd'hui », à la semaine où l'on est, et le pointillé
+     plat relie le dernier point à aujourd'hui (lot A, B3). Débrief 28 : la
+     ligne de fraîcheur (l'âge du relevé, en ambre) est retirée — l'écart se
+     lit au pointillé plat de la courbe, l'en-tête ne dit plus « il y a … ». */
+  verifier('le même reculé de trois semaines : la ligne de la semaine reste muette, plus de ligne de fraîcheur (débrief 28) ; la courbe dit « aujourd’hui » à la semaine en cours, le pointillé plat montre l’écart',
     deuxCas.vieux.iAuj - deuxCas.vieux.auj === 3 && !/dernier relevé|il y a/i.test(deuxCas.vieux.ligne) &&
-    deuxCas.vieux.ambre && /il y a \d+ jours/.test(deuxCas.vieux.fraicheur) &&
+    !deuxCas.vieux.fraicheur && !deuxCas.vieux.ambre && !/il y a \d+ jours|relevé archivé/.test(deuxCas.vieux.entete) &&
     deuxCas.vieux.repere === 'aujourd’hui' && deuxCas.vieux.palier && !deuxCas.vieux.dernierRelevé,
     JSON.stringify(deuxCas.vieux));
   /* La reprise (retour sur l'onglet, minuterie horaire) ne casse rien quand
@@ -2183,23 +2245,85 @@ async function deplierFiltresColonne(pg) {
 
   // =================================================================
   section('Tri du tableau');
+  /* Débrief 29 (performance) : la boucle d'avant cliquait chaque colonne
+     deux fois sur le tableau entier — 274 clics, chacun redessinant 640
+     lignes × 137 colonnes (3 à 8 s le rendu, toutes les lignes dessinées
+     d'un bloc par la batterie) : la batterie y passait des dizaines de
+     minutes et finissait par manquer de mémoire. Même intention, en deux
+     temps :
+     1. TOUTES les colonnes, dans les deux sens, sur un échantillon de
+        lignes (la recherche « GAE3 » : 16 plans, 120 colonnes non
+        uniformes, comme l'extract entier) — un seul appel à la page, le
+        clic de chaque en-tête et la lecture de l'état (lignes, sens,
+        aria-sort, légende) faits sur place ;
+     2. quelques colonnes de natures différentes (la colonne suivie, à son
+        tri propre, une colonne texte, la dernière) cliquées pour de bon,
+        dans les deux sens, sur le tableau entier : aucune ligne perdue. */
   const cles = await p.evaluate(() => [...document.querySelectorAll('tr.titres button[data-tri]')].map(b => b.dataset.tri));
+  const lignesVues = () => p.evaluate(() => document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length);
+  await p.fill('#recherche', 'GAE3');
+  await p.waitForFunction(t => { const n = document.querySelectorAll('#corps-tableau tr').length; return n > 1 && n < t; }, TOTAL, { timeout: 5000 }).catch(() => {});
+  const ECHANTILLON = await lignesVues();
+  const triEchantillon = await p.evaluate(() => {
+    const ths = () => [...document.querySelectorAll('tr.titres th')];
+    const colonne = c => {
+      const i = ths().findIndex(t => t.dataset.cle === c);
+      return [...document.querySelectorAll('#corps-tableau tr')].map(tr => ({ t: tr.children[i].textContent.trim(), vide: tr.children[i].classList.contains('tiret-vide') }));
+    };
+    const cliquer = c => { const b = document.querySelector('tr.titres button[data-tri="' + c + '"]'); b.focus(); b.click(); };
+    const etat = (c, sens) => {
+      const th = ths().find(t => t.dataset.cle === c), b = th && th.querySelector('button[data-tri]');
+      const nom = b ? b.textContent : '';
+      const leg = (document.getElementById('legende-tableau') || {}).textContent || '';
+      return !!th && th.getAttribute('aria-sort') === (sens ? 'ascending' : 'descending') &&
+        document.querySelectorAll('tr.titres th[aria-sort="ascending"], tr.titres th[aria-sort="descending"]').length === 1 &&
+        leg.indexOf(', triées par ' + nom + ', ordre ' + (sens ? 'croissant' : 'décroissant')) !== -1;
+    };
+    /* Les cases vides (« — ») restent en bas, dans les deux sens. */
+    const videsEnBas = l => l.every((x, i) => !x.vide || l.slice(i).every(y => y.vide));
+    const n0 = document.querySelectorAll('#corps-tableau tr').length;
+    const fautes = [];
+    let inversees = 0;
+    [...document.querySelectorAll('tr.titres button[data-tri]')].map(b => b.dataset.tri).forEach(c => {
+      /* Un premier clic trie dans l'ordre croissant — sauf la colonne déjà
+         triée (la référence, à l'ouverture), qu'il inverse : on clique alors
+         jusqu'au croissant. */
+      cliquer(c); if (!etat(c, true)) cliquer(c);
+      const okAsc = etat(c, true), asc = colonne(c);
+      cliquer(c);
+      const okDesc = etat(c, false), desc = colonne(c);
+      const tAsc = asc.map(x => x.t), tDesc = desc.map(x => x.t);
+      if (asc.length !== n0 || desc.length !== n0) fautes.push(c + ' perd des lignes');
+      else if (!okAsc || !okDesc) fautes.push(c + ' : sens, aria-sort ou légende faux');
+      else if (!videsEnBas(asc) || !videsEnBas(desc)) fautes.push(c + ' : des cases vides remontent');
+      else if (new Set(tAsc).size > 1 && tAsc.join('|') === tDesc.join('|')) fautes.push(c + ' ne s’inverse pas');
+      else if (new Set(tAsc).size > 1) inversees++;
+    });
+    return { n0, colonnes: document.querySelectorAll('tr.titres button[data-tri]').length, inversees, fautes };
+  });
+  verifier('chaque colonne se trie dans les deux sens sans perdre de ligne — toutes les colonnes, sur un échantillon de lignes (sens, aria-sort et légende suivent, les cases vides restent en bas)',
+    ECHANTILLON > 1 && ECHANTILLON < TOTAL && triEchantillon.n0 === ECHANTILLON && triEchantillon.colonnes === cles.length &&
+    triEchantillon.inversees >= 100 && triEchantillon.fautes.length === 0, JSON.stringify(Object.assign({ ECHANTILLON }, triEchantillon, { fautes: triEchantillon.fautes.slice(0, 5) })));
+  await p.fill('#recherche', '');
+  await p.waitForFunction(t => document.querySelectorAll('#corps-tableau tr').length === t, TOTAL, { timeout: 15000 }).catch(() => {});
   let triOk = true, triDetail = '';
-  for (const cle of cles) {
-    await p.click(`tr.titres button[data-tri="${cle}"]`); await p.waitForTimeout(220);
-    const asc = await p.evaluate(c => {
-      const i = [...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === c);
-      return [...document.querySelectorAll('#corps-tableau tr')].map(tr => tr.children[i].textContent.trim());
-    }, cle);
-    await p.click(`tr.titres button[data-tri="${cle}"]`); await p.waitForTimeout(220);
-    const desc = await p.evaluate(c => {
-      const i = [...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === c);
-      return [...document.querySelectorAll('#corps-tableau tr')].map(tr => tr.children[i].textContent.trim());
-    }, cle);
+  const colonneEntiere = c => p.evaluate(c => {
+    const i = [...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === c);
+    return [...document.querySelectorAll('#corps-tableau tr')].map(tr => tr.children[i].textContent.trim());
+  }, c);
+  const sensDe = c => p.evaluate(c => (document.querySelector('tr.titres th[data-cle="' + c + '"]') || { getAttribute: () => '' }).getAttribute('aria-sort'), c);
+  for (const cle of [...new Set(['avancement', 'ata', cles[cles.length - 1]])].filter(c => cles.indexOf(c) !== -1)) {
+    await p.click(`tr.titres button[data-tri="${cle}"]`);
+    await p.waitForFunction(c => (document.querySelector('tr.titres th[data-cle="' + c + '"]') || { getAttribute: () => '' }).getAttribute('aria-sort') === 'ascending', cle, { timeout: 15000 }).catch(() => {});
+    const asc = await colonneEntiere(cle), sAsc = await sensDe(cle);
+    await p.click(`tr.titres button[data-tri="${cle}"]`);
+    await p.waitForFunction(c => (document.querySelector('tr.titres th[data-cle="' + c + '"]') || { getAttribute: () => '' }).getAttribute('aria-sort') === 'descending', cle, { timeout: 15000 }).catch(() => {});
+    const desc = await colonneEntiere(cle), sDesc = await sensDe(cle);
     if (asc.length !== TOTAL || desc.length !== TOTAL) { triOk = false; triDetail = cle + ' perd des lignes'; break; }
+    if (sAsc !== 'ascending' || sDesc !== 'descending') { triOk = false; triDetail = cle + ' : aria-sort ' + sAsc + '/' + sDesc; break; }
     if (asc.join('|') === desc.join('|') && new Set(asc).size > 1) { triOk = false; triDetail = cle + ' ne s\'inverse pas'; break; }
   }
-  verifier('chaque colonne se trie dans les deux sens sans perdre de ligne', triOk, triDetail);
+  verifier('cliquées pour de bon sur le tableau entier, la colonne suivie, une colonne texte et la dernière se trient dans les deux sens sans perdre de ligne', triOk, triDetail);
   verifier('aria-sort suit la colonne active',
     await p.evaluate(() => document.querySelectorAll('tr.titres th[aria-sort="ascending"], tr.titres th[aria-sort="descending"]').length === 1));
 
@@ -2381,7 +2505,22 @@ async function deplierFiltresColonne(pg) {
       /* Débrief 27 (lot C, D10) : plus de cadre qui défile — la liste prend
          sa hauteur dans la page. */
       naturel: zone.scrollHeight <= zone.clientHeight + 1 && getComputedStyle(zone).overflowY === 'visible' && getComputedStyle(zone).maxHeight === 'none',
-      total: [...document.querySelectorAll('.groupe-refs .entete')].length
+      total: [...document.querySelectorAll('.groupe-refs .entete')].length,
+      /* Débrief 28 : plus de « cliquez une référence… » ; « Filtrer la page
+         sur ATA … » et « Copier (n) » côte à côte sur leur ligne
+         (.actions-groupe), sous l'en-tête. */
+      invite: /cliquez une référence/.test(document.querySelector('.groupe-refs').textContent),
+      actions: (() => {
+        const a = document.querySelector('.groupe-refs .actions-groupe');
+        if (!a) return null;
+        const f = a.querySelector('#filtrer-groupe-page'), c = a.querySelector('button.copier');
+        const r = e => e.getBoundingClientRect();
+        return { filtrer: !!f, copier: !!c && /^Copier \(\d+\)$/.test(c.textContent.trim()),
+                 ordre: !!f && !!c && !!(f.compareDocumentPosition(c) & Node.DOCUMENT_POSITION_FOLLOWING),
+                 coteACote: !!f && !!c && r(c).left >= r(f).right && Math.abs((r(c).top + r(c).height / 2) - (r(f).top + r(f).height / 2)) <= 2,
+                 sousEntete: r(a).top >= r(document.querySelector('.groupe-refs .entete')).bottom - 1,
+                 horsEntete: !document.querySelector('.groupe-refs .entete button') };
+      })()
     };
   });
   const ordreValeurs = liste.valeurs.map(v => v.libelle);
@@ -2405,9 +2544,13 @@ async function deplierFiltresColonne(pg) {
   verifier('dans chaque sous-liste, un seul état — celui de son titre — et les références dans l’ordre',
     liste.paquets.every(q => q.refs.every(r => r.etat === q.libelle) && parRef(q.refs)),
     JSON.stringify(liste.paquets.map(q => [q.libelle, q.refs.slice(0, 2)])));
-  verifier('l\'en-tete dit combien et invite a cliquer une reference',
+  /* Débrief 28 : l'en-tête dit combien, sans plus inviter à « cliquer une
+     référence » ; ses deux gestes — filtrer la page, copier les références —
+     sont côte à côte sur leur ligne, sous lui. */
+  verifier('l’en-tête dit combien, sans « cliquez une référence… » ; « Filtrer la page sur ATA … » puis « Copier (n) », côte à côte sur leur ligne (débrief 28)',
     new RegExp('^' + grosAta.total + ' plans · ' + restantsListe + ' pas encore validés').test(liste.entete.trim()) &&
-    /cliquez une référence pour la retrouver dans le tableau/.test(liste.entete), liste.entete.trim());
+    !liste.invite && !!liste.actions && liste.actions.filtrer && liste.actions.copier && liste.actions.ordre && liste.actions.coteACote &&
+    liste.actions.sousEntete && liste.actions.horsEntete, JSON.stringify([liste.entete.trim(), liste.invite, liste.actions]));
   verifier('des jetons compacts : pastille + reference en mono, aucun ne deborde',
     liste.pastilles && liste.mono && liste.dedans);
   /* Débrief 27 (lot C, D10, P-F4, B19) : le cadre de 430 px coupait une
@@ -2425,6 +2568,16 @@ async function deplierFiltresColonne(pg) {
       return trs.length === 1 && trs[0].children[i].textContent.trim() === r &&
         [...document.querySelectorAll('.jeton')].some(j => j.textContent.indexOf(r) !== -1);
     }, refJeton), refJeton);
+  /* Débrief 28 : le journal suit la page filtrée sur un plan — il ne garde
+     que les changements de ce plan (tous, s'il en a). */
+  const journalDuPlan = await p.evaluate(r => {
+    const tous = window.__journal().reduce((l, s) => l.concat(s.evenements), []);
+    const vus = window.__journalAffiche().reduce((l, s) => l.concat(s.evenements), []);
+    return { tous: tous.length, duPlan: tous.filter(e => e.ref === r).length, vus: vus.length, autres: vus.filter(e => e.ref !== r).length,
+             lignes: [...document.querySelectorAll('#zone-journal .journal-ligne[data-ref]')].filter(l => l.dataset.ref !== r).length };
+  }, refJeton);
+  verifier('la page filtrée sur ce plan, le journal ne montre que ses changements (débrief 28)',
+    journalDuPlan.autres === 0 && journalDuPlan.lignes === 0 && journalDuPlan.vus === journalDuPlan.duPlan && journalDuPlan.vus < journalDuPlan.tous, JSON.stringify(journalDuPlan));
   /* Deux cents references d'un coup : une source ou tous les plans partagent
      le meme ATA. La liste doit rester lisible et defilable. */
   await p.evaluate(() => {
@@ -3079,7 +3232,20 @@ async function deplierFiltresColonne(pg) {
     avantGroupe.length >= 5 && deplie17.map(l => l.g + '=' + l.n).join() === avantGroupe.map(l => l.g + '=' + l.n).join() &&
     deplie17[0].presse && deplie17[0].ouvert && deplie17.slice(1).every(l => !l.presse && !l.ouvert),
     JSON.stringify(deplie17.slice(0, 4)));
+  /* Débrief 28 : le journal suit aussi les filtres de la page qui portent
+     sur des plans (un groupe ATA/ECP, une liste de plans) — comme le reste
+     de la page, il ne montre que les changements de leurs plans (Nathan :
+     « ça filtre tout, sauf semaine par semaine »). */
+  const journalDeLaPage = () => p.evaluate(() => {
+    const evts = window.__journalAffiche().reduce((l, s) => l.concat(s.evenements), []);
+    const refs = new Set([...document.querySelectorAll('#corps-tableau .ref-plan')].map(b => b.dataset.refPlan));
+    const lignes = [...document.querySelectorAll('#zone-journal .journal-ligne[data-ref]')].map(l => l.dataset.ref);
+    return { n: evts.length, refs: refs.size, horsTableau: evts.filter(e => !refs.has(e.ref)).map(e => e.ref).slice(0, 5),
+             lignesHors: lignes.filter(r => !refs.has(r)).slice(0, 5), semaines: document.querySelectorAll('#zone-journal .journal-semaine').length };
+  });
+  const journalSansGroupe = await journalDeLaPage();
   await p.click('#filtrer-groupe-page'); await p.waitForTimeout(500);
+  const journalDuGroupe = await journalDeLaPage();
   const filtre27 = await p.evaluate(() => ({
     compte: document.getElementById('compte').textContent, note: document.getElementById('note-graphe').textContent,
     jetons: [...document.querySelectorAll('#filtres-actifs .jeton')].map(j => j.textContent.replace('×', '').replace(/\s+/g, ' ').trim()),
@@ -3089,6 +3255,9 @@ async function deplierFiltresColonne(pg) {
     filtre27.compte.indexOf(TOTAL + ' plans') === -1 && /^Historique · \S+ /.test(filtre27.note) && filtre27.jetons.join() === 'ATA : ' + avantGroupe[0].g, JSON.stringify(filtre27));
   verifier('posé, le bouton dit comment le retirer, garde le focus, et la ligne porte l’entonnoir du filtre',
     filtre27.bouton === 'Retirer le filtre ATA ' + avantGroupe[0].g + ' de la page' && filtre27.focus === 'filtrer-groupe-page' && (await lignesDuBloc())[0].filtre, JSON.stringify(filtre27));
+  verifier('le journal suit le filtre de la page sur ATA … : il ne garde que les changements des plans du groupe — tous dans le tableau filtré —, moins qu’avant (débrief 28)',
+    journalSansGroupe.n > 0 && journalDuGroupe.n < journalSansGroupe.n && journalDuGroupe.horsTableau.length === 0 && journalDuGroupe.lignesHors.length === 0 &&
+    journalDuGroupe.refs < journalSansGroupe.refs, JSON.stringify([journalSansGroupe, journalDuGroupe]));
   await p.click('.critique-ligne >> nth=2'); await p.waitForTimeout(400);
   const bascule17 = await lignesDuBloc();
   verifier('cliquer un autre groupe le déplie à la place du premier, la liste reste entière ; le filtre de la page reste sur le premier',
@@ -3100,9 +3269,14 @@ async function deplierFiltresColonne(pg) {
   const bascule27 = await lignesDuBloc();
   verifier('son bouton « Filtrer la page » fait suivre le tableau à ce groupe (un seul filtre de groupe)',
     lignesTableau17 === bascule27[2].n && bascule27[2].filtre && !bascule27[0].filtre, JSON.stringify([bascule27.slice(0, 3), lignesTableau17]));
+  const journalAutreGroupe = await journalDeLaPage();
   await p.click('#filtrer-groupe-page'); await p.waitForTimeout(400);
   verifier('re-cliquer le bouton retire le filtre de la page, la ligne reste dépliée',
     (await lignesTableau27()) === TOTAL && (await lignesDuBloc())[2].presse);
+  const journalRendu = await journalDeLaPage();
+  verifier('le journal passe au groupe filtré à sa place (ses seuls plans), puis, le filtre retiré, rend tous les changements (débrief 28)',
+    journalAutreGroupe.horsTableau.length === 0 && journalAutreGroupe.lignesHors.length === 0 && journalAutreGroupe.n < journalSansGroupe.n &&
+    journalRendu.n === journalSansGroupe.n && journalRendu.semaines === journalSansGroupe.semaines, JSON.stringify([journalAutreGroupe, journalRendu, journalSansGroupe.n]));
   await p.click('.critique-ligne >> nth=2'); await p.waitForTimeout(350);
   verifier('re-cliquer la ligne la replie',
     (await lignesDuBloc()).every(l => !l.presse && !l.ouvert));
@@ -3280,8 +3454,14 @@ async function deplierFiltresColonne(pg) {
   {
     const ctxPrefs = await contexte();
     const pp = await page(ctxPrefs, 'préférences');
-    await pp.click('#vue-tableau button[data-vue="essentielle"]'); await pp.waitForTimeout(800);
-    await pp.reload(); await pp.waitForTimeout(1400);
+    await pp.click('#vue-tableau button[data-vue="essentielle"]');
+    /* Débrief 29 (batterie) : la page retient le choix 400 ms après le geste
+       (regroupé) ; sur une machine chargée, un délai fixe de 800 ms
+       rechargeait parfois avant. On attend qu'il soit retenu (5 s au plus). */
+    const retenu = (cle, val) => pp.waitForFunction(([k, v]) => { try { return JSON.stringify((JSON.parse(localStorage.getItem('suivi-fwd:v1')) || {})[k]) === JSON.stringify(v); } catch (e) { return false; } },
+      [cle, val], { timeout: 5000 }).catch(() => {});
+    await retenu('vueTable', 'essentielle');
+    await pp.reload(); await attendrePrete(pp, 1400);
     /* Débrief 27, lot D (P-F15) : la vue choisie se retient — la page
        rouverte est sur « Vue essentielle » ; « Toutes les colonnes » rend
        ensuite l'extract dans l'ordre de la feuille (l'ordre mémorisé sous la
@@ -3296,8 +3476,9 @@ async function deplierFiltresColonne(pg) {
     verifier('après « Vue essentielle » puis rechargement, la page rouvre sur la vue essentielle ; « Toutes les colonnes » revient dans l’ordre de l’extract',
       rouverteEss === 'true' && apresEssentielle.toutes === 'true' && apresEssentielle.n === COLONNES_TOTAL && apresEssentielle.tete === 'reference,avancement,rpt',
       JSON.stringify([rouverteEss, apresEssentielle]));
-    await pp.click('tr.titres button[data-tri="ata"]'); await pp.waitForTimeout(800);
-    await pp.reload(); await pp.waitForTimeout(1400);
+    await pp.click('tr.titres button[data-tri="ata"]');
+    await retenu('tri', { cle: 'ata', asc: true });
+    await pp.reload(); await attendrePrete(pp, 1400);
     verifier('le tri d’une colonne survit au rechargement',
       await pp.evaluate(() => document.querySelector('th[data-cle="ata"]').getAttribute('aria-sort') === 'ascending'));
     await ctxPrefs.close();
@@ -3666,13 +3847,17 @@ async function deplierFiltresColonne(pg) {
     bandeau13.avancementVisible && Math.abs((bandeau13.select.t + bandeau13.select.b) - (bandeau13.boutons.t + bandeau13.boutons.b)) <= 4 &&
     bandeau13.select.r < bandeau13.boutons.l &&
     bandeau13.boutonsTexte.join('|') === 'Définition électrique|Concept harnais', JSON.stringify(bandeau13));
-  /* Débrief 14 : « tout centré sur la droite ». La barre finit au bord droit
-     de la page ; chaque commande a son mot juste devant elle. */
-  const bordDroit = await p.evaluate(() => Math.round(document.querySelector('.bandeau-mode').getBoundingClientRect().right -
-    parseFloat(getComputedStyle(document.querySelector('.bandeau-mode')).paddingRight)));
-  const finBarre = await p.evaluate(() => Math.round(Math.max(...[...document.querySelectorAll('#portee .reglage')].filter(e => e.getClientRects().length).map(e => e.getBoundingClientRect().right))));
-  verifier('la barre finit au bord droit — celui de la page —, chaque commande avec son mot juste devant elle',
-    Math.abs(finBarre - bordDroit) <= 1 &&
+  /* Débrief 14 : « tout centré sur la droite ». La barre finissait au bord
+     droit de la page. Débrief 28 : sur un écran large, la barre est au
+     centre du bandeau, comme le titre (« réglages centrés ») ; chaque
+     commande a toujours son mot juste devant elle. */
+  const bordsBandeau = await p.evaluate(() => { const b = document.querySelector('.bandeau-mode'), r = b.getBoundingClientRect(), c = getComputedStyle(b);
+    return { g: r.left + parseFloat(c.paddingLeft), d: r.right - parseFloat(c.paddingRight) }; });
+  const vusBarre = await p.evaluate(() => [...document.querySelectorAll('#portee .reglage')].filter(e => e.getClientRects().length).map(e => { const r = e.getBoundingClientRect(); return [r.left, r.right]; }));
+  const debutBarre = Math.min(...vusBarre.map(x => x[0])), finBarre = Math.max(...vusBarre.map(x => x[1]));
+  const bordDroit = Math.round(bordsBandeau.d);
+  verifier('la barre est au centre du bandeau, sans toucher ses bords (débrief 28), chaque commande avec son mot juste devant elle',
+    Math.abs((debutBarre + finBarre) / 2 - (bordsBandeau.g + bordsBandeau.d) / 2) <= 2 && finBarre < bordsBandeau.d - 20 && debutBarre > bordsBandeau.g + 20 &&
     !!bandeau13.label && !!bandeau13.mot &&
     bandeau13.label.r <= bandeau13.select.l && bandeau13.select.l - bandeau13.label.r <= 14 &&
     bandeau13.mot.r <= bandeau13.boutons.l && bandeau13.boutons.l - bandeau13.mot.r <= 14 && bandeau13.motTexte === 'Avancement',
@@ -4727,7 +4912,7 @@ async function deplierFiltresColonne(pg) {
   const journalRange27 = (o, w, souple) => o.visible && o.gauche <= 2 && o.droite <= 1 && !o.deborde && !o.fondu && o.caches === 0 &&
     (souple ? /^(Passés à,Mouvements|Passés à|Mouvements)$/ : /^Passés à,Mouvements$/).test(o.titres) && (w >= 1180 ? o.premiereLigne && !o.chevauche : o.dessous);
   for (const w of [1440, 1280, 1024]) {
-    await p.setViewportSize({ width: w, height: 950 }); await p.waitForTimeout(450);
+    await redimensionner(p, w, 950);
     const l = await ligne19();
     verifier('à ' + w + ' px, journal : les pastilles à gauche, en deux rangées titrées qui passent à la ligne — aucune cachée —, « Chercher un plan » au bout à droite' + (w >= 1180 ? ', sur la première ligne' : ', dessous'),
       journalRange27(l.journal, w), JSON.stringify(l.journal));
@@ -4739,7 +4924,7 @@ async function deplierFiltresColonne(pg) {
   /* Une ligne trop longue défilait, avec un fondu au bord droit. Débrief 27
      (lot B) : à 800 px aussi, les pastilles du journal passent à la ligne —
      toutes en vue, sans fondu ni défilement. */
-  await p.setViewportSize({ width: 800, height: 950 }); await p.waitForTimeout(450);
+  await redimensionner(p, 800, 950);
   const fondu19 = await p.evaluate(async () => {
     const r = document.getElementById('filtre-journal'), rr = r.getBoundingClientRect();
     return { deborde: r.scrollWidth > r.clientWidth + 2, fondu: r.classList.contains('deborde-droite'),
@@ -4748,7 +4933,7 @@ async function deplierFiltresColonne(pg) {
   });
   verifier('à 800 px, les pastilles du journal passent à la ligne : toutes en vue, ni fondu ni défilement',
     !fondu19.deborde && !fondu19.fondu && fondu19.caches === 0 && fondu19.page, JSON.stringify(fondu19));
-  await p.setViewportSize({ width: 1280, height: 950 }); await p.waitForTimeout(450);
+  await redimensionner(p, 1280, 950);
 
   // Seulement les valeurs qu'il y a — à la définition comme au concept, dans les trois rangées.
   const rangees19 = () => p.evaluate(() => {
@@ -4803,7 +4988,7 @@ async function deplierFiltresColonne(pg) {
     window.__chargerSource(s);
   });
   for (const w of [1440, 1280, 1024]) {
-    await p.setViewportSize({ width: w, height: 950 }); await p.waitForTimeout(450);
+    await redimensionner(p, w, 950);
     const t = await p.evaluate(() => {
       const bs = [...document.querySelectorAll('#etats .etat-btn')];
       return { n: bs.length, rangs: new Set(bs.map(b => Math.round(b.getBoundingClientRect().top))).size,
@@ -4819,7 +5004,7 @@ async function deplierFiltresColonne(pg) {
     verifier('à ' + w + ' px, les sept valeurs de GATES : ' + (w >= 1280 ? 'sept tuiles sur une seule ligne' : 'deux rangées équilibrées (4 + 3)') + ', aucun libellé coupé, sans débord de la page',
       t.n === 7 && (w >= 1280 ? t.rangs === 1 : t.parRang.join() === '4,3') && !t.coupes.length && !t.points && t.page, JSON.stringify(t));
   }
-  await p.setViewportSize({ width: 1280, height: 950 }); await p.waitForTimeout(300);
+  await redimensionner(p, 1280, 950);
 
   // Relecture 19 : les trois rangées ont le même pas, l'anneau du focus n'est pas rogné, pas de barre de défilement.
   const style19 = await p.evaluate(() => ['filtre-journal', 'filtre-valeur-groupe', 'filtre-valeur-graphe'].map(id => {
@@ -4887,7 +5072,7 @@ async function deplierFiltresColonne(pg) {
   });
   const fonduBloc19 = [];
   for (const w of [1100, 1280]) {
-    await p.setViewportSize({ width: w, height: 950 }); await p.waitForTimeout(450);
+    await redimensionner(p, w, 950);
     const lire = () => p.evaluate(() => { const r = document.getElementById('filtre-valeur-groupe');
       return { fondu: r.classList.contains('deborde-droite'), deborde: r.scrollWidth - r.clientWidth - r.scrollLeft > 2, compte: document.getElementById('compte-groupes').textContent }; });
     await p.fill('#filtre-groupe', '2'); await p.waitForTimeout(500);
@@ -4896,7 +5081,7 @@ async function deplierFiltresColonne(pg) {
     const vide = await lire();
     fonduBloc19.push({ w, tape, vide });
   }
-  await p.setViewportSize({ width: 1280, height: 950 }); await p.waitForTimeout(300);
+  await redimensionner(p, 1280, 950);
   verifier('bloc : le fondu de la rangée suit le compte « n sur m » qui paraît et s’en va — jamais un fondu sans débord, jamais un débord sans fondu',
     fonduBloc19.every(x => !!x.tape.compte && x.tape.fondu === x.tape.deborde && !x.vide.compte && x.vide.fondu === x.vide.deborde), JSON.stringify(fonduBloc19));
 
@@ -5029,7 +5214,7 @@ async function deplierFiltresColonne(pg) {
                surface: getComputedStyle(document.getElementById('section-plans')).backgroundColor };
     });
     await p.evaluate(() => { window.__chargerSource(window.__jeuDExemple('HDK')); window.scrollTo(0, 0); });
-    await p.setViewportSize({ width: 1280, height: 950 }); await p.waitForTimeout(600);
+    await redimensionner(p, 1280, 950);
     const t = await lireTeintes(p);
     const nums = t.panneaux.map(x => x.numero);
     verifier('chaque panneau porte sa teinte sur son numéro : six couleurs différentes (le journal a la sienne depuis le débrief 21), la synthèse à l’encre',
@@ -5054,9 +5239,12 @@ async function deplierFiltresColonne(pg) {
 
     // --- Le sommaire : hors du bandeau du titre, collé en haut, le panneau courant marqué.
     const tete = await p.evaluate(() => ({
-      /* Débrief 27 (lot H) : le titre a son surtitre (le contrat) et sa
-         ligne de fraîcheur — quatre lignes, toujours sans le sommaire. */
-      horsTitre: !document.querySelector('.masthead .sommaire') && document.querySelector('.masthead').children.length === 4,
+      /* Débrief 27 (lot H) : le titre avait son surtitre (le contrat) et sa
+         ligne de fraîcheur — quatre lignes. Débrief 28 : ni surtitre ni
+         fraîcheur — le titre et la semaine, deux lignes, toujours sans le
+         sommaire. */
+      horsTitre: !document.querySelector('.masthead .sommaire') && document.querySelector('.masthead').children.length === 2 &&
+        document.querySelector('.masthead').children[0].id === 'titre-page' && document.querySelector('.masthead').children[1].classList.contains('semaine'),
       sousTitre: document.getElementById('sommaire').getBoundingClientRect().top >= document.querySelector('.masthead').getBoundingClientRect().bottom - 12,
       avantPanneaux: document.getElementById('sommaire').getBoundingClientRect().bottom <= document.getElementById('section-synthese').getBoundingClientRect().top,
       position: getComputedStyle(document.getElementById('sommaire')).position
@@ -5155,7 +5343,13 @@ async function deplierFiltresColonne(pg) {
     // Au téléphone : le sommaire défile de côté dans sa ligne, jamais la page.
     const ctxT = await contexte({ viewport: { width: 390, height: 844 } });
     const pt = await page(ctxT, 'sommaire téléphone');
-    await pt.click('#sommaire-liste a[data-chapitre="rapprochement"]'); await pt.waitForTimeout(1500);
+    await pt.click('#sommaire-liste a[data-chapitre="rapprochement"]');
+    /* Débrief 29 (batterie) : plus de délai fixe (1,5 s) — sur une machine
+       chargée, le glissement n'était pas fini ; on attend que la page soit
+       arrivée (l'entrée marquée, 5 s au plus, image par image). */
+    await pt.waitForFunction(() => (document.querySelector('#sommaire-liste a[aria-current]') || { dataset: {} }).dataset.chapitre === 'rapprochement',
+      null, { timeout: 5000, polling: 'raf' }).catch(() => {});
+    await pt.waitForTimeout(300);
     const tel = await pt.evaluate(() => {
       const l = document.getElementById('sommaire-liste'), a = l.querySelector('a[aria-current]');
       const lr = l.getBoundingClientRect(), ar = a ? a.getBoundingClientRect() : null;
@@ -5207,7 +5401,7 @@ async function deplierFiltresColonne(pg) {
 
     // Défaut 3a : les en-têtes du journal ne se coupent plus mot à mot entre 768 et 900 px.
     for (const w of [900, 820, 768]) {
-      await p.setViewportSize({ width: w, height: 950 }); await p.waitForTimeout(450);
+      await redimensionner(p, w, 950);
       const ent = await p.evaluate(() => [...document.querySelectorAll('.journal-entetes .entete-col')].map(e => {
         const lh = parseFloat(getComputedStyle(e.parentNode).lineHeight) || 15;
         return { texte: e.textContent, lignes: Math.round(e.getBoundingClientRect().height / lh) };
@@ -5215,7 +5409,7 @@ async function deplierFiltresColonne(pg) {
       verifier('à ' + w + ' px, chaque en-tête du journal tient sur deux lignes au plus (« passés à » / « « Terminé » »)',
         ent.length >= 3 && ent.every(e => e.lignes <= 2), JSON.stringify(ent));
     }
-    await p.setViewportSize({ width: 1280, height: 950 }); await p.waitForTimeout(400);
+    await redimensionner(p, 1280, 950);
   }
   {
     // Le classeur vide : le geste de la fenêtre d'import, le collage en secours ; ni sommaire.
@@ -5664,7 +5858,7 @@ async function deplierFiltresColonne(pg) {
     const bonChevron = x => x.ecart >= 2 && x.chevronDedans && x.visible && x.dansPanneau;
     const dims21 = await p.evaluate(() => [...document.getElementById('dim-critique').options].map(o => o.text));
     for (const w of [360, 390, 768, 1024, 1440, 1920]) {
-      await p.setViewportSize({ width: w, height: 900 }); await p.waitForTimeout(350);
+      await redimensionner(p, w, 900);
       const m = await mesurerChevrons(p);
       verifier('à ' + w + ' px, thème clair : pour les ' + dims21.length + ' dimensions, le chevron est dans le menu, visible, et le mot finit avant lui',
         m.mesures.length === dims21.length && m.mesures.every(bonChevron) && m.page, JSON.stringify(m.mesures.filter(x => !bonChevron(x))) + ' page:' + m.page);
@@ -5676,7 +5870,7 @@ async function deplierFiltresColonne(pg) {
        largeur, mesurée une fois, ne suivait pas. On pose une police de
        secours nettement plus large (espacée), sans rien appeler du script,
        puis on la retire. */
-    await p.setViewportSize({ width: 1280, height: 950 }); await p.waitForTimeout(300);
+    await redimensionner(p, 1280, 950);
     await p.selectOption('#dim-critique', 'ecp'); await p.waitForTimeout(400);
     const largeurEcp = () => p.evaluate(() => Math.round(document.getElementById('dim-critique').getBoundingClientRect().width));
     const lEcp = await largeurEcp();
@@ -5731,16 +5925,23 @@ async function deplierFiltresColonne(pg) {
       const rm = mh.getBoundingClientRect(), rn = nav.getBoundingClientRect(), rs = syn.getBoundingClientRect();
       const papier = cs(document.body).backgroundColor, surface = cs(document.getElementById('section-plans')).backgroundColor;
       const fond = cs(mh).backgroundColor;
+      /* Débrief 28 : le titre est posé sur le bandeau d'encre marine de
+         l'en-tête (peint d'un bord à l'autre par header.entete, son jeton
+         --bandeau-fond), plus sur le papier : ses contrastes se mesurent
+         contre lui. */
+      const ent = document.querySelector('header.entete');
+      const fondBandeau = (h => 'rgb(' + h.replace(/^#/, '').match(/../g).map(x => parseInt(x, 16)).join(', ') + ')')(cs(ent).getPropertyValue('--bandeau-fond').trim());
       const transparent = c => /rgba\(.*, 0\)$/.test(c) || c === 'transparent';
       const sansCadre = el => ['Top', 'Right', 'Bottom', 'Left'].every(c => parseFloat(cs(el)['border' + c + 'Width']) === 0) && cs(el).boxShadow === 'none';
       const centre = Math.abs((rm.left + rm.right) / 2 - (rs.left + rs.right) / 2) <= 2;
       const rt = document.createRange(); rt.selectNodeContents(h1);
       const rtitre = rt.getBoundingClientRect();
       const bandeau = {
-        fond, papier, fondus: transparent(fond) && sansCadre(mh) && cs(mh).borderRadius === '0px',
+        fond, papier, fondBandeau, fondus: transparent(fond) && sansCadre(mh) && cs(mh).borderRadius === '0px',
+        peint: cs(ent).borderImageSource.indexOf(fondBandeau) !== -1 && ent.contains(mh) && fondBandeau !== papier,
         poids: +cs(h1).fontWeight, taille: parseFloat(cs(h1).fontSize), police: cs(h1).fontFamily.split(',')[0],
-        cTitre: contraste(cs(h1).color, papier), cSemaine: contraste(cs(sem).color, papier),
-        cSemaineB: contraste(cs(sem.querySelector('b')).color, papier),
+        cTitre: contraste(cs(h1).color, fondBandeau), cSemaine: contraste(cs(sem).color, fondBandeau),
+        cSemaineB: contraste(cs(sem.querySelector('b')).color, fondBandeau),
         centre: centre && Math.abs((rtitre.left + rtitre.right) / 2 - (rs.left + rs.right) / 2) <= 3,
         sousTitre: rn.top >= rm.bottom - 12,
         navFond: cs(nav).backgroundColor === papier, navSansCadre: transparent(cs(nav).borderBottomColor) && parseFloat(cs(nav).borderTopWidth) === 0 &&
@@ -5770,10 +5971,13 @@ async function deplierFiltresColonne(pg) {
     });
     const verifierBandeau = (b, theme, largeur) => {
       const B = b.bandeau;
-      verifier(theme + ', ' + largeur + ' px : « Suivi FWD » se fond dans la page — posé sur le papier, sans fond, sans cadre ni ombre, centré au-dessus des panneaux, en Newsreader, grand et lisible',
-        B.fondus && B.centre && B.police === 'Newsreader' && B.taille >= (largeur < 720 ? 32 : 44) && B.cTitre >= 7 && B.cSemaine >= 4.5 && B.cSemaineB >= 4.5,
+      /* Débrief 28 : le haut de page est un bandeau marine d'un bord à
+         l'autre (plus « posé sur le papier ») ; le titre y reste sans fond ni
+         cadre à lui, centré, en Newsreader, grand et lisible sur le bandeau. */
+      verifier(theme + ', ' + largeur + ' px : « Suivi FWD » posé sur le bandeau marine de l’en-tête (débrief 28) — sans fond ni cadre à lui, centré au-dessus des panneaux, en Newsreader, grand et lisible',
+        B.fondus && B.peint && B.centre && B.police === 'Newsreader' && B.taille >= (largeur < 720 ? 32 : 44) && B.cTitre >= 7 && B.cSemaine >= 4.5 && B.cSemaineB >= 4.5,
         JSON.stringify(B));
-      verifier(theme + ', ' + largeur + ' px : le sommaire suit le titre, sur le papier, sans cadre autour — rien ne fait de l’en-tête un bloc à part',
+      verifier(theme + ', ' + largeur + ' px : le sommaire suit le titre, sur le papier, sans cadre autour — le bandeau marine s’arrête à l’en-tête (débrief 28)',
         B.sousTitre && B.navFond && B.navSansCadre, JSON.stringify(B));
       const P = b.panneaux;
       verifier(theme + ', ' + largeur + ' px : chaque panneau ouvre sur sa tête (surtitre et titre), d’un bord à l’autre, fermée d’un filet, sous un liseré de 2 px de sa teinte',
@@ -5789,14 +5993,14 @@ async function deplierFiltresColonne(pg) {
     };
     await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(300);
     verifierBandeau(await lireBandeau(p), 'thème clair', 1280);
-    await p.setViewportSize({ width: 390, height: 844 }); await p.waitForTimeout(450);
+    await redimensionner(p, 390, 844);
     verifierBandeau(await lireBandeau(p), 'thème clair', 390);
-    await p.setViewportSize({ width: 1280, height: 950 }); await p.waitForTimeout(400);
+    await redimensionner(p, 1280, 950);
     const ctxS21 = await contexte({ colorScheme: 'dark' });
     const ps21 = await page(ctxS21, 'bandeau sombre');
     verifierBandeau(await lireBandeau(ps21), 'thème sombre', 1280);
     for (const w of [360, 1440]) {
-      await ps21.setViewportSize({ width: w, height: 900 }); await ps21.waitForTimeout(350);
+      await redimensionner(ps21, w, 900);
       const m = await mesurerChevrons(ps21);
       verifier('à ' + w + ' px, thème sombre : pour chaque dimension, le chevron est visible et le mot finit avant lui',
         m.mesures.every(bonChevron) && m.page, JSON.stringify(m.mesures.filter(x => !bonChevron(x))));
@@ -5825,7 +6029,7 @@ async function deplierFiltresColonne(pg) {
        pour chaque dimension, sur chaque ligne, le texte du nom ne touche
        jamais le chevron — à 1280 px, puis au téléphone où il passe à droite. */
     for (const w of [1280, 390]) {
-      await p.setViewportSize({ width: w, height: 950 }); await p.waitForTimeout(300);
+      await redimensionner(p, w, 950);
       const chev = await p.evaluate(async () => {
         const attendre = ms => new Promise(r => setTimeout(r, ms));
         const sel = document.getElementById('dim-critique'), faux = [];
@@ -6394,16 +6598,16 @@ async function deplierFiltresColonne(pg) {
     verifier('par ECP, 1280 px : la colonne du nom ne dépasse jamais 240 px, les noms restent alignés à gauche, les barres sont alignées et larges (400 px et plus)',
       (n1280.col === '' || parseFloat(n1280.col) <= 240) && new Set(n1280.noms.map(x => x.gauche)).size === 1 &&
       n1280.barresAlignees && n1280.barre >= 400, JSON.stringify(n1280));
-    await p23.setViewportSize({ width: 900, height: 950 }); await p23.waitForTimeout(400);
+    await redimensionner(p23, 900, 950);
     const n900 = await mesurerNoms();
     verifier('par ECP, 900 px : la barre garde 220 px et plus, alignée sur les autres ; les noms trop longs passent au-dessus — toujours en entier, jamais coupés',
       n900.barre >= 219 && n900.barresAlignees && n900.noms.every(x => !x.coupe) && n900.noms.some(x => x.dessus && x.sousBarre),
       JSON.stringify(n900));
-    await p23.setViewportSize({ width: 390, height: 844 }); await p23.waitForTimeout(400);
+    await redimensionner(p23, 390, 844);
     const n390 = await mesurerNoms();
     verifier('par ECP, au téléphone : le nom a toute la ligne, sans largeur imposée, et rien n’est coupé',
       n390.col === '' && n390.noms.every(x => !x.coupe), JSON.stringify(n390));
-    await p23.setViewportSize({ width: 1280, height: 950 }); await p23.waitForTimeout(300);
+    await redimensionner(p23, 1280, 950);
     /* Une dimension aux noms courts : la colonne revient à sa largeur d'avant. */
     await p23.selectOption('#dim-critique', 'ata'); await p23.waitForTimeout(400);
     const nAta = await mesurerNoms();
@@ -6587,7 +6791,7 @@ async function deplierFiltresColonne(pg) {
 
     /* Au téléphone, chaque ligne porte ses libellés : la barre « Trier »
        ne reste pas collée — elle cachait la ligne qu'on venait d'ouvrir. */
-    await p24.setViewportSize({ width: 390, height: 844 }); await p24.waitForTimeout(400);
+    await redimensionner(p24, 390, 844);
     await poser24(6, 300); await p24.waitForTimeout(150);
     const tel24 = await p24.evaluate(() => {
       const t = document.querySelector('#zone-critique .critique-tete');
@@ -6596,7 +6800,7 @@ async function deplierFiltresColonne(pg) {
     const bas390 = await ouvrirDuBas24();
     verifier('au téléphone, la barre « Trier » défile avec la liste au lieu d’en cacher le haut, et une ligne ouverte en bas de l’écran garde son nom lisible',
       tel24.position !== 'sticky' && tel24.bas < 0 && bas390.ouverte && bas390.nomVu && bas390.sousTete >= -1, JSON.stringify({ tel24, bas390 }));
-    await p24.setViewportSize({ width: 1280, height: 950 }); await p24.waitForTimeout(400);
+    await redimensionner(p24, 1280, 950);
 
     /* Débrief 23, gardé : un nom MOYEN ne passe pas au-dessus, la colonne
        s'élargit pour lui (plus de 118 px, 240 au plus) et l'en-tête « ECP »
@@ -6642,7 +6846,7 @@ async function deplierFiltresColonne(pg) {
     }, NOMS24[2]);
     verifier('impression A4 (page de 717 px) : une ligne dont le nom est passé au-dessus à l’écran s’imprime d’un tenant — le nom sur sa ligne avec « Plans » à droite, la barre sur toute la largeur, la fin estimée dessous, rien en escalier',
       impr24.colonnes === 2 && impr24.lignesNom === 1 && impr24.memeLigne && impr24.plansADroite && impr24.barreLarge && impr24.finSousNom, JSON.stringify(impr24));
-    await p24.setViewportSize({ width: 1280, height: 950 }); await p24.waitForTimeout(400);
+    await redimensionner(p24, 1280, 950);
 
     /* « Les nouveaux sont pas droits » : des plans nouveaux arrivés à des
        valeurs de longueurs différentes, la flèche de chaque ligne au même
@@ -6694,7 +6898,9 @@ async function deplierFiltresColonne(pg) {
         const rav = av.getBoundingClientRect(), rap = ap.getBoundingClientRect();
         const finAvant = Math.max(...texte(av).map(n => { const rg = document.createRange(); rg.selectNodeContents(n); return Math.max(...[...rg.getClientRects()].map(r => r.right)); }));
         return { ref: l.dataset.ref, valeur: (type === 'nouveau' ? ap : av).textContent,
-                 avant: Math.round(rav.right), fleche: Math.round(f.left), apres: Math.round(rap.left), droite: Math.round(rap.right),
+                 avant: Math.round(rav.right), avantGauche: Math.round(rav.left), colonneAvant: Math.round(l.querySelector('.vers').getBoundingClientRect().left),
+                 alignAvant: getComputedStyle(av).textAlign, finAvant: Math.round(finAvant),
+                 fleche: Math.round(f.left), apres: Math.round(rap.left), droite: Math.round(rap.right),
                  large: Math.round(l.querySelector('.vers').getBoundingClientRect().right), ecartAvant: Math.round(f.left - finAvant),
                  coupe: ap.scrollWidth > ap.clientWidth + 1 || av.scrollWidth > av.clientWidth + 1, haut: Math.round(rap.height),
                  lignes: 1 + coupures(type === 'nouveau' ? ap : av).length, coupuresMot: [...coupures(av), ...coupures(ap)].filter(c => c !== '_' && c !== ' ') };
@@ -6719,13 +6925,13 @@ async function deplierFiltresColonne(pg) {
        valeur coupée au milieu d'un mot ni rognée au bord. */
     const etroits24 = [];
     for (const w of [720, 600, 390, 360]) {
-      await p24.setViewportSize({ width: w, height: 900 }); await p24.waitForTimeout(450);
+      await redimensionner(p24, w, 900);
       const ls = await mesurerJournal24('nouveau');
       etroits24.push({ w, n: ls.length, fleches: [...new Set(ls.map(x => x.fleche))], apres: [...new Set(ls.map(x => x.apres))],
         debord: ls.filter(x => x.droite > x.large + 1 || x.coupe).map(x => x.valeur), coupuresMot: ls.filter(x => x.coupuresMot.length).map(x => x.valeur),
         gates: ligne24(ls, 'PWD_IN_PROGRESS').lignes });
     }
-    await p24.setViewportSize({ width: 1280, height: 950 }); await p24.waitForTimeout(450);
+    await redimensionner(p24, 1280, 950);
     verifier('journal sous 720 px (720, 600, 390, 360) : la flèche et l’arrivée tombent au même endroit sur chaque ligne, rien n’est rogné, aucun mot coupé, PWD_IN_PROGRESS sur une ligne',
       etroits24.every(x => x.n === VALEURS24.length && x.fleches.length === 1 && x.apres.length === 1 && !x.debord.length && !x.coupuresMot.length && x.gates === 1),
       JSON.stringify(etroits24));
@@ -6733,9 +6939,14 @@ async function deplierFiltresColonne(pg) {
     await p24.click('#filtre-journal button[data-journal="disparus"]'); await p24.waitForTimeout(300);
     const disparus24 = await mesurerJournal24('disparu');
     const longD = ligne24(disparus24, 'Valeur saisie à la main beaucoup trop longue');
-    verifier('journal, plans disparus : une valeur de départ sur deux lignes reste collée à sa flèche, au même écart que les valeurs sur une ligne',
-      disparus24.length === 3 && longD.lignes >= 2 && memes(disparus24, 'fleche') && memes(disparus24, 'ecartAvant') && disparus24[0].ecartAvant <= 6 &&
-      disparus24.every(x => !x.coupe && !x.coupuresMot.length), JSON.stringify(disparus24));
+    /* Débrief 28 : les valeurs de départ s'alignent à gauche, en colonne,
+       comme les arrivées (calées contre la flèche, « nouveau » ou « TO_TREAT »
+       semblaient décalés) : même bord gauche sur chaque ligne, une valeur sur
+       deux lignes passe à la ligne dans sa colonne, sans toucher la flèche. */
+    verifier('journal, plans disparus : les valeurs de départ alignées à gauche, en colonne (même bord gauche) ; celle sur deux lignes reste dans sa colonne, avant la flèche (débrief 28)',
+      disparus24.length === 3 && longD.lignes >= 2 && memes(disparus24, 'fleche') && memes(disparus24, 'avantGauche') &&
+      disparus24.every(x => x.alignAvant === 'left' && x.avantGauche - x.colonneAvant <= 1 && x.finAvant <= x.fleche && !x.coupe && !x.coupuresMot.length),
+      JSON.stringify(disparus24));
     await cx24.close();
   }
 
@@ -6749,7 +6960,7 @@ async function deplierFiltresColonne(pg) {
     return b ? b.dataset.trig : null;
   });
   await p.waitForTimeout(700);
-  await p.reload(); await p.waitForTimeout(1400);
+  await p.reload(); await attendrePrete(p, 1400);
   const apresRech = await p.evaluate(() => {
     const b = document.querySelector('button[data-trig][data-actif="true"]');
     return { tri: b ? b.dataset.trig : null, jalons: window.__jeuDExemple('HDK').jalons.length,
@@ -7074,7 +7285,10 @@ async function deplierFiltresColonne(pg) {
     presse: ([...document.querySelectorAll('#zone-critique button[data-arret-groupe]')].find(b => b.dataset.arretGroupe === g) || {}).getAttribute('aria-pressed'),
     surveiller: (document.getElementById('a-surveiller').textContent.match(/(\d+) plans?/) || [])[1],
     jetons: [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').trim()),
-    premier: (document.querySelector('#zone-critique .groupe-refs > :nth-child(2)') || {}).className,
+    /* Débrief 28 : sous l'en-tête du groupe vient la ligne de ses gestes
+       (.actions-groupe : filtrer la page, copier) ; la première liste est
+       celle qui la suit. */
+    premier: (([...((document.querySelector('#zone-critique .groupe-refs') || {}).children || [])].filter(c => !c.classList.contains('entete') && !c.classList.contains('actions-groupe'))[0]) || {}).className,
     titre: ((document.querySelector('#zone-critique .groupe-refs .titre-arret') || {}).textContent || '').replace(/[\u00a0\u202f]/g, ' '),
     depuis: [...document.querySelectorAll('#zone-critique .groupe-refs .sous-arret .jeton-ud')].map(b => (b.querySelector('.depuis') || {}).textContent)
   }), arretG.g);
@@ -7134,7 +7348,7 @@ async function deplierFiltresColonne(pg) {
   brancher(pc, 'corrompu');
   await pc.goto(URL); await pc.waitForTimeout(600);
   await pc.evaluate(() => localStorage.setItem('suivi-fwd:v1', '{ceci n\'est pas du JSON'));
-  await pc.reload(); await pc.waitForTimeout(1300);
+  await pc.reload(); await attendrePrete(pc, 1300);
   verifier('un stockage illisible ne bloque pas le démarrage',
     await pc.evaluate(t => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === t, TOTAL));
   await pc.evaluate(() => localStorage.setItem('suivi-fwd:v1', JSON.stringify({
@@ -7144,7 +7358,7 @@ async function deplierFiltresColonne(pg) {
     /* Débrief 27 : l'extract entier, pour que la vérification porte sur « cachees ». */
     vueTable: 'toutes', videsMontrees: true
   })));
-  await pc.reload(); await pc.waitForTimeout(1300);
+  await pc.reload(); await attendrePrete(pc, 1300);
   await pc.click('.segmente button[data-span="0"]'); await pc.waitForTimeout(400);
   const survie = await pc.evaluate(() => ({
     lignes: (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length),
@@ -7224,7 +7438,7 @@ async function deplierFiltresColonne(pg) {
     const ctxL = await contexte({ colorScheme: theme });
     const pl = await page(ctxL, 'graphique ' + theme);
     for (const w of [360, 768, 1024, 1440, 1920]) {
-      await pl.setViewportSize({ width: w, height: 950 }); await pl.waitForTimeout(450);
+      await redimensionner(pl, w, 950);
       largeurs20.push(Object.assign({ theme, w }, await pl.evaluate(lireDessin20)));
     }
     await ctxL.close();
@@ -7264,7 +7478,7 @@ async function deplierFiltresColonne(pg) {
 
   /* La molette en zoom arrière s'arrête à la largeur de « Tout » (elle
      allait jusqu'à deux ans, la moitié du graphique vide). */
-  await pe.setViewportSize({ width: 1280, height: 950 }); await pe.waitForTimeout(450);
+  await redimensionner(pe, 1280, 950);
   await pe.click('.segmente button[data-span="0"]'); await pe.waitForTimeout(350);
   const nTout20 = await pe.evaluate(() => document.querySelectorAll('svg.graphe .zone-clic').length);
   await pe.click('.segmente button[data-span="26"]'); await pe.waitForTimeout(350);
@@ -7460,14 +7674,17 @@ async function deplierFiltresColonne(pg) {
     await g.keyboard.press('Escape'); await g.waitForTimeout(300);
     verifier('Échap ferme l’aide et rend le focus au bouton qui l’avait ouverte',
       await g.evaluate(() => !document.getElementById('aide').open && document.activeElement.id === 'ouvrir-aide-pied'));
-    /* Le bouton « Aide » du bandeau (#ouvrir-aide, posé par l'en-tête) ouvre la même fenêtre. */
-    await g.evaluate(() => { const b = document.createElement('button'); b.type = 'button'; b.id = 'ouvrir-aide'; b.textContent = 'Aide'; document.getElementById('reglages').appendChild(b); });
-    await g.click('#ouvrir-aide'); await g.waitForTimeout(300);
+    /* Le bouton « Aide » de la page (#ouvrir-aide) ouvre la même fenêtre.
+       Débrief 28 : c'est l'icône ronde au bout du sommaire (plus un bouton
+       posé dans le bandeau) — on clique la vraie, sans en fabriquer. */
+    const iconeAide = await g.evaluate(() => { const b = document.getElementById('ouvrir-aide'); return { un: document.querySelectorAll('#ouvrir-aide').length, dansSommaire: !!b && !!b.closest('nav.sommaire #outils-page') }; });
+    await g.click('#ouvrir-aide');
+    await g.waitForFunction(() => document.getElementById('aide').open, null, { timeout: 3000 }).catch(() => {});
     const parBandeau = await g.evaluate(() => document.getElementById('aide').open);
-    await g.click('#aide-fermer'); await g.waitForTimeout(300);
-    verifier('#ouvrir-aide (le bouton du bandeau) ouvre la même aide ; la croix la ferme et rend le focus',
-      parBandeau && await g.evaluate(() => !document.getElementById('aide').open && document.activeElement.id === 'ouvrir-aide'));
-    await g.evaluate(() => document.getElementById('ouvrir-aide').remove());
+    await g.click('#aide-fermer');
+    await g.waitForFunction(() => !document.getElementById('aide').open, null, { timeout: 3000 }).catch(() => {});
+    verifier('#ouvrir-aide (l’icône du sommaire, débrief 28) ouvre la même aide ; la croix la ferme et rend le focus',
+      iconeAide.un === 1 && iconeAide.dansSommaire && parBandeau && await g.evaluate(() => !document.getElementById('aide').open && document.activeElement.id === 'ouvrir-aide'), JSON.stringify(iconeAide));
 
     // --- Le raccourci « / » se coupe dans l'aide (WCAG 2.1.4), et le choix est gardé.
     await g.evaluate(() => { document.activeElement.blur(); window.scrollTo(0, 0); });
@@ -7503,21 +7720,43 @@ async function deplierFiltresColonne(pg) {
 
     // --- Annonces : le périmètre, un filtre posé, un filtre retiré.
     await g.evaluate(() => window.scrollTo(0, 0));
-    const lireAnnonce = async () => { await g.waitForTimeout(700); return g.evaluate(() => document.getElementById('annonce').textContent); };
+    /* Débrief 29 (batterie) : l'échec connu d'ici (« les changements de la
+       page sont dits ») venait d'un délai fixe de 700 ms — la page annonce
+       400 ms après le geste, puis 60 ms (la zone vidée, puis écrite), soit
+       660 à 730 ms après le clic : on lisait parfois encore l'annonce
+       d'avant. On compte les messages écrits dans la zone et on attend le
+       suivant (5 s au plus), puis 500 ms de calme pour garder le dernier. */
+    await g.evaluate(() => {
+      if (window.__annonces) return;
+      window.__annonces = [];
+      const z = document.getElementById('annonce');
+      new MutationObserver(() => { if (z.textContent) window.__annonces.push(z.textContent); }).observe(z, { childList: true, characterData: true, subtree: true });
+    });
+    const nbAnnonces = () => g.evaluate(() => window.__annonces.length);
+    const lireAnnonce = async n0 => {
+      await g.waitForFunction(n => window.__annonces.length > n, n0, { timeout: 5000 }).catch(() => {});
+      await g.waitForTimeout(500);
+      return g.evaluate(() => window.__annonces.length ? window.__annonces[window.__annonces.length - 1] : document.getElementById('annonce').textContent);
+    };
+    let n0 = await nbAnnonces();
     await g.click('#choix-perimetre button[data-perimetre="PERSO"]');
-    const aPer = await lireAnnonce();
+    const aPer = await lireAnnonce(n0);
+    n0 = await nbAnnonces();
     await g.click('.etat-btn >> nth=1');
-    const aEtat = await lireAnnonce();
+    const aEtat = await lireAnnonce(n0);
+    n0 = await nbAnnonces();
     await g.click('#tout-effacer');
-    const aRetire = await lireAnnonce();
+    const aRetire = await lireAnnonce(n0);
     /* Débrief 27, intégration : la tuile dit elle-même son état (lot A, « 60
        plans en En cours · 26 % du périmètre PERSO »), et « Tout effacer »
        le sien (lot H, « Filtres effacés : … ») — la phrase générale ne les
-       recouvre plus. */
-    verifier('les changements de la page sont dits : « Périmètre PERSO : … », l’état choisi avec son nombre de plans, puis « Filtres effacés / Filtre retiré : … »',
-      /^Périmètre PERSO : \d+ sur \d+ plans? validés?\.$/.test(aPer) &&
-      (/^État \S.* : (\d[\d  ]* plans?( sur \d[\d  ]*)?|aucun plan)\.$/.test(aEtat) || /^\d[\d  ]* plans? en \S.* · \d+(,\d+)? % du périmètre/.test(aEtat)) &&
-      /^(Filtres? retirés?|Filtres effacés) : /.test(aRetire),
+       recouvre plus. Débrief 29 : on attend leur phrase d'aujourd'hui, telle
+       quelle (plus les tournures d'avant, « État … : N plans » ou « Filtre
+       retiré »). */
+    verifier('les changements de la page sont dits : « Périmètre PERSO : N sur M plans validés. », la tuile choisie (« N plans en … · P % du périmètre PERSO »), puis « Filtres effacés : … »',
+      /^Périmètre PERSO : \d[\d\u00a0\u202f ]* sur \d[\d\u00a0\u202f ]* plans? validés?\.$/.test(aPer) &&
+      /^\d[\d\u00a0\u202f ]* plans? en \S.* · \d+(,\d+)? % du périmètre PERSO$/.test(aEtat) &&
+      /^Filtres effacés : \d[\d\u00a0\u202f ]* sur \d[\d\u00a0\u202f ]* plans? validés?\.$/.test(aRetire),
       JSON.stringify([aPer, aEtat, aRetire]));
 
     // --- Le lien de la vue : l'adresse suit (contrat, avancement, périmètre, recherche, section).
@@ -7760,6 +7999,10 @@ async function deplierFiltresColonne(pg) {
           const autre = s.querySelector('button[aria-pressed="false"]:not([hidden])');
           return {
             id: s.id || s.getAttribute('aria-label'), piste: cs(s).backgroundColor, rayon: cs(s).borderTopLeftRadius,
+            /* Débrief 28 : dans le bandeau marine de l'en-tête, la pastille
+               choisie prend la puce du bandeau (son jeton --seg-puce, lu ici). */
+            bandeau: !!s.closest('header.entete'),
+            puceBandeau: (v => v ? 'rgb(' + v.replace(/^#/, '').match(/../g).map(x => parseInt(x, 16)).join(', ') + ')' : '')(cs(s).getPropertyValue('--seg-puce').trim()),
             haut: Math.round(s.getBoundingClientRect().height),
             bordsBoutons: [...s.querySelectorAll('button')].every(b => parseFloat(cs(b).borderLeftWidth) === 0 && parseFloat(cs(b).borderRightWidth) === 0),
             presseFond: presse ? cs(presse).backgroundColor : null, presseGras: presse ? cs(presse).fontWeight : null,
@@ -7788,12 +8031,24 @@ async function deplierFiltresColonne(pg) {
           tiret: !!document.querySelector('style') && [...document.styleSheets].some(f => { try { return [...f.cssRules].some(x => x.selectorText === '.tiret-vide'); } catch (e) { return false; } })
         };
       });
-      verifier(schema + ' : chaque contrôle segmenté de la page est une piste de 28 px, rayon 7, sans filet entre les boutons ; le choix est une pastille levée en graisse 500, lisible (≥ 7:1), les autres choix ≥ 4,5:1',
-        r.segs.length >= 3 && r.segs.every(s => Math.abs(s.haut - 28) <= 1 && s.rayon === '7px' && s.bordsBoutons && s.presseGras === '500' && s.ombre && s.presseEncre >= 7 && s.autreEncre >= 4.5),
+      /* Débrief 28 : les contrôles de l'en-tête sont sur le bandeau marine,
+         dont les jetons sont redéfinis pour que « ses contrôles gardent leurs
+         contrastes » : la même règle (choix ≥ 7:1) s'y vérifie à part, pour
+         qu'un écart du bandeau se lise comme tel. */
+      verifier(schema + ' : chaque contrôle segmenté de la page est une piste de 28 px, rayon 7, sans filet entre les boutons ; le choix est une pastille levée en graisse 500, lisible (≥ 7:1 hors du bandeau), les autres choix ≥ 4,5:1',
+        r.segs.length >= 3 && r.segs.every(s => Math.abs(s.haut - 28) <= 1 && s.rayon === '7px' && s.bordsBoutons && s.presseGras === '500' && s.ombre && (s.bandeau || s.presseEncre >= 7) && s.autreEncre >= 4.5),
         JSON.stringify(r.segs));
-      verifier(schema + ' : plus de pavé noir — la pastille choisie est claire en clair (blanche), sombre en sombre',
-        r.segs.every(s => s.presseFond === (schema === 'light' ? 'rgb(255, 255, 255)' : 'rgb(44, 44, 51)')),
-        JSON.stringify(r.segs.map(s => s.presseFond)));
+      verifier(schema + ' : dans le bandeau marine de l’en-tête (débrief 28), le choix d’un contrôle segmenté reste lisible (≥ 7:1), comme ailleurs',
+        r.segs.some(s => s.bandeau) && r.segs.filter(s => s.bandeau).every(s => s.presseEncre >= 7),
+        JSON.stringify(r.segs.filter(s => s.bandeau).map(s => [s.id, s.presseFond, +s.presseEncre.toFixed(2)])));
+      /* Débrief 28 : les contrôles de l'en-tête sont posés sur le bandeau
+         marine — leur pastille choisie est la puce du bandeau (jeton
+         --seg-puce), lisible (≥ 7:1, plus haut) ; ailleurs, toujours claire
+         en clair (blanche), sombre en sombre. */
+      verifier(schema + ' : plus de pavé noir — la pastille choisie est claire en clair (blanche), sombre en sombre ; dans le bandeau marine de l’en-tête, la puce du bandeau (débrief 28)',
+        r.segs.some(s => s.bandeau) && r.segs.some(s => !s.bandeau) &&
+        r.segs.every(s => s.bandeau ? (!!s.puceBandeau && s.presseFond === s.puceBandeau) : s.presseFond === (schema === 'light' ? 'rgb(255, 255, 255)' : 'rgb(44, 44, 51)')),
+        JSON.stringify(r.segs.map(s => [s.id, s.bandeau, s.presseFond, s.puceBandeau])));
       verifier(schema + ' : une seule tête neutre pour tous les panneaux ; la teinte ne reste qu\'au liseré de 2 px, de la couleur du numéro',
         r.tetes.length >= 5 && r.tetes.every(t => t === r.tetes[0]) && r.tetes[0] === (schema === 'light' ? 'rgb(248, 247, 243)' : 'rgb(27, 27, 31)') &&
         r.liseres.every(l => l.l === 2 && l.c === l.n), JSON.stringify({ tetes: r.tetes, liseres: r.liseres }));
@@ -7807,12 +8062,20 @@ async function deplierFiltresColonne(pg) {
         verifier('la classe commune du tiret de case vide (.tiret-vide) existe', r.tiret);
       } else {
         verifier('sombre : les feuilles sont chaudes comme le papier (surface #171716)', r.surface === 'rgb(23, 23, 22)', r.surface);
-        const sombre27 = await q.evaluate(() => ({
-          afaire: getComputedStyle(document.documentElement).getPropertyValue('--v-afaire-2').trim(),
-          encre3: window.__contraste(getComputedStyle(document.documentElement).getPropertyValue('--encre-3').trim().replace(/^#(..)(..)(..)$/, (m, a, b, c) => 'rgb(' + [a, b, c].map(h => parseInt(h, 16)).join(',') + ')'), getComputedStyle(document.getElementById('section-plans')).backgroundColor)
-        }));
-        verifier('sombre : TO_TREAT (#9d9990) n\'est plus la marque la plus claire de la barre, et le gris tertiaire tient 4,5:1 sur la surface',
-          sombre27.afaire === '#9d9990' && sombre27.encre3 >= 4.5, JSON.stringify(sombre27));
+        /* Débrief 28 : les couleurs des états « Terre » — TO_TREAT n'est plus
+           #9d9990 ; la valeur est lue au jeton (--v-afaire-2) et mesurée
+           contre les autres marques de la barre, plus écrite en dur. */
+        const sombre27 = await q.evaluate(() => {
+          const rac = getComputedStyle(document.documentElement), jeton = n => rac.getPropertyValue(n).trim();
+          const rgb = h => h.replace(/^#(..)(..)(..)$/, (m, a, b, c) => 'rgb(' + [a, b, c].map(x => parseInt(x, 16)).join(',') + ')');
+          const marques = ['--fait', '--v-fait-2', '--v-cours-1', '--v-cours-2', '--v-cours-3', '--v-cours-4', '--v-cours-5', '--v-cours-6', '--v-afaire-1'].map(n => ({ n, l: window.__lum(rgb(jeton(n))) }));
+          const afaire = jeton('--v-afaire-2');
+          return { afaire, plusClaire: marques.every(m => window.__lum(rgb(afaire)) >= m.l),
+                   encreAfaire: window.__contraste(rgb(jeton('--v-afaire-2-encre')), rgb(afaire)),
+                   encre3: window.__contraste(rgb(jeton('--encre-3')), getComputedStyle(document.getElementById('section-plans')).backgroundColor) };
+        });
+        verifier('sombre : TO_TREAT (--v-afaire-2, « Terre » au débrief 28) n\'est pas la marque la plus claire de la barre, son encre s\'y lit (4,5:1), et le gris tertiaire tient 4,5:1 sur la surface',
+          /^#[0-9a-f]{6}$/i.test(sombre27.afaire) && !sombre27.plusClaire && sombre27.encreAfaire >= 4.5 && sombre27.encre3 >= 4.5, JSON.stringify(sombre27));
       }
       /* L'anneau du focus clavier : l'ardoise, sur un bouton comme sur un champ. */
       await q.evaluate(() => { window.scrollTo(0, 0); document.getElementById('titre-page').setAttribute('tabindex', '-1'); document.getElementById('titre-page').focus(); });
@@ -7867,12 +8130,19 @@ async function deplierFiltresColonne(pg) {
     const bords = await q.evaluate(() => {
       const sec = document.getElementById('section-synthese').getBoundingClientRect();
       const pied = document.querySelector('footer.pied'), pp = parseFloat(getComputedStyle(pied).paddingLeft), rp = pied.getBoundingClientRect();
-      const reg = document.getElementById('reglages').getBoundingClientRect();
+      /* Débrief 28 : les réglages se centrent sur un écran large (comme le
+         titre) : on mesure leurs réglages visibles, pas la boîte. */
+      const vus = [...document.querySelectorAll('#portee .reglage')].filter(e => e.getClientRects().length).map(e => e.getBoundingClientRect());
+      const reg = { left: Math.min(...vus.map(b => b.left)), right: Math.max(...vus.map(b => b.right)) };
       const tete = document.querySelector('#section-synthese .panneau-tete .surtitre').getBoundingClientRect();
-      return { contenuG: tete.left, contenuD: tete.right, pied: rp.left + pp, reglagesD: reg.right, largeurPage: sec.width };
+      return { contenuG: tete.left, contenuD: tete.right, pied: rp.left + pp, reglagesG: reg.left, reglagesD: reg.right, largeurPage: sec.width };
     });
-    verifier('le pied et les réglages du haut s\'alignent sur le bord du contenu des panneaux (plus sur leur bord extérieur)',
-      Math.abs(bords.pied - bords.contenuG) <= 1 && Math.abs(bords.reglagesD - bords.contenuD) <= 1, JSON.stringify(bords));
+    /* Débrief 28 : les réglages ne se calent plus sur le bord droit du
+       contenu — ils sont au centre du contenu, comme le titre, et restent
+       dedans ; le pied garde le bord gauche du contenu. */
+    verifier('le pied s\'aligne sur le bord du contenu des panneaux ; les réglages du haut sont au centre du contenu, sans en sortir (débrief 28)',
+      Math.abs(bords.pied - bords.contenuG) <= 1 && Math.abs((bords.reglagesG + bords.reglagesD) / 2 - (bords.contenuG + bords.contenuD) / 2) <= 2 &&
+      bords.reglagesG >= bords.contenuG - 1 && bords.reglagesD <= bords.contenuD + 1, JSON.stringify(bords));
     /* garderFocus : un rendu qui remplace l'élément focalisé rend le focus
        au même élément ; s'il n'existe plus, au titre de la section — jamais
        au corps de la page. */
@@ -7894,7 +8164,13 @@ async function deplierFiltresColonne(pg) {
       focus27.meme && focus27.rendu === 'rendu' && focus27.apres !== 'body' && focus27.dansSection, JSON.stringify(focus27));
     /* annoncer : une seule zone polie, les appels rapprochés regroupés. */
     await q.evaluate(() => { window.__annoncer('premier'); window.__annoncer('12 plans affichés sur 634'); });
-    await q.waitForFunction(() => (document.getElementById('annonce') || {}).textContent, null, { timeout: 4000 }).catch(() => {});
+    /* Débrief 29 (batterie) : attendre le message attendu lui-même, 10 s au
+       plus. La page l'écrit 460 ms après l'appel, mais ses minuteries passent
+       après le rendu en cours : juste après le regroupement changé (le
+       tableau entier redessiné, toutes ses lignes d'un bloc ici), il arrive
+       vers 3,5 s — les 4 s d'avant ne suffisaient plus sur une machine
+       chargée. */
+    await q.waitForFunction(() => (document.getElementById('annonce') || {}).textContent === '12 plans affichés sur 634', null, { timeout: 10000 }).catch(() => {});
     const annonce = await q.evaluate(() => {
       const z = document.getElementById('annonce');
       return { role: z && z.getAttribute('role'), live: z && z.getAttribute('aria-live'), texte: z && z.textContent, masque: z && z.getBoundingClientRect().width <= 1,
@@ -7924,36 +8200,76 @@ async function deplierFiltresColonne(pg) {
       const vus = [...document.querySelectorAll('#portee .reglage')].filter(e => e.getClientRects().length);
       const centres = vus.map(e => Math.round(r(e).top + r(e).height / 2));
       const ens = document.getElementById('voir-ensemble'), aide = document.getElementById('ouvrir-aide'), adm = document.getElementById('choix-admin');
+      /* Débrief 28 : Vue d'ensemble, Aide et Administration sont trois icônes
+         rondes au bout du sommaire collé (après la loupe), leur nom au survol
+         (title) et pour les lecteurs d'écran (texte .masque) — plus dans le
+         bandeau du titre. */
+      const outils = document.getElementById('outils-page'), som = document.querySelector('nav.sommaire');
+      const icone = b => { const c = getComputedStyle(b), t = b.querySelector('.masque'), rb = r(b);
+        return !!b.querySelector('svg') && !!t && t.getBoundingClientRect().width <= 1 && !!b.title && Math.abs(rb.width - rb.height) <= 1 && rb.width <= 40 && c.borderTopLeftRadius === '50%'; };
       return {
         banniere: !!ent && ent.contains(document.getElementById('reglages')) && ent.contains(document.getElementById('titre-page')) && !document.querySelector('header header'),
         ordre: vus.map(e => e.id || e.classList[e.classList.length - 1]).join(','), uneLigne: Math.max(...centres) - Math.min(...centres) <= 2,
-        outilsAuDessus: r(document.getElementById('outils-page')).bottom <= r(document.getElementById('portee')).top,
-        ensemble: ens.tagName === 'BUTTON' && getComputedStyle(ens).textDecorationLine === 'none' && !!ens.querySelector('svg') && ens.getAttribute('aria-haspopup') === 'dialog',
-        aide: !!aide && aide.tagName === 'BUTTON' && /Aide/.test(aide.textContent),
-        admin: getComputedStyle(adm).visibility === 'hidden' && r(adm).width > 50 && adm.dataset.droits === 'attente',
+        outilsAuSommaire: !!outils && !!som && outils.parentElement === som && som.lastElementChild === outils &&
+          (outils.previousElementSibling || {}).id === 'cherche-plan' && !ent.contains(outils) && !document.getElementById('reglages').contains(outils),
+        ensemble: ens.tagName === 'BUTTON' && getComputedStyle(ens).textDecorationLine === 'none' && icone(ens) && ens.getAttribute('aria-haspopup') === 'dialog' && /Vue d’ensemble/.test(ens.textContent),
+        aide: !!aide && aide.tagName === 'BUTTON' && icone(aide) && /Aide/.test(aide.textContent),
+        iconeAdmin: icone(document.getElementById('ouvrir-admin')) && document.getElementById('ouvrir-admin').title === 'Administration',
+        admin: getComputedStyle(adm).visibility === 'hidden' && r(adm).width >= 30 && adm.dataset.droits === 'attente',
         etat: r(document.getElementById('etat-contrat')).width <= 1 && !document.getElementById('etat-contrat').hasAttribute('aria-live'),
         noms: [...document.querySelectorAll('#choix-perimetre button')].map(b => b.textContent.replace(/\s+/g, ' ').trim())
       };
     });
     verifier('B1 : une seule barre de réglages dans l’en-tête de la page (repère bannière, avec le titre) — Contrat, Avancement, Périmètre sur une ligne, dans cet ordre',
       barreH.banniere && barreH.ordre === 'reglage-contrat,choix-avancement,perimetre' && barreH.uneLigne, JSON.stringify(barreH));
-    verifier('B1 : au-dessus, les outils — « Vue d’ensemble » est un bouton à icône (plus un lien souligné), « Aide » existe (#ouvrir-aide), la place d’« Administration » est gardée invisible tant que les droits ne sont pas lus',
-      barreH.outilsAuDessus && barreH.ensemble && barreH.aide && barreH.admin, JSON.stringify(barreH));
+    verifier('B1, débrief 28 : les outils au bout du sommaire, après la loupe — « Vue d’ensemble », « Aide » et « Administration » en icônes rondes (nom au survol et masqué pour les lecteurs d’écran), la place d’« Administration » gardée invisible tant que les droits ne sont pas lus',
+      barreH.outilsAuSommaire && barreH.ensemble && barreH.aide && barreH.iconeAdmin && barreH.admin, JSON.stringify(barreH));
     verifier('X-A13 : les boutons du périmètre se nomment « Tout 634 plans » (plus « Tout634 ») ; rien ne s’écrit à côté du menu du contrat (son état est masqué, sans aria-live)',
       barreH.etat && barreH.noms.length === 3 && barreH.noms.every(n => /^\S.* \d[\d\s ]* plans?$/.test(n)), JSON.stringify(barreH.noms));
+    /* Débrief 28 : le haut de page est un bandeau d'encre marine (jetons
+       redéfinis pour le seul en-tête), le titre et les réglages en clair ;
+       les réglages au centre, comme le titre, sur un écran large. Mesuré,
+       en clair puis en sombre (le marine plus clair que la page noire). */
+    for (const schema of ['light', 'dark']) {
+      await h.emulateMedia({ colorScheme: schema }); await h.waitForTimeout(150);
+      const bandeau = await h.evaluate(() => {
+        const lum = c => { const m = c.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]; };
+        const rgb = h => h.replace(/^#(..)(..)(..)$/, (m, a, b, c) => 'rgb(' + [a, b, c].map(x => parseInt(x, 16)).join(', ') + ')');
+        const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+        const ent = document.querySelector('header.entete'), cs = getComputedStyle(ent);
+        const fond = rgb(cs.getPropertyValue('--bandeau-fond').trim()), papier = getComputedStyle(document.body).backgroundColor;
+        const t = document.getElementById('titre-page'), rg = document.createRange(); rg.selectNodeContents(t);
+        const tb = rg.getBoundingClientRect(), centre = b => (b.left + b.right) / 2;
+        const vus = [...document.querySelectorAll('#portee .reglage')].filter(e => e.getClientRects().length).map(e => e.getBoundingClientRect());
+        const reg = { left: Math.min(...vus.map(b => b.left)), right: Math.max(...vus.map(b => b.right)) };
+        const contenu = document.querySelector('#section-synthese .panneau-tete .surtitre').getBoundingClientRect();
+        return { fond, papier, peint: cs.borderImageSource.indexOf(fond) !== -1, titre: +cr(getComputedStyle(t).color, fond).toFixed(2), reglage: +cr(cs.color, fond).toFixed(2),
+                 lumFond: +lum(fond).toFixed(3), lumPapier: +lum(papier).toFixed(3),
+                 centreTitre: Math.round(centre(tb)), centreReglages: Math.round(centre(reg)), centreContenu: Math.round(centre(contenu)) };
+      });
+      verifier('débrief 28, ' + schema + ' : l’en-tête est un bandeau marine peint d’un bord à l’autre, distinct du papier ; le titre et les réglages s’y lisent en clair (≥ 7:1) ; les réglages au centre, comme le titre',
+        bandeau.peint && Math.abs(bandeau.lumFond - bandeau.lumPapier) > 0.03 && (schema === 'dark' || bandeau.lumFond < bandeau.lumPapier) && bandeau.titre >= 7 && bandeau.reglage >= 7 &&
+        Math.abs(bandeau.centreReglages - bandeau.centreTitre) <= 2 && Math.abs(bandeau.centreTitre - bandeau.centreContenu) <= 2, JSON.stringify(bandeau));
+    }
+    await h.emulateMedia({ colorScheme: 'light' }); await h.waitForTimeout(150);
 
-    // Le surtitre du titre, et ce qui le fait changer.
-    const surtitre = () => h.evaluate(() => document.getElementById('contexte-page').textContent);
+    /* Le surtitre du titre, et ce qui le fait changer. Débrief 28 : le
+       surtitre (« HDK · TRANCHE 1 · DÉFINITION ÉLECTRIQUE ») est retiré ;
+       l'avancement suivi se lit au titre (« Suivi concept harnais »), le
+       périmètre à son bouton pressé et au bandeau des filtres — et rien ne
+       se réécrit au-dessus du titre quand ils changent. */
+    const surtitre = () => h.evaluate(() => ({ surtitre: !!document.getElementById('contexte-page') || !!document.querySelector('.masthead .contexte-page'),
+      titre: document.getElementById('titre-page').textContent, avantTitre: !document.getElementById('titre-page').previousElementSibling,
+      perimetre: (document.querySelector('#choix-perimetre button[aria-pressed="true"]') || { dataset: {} }).dataset.perimetre }));
     const s0 = await surtitre();
     await h.click('#choix-indicateur button[data-indicateur="concept"]'); await h.waitForTimeout(600);
     const s1 = await surtitre();
     await h.click('#choix-indicateur button[data-indicateur="def"]'); await h.waitForTimeout(600);
     await h.click('#choix-perimetre button[data-perimetre="PERSO"]'); await h.waitForTimeout(600);
     const s2 = await surtitre();
-    const styleSurtitre = await h.evaluate(() => { const c = getComputedStyle(document.getElementById('contexte-page')); return [c.fontFamily.split(',')[0], c.fontSize, c.fontWeight, c.textTransform, c.letterSpacing].join('|'); });
-    verifier('B1 : au-dessus du titre, « HDK · Définition électrique » (Mono 11/500, capitales) — il suit l’avancement et le périmètre',
-      s0 === 'HDK · Définition électrique' && s1 === 'HDK · Concept harnais' && s2 === 'HDK · Définition électrique · Périmètre PERSO' &&
-      /Plex Mono/.test(styleSurtitre) && /\|11px\|500\|uppercase\|/.test(styleSurtitre), JSON.stringify([s0, s1, s2, styleSurtitre]));
+    verifier('B1, débrief 28 : plus de surtitre au-dessus du titre (ni « HDK · Définition électrique », ni après un changement) ; le titre suit l’avancement, le périmètre se lit à son bouton',
+      [s0, s1, s2].every(s => !s.surtitre && s.avantTitre) && s0.titre === 'Suivi FWD' && s1.titre === 'Suivi concept harnais' && s2.titre === 'Suivi FWD' && s2.perimetre === 'PERSO',
+      JSON.stringify([s0, s1, s2]));
 
     // Le bandeau des filtres : posé par-dessus, rien ne bouge (P-F6).
     await h.click('#choix-perimetre button[data-perimetre=""]'); await h.waitForTimeout(600);
@@ -7980,22 +8296,22 @@ async function deplierFiltresColonne(pg) {
     const apresX = await h.evaluate(() => ({ cache: document.getElementById('filtres-actifs').hidden, focus: document.activeElement === document.body ? 'body' : document.activeElement.tagName + '#' + document.activeElement.id }));
     verifier('X-A1 : retirer le dernier filtre au clavier ne jette pas le focus sur le corps de la page', apresX.cache && apresX.focus !== 'body', JSON.stringify(apresX));
 
-    // La fraîcheur des chiffres, sous la semaine (P-F10) ; en ambre au-delà de huit jours.
+    /* La fraîcheur des chiffres, sous la semaine (P-F10). Débrief 28 : la
+       ligne « Chiffres du … · dernier relevé archivé … » est retirée — ni
+       un relevé frais ni un relevé de vingt jours ne l'écrivent. */
     const fraicheur = await h.evaluate(() => {
       const iso = d => d.toISOString().slice(0, 10);
-      const lire = () => { const z = document.getElementById('fraicheur'); return { texte: z.textContent, vieux: !!z.querySelector('.vieux'), couleur: z.querySelector('.vieux') ? getComputedStyle(z.querySelector('.vieux')).color : '' }; };
+      const lire = () => { const m = document.querySelector('.masthead'); return { ligne: !!document.getElementById('fraicheur'), texte: m.textContent.replace(/\s+/g, ' '), vieux: !!m.querySelector('.vieux') }; };
       const jour = n => { const d = new Date(); d.setHours(12); d.setDate(d.getDate() - n); return iso(d); };
       const s = window.__jeuDExemple('HDK'); s.releves[s.releves.length - 1].date = jour(2);
       window.__chargerSource(s); const frais = lire();
       const v = window.__jeuDExemple('HDK'); v.releves[v.releves.length - 1].date = jour(20);
       window.__chargerSource(v); const vieux = lire();
-      const cours = getComputedStyle(document.documentElement).getPropertyValue('--cours').trim();
       window.__chargerSource(window.__jeuDExemple('HDK'));
-      return { frais, vieux, cours };
+      return { frais, vieux };
     });
-    verifier('P-F10 : sous la semaine, « Dernier relevé archivé : S… (vendredi …) » ; au-delà de huit jours, en ambre avec son âge',
-      /^Dernier relevé archivé : S\d+ \(\S+ \d+ \S+\)$/.test(fraicheur.frais.texte) && !fraicheur.frais.vieux &&
-      fraicheur.vieux.vieux && /il y a 20 jours/.test(fraicheur.vieux.texte) && !!fraicheur.vieux.couleur, JSON.stringify(fraicheur));
+    verifier('P-F10, débrief 28 : plus de ligne de fraîcheur sous la semaine — ni « Chiffres du … », ni « dernier relevé archivé », ni l’âge en ambre d’un relevé de vingt jours',
+      [fraicheur.frais, fraicheur.vieux].every(x => !x.ligne && !x.vieux && !/Chiffres du|relevé archivé|il y a \d+ jours/i.test(x.texte)), JSON.stringify(fraicheur));
 
     // La vue d'ensemble : une fenêtre (B18, P-F16, P-F18, X-A19).
     await h.evaluate(() => window.scrollTo(0, 0)); await h.waitForTimeout(200);
@@ -8050,22 +8366,30 @@ async function deplierFiltresColonne(pg) {
       const a = window.__jeuDExemple('HDK'); a.contrats = liste; a.contrat = 'HDK';
       window.__chargerSource(a);
       const x = () => Math.round(document.getElementById('select-contrat').getBoundingClientRect().left);
-      const r1 = { contexte: document.getElementById('contexte-page').textContent, tranches: [...document.querySelectorAll('#select-tranche option')].map(o => o.textContent).join(','),
-                   menu: !document.getElementById('select-tranche').hidden, x: x() };
+      /* Débrief 28 : plus de surtitre (#contexte-page) — le contrat montré se
+         lit au menu du contrat et à la légende du tableau. */
+      const montre = () => ({ surtitre: !!document.getElementById('contexte-page'), contrat: document.getElementById('select-contrat').value,
+                              legende: (document.getElementById('legende-tableau') || {}).textContent || '' });
+      const r1 = Object.assign(montre(), { tranches: [...document.querySelectorAll('#select-tranche option')].map(o => o.textContent).join(','),
+                   tranche: (document.getElementById('select-tranche').selectedOptions[0] || {}).textContent,
+                   menu: !document.getElementById('select-tranche').hidden, x: x() });
       const t = window.__jeuDExemple('THS'); t.contrats = liste; t.contrat = 'THS';
       window.__chargerSource(t);
-      const r2 = { contexte: document.getElementById('contexte-page').textContent, menu: !document.getElementById('select-tranche').hidden,
-                   unique: !document.getElementById('tranche-unique').hidden && document.getElementById('tranche-unique').getClientRects().length > 0, x: x() };
+      const r2 = Object.assign(montre(), { menu: !document.getElementById('select-tranche').hidden,
+                   unique: !document.getElementById('tranche-unique').hidden && document.getElementById('tranche-unique').getClientRects().length > 0, x: x() });
       window.__chargerSource(a);
       window.scrollTo(0, 1500);
       return { r1, r2 };
     });
     await h.waitForTimeout(400);
     const marque = await h.evaluate(() => document.getElementById('sommaire-contrat').textContent);
-    verifier('A-F10 : « HDK › Tranche 1 » — le surtitre dit « HDK · Tranche 1 · … », la marque du sommaire collé « HDK › Tranche 1 »',
-      tranches.r1.contexte === 'HDK · Tranche 1 · Définition électrique' && tranches.r1.tranches === 'Tranche 1,Tranche 2' && marque === 'HDK › Tranche 1', JSON.stringify([tranches.r1, marque]));
+    /* Débrief 28 : sans surtitre, « HDK › Tranche 1 » se lit au menu des
+       tranches et à la marque du sommaire collé. */
+    verifier('A-F10 : « HDK › Tranche 1 » — le menu des tranches dit « Tranche 1 », la marque du sommaire collé « HDK › Tranche 1 » ; plus de surtitre (débrief 28)',
+      !tranches.r1.surtitre && tranches.r1.contrat === 'HDK' && tranches.r1.tranche === 'Tranche 1' && tranches.r1.tranches === 'Tranche 1,Tranche 2' && marque === 'HDK › Tranche 1', JSON.stringify([tranches.r1, marque]));
     verifier('B7 : vers THS (une seule tranche), la case « Tranche » garde sa place (« unique ») — le menu du contrat ne glisse pas sous le pointeur',
-      tranches.r1.menu && !tranches.r2.menu && tranches.r2.unique && Math.abs(tranches.r2.x - tranches.r1.x) <= 1 && tranches.r2.contexte === 'THS · Définition électrique', JSON.stringify(tranches));
+      tranches.r1.menu && !tranches.r2.menu && tranches.r2.unique && Math.abs(tranches.r2.x - tranches.r1.x) <= 1 && !tranches.r2.surtitre &&
+      tranches.r2.contrat === 'THS' && /^Plans GATES de THS : /.test(tranches.r2.legende), JSON.stringify(tranches));
     await h.evaluate(() => { window.__chargerSource(window.__jeuDExemple('HDK')); window.scrollTo(0, 0); });
     await cH.close();
 
@@ -8083,7 +8407,13 @@ async function deplierFiltresColonne(pg) {
       barre: !document.getElementById('barre-chargement').hidden, attente: document.body.getAttribute('data-attente'),
       occupe: [...document.querySelectorAll('main, .page > section')].some(sec => sec.getAttribute('aria-busy') === 'true'),   // débrief 27 : le <main> du lot G porte aria-busy
       concept: (document.querySelector('#choix-indicateur button[aria-pressed="true"]') || {}).dataset.indicateur,
-      ind: window.__indicateur().indicateur, contexte: document.getElementById('contexte-page').textContent,
+      /* Débrief 28 : plus de surtitre (#contexte-page) à lire ; ce que la page
+         montre se recompose de ce qui reste à l'écran — le contrat nommé par
+         la légende du tableau, l'avancement par le titre (« Suivi concept
+         harnais ») : « THS · Concept harnais », comme le surtitre d'avant. */
+      ind: window.__indicateur().indicateur,
+      contexte: (((document.getElementById('legende-tableau') || {}).textContent || '').match(/^Plans GATES de (.+?) : /) || [, '?'])[1] + ' · ' +
+        (/concept harnais/i.test(document.getElementById('titre-page').textContent) ? 'Concept harnais' : 'Définition électrique'),
       x: Math.round(document.getElementById('select-contrat').getBoundingClientRect().left),
       alerte: document.getElementById('alerte-contrat').hidden ? '' : document.getElementById('alerte-contrat-texte').textContent,
       role: document.getElementById('alerte-contrat').getAttribute('role'), focus: document.activeElement.id
@@ -8173,7 +8503,12 @@ async function deplierFiltresColonne(pg) {
         traits: [...document.querySelectorAll('#corps-tableau td')].filter(td => td.textContent.trim() === '-').length,
         refSoulignee: ref ? cs(ref).textDecorationStyle + ' ' + cs(ref).textDecorationLine : '',
         filtresCaches: document.querySelector('tr.filtres').hidden,
-        boutonFiltres: document.getElementById('ouvrir-filtres').getAttribute('aria-expanded'),
+        /* Débrief 28 : plus de bouton « Filtrer par colonne » (ni « Copier le
+           tableau », ni « Télécharger (CSV) ») : on relève s'ils se voient. */
+        boutonFiltres: (b => !!b && b.getClientRects().length > 0)(document.getElementById('ouvrir-filtres')),
+        boutonsExport: ['copier-tableau', 'telecharger-tableau'].filter(id => { const b = document.getElementById(id); return !!b && b.getClientRects().length > 0; }),
+        motsOutils: document.getElementById('actions-tableau') ? document.getElementById('actions-tableau').innerText : '',
+        champsFiltres: [...document.querySelectorAll('tr.filtres input[data-filtre]')].filter(i => i.getClientRects().length > 0).length,
         arretsCorps: document.querySelectorAll('#corps-tableau [tabindex="0"]').length,
         refsHorsTab: [...document.querySelectorAll('#corps-tableau .ref-plan')].filter(b => b.getAttribute('tabindex') !== '-1' && b.getAttribute('tabindex') !== '0').length,
         arretsTete: document.querySelectorAll('tr.titres button[data-tri][tabindex="0"]').length,
@@ -8199,7 +8534,15 @@ async function deplierFiltresColonne(pg) {
     await d.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
     await d.waitForTimeout(300);
     verifier('la référence se voit cliquable sans survol : soulignée en pointillé (P-F17)', /dotted/.test(neuf.refSoulignee) && /underline/.test(neuf.refSoulignee), neuf.refSoulignee);
-    verifier('la rangée des filtres de colonne est repliée derrière « Filtrer par colonne » (X-A2)', neuf.filtresCaches && neuf.boutonFiltres === 'false', JSON.stringify([neuf.filtresCaches, neuf.boutonFiltres]));
+    /* Débrief 27 (X-A2) : la rangée était repliée derrière « Filtrer par
+       colonne ». Débrief 28 : elle est toujours affichée, même pour un
+       nouveau venu, et le bouton est retiré. */
+    verifier('la rangée des filtres de colonne est toujours affichée, même pour un nouveau venu : un champ par colonne (débrief 28)',
+      !neuf.filtresCaches && neuf.champsFiltres === neuf.n, JSON.stringify([neuf.filtresCaches, neuf.champsFiltres, neuf.n]));
+    verifier('plus de bouton « Filtrer par colonne » au-dessus du tableau (débrief 28)',
+      !neuf.boutonFiltres && !/Filtrer par colonne/.test(neuf.motsOutils), JSON.stringify([neuf.boutonFiltres, neuf.motsOutils]));
+    verifier('plus de bouton « Copier le tableau » ni « Télécharger (CSV) » au-dessus du tableau (débrief 28)',
+      neuf.boutonsExport.length === 0 && !/Copier le tableau|Télécharger/.test(neuf.motsOutils), JSON.stringify([neuf.boutonsExport, neuf.motsOutils]));
     verifier('un seul arrêt de tabulation pour les lignes, un pour les en-têtes (X-A2)',
       neuf.arretsCorps === 1 && neuf.refsHorsTab === 0 && neuf.arretsTete === 1, JSON.stringify([neuf.arretsCorps, neuf.refsHorsTab, neuf.arretsTete]));
     verifier('les boutons de tri font 24 px de haut au moins (2.5.8)', neuf.triHaut >= 24, String(neuf.triHaut));
@@ -8262,19 +8605,24 @@ async function deplierFiltresColonne(pg) {
     const affichees = await d.evaluate(() => ({ n: document.querySelectorAll('tr.titres th').length, vides: document.getElementById('colonnes-vides').textContent }));
     verifier('« Afficher » les remet toutes (137), « Masquer » les retire', affichees.n === 137 && /affichées/.test(affichees.vides) && /Masquer$/.test(affichees.vides), JSON.stringify(affichees));
     await d.waitForTimeout(600);
-    await d.reload(); await d.waitForTimeout(1300);
+    await d.reload(); await attendrePrete(d, 1300);
     const rouvert = await d.evaluate(() => ({ presse: [...document.querySelectorAll('#vue-tableau button[aria-pressed="true"]')].map(b => b.dataset.vue).join(), n: document.querySelectorAll('tr.titres th').length }));
     verifier('les deux choix se retiennent : la page rouverte est sur « Toutes les colonnes », colonnes vides affichées', rouvert.presse === 'toutes' && rouvert.n === 137, JSON.stringify(rouvert));
 
-    /* Filtrer par colonne : déplié, focus au premier champ ; un filtre posé garde la rangée. */
+    /* Filtrer par colonne : déplié, focus au premier champ ; un filtre posé
+       garde la rangée. Débrief 28 : la rangée est toujours là, sans bouton —
+       on tape directement dans le premier champ ; le filtre posé se voit
+       (champ marqué actif, jeton du bandeau des filtres) et la rangée reste. */
     await d.evaluate(() => document.getElementById('section-plans').scrollIntoView());
-    await d.click('#ouvrir-filtres'); await d.waitForTimeout(250);
-    const deplie = await d.evaluate(() => ({ cache: document.querySelector('tr.filtres').hidden, exp: document.getElementById('ouvrir-filtres').getAttribute('aria-expanded'), actif: document.activeElement.getAttribute('data-filtre') }));
-    await d.keyboard.type('GAE21'); await d.waitForTimeout(600);
-    await d.click('#ouvrir-filtres'); await d.waitForTimeout(250);
-    const garde = await d.evaluate(() => ({ cache: document.querySelector('tr.filtres').hidden, texte: document.getElementById('ouvrir-filtres').textContent.trim() }));
-    verifier('« Filtrer par colonne » déplie la rangée (focus au premier champ) ; un filtre posé la garde à vue et se compte',
-      !deplie.cache && deplie.exp === 'true' && deplie.actif === 'reference' && !garde.cache && /\(1\)/.test(garde.texte), JSON.stringify([deplie, garde]));
+    await d.click('tr.filtres input[data-filtre="reference"]');
+    const deplie = await d.evaluate(() => ({ cache: document.querySelector('tr.filtres').hidden, actif: document.activeElement.getAttribute('data-filtre') }));
+    await d.keyboard.type('GAE21');
+    await d.waitForFunction(() => { const i = document.querySelector('tr.filtres input[data-filtre="reference"]'); return !!i && i.dataset.actif === 'true' && !document.getElementById('filtres-actifs').hidden; }, null, { timeout: 5000 }).catch(() => {});
+    const garde = await d.evaluate(() => ({ cache: document.querySelector('tr.filtres').hidden, actif: (document.querySelector('tr.filtres input[data-filtre="reference"]') || {}).dataset,
+      bouton: !!document.getElementById('ouvrir-filtres') && document.getElementById('ouvrir-filtres').getClientRects().length > 0,
+      jeton: document.getElementById('filtres-actifs').hidden ? '' : document.getElementById('filtres-actifs').textContent.replace(/\s+/g, ' ') }));
+    verifier('la rangée des filtres est là : on tape dans le champ de la référence, sans rien déplier ; le filtre posé se marque (champ actif, jeton du bandeau) et la rangée reste (débrief 28)',
+      !deplie.cache && deplie.actif === 'reference' && !garde.cache && !!garde.actif && garde.actif.actif === 'true' && /GAE21/.test(garde.jeton), JSON.stringify([deplie, garde]));
     await reinitialiser(d);
 
     /* L'export : ce que montre le tableau, à la mode d'Excel. */
@@ -8286,19 +8634,23 @@ async function deplierFiltresColonne(pg) {
                titres: [...document.querySelectorAll('tr.titres th')].map(t => t.textContent.trim()).join('\t'),
                bom: csv.charCodeAt(0) === 0xfeff, pointVirgule: csv.split('\r\n')[0].split(';').length };
     });
-    verifier('« Copier le tableau » prend les lignes filtrées et les colonnes affichées, en colonnes pour Excel (P-F21)',
-      exp.lignesTSV === exp.lignesTableau + 1 && exp.tete === exp.titres, JSON.stringify([exp.lignesTSV, exp.lignesTableau, exp.tete.slice(0, 60)]));
-    const [dl] = await Promise.all([d.waitForEvent('download', { timeout: 5000 }).catch(() => null), d.click('#telecharger-tableau')]);
-    let csvFichier = '';
-    if (dl) { try { csvFichier = require('fs').readFileSync(await dl.path(), 'utf8'); } catch (e) { csvFichier = ''; } }
-    const msg = await d.evaluate(() => document.getElementById('message-tableau').textContent);
-    verifier('« Télécharger (CSV) » donne un fichier plans-gates-…csv (BOM, point-virgule), et dit ce qu’il contient',
-      !!dl && /^plans-gates-.+\.csv$/.test(dl.suggestedFilename()) && csvFichier.charCodeAt(0) === 0xfeff && csvFichier.split('\r\n')[0].split(';').length === exp.pointVirgule && /lignes/.test(msg),
-      JSON.stringify([dl && dl.suggestedFilename(), csvFichier.length, msg]));
-    await d.click('#copier-tableau'); await d.waitForTimeout(400);
-    const copie = await d.evaluate(() => ({ msg: document.getElementById('message-tableau').textContent, role: document.getElementById('message-tableau').getAttribute('role') }));
-    verifier('« Copier le tableau » répond par un mot posé sous les boutons, sans rien pousser (role="status")',
-      /Tableau copié|refusé/.test(copie.msg) && copie.role === 'status', JSON.stringify(copie));
+    /* Débrief 28 : les boutons « Copier le tableau » et « Télécharger (CSV) »
+       sont retirés ; l'export interne qu'ils appelaient reste (il prend ce
+       que montre le tableau) et se vérifie toujours. */
+    verifier('l’export du tableau (gardé sans ses boutons, débrief 28) prend les lignes filtrées et les colonnes affichées, en colonnes pour Excel (P-F21)',
+      exp.lignesTSV === exp.lignesTableau + 1 && exp.tete === exp.titres && exp.bom && exp.pointVirgule > 1,
+      JSON.stringify([exp.lignesTSV, exp.lignesTableau, exp.tete.slice(0, 60), exp.bom, exp.pointVirgule]));
+    /* Débrief 28 : plus rien à cliquer pour télécharger ni copier le
+       tableau — aucun bouton visible, aucun mot posé sous les boutons. (Le
+       bouton « Filtrer par colonne » a sa vérification plus haut.) */
+    const sansExport = await d.evaluate(() => {
+      const vu = id => { const b = document.getElementById(id); return !!b && b.getClientRects().length > 0 && !b.closest('[hidden]'); };
+      return { telecharger: vu('telecharger-tableau'), copier: vu('copier-tableau'), filtrer: vu('ouvrir-filtres'),
+               boutons: [...document.querySelectorAll('#section-plans button')].filter(b => b.getClientRects().length && /Télécharger|Copier le tableau/.test(b.textContent)).length,
+               msg: document.getElementById('message-tableau').hidden ? '' : document.getElementById('message-tableau').textContent };
+    });
+    verifier('plus de « Télécharger (CSV) » ni de « Copier le tableau » dans la section des plans — rien ne se télécharge, rien ne s’écrit sous le tableau (débrief 28)',
+      !sansExport.telecharger && !sansExport.copier && sansExport.boutons === 0 && sansExport.msg === '', JSON.stringify(sansExport));
     await d.fill('#recherche', ''); await d.waitForTimeout(400);
 
     /* La fiche d'un plan : la ligne SEE, la croix qui dit vrai, Échap, le focus rendu. */
@@ -8342,7 +8694,13 @@ async function deplierFiltresColonne(pg) {
     /* Chercher un plan depuis le sommaire (combobox). */
     await d.evaluate(() => window.scrollTo(0, 0)); await d.waitForTimeout(200);
     const debut = (connu || 'GAE2').slice(0, 4);
-    await d.click('#cherche-plan-champ');
+    /* Débrief 28 : « Chercher un plan » est partout une loupe ronde, au bout
+       du sommaire (le champ de 200 px poussait le sommaire) ; elle ouvre le
+       champ par-dessus, le focus dedans. */
+    await d.click('#cherche-plan-ouvrir');
+    await d.waitForFunction(() => document.activeElement && document.activeElement.id === 'cherche-plan-champ', null, { timeout: 3000 }).catch(() => {});
+    const loupe28 = await d.evaluate(() => ({ ouvert: document.getElementById('cherche-plan').getAttribute('data-ouvert'), actif: document.activeElement.id,
+      rond: getComputedStyle(document.getElementById('cherche-plan-ouvrir')).borderTopLeftRadius }));
     await d.keyboard.type(debut, { delay: 20 }); await d.waitForTimeout(400);
     const liste = await d.evaluate(() => ({ exp: document.getElementById('cherche-plan-champ').getAttribute('aria-expanded'),
       options: [...document.querySelectorAll('#cherche-plan-liste li[role="option"][data-ref]')].map(o => o.dataset.ref),
@@ -8350,14 +8708,21 @@ async function deplierFiltresColonne(pg) {
     await d.keyboard.press('ArrowDown'); await d.keyboard.press('Enter'); await d.waitForTimeout(800);
     const ouvert = await d.evaluate(() => ({ fiche: !document.getElementById('fiche-plan').hidden, ref: (document.querySelector('#fiche-plan .ref') || {}).textContent, actif: document.activeElement.id,
       exp: document.getElementById('cherche-plan-champ').getAttribute('aria-expanded') }));
-    verifier('« Chercher un plan » (sommaire) propose les plans qui commencent par la saisie, au clavier (combobox) ; Entrée ouvre la fiche du plan choisi (P-F23)',
-      liste.exp === 'true' && liste.options.length >= 2 && liste.options.every(r => r.indexOf(debut) === 0) && !!liste.choisi &&
-      ouvert.fiche && ouvert.ref === liste.options[1] && ouvert.actif === 'titre-fiche-plan' && ouvert.exp === 'false', JSON.stringify([liste, ouvert]));
+    verifier('« Chercher un plan » (sommaire) : la loupe ronde ouvre le champ (débrief 28) ; il propose les plans qui commencent par la saisie, au clavier (combobox) ; Entrée ouvre la fiche du plan choisi (P-F23)',
+      loupe28.ouvert === 'true' && loupe28.actif === 'cherche-plan-champ' && loupe28.rond === '50%' && liste.exp === 'true' && liste.options.length >= 2 && liste.options.every(r => r.indexOf(debut) === 0) && !!liste.choisi &&
+      ouvert.fiche && ouvert.ref === liste.options[1] && ouvert.actif === 'titre-fiche-plan' && ouvert.exp === 'false', JSON.stringify([loupe28, liste, ouvert]));
     await d.keyboard.press('Escape'); await d.waitForTimeout(500);
     const retourChamp = await d.evaluate(() => document.activeElement.id);
-    verifier('Échap ferme la fiche ouverte par la recherche et rend le focus au champ de recherche', retourChamp === 'cherche-plan-champ', retourChamp);
+    /* Débrief 28 : la recherche est une loupe à toutes les largeurs — le
+       plan choisi, elle se replie ; Échap sur la fiche rend le focus à la
+       loupe (comme au téléphone), plus au champ, replié. */
+    verifier('Échap ferme la fiche ouverte par la recherche et rend le focus à la recherche — la loupe, le champ replié (débrief 28)', retourChamp === 'cherche-plan-ouvrir', retourChamp);
     if (connu) {
       const formeSee = await d.evaluate(r => window.__racineSEE(window.__analyserUD(r).racine), connu);
+      if (!(await d.evaluate(() => document.getElementById('cherche-plan').getAttribute('data-ouvert') === 'true'))) {
+        await d.click('#cherche-plan-ouvrir');
+        await d.waitForFunction(() => document.activeElement && document.activeElement.id === 'cherche-plan-champ', null, { timeout: 3000 }).catch(() => {});
+      }
       await d.fill('#cherche-plan-champ', formeSee); await d.waitForTimeout(400);
       const parSee = await d.evaluate(() => [...document.querySelectorAll('#cherche-plan-liste li[data-ref]')].map(o => o.dataset.ref));
       verifier('une référence écrite à la mode de SEE trouve le plan de GATES', parSee.indexOf(connu) !== -1, JSON.stringify([formeSee, parSee]));
@@ -8422,60 +8787,72 @@ async function deplierFiltresColonne(pg) {
     await q.evaluate(couleursA);
 
     // --- La Synthèse : un vrai titre, le verdict, « À vérifier ».
+    /* Débrief 28 : le verdict de l'échéance (#verdict-synthese) et « À
+       vérifier » (#signaux-synthese) sont retirés de la Synthèse (l'échéance
+       se lit au graphique et à ses jalons) ; la puce de la Tendance et la
+       phrase qui décrit le graphique disent toujours « il manquera N plans ». */
     const syn = await q.evaluate(new Function(esp + `
-      const sec = document.getElementById('section-synthese'), v = document.getElementById('verdict-synthese'), s = document.getElementById('signaux-synthese');
-      const suite = v.querySelector('.verdict-suite');
+      const sec = document.getElementById('section-synthese');
       return { titre: document.getElementById('phrase').tagName, nom: sec.getAttribute('aria-label'), labelledby: sec.getAttribute('aria-labelledby'),
-               verdict: esp(v.textContent), cls: v.className, visible: !v.hidden,
-               encre: suite ? window.__contrasteA(getComputedStyle(suite).color, window.__fondA(suite)) : 0,
-               signaux: esp(s.textContent), liens: [...s.querySelectorAll('button[data-signal]')].map(b => b.dataset.signal),
-               reponse: esp((document.getElementById('reponse-rapprochement') || {}).textContent),
+               verdict: !!document.getElementById('verdict-synthese') || !!sec.querySelector('.verdict-synthese'),
+               signaux: !!document.getElementById('signaux-synthese') || !!sec.querySelector('.signaux-synthese, button[data-signal]'),
+               texte: esp(sec.textContent),
+               resume: esp(document.getElementById('resume-graphe').textContent),
                pastille: esp(document.getElementById('echeance-titre').textContent), retard: document.getElementById('echeance-titre').classList.contains('en-retard') };`));
     verifier('Synthèse : la phrase de tête est le titre (h2) de la région « Synthèse »',
       syn.titre === 'H2' && syn.nom === 'Synthèse' && !syn.labelledby, JSON.stringify(syn));
-    verifier('Synthèse : sous la phrase, le verdict de l’échéance en mots — nom, date, jours, rythme requis contre rythme tenu, et « il manquera N plans » (en retard)',
-      syn.visible && /^Solde FWD · \S+ \d+ \S+ \(S\d+\), dans \d+ jours — il faut \d+ validés\/sem\., rythme tenu [\d,]+\/sem\. → donc au rythme actuel, il manquera \d+ plans\. Détail$/.test(syn.verdict) &&
-      /\bmal\b/.test(syn.cls) && syn.encre >= 4.5, JSON.stringify(syn));
-    verifier('Tendance : la puce de l’échéance dit le verdict en mots (« en retard »), le même que la Synthèse',
-      syn.retard && /en retard$/.test(syn.pastille), syn.pastille);
-    const manqueRep = (syn.reponse.match(/(\d+) plans? validés? absents?/) || [])[1];
-    verifier('Synthèse : « À vérifier » liste les reculs du dernier relevé et les validés absents de SEE (le nombre de la comparaison), chacun un lien',
-      /^À vérifier : /.test(syn.signaux) && syn.liens.indexOf('see') !== -1 && !!manqueRep && syn.signaux.indexOf(manqueRep + ' plans validés absents de SEE') !== -1 &&
-      (syn.liens.indexOf('reculs') === -1 || /\d+ reculs? (cette semaine|au dernier relevé)/.test(syn.signaux)), JSON.stringify({ syn: syn.signaux, manqueRep }));
+    verifier('Synthèse : plus de verdict de l’échéance sous la phrase (débrief 28) — ni « il faut N validés/sem. », ni « Détail »',
+      !syn.verdict && !/il faut \d+ validés\/sem\.|→ donc au rythme actuel| Détail$/.test(syn.texte), JSON.stringify(syn));
+    verifier('Tendance : la puce de l’échéance dit le verdict en mots (« en retard »), comme la phrase qui décrit le graphique (« il manquera N plans »)',
+      syn.retard && /en retard$/.test(syn.pastille) && /il manquera \d+ plans\.$/.test(syn.resume), JSON.stringify([syn.pastille, syn.resume]));
+    verifier('Synthèse : plus de ligne « À vérifier » ni de ses liens (reculs, validés absents de SEE) (débrief 28)',
+      !syn.signaux && !/À vérifier/.test(syn.texte), JSON.stringify(syn));
 
-    // « Détail » ouvre la fiche ; Échap la ferme et rend le focus au lien.
-    await q.focus('#verdict-synthese button[data-jalon]'); await q.keyboard.press('Enter'); await q.waitForTimeout(700);
+    /* « Détail » ouvrait la fiche ; Échap la ferme et rend le focus au lien.
+       Débrief 28 : sans le verdict, la fiche s'ouvre de la puce de la
+       Tendance — au clavier ici, à la souris plus bas. */
+    await q.focus('#echeance-titre'); await q.keyboard.press('Enter');
+    await q.waitForFunction(() => !!document.getElementById('fiche-echeance'), null, { timeout: 3000 }).catch(() => {});
     const fiche = await q.evaluate(new Function(esp + `
       const f = document.getElementById('fiche-echeance');
       return f ? { verdict: esp(f.querySelector('.fiche-echeance-verdict').textContent), rythme: esp((f.querySelector('.fiche-echeance-rythme') || {}).textContent),
                    num: getComputedStyle(f.querySelector('.fiche-echeance-tete .num')).backgroundColor,
                    alerte: getComputedStyle(document.querySelector('.legende-jalon.critique .num') || document.body).backgroundColor } : null;`));
-    verifier('« Détail » ouvre la fiche : « Au rythme tenu (N/sem.), il manquera N plans le …, soit N semaines après l’échéance », le rythme arrondi, le numéro en rouge',
+    verifier('la puce de l’échéance (au clavier, débrief 28) ouvre la fiche : « Au rythme tenu (N/sem.), il manquera N plans le …, soit N semaines après l’échéance », le rythme arrondi, le numéro en rouge — le même manque que la description du graphique',
       !!fiche && /^Au rythme tenu \([\d,]+\/sem\.\), il manquera \d+ plans le \S+ \d+ \S+ ; tout serait validé en S\d+ · \S+ \d{4}, soit \d+ semaines? après l’échéance/.test(fiche.verdict) &&
-      /^Il faut \d+ plans validés par semaine/.test(fiche.rythme) && fiche.num === fiche.alerte && syn.verdict.indexOf('il manquera ' + (fiche.verdict.match(/il manquera (\d+)/) || [])[1] + ' plans') !== -1,
-      JSON.stringify(fiche));
-    await q.keyboard.press('Escape'); await q.waitForTimeout(300);
-    const apresEchap = await q.evaluate(() => ({ fiche: !!document.getElementById('fiche-echeance'), focus: document.activeElement.closest('#verdict-synthese') ? 'detail' : document.activeElement.tagName + '.' + document.activeElement.className }));
-    verifier('Échap ferme la fiche de l’échéance et rend le focus à ce qui l’a ouverte (le « Détail » du verdict)',
-      !apresEchap.fiche && apresEchap.focus === 'detail', JSON.stringify(apresEchap));
+      /^Il faut \d+ plans validés par semaine/.test(fiche.rythme) && fiche.num === fiche.alerte && syn.resume.indexOf('il manquera ' + (fiche.verdict.match(/il manquera (\d+)/) || [])[1] + ' plans') !== -1,
+      JSON.stringify([fiche, syn.resume]));
+    await q.keyboard.press('Escape');
+    await q.waitForFunction(() => !document.getElementById('fiche-echeance'), null, { timeout: 3000 }).catch(() => {});
+    const apresEchap = await q.evaluate(() => ({ fiche: !!document.getElementById('fiche-echeance'), focus: document.activeElement.id || document.activeElement.tagName + '.' + document.activeElement.className }));
+    verifier('Échap ferme la fiche de l’échéance et rend le focus à ce qui l’a ouverte (la puce de la Tendance, ouverte au clavier — débrief 28 : plus de « Détail » du verdict)',
+      !apresEchap.fiche && apresEchap.focus === 'echeance-titre', JSON.stringify(apresEchap));
     await q.click('#echeance-titre'); await q.waitForTimeout(600);
     await q.keyboard.press('Escape'); await q.waitForTimeout(300);
     verifier('… et à la puce de la Tendance quand c’est elle qui l’a ouverte',
       await q.evaluate(() => !document.getElementById('fiche-echeance') && document.activeElement && document.activeElement.id === 'echeance-titre'));
 
-    // Les liens de « À vérifier ».
+    /* Les liens de « À vérifier ». Débrief 28 : la ligne est retirée ; la
+       même case de la comparaison (« validés, absents de SEE ») et le filtre
+       « reculs » du journal restent à portée dans leurs sections — on les
+       pose de là, ils répondent comme avant. */
     await q.evaluate(() => window.scrollTo(0, 0));
-    await q.click('#signaux-synthese button[data-signal="see"]'); await q.waitForTimeout(900);
-    const lienSee = await q.evaluate(() => { const a = document.activeElement; return { rapp: a.dataset.rapp, presse: a.getAttribute('aria-pressed'), ouvert: a.getAttribute('aria-expanded'), vu: a.getBoundingClientRect().top < innerHeight && a.getBoundingClientRect().bottom > 0 }; });
-    verifier('« N plans validés absents de SEE » mène à la comparaison : la case posée et dépliée, le focus dessus, à l’écran',
-      lienSee.rapp === 'manque' && lienSee.presse === 'true' && lienSee.ouvert === 'true' && lienSee.vu, JSON.stringify(lienSee));
+    const caseSee = await q.evaluate(() => !!document.querySelector('#verdicts-rapprochement button[data-rapp="manque"]'));
+    if (caseSee) {
+      await q.click('#verdicts-rapprochement button[data-rapp="manque"]');
+      await q.waitForFunction(() => (document.querySelector('#verdicts-rapprochement button[data-rapp="manque"]') || { getAttribute: () => '' }).getAttribute('aria-pressed') === 'true', null, { timeout: 3000 }).catch(() => {});
+    }
+    const lienSee = await q.evaluate(() => { const a = document.querySelector('#verdicts-rapprochement button[data-rapp="manque"]'); return a ? { rapp: a.dataset.rapp, presse: a.getAttribute('aria-pressed'), ouvert: a.getAttribute('aria-expanded'), signal: !!document.querySelector('button[data-signal]') } : null; });
+    verifier('sans « À vérifier » (débrief 28), la case « validés, absents de SEE » se pose et se déplie de la comparaison elle-même ; aucun lien data-signal ne reste',
+      !!lienSee && lienSee.rapp === 'manque' && lienSee.presse === 'true' && lienSee.ouvert === 'true' && !lienSee.signal, JSON.stringify(lienSee));
     await reinitialiser(q);
-    if (syn.liens.indexOf('reculs') !== -1) {
-      await q.evaluate(() => window.scrollTo(0, 0));
-      await q.click('#signaux-synthese button[data-signal="reculs"]'); await q.waitForTimeout(900);
-      const lienRecul = await q.evaluate(() => ({ filtre: window.__vueValeurs().journal, focus: document.activeElement.dataset.semaine !== undefined, ouvert: document.activeElement.getAttribute('aria-expanded') }));
-      verifier('« N recul(s) » mène au journal filtré sur les reculs, la semaine du dernier relevé dépliée, le focus sur elle',
-        lienRecul.filtre === 'reculs' && lienRecul.focus && lienRecul.ouvert === 'true', JSON.stringify(lienRecul));
+    const boutonReculs = await q.evaluate(() => !!document.querySelector('#filtre-journal button[data-journal="reculs"]'));
+    if (boutonReculs) {
+      await q.click('#filtre-journal button[data-journal="reculs"]');
+      await q.waitForFunction(() => window.__vueValeurs().journal === 'reculs', null, { timeout: 3000 }).catch(() => {});
+      const lienRecul = await q.evaluate(() => ({ filtre: window.__vueValeurs().journal, signal: !!document.querySelector('#signaux-synthese, button[data-signal="reculs"]') }));
+      verifier('sans « À vérifier » (débrief 28), le journal se filtre sur les reculs de sa propre rangée',
+        lienRecul.filtre === 'reculs' && !lienRecul.signal, JSON.stringify(lienRecul));
       await q.click('#filtre-journal button[data-journal=""]'); await q.waitForTimeout(300);
     }
 
@@ -8603,6 +8980,14 @@ async function deplierFiltresColonne(pg) {
       tete: [...document.querySelectorAll('#donnees-graphe-corps thead th')].map(t => t.textContent).join('|'),
       points: [...document.querySelectorAll('svg.graphe .zone-clic')].length, releves: (document.getElementById('note-graphe').textContent.match(/^(\d+) relevés/) || [])[1] }));
     verifier('X-A7 : « Voir les chiffres » déplie le tableau des relevés — semaine, validés, plans suivis, gain net', table.tete === 'Semaine|Validés|Plans suivis|Gain net' && table.lignes === +table.releves, JSON.stringify(table));
+    /* Débrief 28 : la note « N relevés, de … à … » sous le graphique est
+       réservée aux lecteurs d'écran (classe masque) : elle reste dans la
+       page, à jour, mais ne se voit plus. */
+    const note28 = await q.evaluate(() => { const n = document.getElementById('note-graphe'), b = n.getBoundingClientRect();
+      return { masque: n.classList.contains('masque'), l: b.width, h: b.height, cache: n.hidden || getComputedStyle(n).display === 'none', texte: n.textContent.replace(/[  ]/g, ' ') }; });
+    verifier('la note « N relevés, de … à … » du graphique est masquée à l’œil (classe masque, 1 px) mais lue aux lecteurs d’écran, à jour (débrief 28)',
+      note28.masque && note28.l <= 1 && note28.h <= 1 && !note28.cache && /^\d+ relevés, de S\d+ · .+ à S\d+ · .+$/.test(note28.texte) && +note28.texte.match(/^\d+/)[0] === +table.releves,
+      JSON.stringify(note28));
     await q.click('#donnees-graphe summary');
 
     // Les pilules : « Courbe : », un second clic revient aux validés ; une seule valeur : le cadre s'arrête à aujourd'hui + 4 semaines.
@@ -8644,18 +9029,19 @@ async function deplierFiltresColonne(pg) {
       vide.bloc === 'La courbe commence au deuxième relevé' && !vide.svg && !vide.pilules && !vide.periode && !vide.legende, JSON.stringify(vide));
     await cA.close();
 
-    // Sombre : le verdict et la puce lisibles.
+    /* Sombre : le verdict et la puce lisibles. Débrief 28 : le verdict de la
+       Synthèse est retiré — restent la puce, « requis » et les barres. */
     const cS = await contexte({ colorScheme: 'dark' });
     const qs = await page(cS, 'lot A sombre');
     await qs.evaluate(couleursA);
     const sombre = await qs.evaluate(() => {
-      const s = document.querySelector('#verdict-synthese .verdict-suite'), m = document.querySelector('#echeance-titre .verdict-mot'), r = document.querySelector('svg.graphe .requis-mot'), b = document.querySelector('svg.graphe .barre-semaine');
+      const m = document.querySelector('#echeance-titre .verdict-mot'), r = document.querySelector('svg.graphe .requis-mot'), b = document.querySelector('svg.graphe .barre-semaine');
       const fondG = getComputedStyle(document.getElementById('section-tendance')).backgroundColor;
-      return { suite: window.__contrasteA(getComputedStyle(s).color, window.__fondA(s)), mot: window.__contrasteA(getComputedStyle(m).color, window.__fondA(m)),
+      return { verdict: !!document.getElementById('verdict-synthese'), mot: window.__contrasteA(getComputedStyle(m).color, window.__fondA(m)),
                requis: window.__contrasteA(getComputedStyle(r).fill, fondG), barre: window.__contrasteA(getComputedStyle(b).fill, fondG) };
     });
-    verifier('sombre : le verdict, le mot de la puce et « requis N/sem. » tiennent 4,5:1, les barres par semaine 3:1',
-      sombre.suite >= 4.5 && sombre.mot >= 4.5 && sombre.requis >= 4.5 && sombre.barre >= 3, JSON.stringify(sombre));
+    verifier('sombre : le mot de la puce et « requis N/sem. » tiennent 4,5:1, les barres par semaine 3:1 (plus de verdict dans la Synthèse, débrief 28)',
+      !sombre.verdict && sombre.mot >= 4.5 && sombre.requis >= 4.5 && sombre.barre >= 3, JSON.stringify(sombre));
     await cS.close();
 
     // Au doigt : un toucher ouvre la bulle et la garde, en bas de l'écran ; un toucher ailleurs la ferme.
@@ -8767,12 +9153,12 @@ async function deplierFiltresColonne(pg) {
     verifier('C — dans les barres, seule la part des validés s’écrit ; chaque segment garde son infobulle',
       barres.ecrits > 0 && barres.familles.join() === 'termine' && barres.titres, JSON.stringify(barres));
     /* À 768 px, la barre n'a plus que ~115 px : « 12 % » se coupait en « 2% ». */
-    await c.setViewportSize({ width: 768, height: 900 }); await c.waitForTimeout(500);
+    await redimensionner(c, 768, 900);
     const coupees = await c.evaluate(() => [...document.querySelectorAll('#zone-critique .critique-barre span[data-cle]')].filter(s => {
       if (!s.textContent || getComputedStyle(s).fontSize === '0px') return false;
       const r = document.createRange(); r.selectNodeContents(s); return r.getBoundingClientRect().width > s.clientWidth + 0.5; }).map(s => s.textContent));
     verifier('C — à 768 px, aucune part n’est coupée dans une barre trop étroite : elle s’écrit en entier, ou pas du tout', coupees.length === 0, JSON.stringify(coupees));
-    await c.setViewportSize({ width: 1440, height: 900 }); await c.waitForTimeout(500);
+    await redimensionner(c, 1440, 900);
 
     // 6. La molette au-dessus de la liste descend la page (P-F1).
     await c.evaluate(() => document.getElementById('section-repartition').scrollIntoView());
@@ -8995,7 +9381,7 @@ async function deplierFiltresColonne(pg) {
       rep.every(x => x.l >= 24 && x.h >= 24), JSON.stringify(rep));
     // Les mots de la figure, à toutes les largeurs : 12 px au moins, sans chevauchement, dans la figure.
     for (const largeur of [1280, 1024, 900, 600, 390, 320]) {
-      await q.setViewportSize({ width: largeur, height: 900 }); await q.waitForTimeout(500);
+      await redimensionner(q, largeur, 900);
       const m = await q.evaluate(() => {
         const f = document.getElementById('venn-rapprochement'), boite = f.getBoundingClientRect();
         const mots = [...f.querySelectorAll('.venn-base, .cote, .commun-n, .commun-mot')];
@@ -9016,7 +9402,12 @@ async function deplierFiltresColonne(pg) {
     // Au doigt (téléphone) : toucher un côté fait ce que fait sa ligne ; cibles de 44 px.
     const cT = await contexte({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
     const t = await page(cT, 'lot E doigt');
-    await t.evaluate(() => document.getElementById('venn-rapprochement').scrollIntoView({ block: 'center' })); await t.waitForTimeout(500);
+    await t.evaluate(() => document.getElementById('venn-rapprochement').scrollIntoView({ block: 'center' }));
+    /* Débrief 29 (batterie) : plus de délai fixe — la figure à l'écran, son
+       entrée jouée (« anime », plus de transition en cours), 5 s au plus. */
+    await t.waitForFunction(() => { const f = document.querySelector('#venn-rapprochement .venn'), r = f && f.getBoundingClientRect();
+      return !!r && r.bottom > 0 && r.top < innerHeight && f.classList.contains('anime') &&
+        !document.getAnimations().some(a => a.playState === 'running' && isFinite(a.effect.getComputedTiming().endTime)); }, null, { timeout: 5000, polling: 'raf' }).catch(() => {});
     await t.tap('#venn-rapprochement .cote[data-cle="seul"]'); await t.waitForTimeout(1200);
     const eT = await t.evaluate(() => {
       const bloc = document.querySelector('#verdicts-rapprochement .verdict-bloc[data-lot="seul"]').getBoundingClientRect();
@@ -9108,7 +9499,7 @@ async function deplierFiltresColonne(pg) {
       };
     });
     for (const w of [1440, 1280, 1024, 800]) {
-      await qB.setViewportSize({ width: w, height: 950 }); await qB.waitForTimeout(450);
+      await redimensionner(qB, w, 950);
       const r = await rangee();
       verifier('à ' + w + ' px, la rangée du journal : « Tout », puis « Passés à » et « Mouvements » (deux groupes nommés) ; chaque pastille en vue, rien sous un fondu ni hors du cadre ; la recherche ' +
         (w >= 1180 ? 'au bout de la première rangée' : 'sur sa ligne, dessous'),
@@ -9119,7 +9510,7 @@ async function deplierFiltresColonne(pg) {
           r.mouvements[0] === 'reculs' && r.mouvements.join() === ['reculs', 'nouveaux', 'disparus', 'indice'].filter(k => r.mouvements.indexOf(k) !== -1).join(), JSON.stringify(r.mouvements));
       }
     }
-    await qB.setViewportSize({ width: 1440, height: 950 }); await qB.waitForTimeout(400);
+    await redimensionner(qB, 1440, 950);
     const recul = await qB.evaluate(() => {
       const b = document.querySelector('#filtre-journal button[data-journal="reculs"]');
       const t = document.createElement('span'); t.style.color = 'var(--alerte)'; document.body.appendChild(t); const alerte = getComputedStyle(t).color; t.remove();
@@ -9194,7 +9585,7 @@ async function deplierFiltresColonne(pg) {
       tete.codes.length >= 5 && tete.codes.every(c => c.police === 'IBM Plex Mono' && c.taille === 11 && c.lignes <= 2 && c.coupes.every(k => k === '_')) &&
       tete.semaine === 'Semaine' && tete.jauge === 'Répartition' && tete.jaugeVue && tete.colle === 'sticky' && !tete.deborde && !tete.serre, JSON.stringify(tete.codes));
     // À 1 024 px : plus de jauge ; les onze colonnes ne tiennent pas — chaque compte prend ses mots, rien n'est coupé.
-    await qB.setViewportSize({ width: 1024, height: 900 }); await qB.waitForTimeout(500);
+    await redimensionner(qB, 1024, 900);
     const etroit = await qB.evaluate(() => {
       const z = document.getElementById('zone-journal'), zr = z.getBoundingClientRect();
       return { serre: z.classList.contains('journal-serre'), deborde: z.scrollWidth > z.clientWidth + 1,
@@ -9204,7 +9595,7 @@ async function deplierFiltresColonne(pg) {
     });
     verifier('à 1 024 px, le journal ne coupe plus « Reculs » ni « Disparus » au bord : trop de colonnes pour la carte, chaque compte porte ses mots ; plus de jauge',
       !etroit.deborde && etroit.hors === 0 && (etroit.serre ? etroit.mots > 5 : true) && etroit.jauges === 0, JSON.stringify(etroit));
-    await qB.setViewportSize({ width: 1440, height: 950 }); await qB.waitForTimeout(500);
+    await redimensionner(qB, 1440, 950);
     verifier('revenu à 1 440 px, le journal redevient un tableau',
       await qB.evaluate(() => { const z = document.getElementById('zone-journal'); return z.classList.contains('journal-grille') && !z.classList.contains('journal-serre'); }));
 
@@ -9785,10 +10176,10 @@ async function deplierFiltresColonne(pg) {
     verifier('téléphone : le panneau en plein écran, la page derrière immobile (on défile dans le panneau), chaque cible ≥ 44 px, champs à 16 px (M8, D11)',
       tel.plein && tel.verrou === 'hidden' && y1 === y0 && tel.petites.length === 0 && champs.length >= 5 && champs.every(c => c.t === '16px' && c.h >= 44),
       JSON.stringify({ tel, y0, y1, champs }));
-    await tp.setViewportSize({ width: 390, height: 500 }); await tp.waitForTimeout(200);
+    await redimensionner(tp, 390, 500);
     const barre = await rect(tp, '.admin-form-boutons');
     verifier('clavier ouvert (390 × 500) : « Enregistrer » reste collé en bas de l\'écran (M8)', barre && barre.b <= 501 && barre.y < 500, JSON.stringify(barre));
-    await tp.setViewportSize({ width: 844, height: 390 }); await tp.waitForTimeout(200);
+    await redimensionner(tp, 844, 390);
     const couche = await tp.evaluate(() => { const d = document.getElementById('admin'), r = d.getBoundingClientRect(); return { h: Math.round(r.height), w: Math.round(r.width), defile: getComputedStyle(d).overflowY, corps: getComputedStyle(document.getElementById('admin-corps')).overflowY }; });
     verifier('téléphone couché (844 × 390) : plein écran, et tout le panneau défile — les onglets avec (M7)',
       couche.h === 390 && couche.w === 844 && couche.defile === 'auto' && couche.corps === 'visible', JSON.stringify(couche));

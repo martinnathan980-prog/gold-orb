@@ -2241,10 +2241,12 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const vu = await p.evaluate(() => ({
     semaine: document.getElementById('num-semaine').textContent,
     dates: document.getElementById('dates-semaine').textContent,
-    /* Débrief 27 (lot H, P-F10) : la ligne de la semaine seule — l'âge des
-       chiffres (le dernier relevé archivé) a sa propre ligne dessous. */
+    /* Débrief 27 (lot H, P-F10) : la ligne de la semaine seule. Débrief 28 :
+       la ligne de l'âge des chiffres (« Chiffres du … · dernier relevé
+       archivé … », #fraicheur) est retirée de l'en-tête. */
     titreSemaine: document.querySelector('.masthead .semaine').textContent.replace(/\s+/g, ' '),
-    fraicheur: document.getElementById('fraicheur').textContent,
+    fraicheur: !!document.getElementById('fraicheur'),
+    entete: document.querySelector('.masthead').textContent.replace(/\s+/g, ' '),
     sansMention: !document.getElementById('releve-semaine'),
     repere: ([...document.querySelectorAll('svg.graphe .repere-auj')].map(x => x.textContent)[0]) || '',
     etats: [...document.querySelectorAll('#etats .etat-n')].map(e => +e.textContent.replace(/\s/g, '')),
@@ -2270,9 +2272,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
     return 'Semaine ' + Math.ceil(((t.getTime() - Date.UTC(t.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7);
   })();
   verifier('la semaine affichée est celle d’aujourd’hui, au numéro près', vu.semaine === semAttendue, vu.semaine + ' vs ' + semAttendue);
-  verifier('la ligne de la semaine ne porte que la semaine d’aujourd’hui (le dernier relevé archivé a sa ligne à lui, dessous), et la courbe dit « aujourd’hui »',
-    vu.sansMention && !/dernier relevé/.test(vu.titreSemaine) && /dernier relevé archivé : S\d+/i.test(vu.fraicheur) && vu.repere === 'aujourd’hui',
-    JSON.stringify([vu.sansMention, vu.titreSemaine, vu.fraicheur, vu.repere]));
+  verifier('la ligne de la semaine ne porte que la semaine d’aujourd’hui (plus de ligne « dernier relevé archivé » dessous, débrief 28), et la courbe dit « aujourd’hui »',
+    vu.sansMention && !/dernier relevé/.test(vu.titreSemaine) && !vu.fraicheur && !/Chiffres du|relevé archivé/i.test(vu.entete) && vu.repere === 'aujourd’hui',
+    JSON.stringify([vu.sansMention, vu.titreSemaine, vu.fraicheur, vu.entete, vu.repere]));
   verifier('les dates de la semaine sont écrites en toutes lettres',
     /^du \d+ .* \d{4}$/.test(vu.dates), vu.dates);
   verifier('les quatre états totalisent les 186 plans',
@@ -2320,16 +2322,18 @@ function serveurSur(valeurs, proprietes, fichiers) {
 
   /* Un seul contrat : le sélecteur n'a rien à proposer, il reste caché — et
      le titre ne dit pas « contrat ». Débrief 27 (lot H, B1) : son surtitre
-     dit ce qu'il montre (l'avancement suivi, et le contrat s'il est nommé). */
+     disait ce qu'il montre. Débrief 28 : le surtitre est retiré ; le titre
+     dit l'avancement suivi (« Suivi FWD » à la définition électrique,
+     « Suivi concept harnais » au concept). */
   const contratAddon = await p.evaluate(() => ({
     selecteur: document.getElementById('choix-contrat').hidden &&
                document.getElementById('select-contrat').offsetParent === null,
-    rappel: !/contrat/i.test(document.querySelector('.masthead').textContent) &&
-            /Définition électrique|Concept harnais/.test(document.getElementById('contexte-page').textContent),
+    rappel: !/contrat/i.test(document.querySelector('.masthead').textContent) && !document.getElementById('contexte-page') &&
+            document.getElementById('titre-page').textContent === (window.__indicateur().indicateur === 'concept' ? 'Suivi concept harnais' : 'Suivi FWD'),
     pont: typeof window.SUIVI_FWD_API.chargerContrat === 'function' && !window.SUIVI_FWD_API.sauverJalons
   }));
   verifier('avec un seul contrat, la page ne montre pas de sélecteur', contratAddon.selecteur);
-  verifier('ni de mot « contrat » autour du titre — son surtitre dit l’avancement suivi', contratAddon.rappel);
+  verifier('ni de mot « contrat » autour du titre, ni de surtitre (débrief 28) — le titre dit l’avancement suivi', contratAddon.rappel);
   verifier('le pont vers le classeur expose chargerContrat, et plus sauverJalons', contratAddon.pont);
   // Hors du classeur, le pont ne peut pas répondre : il rappelle avec null, sans casser la page.
   verifier('hors classeur, chargerContrat rappelle null au lieu de planter',
@@ -2884,8 +2888,12 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const libelleEtat = await pg.evaluate(k => window.__valeurs().filter(v => v.cle === k).map(v => v.libelle)[0], etatPose.cle);
   /* Le domaine se choisit par le périmètre du haut ; le filtre de colonne
      reste une porte d'entrée, et son jeton nomme la colonne. */
-  /* Débrief 27 : la rangée des filtres de colonne se déplie d'abord (X-A2). */
-  if (await pg.getAttribute('#ouvrir-filtres', 'aria-expanded') !== 'true') { await pg.click('#ouvrir-filtres'); await pg.waitForTimeout(250); }
+  /* Débrief 27 : la rangée des filtres de colonne se dépliait d'abord (X-A2).
+     Débrief 28 : elle est toujours affichée (plus rien à déplier) — on
+     vérifie qu'elle est là avant d'y taper. */
+  verifier('débrief 28 : la rangée des filtres de colonne est affichée d’emblée, sans rien à déplier',
+    await pg.evaluate(() => { const r = document.querySelector('tr.filtres'), i = document.querySelector('input[data-filtre="domaine"]');
+      return !!r && !r.hidden && r.getClientRects().length > 0 && !!i && i.getClientRects().length > 0; }));
   await pg.fill('input[data-filtre="domaine"]', 'PERSO'); await pg.waitForTimeout(400);
   await pg.fill('#recherche', 'UD-24'); await pg.waitForTimeout(400);
   const jetons = await pg.evaluate(() => [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').trim()));
@@ -3327,7 +3335,11 @@ function serveurSur(valeurs, proprietes, fichiers) {
     etat: document.getElementById('etat-contrat').textContent,
     nom: document.getElementById('select-contrat').value,
     masthead: document.querySelector('.masthead').textContent,
-    contexte: document.getElementById('contexte-page').textContent,
+    /* Débrief 28 : plus de surtitre (#contexte-page) ; le contrat affiché
+       se lit au menu du contrat et à la légende du tableau. */
+    surtitre: !!document.getElementById('contexte-page'),
+    option: (document.getElementById('select-contrat').selectedOptions[0] || {}).textContent || '',
+    legende: (document.getElementById('legende-tableau') || {}).textContent || '',
     plans: document.querySelectorAll('#corps-tableau tr').length,
     etats: [...document.querySelectorAll('#etats .etat-n')].reduce((s, e) => s + (+e.textContent.replace(/\s/g, '')), 0),
     totauxGroupes: [...document.querySelectorAll('.critique-total')].reduce((s, t) => s + (+t.textContent), 0),
@@ -3341,8 +3353,12 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const departM = await etatPage();
   verifier('avec deux contrats, le sélecteur est visible et les liste dans l\'ordre des onglets',
     departM.visible && departM.options === 'X1,X2' && departM.courant === 'X1', JSON.stringify(departM.options));
-  /* Débrief 27 (lot H, B1, P-F11) : le surtitre du titre nomme le contrat affiché. */
-  verifier('le contrat courant est celui du sélecteur, et le surtitre du titre le nomme', departM.nom === 'X1' && !/contrat/i.test(departM.masthead) && /^X1 · /.test(departM.contexte), departM.nom + ' / ' + departM.contexte);
+  /* Débrief 27 (lot H, B1, P-F11) : le surtitre du titre nommait le contrat
+     affiché. Débrief 28 : le surtitre est retiré — le menu du contrat et la
+     légende du tableau le nomment. */
+  verifier('le contrat courant est celui du sélecteur, que le menu et la légende du tableau nomment ; plus de surtitre (débrief 28)',
+    departM.nom === 'X1' && !/contrat/i.test(departM.masthead) && !departM.surtitre && /X1/.test(departM.option) && /^Plans GATES de X1\b/.test(departM.legende),
+    JSON.stringify([departM.nom, departM.option, departM.surtitre, departM.legende]));
   verifier('la page s\'ouvre sur le premier contrat, avec ses relevés, sans rien demander au classeur',
     departM.plans === 186 && departM.etats === 186 && departM.releves === pM.releves.length && departM.appels.length === 0,
     JSON.stringify([departM.plans, departM.releves, departM.appels]));
@@ -3351,9 +3367,12 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const x2M = await etatPage();
   verifier('changer de contrat demande le paquet de X2 au classeur, par le pont',
     x2M.appels.join() === 'X2', JSON.stringify(x2M.appels));
-  verifier('et la page passe sur X2 : ses 93 plans partout, son nom sous le titre',
+  /* Débrief 28 : son nom ne s'écrit plus sous le titre (le surtitre est
+     retiré) ; le menu et la légende du tableau le disent. */
+  verifier('et la page passe sur X2 : ses 93 plans partout, son nom au menu et à la légende du tableau',
     x2M.plans === 93 && x2M.etats === 93 && x2M.totauxGroupes === 93 && x2M.nom === 'X2' &&
-    x2M.courant === 'X2' && /93 plans/.test(x2M.phrase) && /^X2 · /.test(x2M.contexte), JSON.stringify([x2M.plans, x2M.etats, x2M.totauxGroupes, x2M.nom, x2M.contexte]));
+    x2M.courant === 'X2' && /93 plans/.test(x2M.phrase) && !x2M.surtitre && /X2/.test(x2M.option) && /^Plans GATES de X2\b/.test(x2M.legende),
+    JSON.stringify([x2M.plans, x2M.etats, x2M.totauxGroupes, x2M.nom, x2M.option, x2M.legende]));
   /* Le classeur a bougé depuis l'assemblage de la page (suppressions plus
      haut) : le pont sert son état du moment, pas celui de l'ouverture. */
   verifier('le graphique trace l\'historique de X2, tel qu\'il est dans le classeur à cet instant',
