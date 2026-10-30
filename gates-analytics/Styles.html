@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "a3f1574";
+  --suivi-fwd-edition: "552099a";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -178,8 +178,8 @@
     --v-cours-4: #a493b8; --v-cours-4-encre: var(--sur-plein);
     --v-cours-5: #cf916f; --v-cours-5-encre: var(--sur-plein);
     --v-cours-6: #b7cbdc; --v-cours-6-encre: var(--sur-plein);
-    --v-afaire-1: #8a857a; --v-afaire-1-encre: var(--sur-plein);
-    --v-afaire-2: #57534c; --v-afaire-2-encre: var(--encre);   /* débrief 27 : TO_TREAT n'est plus la marque la plus claire de la barre ; encre 6,7:1 */
+    --v-afaire-1: #948f84; --v-afaire-1-encre: var(--sur-plein);   /* débrief 29 : un cran plus clair (#8a857a), pour rester distinct de TO_TREAT éclairci (1,6:1 entre eux, 1,7:1 avec la sauge voisine) ; encre 5,9:1 */
+    --v-afaire-2: #706c64; --v-afaire-2-encre: var(--encre);   /* débrief 29 (X) : TO_TREAT à 3:1 au moins sur chaque fond sombre (3,4:1 sur la surface, 3,0 sur une ligne survolée ; #57534c faisait 2,3:1), toujours la plus sombre des marques ; encre 4,6:1 */
     --r1: #1a241e; --r2: #23382c; --r3: #2e4f3c; --r4: #3d6b51; --r5: #558a6b; --r6: #6fae82;
     --focus: #a9bedb;   /* débrief 27 (D5) : l'ardoise claire, 9,5:1 sur la surface */
     --voile-ecart: rgba(221, 164, 52, .2);
@@ -245,8 +245,8 @@
   --v-cours-4: #a493b8; --v-cours-4-encre: var(--sur-plein);
   --v-cours-5: #cf916f; --v-cours-5-encre: var(--sur-plein);
   --v-cours-6: #b7cbdc; --v-cours-6-encre: var(--sur-plein);
-  --v-afaire-1: #8a857a; --v-afaire-1-encre: var(--sur-plein);
-  --v-afaire-2: #57534c; --v-afaire-2-encre: var(--encre);   /* débrief 27 : TO_TREAT n'est plus la marque la plus claire de la barre ; encre 6,7:1 */
+  --v-afaire-1: #948f84; --v-afaire-1-encre: var(--sur-plein);   /* débrief 29 : un cran plus clair (#8a857a), pour rester distinct de TO_TREAT éclairci (1,6:1 entre eux, 1,7:1 avec la sauge voisine) ; encre 5,9:1 */
+  --v-afaire-2: #706c64; --v-afaire-2-encre: var(--encre);   /* débrief 29 (X) : TO_TREAT à 3:1 au moins sur chaque fond sombre (3,4:1 sur la surface, 3,0 sur une ligne survolée ; #57534c faisait 2,3:1), toujours la plus sombre des marques ; encre 4,6:1 */
   --r1: #1a241e; --r2: #23382c; --r3: #2e4f3c; --r4: #3d6b51; --r5: #558a6b; --r6: #6fae82;
   --focus: #a9bedb;   /* débrief 27 (D5) : l'ardoise claire, 9,5:1 sur la surface */
   --voile-ecart: rgba(221, 164, 52, .2);
@@ -615,6 +615,25 @@ body {
 .etats.en-legende .etat-btn:hover, .etats.en-legende .etat-btn.eclaire { border-color: var(--filet-fort); }
 .etats.en-legende .etat-btn[aria-pressed="true"] { border-color: var(--encre); box-shadow: inset 0 -2px 0 var(--teinte); }
 .etats.en-legende .etat-btn[aria-pressed="true"]::after { display: none; }
+/* Débrief 29 (P-F17) : « on ne voit pas que les tuiles se cliquent ». Au
+   survol et au focus clavier, une ligne discrète — l'entonnoir et « Filtrer
+   la page », ou « Retirer le filtre » sur la tuile pressée — paraît sous le
+   nombre. Sa place est gardée dans la carte (visibility, pas display) :
+   rien ne bouge. Sous la barre, où les tuiles libres n'ont que 64 px, elle
+   se pose sous la tuile, par-dessus le blanc du panneau. Sans survol (un
+   doigt), pas de place vide : le toucher filtre, et le dit tout de suite. */
+.indice-tuile {
+  display: flex; align-items: center; gap: 4px; grid-column: 1 / -1; min-width: 0; margin-top: -2px;
+  font-size: 12px; line-height: 14px; font-weight: 400; color: var(--encre-2); white-space: nowrap;
+  visibility: hidden; opacity: 0; transition: opacity .12s, visibility .12s;
+}
+.indice-tuile svg { flex: none; }
+.etat-btn:hover .indice-tuile, .etat-btn:focus-visible .indice-tuile { visibility: visible; opacity: 1; }
+@media not all and (max-width: 680px) {
+  .etats:not(.en-legende) .indice-tuile { position: absolute; top: 100%; left: 50%; margin-top: 0; transform: translateX(-50%); justify-content: center; }
+}
+@media (hover: none) { .indice-tuile { display: none; } }
+@media (prefers-reduced-motion: reduce) { .indice-tuile { transition: none; } }
 
 /* ---------------------------------------------------- Composants communs (débrief 27)
    Le dessin décidé une fois (cahier D7, D8), prêt pour toutes les sections :
@@ -1843,7 +1862,11 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 .legende-jalons { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--filet); font-size: 13px; color: var(--encre-2); }
 .legende-jalons:empty { display: none; }
 .legende-jalons-mot { display: block; margin-bottom: 8px; }
-.legende-jalons-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); gap: 10px 18px; }
+/* Débrief 29 (B10) : 150 px par jalon et 14 px entre eux — les cinq jalons
+   tiennent sur une ligne à 1024 px (ils étaient en 4 + 1). Le script
+   équilibre les rangées (3 + 2 plutôt que 4 + 1 sur une tablette), comme
+   les tuiles de la synthèse ; cette règle-ci vaut s'il ne l'a pas fait. */
+.legende-jalons-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 14px; }
 .legende-jalon {
   display: grid; grid-template-columns: 18px 1fr; grid-template-rows: auto auto;
   column-gap: 8px; row-gap: 1px; align-items: center; cursor: pointer; border-radius: 6px;
@@ -1871,6 +1894,9 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 .legende-jalon.hors-fenetre .mot, .legende-jalon.hors-fenetre .quand { color: var(--encre-3); }
 .legende-jalon.hors-fenetre .num { background: var(--surface); color: var(--encre-2); box-shadow: none; border: 1.5px dashed var(--encre-3); }
 .legende-jalon .retard { color: var(--alerte); font-weight: 500; font-style: normal; }
+/* Débrief 29 (B10) : « en retard » ne se coupe pas (« · en » / « retard »
+   dans une case étroite) : il passe à la ligne d'un seul tenant. */
+.legende-jalon .retard { white-space: nowrap; }
 .legende-jalon.critique.hors-fenetre .num { background: var(--surface); color: var(--alerte); border-color: var(--alerte); }
 /* Débrief 27 (D8) : la Tendance sans courbe (moins de deux relevés) — l'état
    vide à la place du dessin, et rien de ce qui n'agirait sur rien. */
@@ -2725,6 +2751,9 @@ button.aide[aria-expanded="true"]::before { border-color: var(--encre); backgrou
    téléphone, elles gardent leur ligne qui défile. */
 @media not all and (max-width: 720px) {
   .ligne-filtres > #filtre-valeur-groupe { flex-wrap: wrap; overflow: visible; -webkit-mask-image: none; mask-image: none; }
+  /* Débrief 29 (B10) : la rangée « Courbe : » de la Tendance aussi — à
+     1024 px, elle défilait sous un fondu et coupait « Non r… ». */
+  .ligne-filtres > #filtre-valeur-graphe, #filtre-valeur-graphe.ligne-filtres { flex-wrap: wrap; overflow: visible; -webkit-mask-image: none; mask-image: none; }
 }
 @media (max-width: 720px) {
   /* En colonne, l'en-tete ne peut plus coiffer les valeurs : il se replie en
@@ -3187,6 +3216,14 @@ table.plans thead .titres th .poignee {
 }
 table.plans thead .titres:hover .poignee, table.plans thead .titres:focus-within .poignee { opacity: 1; }
 .fleche { color: var(--encre); }
+/* Débrief 29 (P-F17) : la double flèche du repos, pâle (--encre-3, 5:1),
+   comme dans « Par ATA » ; elle passe à l'encre au survol et au focus. Le
+   tableau de la seconde base fait de même. */
+table.plans thead .titres th button .fleche, table.plans thead .titres-la th button .fleche { flex: none; }
+table.plans thead .titres th button .fleche.repos, table.plans thead .titres-la th button .fleche.repos { color: var(--encre-3); transition: color .12s; }
+table.plans thead .titres th button:hover .fleche.repos, table.plans thead .titres th button:focus-visible .fleche.repos,
+table.plans thead .titres-la th button:hover .fleche.repos, table.plans thead .titres-la th button:focus-visible .fleche.repos { color: var(--encre); }
+@media (prefers-reduced-motion: reduce) { table.plans thead .titres th button .fleche.repos, table.plans thead .titres-la th button .fleche.repos { transition: none; } }
 
 table.plans tbody td { padding: 8px 14px; border-bottom: 1px solid var(--filet); vertical-align: middle; white-space: nowrap; }
 table.plans tbody tr:hover td { background: var(--survol-ligne); }

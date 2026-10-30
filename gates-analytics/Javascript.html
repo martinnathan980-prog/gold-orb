@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'a3f1574';
+  var EDITION = '552099a';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -1137,9 +1137,9 @@
       var versAutre = autre === 'concept' ? 'au concept harnais' : 'à la définition électrique';
       var nJours = joursAvant(j);
       return '\x3Cdiv class="fiche-echeance" id="fiche-echeance" role="region" aria-label="Échéance ' + ech(j.texte) + '">' +
-        '\x3Cdiv class="fiche-echeance-tete">\x3Cspan class="num">' + (idx + 1) + '\x3C/span>\x3Ch3>' + ech(j.texte) + '\x3C/h3>' +
+        '\x3Cdiv class="fiche-echeance-tete">\x3Cspan class="num">' + (idx + 1) + '\x3C/span>\x3Ch3 id="fiche-echeance-titre" tabindex="-1">' + ech(j.texte) + '\x3C/h3>' +
         '\x3Cspan class="quand">' + ech(quand) + (j.perimetre ? ' · ' + ech(j.perimetre) : '') + '\x3C/span>' +
-        '\x3Cbutton type="button" class="fiche-echeance-fermer" data-fermer-echeance="1" aria-label="Fermer la fiche">×\x3C/button>\x3C/div>' +
+        '\x3Cbutton type="button" class="fiche-echeance-fermer" data-fermer-echeance="1" aria-label="Fermer la fiche de l\u2019échéance">×\x3C/button>\x3C/div>' +
         '\x3Cdiv class="fiche-echeance-rythme">' + ech(motJours(nJours).replace(/^./, function (c) { return c.toUpperCase(); })) +
         '. Ce jalon suit \x3Cb>' + leAutre + '\x3C/b> : ses plans se comptent sur cet avancement.\x3C/div>' +
         '\x3Cdiv>\x3Cbutton type="button" class="lien-doux" data-aller-indicateur="' + autre + '" data-jalon="' + idx + '">Passer ' + versAutre + '\x3C/button>\x3C/div>' +
@@ -1186,9 +1186,9 @@
        est manquée, comme son marqueur sur le graphique (il restait gris). */
     var manquee = b.restants > 0 && (passe || b.enRetard) && jalonDansPerimetre(j);
     return '\x3Cdiv class="fiche-echeance" id="fiche-echeance" role="region" aria-label="Échéance ' + ech(j.texte) + '">' +
-      '\x3Cdiv class="fiche-echeance-tete">\x3Cspan class="num' + (manquee ? ' critique' : '') + '">' + (idx + 1) + '\x3C/span>\x3Ch3>' + ech(j.texte) + '\x3C/h3>' +
+      '\x3Cdiv class="fiche-echeance-tete">\x3Cspan class="num' + (manquee ? ' critique' : '') + '">' + (idx + 1) + '\x3C/span>\x3Ch3 id="fiche-echeance-titre" tabindex="-1">' + ech(j.texte) + '\x3C/h3>' +
       '\x3Cspan class="quand">' + ech(quand) + portee + '\x3C/span>' +
-      '\x3Cbutton type="button" class="fiche-echeance-fermer" data-fermer-echeance="1" aria-label="Fermer la fiche">×\x3C/button>\x3C/div>' +
+      '\x3Cbutton type="button" class="fiche-echeance-fermer" data-fermer-echeance="1" aria-label="Fermer la fiche de l\u2019échéance">×\x3C/button>\x3C/div>' +
       '\x3Cdiv class="fiche-echeance-chiffres">' +
         '\x3Cdiv>\x3Cb>' + nb(jours) + '\x3C/b>\x3Cspan>' + (passe ? (jours > 1 ? 'jours de retard' : 'jour de retard') : (jours > 1 ? 'jours restants' : (jours === 1 ? 'jour restant' : 'c’est aujourd’hui'))) + '\x3C/span>\x3C/div>' +
         '\x3Cdiv>\x3Cb>' + nb(b.semainesRestantes) + '\x3C/b>\x3Cspan>' + (b.semainesRestantes > 1 ? 'semaines restantes' : 'semaine restante') + '\x3C/span>\x3C/div>' +
@@ -1311,7 +1311,20 @@
   function ouvrirEcheance(idx, defiler) {
     vue.echeance = (vue.echeance === idx && !defiler) ? null : idx;
     rendreGraphique(selection());
-    if (defiler && vue.echeance !== null && $('fiche-echeance')) defilerVers($('legende-jalons'), { block: 'center', behavior: lisse() });
+    if (defiler && vue.echeance !== null && $('fiche-echeance')) {
+      /* Débrief 29 (X) : ouverte depuis la puce, tout en haut de la
+         Tendance, la fiche est plus bas : la page y descend — la fiche au
+         milieu de l'écran (la légende des jalons centrée la laissait
+         parfois sous le bord, au téléphone) — et le focus la suit, sur son
+         titre. Il restait sur la puce, sortie de l'écran : le Tab suivant
+         remontait. Échap la referme et rend le focus à la puce. Le titre
+         a son id et son tabindex dans le rendu : redessinée (la fenêtre
+         change de taille, la barre d'adresse du téléphone se replie en
+         défilant), la fiche retrouve le focus sur lui (garderFocus). */
+      defilerVers($('fiche-echeance'), { block: 'center', behavior: lisse() });
+      var titre = $('fiche-echeance-titre');
+      if (titre) { try { titre.focus({ preventScroll: true }); } catch (e) { titre.focus(); } }
+    }
   }
   /* Le défilement doux, sauf si l'on préfère moins d'animation. */
   function lisse() {
@@ -3080,7 +3093,14 @@
         (actif ? '' : ' aria-label="' + ech(dit + ', ' + nb(nV) + (nV > 1 ? ' plans' : ' plan')) + '"') + '>' +
         '\x3Cspan class="etat-haut">' + pastille + '\x3Cspan class="libelle">' + ech(v.libelle).replace(/_/g, '_\x3Cwbr>') + '\x3C/span>\x3C/span>' +
         '\x3Cspan class="etat-n">' + nb(parValeur[v.cle] || 0) + '\x3C/span>' +
-        '\x3Cspan class="etat-pct">' + partDite(parValeur[v.cle] || 0, c.total) + '\x3C/span>\x3C/button>';
+        '\x3Cspan class="etat-pct">' + partDite(parValeur[v.cle] || 0, c.total) + '\x3C/span>' +
+        /* Débrief 29 (P-F17) : la tuile dit ce qu'elle fait — au survol et au
+           focus clavier, « Filtrer la page » (ou « Retirer le filtre » sur la
+           tuile pressée) paraît sous le nombre, dans une place gardée : rien
+           ne bouge. Le title le dit déjà aux lecteurs d'écran. */
+        '\x3Cspan class="indice-tuile" aria-hidden="true">' + (actif
+          ? '\x3Csvg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">\x3Cpath d="M3 3l6 6M9 3 3 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>\x3C/svg>Retirer le filtre'
+          : iconeEntonnoir() + 'Filtrer la page') + '\x3C/span>\x3C/button>';
     }).join('');
 
     aMesurer('barre');                 // à l'image suivante, avec les autres mesures
@@ -3611,7 +3631,12 @@
       var n = 0;
       traitsX.forEach(function (tx) { if (tx > bx.g - 1 && tx < bx.d + 1) n += 10; });
       traitsCaches.forEach(function (tx) { if (tx > bx.g - 1 && tx < bx.d + 1) n += 3; });
-      droites.forEach(function (sg) { if (coupe(bx, sg)) n += 2; });
+      /* Débrief 29 (B3) : la droite « requis » pèse plus qu'une autre
+         droite, et plus que deux traits cachés : au téléphone, « manque
+         535 » se posait en travers d'elle (gêne 2) plutôt qu'à droite du
+         trait, sur les traits des jalons 2 et 3 — qu'on ne voit qu'au
+         survol (gêne 6). */
+      droites.forEach(function (sg) { if (coupe(bx, sg)) n += sg === segRequis ? 8 : 2; });
       boites.forEach(function (o) { if (seCoupent(bx, o)) n += 20; });
       if (bx.g < (gMin === undefined ? mG - 5 : gMin) || bx.d > dMax) n += 50;   // la boîte compte 3 px de fond de chaque côté
       return n;
@@ -3772,7 +3797,10 @@
       horsClip.push(texteMot(cFin, { cls: 'fin-mot' }));
     }
     if (cMq) {
-      if (cMq.gene >= 10) horsClip.push(fondMot(cMq));
+      /* Débrief 29 (B3) : un fond plein dès qu'une droite tracée le croise
+         malgré tout (« requis », la projection) — le liseré seul laissait
+         passer le trait entre les lettres. */
+      if (cMq.gene >= 10 || droites.some(function (sg) { return coupe(cMq.boite, sg); })) horsClip.push(fondMot(cMq));
       horsClip.push(texteMot(cMq, { cls: 'manque-jalon',
         plus: ' fill="var(--alerte)" font-weight="500" stroke="var(--surface)" stroke-width="4" stroke-linejoin="round" paint-order="stroke"',
         titre: '\x3Ctitle>Au rythme tenu, il manquerait ' + nb(bilan.manque) + ' plan' + (bilan.manque > 1 ? 's' : '') + ' le jour de l’échéance\x3C/title>' }));
@@ -3936,6 +3964,14 @@
        bande, la baisse dessous. Des barres plus soutenues (--barre-semaine,
        3:1 sur la surface : le vert clair d'avant faisait 2,2:1). */
     var lb = Math.min(10, Math.max(2, pasX - 2));
+    /* Débrief 29 (X, 1.4.11) : sous une valeur, les barres prennent sa
+       couleur — trop pâle pour 3:1 sur le blanc (TO_CONFIRM 2,3:1,
+       FWD_TO_SEIZE 2,5:1), elles ont le liseré de la courbe. Une baisse
+       n'est plus une barre à 50 % (1,5:1) : un aplat léger (30 %) cerné
+       d'un trait plein de 1,5 px — la couleur, ou le liseré si elle est
+       trop pâle. Pleine, elle monte ; creuse, elle descend. */
+    var remplir = vVal ? coul : 'var(--barre-semaine)';
+    var barrePale = !!vVal && contrasteSurface(coul) < 3;
     var hautBarres = bandeH - 14;                      // sous le nom de la bande
     var hMax = deuxSens ? hautBarres / 2 : hautBarres, yZero = deuxSens ? basBande - hautBarres / 2 : basBande;
     var motBande = vVal ? ech('« ' + vVal.libelle + ' » : variation nette par semaine') : motFini(2) + ' / semaine';
@@ -3954,7 +3990,9 @@
       s.push('\x3Cpath class="barre-semaine' + (monte ? '' : ' perte') + '" d="M' + xg.toFixed(1) + ' ' + yb.toFixed(1) + ' V' + (yh + sens * rx).toFixed(1) +
              ' Q' + xg.toFixed(1) + ' ' + yh.toFixed(1) + ' ' + (xg + rx).toFixed(1) + ' ' + yh.toFixed(1) +
              ' H' + (xg + lb - rx).toFixed(1) + ' Q' + (xg + lb).toFixed(1) + ' ' + yh.toFixed(1) + ' ' + (xg + lb).toFixed(1) + ' ' + (yh + sens * rx).toFixed(1) +
-             ' V' + yb.toFixed(1) + ' Z" fill="' + (vVal ? coul : 'var(--barre-semaine)') + '"' + (monte ? '' : ' opacity=".5"') + '/>');
+             ' V' + yb.toFixed(1) + ' Z" fill="' + remplir + '"' +
+             (monte ? (barrePale ? ' stroke="var(--lisere-courbe)" stroke-width="1"' : '')
+                    : ' fill-opacity=".3" stroke="' + (barrePale ? 'var(--lisere-courbe)' : remplir) + '" stroke-width="1.5" stroke-linejoin="round"') + '/>');
     });
 
     // Graduations : espacees pour tenir une dizaine d etiquettes quel que soit le zoom
@@ -4095,7 +4133,15 @@
        en jours et la raison d'un retrait passent dans le survol et dans la
        fiche. En retrait hors périmètre, en rouge s'il est l'échéance
        manquée. Survoler un jalon ici l'éclaire sur le graphique. */
-    $('legende-jalons').innerHTML = jalons.length ? '\x3Cspan class="legende-jalons-mot">Jalons\x3C/span>\x3Cdiv class="legende-jalons-grille" title="Cliquez un jalon pour le détail de son échéance">' + jalons.map(function (j, idx) {
+    /* Débrief 29 (B10) : des rangées équilibrées, comme les tuiles — tous
+       les jalons sur une ligne tant que chacun garde 150 px (cinq à
+       1024 px), sinon 3 + 2 plutôt que 4 + 1. La légende a la largeur du
+       tracé (L). */
+    var parLigneJ = Math.max(1, Math.min(jalons.length, Math.floor((L + 14) / (150 + 14))));
+    var rangsJ = Math.max(1, Math.ceil(jalons.length / parLigneJ));
+    var colonnesJ = Math.max(1, Math.ceil(jalons.length / rangsJ));
+    $('legende-jalons').innerHTML = jalons.length ? '\x3Cspan class="legende-jalons-mot">Jalons\x3C/span>\x3Cdiv class="legende-jalons-grille" style="grid-template-columns:repeat(' + colonnesJ +
+      ', minmax(0, 1fr))" title="Cliquez un jalon pour le détail de son échéance">' + jalons.map(function (j, idx) {
       var hors = !jalonDansPerimetre(j), rouge = prochain && j.i === prochain.i && !hors && enRetard;
       var nj = joursAvant(j);
       var horsFenetre = j.i < d0 || j.i > d1;   // dans la légende, mais pas dans la fenêtre affichée
@@ -4110,7 +4156,7 @@
         '\x3Cb class="num">' + (idx + 1) + '\x3C/b>\x3Cspan class="mot">' + ech(j.texte) + '\x3C/span>' +
         /* Débrief 27 (X-A8) : l'échéance manquée le dit en mots, pas
            seulement en rouge. */
-        '\x3Cspan class="quand">' + semaineDite(j.i) + (rouge ? '\x3Cspan class="retard"> \u00b7 en retard\x3C/span>' : '') + '\x3C/span>\x3C/span>';
+        '\x3Cspan class="quand">' + semaineDite(j.i) + (rouge ? ' \x3Cspan class="retard">\u00b7 en retard\x3C/span>' : '') + '\x3C/span>\x3C/span>';
     }).join('') + '\x3C/div>' + (vue.echeance !== null && jalons[vue.echeance] ? ficheEcheance(vue.echeance) : '') : '';
 
     /* Dessiné avant l'arrivée des polices, les mots ont été placés avec
@@ -5541,9 +5587,12 @@
         '>' + libelleGroupeTete(g, nomSuivi) + '\x3C/th>';
     }).join('') + '\x3C/tr>') + '\x3Ctr class="titres">' + cols.map(function (c, i) {
       var actif = vue.tri.cle === c.cle;
-      var fleche = actif ? '\x3Csvg class="fleche" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">\x3Cpath d="' +
-        (vue.tri.asc ? 'M5 8.5V1.5M2 4.5 5 1.5l3 3' : 'M5 1.5v7M2 5.5 5 8.5l3-3') +
-        '" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>\x3C/svg>' : '';
+      /* Débrief 29 (P-F17) : comme les en-têtes de « Par ATA », chaque
+         colonne dit qu'elle trie — une double flèche pâle au repos, ↑ ou ↓
+         à l'encre sur la colonne triée. */
+      var fleche = '\x3Csvg class="fleche' + (actif ? '' : ' repos') + '" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">\x3Cpath d="' +
+        (!actif ? 'M3 4 5 1.8 7 4M3 6l2 2.2L7 6' : vue.tri.asc ? 'M5 8.5V1.5M2 4.5 5 1.5l3 3' : 'M5 1.5v7M2 5.5 5 8.5l3-3') +
+        '" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>\x3C/svg>';
       /* Débrief 27 (2.5.7) : la poignée est un bouton — un clic ouvre « ← à
          gauche / à droite → », pour qui ne peut pas glisser. Hors de la
          tabulation : au clavier, Alt + flèches sur l'en-tête. */
@@ -8002,9 +8051,11 @@
 
     $('tete-seconde').innerHTML = '\x3Ctr class="titres-la">' + cols.map(function (t) {
       var actif = S.tri.cle === t;
-      var fleche = actif ? '\x3Csvg class="fleche" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">\x3Cpath d="' +
-        (S.tri.asc ? 'M5 8.5V1.5M2 4.5 5 1.5l3 3' : 'M5 1.5v7M2 5.5 5 8.5l3-3') +
-        '" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>\x3C/svg>' : '';
+      /* Débrief 29 (P-F17) : la double flèche pâle au repos, comme le
+         tableau d'ici. */
+      var fleche = '\x3Csvg class="fleche' + (actif ? '' : ' repos') + '" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">\x3Cpath d="' +
+        (!actif ? 'M3 4 5 1.8 7 4M3 6l2 2.2L7 6' : S.tri.asc ? 'M5 8.5V1.5M2 4.5 5 1.5l3 3' : 'M5 1.5v7M2 5.5 5 8.5l3-3') +
+        '" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>\x3C/svg>';
       return '\x3Cth scope="col" data-cle="' + ech(t) + '" aria-sort="' + (actif ? (S.tri.asc ? 'ascending' : 'descending') : 'none') +
         '"' + (t === SECONDE.premiere ? ' class="col-fige-la"' : '') + '>\x3Cbutton type="button" data-tri-seconde="' + ech(t) + '">' +
         ech(t) + fleche + '\x3C/button>\x3C/th>';
@@ -10704,7 +10755,10 @@
     clearTimeout(minuteurTaille);
     minuteurTaille = setTimeout(function () {
       if (!vue) return;                // la page attend encore ses données
-      rendreGraphique(selection()); marquerLourd(); ajusterSticky(); majOmbre();
+      /* Débrief 29 (X) : le graphique et sa légende se réécrivent — le focus
+         qui y était (la fiche d'une échéance, un jalon) y reste. */
+      garderFocus(function () { rendreGraphique(selection()); }, 'section-tendance');
+      marquerLourd(); ajusterSticky(); majOmbre();
       aMesurer('barre');
       ajusterColonneNom();
       marquerDebords();
@@ -10718,6 +10772,16 @@
       aMesurer('journal');
     }, 160);
   });
+  /* Débrief 29 (X) : le thème du système change page ouverte (le mode
+     sombre automatique, le soir) : le graphique se redessine — le liseré
+     d'une couleur trop pâle pour 3:1 (courbe, barres) se décide au dessin,
+     selon le fond du moment. */
+  var schemaSombre = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  if (schemaSombre) {
+    var auChangementDeTheme = function () { if (vue) garderFocus(function () { rendreGraphique(selection()); }, 'section-tendance'); };
+    if (schemaSombre.addEventListener) schemaSombre.addEventListener('change', auChangementDeTheme);
+    else if (schemaSombre.addListener) schemaSombre.addListener(auChangementDeTheme);
+  }
   /* Le fondu suit le défilement de chaque rangée : il s'efface au bout. La
      molette, sur une rangée qui dépasse, la fait défiler de côté (elle n'a
      pas de barre). */
@@ -12399,5 +12463,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = 'a3f1574';
+window.SUIVI_FWD_FIN = '552099a';
 </script>
