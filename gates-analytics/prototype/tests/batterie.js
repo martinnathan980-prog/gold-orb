@@ -11056,6 +11056,21 @@ async function deplierFiltresColonne(pg) {
       survolTete.fleche === survolTete.encre && apresTri.find(t => t.cle === autreCle).tri === 'ascending' && !apresTri.find(t => t.cle === autreCle).repos &&
       apresTri.find(t => t.cle === actives[0].cle).repos, JSON.stringify({ survolTete, apresTri: apresTri.filter(t => t.cle === autreCle || t.cle === actives[0].cle) }));
     await pT.click('#tete-tableau button[data-tri="' + actives[0].cle + '"]'); await pT.waitForTimeout(400);
+    // Le tableau de la seconde base : les mêmes flèches.
+    await pT.click('#bouton-base-la'); await pT.waitForTimeout(600);
+    const lireSeconde = () => pT.evaluate(() => [...document.querySelectorAll('#tete-seconde th')].map(th => {
+      const f = th.querySelector('button .fleche');
+      return { cle: th.dataset.cle, tri: th.getAttribute('aria-sort'), fleche: !!f, repos: !!(f && f.classList.contains('repos')) };
+    }));
+    const seconde0 = await lireSeconde();
+    const cleSeconde = seconde0.length > 2 ? seconde0[2].cle : null;
+    if (cleSeconde) { await pT.click('#tete-seconde th:nth-child(3) button'); await pT.waitForTimeout(400); }
+    const seconde1 = await lireSeconde();
+    verifier('tableau de la seconde base : chaque en-tête porte aussi sa double flèche au repos ; trié, il prend ↑ ou ↓ et lui seul',
+      seconde0.length > 5 && seconde0.every(t => t.fleche && (t.tri === 'none') === t.repos) && !!cleSeconde &&
+      seconde1.filter(t => t.tri !== 'none').map(t => t.cle).join() === cleSeconde && seconde1.every(t => t.fleche && (t.tri === 'none') === t.repos),
+      JSON.stringify({ seconde0: seconde0.slice(0, 6), seconde1: seconde1.slice(0, 6) }));
+    await pT.click('#choix-base button[data-base="ici"]'); await pT.waitForTimeout(600);
 
     // Échéance : Entrée sur la puce, le focus suit la fiche.
     await pT.evaluate(() => window.scrollTo(0, 0));
@@ -11069,6 +11084,15 @@ async function deplierFiltresColonne(pg) {
                sommaire: Math.round(bas), ecran: innerHeight, anneau: getComputedStyle(a).outlineStyle };
     });
     const ficheT = await lireFocusFiche(pT);
+    /* La fenêtre change de taille, fiche ouverte (la barre d'adresse d'un
+       téléphone qui se replie en défilant) : le graphique et sa légende se
+       réécrivent — le focus reste sur le titre de la fiche, pas sur le corps. */
+    await redimensionner(pT, 1440, 860);
+    const focusTaille = await pT.evaluate(() => ({ id: document.activeElement.id, anneau: getComputedStyle(document.activeElement).outlineStyle }));
+    await redimensionner(pT, 1440, 900);
+    const focusTaille2 = await pT.evaluate(() => document.activeElement.id);
+    verifier('échéance : la fenêtre change de taille, fiche ouverte — le graphique se redessine, le focus reste sur le titre de la fiche, cerclé',
+      focusTaille.id === 'fiche-echeance-titre' && focusTaille.anneau === 'solid' && focusTaille2 === 'fiche-echeance-titre', JSON.stringify({ focusTaille, focusTaille2 }));
     await pT.keyboard.press('Tab');
     const apresTab = await pT.evaluate(() => document.activeElement.getAttribute('aria-label') || document.activeElement.textContent.trim().slice(0, 30));
     await pT.keyboard.press('Shift+Tab');

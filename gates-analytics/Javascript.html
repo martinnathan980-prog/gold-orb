@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'f9fa8ef';
+  var EDITION = '167173e';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -1137,7 +1137,7 @@
       var versAutre = autre === 'concept' ? 'au concept harnais' : 'à la définition électrique';
       var nJours = joursAvant(j);
       return '\x3Cdiv class="fiche-echeance" id="fiche-echeance" role="region" aria-label="Échéance ' + ech(j.texte) + '">' +
-        '\x3Cdiv class="fiche-echeance-tete">\x3Cspan class="num">' + (idx + 1) + '\x3C/span>\x3Ch3>' + ech(j.texte) + '\x3C/h3>' +
+        '\x3Cdiv class="fiche-echeance-tete">\x3Cspan class="num">' + (idx + 1) + '\x3C/span>\x3Ch3 id="fiche-echeance-titre" tabindex="-1">' + ech(j.texte) + '\x3C/h3>' +
         '\x3Cspan class="quand">' + ech(quand) + (j.perimetre ? ' · ' + ech(j.perimetre) : '') + '\x3C/span>' +
         '\x3Cbutton type="button" class="fiche-echeance-fermer" data-fermer-echeance="1" aria-label="Fermer la fiche de l\u2019échéance">×\x3C/button>\x3C/div>' +
         '\x3Cdiv class="fiche-echeance-rythme">' + ech(motJours(nJours).replace(/^./, function (c) { return c.toUpperCase(); })) +
@@ -1186,7 +1186,7 @@
        est manquée, comme son marqueur sur le graphique (il restait gris). */
     var manquee = b.restants > 0 && (passe || b.enRetard) && jalonDansPerimetre(j);
     return '\x3Cdiv class="fiche-echeance" id="fiche-echeance" role="region" aria-label="Échéance ' + ech(j.texte) + '">' +
-      '\x3Cdiv class="fiche-echeance-tete">\x3Cspan class="num' + (manquee ? ' critique' : '') + '">' + (idx + 1) + '\x3C/span>\x3Ch3>' + ech(j.texte) + '\x3C/h3>' +
+      '\x3Cdiv class="fiche-echeance-tete">\x3Cspan class="num' + (manquee ? ' critique' : '') + '">' + (idx + 1) + '\x3C/span>\x3Ch3 id="fiche-echeance-titre" tabindex="-1">' + ech(j.texte) + '\x3C/h3>' +
       '\x3Cspan class="quand">' + ech(quand) + portee + '\x3C/span>' +
       '\x3Cbutton type="button" class="fiche-echeance-fermer" data-fermer-echeance="1" aria-label="Fermer la fiche de l\u2019échéance">×\x3C/button>\x3C/div>' +
       '\x3Cdiv class="fiche-echeance-chiffres">' +
@@ -1317,13 +1317,13 @@
          milieu de l'écran (la légende des jalons centrée la laissait
          parfois sous le bord, au téléphone) — et le focus la suit, sur son
          titre. Il restait sur la puce, sortie de l'écran : le Tab suivant
-         remontait. Échap la referme et rend le focus à la puce. */
+         remontait. Échap la referme et rend le focus à la puce. Le titre
+         a son id et son tabindex dans le rendu : redessinée (la fenêtre
+         change de taille, la barre d'adresse du téléphone se replie en
+         défilant), la fiche retrouve le focus sur lui (garderFocus). */
       defilerVers($('fiche-echeance'), { block: 'center', behavior: lisse() });
-      var titre = $('fiche-echeance').querySelector('h3');
-      if (titre) {
-        titre.setAttribute('tabindex', '-1');
-        try { titre.focus({ preventScroll: true }); } catch (e) { titre.focus(); }
-      }
+      var titre = $('fiche-echeance-titre');
+      if (titre) { try { titre.focus({ preventScroll: true }); } catch (e) { titre.focus(); } }
     }
   }
   /* Le défilement doux, sauf si l'on préfère moins d'animation. */
@@ -8044,9 +8044,11 @@
 
     $('tete-seconde').innerHTML = '\x3Ctr class="titres-la">' + cols.map(function (t) {
       var actif = S.tri.cle === t;
-      var fleche = actif ? '\x3Csvg class="fleche" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">\x3Cpath d="' +
-        (S.tri.asc ? 'M5 8.5V1.5M2 4.5 5 1.5l3 3' : 'M5 1.5v7M2 5.5 5 8.5l3-3') +
-        '" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>\x3C/svg>' : '';
+      /* Débrief 29 (P-F17) : la double flèche pâle au repos, comme le
+         tableau d'ici. */
+      var fleche = '\x3Csvg class="fleche' + (actif ? '' : ' repos') + '" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">\x3Cpath d="' +
+        (!actif ? 'M3 4 5 1.8 7 4M3 6l2 2.2L7 6' : S.tri.asc ? 'M5 8.5V1.5M2 4.5 5 1.5l3 3' : 'M5 1.5v7M2 5.5 5 8.5l3-3') +
+        '" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>\x3C/svg>';
       return '\x3Cth scope="col" data-cle="' + ech(t) + '" aria-sort="' + (actif ? (S.tri.asc ? 'ascending' : 'descending') : 'none') +
         '"' + (t === SECONDE.premiere ? ' class="col-fige-la"' : '') + '>\x3Cbutton type="button" data-tri-seconde="' + ech(t) + '">' +
         ech(t) + fleche + '\x3C/button>\x3C/th>';
@@ -10746,7 +10748,10 @@
     clearTimeout(minuteurTaille);
     minuteurTaille = setTimeout(function () {
       if (!vue) return;                // la page attend encore ses données
-      rendreGraphique(selection()); marquerLourd(); ajusterSticky(); majOmbre();
+      /* Débrief 29 (X) : le graphique et sa légende se réécrivent — le focus
+         qui y était (la fiche d'une échéance, un jalon) y reste. */
+      garderFocus(function () { rendreGraphique(selection()); }, 'section-tendance');
+      marquerLourd(); ajusterSticky(); majOmbre();
       aMesurer('barre');
       ajusterColonneNom();
       marquerDebords();
@@ -10766,7 +10771,7 @@
      selon le fond du moment. */
   var schemaSombre = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
   if (schemaSombre) {
-    var auChangementDeTheme = function () { if (vue) rendreGraphique(selection()); };
+    var auChangementDeTheme = function () { if (vue) garderFocus(function () { rendreGraphique(selection()); }, 'section-tendance'); };
     if (schemaSombre.addEventListener) schemaSombre.addEventListener('change', auChangementDeTheme);
     else if (schemaSombre.addListener) schemaSombre.addListener(auChangementDeTheme);
   }
@@ -12451,5 +12456,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = 'f9fa8ef';
+window.SUIVI_FWD_FIN = '167173e';
 </script>

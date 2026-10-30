@@ -3221,11 +3221,13 @@ table.plans thead .titres th .poignee {
 table.plans thead .titres:hover .poignee, table.plans thead .titres:focus-within .poignee { opacity: 1; }
 .fleche { color: var(--encre); }
 /* Débrief 29 (P-F17) : la double flèche du repos, pâle (--encre-3, 5:1),
-   comme dans « Par ATA » ; elle passe à l'encre au survol et au focus. */
-table.plans thead .titres th button .fleche { flex: none; }
-table.plans thead .titres th button .fleche.repos { color: var(--encre-3); transition: color .12s; }
-table.plans thead .titres th button:hover .fleche.repos, table.plans thead .titres th button:focus-visible .fleche.repos { color: var(--encre); }
-@media (prefers-reduced-motion: reduce) { table.plans thead .titres th button .fleche.repos { transition: none; } }
+   comme dans « Par ATA » ; elle passe à l'encre au survol et au focus. Le
+   tableau de la seconde base fait de même. */
+table.plans thead .titres th button .fleche, table.plans thead .titres-la th button .fleche { flex: none; }
+table.plans thead .titres th button .fleche.repos, table.plans thead .titres-la th button .fleche.repos { color: var(--encre-3); transition: color .12s; }
+table.plans thead .titres th button:hover .fleche.repos, table.plans thead .titres th button:focus-visible .fleche.repos,
+table.plans thead .titres-la th button:hover .fleche.repos, table.plans thead .titres-la th button:focus-visible .fleche.repos { color: var(--encre); }
+@media (prefers-reduced-motion: reduce) { table.plans thead .titres th button .fleche.repos, table.plans thead .titres-la th button .fleche.repos { transition: none; } }
 
 table.plans tbody td { padding: 8px 14px; border-bottom: 1px solid var(--filet); vertical-align: middle; white-space: nowrap; }
 table.plans tbody tr:hover td { background: var(--survol-ligne); }
@@ -6181,7 +6183,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       var versAutre = autre === 'concept' ? 'au concept harnais' : 'à la définition électrique';
       var nJours = joursAvant(j);
       return '<div class="fiche-echeance" id="fiche-echeance" role="region" aria-label="Échéance ' + ech(j.texte) + '">' +
-        '<div class="fiche-echeance-tete"><span class="num">' + (idx + 1) + '</span><h3>' + ech(j.texte) + '</h3>' +
+        '<div class="fiche-echeance-tete"><span class="num">' + (idx + 1) + '</span><h3 id="fiche-echeance-titre" tabindex="-1">' + ech(j.texte) + '</h3>' +
         '<span class="quand">' + ech(quand) + (j.perimetre ? ' · ' + ech(j.perimetre) : '') + '</span>' +
         '<button type="button" class="fiche-echeance-fermer" data-fermer-echeance="1" aria-label="Fermer la fiche de l\u2019échéance">×</button></div>' +
         '<div class="fiche-echeance-rythme">' + ech(motJours(nJours).replace(/^./, function (c) { return c.toUpperCase(); })) +
@@ -6230,7 +6232,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        est manquée, comme son marqueur sur le graphique (il restait gris). */
     var manquee = b.restants > 0 && (passe || b.enRetard) && jalonDansPerimetre(j);
     return '<div class="fiche-echeance" id="fiche-echeance" role="region" aria-label="Échéance ' + ech(j.texte) + '">' +
-      '<div class="fiche-echeance-tete"><span class="num' + (manquee ? ' critique' : '') + '">' + (idx + 1) + '</span><h3>' + ech(j.texte) + '</h3>' +
+      '<div class="fiche-echeance-tete"><span class="num' + (manquee ? ' critique' : '') + '">' + (idx + 1) + '</span><h3 id="fiche-echeance-titre" tabindex="-1">' + ech(j.texte) + '</h3>' +
       '<span class="quand">' + ech(quand) + portee + '</span>' +
       '<button type="button" class="fiche-echeance-fermer" data-fermer-echeance="1" aria-label="Fermer la fiche de l\u2019échéance">×</button></div>' +
       '<div class="fiche-echeance-chiffres">' +
@@ -6361,13 +6363,13 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
          milieu de l'écran (la légende des jalons centrée la laissait
          parfois sous le bord, au téléphone) — et le focus la suit, sur son
          titre. Il restait sur la puce, sortie de l'écran : le Tab suivant
-         remontait. Échap la referme et rend le focus à la puce. */
+         remontait. Échap la referme et rend le focus à la puce. Le titre
+         a son id et son tabindex dans le rendu : redessinée (la fenêtre
+         change de taille, la barre d'adresse du téléphone se replie en
+         défilant), la fiche retrouve le focus sur lui (garderFocus). */
       defilerVers($('fiche-echeance'), { block: 'center', behavior: lisse() });
-      var titre = $('fiche-echeance').querySelector('h3');
-      if (titre) {
-        titre.setAttribute('tabindex', '-1');
-        try { titre.focus({ preventScroll: true }); } catch (e) { titre.focus(); }
-      }
+      var titre = $('fiche-echeance-titre');
+      if (titre) { try { titre.focus({ preventScroll: true }); } catch (e) { titre.focus(); } }
     }
   }
   /* Le défilement doux, sauf si l'on préfère moins d'animation. */
@@ -13088,9 +13090,11 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
 
     $('tete-seconde').innerHTML = '<tr class="titres-la">' + cols.map(function (t) {
       var actif = S.tri.cle === t;
-      var fleche = actif ? '<svg class="fleche" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="' +
-        (S.tri.asc ? 'M5 8.5V1.5M2 4.5 5 1.5l3 3' : 'M5 1.5v7M2 5.5 5 8.5l3-3') +
-        '" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '';
+      /* Débrief 29 (P-F17) : la double flèche pâle au repos, comme le
+         tableau d'ici. */
+      var fleche = '<svg class="fleche' + (actif ? '' : ' repos') + '" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="' +
+        (!actif ? 'M3 4 5 1.8 7 4M3 6l2 2.2L7 6' : S.tri.asc ? 'M5 8.5V1.5M2 4.5 5 1.5l3 3' : 'M5 1.5v7M2 5.5 5 8.5l3-3') +
+        '" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
       return '<th scope="col" data-cle="' + ech(t) + '" aria-sort="' + (actif ? (S.tri.asc ? 'ascending' : 'descending') : 'none') +
         '"' + (t === SECONDE.premiere ? ' class="col-fige-la"' : '') + '><button type="button" data-tri-seconde="' + ech(t) + '">' +
         ech(t) + fleche + '</button></th>';
@@ -15790,7 +15794,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     clearTimeout(minuteurTaille);
     minuteurTaille = setTimeout(function () {
       if (!vue) return;                // la page attend encore ses données
-      rendreGraphique(selection()); marquerLourd(); ajusterSticky(); majOmbre();
+      /* Débrief 29 (X) : le graphique et sa légende se réécrivent — le focus
+         qui y était (la fiche d'une échéance, un jalon) y reste. */
+      garderFocus(function () { rendreGraphique(selection()); }, 'section-tendance');
+      marquerLourd(); ajusterSticky(); majOmbre();
       aMesurer('barre');
       ajusterColonneNom();
       marquerDebords();
@@ -15810,7 +15817,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      selon le fond du moment. */
   var schemaSombre = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
   if (schemaSombre) {
-    var auChangementDeTheme = function () { if (vue) rendreGraphique(selection()); };
+    var auChangementDeTheme = function () { if (vue) garderFocus(function () { rendreGraphique(selection()); }, 'section-tendance'); };
     if (schemaSombre.addEventListener) schemaSombre.addEventListener('change', auChangementDeTheme);
     else if (schemaSombre.addListener) schemaSombre.addListener(auChangementDeTheme);
   }
