@@ -102,6 +102,9 @@
      (le --r4 d'avant, #86b8a0, faisait 2,2:1). */
   --grille: #efede8;
   --barre-semaine: #5f9a7d;
+  /* Le liseré sous une courbe trop claire pour 3:1 (le même rôle que
+     --lisere-donnee sous les pastilles) ; sans objet en sombre. */
+  --lisere-courbe: rgba(25, 25, 21, .5);
 
   /* Les panneaux des sections (débrief 20) : chaque section est une feuille
      posée sur le papier, bordée d'un filet et d'une ombre à peine marquée.
@@ -199,6 +202,7 @@
     --lisere-donnee: transparent;
     --alerte-fond: #2b1f14;
     --grille: #212124; --barre-semaine: #4f8a68;   /* débrief 27 : barres 4,4:1 sur la surface */
+    --lisere-courbe: transparent;
   }
 }
 :root[data-theme="dark"] {
@@ -258,6 +262,7 @@
   --lisere-donnee: transparent;
   --alerte-fond: #2b1f14;
   --grille: #212124; --barre-semaine: #4f8a68;   /* débrief 27 : barres 4,4:1 sur la surface */
+  --lisere-courbe: transparent;
 }
 
 /* Les contrôles du navigateur — la liste d'un menu déroulant, les barres de
@@ -1279,8 +1284,10 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 .indice-zoom[hidden] { display: none; }
 /* Débrief 27 (M11) : après un glissement ou un zoom à la main, le retour au
    cadrage d'ouverture, en haut à gauche du graphique, par-dessus. */
+/* Sa place exacte, le coin haut gauche du tracé (le plus vide d'une
+   courbe qui monte), est posée par le script. */
 .revenir-cadrage {
-  position: absolute; left: 42px; top: 56px; z-index: 2;   /* recalé par le script : le coin haut gauche du tracé, le plus vide d'une courbe qui monte */ min-height: 28px; padding: 3px 12px; border-radius: 999px;
+  position: absolute; left: 42px; top: 56px; z-index: 2; min-height: 28px; padding: 3px 12px; border-radius: 999px;
   border: 1px solid var(--filet-fort); background: var(--surface); color: var(--encre); font: inherit; font-size: 13px; line-height: 20px;
   cursor: pointer; box-shadow: var(--flottant-ombre);
 }
@@ -2393,9 +2400,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
            et la page dit la semaine (annoncer) — ; sa phrase-résumé est
            dans #resume-graphe. Deux repères posés par-dessus, sans rien
            pousser : l'indice du zoom (Ctrl + molette) et le retour au
-           cadrage après un glissement. -->
-      <div class="cadre-graphe" id="cadre-graphe" tabindex="0" aria-describedby="resume-graphe"
-           aria-label="Graphique de l’avancement : flèches gauche et droite pour parcourir les semaines">
+           cadrage après un glissement. role="application" : un lecteur
+           d'écran laisse alors les flèches au graphique. -->
+      <div class="cadre-graphe" id="cadre-graphe" tabindex="0" role="application" aria-roledescription="graphique" aria-describedby="resume-graphe"
+           aria-label="Avancement dans le temps : flèches gauche et droite pour passer d’un relevé à l’autre">
         <div id="zone-graphe"></div>
         <div class="indice-zoom" id="indice-zoom" aria-hidden="true" hidden></div>
         <button type="button" class="revenir-cadrage" id="revenir-cadrage" hidden></button>
@@ -4339,7 +4347,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         '<span>' + nb(b.termines) + ' sur ' + nb(b.total) + ' validés · ' + pct + ' %</span></div>' +
       (b.restants && !passe
         ? '<div class="fiche-echeance-rythme">Il faut <b>' + rythmeDit(b.requis) + '</b> plans ' + motFini(2) + ' par semaine d’ici l’échéance' +
-          (b.rythme !== null ? ' ; le rythme tenu, du premier au dernier relevé, est de <b>' + virgule(b.rythme) + '</b> par semaine.' : '.') + '</div>'
+          (b.rythme !== null ? ' ; le rythme tenu est de <b>' + virgule(b.rythme) + '</b> par semaine.' : '.') + '</div>'
         : '') +
       '<div class="fiche-echeance-verdict ' + verdict.cls + '">' + ech(verdict.mot) + '</div>' +
       '</div>';
@@ -4376,7 +4384,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      relevé), aucun mot : on ne sait pas encore. */
   function verdictEcheance(b) {
     if (!b || !b.total) return { cls: 'neutre', mot: '' };
-    if (!b.restants) return { cls: 'bon', mot: 'tout est ' + motFini(2) };
+    if (!b.restants) return { cls: 'bon', mot: 'tout est ' + motFini(1) };
     if (b.rythme === null) return { cls: 'neutre', mot: '' };
     return b.enRetard ? { cls: 'mal', mot: 'en retard' } : { cls: 'bon', mot: 'dans les temps' };
   }
@@ -4405,7 +4413,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       : (b.domaine && b.domaine !== (vue.perimetre || '') ? ', sur ses plans ' + b.domaine : '');
     var fini = motFini(2);
     var rythme = '', suite;
-    if (!b.restants) suite = 'tout est ' + fini + '.';
+    if (!b.restants) suite = 'tout est ' + motFini(1) + '.';
     else {
       rythme = ' \u2014 il faut <b>' + rythmeDit(b.requis) + '\u00a0' + fini + '/sem.</b>' +
         (b.rythme !== null ? ', rythme tenu <b>' + virgule(Math.max(0, b.rythme)) + '/sem.</b>' : '');
@@ -6062,7 +6070,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        vide, pas de « 0 sur 0 » — la phrase dit qu'il n'y a rien. */
     if (choisie && c.total) {
       var vC = valeurDeCle(choisie), nC = parValeur[choisie] || 0;
-      var de = autreFiltre || (vue.groupe && !gA) ? 'de la sélection' : gA ? 'de ' + ech(nomGroupe(gA)) : 'du périmètre';
+      var de = autreFiltre || (vue.groupe && !gA) ? 'de la sélection' : gA ? 'de ' + ech(nomGroupe(gA)) : 'du périmètre' + (vue.perimetre ? ' ' + ech(vue.perimetre) : '');
       $('phrase').innerHTML = '<b>' + nb(nC) + '</b> ' + (nC > 1 ? 'plans' : 'plan') +
         (vC && vC.hachure ? (nC > 1 ? ' non renseignés' : ' non renseigné') : ' en ' + ech(vC ? vC.libelle : choisie)) +
         ' <span class="phrase-part">\u00b7 ' + partDite(nC, c.total) + ' ' + de + '</span>';
@@ -6380,6 +6388,30 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      montrer — le cadrage d'ouverture s'arrête alors quatre semaines après
      aujourd'hui, au lieu de courir jusqu'au dernier jalon (70 % du tracé
      restait vide). Un cadrage choisi à la main reste le sien. */
+  /* Le contraste d'une couleur (« var(--v-cours-3) », « #1fbfbf ») sur la
+     surface du thème courant : lu dans la feuille de style, au moment du
+     dessin. */
+  function contrasteSurface(couleur) {
+    try {
+      var racine = getComputedStyle(document.documentElement);
+      var lire = function (c) {
+        var m = /^var\((--[\w-]+)\)$/.exec(String(c).trim());
+        return m ? racine.getPropertyValue(m[1]).trim() : String(c).trim();
+      };
+      var lum = function (c) {
+        var h = /^#([0-9a-f]{6})$/i.exec(c);
+        if (!h) return null;
+        var v = [0, 2, 4].map(function (k) {
+          var x = parseInt(h[1].slice(k, k + 2), 16) / 255;
+          return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+        });
+        return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
+      };
+      var a = lum(lire(couleur)), b = lum(lire('var(--surface)'));
+      if (a === null || b === null) return 21;
+      return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    } catch (e) { return 21; }
+  }
   function cadrageValeur() {
     var debut = Math.max(0, AUJ - RECUL_OUVERTURE);
     return { debut: debut, span: Math.max(8, semaineDepart() + 4 - debut + 1) };
@@ -6543,6 +6575,12 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       /* « Non renseigné » n'a pas de couleur à lui, mais une texture : sa
          courbe se trace en tirets, comme sa hachure — son gris est celui
          d'« À traiter » (débrief 22). */
+      /* Débrief 27 (X-A12) : une couleur de valeur trop claire pour 3:1 sur
+         la surface (TO_CONFIRM, 2,3:1 en clair) se trace sur un liseré
+         sombre, comme ses pastilles : la courbe se détache du blanc. */
+      if (vVal && !vVal.hachure && contrasteSurface(coul) < 3) {
+        s.push('<path class="courbe-lisere" d="' + chemin + '" fill="none" stroke="var(--lisere-courbe)" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round"/>');
+      }
       s.push('<path class="courbe" d="' + chemin + '" fill="none" stroke="' + coul + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"' +
              (vVal && vVal.hachure ? ' stroke-dasharray="6 4"' : '') + '/>');
       /* Un point par relevé, plein, cerclé de la couleur du fond pour rester
@@ -6577,6 +6615,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        survol, en léger). */
     var traitPlein = function (pl) { return pl.aujourdhui || (!!prochain && pl.j.i === prochain.i && jalonDansPerimetre(pl.j)); };
     var traitsX = places.filter(traitPlein).map(function (pl) { return pl.jx; });
+    /* Les traits cachés pèsent moins, mais pèsent : au survol, ils
+       paraissent — un mot qui peut les éviter les évite. */
+    var traitsCaches = places.filter(function (pl) { return !traitPlein(pl); }).map(function (pl) { return pl.jx; });
     var droites = [], boites = [];
     if (!vVal) boites.push({ g: L - mD + 6, d: L - mD + 10 + largeurMot(nb(total) + ' plans'), h: y(total) - 9, b: y(total) + 5 });
     /* Les numéros des jalons et le mot « aujourd'hui », en tête : aucun mot
@@ -6598,6 +6639,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     function gene(bx, dMax, gMin) {
       var n = 0;
       traitsX.forEach(function (tx) { if (tx > bx.g - 1 && tx < bx.d + 1) n += 10; });
+      traitsCaches.forEach(function (tx) { if (tx > bx.g - 1 && tx < bx.d + 1) n += 3; });
       droites.forEach(function (sg) { if (coupe(bx, sg)) n += 2; });
       boites.forEach(function (o) { if (seCoupent(bx, o)) n += 20; });
       if (bx.g < (gMin === undefined ? mG - 5 : gMin) || bx.d > dMax) n += 50;   // la boîte compte 3 px de fond de chaque côté

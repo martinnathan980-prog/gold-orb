@@ -996,7 +996,8 @@ async function reinitialiser(pg) {
       semaines: grads.filter(t => /^S\d{1,2}$/.test(t)), avecAnnee: grads.filter(t => /^\d{4}-S/.test(t) && !/plans/.test(t)),
       annees: [...document.querySelectorAll('svg.graphe .annee')].map(t => t.textContent),
       pointsPleins: document.querySelectorAll('svg.graphe circle[fill="var(--fait)"][stroke="var(--surface)"]').length,
-      barres: document.querySelectorAll('svg.graphe path[fill="var(--r4)"]').length,
+      /* Débrief 27 (B3, X-A12) : les barres prennent --barre-semaine (3:1 sur la surface ; --r4 faisait 2,2:1). */
+      barres: document.querySelectorAll('svg.graphe path.barre-semaine[fill="var(--barre-semaine)"]').length,
       courbe: (document.querySelector('svg.graphe path[stroke="var(--fait)"][stroke-width="2"]') || {}).tagName === 'path'
     };
   });
@@ -1155,9 +1156,12 @@ async function reinitialiser(pg) {
   await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(500);
   await p.click('#etats .etat-btn[data-etat="termine"]'); await p.waitForTimeout(500);
   const cumul = await lirePerimetre();
+  /* Débrief 27 (B23) : sous une tuile, la phrase dit la part choisie, dans
+     le périmètre nommé (« 83 plans en Terminé · 36 % du périmètre PERSO »),
+     au lieu de « 83 sur 83 plans validés dans la sélection ». */
   verifier('périmètre + état se cumulent : les validés PERSO, « sur » les plans PERSO',
     cumul.lignes === perso.etats[0] && cumul.compte === perso.etats[0] + ' plans sur ' + nPerso &&
-    /dans la sélection/.test(cumul.phrase) && cumul.jetons.length === 2, cumul.compte + ' / ' + cumul.phrase);
+    new RegExp('^' + perso.etats[0] + ' plans en .+ · \\d+ % du périmètre PERSO$').test(cumul.phrase.replace(/[\u00a0\u202f]/g, ' ').trim()) && cumul.jetons.length === 2, cumul.compte + ' / ' + cumul.phrase);
   verifier('la courbe reste celle du périmètre, et le dit',
     cumul.dernier.total === nPerso && /^Historique · périmètre PERSO/.test(cumul.note) &&
     /autres filtres ne s’appliquent pas/.test(cumul.note), cumul.note);
@@ -1598,8 +1602,12 @@ async function reinitialiser(pg) {
   verifier('le titre ne porte que la semaine d’aujourd’hui : aucune mention du dernier relevé, quel que soit son âge',
     !/dernier relevé|il y a/.test(semaineTitre.titre) && semaineTitre.sansMention,
     JSON.stringify(semaineTitre));
-  verifier('le repère de la courbe ne dit « aujourd’hui » que si le dernier relevé est de cette semaine',
-    semaineTitre.repere === (semaineTitre.iAuj === semaineTitre.auj ? 'aujourd’hui' : 'dernier relevé'),
+  /* Débrief 27 (B3) : un seul « maintenant » sur la courbe — le trait
+     d'aujourd'hui, toujours nommé « aujourd'hui » ; le trait plein du
+     « dernier relevé » est retiré (le dernier point garde son nombre, et le
+     pointillé plat dit l'écart jusqu'à aujourd'hui). */
+  verifier('le repère de la courbe dit « aujourd’hui » (un seul « maintenant »), quel que soit l’âge du dernier relevé',
+    semaineTitre.repere === 'aujourd’hui',
     JSON.stringify([semaineTitre.repere, semaineTitre.iAuj, semaineTitre.auj]));
   /* Les deux cas, joués pour de bon : un historique arrêté cette semaine —
      la ligne se tait, la courbe dit « aujourd'hui » — puis le même reculé
@@ -1622,14 +1630,19 @@ async function reinitialiser(pg) {
     poser(3); await attendre(600);
     const vieux = lu();
     vieux.repere = ([...document.querySelectorAll('svg.graphe .repere-auj')].map(x => x.textContent)[0]) || '';
+    vieux.palier = !!document.querySelector('svg.graphe .palier-attente');
+    vieux.dernierRelevé = [...document.querySelectorAll('svg.graphe text')].some(t => /dernier relevé/.test(t.textContent));
     return { ajour, vieux };
   });
   verifier('un historique archivé cette semaine : le titre dit la semaine, la courbe dit « aujourd’hui »',
     deuxCas.ajour.iAuj === deuxCas.ajour.auj && !/dernier relevé/.test(deuxCas.ajour.titre) && deuxCas.ajour.repere === 'aujourd’hui',
     JSON.stringify(deuxCas.ajour));
-  verifier('le même reculé de trois semaines : le titre reste muet sur le relevé, c’est la courbe qui dit « dernier relevé »',
+  /* Débrief 27 (B3) : reculé de trois semaines, la courbe garde un seul
+     repère, « aujourd'hui », à la semaine où l'on est ; l'âge du relevé se
+     lit au pointillé plat qui relie le dernier point à aujourd'hui. */
+  verifier('le même reculé de trois semaines : le titre reste muet sur le relevé ; la courbe dit « aujourd’hui » à la semaine en cours, le pointillé plat montre l’écart',
     deuxCas.vieux.iAuj - deuxCas.vieux.auj === 3 && !/dernier relevé|il y a/.test(deuxCas.vieux.titre) &&
-    deuxCas.vieux.repere === 'dernier relevé',
+    deuxCas.vieux.repere === 'aujourd’hui' && deuxCas.vieux.palier && !deuxCas.vieux.dernierRelevé,
     JSON.stringify(deuxCas.vieux));
   /* La reprise (retour sur l'onglet, minuterie horaire) ne casse rien quand
      la semaine n'a pas bougé : mêmes valeurs, page toujours debout. */
@@ -1642,7 +1655,7 @@ async function reinitialiser(pg) {
     return t;
   });
   verifier('reprendre la semaine sans qu’elle ait changé laisse la page identique',
-    apresReprise.titre === deuxCas.vieux.titre && apresReprise.repere === 'dernier relevé' && apresReprise.lignes > 0,
+    apresReprise.titre === deuxCas.vieux.titre && apresReprise.repere === 'aujourd’hui' && apresReprise.lignes > 0,   // débrief 27 : un seul repère
     JSON.stringify(apresReprise));
   /* ---------------------------------------------------------------
      Chercher dans une section : plus de barre qui cherche partout. Le
@@ -2376,11 +2389,15 @@ async function reinitialiser(pg) {
     zoom1.n === 52 && zoom1.presse === 'true', zoom0 + ' → ' + JSON.stringify(zoom1));
   const svg = await p.$('svg.graphe'); const box = await svg.boundingBox();
   await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  /* Débrief 27 (P-F1, X-A9) : le zoom passe par Ctrl + molette (la molette
+     seule fait défiler la page). */
+  await p.keyboard.down('Control');
   for (let i = 0; i < 30; i++) await p.mouse.wheel(0, -400);
   await p.waitForTimeout(400);
   const zoomMax = await p.evaluate(() => document.querySelectorAll('.zone-clic').length);
   verifier('30 crans de zoom avant laissent au moins une semaine', zoomMax >= 1, zoomMax + ' semaines');
   for (let i = 0; i < 60; i++) await p.mouse.wheel(0, 400);
+  await p.keyboard.up('Control');
   await p.waitForTimeout(400);
   const zoomMin = await p.evaluate(() => document.querySelectorAll('.zone-clic').length);
   verifier('60 crans de zoom arrière restent bornés', zoomMin > zoomMax && zoomMin < 400, zoomMin + ' semaines');
@@ -2711,8 +2728,8 @@ async function reinitialiser(pg) {
   verifier('le panoramique fonctionne toujours', (await derniereSemaine()) !== avantPan);
   const avantMolette = await p.evaluate(() => document.querySelectorAll('.zone-clic').length);
   await p.mouse.move(cadre.x + cadre.width * 0.5, cadre.y + cadre.height * 0.5);
-  await p.mouse.wheel(0, -300); await p.waitForTimeout(300);
-  verifier('la molette fonctionne toujours',
+  await p.keyboard.down('Control'); await p.mouse.wheel(0, -300); await p.keyboard.up('Control'); await p.waitForTimeout(300);   // débrief 27 : Ctrl + molette
+  verifier('la molette (Ctrl + molette, débrief 27) fonctionne toujours',
     (await p.evaluate(() => document.querySelectorAll('.zone-clic').length)) !== avantMolette);
   /* Une configuration hostile : balise, 400 caractères, texte vide, semaine
      illisible. Rien ne s'exécute, rien ne déborde, l'illisible est écarté. */
@@ -3318,7 +3335,7 @@ async function reinitialiser(pg) {
         tenuFiche: (fiche.match(/le rythme tenu est de ([\d,]+)/) || [])[1], tenuLegende: (leg.match(/au rythme tenu \(([\d,]+)\/sem\.\)/) || [])[1],
         finFiche: (fiche.match(/(?:tout serait validé|au rythme global, la fin serait) en (S\d+ · \S+ \d{4})/) || [])[1], finLegende: (survols.match(/: fin (S\d+ · \S+ \d{4})\./) || [])[1],
         legendeCourte: !/→ fin|\/sem\. sur|» : [\d,]+\/sem\./.test(leg),
-        manqueFiche: (fiche.match(/il manquerait (\d[\d ]*) plans?/) || [])[1], manqueGraphe: manque[0],
+        manqueFiche: (fiche.match(/il manquer(?:a|ait) (\d[\d ]*) plans?/) || [])[1], manqueGraphe: manque[0],   // débrief 27 (P-F18) : « il manquera »
         rouge: document.getElementById('echeance-titre').classList.contains('en-retard'),
         mal: f.querySelector('.fiche-echeance-verdict').classList.contains('mal'),
         jours: ch[0], semaines: ch[1], restants: ch[2]
@@ -3333,8 +3350,10 @@ async function reinitialiser(pg) {
       !!m.manqueFiche && m.manqueFiche.replace(/ /g, '') === (m.manqueGraphe || '').replace(/ /g, '') && m.rouge === m.mal, JSON.stringify(m));
     verifier('jours et semaines restants se comptent tous deux d\'aujourd\'hui',
       m.semaines >= 1 && Math.abs(m.jours / 7 - m.semaines) < 1.2, JSON.stringify([m.jours, m.semaines]));
+    /* Débrief 27 (P-F18) : au-delà de dix, le rythme requis s'arrondit au
+       plan (« 83/sem. », plus « 83,0 ») — à un demi-plan près, donc. */
     verifier('le rythme requis est bien les plans à valider divisés par les semaines restantes',
-      Math.abs(Number(m.requisFiche.replace(',', '.')) - m.restants / m.semaines) < 0.051, JSON.stringify([m.requisFiche, m.restants, m.semaines]));
+      Math.abs(Number(m.requisFiche.replace(',', '.')) - m.restants / m.semaines) < (m.restants / m.semaines >= 10 ? 0.501 : 0.051), JSON.stringify([m.requisFiche, m.restants, m.semaines]));
     await pq.click('#fiche-echeance [data-fermer-echeance]'); await pq.waitForTimeout(300);
 
     // Une ligne du bloc, puis le graphique de ce groupe : les mêmes nombres.
@@ -3837,7 +3856,8 @@ async function reinitialiser(pg) {
   };
   const immobile = await vivant15(false), bouge15 = await vivant15(true);
   verifier('un extract inchangé depuis le dernier relevé reste ce relevé-là : pas de palier inventé à la semaine où l’on est',
-    immobile.pts[immobile.pts.length - 1] < immobile.jour && immobile.repere === 'dernier relevé' && !/pas encore archivé/.test(immobile.pied),
+    /* Débrief 27 (B3) : le repère dit toujours « aujourd'hui » (un seul « maintenant ») ; le dernier point reste avant lui. */
+    immobile.pts[immobile.pts.length - 1] < immobile.jour && immobile.repere === 'aujourd’hui' && !/pas encore archivé/.test(immobile.pied),
     JSON.stringify(immobile));
   verifier('un extract recollé depuis devient un point de plus, à la semaine où l’on est — le relevé d’avant reste le sien',
     bouge15.pts[bouge15.pts.length - 1] === bouge15.jour && bouge15.pts.length === immobile.pts.length + 1 && bouge15.repere === 'aujourd’hui',
@@ -6625,9 +6645,10 @@ async function reinitialiser(pg) {
       .filter(x => /^S\d+/.test(x.fin));
     const rang = f => { const m = f.match(/^S(\d+) · \S+ (\d{4})$/); return m ? +m[2] * 100 + +m[1] : 0; };
     fins.sort((a, b) => rang(b.fin) - rang(a.fin));
-    return { v, dernier: fins[0], globale: (v.match(/au rythme global, la fin serait en (S\d+ · \S+ \d{4})/) || [])[1] };
+    /* Débrief 27 (P-F18) : « tout serait validé en … » (plus « au rythme global, la fin serait en … »). */
+    return { v, dernier: fins[0], globale: (v.match(/tout serait validé en (S\d+ · \S+ \d{4})/) || [])[1] };
   });
-  verifier('W — la fiche dit « au rythme global, la fin serait en … » et nomme le dernier groupe, à la fin que montre le bloc',
+  verifier('W — la fiche dit « tout serait validé en … » et nomme le dernier groupe, à la fin que montre le bloc',
     !!w20.globale && !!w20.dernier && w20.v.indexOf('le dernier groupe (ATA ' + w20.dernier.g + ') finirait en ' + w20.dernier.fin) !== -1, JSON.stringify(w20));
   await p.click('#echeance-titre'); await p.waitForTimeout(300);
 
@@ -6644,7 +6665,7 @@ async function reinitialiser(pg) {
   const ens20 = await p.evaluate(() => [...document.querySelectorAll('#ensemble tbody tr')].map(tr =>
     [...tr.querySelectorAll('td')].pop().textContent.replace(/[\u00a0\u202f]/g, ' ')));
   await p.click('#ensemble button[data-fermer-ensemble]'); await p.waitForTimeout(200);
-  const finLoin = (ficheLoin.match(/la fin serait en (S\d+ · \S+ \d{4})/) || [])[1];
+  const finLoin = (ficheLoin.match(/tout serait validé en (S\d+ · \S+ \d{4})/) || [])[1];   // débrief 27 (P-F18)
   verifier('M — vue d’ensemble, échéance tenue : la fin écrite est celle de la fiche, sur le périmètre du jalon, qui est nommé',
     !!finLoin && /^tenue/.test(ens20[0]) && ens20[0].indexOf('au rythme global de BASE/OPTION, la fin serait en ' + finLoin) !== -1, JSON.stringify([ficheLoin, ens20[0]]));
   verifier('M — un contrat sans jalon garde la fin de tout le contrat', /^fin S\d+ · \S+ \d{4}$/.test(ens20[1]), ens20[1]);
@@ -6929,7 +6950,9 @@ async function reinitialiser(pg) {
   await pe.click('.segmente button[data-span="26"]'); await pe.waitForTimeout(350);
   const boiteZ = await (await pe.$('svg.graphe')).boundingBox();
   await pe.mouse.move(boiteZ.x + boiteZ.width / 2, boiteZ.y + boiteZ.height / 2);
+  await pe.keyboard.down('Control');   // débrief 27 : le zoom passe par Ctrl + molette
   for (let i = 0; i < 40; i++) await pe.mouse.wheel(0, 400);
+  await pe.keyboard.up('Control');
   await pe.waitForTimeout(400);
   const molette20 = await pe.evaluate(() => ({
     n: document.querySelectorAll('svg.graphe .zone-clic').length,
@@ -6940,7 +6963,9 @@ async function reinitialiser(pg) {
   await pe.click('.segmente button[data-span="52"]'); await pe.waitForTimeout(350);
   const boiteAn = await (await pe.$('svg.graphe')).boundingBox();
   await pe.mouse.move(boiteAn.x + boiteAn.width / 2, boiteAn.y + boiteAn.height / 2);
+  await pe.keyboard.down('Control');   // débrief 27
   for (let i = 0; i < 10; i++) await pe.mouse.wheel(0, 400);
+  await pe.keyboard.up('Control');
   await pe.waitForTimeout(400);
   const an20 = await pe.evaluate(() => document.querySelectorAll('svg.graphe .zone-clic').length);
   verifier('débrief 20 : depuis « 1 an », plus large que « Tout », la molette n’élargit ni ne rétrécit en zoom arrière',

@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "03d2a9a";
+  --suivi-fwd-edition: "48b0220";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -98,6 +98,9 @@
      (le --r4 d'avant, #86b8a0, faisait 2,2:1). */
   --grille: #efede8;
   --barre-semaine: #5f9a7d;
+  /* Le liseré sous une courbe trop claire pour 3:1 (le même rôle que
+     --lisere-donnee sous les pastilles) ; sans objet en sombre. */
+  --lisere-courbe: rgba(25, 25, 21, .5);
 
   /* Les panneaux des sections (débrief 20) : chaque section est une feuille
      posée sur le papier, bordée d'un filet et d'une ombre à peine marquée.
@@ -195,6 +198,7 @@
     --lisere-donnee: transparent;
     --alerte-fond: #2b1f14;
     --grille: #212124; --barre-semaine: #4f8a68;   /* débrief 27 : barres 4,4:1 sur la surface */
+    --lisere-courbe: transparent;
   }
 }
 :root[data-theme="dark"] {
@@ -254,6 +258,7 @@
   --lisere-donnee: transparent;
   --alerte-fond: #2b1f14;
   --grille: #212124; --barre-semaine: #4f8a68;   /* débrief 27 : barres 4,4:1 sur la surface */
+  --lisere-courbe: transparent;
 }
 
 /* Les contrôles du navigateur — la liste d'un menu déroulant, les barres de
@@ -1275,8 +1280,10 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 .indice-zoom[hidden] { display: none; }
 /* Débrief 27 (M11) : après un glissement ou un zoom à la main, le retour au
    cadrage d'ouverture, en haut à gauche du graphique, par-dessus. */
+/* Sa place exacte, le coin haut gauche du tracé (le plus vide d'une
+   courbe qui monte), est posée par le script. */
 .revenir-cadrage {
-  position: absolute; left: 42px; top: 56px; z-index: 2;   /* recalé par le script : le coin haut gauche du tracé, le plus vide d'une courbe qui monte */ min-height: 28px; padding: 3px 12px; border-radius: 999px;
+  position: absolute; left: 42px; top: 56px; z-index: 2; min-height: 28px; padding: 3px 12px; border-radius: 999px;
   border: 1px solid var(--filet-fort); background: var(--surface); color: var(--encre); font: inherit; font-size: 13px; line-height: 20px;
   cursor: pointer; box-shadow: var(--flottant-ombre);
 }

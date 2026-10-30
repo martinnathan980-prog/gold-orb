@@ -70,7 +70,7 @@
 <script>
   /* La livraison de ce fichier, posée par la construction : la page la compare
      à celles de Code, Styles et Javascript, et nomme celui qui diffère. */
-  window.SUIVI_FWD_LIVRAISON_INDEX = '03d2a9a';
+  window.SUIVI_FWD_LIVRAISON_INDEX = '48b0220';
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
@@ -289,9 +289,10 @@
            et la page dit la semaine (annoncer) — ; sa phrase-résumé est
            dans #resume-graphe. Deux repères posés par-dessus, sans rien
            pousser : l'indice du zoom (Ctrl + molette) et le retour au
-           cadrage après un glissement. -->
-      <div class="cadre-graphe" id="cadre-graphe" tabindex="0" aria-describedby="resume-graphe"
-           aria-label="Graphique de l’avancement : flèches gauche et droite pour parcourir les semaines">
+           cadrage après un glissement. role="application" : un lecteur
+           d'écran laisse alors les flèches au graphique. -->
+      <div class="cadre-graphe" id="cadre-graphe" tabindex="0" role="application" aria-roledescription="graphique" aria-describedby="resume-graphe"
+           aria-label="Avancement dans le temps : flèches gauche et droite pour passer d’un relevé à l’autre">
         <div id="zone-graphe"></div>
         <div class="indice-zoom" id="indice-zoom" aria-hidden="true" hidden></div>
         <button type="button" class="revenir-cadrage" id="revenir-cadrage" hidden></button>
