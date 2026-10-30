@@ -4247,10 +4247,11 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       document.body.appendChild(zone);
     }
     clearTimeout(ANNONCE.minuteur);
+    ANNONCE.attente = !!texte;
     if (!texte) return;
     ANNONCE.minuteur = setTimeout(function () {
       zone.textContent = '';
-      ANNONCE.minuteur = setTimeout(function () { zone.textContent = String(texte); }, 60);
+      ANNONCE.minuteur = setTimeout(function () { ANNONCE.attente = false; zone.textContent = String(texte); }, 60);
     }, 400);
   }
   /* Pour la batterie de tests : les mêmes aides, appelées de l'extérieur. */
@@ -13748,6 +13749,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var e = etatAnnonce(), a = VUE_ANNONCEE;
     VUE_ANNONCEE = e;
     if (!a) return;
+    /* Débrief 27 : une section qui vient de dire son propre geste (« ATA 24
+       déplié… », le lot de la comparaison) garde la parole : la phrase
+       générale ne la recouvre pas. */
+    if (ANNONCE.attente) return;
     var phrase = texteDe($('phrase'));
     if (e.contrat !== a.contrat) {
       var c = (CONTRATS || []).filter(function (x) { return x.id === CONTRAT; })[0];
@@ -13795,6 +13800,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      sur la page), toutes ses lignes ; il revient ensuite tel qu'il était. */
   var IMPRESSION = null;
   window.addEventListener('beforeprint', function () {
+    /* Débrief 27 : une impression demandée pendant l'ouverture la termine
+       d'abord — sinon le tableau, dessiné après, n'aurait que sa première
+       tranche. */
+    if (typeof finirRendu === 'function') finirRendu(true);
     if (!SRC || !vue) return;
     poserEnteteImpression();
     if (!IMPRESSION) IMPRESSION = { vueTable: vue.vueTable, ordre: vue.ordre.slice(), cachees: JSON.parse(JSON.stringify(vue.cachees)) };
@@ -13806,7 +13815,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     toutesLesLignes('corps-tableau');
     toutesLesLignes('corps-seconde');
     [].forEach.call(document.querySelectorAll('table.plans thead th'), function (th) {
-      var b = th.querySelector('button');
+      /* Débrief 27 : le nom vient du bouton de tri, pas de la poignée qui
+         déplace la colonne (lot D). */
+      var b = th.querySelector('button[data-tri]') || th.querySelector('button');
       if (b) th.setAttribute('data-imprime', texteDe(b));
     });
   });

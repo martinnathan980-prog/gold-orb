@@ -261,6 +261,12 @@ function monterLeChargeur(options) {
   const erreurs = [];
   const nav = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
   const ctx = await nav.newContext({ viewport: { width: 1280, height: 1000 } });
+  /* Débrief 27 : la page ouvre sur la « Vue essentielle », colonnes vides
+     masquées (lot D) ; ce test lit l'extract entier — le lecteur qui a
+     choisi « Toutes les colonnes » et « Afficher ». */
+  await ctx.addInitScript(function () {
+    try { localStorage.setItem('suivi-fwd:v1', JSON.stringify({ vueTable: 'toutes', videsMontrees: true })); } catch (e) { /* sans stockage */ }
+  });
   const p = await ctx.newPage();
   p.on('pageerror', function (e) { erreurs.push(e.message); });
   p.on('console', function (m) {
@@ -280,7 +286,8 @@ function monterLeChargeur(options) {
       lignes: document.querySelectorAll('#corps-tableau tr:not(.ligne-suite)').length +
         (Number(((document.querySelector('#corps-tableau tr.ligne-suite') || {}).textContent || '')
           .replace(/[\s\u202f\u00a0]/g, '').replace(/^(\d+).*$/, '$1')) || 0),
-      graphe: !!document.querySelector('svg.graphe'),
+      /* Débrief 27 (lot A) : un seul relevé, la courbe dit qu'elle commence au deuxième. */
+      graphe: !!document.querySelector('svg.graphe') || !!document.querySelector('.graphe-vide-bloc'),
       journal: document.querySelectorAll('#zone-journal *').length,
       demo: document.getElementById('avertissement-demo') &&
             document.getElementById('avertissement-demo').offsetParent !== null
@@ -321,7 +328,7 @@ function monterLeChargeur(options) {
       return v === undefined || v === null || String(v).trim() === '';
     }), [attendues[0], paquet.colonnes[0].cle,
          paquet.plans.slice(0, 2).map(function (p) { return p[paquet.colonnes[0].cle]; })]);
-  verifier('le graphe est tracé et le journal rempli', vu.graphe && vu.journal > 0,
+  verifier('le graphe est tracé (ou dit qu’il commence au deuxième relevé) et le journal rempli', vu.graphe && vu.journal > 0,
     [vu.graphe, vu.journal]);
   verifier('l\'avertissement « jeu d\'exemple » reste caché : ce sont de vraies données',
     !vu.demo);

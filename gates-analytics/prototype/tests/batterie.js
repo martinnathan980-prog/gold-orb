@@ -1702,7 +1702,12 @@ async function deplierFiltresColonne(pg) {
       const s = window.__jeuDExemple('HDK'), n = s.releves.length, base = new Date();
       s.releves = s.releves.map((r, i) => {
         const d = new Date(base.getTime() - ((n - 1 - i) + recul) * 7 * jour);
-        return Object.assign({}, r, { semaine: window.__etiquetteISO(d) });
+        /* Débrief 27 : les relevés de démonstration portent leur date (lot B) ;
+           déplacés dans le temps, ils la perdent — sinon la ligne de
+           fraîcheur lirait l'ancienne. */
+        const x = Object.assign({}, r, { semaine: window.__etiquetteISO(d) });
+        delete x.date;
+        return x;
       });
       window.__chargerSource(s);
     };
@@ -8070,7 +8075,7 @@ async function deplierFiltresColonne(pg) {
     const lireL = () => l.evaluate(() => ({
       sel: document.getElementById('select-contrat').value, grise: document.getElementById('select-contrat').disabled,
       barre: !document.getElementById('barre-chargement').hidden, attente: document.body.getAttribute('data-attente'),
-      occupe: [...document.querySelectorAll('.page > section')].some(sec => sec.getAttribute('aria-busy') === 'true'),
+      occupe: [...document.querySelectorAll('main, .page > section')].some(sec => sec.getAttribute('aria-busy') === 'true'),   // débrief 27 : le <main> du lot G porte aria-busy
       concept: (document.querySelector('#choix-indicateur button[aria-pressed="true"]') || {}).dataset.indicateur,
       ind: window.__indicateur().indicateur, contexte: document.getElementById('contexte-page').textContent,
       x: Math.round(document.getElementById('select-contrat').getBoundingClientRect().left),
