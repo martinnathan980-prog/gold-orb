@@ -113,7 +113,7 @@ def chrome(visible=True, grand=True):
             raise ErreurPilote('Edge est introuvable sur ce poste : double-cliquez « Choisir le navigateur » '
                                'et reprenez Chrome.')
         os.environ['SUIVI_FWD_CHROME'] = exe
-    options = ['--disable-features=DownloadBubble,DownloadBubbleV2']
+    options = ['--disable-features=DownloadBubble,DownloadBubbleV2', '--hide-crash-restore-bubble']
     options += ['--start-maximized'] if grand else ['--window-size=1280,900', '--window-position=40,40']
     options += json.loads(os.environ.get('SUIVI_FWD_OPTIONS_CHROME', '[]'))
     return Chrome(port=PORT, telechargements=str(r / 'telechargements'), lancer=True,

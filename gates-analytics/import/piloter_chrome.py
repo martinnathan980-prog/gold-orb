@@ -324,12 +324,28 @@ class Chrome:
             self._canal = None
         self._fermer_onglet_a_part()
         if self._processus:
+            self._fermer_proprement()
             self._processus.terminate()
             try:
                 self._processus.wait(timeout=10)
             except subprocess.TimeoutExpired:
                 self._processus.kill()
             self._processus = None
+
+    def _fermer_proprement(self):
+        """Le Chrome lancé ici se ferme comme on ferme sa fenêtre : il enregistre
+        ses cookies et ce que les sites gardent (un choix fait dans leurs
+        réglages), et ne propose pas de « restaurer les pages » la fois
+        suivante. Sinon, il est arrêté net, comme avant."""
+        try:
+            canal = _Canal(self._version()['webSocketDebuggerUrl'], 10)
+            try:
+                canal.envoyer(json.dumps({'id': 1, 'method': 'Browser.close'}))
+            finally:
+                canal.fermer()
+            self._processus.wait(timeout=15)
+        except Exception:
+            pass
 
     # -- le canal ----------------------------------------------------------
     def _http(self, chemin):
