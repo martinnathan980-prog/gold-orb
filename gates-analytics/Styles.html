@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "02ab976";
+  --suivi-fwd-edition: "30b8b50";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -1303,7 +1303,7 @@ svg.graphe text.grad[opacity] { opacity: .95; }
    numéro ou de son jalon dans la légende (clavier compris : focusin). */
 .jalon .jalon-trait { opacity: 0; transition: opacity .15s; }
 .jalon.prochain .jalon-trait { opacity: .8; }
-.jalon:hover .jalon-trait, .jalon.survole .jalon-trait { opacity: .35; }
+.jalon:hover .jalon-trait, .jalon.survole .jalon-trait { opacity: .35; stroke-width: 2; }
 .jalon.prochain:hover .jalon-trait, .jalon.prochain.survole .jalon-trait { opacity: 1; stroke-width: 2; }
 .jalon.survole .jalon-lien, .jalon.survole .jalon-coche { stroke-width: 2; }
 @media (prefers-reduced-motion: reduce) { .jalon .jalon-trait { transition: none; } }

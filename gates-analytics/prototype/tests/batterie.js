@@ -2521,9 +2521,12 @@ async function reinitialiser(pg) {
   }));
   /* Débrief 13 : « Diffusion PH base et la date, c'est nickel » — sous le
      nom, la semaine et rien d'autre : ni périmètre, ni « dans N jours ». */
-  verifier('sous le graphique, la légende des jalons : « Jalons », puis chaque numéro, son texte et sa semaine — rien d’autre —, atteignable au clavier',
+  /* Débrief 27 (X-A8) : l'échéance manquée le dit aussi en mots, après sa
+     semaine (« S51 · déc. 2026 · en retard ») — elle seule. */
+  verifier('sous le graphique, la légende des jalons : « Jalons », puis chaque numéro, son texte et sa semaine — et « en retard » pour l’échéance manquée, rien d’autre —, atteignable au clavier',
     legendeJ.visible && legendeJ.mot === 'Jalons' && legendeJ.entrees.length === 5 &&
-    legendeJ.entrees.every((e, i) => e.num === String(i + 1) && e.idx === String(i) && e.mot.length > 0 && /^S\d{1,2} · \S+ \d{4}$/.test(e.quand) && e.focusable) &&
+    legendeJ.entrees.every((e, i) => e.num === String(i + 1) && e.idx === String(i) && e.mot.length > 0 &&
+      (e.critique ? /^S\d{1,2} · \S+ \d{4} · en retard$/ : /^S\d{1,2} · \S+ \d{4}$/).test(e.quand) && e.focusable) &&
     legendeJ.entrees.every(e => !/BASE|OPTION|PERSO|jour|demain|hier|FWD|concept/i.test(e.quand) && e.autres === 0) &&
     /* Sous la définition électrique, les diffusions TO — la table outil,
        concept harnais — restent dessinées, en retrait ; les autres comptent. */
