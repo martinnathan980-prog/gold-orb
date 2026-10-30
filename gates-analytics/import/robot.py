@@ -306,6 +306,32 @@ def preparer():
     print('\nC\'est noté. Le robot garde ces connexions dans son propre %s.' % nom_navigateur())
 
 
+def court(url):
+    return str(url or '').split('?')[0][:110]
+
+
+def souci_reseau(methode, p, adresses):
+    """Ce qui a échoué pendant le chargement (une réponse 401, 403, 500…, une
+    demande refusée, une erreur de la page), en une ligne — ou ''. Montré
+    pendant l'apprentissage : c'est ce qui dit pourquoi une page reste vide."""
+    if methode == 'Network.responseReceived':
+        r = p.get('response') or {}
+        if int(r.get('status') or 0) >= 400 and not court(r.get('url')).endswith('favicon.ico'):
+            return 'réponse %s de %s' % (r.get('status'), court(r.get('url')))
+    elif methode == 'Network.loadingFailed' and not p.get('canceled') and p.get('errorText') != 'net::ERR_ABORTED':
+        motif = (p.get('corsErrorStatus') or {}).get('corsError') or p.get('blockedReason') or p.get('errorText') or '?'
+        return 'refusé (%s) : %s' % (motif, court(adresses.get(p.get('requestId'))))
+    elif methode == 'Log.entryAdded':
+        e = p.get('entry') or {}
+        if e.get('level') == 'error':
+            return 'erreur de la page : %s' % str(e.get('text', '')).split('\n')[0][:140]
+    elif methode == 'Runtime.exceptionThrown':
+        d = p.get('exceptionDetails') or {}
+        texte = (d.get('exception') or {}).get('description') or d.get('text') or ''
+        return 'erreur de la page : %s' % str(texte).split('\n')[0][:140]
+    return ''
+
+
 # ---------------------------------------------------------------- apprendre
 def apprendre():
     cfg = config()
@@ -319,6 +345,12 @@ def apprendre():
         c.envoyer('Runtime.addBinding', name='__suiviFwd')
         c.envoyer('Page.addScriptToEvaluateOnNewDocument', source=GUETTEUR)
         avant = fichiers(c)
+        for domaine in ('Network.enable', 'Log.enable'):
+            try:
+                c.envoyer(domaine)
+            except ErreurPilote:
+                pass
+        adresses, signales = {}, set()
         c.ouvrir(depart)
         try:
             c.evaluer(GUETTEUR)
@@ -332,6 +364,12 @@ def apprendre():
         while not stop.is_set():
             try:
                 for m in lire_evenements(c, 0.5):
+                    if m.get('method') == 'Network.requestWillBeSent':
+                        adresses[m['params'].get('requestId')] = (m['params'].get('request') or {}).get('url', '')
+                    souci = souci_reseau(m.get('method'), m.get('params') or {}, adresses)
+                    if souci and souci not in signales and len(signales) < 30:
+                        signales.add(souci)
+                        print('  ⚠ %s' % souci)
                     if m.get('method') == 'Page.frameNavigated' and not m['params']['frame'].get('parentId'):
                         print('  → page %s' % m['params']['frame'].get('url', '').split('?')[0][:110])
                     if m.get('method') == 'Runtime.bindingCalled' and m['params'].get('name') == '__suiviFwd':
