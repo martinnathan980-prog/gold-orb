@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'adf512a';
+  var EDITION = 'b034aef';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -4658,12 +4658,25 @@
   /* L'état vient du navigateur lui-même (contentvisibilityautostatechange) :
      au tout premier rendu, avant qu'il ait tranché, le tableau compte comme
      hors de l'écran. Sans content-visibility, il est toujours « à l'écran ». */
-  /* Débrief 27 (X-A11) : le tableau n'a plus de content-visibility — il est
-     toujours « à l'écran » pour ces mesures. */
-  var CV_AUTO = false;
+  /* Débrief 27 (X-A11) : le tableau n'a plus de content-visibility, sauf
+     très lourd (data-lourd, voir marquerLourd) — alors seulement il peut
+     être « hors de l'écran » pour ces mesures. */
+  var CV_AUTO = !!(window.CSS && CSS.supports && CSS.supports('content-visibility', 'auto'));
   var cadresVisibles = {};
   function tableauHorsEcran(cadre) {
-    return CV_AUTO && !!cadre && !cadresVisibles[cadre.id];
+    return CV_AUTO && !!cadre && cadre.hasAttribute('data-lourd') && !cadresVisibles[cadre.id];
+  }
+  /* Le seuil : 40 000 cellules dessinées (près de 300 lignes de l'extract
+     entier). En dessous — la première tranche, toujours —, les lignes
+     restent dans l'arbre d'accessibilité même hors de l'écran (X-A11). */
+  var SEUIL_LOURD = 40000;
+  function marquerLourd() {
+    var t = TRANCHES['corps-tableau'], cadre = $('cadre-tableau');
+    if (!cadre) return;
+    var lourd = !!t && t.montrees * t.nbCols > SEUIL_LOURD;
+    if (lourd === cadre.hasAttribute('data-lourd')) return;
+    if (lourd) { delete cadresVisibles['cadre-tableau']; cadre.setAttribute('data-lourd', ''); }
+    else cadre.removeAttribute('data-lourd');
   }
   function ajusterSticky() { aMesurer('sticky'); }
   /* Les cellules figées du corps lisent leur décalage dans une variable du
@@ -4847,7 +4860,7 @@
       $('corps-tableau').innerHTML = '\x3Ctr>\x3Ctd colspan="' + cols.length + '">\x3Cdiv class="vide-message">Ces ' + nb(nLa) +
         (nLa > 1 ? ' lignes n’ont pas de plan dans GATES. ' : ' ligne n’a pas de plan dans GATES. ') +
         '\x3Cbutton class="lien-doux" type="button" data-aller-base="la">Les voir dans ' + ech(nomLa) + '\x3C/button>\x3C/div>\x3C/td>\x3C/tr>';
-      delete TRANCHES['corps-tableau'];
+      delete TRANCHES['corps-tableau']; marquerLourd();
       $('compte').textContent = '0 plan sur ' + nb(population().length);
       legenderTableau(0);
       majOmbre();
@@ -4859,7 +4872,7 @@
 
     if (!rangs.length) {
       $('corps-tableau').innerHTML = '\x3Ctr>\x3Ctd colspan="' + cols.length + '">\x3Cdiv class="vide-message">Aucun plan ne correspond aux filtres.\x3C/div>\x3C/td>\x3C/tr>';
-      delete TRANCHES['corps-tableau'];
+      delete TRANCHES['corps-tableau']; marquerLourd();
       $('compte').textContent = '0 plan';
       majOmbre();
       return;
@@ -4900,7 +4913,7 @@
         }
         return '\x3Ctd class="' + classes + '"' + styleFige(i, nFige) + titre + '>' + ech(libelleGroupe(val)) + '\x3C/td>';
       }).join('') + '\x3C/tr>';
-    }, function () { ajusterSticky(); poserRepereCorps(); }, premiere);   // chaque tranche ajoutée a ses colonnes figées posées
+    }, function () { marquerLourd(); ajusterSticky(); poserRepereCorps(); }, premiere);   // chaque tranche ajoutée a ses colonnes figées posées
 
     /* « sur N » : N est la population du périmètre, pas la feuille entière. */
     var base = population().length;
@@ -6773,8 +6786,19 @@
     /* L'historique s'ouvre en haut de l'écran, sous le sommaire collé — on
        arrive souvent de loin (la recherche du sommaire, la comparaison). */
     mesurerMaintenant();               // la hauteur des bandeaux collés (filtres, sommaire) à jour avant de défiler
-    if (vue.base === 'ici' && !fiche.hidden) defilerVers(fiche, { block: 'start', behavior: 'smooth' });
-    else defilerVers(cadre, { block: 'nearest', behavior: 'smooth' });
+    if (vue.base === 'ici' && !fiche.hidden) {
+      /* D'un saut, puis recalé à l'image suivante : les mesures de la page
+         (colonne des noms du bloc par groupe…) bougeaient ce qui est
+         au-dessus pendant un défilement animé, et la fiche finissait sous
+         le sommaire collé. */
+      defilerVers(fiche, { block: 'start' });
+      apresImage(function () {
+        var haut = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+        var ecart = fiche.getBoundingClientRect().top - haut;
+        if (!fiche.hidden && Math.abs(ecart) > 3) window.scrollBy(0, ecart);
+      });
+    }
+    else defilerVers(cadre, { block: 'nearest', behavior: window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     if (vue.base === 'ici' && !fiche.hidden && titre) {
       titre.focus({ preventScroll: true });
       var etat = fiche.querySelector('.fiche-plan-tete .etat');
@@ -6811,8 +6835,9 @@
     rendre();
     var cible = null;
     if (o && o.g && document.contains(o.g.el) && focusVisible(o.g.el)) cible = o.g.el;
-    else if (o && o.g && !o.g.cle) cible = retrouverFocus(o.g);
-    else if (o && o.g && o.g.cle && o.g.cle[0] !== 'data-ref-plan') cible = retrouverFocus(o.g);
+    /* Un bouton redessiné (un plan de la comparaison…) se retrouve par sa
+       clé ; une référence du tableau, par sa ligne (rangeeDuPlan). */
+    else if (o && o.g && !(o.g.cle && o.g.cle[0] === 'data-ref-plan')) cible = retrouverFocus(o.g);
     if (!cible || cible === document.body) {
       cible = rangeeDuPlan(ref);
       if (cible) { prendreRepere(cible); defilerVers(cible, { block: 'nearest' }); }
@@ -9052,5 +9077,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = 'adf512a';
+window.SUIVI_FWD_FIN = 'b034aef';
 </script>

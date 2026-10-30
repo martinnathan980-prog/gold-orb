@@ -580,10 +580,12 @@ async function deplierFiltresColonne(pg) {
     lignes: document.querySelectorAll('#corps-tableau tr').length,
     ref: (document.querySelector('#corps-tableau td.ref, #corps-tableau .ref') || {}).textContent,
     jetons: [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').replace(/\s+/g, ' ').trim()),
-    focus: document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.base : null
+    focus: document.activeElement ? document.activeElement.id : null
   }));
+  /* Débrief 27, lot D (X-A1) : le focus va au titre de l'historique qui
+     s'ouvre — il allait au bouton « GATES », sans rapport avec le geste. */
   verifier('sous un filtre d\'état qui l\'exclut et le périmètre PERSO, le clic sur un plan de la liste l\'affiche seul : l\'état s\'efface, le périmètre reste',
-    !!cible && sousFiltre.lignes === 1 && sousFiltre.ref === cible.ref && sousFiltre.focus === 'ici' &&
+    !!cible && sousFiltre.lignes === 1 && sousFiltre.ref === cible.ref && sousFiltre.focus === 'titre-fiche-plan' &&
     sousFiltre.jetons.some(j => /^Périmètre : PERSO$/.test(j)) && !sousFiltre.jetons.some(j => /^État/.test(j)) &&
     sousFiltre.jetons.some(j => /^Sélection : plan /.test(j)), JSON.stringify([cible, sousFiltre]));
   await p.evaluate(() => { const b = document.getElementById('tout-effacer'); if (b) b.click(); });
