@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'c513f1d';
+  var EDITION = 'a3f1574';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -2544,6 +2544,7 @@
   var CLE_PREFS = 'suivi-fwd:v1';
   var minuteurPrefs = null;
   function sauverPrefs() {
+    minuteurPrefs = null;
     try {
       /* L'ordre mémorisé est celui de la vue complète : en vue essentielle,
          vue.ordre porte « essentielles d'abord », qui n'est pas un ordre à
@@ -2566,6 +2567,12 @@
     clearTimeout(minuteurPrefs);
     minuteurPrefs = setTimeout(sauverPrefs, 400);
   }
+  /* Débrief 29 : un choix fait juste avant de recharger ou de fermer
+     l'onglet n'est pas perdu — la page occupée à se redessiner pouvait
+     partir avant que la sauvegarde différée ne tombe. */
+  window.addEventListener('pagehide', function () {
+    if (minuteurPrefs !== null) { clearTimeout(minuteurPrefs); sauverPrefs(); }
+  });
   /* La disposition — dimension, ordre des colonnes du tableau, tris — se relit
      d'un stockage ou d'une vue précédente. Elle est validée contre la source
      courante : une colonne disparue ou une clé inconnue ne passe pas. Les
@@ -12392,5 +12399,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = 'c513f1d';
+window.SUIVI_FWD_FIN = 'a3f1574';
 </script>

@@ -7553,6 +7553,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   var CLE_PREFS = 'suivi-fwd:v1';
   var minuteurPrefs = null;
   function sauverPrefs() {
+    minuteurPrefs = null;
     try {
       /* L'ordre mémorisé est celui de la vue complète : en vue essentielle,
          vue.ordre porte « essentielles d'abord », qui n'est pas un ordre à
@@ -7575,6 +7576,12 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     clearTimeout(minuteurPrefs);
     minuteurPrefs = setTimeout(sauverPrefs, 400);
   }
+  /* Débrief 29 : un choix fait juste avant de recharger ou de fermer
+     l'onglet n'est pas perdu — la page occupée à se redessiner pouvait
+     partir avant que la sauvegarde différée ne tombe. */
+  window.addEventListener('pagehide', function () {
+    if (minuteurPrefs !== null) { clearTimeout(minuteurPrefs); sauverPrefs(); }
+  });
   /* La disposition — dimension, ordre des colonnes du tableau, tris — se relit
      d'un stockage ou d'une vue précédente. Elle est validée contre la source
      courante : une colonne disparue ou une clé inconnue ne passe pas. Les
