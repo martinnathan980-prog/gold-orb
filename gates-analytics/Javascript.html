@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '70fec91';
+  var EDITION = 'aaa65ee';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -1760,7 +1760,6 @@
 
     MEMO_DERIVE = {}; MEMO_VALEURS = {};
     JOURNAL = construireJournal();
-    ORDRE_RESUME = {};
     INDEX_RELEVES = null; MEMO_ARRET = {};
 
 
@@ -2059,36 +2058,23 @@
   /* La clé d'une sorte de ligne, la même d'une semaine à l'autre : c'est elle
      qui donne sa colonne dans le journal. */
   function cleResume(l) { return l.passage ? 'v:' + l.cle : l.cle; }
-  /* L'ordre des lignes, le même partout — comparatif, journal, bulle — : de
-     la sorte la plus fréquente à la plus rare, sur tout l'historique du
-     périmètre (débrief 14 : « de gauche à droite, de là où il y en a le
-     plus ») — le nombre de semaines où elle apparaît, puis le nombre de
-     plans. Le journal range ainsi ses colonnes pleines à gauche et les
-     rares à droite ; une ligne qui n'a qu'une case ne coupe plus le tableau
-     en deux. À égalité, l'ordre des familles : les passages (terminé, en
-     cours, à faire, non renseigné), les reculs, les changements d'indice,
-     les nouveaux, les disparus. */
-  var ORDRE_RESUME = {};
-  var RANG_BASE_LIGNE = { reculs: 4, indice: 5, nouveaux: 6, disparus: 7 };
-  function rangBaseLigne(l) { return l.passage ? RANG_FAMILLE[l.famille] : RANG_BASE_LIGNE[l.cle]; }
-  function frequencesResume() {
-    var cle = (vue && vue.perimetre) || '';
-    if (ORDRE_RESUME[cle]) return ORDRE_RESUME[cle];
-    var f = {};
-    journalAffiche().forEach(function (sem) {
-      lignesResume(sem.evenements).forEach(function (l) {
-        var k = cleResume(l);
-        f[k] = f[k] || { semaines: 0, plans: 0 };
-        f[k].semaines++;
-        f[k].plans += l.n;
-      });
-    });
-    return (ORDRE_RESUME[cle] = f);
+  /* L'ordre des lignes, le même partout — comparatif, journal, bulle.
+     Débrief 27 (B9) : celui de la légende et des pastilles — les valeurs
+     dans l'ordre des tuiles, celles d'hier ensuite (par famille, puis par
+     nom), puis les mouvements : reculs, nouveaux, disparus, changements
+     d'indice. L'œil passe d'une pastille à sa colonne du journal, ou à sa
+     ligne de la bulle, sans chercher. (Des débriefs 14 à 26 : de la sorte
+     la plus fréquente à la plus rare — le journal rangeait alors ses
+     colonnes dans un autre ordre que ses pastilles.) */
+  var RANG_MOUVEMENT = { reculs: 0, nouveaux: 1, disparus: 2, indice: 3 };
+  function rangLigne(l) {
+    if (!l.passage) return [2, RANG_MOUVEMENT[l.cle] || 0, ''];
+    var i = VALEURS_COLONNE.indexOf(valeurDeCle(l.cle));
+    return i !== -1 ? [0, i, ''] : [1, RANG_FAMILLE[l.famille] || 0, l.libelle || ''];
   }
   function comparerLignes(la, lb) {
-    var f = frequencesResume(), fa = f[cleResume(la)] || { semaines: 0, plans: 0 }, fb = f[cleResume(lb)] || { semaines: 0, plans: 0 };
-    return (fb.semaines - fa.semaines) || (fb.plans - fa.plans) || (rangBaseLigne(la) - rangBaseLigne(lb)) ||
-      COMPARER_REF(la.libelle || la.cle, lb.libelle || lb.cle);
+    var a = rangLigne(la), b = rangLigne(lb);
+    return (a[0] - b[0]) || (a[1] - b[1]) || COMPARER_REF(a[2], b[2]);
   }
   function resumeEvenements(evts) {
     return lignesResume(evts).sort(comparerLignes);
@@ -5149,7 +5135,6 @@
      « Tout » à gauche des deux. Plus rien ne se cache au bout d'une rangée
      qui défile : « Reculs », la pastille qu'on vient chercher, était hors
      du cadre, son anneau du focus avec elle. */
-  var RANG_MOUVEMENT = { reculs: 0, nouveaux: 1, disparus: 2, indice: 3 };
   function rendreFiltreJournal(journal) {
     /* Deux comptes : sur tout le journal du périmètre (il décide si le
        choix tient encore), et sous la recherche du journal — celui qui
@@ -5316,16 +5301,9 @@
         if (!vuesCol[k]) { vuesCol[k] = l; colonnes.push(k); }
       });
     });
+    colonnes.sort(function (a, b) { return comparerLignes(vuesCol[a], vuesCol[b]); });
     var rangTuile = {};
     VALEURS_COLONNE.forEach(function (v, i) { rangTuile[v.cle] = i; });
-    var rangColonne = function (l) {
-      if (!l.passage) return [2, RANG_MOUVEMENT[l.cle] || 0, ''];
-      return rangTuile[l.cle] !== undefined ? [0, rangTuile[l.cle], ''] : [1, RANG_FAMILLE[l.famille] || 0, l.libelle || ''];
-    };
-    colonnes.sort(function (a, b) {
-      var ra = rangColonne(vuesCol[a]), rb = rangColonne(vuesCol[b]);
-      return (ra[0] - rb[0]) || (ra[1] - rb[1]) || COMPARER_REF(ra[2], rb[2]);
-    });
     var nPasses = colonnes.filter(function (k) { return vuesCol[k].passage; }).length;
     var enGrille = GRILLE_JOURNAL && colonnes.length > 0;
     zone.classList.toggle('journal-grille', enGrille);
@@ -8497,5 +8475,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = '70fec91';
+window.SUIVI_FWD_FIN = 'aaa65ee';
 </script>

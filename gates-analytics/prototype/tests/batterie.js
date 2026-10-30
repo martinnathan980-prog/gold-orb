@@ -4516,8 +4516,8 @@ async function reinitialiser(pg) {
      ligne, en deux rangées titrées, « Passés à » et « Mouvements » ; la
      recherche reste au bout de la première ligne, et passe dessous sous
      1 180 px. Aucune pastille hors du cadre, aucun fondu. */
-  const journalRange27 = (o, w, souple) => o.visible && o.gauche <= 2 && o.droite <= 1 && !o.chevauche && !o.deborde && !o.fondu && o.caches === 0 &&
-    (souple ? /^(Passés à,Mouvements|Passés à|Mouvements)$/ : /^Passés à,Mouvements$/).test(o.titres) && (w >= 1180 ? o.premiereLigne : o.dessous);
+  const journalRange27 = (o, w, souple) => o.visible && o.gauche <= 2 && o.droite <= 1 && !o.deborde && !o.fondu && o.caches === 0 &&
+    (souple ? /^(Passés à,Mouvements|Passés à|Mouvements)$/ : /^Passés à,Mouvements$/).test(o.titres) && (w >= 1180 ? o.premiereLigne && !o.chevauche : o.dessous);
   for (const w of [1440, 1280, 1024]) {
     await p.setViewportSize({ width: w, height: 950 }); await p.waitForTimeout(450);
     const l = await ligne19();
@@ -6179,8 +6179,10 @@ async function reinitialiser(pg) {
     const pilules23 = await p23.evaluate(() => [...document.querySelectorAll('#filtre-journal button')].map(b => ({
       cle: b.dataset.journal, texte: b.textContent.trim(), pastille: (b.querySelector('.pastille') || {}).className || '' })));
     const pil = k => pilules23.find(x => x.cle === k) || {};
+    /* Débrief 27 (lot B) : « , » masqué entre le nom et le compte — un
+       lecteur d'écran lit « Nouveaux, 6 », plus « Nouveaux6 ». */
     verifier('le journal a une pilule « Nouveaux » et une pilule « Disparus », chacune avec son compte et son signe (+ / −)',
-      /^Nouveaux\s*\d+$/.test(pil('nouveaux').texte || '') && /^Disparus\s*3$/.test(pil('disparus').texte || '') &&
+      /^Nouveaux,?\s*\d+$/.test(pil('nouveaux').texte || '') && /^Disparus,?\s*3$/.test(pil('disparus').texte || '') &&
       /\bnouveau\b/.test(pil('nouveaux').pastille) && /\bdisparu\b/.test(pil('disparus').pastille), JSON.stringify(pilules23));
     const filtrer23 = async cle => {
       await p23.click('#filtre-journal button[data-journal="' + cle + '"]'); await p23.waitForTimeout(300);
