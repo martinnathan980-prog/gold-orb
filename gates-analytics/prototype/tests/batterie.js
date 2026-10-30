@@ -7488,6 +7488,17 @@ async function reinitialiser(pg) {
     verifier('… et le message dit où il est, sans prétendre qu\'il est sur le graphique à l\'écran, avec « Afficher HDK › Tranche 2 » (A-F1)',
       msgT2.texte === 'Jalon « Revue T2 » enregistré pour HDK › Tranche 2. Il apparaît sur le graphique de cette tranche.' && msgT2.bouton === 'Afficher HDK › Tranche 2', JSON.stringify(msgT2));
 
+    /* Le même jalon une seconde fois : refusé sous le nom, plutôt qu'un doublon. */
+    await np.click('[data-admin="ajouter"]');
+    await np.fill('#admin-texte', 'Revue T2'); await np.fill('#admin-date', '2026-12-10');
+    await np.selectOption('#admin-pour', 'HDK Tranche 2');
+    await np.click('form[data-form="jalon"] [type="submit"]'); await libre(np);
+    const doublon = await np.evaluate(() => ({ msg: (document.getElementById('admin-texte-msg') || {}).textContent, focus: document.activeElement.name,
+      lignes: [...document.querySelectorAll('#admin-corps tr[data-cle]')].filter(t => /Revue T2/.test(t.innerText)).length }));
+    verifier('le même jalon une seconde fois : « Ce jalon existe déjà… » sous le nom, rien d\'écrit (le doublon qu\'on créait en croyant le premier perdu)',
+      doublon.msg === 'Ce jalon existe déjà : « Revue T2 », le 10/12/2026, pour HDK › Tranche 2.' && doublon.focus === 'texte' && doublon.lignes === 1, JSON.stringify(doublon));
+    await np.click('[data-admin="annuler"]');
+
     /* A-F2, A-F19 : la suppression ne se confirme pas d'un double-clic, et s'annule. */
     const corbeille = await rect(np, '#admin-corps tr.recent [data-admin="supprimer"], #admin-corps tr[data-cle] [data-admin="supprimer"]');
     await np.mouse.dblclick(corbeille.x + corbeille.w / 2, corbeille.y + corbeille.h / 2);

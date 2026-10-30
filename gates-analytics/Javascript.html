@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'bce196f';
+  var EDITION = 'a52b439';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -8328,15 +8328,25 @@
     if (v.dateInvalide) ADMIN.erreurs.date = 'Cette date n’existe pas. Choisissez un jour du calendrier.';
     else if (!date) ADMIN.erreurs.date = 'Choisissez la date du jalon.';
     else if (an < 2000 || an > 2100) ADMIN.erreurs.date = 'L’année ' + an + ' semble erronée : choisissez une date entre 2000 et 2100.';
+    var pour = v.pour;
+    var envoi = { ligne: j ? j.ligne : 0, signature: j ? j.signature : '', texte: texte, date: date,
+                  contrats: pour === '__plusieurs' ? j.contrats : pour ? [pour] : [], perimetre: v.perimetre, suivi: v.suivi };
+    /* Le même jalon deux fois (même nom, même jour, même contrat, mêmes
+       plans, même avancement) : c'est un doublon, pas un second jalon — le
+       rapport l'a vu naître d'un enregistrement qu'on croyait perdu. */
+    var memes = function (a) { return a.map(cleContrat).sort().join('|'); };
+    var doublon = !ADMIN.erreurs.texte && !ADMIN.erreurs.date && (ADMIN.jalons ? ADMIN.jalons.jalons : []).filter(function (x) {
+      return (!j || cleJalon(x) !== cleJalon(j)) && x.date === date && norm(String(x.texte).replace(/^'/, '')) === norm(texte) &&
+        norm(x.perimetre || '') === norm(envoi.perimetre) && (x.suivi === 'concept') === (envoi.suivi === 'concept') && memes(x.contrats) === memes(envoi.contrats);
+    })[0];
+    if (doublon) ADMIN.erreurs.texte = 'Ce jalon existe déjà : « ' + texte + ' », le ' + dateDite(date) + ', pour ' +
+      (envoi.contrats.length ? porteeDeJalon(envoi.contrats) : 'tous les contrats') + '.';
     if (ADMIN.erreurs.texte || ADMIN.erreurs.date) {
       messageAdmin('');
       ADMIN.focusApres = 'form[data-form="jalon"] [aria-invalid="true"]';
       rendreAdmin();
       return;
     }
-    var pour = v.pour;
-    var envoi = { ligne: j ? j.ligne : 0, signature: j ? j.signature : '', texte: texte, date: date,
-                  contrats: pour === '__plusieurs' ? j.contrats : pour ? [pour] : [], perimetre: v.perimetre, suivi: v.suivi };
     occuperAdmin(true, form.querySelector('[type="submit"]'), 'Enregistrement…');
     appelerServeur('adminEnregistrerJalon', [envoi, CONTRAT], function (r) {
       occuperAdmin(false);
@@ -8840,5 +8850,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = 'bce196f';
+window.SUIVI_FWD_FIN = 'a52b439';
 </script>

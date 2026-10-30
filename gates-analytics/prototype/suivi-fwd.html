@@ -11548,15 +11548,25 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if (v.dateInvalide) ADMIN.erreurs.date = 'Cette date n’existe pas. Choisissez un jour du calendrier.';
     else if (!date) ADMIN.erreurs.date = 'Choisissez la date du jalon.';
     else if (an < 2000 || an > 2100) ADMIN.erreurs.date = 'L’année ' + an + ' semble erronée : choisissez une date entre 2000 et 2100.';
+    var pour = v.pour;
+    var envoi = { ligne: j ? j.ligne : 0, signature: j ? j.signature : '', texte: texte, date: date,
+                  contrats: pour === '__plusieurs' ? j.contrats : pour ? [pour] : [], perimetre: v.perimetre, suivi: v.suivi };
+    /* Le même jalon deux fois (même nom, même jour, même contrat, mêmes
+       plans, même avancement) : c'est un doublon, pas un second jalon — le
+       rapport l'a vu naître d'un enregistrement qu'on croyait perdu. */
+    var memes = function (a) { return a.map(cleContrat).sort().join('|'); };
+    var doublon = !ADMIN.erreurs.texte && !ADMIN.erreurs.date && (ADMIN.jalons ? ADMIN.jalons.jalons : []).filter(function (x) {
+      return (!j || cleJalon(x) !== cleJalon(j)) && x.date === date && norm(String(x.texte).replace(/^'/, '')) === norm(texte) &&
+        norm(x.perimetre || '') === norm(envoi.perimetre) && (x.suivi === 'concept') === (envoi.suivi === 'concept') && memes(x.contrats) === memes(envoi.contrats);
+    })[0];
+    if (doublon) ADMIN.erreurs.texte = 'Ce jalon existe déjà : « ' + texte + ' », le ' + dateDite(date) + ', pour ' +
+      (envoi.contrats.length ? porteeDeJalon(envoi.contrats) : 'tous les contrats') + '.';
     if (ADMIN.erreurs.texte || ADMIN.erreurs.date) {
       messageAdmin('');
       ADMIN.focusApres = 'form[data-form="jalon"] [aria-invalid="true"]';
       rendreAdmin();
       return;
     }
-    var pour = v.pour;
-    var envoi = { ligne: j ? j.ligne : 0, signature: j ? j.signature : '', texte: texte, date: date,
-                  contrats: pour === '__plusieurs' ? j.contrats : pour ? [pour] : [], perimetre: v.perimetre, suivi: v.suivi };
     occuperAdmin(true, form.querySelector('[type="submit"]'), 'Enregistrement…');
     appelerServeur('adminEnregistrerJalon', [envoi, CONTRAT], function (r) {
       occuperAdmin(false);
