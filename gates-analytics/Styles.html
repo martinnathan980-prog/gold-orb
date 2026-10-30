@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "2addffa";
+  --suivi-fwd-edition: "d825856";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -729,7 +729,9 @@ header.entete {
 .masthead h1 { font-size: clamp(36px, 6vw, 56px); }
 /* Débrief 28 (4) : le bandeau en encre marine, titre et réglages en clair
    (choix « C » de Nathan) ; le papier beige reste dessous. Les jetons sont
-   redéfinis pour le seul bandeau : ses contrôles gardent leurs contrastes. */
+   redéfinis pour le seul bandeau : ses contrôles gardent leurs contrastes.
+   En sombre, un marine plus clair que la page noire (Nathan : « trop
+   sombre » dans un marine profond), pour garder le même éclat qu'en clair. */
 header.entete {
   --bandeau-fond: #22303f; --bandeau-fond-2: #1d2936; --bandeau-trait: #1d2936;
   --encre: #f2f1ec; --encre-2: #cdd2d9; --encre-3: #a9b1bc;
@@ -740,15 +742,15 @@ header.entete {
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) header.entete {
-    --bandeau-fond: #18212b; --bandeau-fond-2: #151d26; --bandeau-trait: #151d26;
-    --filet: #2c3743; --filet-fort: #435162; --bord-champ: #6f7f91;
-    --seg-piste: #10171f; --seg-puce: #2c3b4c; --seg-anneau: #4b5d71; --surface: #202b37; --creux: #253240;
+    --bandeau-fond: #2e4057; --bandeau-fond-2: #293a4f; --bandeau-trait: #293a4f;
+    --filet: #40546b; --filet-fort: #587089; --bord-champ: #8396ab;
+    --seg-piste: #22324a; --seg-puce: #435a74; --seg-anneau: #6680a0; --surface: #36495f; --creux: #3b4f66;
   }
 }
 :root[data-theme="dark"] header.entete {
-  --bandeau-fond: #18212b; --bandeau-fond-2: #151d26; --bandeau-trait: #151d26;
-  --filet: #2c3743; --filet-fort: #435162; --bord-champ: #6f7f91;
-  --seg-piste: #10171f; --seg-puce: #2c3b4c; --seg-anneau: #4b5d71; --surface: #202b37; --creux: #253240;
+--bandeau-fond: #2e4057; --bandeau-fond-2: #293a4f; --bandeau-trait: #293a4f;
+  --filet: #40546b; --filet-fort: #587089; --bord-champ: #8396ab;
+  --seg-piste: #22324a; --seg-puce: #435a74; --seg-anneau: #6680a0; --surface: #36495f; --creux: #3b4f66;
 }
 /* Débrief 28 (3) : plus de filet double sous la semaine — un seul trait
    sombre à la limite du bandeau et du papier (idée de Nathan). Les réglages
