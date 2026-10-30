@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "b034aef";
+  --suivi-fwd-edition: "b3f71d1";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -1974,7 +1974,10 @@ dialog.admin[aria-busy="true"] .admin-corps { opacity: .6; pointer-events: none;
 /* Sauf pour un tableau très lourd (plus de 40 000 cellules dessinées : on a
    fait venir des centaines de lignes de l'extract entier, ou un test a levé
    le seuil des tranches) : hors de l'écran, il ne se remet pas en page à
-   chaque geste — c'est ce qui figeait la page (M4). Voir marquerLourd. */
+   chaque geste — c'est ce qui figeait la page (M4). Voir marquerLourd. Au
+   doigt, ce tableau-là retrouve aussi son cadre de 68vh : à sa hauteur dans
+   la page, hors de l'écran, il compterait pour 560 px et un saut vers la
+   comparaison s'arrêterait au milieu des plans. */
 .cadre-tableau[data-lourd] { content-visibility: auto; contain-intrinsic-size: auto 560px; }
 /* Le tableau n'est jamais l'ancre du défilement de la page : ses lignes
    viennent par tranches, une ligne d'ancrage prise dedans (au rechargement,
@@ -2161,8 +2164,8 @@ button.poignee:hover, button.poignee:focus-visible { color: var(--encre-2); opac
    retient ; il ne défile que de côté. Les lignes viennent par tranches,
    d'un bouton « Afficher N plans de plus ». */
 @media (max-width: 720px), (pointer: coarse) {
-  .defile { max-height: none; }
-  .ombre-bas { display: none; }
+  .cadre-tableau:not([data-lourd]) .defile { max-height: none; }
+  .cadre-tableau:not([data-lourd]) .ombre-bas { display: none; }
 }
 /* D11 : 44 px au doigt, sans changer le dessin à la souris. */
 @media (pointer: coarse) {

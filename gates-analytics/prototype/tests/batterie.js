@@ -1679,14 +1679,18 @@ async function deplierFiltresColonne(pg) {
      --------------------------------------------------------------- */
   console.log('\n— Chercher dans une section —');
   await reinitialiser(p);
+  /* Débrief 27, lot D (P-F23) : en plus des champs de section, « Chercher un
+     plan » revient — pas comme une barre qui filtre toute la page, mais
+     dans le sommaire collé : il ouvre l'historique du plan choisi. */
   const champs = await p.evaluate(() => ({
     global: !!document.getElementById('chercher-plan') || !!document.getElementById('champ-plan'),
+    sommaire: !!document.querySelector('#sommaire #cherche-plan-champ[role="combobox"]'),
     journal: !!document.querySelector('#section-journal .panneau-tete + .ligne-filtres #recherche-journal'),
     groupe: !!document.querySelector('.ligne-filtres #filtre-groupe'),
     rapp: !!document.querySelector('#rapprochement .section-tete #recherche-rapp')
   }));
-  verifier('plus de barre « Chercher un plan » en haut : un champ dans le journal, les groupes et la comparaison',
-    !champs.global && champs.journal && champs.groupe && champs.rapp, JSON.stringify(champs));
+  verifier('pas de barre qui filtre toute la page : un champ dans le journal, les groupes et la comparaison, et « Chercher un plan » dans le sommaire',
+    !champs.global && champs.sommaire && champs.journal && champs.groupe && champs.rapp, JSON.stringify(champs));
   const cibles = await p.evaluate(() => {
     const R = window.__rapprochement();
     const accord = R.accord[0].reference;

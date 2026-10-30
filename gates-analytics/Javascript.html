@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'b034aef';
+  var EDITION = 'b3f71d1';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -8024,7 +8024,7 @@
     clearTimeout(minuteurTaille);
     minuteurTaille = setTimeout(function () {
       if (!vue) return;                // la page attend encore ses données
-      rendreGraphique(selection()); ajusterSticky(); majOmbre();
+      rendreGraphique(selection()); marquerLourd(); ajusterSticky(); majOmbre();
       aMesurer('barre');
       ajusterColonneNom();
       marquerDebords();
@@ -9077,5 +9077,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = 'b034aef';
+window.SUIVI_FWD_FIN = 'b3f71d1';
 </script>
