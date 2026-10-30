@@ -8507,7 +8507,10 @@ async function deplierFiltresColonne(pg) {
            tableau », ni « Télécharger (CSV) ») : on relève s'ils se voient. */
         boutonFiltres: (b => !!b && b.getClientRects().length > 0)(document.getElementById('ouvrir-filtres')),
         boutonsExport: ['copier-tableau', 'telecharger-tableau'].filter(id => { const b = document.getElementById(id); return !!b && b.getClientRects().length > 0; }),
-        motsOutils: document.getElementById('actions-tableau') ? document.getElementById('actions-tableau').innerText : '',
+        /* Débrief 29 : la zone des actions, vide, est cachée — innerText d'un
+           élément non dessiné rendrait tout son texte, même caché : on ne lit
+           que ce qui se voit. */
+        motsOutils: (a => a && a.getClientRects().length > 0 ? a.innerText : '')(document.getElementById('actions-tableau')),
         champsFiltres: [...document.querySelectorAll('tr.filtres input[data-filtre]')].filter(i => i.getClientRects().length > 0).length,
         arretsCorps: document.querySelectorAll('#corps-tableau [tabindex="0"]').length,
         refsHorsTab: [...document.querySelectorAll('#corps-tableau .ref-plan')].filter(b => b.getAttribute('tabindex') !== '-1' && b.getAttribute('tabindex') !== '0').length,
@@ -10421,6 +10424,19 @@ async function deplierFiltresColonne(pg) {
     }, toutes29.iv);
     verifier('le filtre de colonne lit toujours « - » : il garde les cases écrites « — » (B22)', filtre29.n > 0 && filtre29.tous, JSON.stringify(filtre29));
     await reinitialiser(q);
+    // Trié sur Validité, dans les deux sens : les « — » (vides ou « - ») restent en bas.
+    const triVides = async () => q.evaluate(iv => {
+      const l = [...document.querySelectorAll('#corps-tableau tr:not(.ancien)')].filter(tr => tr.cells.length > iv).map(tr => tr.cells[iv].classList.contains('tiret-vide'));
+      const premier = l.indexOf(true);
+      return { n: l.length, vides: l.filter(Boolean).length, enBas: premier === -1 || l.slice(premier).every(Boolean) };
+    }, toutes29.iv);
+    await q.click('tr.titres button[data-tri="validite"]'); await q.waitForTimeout(600);
+    const triA = await triVides();
+    await q.click('tr.titres button[data-tri="validite"]'); await q.waitForTimeout(600);
+    const triD = await triVides();
+    verifier('trié sur Validité, croissant puis décroissant : les cases « — » (vides ou « - ») restent en bas (B22)',
+      triA.vides > 0 && triA.enBas && triD.enBas && triA.n === triD.n, JSON.stringify([triA, triD]));
+    await q.click('tr.titres button[data-tri="reference"]'); await q.waitForTimeout(600);
     const al2 = await alignement(q);
     verifier('« Toutes les colonnes » : intitulés, champs et cases au même bord gauche, à 1 px près', al2.n > 50 && al2.ecarts.length === 0, JSON.stringify(al2.ecarts.slice(0, 6)));
 

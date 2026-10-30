@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '7bba6dd';
+  var EDITION = '8fa92c6';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -5712,6 +5712,12 @@
       var k = vue.tri.cle, sens = vue.tri.asc ? 1 : -1;
       if (k === CLE_SUIVIE) return (a._pct - b._pct) * sens || COMPARER_LOCAL(a.reference, b.reference);
       var va = String(a[k] == null ? '' : a[k]), vb = String(b[k] == null ? '' : b[k]);
+      /* Débrief 29 (B22) : « - » s'écrit « — » comme une case vide ; il se
+         range avec elles, en bas dans les deux sens — sinon des « — »
+         remontaient en tête du tri croissant. Les filtres lisent toujours
+         « - ». */
+      if (va.trim() === '-') va = '';
+      if (vb.trim() === '-') vb = '';
       if (va === '' && vb === '') return 0;
       if (va === '') return 1;
       if (vb === '') return -1;
@@ -5800,7 +5806,8 @@
         if (val === '' || val == null) return '\x3Ctd class="' + classes + ' doux tiret-vide"' + styleFige(i, nFige) + '>\u2014\x3C/td>';
         /* Débrief 29 (B22) : « - », que l'extract écrit dans les blocs sans
            valeur, se lit comme une case vide — « — » en gris, la valeur
-           brute dite au survol. Le tri et les filtres gardent « - ». */
+           brute dite au survol. Il se trie avec les cases vides (en bas,
+           rangsDuTableau) ; les filtres gardent « - ». */
         if (String(val).trim() === '-') return '\x3Ctd class="' + classes + ' doux tiret-vide"' + styleFige(i, nFige) + ' title="« - » dans GATES">\u2014\x3C/td>';
         var titre = c.classe.indexOf('large') !== -1 ? ' title="' + ech(val) + '"' : '';
         /* La référence se clique : le tableau se réduit à ce plan, et son
@@ -12205,5 +12212,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = '7bba6dd';
+window.SUIVI_FWD_FIN = '8fa92c6';
 </script>

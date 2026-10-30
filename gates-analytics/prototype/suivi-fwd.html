@@ -10438,6 +10438,12 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       var k = vue.tri.cle, sens = vue.tri.asc ? 1 : -1;
       if (k === CLE_SUIVIE) return (a._pct - b._pct) * sens || COMPARER_LOCAL(a.reference, b.reference);
       var va = String(a[k] == null ? '' : a[k]), vb = String(b[k] == null ? '' : b[k]);
+      /* Débrief 29 (B22) : « - » s'écrit « — » comme une case vide ; il se
+         range avec elles, en bas dans les deux sens — sinon des « — »
+         remontaient en tête du tri croissant. Les filtres lisent toujours
+         « - ». */
+      if (va.trim() === '-') va = '';
+      if (vb.trim() === '-') vb = '';
       if (va === '' && vb === '') return 0;
       if (va === '') return 1;
       if (vb === '') return -1;
@@ -10526,7 +10532,8 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         if (val === '' || val == null) return '<td class="' + classes + ' doux tiret-vide"' + styleFige(i, nFige) + '>\u2014</td>';
         /* Débrief 29 (B22) : « - », que l'extract écrit dans les blocs sans
            valeur, se lit comme une case vide — « — » en gris, la valeur
-           brute dite au survol. Le tri et les filtres gardent « - ». */
+           brute dite au survol. Il se trie avec les cases vides (en bas,
+           rangsDuTableau) ; les filtres gardent « - ». */
         if (String(val).trim() === '-') return '<td class="' + classes + ' doux tiret-vide"' + styleFige(i, nFige) + ' title="« - » dans GATES">\u2014</td>';
         var titre = c.classe.indexOf('large') !== -1 ? ' title="' + ech(val) + '"' : '';
         /* La référence se clique : le tableau se réduit à ce plan, et son
