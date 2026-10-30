@@ -721,7 +721,7 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
    (débrief 22). La peinture déborde sur les côtés sans élargir la page
    (border-image : un débordement d'encre, pas de défilement). */
 header.entete {
-  border-image: linear-gradient(to bottom, var(--bandeau-fond), var(--bandeau-fond-2) calc(100% - 1px), var(--bandeau-filet) 0) fill 0 / 0 / 0 100vmax;
+  border-image: linear-gradient(to bottom, var(--bandeau-fond), var(--bandeau-fond-2) calc(100% - 2px), var(--bandeau-trait) 0) fill 0 / 0 / 0 100vmax;
   margin-bottom: 10px;
 }
 /* Débrief 28 (2) : le blanc faisait « page blanche ». Le bandeau prend un
@@ -729,22 +729,26 @@ header.entete {
    comme le titre d'un journal : un filet double (épais, puis fin) sous la
    semaine, sur toute la largeur du contenu. */
 .masthead h1 { font-size: clamp(36px, 6vw, 56px); }
-.masthead::after {
-  content: ""; display: block; height: 5px; margin-top: 20px;
-  border-top: 2px solid var(--bandeau-trait); border-bottom: 1px solid var(--bandeau-trait);
+/* Débrief 28 (3) : plus de filet double sous la semaine — un seul trait
+   sombre à la limite du bandeau et du papier (idée de Nathan). Les réglages
+   au centre, comme le titre. */
+@media (min-width: 721px) {
+  .bandeau-mode { justify-content: center; }
+  .bandeau-mode .reglages { margin-left: auto; margin-right: auto; align-items: center; }
+  .reglages-portee { justify-content: center; }
 }
 /* Les outils de la page : trois icônes rondes à droite du titre — leur nom
    au survol (title) et pour les lecteurs d'écran (texte masqué). */
-.masthead { position: relative; }
-.masthead .outils-page { position: absolute; right: 0; top: 39px; gap: 8px; min-height: 0; }
-.masthead .outil-page {
-  width: 36px; height: 36px; min-height: 0; padding: 0; justify-content: center;
+.sommaire .outils-page { flex: none; gap: 6px; min-height: 0; margin-left: 12px; }
+.sommaire .outil-page {
+  width: 34px; height: 34px; min-height: 0; padding: 0; justify-content: center;
   border: 1px solid var(--filet); border-radius: 50%; color: var(--encre-2); background: var(--surface);
 }
-.masthead .outil-page:hover, .masthead .outil-page[aria-expanded="true"] { color: var(--encre); border-color: var(--filet-fort); background: var(--creux); }
-.masthead .outil-page svg { width: 16px; height: 16px; }
+.sommaire .outil-page:hover, .sommaire .outil-page[aria-expanded="true"] { color: var(--encre); border-color: var(--filet-fort); background: var(--creux); }
+.sommaire .outil-page svg { width: 16px; height: 16px; }
 @media (max-width: 720px) {
-  .masthead .outils-page { position: static; justify-content: center; margin-top: 14px; }
+  .sommaire .outils-page { margin-left: 6px; gap: 4px; }
+  .sommaire .outil-page { width: 32px; height: 32px; }
 }
 /* Débrief 28 : le tableau des plans sans « Filtrer par colonne » (les
    filtres sont toujours là), ni « Copier le tableau », ni « Télécharger ». */
@@ -1223,6 +1227,9 @@ header.entete {
   display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
 }
 .groupe-refs .sous-groupe, .groupe-refs .sous-arret { margin-top: 10px; }
+.groupe-refs .actions-groupe { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 12px; }
+.groupe-refs .actions-groupe:empty { display: none; }
+.groupe-refs .actions-groupe .copier { min-height: 30px; padding: 0 12px; font-size: 13px; }
 .groupe-refs .sous-titre, .groupe-refs .titre-arret {
   margin: 0 0 7px;
   display: flex; align-items: center; gap: 7px;
@@ -3134,11 +3141,12 @@ table.plans td.large:focus { white-space: normal; overflow: visible; }
 .cherche-plan-liste .libelle-option { grid-column: 1 / -1; font-size: 12px; color: var(--encre-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* De grand écran : le sommaire se centre entre la marque à gauche et le
    champ à droite, sans jamais passer dessous. */
-@media (min-width: 1280px) {
-  .sommaire { padding-inline: 230px; }
-}
-@media (max-width: 1279px) {
-  .cherche-plan { position: static; transform: none; flex: none; margin-left: 10px; }
+/* Débrief 28 : partout une loupe ronde, à côté des outils de la page (le
+   champ de 200 px poussait le sommaire) ; elle ouvre le champ par-dessus. */
+@media all {
+  .cherche-plan { position: static; transform: none; flex: none; margin-left: 12px; }
+  .cherche-plan-ouvrir { width: 34px; height: 34px; justify-content: center; border-radius: 50%; }
+  .sommaire .outils-page { margin-left: 6px; }
   .cherche-plan-ouvrir { display: inline-flex; }
   .cherche-plan-cadre { display: none; }
   .cherche-plan[data-ouvert="true"] .cherche-plan-ouvrir { visibility: hidden; }
@@ -3148,6 +3156,11 @@ table.plans td.large:focus { white-space: normal; overflow: visible; }
   .cherche-plan[data-ouvert="true"] .cherche-plan-fermer { display: inline-flex; }
   .cherche-plan-cadre .loupe { left: 12px; }
   .cherche-plan-liste { left: auto; right: 0; width: min(100%, 520px); }
+}
+/* La marque « Suivi FWD · HDK › Tranche 1 » du sommaire collé garde sa place à
+   gauche ; le sommaire se centre entre elle et les icônes. */
+@media (min-width: 1181px) {
+  .sommaire { padding-left: 230px; }
 }
 @media (max-width: 720px) { .cherche-plan-liste { left: 0; width: auto; } }
 @media (pointer: coarse) {
@@ -3505,31 +3518,6 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       <span aria-hidden="true">·</span>
       <span id="dates-semaine">—</span>
     </div>
-      <!-- Débrief 28 : les outils de la page — Vue d'ensemble, Aide,
-           Administration — ne prennent plus une ligne à eux : trois icônes
-           discrètes à droite du titre (leur nom au survol et pour les
-           lecteurs d'écran). -->
-        <div class="outils-page" id="outils-page">
-          <!-- Débrief 26 : seuls les administrateurs voient ce bouton. Débrief
-               27 : sa place est gardée dès la première image (invisible tant
-               que les droits ne sont pas lus) : rien ne bouge quand ils
-               arrivent. -->
-          <span class="choix-admin" id="choix-admin" data-droits="attente">
-            <button type="button" class="outil-page bouton-admin" id="ouvrir-admin" title="Administration" aria-haspopup="dialog">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 10.2a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4Z" stroke="currentColor" stroke-width="1.4"/><path d="M13.1 9.6l1.1.9-1.3 2.3-1.4-.5a5.3 5.3 0 0 1-1.4.8L9.8 14.5H7.2l-.3-1.4a5.3 5.3 0 0 1-1.4-.8l-1.4.5-1.3-2.3 1.1-.9a5.4 5.4 0 0 1 0-1.6l-1.1-.9 1.3-2.3 1.4.5a5.3 5.3 0 0 1 1.4-.8l.3-1.4h2.6l.3 1.4c.5.2 1 .5 1.4.8l1.4-.5 1.3 2.3-1.1.9c.1.5.1 1.1 0 1.6Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
-              <span class="masque">Administration</span>
-            </button>
-          </span>
-          <button type="button" class="outil-page" id="voir-ensemble" title="Vue d’ensemble de tous les contrats" aria-haspopup="dialog" aria-expanded="false" aria-controls="ensemble" hidden>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
-            <span class="masque">Vue d’ensemble</span>
-          </button>
-          <!-- Débrief 27 : l'aide de la page (le lot G y branche sa fenêtre). -->
-          <button type="button" class="outil-page" id="ouvrir-aide" title="Aide : comment lire cette page" aria-haspopup="dialog">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.3" stroke="currentColor" stroke-width="1.3"/><path d="M6.2 6.3a1.9 1.9 0 0 1 3.7.5c0 1.3-1.9 1.6-1.9 2.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.6" r=".85" fill="currentColor"/></svg>
-            <span class="masque">Aide</span>
-          </button>
-        </div>
   </div>
   </header>
 
@@ -3568,6 +3556,31 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         <ul class="cherche-plan-liste" id="cherche-plan-liste" role="listbox" aria-label="Plans trouvés" hidden></ul>
         <span class="masque" id="cherche-plan-aide">Trois caractères au moins. Flèches haut et bas pour choisir, Entrée pour ouvrir l’historique du plan, Échap pour fermer.</span>
       </div>
+    </div>
+      <!-- Débrief 28 : les outils de la page — Vue d'ensemble, Aide,
+     Administration — ne prennent plus de ligne à eux : trois icônes au
+     bout du sommaire, à portée pendant toute la lecture (leur nom au
+     survol et pour les lecteurs d'écran). -->
+    <div class="outils-page" id="outils-page">
+      <!-- Débrief 26 : seuls les administrateurs voient ce bouton. Débrief
+           27 : sa place est gardée dès la première image (invisible tant
+           que les droits ne sont pas lus) : rien ne bouge quand ils
+           arrivent. -->
+      <span class="choix-admin" id="choix-admin" data-droits="attente">
+        <button type="button" class="outil-page bouton-admin" id="ouvrir-admin" title="Administration" aria-haspopup="dialog">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 10.2a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4Z" stroke="currentColor" stroke-width="1.4"/><path d="M13.1 9.6l1.1.9-1.3 2.3-1.4-.5a5.3 5.3 0 0 1-1.4.8L9.8 14.5H7.2l-.3-1.4a5.3 5.3 0 0 1-1.4-.8l-1.4.5-1.3-2.3 1.1-.9a5.4 5.4 0 0 1 0-1.6l-1.1-.9 1.3-2.3 1.4.5a5.3 5.3 0 0 1 1.4-.8l.3-1.4h2.6l.3 1.4c.5.2 1 .5 1.4.8l1.4-.5 1.3 2.3-1.1.9c.1.5.1 1.1 0 1.6Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+          <span class="masque">Administration</span>
+        </button>
+      </span>
+      <button type="button" class="outil-page" id="voir-ensemble" title="Vue d’ensemble de tous les contrats" aria-haspopup="dialog" aria-expanded="false" aria-controls="ensemble" hidden>
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
+        <span class="masque">Vue d’ensemble</span>
+      </button>
+      <!-- Débrief 27 : l'aide de la page (le lot G y branche sa fenêtre). -->
+      <button type="button" class="outil-page" id="ouvrir-aide" title="Aide : comment lire cette page" aria-haspopup="dialog">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.3" stroke="currentColor" stroke-width="1.3"/><path d="M6.2 6.3a1.9 1.9 0 0 1 3.7.5c0 1.3-1.9 1.6-1.9 2.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.6" r=".85" fill="currentColor"/></svg>
+        <span class="masque">Aide</span>
+      </button>
     </div>
   </nav>
   <!-- Débrief 27 (lot H, P-F6, M5) : les filtres posés, sous le sommaire et
@@ -9313,7 +9326,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       (vb ? ' « ' + ech(valeurDeCle(vb) ? valeurDeCle(vb).libelle : vb) + ' » sur ' + nb((r.plans || []).length)
           : (restants ? ' · <b>' + nb(restants) + '</b> pas encore validé' + (restants > 1 ? 's' : '') : ' · tout est validé')) +
       (nArret ? ' · <span class="arret-n"><span class="pastille arret"></span>' + nb(nArret) + ' à l\u2019arrêt</span>' : '') +
-      '</span>' + filtrer + boutonCopier(copie) + '<span>cliquez une référence pour la retrouver dans le tableau</span></div>' + html + plus + '</div>';
+      '</span></div>' +
+      /* Débrief 28 : les deux gestes du groupe ensemble, sur leur ligne —
+         filtrer la page, copier ses références. */
+      '<div class="actions-groupe">' + filtrer + boutonCopier(copie) + '</div>' + html + plus + '</div>';
   }
   /* Débrief 27 (lot C, P-F5) : « j'ai cliqué ATA 39 pour voir lesquels, et
      toute la page est devenue 6 sur 80 ». Ouvrir une ligne ne fait plus que
@@ -9342,8 +9358,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   function listeTrouves(trouves) {
     var n = trouves.length;
     return '<div class="groupe-refs trouves"><div class="entete"><span><b>' + nb(n) + '</b> plan' + (n > 1 ? 's' : '') +
-      ' trouvé' + (n > 1 ? 's' : '') + ' dans ce groupe</span>' +
-      '<span>cliquez une référence pour la retrouver dans le tableau</span></div>' +
+      ' trouvé' + (n > 1 ? 's' : '') + ' dans ce groupe</span></div>' +
       '<div class="grille">' + trouves.map(jetonUD).join('') + '</div></div>';
   }
 

@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'f1c98b5';
+  var EDITION = 'aff3b7f';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -4663,7 +4663,10 @@
       (vb ? ' « ' + ech(valeurDeCle(vb) ? valeurDeCle(vb).libelle : vb) + ' » sur ' + nb((r.plans || []).length)
           : (restants ? ' · \x3Cb>' + nb(restants) + '\x3C/b> pas encore validé' + (restants > 1 ? 's' : '') : ' · tout est validé')) +
       (nArret ? ' · \x3Cspan class="arret-n">\x3Cspan class="pastille arret">\x3C/span>' + nb(nArret) + ' à l\u2019arrêt\x3C/span>' : '') +
-      '\x3C/span>' + filtrer + boutonCopier(copie) + '\x3Cspan>cliquez une référence pour la retrouver dans le tableau\x3C/span>\x3C/div>' + html + plus + '\x3C/div>';
+      '\x3C/span>\x3C/div>' +
+      /* Débrief 28 : les deux gestes du groupe ensemble, sur leur ligne —
+         filtrer la page, copier ses références. */
+      '\x3Cdiv class="actions-groupe">' + filtrer + boutonCopier(copie) + '\x3C/div>' + html + plus + '\x3C/div>';
   }
   /* Débrief 27 (lot C, P-F5) : « j'ai cliqué ATA 39 pour voir lesquels, et
      toute la page est devenue 6 sur 80 ». Ouvrir une ligne ne fait plus que
@@ -4692,8 +4695,7 @@
   function listeTrouves(trouves) {
     var n = trouves.length;
     return '\x3Cdiv class="groupe-refs trouves">\x3Cdiv class="entete">\x3Cspan>\x3Cb>' + nb(n) + '\x3C/b> plan' + (n > 1 ? 's' : '') +
-      ' trouvé' + (n > 1 ? 's' : '') + ' dans ce groupe\x3C/span>' +
-      '\x3Cspan>cliquez une référence pour la retrouver dans le tableau\x3C/span>\x3C/div>' +
+      ' trouvé' + (n > 1 ? 's' : '') + ' dans ce groupe\x3C/span>\x3C/div>' +
       '\x3Cdiv class="grille">' + trouves.map(jetonUD).join('') + '\x3C/div>\x3C/div>';
   }
 
@@ -12128,5 +12130,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = 'f1c98b5';
+window.SUIVI_FWD_FIN = 'aff3b7f';
 </script>
