@@ -70,7 +70,7 @@
 <script>
   /* La livraison de ce fichier, posée par la construction : la page la compare
      à celles de Code, Styles et Javascript, et nomme celui qui diffère. */
-  window.SUIVI_FWD_LIVRAISON_INDEX = 'a6eee20';
+  window.SUIVI_FWD_LIVRAISON_INDEX = 'f9fa8ef';
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
@@ -238,47 +238,49 @@
       <li class="teinte-plans"><a href="#section-plans" data-chapitre="section-plans">Plans</a></li>
       <li><a href="#rapprochement" data-chapitre="rapprochement">Comparaison</a></li>
     </ol>
-    <!-- Débrief 27, lot D (P-F23) : chercher un plan de n'importe où — sa
-         référence écrite à la mode de GATES ou de SEE ; la liste propose les
-         plans qui commencent ou contiennent ce qu'on tape, et en choisir un
-         ouvre son historique au-dessus du tableau. -->
-    <div class="cherche-plan" id="cherche-plan" role="search" aria-label="Chercher un plan" data-ouvert="false">
-      <button type="button" class="cherche-plan-ouvrir" id="cherche-plan-ouvrir" aria-label="Chercher un plan" aria-expanded="false" aria-controls="cherche-plan-cadre" title="Chercher un plan">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/><path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      </button>
-      <div class="cherche-plan-cadre" id="cherche-plan-cadre">
-        <label class="masque" for="cherche-plan-champ">Chercher un plan par sa référence (GATES ou SEE)</label>
-        <input id="cherche-plan-champ" type="search" placeholder="Chercher un plan" autocomplete="off" spellcheck="false"
-               role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="cherche-plan-liste" aria-describedby="cherche-plan-aide">
-        <svg class="loupe" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/><path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        <button type="button" class="cherche-plan-fermer" id="cherche-plan-fermer" aria-label="Fermer la recherche de plan">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="m3 3 6 6M9 3 3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        </button>
-        <ul class="cherche-plan-liste" id="cherche-plan-liste" role="listbox" aria-label="Plans trouvés" hidden></ul>
-        <span class="masque" id="cherche-plan-aide">Trois caractères au moins. Flèches haut et bas pour choisir, Entrée pour ouvrir l’historique du plan, Échap pour fermer.</span>
-      </div>
-    </div>
-      <!-- Débrief 28 : les outils de la page — Vue d'ensemble, Aide,
-     Administration — ne prennent plus de ligne à eux : trois icônes au
-     bout du sommaire, à portée pendant toute la lecture (leur nom au
-     survol et pour les lecteurs d'écran). -->
+    <!-- Débrief 28 : les outils de la page — Vue d'ensemble, Aide,
+         Administration — ne prennent plus de ligne à eux : des icônes au
+         bout du sommaire, à portée pendant toute la lecture (leur nom en
+         bulle au survol et au clavier, et pour les lecteurs d'écran).
+         Débrief 29 : un seul groupe, calé au bord du contenu — le ⚙ en
+         tête, puis la loupe, Vue d'ensemble et Aide. -->
     <div class="outils-page" id="outils-page">
       <!-- Débrief 26 : seuls les administrateurs voient ce bouton. Débrief
            27 : sa place est gardée dès la première image (invisible tant
-           que les droits ne sont pas lus) : rien ne bouge quand ils
-           arrivent. -->
+           que les droits ne sont pas lus). Débrief 29 : en tête du groupe
+           calé à droite — quand il s'efface (lecteur), rien ne bouge. -->
       <span class="choix-admin" id="choix-admin" data-droits="attente">
-        <button type="button" class="outil-page bouton-admin" id="ouvrir-admin" title="Administration" aria-haspopup="dialog">
+        <button type="button" class="outil-page bouton-admin" id="ouvrir-admin" data-nom="Administration" aria-haspopup="dialog">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 10.2a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4Z" stroke="currentColor" stroke-width="1.4"/><path d="M13.1 9.6l1.1.9-1.3 2.3-1.4-.5a5.3 5.3 0 0 1-1.4.8L9.8 14.5H7.2l-.3-1.4a5.3 5.3 0 0 1-1.4-.8l-1.4.5-1.3-2.3 1.1-.9a5.4 5.4 0 0 1 0-1.6l-1.1-.9 1.3-2.3 1.4.5a5.3 5.3 0 0 1 1.4-.8l.3-1.4h2.6l.3 1.4c.5.2 1 .5 1.4.8l1.4-.5 1.3 2.3-1.1.9c.1.5.1 1.1 0 1.6Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
           <span class="masque">Administration</span>
         </button>
       </span>
-      <button type="button" class="outil-page" id="voir-ensemble" title="Vue d’ensemble de tous les contrats" aria-haspopup="dialog" aria-expanded="false" aria-controls="ensemble" hidden>
+      <!-- Débrief 27, lot D (P-F23) : chercher un plan de n'importe où — sa
+           référence écrite à la mode de GATES ou de SEE ; la liste propose les
+           plans qui commencent ou contiennent ce qu'on tape, et en choisir un
+           ouvre son historique au-dessus du tableau. -->
+      <div class="cherche-plan" id="cherche-plan" role="search" aria-label="Chercher un plan" data-ouvert="false">
+        <button type="button" class="cherche-plan-ouvrir" id="cherche-plan-ouvrir" aria-label="Chercher un plan" aria-expanded="false" aria-controls="cherche-plan-cadre" data-nom="Chercher un plan">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/><path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+        <div class="cherche-plan-cadre" id="cherche-plan-cadre">
+          <label class="masque" for="cherche-plan-champ">Chercher un plan par sa référence (GATES ou SEE)</label>
+          <input id="cherche-plan-champ" type="search" placeholder="Chercher un plan" autocomplete="off" spellcheck="false"
+                 role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="cherche-plan-liste" aria-describedby="cherche-plan-aide">
+          <svg class="loupe" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/><path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <button type="button" class="cherche-plan-fermer" id="cherche-plan-fermer" aria-label="Fermer la recherche de plan">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="m3 3 6 6M9 3 3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
+          <ul class="cherche-plan-liste" id="cherche-plan-liste" role="listbox" aria-label="Plans trouvés" hidden></ul>
+          <span class="masque" id="cherche-plan-aide">Trois caractères au moins. Flèches haut et bas pour choisir, Entrée pour ouvrir l’historique du plan, Échap pour fermer.</span>
+        </div>
+      </div>
+      <button type="button" class="outil-page" id="voir-ensemble" data-nom="Vue d’ensemble des contrats" aria-haspopup="dialog" aria-expanded="false" aria-controls="ensemble" hidden>
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
         <span class="masque">Vue d’ensemble</span>
       </button>
       <!-- Débrief 27 : l'aide de la page (le lot G y branche sa fenêtre). -->
-      <button type="button" class="outil-page" id="ouvrir-aide" title="Aide : comment lire cette page" aria-haspopup="dialog">
+      <button type="button" class="outil-page" id="ouvrir-aide" data-nom="Aide" aria-haspopup="dialog">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.3" stroke="currentColor" stroke-width="1.3"/><path d="M6.2 6.3a1.9 1.9 0 0 1 3.7.5c0 1.3-1.9 1.6-1.9 2.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.6" r=".85" fill="currentColor"/></svg>
         <span class="masque">Aide</span>
       </button>
@@ -287,8 +289,10 @@
   <!-- Débrief 27 (lot H, P-F6, M5) : les filtres posés, sous le sommaire et
        collés avec lui. Le bandeau ne prend aucune place dans la page (hauteur
        nulle, sa ligne posée par-dessus) : rien ne saute quand un filtre
-       s'ajoute ou s'enlève. -->
-  <div class="filtres-actifs" id="filtres-actifs" hidden></div>
+       s'ajoute ou s'enlève. Débrief 29 (X-A10) : entre le sommaire et le
+       contenu, hors de tout repère, il est une région nommée — un lecteur
+       d'écran le trouve dans la liste des repères, comme le reste. -->
+  <div class="filtres-actifs" id="filtres-actifs" role="region" aria-label="Filtres posés" hidden></div>
 
   <!-- Débrief 27, lot G : le contenu de la page, de la synthèse à la
        comparaison, dans sa région principale — la cible de « Aller au
@@ -510,7 +514,13 @@
           <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
         </svg>
         <label class="masque" for="recherche">Rechercher dans toutes les colonnes</label>
-        <input id="recherche" type="search" placeholder="Rechercher dans toutes les colonnes…" autocomplete="off">
+        <input id="recherche" type="search" placeholder="Rechercher dans toutes les colonnes…" autocomplete="off" aria-describedby="portee-recherche">
+        <!-- Débrief 29 (F5) : la recherche filtre toute la page (Synthèse,
+             courbe, journal…), pas seulement le tableau : le champ le dit
+             avant qu'on tape — l'entonnoir des filtres de la page
+             (iconeEntonnoir) et trois mots, posés dans le champ, sans rien
+             pousser. -->
+        <span class="portee-recherche" id="portee-recherche"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M1.5 2h9L7 6.2V10l-2-1.1V6.2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>filtre toute la page</span>
       </div>
       <div class="recherche" data-base="la" hidden>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -532,20 +542,17 @@
     </div>
     <!-- Débrief 27, lot D : une seule rangée d'outils sous la recherche — à
          gauche ce qui filtre ou masque, à droite ce qu'on fait du tableau.
-         Les colonnes vides de la sélection sont masquées, et le disent ; les
-         filtres de colonne ne se déplient qu'à la demande (X-A2) ; « Copier
-         le tableau » et « Télécharger (CSV) » prennent ce que le tableau
-         montre — filtres, tri et colonnes affichées (P-F21). -->
+         Les colonnes vides de la sélection sont masquées, et le disent.
+         Débrief 28 : la rangée des filtres de colonne est toujours là, sans
+         bouton pour la plier ; « Copier le tableau » et « Télécharger (CSV) »
+         sont retirés. Débrief 29 : le bouton « Filtrer par colonne », qui
+         revenait à chaque changement de base (refleterBase) et ne faisait
+         plus rien, est supprimé ; la zone des actions, vide, reste cachée —
+         ni trou ni marge à droite de la puce « non renseigné ». -->
     <div class="barre-tableau" id="barre-tableau">
       <div class="incomplets" id="incomplets" data-base="ici"></div>
       <span class="colonnes-vides" id="colonnes-vides" hidden></span>
-      <span class="actions-tableau" id="actions-tableau">
-        <span class="outil-ici" data-base="ici" hidden>
-          <button type="button" class="bouton-outil" id="ouvrir-filtres" aria-expanded="false" aria-controls="tete-tableau">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 3.5h11l-4.2 5v4l-2.6 1.2V8.5l-4.2-5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
-            <span class="mot-outil">Filtrer<span class="mot-long"> par colonne</span></span>
-          </button>
-        </span>
+      <span class="actions-tableau" id="actions-tableau" hidden>
         <button type="button" class="bouton-outil" id="copier-tableau" hidden>
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5.2" y="5.2" width="8.3" height="8.3" rx="1.3" stroke="currentColor" stroke-width="1.4"/><path d="M10.8 3.2V3a1 1 0 0 0-1-1H3.4a1 1 0 0 0-1 1v6.4a1 1 0 0 0 1 1h.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
           <span class="mot-outil">Copier<span class="mot-long"> le tableau</span></span>
@@ -749,7 +756,7 @@
         <div><dt><kbd>Tab</kbd> <kbd>Maj</kbd>+<kbd>Tab</kbd></dt><dd>Passer d’un bouton, d’un lien ou d’un champ à l’autre. Au premier <kbd>Tab</kbd>, « Aller au contenu » saute l’en-tête.</dd></div>
         <div><dt><kbd>Entrée</kbd> <kbd>Espace</kbd></dt><dd>Activer le bouton qui a le focus.</dd></div>
         <div><dt><kbd>Échap</kbd></dt><dd>Fermer ce qui est ouvert : cette aide, une fiche, la vue d’ensemble, une bulle. Dans un champ de recherche : l’effacer.</dd></div>
-        <div><dt><kbd>/</kbd></dt><dd>Aller à la recherche du tableau des plans, quand aucun champ n’est en cours de saisie.</dd></div>
+        <div><dt><kbd>/</kbd></dt><dd>Chercher un plan (la loupe du sommaire), quand aucun champ n’est en cours de saisie.</dd></div>
         <div><dt><kbd>Ctrl</kbd> + molette</dt><dd>Zoomer dans le graphique (<kbd>⌘</kbd> + molette sur un Mac). La molette seule fait défiler la page.</dd></div>
       </dl>
       <label class="aide-option"><input type="checkbox" id="raccourcis-clavier" checked> Raccourcis clavier d’une seule touche : <kbd>/</kbd></label>

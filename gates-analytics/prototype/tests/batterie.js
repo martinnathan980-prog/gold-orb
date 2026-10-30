@@ -2283,7 +2283,11 @@ async function deplierFiltresColonne(pg) {
     const videsEnBas = l => l.every((x, i) => !x.vide || l.slice(i).every(y => y.vide));
     const n0 = document.querySelectorAll('#corps-tableau tr').length;
     const fautes = [];
-    let inversees = 0;
+    /* Débrief 29 (B22) : « - » s'écrit « — » et se range avec les cases
+       vides ; une colonne qui n'a plus qu'une seule valeur (« 1 », le reste
+       « — ») ne peut pas s'inverser à l'œil : elle compte à part
+       (uneValeur), vérifiée pour ses lignes et ses cases vides en bas. */
+    let inversees = 0, uneValeur = 0;
     [...document.querySelectorAll('tr.titres button[data-tri]')].map(b => b.dataset.tri).forEach(c => {
       /* Un premier clic trie dans l'ordre croissant — sauf la colonne déjà
          triée (la référence, à l'ouverture), qu'il inverse : on clique alors
@@ -2296,14 +2300,15 @@ async function deplierFiltresColonne(pg) {
       if (asc.length !== n0 || desc.length !== n0) fautes.push(c + ' perd des lignes');
       else if (!okAsc || !okDesc) fautes.push(c + ' : sens, aria-sort ou légende faux');
       else if (!videsEnBas(asc) || !videsEnBas(desc)) fautes.push(c + ' : des cases vides remontent');
-      else if (new Set(tAsc).size > 1 && tAsc.join('|') === tDesc.join('|')) fautes.push(c + ' ne s’inverse pas');
-      else if (new Set(tAsc).size > 1) inversees++;
+      else if (new Set(asc.filter(x => !x.vide).map(x => x.t)).size > 1 && tAsc.join('|') === tDesc.join('|')) fautes.push(c + ' ne s’inverse pas');
+      else if (new Set(asc.filter(x => !x.vide).map(x => x.t)).size > 1) inversees++;
+      else if (new Set(tAsc).size > 1) uneValeur++;
     });
-    return { n0, colonnes: document.querySelectorAll('tr.titres button[data-tri]').length, inversees, fautes };
+    return { n0, colonnes: document.querySelectorAll('tr.titres button[data-tri]').length, inversees, uneValeur, fautes };
   });
   verifier('chaque colonne se trie dans les deux sens sans perdre de ligne — toutes les colonnes, sur un échantillon de lignes (sens, aria-sort et légende suivent, les cases vides restent en bas)',
     ECHANTILLON > 1 && ECHANTILLON < TOTAL && triEchantillon.n0 === ECHANTILLON && triEchantillon.colonnes === cles.length &&
-    triEchantillon.inversees >= 100 && triEchantillon.fautes.length === 0, JSON.stringify(Object.assign({ ECHANTILLON }, triEchantillon, { fautes: triEchantillon.fautes.slice(0, 5) })));
+    triEchantillon.inversees + triEchantillon.uneValeur >= 100 && triEchantillon.fautes.length === 0, JSON.stringify(Object.assign({ ECHANTILLON }, triEchantillon, { fautes: triEchantillon.fautes.slice(0, 5) })));
   await p.fill('#recherche', '');
   await p.waitForFunction(t => document.querySelectorAll('#corps-tableau tr').length === t, TOTAL, { timeout: 15000 }).catch(() => {});
   let triOk = true, triDetail = '';
@@ -3673,14 +3678,19 @@ async function deplierFiltresColonne(pg) {
        numéro de semaine reste celui du pied. */
     const MOIS27 = '(janv\\.|févr\\.|mars|avr\\.|mai|juin|juil\\.|août|sept\\.|oct\\.|nov\\.|déc\\.)';
     const SEM_JOURNAL = new RegExp('^S\\d{1,2} · du (lun|mar|mer|jeu|ven|sam|dim)\\. \\d{1,2}( ' + MOIS27 + ')? au (lun|mar|mer|jeu|ven|sam|dim)\\. \\d{1,2} ' + MOIS27 + '( \\d{4})?$');
-    verifier('pied, note du graphique, journal et jalons écrivent la semaine de la même façon (le journal, avec les dates des deux relevés)',
-      /^Dernier relevé : S\d{1,2} · \S+ \d{4} · \d+ relevés$/.test(esp(lieux.pied)) &&
+    /* Débrief 29 (lot E2, A-F13) : le pied dit « archivé » et le jour du
+       relevé — « Dernier relevé archivé : S43 (vendredi 23 octobre) · 6
+       relevés » ; son numéro de semaine reste celui de la note et du journal. */
+    const PIED29 = /^Dernier relevé archivé : (S\d{1,2}) \((lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche) \d{1,2} (janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)( \d{4})?\) · \d+ relevés$/;
+    const semPied = (esp(lieux.pied).match(PIED29) || [])[1];
+    verifier('pied, note du graphique, journal et jalons nomment la semaine de la même façon (le pied avec le jour du relevé archivé, le journal avec les dates des deux relevés)',
+      !!semPied &&
       /^\d+ relevés, de S\d{1,2} · \S+ \d{4} à S\d{1,2} · \S+ \d{4}$/.test(esp(lieux.note)) &&
-      SEM_JOURNAL.test(esp(lieux.journal)) && esp(lieux.journal).split(' ')[0] === esp(lieux.pied).replace(/^Dernier relevé : /, '').split(' ')[0] &&
+      SEM_JOURNAL.test(esp(lieux.journal)) && esp(lieux.journal).split(' ')[0] === semPied &&
       lieux.legende.every(q => SEM.test(esp(q))), JSON.stringify(lieux));
     // Le pied et la note disent le même dernier relevé.
     verifier('le pied et la note du graphique nomment le même dernier relevé',
-      esp(lieux.note).split(' à ')[1] === esp(lieux.pied).replace(/^Dernier relevé : /, '').replace(/ · \d+ relevés$/, ''), JSON.stringify(lieux));
+      !!semPied && (esp(lieux.note).split(' à ')[1] || '').split(' ')[0] === semPied, JSON.stringify(lieux));
 
     // La fiche, la légende, le « manque » du graphique et la puce : les mêmes nombres.
     await pq.click('#echeance-titre'); await pq.waitForTimeout(500);
@@ -5424,14 +5434,19 @@ async function deplierFiltresColonne(pg) {
       const z = document.getElementById('classeur-vide');
       return { gestes: [...z.querySelectorAll('ol li')].map(li => li.textContent),
                secours: [...z.querySelectorAll('p.doux')].map(x => x.textContent).join(' | '),
-               sommaire: getComputedStyle(document.getElementById('sommaire')).display };
+               sommaire: getComputedStyle(document.getElementById('sommaire')).display,
+               /* Débrief 29 (B4) : la liste des sections et la loupe se taisent, les
+                  outils (Aide, Vue d'ensemble, Administration) restent. */
+               liste: getComputedStyle(document.getElementById('sommaire-liste')).display, loupe: getComputedStyle(document.getElementById('cherche-plan')).display,
+               aide: (b => !!b && b.getClientRects().length > 0)(document.getElementById('ouvrir-aide')) };
     });
     verifier('classeur vide : trois gestes — le menu « Importer les exports GATES et SEE… », les fichiers choisis sans les ouvrir, le relevé archivé par la même fenêtre',
       vide.gestes.length === 3 && /Suivi FWD → Importer les exports GATES et SEE…/.test(vide.gestes[0]) &&
       /plusieurs d’un coup/.test(vide.gestes[1]) && /sans les ouvrir/.test(vide.gestes[1]) && /archive le relevé/.test(vide.gestes[1]) &&
       !vide.gestes.some(g => /copier|coller|Ctrl/.test(g)), JSON.stringify(vide.gestes));
     verifier('classeur vide : le collage reste, en secours, sur une ligne à part', /coller/.test(vide.secours) && /Archiver le relevé/.test(vide.secours), vide.secours);
-    verifier('classeur vide : pas de sommaire (il n’y a aucun panneau)', vide.sommaire === 'none', vide.sommaire);
+    verifier('classeur vide : pas de liste de sections ni de loupe (il n’y a aucun panneau) ; l’Aide reste au bout du sommaire (débrief 29)',
+      vide.sommaire !== 'none' && vide.liste === 'none' && vide.loupe === 'none' && vide.aide, JSON.stringify(vide));
     await ctxV.close();
   }
   await reinitialiser(p);
@@ -7001,8 +7016,11 @@ async function deplierFiltresColonne(pg) {
   await p.keyboard.press('Escape'); await p.waitForTimeout(300);
   await p.evaluate(() => document.activeElement.blur());
   await p.keyboard.press('/'); await p.waitForTimeout(150);
-  verifier('A — hors d’un champ, « / » mène toujours à la recherche du tableau',
-    await p.evaluate(() => document.activeElement.id === 'recherche'));
+  /* Débrief 29 (S9) : « / » ouvre la loupe du sommaire (là où l'on est),
+     plus la recherche du tableau (la page sautait aux Plans). */
+  verifier('A — hors d’un champ, « / » mène toujours à la recherche de plan (la loupe du sommaire, débrief 29)',
+    await p.evaluate(() => document.activeElement.id === 'cherche-plan-champ'));
+  await p.keyboard.press('Escape'); await p.waitForTimeout(150);
   await p.evaluate(() => document.activeElement.blur());
 
   // B et J. Une sélection vide : une phrase, une piste, des tuiles qui ne se recouvrent pas.
@@ -7698,8 +7716,9 @@ async function deplierFiltresColonne(pg) {
     await g.evaluate(() => document.activeElement.blur());
     await g.keyboard.press('/'); await g.waitForTimeout(200);
     const sansRaccourci = await g.evaluate(() => ({ focus: document.activeElement.id || document.activeElement.tagName, garde: localStorage.getItem('suivi-fwd:raccourcis') }));
-    verifier('« / » mène à la recherche des plans ; coupé dans l’aide, il ne fait plus rien, et le choix est gardé sur ce poste',
-      avecRaccourci === 'recherche' && sansRaccourci.focus !== 'recherche' && sansRaccourci.garde === 'non', JSON.stringify([avecRaccourci, sansRaccourci]));
+    /* Débrief 29 (S9) : « / » ouvre la loupe du sommaire. */
+    verifier('« / » mène à la recherche des plans (la loupe du sommaire, débrief 29) ; coupé dans l’aide, il ne fait plus rien, et le choix est gardé sur ce poste',
+      avecRaccourci === 'cherche-plan-champ' && sansRaccourci.focus !== 'cherche-plan-champ' && sansRaccourci.garde === 'non', JSON.stringify([avecRaccourci, sansRaccourci]));
     await g.evaluate(() => localStorage.removeItem('suivi-fwd:raccourcis'));
 
     // --- Échap ferme le panneau du dessus : la vue d'ensemble, l'aide « ? », la bulle ; pas un champ rempli.
@@ -8205,18 +8224,20 @@ async function deplierFiltresColonne(pg) {
       /* Débrief 28 : Vue d'ensemble, Aide et Administration sont trois icônes
          rondes au bout du sommaire collé (après la loupe), leur nom au survol
          (title) et pour les lecteurs d'écran (texte .masque) — plus dans le
-         bandeau du titre. */
+         bandeau du titre. Débrief 29 : un seul groupe au bout du sommaire, le
+         ⚙ en tête, puis la loupe ; le nom en bulle (data-nom) au survol et au
+         clavier, plus en title. */
       const outils = document.getElementById('outils-page'), som = document.querySelector('nav.sommaire');
       const icone = b => { const c = getComputedStyle(b), t = b.querySelector('.masque'), rb = r(b);
-        return !!b.querySelector('svg') && !!t && t.getBoundingClientRect().width <= 1 && !!b.title && Math.abs(rb.width - rb.height) <= 1 && rb.width <= 40 && c.borderTopLeftRadius === '50%'; };
+        return !!b.querySelector('svg') && !!t && t.getBoundingClientRect().width <= 1 && !!b.dataset.nom && !b.title && Math.abs(rb.width - rb.height) <= 1 && rb.width <= 40 && c.borderTopLeftRadius === '50%'; };
       return {
         banniere: !!ent && ent.contains(document.getElementById('reglages')) && ent.contains(document.getElementById('titre-page')) && !document.querySelector('header header'),
         ordre: vus.map(e => e.id || e.classList[e.classList.length - 1]).join(','), uneLigne: Math.max(...centres) - Math.min(...centres) <= 2,
         outilsAuSommaire: !!outils && !!som && outils.parentElement === som && som.lastElementChild === outils &&
-          (outils.previousElementSibling || {}).id === 'cherche-plan' && !ent.contains(outils) && !document.getElementById('reglages').contains(outils),
+          outils.firstElementChild === adm && (adm.nextElementSibling || {}).id === 'cherche-plan' && !ent.contains(outils) && !document.getElementById('reglages').contains(outils),
         ensemble: ens.tagName === 'BUTTON' && getComputedStyle(ens).textDecorationLine === 'none' && icone(ens) && ens.getAttribute('aria-haspopup') === 'dialog' && /Vue d’ensemble/.test(ens.textContent),
         aide: !!aide && aide.tagName === 'BUTTON' && icone(aide) && /Aide/.test(aide.textContent),
-        iconeAdmin: icone(document.getElementById('ouvrir-admin')) && document.getElementById('ouvrir-admin').title === 'Administration',
+        iconeAdmin: icone(document.getElementById('ouvrir-admin')) && document.getElementById('ouvrir-admin').dataset.nom === 'Administration',
         admin: getComputedStyle(adm).visibility === 'hidden' && r(adm).width >= 30 && adm.dataset.droits === 'attente',
         etat: r(document.getElementById('etat-contrat')).width <= 1 && !document.getElementById('etat-contrat').hasAttribute('aria-live'),
         noms: [...document.querySelectorAll('#choix-perimetre button')].map(b => b.textContent.replace(/\s+/g, ' ').trim())
@@ -8224,7 +8245,7 @@ async function deplierFiltresColonne(pg) {
     });
     verifier('B1 : une seule barre de réglages dans l’en-tête de la page (repère bannière, avec le titre) — Contrat, Avancement, Périmètre sur une ligne, dans cet ordre',
       barreH.banniere && barreH.ordre === 'reglage-contrat,choix-avancement,perimetre' && barreH.uneLigne, JSON.stringify(barreH));
-    verifier('B1, débrief 28 : les outils au bout du sommaire, après la loupe — « Vue d’ensemble », « Aide » et « Administration » en icônes rondes (nom au survol et masqué pour les lecteurs d’écran), la place d’« Administration » gardée invisible tant que les droits ne sont pas lus',
+    verifier('B1, débrief 28 : les outils au bout du sommaire, avec la loupe — « Vue d’ensemble », « Aide » et « Administration » en icônes rondes (nom en bulle, débrief 29, et masqué pour les lecteurs d’écran), la place d’« Administration » gardée invisible en tête du groupe tant que les droits ne sont pas lus',
       barreH.outilsAuSommaire && barreH.ensemble && barreH.aide && barreH.iconeAdmin && barreH.admin, JSON.stringify(barreH));
     verifier('X-A13 : les boutons du périmètre se nomment « Tout 634 plans » (plus « Tout634 ») ; rien ne s’écrit à côté du menu du contrat (son état est masqué, sans aria-live)',
       barreH.etat && barreH.noms.length === 3 && barreH.noms.every(n => /^\S.* \d[\d\s ]* plans?$/.test(n)), JSON.stringify(barreH.noms));
@@ -8509,7 +8530,10 @@ async function deplierFiltresColonne(pg) {
            tableau », ni « Télécharger (CSV) ») : on relève s'ils se voient. */
         boutonFiltres: (b => !!b && b.getClientRects().length > 0)(document.getElementById('ouvrir-filtres')),
         boutonsExport: ['copier-tableau', 'telecharger-tableau'].filter(id => { const b = document.getElementById(id); return !!b && b.getClientRects().length > 0; }),
-        motsOutils: document.getElementById('actions-tableau') ? document.getElementById('actions-tableau').innerText : '',
+        /* Débrief 29 : la zone des actions, vide, est cachée — innerText d'un
+           élément non dessiné rendrait tout son texte, même caché : on ne lit
+           que ce qui se voit. */
+        motsOutils: (a => a && a.getClientRects().length > 0 ? a.innerText : '')(document.getElementById('actions-tableau')),
         champsFiltres: [...document.querySelectorAll('tr.filtres input[data-filtre]')].filter(i => i.getClientRects().length > 0).length,
         arretsCorps: document.querySelectorAll('#corps-tableau [tabindex="0"]').length,
         refsHorsTab: [...document.querySelectorAll('#corps-tableau .ref-plan')].filter(b => b.getAttribute('tabindex') !== '-1' && b.getAttribute('tabindex') !== '0').length,
@@ -8519,8 +8543,13 @@ async function deplierFiltresColonne(pg) {
       };
     });
     verifier('un nouveau venu ouvre sur la « Vue essentielle » (P-F15)', neuf.presse === 'toutes:false essentielle:true' && neuf.n > 1 && neuf.n <= 9, JSON.stringify([neuf.presse, neuf.n]));
-    verifier('le groupe de la colonne suivie dit « Avancement (GATES · HDK AA 011) », et aucune case d’en-tête de groupe n’est vide (X-A11)',
-      neuf.groupes.indexOf('Avancement (GATES · HDK AA 011)') !== -1 && neuf.groupes.every(g => g.length > 0) && neuf.groupes.indexOf('HDK AA 011') === -1, JSON.stringify(neuf.groupes));
+    /* Débrief 29 (P-F15) : la vue essentielle n'a plus de rangée de groupes
+       (« Informations principales » s'y répétait trois fois) ; le libellé
+       « Avancement (GATES · HDK AA 011) » et les cases jamais vides se
+       vérifient en « Toutes les colonnes » (section « Débrief 29 : le
+       tableau des plans (lot PL) »). */
+    verifier('en vue essentielle, plus de rangée de groupes au-dessus des en-têtes (débrief 29, P-F15)',
+      neuf.groupes.length === 0, JSON.stringify(neuf.groupes));
     verifier('le tableau a un nom (légende) qui dit ce qu’il montre, et plus de content-visibility qui cache ses lignes (X-A11)',
       /^Plans GATES de HDK : \d+ lignes, triées par Référence UD, ordre croissant/.test(neuf.caption) && neuf.cv !== 'auto', JSON.stringify([neuf.caption, neuf.cv]));
     verifier('une case vide s’écrit « — » (B22), plus jamais « - »', neuf.tirets > 0 && neuf.traits === 0, JSON.stringify([neuf.tirets, neuf.traits]));
@@ -10195,6 +10224,384 @@ async function deplierFiltresColonne(pg) {
   //  dans un bloc { … } qui ouvre et ferme ses propres pages.
   // =================================================================
   /* (début du lot E1) */
+  /* Débrief 29, lot E1 — l'en-tête, le sommaire collé et sa loupe, sur la
+     page VIVANTE (le vrai Code.gs du simulateur derrière google.script.run,
+     comme le lot F) : la page ne saute plus (loupe, Tab, frappe), Échap
+     ferme d'un coup, la liste des plans passe au-dessus des filtres, les
+     icônes disent leur nom, rien ne bouge quand les droits arrivent, les
+     deux bandeaux d'alerte se lisent, le téléphone (debout et couché). */
+  section('Débrief 29 : en-tête, sommaire, recherche de plan (lot E1)');
+  {
+    const fsE1 = require('fs'), osE1 = require('os');
+    const { construireSimulateur } = require(path.join(__dirname, '..', '..', 'tests', 'construire-simulateur.js'));
+    const { Feuille } = require(path.join(__dirname, '..', '..', 'tests', 'faux-classeur.js'));
+    const simE1 = construireSimulateur({ date: '2026-10-29', avantPage: function (c, classeur) {
+      const ths = classeur.getSheetByName('THS');
+      classeur.feuilles.splice(1, 0, new Feuille('HDK Tranche 2', ths.valeurs.map(l => l.slice()), false, ths.fusions.map(f => Object.assign({}, f))));
+    } });
+    const srvE1 = simE1.contexte;
+    simE1.classeur.proprietaire = 'nathan@airbus.com';
+    srvE1.__emailScript = 'nathan@airbus.com';
+    const fichierE1 = path.join(osE1.tmpdir(), 'suivi-fwd-e1-' + process.pid + '.html');
+    fsE1.writeFileSync(fichierE1, simE1.page.replace(/<script>\s*\/\* Simulateur : google\.script\.run[\s\S]*?<\/script>/, ''));
+    const vivE1 = async (o) => {
+      const c = await nav.newContext({ viewport: { width: o.largeur || 1440, height: o.hauteur || 900 }, colorScheme: o.schema || 'light',
+        isMobile: !!o.mobile, hasTouch: !!o.mobile, reducedMotion: o.reducedMotion || 'no-preference' });
+      const pg = await c.newPage();
+      brancher(pg, 'lot E1 ' + (o.etiquette || ''));
+      const email = o.email || 'nathan@airbus.com';
+      await pg.exposeFunction('__appel', (nom, args) => {
+        if (typeof srvE1[nom] !== 'function' || /_$/.test(nom)) throw new Error('fonction inconnue ' + nom);
+        if (o.panne && nom === 'getDonneesCompactes' && o.panne.test(String(JSON.parse(args)[0]))) throw new Error('service indisponible');
+        const avant = srvE1.__emailLecteur; srvE1.__emailLecteur = email;
+        try { const r = srvE1[nom].apply(null, JSON.parse(args)); return JSON.stringify(r === undefined ? null : r); } finally { srvE1.__emailLecteur = avant; }
+      });
+      await pg.addInitScript(lent => {
+        window.SUIVI_FWD_BUDGET = 1e9;
+        function chaine(ok, ko) {
+          const c = { withSuccessHandler: f => chaine(f, ko), withFailureHandler: f => chaine(ok, f), withUserObject: () => chaine(ok, ko) };
+          return new Proxy(c, { get(t, nom) {
+            if (nom in t) return t[nom];
+            if (typeof nom !== 'string') return undefined;
+            return function () {
+              const args = Array.prototype.slice.call(arguments);
+              setTimeout(() => window.__appel(nom, JSON.stringify(args)).then(j => { if (ok) ok(JSON.parse(j)); },
+                e => { if (ko) ko({ message: String(e.message || e).replace(/^Error: /, '') }); }), lent);
+            };
+          } });
+        }
+        window.google = { script: { run: chaine(null, null) } };
+      }, o.latence === undefined ? 40 : o.latence);
+      await pg.goto('file://' + fichierE1);
+      await pg.waitForFunction(() => document.documentElement.getAttribute('data-suivi-fwd') === 'pret', null, { timeout: 30000 });
+      if (!o.sansAttente) {
+        await pg.waitForFunction(() => document.getElementById('choix-admin').getAttribute('data-droits') !== 'attente', null, { timeout: 20000 }).catch(() => {});
+        await pg.waitForTimeout(500);
+      }
+      pg.__ctx = c;
+      return pg;
+    };
+    const couleursE1 = () => {
+      window.__lumE1 = c => { const m = c.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]; };
+      window.__crE1 = (a, b) => { const x = window.__lumE1(a), y = window.__lumE1(b); return +((Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)).toFixed(2); };
+    };
+    /* Un clic de souris à l'endroit de l'élément (sans le défilement que
+       Playwright fait avant un click()). */
+    const cliquerSur = async (pg, sel) => {
+      const r = await pg.evaluate(s => { const b = document.querySelector(s).getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; }, sel);
+      await pg.mouse.click(r[0], r[1]);
+    };
+    const yE1 = pg => pg.evaluate(() => Math.round(window.scrollY));
+
+    /* NOUVEAU-1 et NOUVEAU-4 (premier contact) : la loupe ne fait plus sauter
+       la page — ni au clic, ni à la frappe, ni à la fermeture ; Échap ferme
+       la liste, puis la recherche (le texte effacé avec). */
+    for (const [w, h, mob] of [[1440, 900, false], [390, 844, true]]) {
+      const pg = await vivE1({ largeur: w, hauteur: h, mobile: mob, etiquette: 'loupe ' + w });
+      await pg.evaluate(() => window.scrollTo(0, 2500)); await pg.waitForTimeout(300);
+      const y0 = await yE1(pg);
+      await cliquerSur(pg, '#cherche-plan-ouvrir'); await pg.waitForTimeout(300);
+      const ouvert = await pg.evaluate(() => ({ y: Math.round(scrollY), actif: document.activeElement.id, ouvert: document.getElementById('cherche-plan').dataset.ouvert }));
+      await pg.keyboard.type('GAE21'); await pg.waitForTimeout(500);
+      const tape = await pg.evaluate(() => ({ y: Math.round(scrollY), liste: !document.getElementById('cherche-plan-liste').hidden }));
+      await pg.keyboard.press('ArrowDown'); await pg.waitForTimeout(150);
+      await pg.keyboard.press('Escape'); await pg.waitForTimeout(200);
+      const esc1 = await pg.evaluate(() => ({ y: Math.round(scrollY), liste: !document.getElementById('cherche-plan-liste').hidden, ouvert: document.getElementById('cherche-plan').dataset.ouvert, v: document.getElementById('cherche-plan-champ').value }));
+      await pg.keyboard.press('Escape'); await pg.waitForTimeout(200);
+      const esc2 = await pg.evaluate(() => ({ y: Math.round(scrollY), ouvert: document.getElementById('cherche-plan').dataset.ouvert, v: document.getElementById('cherche-plan-champ').value, actif: document.activeElement.id }));
+      verifier(w + ' px : ouvrir la loupe, taper « GAE21 », la flèche, puis Échap — la page ne bouge pas d’un pixel (elle remontait de y 2500 à 1129, puis 672)',
+        y0 === 2500 && ouvert.y === y0 && ouvert.actif === 'cherche-plan-champ' && ouvert.ouvert === 'true' && tape.y === y0 && tape.liste && esc1.y === y0 && esc2.y === y0,
+        JSON.stringify({ y0, ouvert, tape, esc1, esc2 }));
+      verifier(w + ' px : Échap ferme la liste, puis la recherche tout de suite, le texte effacé avec — deux Échap au lieu de trois ; le focus revient à la loupe',
+        !esc1.liste && esc1.ouvert === 'true' && esc1.v === 'GAE21' && esc2.ouvert === 'false' && esc2.v === '' && esc2.actif === 'cherche-plan-ouvrir',
+        JSON.stringify({ esc1, esc2 }));
+      await pg.__ctx.close();
+    }
+
+    /* NOUVEAU-2 (premier contact) : un filtre de la page posé, la liste des
+       plans trouvés passe au-dessus du bandeau des filtres (le sommaire
+       au-dessus de lui). */
+    for (const [w, h, mob, schema] of [[1440, 900, false, 'light'], [390, 844, true, 'dark']]) {
+      const pg = await vivE1({ largeur: w, hauteur: h, mobile: mob, schema, etiquette: 'sous les filtres ' + w });
+      await pg.evaluate(() => document.querySelector('#etats .etat-btn[data-etat="pwd_in_progress"]').click()); await pg.waitForTimeout(500);
+      await pg.evaluate(() => window.scrollTo(0, 1800)); await pg.waitForTimeout(300);
+      await cliquerSur(pg, '#cherche-plan-ouvrir'); await pg.waitForTimeout(250);
+      await pg.keyboard.type('GAE5316A600002B'); await pg.waitForTimeout(500);
+      const dessus = await pg.evaluate(() => {
+        const o = document.querySelector('#cherche-plan-liste li'), f = document.getElementById('filtres-actifs');
+        if (!o) return { option: false };
+        const r = o.getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return { option: true, n: document.querySelectorAll('#cherche-plan-liste li[data-ref]').length, filtres: !f.hidden, enHaut: !!e && !!e.closest('#cherche-plan-liste'), dessous: e ? (e.id || e.className) : null,
+                 zSommaire: +getComputedStyle(document.getElementById('sommaire')).zIndex, zFiltres: +getComputedStyle(f).zIndex };
+      });
+      verifier(schema + ', ' + w + ' px, filtre PWD_IN_PROGRESS posé : la suggestion de « GAE5316A600002B » est au-dessus du bandeau des filtres (l’élément sous son centre), le sommaire passe devant les filtres',
+        dessus.option && dessus.n === 1 && dessus.filtres && dessus.enHaut && dessus.zSommaire > dessus.zFiltres, JSON.stringify(dessus));
+      await pg.__ctx.close();
+    }
+
+    /* a11y/NOUVEAU-1 : Tab dans les six liens du sommaire collé, puis ses
+       quatre icônes, et sur la croix d'un filtre posé : la page reste où
+       elle est (±2 px) ; au téléphone, le lien atteint reste dans la bande. */
+    for (const [w, h, mob, rm] of [[1440, 900, false, 'no-preference'], [390, 844, true, 'reduce']]) {
+      const pg = await vivE1({ largeur: w, hauteur: h, mobile: mob, reducedMotion: rm, etiquette: 'tab ' + w });
+      await pg.evaluate(() => document.querySelector('#etats .etat-btn[data-etat="pwd_in_progress"]').click()); await pg.waitForTimeout(500);
+      await pg.evaluate(() => { document.activeElement.blur(); window.scrollTo(0, 3000); }); await pg.waitForTimeout(300);
+      const y0 = await yE1(pg);
+      await pg.focus('#sommaire-liste li:first-child a'); await pg.waitForTimeout(150);
+      const pas = [];
+      for (let i = 0; i < 12; i++) {
+        await pg.keyboard.press('Tab'); await pg.waitForTimeout(120);
+        pas.push(await pg.evaluate(() => {
+          const a = document.activeElement, l = document.getElementById('sommaire-liste').getBoundingClientRect(), r = a.getBoundingClientRect();
+          return { y: Math.round(scrollY), id: a.id || a.getAttribute('data-chapitre') || a.className, dansBande: a.closest('#sommaire-liste') ? (r.left >= l.left - 1 && r.right <= l.right + 1) : null,
+                   barre: !!a.closest('#sommaire, #filtres-actifs') };
+        }));
+      }
+      const dansBarres = pas.filter(p => p.barre);
+      const ids = dansBarres.map(p => p.id);
+      verifier(w + ' px' + (rm === 'reduce' ? ' (moins d’animations)' : '') + ' : Tab dans les liens du sommaire collé, ses quatre icônes puis la croix d’un filtre posé — la page reste à sa place (±2 px), chaque lien atteint reste dans la bande du sommaire',
+        ['ouvrir-admin', 'cherche-plan-ouvrir', 'voir-ensemble', 'ouvrir-aide'].every(id => ids.indexOf(id) !== -1) && dansBarres.some(p => p.id === 'x') &&
+        dansBarres.every(p => Math.abs(p.y - y0) <= 2) && dansBarres.every(p => p.dansBande !== false), JSON.stringify({ y0, pas }));
+      /* Un clic de souris sur une icône ne fait pas sauter la page non plus. */
+      await pg.evaluate(() => { document.activeElement.blur(); window.scrollTo(0, 3000); }); await pg.waitForTimeout(250);
+      await cliquerSur(pg, '#ouvrir-aide'); await pg.waitForTimeout(400);
+      const apresAide = await pg.evaluate(() => ({ y: Math.round(scrollY), ouverte: document.getElementById('aide').open }));
+      await pg.keyboard.press('Escape'); await pg.waitForTimeout(300);
+      const retour = await pg.evaluate(() => ({ y: Math.round(scrollY), actif: document.activeElement.id }));
+      verifier(w + ' px : un clic sur l’icône Aide depuis le bas de la page ouvre l’aide sans faire bouger la page ; Échap y revient, le focus sur l’icône',
+        apresAide.ouverte && Math.abs(apresAide.y - 3000) <= 2 && Math.abs(retour.y - 3000) <= 2 && retour.actif === 'ouvrir-aide', JSON.stringify({ apresAide, retour }));
+      /* Les sauts du sommaire s'arrêtent toujours sous les barres collées. */
+      await pg.evaluate(() => window.scrollTo(0, 0)); await pg.waitForTimeout(200);
+      await pg.click('#sommaire-liste a[data-chapitre="section-plans"]');
+      await pg.waitForFunction(() => { const s = document.getElementById('section-plans').getBoundingClientRect().top; return s > 0 && s < 200; }, null, { timeout: 5000, polling: 'raf' }).catch(() => {});
+      await pg.waitForTimeout(400);
+      const saut = await pg.evaluate(() => ({ sec: Math.round(document.getElementById('section-plans').getBoundingClientRect().top),
+        bas: Math.round(Math.max(document.getElementById('sommaire').getBoundingClientRect().bottom, document.querySelector('#filtres-actifs .filtres-ligne').getBoundingClientRect().bottom)) }));
+      verifier(w + ' px : « 05 Plans » mène toujours juste sous le sommaire et les filtres collés', saut.sec >= saut.bas && saut.sec <= saut.bas + 30, JSON.stringify(saut));
+      await pg.__ctx.close();
+    }
+
+    /* S9 : la section marquée est celle qui occupe le plus d'écran sous les
+       barres collées ; « / » ouvre la loupe là où l'on est. */
+    {
+      const pg = await vivE1({ largeur: 1440, hauteur: 900, etiquette: 'S9' });
+      await pg.evaluate(() => { const s = document.getElementById('section-plans'); window.scrollTo(0, s.getBoundingClientRect().top + scrollY - 405); }); await pg.waitForTimeout(400);
+      const espion = await pg.evaluate(() => ({ courant: (document.querySelector('#sommaire-liste a[aria-current]') || { dataset: {} }).dataset.chapitre,
+        plans: Math.round(document.getElementById('section-plans').getBoundingClientRect().top) }));
+      verifier('S9 : le haut des Plans à 45 % de l’écran (les Plans prennent le bas de l’écran, l’ATA le haut) — le sommaire marque « Plans », plus « Par ATA »',
+        espion.courant === 'section-plans' && Math.abs(espion.plans - 405) <= 2, JSON.stringify(espion));
+      await pg.evaluate(() => { document.activeElement.blur(); window.scrollTo(0, 1500); }); await pg.waitForTimeout(300);
+      await pg.keyboard.press('/'); await pg.waitForTimeout(300);
+      const barre = await pg.evaluate(() => ({ y: Math.round(scrollY), actif: document.activeElement.id, ouvert: document.getElementById('cherche-plan').dataset.ouvert,
+        aide: [...document.querySelectorAll('#aide dd')].map(d => d.textContent).find(t => /loupe du sommaire/.test(t)) || '' }));
+      verifier('S9 : « / » (sans champ en cours de saisie) ouvre la loupe du sommaire, la page ne saute plus aux Plans ; l’aide le dit',
+        barre.y === 1500 && barre.actif === 'cherche-plan-champ' && barre.ouvert === 'true' && /^Chercher un plan \(la loupe du sommaire\)/.test(barre.aide), JSON.stringify(barre));
+      await pg.keyboard.press('Escape'); await pg.waitForTimeout(150);
+      /* B3 : au-delà de 1280 px aussi, la fiche ouverte par la loupe se
+         ferme sur la loupe — et la page revient là où on l'avait laissée. */
+      await pg.evaluate(() => window.scrollTo(0, 1800)); await pg.waitForTimeout(250);
+      await cliquerSur(pg, '#cherche-plan-ouvrir'); await pg.waitForTimeout(250);
+      await pg.keyboard.type('GAE5316A600002B'); await pg.waitForTimeout(500);
+      await pg.keyboard.press('Enter'); await pg.waitForTimeout(900);
+      const fiche = await pg.evaluate(() => ({ ouverte: !document.getElementById('fiche-plan').hidden, actif: document.activeElement.id, y: Math.round(scrollY) }));
+      await pg.keyboard.press('Escape'); await pg.waitForTimeout(700);
+      const ferme = await pg.evaluate(() => ({ fermee: document.getElementById('fiche-plan').hidden, actif: document.activeElement.id, y: Math.round(scrollY) }));
+      verifier('B3, 1440 px : Entrée ouvre la fiche du plan trouvé (la page y descend) ; Échap la ferme, le focus revient à la loupe et la page là où on l’avait laissée',
+        fiche.ouverte && fiche.actif === 'titre-fiche-plan' && fiche.y !== 1800 && ferme.fermee && ferme.actif === 'cherche-plan-ouvrir' && Math.abs(ferme.y - 1800) <= 2, JSON.stringify({ fiche, ferme }));
+      await pg.__ctx.close();
+    }
+
+    /* B21, beaute/NOUVEAU-2 et a11y/NOUVEAU-4 : les bords, les bulles, le
+       fond de l'en-tête — en clair et en sombre. */
+    for (const schema of ['light', 'dark']) for (const [w, h] of [[1440, 900], [1024, 768]]) {
+      const pg = await vivE1({ largeur: w, hauteur: h, schema, etiquette: 'bords ' + schema + ' ' + w });
+      await pg.evaluate(couleursE1);
+      await pg.evaluate(() => window.scrollTo(0, 1600)); await pg.waitForTimeout(300);
+      const bords = await pg.evaluate(() => {
+        const r = s => document.querySelector(s).getBoundingClientRect();
+        const contenu = r('#section-synthese .panneau-tete .surtitre'), liste = r('#sommaire-liste'), pied = document.querySelector('footer.pied');
+        const av = getComputedStyle(pied, '::before'), rp = pied.getBoundingClientRect();
+        const ent = document.querySelector('header.entete'), ce = getComputedStyle(ent);
+        const fondHex = ce.getPropertyValue('--bandeau-fond').trim();
+        const fond = 'rgb(' + fondHex.replace('#', '').match(/../g).map(x => parseInt(x, 16)).join(', ') + ')';
+        const mots = [...ent.querySelectorAll('label, .mot-reglage, #titre-page, #num-semaine, #dates-semaine')].filter(e => e.getClientRects().length);
+        const marque = document.querySelector('.sommaire-marque');
+        return { contenuG: Math.round(contenu.left), contenuD: Math.round(contenu.right), aideD: Math.round(r('#ouvrir-aide').right), outilsG: Math.round(r('#outils-page').left), listeD: Math.round(liste.right),
+                 centreListe: Math.round((liste.left + liste.right) / 2), centrePage: Math.round(innerWidth / 2), listeEntiere: document.getElementById('sommaire-liste').scrollWidth <= document.getElementById('sommaire-liste').clientWidth + 1,
+                 marqueG: marque.getClientRects().length ? Math.round(marque.getBoundingClientRect().left) : null, marqueD: marque.getClientRects().length ? Math.round(marque.getBoundingClientRect().right) : null, listeG: Math.round(liste.left),
+                 filetG: Math.round(rp.left + parseFloat(av.left)), filetD: Math.round(rp.right - parseFloat(av.right)), filetH: av.height, bordPied: getComputedStyle(pied).borderTopWidth,
+                 fondEntete: ce.backgroundColor, fond, pireMot: Math.min(...mots.map(e => window.__crE1(getComputedStyle(e).color, ce.backgroundColor))), debord: document.documentElement.scrollWidth - innerWidth };
+      });
+      verifier('B21, ' + schema + ', ' + w + ' px : les icônes du sommaire finissent sur le bord du contenu, la marque collée commence sur lui ; le filet du pied va d’un bord du contenu à l’autre ; la liste tient entière, sans toucher la marque ni les icônes',
+        Math.abs(bords.aideD - bords.contenuD) <= 1 && (bords.marqueG === null || Math.abs(bords.marqueG - bords.contenuG) <= 1) && Math.abs(bords.filetG - bords.contenuG) <= 1 && Math.abs(bords.filetD - bords.contenuD) <= 1 &&
+        bords.filetH === '1px' && bords.bordPied === '0px' && bords.listeEntiere && bords.listeD < bords.outilsG && (bords.marqueD === null || bords.marqueD < bords.listeG) && bords.debord <= 0 &&
+        (w < 1440 || Math.abs(bords.centreListe - bords.centrePage) <= 2), JSON.stringify(bords));
+      verifier('a11y/NOUVEAU-4, ' + schema + ', ' + w + ' px : l’en-tête a le marine du bandeau en couleur de fond (lisible par les outils de contraste) ; chaque mot clair y tient 4,5:1',
+        bords.fondEntete === bords.fond && bords.pireMot >= 4.5, JSON.stringify({ fond: bords.fondEntete, attendu: bords.fond, pire: bords.pireMot }));
+      if (w === 1440) {
+        /* Les bulles : au clavier, chaque icône dit son nom ; plus de title. */
+        await pg.focus('#sommaire-liste li:last-child a');
+        const bulles = [];
+        for (let i = 0; i < 4; i++) {
+          await pg.keyboard.press('Tab'); await pg.waitForTimeout(250);
+          bulles.push(await pg.evaluate(() => { const a = document.activeElement, c = getComputedStyle(a, '::before'), r = a.getBoundingClientRect();
+            const fond = getComputedStyle(document.body).backgroundColor;
+            return { id: a.id, nom: a.dataset.nom, contenu: c.content, op: c.opacity, vis: c.visibility, titre: a.getAttribute('title'), droite: Math.round(r.right), largeur: parseFloat(c.width),
+                     encre: window.__crE1(c.color, c.backgroundColor), pe: c.pointerEvents }; }));
+        }
+        verifier('beaute/NOUVEAU-2, ' + schema + ' : au clavier, chaque icône du sommaire montre son nom dans une bulle (Administration, Chercher un plan, Vue d’ensemble des contrats, Aide), lisible, cachée aux lecteurs d’écran (/ "") ; plus de title',
+          bulles.map(b => b.id).join() === 'ouvrir-admin,cherche-plan-ouvrir,voir-ensemble,ouvrir-aide' &&
+          bulles.every(b => b.nom && b.contenu.indexOf('"' + b.nom + '"') === 0 && /\/ ""$/.test(b.contenu) && b.op === '1' && b.vis === 'visible' && !b.titre && b.encre >= 4.5 && b.pe === 'none' && b.droite - b.largeur >= 0),
+          JSON.stringify(bulles));
+      }
+      await pg.__ctx.close();
+    }
+    {
+      /* La bulle se montre aussi au survol de la souris ; sans animation si
+         l'on préfère moins d'animations ; au téléphone, elle ne sort pas de
+         l'écran. */
+      const pg = await vivE1({ largeur: 1440, hauteur: 900, reducedMotion: 'reduce', etiquette: 'bulle survol' });
+      const r = await pg.evaluate(() => { const b = document.getElementById('voir-ensemble').getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; });
+      await pg.mouse.move(r[0], r[1]); await pg.waitForTimeout(500);
+      const survol = await pg.evaluate(() => { const c = getComputedStyle(document.getElementById('voir-ensemble'), '::before'); return { op: c.opacity, transition: c.transitionDuration }; });
+      verifier('beaute/NOUVEAU-2 : la bulle paraît au survol de la souris ; sans transition quand on préfère moins d’animations',
+        survol.op === '1' && survol.transition.split(',').every(t => parseFloat(t) === 0), JSON.stringify(survol));
+      await pg.__ctx.close();
+      const tp = await vivE1({ largeur: 390, hauteur: 844, mobile: true, schema: 'dark', etiquette: 'bulle téléphone' });
+      const tel = await tp.evaluate(() => [...document.querySelectorAll('#outils-page .outil-page, #cherche-plan-ouvrir')].filter(b => b.getClientRects().length).map(b => {
+        b.focus(); const c = getComputedStyle(b, '::before'), r = b.getBoundingClientRect();
+        return { id: b.id, gauche: Math.round(r.right - parseFloat(c.width)), droite: Math.round(r.right) };
+      }));
+      verifier('beaute/NOUVEAU-2, 390 px : chaque bulle, calée à droite sous son icône, reste dans l’écran',
+        tel.length === 4 && tel.every(b => b.gauche >= 0 && b.droite <= 390), JSON.stringify(tel));
+      await tp.__ctx.close();
+    }
+
+    /* admin/NOUVEAU-1 : pour un lecteur, l'arrivée des droits (le ⚙ qui
+       s'efface) ne déplace ni la liste du sommaire ni la loupe. */
+    for (const [w, h, mob] of [[1440, 900, false], [1024, 768, false], [390, 844, true]]) {
+      const pg = await vivE1({ email: 'lecteur@airbus.com', largeur: w, hauteur: h, mobile: mob, latence: 700, sansAttente: true, etiquette: 'lecteur ' + w });
+      const lirePos = () => pg.evaluate(() => ({ droits: document.getElementById('choix-admin').getAttribute('data-droits'), cache: document.getElementById('choix-admin').hidden,
+        lien: Math.round(document.querySelector('#sommaire-liste li:first-child a').getBoundingClientRect().left), loupe: Math.round(document.getElementById('cherche-plan-ouvrir').getBoundingClientRect().left),
+        aide: Math.round(document.getElementById('ouvrir-aide').getBoundingClientRect().left) }));
+      const avant = await lirePos();
+      await pg.waitForFunction(() => document.getElementById('choix-admin').hidden, null, { timeout: 20000 }).catch(() => {});
+      await pg.waitForTimeout(300);
+      const apres = await lirePos();
+      verifier('admin/NOUVEAU-1, ' + w + ' px : un lecteur — quand les droits arrivent et que le ⚙ s’efface, rien ne bouge (premier lien du sommaire, loupe, Aide)',
+        avant.droits === 'attente' && apres.cache && apres.lien === avant.lien && apres.loupe === avant.loupe && apres.aide === avant.aide, JSON.stringify({ avant, apres }));
+      await pg.__ctx.close();
+    }
+
+    /* suivis/NOUVEAU-2 et batterie/B2 : le bandeau d'erreur du contrat se lit
+       en clair comme en sombre ; la pastille choisie du bandeau sombre tient
+       7:1 (vérifiée plus haut, lot H). */
+    for (const schema of ['light', 'dark']) {
+      const pg = await vivE1({ largeur: 1440, hauteur: 900, schema, panne: /THS/, etiquette: 'alerte contrat ' + schema });
+      const ths = await pg.evaluate(() => ([...document.querySelectorAll('#select-contrat option')].find(o => /THS/.test(o.textContent)) || {}).value);
+      await pg.selectOption('#select-contrat', ths);
+      await pg.waitForFunction(() => !document.getElementById('alerte-contrat').hidden, null, { timeout: 15000 }).catch(() => {});
+      await pg.waitForTimeout(300);
+      await pg.evaluate(couleursE1);
+      const alerte = await pg.evaluate(() => {
+        const z = document.getElementById('alerte-contrat'), t = document.getElementById('alerte-contrat-texte'), x = document.getElementById('fermer-alerte-contrat'), b = document.getElementById('reessayer-contrat');
+        const fond = getComputedStyle(z).backgroundColor, cs = e => getComputedStyle(e);
+        return { vu: !z.hidden, texte: t.textContent, texteCr: window.__crE1(cs(t).color, fond), croix: window.__crE1(cs(x).color, fond),
+                 bouton: window.__crE1(cs(b).color, cs(b).backgroundColor === 'rgba(0, 0, 0, 0)' ? fond : cs(b).backgroundColor) };
+      });
+      verifier('suivis/NOUVEAU-2, ' + schema + ' : le bandeau d’erreur du contrat (A-F5) se lit — texte ≥ 4,5:1 sur son fond, la croix ≥ 3:1, « Réessayer » ≥ 4,5:1 (en clair, le texte était à 1:1)',
+        alerte.vu && /THS n’a pas pu être chargé/.test(alerte.texte) && alerte.texteCr >= 4.5 && alerte.croix >= 3 && alerte.bouton >= 4.5, JSON.stringify(alerte));
+      await pg.__ctx.close();
+    }
+    /* Le message « Contrat non chargé » que la page écrit en console est
+       voulu ici : on le retire des erreurs relevées. */
+    for (let i = erreursJS.length - 1; i >= 0; i--) if (/^lot E1 alerte contrat .* : Contrat non chargé/.test(erreursJS[i])) erreursJS.splice(i, 1);
+
+    /* admin/NOUVEAU-2 : le message du classeur (#alerte-source) sur le
+       bandeau marine, en clair et en sombre. */
+    for (const schema of ['light', 'dark']) {
+      const cV = await contexte({ colorScheme: schema });
+      await cV.addInitScript(() => {
+        window.SUIVI_FWD_DONNEES = { ok: false, message: 'Colonne d’avancement introuvable dans l’onglet HDK.', colonnes: [], plans: [], releves: [], jalons: [], contrats: [], contrat: '' };
+      });
+      const pv = await page(cV, 'lot E1 message du classeur ' + schema);
+      await pv.evaluate(couleursE1);
+      const source = await pv.evaluate(() => {
+        const a = document.getElementById('alerte-source'), ent = document.querySelector('header.entete'), ce = getComputedStyle(ent);
+        const hex = h => 'rgb(' + h.trim().replace('#', '').match(/../g).map(x => parseInt(x, 16)).join(', ') + ')';
+        return { vu: !a.hidden && a.getClientRects().length > 0, texte: a.textContent, haut: window.__crE1(getComputedStyle(a).color, hex(ce.getPropertyValue('--bandeau-fond'))),
+                 bas: window.__crE1(getComputedStyle(a).color, hex(ce.getPropertyValue('--bandeau-fond-2'))), taille: parseFloat(getComputedStyle(a).fontSize) };
+      });
+      verifier('admin/NOUVEAU-2, ' + schema + ' : le message du classeur se lit sur le bandeau marine (≥ 4,5:1 sur tout le dégradé ; 2:1 en clair et 3,4:1 en sombre avant)',
+        source.vu && /introuvable/.test(source.texte) && source.haut >= 4.5 && source.bas >= 4.5, JSON.stringify(source));
+      if (schema === 'light') {
+        /* B4 : la page vide garde l'Aide au bout du sommaire, qui l'ouvre. */
+        if (await pv.isVisible('#ouvrir-aide')) { await pv.click('#ouvrir-aide'); await pv.waitForTimeout(400); }
+        const aideVide = await pv.evaluate(() => ({ ouverte: document.getElementById('aide').open, vide: document.body.dataset.vide }));
+        verifier('B4 : un classeur vide garde ses outils — l’icône Aide du sommaire ouvre l’aide', aideVide.vide === 'true' && aideVide.ouverte, JSON.stringify(aideVide));
+      }
+      await cV.close();
+    }
+    /* Téléphone debout (mobile/NOUVEAU-3, suivis/NOUVEAU-3) : des icônes de
+       28 px (toucher 44 px), la section lue toujours lisible en entier hors
+       des fondus, un fondu à gauche quand la bande est défilée. */
+    for (const [w, h] of [[390, 844], [360, 740]]) {
+      const pg = await vivE1({ largeur: w, hauteur: h, mobile: true, etiquette: 'téléphone ' + w });
+      const icones = await pg.evaluate(() => [...document.querySelectorAll('#outils-page .outil-page, #cherche-plan-ouvrir')].filter(b => b.getClientRects().length).map(b => {
+        const r = b.getBoundingClientRect(), a = getComputedStyle(b, '::after');
+        return { id: b.id, l: Math.round(r.width), zoneH: Math.round(r.height - 2 * parseFloat(a.top)), zoneL: Math.round(r.width - 2 * parseFloat(a.left)) };
+      }));
+      const largeurListe = await pg.evaluate(() => Math.round(document.getElementById('sommaire-liste').getBoundingClientRect().width));
+      const parSection = [];
+      for (const id of ['section-synthese', 'section-tendance', 'section-journal', 'section-repartition', 'section-plans', 'rapprochement']) {
+        await pg.evaluate(id => { const s = document.getElementById(id); window.scrollTo(0, s.getBoundingClientRect().top + scrollY - 60); }, id);
+        await pg.waitForTimeout(350);
+        parSection.push(await pg.evaluate(() => {
+          const l = document.getElementById('sommaire-liste'), lr = l.getBoundingClientRect(), a = l.querySelector('a[aria-current]');
+          const mg = l.classList.contains('deborde-gauche') ? 28 : 0, md = l.classList.contains('deborde-droite') ? 28 : 0;
+          const lisibles = [...l.querySelectorAll('li:not([hidden]) a')].filter(x => { const q = x.getBoundingClientRect(); return q.left >= lr.left + mg - 1 && q.right <= lr.right - md + 1; }).map(x => x.dataset.chapitre);
+          return { courant: a ? a.dataset.chapitre : null, lisibles, gauche: l.classList.contains('deborde-gauche'), defile: l.scrollLeft > 2, masque: getComputedStyle(l).maskImage || getComputedStyle(l).webkitMaskImage };
+        }));
+      }
+      verifier('téléphone ' + w + ' px : quatre icônes de 28 px, chacune touchable sur 44 × 44 px ; la bande des sections gagne la place (≥ 200 px)',
+        icones.length === 4 && icones.every(i => i.l === 28 && i.zoneH >= 44 && i.zoneL >= 44) && largeurListe >= 200, JSON.stringify({ icones, largeurListe }));
+      verifier('téléphone ' + w + ' px : à chaque section, son nom se lit en entier hors des fondus (avec un voisin entier presque partout) ; défilée, la bande a un fondu à gauche',
+        parSection.every(s => s.courant && s.lisibles.indexOf(s.courant) !== -1) && parSection.filter(s => s.lisibles.length >= 2).length >= 4 &&
+        parSection.every(s => s.gauche === s.defile) &&  parSection.filter(s => s.gauche).every(s => /^linear-gradient\(to right, (transparent|rgba\(0, 0, 0, 0\))/.test(s.masque)),
+        JSON.stringify(parSection));
+      await pg.__ctx.close();
+    }
+
+    /* Téléphone couché (mobile/M5) : le sommaire ne colle plus, seuls les
+       filtres posés collent, en une ligne courte (≤ 48 px) ; ses sauts et sa
+       loupe marchent toujours. */
+    for (const schema of ['light', 'dark']) {
+      const pg = await vivE1({ largeur: 844, hauteur: 390, mobile: true, schema, etiquette: 'couché ' + schema });
+      await pg.evaluate(() => document.querySelector('#etats .etat-btn[data-etat="pwd_in_progress"]').click()); await pg.waitForTimeout(500);
+      await pg.evaluate(() => window.scrollTo(0, 1400)); await pg.waitForTimeout(400);
+      const couche = await pg.evaluate(() => {
+        const s = document.getElementById('sommaire').getBoundingClientRect(), f = document.querySelector('#filtres-actifs .filtres-ligne').getBoundingClientRect();
+        const vu = e => !!e && getComputedStyle(e).display !== 'none';
+        return { somBas: Math.round(s.bottom), filtreHaut: Math.round(f.top), colles: Math.max(0, Math.round(s.bottom)) + Math.round(f.height),
+                 mot: vu(document.querySelector('#filtres-actifs .mot')), long: vu(document.querySelector('#tout-effacer .long')), court: vu(document.querySelector('#tout-effacer .court')) };
+      });
+      verifier('M5, ' + schema + ', 844 × 390 : le sommaire reste en haut de la page ; seuls les filtres posés collent, en une ligne de 48 px au plus, sans « Filtres », « Effacer » au bout',
+        couche.somBas <= 0 && couche.filtreHaut === 0 && couche.colles <= 48 && !couche.mot && !couche.long && couche.court, JSON.stringify(couche));
+      if (schema === 'light') {
+        await pg.evaluate(() => window.scrollTo(0, 0)); await pg.waitForTimeout(250);
+        await pg.click('#sommaire-liste a[data-chapitre="section-plans"]'); await pg.waitForTimeout(1500);
+        const saut = await pg.evaluate(() => ({ sec: Math.round(document.getElementById('section-plans').getBoundingClientRect().top), filtres: Math.round(document.querySelector('#filtres-actifs .filtres-ligne').getBoundingClientRect().bottom) }));
+        await pg.evaluate(() => window.scrollTo(0, 0)); await pg.waitForTimeout(250);
+        await pg.evaluate(() => document.getElementById('cherche-plan-ouvrir').click()); await pg.waitForTimeout(250);
+        const loupe = await pg.evaluate(() => { const c = document.getElementById('cherche-plan-cadre').getBoundingClientRect(), s = document.getElementById('sommaire').getBoundingClientRect();
+          return { dedans: c.top >= s.top - 1 && c.bottom <= s.bottom + 1 && c.width > 400, actif: document.activeElement.id }; });
+        verifier('M5, 844 × 390 : « 05 Plans » s’arrête juste sous les filtres collés ; la loupe s’ouvre dans le sommaire',
+          saut.sec >= saut.filtres && saut.sec <= saut.filtres + 30 && loupe.dedans && loupe.actif === 'cherche-plan-champ', JSON.stringify({ saut, loupe }));
+      }
+      await pg.__ctx.close();
+    }
+    try { fsE1.unlinkSync(fichierE1); } catch (e) { /* déjà parti */ }
+  }
   /* (fin du lot E1) */
 
 
@@ -10203,6 +10610,260 @@ async function deplierFiltresColonne(pg) {
   //  dans un bloc { … } qui ouvre et ferme ses propres pages.
   // =================================================================
   /* (début du lot E2) */
+  section('Débrief 29 : états d’erreur, Vue d’ensemble, contrats masqués, pied (lot E2)');
+  {
+    const fs29 = require('fs'), os29 = require('os');
+    const { construireSimulateur } = require(path.join(__dirname, '..', '..', 'tests', 'construire-simulateur.js'));
+    const { Feuille } = require(path.join(__dirname, '..', '..', 'tests', 'faux-classeur.js'));
+    /* Le classeur du simulateur, comme chez Nathan : HDK (deux tranches, la
+       seconde « HDK Tranche 2 », sans historique) et THS, sans jalon. */
+    const sim = construireSimulateur({ date: '2026-10-29', avantPage: function (c, classeur) {
+      const ths = classeur.getSheetByName('THS');
+      classeur.feuilles.splice(1, 0, new Feuille('HDK Tranche 2', ths.valeurs.map(l => l.slice()), false, ths.fusions.map(f => Object.assign({}, f))));
+    } });
+    const srv = sim.contexte;
+    sim.classeur.proprietaire = 'nathan@airbus.com';
+    srv.__emailScript = 'nathan@airbus.com';
+    const fichier29 = path.join(os29.tmpdir(), 'suivi-fwd-e2-' + process.pid + '.html');
+    fs29.writeFileSync(fichier29, sim.page.replace(/<script>\s*\/\* Simulateur : google\.script\.run[\s\S]*?<\/script>/, ''));
+    const commeQui = (email, fn) => { const avant = srv.__emailLecteur; srv.__emailLecteur = email; try { return fn(); } finally { srv.__emailLecteur = avant; } };
+    /* Une panne du classeur le temps d'un essai : les fonctions qui rendent
+       un contrat échouent (« Service indisponible »). */
+    const RENDRE = ['getDonneesCompactes', 'getDonneesCompactesJson', 'getDonneesPourClient', 'getDonneesPourClientLues'];
+    let gardees = null;
+    const panne = oui => {
+      if (oui && !gardees) { gardees = {}; RENDRE.forEach(k => { gardees[k] = srv[k]; srv[k] = function () { throw new Error('Service indisponible'); }; }); }
+      if (!oui && gardees) { RENDRE.forEach(k => { srv[k] = gardees[k]; }); gardees = null; }
+    };
+    const vivante = async (o) => {
+      const c = await nav.newContext({ viewport: { width: o.largeur || 1280, height: o.hauteur || 900 }, colorScheme: o.schema || 'light',
+        isMobile: !!o.mobile, hasTouch: !!o.mobile, locale: 'en-US' });
+      const pg = await c.newPage();
+      const etiquette = 'lot E2 ' + o.email;
+      /* Le pont du classeur écrit « Contrat non chargé : … » dans la console
+         à chaque échec — ici voulu (la panne, le contrat masqué) ; toute
+         autre erreur compte. */
+      pg.on('pageerror', e => erreursJS.push(etiquette + ' : ' + e.message));
+      pg.on('console', m => { if (m.type() === 'error' && !/Contrat non chargé/.test(m.text())) erreursJS.push(etiquette + ' : ' + m.text()); });
+      pg.on('dialog', d => d.dismiss().catch(() => {}));
+      await pg.exposeFunction('__appel', (nom, args) => {
+        if (typeof srv[nom] !== 'function' || /_$/.test(nom)) throw new Error('fonction inconnue ' + nom);
+        return commeQui(o.email, () => { const r = srv[nom].apply(null, JSON.parse(args)); return JSON.stringify(r === undefined ? null : r); });
+      });
+      await pg.addInitScript(lent => {
+        window.SUIVI_FWD_BUDGET = 1e9;
+        function chaine(ok, ko) {
+          const c = { withSuccessHandler: f => chaine(f, ko), withFailureHandler: f => chaine(ok, f), withUserObject: () => chaine(ok, ko) };
+          return new Proxy(c, { get(t, nom) {
+            if (nom in t) return t[nom];
+            if (typeof nom !== 'string') return undefined;
+            return function () {
+              const args = Array.prototype.slice.call(arguments);
+              setTimeout(() => window.__appel(nom, JSON.stringify(args)).then(j => { if (ok) ok(JSON.parse(j)); },
+                e => { if (ko) ko({ message: String(e.message || e).replace(/^Error: /, '') }); }), lent);
+            };
+          } });
+        }
+        window.google = { script: { run: chaine(null, null) } };
+      }, o.latence === undefined ? 40 : o.latence);
+      await pg.goto('file://' + fichier29);
+      await pg.waitForFunction(() => document.documentElement.getAttribute('data-suivi-fwd') === 'pret', null, { timeout: 30000 });
+      /* Les droits arrivent après l'ouverture (mesDroits). */
+      await pg.waitForFunction(() => {
+        const b = document.getElementById('ouvrir-admin');
+        const vu = b && b.getClientRects().length && getComputedStyle(b).visibility !== 'hidden';
+        return vu || (document.getElementById('pied-responsable') || {}).textContent;
+      }, null, { timeout: 20000 }).catch(() => {});
+      await pg.evaluate(() => {
+        window.__lum = c => {
+          const m = c.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+          return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2];
+        };
+        window.__contraste = (a, b) => { const x = window.__lum(a), y = window.__lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+      });
+      pg.__ctx = c;
+      return pg;
+    };
+    const alerteVue = pg => pg.waitForFunction(() => !document.getElementById('alerte-contrat').hidden, null, { timeout: 15000 }).catch(() => {});
+    const ensembleFini = pg => pg.waitForFunction(() => document.querySelectorAll('#ensemble tbody tr').length > 0 &&
+      ![...document.querySelectorAll('#ensemble tbody td')].some(td => /chargement…/.test(td.textContent)), null, { timeout: 15000 }).catch(() => {});
+    const etatContrat = pg => pg.evaluate(() => {
+      const r = document.getElementById('reessayer-contrat');
+      return { alerte: document.getElementById('alerte-contrat').hidden ? '' : document.getElementById('alerte-contrat-texte').textContent,
+               reessayer: !r.hidden && r.getClientRects().length > 0,
+               contrats: [...document.querySelectorAll('#select-contrat option')].map(x => x.textContent).join(),
+               valeur: document.getElementById('select-contrat').value,
+               tranches: [...document.querySelectorAll('#select-tranche option')].map(x => x.textContent).join() };
+    });
+
+    try {
+      /* B7, A-F5 : le bandeau d'erreur et le message du classeur, dans l'en-tête marine, lisibles dans les deux thèmes. */
+      for (const schema of ['light', 'dark']) {
+        const pg = await vivante({ email: 'nathan@airbus.com', schema });
+        panne(true);
+        await pg.selectOption('#select-contrat', 'THS');
+        await alerteVue(pg);
+        panne(false);
+        await pg.mouse.move(4, 4);
+        const m = await pg.evaluate(() => {
+          const a = document.getElementById('alerte-contrat'), t = document.getElementById('alerte-contrat-texte');
+          const x = document.getElementById('fermer-alerte-contrat'), r = document.getElementById('reessayer-contrat');
+          const fond = getComputedStyle(a).backgroundColor, cx = getComputedStyle(x), cr = getComputedStyle(r);
+          const fondR = cr.backgroundColor === 'rgba(0, 0, 0, 0)' ? fond : cr.backgroundColor;
+          return { texte: t.textContent, vu: !a.hidden, fond,
+                   encre: +window.__contraste(getComputedStyle(t).color, fond).toFixed(2),
+                   croix: +window.__contraste(cx.color, fond).toFixed(2), croixBord: +window.__contraste(cx.borderTopColor, fond).toFixed(2),
+                   reessayer: +window.__contraste(cr.color, fondR).toFixed(2), reessayerBord: +window.__contraste(cr.borderTopColor, fond).toFixed(2),
+                   reessayerVu: !r.hidden && r.getClientRects().length > 0 };
+        });
+        verifier('B7, A-F5 (' + schema + ') : le bandeau d’erreur se lit dans l’en-tête marine — texte ≥ 4,5:1 sur son fond, « Réessayer » ≥ 4,5:1, la croix et les bords de « Réessayer » et de la croix ≥ 3:1',
+          m.vu && m.texte === 'THS n’a pas pu être chargé : service indisponible. La page montre toujours HDK › Tranche 1.' && m.reessayerVu &&
+          m.fond === (schema === 'light' ? 'rgb(251, 238, 234)' : 'rgb(43, 31, 20)') &&
+          m.encre >= 4.5 && m.reessayer >= 4.5 && m.croix >= 3 && m.croixBord >= 3 && m.reessayerBord >= 3, JSON.stringify(m));
+        await pg.click('#fermer-alerte-contrat');
+        await pg.evaluate(() => { const s = window.__jeuDExemple('HDK'); s.message = 'La colonne d’avancement est introuvable dans l’onglet « HDK ».'; window.__chargerSource(s); });
+        await pg.waitForTimeout(300);
+        const src = await pg.evaluate(() => {
+          const a = document.getElementById('alerte-source'), c = getComputedStyle(a);
+          return { vu: !a.hidden && a.getClientRects().length > 0, fond: c.backgroundColor, bord: c.borderLeftWidth, encre: +window.__contraste(c.color, c.backgroundColor).toFixed(2) };
+        });
+        verifier('B7 (' + schema + ') : le message du classeur qui n’a rien pu rendre prend le dessin du bandeau d’erreur — son texte ≥ 4,5:1 (en rouge sur la bande marine, il tombait à 2:1)',
+          src.vu && src.fond === m.fond && src.bord === '3px' && src.encre >= 4.5, JSON.stringify(src));
+        await pg.__ctx.close();
+      }
+
+      /* A-F13 : le pied et l'aide disent « archivé », et le jour du relevé. */
+      {
+        const pg = await vivante({ email: 'lecteur@airbus.com' });
+        const pied = await pg.evaluate(() => document.getElementById('import').textContent);
+        await pg.click('#ouvrir-aide-pied'); await pg.waitForTimeout(400);
+        const aide = await pg.evaluate(() => document.getElementById('aide-fraicheur').textContent);
+        verifier('A-F13 : le pied dit « Dernier relevé archivé : S43 (vendredi 23 octobre) · 6 relevés », et l’aide le redit — sans ligne d’âge en tête de page',
+          pied === 'Dernier relevé archivé : S43 (vendredi 23 octobre) · 6 relevés' && aide.indexOf(pied + '.') === 0 &&
+          !(await pg.evaluate(() => /Chiffres du /.test(document.getElementById('entete').textContent))), JSON.stringify({ pied, aide }));
+        await pg.__ctx.close();
+      }
+
+      /* A-F21, S7 : un lecteur, page ouverte ; THS masqué entre-temps par l'administrateur, puis choisi au menu. */
+      {
+        const lp = await vivante({ email: 'lecteur@airbus.com' });
+        commeQui('nathan@airbus.com', () => srv.adminRetirerContrat('THS', true));
+        try {
+          await lp.selectOption('#select-contrat', 'THS');
+          await alerteVue(lp);
+          const m1 = await etatContrat(lp);
+          verifier('A-F21, S7 : un contrat masqué entre-temps quitte le menu ; le bandeau le dit en une phrase qui ne le nomme qu’une fois, sans « Réessayer » (qui ne pourrait qu’échouer)',
+            m1.alerte === 'THS n’est plus affiché sur le tableau de bord (masqué par un administrateur). La page montre toujours HDK › Tranche 1.' &&
+            !m1.reessayer && m1.contrats === 'HDK' && m1.valeur === 'HDK' && m1.tranches === 'Tranche 1,Tranche 2', JSON.stringify(m1));
+          await lp.click('#voir-ensemble'); await ensembleFini(lp);
+          const lignes = await lp.evaluate(() => [...document.querySelectorAll('#ensemble tbody th button')].map(b => b.textContent.trim()).join());
+          await lp.keyboard.press('Escape'); await lp.waitForTimeout(300);
+          const m2 = await etatContrat(lp);
+          verifier('A-F21 : la Vue d’ensemble ne le ramène pas — ni dans ses lignes, ni dans le menu une fois fermée',
+            lignes === 'HDK › Tranche 1,HDK › Tranche 2' && m2.contrats === 'HDK', JSON.stringify({ lignes, m2 }));
+          /* Une panne ordinaire ensuite : « Réessayer » revient. L'horloge
+             avance d'une minute : la demande faite d'avance à l'ouverture du
+             menu (débrief 23) n'est plus bonne, la page redemande. */
+          await lp.evaluate(() => { const vrai = Date.now; Date.now = () => vrai() + 60000; });
+          panne(true);
+          await lp.selectOption('#select-tranche', 'HDK Tranche 2');
+          await lp.waitForFunction(() => /n’a pas pu être chargé/.test(document.getElementById('alerte-contrat-texte').textContent), null, { timeout: 15000 }).catch(() => {});
+          panne(false);
+          const m3 = await etatContrat(lp);
+          verifier('A-F21 : après lui, une panne ordinaire remet « Réessayer »',
+            m3.alerte === 'HDK › Tranche 2 n’a pas pu être chargé : service indisponible. La page montre toujours HDK › Tranche 1.' && m3.reessayer, JSON.stringify(m3));
+        } finally {
+          panne(false);
+          commeQui('nathan@airbus.com', () => srv.adminRetirerContrat('THS', false));
+        }
+        await lp.__ctx.close();
+      }
+
+      /* F18, A-F10, A-F25, S8 : la Vue d'ensemble, vue par le responsable. */
+      {
+        const np = await vivante({ email: 'nathan@airbus.com' });
+        await np.click('#echeance-titre'); await np.waitForTimeout(500);
+        const requisFiche = await np.evaluate(() => { const b = document.querySelector('#fiche-echeance .fiche-echeance-rythme b'); return b ? b.textContent.trim() : null; });
+        await np.click('#fiche-echeance [data-fermer-echeance]').catch(() => {}); await np.waitForTimeout(300);
+        await np.click('#voir-ensemble'); await ensembleFini(np);
+        const ens = await np.evaluate(() => [...document.querySelectorAll('#ensemble tbody tr')].map(tr => {
+          const td = tr.querySelectorAll('td'), aj = tr.querySelector('[data-ajouter-jalon]');
+          return { nom: tr.querySelector('th button').textContent.trim(), sous: (tr.querySelector('th small') || {}).textContent || '',
+                   aEcheance: td[5] ? td[5].textContent.replace(/[\u00a0\u202f]/g, ' ') : '',
+                   prochaine: td[4] ? (td[4].querySelector('.doux') || td[4]).textContent : '',
+                   ajouter: aj ? aj.dataset.ajouterJalon + '|' + aj.textContent + '|' + aj.getAttribute('aria-label') : '' };
+        }));
+        verifier('A-F10 : la Vue d’ensemble nomme chaque onglet comme l’administration — « HDK › Tranche 1 » (plus « HDK » seul au-dessus de « HDK › Tranche 2 »), « à l’écran » sous celui qu’on regarde',
+          ens.map(r => r.nom).join() === 'HDK › Tranche 1,HDK › Tranche 2,THS' && ens[0].sous === 'à l’écran' && !ens[1].sous && !ens[2].sous, JSON.stringify(ens));
+        const ilFaut = (ens[0].aEcheance.match(/il faut ([\d\s,]+)\/sem\./) || [])[1];
+        verifier('F18 : « il faut 83/sem. » — le rythme requis arrondi comme dans la fiche de l’échéance (plus « 83,0 »)',
+          !!requisFiche && /^manque \d+il faut \d+\/sem\.$/.test(ens[0].aEcheance) && ilFaut === requisFiche, JSON.stringify({ requisFiche, aEcheance: ens[0].aEcheance }));
+        verifier('A-F25, S8 : sous « aucun jalon », le responsable trouve « + Ajouter un jalon » (nommé pour son contrat) ; le contrat qui a ses jalons, non',
+          !ens[0].ajouter && ens[1].prochaine === 'aucun jalon' && ens[2].prochaine === 'aucun jalon' &&
+          ens[1].ajouter === 'HDK Tranche 2|+ Ajouter un jalon|Ajouter un jalon pour HDK › Tranche 2' &&
+          ens[2].ajouter === 'THS|+ Ajouter un jalon|Ajouter un jalon pour THS', JSON.stringify(ens));
+        await np.focus('#ensemble [data-ajouter-jalon="THS"]');
+        await np.keyboard.press('Enter');
+        await np.waitForFunction(() => document.getElementById('admin').open && document.querySelector('#admin-corps form[data-form="jalon"]'), null, { timeout: 15000 }).catch(() => {});
+        const ouvert = await np.evaluate(() => ({ ensemble: document.getElementById('ensemble').open, admin: document.getElementById('admin').open,
+          onglet: ((document.querySelector('#admin-onglets [aria-selected="true"]') || {}).textContent || '').trim(),
+          pour: (document.querySelector('#admin-corps select[name="pour"]') || {}).value, focus: document.activeElement.id }));
+        await np.keyboard.press('Escape'); await np.waitForTimeout(500);
+        const retour = await np.evaluate(() => ({ admin: document.getElementById('admin').open, focus: document.activeElement.id }));
+        verifier('S8 : « + Ajouter un jalon » ferme la Vue d’ensemble et ouvre l’administration sur un jalon neuf pour ce contrat (onglet Jalons, « Pour » = THS, le focus sur le nom) ; Échap ramène le focus sur « Vue d’ensemble »',
+          !ouvert.ensemble && ouvert.admin && ouvert.onglet === 'Jalons' && ouvert.pour === 'THS' && ouvert.focus === 'admin-texte' &&
+          !retour.admin && retour.focus === 'voir-ensemble', JSON.stringify({ ouvert, retour }));
+        await np.__ctx.close();
+      }
+      /* Un lecteur lit « aucun jalon », sans plus ; une administratrice de THS seul ne trouve le geste que pour THS. */
+      {
+        const lp = await vivante({ email: 'lecteur@airbus.com' });
+        await lp.click('#voir-ensemble'); await ensembleFini(lp);
+        const lecteur = await lp.evaluate(() => ({ boutons: document.querySelectorAll('#ensemble [data-ajouter-jalon]').length,
+          aucun: [...document.querySelectorAll('#ensemble tbody td .doux')].map(d => d.textContent).join() }));
+        await lp.__ctx.close();
+        commeQui('nathan@airbus.com', () => srv.adminEnregistrerAdmins([{ email: 'anne@airbus.com', contrats: ['THS'] }]));
+        const ap = await vivante({ email: 'anne@airbus.com' });
+        await ap.click('#voir-ensemble'); await ensembleFini(ap);
+        const anne = await ap.evaluate(() => [...document.querySelectorAll('#ensemble [data-ajouter-jalon]')].map(b => b.dataset.ajouterJalon).join());
+        await ap.__ctx.close();
+        commeQui('nathan@airbus.com', () => srv.adminEnregistrerAdmins([]));
+        verifier('S8 : un lecteur lit « aucun jalon », sans bouton ; une administratrice de THS seul ne trouve « + Ajouter un jalon » que pour THS',
+          lecteur.boutons === 0 && lecteur.aucun === 'aucun jalon,aucun jalon' && anne === 'THS', JSON.stringify({ lecteur, anne }));
+      }
+
+      /* A-F25 : réseau lent — la fenêtre ne grandit plus quand les autres contrats arrivent. */
+      {
+        const pg = await vivante({ email: 'nathan@airbus.com', latence: 900 });
+        await pg.click('#voir-ensemble'); await pg.waitForTimeout(600);
+        const avant = await pg.evaluate(() => ({ h: Math.round(document.getElementById('ensemble').getBoundingClientRect().height),
+          attente: [...document.querySelectorAll('#ensemble tbody td')].filter(td => /chargement…/.test(td.textContent)).length,
+          lignes: [...document.querySelectorAll('#ensemble tbody tr')].map(tr => Math.round(tr.getBoundingClientRect().height)) }));
+        await ensembleFini(pg);
+        const apres = await pg.evaluate(() => ({ h: Math.round(document.getElementById('ensemble').getBoundingClientRect().height),
+          lignes: [...document.querySelectorAll('#ensemble tbody tr')].map(tr => Math.round(tr.getBoundingClientRect().height)) }));
+        verifier('A-F25 : sur un réseau lent, une ligne « chargement… » a déjà la hauteur d’une ligne remplie — la Vue d’ensemble ne grandit plus à l’arrivée des chiffres',
+          avant.attente === 2 && Math.abs(apres.h - avant.h) <= 1 && avant.lignes.join() === apres.lignes.join(), JSON.stringify({ avant, apres }));
+        await pg.__ctx.close();
+      }
+
+      /* D11 : au téléphone, « + Ajouter un jalon » est une cible de 44 px. */
+      {
+        const tp = await vivante({ email: 'nathan@airbus.com', largeur: 390, hauteur: 844, mobile: true });
+        await tp.tap('#voir-ensemble'); await ensembleFini(tp);
+        const cibles = await tp.evaluate(() => [...document.querySelectorAll('#ensemble [data-ajouter-jalon]')].map(b => {
+          const r = b.getBoundingClientRect(), a = getComputedStyle(b, '::after');
+          return { h: Math.round(r.height - parseFloat(a.top) - parseFloat(a.bottom)), w: Math.round(r.width - parseFloat(a.left) - parseFloat(a.right)), droite: Math.round(innerWidth - r.right) };
+        }));
+        verifier('D11 : au téléphone, chaque « + Ajouter un jalon » de la Vue d’ensemble offre une cible de 44 px au moins, calée à droite de sa carte',
+          cibles.length === 2 && cibles.every(c => c.h >= 44 && c.w >= 44 && c.droite <= 20), JSON.stringify(cibles));
+        await tp.__ctx.close();
+      }
+    } finally {
+      panne(false);
+      try { fs29.unlinkSync(fichier29); } catch (e) { /* déjà parti */ }
+    }
+  }
   /* (fin du lot E2) */
 
 
@@ -10564,6 +11225,267 @@ async function deplierFiltresColonne(pg) {
   //  dans un bloc { … } qui ouvre et ferme ses propres pages.
   // =================================================================
   /* (début du lot PL) */
+  /* Débrief 29, lot PL — le tableau des plans : le bouton mort « Filtrer
+     par colonne » supprimé pour de bon, la vue essentielle sans rangée de
+     groupes, les intitulés au bord gauche de leurs cases (poignée hors du
+     flux), la Mono gardée aux références et aux codes, « - » écrit « — »,
+     la portée des filtres de la page dite avant l'usage (recherche, tuiles
+     de la Synthèse), le focus gardé sur la puce « non renseigné », le
+     changement de base annoncé, une case atteinte au clavier jamais
+     couverte. Sur l'aperçu (jeu d'exemple, seconde base SEE), un nouveau
+     venu (vue essentielle). */
+  section('Débrief 29 : le tableau des plans (lot PL)');
+  {
+    const lum29 = () => {
+      window.__lum29 = c => { const m = c.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]; };
+      window.__cr29 = (a, b) => { const x = window.__lum29(a), y = window.__lum29(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+    };
+    const versPlans = async pg => { await pg.evaluate(() => document.getElementById('section-plans').scrollIntoView()); await pg.waitForTimeout(300); };
+    /* Aucun bouton « Filtrer » / « Filtrer par colonne » nulle part dans la section. */
+    const boutonFiltrer = pg => pg.evaluate(() => ({
+      element: !!document.getElementById('ouvrir-filtres'),
+      vus: [...document.querySelectorAll('#section-plans button')].filter(b => b.getClientRects().length && /^Filtrer( par colonne)?\b/.test(b.textContent.trim()) && !/^Filtrer la page/.test(b.textContent.trim())).map(b => b.textContent.trim()),
+      actions: (a => !!a && a.getClientRects().length > 0)(document.getElementById('actions-tableau'))
+    }));
+    /* Le bord gauche de l'intitulé, du champ « filtrer » et des cases de chaque colonne. */
+    const alignement = pg => pg.evaluate(() => {
+      const ths = [...document.querySelectorAll('#tete-tableau tr.titres th')];
+      const fils = [...document.querySelectorAll('#tete-tableau tr.filtres th')];
+      const ligne = document.querySelector('#corps-tableau tr');
+      const ecarts = [], poignees = [];
+      ths.forEach((th, i) => {
+        const b = th.querySelector('button[data-tri]'), inp = fils[i] && fils[i].querySelector('input'), td = ligne && ligne.cells[i];
+        if (!b || !inp || !td || td.getClientRects().length === 0) return;
+        const bord = td.getBoundingClientRect().left + parseFloat(getComputedStyle(td).paddingLeft);
+        const e = Math.max(Math.abs(b.getBoundingClientRect().left - bord), Math.abs(inp.getBoundingClientRect().left - bord));
+        if (e > 1) ecarts.push(th.dataset.cle + ':' + Math.round(e));
+        const p = th.querySelector('.poignee');
+        if (p) { const r = p.getBoundingClientRect(); poignees.push({ cle: th.dataset.cle, l: r.width, h: r.height, empiete: r.right - b.getBoundingClientRect().left }); }
+      });
+      return { n: ths.length, ecarts, poignees };
+    });
+    /* La police des cases d'une colonne (la première case non vide). */
+    const police = (pg, cle) => pg.evaluate(cle => {
+      const ths = [...document.querySelectorAll('#tete-tableau tr.titres th')];
+      const i = ths.findIndex(t => t.dataset.cle === cle);
+      if (i < 0) return null;
+      const td = [...document.querySelectorAll('#corps-tableau tr')].map(tr => tr.cells[i]).find(c => c && !c.classList.contains('tiret-vide'));
+      if (!td) return null;
+      const el = td.querySelector('.num, .ref-plan') || td;
+      return { famille: getComputedStyle(el).fontFamily.split(',')[0].replace(/["']/g, '').trim(), chiffres: getComputedStyle(el).fontVariantNumeric, texte: td.textContent.trim() };
+    }, cle);
+    /* La case qui a le focus est-elle entièrement visible (coins et centre) ? */
+    const caseVue = pg => pg.evaluate(() => {
+      const a = document.activeElement, td = a && a.closest ? a.closest('#corps-tableau td') : null;
+      if (!td) return { ok: false, quoi: a ? a.tagName : null };
+      const r = td.getBoundingClientRect();
+      const ok = [[r.left + 3, r.top + 3], [r.right - 3, r.bottom - 3], [r.left + r.width / 2, r.top + r.height / 2]]
+        .every(([x, y]) => { const e = document.elementFromPoint(x, y); return !!e && (e === td || td.contains(e)); });
+      const th = document.querySelectorAll('#tete-tableau tr.titres th')[td.cellIndex];
+      return { ok, cle: th ? th.dataset.cle : '?', r: [r.left, r.top, r.right, r.bottom].map(Math.round) };
+    });
+    const parcourir = async (pg, touches, cachees) => {
+      for (const [touche, n] of touches) for (let k = 0; k < n; k++) {
+        await pg.keyboard.press(touche);
+        const v = await caseVue(pg);
+        if (!v.ok) cachees.push(touche + ' ' + v.cle + ' ' + JSON.stringify(v.r || v.quoi));
+      }
+    };
+
+    // --- 1. Le nouveau venu, 1440 × 900, clair.
+    const c29 = await contexte({ prefsVierges: true, viewport: { width: 1440, height: 900 } });
+    const q = await page(c29, 'lot PL');
+    await q.evaluate(lum29);
+    await versPlans(q);
+    const ouvert = await q.evaluate(() => {
+      const barre = document.getElementById('barre-tableau');
+      const vus = [...barre.children].filter(e => e.getClientRects().length > 0 && e.getBoundingClientRect().width > 0).map(e => e.id || e.className);
+      return { vus, groupes: document.querySelectorAll('#tete-tableau tr.groupes').length, haut: (document.querySelector('#tete-tableau tr.titres th') || {}).style.top,
+        puce: !!document.querySelector('#incomplets .puce-vide'), vue: [...document.querySelectorAll('#vue-tableau button[aria-pressed="true"]')].map(b => b.dataset.vue).join() };
+    });
+    const f0 = await boutonFiltrer(q);
+    verifier('plus de bouton « Filtrer par colonne » : ni dans la page, ni visible, et la zone des actions vide ne prend aucune place (débrief 29)',
+      !f0.element && f0.vus.length === 0 && !f0.actions, JSON.stringify(f0));
+    verifier('sous la recherche, la puce « … non renseigné » est seule sur sa rangée : ni trou, ni bouton à droite (débrief 29)',
+      ouvert.puce && ouvert.vus.length === 1 && ouvert.vus[0] === 'incomplets', JSON.stringify(ouvert.vus));
+    verifier('vue essentielle : pas de rangée de groupes, les intitulés collent en haut du cadre (P-F15)',
+      ouvert.vue === 'essentielle' && ouvert.groupes === 0 && ouvert.haut === '0px', JSON.stringify(ouvert));
+
+    const al1 = await alignement(q);
+    verifier('vue essentielle : intitulé, champ « filtrer » et cases de chaque colonne partagent le même bord gauche, à 1 px près (beauté NOUVEAU-3)',
+      al1.n > 4 && al1.ecarts.length === 0 && al1.poignees.length > 0, JSON.stringify(al1.ecarts));
+    verifier('la poignée de déplacement, hors du flux, garde sa zone (19 × 24 px au moins) sans empiéter sur l’intitulé',
+      al1.poignees.every(p => p.l >= 19 && p.h >= 24 && p.empiete <= 0.5), JSON.stringify(al1.poignees.slice(0, 3)));
+
+    const pol = {};
+    for (const k of ['reference', 'avancement', 'ecp', 'ata', 'sequence', 'date_creation', 'validation_definition_electrique', 'avancement_concept_harnais_2']) pol[k] = await police(q, k);
+    const sans = k => pol[k] && pol[k].famille === 'IBM Plex Sans' && /tabular-nums/.test(pol[k].chiffres);
+    const mono = k => pol[k] && pol[k].famille === 'IBM Plex Mono';
+    verifier('dates, nombres et Oui/Non en Plex Sans à chiffres alignés ; la Mono reste à la référence, à l’ECP et aux codes de GATES (B5, D2)',
+      sans('ata') && sans('sequence') && sans('date_creation') && sans('validation_definition_electrique') && sans('avancement_concept_harnais_2') &&
+      mono('reference') && mono('avancement') && mono('ecp'), JSON.stringify(pol));
+
+    // La recherche dit sa portée avant qu'on tape.
+    const portee = await q.evaluate(() => {
+      const inp = document.getElementById('recherche'), id = inp.getAttribute('aria-describedby'), p = id && document.getElementById(id);
+      if (!p) return { id };
+      const ri = inp.getBoundingClientRect(), rp = p.getBoundingClientRect();
+      const fin = document.elementFromPoint(rp.left + rp.width / 2, rp.top + rp.height / 2);
+      return { id, texte: p.textContent.trim(), vu: rp.width > 0 && rp.height > 0, dedans: rp.left >= ri.left && rp.right <= ri.right && rp.top >= ri.top && rp.bottom <= ri.bottom,
+        entonnoir: !!p.querySelector('svg[aria-hidden="true"]'), clic: fin === inp, place: parseFloat(getComputedStyle(inp).paddingRight) >= ri.right - rp.left,
+        cr: window.__cr29(getComputedStyle(p).color, getComputedStyle(inp).backgroundColor) };
+    });
+    verifier('la recherche des plans dit « filtre toute la page » (entonnoir), dans le champ, sans prendre le clic, et le champ la nomme (aria-describedby) (F5)',
+      portee.texte === 'filtre toute la page' && portee.vu && portee.dedans && portee.entonnoir && portee.clic && portee.place, JSON.stringify(portee));
+    verifier('« filtre toute la page » se lit : 4,5:1 au moins sur le champ, en clair', portee.cr >= 4.5, String(portee.cr));
+
+    // Les tuiles de la Synthèse disent aussi qu'elles filtrent toute la page.
+    const tuiles = await q.evaluate(() => [...document.querySelectorAll('#etats .etat-btn')].map(b => ({
+      code: b.querySelector('.libelle').textContent.trim(), titre: b.title, nom: b.getAttribute('aria-label'), n: b.querySelector('.etat-n').textContent.trim(), presse: b.getAttribute('aria-pressed') })));
+    const plansDe = n => n + (parseInt(n.replace(/\s/g, ''), 10) > 1 ? ' plans' : ' plan');
+    verifier('chaque tuile de la Synthèse dit « Filtrer toute la page sur CODE » (survol) et « …, N plans » aux lecteurs d’écran (F5)',
+      tuiles.length > 2 && tuiles.every(t => t.presse === 'false' && t.titre === 'Filtrer toute la page sur ' + t.code && t.nom === 'Filtrer toute la page sur ' + t.code + ', ' + plansDe(t.n)),
+      JSON.stringify(tuiles.slice(0, 3)));
+    await q.click('#etats .etat-btn >> nth=1'); await q.waitForTimeout(500);
+    const presse = await q.evaluate(() => { const b = document.querySelector('#etats .etat-btn[aria-pressed="true"]'); return b ? { titre: b.title, nom: b.getAttribute('aria-label') } : null; });
+    verifier('la tuile pressée dit « Retirer le filtre », sans nom imposé (son texte se lit)', !!presse && presse.titre === 'Retirer le filtre' && presse.nom === null, JSON.stringify(presse));
+    await reinitialiser(q);
+    await versPlans(q);
+
+    // X-A1 : la puce « non renseigné » garde le focus.
+    await q.focus('#incomplets .puce-vide');
+    await q.keyboard.press('Enter'); await q.waitForTimeout(400);
+    const pu1 = await q.evaluate(() => { const a = document.activeElement; return { classe: a.className, vide: a.dataset && a.dataset.vide, presse: a.getAttribute('aria-pressed') }; });
+    await q.keyboard.press('Enter'); await q.waitForTimeout(400);
+    const pu2 = await q.evaluate(() => { const a = document.activeElement; return { classe: a.className, vide: a.dataset && a.dataset.vide, presse: a.getAttribute('aria-pressed') }; });
+    verifier('Entrée sur la puce « … non renseigné » : le focus reste sur la puce redessinée, pressée puis relâchée (X-A1)',
+      pu1.classe === 'puce-vide' && !!pu1.vide && pu1.presse === 'true' && pu2.classe === 'puce-vide' && pu2.presse === 'false', JSON.stringify([pu1, pu2]));
+
+    // X-A5 : changer de base se dit ; toujours aucun bouton « Filtrer ».
+    await q.evaluate(() => {
+      window.__annoncer(''); window.__annonces29 = [];
+      new MutationObserver(() => { const t = document.getElementById('annonce').textContent; if (t) window.__annonces29.push(t); })
+        .observe(document.getElementById('annonce'), { childList: true, characterData: true, subtree: true });
+    });
+    await q.click('#choix-base button[data-base="la"]');
+    await q.waitForFunction(() => window.__annonces29.length > 0, null, { timeout: 4000 }).catch(() => {});
+    const base1 = await q.evaluate(() => ({ dit: window.__annonces29.slice(), compte: document.getElementById('compte').textContent }));
+    const f1 = await boutonFiltrer(q);
+    await q.click('#choix-base button[data-base="ici"]');
+    await q.waitForFunction(() => window.__annonces29.length > 1, null, { timeout: 4000 }).catch(() => {});
+    const base2 = await q.evaluate(() => ({ dit: window.__annonces29.slice(), compte: document.getElementById('compte').textContent }));
+    const f2 = await boutonFiltrer(q);
+    verifier('passer à la base SEE se dit : « Base SEE affichée : N lignes », le compte affiché (X-A5)',
+      base1.dit.length === 1 && base1.dit[0] === 'Base SEE affichée : ' + base1.compte && /lignes?$/.test(base1.compte), JSON.stringify(base1));
+    verifier('revenir à GATES se dit : « Base GATES affichée : N plans » (X-A5)',
+      base2.dit.length === 2 && base2.dit[1] === 'Base GATES affichée : ' + base2.compte && /plans?$/.test(base2.compte), JSON.stringify(base2));
+    // Une fiche de plan ouverte : toujours pas de bouton.
+    await q.click('#corps-tableau .ref-plan >> nth=2'); await q.waitForTimeout(600);
+    const f3 = await boutonFiltrer(q);
+    verifier('ni sur SEE, ni de retour sur GATES, ni fiche de plan ouverte : aucun bouton « Filtrer » ne revient (débrief 29)',
+      [f1, f2, f3].every(f => !f.element && f.vus.length === 0 && !f.actions), JSON.stringify([f1, f2, f3]));
+    await q.keyboard.press('Escape'); await q.waitForTimeout(500);
+
+    // --- 2. « Toutes les colonnes » : sa rangée de groupes, « - » écrit « — ».
+    await q.click('#vue-tableau button[data-vue="toutes"]'); await q.waitForTimeout(800);
+    await versPlans(q);
+    const toutes29 = await q.evaluate(() => {
+      const ths = [...document.querySelectorAll('#tete-tableau tr.titres th')];
+      const iv = ths.findIndex(t => t.dataset.cle === 'validite');
+      const tiret = document.querySelector('#corps-tableau td.tiret-vide[title]');
+      return { groupes: [...document.querySelectorAll('#tete-tableau tr.groupes th')].map(t => t.textContent.trim()),
+        traits: [...document.querySelectorAll('#corps-tableau td')].filter(td => td.textContent.trim() === '-').length,
+        tirets: document.querySelectorAll('#corps-tableau td.tiret-vide[title="« - » dans GATES"]').length,
+        tiret: tiret ? { texte: tiret.textContent, police: getComputedStyle(tiret).fontFamily.split(',')[0].replace(/["']/g, ''), doux: tiret.classList.contains('doux') } : null, iv };
+    });
+    verifier('« Toutes les colonnes » garde sa rangée de groupes : le groupe suivi dit « Avancement (GATES · HDK AA 011) », aucune case vide (X-A11)',
+      toutes29.groupes.indexOf('Avancement (GATES · HDK AA 011)') !== -1 && toutes29.groupes.every(g => g.length > 0) && toutes29.groupes.indexOf('HDK AA 011') === -1,
+      JSON.stringify(toutes29.groupes.slice(0, 8)));
+    verifier('« - » de l’extract s’écrit « — » en gris, en Plex Sans, et dit sa valeur brute au survol (B22)',
+      toutes29.traits === 0 && toutes29.tirets > 0 && !!toutes29.tiret && toutes29.tiret.texte === '—' && toutes29.tiret.police === 'IBM Plex Sans' && toutes29.tiret.doux,
+      JSON.stringify(toutes29));
+    const polT = { validite: await police(q, 'validite'), a_traiter_par: await police(q, 'a_traiter_par'), quantite: await police(q, 'quantite'), cc: await police(q, 'cc') };
+    verifier('« Toutes les colonnes » : Validité et A traiter par (codes de GATES) en Mono, Quantité et CC en Sans (B5)',
+      !!polT.validite && polT.validite.famille === 'IBM Plex Mono' && !!polT.a_traiter_par && polT.a_traiter_par.famille === 'IBM Plex Mono' &&
+      !!polT.quantite && polT.quantite.famille === 'IBM Plex Sans' && !!polT.cc && polT.cc.famille === 'IBM Plex Sans', JSON.stringify(polT));
+    // Le filtre de colonne garde la valeur brute : « - » trouve les cases « — ».
+    await q.fill('tr.filtres input[data-filtre="validite"]', '-'); await q.waitForTimeout(600);
+    const filtre29 = await q.evaluate(iv => {
+      const lignes = [...document.querySelectorAll('#corps-tableau tr')].filter(tr => tr.cells.length > iv && !tr.querySelector('.vide-message'));
+      return { n: lignes.length, tous: lignes.every(tr => tr.cells[iv].textContent.trim() === '—' && tr.cells[iv].title === '« - » dans GATES') };
+    }, toutes29.iv);
+    verifier('le filtre de colonne lit toujours « - » : il garde les cases écrites « — » (B22)', filtre29.n > 0 && filtre29.tous, JSON.stringify(filtre29));
+    await reinitialiser(q);
+    // Trié sur Validité, dans les deux sens : les « — » (vides ou « - ») restent en bas.
+    const triVides = async () => q.evaluate(iv => {
+      const l = [...document.querySelectorAll('#corps-tableau tr:not(.ancien)')].filter(tr => tr.cells.length > iv).map(tr => tr.cells[iv].classList.contains('tiret-vide'));
+      const premier = l.indexOf(true);
+      return { n: l.length, vides: l.filter(Boolean).length, enBas: premier === -1 || l.slice(premier).every(Boolean) };
+    }, toutes29.iv);
+    await q.click('tr.titres button[data-tri="validite"]'); await q.waitForTimeout(600);
+    const triA = await triVides();
+    await q.click('tr.titres button[data-tri="validite"]'); await q.waitForTimeout(600);
+    const triD = await triVides();
+    verifier('trié sur Validité, croissant puis décroissant : les cases « — » (vides ou « - ») restent en bas (B22)',
+      triA.vides > 0 && triA.enBas && triD.enBas && triA.n === triD.n, JSON.stringify([triA, triD]));
+    await q.click('tr.titres button[data-tri="reference"]'); await q.waitForTimeout(600);
+    const al2 = await alignement(q);
+    verifier('« Toutes les colonnes » : intitulés, champs et cases au même bord gauche, à 1 px près', al2.n > 50 && al2.ecarts.length === 0, JSON.stringify(al2.ecarts.slice(0, 6)));
+
+    // X-A3 à 1440 : ← → le long d'une ligne, ↓ ↑ sur 25 lignes.
+    await versPlans(q);
+    await q.evaluate(() => document.querySelectorAll('#corps-tableau .ref-plan')[4].focus());
+    const cachees1440 = [];
+    await parcourir(q, [['ArrowRight', 30], ['ArrowLeft', 30], ['ArrowDown', 25], ['ArrowUp', 25]], cachees1440);
+    verifier('à 1440 × 900, 110 arrêts au clavier dans le tableau : aucune case couverte par les colonnes figées ni par les en-têtes collés (X-A3)',
+      cachees1440.length === 0, JSON.stringify(cachees1440.slice(0, 5)));
+    await c29.close();
+
+    // --- 3. 720 × 450, filtre de la page posé (bandeau collé) : la case Séquence passe sous « Référence UD ».
+    const c29b = await contexte({ prefsVierges: true, viewport: { width: 720, height: 450 } });
+    const q2 = await page(c29b, 'lot PL 720');
+    await q2.click('#etats .etat-btn >> nth=1'); await q2.waitForTimeout(500);
+    await versPlans(q2);
+    await q2.evaluate(() => document.querySelectorAll('#corps-tableau .ref-plan')[0].focus());
+    const cachees720 = [];
+    await parcourir(q2, [['ArrowDown', 3], ['ArrowRight', 8], ['ArrowLeft', 8], ['ArrowRight', 6], ['ArrowLeft', 2], ['ArrowDown', 25], ['ArrowUp', 25]], cachees720);
+    await q2.click('#vue-tableau button[data-vue="toutes"]'); await q2.waitForTimeout(800);
+    await versPlans(q2);
+    await q2.evaluate(() => document.querySelectorAll('#corps-tableau .ref-plan')[2].focus());
+    await parcourir(q2, [['ArrowRight', 20], ['ArrowLeft', 20]], cachees720);
+    verifier('à 720 × 450, ← → et ↑ ↓ (vue essentielle filtrée, puis toutes les colonnes) : chaque case atteinte est entièrement visible (X-A3)',
+      cachees720.length === 0, JSON.stringify(cachees720.slice(0, 5)));
+    await c29b.close();
+
+    // --- 4. Sombre : la portée de la recherche se lit.
+    const c29c = await contexte({ prefsVierges: true, colorScheme: 'dark', viewport: { width: 1024, height: 768 } });
+    const q3 = await page(c29c, 'lot PL sombre');
+    await q3.evaluate(lum29);
+    const sombre29 = await q3.evaluate(() => { const p = document.getElementById('portee-recherche'), inp = document.getElementById('recherche');
+      return { cr: window.__cr29(getComputedStyle(p).color, getComputedStyle(inp).backgroundColor), bouton: !!document.getElementById('ouvrir-filtres') }; });
+    verifier('en sombre, « filtre toute la page » tient 4,5:1 sur le champ ; pas de bouton « Filtrer par colonne »', sombre29.cr >= 4.5 && !sombre29.bouton, JSON.stringify(sombre29));
+    await c29c.close();
+
+    // --- 5. Téléphone 390 : la portée sous le champ, la loupe centrée, aucun « Filtrer ».
+    const c29d = await contexte({ prefsVierges: true, viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const q4 = await page(c29d, 'lot PL téléphone');
+    await versPlans(q4);
+    const tel29 = await q4.evaluate(() => {
+      const inp = document.getElementById('recherche'), p = document.getElementById('portee-recherche'), loupe = inp.parentNode.querySelector('svg');
+      const ri = inp.getBoundingClientRect(), rp = p.getBoundingClientRect(), rl = loupe.getBoundingClientRect();
+      const puce = document.querySelector('#incomplets').getBoundingClientRect();
+      const poignee = document.querySelector('#tete-tableau tr.titres th .poignee');
+      return { dessous: rp.top >= ri.bottom && rp.left >= ri.left - 1, loupe: Math.abs((rl.top + rl.height / 2) - (ri.top + ri.height / 2)), pasDeChevauchement: puce.top >= rp.bottom,
+        police: parseFloat(getComputedStyle(inp).fontSize), large: document.documentElement.scrollWidth <= 390,
+        poignee: poignee ? Math.round(poignee.getBoundingClientRect().height) : 0 };
+    });
+    const f4 = await boutonFiltrer(q4);
+    verifier('au téléphone : « filtre toute la page » sous le champ, la loupe centrée sur le champ, rien ne chevauche, pas de défilement de côté',
+      tel29.dessous && tel29.loupe <= 2 && tel29.pasDeChevauchement && tel29.police >= 16 && tel29.large, JSON.stringify(tel29));
+    verifier('au téléphone : aucun bouton « Filtrer », et la poignée d’une colonne offre 44 px de haut au doigt',
+      !f4.element && f4.vus.length === 0 && tel29.poignee >= 44, JSON.stringify([f4, tel29.poignee]));
+    await c29d.close();
+  }
   /* (fin du lot PL) */
 
 
@@ -10572,6 +11494,238 @@ async function deplierFiltresColonne(pg) {
   //  dans un bloc { … } qui ouvre et ferme ses propres pages.
   // =================================================================
   /* (début du lot I) */
+  section('Débrief 29 : impression, haut de page, couche tactile, téléphone (lot I)');
+  {
+    /* La page vivante, servie par le vrai serveur sur le classeur du
+       simulateur (comme la section du lot F) : HDK, sa tranche, son
+       périmètre, sa base SEE — les vrais réglages du bandeau. */
+    const fsI = require('fs'), osI = require('os');
+    const { construireSimulateur } = require(path.join(__dirname, '..', '..', 'tests', 'construire-simulateur.js'));
+    const { Feuille } = require(path.join(__dirname, '..', '..', 'tests', 'faux-classeur.js'));
+    const simI = construireSimulateur({ date: '2026-10-29', avantPage: function (c, classeur) {
+      const ths = classeur.getSheetByName('THS');
+      classeur.feuilles.splice(1, 0, new Feuille('HDK Tranche 2', ths.valeurs.map(l => l.slice()), false, ths.fusions.map(f => Object.assign({}, f))));
+    } });
+    const srvI = simI.contexte;
+    simI.classeur.proprietaire = 'nathan@airbus.com';
+    srvI.__emailScript = 'nathan@airbus.com';
+    const fichierI = path.join(osI.tmpdir(), 'suivi-fwd-lot-i-' + process.pid + '.html');
+    fsI.writeFileSync(fichierI, simI.page.replace(/<script>\s*\/\* Simulateur : google\.script\.run[\s\S]*?<\/script>/, ''));
+    const vivanteI = async (o) => {
+      const email = o.email || 'lecteur@airbus.com';
+      const c = await nav.newContext({ viewport: { width: o.largeur || 1280, height: o.hauteur || 900 }, colorScheme: o.schema || 'light',
+        isMobile: !!o.mobile, hasTouch: !!o.mobile, locale: 'en-US' });
+      const pg = await c.newPage();
+      brancher(pg, 'lot I ' + (o.largeur || 1280) + (o.mobile ? ' tactile' : ''));
+      await pg.exposeFunction('__appel', (nom, args) => {
+        if (typeof srvI[nom] !== 'function' || /_$/.test(nom)) throw new Error('fonction inconnue ' + nom);
+        const avant = srvI.__emailLecteur; srvI.__emailLecteur = email;
+        try { const r = srvI[nom].apply(null, JSON.parse(args)); return JSON.stringify(r === undefined ? null : r); } finally { srvI.__emailLecteur = avant; }
+      });
+      await pg.addInitScript(() => {
+        window.SUIVI_FWD_BUDGET = 1e9;
+        function chaine(ok, ko) {
+          const c = { withSuccessHandler: f => chaine(f, ko), withFailureHandler: f => chaine(ok, f), withUserObject: () => chaine(ok, ko) };
+          return new Proxy(c, { get(t, nom) {
+            if (nom in t) return t[nom];
+            if (typeof nom !== 'string') return undefined;
+            return function () {
+              const args = Array.prototype.slice.call(arguments);
+              setTimeout(() => window.__appel(nom, JSON.stringify(args)).then(j => { if (ok) ok(JSON.parse(j)); },
+                e => { if (ko) ko({ message: String(e.message || e).replace(/^Error: /, '') }); }), 40);
+            };
+          } });
+        }
+        window.google = { script: { run: chaine(null, null) } };
+      });
+      await pg.goto('file://' + fichierI);
+      await pg.waitForFunction(() => document.documentElement.getAttribute('data-suivi-fwd') === 'pret', null, { timeout: 30000 });
+      /* Les droits arrivent après l'ouverture : le pied nomme le responsable. */
+      await pg.waitForFunction(() => (document.getElementById('pied-responsable') || {}).textContent ||
+        getComputedStyle(document.getElementById('choix-admin')).visibility !== 'hidden', null, { timeout: 20000 }).catch(() => {});
+      /* Le bandeau du simulateur, posé au-dessus de la page, n'existe pas
+         devant le classeur : on le retire pour mesurer la vraie page. */
+      await pg.evaluate(() => { const x = document.querySelector('.simulateur-bandeau'); if (x) x.remove(); window.scrollTo(0, 0); });
+      await pg.waitForTimeout(600);
+      pg.__ctx = c;
+      return pg;
+    };
+    const boite = (pg, s) => pg.evaluate(s => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect();
+      return { x: Math.round(r.left), y: Math.round(r.top + scrollY), w: Math.round(r.width), h: Math.round(r.height), b: Math.round(r.bottom + scrollY), r: Math.round(r.right) }; }, s);
+    const lumI = c => { const m = c.match(/[\d.]+/g).slice(0, 3).map(Number); return (m[0] + m[1] + m[2]) / 3; };
+
+    // --- P-F9 : l'impression. Chrome lit les règles de largeur sur la feuille en portrait (moins de 860 px)
+    //     même quand la page sort à l'italienne : on l'imite par une fenêtre de 800 px en média « print ».
+    for (const schema of ['light', 'dark']) {
+      const gi = await vivanteI({ largeur: 1440, hauteur: 900, schema });
+      await gi.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+      await gi.emulateMedia({ media: 'print', colorScheme: schema });
+      const lireImp = () => gi.evaluate(() => {
+        const e = document.querySelector('header.entete'), cs = getComputedStyle(e), h1 = document.querySelector('.masthead h1');
+        const face = getComputedStyle(document.querySelector('.rapp-face')).gridTemplateColumns.split(' ').filter(Boolean).length;
+        const f = document.getElementById('venn-rapprochement').getBoundingClientRect(), v = document.getElementById('verdicts-rapprochement').getBoundingClientRect();
+        return { bordure: cs.borderImageSource, fond: cs.backgroundColor, titre: getComputedStyle(h1).color, semaine: getComputedStyle(document.getElementById('num-semaine')).color,
+                 colonnes: face, coteACote: v.left >= f.right - 1 && v.top < f.bottom, hauteur: Math.round(document.getElementById('rapprochement').getBoundingClientRect().height) };
+      });
+      await redimensionner(gi, 800, 900);
+      const etroite = await lireImp();
+      /* A4 à l'italienne, 10 mm de marge : 1 047 × 718 px. */
+      await redimensionner(gi, 1047, 718);
+      const a4 = await lireImp();
+      verifier('imprimée (' + schema + ') : le bandeau du titre sans aplat marine — ni bordure peinte ni fond —, le titre et la semaine à l’encre sombre (P-F9)',
+        a4.bordure === 'none' && /rgba\(0, 0, 0, 0\)|transparent/.test(a4.fond) && lumI(a4.titre) < 80 && lumI(a4.semaine) < 80, JSON.stringify(a4));
+      verifier('imprimée (' + schema + ') : la comparaison garde sa figure et ses verdicts côte à côte, même quand Chrome lit la largeur d’une feuille en portrait (P-F9)',
+        etroite.colonnes === 2 && etroite.coteACote && a4.colonnes === 2 && a4.coteACote, JSON.stringify([etroite, a4]));
+      verifier('imprimée (' + schema + ') : la comparaison tient sur une page A4 à l’italienne (moins de 718 px de haut)',
+        a4.hauteur > 200 && a4.hauteur <= 718, JSON.stringify(a4));
+      await gi.emulateMedia({ media: 'screen', colorScheme: schema });
+      await gi.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+      await gi.__ctx.close();
+    }
+
+    // --- B15 : de 721 à 1 329 px, le bouton « haut de page » tient dans la marge, sans toucher les cartes.
+    {
+      const gb = await vivanteI({ largeur: 1024, hauteur: 768 });
+      const res = [];
+      for (const [l, h] of [[1024, 768], [1180, 800], [1280, 800], [800, 900]]) {
+        await redimensionner(gb, l, h);
+        await gb.evaluate(() => window.scrollTo(0, document.getElementById('section-plans').getBoundingClientRect().top + scrollY - 200));
+        await gb.waitForTimeout(300);
+        res.push(await gb.evaluate(() => {
+          const bt = document.getElementById('haut-de-page'), r = bt.getBoundingClientRect();
+          let bord = 0;
+          for (const s of document.querySelectorAll('.panneau, footer.pied')) { const q = s.getBoundingClientRect(); if (q.width) bord = Math.max(bord, q.right); }
+          return { l: innerWidth, vu: !bt.hidden, gauche: Math.round(r.left), droite: Math.round(r.right), taille: Math.round(r.width), bord: Math.round(bord), ecran: document.documentElement.clientWidth };
+        }));
+      }
+      verifier('de 800 à 1 280 px, le bouton « haut de page » paraît dans la marge à droite des cartes : il ne touche ni leur bord ni leur marge intérieure (B15)',
+        res.every(x => x.vu && x.taille === 28 && x.gauche > x.bord && x.droite <= x.ecran), JSON.stringify(res));
+      await gb.__ctx.close();
+    }
+
+    // --- Au téléphone (390 × 844, tactile) : M16, M6, M15, X-A10.
+    for (const schema of ['light', 'dark']) {
+      const gt = await vivanteI({ largeur: 390, hauteur: 844, mobile: true, schema });
+      if (schema === 'light') {
+        // M16 : le bouton reste fixé à l'écran, là où l'on est ; la page ne s'allonge pas.
+        const h0 = await gt.evaluate(() => document.documentElement.scrollHeight);
+        await gt.evaluate(() => window.scrollTo(0, 4000)); await gt.waitForTimeout(300);
+        await gt.evaluate(() => window.scrollBy(0, -200)); await gt.waitForTimeout(400);
+        const bt = await gt.evaluate(h0 => {
+          const b = document.getElementById('haut-de-page'), r = b.getBoundingClientRect();
+          return { vu: !b.hidden, position: getComputedStyle(b).position, haut: Math.round(r.top), bas: Math.round(r.bottom), gauche: Math.round(r.left), droite: Math.round(r.right),
+                   h0, h1: document.documentElement.scrollHeight, iw: innerWidth, ih: innerHeight };
+        }, h0);
+        verifier('au doigt, en remontant : le bouton « haut de page » est fixé à l’écran, en entier dans la fenêtre, et la page ne s’allonge pas (M16)',
+          bt.vu && bt.position === 'fixed' && bt.haut >= 0 && bt.bas <= bt.ih && bt.gauche >= 0 && bt.droite <= bt.iw && bt.h1 === bt.h0, JSON.stringify(bt));
+        await gt.evaluate(() => window.scrollTo(0, 0)); await gt.waitForTimeout(300);
+
+        // M6 : les dernières cibles au doigt (la zone ::after comptée).
+        const zone = (sel) => gt.evaluate(sel => [...document.querySelectorAll(sel)].filter(e => e.getClientRects().length).map(e => {
+          const r = e.getBoundingClientRect(), a = getComputedStyle(e, '::after');
+          let w = r.width, h = r.height, t = r.top, bo = r.bottom, l = r.left, ri = r.right;
+          if (a.content && a.content !== 'none' && a.position === 'absolute') {
+            if (a.top !== 'auto' && a.bottom !== 'auto') { t = r.top + parseFloat(a.top); bo = r.bottom - parseFloat(a.bottom); h = Math.max(h, bo - t); }
+            if (a.left !== 'auto' && a.right !== 'auto') { l = r.left + parseFloat(a.left); ri = r.right - parseFloat(a.right); w = Math.max(w, ri - l); }
+          }
+          return { w: Math.round(w), h: Math.round(h), t, b: bo, l, r: ri, nom: (e.textContent || e.getAttribute('aria-label') || '').trim().slice(0, 24) };
+        }), sel);
+        const comptes = await zone('#zone-journal .compte-passage');
+        let chevauchent = 0;
+        for (let i = 0; i < comptes.length; i++) for (let j = i + 1; j < comptes.length; j++) {
+          const a = comptes[i], z = comptes[j];
+          if (a.l < z.r - 0.5 && z.l < a.r - 0.5 && a.t < z.b - 0.5 && z.t < a.b - 0.5) chevauchent++;
+        }
+        verifier('au doigt : chaque compte d’une semaine du journal offre 44 px à toucher, sans empiéter sur son voisin (M6)',
+          comptes.length > 5 && comptes.every(x => x.h >= 44) && chevauchent === 0, JSON.stringify({ n: comptes.length, petits: comptes.filter(x => x.h < 44).slice(0, 3), chevauchent }));
+        const petites = {};
+        for (const [nom, sel, dim] of [['menu du titre « Par ATA »', 'select#dim-critique', 'h'], ['entrées du sommaire', '#sommaire-liste a', 'h'],
+          ['champs « filtrer » des colonnes', 'table.plans thead .filtres input', 'h'], ['en-têtes de tri des plans', 'table.plans thead .titres th button:not(.poignee)', 'w'],
+          ['en-têtes de tri de « Par ATA »', 'button.tri-groupe', 'w'], ['adresse du responsable, au pied', '#pied-responsable a', 'h']]) {
+          const z = await zone(sel);
+          const trop = z.filter(x => x[dim] < 44 || x.h < 44);
+          if (!z.length || trop.length) petites[nom] = z.length ? trop.slice(0, 3) : 'absent';
+        }
+        verifier('au doigt : le menu du titre « Par ATA », le sommaire, les champs et les en-têtes de tri des colonnes, l’adresse du pied offrent tous 44 px (M6)',
+          Object.keys(petites).length === 0, JSON.stringify(petites));
+        const trait = await gt.evaluate(() => { const s = document.getElementById('dim-critique'), r = s.getBoundingClientRect(), cs = getComputedStyle(s);
+          return { h: Math.round(r.height), ombre: cs.boxShadow, couches: cs.backgroundImage.split('),').length }; });
+        verifier('au doigt : le menu du titre grandit à 44 px, son trait reste sous le mot (un trait peint, plus le bas de la case)',
+          trait.h >= 44 && trait.ombre === 'none' && trait.couches >= 2, JSON.stringify(trait));
+      }
+      // M15 : un bandeau plus serré, des tuiles d'une ligne — toute la synthèse au premier écran.
+      const m = {
+        entete: await boite(gt, 'header.entete'), phrase: await boite(gt, '#phrase'), etats: await boite(gt, '#etats'),
+        motAv: await boite(gt, '#choix-avancement .mot-reglage'), segAv: await boite(gt, '#choix-indicateur')
+      };
+      const tuiles = await gt.evaluate(() => [...document.querySelectorAll('#etats .etat-btn')].map(b => {
+        const r = b.getBoundingClientRect(), n = b.querySelector('.etat-n').getBoundingClientRect(), lib = b.querySelector('.libelle'), l = lib.getBoundingClientRect(), pct = b.querySelector('.etat-pct');
+        return { h: Math.round(r.height), uneLigne: n.left >= l.right - 1 && n.top < l.bottom && n.bottom > l.top, entier: lib.scrollWidth <= lib.clientWidth + 1 && getComputedStyle(lib).textOverflow !== 'ellipsis',
+                 part: pct.textContent.trim() !== '' && pct.getBoundingClientRect().width <= 1, colonnes: getComputedStyle(b.parentNode).gridTemplateColumns.split(' ').length };
+      }));
+      verifier('téléphone (' + schema + ') : les tuiles des états tiennent sur une ligne — la valeur, son nombre à droite —, 44 px chacune, deux par rangée, les codes entiers (M15)',
+        tuiles.length >= 5 && tuiles.every(t => t.h >= 44 && t.h <= 60 && t.uneLigne && t.entier && t.colonnes === 2) && m.etats.h <= 210, JSON.stringify({ etats: m.etats, tuiles: tuiles.slice(0, 3) }));
+      verifier('téléphone (' + schema + ') : la part de chaque tuile s’efface à l’œil, mais reste écrite pour les lecteurs d’écran (M15)',
+        tuiles.every(t => t.part), JSON.stringify(tuiles.map(t => t.part)));
+      verifier('téléphone (' + schema + ') : le bandeau fait moins de 295 px (337 avant), la phrase de tête paraît avant 410 px (443 avant) et les sept tuiles finissent dans le premier écran (M15)',
+        m.entete.h <= 295 && m.phrase.y <= 410 && m.etats.b <= 844, JSON.stringify(m));
+      verifier('téléphone (' + schema + ') : à 390 px, le mot « Avancement » reste devant ses puces, sur leur ligne',
+        m.motAv && m.segAv && m.motAv.r <= m.segAv.x && Math.abs((m.motAv.y + m.motAv.h / 2) - (m.segAv.y + m.segAv.h / 2)) <= 4, JSON.stringify(m));
+      if (schema === 'light') {
+        // X-A10 : le bandeau des filtres posés est une région nommée, hors du sommaire et du contenu.
+        await gt.click('#etats .etat-btn'); await gt.waitForTimeout(600);
+        const region = await gt.evaluate(() => {
+          const f = document.getElementById('filtres-actifs'), j = document.getElementById('filtres-jetons');
+          return { vu: !f.hidden, role: f.getAttribute('role'), nom: f.getAttribute('aria-label'), dedans: !!j && f.contains(j) && f.contains(document.getElementById('tout-effacer')),
+                   ailleurs: !f.closest('main, nav, header, footer') };
+        });
+        verifier('un filtre posé : son bandeau est une région nommée « Filtres posés », qui tient les jetons et « Tout effacer » (X-A10)',
+          region.vu && region.role === 'region' && region.nom === 'Filtres posés' && region.dedans && region.ailleurs, JSON.stringify(region));
+        // M15, D7 : un code ne se coupe qu'après un « _ » ou une espace — à 390 px comme à 320 (le nombre repasse alors sous la valeur).
+        const coupures = () => gt.evaluate(() => [...document.querySelectorAll('#etats .libelle')].map(lib => {
+          const r = document.createRange(), tw = document.createTreeWalker(lib, NodeFilter.SHOW_TEXT), mauvaises = [];
+          let n, haut = null, avant = '';
+          while ((n = tw.nextNode())) for (let i = 0; i < n.length; i++) {
+            r.setStart(n, i); r.setEnd(n, i + 1);
+            const q = r.getClientRects()[0], ch = n.data[i];
+            if (!q) continue;
+            if (haut !== null && q.top > haut + 4 && !/[_\s]/.test(avant) && !/\s/.test(ch)) mauvaises.push(avant + '|' + ch);
+            haut = q.top; avant = ch;
+          }
+          return mauvaises.length ? lib.textContent + ' (' + mauvaises.join(', ') + ')' : '';
+        }).filter(Boolean));
+        const coupe390 = await coupures();
+        await redimensionner(gt, 320, 640);
+        const coupe320 = await coupures();
+        const pile320 = await gt.evaluate(() => [...document.querySelectorAll('#etats .etat-btn')].every(b => b.querySelector('.etat-n').getBoundingClientRect().top >= b.querySelector('.libelle').getBoundingClientRect().bottom - 1));
+        verifier('téléphone : les codes des tuiles ne se coupent jamais au milieu d’un mot, à 390 px comme à 320 px (où le nombre passe sous la valeur) (M15, D7)',
+          coupe390.length === 0 && coupe320.length === 0 && pile320, JSON.stringify({ coupe390, coupe320, pile320 }));
+      }
+      await gt.__ctx.close();
+    }
+
+    // --- M7 : le téléphone à l'italienne — la barre des états au premier écran.
+    for (const [l, h, schema] of [[844, 390, 'light'], [844, 390, 'dark'], [667, 375, 'light']]) {
+      const gl = await vivanteI({ largeur: l, hauteur: h, mobile: true, schema });
+      const m = await gl.evaluate(() => {
+        const r = s => { const e = document.querySelector(s); const q = e.getBoundingClientRect(); return { y: Math.round(q.top + scrollY), h: Math.round(q.height), b: Math.round(q.bottom + scrollY) }; };
+        const mot = document.getElementById('mot-perimetre'), motR = mot.getBoundingClientRect();
+        const t = document.querySelector('.masthead h1').getBoundingClientRect(), s = document.querySelector('.semaine').getBoundingClientRect();
+        /* Les rangées des réglages : leurs hauts, regroupés à 15 px près. */
+        const hauts = [...document.querySelectorAll('#portee .reglage')].filter(e => e.getClientRects().length).map(e => e.getBoundingClientRect().top).sort((a, b) => a - b);
+        const rangees = hauts.reduce((n, y, i) => n + (i === 0 || y - hauts[i - 1] > 15 ? 1 : 0), 0);
+        return { entete: r('header.entete'), barre: r('#barre'), rangees,
+                 motCache: motR.width <= 1 && mot.textContent.trim() === 'Périmètre' && document.getElementById('choix-perimetre').getAttribute('aria-labelledby') === 'mot-perimetre',
+                 uneLigne: Math.abs(t.bottom - s.bottom) < 12 && s.left >= t.right, defile: document.documentElement.scrollWidth - innerWidth };
+      });
+      verifier('à l’italienne (' + l + ' × ' + h + ', ' + schema + ') : le bandeau fait moins de 160 px (207 avant), les réglages sur deux rangées au plus, le titre et la semaine sur une ligne, et la barre des états finit dans le premier écran (M7)',
+        m.entete.h <= 160 && m.rangees <= 2 && m.uneLigne && m.barre.b <= h && m.defile <= 0, JSON.stringify(m));
+      verifier('à l’italienne (' + l + ' × ' + h + ', ' + schema + ') : « Périmètre » se tait à l’œil, mais nomme toujours ses puces pour les lecteurs d’écran',
+        m.motCache, JSON.stringify(m));
+      await gl.__ctx.close();
+    }
+    try { fsI.unlinkSync(fichierI); } catch (e) { /* déjà parti */ }
+  }
   /* (fin du lot I) */
 
   await ctx.close();

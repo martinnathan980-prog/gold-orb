@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'a6eee20';
+  var EDITION = 'f9fa8ef';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -921,6 +921,22 @@
     zone.innerHTML = morceaux.map(function (m) { return '\x3Cspan class="morceau">' + m + '\x3C/span>'; }).join(' \u00b7 ');
   }
 
+  /* Débrief 29 (A-F13) : le pied et l'aide disent « archivé », et le jour
+     de ce relevé — « Dernier relevé archivé : S43 (vendredi 23 octobre) » :
+     la semaine du haut (« Semaine 44 ») et celle du pied (S43) ne se
+     confondent plus. Le jour est celui que le classeur a noté pour ce
+     relevé (le vendredi de sa semaine s'il n'en a pas noté) ; l'année ne
+     s'écrit que si ce n'est pas celle d'aujourd'hui. Pas de ligne d'âge en
+     tête de page (décision du débrief 28). */
+  function releveArchiveDit(i) {
+    var der = RELEVES_SRC.filter(function (r) { return indexDe(r.semaine) === i; }).pop();
+    var lu = der ? /^(\d{4})-(\d{2})-(\d{2})/.exec(String(der.date || '')) : null;
+    var jour = lu ? new Date(Date.UTC(+lu[1], +lu[2] - 1, +lu[3])) : new Date(dateDe(i).getTime() + 4 * 864e5);
+    var annee = jour.getUTCFullYear() !== aujourdhuiCivil().getUTCFullYear() ? ' ' + jour.getUTCFullYear() : '';
+    return 'Dernier relevé archivé : S' + numeroSemaine(i) + ' (' + JOURS_SEMAINE[jour.getUTCDay()] + ' ' + jour.getUTCDate() + ' ' +
+      MOIS[jour.getUTCMonth()] + annee + ')';
+  }
+
   function valeurDim(p, cle) {
     if (cle === '_anciennete') return ancienneteDepuis(p[CLE_DATE], aujourdhuiCivil());
     if (cle === '_mois') return moisDe(p[CLE_DATE]);
@@ -1329,6 +1345,33 @@
       if (String(v == null ? '' : v).trim() !== '') return false;
     }
     return true;
+  }
+
+  /* Débrief 29 (B5, D2) : la Mono est pour les références et les codes de
+     GATES. Une colonne courte (classe « num ») se lit en Plex Sans à
+     chiffres alignés (c.chiffre : classe « chiffre » des cases) — dates,
+     nombres, Oui/Non, ATA, Séquence, Domaine, « Traité »… —, sauf l'ECP et
+     les colonnes d'état des blocs de GATES (Avancement…, Validité, A
+     traiter par, Configuration officielle, Commentaire) tant qu'elles ne
+     portent que des codes (V, NV, MR, EMPTY, 100 %) : un seul mot en
+     minuscules (« Traité », « À faire ») et la colonne passe en Sans. */
+  var TITRE_ETAT_GATES = /^(avancement|validite|a traiter par|configuration officielle|commentaire)\b/;
+  function marquerChiffres(colonnes, plans) {
+    colonnes.forEach(function (c) {
+      c.chiffre = false;
+      if (!/(^|\s)num(\s|$)/.test(c.classe || '')) return;
+      var titre = reduireTexte(String(c.titre || ''));
+      if (/^ecp\b/.test(titre)) return;
+      if (TITRE_ETAT_GATES.test(titre)) {
+        var mots = false;
+        for (var i = 0; i < plans.length && !mots; i++) {
+          var v = plans[i][c.cle];
+          if (v != null && /[a-z\u00e0-\u00ff]/.test(String(v))) mots = true;
+        }
+        if (!mots) return;
+      }
+      c.chiffre = true;
+    });
   }
 
   /**
@@ -1752,6 +1795,7 @@
        « constructor » ou « __proto__ » et passer pour une colonne. */
     PAR_CLE = Object.create(null);
     COLONNES.forEach(function (c) { PAR_CLE[c.cle] = c; });
+    marquerChiffres(COLONNES, PLANS.concat(ANCIENS));
     CLE_DATE = src.cleDate || null;
     MOIS_D_ABORD = ordreDesDates(PLANS, CLE_DATE);
     /* Le concept harnais ne se suit que si la source en nomme la colonne ;
@@ -1887,9 +1931,9 @@
       : !RELEVES_SRC.length
       ? 'Aucun relevé archivé pour l\u2019instant : la page montre l\u2019extract du jour.'
       : EXTRAIT_EN_PLUS
-        ? 'Dernier relevé : ' + semaineDite(RELEVES[RELEVES.length - 2].i) + ' · ' + nArchives + (nArchives > 1 ? ' relevés' : ' relevé') +
+        ? releveArchiveDit(RELEVES[RELEVES.length - 2].i) + ' · ' + nArchives + (nArchives > 1 ? ' relevés' : ' relevé') +
           ' · l\u2019extract du jour, pas encore archivé, compte pour ' + semaineDite(DERNIER.i)
-        : 'Dernier relevé : ' + semaineDite(DERNIER.i) + ' · ' + RELEVES.length + (RELEVES.length > 1 ? ' relevés' : ' relevé');
+        : releveArchiveDit(DERNIER.i) + ' · ' + RELEVES.length + (RELEVES.length > 1 ? ' relevés' : ' relevé');
     var colonneLue = colonneDite(CLE_SUIVIE);
     $('colonne-suivie').textContent = colonneLue
       ? 'Colonne suivie : ' + colonneLue
@@ -2062,9 +2106,9 @@
       vueTable: VAUT_ESSENTIELLES ? 'essentielle' : 'toutes',
       /* Débrief 27 : les colonnes vides de bout en bout dans la sélection
          sont masquées (colonnesVides) ; « Afficher » les remet — un choix
-         retenu lui aussi. La rangée des filtres de colonne, elle, ne se
-         déplie qu'à la demande et le temps de la visite (X-A2). */
-      videsMontrees: false, filtresOuverts: false,
+         retenu lui aussi. (La rangée des filtres de colonne est toujours
+         là : débrief 28.) */
+      videsMontrees: false,
       /* La case du tableau, et l'en-tête, qui portent l'arrêt de tabulation
          (X-A2 : un seul arrêt pour les en-têtes, un pour les lignes). */
       repereTete: '', repereCorps: null
@@ -2072,7 +2116,6 @@
     vue.fen = cadrageParDefaut();
     if (!avant) { if (vue.vueTable === 'essentielle') appliquerVueTable(); return; }
     appliquerDisposition(avant);
-    vue.filtresOuverts = !!avant.filtresOuverts;
   }
 
   /* Les commandes fixes de la page reflètent la vue : le champ de recherche,
@@ -3031,9 +3074,16 @@
         ? '\x3Cspan class="pastille hachure">\x3C/span>'
         : '\x3Cspan class="pastille" style="background:' + v.couleur + '">\x3C/span>';
       var actif = vue.etat === v.cle;
+      /* Débrief 29 (F5) : la tuile filtre toute la page, pas seulement la
+         Synthèse — elle le dit avant le clic (au survol, et en clair aux
+         lecteurs d'écran : « Filtrer toute la page sur PWD_IN_PROGRESS,
+         220 plans »). */
+      var nV = parValeur[v.cle] || 0;
+      var dit = 'Filtrer toute la page sur ' + v.libelle;
       return '\x3Cbutton class="etat-btn" type="button" data-etat="' + ech(v.cle) + '" data-cle="' + ech(v.cle) + '" data-famille="' + v.famille +
         '" style="--teinte:' + v.teinte +
-        '" aria-pressed="' + actif + '" title="' + (actif ? 'Retirer le filtre' : 'N\u2019afficher que ces plans') + '">' +
+        '" aria-pressed="' + actif + '" title="' + ech(actif ? 'Retirer le filtre' : dit) + '"' +
+        (actif ? '' : ' aria-label="' + ech(dit + ', ' + nb(nV) + (nV > 1 ? ' plans' : ' plan')) + '"') + '>' +
         '\x3Cspan class="etat-haut">' + pastille + '\x3Cspan class="libelle">' + ech(v.libelle).replace(/_/g, '_\x3Cwbr>') + '\x3C/span>\x3C/span>' +
         '\x3Cspan class="etat-n">' + nb(parValeur[v.cle] || 0) + '\x3C/span>' +
         '\x3Cspan class="etat-pct">' + partDite(parValeur[v.cle] || 0, c.total) + '\x3C/span>' +
@@ -5486,20 +5536,10 @@
         '\x3Cspan class="masque"> (' + ech(noms) + ')\x3C/span>\x3C/span>' +
         '\x3Cbutton type="button" data-vides="afficher" title="' + ech('Afficher : ' + noms) + '">Afficher\x3C/button>';
   }
-  /* La rangée des filtres de colonne : dépliée à la demande, et toujours
-     quand un filtre de colonne est posé — on voit ce qui filtre. */
+  /* La rangée des filtres de colonne. Débrief 28 : elle est toujours là
+     (Nathan) ; débrief 29 : le bouton qui la pliait est supprimé. */
   function filtresColonneVisibles() {
-    /* Débrief 28 : la rangée des filtres de colonne est toujours là (Nathan). */
     return true;
-  }
-  function refleterOutilsTableau() {
-    var b = $('ouvrir-filtres');
-    if (!b) return;
-    var ouverts = filtresColonneVisibles();
-    var n = Object.keys(vue.filtres).filter(function (k) { return vue.filtres[k]; }).length;
-    b.setAttribute('aria-expanded', String(ouverts));
-    b.querySelector('.mot-outil').innerHTML = 'Filtrer\x3Cspan class="mot-long"> par colonne\x3C/span>' + (n ? ' (' + nb(n) + ')' : '');
-    b.title = ouverts ? (n ? 'Les filtres de colonne posés restent affichés' : 'Replier les filtres de colonne') : 'Un champ « filtrer » sous chaque en-tête';
   }
   /* Le libellé d'un groupe d'en-têtes : celui de la colonne suivie dit ce
      qu'il est (« Avancement (GATES · HDK AA 011) » — « HDK AA 011 » seul ne
@@ -5528,11 +5568,17 @@
       else groupes.push(d = { nom: c.groupe, n: 1, fige: colle, debut: i, suite: !!(d && d.nom === c.groupe) });
       if (c.cle === CLE_SUIVIE) d.suivie = true;
     });
-    var html = '\x3Ctr class="groupes">' + groupes.map(function (g) {
+    /* Débrief 29 (P-F15) : la vue essentielle garde une poignée de colonnes
+       prises dans des groupes différents — sa rangée de groupes répétait
+       « Informations principales » trois fois, coupée par les autres. Elle
+       n'a plus de rangée de groupes ; « Toutes les colonnes » garde la
+       sienne, telle quelle. */
+    var sansGroupes = vue.vueTable === 'essentielle';
+    var html = (sansGroupes ? '' : '\x3Ctr class="groupes">' + groupes.map(function (g) {
       var cl = g.fige ? (g.debut + g.n === nFige ? 'col-fige fige-fin' : 'col-fige') : '';
       return '\x3Cth colspan="' + g.n + '" data-debut="' + g.debut + '"' + (cl ? ' class="' + cl + '"' : '') +
         '>' + libelleGroupeTete(g, nomSuivi) + '\x3C/th>';
-    }).join('') + '\x3C/tr>\x3Ctr class="titres">' + cols.map(function (c, i) {
+    }).join('') + '\x3C/tr>') + '\x3Ctr class="titres">' + cols.map(function (c, i) {
       var actif = vue.tri.cle === c.cle;
       /* Débrief 29 (P-F17) : comme les en-têtes de « Par ATA », chaque
          colonne dit qu'elle trie — une double flèche pâle au repos, ↑ ou ↓
@@ -5559,7 +5605,6 @@
         '" placeholder="filtrer" data-actif="' + (!!val) + '" aria-label="Filtrer ' + ech(c.titre) + '">\x3C/th>';
     }).join('') + '\x3C/tr>';
     $('tete-tableau').innerHTML = html;
-    refleterOutilsTableau();
     ajusterSticky();
   }
   /* Un tableau encore hors de l'écran n'est pas mis en page (content-
@@ -5596,9 +5641,11 @@
   function styleFige(i, n) { return i < n ? ' style="left:var(--fige-' + i + ',0px)"' : ''; }
   function poserColonnesFigees() {
     if (tableauHorsEcran($('cadre-tableau'))) return;
-    var g = document.querySelector('.groupes'), t = document.querySelector('.titres'), f = document.querySelector('.filtres');
-    if (!g || !t || !f) return;
-    var hg = g.getBoundingClientRect().height;
+    /* Débrief 29 : la vue essentielle n'a pas de rangée de groupes (hg = 0). */
+    var tete = $('tete-tableau');
+    var g = tete.querySelector('tr.groupes'), t = tete.querySelector('tr.titres'), f = tete.querySelector('tr.filtres');
+    if (!t || !f) return;
+    var hg = g ? g.getBoundingClientRect().height : 0;
     var ht = t.getBoundingClientRect().height;
     /* On mesure les colonnes collees et on les pose les unes apres les
        autres. Sans ce cumul, la deuxieme viendrait recouvrir la premiere. */
@@ -5612,7 +5659,7 @@
     t.querySelectorAll('th').forEach(function (th) { th.style.top = hg + 'px'; });
     f.querySelectorAll('th').forEach(function (th) { th.style.top = (hg + ht) + 'px'; });
     if (!gauche.length) return;
-    g.querySelectorAll('th.col-fige').forEach(function (th) {
+    if (g) g.querySelectorAll('th.col-fige').forEach(function (th) {
       var d = parseInt(th.dataset.debut, 10) || 0;
       th.style.left = (gauche[d] || 0) + 'px';
     });
@@ -5730,6 +5777,12 @@
       var k = vue.tri.cle, sens = vue.tri.asc ? 1 : -1;
       if (k === CLE_SUIVIE) return (a._pct - b._pct) * sens || COMPARER_LOCAL(a.reference, b.reference);
       var va = String(a[k] == null ? '' : a[k]), vb = String(b[k] == null ? '' : b[k]);
+      /* Débrief 29 (B22) : « - » s'écrit « — » comme une case vide ; il se
+         range avec elles, en bas dans les deux sens — sinon des « — »
+         remontaient en tête du tri croissant. Les filtres lisent toujours
+         « - ». */
+      if (va.trim() === '-') va = '';
+      if (vb.trim() === '-') vb = '';
       if (va === '' && vb === '') return 0;
       if (va === '') return 1;
       if (vb === '') return -1;
@@ -5811,11 +5864,16 @@
             '\x3C/span>\x3C/td>';
         }
         var val = p[c.cle];
-        var classes = (c.classe + ' ' + fige + (c.cle === 'reference' ? ' col-ref' : '')).trim();
+        var classes = (c.classe + (c.chiffre ? ' chiffre' : '') + ' ' + fige + (c.cle === 'reference' ? ' col-ref' : '')).trim();
         /* « — » posé sur la case elle-même (classe tiret-vide), sans élément
            de plus : sur l'extract entier, ce sont des dizaines de milliers
            de cases. */
         if (val === '' || val == null) return '\x3Ctd class="' + classes + ' doux tiret-vide"' + styleFige(i, nFige) + '>\u2014\x3C/td>';
+        /* Débrief 29 (B22) : « - », que l'extract écrit dans les blocs sans
+           valeur, se lit comme une case vide — « — » en gris, la valeur
+           brute dite au survol. Il se trie avec les cases vides (en bas,
+           rangsDuTableau) ; les filtres gardent « - ». */
+        if (String(val).trim() === '-') return '\x3Ctd class="' + classes + ' doux tiret-vide"' + styleFige(i, nFige) + ' title="« - » dans GATES">\u2014\x3C/td>';
         var titre = c.classe.indexOf('large') !== -1 ? ' title="' + ech(val) + '"' : '';
         /* La référence se clique : le tableau se réduit à ce plan, et son
            historique s'ouvre au-dessus. */
@@ -5936,7 +5994,13 @@
   function lireDebord(rangee) {
     if (!rangee) return null;
     var reste = rangee.scrollWidth - rangee.clientWidth - rangee.scrollLeft, deborde = !rangee.hidden && reste > 2;
-    return function () { rangee.classList.toggle('deborde-droite', deborde); };
+    /* Débrief 29 : le sommaire défilé (au téléphone, calé sur la section
+       lue) dit aussi ce qui dépasse à gauche — « YNTHÈSE » coupé net. */
+    var gauche = rangee.id === 'sommaire-liste' && !rangee.hidden && rangee.scrollLeft > 2;
+    return function () {
+      rangee.classList.toggle('deborde-droite', deborde);
+      if (rangee.id === 'sommaire-liste') rangee.classList.toggle('deborde-gauche', gauche);
+    };
   }
   function marquerDebords() {
     ['filtre-journal', 'filtre-valeur-groupe', 'filtre-valeur-graphe'].forEach(function (id) { marquerDebord($(id)); });
@@ -6862,6 +6926,7 @@
     remettreContrat();
     var r = String(raison || '').trim();
     $('etat-contrat').textContent = r || 'Contrat impossible à charger.';
+    if (MASQUE_ENTRE_TEMPS.test(r)) { echecContratMasque(id, menu); return; }
     /* La raison dite dans la phrase : « … : service indisponible. » (une
        majuscule de début de phrase s'efface ; un sigle reste). */
     var dite = /^[A-ZÀ-Ý][a-zà-ÿ]/.test(r) ? r.charAt(0).toLowerCase() + r.slice(1) : r;
@@ -6874,8 +6939,38 @@
     appliquerGestesEnAttente();
     rendreFocusMenu(menu);
   }
-  function montrerAlerteContrat(texte) {
+  /* Débrief 29 (A-F21, S7) : un contrat masqué par un administrateur depuis
+     l'ouverture de la page — le classeur le dit (« … n'est plus affiché sur
+     le tableau de bord… »). Il quitte les menus tout de suite (sa famille
+     aussi, s'il en était la seule tranche), sans « Réessayer », qui ne
+     pourrait qu'échouer encore, et la phrase ne le nomme qu'une fois. Les
+     listes de contrats gardées dans les paquets déjà reçus l'oublient aussi
+     : la vue d'ensemble ne le ramène pas. Le contrat à l'écran, lui, reste
+     (la page montre encore ses chiffres). */
+  var MASQUE_ENTRE_TEMPS = /n[\u2019']est plus affiché sur le tableau de bord/;
+  function echecContratMasque(id, menu) {
+    var nom = nomAffiche(id);
+    ECHEC_CONTRAT = null;
+    if (id !== CONTRAT) oublierContrat(id);
+    montrerAlerteContrat(nom + ' n\u2019est plus affiché sur le tableau de bord (masqué par un administrateur). ' +
+      (id === CONTRAT ? 'La page montre ses chiffres d\u2019avant.' : 'La page montre toujours ' + nomAffiche(CONTRAT) + '.'), true);
+    appliquerGestesEnAttente();
+    rendreFocusMenu(menu);
+  }
+  function oublierContrat(id) {
+    var garder = function (c) { return c && String(c.id) !== id; };
+    CONTRATS = CONTRATS.filter(garder);
+    if (SRC && Array.isArray(SRC.contrats)) SRC.contrats = SRC.contrats.filter(garder);
+    Object.keys(PAQUETS).forEach(function (k) {
+      if (PAQUETS[k] && Array.isArray(PAQUETS[k].contrats)) PAQUETS[k].contrats = PAQUETS[k].contrats.filter(garder);
+    });
+    delete PAQUETS[id]; delete AVANCES[id]; delete MESSAGES_ENSEMBLE[id];
+    afficherContrat();
+  }
+  /* sansReessayer : un échec que redemander ne réparerait pas. */
+  function montrerAlerteContrat(texte, sansReessayer) {
     var z = $('alerte-contrat');
+    $('reessayer-contrat').hidden = !!sansReessayer;
     z.hidden = false;
     $('alerte-contrat-texte').textContent = texte;
   }
@@ -7083,15 +7178,20 @@
     var lignes = CONTRATS.map(function (c) {
       var r = resumes && resumes[c.id];
       var courant = c.id === CONTRAT;
+      /* Débrief 29 (A-F10) : un seul nom par onglet, celui du panneau
+         d'administration — « HDK › Tranche 1 », jamais « HDK » seul juste
+         au-dessus de « HDK › Tranche 2 » — et « à l'écran », ses mots. */
       var tete = '\x3Ctr' + (courant ? ' class="courant"' : '') + '>\x3Cth scope="row">\x3Cbutton type="button" class="lien-doux" data-aller-contrat="' + ech(c.id) + '"' +
-        (r && !r.message ? ' title="Passer à ce contrat"' : '') + '>' + ech(c.nom) + '\x3C/button>' + (courant ? '\x3Csmall>affiché\x3C/small>' : '') + '\x3C/th>';
+        (r && !r.message ? ' title="Passer à ce contrat"' : '') + '>' + ech(nomComplet(c.id)) + '\x3C/button>' + (courant ? '\x3Csmall>à l’écran\x3C/small>' : '') + '\x3C/th>';
       if (!r) {
         return tete + '\x3Ctd colspan="7" class="doux">' + (!resumes || ENSEMBLE_EN_COURS[c.id] ? 'chargement…' : ech(MESSAGES_ENSEMBLE[c.id] || 'contrat impossible à charger')) + '\x3C/td>\x3C/tr>';
       }
       if (r.message) return tete + '\x3Ctd colspan="7" class="alerte-ligne">' + ech(r.message) + '\x3C/td>\x3C/tr>';
       var e = r.echeance;
       var aLEcheance = !e ? TIRET_VIDE
-        : e.enRetard ? '\x3Cspan class="v tard">manque ' + nb(e.manque) + '\x3C/span>\x3Csmall>il faut ' + virgule(e.requis) + '/sem.\x3C/small>'
+        /* Débrief 29 (P-F18) : le rythme requis arrondi comme dans la fiche
+           de l'échéance (« il faut 83/sem. », plus « 83,0 »). */
+        : e.enRetard ? '\x3Cspan class="v tard">manque ' + nb(e.manque) + '\x3C/span>\x3Csmall>il faut ' + rythmeDit(e.requis) + '/sem.\x3C/small>'
         : '\x3Cspan class="v bon">tenue\x3C/span>' + (e.fin === 'validé' ? '\x3Csmall>tout est validé' + (e.domaine ? ' dans ' + ech(e.domaine) : '') + '\x3C/small>' : '');
       var finActuelle = e
         ? (e.fin === 'validé' ? '\x3Cspan class="v bon">tout est validé\x3C/span>'
@@ -7106,7 +7206,8 @@
           (r.reculs ? '\x3Csmall class="recul">' + nb(r.reculs) + (r.reculs > 1 ? ' reculs' : ' recul') + '\x3C/small>' : '') + '\x3C/td>' +
         '\x3Ctd>\x3Cspan class="v">' + (r.rythme === null ? TIRET_VIDE : virgule(r.rythme) + '/sem.') + '\x3C/span>\x3C/td>' +
         '\x3Ctd>\x3Cspan class="v' + (r.arret ? ' arret' : '') + '">' + (r.arret ? nb(r.arret) : TIRET_VIDE) + '\x3C/span>\x3C/td>' +
-        '\x3Ctd>' + (e ? '\x3Cspan class="v">' + ech(e.texte) + '\x3C/span>\x3Csmall>' + ech(e.quand) + ' · ' + ech(motJours(e.jours)) + '\x3C/small>' : '\x3Cspan class="doux">' + (r.sansJalon ? 'aucun jalon' : 'aucune à venir') + '\x3C/span>') + '\x3C/td>' +
+        '\x3Ctd>' + (e ? '\x3Cspan class="v">' + ech(e.texte) + '\x3C/span>\x3Csmall>' + ech(e.quand) + ' · ' + ech(motJours(e.jours)) + '\x3C/small>'
+          : '\x3Cspan class="doux">' + (r.sansJalon ? 'aucun jalon' : 'aucune à venir') + '\x3C/span>' + lienAjouterJalon(c.id, r)) + '\x3C/td>' +
         '\x3Ctd>' + aLEcheance + '\x3C/td>\x3Ctd>' + finActuelle + '\x3C/td>\x3C/tr>';
     }).join('');
     garderFocus(function () { corps.innerHTML = lignes; }, 'ensemble');
@@ -7117,6 +7218,15 @@
         if (c.tagName === 'TD' && c.colSpan === 1 && COLONNES_ENSEMBLE[k]) c.setAttribute('data-libelle', COLONNES_ENSEMBLE[k][0]);
       });
     });
+  }
+  /* Débrief 29 (A-F25, S8) : sous « aucun jalon », un administrateur de ce
+     contrat trouve le geste — « + Ajouter un jalon » ouvre l'administration
+     sur un jalon neuf pour ce contrat. Les lecteurs lisent « aucun jalon »,
+     sans plus. */
+  function lienAjouterJalon(id, r) {
+    if (!r.sansJalon || !estAdmin() || DROITS.coherent === false || !peutGererContrat(id)) return '';
+    return '\x3Cbutton type="button" class="lien-doux ajouter-jalon" data-ajouter-jalon="' + ech(id) + '" aria-label="Ajouter un jalon pour ' +
+      ech(nomComplet(id)) + '">+ Ajouter un jalon\x3C/button>';
   }
   function ouvrirEnsemble() {
     var zone = $('ensemble');
@@ -7192,6 +7302,8 @@
     if (appuiHorsEnsemble && horsDeLEnsemble(e)) { appuiHorsEnsemble = false; fermerEnsemble(); return; }
     appuiHorsEnsemble = false;
     if (e.target.closest('button[data-fermer-ensemble]')) { fermerEnsemble(); return; }
+    var aj = e.target.closest('button[data-ajouter-jalon]');
+    if (aj) { var pour = aj.dataset.ajouterJalon; fermerEnsemble(true); ouvrirAdmin({ ajouter: pour }); return; }
     var b = e.target.closest('button[data-aller-contrat]');
     if (!b) return;
     var id = b.dataset.allerContrat;
@@ -8394,6 +8506,14 @@
       else cible = $('corps-tableau').querySelector('[tabindex="0"]') || titreFocalisable($('section-plans'));
     }
     if (cible && cible.focus) { try { cible.focus({ preventScroll: !!(o && o.g && cible === o.g.el) }); } catch (err) { cible.focus(); } }
+    /* Débrief 29 : ouverte par la loupe du sommaire, la fiche se referme sur
+       la page là où on l'avait laissée — le focus revient à la loupe, la
+       page aussi (au téléphone, elle tombait au bas des 634 lignes). */
+    if (o && typeof o.y === 'number' && cible === o.g.el) {
+      var y = o.y;
+      window.scrollTo(window.scrollX, y);
+      apresImage(function () { if (Math.abs(window.scrollY - y) > 1) window.scrollTo(window.scrollX, y); });
+    }
     annoncer('Historique fermé : le tableau montre de nouveau tous les plans');
     return true;
   }
@@ -8476,11 +8596,18 @@
     if (res && res.q) annoncer(res.trouves ? nb(res.trouves) + (res.trouves > 1 ? ' plans trouvés' : ' plan trouvé') + ' dans la comparaison'
       : 'Aucun plan de la comparaison ne contient « ' + v.trim() + ' »');
   });
+  /* Débrief 29 (X-A5) : changer de base change tout le tableau — cela se
+     dit, avec le compte que la page affiche (« Base SEE affichée : 1 204
+     lignes », « Base GATES affichée : 634 plans »). */
+  function annoncerBase() {
+    annoncer('Base ' + (vue.base === 'la' ? nomSeconde() : 'GATES') + ' affichée : ' + $('compte').textContent);
+  }
   $('choix-base').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-base]');
     if (!b || b.dataset.base === vue.base) return;
     vue.base = b.dataset.base;
     rendre();
+    annoncerBase();
   });
   /* « Les voir dans GATES / SEE » : on change de côté sans toucher aux filtres. */
   $('section-plans').addEventListener('click', function (e) {
@@ -8490,6 +8617,7 @@
     rendre();
     var cible = document.querySelector('#choix-base button[data-base="' + vue.base + '"]');
     if (cible) cible.focus();
+    annoncerBase();
   });
 
   /* Survoler un bouton ou un segment du rapprochement éclaire le segment et
@@ -8644,9 +8772,13 @@
     var f = $('filtres-actifs'), ligne = f && !f.hidden ? f.querySelector('.filtres-ligne') : null;
     return ligne ? Math.round(ligne.getBoundingClientRect().height) : 0;
   }
+  /* Débrief 29 (M5) : au téléphone couché, le sommaire ne colle plus (il
+     reste en haut de la page) : il ne compte plus dans ce qui couvre le
+     haut de l'écran. */
+  function sommaireColle() { return getComputedStyle(SOMMAIRE).position === 'sticky'; }
   function lireHautSommaire() {
     var h = hauteurFiltres();
-    var s = Math.round(SOMMAIRE.getBoundingClientRect().height);
+    var s = sommaireColle() ? Math.round(SOMMAIRE.getBoundingClientRect().height) : 0;
     return function () {
       var racine = document.documentElement.style;
       racine.setProperty('--h-sommaire', s + 'px');
@@ -8663,19 +8795,26 @@
   function majSommaire() {
     var boite = SOMMAIRE.getBoundingClientRect();
     if (!boite.height) return;                       // classeur vide : rien à suivre
-    var colle = window.scrollY > 0 && boite.top <= parseFloat(getComputedStyle(SOMMAIRE).top) + 0.5;
+    var colle = window.scrollY > 0 && sommaireColle() && boite.top <= parseFloat(getComputedStyle(SOMMAIRE).top) + 0.5;
     if ((SOMMAIRE.getAttribute('data-colle') === 'true') !== colle) SOMMAIRE.setAttribute('data-colle', colle ? 'true' : 'false');
     // Le contrat peut changer pendant qu'on lit : relu à chaque passage.
     /* Débrief 27 (lot H) : « HDK › Tranche 1 », comme le surtitre du titre —
        la tranche 1 s'écrivait « HDK » tout court. */
     var contrat = colle && CONTRATS && CONTRATS.length ? nomAffiche(CONTRAT) : '';
     if ($('sommaire-contrat').textContent !== contrat) $('sommaire-contrat').textContent = contrat;
-    var courant = null, presents = LIENS_SOMMAIRE.filter(function (a) { return !a.parentNode.hidden && !a.hasAttribute('aria-disabled'); });
-    var seuil = boite.bottom + hauteurFiltres() + 40;   // débrief 27 : sous le sommaire ET les filtres collés
+    var courant = null, presents = LIENS_SOMMAIRE.filter(function (a) {
+      var sec = chapitreDe(a);
+      return !a.parentNode.hidden && !a.hasAttribute('aria-disabled') && !!sec && sec.getClientRects().length > 0;
+    });
+    /* Débrief 29 (S9) : la section qu'on lit est celle qui occupe le plus
+       d'écran sous le sommaire et les filtres collés — le seuil de 35 %
+       marquait « Par ATA » quand les Plans prenaient déjà le bas de l'écran
+       (l'ATA 37→365 px, les Plans 405→900). À égalité, celle du dessus. */
+    var seuil = Math.max(0, sommaireColle() ? boite.bottom : 0) + hauteurFiltres(), basEcran = window.innerHeight, vuMax = 0;
     presents.forEach(function (a) {
-      /* Débrief 27 : sous le sommaire et les filtres collés (lot H), et au plus tôt
-         quand la section croise 35 % de la hauteur de l'écran (lot G). */
-      if (chapitreDe(a).getBoundingClientRect().top <= Math.max(seuil, window.innerHeight * 0.35)) courant = a;
+      var r = chapitreDe(a).getBoundingClientRect();
+      var vu = Math.min(r.bottom, basEcran) - Math.max(r.top, seuil);
+      if (vu > vuMax + 0.5) { vuMax = vu; courant = a; }
     });
     var fond = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
     if (fond && presents.length && window.scrollY > 0) courant = presents[presents.length - 1];
@@ -8686,12 +8825,26 @@
     });
     /* Au téléphone le sommaire défile de côté : le panneau courant y reste
        en vue, sans faire bouger la page. */
-    if (courant && LISTE_SOMMAIRE.scrollWidth > LISTE_SOMMAIRE.clientWidth + 1) {
-      var g = courant.parentNode.offsetLeft - LISTE_SOMMAIRE.offsetLeft, d = g + courant.offsetWidth;
-      if (g < LISTE_SOMMAIRE.scrollLeft || d > LISTE_SOMMAIRE.scrollLeft + LISTE_SOMMAIRE.clientWidth) {
-        LISTE_SOMMAIRE.scrollLeft = Math.max(0, g - (LISTE_SOMMAIRE.clientWidth - courant.offsetWidth) / 2);
-      }
-    }
+    if (courant && LISTE_SOMMAIRE.scrollWidth > LISTE_SOMMAIRE.clientWidth + 1) caleSommaire(courant);
+  }
+  /* Débrief 29 : le panneau courant se lisait au milieu de la bande, ses
+     voisins coupés des deux côtés (« ESE 02 TENDANCE 03 »). Il est
+     maintenant lisible en entier, hors des fondus des bords, avec le
+     panneau d'avant quand les deux tiennent ; sinon il se cale à gauche,
+     juste après le fondu. Rien ne bouge s'il est déjà lisible. */
+  function caleSommaire(courant) {
+    var l = LISTE_SOMMAIRE, fondu = 28, larg = l.clientWidth, max = l.scrollWidth - larg;
+    var li = courant.parentNode, g = li.offsetLeft - l.offsetLeft, d = g + li.offsetWidth;
+    var lisible = function (x) {
+      return g >= x + (x > 2 ? fondu : 0) && d <= x + larg - (x < max - 2 ? fondu : 0);
+    };
+    var borne = function (x) { return Math.max(0, Math.min(max, x)); };
+    if (lisible(l.scrollLeft)) return;
+    var precedent = function (e) { e = e && e.previousElementSibling; while (e && e.hidden) e = e.previousElementSibling; return e; };
+    var avant = precedent(li), premier = !avant || !precedent(avant);
+    var x = !avant ? 0 : premier ? 0 : borne(avant.offsetLeft - l.offsetLeft - fondu);
+    if (!lisible(x)) x = avant ? borne(g - fondu) : 0;
+    l.scrollLeft = x;
   }
   var attenteSommaire = false;
   window.addEventListener('scroll', function () {
@@ -8713,7 +8866,7 @@
     var sec = chapitreDe(a);
     if (!chapitreVisible(sec)) return;
     var doux = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    var haut = sec.getBoundingClientRect().top + window.scrollY - SOMMAIRE.getBoundingClientRect().height -
+    var haut = sec.getBoundingClientRect().top + window.scrollY - (sommaireColle() ? SOMMAIRE.getBoundingClientRect().height : 0) -
       hauteurFiltres() - 14;
     window.scrollTo({ top: Math.max(0, haut), behavior: doux ? 'smooth' : 'auto' });
     /* Le titre du panneau (débrief 27 : la phrase de la synthèse est son
@@ -8723,6 +8876,62 @@
       if (!titre.hasAttribute('tabindex')) titre.setAttribute('tabindex', '-1');
       try { titre.focus({ preventScroll: true }); } catch (err) { titre.focus(); }
     }
+  });
+  /* Débrief 29 (a11y) : le focus dans les barres collées — le sommaire et
+     les filtres posés sont toujours à l'écran, mais Chrome les croyait
+     cachés sous la marge du haut (scroll-padding) et ramenait la page d'une
+     demi-hauteur d'écran à chaque Tab, au clic d'une icône ou d'une croix.
+     Au clavier : la page reprend, avant d'être peinte, la place qu'elle
+     avait avant Tab. À la souris (ou au doigt) : le bouton prend le focus
+     sans défilement. */
+  /* La place d'avant, reprise à l'image suivante (avant d'être peinte) ;
+     plusieurs touches dans la même image gardent la première place. */
+  var PLACE_GARDEE = null;
+  function garderPlace(y) {
+    if (PLACE_GARDEE !== null) return;
+    PLACE_GARDEE = y;
+    requestAnimationFrame(function () {
+      var z = PLACE_GARDEE, ici = window.scrollY;
+      PLACE_GARDEE = null;
+      if (ici === z) return;
+      window.scrollTo(window.scrollX, z);
+      /* Sur un écran très bas, le sommaire pas encore collé peut être sous
+         le bord : alors le défilement de Chrome était le bon. */
+      var a = document.activeElement, r = a && a !== document.body ? a.getBoundingClientRect() : null;
+      if (r && (r.bottom <= 0 || r.top >= window.innerHeight)) window.scrollTo(window.scrollX, ici);
+    });
+  }
+  var DEFILEMENT_AVANT_TAB = null;
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Tab') DEFILEMENT_AVANT_TAB = PLACE_GARDEE !== null ? PLACE_GARDEE : window.scrollY;
+  }, true);
+  document.addEventListener('focusin', function (e) {
+    var y = DEFILEMENT_AVANT_TAB;
+    DEFILEMENT_AVANT_TAB = null;
+    var el = e.target;
+    if (y === null || !el || !el.closest || !el.closest('#sommaire, #filtres-actifs') || !sommaireColle()) return;
+    garderPlace(y);
+  });
+  document.addEventListener('keyup', function (e) { if (e.key === 'Tab') DEFILEMENT_AVANT_TAB = null; }, true);
+  /* Dans le champ de la loupe, Chrome amène le curseur sous la marge à
+     chaque lettre tapée (la page remontait de 41 px par caractère) : la
+     page reprend sa place avant d'être peinte. */
+  function garderPlaceSaisie() {
+    if (sommaireColle()) garderPlace(window.scrollY);
+  }
+  /* Seulement la frappe et le curseur : Entrée, elle, mène à la fiche du
+     plan (la page doit y descendre). */
+  $('cherche-plan-champ').addEventListener('beforeinput', function (e) { if (e.inputType !== 'insertLineBreak') garderPlaceSaisie(); });
+  $('cherche-plan-champ').addEventListener('keydown', function (e) {
+    if (/^(ArrowLeft|ArrowRight|Home|End)$/.test(e.key)) garderPlaceSaisie();
+  }, true);
+  [SOMMAIRE, $('filtres-actifs')].forEach(function (barre) {
+    barre.addEventListener('mousedown', function (e) {
+      var b = e.target.closest && e.target.closest('button, input');
+      if (!b || b.disabled || e.button !== 0 || document.activeElement === b || !sommaireColle()) return;
+      e.preventDefault();
+      try { b.focus({ preventScroll: true }); } catch (err) { b.focus(); }
+    });
   });
   /* Un panneau qui paraît ou s'efface (la comparaison selon le contrat, la
      page vide), le bandeau des filtres qui s'ouvre : le sommaire suit. */
@@ -8744,7 +8953,7 @@
      ============================================================ */
 
   /* Le bouton « haut de page » (B15, M16). Dans la marge des panneaux
-     (1330 px et plus) ou au-dessus de leur bord intérieur (jusqu'à 721 px),
+     (1330 px et plus ; débrief 29 : de 721 à 1 329 px aussi, en 28 px),
      il ne couvre rien : il paraît dès qu'on est descendu d'un écran et
      quart. Au téléphone, il couvrirait le bord du contenu : il ne paraît
      qu'en remontant — on cherche le haut —, s'efface dès qu'on redescend, et
@@ -8802,7 +9011,7 @@
   function mener(cible, titre) {
     if (!cible) return;
     var doux = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    var haut = cible.getBoundingClientRect().top + window.scrollY - SOMMAIRE.getBoundingClientRect().height -
+    var haut = cible.getBoundingClientRect().top + window.scrollY - (sommaireColle() ? SOMMAIRE.getBoundingClientRect().height : 0) -
       (parseFloat(getComputedStyle(SOMMAIRE).top) || 0) - 14;
     window.scrollTo({ top: Math.max(0, haut), behavior: doux ? 'smooth' : 'auto' });
     var f = titre || cible;
@@ -9095,7 +9304,7 @@
     var sec = $(id);
     if (!chapitreVisible(sec)) return;
     finirRendu(true);
-    var haut = sec.getBoundingClientRect().top + window.scrollY - SOMMAIRE.getBoundingClientRect().height - 14;
+    var haut = sec.getBoundingClientRect().top + window.scrollY - (sommaireColle() ? SOMMAIRE.getBoundingClientRect().height : 0) - 14;
     window.scrollTo(0, Math.max(0, haut));
   }
   function sectionLue() {
@@ -9386,7 +9595,9 @@
     if (!b) return;
     var k = b.dataset.vide;
     if (vue.vides[k]) delete vue.vides[k]; else vue.vides[k] = true;
-    rendre();
+    /* Débrief 29 (X-A1) : la puce est redessinée ; le focus revient sur la
+       nouvelle (data-vide), pas sur le corps de la page. */
+    garderFocus(rendre, 'barre-tableau');
   });
 
   $('dim-critique').addEventListener('change', function (e) {
@@ -9441,7 +9652,7 @@
   function hautSommaire() {
     var f = $('filtres-actifs'), s = $('sommaire');
     return (f && !f.hidden ? f.getBoundingClientRect().height : 0) +
-      (s && s.getClientRects().length ? s.getBoundingClientRect().height : 0);
+      (s && s.getClientRects().length && getComputedStyle(s).position === 'sticky' ? s.getBoundingClientRect().height : 0);
   }
   function hautLibreCritique() {
     var tete = $('zone-critique').querySelector('.critique-tete');
@@ -10033,7 +10244,49 @@
     if (!cible) return;
     if (cible.tagName === 'TD' && !cible.hasAttribute('tabindex')) cible.setAttribute('tabindex', '-1');
     prendreRepere(cible);
-    cible.focus();
+    /* Débrief 29 (X-A3) : Chrome jugeait « visible » une case couverte par
+       la colonne figée à 1 px près, et ne défilait pas — le scroll-padding
+       du cadre restait lettre morte. Le focus ne fait plus défiler ; la case
+       est amenée à vue à la main (montrerCase). */
+    try { cible.focus({ preventScroll: true }); } catch (e) { cible.focus(); }
+    montrerCase(caseDe(cible) || cible);
+  }
+  /* Une case atteinte au clavier ne reste jamais sous ce qui la couvre :
+     à droite des colonnes figées réellement collées, sous les en-têtes
+     collés, au-dessus du fondu du bas du cadre ; puis, dans la page, sous
+     le sommaire collé et dans la fenêtre. */
+  function montrerCase(td) {
+    var defile = $('defile');
+    if (!td || !defile) return;
+    var d = defile.getBoundingClientRect();
+    var gauche = d.left + defile.clientLeft, droite = gauche + defile.clientWidth;
+    var haut = d.top + defile.clientTop, bas = haut + defile.clientHeight;
+    var colle = function (el) { return getComputedStyle(el).position === 'sticky' && getComputedStyle(el).left !== 'auto'; };
+    var figR = gauche;
+    [].forEach.call(tete.querySelectorAll('tr.titres th.col-fige'), function (th) {
+      if (!colle(th)) return;
+      var x = th.getBoundingClientRect().right;
+      if (x > figR) figR = x;
+    });
+    var r = td.getBoundingClientRect();
+    if (!(td.classList.contains('col-fige') && colle(td))) {
+      if (r.left < figR + 4) defile.scrollLeft -= Math.ceil(figR + 4 - r.left);
+      else if (r.right > droite - 4) defile.scrollLeft += Math.ceil(Math.min(r.right - (droite - 4), r.left - (figR + 4)));
+    }
+    if (defile.scrollHeight > defile.clientHeight + 1) {
+      /* Le bas des en-têtes collés : celui de leurs cases (sticky), pas du
+         thead, qui défile avec le tableau. */
+      var basTete = tete.querySelector('tr.filtres th') || tete.querySelector('tr.titres th');
+      var hautT = Math.max(haut, basTete ? basTete.getBoundingClientRect().bottom : haut);
+      var fondu = $('cadre-tableau').getAttribute('data-plus-bas') === 'true' ? 32 : 2;
+      r = td.getBoundingClientRect();
+      if (r.top < hautT + 2) defile.scrollTop -= Math.ceil(hautT + 2 - r.top);
+      else if (r.bottom > bas - fondu) defile.scrollTop += Math.ceil(Math.min(r.bottom - (bas - fondu), r.top - (hautT + 2)));
+    }
+    var hautPage = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+    r = td.getBoundingClientRect();
+    if (r.top < hautPage) window.scrollBy(0, Math.floor(r.top - hautPage));
+    else if (r.bottom > window.innerHeight - 8) window.scrollBy(0, Math.ceil(Math.min(r.bottom - window.innerHeight + 8, r.top - hautPage)));
   }
   $('corps-tableau').addEventListener('keydown', function (e) {
     var td = caseDe(e.target);
@@ -10171,18 +10424,6 @@
     fermerMenuColonne(false);
   });
   $('defile').addEventListener('scroll', function () { fermerMenuColonne(false); }, { passive: true });
-  /* « Filtrer par colonne » : la rangée des champs se déplie (le focus va au
-     premier), ou se replie — sauf si un filtre est posé : il reste à vue. */
-  $('ouvrir-filtres').addEventListener('click', function () {
-    var ouvrir = !filtresColonneVisibles();
-    vue.filtresOuverts = ouvrir;
-    rendreEntetes();
-    if (ouvrir) {
-      var champ = tete.querySelector('tr.filtres input');
-      if (champ) champ.focus({ preventScroll: true });
-      annoncer('Filtres de colonne affichés : un champ sous chaque en-tête');
-    } else annoncer(filtresColonneVisibles() ? 'Des filtres de colonne sont posés : ils restent affichés' : 'Filtres de colonne repliés');
-  });
   /* ============================================================
      DÉBRIEF 27, LOT D — EXPORTER LE TABLEAU (P-F21)
      « Copier le tableau » : ce que le tableau montre — filtres, tri,
@@ -10301,7 +10542,6 @@
      par-dessus le sommaire.
      ============================================================ */
   var CHERCHE = { refs: [], actif: -1, minuteur: 0 };
-  function chercheEnIcone() { return !!(window.matchMedia && window.matchMedia('(max-width: 1279px)').matches); }
   function plansTrouves(texte) {
     var q = motCherche(texte);
     if (!q || !PLANS) return { q: q, debut: [], dedans: [], anciens: [] };
@@ -10333,7 +10573,15 @@
     CHERCHE.actif = opts.length ? (i + opts.length) % opts.length : -1;
     [].forEach.call(opts, function (o, k) { o.setAttribute('aria-selected', String(k === CHERCHE.actif)); });
     var o = opts[CHERCHE.actif];
-    if (o) { champ.setAttribute('aria-activedescendant', o.id); if (o.scrollIntoView) o.scrollIntoView({ block: 'nearest' }); }
+    /* Débrief 29 : seule la liste défile jusqu'à l'option choisie — un
+       scrollIntoView faisait aussi défiler la page (l'option, sous le
+       sommaire collé, était dans la marge du haut). */
+    if (o) {
+      champ.setAttribute('aria-activedescendant', o.id);
+      var liste = o.parentNode;
+      if (o.offsetTop < liste.scrollTop) liste.scrollTop = o.offsetTop;
+      else if (o.offsetTop + o.offsetHeight > liste.scrollTop + liste.clientHeight) liste.scrollTop = o.offsetTop + o.offsetHeight - liste.clientHeight;
+    }
     else champ.removeAttribute('aria-activedescendant');
   }
   function rendreListeCherche(texte) {
@@ -10363,11 +10611,17 @@
     marquerOptionCherche(vus.length ? 0 : -1);
     annoncer(tous.length ? nb(tous.length) + (tous.length > 1 ? ' plans trouvés' : ' plan trouvé') + ', flèches pour choisir' : 'Aucun plan trouvé');
   }
+  /* Débrief 29 : le champ et la loupe vivent dans le sommaire collé, donc
+     toujours à l'écran — un focus() ordinaire ramenait la page à la place du
+     sommaire dans le flux (de y 2500 à 1129, puis 672 à la fermeture). */
+  function focusSurPlace(el) {
+    try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); }
+  }
   function ouvrirCherche() {
     var bloc = $('cherche-plan');
     bloc.setAttribute('data-ouvert', 'true');
     $('cherche-plan-ouvrir').setAttribute('aria-expanded', 'true');
-    $('cherche-plan-champ').focus();
+    focusSurPlace($('cherche-plan-champ'));
   }
   function replierCherche(rendreFocus) {
     var bloc = $('cherche-plan');
@@ -10375,23 +10629,24 @@
     if (bloc.getAttribute('data-ouvert') !== 'true') return;
     bloc.setAttribute('data-ouvert', 'false');
     $('cherche-plan-ouvrir').setAttribute('aria-expanded', 'false');
-    if (rendreFocus) $('cherche-plan-ouvrir').focus();
+    if (rendreFocus) focusSurPlace($('cherche-plan-ouvrir'));
   }
   function choisirPlanCherche(ref) {
     var p = PLAN_PAR_REF[ref];
     if (!p) return;
-    var champ = $('cherche-plan-champ');
+    var champ = $('cherche-plan-champ'), depart = window.scrollY;
     fermerListeCherche();
     /* Un plan hors du périmètre posé : on ne le cache pas derrière lui — le
        périmètre se retire, l'historique s'ouvre. */
     if (!dansPerimetre(p)) vue.perimetre = '';
     montrerCePlan(ref);
     champ.value = '';
-    if (chercheEnIcone()) {
-      OUVREUR_PLAN = { ref: ref, g: empreinteFocus($('cherche-plan-ouvrir')) };
-      $('cherche-plan').setAttribute('data-ouvert', 'false');
-      $('cherche-plan-ouvrir').setAttribute('aria-expanded', 'false');
-    }
+    /* Débrief 29 : la recherche est une loupe à toutes les largeurs (débrief
+       28) — elle est toujours ce qui a ouvert la fiche : Échap y ramène le
+       focus. Au-delà de 1280 px, il tombait sur le titre des plans. */
+    OUVREUR_PLAN = { ref: ref, g: empreinteFocus($('cherche-plan-ouvrir')), y: depart };
+    $('cherche-plan').setAttribute('data-ouvert', 'false');
+    $('cherche-plan-ouvrir').setAttribute('aria-expanded', 'false');
   }
   $('cherche-plan-ouvrir').addEventListener('click', function () {
     if ($('cherche-plan').getAttribute('data-ouvert') === 'true') replierCherche(true); else ouvrirCherche();
@@ -10416,11 +10671,14 @@
       if (CHERCHE.actif >= 0 && CHERCHE.refs[CHERCHE.actif]) { e.preventDefault(); choisirPlanCherche(CHERCHE.refs[CHERCHE.actif]); }
       return;
     }
+    /* Débrief 29 : Échap ferme la liste si elle est ouverte ; sinon il
+       ferme la recherche tout de suite, le texte effacé avec — il fallait
+       trois Échap (la liste, le texte, puis le champ) pour « Échap pour
+       fermer ». */
     if (e.key === 'Escape') {
       e.preventDefault(); e.stopPropagation();
       if (ouverte) fermerListeCherche();
-      else if (e.target.value) e.target.value = '';
-      else replierCherche(true);
+      else { e.target.value = ''; replierCherche(true); }
       return;
     }
     if (e.key === 'Tab') fermerListeCherche();
@@ -10467,8 +10725,7 @@
     if (b) trancheSuivante(b.dataset.suite);
   });
   document.addEventListener('keydown', function (e) {
-    var champ = vue.base === 'la' ? $('recherche-seconde') : $('recherche');
-    if (e.key !== '/' || document.activeElement === champ) return;
+    if (e.key !== '/') return;
     /* « / » est aussi un caractère qu'on tape : dans un autre champ (le
        journal, un filtre de colonne, « S38/A »…), il reste dans ce champ au
        lieu d'emmener la frappe dans la recherche du tableau. */
@@ -10477,7 +10734,12 @@
     /* Débrief 27, lot G (WCAG 2.1.4) : un raccourci d'une seule touche se
        coupe, dans l'aide (« Raccourcis d'une seule touche »). */
     if (!raccourcisActifs() || e.ctrlKey || e.metaKey || e.altKey || document.querySelector('dialog[open]')) return;
-    e.preventDefault(); champ.focus(); champ.select();
+    /* Débrief 29 (S9) : « / » ouvre la loupe du sommaire, là où l'on est —
+       il menait à la recherche du tableau, et la page sautait aux Plans.
+       La loupe cherche dans GATES et dans SEE. */
+    var loupe = $('cherche-plan-ouvrir');
+    if (!focusVisible(loupe)) return;
+    e.preventDefault(); ouvrirCherche();
   });
   var minuteurTaille = null;
   window.addEventListener('resize', function () {
@@ -12189,5 +12451,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = 'a6eee20';
+window.SUIVI_FWD_FIN = 'f9fa8ef';
 </script>
