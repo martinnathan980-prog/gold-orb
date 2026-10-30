@@ -7557,8 +7557,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     /* Les références d'un gros groupe déplié : une douzaine de rangées de
        puces, puis « Voir les N autres plans » (D10). La rangée de puces
        compte autant de puces que la largeur en loge (colonnes de 150 px). */
-    var largeurListe = $('zone-critique').clientWidth || 0;
-    var limiteRefs = largeurListe ? Math.max(1, Math.floor((largeurListe - 32 + 7) / 157)) * 12 : 0;
+    /* La largeur vient de la dernière mesure de la page (poserColonneNom,
+       à l'image d'avant) : la lire ici forcerait une mise en page entière,
+       tableau de 640 lignes compris, au milieu du rendu. */
+    var limiteRefs = LARGEUR_LISTE ? Math.max(1, Math.floor((LARGEUR_LISTE - 32 + 7) / 157)) * 12 : 0;
 
     var lignes = rangs.map(function (r, i) {
       var ouvert = estOuvert(r);
@@ -7741,7 +7743,11 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      mesure, tous les noms d'un coup ; au téléphone, le nom a toute la ligne.
      Elle se fait à l'image suivante, avec les autres mesures de la page. */
   function ajusterColonneNom() { aMesurer('colonneNom'); }
+  /* Débrief 27 (lot C) : la largeur de la liste, relevée avec les autres
+     mesures de la page ; le rendu du bloc s'en sert sans rien remesurer. */
+  var LARGEUR_LISTE = 0;
   function poserColonneNom() {
+    LARGEUR_LISTE = $('zone-critique') ? $('zone-critique').clientWidth : 0;
     largeurColonneNom();
     poserPartsBarre();
   }
