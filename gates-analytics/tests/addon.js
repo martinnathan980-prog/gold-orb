@@ -2228,6 +2228,10 @@ function serveurSur(valeurs, proprietes, fichiers) {
   section('La page rendue par Apps Script');
   const nav = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
   const ctx = await nav.newContext({ viewport: { width: 1280, height: 1000 } });
+  /* Débrief 27, lot D : une tranche du tableau tient 60 lignes au plus ;
+     ces vérifications comptent toutes les lignes, d'un coup (comme la
+     batterie). */
+  await ctx.addInitScript(() => { window.SUIVI_FWD_BUDGET = 1e9; });
   const p = await ctx.newPage();
   p.on('pageerror', e => erreursJS.push(e.message));
   p.on('console', m => { if (m.type() === 'error' && !m.text().includes('ERR_FILE')) erreursJS.push(m.text()); });
@@ -2404,6 +2408,14 @@ function serveurSur(valeurs, proprietes, fichiers) {
   /* Ici, on compte les lignes du tableau : toutes dessinées d'un coup. Le
      découpage en tranches a ses propres tests (« 640 plans… »). */
   await ctxGates.addInitScript(() => { window.SUIVI_FWD_BUDGET = 1e9; });
+  /* Débrief 27, lot D : un nouveau venu ouvre sur la vue essentielle, les
+     colonnes vides masquées ; ici, on vérifie l'extract entier : le lecteur a
+     choisi « Toutes les colonnes » et « Afficher » les vides (deux choix que
+     la page retient). La batterie vérifie le nouveau venu. */
+  await ctxGates.addInitScript(() => {
+    try { if (!localStorage.getItem('suivi-fwd:v1')) localStorage.setItem('suivi-fwd:v1', JSON.stringify({ vueTable: 'toutes', videsMontrees: true })); }
+    catch (e) { /* sans stockage : les valeurs par défaut */ }
+  });
   const pg = await ctxGates.newPage();
   pg.on('pageerror', e => erreursJS.push('gates : ' + e.message));
   pg.on('console', m => { if (m.type() === 'error' && !m.text().includes('ERR_FILE')) erreursJS.push('gates : ' + m.text()); });
@@ -2515,6 +2527,14 @@ function serveurSur(valeurs, proprietes, fichiers) {
      ferait le lecteur, puis on remonte : la suite part du même état. */
   await pg.evaluate(() => document.getElementById('cadre-tableau').scrollIntoView({ block: 'start' }));
   await pg.waitForTimeout(500);
+  /* Débrief 27, lot D : au-delà de 20 000 cellules, le tableau garde
+     content-visibility hors de l'écran ; ses colonnes figées se posent quand
+     il paraît, après sa mise en page — sur une machine chargée, plus de
+     500 ms. On attend qu'elles le soient (au plus 5 s), comme la batterie. */
+  await pg.waitForFunction(() => {
+    const g = [...document.querySelectorAll('tr.titres th.col-fige')].map(t => parseFloat(t.style.left));
+    return g.length > 0 && g[0] === 0;
+  }, null, { timeout: 5000, polling: 'raf' }).catch(() => {});
   const fige = await pg.evaluate(() => {
     const th = [...document.querySelectorAll('tr.titres th')];
     const n = th.findIndex(t => t.textContent.trim() === 'Référence UD');
@@ -2797,7 +2817,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
       .map(b => b.dataset.vue + ':' + b.getAttribute('aria-pressed')),
     n: document.querySelectorAll('tr.titres th').length
   }));
-  verifier('la vue « toutes les colonnes » est celle de depart',
+  verifier('la vue « toutes les colonnes », choisie et retenue, est celle de depart',
     vueDepart.presse.join(' ') === 'toutes:true essentielle:false' && vueDepart.n === 137,
     JSON.stringify(vueDepart));
 
@@ -2863,6 +2883,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const libelleEtat = await pg.evaluate(k => window.__valeurs().filter(v => v.cle === k).map(v => v.libelle)[0], etatPose.cle);
   /* Le domaine se choisit par le périmètre du haut ; le filtre de colonne
      reste une porte d'entrée, et son jeton nomme la colonne. */
+  /* Débrief 27 : la rangée des filtres de colonne se déplie d'abord (X-A2). */
+  if (await pg.getAttribute('#ouvrir-filtres', 'aria-expanded') !== 'true') { await pg.click('#ouvrir-filtres'); await pg.waitForTimeout(250); }
   await pg.fill('input[data-filtre="domaine"]', 'PERSO'); await pg.waitForTimeout(400);
   await pg.fill('#recherche', 'UD-24'); await pg.waitForTimeout(400);
   const jetons = await pg.evaluate(() => [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').trim()));
@@ -3257,6 +3279,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
      ou une panne du classeur laissent la page sur le contrat courant. */
   section('Changer de contrat dans la page rendue');
   const ctxMulti = await nav.newContext({ viewport: { width: 1280, height: 1000 } });
+  /* Débrief 27, lot D : une tranche du tableau tient 60 lignes au plus ; les
+     plans se comptent ici aux lignes du tableau — toutes, d'un coup. */
+  await ctxMulti.addInitScript(() => { window.SUIVI_FWD_BUDGET = 1e9; });
   const pm = await ctxMulti.newPage();
   pm.on('pageerror', e => erreursJS.push('contrats : ' + e.message));
   /* La panne simulée passe par le rappel d'échec du pont, qui la journalise

@@ -168,6 +168,7 @@ function lireEtat() {
     corps: h('corps-tableau'), tete: h('tete-tableau').replace(/ style="[^"]*"/g, ''), seconde: h('corps-seconde'),
     zoneJournal: h('zone-journal'), zoneCritique: h('zone-critique'), barre: h('barre'), etats: h('etats'),
     cellules: document.querySelectorAll('#corps-tableau td').length, see: document.querySelectorAll('#corps-seconde td').length,
+    colonnes: document.querySelectorAll('#tete-tableau tr.titres th').length,
     /* Débrief 27, lot G : le pied a deux colonnes, les temps de l'ouverture
        repliés dans « Infos techniques » : on compare ses morceaux nommés. */
     pied: [...document.querySelectorAll('.pied [id]:not(#mesure-ouverture):not(#pied-technique)')].map(e => e.hidden ? '' : e.textContent).join('|'),
@@ -254,9 +255,12 @@ function photoDeLaSynthese() {
   const ref640 = await etatFinal(pRef);
   const etatsRef = await pRef.evaluate(() => window.__etats);
   await fermer(pRef);
-  verifier('d’un bloc (window.SUIVI_FWD_DIFFERER = false) : « synthese » puis « pret », la page entière, 60 lignes au tableau',
-    etatsRef.join() === 'chargement,synthese,pret' && ref640.cellules === 60 * 137 + 1 && /sur 640 plans/.test(ref640.synthese),
-    JSON.stringify([etatsRef, ref640.cellules, ref640.synthese.slice(0, 80)]));
+  /* Débrief 27, lot D : la page s'ouvre sur la vue essentielle (9 colonnes
+     au plus, colonnes vides de la sélection masquées) ; sa première tranche
+     garde 60 lignes. */
+  verifier('d’un bloc (window.SUIVI_FWD_DIFFERER = false) : « synthese » puis « pret », la page entière, 60 lignes au tableau (vue essentielle)',
+    etatsRef.join() === 'chargement,synthese,pret' && ref640.colonnes >= 2 && ref640.colonnes <= 9 && ref640.cellules === 60 * ref640.colonnes + 1 && /sur 640 plans/.test(ref640.synthese),
+    JSON.stringify([etatsRef, ref640.colonnes, ref640.cellules, ref640.synthese.slice(0, 80)]));
 
   const pEnv = await ouvrir(urlEnv640, {
     etiquette: 'g640 en deux temps',
@@ -389,10 +393,13 @@ function photoDeLaSynthese() {
   special.plansTab.lignes[0][iLib] = caracteres;
   const urlSpecJson = ecrirePage('special-json', base640, litteral(special));
   const urlSpecEnv = ecrirePage('special-env', base640, litteral(enveloppe(special)));
-  const pSj = await ouvrir(urlSpecJson, { bloc: true, etiquette: 'caractères, JSON' });
+  /* Débrief 27 : le libellé n'est pas de la vue essentielle — les deux pages
+     s'ouvrent sur « Toutes les colonnes », le choix retenu d'un lecteur. */
+  const toutesColonnes = () => { try { localStorage.setItem('suivi-fwd:v1', JSON.stringify({ vueTable: 'toutes', videsMontrees: true })); } catch (e) { /* sans stockage */ } };
+  const pSj = await ouvrir(urlSpecJson, { bloc: true, etiquette: 'caractères, JSON', init: toutesColonnes });
   const sJ = await etatFinal(pSj);
   await fermer(pSj);
-  const pSe = await ouvrir(urlSpecEnv, { etiquette: 'caractères, enveloppe' });
+  const pSe = await ouvrir(urlSpecEnv, { etiquette: 'caractères, enveloppe', init: toutesColonnes });
   const sE = await etatFinal(pSe);
   const celluleSpec = await pSe.evaluate(() => {
     const ref = window.__deballerPaquet(JSON.parse(JSON.stringify(window.SUIVI_FWD_DONNEES))).plans[0].libelle;

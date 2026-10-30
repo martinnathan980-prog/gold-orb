@@ -70,7 +70,7 @@
 <script>
   /* La livraison de ce fichier, posée par la construction : la page la compare
      à celles de Code, Styles et Javascript, et nomme celui qui diffère. */
-  window.SUIVI_FWD_LIVRAISON_INDEX = 'c5df943';
+  window.SUIVI_FWD_LIVRAISON_INDEX = 'cc55ffe';
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
@@ -261,6 +261,26 @@
       <li class="teinte-plans"><a href="#section-plans" data-chapitre="section-plans">Plans</a></li>
       <li><a href="#rapprochement" data-chapitre="rapprochement">Comparaison</a></li>
     </ol>
+    <!-- Débrief 27, lot D (P-F23) : chercher un plan de n'importe où — sa
+         référence écrite à la mode de GATES ou de SEE ; la liste propose les
+         plans qui commencent ou contiennent ce qu'on tape, et en choisir un
+         ouvre son historique au-dessus du tableau. -->
+    <div class="cherche-plan" id="cherche-plan" role="search" aria-label="Chercher un plan" data-ouvert="false">
+      <button type="button" class="cherche-plan-ouvrir" id="cherche-plan-ouvrir" aria-label="Chercher un plan" aria-expanded="false" aria-controls="cherche-plan-cadre" title="Chercher un plan">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/><path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <div class="cherche-plan-cadre" id="cherche-plan-cadre">
+        <label class="masque" for="cherche-plan-champ">Chercher un plan par sa référence (GATES ou SEE)</label>
+        <input id="cherche-plan-champ" type="search" placeholder="Chercher un plan" autocomplete="off" spellcheck="false"
+               role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="cherche-plan-liste" aria-describedby="cherche-plan-aide">
+        <svg class="loupe" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/><path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <button type="button" class="cherche-plan-fermer" id="cherche-plan-fermer" aria-label="Fermer la recherche de plan">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="m3 3 6 6M9 3 3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <ul class="cherche-plan-liste" id="cherche-plan-liste" role="listbox" aria-label="Plans trouvés" hidden></ul>
+        <span class="masque" id="cherche-plan-aide">Trois caractères au moins. Flèches haut et bas pour choisir, Entrée pour ouvrir l’historique du plan, Échap pour fermer.</span>
+      </div>
+    </div>
   </nav>
   <!-- Débrief 27 (lot H, P-F6, M5) : les filtres posés, sous le sommaire et
        collés avec lui. Le bandeau ne prend aucune place dans la page (hauteur
@@ -468,7 +488,33 @@
       </span>
       <span class="legende-rapp" id="legende-seconde" data-base="la" hidden></span>
     </div>
-    <div class="incomplets" id="incomplets" data-base="ici"></div>
+    <!-- Débrief 27, lot D : une seule rangée d'outils sous la recherche — à
+         gauche ce qui filtre ou masque, à droite ce qu'on fait du tableau.
+         Les colonnes vides de la sélection sont masquées, et le disent ; les
+         filtres de colonne ne se déplient qu'à la demande (X-A2) ; « Copier
+         le tableau » et « Télécharger (CSV) » prennent ce que le tableau
+         montre — filtres, tri et colonnes affichées (P-F21). -->
+    <div class="barre-tableau" id="barre-tableau">
+      <div class="incomplets" id="incomplets" data-base="ici"></div>
+      <span class="colonnes-vides" id="colonnes-vides" hidden></span>
+      <span class="actions-tableau" id="actions-tableau">
+        <span class="outil-ici" data-base="ici">
+          <button type="button" class="bouton-outil" id="ouvrir-filtres" aria-expanded="false" aria-controls="tete-tableau">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 3.5h11l-4.2 5v4l-2.6 1.2V8.5l-4.2-5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+            <span class="mot-outil">Filtrer<span class="mot-long"> par colonne</span></span>
+          </button>
+        </span>
+        <button type="button" class="bouton-outil" id="copier-tableau">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5.2" y="5.2" width="8.3" height="8.3" rx="1.3" stroke="currentColor" stroke-width="1.4"/><path d="M10.8 3.2V3a1 1 0 0 0-1-1H3.4a1 1 0 0 0-1 1v6.4a1 1 0 0 0 1 1h.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <span class="mot-outil">Copier<span class="mot-long"> le tableau</span></span>
+        </button>
+        <button type="button" class="bouton-outil" id="telecharger-tableau">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2.5v7.8m0 0 3-3m-3 3-3-3M3 11.5v1.2c0 .5.4.8.8.8h8.4c.4 0 .8-.3.8-.8v-1.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="mot-outil">Télécharger<span class="mot-long"> (CSV)</span></span>
+        </button>
+        <span class="message-tableau" id="message-tableau" role="status" hidden></span>
+      </span>
+    </div>
     <!-- L'historique d'un plan : dès que le tableau n'en montre qu'un — un
          clic sur une référence, où qu'elle soit —, sa vie relevé après
          relevé. -->
@@ -476,13 +522,19 @@
 
     <div class="cadre-tableau" id="cadre-tableau" data-base="ici">
       <div class="defile" id="defile">
-        <table class="plans">
+        <!-- Débrief 27 (X-A11, X-A2) : le tableau a un nom (sa légende, tenue
+             à jour à chaque rendu) et dit comment s'y déplacer au clavier. -->
+        <table class="plans" aria-describedby="aide-clavier-tableau">
+          <caption class="masque" id="legende-tableau">Plans</caption>
           <thead id="tete-tableau"></thead>
           <tbody id="corps-tableau"></tbody>
         </table>
       </div>
       <div class="ombre-defile"></div>
+      <div class="ombre-bas"></div>
+      <div class="menu-colonne" id="menu-colonne" role="group" hidden></div>
     </div>
+    <p class="masque" id="aide-clavier-tableau">Une seule tabulation pour les en-têtes, une pour les lignes. Flèches pour passer d’une case à l’autre, Début et Fin pour aller au bout de la ligne, Page suivante et Page précédente pour sauter dix lignes. Sur un en-tête, Alt et flèche gauche ou droite déplace la colonne.</p>
     <!-- La seconde base, telle que son extract : toutes ses colonnes, dans son
          ordre, sous leurs intitulés ; le verdict du rapprochement en pastille
          dans la cellule de la référence, les cellules qui diffèrent teintées. -->

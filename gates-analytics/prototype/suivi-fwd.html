@@ -100,6 +100,10 @@
   /* Débrief 27 (lot F) : --succes-fond, le fond d'un message réussi (le
      bandeau du panneau d'administration) — l'encre y tient 15:1. */
   --succes-fond: #ebf4ee;
+  /* Débrief 27, lot D (P-F17) : le fond d'une ligne survolée du tableau des
+     plans — --creux (#faf9f6) ne se voyait pas sur le blanc. --encre-3 y
+     tient 4,6:1 (4,8:1 en sombre). */
+  --survol-ligne: #f3f1eb;
 
   /* Les panneaux des sections (débrief 20) : chaque section est une feuille
      posée sur le papier, bordée d'un filet et d'une ombre à peine marquée.
@@ -203,6 +207,7 @@
     --lisere-donnee: transparent;
     --alerte-fond: #2b1f14;
     --succes-fond: #16231a;
+    --survol-ligne: #232321;
   }
 }
 :root[data-theme="dark"] {
@@ -265,6 +270,7 @@
   --lisere-donnee: transparent;
   --alerte-fond: #2b1f14;
   --succes-fond: #16231a;
+  --survol-ligne: #232321;
 }
 
 /* Les contrôles du navigateur — la liste d'un menu déroulant, les barres de
@@ -1605,7 +1611,10 @@ dialog.ensemble::backdrop { background: var(--voile-dialogue); }
 .fiche-plan-etapes .mot-recul { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; }
 /* La référence du tableau se clique comme un lien discret. */
 .ref-plan { border: none; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
-.ref-plan:hover { text-decoration: underline; text-underline-offset: 3px; }
+/* Débrief 27 (P-F17) : elle se voit cliquable sans la survoler — un
+   pointillé au repos, un trait plein au survol de sa ligne ou au focus. */
+.ref-plan { text-decoration: underline dotted var(--encre-3); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.ref-plan:hover, tr:hover > td > .ref-plan, .ref-plan:focus-visible { text-decoration: underline solid var(--encre); text-decoration-thickness: 1px; }
 /* À surveiller : les plans à l'arrêt, sous les états, en ambre — ce n'est pas un retard, c'est une question à poser. */
 .a-surveiller { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-top: 8px; font-size: 13px; color: var(--encre-2); }
 .a-surveiller[hidden] { display: none; }
@@ -2289,10 +2298,29 @@ html.admin-ouvert { overflow: hidden; padding-right: var(--barre-admin, 0px); }
 .puce-vide b { font-variant-numeric: tabular-nums; font-weight: 500; }
 
 .cadre-tableau { position: relative; border: 1px solid var(--filet); background: var(--surface); }
-/* Sous la ligne de flottaison à l'ouverture, un tableau de milliers de
-   cellules ne se met en page que quand on s'en approche. */
-.cadre-tableau { content-visibility: auto; contain-intrinsic-size: auto 560px; }
-.defile { overflow: auto; max-height: 68vh; }
+/* Débrief 27 (X-A11) : plus de content-visibility sur le tableau — il
+   cachait ses lignes aux lecteurs d'écran tant qu'on ne l'avait pas fait
+   défiler. Ce qui épargnait la mise en page, c'est maintenant le rendu par
+   tranches (pasDeTranche) : peu de lignes d'abord, la suite en descendant.
+   Le cadre défile seul, sous ses en-têtes collés, et sans retenir la
+   molette au bout (overscroll-behavior: auto). scroll-padding : une case
+   amenée à l'écran par le clavier s'arrête sous les en-têtes et à droite
+   des colonnes figées, jamais dessous (X-A3 ; mesurés par
+   poserColonnesFigees). */
+/* Sauf pour un tableau très lourd (plus de 20 000 cellules dessinées : on a
+   fait venir des centaines de lignes de l'extract entier, ou un test a levé
+   le seuil des tranches) : hors de l'écran, il ne se remet pas en page à
+   chaque geste — c'est ce qui figeait la page (M4). Voir marquerLourd. Au
+   doigt, ce tableau-là retrouve aussi son cadre de 68vh : à sa hauteur dans
+   la page, hors de l'écran, il compterait pour 560 px et un saut vers la
+   comparaison s'arrêterait au milieu des plans. */
+.cadre-tableau[data-lourd] { content-visibility: auto; contain-intrinsic-size: auto 560px; }
+/* Le tableau n'est jamais l'ancre du défilement de la page : ses lignes
+   viennent par tranches, une ligne d'ancrage prise dedans (au rechargement,
+   le navigateur la retrouve par sa place dans le tableau) déplaçait la page. */
+.cadre-tableau { overflow-anchor: none; }
+.defile { overflow: auto; max-height: 68vh; overscroll-behavior: auto;
+  scroll-padding-top: var(--haut-entetes, 0px); scroll-padding-left: var(--larg-figees, 0px); }
 .ombre-defile {
   position: absolute; top: 0; right: 0; bottom: 0; width: 46px; pointer-events: none;
   background: linear-gradient(to right, transparent, var(--surface)); opacity: 0; transition: opacity .15s;
@@ -2322,11 +2350,11 @@ table.plans thead .titres-la th button {
 }
 table.plans thead .titres-la th button:hover { color: var(--encre); }
 .col-fige-la { position: sticky; left: 0; background: var(--surface); z-index: 2; box-shadow: inset -1px 0 0 var(--filet-fort); }
-table.plans tbody tr:hover .col-fige-la { background: var(--creux); }
+table.plans tbody tr:hover .col-fige-la { background: var(--survol-ligne); }
 table.plans thead tr th.col-fige-la { z-index: 6; }
 table.plans thead .filtres th { padding: 0 14px 7px; position: sticky; z-index: 4; border-bottom: 1px solid var(--filet); font-weight: 400; }
 table.plans thead .filtres input {
-  width: 100%; min-width: 78px; border: none; border-bottom: 1px solid var(--filet);
+  width: 100%; min-width: 78px; border: none; border-bottom: 1px solid var(--bord-champ);
   background: none; color: var(--encre); font: inherit; font-size: 12px; padding: 2px 0;
 }
 table.plans thead .filtres input::placeholder { color: var(--filtre-invite); }
@@ -2345,12 +2373,12 @@ table.plans thead .titres:hover .poignee, table.plans thead .titres:focus-within
 .fleche { color: var(--encre); }
 
 table.plans tbody td { padding: 8px 14px; border-bottom: 1px solid var(--filet); vertical-align: middle; white-space: nowrap; }
-table.plans tbody tr:hover td { background: var(--creux); }
+table.plans tbody tr:hover td { background: var(--survol-ligne); }
 /* Le decalage gauche est mesure au rendu : dans l'ordre de la feuille la
    reference n'est pas la premiere colonne, et tout ce qui la precede reste
    colle avec elle plutot que de passer dessous. */
 .col-fige { position: sticky; left: 0; background: var(--surface); z-index: 2; }
-table.plans tbody tr:hover .col-fige { background: var(--creux); }
+table.plans tbody tr:hover .col-fige { background: var(--survol-ligne); }
 /* La specificite de `.titres th` ecrasait ce z-index : les entetes figees
    passaient sous les colonnes qui defilent. Un selecteur plus precis. */
 table.plans thead tr th.col-fige { z-index: 6; }
@@ -2362,6 +2390,217 @@ table.plans thead tr th.col-fige { z-index: 6; }
 .etat-cellule { display: inline-flex; align-items: center; gap: 8px; }
 
 .vide-message { padding: 44px 16px; color: var(--encre-3); }
+
+/* ---------------------------------------------------- Débrief 27, lot D : le tableau des plans
+   Sous la recherche, une seule rangée d'outils : à gauche ce qui filtre ou
+   masque (la puce « non renseigné », « N colonnes vides masquées »), à
+   droite ce qu'on fait du tableau (filtrer par colonne, copier, télécharger).
+   Les boutons ont la hauteur des commandes (D3 : 28 px, rayon 6). */
+.barre-tableau { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding-bottom: 12px; }
+.barre-tableau .incomplets { padding-bottom: 0; }
+.colonnes-vides { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; font-size: 13px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
+.colonnes-vides[hidden] { display: none; }
+.colonnes-vides button { border: none; background: none; padding: 2px 0; font: inherit; color: var(--encre-2); cursor: pointer;
+  text-decoration: underline; text-decoration-color: var(--encre-3); text-underline-offset: 3px; }
+.colonnes-vides button:hover { color: var(--encre); text-decoration-color: var(--encre); }
+.actions-tableau { position: relative; margin-left: auto; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.actions-tableau[hidden] { display: none; }
+.bouton-outil {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px;
+  border: 1px solid var(--filet-fort); border-radius: 6px; background: var(--surface); color: var(--encre-2);
+  font: 13px/1 "IBM Plex Sans", system-ui, sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer;
+}
+.bouton-outil[hidden] { display: none; }
+.bouton-outil svg { flex: none; color: var(--encre-3); }
+.bouton-outil:hover { border-color: var(--encre-3); color: var(--encre); background: var(--creux); }
+.bouton-outil:hover svg { color: var(--encre); }
+.bouton-outil[aria-expanded="true"] { border-color: var(--encre-2); color: var(--encre); background: var(--seg-piste); }
+/* M4 : l'appui se voit avant le travail (au pointer down, avant le clic). */
+.bouton-outil:active, .colonnes-vides button:active { background: var(--seg-piste); border-color: var(--encre-2); }
+.ref-plan:active { color: var(--encre-2); }
+.bouton-outil[aria-expanded="true"] svg { color: var(--encre); }
+.bouton-outil[data-etat="fait"] { border-color: var(--fait); color: var(--fait); }
+.bouton-outil[data-etat="fait"] svg { color: var(--fait); }
+.bouton-outil .n { color: var(--encre-3); }
+/* Le mot d'un export (« Tableau copié », « Téléchargement bloqué… ») :
+   posé sous les boutons, par-dessus la page — il ne pousse rien. */
+.message-tableau {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 8; width: max-content; max-width: min(380px, 86vw);
+  padding: 8px 12px; background: var(--releve); border: 1px solid var(--releve-bord); border-radius: 6px;
+  box-shadow: var(--flottant-ombre); font-size: 13px; line-height: 1.45; color: var(--encre); white-space: normal;
+}
+.message-tableau[hidden] { display: none; }
+.message-tableau button { border: none; background: none; padding: 0; font: inherit; color: var(--encre); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+
+/* La rangée des filtres de colonne ne se montre que dépliée (X-A2 : 138
+   arrêts de tabulation de moins) ; le bord de ses champs tient 3:1. */
+table.plans thead tr.filtres[hidden] { display: none; }
+/* Une case du tableau atteinte aux flèches : l'anneau du focus à
+   l'intérieur de la case, jamais rogné par sa voisine collée. */
+table.plans tbody td:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+table.plans tbody td:focus { outline: 2px solid var(--focus); outline-offset: -2px; }
+/* Les boutons de tri : 24 px de haut au moins (2.5.8). */
+table.plans thead .titres th button, table.plans thead .titres-la th button { min-height: 24px; }
+/* « EMPTY » vient de GATES tel quel : son sens est dit en clair au survol
+   (« Non renseigné (EMPTY dans GATES) ») et aux lecteurs d'écran — un mot
+   ajouté par la feuille de style, masqué à l'œil : la case garde, pour la
+   copie et la recherche, le texte exact de GATES. */
+.etat-cellule .vide-gates { cursor: help; }
+.etat-cellule .vide-gates::after {
+  content: " : non renseign\e9  dans GATES"; position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+/* Le bas du cadre fond quand il reste des lignes dessous (D10, B19) : une
+   ligne coupée à mi-hauteur ne passe plus pour un défaut d'affichage. */
+.ombre-bas {
+  position: absolute; left: 0; right: 0; bottom: var(--barre-defile, 0px); height: 32px; pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--surface)); opacity: 0; transition: opacity .15s;
+}
+.cadre-tableau[data-plus-bas="true"] .ombre-bas { opacity: 1; }
+/* « N lignes de plus » reste à gauche du cadre, même défilé de côté. */
+tr.ligne-suite td > button { position: sticky; left: 14px; }
+/* Déplacer une colonne sans la glisser (2.5.7) : la poignée ouvre un petit
+   menu, « ← à gauche » / « à droite → » ; Alt + flèches au clavier. */
+.poignee { border: none; background: none; padding: 0; font: inherit; line-height: 1; }
+button.poignee { cursor: pointer; }
+button.poignee:hover, button.poignee:focus-visible { color: var(--encre-2); opacity: 1; }
+.menu-colonne {
+  position: absolute; z-index: 9; display: grid; gap: 2px; padding: 4px; min-width: 190px;
+  background: var(--releve); border: 1px solid var(--releve-bord); border-radius: 6px; box-shadow: var(--flottant-ombre);
+}
+.menu-colonne[hidden] { display: none; }
+.menu-colonne .titre-menu { padding: 4px 8px 2px; font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--encre-3); }
+.menu-colonne button {
+  border: none; background: none; border-radius: 4px; padding: 6px 8px; min-height: 28px; text-align: left;
+  font: 13px "IBM Plex Sans", system-ui, sans-serif; color: var(--encre); cursor: pointer;
+}
+.menu-colonne button:hover { background: var(--survol-ligne); }
+.menu-colonne button:disabled { color: var(--encre-3); cursor: default; background: none; }
+
+/* Au téléphone (M1) : seule la référence reste collée à gauche, sur 40 %
+   de l'écran au plus — la colonne suivie et ce qui précède la référence
+   défilent avec le reste, sinon rien d'autre n'était atteignable. */
+@media (max-width: 720px) {
+  table.plans .col-fige:not(.col-ref) { left: auto !important; box-shadow: none; }
+  table.plans thead .groupes th.col-fige { left: auto !important; box-shadow: none; }
+  /* Un nom de groupe long (« Informations principales ») ne doit pas
+     élargir la colonne de la référence au-delà de 40 % : il passe à la ligne. */
+  table.plans thead .groupes th { white-space: normal; }
+  table.plans .col-ref { left: 0 !important; box-sizing: border-box; max-width: 40vw; padding-left: 10px; padding-right: 10px;
+    white-space: normal; box-shadow: inset -1px 0 0 var(--filet-fort); }
+  /* La référence tient sur sa ligne (15 caractères, ~110 px) ; une plus
+     longue que 40 % de l'écran passe à la ligne. width: max-content garde
+     la colonne à sa largeur naturelle — sans lui, le tableau trop large la
+     serrait jusqu'à couper « GAE5316A60000 | 2B ». */
+  table.plans .col-ref .ref-plan, table.plans thead .col-ref button { width: max-content; max-width: calc(40vw - 20px); overflow-wrap: anywhere; }
+  .actions-tableau { margin-left: 0; }
+}
+/* Au doigt et sur un écran étroit (D10, M2) : le tableau prend sa hauteur
+   dans la page — le pouce fait défiler la page, jamais un cadre qui la
+   retient ; il ne défile que de côté. Les lignes viennent par tranches,
+   d'un bouton « Afficher N plans de plus ». */
+@media (max-width: 720px), (pointer: coarse) {
+  .cadre-tableau:not([data-lourd]) .defile { max-height: none; }
+  .cadre-tableau:not([data-lourd]) .ombre-bas { display: none; }
+}
+/* D11 : 44 px au doigt, sans changer le dessin à la souris. */
+@media (pointer: coarse) {
+  table.plans tbody td { padding-top: 12px; padding-bottom: 12px; }
+  .ref-plan, .bouton-outil, .colonnes-vides button, tr.ligne-suite button { position: relative; }
+  .ref-plan::after { content: ""; position: absolute; inset: -12px -8px; }
+  .bouton-outil::after { content: ""; position: absolute; inset: -9px -2px; }
+  .colonnes-vides button::after, tr.ligne-suite button::after { content: ""; position: absolute; inset: -12px -6px; }
+  table.plans thead .titres th button, table.plans thead .titres-la th button { min-height: 44px; }
+  table.plans thead .filtres input { font-size: 16px; min-height: 40px; }
+  .menu-colonne button { min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) { .ombre-bas { transition: none; } }
+/* Au téléphone, les boutons d'outils disent l'essentiel : « Filtrer »,
+   « Copier », « Télécharger » (leur nom complet reste aux lecteurs d'écran,
+   le mot masqué est seulement visuellement retiré). */
+@media (max-width: 480px) {
+  .bouton-outil .mot-long { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+/* D9 : un libellé coupé de « … » se lisait seulement au survol (title). Au
+   doigt il passe à la ligne ; au clavier, la case atteinte s'ouvre en
+   entier. */
+@media (pointer: coarse) { table.plans td.large { white-space: normal; max-width: 260px; } }
+table.plans td.large:focus { white-space: normal; overflow: visible; }
+
+/* L'historique d'un plan dit aussi où il en est dans la seconde base
+   (P-F7) : la ligne de SEE, ce qu'elle dit, et le verdict. */
+.fiche-plan-see { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--filet); font-size: 13px; color: var(--encre-2); }
+.fiche-plan-see .mot-see { color: var(--encre); font-weight: 500; }
+.fiche-plan-see .ligne-see { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--encre); }
+.fiche-plan-see .verdict-see { color: var(--encre); }
+.fiche-plan-see .verdict-see.manque { color: var(--alerte); }
+.fiche-plan-see .verdict-see.avance { color: var(--cours); }
+.fiche-plan-see .verdict-see.accord { color: var(--fait); }
+.fiche-plan-see .lien-doux { color: var(--encre-2); }
+.fiche-plan-tete h3.mot { margin: 0; }
+
+/* « Chercher un plan », dans le sommaire collé (P-F23) : un champ discret à
+   droite sur grand écran ; en dessous de 1280 px, une loupe qui l'ouvre
+   par-dessus le sommaire. La liste des plans trouvés se parcourt aux
+   flèches (combobox ARIA). */
+.cherche-plan { position: absolute; right: var(--retrait-panneau); top: 50%; transform: translateY(-50%); z-index: 2; display: flex; align-items: center; }
+.cherche-plan-cadre { position: relative; display: flex; align-items: center; gap: 6px; width: 200px; }
+.cherche-plan-cadre input {
+  width: 100%; height: 28px; padding: 0 10px 0 30px; border: 1px solid var(--bord-champ); border-radius: 4px;
+  background: var(--surface); color: var(--encre); font: 13px "IBM Plex Sans", system-ui, sans-serif;
+}
+.cherche-plan-cadre input::placeholder { color: var(--encre-3); }
+.cherche-plan-cadre input:hover { border-color: var(--encre-2); }
+.cherche-plan-cadre input:focus { outline: 2px solid var(--focus); outline-offset: 2px; }
+.cherche-plan-cadre input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+.cherche-plan-cadre .loupe { position: absolute; left: 10px; top: 50%; margin-top: -7px; color: var(--encre-3); pointer-events: none; }
+.cherche-plan-ouvrir, .cherche-plan-fermer {
+  display: none; flex: none; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0;
+  border: 1px solid var(--filet-fort); border-radius: 50%; background: var(--surface); color: var(--encre-2); cursor: pointer;
+}
+.cherche-plan-ouvrir:hover, .cherche-plan-fermer:hover { border-color: var(--encre); color: var(--encre); }
+.cherche-plan-liste {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 31; width: max(100%, 360px); max-width: calc(100vw - 32px);
+  max-height: min(60vh, 420px); overflow: auto; margin: 0; padding: 4px; list-style: none;
+  background: var(--releve); border: 1px solid var(--releve-bord); border-radius: 6px; box-shadow: var(--flottant-ombre);
+}
+.cherche-plan-liste[hidden] { display: none; }
+.cherche-plan-liste li {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; gap: 2px 12px;
+  padding: 7px 10px; border-radius: 4px; font-size: 13px; color: var(--encre-2); cursor: pointer;
+}
+.cherche-plan-liste li[aria-selected="true"] { background: var(--survol-ligne); box-shadow: inset 2px 0 0 var(--focus); color: var(--encre); }
+.cherche-plan-liste li:hover { background: var(--survol-ligne); }
+.cherche-plan-liste li[aria-disabled="true"] { cursor: default; background: none; box-shadow: none; grid-template-columns: 1fr; }
+.cherche-plan-liste .ref-option { font: 500 12px "IBM Plex Mono", monospace; color: var(--encre); white-space: nowrap; }
+.cherche-plan-liste .ref-option mark { background: none; color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.cherche-plan-liste .etat-option { display: inline-flex; align-items: center; gap: 6px; justify-self: end; font: 12px "IBM Plex Mono", monospace; white-space: nowrap; }
+.cherche-plan-liste .libelle-option { grid-column: 1 / -1; font-size: 12px; color: var(--encre-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* De grand écran : le sommaire se centre entre la marque à gauche et le
+   champ à droite, sans jamais passer dessous. */
+@media (min-width: 1280px) {
+  .sommaire { padding-inline: 230px; }
+}
+@media (max-width: 1279px) {
+  .cherche-plan { position: static; transform: none; flex: none; margin-left: 10px; }
+  .cherche-plan-ouvrir { display: inline-flex; }
+  .cherche-plan-cadre { display: none; }
+  .cherche-plan[data-ouvert="true"] .cherche-plan-ouvrir { visibility: hidden; }
+  .cherche-plan[data-ouvert="true"] .cherche-plan-cadre {
+    display: flex; position: absolute; inset: 0; width: auto; padding: 0 2px; background: var(--papier); z-index: 3;
+  }
+  .cherche-plan[data-ouvert="true"] .cherche-plan-fermer { display: inline-flex; }
+  .cherche-plan-cadre .loupe { left: 12px; }
+  .cherche-plan-liste { left: auto; right: 0; width: min(100%, 520px); }
+}
+@media (max-width: 720px) { .cherche-plan-liste { left: 0; width: auto; } }
+@media (pointer: coarse) {
+  .cherche-plan-ouvrir, .cherche-plan-fermer { position: relative; }
+  .cherche-plan-ouvrir::after, .cherche-plan-fermer::after { content: ""; position: absolute; inset: -8px; }
+  .cherche-plan-cadre input { height: 36px; font-size: 16px; }
+  .cherche-plan-liste li { min-height: 44px; }
+}
+@media print { .cherche-plan, .actions-tableau, .colonnes-vides button, .menu-colonne { display: none !important; } }
 .compte { color: var(--encre-3); font-size: 12px; font-variant-numeric: tabular-nums; }
 .pied { padding: 20px var(--retrait-panneau) 42px; margin-top: 32px; border-top: 1px solid var(--filet); color: var(--encre-3); font-size: 12px; line-height: 1.8; }
 /* Débrief 26, téléphone : le bouton ↑ ne cache plus la dernière ligne du pied ;
@@ -2752,6 +2991,26 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       <li class="teinte-plans"><a href="#section-plans" data-chapitre="section-plans">Plans</a></li>
       <li><a href="#rapprochement" data-chapitre="rapprochement">Comparaison</a></li>
     </ol>
+    <!-- Débrief 27, lot D (P-F23) : chercher un plan de n'importe où — sa
+         référence écrite à la mode de GATES ou de SEE ; la liste propose les
+         plans qui commencent ou contiennent ce qu'on tape, et en choisir un
+         ouvre son historique au-dessus du tableau. -->
+    <div class="cherche-plan" id="cherche-plan" role="search" aria-label="Chercher un plan" data-ouvert="false">
+      <button type="button" class="cherche-plan-ouvrir" id="cherche-plan-ouvrir" aria-label="Chercher un plan" aria-expanded="false" aria-controls="cherche-plan-cadre" title="Chercher un plan">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/><path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <div class="cherche-plan-cadre" id="cherche-plan-cadre">
+        <label class="masque" for="cherche-plan-champ">Chercher un plan par sa référence (GATES ou SEE)</label>
+        <input id="cherche-plan-champ" type="search" placeholder="Chercher un plan" autocomplete="off" spellcheck="false"
+               role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="cherche-plan-liste" aria-describedby="cherche-plan-aide">
+        <svg class="loupe" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/><path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <button type="button" class="cherche-plan-fermer" id="cherche-plan-fermer" aria-label="Fermer la recherche de plan">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="m3 3 6 6M9 3 3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <ul class="cherche-plan-liste" id="cherche-plan-liste" role="listbox" aria-label="Plans trouvés" hidden></ul>
+        <span class="masque" id="cherche-plan-aide">Trois caractères au moins. Flèches haut et bas pour choisir, Entrée pour ouvrir l’historique du plan, Échap pour fermer.</span>
+      </div>
+    </div>
   </nav>
   <!-- Débrief 27 (lot H, P-F6, M5) : les filtres posés, sous le sommaire et
        collés avec lui. Le bandeau ne prend aucune place dans la page (hauteur
@@ -2959,7 +3218,33 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       </span>
       <span class="legende-rapp" id="legende-seconde" data-base="la" hidden></span>
     </div>
-    <div class="incomplets" id="incomplets" data-base="ici"></div>
+    <!-- Débrief 27, lot D : une seule rangée d'outils sous la recherche — à
+         gauche ce qui filtre ou masque, à droite ce qu'on fait du tableau.
+         Les colonnes vides de la sélection sont masquées, et le disent ; les
+         filtres de colonne ne se déplient qu'à la demande (X-A2) ; « Copier
+         le tableau » et « Télécharger (CSV) » prennent ce que le tableau
+         montre — filtres, tri et colonnes affichées (P-F21). -->
+    <div class="barre-tableau" id="barre-tableau">
+      <div class="incomplets" id="incomplets" data-base="ici"></div>
+      <span class="colonnes-vides" id="colonnes-vides" hidden></span>
+      <span class="actions-tableau" id="actions-tableau">
+        <span class="outil-ici" data-base="ici">
+          <button type="button" class="bouton-outil" id="ouvrir-filtres" aria-expanded="false" aria-controls="tete-tableau">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 3.5h11l-4.2 5v4l-2.6 1.2V8.5l-4.2-5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+            <span class="mot-outil">Filtrer<span class="mot-long"> par colonne</span></span>
+          </button>
+        </span>
+        <button type="button" class="bouton-outil" id="copier-tableau">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5.2" y="5.2" width="8.3" height="8.3" rx="1.3" stroke="currentColor" stroke-width="1.4"/><path d="M10.8 3.2V3a1 1 0 0 0-1-1H3.4a1 1 0 0 0-1 1v6.4a1 1 0 0 0 1 1h.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <span class="mot-outil">Copier<span class="mot-long"> le tableau</span></span>
+        </button>
+        <button type="button" class="bouton-outil" id="telecharger-tableau">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2.5v7.8m0 0 3-3m-3 3-3-3M3 11.5v1.2c0 .5.4.8.8.8h8.4c.4 0 .8-.3.8-.8v-1.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="mot-outil">Télécharger<span class="mot-long"> (CSV)</span></span>
+        </button>
+        <span class="message-tableau" id="message-tableau" role="status" hidden></span>
+      </span>
+    </div>
     <!-- L'historique d'un plan : dès que le tableau n'en montre qu'un — un
          clic sur une référence, où qu'elle soit —, sa vie relevé après
          relevé. -->
@@ -2967,13 +3252,19 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
 
     <div class="cadre-tableau" id="cadre-tableau" data-base="ici">
       <div class="defile" id="defile">
-        <table class="plans">
+        <!-- Débrief 27 (X-A11, X-A2) : le tableau a un nom (sa légende, tenue
+             à jour à chaque rendu) et dit comment s'y déplacer au clavier. -->
+        <table class="plans" aria-describedby="aide-clavier-tableau">
+          <caption class="masque" id="legende-tableau">Plans</caption>
           <thead id="tete-tableau"></thead>
           <tbody id="corps-tableau"></tbody>
         </table>
       </div>
       <div class="ombre-defile"></div>
+      <div class="ombre-bas"></div>
+      <div class="menu-colonne" id="menu-colonne" role="group" hidden></div>
     </div>
+    <p class="masque" id="aide-clavier-tableau">Une seule tabulation pour les en-têtes, une pour les lignes. Flèches pour passer d’une case à l’autre, Début et Fin pour aller au bout de la ligne, Page suivante et Page précédente pour sauter dix lignes. Sur un en-tête, Alt et flèche gauche ou droite déplace la colonne.</p>
     <!-- La seconde base, telle que son extract : toutes ses colonnes, dans son
          ordre, sous leurs intitulés ; le verdict du rapprochement en pastille
          dans la cellule de la référence, les cellules qui diffèrent teintées. -->
@@ -5647,7 +5938,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       lotLa: null,
       /* Le tableau de la seconde base : sa recherche, ses deux vues, son tri.
          Le tri vide, c'est l'ordre de l'extract. */
-      seconde: { recherche: '', vueTable: 'toutes', tri: { cle: null, asc: true } },
+      seconde: { recherche: '', vueTable: SECONDE && SECONDE.vautEssentielles ? 'essentielle' : 'toutes', tri: { cle: null, asc: true } },
       /* La base montrée dans le tableau : ici (GATES) ou là (la seconde). */
       base: 'ici',
       fen: null, fenAuto: true,
@@ -5677,15 +5968,23 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
          sélection de plans — sinon il retirerait une tuile pressée à la main. */
       etatParArret: '',
       /* Deux vues du tableau, et rien entre les deux : « toutes » montre l'export
-         tel quel, dans son ordre ; « essentielle » ne garde que ce qu'on regarde. */
-      vueTable: 'toutes'
+         tel quel, dans son ordre ; « essentielle » ne garde que ce qu'on regarde.
+         Débrief 27 (P-F15) : la page s'ouvre sur la vue essentielle, pour
+         tout le monde ; le choix du lecteur se retient (sauverPrefs). */
+      vueTable: VAUT_ESSENTIELLES ? 'essentielle' : 'toutes',
+      /* Débrief 27 : les colonnes vides de bout en bout dans la sélection
+         sont masquées (colonnesVides) ; « Afficher » les remet — un choix
+         retenu lui aussi. La rangée des filtres de colonne, elle, ne se
+         déplie qu'à la demande et le temps de la visite (X-A2). */
+      videsMontrees: false, filtresOuverts: false,
+      /* La case du tableau, et l'en-tête, qui portent l'arrêt de tabulation
+         (X-A2 : un seul arrêt pour les en-têtes, un pour les lignes). */
+      repereTete: '', repereCorps: null
     };
     vue.fen = cadrageParDefaut();
-    if (!avant) return;
+    if (!avant) { if (vue.vueTable === 'essentielle') appliquerVueTable(); return; }
     appliquerDisposition(avant);
-    vue.vueTable = avant.vueTable === 'essentielle' ? 'essentielle' : 'toutes';
-    if (vue.vueTable === 'essentielle') appliquerVueTable();
-    if (avant.seconde && avant.seconde.vueTable === 'essentielle') vue.seconde.vueTable = 'essentielle';
+    vue.filtresOuverts = !!avant.filtresOuverts;
   }
 
   /* Les commandes fixes de la page reflètent la vue : le champ de recherche,
@@ -6149,7 +6448,12 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         dimCritique: vue.dimCritique,
         ordre: vue.vueTable === 'essentielle' ? ORDRE_FEUILLE.slice() : vue.ordre,
         tri: vue.tri,
-        triGroupe: vue.triGroupe
+        triGroupe: vue.triGroupe,
+        /* Débrief 27 : la vue du tableau (et de la seconde base) et les
+           colonnes vides montrées sont un choix du lecteur. */
+        vueTable: vue.vueTable,
+        vueSeconde: vue.seconde.vueTable,
+        videsMontrees: !!vue.videsMontrees
       }));
     } catch (e) { /* navigation privée ou stockage bloqué : sans conséquence */ }
   }
@@ -6175,6 +6479,21 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if (pref.triGroupe && TRIS_GROUPE.indexOf(pref.triGroupe.cle) !== -1) {
       vue.triGroupe = { cle: pref.triGroupe.cle, asc: !!pref.triGroupe.asc };
     }
+    /* Débrief 27 : la vue choisie se reprend — d'un stockage (vueTable,
+       vueSeconde) ou de la vue d'avant un changement de contrat (vueTable,
+       seconde.vueTable) —, si la source en a deux. La vue essentielle range
+       ses colonnes elle-même : son ordre passe devant celui relu. */
+    var vt = pref.vueTable, vs = pref.vueSeconde || (pref.seconde && pref.seconde.vueTable);
+    if (vt === 'toutes' || vt === 'essentielle') vue.vueTable = vt;
+    if (vs === 'toutes' || vs === 'essentielle') vue.seconde.vueTable = vs;
+    if (typeof pref.videsMontrees === 'boolean') vue.videsMontrees = pref.videsMontrees;
+    if (!VAUT_ESSENTIELLES) vue.vueTable = 'toutes';
+    if (!(SECONDE && SECONDE.vautEssentielles)) vue.seconde.vueTable = 'toutes';
+    if (vue.vueTable === 'essentielle') appliquerVueTable();
+    else {                               // l'extract entier, dans l'ordre relu — sinon celui de la feuille
+      vue.cachees = {};
+      if (!Array.isArray(pref.ordre)) vue.ordre = ORDRE_FEUILLE.slice();
+    }
   }
   function chargerPrefs() {
     try {
@@ -6188,6 +6507,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
          s'ouvre toujours sur « Échéances ». Un ancien stockage qui en porte
          un (fen, cadrage) est ignoré. */
       appliquerDisposition(pref);
+      refleterVue();                   // débrief 27 : l'interrupteur de la vue du tableau suit le choix relu
     } catch (e) { /* preferences illisibles : on repart des valeurs par defaut */ }
   }
 
@@ -8357,7 +8677,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      lit sans faire défiler cent trente colonnes. C'est la seule entorse à
      l'ordre de la feuille, dans les deux vues. */
   function visibles() {
-    var cles = vue.ordre.filter(function (k) { return !vue.cachees[k]; });
+    var cles = vue.ordre.filter(function (k) { return !vue.cachees[k] && !(VIDES[k] && !vue.videsMontrees); });
     var iSuivie = cles.indexOf(CLE_SUIVIE), iRef = -1;
     for (var i = 0; i < cles.length; i++) if (PAR_CLE[cles[i]] && PAR_CLE[cles[i]].fige) { iRef = i; break; }
     if (iSuivie !== -1 && iRef !== -1 && iSuivie !== iRef + 1) {
@@ -8382,9 +8702,73 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if (i >= n) return '';
     return i === n - 1 ? 'col-fige fige-fin' : 'col-fige';
   }
+  /* Débrief 27, lot D (P-F15) : les colonnes vides de bout en bout dans la
+     sélection — lignes grisées comprises — sont masquées, et la rangée
+     d'outils le dit (« 4 colonnes vides masquées · Afficher »). Jamais la
+     référence ni la colonne suivie, ni une colonne triée ou filtrée : on ne
+     retire pas ce qu'on vient de toucher. Une sélection vide ne masque rien.
+     VIDES compte aussi quand elles sont montrées : le bouton dit combien. */
+  var VIDES = {};
+  function majColonnesVides(liste) {
+    VIDES = {};
+    var rangs = vue.lotLa ? [] : liste.concat(anciensDuTableau());
+    if (!rangs.length) return;
+    vue.ordre.forEach(function (k) {
+      var c = PAR_CLE[k];
+      if (!c || vue.cachees[k] || colonneFixe(c) || vue.filtres[k] || vue.tri.cle === k) return;
+      for (var i = 0; i < rangs.length; i++) {
+        var v = rangs[i][k];
+        if (v != null && String(v).trim() !== '') return;
+      }
+      VIDES[k] = true;
+    });
+  }
+  function rendreColonnesVides() {
+    var zone = $('colonnes-vides');
+    if (!zone) return;
+    var cles = vue.ordre.filter(function (k) { return VIDES[k]; });
+    var n = cles.length;
+    zone.hidden = !n || vue.base !== 'ici';
+    if (zone.hidden) { zone.innerHTML = ''; return; }
+    var noms = cles.map(function (k) { return PAR_CLE[k].titre; }).join(', ');
+    var pl = n > 1;
+    zone.innerHTML = vue.videsMontrees
+      ? '<span>' + nb(n) + (pl ? ' colonnes vides affichées' : ' colonne vide affichée') + '</span>' +
+        '<button type="button" data-vides="masquer" title="' + ech('Masquer : ' + noms) + '">Masquer</button>'
+      : '<span>' + nb(n) + (pl ? ' colonnes vides masquées' : ' colonne vide masquée') +
+        '<span class="masque"> (' + ech(noms) + ')</span></span>' +
+        '<button type="button" data-vides="afficher" title="' + ech('Afficher : ' + noms) + '">Afficher</button>';
+  }
+  /* La rangée des filtres de colonne : dépliée à la demande, et toujours
+     quand un filtre de colonne est posé — on voit ce qui filtre. */
+  function filtresColonneVisibles() {
+    return vue.filtresOuverts || Object.keys(vue.filtres).some(function (k) { return vue.filtres[k]; });
+  }
+  function refleterOutilsTableau() {
+    var b = $('ouvrir-filtres');
+    if (!b) return;
+    var ouverts = filtresColonneVisibles();
+    var n = Object.keys(vue.filtres).filter(function (k) { return vue.filtres[k]; }).length;
+    b.setAttribute('aria-expanded', String(ouverts));
+    b.querySelector('.mot-outil').innerHTML = 'Filtrer<span class="mot-long"> par colonne</span>' + (n ? ' (' + nb(n) + ')' : '');
+    b.title = ouverts ? (n ? 'Les filtres de colonne posés restent affichés' : 'Replier les filtres de colonne') : 'Un champ « filtrer » sous chaque en-tête';
+  }
+  /* Le libellé d'un groupe d'en-têtes : celui de la colonne suivie dit ce
+     qu'il est (« Avancement (GATES · HDK AA 011) » — « HDK AA 011 » seul ne
+     parlait à personne) ; un groupe sans nom, ou la suite d'un groupe coupé
+     par le bloc figé, garde un mot pour les lecteurs d'écran (X-A11). */
+  function libelleGroupeTete(g, nomSuivi) {
+    var nom = g.suivie || (nomSuivi && g.nom === nomSuivi) ? 'Avancement (GATES' + (g.nom ? ' \u00b7 ' + g.nom : '') + ')' : g.nom;
+    if (g.suite) return '<span class="masque">' + ech(nom ? 'Suite de « ' + nom + ' »' : 'Autres colonnes') + '</span>';
+    return nom ? ech(nom) : '<span class="masque">Autres colonnes</span>';
+  }
   function rendreEntetes() {
     var cols = visibles();
     var nFige = nbFigees(cols);
+    var suivie = PAR_CLE[CLE_SUIVIE], nomSuivi = suivie ? String(suivie.groupe || '') : '';
+    /* L'arrêt de tabulation des en-têtes : le dernier qu'on a touché, sinon
+       le premier. */
+    var repere = cols.some(function (c) { return c.cle === vue.repereTete; }) ? vue.repereTete : (cols[0] ? cols[0].cle : '');
     /* Un groupe a cheval sur la limite du bloc fige est coupe en deux : la
        moitie collee garde le libelle, la suite le laisse vide pour que la
        bande se lise d'un trait. */
@@ -8393,32 +8777,38 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       var colle = i < nFige;
       var d = groupes[groupes.length - 1];
       if (d && d.nom === c.groupe && d.fige === colle) d.n++;
-      else groupes.push({ nom: c.groupe, n: 1, fige: colle, debut: i, suite: !!(d && d.nom === c.groupe) });
+      else groupes.push(d = { nom: c.groupe, n: 1, fige: colle, debut: i, suite: !!(d && d.nom === c.groupe) });
+      if (c.cle === CLE_SUIVIE) d.suivie = true;
     });
     var html = '<tr class="groupes">' + groupes.map(function (g) {
       var cl = g.fige ? (g.debut + g.n === nFige ? 'col-fige fige-fin' : 'col-fige') : '';
       return '<th colspan="' + g.n + '" data-debut="' + g.debut + '"' + (cl ? ' class="' + cl + '"' : '') +
-        '>' + ech(g.suite ? '' : g.nom) + '</th>';
+        '>' + libelleGroupeTete(g, nomSuivi) + '</th>';
     }).join('') + '</tr><tr class="titres">' + cols.map(function (c, i) {
       var actif = vue.tri.cle === c.cle;
       var fleche = actif ? '<svg class="fleche" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="' +
         (vue.tri.asc ? 'M5 8.5V1.5M2 4.5 5 1.5l3 3' : 'M5 1.5v7M2 5.5 5 8.5l3-3') +
         '" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '';
-      var poignee = colonneFixe(c) ? '' : '<span class="poignee" aria-hidden="true"><svg width="7" height="12" viewBox="0 0 7 12" fill="currentColor">' +
+      /* Débrief 27 (2.5.7) : la poignée est un bouton — un clic ouvre « ← à
+         gauche / à droite → », pour qui ne peut pas glisser. Hors de la
+         tabulation : au clavier, Alt + flèches sur l'en-tête. */
+      var poignee = colonneFixe(c) ? '' : '<button type="button" class="poignee" data-menu-col="' + ech(c.cle) + '" tabindex="-1" aria-haspopup="true"' +
+        ' aria-label="' + ech('Déplacer la colonne ' + c.titre) + '" title="Glisser, ou cliquer pour déplacer la colonne"><svg width="7" height="12" viewBox="0 0 7 12" fill="currentColor" aria-hidden="true">' +
         '<circle cx="1.6" cy="2" r="1.1"/><circle cx="5.4" cy="2" r="1.1"/><circle cx="1.6" cy="6" r="1.1"/>' +
-        '<circle cx="5.4" cy="6" r="1.1"/><circle cx="1.6" cy="10" r="1.1"/><circle cx="5.4" cy="10" r="1.1"/></svg></span>';
-      var cl = classeFige(i, nFige);
+        '<circle cx="5.4" cy="6" r="1.1"/><circle cx="1.6" cy="10" r="1.1"/><circle cx="5.4" cy="10" r="1.1"/></svg></button>';
+      var cl = (classeFige(i, nFige) + (c.cle === 'reference' ? ' col-ref' : '')).trim();
       return '<th scope="col" data-cle="' + c.cle + '"' + (cl ? ' class="' + cl + '"' : '') +
         (colonneFixe(c) ? '' : ' draggable="true"') +
         ' aria-sort="' + (actif ? (vue.tri.asc ? 'ascending' : 'descending') : 'none') + '">' +
-        poignee + '<button type="button" data-tri="' + c.cle + '">' + ech(c.titre) + fleche + '</button></th>';
-    }).join('') + '</tr><tr class="filtres">' + cols.map(function (c, i) {
+        poignee + '<button type="button" data-tri="' + c.cle + '" tabindex="' + (c.cle === repere ? 0 : -1) + '">' + ech(c.titre) + fleche + '</button></th>';
+    }).join('') + '</tr><tr class="filtres"' + (filtresColonneVisibles() ? '' : ' hidden') + '>' + cols.map(function (c, i) {
       var val = vue.filtres[c.cle] || '';
-      var cl = classeFige(i, nFige);
+      var cl = (classeFige(i, nFige) + (c.cle === 'reference' ? ' col-ref' : '')).trim();
       return '<th' + (cl ? ' class="' + cl + '"' : '') + '><input type="text" data-filtre="' + c.cle + '" value="' + ech(val) +
         '" placeholder="filtrer" data-actif="' + (!!val) + '" aria-label="Filtrer ' + ech(c.titre) + '"></th>';
     }).join('') + '</tr>';
     $('tete-tableau').innerHTML = html;
+    refleterOutilsTableau();
     ajusterSticky();
   }
   /* Un tableau encore hors de l'écran n'est pas mis en page (content-
@@ -8427,10 +8817,25 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   /* L'état vient du navigateur lui-même (contentvisibilityautostatechange) :
      au tout premier rendu, avant qu'il ait tranché, le tableau compte comme
      hors de l'écran. Sans content-visibility, il est toujours « à l'écran ». */
+  /* Débrief 27 (X-A11) : le tableau n'a plus de content-visibility, sauf
+     très lourd (data-lourd, voir marquerLourd) — alors seulement il peut
+     être « hors de l'écran » pour ces mesures. */
   var CV_AUTO = !!(window.CSS && CSS.supports && CSS.supports('content-visibility', 'auto'));
   var cadresVisibles = {};
   function tableauHorsEcran(cadre) {
-    return CV_AUTO && !!cadre && !cadresVisibles[cadre.id];
+    return CV_AUTO && !!cadre && cadre.hasAttribute('data-lourd') && !cadresVisibles[cadre.id];
+  }
+  /* Le seuil : 20 000 cellules dessinées (près de 150 lignes de l'extract
+     entier). En dessous — la première tranche, toujours —, les lignes
+     restent dans l'arbre d'accessibilité même hors de l'écran (X-A11). */
+  var SEUIL_LOURD = 20000;
+  function marquerLourd() {
+    var t = TRANCHES['corps-tableau'], cadre = $('cadre-tableau');
+    if (!cadre) return;
+    var lourd = !!t && t.montrees * t.nbCols > SEUIL_LOURD;
+    if (lourd === cadre.hasAttribute('data-lourd')) return;
+    if (lourd) { delete cadresVisibles['cadre-tableau']; cadre.setAttribute('data-lourd', ''); }
+    else cadre.removeAttribute('data-lourd');
   }
   function ajusterSticky() { aMesurer('sticky'); }
   /* Les cellules figées du corps lisent leur décalage dans une variable du
@@ -8469,6 +8874,15 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     });
     var corps = $('corps-tableau');
     gauche.forEach(function (x, k) { corps.style.setProperty('--fige-' + k, x + 'px'); });
+    /* Débrief 27 (X-A3) : la hauteur des en-têtes collés et la largeur des
+       colonnes figées (au téléphone, la seule référence) deviennent le
+       scroll-padding du cadre — une case amenée au clavier ne passe plus
+       dessous. */
+    var ref = t.querySelector('th.col-ref');
+    var etroit = window.matchMedia && window.matchMedia('(max-width: 720px)').matches;
+    var defile = $('defile');
+    defile.style.setProperty('--haut-entetes', Math.round(hg + ht + f.getBoundingClientRect().height) + 'px');
+    defile.style.setProperty('--larg-figees', Math.round(etroit ? (ref ? ref.getBoundingClientRect().width : 0) : cumul) + 'px');
   }
   /* Un tableau de dizaines de milliers de cellules ne se dessine pas d'un
      bloc : c'était l'essentiel du temps d'ouverture sur un gros extract. Au-
@@ -8480,26 +8894,48 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      de l'ouverture — 3 s sur un poste rapide, une vingtaine sur un poste
      chargé. 6 000 cellules, soit 60 lignes de l'extract entier, se posent en
      un clin d'œil ; la suite vient en descendant. */
-  var BUDGET_CELLULES = typeof window.SUIVI_FWD_BUDGET === 'number' && window.SUIVI_FWD_BUDGET > 0 ? window.SUIVI_FWD_BUDGET : 6000;
+  var BUDGET_CELLULES = typeof window.SUIVI_FWD_BUDGET === 'number' && window.SUIVI_FWD_BUDGET > 0 ? window.SUIVI_FWD_BUDGET : 3000;
   /* Débrief 23 : à l'ouverture, le tableau pose d'abord vingt lignes — un
      instant —, et complète sa première tranche dès que la page a fini de
      s'afficher : c'est le même tableau qu'avant, en deux fois. Un budget
      fixé par un test garde la tranche entière d'un coup. */
   var PREMIERE_TRANCHE = typeof window.SUIVI_FWD_BUDGET === 'number' ? 0 : 20;
+  /* Débrief 27, lot D (M4) : « Tout effacer » figeait la page deux secondes
+     (huit à neuf sur un téléphone moyen) — chaque rendu remettait en page des
+     milliers de cellules — et le tableau n'est plus épargné hors de l'écran
+     (content-visibility retiré, X-A11). Une tranche tient maintenant entre
+     25 et 60 lignes, autour de 3 000 cellules : 25 lignes de l'extract
+     entier, 60 de la vue essentielle ; la suite vient en descendant dans le
+     cadre. Au doigt et
+     sur un écran étroit, le tableau prend sa hauteur dans la page (D10) :
+     30 lignes, puis un bouton « Afficher 30 lignes de plus » — la page
+     continue de défiler jusqu'à la comparaison au lieu de s'allonger sans
+     fin sous le pouce. Un budget fixé par un test garde l'ancienne règle
+     (tout d'un coup avec un budget immense). */
+  var TABLEAU_A_LA_PAGE = window.matchMedia ? window.matchMedia('(max-width: 720px), (pointer: coarse)') : null;
+  function tableauALaPage() { return !!(TABLEAU_A_LA_PAGE && TABLEAU_A_LA_PAGE.matches); }
+  function pasDeTranche(nbCols) {
+    var parBudget = Math.floor(BUDGET_CELLULES / Math.max(1, nbCols));
+    if (typeof window.SUIVI_FWD_BUDGET === 'number') return Math.max(60, parBudget);
+    if (tableauALaPage()) return 30;
+    return Math.max(25, Math.min(60, parBudget));
+  }
   var TRANCHES = {};
   function trancheHtml(t, combien) {
     var fin = Math.min(t.total, t.montrees + (combien || t.pas)), h = '';
     for (var i = t.montrees; i < fin; i++) h += t.ligneHtml(i);
     t.montrees = fin;
-    var reste = t.total - fin;
+    var reste = t.total - fin, suivant = Math.min(reste, t.pas);
     return h + (reste > 0
       ? '<tr class="ligne-suite"><td colspan="' + t.nbCols + '"><button type="button" class="lien-doux" data-suite="' + t.id + '">' +
-        nb(reste) + (reste > 1 ? ' lignes de plus' : ' ligne de plus') + ' — descendez, ou cliquez ici</button></td></tr>'
+        (tableauALaPage()
+          ? 'Afficher ' + nb(suivant) + (suivant > 1 ? ' lignes de plus' : ' ligne de plus') + ' · ' + nb(reste) + (reste > 1 ? ' restantes' : ' restante')
+          : nb(reste) + (reste > 1 ? ' lignes de plus' : ' ligne de plus') + ' — descendez, ou cliquez ici') + '</button></td></tr>'
       : '');
   }
   function poserTranches(corps, total, nbCols, ligneHtml, apres, premiere) {
     var t = { id: corps.id, total: total, nbCols: Math.max(1, nbCols), montrees: 0, ligneHtml: ligneHtml, apres: apres,
-              pas: Math.max(60, Math.floor(BUDGET_CELLULES / Math.max(1, nbCols))) };
+              pas: pasDeTranche(nbCols) };
     TRANCHES[corps.id] = t;
     corps.innerHTML = trancheHtml(t, premiere && premiere < t.pas ? premiere : 0);
     if (apres) apres();
@@ -8523,29 +8959,22 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     corps.insertAdjacentHTML('beforeend', trancheHtml(t));
     if (t.apres) t.apres();
   }
-  /* Près du bas du cadre qui défile, la tranche suivante vient d'elle-même. */
+  /* Près du bas du cadre qui défile, la tranche suivante vient d'elle-même.
+     Un cadre qui ne défile pas en hauteur (au doigt : le tableau prend sa
+     hauteur dans la page) ne déclenche rien : on y clique « Afficher… ». */
   function suivreDefilement(cadre, idCorps) {
     cadre.addEventListener('scroll', function () {
+      if (cadre.scrollHeight - cadre.clientHeight < 2) return;
       if (cadre.scrollTop + cadre.clientHeight > cadre.scrollHeight - 600) trancheSuivante(idCorps);
     }, { passive: true });
   }
 
-  function rendreCorps(liste, premiere) {
-    var cols = visibles();
-    $('cadre-tableau').removeAttribute('data-a-venir');   // l'ouverture lui gardait sa place
-    /* Le lot « seulement dans la seconde base » n'a aucun plan ici : le
-       tableau de GATES le dit, et propose l'autre côté. La barre du haut, elle,
-       montre toujours la sélection — ce lot n'est pas un filtre sur les plans. */
-    if (vue.lotLa && RAPPROCHEMENT) {
-      var nLa = RAPPROCHEMENT.seul.length, nomLa = nomSeconde();
-      $('corps-tableau').innerHTML = '<tr><td colspan="' + cols.length + '"><div class="vide-message">Ces ' + nb(nLa) +
-        (nLa > 1 ? ' lignes n’ont pas de plan dans GATES. ' : ' ligne n’a pas de plan dans GATES. ') +
-        '<button class="lien-doux" type="button" data-aller-base="la">Les voir dans ' + ech(nomLa) + '</button></div></td></tr>';
-      delete TRANCHES['corps-tableau'];
-      $('compte').textContent = '0 plan sur ' + nb(population().length);
-      majOmbre();
-      return;
-    }
+  /* Débrief 27, lot D : ce que le tableau montre — ses colonnes, ses lignes
+     dans leur ordre —, gardé du dernier rendu : « Copier le tableau » et
+     « Télécharger (CSV) » prennent exactement cela, et la navigation au
+     clavier y retrouve une ligne pas encore dessinée. */
+  var TABLEAU_MONTRE = { cols: [], rangs: [], nActifs: 0 };
+  function rangsDuTableau(liste) {
     var rangs = liste.slice().sort(function (a, b) {
       var k = vue.tri.cle, sens = vue.tri.asc ? 1 : -1;
       if (k === CLE_SUIVIE) return (a._pct - b._pct) * sens || COMPARER_LOCAL(a.reference, b.reference);
@@ -8556,17 +8985,63 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       return COMPARER_REF(va, vb) * sens;
     });
     var nActifs = rangs.length, anciens = anciensDuTableau();
-    rangs = rangs.concat(anciens.sort(function (a, b) { return COMPARER_REF(a.reference, b.reference); }));
+    return { rangs: rangs.concat(anciens.sort(function (a, b) { return COMPARER_REF(a.reference, b.reference); })), nActifs: nActifs, anciens: anciens };
+  }
+  /* La légende du tableau (X-A11) : ce qu'il montre, en une phrase, tenue à
+     jour à chaque rendu — « Plans GATES de HDK › Tranche 1 : 634 lignes,
+     triées par Référence UD, ordre croissant ». */
+  function legenderTableau(n) {
+    var cap = $('legende-tableau');
+    if (!cap) return;
+    var tri = PAR_CLE[vue.tri.cle];
+    var nomContrat = (CONTRATS.filter(function (c) { return c.id === CONTRAT; })[0] || {}).nom || CONTRAT || '';
+    cap.textContent = 'Plans GATES' + (nomContrat ? ' de ' + nomContrat : '') + ' : ' + nb(n) + (n > 1 ? ' lignes' : ' ligne') +
+      (tri ? ', triées par ' + tri.titre + (vue.tri.asc ? ', ordre croissant' : ', ordre décroissant') : '') +
+      (vue.vueTable === 'essentielle' ? ' (vue essentielle)' : '');
+  }
+  /* Débrief 27 (X-A5) : une recherche ou un filtre de colonne dit son
+     résultat — « 12 plans trouvés pour « GAE21 » » —, une fois la frappe
+     posée (annoncer regroupe les appels rapprochés). */
+  function annoncerResultatTableau(q) {
+    var n = TABLEAU_MONTRE.nActifs, base = population().length, t = q == null ? '' : String(q).trim();
+    annoncer(t ? nb(n) + (n > 1 ? ' plans trouvés' : ' plan trouvé') + ' pour « ' + t + ' »'
+               : nb(n) + (n > 1 ? ' plans affichés' : ' plan affiché') + (n !== base ? ' sur ' + nb(base) : ''));
+  }
+  function rendreCorps(liste, premiere) {
+    var cols = visibles();
+    $('cadre-tableau').removeAttribute('data-a-venir');   // l'ouverture lui gardait sa place
+    /* Le lot « seulement dans la seconde base » n'a aucun plan ici : le
+       tableau de GATES le dit, et propose l'autre côté. La barre du haut, elle,
+       montre toujours la sélection — ce lot n'est pas un filtre sur les plans. */
+    if (vue.lotLa && RAPPROCHEMENT) {
+      var nLa = RAPPROCHEMENT.seul.length, nomLa = nomSeconde();
+      TABLEAU_MONTRE = { cols: cols, rangs: [], nActifs: 0 };
+      $('corps-tableau').innerHTML = '<tr><td colspan="' + cols.length + '"><div class="vide-message">Ces ' + nb(nLa) +
+        (nLa > 1 ? ' lignes n’ont pas de plan dans GATES. ' : ' ligne n’a pas de plan dans GATES. ') +
+        '<button class="lien-doux" type="button" data-aller-base="la">Les voir dans ' + ech(nomLa) + '</button></div></td></tr>';
+      delete TRANCHES['corps-tableau']; marquerLourd();
+      $('compte').textContent = '0 plan sur ' + nb(population().length);
+      legenderTableau(0);
+      majOmbre();
+      return;
+    }
+    var r = rangsDuTableau(liste), rangs = r.rangs, nActifs = r.nActifs, anciens = r.anciens;
+    TABLEAU_MONTRE = { cols: cols, rangs: rangs, nActifs: nActifs };
+    legenderTableau(rangs.length);
 
     if (!rangs.length) {
       $('corps-tableau').innerHTML = '<tr><td colspan="' + cols.length + '"><div class="vide-message">Aucun plan ne correspond aux filtres.</div></td></tr>';
-      delete TRANCHES['corps-tableau'];
+      delete TRANCHES['corps-tableau']; marquerLourd();
       $('compte').textContent = '0 plan';
       majOmbre();
       return;
     }
 
     var nFige = nbFigees(cols);
+    /* Débrief 27 (X-A2) : une seule référence porte l'arrêt de tabulation
+       des lignes (posé par poserRepereCorps) ; les autres se rejoignent aux
+       flèches. Une case vide s'écrit « — » (B22), et « EMPTY » de GATES dit
+       son sens au survol et aux lecteurs d'écran (P-F14). */
     poserTranches($('corps-tableau'), rangs.length, cols.length, function (k) {
       var p = rangs[k], ancien = p._ancien;
       return (ancien ? '<tr class="ancien" title="' + ech(ancien === 'quantité 0' ? 'Quantité 0 dans ce bloc' : 'Ancien plan, « S » dans Validité') +
@@ -8576,25 +9051,31 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
           var e = valeurDeCle(p._cle) || ETAT_PAR_CLE[p._etat];
           var past = e.hachure ? '<span class="pastille hachure"></span>'
             : '<span class="pastille" style="background:' + e.couleur + '"></span>';
-          return '<td class="' + fige + '"' + styleFige(i, nFige) + '><span class="etat-cellule">' + past +
-            (String(p[CLE_SUIVIE] == null ? '' : p[CLE_SUIVIE]).trim() ? '<span class="num">' + ech(p[CLE_SUIVIE]) + '</span>' : '<span class="doux">Non renseigné</span>') +
+          var brut = String(p[CLE_SUIVIE] == null ? '' : p[CLE_SUIVIE]).trim();
+          var texte = !brut ? '<span class="doux">Non renseigné</span>'
+            : e.hachure ? '<span class="num vide-gates" title="Non renseigné (' + ech(brut) + ' dans GATES)">' + ech(brut) + '</span>'
+            : '<span class="num">' + ech(brut) + '</span>';
+          return '<td class="' + fige + '"' + styleFige(i, nFige) + '><span class="etat-cellule">' + past + texte +
             (ancien ? '<span class="marque-ancien">' + ech(ancien) + '</span>' : '') +
             '</span></td>';
         }
         var val = p[c.cle];
-        var classes = (c.classe + ' ' + fige).trim();
-        if (val === '' || val == null) return '<td class="' + classes + ' doux"' + styleFige(i, nFige) + '>-</td>';
+        var classes = (c.classe + ' ' + fige + (c.cle === 'reference' ? ' col-ref' : '')).trim();
+        /* « — » posé sur la case elle-même (classe tiret-vide), sans élément
+           de plus : sur l'extract entier, ce sont des dizaines de milliers
+           de cases. */
+        if (val === '' || val == null) return '<td class="' + classes + ' doux tiret-vide"' + styleFige(i, nFige) + '>\u2014</td>';
         var titre = c.classe.indexOf('large') !== -1 ? ' title="' + ech(val) + '"' : '';
         /* La référence se clique : le tableau se réduit à ce plan, et son
            historique s'ouvre au-dessus. */
         if (c.cle === 'reference' && ancien) return '<td class="' + classes + '"' + styleFige(i, nFige) + '>' + ech(val) + '</td>';
         if (c.cle === 'reference') {
-          return '<td class="' + classes + '"' + styleFige(i, nFige) + '><button class="ref-plan" type="button" data-ref-plan="' + ech(val) +
-            '" title="Voir l\u2019historique de ce plan">' + ech(val) + '</button></td>';
+          return '<td class="' + classes + '"' + styleFige(i, nFige) + '><button class="ref-plan" type="button" tabindex="-1" data-ref-plan="' + ech(val) +
+            '" title="Voir l’historique de ce plan">' + ech(val) + '</button></td>';
         }
         return '<td class="' + classes + '"' + styleFige(i, nFige) + titre + '>' + ech(libelleGroupe(val)) + '</td>';
       }).join('') + '</tr>';
-    }, ajusterSticky, premiere);   // chaque tranche ajoutée a ses colonnes figées posées
+    }, function () { marquerLourd(); ajusterSticky(); poserRepereCorps(); }, premiere);   // chaque tranche ajoutée a ses colonnes figées posées
 
     /* « sur N » : N est la population du périmètre, pas la feuille entière. */
     var base = population().length;
@@ -8770,9 +9251,12 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         '<span class="bande ' + f.cls + '" style="' + f.style + '"></span>' +
         '<span class="sem">' + (change ? 'S' + numeroSemaine(c.i) : '') + '</span></span>';
     }).join('');
+    /* Débrief 27 (P-F16) : la croix ferme l'historique — « Retirer ce plan
+       du tableau » faisait peur et disait faux : le tableau revient à tous
+       les plans. Échap fait de même (voir fermerFichePlan). */
     var fermer = vue.refsLibelle.indexOf('plan ') === 0
-      ? '<button type="button" class="fiche-plan-fermer" data-fermer-plan="1" aria-label="Retirer ce plan du tableau">×</button>' : '';
-    zone.innerHTML = '<div class="fiche-plan-tete"><span class="mot">Historique du plan</span>' +
+      ? '<button type="button" class="fiche-plan-fermer" data-fermer-plan="1" aria-label="Fermer l\u2019historique" title="Fermer l\u2019historique (le tableau revient à tous les plans)">×</button>' : '';
+    zone.innerHTML = '<div class="fiche-plan-tete"><h3 class="mot" id="titre-fiche-plan" tabindex="-1">Historique du plan</h3>' +
       '<b class="ref">' + ech(p.reference) + '</b>' +
       '<span class="etat">' + pastilleValeur(cleValeur(p[CLE_SUIVIE]), p._etat) + ech(libelleValeur(p[CLE_SUIVIE])) + '</span>' + fermer + '</div>' +
       (h.length > 1
@@ -8780,7 +9264,43 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
           '<div class="fiche-plan-resume' + (arret ? ' arret' : '') + '">' + resume + (arret ? ' \u2014 <b>à l\u2019arrêt</b>' : '') + '.</div>' +
           (etapes.length ? '<ol class="fiche-plan-etapes">' + etapes.join('') + '</ol>'
             : '<div class="fiche-plan-resume doux">Aucun changement sur les ' + h.length + ' relevés.</div>')
-        : '<div class="fiche-plan-resume doux">Un seul relevé pour l\u2019instant : l\u2019historique se remplira relevé après relevé.</div>');
+        : '<div class="fiche-plan-resume doux">Un seul relevé pour l\u2019instant : l\u2019historique se remplira relevé après relevé.</div>') +
+      ligneSeePlan(p);
+  }
+  /* Débrief 27, lot D (P-F7) : « est-il dans SEE ? » — la fiche le dit, sans
+     passer par la comparaison : la ligne de la seconde base (écrite comme
+     elle l'écrit), ce qu'elle en dit, et le verdict du rapprochement, avec
+     « Voir la ligne SEE ». Sans seconde base (ou sous le concept harnais,
+     que SEE ne connaît pas), rien. */
+  function etatSeeDeLigne(l) {
+    var titres = SECONDE.titres, cles = SECONDE.cles;
+    var voulues = SECONDE.essentielles.filter(function (t) { return cles.indexOf(t) === -1; });
+    if (!voulues.length) voulues = titres.filter(function (t) { return /^(user\s*)?stat(us|ut)$|^(é|e)tat$|^validated$|^valid(é|e)$/i.test(String(t).trim()); });
+    return voulues.slice(0, 3).map(function (t) {
+      var v = String(l[t] == null ? '' : l[t]).trim();
+      if (!v) return '';
+      if (estBooleen(v)) {
+        var date = titres.filter(function (d) { return norm(d) === norm(t + ' date') || norm(d) === norm('date ' + t); })[0];
+        var quand = date ? String(l[date] == null ? '' : l[date]).trim() : '';
+        return ech(t) + ' ' + (estVrai(v) ? '\u2713' : 'non') + (estVrai(v) && quand ? ' le ' + ech(quand) : '');
+      }
+      return ech(t) + ' ' + ech(v);
+    }).filter(Boolean).join(' \u00b7 ');
+  }
+  function ligneSeePlan(p) {
+    if (!RAPPROCHEMENT || !SECONDE) return '';
+    var R = RAPPROCHEMENT, nom = nomSeconde(), cat = R.parPlan[p.reference];
+    var lignes = R.lignes.filter(function (e) { return e.plan && e.plan.reference === p.reference; });
+    var verdict = cat ? '<span class="verdict-see ' + cat + '">\u2192 ' + ech(phraseLot(cat, 1, nom)) + '</span>' : '';
+    var tete = '<div class="fiche-plan-see" id="fiche-plan-see"><span class="mot-see">Dans ' + ech(nom) + '\u00a0:</span>';
+    if (!lignes.length) return tete + '<span>aucune ligne</span>' + verdict + '</div>';
+    var e = lignes.filter(function (x) { return x.cat === cat; })[0] || lignes[0];
+    var refLa = SECONDE.cles.map(function (t) { return String(e.ligne[t] == null ? '' : e.ligne[t]).trim(); }).filter(Boolean).join(' \u00b7 ');
+    var etat = etatSeeDeLigne(e.ligne);
+    return tete + '<span class="ligne-see">' + ech(refLa || e.ref) + '</span>' +
+      (etat ? '<span>\u2014 ' + etat + '</span>' : '') + verdict +
+      (lignes.length > 1 ? '<span>(' + nb(lignes.length) + ' lignes)</span>' : '') +
+      '<button type="button" class="lien-doux" data-voir-see="' + ech(p.reference) + '">Voir ' + (lignes.length > 1 ? 'les lignes ' : 'la ligne ') + ech(nom) + '</button></div>';
   }
 
   /* À surveiller : les plans à l'arrêt du périmètre, en une puce qui les
@@ -9886,7 +10406,16 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   function lireOmbre() {
     if (tableauHorsEcran($('cadre-tableau'))) return null;
     var d = $('defile'), deborde = (d.scrollWidth - d.clientWidth - d.scrollLeft) > 4 ? 'true' : 'false';
-    return function () { $('cadre-tableau').dataset.deborde = deborde; };
+    /* Débrief 27 (D10, B19) : et le fondu du bas, tant qu'il reste des
+       lignes sous le cadre — posé au-dessus de la barre de défilement. */
+    var plusBas = (d.scrollHeight - d.clientHeight - d.scrollTop) > 4 ? 'true' : 'false';
+    var barre = Math.max(0, d.offsetHeight - d.clientHeight - (d.clientTop || 0) * 2);
+    return function () {
+      var c = $('cadre-tableau');
+      c.dataset.deborde = deborde;
+      c.dataset.plusBas = plusBas;
+      c.style.setProperty('--barre-defile', barre + 'px');
+    };
   }
 
   /* La section « Comparaison des bases de données » : une phrase, deux
@@ -10265,6 +10794,14 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var lot = lotRappActif();
     var casePlan = lot && LOTS_PLANS.indexOf(lot) !== -1 ? lot : undefined;
     var cherche = norm(S.recherche);
+    /* Débrief 27, lot D (P-F7) : la recherche de la seconde base reconnaît
+       aussi une référence écrite à la mode de GATES (ou de SEE, en entier) :
+       la même clé que la comparaison — « GAE5316A600002B » trouve la ligne
+       « GAE531A6600 · 002 · B ». Et un plan choisi (une seule référence
+       sélectionnée) réduit ce tableau à ses lignes. */
+    var refQ = motCherche(S.recherche);
+    var plan = !lot && vue.refs ? Object.keys(vue.refs) : [];
+    var seulPlan = plan.length === 1 ? plan[0] : null;
     var lignes = R.lignes.filter(function (e) {
       if (e.cat === 'hors') return false;
       /* Sous un lot, les lignes des plans de cette case — toutes leurs lignes,
@@ -10272,7 +10809,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
          « seulement là » garde ses lignes à lui. */
       if (lot === 'seul') { if (e.cat !== 'seul') return false; }
       else if (lot && (!casePlan || !e.plan || R.parPlan[e.plan.reference] !== casePlan)) return false;
-      if (cherche && !SECONDE.titres.some(function (t) { return norm(e.ligne[t]).indexOf(cherche) !== -1; })) return false;
+      if (seulPlan && (!e.plan || e.plan.reference !== seulPlan)) return false;
+      if (cherche && !(refQ && refCorrespond(e.ref, refQ)) &&
+          !SECONDE.titres.some(function (t) { return norm(e.ligne[t]).indexOf(cherche) !== -1; })) return false;
       return true;
     });
     if (S.tri.cle) {
@@ -10302,7 +10841,8 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     });
     document.querySelectorAll('#section-plans [data-base]:not(button)').forEach(function (el) {
       el.hidden = el.dataset.base !== vue.base ||
-        (el.id === 'vue-seconde' && !(SECONDE && SECONDE.vautEssentielles));
+        (el.id === 'vue-seconde' && !(SECONDE && SECONDE.vautEssentielles)) ||
+        (el.id === 'vue-tableau' && !VAUT_ESSENTIELLES);   // débrief 27 : pas de second choix, pas d'interrupteur
     });
   }
   function rendreSeconde() {
@@ -10329,10 +10869,14 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if (!lignes.length) {
       delete TRANCHES['corps-seconde'];
       var nAbs = compteLotRapp(lot);
+      var seulSans = !lot && vue.refs && Object.keys(vue.refs).length === 1 ? Object.keys(vue.refs)[0] : null;
       $('corps-seconde').innerHTML = '<tr><td colspan="' + Math.max(cols.length, 1) + '"><div class="vide-message">' +
         (lot === 'manque' || lot === 'attente'
           ? 'Ces ' + nb(nAbs) + (nAbs > 1 ? ' plans n’ont pas de ligne dans ' : ' plan n’a pas de ligne dans ') + ech(nom) + '. ' +
             '<button class="lien-doux" type="button" data-aller-base="ici">Les voir dans GATES</button>'
+          : seulSans && !vue.seconde.recherche
+          ? ech(seulSans) + ' n’a pas de ligne dans ' + ech(nom) + '. ' +
+            '<button class="lien-doux" type="button" data-aller-base="ici">Le voir dans GATES</button>'
           : 'Aucune ligne ne correspond.') +
         '</div></td></tr>';
     } else {
@@ -10351,7 +10895,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
               contenu = '<span class="verdict">' + pastilleVerdict(e.cat) + (ref
                 ? '<button type="button" class="ref ref-lien" data-plan="' + ech(ref) + '" title="Retrouver ce plan dans GATES">' + ech(s) + '</button>'
                 : '<span class="ref">' + ech(s) + '</span>') + '</span>';
-            } else if (s === '') { classes.push('doux'); contenu = '-'; }
+            } else if (s === '') { classes.push('doux', 'tiret-vide'); contenu = '\u2014'; }   // débrief 27 (B22)
             else if (estBooleen(s)) { classes.push('coche'); contenu = '<span title="' + ech(s) + '">' + (estVrai(s) ? '✓' : '–') + '</span>'; }
             else contenu = ech(s);
             return '<td' + (classes.length ? ' class="' + classes.join(' ') + '"' : '') + titre + '>' + contenu + '</td>';
@@ -10387,8 +10931,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     rendreEcheanceTitre();
     rendreJournal();
     rendreCritique(liste);
+    majColonnesVides(liste);
     rendreEntetes();
     rendreCorps(liste);
+    rendreColonnesVides();
     rendreFichePlan(liste);
     rendreASurveiller();
     rendreRapprochement();
@@ -10482,7 +11028,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   $('recherche').addEventListener('input', function (e) {
     var v = e.target.value;
     clearTimeout(minuteur);
-    minuteur = setTimeout(function () { vue.recherche = v; rendre(); }, 170);
+    minuteur = setTimeout(function () { vue.recherche = v; rendre(); annoncerResultatTableau(v); }, 170);
   });
 
   /* La barre et ses valeurs se répondent : survoler une valeur éclaire son
@@ -10526,13 +11072,14 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var b = e.target.closest('button[data-ref-plan]');
     if (!b) return;
     var ref = b.dataset.refPlan;
-    if (vue.refsLibelle === 'plan ' + ref) { vue.refs = null; vue.refsLibelle = ''; rendre(); return; }
+    if (vue.refsLibelle === 'plan ' + ref) { fermerFichePlan(); return; }
     montrerCePlan(ref);
   });
   $('fiche-plan').addEventListener('click', function (e) {
+    var vs = e.target.closest('button[data-voir-see]');
+    if (vs) { voirLigneSee(); return; }
     if (!e.target.closest('button[data-fermer-plan]')) return;
-    vue.refs = null; vue.refsLibelle = '';
-    rendre();
+    fermerFichePlan();
   });
   $('a-surveiller').addEventListener('click', function (e) {
     if (!e.target.closest('button[data-arret]')) return;
@@ -10612,7 +11159,8 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if (!b || b.dataset.vue === vue.seconde.vueTable) return;
     vue.seconde.vueTable = b.dataset.vue;
     refleterVue();
-    if (RAPPROCHEMENT) rendreSeconde();
+    if (RAPPROCHEMENT) garderFocus(rendreSeconde, 'vue-seconde');
+    planifierSauvegarde();               // débrief 27 : retenu, comme celle de GATES
   });
   $('tete-seconde').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-tri-seconde]');
@@ -10633,6 +11181,12 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      périmètre, lui, reste. Puis on descend au tableau, et le focus se pose
      sur le bouton de base, qui survit au rendu. */
   function montrerCePlan(ref) {
+    /* Débrief 27 (P-F16, X-A1) : ce qui a ouvert l'historique — une
+       référence du tableau, un plan de la comparaison, la recherche du
+       sommaire… — est noté : sa fermeture (la croix, Échap) y ramène le
+       focus. */
+    var actif = document.activeElement;
+    OUVREUR_PLAN = actif && actif !== document.body ? { ref: ref, g: empreinteFocus(actif) } : { ref: ref, g: null };
     vue.etat = ''; vue.groupe = null; vue.filtres = {}; vue.vides = {}; vue.etatParArret = '';
     vue.recherche = ''; $('recherche').value = '';
     vue.refs = {}; vue.refs[ref] = true; vue.refsLibelle = 'plan ' + ref;
@@ -10640,12 +11194,99 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     rendre();
     allerAuTableau();
   }
+  /* On descend au tableau ; le focus va au titre de l'historique quand il
+     s'ouvre (débrief 27 : il allait au bouton « GATES », sans rapport),
+     sinon au bouton de la base montrée. */
   function allerAuTableau() {
     var cadre = $(vue.base === 'la' ? 'cadre-seconde' : 'cadre-tableau');
-    defilerVers(cadre, { block: 'nearest', behavior: 'smooth' });
+    var fiche = $('fiche-plan'), titre = $('titre-fiche-plan');
+    /* L'historique s'ouvre en haut de l'écran, sous le sommaire collé — on
+       arrive souvent de loin (la recherche du sommaire, la comparaison). */
+    mesurerMaintenant();               // la hauteur des bandeaux collés (filtres, sommaire) à jour avant de défiler
+    if (vue.base === 'ici' && !fiche.hidden) {
+      /* D'un saut, puis recalé à l'image suivante : les mesures de la page
+         (colonne des noms du bloc par groupe…) bougeaient ce qui est
+         au-dessus pendant un défilement animé, et la fiche finissait sous
+         le sommaire collé. */
+      defilerVers(fiche, { block: 'start' });
+      apresImage(function () {
+        var haut = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+        var ecart = fiche.getBoundingClientRect().top - haut;
+        if (!fiche.hidden && Math.abs(ecart) > 3) window.scrollBy(0, ecart);
+      });
+    }
+    else defilerVers(cadre, { block: 'nearest', behavior: window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    if (vue.base === 'ici' && !fiche.hidden && titre) {
+      titre.focus({ preventScroll: true });
+      var etat = fiche.querySelector('.fiche-plan-tete .etat');
+      annoncer('Historique du plan ' + (fiche.querySelector('.fiche-plan-tete .ref') || {}).textContent + (etat ? ', ' + etat.textContent : ''));
+      return;
+    }
     var bouton = document.querySelector('#choix-base button[data-base="' + vue.base + '"]');
     if (bouton && !bouton.closest('[hidden]')) bouton.focus();
   }
+  /* Fermer l'historique (la croix, Échap) : le tableau revient à tous les
+     plans, et le focus à ce qui l'avait ouvert — la référence du tableau
+     est redessinée au besoin jusqu'à sa ligne, puis amenée à l'écran. */
+  var OUVREUR_PLAN = null;
+  function rangeeDuPlan(ref) {
+    var t = TRANCHES['corps-tableau'];
+    var trouve = function () {
+      return [].filter.call($('corps-tableau').querySelectorAll('button[data-ref-plan]'), function (b) { return b.getAttribute('data-ref-plan') === ref; })[0];
+    };
+    var b = trouve();
+    /* Pas plus de 15 000 cellules dessinées pour y arriver : au-delà, le
+       focus va à la première ligne plutôt que de figer la page. */
+    var rang = -1;
+    for (var k = 0; k < TABLEAU_MONTRE.rangs.length; k++) if (TABLEAU_MONTRE.rangs[k].reference === ref) { rang = k; break; }
+    if (!b && rang !== -1 && (rang + 1) * Math.max(1, TABLEAU_MONTRE.cols.length) <= 15000) {
+      while (!b && t && TRANCHES['corps-tableau'] === t && t.montrees < t.total) { trancheSuivante('corps-tableau'); b = trouve(); }
+    }
+    return b || null;
+  }
+  function fermerFichePlan() {
+    if (vue.refsLibelle.indexOf('plan ') !== 0) return false;
+    var ref = vue.refsLibelle.slice(5), o = OUVREUR_PLAN && OUVREUR_PLAN.ref === ref ? OUVREUR_PLAN : null;
+    OUVREUR_PLAN = null;
+    vue.refs = null; vue.refsLibelle = '';
+    rendre();
+    var cible = null;
+    if (o && o.g && document.contains(o.g.el) && focusVisible(o.g.el)) cible = o.g.el;
+    /* Un bouton redessiné (un plan de la comparaison…) se retrouve par sa
+       clé ; une référence du tableau, par sa ligne (rangeeDuPlan). */
+    else if (o && o.g && !(o.g.cle && o.g.cle[0] === 'data-ref-plan')) cible = retrouverFocus(o.g);
+    if (!cible || cible === document.body) {
+      cible = rangeeDuPlan(ref);
+      if (cible) { prendreRepere(cible); defilerVers(cible, { block: 'nearest' }); }
+      else cible = $('corps-tableau').querySelector('[tabindex="0"]') || titreFocalisable($('section-plans'));
+    }
+    if (cible && cible.focus) { try { cible.focus({ preventScroll: !!(o && o.g && cible === o.g.el) }); } catch (err) { cible.focus(); } }
+    annoncer('Historique fermé : le tableau montre de nouveau tous les plans');
+    return true;
+  }
+  /* « Voir la ligne SEE » : le tableau de la seconde base, réduit aux
+     lignes de ce plan (voir lignesSecondeAffichees), son focus sur la
+     première. */
+  function voirLigneSee() {
+    if (!RAPPROCHEMENT || !SECONDE) return;
+    vue.lotLa = null; vue.base = 'la';
+    rendre();
+    allerAuTableau();
+    var b = document.querySelector('#corps-seconde button.ref-lien');
+    if (b) b.focus({ preventScroll: true });
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' || e.defaultPrevented) return;
+    var fiche = $('fiche-plan');
+    if (!fiche || fiche.hidden || vue.refsLibelle.indexOf('plan ') !== 0) return;
+    /* Un champ rempli garde Échap pour se vider ; ailleurs que dans les
+       plans (une autre section a le focus), Échap n'est pas pour nous. */
+    var a = document.activeElement;
+    if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.value) return;
+    if (a && a !== document.body && !a.closest('#section-plans')) return;
+    e.preventDefault();
+    fermerFichePlan();
+  });
 
   /* ============================================================
      CHERCHER DANS UNE SECTION
@@ -11827,17 +12468,29 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     vue.vueTable = b.dataset.vue;
     appliquerVueTable();
     refleterVue();
-    rendre();
+    garderFocus(rendre, 'vue-tableau');
+    /* Débrief 27 : le choix se retient, et se dit. */
+    planifierSauvegarde();
+    var nVides = Object.keys(VIDES).length;
+    annoncer((vue.vueTable === 'essentielle' ? 'Vue essentielle' : 'Toutes les colonnes') + ' : ' + nb(TABLEAU_MONTRE.cols.length) + ' colonnes' +
+      (nVides && !vue.videsMontrees ? ', ' + nb(nVides) + (nVides > 1 ? ' vides masquées' : ' vide masquée') : ''));
   });
 
   var tete = $('tete-tableau');
   tete.addEventListener('click', function (e) {
+    var m = e.target.closest('button[data-menu-col]');
+    if (m) { e.stopPropagation(); ouvrirMenuColonne(m.dataset.menuCol, m); return; }
     var b = e.target.closest('button[data-tri]');
     if (!b) return;
     if (vue.tri.cle === b.dataset.tri) vue.tri.asc = !vue.tri.asc;
     else vue.tri = { cle: b.dataset.tri, asc: true };
-    rendreEntetes(); rendreCorps(selection());
+    vue.repereTete = b.dataset.tri;
+    /* Débrief 27 (X-A1, X-A5) : le focus reste sur l'en-tête trié, et le
+       tri se dit. */
+    garderFocus(function () { rendreEntetes(); rendreCorps(selection()); }, 'tete-tableau');
     planifierSauvegarde();                  // le tri est une disposition : il survit à l'onglet
+    var col = PAR_CLE[vue.tri.cle];
+    if (col) annoncer('Tableau trié par ' + col.titre + ', ordre ' + (vue.tri.asc ? 'croissant' : 'décroissant'));
   });
   var minuteurFiltre = null;
   tete.addEventListener('input', function (e) {
@@ -11857,6 +12510,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       var garde = champ && champ.getAttribute && champ.getAttribute('data-filtre') === cle
         ? { debut: champ.selectionStart, fin: champ.selectionEnd } : null;
       rendre();
+      annoncerResultatTableau(null);
       if (!garde) return;
       var neuf = [].filter.call(tete.querySelectorAll('input[data-filtre]'), function (x) { return x.getAttribute('data-filtre') === cle; })[0];
       if (!neuf) return;
@@ -11910,6 +12564,485 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     tete.querySelectorAll('.glisse, .cible').forEach(function (el) { el.classList.remove('glisse', 'cible'); });
   });
 
+  /* ============================================================
+     DÉBRIEF 27, LOT D — LE TABLEAU AU CLAVIER ET SANS GLISSER
+     X-A2 : 913 arrêts de tabulation dans le tableau. Il en reste deux — un
+     pour les en-têtes, un pour les lignes (« tabindex mobile ») — et les
+     flèches vont d'une case à l'autre ; la rangée des filtres de colonne ne
+     se déplie qu'à la demande. 2.5.7 : une colonne se déplace sans la
+     glisser — Alt + flèches sur son en-tête, ou le petit menu de sa poignée.
+     ============================================================ */
+  /* Ce qui porte le focus dans une case : le bouton de la référence, sinon
+     la case elle-même (focalisable à la demande, tabindex -1). */
+  function cibleCase(td) { return td ? (td.querySelector('button') || td) : null; }
+  function caseDe(el) { return el && el.closest ? el.closest('#corps-tableau td') : null; }
+  function lignesNavigables() {
+    return [].filter.call($('corps-tableau').rows, function (tr) {
+      return !tr.classList.contains('ligne-suite') && !tr.querySelector('.vide-message');
+    });
+  }
+  function indexColonneRef() {
+    for (var i = 0; i < TABLEAU_MONTRE.cols.length; i++) if (TABLEAU_MONTRE.cols[i].cle === 'reference') return i;
+    return 0;
+  }
+  function refDeRangee(tr) {
+    var c = tr && tr.cells[indexColonneRef()];
+    return c ? c.textContent.trim() : '';
+  }
+  /* La case qui garde l'arrêt de tabulation des lignes : une seule. */
+  function prendreRepere(el) {
+    var corps = $('corps-tableau');
+    [].forEach.call(corps.querySelectorAll('[tabindex="0"]'), function (x) { if (x !== el) x.setAttribute('tabindex', '-1'); });
+    el.setAttribute('tabindex', '0');
+    var td = caseDe(el);
+    vue.repereCorps = { ref: refDeRangee(td && td.parentNode), col: td ? td.cellIndex : 0 };
+  }
+  /* Après un rendu : la même ligne et la même colonne si elles sont encore
+     là, sinon la référence de la première ligne. */
+  function poserRepereCorps() {
+    var corps = $('corps-tableau');
+    if (!corps || corps.querySelector('[tabindex="0"]')) return;
+    var lignes = lignesNavigables();
+    if (!lignes.length) return;
+    var r = vue.repereCorps, tr = null;
+    if (r && r.ref) tr = lignes.filter(function (l) { return refDeRangee(l) === r.ref; })[0] || null;
+    var j = tr ? Math.min(r.col, tr.cells.length - 1) : indexColonneRef();
+    var cible = cibleCase((tr || lignes[0]).cells[j]);
+    if (cible) cible.setAttribute('tabindex', '0');
+  }
+  function allerALaCase(lignes, i, j) {
+    var t = TRANCHES['corps-tableau'];
+    while (i >= lignes.length && t && TRANCHES['corps-tableau'] === t && t.montrees < t.total) {
+      trancheSuivante('corps-tableau');
+      lignes = lignesNavigables();
+    }
+    if (!lignes.length) return;
+    i = Math.max(0, Math.min(lignes.length - 1, i));
+    var cells = lignes[i].cells;
+    var cible = cibleCase(cells[Math.max(0, Math.min(cells.length - 1, j))]);
+    if (!cible) return;
+    if (cible.tagName === 'TD' && !cible.hasAttribute('tabindex')) cible.setAttribute('tabindex', '-1');
+    prendreRepere(cible);
+    cible.focus();
+  }
+  $('corps-tableau').addEventListener('keydown', function (e) {
+    var td = caseDe(e.target);
+    if (!td || e.altKey || e.metaKey) return;
+    var lignes = lignesNavigables(), i = lignes.indexOf(td.parentNode), j = td.cellIndex, k = e.key;
+    if (i === -1) return;
+    var t = TRANCHES['corps-tableau'], total = t ? t.total : lignes.length;
+    /* De la première ligne, ↑ remonte à l'en-tête de la colonne. */
+    if (k === 'ArrowUp' && i === 0) {
+      var enTete = tete.querySelectorAll('tr.titres th')[j];
+      var bt = enTete && enTete.querySelector('button[data-tri]');
+      if (bt) { e.preventDefault(); prendreRepereTete(bt); bt.focus(); }
+      return;
+    }
+    if (k === 'ArrowDown') i++;
+    else if (k === 'ArrowUp') i--;
+    else if (k === 'ArrowRight') j++;
+    else if (k === 'ArrowLeft') j--;
+    else if (k === 'PageDown') i += 10;
+    else if (k === 'PageUp') i -= 10;
+    else if (k === 'Home') { j = 0; if (e.ctrlKey) i = 0; }
+    else if (k === 'End') { j = td.parentNode.cells.length - 1; if (e.ctrlKey) i = total - 1; }
+    else return;
+    e.preventDefault();
+    allerALaCase(lignes, i, j);
+  });
+  $('corps-tableau').addEventListener('focusin', function (e) {
+    var td = caseDe(e.target);
+    if (td && (e.target === td || e.target === cibleCase(td))) prendreRepere(e.target);
+  });
+  /* Les en-têtes : un seul arrêt, les flèches de l'un à l'autre, ↓ vers la
+     première ligne, Alt + ← / → déplace la colonne. */
+  function boutonsTete() { return [].slice.call(tete.querySelectorAll('tr.titres button[data-tri]')); }
+  function prendreRepereTete(b) {
+    boutonsTete().forEach(function (x) { x.setAttribute('tabindex', x === b ? '0' : '-1'); });
+    vue.repereTete = b.getAttribute('data-tri');
+  }
+  tete.addEventListener('focusin', function (e) {
+    var b = e.target.closest && e.target.closest('tr.titres button[data-tri]');
+    if (b) prendreRepereTete(b);
+  });
+  tete.addEventListener('keydown', function (e) {
+    var b = e.target.closest && e.target.closest('tr.titres button[data-tri]');
+    if (!b) return;
+    var tous = boutonsTete(), i = tous.indexOf(b);
+    if (e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      e.preventDefault();
+      deplacerColonne(b.getAttribute('data-tri'), e.key === 'ArrowLeft' ? -1 : 1);
+      return;
+    }
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      allerALaCase(lignesNavigables(), 0, b.closest('th').cellIndex);
+      return;
+    }
+    var n = e.key === 'ArrowLeft' ? i - 1 : e.key === 'ArrowRight' ? i + 1 : e.key === 'Home' ? 0 : e.key === 'End' ? tous.length - 1 : null;
+    if (n === null) return;
+    e.preventDefault();
+    var cible = tous[Math.max(0, Math.min(tous.length - 1, n))];
+    prendreRepereTete(cible);
+    cible.focus();
+  });
+  function rangFrancais(n) { return n === 1 ? '1re' : n + 'e'; }
+  /* Déplacer une colonne d'un cran — jamais devant la référence ni la
+     colonne suivie, qui restent figées en tête. */
+  function deplacerColonne(cle, sens) {
+    var cols = visibles(), i = -1;
+    for (var k = 0; k < cols.length; k++) if (cols[k].cle === cle) { i = k; break; }
+    var col = PAR_CLE[cle], voisin = cols[i + sens];
+    if (i === -1 || !col) return false;
+    if (colonneFixe(col) || !voisin || colonneFixe(voisin)) {
+      annoncer('La colonne « ' + col.titre + ' » ne peut pas aller plus ' + (sens < 0 ? 'à gauche' : 'à droite'));
+      return false;
+    }
+    vue.ordre = reordonner(vue.ordre, cle, voisin.cle);
+    vue.repereTete = cle;
+    garderFocus(function () { rendreEntetes(); rendreCorps(selection()); }, 'tete-tableau');
+    planifierSauvegarde();
+    annoncer('Colonne « ' + col.titre + ' » déplacée en ' + rangFrancais(i + sens + 1) + ' position');
+    return true;
+  }
+  /* Le petit menu de la poignée : « ← Déplacer à gauche », « Déplacer à
+     droite → ». Posé sous l'en-tête, par-dessus le tableau ; Échap ou un
+     clic ailleurs le referme. */
+  var MENU_COL = { cle: null, retour: null };
+  function fermerMenuColonne(rendreFocus) {
+    var m = $('menu-colonne');
+    if (!m || m.hidden) return;
+    m.hidden = true; m.innerHTML = '';
+    var b = rendreFocus && MENU_COL.cle ? [].filter.call(tete.querySelectorAll('button[data-tri]'), function (x) { return x.getAttribute('data-tri') === MENU_COL.cle; })[0] : null;
+    MENU_COL.cle = null;
+    if (b) b.focus();
+  }
+  function ouvrirMenuColonne(cle, poignee) {
+    var m = $('menu-colonne'), col = PAR_CLE[cle];
+    if (!m || !col) return;
+    if (!m.hidden && MENU_COL.cle === cle) { fermerMenuColonne(true); return; }
+    var cols = visibles(), i = -1;
+    for (var k = 0; k < cols.length; k++) if (cols[k].cle === cle) { i = k; break; }
+    var gauche = i > 0 && !colonneFixe(cols[i - 1]), droite = i !== -1 && i < cols.length - 1;
+    MENU_COL.cle = cle;
+    m.setAttribute('aria-label', 'Déplacer la colonne ' + col.titre);
+    m.innerHTML = '<div class="titre-menu">' + ech(col.titre) + '</div>' +
+      '<button type="button" data-deplacer="-1"' + (gauche ? '' : ' disabled') + '>← Déplacer à gauche</button>' +
+      '<button type="button" data-deplacer="1"' + (droite ? '' : ' disabled') + '>Déplacer à droite →</button>';
+    m.hidden = false;
+    var cadre = $('cadre-tableau').getBoundingClientRect(), th = poignee.closest('th').getBoundingClientRect();
+    var x = Math.max(4, Math.min(th.left - cadre.left, cadre.width - m.offsetWidth - 4));
+    m.style.left = x + 'px';
+    m.style.top = (th.bottom - cadre.top + 4) + 'px';
+    var premier = m.querySelector('button:not([disabled])');
+    if (premier) premier.focus();
+  }
+  $('menu-colonne').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-deplacer]');
+    if (!b || b.disabled) return;
+    var cle = MENU_COL.cle;
+    fermerMenuColonne(false);
+    if (cle && deplacerColonne(cle, +b.getAttribute('data-deplacer'))) {
+      var neuf = [].filter.call(tete.querySelectorAll('button[data-tri]'), function (x) { return x.getAttribute('data-tri') === cle; })[0];
+      if (neuf) neuf.focus();
+    }
+  });
+  $('menu-colonne').addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); fermerMenuColonne(true); return; }
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    var bs = [].slice.call(this.querySelectorAll('button:not([disabled])')), i = bs.indexOf(document.activeElement);
+    if (!bs.length) return;
+    e.preventDefault();
+    bs[(i + (e.key === 'ArrowDown' ? 1 : bs.length - 1)) % bs.length].focus();
+  });
+  document.addEventListener('click', function (e) {
+    if (!MENU_COL.cle || (e.target.closest && e.target.closest('#menu-colonne, button[data-menu-col]'))) return;
+    fermerMenuColonne(false);
+  });
+  $('defile').addEventListener('scroll', function () { fermerMenuColonne(false); }, { passive: true });
+  /* « Filtrer par colonne » : la rangée des champs se déplie (le focus va au
+     premier), ou se replie — sauf si un filtre est posé : il reste à vue. */
+  $('ouvrir-filtres').addEventListener('click', function () {
+    var ouvrir = !filtresColonneVisibles();
+    vue.filtresOuverts = ouvrir;
+    rendreEntetes();
+    if (ouvrir) {
+      var champ = tete.querySelector('tr.filtres input');
+      if (champ) champ.focus({ preventScroll: true });
+      annoncer('Filtres de colonne affichés : un champ sous chaque en-tête');
+    } else annoncer(filtresColonneVisibles() ? 'Des filtres de colonne sont posés : ils restent affichés' : 'Filtres de colonne repliés');
+  });
+  /* ============================================================
+     DÉBRIEF 27, LOT D — EXPORTER LE TABLEAU (P-F21)
+     « Copier le tableau » : ce que le tableau montre — filtres, tri,
+     colonnes affichées, lignes grisées comprises —, en colonnes séparées
+     par des tabulations, prêt à coller dans Excel (même presse-papiers que
+     « Copier (n) »). « Télécharger (CSV) » : le même contenu en fichier, à
+     la mode d'Excel en français (point-virgule, BOM UTF-8). Si le navigateur
+     refuse le fichier (le cadre d'Apps Script peut l'interdire), le tableau
+     est copié à la place et la page le dit.
+     ============================================================ */
+  function texteCase(v) { return String(v == null ? '' : v).replace(/[\t\r\n]+/g, ' ').trim(); }
+  function contenuDuTableau() {
+    if (vue.base === 'la' && RAPPROCHEMENT && SECONDE) {
+      var titres = vue.seconde.vueTable === 'essentielle' && SECONDE.vautEssentielles ? SECONDE.essentielles : SECONDE.titres;
+      return { titres: titres.slice(), base: nomSeconde(),
+               lignes: lignesSecondeAffichees().map(function (e) { return titres.map(function (t) { return texteCase(e.ligne[t]); }); }) };
+    }
+    var T = TABLEAU_MONTRE;
+    return { titres: T.cols.map(function (c) { return c.titre; }), base: 'GATES',
+             lignes: T.rangs.map(function (p) { return T.cols.map(function (c) { return texteCase(p[c.cle]); }); }) };
+  }
+  function enTSV(c) {
+    return [c.titres.map(texteCase).join('\t')].concat(c.lignes.map(function (l) { return l.join('\t'); })).join('\n');
+  }
+  function enCSV(c) {
+    var champ = function (v) { v = String(v); return /[";\r\n]|^\s|\s$/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    return '﻿' + [c.titres].concat(c.lignes).map(function (l) { return l.map(champ).join(';'); }).join('\r\n') + '\r\n';
+  }
+  function nomDuFichier(base) {
+    var c = (CONTRATS.filter(function (x) { return x.id === CONTRAT; })[0] || {}).nom || CONTRAT || 'contrat';
+    var morceau = function (t) { return norm(t).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); };
+    var j = aujourdhuiCivil();
+    return 'plans-' + morceau(base) + '-' + morceau(c) + '-' + j.getUTCFullYear() + '-' + deuxChiffres(j.getUTCMonth() + 1) + '-' + deuxChiffres(j.getUTCDate()) + '.csv';
+  }
+  function telechargerTexte(nom, texte, type) {
+    try {
+      var blob = new Blob([texte], { type: type });
+      if (window.navigator && navigator.msSaveOrOpenBlob) { navigator.msSaveOrOpenBlob(blob, nom); return true; }
+      var a = document.createElement('a');
+      if (!('download' in a) || !window.URL || !URL.createObjectURL) return false;
+      var url = URL.createObjectURL(blob);
+      a.href = url; a.download = nom; a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) { /* déjà libérée */ } }, 30000);
+      return true;
+    } catch (e) { return false; }
+  }
+  /* Le mot posé sous les boutons, par-dessus la page : il ne pousse rien,
+     se lit (role="status"), et s'en va seul ou au premier clic ailleurs. */
+  var MESSAGE_TABLEAU = { minuteur: 0 };
+  function direSousLesOutils(html, duree) {
+    var m = $('message-tableau');
+    if (!m) return;
+    clearTimeout(MESSAGE_TABLEAU.minuteur);
+    m.innerHTML = html;
+    m.hidden = false;
+    MESSAGE_TABLEAU.minuteur = setTimeout(function () { m.hidden = true; m.innerHTML = ''; }, duree || 7000);
+  }
+  document.addEventListener('click', function (e) {
+    var m = $('message-tableau');
+    if (!m || m.hidden || (e.target.closest && e.target.closest('#actions-tableau'))) return;
+    clearTimeout(MESSAGE_TABLEAU.minuteur); m.hidden = true; m.innerHTML = '';
+  });
+  function mesureExport(c) {
+    var n = c.lignes.length;
+    return nb(n) + (n > 1 ? ' lignes' : ' ligne') + ', ' + nb(c.titres.length) + (c.titres.length > 1 ? ' colonnes' : ' colonne');
+  }
+  function copierLeTableau(bouton, apresTelechargement) {
+    var c = contenuDuTableau();
+    if (!c.lignes.length) { direSousLesOutils('Rien à copier : le tableau est vide.'); return; }
+    copierTexte(enTSV(c), function (ok) {
+      if (bouton) {
+        var mot = bouton.querySelector('.mot-outil');
+        if (!bouton.__mot) bouton.__mot = mot.innerHTML;
+        mot.textContent = ok ? 'Copié' : 'Copie refusée';
+        bouton.setAttribute('data-etat', ok ? 'fait' : 'refuse');
+        clearTimeout(bouton.__minuteur);
+        bouton.__minuteur = setTimeout(function () { mot.innerHTML = bouton.__mot; bouton.removeAttribute('data-etat'); }, 2000);
+      }
+      if (apresTelechargement) {
+        direSousLesOutils(ok
+          ? 'Le navigateur a bloqué le téléchargement : le tableau est copié à la place (' + mesureExport(c) + '). Collez-le dans Excel.'
+          : 'Le navigateur a bloqué le téléchargement et la copie. Sélectionnez le tableau à la main pour le copier.', 10000);
+        return;
+      }
+      direSousLesOutils(ok ? 'Tableau copié (' + mesureExport(c) + ') : collez-le dans Excel ou dans un courriel.'
+                          : 'Le navigateur a refusé la copie. Le bouton « Télécharger (CSV) » donne le même tableau en fichier.', ok ? 5000 : 9000);
+    });
+  }
+  /* Pour la batterie : le texte exact que copient « Copier le tableau » (tsv)
+     et « Télécharger » (csv). */
+  window.__exportTableau = function (format) { var c = contenuDuTableau(); return format === 'csv' ? enCSV(c) : enTSV(c); };
+  $('copier-tableau').addEventListener('click', function () { copierLeTableau(this, false); });
+  $('telecharger-tableau').addEventListener('click', function () {
+    var c = contenuDuTableau();
+    if (!c.lignes.length) { direSousLesOutils('Rien à télécharger : le tableau est vide.'); return; }
+    var nom = nomDuFichier(c.base);
+    if (!telechargerTexte(nom, enCSV(c), 'text/csv;charset=utf-8')) { copierLeTableau(null, true); return; }
+    direSousLesOutils('<b>' + ech(nom) + '</b> : ' + mesureExport(c) + '. Rien n’est arrivé ? ' +
+      '<button type="button" data-copier-secours="1">Copier le tableau</button> à la place.', 9000);
+  });
+  $('message-tableau').addEventListener('click', function (e) {
+    if (e.target.closest('button[data-copier-secours]')) copierLeTableau($('copier-tableau'), false);
+  });
+
+  /* ============================================================
+     DÉBRIEF 27, LOT D — CHERCHER UN PLAN DE N'IMPORTE OÙ (P-F23)
+     Un champ dans le sommaire collé : on tape une référence — à la mode de
+     GATES ou de SEE, trois caractères au moins —, une liste propose les
+     plans qui commencent par elle, puis ceux qui la contiennent ; flèches et
+     Entrée, ou un clic, ouvrent l'historique du plan au-dessus du tableau
+     (avec sa ligne SEE). Combobox ARIA : le focus reste dans le champ, la
+     liste suit aria-activedescendant. Sous 1280 px, une loupe l'ouvre
+     par-dessus le sommaire.
+     ============================================================ */
+  var CHERCHE = { refs: [], actif: -1, minuteur: 0 };
+  function chercheEnIcone() { return !!(window.matchMedia && window.matchMedia('(max-width: 1279px)').matches); }
+  function plansTrouves(texte) {
+    var q = motCherche(texte);
+    if (!q || !PLANS) return { q: q, debut: [], dedans: [], anciens: [] };
+    var debut = [], dedans = [], anciens = [];
+    PLANS.forEach(function (p) {
+      var k = refCherchee(p.reference).indexOf(q);
+      if (k === 0) debut.push(p); else if (k > 0) dedans.push(p);
+    });
+    (ANCIENS || []).forEach(function (p) { if (refCherchee(p.reference).indexOf(q) !== -1) anciens.push(p); });
+    var parRef = function (a, b) { return COMPARER_REF(a.reference, b.reference); };
+    return { q: q, debut: debut.sort(parRef), dedans: dedans.sort(parRef), anciens: anciens };
+  }
+  /* La part tapée, soulignée dans la référence (quand la référence s'écrit
+     sans séparateurs, ce qui est le cas de GATES). */
+  function refSoulignee(ref, q) {
+    var r = String(ref), k = refCherchee(r).indexOf(q);
+    if (k === -1 || refCherchee(r) !== r.toUpperCase()) return ech(r);
+    return ech(r.slice(0, k)) + '<mark>' + ech(r.slice(k, k + q.length)) + '</mark>' + ech(r.slice(k + q.length));
+  }
+  function fermerListeCherche() {
+    var liste = $('cherche-plan-liste'), champ = $('cherche-plan-champ');
+    liste.hidden = true; liste.innerHTML = '';
+    champ.setAttribute('aria-expanded', 'false');
+    champ.removeAttribute('aria-activedescendant');
+    CHERCHE.refs = []; CHERCHE.actif = -1;
+  }
+  function marquerOptionCherche(i) {
+    var champ = $('cherche-plan-champ'), opts = $('cherche-plan-liste').querySelectorAll('li[data-ref]');
+    CHERCHE.actif = opts.length ? (i + opts.length) % opts.length : -1;
+    [].forEach.call(opts, function (o, k) { o.setAttribute('aria-selected', String(k === CHERCHE.actif)); });
+    var o = opts[CHERCHE.actif];
+    if (o) { champ.setAttribute('aria-activedescendant', o.id); if (o.scrollIntoView) o.scrollIntoView({ block: 'nearest' }); }
+    else champ.removeAttribute('aria-activedescendant');
+  }
+  function rendreListeCherche(texte) {
+    if (!PLANS) return;
+    var t = plansTrouves(texte), liste = $('cherche-plan-liste'), champ = $('cherche-plan-champ');
+    if (!t.q) { fermerListeCherche(); return; }
+    var tous = t.debut.concat(t.dedans), max = 8, vus = tous.slice(0, max);
+    CHERCHE.refs = vus.map(function (p) { return p.reference; });
+    var html = vus.map(function (p, i) {
+      var lib = CLE_LIBELLE ? String(p[CLE_LIBELLE] == null ? '' : p[CLE_LIBELLE]).trim() : '';
+      return '<li role="option" id="cherche-plan-opt-' + i + '" data-ref="' + ech(p.reference) + '" aria-selected="false">' +
+        '<span class="ref-option">' + refSoulignee(p.reference, t.q) + '</span>' +
+        '<span class="etat-option">' + pastilleValeur(p._cle, p._etat) + ech(libelleValeur(p[CLE_SUIVIE])) + '</span>' +
+        (lib ? '<span class="libelle-option">' + ech(lib) + '</span>' : '') + '</li>';
+    }).join('');
+    if (tous.length > max) {
+      html += '<li role="option" aria-disabled="true">… et ' + nb(tous.length - max) + (tous.length - max > 1 ? ' autres plans' : ' autre plan') + ' : précisez la référence</li>';
+    }
+    if (!tous.length) {
+      html = '<li role="option" aria-disabled="true">' + (t.anciens.length
+        ? ech(t.anciens[0].reference) + ' est un plan à part (' + ech(t.anciens[0]._ancien) + '), grisé dans le tableau, sans historique suivi.'
+        : 'Aucun plan ne correspond à « ' + ech(String(texte).trim()) + ' ».') + '</li>';
+    }
+    liste.innerHTML = html;
+    liste.hidden = false;
+    champ.setAttribute('aria-expanded', 'true');
+    marquerOptionCherche(vus.length ? 0 : -1);
+    annoncer(tous.length ? nb(tous.length) + (tous.length > 1 ? ' plans trouvés' : ' plan trouvé') + ', flèches pour choisir' : 'Aucun plan trouvé');
+  }
+  function ouvrirCherche() {
+    var bloc = $('cherche-plan');
+    bloc.setAttribute('data-ouvert', 'true');
+    $('cherche-plan-ouvrir').setAttribute('aria-expanded', 'true');
+    $('cherche-plan-champ').focus();
+  }
+  function replierCherche(rendreFocus) {
+    var bloc = $('cherche-plan');
+    fermerListeCherche();
+    if (bloc.getAttribute('data-ouvert') !== 'true') return;
+    bloc.setAttribute('data-ouvert', 'false');
+    $('cherche-plan-ouvrir').setAttribute('aria-expanded', 'false');
+    if (rendreFocus) $('cherche-plan-ouvrir').focus();
+  }
+  function choisirPlanCherche(ref) {
+    var p = PLAN_PAR_REF[ref];
+    if (!p) return;
+    var champ = $('cherche-plan-champ');
+    fermerListeCherche();
+    /* Un plan hors du périmètre posé : on ne le cache pas derrière lui — le
+       périmètre se retire, l'historique s'ouvre. */
+    if (!dansPerimetre(p)) vue.perimetre = '';
+    montrerCePlan(ref);
+    champ.value = '';
+    if (chercheEnIcone()) {
+      OUVREUR_PLAN = { ref: ref, g: empreinteFocus($('cherche-plan-ouvrir')) };
+      $('cherche-plan').setAttribute('data-ouvert', 'false');
+      $('cherche-plan-ouvrir').setAttribute('aria-expanded', 'false');
+    }
+  }
+  $('cherche-plan-ouvrir').addEventListener('click', function () {
+    if ($('cherche-plan').getAttribute('data-ouvert') === 'true') replierCherche(true); else ouvrirCherche();
+  });
+  $('cherche-plan-fermer').addEventListener('click', function () { $('cherche-plan-champ').value = ''; replierCherche(true); });
+  $('cherche-plan-champ').addEventListener('input', function (e) {
+    var v = e.target.value;
+    clearTimeout(CHERCHE.minuteur);
+    CHERCHE.minuteur = setTimeout(function () { rendreListeCherche(v); }, 120);
+  });
+  $('cherche-plan-champ').addEventListener('keydown', function (e) {
+    var liste = $('cherche-plan-liste'), ouverte = !liste.hidden, n = CHERCHE.refs.length;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!ouverte) { clearTimeout(CHERCHE.minuteur); rendreListeCherche(e.target.value); return; }
+      if (n) marquerOptionCherche(CHERCHE.actif + (e.key === 'ArrowDown' ? 1 : -1));
+      return;
+    }
+    if (e.key === 'Enter') {
+      clearTimeout(CHERCHE.minuteur);
+      if (!ouverte) rendreListeCherche(e.target.value);
+      if (CHERCHE.actif >= 0 && CHERCHE.refs[CHERCHE.actif]) { e.preventDefault(); choisirPlanCherche(CHERCHE.refs[CHERCHE.actif]); }
+      return;
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault(); e.stopPropagation();
+      if (ouverte) fermerListeCherche();
+      else if (e.target.value) e.target.value = '';
+      else replierCherche(true);
+      return;
+    }
+    if (e.key === 'Tab') fermerListeCherche();
+  });
+  /* La souris : mousedown, pour garder le focus dans le champ jusqu'au choix. */
+  $('cherche-plan-liste').addEventListener('mousedown', function (e) {
+    var o = e.target.closest('li[data-ref]');
+    e.preventDefault();
+    if (o) choisirPlanCherche(o.getAttribute('data-ref'));
+  });
+  $('cherche-plan').addEventListener('focusout', function () {
+    setTimeout(function () {
+      var bloc = $('cherche-plan');
+      if (bloc.contains(document.activeElement)) return;
+      fermerListeCherche();
+      if (!$('cherche-plan-champ').value) replierCherche(false);
+    }, 0);
+  });
+
+  /* « N colonnes vides masquées · Afficher » / « … affichées · Masquer ». */
+  $('colonnes-vides').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-vides]');
+    if (!b) return;
+    vue.videsMontrees = b.getAttribute('data-vides') === 'afficher';
+    rendreEntetes(); rendreCorps(selection()); rendreColonnesVides();
+    var neuf = $('colonnes-vides').querySelector('button');
+    if (neuf) neuf.focus();
+    planifierSauvegarde();
+    var n = Object.keys(VIDES).length;
+    annoncer(nb(n) + (n > 1 ? ' colonnes vides ' : ' colonne vide ') + (vue.videsMontrees ? (n > 1 ? 'affichées' : 'affichée') : (n > 1 ? 'masquées' : 'masquée')));
+  });
+
   $('defile').addEventListener('scroll', majOmbre, { passive: true });
   suivreDefilement($('defile'), 'corps-tableau');
   ['cadre-tableau', 'cadre-seconde'].forEach(function (id) {
@@ -11941,7 +13074,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     clearTimeout(minuteurTaille);
     minuteurTaille = setTimeout(function () {
       if (!vue) return;                // la page attend encore ses données
-      rendreGraphique(selection()); ajusterSticky(); majOmbre();
+      rendreGraphique(selection()); marquerLourd(); ajusterSticky(); majOmbre();
       aMesurer('barre');
       ajusterColonneNom();
       marquerDebords();
@@ -12192,8 +13325,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if (o.tableauPose) return;
     o.tableauPose = true;
     if (o.guetteur) { o.guetteur.disconnect(); o.guetteur = null; }
+    majColonnesVides(o.liste);
     rendreEntetes();
     rendreCorps(o.liste, PREMIERE_TRANCHE);
+    rendreColonnesVides();
     o.tranche = TRANCHES['corps-tableau'] || null;
   }
   function executerEtape(o) {
@@ -12292,15 +13427,24 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      dessiner, puis reprend la sienne : on la retrouve où on l'avait
      laissée. Seulement pour une page rouverte ; rien n'est gardé nulle part. */
   var HAUTEUR_GARDEE = false;
+  /* Débrief 27 : et l'ancrage du défilement est suspendu le temps de se
+     dessiner. Le tableau des plans n'a plus de content-visibility (X-A11) :
+     ses lignes se posent pour de vrai au-dessus de l'endroit retrouvé, et le
+     navigateur, pour garder « sa » ligne d'ancrage du squelette, déplaçait
+     le défilement de quelques dizaines de pixels. La page finie a la même
+     hauteur qu'avant le rechargement : le même décalage montre la même
+     chose. */
   function garderHauteur() {
     if (!defilementRestaure()) return;
     HAUTEUR_GARDEE = true;
     document.documentElement.style.minHeight = '200000px';
+    document.documentElement.style.overflowAnchor = 'none';
   }
   function rendreHauteur() {
     if (!HAUTEUR_GARDEE) return;
     HAUTEUR_GARDEE = false;
     document.documentElement.style.removeProperty('min-height');
+    document.documentElement.style.removeProperty('overflow-anchor');
   }
   function cibleDeLAdresse() {
     var h = String(location.hash || '').slice(1);
