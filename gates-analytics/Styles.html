@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "8d83704";
+  --suivi-fwd-edition: "bce196f";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -93,6 +93,9 @@
   --retrait-panneau: 31px;
   /* --alerte-fond : le fond d'un bandeau d'erreur (D8, .bandeau-alerte). */
   --alerte-fond: #fbeeea;
+  /* Débrief 27 (lot F) : --succes-fond, le fond d'un message réussi (le
+     bandeau du panneau d'administration) — l'encre y tient 15:1. */
+  --succes-fond: #ebf4ee;
 
   /* Les panneaux des sections (débrief 20) : chaque section est une feuille
      posée sur le papier, bordée d'un filet et d'une ombre à peine marquée.
@@ -179,8 +182,11 @@
     --panne-fond: #2b1f14; --panne-bord: #e0894a;
     --selection: #3a4a63;
     --voile-dialogue: rgba(0, 0, 0, .62);
-    --principal-fond: #26303f; --principal-bord: var(--accent); --principal-encre: var(--encre);
-    --principal-survol: #313d50; --principal-survol-bord: var(--accent);
+    /* Débrief 27 (A-F24) : l'action principale d'un formulaire en miroir
+       du clair — un aplat de l'encre claire, le texte sombre (15:1) ; le
+       bleu-gris d'avant se voyait à peine. */
+    --principal-fond: var(--encre); --principal-bord: var(--encre); --principal-encre: var(--surface);
+    --principal-survol: var(--encre-2); --principal-survol-bord: var(--encre-2);
     /* Débrief 27 : segmenté, tête neutre, bord des champs (3,2:1) ; pas de
        liseré sous les pastilles, toutes à 3:1 au moins sur la surface. */
     --seg-piste: #101013; --seg-puce: #2c2c33; --seg-anneau: #4a4943;
@@ -189,6 +195,7 @@
     --bord-champ: #6a6860;
     --lisere-donnee: transparent;
     --alerte-fond: #2b1f14;
+    --succes-fond: #16231a;
   }
 }
 :root[data-theme="dark"] {
@@ -237,8 +244,11 @@
   --panne-fond: #2b1f14; --panne-bord: #e0894a;
   --selection: #3a4a63;
   --voile-dialogue: rgba(0, 0, 0, .62);
-  --principal-fond: #26303f; --principal-bord: var(--accent); --principal-encre: var(--encre);
-  --principal-survol: #313d50; --principal-survol-bord: var(--accent);
+  /* Débrief 27 (A-F24) : l'action principale d'un formulaire en miroir
+     du clair — un aplat de l'encre claire, le texte sombre (15:1) ; le
+     bleu-gris d'avant se voyait à peine. */
+  --principal-fond: var(--encre); --principal-bord: var(--encre); --principal-encre: var(--surface);
+  --principal-survol: var(--encre-2); --principal-survol-bord: var(--encre-2);
   /* Débrief 27 : segmenté, tête neutre, bord des champs (3,2:1) ; pas de
      liseré sous les pastilles, toutes à 3:1 au moins sur la surface. */
   --seg-piste: #101013; --seg-puce: #2c2c33; --seg-anneau: #4a4943;
@@ -247,6 +257,7 @@
   --bord-champ: #6a6860;
   --lisere-donnee: transparent;
   --alerte-fond: #2b1f14;
+  --succes-fond: #16231a;
 }
 
 /* Les contrôles du navigateur — la liste d'un menu déroulant, les barres de
@@ -1861,68 +1872,240 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
 .bandeau-mode .choix-admin[hidden] { display: none; }
 .bouton-admin { display: inline-flex; align-items: center; gap: 6px; }
 .bouton-admin svg { flex: none; }
+/* Débrief 27 (lot F, rapport « flux admin » A-F1…A-F25, B17, M7, M8) : le
+   panneau refait pour qu'on s'y fie —
+   — calé en haut (A-F16) : il ne saute plus d'un onglet à l'autre ni quand
+     le formulaire s'ouvre, il ne grandit que vers le bas ;
+   — des onglets soulignés (B17), qui ne ressemblent plus aux filtres ;
+   — les messages dans un bandeau au pied du panneau (succès vert, échec
+     rouge, D8), avec leur bouton (« Annuler la suppression »,
+     « Réafficher ») : rien ne s'insère au-dessus de ce qu'on lit ;
+   — chaque champ dit sous lui ce qui ne va pas (A-F7), le nom compte ses
+     60 caractères (A-F8) ;
+   — les confirmations dans une ligne sous la ligne visée : le second clic
+     d'un double-clic retombe sur le bouton d'origine, jamais sur « Oui »
+     (A-F2) ;
+   — au téléphone, plein écran, la barre « Enregistrer » collée en bas et la
+     page derrière immobile (M7, M8). */
 dialog.admin {
-  width: min(780px, calc(100vw - 32px)); max-height: calc(100vh - 40px); padding: 0;
-  border: 1px solid var(--panneau-bord); border-radius: 8px; background: var(--surface); color: var(--encre);
+  width: min(780px, calc(100vw - 32px)); padding: 0;
+  margin: 8vh auto auto; max-height: 84vh; max-height: 84dvh;
+  border: 1px solid var(--panneau-bord); border-radius: 10px; background: var(--surface); color: var(--encre);
   box-shadow: var(--panneau-ombre); overflow: hidden;
 }
 dialog.admin[open] { display: flex; flex-direction: column; }
 dialog.admin::backdrop { background: var(--voile-dialogue); }
-.admin-tete { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 24px 14px; border-bottom: 1px solid var(--filet); }
+/* Le trait de chargement (D8) : 2 px d'ardoise en haut du panneau, qui ne
+   paraît qu'au-delà de 200 ms (un aller-retour rapide ne clignote pas) ;
+   immobile si l'on préfère moins d'animation. */
+dialog.admin::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; z-index: 3; pointer-events: none;
+  background: linear-gradient(90deg, transparent 0, var(--accent) 35%, transparent 70%) no-repeat; background-size: 200% 100%;
+  opacity: 0; transition: opacity .1s;
+}
+dialog.admin[aria-busy="true"]::before { opacity: 1; transition-delay: .2s; animation: admin-chargement 1.1s linear infinite; }
+@keyframes admin-chargement { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+.admin-tete { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 24px 12px; flex: none; }
+dialog.admin.sans-onglets .admin-tete { border-bottom: 1px solid var(--filet); }
 .admin-tete h2 { margin: 0; font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 24px; line-height: 1.15; }
 .admin-qui { margin: 4px 0 0; font-size: 13px; color: var(--encre-2); }
+/* Ce que la personne peut faire, dit sous le titre (A-F11). */
+.admin-portee { margin: 6px 0 0; max-width: 72ch; font-size: 13px; line-height: 1.5; color: var(--encre); }
+.admin-portee[hidden] { display: none; }
 .admin-fermer { flex: none; width: 28px; height: 28px; border: 1px solid var(--filet-fort); border-radius: 50%; background: none; color: var(--encre-2); font-size: 18px; line-height: 1; padding: 0; cursor: pointer; }
 .admin-fermer:hover { color: var(--encre); border-color: var(--encre-3); }
-.admin-onglets { margin: 14px 24px 0; align-self: flex-start; }
-.admin-message { margin: 12px 24px 0; font-size: 13px; }
-.admin-message:empty { display: none; }
-.admin-message.ok { color: var(--fait); }
-.admin-message.erreur { color: var(--alerte); }
-.admin-corps { padding: 14px 24px 24px; overflow: auto; flex: 1 1 auto; }
-.admin-corps h3 { margin: 6px 0 10px; }
+/* Les onglets soulignés (B17) : 13/500, l'onglet ouvert à l'encre sur un
+   trait de 2 px, les autres en gris secondaire (7:1 et plus), un filet sous
+   la rangée. Le sombre n'a plus de pastille à peine visible (A-F24). */
+.admin-onglets { display: flex; gap: 22px; padding: 0 24px; border-bottom: 1px solid var(--filet); flex: none; }
+.admin-onglets[hidden], .admin-onglets [role="tab"][hidden] { display: none; }
+.admin-onglets [role="tab"] {
+  position: relative; border: 0; border-bottom: 2px solid transparent; background: none; margin: 0 0 -1px; padding: 9px 0 8px;
+  font: inherit; font-size: 13px; font-weight: 500; line-height: 18px; color: var(--encre-2); cursor: pointer; white-space: nowrap;
+}
+.admin-onglets [role="tab"]:hover { color: var(--encre); }
+.admin-onglets [role="tab"][aria-selected="true"] { color: var(--encre); border-bottom-color: var(--encre); }
+.admin-onglets [role="tab"]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
+.admin-corps { position: relative; padding: 16px 24px 24px; overflow: auto; flex: 1 1 auto; min-height: 0; overscroll-behavior: contain; }
+dialog.admin[aria-busy="true"] .admin-corps { pointer-events: none; }
+dialog.admin[aria-busy="true"] .admin-corps:not(.en-attente) { opacity: .6; }
 .admin-corps p { margin: 0 0 12px; font-size: 14px; color: var(--encre-2); line-height: 1.55; }
-.admin-ligne-outils { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-.admin-ligne-outils label { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--encre-2); cursor: pointer; }
-.admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+/* La place d'un onglet qu'on lit pour la première fois : assez haute pour
+   que le panneau ne s'allonge pas d'un coup à l'arrivée de la liste. */
+.admin-attente { min-height: 180px; display: grid; place-content: center; color: var(--encre-2); font-size: 13px; }
+/* Les titres du panneau (« Jalons de HDK › Tranche 1 », « Modifier
+   « Solde FWD » ») : Sans 14/500 en minuscules — un nom de jalon en
+   capitales se lirait mal. */
+.admin-corps h3.admin-titre, .admin-corps .admin-form h3 {
+  margin: 0; font-size: 14px; font-weight: 500; line-height: 1.35; letter-spacing: 0; text-transform: none; color: var(--encre);
+}
+.admin-ligne-outils { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; min-height: 36px; margin-bottom: 4px; }
+.admin-coche { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 13px; color: var(--encre-2); cursor: pointer; }
+.admin-coche input { width: 16px; height: 16px; margin: 0; accent-color: var(--encre); }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
 .admin-table th { text-align: left; font-weight: 500; font-size: 12px; color: var(--encre-2); padding: 0 10px 8px 0; border-bottom: 1px solid var(--filet-fort); white-space: nowrap; }
-.admin-table td { padding: 10px 10px 10px 0; border-bottom: 1px solid var(--filet); vertical-align: middle; }
-.admin-table td.actions { text-align: right; white-space: nowrap; }
-.admin-table td.actions .lien-doux + .lien-doux { margin-left: 14px; }
-.admin-table .num { white-space: nowrap; font-family: inherit; }
+.admin-table td { padding: 8px 10px 8px 0; border-bottom: 1px solid var(--filet); vertical-align: middle; transition: background-color .8s ease; }
+.admin-table td.actions { text-align: right; white-space: nowrap; padding-right: 4px; }
+.admin-table .date { white-space: nowrap; }
 .admin-table td.nom { overflow-wrap: anywhere; }
 .admin-table .doux { color: var(--encre-3); }
 .admin-table tr.passe td { color: var(--encre-3); }
-.admin-vide { padding: 18px 0; color: var(--encre-3); font-size: 14px; }
-.etiquette-admin { display: inline-block; padding: 1px 7px; border: 1px solid var(--filet-fort); border-radius: 10px; font-size: 12px; color: var(--encre-2); margin: 1px 4px 1px 0; white-space: nowrap; }
-.admin-form { margin: 0 0 18px; padding: 16px 18px; border: 1px solid var(--filet-fort); border-radius: 6px; background: var(--creux); }
-.admin-form h3 { margin-top: 0; }
-.admin-champs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+.admin-table tr.est-masque td:not(.actions) { color: var(--encre-3); }
+/* La ligne qu'on modifie, et celle qu'on vient d'enregistrer (éclairée
+   3 s, puis elle s'éteint en douceur) : un voile d'ardoise (A-F1, A-F17). */
+.admin-table tr.en-cours td, .admin-table tr.recent td { background: var(--accent-voile); }
+.etiquette-admin { display: inline-block; padding: 1px 8px; border: 1px solid var(--filet-fort); border-radius: 999px; font-size: 12px; line-height: 18px; color: var(--encre-2); margin: 1px 4px 1px 0; white-space: nowrap; }
+.etiquette-admin.en-cours { border-color: var(--accent); color: var(--accent); }
+.etiquette-admin.etat-masque { border-style: dashed; }
+.admin-lecture { font-size: 12px; color: var(--encre-3); white-space: nowrap; }
+/* Modifier, supprimer : deux icônes (B17) au gris tertiaire, à l'encre
+   quand on survole la ligne ; la corbeille survolée passe au rouge. Leur
+   nom dit le jalon (« Modifier le jalon Solde FWD du 15/12/2026 »). Au
+   téléphone, le mot s'écrit à côté de l'icône. */
+.admin-icone {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-width: 28px; height: 28px; padding: 0 6px; border: 0; border-radius: 6px; background: none;
+  color: var(--encre-3); font: inherit; font-size: 13px; cursor: pointer; vertical-align: middle;
+}
+.admin-icone svg { flex: none; }
+.admin-icone + .admin-icone { margin-left: 2px; }
+.admin-table tr:hover .admin-icone, .admin-icone:focus-visible { color: var(--encre); }
+@media (hover: hover) {
+  .admin-icone:hover { background: var(--seg-survol); color: var(--encre); }
+  .admin-icone[data-admin="supprimer"]:hover { color: var(--alerte); }
+  .bouton.principal:hover { background: var(--principal-survol); border-color: var(--principal-survol-bord); }
+}
+.admin-icone[aria-expanded="true"] { color: var(--alerte); }
+.admin-icone-mot { display: none; }
+.admin-table .lien-doux { min-height: 28px; }
+/* La question d'une confirmation, dans une ligne à elle sous la ligne
+   visée : la phrase, puis [Garder] [Oui, supprimer]. */
+.admin-table tr.admin-confirmation td { padding: 0 0 10px; }
+.admin-question, .admin-garde {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; padding: 10px 12px; border-radius: 6px;
+  border-left: 3px solid var(--alerte); background: var(--alerte-fond); font-size: 13px; line-height: 1.45; color: var(--encre);
+}
+.admin-question.neutre { border-left-color: var(--encre-3); background: var(--creux); }
+.admin-question-texte { flex: 1 1 240px; min-width: 0; }
+.admin-question-boutons { display: inline-flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.admin-garde { margin-top: 14px; border-left-color: var(--cours); background: var(--surface); }
+.bouton.petit { min-height: 28px; padding: 3px 12px; line-height: 20px; }
+.bouton.danger { color: var(--alerte); border-color: var(--alerte); }
+.bouton[aria-disabled="true"] { cursor: progress; }
+/* Le formulaire : chaque champ, puis sous lui son message (erreur en rouge,
+   avertissement en ambre) et, pour le nom, le compte des caractères. */
+.admin-form { margin: 0 0 18px; padding: 16px 18px; border: 1px solid var(--filet-fort); border-radius: 10px; background: var(--creux); }
+.admin-corps .admin-form h3 { margin-bottom: 12px; }
+.admin-champs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; }
 .admin-champs .pleine { grid-column: 1 / -1; }
-.admin-champ { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--encre-2); }
+.admin-champ { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.admin-champ > label { font-size: 12px; color: var(--encre-2); }
 .admin-champ input, .admin-champ select {
-  font: inherit; font-size: 14px; color: var(--encre); background: var(--surface);
-  border: 1px solid var(--bord-champ); border-radius: 4px; padding: 7px 9px; min-width: 0; width: 100%;
+  box-sizing: border-box; font: inherit; font-size: 14px; color: var(--encre); background-color: var(--surface);
+  border: 1px solid var(--bord-champ); border-radius: 4px; padding: 7px 9px; min-height: 36px; min-width: 0; width: 100%;
+}
+/* Les menus du formulaire comme ceux de la page (B17) : sans l'habit du
+   système, un chevron discret. */
+.admin-champ select {
+  appearance: none; -webkit-appearance: none; padding-right: 30px; cursor: pointer;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5 6 8 9.5 4.5' fill='none' stroke='%238f8c82' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat; background-position: right 10px center;
 }
 .admin-champ input:focus, .admin-champ select:focus { outline: 2px solid var(--focus); outline-offset: 2px; }
-.admin-champ input[aria-invalid="true"] { border-color: var(--alerte); }
-.admin-form-boutons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+.admin-champ [aria-invalid="true"] { border-color: var(--alerte); box-shadow: inset 0 0 0 1px var(--alerte); }
+.admin-champ input[readonly], .admin-champ select:disabled { background-color: var(--creux); color: var(--encre-2); cursor: default; opacity: 1; }
+/* Une ligne gardée sous chaque champ : un message qui paraît ne pousse
+   pas les champs suivants. */
+.admin-champ-pied { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-height: 17px; font-size: 12px; line-height: 1.45; }
+.admin-champ-msg { color: var(--encre-2); }
+.admin-champ-msg:empty { display: none; }
+.admin-champ-msg.erreur { color: var(--alerte); }
+.admin-champ-msg.avertissement { color: var(--cours); }
+.admin-compteur { margin-left: auto; color: var(--encre-3); white-space: nowrap; }
+.admin-compteur.plein { color: var(--cours); }
+.admin-form-boutons { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 16px; }
 .bouton.principal { background: var(--principal-fond); border-color: var(--principal-bord); color: var(--principal-encre); }
-.bouton.principal:hover { background: var(--principal-survol); border-color: var(--principal-survol-bord); }
-.bouton.danger { color: var(--alerte); }
 .admin-note { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--filet); font-size: 13px; color: var(--encre-3); line-height: 1.55; }
-dialog.admin[aria-busy="true"] .admin-corps { opacity: .6; pointer-events: none; }
+.admin-vide.etat-vide { min-height: 120px; }
+.admin-corps .bandeau-alerte { margin-bottom: 12px; }
+/* Le bandeau des messages, au pied du panneau : le succès sur un voile vert,
+   l'échec sur le voile rouge des bandeaux d'erreur (D8), texte à l'encre ;
+   son bouton à droite. */
+.admin-message {
+  flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; margin: 0; padding: 10px 24px;
+  border-top: 1px solid var(--filet); background: var(--surface); font-size: 13px; line-height: 1.5; color: var(--encre);
+}
+.admin-message:empty { display: none; }
+.admin-message.ok { background: var(--succes-fond); box-shadow: inset 3px 0 0 var(--fait); }
+.admin-message.erreur { background: var(--alerte-fond); box-shadow: inset 3px 0 0 var(--alerte); }
+.admin-message-texte { flex: 1 1 280px; min-width: 0; }
+.admin-message .bouton { margin-left: auto; }
+/* Au pied de la page, l'adresse du responsable pour les lecteurs (A-F23). */
+#pied-responsable a { color: var(--encre-2); text-underline-offset: 3px; }
+#pied-responsable a:hover { color: var(--encre); }
+/* La page derrière ne défile plus tant que le panneau est ouvert (M8) ; la
+   place de la barre de défilement qui s'efface est rendue en marge
+   (--barre-admin, mesurée à l'ouverture) : rien ne bouge derrière le voile. */
+html.admin-ouvert { overflow: hidden; padding-right: var(--barre-admin, 0px); }
+@media (prefers-reduced-motion: reduce) {
+  dialog.admin[aria-busy="true"]::before { animation: none; background: var(--accent); opacity: .6; transition: none; }
+  .admin-table td { transition: none; }
+}
 @media (max-width: 720px) {
-  .admin-tete { padding: 16px 16px 12px; }
-  .admin-onglets { margin: 12px 16px 0; }
-  .admin-message { margin: 10px 16px 0; }
+  .admin-tete { padding: 16px 16px 10px; }
+  .admin-onglets { padding: 0 16px; gap: 18px; }
+  .admin-message { padding: 10px 16px; }
   .admin-corps { padding: 12px 16px 20px; }
   .admin-champs { grid-template-columns: minmax(0, 1fr); }
   .admin-table thead { display: none; }
   .admin-table, .admin-table tbody, .admin-table tr, .admin-table td { display: block; width: 100%; }
   .admin-table tr { padding: 10px 0; border-bottom: 1px solid var(--filet); }
+  .admin-table tr.en-cours, .admin-table tr.recent { background: var(--accent-voile); }
   .admin-table td { border: none; padding: 2px 0; }
   .admin-table td.actions { text-align: left; padding-top: 6px; }
   .admin-table td[data-titre]::before { content: attr(data-titre) " · "; color: var(--encre-3); font-size: 12px; }
+  .admin-table tr.admin-confirmation { padding: 0 0 10px; }
+  .admin-icone { margin-left: -6px; }
+  .admin-icone + .admin-icone { margin-left: 10px; }
+  .admin-icone-mot { display: inline; }
+}
+/* Au téléphone : plein écran (100dvh, sans la place des barres du
+   navigateur), et « Enregistrer » collé en bas tant que le formulaire est
+   à l'écran — même clavier ouvert (M8). */
+@media (max-width: 560px) {
+  dialog.admin { width: 100%; max-width: 100%; height: 100vh; height: 100dvh; max-height: none; margin: 0; border: 0; border-radius: 0; }
+  /* La marge du bas passe dans le contenu : la barre collée touche le bord. */
+  .admin-corps { padding-bottom: 0; }
+  .admin-corps::after { content: ""; display: block; height: 20px; }
+  .admin-form { padding: 14px 14px 0; }
+  .admin-form-boutons {
+    position: sticky; bottom: 0; z-index: 2; margin: 14px -14px 0; padding: 10px 14px;
+    background: var(--creux); border-top: 1px solid var(--filet); border-radius: 0 0 10px 10px;
+  }
+}
+/* Téléphone couché (M7) : plein écran aussi, une tête resserrée, et les
+   onglets défilent avec le reste — le panneau entier défile. */
+@media (orientation: landscape) and (max-height: 500px) {
+  dialog.admin { width: 100%; max-width: 100%; height: 100vh; height: 100dvh; max-height: none; margin: 0; border: 0; border-radius: 0; }
+  dialog.admin[open] { display: block; overflow: auto; overscroll-behavior: contain; }
+  .admin-tete { padding: 8px 16px; }
+  .admin-tete h2 { font-size: 20px; }
+  .admin-corps { overflow: visible; }
+  .admin-corps::after { display: none; }
+  .admin-corps { padding-bottom: 20px; }
+  /* Le message reste au bas de l'écran ; la barre du formulaire, elle,
+     défile avec lui (deux barres collées se couvriraient). */
+  .admin-message { position: sticky; bottom: 0; z-index: 2; }
+  .admin-form-boutons { position: static; margin: 16px 0 0; padding: 0 0 16px; border-top: 0; background: none; }
+}
+/* Au doigt (D11) : 44 px à toucher partout dans le panneau ; les champs à
+   16 px (iOS n'y zoome plus). */
+@media (pointer: coarse) {
+  .admin-onglets [role="tab"] { min-height: 44px; min-width: 44px; }
+  .admin-icone { min-width: 44px; height: 44px; }
+  .admin-table .lien-doux, .admin-message .bouton, .admin-corps .bouton { min-height: 44px; }
+  .admin-coche { min-height: 44px; }
+  .admin-champ input, .admin-champ select { min-height: 44px; font-size: 16px; }
 }
 /* « Copier (12) » : sur chaque liste de références de la page (verdict de
    la comparaison, semaine du journal, groupe déplié). Un petit bouton à
