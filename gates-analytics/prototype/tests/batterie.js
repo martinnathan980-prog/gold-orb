@@ -3130,14 +3130,20 @@ async function deplierFiltresColonne(pg) {
     const pp = await page(ctxPrefs, 'préférences');
     await pp.click('#vue-tableau button[data-vue="essentielle"]'); await pp.waitForTimeout(800);
     await pp.reload(); await pp.waitForTimeout(1400);
+    /* Débrief 27, lot D (P-F15) : la vue choisie se retient — la page
+       rouverte est sur « Vue essentielle » ; « Toutes les colonnes » rend
+       ensuite l'extract dans l'ordre de la feuille (l'ordre mémorisé sous la
+       vue essentielle est celui de la feuille). */
+    const rouverteEss = await pp.evaluate(() => document.querySelector('#vue-tableau button[data-vue="essentielle"]').getAttribute('aria-pressed'));
+    await pp.click('#vue-tableau button[data-vue="toutes"]'); await pp.waitForTimeout(800);
     const apresEssentielle = await pp.evaluate(() => ({
       toutes: document.querySelector('#vue-tableau button[data-vue="toutes"]').getAttribute('aria-pressed'),
       n: document.querySelectorAll('tr.titres th').length,
       tete: [...document.querySelectorAll('tr.titres th')].slice(0, 3).map(t => t.dataset.cle).join(',')
     }));
-    verifier('après « Vue essentielle » puis rechargement, « Toutes les colonnes » revient dans l’ordre de l’extract',
-      apresEssentielle.toutes === 'true' && apresEssentielle.n === COLONNES_TOTAL && apresEssentielle.tete === 'reference,avancement,rpt',
-      JSON.stringify(apresEssentielle));
+    verifier('après « Vue essentielle » puis rechargement, la page rouvre sur la vue essentielle ; « Toutes les colonnes » revient dans l’ordre de l’extract',
+      rouverteEss === 'true' && apresEssentielle.toutes === 'true' && apresEssentielle.n === COLONNES_TOTAL && apresEssentielle.tete === 'reference,avancement,rpt',
+      JSON.stringify([rouverteEss, apresEssentielle]));
     await pp.click('tr.titres button[data-tri="ata"]'); await pp.waitForTimeout(800);
     await pp.reload(); await pp.waitForTimeout(1400);
     verifier('le tri d’une colonne survit au rechargement',
