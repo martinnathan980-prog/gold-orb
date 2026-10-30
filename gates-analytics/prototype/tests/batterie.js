@@ -11241,6 +11241,225 @@ async function deplierFiltresColonne(pg) {
   //  dans un bloc { … } qui ouvre et ferme ses propres pages.
   // =================================================================
   /* (début du lot J) */
+  section('Débrief 29 : journal au téléphone, rythme requis, plans de la liste par groupe (lot J)');
+  {
+    /* La page vivante, servie par le vrai serveur sur le classeur du
+       simulateur (comme la section du lot F) : HDK, ses six relevés, son
+       jalon « Solde FWD » (Séquence 600). */
+    const fsJ = require('fs'), osJ = require('os');
+    const { construireSimulateur } = require(path.join(__dirname, '..', '..', 'tests', 'construire-simulateur.js'));
+    const { Feuille } = require(path.join(__dirname, '..', '..', 'tests', 'faux-classeur.js'));
+    const simJ = construireSimulateur({ date: '2026-10-29', avantPage: function (c, classeur) {
+      const ths = classeur.getSheetByName('THS');
+      classeur.feuilles.splice(1, 0, new Feuille('HDK Tranche 2', ths.valeurs.map(l => l.slice()), false, ths.fusions.map(f => Object.assign({}, f))));
+    } });
+    const srvJ = simJ.contexte;
+    simJ.classeur.proprietaire = 'nathan@airbus.com';
+    srvJ.__emailScript = 'nathan@airbus.com';
+    const fichierJ = path.join(osJ.tmpdir(), 'suivi-fwd-lot-j-' + process.pid + '.html');
+    fsJ.writeFileSync(fichierJ, simJ.page.replace(/<script>\s*\/\* Simulateur : google\.script\.run[\s\S]*?<\/script>/, ''));
+    const vivanteJ = async (o) => {
+      const email = 'nathan@airbus.com';
+      const c = await nav.newContext({ viewport: { width: o.largeur || 1280, height: o.hauteur || 900 }, colorScheme: o.schema || 'light',
+        isMobile: !!o.mobile, hasTouch: !!o.mobile, locale: 'en-US' });
+      const pg = await c.newPage();
+      brancher(pg, 'lot J ' + (o.largeur || 1280) + (o.mobile ? ' tactile' : '') + ' ' + (o.schema || 'light'));
+      await pg.exposeFunction('__appel', (nom, args) => {
+        if (typeof srvJ[nom] !== 'function' || /_$/.test(nom)) throw new Error('fonction inconnue ' + nom);
+        const avant = srvJ.__emailLecteur; srvJ.__emailLecteur = email;
+        try { const r = srvJ[nom].apply(null, JSON.parse(args)); return JSON.stringify(r === undefined ? null : r); } finally { srvJ.__emailLecteur = avant; }
+      });
+      await pg.addInitScript(() => {
+        window.SUIVI_FWD_BUDGET = 1e9;
+        function chaine(ok, ko) {
+          const c = { withSuccessHandler: f => chaine(f, ko), withFailureHandler: f => chaine(ok, f), withUserObject: () => chaine(ok, ko) };
+          return new Proxy(c, { get(t, nom) {
+            if (nom in t) return t[nom];
+            if (typeof nom !== 'string') return undefined;
+            return function () {
+              const args = Array.prototype.slice.call(arguments);
+              setTimeout(() => window.__appel(nom, JSON.stringify(args)).then(j => { if (ok) ok(JSON.parse(j)); },
+                e => { if (ko) ko({ message: String(e.message || e).replace(/^Error: /, '') }); }), 40);
+            };
+          } });
+        }
+        window.google = { script: { run: chaine(null, null) } };
+      });
+      await pg.goto('file://' + fichierJ);
+      await pg.waitForFunction(() => document.documentElement.getAttribute('data-suivi-fwd') === 'pret', null, { timeout: 30000 });
+      await pg.waitForFunction(() => (document.getElementById('pied-responsable') || {}).textContent ||
+        getComputedStyle(document.getElementById('choix-admin')).visibility !== 'hidden', null, { timeout: 20000 }).catch(() => {});
+      /* Le bandeau du simulateur n'existe pas devant le classeur. */
+      await pg.evaluate(() => { const x = document.querySelector('.simulateur-bandeau'); if (x) x.remove(); window.scrollTo(0, 0); });
+      await pg.waitForTimeout(600);
+      pg.__ctx = c;
+      return pg;
+    };
+    /* Toucher (au doigt) ou cliquer le milieu d'un élément. */
+    const toucher = async (pg, tactile, quoi) => {
+      const p = await pg.evaluate(q => { const e = typeof q === 'string' ? document.querySelector(q) : document.querySelectorAll(q.s)[q.i];
+        const r = e.getBoundingClientRect(); return { x: r.left + Math.min(30, r.width / 2), y: r.top + r.height / 2 }; }, quoi);
+      if (tactile) await pg.touchscreen.tap(p.x, p.y); else await pg.mouse.click(p.x, p.y);
+      await pg.waitForTimeout(500);
+    };
+    /* Le nom d'une semaine (« S41 · du … ») : où il est à l'écran, et où en est la page. */
+    const nomSemaine = (pg, k) => pg.evaluate(k => { const t = document.querySelectorAll('#zone-journal .journal-plier')[k];
+      return { y: scrollY, nom: t.querySelector('.sem').getBoundingClientRect().top, sem: t.querySelector('.sem-num').textContent, ouvert: t.getAttribute('aria-expanded'), focus: document.activeElement === t }; }, k);
+
+    // --- M10 et NOUVEAU-2 : au téléphone, la ligne d'une semaine ouverte s'efface (display: contents) ;
+    //     le journal mesurait cette boîte vide (son haut : 0) et jetait la page vers le haut.
+    for (const o of [{ largeur: 390, hauteur: 844, schema: 'light' }, { largeur: 360, hauteur: 740, schema: 'dark' }]) {
+      const dit = o.largeur + ' × ' + o.hauteur + ', ' + o.schema;
+      const gj = await vivanteJ(Object.assign({ mobile: true }, o));
+      // 1. Toucher « 9 passés à « VALIDATED » » sous la première semaine : ses plans à l'écran.
+      await gj.evaluate(() => document.querySelector('#zone-journal .compte-passage').scrollIntoView({ block: 'center' }));
+      await gj.waitForTimeout(300);
+      const avantCompte = await gj.evaluate(() => { const c = document.querySelector('#zone-journal .compte-passage');
+        return { y: scrollY, passage: c.dataset.passage, sem: c.closest('.journal-semaine').querySelector('.journal-plier').dataset.semaine }; });
+      await toucher(gj, true, '#zone-journal .compte-passage');
+      const apresCompte = await gj.evaluate(c => {
+        const t = [...document.querySelectorAll('#zone-journal .journal-plier')].find(b => b.dataset.semaine === c.sem), s = t.closest('.journal-semaine');
+        const l = s.querySelector('.journal-ligne'), a = document.activeElement;
+        return { y: scrollY, vh: innerHeight, filtre: window.__vueValeurs().journal, ouverte: t.getAttribute('aria-expanded'),
+                 haut: Math.round(s.getBoundingClientRect().top), sommaire: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bas-sommaire')) || 0,
+                 ligne: l ? Math.round(l.getBoundingClientRect().top) : null, focus: a.dataset.passage === c.passage && s.contains(a) };
+      }, avantCompte);
+      verifier('au téléphone (' + dit + '), toucher le premier compte d’une semaine filtre le journal, déplie la semaine et la monte sous le sommaire : son premier plan est à l’écran, la page n’est pas remontée (M10)',
+        apresCompte.filtre === avantCompte.passage && apresCompte.ouverte === 'true' && apresCompte.ligne !== null && apresCompte.ligne > apresCompte.sommaire &&
+        apresCompte.ligne < apresCompte.vh && apresCompte.y >= avantCompte.y && Math.abs(apresCompte.haut - (apresCompte.sommaire + 4)) <= 2 && apresCompte.focus,
+        JSON.stringify([avantCompte, apresCompte]));
+      // 2. Ouvrir S41 (troisième semaine, pliée) : son nom reste sous le doigt, la page ne bouge pas.
+      await gj.evaluate(() => { document.querySelector('#filtre-journal button[data-journal=""]').click(); });
+      await gj.waitForTimeout(300);
+      await gj.evaluate(() => document.querySelectorAll('#zone-journal .journal-plier[aria-expanded="true"]').forEach(b => b.click()));
+      await gj.waitForTimeout(300);
+      await gj.evaluate(() => document.querySelectorAll('#zone-journal .journal-plier')[2].scrollIntoView({ block: 'center' }));
+      await gj.waitForTimeout(300);
+      const avantS41 = await nomSemaine(gj, 2);
+      await toucher(gj, true, { s: '#zone-journal .journal-plier', i: 2 });
+      const ouvertS41 = await nomSemaine(gj, 2);
+      verifier('au téléphone (' + dit + '), ouvrir ' + avantS41.sem + ' garde son nom à ±2 px sous le doigt, et la page ne remonte pas (NOUVEAU-2 : elle sautait de 400 à 800 px)',
+        avantS41.ouvert === 'false' && ouvertS41.ouvert === 'true' && Math.abs(ouvertS41.nom - avantS41.nom) <= 2 && ouvertS41.y >= avantS41.y && ouvertS41.focus,
+        JSON.stringify([avantS41, ouvertS41]));
+      // 3. La replier : rien ne bouge non plus.
+      await toucher(gj, true, { s: '#zone-journal .journal-plier', i: 2 });
+      const plieS41 = await nomSemaine(gj, 2);
+      verifier('au téléphone (' + dit + '), la replier aussitôt : son nom ne bouge pas, la page non plus',
+        plieS41.ouvert === 'false' && Math.abs(plieS41.nom - avantS41.nom) <= 2 && Math.abs(plieS41.y - avantS41.y) <= 2, JSON.stringify([avantS41, plieS41]));
+      // 4. Replier une semaine lue de loin, son nom collé sous le sommaire : son nom reste là, à l'écran.
+      await gj.evaluate(() => document.querySelectorAll('#zone-journal .journal-plier')[0].click());
+      await gj.waitForTimeout(300);
+      await gj.evaluate(() => { const l = document.querySelectorAll('#zone-journal .journal-semaine')[0].querySelectorAll('.journal-ligne'); l[Math.min(8, l.length - 1)].scrollIntoView({ block: 'center' }); });
+      await gj.waitForTimeout(300);
+      const colle = await nomSemaine(gj, 0);
+      await toucher(gj, true, { s: '#zone-journal .journal-plier', i: 0 });
+      const replie = await nomSemaine(gj, 0);
+      const sommaireJ = await gj.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bas-sommaire')) || 0);
+      verifier('au téléphone (' + dit + '), replier une semaine dont le nom était collé en haut : le nom reste à sa place, sous le sommaire, à l’écran',
+        colle.ouvert === 'true' && replie.ouvert === 'false' && Math.abs(replie.nom - colle.nom) <= 2 && replie.nom >= sommaireJ && replie.y < colle.y,
+        JSON.stringify([colle, replie, sommaireJ]));
+      await gj.__ctx.close();
+    }
+    // Sur grand écran, rien ne change : la ligne d'une semaine reste sous le pointeur.
+    for (const o of [{ largeur: 1440, hauteur: 900, schema: 'light' }, { largeur: 1024, hauteur: 768, schema: 'dark' }]) {
+      const gj = await vivanteJ(o);
+      await gj.evaluate(() => document.querySelectorAll('#zone-journal .journal-plier[aria-expanded="true"]').forEach(b => b.click()));
+      await gj.waitForTimeout(300);
+      await gj.evaluate(() => document.querySelectorAll('#zone-journal .journal-plier')[2].scrollIntoView({ block: 'center' }));
+      await gj.waitForTimeout(300);
+      const a = await nomSemaine(gj, 2);
+      await toucher(gj, false, { s: '#zone-journal .journal-plier', i: 2 });
+      const b = await nomSemaine(gj, 2);
+      verifier('à ' + o.largeur + ' px (' + o.schema + '), ouvrir une semaine garde son nom sous le pointeur et la page immobile',
+        b.ouvert === 'true' && Math.abs(b.nom - a.nom) <= 2 && Math.abs(b.y - a.y) <= 2, JSON.stringify([a, b]));
+      await gj.__ctx.close();
+    }
+
+    // --- S2 : le rythme requis du bloc par groupe, arrondi comme partout (rythmeDit) : « 38/sem. », plus « 38,1 ».
+    {
+      const gj = await vivanteJ({ largeur: 1440, hauteur: 900, schema: 'light' });
+      await gj.selectOption('#dim-critique', 'sequence'); await gj.waitForTimeout(600);
+      const lignes = await gj.evaluate(() => [...document.querySelectorAll('#zone-critique .critique-ligne')].map(l => ({
+        g: l.dataset.groupe, requis: ((l.querySelector('.requis') || {}).textContent || '').trim(),
+        titre: (l.querySelector('.critique-effort') || {}).title || '', lu: (l.querySelector('.masque') || {}).textContent || '' })).filter(x => x.requis));
+      const gros = lignes.filter(x => { const n = parseFloat(x.requis.replace(',', '.')); return n >= 10; });
+      verifier('le rythme requis d’un groupe d’au moins 10 plans par semaine s’écrit en entier, à l’œil, dans sa bulle et pour un lecteur d’écran (« 38/sem. », plus « 38,1 ») (S2)',
+        gros.length >= 2 && gros.every(x => { const m = x.requis.match(/^(\d+)\/sem\.$/); return m && x.titre.indexOf(' : ' + m[1] + ' par semaine ;') !== -1 && x.lu.indexOf('Rythme requis : ' + m[1] + ' plans par semaine') !== -1; }),
+        JSON.stringify(lignes.map(x => [x.g, x.requis])));
+      const cible = gros[0] || lignes[0];
+      await gj.evaluate(g => [...document.querySelectorAll('#zone-critique .critique-ligne')].find(l => l.dataset.groupe === g).click(), cible.g);
+      await gj.waitForTimeout(400);
+      await gj.click('#filtrer-groupe-page'); await gj.waitForTimeout(800);
+      const graphe = await gj.evaluate(g => ({
+        mots: [...document.querySelectorAll('svg text')].map(t => t.textContent.trim()).filter(t => /^requis \d/.test(t)),
+        ligne: (([...document.querySelectorAll('#zone-critique .critique-ligne')].find(l => l.dataset.groupe === g) || document).querySelector('.requis') || {}).textContent }), cible.g);
+      verifier('la page filtrée sur « Séquence ' + cible.g + ' », la ligne du bloc et la droite « requis » du graphique disent le même entier (S2)',
+        graphe.mots.length === 1 && graphe.mots[0] === 'requis ' + cible.requis && graphe.ligne === cible.requis, JSON.stringify([cible.requis, graphe]));
+      await gj.click('#filtrer-groupe-page'); await gj.waitForTimeout(500);
+
+      // --- S10 : une référence de la liste dépliée ouvre la fiche du plan comme partout ailleurs (montrerCePlan).
+      await gj.selectOption('#dim-critique', 'ata'); await gj.waitForTimeout(600);
+      await gj.evaluate(() => { const l = [...document.querySelectorAll('#zone-critique .critique-ligne')].find(x => x.dataset.groupe === '21');
+        if (l.getAttribute('aria-expanded') !== 'true') l.click(); });
+      await gj.waitForTimeout(500);
+      const ouvrirAuClavier = async (ref) => {
+        await gj.evaluate(r => { const j = document.querySelector('#zone-critique .jeton-ud[data-ud="' + r + '"]'); j.scrollIntoView({ block: 'center' }); j.focus(); }, ref);
+        await gj.keyboard.press('Enter'); await gj.waitForTimeout(900);
+        const fiche = await gj.evaluate(() => ({ focus: document.activeElement.id, fiche: !document.getElementById('fiche-plan').hidden,
+          ref: ((document.querySelector('#fiche-plan .fiche-plan-tete .ref') || {}).textContent || '').trim(), lignes: document.querySelectorAll('#corps-tableau tr').length }));
+        await gj.keyboard.press('Escape'); await gj.waitForTimeout(700);
+        const retour = await gj.evaluate(() => { const a = document.activeElement, r = a.getBoundingClientRect();
+          return { ud: a.dataset.ud || a.tagName, jeton: a.classList.contains('jeton-ud') && !!a.closest('#zone-critique'), aLEcran: r.top >= 0 && r.bottom <= innerHeight, fiche: !document.getElementById('fiche-plan').hidden }; });
+        return { fiche, retour };
+      };
+      const ref1 = await gj.evaluate(() => document.querySelector('#zone-critique .jeton-ud').dataset.ud);
+      const r1 = await ouvrirAuClavier(ref1);
+      verifier('Entrée sur une référence de la liste d’ATA 21 : la fiche du plan s’ouvre, le focus sur son titre, le tableau réduit à ce plan (S10 : le focus tombait sur le corps de la page)',
+        r1.fiche.focus === 'titre-fiche-plan' && r1.fiche.fiche && r1.fiche.ref === ref1 && r1.fiche.lignes === 1, JSON.stringify(r1.fiche));
+      verifier('puis Échap ferme la fiche et rend le focus à cette référence de la liste, à l’écran (S10 : il allait au tableau)',
+        !r1.retour.fiche && r1.retour.ud === ref1 && r1.retour.jeton && r1.retour.aLEcran, JSON.stringify(r1.retour));
+      // Une référence montrée par « Voir les N autres plans » (Séquence 600, 292 plans) : la liste reste dépliée, le focus y revient.
+      await gj.selectOption('#dim-critique', 'sequence'); await gj.waitForTimeout(600);
+      await gj.evaluate(() => { const l = [...document.querySelectorAll('#zone-critique .critique-ligne')].find(x => x.dataset.groupe === '600');
+        if (l.getAttribute('aria-expanded') !== 'true') l.click(); });
+      await gj.waitForTimeout(500);
+      const plus = await gj.$('#zone-critique button[data-plus-refs][aria-expanded="false"]');
+      if (plus) { await plus.click(); await gj.waitForTimeout(400); }
+      const ref2 = await gj.evaluate(() => { const j = document.querySelectorAll('#zone-critique .jeton-ud'); return j[j.length - 1].dataset.ud; });
+      const r2 = await ouvrirAuClavier(ref2);
+      verifier('une référence montrée par « Voir les N autres plans » : la fiche s’ouvre sur son titre, Échap rend le focus à cette référence, la liste toujours dépliée',
+        !!plus && r2.fiche.focus === 'titre-fiche-plan' && r2.fiche.ref === ref2 && r2.retour.ud === ref2 && r2.retour.jeton && r2.retour.aLEcran, JSON.stringify(r2));
+      // À la souris, la croix de la fiche fait de même.
+      const ref3 = await gj.evaluate(() => document.querySelectorAll('#zone-critique .jeton-ud')[1].dataset.ud);
+      await gj.evaluate(r => document.querySelector('#zone-critique .jeton-ud[data-ud="' + r + '"]').scrollIntoView({ block: 'center' }), ref3);
+      await gj.click('#zone-critique .jeton-ud[data-ud="' + ref3 + '"]'); await gj.waitForTimeout(900);
+      const titre3 = await gj.evaluate(() => document.activeElement.id);
+      await gj.click('#fiche-plan .fiche-plan-fermer'); await gj.waitForTimeout(700);
+      const retour3 = await gj.evaluate(() => ({ ud: document.activeElement.dataset.ud || document.activeElement.tagName, lignes: document.querySelectorAll('#corps-tableau tr').length }));
+      verifier('à la souris : un clic sur une référence de la liste ouvre sa fiche (focus sur le titre) ; sa croix rend le focus à la référence et le tableau à tous les plans',
+        titre3 === 'titre-fiche-plan' && retour3.ud === ref3 && retour3.lignes > 1, JSON.stringify([titre3, retour3]));
+      await gj.__ctx.close();
+    }
+    // Au téléphone, toucher une référence de la liste ouvre aussi la fiche, et sa croix ramène à la liste.
+    {
+      const gj = await vivanteJ({ largeur: 390, hauteur: 844, schema: 'dark', mobile: true });
+      await gj.evaluate(() => { const l = [...document.querySelectorAll('#zone-critique .critique-ligne')].find(x => x.dataset.groupe === '21');
+        l.scrollIntoView({ block: 'center' }); if (l.getAttribute('aria-expanded') !== 'true') l.click(); });
+      await gj.waitForTimeout(500);
+      const ref = await gj.evaluate(() => { const j = document.querySelectorAll('#zone-critique .jeton-ud')[3]; j.scrollIntoView({ block: 'center' }); return j.dataset.ud; });
+      await gj.waitForTimeout(300);
+      await toucher(gj, true, '#zone-critique .jeton-ud[data-ud="' + ref + '"]');
+      await gj.waitForTimeout(500);
+      const fiche = await gj.evaluate(() => { const f = document.getElementById('fiche-plan'), r = f.getBoundingClientRect(); return { focus: document.activeElement.id, vue: !f.hidden && r.top >= 0 && r.top < innerHeight / 2 }; });
+      await toucher(gj, true, '#fiche-plan .fiche-plan-fermer');
+      await gj.waitForTimeout(300);
+      const retour = await gj.evaluate(() => { const a = document.activeElement, r = a.getBoundingClientRect(); return { ud: a.dataset.ud || a.tagName, aLEcran: r.top >= 0 && r.bottom <= innerHeight }; });
+      verifier('au téléphone (390 × 844, sombre), toucher une référence de la liste ouvre sa fiche en haut de l’écran ; sa croix ramène à la référence, à l’écran (S10)',
+        fiche.focus === 'titre-fiche-plan' && fiche.vue && retour.ud === ref && retour.aLEcran, JSON.stringify([ref, fiche, retour]));
+      await gj.__ctx.close();
+    }
+    try { fsJ.unlinkSync(fichierJ); } catch (e) { /* déjà parti */ }
+  }
   /* (fin du lot J) */
 
 

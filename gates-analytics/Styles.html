@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "552099a";
+  --suivi-fwd-edition: "176f911";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -1230,6 +1230,10 @@ header.entete .alerte-source {
   .journal-semaine.ouverte .journal-plier {
     position: sticky; top: var(--bas-sommaire, 40px); z-index: 1; width: 100%; box-sizing: border-box;
     padding: 11px 2px; border-radius: 0; background: var(--surface); box-shadow: 0 1px 0 var(--filet);
+    /* Débrief 29 (M10) : 2 px au-dessus, comme quand la semaine est
+       pliée — son nom ne remonte pas en s'ouvrant. Collé, le bouton reste
+       au ras du sommaire (la marge ne compte pas). */
+    margin-top: 2px;
   }
   .journal-semaine.ouverte .journal-tete > .resume { padding: 0 2px 10px 24px; }
 }
