@@ -1592,6 +1592,11 @@ async function reinitialiser(pg) {
     const t = window.__semaineDuTitre();
     t.repere = ([...document.querySelectorAll('svg.graphe .repere-auj')].map(x => x.textContent)[0]) || '';
     t.sansMention = !document.getElementById('releve-semaine');
+    /* Débrief 27 (lot H, P-F10) : la ligne de la semaine seule ; l'âge des
+       chiffres a sa propre ligne dessous (#fraicheur). */
+    t.ligne = document.querySelector('.masthead .semaine').textContent.replace(/\s+/g, ' ');
+    t.fraicheur = document.getElementById('fraicheur').textContent;
+    t.ambre = !!document.querySelector('#fraicheur .vieux');
     return t;
   });
   const attApres = attenduDuJour();   // la batterie dure : minuit peut tomber entre les deux
@@ -1599,8 +1604,11 @@ async function reinitialiser(pg) {
     (semaineTitre.num === attAvant.num && semaineTitre.dates === attAvant.dates) ||
     (semaineTitre.num === attApres.num && semaineTitre.dates === attApres.dates),
     JSON.stringify([semaineTitre.num, semaineTitre.dates, attAvant, attApres]));
-  verifier('le titre ne porte que la semaine d’aujourd’hui : aucune mention du dernier relevé, quel que soit son âge',
-    !/dernier relevé|il y a/.test(semaineTitre.titre) && semaineTitre.sansMention,
+  /* Débrief 27 (lot H, P-F10, A-F13) : la ligne de la semaine reste muette
+     sur le relevé ; dessous, une ligne à part dit le dernier relevé archivé
+     — en ambre, avec son âge, quand il a plus de huit jours. */
+  verifier('la ligne de la semaine ne porte que la semaine d’aujourd’hui ; le dernier relevé archivé a sa ligne à lui, dessous',
+    !/dernier relevé|il y a/i.test(semaineTitre.ligne) && semaineTitre.sansMention && /Dernier relevé archivé : S\d+/.test(semaineTitre.fraicheur),
     JSON.stringify(semaineTitre));
   verifier('le repère de la courbe ne dit « aujourd’hui » que si le dernier relevé est de cette semaine',
     semaineTitre.repere === (semaineTitre.iAuj === semaineTitre.auj ? 'aujourd’hui' : 'dernier relevé'),
@@ -1621,18 +1629,23 @@ async function reinitialiser(pg) {
     };
     const attendre = ms => new Promise(r => setTimeout(r, ms));
     poser(0); await attendre(600);
-    const ajour = lu();
+    const ligne = () => ({ ligne: document.querySelector('.masthead .semaine').textContent.replace(/\s+/g, ' '),
+      fraicheur: document.getElementById('fraicheur').textContent, ambre: !!document.querySelector('#fraicheur .vieux') });
+    const ajour = Object.assign(lu(), ligne());
     ajour.repere = ([...document.querySelectorAll('svg.graphe .repere-auj')].map(x => x.textContent)[0]) || '';
     poser(3); await attendre(600);
-    const vieux = lu();
+    const vieux = Object.assign(lu(), ligne());
     vieux.repere = ([...document.querySelectorAll('svg.graphe .repere-auj')].map(x => x.textContent)[0]) || '';
     return { ajour, vieux };
   });
   verifier('un historique archivé cette semaine : le titre dit la semaine, la courbe dit « aujourd’hui »',
-    deuxCas.ajour.iAuj === deuxCas.ajour.auj && !/dernier relevé/.test(deuxCas.ajour.titre) && deuxCas.ajour.repere === 'aujourd’hui',
+    deuxCas.ajour.iAuj === deuxCas.ajour.auj && !/dernier relevé/i.test(deuxCas.ajour.ligne) && !deuxCas.ajour.ambre && deuxCas.ajour.repere === 'aujourd’hui',
     JSON.stringify(deuxCas.ajour));
-  verifier('le même reculé de trois semaines : le titre reste muet sur le relevé, c’est la courbe qui dit « dernier relevé »',
-    deuxCas.vieux.iAuj - deuxCas.vieux.auj === 3 && !/dernier relevé|il y a/.test(deuxCas.vieux.titre) &&
+  /* Débrief 27 (lot H, P-F10) : la ligne de la semaine reste muette ; celle
+     de la fraîcheur, dessous, dit l'âge du relevé, en ambre. */
+  verifier('le même reculé de trois semaines : la ligne de la semaine reste muette, la courbe dit « dernier relevé », la ligne de fraîcheur dit son âge en ambre',
+    deuxCas.vieux.iAuj - deuxCas.vieux.auj === 3 && !/dernier relevé|il y a/i.test(deuxCas.vieux.ligne) &&
+    deuxCas.vieux.ambre && /il y a \d+ jours/.test(deuxCas.vieux.fraicheur) &&
     deuxCas.vieux.repere === 'dernier relevé',
     JSON.stringify(deuxCas.vieux));
   /* La reprise (retour sur l'onglet, minuterie horaire) ne casse rien quand
@@ -7554,7 +7567,7 @@ async function reinitialiser(pg) {
     await l.selectOption('#select-contrat', 'VRK'); await l.waitForTimeout(2000);
     const l4 = await lireL();
     verifier('A-F5 : en panne, un bandeau d’alerte dit ce qui a échoué et ce qu’on voit encore, avec « Réessayer » ; le menu revient au contrat affiché',
-      l4.role === 'alert' && /^VRK n’a pas pu être chargé : Service indisponible\. La page montre toujours THS\.$/.test(l4.alerte) && l4.sel === 'THS' && !l4.barre && !l4.attente,
+      l4.role === 'alert' && /^VRK n’a pas pu être chargé : service indisponible\. La page montre toujours THS\.$/.test(l4.alerte) && l4.sel === 'THS' && !l4.barre && !l4.attente,
       JSON.stringify(l4));
     await l.evaluate(() => { window.__panne = ''; });
     await l.click('#reessayer-contrat'); await l.waitForTimeout(2000);

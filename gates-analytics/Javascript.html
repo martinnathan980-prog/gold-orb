@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '3d463a1';
+  var EDITION = '0e5f128';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -5632,7 +5632,10 @@
     remettreContrat();
     var r = String(raison || '').trim();
     $('etat-contrat').textContent = r || 'Contrat impossible à charger.';
-    var fin = r ? ' : ' + r.replace(/[\s.]+$/, '') + '.' : ' : le classeur n\u2019a pas répondu.';
+    /* La raison dite dans la phrase : « … : service indisponible. » (une
+       majuscule de début de phrase s'efface ; un sigle reste). */
+    var dite = /^[A-ZÀ-Ý][a-zà-ÿ]/.test(r) ? r.charAt(0).toLowerCase() + r.slice(1) : r;
+    var fin = r ? ' : ' + dite.replace(/[\s.]+$/, '') + '.' : ' : le classeur n\u2019a pas répondu.';
     var texte = forcer && id === CONTRAT
       ? 'Les chiffres de ' + nomAffiche(id) + ' n\u2019ont pas pu être relus' + fin + ' La page montre ceux d\u2019avant.'
       : nomAffiche(id) + ' n\u2019a pas pu être chargé' + fin + ' La page montre toujours ' + nomAffiche(CONTRAT) + '.';
@@ -8644,5 +8647,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = '3d463a1';
+window.SUIVI_FWD_FIN = '0e5f128';
 </script>

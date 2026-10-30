@@ -8849,7 +8849,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     remettreContrat();
     var r = String(raison || '').trim();
     $('etat-contrat').textContent = r || 'Contrat impossible à charger.';
-    var fin = r ? ' : ' + r.replace(/[\s.]+$/, '') + '.' : ' : le classeur n\u2019a pas répondu.';
+    /* La raison dite dans la phrase : « … : service indisponible. » (une
+       majuscule de début de phrase s'efface ; un sigle reste). */
+    var dite = /^[A-ZÀ-Ý][a-zà-ÿ]/.test(r) ? r.charAt(0).toLowerCase() + r.slice(1) : r;
+    var fin = r ? ' : ' + dite.replace(/[\s.]+$/, '') + '.' : ' : le classeur n\u2019a pas répondu.';
     var texte = forcer && id === CONTRAT
       ? 'Les chiffres de ' + nomAffiche(id) + ' n\u2019ont pas pu être relus' + fin + ' La page montre ceux d\u2019avant.'
       : nomAffiche(id) + ' n\u2019a pas pu être chargé' + fin + ' La page montre toujours ' + nomAffiche(CONTRAT) + '.';
