@@ -2283,7 +2283,11 @@ async function deplierFiltresColonne(pg) {
     const videsEnBas = l => l.every((x, i) => !x.vide || l.slice(i).every(y => y.vide));
     const n0 = document.querySelectorAll('#corps-tableau tr').length;
     const fautes = [];
-    let inversees = 0;
+    /* Débrief 29 (B22) : « - » s'écrit « — » et se range avec les cases
+       vides ; une colonne qui n'a plus qu'une seule valeur (« 1 », le reste
+       « — ») ne peut pas s'inverser à l'œil : elle compte à part
+       (uneValeur), vérifiée pour ses lignes et ses cases vides en bas. */
+    let inversees = 0, uneValeur = 0;
     [...document.querySelectorAll('tr.titres button[data-tri]')].map(b => b.dataset.tri).forEach(c => {
       /* Un premier clic trie dans l'ordre croissant — sauf la colonne déjà
          triée (la référence, à l'ouverture), qu'il inverse : on clique alors
@@ -2296,14 +2300,15 @@ async function deplierFiltresColonne(pg) {
       if (asc.length !== n0 || desc.length !== n0) fautes.push(c + ' perd des lignes');
       else if (!okAsc || !okDesc) fautes.push(c + ' : sens, aria-sort ou légende faux');
       else if (!videsEnBas(asc) || !videsEnBas(desc)) fautes.push(c + ' : des cases vides remontent');
-      else if (new Set(tAsc).size > 1 && tAsc.join('|') === tDesc.join('|')) fautes.push(c + ' ne s’inverse pas');
-      else if (new Set(tAsc).size > 1) inversees++;
+      else if (new Set(asc.filter(x => !x.vide).map(x => x.t)).size > 1 && tAsc.join('|') === tDesc.join('|')) fautes.push(c + ' ne s’inverse pas');
+      else if (new Set(asc.filter(x => !x.vide).map(x => x.t)).size > 1) inversees++;
+      else if (new Set(tAsc).size > 1) uneValeur++;
     });
-    return { n0, colonnes: document.querySelectorAll('tr.titres button[data-tri]').length, inversees, fautes };
+    return { n0, colonnes: document.querySelectorAll('tr.titres button[data-tri]').length, inversees, uneValeur, fautes };
   });
   verifier('chaque colonne se trie dans les deux sens sans perdre de ligne — toutes les colonnes, sur un échantillon de lignes (sens, aria-sort et légende suivent, les cases vides restent en bas)',
     ECHANTILLON > 1 && ECHANTILLON < TOTAL && triEchantillon.n0 === ECHANTILLON && triEchantillon.colonnes === cles.length &&
-    triEchantillon.inversees >= 100 && triEchantillon.fautes.length === 0, JSON.stringify(Object.assign({ ECHANTILLON }, triEchantillon, { fautes: triEchantillon.fautes.slice(0, 5) })));
+    triEchantillon.inversees + triEchantillon.uneValeur >= 100 && triEchantillon.fautes.length === 0, JSON.stringify(Object.assign({ ECHANTILLON }, triEchantillon, { fautes: triEchantillon.fautes.slice(0, 5) })));
   await p.fill('#recherche', '');
   await p.waitForFunction(t => document.querySelectorAll('#corps-tableau tr').length === t, TOTAL, { timeout: 15000 }).catch(() => {});
   let triOk = true, triDetail = '';
