@@ -316,22 +316,26 @@ async function reinitialiser(pg) {
       sous: !!document.getElementById('sous-rapprochement'),
       compte: !!document.getElementById('compte-rapprochement'),
       figure: (() => {
-        const svg = document.querySelector('#venn-rapprochement svg');
+        /* Débrief 27 (lot E, M9/B24) : les mots de la figure sont en HTML
+           par-dessus le dessin (.venn) — ils se lisent dans la figure, plus
+           dans son SVG, qui ne garde que les cercles et l'anneau. Le « · »
+           des comptes tient au mot d'avant par une espace insécable. */
+        const fig = document.getElementById('venn-rapprochement'), svg = fig.querySelector('svg');
         if (!svg) return null;
         const RAYON = 40;
         return {
           cercles: [...svg.querySelectorAll('circle.cercle-ici, circle.cercle-la')].map(c => c.getAttribute('class')).join(),
-          bases: [...svg.querySelectorAll('.base-nom')].map(t => t.textContent).join(),
-          comptes: [...svg.querySelectorAll('.base-compte')].map(t => t.textContent).join(' | '),
+          bases: [...fig.querySelectorAll('.base-nom')].map(t => t.textContent).join(),
+          comptes: [...fig.querySelectorAll('.base-compte')].map(t => t.textContent.replace(/\u00a0/g, ' ')).join(' | '),
           parts: [...svg.querySelectorAll('.donut-seg')].map(x => ({
             cle: x.getAttribute('data-cle'), n: +x.getAttribute('data-n'),
             cat: x.getAttribute('class').replace('donut-seg', '').replace('survole', '').trim(),
             degres: x.tagName === 'circle' ? 360 : Math.round(x.getTotalLength() / (2 * Math.PI * RAYON) * 360) })),
-          cotes: [...svg.querySelectorAll('.cote')].map(g => ({
+          cotes: [...fig.querySelectorAll('.cote')].map(g => ({
             cle: g.getAttribute('data-cle'), n: +(g.querySelector('.grand') || g.querySelector('.moyen')).textContent.replace(/\s/g, ''),
             mots: [...g.querySelectorAll('.petit')].map(t => t.textContent.replace(/^[\d\s ]+/, '')).join(' · '),
             zero: g.classList.contains('zero') })),
-          commun: +svg.querySelector('.commun-n').textContent.replace(/\s/g, ''), motCommun: svg.querySelector('.commun-mot').textContent,
+          commun: +fig.querySelector('.commun-n').textContent.replace(/\s/g, ''), motCommun: fig.querySelector('.commun-mot').textContent,
           aria: document.getElementById('venn-rapprochement').getAttribute('aria-label')
         };
       })(),
@@ -367,17 +371,26 @@ async function reinitialiser(pg) {
   verifier('la section est là, nommée d\'après la seconde base',
     !r0.cache && r0.titre === 'Comparaison des bases de données', r0.titre);
   /* La figure s'anime quand elle paraît à l'écran — pas avant —, même si un
-     filtre l'a redessinée entre-temps ; une fois par source. */
-  const animAvant = await p.evaluate(() => document.querySelector('#venn-rapprochement svg').classList.contains('anime'));
+     filtre l'a redessinée entre-temps ; une fois par source.
+     Débrief 27 (lot E) : c'est la figure entière (.venn : le dessin et ses
+     mots en HTML) qui porte « anime », plus le seul SVG. */
+  const animAvant = await p.evaluate(() => document.querySelector('#venn-rapprochement .venn').classList.contains('anime'));
   await p.click('#etats .etat-btn[data-etat="termine"]'); await p.waitForTimeout(400);
   await p.click('#etats .etat-btn[data-etat="termine"]'); await p.waitForTimeout(400);
   await p.evaluate(() => document.getElementById('venn-rapprochement').scrollIntoView({ block: 'center' })); await p.waitForTimeout(700);
   const animApres = await p.evaluate(() => {
-    const svg = document.querySelector('#venn-rapprochement svg');
-    return { anime: svg.classList.contains('anime'), texteVisible: parseFloat(getComputedStyle(svg.querySelector('.commun-n')).opacity) };
+    const fig = document.querySelector('#venn-rapprochement .venn');
+    return { anime: fig.classList.contains('anime'), texteVisible: parseFloat(getComputedStyle(fig.querySelector('.commun-n')).opacity) };
   });
   await p.waitForTimeout(1200);
-  const animFin = await p.evaluate(() => parseFloat(getComputedStyle(document.querySelector('#venn-rapprochement .commun-n')).opacity));
+  /* Débrief 27 : sur une machine chargée, l'animation tarde parfois à
+     démarrer (le premier dessin après le défilement se fait attendre) : on
+     attend qu'elle ait fini — 5 s au plus — avant de lire l'opacité. */
+  const animFin = await p.evaluate(async () => {
+    const fig = document.querySelector('#venn-rapprochement .venn');
+    await Promise.race([Promise.all(fig.getAnimations({ subtree: true }).map(a => a.finished)), new Promise(r => setTimeout(r, 5000))]);
+    return parseFloat(getComputedStyle(fig.querySelector('.commun-n')).opacity);
+  });
   verifier('la figure ne s\'anime qu\'en paraissant à l\'écran, même redessinée par un filtre avant ; ses textes finissent pleinement visibles',
     !animAvant && animApres.anime && animFin === 1, JSON.stringify([animAvant, animApres, animFin]));
   await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(200);
@@ -455,20 +468,33 @@ async function reinitialiser(pg) {
   verifier('les références d\'un lot sont triées', rangees.avance.map(r => r.ref).join() === rangees.avance.map(r => r.ref).sort((a, b) => a.localeCompare(b, 'fr', { numeric: true, sensitivity: 'base' })).join());
   await ouvrirLot('accord');
   const li1 = await lireListe();
-  verifier('déplier « validés et dans SEE » montre TOUS ses plans — ' + ACCORD + ' puces, aucune coupure, aucun renvoi au tableau',
-    li1.groupes[0].ouvert === 'true' && li1.groupes[0].lignes === ACCORD && li1.groupes.slice(1).every(g => g.ouvert === 'false') &&
+  /* Débrief 27 (lot E, D10, M2) : plus de zone qui défile dans la liste —
+     elle retenait la molette et le doigt. Un gros lot montre ses 24
+     premières puces, puis « Voir les N autres » déplie les autres sur place
+     (toujours aucun renvoi au tableau) ; le focus passe à la première
+     révélée, et la zone prend sa hauteur naturelle. */
+  const plusAccord = await p.evaluate(() => (document.querySelector('#verdicts-rapprochement .verdict-bloc[data-lot="accord"] .rapp-voir-plus') || {}).textContent || null);
+  verifier('déplier « validés et dans SEE » (' + ACCORD + ' plans) montre ses 24 premières puces, puis « Voir les ' + (ACCORD - 24) + ' autres » — aucun renvoi au tableau',
+    li1.groupes[0].ouvert === 'true' && li1.groupes[0].lignes === 24 && plusAccord === 'Voir les ' + fr(ACCORD - 24) + ' autres' &&
+    li1.groupes.slice(1).every(g => g.ouvert === 'false') &&
     await p.evaluate(() => !document.querySelector('#verdicts-rapprochement .rapp-groupe-suite, #verdicts-rapprochement [data-rapp-tout]')),
-    JSON.stringify(li1.groupes));
+    JSON.stringify([li1.groupes[0], plusAccord]));
+  await p.click('#verdicts-rapprochement .verdict-bloc[data-lot="accord"] .rapp-voir-plus'); await p.waitForTimeout(400);
+  const toutAccord = await p.evaluate(() => {
+    const puces = [...document.querySelectorAll('#verdicts-rapprochement .verdict-bloc[data-lot="accord"] .rapp-puce')];
+    return { n: puces.length, plus: !!document.querySelector('#verdicts-rapprochement .rapp-voir-plus'), focus: puces.indexOf(document.activeElement),
+             copier: (document.querySelector('#verdicts-rapprochement .verdict-bloc[data-lot="accord"] button[data-copier]') || {}).textContent };
+  });
+  verifier('« Voir les N autres » montre TOUS les plans du lot sur place, le focus sur la première puce révélée ; « Copier » copiait déjà tout',
+    toutAccord.n === ACCORD && !toutAccord.plus && toutAccord.focus === 24 && toutAccord.copier === 'Copier (' + fr(ACCORD) + ')', JSON.stringify(toutAccord));
   const defile = await p.evaluate(() => {
     const corps = document.querySelector('#verdicts-rapprochement .verdict-bloc[data-lot="accord"] .verdict-corps');
-    const page = document.documentElement;
-    return { defile: corps.scrollHeight > corps.clientHeight + 1, reglage: getComputedStyle(corps).overflowY,
-             retenue: getComputedStyle(corps).overscrollBehaviorY, hauteur: corps.getBoundingClientRect().height,
-             plafond: window.innerHeight * 0.46, page: page.scrollWidth <= page.clientWidth + 1 };
+    const page = document.documentElement, c = getComputedStyle(corps);
+    return { defile: corps.scrollHeight > corps.clientHeight + 1, reglage: c.overflowY, plafond: c.maxHeight,
+             retenue: c.overscrollBehaviorY, page: page.scrollWidth <= page.clientWidth + 1 };
   });
-  verifier('le lot le plus gros défile dans sa zone — plafonnée à 46 % de la hauteur de fenêtre, retenue comprise — au lieu de pousser la page',
-    defile.reglage === 'auto' && defile.defile && defile.retenue === 'contain' &&
-    Math.abs(defile.hauteur - defile.plafond) <= 2 && defile.page, JSON.stringify(defile));
+  verifier('le lot déplié prend sa hauteur naturelle : aucune zone qui défile ni ne retient le défilement de la page',
+    defile.reglage === 'visible' && !defile.defile && defile.plafond === 'none' && defile.retenue === 'auto' && defile.page, JSON.stringify(defile));
   await ouvrirLot('accord');
   const replie = await lireListe();
   verifier('re-cliquer le verdict posé et déplié le replie et retire le filtre',
@@ -575,8 +601,11 @@ async function reinitialiser(pg) {
     r0.puces.map(x => x.pastille).join() === 'accord,indice,avance,manque,attente,seul', r0.puces.map(x => x.pastille).join());
   verifier('et dit d\'avance où ses lignes existent : ce qui n\'est pas dans SEE emmène sur GATES, « seulement dans SEE » sur SEE',
     r0.puces.map(x => x.atterrit).join() === ',,,ici,ici,la', r0.puces.map(x => x.atterrit).join());
+  /* Débrief 27 (B10) : « … pas encore dans SEE (rien d’anormal) » — la remarque
+     entre parenthèses, plus après un deux-points (ici, dans le jeton du
+     bandeau, la bulle, le nom de la figure et au singulier). */
   verifier('chaque verdict se lit en une phrase de tous les jours, qui se suffit à elle-même',
-    r0.puces.map(x => x.phrase).join(' | ') === 'validés dans GATES et connus de SEE | dans SEE sous une autre lettre d’indice | dans SEE, mais GATES ne les dit pas validés | validés dans GATES, mais SEE ne les connaît pas | pas validés, et pas encore dans SEE : rien d’anormal | lignes de SEE sans plan dans GATES',
+    r0.puces.map(x => x.phrase).join(' | ') === 'validés dans GATES et connus de SEE | dans SEE sous une autre lettre d’indice | dans SEE, mais GATES ne les dit pas validés | validés dans GATES, mais SEE ne les connaît pas | pas validés, et pas encore dans SEE (rien d’anormal) | lignes de SEE sans plan dans GATES',
     r0.puces.map(x => x.phrase).join(' | '));
   const F = r0.figure;
   verifier('deux cercles face à face, GATES plein à gauche avec ses validés, SEE en pointillé à droite avec ses lignes',
@@ -595,7 +624,7 @@ async function reinitialiser(pg) {
   verifier('la figure se lit aussi à voix haute',
     F && F.aria === 'Comparaison GATES / SEE, sur ' + TOTAL + ' plans : ' + ACCORD + ' validés dans GATES et connus de SEE ; 2 dans SEE sous une autre lettre d’indice ; ' +
       '12 dans SEE, mais GATES ne les dit pas validés ; 3 validés dans GATES, mais SEE ne les connaît pas ; ' + ATTENTE +
-      ' pas validés, et pas encore dans SEE : rien d’anormal ; 5 lignes de SEE sans plan dans GATES.', F && F.aria);
+      ' pas validés, et pas encore dans SEE (rien d’anormal) ; 5 lignes de SEE sans plan dans GATES.', F && F.aria);
   const rectsRapp = await p.evaluate(() => {
     const fig = document.getElementById('venn-rapprochement').getBoundingClientRect();
     const zone = document.getElementById('verdicts-rapprochement').getBoundingClientRect();
@@ -664,7 +693,7 @@ async function reinitialiser(pg) {
   const rAt = await lireRapp();
   verifier('« pas encore dans SEE » : les ' + ATTENTE + ' plans qui attendent, et le tableau de SEE le dit vide',
     rAt.lignes === ATTENTE && rAt.seconde === 0 && rAt.secondeVide === 'Ces ' + fr(ATTENTE) + ' plans n’ont pas de ligne dans SEE. Les voir dans GATES' &&
-    rAt.jetons[0] === 'Comparaison : pas validés, et pas encore dans SEE : rien d’anormal', JSON.stringify([rAt.lignes, rAt.secondeVide]));
+    rAt.jetons[0] === 'Comparaison : pas validés, et pas encore dans SEE (rien d’anormal)', JSON.stringify([rAt.lignes, rAt.secondeVide]));
   await p.click('.jeton .x'); await p.waitForTimeout(400);
   verifier('la croix du bandeau retire aussi le filtre du rapprochement',
     await p.evaluate(t => document.querySelectorAll('#corps-tableau tr').length === t &&
@@ -733,7 +762,7 @@ async function reinitialiser(pg) {
     /à vérifier des deux côtés/.test(svMa.texte), svMa.texte.slice(0, 120));
   const svAt = await survolRapp('#venn-rapprochement .cote[data-cle="attente"] .moyen');
   verifier('survoler « pas encore dans SEE » dit que ce n\'est pas anormal, avec la répartition par état',
-    svAt.visible === 'true' && svAt.eclaire === 'attente' && /pas validés, et pas encore dans SEE : rien d’anormal/.test(svAt.texte) &&
+    svAt.visible === 'true' && svAt.eclaire === 'attente' && /pas validés, et pas encore dans SEE \(rien d’anormal\)/.test(svAt.texte) &&
     /À faire dans GATES/.test(svAt.texte), svAt.texte.slice(0, 120));
   const svSe = await survolRapp('#venn-rapprochement .cote[data-cle="seul"] .grand');
   verifier('survoler le 5 « seulement dans SEE » ouvre sa bulle',
@@ -1837,7 +1866,7 @@ async function reinitialiser(pg) {
   const phrases1 = await p.evaluate(() => ['accord', 'emission', 'avance', 'manque', 'attente', 'seul'].map(c => window.__phraseLot(c, 1)));
   const phrases2 = await p.evaluate(() => ['accord', 'emission', 'avance', 'manque', 'attente', 'seul'].map(c => window.__phraseLot(c, 2)));
   verifier('au singulier, chaque verdict s’accorde : « validé », « le connaît pas », « ligne de »',
-    phrases1.join(' | ') === 'validé dans GATES et connu de SEE | dans SEE sous une autre lettre d’indice | dans SEE, mais GATES ne le dit pas validé | validé dans GATES, mais SEE ne le connaît pas | pas validé, et pas encore dans SEE : rien d’anormal | ligne de SEE sans plan dans GATES',
+    phrases1.join(' | ') === 'validé dans GATES et connu de SEE | dans SEE sous une autre lettre d’indice | dans SEE, mais GATES ne le dit pas validé | validé dans GATES, mais SEE ne le connaît pas | pas validé, et pas encore dans SEE (rien d’anormal) | ligne de SEE sans plan dans GATES',
     phrases1.join(' | '));
   verifier('et au pluriel, la forme attendue', /^validés dans GATES et connus de SEE/.test(phrases2[0]) && /lignes de SEE/.test(phrases2[5]), phrases2.join(' | '));
   await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
@@ -6664,14 +6693,21 @@ async function reinitialiser(pg) {
   // AA. Sous un verdict déplié, la légende ne nomme que les valeurs de sa liste.
   const aa20 = await p.evaluate(() => {
     const corps = document.querySelector('#verdicts-rapprochement .verdict-corps[data-lot="avance"]');
-    const legende = [...corps.querySelectorAll('.rapp-puces-legende > span')].map(s => s.textContent.trim());
-    const parRef = {};
+    /* Débrief 27 (lot E, D9) : chaque valeur de la légende porte son compte
+       (<b class="n">) — la répartition que seule la bulle du survol donnait. */
+    const items = [...corps.querySelectorAll('.rapp-puces-legende > span')].map(s => {
+      const n = s.querySelector('.n'), t = s.textContent;
+      return { mot: t.slice(0, t.length - (n ? n.textContent.length : 0)).trim(), n: n ? +n.textContent.replace(/\s/g, '') : null };
+    });
+    const legende = items.map(x => x.mot);
+    const parRef = {}, compte = {};
     [...document.querySelectorAll('#corps-tableau tr')].forEach(tr => { parRef[tr.querySelector('td.ref').textContent.trim()] = tr.querySelector('.etat-cellule').textContent.trim(); });
-    const valeurs = [...new Set([...corps.querySelectorAll('.rapp-puce[data-plan-rapp]')].map(b => parRef[b.dataset.planRapp]))];
-    return { legende, valeurs };
+    [...corps.querySelectorAll('.rapp-puce[data-plan-rapp]')].forEach(b => { const v = parRef[b.dataset.planRapp]; compte[v] = (compte[v] || 0) + 1; });
+    const valeurs = Object.keys(compte);
+    return { legende, valeurs, comptesJustes: items.every(x => x.n === compte[x.mot]), items };
   });
-  verifier('AA — légende du verdict déplié : seulement les valeurs présentes, écrites comme dans la colonne',
-    aa20.legende.length >= 2 && aa20.legende.slice().sort().join() === aa20.valeurs.slice().sort().join(), JSON.stringify(aa20));
+  verifier('AA — légende du verdict déplié : seulement les valeurs présentes, écrites comme dans la colonne, chacune avec son compte',
+    aa20.legende.length >= 2 && aa20.legende.slice().sort().join() === aa20.valeurs.slice().sort().join() && aa20.comptesJustes, JSON.stringify(aa20));
 
   // P1. « Copier (n) » sur les listes de références.
   await p.evaluate(() => {
@@ -7323,6 +7359,154 @@ async function reinitialiser(pg) {
       annonce.role === 'status' && annonce.live === 'polite' && annonce.texte === '12 plans affichés sur 634' && annonce.masque && annonce.copierParle === 0 && annonce.zones === 1,
       JSON.stringify(annonce));
     await c0.close();
+  }
+
+  // =================================================================
+  /* Débrief 27, lot E — la comparaison : les côtés de la figure sont des
+     boutons qui font ce que fait leur ligne de verdict (souris, clavier,
+     doigt), les parts de l'anneau aussi au pointeur ; les mots de la figure,
+     en HTML par-dessus le dessin, jamais sous 12 px à aucune largeur, sans
+     se chevaucher ; les verdicts en grille 12 | 52 | 1fr | 16 ; « (rien
+     d'anormal) » ; une apparition de 300 ms au plus, aucune sous mouvement
+     réduit ; « 3 » et « 12 » de « À traiter » nommés par leur phrase, 24 px
+     au moins (44 au doigt) ; un lot déplié dit ce qu'il veut dire. */
+  section('Débrief 27 : comparaison (lot E)');
+  {
+    const cE = await contexte();
+    const q = await page(cE, 'lot E');
+    await q.evaluate(() => document.getElementById('rapprochement').scrollIntoView({ block: 'start' }));
+    await q.waitForTimeout(800);
+    await q.waitForFunction(() => document.querySelector('#venn-rapprochement .venn.anime'), null, { timeout: 5000 }).catch(() => {});
+    const fig = await q.evaluate(() => {
+      const f = document.getElementById('venn-rapprochement');
+      return { role: f.getAttribute('role'), svgCache: f.querySelector('svg').getAttribute('aria-hidden'),
+        boutons: [...f.querySelectorAll('button.cote')].map(b => b.dataset.rapp + ':' + b.textContent.replace(/\s+/g, ' ').trim()),
+        svgTexte: f.querySelectorAll('svg text').length,
+        anim: Math.max(0, ...[...f.querySelectorAll('.venn, .venn *')].map(e => {
+          const c = getComputedStyle(e); if (c.animationName === 'none') return 0;
+          const d = c.animationDuration.split(',').map(parseFloat), l = c.animationDelay.split(',').map(parseFloat);
+          return Math.max(...d.map((x, i) => Math.round((x + (l[i] || 0)) * 1000)));
+        })) };
+    });
+    verifier('E — la figure est un groupe : ses trois côtés sont des boutons, nommés par leur nombre et leurs mots ; son dessin est caché aux lecteurs d’écran',
+      fig.role === 'group' && fig.svgCache === 'true' && fig.svgTexte === 0 &&
+      fig.boutons.join(' | ') === 'manque:' + MANQUE + ' validés sans SEE | attente:' + fr(ATTENTE) + ' pas encore dans SEE | seul:5 seulement dans SEE', JSON.stringify(fig));
+    verifier('E — l’apparition de la figure dure 300 ms au plus', fig.anim > 0 && fig.anim <= 300, String(fig.anim));
+    const lire = () => q.evaluate(() => ({
+      lignes: document.querySelectorAll('#corps-tableau tr').length,
+      presses: [...document.querySelectorAll('#rapprochement button[aria-pressed="true"]')].map(b => (b.closest('#venn-rapprochement') ? 'fig:' : b.closest('#reponse-rapprochement') ? 'rep:' : 'ver:') + b.dataset.rapp).sort().join(),
+      ouvert: [...document.querySelectorAll('#verdicts-rapprochement .verdict-bloc[data-ouvert="true"]')].map(b => b.dataset.lot).join(),
+      focus: document.activeElement && document.activeElement.closest('#venn-rapprochement') ? document.activeElement.dataset.rapp : null,
+      detail: (document.querySelector('#verdicts-rapprochement .rapp-detail') || {}).textContent || '',
+      annonce: (document.getElementById('annonce') || {}).textContent || ''
+    }));
+    // À la souris : le côté « validés sans SEE ».
+    await q.click('#venn-rapprochement .cote[data-cle="manque"]'); await q.waitForTimeout(900);
+    await q.waitForFunction(() => /^Comparaison/.test((document.getElementById('annonce') || {}).textContent || ''), null, { timeout: 4000 }).catch(() => {});
+    const eM = await lire();
+    verifier('E — cliquer « ' + MANQUE + ' validés sans SEE » dans la figure fait ce que fait sa ligne : le tableau montre les ' + MANQUE + ' plans, le verdict est posé et déplié, le côté pressé, le focus y reste',
+      eM.lignes === MANQUE && eM.ouvert === 'manque' && eM.presses === 'fig:manque,rep:manque,ver:manque' && eM.focus === 'manque', JSON.stringify(eM));
+    verifier('E — le lot déplié dit ce qu’il veut dire et ce que fait un clic, et le changement est annoncé',
+      /^À vérifier des deux côtés/.test(eM.detail) && /Un clic sur un plan le montre seul dans le tableau\./.test(eM.detail) &&
+      /^Comparaison : 3 validés dans GATES, mais SEE ne les connaît pas\. Le tableau des plans ne montre plus que ceux-là\.$/.test(eM.annonce), JSON.stringify([eM.detail, eM.annonce]));
+    await q.click('#venn-rapprochement .cote[data-cle="manque"]'); await q.waitForTimeout(900);
+    await q.waitForFunction(() => /retiré/.test((document.getElementById('annonce') || {}).textContent || ''), null, { timeout: 4000 }).catch(() => {});
+    const eM2 = await lire();
+    verifier('E — un second clic sur le côté pressé retire le filtre et replie le lot',
+      eM2.lignes === TOTAL && eM2.presses === '' && eM2.ouvert === '' && eM2.annonce === 'Filtre de la comparaison retiré.', JSON.stringify(eM2));
+    // Au clavier : Entrée puis Espace sur « pas encore dans SEE ».
+    await q.focus('#venn-rapprochement .cote[data-cle="attente"]'); await q.keyboard.press('Enter'); await q.waitForTimeout(700);
+    const eA = await lire();
+    const eclaire = await q.evaluate(() => [...document.querySelectorAll('#venn-rapprochement .survole')].map(x => x.dataset.cle).join());
+    verifier('E — au clavier, Entrée sur « pas encore dans SEE » pose et déplie son lot, le focus reste sur le côté, qui s’éclaire',
+      eA.lignes === ATTENTE && eA.ouvert === 'attente' && eA.focus === 'attente' && eclaire === 'attente', JSON.stringify([eA, eclaire]));
+    await q.keyboard.press('Space'); await q.waitForTimeout(700);
+    const eA2 = await lire();
+    verifier('E — Espace le retire', eA2.lignes === TOTAL && eA2.ouvert === '' && eA2.focus === 'attente', JSON.stringify(eA2));
+    // Au pointeur : une part de l'anneau.
+    const surPart = await q.evaluate(() => {
+      const path = document.querySelector('#venn-rapprochement .donut-seg[data-cle="avance"]');
+      const m = path.getScreenCTM(), pt = path.getPointAtLength(path.getTotalLength() / 2);
+      const x = m.a * pt.x + m.c * pt.y + m.e, y = m.b * pt.x + m.d * pt.y + m.f;
+      const sous = document.elementFromPoint(x, y);
+      return { x, y, cible: sous && sous.getAttribute('data-cible'), curseur: sous && getComputedStyle(sous).cursor };
+    });
+    await q.mouse.click(surPart.x, surPart.y); await q.waitForTimeout(800);
+    const eP = await lire();
+    verifier('E — cliquer la part ambre de l’anneau pose et déplie « dans SEE, mais GATES ne les dit pas validés » (12 plans), curseur de lien',
+      surPart.cible === 'avance' && surPart.curseur === 'pointer' && eP.lignes === AVANCE && eP.ouvert === 'avance', JSON.stringify([surPart, eP]));
+    await q.mouse.click(surPart.x, surPart.y); await q.waitForTimeout(700);
+    // Les verdicts : la grille 12 | 52 | 1fr | 16.
+    const grille = await q.evaluate(() => {
+      const v = document.querySelector('#verdicts-rapprochement .verdict'), c = getComputedStyle(v);
+      const p = v.querySelector('.pastille').getBoundingClientRect(), n = v.querySelector('.verdict-n'), nr = n.getBoundingClientRect();
+      return { colonnes: c.gridTemplateColumns, ecart: c.columnGap, droite: getComputedStyle(n).textAlign, pastilleAuNombre: Math.round(nr.left - p.right) };
+    });
+    verifier('E — verdicts en grille 12 | 52 | 1fr | 16 px, 10 px d’écart, le nombre aligné à droite près de sa pastille',
+      /^12px 52px .+ 16px$/.test(grille.colonnes) && grille.ecart === '10px' && grille.droite === 'right' && grille.pastilleAuNombre <= 52, JSON.stringify(grille));
+    const insecable = await q.evaluate(() => {
+      const s = document.querySelector('#verdicts-rapprochement button[data-rapp="attente"] .sans-coupure');
+      return s ? s.textContent + '|' + getComputedStyle(s).whiteSpace : null;
+    });
+    verifier('E — « (rien d’anormal) » ne se coupe pas', insecable === '(rien d’anormal)|nowrap', String(insecable));
+    // « À traiter » : nommés par leur phrase, 24 px au moins.
+    const rep = await q.evaluate(() => [...document.querySelectorAll('#reponse-rapprochement button')].map(b => {
+      const r = b.getBoundingClientRect(); return { nom: b.getAttribute('aria-label'), l: Math.round(r.width), h: Math.round(r.height) };
+    }));
+    verifier('E — « ' + MANQUE + ' » et « 12 » de « À traiter » se nomment par leur phrase et offrent 24 px au moins',
+      rep.length === 2 && rep[0].nom === MANQUE + ' plans validés absents de SEE' && rep[1].nom === '12 plans dans SEE que GATES ne dit pas validés' &&
+      rep.every(x => x.l >= 24 && x.h >= 24), JSON.stringify(rep));
+    // Les mots de la figure, à toutes les largeurs : 12 px au moins, sans chevauchement, dans la figure.
+    for (const largeur of [1280, 1024, 900, 600, 390, 320]) {
+      await q.setViewportSize({ width: largeur, height: 900 }); await q.waitForTimeout(500);
+      const m = await q.evaluate(() => {
+        const f = document.getElementById('venn-rapprochement'), boite = f.getBoundingClientRect();
+        const mots = [...f.querySelectorAll('.venn-base, .cote, .commun-n, .commun-mot')];
+        const tailles = [...f.querySelectorAll('.venn span, .venn p')].map(e => parseFloat(getComputedStyle(e).fontSize));
+        const r = mots.map(e => e.getBoundingClientRect());
+        let chevauche = 0;
+        for (let i = 0; i < r.length; i++) for (let j = i + 1; j < r.length; j++) {
+          if (r[i].right > r[j].left + 1 && r[j].right > r[i].left + 1 && r[i].bottom > r[j].top + 1 && r[j].bottom > r[i].top + 1) chevauche++;
+        }
+        return { trace: f.querySelector('.venn').className, plusPetit: Math.min(...tailles), chevauche,
+          dedans: r.every(x => x.left >= boite.left - 1 && x.right <= boite.right + 1 && x.top >= boite.top - 1 && x.bottom <= boite.bottom + 1),
+          page: document.documentElement.scrollWidth <= window.innerWidth };
+      });
+      verifier('E — à ' + largeur + ' px (' + m.trace.replace('venn ', '') + ') : les mots de la figure à 12 px au moins, sans se chevaucher, dans la figure, sans débord de page',
+        m.plusPetit >= 12 && m.chevauche === 0 && m.dedans && m.page, JSON.stringify(m));
+    }
+    await cE.close();
+    // Au doigt (téléphone) : toucher un côté fait ce que fait sa ligne ; cibles de 44 px.
+    const cT = await contexte({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const t = await page(cT, 'lot E doigt');
+    await t.evaluate(() => document.getElementById('venn-rapprochement').scrollIntoView({ block: 'center' })); await t.waitForTimeout(500);
+    await t.tap('#venn-rapprochement .cote[data-cle="seul"]'); await t.waitForTimeout(1200);
+    const eT = await t.evaluate(() => {
+      const bloc = document.querySelector('#verdicts-rapprochement .verdict-bloc[data-lot="seul"]').getBoundingClientRect();
+      return { ouvert: [...document.querySelectorAll('#verdicts-rapprochement .verdict-bloc[data-ouvert="true"]')].map(b => b.dataset.lot).join(),
+        seconde: document.querySelectorAll('#corps-seconde tr[data-i]').length, blocEnVue: bloc.top >= 0 && bloc.top < innerHeight - 60 };
+    });
+    verifier('E — au doigt, toucher « 5 seulement dans SEE » pose et déplie son lot, et la liste dépliée est à l’écran',
+      eT.ouvert === 'seul' && eT.seconde === 5 && eT.blocEnVue, JSON.stringify(eT));
+    const doigt = await t.evaluate(() => ({
+      rep: [...document.querySelectorAll('#reponse-rapprochement button')].map(b => { const r = b.getBoundingClientRect(), a = getComputedStyle(b, '::after');
+        return Math.round(r.height - 2 * parseFloat(a.top)) + 'x' + Math.round(r.width - 2 * parseFloat(a.left)); }),
+      verdicts: Math.min(...[...document.querySelectorAll('#verdicts-rapprochement .verdict')].map(b => b.getBoundingClientRect().height)),
+      cotes: Math.min(...[...document.querySelectorAll('#venn-rapprochement .cote')].map(b => b.getBoundingClientRect().height))
+    }));
+    verifier('E — au doigt : « À traiter » touchables sur 44 px, chaque ligne de verdict et chaque côté de la figure 44 px au moins',
+      doigt.rep.length === 2 && doigt.rep.every(x => x.split('x').every(v => +v >= 44)) && doigt.verdicts >= 44 && doigt.cotes >= 44, JSON.stringify(doigt));
+    await cT.close();
+    // Mouvement réduit : rien ne bouge.
+    const cR = await contexte({ reducedMotion: 'reduce' });
+    const r = await page(cR, 'lot E calme');
+    await r.evaluate(() => document.getElementById('rapprochement').scrollIntoView()); await r.waitForTimeout(600);
+    const calme = await r.evaluate(() => ({
+      animations: [...document.querySelectorAll('#venn-rapprochement *')].filter(e => getComputedStyle(e).animationName !== 'none').length,
+      transitions: [...document.querySelectorAll('#rapprochement .donut-seg, #rapprochement .chevron')].filter(e => getComputedStyle(e).transitionDuration.split(',').some(x => parseFloat(x) > 0)).length
+    }));
+    verifier('E — sous « moins d’animations », la figure ne s’anime pas et rien n’y glisse', calme.animations === 0 && calme.transitions === 0, JSON.stringify(calme));
+    await cR.close();
   }
 
   await ctx.close();
