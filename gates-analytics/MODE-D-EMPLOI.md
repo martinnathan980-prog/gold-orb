@@ -781,6 +781,25 @@ classeur. Dans l'ordre d'efficacité :
   référence la montre dans le tableau ; le petit champ à droite du titre ne
   cherche que dans la comparaison. Elle n'existe que pour la définition
   électrique : SEE ne connaît pas le concept harnais.
+- **Le pied de page** (débrief 27) : à gauche le dernier relevé, la colonne
+  suivie et l'heure où les chiffres ont été lus ; à droite **Aide : comment
+  lire cette page** (les six parties, les filtres, le clavier, les sigles —
+  S43, ATA, FWD, PSN… —, d'où viennent les chiffres et à qui demander : le
+  responsable) et **Copier le lien de cette vue**. Le lien rouvre la page
+  sur le même contrat, la même tranche, le même avancement, le même
+  périmètre, la même recherche et la même partie
+  (`…/exec?contrat=HDK&tranche=Tranche%202&perimetre=PERSO&section=plans`) ;
+  l'adresse dans la barre du navigateur suit d'elle-même. Les temps de
+  l'ouverture et la livraison sont repliés dans **Infos techniques**.
+- **Au clavier** : au premier Tab, « Aller au contenu » (et au tableau des
+  plans, à la comparaison) ; **Échap** ferme ce qui est ouvert ; **/** va à
+  la recherche du tableau — un raccourci d'une seule touche, qui se coupe
+  dans l'aide.
+- **Imprimer** (Ctrl+P) : à l'italienne, sans les boutons ni les champs,
+  avec en tête le contrat, l'avancement, les filtres et l'heure des
+  chiffres ; le tableau des plans en vue essentielle, toutes ses lignes
+  (filtrer d'abord pour un tableau court). En thème sombre aussi, la page
+  s'imprime en clair.
 
 ### L'administration, depuis le tableau de bord (débrief 26)
 

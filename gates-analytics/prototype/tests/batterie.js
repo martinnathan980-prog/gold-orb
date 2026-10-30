@@ -1207,9 +1207,18 @@ async function reinitialiser(pg) {
       document.querySelector('#choix-perimetre button[data-perimetre=""]').getAttribute('aria-pressed') === 'true'));
 
   // Le périmètre n'est pas une préférence : la page rouvre toujours sur Tout.
+  /* Débrief 27, lot G : l'adresse suit désormais la vue (#…&perimetre=PERSO,
+     google.script.history dans le classeur) — rechargée, la page se rouvre
+     telle quelle. Rien n'est mémorisé dans le navigateur pour autant : la
+     page ouverte par son adresse nue (le lien du classeur, un nouvel onglet)
+     rouvre sur Tout. */
   await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(900);
   await p.reload(); await p.waitForTimeout(1400);
-  verifier('le périmètre n’est pas mémorisé : la page rouvre sur Tout',
+  verifier('débrief 27 : rechargée, la page garde le périmètre de son adresse (PERSO)',
+    await p.evaluate(() => /perimetre=PERSO/.test(location.hash) &&
+      document.querySelector('#choix-perimetre button[data-perimetre="PERSO"]').getAttribute('aria-pressed') === 'true'));
+  await p.goto('about:blank'); await p.goto(URL); await p.waitForTimeout(1400);
+  verifier('le périmètre n’est pas mémorisé : la page rouverte par son adresse nue est sur Tout',
     await p.evaluate(t => document.querySelector('#choix-perimetre button[data-perimetre=""]').getAttribute('aria-pressed') === 'true' &&
       document.querySelectorAll('#corps-tableau tr').length === t && document.getElementById('filtres-actifs').hidden, TOTAL));
 
@@ -4818,8 +4827,12 @@ async function reinitialiser(pg) {
                courant: courant && courant.dataset.chapitre, focus: document.activeElement === document.querySelector('#section-plans h2'),
                href: location.href, colle: document.getElementById('sommaire').dataset.colle };
     });
-    verifier('un clic sur « 05 Plans » descend au panneau, juste sous le sommaire collé en haut, sans toucher à l’adresse',
-      saut.scroll > 500 && saut.navHaut === 0 && saut.secHaut >= saut.navBas && saut.secHaut <= saut.navBas + 40 && saut.href === adresse && saut.colle === 'true',
+    /* Débrief 27, lot G : l'adresse suit la vue (« section=plans » après le
+       saut, voir le lien de la vue) ; ce qui compte ici : pas de saut
+       d'ancre, jamais « #section-plans ». */
+    verifier('un clic sur « 05 Plans » descend au panneau, juste sous le sommaire collé en haut, sans saut d’ancre dans l’adresse',
+      saut.scroll > 500 && saut.navHaut === 0 && saut.secHaut >= saut.navBas && saut.secHaut <= saut.navBas + 40 &&
+      saut.href.replace(/#.*$/, '') === adresse.replace(/#.*$/, '') && !/#section-plans$/.test(saut.href) && saut.colle === 'true',
       JSON.stringify(saut));
     verifier('le panneau atteint est marqué dans le sommaire, et le focus clavier est sur son titre',
       saut.courant === 'section-plans' && saut.focus, JSON.stringify(saut));
@@ -7051,6 +7064,231 @@ async function reinitialiser(pg) {
   verifier('le focus revient sur l\'en-tête trié',
     await pk.evaluate(() => document.activeElement && document.activeElement.dataset.trig === 'total'));
   await ctxClavier.close();
+
+  // =================================================================
+  /* Débrief 27, lot G — l'accessibilité de toute la page (liens
+     d'évitement, région principale, sections nommées), l'aide « Comment
+     lire cette page », Échap qui ferme le panneau du dessus, le lien de la
+     vue (adresse tenue à jour et relue), les annonces, la page imprimée, le
+     pied en deux colonnes, le bouton « haut de page » qui ne couvre rien, le
+     sommaire qui suit la section à 35 % de l'écran, et la couche tactile. */
+  section('Débrief 27 : accessibilité globale, aide, partage, impression (lot G)');
+  {
+    const cG = await contexte();
+    const g = await page(cG, 'lot G');
+    // --- Structure : une région principale, des sections nommées, le pied hors de main.
+    const struct = await g.evaluate(() => {
+      const main = document.querySelectorAll('main');
+      const secs = [...document.querySelectorAll('section.panneau:not(.panneau-hors-suite)')];
+      const nom = s => { const id = s.getAttribute('aria-labelledby'); const e = id && document.getElementById(id); return (e ? e.textContent : s.getAttribute('aria-label') || '').trim(); };
+      return { mains: main.length, id: main[0] && main[0].id, toutesDedans: secs.every(s => main[0].contains(s)),
+               nommees: secs.filter(s => !s.hidden).map(s => s.id + ':' + nom(s)), sansNom: secs.filter(s => !s.hidden && !nom(s)).map(s => s.id),
+               pied: !!document.querySelector('footer.pied') && !document.querySelector('main footer, section footer'),
+               premier: (() => { const f = [...document.querySelectorAll('a[href], button, input, select, [tabindex]:not([tabindex="-1"])')][0]; return f && f.textContent.trim(); })() };
+    });
+    verifier('une seule région principale (main#contenu) autour de toutes les sections, chacune nommée par son titre, le pied hors de main',
+      struct.mains === 1 && struct.id === 'contenu' && struct.toutesDedans && !struct.sansNom.length && struct.pied, JSON.stringify(struct));
+    // --- Liens d'évitement : le premier Tab montre « Aller au contenu », Entrée y mène.
+    await g.evaluate(() => { window.scrollTo(0, 0); document.activeElement && document.activeElement.blur(); });
+    await g.keyboard.press('Tab'); await g.waitForTimeout(150);
+    const evit = await g.evaluate(() => { const a = document.activeElement, r = a.getBoundingClientRect();
+      return { texte: a.textContent.trim(), visible: r.width > 60 && r.height > 20 && r.top >= 0 && r.left >= 0, contraste: getComputedStyle(a).color }; });
+    await g.keyboard.press('Enter'); await g.waitForTimeout(900);
+    const apresEvit = await g.evaluate(() => ({ focus: document.activeElement.id, descendu: window.scrollY > 0 }));
+    verifier('le premier Tab montre « Aller au contenu », lisible en haut à gauche ; Entrée pose le focus sur la région principale',
+      evit.texte === 'Aller au contenu' && evit.visible && apresEvit.focus === 'contenu' && apresEvit.descendu, JSON.stringify([evit, apresEvit]));
+    await g.evaluate(() => document.querySelector('.evitement[data-evitement="section-plans"]').click()); await g.waitForTimeout(900);
+    verifier('« Aller au tableau des plans » mène au panneau des plans, le focus sur son titre',
+      await g.evaluate(() => document.activeElement === document.querySelector('#section-plans h2')));
+    await g.evaluate(() => { const s = window.__jeuDExemple('HDK'); delete s.rapprochement; window.__chargerSource(s); }); await g.waitForTimeout(700);
+    verifier('sans comparaison, « Aller à la comparaison » s’efface ; elle revenue, le lien revient',
+      await g.evaluate(() => document.querySelector('.evitement[data-evitement="rapprochement"]').hidden) &&
+      await g.evaluate(async () => { window.__chargerSource(window.__jeuDExemple('HDK')); await new Promise(r => setTimeout(r, 300)); return !document.querySelector('.evitement[data-evitement="rapprochement"]').hidden; }));
+    await g.evaluate(() => window.scrollTo(0, 0)); await g.waitForTimeout(200);
+
+    // --- L'aide : ouverte depuis le pied, fenêtre modale, le focus sur son titre, Échap la ferme et rend le focus.
+    await g.click('#ouvrir-aide-pied'); await g.waitForTimeout(400);
+    const aide = await g.evaluate(() => {
+      const d = document.getElementById('aide'), t = d.textContent;
+      return { ouverte: d.open, modale: d.matches(':modal'), focus: document.activeElement.id,
+               parties: d.querySelectorAll('.aide-liste:not(.aide-touches):not(.aide-glossaire) > div').length,
+               sigles: ['S43', 'ATA', 'PSN', 'FWD', 'GATES', 'SEE', 'Relevé'].every(s => [...d.querySelectorAll('.aide-glossaire dt')].some(x => x.textContent.indexOf(s) === 0)),
+               telsQuels: /ceux de GATES, tels quels/.test(t), filtres: /Toute la page/.test(t) && /Une seule partie/.test(t),
+               clavier: !!d.querySelector('#raccourcis-clavier') && /Échap/.test(t), lien: !!d.querySelector('[data-copier-lien]'),
+               source: /Chaque vendredi/.test(t), qui: !!document.getElementById('aide-responsable').textContent };
+    });
+    verifier('l’aide s’ouvre du pied : fenêtre modale, focus sur son titre, les six parties, les filtres, le clavier, les sigles, la source des chiffres, le lien, à qui demander — les états de GATES « tels quels »',
+      aide.ouverte && aide.modale && aide.focus === 'aide-titre' && aide.parties === 6 && aide.sigles && aide.telsQuels && aide.filtres && aide.clavier && aide.lien && aide.source && aide.qui,
+      JSON.stringify(aide));
+    await g.keyboard.press('Escape'); await g.waitForTimeout(300);
+    verifier('Échap ferme l’aide et rend le focus au bouton qui l’avait ouverte',
+      await g.evaluate(() => !document.getElementById('aide').open && document.activeElement.id === 'ouvrir-aide-pied'));
+    /* Le bouton « Aide » du bandeau (#ouvrir-aide, posé par l'en-tête) ouvre la même fenêtre. */
+    await g.evaluate(() => { const b = document.createElement('button'); b.type = 'button'; b.id = 'ouvrir-aide'; b.textContent = 'Aide'; document.getElementById('reglages').appendChild(b); });
+    await g.click('#ouvrir-aide'); await g.waitForTimeout(300);
+    const parBandeau = await g.evaluate(() => document.getElementById('aide').open);
+    await g.click('#aide-fermer'); await g.waitForTimeout(300);
+    verifier('#ouvrir-aide (le bouton du bandeau) ouvre la même aide ; la croix la ferme et rend le focus',
+      parBandeau && await g.evaluate(() => !document.getElementById('aide').open && document.activeElement.id === 'ouvrir-aide'));
+    await g.evaluate(() => document.getElementById('ouvrir-aide').remove());
+
+    // --- Le raccourci « / » se coupe dans l'aide (WCAG 2.1.4), et le choix est gardé.
+    await g.evaluate(() => { document.activeElement.blur(); window.scrollTo(0, 0); });
+    await g.keyboard.press('/'); await g.waitForTimeout(200);
+    const avecRaccourci = await g.evaluate(() => document.activeElement.id);
+    await g.click('#ouvrir-aide-pied'); await g.waitForTimeout(300);
+    await g.click('#raccourcis-clavier'); await g.waitForTimeout(200);
+    await g.keyboard.press('Escape'); await g.waitForTimeout(200);
+    await g.evaluate(() => document.activeElement.blur());
+    await g.keyboard.press('/'); await g.waitForTimeout(200);
+    const sansRaccourci = await g.evaluate(() => ({ focus: document.activeElement.id || document.activeElement.tagName, garde: localStorage.getItem('suivi-fwd:raccourcis') }));
+    verifier('« / » mène à la recherche des plans ; coupé dans l’aide, il ne fait plus rien, et le choix est gardé sur ce poste',
+      avecRaccourci === 'recherche' && sansRaccourci.focus !== 'recherche' && sansRaccourci.garde === 'non', JSON.stringify([avecRaccourci, sansRaccourci]));
+    await g.evaluate(() => localStorage.removeItem('suivi-fwd:raccourcis'));
+
+    // --- Échap ferme le panneau du dessus : la vue d'ensemble, l'aide « ? », la bulle ; pas un champ rempli.
+    await g.click('#voir-ensemble'); await g.waitForTimeout(500);
+    await g.keyboard.press('Escape'); await g.waitForTimeout(300);
+    const ens = await g.evaluate(() => ({ ferme: document.getElementById('ensemble').hidden, focus: document.activeElement.id }));
+    verifier('Échap ferme la vue d’ensemble, et le focus revient sur « Vue d’ensemble »', ens.ferme && ens.focus === 'voir-ensemble', JSON.stringify(ens));
+    await g.focus('button[data-aide]'); await g.keyboard.press('Enter'); await g.waitForTimeout(400);
+    const aideOuverte = await g.evaluate(() => !!document.getElementById('panneau-fin'));
+    await g.fill('#filtre-groupe', 'zz'); await g.waitForTimeout(300);
+    await g.focus('#filtre-groupe'); await g.keyboard.press('Escape'); await g.waitForTimeout(300);
+    const apresChamp = await g.evaluate(() => ({ champ: document.getElementById('filtre-groupe').value, aide: !!document.getElementById('panneau-fin') }));
+    await g.focus('button[data-aide]'); await g.keyboard.press('Escape'); await g.waitForTimeout(400);
+    const apresEchap = await g.evaluate(() => ({ aide: !!document.getElementById('panneau-fin'), focus: document.activeElement && document.activeElement.hasAttribute('data-aide') }));
+    verifier('Échap dans un champ rempli le vide sans rien fermer ; ensuite, il ferme l’aide « ? » ouverte et garde le focus sur son bouton',
+      aideOuverte && apresChamp.champ === '' && apresChamp.aide && !apresEchap.aide && apresEchap.focus, JSON.stringify([aideOuverte, apresChamp, apresEchap]));
+    await g.evaluate(() => { document.getElementById('bulle').dataset.visible = 'true'; });
+    await g.keyboard.press('Escape'); await g.waitForTimeout(200);
+    verifier('Échap cache une bulle restée affichée (WCAG 1.4.13)', await g.evaluate(() => document.getElementById('bulle').dataset.visible === 'false'));
+
+    // --- Annonces : le périmètre, un filtre posé, un filtre retiré.
+    await g.evaluate(() => window.scrollTo(0, 0));
+    const lireAnnonce = async () => { await g.waitForTimeout(700); return g.evaluate(() => document.getElementById('annonce').textContent); };
+    await g.click('#choix-perimetre button[data-perimetre="PERSO"]');
+    const aPer = await lireAnnonce();
+    await g.click('.etat-btn >> nth=1');
+    const aEtat = await lireAnnonce();
+    await g.click('#tout-effacer');
+    const aRetire = await lireAnnonce();
+    verifier('les changements de la page sont dits : « Périmètre PERSO : … », « État … : N plans sur M. », « Filtre retiré : … »',
+      /^Périmètre PERSO : \d+ sur \d+ plans? validés?\.$/.test(aPer) && /^État \S.* : (\d[\d  ]* plans?( sur \d[\d  ]*)?|aucun plan)\.$/.test(aEtat) && /^Filtres? retirés? : /.test(aRetire),
+      JSON.stringify([aPer, aEtat, aRetire]));
+
+    // --- Le lien de la vue : l'adresse suit (contrat, avancement, périmètre, recherche, section).
+    await g.click('#choix-perimetre button[data-perimetre="PERSO"]'); await g.waitForTimeout(400);
+    await g.fill('#recherche', 'GAE'); await g.waitForTimeout(400);
+    await g.evaluate(() => window.scrollTo(0, 0)); await g.waitForTimeout(900);
+    const adr = await g.evaluate(() => ({ hash: decodeURIComponent(location.hash), lien: window.__lienDeLaVue() }));
+    verifier('l’adresse suit la vue — contrat, périmètre, recherche — et « Copier le lien » la reprend',
+      /contrat=HDK/.test(adr.hash) && /perimetre=PERSO/.test(adr.hash) && /recherche=GAE/.test(adr.hash) && decodeURIComponent(adr.lien).indexOf(adr.hash) !== -1, JSON.stringify(adr));
+    await g.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight)); await g.waitForTimeout(300);
+    await g.click('.pied [data-copier-lien]'); await g.waitForTimeout(500);
+    const copie = await g.evaluate(() => { const b = document.querySelector('.pied [data-copier-lien]'), z = document.querySelector('.pied .lien-a-copier');
+      return { dit: b.textContent, champ: z ? z.value : '', annonce: document.getElementById('annonce').textContent }; });
+    verifier('« Copier le lien de cette vue » copie (le bouton dit « Lien copié ») ou, refusé, montre le lien prêt à copier',
+      (copie.dit === 'Lien copié' && /copié/.test(copie.annonce)) || /perimetre=PERSO/.test(decodeURIComponent(copie.champ)), JSON.stringify(copie));
+    await cG.close();
+    /* Le lien rouvre la vue : un autre contrat, le concept harnais, son périmètre, sa recherche et sa section. */
+    const cL = await contexte();
+    const gl = await cL.newPage(); brancher(gl, 'lot G lien');
+    await gl.goto(URL + '#contrat=THS&avancement=concept&perimetre=perso&recherche=GAE&section=plans'); await gl.waitForTimeout(2200);
+    const rouverte = await gl.evaluate(() => {
+      const sec = document.getElementById('section-plans').getBoundingClientRect(), nav = document.getElementById('sommaire').getBoundingClientRect();
+      return { contrat: document.getElementById('select-contrat').value, titre: document.getElementById('titre-page').textContent,
+               perimetre: (document.querySelector('#choix-perimetre button[aria-pressed="true"]') || {}).dataset, recherche: document.getElementById('recherche').value,
+               plans: Math.round(sec.top - nav.bottom), fond: window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2 };
+    });
+    verifier('un lien partagé rouvre la page sur son contrat (THS), le concept harnais, PERSO, sa recherche, et descend à « Plans » (au plus bas si la page est courte)',
+      rouverte.contrat === 'THS' && rouverte.titre === 'Suivi concept harnais' && rouverte.perimetre && rouverte.perimetre.perimetre === 'PERSO' &&
+      rouverte.recherche === 'GAE' && rouverte.plans >= -2 && (rouverte.plans <= 40 || rouverte.fond), JSON.stringify(rouverte));
+    await gl.goto('about:blank');
+    await gl.goto(URL + '#contrat=INCONNU&perimetre=nulle-part'); await gl.waitForTimeout(1500);
+    verifier('un lien vers un contrat ou un périmètre inconnus ouvre la page normale, sans erreur',
+      await gl.evaluate(() => document.getElementById('select-contrat').value === 'HDK' &&
+        document.querySelector('#choix-perimetre button[data-perimetre=""]').getAttribute('aria-pressed') === 'true'));
+    await cL.close();
+
+    // --- L'impression : vue essentielle, toutes les lignes, sans commandes, en-tête, couleurs claires même en sombre.
+    const cI = await contexte({ colorScheme: 'dark' });
+    const gi = await page(cI, 'lot G impression');
+    const avantImp = await gi.evaluate(() => document.querySelectorAll('tr.titres th').length);
+    await gi.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+    await gi.emulateMedia({ media: 'print', colorScheme: 'dark' });
+    const imp = await gi.evaluate(() => {
+      const cache = s => [...document.querySelectorAll(s)].every(e => getComputedStyle(e).display === 'none');
+      const t = document.getElementById('entete-impression');
+      const lum = c => { const m = c.match(/\d+/g).slice(0, 3).map(Number); return (m[0] + m[1] + m[2]) / 3; };
+      return { colonnes: document.querySelectorAll('tr.titres th').length, lignes: document.querySelectorAll('#corps-tableau tr:not(.ligne-suite)').length,
+               suite: document.querySelectorAll('#corps-tableau tr.ligne-suite').length,
+               caches: cache('.sommaire') && cache('.reglages') && cache('.recherche') && cache('.segmente') && cache('.haut-de-page') && cache('.pied-actions') && cache('thead .filtres'),
+               entete: getComputedStyle(t).display !== 'none' && /HDK/.test(t.textContent) && /Définition électrique/.test(t.textContent),
+               encre: lum(getComputedStyle(document.body).color), fond: lum(getComputedStyle(document.querySelector('.panneau')).backgroundColor),
+               titres: [...document.querySelectorAll('tr.titres th')].every(th => th.getAttribute('data-imprime')) };
+    });
+    await gi.emulateMedia({ media: 'screen', colorScheme: 'dark' });
+    await gi.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+    const apresImp = await gi.evaluate(() => document.querySelectorAll('tr.titres th').length);
+    verifier('imprimée : le tableau en vue essentielle, toutes ses lignes, sans commandes, l’en-tête du contrat, encre sombre sur fond clair même en thème sombre ; puis tout revient',
+      imp.colonnes < avantImp && imp.colonnes > 0 && imp.lignes === TOTAL && imp.suite === 0 && imp.caches && imp.entete && imp.encre < 80 && imp.fond > 200 && imp.titres && apresImp === avantImp,
+      JSON.stringify([imp, avantImp, apresImp]));
+    await cI.close();
+
+    // --- Le pied en deux colonnes, les infos techniques repliées ; une colonne au téléphone.
+    const piedDe = async (pg) => pg.evaluate(() => {
+      const gch = document.querySelector('.pied-gauche').getBoundingClientRect(), drt = document.querySelector('.pied-droite').getBoundingClientRect();
+      const d = document.getElementById('pied-technique');
+      return { cote: drt.left > gch.right && Math.abs(drt.top - gch.top) < 4, dessous: drt.top >= gch.bottom - 1,
+               replie: !d.open && d.contains(document.getElementById('livraison')) && d.contains(document.getElementById('mesure-ouverture')),
+               aide: !!document.querySelector('.pied [data-ouvrir-aide]'), lien: !!document.querySelector('.pied [data-copier-lien]') };
+    });
+    const cP = await contexte({ viewport: { width: 1440, height: 900 } });
+    const gp = await page(cP, 'lot G pied');
+    const pied1440 = await piedDe(gp);
+    // Le bouton « haut de page » dans la marge, à 1440 px.
+    await gp.evaluate(() => window.scrollTo(0, 2500)); await gp.waitForTimeout(300);
+    const marge = await gp.evaluate(() => { const b = document.getElementById('haut-de-page').getBoundingClientRect(), p = document.querySelector('#section-synthese').getBoundingClientRect();
+      return { visible: !document.getElementById('haut-de-page').hidden, ecart: Math.round(b.left - p.right) }; });
+    await cP.close();
+    const cT = await contexte({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const gt = await page(cT, 'lot G téléphone');
+    const pied390 = await piedDe(gt);
+    verifier('le pied : deux colonnes à 1440 px (les chiffres, puis l’aide et le lien), une seule au téléphone ; temps et livraison dans « Infos techniques », replié',
+      pied1440.cote && pied1440.replie && pied1440.aide && pied1440.lien && pied390.dessous && pied390.replie, JSON.stringify([pied1440, pied390]));
+    verifier('à 1440 px, le bouton « haut de page » est dans la marge, à côté des panneaux, sans les toucher',
+      marge.visible && marge.ecart >= 8, JSON.stringify(marge));
+    // Au téléphone : il ne paraît qu'en remontant, jamais pendant une saisie ; 36 px (la règle étroite gagne enfin).
+    await gt.evaluate(() => window.scrollTo(0, 3000)); await gt.waitForTimeout(300);
+    const descente = await gt.evaluate(() => !document.getElementById('haut-de-page').hidden);
+    await gt.evaluate(() => window.scrollBy(0, -200)); await gt.waitForTimeout(300);
+    const remontee = await gt.evaluate(() => { const b = document.getElementById('haut-de-page'); return { vu: !b.hidden, taille: Math.round(b.getBoundingClientRect().width) }; });
+    await gt.evaluate(() => { const i = document.getElementById('filtre-groupe'); i.focus({ preventScroll: true }); window.scrollBy(0, -100); }); await gt.waitForTimeout(300);
+    const saisie = await gt.evaluate(() => !document.getElementById('haut-de-page').hidden);
+    verifier('au téléphone, le bouton « haut de page » ne paraît qu’en remontant (36 px), et se retire pendant une saisie',
+      !descente && remontee.vu && remontee.taille === 36 && !saisie, JSON.stringify([descente, remontee, saisie]));
+    // La couche tactile : liens doux, champs à 16 px.
+    const tactile = await gt.evaluate(() => {
+      const l = document.querySelector('.pied [data-copier-lien]'), a = getComputedStyle(l, '::after'), h = l.getBoundingClientRect().height - 2 * parseFloat(a.top);
+      const champ = document.querySelector('table.plans thead .filtres input');
+      return { zone: Math.round(h), police: champ ? parseFloat(getComputedStyle(champ).fontSize) : 16, contact: parseFloat(getComputedStyle(document.getElementById('recherche')).fontSize) };
+    });
+    verifier('au doigt : un lien doux offre 44 px à toucher, tous les champs écrivent en 16 px (iOS ne zoome plus)',
+      tactile.zone >= 44 && tactile.police >= 16 && tactile.contact >= 16, JSON.stringify(tactile));
+    await cT.close();
+
+    // --- Le sommaire marque la section qui traverse 35 % de l'écran.
+    const cS = await contexte({ viewport: { width: 1280, height: 800 } });
+    const gs = await page(cS, 'lot G sommaire');
+    await gs.evaluate(() => { const s = document.getElementById('section-repartition'); window.scrollTo(0, s.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.3); });
+    await gs.waitForTimeout(400);
+    const espion = await gs.evaluate(() => ({ courant: (document.querySelector('#sommaire-liste a[aria-current]') || {}).dataset,
+      haut: Math.round(document.getElementById('section-repartition').getBoundingClientRect().top) }));
+    verifier('le sommaire marque la section qui traverse 35 % de l’écran (« Par ATA » dès que son haut passe cette ligne), plus d’un panneau de retard',
+      espion.courant && espion.courant.chapitre === 'section-repartition', JSON.stringify(espion));
+    await cS.close();
+  }
 
   // =================================================================
   section('Largeurs d\'écran');

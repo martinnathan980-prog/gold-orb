@@ -70,7 +70,7 @@
 <script>
   /* La livraison de ce fichier, posée par la construction : la page la compare
      à celles de Code, Styles et Javascript, et nomme celui qui diffère. */
-  window.SUIVI_FWD_LIVRAISON_INDEX = '8d83704';
+  window.SUIVI_FWD_LIVRAISON_INDEX = 'b978b16';
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
@@ -125,7 +125,21 @@
   };
 </script>
 
+<!-- Débrief 27, lot G : les liens d'évitement. Invisibles à la souris, le
+     premier Tab les montre en haut à gauche : on saute l'en-tête, ou droit
+     au tableau des plans, ou à la comparaison (un lien vers une section
+     absente s'efface, voir majEvitements). -->
+<div class="evitements" id="evitements">
+  <a class="evitement" href="#contenu" data-evitement="contenu">Aller au contenu</a>
+  <a class="evitement" href="#section-plans" data-evitement="section-plans">Aller au tableau des plans</a>
+  <a class="evitement" href="#rapprochement" data-evitement="rapprochement">Aller à la comparaison</a>
+</div>
 <div class="page">
+
+  <!-- Débrief 27, lot G : l'en-tête des pages imprimées — le contrat, la
+       tranche, l'avancement, les filtres et l'heure des chiffres. Rien à
+       l'écran (voir poserEnteteImpression). -->
+  <div class="entete-impression" id="entete-impression" aria-hidden="true"></div>
 
   <div class="filtres-actifs" id="filtres-actifs" hidden></div>
 
@@ -204,6 +218,12 @@
       <li><a href="#rapprochement" data-chapitre="rapprochement">Comparaison</a></li>
     </ol>
   </nav>
+
+  <!-- Débrief 27, lot G : le contenu de la page, de la synthèse à la
+       comparaison, dans sa région principale — la cible de « Aller au
+       contenu ». Chaque section y est une région nommée par son titre
+       (nommerSections). -->
+  <main class="contenu" id="contenu">
 
   <!-- Un classeur sans plans : ce qu'il faut faire, au lieu de sections vides. -->
   <section class="classeur-vide" id="classeur-vide" hidden>
@@ -463,25 +483,46 @@
     </div>
   </section>
 
+  </main>
+
+  <!-- Débrief 27, lot G (B14) : le pied en deux colonnes. À gauche, ce que
+       disent les chiffres : le dernier relevé, la colonne suivie, l'heure
+       de leur lecture. À droite, l'aide, le lien de cette vue, la mention
+       des consultations, et les infos techniques repliées (les temps de
+       l'ouverture, la livraison) — plus une console de débogage. -->
   <footer class="pied">
-    <span id="import"></span><br>
-    <!-- La colonne lue, nommée comme dans l'export : on voit d'un coup d'œil
-         que la page suit la bonne. -->
-    <span id="colonne-suivie"></span><br id="colonne-suivie-fin">
-    <!-- La démonstration seule le dit : sur le classeur, ces chiffres SONT
-         ceux du tableur. Masqué dès qu'un classeur est derrière la page. -->
-    <span id="avertissement-demo" hidden>Démonstration — les chiffres de cette page sont fictifs, aucun ne vient d'un classeur.</span>
-    <!-- Quand les chiffres ont été lus dans le classeur : une page restée
-         ouverte depuis vendredi ne montre pas ceux de lundi. -->
-    <div id="lu-le" hidden></div>
-    <!-- Débrief 23 : combien de temps l'ouverture a pris — le classeur, le
-         transfert, l'affichage. Avec ?mesure=1 dans l'adresse, le détail. -->
-    <div id="mesure-ouverture" hidden></div>
-    <!-- La livraison qui tourne : le Diagnostic dit laquelle attendre. -->
-    <div id="livraison" hidden></div>
-    <!-- Dit en clair : l'ouverture est comptée, sans nom ni adresse
-         (débrief 18). Seulement quand un classeur est derrière la page. -->
-    <div id="mention-consultations" hidden>Les ouvertures de cette page sont comptées, sans nom ni adresse.</div>
+    <div class="pied-gauche">
+      <p class="pied-releve">
+        <span id="import"></span><br>
+        <!-- La colonne lue, nommée comme dans l'export : on voit d'un coup d'œil
+             que la page suit la bonne. -->
+        <span id="colonne-suivie"></span><br id="colonne-suivie-fin">
+        <!-- La démonstration seule le dit : sur le classeur, ces chiffres SONT
+             ceux du tableur. Masqué dès qu'un classeur est derrière la page. -->
+        <span id="avertissement-demo" hidden>Démonstration — les chiffres de cette page sont fictifs, aucun ne vient d'un classeur.</span>
+      </p>
+      <!-- Quand les chiffres ont été lus dans le classeur : une page restée
+           ouverte depuis vendredi ne montre pas ceux de lundi. -->
+      <div id="lu-le" hidden></div>
+    </div>
+    <div class="pied-droite">
+      <p class="pied-actions">
+        <button type="button" class="lien-doux" id="ouvrir-aide-pied" data-ouvrir-aide aria-haspopup="dialog">Aide : comment lire cette page</button>
+        <span class="pied-point" aria-hidden="true">·</span>
+        <button type="button" class="lien-doux" data-copier-lien>Copier le lien de cette vue</button>
+      </p>
+      <!-- Dit en clair : l'ouverture est comptée, sans nom ni adresse
+           (débrief 18). Seulement quand un classeur est derrière la page. -->
+      <div id="mention-consultations" hidden>Les ouvertures de cette page sont comptées, sans nom ni adresse.</div>
+      <details class="pied-technique" id="pied-technique">
+        <summary>Infos techniques</summary>
+        <!-- Débrief 23 : combien de temps l'ouverture a pris — le classeur, le
+             transfert, l'affichage. Avec ?mesure=1 dans l'adresse, le détail. -->
+        <div id="mesure-ouverture" hidden></div>
+        <!-- La livraison qui tourne : le Diagnostic dit laquelle attendre. -->
+        <div id="livraison" hidden></div>
+      </details>
+    </div>
   </footer>
 </div>
 
@@ -512,6 +553,79 @@
 <button type="button" class="haut-de-page" id="haut-de-page" aria-label="Revenir en haut de la page" hidden>
   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
 </button>
+<!-- Débrief 27, lot G : l'aide, « Comment lire cette page ». Une fenêtre
+     native : Échap la ferme, le clavier y reste, le focus revient au bouton
+     qui l'a ouverte. Elle s'ouvre par « Aide » dans le bandeau
+     (#ouvrir-aide) et dans le pied. Les états de GATES n'y sont pas
+     définis — personne n'en a la définition officielle : ce sont ceux de
+     GATES, tels quels. Ce qui change (l'heure des chiffres, le
+     responsable), majAide le pose à l'ouverture. -->
+<dialog class="aide-page" id="aide" aria-labelledby="aide-titre" aria-describedby="aide-intro">
+  <div class="aide-tete">
+    <h2 id="aide-titre">Comment lire cette page</h2>
+    <button type="button" class="aide-fermer" id="aide-fermer" aria-label="Fermer l’aide">×</button>
+  </div>
+  <div class="aide-corps" id="aide-corps">
+    <p class="aide-intro" id="aide-intro">Le suivi des plans d’un contrat, du plus général au plus détaillé. Rien ne s’écrit d’ici : la page ne fait que lire le classeur.</p>
+    <section class="aide-bloc" aria-labelledby="aide-parties">
+      <h3 class="etiquette-carte" id="aide-parties">Les six parties, de haut en bas</h3>
+      <dl class="aide-liste">
+        <div class="teinte-une"><dt><span class="aide-num">01</span> Synthèse</dt><dd>Combien de plans sont validés sur le total, et tous les plans répartis par état. Un clic sur un état ne montre que ses plans, dans toute la page.</dd></div>
+        <div class="teinte-temps"><dt><span class="aide-num">02</span> Tendance</dt><dd>La courbe des plans validés, relevé après relevé, avec les jalons du programme (numérotés) et la fin estimée au rythme tenu. « Prochaine échéance » ouvre la fiche de l’échéance : combien de plans valider chaque semaine pour la tenir.</dd></div>
+        <div class="teinte-journal"><dt><span class="aide-num">03</span> Changements</dt><dd>Semaine par semaine, les plans qui ont changé d’état ou d’indice, et ceux qui sont apparus ou ont disparu de l’export. Les reculs sont en rouge. Un clic déplie une semaine.</dd></div>
+        <div class="teinte-groupe"><dt><span class="aide-num">04</span> Par ATA</dt><dd>Le même avancement, chapitre ATA par chapitre ATA — ou par séquence, CC, ECP… avec le menu du titre —, et pour chaque groupe sa fin estimée et le rythme requis. Un clic déplie les plans du groupe.</dd></div>
+        <div class="teinte-plans"><dt><span class="aide-num">05</span> Plans</dt><dd>L’export GATES tel quel : une ligne par plan, avec recherche, tri et filtres. « Vue essentielle » ne garde que les colonnes utiles. Un clic sur une référence ouvre l’historique du plan.</dd></div>
+        <div><dt><span class="aide-num">06</span> Comparaison</dt><dd>GATES face à SEE : les plans validés que SEE connaît, et les écarts à traiter. Seulement quand le contrat a une base SEE, et pour la définition électrique.</dd></div>
+      </dl>
+    </section>
+    <section class="aide-bloc" aria-labelledby="aide-filtres">
+      <h3 class="etiquette-carte" id="aide-filtres">Les filtres : toute la page, ou une seule partie</h3>
+      <p><b>Toute la page</b> suit le contrat, la tranche et l’avancement choisis en haut, puis le périmètre, un état cliqué dans la synthèse, un groupe filtré dans Par ATA, une référence ou une ligne de la comparaison. Ces filtres s’affichent dans la barre « Filtres », en haut de l’écran : chaque × en retire un, « Tout effacer » les retire tous.</p>
+      <p><b>Une seule partie</b> change avec les pastilles et le petit champ de recherche des parties Tendance, Changements, Par ATA et Comparaison. Le reste de la page ne bouge pas.</p>
+    </section>
+    <section class="aide-bloc" aria-labelledby="aide-clavier">
+      <h3 class="etiquette-carte" id="aide-clavier">Au clavier</h3>
+      <dl class="aide-liste aide-touches">
+        <div><dt><kbd>Tab</kbd> <kbd>Maj</kbd>+<kbd>Tab</kbd></dt><dd>Passer d’un bouton, d’un lien ou d’un champ à l’autre. Au premier <kbd>Tab</kbd>, « Aller au contenu » saute l’en-tête.</dd></div>
+        <div><dt><kbd>Entrée</kbd> <kbd>Espace</kbd></dt><dd>Activer le bouton qui a le focus.</dd></div>
+        <div><dt><kbd>Échap</kbd></dt><dd>Fermer ce qui est ouvert : cette aide, une fiche, la vue d’ensemble, une bulle. Dans un champ de recherche : l’effacer.</dd></div>
+        <div><dt><kbd>/</kbd></dt><dd>Aller à la recherche du tableau des plans, quand aucun champ n’est en cours de saisie.</dd></div>
+        <div><dt><kbd>Ctrl</kbd> + molette</dt><dd>Zoomer dans le graphique (<kbd>⌘</kbd> + molette sur un Mac). La molette seule fait défiler la page.</dd></div>
+      </dl>
+      <label class="aide-option"><input type="checkbox" id="raccourcis-clavier" checked> Raccourcis clavier d’une seule touche : <kbd>/</kbd></label>
+      <p class="aide-note">À décocher quand un logiciel de dictée ou d’aide tape « / » sans le vouloir. Le choix est gardé sur ce poste.</p>
+    </section>
+    <section class="aide-bloc" aria-labelledby="aide-sigles">
+      <h3 class="etiquette-carte" id="aide-sigles">Sigles et mots de la page</h3>
+      <dl class="aide-liste aide-glossaire">
+        <div><dt><abbr title="semaine 43">S43</abbr></dt><dd>La semaine 43 de l’année, du lundi au dimanche (numérotation ISO). « S43 · oct. 2026 » : la semaine et son mois.</dd></div>
+        <div><dt>Relevé</dt><dd>La photo des états de tous les plans, archivée chaque vendredi. La courbe et le journal comparent les relevés entre eux.</dd></div>
+        <div><dt>GATES</dt><dd>La base d’où vient l’export des plans et de leur avancement. Les états (<span lang="en">VALIDATED</span>, <span lang="en">PWD_IN_PROGRESS</span>…) sont ceux de GATES, tels quels : la page ne les traduit pas. « Non renseigné » : un plan sans état dans GATES (<span lang="en">EMPTY</span>).</dd></div>
+        <div><dt>SEE</dt><dd>La seconde base, celle des schémas créés. Un plan connu de SEE est un plan terminé : la comparaison croise cette présence avec l’avancement de GATES.</dd></div>
+        <div><dt>FWD</dt><dd>La définition électrique des plans : l’avancement que la page suit d’abord. L’autre, le concept harnais, se choisit en haut de la page.</dd></div>
+        <div><dt>ATA</dt><dd>Le chapitre ATA (<span lang="en">Air Transport Association</span>) : la numérotation standard des systèmes de l’avion — 21, 24, 92…</dd></div>
+        <div><dt>TO</dt><dd>Table outil. Les jalons TO suivent le concept harnais.</dd></div>
+        <div><dt>PSN</dt><dd>Le numéro de la machine d’un contrat dans SEE : c’est lui qui trie les lignes de SEE qui reviennent au contrat.</dd></div>
+        <div><dt>PH, CC, ECP, RPT…</dt><dd>Les noms des colonnes de l’export GATES, gardés tels quels.</dd></div>
+      </dl>
+    </section>
+    <section class="aide-bloc" aria-labelledby="aide-source">
+      <h3 class="etiquette-carte" id="aide-source">D’où viennent les chiffres</h3>
+      <p>De l’export GATES de chaque contrat et de l’extract SEE, importés dans le classeur Google Sheets du suivi. Chaque vendredi, l’état de tous les plans y est archivé : c’est le relevé de la semaine, celui que comparent la courbe et le journal.</p>
+      <p id="aide-fraicheur"></p>
+    </section>
+    <section class="aide-bloc" aria-labelledby="aide-partage">
+      <h3 class="etiquette-carte" id="aide-partage">Partager, imprimer</h3>
+      <p>Le lien rouvre la page sur le même contrat, la même tranche, le même avancement, le même périmètre, la même recherche dans le tableau des plans et la même partie.</p>
+      <p class="aide-actions"><button type="button" class="bouton" data-copier-lien>Copier le lien de cette vue</button></p>
+      <p><kbd>Ctrl</kbd>+<kbd>P</kbd> imprime la page sans ses boutons, avec le contrat et les filtres en tête, et le tableau des plans en vue essentielle.</p>
+    </section>
+    <section class="aide-bloc" aria-labelledby="aide-qui">
+      <h3 class="etiquette-carte" id="aide-qui">Une question, une erreur ?</h3>
+      <p id="aide-responsable">Le responsable du tableau de bord, propriétaire du classeur du suivi, peut répondre.</p>
+    </section>
+  </div>
+</dialog>
 
     <?!= include('Javascript'); ?>
   </body>

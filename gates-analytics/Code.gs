@@ -47,7 +47,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = '8d83704';
+const EDITION = 'b978b16';
 
 // =====================================================================
 //  CONFIGURATION
@@ -393,14 +393,51 @@ function doGet(e) {
      changements de contrat, en profitent. Le pied dit « relu à la
      demande ». */
   if (e && e.parameter && e.parameter.frais) { MESURES_.frais = true; marquerDonneesModifiees_(); }
-  const page = mesurer_('page', function () { return pageDuTableau(!!(e && e.parameter && e.parameter.forcer)); })
-    .setTitle('Suivi FWD')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  /* Débrief 27, lot G : un lien partagé (« Copier le lien de cette vue »)
+     porte son contrat et sa tranche — ?contrat=HDK&tranche=Tranche%202 :
+     la page s'ouvre directement dessus, sans passer par le premier contrat.
+     Un contrat inconnu ou retiré du tableau de bord : le premier, comme
+     avant. Le reste de la vue (avancement, périmètre…), la page le lit. */
+  CONTRAT_DEMANDE_ = contratDeLAdresse_(e);
+  let page;
+  try {
+    page = mesurer_('page', function () { return pageDuTableau(!!(e && e.parameter && e.parameter.forcer)); })
+      .setTitle('Suivi FWD')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  } finally {
+    CONTRAT_DEMANDE_ = '';
+  }
   journaliserMesures_();
 
   return CONFIG.AUTORISER_INTEGRATION_EXTERNE
     ? page.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     : page;
+}
+
+/* Débrief 27, lot G : le contrat que demande l'adresse de la page, s'il est
+   affiché au tableau de bord ('' sinon). « contrat » est le nom du contrat
+   (« HDK ») ou de son onglet (« HDK Tranche 2 ») ; « tranche » choisit
+   parmi les siennes (« Tranche 1 » : le contrat lui-même). Les noms se
+   comparent sans casse, accents ni séparateurs (memeContrat_). */
+let CONTRAT_DEMANDE_ = '';
+function contratDeLAdresse_(e) {
+  const p = e && e.parameter ? e.parameter : {};
+  const voulu = String(p.contrat || '').trim().slice(0, 120), tranche = String(p.tranche || '').trim().slice(0, 60);
+  if (!voulu) return '';
+  try {
+    return enLecture(function () {
+      const liste = contratsPourLaPage_(listerContrats(classeurActif_()));
+      const famille = liste.filter(function (c) { return memeContrat_(c.contrat, voulu); });
+      if (famille.length) {
+        const memeTranche = tranche ? famille.filter(function (c) { return c.tranche && memeContrat_(c.tranche, tranche); })[0] : null;
+        return (memeTranche || famille.filter(function (c) { return !c.tranche; })[0] || famille[0]).id;
+      }
+      const direct = liste.filter(function (c) { return memeContrat_(c.id, voulu) || memeContrat_(c.nom, voulu); })[0];
+      return direct ? direct.id : '';
+    });
+  } catch (err) {
+    return '';
+  }
 }
 
 /** Ouverture depuis le classeur, en fenêtre. */
@@ -2459,7 +2496,8 @@ function compacterPaquet(paquet) {
  * erreur est toujours en clair.
  */
 function donneesJSONPourPage() {
-  const rendu = paquetCompact_('');
+  /* Débrief 27, lot G : le contrat demandé par l'adresse (doGet), sinon le premier. */
+  const rendu = paquetCompact_(CONTRAT_DEMANDE_ || '');
   if (POUR_INDEX_ && rendu.ok && rendu.gz) return enveloppeLitterale_(rendu);
   return echapperPourScript_(jsonDuPaquet_(rendu));
 }
@@ -5536,8 +5574,15 @@ function exigerAdmin_(condition, quoi) {
  */
 function mesDroits() {
   const d = droitsDeLAppelant_();
+  /* Débrief 27, lot G : le lien …/exec de l'application web, pour « Copier
+     le lien de cette vue » (la page, dans son cadre, ne voit pas l'adresse
+     de l'onglet) ; et le responsable, que l'aide nomme à qui la lit — à un
+     compte reconnu du domaine seulement. */
+  let adresse = '';
+  try { adresse = ScriptApp.getService().getUrl() || ''; } catch (err) { adresse = ''; }
   return { role: d.role, identifie: d.identifie, email: d.email, tous: d.tous, contrats: d.contrats, coherent: d.coherent,
-           responsable: d.role !== 'lecteur' ? d.responsable : '', jalonsEditables: !!String(CONFIG.FEUILLE_JALONS || '').trim() };
+           responsable: d.identifie ? d.responsable : '', jalonsEditables: !!String(CONFIG.FEUILLE_JALONS || '').trim(),
+           adresse: adresse };
 }
 
 /* La signature d'une ligne de l'onglet des jalons, telle que la page l'a vue :
