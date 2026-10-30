@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'df0bbe3';
+  var EDITION = 'ea568ec';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -1318,6 +1318,33 @@
     return true;
   }
 
+  /* Débrief 29 (B5, D2) : la Mono est pour les références et les codes de
+     GATES. Une colonne courte (classe « num ») se lit en Plex Sans à
+     chiffres alignés (c.chiffre : classe « chiffre » des cases) — dates,
+     nombres, Oui/Non, ATA, Séquence, Domaine, « Traité »… —, sauf l'ECP et
+     les colonnes d'état des blocs de GATES (Avancement…, Validité, A
+     traiter par, Configuration officielle, Commentaire) tant qu'elles ne
+     portent que des codes (V, NV, MR, EMPTY, 100 %) : un seul mot en
+     minuscules (« Traité », « À faire ») et la colonne passe en Sans. */
+  var TITRE_ETAT_GATES = /^(avancement|validite|a traiter par|configuration officielle|commentaire)\b/;
+  function marquerChiffres(colonnes, plans) {
+    colonnes.forEach(function (c) {
+      c.chiffre = false;
+      if (!/(^|\s)num(\s|$)/.test(c.classe || '')) return;
+      var titre = reduireTexte(String(c.titre || ''));
+      if (/^ecp\b/.test(titre)) return;
+      if (TITRE_ETAT_GATES.test(titre)) {
+        var mots = false;
+        for (var i = 0; i < plans.length && !mots; i++) {
+          var v = plans[i][c.cle];
+          if (v != null && /[a-z\u00e0-\u00ff]/.test(String(v))) mots = true;
+        }
+        if (!mots) return;
+      }
+      c.chiffre = true;
+    });
+  }
+
   /**
    * Dérive tout l'état de la page d'une source. Rejouable : la source
    * initiale et chaque contrat passent par ici.
@@ -1739,6 +1766,7 @@
        « constructor » ou « __proto__ » et passer pour une colonne. */
     PAR_CLE = Object.create(null);
     COLONNES.forEach(function (c) { PAR_CLE[c.cle] = c; });
+    marquerChiffres(COLONNES, PLANS.concat(ANCIENS));
     CLE_DATE = src.cleDate || null;
     MOIS_D_ABORD = ordreDesDates(PLANS, CLE_DATE);
     /* Le concept harnais ne se suit que si la source en nomme la colonne ;
@@ -2049,9 +2077,9 @@
       vueTable: VAUT_ESSENTIELLES ? 'essentielle' : 'toutes',
       /* Débrief 27 : les colonnes vides de bout en bout dans la sélection
          sont masquées (colonnesVides) ; « Afficher » les remet — un choix
-         retenu lui aussi. La rangée des filtres de colonne, elle, ne se
-         déplie qu'à la demande et le temps de la visite (X-A2). */
-      videsMontrees: false, filtresOuverts: false,
+         retenu lui aussi. (La rangée des filtres de colonne est toujours
+         là : débrief 28.) */
+      videsMontrees: false,
       /* La case du tableau, et l'en-tête, qui portent l'arrêt de tabulation
          (X-A2 : un seul arrêt pour les en-têtes, un pour les lignes). */
       repereTete: '', repereCorps: null
@@ -2059,7 +2087,6 @@
     vue.fen = cadrageParDefaut();
     if (!avant) { if (vue.vueTable === 'essentielle') appliquerVueTable(); return; }
     appliquerDisposition(avant);
-    vue.filtresOuverts = !!avant.filtresOuverts;
   }
 
   /* Les commandes fixes de la page reflètent la vue : le champ de recherche,
@@ -3018,9 +3045,16 @@
         ? '\x3Cspan class="pastille hachure">\x3C/span>'
         : '\x3Cspan class="pastille" style="background:' + v.couleur + '">\x3C/span>';
       var actif = vue.etat === v.cle;
+      /* Débrief 29 (F5) : la tuile filtre toute la page, pas seulement la
+         Synthèse — elle le dit avant le clic (au survol, et en clair aux
+         lecteurs d'écran : « Filtrer toute la page sur PWD_IN_PROGRESS,
+         220 plans »). */
+      var nV = parValeur[v.cle] || 0;
+      var dit = 'Filtrer toute la page sur ' + v.libelle;
       return '\x3Cbutton class="etat-btn" type="button" data-etat="' + ech(v.cle) + '" data-cle="' + ech(v.cle) + '" data-famille="' + v.famille +
         '" style="--teinte:' + v.teinte +
-        '" aria-pressed="' + actif + '" title="' + (actif ? 'Retirer le filtre' : 'N\u2019afficher que ces plans') + '">' +
+        '" aria-pressed="' + actif + '" title="' + ech(actif ? 'Retirer le filtre' : dit) + '"' +
+        (actif ? '' : ' aria-label="' + ech(dit + ', ' + nb(nV) + (nV > 1 ? ' plans' : ' plan')) + '"') + '>' +
         '\x3Cspan class="etat-haut">' + pastille + '\x3Cspan class="libelle">' + ech(v.libelle).replace(/_/g, '_\x3Cwbr>') + '\x3C/span>\x3C/span>' +
         '\x3Cspan class="etat-n">' + nb(parValeur[v.cle] || 0) + '\x3C/span>' +
         '\x3Cspan class="etat-pct">' + partDite(parValeur[v.cle] || 0, c.total) + '\x3C/span>\x3C/button>';
@@ -5440,20 +5474,10 @@
         '\x3Cspan class="masque"> (' + ech(noms) + ')\x3C/span>\x3C/span>' +
         '\x3Cbutton type="button" data-vides="afficher" title="' + ech('Afficher : ' + noms) + '">Afficher\x3C/button>';
   }
-  /* La rangée des filtres de colonne : dépliée à la demande, et toujours
-     quand un filtre de colonne est posé — on voit ce qui filtre. */
+  /* La rangée des filtres de colonne. Débrief 28 : elle est toujours là
+     (Nathan) ; débrief 29 : le bouton qui la pliait est supprimé. */
   function filtresColonneVisibles() {
-    /* Débrief 28 : la rangée des filtres de colonne est toujours là (Nathan). */
     return true;
-  }
-  function refleterOutilsTableau() {
-    var b = $('ouvrir-filtres');
-    if (!b) return;
-    var ouverts = filtresColonneVisibles();
-    var n = Object.keys(vue.filtres).filter(function (k) { return vue.filtres[k]; }).length;
-    b.setAttribute('aria-expanded', String(ouverts));
-    b.querySelector('.mot-outil').innerHTML = 'Filtrer\x3Cspan class="mot-long"> par colonne\x3C/span>' + (n ? ' (' + nb(n) + ')' : '');
-    b.title = ouverts ? (n ? 'Les filtres de colonne posés restent affichés' : 'Replier les filtres de colonne') : 'Un champ « filtrer » sous chaque en-tête';
   }
   /* Le libellé d'un groupe d'en-têtes : celui de la colonne suivie dit ce
      qu'il est (« Avancement (GATES · HDK AA 011) » — « HDK AA 011 » seul ne
@@ -5482,11 +5506,17 @@
       else groupes.push(d = { nom: c.groupe, n: 1, fige: colle, debut: i, suite: !!(d && d.nom === c.groupe) });
       if (c.cle === CLE_SUIVIE) d.suivie = true;
     });
-    var html = '\x3Ctr class="groupes">' + groupes.map(function (g) {
+    /* Débrief 29 (P-F15) : la vue essentielle garde une poignée de colonnes
+       prises dans des groupes différents — sa rangée de groupes répétait
+       « Informations principales » trois fois, coupée par les autres. Elle
+       n'a plus de rangée de groupes ; « Toutes les colonnes » garde la
+       sienne, telle quelle. */
+    var sansGroupes = vue.vueTable === 'essentielle';
+    var html = (sansGroupes ? '' : '\x3Ctr class="groupes">' + groupes.map(function (g) {
       var cl = g.fige ? (g.debut + g.n === nFige ? 'col-fige fige-fin' : 'col-fige') : '';
       return '\x3Cth colspan="' + g.n + '" data-debut="' + g.debut + '"' + (cl ? ' class="' + cl + '"' : '') +
         '>' + libelleGroupeTete(g, nomSuivi) + '\x3C/th>';
-    }).join('') + '\x3C/tr>\x3Ctr class="titres">' + cols.map(function (c, i) {
+    }).join('') + '\x3C/tr>') + '\x3Ctr class="titres">' + cols.map(function (c, i) {
       var actif = vue.tri.cle === c.cle;
       var fleche = actif ? '\x3Csvg class="fleche" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">\x3Cpath d="' +
         (vue.tri.asc ? 'M5 8.5V1.5M2 4.5 5 1.5l3 3' : 'M5 1.5v7M2 5.5 5 8.5l3-3') +
@@ -5510,7 +5540,6 @@
         '" placeholder="filtrer" data-actif="' + (!!val) + '" aria-label="Filtrer ' + ech(c.titre) + '">\x3C/th>';
     }).join('') + '\x3C/tr>';
     $('tete-tableau').innerHTML = html;
-    refleterOutilsTableau();
     ajusterSticky();
   }
   /* Un tableau encore hors de l'écran n'est pas mis en page (content-
@@ -5547,9 +5576,11 @@
   function styleFige(i, n) { return i < n ? ' style="left:var(--fige-' + i + ',0px)"' : ''; }
   function poserColonnesFigees() {
     if (tableauHorsEcran($('cadre-tableau'))) return;
-    var g = document.querySelector('.groupes'), t = document.querySelector('.titres'), f = document.querySelector('.filtres');
-    if (!g || !t || !f) return;
-    var hg = g.getBoundingClientRect().height;
+    /* Débrief 29 : la vue essentielle n'a pas de rangée de groupes (hg = 0). */
+    var tete = $('tete-tableau');
+    var g = tete.querySelector('tr.groupes'), t = tete.querySelector('tr.titres'), f = tete.querySelector('tr.filtres');
+    if (!t || !f) return;
+    var hg = g ? g.getBoundingClientRect().height : 0;
     var ht = t.getBoundingClientRect().height;
     /* On mesure les colonnes collees et on les pose les unes apres les
        autres. Sans ce cumul, la deuxieme viendrait recouvrir la premiere. */
@@ -5563,7 +5594,7 @@
     t.querySelectorAll('th').forEach(function (th) { th.style.top = hg + 'px'; });
     f.querySelectorAll('th').forEach(function (th) { th.style.top = (hg + ht) + 'px'; });
     if (!gauche.length) return;
-    g.querySelectorAll('th.col-fige').forEach(function (th) {
+    if (g) g.querySelectorAll('th.col-fige').forEach(function (th) {
       var d = parseInt(th.dataset.debut, 10) || 0;
       th.style.left = (gauche[d] || 0) + 'px';
     });
@@ -5681,6 +5712,12 @@
       var k = vue.tri.cle, sens = vue.tri.asc ? 1 : -1;
       if (k === CLE_SUIVIE) return (a._pct - b._pct) * sens || COMPARER_LOCAL(a.reference, b.reference);
       var va = String(a[k] == null ? '' : a[k]), vb = String(b[k] == null ? '' : b[k]);
+      /* Débrief 29 (B22) : « - » s'écrit « — » comme une case vide ; il se
+         range avec elles, en bas dans les deux sens — sinon des « — »
+         remontaient en tête du tri croissant. Les filtres lisent toujours
+         « - ». */
+      if (va.trim() === '-') va = '';
+      if (vb.trim() === '-') vb = '';
       if (va === '' && vb === '') return 0;
       if (va === '') return 1;
       if (vb === '') return -1;
@@ -5762,11 +5799,16 @@
             '\x3C/span>\x3C/td>';
         }
         var val = p[c.cle];
-        var classes = (c.classe + ' ' + fige + (c.cle === 'reference' ? ' col-ref' : '')).trim();
+        var classes = (c.classe + (c.chiffre ? ' chiffre' : '') + ' ' + fige + (c.cle === 'reference' ? ' col-ref' : '')).trim();
         /* « — » posé sur la case elle-même (classe tiret-vide), sans élément
            de plus : sur l'extract entier, ce sont des dizaines de milliers
            de cases. */
         if (val === '' || val == null) return '\x3Ctd class="' + classes + ' doux tiret-vide"' + styleFige(i, nFige) + '>\u2014\x3C/td>';
+        /* Débrief 29 (B22) : « - », que l'extract écrit dans les blocs sans
+           valeur, se lit comme une case vide — « — » en gris, la valeur
+           brute dite au survol. Il se trie avec les cases vides (en bas,
+           rangsDuTableau) ; les filtres gardent « - ». */
+        if (String(val).trim() === '-') return '\x3Ctd class="' + classes + ' doux tiret-vide"' + styleFige(i, nFige) + ' title="« - » dans GATES">\u2014\x3C/td>';
         var titre = c.classe.indexOf('large') !== -1 ? ' title="' + ech(val) + '"' : '';
         /* La référence se clique : le tableau se réduit à ce plan, et son
            historique s'ouvre au-dessus. */
@@ -8441,11 +8483,18 @@
     if (res && res.q) annoncer(res.trouves ? nb(res.trouves) + (res.trouves > 1 ? ' plans trouvés' : ' plan trouvé') + ' dans la comparaison'
       : 'Aucun plan de la comparaison ne contient « ' + v.trim() + ' »');
   });
+  /* Débrief 29 (X-A5) : changer de base change tout le tableau — cela se
+     dit, avec le compte que la page affiche (« Base SEE affichée : 1 204
+     lignes », « Base GATES affichée : 634 plans »). */
+  function annoncerBase() {
+    annoncer('Base ' + (vue.base === 'la' ? nomSeconde() : 'GATES') + ' affichée : ' + $('compte').textContent);
+  }
   $('choix-base').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-base]');
     if (!b || b.dataset.base === vue.base) return;
     vue.base = b.dataset.base;
     rendre();
+    annoncerBase();
   });
   /* « Les voir dans GATES / SEE » : on change de côté sans toucher aux filtres. */
   $('section-plans').addEventListener('click', function (e) {
@@ -8455,6 +8504,7 @@
     rendre();
     var cible = document.querySelector('#choix-base button[data-base="' + vue.base + '"]');
     if (cible) cible.focus();
+    annoncerBase();
   });
 
   /* Survoler un bouton ou un segment du rapprochement éclaire le segment et
@@ -9432,7 +9482,9 @@
     if (!b) return;
     var k = b.dataset.vide;
     if (vue.vides[k]) delete vue.vides[k]; else vue.vides[k] = true;
-    rendre();
+    /* Débrief 29 (X-A1) : la puce est redessinée ; le focus revient sur la
+       nouvelle (data-vide), pas sur le corps de la page. */
+    garderFocus(rendre, 'barre-tableau');
   });
 
   $('dim-critique').addEventListener('change', function (e) {
@@ -10079,7 +10131,49 @@
     if (!cible) return;
     if (cible.tagName === 'TD' && !cible.hasAttribute('tabindex')) cible.setAttribute('tabindex', '-1');
     prendreRepere(cible);
-    cible.focus();
+    /* Débrief 29 (X-A3) : Chrome jugeait « visible » une case couverte par
+       la colonne figée à 1 px près, et ne défilait pas — le scroll-padding
+       du cadre restait lettre morte. Le focus ne fait plus défiler ; la case
+       est amenée à vue à la main (montrerCase). */
+    try { cible.focus({ preventScroll: true }); } catch (e) { cible.focus(); }
+    montrerCase(caseDe(cible) || cible);
+  }
+  /* Une case atteinte au clavier ne reste jamais sous ce qui la couvre :
+     à droite des colonnes figées réellement collées, sous les en-têtes
+     collés, au-dessus du fondu du bas du cadre ; puis, dans la page, sous
+     le sommaire collé et dans la fenêtre. */
+  function montrerCase(td) {
+    var defile = $('defile');
+    if (!td || !defile) return;
+    var d = defile.getBoundingClientRect();
+    var gauche = d.left + defile.clientLeft, droite = gauche + defile.clientWidth;
+    var haut = d.top + defile.clientTop, bas = haut + defile.clientHeight;
+    var colle = function (el) { return getComputedStyle(el).position === 'sticky' && getComputedStyle(el).left !== 'auto'; };
+    var figR = gauche;
+    [].forEach.call(tete.querySelectorAll('tr.titres th.col-fige'), function (th) {
+      if (!colle(th)) return;
+      var x = th.getBoundingClientRect().right;
+      if (x > figR) figR = x;
+    });
+    var r = td.getBoundingClientRect();
+    if (!(td.classList.contains('col-fige') && colle(td))) {
+      if (r.left < figR + 4) defile.scrollLeft -= Math.ceil(figR + 4 - r.left);
+      else if (r.right > droite - 4) defile.scrollLeft += Math.ceil(Math.min(r.right - (droite - 4), r.left - (figR + 4)));
+    }
+    if (defile.scrollHeight > defile.clientHeight + 1) {
+      /* Le bas des en-têtes collés : celui de leurs cases (sticky), pas du
+         thead, qui défile avec le tableau. */
+      var basTete = tete.querySelector('tr.filtres th') || tete.querySelector('tr.titres th');
+      var hautT = Math.max(haut, basTete ? basTete.getBoundingClientRect().bottom : haut);
+      var fondu = $('cadre-tableau').getAttribute('data-plus-bas') === 'true' ? 32 : 2;
+      r = td.getBoundingClientRect();
+      if (r.top < hautT + 2) defile.scrollTop -= Math.ceil(hautT + 2 - r.top);
+      else if (r.bottom > bas - fondu) defile.scrollTop += Math.ceil(Math.min(r.bottom - (bas - fondu), r.top - (hautT + 2)));
+    }
+    var hautPage = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+    r = td.getBoundingClientRect();
+    if (r.top < hautPage) window.scrollBy(0, Math.floor(r.top - hautPage));
+    else if (r.bottom > window.innerHeight - 8) window.scrollBy(0, Math.ceil(Math.min(r.bottom - window.innerHeight + 8, r.top - hautPage)));
   }
   $('corps-tableau').addEventListener('keydown', function (e) {
     var td = caseDe(e.target);
@@ -10217,18 +10311,6 @@
     fermerMenuColonne(false);
   });
   $('defile').addEventListener('scroll', function () { fermerMenuColonne(false); }, { passive: true });
-  /* « Filtrer par colonne » : la rangée des champs se déplie (le focus va au
-     premier), ou se replie — sauf si un filtre est posé : il reste à vue. */
-  $('ouvrir-filtres').addEventListener('click', function () {
-    var ouvrir = !filtresColonneVisibles();
-    vue.filtresOuverts = ouvrir;
-    rendreEntetes();
-    if (ouvrir) {
-      var champ = tete.querySelector('tr.filtres input');
-      if (champ) champ.focus({ preventScroll: true });
-      annoncer('Filtres de colonne affichés : un champ sous chaque en-tête');
-    } else annoncer(filtresColonneVisibles() ? 'Des filtres de colonne sont posés : ils restent affichés' : 'Filtres de colonne repliés');
-  });
   /* ============================================================
      DÉBRIEF 27, LOT D — EXPORTER LE TABLEAU (P-F21)
      « Copier le tableau » : ce que le tableau montre — filtres, tri,
@@ -12246,5 +12328,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = 'df0bbe3';
+window.SUIVI_FWD_FIN = 'ea568ec';
 </script>
