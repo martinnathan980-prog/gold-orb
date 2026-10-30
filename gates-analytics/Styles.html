@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "8dbc4ac";
+  --suivi-fwd-edition: "0f04aaa";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -1991,10 +1991,8 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
    Un bouton que seuls les administrateurs voient, et un panneau : les
    jalons, les contrats retirés ou remis, les administrateurs. Tout passe par
    le classeur, qui revérifie qui écrit. */
-.bandeau-mode .choix-admin { display: flex; justify-content: flex-end; }
-.bandeau-mode .choix-admin[hidden] { display: none; }
-.bouton-admin { display: inline-flex; align-items: center; gap: 6px; }
-.bouton-admin svg { flex: none; }
+/* Le bouton lui-même est un outil de la barre des réglages (.outil-page,
+   débrief 27). */
 dialog.admin {
   width: min(780px, calc(100vw - 32px)); max-height: calc(100vh - 40px); padding: 0;
   border: 1px solid var(--panneau-bord); border-radius: 8px; background: var(--surface); color: var(--encre);

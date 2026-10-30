@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '8dbc4ac';
+  var EDITION = '0f04aaa';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -2045,7 +2045,7 @@
      seule tranche est en jeu — « HDK › Tranche 1 » quand le contrat a
      plusieurs tranches, « THS » sinon. */
   function nomAffiche(id) {
-    var familles = famillesDeContrats();
+    var familles = CONTRATS ? famillesDeContrats() : [];
     for (var i = 0; i < familles.length; i++) {
       for (var k = 0; k < familles[i].membres.length; k++) {
         var m = familles[i].membres[k];
@@ -6091,7 +6091,7 @@
      sa tranche, l'avancement suivi, le périmètre s'il en est un — et le
      rappel du contrat dans le sommaire collé. */
   function rendreEntete() {
-    var nom = CONTRATS.length ? nomAffiche(CONTRAT) : '';
+    var nom = CONTRATS && CONTRATS.length ? nomAffiche(CONTRAT) : '';
     var morceaux = nom ? [nom.replace(' \u203a ', ' \u00b7 ')] : [];
     morceaux.push(INDICATEUR === 'concept' ? 'Concept harnais' : 'Définition électrique');
     if (vue.perimetre) morceaux.push('Périmètre ' + vue.perimetre);
@@ -7075,7 +7075,7 @@
     // Le contrat peut changer pendant qu'on lit : relu à chaque passage.
     /* Débrief 27 (lot H) : « HDK › Tranche 1 », comme le surtitre du titre —
        la tranche 1 s'écrivait « HDK » tout court. */
-    var contrat = colle && CONTRATS.length ? nomAffiche(CONTRAT) : '';
+    var contrat = colle && CONTRATS && CONTRATS.length ? nomAffiche(CONTRAT) : '';
     if ($('sommaire-contrat').textContent !== contrat) $('sommaire-contrat').textContent = contrat;
     var courant = null, presents = LIENS_SOMMAIRE.filter(function (a) { return !a.parentNode.hidden && !a.hasAttribute('aria-disabled'); });
     var seuil = boite.bottom + hauteurFiltres() + 40;   // débrief 27 : sous le sommaire ET les filtres collés
@@ -8640,5 +8640,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = '8dbc4ac';
+window.SUIVI_FWD_FIN = '0f04aaa';
 </script>

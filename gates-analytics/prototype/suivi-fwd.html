@@ -1995,10 +1995,8 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
    Un bouton que seuls les administrateurs voient, et un panneau : les
    jalons, les contrats retirés ou remis, les administrateurs. Tout passe par
    le classeur, qui revérifie qui écrit. */
-.bandeau-mode .choix-admin { display: flex; justify-content: flex-end; }
-.bandeau-mode .choix-admin[hidden] { display: none; }
-.bouton-admin { display: inline-flex; align-items: center; gap: 6px; }
-.bouton-admin svg { flex: none; }
+/* Le bouton lui-même est un outil de la barre des réglages (.outil-page,
+   débrief 27). */
 dialog.admin {
   width: min(780px, calc(100vw - 32px)); max-height: calc(100vh - 40px); padding: 0;
   border: 1px solid var(--panneau-bord); border-radius: 8px; background: var(--surface); color: var(--encre);
@@ -5263,7 +5261,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      seule tranche est en jeu — « HDK › Tranche 1 » quand le contrat a
      plusieurs tranches, « THS » sinon. */
   function nomAffiche(id) {
-    var familles = famillesDeContrats();
+    var familles = CONTRATS ? famillesDeContrats() : [];
     for (var i = 0; i < familles.length; i++) {
       for (var k = 0; k < familles[i].membres.length; k++) {
         var m = familles[i].membres[k];
@@ -9309,7 +9307,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      sa tranche, l'avancement suivi, le périmètre s'il en est un — et le
      rappel du contrat dans le sommaire collé. */
   function rendreEntete() {
-    var nom = CONTRATS.length ? nomAffiche(CONTRAT) : '';
+    var nom = CONTRATS && CONTRATS.length ? nomAffiche(CONTRAT) : '';
     var morceaux = nom ? [nom.replace(' \u203a ', ' \u00b7 ')] : [];
     morceaux.push(INDICATEUR === 'concept' ? 'Concept harnais' : 'Définition électrique');
     if (vue.perimetre) morceaux.push('Périmètre ' + vue.perimetre);
@@ -10293,7 +10291,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     // Le contrat peut changer pendant qu'on lit : relu à chaque passage.
     /* Débrief 27 (lot H) : « HDK › Tranche 1 », comme le surtitre du titre —
        la tranche 1 s'écrivait « HDK » tout court. */
-    var contrat = colle && CONTRATS.length ? nomAffiche(CONTRAT) : '';
+    var contrat = colle && CONTRATS && CONTRATS.length ? nomAffiche(CONTRAT) : '';
     if ($('sommaire-contrat').textContent !== contrat) $('sommaire-contrat').textContent = contrat;
     var courant = null, presents = LIENS_SOMMAIRE.filter(function (a) { return !a.parentNode.hidden && !a.hasAttribute('aria-disabled'); });
     var seuil = boite.bottom + hauteurFiltres() + 40;   // débrief 27 : sous le sommaire ET les filtres collés

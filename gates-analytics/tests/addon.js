@@ -2237,7 +2237,10 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const vu = await p.evaluate(() => ({
     semaine: document.getElementById('num-semaine').textContent,
     dates: document.getElementById('dates-semaine').textContent,
-    titreSemaine: document.querySelector('.masthead').textContent.replace(/\s+/g, ' '),
+    /* Débrief 27 (lot H, P-F10) : la ligne de la semaine seule — l'âge des
+       chiffres (le dernier relevé archivé) a sa propre ligne dessous. */
+    titreSemaine: document.querySelector('.masthead .semaine').textContent.replace(/\s+/g, ' '),
+    fraicheur: document.getElementById('fraicheur').textContent,
     sansMention: !document.getElementById('releve-semaine'),
     repere: ([...document.querySelectorAll('svg.graphe .repere-auj')].map(x => x.textContent)[0]) || '',
     etats: [...document.querySelectorAll('#etats .etat-n')].map(e => +e.textContent.replace(/\s/g, '')),
@@ -2263,8 +2266,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
     return 'Semaine ' + Math.ceil(((t.getTime() - Date.UTC(t.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7);
   })();
   verifier('la semaine affichée est celle d’aujourd’hui, au numéro près', vu.semaine === semAttendue, vu.semaine + ' vs ' + semAttendue);
-  verifier('le titre ne porte que la semaine d’aujourd’hui, sans mention du dernier relevé, et la courbe dit « aujourd’hui »',
-    vu.sansMention && !/dernier relevé/.test(vu.titreSemaine) && vu.repere === 'aujourd’hui', JSON.stringify([vu.sansMention, vu.repere]));
+  verifier('la ligne de la semaine ne porte que la semaine d’aujourd’hui (le dernier relevé archivé a sa ligne à lui, dessous), et la courbe dit « aujourd’hui »',
+    vu.sansMention && !/dernier relevé/.test(vu.titreSemaine) && /dernier relevé archivé : S\d+/i.test(vu.fraicheur) && vu.repere === 'aujourd’hui',
+    JSON.stringify([vu.sansMention, vu.titreSemaine, vu.fraicheur, vu.repere]));
   verifier('les dates de la semaine sont écrites en toutes lettres',
     /^du \d+ .* \d{4}$/.test(vu.dates), vu.dates);
   verifier('les quatre états totalisent les 186 plans',
@@ -2311,15 +2315,17 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('la configuration livrée en met cinq à l\'écran', jalonsPage.length === 5, String(jalonsPage.length));
 
   /* Un seul contrat : le sélecteur n'a rien à proposer, il reste caché — et
-     le titre ne nomme jamais le contrat. */
+     le titre ne dit pas « contrat ». Débrief 27 (lot H, B1) : son surtitre
+     dit ce qu'il montre (l'avancement suivi, et le contrat s'il est nommé). */
   const contratAddon = await p.evaluate(() => ({
     selecteur: document.getElementById('choix-contrat').hidden &&
                document.getElementById('select-contrat').offsetParent === null,
-    rappel: !/contrat/i.test(document.querySelector('.masthead').textContent),
+    rappel: !/contrat/i.test(document.querySelector('.masthead').textContent) &&
+            /Définition électrique|Concept harnais/.test(document.getElementById('contexte-page').textContent),
     pont: typeof window.SUIVI_FWD_API.chargerContrat === 'function' && !window.SUIVI_FWD_API.sauverJalons
   }));
   verifier('avec un seul contrat, la page ne montre pas de sélecteur', contratAddon.selecteur);
-  verifier('ni de rappel du contrat sous le titre', contratAddon.rappel);
+  verifier('ni de mot « contrat » autour du titre — son surtitre dit l’avancement suivi', contratAddon.rappel);
   verifier('le pont vers le classeur expose chargerContrat, et plus sauverJalons', contratAddon.pont);
   // Hors du classeur, le pont ne peut pas répondre : il rappelle avec null, sans casser la page.
   verifier('hors classeur, chargerContrat rappelle null au lieu de planter',
@@ -2897,13 +2903,13 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const perim = await pg.evaluate(() => ({
     visible: !document.getElementById('perimetre').hidden &&
              document.getElementById('choix-perimetre').offsetParent !== null,
-    haut: document.getElementById('perimetre').getBoundingClientRect().top >=
-          document.querySelector('.masthead').getBoundingClientRect().bottom &&
-          document.getElementById('perimetre').getBoundingClientRect().bottom <=
-          document.getElementById('barre').getBoundingClientRect().top + 1 &&
-          !document.querySelector('header.masthead #perimetre') &&
-          document.getElementById('perimetre').getBoundingClientRect().left >
-          document.getElementById('phrase').getBoundingClientRect().right,
+    /* Débrief 27 (lot H, P-F5) : le périmètre porte sur toute la page — il
+       est dans la barre des réglages, au-dessus du titre, plus dans la
+       synthèse. */
+    haut: document.getElementById('perimetre').getBoundingClientRect().bottom <=
+          document.querySelector('.masthead').getBoundingClientRect().top + 1 &&
+          !!document.querySelector('header#entete #portee #perimetre') &&
+          !document.querySelector('#section-synthese #perimetre'),
     boutons: [...document.querySelectorAll('#choix-perimetre button')].map(b => ({
       val: b.dataset.perimetre, n: +b.querySelector('.n').textContent.replace(/\s/g, ''),
       presse: b.getAttribute('aria-pressed')
@@ -2912,7 +2918,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   }));
   const attenduDom = { 'BASE/OPTION': 0, 'PERSO': 0 };
   mGates.plans.forEach(pl => { attenduDom[pl[mGates.cleDomaine]]++; });
-  verifier('le sélecteur est proposé hors du titre, à droite de la phrase d\'avancement, avec une puce par domaine de la feuille',
+  verifier('le sélecteur est proposé dans la barre des réglages, au-dessus du titre, avec une puce par domaine de la feuille',
     perim.visible && perim.haut && perim.boutons.map(b => b.val).join(',') === ',BASE/OPTION,PERSO',
     JSON.stringify(perim.boutons));
   verifier('les comptes sont ceux de la feuille, et il démarre sur Tout',
@@ -3272,6 +3278,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
     etat: document.getElementById('etat-contrat').textContent,
     nom: document.getElementById('select-contrat').value,
     masthead: document.querySelector('.masthead').textContent,
+    contexte: document.getElementById('contexte-page').textContent,
     plans: document.querySelectorAll('#corps-tableau tr').length,
     etats: [...document.querySelectorAll('#etats .etat-n')].reduce((s, e) => s + (+e.textContent.replace(/\s/g, '')), 0),
     totauxGroupes: [...document.querySelectorAll('.critique-total')].reduce((s, t) => s + (+t.textContent), 0),
@@ -3285,7 +3292,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const departM = await etatPage();
   verifier('avec deux contrats, le sélecteur est visible et les liste dans l\'ordre des onglets',
     departM.visible && departM.options === 'X1,X2' && departM.courant === 'X1', JSON.stringify(departM.options));
-  verifier('le contrat courant est celui du sélecteur, sans rappel sous le titre', departM.nom === 'X1' && !/contrat/i.test(departM.masthead), departM.nom);
+  /* Débrief 27 (lot H, B1, P-F11) : le surtitre du titre nomme le contrat affiché. */
+  verifier('le contrat courant est celui du sélecteur, et le surtitre du titre le nomme', departM.nom === 'X1' && !/contrat/i.test(departM.masthead) && /^X1 · /.test(departM.contexte), departM.nom + ' / ' + departM.contexte);
   verifier('la page s\'ouvre sur le premier contrat, avec ses relevés, sans rien demander au classeur',
     departM.plans === 186 && departM.etats === 186 && departM.releves === pM.releves.length && departM.appels.length === 0,
     JSON.stringify([departM.plans, departM.releves, departM.appels]));
@@ -3296,7 +3304,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
     x2M.appels.join() === 'X2', JSON.stringify(x2M.appels));
   verifier('et la page passe sur X2 : ses 93 plans partout, son nom sous le titre',
     x2M.plans === 93 && x2M.etats === 93 && x2M.totauxGroupes === 93 && x2M.nom === 'X2' &&
-    x2M.courant === 'X2' && /93 plans/.test(x2M.phrase), JSON.stringify([x2M.plans, x2M.etats, x2M.totauxGroupes, x2M.nom]));
+    x2M.courant === 'X2' && /93 plans/.test(x2M.phrase) && /^X2 · /.test(x2M.contexte), JSON.stringify([x2M.plans, x2M.etats, x2M.totauxGroupes, x2M.nom, x2M.contexte]));
   /* Le classeur a bougé depuis l'assemblage de la page (suppressions plus
      haut) : le pont sert son état du moment, pas celui de l'ouverture. */
   verifier('le graphique trace l\'historique de X2, tel qu\'il est dans le classeur à cet instant',

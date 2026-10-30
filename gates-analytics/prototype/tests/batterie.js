@@ -244,14 +244,20 @@ async function reinitialiser(pg) {
     aujourdhui: document.querySelectorAll('svg.graphe .repere-auj').length === 1,
     cadrage: [...document.querySelectorAll('.commandes-graphe .segmente button[aria-pressed="true"]')]
       .map(b => b.dataset.span).join(','),
-    echeances: !document.querySelector('.commandes-graphe .segmente button[data-span="jalons"]').hidden
+    /* Débrief 27 (lot H, P-F12) : sans échéance à venir, « Échéances »
+       reste à sa place, grisé (aria-disabled), au lieu de disparaître. */
+    echeances: ((b) => !b.hidden && b.getAttribute('aria-disabled') !== 'true')(document.querySelector('.commandes-graphe .segmente button[data-span="jalons"]')),
+    contexte: document.getElementById('contexte-page').textContent
   }));
   await p.selectOption('#select-contrat', 'THS'); await p.waitForTimeout(1200);
   const x2 = await lireContrat();
   verifier('changer de contrat change le nombre de plans', x2.plans > 0 && x2.plans !== TOTAL, String(x2.plans));
   verifier('et le pied de page', x2.pied !== pied0, x2.pied);
-  verifier('le contrat courant est celui du sélecteur, et le titre ne le répète pas',
-    x2.nom === 'THS' && x2.courant === 'THS' && !/contrat/i.test(x2.masthead), x2.nom);
+  /* Débrief 27 (lot H, B1, P-F11) : le titre ne dit toujours pas « contrat »,
+     mais son surtitre nomme ce qu'il montre (« THS · Définition électrique ») :
+     une capture dit d'elle-même quel contrat elle montre. */
+  verifier('le contrat courant est celui du sélecteur, et le surtitre du titre le nomme',
+    x2.nom === 'THS' && x2.courant === 'THS' && !/contrat/i.test(x2.masthead) && /^THS · /.test(x2.contexte), x2.nom + ' / ' + x2.contexte);
   verifier('les filtres et le cadrage repartent de zero : « Échéances » (ou six mois sans jalon à venir), le repère du dernier relevé',
     x2.filtres && x2.presse === 0 && x2.cadrage === (x2.echeances ? 'jalons' : '26') && x2.aujourdhui, JSON.stringify(x2));
   verifier('le bloc par groupe et le journal suivent le nouveau contrat',
@@ -1061,26 +1067,24 @@ async function reinitialiser(pg) {
   const selP = await p.evaluate(() => ({
     visible: !document.getElementById('perimetre').hidden &&
              document.getElementById('choix-perimetre').offsetParent !== null,
-    /* Hors de la zone du titre — le titre reste seul, centré — à droite de
-       la phrase « N sur M plans terminés », juste au-dessus de la barre :
-       c'est là qu'on choisit ce qu'on regarde. */
-    haut: document.getElementById('perimetre').getBoundingClientRect().top >=
-          document.querySelector('.masthead').getBoundingClientRect().bottom &&
-          document.getElementById('perimetre').getBoundingClientRect().bottom <=
-          document.getElementById('barre').getBoundingClientRect().top + 1,
-    horsDuTitre: !document.querySelector('header.masthead #perimetre') &&
-                 document.querySelector('.masthead').children.length === 2 &&
-                 document.querySelector('.masthead').textContent.indexOf('Périmètre') === -1,
-    dansLaLigne: !!document.querySelector('.avancement-ligne #perimetre #choix-perimetre') &&
-                 document.getElementById('perimetre').getBoundingClientRect().left >
-                 document.getElementById('phrase').getBoundingClientRect().right,
+    /* Débrief 27 (lot H, P-F5) : le périmètre porte sur toute la page — il
+       est monté dans la barre des réglages, sur la ligne du contrat et de
+       l'avancement, au-dessus du titre (il n'est plus dans la synthèse). */
+    haut: document.getElementById('perimetre').getBoundingClientRect().bottom <=
+          document.querySelector('.masthead').getBoundingClientRect().top + 1,
+    horsDuTitre: !document.querySelector('.masthead #perimetre') && !document.querySelector('#section-synthese #perimetre') &&
+                 document.querySelector('.masthead').textContent.indexOf('Périmètre ') === -1,
+    dansLaLigne: !!document.querySelector('header#entete #portee #perimetre #choix-perimetre') &&
+                 Math.abs((r => r.top + r.height / 2)(document.getElementById('choix-perimetre').getBoundingClientRect()) -
+                          (r => r.top + r.height / 2)(document.getElementById('choix-indicateur').getBoundingClientRect())) <= 2 &&
+                 document.getElementById('perimetre').getBoundingClientRect().left > document.getElementById('choix-indicateur').getBoundingClientRect().right,
     boutons: [...document.querySelectorAll('#choix-perimetre button')].map(b => ({
       val: b.dataset.perimetre, texte: b.textContent.trim(),
       n: +(b.querySelector('.n') || { textContent: '0' }).textContent.replace(/\s/g, ''),
       presse: b.getAttribute('aria-pressed')
     }))
   }));
-  verifier('le sélecteur est là, hors de la zone du titre : à droite de la phrase, au-dessus de la barre',
+  verifier('le sélecteur est là, dans la barre des réglages : sur la ligne de l’avancement, à sa droite, au-dessus du titre (plus dans la synthèse)',
     selP.visible && selP.haut && selP.horsDuTitre && selP.dansLaLigne, JSON.stringify(selP).slice(0, 160));
   verifier('trois boutons : Tout, puis un par domaine de la démo',
     selP.boutons.map(b => b.val).join(',') === ',BASE/OPTION,PERSO' && /^Tout/.test(selP.boutons[0].texte),
@@ -3444,7 +3448,7 @@ async function reinitialiser(pg) {
   await p.evaluate(() => window.scrollTo(0, 0));
   const bandeau13 = await p.evaluate(() => {
     const r = el => { const b = el.getBoundingClientRect(); return { l: Math.round(b.left), r: Math.round(b.right), t: Math.round(b.top), b: Math.round(b.bottom) }; };
-    const lab = document.querySelector('#choix-contrat > label');
+    const lab = document.querySelector('#choix-contrat label[for="select-contrat"]');
     const mot = document.querySelector('#choix-avancement .mot-reglage');
     return {
       avancementVisible: !document.getElementById('choix-avancement').hidden && document.getElementById('choix-indicateur').offsetParent !== null,
@@ -3454,20 +3458,24 @@ async function reinitialiser(pg) {
       boutonsTexte: [...document.querySelectorAll('#choix-indicateur button')].map(b => b.textContent.trim())
     };
   });
-  verifier('le contrat au-dessus, l’avancement dessous : « Définition électrique | Concept harnais » sous le sélecteur',
-    bandeau13.avancementVisible && bandeau13.select.b <= bandeau13.boutons.t + 1 &&
+  /* Débrief 27 (lot H, B1) : plus d'escalier de trois lignes — une seule
+     barre de réglages : le contrat, puis l'avancement (puis le périmètre),
+     sur la même ligne, le contrat à gauche de l'avancement. */
+  verifier('une seule barre : le contrat puis l’avancement « Définition électrique | Concept harnais », sur la même ligne',
+    bandeau13.avancementVisible && Math.abs((bandeau13.select.t + bandeau13.select.b) - (bandeau13.boutons.t + bandeau13.boutons.b)) <= 4 &&
+    bandeau13.select.r < bandeau13.boutons.l &&
     bandeau13.boutonsTexte.join('|') === 'Définition électrique|Concept harnais', JSON.stringify(bandeau13));
-  /* Débrief 14 : « tout centré sur la droite ». Les deux commandes
-     finissent au bord droit de la page, chacune avec son mot juste devant
-     elle. */
+  /* Débrief 14 : « tout centré sur la droite ». La barre finit au bord droit
+     de la page ; chaque commande a son mot juste devant elle. */
   const bordDroit = await p.evaluate(() => Math.round(document.querySelector('.bandeau-mode').getBoundingClientRect().right -
     parseFloat(getComputedStyle(document.querySelector('.bandeau-mode')).paddingRight)));
-  verifier('les deux commandes finissent au même bord droit — celui de la page —, chacune avec son mot juste devant elle',
-    Math.abs(bandeau13.select.r - bandeau13.boutons.r) <= 1 && Math.abs(bandeau13.boutons.r - bordDroit) <= 1 &&
+  const finBarre = await p.evaluate(() => Math.round(Math.max(...[...document.querySelectorAll('#portee .reglage')].filter(e => e.getClientRects().length).map(e => e.getBoundingClientRect().right))));
+  verifier('la barre finit au bord droit — celui de la page —, chaque commande avec son mot juste devant elle',
+    Math.abs(finBarre - bordDroit) <= 1 &&
     !!bandeau13.label && !!bandeau13.mot &&
     bandeau13.label.r <= bandeau13.select.l && bandeau13.select.l - bandeau13.label.r <= 14 &&
     bandeau13.mot.r <= bandeau13.boutons.l && bandeau13.boutons.l - bandeau13.mot.r <= 14 && bandeau13.motTexte === 'Avancement',
-    JSON.stringify([bandeau13, bordDroit]));
+    JSON.stringify([bandeau13, bordDroit, finBarre]));
 
   await p.evaluate(() => document.getElementById('zone-journal').scrollIntoView({ block: 'start' }));
   await p.waitForTimeout(200);
@@ -4790,7 +4798,9 @@ async function reinitialiser(pg) {
 
     // --- Le sommaire : hors du bandeau du titre, collé en haut, le panneau courant marqué.
     const tete = await p.evaluate(() => ({
-      horsTitre: !document.querySelector('header.masthead .sommaire') && document.querySelector('.masthead').children.length === 2,
+      /* Débrief 27 (lot H) : le titre a son surtitre (le contrat) et sa
+         ligne de fraîcheur — quatre lignes, toujours sans le sommaire. */
+      horsTitre: !document.querySelector('.masthead .sommaire') && document.querySelector('.masthead').children.length === 4,
       sousTitre: document.getElementById('sommaire').getBoundingClientRect().top >= document.querySelector('.masthead').getBoundingClientRect().bottom - 12,
       avantPanneaux: document.getElementById('sommaire').getBoundingClientRect().bottom <= document.getElementById('section-synthese').getBoundingClientRect().top,
       position: getComputedStyle(document.getElementById('sommaire')).position
@@ -4827,15 +4837,19 @@ async function reinitialiser(pg) {
     await p.waitForTimeout(400);
     verifier('en faisant défiler, la marque suit le panneau qu’on lit',
       await p.evaluate(() => (document.querySelector('#sommaire-liste a[aria-current]') || {}).dataset.chapitre) === 'section-tendance');
-    // Un filtre actif : son bandeau colle en haut, le sommaire juste dessous.
+    /* Un filtre actif : le sommaire colle en haut, la ligne des filtres juste
+       dessous. Débrief 27 (lot H, P-F6) : l'ordre s'inverse — le bandeau des
+       filtres ne prend plus de place dans la page (hauteur nulle, sa ligne
+       posée par-dessus), il pend sous le sommaire collé. */
     await p.click('.etat-btn >> nth=0'); await p.waitForTimeout(500);
     await p.evaluate(() => document.getElementById('section-repartition').scrollIntoView()); await p.waitForTimeout(400);
     const sousFiltres = await p.evaluate(() => {
-      const f = document.getElementById('filtres-actifs').getBoundingClientRect(), n = document.getElementById('sommaire').getBoundingClientRect();
-      return { filtres: !document.getElementById('filtres-actifs').hidden, fBas: Math.round(f.bottom), nHaut: Math.round(n.top) };
+      const f = document.querySelector('#filtres-actifs .filtres-ligne').getBoundingClientRect(), n = document.getElementById('sommaire').getBoundingClientRect();
+      return { filtres: !document.getElementById('filtres-actifs').hidden, fHaut: Math.round(f.top), nBas: Math.round(n.bottom), nHaut: Math.round(n.top),
+               place: Math.round(document.getElementById('filtres-actifs').getBoundingClientRect().height) };
     });
-    verifier('avec un filtre actif, le sommaire colle sous le bandeau des filtres, sans le recouvrir',
-      sousFiltres.filtres && Math.abs(sousFiltres.nHaut - sousFiltres.fBas) <= 1, JSON.stringify(sousFiltres));
+    verifier('avec un filtre actif, le sommaire colle en haut et la ligne des filtres juste dessous, sans le recouvrir ni prendre de place',
+      sousFiltres.filtres && sousFiltres.nHaut === 0 && Math.abs(sousFiltres.fHaut - sousFiltres.nBas) <= 1 && sousFiltres.place === 0, JSON.stringify(sousFiltres));
     await reinitialiser(p);
     // La dimension suit : « Par ECP » quand on groupe par ECP. Puis on remet celle d'avant.
     const autreDim = await p.evaluate(() => {
@@ -4855,8 +4869,15 @@ async function reinitialiser(pg) {
       cachee: document.getElementById('rapprochement').hidden,
       liens: [...document.querySelectorAll('#sommaire-liste li:not([hidden]) a')].map(a => a.dataset.chapitre)
     }));
-    verifier('sans seconde base affichée (concept harnais), le sommaire ne liste que les cinq panneaux présents',
-      sansSEE.cachee && sansSEE.liens.length === 5 && !sansSEE.liens.includes('rapprochement'), JSON.stringify(sansSEE));
+    /* Débrief 27 (lot H, P-F12) : l'entrée 06 ne disparaît plus sans un mot —
+       elle reste, grisée (aria-disabled), avec sa raison. */
+    const sansSEE27 = await p.evaluate(() => {
+      const a = document.querySelector('#sommaire-liste a[data-chapitre="rapprochement"]');
+      return { grisee: a.getAttribute('aria-disabled') === 'true' && a.parentNode.hasAttribute('data-absent'), raison: a.title };
+    });
+    verifier('sans seconde base affichée (concept harnais), l’entrée « Comparaison » reste au sommaire, grisée, avec sa raison ; les cinq autres mènent à leur panneau',
+      sansSEE.cachee && sansSEE.liens.length === 6 && sansSEE.liens[5] === 'rapprochement' && sansSEE27.grisee && /concept harnais/.test(sansSEE27.raison),
+      JSON.stringify([sansSEE, sansSEE27]));
     await p.click('#choix-indicateur button[data-indicateur="def"]'); await p.waitForTimeout(700);
     await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(300);
 
@@ -6641,13 +6662,18 @@ async function reinitialiser(pg) {
   await p.click('#echeance-titre'); await p.waitForTimeout(400);
   const ficheLoin = await p.evaluate(() => String((document.querySelector('#fiche-echeance .fiche-echeance-verdict') || {}).textContent).replace(/[\u00a0\u202f]/g, ' '));
   await p.click('#voir-ensemble'); await p.waitForTimeout(1500);
-  const ens20 = await p.evaluate(() => [...document.querySelectorAll('#ensemble tbody tr')].map(tr =>
-    [...tr.querySelectorAll('td')].pop().textContent.replace(/[\u00a0\u202f]/g, ' ')));
+  /* Débrief 27 (lot H, P-F18) : « Au rythme tenu » est coupée en deux
+     colonnes — « À l'échéance » (tenue, ou manque N) puis « Fin au rythme
+     actuel » (la semaine, et le périmètre du jalon). */
+  const ens20 = await p.evaluate(() => [...document.querySelectorAll('#ensemble tbody tr')].map(tr => {
+    const td = [...tr.querySelectorAll('td')].map(c => c.textContent.replace(/[\u00a0\u202f]/g, ' '));
+    return { echeance: td[td.length - 2], fin: td[td.length - 1] };
+  }));
   await p.click('#ensemble button[data-fermer-ensemble]'); await p.waitForTimeout(200);
   const finLoin = (ficheLoin.match(/la fin serait en (S\d+ · \S+ \d{4})/) || [])[1];
-  verifier('M — vue d’ensemble, échéance tenue : la fin écrite est celle de la fiche, sur le périmètre du jalon, qui est nommé',
-    !!finLoin && /^tenue/.test(ens20[0]) && ens20[0].indexOf('au rythme global de BASE/OPTION, la fin serait en ' + finLoin) !== -1, JSON.stringify([ficheLoin, ens20[0]]));
-  verifier('M — un contrat sans jalon garde la fin de tout le contrat', /^fin S\d+ · \S+ \d{4}$/.test(ens20[1]), ens20[1]);
+  verifier('M — vue d’ensemble, échéance tenue : « tenue » à l’échéance, et la fin écrite est celle de la fiche, sur le périmètre du jalon, qui est nommé',
+    !!finLoin && /^tenue/.test(ens20[0].echeance) && ens20[0].fin.indexOf(finLoin) === 0 && /pour BASE\/OPTION/.test(ens20[0].fin), JSON.stringify([ficheLoin, ens20[0]]));
+  verifier('M — un contrat sans jalon garde la fin de tout le contrat', /^S\d+ · \S+ \d{4}$/.test(ens20[1].fin) && ens20[1].echeance === '—', JSON.stringify(ens20[1]));
   await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
   await p.waitForTimeout(500);
   await reinitialiser(p);
@@ -7323,6 +7349,247 @@ async function reinitialiser(pg) {
       annonce.role === 'status' && annonce.live === 'polite' && annonce.texte === '12 plans affichés sur 634' && annonce.masque && annonce.copierParle === 0 && annonce.zones === 1,
       JSON.stringify(annonce));
     await c0.close();
+  }
+
+  // =================================================================
+  /* Débrief 27, lot H : l'en-tête, les réglages et leurs états — une seule
+     barre de réglages (le périmètre y monte), le surtitre du contrat et la
+     fraîcheur des chiffres, l'attente et l'erreur d'un changement de contrat
+     (rien ne s'écrit à côté du menu, un geste fait pendant l'attente n'est
+     pas perdu, « Réessayer »), la vue d'ensemble en fenêtre, le bandeau des
+     filtres qui ne pousse rien, les entrées et commandes absentes qui disent
+     pourquoi. */
+  section('Débrief 27 : en-tête, réglages, états (lot H)');
+  {
+    const cH = await contexte();
+    const h = await page(cH, 'lot H');
+    const barreH = await h.evaluate(() => {
+      const r = e => e.getBoundingClientRect();
+      const ent = document.querySelector('header#entete');
+      const vus = [...document.querySelectorAll('#portee .reglage')].filter(e => e.getClientRects().length);
+      const centres = vus.map(e => Math.round(r(e).top + r(e).height / 2));
+      const ens = document.getElementById('voir-ensemble'), aide = document.getElementById('ouvrir-aide'), adm = document.getElementById('choix-admin');
+      return {
+        banniere: !!ent && ent.contains(document.getElementById('reglages')) && ent.contains(document.getElementById('titre-page')) && !document.querySelector('header header'),
+        ordre: vus.map(e => e.id || e.classList[e.classList.length - 1]).join(','), uneLigne: Math.max(...centres) - Math.min(...centres) <= 2,
+        outilsAuDessus: r(document.getElementById('outils-page')).bottom <= r(document.getElementById('portee')).top,
+        ensemble: ens.tagName === 'BUTTON' && getComputedStyle(ens).textDecorationLine === 'none' && !!ens.querySelector('svg') && ens.getAttribute('aria-haspopup') === 'dialog',
+        aide: !!aide && aide.tagName === 'BUTTON' && /Aide/.test(aide.textContent),
+        admin: getComputedStyle(adm).visibility === 'hidden' && r(adm).width > 50 && adm.dataset.droits === 'attente',
+        etat: r(document.getElementById('etat-contrat')).width <= 1 && !document.getElementById('etat-contrat').hasAttribute('aria-live'),
+        noms: [...document.querySelectorAll('#choix-perimetre button')].map(b => b.textContent.replace(/\s+/g, ' ').trim())
+      };
+    });
+    verifier('B1 : une seule barre de réglages dans l’en-tête de la page (repère bannière, avec le titre) — Contrat, Avancement, Périmètre sur une ligne, dans cet ordre',
+      barreH.banniere && barreH.ordre === 'reglage-contrat,choix-avancement,perimetre' && barreH.uneLigne, JSON.stringify(barreH));
+    verifier('B1 : au-dessus, les outils — « Vue d’ensemble » est un bouton à icône (plus un lien souligné), « Aide » existe (#ouvrir-aide), la place d’« Administration » est gardée invisible tant que les droits ne sont pas lus',
+      barreH.outilsAuDessus && barreH.ensemble && barreH.aide && barreH.admin, JSON.stringify(barreH));
+    verifier('X-A13 : les boutons du périmètre se nomment « Tout 634 plans » (plus « Tout634 ») ; rien ne s’écrit à côté du menu du contrat (son état est masqué, sans aria-live)',
+      barreH.etat && barreH.noms.length === 3 && barreH.noms.every(n => /^\S.* \d[\d\s ]* plans?$/.test(n)), JSON.stringify(barreH.noms));
+
+    // Le surtitre du titre, et ce qui le fait changer.
+    const surtitre = () => h.evaluate(() => document.getElementById('contexte-page').textContent);
+    const s0 = await surtitre();
+    await h.click('#choix-indicateur button[data-indicateur="concept"]'); await h.waitForTimeout(600);
+    const s1 = await surtitre();
+    await h.click('#choix-indicateur button[data-indicateur="def"]'); await h.waitForTimeout(600);
+    await h.click('#choix-perimetre button[data-perimetre="PERSO"]'); await h.waitForTimeout(600);
+    const s2 = await surtitre();
+    const styleSurtitre = await h.evaluate(() => { const c = getComputedStyle(document.getElementById('contexte-page')); return [c.fontFamily.split(',')[0], c.fontSize, c.fontWeight, c.textTransform, c.letterSpacing].join('|'); });
+    verifier('B1 : au-dessus du titre, « HDK · Définition électrique » (Mono 11/500, capitales) — il suit l’avancement et le périmètre',
+      s0 === 'HDK · Définition électrique' && s1 === 'HDK · Concept harnais' && s2 === 'HDK · Définition électrique · Périmètre PERSO' &&
+      /Plex Mono/.test(styleSurtitre) && /\|11px\|500\|uppercase\|/.test(styleSurtitre), JSON.stringify([s0, s1, s2, styleSurtitre]));
+
+    // Le bandeau des filtres : posé par-dessus, rien ne bouge (P-F6).
+    await h.click('#choix-perimetre button[data-perimetre=""]'); await h.waitForTimeout(600);
+    await h.evaluate(() => window.scrollTo(0, 0)); await h.waitForTimeout(200);
+    const place = () => h.evaluate(() => {
+      const r = s => { const b = document.querySelector(s).getBoundingClientRect(); return [Math.round(b.top), Math.round(b.left)]; };
+      return { perso: r('#choix-perimetre button[data-perimetre="PERSO"]'), synthese: r('#section-synthese'), tendance: r('#section-tendance'),
+               hauteur: document.documentElement.scrollHeight, y: window.scrollY };
+    });
+    const avantF = await place();
+    await h.click('#choix-perimetre button[data-perimetre="PERSO"]'); await h.waitForTimeout(600);
+    const apresF = await place();
+    const ligneF = await h.evaluate(() => {
+      const f = document.getElementById('filtres-actifs'), l = f.querySelector('.filtres-ligne'), x = f.querySelector('button[data-retirer]');
+      return { visible: !f.hidden, place: Math.round(f.getBoundingClientRect().height), sousSommaire: Math.abs(l.getBoundingClientRect().top - document.getElementById('sommaire').getBoundingClientRect().bottom) <= 1,
+               nom: x && x.getAttribute('aria-label') };
+    });
+    verifier('P-F6 : un clic sur PERSO pose le bandeau des filtres sans rien pousser — le bouton reste sous le pointeur, la synthèse ne descend pas',
+      ligneF.visible && ligneF.place === 0 && ligneF.sousSommaire && Math.abs(apresF.perso[0] - avantF.perso[0]) <= 1 &&
+      apresF.synthese[0] === avantF.synthese[0] && apresF.tendance[0] === avantF.tendance[0], JSON.stringify([avantF, apresF, ligneF]));
+    verifier('X-A13 : la croix d’un jeton dit quel filtre elle retire', ligneF.nom === 'Retirer le filtre Périmètre : PERSO', ligneF.nom);
+    await h.focus('#filtres-actifs button[data-retirer="perimetre"]');
+    await h.keyboard.press('Enter'); await h.waitForTimeout(600);
+    const apresX = await h.evaluate(() => ({ cache: document.getElementById('filtres-actifs').hidden, focus: document.activeElement === document.body ? 'body' : document.activeElement.tagName + '#' + document.activeElement.id }));
+    verifier('X-A1 : retirer le dernier filtre au clavier ne jette pas le focus sur le corps de la page', apresX.cache && apresX.focus !== 'body', JSON.stringify(apresX));
+
+    // La fraîcheur des chiffres, sous la semaine (P-F10) ; en ambre au-delà de huit jours.
+    const fraicheur = await h.evaluate(() => {
+      const iso = d => d.toISOString().slice(0, 10);
+      const lire = () => { const z = document.getElementById('fraicheur'); return { texte: z.textContent, vieux: !!z.querySelector('.vieux'), couleur: z.querySelector('.vieux') ? getComputedStyle(z.querySelector('.vieux')).color : '' }; };
+      const jour = n => { const d = new Date(); d.setHours(12); d.setDate(d.getDate() - n); return iso(d); };
+      const s = window.__jeuDExemple('HDK'); s.releves[s.releves.length - 1].date = jour(2);
+      window.__chargerSource(s); const frais = lire();
+      const v = window.__jeuDExemple('HDK'); v.releves[v.releves.length - 1].date = jour(20);
+      window.__chargerSource(v); const vieux = lire();
+      const cours = getComputedStyle(document.documentElement).getPropertyValue('--cours').trim();
+      window.__chargerSource(window.__jeuDExemple('HDK'));
+      return { frais, vieux, cours };
+    });
+    verifier('P-F10 : sous la semaine, « Dernier relevé archivé : S… (vendredi …) » ; au-delà de huit jours, en ambre avec son âge',
+      /^Dernier relevé archivé : S\d+ \(\S+ \d+ \S+\)$/.test(fraicheur.frais.texte) && !fraicheur.frais.vieux &&
+      fraicheur.vieux.vieux && /il y a 20 jours/.test(fraicheur.vieux.texte) && !!fraicheur.vieux.couleur, JSON.stringify(fraicheur));
+
+    // La vue d'ensemble : une fenêtre (B18, P-F16, P-F18, X-A19).
+    await h.evaluate(() => window.scrollTo(0, 0)); await h.waitForTimeout(200);
+    await h.click('#voir-ensemble'); await h.waitForTimeout(900);
+    const fen = await h.evaluate(() => {
+      const d = document.getElementById('ensemble');
+      return { modal: d.tagName === 'DIALOG' && d.open && !d.hidden, focus: document.activeElement.id,
+               colonnes: [...d.querySelectorAll('thead th')].map(t => t.textContent).join('|'),
+               note: (d.querySelector('.ensemble-note') || {}).textContent || '', jauge: d.querySelectorAll('.jauge-ensemble i').length,
+               lignes: d.querySelectorAll('tbody tr').length, aria: document.getElementById('voir-ensemble').getAttribute('aria-expanded') };
+    });
+    verifier('B18 : « Vue d’ensemble » s’ouvre en fenêtre (dialog), le focus sur son titre, une jauge sous chaque « validés »',
+      fen.modal && fen.focus === 'ensemble-titre' && fen.lignes === 3 && fen.jauge === 3 && fen.aria === 'true', JSON.stringify(fen));
+    verifier('P-F18 : des colonnes claires — « À l’échéance » puis « Fin au rythme actuel » —, et « À l’arrêt » expliqué en clair sous le tableau',
+      fen.colonnes === 'Contrat|Validés|Depuis le relevé précédent|Rythme tenu|À l’arrêt|Prochaine échéance|À l’échéance|Fin au rythme actuel' &&
+      /À l’arrêt : plans en cours sans aucun changement depuis \d+ semaines/.test(fen.note), JSON.stringify(fen));
+    await h.keyboard.press('Escape'); await h.waitForTimeout(300);
+    const ferme = await h.evaluate(() => ({ ouverte: document.getElementById('ensemble').open, cache: document.getElementById('ensemble').hidden, focus: document.activeElement.id }));
+    await h.click('#voir-ensemble'); await h.waitForTimeout(700);
+    await h.mouse.click(6, 6); await h.waitForTimeout(300);
+    const dehors = await h.evaluate(() => !document.getElementById('ensemble').open && document.activeElement.id === 'voir-ensemble');
+    verifier('X-A19 : Échap ferme la fenêtre et rend le focus au bouton ; un clic à côté la ferme aussi',
+      !ferme.ouverte && ferme.cache && ferme.focus === 'voir-ensemble' && dehors, JSON.stringify([ferme, dehors]));
+
+    // Ce qui manque pour un contrat dit pourquoi (P-F12).
+    await h.click('#choix-indicateur button[data-indicateur="concept"]'); await h.waitForTimeout(700);
+    await h.click('#sommaire-liste a[data-chapitre="rapprochement"]', { force: true }); await h.waitForTimeout(300);
+    const absente = await h.evaluate(() => {
+      const a = document.querySelector('#sommaire-liste a[data-chapitre="rapprochement"]'), b = document.getElementById('raison-indispo');
+      return { li: !a.parentNode.hidden && a.parentNode.hasAttribute('data-absent'), aria: a.getAttribute('aria-disabled'), couleur: getComputedStyle(a).color,
+               bulle: b && !b.hidden ? b.textContent : '', y: window.scrollY };
+    });
+    await h.keyboard.press('Escape'); await h.waitForTimeout(100);
+    const bulleFermee = await h.evaluate(() => document.getElementById('raison-indispo').hidden);
+    verifier('P-F12 : sous le concept harnais, « 06 Comparaison » reste au sommaire, grisée ; un clic dit pourquoi (dans une bulle, sans bouger la page), Échap la ferme',
+      absente.li && absente.aria === 'true' && /concept harnais/.test(absente.bulle) && absente.y === 0 && bulleFermee, JSON.stringify([absente, bulleFermee]));
+    await h.click('#choix-indicateur button[data-indicateur="def"]'); await h.waitForTimeout(700);
+    await h.selectOption('#select-contrat', 'THS'); await h.waitForTimeout(1000);
+    await h.click('.commandes-graphe button[data-span="jalons"]', { force: true }); await h.waitForTimeout(300);
+    const echH = await h.evaluate(() => {
+      const b = document.querySelector('.commandes-graphe button[data-span="jalons"]'), r = document.getElementById('raison-indispo');
+      return { visible: !b.hidden && b.getClientRects().length > 0, aria: b.getAttribute('aria-disabled'), titre: b.title, bulle: r && !r.hidden ? r.textContent : '',
+               presses: [...document.querySelectorAll('.commandes-graphe .segmente button[aria-pressed="true"]')].map(x => x.dataset.span).join() };
+    });
+    verifier('P-F12 : sur THS (aucun jalon), « Échéances » reste à sa place, grisé ; un clic dit « Aucun jalon pour THS » sans changer le cadrage',
+      echH.visible && echH.aria === 'true' && /^Aucun jalon pour THS/.test(echH.titre) && echH.bulle === echH.titre && echH.presses === '26', JSON.stringify(echH));
+    await h.selectOption('#select-contrat', 'HDK'); await h.waitForTimeout(1000);
+
+    // Des tranches : « HDK › Tranche 1 », et la barre ne glisse pas vers THS (B7).
+    const tranches = await h.evaluate(() => {
+      const liste = [{ id: 'HDK', nom: 'HDK', contrat: 'HDK', tranche: '' }, { id: 'HDK Tranche 2', nom: 'HDK › Tranche 2', contrat: 'HDK', tranche: 'Tranche 2' }, { id: 'THS', nom: 'THS', contrat: 'THS', tranche: '' }];
+      const a = window.__jeuDExemple('HDK'); a.contrats = liste; a.contrat = 'HDK';
+      window.__chargerSource(a);
+      const x = () => Math.round(document.getElementById('select-contrat').getBoundingClientRect().left);
+      const r1 = { contexte: document.getElementById('contexte-page').textContent, tranches: [...document.querySelectorAll('#select-tranche option')].map(o => o.textContent).join(','),
+                   menu: !document.getElementById('select-tranche').hidden, x: x() };
+      const t = window.__jeuDExemple('THS'); t.contrats = liste; t.contrat = 'THS';
+      window.__chargerSource(t);
+      const r2 = { contexte: document.getElementById('contexte-page').textContent, menu: !document.getElementById('select-tranche').hidden,
+                   unique: !document.getElementById('tranche-unique').hidden && document.getElementById('tranche-unique').getClientRects().length > 0, x: x() };
+      window.__chargerSource(a);
+      window.scrollTo(0, 1500);
+      return { r1, r2 };
+    });
+    await h.waitForTimeout(400);
+    const marque = await h.evaluate(() => document.getElementById('sommaire-contrat').textContent);
+    verifier('A-F10 : « HDK › Tranche 1 » — le surtitre dit « HDK · Tranche 1 · … », la marque du sommaire collé « HDK › Tranche 1 »',
+      tranches.r1.contexte === 'HDK · Tranche 1 · Définition électrique' && tranches.r1.tranches === 'Tranche 1,Tranche 2' && marque === 'HDK › Tranche 1', JSON.stringify([tranches.r1, marque]));
+    verifier('B7 : vers THS (une seule tranche), la case « Tranche » garde sa place (« unique ») — le menu du contrat ne glisse pas sous le pointeur',
+      tranches.r1.menu && !tranches.r2.menu && tranches.r2.unique && Math.abs(tranches.r2.x - tranches.r1.x) <= 1 && tranches.r2.contexte === 'THS · Définition électrique', JSON.stringify(tranches));
+    await h.evaluate(() => { window.__chargerSource(window.__jeuDExemple('HDK')); window.scrollTo(0, 0); });
+    await cH.close();
+
+    // Un classeur lent, puis en panne : l'attente et l'erreur d'un changement de contrat (D8, A-F4, A-F5, X-A4).
+    const cL = await contexte();
+    await cL.addInitScript(() => {
+      window.__lenteur = 900; window.__panne = '';
+      window.SUIVI_FWD_API = { chargerContrat: function (id, rappel) {
+        setTimeout(function () { if (window.__panne) rappel(null, window.__panne); else rappel(window.__jeuDExemple(id)); }, window.__lenteur);
+      } };
+    });
+    const l = await page(cL, 'lot H lent');
+    const lireL = () => l.evaluate(() => ({
+      sel: document.getElementById('select-contrat').value, grise: document.getElementById('select-contrat').disabled,
+      barre: !document.getElementById('barre-chargement').hidden, attente: document.body.getAttribute('data-attente'),
+      occupe: [...document.querySelectorAll('.page > section')].some(sec => sec.getAttribute('aria-busy') === 'true'),
+      concept: (document.querySelector('#choix-indicateur button[aria-pressed="true"]') || {}).dataset.indicateur,
+      ind: window.__indicateur().indicateur, contexte: document.getElementById('contexte-page').textContent,
+      x: Math.round(document.getElementById('select-contrat').getBoundingClientRect().left),
+      alerte: document.getElementById('alerte-contrat').hidden ? '' : document.getElementById('alerte-contrat-texte').textContent,
+      role: document.getElementById('alerte-contrat').getAttribute('role'), focus: document.activeElement.id
+    }));
+    const l0 = await lireL();
+    await l.focus('#select-contrat');
+    await l.selectOption('#select-contrat', 'THS'); await l.waitForTimeout(250);
+    const l1 = await lireL();
+    verifier('D8 / A-F14 : pendant l’attente, rien ne bouge dans la barre ; le menu garde THS, reste à portée (focus compris) ; un trait en haut de l’écran, la page d’avant voilée et aria-busy',
+      l1.sel === 'THS' && !l1.grise && l1.barre && l1.attente === 'contrat' && l1.occupe && l1.x === l0.x && l1.focus === 'select-contrat' && l1.contexte === l0.contexte,
+      JSON.stringify([l0, l1]));
+    await l.click('#choix-indicateur button[data-indicateur="concept"]'); await l.waitForTimeout(150);
+    const l2 = await lireL();
+    await l.waitForTimeout(1600);
+    const l3 = await lireL();
+    verifier('A-F4 : « Concept harnais » cliqué pendant l’attente est gardé (pressé tout de suite) et appliqué à l’arrivée — le menu ne revient jamais à HDK',
+      l2.sel === 'THS' && l2.concept === 'concept' && l2.ind === 'def' && l3.sel === 'THS' && l3.ind === 'concept' && !l3.barre && !l3.occupe &&
+      l3.contexte === 'THS · Concept harnais', JSON.stringify([l2, l3]));
+    /* La panne, et une horloge avancée d'une minute : la demande faite
+       d'avance à l'ouverture du menu (débrief 23) n'est plus bonne, la page
+       redemande au classeur — qui ne répond pas. */
+    await l.evaluate(() => { window.__panne = 'Service indisponible'; const vrai = Date.now; Date.now = () => vrai() + 60000; });
+    await l.selectOption('#select-contrat', 'VRK'); await l.waitForTimeout(2000);
+    const l4 = await lireL();
+    verifier('A-F5 : en panne, un bandeau d’alerte dit ce qui a échoué et ce qu’on voit encore, avec « Réessayer » ; le menu revient au contrat affiché',
+      l4.role === 'alert' && /^VRK n’a pas pu être chargé : Service indisponible\. La page montre toujours THS\.$/.test(l4.alerte) && l4.sel === 'THS' && !l4.barre && !l4.attente,
+      JSON.stringify(l4));
+    await l.evaluate(() => { window.__panne = ''; });
+    await l.click('#reessayer-contrat'); await l.waitForTimeout(2000);
+    const l5 = await lireL();
+    verifier('A-F5 : « Réessayer » relance la même demande ; à l’arrivée le bandeau s’efface et le focus est sur le menu',
+      l5.sel === 'VRK' && /^VRK · /.test(l5.contexte) && l5.alerte === '' && l5.focus === 'select-contrat', JSON.stringify(l5));
+    // Au clavier : les flèches sur le menu fermé ne chargent qu'après une pause (X-A4).
+    await l.focus('#select-contrat');
+    await l.keyboard.press('ArrowUp'); await l.waitForTimeout(250);
+    const k1 = await lireL();
+    await l.waitForTimeout(2200);
+    const k2 = await lireL();
+    verifier('X-A4 : une flèche sur le menu fermé ne charge pas tout de suite (600 ms de pause) ; puis le contrat arrive et le focus reste sur le menu',
+      k1.sel !== 'VRK' && !k1.attente && /^VRK · /.test(k1.contexte) && k2.sel === k1.sel && new RegExp('^' + k1.sel + ' · ').test(k2.contexte) && k2.focus === 'select-contrat',
+      JSON.stringify([k1, k2]));
+    await cL.close();
+
+    // Au téléphone : la grille compacte et le bandeau des filtres sur une ligne (M5).
+    const cT = await contexte({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const t = await page(cT, 'lot H téléphone');
+    await t.tap('#choix-perimetre button[data-perimetre="PERSO"]'); await t.waitForTimeout(700);
+    await t.evaluate(() => { const b = document.querySelector('#etats .etat-btn[data-etat]'); if (b) b.click(); }); await t.waitForTimeout(700);
+    const tel = await t.evaluate(() => {
+      const r = e => e.getBoundingClientRect();
+      const jetons = [...document.querySelectorAll('.filtres-ligne .jeton')], zone = document.getElementById('filtres-jetons');
+      const effacer = document.getElementById('tout-effacer');
+      return { large: document.documentElement.scrollWidth <= window.innerWidth,
+               uneLigne: jetons.length === 2 && new Set(jetons.map(j => Math.round(r(j).top))).size === 1 && r(document.querySelector('.filtres-ligne')).height <= 56,
+               effacer: effacer.innerText.trim(), dedans: r(jetons[0]).right <= r(zone).right + 1,
+               mot: getComputedStyle(document.querySelector('.filtres-ligne .mot')).display,
+               contrat: Math.round(r(document.getElementById('select-contrat')).width), barre: Math.round(r(document.getElementById('portee')).width) };
+    });
+    verifier('M5 : au téléphone, le bandeau des filtres tient sur une ligne (jetons qui défilent, « Effacer » au bout), sans faire déborder la page',
+      tel.large && tel.uneLigne && tel.effacer === 'Effacer' && tel.dedans && tel.mot === 'none', JSON.stringify(tel));
+    await cT.close();
   }
 
   await ctx.close();
