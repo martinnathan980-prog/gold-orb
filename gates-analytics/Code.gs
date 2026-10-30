@@ -47,7 +47,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = 'aaa65ee';
+const EDITION = '0a803d1';
 
 // =====================================================================
 //  CONFIGURATION
