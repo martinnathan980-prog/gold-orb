@@ -70,7 +70,7 @@
 <script>
   /* La livraison de ce fichier, posée par la construction : la page la compare
      à celles de Code, Styles et Javascript, et nomme celui qui diffère. */
-  window.SUIVI_FWD_LIVRAISON_INDEX = 'cc55ffe';
+  window.SUIVI_FWD_LIVRAISON_INDEX = '499a4e4';
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
@@ -316,18 +316,29 @@
        laisse pas de trou dans la suite. -->
   <!-- Débrief 21 : chaque panneau ouvre sur sa tête teintée (panneau-tete),
        qui porte le surtitre et le titre ; le contenu suit, sur le blanc. -->
-  <section class="avancement panneau teinte-une" id="section-synthese" aria-labelledby="surtitre-synthese">
+  <!-- Débrief 27 (X-A10) : la région s'appelle « Synthèse » (le numéro du
+       surtitre, posé par la feuille de style, se lisait « · SYNTHÈSE ») et
+       la phrase de tête en est le vrai titre, un h2. -->
+  <section class="avancement panneau teinte-une" id="section-synthese" aria-label="Synthèse">
     <div class="panneau-tete">
       <p class="surtitre" id="surtitre-synthese">Synthèse</p>
       <!-- Débrief 27 (lot H, P-F5) : le périmètre est monté dans la barre
            des réglages, avec le contrat et l'avancement : il porte sur toute
            la page, pas sur ce seul panneau. -->
       <div class="avancement-ligne">
-        <div class="phrase" id="phrase">Chargement…</div>
+        <h2 class="phrase" id="phrase">Chargement…</h2>
       </div>
+      <!-- Débrief 27 (P-F2) : sous la phrase, le verdict de la prochaine
+           échéance, en mots — bon ou mauvais, et pourquoi ; puis ce qui est
+           à vérifier (reculs du dernier relevé, validés absents de SEE),
+           chacun menant à sa liste. -->
+      <p class="verdict-synthese" id="verdict-synthese" hidden></p>
+      <p class="signaux-synthese" id="signaux-synthese" hidden></p>
     </div>
     <div class="alerte-valeurs" id="alerte-valeurs" role="status" hidden></div>
-    <div class="barre" id="barre" role="img" aria-label="Répartition de l'avancement suivi"></div>
+    <!-- Débrief 27 (X-A7) : la barre ne se lit pas aux lecteurs d'écran — les tuiles, juste
+         dessous, portent les mêmes nombres, en mots (avant : une image sans valeurs). -->
+    <div class="barre" id="barre" aria-hidden="true"></div>
     <div class="filets" id="filets" aria-hidden="true"></div>
     <div class="etats" id="etats" role="group" aria-label="Filtrer par valeur de l'avancement suivi"></div>
     <!-- À surveiller : les plans en cours qui n'ont pas bougé depuis des
@@ -357,14 +368,32 @@
     <!-- La valeur que suit la courbe (débrief 18) : les validés par défaut,
          ou une autre valeur de la colonne, relevé après relevé — seulement
          celles que les relevés portent (débrief 19). Rien n'en est mémorisé. -->
-    <div class="ligne-filtres filtre-journal rangee-valeurs" id="filtre-valeur-graphe" role="group" aria-label="Valeur suivie par la courbe" hidden></div>
+    <div class="ligne-filtres filtre-journal rangee-valeurs" id="filtre-valeur-graphe" role="group" aria-label="Courbe : valeur suivie par le graphique" hidden></div>
     <div class="feuille">
-      <div class="cadre-graphe" id="cadre-graphe">
+      <!-- Débrief 27 (X-A7, D9) : le graphique se parcourt au clavier — le
+           cadre prend le focus, les flèches passent d'une semaine à l'autre
+           et la page dit la semaine (annoncer) — ; sa phrase-résumé est
+           dans #resume-graphe. Deux repères posés par-dessus, sans rien
+           pousser : l'indice du zoom (Ctrl + molette) et le retour au
+           cadrage après un glissement. role="application" : un lecteur
+           d'écran laisse alors les flèches au graphique. -->
+      <div class="cadre-graphe" id="cadre-graphe" tabindex="0" role="application" aria-roledescription="graphique" aria-describedby="resume-graphe"
+           aria-label="Avancement dans le temps : flèches gauche et droite pour passer d’un relevé à l’autre">
         <div id="zone-graphe"></div>
+        <div class="indice-zoom" id="indice-zoom" aria-hidden="true" hidden></div>
+        <button type="button" class="revenir-cadrage" id="revenir-cadrage" hidden><span aria-hidden="true">↺</span> Revenir aux échéances</button>
       </div>
+      <p class="masque" id="resume-graphe"></p>
       <p class="note-graphe" id="note-graphe"></p>
       <div class="legende" id="legende"></div>
       <div class="legende-jalons" id="legende-jalons"></div>
+      <!-- Débrief 27 (X-A7) : les chiffres de la courbe, en tableau, pour
+           qui ne voit pas le dessin — et pour les copier. Rempli à
+           l'ouverture seulement. -->
+      <details class="donnees-graphe" id="donnees-graphe">
+        <summary>Voir les chiffres</summary>
+        <div class="donnees-graphe-corps" id="donnees-graphe-corps"></div>
+      </details>
     </div>
   </section>
 
@@ -626,7 +655,11 @@
   </footer>
 </div>
 
-<div class="bulle" id="bulle" role="status" aria-live="polite"></div>
+<!-- Débrief 27 (X-A5, X-A7) : la bulle ne parle plus d'elle-même — au survol, elle se lisait
+     d'un trait (« Relevé de S41 · oct. 2026validés40 / 635… ») ; ce qu'elle dit se trouve au
+     clavier (le cadre du graphique l'annonce), dans « Voir les chiffres » et dans les lignes
+     de la comparaison. Tenue au doigt, elle porte une croix pour la fermer. -->
+<div class="bulle" id="bulle" aria-hidden="true"></div>
 <!-- Débrief 27 : la seule zone d'annonce de la page (voir annoncer()) :
      les lecteurs d'écran y entendent les changements de résultat. -->
 <div class="masque" id="annonce" role="status" aria-live="polite" aria-atomic="true"></div>

@@ -104,6 +104,14 @@
      plans — --creux (#faf9f6) ne se voyait pas sur le blanc. --encre-3 y
      tient 4,6:1 (4,8:1 en sombre). */
   --survol-ligne: #f3f1eb;
+  /* Débrief 27 (B3, X-A12) : les traits d'échelle du graphique, plus doux
+     que le filet ; les barres des validés par semaine, 3,3:1 sur la surface
+     (le --r4 d'avant, #86b8a0, faisait 2,2:1). */
+  --grille: #efede8;
+  --barre-semaine: #5f9a7d;
+  /* Le liseré sous une courbe trop claire pour 3:1 (le même rôle que
+     --lisere-donnee sous les pastilles) ; sans objet en sombre. */
+  --lisere-courbe: rgba(25, 25, 21, .5);
 
   /* Les panneaux des sections (débrief 20) : chaque section est une feuille
      posée sur le papier, bordée d'un filet et d'une ombre à peine marquée.
@@ -208,6 +216,8 @@
     --alerte-fond: #2b1f14;
     --succes-fond: #16231a;
     --survol-ligne: #232321;
+    --grille: #212124; --barre-semaine: #4f8a68;   /* débrief 27 : barres 4,4:1 sur la surface */
+    --lisere-courbe: transparent;
   }
 }
 :root[data-theme="dark"] {
@@ -271,6 +281,8 @@
   --alerte-fond: #2b1f14;
   --succes-fond: #16231a;
   --survol-ligne: #232321;
+  --grille: #212124; --barre-semaine: #4f8a68;   /* débrief 27 : barres 4,4:1 sur la surface */
+  --lisere-courbe: transparent;
 }
 
 /* Les contrôles du navigateur — la liste d'un menu déroulant, les barres de
@@ -409,6 +421,35 @@ body {
 .alerte-valeurs p + p { margin-top: 6px; }
 .alerte-valeurs code { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
 .phrase b { font-weight: 500; }
+/* Débrief 27 (P-F2, X-A8) : le verdict de la prochaine échéance, sous la
+   phrase — un point de couleur, la conséquence en rouge (manquée) ou en
+   vert (tenue), le reste au gris secondaire ; les nombres en chiffres
+   alignés. Puis « À vérifier », des liens vers les listes. */
+.verdict-synthese, .signaux-synthese { margin: 6px 0 0; font-size: 13px; line-height: 1.55; color: var(--encre-2); font-variant-numeric: tabular-nums; }
+.verdict-synthese[hidden], .signaux-synthese[hidden] { display: none; }
+.verdict-synthese { position: relative; padding-left: 16px; }
+.verdict-synthese b { color: var(--encre); font-weight: 500; }
+.verdict-point { position: absolute; left: 0; top: calc(.775em - 4px); width: 8px; height: 8px; border-radius: 50%; background: var(--encre-3); }
+.verdict-synthese.mal .verdict-point { background: var(--alerte); }
+.verdict-synthese.bon .verdict-point { background: var(--fait); }
+.verdict-synthese.mal .verdict-suite { color: var(--alerte); font-weight: 500; }
+.verdict-synthese.bon .verdict-suite { color: var(--fait); font-weight: 500; }
+.verdict-synthese .verdict-detail { margin-left: 2px; padding: 0; }
+.signaux-synthese { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding-left: 16px; }
+.signaux-synthese .mot-signaux { color: var(--encre-2); }
+.signaux-synthese .sep { color: var(--encre-3); }
+.lien-signal {
+  border: none; background: none; padding: 0; font: inherit; color: var(--encre-2); cursor: pointer; text-align: left;
+  text-decoration: underline dotted var(--trait-donnee); text-underline-offset: 4px;
+}
+.lien-signal b { color: var(--encre); font-weight: 500; }
+.lien-signal.recul b { color: var(--alerte); }
+.lien-signal .pastille { display: inline-block; vertical-align: -1px; margin-right: 5px; }
+.lien-signal:hover { color: var(--encre); text-decoration-color: currentColor; }
+@media (pointer: coarse) {
+  .verdict-synthese .verdict-detail, .lien-signal { position: relative; }
+  .verdict-synthese .verdict-detail::after, .lien-signal::after { content: ""; position: absolute; inset: -12px -6px; }
+}
 
 .barre { display: flex; gap: 2px; height: 26px; margin-bottom: 0; }
 /* Une sélection sans plan : la barre garde sa hauteur, une piste fine et
@@ -577,6 +618,21 @@ body {
 }
 @keyframes barre-chargement { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
 @media (prefers-reduced-motion: reduce) { .barre-chargement::before { animation: none; width: 100%; opacity: .6; } }
+/* Débrief 27 (B23) : une tuile pressée garde la répartition — les autres
+   segments pâlissent à 35 % ; dans les autres tuiles, la pastille pâlit et
+   le texte passe au gris tertiaire (4,5:1 : ce sont toujours des boutons,
+   un texte à 35 % ne se lirait plus). Le survol et le focus les rallument. */
+.barre.avec-choix span:not(.choisi) { opacity: .35; }
+.etats.avec-choix .etat-btn:not([aria-pressed="true"]) .pastille { opacity: .35; }
+.etats.avec-choix .etat-btn:not([aria-pressed="true"]) .etat-haut,
+.etats.avec-choix .etat-btn:not([aria-pressed="true"]) .etat-n { color: var(--encre-3); }
+.etats.avec-choix .etat-btn:not([aria-pressed="true"]):hover .pastille,
+.etats.avec-choix .etat-btn:not([aria-pressed="true"]):focus-visible .pastille,
+.etats.avec-choix .etat-btn.eclaire .pastille { opacity: 1; }
+.etats.avec-choix .etat-btn:not([aria-pressed="true"]):hover .etat-n,
+.etats.avec-choix .etat-btn:not([aria-pressed="true"]):focus-visible .etat-n,
+.etats.avec-choix .etat-btn.eclaire .etat-n { color: var(--encre); }
+.phrase .phrase-part { color: var(--encre-2); white-space: nowrap; }
 .barre.focalise span { opacity: .3; transition: opacity .15s; }
 .barre.focalise span.eclaire { opacity: 1; box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--encre); position: relative; z-index: 1; }
 @media (prefers-reduced-motion: reduce) { .barre.focalise span, .etats.en-legende .etat-btn { transition: none; } }
@@ -832,6 +888,8 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 }
 .filtre-journal button:hover .n, .filtre-journal button[aria-pressed="true"] .n { color: var(--encre-2); }
 .rangee-valeurs { display: flex; }
+/* Débrief 27 (P-F19) : le nom d'une rangée de pilules (« Courbe : »). */
+.rangee-valeurs .mot-rangee { flex: none; align-self: center; padding: 0 6px 0 2px; font-size: 13px; color: var(--encre-2); white-space: nowrap; }
 .journal-semaine {
   border-bottom: 1px solid var(--filet);
 }
@@ -1324,18 +1382,50 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
    et le nombre du jour s'écrivaient en gris. Et les semaines à venir de
    l'axe, pâlies, restent lisibles (4,5:1). */
 .grad.manque-jalon { fill: var(--alerte); }
+.grad.requis-mot.mal { fill: var(--alerte); }
+.grad.requis-mot.bon { fill: var(--fait); }
 .grad.nombre-point { fill: var(--encre); }
 svg.graphe text.grad[opacity] { opacity: .95; }
 .cadre-graphe {
   cursor: grab;
   user-select: none; -webkit-user-select: none;
-  touch-action: none;             /* sinon le navigateur prend le geste pour un defilement */
+  /* Débrief 27 (M2) : le pouce qui descend fait défiler la page (le
+     navigateur garde les gestes verticaux) ; seul un glissement horizontal
+     déplace la courbe. touch-action: none bloquait la page sur 30 à 83 %
+     de l'écran d'un téléphone. */
+  touch-action: pan-y;
+  border-radius: 6px;
 }
 .cadre-graphe[data-glisse="true"] { cursor: grabbing; }
+.cadre-graphe:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; }
 .cadre-graphe svg text { user-select: none; }
 .zone-clic { cursor: inherit; }
-/* Survoler une semaine l'éclaire d'une bande discrète, sous la bulle. */
-.zone-clic:hover { fill: var(--filet); fill-opacity: .55; }
+/* Survoler une semaine l'éclaire d'une bande discrète, sous la bulle ; la
+   semaine montrée au doigt ou au clavier aussi (.marquee). */
+.zone-clic:hover, .zone-clic.marquee { fill: var(--encre); fill-opacity: .05; }   /* débrief 27 : un voile léger, la courbe reste lisible dessous (le filet à 55 % la pâlissait) */
+/* Débrief 27 (P-F1) : « Ctrl + molette pour zoomer », une fois par
+   visite, au milieu du graphique, par-dessus — rien ne bouge. */
+.indice-zoom {
+  position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 2; pointer-events: none;
+  padding: 7px 14px; border-radius: 999px; background: var(--releve); border: 1px solid var(--releve-bord);
+  box-shadow: var(--flottant-ombre); color: var(--encre); font-size: 13px; white-space: nowrap;
+  opacity: 0; transition: opacity .25s;
+}
+.indice-zoom.visible { opacity: 1; }
+.indice-zoom[hidden] { display: none; }
+/* Débrief 27 (M11) : après un glissement ou un zoom à la main, le retour au
+   cadrage d'ouverture, en haut à gauche du graphique, par-dessus. */
+/* Sa place exacte, le coin haut gauche du tracé (le plus vide d'une
+   courbe qui monte), est posée par le script. */
+.revenir-cadrage {
+  position: absolute; left: 42px; top: 56px; z-index: 2; min-height: 28px; padding: 3px 12px; border-radius: 999px;
+  border: 1px solid var(--filet-fort); background: var(--surface); color: var(--encre); font: inherit; font-size: 13px; line-height: 20px;
+  cursor: pointer; box-shadow: var(--flottant-ombre);
+}
+.revenir-cadrage:hover { border-color: var(--encre-3); }
+.revenir-cadrage[hidden] { display: none; }
+@media (pointer: coarse) { .revenir-cadrage::after { content: ""; position: absolute; inset: -8px -2px; } }
+@media (prefers-reduced-motion: reduce) { .indice-zoom { transition: none; } }
 .annee { font-size: 11px; fill: var(--encre-3); font-variant-numeric: tabular-nums; letter-spacing: .04em; }
 .jalon-texte {
   font-size: 12px; fill: var(--encre-2); font-weight: 500;
@@ -1343,7 +1433,15 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 }
 .jalon-texte.masque { display: none; }
 .jalon-num { font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; fill: var(--surface); pointer-events: none; }
-.jalon.survole line { stroke-width: 2; opacity: 1; }
+/* Débrief 27 (B3) : le trait d'un jalon — plein pour la prochaine
+   échéance, caché pour les autres, qui paraît léger (35 %) au survol de son
+   numéro ou de son jalon dans la légende (clavier compris : focusin). */
+.jalon .jalon-trait { opacity: 0; transition: opacity .15s; }
+.jalon.prochain .jalon-trait { opacity: .8; }
+.jalon:hover .jalon-trait, .jalon.survole .jalon-trait { opacity: .35; stroke-width: 2; }
+.jalon.prochain:hover .jalon-trait, .jalon.prochain.survole .jalon-trait { opacity: 1; stroke-width: 2; }
+.jalon.survole .jalon-lien, .jalon.survole .jalon-coche { stroke-width: 2; }
+@media (prefers-reduced-motion: reduce) { .jalon .jalon-trait { transition: none; } }
 .jalon.survole .jalon-marque { stroke: var(--encre); stroke-width: 2; }
 .jalon.survole .jalon-texte.masque { display: block; transform: translateY(26px); }   /* révélé sous la rangée des numéros, pas par-dessus les voisins */
 .jalon.critique .jalon-texte { fill: var(--alerte); }   /* l'échéance manquée : rouge sur le graphique comme dans la légende */
@@ -1371,9 +1469,23 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 /* Hors du périmètre choisi : le numéro reste net (c'est le lien avec le
    graphique), seul le reste s'efface un peu. */
 .legende-jalon.hors-perimetre .num { background: var(--surface); color: var(--encre-2); box-shadow: inset 0 0 0 1.5px var(--encre-3); }
-.legende-jalon.hors-perimetre .mot, .legende-jalon.hors-perimetre .quand { opacity: .7; }
-/* Hors de la fenêtre affichée : dans la légende, mais nulle part sur le dessin. */
-.legende-jalon.hors-fenetre { opacity: .55; }
+/* Débrief 27 (X, contraste) : plus d'opacité sur le texte — elle faisait
+   tomber les dates à 3,5:1 ; le gris tertiaire (4,6:1 au moins) et
+   l'italique disent « en retrait ». */
+.legende-jalon.hors-perimetre .mot, .legende-jalon.hors-perimetre .quand { color: var(--encre-3); font-style: italic; }
+/* Hors de la fenêtre affichée : dans la légende, mais nulle part sur le
+   dessin — le numéro se creuse en pointillé, le texte passe au gris
+   tertiaire (il était à 55 % d'opacité, sous 4,5:1). */
+.legende-jalon.hors-fenetre .mot, .legende-jalon.hors-fenetre .quand { color: var(--encre-3); }
+.legende-jalon.hors-fenetre .num { background: var(--surface); color: var(--encre-2); box-shadow: none; border: 1.5px dashed var(--encre-3); }
+.legende-jalon .retard { color: var(--alerte); font-weight: 500; font-style: normal; }
+.legende-jalon.critique.hors-fenetre .num { background: var(--surface); color: var(--alerte); border-color: var(--alerte); }
+/* Débrief 27 (D8) : la Tendance sans courbe (moins de deux relevés) — l'état
+   vide à la place du dessin, et rien de ce qui n'agirait sur rien. */
+.graphe-vide #filtre-valeur-graphe, .graphe-vide .commandes-graphe, .graphe-vide #legende,
+.graphe-vide #note-graphe, .graphe-vide #donnees-graphe { display: none !important; }
+.graphe-vide .cadre-graphe { cursor: default; }
+.panneau.graphe-vide .feuille { border-top: 0; padding-top: 0; }
 .legende-jalon.critique .num { background: var(--alerte); }
 
 /* ---------------------------------------------------- Fiche d'une échéance */
@@ -1388,6 +1500,7 @@ svg.graphe text.grad[opacity] { opacity: .95; }
   display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%;
   background: var(--encre-2); color: var(--surface); font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums;
 }
+.fiche-echeance-tete .num.critique { background: var(--alerte); }
 .fiche-echeance-tete h3 { margin: 0; font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 20px; line-height: 1.2; }
 .fiche-echeance-tete .quand { color: var(--encre-2); }
 .fiche-echeance-fermer {
@@ -1449,6 +1562,11 @@ svg.graphe text.grad[opacity] { opacity: .95; }
    texte : au téléphone, où la puce passe sur deux lignes, il ouvrait la
    seconde, seul en tête (relecture du débrief 20). */
 .echeance-titre .portee::before { content: "\00b7\00a0"; }
+/* Débrief 27 (P-F2, X-A8) : le verdict en mots dans la puce. */
+.echeance-titre .verdict-mot { font-weight: 500; }
+.echeance-titre .verdict-mot::before { content: "\00b7\00a0"; color: var(--encre-3); font-weight: 400; }
+.echeance-titre .verdict-mot.mal { color: var(--alerte); }
+.echeance-titre .verdict-mot.bon { color: var(--fait); }
 @media (max-width: 480px) {
   /* Au téléphone, deux lignes nettes : l'échéance, puis le groupe et les
      jours, alignés sous « Prochaine échéance » — le point se pose dans la
@@ -1458,7 +1576,7 @@ svg.graphe text.grad[opacity] { opacity: .95; }
   .echeance-titre > b { white-space: normal; overflow-wrap: anywhere; min-width: 0; }
   .echeance-titre .point { position: absolute; left: 11px; top: 12px; }
   .echeance-titre::before { content: ""; order: 1; flex-basis: 100%; height: 0; }
-  .echeance-titre .portee, .echeance-titre .jours { order: 2; }
+  .echeance-titre .portee, .echeance-titre .jours, .echeance-titre .verdict-mot { order: 2; }
   .echeance-titre .portee::before { content: none; }
 }
 
@@ -1487,7 +1605,7 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 /* Un jalon d'un autre périmètre que celui choisi : dessiné, mais en retrait —
    il ne fait pas l'échéance ici. Le marqueur se creuse et garde son numéro
    lisible ; le trait et le texte s'estompent. */
-.jalon.hors-perimetre line { opacity: .35; }
+.jalon.hors-perimetre .jalon-lien, .jalon.hors-perimetre .jalon-coche { opacity: .35; }
 .jalon.hors-perimetre .jalon-marque { fill: var(--surface); stroke: var(--encre-3); stroke-width: 1.5; }
 .jalon.hors-perimetre .jalon-num { fill: var(--encre-2); }
 .jalon.hors-perimetre .jalon-texte { fill: var(--encre-3); }
@@ -1768,6 +1886,43 @@ table.plans tbody tr.ancien .pastille { opacity: .4; }
 }
 .legende-item { display: inline-flex; align-items: center; gap: 7px; min-width: 0; overflow-wrap: anywhere; }
 .legende-item span { border-bottom: 1px dotted var(--filet-fort); cursor: help; }
+/* Débrief 27 (M3, D9) : le mot de la légende est un bouton — il déplie sa
+   phrase sous la légende (.legende-detail). */
+.legende-mot { border: 0; background: none; padding: 2px 0; margin: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; border-radius: 3px; }
+.legende-mot span { cursor: pointer; }
+.legende-mot:hover span, .legende-mot[aria-expanded="true"] span { color: var(--encre); border-bottom-color: currentColor; }
+.legende-mot[aria-expanded="true"] span { border-bottom-style: solid; }
+.legende-detail { flex: 1 1 100%; margin: 0; text-align: center; font-size: 13px; line-height: 1.5; color: var(--encre-2); font-variant-numeric: tabular-nums; }
+.legende-detail[hidden] { display: none; }
+@media (pointer: coarse) {
+  .legende-mot { position: relative; }
+  .legende-mot::after { content: ""; position: absolute; inset: -12px -4px; }
+}
+/* Débrief 27 (X-A7) : « Voir les chiffres » — les relevés de la courbe en
+   tableau, sous les jalons. Replié par défaut. */
+.donnees-graphe { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--filet); font-size: 13px; color: var(--encre-2); }
+.donnees-graphe > summary {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 28px; cursor: pointer; list-style: none;
+  color: var(--encre-2); border-radius: 4px;
+}
+.donnees-graphe > summary::-webkit-details-marker { display: none; }
+.donnees-graphe > summary::before {
+  content: ""; width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg); transition: transform .15s; margin-right: 2px;
+}
+.donnees-graphe[open] > summary::before { transform: rotate(45deg); }
+.donnees-graphe > summary:hover { color: var(--encre); }
+@media (prefers-reduced-motion: reduce) { .donnees-graphe > summary::before { transition: none; } }
+@media (pointer: coarse) { .donnees-graphe > summary { min-height: 44px; } }
+.donnees-graphe-corps { margin-top: 8px; overflow-x: auto; }
+.donnees-graphe-corps p { margin: 0 0 10px; max-width: 70ch; line-height: 1.55; }
+.table-donnees { border-collapse: collapse; font-variant-numeric: tabular-nums; min-width: 320px; }
+.table-donnees th, .table-donnees td { padding: 5px 16px 5px 0; text-align: right; white-space: nowrap; }
+.table-donnees th:first-child, .table-donnees td:first-child { text-align: left; }
+.table-donnees thead th { font-size: 12px; font-weight: 500; color: var(--encre-2); border-bottom: 1px solid var(--filet-fort); }
+.table-donnees tbody th { font-weight: 400; color: var(--encre-2); }
+.table-donnees td { color: var(--encre); }
+.table-donnees tbody tr + tr > * { border-top: 1px solid var(--filet); }
 
 .bulle {
   position: fixed; z-index: 40; pointer-events: none; background: var(--releve);
@@ -1776,6 +1931,17 @@ table.plans tbody tr.ancien .pastille { opacity: .4; }
   opacity: 0; transition: opacity .1s;
 }
 .bulle[data-visible="true"] { opacity: 1; }
+/* Débrief 27 (M3) : tenue au doigt, la bulle se touche (sa croix la ferme) ;
+   au téléphone, elle se pose en bas de l'écran, jamais sous le doigt. */
+.bulle.tenue { pointer-events: auto; padding-right: 34px; z-index: 50; }   /* au-dessus du bouton ↑ */
+.bulle.tenue[data-visible="false"] { pointer-events: none; }
+.bulle.en-bas { left: 12px; right: 12px; top: auto; bottom: 12px; font-size: 13px; padding: 12px 40px 12px 14px; }
+.bulle-fermer {
+  position: absolute; top: 4px; right: 4px; width: 28px; height: 28px; border-radius: 50%; padding: 0;
+  border: 1px solid var(--filet-fort); background: var(--surface); color: var(--encre-2); font: inherit; font-size: 16px; line-height: 1; cursor: pointer;
+}
+.bulle-fermer::after { content: ""; position: absolute; inset: -8px; }
+@media (prefers-reduced-motion: reduce) { .bulle { transition: none; } }
 .bulle .tete-bulle { color: var(--encre-3); font-size: 11px; margin-bottom: 5px; }
 /* Les comptes de la semaine, sous les deux lignes de tête : même dessin
    qu'elles — une pastille, un mot, un nombre à droite. */
@@ -3046,18 +3212,29 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        laisse pas de trou dans la suite. -->
   <!-- Débrief 21 : chaque panneau ouvre sur sa tête teintée (panneau-tete),
        qui porte le surtitre et le titre ; le contenu suit, sur le blanc. -->
-  <section class="avancement panneau teinte-une" id="section-synthese" aria-labelledby="surtitre-synthese">
+  <!-- Débrief 27 (X-A10) : la région s'appelle « Synthèse » (le numéro du
+       surtitre, posé par la feuille de style, se lisait « · SYNTHÈSE ») et
+       la phrase de tête en est le vrai titre, un h2. -->
+  <section class="avancement panneau teinte-une" id="section-synthese" aria-label="Synthèse">
     <div class="panneau-tete">
       <p class="surtitre" id="surtitre-synthese">Synthèse</p>
       <!-- Débrief 27 (lot H, P-F5) : le périmètre est monté dans la barre
            des réglages, avec le contrat et l'avancement : il porte sur toute
            la page, pas sur ce seul panneau. -->
       <div class="avancement-ligne">
-        <div class="phrase" id="phrase">Chargement…</div>
+        <h2 class="phrase" id="phrase">Chargement…</h2>
       </div>
+      <!-- Débrief 27 (P-F2) : sous la phrase, le verdict de la prochaine
+           échéance, en mots — bon ou mauvais, et pourquoi ; puis ce qui est
+           à vérifier (reculs du dernier relevé, validés absents de SEE),
+           chacun menant à sa liste. -->
+      <p class="verdict-synthese" id="verdict-synthese" hidden></p>
+      <p class="signaux-synthese" id="signaux-synthese" hidden></p>
     </div>
     <div class="alerte-valeurs" id="alerte-valeurs" role="status" hidden></div>
-    <div class="barre" id="barre" role="img" aria-label="Répartition de l'avancement suivi"></div>
+    <!-- Débrief 27 (X-A7) : la barre ne se lit pas aux lecteurs d'écran — les tuiles, juste
+         dessous, portent les mêmes nombres, en mots (avant : une image sans valeurs). -->
+    <div class="barre" id="barre" aria-hidden="true"></div>
     <div class="filets" id="filets" aria-hidden="true"></div>
     <div class="etats" id="etats" role="group" aria-label="Filtrer par valeur de l'avancement suivi"></div>
     <!-- À surveiller : les plans en cours qui n'ont pas bougé depuis des
@@ -3087,14 +3264,32 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     <!-- La valeur que suit la courbe (débrief 18) : les validés par défaut,
          ou une autre valeur de la colonne, relevé après relevé — seulement
          celles que les relevés portent (débrief 19). Rien n'en est mémorisé. -->
-    <div class="ligne-filtres filtre-journal rangee-valeurs" id="filtre-valeur-graphe" role="group" aria-label="Valeur suivie par la courbe" hidden></div>
+    <div class="ligne-filtres filtre-journal rangee-valeurs" id="filtre-valeur-graphe" role="group" aria-label="Courbe : valeur suivie par le graphique" hidden></div>
     <div class="feuille">
-      <div class="cadre-graphe" id="cadre-graphe">
+      <!-- Débrief 27 (X-A7, D9) : le graphique se parcourt au clavier — le
+           cadre prend le focus, les flèches passent d'une semaine à l'autre
+           et la page dit la semaine (annoncer) — ; sa phrase-résumé est
+           dans #resume-graphe. Deux repères posés par-dessus, sans rien
+           pousser : l'indice du zoom (Ctrl + molette) et le retour au
+           cadrage après un glissement. role="application" : un lecteur
+           d'écran laisse alors les flèches au graphique. -->
+      <div class="cadre-graphe" id="cadre-graphe" tabindex="0" role="application" aria-roledescription="graphique" aria-describedby="resume-graphe"
+           aria-label="Avancement dans le temps : flèches gauche et droite pour passer d’un relevé à l’autre">
         <div id="zone-graphe"></div>
+        <div class="indice-zoom" id="indice-zoom" aria-hidden="true" hidden></div>
+        <button type="button" class="revenir-cadrage" id="revenir-cadrage" hidden><span aria-hidden="true">↺</span> Revenir aux échéances</button>
       </div>
+      <p class="masque" id="resume-graphe"></p>
       <p class="note-graphe" id="note-graphe"></p>
       <div class="legende" id="legende"></div>
       <div class="legende-jalons" id="legende-jalons"></div>
+      <!-- Débrief 27 (X-A7) : les chiffres de la courbe, en tableau, pour
+           qui ne voit pas le dessin — et pour les copier. Rempli à
+           l'ouverture seulement. -->
+      <details class="donnees-graphe" id="donnees-graphe">
+        <summary>Voir les chiffres</summary>
+        <div class="donnees-graphe-corps" id="donnees-graphe-corps"></div>
+      </details>
     </div>
   </section>
 
@@ -3356,7 +3551,11 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   </footer>
 </div>
 
-<div class="bulle" id="bulle" role="status" aria-live="polite"></div>
+<!-- Débrief 27 (X-A5, X-A7) : la bulle ne parle plus d'elle-même — au survol, elle se lisait
+     d'un trait (« Relevé de S41 · oct. 2026validés40 / 635… ») ; ce qu'elle dit se trouve au
+     clavier (le cadre du graphique l'annonce), dans « Voir les chiffres » et dans les lignes
+     de la comparaison. Tenue au doigt, elle porte une croix pour la fermer. -->
+<div class="bulle" id="bulle" aria-hidden="true"></div>
 <!-- Débrief 27 : la seule zone d'annonce de la page (voir annoncer()) :
      les lecteurs d'écran y entendent les changements de résultat. -->
 <div class="masque" id="annonce" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -5175,22 +5374,29 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var b = bilanEcheance(j, gA);
     var passe = b.jours < 0;
     var dans = gA ? ' dans ' + nomGroupe(gA) + (b.domaine ? ' (' + b.domaine + ')' : '') : b.domaine ? ' dans ' + b.domaine : '';
-    /* Sans groupe, la fin est celle du rythme global, qui suppose que le
-       rythme des groupes finis passe aux autres : la phrase le dit, et
-       nomme le groupe qui, à son propre rythme, finirait plus tard. */
-    var fin = gA ? 'tout serait validé en ' + semaineDite(b.fin) : 'au rythme global, la fin serait en ' + semaineDite(b.fin);
+    /* Sans groupe, la fin est celle du rythme de tous les plans, qui
+       suppose que le rythme des groupes finis passe aux autres : la phrase
+       nomme le groupe qui, à son propre rythme, finirait plus tard.
+       Débrief 27 (P-F18) : en clair — « Au rythme tenu (6,6/sem.), il
+       manquera 535 plans le mar. 15 déc. ; tout serait validé en S28 ·
+       juil. 2028, soit 82 semaines après l'échéance. » (« au rythme
+       global », à côté de « rythme tenu », faisait relire ; « 82 semaines
+       après » ne disait pas après quoi.) */
+    var fin = 'tout serait ' + motFini(1) + ' en ' + semaineDite(b.fin);
     var dernier = gA ? '' : motDernierGroupe(b.fin, b.domaine, vue.dimCritique, (b.domaine || '') !== (vue.perimetre || ''));
     var dansG = gA ? dans : '';
+    var dEch = dateEcheance(j);
+    var leJour = 'le ' + JOURS_COURTS[dEch.getUTCDay()] + '\u00a0' + dEch.getUTCDate() + '\u00a0' + MOIS_COURT[dEch.getUTCMonth()];
     var verdict;
     if (!b.total) verdict = { cls: 'mal', mot: 'Aucun plan' + (gA ? ' dans ' + nomGroupe(gA) : '') + (b.domaine ? ' dans le périmètre ' + b.domaine : '') + '.' };
-    else if (!b.restants) verdict = { cls: 'bon', mot: 'Tout est validé' + dans + '.' };
+    else if (!b.restants) verdict = { cls: 'bon', mot: 'Tout est ' + motFini(1) + dans + '.' };
     else if (passe) verdict = { cls: 'mal', mot: 'Échéance passée : ' + nb(b.restants) + (b.restants > 1 ? ' plans restent' : ' plan reste') + ' à valider' + dans + '.' };
     else if (b.rythme === null) verdict = { cls: 'mal', mot: 'Un seul relevé pour l’instant : il en faut deux pour mesurer un rythme.' };
-    else if (b.rythme <= 0) verdict = { cls: 'mal', mot: 'Aucun plan validé depuis le premier relevé' + dansG + ' : pas de rythme, donc pas de date d’arrivée.' };
-    else if (!b.enRetard) verdict = { cls: 'bon', mot: 'Au rythme tenu, l’échéance est tenue' + dansG + ' : ' + fin + dernier + '.' };
-    else verdict = { cls: 'mal', mot: 'Au rythme tenu, il manquerait ' + nb(b.manque) + (b.manque > 1 ? ' plans' : ' plan') +
-      dansG + ' le jour de l’échéance ; ' + fin + ', ' +
-      nb(b.fin - j.i) + (b.fin - j.i > 1 ? ' semaines' : ' semaine') + ' après' + dernier + '.' };
+    else if (b.rythme <= 0) verdict = { cls: 'mal', mot: 'Aucun plan ' + motFini(1) + ' depuis le premier relevé' + dansG + ' : pas de rythme, donc pas de date d’arrivée.' };
+    else if (!b.enRetard) verdict = { cls: 'bon', mot: 'Au rythme tenu (' + virgule(b.rythme) + '/sem.), l’échéance sera tenue' + dansG + ' : ' + fin + dernier + '.' };
+    else verdict = { cls: 'mal', mot: 'Au rythme tenu (' + virgule(b.rythme) + '/sem.), il manquera ' + nb(b.manque) + (b.manque > 1 ? ' plans' : ' plan') +
+      dansG + ' ' + leJour + ' ; ' + fin + ', soit ' +
+      nb(b.fin - j.i) + (b.fin - j.i > 1 ? ' semaines' : ' semaine') + ' après l’échéance' + dernier + '.' };
     var pct = b.total ? Math.round(100 * b.termines / b.total) : 0;
     var jours = Math.abs(b.jours);
     /* Sous quel périmètre se comptent ces plans : celui qu'on regarde, ou
@@ -5198,8 +5404,11 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        regarde, la fiche le dit. */
     var portee = (gA ? ' · ' + ech(nomGroupe(gA)) : '') +
       (b.domaine ? ' · ' + ech(b.domaine) + (!jalonDansPerimetre(j) ? ' (hors du périmètre choisi)' : '') : '');
+    /* Débrief 27 (B3) : le numéro de la fiche est rouge quand l'échéance
+       est manquée, comme son marqueur sur le graphique (il restait gris). */
+    var manquee = b.restants > 0 && (passe || b.enRetard) && jalonDansPerimetre(j);
     return '<div class="fiche-echeance" id="fiche-echeance" role="region" aria-label="Échéance ' + ech(j.texte) + '">' +
-      '<div class="fiche-echeance-tete"><span class="num">' + (idx + 1) + '</span><h3>' + ech(j.texte) + '</h3>' +
+      '<div class="fiche-echeance-tete"><span class="num' + (manquee ? ' critique' : '') + '">' + (idx + 1) + '</span><h3>' + ech(j.texte) + '</h3>' +
       '<span class="quand">' + ech(quand) + portee + '</span>' +
       '<button type="button" class="fiche-echeance-fermer" data-fermer-echeance="1" aria-label="Fermer la fiche">×</button></div>' +
       '<div class="fiche-echeance-chiffres">' +
@@ -5210,7 +5419,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       '<div class="fiche-echeance-jauge"><div class="piste"><span style="width:' + pct + '%"></span></div>' +
         '<span>' + nb(b.termines) + ' sur ' + nb(b.total) + ' validés · ' + pct + ' %</span></div>' +
       (b.restants && !passe
-        ? '<div class="fiche-echeance-rythme">Il faut <b>' + virgule(b.requis) + '</b> plans validés par semaine d’ici l’échéance' +
+        ? '<div class="fiche-echeance-rythme">Il faut <b>' + rythmeDit(b.requis) + '</b> plans ' + motFini(2) + ' par semaine d’ici l’échéance' +
           (b.rythme !== null ? ' ; le rythme tenu est de <b>' + virgule(b.rythme) + '</b> par semaine.' : '.') + '</div>'
         : '') +
       '<div class="fiche-echeance-verdict ' + verdict.cls + '">' + ech(verdict.mot) + '</div>' +
@@ -5221,26 +5430,114 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   function rendreEcheanceTitre() {
     var bouton = $('echeance-titre'), j = prochainJalon();
     /* Vidée aussi : cachée, elle gardait le texte du contrat d'avant. */
-    if (!j) { bouton.hidden = true; bouton.innerHTML = ''; return; }
+    if (!j) { bouton.hidden = true; bouton.innerHTML = ''; rendreVerdictSynthese(null); return; }
     /* La portée de la courbe : sous un groupe ouvert dans le bloc, le point
        est le verdict de CE groupe — celui du marqueur rouge et de la droite
        « requis » —, et la puce le nomme. Un seul verdict par écran. */
     var gA = groupeAffiche();
     var idx = jalons.indexOf(j), b = bilanEcheance(j, gA);
+    var v = verdictEcheance(b);
     bouton.hidden = false;
     bouton.className = 'echeance-titre' + (b.enRetard ? ' en-retard' : '');
     bouton.dataset.jalon = idx;
+    /* Débrief 27 (P-F2, X-A8) : le verdict dit en mots dans la puce — « en
+       retard », « dans les temps » —, plus seulement par la couleur du
+       point et dans un survol qu'on n'atteint ni au doigt ni au clavier. */
     bouton.innerHTML = '<span class="point" aria-hidden="true"></span><span>Prochaine échéance</span>' +
       '<b>' + ech(j.texte) + '</b>' + (gA ? '<span class="portee">' + ech(nomGroupe(gA)) + '</span>' : '') +
-      '<span class="jours">' + ech(motJours(b.jours)) + '</span>';
+      '<span class="jours">' + ech(motJours(b.jours)) + '</span>' +
+      (v.mot ? '<span class="verdict-mot ' + v.cls + '">' + ech(v.mot) + '</span>' : '');
     var pour = gA ? ' pour ' + nomGroupe(gA) : '';
     bouton.title = b.enRetard ? 'Au rythme tenu, cette échéance ne sera pas tenue' + pour + ' — cliquez pour le détail'
                               : 'Au rythme tenu, cette échéance est tenue' + pour + ' — cliquez pour le détail';
+    rendreVerdictSynthese(j, b, gA, idx);
+  }
+  /* Débrief 27 : le verdict d'une échéance en un mot, le même pour la puce
+     de la Tendance et la ligne de la Synthèse. Sans rythme mesuré (un seul
+     relevé), aucun mot : on ne sait pas encore. */
+  function verdictEcheance(b) {
+    if (!b || !b.total) return { cls: 'neutre', mot: '' };
+    if (!b.restants) return { cls: 'bon', mot: 'tout est ' + motFini(1) };
+    if (b.rythme === null) return { cls: 'neutre', mot: '' };
+    return b.enRetard ? { cls: 'mal', mot: 'en retard' } : { cls: 'bon', mot: 'dans les temps' };
+  }
+  /* Débrief 27 (P-F2, X-A8) : le verdict de la Synthèse, sous la phrase —
+     « Solde FWD · mar. 15 déc. (S51), dans 47 jours — il faut 83 validés
+     par semaine, rythme tenu 6,6 → au rythme actuel, il manquera 535
+     plans. Détail ». La conséquence en rouge quand l'échéance ne sera pas
+     tenue, en vert quand elle le sera ; le mot le dit toujours, la couleur
+     ne fait que l'appuyer. Les nombres sont ceux de la fiche, de la puce et
+     du bloc par groupe (bilanEcheance) : un seul verdict par écran.
+     « Détail » ouvre la fiche de l'échéance, sous le graphique. Pas de
+     prochaine échéance : pas de ligne. */
+  var JOURS_COURTS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+  /* Un rythme requis arrondi pour se lire (P-F18) : « 83 » au-delà de
+     dix, « 8,3 » en dessous. Le rythme tenu garde sa décimale (virgule),
+     comme dans le bloc par groupe et la vue d'ensemble. */
+  function rythmeDit(x) { return x >= 10 ? nb(Math.round(x)) : virgule(x); }
+  function rendreVerdictSynthese(j, b, gA, idx) {
+    var z = $('verdict-synthese');
+    if (!z) return;
+    if (!j || !b || !b.total) { z.hidden = true; z.innerHTML = ''; z.className = 'verdict-synthese'; return; }
+    var v = verdictEcheance(b), d = dateEcheance(j);
+    var quand = JOURS_COURTS[d.getUTCDay()] + '\u00a0' + d.getUTCDate() + '\u00a0' + MOIS_COURT[d.getUTCMonth()] +
+      ' (S' + numeroSemaine(j.i) + '), ' + motJours(b.jours);
+    var portee = gA ? ' (' + nomGroupe(gA) + ')'
+      : (b.domaine && b.domaine !== (vue.perimetre || '') ? ', sur ses plans ' + b.domaine : '');
+    var fini = motFini(2);
+    var rythme = '', suite;
+    if (!b.restants) suite = 'tout est ' + motFini(1) + '.';
+    else {
+      rythme = ' \u2014 il faut <b>' + rythmeDit(b.requis) + '\u00a0' + fini + '/sem.</b>' +
+        (b.rythme !== null ? ', rythme tenu <b>' + virgule(Math.max(0, b.rythme)) + '/sem.</b>' : '');
+      if (b.rythme === null) suite = 'le rythme se mesurera au deuxième relevé.';
+      else if (b.enRetard) suite = 'au rythme actuel, il manquera ' + nb(b.manque) + (b.manque > 1 ? ' plans.' : ' plan.');
+      else suite = 'au rythme actuel, l’échéance sera tenue.';
+    }
+    z.className = 'verdict-synthese ' + v.cls;
+    z.innerHTML = '<span class="verdict-point" aria-hidden="true"></span>' +
+      '<span class="verdict-texte"><b>' + ech(j.texte) + '</b>' + ech(portee) + ' \u00b7 ' + ech(quand) + rythme + ' ' +
+      '<span class="verdict-suite"><span aria-hidden="true">\u2192 </span><span class="masque">donc </span>' + ech(suite) + '</span></span> ' +
+      '<button type="button" class="lien-doux verdict-detail" data-jalon="' + idx + '" aria-label="Détail de l’échéance ' + ech(j.texte) + '">Détail</button>';
+    z.hidden = false;
+  }
+  /* Débrief 27 : « À vérifier », sous le verdict — les reculs du dernier
+     relevé et les plans validés absents de la seconde base, chacun un lien
+     vers sa liste (le journal filtré sur les reculs, la case de la
+     comparaison). Seulement ce qui vaut plus que zéro ; rien, pas de ligne.
+     Compté sur le périmètre, jamais sur la tuile pressée ni la recherche :
+     un clic sur une tuile ne fait ni paraître ni disparaître la ligne, et
+     les tuiles, juste dessous, ne bougent pas. (« À surveiller », plus bas,
+     reste la puce des plans à l'arrêt, qui filtre la page.) */
+  function rendreSignaux() {
+    var z = $('signaux-synthese');
+    if (!z) return;
+    var morceaux = [];
+    var sem = JOURNAL.length ? JOURNAL[0] : null;
+    var dernier = RELEVES.length ? RELEVES[RELEVES.length - 1].i : null;
+    var nR = sem && sem.i === dernier ? sem.evenements.filter(function (e) { return estRecul(e) && dansPerimetreEvt(e); }).length : 0;
+    if (nR) {
+      morceaux.push('<button type="button" class="lien-signal recul" data-signal="reculs">' +
+        '<span class="pastille recul" aria-hidden="true"></span><b>' + nb(nR) + '</b> ' + (nR > 1 ? 'reculs' : 'recul') +
+        (sem.i === semaineDAujourdhui() ? ' cette semaine' : ' au dernier relevé') + '</button>');
+    }
+    var nM = RAPPROCHEMENT ? compteLotRapp('manque') : 0;
+    if (nM) {
+      morceaux.push('<button type="button" class="lien-signal" data-signal="see">' +
+        '<b>' + nb(nM) + '</b> ' + (nM > 1 ? 'plans validés absents de ' : 'plan validé absent de ') + ech(nomSeconde()) + '</button>');
+    }
+    z.hidden = !morceaux.length;
+    z.innerHTML = morceaux.length ? '<span class="mot-signaux">À vérifier\u00a0:</span> ' +
+      morceaux.join('<span class="sep" aria-hidden="true">\u00b7</span>') : '';
   }
   function ouvrirEcheance(idx, defiler) {
     vue.echeance = (vue.echeance === idx && !defiler) ? null : idx;
     rendreGraphique(selection());
-    if (defiler && vue.echeance !== null && $('fiche-echeance')) defilerVers($('legende-jalons'), { block: 'center', behavior: 'smooth' });
+    if (defiler && vue.echeance !== null && $('fiche-echeance')) defilerVers($('legende-jalons'), { block: 'center', behavior: lisse() });
+  }
+  /* Le défilement doux, sauf si l'on préfère moins d'animation. */
+  function lisse() {
+    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
   }
 
   /* Une colonne « Colonne N » — le nom que le serveur donne à une colonne sans
@@ -5886,6 +6183,8 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     afficherContrat();
     refleterVue();
     $('bulle').dataset.visible = 'false';
+    /* Débrief 27 : une bulle tenue (au doigt, au clavier) se ferme aussi. */
+    if (typeof cacherBulle === 'function') cacherBulle();
   }
 
   /* La « vue » : ce que le lecteur a posé sur la page. Les filtres, la
@@ -5942,6 +6241,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       /* La base montrée dans le tableau : ici (GATES) ou là (la seconde). */
       base: 'ici',
       fen: null, fenAuto: true,
+      /* Débrief 27 : la fenêtre déplacée ou zoomée à la main (le bouton
+         « Revenir aux échéances » paraît), le mot de la légende déplié, et
+         ce qui a ouvert la fiche d'une échéance (Échap y ramène le focus). */
+      fenManuelle: false, legendeOuverte: '', ouvreurEcheance: null,
       /* L'ordre de la feuille, sans exception : tout le monde doit voir le même
          tableau que l'export. Le verrouillage à gauche s'adapte à cet ordre
          plutôt que l'inverse. Et le tableau s'ouvre complet : c'est l'extract.
@@ -6874,37 +7177,67 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var p = 100 * n / total;
     return (p < 1 ? (Math.round(p * 10) / 10).toFixed(1).replace('.', ',') : String(Math.round(p))) + '\u202f%';
   }
+  /* Débrief 27 (P-F14) : le mot de ce qui est fini, selon l'avancement
+     suivi — « validés » pour la définition électrique, « traités » pour le
+     concept harnais (dont les valeurs sont « Traité » / « À traiter »).
+     Accordé au compte, comme la phrase : « 0 sur 1 plan validé ». */
+  function motFini(n) {
+    var m = INDICATEUR === 'concept' ? 'traité' : 'validé';
+    return n > 1 ? m + 's' : m;
+  }
   function rendreAvancement(liste) {
-    var c = compte(liste);
+    /* Débrief 27 (B23) : une tuile pressée garde la répartition à l'écran —
+       la barre et les tuiles se comptent sans elle, les autres valeurs
+       pâlissent, et la phrase dit la part choisie (« 220 plans en
+       PWD_IN_PROGRESS · 35 % du périmètre »). Avant, la barre passait à
+       100 % d'une couleur et six tuiles à « 0 » : on perdait justement la
+       répartition sur laquelle on venait de cliquer. Le reste de la page,
+       lui, est toujours filtré par la tuile. */
+    var choisie = vue.etat || '';
+    var base = choisie ? selectionSans({ etat: true }) : liste;
+    var c = compte(base);
     /* Sous un périmètre seul, la phrase le nomme ; dès qu'un autre filtre
        s'ajoute, c'est une sélection. */
     /* La portée dite comme la note du graphique : le groupe choisi, le
        périmètre ; « la sélection » dès qu'un autre filtre s'ajoute. */
     var gA = groupeAffiche();
-    /* Accordée au compte : « 0 sur 1 plan validé », et pour une sélection
-       vide, pas de « 0 sur 0 » — la phrase dit qu'il n'y a rien. */
-    $('phrase').innerHTML = !c.total ? 'Aucun plan dans la sélection'
-      : '<b>' + nb(c.termine) + '</b> sur ' + nb(c.total) + (c.total > 1 ? ' plans validés' : ' plan validé') +
-      (filtreHorsGroupe() || (vue.groupe && !gA) ? ' dans la sélection'
-        : gA ? ' dans ' + ech(nomGroupe(gA)) + (vue.perimetre ? ', périmètre ' + ech(vue.perimetre) : '')
-        : (vue.perimetre ? ' dans le périmètre ' + ech(vue.perimetre) : ''));
-
+    var autreFiltre = !!(vue.recherche || vue.refs ||
+      Object.keys(vue.filtres).some(function (k) { return vue.filtres[k]; }) ||
+      Object.keys(vue.vides).some(function (k) { return vue.vides[k]; }));
     /* Le pourcentage se lit dans la barre : les chiffres du dessous n'ont plus
        qu'un sens possible, un nombre de plans. */
     /* Une part par valeur de la colonne, telle qu'elle est écrite : la page
        ne range pas les valeurs dans des cases qu'elle aurait prévues. */
     var parValeur = {};
-    liste.forEach(function (p) { var k = cleValeur(p[CLE_SUIVIE]); parValeur[k] = (parValeur[k] || 0) + 1; });
+    base.forEach(function (p) { var k = cleValeur(p[CLE_SUIVIE]); parValeur[k] = (parValeur[k] || 0) + 1; });
+    /* Accordée au compte : « 0 sur 1 plan validé », et pour une sélection
+       vide, pas de « 0 sur 0 » — la phrase dit qu'il n'y a rien. */
+    if (choisie && c.total) {
+      var vC = valeurDeCle(choisie), nC = parValeur[choisie] || 0;
+      var de = autreFiltre || (vue.groupe && !gA) ? 'de la sélection' : gA ? 'de ' + ech(nomGroupe(gA)) : 'du périmètre' + (vue.perimetre ? ' ' + ech(vue.perimetre) : '');
+      $('phrase').innerHTML = '<b>' + nb(nC) + '</b> ' + (nC > 1 ? 'plans' : 'plan') +
+        (vC && vC.hachure ? (nC > 1 ? ' non renseignés' : ' non renseigné') : ' en ' + ech(vC ? vC.libelle : choisie)) +
+        ' <span class="phrase-part">\u00b7 ' + partDite(nC, c.total) + ' ' + de + '</span>';
+    } else {
+      $('phrase').innerHTML = !c.total ? 'Aucun plan dans la sélection'
+        : '<b>' + nb(c.termine) + '</b> sur ' + nb(c.total) + ' ' + (c.total > 1 ? 'plans ' : 'plan ') + motFini(c.total) +
+        (filtreHorsGroupe() || (vue.groupe && !gA) ? ' dans la sélection'
+          : gA ? ' dans ' + ech(nomGroupe(gA)) + (vue.perimetre ? ', périmètre ' + ech(vue.perimetre) : '')
+          : (vue.perimetre ? ' dans le périmètre ' + ech(vue.perimetre) : ''));
+    }
+
     /* Aucun plan : une piste fine et vide plutôt qu'un trou dans la page. */
     $('barre').classList.toggle('vide', !c.total);
+    $('barre').classList.toggle('avec-choix', !!choisie && !!c.total);
     $('barre').innerHTML = VALEURS_COLONNE.map(function (v) {
       var n = parValeur[v.cle] || 0;
       if (!n) return '';
       var part = (n / (c.total || 1)) * 100;
       var texte = part >= 6 ? Math.round(part) + '\u202f%' : '';
+      var cls = choisie === v.cle ? ' choisi' : '';
       return v.hachure
-        ? '<span class="hachure" data-cle="' + ech(v.cle) + '" style="width:' + part.toFixed(2) + '%;color:var(--encre-2)" title="' + ech(v.libelle) + '">' + (texte ? '<i class="etiq-part">' + texte + '</i>' : '') + '</span>'
-        : '<span data-cle="' + ech(v.cle) + '" style="width:' + part.toFixed(2) + '%;background:' + v.couleur +
+        ? '<span class="hachure' + cls + '" data-cle="' + ech(v.cle) + '" style="width:' + part.toFixed(2) + '%;color:var(--encre-2)" title="' + ech(v.libelle) + '">' + (texte ? '<i class="etiq-part">' + texte + '</i>' : '') + '</span>'
+        : '<span' + (cls ? ' class="' + cls.slice(1) + '"' : '') + ' data-cle="' + ech(v.cle) + '" style="width:' + part.toFixed(2) + '%;background:' + v.couleur +
           ';color:' + v.encre + '" title="' + ech(v.libelle) + '">' + texte + '</span>';
     }).join('');
 
@@ -6920,6 +7253,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       if (vue.groupe && String(valeurDim(p, vue.groupe.dim) || '\u2014') !== vue.groupe.val) return;
       dansPortee[cleValeur(p[CLE_SUIVIE])] = true;
     });
+    $('etats').classList.toggle('avec-choix', !!choisie && !!c.total);
     $('etats').innerHTML = VALEURS_COLONNE.filter(function (v) { return dansPortee[v.cle] || vue.etat === v.cle; }).map(function (v) {
       var pastille = v.hachure
         ? '<span class="pastille hachure"></span>'
@@ -7098,7 +7432,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if (!finies.length) items.forEach(function (x) { x.titre += ' \u2014 un second clic revient à la courbe des validés'; });
     /* Rien d'autre à suivre que les validés : pas de rangée. */
     var autres = items.filter(function (x) { return x.cle && (!x.absente || x.cle === vue.valeurGraphe); }).length;
-    z.innerHTML = autres ? boutonsPastilles('valeur-graphe', vue.valeurGraphe, items, premier) : '';
+    /* Débrief 27 (P-F19) : la rangée se nomme — « Courbe : » — pour ne pas
+       se lire comme une légende ; ses pilules changent la courbe. */
+    z.innerHTML = autres ? '<span class="mot-rangee" aria-hidden="true">Courbe\u00a0:</span>' + boutonsPastilles('valeur-graphe', vue.valeurGraphe, items, premier) : '';
     z.hidden = !z.innerHTML;
     if (z.hidden) vue.valeurGraphe = '';
     marquerDebord(z);
@@ -7123,8 +7459,13 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   }
   /* L et la hauteur du tracé se refont à chaque dessin, à la largeur du
      cadre (mesurerGraphique) : 980 n'est que la valeur d'avant mesure. */
-  var L = 980, mG = 36, mD = 72, plotH = 176, ecart = 16, bandeH = 30, mBas = 34;
-  var mHaut = 44, H = mHaut + plotH + ecart + bandeH + mBas;
+  /* Débrief 27 (B3) : de haut en bas — la rangée des jalons et du mot
+     « aujourd'hui » (mHaut), le tracé (plotH), les semaines et l'année de
+     l'axe (axeH), puis, à part, la bande des validés par semaine (bandeH),
+     avec sa propre ligne de base et son nom. Les barres pendaient sous le
+     zéro du tracé, sans base : on les lisait comme des valeurs négatives. */
+  var L = 980, mG = 36, mD = 72, plotH = 176, axeH = 37, ecart = 8, bandeH = 40, mBas = 4;
+  var mHaut = 44, H = mHaut + plotH + axeH + ecart + bandeH + mBas;
   var HAUTEUR_ETIQUETTE = 23;   // un niveau de marqueurs (rayon 10) et son interligne
   var LARGEUR = L - mG - mD;
   var MAX_IDX = 104;                       // deux ans, ou un an au-delà d'aujourd'hui : voir chargerSource()
@@ -7187,11 +7528,44 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     f.debut = Math.max(0, Math.min(f.debut, MAX_IDX - f.span + 1));
   }
 
+  /* Débrief 27 (B3) : la courbe d'une seule valeur n'a pas d'échéance à
+     montrer — le cadrage d'ouverture s'arrête alors quatre semaines après
+     aujourd'hui, au lieu de courir jusqu'au dernier jalon (70 % du tracé
+     restait vide). Un cadrage choisi à la main reste le sien. */
+  /* Le contraste d'une couleur (« var(--v-cours-3) », « #1fbfbf ») sur la
+     surface du thème courant : lu dans la feuille de style, au moment du
+     dessin. */
+  function contrasteSurface(couleur) {
+    try {
+      var racine = getComputedStyle(document.documentElement);
+      var lire = function (c) {
+        var m = /^var\((--[\w-]+)\)$/.exec(String(c).trim());
+        return m ? racine.getPropertyValue(m[1]).trim() : String(c).trim();
+      };
+      var lum = function (c) {
+        var h = /^#([0-9a-f]{6})$/i.exec(c);
+        if (!h) return null;
+        var v = [0, 2, 4].map(function (k) {
+          var x = parseInt(h[1].slice(k, k + 2), 16) / 255;
+          return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+        });
+        return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
+      };
+      var a = lum(lire(couleur)), b = lum(lire('var(--surface)'));
+      if (a === null || b === null) return 21;
+      return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    } catch (e) { return 21; }
+  }
+  function cadrageValeur() {
+    var debut = Math.max(0, AUJ - RECUL_OUVERTURE);
+    return { debut: debut, span: Math.max(8, semaineDepart() + 4 - debut + 1) };
+  }
   function rendreGraphique(liste) {
-    bornerFenetre();
     if (!GRAPHE_MESURE) mesurerGraphique();
     policeAttendue = false;
     var vg = rendreFiltreValeurGraphe();
+    if (vue.fenAuto) vue.fen = vg ? cadrageValeur() : cadrageParDefaut();
+    bornerFenetre();
     var vueSerie = serieAffichee();
     var pts = vueSerie.pts;
     var dernier = pts[pts.length - 1];
@@ -7265,8 +7639,14 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        relie au numéro quand celui-ci a dû s'écarter. */
     var ESPACE_MARQUEURS = 23;   // un diamètre de 20 px et un jour de 3 px
     var places = [];
+    /* Débrief 27 (B3) : un seul « maintenant » — un trait fin à la semaine
+       où l'on est, nommé « aujourd'hui » dans la rangée du haut. Le trait
+       plein du « dernier relevé », une semaine avant, était le trait le plus
+       foncé après les données, et les deux mots se touchaient presque. Le
+       dernier point garde son nombre ; l'écart entre lui et aujourd'hui se
+       lit au petit pointillé plat qui les relie. */
     var xAuj = null;
-    if (AUJ >= d0 && AUJ <= d1) xAuj = mG + pasX * (AUJ - d0);
+    if (depart >= d0 && depart <= d1) xAuj = mG + pasX * (depart - d0);
     var dernierCx = -Infinity;
     jalons.map(function (j, idx) { return { j: j, idx: idx }; })
       .filter(function (o) { return o.j.i >= d0 && o.j.i <= d1; })
@@ -7287,7 +7667,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        rangée ; s'il y croiserait un numéro, il passe au-dessus. Quand le
        trait est trop près du bord gauche pour lui, il s'écrit à droite. */
     var niveauAuj = 0;
-    var motAuj = AUJ === semaineDAujourdhui() ? 'aujourd’hui' : 'dernier relevé';
+    var motAuj = 'aujourd’hui';
     var aujADroite = false;
     if (xAuj !== null) {
       var wAuj = largeurMot(motAuj) + 6;
@@ -7297,22 +7677,25 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       places.push({ aujourdhui: true, jx: xAuj, niveau: niveauAuj });
     }
     mHaut = 26 + (1 + niveauAuj) * HAUTEUR_ETIQUETTE;
-    H = mHaut + plotH + ecart + bandeH + mBas;
+    H = mHaut + plotH + axeH + ecart + bandeH + mBas;
 
     var y = function (v) { return mHaut + plotH - (v / haut) * plotH; };
-    var yBande = mHaut + plotH + ecart;
-    var basTotal = yBande + bandeH;
+    var yBas = mHaut + plotH;                 // le zéro du tracé
+    var yBande = yBas + axeH + ecart;         // le haut de la bande des semaines
+    var basBande = yBande + bandeH;           // sa ligne de base
 
-    var s = ['<svg class="graphe" viewBox="0 0 ' + L + ' ' + H + '" role="img" aria-label="' +
-      (vVal ? ech('Plans « ' + vVal.libelle + ' », relevé après relevé') : 'Plans validés par semaine, historique et projection') + '">'];
+    var s = ['<svg class="graphe" viewBox="0 0 ' + L + ' ' + H + '" role="img" aria-describedby="resume-graphe" aria-label="' +
+      (vVal ? ech('Plans « ' + vVal.libelle + ' », relevé après relevé') : 'Plans ' + motFini(2) + ' par semaine, historique et projection') + '">'];
     s.push('<defs><clipPath id="zoneTracee"><rect x="' + mG + '" y="' + (mHaut - 12) + '" width="' + LARGEUR + '" height="' + (plotH + 16) + '"/></clipPath></defs>');
 
     /* L'échelle se lit d'un coup d'œil : des valeurs rondes, quatre traits au
        plus, le plafond à part et nommé. */
+    /* Débrief 27 (B3) : des traits d'échelle plus doux (--grille) ; le zéro
+       garde le filet, c'est la base du tracé. */
     var pas = pasDEchelle(haut);
     for (var v = 0; v < haut; v += pas) {
       if (haut - v < pas * 0.5) continue;
-      s.push('<line x1="' + mG + '" x2="' + (L - mD) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '" stroke="var(--filet)" stroke-width="1"/>');
+      s.push('<line x1="' + mG + '" x2="' + (L - mD) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '" stroke="var(--' + (v ? 'grille' : 'filet') + ')" stroke-width="1"/>');
       s.push('<text class="grad" x="' + (mG - 8) + '" y="' + (y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + nb(v) + '</text>');
     }
     /* Sous une valeur, le haut de l'échelle n'est pas le total des plans :
@@ -7336,6 +7719,12 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       /* « Non renseigné » n'a pas de couleur à lui, mais une texture : sa
          courbe se trace en tirets, comme sa hachure — son gris est celui
          d'« À traiter » (débrief 22). */
+      /* Débrief 27 (X-A12) : une couleur de valeur trop claire pour 3:1 sur
+         la surface (TO_CONFIRM, 2,3:1 en clair) se trace sur un liseré
+         sombre, comme ses pastilles : la courbe se détache du blanc. */
+      if (vVal && !vVal.hachure && contrasteSurface(coul) < 3) {
+        s.push('<path class="courbe-lisere" d="' + chemin + '" fill="none" stroke="var(--lisere-courbe)" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round"/>');
+      }
       s.push('<path class="courbe" d="' + chemin + '" fill="none" stroke="' + coul + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"' +
              (vVal && vVal.hachure ? ' stroke-dasharray="6 4"' : '') + '/>');
       /* Un point par relevé, plein, cerclé de la couleur du fond pour rester
@@ -7364,9 +7753,36 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        tient dans le cadre ; à défaut, celle qui gêne le moins. Un trait de
        jalon pèse plus lourd qu'une droite : le fond du mot cache la droite,
        mais un jalon caché sous « fin … » se lirait « fin = jalon ». */
-    var traitsX = places.map(function (pl) { return pl.jx; });
+    /* Débrief 27 (B3) : seuls comptent les traits pleine hauteur — celui
+       de la prochaine échéance et celui d'aujourd'hui ; les autres jalons
+       n'ont plus qu'une coche sous leur numéro (leur trait ne paraît qu'au
+       survol, en léger). */
+    var traitPlein = function (pl) { return pl.aujourdhui || (!!prochain && pl.j.i === prochain.i && jalonDansPerimetre(pl.j)); };
+    var traitsX = places.filter(traitPlein).map(function (pl) { return pl.jx; });
+    /* Les traits cachés pèsent moins, mais pèsent : au survol, ils
+       paraissent — un mot qui peut les éviter les évite. */
+    var traitsCaches = places.filter(function (pl) { return !traitPlein(pl); }).map(function (pl) { return pl.jx; });
     var droites = [], boites = [];
     if (!vVal) boites.push({ g: L - mD + 6, d: L - mD + 10 + largeurMot(nb(total) + ' plans'), h: y(total) - 9, b: y(total) + 5 });
+    /* Les numéros des jalons et le mot « aujourd'hui », en tête : aucun mot
+       posé près du haut du tracé (« requis … ») ne vient les couvrir. */
+    places.forEach(function (pl) {
+      if (pl.aujourdhui) {
+        var wA = largeurMot(motAuj), yA = mHaut - 13 - pl.niveau * HAUTEUR_ETIQUETTE;
+        boites.push({ g: aujADroite ? pl.jx + 3 : pl.jx - wA - 7, d: aujADroite ? pl.jx + wA + 7 : pl.jx - 3, h: yA - 11, b: yA + 4 });
+      } else boites.push({ g: pl.cx - 11, d: pl.cx + 11, h: mHaut - 28, b: mHaut - 6 });
+    });
+    /* Débrief 27 : le dernier point et son nombre (« 53 ») sont réservés
+       avant de poser les mots — « fin … » posait son fond plein dessus
+       depuis que « aujourd'hui » n'est plus écrit sous le point. */
+    var auPoint = vVal ? dernierT.termine : atteint;
+    var pointMontre = AUJ >= d0 && AUJ <= d1 && (!vVal || dernierT.i === AUJ);
+    var dessous = (!!vVal && trace.length > 1 && trace[trace.length - 2].termine > auPoint) || y(auPoint) < mHaut + 12;
+    if (pointMontre) {
+      var wNombre = largeurMot(String(auPoint), true), yNombre = dessous ? y(auPoint) + 16 : y(auPoint) - 8;
+      boites.push({ g: x(AUJ) - 9 - wNombre - 3, d: x(AUJ) - 6, h: yNombre - 11, b: yNombre + 4 },
+                  { g: x(AUJ) - 7, d: x(AUJ) + 7, h: y(auPoint) - 7, b: y(auPoint) + 7 });
+    }
     function coupe(bx, sg) {
       var n = Math.max(20, Math.ceil(Math.max(Math.abs(sg[2] - sg[0]), Math.abs(sg[3] - sg[1])) / 3));
       for (var t = 0; t <= n; t++) {
@@ -7378,6 +7794,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     function gene(bx, dMax, gMin) {
       var n = 0;
       traitsX.forEach(function (tx) { if (tx > bx.g - 1 && tx < bx.d + 1) n += 10; });
+      traitsCaches.forEach(function (tx) { if (tx > bx.g - 1 && tx < bx.d + 1) n += 3; });
       droites.forEach(function (sg) { if (coupe(bx, sg)) n += 2; });
       boites.forEach(function (o) { if (seCoupent(bx, o)) n += 20; });
       if (bx.g < (gMin === undefined ? mG - 5 : gMin) || bx.d > dMax) n += 50;   // la boîte compte 3 px de fond de chaque côté
@@ -7421,41 +7838,36 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     /* Entre le dernier relevé et la semaine en cours, rien n'a été relevé :
        un trait plat, fin, avant que les projections ne partent d'aujourd'hui. */
     if (depart > AUJ && !vVal) {
-      s.push('<path d="M' + x(AUJ).toFixed(1) + ' ' + y(atteint).toFixed(1) + ' L' + x(depart).toFixed(1) + ' ' + y(atteint).toFixed(1) +
+      s.push('<path class="palier-attente" d="M' + x(AUJ).toFixed(1) + ' ' + y(atteint).toFixed(1) + ' L' + x(depart).toFixed(1) + ' ' + y(atteint).toFixed(1) +
              '" fill="none" stroke="var(--encre-3)" stroke-width="1" stroke-dasharray="2 3"/>');
-      /* D'où partent les projections, dit sous le point : la semaine en
-         cours, que le dernier relevé n'a pas encore rattrapée. */
-      if (depart >= d0 && depart <= d1) {
-        /* Débrief 26 : près de zéro, « aujourd'hui » sous le point tombait
-           sur le nom de la bande des semaines (« validés par semaine »),
-           posé plus tard : sa ligne est réservée le temps de choisir, et le
-           mot passe au-dessus du point s'il le faut. */
-        var zoneBande = { g: mG - 11, d: L - 2, h: yBande - 14, b: yBande + 1 };
-        boites.push(zoneBande);
-        var cDep = placerMot([{ lignes: ['aujourd’hui'], x: x(depart) + 3, base: y(atteint) + 15, ancre: 'start' },
-                              { lignes: ['aujourd’hui'], x: x(depart) + 3, base: y(atteint) - 8, ancre: 'start', malus: 1 }], L - 2);
-        boites.splice(boites.indexOf(zoneBande), 1);
-        if (cDep.gene >= 10 || cDep.base < y(atteint)) horsClip.push(fondMot(cDep));
-        horsClip.push(texteMot(cDep, { cls: 'repere-depart' }));
-      }
+      /* Débrief 27 (B3) : le mot « aujourd'hui » n'est plus écrit sous le
+         point (son fond coupait le départ de la droite « requis ») : il est
+         en tête, sur le trait d'aujourd'hui. */
     }
     /* La droite « requis » monte de ce qui est terminé à ce que le jalon
        demande : tous les plans de la courbe quand le jalon vaut pour eux, les
        seuls plans de son périmètre sinon (sur « Tout », un jalon BASE/OPTION
        ne demande pas les PERSO). */
     var cible = bilan ? atteint + bilan.restants : total;
+    /* Débrief 27 (X-A8, B3) : la droite « requis » a son propre dessin —
+       un trait-point (8 3 2 3), que « réalisé » (plein) et la projection
+       (tirets) ne partagent pas : elles se distinguent sans la couleur, que
+       certains ne voient pas (le rouge et le vert se confondent). Elle part
+       du point d'aujourd'hui, et son nom (« requis 83/sem. ») s'écrit
+       contre elle, jamais dessus (posé plus bas, avec les autres mots). */
+    var segRequis = null, cr = enRetard ? 'var(--alerte)' : 'var(--fait)';
     if (requis !== null && surLaCourbe && prochain.i > depart) {
-      var cr = enRetard ? 'var(--alerte)' : 'var(--fait)';
-      s.push('<path d="M' + x(depart).toFixed(1) + ' ' + y(atteint).toFixed(1) + ' L' + x(prochain.i).toFixed(1) + ' ' + y(cible).toFixed(1) + '" fill="none" stroke="' + cr + '" stroke-width="1.6"/>');
+      s.push('<path class="droite-requis" d="M' + x(depart).toFixed(1) + ' ' + y(atteint).toFixed(1) + ' L' + x(prochain.i).toFixed(1) + ' ' + y(cible).toFixed(1) + '" fill="none" stroke="' + cr + '" stroke-width="1.6" stroke-dasharray="8 3 2 3"/>');
       s.push('<circle cx="' + x(prochain.i).toFixed(1) + '" cy="' + y(cible).toFixed(1) + '" r="3.4" fill="' + cr + '"/>');
-      droites.push([x(depart), y(atteint), x(prochain.i), y(cible)]);
+      segRequis = [x(depart), y(atteint), x(prochain.i), y(cible)];
+      droites.push(segRequis);
     }
 
     var finVisible = false;
     if (projIdx !== null && !vVal) {
       var xP = x(projIdx), yP = y(total);
       s.push('<path d="M' + x(depart).toFixed(1) + ' ' + y(atteint).toFixed(1) + ' L' + xP.toFixed(1) + ' ' + yP.toFixed(1) +
-             '" fill="none" stroke="var(--fait)" stroke-width="1.6" stroke-dasharray="5 4" opacity=".6"/>');
+             '" fill="none" stroke="var(--fait)" stroke-width="1.6" stroke-dasharray="5 4"/>');   // débrief 27 (X-A12) : pleine opacité, 3:1 au moins
       droites.push([x(depart), y(atteint), xP, yP]);
       if (projIdx >= d0 && projIdx <= d1) {
         /* Le bout de la projection : un losange plein, du vert du réalisé.
@@ -7549,25 +7961,68 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         plus: ' fill="var(--alerte)" font-weight="500" stroke="var(--surface)" stroke-width="4" stroke-linejoin="round" paint-order="stroke"',
         titre: '<title>Au rythme tenu, il manquerait ' + nb(bilan.manque) + ' plan' + (bilan.manque > 1 ? 's' : '') + ' le jour de l’échéance</title>' }));
     }
+    /* Débrief 27 (X-A8, B3) : le nom de la droite « requis », écrit contre
+       elle : au-dessus de son bout, à gauche (au-dessus d'une droite qui
+       monte), ou à droite de son bout, ou au-dessus de son milieu, ou
+       dessous à droite. Une place qui croise la droite elle-même est
+       écartée d'abord : le mot ne s'écrit jamais en travers. */
+    if (segRequis) {
+      var motRq = 'requis ' + rythmeDit(requis) + '/sem.';
+      var xS = segRequis[0], yS = segRequis[1], xE = segRequis[2], yE = segRequis[3];
+      /* Le long de la droite, du bout vers le départ : au-dessus à gauche
+         (au-dessus d'une droite qui monte), dessous à droite ; puis à droite
+         du bout ; puis, en court, « requis » seul. */
+      var candRq = [{ lignes: [motRq], x: xE - 8, base: yE - 6, ancre: 'end', gras: true },
+                    { lignes: [motRq], x: xE + 8, base: yE + 4, ancre: 'start', gras: true, malus: 0.5 }];
+      [0.75, 0.5, 0.3].forEach(function (t, k) {
+        var xt = xS + (xE - xS) * t, yt = yS + (yE - yS) * t;
+        candRq.push({ lignes: [motRq], x: xt - 6, base: yt - 7, ancre: 'end', gras: true, malus: 1 + k * 0.3 },
+                    { lignes: [motRq], x: xt + 8, base: yt + 15, ancre: 'start', gras: true, malus: 1.2 + k * 0.3 });
+      });
+      [1, 0.5].forEach(function (t) {
+        var xt = xS + (xE - xS) * t, yt = yS + (yE - yS) * t;
+        candRq.push({ lignes: ['requis'], x: xt - 6, base: yt - 7, ancre: 'end', gras: true, malus: 4 },
+                    { lignes: ['requis'], x: xt + 8, base: yt + 15, ancre: 'start', gras: true, malus: 4.2 });
+      });
+      /* Une place est exclue si le mot y croise sa droite ou le trait d'un
+         jalon (même caché : il paraît au survol) ou d'aujourd'hui, couvre un
+         autre mot, sort du tracé (rangée des jalons, axe, bords) ; parmi les
+         autres, la moins gênée. */
+      var exclue = function (bx) {
+        return coupe(bx, segRequis) || bx.h < mHaut - 4 || bx.b > yBas + 2 || bx.g < mG - 5 || bx.d > L - 2 ||
+          traitsX.concat(traitsCaches).some(function (tx) { return tx > bx.g - 1 && tx < bx.d + 1; }) ||
+          boites.some(function (o) { return seCoupent(bx, o); });
+      };
+      var cRq = null;
+      noterMots(candRq, L - 2).forEach(function (c) { if (!exclue(c.boite) && (!cRq || c.gene < cRq.gene)) cRq = c; });
+      /* Nulle part sans couvrir un autre mot ni croiser la droite (un cadre
+         de téléphone, un groupe serré) : pas de nom sur la courbe — la
+         légende le porte, avec le même trait-point. */
+      if (cRq) {
+        boites.push(cRq.boite);
+        horsClip.push(texteMot(cRq, { cls: 'requis-mot ' + (enRetard ? 'mal' : 'bon'),
+          plus: ' fill="' + cr + '" font-weight="500" stroke="var(--surface)" stroke-width="4" stroke-linejoin="round" paint-order="stroke"' }));
+      }
+    }
     s.push('</g>');
 
-    if (AUJ >= d0 && AUJ <= d1) {
-      s.push('<line x1="' + x(AUJ).toFixed(1) + '" x2="' + x(AUJ).toFixed(1) + '" y1="' + (mHaut - 6) + '" y2="' + basTotal.toFixed(1) + '" stroke="var(--encre-3)" stroke-width="1"/>');
+    /* Débrief 27 (B3) : le trait d'aujourd'hui, un filet fin (--filet-fort),
+       de la rangée du haut au zéro du tracé ; son mot, en tête, et la
+       semaine écrite sur l'axe disent où il est. */
+    if (xAuj !== null) {
+      s.push('<line class="trait-auj" x1="' + xAuj.toFixed(1) + '" x2="' + xAuj.toFixed(1) + '" y1="' + (mHaut - 6) + '" y2="' + yBas.toFixed(1) + '" stroke="var(--filet-fort)" stroke-width="1"/>');
       var plAuj = places.filter(function (q) { return q.aujourdhui; })[0];
       var yAuj = mHaut - 13 - (plAuj ? plAuj.niveau : 0) * HAUTEUR_ETIQUETTE;
-      /* Le trait marque le dernier relevé. Il ne s'appelle « aujourd'hui »
-         que si ce relevé est de cette semaine — sinon la page dirait deux
-         « aujourd'hui » différents, l'un au titre, l'autre sur la courbe. */
-      s.push('<text class="grad repere-auj" x="' + (aujADroite ? x(AUJ) + 6 : x(AUJ) - 6).toFixed(1) + '" y="' + yAuj.toFixed(1) + '" text-anchor="' + (aujADroite ? 'start' : 'end') + '">' +
+      s.push('<text class="grad repere-auj" x="' + (aujADroite ? xAuj + 6 : xAuj - 6).toFixed(1) + '" y="' + yAuj.toFixed(1) + '" text-anchor="' + (aujADroite ? 'start' : 'end') + '">' +
              motAuj + '</text>');
+    }
+    if (AUJ >= d0 && AUJ <= d1) {
       /* Sous une valeur, le point n'est celui du jour que si la courbe
          finit bien au dernier relevé ; et quand elle y descend, son nombre
          s'écrit dessous, pas en travers du trait. De même tout en haut
          (100 %) : au-dessus du point, il sortait du tracé et s'écrivait sur
          « dernier relevé ». */
-      var auPoint = vVal ? dernierT.termine : atteint;
-      if (!vVal || dernierT.i === AUJ) {
-        var dessous = (!!vVal && trace.length > 1 && trace[trace.length - 2].termine > auPoint) || y(auPoint) < mHaut + 12;
+      if (pointMontre) {   // auPoint, dessous : réservés plus haut
         s.push('<circle cx="' + x(AUJ).toFixed(1) + '" cy="' + y(auPoint).toFixed(1) + '" r="4.5" fill="' + coul + '" stroke="var(--surface)" stroke-width="2"/>');
         s.push('<text class="grad nombre-point" x="' + (x(AUJ) - 9).toFixed(1) + '" y="' + (dessous ? y(auPoint) + 16 : y(auPoint) - 8).toFixed(1) + '" text-anchor="end" fill="var(--encre)" font-weight="500"' +
                ' stroke="var(--surface)" stroke-width="4" stroke-linejoin="round" paint-order="stroke">' + auPoint + '</text>');
@@ -7594,11 +8049,19 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       var yMarque = yBase - 9;        // centre du numéro
       var cx = pl.cx;
 
-      s.push('<g class="jalon' + (hors ? ' hors-perimetre' : '') + (critique ? ' critique' : '') + '" data-jalon="' + idx + '" data-i="' + j.i + '" role="img" aria-label="Jalon ' + (idx + 1) + ', ' +
-             ech(j.texte) + ', ' + semaineDite(j.i) + mention + '">');
-      s.push('<title>' + (idx + 1) + ' \u2014 ' + ech(j.texte) + ' \u2014 ' + semaineDite(j.i) + mention + '</title>');
-      s.push('<line x1="' + jx.toFixed(1) + '" x2="' + jx.toFixed(1) + '" y1="' + yBase.toFixed(1) + '" y2="' + basTotal.toFixed(1) +
-             '" stroke="' + couleur + '" stroke-width="1" stroke-dasharray="3 4" opacity=".8"/>');
+      /* Débrief 27 (B3) : le trait pleine hauteur pour la seule prochaine
+         échéance (rouge si elle est manquée) ; les autres jalons gardent
+         une coche de 6 px sous leur numéro, et leur trait ne paraît, léger,
+         qu'au survol du numéro ou de leur jalon dans la légende (CSS). Sept
+         traits verticaux, c'était trop. */
+      var plein = traitPlein(pl);
+      s.push('<g class="jalon' + (hors ? ' hors-perimetre' : '') + (critique ? ' critique' : '') + (plein ? ' prochain' : '') + '" data-jalon="' + idx + '" data-i="' + j.i + '" role="img" aria-label="Jalon ' + (idx + 1) + ', ' +
+             ech(j.texte) + ', ' + semaineDite(j.i) + mention + (critique ? ', en retard' : '') + '">');
+      s.push('<title>' + (idx + 1) + ' \u2014 ' + ech(j.texte) + ' \u2014 ' + semaineDite(j.i) + mention + (critique ? ' \u2014 en retard' : '') + '</title>');
+      s.push('<line class="jalon-trait" x1="' + jx.toFixed(1) + '" x2="' + jx.toFixed(1) + '" y1="' + yBase.toFixed(1) + '" y2="' + yBas.toFixed(1) +
+             '" stroke="' + couleur + '" stroke-width="1" stroke-dasharray="3 4"/>');
+      if (!plein) s.push('<line class="jalon-coche" x1="' + jx.toFixed(1) + '" x2="' + jx.toFixed(1) + '" y1="' + yBase.toFixed(1) + '" y2="' + (yBase + 6).toFixed(1) +
+             '" stroke="' + couleur + '" stroke-width="1"/>');
       if (Math.abs(cx - jx) > 0.5) {
         s.push('<line class="jalon-lien" x1="' + jx.toFixed(1) + '" y1="' + yBase.toFixed(1) + '" x2="' + cx.toFixed(1) + '" y2="' + (yMarque + 10).toFixed(1) +
                '" stroke="' + couleur + '" stroke-width="1"/>');
@@ -7623,7 +8086,13 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       /* Sur un cadre étroit, la phrase reste entière dans le tracé. */
       var demiAucun = largeurMot(motAucun) / 2;
       xv = Math.max(Math.min(xv, L - mD - demiAucun), Math.min(mG + demiAucun, mG + LARGEUR / 2));
-      s.push('<text class="grad" x="' + xv.toFixed(1) + '" y="' + (mHaut + plotH * 0.86).toFixed(1) +
+      /* Débrief 27 : à la hauteur où aucune droite ne le barre (la
+         projection passait en travers), du bas vers le haut du tracé. */
+      var candAucun = [0.86, 0.62, 0.38, 0.16].map(function (f, k) {
+        return { lignes: [motAucun], x: xv, base: mHaut + plotH * f, ancre: 'middle', malus: k * 0.5 };
+      });
+      var cAucun = placerMot(candAucun, L - mD + 4);
+      s.push('<text class="grad mot-aucun" x="' + xv.toFixed(1) + '" y="' + cAucun.base.toFixed(1) +
              '" text-anchor="middle">' + motAucun + '</text>');
     }
 
@@ -7644,28 +8113,21 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var deuxSens = !!vVal && taux.some(function (t) { return t.v < 0; });
     var maxSem = 1;
     taux.forEach(function (t) { maxSem = Math.max(maxSem, deuxSens ? Math.abs(t.v) : t.v); });
-    var lb = Math.min(14, Math.max(2, pasX - 2));
-    var hMax = deuxSens ? bandeH / 2 : bandeH, yZero = yBande + (deuxSens ? bandeH / 2 : bandeH);
-    /* Le nom de la bande, à gauche ; sur un cadre étroit, le trait du
-       dernier relevé le barrerait : il passe alors à sa droite, ou s'écrit
-       en court (« validés/sem. », « « En cours » par sem. ») à gauche ou
-       juste avant le trait, et sur un fond plein en dernier recours. */
-    var motBande = vVal ? ech('« ' + vVal.libelle + ' » : variation nette par semaine') : 'validés par semaine';
-    var motCourt = vVal ? ech('« ' + vVal.libelle + ' » par sem.') : 'validés/sem.';
-    var candBande = [{ lignes: [motBande], x: mG, base: yBande - 3, ancre: 'start' }];
-    if (xAuj !== null) candBande.push({ lignes: [motBande], x: xAuj + 6, base: yBande - 3, ancre: 'start' });
-    candBande.push({ lignes: [motCourt], x: mG, base: yBande - 3, ancre: 'start', malus: 3, court: true });
-    if (xAuj !== null) candBande.push({ lignes: [motCourt], x: xAuj - 6, base: yBande - 3, ancre: 'end', malus: 3, court: true });
-    /* À gauche, il peut mordre sur la marge jusqu'aux nombres de
-       l'échelle, qui s'arrêtent 8 px avant le tracé (et plus haut) : le
-       mot lui-même n'y entre pas, seulement les 3 px de son fond. */
-    var cBande = placerMot(candBande, L - 2, mG - 11);
-    if (cBande.gene >= 10) s.push(fondMot(cBande));
-    /* En court, le nom entier reste au survol. */
-    s.push(texteMot(cBande, cBande.court ? { titre: '<title>' + motBande + '</title>' } : {}));
-    if (deuxSens) {
-      s.push('<line x1="' + mG + '" x2="' + (L - mD) + '" y1="' + yZero.toFixed(1) + '" y2="' + yZero.toFixed(1) + '" stroke="var(--filet)" stroke-width="1"/>');
-    }
+    /* Débrief 27 (B3) : la bande a sa rangée à elle, sous l'axe — son nom
+       en haut à gauche (« validés / semaine », 11 px), dessous les barres
+       (10 px de large, le haut arrondi) posées sur leur propre ligne de
+       base ; pour une valeur qui peut baisser, un zéro au milieu de la
+       bande, la baisse dessous. Des barres plus soutenues (--barre-semaine,
+       3:1 sur la surface : le vert clair d'avant faisait 2,2:1). */
+    var lb = Math.min(10, Math.max(2, pasX - 2));
+    var hautBarres = bandeH - 14;                      // sous le nom de la bande
+    var hMax = deuxSens ? hautBarres / 2 : hautBarres, yZero = deuxSens ? basBande - hautBarres / 2 : basBande;
+    var motBande = vVal ? ech('« ' + vVal.libelle + ' » : variation nette par semaine') : motFini(2) + ' / semaine';
+    var motCourt = vVal ? ech('« ' + vVal.libelle + ' » par sem.') : motFini(2) + '/sem.';
+    var nomEntier = largeurMot(motBande) <= LARGEUR + mG - 4;
+    s.push('<text class="grad nom-bande" x="' + mG + '" y="' + (yBande + 10).toFixed(1) + '" text-anchor="start">' +
+           (nomEntier ? motBande : '<title>' + motBande + '</title>' + motCourt) + '</text>');
+    s.push('<line class="base-bande" x1="' + mG + '" x2="' + (L - mD) + '" y1="' + yZero.toFixed(1) + '" y2="' + yZero.toFixed(1) + '" stroke="var(--filet-fort)" stroke-width="1"/>');
     taux.forEach(function (t) {
       if (t.i < d0 || t.i > d1 || !t.v || (!deuxSens && t.v < 0)) return;
       var h = Math.max(1.5, (Math.abs(t.v) / maxSem) * hMax);
@@ -7676,9 +8138,8 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       s.push('<path class="barre-semaine' + (monte ? '' : ' perte') + '" d="M' + xg.toFixed(1) + ' ' + yb.toFixed(1) + ' V' + (yh + sens * rx).toFixed(1) +
              ' Q' + xg.toFixed(1) + ' ' + yh.toFixed(1) + ' ' + (xg + rx).toFixed(1) + ' ' + yh.toFixed(1) +
              ' H' + (xg + lb - rx).toFixed(1) + ' Q' + (xg + lb).toFixed(1) + ' ' + yh.toFixed(1) + ' ' + (xg + lb).toFixed(1) + ' ' + (yh + sens * rx).toFixed(1) +
-             ' V' + yb.toFixed(1) + ' Z" fill="' + (vVal ? coul : 'var(--r4)') + '"' + (monte ? '' : ' opacity=".5"') + '/>');
+             ' V' + yb.toFixed(1) + ' Z" fill="' + (vVal ? coul : 'var(--barre-semaine)') + '"' + (monte ? '' : ' opacity=".5"') + '/>');
     });
-    s.push('<line x1="' + mG + '" x2="' + (L - mD) + '" y1="' + basTotal.toFixed(1) + '" y2="' + basTotal.toFixed(1) + '" stroke="var(--filet)" stroke-width="1"/>');
 
     // Graduations : espacees pour tenir une dizaine d etiquettes quel que soit le zoom
     /* Une dizaine sur un grand écran, moins sur un cadre étroit : une
@@ -7686,20 +8147,26 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        l'année dessous ne se touchent jamais. */
     var saut = Math.max(1, Math.ceil(span / Math.max(2, Math.min(11, Math.floor(LARGEUR / 60)))));
     var anneeEcrite = '';
+    /* Débrief 27 (B3) : la semaine d'aujourd'hui (celle du trait) s'écrit
+       toujours ; celle du dernier relevé aussi, si elle n'est pas trop
+       près ; une graduation régulière trop proche de l'une d'elles leur
+       cède la place. L'axe est sous le tracé, la bande des semaines dessous. */
+    var aujEcrit = Math.abs(AUJ - depart) * pasX >= 34;
+    var forcee = function (k) { return k === depart || (k === AUJ && aujEcrit); };
     for (var k3 = d0; k3 <= d1; k3++) {
-      if ((k3 - d0) % saut !== 0 && k3 !== AUJ) continue;
-      // La semaine d'aujourd'hui s'écrit toujours ; une graduation régulière trop proche lui cède la place.
-      if (k3 !== AUJ && Math.abs(k3 - AUJ) * pasX < 34) continue;
+      if ((k3 - d0) % saut !== 0 && !forcee(k3)) continue;
+      if (!forcee(k3) && (Math.abs(k3 - depart) * pasX < 34 || (aujEcrit && Math.abs(k3 - AUJ) * pasX < 34))) continue;
       var lib = etiquette(k3);
       var annee = lib.slice(0, 4), semaine = 'S' + numeroSemaine(k3);
-      s.push('<text class="grad" x="' + x(k3).toFixed(1) + '" y="' + (H - 19) + '" text-anchor="middle"' + (k3 > AUJ ? ' opacity=".7"' : '') + '>' +
+      /* À 18 px sous le zéro : la première semaine ne touche pas le « 0 » de l'échelle. */
+      s.push('<text class="grad" x="' + x(k3).toFixed(1) + '" y="' + (yBas + 18).toFixed(1) + '" text-anchor="middle"' + (k3 > AUJ ? ' opacity=".7"' : '') + '>' +
              semaine + '</text>');
       /* L'année n'encombre pas chaque graduation : une fois, puis à chaque
          changement. */
       if (annee !== anneeEcrite) {
         /* Débrief 27 : l'année passe de 10 à 11 px (jamais moins de 11 px
            rendus) ; un pixel plus bas, elle ne touche pas la semaine. */
-        s.push('<text class="annee" x="' + x(k3).toFixed(1) + '" y="' + (H - 5) + '" text-anchor="middle">' + annee + '</text>');
+        s.push('<text class="annee" x="' + x(k3).toFixed(1) + '" y="' + (yBas + 32).toFixed(1) + '" text-anchor="middle">' + annee + '</text>');
         anneeEcrite = annee;
       }
     }
@@ -7720,20 +8187,44 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
          pour les lecteurs d'écran. Ni bouton ni focus : rien ne se pose sur
          le graphique, et un clic n'y dessine plus de contour. */
       s.push('<rect class="zone-clic" x="' + (x(k4) - pasX / 2).toFixed(1) + '" y="' + (mHaut - 6) + '" width="' + pasX.toFixed(1) +
-             '" height="' + (plotH + ecart + bandeH + 6).toFixed(1) + '" fill="transparent" role="img" data-i="' + k4 + '" ' +
+             '" height="' + (basBande - mHaut + 6).toFixed(1) + '" fill="transparent" role="img" data-i="' + k4 + '" ' +
              'aria-label="' + semaineDite(k4) +
-             (ptK ? ' : ' + ptK.termine + (vVal ? ech(' « ' + vVal.libelle + ' »') : ' validés') : k4 > depart ? ' (à venir)'
+             (ptK ? ' : ' + ptK.termine + (vVal ? ech(' « ' + vVal.libelle + ' »') : ' ' + motFini(2)) : k4 > depart ? ' (à venir)'
                : RELEVES.some(function (r) { return r.i === k4; }) ? ' : relevé sans détail plan par plan, hors de cette courbe' : ' : pas de relevé') + '"/>');
     }
 
     s.push('</svg>');
-    $('zone-graphe').innerHTML = s.join('');
+    /* Débrief 27 (D8, B7) : moins de deux points, pas de courbe — une
+       grille vide avec un seul point et des commandes qui n'agissent sur
+       rien. Un état calme à la place : ce qui manque et quand cela viendra ;
+       les pilules, la période, la légende et les chiffres se cachent
+       (.graphe-vide), les jalons restent listés dessous. */
+    var vide = trace.length < 2;
+    $('section-tendance').classList.toggle('graphe-vide', vide);
+    cadreGraphe.tabIndex = vide ? -1 : 0;
+    $('zone-graphe').innerHTML = !vide ? s.join('')
+      : '<div class="etat-vide graphe-vide-bloc"><p class="etat-vide-phrase">La courbe commence au deuxième relevé</p>' +
+        '<p class="etat-vide-detail">' + (trace.length
+          ? 'Un seul relevé pour l’instant (' + ech(semaineDite(trace[0].i)) + ') : ' + nb(trace[0].termine) + ' sur ' + nb(trace[0].total) + ' plans ' + motFini(2) + '. '
+          : 'Aucun relevé archivé pour l’instant. ') +
+        'La courbe et le rythme se dessineront au prochain relevé archivé.</p></div>';
 
+    /* Débrief 27 (M3, D9) : chaque mot de la légende est un bouton qui
+       déplie sa phrase sous la légende — au doigt et au clavier, plus
+       seulement au survol (le soulignement pointillé promettait quelque
+       chose qu'un toucher n'ouvrait pas). Un seul déplié à la fois ; un
+       second appui le replie. Le survol garde son titre. */
+    var phrases = {};
+    var motLegende = function (cle, titre, texte) {
+      phrases[cle] = titre;
+      return '<button type="button" class="legende-mot" data-legende="' + cle + '" aria-expanded="' + (vue.legendeOuverte === cle) +
+        '" aria-controls="legende-detail"><span title="' + ech(titre) + '">' + texte + '</span></button>';
+    };
     var items = ['<span class="legende-item"><svg width="20" height="8" aria-hidden="true"><line x1="0" y1="4" x2="20" y2="4" stroke="' + coul + '" stroke-width="2.2"' +
       (vVal && vVal.hachure ? ' stroke-dasharray="6 4"' : '') + '/></svg>' +
-      (vVal ? '<span title="' + ech('Plans « ' + vVal.libelle + ' », relevé après relevé. Le rythme, la fin estimée et l’échéance se lisent sur les validés.') + '">' +
-                ech('« ' + vVal.libelle + ' », relevé après relevé') + '</span></span>'
-            : '<span title="Plans validés, relevé après relevé.">r\u00e9alis\u00e9</span></span>')];
+      (vVal ? motLegende('realise', 'Plans « ' + vVal.libelle + ' », relevé après relevé. Le rythme, la fin estimée et l’échéance se lisent sur les ' + motFini(2) + '.',
+                ech('« ' + vVal.libelle + ' », relevé après relevé')) + '</span>'
+            : motLegende('realise', 'Plans ' + motFini(2) + ', relevé après relevé : le trait plein, un point par relevé.', 'r\u00e9alis\u00e9') + '</span>')];
     /* Les mêmes mots que la fiche et le bloc par groupe : « rythme tenu »,
        « fin », « requis » — et les mêmes nombres, tirés de bilanEcheance. */
     /* Rien de validé depuis le premier relevé : pas de projection tracée,
@@ -7741,8 +8232,8 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        (0,0/sem.) » renvoyait à une droite absente). Les mots du bloc par
        groupe, sans pastille. */
     if (ryt && restants > 0 && !vVal && projIdx === null) {
-      items.push('<span class="legende-item sans-rythme"><span title="Aucun plan validé depuis le premier relevé : pas de rythme, donc pas de date d\u2019arrivée.">' +
-        'rien de validé depuis le premier relevé</span></span>');
+      items.push('<span class="legende-item sans-rythme">' + motLegende('rythme', 'Aucun plan ' + motFini(1) + ' depuis le premier relevé : pas de rythme, donc pas de date d\u2019arrivée.',
+        'rien de ' + motFini(1) + ' depuis le premier relevé') + '</span>');
     }
     if (ryt && restants > 0 && !vVal && projIdx !== null) {
       /* Accordé : avec deux relevés, « 7 plans validés en 1 semaine » (il
@@ -7754,10 +8245,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         'À ce rythme, ' + (restants > 1 ? 'les ' + nb(restants) + ' restants demandent ' : 'le dernier demande ') +
         dansSem + (dansSem > 1 ? ' semaines' : ' semaine') + ' : fin ' + semaineDite(projIdx) + '.';
       items.push('<span class="legende-item"><svg width="22" height="8" aria-hidden="true">' +
-        '<line x1="0" y1="4" x2="22" y2="4" stroke="var(--fait)" stroke-width="1.6" stroke-dasharray="4 3" opacity=".65"/></svg>' +
+        '<line x1="0" y1="4" x2="22" y2="4" stroke="var(--fait)" stroke-width="1.6" stroke-dasharray="5 4"/></svg>' +
         /* Le rythme seul (débrief 19 : « la flèche et fin juillet 2032, on
            s'en fout ») : la fin estimée reste dans le survol et sur la courbe. */
-        '<span title="' + ech(explication) + '">au rythme tenu (' + virgule(vitesse) + '/sem.)</span></span>');
+        motLegende('rythme', explication, 'au rythme tenu (' + virgule(vitesse) + '/sem.)') + '</span>');
     }
     if (requis !== null && !vVal) {
       var dom = bilan.domaine && bilan.domaine !== vue.perimetre ? bilan.domaine : '';
@@ -7766,19 +8257,22 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
          groupe choisi dans le bloc. */
       var gA = groupeAffiche();
       var porteeG = gA ? nomGroupe(gA) : '';
-      items.push('<span class="legende-item"><svg width="20" height="8" aria-hidden="true"><line x1="0" y1="4" x2="20" y2="4" stroke="' +
-        (enRetard ? 'var(--alerte)' : 'var(--fait)') + '" stroke-width="1.6"/></svg>' +
-        '<span title="' + ech(nb(bilan.restants) + (bilan.restants > 1 ? ' plans' : ' plan') + ' à valider' + (dom ? ' dans ' + dom : '') +
-          ' en ' + bilan.semaines + (bilan.semaines > 1 ? ' semaines' : ' semaine') + ', d\u2019ici le ' + JOURS_SEMAINE[d.getUTCDay()] + ' ' +
-          d.getUTCDate() + ' ' + MOIS[d.getUTCMonth()] + ' : ' + virgule(requis) + ' par semaine. En rouge quand le rythme tenu ne suffit pas.') + '">' +
+      items.push('<span class="legende-item"><svg width="26" height="8" aria-hidden="true"><line x1="0" y1="4" x2="26" y2="4" stroke="' +
+        (enRetard ? 'var(--alerte)' : 'var(--fait)') + '" stroke-width="1.6" stroke-dasharray="8 3 2 3"/></svg>' +
         /* Sans le nombre (débrief 19) : il est dans le survol, dans la fiche de
            l'échéance et dans le bloc par groupe. */
-        'requis pour \u00ab\u00a0' + ech(prochain.texte) + '\u00a0\u00bb' + (porteeG ? ' (' + ech(porteeG) + ')' : '') +
-        (dom ? ' sur ses plans ' + ech(dom) : '') + '</span>' +
+        motLegende('requis', nb(bilan.restants) + (bilan.restants > 1 ? ' plans' : ' plan') + ' à valider' + (dom ? ' dans ' + dom : '') +
+          ' en ' + bilan.semaines + (bilan.semaines > 1 ? ' semaines' : ' semaine') + ', d\u2019ici le ' + JOURS_SEMAINE[d.getUTCDay()] + ' ' +
+          d.getUTCDate() + ' ' + MOIS[d.getUTCMonth()] + ' : ' + rythmeDit(requis) + ' par semaine. En rouge quand le rythme tenu ne suffit pas.',
+          'requis pour \u00ab\u00a0' + ech(prochain.texte) + '\u00a0\u00bb' + (porteeG ? ' (' + ech(porteeG) + ')' : '') +
+          (dom ? ' sur ses plans ' + ech(dom) : '')) +
         (!surLaCourbe && dom ? '<button type="button" class="lien-doux" data-voir-perimetre="' + ech(dom) + '">voir ' + ech(dom) + '</button>' : '') +
         '</span>');
     }
-    $('legende').innerHTML = items.join('');
+    if (vue.legendeOuverte && !phrases[vue.legendeOuverte]) vue.legendeOuverte = '';
+    $('legende').innerHTML = items.join('') +
+      '<p class="legende-detail" id="legende-detail"' + (vue.legendeOuverte ? '' : ' hidden') + '>' +
+      (vue.legendeOuverte ? ech(phrases[vue.legendeOuverte]) : '') + '</p>';
     /* La légende des jalons : chaque numéro en clair, son nom, et dessous sa
        semaine telle que la page la dit partout — « S51 · déc. 2026 ». Rien
        d'autre (débrief 13) : le périmètre, l'avancement suivi, le décompte
@@ -7798,7 +8292,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
            suivi et le décompte en jours sont dans la bulle et dans la
            fiche ; le graphique dit le reste. */
         '<b class="num">' + (idx + 1) + '</b><span class="mot">' + ech(j.texte) + '</span>' +
-        '<span class="quand">' + semaineDite(j.i) + '</span></span>';
+        /* Débrief 27 (X-A8) : l'échéance manquée le dit en mots, pas
+           seulement en rouge. */
+        '<span class="quand">' + semaineDite(j.i) + (rouge ? '<span class="retard"> \u00b7 en retard</span>' : '') + '</span></span>';
     }).join('') + '</div>' + (vue.echeance !== null && jalons[vue.echeance] ? ficheEcheance(vue.echeance) : '') : '';
 
     /* Dessiné avant l'arrivée des polices, les mots ont été placés avec
@@ -7812,9 +8308,69 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
 
     derniereAnalyse = { pts: pts, total: total, atteint: atteint, restants: restants, vitesse: vitesse,
                         projIdx: projIdx, trace: trace, valeur: vVal,
-                        prochain: prochain, requis: requis, enRetard: enRetard, span: span, d0: d0 };
+                        prochain: prochain, requis: requis, enRetard: enRetard, span: span, d0: d0,
+                        bilan: bilan, ryt: ryt,
+                        echelle: { d0: d0, pasX: pasX, mHaut: mHaut, plotH: plotH, haut: haut, H: H } };
     majBoutonsZoom();
+    /* Débrief 27 : après un glissement ou un zoom à la main, le retour au
+       cadrage d'ouverture ; la semaine montrée au doigt ou au clavier reste
+       éclairée ; la phrase-résumé et, s'il est ouvert, le tableau des
+       chiffres suivent la courbe. */
+    var rv = $('revenir-cadrage');
+    if (rv) {
+      rv.hidden = !vue.fenManuelle;
+      rv.style.left = (mG + 6) + 'px'; rv.style.top = (mHaut + 6) + 'px';
+      if (vue.fenManuelle) rv.innerHTML = '<span aria-hidden="true">\u21ba</span> ' +
+        (!vVal && cadrageEcheances() ? 'Revenir aux échéances' : 'Revenir au cadrage de départ');
+    }
+    if (semaineMarquee !== null) marquerSemaine(semaineMarquee);
+    rendreDonneesGraphe();
     planifierSauvegarde();
+  }
+
+  /* Débrief 27 (X-A7) : ce que dit le graphique, en mots — une phrase
+     (#resume-graphe, la description du cadre et du dessin pour les
+     lecteurs d'écran) et, dans « Voir les chiffres », le tableau des
+     relevés : semaine, nombre, plans suivis, gain net. Le tableau ne se
+     remplit qu'ouvert, et seulement s'il a changé (un glissement redessine
+     la courbe à chaque semaine). */
+  var CLE_DONNEES_GRAPHE = '';
+  function rendreDonneesGraphe() {
+    var a = derniereAnalyse, resume = $('resume-graphe');
+    if (!a || !resume) return;
+    var serie = a.trace || a.pts, der = serie[serie.length - 1], v = a.valeur, b = a.bilan;
+    var phrase;
+    if (!der) phrase = 'Aucun relevé.';
+    else if (v) phrase = nb(der.termine) + ' plans « ' + v.libelle + ' » sur ' + nb(der.total) + ', en ' + semaineDite(der.i) + '.';
+    else {
+      phrase = nb(a.atteint) + ' ' + (a.total > 1 ? 'plans ' : 'plan ') + motFini(a.total) + ' sur ' + nb(a.total) + ', en ' + semaineDite(der.i) + '. ' +
+        (a.ryt ? 'Rythme tenu : ' + virgule(a.vitesse) + ' par semaine' + (a.projIdx !== null ? ', fin estimée en ' + semaineDite(a.projIdx) : '') + '.'
+               : 'Un seul relevé : pas encore de rythme.');
+      if (a.prochain && b && b.restants) {
+        var d = dateEcheance(a.prochain);
+        phrase += ' Échéance « ' + a.prochain.texte + ' », ' + JOURS_SEMAINE[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + MOIS[d.getUTCMonth()] +
+          ' : il faut ' + rythmeDit(b.requis) + ' par semaine ; ' +
+          (b.rythme === null ? 'le rythme se mesurera au deuxième relevé.'
+            : b.enRetard ? 'au rythme tenu, il manquera ' + nb(b.manque) + (b.manque > 1 ? ' plans.' : ' plan.') : 'au rythme tenu, elle sera tenue.');
+      }
+    }
+    resume.textContent = phrase;
+    var details = $('donnees-graphe'), corps = $('donnees-graphe-corps');
+    if (!details || !corps) return;
+    details.hidden = !serie.length;
+    if (!details.open) return;
+    var titreN = v ? '« ' + v.libelle + ' »' : majuscule(motFini(2));
+    var lignes = serie.map(function (pt, k) {
+      var g = k ? pt.termine - serie[k - 1].termine : null;
+      return '<tr><th scope="row">' + ech(semaineDite(pt.i)) + '</th><td>' + nb(pt.termine) + '</td><td>' + nb(pt.total) + '</td><td>' +
+        (g === null ? TIRET_VIDE : (g > 0 ? '+' : '') + nb(g)) + '</td></tr>';
+    });
+    var html = '<p>' + ech(phrase) + '</p><table class="table-donnees"><caption class="masque">Relevés de la courbe, du plus ancien au plus récent</caption>' +
+      '<thead><tr><th scope="col">Semaine</th><th scope="col">' + ech(titreN) + '</th><th scope="col">Plans suivis</th><th scope="col">' +
+      (v ? 'Variation nette' : 'Gain net') + '</th></tr></thead><tbody>' + lignes.join('') + '</tbody></table>';
+    if (html === CLE_DONNEES_GRAPHE && corps.innerHTML) return;
+    CLE_DONNEES_GRAPHE = html;
+    corps.innerHTML = html;
   }
 
   /* « Tout » n'a pas de largeur fixe : il est pressé quand la fenêtre est
@@ -7856,7 +8412,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   }
 
   function reglerSpan(span) {
-    vue.fenAuto = false;
+    vue.fenAuto = false; vue.fenManuelle = false;
     vue.fen = span === 'jalons' ? (cadrageEcheances() || cadrageSur(SPAN_OUVERTURE))
             : span ? cadrageSur(span) : { debut: 0, span: spanTout() };
     rendreGraphique(selection());
@@ -7882,19 +8438,59 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
           survivent au redessin du SVG ---- */
   var cadreGraphe = $('cadre-graphe');
   var glisse = null;
+  /* Débrief 27 (M3, D9, X-A7) : la bulle d'une semaine s'ouvre de trois
+     façons. Au survol de la souris, comme avant. Au doigt : un toucher sur
+     la courbe l'ouvre et la garde (elle s'effaçait 5 ms après) ; un toucher
+     ailleurs, un défilement, sa croix ou Échap la ferment ; au téléphone,
+     elle se pose en bas de l'écran, jamais sous le doigt. Au clavier : le
+     cadre du graphique prend le focus, les flèches passent d'un relevé à
+     l'autre (Début, Fin : le premier, le dernier), et la page dit la
+     semaine (annoncer). modeBulle : '' (fermée, ou au survol), 'tenue'
+     (au doigt), 'clavier'. */
+  var modeBulle = '', semaineClavier = null, semaineMarquee = null;
 
   /* Le geste du graphique : le panoramique. Il part de n'importe quel point
      du cadre, frise des jalons et marge du bas comprises — le curseur y
      promet la main partout. Un clic net sur le numéro d'un jalon ouvre la
-     fiche de son échéance ; ailleurs, il ne fait rien. */
+     fiche de son échéance ; ailleurs, il ne fait rien (au doigt : la bulle
+     de la semaine). Débrief 27 (M2) : le cadre laisse au navigateur les
+     gestes verticaux (touch-action: pan-y) — un pouce qui descend fait
+     défiler la page, et le navigateur nous envoie pointercancel ; seul un
+     glissement franchement horizontal déplace la courbe. */
   cadreGraphe.addEventListener('pointerdown', function (e) {
     if (e.button !== 0) return;
-    glisse = { x0: e.clientX, debut0: vue.fen.debut, bouge: false };
+    if (e.target.closest && e.target.closest('#revenir-cadrage')) return;
+    glisse = { x0: e.clientX, debut0: vue.fen.debut, bouge: false, type: e.pointerType || 'mouse' };
     cadreGraphe.setPointerCapture(e.pointerId);
   });
 
+  /* Débrief 27 (P-F1, X-A9) : la molette seule fait défiler la page — elle
+     restait coincée sur le graphique, qui zoomait à la place. Le zoom passe
+     par Ctrl (⌘ sur Mac) + molette, et par le pincement d'un pavé tactile,
+     qui arrive en Ctrl + molette. La première molette simple sur le
+     graphique fait paraître, une fois par visite, un mot discret qui le dit. */
+  var INDICE_ZOOM_VU = false;
+  function montrerIndiceZoom() {
+    if (INDICE_ZOOM_VU) return;
+    INDICE_ZOOM_VU = true;
+    try { if (sessionStorage.getItem('suivi-fwd:indice-zoom')) return; sessionStorage.setItem('suivi-fwd:indice-zoom', '1'); } catch (err) { /* stockage interdit : une fois par page */ }
+    var z = $('indice-zoom');
+    if (!z) return;
+    var mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
+    z.textContent = (mac ? '⌘' : 'Ctrl') + ' + molette pour zoomer · glisser pour se déplacer';
+    z.hidden = false;
+    clearTimeout(z.__minuteur);
+    requestAnimationFrame(function () { z.classList.add('visible'); });
+    z.__minuteur = setTimeout(function () {
+      z.classList.remove('visible');
+      z.__minuteur = setTimeout(function () { z.hidden = true; }, 350);
+    }, 2400);
+  }
   cadreGraphe.addEventListener('wheel', function (e) {
     if (!e.target.closest || !e.target.closest('svg')) return;
+    if (!e.ctrlKey && !e.metaKey) { if (e.deltaY) montrerIndiceZoom(); return; }
+    /* Ctrl + molette : c'est pour le graphique — jamais le zoom de la page
+       entière, même quand le graphique est déjà à sa limite. */
     e.preventDefault();
     var i = indexSousCurseur(e.clientX);
     if (i === null) return;
@@ -7908,7 +8504,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if (span1 === span0) return;
     // La semaine sous le curseur reste au meme endroit a l'ecran.
     var part = (i - vue.fen.debut) / (span0 - 1);
-    vue.fenAuto = false;
+    vue.fenAuto = false; vue.fenManuelle = true;
     vue.fen.span = span1;
     vue.fen.debut = Math.round(i - part * (span1 - 1));
     /* Arrivé au plafond en zoomant arrière : exactement la fenêtre de
@@ -7922,10 +8518,11 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var dx = e.clientX - glisse.x0;
     if (Math.abs(dx) > 4) glisse.bouge = true;
     if (!glisse.bouge) return;
+    if (modeBulle) cacherBulle();
     var semaines = dx / pxParSemaine();
     cadreGraphe.dataset.glisse = 'true';
     var nd = Math.round(glisse.debut0 - semaines);
-    if (nd !== vue.fen.debut) { vue.fenAuto = false; vue.fen.debut = nd; rendreGraphique(selection()); }
+    if (nd !== vue.fen.debut) { vue.fenAuto = false; vue.fenManuelle = true; vue.fen.debut = nd; rendreGraphique(selection()); }
   });
 
   function finGlisse() {
@@ -7934,24 +8531,35 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     cadreGraphe.dataset.glisse = 'false';
   }
   cadreGraphe.addEventListener('pointerup', function (e) {
-    var net = !!glisse && !glisse.bouge;
+    var g0 = glisse, net = !!glisse && !glisse.bouge;
     finGlisse();
     if (!net) return;
     /* Le cadre a capturé le pointeur : la cible se retrouve sous le doigt. */
     var sous = document.elementFromPoint(e.clientX, e.clientY);
     var g = sous && sous.closest && sous.closest('.jalon[data-jalon]');
-    if (g) ouvrirEcheance(+g.getAttribute('data-jalon'), true);
+    if (g) { vue.ouvreurEcheance = null; ouvrirEcheance(+g.getAttribute('data-jalon'), true); return; }
+    if (g0.type !== 'mouse' && sous && sous.closest && sous.closest('.zone-clic')) {
+      var i = indexSousCurseur(e.clientX);
+      if (i !== null) montrerBulleSemaine(i, 'tenue', e.clientX, e.clientY);
+    }
   });
   cadreGraphe.addEventListener('pointercancel', finGlisse);
 
-  /* Infobulle */
-  cadreGraphe.addEventListener('mousemove', function (e) {
-    if (glisse && glisse.bouge) { $('bulle').dataset.visible = 'false'; return; }
-    if (!e.target.closest || !e.target.closest('.zone-clic')) { $('bulle').dataset.visible = 'false'; return; }
-    var i = indexSousCurseur(e.clientX);
+  /* Après un glissement ou un zoom à la main (débrief 27, M11) : « ↺ Revenir
+     aux échéances » se pose en haut du graphique, par-dessus — rien ne
+     bouge — et ramène le cadrage d'ouverture. */
+  $('revenir-cadrage').addEventListener('click', function () {
+    var avaitFocus = document.activeElement === this;
+    vue.fenAuto = true; vue.fenManuelle = false;
+    rendreGraphique(selection());
+    if (avaitFocus) cadreGraphe.focus({ preventScroll: true });
+    annoncer('Graphique revenu à son cadrage de départ');
+  });
+
+  /* La bulle d'une semaine : son contenu, d'abord. */
+  function contenuBulleSemaine(i) {
     var a = derniereAnalyse;
-    if (i === null || !a) return;
-    var bulle = $('bulle');
+    if (i === null || !a) return '';
     var k = -1, serie = a.trace || a.pts, v = a.valeur;
     for (var q = 0; q < serie.length; q++) if (serie[q].i === i) k = q;
     /* Le relevé d'avant dans RELEVES, pour dire si le point précédent de la
@@ -7963,22 +8571,90 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       var pt = serie[k];
       var gagne = k > 0 ? pt.termine - serie[k - 1].termine : null;
       var surPrecedent = k > 0 && iReleve > 0 && RELEVES[iReleve - 1].i === serie[k - 1].i;
-      bulle.innerHTML = '<div class="tete-bulle">Relevé de ' + semaineDite(i) + '</div>' +
-        '<div class="bulle-ligne">' + (v ? pastilleValeur(v.cle, v.famille) + ech(v.libelle) : '<span class="pastille" style="background:var(--fait)"></span>validés') +
+      return '<div class="tete-bulle">Relevé de ' + semaineDite(i) + '</div>' +
+        '<div class="bulle-ligne">' + (v ? pastilleValeur(v.cle, v.famille) + ech(v.libelle) : '<span class="pastille" style="background:var(--fait)"></span>' + motFini(2)) +
           '<span class="n">' + nb(pt.termine) + ' / ' + nb(pt.total) + '</span></div>' +
         (gagne !== null ? '<div class="bulle-ligne"><span class="pastille sans"></span>' + (v ? 'variation nette' : 'gain net') +
           (surPrecedent ? ' sur le relevé précédent' : ' depuis le relevé de ' + semaineDite(serie[k - 1].i)) + '<span class="n">' +
           (gagne > 0 ? '+' : '') + nb(gagne) + '</span></div>' : '') +
         comptesDeLaSemaine(i);
-    } else {
-      var depart = semaineDepart();
-      bulle.innerHTML = '<div class="tete-bulle">' + semaineDite(i) + '</div><div class="bulle-ligne">' +
-        (i > depart ? 'À venir' : i === depart && i > AUJ ? 'Semaine en cours : pas encore de relevé archivé'
-          : iReleve !== -1 ? 'Relevé sans détail plan par plan : hors de cette courbe' : 'Pas de relevé cette semaine-là') + '</div>';
     }
+    var depart = semaineDepart();
+    return '<div class="tete-bulle">' + semaineDite(i) + '</div><div class="bulle-ligne">' +
+      (i > depart ? 'À venir' : i === depart && i > AUJ ? 'Semaine en cours : pas encore de relevé archivé'
+        : iReleve !== -1 ? 'Relevé sans détail plan par plan : hors de cette courbe' : 'Pas de relevé cette semaine-là') + '</div>';
+  }
+  /* La bulle, montrée près du point (cx, cy, en pixels de l'écran) ; tenue
+     au doigt sur un téléphone, en bas de l'écran. */
+  function montrerBulleSemaine(i, mode, cx, cy) {
+    var html = contenuBulleSemaine(i);
+    if (!html) return;
+    var bulle = $('bulle');
+    modeBulle = mode;
+    bulle.innerHTML = '<div class="bulle-semaine">' + html + '</div>' +
+      (mode === 'tenue' ? '<button type="button" class="bulle-fermer" tabindex="-1" aria-label="Fermer le détail de la semaine">×</button>' : '');
+    bulle.classList.toggle('tenue', mode === 'tenue');
+    var enBas = mode === 'tenue' && !!window.matchMedia && window.matchMedia('(max-width: 560px)').matches;
+    bulle.classList.toggle('en-bas', enBas);
     bulle.dataset.visible = 'true';
-    bulle.style.left = Math.min(e.clientX + 14, window.innerWidth - bulle.offsetWidth - 12) + 'px';
-    bulle.style.top = Math.min(e.clientY + 16, window.innerHeight - bulle.offsetHeight - 12) + 'px';
+    marquerSemaine(mode ? i : null);
+    if (enBas) { bulle.style.left = ''; bulle.style.top = ''; return; }
+    bulle.style.left = Math.max(12, Math.min(cx + 14, window.innerWidth - bulle.offsetWidth - 12)) + 'px';
+    bulle.style.top = Math.max(12, Math.min(cy + 16, window.innerHeight - bulle.offsetHeight - 12)) + 'px';
+  }
+  function bulleDuGraphe() {
+    var bulle = $('bulle');
+    return bulle.dataset.visible === 'true' && !!bulle.querySelector('.bulle-semaine');
+  }
+  function cacherBulle() {
+    var bulle = $('bulle');
+    if (bulle.querySelector('.bulle-semaine') || modeBulle) {
+      bulle.dataset.visible = 'false';
+      bulle.classList.remove('tenue', 'en-bas');
+    }
+    modeBulle = '';
+    marquerSemaine(null);
+  }
+  /* La bande de la semaine montrée au doigt ou au clavier reste éclairée,
+     comme au survol (redessinée, elle se retrouve par son indice). */
+  function marquerSemaine(i) {
+    semaineMarquee = i;
+    [].forEach.call($('zone-graphe').querySelectorAll('.zone-clic.marquee'), function (r) { r.classList.remove('marquee'); });
+    if (i === null) return;
+    var r = $('zone-graphe').querySelector('.zone-clic[data-i="' + i + '"]');
+    if (r) r.classList.add('marquee');
+  }
+  /* Ce que dit la bulle, en une phrase pour les lecteurs d'écran : « Relevé
+     de S43 · oct. 2026 ; validés : 53 / 634 ; gain net sur le relevé
+     précédent : +9 ; … ». */
+  function texteBulle() {
+    return [].map.call($('bulle').querySelectorAll('.tete-bulle, .bulle-ligne'), function (el) {
+      var n = el.querySelector('.n'), t = el.textContent;
+      if (n) t = t.slice(0, t.length - n.textContent.length).trim() + ' : ' + n.textContent;
+      return t.replace(/\s+/g, ' ').trim();
+    }).join(' ; ');
+  }
+  /* Où est le point d'une semaine à l'écran : de quoi poser la bulle du
+     clavier à côté de lui. */
+  function pointEcran(i) {
+    var svg = $('zone-graphe').querySelector('svg'), a = derniereAnalyse;
+    if (!svg || !a || !a.echelle) return { x: 0, y: 0 };
+    var r = svg.getBoundingClientRect(), e = a.echelle;
+    var pt = (a.trace || a.pts).filter(function (p) { return p.i === i; })[0];
+    var yv = pt ? e.mHaut + e.plotH - (pt.termine / e.haut) * e.plotH : e.mHaut + e.plotH;
+    return { x: r.left + (mG + e.pasX * (i - e.d0)) * r.width / L, y: r.top + yv * r.height / e.H };
+  }
+
+  /* Infobulle au survol de la souris. Tenue au doigt, le survol (simulé
+     par le navigateur après un toucher) n'y touche pas ; la souris reprend
+     la main sur la bulle du clavier dès qu'elle survole une semaine. */
+  cadreGraphe.addEventListener('mousemove', function (e) {
+    if (modeBulle === 'tenue') return;
+    if (glisse && glisse.bouge) { cacherBulle(); return; }
+    if (!e.target.closest || !e.target.closest('.zone-clic')) { if (modeBulle !== 'clavier') cacherBulle(); return; }
+    var i = indexSousCurseur(e.clientX);
+    if (i === null || !derniereAnalyse) return;
+    montrerBulleSemaine(i, '', e.clientX, e.clientY);
   });
   /* Sous les deux lignes de tête, le résumé de la semaine — les lignes du
      journal, mot pour mot : « +6 » ne dit pas ce qui s'est passé. Quand la
@@ -7990,7 +8666,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if (vue.groupe && CLES_DIM.indexOf(vue.groupe.dim) !== -1) {
       evts = evts.filter(function (e) {
         var p = planDeRef(e.ref);
-        return p && String(valeurDim(p, vue.groupe.dim) || '\u2014') === vue.groupe.val;
+        return p && String(valeurDim(p, vue.groupe.dim) || '—') === vue.groupe.val;
       });
     }
     var lignes = resumeEvenements(evts).map(function (l) {
@@ -8000,13 +8676,82 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     return lignes.length ? '<div class="bulle-comptes">' + lignes.join('') + '</div>' : '';
   }
 
-  cadreGraphe.addEventListener('mouseleave', function () { $('bulle').dataset.visible = 'false'; });
+  cadreGraphe.addEventListener('mouseleave', function () { if (!modeBulle) cacherBulle(); });
+
+  /* Au clavier : les flèches parcourent les relevés de la courbe. */
+  cadreGraphe.addEventListener('keydown', function (e) {
+    if (e.target !== cadreGraphe) return;
+    var a = derniereAnalyse;
+    if (!a || !$('zone-graphe').querySelector('svg') || ['ArrowLeft', 'ArrowRight', 'Home', 'End'].indexOf(e.key) === -1) return;
+    var serie = (a.trace || a.pts).map(function (pt) { return pt.i; });
+    if (!serie.length) return;
+    e.preventDefault();
+    var pos = semaineClavier === null ? -1 : serie.indexOf(semaineClavier);
+    if (pos === -1) pos = e.key === 'Home' ? 0 : serie.length - 1;
+    else if (e.key === 'ArrowLeft') pos = Math.max(0, pos - 1);
+    else if (e.key === 'ArrowRight') pos = Math.min(serie.length - 1, pos + 1);
+    else pos = e.key === 'Home' ? 0 : serie.length - 1;
+    var i = serie[pos];
+    semaineClavier = i;
+    /* Un relevé hors de la fenêtre : elle glisse juste assez pour le montrer. */
+    var d1 = vue.fen.debut + vue.fen.span - 1;
+    if (i < vue.fen.debut || i > d1) {
+      vue.fenAuto = false; vue.fenManuelle = true;
+      vue.fen.debut = i < vue.fen.debut ? i - 1 : i - vue.fen.span + 2;
+      rendreGraphique(selection());
+    }
+    var pt = pointEcran(i);
+    montrerBulleSemaine(i, 'clavier', pt.x, pt.y);
+    annoncer(texteBulle());
+  });
+  cadreGraphe.addEventListener('blur', function () {
+    if (modeBulle === 'clavier') cacherBulle();
+    semaineClavier = null;
+  });
+  /* Fermer la bulle : un toucher hors du graphique et de la bulle, sa croix,
+     un défilement de la page, Échap (survol compris : elle couvrait la
+     courbe et rien ne la fermait). */
+  document.addEventListener('pointerdown', function (e) {
+    if (modeBulle !== 'tenue') return;
+    var t = e.target;
+    if (t.closest && t.closest('#bulle') && !t.closest('.bulle-fermer')) return;
+    if (t.closest && t.closest('#cadre-graphe') && !t.closest('.bulle-fermer')) return;
+    cacherBulle();
+  }, true);
+  window.addEventListener('scroll', function () { if (modeBulle === 'tenue') cacherBulle(); }, { passive: true });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' || !bulleDuGraphe()) return;
+    cacherBulle();
+    e.preventDefault();
+  });
 
   document.querySelector('.commandes-graphe .segmente').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-span]');
-    if (b && b.getAttribute('aria-disabled') === 'true') { montrerRaison(b, b.title); return; }
-    if (b) reglerSpan(b.dataset.span === 'jalons' ? 'jalons' : Number(b.dataset.span));
+    if (!b) return;
+    if (b.getAttribute('aria-disabled') === 'true') { montrerRaison(b, b.title); return; }
+    reglerSpan(b.dataset.span === 'jalons' ? 'jalons' : Number(b.dataset.span));
+    annoncer('Graphique : ' + b.textContent.trim());   // débrief 27 (X-A5)
   });
+  /* Débrief 27 : un mot de la légende déplie (ou replie) sa phrase ; Échap
+     la replie. Le focus reste sur le mot. */
+  $('legende').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-legende]');
+    if (!b) return;
+    var cle = b.dataset.legende;
+    vue.legendeOuverte = vue.legendeOuverte === cle ? '' : cle;
+    rendreGraphique(selection());
+    rendreFocus($('legende'), 'legende', cle);
+  });
+  $('legende').addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' || !vue.legendeOuverte) return;
+    var cle = vue.legendeOuverte;
+    vue.legendeOuverte = '';
+    rendreGraphique(selection());
+    rendreFocus($('legende'), 'legende', cle);
+    e.preventDefault();
+  });
+  /* « Voir les chiffres » : le tableau se remplit à l'ouverture. */
+  $('donnees-graphe').addEventListener('toggle', function () { if (this.open) rendreDonneesGraphe(); });
 
   /* ============================================================
      CHEMIN CRITIQUE
@@ -10937,6 +11682,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     rendreColonnesVides();
     rendreFichePlan(liste);
     rendreASurveiller();
+    rendreSignaux();
     rendreRapprochement();
     rendreSeconde();
     rendreIncomplets();
@@ -10955,6 +11701,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     rendreGraphique(liste);
     rendreEcheanceTitre();
     rendreASurveiller();
+    rendreSignaux();
     rendreFiltresActifs();
     libellerSommaireGroupe();
     $('rapprochement').hidden = !RAPPROCHEMENT;
@@ -11065,7 +11812,11 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     /* De même pour « À surveiller » (des plans en cours) sous une tuile
        Validé ou À faire : la page ne se vide pas, la tuile l'emporte. */
     if (vue.refsLibelle === SEL_ARRET && etatContraireALArret()) { vue.refs = null; vue.refsLibelle = ''; }
-    rendre();
+    /* Débrief 27 (X-A1, X-A5) : la tuile garde le focus après le rendu
+       (il tombait sur le corps de la page), et la page dit le résultat —
+       la phrase de tête. */
+    garderFocus(function () { rendre(); }, 'section-synthese');
+    annoncer((vue.etat ? '' : 'Filtre retiré. ') + $('phrase').textContent.replace(/\s+/g, ' ').trim());
   });
 
   $('corps-tableau').addEventListener('click', function (e) {
@@ -11093,7 +11844,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
          n'aurait laissé aucun plan à l'arrêt à l'écran. */
       if (etatContraireALArret()) vue.etat = '';
     }
-    rendre();
+    garderFocus(function () { rendre(); }, 'section-synthese');   // débrief 27 (X-A1)
   });
 
   /* Les tuiles du rapprochement : les lots d'ici filtrent le tableau ;
@@ -11372,8 +12123,21 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   }
   /* Un jalon de la légende, un numéro du graphique ou l'échéance sous le
      titre : un clic ouvre la fiche de l'échéance, un second la referme. */
+  /* Débrief 27 (P-F16) : la fiche refermée — Échap ou sa croix —, le focus
+     revient à ce qui l'a ouverte : la puce de la Tendance, le « Détail » du
+     verdict de la Synthèse, sinon le jalon de la légende (un numéro du
+     graphique n'est pas focalisable : son jalon de la légende le remplace). */
+  function fermerEcheance() {
+    var idx = vue.echeance, ouvreur = vue.ouvreurEcheance;
+    vue.echeance = null; vue.ouvreurEcheance = null;
+    rendreGraphique(selection());
+    var el = ouvreur === 'echeance-titre' ? $('echeance-titre')
+      : ouvreur === 'verdict-synthese' ? document.querySelector('#verdict-synthese button[data-jalon]') : null;
+    if (!el || !focusVisible(el)) el = document.querySelector('.legende-jalon[data-jalon="' + idx + '"]');
+    if (el) { try { el.focus({ preventScroll: ouvreur === 'echeance-titre' || ouvreur === 'verdict-synthese' ? false : true }); } catch (err) { el.focus(); } }
+  }
   $('legende-jalons').addEventListener('click', function (e) {
-    if (e.target.closest('[data-fermer-echeance]')) { vue.echeance = null; rendreGraphique(selection()); return; }
+    if (e.target.closest('[data-fermer-echeance]')) { fermerEcheance(); return; }
     var aller = e.target.closest('[data-aller-indicateur]');
     if (aller) {
       var idxJalon = +aller.dataset.jalon;
@@ -11383,27 +12147,63 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       return;
     }
     var el = e.target.closest('.legende-jalon[data-jalon]');
-    if (el) ouvrirEcheance(+el.dataset.jalon);
+    if (el) { vue.ouvreurEcheance = null; ouvrirEcheance(+el.dataset.jalon); }
   });
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape' || vue.echeance === null || !$('fiche-echeance')) return;
-    if (e.target.closest && e.target.closest('input, select, textarea')) return;
-    var idx = vue.echeance;
-    vue.echeance = null;
-    rendreGraphique(selection());
-    var el = document.querySelector('.legende-jalon[data-jalon="' + idx + '"]');
-    if (el) el.focus();
+    if (e.target.closest && e.target.closest('input, select, textarea, dialog')) return;
+    /* La bulle d'une semaine, ouverte par-dessus, s'est fermée d'abord
+       (elle a pris ce même Échap : preventDefault). */
+    if (e.defaultPrevented) return;
+    e.preventDefault();
+    fermerEcheance();
   });
   $('legende-jalons').addEventListener('keydown', function (e) {
     var el = e.target.closest('.legende-jalon[data-jalon]');
     if (!el || (e.key !== 'Enter' && e.key !== ' ')) return;
     e.preventDefault();
+    vue.ouvreurEcheance = null;
     ouvrirEcheance(+el.dataset.jalon);
     var meme = document.querySelector('.legende-jalon[data-jalon="' + el.dataset.jalon + '"]');
     if (meme) meme.focus();
   });
   $('echeance-titre').addEventListener('click', function () {
+    vue.ouvreurEcheance = 'echeance-titre';
     ouvrirEcheance(+this.dataset.jalon, true);
+  });
+  /* Débrief 27 : « Détail » du verdict de la Synthèse ouvre la même fiche ;
+     Échap y ramène le focus. */
+  $('verdict-synthese').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-jalon]');
+    if (!b) return;
+    vue.ouvreurEcheance = 'verdict-synthese';
+    ouvrirEcheance(+b.dataset.jalon, true);
+  });
+  /* « À vérifier » : chaque lien mène à sa liste, dans sa section — le
+     journal filtré sur les reculs, la semaine du dernier relevé dépliée ; la
+     case « validés, absents de SEE » de la comparaison, posée et dépliée
+     comme le « 4 » de sa réponse. Le focus suit, pour le clavier. */
+  $('signaux-synthese').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-signal]');
+    if (!b) return;
+    if (b.dataset.signal === 'reculs') {
+      var sem = JOURNAL.length ? JOURNAL[0] : null;
+      vue.journal = 'reculs';
+      if (sem) vue.journalOuverts[sem.i] = true;
+      rendreJournal();
+      var tete = sem && [].filter.call($('zone-journal').querySelectorAll('button[data-semaine]'), function (x) { return x.dataset.semaine === String(sem.i); })[0];
+      defilerVers(tete || $('section-journal'), { block: 'start', behavior: lisse() });
+      if (tete) tete.focus({ preventScroll: true });
+      annoncer('Changements : les reculs du dernier relevé');
+    } else if (b.dataset.signal === 'see' && RAPPROCHEMENT) {
+      if (lotRappActif() !== 'manque') poserLotRapp('manque');
+      vue.lotRappOuvert = 'manque';
+      rendre();
+      var v = document.querySelector('#verdicts-rapprochement button[data-rapp="manque"]');
+      defilerVers(v || $('rapprochement'), { block: 'start', behavior: lisse() });
+      if (v) v.focus({ preventScroll: true });
+      annoncer(compteLotRapp('manque') + ' plans validés absents de ' + nomSeconde() + ', dans la comparaison');
+    }
   });
 
   /* ============================================================ SOMMAIRE */
@@ -11527,8 +12327,8 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var haut = sec.getBoundingClientRect().top + window.scrollY - SOMMAIRE.getBoundingClientRect().height -
       hauteurFiltres() - 14;
     window.scrollTo({ top: Math.max(0, haut), behavior: doux ? 'smooth' : 'auto' });
-    /* Le titre du panneau ; la synthèse n'a pas de h2 : son surtitre, qui
-       nomme la section pour les lecteurs d'écran. */
+    /* Le titre du panneau (débrief 27 : la phrase de la synthèse est son
+       h2) ; à défaut, son surtitre. */
     var titre = sec.querySelector('h2') || sec.querySelector('.surtitre');
     if (titre) {
       if (!titre.hasAttribute('tabindex')) titre.setAttribute('tabindex', '-1');
@@ -12375,12 +13175,15 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var b = e.target.closest('button[data-valeur-graphe]');
     if (!b || b.disabled) return;
     var cle = b.dataset.valeurGraphe;
-    /* Sans pilule pour les validés, un second clic sur la pilule pressée
-       ramène leur courbe. */
-    var sansDefaut = !$('filtre-valeur-graphe').querySelector('button[data-valeur-graphe=""]');
-    vue.valeurGraphe = sansDefaut && cle === vue.valeurGraphe ? '' : cle;
+    /* Débrief 27 (P-F19) : un second clic sur la pilule pressée ramène la
+       courbe par défaut, celle des validés — qu'elle ait sa pilule ou non
+       (avant, seulement quand elle n'en avait pas). Le focus reste sur la
+       pilule cliquée. */
+    vue.valeurGraphe = cle === vue.valeurGraphe ? '' : cle;
     rendreGraphique(selection());
     rendreFocus($('filtre-valeur-graphe'), 'valeur-graphe', cle);
+    var vA = vue.valeurGraphe ? (valeurDeCle(vue.valeurGraphe) || HIER_GRAPHE[vue.valeurGraphe]) : null;
+    annoncer('Courbe : ' + (vA ? vA.libelle : 'plans ' + motFini(2)));   // débrief 27 (X-A5)
   });
 
   $('zone-journal').addEventListener('click', function (e) {

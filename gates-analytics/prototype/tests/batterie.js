@@ -1029,7 +1029,8 @@ async function deplierFiltresColonne(pg) {
       semaines: grads.filter(t => /^S\d{1,2}$/.test(t)), avecAnnee: grads.filter(t => /^\d{4}-S/.test(t) && !/plans/.test(t)),
       annees: [...document.querySelectorAll('svg.graphe .annee')].map(t => t.textContent),
       pointsPleins: document.querySelectorAll('svg.graphe circle[fill="var(--fait)"][stroke="var(--surface)"]').length,
-      barres: document.querySelectorAll('svg.graphe path[fill="var(--r4)"]').length,
+      /* Débrief 27 (B3, X-A12) : les barres prennent --barre-semaine (3:1 sur la surface ; --r4 faisait 2,2:1). */
+      barres: document.querySelectorAll('svg.graphe path.barre-semaine[fill="var(--barre-semaine)"]').length,
       courbe: (document.querySelector('svg.graphe path[stroke="var(--fait)"][stroke-width="2"]') || {}).tagName === 'path'
     };
   });
@@ -1186,9 +1187,12 @@ async function deplierFiltresColonne(pg) {
   await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(500);
   await p.click('#etats .etat-btn[data-etat="termine"]'); await p.waitForTimeout(500);
   const cumul = await lirePerimetre();
+  /* Débrief 27 (B23) : sous une tuile, la phrase dit la part choisie, dans
+     le périmètre nommé (« 83 plans en Terminé · 36 % du périmètre PERSO »),
+     au lieu de « 83 sur 83 plans validés dans la sélection ». */
   verifier('périmètre + état se cumulent : les validés PERSO, « sur » les plans PERSO',
     cumul.lignes === perso.etats[0] && cumul.compte === perso.etats[0] + ' plans sur ' + nPerso &&
-    /dans la sélection/.test(cumul.phrase) && cumul.jetons.length === 2, cumul.compte + ' / ' + cumul.phrase);
+    new RegExp('^' + perso.etats[0] + ' plans en .+ · \\d+ % du périmètre PERSO$').test(cumul.phrase.replace(/[\u00a0\u202f]/g, ' ').trim()) && cumul.jetons.length === 2, cumul.compte + ' / ' + cumul.phrase);
   verifier('la courbe reste celle du périmètre, et le dit',
     cumul.dernier.total === nPerso && /^Historique · périmètre PERSO/.test(cumul.note) &&
     /autres filtres ne s’appliquent pas/.test(cumul.note), cumul.note);
@@ -1646,8 +1650,12 @@ async function deplierFiltresColonne(pg) {
   verifier('la ligne de la semaine ne porte que la semaine d’aujourd’hui ; le dernier relevé archivé a sa ligne à lui, dessous',
     !/dernier relevé|il y a/i.test(semaineTitre.ligne) && semaineTitre.sansMention && /Dernier relevé archivé : S\d+/.test(semaineTitre.fraicheur),
     JSON.stringify(semaineTitre));
-  verifier('le repère de la courbe ne dit « aujourd’hui » que si le dernier relevé est de cette semaine',
-    semaineTitre.repere === (semaineTitre.iAuj === semaineTitre.auj ? 'aujourd’hui' : 'dernier relevé'),
+  /* Débrief 27 (B3) : un seul « maintenant » sur la courbe — le trait
+     d'aujourd'hui, toujours nommé « aujourd'hui » ; le trait plein du
+     « dernier relevé » est retiré (le dernier point garde son nombre, et le
+     pointillé plat dit l'écart jusqu'à aujourd'hui). */
+  verifier('le repère de la courbe dit « aujourd’hui » (un seul « maintenant »), quel que soit l’âge du dernier relevé',
+    semaineTitre.repere === 'aujourd’hui',
     JSON.stringify([semaineTitre.repere, semaineTitre.iAuj, semaineTitre.auj]));
   /* Les deux cas, joués pour de bon : un historique arrêté cette semaine —
      la ligne se tait, la courbe dit « aujourd'hui » — puis le même reculé
@@ -1672,17 +1680,21 @@ async function deplierFiltresColonne(pg) {
     poser(3); await attendre(600);
     const vieux = Object.assign(lu(), ligne());
     vieux.repere = ([...document.querySelectorAll('svg.graphe .repere-auj')].map(x => x.textContent)[0]) || '';
+    vieux.palier = !!document.querySelector('svg.graphe .palier-attente');
+    vieux.dernierRelevé = [...document.querySelectorAll('svg.graphe text')].some(t => /dernier relevé/.test(t.textContent));
     return { ajour, vieux };
   });
   verifier('un historique archivé cette semaine : le titre dit la semaine, la courbe dit « aujourd’hui »',
     deuxCas.ajour.iAuj === deuxCas.ajour.auj && !/dernier relevé/i.test(deuxCas.ajour.ligne) && !deuxCas.ajour.ambre && deuxCas.ajour.repere === 'aujourd’hui',
     JSON.stringify(deuxCas.ajour));
-  /* Débrief 27 (lot H, P-F10) : la ligne de la semaine reste muette ; celle
-     de la fraîcheur, dessous, dit l'âge du relevé, en ambre. */
-  verifier('le même reculé de trois semaines : la ligne de la semaine reste muette, la courbe dit « dernier relevé », la ligne de fraîcheur dit son âge en ambre',
+  /* Débrief 27 : la ligne de la semaine reste muette ; celle de la
+     fraîcheur, dessous, dit l'âge du relevé, en ambre (lot H, P-F10) ; la
+     courbe garde un seul repère, « aujourd'hui », à la semaine où l'on est,
+     et le pointillé plat relie le dernier point à aujourd'hui (lot A, B3). */
+  verifier('le même reculé de trois semaines : la ligne de la semaine reste muette, la ligne de fraîcheur dit son âge en ambre ; la courbe dit « aujourd’hui » à la semaine en cours, le pointillé plat montre l’écart',
     deuxCas.vieux.iAuj - deuxCas.vieux.auj === 3 && !/dernier relevé|il y a/i.test(deuxCas.vieux.ligne) &&
     deuxCas.vieux.ambre && /il y a \d+ jours/.test(deuxCas.vieux.fraicheur) &&
-    deuxCas.vieux.repere === 'dernier relevé',
+    deuxCas.vieux.repere === 'aujourd’hui' && deuxCas.vieux.palier && !deuxCas.vieux.dernierRelevé,
     JSON.stringify(deuxCas.vieux));
   /* La reprise (retour sur l'onglet, minuterie horaire) ne casse rien quand
      la semaine n'a pas bougé : mêmes valeurs, page toujours debout. */
@@ -1695,7 +1707,7 @@ async function deplierFiltresColonne(pg) {
     return t;
   });
   verifier('reprendre la semaine sans qu’elle ait changé laisse la page identique',
-    apresReprise.titre === deuxCas.vieux.titre && apresReprise.repere === 'dernier relevé' && apresReprise.lignes > 0,
+    apresReprise.titre === deuxCas.vieux.titre && apresReprise.repere === 'aujourd’hui' && apresReprise.lignes > 0,   // débrief 27 : un seul repère
     JSON.stringify(apresReprise));
   /* ---------------------------------------------------------------
      Chercher dans une section : plus de barre qui cherche partout. Le
@@ -2434,13 +2446,19 @@ async function deplierFiltresColonne(pg) {
   }));
   verifier('le bouton « 1 an » cadre 52 semaines et se marque pressé',
     zoom1.n === 52 && zoom1.presse === 'true', zoom0 + ' → ' + JSON.stringify(zoom1));
+  /* Débrief 27 : la Synthèse a grandi (le verdict, « À vérifier ») — le graphique est d'abord ramené à l'écran, sinon son milieu tombait sous le bas de la fenêtre. */
+  await p.evaluate(() => document.getElementById('cadre-graphe').scrollIntoView({ block: 'center' })); await p.waitForTimeout(150);
   const svg = await p.$('svg.graphe'); const box = await svg.boundingBox();
   await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  /* Débrief 27 (P-F1, X-A9) : le zoom passe par Ctrl + molette (la molette
+     seule fait défiler la page). */
+  await p.keyboard.down('Control');
   for (let i = 0; i < 30; i++) await p.mouse.wheel(0, -400);
   await p.waitForTimeout(400);
   const zoomMax = await p.evaluate(() => document.querySelectorAll('.zone-clic').length);
   verifier('30 crans de zoom avant laissent au moins une semaine', zoomMax >= 1, zoomMax + ' semaines');
   for (let i = 0; i < 60; i++) await p.mouse.wheel(0, 400);
+  await p.keyboard.up('Control');
   await p.waitForTimeout(400);
   const zoomMin = await p.evaluate(() => document.querySelectorAll('.zone-clic').length);
   verifier('60 crans de zoom arrière restent bornés', zoomMin > zoomMax && zoomMin < 400, zoomMin + ' semaines');
@@ -2465,8 +2483,16 @@ async function deplierFiltresColonne(pg) {
   // =================================================================
   section('Glisser le graphique depuis n\'importe quel point');
   /* Le curseur promet la main sur tout le cadre : le glissement doit donc
-     partir de partout, y compris de la frise des jalons et de la marge basse. */
-  const cadre = await (await p.$('#cadre-graphe')).boundingBox();
+     partir de partout, y compris de la frise des jalons et de la marge basse.
+     Débrief 27 : la Synthèse a grandi (le verdict, « À vérifier ») ; le
+     cadre est ramené au milieu de l'écran avant d'en lire la place — en
+     haut de page, son bas tombait sous la fenêtre. */
+  let cadre = null;
+  async function ramenerCadre() {
+    await p.evaluate(() => document.getElementById('cadre-graphe').scrollIntoView({ block: 'center' })); await p.waitForTimeout(150);
+    cadre = await (await p.$('#cadre-graphe')).boundingBox();
+  }
+  await ramenerCadre();
   /* La dernière semaine du cadre : celle de la dernière bande de survol. (Pas
      la dernière graduation : les mots posés sur la courbe, « fin S9… »,
      « manque 180 », passent après les traits des jalons.) */
@@ -2564,9 +2590,12 @@ async function deplierFiltresColonne(pg) {
   }));
   /* Débrief 13 : « Diffusion PH base et la date, c'est nickel » — sous le
      nom, la semaine et rien d'autre : ni périmètre, ni « dans N jours ». */
-  verifier('sous le graphique, la légende des jalons : « Jalons », puis chaque numéro, son texte et sa semaine — rien d’autre —, atteignable au clavier',
+  /* Débrief 27 (X-A8) : l'échéance manquée le dit aussi en mots, après sa
+     semaine (« S51 · déc. 2026 · en retard ») — elle seule. */
+  verifier('sous le graphique, la légende des jalons : « Jalons », puis chaque numéro, son texte et sa semaine — et « en retard » pour l’échéance manquée, rien d’autre —, atteignable au clavier',
     legendeJ.visible && legendeJ.mot === 'Jalons' && legendeJ.entrees.length === 5 &&
-    legendeJ.entrees.every((e, i) => e.num === String(i + 1) && e.idx === String(i) && e.mot.length > 0 && /^S\d{1,2} · \S+ \d{4}$/.test(e.quand) && e.focusable) &&
+    legendeJ.entrees.every((e, i) => e.num === String(i + 1) && e.idx === String(i) && e.mot.length > 0 &&
+      (e.critique ? /^S\d{1,2} · \S+ \d{4} · en retard$/ : /^S\d{1,2} · \S+ \d{4}$/).test(e.quand) && e.focusable) &&
     legendeJ.entrees.every(e => !/BASE|OPTION|PERSO|jour|demain|hier|FWD|concept/i.test(e.quand) && e.autres === 0) &&
     /* Sous la définition électrique, les diffusions TO — la table outil,
        concept harnais — restent dessinées, en retrait ; les autres comptent. */
@@ -2765,19 +2794,15 @@ async function deplierFiltresColonne(pg) {
     dessinJ.aria.every((a, i) => new RegExp('^Jalon ' + (i + 1) + ', ').test(a)), JSON.stringify([dessinJ.nums, dessinJ.titres]));
   verifier('les cinq numéros sur une seule rangée, sans étage, aucun ne touche l’autre, et aucun nom écrit sur le dessin — la légende les porte',
     dessinJ.chev.length === 0 && dessinJ.visibles === 0 && dessinJ.rangs === 1, JSON.stringify([dessinJ.chev, dessinJ.visibles, dessinJ.rangs]));
-  /* Le panoramique et la molette marchent toujours, jalons compris.
-     Débrief 27 (lot H, P-F5) : le périmètre cliqué plus haut est monté dans
-     la barre du haut de la page ; y aller fait défiler la page — le cadre du
-     graphique est donc remis à l'écran et remesuré avant d'y glisser. */
-  await p.evaluate(() => document.getElementById('cadre-graphe').scrollIntoView({ block: 'center' })); await p.waitForTimeout(300);
-  Object.assign(cadre, await (await p.$('#cadre-graphe')).boundingBox());
+  /* Le panoramique et la molette marchent toujours, jalons compris. */
+  await ramenerCadre();   // débrief 27 : à l'écran, la page a pu défiler depuis
   const avantPan = await derniereSemaine();
   await balayer(0.5, -1);
   verifier('le panoramique fonctionne toujours', (await derniereSemaine()) !== avantPan);
   const avantMolette = await p.evaluate(() => document.querySelectorAll('.zone-clic').length);
   await p.mouse.move(cadre.x + cadre.width * 0.5, cadre.y + cadre.height * 0.5);
-  await p.mouse.wheel(0, -300); await p.waitForTimeout(300);
-  verifier('la molette fonctionne toujours',
+  await p.keyboard.down('Control'); await p.mouse.wheel(0, -300); await p.keyboard.up('Control'); await p.waitForTimeout(300);   // débrief 27 : Ctrl + molette
+  verifier('la molette (Ctrl + molette, débrief 27) fonctionne toujours',
     (await p.evaluate(() => document.querySelectorAll('.zone-clic').length)) !== avantMolette);
   /* Une configuration hostile : balise, 400 caractères, texte vide, semaine
      illisible. Rien ne s'exécute, rien ne déborde, l'illisible est écarté. */
@@ -3390,7 +3415,7 @@ async function deplierFiltresColonne(pg) {
         tenuFiche: (fiche.match(/le rythme tenu est de ([\d,]+)/) || [])[1], tenuLegende: (leg.match(/au rythme tenu \(([\d,]+)\/sem\.\)/) || [])[1],
         finFiche: (fiche.match(/(?:tout serait validé|au rythme global, la fin serait) en (S\d+ · \S+ \d{4})/) || [])[1], finLegende: (survols.match(/: fin (S\d+ · \S+ \d{4})\./) || [])[1],
         legendeCourte: !/→ fin|\/sem\. sur|» : [\d,]+\/sem\./.test(leg),
-        manqueFiche: (fiche.match(/il manquerait (\d[\d ]*) plans?/) || [])[1], manqueGraphe: manque[0],
+        manqueFiche: (fiche.match(/il manquer(?:a|ait) (\d[\d ]*) plans?/) || [])[1], manqueGraphe: manque[0],   // débrief 27 (P-F18) : « il manquera »
         rouge: document.getElementById('echeance-titre').classList.contains('en-retard'),
         mal: f.querySelector('.fiche-echeance-verdict').classList.contains('mal'),
         jours: ch[0], semaines: ch[1], restants: ch[2]
@@ -3405,8 +3430,10 @@ async function deplierFiltresColonne(pg) {
       !!m.manqueFiche && m.manqueFiche.replace(/ /g, '') === (m.manqueGraphe || '').replace(/ /g, '') && m.rouge === m.mal, JSON.stringify(m));
     verifier('jours et semaines restants se comptent tous deux d\'aujourd\'hui',
       m.semaines >= 1 && Math.abs(m.jours / 7 - m.semaines) < 1.2, JSON.stringify([m.jours, m.semaines]));
+    /* Débrief 27 (P-F18) : au-delà de dix, le rythme requis s'arrondit au
+       plan (« 83/sem. », plus « 83,0 ») — à un demi-plan près, donc. */
     verifier('le rythme requis est bien les plans à valider divisés par les semaines restantes',
-      Math.abs(Number(m.requisFiche.replace(',', '.')) - m.restants / m.semaines) < 0.051, JSON.stringify([m.requisFiche, m.restants, m.semaines]));
+      Math.abs(Number(m.requisFiche.replace(',', '.')) - m.restants / m.semaines) < (m.restants / m.semaines >= 10 ? 0.501 : 0.051), JSON.stringify([m.requisFiche, m.restants, m.semaines]));
     await pq.click('#fiche-echeance [data-fermer-echeance]'); await pq.waitForTimeout(300);
 
     // Une ligne du bloc, puis le graphique de ce groupe : les mêmes nombres.
@@ -3913,7 +3940,8 @@ async function deplierFiltresColonne(pg) {
   };
   const immobile = await vivant15(false), bouge15 = await vivant15(true);
   verifier('un extract inchangé depuis le dernier relevé reste ce relevé-là : pas de palier inventé à la semaine où l’on est',
-    immobile.pts[immobile.pts.length - 1] < immobile.jour && immobile.repere === 'dernier relevé' && !/pas encore archivé/.test(immobile.pied),
+    /* Débrief 27 (B3) : le repère dit toujours « aujourd'hui » (un seul « maintenant ») ; le dernier point reste avant lui. */
+    immobile.pts[immobile.pts.length - 1] < immobile.jour && immobile.repere === 'aujourd’hui' && !/pas encore archivé/.test(immobile.pied),
     JSON.stringify(immobile));
   verifier('un extract recollé depuis devient un point de plus, à la semaine où l’on est — le relevé d’avant reste le sien',
     bouge15.pts[bouge15.pts.length - 1] === bouge15.jour && bouge15.pts.length === immobile.pts.length + 1 && bouge15.repere === 'aujourd’hui',
@@ -6721,9 +6749,10 @@ async function deplierFiltresColonne(pg) {
       .filter(x => /^S\d+/.test(x.fin));
     const rang = f => { const m = f.match(/^S(\d+) · \S+ (\d{4})$/); return m ? +m[2] * 100 + +m[1] : 0; };
     fins.sort((a, b) => rang(b.fin) - rang(a.fin));
-    return { v, dernier: fins[0], globale: (v.match(/au rythme global, la fin serait en (S\d+ · \S+ \d{4})/) || [])[1] };
+    /* Débrief 27 (P-F18) : « tout serait validé en … » (plus « au rythme global, la fin serait en … »). */
+    return { v, dernier: fins[0], globale: (v.match(/tout serait validé en (S\d+ · \S+ \d{4})/) || [])[1] };
   });
-  verifier('W — la fiche dit « au rythme global, la fin serait en … » et nomme le dernier groupe, à la fin que montre le bloc',
+  verifier('W — la fiche dit « tout serait validé en … » et nomme le dernier groupe, à la fin que montre le bloc',
     !!w20.globale && !!w20.dernier && w20.v.indexOf('le dernier groupe (ATA ' + w20.dernier.g + ') finirait en ' + w20.dernier.fin) !== -1, JSON.stringify(w20));
   await p.click('#echeance-titre'); await p.waitForTimeout(300);
 
@@ -6745,7 +6774,7 @@ async function deplierFiltresColonne(pg) {
     return { echeance: td[td.length - 2], fin: td[td.length - 1] };
   }));
   await p.click('#ensemble button[data-fermer-ensemble]'); await p.waitForTimeout(200);
-  const finLoin = (ficheLoin.match(/la fin serait en (S\d+ · \S+ \d{4})/) || [])[1];
+  const finLoin = (ficheLoin.match(/tout serait validé en (S\d+ · \S+ \d{4})/) || [])[1];   // débrief 27 (P-F18)
   verifier('M — vue d’ensemble, échéance tenue : « tenue » à l’échéance, et la fin écrite est celle de la fiche, sur le périmètre du jalon, qui est nommé',
     !!finLoin && /^tenue/.test(ens20[0].echeance) && ens20[0].fin.indexOf(finLoin) === 0 && /pour BASE\/OPTION/.test(ens20[0].fin), JSON.stringify([ficheLoin, ens20[0]]));
   verifier('M — un contrat sans jalon garde la fin de tout le contrat', /^S\d+ · \S+ \d{4}$/.test(ens20[1].fin) && ens20[1].echeance === '—', JSON.stringify(ens20[1]));
@@ -7030,9 +7059,12 @@ async function deplierFiltresColonne(pg) {
   await pe.click('.segmente button[data-span="0"]'); await pe.waitForTimeout(350);
   const nTout20 = await pe.evaluate(() => document.querySelectorAll('svg.graphe .zone-clic').length);
   await pe.click('.segmente button[data-span="26"]'); await pe.waitForTimeout(350);
+  await pe.evaluate(() => document.getElementById('cadre-graphe').scrollIntoView({ block: 'center' })); await pe.waitForTimeout(150);   // débrief 27 : à l'écran
   const boiteZ = await (await pe.$('svg.graphe')).boundingBox();
   await pe.mouse.move(boiteZ.x + boiteZ.width / 2, boiteZ.y + boiteZ.height / 2);
+  await pe.keyboard.down('Control');   // débrief 27 : le zoom passe par Ctrl + molette
   for (let i = 0; i < 40; i++) await pe.mouse.wheel(0, 400);
+  await pe.keyboard.up('Control');
   await pe.waitForTimeout(400);
   const molette20 = await pe.evaluate(() => ({
     n: document.querySelectorAll('svg.graphe .zone-clic').length,
@@ -7041,9 +7073,12 @@ async function deplierFiltresColonne(pg) {
   verifier('débrief 20 : 40 crans de zoom arrière s’arrêtent à la fenêtre de « Tout », qui se marque pressé',
     molette20.n === nTout20 && molette20.presses === 'Tout', JSON.stringify([nTout20, molette20]));
   await pe.click('.segmente button[data-span="52"]'); await pe.waitForTimeout(350);
+  await pe.evaluate(() => document.getElementById('cadre-graphe').scrollIntoView({ block: 'center' })); await pe.waitForTimeout(150);   // débrief 27 : à l'écran
   const boiteAn = await (await pe.$('svg.graphe')).boundingBox();
   await pe.mouse.move(boiteAn.x + boiteAn.width / 2, boiteAn.y + boiteAn.height / 2);
+  await pe.keyboard.down('Control');   // débrief 27
   for (let i = 0; i < 10; i++) await pe.mouse.wheel(0, 400);
+  await pe.keyboard.up('Control');
   await pe.waitForTimeout(400);
   const an20 = await pe.evaluate(() => document.querySelectorAll('svg.graphe .zone-clic').length);
   verifier('débrief 20 : depuis « 1 an », plus large que « Tout », la molette n’élargit ni ne rétrécit en zoom arrière',
@@ -7113,7 +7148,8 @@ async function deplierFiltresColonne(pg) {
   await pe.waitForTimeout(500);
   const plat20 = await pe.evaluate(() => {
     const leg = document.getElementById('legende');
-    return { legende: leg.textContent, pointilles: leg.querySelectorAll('line[stroke-dasharray]').length,
+    /* Débrief 27 (X-A8) : la droite « requis » a son trait-point (8 3 2 3), en légende aussi — seul compte le pointillé de la projection. */
+    return { legende: leg.textContent, pointilles: leg.querySelectorAll('line[stroke-dasharray]:not([stroke-dasharray="8 3 2 3"])').length,
              projection: document.querySelectorAll('svg.graphe path[stroke-dasharray="5 4"]').length,
              item: !!leg.querySelector('.sans-rythme') && !leg.querySelector('.sans-rythme svg') };
   });
@@ -8150,6 +8186,274 @@ async function deplierFiltresColonne(pg) {
     verifier('le tableau se dessine par tranches (25 lignes de l’extract entier d’abord), la suite vient en descendant ; le bas du cadre fond tant qu’il reste des lignes (M4, D10)',
       tr1.lignes >= 20 && tr1.lignes <= 60 && tr1.suite && tr2 > tr1.lignes && tr1.fondu === 'true', JSON.stringify([tr1, tr2]));
     await cR.close();
+  }
+
+  // =================================================================
+  section('Débrief 27 : Synthèse et Tendance (lot A)');
+  {
+    const couleursA = () => {
+      window.__lumA = c => {
+        const m = c.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+        return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2];
+      };
+      window.__contrasteA = (a, b) => { const x = window.__lumA(a), y = window.__lumA(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+      window.__fondA = e => { for (let x = e; x; x = x.parentElement) { const f = getComputedStyle(x).backgroundColor; if (f && !/rgba\(.*,\s*0\)$/.test(f) && f !== 'transparent') return f; } return 'rgb(255,255,255)'; };
+    };
+    const esp = 'const esp = t => String(t || "").replace(/[\\u00a0\\u202f]/g, " ").replace(/\\s+/g, " ").trim();';
+    const cA = await contexte();
+    const q = await page(cA, 'lot A');
+    await q.evaluate(couleursA);
+
+    // --- La Synthèse : un vrai titre, le verdict, « À vérifier ».
+    const syn = await q.evaluate(new Function(esp + `
+      const sec = document.getElementById('section-synthese'), v = document.getElementById('verdict-synthese'), s = document.getElementById('signaux-synthese');
+      const suite = v.querySelector('.verdict-suite');
+      return { titre: document.getElementById('phrase').tagName, nom: sec.getAttribute('aria-label'), labelledby: sec.getAttribute('aria-labelledby'),
+               verdict: esp(v.textContent), cls: v.className, visible: !v.hidden,
+               encre: suite ? window.__contrasteA(getComputedStyle(suite).color, window.__fondA(suite)) : 0,
+               signaux: esp(s.textContent), liens: [...s.querySelectorAll('button[data-signal]')].map(b => b.dataset.signal),
+               reponse: esp((document.getElementById('reponse-rapprochement') || {}).textContent),
+               pastille: esp(document.getElementById('echeance-titre').textContent), retard: document.getElementById('echeance-titre').classList.contains('en-retard') };`));
+    verifier('Synthèse : la phrase de tête est le titre (h2) de la région « Synthèse »',
+      syn.titre === 'H2' && syn.nom === 'Synthèse' && !syn.labelledby, JSON.stringify(syn));
+    verifier('Synthèse : sous la phrase, le verdict de l’échéance en mots — nom, date, jours, rythme requis contre rythme tenu, et « il manquera N plans » (en retard)',
+      syn.visible && /^Solde FWD · \S+ \d+ \S+ \(S\d+\), dans \d+ jours — il faut \d+ validés\/sem\., rythme tenu [\d,]+\/sem\. → donc au rythme actuel, il manquera \d+ plans\. Détail$/.test(syn.verdict) &&
+      /\bmal\b/.test(syn.cls) && syn.encre >= 4.5, JSON.stringify(syn));
+    verifier('Tendance : la puce de l’échéance dit le verdict en mots (« en retard »), le même que la Synthèse',
+      syn.retard && /en retard$/.test(syn.pastille), syn.pastille);
+    const manqueRep = (syn.reponse.match(/(\d+) plans? validés? absents?/) || [])[1];
+    verifier('Synthèse : « À vérifier » liste les reculs du dernier relevé et les validés absents de SEE (le nombre de la comparaison), chacun un lien',
+      /^À vérifier : /.test(syn.signaux) && syn.liens.indexOf('see') !== -1 && !!manqueRep && syn.signaux.indexOf(manqueRep + ' plans validés absents de SEE') !== -1 &&
+      (syn.liens.indexOf('reculs') === -1 || /\d+ reculs? (cette semaine|au dernier relevé)/.test(syn.signaux)), JSON.stringify({ syn: syn.signaux, manqueRep }));
+
+    // « Détail » ouvre la fiche ; Échap la ferme et rend le focus au lien.
+    await q.focus('#verdict-synthese button[data-jalon]'); await q.keyboard.press('Enter'); await q.waitForTimeout(700);
+    const fiche = await q.evaluate(new Function(esp + `
+      const f = document.getElementById('fiche-echeance');
+      return f ? { verdict: esp(f.querySelector('.fiche-echeance-verdict').textContent), rythme: esp((f.querySelector('.fiche-echeance-rythme') || {}).textContent),
+                   num: getComputedStyle(f.querySelector('.fiche-echeance-tete .num')).backgroundColor,
+                   alerte: getComputedStyle(document.querySelector('.legende-jalon.critique .num') || document.body).backgroundColor } : null;`));
+    verifier('« Détail » ouvre la fiche : « Au rythme tenu (N/sem.), il manquera N plans le …, soit N semaines après l’échéance », le rythme arrondi, le numéro en rouge',
+      !!fiche && /^Au rythme tenu \([\d,]+\/sem\.\), il manquera \d+ plans le \S+ \d+ \S+ ; tout serait validé en S\d+ · \S+ \d{4}, soit \d+ semaines? après l’échéance/.test(fiche.verdict) &&
+      /^Il faut \d+ plans validés par semaine/.test(fiche.rythme) && fiche.num === fiche.alerte && syn.verdict.indexOf('il manquera ' + (fiche.verdict.match(/il manquera (\d+)/) || [])[1] + ' plans') !== -1,
+      JSON.stringify(fiche));
+    await q.keyboard.press('Escape'); await q.waitForTimeout(300);
+    const apresEchap = await q.evaluate(() => ({ fiche: !!document.getElementById('fiche-echeance'), focus: document.activeElement.closest('#verdict-synthese') ? 'detail' : document.activeElement.tagName + '.' + document.activeElement.className }));
+    verifier('Échap ferme la fiche de l’échéance et rend le focus à ce qui l’a ouverte (le « Détail » du verdict)',
+      !apresEchap.fiche && apresEchap.focus === 'detail', JSON.stringify(apresEchap));
+    await q.click('#echeance-titre'); await q.waitForTimeout(600);
+    await q.keyboard.press('Escape'); await q.waitForTimeout(300);
+    verifier('… et à la puce de la Tendance quand c’est elle qui l’a ouverte',
+      await q.evaluate(() => !document.getElementById('fiche-echeance') && document.activeElement && document.activeElement.id === 'echeance-titre'));
+
+    // Les liens de « À vérifier ».
+    await q.evaluate(() => window.scrollTo(0, 0));
+    await q.click('#signaux-synthese button[data-signal="see"]'); await q.waitForTimeout(900);
+    const lienSee = await q.evaluate(() => { const a = document.activeElement; return { rapp: a.dataset.rapp, presse: a.getAttribute('aria-pressed'), ouvert: a.getAttribute('aria-expanded'), vu: a.getBoundingClientRect().top < innerHeight && a.getBoundingClientRect().bottom > 0 }; });
+    verifier('« N plans validés absents de SEE » mène à la comparaison : la case posée et dépliée, le focus dessus, à l’écran',
+      lienSee.rapp === 'manque' && lienSee.presse === 'true' && lienSee.ouvert === 'true' && lienSee.vu, JSON.stringify(lienSee));
+    await reinitialiser(q);
+    if (syn.liens.indexOf('reculs') !== -1) {
+      await q.evaluate(() => window.scrollTo(0, 0));
+      await q.click('#signaux-synthese button[data-signal="reculs"]'); await q.waitForTimeout(900);
+      const lienRecul = await q.evaluate(() => ({ filtre: window.__vueValeurs().journal, focus: document.activeElement.dataset.semaine !== undefined, ouvert: document.activeElement.getAttribute('aria-expanded') }));
+      verifier('« N recul(s) » mène au journal filtré sur les reculs, la semaine du dernier relevé dépliée, le focus sur elle',
+        lienRecul.filtre === 'reculs' && lienRecul.focus && lienRecul.ouvert === 'true', JSON.stringify(lienRecul));
+      await q.click('#filtre-journal button[data-journal=""]'); await q.waitForTimeout(300);
+    }
+
+    // B23 : une tuile pressée garde la répartition.
+    await q.evaluate(() => window.scrollTo(0, 0));
+    const avantTuile = await q.evaluate(() => ({ n: [...document.querySelectorAll('#etats .etat-n')].map(e => e.textContent), segs: document.querySelectorAll('#barre span[data-cle]').length }));
+    const cleT = await q.evaluate(() => [...document.querySelectorAll('#etats .etat-btn')].find(b => b.dataset.famille === 'encours').dataset.etat);
+    await q.focus('#etats .etat-btn[data-etat="' + cleT + '"]'); await q.keyboard.press('Enter'); await q.waitForTimeout(500);
+    const tuile = await q.evaluate(new Function('cle', esp + `
+      const b = document.querySelector('#etats .etat-btn[data-etat="' + cle + '"]');
+      return { phrase: esp(document.getElementById('phrase').textContent), n: [...document.querySelectorAll('#etats .etat-n')].map(e => e.textContent),
+               segs: document.querySelectorAll('#barre span[data-cle]').length,
+               pales: [...document.querySelectorAll('#barre span[data-cle]')].filter(s => s.dataset.cle !== cle).map(s => getComputedStyle(s).opacity),
+               choisi: getComputedStyle(document.querySelector('#barre span[data-cle="' + cle + '"]')).opacity,
+               focus: document.activeElement === b, encreAutre: (() => { const o = [...document.querySelectorAll('#etats .etat-btn')].find(x => x !== b); const n = o.querySelector('.etat-n'); return window.__contrasteA(getComputedStyle(n).color, window.__fondA(n)); })(),
+               lignes: document.querySelectorAll('#corps-tableau tr').length };`), cleT);
+    verifier('B23 : une tuile pressée garde la répartition — mêmes tuiles et mêmes nombres, mêmes segments, les autres pâlis à 35 %, le texte des autres tuiles lisible (4,5:1)',
+      JSON.stringify(tuile.n) === JSON.stringify(avantTuile.n) && tuile.segs === avantTuile.segs && tuile.pales.length && tuile.pales.every(o => o === '0.35') && tuile.choisi === '1' && tuile.encreAutre >= 4.5,
+      JSON.stringify({ avantTuile, tuile }));
+    verifier('B23 : la phrase dit la part choisie (« N plans en X · P % du périmètre »), le tableau reste filtré, le focus reste sur la tuile',
+      /^\d+ plans? en .+ · \d+(,\d)? % du périmètre$/.test(tuile.phrase) && tuile.lignes < TOTAL && tuile.focus, JSON.stringify(tuile));
+    await q.keyboard.press('Enter'); await q.waitForTimeout(400);
+
+    // La Tendance : un seul « aujourd'hui », les jalons calmes, la droite requis.
+    const g = await q.evaluate(() => {
+      const svg = document.querySelector('#zone-graphe svg');
+      const op = l => getComputedStyle(l).opacity;
+      const jal = [...svg.querySelectorAll('.jalon')].map(j => ({ prochain: j.classList.contains('prochain'), trait: op(j.querySelector('.jalon-trait')), coche: !!j.querySelector('.jalon-coche') }));
+      const mots = [...svg.querySelectorAll('text')].map(t => t.textContent);
+      const rq = svg.querySelector('.droite-requis'), motRq = svg.querySelector('.requis-mot');
+      let coupe = null;
+      if (rq && motRq) {
+        const b = motRq.getBBox(), L = rq.getTotalLength(); coupe = false;
+        for (let k = 0; k <= 60; k++) { const p = rq.getPointAtLength(L * k / 60); if (p.x > b.x && p.x < b.x + b.width && p.y > b.y && p.y < b.y + b.height) coupe = true; }
+      }
+      const semaines = [...svg.querySelectorAll('text.grad')].filter(t => /^S\d+$/.test(t.textContent)).map(t => t.getBBox());
+      const barres = [...svg.querySelectorAll('.barre-semaine')].map(b => b.getBBox());
+      const proj = svg.querySelector('path[stroke-dasharray="5 4"]');
+      const fondSvg = getComputedStyle(document.getElementById('section-tendance')).backgroundColor;
+      const barre = svg.querySelector('.barre-semaine');
+      return { aujourdhui: mots.filter(m => m === 'aujourd’hui').length, dernier: mots.some(m => /dernier relevé/.test(m)), auj: svg.querySelectorAll('.repere-auj').length,
+               jal, dash: rq ? rq.getAttribute('stroke-dasharray') : null, motRq: motRq ? motRq.textContent : null, coupe,
+               basSemaines: Math.max.apply(null, semaines.map(b => b.y + b.height)), hautBarres: barres.length ? Math.min.apply(null, barres.map(b => b.y)) : null,
+               largeurBarre: barres.length ? Math.max.apply(null, barres.map(b => b.width)) : null, nom: mots.some(m => /^validés \/ semaine$/.test(m)),
+               projOpacite: proj ? proj.getAttribute('opacity') : 'absente',
+               barreContraste: barre ? window.__contrasteA(getComputedStyle(barre).fill, fondSvg) : 0,
+               toucher: getComputedStyle(document.getElementById('cadre-graphe')).touchAction,
+               decrit: svg.getAttribute('aria-describedby'), resume: document.getElementById('resume-graphe').textContent.replace(/[\u00a0\u202f]/g, ' ') };
+    });
+    verifier('B3 : un seul repère « aujourd’hui », plus de trait « dernier relevé »', g.aujourdhui === 1 && g.auj === 1 && !g.dernier, JSON.stringify({ a: g.aujourdhui, d: g.dernier }));
+    verifier('B3 : seule la prochaine échéance a son trait pleine hauteur ; les autres jalons, une coche (leur trait est caché)',
+      g.jal.filter(j => j.prochain).length >= 1 && g.jal.every(j => j.prochain ? +j.trait > 0 && !j.coche : j.trait === '0' && j.coche), JSON.stringify(g.jal));
+    verifier('B3, X-A8 : la droite « requis » a son trait-point (8 3 2 3) et son nom « requis N/sem. » écrit contre elle, jamais en travers',
+      g.dash === '8 3 2 3' && /^requis \d+(,\d)?\/sem\.$/.test(g.motRq) && g.coupe === false, JSON.stringify({ dash: g.dash, mot: g.motRq, coupe: g.coupe }));
+    verifier('B3 : les barres des validés par semaine ont leur bande sous l’axe (« validés / semaine »), 10 px de large au plus, 3:1 sur la surface',
+      g.hautBarres !== null && g.hautBarres > g.basSemaines && g.largeurBarre <= 10.01 && g.nom && g.barreContraste >= 3, JSON.stringify(g));
+    verifier('X-A12 : la projection au rythme tenu est à pleine opacité ; M2 : le cadre laisse le défilement vertical au navigateur (pan-y)',
+      g.projOpacite === null && g.toucher === 'pan-y', JSON.stringify({ o: g.projOpacite, t: g.toucher }));
+    verifier('X-A7 : le dessin est décrit par une phrase (aria-describedby) qui dit le compte, le rythme et l’échéance',
+      g.decrit === 'resume-graphe' && /^\d+ plans validés sur \d+, en S\d+ · .* Rythme tenu : [\d,]+ par semaine.* il manquera \d+ plans\.$/.test(g.resume), g.resume);
+    // Survol d'un jalon dans la légende : son trait paraît, léger.
+    const idxAutre = await q.evaluate(() => { const j = [...document.querySelectorAll('svg.graphe .jalon')].find(x => !x.classList.contains('prochain')); return j ? j.dataset.jalon : null; });
+    if (idxAutre !== null) {
+      await q.hover('.legende-jalon[data-jalon="' + idxAutre + '"]'); await q.waitForTimeout(250);
+      const op = await q.evaluate(i => getComputedStyle(document.querySelector('svg.graphe .jalon[data-jalon="' + i + '"] .jalon-trait')).opacity, idxAutre);
+      verifier('B3 : survoler un jalon dans la légende fait paraître son trait, léger (35 %)', op === '0.35', op);
+      await q.mouse.move(5, 5);
+    }
+
+    // La molette : la page défile ; Ctrl + molette zoome.
+    await q.evaluate(() => document.getElementById('section-tendance').scrollIntoView());
+    await q.waitForTimeout(200);
+    const centre = await q.evaluate(() => { const r = document.querySelector('#zone-graphe svg').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+    const avantMol = await q.evaluate(() => ({ y: scrollY, n: document.querySelectorAll('svg.graphe .zone-clic').length }));
+    await q.mouse.move(centre.x, centre.y);
+    await q.mouse.wheel(0, 200); await q.waitForTimeout(400);
+    const apresMol = await q.evaluate(() => ({ y: scrollY, n: document.querySelectorAll('svg.graphe .zone-clic').length, indice: !document.getElementById('indice-zoom').hidden && /molette pour zoomer/.test(document.getElementById('indice-zoom').textContent) }));
+    verifier('P-F1, X-A9 : la molette seule sur le graphique fait défiler la page, sans zoomer ; un mot dit « Ctrl + molette pour zoomer »',
+      apresMol.y > avantMol.y && apresMol.n === avantMol.n && apresMol.indice, JSON.stringify({ avantMol, apresMol }));
+    await q.evaluate(() => document.getElementById('section-tendance').scrollIntoView());
+    await q.waitForTimeout(200);
+    const centre2 = await q.evaluate(() => { const r = document.querySelector('#zone-graphe svg').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+    await q.mouse.move(centre2.x, centre2.y);
+    const yZoom = await q.evaluate(() => scrollY);
+    await q.keyboard.down('Control'); await q.mouse.wheel(0, -300); await q.keyboard.up('Control'); await q.waitForTimeout(300);
+    const zoom = await q.evaluate(() => ({ y: scrollY, n: document.querySelectorAll('svg.graphe .zone-clic').length, revenir: !document.getElementById('revenir-cadrage').hidden, mot: document.getElementById('revenir-cadrage').textContent }));
+    verifier('Ctrl + molette zoome le graphique (la page ne bouge pas), et « ↺ Revenir aux échéances » paraît',
+      zoom.n < avantMol.n && zoom.y === yZoom && zoom.revenir && /Revenir aux échéances/.test(zoom.mot), JSON.stringify(zoom));
+    await q.click('#revenir-cadrage'); await q.waitForTimeout(300);
+    const retour = await q.evaluate(() => ({ n: document.querySelectorAll('svg.graphe .zone-clic').length, cache: document.getElementById('revenir-cadrage').hidden, presse: (document.querySelector('.commandes-graphe button[aria-pressed="true"]') || {}).textContent }));
+    verifier('« Revenir aux échéances » ramène le cadrage d’ouverture et s’efface', retour.n === avantMol.n && retour.cache && retour.presse === 'Échéances', JSON.stringify(retour));
+
+    // La bulle : Échap la ferme ; au clavier, les flèches parcourent les relevés et la page les dit.
+    const zc = await q.evaluate(() => { const z = [...document.querySelectorAll('svg.graphe .zone-clic')].find(r => /validés$/.test(r.getAttribute('aria-label'))); const r = z.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+    await q.mouse.move(zc.x, zc.y); await q.waitForTimeout(200);
+    const survol = await q.evaluate(() => document.getElementById('bulle').dataset.visible);
+    await q.keyboard.press('Escape'); await q.waitForTimeout(150);
+    const echapSurvol = await q.evaluate(() => document.getElementById('bulle').dataset.visible);
+    verifier('X-A7 : Échap ferme la bulle du survol', survol === 'true' && echapSurvol === 'false', survol + '/' + echapSurvol);
+    await q.mouse.move(5, 5);
+    await q.focus('#cadre-graphe'); await q.keyboard.press('ArrowLeft'); await q.keyboard.press('ArrowLeft');
+    await q.waitForFunction(() => /Relevé de/.test((document.getElementById('annonce') || {}).textContent || ''), null, { timeout: 3000 }).catch(() => {});
+    const clavier = await q.evaluate(() => ({ bulle: document.getElementById('bulle').dataset.visible, texte: document.getElementById('bulle').textContent.slice(0, 40),
+      annonce: document.getElementById('annonce').textContent, marquee: document.querySelectorAll('svg.graphe .zone-clic.marquee').length,
+      cachee: document.getElementById('bulle').getAttribute('aria-hidden') }));
+    verifier('X-A7 : au clavier, le graphique prend le focus, les flèches passent d’un relevé à l’autre, la bulle s’ouvre et la page dit la semaine',
+      clavier.bulle === 'true' && /^Relevé de S\d+/.test(clavier.texte) && /^Relevé de S\d+ · .* ; validés : \d+ \/ \d+/.test(clavier.annonce) && clavier.marquee === 1 && clavier.cachee === 'true',
+      JSON.stringify(clavier));
+    await q.keyboard.press('Escape'); await q.waitForTimeout(150);
+    verifier('… et Échap la referme', await q.evaluate(() => document.getElementById('bulle').dataset.visible === 'false'));
+
+    // La légende : des boutons qui déplient leur phrase.
+    await q.click('#legende button[data-legende="rythme"]'); await q.waitForTimeout(200);
+    const leg = await q.evaluate(() => ({ exp: document.querySelector('#legende button[data-legende="rythme"]').getAttribute('aria-expanded'),
+      detail: document.getElementById('legende-detail').textContent, titre: document.querySelector('#legende button[data-legende="rythme"] span[title]').getAttribute('title'),
+      focus: document.activeElement.dataset.legende }));
+    verifier('M3, D9 : un mot de la légende est un bouton qui déplie sa phrase (au doigt, au clavier) ; le focus reste sur lui',
+      leg.exp === 'true' && leg.detail === leg.titre && /par semaine/.test(leg.detail) && leg.focus === 'rythme', JSON.stringify(leg));
+    await q.click('#legende button[data-legende="rythme"]'); await q.waitForTimeout(200);
+    verifier('… un second appui la replie', await q.evaluate(() => document.getElementById('legende-detail').hidden && document.getElementById('legende-detail').textContent === ''));
+
+    // « Voir les chiffres ».
+    await q.click('#donnees-graphe summary'); await q.waitForTimeout(200);
+    const table = await q.evaluate(() => ({ lignes: document.querySelectorAll('#donnees-graphe-corps tbody tr').length,
+      tete: [...document.querySelectorAll('#donnees-graphe-corps thead th')].map(t => t.textContent).join('|'),
+      points: [...document.querySelectorAll('svg.graphe .zone-clic')].length, releves: (document.getElementById('note-graphe').textContent.match(/^(\d+) relevés/) || [])[1] }));
+    verifier('X-A7 : « Voir les chiffres » déplie le tableau des relevés — semaine, validés, plans suivis, gain net', table.tete === 'Semaine|Validés|Plans suivis|Gain net' && table.lignes === +table.releves, JSON.stringify(table));
+    await q.click('#donnees-graphe summary');
+
+    // Les pilules : « Courbe : », un second clic revient aux validés ; une seule valeur : le cadre s'arrête à aujourd'hui + 4 semaines.
+    const pil = await q.evaluate(() => ({ mot: (document.querySelector('#filtre-valeur-graphe .mot-rangee') || {}).textContent }));
+    await q.click('#filtre-valeur-graphe button[data-valeur-graphe="encours"]'); await q.waitForTimeout(300);
+    const val = await q.evaluate(() => {
+      const zs = [...document.querySelectorAll('svg.graphe .zone-clic')], t = document.querySelector('svg.graphe .trait-auj');
+      const xa = t ? +t.getAttribute('x1') : null;
+      const iAuj = zs.findIndex(z => xa >= +z.getAttribute('x') && xa < +z.getAttribute('x') + +z.getAttribute('width'));
+      return { graphe: window.__vueValeurs().graphe, apres: zs.length - 1 - iAuj };
+    });
+    await q.click('#filtre-valeur-graphe button[data-valeur-graphe="encours"]'); await q.waitForTimeout(300);
+    const val2 = await q.evaluate(() => ({ graphe: window.__vueValeurs().graphe, focus: document.activeElement.dataset.valeurGraphe }));
+    verifier('P-F19 : la rangée se nomme « Courbe : » ; un second clic sur la pilule pressée revient à la courbe des validés, le focus reste dessus',
+      /^Courbe\s:$/.test((pil.mot || '').replace(/ /g, ' ')) && val.graphe === 'encours' && val2.graphe === '' && val2.focus === 'encours', JSON.stringify({ pil, val, val2 }));
+    verifier('B3 : la courbe d’une seule valeur s’arrête quatre semaines après aujourd’hui (le cadre des échéances laissait 70 % de vide)', val.apres === 4, JSON.stringify(val));
+
+    // Les jalons en retrait : lisibles (4,5:1), sans opacité ; l'échéance manquée dit « en retard ».
+    const jl = await q.evaluate(() => {
+      const r = [...document.querySelectorAll('.legende-jalon.hors-perimetre .quand, .legende-jalon.hors-fenetre .quand')].map(e => ({ c: window.__contrasteA(getComputedStyle(e).color, window.__fondA(e)), o: getComputedStyle(e).opacity, oj: getComputedStyle(e.closest('.legende-jalon')).opacity }));
+      return { r, retard: (document.querySelector('.legende-jalon.critique .quand') || {}).textContent };
+    });
+    verifier('X-A8, contraste : les dates des jalons en retrait tiennent 4,5:1 sans opacité ; l’échéance manquée le dit en mots (« en retard »)',
+      jl.r.length > 0 && jl.r.every(x => x.c >= 4.5 && x.o === '1' && x.oj === '1') && / · en retard$/.test(jl.retard || ''), JSON.stringify(jl));
+
+    // Concept harnais : « plans traités ».
+    const concept = await q.evaluate(() => { const b = document.querySelector('#choix-indicateur button[data-indicateur="concept"]'); if (!b || !b.getClientRects().length) return null; b.click(); const t = document.getElementById('phrase').textContent; document.querySelector('#choix-indicateur button[data-indicateur="def"]').click(); return t; });
+    if (concept !== null) verifier('P-F14 : en concept harnais, la phrase dit « plans traités »', /plans traités/.test(concept), concept);
+
+    // Un seul relevé : un état calme à la place d'une grille vide.
+    const vide = await q.evaluate(() => {
+      const s = window.__jeuDExemple('HDK'); s.releves = s.releves.slice(-1); window.__chargerSource(s);
+      const r = { bloc: (document.querySelector('#zone-graphe .etat-vide-phrase') || {}).textContent, svg: !!document.querySelector('#zone-graphe svg'),
+        pilules: !!document.getElementById('filtre-valeur-graphe').offsetParent, periode: !!document.querySelector('.commandes-graphe').offsetParent, legende: !!document.getElementById('legende').offsetParent };
+      window.__chargerSource(window.__jeuDExemple('HDK'));
+      return r;
+    });
+    verifier('D8, B7 : un seul relevé — « La courbe commence au deuxième relevé », sans grille, ni pilules, ni période, ni légende',
+      vide.bloc === 'La courbe commence au deuxième relevé' && !vide.svg && !vide.pilules && !vide.periode && !vide.legende, JSON.stringify(vide));
+    await cA.close();
+
+    // Sombre : le verdict et la puce lisibles.
+    const cS = await contexte({ colorScheme: 'dark' });
+    const qs = await page(cS, 'lot A sombre');
+    await qs.evaluate(couleursA);
+    const sombre = await qs.evaluate(() => {
+      const s = document.querySelector('#verdict-synthese .verdict-suite'), m = document.querySelector('#echeance-titre .verdict-mot'), r = document.querySelector('svg.graphe .requis-mot'), b = document.querySelector('svg.graphe .barre-semaine');
+      const fondG = getComputedStyle(document.getElementById('section-tendance')).backgroundColor;
+      return { suite: window.__contrasteA(getComputedStyle(s).color, window.__fondA(s)), mot: window.__contrasteA(getComputedStyle(m).color, window.__fondA(m)),
+               requis: window.__contrasteA(getComputedStyle(r).fill, fondG), barre: window.__contrasteA(getComputedStyle(b).fill, fondG) };
+    });
+    verifier('sombre : le verdict, le mot de la puce et « requis N/sem. » tiennent 4,5:1, les barres par semaine 3:1',
+      sombre.suite >= 4.5 && sombre.mot >= 4.5 && sombre.requis >= 4.5 && sombre.barre >= 3, JSON.stringify(sombre));
+    await cS.close();
+
+    // Au doigt : un toucher ouvre la bulle et la garde, en bas de l'écran ; un toucher ailleurs la ferme.
+    const cT = await contexte({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const qt = await page(cT, 'lot A doigt');
+    await qt.evaluate(() => document.getElementById('cadre-graphe').scrollIntoView({ block: 'center' }));
+    await qt.waitForTimeout(300);
+    const zt = await qt.evaluate(() => { const z = [...document.querySelectorAll('svg.graphe .zone-clic')].find(r => /validés$/.test(r.getAttribute('aria-label'))); const r = z.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height * 0.6 }; });
+    await qt.touchscreen.tap(zt.x, zt.y); await qt.waitForTimeout(400);
+    const tap = await qt.evaluate(() => { const b = document.getElementById('bulle'), r = b.getBoundingClientRect(); return { v: b.dataset.visible, cls: b.className, bas: Math.round(innerHeight - r.bottom), texte: b.textContent.slice(0, 30) }; });
+    verifier('M3, D9 : au doigt, un toucher sur la courbe ouvre la bulle de la semaine et la garde, posée en bas de l’écran',
+      tap.v === 'true' && /tenue/.test(tap.cls) && /en-bas/.test(tap.cls) && tap.bas >= 8 && tap.bas <= 16 && /^Relevé de S\d+/.test(tap.texte), JSON.stringify(tap));
+    await qt.touchscreen.tap(20, 60); await qt.waitForTimeout(300);
+    verifier('… un toucher ailleurs la ferme', await qt.evaluate(() => document.getElementById('bulle').dataset.visible === 'false'));
+    await cT.close();
   }
 
   // =================================================================
