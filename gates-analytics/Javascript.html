@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '48b0220';
+  var EDITION = '02ab976';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -4314,7 +4314,9 @@
 
   document.querySelector('.commandes-graphe .segmente').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-span]');
-    if (b) reglerSpan(b.dataset.span === 'jalons' ? 'jalons' : Number(b.dataset.span));
+    if (!b) return;
+    reglerSpan(b.dataset.span === 'jalons' ? 'jalons' : Number(b.dataset.span));
+    annoncer('Graphique : ' + b.textContent.trim());   // débrief 27 (X-A5)
   });
   /* Débrief 27 : un mot de la légende déplie (ou replie) sa phrase ; Échap
      la replie. Le focus reste sur le mot. */
@@ -7573,6 +7575,8 @@
     vue.valeurGraphe = cle === vue.valeurGraphe ? '' : cle;
     rendreGraphique(selection());
     rendreFocus($('filtre-valeur-graphe'), 'valeur-graphe', cle);
+    var vA = vue.valeurGraphe ? (valeurDeCle(vue.valeurGraphe) || HIER_GRAPHE[vue.valeurGraphe]) : null;
+    annoncer('Courbe : ' + (vA ? vA.libelle : 'plans ' + motFini(2)));   // débrief 27 (X-A5)
   });
 
   $('zone-journal').addEventListener('click', function (e) {
@@ -8800,5 +8804,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = '48b0220';
+window.SUIVI_FWD_FIN = '02ab976';
 </script>
