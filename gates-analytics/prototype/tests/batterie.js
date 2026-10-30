@@ -2387,6 +2387,8 @@ async function reinitialiser(pg) {
   }));
   verifier('le bouton « 1 an » cadre 52 semaines et se marque pressé',
     zoom1.n === 52 && zoom1.presse === 'true', zoom0 + ' → ' + JSON.stringify(zoom1));
+  /* Débrief 27 : la Synthèse a grandi (le verdict, « À vérifier ») — le graphique est d'abord ramené à l'écran, sinon son milieu tombait sous le bas de la fenêtre. */
+  await p.evaluate(() => document.getElementById('cadre-graphe').scrollIntoView({ block: 'center' })); await p.waitForTimeout(150);
   const svg = await p.$('svg.graphe'); const box = await svg.boundingBox();
   await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   /* Débrief 27 (P-F1, X-A9) : le zoom passe par Ctrl + molette (la molette
@@ -2422,8 +2424,16 @@ async function reinitialiser(pg) {
   // =================================================================
   section('Glisser le graphique depuis n\'importe quel point');
   /* Le curseur promet la main sur tout le cadre : le glissement doit donc
-     partir de partout, y compris de la frise des jalons et de la marge basse. */
-  const cadre = await (await p.$('#cadre-graphe')).boundingBox();
+     partir de partout, y compris de la frise des jalons et de la marge basse.
+     Débrief 27 : la Synthèse a grandi (le verdict, « À vérifier ») ; le
+     cadre est ramené au milieu de l'écran avant d'en lire la place — en
+     haut de page, son bas tombait sous la fenêtre. */
+  let cadre = null;
+  async function ramenerCadre() {
+    await p.evaluate(() => document.getElementById('cadre-graphe').scrollIntoView({ block: 'center' })); await p.waitForTimeout(150);
+    cadre = await (await p.$('#cadre-graphe')).boundingBox();
+  }
+  await ramenerCadre();
   /* La dernière semaine du cadre : celle de la dernière bande de survol. (Pas
      la dernière graduation : les mots posés sur la courbe, « fin S9… »,
      « manque 180 », passent après les traits des jalons.) */
@@ -2726,6 +2736,7 @@ async function reinitialiser(pg) {
   verifier('les cinq numéros sur une seule rangée, sans étage, aucun ne touche l’autre, et aucun nom écrit sur le dessin — la légende les porte',
     dessinJ.chev.length === 0 && dessinJ.visibles === 0 && dessinJ.rangs === 1, JSON.stringify([dessinJ.chev, dessinJ.visibles, dessinJ.rangs]));
   /* Le panoramique et la molette marchent toujours, jalons compris. */
+  await ramenerCadre();   // débrief 27 : à l'écran, la page a pu défiler depuis
   const avantPan = await derniereSemaine();
   await balayer(0.5, -1);
   verifier('le panoramique fonctionne toujours', (await derniereSemaine()) !== avantPan);
@@ -6951,6 +6962,7 @@ async function reinitialiser(pg) {
   await pe.click('.segmente button[data-span="0"]'); await pe.waitForTimeout(350);
   const nTout20 = await pe.evaluate(() => document.querySelectorAll('svg.graphe .zone-clic').length);
   await pe.click('.segmente button[data-span="26"]'); await pe.waitForTimeout(350);
+  await pe.evaluate(() => document.getElementById('cadre-graphe').scrollIntoView({ block: 'center' })); await pe.waitForTimeout(150);   // débrief 27 : à l'écran
   const boiteZ = await (await pe.$('svg.graphe')).boundingBox();
   await pe.mouse.move(boiteZ.x + boiteZ.width / 2, boiteZ.y + boiteZ.height / 2);
   await pe.keyboard.down('Control');   // débrief 27 : le zoom passe par Ctrl + molette
@@ -6964,6 +6976,7 @@ async function reinitialiser(pg) {
   verifier('débrief 20 : 40 crans de zoom arrière s’arrêtent à la fenêtre de « Tout », qui se marque pressé',
     molette20.n === nTout20 && molette20.presses === 'Tout', JSON.stringify([nTout20, molette20]));
   await pe.click('.segmente button[data-span="52"]'); await pe.waitForTimeout(350);
+  await pe.evaluate(() => document.getElementById('cadre-graphe').scrollIntoView({ block: 'center' })); await pe.waitForTimeout(150);   // débrief 27 : à l'écran
   const boiteAn = await (await pe.$('svg.graphe')).boundingBox();
   await pe.mouse.move(boiteAn.x + boiteAn.width / 2, boiteAn.y + boiteAn.height / 2);
   await pe.keyboard.down('Control');   // débrief 27
