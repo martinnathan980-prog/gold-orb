@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'ea568ec';
+  var EDITION = 'd2a004a';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -919,6 +919,22 @@
       morceaux.push(age > 8 ? '\x3Cspan class="vieux">' + ech(mot) + ', il y a ' + age + ' jours\x3C/span>' : ech(mot));
     }
     zone.innerHTML = morceaux.map(function (m) { return '\x3Cspan class="morceau">' + m + '\x3C/span>'; }).join(' \u00b7 ');
+  }
+
+  /* Débrief 29 (A-F13) : le pied et l'aide disent « archivé », et le jour
+     de ce relevé — « Dernier relevé archivé : S43 (vendredi 23 octobre) » :
+     la semaine du haut (« Semaine 44 ») et celle du pied (S43) ne se
+     confondent plus. Le jour est celui que le classeur a noté pour ce
+     relevé (le vendredi de sa semaine s'il n'en a pas noté) ; l'année ne
+     s'écrit que si ce n'est pas celle d'aujourd'hui. Pas de ligne d'âge en
+     tête de page (décision du débrief 28). */
+  function releveArchiveDit(i) {
+    var der = RELEVES_SRC.filter(function (r) { return indexDe(r.semaine) === i; }).pop();
+    var lu = der ? /^(\d{4})-(\d{2})-(\d{2})/.exec(String(der.date || '')) : null;
+    var jour = lu ? new Date(Date.UTC(+lu[1], +lu[2] - 1, +lu[3])) : new Date(dateDe(i).getTime() + 4 * 864e5);
+    var annee = jour.getUTCFullYear() !== aujourdhuiCivil().getUTCFullYear() ? ' ' + jour.getUTCFullYear() : '';
+    return 'Dernier relevé archivé : S' + numeroSemaine(i) + ' (' + JOURS_SEMAINE[jour.getUTCDay()] + ' ' + jour.getUTCDate() + ' ' +
+      MOIS[jour.getUTCMonth()] + annee + ')';
   }
 
   function valeurDim(p, cle) {
@@ -1902,9 +1918,9 @@
       : !RELEVES_SRC.length
       ? 'Aucun relevé archivé pour l\u2019instant : la page montre l\u2019extract du jour.'
       : EXTRAIT_EN_PLUS
-        ? 'Dernier relevé : ' + semaineDite(RELEVES[RELEVES.length - 2].i) + ' · ' + nArchives + (nArchives > 1 ? ' relevés' : ' relevé') +
+        ? releveArchiveDit(RELEVES[RELEVES.length - 2].i) + ' · ' + nArchives + (nArchives > 1 ? ' relevés' : ' relevé') +
           ' · l\u2019extract du jour, pas encore archivé, compte pour ' + semaineDite(DERNIER.i)
-        : 'Dernier relevé : ' + semaineDite(DERNIER.i) + ' · ' + RELEVES.length + (RELEVES.length > 1 ? ' relevés' : ' relevé');
+        : releveArchiveDit(DERNIER.i) + ' · ' + RELEVES.length + (RELEVES.length > 1 ? ' relevés' : ' relevé');
     var colonneLue = colonneDite(CLE_SUIVIE);
     $('colonne-suivie').textContent = colonneLue
       ? 'Colonne suivie : ' + colonneLue
@@ -6861,6 +6877,7 @@
     remettreContrat();
     var r = String(raison || '').trim();
     $('etat-contrat').textContent = r || 'Contrat impossible à charger.';
+    if (MASQUE_ENTRE_TEMPS.test(r)) { echecContratMasque(id, menu); return; }
     /* La raison dite dans la phrase : « … : service indisponible. » (une
        majuscule de début de phrase s'efface ; un sigle reste). */
     var dite = /^[A-ZÀ-Ý][a-zà-ÿ]/.test(r) ? r.charAt(0).toLowerCase() + r.slice(1) : r;
@@ -6873,8 +6890,38 @@
     appliquerGestesEnAttente();
     rendreFocusMenu(menu);
   }
-  function montrerAlerteContrat(texte) {
+  /* Débrief 29 (A-F21, S7) : un contrat masqué par un administrateur depuis
+     l'ouverture de la page — le classeur le dit (« … n'est plus affiché sur
+     le tableau de bord… »). Il quitte les menus tout de suite (sa famille
+     aussi, s'il en était la seule tranche), sans « Réessayer », qui ne
+     pourrait qu'échouer encore, et la phrase ne le nomme qu'une fois. Les
+     listes de contrats gardées dans les paquets déjà reçus l'oublient aussi
+     : la vue d'ensemble ne le ramène pas. Le contrat à l'écran, lui, reste
+     (la page montre encore ses chiffres). */
+  var MASQUE_ENTRE_TEMPS = /n[\u2019']est plus affiché sur le tableau de bord/;
+  function echecContratMasque(id, menu) {
+    var nom = nomAffiche(id);
+    ECHEC_CONTRAT = null;
+    if (id !== CONTRAT) oublierContrat(id);
+    montrerAlerteContrat(nom + ' n\u2019est plus affiché sur le tableau de bord (masqué par un administrateur). ' +
+      (id === CONTRAT ? 'La page montre ses chiffres d\u2019avant.' : 'La page montre toujours ' + nomAffiche(CONTRAT) + '.'), true);
+    appliquerGestesEnAttente();
+    rendreFocusMenu(menu);
+  }
+  function oublierContrat(id) {
+    var garder = function (c) { return c && String(c.id) !== id; };
+    CONTRATS = CONTRATS.filter(garder);
+    if (SRC && Array.isArray(SRC.contrats)) SRC.contrats = SRC.contrats.filter(garder);
+    Object.keys(PAQUETS).forEach(function (k) {
+      if (PAQUETS[k] && Array.isArray(PAQUETS[k].contrats)) PAQUETS[k].contrats = PAQUETS[k].contrats.filter(garder);
+    });
+    delete PAQUETS[id]; delete AVANCES[id]; delete MESSAGES_ENSEMBLE[id];
+    afficherContrat();
+  }
+  /* sansReessayer : un échec que redemander ne réparerait pas. */
+  function montrerAlerteContrat(texte, sansReessayer) {
     var z = $('alerte-contrat');
+    $('reessayer-contrat').hidden = !!sansReessayer;
     z.hidden = false;
     $('alerte-contrat-texte').textContent = texte;
   }
@@ -7082,15 +7129,20 @@
     var lignes = CONTRATS.map(function (c) {
       var r = resumes && resumes[c.id];
       var courant = c.id === CONTRAT;
+      /* Débrief 29 (A-F10) : un seul nom par onglet, celui du panneau
+         d'administration — « HDK › Tranche 1 », jamais « HDK » seul juste
+         au-dessus de « HDK › Tranche 2 » — et « à l'écran », ses mots. */
       var tete = '\x3Ctr' + (courant ? ' class="courant"' : '') + '>\x3Cth scope="row">\x3Cbutton type="button" class="lien-doux" data-aller-contrat="' + ech(c.id) + '"' +
-        (r && !r.message ? ' title="Passer à ce contrat"' : '') + '>' + ech(c.nom) + '\x3C/button>' + (courant ? '\x3Csmall>affiché\x3C/small>' : '') + '\x3C/th>';
+        (r && !r.message ? ' title="Passer à ce contrat"' : '') + '>' + ech(nomComplet(c.id)) + '\x3C/button>' + (courant ? '\x3Csmall>à l’écran\x3C/small>' : '') + '\x3C/th>';
       if (!r) {
         return tete + '\x3Ctd colspan="7" class="doux">' + (!resumes || ENSEMBLE_EN_COURS[c.id] ? 'chargement…' : ech(MESSAGES_ENSEMBLE[c.id] || 'contrat impossible à charger')) + '\x3C/td>\x3C/tr>';
       }
       if (r.message) return tete + '\x3Ctd colspan="7" class="alerte-ligne">' + ech(r.message) + '\x3C/td>\x3C/tr>';
       var e = r.echeance;
       var aLEcheance = !e ? TIRET_VIDE
-        : e.enRetard ? '\x3Cspan class="v tard">manque ' + nb(e.manque) + '\x3C/span>\x3Csmall>il faut ' + virgule(e.requis) + '/sem.\x3C/small>'
+        /* Débrief 29 (P-F18) : le rythme requis arrondi comme dans la fiche
+           de l'échéance (« il faut 83/sem. », plus « 83,0 »). */
+        : e.enRetard ? '\x3Cspan class="v tard">manque ' + nb(e.manque) + '\x3C/span>\x3Csmall>il faut ' + rythmeDit(e.requis) + '/sem.\x3C/small>'
         : '\x3Cspan class="v bon">tenue\x3C/span>' + (e.fin === 'validé' ? '\x3Csmall>tout est validé' + (e.domaine ? ' dans ' + ech(e.domaine) : '') + '\x3C/small>' : '');
       var finActuelle = e
         ? (e.fin === 'validé' ? '\x3Cspan class="v bon">tout est validé\x3C/span>'
@@ -7105,7 +7157,8 @@
           (r.reculs ? '\x3Csmall class="recul">' + nb(r.reculs) + (r.reculs > 1 ? ' reculs' : ' recul') + '\x3C/small>' : '') + '\x3C/td>' +
         '\x3Ctd>\x3Cspan class="v">' + (r.rythme === null ? TIRET_VIDE : virgule(r.rythme) + '/sem.') + '\x3C/span>\x3C/td>' +
         '\x3Ctd>\x3Cspan class="v' + (r.arret ? ' arret' : '') + '">' + (r.arret ? nb(r.arret) : TIRET_VIDE) + '\x3C/span>\x3C/td>' +
-        '\x3Ctd>' + (e ? '\x3Cspan class="v">' + ech(e.texte) + '\x3C/span>\x3Csmall>' + ech(e.quand) + ' · ' + ech(motJours(e.jours)) + '\x3C/small>' : '\x3Cspan class="doux">' + (r.sansJalon ? 'aucun jalon' : 'aucune à venir') + '\x3C/span>') + '\x3C/td>' +
+        '\x3Ctd>' + (e ? '\x3Cspan class="v">' + ech(e.texte) + '\x3C/span>\x3Csmall>' + ech(e.quand) + ' · ' + ech(motJours(e.jours)) + '\x3C/small>'
+          : '\x3Cspan class="doux">' + (r.sansJalon ? 'aucun jalon' : 'aucune à venir') + '\x3C/span>' + lienAjouterJalon(c.id, r)) + '\x3C/td>' +
         '\x3Ctd>' + aLEcheance + '\x3C/td>\x3Ctd>' + finActuelle + '\x3C/td>\x3C/tr>';
     }).join('');
     garderFocus(function () { corps.innerHTML = lignes; }, 'ensemble');
@@ -7116,6 +7169,15 @@
         if (c.tagName === 'TD' && c.colSpan === 1 && COLONNES_ENSEMBLE[k]) c.setAttribute('data-libelle', COLONNES_ENSEMBLE[k][0]);
       });
     });
+  }
+  /* Débrief 29 (A-F25, S8) : sous « aucun jalon », un administrateur de ce
+     contrat trouve le geste — « + Ajouter un jalon » ouvre l'administration
+     sur un jalon neuf pour ce contrat. Les lecteurs lisent « aucun jalon »,
+     sans plus. */
+  function lienAjouterJalon(id, r) {
+    if (!r.sansJalon || !estAdmin() || DROITS.coherent === false || !peutGererContrat(id)) return '';
+    return '\x3Cbutton type="button" class="lien-doux ajouter-jalon" data-ajouter-jalon="' + ech(id) + '" aria-label="Ajouter un jalon pour ' +
+      ech(nomComplet(id)) + '">+ Ajouter un jalon\x3C/button>';
   }
   function ouvrirEnsemble() {
     var zone = $('ensemble');
@@ -7191,6 +7253,8 @@
     if (appuiHorsEnsemble && horsDeLEnsemble(e)) { appuiHorsEnsemble = false; fermerEnsemble(); return; }
     appuiHorsEnsemble = false;
     if (e.target.closest('button[data-fermer-ensemble]')) { fermerEnsemble(); return; }
+    var aj = e.target.closest('button[data-ajouter-jalon]');
+    if (aj) { var pour = aj.dataset.ajouterJalon; fermerEnsemble(true); ouvrirAdmin({ ajouter: pour }); return; }
     var b = e.target.closest('button[data-aller-contrat]');
     if (!b) return;
     var id = b.dataset.allerContrat;
@@ -12328,5 +12392,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = 'ea568ec';
+window.SUIVI_FWD_FIN = 'd2a004a';
 </script>

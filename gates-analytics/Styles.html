@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "ea568ec";
+  --suivi-fwd-edition: "d2a004a";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -95,6 +95,16 @@
   --retrait-panneau: 31px;
   /* --alerte-fond : le fond d'un bandeau d'erreur (D8, .bandeau-alerte). */
   --alerte-fond: #fbeeea;
+  /* Débrief 29 : --alerte-bord-commande, le bord d'un bouton posé sur ce
+     fond (« Réessayer », la croix) — 3,4:1 sur le rose (3,7:1 en sombre). */
+  --alerte-bord-commande: #85827a;
+  /* Débrief 29 : les encres du papier, gardées sous un autre nom. L'en-tête
+     marine (débrief 28) redéfinit --encre, --surface… pour ses propres
+     contrôles ; ce qui s'y pose comme un morceau de papier (les bandeaux
+     d'erreur) reprend celles-ci. Calculées sur la racine, elles suivent le
+     thème sans être recopiées. */
+  --papier-encre: var(--encre); --papier-encre-2: var(--encre-2); --papier-encre-3: var(--encre-3);
+  --papier-filet: var(--filet); --papier-surface: var(--surface); --papier-creux: var(--creux); --papier-focus: var(--focus);
   /* Débrief 27 (lot F) : --succes-fond, le fond d'un message réussi (le
      bandeau du panneau d'administration) — l'encre y tient 15:1. */
   --succes-fond: #ebf4ee;
@@ -214,6 +224,7 @@
     --bord-champ: #6a6860;
     --lisere-donnee: transparent;
     --alerte-fond: #2b1f14;
+    --alerte-bord-commande: #7b7970;
     --succes-fond: #16231a;
     --survol-ligne: #232321;
     --bandeau-fond: #1d1c19; --bandeau-fond-2: #181714; --bandeau-filet: #2e2c27; --bandeau-trait: var(--encre-2);
@@ -280,6 +291,7 @@
   --bord-champ: #6a6860;
   --lisere-donnee: transparent;
   --alerte-fond: #2b1f14;
+  --alerte-bord-commande: #7b7970;
   --succes-fond: #16231a;
   --survol-ligne: #232321;
   --bandeau-fond: #1d1c19; --bandeau-fond-2: #181714; --bandeau-filet: #2e2c27; --bandeau-trait: var(--encre-2);
@@ -885,6 +897,25 @@ header.entete .alerte-contrat {
 .alerte-contrat-texte { flex: 1 1 260px; min-width: 0; }
 .alerte-contrat .bouton { margin-left: 0; }
 .alerte-contrat .fiche-plan-fermer { margin-left: 0; flex: none; }
+/* Débrief 29 (B7, A-F5) : le bandeau vit dans l'en-tête marine, qui
+   redéfinit les encres pour ses contrôles clairs : en thème clair, le
+   message s'écrivait en crème sur le rose (1:1) et la croix ne se voyait
+   plus. C'est un morceau de papier posé sur la bande : il reprend les
+   encres de la page ; les bords de « Réessayer » et de la croix tiennent
+   3:1 sur son fond, dans les deux thèmes. */
+header.entete .alerte-contrat {
+  --encre: var(--papier-encre); --encre-2: var(--papier-encre-2); --encre-3: var(--papier-encre-3);
+  --filet: var(--papier-filet); --filet-fort: var(--alerte-bord-commande);
+  --surface: var(--papier-surface); --creux: var(--papier-creux); --focus: var(--papier-focus);
+  color: var(--encre);
+}
+/* Débrief 29 (B7) : de même, le message du classeur qui n'a rien pu rendre
+   (colonne d'avancement introuvable…) — en rouge sur la bande marine, il
+   tombait à 2:1. Il prend le dessin du bandeau d'erreur (D8). */
+header.entete .alerte-source {
+  padding: 5px 12px; border-left: 3px solid var(--alerte); border-radius: 6px;
+  background: var(--alerte-fond); color: var(--papier-encre); font-size: 13px; line-height: 1.45;
+}
 @media print { .barre-chargement, .alerte-contrat, .raison-indispo { display: none !important; } }
 
 /* ---------------------------------------------------- Filtres actifs */
@@ -1944,7 +1975,10 @@ dialog.ensemble::backdrop { background: var(--voile-dialogue); }
    bouge quand un contrat passe de « chargement… » à ses chiffres. */
 .ensemble-table { width: 100%; min-width: 860px; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
 .ensemble-table th, .ensemble-table td { padding: 8px 10px; text-align: left; vertical-align: top; border-top: 1px solid var(--filet); overflow-wrap: anywhere; }
-.ensemble-table tbody th, .ensemble-table tbody td { height: 58px; }
+/* Débrief 29 (A-F25) : 64 px, la hauteur d'une ligne remplie (chiffre,
+   part, jauge) — une ligne « chargement… » la garde déjà : la fenêtre ne
+   grandit plus quand les autres contrats arrivent. */
+.ensemble-table tbody th, .ensemble-table tbody td { height: 64px; }
 .ensemble-table thead th { border-top: none; border-bottom: 1px solid var(--filet-fort); font-size: 12px; font-weight: 500; color: var(--encre-2); vertical-align: bottom; }
 .ensemble-table tbody th .lien-doux { font: 500 14px "IBM Plex Sans", system-ui, sans-serif; color: var(--encre); text-align: left; }
 .ensemble-table tr.courant { background: var(--creux); }
@@ -1954,6 +1988,10 @@ dialog.ensemble::backdrop { background: var(--voile-dialogue); }
 .ensemble-table .v.bon { color: var(--fait); }
 .ensemble-table .v.arret { color: var(--cours); }
 .ensemble-table .alerte-ligne { color: var(--alerte); }
+/* Débrief 29 (A-F25) : « + Ajouter un jalon », sous « aucun jalon » (un
+   administrateur du contrat) — 12 px, une ligne de 18 : au doigt, sa cible
+   fait 44 px avec la marge des liens doux. */
+.ensemble-table .ajouter-jalon { display: block; justify-self: end; margin-top: 2px; font-size: 12px; line-height: 18px; text-align: left; }
 /* Sous « 53 / 634 », la part validée en une petite jauge de 60 × 4 px. */
 .jauge-ensemble { display: block; width: 60px; height: 4px; margin-top: 5px; border-radius: 2px; background: var(--filet); overflow: hidden; }
 .jauge-ensemble i { display: block; height: 100%; background: var(--fait); }

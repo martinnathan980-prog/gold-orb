@@ -3678,14 +3678,19 @@ async function deplierFiltresColonne(pg) {
        numéro de semaine reste celui du pied. */
     const MOIS27 = '(janv\\.|févr\\.|mars|avr\\.|mai|juin|juil\\.|août|sept\\.|oct\\.|nov\\.|déc\\.)';
     const SEM_JOURNAL = new RegExp('^S\\d{1,2} · du (lun|mar|mer|jeu|ven|sam|dim)\\. \\d{1,2}( ' + MOIS27 + ')? au (lun|mar|mer|jeu|ven|sam|dim)\\. \\d{1,2} ' + MOIS27 + '( \\d{4})?$');
-    verifier('pied, note du graphique, journal et jalons écrivent la semaine de la même façon (le journal, avec les dates des deux relevés)',
-      /^Dernier relevé : S\d{1,2} · \S+ \d{4} · \d+ relevés$/.test(esp(lieux.pied)) &&
+    /* Débrief 29 (lot E2, A-F13) : le pied dit « archivé » et le jour du
+       relevé — « Dernier relevé archivé : S43 (vendredi 23 octobre) · 6
+       relevés » ; son numéro de semaine reste celui de la note et du journal. */
+    const PIED29 = /^Dernier relevé archivé : (S\d{1,2}) \((lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche) \d{1,2} (janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)( \d{4})?\) · \d+ relevés$/;
+    const semPied = (esp(lieux.pied).match(PIED29) || [])[1];
+    verifier('pied, note du graphique, journal et jalons nomment la semaine de la même façon (le pied avec le jour du relevé archivé, le journal avec les dates des deux relevés)',
+      !!semPied &&
       /^\d+ relevés, de S\d{1,2} · \S+ \d{4} à S\d{1,2} · \S+ \d{4}$/.test(esp(lieux.note)) &&
-      SEM_JOURNAL.test(esp(lieux.journal)) && esp(lieux.journal).split(' ')[0] === esp(lieux.pied).replace(/^Dernier relevé : /, '').split(' ')[0] &&
+      SEM_JOURNAL.test(esp(lieux.journal)) && esp(lieux.journal).split(' ')[0] === semPied &&
       lieux.legende.every(q => SEM.test(esp(q))), JSON.stringify(lieux));
     // Le pied et la note disent le même dernier relevé.
     verifier('le pied et la note du graphique nomment le même dernier relevé',
-      esp(lieux.note).split(' à ')[1] === esp(lieux.pied).replace(/^Dernier relevé : /, '').replace(/ · \d+ relevés$/, ''), JSON.stringify(lieux));
+      !!semPied && (esp(lieux.note).split(' à ')[1] || '').split(' ')[0] === semPied, JSON.stringify(lieux));
 
     // La fiche, la légende, le « manque » du graphique et la puce : les mêmes nombres.
     await pq.click('#echeance-titre'); await pq.waitForTimeout(500);
@@ -10603,6 +10608,260 @@ async function deplierFiltresColonne(pg) {
   //  dans un bloc { … } qui ouvre et ferme ses propres pages.
   // =================================================================
   /* (début du lot E2) */
+  section('Débrief 29 : états d’erreur, Vue d’ensemble, contrats masqués, pied (lot E2)');
+  {
+    const fs29 = require('fs'), os29 = require('os');
+    const { construireSimulateur } = require(path.join(__dirname, '..', '..', 'tests', 'construire-simulateur.js'));
+    const { Feuille } = require(path.join(__dirname, '..', '..', 'tests', 'faux-classeur.js'));
+    /* Le classeur du simulateur, comme chez Nathan : HDK (deux tranches, la
+       seconde « HDK Tranche 2 », sans historique) et THS, sans jalon. */
+    const sim = construireSimulateur({ date: '2026-10-29', avantPage: function (c, classeur) {
+      const ths = classeur.getSheetByName('THS');
+      classeur.feuilles.splice(1, 0, new Feuille('HDK Tranche 2', ths.valeurs.map(l => l.slice()), false, ths.fusions.map(f => Object.assign({}, f))));
+    } });
+    const srv = sim.contexte;
+    sim.classeur.proprietaire = 'nathan@airbus.com';
+    srv.__emailScript = 'nathan@airbus.com';
+    const fichier29 = path.join(os29.tmpdir(), 'suivi-fwd-e2-' + process.pid + '.html');
+    fs29.writeFileSync(fichier29, sim.page.replace(/<script>\s*\/\* Simulateur : google\.script\.run[\s\S]*?<\/script>/, ''));
+    const commeQui = (email, fn) => { const avant = srv.__emailLecteur; srv.__emailLecteur = email; try { return fn(); } finally { srv.__emailLecteur = avant; } };
+    /* Une panne du classeur le temps d'un essai : les fonctions qui rendent
+       un contrat échouent (« Service indisponible »). */
+    const RENDRE = ['getDonneesCompactes', 'getDonneesCompactesJson', 'getDonneesPourClient', 'getDonneesPourClientLues'];
+    let gardees = null;
+    const panne = oui => {
+      if (oui && !gardees) { gardees = {}; RENDRE.forEach(k => { gardees[k] = srv[k]; srv[k] = function () { throw new Error('Service indisponible'); }; }); }
+      if (!oui && gardees) { RENDRE.forEach(k => { srv[k] = gardees[k]; }); gardees = null; }
+    };
+    const vivante = async (o) => {
+      const c = await nav.newContext({ viewport: { width: o.largeur || 1280, height: o.hauteur || 900 }, colorScheme: o.schema || 'light',
+        isMobile: !!o.mobile, hasTouch: !!o.mobile, locale: 'en-US' });
+      const pg = await c.newPage();
+      const etiquette = 'lot E2 ' + o.email;
+      /* Le pont du classeur écrit « Contrat non chargé : … » dans la console
+         à chaque échec — ici voulu (la panne, le contrat masqué) ; toute
+         autre erreur compte. */
+      pg.on('pageerror', e => erreursJS.push(etiquette + ' : ' + e.message));
+      pg.on('console', m => { if (m.type() === 'error' && !/Contrat non chargé/.test(m.text())) erreursJS.push(etiquette + ' : ' + m.text()); });
+      pg.on('dialog', d => d.dismiss().catch(() => {}));
+      await pg.exposeFunction('__appel', (nom, args) => {
+        if (typeof srv[nom] !== 'function' || /_$/.test(nom)) throw new Error('fonction inconnue ' + nom);
+        return commeQui(o.email, () => { const r = srv[nom].apply(null, JSON.parse(args)); return JSON.stringify(r === undefined ? null : r); });
+      });
+      await pg.addInitScript(lent => {
+        window.SUIVI_FWD_BUDGET = 1e9;
+        function chaine(ok, ko) {
+          const c = { withSuccessHandler: f => chaine(f, ko), withFailureHandler: f => chaine(ok, f), withUserObject: () => chaine(ok, ko) };
+          return new Proxy(c, { get(t, nom) {
+            if (nom in t) return t[nom];
+            if (typeof nom !== 'string') return undefined;
+            return function () {
+              const args = Array.prototype.slice.call(arguments);
+              setTimeout(() => window.__appel(nom, JSON.stringify(args)).then(j => { if (ok) ok(JSON.parse(j)); },
+                e => { if (ko) ko({ message: String(e.message || e).replace(/^Error: /, '') }); }), lent);
+            };
+          } });
+        }
+        window.google = { script: { run: chaine(null, null) } };
+      }, o.latence === undefined ? 40 : o.latence);
+      await pg.goto('file://' + fichier29);
+      await pg.waitForFunction(() => document.documentElement.getAttribute('data-suivi-fwd') === 'pret', null, { timeout: 30000 });
+      /* Les droits arrivent après l'ouverture (mesDroits). */
+      await pg.waitForFunction(() => {
+        const b = document.getElementById('ouvrir-admin');
+        const vu = b && b.getClientRects().length && getComputedStyle(b).visibility !== 'hidden';
+        return vu || (document.getElementById('pied-responsable') || {}).textContent;
+      }, null, { timeout: 20000 }).catch(() => {});
+      await pg.evaluate(() => {
+        window.__lum = c => {
+          const m = c.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+          return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2];
+        };
+        window.__contraste = (a, b) => { const x = window.__lum(a), y = window.__lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+      });
+      pg.__ctx = c;
+      return pg;
+    };
+    const alerteVue = pg => pg.waitForFunction(() => !document.getElementById('alerte-contrat').hidden, null, { timeout: 15000 }).catch(() => {});
+    const ensembleFini = pg => pg.waitForFunction(() => document.querySelectorAll('#ensemble tbody tr').length > 0 &&
+      ![...document.querySelectorAll('#ensemble tbody td')].some(td => /chargement…/.test(td.textContent)), null, { timeout: 15000 }).catch(() => {});
+    const etatContrat = pg => pg.evaluate(() => {
+      const r = document.getElementById('reessayer-contrat');
+      return { alerte: document.getElementById('alerte-contrat').hidden ? '' : document.getElementById('alerte-contrat-texte').textContent,
+               reessayer: !r.hidden && r.getClientRects().length > 0,
+               contrats: [...document.querySelectorAll('#select-contrat option')].map(x => x.textContent).join(),
+               valeur: document.getElementById('select-contrat').value,
+               tranches: [...document.querySelectorAll('#select-tranche option')].map(x => x.textContent).join() };
+    });
+
+    try {
+      /* B7, A-F5 : le bandeau d'erreur et le message du classeur, dans l'en-tête marine, lisibles dans les deux thèmes. */
+      for (const schema of ['light', 'dark']) {
+        const pg = await vivante({ email: 'nathan@airbus.com', schema });
+        panne(true);
+        await pg.selectOption('#select-contrat', 'THS');
+        await alerteVue(pg);
+        panne(false);
+        await pg.mouse.move(4, 4);
+        const m = await pg.evaluate(() => {
+          const a = document.getElementById('alerte-contrat'), t = document.getElementById('alerte-contrat-texte');
+          const x = document.getElementById('fermer-alerte-contrat'), r = document.getElementById('reessayer-contrat');
+          const fond = getComputedStyle(a).backgroundColor, cx = getComputedStyle(x), cr = getComputedStyle(r);
+          const fondR = cr.backgroundColor === 'rgba(0, 0, 0, 0)' ? fond : cr.backgroundColor;
+          return { texte: t.textContent, vu: !a.hidden, fond,
+                   encre: +window.__contraste(getComputedStyle(t).color, fond).toFixed(2),
+                   croix: +window.__contraste(cx.color, fond).toFixed(2), croixBord: +window.__contraste(cx.borderTopColor, fond).toFixed(2),
+                   reessayer: +window.__contraste(cr.color, fondR).toFixed(2), reessayerBord: +window.__contraste(cr.borderTopColor, fond).toFixed(2),
+                   reessayerVu: !r.hidden && r.getClientRects().length > 0 };
+        });
+        verifier('B7, A-F5 (' + schema + ') : le bandeau d’erreur se lit dans l’en-tête marine — texte ≥ 4,5:1 sur son fond, « Réessayer » ≥ 4,5:1, la croix et les bords de « Réessayer » et de la croix ≥ 3:1',
+          m.vu && m.texte === 'THS n’a pas pu être chargé : service indisponible. La page montre toujours HDK › Tranche 1.' && m.reessayerVu &&
+          m.fond === (schema === 'light' ? 'rgb(251, 238, 234)' : 'rgb(43, 31, 20)') &&
+          m.encre >= 4.5 && m.reessayer >= 4.5 && m.croix >= 3 && m.croixBord >= 3 && m.reessayerBord >= 3, JSON.stringify(m));
+        await pg.click('#fermer-alerte-contrat');
+        await pg.evaluate(() => { const s = window.__jeuDExemple('HDK'); s.message = 'La colonne d’avancement est introuvable dans l’onglet « HDK ».'; window.__chargerSource(s); });
+        await pg.waitForTimeout(300);
+        const src = await pg.evaluate(() => {
+          const a = document.getElementById('alerte-source'), c = getComputedStyle(a);
+          return { vu: !a.hidden && a.getClientRects().length > 0, fond: c.backgroundColor, bord: c.borderLeftWidth, encre: +window.__contraste(c.color, c.backgroundColor).toFixed(2) };
+        });
+        verifier('B7 (' + schema + ') : le message du classeur qui n’a rien pu rendre prend le dessin du bandeau d’erreur — son texte ≥ 4,5:1 (en rouge sur la bande marine, il tombait à 2:1)',
+          src.vu && src.fond === m.fond && src.bord === '3px' && src.encre >= 4.5, JSON.stringify(src));
+        await pg.__ctx.close();
+      }
+
+      /* A-F13 : le pied et l'aide disent « archivé », et le jour du relevé. */
+      {
+        const pg = await vivante({ email: 'lecteur@airbus.com' });
+        const pied = await pg.evaluate(() => document.getElementById('import').textContent);
+        await pg.click('#ouvrir-aide-pied'); await pg.waitForTimeout(400);
+        const aide = await pg.evaluate(() => document.getElementById('aide-fraicheur').textContent);
+        verifier('A-F13 : le pied dit « Dernier relevé archivé : S43 (vendredi 23 octobre) · 6 relevés », et l’aide le redit — sans ligne d’âge en tête de page',
+          pied === 'Dernier relevé archivé : S43 (vendredi 23 octobre) · 6 relevés' && aide.indexOf(pied + '.') === 0 &&
+          !(await pg.evaluate(() => /Chiffres du /.test(document.getElementById('entete').textContent))), JSON.stringify({ pied, aide }));
+        await pg.__ctx.close();
+      }
+
+      /* A-F21, S7 : un lecteur, page ouverte ; THS masqué entre-temps par l'administrateur, puis choisi au menu. */
+      {
+        const lp = await vivante({ email: 'lecteur@airbus.com' });
+        commeQui('nathan@airbus.com', () => srv.adminRetirerContrat('THS', true));
+        try {
+          await lp.selectOption('#select-contrat', 'THS');
+          await alerteVue(lp);
+          const m1 = await etatContrat(lp);
+          verifier('A-F21, S7 : un contrat masqué entre-temps quitte le menu ; le bandeau le dit en une phrase qui ne le nomme qu’une fois, sans « Réessayer » (qui ne pourrait qu’échouer)',
+            m1.alerte === 'THS n’est plus affiché sur le tableau de bord (masqué par un administrateur). La page montre toujours HDK › Tranche 1.' &&
+            !m1.reessayer && m1.contrats === 'HDK' && m1.valeur === 'HDK' && m1.tranches === 'Tranche 1,Tranche 2', JSON.stringify(m1));
+          await lp.click('#voir-ensemble'); await ensembleFini(lp);
+          const lignes = await lp.evaluate(() => [...document.querySelectorAll('#ensemble tbody th button')].map(b => b.textContent.trim()).join());
+          await lp.keyboard.press('Escape'); await lp.waitForTimeout(300);
+          const m2 = await etatContrat(lp);
+          verifier('A-F21 : la Vue d’ensemble ne le ramène pas — ni dans ses lignes, ni dans le menu une fois fermée',
+            lignes === 'HDK › Tranche 1,HDK › Tranche 2' && m2.contrats === 'HDK', JSON.stringify({ lignes, m2 }));
+          /* Une panne ordinaire ensuite : « Réessayer » revient. L'horloge
+             avance d'une minute : la demande faite d'avance à l'ouverture du
+             menu (débrief 23) n'est plus bonne, la page redemande. */
+          await lp.evaluate(() => { const vrai = Date.now; Date.now = () => vrai() + 60000; });
+          panne(true);
+          await lp.selectOption('#select-tranche', 'HDK Tranche 2');
+          await lp.waitForFunction(() => /n’a pas pu être chargé/.test(document.getElementById('alerte-contrat-texte').textContent), null, { timeout: 15000 }).catch(() => {});
+          panne(false);
+          const m3 = await etatContrat(lp);
+          verifier('A-F21 : après lui, une panne ordinaire remet « Réessayer »',
+            m3.alerte === 'HDK › Tranche 2 n’a pas pu être chargé : service indisponible. La page montre toujours HDK › Tranche 1.' && m3.reessayer, JSON.stringify(m3));
+        } finally {
+          panne(false);
+          commeQui('nathan@airbus.com', () => srv.adminRetirerContrat('THS', false));
+        }
+        await lp.__ctx.close();
+      }
+
+      /* F18, A-F10, A-F25, S8 : la Vue d'ensemble, vue par le responsable. */
+      {
+        const np = await vivante({ email: 'nathan@airbus.com' });
+        await np.click('#echeance-titre'); await np.waitForTimeout(500);
+        const requisFiche = await np.evaluate(() => { const b = document.querySelector('#fiche-echeance .fiche-echeance-rythme b'); return b ? b.textContent.trim() : null; });
+        await np.click('#fiche-echeance [data-fermer-echeance]').catch(() => {}); await np.waitForTimeout(300);
+        await np.click('#voir-ensemble'); await ensembleFini(np);
+        const ens = await np.evaluate(() => [...document.querySelectorAll('#ensemble tbody tr')].map(tr => {
+          const td = tr.querySelectorAll('td'), aj = tr.querySelector('[data-ajouter-jalon]');
+          return { nom: tr.querySelector('th button').textContent.trim(), sous: (tr.querySelector('th small') || {}).textContent || '',
+                   aEcheance: td[5] ? td[5].textContent.replace(/[\u00a0\u202f]/g, ' ') : '',
+                   prochaine: td[4] ? (td[4].querySelector('.doux') || td[4]).textContent : '',
+                   ajouter: aj ? aj.dataset.ajouterJalon + '|' + aj.textContent + '|' + aj.getAttribute('aria-label') : '' };
+        }));
+        verifier('A-F10 : la Vue d’ensemble nomme chaque onglet comme l’administration — « HDK › Tranche 1 » (plus « HDK » seul au-dessus de « HDK › Tranche 2 »), « à l’écran » sous celui qu’on regarde',
+          ens.map(r => r.nom).join() === 'HDK › Tranche 1,HDK › Tranche 2,THS' && ens[0].sous === 'à l’écran' && !ens[1].sous && !ens[2].sous, JSON.stringify(ens));
+        const ilFaut = (ens[0].aEcheance.match(/il faut ([\d\s,]+)\/sem\./) || [])[1];
+        verifier('F18 : « il faut 83/sem. » — le rythme requis arrondi comme dans la fiche de l’échéance (plus « 83,0 »)',
+          !!requisFiche && /^manque \d+il faut \d+\/sem\.$/.test(ens[0].aEcheance) && ilFaut === requisFiche, JSON.stringify({ requisFiche, aEcheance: ens[0].aEcheance }));
+        verifier('A-F25, S8 : sous « aucun jalon », le responsable trouve « + Ajouter un jalon » (nommé pour son contrat) ; le contrat qui a ses jalons, non',
+          !ens[0].ajouter && ens[1].prochaine === 'aucun jalon' && ens[2].prochaine === 'aucun jalon' &&
+          ens[1].ajouter === 'HDK Tranche 2|+ Ajouter un jalon|Ajouter un jalon pour HDK › Tranche 2' &&
+          ens[2].ajouter === 'THS|+ Ajouter un jalon|Ajouter un jalon pour THS', JSON.stringify(ens));
+        await np.focus('#ensemble [data-ajouter-jalon="THS"]');
+        await np.keyboard.press('Enter');
+        await np.waitForFunction(() => document.getElementById('admin').open && document.querySelector('#admin-corps form[data-form="jalon"]'), null, { timeout: 15000 }).catch(() => {});
+        const ouvert = await np.evaluate(() => ({ ensemble: document.getElementById('ensemble').open, admin: document.getElementById('admin').open,
+          onglet: ((document.querySelector('#admin-onglets [aria-selected="true"]') || {}).textContent || '').trim(),
+          pour: (document.querySelector('#admin-corps select[name="pour"]') || {}).value, focus: document.activeElement.id }));
+        await np.keyboard.press('Escape'); await np.waitForTimeout(500);
+        const retour = await np.evaluate(() => ({ admin: document.getElementById('admin').open, focus: document.activeElement.id }));
+        verifier('S8 : « + Ajouter un jalon » ferme la Vue d’ensemble et ouvre l’administration sur un jalon neuf pour ce contrat (onglet Jalons, « Pour » = THS, le focus sur le nom) ; Échap ramène le focus sur « Vue d’ensemble »',
+          !ouvert.ensemble && ouvert.admin && ouvert.onglet === 'Jalons' && ouvert.pour === 'THS' && ouvert.focus === 'admin-texte' &&
+          !retour.admin && retour.focus === 'voir-ensemble', JSON.stringify({ ouvert, retour }));
+        await np.__ctx.close();
+      }
+      /* Un lecteur lit « aucun jalon », sans plus ; une administratrice de THS seul ne trouve le geste que pour THS. */
+      {
+        const lp = await vivante({ email: 'lecteur@airbus.com' });
+        await lp.click('#voir-ensemble'); await ensembleFini(lp);
+        const lecteur = await lp.evaluate(() => ({ boutons: document.querySelectorAll('#ensemble [data-ajouter-jalon]').length,
+          aucun: [...document.querySelectorAll('#ensemble tbody td .doux')].map(d => d.textContent).join() }));
+        await lp.__ctx.close();
+        commeQui('nathan@airbus.com', () => srv.adminEnregistrerAdmins([{ email: 'anne@airbus.com', contrats: ['THS'] }]));
+        const ap = await vivante({ email: 'anne@airbus.com' });
+        await ap.click('#voir-ensemble'); await ensembleFini(ap);
+        const anne = await ap.evaluate(() => [...document.querySelectorAll('#ensemble [data-ajouter-jalon]')].map(b => b.dataset.ajouterJalon).join());
+        await ap.__ctx.close();
+        commeQui('nathan@airbus.com', () => srv.adminEnregistrerAdmins([]));
+        verifier('S8 : un lecteur lit « aucun jalon », sans bouton ; une administratrice de THS seul ne trouve « + Ajouter un jalon » que pour THS',
+          lecteur.boutons === 0 && lecteur.aucun === 'aucun jalon,aucun jalon' && anne === 'THS', JSON.stringify({ lecteur, anne }));
+      }
+
+      /* A-F25 : réseau lent — la fenêtre ne grandit plus quand les autres contrats arrivent. */
+      {
+        const pg = await vivante({ email: 'nathan@airbus.com', latence: 900 });
+        await pg.click('#voir-ensemble'); await pg.waitForTimeout(600);
+        const avant = await pg.evaluate(() => ({ h: Math.round(document.getElementById('ensemble').getBoundingClientRect().height),
+          attente: [...document.querySelectorAll('#ensemble tbody td')].filter(td => /chargement…/.test(td.textContent)).length,
+          lignes: [...document.querySelectorAll('#ensemble tbody tr')].map(tr => Math.round(tr.getBoundingClientRect().height)) }));
+        await ensembleFini(pg);
+        const apres = await pg.evaluate(() => ({ h: Math.round(document.getElementById('ensemble').getBoundingClientRect().height),
+          lignes: [...document.querySelectorAll('#ensemble tbody tr')].map(tr => Math.round(tr.getBoundingClientRect().height)) }));
+        verifier('A-F25 : sur un réseau lent, une ligne « chargement… » a déjà la hauteur d’une ligne remplie — la Vue d’ensemble ne grandit plus à l’arrivée des chiffres',
+          avant.attente === 2 && Math.abs(apres.h - avant.h) <= 1 && avant.lignes.join() === apres.lignes.join(), JSON.stringify({ avant, apres }));
+        await pg.__ctx.close();
+      }
+
+      /* D11 : au téléphone, « + Ajouter un jalon » est une cible de 44 px. */
+      {
+        const tp = await vivante({ email: 'nathan@airbus.com', largeur: 390, hauteur: 844, mobile: true });
+        await tp.tap('#voir-ensemble'); await ensembleFini(tp);
+        const cibles = await tp.evaluate(() => [...document.querySelectorAll('#ensemble [data-ajouter-jalon]')].map(b => {
+          const r = b.getBoundingClientRect(), a = getComputedStyle(b, '::after');
+          return { h: Math.round(r.height - parseFloat(a.top) - parseFloat(a.bottom)), w: Math.round(r.width - parseFloat(a.left) - parseFloat(a.right)), droite: Math.round(innerWidth - r.right) };
+        }));
+        verifier('D11 : au téléphone, chaque « + Ajouter un jalon » de la Vue d’ensemble offre une cible de 44 px au moins, calée à droite de sa carte',
+          cibles.length === 2 && cibles.every(c => c.h >= 44 && c.w >= 44 && c.droite <= 20), JSON.stringify(cibles));
+        await tp.__ctx.close();
+      }
+    } finally {
+      panne(false);
+      try { fs29.unlinkSync(fichier29); } catch (e) { /* déjà parti */ }
+    }
+  }
   /* (fin du lot E2) */
 
 

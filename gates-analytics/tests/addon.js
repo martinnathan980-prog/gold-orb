@@ -2306,8 +2306,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('la somme des plans par groupe fait 186',
     vu.totauxGroupes.reduce((a, b) => a + b, 0) === 186, String(vu.totauxGroupes.reduce((a, b) => a + b, 0)));
   verifier('le graphique a de quoi tracer', vu.releves);
-  verifier('le pied nomme le dernier relevé et compte les relevés, comme la note du graphique',
-    /^Dernier relevé : S\d{1,2}\u00a0· \S+\u00a0\d{4} · \d+ relevés$/.test(vu.importe), vu.importe);
+  /* Débrief 29 (lot E2, A-F13) : « Dernier relevé archivé : S43 (vendredi 23 octobre) · 6 relevés ». */
+  verifier('le pied nomme le dernier relevé archivé, son jour, et compte les relevés, comme la note du graphique',
+    /^Dernier relevé archivé : S\d{1,2} \((lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche) \d{1,2} \S+( \d{4})?\) · \d+ relevés$/.test(vu.importe), vu.importe);
   verifier('rien ne permet d\'éditer un jalon dans la page', vu.jalons === 0);
   /* Les jalons de CONFIG sont dessinés — ceux qui tombent après le premier
      relevé, puisque l'axe du graphique part de là. Sur « Tout », la fenêtre

@@ -99,6 +99,16 @@
   --retrait-panneau: 31px;
   /* --alerte-fond : le fond d'un bandeau d'erreur (D8, .bandeau-alerte). */
   --alerte-fond: #fbeeea;
+  /* Débrief 29 : --alerte-bord-commande, le bord d'un bouton posé sur ce
+     fond (« Réessayer », la croix) — 3,4:1 sur le rose (3,7:1 en sombre). */
+  --alerte-bord-commande: #85827a;
+  /* Débrief 29 : les encres du papier, gardées sous un autre nom. L'en-tête
+     marine (débrief 28) redéfinit --encre, --surface… pour ses propres
+     contrôles ; ce qui s'y pose comme un morceau de papier (les bandeaux
+     d'erreur) reprend celles-ci. Calculées sur la racine, elles suivent le
+     thème sans être recopiées. */
+  --papier-encre: var(--encre); --papier-encre-2: var(--encre-2); --papier-encre-3: var(--encre-3);
+  --papier-filet: var(--filet); --papier-surface: var(--surface); --papier-creux: var(--creux); --papier-focus: var(--focus);
   /* Débrief 27 (lot F) : --succes-fond, le fond d'un message réussi (le
      bandeau du panneau d'administration) — l'encre y tient 15:1. */
   --succes-fond: #ebf4ee;
@@ -218,6 +228,7 @@
     --bord-champ: #6a6860;
     --lisere-donnee: transparent;
     --alerte-fond: #2b1f14;
+    --alerte-bord-commande: #7b7970;
     --succes-fond: #16231a;
     --survol-ligne: #232321;
     --bandeau-fond: #1d1c19; --bandeau-fond-2: #181714; --bandeau-filet: #2e2c27; --bandeau-trait: var(--encre-2);
@@ -284,6 +295,7 @@
   --bord-champ: #6a6860;
   --lisere-donnee: transparent;
   --alerte-fond: #2b1f14;
+  --alerte-bord-commande: #7b7970;
   --succes-fond: #16231a;
   --survol-ligne: #232321;
   --bandeau-fond: #1d1c19; --bandeau-fond-2: #181714; --bandeau-filet: #2e2c27; --bandeau-trait: var(--encre-2);
@@ -889,6 +901,25 @@ header.entete .alerte-contrat {
 .alerte-contrat-texte { flex: 1 1 260px; min-width: 0; }
 .alerte-contrat .bouton { margin-left: 0; }
 .alerte-contrat .fiche-plan-fermer { margin-left: 0; flex: none; }
+/* Débrief 29 (B7, A-F5) : le bandeau vit dans l'en-tête marine, qui
+   redéfinit les encres pour ses contrôles clairs : en thème clair, le
+   message s'écrivait en crème sur le rose (1:1) et la croix ne se voyait
+   plus. C'est un morceau de papier posé sur la bande : il reprend les
+   encres de la page ; les bords de « Réessayer » et de la croix tiennent
+   3:1 sur son fond, dans les deux thèmes. */
+header.entete .alerte-contrat {
+  --encre: var(--papier-encre); --encre-2: var(--papier-encre-2); --encre-3: var(--papier-encre-3);
+  --filet: var(--papier-filet); --filet-fort: var(--alerte-bord-commande);
+  --surface: var(--papier-surface); --creux: var(--papier-creux); --focus: var(--papier-focus);
+  color: var(--encre);
+}
+/* Débrief 29 (B7) : de même, le message du classeur qui n'a rien pu rendre
+   (colonne d'avancement introuvable…) — en rouge sur la bande marine, il
+   tombait à 2:1. Il prend le dessin du bandeau d'erreur (D8). */
+header.entete .alerte-source {
+  padding: 5px 12px; border-left: 3px solid var(--alerte); border-radius: 6px;
+  background: var(--alerte-fond); color: var(--papier-encre); font-size: 13px; line-height: 1.45;
+}
 @media print { .barre-chargement, .alerte-contrat, .raison-indispo { display: none !important; } }
 
 /* ---------------------------------------------------- Filtres actifs */
@@ -1948,7 +1979,10 @@ dialog.ensemble::backdrop { background: var(--voile-dialogue); }
    bouge quand un contrat passe de « chargement… » à ses chiffres. */
 .ensemble-table { width: 100%; min-width: 860px; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
 .ensemble-table th, .ensemble-table td { padding: 8px 10px; text-align: left; vertical-align: top; border-top: 1px solid var(--filet); overflow-wrap: anywhere; }
-.ensemble-table tbody th, .ensemble-table tbody td { height: 58px; }
+/* Débrief 29 (A-F25) : 64 px, la hauteur d'une ligne remplie (chiffre,
+   part, jauge) — une ligne « chargement… » la garde déjà : la fenêtre ne
+   grandit plus quand les autres contrats arrivent. */
+.ensemble-table tbody th, .ensemble-table tbody td { height: 64px; }
 .ensemble-table thead th { border-top: none; border-bottom: 1px solid var(--filet-fort); font-size: 12px; font-weight: 500; color: var(--encre-2); vertical-align: bottom; }
 .ensemble-table tbody th .lien-doux { font: 500 14px "IBM Plex Sans", system-ui, sans-serif; color: var(--encre); text-align: left; }
 .ensemble-table tr.courant { background: var(--creux); }
@@ -1958,6 +1992,10 @@ dialog.ensemble::backdrop { background: var(--voile-dialogue); }
 .ensemble-table .v.bon { color: var(--fait); }
 .ensemble-table .v.arret { color: var(--cours); }
 .ensemble-table .alerte-ligne { color: var(--alerte); }
+/* Débrief 29 (A-F25) : « + Ajouter un jalon », sous « aucun jalon » (un
+   administrateur du contrat) — 12 px, une ligne de 18 : au doigt, sa cible
+   fait 44 px avec la marge des liens doux. */
+.ensemble-table .ajouter-jalon { display: block; justify-self: end; margin-top: 2px; font-size: 12px; line-height: 18px; text-align: left; }
 /* Sous « 53 / 634 », la part validée en une petite jauge de 60 × 4 px. */
 .jauge-ensemble { display: block; width: 60px; height: 4px; margin-top: 5px; border-radius: 2px; background: var(--filet); overflow: hidden; }
 .jauge-ensemble i { display: block; height: 100%; background: var(--fait); }
@@ -5766,6 +5804,22 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     zone.innerHTML = morceaux.map(function (m) { return '<span class="morceau">' + m + '</span>'; }).join(' \u00b7 ');
   }
 
+  /* Débrief 29 (A-F13) : le pied et l'aide disent « archivé », et le jour
+     de ce relevé — « Dernier relevé archivé : S43 (vendredi 23 octobre) » :
+     la semaine du haut (« Semaine 44 ») et celle du pied (S43) ne se
+     confondent plus. Le jour est celui que le classeur a noté pour ce
+     relevé (le vendredi de sa semaine s'il n'en a pas noté) ; l'année ne
+     s'écrit que si ce n'est pas celle d'aujourd'hui. Pas de ligne d'âge en
+     tête de page (décision du débrief 28). */
+  function releveArchiveDit(i) {
+    var der = RELEVES_SRC.filter(function (r) { return indexDe(r.semaine) === i; }).pop();
+    var lu = der ? /^(\d{4})-(\d{2})-(\d{2})/.exec(String(der.date || '')) : null;
+    var jour = lu ? new Date(Date.UTC(+lu[1], +lu[2] - 1, +lu[3])) : new Date(dateDe(i).getTime() + 4 * 864e5);
+    var annee = jour.getUTCFullYear() !== aujourdhuiCivil().getUTCFullYear() ? ' ' + jour.getUTCFullYear() : '';
+    return 'Dernier relevé archivé : S' + numeroSemaine(i) + ' (' + JOURS_SEMAINE[jour.getUTCDay()] + ' ' + jour.getUTCDate() + ' ' +
+      MOIS[jour.getUTCMonth()] + annee + ')';
+  }
+
   function valeurDim(p, cle) {
     if (cle === '_anciennete') return ancienneteDepuis(p[CLE_DATE], aujourdhuiCivil());
     if (cle === '_mois') return moisDe(p[CLE_DATE]);
@@ -6747,9 +6801,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       : !RELEVES_SRC.length
       ? 'Aucun relevé archivé pour l\u2019instant : la page montre l\u2019extract du jour.'
       : EXTRAIT_EN_PLUS
-        ? 'Dernier relevé : ' + semaineDite(RELEVES[RELEVES.length - 2].i) + ' · ' + nArchives + (nArchives > 1 ? ' relevés' : ' relevé') +
+        ? releveArchiveDit(RELEVES[RELEVES.length - 2].i) + ' · ' + nArchives + (nArchives > 1 ? ' relevés' : ' relevé') +
           ' · l\u2019extract du jour, pas encore archivé, compte pour ' + semaineDite(DERNIER.i)
-        : 'Dernier relevé : ' + semaineDite(DERNIER.i) + ' · ' + RELEVES.length + (RELEVES.length > 1 ? ' relevés' : ' relevé');
+        : releveArchiveDit(DERNIER.i) + ' · ' + RELEVES.length + (RELEVES.length > 1 ? ' relevés' : ' relevé');
     var colonneLue = colonneDite(CLE_SUIVIE);
     $('colonne-suivie').textContent = colonneLue
       ? 'Colonne suivie : ' + colonneLue
@@ -11706,6 +11760,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     remettreContrat();
     var r = String(raison || '').trim();
     $('etat-contrat').textContent = r || 'Contrat impossible à charger.';
+    if (MASQUE_ENTRE_TEMPS.test(r)) { echecContratMasque(id, menu); return; }
     /* La raison dite dans la phrase : « … : service indisponible. » (une
        majuscule de début de phrase s'efface ; un sigle reste). */
     var dite = /^[A-ZÀ-Ý][a-zà-ÿ]/.test(r) ? r.charAt(0).toLowerCase() + r.slice(1) : r;
@@ -11718,8 +11773,38 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     appliquerGestesEnAttente();
     rendreFocusMenu(menu);
   }
-  function montrerAlerteContrat(texte) {
+  /* Débrief 29 (A-F21, S7) : un contrat masqué par un administrateur depuis
+     l'ouverture de la page — le classeur le dit (« … n'est plus affiché sur
+     le tableau de bord… »). Il quitte les menus tout de suite (sa famille
+     aussi, s'il en était la seule tranche), sans « Réessayer », qui ne
+     pourrait qu'échouer encore, et la phrase ne le nomme qu'une fois. Les
+     listes de contrats gardées dans les paquets déjà reçus l'oublient aussi
+     : la vue d'ensemble ne le ramène pas. Le contrat à l'écran, lui, reste
+     (la page montre encore ses chiffres). */
+  var MASQUE_ENTRE_TEMPS = /n[\u2019']est plus affiché sur le tableau de bord/;
+  function echecContratMasque(id, menu) {
+    var nom = nomAffiche(id);
+    ECHEC_CONTRAT = null;
+    if (id !== CONTRAT) oublierContrat(id);
+    montrerAlerteContrat(nom + ' n\u2019est plus affiché sur le tableau de bord (masqué par un administrateur). ' +
+      (id === CONTRAT ? 'La page montre ses chiffres d\u2019avant.' : 'La page montre toujours ' + nomAffiche(CONTRAT) + '.'), true);
+    appliquerGestesEnAttente();
+    rendreFocusMenu(menu);
+  }
+  function oublierContrat(id) {
+    var garder = function (c) { return c && String(c.id) !== id; };
+    CONTRATS = CONTRATS.filter(garder);
+    if (SRC && Array.isArray(SRC.contrats)) SRC.contrats = SRC.contrats.filter(garder);
+    Object.keys(PAQUETS).forEach(function (k) {
+      if (PAQUETS[k] && Array.isArray(PAQUETS[k].contrats)) PAQUETS[k].contrats = PAQUETS[k].contrats.filter(garder);
+    });
+    delete PAQUETS[id]; delete AVANCES[id]; delete MESSAGES_ENSEMBLE[id];
+    afficherContrat();
+  }
+  /* sansReessayer : un échec que redemander ne réparerait pas. */
+  function montrerAlerteContrat(texte, sansReessayer) {
     var z = $('alerte-contrat');
+    $('reessayer-contrat').hidden = !!sansReessayer;
     z.hidden = false;
     $('alerte-contrat-texte').textContent = texte;
   }
@@ -11927,15 +12012,20 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var lignes = CONTRATS.map(function (c) {
       var r = resumes && resumes[c.id];
       var courant = c.id === CONTRAT;
+      /* Débrief 29 (A-F10) : un seul nom par onglet, celui du panneau
+         d'administration — « HDK › Tranche 1 », jamais « HDK » seul juste
+         au-dessus de « HDK › Tranche 2 » — et « à l'écran », ses mots. */
       var tete = '<tr' + (courant ? ' class="courant"' : '') + '><th scope="row"><button type="button" class="lien-doux" data-aller-contrat="' + ech(c.id) + '"' +
-        (r && !r.message ? ' title="Passer à ce contrat"' : '') + '>' + ech(c.nom) + '</button>' + (courant ? '<small>affiché</small>' : '') + '</th>';
+        (r && !r.message ? ' title="Passer à ce contrat"' : '') + '>' + ech(nomComplet(c.id)) + '</button>' + (courant ? '<small>à l’écran</small>' : '') + '</th>';
       if (!r) {
         return tete + '<td colspan="7" class="doux">' + (!resumes || ENSEMBLE_EN_COURS[c.id] ? 'chargement…' : ech(MESSAGES_ENSEMBLE[c.id] || 'contrat impossible à charger')) + '</td></tr>';
       }
       if (r.message) return tete + '<td colspan="7" class="alerte-ligne">' + ech(r.message) + '</td></tr>';
       var e = r.echeance;
       var aLEcheance = !e ? TIRET_VIDE
-        : e.enRetard ? '<span class="v tard">manque ' + nb(e.manque) + '</span><small>il faut ' + virgule(e.requis) + '/sem.</small>'
+        /* Débrief 29 (P-F18) : le rythme requis arrondi comme dans la fiche
+           de l'échéance (« il faut 83/sem. », plus « 83,0 »). */
+        : e.enRetard ? '<span class="v tard">manque ' + nb(e.manque) + '</span><small>il faut ' + rythmeDit(e.requis) + '/sem.</small>'
         : '<span class="v bon">tenue</span>' + (e.fin === 'validé' ? '<small>tout est validé' + (e.domaine ? ' dans ' + ech(e.domaine) : '') + '</small>' : '');
       var finActuelle = e
         ? (e.fin === 'validé' ? '<span class="v bon">tout est validé</span>'
@@ -11950,7 +12040,8 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
           (r.reculs ? '<small class="recul">' + nb(r.reculs) + (r.reculs > 1 ? ' reculs' : ' recul') + '</small>' : '') + '</td>' +
         '<td><span class="v">' + (r.rythme === null ? TIRET_VIDE : virgule(r.rythme) + '/sem.') + '</span></td>' +
         '<td><span class="v' + (r.arret ? ' arret' : '') + '">' + (r.arret ? nb(r.arret) : TIRET_VIDE) + '</span></td>' +
-        '<td>' + (e ? '<span class="v">' + ech(e.texte) + '</span><small>' + ech(e.quand) + ' · ' + ech(motJours(e.jours)) + '</small>' : '<span class="doux">' + (r.sansJalon ? 'aucun jalon' : 'aucune à venir') + '</span>') + '</td>' +
+        '<td>' + (e ? '<span class="v">' + ech(e.texte) + '</span><small>' + ech(e.quand) + ' · ' + ech(motJours(e.jours)) + '</small>'
+          : '<span class="doux">' + (r.sansJalon ? 'aucun jalon' : 'aucune à venir') + '</span>' + lienAjouterJalon(c.id, r)) + '</td>' +
         '<td>' + aLEcheance + '</td><td>' + finActuelle + '</td></tr>';
     }).join('');
     garderFocus(function () { corps.innerHTML = lignes; }, 'ensemble');
@@ -11961,6 +12052,15 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         if (c.tagName === 'TD' && c.colSpan === 1 && COLONNES_ENSEMBLE[k]) c.setAttribute('data-libelle', COLONNES_ENSEMBLE[k][0]);
       });
     });
+  }
+  /* Débrief 29 (A-F25, S8) : sous « aucun jalon », un administrateur de ce
+     contrat trouve le geste — « + Ajouter un jalon » ouvre l'administration
+     sur un jalon neuf pour ce contrat. Les lecteurs lisent « aucun jalon »,
+     sans plus. */
+  function lienAjouterJalon(id, r) {
+    if (!r.sansJalon || !estAdmin() || DROITS.coherent === false || !peutGererContrat(id)) return '';
+    return '<button type="button" class="lien-doux ajouter-jalon" data-ajouter-jalon="' + ech(id) + '" aria-label="Ajouter un jalon pour ' +
+      ech(nomComplet(id)) + '">+ Ajouter un jalon</button>';
   }
   function ouvrirEnsemble() {
     var zone = $('ensemble');
@@ -12036,6 +12136,8 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if (appuiHorsEnsemble && horsDeLEnsemble(e)) { appuiHorsEnsemble = false; fermerEnsemble(); return; }
     appuiHorsEnsemble = false;
     if (e.target.closest('button[data-fermer-ensemble]')) { fermerEnsemble(); return; }
+    var aj = e.target.closest('button[data-ajouter-jalon]');
+    if (aj) { var pour = aj.dataset.ajouterJalon; fermerEnsemble(true); ouvrirAdmin({ ajouter: pour }); return; }
     var b = e.target.closest('button[data-aller-contrat]');
     if (!b) return;
     var id = b.dataset.allerContrat;
