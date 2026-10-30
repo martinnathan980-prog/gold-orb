@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "d825856";
+  --suivi-fwd-edition: "df0bbe3";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -681,6 +681,10 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 /* Ce que le classeur a à dire quand il n'a rien pu rendre : en rouge, à la
    place du mot de mode, et annoncé aux lecteurs d'écran. */
 .bandeau-mode .alerte-source { color: var(--alerte); font-weight: 500; }
+/* Débrief 29 : sur le bandeau marine, le rouge du papier tombait à 2:1
+   (3,4:1 en sombre) — le message qui dit pourquoi la page est vide prend
+   le corail clair du bandeau (7,9:1 en clair, 6,2:1 en sombre). */
+header.entete .bandeau-mode .alerte-source { color: var(--alerte-bandeau); }
 .bandeau-mode .alerte-source[hidden] { display: none; }
 .bandeau-mode .reglages {
   margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
@@ -721,7 +725,13 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 header.entete {
   border-image: linear-gradient(to bottom, var(--bandeau-fond), var(--bandeau-fond-2) calc(100% - 2px), var(--bandeau-trait) 0) fill 0 / 0 / 0 100vmax;
   margin-bottom: 10px;
+  /* Débrief 29 : le marine aussi en couleur de fond, sous le dégradé — les
+     outils de contraste (axe…) ne lisent pas une border-image et jugeaient
+     les mots clairs du bandeau sur le papier beige (1,9:1). Le ton le plus
+     clair du dégradé : la mesure vaut le pire cas. */
+  background-color: var(--bandeau-fond);
 }
+@media print { header.entete { background-color: transparent; } }
 /* Débrief 28 (2) : le blanc faisait « page blanche ». Le bandeau prend un
    ton de pierre, un cran plus soutenu que le papier, et le titre se pose
    comme le titre d'un journal : un filet double (épais, puis fin) sous la
@@ -738,19 +748,38 @@ header.entete {
   --filet: #34424f; --filet-fort: #4b5a6a; --bord-champ: #7d8c9c;
   --seg-piste: #18222d; --seg-puce: #34465a; --seg-anneau: #56687c;
   --surface: #2a3846; --creux: #2f3e4d; --focus: #a9bedb;
+  --alerte-bandeau: #ffb4a1;
+  color: var(--encre);
+}
+/* Débrief 29 : le bandeau d'erreur du contrat (D8) vit dans l'en-tête mais
+   se pose sur son fond rose (ou brun en sombre) : il reprend les encres de
+   la page — en clair, le texte du bandeau marine (#f2f1ec) y tombait à
+   1:1. La pastille choisie du bandeau sombre (#3c5068) tient 7,3:1 sous
+   l'encre claire (6,3:1 avant), toujours plus claire que sa piste. */
+header.entete .alerte-contrat {
+  --encre: #191915; --encre-2: #57564e; --encre-3: #6f6d64; --filet: #e5e3dc; --filet-fort: #cfccc2;
+  --bord-champ: #8f8c82; --surface: #ffffff; --creux: #faf9f6; --focus: #34507a;
   color: var(--encre);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) header.entete {
     --bandeau-fond: #2e4057; --bandeau-fond-2: #293a4f; --bandeau-trait: #293a4f;
     --filet: #40546b; --filet-fort: #587089; --bord-champ: #8396ab;
-    --seg-piste: #22324a; --seg-puce: #435a74; --seg-anneau: #6680a0; --surface: #36495f; --creux: #3b4f66;
+    --seg-piste: #22324a; --seg-puce: #3c5068; --seg-anneau: #6680a0; --surface: #36495f; --creux: #3b4f66;
+  }
+  :root:not([data-theme="light"]) header.entete .alerte-contrat {
+    --encre: #f1f0ea; --encre-2: #a6a49a; --encre-3: #908e84; --filet: #272725; --filet-fort: #3d3c37;
+    --bord-champ: #6a6860; --surface: #171716; --creux: #1d1d1b; --focus: #a9bedb;
   }
 }
 :root[data-theme="dark"] header.entete {
---bandeau-fond: #2e4057; --bandeau-fond-2: #293a4f; --bandeau-trait: #293a4f;
+  --bandeau-fond: #2e4057; --bandeau-fond-2: #293a4f; --bandeau-trait: #293a4f;
   --filet: #40546b; --filet-fort: #587089; --bord-champ: #8396ab;
-  --seg-piste: #22324a; --seg-puce: #435a74; --seg-anneau: #6680a0; --surface: #36495f; --creux: #3b4f66;
+  --seg-piste: #22324a; --seg-puce: #3c5068; --seg-anneau: #6680a0; --surface: #36495f; --creux: #3b4f66;
+}
+:root[data-theme="dark"] header.entete .alerte-contrat {
+  --encre: #f1f0ea; --encre-2: #a6a49a; --encre-3: #908e84; --filet: #272725; --filet-fort: #3d3c37;
+  --bord-champ: #6a6860; --surface: #171716; --creux: #1d1d1b; --focus: #a9bedb;
 }
 /* Débrief 28 (3) : plus de filet double sous la semaine — un seul trait
    sombre à la limite du bandeau et du papier (idée de Nathan). Les réglages
@@ -760,17 +789,46 @@ header.entete {
   .bandeau-mode .reglages { margin-left: auto; margin-right: auto; align-items: center; }
   .reglages-portee { justify-content: center; }
 }
-/* Les outils de la page : trois icônes rondes à droite du titre — leur nom
-   au survol (title) et pour les lecteurs d'écran (texte masqué). */
-.sommaire .outils-page { flex: none; gap: 6px; min-height: 0; margin-left: 12px; }
+/* Les outils de la page : des icônes rondes au bout du sommaire — leur nom
+   pour les lecteurs d'écran (texte masqué). Débrief 29 : un seul groupe,
+   calé au bord du contenu — ⚙ (administrateurs) en tête, puis la loupe, Vue
+   d'ensemble et Aide. Le ⚙ s'efface quand les droits disent « lecteur » :
+   en tête d'un groupe calé à droite, rien d'autre ne bouge. */
+.sommaire .outils-page { grid-column: 3; justify-self: end; flex: none; flex-wrap: nowrap; gap: 6px; min-height: 0; margin: 0; }
+/* Débrief 29 : au-delà du téléphone, le groupe garde la largeur de ses
+   quatre icônes (4 × 34 + 3 × 6) même sans le ⚙ — à 1024 px, la liste,
+   centrée sur la place qui reste, glissait de 40 px quand il s'effaçait. */
+@media (min-width: 721px) { .sommaire .outils-page { min-width: 154px; } }
 .sommaire .outil-page {
+  position: relative;
   width: 34px; height: 34px; min-height: 0; padding: 0; justify-content: center;
   border: 1px solid var(--filet); border-radius: 50%; color: var(--encre-2); background: var(--surface);
 }
 .sommaire .outil-page:hover, .sommaire .outil-page[aria-expanded="true"] { color: var(--encre); border-color: var(--filet-fort); background: var(--creux); }
 .sommaire .outil-page svg { width: 16px; height: 16px; }
+/* Débrief 29 (D9) : le nom de chaque icône dans une bulle, au survol de la
+   souris (après un court instant) ET au clavier (focus visible) — le title
+   ne se montrait qu'à la souris, avec retard, et jamais au clavier. Calée à
+   droite sous l'icône : elle ne sort jamais de l'écran. Le texte de la
+   bulle est caché aux lecteurs d'écran (content … / "") : ils lisent déjà
+   le nom masqué du bouton. */
+.sommaire .outil-page[data-nom]::before, .cherche-plan-ouvrir[data-nom]::before {
+  content: attr(data-nom) / ""; position: absolute; top: calc(100% + 6px); right: 0; z-index: 4;
+  padding: 3px 8px; border: 1px solid var(--releve-bord); border-radius: 6px; background: var(--releve);
+  box-shadow: var(--flottant-ombre); color: var(--encre);
+  font: 400 12px/18px "IBM Plex Sans", system-ui, sans-serif; letter-spacing: 0; text-transform: none; white-space: nowrap;
+  pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .12s, visibility .12s;
+}
+.sommaire .outil-page[data-nom]:focus-visible::before, .cherche-plan-ouvrir[data-nom]:focus-visible::before { opacity: 1; visibility: visible; }
+@media (hover: hover) {
+  .sommaire .outil-page[data-nom]:hover::before, .cherche-plan-ouvrir[data-nom]:hover::before { opacity: 1; visibility: visible; transition-delay: .3s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sommaire .outil-page[data-nom]::before, .cherche-plan-ouvrir[data-nom]::before { transition: none !important; }
+}
+@media print { .sommaire .outil-page::before, .cherche-plan-ouvrir::before { display: none; } }
 @media (max-width: 720px) {
-  .sommaire .outils-page { margin-left: 6px; gap: 4px; }
+  .sommaire .outils-page { grid-column: 2; gap: 4px; }
   .sommaire .outil-page { width: 32px; height: 32px; }
 }
 /* Débrief 28 : le tableau des plans sans « Filtrer par colonne » (les
@@ -786,6 +844,7 @@ header.entete {
   .outil-page { position: relative; }
   .outil-page::after { content: ""; position: absolute; inset: -8px -6px; }
 }
+@media (pointer: coarse) and (max-width: 480px) { .sommaire .outil-page::after { inset: -8px; } }
 /* Le téléphone : une grille compacte — le contrat et la tranche côte à côte,
    leurs menus sur le reste de leur case ; l'avancement, puis le périmètre,
    chacun sur sa ligne, son mot devant lui (au-dessus si la ligne manque de
@@ -1391,15 +1450,23 @@ header.entete {
    haut de l'écran, d'un filet souligné ; le panneau qu'on lit est écrit à
    l'encre et souligné de sa teinte. Débrief 27 (lot H) : le bandeau des
    filtres actifs colle juste dessous (--h-sommaire, posé par le script). */
+/* Débrief 29 : une grille de trois colonnes — la liste au centre de la
+   page quelle que soit la largeur des outils (le ⚙ qui s'efface, la marque
+   collée), les outils calés au bord du contenu. Au-dessus du bandeau des
+   filtres (z-index 31 contre 30) : la liste des plans trouvés et les bulles
+   des icônes passaient dessous. Les deux barres ne se recouvrent jamais
+   autrement. */
 .sommaire {
-  position: sticky; top: 0; z-index: 29;
-  display: flex; align-items: center; min-width: 0; margin-top: -10px;
+  position: sticky; top: 0; z-index: 31;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(max-content, 1fr); column-gap: 12px;
+  align-items: center; min-width: 0; margin-top: -10px;
   background: var(--papier); border-bottom: 1px solid transparent;
   transition: border-color .2s;
 }
 .sommaire[data-colle="true"] { border-bottom-color: var(--filet-fort); }
 .sommaire-liste {
-  list-style: none; margin: 0 auto; padding: 0 2px; display: flex; gap: 0 28px; min-width: 0;
+  grid-column: 2;
+  list-style: none; margin: 0; padding: 0 2px; display: flex; gap: 0 28px; min-width: 0;
   overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain;
   counter-reset: chapitre;
 }
@@ -1410,6 +1477,13 @@ header.entete {
    bien au-delà du téléphone (relecture du débrief 20 : à 768 px, rien ne le
    disait). Le script pose la classe tant qu'il reste à faire défiler. */
 .sommaire-liste.deborde-droite { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+/* Débrief 29 : et à gauche, une fois la liste défilée (au téléphone, elle
+   se cale sur la section lue) — un nom coupé au bord se devine aussi. */
+.sommaire-liste.deborde-gauche { -webkit-mask-image: linear-gradient(to right, transparent, #000 28px); mask-image: linear-gradient(to right, transparent, #000 28px); }
+.sommaire-liste.deborde-gauche.deborde-droite {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent);
+}
 /* Un panneau absent ne compte pas ([hidden] vaut display: none, hors du
    compteur) : les numéros restent ceux des panneaux. */
 .sommaire-liste li { counter-increment: chapitre; flex: none; }
@@ -1454,16 +1528,37 @@ header.entete {
 .sommaire[data-colle="true"] .sommaire-marque { opacity: 1; }
 @media (max-width: 1180px) { .sommaire-marque { display: none; } }
 @media (max-width: 720px) {
-  .sommaire { margin-top: -6px; }
-  .sommaire-liste { gap: 0 20px; margin: 0; padding: 0; }
+  .sommaire { margin-top: -6px; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; }
+  .sommaire-liste { grid-column: 1; gap: 0 20px; margin: 0; padding: 0; }
 }
-body[data-vide="true"] .sommaire { display: none; }
+/* Débrief 29 : au téléphone, trois sections se lisent à côté des icônes —
+   des noms un peu moins espacés, des icônes de 28 px serrées (leur zone de
+   toucher reste de 44 px, voir pointer: coarse). */
+@media (max-width: 480px) {
+  .sommaire-liste { gap: 0 12px; }
+  .sommaire-liste a { letter-spacing: .06em; }
+  .sommaire a::before { margin-right: 6px; }
+  .sommaire .outils-page { gap: 2px; }
+  .sommaire .outil-page, .sommaire .cherche-plan-ouvrir { width: 28px; height: 28px; }
+  .sommaire .outil-page svg { width: 15px; height: 15px; }
+}
+/* Débrief 29 : un contrat ou un classeur vide n'a pas de sections, mais
+   garde ses outils — Vue d'ensemble (les autres contrats), Aide,
+   Administration. Le sommaire ne montre plus qu'eux. */
+body[data-vide="true"] .sommaire-liste, body[data-vide="true"] .cherche-plan { display: none; }
 @media (prefers-reduced-motion: reduce) { .sommaire, .sommaire a, .sommaire-marque { transition: none; } }
 @media print { .sommaire { display: none; } }
 /* Un saut vers un panneau — ou tout ce que la page amène à l'écran —
    s'arrête sous le sommaire collé, pas derrière lui (--bas-sommaire : sa
    hauteur et celle des filtres actifs, posée par le script). */
 html { scroll-padding-top: calc(var(--bas-sommaire, 40px) + 14px); }
+/* Débrief 29 : un élément du sommaire ou des filtres collés est toujours à
+   l'écran ; sans cela Chrome recentre la page à chaque Tab (il le croyait
+   caché sous la marge du haut, où il vit). */
+.sommaire a, .sommaire button, .sommaire input, .filtres-actifs button { scroll-margin-top: calc(-1 * (var(--bas-sommaire, 40px) + 14px)); }
+/* Chrome n'en tient compte tout à fait que pour les liens (dans la bande
+   qui défile) : pour les boutons et le champ, le script garde aussi la page
+   à sa place (voir « Le focus dans les barres collées »). */
 
 /* Le mot qu'on change dans le titre : « Avancement FWD par [ATA ▾] ». Le
    menu prend la police du titre, l'accent, un soulignement fin et un
@@ -3167,9 +3262,8 @@ table.plans td.large:focus { white-space: normal; overflow: visible; }
 /* Débrief 28 : partout une loupe ronde, à côté des outils de la page (le
    champ de 200 px poussait le sommaire) ; elle ouvre le champ par-dessus. */
 @media all {
-  .cherche-plan { position: static; transform: none; flex: none; margin-left: 12px; }
-  .cherche-plan-ouvrir { width: 34px; height: 34px; justify-content: center; border-radius: 50%; }
-  .sommaire .outils-page { margin-left: 6px; }
+  .cherche-plan { position: static; transform: none; flex: none; margin: 0; }
+  .cherche-plan-ouvrir { position: relative; width: 34px; height: 34px; justify-content: center; border-radius: 50%; }
   .cherche-plan-ouvrir { display: inline-flex; }
   .cherche-plan-cadre { display: none; }
   .cherche-plan[data-ouvert="true"] .cherche-plan-ouvrir { visibility: hidden; }
@@ -3180,10 +3274,17 @@ table.plans td.large:focus { white-space: normal; overflow: visible; }
   .cherche-plan-cadre .loupe { left: 12px; }
   .cherche-plan-liste { left: auto; right: 0; width: min(100%, 520px); }
 }
+/* Débrief 29 (B21) : dès 721 px, le sommaire a les retraits du contenu des
+   panneaux — la marque à gauche, les icônes à droite finissent sur le même
+   bord que le contenu ; le champ ouvert aussi. */
+@media (min-width: 721px) {
+  .sommaire { padding-inline: var(--retrait-panneau); }
+  .cherche-plan[data-ouvert="true"] .cherche-plan-cadre { left: var(--retrait-panneau); right: var(--retrait-panneau); }
+}
 /* La marque « Suivi FWD · HDK › Tranche 1 » du sommaire collé garde sa place à
-   gauche ; le sommaire se centre entre elle et les icônes. */
+   gauche ; le sommaire se centre sur la page, sans passer dessous. */
 @media (min-width: 1181px) {
-  .sommaire { padding-left: 230px; }
+  .sommaire { grid-template-columns: minmax(199px, 1fr) minmax(0, auto) minmax(max-content, 1fr); }
 }
 @media (max-width: 720px) { .cherche-plan-liste { left: 0; width: auto; } }
 @media (pointer: coarse) {
@@ -3194,7 +3295,11 @@ table.plans td.large:focus { white-space: normal; overflow: visible; }
 }
 @media print { .cherche-plan, .actions-tableau, .colonnes-vides button, .menu-colonne { display: none !important; } }
 .compte { color: var(--encre-3); font-size: 12px; font-variant-numeric: tabular-nums; }
-.pied { padding: 20px var(--retrait-panneau) 42px; margin-top: 32px; border-top: 1px solid var(--filet); color: var(--encre-3); font-size: 12px; line-height: 1.8; }
+.pied { position: relative; padding: 20px var(--retrait-panneau) 42px; margin-top: 32px; color: var(--encre-3); font-size: 12px; line-height: 1.8; }
+/* Débrief 29 (B21) : le filet du pied commence et finit sur le bord du
+   contenu des panneaux, comme le texte du pied — plus sur leur bord
+   extérieur. */
+.pied::before { content: ""; position: absolute; top: 0; left: var(--retrait-panneau); right: var(--retrait-panneau); height: 1px; background: var(--filet); }
 /* Débrief 26, téléphone : le bouton ↑ ne cache plus la dernière ligne du pied ;
    la ligne de groupe choisie garde sa lettre hors de la barre ; le résumé
    d'une semaine du journal passe sous la semaine, sans rien couper. */
@@ -3353,6 +3458,18 @@ kbd {
    que la phrase de tête et la barre paraissent dès le premier écran, et
    l'aide prend tout l'écran. */
 @media (orientation: landscape) and (max-height: 500px) {
+  /* Débrief 29 (M5) : à 844 × 390, le sommaire et les filtres collés
+     prenaient 22 % de l'écran. Le sommaire reste en haut de la page (relatif :
+     sa recherche s'y ouvre toujours) ; seuls les filtres posés collent, en
+     une ligne courte comme au téléphone : ni « Filtres », « Effacer » au
+     bout. */
+  .sommaire { position: relative; }
+  .sommaire a, .sommaire button, .sommaire input { scroll-margin: 0; }
+  .filtres-actifs { top: 0; }
+  .filtres-ligne { gap: 8px; padding-block: 5px; }
+  .filtres-ligne .mot { display: none; }
+  .tout-effacer .long { display: none; }
+  .tout-effacer .court { display: inline; }
   .masthead { padding-block: 10px 8px; }
   .masthead h1 { font-size: 28px; margin-bottom: 4px; }
   .semaine { font-size: 14px; }

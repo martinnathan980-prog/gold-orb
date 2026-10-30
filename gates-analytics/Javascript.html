@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'd825856';
+  var EDITION = 'df0bbe3';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -5887,7 +5887,13 @@
   function lireDebord(rangee) {
     if (!rangee) return null;
     var reste = rangee.scrollWidth - rangee.clientWidth - rangee.scrollLeft, deborde = !rangee.hidden && reste > 2;
-    return function () { rangee.classList.toggle('deborde-droite', deborde); };
+    /* Débrief 29 : le sommaire défilé (au téléphone, calé sur la section
+       lue) dit aussi ce qui dépasse à gauche — « YNTHÈSE » coupé net. */
+    var gauche = rangee.id === 'sommaire-liste' && !rangee.hidden && rangee.scrollLeft > 2;
+    return function () {
+      rangee.classList.toggle('deborde-droite', deborde);
+      if (rangee.id === 'sommaire-liste') rangee.classList.toggle('deborde-gauche', gauche);
+    };
   }
   function marquerDebords() {
     ['filtre-journal', 'filtre-valeur-groupe', 'filtre-valeur-graphe'].forEach(function (id) { marquerDebord($(id)); });
@@ -8345,6 +8351,14 @@
       else cible = $('corps-tableau').querySelector('[tabindex="0"]') || titreFocalisable($('section-plans'));
     }
     if (cible && cible.focus) { try { cible.focus({ preventScroll: !!(o && o.g && cible === o.g.el) }); } catch (err) { cible.focus(); } }
+    /* Débrief 29 : ouverte par la loupe du sommaire, la fiche se referme sur
+       la page là où on l'avait laissée — le focus revient à la loupe, la
+       page aussi (au téléphone, elle tombait au bas des 634 lignes). */
+    if (o && typeof o.y === 'number' && cible === o.g.el) {
+      var y = o.y;
+      window.scrollTo(window.scrollX, y);
+      apresImage(function () { if (Math.abs(window.scrollY - y) > 1) window.scrollTo(window.scrollX, y); });
+    }
     annoncer('Historique fermé : le tableau montre de nouveau tous les plans');
     return true;
   }
@@ -8595,9 +8609,13 @@
     var f = $('filtres-actifs'), ligne = f && !f.hidden ? f.querySelector('.filtres-ligne') : null;
     return ligne ? Math.round(ligne.getBoundingClientRect().height) : 0;
   }
+  /* Débrief 29 (M5) : au téléphone couché, le sommaire ne colle plus (il
+     reste en haut de la page) : il ne compte plus dans ce qui couvre le
+     haut de l'écran. */
+  function sommaireColle() { return getComputedStyle(SOMMAIRE).position === 'sticky'; }
   function lireHautSommaire() {
     var h = hauteurFiltres();
-    var s = Math.round(SOMMAIRE.getBoundingClientRect().height);
+    var s = sommaireColle() ? Math.round(SOMMAIRE.getBoundingClientRect().height) : 0;
     return function () {
       var racine = document.documentElement.style;
       racine.setProperty('--h-sommaire', s + 'px');
@@ -8614,19 +8632,26 @@
   function majSommaire() {
     var boite = SOMMAIRE.getBoundingClientRect();
     if (!boite.height) return;                       // classeur vide : rien à suivre
-    var colle = window.scrollY > 0 && boite.top <= parseFloat(getComputedStyle(SOMMAIRE).top) + 0.5;
+    var colle = window.scrollY > 0 && sommaireColle() && boite.top <= parseFloat(getComputedStyle(SOMMAIRE).top) + 0.5;
     if ((SOMMAIRE.getAttribute('data-colle') === 'true') !== colle) SOMMAIRE.setAttribute('data-colle', colle ? 'true' : 'false');
     // Le contrat peut changer pendant qu'on lit : relu à chaque passage.
     /* Débrief 27 (lot H) : « HDK › Tranche 1 », comme le surtitre du titre —
        la tranche 1 s'écrivait « HDK » tout court. */
     var contrat = colle && CONTRATS && CONTRATS.length ? nomAffiche(CONTRAT) : '';
     if ($('sommaire-contrat').textContent !== contrat) $('sommaire-contrat').textContent = contrat;
-    var courant = null, presents = LIENS_SOMMAIRE.filter(function (a) { return !a.parentNode.hidden && !a.hasAttribute('aria-disabled'); });
-    var seuil = boite.bottom + hauteurFiltres() + 40;   // débrief 27 : sous le sommaire ET les filtres collés
+    var courant = null, presents = LIENS_SOMMAIRE.filter(function (a) {
+      var sec = chapitreDe(a);
+      return !a.parentNode.hidden && !a.hasAttribute('aria-disabled') && !!sec && sec.getClientRects().length > 0;
+    });
+    /* Débrief 29 (S9) : la section qu'on lit est celle qui occupe le plus
+       d'écran sous le sommaire et les filtres collés — le seuil de 35 %
+       marquait « Par ATA » quand les Plans prenaient déjà le bas de l'écran
+       (l'ATA 37→365 px, les Plans 405→900). À égalité, celle du dessus. */
+    var seuil = Math.max(0, sommaireColle() ? boite.bottom : 0) + hauteurFiltres(), basEcran = window.innerHeight, vuMax = 0;
     presents.forEach(function (a) {
-      /* Débrief 27 : sous le sommaire et les filtres collés (lot H), et au plus tôt
-         quand la section croise 35 % de la hauteur de l'écran (lot G). */
-      if (chapitreDe(a).getBoundingClientRect().top <= Math.max(seuil, window.innerHeight * 0.35)) courant = a;
+      var r = chapitreDe(a).getBoundingClientRect();
+      var vu = Math.min(r.bottom, basEcran) - Math.max(r.top, seuil);
+      if (vu > vuMax + 0.5) { vuMax = vu; courant = a; }
     });
     var fond = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
     if (fond && presents.length && window.scrollY > 0) courant = presents[presents.length - 1];
@@ -8637,12 +8662,26 @@
     });
     /* Au téléphone le sommaire défile de côté : le panneau courant y reste
        en vue, sans faire bouger la page. */
-    if (courant && LISTE_SOMMAIRE.scrollWidth > LISTE_SOMMAIRE.clientWidth + 1) {
-      var g = courant.parentNode.offsetLeft - LISTE_SOMMAIRE.offsetLeft, d = g + courant.offsetWidth;
-      if (g < LISTE_SOMMAIRE.scrollLeft || d > LISTE_SOMMAIRE.scrollLeft + LISTE_SOMMAIRE.clientWidth) {
-        LISTE_SOMMAIRE.scrollLeft = Math.max(0, g - (LISTE_SOMMAIRE.clientWidth - courant.offsetWidth) / 2);
-      }
-    }
+    if (courant && LISTE_SOMMAIRE.scrollWidth > LISTE_SOMMAIRE.clientWidth + 1) caleSommaire(courant);
+  }
+  /* Débrief 29 : le panneau courant se lisait au milieu de la bande, ses
+     voisins coupés des deux côtés (« ESE 02 TENDANCE 03 »). Il est
+     maintenant lisible en entier, hors des fondus des bords, avec le
+     panneau d'avant quand les deux tiennent ; sinon il se cale à gauche,
+     juste après le fondu. Rien ne bouge s'il est déjà lisible. */
+  function caleSommaire(courant) {
+    var l = LISTE_SOMMAIRE, fondu = 28, larg = l.clientWidth, max = l.scrollWidth - larg;
+    var li = courant.parentNode, g = li.offsetLeft - l.offsetLeft, d = g + li.offsetWidth;
+    var lisible = function (x) {
+      return g >= x + (x > 2 ? fondu : 0) && d <= x + larg - (x < max - 2 ? fondu : 0);
+    };
+    var borne = function (x) { return Math.max(0, Math.min(max, x)); };
+    if (lisible(l.scrollLeft)) return;
+    var precedent = function (e) { e = e && e.previousElementSibling; while (e && e.hidden) e = e.previousElementSibling; return e; };
+    var avant = precedent(li), premier = !avant || !precedent(avant);
+    var x = !avant ? 0 : premier ? 0 : borne(avant.offsetLeft - l.offsetLeft - fondu);
+    if (!lisible(x)) x = avant ? borne(g - fondu) : 0;
+    l.scrollLeft = x;
   }
   var attenteSommaire = false;
   window.addEventListener('scroll', function () {
@@ -8664,7 +8703,7 @@
     var sec = chapitreDe(a);
     if (!chapitreVisible(sec)) return;
     var doux = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    var haut = sec.getBoundingClientRect().top + window.scrollY - SOMMAIRE.getBoundingClientRect().height -
+    var haut = sec.getBoundingClientRect().top + window.scrollY - (sommaireColle() ? SOMMAIRE.getBoundingClientRect().height : 0) -
       hauteurFiltres() - 14;
     window.scrollTo({ top: Math.max(0, haut), behavior: doux ? 'smooth' : 'auto' });
     /* Le titre du panneau (débrief 27 : la phrase de la synthèse est son
@@ -8674,6 +8713,62 @@
       if (!titre.hasAttribute('tabindex')) titre.setAttribute('tabindex', '-1');
       try { titre.focus({ preventScroll: true }); } catch (err) { titre.focus(); }
     }
+  });
+  /* Débrief 29 (a11y) : le focus dans les barres collées — le sommaire et
+     les filtres posés sont toujours à l'écran, mais Chrome les croyait
+     cachés sous la marge du haut (scroll-padding) et ramenait la page d'une
+     demi-hauteur d'écran à chaque Tab, au clic d'une icône ou d'une croix.
+     Au clavier : la page reprend, avant d'être peinte, la place qu'elle
+     avait avant Tab. À la souris (ou au doigt) : le bouton prend le focus
+     sans défilement. */
+  /* La place d'avant, reprise à l'image suivante (avant d'être peinte) ;
+     plusieurs touches dans la même image gardent la première place. */
+  var PLACE_GARDEE = null;
+  function garderPlace(y) {
+    if (PLACE_GARDEE !== null) return;
+    PLACE_GARDEE = y;
+    requestAnimationFrame(function () {
+      var z = PLACE_GARDEE, ici = window.scrollY;
+      PLACE_GARDEE = null;
+      if (ici === z) return;
+      window.scrollTo(window.scrollX, z);
+      /* Sur un écran très bas, le sommaire pas encore collé peut être sous
+         le bord : alors le défilement de Chrome était le bon. */
+      var a = document.activeElement, r = a && a !== document.body ? a.getBoundingClientRect() : null;
+      if (r && (r.bottom <= 0 || r.top >= window.innerHeight)) window.scrollTo(window.scrollX, ici);
+    });
+  }
+  var DEFILEMENT_AVANT_TAB = null;
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Tab') DEFILEMENT_AVANT_TAB = PLACE_GARDEE !== null ? PLACE_GARDEE : window.scrollY;
+  }, true);
+  document.addEventListener('focusin', function (e) {
+    var y = DEFILEMENT_AVANT_TAB;
+    DEFILEMENT_AVANT_TAB = null;
+    var el = e.target;
+    if (y === null || !el || !el.closest || !el.closest('#sommaire, #filtres-actifs') || !sommaireColle()) return;
+    garderPlace(y);
+  });
+  document.addEventListener('keyup', function (e) { if (e.key === 'Tab') DEFILEMENT_AVANT_TAB = null; }, true);
+  /* Dans le champ de la loupe, Chrome amène le curseur sous la marge à
+     chaque lettre tapée (la page remontait de 41 px par caractère) : la
+     page reprend sa place avant d'être peinte. */
+  function garderPlaceSaisie() {
+    if (sommaireColle()) garderPlace(window.scrollY);
+  }
+  /* Seulement la frappe et le curseur : Entrée, elle, mène à la fiche du
+     plan (la page doit y descendre). */
+  $('cherche-plan-champ').addEventListener('beforeinput', function (e) { if (e.inputType !== 'insertLineBreak') garderPlaceSaisie(); });
+  $('cherche-plan-champ').addEventListener('keydown', function (e) {
+    if (/^(ArrowLeft|ArrowRight|Home|End)$/.test(e.key)) garderPlaceSaisie();
+  }, true);
+  [SOMMAIRE, $('filtres-actifs')].forEach(function (barre) {
+    barre.addEventListener('mousedown', function (e) {
+      var b = e.target.closest && e.target.closest('button, input');
+      if (!b || b.disabled || e.button !== 0 || document.activeElement === b || !sommaireColle()) return;
+      e.preventDefault();
+      try { b.focus({ preventScroll: true }); } catch (err) { b.focus(); }
+    });
   });
   /* Un panneau qui paraît ou s'efface (la comparaison selon le contrat, la
      page vide), le bandeau des filtres qui s'ouvre : le sommaire suit. */
@@ -8753,7 +8848,7 @@
   function mener(cible, titre) {
     if (!cible) return;
     var doux = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    var haut = cible.getBoundingClientRect().top + window.scrollY - SOMMAIRE.getBoundingClientRect().height -
+    var haut = cible.getBoundingClientRect().top + window.scrollY - (sommaireColle() ? SOMMAIRE.getBoundingClientRect().height : 0) -
       (parseFloat(getComputedStyle(SOMMAIRE).top) || 0) - 14;
     window.scrollTo({ top: Math.max(0, haut), behavior: doux ? 'smooth' : 'auto' });
     var f = titre || cible;
@@ -9046,7 +9141,7 @@
     var sec = $(id);
     if (!chapitreVisible(sec)) return;
     finirRendu(true);
-    var haut = sec.getBoundingClientRect().top + window.scrollY - SOMMAIRE.getBoundingClientRect().height - 14;
+    var haut = sec.getBoundingClientRect().top + window.scrollY - (sommaireColle() ? SOMMAIRE.getBoundingClientRect().height : 0) - 14;
     window.scrollTo(0, Math.max(0, haut));
   }
   function sectionLue() {
@@ -9392,7 +9487,7 @@
   function hautSommaire() {
     var f = $('filtres-actifs'), s = $('sommaire');
     return (f && !f.hidden ? f.getBoundingClientRect().height : 0) +
-      (s && s.getClientRects().length ? s.getBoundingClientRect().height : 0);
+      (s && s.getClientRects().length && getComputedStyle(s).position === 'sticky' ? s.getBoundingClientRect().height : 0);
   }
   function hautLibreCritique() {
     var tete = $('zone-critique').querySelector('.critique-tete');
@@ -10252,7 +10347,6 @@
      par-dessus le sommaire.
      ============================================================ */
   var CHERCHE = { refs: [], actif: -1, minuteur: 0 };
-  function chercheEnIcone() { return !!(window.matchMedia && window.matchMedia('(max-width: 1279px)').matches); }
   function plansTrouves(texte) {
     var q = motCherche(texte);
     if (!q || !PLANS) return { q: q, debut: [], dedans: [], anciens: [] };
@@ -10284,7 +10378,15 @@
     CHERCHE.actif = opts.length ? (i + opts.length) % opts.length : -1;
     [].forEach.call(opts, function (o, k) { o.setAttribute('aria-selected', String(k === CHERCHE.actif)); });
     var o = opts[CHERCHE.actif];
-    if (o) { champ.setAttribute('aria-activedescendant', o.id); if (o.scrollIntoView) o.scrollIntoView({ block: 'nearest' }); }
+    /* Débrief 29 : seule la liste défile jusqu'à l'option choisie — un
+       scrollIntoView faisait aussi défiler la page (l'option, sous le
+       sommaire collé, était dans la marge du haut). */
+    if (o) {
+      champ.setAttribute('aria-activedescendant', o.id);
+      var liste = o.parentNode;
+      if (o.offsetTop < liste.scrollTop) liste.scrollTop = o.offsetTop;
+      else if (o.offsetTop + o.offsetHeight > liste.scrollTop + liste.clientHeight) liste.scrollTop = o.offsetTop + o.offsetHeight - liste.clientHeight;
+    }
     else champ.removeAttribute('aria-activedescendant');
   }
   function rendreListeCherche(texte) {
@@ -10314,11 +10416,17 @@
     marquerOptionCherche(vus.length ? 0 : -1);
     annoncer(tous.length ? nb(tous.length) + (tous.length > 1 ? ' plans trouvés' : ' plan trouvé') + ', flèches pour choisir' : 'Aucun plan trouvé');
   }
+  /* Débrief 29 : le champ et la loupe vivent dans le sommaire collé, donc
+     toujours à l'écran — un focus() ordinaire ramenait la page à la place du
+     sommaire dans le flux (de y 2500 à 1129, puis 672 à la fermeture). */
+  function focusSurPlace(el) {
+    try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); }
+  }
   function ouvrirCherche() {
     var bloc = $('cherche-plan');
     bloc.setAttribute('data-ouvert', 'true');
     $('cherche-plan-ouvrir').setAttribute('aria-expanded', 'true');
-    $('cherche-plan-champ').focus();
+    focusSurPlace($('cherche-plan-champ'));
   }
   function replierCherche(rendreFocus) {
     var bloc = $('cherche-plan');
@@ -10326,23 +10434,24 @@
     if (bloc.getAttribute('data-ouvert') !== 'true') return;
     bloc.setAttribute('data-ouvert', 'false');
     $('cherche-plan-ouvrir').setAttribute('aria-expanded', 'false');
-    if (rendreFocus) $('cherche-plan-ouvrir').focus();
+    if (rendreFocus) focusSurPlace($('cherche-plan-ouvrir'));
   }
   function choisirPlanCherche(ref) {
     var p = PLAN_PAR_REF[ref];
     if (!p) return;
-    var champ = $('cherche-plan-champ');
+    var champ = $('cherche-plan-champ'), depart = window.scrollY;
     fermerListeCherche();
     /* Un plan hors du périmètre posé : on ne le cache pas derrière lui — le
        périmètre se retire, l'historique s'ouvre. */
     if (!dansPerimetre(p)) vue.perimetre = '';
     montrerCePlan(ref);
     champ.value = '';
-    if (chercheEnIcone()) {
-      OUVREUR_PLAN = { ref: ref, g: empreinteFocus($('cherche-plan-ouvrir')) };
-      $('cherche-plan').setAttribute('data-ouvert', 'false');
-      $('cherche-plan-ouvrir').setAttribute('aria-expanded', 'false');
-    }
+    /* Débrief 29 : la recherche est une loupe à toutes les largeurs (débrief
+       28) — elle est toujours ce qui a ouvert la fiche : Échap y ramène le
+       focus. Au-delà de 1280 px, il tombait sur le titre des plans. */
+    OUVREUR_PLAN = { ref: ref, g: empreinteFocus($('cherche-plan-ouvrir')), y: depart };
+    $('cherche-plan').setAttribute('data-ouvert', 'false');
+    $('cherche-plan-ouvrir').setAttribute('aria-expanded', 'false');
   }
   $('cherche-plan-ouvrir').addEventListener('click', function () {
     if ($('cherche-plan').getAttribute('data-ouvert') === 'true') replierCherche(true); else ouvrirCherche();
@@ -10367,11 +10476,14 @@
       if (CHERCHE.actif >= 0 && CHERCHE.refs[CHERCHE.actif]) { e.preventDefault(); choisirPlanCherche(CHERCHE.refs[CHERCHE.actif]); }
       return;
     }
+    /* Débrief 29 : Échap ferme la liste si elle est ouverte ; sinon il
+       ferme la recherche tout de suite, le texte effacé avec — il fallait
+       trois Échap (la liste, le texte, puis le champ) pour « Échap pour
+       fermer ». */
     if (e.key === 'Escape') {
       e.preventDefault(); e.stopPropagation();
       if (ouverte) fermerListeCherche();
-      else if (e.target.value) e.target.value = '';
-      else replierCherche(true);
+      else { e.target.value = ''; replierCherche(true); }
       return;
     }
     if (e.key === 'Tab') fermerListeCherche();
@@ -10418,8 +10530,7 @@
     if (b) trancheSuivante(b.dataset.suite);
   });
   document.addEventListener('keydown', function (e) {
-    var champ = vue.base === 'la' ? $('recherche-seconde') : $('recherche');
-    if (e.key !== '/' || document.activeElement === champ) return;
+    if (e.key !== '/') return;
     /* « / » est aussi un caractère qu'on tape : dans un autre champ (le
        journal, un filtre de colonne, « S38/A »…), il reste dans ce champ au
        lieu d'emmener la frappe dans la recherche du tableau. */
@@ -10428,7 +10539,12 @@
     /* Débrief 27, lot G (WCAG 2.1.4) : un raccourci d'une seule touche se
        coupe, dans l'aide (« Raccourcis d'une seule touche »). */
     if (!raccourcisActifs() || e.ctrlKey || e.metaKey || e.altKey || document.querySelector('dialog[open]')) return;
-    e.preventDefault(); champ.focus(); champ.select();
+    /* Débrief 29 (S9) : « / » ouvre la loupe du sommaire, là où l'on est —
+       il menait à la recherche du tableau, et la page sautait aux Plans.
+       La loupe cherche dans GATES et dans SEE. */
+    var loupe = $('cherche-plan-ouvrir');
+    if (!focusVisible(loupe)) return;
+    e.preventDefault(); ouvrirCherche();
   });
   var minuteurTaille = null;
   window.addEventListener('resize', function () {
@@ -12130,5 +12246,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = 'd825856';
+window.SUIVI_FWD_FIN = 'df0bbe3';
 </script>
