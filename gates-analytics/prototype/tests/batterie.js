@@ -4379,7 +4379,9 @@ async function reinitialiser(pg) {
     const tiret18 = await p.evaluate(() => {
       const l = [...document.querySelectorAll('.critique-ligne')].find(x => x.dataset.groupe === '\u2014');
       const n = Number(l.querySelector('.critique-total').textContent);
+      /* Débrief 27 (lot C) : « choisir » = déplier, puis filtrer la page sur lui. */
       l.click();
+      document.getElementById('filtrer-groupe-page').click();
       return { n, tuiles: [...document.querySelectorAll('#etats .etat-n')].reduce((t, e) => t + Number(e.textContent.replace(/\s/g, '')), 0),
                lignes: document.querySelectorAll('#corps-tableau tr:not(.ligne-suite)').length };
     });
@@ -4637,8 +4639,12 @@ async function reinitialiser(pg) {
     const c = getComputedStyle(document.getElementById(id));
     return id + ':' + c.columnGap + '/' + c.paddingTop + '/' + c.scrollbarWidth + '/' + c.overflowY;
   }));
+  /* Débrief 27 (lot C, X-A3) : au large, les pastilles du bloc par groupe
+     passent à la ligne au lieu de défiler sous un fondu — leur rangée ne
+     défile plus (overflow visible), toujours sans barre de défilement. */
   verifier('les trois rangées : le même écart entre pastilles, 4 px autour pour l’anneau du focus, sans barre de défilement',
-    style19.every(x => / ?:4px\/4px\/none\/hidden$/.test(x.replace(/^[^:]+/, ''))), JSON.stringify(style19));
+    style19.every(x => { const id = x.split(':')[0]; return (id === 'filtre-valeur-groupe' ? /^:4px\/4px\/none\/visible$/ : /^:4px\/4px\/none\/hidden$/).test(x.slice(id.length)); }),
+    JSON.stringify(style19));
 
   // Une valeur que seul PERSO porte : sous BASE/OPTION, ni tuile, ni pastille au bloc, ni pilule au graphique ; pressée, sa tuile reste.
   const perso19 = await p.evaluate(() => {
@@ -6408,15 +6414,23 @@ async function reinitialiser(pg) {
        « nom-dessus » posée à l'écran reste. Elle ne doit rien y changer :
        le nom d'un tenant, les cellules empilées dessous, pas en escalier. */
     await p24.setViewportSize({ width: 717, height: 950 });
+    /* Débrief 27 (lot C, M2) : la carte du téléphone a deux colonnes — le
+       nom et « Plans 65 » sur une ligne, la barre dessous, puis la fin
+       estimée et le rythme côte à côte. La classe « nom-dessus » ne doit
+       rien y changer : le nom sur sa ligne, en entier, la barre sur toute
+       la largeur, la fin estimée sous le nom, rien en escalier. */
     const impr24 = await p24.evaluate(nom => {
       const l = [...document.querySelectorAll('#zone-critique .critique-ligne')].find(x => x.querySelector('.critique-nom').textContent === nom);
       l.classList.add('nom-dessus');
-      const n = l.querySelector('.critique-nom'), cs = getComputedStyle(l);
-      return { colonnes: cs.gridTemplateColumns.split(' ').length, lignesNom: Math.round(n.getBoundingClientRect().height / parseFloat(getComputedStyle(n).lineHeight)),
-               gauches: [...l.children].filter(c => c.offsetWidth && !c.classList.contains('chevron')).map(c => Math.round(c.getBoundingClientRect().left)) };
+      const n = l.querySelector('.critique-nom'), cs = getComputedStyle(l), r = e => l.querySelector(e).getBoundingClientRect();
+      const rl = l.getBoundingClientRect(), rn = r('.critique-nom'), rp = r('.critique-plans'), rb = r('.critique-barre'), rf = r('.critique-date');
+      return { colonnes: cs.gridTemplateColumns.split(' ').length, lignesNom: Math.round(rn.height / parseFloat(getComputedStyle(n).lineHeight)),
+               memeLigne: Math.abs((rn.top + rn.bottom) / 2 - (rp.top + rp.bottom) / 2) <= 6, plansADroite: rp.left >= rn.right - 1,
+               barreLarge: rb.width >= rl.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 2 && rb.top >= rn.bottom - 1,
+               finSousNom: Math.abs(rf.left - rl.left - parseFloat(cs.paddingLeft)) <= 2 && rf.top >= rb.bottom - 1 };
     }, NOMS24[2]);
-    verifier('impression A4 (page de 717 px) : une ligne dont le nom est passé au-dessus à l’écran s’imprime d’un tenant — une seule colonne, le nom sur une ligne, les cellules empilées',
-      impr24.colonnes === 1 && impr24.lignesNom === 1 && new Set(impr24.gauches).size === 1, JSON.stringify(impr24));
+    verifier('impression A4 (page de 717 px) : une ligne dont le nom est passé au-dessus à l’écran s’imprime d’un tenant — le nom sur sa ligne avec « Plans » à droite, la barre sur toute la largeur, la fin estimée dessous, rien en escalier',
+      impr24.colonnes === 2 && impr24.lignesNom === 1 && impr24.memeLigne && impr24.plansADroite && impr24.barreLarge && impr24.finSousNom, JSON.stringify(impr24));
     await p24.setViewportSize({ width: 1280, height: 950 }); await p24.waitForTimeout(400);
 
     /* « Les nouveaux sont pas droits » : des plans nouveaux arrivés à des

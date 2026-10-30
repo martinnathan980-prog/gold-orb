@@ -1909,9 +1909,11 @@ button.aide[aria-expanded="true"]::before { border-color: var(--encre); backgrou
   #zone-critique, #zone-critique.sans-jalon { --cols: 1fr; }
   /* Débrief 27 (lot C, M2) : une carte plus courte (165 px → 120) — le nom
      et le nombre de plans sur une ligne, la barre, puis la fin estimée et
-     le rythme côte à côte, chacun sous son libellé. */
+     le rythme côte à côte, chacun sous son libellé. La colonne de droite
+     prend la largeur de ses nombres ; le nom, tout le reste (à
+     l'impression A4, un nom d'ECP long tient sur sa ligne). */
   .critique-ligne {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas: "nom plans" "barre barre" "fin effort";
     gap: 9px 16px; padding: 12px 0 13px; border-bottom: 1px solid var(--filet);
   }
