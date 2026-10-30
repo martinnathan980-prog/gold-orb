@@ -70,7 +70,7 @@
 <script>
   /* La livraison de ce fichier, posée par la construction : la page la compare
      à celles de Code, Styles et Javascript, et nomme celui qui diffère. */
-  window.SUIVI_FWD_LIVRAISON_INDEX = '8d83704';
+  window.SUIVI_FWD_LIVRAISON_INDEX = 'a52b439';
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
@@ -482,6 +482,8 @@
     <!-- Dit en clair : l'ouverture est comptée, sans nom ni adresse
          (débrief 18). Seulement quand un classeur est derrière la page. -->
     <div id="mention-consultations" hidden>Les ouvertures de cette page sont comptées, sans nom ni adresse.</div>
+    <!-- Débrief 27 (A-F23) : aux lecteurs, qui gère les jalons et les droits, et comment le joindre. -->
+    <div id="pied-responsable" hidden></div>
   </footer>
 </div>
 
@@ -491,21 +493,25 @@
 <div class="masque" id="annonce" role="status" aria-live="polite" aria-atomic="true"></div>
 <!-- Débrief 26 : le panneau d'administration — les jalons, les contrats, les
      administrateurs. Vide tant qu'un administrateur ne l'ouvre pas. -->
-<dialog class="admin" id="admin" aria-labelledby="admin-titre">
+<dialog class="admin" id="admin" aria-labelledby="admin-titre" aria-describedby="admin-portee">
   <div class="admin-tete">
     <div>
       <h2 id="admin-titre">Administration</h2>
       <p class="admin-qui" id="admin-qui"></p>
+      <!-- Débrief 27 (A-F11) : ce que la personne peut faire, quand elle n'a pas tout. -->
+      <p class="admin-portee" id="admin-portee" hidden></p>
     </div>
     <button type="button" class="admin-fermer" id="admin-fermer" aria-label="Fermer l’administration">×</button>
   </div>
-  <div class="segmente admin-onglets" id="admin-onglets" role="group" aria-label="Ce qu’on administre">
-    <button type="button" data-onglet="jalons" aria-pressed="true">Jalons</button>
-    <button type="button" data-onglet="contrats" aria-pressed="false">Contrats</button>
-    <button type="button" data-onglet="admins" aria-pressed="false" hidden>Administrateurs</button>
+  <!-- Débrief 27 (B17) : de vrais onglets, soulignés ; les flèches passent de l'un à l'autre. -->
+  <div class="admin-onglets" id="admin-onglets" role="tablist" aria-label="Ce qu’on administre">
+    <button type="button" role="tab" id="admin-onglet-jalons" data-onglet="jalons" aria-selected="true" aria-controls="admin-corps">Jalons</button>
+    <button type="button" role="tab" id="admin-onglet-contrats" data-onglet="contrats" aria-selected="false" aria-controls="admin-corps" tabindex="-1">Contrats</button>
+    <button type="button" role="tab" id="admin-onglet-admins" data-onglet="admins" aria-selected="false" aria-controls="admin-corps" tabindex="-1" hidden>Administrateurs</button>
   </div>
+  <div class="admin-corps" id="admin-corps" role="tabpanel" aria-labelledby="admin-onglet-jalons"></div>
+  <!-- Débrief 27 : les messages au pied du panneau — rien ne s'insère au-dessus de ce qu'on lit. -->
   <div class="admin-message" id="admin-message" role="status" aria-live="polite"></div>
-  <div class="admin-corps" id="admin-corps"></div>
 </dialog>
 <!-- Une page longue : un bouton discret ramène en haut, là où sont le
      périmètre et l'avancement suivi. -->

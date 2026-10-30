@@ -47,7 +47,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = '8d83704';
+const EDITION = 'a52b439';
 
 // =====================================================================
 //  CONFIGURATION
@@ -886,6 +886,12 @@ function getFeuilleDonnees(classeur, contrat) {
     if (contrats[i].id === voulu || normaliser(contrats[i].id) === normaliser(voulu)) {
       return ongletNomme_(classeur, contrats[i].id);
     }
+  }
+  /* Débrief 27 : un contrat masqué entre-temps par un administrateur, demandé
+     par une page restée ouverte depuis — le dire en clair, sans parler
+     d'onglet (« aucun onglet visible » était du vocabulaire de tableur). */
+  if (contratsRetires_(classeur).some(function (n) { return n === voulu || normaliser(n) === normaliser(voulu); })) {
+    throw new Error('« ' + voulu + ' » n’est plus affiché sur le tableau de bord (masqué par un administrateur). Rechargez la page pour mettre la liste à jour.');
   }
   throw new Error('Le contrat « ' + voulu + ' » est introuvable : aucun onglet visible de ce nom.');
 }
@@ -5510,10 +5516,11 @@ function droitsDeLAppelant_() {
   return d;
 }
 
-/* Les refus commencent par « [droits] » : la page relit alors les droits du lecteur. */
+/* Les refus commencent par « [droits] » : la page relit alors les droits du lecteur.
+   Débrief 27 : dit sans ordre (« Le demander à » sonnait comme une consigne). */
 function refuser_(d, quoi) {
   throw new Error('[droits] ' + (d.identifie
-    ? 'Réservé ' + quoi + ' : votre compte (' + d.email + ') n’en a pas le droit. Le demander à ' + (d.responsable || emailDuResponsable_() || 'au responsable du tableau de bord') + '.'
+    ? 'Réservé ' + quoi + ' : votre compte (' + d.email + ') n’a pas ce droit. Pour l’obtenir, écrivez à ' + (d.responsable || emailDuResponsable_() || 'au responsable du tableau de bord') + '.'
     : 'Réservé ' + quoi + ' : Google ne dit pas qui vous êtes (compte hors du domaine du classeur, plusieurs comptes Google ouverts, ou page ouverte sans être connecté) : ouvrir le tableau de bord avec votre seul compte de l’entreprise.'));
 }
 
@@ -5536,8 +5543,12 @@ function exigerAdmin_(condition, quoi) {
  */
 function mesDroits() {
   const d = droitsDeLAppelant_();
+  /* Débrief 27 : un lecteur identifié (un compte du domaine) apprend aussi
+     qui gère les jalons et les droits — le pied de page le lui dit, pour
+     qu'il sache à qui écrire. Le refus d'une écriture le disait déjà. Un
+     lecteur que Google ne nomme pas ne l'apprend pas. */
   return { role: d.role, identifie: d.identifie, email: d.email, tous: d.tous, contrats: d.contrats, coherent: d.coherent,
-           responsable: d.role !== 'lecteur' ? d.responsable : '', jalonsEditables: !!String(CONFIG.FEUILLE_JALONS || '').trim() };
+           responsable: d.role !== 'lecteur' || d.identifie ? d.responsable : '', jalonsEditables: !!String(CONFIG.FEUILLE_JALONS || '').trim() };
 }
 
 /* La signature d'une ligne de l'onglet des jalons, telle que la page l'a vue :
@@ -5589,12 +5600,13 @@ function listeAdminJalons_(classeur, f, d) {
 function jalonSaisi_(j, classeur) {
   const x = j && typeof j === 'object' ? j : {};
   const texte = String(x.texte === undefined || x.texte === null ? '' : x.texte).replace(/\s+/g, ' ').trim();
-  if (!texte) throw new Error('Le jalon n’a pas de nom.');
-  if (texte.length > 60) throw new Error('Nom trop long : ' + texte.length + ' caractères (60 au plus).');
+  /* Débrief 27 : les mêmes mots que la page sous chaque champ. */
+  if (!texte) throw new Error('Donnez un nom au jalon (par exemple « Solde FWD »).');
+  if (texte.length > 60) throw new Error('Ce nom fait ' + texte.length + ' caractères : 60 au plus, pour qu’il se lise sur le graphique.');
   const date = dateDeJalon(String(x.date || '').trim());
-  if (!date) throw new Error('Date illisible : « ' + String(x.date || '').slice(0, 20) + ' » (attendu : un jour du calendrier).');
+  if (!date) throw new Error('Cette date n’existe pas (« ' + String(x.date || '').slice(0, 20) + ' ») : choisissez un jour du calendrier.');
   const an = date.getUTCFullYear();
-  if (an < 2000 || an > 2100) throw new Error('Date hors de portée : ' + an + '.');
+  if (an < 2000 || an > 2100) throw new Error('L’année ' + an + ' semble erronée : choisissez une date entre 2000 et 2100.');
   const tous = listerContrats(classeur);
   const contrats = (Array.isArray(x.contrats) ? x.contrats : []).map(function (c) { return String(c).trim(); }).filter(Boolean).map(function (c) {
     const k = tous.filter(function (t) { return memeContrat_(t.id, c); })[0];
@@ -5634,7 +5646,7 @@ function adminEnregistrerJalon(j, contratAffiche) {
     if (ligne) {
       const avant = t.lignes.filter(function (x) { return x.ligne === ligne; })[0];
       if (!avant || signatureLigne_(avant.valeurs) !== String(j.signature || '')) {
-        throw new Error('Ce jalon a été modifié ou supprimé entre-temps (par quelqu’un d’autre, ou dans le classeur) : la liste est rechargée, recommencer.');
+        throw new Error('Ce jalon a été modifié ou supprimé entre-temps (par quelqu’un d’autre, ou dans le classeur) : la liste vient d’être rechargée, il suffit de recommencer.');
       }
       if (!permis(contratsDeLaLigne_(avant.jalon))) refuser_(d, 'aux administrateurs de ses contrats');
     } else {
@@ -5670,7 +5682,7 @@ function adminSupprimerJalon(ligne, signature, contratAffiche) {
     const t = lireOngletJalons_(f, f.getLastRow(), Math.max(ENTETES_ONGLET_JALONS.length, Math.min(f.getLastColumn(), 12)));
     const n = Number(ligne) || 0, avant = t.lignes.filter(function (x) { return x.ligne === n; })[0];
     if (!avant || signatureLigne_(avant.valeurs) !== String(signature || '')) {
-      throw new Error('Ce jalon a été modifié ou supprimé entre-temps : la liste est rechargée, recommencer.');
+      throw new Error('Ce jalon a été modifié ou supprimé entre-temps : la liste vient d’être rechargée, il suffit de recommencer.');
     }
     const contrats = contratsDeLaLigne_(avant.jalon);
     if (!(contrats.length ? contrats.every(function (c) { return peutGerer_(d, c); }) : peutGerer_(d, ''))) refuser_(d, 'aux administrateurs de ses contrats');
@@ -5703,7 +5715,7 @@ function adminEnregistrerAdmins(liste) {
   (Array.isArray(liste) ? liste : []).forEach(function (a) {
     const email = String(a && a.email || '').trim().toLowerCase();
     if (!email) return;
-    if (!FORME_EMAIL.test(email)) throw new Error('Adresse illisible : « ' + email.slice(0, 60) + ' ».');
+    if (!FORME_EMAIL.test(email)) throw new Error('L’adresse « ' + email.slice(0, 60) + ' » n’est pas valide.');
     if (email === d.responsable || vus[email]) return;
     vus[email] = true;
     const contrats = (a && Array.isArray(a.contrats) ? a.contrats : []).map(function (c) { return String(c).trim(); }).filter(Boolean);
@@ -5760,14 +5772,14 @@ function adminRetirerContrat(id, retirer) {
       const contrats = listerContrats(classeur);
       const c = contrats.filter(function (k) { return k.id === nom; })[0];
       if (!c) throw new Error('Contrat introuvable : « ' + nom.slice(0, 60) + ' ».');
-      if (contrats.length < 2) throw new Error('C’est le seul contrat affiché : il ne se retire pas.');
+      if (contrats.length < 2) throw new Error('C’est le seul contrat affiché : il ne peut pas être masqué.');
       classeur.getSheetByName(c.id).hideSheet();
     } else {
-      if (contratsRetires_(classeur).indexOf(nom) === -1) throw new Error('Contrat retiré introuvable : « ' + nom.slice(0, 60) + ' ».');
+      if (contratsRetires_(classeur).indexOf(nom) === -1) throw new Error('Contrat masqué introuvable : « ' + nom.slice(0, 60) + ' ».');
       classeur.getSheetByName(nom).showSheet();
     }
     marquerDonneesModifiees_();
-    journaliserAdmin_(d.email, (retirer !== false ? 'contrat retiré : ' : 'contrat remis : ') + nom);
+    journaliserAdmin_(d.email, (retirer !== false ? 'contrat masqué : ' : 'contrat réaffiché : ') + nom);
   });
   return adminContrats();
 }
