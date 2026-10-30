@@ -7510,8 +7510,14 @@ async function deplierFiltresColonne(pg) {
     const aEtat = await lireAnnonce();
     await g.click('#tout-effacer');
     const aRetire = await lireAnnonce();
-    verifier('les changements de la page sont dits : « Périmètre PERSO : … », « État … : N plans sur M. », « Filtre retiré : … »',
-      /^Périmètre PERSO : \d+ sur \d+ plans? validés?\.$/.test(aPer) && /^État \S.* : (\d[\d  ]* plans?( sur \d[\d  ]*)?|aucun plan)\.$/.test(aEtat) && /^Filtres? retirés? : /.test(aRetire),
+    /* Débrief 27, intégration : la tuile dit elle-même son état (lot A, « 60
+       plans en En cours · 26 % du périmètre PERSO »), et « Tout effacer »
+       le sien (lot H, « Filtres effacés : … ») — la phrase générale ne les
+       recouvre plus. */
+    verifier('les changements de la page sont dits : « Périmètre PERSO : … », l’état choisi avec son nombre de plans, puis « Filtres effacés / Filtre retiré : … »',
+      /^Périmètre PERSO : \d+ sur \d+ plans? validés?\.$/.test(aPer) &&
+      (/^État \S.* : (\d[\d  ]* plans?( sur \d[\d  ]*)?|aucun plan)\.$/.test(aEtat) || /^\d[\d  ]* plans? en \S.* · \d+(,\d+)? % du périmètre/.test(aEtat)) &&
+      /^(Filtres? retirés?|Filtres effacés) : /.test(aRetire),
       JSON.stringify([aPer, aEtat, aRetire]));
 
     // --- Le lien de la vue : l'adresse suit (contrat, avancement, périmètre, recherche, section).
