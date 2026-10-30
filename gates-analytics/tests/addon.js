@@ -2879,7 +2879,10 @@ function serveurSur(valeurs, proprietes, fichiers) {
       document.getElementById('recherche').value === ''));
 
   // Un filtre venu d'un groupe doit aussi apparaître, avec son libellé lisible.
-  await pg.click('.critique-ligne >> nth=0'); await pg.waitForTimeout(500);
+  /* Débrief 27 (lot C, P-F5) : déplier une ligne ne filtre plus la page ;
+     le filtre du groupe, c'est le bouton « Filtrer la page sur … » de sa liste. */
+  await pg.click('.critique-ligne >> nth=0'); await pg.waitForTimeout(400);
+  await pg.click('#filtrer-groupe-page'); await pg.waitForTimeout(500);
   verifier('choisir un groupe pose un jeton nommé',
     await pg.evaluate(() => {
       const j = [...document.querySelectorAll('.jeton')].map(x => x.textContent);
@@ -2966,10 +2969,13 @@ function serveurSur(valeurs, proprietes, fichiers) {
     l.sort((a, b) => +b.querySelector('.critique-total').textContent - +a.querySelector('.critique-total').textContent);
     return l[0].dataset.groupe;
   });
-  await pg.click(`.critique-ligne[data-groupe="${grosGroupe}"]`); await pg.waitForTimeout(600);
+  /* Débrief 27 (lot C) : la ligne se déplie (aria-expanded) ; le tableau
+     suit le groupe quand on filtre la page sur lui, par son bouton. */
+  await pg.click(`.critique-ligne[data-groupe="${grosGroupe}"]`); await pg.waitForTimeout(500);
+  await pg.click('#filtrer-groupe-page'); await pg.waitForTimeout(600);
   const ud = await pg.evaluate(() => ({
     jetons: [...document.querySelectorAll('.jeton-ud[data-ud]')].map(b => b.textContent.trim()),
-    total: +document.querySelector('.critique-ligne[aria-pressed="true"] .critique-total').textContent,
+    total: +document.querySelector('.critique-ligne[aria-expanded="true"] .critique-total').textContent,
     entete: (document.querySelector('.groupe-refs .entete') || {}).textContent || '',
     /* Une sous-liste par valeur de la colonne (débrief 13) : son libellé, son
        compte, et les titres de ses jetons. */
@@ -2977,8 +2983,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
        titre, hors des sous-listes par valeur. */
     arret: document.querySelectorAll('.groupe-refs .sous-arret .jeton-ud[data-ud]').length,
     paquets: [...document.querySelectorAll('.groupe-refs .sous-groupe')].map(sg => {
-      const t = sg.querySelector('.sous-titre'), n = t.querySelector('.n');
-      return { libelle: t.textContent.slice(0, t.textContent.length - (n ? n.textContent.length : 0)).replace(/\s+/g, ' ').trim(),
+      /* Débrief 27 (lot C, B25) : après le compte, la part de la sous-liste (.part). */
+      const t = sg.querySelector('.sous-titre'), n = t.querySelector('.n'), part = t.querySelector('.part');
+      return { libelle: t.textContent.slice(0, t.textContent.length - (n ? n.textContent.length : 0) - (part ? part.textContent.length : 0)).replace(/\s+/g, ' ').trim(),
                n: n ? +n.textContent.replace(/\D/g, '') : NaN, pastille: !!t.querySelector('.pastille'),
                etats: [...sg.querySelectorAll('.jeton-ud[data-ud]')].map(b => (b.getAttribute('title') || '').split(' — ')[0]) };
     }),
@@ -3049,17 +3056,26 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('une dimension ordinaire n\'a pas besoin de note', noteA.trim() === '', noteA);
   verifier('le mois de création, lui, est expliqué',
     /mois/.test(noteM) && /vague|temps/i.test(noteM), noteM);
+  /* Débrief 27 (lot C, D10) : plus de cadre qui défile (il coupait une
+     ligne en deux et gardait la molette) ; au-delà d'une quinzaine de
+     groupes, les suivants attendent derrière « Voir les N autres », qui les
+     montre sur place. */
   const bcp = await pg.evaluate(() => {
-    const z = document.getElementById('zone-critique');
+    const z = document.getElementById('zone-critique'), plus = document.getElementById('plus-groupes');
     return {
       lignes: document.querySelectorAll('.critique-ligne').length,
-      hauteur: Math.round(z.getBoundingClientRect().height),
-      defile: z.scrollHeight > z.clientHeight + 4
+      vues: [...document.querySelectorAll('.critique-rangee')].filter(r => !r.hidden).length,
+      plus: plus ? plus.textContent : '',
+      cadre: z.scrollHeight > z.clientHeight + 4 || getComputedStyle(z).overflowY !== 'visible'
     };
   });
   verifier('toutes les lignes sont présentes, même nombreuses', bcp.lignes > 15, String(bcp.lignes));
-  verifier('le bloc garde une hauteur raisonnable', bcp.hauteur <= 520, bcp.hauteur + ' px');
-  verifier('et on y descend au lieu d\'allonger la page', bcp.defile);
+  verifier('le bloc garde une hauteur raisonnable : quinze groupes, puis « Voir les N autres »',
+    bcp.vues === 15 && bcp.plus.indexOf('Voir les ' + (bcp.lignes - 15) + ' autres') === 0, JSON.stringify(bcp));
+  verifier('et la liste prend sa hauteur dans la page, sans cadre qui défile', !bcp.cadre, JSON.stringify(bcp));
+  await pg.click('#plus-groupes'); await pg.waitForTimeout(400);
+  verifier('« Voir les N autres » montre tous les groupes',
+    await pg.evaluate(() => [...document.querySelectorAll('.critique-rangee')].every(r => !r.hidden)));
   await pg.selectOption('#dim-critique', 'ata'); await pg.waitForTimeout(500);
 
   // =================================================================

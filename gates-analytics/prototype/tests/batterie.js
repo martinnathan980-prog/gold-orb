@@ -2241,8 +2241,12 @@ async function reinitialiser(pg) {
     const paquets = [...document.querySelectorAll('.groupe-refs .sous-groupe')].map(sg => {
       const t = sg.querySelector('.sous-titre');
       const n = t.querySelector('.n');
+      /* Débrief 27 (lot C, B25) : le titre porte aussi la part de la
+         sous-liste (« · 40 % », .part) après son compte. */
+      const part = t.querySelector('.part');
       return {
-        libelle: (t.textContent.slice(0, t.textContent.length - (n ? n.textContent.length : 0))).replace(/\s+/g, ' ').trim(),
+        libelle: (t.textContent.slice(0, t.textContent.length - (n ? n.textContent.length : 0) - (part ? part.textContent.length : 0))).replace(/\s+/g, ' ').trim(),
+        part: part ? Number(part.textContent.replace(/\D/g, '')) : NaN,
         n: n ? +n.textContent.replace(/\D/g, '') : NaN,
         pastille: !!t.querySelector('.pastille'),
         refs: [...sg.querySelectorAll('.jeton-ud')].map(b => ({
@@ -2262,7 +2266,10 @@ async function reinitialiser(pg) {
       pastilles: refs.every(b => b.querySelector('.pastille')),
       mono: refs.every(b => /Mono|mono/.test(getComputedStyle(b).fontFamily)),
       dedans: refs.every(b => b.getBoundingClientRect().right <= zone.getBoundingClientRect().right + 1),
-      defile: zone.scrollHeight > zone.clientHeight && getComputedStyle(zone).overflowY === 'auto'
+      /* Débrief 27 (lot C, D10) : plus de cadre qui défile — la liste prend
+         sa hauteur dans la page. */
+      naturel: zone.scrollHeight <= zone.clientHeight + 1 && getComputedStyle(zone).overflowY === 'visible' && getComputedStyle(zone).maxHeight === 'none',
+      total: [...document.querySelectorAll('.groupe-refs .entete')].length
     };
   });
   const ordreValeurs = liste.valeurs.map(v => v.libelle);
@@ -2291,7 +2298,12 @@ async function reinitialiser(pg) {
     /cliquez une référence pour la retrouver dans le tableau/.test(liste.entete), liste.entete.trim());
   verifier('des jetons compacts : pastille + reference en mono, aucun ne deborde',
     liste.pastilles && liste.mono && liste.dedans);
-  verifier('le bloc defile plutot que de pousser la page', liste.defile);
+  /* Débrief 27 (lot C, D10, P-F4, B19) : le cadre de 430 px coupait une
+     ligne en deux et gardait la molette ; la liste prend maintenant sa
+     hauteur dans la page. */
+  verifier('la liste dépliée prend sa hauteur dans la page : plus de cadre qui défile (débrief 27)', liste.naturel, JSON.stringify(liste.naturel));
+  verifier('chaque sous-liste dit sa part du groupe (« · 40 % »), et les parts font 100 % (débrief 27, B25)',
+    liste.paquets.every(q => q.part === Math.round(100 * q.refs.length / grosAta.total)), JSON.stringify(liste.paquets.map(q => [q.libelle, q.part, q.refs.length])));
   const refJeton = liste.paquets[liste.paquets.length - 1].refs[0].ref;
   await p.click(`.jeton-ud[data-ud="${refJeton}"]`); await p.waitForTimeout(600);
   verifier('un clic sur un jeton filtre le tableau sur ce plan',
@@ -2310,22 +2322,38 @@ async function reinitialiser(pg) {
   });
   await p.waitForTimeout(500);
   await p.click('.critique-ligne[data-groupe="21"]'); await p.waitForTimeout(700);
-  const deuxCents = await p.evaluate(() => {
+  /* Débrief 27 (lot C, D10) : plus de cadre qui défile. Les 640 puces sont
+     là, une douzaine de rangées se montrent, « Voir les N autres plans »
+     montre le reste sur place — et le replie. */
+  const lireDeuxCents = () => p.evaluate(() => {
     const zone = document.getElementById('zone-critique');
-    const refs = [...document.querySelectorAll('.jeton-ud')];
-    const derniere = refs[refs.length - 1].getBoundingClientRect();
+    const refs = [...document.querySelectorAll('.jeton-ud')], vus = refs.filter(b => !b.hidden && b.getClientRects().length);
+    const plus = document.querySelector('#zone-critique button[data-plus-refs]');
     return {
-      jetons: refs.length, plans: document.querySelectorAll('#corps-tableau tr').length,
-      defile: zone.scrollHeight > zone.clientHeight,
-      hauteur: Math.round(zone.getBoundingClientRect().height),
-      dedans: refs.every(b => b.getBoundingClientRect().right <= zone.getBoundingClientRect().right + 1),
-      lignes: new Set(refs.map(b => Math.round(b.getBoundingClientRect().top))).size,
-      dernierAtteignable: derniere.top - zone.getBoundingClientRect().top < zone.scrollHeight
+      jetons: refs.length, vus: vus.length, plans: document.querySelectorAll('#corps-tableau tr').length,
+      defile: zone.scrollHeight > zone.clientHeight + 1,
+      dedans: vus.every(b => b.getBoundingClientRect().right <= zone.getBoundingClientRect().right + 1),
+      lignes: new Set(vus.map(b => Math.round(b.getBoundingClientRect().top))).size,
+      plus: plus ? plus.textContent : null, deplie: plus ? plus.getAttribute('aria-expanded') : null
     };
   });
-  verifier('640 references dans un seul groupe : toutes la, en grille, dans un bloc qui defile',
-    deuxCents.jetons === TOTAL && deuxCents.defile && deuxCents.dedans && deuxCents.lignes > 20 &&
-    deuxCents.hauteur <= 460 && deuxCents.dernierAtteignable, JSON.stringify(deuxCents));
+  const deuxCents = await lireDeuxCents();
+  verifier('640 références dans un seul groupe : toutes là, en grille ; une douzaine de rangées montrées, puis « Voir les N autres plans de ce groupe » (débrief 27)',
+    deuxCents.jetons === TOTAL && !deuxCents.defile && deuxCents.dedans && deuxCents.lignes >= 10 && deuxCents.lignes <= 14 &&
+    deuxCents.plus === 'Voir les ' + (TOTAL - deuxCents.vus) + ' autres plans de ce groupe' && deuxCents.deplie === 'false', JSON.stringify(deuxCents));
+  await p.click('#zone-critique button[data-plus-refs]'); await p.waitForTimeout(500);
+  const deuxCentsTout = await lireDeuxCents();
+  const focusPlus = await p.evaluate(() => document.activeElement && document.activeElement.classList.contains('jeton-ud'));
+  verifier('« Voir les N autres plans » : les 640 se montrent sur place, le focus va à la première montrée, le bouton propose de réduire',
+    deuxCentsTout.vus === TOTAL && deuxCentsTout.lignes > 20 && deuxCentsTout.plus === 'Réduire la liste des plans' && deuxCentsTout.deplie === 'true' && focusPlus,
+    JSON.stringify([deuxCentsTout, focusPlus]));
+  await p.evaluate(() => document.querySelector('#zone-critique button[data-plus-refs]').scrollIntoView({ block: 'center' }));
+  const yReduire = await p.evaluate(() => document.querySelector('#zone-critique button[data-plus-refs]').getBoundingClientRect().top);
+  await p.click('#zone-critique button[data-plus-refs]'); await p.waitForTimeout(500);
+  const reduit = await p.evaluate(y => ({ vus: [...document.querySelectorAll('.jeton-ud')].filter(b => !b.hidden).length,
+    saut: Math.round(document.querySelector('#zone-critique button[data-plus-refs]').getBoundingClientRect().top - y) }), yReduire);
+  verifier('« Réduire la liste des plans » : retour à la douzaine de rangées, le bouton reste sous le pointeur',
+    reduit.vus === deuxCents.vus && Math.abs(reduit.saut) <= 2, JSON.stringify(reduit));
   await p.evaluate(() => { window.__chargerSource(window.__jeuDExemple('HDK')); });
   await p.waitForTimeout(500);
   await reinitialiser(p);
@@ -2889,37 +2917,65 @@ async function reinitialiser(pg) {
 
   // =================================================================
   section('Sélection d\'un groupe et dimensions');
+  /* Débrief 27 (lot C, P-F5) : « j'ai cliqué ATA 39 pour voir lesquels,
+     et toute la page est devenue 6 sur 80 ». Une ligne cliquée ne fait
+     plus que se déplier (aria-expanded) ; filtrer toute la page sur ce
+     groupe est le bouton « Filtrer la page sur ATA … » de la liste
+     dépliée — un second clic le retire. */
   const lignesDuBloc = () => p.evaluate(() => [...document.querySelectorAll('#zone-critique .critique-ligne')].map(l => ({
-    g: l.dataset.groupe, n: +l.querySelector('.critique-total').textContent, presse: l.getAttribute('aria-pressed') === 'true',
+    g: l.dataset.groupe, n: +l.querySelector('.critique-total').textContent, presse: l.getAttribute('aria-expanded') === 'true',
+    filtre: l.classList.contains('filtre-page') && !!l.querySelector('.marque-filtre'),
     /* Débrief 20 : le bouton « n à l'arrêt » se pose juste après la ligne. */
     ouvert: (s => !!(s && s.classList.contains('groupe-refs')))(l.nextElementSibling && l.nextElementSibling.classList.contains('critique-arret') ? l.nextElementSibling.nextElementSibling : l.nextElementSibling) })));
+  const lignesTableau27 = () => p.evaluate(() => document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length);
   const avantGroupe = await lignesDuBloc();
+  const noteAvant = await p.evaluate(() => document.getElementById('note-graphe').textContent);
   await p.click('.critique-ligne >> nth=0'); await p.waitForTimeout(400);
   const apresGroupe = await p.evaluate(() => ({
     compte: document.getElementById('compte').textContent,
     note: document.getElementById('note-graphe').textContent,
-    presse: document.querySelectorAll('.critique-ligne[aria-pressed="true"]').length
+    presse: document.querySelectorAll('.critique-ligne[aria-expanded="true"]').length,
+    jetons: document.querySelectorAll('#filtres-actifs .jeton').length,
+    bouton: (document.getElementById('filtrer-groupe-page') || {}).textContent,
+    focus: document.activeElement && document.activeElement.classList.contains('critique-ligne') && document.activeElement.dataset.groupe
   }));
-  verifier('cliquer un groupe filtre le tableau', apresGroupe.compte.indexOf(TOTAL + ' plans') === -1, apresGroupe.compte);
-  verifier('le graphique suit le groupe, et le nomme', /^Historique · \S+ /.test(apresGroupe.note), apresGroupe.note);
-  verifier('une seule ligne est marquée sélectionnée', apresGroupe.presse === 1);
+  verifier('cliquer un groupe le déplie sans filtrer la page : tableau, courbe et bandeau des filtres inchangés (débrief 27)',
+    apresGroupe.compte.indexOf(TOTAL + ' plans') !== -1 && apresGroupe.note === noteAvant && apresGroupe.jetons === 0, JSON.stringify(apresGroupe));
+  verifier('une seule ligne est dépliée (aria-expanded), le focus reste sur elle, et sa liste offre « Filtrer la page sur ATA … »',
+    apresGroupe.presse === 1 && apresGroupe.focus === avantGroupe[0].g && apresGroupe.bouton === 'Filtrer la page sur ATA ' + avantGroupe[0].g, JSON.stringify(apresGroupe));
   // Débrief 17 : un groupe cliqué se déplie sur place, comme une semaine du journal — les autres restent.
   const deplie17 = await lignesDuBloc();
   verifier('cliquer un groupe le déplie sur place : tous les autres groupes restent, avec leurs comptes, et ses plans s\'ouvrent juste sous lui',
     avantGroupe.length >= 5 && deplie17.map(l => l.g + '=' + l.n).join() === avantGroupe.map(l => l.g + '=' + l.n).join() &&
     deplie17[0].presse && deplie17[0].ouvert && deplie17.slice(1).every(l => !l.presse && !l.ouvert),
     JSON.stringify(deplie17.slice(0, 4)));
+  await p.click('#filtrer-groupe-page'); await p.waitForTimeout(500);
+  const filtre27 = await p.evaluate(() => ({
+    compte: document.getElementById('compte').textContent, note: document.getElementById('note-graphe').textContent,
+    jetons: [...document.querySelectorAll('#filtres-actifs .jeton')].map(j => j.textContent.replace('×', '').replace(/\s+/g, ' ').trim()),
+    bouton: document.getElementById('filtrer-groupe-page').textContent, focus: document.activeElement && document.activeElement.id
+  }));
+  verifier('« Filtrer la page sur ATA … » filtre le tableau, la courbe suit le groupe et le nomme, le bandeau dit « ATA : … »',
+    filtre27.compte.indexOf(TOTAL + ' plans') === -1 && /^Historique · \S+ /.test(filtre27.note) && filtre27.jetons.join() === 'ATA : ' + avantGroupe[0].g, JSON.stringify(filtre27));
+  verifier('posé, le bouton dit comment le retirer, garde le focus, et la ligne porte l’entonnoir du filtre',
+    filtre27.bouton === 'Retirer le filtre ATA ' + avantGroupe[0].g + ' de la page' && filtre27.focus === 'filtrer-groupe-page' && (await lignesDuBloc())[0].filtre, JSON.stringify(filtre27));
   await p.click('.critique-ligne >> nth=2'); await p.waitForTimeout(400);
   const bascule17 = await lignesDuBloc();
-  const lignesTableau17 = await p.evaluate(() => document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length);
-  verifier('cliquer un autre groupe le déplie à la place du premier, la liste reste entière, et le tableau suit ce groupe',
+  verifier('cliquer un autre groupe le déplie à la place du premier, la liste reste entière ; le filtre de la page reste sur le premier',
     bascule17.map(l => l.g + '=' + l.n).join() === avantGroupe.map(l => l.g + '=' + l.n).join() &&
     bascule17.filter(l => l.presse).length === 1 && bascule17[2].presse && bascule17[2].ouvert && !bascule17[0].ouvert &&
-    lignesTableau17 === bascule17[2].n, JSON.stringify([bascule17.slice(0, 3), lignesTableau17]));
-  await p.click('.critique-ligne >> nth=0'); await p.waitForTimeout(400);
-  await p.click('.critique-ligne >> nth=0'); await p.waitForTimeout(350);
-  verifier('re-cliquer désélectionne',
-    await p.evaluate(t => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === t, TOTAL));
+    bascule17[0].filtre && (await lignesTableau27()) === bascule17[0].n, JSON.stringify(bascule17.slice(0, 3)));
+  await p.click('#filtrer-groupe-page'); await p.waitForTimeout(500);
+  const lignesTableau17 = await lignesTableau27();
+  const bascule27 = await lignesDuBloc();
+  verifier('son bouton « Filtrer la page » fait suivre le tableau à ce groupe (un seul filtre de groupe)',
+    lignesTableau17 === bascule27[2].n && bascule27[2].filtre && !bascule27[0].filtre, JSON.stringify([bascule27.slice(0, 3), lignesTableau17]));
+  await p.click('#filtrer-groupe-page'); await p.waitForTimeout(400);
+  verifier('re-cliquer le bouton retire le filtre de la page, la ligne reste dépliée',
+    (await lignesTableau27()) === TOTAL && (await lignesDuBloc())[2].presse);
+  await p.click('.critique-ligne >> nth=2'); await p.waitForTimeout(350);
+  verifier('re-cliquer la ligne la replie',
+    (await lignesDuBloc()).every(l => !l.presse && !l.ouvert));
   const dims = await p.evaluate(() => [...document.querySelectorAll('#dim-critique option')].map(o => o.value));
   for (const d of dims) {
     await p.selectOption('#dim-critique', d); await p.waitForTimeout(400);
@@ -3345,7 +3401,10 @@ async function reinitialiser(pg) {
       return { requis: (v.match(/^([\d,]+)\/sem\./) || [])[1], tenu: (v.match(/tenu ([\d,]+)\/sem\./) || [])[1],
                fin: esp(l.querySelector('.critique-date .v').textContent) };
     });
-    await pq.click('.critique-ligne >> nth=0'); await pq.waitForTimeout(500);
+    /* Débrief 27 (lot C) : le graphique suit le groupe quand on filtre la
+       page sur lui (« Filtrer la page sur … »), plus au simple dépliage. */
+    await pq.click('.critique-ligne >> nth=0'); await pq.waitForTimeout(400);
+    await pq.click('#filtrer-groupe-page'); await pq.waitForTimeout(500);
     const legG = esp(await pq.evaluate(() => document.getElementById('legende').textContent));
     const survG = esp(await pq.evaluate(() => [...document.querySelectorAll('#legende .legende-item span[title]')].map(x => x.getAttribute('title')).join(' | ')));
     verifier('une ligne du bloc et le graphique de son groupe disent le même rythme requis, le même rythme tenu, la même fin',
@@ -3356,6 +3415,7 @@ async function reinitialiser(pg) {
     verifier('choisir un groupe : la phrase et la note du graphique le nomment de la même façon, sans « autres filtres » inventés',
       /plans validés dans \S+ \S+$/.test(phraseG) && noteG.indexOf(phraseG.replace(/^.* dans /, '')) !== -1 && !/autres filtres/.test(noteG),
       JSON.stringify([phraseG, noteG]));
+    await pq.click('#filtrer-groupe-page'); await pq.waitForTimeout(400);
     await pq.click('.critique-ligne >> nth=0'); await pq.waitForTimeout(400);
 
     // La dernière semaine : journal et bulle du graphique, les mêmes lignes.
@@ -3720,8 +3780,9 @@ async function reinitialiser(pg) {
 
   // --- Le chevron des groupes, comme celui des semaines.
   await p.click('.critique-ligne >> nth=0'); await p.waitForTimeout(400);
+  /* Débrief 27 (lot C, X-A6) : la ligne dit « dépliée » (aria-expanded), plus « pressée ». */
   const chevrons = await p.evaluate(() => [...document.querySelectorAll('.critique-ligne')].map(l => ({
-    chevron: !!l.querySelector('svg.chevron'), presse: l.getAttribute('aria-pressed'),
+    chevron: !!l.querySelector('svg.chevron'), presse: l.getAttribute('aria-expanded'),
     tourne: getComputedStyle(l.querySelector('svg.chevron')).transform })));
   verifier('chaque groupe porte un chevron : vers la droite fermé, vers le bas ouvert — comme les semaines du journal',
     chevrons.every(c => c.chevron) && chevrons.filter(c => c.presse === 'true').every(c => c.tourne !== 'none') &&
@@ -3858,8 +3919,11 @@ async function reinitialiser(pg) {
   });
   await p.waitForTimeout(500);
   await p.selectOption('#dim-critique', '_mois'); await p.waitForTimeout(400);
+  /* Débrief 27 (lot C) : la courbe d'un groupe, c'est le filtre de la page
+     posé sur lui (le bouton de sa liste dépliée). */
   const serieMois = await p.evaluate(() => {
     document.querySelectorAll('.critique-ligne')[0].click();
+    document.getElementById('filtrer-groupe-page').click();
     const pts = window.__serieAffichee().pts;
     const val = document.querySelectorAll('.critique-ligne')[0].dataset.groupe;
     /* recompte à la main : plans du mois, relevé par relevé */
@@ -3869,6 +3933,7 @@ async function reinitialiser(pg) {
     const refsMois = new Set(s.plans.filter(p => moisDe(p[s.cleDate]) === val).map(p => p.reference));
     const attendu = s.releves.slice().sort((a, b) => a.semaine < b.semaine ? -1 : 1)
       .map(r => Object.keys(r.plans).filter(ref => refsMois.has(ref) && window.__classer(r.plans[ref]) === 'termine').length);
+    document.getElementById('filtrer-groupe-page').click();
     document.querySelectorAll('.critique-ligne')[0].click();
     return { val, termines: pts.map(x => x.termine), totaux: pts.map(x => x.total), attendu };
   });
@@ -4382,9 +4447,12 @@ async function reinitialiser(pg) {
   // Un groupe choisi dans le bloc : la courbe de la valeur ne compte que lui.
   await p.click('#filtre-valeur-groupe button[data-valeur-bloc="encours"]'); await p.waitForTimeout(300);
   const ligneG18 = await p.evaluate(() => { const l = document.querySelector('.critique-ligne'); return { g: l.dataset.groupe, n: Number(l.querySelector('.critique-total').textContent) }; });
-  await p.click('.critique-ligne >> nth=0'); await p.waitForTimeout(500);
+  // Débrief 27 (lot C) : « choisi » = la page filtrée sur lui, par le bouton de sa liste dépliée.
+  await p.click('.critique-ligne >> nth=0'); await p.waitForTimeout(400);
+  await p.click('#filtrer-groupe-page'); await p.waitForTimeout(500);
   const grp18 = await p.evaluate(() => { const pts = window.__serieValeur('encours').pts; return pts[pts.length - 1].termine; });
   verifier('graphique : un groupe choisi dans le bloc — la courbe « En cours » finit à son compte dans le bloc', grp18 === ligneG18.n, JSON.stringify([grp18, ligneG18]));
+  await p.click('#filtrer-groupe-page'); await p.waitForTimeout(400);
   await p.click('.critique-ligne >> nth=0'); await p.waitForTimeout(400);
   await p.click('#filtre-valeur-groupe button[data-valeur-bloc=""]'); await p.waitForTimeout(300);
   await p.focus('#filtre-valeur-graphe button[data-valeur-graphe="afaire"]'); await p.keyboard.press('Enter'); await p.waitForTimeout(300);
@@ -4886,16 +4954,24 @@ async function reinitialiser(pg) {
       tel.page && tel.defile && tel.courant === 'rapprochement' && tel.enVue && tel.haut === 0, JSON.stringify(tel));
 
     // Défaut 3c : au téléphone, « Plans 65 » s'aligne comme ses voisins.
+    /* Débrief 27 (lot C, M2) : la carte est plus courte — « Plans 65 » au
+       bord droit, sur la ligne du nom ; dessous la barre, puis la fin
+       estimée (à gauche) et le rythme (au bord droit, comme le nombre de
+       plans), chacun sous son libellé. */
     await pt.evaluate(() => document.getElementById('zone-critique').scrollIntoView()); await pt.waitForTimeout(500);
     const plansTel = await pt.evaluate(() => {
       const l = [...document.querySelectorAll('#zone-critique .critique-ligne')].find(x => x.querySelector('.critique-total'));
-      const bordDroit = el => { const r = document.createRange(); r.selectNodeContents(el); return Math.round(r.getBoundingClientRect().right); };
-      const tot = l.querySelector('.critique-total'), fin = l.querySelector('.critique-fin, .critique-date');
-      return { total: bordDroit(tot), fin: bordDroit(fin), gaucheTotal: Math.round(tot.getBoundingClientRect().left),
-               gaucheLigne: Math.round(l.getBoundingClientRect().left), ligneDroite: Math.round(l.getBoundingClientRect().right) };
+      const bord = (el, cote) => { const r = document.createRange(); r.selectNodeContents(el); return Math.round(r.getBoundingClientRect()[cote]); };
+      const tot = l.querySelector('.critique-total'), nom = l.querySelector('.critique-nom'), fin = l.querySelector('.critique-date .v'), eff = l.querySelector('.critique-effort .v');
+      const rl = l.getBoundingClientRect();
+      return { total: bord(tot, 'right'), effort: bord(eff, 'right'), ligneDroite: Math.round(rl.right),
+               finGauche: bord(fin, 'left'), ligneGauche: Math.round(rl.left),
+               memeLigne: Math.abs(tot.getBoundingClientRect().top + tot.getBoundingClientRect().height / 2 - (nom.getBoundingClientRect().top + nom.getBoundingClientRect().height / 2)) <= 4,
+               hauteur: Math.round(rl.height) };
     });
-    verifier('à 390 px, dans une ligne « par ATA », le nombre de plans est au bord droit comme la fin estimée, son libellé à gauche',
-      Math.abs(plansTel.total - plansTel.fin) <= 2 && Math.abs(plansTel.gaucheTotal - plansTel.gaucheLigne) <= 2, JSON.stringify(plansTel));
+    verifier('à 390 px, une ligne « par ATA » : le nombre de plans au bord droit sur la ligne du nom, le rythme au même bord, la fin estimée à gauche ; la carte tient en 140 px (débrief 27)',
+      Math.abs(plansTel.total - plansTel.ligneDroite) <= 2 && Math.abs(plansTel.effort - plansTel.ligneDroite) <= 2 && plansTel.memeLigne &&
+      plansTel.finGauche - plansTel.ligneGauche <= 2 && plansTel.hauteur <= 140, JSON.stringify(plansTel));
 
     // Défaut 3b : la vue d'ensemble au téléphone, une carte par contrat.
     await pt.evaluate(() => window.scrollTo(0, 0));
@@ -4988,7 +5064,9 @@ async function reinitialiser(pg) {
       const pm = await page(ctxM, 'manque sous fin ' + w);
       await pm.click('#choix-perimetre button:nth-child(3)'); await pm.waitForTimeout(300);
       await pm.selectOption('#dim-critique', 'ecp'); await pm.waitForTimeout(300);
-      await pm.locator('#zone-critique button.critique-ligne[data-groupe="ECP-2108"]').click(); await pm.waitForTimeout(400);
+      /* Débrief 27 (lot C) : la courbe d'un groupe vient du filtre de la page posé sur lui. */
+      await pm.locator('#zone-critique button.critique-ligne[data-groupe="ECP-2108"]').click(); await pm.waitForTimeout(300);
+      await pm.click('#filtrer-groupe-page'); await pm.waitForTimeout(400);
       await poserMesure(pm);
       const r = await motsRecouverts(pm);
       verifier('à ' + w + ' px, PERSO, ECP-2108 ouvert : « manque N » et « fin … » se lisent tous deux, aucun fond plein ne recouvre un mot',
@@ -5016,11 +5094,13 @@ async function reinitialiser(pg) {
               const noms = [...document.querySelectorAll('#zone-critique button.critique-ligne')].slice(0, 12).map(b => b.dataset.groupe);
               for (let i = -1; i < noms.length; i++) {
                 const ligne = () => [...document.querySelectorAll('#zone-critique button.critique-ligne')].find(b => b.dataset.groupe === noms[i]);
-                if (i >= 0) ligne().click();
+                /* Débrief 27 (lot C) : déplier la ligne, puis filtrer la page sur
+                   elle (le graphique suit le groupe) ; défaire dans l'ordre inverse. */
+                if (i >= 0) { ligne().click(); document.getElementById('filtrer-groupe-page').click(); }
                 const m = window.__motsRecouverts();
                 out.vus++; if (m.mots.some(x => /^manque/.test(x))) out.avecManque++;
                 if (m.couverts.length || m.chevauches.length) out.fautes.push(span + '/' + per + '/' + dim + '/' + (i < 0 ? '—' : noms[i]) + ' : ' + JSON.stringify(m));
-                if (i >= 0) ligne().click();
+                if (i >= 0) { document.getElementById('filtrer-groupe-page').click(); ligne().click(); }
               }
             }
           }
@@ -5169,11 +5249,11 @@ async function reinitialiser(pg) {
     await p.selectOption('#dim-critique', 'ata'); await p.waitForTimeout(300);
     const jetons = await p.evaluate(() => {
       const out = [];
-      [...document.querySelectorAll('#zone-critique .critique-ligne')].forEach(l => { if (l.getAttribute('aria-pressed') !== 'true') l.click(); });
+      [...document.querySelectorAll('#zone-critique .critique-ligne')].forEach(l => { if (l.getAttribute('aria-expanded') !== 'true') l.click(); });
       document.querySelectorAll('#zone-critique .jeton-ud.arret').forEach(j => {
         out.push({ auMoins: /depuis au moins S\d+/.test(j.title), puce: (j.querySelector('.depuis') || { textContent: '' }).textContent.replace(/ /g, ' ') });
       });
-      [...document.querySelectorAll('#zone-critique .critique-ligne[aria-pressed="true"]')].forEach(l => l.click());
+      [...document.querySelectorAll('#zone-critique .critique-ligne[aria-expanded="true"]')].forEach(l => l.click());
       return out;
     });
     const faux = jetons.filter(j => j.auMoins ? !/^depuis ≤ S\d+$/.test(j.puce) : !/^depuis S\d+$/.test(j.puce));
@@ -5191,7 +5271,9 @@ async function reinitialiser(pg) {
       const cas = [];
       for (const dim of ['_mois', 'ata']) {
         await pe.selectOption('#dim-critique', dim); await pe.waitForTimeout(300);
+        // Débrief 27 (lot C) : la puce nomme le groupe quand la page est filtrée sur lui.
         await pe.locator('#zone-critique button.critique-ligne').first().click(); await pe.waitForTimeout(300);
+        await pe.click('#filtrer-groupe-page'); await pe.waitForTimeout(300);
         cas.push(await pe.evaluate(() => {
           const b = document.getElementById('echeance-titre'), mot = b.querySelector('span:not(.point):not(.portee):not(.jours)');
           const po = b.querySelector('.portee'), jo = b.querySelector('.jours');
@@ -5200,6 +5282,7 @@ async function reinitialiser(pg) {
                    gauche: Math.round(r(po).left - r(mot).left), jours: Math.round(r(jo).left - r(mot).left),
                    ligne: Math.round(r(po).top - r(mot).top), largeur: b.scrollWidth <= b.clientWidth + 1 };
         }));
+        await pe.click('#filtrer-groupe-page'); await pe.waitForTimeout(200);
         await pe.locator('#zone-critique button.critique-ligne').first().click(); await pe.waitForTimeout(200);
       }
       const telephone = w < 480;
@@ -5887,7 +5970,10 @@ async function reinitialiser(pg) {
             const n = chiffre(m[2]), t = chiffre(m[3]);
             somme += n; total = total === null ? t : total;
             const pct = Math.round(100 * n / t);
-            if (t !== total || l.title.indexOf(m[2] + ' « ' + m[1] + ' » (' + pct + ' %)') < 0) fautes.push(l.dataset.groupe + ' ligne=' + JSON.stringify(l.title));
+            /* Débrief 27 (lot C, X-A6) : la ligne se dit en une phrase (masquée à
+               l'œil) au lieu d'une infobulle : elle redit chaque part, à côté de son mot. */
+            const phrase = (l.querySelector('.masque') || { textContent: '' }).textContent;
+            if (t !== total || phrase.indexOf(m[2] + ' ' + m[1] + ' (' + pct + ' %)') < 0) fautes.push(l.dataset.groupe + ' ligne=' + JSON.stringify(phrase));
             const ecrit = s.textContent.replace(/[\s %]/g, '');
             if (ecrit && Number(ecrit) !== pct) fautes.push(l.dataset.groupe + ' ' + s.dataset.cle + ' écrit ' + s.textContent + ' / ' + pct);
           });
@@ -5895,7 +5981,7 @@ async function reinitialiser(pg) {
         });
         return { segments, fautes: fautes.slice(0, 4) };
       });
-      verifier(nom + ' : barres par ATA : chaque segment a pour infobulle « valeur : n sur total », et l’infobulle de la ligne redit chaque part écrite, à côté de son mot',
+      verifier(nom + ' : barres par ATA : chaque segment a pour infobulle « valeur : n sur total », et la phrase de la ligne (lecteur d’écran) redit chaque part, à côté de son mot',
         ata22.segments > 0 && !ata22.fautes.length, JSON.stringify(ata22));
 
       // (q) La bulle d'un verdict SEE répartit le lot valeur par valeur, chaque pastille à la couleur de sa tuile.
@@ -6166,36 +6252,39 @@ async function reinitialiser(pg) {
     const cx24 = await contexte();
     const p24 = await page(cx24, 'débrief 24');
     /* « Quand je scroll en bas, je ne vois plus Séquence, Plans, Répartition… » :
-       la liste des groupes défile dans son cadre, l'en-tête reste en haut. */
+       l'en-tête de la liste reste en vue.
+       Débrief 27 (lot C, D10, P-F4) : plus de cadre qui défile — la liste
+       prend sa hauteur dans la page, et son en-tête colle sous le sommaire
+       tant qu'on la lit. Les vérifications du débrief 24 se refont dans la
+       page : ce que la page amène sous les yeux se pose sous l'en-tête. */
     await p24.selectOption('#dim-critique', 'ata'); await p24.waitForTimeout(400);
-    const tete24 = await p24.evaluate(async () => {
-      const attendre = ms => new Promise(r => setTimeout(r, ms));
+    /* Descendre la page jusqu'à la k-ième ligne du bloc, posée à y px du haut. */
+    const poser24 = (k, y) => p24.evaluate(([k, y]) => {
+      const l = document.querySelectorAll('#zone-critique .critique-ligne')[k];
+      window.scrollBy(0, l.getBoundingClientRect().top - y);
+    }, [k, y]);
+    await poser24(5, 200); await p24.waitForTimeout(200);
+    const tete24 = await p24.evaluate(() => {
       const z = document.getElementById('zone-critique'), t = z.querySelector('.critique-tete');
-      const defile = z.scrollHeight > z.clientHeight + 40;
-      z.scrollIntoView({ block: 'center' }); await attendre(150);
-      z.scrollTop = Math.min(400, z.scrollHeight - z.clientHeight); await attendre(150);
-      const rz = z.getBoundingClientRect(), rt = t.getBoundingClientRect();
+      const rt = t.getBoundingClientRect(), bs = document.getElementById('sommaire').getBoundingClientRect();
       const dessus = document.elementFromPoint(rt.left + 30, rt.top + rt.height / 2);
       const fond = getComputedStyle(t).backgroundColor;
-      const r = { defile, scroll: z.scrollTop, ecart: Math.round(rt.top - rz.top), visible: !!dessus && t.contains(dessus), opaque: !/rgba\(.*, 0\)$/.test(fond) };
-      z.scrollTop = 0; await attendre(100);
-      return r;
+      return { cadre: z.scrollHeight > z.clientHeight + 1 || getComputedStyle(z).overflowY !== 'visible', haut: Math.round(rt.top), sommaire: Math.round(bs.bottom),
+               passee: z.querySelector('.critique-ligne').getBoundingClientRect().top < rt.top, visible: !!dessus && t.contains(dessus), opaque: !/rgba\(.*, 0\)$/.test(fond) };
     });
-    verifier('en descendant la liste du bloc, l’en-tête (ATA, Plans, Répartition, Fin estimée, Rythme requis) reste collé en haut du cadre, opaque, au-dessus des lignes',
-      tete24.defile && tete24.scroll > 0 && Math.abs(tete24.ecart) <= 1 && tete24.visible && tete24.opaque, JSON.stringify(tete24));
+    verifier('en descendant la page dans la liste du bloc, l’en-tête (ATA, Plans, Répartition, Fin estimée, Rythme requis) reste collé sous le sommaire, opaque, au-dessus des lignes — et la liste n’a plus de cadre qui défile (débrief 27)',
+      !tete24.cadre && tete24.passee && Math.abs(tete24.haut - tete24.sommaire) <= 1 && tete24.visible && tete24.opaque, JSON.stringify(tete24));
 
     /* Relecture du débrief 24 : l'en-tête collé ne doit rien cacher. Une
-       ligne ouverte au ras du bas du cadre monte en haut pour montrer ses
-       plans : elle se pose SOUS l'en-tête — sinon on voit la liste dépliée
-       sans savoir quel groupe on vient d'ouvrir. Même chose au téléphone,
-       où la barre « Trier » défile avec la liste. */
+       ligne ouverte au ras du bas de l'écran monte pour montrer ses plans :
+       elle se pose SOUS l'en-tête — sinon on voit la liste dépliée sans
+       savoir quel groupe on vient d'ouvrir. Au téléphone, la barre « Trier »
+       défile avec la liste. */
     const ouvrirDuBas24 = async () => {
-      const i = await p24.evaluate(async () => {
-        const attendre = ms => new Promise(r => setTimeout(r, ms));
-        const z = document.getElementById('zone-critique');
-        z.scrollTop = 0; z.scrollIntoView({ block: 'center' }); await attendre(150);
-        const bas = z.getBoundingClientRect().bottom, ls = [...z.querySelectorAll('.critique-ligne')];
-        let k = -1; ls.forEach((l, j) => { if (l.getBoundingClientRect().bottom <= bas) k = j; });
+      await poser24(0, 600); await p24.waitForTimeout(150);
+      const i = await p24.evaluate(() => {
+        const ls = [...document.querySelectorAll('#zone-critique .critique-ligne')];
+        let k = -1; ls.forEach((l, j) => { const r = l.getBoundingClientRect(); if (r.height && r.bottom <= window.innerHeight) k = j; });
         return k;
       });
       const ligne = p24.locator('#zone-critique .critique-ligne').nth(i);
@@ -6204,95 +6293,92 @@ async function reinitialiser(pg) {
       const r = await p24.evaluate(g => {
         const z = document.getElementById('zone-critique'), t = z.querySelector('.critique-tete');
         const l = [...z.querySelectorAll('.critique-ligne')].find(x => x.dataset.groupe === g), n = l.querySelector('.critique-nom');
-        const rz = z.getBoundingClientRect(), rt = t.getBoundingClientRect(), rl = l.getBoundingClientRect(), rn = n.getBoundingClientRect();
+        const liste = document.getElementById(l.getAttribute('aria-controls') || '');
+        const rt = t.getBoundingClientRect(), rl = l.getBoundingClientRect(), rn = n.getBoundingClientRect();
+        const bas = Math.max(document.getElementById('sommaire').getBoundingClientRect().bottom, getComputedStyle(t).position === 'sticky' ? rt.bottom : 0);
         const pt = document.elementFromPoint(rn.left + Math.min(20, rn.width / 2), rn.top + rn.height / 2);
-        return { groupe: g, ouverte: l.getAttribute('aria-pressed') === 'true', defile: z.scrollTop, collee: getComputedStyle(t).position,
-                 basTete: Math.round(rt.bottom - rz.top), hautLigne: Math.round(rl.top - rz.top), nomVu: !!pt && l.contains(pt) };
+        return { groupe: g, ouverte: l.getAttribute('aria-expanded') === 'true', collee: getComputedStyle(t).position,
+                 sousTete: Math.round(rl.top - bas), listeVue: !!liste && liste.getBoundingClientRect().top < window.innerHeight - 100, nomVu: !!pt && l.contains(pt) };
       }, groupe);
       await p24.locator('#zone-critique .critique-ligne').nth(i).locator('.critique-nom').click(); await p24.waitForTimeout(300);   // on la referme
       return r;
     };
     const bas1280 = await ouvrirDuBas24();
-    verifier('ouvrir la dernière ligne visible du bloc : elle monte montrer ses plans et se pose sous l’en-tête collé — son nom reste lisible',
-      bas1280.ouverte && bas1280.defile > 0 && bas1280.collee === 'sticky' && bas1280.hautLigne >= bas1280.basTete - 1 && bas1280.nomVu, JSON.stringify(bas1280));
+    verifier('ouvrir la dernière ligne visible de l’écran : elle monte montrer ses plans et se pose sous l’en-tête collé — son nom reste lisible',
+      bas1280.ouverte && bas1280.collee === 'sticky' && bas1280.sousTete >= -1 && bas1280.listeVue && bas1280.nomVu, JSON.stringify(bas1280));
 
     /* Au clavier, en remontant (Maj+Tab), le navigateur amène chaque ligne
-       au bord haut du cadre : elle doit s'arrêter sous l'en-tête. */
-    await p24.evaluate(async () => {
-      const attendre = ms => new Promise(r => setTimeout(r, ms));
-      const z = document.getElementById('zone-critique');
-      z.scrollIntoView({ block: 'center' }); z.scrollTop = z.scrollHeight; await attendre(150);
-      const rz = z.getBoundingClientRect();
-      [...z.querySelectorAll('.critique-ligne')].filter(l => l.getBoundingClientRect().top > rz.top + 120)[0].focus();
-    });
+       au bord haut de l'écran : elle doit s'arrêter sous l'en-tête collé. */
+    await poser24(8, 250); await p24.waitForTimeout(150);
+    await p24.evaluate(() => document.querySelectorAll('#zone-critique .critique-ligne')[8].focus());
     const clavier24 = [];
     for (let k = 0; k < 10; k++) {
-      await p24.keyboard.press('Shift+Tab'); await p24.waitForTimeout(60);
+      await p24.keyboard.press('Shift+Tab'); await p24.waitForTimeout(80);
       clavier24.push(await p24.evaluate(() => {
         const z = document.getElementById('zone-critique'), a = document.activeElement;
-        if (!a || !z.contains(a) || a.closest('.critique-tete')) return null;
+        if (!a || !z.contains(a) || !a.closest('.critique-rangee')) return null;
         const l = a.closest('.critique-ligne'), cible = l ? l.querySelector('.critique-nom') : a;
-        const rz = z.getBoundingClientRect(), rt = z.querySelector('.critique-tete').getBoundingClientRect(), rc = cible.getBoundingClientRect();
+        const rt = z.querySelector('.critique-tete').getBoundingClientRect(), rc = cible.getBoundingClientRect();
         const pt = document.elementFromPoint(rc.left + Math.min(20, rc.width / 2), rc.top + rc.height / 2);
-        return { quoi: l ? l.dataset.groupe : a.className, haut: Math.round(rc.top - rz.top), basTete: Math.round(rt.bottom - rz.top), cache: !!pt && !!pt.closest('.critique-tete') };
+        return { quoi: l ? l.dataset.groupe : a.className, haut: Math.round(rc.top), basTete: Math.round(rt.bottom), cache: !!pt && !!pt.closest('.critique-tete, .sommaire') };
       }));
     }
     const vus24 = clavier24.filter(Boolean);
     verifier('au clavier, en remontant la liste (Maj+Tab), chaque ligne qui prend le focus se pose sous l’en-tête collé, jamais dessous',
       vus24.length >= 6 && vus24.every(x => !x.cache && x.haut >= x.basTete - 1), JSON.stringify(vus24));
 
-    /* L'en-tête collé se clique la liste descendue : « ? » ouvre l'aide là
-       où on la voit, la refermer ne fait pas sauter les lignes, et un tri
+    /* L'en-tête collé se clique la liste descendue : « ? » ouvre l'aide
+       au-dessus de la liste (débrief 27, P-F4) et la page remonte jusqu'à
+       elle ; la refermer de plus bas ne fait pas sauter les lignes ; un tri
        montre le classement depuis son premier. */
+    await poser24(6, 300); await p24.waitForTimeout(150);
     const clics24 = await p24.evaluate(async () => {
       const attendre = ms => new Promise(r => setTimeout(r, ms));
       const z = document.getElementById('zone-critique');
       const tete = () => z.querySelector('.critique-tete').getBoundingClientRect();
+      const sommaire = () => document.getElementById('sommaire').getBoundingClientRect().bottom;
       const premiere = () => [...z.querySelectorAll('.critique-ligne')].findIndex(x => x.getBoundingClientRect().top >= tete().bottom - 1);
-      z.scrollIntoView({ block: 'center' }); z.scrollTop = 600; await attendre(150);
-      const descendu = z.scrollTop;
+      const colle = Math.abs(tete().top - sommaire()) <= 1 && z.querySelector('.critique-ligne').getBoundingClientRect().top < tete().top;
       z.querySelector('.critique-tete button[data-aide]').click(); await attendre(300);
-      const pa = document.getElementById('panneau-fin'), rp = pa ? pa.getBoundingClientRect() : null, rz = z.getBoundingClientRect();
-      const aide = { descendu, ouvert: !!pa, haut: rp ? Math.round(rp.top - tete().bottom) : null, bas: rp ? Math.round(rp.top - rz.bottom) : null };
-      /* Juste sous l'aide, hors de vue au-dessus — pas tout en bas, où le
-         cadre, recalé sur sa fin, garderait les lignes en place de lui-même. */
-      if (pa) z.scrollTop += pa.getBoundingClientRect().bottom - tete().bottom + 20;
+      const pa = document.getElementById('panneau-fin'), rp = pa ? pa.getBoundingClientRect() : null;
+      const aide = { colle, ouvert: !!pa, haut: rp ? Math.round(rp.top - sommaire()) : null, dessus: rp ? Math.round(tete().top - rp.bottom) : null,
+                     dansCadre: !!pa && !!pa.closest('.critique-table'), focus: document.activeElement && document.activeElement.getAttribute('data-aide') };
+      /* Plus bas, l'aide hors de vue au-dessus, l'en-tête de nouveau collé. */
+      window.scrollBy(0, (pa ? pa.getBoundingClientRect().bottom : 0) - sommaire() + 300);
       await attendre(150);
       const l0 = z.querySelectorAll('.critique-ligne')[premiere()], g = l0.dataset.groupe, y0 = l0.getBoundingClientRect().top;
-      const auMilieu = z.scrollTop > 0 && z.scrollTop < z.scrollHeight - z.clientHeight - 20;
+      const auMilieu = Math.abs(tete().top - sommaire()) <= 1;
       z.querySelector('.critique-tete button[data-aide]').click(); await attendre(300);
       const l1 = [...z.querySelectorAll('.critique-ligne')].find(x => x.dataset.groupe === g);
       const fermer = { auMilieu, ferme: !document.getElementById('panneau-fin'), groupe: g, saut: Math.round(l1.getBoundingClientRect().top - y0) };
-      z.scrollTop = 600; await attendre(150);
+      window.scrollBy(0, z.querySelectorAll('.critique-ligne')[6].getBoundingClientRect().top - 300); await attendre(150);
       z.querySelector('.critique-tete button[data-trig="fin"]').click(); await attendre(300);
-      const tri = { actif: z.querySelector('button[data-trig="fin"]').dataset.actif, defile: z.scrollTop, premiere: premiere() };
+      const tri = { actif: z.querySelector('button[data-trig="fin"]').dataset.actif, premiere: premiere(),
+                    sousTete: Math.round(z.querySelector('.critique-ligne').getBoundingClientRect().top - tete().bottom),
+                    triee: z.querySelector('button[data-trig="fin"]').parentNode.getAttribute('aria-sort') };
       /* Deux clics de plus : retour au classement par défaut. */
       z.querySelector('.critique-tete button[data-trig="fin"]').click(); await attendre(200);
       z.querySelector('.critique-tete button[data-trig="fin"]').click(); await attendre(200);
-      z.scrollTop = 0;
       return { aide, fermer, tri };
     });
-    verifier('liste descendue, « ? » dans l’en-tête collé : l’aide s’ouvre sous l’en-tête, dans le cadre — pas hors de vue au-dessus',
-      clics24.aide.descendu > 0 && clics24.aide.ouvert && clics24.aide.haut >= -1 && clics24.aide.bas < -100, JSON.stringify(clics24.aide));
+    verifier('liste descendue, « ? » dans l’en-tête collé : l’aide s’ouvre au-dessus de l’en-tête de la liste (pas dans un cadre) et la page remonte jusqu’à elle ; le focus reste sur le « ? »',
+      clics24.aide.colle && clics24.aide.ouvert && clics24.aide.haut >= -1 && clics24.aide.haut < 60 && clics24.aide.dessus >= 0 && !clics24.aide.dansCadre && clics24.aide.focus === 'fin', JSON.stringify(clics24.aide));
     verifier('liste descendue sous l’aide ouverte, « ? » la referme : les lignes qu’on regardait restent où elles étaient',
       clics24.fermer.auMilieu && clics24.fermer.ferme && Math.abs(clics24.fermer.saut) <= 1, JSON.stringify(clics24.fermer));
-    verifier('liste descendue, un tri depuis l’en-tête collé montre le classement depuis son premier, juste sous l’en-tête',
-      clics24.tri.actif === 'true' && clics24.tri.defile === 0 && clics24.tri.premiere === 0, JSON.stringify(clics24.tri));
+    verifier('liste descendue, un tri depuis l’en-tête collé montre le classement depuis son premier, juste sous l’en-tête, et l’en-tête le dit (aria-sort)',
+      clics24.tri.actif === 'true' && clics24.tri.premiere === 0 && Math.abs(clics24.tri.sousTete) <= 2 && /^(a|de)scending$/.test(clics24.tri.triee || ''), JSON.stringify(clics24.tri));
 
     /* Au téléphone, chaque ligne porte ses libellés : la barre « Trier »
-       ne reste pas collée — elle défilait par-dessus 60 des 380 px du
-       cadre et cachait la ligne qu'on venait d'ouvrir. */
+       ne reste pas collée — elle cachait la ligne qu'on venait d'ouvrir. */
     await p24.setViewportSize({ width: 390, height: 844 }); await p24.waitForTimeout(400);
-    const tel24 = await p24.evaluate(async () => {
-      const attendre = ms => new Promise(r => setTimeout(r, ms));
-      const z = document.getElementById('zone-critique'), t = z.querySelector('.critique-tete');
-      z.scrollIntoView({ block: 'center' }); z.scrollTop = 300; await attendre(150);
-      const r = { position: getComputedStyle(t).position, ecart: Math.round(t.getBoundingClientRect().top - z.getBoundingClientRect().top) };
-      z.scrollTop = 0; return r;
+    await poser24(6, 300); await p24.waitForTimeout(150);
+    const tel24 = await p24.evaluate(() => {
+      const t = document.querySelector('#zone-critique .critique-tete');
+      return { position: getComputedStyle(t).position, bas: Math.round(t.getBoundingClientRect().bottom) };
     });
     const bas390 = await ouvrirDuBas24();
-    verifier('au téléphone, la barre « Trier » défile avec la liste au lieu d’en cacher le haut, et une ligne ouverte en bas du cadre garde son nom lisible',
-      tel24.position !== 'sticky' && tel24.ecart < -100 && bas390.ouverte && bas390.nomVu, JSON.stringify({ tel24, bas390 }));
+    verifier('au téléphone, la barre « Trier » défile avec la liste au lieu d’en cacher le haut, et une ligne ouverte en bas de l’écran garde son nom lisible',
+      tel24.position !== 'sticky' && tel24.bas < 0 && bas390.ouverte && bas390.nomVu && bas390.sousTete >= -1, JSON.stringify({ tel24, bas390 }));
     await p24.setViewportSize({ width: 1280, height: 950 }); await p24.waitForTimeout(400);
 
     /* Débrief 23, gardé : un nom MOYEN ne passe pas au-dessus, la colonne
@@ -6515,10 +6601,13 @@ async function reinitialiser(pg) {
 
   // C. Les puces au-dessus du tableau comptent ce que leur clic montrera.
   /* Un groupe qui a des deux : des plans à l'arrêt et des « non renseignés ». */
+  /* Débrief 27 (lot C) : la phrase de la ligne (plus son infobulle) dit ses
+     valeurs ; « groupe ouvert » = la page filtrée sur lui, par son bouton. */
   await p.evaluate(() => [...document.querySelectorAll('.critique-arret')].map(a => a.previousElementSibling)
-    .find(l => /« Non renseigné »/.test(l.title)).click()); await p.waitForTimeout(500);
+    .find(l => /Non renseigné/.test(l.querySelector('.masque').textContent)).click()); await p.waitForTimeout(500);
+  await p.click('#filtrer-groupe-page'); await p.waitForTimeout(500);
   const puces20 = await p.evaluate(() => ({
-    groupe: (document.querySelector('.critique-ligne[aria-pressed="true"]') || {}).dataset,
+    groupe: (document.querySelector('.critique-ligne.filtre-page[aria-expanded="true"]') || {}).dataset,
     vide: (document.querySelector('#incomplets .puce-vide b') || {}).textContent,
     arret: (document.getElementById('a-surveiller').textContent.match(/(\d+) plans?/) || [])[1]
   }));
@@ -6583,7 +6672,9 @@ async function reinitialiser(pg) {
     const res = [];
     const groupes = [...document.querySelectorAll('.critique-ligne')].map(l => l.dataset.groupe);
     for (const g of groupes) {
+      /* Débrief 27 (lot C) : déplier, puis filtrer la page sur le groupe. */
       [...document.querySelectorAll('.critique-ligne')].find(l => l.dataset.groupe === g).click();
+      document.getElementById('filtrer-groupe-page').click();
       await att(150);
       const pill = document.getElementById('echeance-titre');
       const prochain = window.__prochainJalon();
@@ -6592,6 +6683,7 @@ async function reinitialiser(pg) {
       res.push({ g, retard: pill.classList.contains('en-retard'), texte: pill.textContent,
         legende: document.querySelectorAll('.legende-jalon')[idx].classList.contains('critique'),
         svg: svg ? svg.classList.contains('critique') : null });
+      document.getElementById('filtrer-groupe-page').click();
       [...document.querySelectorAll('.critique-ligne')].find(l => l.dataset.groupe === g).click();
       await att(120);
     }
@@ -6604,6 +6696,7 @@ async function reinitialiser(pg) {
   verifier('L — l’exemple a des groupes des deux sortes : le test compare vraiment', !!groupeTenu && !!groupeTard, JSON.stringify(verdicts20.map(v => v.g + ':' + v.retard)));
   if (groupeTenu) {
     await p.evaluate(g => [...document.querySelectorAll('.critique-ligne')].find(l => l.dataset.groupe === g).click(), groupeTenu.g); await p.waitForTimeout(400);
+    await p.click('#filtrer-groupe-page'); await p.waitForTimeout(400);
     await p.click('#echeance-titre'); await p.waitForTimeout(400);
     const fiche20 = await p.evaluate(() => { const f = document.getElementById('fiche-echeance');
       return f ? { quand: f.querySelector('.quand').textContent, bon: f.querySelector('.fiche-echeance-verdict').classList.contains('bon'),
@@ -6653,13 +6746,17 @@ async function reinitialiser(pg) {
   await reinitialiser(p);
 
   // X. Un verdict cliqué montre exactement son nombre, même avec un groupe ouvert.
-  await p.evaluate(() => document.querySelector('.critique-ligne').click()); await p.waitForTimeout(500);
+  /* Débrief 27 (lot C) : ouvrir un groupe ne filtre plus la page ; c'est le
+     filtre de la page posé sur lui (son bouton) que le verdict retire — la
+     ligne, elle, peut rester dépliée. */
+  await p.evaluate(() => document.querySelector('.critique-ligne').click()); await p.waitForTimeout(400);
+  await p.click('#filtrer-groupe-page'); await p.waitForTimeout(500);
   await p.click('#verdicts-rapprochement button[data-rapp="avance"]'); await p.waitForTimeout(600);
   const x20 = await p.evaluate(() => ({ lignes: document.querySelectorAll('#corps-tableau tr').length,
-    ouvert: !!document.querySelector('.critique-ligne[aria-pressed="true"]'),
+    filtre: !!document.querySelector('.critique-ligne.filtre-page'),
     jetons: [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').trim()) }));
-  verifier('X — groupe ouvert, clic sur « 12 dans SEE, mais GATES ne les dit pas validés » : le groupe se ferme, le tableau montre 12 lignes',
-    x20.lignes === AVANCE && !x20.ouvert && x20.jetons.length === 1 && /^Comparaison/.test(x20.jetons[0]), JSON.stringify(x20));
+  verifier('X — page filtrée sur un groupe, clic sur « 12 dans SEE, mais GATES ne les dit pas validés » : le filtre du groupe se retire, le tableau montre 12 lignes',
+    x20.lignes === AVANCE && !x20.filtre && x20.jetons.length === 1 && /^Comparaison/.test(x20.jetons[0]), JSON.stringify(x20));
 
   // AA. Sous un verdict déplié, la légende ne nomme que les valeurs de sa liste.
   const aa20 = await p.evaluate(() => {
@@ -6734,7 +6831,7 @@ async function reinitialiser(pg) {
   const p20 = await p.evaluate(g => ({
     lignes: document.querySelectorAll('#corps-tableau tr').length,
     etats: [...new Set([...document.querySelectorAll('#corps-tableau .etat-cellule')].map(x => x.textContent.trim()))].join(),
-    ouvert: (document.querySelector('.critique-ligne[aria-pressed="true"]') || {}).dataset,
+    ouvert: (document.querySelector('.critique-ligne[aria-expanded="true"]') || {}).dataset,
     presse: ([...document.querySelectorAll('#zone-critique button[data-arret-groupe]')].find(b => b.dataset.arretGroupe === g) || {}).getAttribute('aria-pressed'),
     surveiller: (document.getElementById('a-surveiller').textContent.match(/(\d+) plans?/) || [])[1],
     jetons: [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').trim()),
@@ -6749,9 +6846,12 @@ async function reinitialiser(pg) {
     p20.premier === 'sous-arret' && /^À l’arrêt/.test(p20.titre) && p20.depuis.length === arretG.n && p20.depuis.every(t => /^depuis (≤\u00a0)?S\d{1,2}$/.test(t)), JSON.stringify(p20));
   await p.evaluate(g => [...document.querySelectorAll('#zone-critique button[data-arret-groupe]')].find(b => b.dataset.arretGroupe === g).click(), arretG.g);
   await p.waitForTimeout(500);
-  const p20b = await p.evaluate(() => ({ lignes: document.querySelectorAll('#corps-tableau tr').length, ouvert: !!document.querySelector('.critique-ligne[aria-pressed="true"]'),
-    total: +((document.querySelector('.critique-ligne[aria-pressed="true"] .critique-total') || {}).textContent || 0) }));
-  verifier('P2 — un second clic retire le filtre et laisse le groupe ouvert', p20b.ouvert && p20b.lignes === p20b.total && p20b.total > arretG.n, JSON.stringify(p20b));
+  /* Débrief 27 (lot C) : le second clic défait tout ce que le premier a
+     posé — la sélection et le filtre de la page sur le groupe — ; la ligne
+     reste dépliée (elle ne filtre plus rien par elle-même). */
+  const p20b = await p.evaluate(() => ({ lignes: document.querySelectorAll('#corps-tableau tr').length, ouvert: !!document.querySelector('.critique-ligne[aria-expanded="true"]'),
+    jetons: document.querySelectorAll('#filtres-actifs .jeton').length }));
+  verifier('P2 — un second clic retire le filtre (sélection et groupe) et laisse le groupe déplié', p20b.ouvert && p20b.lignes === TOTAL && p20b.jetons === 0, JSON.stringify(p20b));
   await reinitialiser(p);
 
   // P3. La réponse sous le titre de la comparaison.
@@ -7035,8 +7135,10 @@ async function reinitialiser(pg) {
   verifier('tous les éléments focusables ont un nom accessible', tab.sansNom === 0, tab.sansNom + ' sans nom');
   verifier('les états exposent aria-pressed',
     await pk.evaluate(() => [...document.querySelectorAll('#etats .etat-btn')].every(b => b.hasAttribute('aria-pressed'))));
-  verifier('les lignes de groupe exposent aria-pressed',
-    await pk.evaluate(() => [...document.querySelectorAll('.critique-ligne')].every(b => b.hasAttribute('aria-pressed'))));
+  /* Débrief 27 (lot C, X-A6) : une ligne se déplie — aria-expanded, et
+     aria-controls vers sa liste quand elle est ouverte. */
+  verifier('les lignes de groupe exposent aria-expanded (elles se déplient)',
+    await pk.evaluate(() => [...document.querySelectorAll('.critique-ligne')].every(b => b.hasAttribute('aria-expanded') && !b.hasAttribute('aria-pressed'))));
   await pk.focus('button[data-aide]');
   await pk.keyboard.press('Enter'); await pk.waitForTimeout(350);
   verifier('le panneau d\'aide s\'ouvre au clavier',
@@ -7323,6 +7425,222 @@ async function reinitialiser(pg) {
       annonce.role === 'status' && annonce.live === 'polite' && annonce.texte === '12 plans affichés sur 634' && annonce.masque && annonce.copierParle === 0 && annonce.zones === 1,
       JSON.stringify(annonce));
     await c0.close();
+  }
+
+  // =================================================================
+  /* Débrief 27, lot C — « Par ATA » : la liste prend sa hauteur dans la
+     page (plus de cadre qui défile, plus de ligne coupée, la molette
+     descend la page), une ligne se déplie sans filtrer la page (le filtre
+     est un bouton nommé), les en-têtes disent qu'ils trient (↕, ↑/↓,
+     aria-sort), le rythme requis à l'encre avec sa jauge, seule la part des
+     validés écrite dans la barre, des lignes qui se disent en une phrase. */
+  section('Débrief 27 : Par ATA (lot C)');
+  {
+    const cC = await contexte({ viewport: { width: 1440, height: 900 } });
+    const c = await page(cC, 'lot C');
+    await c.selectOption('#dim-critique', 'ata'); await c.waitForTimeout(400);
+    const rgb = col => col.match(/[\d.]+/g).map(Number).slice(0, 3);
+    const lumC = col => rgb(col).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }).reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i], 0);
+    const contrasteC = (a, b) => { const x = lumC(a), y = lumC(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+
+    // 1. Structure : une table pour les lecteurs d'écran, aria-sort sur l'en-tête trié.
+    const struct = await c.evaluate(() => {
+      const t = document.querySelector('#zone-critique [role="table"]');
+      const ent = [...document.querySelectorAll('#zone-critique .critique-tete > [role="columnheader"]')];
+      const rangees = [...document.querySelectorAll('#zone-critique .critique-rangee[role="row"]')];
+      return { table: !!t && !!t.getAttribute('aria-labelledby'), tete: document.querySelector('.critique-tete').getAttribute('role'), entetes: ent.length,
+        tries: ent.filter(e => e.hasAttribute('aria-sort')).map(e => e.querySelector('button').dataset.trig + ':' + e.getAttribute('aria-sort')),
+        repos: ent.filter(e => !e.hasAttribute('aria-sort')).every(e => !!e.querySelector('.tri-groupe .fleche.repos')),
+        actif: ent.filter(e => e.hasAttribute('aria-sort')).every(e => !!e.querySelector('.tri-groupe .fleche:not(.repos)')),
+        cellules: rangees.length > 0 && rangees.every(r => { const c = r.querySelector('[role="cell"]'); return c && c.getAttribute('aria-colspan') === '5' && c.querySelector('.critique-ligne'); }),
+        hauteur: Math.round(document.querySelector('.critique-tete .tri-groupe').getBoundingClientRect().height) };
+    });
+    verifier('C — la liste est une table (en-tête de colonnes, une rangée par groupe), seule la colonne triée porte aria-sort, les autres une double flèche pâle',
+      struct.table && struct.tete === 'row' && struct.entetes === 5 && struct.tries.join() === 'nom:ascending' && struct.repos && struct.actif && struct.cellules, JSON.stringify(struct));
+    verifier('C — un en-tête qu’on clique fait 28 px de haut (D3)', struct.hauteur >= 28, String(struct.hauteur));
+    await c.click('#zone-critique button[data-trig="fin"]'); await c.waitForTimeout(300);
+    const tri = await c.evaluate(() => ({ tries: [...document.querySelectorAll('#zone-critique [role="columnheader"][aria-sort]')].map(e => e.querySelector('button').dataset.trig + ':' + e.getAttribute('aria-sort')),
+      focus: document.activeElement && document.activeElement.dataset.trig }));
+    await c.waitForTimeout(500);
+    const annonceTri = await c.evaluate(() => document.getElementById('annonce').textContent);
+    verifier('C — trier par fin estimée : aria-sort passe à cette colonne, le focus y reste, et le tri est annoncé',
+      tri.tries.join() === 'fin:descending' && tri.focus === 'fin' && /^Liste triée par fin estimée, ordre décroissant\./.test(annonceTri), JSON.stringify([tri, annonceTri]));
+    await c.click('#zone-critique button[data-trig="fin"]'); await c.waitForTimeout(200);
+    await c.click('#zone-critique button[data-trig="fin"]'); await c.waitForTimeout(200);
+
+    // 2. Les « ? » : 24 px, nommés.
+    const aides = await c.evaluate(() => [...document.querySelectorAll('#zone-critique button.aide')].map(b => {
+      const r = b.getBoundingClientRect(); return { l: Math.round(r.width), h: Math.round(r.height), nom: b.getAttribute('aria-label') }; }));
+    verifier('C — chaque « ? » est une cible de 24 px et dit ce qu’il explique (« Aide : comment la fin estimée est calculée »)',
+      aides.length === 2 && aides.every(a => a.l >= 24 && a.h >= 24) && aides[0].nom === 'Aide : comment la fin estimée est calculée' &&
+      /^Aide : comment le rythme (requis|tenu) est calculé$/.test(aides[1].nom), JSON.stringify(aides));
+
+    // 3. Les lignes se disent en une phrase ; les cellules visibles sont cachées aux lecteurs d'écran.
+    const phrases = await c.evaluate(() => [...document.querySelectorAll('#zone-critique .critique-ligne')].map(l => ({
+      g: l.dataset.groupe, phrase: (l.querySelector(':scope > .masque') || { textContent: '' }).textContent,
+      caches: [...l.children].filter(x => !x.classList.contains('masque')).every(x => x.getAttribute('aria-hidden') === 'true'),
+      total: Number(l.querySelector('.critique-total').textContent), titre: l.hasAttribute('title') })));
+    verifier('C — chaque ligne se dit « ATA 21, 65 plans : … VALIDATED (… %) … Fin estimée : … Rythme … » ; ses cellules visibles sont cachées aux lecteurs d’écran, plus d’infobulle',
+      phrases.length >= 5 && phrases.every(x => x.phrase.indexOf('ATA ' + x.g + ', ' + x.total + ' plan') === 0 && /Fin estimée : /.test(x.phrase) && /Rythme (requis|tenu) : /.test(x.phrase) && x.caches && !x.titre),
+      JSON.stringify(phrases.slice(0, 2)));
+
+    // 4. Rythme requis à l'encre, 13/500, avec sa jauge ; plus de rouge dans le texte.
+    const rythme = await c.evaluate(() => {
+      const r = [...document.querySelectorAll('#zone-critique .critique-effort .requis')];
+      const j = [...document.querySelectorAll('#zone-critique .critique-effort .jauge-rythme')];
+      const encre = getComputedStyle(document.querySelector('.critique-nom')).color;
+      return { n: r.length, jauges: j.length, couleurs: [...new Set(r.map(e => getComputedStyle(e).color))], encre, poids: [...new Set(r.map(e => getComputedStyle(e).fontWeight))],
+        taille: [...new Set(r.map(e => getComputedStyle(e).fontSize))], chiffres: [...new Set(r.map(e => getComputedStyle(e).fontVariantNumeric))],
+        dims: j.map(e => Math.round(e.getBoundingClientRect().width) + '×' + Math.round(e.getBoundingClientRect().height)),
+        parts: [...document.querySelectorAll('#zone-critique .critique-effort')].filter(e => e.querySelector('.requis')).map(e => {
+          const t = e.querySelector('.v').textContent.replace(/[\s  ]/g, '');
+          const req = Number((t.match(/^([\d,]+)\/sem/) || [])[1].replace(',', '.')), tenu = Number(((t.match(/tenu([\d,]+)\//) || [])[1] || '0').replace(',', '.'));
+          const jg = e.querySelector('.jauge-rythme'), w = parseFloat(jg.querySelector('i').style.width);
+          return { req, tenu, w, suffit: jg.classList.contains('suffit') };
+        }),
+        fond: getComputedStyle(j[0]).backgroundColor, remplissage: getComputedStyle(j[0].querySelector('i')).backgroundColor,
+        surface: getComputedStyle(document.getElementById('section-repartition')).backgroundColor };
+    });
+    verifier('C — « Rythme requis » à l’encre, 13 px, poids 500, chiffres alignés — plus de rouge sur toute la colonne (B13)',
+      rythme.n >= 5 && rythme.couleurs.length === 1 && rythme.couleurs[0] === rythme.encre && rythme.poids.join() === '500' && rythme.taille.join() === '13px' && /tabular-nums/.test(rythme.chiffres.join()), JSON.stringify(rythme).slice(0, 400));
+    verifier('C — sous lui, une jauge de 40 × 4 px : la part du rythme requis que tient le rythme tenu (pleine et verte quand il suffit)',
+      rythme.jauges === rythme.n && rythme.dims.every(d => d === '40×4') &&
+      /* Les rythmes écrits sont arrondis au dixième : la jauge, calculée sur
+         les vrais, peut s'en écarter d'autant. */
+      rythme.parts.every(x => x.suffit ? x.w === 100 : Math.abs(x.w - Math.min(100, 100 * x.tenu / x.req)) <= 100 * (0.05 / x.req + 0.05 * x.tenu / (x.req * (x.req - 0.05))) + 0.5),
+      JSON.stringify(rythme.parts.filter(x => !(x.suffit ? x.w === 100 : Math.abs(x.w - Math.min(100, 100 * x.tenu / x.req)) <= 100 * (0.05 / x.req + 0.05 * x.tenu / (x.req * (x.req - 0.05))) + 0.5)).slice(0, 4)));
+    verifier('C — la jauge se lit : son remplissage tient 3:1 sur sa piste', contrasteC(rythme.remplissage, rythme.fond) >= 3, contrasteC(rythme.remplissage, rythme.fond).toFixed(2));
+
+    // 5. Dans la barre, seule la part des validés est écrite (B25).
+    const barres = await c.evaluate(() => {
+      const fam = {}; window.__valeurs().forEach(v => { fam[v.cle] = v.famille; });
+      const ecrits = [...document.querySelectorAll('#zone-critique .critique-barre span[data-cle]')].filter(s => s.textContent.trim());
+      return { ecrits: ecrits.length, familles: [...new Set(ecrits.map(s => fam[s.dataset.cle]))], titres: [...document.querySelectorAll('#zone-critique .critique-barre span[data-cle]')].every(s => !!s.title) };
+    });
+    verifier('C — dans les barres, seule la part des validés s’écrit ; chaque segment garde son infobulle',
+      barres.ecrits > 0 && barres.familles.join() === 'termine' && barres.titres, JSON.stringify(barres));
+
+    // 6. La molette au-dessus de la liste descend la page (P-F1).
+    await c.evaluate(() => document.getElementById('section-repartition').scrollIntoView());
+    await c.waitForTimeout(200);
+    const yAvant = await c.evaluate(() => scrollY);
+    const boite = await c.locator('#zone-critique .critique-ligne').nth(2).boundingBox();
+    await c.mouse.move(boite.x + 300, boite.y + 10);
+    for (let k = 0; k < 4; k++) { await c.mouse.wheel(0, 100); await c.waitForTimeout(60); }
+    await c.waitForTimeout(300);
+    const yApres = await c.evaluate(() => scrollY);
+    verifier('C — la molette au-dessus de la liste fait descendre la page (plus de cadre qui la retient)', yApres - yAvant >= 300, yAvant + ' → ' + yApres);
+
+    // 7. L'aide au-dessus de l'en-tête ; sa croix et Échap la referment, le focus revient au « ? ».
+    await c.evaluate(() => document.getElementById('section-repartition').scrollIntoView());
+    await c.click('#zone-critique button[data-aide="fin"]'); await c.waitForTimeout(300);
+    const aideC = await c.evaluate(() => {
+      const pa = document.getElementById('panneau-fin'), t = document.querySelector('#zone-critique .critique-table');
+      return { ouvert: !!pa, avant: !!pa && !!(pa.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_FOLLOWING) && !t.contains(pa),
+               croix: !!pa && pa.querySelector('button[data-fermer-aide]').getAttribute('aria-label') };
+    });
+    await c.click('#panneau-fin button[data-fermer-aide]'); await c.waitForTimeout(300);
+    const croixC = await c.evaluate(() => ({ ferme: !document.getElementById('panneau-fin'), focus: document.activeElement && document.activeElement.getAttribute('data-aide') }));
+    await c.focus('#zone-critique button[data-aide="fin"]'); await c.keyboard.press('Enter'); await c.waitForTimeout(300);
+    await c.keyboard.press('Escape'); await c.waitForTimeout(300);
+    const echapC = await c.evaluate(() => ({ ferme: !document.getElementById('panneau-fin'), focus: document.activeElement && document.activeElement.getAttribute('data-aide'),
+      etendu: document.querySelector('#zone-critique button[data-aide]').getAttribute('aria-expanded') }));
+    verifier('C — « ? » ouvre l’explication au-dessus de l’en-tête de la liste ; sa croix « Fermer l’explication » et Échap la referment, le focus revient au « ? »',
+      aideC.ouvert && aideC.avant && aideC.croix === 'Fermer l’explication' && croixC.ferme && croixC.focus === 'fin' && echapC.ferme && echapC.focus === 'fin' && echapC.etendu === 'false',
+      JSON.stringify([aideC, croixC, echapC]));
+
+    // 8. Déplier n'annonce que le dépliage ; le filtre de la page s'annonce.
+    await c.click('#zone-critique .critique-ligne >> nth=1'); await c.waitForTimeout(600);
+    const annonceDeplie = await c.evaluate(() => document.getElementById('annonce').textContent);
+    const g1 = await c.evaluate(() => document.querySelectorAll('#zone-critique .critique-ligne')[1].dataset.groupe);
+    const controle = await c.evaluate(() => { const l = document.querySelectorAll('#zone-critique .critique-ligne')[1]; const id = l.getAttribute('aria-controls'); return !!id && !!document.getElementById(id) && document.getElementById(id).classList.contains('groupe-refs'); });
+    await c.click('#filtrer-groupe-page'); await c.waitForTimeout(600);
+    const annonceFiltre = await c.evaluate(() => document.getElementById('annonce').textContent);
+    verifier('C — déplier une ligne l’annonce (« ATA … déplié : N plans. »), sa ligne pointe vers sa liste (aria-controls) ; filtrer la page s’annonce aussi',
+      new RegExp('^ATA ' + g1 + ' déplié : \\d+ plans?\\.$').test(annonceDeplie) && controle && new RegExp('^Page filtrée sur ATA ' + g1 + ' : \\d+ plans?\\.$').test(annonceFiltre),
+      JSON.stringify([annonceDeplie, controle, annonceFiltre]));
+    await c.click('#filtrer-groupe-page'); await c.waitForTimeout(400);
+    await c.click('#zone-critique .critique-ligne >> nth=1'); await c.waitForTimeout(300);
+
+    // 9. « Voir les N autres » : quinze groupes, puis le reste sur place.
+    await c.selectOption('#dim-critique', 'ecp'); await c.waitForTimeout(400);
+    const avantPlus = await c.evaluate(() => ({ vues: [...document.querySelectorAll('.critique-rangee')].filter(r => !r.hidden).length, toutes: document.querySelectorAll('.critique-rangee').length,
+      bouton: (document.getElementById('plus-groupes') || {}).textContent, etendu: (document.getElementById('plus-groupes') || { getAttribute: () => null }).getAttribute('aria-expanded') }));
+    verifier('C — par ECP (plus de quinze groupes) : quinze lignes, puis « Voir les N autres ECP »',
+      avantPlus.vues === 15 && avantPlus.toutes > 18 && avantPlus.bouton === 'Voir les ' + (avantPlus.toutes - 15) + ' autres ECP' && avantPlus.etendu === 'false', JSON.stringify(avantPlus));
+    const seizieme = await c.evaluate(() => document.querySelectorAll('.critique-rangee')[15].querySelector('.critique-ligne').dataset.groupe);
+    await c.click('#plus-groupes'); await c.waitForTimeout(400);
+    const apresPlus = await c.evaluate(() => ({ vues: [...document.querySelectorAll('.critique-rangee')].filter(r => !r.hidden).length,
+      bouton: document.getElementById('plus-groupes').textContent, focus: document.activeElement && document.activeElement.dataset.groupe }));
+    verifier('C — « Voir les N autres » montre tous les groupes sur place ; le focus va au premier montré ; le bouton propose de réduire',
+      apresPlus.vues === avantPlus.toutes && apresPlus.focus === seizieme && apresPlus.bouton === 'Réduire la liste aux 15 premiers ECP', JSON.stringify(apresPlus));
+    await c.evaluate(() => document.getElementById('plus-groupes').scrollIntoView({ block: 'center' }));
+    const yPlus = await c.evaluate(() => document.getElementById('plus-groupes').getBoundingClientRect().top);
+    await c.click('#plus-groupes'); await c.waitForTimeout(400);
+    const reduitC = await c.evaluate(y => ({ vues: [...document.querySelectorAll('.critique-rangee')].filter(r => !r.hidden).length,
+      saut: Math.round(document.getElementById('plus-groupes').getBoundingClientRect().top - y) }), yPlus);
+    verifier('C — « Réduire la liste » : retour aux quinze, le bouton reste sous le pointeur', reduitC.vues === 15 && Math.abs(reduitC.saut) <= 2, JSON.stringify(reduitC));
+    /* À l'impression, toute la liste. */
+    await c.emulateMedia({ media: 'print' });
+    const impr = await c.evaluate(() => [...document.querySelectorAll('.critique-rangee')].filter(r => getComputedStyle(r).display !== 'none').length);
+    await c.emulateMedia({ media: 'screen' });
+    verifier('C — à l’impression, tous les groupes s’impriment, même ceux derrière « Voir les N autres »', impr === avantPlus.toutes, impr + ' / ' + avantPlus.toutes);
+    await c.selectOption('#dim-critique', 'ata'); await c.waitForTimeout(400);
+
+    // 10. Un second clic sur la pastille choisie du bloc rend « Tout » (P-F19).
+    await c.click('#filtre-valeur-groupe button[data-valeur-bloc="termine"]'); await c.waitForTimeout(300);
+    await c.click('#filtre-valeur-groupe button[data-valeur-bloc="termine"]'); await c.waitForTimeout(300);
+    const pastille = await c.evaluate(() => ({ bloc: window.__vueValeurs().bloc, tout: document.querySelector('#filtre-valeur-groupe button[data-valeur-bloc=""]').getAttribute('aria-pressed'),
+      focus: document.activeElement && document.activeElement.dataset.valeurBloc }));
+    verifier('C — un second clic sur la pastille choisie du bloc rend « Tout », le focus reste sur elle',
+      pastille.bloc === '' && pastille.tout === 'true' && pastille.focus === 'termine', JSON.stringify(pastille));
+    /* À 1440 px, les pastilles du bloc passent à la ligne : aucune n'est cachée sous un fondu. */
+    const rangee = await c.evaluate(() => { const z = document.getElementById('filtre-valeur-groupe'), r = z.getBoundingClientRect();
+      return { deborde: z.scrollWidth - z.clientWidth, cachees: [...z.querySelectorAll('button')].filter(b => b.getBoundingClientRect().right > r.right + 1).length, masque: getComputedStyle(z).webkitMaskImage || getComputedStyle(z).maskImage }; });
+    verifier('C — à 1440 px, les pastilles du bloc passent à la ligne : aucune cachée, pas de fondu', rangee.deborde <= 1 && rangee.cachees === 0 && /none/.test(rangee.masque), JSON.stringify(rangee));
+
+    // 11. La sélection vide : une phrase calme, les commandes du bloc s'effacent (D8).
+    await c.fill('#recherche', 'zzzz-introuvable'); await c.waitForTimeout(500);
+    const videC = await c.evaluate(() => ({ phrase: (document.querySelector('#zone-critique .etat-vide-phrase') || {}).textContent,
+      detail: (document.querySelector('#zone-critique .etat-vide-detail') || {}).textContent,
+      commandes: getComputedStyle(document.querySelector('#section-repartition .ligne-filtres')).display }));
+    await c.fill('#recherche', ''); await c.waitForTimeout(500);
+    const revenu = await c.evaluate(() => getComputedStyle(document.querySelector('#section-repartition .ligne-filtres')).display);
+    verifier('C — sélection vide : « Aucun plan dans la sélection. » et son explication ; la ligne des pastilles et de la recherche s’efface, puis revient',
+      videC.phrase === 'Aucun plan dans la sélection.' && /Tout effacer/.test(videC.detail || '') && videC.commandes === 'none' && revenu !== 'none', JSON.stringify([videC, revenu]));
+
+    // 12. Thème sombre : rythme requis et jauge lisibles.
+    await c.emulateMedia({ colorScheme: 'dark' }); await c.waitForTimeout(200);
+    const sombre = await c.evaluate(() => {
+      const r = document.querySelector('#zone-critique .critique-effort .requis'), j = document.querySelector('#zone-critique .jauge-rythme');
+      return { encre: getComputedStyle(r).color, fond: getComputedStyle(document.getElementById('section-repartition')).backgroundColor,
+               piste: getComputedStyle(j).backgroundColor, remplissage: getComputedStyle(j.querySelector('i')).backgroundColor };
+    });
+    verifier('C — en sombre, le rythme requis tient 4,5:1 sur le panneau et la jauge 3:1 sur sa piste',
+      contrasteC(sombre.encre, sombre.fond) >= 4.5 && contrasteC(sombre.remplissage, sombre.piste) >= 3, JSON.stringify(sombre));
+    await c.emulateMedia({ colorScheme: 'light' });
+    await cC.close();
+
+    // 13. Au téléphone (doigt) : une carte courte, des cibles de 44 px.
+    const cT = await contexte({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const t = await page(cT, 'lot C téléphone');
+    await t.selectOption('#dim-critique', 'ata'); await t.waitForTimeout(400);
+    const tel = await t.evaluate(() => {
+      const ls = [...document.querySelectorAll('#zone-critique .critique-ligne')].slice(0, 4);
+      const tris = [...document.querySelectorAll('#zone-critique .tri-groupe')].map(b => Math.round(b.getBoundingClientRect().height));
+      const aide = document.querySelector('#zone-critique button.aide'), apres = getComputedStyle(aide, '::after');
+      return { hauteurs: ls.map(l => Math.round(l.getBoundingClientRect().height)), tris, aideCible: apres.content !== 'none' && parseFloat(apres.top) <= -10,
+               debord: document.documentElement.scrollWidth - window.innerWidth };
+    });
+    verifier('C — au téléphone : une carte par groupe de 140 px au plus, des en-têtes de 44 px, le « ? » avec une cible de 44 px, rien ne déborde',
+      tel.hauteurs.every(h => h <= 140) && tel.tris.every(h => h >= 44) && tel.aideCible && tel.debord <= 1, JSON.stringify(tel));
+    await t.locator('#zone-critique .critique-ligne').nth(0).tap(); await t.waitForTimeout(400);
+    const telOuvert = await t.evaluate(() => ({ vus: [...document.querySelectorAll('#zone-critique .groupe-refs .jeton-ud')].filter(b => !b.hidden).length,
+      tous: document.querySelectorAll('#zone-critique .groupe-refs .jeton-ud').length, bouton: Math.round(document.getElementById('filtrer-groupe-page').getBoundingClientRect().height),
+      plus: (document.querySelector('#zone-critique button[data-plus-refs]') || {}).textContent }));
+    verifier('C — au téléphone, un groupe déplié montre une douzaine de plans puis « Voir les N autres plans de ce groupe » ; « Filtrer la page » fait 44 px',
+      telOuvert.vus >= 6 && telOuvert.vus <= 24 && telOuvert.plus === 'Voir les ' + (telOuvert.tous - telOuvert.vus) + ' autres plans de ce groupe' && telOuvert.bouton >= 44, JSON.stringify(telOuvert));
+    await cT.close();
   }
 
   await ctx.close();

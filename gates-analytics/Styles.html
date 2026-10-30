@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "8d83704";
+  --suivi-fwd-edition: "83d97fa";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -1658,9 +1658,11 @@ table.plans tbody tr.ancien .pastille { opacity: .4; }
    avec la liste au lieu d'en cacher le haut. « not all and » est le
    complément exact de la requête du téléphone (min-width: 721px laisserait
    un trou aux largeurs fractionnaires). Ce qu'on amène en haut du cadre
-   — ligne ouverte, focus au clavier — se pose sous lui (sousTeteCritique). */
+   — ligne ouverte, focus au clavier — se pose sous lui (hautLibreCritique).
+   Débrief 27 (lot C) : plus de cadre qui défile ; l'en-tête colle sous le
+   sommaire (--bas-sommaire) tant qu'on lit la liste dans la page. */
 @media not all and (max-width: 720px) {
-  .critique-tete { position: sticky; top: 0; z-index: 3; background: var(--surface); padding-top: 6px; }
+  .critique-tete { position: sticky; top: var(--bas-sommaire, 0px); z-index: 3; background: var(--surface); padding-top: 6px; }
 }
 .critique-tete > span { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0; }
 /* Quand d'autres filtres réduisent les lignes, les colonnes tirées de
@@ -1670,29 +1672,51 @@ table.plans tbody tr.ancien .pastille { opacity: .4; }
 .critique-note.note-arret .pastille, .critique-note.note-valeur .pastille { flex: none; width: 8px; height: 8px; align-self: center; }
 .critique-note.note-arret b { color: var(--cours); font-weight: 500; }
 .critique-tete > span.a-gauche { justify-content: flex-start; }
+/* Débrief 27 (lot C, X) : un en-tête qu'on clique a 28 px de haut (D3),
+   44 au doigt (D11) — il en faisait 19. */
 button.tri-groupe {
   border: none; background: none; padding: 2px 0; margin: 0; color: inherit; cursor: pointer;
   font: inherit; letter-spacing: inherit; text-transform: inherit;
-  display: inline-flex; align-items: center; gap: 5px; min-width: 0;
+  display: inline-flex; align-items: center; gap: 5px; min-width: 0; min-height: 28px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 button.tri-groupe:hover { color: var(--encre); }
 button.tri-groupe[data-actif="true"] { color: var(--encre); }
+/* Débrief 27 (lot C, P-F17) : « les en-têtes ne font pas cliquables ». Au
+   repos, une double flèche pâle dit qu'on peut trier ; la colonne active
+   porte sa flèche ↑ ou ↓ à l'encre. */
+button.tri-groupe .fleche { flex: none; }
+button.tri-groupe .fleche.repos { color: var(--encre-3); transition: color .12s; }
+button.tri-groupe:hover .fleche.repos, button.tri-groupe:focus-visible .fleche.repos { color: var(--encre); }
+/* Débrief 27 (lot C, X-A15) : le « ? » faisait 15 px — trop petit pour un
+   doigt, et à moins de 24 px des en-têtes. Une cible de 24 px (44 au
+   doigt), le rond de 18 px dessiné dedans ; son nom dit ce qu'il explique. */
 button.aide {
-  border: 1px solid var(--filet-fort); background: none; color: var(--encre-3);
-  width: 15px; height: 15px; border-radius: 50%; padding: 0; flex: none; cursor: pointer;
-  font: 500 11px/1 "IBM Plex Sans", system-ui, sans-serif; letter-spacing: 0;
+  position: relative; isolation: isolate; border: 0; background: none; color: var(--encre-2);
+  width: 24px; height: 24px; border-radius: 50%; padding: 0; flex: none; cursor: pointer;
+  font: 500 12px/24px "IBM Plex Sans", system-ui, sans-serif; letter-spacing: 0; text-align: center;
 }
-button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre); color: var(--encre); }
+button.aide::before {
+  content: ""; position: absolute; inset: 3px; border: 1px solid var(--bord-champ); border-radius: 50%;
+  pointer-events: none; z-index: -1;
+}
+button.aide:hover, button.aide[aria-expanded="true"] { color: var(--encre); }
+button.aide:hover::before { border-color: var(--encre); }
+button.aide[aria-expanded="true"]::before { border-color: var(--encre); background: var(--creux); }
+@media (pointer: coarse) {
+  button.tri-groupe { min-height: 44px; }
+  button.aide::after { content: ""; position: absolute; inset: -10px; }
+}
+@media (prefers-reduced-motion: reduce) { button.tri-groupe .fleche.repos { transition: none; } }
 
 .critique-ligne { position: relative; padding: 7px 0; border: none; background: none; width: 100%; text-align: center; font: inherit; color: var(--encre); cursor: pointer; }
 /* Le chevron dit qu'une ligne se déplie, comme les semaines du journal :
    vers la droite fermée, vers le bas ouverte. */
 .critique-ligne .chevron { position: absolute; left: 8px; top: 50%; margin-top: -4.5px; color: var(--encre-3); transition: transform .12s; }
-.critique-ligne[aria-pressed="true"] .chevron { transform: rotate(90deg); color: var(--encre); }
+.critique-ligne[aria-expanded="true"] .chevron { transform: rotate(90deg); color: var(--encre); }
 .critique-ligne:hover .chevron { color: var(--encre); }
 .critique-ligne:hover { background: var(--creux); }
-.critique-ligne[aria-pressed="true"] { background: var(--creux); box-shadow: inset 3px 0 0 var(--encre); }
+.critique-ligne[aria-expanded="true"] { background: var(--creux); box-shadow: inset 3px 0 0 var(--encre); }
 .critique-nom { font-size: 13px; text-align: left; padding-left: 24px; min-width: 0; white-space: normal; overflow-wrap: anywhere; line-height: 1.3; }
 /* Le temps de la mesure : chaque nom sur une ligne, pour lire sa largeur. */
 #zone-critique.mesure-nom .critique-nom { white-space: nowrap; overflow-wrap: normal; }
@@ -1773,11 +1797,98 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
   font-variant-numeric: tabular-nums;
   text-align: center; font-size: 14px; color: var(--encre);
 }
+/* Débrief 27 (lot C, B13) : « Rythme requis » était en rouge gras sur
+   toutes les lignes — quand tout est rouge, rien ne ressort. Le rythme
+   requis s'écrit à l'encre, 13/500 ; dessous, une jauge de 40 × 4 px (la
+   part du rythme requis que le rythme tenu atteint : rouge quand il ne
+   suffit pas, verte pleine quand il suffit), puis « tenu 1,0/sem. ». Le
+   rouge se réduit à de petites barres qu'on compare d'une ligne à l'autre ;
+   la phrase de la ligne (lecteur d'écran) dit « en retard » en toutes
+   lettres. */
 .critique-ecart { font-size: 13px; color: var(--encre); line-height: 1.25; font-variant-numeric: tabular-nums; }
-.critique-ecart small { display: block; font-size: 11px; color: var(--encre-3); margin-top: 3px; font-weight: 400; letter-spacing: .01em; }
-.critique-ecart b.tard { color: var(--alerte); font-weight: 500; }
+.critique-ecart .requis { font-weight: 500; color: var(--encre); }
+.critique-ecart small {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-size: 11px; color: var(--encre-3); margin-top: 4px; font-weight: 400; letter-spacing: .01em; white-space: nowrap;
+}
+.jauge-rythme {
+  display: inline-block; flex: none; width: 40px; height: 4px; border-radius: 2px;
+  background: var(--filet-fort); overflow: hidden;
+}
+.jauge-rythme i { display: block; height: 100%; border-radius: 2px; background: var(--alerte); }
+.jauge-rythme.suffit i { background: var(--fait); }
 .critique-ecart.arret { color: var(--alerte); font-weight: 500; font-size: 12px; }
 .critique-fin.doux, .critique-date.doux .v { color: var(--encre-3); }
+@media (prefers-reduced-motion: reduce) { .critique-ligne .chevron { transition: none; } }
+/* Débrief 27 (lot C, X-A6) : la liste est une table pour les lecteurs
+   d'écran (l'en-tête porte aria-sort) ; chaque ligne y est une rangée
+   d'une seule cellule qui couvre les cinq colonnes, et cette cellule tient
+   le bouton de la ligne, son « à l'arrêt » et sa liste dépliée. Pour
+   l'œil, rien ne change : de simples blocs. */
+.critique-rangee[hidden] { display: none; }
+#section-repartition.bloc-vide .ligne-filtres, #section-repartition.bloc-vide .indice-dim { display: none; }
+/* À l'impression, toute la liste : les groupes et les plans qui
+   attendaient derrière « Voir les N autres » s'impriment aussi. */
+@media print {
+  #zone-critique .critique-rangee[hidden], #zone-critique .groupe-refs [hidden] { display: block !important; }
+  #zone-critique .jeton-ud[hidden] { display: inline-flex !important; }
+  #zone-critique .plus-liste { display: none; }
+}
+/* Une ligne dont le groupe filtre toute la page : un petit entonnoir après
+   son nom — le même geste que le bouton « Filtrer la page » qui l'a posé. */
+.critique-nom .marque-filtre { display: inline-block; vertical-align: -1px; margin-left: 7px; color: var(--encre); }
+.critique-ligne.filtre-page .critique-nom { font-weight: 500; }
+/* « Voir les N autres ATA », « Voir les N autres plans » : la liste se
+   déplie sur place, dans la page (D10) — et se replie de même. */
+.plus-liste {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 28px; margin: 10px 0 2px; padding: 4px 2px;
+  border: 0; background: none; color: var(--encre-2); cursor: pointer;
+  font: 13px/1.3 "IBM Plex Sans", system-ui, sans-serif; font-variant-numeric: tabular-nums;
+  text-decoration: underline; text-decoration-color: var(--bord-champ); text-underline-offset: 3px;
+}
+.plus-liste:hover { color: var(--encre); text-decoration-color: currentColor; }
+.plus-liste svg { flex: none; }
+.plus-liste[aria-expanded="true"] svg { transform: rotate(180deg); }
+.groupe-refs .plus-liste { margin-top: 8px; }
+/* Débrief 27 (lot C, P-F5) : ouvrir une ligne ne filtre plus la page. Le
+   filtre de toute la page devient un geste à part, dit en toutes lettres,
+   dans la liste dépliée : « Filtrer la page sur ATA 39 ». Posé, il prend
+   l'aplat sombre des filtres du bandeau FILTRES et dit comment le retirer. */
+.filtrer-page {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 11px 0 9px;
+  border: 1px solid var(--bord-champ); border-radius: 6px; background: var(--surface); color: var(--encre);
+  font: 500 13px/1 "IBM Plex Sans", system-ui, sans-serif; cursor: pointer; white-space: nowrap;
+}
+.filtrer-page:hover { border-color: var(--encre); background: var(--creux); }
+.filtrer-page svg { flex: none; }
+.filtrer-page.pose { background: var(--jeton-fond); border-color: var(--jeton-bord); color: var(--jeton-encre); }
+.filtrer-page.pose:hover { background: var(--jeton-fond); box-shadow: 0 0 0 1px var(--jeton-bord); }
+@media (pointer: coarse) {
+  .filtrer-page { height: 44px; }
+  .plus-liste { min-height: 44px; }
+}
+/* La part de chaque valeur, en toutes lettres, au titre de sa sous-liste
+   (débrief 27, B25 et D9) : la barre ne l'écrit plus que pour les validés ;
+   au doigt et au clavier, on la lit ici en dépliant la ligne. */
+.groupe-refs .sous-titre .part, .groupe-refs .titre-arret .part { font-variant-numeric: tabular-nums; letter-spacing: 0; color: var(--encre-3); font-weight: 400; }
+.groupe-refs .sous-titre .part::before, .groupe-refs .titre-arret .part::before { content: "· "; }
+/* Les puces au-delà de la douzaine de rangées attendent « Voir les N autres ». */
+.jeton-ud[hidden] { display: none; }
+/* Le panneau d'explication (débrief 27, P-F4) : posé au-dessus de l'en-tête
+   de la liste, plus dans un cadre qui défile ; sa croix le referme. */
+.aide-panneau-tete { display: flex; align-items: flex-start; gap: 12px; margin: 0 0 8px; }
+.aide-panneau-tete h3 { margin: 0; flex: 1 1 auto; padding-top: 4px; }
+.aide-panneau-tete .fiche-plan-fermer { flex: none; margin: -2px -4px 0 auto; background: var(--surface); }
+@media (max-width: 560px) {
+  /* Au téléphone, les formules passent à la ligne au lieu d'être coupées (M13). */
+  .aide-formule { white-space: pre-wrap; overflow-x: visible; }
+}
+/* Débrief 27 (lot C) : les pastilles du bloc passent à la ligne au lieu de
+   défiler sous un fondu (« Non renseigné » coupé à 1440 px, X-A3) ; au
+   téléphone, elles gardent leur ligne qui défile. */
+@media not all and (max-width: 720px) {
+  .ligne-filtres > #filtre-valeur-groupe { flex-wrap: wrap; overflow: visible; -webkit-mask-image: none; mask-image: none; }
+}
 @media (max-width: 720px) {
   /* En colonne, l'en-tete ne peut plus coiffer les valeurs : il se replie en
      une barre de tri, sinon le classement deviendrait inaccessible au telephone. */
@@ -1789,32 +1900,46 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
     content: "Trier"; color: var(--encre-3); flex: none;
   }
   .critique-tete > span, .critique-tete > span.a-gauche { justify-content: flex-start; }
-  /* Chaque valeur reprend son libelle a gauche. */
   #zone-critique, #zone-critique.sans-jalon { --cols: 1fr; }
-  .critique-ligne { gap: 7px; padding: 13px 0; border-bottom: 1px solid var(--filet); }
+  /* Débrief 27 (lot C, M2) : une carte plus courte (165 px → 120) — le nom
+     et le nombre de plans sur une ligne, la barre, puis la fin estimée et
+     le rythme côte à côte, chacun sous son libellé. */
+  .critique-ligne {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: "nom plans" "barre barre" "fin effort";
+    gap: 9px 16px; padding: 12px 0 13px; border-bottom: 1px solid var(--filet);
+  }
+  .critique-ligne > .critique-nom { grid-area: nom; align-self: center; }
+  .critique-ligne > .critique-plans { grid-area: plans; align-self: center; }
+  .critique-ligne > .critique-barre { grid-area: barre; }
+  .critique-ligne > .critique-date { grid-area: fin; align-self: start; }
+  .critique-ligne > .critique-effort { grid-area: effort; align-self: start; }
   /* En colonne, plus de place à rejoindre : le bouton « à l'arrêt » se lit
      sous la ligne, au bord droit, comme les nombres. */
   .critique-plans .arret-n.place { display: none; }
   .critique-arret { display: block; height: auto; text-align: right; padding: 5px 0 9px; }
   .arret-groupe { transform: none; margin: 0; }
-  .critique-nom { text-align: left; font-weight: 500; font-size: 16px; padding-left: 0; padding-right: 22px; }
+  .critique-nom { text-align: left; font-weight: 500; font-size: 16px; padding-left: 18px; padding-right: 0; }
   .critique-tete > span:first-child { padding-left: 0; }
-  /* En colonne, la ligne est haute : centré verticalement, le chevron
-     tombait sur la barre. Il se range au bout de la ligne du nom. */
-  .critique-ligne .chevron { top: 13px; margin-top: 7px; left: auto; right: 6px; }
-  /* « Plans » s'aligne comme « Fin estimée » : le libellé à gauche, le
-     nombre au bord droit, « à l'arrêt » dessous, à droite aussi. */
-  .critique-plans { justify-items: stretch; text-align: right; }
-  .critique-total, .critique-fin, .critique-effort, .critique-date {
-    display: flex; align-items: baseline; justify-content: space-between; gap: 12px; text-align: right;
-  }
+  /* Le chevron, devant le nom, à hauteur de sa ligne. */
+  .critique-ligne .chevron { top: 18px; margin-top: 0; left: 2px; right: auto; }
+  .critique-ligne[aria-expanded="true"] .chevron { left: 14px; }
+  /* Sur le fond de la ligne dépliée, les nombres ne touchent pas le bord. */
+  .critique-ligne[aria-expanded="true"] { padding-right: 10px; }
+  /* « Plans 65 » au bord droit, sur la ligne du nom. */
+  .critique-plans { justify-items: end; text-align: right; }
+  .critique-total { display: flex; align-items: baseline; justify-content: flex-end; gap: 8px; text-align: right; }
+  .critique-date, .critique-effort, .critique-fin { display: grid; gap: 3px; align-content: start; }
+  .critique-date, .critique-fin { justify-items: start; text-align: left; }
+  .critique-effort { justify-items: end; text-align: right; }
   .critique-total::before, .critique-fin::before, .critique-effort::before, .critique-date::before {
     content: attr(data-libelle); flex: none;
     font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 11px; font-weight: 500;
     letter-spacing: .08em; text-transform: uppercase; color: var(--encre-3);
   }
-  .critique-effort .v, .critique-date .v { text-align: right; }
-  .critique-ecart { text-align: right; }
+  .critique-date .v { text-align: left; }
+  .critique-effort .v, .critique-ecart { text-align: right; }
+  .critique-ecart small { justify-content: flex-end; }
 }
 
 /* ---------------------------------------------------- Point hebdo */
@@ -2033,7 +2158,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
    d'une semaine du journal passe sous la semaine, sans rien couper. */
 @media (max-width: 720px) {
   .pied { padding-bottom: 72px; }
-  .critique-ligne[aria-pressed="true"] { padding-left: 12px; }
+  .critique-ligne[aria-expanded="true"] { padding-left: 12px; }
   .journal-grille .mot-case { white-space: normal; }
   .journal-grille .journal-tete .resume { flex: 1 1 100%; padding-left: 22px; }
 }
