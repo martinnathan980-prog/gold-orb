@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "aff3b7f";
+  --suivi-fwd-edition: "2addffa";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -31,15 +31,17 @@
      à faire, deux gris. Chaque couleur déclare à côté d'elle l'encre de
      son pourcentage (4,5:1 au moins, vérifié), thème par thème. Valeurs
      passées au validateur dataviz : SPEC du débrief 22. */
-  --v-fait-2: #a0d466; --v-fait-2-encre: var(--encre);
-  --v-cours-1: #168dd9; --v-cours-1-encre: var(--encre);
-  --v-cours-2: #b0459a; --v-cours-2-encre: var(--sur-plein);
-  --v-cours-3: #1fbfbf; --v-cours-3-encre: var(--encre);
-  --v-cours-4: #1c689d; --v-cours-4-encre: var(--sur-plein);
-  --v-cours-5: #d773b8; --v-cours-5-encre: var(--encre);
-  --v-cours-6: #90cdf1; --v-cours-6-encre: var(--encre);
-  --v-afaire-1: #8a8880; --v-afaire-1-encre: var(--encre);
-  --v-afaire-2: #3b3a38; --v-afaire-2-encre: var(--sur-plein);
+  /* Débrief 28 : les couleurs des états « Terre » (choix 1) — ardoise, ocre,
+     sauge, gris chauds : elles vont avec le papier du site. */
+  --v-fait-2: #9cc4a6; --v-fait-2-encre: var(--encre);
+  --v-cours-1: #577a99; --v-cours-1-encre: var(--sur-plein);
+  --v-cours-2: #c08a3e; --v-cours-2-encre: var(--encre);
+  --v-cours-3: #8db39a; --v-cours-3-encre: var(--encre);
+  --v-cours-4: #7b6a8f; --v-cours-4-encre: var(--sur-plein);
+  --v-cours-5: #b9785a; --v-cours-5-encre: var(--encre);
+  --v-cours-6: #a9c0d3; --v-cours-6-encre: var(--encre);
+  --v-afaire-1: #a8a296; --v-afaire-1-encre: var(--encre);
+  --v-afaire-2: #4d4a44; --v-afaire-2-encre: var(--sur-plein);
 
   /* Rampe séquentielle (clair → foncé), luminance strictement décroissante */
   --r1: #eef4f0; --r2: #d6e6dc; --r3: #b3d2c1; --r4: #86b8a0; --r5: #52997a; --r6: #286b45;
@@ -159,15 +161,15 @@
     --filet: #272725; --filet-fort: #3d3c37;
     --fait: #6fae82; --cours: #dda434; --alerte: #e0745c; --indice: #9d8cff;
     --sur-plein: #11110f;
-    --v-fait-2: #b1e3b7; --v-fait-2-encre: var(--sur-plein);
-    --v-cours-1: #2b5fc6; --v-cours-1-encre: var(--encre);
-    --v-cours-2: #ac3992; --v-cours-2-encre: var(--encre);
-    --v-cours-3: #1b98cc; --v-cours-3-encre: var(--sur-plein);
-    --v-cours-4: #94d9f6; --v-cours-4-encre: var(--sur-plein);
-    --v-cours-5: #9a73b8; --v-cours-5-encre: var(--sur-plein);
-    --v-cours-6: #6cd9d8; --v-cours-6-encre: var(--sur-plein);
-    --v-afaire-1: #696458; --v-afaire-1-encre: var(--encre);
-    --v-afaire-2: #9d9990; --v-afaire-2-encre: var(--sur-plein);   /* débrief 27 : TO_TREAT n'est plus la marque la plus claire de la barre ; encre 6,7:1 */
+    --v-fait-2: #a9d1b2; --v-fait-2-encre: var(--sur-plein);
+    --v-cours-1: #7f9cbb; --v-cours-1-encre: var(--sur-plein);
+    --v-cours-2: #d1a35c; --v-cours-2-encre: var(--sur-plein);
+    --v-cours-3: #a3c7ad; --v-cours-3-encre: var(--sur-plein);
+    --v-cours-4: #a493b8; --v-cours-4-encre: var(--sur-plein);
+    --v-cours-5: #cf916f; --v-cours-5-encre: var(--sur-plein);
+    --v-cours-6: #b7cbdc; --v-cours-6-encre: var(--sur-plein);
+    --v-afaire-1: #8a857a; --v-afaire-1-encre: var(--sur-plein);
+    --v-afaire-2: #57534c; --v-afaire-2-encre: var(--encre);   /* débrief 27 : TO_TREAT n'est plus la marque la plus claire de la barre ; encre 6,7:1 */
     --r1: #1a241e; --r2: #23382c; --r3: #2e4f3c; --r4: #3d6b51; --r5: #558a6b; --r6: #6fae82;
     --focus: #a9bedb;   /* débrief 27 (D5) : l'ardoise claire, 9,5:1 sur la surface */
     --voile-ecart: rgba(221, 164, 52, .2);
@@ -225,15 +227,15 @@
   --filet: #272725; --filet-fort: #3d3c37;
   --fait: #6fae82; --cours: #dda434; --alerte: #e0745c; --indice: #9d8cff;
   --sur-plein: #11110f;
-  --v-fait-2: #b1e3b7; --v-fait-2-encre: var(--sur-plein);
-  --v-cours-1: #2b5fc6; --v-cours-1-encre: var(--encre);
-  --v-cours-2: #ac3992; --v-cours-2-encre: var(--encre);
-  --v-cours-3: #1b98cc; --v-cours-3-encre: var(--sur-plein);
-  --v-cours-4: #94d9f6; --v-cours-4-encre: var(--sur-plein);
-  --v-cours-5: #9a73b8; --v-cours-5-encre: var(--sur-plein);
-  --v-cours-6: #6cd9d8; --v-cours-6-encre: var(--sur-plein);
-  --v-afaire-1: #696458; --v-afaire-1-encre: var(--encre);
-  --v-afaire-2: #9d9990; --v-afaire-2-encre: var(--sur-plein);   /* débrief 27 : TO_TREAT n'est plus la marque la plus claire de la barre ; encre 6,7:1 */
+  --v-fait-2: #a9d1b2; --v-fait-2-encre: var(--sur-plein);
+  --v-cours-1: #7f9cbb; --v-cours-1-encre: var(--sur-plein);
+  --v-cours-2: #d1a35c; --v-cours-2-encre: var(--sur-plein);
+  --v-cours-3: #a3c7ad; --v-cours-3-encre: var(--sur-plein);
+  --v-cours-4: #a493b8; --v-cours-4-encre: var(--sur-plein);
+  --v-cours-5: #cf916f; --v-cours-5-encre: var(--sur-plein);
+  --v-cours-6: #b7cbdc; --v-cours-6-encre: var(--sur-plein);
+  --v-afaire-1: #8a857a; --v-afaire-1-encre: var(--sur-plein);
+  --v-afaire-2: #57534c; --v-afaire-2-encre: var(--encre);   /* débrief 27 : TO_TREAT n'est plus la marque la plus claire de la barre ; encre 6,7:1 */
   --r1: #1a241e; --r2: #23382c; --r3: #2e4f3c; --r4: #3d6b51; --r5: #558a6b; --r6: #6fae82;
   --focus: #a9bedb;   /* débrief 27 (D5) : l'ardoise claire, 9,5:1 sur la surface */
   --voile-ecart: rgba(221, 164, 52, .2);
@@ -725,6 +727,29 @@ header.entete {
    comme le titre d'un journal : un filet double (épais, puis fin) sous la
    semaine, sur toute la largeur du contenu. */
 .masthead h1 { font-size: clamp(36px, 6vw, 56px); }
+/* Débrief 28 (4) : le bandeau en encre marine, titre et réglages en clair
+   (choix « C » de Nathan) ; le papier beige reste dessous. Les jetons sont
+   redéfinis pour le seul bandeau : ses contrôles gardent leurs contrastes. */
+header.entete {
+  --bandeau-fond: #22303f; --bandeau-fond-2: #1d2936; --bandeau-trait: #1d2936;
+  --encre: #f2f1ec; --encre-2: #cdd2d9; --encre-3: #a9b1bc;
+  --filet: #34424f; --filet-fort: #4b5a6a; --bord-champ: #7d8c9c;
+  --seg-piste: #18222d; --seg-puce: #34465a; --seg-anneau: #56687c;
+  --surface: #2a3846; --creux: #2f3e4d; --focus: #a9bedb;
+  color: var(--encre);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) header.entete {
+    --bandeau-fond: #18212b; --bandeau-fond-2: #151d26; --bandeau-trait: #151d26;
+    --filet: #2c3743; --filet-fort: #435162; --bord-champ: #6f7f91;
+    --seg-piste: #10171f; --seg-puce: #2c3b4c; --seg-anneau: #4b5d71; --surface: #202b37; --creux: #253240;
+  }
+}
+:root[data-theme="dark"] header.entete {
+  --bandeau-fond: #18212b; --bandeau-fond-2: #151d26; --bandeau-trait: #151d26;
+  --filet: #2c3743; --filet-fort: #435162; --bord-champ: #6f7f91;
+  --seg-piste: #10171f; --seg-puce: #2c3b4c; --seg-anneau: #4b5d71; --surface: #202b37; --creux: #253240;
+}
 /* Débrief 28 (3) : plus de filet double sous la semaine — un seul trait
    sombre à la limite du bandeau et du papier (idée de Nathan). Les réglages
    au centre, comme le titre. */

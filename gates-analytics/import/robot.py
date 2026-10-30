@@ -1,0 +1,590 @@
+#!/usr/bin/env python3
+"""
+Le robot du Suivi FWD (débrief 28) : il regarde une fois comment on fait un
+export, puis le refait tout seul chaque matin et dépose les fichiers dans le
+tableau de bord.
+
+    python robot.py preparer     une fois : se connecter à Google, CHILDNéo, SEE
+    python robot.py apprendre    montrer un export (GATES d'un contrat, SEE…)
+    python robot.py essayer      le robot refait les exports appris, devant vous
+    python robot.py lancer       exports + dépôt dans le tableau de bord
+    python robot.py activer      Windows le lance chaque matin (et à l'ouverture de session)
+    python robot.py desactiver   plus de lancement automatique
+    python robot.py etat         ce que le robot sait, et son dernier passage
+
+Tout tient dans la bibliothèque standard de Python, plus piloter_chrome.py (à
+côté). Le robot a son propre Chrome et son propre profil : vos onglets ne
+sont jamais touchés, et il ne voit ni ne garde aucun mot de passe (un champ
+« mot de passe » n'est jamais enregistré).
+
+Ses fichiers vivent dans %LOCALAPPDATA%\\SuiviFWD (ailleurs : ~/.suivi-fwd) :
+    robot.json          la configuration (adresse du tableau, exports appris)
+    exports/*.json      un export appris = la suite des gestes
+    chrome/             le profil du Chrome du robot (connexions gardées)
+    telechargements/    où ses fichiers arrivent
+    journal.txt         ce qu'il a fait, jour par jour
+"""
+
+import datetime
+import json
+import os
+import pathlib
+import re
+import select
+import shutil
+import subprocess
+import sys
+import threading
+import time
+import urllib.request
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from piloter_chrome import SANS_PROXY, Chrome, ErreurPilote, _Canal  # noqa: E402
+
+PORT = 9333
+ADRESSES = {
+    '1': ('CHILDNéo (GATES)', 'https://childneo.eu.eurocopter.corp/childneo-web/'),
+    '2': ('SEE', 'https://see-v5-report-viewer.apps.studio.airbushelicopters.com/'),
+}
+
+
+# ---------------------------------------------------------------- lieux
+def racine():
+    base = os.environ.get('LOCALAPPDATA')
+    r = pathlib.Path(base) / 'SuiviFWD' if base else pathlib.Path.home() / '.suivi-fwd'
+    for sous in ('exports', 'telechargements', 'chrome', 'deposes'):
+        (r / sous).mkdir(parents=True, exist_ok=True)
+    return r
+
+
+def config():
+    f = racine() / 'robot.json'
+    if f.exists():
+        try:
+            return json.loads(f.read_text(encoding='utf-8'))
+        except ValueError:
+            pass
+    return {'tableau': '', 'exports': []}
+
+
+def garder(cfg):
+    (racine() / 'robot.json').write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding='utf-8')
+
+
+def noter(texte):
+    ligne = '%s  %s' % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), texte)
+    print(texte)
+    with open(racine() / 'journal.txt', 'a', encoding='utf-8') as f:
+        f.write(ligne + '\n')
+
+
+def nom_de_fichier(nom):
+    return re.sub(r'[^A-Za-z0-9._-]+', '-', nom.strip()).strip('-').lower() or 'export'
+
+
+def chrome(visible=True, grand=True):
+    r = racine()
+    options = ['--disable-features=DownloadBubble,DownloadBubbleV2']
+    options += ['--start-maximized'] if grand else ['--window-size=1280,900', '--window-position=40,40']
+    options += json.loads(os.environ.get('SUIVI_FWD_OPTIONS_CHROME', '[]'))
+    return Chrome(port=PORT, telechargements=str(r / 'telechargements'), lancer=True,
+                  profil=str(r / 'chrome'), sans_fenetre=not visible, delai=60, options=options)
+
+
+# ---------------------------------------------------------------- le guetteur
+# Injecté dans chaque page : il dit au robot chaque clic, chaque champ rempli,
+# chaque choix dans une liste ; il garde tout dans le même onglet (un lien
+# « nouvel onglet » s'ouvre ici) pour que le robot puisse suivre.
+GUETTEUR = r"""
+(function () {
+  if (window.__suiviFwdGuette) return; window.__suiviFwdGuette = true;
+  var dire = function (o) { try { window.__suiviFwd(JSON.stringify(o)); } catch (e) {} };
+  var texte = function (e) { return String(e.innerText || e.value || '').replace(/\s+/g, ' ').trim().slice(0, 90); };
+  var stable = function (id) { return id && !/\d{3,}|[:.]|^(mat|ng|ui|ext|gwt|react|ember|cdk|mui)[-_]/i.test(id); };
+  var chemin = function (e) {
+    var p = [];
+    while (e && e.nodeType === 1 && p.length < 8) {
+      var t = e.tagName.toLowerCase();
+      if (stable(e.id)) { p.unshift(t + '#' + CSS.escape(e.id)); break; }
+      var i = 1, s = e; while ((s = s.previousElementSibling)) if (s.tagName === e.tagName) i++;
+      p.unshift(t + ':nth-of-type(' + i + ')'); e = e.parentElement;
+    }
+    return p.join(' > ');
+  };
+  var decrire = function (e) {
+    var a = function (n) { return e.getAttribute(n) || ''; };
+    return { balise: e.tagName.toLowerCase(), id: stable(e.id) ? e.id : '', nom: a('name'), role: a('role'), type: a('type'),
+             label: a('aria-label'), titre: a('title'), texte: texte(e), placeholder: a('placeholder'), href: a('href'),
+             chemin: chemin(e), page: location.host + location.pathname };
+  };
+  var ACTIF = 'a,button,input,select,textarea,label,summary,option,[role=button],[role=link],[role=menuitem],[role=option],' +
+              '[role=tab],[role=checkbox],[role=radio],[role=gridcell],[role=row],[onclick],td,th,li';
+  var champ = function (e) { return e.matches && e.matches('input:not([type]),input[type=text],input[type=search],input[type=email],input[type=number],input[type=date],textarea'); };
+  document.addEventListener('click', function (ev) {
+    if (!ev.isTrusted) return;            // un clic de la page elle-même (lien de téléchargement…)
+    var e = (ev.target.closest && ev.target.closest(ACTIF)) || ev.target;
+    var a = ev.target.closest && ev.target.closest('a[target]');
+    if (a && a.target !== '_self') a.target = '_self';
+    if (champ(e) || (e.matches && e.matches('select,input[type=password]'))) return;
+    dire({ faire: 'cliquer', cible: decrire(e) });
+  }, true);
+  document.addEventListener('change', function (ev) {
+    var e = ev.target; if (!e.matches || e.matches('input[type=password]')) return;
+    if (e.matches('select')) dire({ faire: 'choisir', cible: decrire(e), valeur: e.value, option: (e.options[e.selectedIndex] || {}).text || '' });
+    else if (champ(e)) dire({ faire: 'remplir', cible: decrire(e), texte: e.value });
+  }, true);
+  document.addEventListener('keydown', function (ev) {
+    var e = ev.target;
+    if (ev.key === 'Enter' && champ(e)) { dire({ faire: 'remplir', cible: decrire(e), texte: e.value }); dire({ faire: 'entree', cible: decrire(e) }); }
+  }, true);
+  window.open = function (u) { if (u) location.href = u; return window; };
+})();
+"""
+
+# Retrouver un élément décrit, dans la page et ses cadres de même origine ;
+# rend ses coordonnées à l'écran (pour un vrai clic de souris).
+TROUVER = r"""
+(function (d) {
+  var norm = function (s) { return String(s || '').replace(/\s+/g, ' ').trim().toLowerCase(); };
+  var vus = [];
+  var visible = function (e) { var r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden'; };
+  var parcourir = function (doc, dx, dy) {
+    var liste = [].slice.call(doc.querySelectorAll(d.balise || '*'));
+    liste.forEach(function (e) { vus.push({ e: e, dx: dx, dy: dy }); });
+    [].slice.call(doc.querySelectorAll('iframe,frame')).forEach(function (f) {
+      try { var r = f.getBoundingClientRect(); if (f.contentDocument) parcourir(f.contentDocument, dx + r.left, dy + r.top); } catch (x) {}
+    });
+  };
+  parcourir(document, 0, 0);
+  var parChemin = null;
+  try { parChemin = d.chemin ? document.querySelector(d.chemin) : null; } catch (x) {}
+  var meilleur = null, note = 0;
+  vus.forEach(function (v) {
+    var e = v.e; if (!visible(e)) return;
+    var n = 0, a = function (k) { return e.getAttribute(k) || ''; };
+    if (d.id && e.id === d.id) n += 10;
+    if (d.nom && a('name') === d.nom) n += 6;
+    if (d.label && a('aria-label') === d.label) n += 6;
+    if (d.texte && norm(e.innerText || e.value) === norm(d.texte)) n += 6;
+    if (d.titre && a('title') === d.titre) n += 3;
+    if (d.placeholder && a('placeholder') === d.placeholder) n += 3;
+    if (d.href && a('href') === d.href) n += 3;
+    if (d.role && a('role') === d.role) n += 1;
+    if (d.type && a('type') === d.type) n += 1;
+    if (parChemin === e) n += 4;
+    if (n > note) { note = n; meilleur = v; }
+  });
+  if (!meilleur || note < 5) return null;
+  var e = meilleur.e; e.scrollIntoView({ block: 'center', inline: 'center' });
+  var r = e.getBoundingClientRect();
+  window.__suiviCible = e;
+  return { x: meilleur.dx + r.left + r.width / 2, y: meilleur.dy + r.top + r.height / 2, note: note };
+})(%s)
+"""
+
+
+# ---------------------------------------------------------------- outils CDP
+def lire_evenements(c, duree):
+    """Les messages de Chrome pendant `duree` secondes (sans rien envoyer)."""
+    fin = time.time() + duree
+    sortie = []
+    canal = c._canal
+    while time.time() < fin:
+        if not canal._reste:
+            pret, _, _ = select.select([canal.prise], [], [], max(0.0, min(0.25, fin - time.time())))
+            if not pret:
+                continue
+        sortie.append(json.loads(canal.recevoir()))
+    return sortie
+
+
+def fichiers(c):
+    return {n for n in c.fichiers_presents() if not n.endswith(('.crdownload', '.tmp', '.part'))}
+
+
+def attendre_page(c, delai=60):
+    fin = time.time() + delai
+    while time.time() < fin:
+        try:
+            if c.evaluer('document.readyState') == 'complete':
+                return
+        except ErreurPilote:
+            pass
+        time.sleep(0.4)
+
+
+def nouvel_onglet(url):
+    demande = urllib.request.Request('http://127.0.0.1:%d/json/new?%s' % (PORT, url), method='PUT')
+    SANS_PROXY.open(demande, timeout=10).read()
+
+
+def page_actuelle(c):
+    try:
+        return c.evaluer('location.host + location.pathname') or ''
+    except ErreurPilote:
+        return ''
+
+
+# Les pages de connexion (Keycloak, SSO…) : le matin, la session est souvent
+# encore ouverte et la page ne s'affiche pas — ses gestes sont alors sautés.
+CONNEXION = re.compile(r'keycloak|login|signin|sso|/auth/|oauth|adfs', re.I)
+
+
+# ---------------------------------------------------------------- préparer
+def preparer():
+    cfg = config()
+    print('\n=== Préparer le robot (une seule fois) ===\n')
+    print('Une fenêtre Chrome va s\'ouvrir : c\'est celle du robot, avec trois onglets.')
+    print('Dans chacun, connectez-vous comme d\'habitude :')
+    print('  1. le tableau de bord Suivi FWD (votre compte Google @airbus.com)')
+    print('  2. CHILDNéo')
+    print('  3. SEE (bouton « SEE-AH-PROD »)')
+    if not cfg.get('tableau'):
+        adr = input('\nCollez ici l\'adresse du tableau de bord (celle qui finit par /exec), puis Entrée :\n> ').strip()
+        cfg['tableau'] = adr
+        garder(cfg)
+    with chrome(True) as c:
+        c.ouvrir(cfg['tableau'])
+        for _, (nom, url) in sorted(ADRESSES.items()):
+            nouvel_onglet(url)
+        input('\nQuand les trois onglets sont ouverts et connectés, revenez ici et appuyez sur Entrée.')
+    noter('Robot préparé (tableau : %s).' % cfg['tableau'])
+    print('\nC\'est noté. Le robot garde ces connexions dans son propre Chrome.')
+
+
+# ---------------------------------------------------------------- apprendre
+def apprendre():
+    cfg = config()
+    print('\n=== Apprendre un export ===\n')
+    nom = input('Nom de cet export (ex. : GATES HDK, GATES HDK Tranche 2, SEE) :\n> ').strip() or 'Export'
+    print('\nOù commence-t-il ?\n  1 = CHILDNéo (GATES)\n  2 = SEE\n  ou collez une autre adresse')
+    choix = input('> ').strip() or '1'
+    depart = ADRESSES[choix][1] if choix in ADRESSES else choix
+    pas, stop = [], threading.Event()
+    with chrome(True) as c:
+        c.envoyer('Runtime.addBinding', name='__suiviFwd')
+        c.envoyer('Page.addScriptToEvaluateOnNewDocument', source=GUETTEUR)
+        avant = fichiers(c)
+        c.ouvrir(depart)
+        try:
+            c.evaluer(GUETTEUR)
+        except ErreurPilote:
+            pass
+        print('\nLa fenêtre du robot est ouverte. Faites votre export comme d\'habitude, jusqu\'au')
+        print('fichier téléchargé. Le robot regarde (il ne garde aucun mot de passe).')
+        print('Quand le fichier est arrivé, revenez ici et appuyez sur Entrée.\n')
+        threading.Thread(target=lambda: (input(), stop.set()), daemon=True).start()
+        recus = set()
+        while not stop.is_set():
+            try:
+                for m in lire_evenements(c, 0.5):
+                    if m.get('method') == 'Runtime.bindingCalled' and m['params'].get('name') == '__suiviFwd':
+                        geste = json.loads(m['params']['payload'])
+                        if pas and geste.get('faire') == 'remplir' and pas[-1].get('faire') == 'remplir' and \
+                                pas[-1]['cible'].get('chemin') == geste['cible'].get('chemin'):
+                            pas[-1] = geste
+                        else:
+                            pas.append(geste)
+                        print('  ✓ %s %s' % (geste['faire'], (geste.get('cible') or {}).get('texte') or geste.get('texte') or ''))
+            except ErreurPilote:
+                print('La fenêtre du robot s\'est fermée.')
+                break
+            nouveaux = fichiers(c) - avant - recus
+            for n in sorted(nouveaux):
+                recus.add(n)
+                print('  ✓ fichier reçu : %s' % n)
+        if not recus:
+            print('\nAucun fichier n\'est arrivé : l\'export n\'a pas été enregistré. Recommencez quand vous voulez.')
+            return
+    fichier = sorted(recus)[-1]
+    extension = pathlib.Path(fichier).suffix or '.xlsx'
+    scenario = {'nom': nom, 'depart': depart, 'etapes': pas, 'fichier': '*' + extension,
+                'appris': datetime.datetime.now().isoformat(timespec='seconds')}
+    proposee = 'SEE' if nom.upper().startswith('SEE') else (nom if nom.upper().startswith('GATES') else 'GATES ' + nom)
+    case = input('\nDans quelle case du tableau ce fichier va-t-il ? (Entrée = « %s ») :\n> ' % proposee).strip() or proposee
+    scenario['case'] = case
+    f = racine() / 'exports' / (nom_de_fichier(nom) + '.json')
+    f.write_text(json.dumps(scenario, ensure_ascii=False, indent=2), encoding='utf-8')
+    cfg['exports'] = [e for e in cfg.get('exports', []) if e.get('nom') != nom] + [{'nom': nom, 'scenario': f.name, 'case': case}]
+    garder(cfg)
+    noter('Appris : %s (%d gestes, fichier %s, case %s).' % (nom, len(pas), fichier, case))
+    if input('\nLe robot essaie tout de suite, devant vous ? (o/n) ').strip().lower().startswith('o'):
+        essayer([nom])
+
+
+# ---------------------------------------------------------------- rejouer
+def souris(c, x, y):
+    for t in ('mouseMoved', 'mousePressed', 'mouseReleased'):
+        extra = {'button': 'left', 'clickCount': 1} if t != 'mouseMoved' else {}
+        c.envoyer('Input.dispatchMouseEvent', type=t, x=x, y=y, **extra)
+        time.sleep(0.05)
+
+
+def trouver(c, cible, delai=60):
+    fin = time.time() + delai
+    while time.time() < fin:
+        try:
+            r = c.evaluer(TROUVER % json.dumps(cible))
+            if r:
+                return r
+        except ErreurPilote:
+            pass
+        time.sleep(0.5)
+    raise ErreurPilote('Je ne retrouve plus « %s » sur la page %s. La page a peut-être changé : refaites '
+                       '« Apprendre » pour cet export.' % (cible.get('texte') or cible.get('label') or cible.get('chemin'),
+                                                          cible.get('page')))
+
+
+def vider_telechargements():
+    """Le dossier de téléchargement du robot, vidé avant chaque export : un
+    fichier du même nom qu'hier serait sinon écrasé sans se voir arriver."""
+    for f in (racine() / 'telechargements').iterdir():
+        try:
+            f.unlink() if f.is_file() else shutil.rmtree(f)
+        except OSError:
+            pass
+
+
+def rejouer(c, scenario, dossier_sortie):
+    vider_telechargements()
+    avant = set()
+    c.ouvrir(scenario['depart'])
+    try:
+        c.evaluer(GUETTEUR)    # même onglet pour les liens « nouvel onglet »
+    except ErreurPilote:
+        pass
+    for i, g in enumerate(scenario['etapes'], 1):
+        cible = g.get('cible') or {}
+        facultatif = bool(CONNEXION.search(cible.get('page', '')))
+        try:
+            r = trouver(c, cible, delai=12 if facultatif else 60)
+        except ErreurPilote:
+            if facultatif and not CONNEXION.search(page_actuelle(c)):
+                print('  %d/%d (page de connexion inutile ce matin : sautée)' % (i, len(scenario['etapes'])))
+                continue
+            raise
+        if g['faire'] == 'cliquer':
+            souris(c, r['x'], r['y'])
+        elif g['faire'] == 'remplir':
+            c.evaluer('(function(e){e.focus(); if (e.select) e.select();})(window.__suiviCible)')
+            c.envoyer('Input.insertText', text=g.get('texte', ''))
+            c.evaluer('window.__suiviCible.dispatchEvent(new Event("change",{bubbles:true}))')
+        elif g['faire'] == 'choisir':
+            c.evaluer('(function(e,v,t){var o=[].slice.call(e.options).filter(function(x){return x.value===v;})[0]'
+                      '||[].slice.call(e.options).filter(function(x){return x.text===t;})[0]; if(o){e.value=o.value;}'
+                      'e.dispatchEvent(new Event("input",{bubbles:true}));e.dispatchEvent(new Event("change",{bubbles:true}));})'
+                      '(window.__suiviCible,%s,%s)' % (json.dumps(g.get('valeur', '')), json.dumps(g.get('option', ''))))
+        elif g['faire'] == 'entree':
+            c.evaluer('window.__suiviCible.focus()')
+            for t in ('keyDown', 'keyUp'):
+                c.envoyer('Input.dispatchKeyEvent', type=t, key='Enter', code='Enter', windowsVirtualKeyCode=13,
+                          nativeVirtualKeyCode=13, **({'text': '\r'} if t == 'keyDown' else {}))
+        print('  %d/%d %s %s' % (i, len(scenario['etapes']), g['faire'], cible.get('texte') or g.get('texte') or ''))
+        time.sleep(1.2)
+        attendre_page(c)
+    chemin = c.attendre_telechargement(avant=avant, delai=600, motif=scenario.get('fichier'))
+    dest = pathlib.Path(dossier_sortie) / (nom_de_fichier(scenario['nom']) + chemin.suffix)
+    shutil.copy2(chemin, dest)
+    return dest
+
+
+def exports_choisis(noms=None):
+    cfg = config()
+    liste = cfg.get('exports', [])
+    if noms:
+        liste = [e for e in liste if e['nom'] in noms]
+    return cfg, liste
+
+
+def faire_les_exports(c, liste, dossier):
+    sortis = []
+    for e in liste:
+        scenario = json.loads((racine() / 'exports' / e['scenario']).read_text(encoding='utf-8'))
+        noter('Export « %s »…' % e['nom'])
+        sortis.append((e, rejouer(c, scenario, dossier)))
+        noter('  ✓ %s' % sortis[-1][1].name)
+    return sortis
+
+
+def essayer(noms=None):
+    cfg, liste = exports_choisis(noms)
+    if not liste:
+        print('Aucun export appris : lancez d\'abord « apprendre ».')
+        return
+    dossier = racine() / 'deposes' / ('essai-' + datetime.datetime.now().strftime('%Y%m%d-%H%M%S'))
+    dossier.mkdir(parents=True, exist_ok=True)
+    with chrome(True) as c:
+        try:
+            faire_les_exports(c, liste, dossier)
+        except ErreurPilote as err:
+            noter('✗ Essai interrompu : %s' % err)
+            input('\nAppuyez sur Entrée pour fermer la fenêtre du robot.')
+            return
+    noter('Essai réussi : les fichiers sont dans %s' % dossier)
+    print('\nTout est bon : le robot sait refaire %s.' % ', '.join(e['nom'] for e in liste))
+
+
+# ---------------------------------------------------------------- déposer
+def cadre_import(c, delai=90):
+    """Le cadre de la fenêtre d'import dans la page du tableau de bord (Apps
+    Script la sert dans un iframe d'une autre origine) : son canal, et le
+    contexte JavaScript où vit la page d'import."""
+    fin = time.time() + delai
+    while time.time() < fin:
+        for cible in json.loads(SANS_PROXY.open('http://127.0.0.1:%d/json/list' % PORT, timeout=5).read().decode()):
+            if cible.get('type') != 'iframe' or 'googleusercontent' not in cible.get('url', ''):
+                continue
+            cadre = Chrome(port=PORT, delai=60)
+            cadre._canal = _Canal(cible['webSocketDebuggerUrl'], 60)
+            arbre = cadre.envoyer('Page.getFrameTree')['frameTree']
+            pile = [arbre]
+            while pile:
+                f = pile.pop()
+                pile.extend(f.get('childFrames', []))
+                ctx = cadre.envoyer('Page.createIsolatedWorld', frameId=f['frame']['id'], worldName='robot')['executionContextId']
+                r = cadre.envoyer('Runtime.evaluate', expression='!!document.getElementById("importer")', contextId=ctx, returnByValue=True)
+                if r.get('result', {}).get('value'):
+                    return cadre, ctx
+            cadre._canal.fermer()
+        time.sleep(2)
+    raise ErreurPilote('La fenêtre d\'import du tableau de bord ne s\'est pas ouverte (connexion Google à refaire ? '
+                       'lancez « preparer »).')
+
+
+def dans_le_cadre(cadre, ctx, js, objet=False):
+    r = cadre.envoyer('Runtime.evaluate', expression=js, contextId=ctx, returnByValue=not objet, awaitPromise=True)
+    if r.get('exceptionDetails'):
+        raise ErreurPilote('La fenêtre d\'import a répondu par une erreur : %s' % r['exceptionDetails'].get('text'))
+    return r['result'] if objet else r['result'].get('value')
+
+
+def deposer(c, cfg, sortis):
+    adresse = cfg['tableau'] + ('&' if '?' in cfg['tableau'] else '?') + 'page=import'
+    c.ouvrir(adresse)
+    cadre, ctx = cadre_import(c)
+    try:
+        time.sleep(3)
+        cadre.envoyer('DOM.enable')
+        for e, chemin in sortis:
+            case = e.get('case') or e['nom']
+            js = ('(function(nom){var norm=function(s){return String(s||"").replace(/\\s+/g," ").trim().toLowerCase();};'
+                  'if(norm(nom)==="see"){var s=document.querySelector("#case-see input.fichier"); if(s) return s;}'
+                  'var c=[].slice.call(document.querySelectorAll(".case")).filter(function(k){'
+                  'var t=k.querySelector(".etiquette"); return t && norm(t.textContent)===norm(nom);})[0];'
+                  'return c ? c.querySelector("input.fichier") : null;})(%s)' % json.dumps(case))
+            obj = dans_le_cadre(cadre, ctx, js, objet=True)
+            if not obj.get('objectId'):
+                raise ErreurPilote('Pas de case « %s » dans la fenêtre d\'import du tableau de bord.' % case)
+            cadre.envoyer('DOM.setFileInputFiles', files=[str(chemin)], objectId=obj['objectId'])
+            noter('  ↑ %s → case « %s »' % (chemin.name, case))
+        fin = time.time() + 600
+        while time.time() < fin and dans_le_cadre(cadre, ctx, 'document.getElementById("importer").disabled'):
+            time.sleep(1)
+        if dans_le_cadre(cadre, ctx, 'document.getElementById("importer").disabled'):
+            raise ErreurPilote('La fenêtre d\'import refuse les fichiers : %s'
+                               % dans_le_cadre(cadre, ctx, 'document.getElementById("blocage").innerText'))
+        dans_le_cadre(cadre, ctx, 'document.getElementById("importer").click()')
+        fin = time.time() + 1800
+        while time.time() < fin:
+            time.sleep(3)
+            if dans_le_cadre(cadre, ctx, 'document.getElementById("fermer").classList.contains("principal") && '
+                                         'document.getElementById("consigne").hidden'):
+                break
+        bilan = dans_le_cadre(cadre, ctx, 'document.getElementById("etat").innerText') or ''
+        rate = dans_le_cadre(cadre, ctx, '!!document.querySelector("#etat.erreur, #etat .erreur")')
+        noter(('✗ ' if rate else '✓ ') + 'Dépôt : ' + bilan.replace('\n', ' · ')[:600])
+        if rate:
+            raise ErreurPilote('Le dépôt a signalé une erreur (voir le journal).')
+    finally:
+        cadre._canal.fermer()
+
+
+# ---------------------------------------------------------------- lancer
+def lancer(auto=False):
+    cfg, liste = exports_choisis()
+    etat = racine() / 'dernier-passage.txt'
+    aujourd_hui = datetime.date.today().isoformat()
+    if auto and etat.exists() and etat.read_text(encoding='utf-8').startswith(aujourd_hui + ' ok'):
+        return 0                                   # déjà fait aujourd'hui
+    if not liste or not cfg.get('tableau'):
+        noter('Rien à faire : le robot n\'est pas encore préparé ou n\'a rien appris.')
+        return 1
+    dossier = racine() / 'deposes' / datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+    dossier.mkdir(parents=True, exist_ok=True)
+    noter('=== Passage du robot ===')
+    try:
+        with chrome(True, grand=not auto) as c:
+            sortis = faire_les_exports(c, liste, dossier)
+            deposer(c, cfg, sortis)
+    except (ErreurPilote, OSError, ValueError) as err:
+        noter('✗ Passage interrompu : %s' % err)
+        etat.write_text('%s échec %s' % (aujourd_hui, err), encoding='utf-8')
+        return 1
+    etat.write_text('%s ok %s' % (aujourd_hui, datetime.datetime.now().strftime('%H:%M')), encoding='utf-8')
+    noter('✓ Passage réussi.')
+    return 0
+
+
+# ---------------------------------------------------------------- planifier
+def commande_robot(action):
+    exe = pathlib.Path(sys.executable)
+    sans_fenetre = exe.with_name('pythonw.exe')
+    return '"%s" "%s" %s' % (sans_fenetre if sans_fenetre.exists() else exe, pathlib.Path(__file__).resolve(), action)
+
+
+def activer():
+    heure = input('À quelle heure le robot passe-t-il le matin ? (Entrée = 08:15) ').strip() or '08:15'
+    taches = [
+        ['schtasks', '/create', '/tn', 'Suivi FWD - robot (matin)', '/tr', commande_robot('auto'),
+         '/sc', 'daily', '/st', heure, '/f'],
+        ['schtasks', '/create', '/tn', 'Suivi FWD - robot (ouverture de session)', '/tr', commande_robot('auto'),
+         '/sc', 'onlogon', '/delay', '0005:00', '/f'],
+    ]
+    for t in taches:
+        r = subprocess.run(t, capture_output=True, text=True)
+        print((r.stdout or r.stderr).strip())
+    noter('Lancement automatique activé : chaque jour à %s, et 5 min après l\'ouverture de session '
+          '(une seule fois par jour).' % heure)
+
+
+def desactiver():
+    for nom in ('Suivi FWD - robot (matin)', 'Suivi FWD - robot (ouverture de session)'):
+        r = subprocess.run(['schtasks', '/delete', '/tn', nom, '/f'], capture_output=True, text=True)
+        print((r.stdout or r.stderr).strip())
+    noter('Lancement automatique désactivé.')
+
+
+def montrer_etat():
+    cfg = config()
+    print('Tableau de bord : %s' % (cfg.get('tableau') or '(pas encore indiqué : lancez « preparer »)'))
+    print('Exports appris  : %s' % (', '.join('%s → %s' % (e['nom'], e.get('case')) for e in cfg.get('exports', [])) or 'aucun'))
+    etat = racine() / 'dernier-passage.txt'
+    print('Dernier passage : %s' % (etat.read_text(encoding='utf-8') if etat.exists() else 'jamais'))
+    print('Dossier         : %s' % racine())
+
+
+def main(argv):
+    action = argv[1] if len(argv) > 1 else 'etat'
+    try:
+        if action == 'preparer':
+            preparer()
+        elif action == 'apprendre':
+            apprendre()
+        elif action == 'essayer':
+            essayer(argv[2:] or None)
+        elif action in ('lancer', 'auto'):
+            return lancer(auto=(action == 'auto'))
+        elif action == 'activer':
+            activer()
+        elif action == 'desactiver':
+            desactiver()
+        else:
+            montrer_etat()
+    except ErreurPilote as err:
+        noter('✗ %s' % err)
+        return 1
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))

@@ -47,7 +47,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = 'aff3b7f';
+const EDITION = '2addffa';
 
 // =====================================================================
 //  CONFIGURATION
@@ -398,6 +398,12 @@ function doGet(e) {
      la page s'ouvre directement dessus, sans passer par le premier contrat.
      Un contrat inconnu ou retiré du tableau de bord : le premier, comme
      avant. Le reste de la vue (avancement, périmètre…), la page le lit. */
+  /* Débrief 28 : ?page=import — la fenêtre d'import du classeur, servie en
+     page à part pour le robot du poste : il y dépose les exports du matin,
+     dans le Chrome où le responsable est connecté à Google. Elle écrit dans
+     le classeur : réservée au responsable et aux administrateurs de tous
+     les contrats. */
+  if (e && e.parameter && e.parameter.page === 'import') return pageImportWeb_();
   CONTRAT_DEMANDE_ = contratDeLAdresse_(e);
   let page;
   try {
@@ -6551,6 +6557,18 @@ function gesteImport_(jeton) {
  * elle n'a que les cases GATES. Le nom de la fonction est resté celui de
  * l'import SEE, le premier : le menu l'appelle ainsi.
  */
+/** Débrief 28 : la fenêtre d'import en page web (?page=import), pour le robot. */
+function pageImportWeb_() {
+  const d = droitsDeLAppelant_();
+  if (!d.coherent || !(d.role === 'responsable' || (d.role === 'administrateur' && d.tous))) {
+    const qui = d.email ? 'Compte reconnu : ' + String(d.email).replace(/[<>&"]/g, '') + '.' : 'Google ne dit pas qui vous êtes.';
+    return HtmlService.createHtmlOutput('<p style="font:15px/1.5 sans-serif;margin:24px">Le dépôt des exports est réservé au responsable ' +
+      'du tableau de bord et aux administrateurs de tous les contrats. ' + qui + '</p>').setTitle('Suivi FWD — import');
+  }
+  return HtmlService.createHtmlOutput(pageImportSecondeBase(parametresImport_(SpreadsheetApp.getActiveSpreadsheet())))
+    .setTitle('Suivi FWD — import').addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
 function importerSecondeBase() {
   gesteDuClasseur();
   const classeur = SpreadsheetApp.getActiveSpreadsheet();

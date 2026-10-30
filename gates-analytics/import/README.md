@@ -14,6 +14,7 @@ et rien ne tourne quand la machine dort.
 
 | Script | Ce qu'il fait |
 |---|---|
+| `robot.py` | **Le robot (débrief 28)** : il regarde une fois l'export fait à la main (« apprendre »), le refait chaque matin et dépose les fichiers dans le tableau de bord (page `?page=import`, réservée au responsable et aux administrateurs de tous les contrats). Installé par `suivi-fwd-robot.py.txt` (fabriqué par `paquet_robot.py`) |
 | `essai.py` | **L'essai à blanc** : un faux GATES sur votre PC, pour apprendre la chaîne sans intranet |
 | `paquet.py` | Fabrique **le fichier unique qui se déballe tout seul** : tout ce dossier, en un `.txt` qui est aussi un programme |
 | `diagnostic.py` | **La fiche d'un vrai extract** : colonnes, valeurs d'avancement, anatomie des références — lit les .xlsx sans rien installer |
