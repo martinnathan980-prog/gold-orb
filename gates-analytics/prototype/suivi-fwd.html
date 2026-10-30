@@ -1975,7 +1975,7 @@ dialog.admin[aria-busy="true"] .admin-corps { opacity: .6; pointer-events: none;
    amenée à l'écran par le clavier s'arrête sous les en-têtes et à droite
    des colonnes figées, jamais dessous (X-A3 ; mesurés par
    poserColonnesFigees). */
-/* Sauf pour un tableau très lourd (plus de 40 000 cellules dessinées : on a
+/* Sauf pour un tableau très lourd (plus de 20 000 cellules dessinées : on a
    fait venir des centaines de lignes de l'extract entier, ou un test a levé
    le seuil des tranches) : hors de l'écran, il ne se remet pas en page à
    chaque geste — c'est ce qui figeait la page (M4). Voir marquerLourd. Au
@@ -7988,10 +7988,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   function tableauHorsEcran(cadre) {
     return CV_AUTO && !!cadre && cadre.hasAttribute('data-lourd') && !cadresVisibles[cadre.id];
   }
-  /* Le seuil : 40 000 cellules dessinées (près de 300 lignes de l'extract
+  /* Le seuil : 20 000 cellules dessinées (près de 150 lignes de l'extract
      entier). En dessous — la première tranche, toujours —, les lignes
      restent dans l'arbre d'accessibilité même hors de l'écran (X-A11). */
-  var SEUIL_LOURD = 40000;
+  var SEUIL_LOURD = 20000;
   function marquerLourd() {
     var t = TRANCHES['corps-tableau'], cadre = $('cadre-tableau');
     if (!cadre) return;
@@ -8224,7 +8224,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         }
         var val = p[c.cle];
         var classes = (c.classe + ' ' + fige + (c.cle === 'reference' ? ' col-ref' : '')).trim();
-        if (val === '' || val == null) return '<td class="' + classes + ' doux"' + styleFige(i, nFige) + '>' + TIRET_VIDE + '</td>';
+        /* « — » posé sur la case elle-même (classe tiret-vide), sans élément
+           de plus : sur l'extract entier, ce sont des dizaines de milliers
+           de cases. */
+        if (val === '' || val == null) return '<td class="' + classes + ' doux tiret-vide"' + styleFige(i, nFige) + '>\u2014</td>';
         var titre = c.classe.indexOf('large') !== -1 ? ' title="' + ech(val) + '"' : '';
         /* La référence se clique : le tableau se réduit à ce plan, et son
            historique s'ouvre au-dessus. */
@@ -9801,7 +9804,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
               contenu = '<span class="verdict">' + pastilleVerdict(e.cat) + (ref
                 ? '<button type="button" class="ref ref-lien" data-plan="' + ech(ref) + '" title="Retrouver ce plan dans GATES">' + ech(s) + '</button>'
                 : '<span class="ref">' + ech(s) + '</span>') + '</span>';
-            } else if (s === '') { classes.push('doux'); contenu = TIRET_VIDE; }   // débrief 27 (B22)
+            } else if (s === '') { classes.push('doux', 'tiret-vide'); contenu = '\u2014'; }   // débrief 27 (B22)
             else if (estBooleen(s)) { classes.push('coche'); contenu = '<span title="' + ech(s) + '">' + (estVrai(s) ? '✓' : '–') + '</span>'; }
             else contenu = ech(s);
             return '<td' + (classes.length ? ' class="' + classes.join(' ') + '"' : '') + titre + '>' + contenu + '</td>';

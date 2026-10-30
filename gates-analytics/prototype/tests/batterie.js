@@ -7385,7 +7385,7 @@ async function deplierFiltresColonne(pg) {
       return {
         presse, n: document.querySelectorAll('tr.titres th').length, groupes,
         caption: cap ? cap.textContent : '', cv: cs(document.getElementById('cadre-tableau')).contentVisibility,
-        tirets: document.querySelectorAll('#corps-tableau td .tiret-vide').length,
+        tirets: document.querySelectorAll('#corps-tableau td.tiret-vide').length,
         traits: [...document.querySelectorAll('#corps-tableau td')].filter(td => td.textContent.trim() === '-').length,
         refSoulignee: ref ? cs(ref).textDecorationStyle + ' ' + cs(ref).textDecorationLine : '',
         filtresCaches: document.querySelector('tr.filtres').hidden,

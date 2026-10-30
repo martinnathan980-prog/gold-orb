@@ -2521,6 +2521,14 @@ function serveurSur(valeurs, proprietes, fichiers) {
      ferait le lecteur, puis on remonte : la suite part du même état. */
   await pg.evaluate(() => document.getElementById('cadre-tableau').scrollIntoView({ block: 'start' }));
   await pg.waitForTimeout(500);
+  /* Débrief 27, lot D : au-delà de 20 000 cellules, le tableau garde
+     content-visibility hors de l'écran ; ses colonnes figées se posent quand
+     il paraît, après sa mise en page — sur une machine chargée, plus de
+     500 ms. On attend qu'elles le soient (au plus 5 s), comme la batterie. */
+  await pg.waitForFunction(() => {
+    const g = [...document.querySelectorAll('tr.titres th.col-fige')].map(t => parseFloat(t.style.left));
+    return g.length > 0 && g[0] === 0;
+  }, null, { timeout: 5000, polling: 'raf' }).catch(() => {});
   const fige = await pg.evaluate(() => {
     const th = [...document.querySelectorAll('tr.titres th')];
     const n = th.findIndex(t => t.textContent.trim() === 'Référence UD');

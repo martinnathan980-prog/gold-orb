@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'b3f71d1';
+  var EDITION = '505403f';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -4666,10 +4666,10 @@
   function tableauHorsEcran(cadre) {
     return CV_AUTO && !!cadre && cadre.hasAttribute('data-lourd') && !cadresVisibles[cadre.id];
   }
-  /* Le seuil : 40 000 cellules dessinées (près de 300 lignes de l'extract
+  /* Le seuil : 20 000 cellules dessinées (près de 150 lignes de l'extract
      entier). En dessous — la première tranche, toujours —, les lignes
      restent dans l'arbre d'accessibilité même hors de l'écran (X-A11). */
-  var SEUIL_LOURD = 40000;
+  var SEUIL_LOURD = 20000;
   function marquerLourd() {
     var t = TRANCHES['corps-tableau'], cadre = $('cadre-tableau');
     if (!cadre) return;
@@ -4902,7 +4902,10 @@
         }
         var val = p[c.cle];
         var classes = (c.classe + ' ' + fige + (c.cle === 'reference' ? ' col-ref' : '')).trim();
-        if (val === '' || val == null) return '\x3Ctd class="' + classes + ' doux"' + styleFige(i, nFige) + '>' + TIRET_VIDE + '\x3C/td>';
+        /* « — » posé sur la case elle-même (classe tiret-vide), sans élément
+           de plus : sur l'extract entier, ce sont des dizaines de milliers
+           de cases. */
+        if (val === '' || val == null) return '\x3Ctd class="' + classes + ' doux tiret-vide"' + styleFige(i, nFige) + '>\u2014\x3C/td>';
         var titre = c.classe.indexOf('large') !== -1 ? ' title="' + ech(val) + '"' : '';
         /* La référence se clique : le tableau se réduit à ce plan, et son
            historique s'ouvre au-dessus. */
@@ -6479,7 +6482,7 @@
               contenu = '\x3Cspan class="verdict">' + pastilleVerdict(e.cat) + (ref
                 ? '\x3Cbutton type="button" class="ref ref-lien" data-plan="' + ech(ref) + '" title="Retrouver ce plan dans GATES">' + ech(s) + '\x3C/button>'
                 : '\x3Cspan class="ref">' + ech(s) + '\x3C/span>') + '\x3C/span>';
-            } else if (s === '') { classes.push('doux'); contenu = TIRET_VIDE; }   // débrief 27 (B22)
+            } else if (s === '') { classes.push('doux', 'tiret-vide'); contenu = '\u2014'; }   // débrief 27 (B22)
             else if (estBooleen(s)) { classes.push('coche'); contenu = '\x3Cspan title="' + ech(s) + '">' + (estVrai(s) ? '✓' : '–') + '\x3C/span>'; }
             else contenu = ech(s);
             return '\x3Ctd' + (classes.length ? ' class="' + classes.join(' ') + '"' : '') + titre + '>' + contenu + '\x3C/td>';
@@ -9077,5 +9080,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = 'b3f71d1';
+window.SUIVI_FWD_FIN = '505403f';
 </script>
