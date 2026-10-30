@@ -104,6 +104,8 @@
      plans — --creux (#faf9f6) ne se voyait pas sur le blanc. --encre-3 y
      tient 4,6:1 (4,8:1 en sombre). */
   --survol-ligne: #f3f1eb;
+  /* Débrief 28 : le bandeau du titre — pierre chaude, filet double à l'encre. */
+  --bandeau-fond: #ece7dd; --bandeau-fond-2: #e6e0d4; --bandeau-filet: #d5cdbd; --bandeau-trait: var(--encre);
   /* Débrief 27 (B3, X-A12) : les traits d'échelle du graphique, plus doux
      que le filet ; les barres des validés par semaine, 3,3:1 sur la surface
      (le --r4 d'avant, #86b8a0, faisait 2,2:1). */
@@ -216,6 +218,7 @@
     --alerte-fond: #2b1f14;
     --succes-fond: #16231a;
     --survol-ligne: #232321;
+    --bandeau-fond: #1d1c19; --bandeau-fond-2: #181714; --bandeau-filet: #2e2c27; --bandeau-trait: var(--encre-2);
     --grille: #212124; --barre-semaine: #4f8a68;   /* débrief 27 : barres 4,4:1 sur la surface */
     --lisere-courbe: transparent;
   }
@@ -281,6 +284,7 @@
   --alerte-fond: #2b1f14;
   --succes-fond: #16231a;
   --survol-ligne: #232321;
+  --bandeau-fond: #1d1c19; --bandeau-fond-2: #181714; --bandeau-filet: #2e2c27; --bandeau-trait: var(--encre-2);
   --grille: #212124; --barre-semaine: #4f8a68;   /* débrief 27 : barres 4,4:1 sur la surface */
   --lisere-courbe: transparent;
 }
@@ -717,8 +721,17 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
    (débrief 22). La peinture déborde sur les côtés sans élargir la page
    (border-image : un débordement d'encre, pas de défilement). */
 header.entete {
-  border-image: linear-gradient(to bottom, var(--surface) calc(100% - 1px), var(--panneau-bord) 0) fill 0 / 0 / 0 100vmax;
+  border-image: linear-gradient(to bottom, var(--bandeau-fond), var(--bandeau-fond-2) calc(100% - 1px), var(--bandeau-filet) 0) fill 0 / 0 / 0 100vmax;
   margin-bottom: 10px;
+}
+/* Débrief 28 (2) : le blanc faisait « page blanche ». Le bandeau prend un
+   ton de pierre, un cran plus soutenu que le papier, et le titre se pose
+   comme le titre d'un journal : un filet double (épais, puis fin) sous la
+   semaine, sur toute la largeur du contenu. */
+.masthead h1 { font-size: clamp(36px, 6vw, 56px); }
+.masthead::after {
+  content: ""; display: block; height: 5px; margin-top: 20px;
+  border-top: 2px solid var(--bandeau-trait); border-bottom: 1px solid var(--bandeau-trait);
 }
 /* Les outils de la page : trois icônes rondes à droite du titre — leur nom
    au survol (title) et pour les lecteurs d'écran (texte masqué). */
