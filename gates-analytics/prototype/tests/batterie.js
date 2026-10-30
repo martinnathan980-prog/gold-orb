@@ -7051,7 +7051,8 @@ async function reinitialiser(pg) {
   await pe.waitForTimeout(500);
   const plat20 = await pe.evaluate(() => {
     const leg = document.getElementById('legende');
-    return { legende: leg.textContent, pointilles: leg.querySelectorAll('line[stroke-dasharray]').length,
+    /* Débrief 27 (X-A8) : la droite « requis » a son trait-point (8 3 2 3), en légende aussi — seul compte le pointillé de la projection. */
+    return { legende: leg.textContent, pointilles: leg.querySelectorAll('line[stroke-dasharray]:not([stroke-dasharray="8 3 2 3"])').length,
              projection: document.querySelectorAll('svg.graphe path[stroke-dasharray="5 4"]').length,
              item: !!leg.querySelector('.sans-rythme') && !leg.querySelector('.sans-rythme svg') };
   });

@@ -2406,7 +2406,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
            aria-label="Avancement dans le temps : flèches gauche et droite pour passer d’un relevé à l’autre">
         <div id="zone-graphe"></div>
         <div class="indice-zoom" id="indice-zoom" aria-hidden="true" hidden></div>
-        <button type="button" class="revenir-cadrage" id="revenir-cadrage" hidden></button>
+        <button type="button" class="revenir-cadrage" id="revenir-cadrage" hidden><span aria-hidden="true">↺</span> Revenir aux échéances</button>
       </div>
       <p class="masque" id="resume-graphe"></p>
       <p class="note-graphe" id="note-graphe"></p>
@@ -6840,12 +6840,13 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         candRq.push({ lignes: ['requis'], x: xt - 6, base: yt - 7, ancre: 'end', gras: true, malus: 4 },
                     { lignes: ['requis'], x: xt + 8, base: yt + 15, ancre: 'start', gras: true, malus: 4.2 });
       });
-      /* Une place est exclue si le mot y croise sa droite ou un trait pleine
-         hauteur, couvre un autre mot, sort du tracé (rangée des jalons, axe,
-         bords) ; parmi les autres, la moins gênée. */
+      /* Une place est exclue si le mot y croise sa droite ou le trait d'un
+         jalon (même caché : il paraît au survol) ou d'aujourd'hui, couvre un
+         autre mot, sort du tracé (rangée des jalons, axe, bords) ; parmi les
+         autres, la moins gênée. */
       var exclue = function (bx) {
         return coupe(bx, segRequis) || bx.h < mHaut - 4 || bx.b > yBas + 2 || bx.g < mG - 5 || bx.d > L - 2 ||
-          traitsX.some(function (tx) { return tx > bx.g - 1 && tx < bx.d + 1; }) ||
+          traitsX.concat(traitsCaches).some(function (tx) { return tx > bx.g - 1 && tx < bx.d + 1; }) ||
           boites.some(function (o) { return seCoupent(bx, o); });
       };
       var cRq = null;

@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '288d0c7';
+  var EDITION = '47f7f86';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -3610,12 +3610,13 @@
         candRq.push({ lignes: ['requis'], x: xt - 6, base: yt - 7, ancre: 'end', gras: true, malus: 4 },
                     { lignes: ['requis'], x: xt + 8, base: yt + 15, ancre: 'start', gras: true, malus: 4.2 });
       });
-      /* Une place est exclue si le mot y croise sa droite ou un trait pleine
-         hauteur, couvre un autre mot, sort du tracé (rangée des jalons, axe,
-         bords) ; parmi les autres, la moins gênée. */
+      /* Une place est exclue si le mot y croise sa droite ou le trait d'un
+         jalon (même caché : il paraît au survol) ou d'aujourd'hui, couvre un
+         autre mot, sort du tracé (rangée des jalons, axe, bords) ; parmi les
+         autres, la moins gênée. */
       var exclue = function (bx) {
         return coupe(bx, segRequis) || bx.h < mHaut - 4 || bx.b > yBas + 2 || bx.g < mG - 5 || bx.d > L - 2 ||
-          traitsX.some(function (tx) { return tx > bx.g - 1 && tx < bx.d + 1; }) ||
+          traitsX.concat(traitsCaches).some(function (tx) { return tx > bx.g - 1 && tx < bx.d + 1; }) ||
           boites.some(function (o) { return seCoupent(bx, o); });
       };
       var cRq = null;
@@ -8830,5 +8831,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = '288d0c7';
+window.SUIVI_FWD_FIN = '47f7f86';
 </script>
