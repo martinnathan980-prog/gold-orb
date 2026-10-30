@@ -34,7 +34,8 @@
  *       "https://www.googleapis.com/auth/script.container.ui",
  *       "https://www.googleapis.com/auth/script.scriptapp",
  *       "https://www.googleapis.com/auth/script.external_request",
- *       "https://www.googleapis.com/auth/script.projects"
+ *       "https://www.googleapis.com/auth/script.projects",
+ *       "https://www.googleapis.com/auth/userinfo.email"
  *     ]
  *   }
  *
@@ -208,7 +209,7 @@ function verifierLaReponse(reponse, geste) {
   }
   if (code === 401) {
     throw new Error(
-      'Autorisation refusée. Vérifier que appsscript.json contient bien les cinq\n'
+      'Autorisation refusée. Vérifier que appsscript.json contient bien les six\n'
       + 'permissions du commentaire MANIFESTE, puis relancer « installer » et\n'
       + 'accepter la demande d\'autorisation.');
   }

@@ -108,7 +108,8 @@ recollent en `.txt` (plan C).
     "https://www.googleapis.com/auth/script.container.ui",
     "https://www.googleapis.com/auth/script.scriptapp",
     "https://www.googleapis.com/auth/script.external_request",
-    "https://www.googleapis.com/auth/script.projects"
+    "https://www.googleapis.com/auth/script.projects",
+    "https://www.googleapis.com/auth/userinfo.email"
   ]
 }
 ```
@@ -166,7 +167,7 @@ TERMINÉ. Il reste deux gestes :
 |---|---|---|
 | « L'API Apps Script n'est pas activée » | L'étape B.4 n'a pas pris | Refaire B.4, attendre 1 min, relancer |
 | Le même message, et l'interrupteur est grisé | L'administrateur l'a fermé | **Plan A** ou **plan C** |
-| « Autorisation refusée » (401) | Le manifeste n'a pas les 5 permissions | Refaire B.3, relancer, réautoriser |
+| « Autorisation refusée » (401) | Le manifeste n’a pas les 6 permissions | Refaire B.3, relancer, réautoriser |
 | « Le projet est introuvable » (404) | L'API vient d'être activée | Attendre 1 minute, relancer |
 | « Le dépôt a répondu 403 / délai dépassé » | Google n'a pas pu joindre GitHub | **Plan C** |
 | « Cet installateur est dans un fichier nommé Code » | Collé au mauvais endroit | Refaire B.2 avec le bon nom |

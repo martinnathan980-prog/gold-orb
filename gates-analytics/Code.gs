@@ -1950,14 +1950,17 @@ function reprendreLaMain() {
   let moi = '';
   try { moi = emailPropre_(Session.getEffectiveUser().getEmail()); } catch (err) { moi = ''; }
   if (!moi) { try { moi = emailPropre_(Session.getActiveUser().getEmail()); } catch (err) { moi = ''; } }
-  /* Débrief 28 : Google ne donne l'adresse qu'une fois l'autorisation « voir
-     votre adresse e-mail » accordée au script — elle se demande en lançant une
-     fonction depuis l'éditeur, pas depuis ce menu. */
+  /* Débrief 28 : Google ne donne l'adresse qu'une fois la permission « voir
+     votre adresse e-mail » (userinfo.email) écrite dans le manifeste — un
+     manifeste posé à la main (plan B) ne l'avait pas — puis accordée, en
+     lançant une fonction depuis l'éditeur. */
   if (!moi) {
-    ui.alert('Suivi FWD', 'Google ne donne pas encore votre adresse au script : il lui manque une autorisation.\n\n' +
-      '1. Menu Extensions → Apps Script.\n2. En haut, dans la liste des fonctions, choisir « diagnostic ».\n' +
-      '3. Cliquer ▶ Exécuter, puis « Examiner les autorisations », votre compte, et « Autoriser ».\n' +
-      '4. Revenir ici et refaire Suivi FWD → Reprendre la main.', ui.ButtonSet.OK);
+    ui.alert('Suivi FWD', 'Google ne donne pas encore votre adresse au script : il lui manque la permission « voir votre adresse e-mail ».\n\n' +
+      '1. Menu Extensions → Apps Script.\n' +
+      '2. À gauche, ⚙ Paramètres du projet : cocher « Afficher le fichier manifeste appsscript.json dans l’éditeur ».\n' +
+      '3. À gauche, <> Éditeur : cliquer appsscript.json, tout effacer, coller le manifeste livré avec le code, Ctrl+S.\n' +
+      '4. En haut, choisir la fonction « diagnostic », cliquer ▶ Exécuter, puis « Examiner les autorisations », votre compte, « Tout sélectionner » s’il y a des cases, et « Autoriser ».\n' +
+      '5. Revenir ici et refaire Suivi FWD → Reprendre la main.', ui.ButtonSet.OK);
     return;
   }
   if (emailPropre_(CONFIG.RESPONSABLE) && emailPropre_(CONFIG.RESPONSABLE) !== moi) {
@@ -3108,6 +3111,13 @@ function diagnostic() {
       ? admins.map(function (a) { return a.email + (a.contrats.length ? ' (' + a.contrats.join(', ') + ')' : ''); }).join(', ') : 'aucun'));
     dire('• Vous : ' + (id.lecteur || 'adresse inconnue') + ' · ce Diagnostic tourne au nom de ' + (id.robot || '?') +
       (id.coherent ? ' (le responsable)' : ' — pas le responsable : vos automatismes ne sont pas ceux du tableau de bord'));
+    /* Débrief 28 : aucune adresse, même celle du script — la permission
+       userinfo.email manque au manifeste, ou n'a pas été accordée. */
+    if (!id.robot) {
+      dire('⚠ Google ne donne aucune adresse au script : sans elle, pas de responsable ni de roue dentée. Dans l’éditeur : ' +
+        '⚙ Paramètres du projet → cocher « Afficher le fichier manifeste », puis remplacer appsscript.json par le manifeste livré ' +
+        '(il contient https://www.googleapis.com/auth/userinfo.email), Ctrl+S, ▶ Exécuter « diagnostic » → Autoriser (tout cocher).');
+    }
     const journal = analyserJson(PropertiesService.getDocumentProperties().getProperty(CLE_JOURNAL_ADMIN));
     if (Array.isArray(journal) && journal.length) {
       let fz = 'Europe/Paris';

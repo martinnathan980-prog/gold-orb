@@ -11,6 +11,7 @@ tableau de bord.
     python robot.py activer      Windows le lance chaque matin (et à l'ouverture de session)
     python robot.py desactiver   plus de lancement automatique
     python robot.py etat         ce que le robot sait, et son dernier passage
+    python robot.py navigateur   Chrome ou Edge (Edge reconnaît la session Windows)
 
 Tout tient dans la bibliothèque standard de Python, plus piloter_chrome.py (à
 côté). Le robot a son propre Chrome et son propre profil : vos onglets ne
@@ -25,6 +26,7 @@ Ses fichiers vivent dans %LOCALAPPDATA%\\SuiviFWD (ailleurs : ~/.suivi-fwd) :
     journal.txt         ce qu'il a fait, jour par jour
 """
 
+import base64
 import datetime
 import json
 import os
@@ -82,19 +84,49 @@ def nom_de_fichier(nom):
     return re.sub(r'[^A-Za-z0-9._-]+', '-', nom.strip()).strip('-').lower() or 'export'
 
 
+def navigateur():
+    """Le navigateur du robot : Chrome, ou Edge (il reconnaît de lui-même la
+    session Windows, ce que certaines connexions demandent)."""
+    return 'edge' if config().get('navigateur') == 'edge' else 'chrome'
+
+
+def chemin_edge():
+    for var in ('PROGRAMFILES(X86)', 'PROGRAMFILES', 'LOCALAPPDATA'):
+        base = os.environ.get(var)
+        if base:
+            p = pathlib.Path(base) / 'Microsoft' / 'Edge' / 'Application' / 'msedge.exe'
+            if p.exists():
+                return str(p)
+    return ''
+
+
+def nom_navigateur():
+    return 'Edge' if navigateur() == 'edge' else 'Chrome'
+
+
 def chrome(visible=True, grand=True):
     r = racine()
+    edge = navigateur() == 'edge'
+    if edge and not os.environ.get('SUIVI_FWD_CHROME'):
+        exe = chemin_edge()
+        if not exe:
+            raise ErreurPilote('Edge est introuvable sur ce poste : double-cliquez « Choisir le navigateur » '
+                               'et reprenez Chrome.')
+        os.environ['SUIVI_FWD_CHROME'] = exe
     options = ['--disable-features=DownloadBubble,DownloadBubbleV2']
     options += ['--start-maximized'] if grand else ['--window-size=1280,900', '--window-position=40,40']
     options += json.loads(os.environ.get('SUIVI_FWD_OPTIONS_CHROME', '[]'))
     return Chrome(port=PORT, telechargements=str(r / 'telechargements'), lancer=True,
-                  profil=str(r / 'chrome'), sans_fenetre=not visible, delai=60, options=options)
+                  profil=str(r / ('edge' if edge else 'chrome')), sans_fenetre=not visible, delai=60, options=options)
 
 
 # ---------------------------------------------------------------- le guetteur
 # Injecté dans chaque page : il dit au robot chaque clic, chaque champ rempli,
 # chaque choix dans une liste ; il garde tout dans le même onglet (un lien
-# « nouvel onglet » s'ouvre ici) pour que le robot puisse suivre.
+# « nouvel onglet » s'ouvre ici) pour que le robot puisse suivre — sauf sur
+# les pages de connexion et dans les cadres, laissés tels quels : une
+# connexion (Keycloak, SSO…) s'ouvre parfois dans une petite fenêtre qui
+# doit rester à part, sinon la page reste blanche.
 GUETTEUR = r"""
 (function () {
   if (window.__suiviFwdGuette) return; window.__suiviFwdGuette = true;
@@ -132,12 +164,14 @@ GUETTEUR = r"""
     if (mot && mot.length <= 40 && mot.indexOf('\n') === -1) return t;
     return (t.closest && t.closest(FAIBLE)) || t;
   };
+  var CONNEXION = /keycloak|login|signin|sso|\/auth\b|oauth|adfs|openid-connect|saml|authorize/i;
+  var libre = function (u) { return window.top === window && !CONNEXION.test(location.href) && !CONNEXION.test(String(u || '')); };
   var champ = function (e) { return e.matches && e.matches('input:not([type]),input[type=text],input[type=search],input[type=email],input[type=number],input[type=date],textarea'); };
   document.addEventListener('click', function (ev) {
     if (!ev.isTrusted) return;            // un clic de la page elle-même (lien de téléchargement…)
     var e = cliquable(ev.target);
     var a = ev.target.closest && ev.target.closest('a[target]');
-    if (a && a.target !== '_self') a.target = '_self';
+    if (a && a.target !== '_self' && libre(a.href)) a.target = '_self';
     if (champ(e) || (e.matches && e.matches('select,input[type=password]'))) return;
     dire({ faire: 'cliquer', cible: decrire(e) });
   }, true);
@@ -150,7 +184,11 @@ GUETTEUR = r"""
     var e = ev.target;
     if (ev.key === 'Enter' && champ(e)) { dire({ faire: 'remplir', cible: decrire(e), texte: e.value }); dire({ faire: 'entree', cible: decrire(e) }); }
   }, true);
-  window.open = function (u) { if (u) location.href = u; return window; };
+  var ouvrir = window.open;
+  window.open = function (u) {
+    if (!libre(u)) return ouvrir.apply(window, arguments);
+    if (u) location.href = u; return window;
+  };
 })();
 """
 
@@ -243,14 +281,14 @@ def page_actuelle(c):
 
 # Les pages de connexion (Keycloak, SSO…) : le matin, la session est souvent
 # encore ouverte et la page ne s'affiche pas — ses gestes sont alors sautés.
-CONNEXION = re.compile(r'keycloak|login|signin|sso|/auth/|oauth|adfs', re.I)
+CONNEXION = re.compile(r'keycloak|login|signin|sso|/auth/|oauth|adfs|openid-connect|saml|authorize', re.I)
 
 
 # ---------------------------------------------------------------- préparer
 def preparer():
     cfg = config()
     print('\n=== Préparer le robot (une seule fois) ===\n')
-    print('Une fenêtre Chrome va s\'ouvrir : c\'est celle du robot, avec trois onglets.')
+    print('Une fenêtre %s va s\'ouvrir : c\'est celle du robot, avec trois onglets.' % nom_navigateur())
     print('Dans chacun, connectez-vous comme d\'habitude :')
     print('  1. le tableau de bord Suivi FWD (votre compte Google @airbus.com)')
     print('  2. CHILDNéo')
@@ -265,7 +303,7 @@ def preparer():
             nouvel_onglet(url)
         input('\nQuand les trois onglets sont ouverts et connectés, revenez ici et appuyez sur Entrée.')
     noter('Robot préparé (tableau : %s).' % cfg['tableau'])
-    print('\nC\'est noté. Le robot garde ces connexions dans son propre Chrome.')
+    print('\nC\'est noté. Le robot garde ces connexions dans son propre %s.' % nom_navigateur())
 
 
 # ---------------------------------------------------------------- apprendre
@@ -294,6 +332,8 @@ def apprendre():
         while not stop.is_set():
             try:
                 for m in lire_evenements(c, 0.5):
+                    if m.get('method') == 'Page.frameNavigated' and not m['params']['frame'].get('parentId'):
+                        print('  → page %s' % m['params']['frame'].get('url', '').split('?')[0][:110])
                     if m.get('method') == 'Runtime.bindingCalled' and m['params'].get('name') == '__suiviFwd':
                         geste = json.loads(m['params']['payload'])
                         if pas and geste.get('faire') == 'remplir' and pas[-1].get('faire') == 'remplir' and \
@@ -412,12 +452,28 @@ def exports_choisis(noms=None):
     return cfg, liste
 
 
+def photo(c):
+    """Ce que montrait la fenêtre du robot quand il a calé : une image et
+    l'adresse de la page, pour comprendre sans y être."""
+    try:
+        image = c.envoyer('Page.captureScreenshot', format='png').get('data') or ''
+        f = racine() / 'photo-du-robot.png'
+        f.write_bytes(base64.b64decode(image))
+        return '%s (page : %s)' % (f, page_actuelle(c))
+    except (ErreurPilote, OSError, ValueError):
+        return ''
+
+
 def faire_les_exports(c, liste, dossier):
     sortis = []
     for e in liste:
         scenario = json.loads((racine() / 'exports' / e['scenario']).read_text(encoding='utf-8'))
         noter('Export « %s »…' % e['nom'])
-        sortis.append((e, rejouer(c, scenario, dossier)))
+        try:
+            sortis.append((e, rejouer(c, scenario, dossier)))
+        except ErreurPilote as err:
+            vue = photo(c)
+            raise ErreurPilote('%s%s' % (err, '\n  Photo de la fenêtre du robot : ' + vue if vue else ''))
         noter('  ✓ %s' % sortis[-1][1].name)
     return sortis
 
@@ -541,6 +597,27 @@ def lancer(auto=False):
     return 0
 
 
+# ---------------------------------------------------------------- navigateur
+def choisir_navigateur():
+    cfg = config()
+    print('\n=== Le navigateur du robot ===\n')
+    print('Aujourd\'hui : %s\n' % nom_navigateur())
+    print('  1 = Chrome')
+    print('  2 = Edge (il reconnaît de lui-même votre session Windows : à essayer si SEE reste blanc)')
+    choix = input('> ').strip()
+    if choix not in ('1', '2'):
+        print('Rien n\'est changé.')
+        return
+    cfg['navigateur'] = 'edge' if choix == '2' else 'chrome'
+    garder(cfg)
+    noter('Navigateur du robot : %s.' % nom_navigateur())
+    print('\nLe robot a son propre profil dans ce navigateur : il faut s\'y connecter une fois.')
+    print('(Si un message dit que le navigateur « n\'a pas ouvert son canal », l\'entreprise le ferme')
+    print(' au robot : revenez ici et reprenez l\'autre.)')
+    if input('\nPréparer maintenant ? (o/n) ').strip().lower().startswith('o'):
+        preparer()
+
+
 # ---------------------------------------------------------------- planifier
 def commande_robot(action):
     exe = pathlib.Path(sys.executable)
@@ -573,6 +650,7 @@ def desactiver():
 def montrer_etat():
     cfg = config()
     print('Tableau de bord : %s' % (cfg.get('tableau') or '(pas encore indiqué : lancez « preparer »)'))
+    print('Navigateur      : %s' % nom_navigateur())
     print('Exports appris  : %s' % (', '.join('%s → %s' % (e['nom'], e.get('case')) for e in cfg.get('exports', [])) or 'aucun'))
     etat = racine() / 'dernier-passage.txt'
     print('Dernier passage : %s' % (etat.read_text(encoding='utf-8') if etat.exists() else 'jamais'))
@@ -594,6 +672,8 @@ def main(argv):
             activer()
         elif action == 'desactiver':
             desactiver()
+        elif action == 'navigateur':
+            choisir_navigateur()
         else:
             montrer_etat()
     except ErreurPilote as err:

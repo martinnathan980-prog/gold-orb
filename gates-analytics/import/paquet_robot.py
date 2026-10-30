@@ -36,6 +36,7 @@ RACCOURCIS = [
     ('Lancer maintenant.bat', 'lancer'),
     ('Etat du robot.bat', 'etat'),
     ('Desactiver le lancement automatique.bat', 'desactiver'),
+    ('Choisir le navigateur (Chrome ou Edge).bat', 'navigateur'),
 ]
 
 
