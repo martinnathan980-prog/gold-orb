@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "8d83704";
+  --suivi-fwd-edition: "adf512a";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -93,6 +93,10 @@
   --retrait-panneau: 31px;
   /* --alerte-fond : le fond d'un bandeau d'erreur (D8, .bandeau-alerte). */
   --alerte-fond: #fbeeea;
+  /* Débrief 27, lot D (P-F17) : le fond d'une ligne survolée du tableau des
+     plans — --creux (#faf9f6) ne se voyait pas sur le blanc. --encre-3 y
+     tient 4,6:1 (4,8:1 en sombre). */
+  --survol-ligne: #f3f1eb;
 
   /* Les panneaux des sections (débrief 20) : chaque section est une feuille
      posée sur le papier, bordée d'un filet et d'une ombre à peine marquée.
@@ -189,6 +193,7 @@
     --bord-champ: #6a6860;
     --lisere-donnee: transparent;
     --alerte-fond: #2b1f14;
+    --survol-ligne: #232321;
   }
 }
 :root[data-theme="dark"] {
@@ -247,6 +252,7 @@
   --bord-champ: #6a6860;
   --lisere-donnee: transparent;
   --alerte-fond: #2b1f14;
+  --survol-ligne: #232321;
 }
 
 /* Les contrôles du navigateur — la liste d'un menu déroulant, les barres de
@@ -1439,7 +1445,10 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 .fiche-plan-etapes .mot-recul { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; }
 /* La référence du tableau se clique comme un lien discret. */
 .ref-plan { border: none; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
-.ref-plan:hover { text-decoration: underline; text-underline-offset: 3px; }
+/* Débrief 27 (P-F17) : elle se voit cliquable sans la survoler — un
+   pointillé au repos, un trait plein au survol de sa ligne ou au focus. */
+.ref-plan { text-decoration: underline dotted var(--encre-3); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.ref-plan:hover, tr:hover > td > .ref-plan, .ref-plan:focus-visible { text-decoration: underline solid var(--encre); text-decoration-thickness: 1px; }
 /* À surveiller : les plans à l'arrêt, sous les états, en ambre — ce n'est pas un retard, c'est une question à poser. */
 .a-surveiller { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-top: 8px; font-size: 13px; color: var(--encre-2); }
 .a-surveiller[hidden] { display: none; }
@@ -1953,10 +1962,21 @@ dialog.admin[aria-busy="true"] .admin-corps { opacity: .6; pointer-events: none;
 .puce-vide b { font-variant-numeric: tabular-nums; font-weight: 500; }
 
 .cadre-tableau { position: relative; border: 1px solid var(--filet); background: var(--surface); }
-/* Sous la ligne de flottaison à l'ouverture, un tableau de milliers de
-   cellules ne se met en page que quand on s'en approche. */
-.cadre-tableau { content-visibility: auto; contain-intrinsic-size: auto 560px; }
-.defile { overflow: auto; max-height: 68vh; }
+/* Débrief 27 (X-A11) : plus de content-visibility sur le tableau — il
+   cachait ses lignes aux lecteurs d'écran tant qu'on ne l'avait pas fait
+   défiler. Ce qui épargnait la mise en page, c'est maintenant le rendu par
+   tranches (pasDeTranche) : peu de lignes d'abord, la suite en descendant.
+   Le cadre défile seul, sous ses en-têtes collés, et sans retenir la
+   molette au bout (overscroll-behavior: auto). scroll-padding : une case
+   amenée à l'écran par le clavier s'arrête sous les en-têtes et à droite
+   des colonnes figées, jamais dessous (X-A3 ; mesurés par
+   poserColonnesFigees). */
+/* Le tableau n'est jamais l'ancre du défilement de la page : ses lignes
+   viennent par tranches, une ligne d'ancrage prise dedans (au rechargement,
+   le navigateur la retrouve par sa place dans le tableau) déplaçait la page. */
+.cadre-tableau { overflow-anchor: none; }
+.defile { overflow: auto; max-height: 68vh; overscroll-behavior: auto;
+  scroll-padding-top: var(--haut-entetes, 0px); scroll-padding-left: var(--larg-figees, 0px); }
 .ombre-defile {
   position: absolute; top: 0; right: 0; bottom: 0; width: 46px; pointer-events: none;
   background: linear-gradient(to right, transparent, var(--surface)); opacity: 0; transition: opacity .15s;
@@ -1986,11 +2006,11 @@ table.plans thead .titres-la th button {
 }
 table.plans thead .titres-la th button:hover { color: var(--encre); }
 .col-fige-la { position: sticky; left: 0; background: var(--surface); z-index: 2; box-shadow: inset -1px 0 0 var(--filet-fort); }
-table.plans tbody tr:hover .col-fige-la { background: var(--creux); }
+table.plans tbody tr:hover .col-fige-la { background: var(--survol-ligne); }
 table.plans thead tr th.col-fige-la { z-index: 6; }
 table.plans thead .filtres th { padding: 0 14px 7px; position: sticky; z-index: 4; border-bottom: 1px solid var(--filet); font-weight: 400; }
 table.plans thead .filtres input {
-  width: 100%; min-width: 78px; border: none; border-bottom: 1px solid var(--filet);
+  width: 100%; min-width: 78px; border: none; border-bottom: 1px solid var(--bord-champ);
   background: none; color: var(--encre); font: inherit; font-size: 12px; padding: 2px 0;
 }
 table.plans thead .filtres input::placeholder { color: var(--filtre-invite); }
@@ -2009,12 +2029,12 @@ table.plans thead .titres:hover .poignee, table.plans thead .titres:focus-within
 .fleche { color: var(--encre); }
 
 table.plans tbody td { padding: 8px 14px; border-bottom: 1px solid var(--filet); vertical-align: middle; white-space: nowrap; }
-table.plans tbody tr:hover td { background: var(--creux); }
+table.plans tbody tr:hover td { background: var(--survol-ligne); }
 /* Le decalage gauche est mesure au rendu : dans l'ordre de la feuille la
    reference n'est pas la premiere colonne, et tout ce qui la precede reste
    colle avec elle plutot que de passer dessous. */
 .col-fige { position: sticky; left: 0; background: var(--surface); z-index: 2; }
-table.plans tbody tr:hover .col-fige { background: var(--creux); }
+table.plans tbody tr:hover .col-fige { background: var(--survol-ligne); }
 /* La specificite de `.titres th` ecrasait ce z-index : les entetes figees
    passaient sous les colonnes qui defilent. Un selecteur plus precis. */
 table.plans thead tr th.col-fige { z-index: 6; }
@@ -2026,6 +2046,211 @@ table.plans thead tr th.col-fige { z-index: 6; }
 .etat-cellule { display: inline-flex; align-items: center; gap: 8px; }
 
 .vide-message { padding: 44px 16px; color: var(--encre-3); }
+
+/* ---------------------------------------------------- Débrief 27, lot D : le tableau des plans
+   Sous la recherche, une seule rangée d'outils : à gauche ce qui filtre ou
+   masque (la puce « non renseigné », « N colonnes vides masquées »), à
+   droite ce qu'on fait du tableau (filtrer par colonne, copier, télécharger).
+   Les boutons ont la hauteur des commandes (D3 : 28 px, rayon 6). */
+.barre-tableau { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding-bottom: 12px; }
+.barre-tableau .incomplets { padding-bottom: 0; }
+.colonnes-vides { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; font-size: 13px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
+.colonnes-vides[hidden] { display: none; }
+.colonnes-vides button { border: none; background: none; padding: 2px 0; font: inherit; color: var(--encre-2); cursor: pointer;
+  text-decoration: underline; text-decoration-color: var(--encre-3); text-underline-offset: 3px; }
+.colonnes-vides button:hover { color: var(--encre); text-decoration-color: var(--encre); }
+.actions-tableau { position: relative; margin-left: auto; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.actions-tableau[hidden] { display: none; }
+.bouton-outil {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px;
+  border: 1px solid var(--filet-fort); border-radius: 6px; background: var(--surface); color: var(--encre-2);
+  font: 13px/1 "IBM Plex Sans", system-ui, sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer;
+}
+.bouton-outil[hidden] { display: none; }
+.bouton-outil svg { flex: none; color: var(--encre-3); }
+.bouton-outil:hover { border-color: var(--encre-3); color: var(--encre); background: var(--creux); }
+.bouton-outil:hover svg { color: var(--encre); }
+.bouton-outil[aria-expanded="true"] { border-color: var(--encre-2); color: var(--encre); background: var(--seg-piste); }
+/* M4 : l'appui se voit avant le travail (au pointer down, avant le clic). */
+.bouton-outil:active, .colonnes-vides button:active { background: var(--seg-piste); border-color: var(--encre-2); }
+.ref-plan:active { color: var(--encre-2); }
+.bouton-outil[aria-expanded="true"] svg { color: var(--encre); }
+.bouton-outil[data-etat="fait"] { border-color: var(--fait); color: var(--fait); }
+.bouton-outil[data-etat="fait"] svg { color: var(--fait); }
+.bouton-outil .n { color: var(--encre-3); }
+/* Le mot d'un export (« Tableau copié », « Téléchargement bloqué… ») :
+   posé sous les boutons, par-dessus la page — il ne pousse rien. */
+.message-tableau {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 8; width: max-content; max-width: min(380px, 86vw);
+  padding: 8px 12px; background: var(--releve); border: 1px solid var(--releve-bord); border-radius: 6px;
+  box-shadow: var(--flottant-ombre); font-size: 13px; line-height: 1.45; color: var(--encre); white-space: normal;
+}
+.message-tableau[hidden] { display: none; }
+.message-tableau button { border: none; background: none; padding: 0; font: inherit; color: var(--encre); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+
+/* La rangée des filtres de colonne ne se montre que dépliée (X-A2 : 138
+   arrêts de tabulation de moins) ; le bord de ses champs tient 3:1. */
+table.plans thead tr.filtres[hidden] { display: none; }
+/* Une case du tableau atteinte aux flèches : l'anneau du focus à
+   l'intérieur de la case, jamais rogné par sa voisine collée. */
+table.plans tbody td:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+table.plans tbody td:focus { outline: 2px solid var(--focus); outline-offset: -2px; }
+/* Les boutons de tri : 24 px de haut au moins (2.5.8). */
+table.plans thead .titres th button, table.plans thead .titres-la th button { min-height: 24px; }
+/* « EMPTY » vient de GATES tel quel : son sens est dit en clair au survol
+   (« Non renseigné (EMPTY dans GATES) ») et aux lecteurs d'écran — un mot
+   ajouté par la feuille de style, masqué à l'œil : la case garde, pour la
+   copie et la recherche, le texte exact de GATES. */
+.etat-cellule .vide-gates { cursor: help; }
+.etat-cellule .vide-gates::after {
+  content: " : non renseign\e9  dans GATES"; position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+/* Le bas du cadre fond quand il reste des lignes dessous (D10, B19) : une
+   ligne coupée à mi-hauteur ne passe plus pour un défaut d'affichage. */
+.ombre-bas {
+  position: absolute; left: 0; right: 0; bottom: var(--barre-defile, 0px); height: 32px; pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--surface)); opacity: 0; transition: opacity .15s;
+}
+.cadre-tableau[data-plus-bas="true"] .ombre-bas { opacity: 1; }
+/* « N lignes de plus » reste à gauche du cadre, même défilé de côté. */
+tr.ligne-suite td > button { position: sticky; left: 14px; }
+/* Déplacer une colonne sans la glisser (2.5.7) : la poignée ouvre un petit
+   menu, « ← à gauche » / « à droite → » ; Alt + flèches au clavier. */
+.poignee { border: none; background: none; padding: 0; font: inherit; line-height: 1; }
+button.poignee { cursor: pointer; }
+button.poignee:hover, button.poignee:focus-visible { color: var(--encre-2); opacity: 1; }
+.menu-colonne {
+  position: absolute; z-index: 9; display: grid; gap: 2px; padding: 4px; min-width: 190px;
+  background: var(--releve); border: 1px solid var(--releve-bord); border-radius: 6px; box-shadow: var(--flottant-ombre);
+}
+.menu-colonne[hidden] { display: none; }
+.menu-colonne .titre-menu { padding: 4px 8px 2px; font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--encre-3); }
+.menu-colonne button {
+  border: none; background: none; border-radius: 4px; padding: 6px 8px; min-height: 28px; text-align: left;
+  font: 13px "IBM Plex Sans", system-ui, sans-serif; color: var(--encre); cursor: pointer;
+}
+.menu-colonne button:hover { background: var(--survol-ligne); }
+.menu-colonne button:disabled { color: var(--encre-3); cursor: default; background: none; }
+
+/* Au téléphone (M1) : seule la référence reste collée à gauche, sur 40 %
+   de l'écran au plus — la colonne suivie et ce qui précède la référence
+   défilent avec le reste, sinon rien d'autre n'était atteignable. */
+@media (max-width: 720px) {
+  table.plans .col-fige:not(.col-ref) { left: auto !important; box-shadow: none; }
+  table.plans thead .groupes th.col-fige { left: auto !important; box-shadow: none; }
+  /* Un nom de groupe long (« Informations principales ») ne doit pas
+     élargir la colonne de la référence au-delà de 40 % : il passe à la ligne. */
+  table.plans thead .groupes th { white-space: normal; }
+  table.plans .col-ref { left: 0 !important; box-sizing: border-box; max-width: 40vw; padding-left: 10px; padding-right: 10px;
+    white-space: normal; overflow-wrap: anywhere; box-shadow: inset -1px 0 0 var(--filet-fort); }
+  .actions-tableau { margin-left: 0; }
+}
+/* Au doigt et sur un écran étroit (D10, M2) : le tableau prend sa hauteur
+   dans la page — le pouce fait défiler la page, jamais un cadre qui la
+   retient ; il ne défile que de côté. Les lignes viennent par tranches,
+   d'un bouton « Afficher N plans de plus ». */
+@media (max-width: 720px), (pointer: coarse) {
+  .defile { max-height: none; }
+  .ombre-bas { display: none; }
+}
+/* D11 : 44 px au doigt, sans changer le dessin à la souris. */
+@media (pointer: coarse) {
+  table.plans tbody td { padding-top: 12px; padding-bottom: 12px; }
+  .ref-plan, .bouton-outil, .colonnes-vides button, tr.ligne-suite button { position: relative; }
+  .ref-plan::after { content: ""; position: absolute; inset: -12px -8px; }
+  .bouton-outil::after { content: ""; position: absolute; inset: -9px -2px; }
+  .colonnes-vides button::after, tr.ligne-suite button::after { content: ""; position: absolute; inset: -12px -6px; }
+  table.plans thead .titres th button, table.plans thead .titres-la th button { min-height: 44px; }
+  table.plans thead .filtres input { font-size: 16px; min-height: 40px; }
+  .menu-colonne button { min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) { .ombre-bas { transition: none; } }
+/* Au téléphone, les boutons d'outils disent l'essentiel : « Filtrer »,
+   « Copier », « Télécharger » (leur nom complet reste aux lecteurs d'écran,
+   le mot masqué est seulement visuellement retiré). */
+@media (max-width: 480px) {
+  .bouton-outil .mot-long { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+/* D9 : un libellé coupé de « … » se lisait seulement au survol (title). Au
+   doigt il passe à la ligne ; au clavier, la case atteinte s'ouvre en
+   entier. */
+@media (pointer: coarse) { table.plans td.large { white-space: normal; max-width: 260px; } }
+table.plans td.large:focus { white-space: normal; overflow: visible; }
+
+/* L'historique d'un plan dit aussi où il en est dans la seconde base
+   (P-F7) : la ligne de SEE, ce qu'elle dit, et le verdict. */
+.fiche-plan-see { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--filet); font-size: 13px; color: var(--encre-2); }
+.fiche-plan-see .mot-see { color: var(--encre); font-weight: 500; }
+.fiche-plan-see .ligne-see { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--encre); }
+.fiche-plan-see .verdict-see { color: var(--encre); }
+.fiche-plan-see .verdict-see.manque { color: var(--alerte); }
+.fiche-plan-see .verdict-see.avance { color: var(--cours); }
+.fiche-plan-see .verdict-see.accord { color: var(--fait); }
+.fiche-plan-see .lien-doux { color: var(--encre-2); }
+.fiche-plan-tete h3.mot { margin: 0; }
+
+/* « Chercher un plan », dans le sommaire collé (P-F23) : un champ discret à
+   droite sur grand écran ; en dessous de 1280 px, une loupe qui l'ouvre
+   par-dessus le sommaire. La liste des plans trouvés se parcourt aux
+   flèches (combobox ARIA). */
+.cherche-plan { position: absolute; right: var(--retrait-panneau); top: 50%; transform: translateY(-50%); z-index: 2; display: flex; align-items: center; }
+.cherche-plan-cadre { position: relative; display: flex; align-items: center; gap: 6px; width: 200px; }
+.cherche-plan-cadre input {
+  width: 100%; height: 28px; padding: 0 10px 0 30px; border: 1px solid var(--bord-champ); border-radius: 4px;
+  background: var(--surface); color: var(--encre); font: 13px "IBM Plex Sans", system-ui, sans-serif;
+}
+.cherche-plan-cadre input::placeholder { color: var(--encre-3); }
+.cherche-plan-cadre input:hover { border-color: var(--encre-2); }
+.cherche-plan-cadre input:focus { outline: 2px solid var(--focus); outline-offset: 2px; }
+.cherche-plan-cadre input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+.cherche-plan-cadre .loupe { position: absolute; left: 10px; top: 50%; margin-top: -7px; color: var(--encre-3); pointer-events: none; }
+.cherche-plan-ouvrir, .cherche-plan-fermer {
+  display: none; flex: none; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0;
+  border: 1px solid var(--filet-fort); border-radius: 50%; background: var(--surface); color: var(--encre-2); cursor: pointer;
+}
+.cherche-plan-ouvrir:hover, .cherche-plan-fermer:hover { border-color: var(--encre); color: var(--encre); }
+.cherche-plan-liste {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 31; width: max(100%, 360px); max-width: calc(100vw - 32px);
+  max-height: min(60vh, 420px); overflow: auto; margin: 0; padding: 4px; list-style: none;
+  background: var(--releve); border: 1px solid var(--releve-bord); border-radius: 6px; box-shadow: var(--flottant-ombre);
+}
+.cherche-plan-liste[hidden] { display: none; }
+.cherche-plan-liste li {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; gap: 2px 12px;
+  padding: 7px 10px; border-radius: 4px; font-size: 13px; color: var(--encre-2); cursor: pointer;
+}
+.cherche-plan-liste li[aria-selected="true"] { background: var(--survol-ligne); box-shadow: inset 2px 0 0 var(--focus); color: var(--encre); }
+.cherche-plan-liste li:hover { background: var(--survol-ligne); }
+.cherche-plan-liste li[aria-disabled="true"] { cursor: default; background: none; box-shadow: none; grid-template-columns: 1fr; }
+.cherche-plan-liste .ref-option { font: 500 12px "IBM Plex Mono", monospace; color: var(--encre); white-space: nowrap; }
+.cherche-plan-liste .ref-option mark { background: none; color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.cherche-plan-liste .etat-option { display: inline-flex; align-items: center; gap: 6px; justify-self: end; font: 12px "IBM Plex Mono", monospace; white-space: nowrap; }
+.cherche-plan-liste .libelle-option { grid-column: 1 / -1; font-size: 12px; color: var(--encre-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* De grand écran : le sommaire se centre entre la marque à gauche et le
+   champ à droite, sans jamais passer dessous. */
+@media (min-width: 1280px) {
+  .sommaire { padding-inline: 230px; }
+}
+@media (max-width: 1279px) {
+  .cherche-plan { position: static; transform: none; flex: none; margin-left: 10px; }
+  .cherche-plan-ouvrir { display: inline-flex; }
+  .cherche-plan-cadre { display: none; }
+  .cherche-plan[data-ouvert="true"] .cherche-plan-ouvrir { visibility: hidden; }
+  .cherche-plan[data-ouvert="true"] .cherche-plan-cadre {
+    display: flex; position: absolute; inset: 0; width: auto; padding: 0 2px; background: var(--papier); z-index: 3;
+  }
+  .cherche-plan[data-ouvert="true"] .cherche-plan-fermer { display: inline-flex; }
+  .cherche-plan-cadre .loupe { left: 12px; }
+  .cherche-plan-liste { left: 0; right: 0; width: auto; }
+}
+@media (pointer: coarse) {
+  .cherche-plan-ouvrir, .cherche-plan-fermer { position: relative; }
+  .cherche-plan-ouvrir::after, .cherche-plan-fermer::after { content: ""; position: absolute; inset: -8px; }
+  .cherche-plan-cadre input { height: 36px; font-size: 16px; }
+  .cherche-plan-liste li { min-height: 44px; }
+}
+@media print { .cherche-plan, .actions-tableau, .colonnes-vides button, .menu-colonne { display: none !important; } }
 .compte { color: var(--encre-3); font-size: 12px; font-variant-numeric: tabular-nums; }
 .pied { padding: 20px var(--retrait-panneau) 42px; margin-top: 32px; border-top: 1px solid var(--filet); color: var(--encre-3); font-size: 12px; line-height: 1.8; }
 /* Débrief 26, téléphone : le bouton ↑ ne cache plus la dernière ligne du pied ;

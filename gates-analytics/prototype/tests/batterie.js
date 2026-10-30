@@ -31,9 +31,17 @@ async function reinitialiser(pg) {
   if (bouton && await bouton.isVisible()) { await bouton.click(); }
   else {
     await pg.fill('#recherche', '');
-    for (const i of await pg.$$('input[data-filtre]')) await i.fill('');
+    /* Débrief 27, lot D : la rangée des filtres de colonne est repliée tant
+       qu'aucun filtre n'est posé — ses champs cachés n'ont rien à vider. */
+    for (const i of await pg.$$('input[data-filtre]')) if (await i.isVisible()) await i.fill('');
   }
   await pg.waitForTimeout(400);
+}
+/* Débrief 27, lot D : les filtres de colonne se déplient d'un bouton
+   (« Filtrer par colonne », X-A2) avant qu'on y tape. */
+async function deplierFiltresColonne(pg) {
+  const b = await pg.$('#ouvrir-filtres');
+  if (b && await b.isVisible() && (await b.getAttribute('aria-expanded')) !== 'true') { await b.click(); await pg.waitForTimeout(250); }
 }
 
 (async () => {
@@ -52,9 +60,23 @@ async function reinitialiser(pg) {
      propres tests, côté add-on, sur un extract de 640 plans. Et elle rend la
      page d'un seul bloc, comme avant le débrief 23 : l'ouverture en deux
      temps a ses propres tests (prototype/tests/ouverture-page.js). */
+  /* Débrief 27, lot D : un nouveau venu ouvre sur la « Vue essentielle », les
+     colonnes vides de la sélection masquées. Les vérifications d'avant
+     portent sur l'extract entier : elles partent du lecteur qui a choisi
+     « Toutes les colonnes » et « Afficher » les colonnes vides — deux choix
+     que la page retient (posés ici seulement si rien n'est encore retenu).
+     Le nouveau venu a sa section (« Débrief 27 : le tableau des plans »),
+     sur un contexte vierge ({ prefsVierges: true }). */
   async function contexte(opts = {}) {
-    const ctx = await nav.newContext(Object.assign({ viewport: { width: 1280, height: 950 } }, opts));
-    await ctx.addInitScript(() => { window.SUIVI_FWD_BUDGET = 1e9; window.SUIVI_FWD_DIFFERER = false; });
+    const { prefsVierges, ...options } = opts;
+    const ctx = await nav.newContext(Object.assign({ viewport: { width: 1280, height: 950 } }, options));
+    await ctx.addInitScript((retenir) => {
+      window.SUIVI_FWD_BUDGET = 1e9; window.SUIVI_FWD_DIFFERER = false;
+      if (retenir) {
+        try { if (!localStorage.getItem('suivi-fwd:v1')) localStorage.setItem('suivi-fwd:v1', JSON.stringify({ vueTable: 'toutes', videsMontrees: true })); }
+        catch (e) { /* sans stockage : la page ouvre sur ses valeurs par défaut */ }
+      }
+    }, !prefsVierges);
     return ctx;
   }
   async function page(ctx, etiquette = 'page') {
@@ -101,11 +123,12 @@ async function reinitialiser(pg) {
     gauches: [...document.querySelectorAll('tr.titres th.col-fige')].map(t => parseFloat(t.style.left)),
     /* Les deux colonnes sans intitulé qui restent, vides de bout en bout comme
        dans l'export réel : la structure de GATES se montre telle quelle, seule
-       la première colonne — celle qu'Excel ajoute — s'efface. */
+       la première colonne — celle qu'Excel ajoute — s'efface. Débrief 27
+       (B22) : une case vide s'écrit « — » (elle s'écrivait « - »). */
     col4: [...document.querySelectorAll('#corps-tableau tr')].every(tr =>
-      tr.children[[...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === 'colonne_4')].textContent.trim() === '-'),
+      tr.children[[...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === 'colonne_4')].textContent.trim() === '\u2014'),
     col5: [...document.querySelectorAll('#corps-tableau tr')].every(tr =>
-      tr.children[[...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === 'colonne_5')].textContent.trim() === '-')
+      tr.children[[...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === 'colonne_5')].textContent.trim() === '\u2014')
   }));
   verifier('le tableau ouvre sur les 137 colonnes : l\'export entier, moins la seule vide sans intitule',
     extrait.affichees === COLONNES_TOTAL, extrait.affichees + ' / ' + COLONNES_TOTAL);
@@ -134,7 +157,9 @@ async function reinitialiser(pg) {
   section('Les deux vues du tableau');
   const vTout = await p.evaluate(() => [...document.querySelectorAll('#vue-tableau button')]
     .map(b => b.dataset.vue + ':' + b.getAttribute('aria-pressed')).join(' '));
-  verifier('on demarre sur « toutes les colonnes »',
+  /* Débrief 27 : « Toutes les colonnes » est ici le choix retenu du lecteur
+     (voir contexte()) ; un nouveau venu, lui, ouvre sur la vue essentielle. */
+  verifier('le choix retenu « toutes les colonnes » rouvre sur « toutes les colonnes »',
     vTout === 'toutes:false essentielle:false' || vTout === 'toutes:true essentielle:false', vTout);
   await p.click('#vue-tableau button[data-vue="essentielle"]'); await p.waitForTimeout(600);
   const vEss = await p.evaluate(() => ({
@@ -2053,6 +2078,7 @@ async function reinitialiser(pg) {
 
   // =================================================================
   section('Filtres de colonne');
+  await deplierFiltresColonne(p);
   await p.fill('input[data-filtre="ata"]', '24'); await p.waitForTimeout(350);
   const f1 = await p.evaluate(() => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length));
   verifier('filtrer une colonne réduit le tableau', f1 > 0 && f1 < TOTAL, f1 + ' lignes');
@@ -2132,8 +2158,10 @@ async function reinitialiser(pg) {
   brancher(pa, 'ancienne pref');
   await pa.addInitScript(() => {
     try {
+      /* Débrief 27 : vueTable et videsMontrees disent « l'extract entier » ;
+         la vérification porte sur « cachees ». */
       localStorage.setItem('suivi-fwd:v1', JSON.stringify({
-        cachees: { ata: true, avancement: true, nom_installation: true, rpt: true }
+        cachees: { ata: true, avancement: true, nom_installation: true, rpt: true }, vueTable: 'toutes', videsMontrees: true
       }));
     } catch (e) { /* sans stockage, rien a ignorer */ }
   });
@@ -3037,6 +3065,7 @@ async function reinitialiser(pg) {
   await p.click('#filtre-journal button[data-journal=""]'); await p.waitForTimeout(400);
 
   // Un filtre de colonne se voit dans le bandeau, avec sa croix.
+  await deplierFiltresColonne(p);
   await p.fill('input[data-filtre="ata"]', '21'); await p.waitForTimeout(500);
   const bandeauColonne = await p.evaluate(() => ({
     visible: !document.getElementById('filtres-actifs').hidden,
@@ -6554,6 +6583,7 @@ async function reinitialiser(pg) {
   await reinitialiser(p);
 
   // G. Un filtre de colonne passe par le même chemin que la recherche.
+  await deplierFiltresColonne(p);
   await p.click('input[data-filtre="reference"]');
   await p.keyboard.type(refs20.pasFini); await p.waitForTimeout(700);
   const g20a = await p.evaluate(() => ({ fiche: !document.getElementById('fiche-plan').hidden && (document.querySelector('#fiche-plan .ref') || {}).textContent,
@@ -6801,7 +6831,9 @@ async function reinitialiser(pg) {
   await pc.evaluate(() => localStorage.setItem('suivi-fwd:v1', JSON.stringify({
     jalons: [{ i: 'pas un nombre', texte: 42 }, null, { i: 99999 }, { semaine: '2026-S50', texte: '<b>stocké</b>' }],
     fen: { debut: 'x' }, tri: { cle: '__proto__' }, triGroupe: { cle: 'rm -rf', asc: 'oui' },
-    ordre: ['inexistante'], cachees: { reference: true }
+    ordre: ['inexistante'], cachees: { reference: true },
+    /* Débrief 27 : l'extract entier, pour que la vérification porte sur « cachees ». */
+    vueTable: 'toutes', videsMontrees: true
   })));
   await pc.reload(); await pc.waitForTimeout(1300);
   await pc.click('.segmente button[data-span="0"]'); await pc.waitForTimeout(400);
@@ -7323,6 +7355,264 @@ async function reinitialiser(pg) {
       annonce.role === 'status' && annonce.live === 'polite' && annonce.texte === '12 plans affichés sur 634' && annonce.masque && annonce.copierParle === 0 && annonce.zones === 1,
       JSON.stringify(annonce));
     await c0.close();
+  }
+
+  // =================================================================
+  /* Débrief 27, lot D : le tableau des plans et la fiche d'un plan — la vue
+     essentielle pour tout le monde (retenue), les colonnes vides masquées,
+     « — » dans les cases vides, le tableau au clavier (deux arrêts de
+     tabulation, les flèches), une colonne déplacée sans glisser, la ligne
+     SEE dans la fiche, Échap qui la ferme, l'export, la recherche d'un plan
+     dans le sommaire, le téléphone. */
+  section('Débrief 27 : le tableau des plans (lot D)');
+  {
+    const cD = await contexte({ prefsVierges: true });
+    const d = await page(cD, 'lot D');
+    await d.evaluate(() => document.getElementById('section-plans').scrollIntoView());
+    await d.waitForTimeout(300);
+    const neuf = await d.evaluate(() => {
+      const cs = e => getComputedStyle(e);
+      const presse = [...document.querySelectorAll('#vue-tableau button')].map(b => b.dataset.vue + ':' + b.getAttribute('aria-pressed')).join(' ');
+      const groupes = [...document.querySelectorAll('tr.groupes th')].map(t => t.textContent.trim());
+      const cap = document.querySelector('table.plans caption');
+      const ref = document.querySelector('#corps-tableau .ref-plan');
+      return {
+        presse, n: document.querySelectorAll('tr.titres th').length, groupes,
+        caption: cap ? cap.textContent : '', cv: cs(document.getElementById('cadre-tableau')).contentVisibility,
+        tirets: document.querySelectorAll('#corps-tableau td .tiret-vide').length,
+        traits: [...document.querySelectorAll('#corps-tableau td')].filter(td => td.textContent.trim() === '-').length,
+        refSoulignee: ref ? cs(ref).textDecorationStyle + ' ' + cs(ref).textDecorationLine : '',
+        filtresCaches: document.querySelector('tr.filtres').hidden,
+        boutonFiltres: document.getElementById('ouvrir-filtres').getAttribute('aria-expanded'),
+        arretsCorps: document.querySelectorAll('#corps-tableau [tabindex="0"]').length,
+        refsHorsTab: [...document.querySelectorAll('#corps-tableau .ref-plan')].filter(b => b.getAttribute('tabindex') !== '-1' && b.getAttribute('tabindex') !== '0').length,
+        arretsTete: document.querySelectorAll('tr.titres button[data-tri][tabindex="0"]').length,
+        triHaut: Math.min(...[...document.querySelectorAll('tr.titres button[data-tri]')].map(b => b.getBoundingClientRect().height)),
+        stocke: (() => { try { return localStorage.getItem('suivi-fwd:v1') || ''; } catch (e) { return ''; } })()
+      };
+    });
+    verifier('un nouveau venu ouvre sur la « Vue essentielle » (P-F15)', neuf.presse === 'toutes:false essentielle:true' && neuf.n > 1 && neuf.n <= 9, JSON.stringify([neuf.presse, neuf.n]));
+    verifier('le groupe de la colonne suivie dit « Avancement (GATES · HDK AA 011) », et aucune case d’en-tête de groupe n’est vide (X-A11)',
+      neuf.groupes.indexOf('Avancement (GATES · HDK AA 011)') !== -1 && neuf.groupes.every(g => g.length > 0) && neuf.groupes.indexOf('HDK AA 011') === -1, JSON.stringify(neuf.groupes));
+    verifier('le tableau a un nom (légende) qui dit ce qu’il montre, et plus de content-visibility qui cache ses lignes (X-A11)',
+      /^Plans GATES de HDK : \d+ lignes, triées par Référence UD, ordre croissant/.test(neuf.caption) && neuf.cv !== 'auto', JSON.stringify([neuf.caption, neuf.cv]));
+    verifier('une case vide s’écrit « — » (B22), plus jamais « - »', neuf.tirets > 0 && neuf.traits === 0, JSON.stringify([neuf.tirets, neuf.traits]));
+    /* La démonstration écrit « non renseigné » à blanc : un plan reçoit ici
+       « EMPTY », comme l'extract de GATES l'écrit. */
+    const empty = await d.evaluate(() => {
+      const s = window.__jeuDExemple('HDK'); s.plans[0].avancement = 'EMPTY'; window.__chargerSource(s);
+      const e = document.querySelector('#corps-tableau .vide-gates');
+      return e ? { titre: e.getAttribute('title'), masque: getComputedStyle(e, '::after').content, texte: e.textContent } : null;
+    });
+    verifier('« EMPTY » reste écrit tel quel, et dit son sens au survol et aux lecteurs d’écran (P-F14)',
+      !!empty && empty.texte === 'EMPTY' && empty.titre === 'Non renseigné (EMPTY dans GATES)' && /non renseigné dans GATES/.test(empty.masque || ''), JSON.stringify(empty));
+    await d.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
+    await d.waitForTimeout(300);
+    verifier('la référence se voit cliquable sans survol : soulignée en pointillé (P-F17)', /dotted/.test(neuf.refSoulignee) && /underline/.test(neuf.refSoulignee), neuf.refSoulignee);
+    verifier('la rangée des filtres de colonne est repliée derrière « Filtrer par colonne » (X-A2)', neuf.filtresCaches && neuf.boutonFiltres === 'false', JSON.stringify([neuf.filtresCaches, neuf.boutonFiltres]));
+    verifier('un seul arrêt de tabulation pour les lignes, un pour les en-têtes (X-A2)',
+      neuf.arretsCorps === 1 && neuf.refsHorsTab === 0 && neuf.arretsTete === 1, JSON.stringify([neuf.arretsCorps, neuf.refsHorsTab, neuf.arretsTete]));
+    verifier('les boutons de tri font 24 px de haut au moins (2.5.8)', neuf.triHaut >= 24, String(neuf.triHaut));
+
+    /* La ligne survolée se voit, et le gris tertiaire y reste lisible. */
+    await d.hover('#corps-tableau tr:nth-child(3) td:nth-child(3)');
+    const survol = await d.evaluate(() => {
+      const lum = c => { const m = c.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]; };
+      const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+      const td = document.querySelector('#corps-tableau tr:nth-child(3) td:nth-child(3)');
+      const fond = getComputedStyle(td).backgroundColor, surface = getComputedStyle(document.getElementById('section-plans')).backgroundColor;
+      const gris = getComputedStyle(document.querySelector('.tiret-vide') || td).color;
+      return { fond, ecart: cr(fond, surface), gris: cr(gris, fond) };
+    });
+    verifier('une ligne survolée se voit (fond distinct de la surface), le gris tertiaire y tient 4,5:1 (P-F17)', survol.ecart > 1.08 && survol.gris >= 4.5, JSON.stringify(survol));
+
+    /* Au clavier : les flèches, ↑ vers l'en-tête, Alt + → déplace la colonne. */
+    await d.focus('#corps-tableau [tabindex="0"]');
+    await d.keyboard.press('ArrowDown'); await d.keyboard.press('ArrowRight');
+    const fleches = await d.evaluate(() => {
+      const a = document.activeElement, tr = a.closest('tr');
+      return { tag: a.tagName, ligne: [...document.querySelectorAll('#corps-tableau tr')].indexOf(tr), col: a.cellIndex, tab: a.getAttribute('tabindex'),
+               autres: document.querySelectorAll('#corps-tableau [tabindex="0"]').length };
+    });
+    verifier('↓ puis → : la case de la deuxième ligne, deuxième colonne prend le focus et l’arrêt de tabulation (un seul)',
+      fleches.tag === 'TD' && fleches.ligne === 1 && fleches.col === 1 && fleches.tab === '0' && fleches.autres === 1, JSON.stringify(fleches));
+    await d.keyboard.press('ArrowUp'); await d.keyboard.press('ArrowUp');
+    const versTete = await d.evaluate(() => document.activeElement.getAttribute('data-tri'));
+    await d.keyboard.press('ArrowRight'); await d.keyboard.press('ArrowRight');
+    const cleDeplacee = await d.evaluate(() => document.activeElement.getAttribute('data-tri'));
+    const avantOrdre = await d.evaluate(() => [...document.querySelectorAll('tr.titres th')].map(t => t.dataset.cle));
+    await d.keyboard.press('Alt+ArrowRight'); await d.waitForTimeout(300);
+    const apresAlt = await d.evaluate(() => ({ ordre: [...document.querySelectorAll('tr.titres th')].map(t => t.dataset.cle), actif: document.activeElement.getAttribute('data-tri') }));
+    await d.waitForFunction(() => /déplacée en/.test((document.getElementById('annonce') || {}).textContent || ''), null, { timeout: 3000 }).catch(() => {});
+    const annonceAlt = await d.evaluate(() => (document.getElementById('annonce') || {}).textContent);
+    const iAv = avantOrdre.indexOf(cleDeplacee);
+    verifier('↑ depuis la première ligne remonte à l’en-tête ; Alt + → déplace la colonne d’un cran, le focus la suit, et c’est dit (2.5.7)',
+      versTete === 'avancement' && iAv !== -1 && apresAlt.ordre.indexOf(cleDeplacee) === iAv + 1 && apresAlt.actif === cleDeplacee && /déplacée en/.test(annonceAlt || ''),
+      JSON.stringify([versTete, cleDeplacee, iAv, apresAlt, annonceAlt]));
+    /* Sans glisser, à la souris : le menu de la poignée. */
+    const thMenu = 'tr.titres th[data-cle="' + cleDeplacee + '"]';
+    await d.hover(thMenu);
+    await d.click(thMenu + ' button.poignee');
+    const menu = await d.evaluate(() => { const m = document.getElementById('menu-colonne'); return { vu: !m.hidden, boutons: [...m.querySelectorAll('button')].map(b => b.textContent.trim() + (b.disabled ? '(off)' : '')) }; });
+    await d.click('#menu-colonne button[data-deplacer="-1"]'); await d.waitForTimeout(300);
+    const apresMenu = await d.evaluate(() => [...document.querySelectorAll('tr.titres th')].map(t => t.dataset.cle));
+    verifier('la poignée ouvre « ← Déplacer à gauche / Déplacer à droite → », et le clic déplace la colonne (2.5.7)',
+      menu.vu && menu.boutons.length === 2 && apresMenu.indexOf(cleDeplacee) === iAv, JSON.stringify([menu, apresMenu.indexOf(cleDeplacee), iAv]));
+    const pad = await d.evaluate(() => { const s = getComputedStyle(document.getElementById('defile')); return { haut: parseFloat(s.scrollPaddingTop), gauche: parseFloat(s.scrollPaddingLeft) }; });
+    verifier('le cadre garde la place des en-têtes collés et des colonnes figées (scroll-padding, X-A3)', pad.haut > 30 && pad.gauche > 100, JSON.stringify(pad));
+
+    /* « Toutes les colonnes » : retenu, et les colonnes vides masquées, dites. */
+    await d.click('#vue-tableau button[data-vue="toutes"]'); await d.waitForTimeout(700);
+    const toutes = await d.evaluate(() => ({ n: document.querySelectorAll('tr.titres th').length, vides: document.getElementById('colonnes-vides').textContent,
+      c4: !!document.querySelector('tr.titres th[data-cle="colonne_4"]'), stocke: localStorage.getItem('suivi-fwd:v1') }));
+    verifier('« Toutes les colonnes » masque les colonnes vides de la sélection et le dit (« N colonnes vides masquées · Afficher »)',
+      toutes.n < 137 && !toutes.c4 && /^\d+ colonnes vides masquées/.test(toutes.vides) && /Afficher$/.test(toutes.vides) && toutes.n + parseInt(toutes.vides, 10) === 137,
+      JSON.stringify([toutes.n, toutes.vides.slice(0, 60)]));
+    await d.click('#colonnes-vides button'); await d.waitForTimeout(700);
+    const affichees = await d.evaluate(() => ({ n: document.querySelectorAll('tr.titres th').length, vides: document.getElementById('colonnes-vides').textContent }));
+    verifier('« Afficher » les remet toutes (137), « Masquer » les retire', affichees.n === 137 && /affichées/.test(affichees.vides) && /Masquer$/.test(affichees.vides), JSON.stringify(affichees));
+    await d.waitForTimeout(600);
+    await d.reload(); await d.waitForTimeout(1300);
+    const rouvert = await d.evaluate(() => ({ presse: [...document.querySelectorAll('#vue-tableau button[aria-pressed="true"]')].map(b => b.dataset.vue).join(), n: document.querySelectorAll('tr.titres th').length }));
+    verifier('les deux choix se retiennent : la page rouverte est sur « Toutes les colonnes », colonnes vides affichées', rouvert.presse === 'toutes' && rouvert.n === 137, JSON.stringify(rouvert));
+
+    /* Filtrer par colonne : déplié, focus au premier champ ; un filtre posé garde la rangée. */
+    await d.evaluate(() => document.getElementById('section-plans').scrollIntoView());
+    await d.click('#ouvrir-filtres'); await d.waitForTimeout(250);
+    const deplie = await d.evaluate(() => ({ cache: document.querySelector('tr.filtres').hidden, exp: document.getElementById('ouvrir-filtres').getAttribute('aria-expanded'), actif: document.activeElement.getAttribute('data-filtre') }));
+    await d.keyboard.type('GAE21'); await d.waitForTimeout(600);
+    await d.click('#ouvrir-filtres'); await d.waitForTimeout(250);
+    const garde = await d.evaluate(() => ({ cache: document.querySelector('tr.filtres').hidden, texte: document.getElementById('ouvrir-filtres').textContent.trim() }));
+    verifier('« Filtrer par colonne » déplie la rangée (focus au premier champ) ; un filtre posé la garde à vue et se compte',
+      !deplie.cache && deplie.exp === 'true' && deplie.actif === 'reference' && !garde.cache && /\(1\)/.test(garde.texte), JSON.stringify([deplie, garde]));
+    await reinitialiser(d);
+
+    /* L'export : ce que montre le tableau, à la mode d'Excel. */
+    await d.click('#vue-tableau button[data-vue="essentielle"]'); await d.waitForTimeout(500);
+    await d.fill('#recherche', 'GAE2'); await d.waitForTimeout(500);
+    const exp = await d.evaluate(() => {
+      const tsv = window.__exportTableau('tsv'), csv = window.__exportTableau('csv');
+      return { lignesTSV: tsv.split('\n').length, tete: tsv.split('\n')[0], lignesTableau: document.querySelectorAll('#corps-tableau tr').length,
+               titres: [...document.querySelectorAll('tr.titres th')].map(t => t.textContent.trim()).join('\t'),
+               bom: csv.charCodeAt(0) === 0xfeff, pointVirgule: csv.split('\r\n')[0].split(';').length };
+    });
+    verifier('« Copier le tableau » prend les lignes filtrées et les colonnes affichées, en colonnes pour Excel (P-F21)',
+      exp.lignesTSV === exp.lignesTableau + 1 && exp.tete === exp.titres, JSON.stringify([exp.lignesTSV, exp.lignesTableau, exp.tete.slice(0, 60)]));
+    const [dl] = await Promise.all([d.waitForEvent('download', { timeout: 5000 }).catch(() => null), d.click('#telecharger-tableau')]);
+    let csvFichier = '';
+    if (dl) { try { csvFichier = require('fs').readFileSync(await dl.path(), 'utf8'); } catch (e) { csvFichier = ''; } }
+    const msg = await d.evaluate(() => document.getElementById('message-tableau').textContent);
+    verifier('« Télécharger (CSV) » donne un fichier plans-gates-…csv (BOM, point-virgule), et dit ce qu’il contient',
+      !!dl && /^plans-gates-.+\.csv$/.test(dl.suggestedFilename()) && csvFichier.charCodeAt(0) === 0xfeff && csvFichier.split('\r\n')[0].split(';').length === exp.pointVirgule && /lignes/.test(msg),
+      JSON.stringify([dl && dl.suggestedFilename(), csvFichier.length, msg]));
+    await d.click('#copier-tableau'); await d.waitForTimeout(400);
+    const copie = await d.evaluate(() => ({ msg: document.getElementById('message-tableau').textContent, role: document.getElementById('message-tableau').getAttribute('role') }));
+    verifier('« Copier le tableau » répond par un mot posé sous les boutons, sans rien pousser (role="status")',
+      /Tableau copié|refusé/.test(copie.msg) && copie.role === 'status', JSON.stringify(copie));
+    await d.fill('#recherche', ''); await d.waitForTimeout(400);
+
+    /* La fiche d'un plan : la ligne SEE, la croix qui dit vrai, Échap, le focus rendu. */
+    const refSee = await d.evaluate(() => {
+      const r = [...document.querySelectorAll('#corps-tableau .ref-plan')].map(b => b.dataset.refPlan);
+      return r;
+    });
+    await d.click('#corps-tableau .ref-plan >> nth=3'); await d.waitForTimeout(700);
+    const fiche = await d.evaluate(() => ({ actif: document.activeElement.id, croix: (document.querySelector('#fiche-plan [data-fermer-plan]') || {}).getAttribute && document.querySelector('#fiche-plan [data-fermer-plan]').getAttribute('aria-label'),
+      see: (document.getElementById('fiche-plan-see') || {}).textContent || '', ref: (document.querySelector('#fiche-plan .ref') || {}).textContent }));
+    verifier('la fiche s’ouvre son titre au focus ; la croix dit « Fermer l’historique » (P-F16) ; elle dit où en est le plan dans SEE (P-F7)',
+      fiche.actif === 'titre-fiche-plan' && fiche.croix === 'Fermer l’historique' && /^Dans SEE\s*:/.test(fiche.see.replace(/ /g, ' ')) && /→/.test(fiche.see), JSON.stringify(fiche));
+    await d.keyboard.press('Escape'); await d.waitForTimeout(600);
+    const echap = await d.evaluate(() => ({ cache: document.getElementById('fiche-plan').hidden, actif: document.activeElement.getAttribute('data-ref-plan'), lignes: document.querySelectorAll('#corps-tableau tr').length }));
+    verifier('Échap ferme la fiche, le tableau revient à tous les plans et le focus à la référence cliquée',
+      echap.cache && echap.actif === fiche.ref && echap.lignes > 1, JSON.stringify([echap, fiche.ref]));
+    /* Un plan connu de SEE : sa ligne, « Voir la ligne SEE », la recherche SEE qui lit une référence de GATES. */
+    /* Un plan qui a sa ligne dans SEE : le tableau de SEE le dit (data-plan). */
+    const connu = await d.evaluate(() => { const tr = document.querySelector('#corps-seconde tr[data-plan]'); return tr ? tr.dataset.plan : null; });
+    if (connu) {
+      await d.fill('#recherche', connu); await d.waitForTimeout(500);
+      await d.click('#corps-tableau .ref-plan'); await d.waitForTimeout(600);
+    }
+    const ligneSee = await d.evaluate(() => (document.getElementById('fiche-plan-see') || {}).textContent || '');
+    if (connu) { await d.click('#fiche-plan button[data-voir-see]'); await d.waitForTimeout(600); }
+    const voir = await d.evaluate(() => ({ base: [...document.querySelectorAll('#choix-base button[aria-pressed="true"]')].map(b => b.dataset.base).join(),
+      lignes: [...document.querySelectorAll('#corps-seconde tr[data-plan]')].map(tr => tr.dataset.plan) }));
+    verifier('« Voir la ligne SEE » passe au tableau de SEE, réduit aux lignes de ce plan (P-F7)',
+      !!connu && voir.base === 'la' && voir.lignes.length >= 1 && voir.lignes.every(r => r === connu), JSON.stringify([connu, ligneSee.slice(0, 120), voir]));
+    await d.click('#choix-base button[data-base="ici"]'); await d.waitForTimeout(300);
+    await d.evaluate(() => { const x = document.querySelector('#fiche-plan [data-fermer-plan]'); if (x) x.click(); });
+    await d.waitForTimeout(300);
+    await d.click('#choix-base button[data-base="la"]'); await d.waitForTimeout(300);
+    await d.fill('#recherche-seconde', connu || 'X'); await d.waitForTimeout(500);
+    const parGates = await d.evaluate(() => [...document.querySelectorAll('#corps-seconde tr[data-plan]')].map(tr => tr.dataset.plan));
+    verifier('la recherche de SEE trouve la ligne d’une référence écrite à la mode de GATES (même clé que la comparaison)',
+      !!connu && parGates.length >= 1 && parGates.every(r => r === connu), JSON.stringify([connu, parGates]));
+    await d.fill('#recherche-seconde', ''); await d.waitForTimeout(300);
+    await d.click('#choix-base button[data-base="ici"]'); await d.waitForTimeout(300);
+
+    /* Chercher un plan depuis le sommaire (combobox). */
+    await d.evaluate(() => window.scrollTo(0, 0)); await d.waitForTimeout(200);
+    const debut = (connu || 'GAE2').slice(0, 4);
+    await d.click('#cherche-plan-champ');
+    await d.keyboard.type(debut, { delay: 20 }); await d.waitForTimeout(400);
+    const liste = await d.evaluate(() => ({ exp: document.getElementById('cherche-plan-champ').getAttribute('aria-expanded'),
+      options: [...document.querySelectorAll('#cherche-plan-liste li[role="option"][data-ref]')].map(o => o.dataset.ref),
+      choisi: document.getElementById('cherche-plan-champ').getAttribute('aria-activedescendant') }));
+    await d.keyboard.press('ArrowDown'); await d.keyboard.press('Enter'); await d.waitForTimeout(800);
+    const ouvert = await d.evaluate(() => ({ fiche: !document.getElementById('fiche-plan').hidden, ref: (document.querySelector('#fiche-plan .ref') || {}).textContent, actif: document.activeElement.id,
+      exp: document.getElementById('cherche-plan-champ').getAttribute('aria-expanded') }));
+    verifier('« Chercher un plan » (sommaire) propose les plans qui commencent par la saisie, au clavier (combobox) ; Entrée ouvre la fiche du plan choisi (P-F23)',
+      liste.exp === 'true' && liste.options.length >= 2 && liste.options.every(r => r.indexOf(debut) === 0) && !!liste.choisi &&
+      ouvert.fiche && ouvert.ref === liste.options[1] && ouvert.actif === 'titre-fiche-plan' && ouvert.exp === 'false', JSON.stringify([liste, ouvert]));
+    await d.keyboard.press('Escape'); await d.waitForTimeout(500);
+    const retourChamp = await d.evaluate(() => document.activeElement.id);
+    verifier('Échap ferme la fiche ouverte par la recherche et rend le focus au champ de recherche', retourChamp === 'cherche-plan-champ', retourChamp);
+    if (connu) {
+      const formeSee = await d.evaluate(r => window.__racineSEE(window.__analyserUD(r).racine), connu);
+      await d.fill('#cherche-plan-champ', formeSee); await d.waitForTimeout(400);
+      const parSee = await d.evaluate(() => [...document.querySelectorAll('#cherche-plan-liste li[data-ref]')].map(o => o.dataset.ref));
+      verifier('une référence écrite à la mode de SEE trouve le plan de GATES', parSee.indexOf(connu) !== -1, JSON.stringify([formeSee, parSee]));
+      await d.keyboard.press('Escape'); await d.keyboard.press('Escape');
+    }
+    await cD.close();
+
+    /* Le téléphone : seule la référence figée, le tableau dans la page, la loupe. */
+    const cT = await contexte({ prefsVierges: true, viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const t = await page(cT, 'lot D téléphone');
+    await t.evaluate(() => document.getElementById('section-plans').scrollIntoView()); await t.waitForTimeout(400);
+    const tel = await t.evaluate(() => {
+      const cs = e => getComputedStyle(e);
+      const ref = document.querySelector('tr.titres th.col-ref'), suivie = document.querySelector('tr.titres th[data-cle="avancement"]');
+      const td = document.querySelector('#corps-tableau td.col-ref');
+      return { refLeft: cs(ref).left, refPos: cs(ref).position, suivieLeft: cs(suivie).left, refLarg: td.getBoundingClientRect().width,
+               maxH: cs(document.getElementById('defile')).maxHeight, loupe: cs(document.getElementById('cherche-plan-ouvrir')).display,
+               champ: cs(document.getElementById('cherche-plan-cadre')).display, debord: document.documentElement.scrollWidth - window.innerWidth,
+               refCible: (() => { const b = document.querySelector('#corps-tableau .ref-plan'); const a = getComputedStyle(b, '::after'); return a.content; })() };
+    });
+    verifier('téléphone : seule la référence reste figée (40 % de l’écran au plus), la colonne suivie défile (M1)',
+      tel.refPos === 'sticky' && tel.refLeft === '0px' && tel.suivieLeft === 'auto' && tel.refLarg <= 390 * 0.4 + 0.5, JSON.stringify(tel));
+    verifier('téléphone : le tableau prend sa hauteur dans la page (pas de cadre qui retient le pouce, D10) ; la référence a sa cible de 44 px',
+      tel.maxH === 'none' && tel.refCible !== 'none' && tel.debord <= 0, JSON.stringify(tel));
+    await t.click('#cherche-plan-ouvrir'); await t.waitForTimeout(200);
+    const loupe = await t.evaluate(() => ({ ouvert: document.getElementById('cherche-plan').getAttribute('data-ouvert'), actif: document.activeElement.id,
+      large: document.getElementById('cherche-plan-champ').getBoundingClientRect().width }));
+    verifier('téléphone : « Chercher un plan » est une loupe qui ouvre le champ sur toute la largeur du sommaire',
+      tel.loupe !== 'none' && tel.champ === 'none' && loupe.ouvert === 'true' && loupe.actif === 'cherche-plan-champ' && loupe.large > 250, JSON.stringify([tel.loupe, tel.champ, loupe]));
+    await cT.close();
+
+    /* Les tranches, au budget réel (sans le seuil levé par la batterie). */
+    const cR = await nav.newContext({ viewport: { width: 1280, height: 950 } });
+    await cR.addInitScript(() => { window.SUIVI_FWD_DIFFERER = false; });
+    const r = await page(cR, 'lot D tranches');
+    await r.click('#vue-tableau button[data-vue="toutes"]'); await r.waitForTimeout(500);
+    await r.evaluate(() => document.getElementById('section-plans').scrollIntoView()); await r.waitForTimeout(400);
+    const tr1 = await r.evaluate(() => ({ lignes: document.querySelectorAll('#corps-tableau tr:not(.ligne-suite)').length, suite: !!document.querySelector('#corps-tableau tr.ligne-suite'),
+      fondu: document.getElementById('cadre-tableau').dataset.plusBas }));
+    await r.evaluate(() => { const f = document.getElementById('defile'); f.scrollTop = f.scrollHeight; });
+    await r.waitForTimeout(400);
+    const tr2 = await r.evaluate(() => document.querySelectorAll('#corps-tableau tr:not(.ligne-suite)').length);
+    verifier('le tableau se dessine par tranches (25 lignes de l’extract entier d’abord), la suite vient en descendant ; le bas du cadre fond tant qu’il reste des lignes (M4, D10)',
+      tr1.lignes >= 20 && tr1.lignes <= 60 && tr1.suite && tr2 > tr1.lignes && tr1.fondu === 'true', JSON.stringify([tr1, tr2]));
+    await cR.close();
   }
 
   await ctx.close();
