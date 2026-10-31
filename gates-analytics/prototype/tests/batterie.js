@@ -1277,9 +1277,13 @@ async function deplierFiltresColonne(pg) {
   verifier('périmètre + état se cumulent : les validés PERSO, « sur » les plans PERSO',
     cumul.lignes === perso.etats[0] && cumul.compte === perso.etats[0] + ' plans sur ' + nPerso &&
     new RegExp('^' + perso.etats[0] + ' plans en .+ · \\d+ % du périmètre PERSO$').test(cumul.phrase.replace(/[\u00a0\u202f]/g, ' ').trim()) && cumul.jetons.length === 2, cumul.compte + ' / ' + cumul.phrase);
-  verifier('la courbe reste celle du périmètre, et le dit',
+  /* Débrief 29 (relecture R2-7) : la tuile « Terminé » filtre toute la
+     page — la courbe devient celle de cet état, ici celle des validés du
+     périmètre : elle le suit, la note ne dit plus « les autres filtres ne
+     s'appliquent pas ». */
+  verifier('la courbe reste celle du périmètre — la tuile « Terminé » en fait la courbe des validés —, et le dit sans « autres filtres » inventés',
     cumul.dernier.total === nPerso && /^Historique · périmètre PERSO/.test(cumul.note) &&
-    /autres filtres ne s’appliquent pas/.test(cumul.note), cumul.note);
+    !/autres filtres/.test(cumul.note), cumul.note);
   await p.click('#tout-effacer'); await p.waitForTimeout(700);
   verifier('« Tout effacer » remet le périmètre à Tout',
     JSON.stringify(await lirePerimetre()) === JSON.stringify(tout0));
@@ -3258,8 +3262,11 @@ async function deplierFiltresColonne(pg) {
   }));
   verifier('« Filtrer la page sur ATA … » filtre le tableau, la courbe suit le groupe et le nomme, le bandeau dit « ATA : … »',
     filtre27.compte.indexOf(TOTAL + ' plans') === -1 && /^Historique · \S+ /.test(filtre27.note) && filtre27.jetons.join() === 'ATA : ' + avantGroupe[0].g, JSON.stringify(filtre27));
+  /* Débrief 29 (relecture R2-13) : « Retirer le filtre ATA … », sans « de
+     la page » — plus court que « Filtrer la page sur … », il ne pousse plus
+     « Copier (n) » à la ligne au téléphone. */
   verifier('posé, le bouton dit comment le retirer, garde le focus, et la ligne porte l’entonnoir du filtre',
-    filtre27.bouton === 'Retirer le filtre ATA ' + avantGroupe[0].g + ' de la page' && filtre27.focus === 'filtrer-groupe-page' && (await lignesDuBloc())[0].filtre, JSON.stringify(filtre27));
+    filtre27.bouton === 'Retirer le filtre ATA ' + avantGroupe[0].g && filtre27.focus === 'filtrer-groupe-page' && (await lignesDuBloc())[0].filtre, JSON.stringify(filtre27));
   verifier('le journal suit le filtre de la page sur ATA … : il ne garde que les changements des plans du groupe — tous dans le tableau filtré —, moins qu’avant (débrief 28)',
     journalSansGroupe.n > 0 && journalDuGroupe.n < journalSansGroupe.n && journalDuGroupe.horsTableau.length === 0 && journalDuGroupe.lignesHors.length === 0 &&
     journalDuGroupe.refs < journalSansGroupe.refs, JSON.stringify([journalSansGroupe, journalDuGroupe]));
@@ -3308,12 +3315,16 @@ async function deplierFiltresColonne(pg) {
     lignes: (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length),
     critique: document.getElementById('zone-critique').textContent,
     graphe: !!document.querySelector('svg.graphe'),
+    /* Débrief 29 (relecture R2-7) : la courbe suit la recherche — sans plan,
+       elle le dit d'un état calme (« Aucun plan dans la sélection »). */
+    grapheVide: (document.querySelector('#zone-graphe .etat-vide-phrase') || {}).textContent || '',
     etats: [...document.querySelectorAll('#etats .etat-n')].map(e => e.textContent.trim())
   }));
   verifier('aucune ligne dans le tableau', vide.lignes === 0, vide.lignes + ' lignes');
   verifier('le bloc par groupe explique la sélection vide', /Aucun/i.test(vide.critique),
     JSON.stringify(vide.critique.slice(0, 80)));
-  verifier('le graphique survit à la sélection vide', vide.graphe);
+  verifier('le graphique survit à la sélection vide : « Aucun plan dans la sélection », sans erreur (débrief 29 : la courbe suit la recherche)',
+    !vide.graphe && vide.grapheVide === 'Aucun plan dans la sélection', vide.grapheVide);
   verifier('les compteurs d\'état tombent à zéro', vide.etats.every(v => v === '0'), JSON.stringify(vide.etats));
   await p.click('button[data-aide] >> nth=0').catch(() => {});
   await p.waitForTimeout(250);
@@ -12001,6 +12012,321 @@ async function deplierFiltresColonne(pg) {
   //  dans un bloc { … } qui ouvre et ferme ses propres pages.
   // =================================================================
   /* (début du lot R2) */
+  section('Débrief 29 : relecture R2 — les filtres de la page partout, Par ATA, journal au clavier, cibles tactiles');
+  {
+    /* La page vivante, servie par le vrai serveur sur le classeur du
+       simulateur (comme les sections des lots F et I) : HDK et ses six
+       relevés archivés, sa tranche « HDK Tranche 2 » à un seul relevé. */
+    const fsR2 = require('fs'), osR2 = require('os');
+    const { construireSimulateur } = require(path.join(__dirname, '..', '..', 'tests', 'construire-simulateur.js'));
+    const { Feuille } = require(path.join(__dirname, '..', '..', 'tests', 'faux-classeur.js'));
+    const simR2 = construireSimulateur({ date: '2026-10-29', avantPage: function (c, classeur) {
+      const ths = classeur.getSheetByName('THS');
+      classeur.feuilles.splice(1, 0, new Feuille('HDK Tranche 2', ths.valeurs.map(l => l.slice()), false, ths.fusions.map(f => Object.assign({}, f))));
+    } });
+    const srvR2 = simR2.contexte;
+    simR2.classeur.proprietaire = 'nathan@airbus.com';
+    srvR2.__emailScript = 'nathan@airbus.com';
+    const fichierR2 = path.join(osR2.tmpdir(), 'suivi-fwd-lot-r2-' + process.pid + '.html');
+    fsR2.writeFileSync(fichierR2, simR2.page.replace(/<script>\s*\/\* Simulateur : google\.script\.run[\s\S]*?<\/script>/, ''));
+    const vivanteR2 = async (o) => {
+      const email = o.email || 'lecteur@airbus.com';
+      const c = await nav.newContext({ viewport: { width: o.largeur || 1440, height: o.hauteur || 900 }, colorScheme: o.schema || 'light',
+        isMobile: !!o.mobile, hasTouch: !!o.mobile, locale: 'en-US', reducedMotion: o.reducedMotion || 'no-preference' });
+      const pg = await c.newPage();
+      brancher(pg, 'lot R2 ' + (o.largeur || 1440) + ' ' + (o.schema || 'light') + (o.mobile ? ' tactile' : ''));
+      await pg.exposeFunction('__appel', (nom, args) => {
+        if (typeof srvR2[nom] !== 'function' || /_$/.test(nom)) throw new Error('fonction inconnue ' + nom);
+        const avant = srvR2.__emailLecteur; srvR2.__emailLecteur = email;
+        try { const r = srvR2[nom].apply(null, JSON.parse(args)); return JSON.stringify(r === undefined ? null : r); } finally { srvR2.__emailLecteur = avant; }
+      });
+      await pg.addInitScript(() => {
+        window.SUIVI_FWD_BUDGET = 1e9;
+        function chaine(ok, ko) {
+          const c = { withSuccessHandler: f => chaine(f, ko), withFailureHandler: f => chaine(ok, f), withUserObject: () => chaine(ok, ko) };
+          return new Proxy(c, { get(t, nom) {
+            if (nom in t) return t[nom];
+            if (typeof nom !== 'string') return undefined;
+            return function () {
+              const args = Array.prototype.slice.call(arguments);
+              setTimeout(() => window.__appel(nom, JSON.stringify(args)).then(j => { if (ok) ok(JSON.parse(j)); },
+                e => { if (ko) ko({ message: String(e.message || e).replace(/^Error: /, '') }); }), 40);
+            };
+          } });
+        }
+        window.google = { script: { run: chaine(null, null) } };
+      });
+      await pg.goto('file://' + fichierR2);
+      await pg.waitForFunction(() => document.documentElement.getAttribute('data-suivi-fwd') === 'pret', null, { timeout: 30000 });
+      await pg.waitForFunction(() => (document.getElementById('pied-responsable') || {}).textContent ||
+        getComputedStyle(document.getElementById('choix-admin')).visibility !== 'hidden', null, { timeout: 20000 }).catch(() => {});
+      await pg.evaluate(() => { const x = document.querySelector('.simulateur-bandeau'); if (x) x.remove(); window.scrollTo(0, 0); });
+      await pg.waitForTimeout(600);
+      pg.__ctx = c;
+      return pg;
+    };
+    const versR2 = (pg, id, marge) => pg.evaluate(([id, m]) => { const e = document.getElementById(id); window.scrollTo(0, e.getBoundingClientRect().top + scrollY - m); }, [id, marge === undefined ? 60 : marge]);
+    const toucherR2 = async (pg, loc, mobile) => { if (mobile) await loc.tap(); else await loc.click(); };
+
+    // --- R2-7 : la recherche, un filtre de colonne et une tuile filtrent aussi le journal et la courbe.
+    {
+      const g = await vivanteR2({ largeur: 1440, hauteur: 900, schema: 'light' });
+      const etatPage = () => g.evaluate(() => {
+        const evts = window.__journalAffiche().reduce((l, s) => l.concat(s.evenements), []);
+        const refs = new Set([...document.querySelectorAll('#corps-tableau .ref-plan')].map(b => b.dataset.refPlan));
+        const pts = window.__serieAffichee().pts, der = pts[pts.length - 1];
+        const m = /^(\d+) sur (\d+) plans validés/.exec(document.getElementById('phrase').textContent.replace(/[\s  ]+/g, ' ').replace(/(\d) (\d)/g, '$1$2'));
+        const avis = document.getElementById('avis-graphe');
+        return { n: evts.length, hors: evts.filter(e => !refs.has(e.ref)).map(e => e.ref).slice(0, 4), lignes: refs.size,
+                 synth: m ? { termine: +m[1], total: +m[2] } : null, der: der, nPts: pts.length,
+                 note: document.getElementById('note-graphe').textContent, avis: !!avis && !avis.hidden && avis.getClientRects().length > 0,
+                 pilule: (document.querySelector('#filtre-valeur-graphe button[aria-pressed="true"]') || {}).dataset ? document.querySelector('#filtre-valeur-graphe button[aria-pressed="true"]').dataset.valeurGraphe : null,
+                 notesATA: [...document.querySelectorAll('#zone-critique .critique-note')].map(x => x.textContent).join(' | ') };
+      });
+      const tous = await etatPage();
+      await g.fill('#recherche', 'siège'); await g.waitForTimeout(1200);
+      const rech = await etatPage();
+      verifier('R2-7 : sous la recherche « siège », le journal ne garde que les changements des plans du tableau filtré, moins qu’avant (Nathan : « ça filtre tout »)',
+        tous.n > 0 && rech.n > 0 && rech.n < tous.n && rech.hors.length === 0, JSON.stringify({ tous: tous.n, rech: rech.n, hors: rech.hors }));
+      verifier('R2-7 : sous la recherche, la courbe se recompte relevé par relevé sur les mêmes plans — son dernier point dit le « 8 sur 56 » de la synthèse —, tous les relevés gardés',
+        !!rech.synth && rech.der.total === rech.synth.total && rech.der.termine === rech.synth.termine && rech.der.total === rech.lignes && rech.der.total < tous.der.total &&
+        rech.nPts === tous.nPts && /sélection/.test(rech.note) && !rech.avis, JSON.stringify({ synth: rech.synth, der: rech.der, lignes: rech.lignes, note: rech.note, avis: rech.avis }));
+      verifier('R2-7 : sous la recherche, Par ATA ne dit plus « un relevé archivé ne se refiltre pas » : ses rythmes suivent aussi',
+        !/refiltre/.test(rech.notesATA), rech.notesATA);
+      await g.click('#echeance-titre'); await g.waitForTimeout(800);
+      const fiche = await g.evaluate(() => (document.getElementById('fiche-echeance') || {}).textContent || '');
+      verifier('R2-7 : la fiche de l’échéance compte les mêmes plans et le dit (« sélection », « 8 sur 56 validés »)',
+        /sélection/.test(fiche) && fiche.replace(/[  ]/g, ' ').indexOf(rech.synth.termine + ' sur ' + rech.synth.total + ' validés') !== -1, fiche.slice(0, 200));
+      await g.keyboard.press('Escape'); await g.waitForTimeout(300);
+      await g.click('#tout-effacer'); await g.waitForTimeout(800);
+      const iNom = await g.evaluate(() => [...document.querySelectorAll('#tete-tableau .filtres input[data-filtre]')].findIndex(i => /installation/i.test(i.dataset.filtre)));
+      await g.locator('#tete-tableau .filtres input[data-filtre]').nth(Math.max(0, iNom)).fill('siège'); await g.waitForTimeout(1200);
+      const col = await etatPage();
+      verifier('R2-7 : un filtre de colonne (Nom Installation : siège) fait de même — journal et courbe sur les plans du tableau',
+        col.n > 0 && col.n < tous.n && col.hors.length === 0 && !!col.synth && col.der.total === col.synth.total && col.der.termine === col.synth.termine,
+        JSON.stringify({ n: col.n, hors: col.hors, synth: col.synth, der: col.der }));
+      await g.click('#tout-effacer'); await g.waitForTimeout(800);
+      await versR2(g, 'section-synthese');
+      const tuile = await g.evaluate(() => { const b = document.querySelectorAll('#etats button')[1]; return { cle: b.dataset.etat, n: +b.querySelector('.etat-n').textContent.replace(/\D/g, '') }; });
+      await g.locator('#etats button').nth(1).click(); await g.waitForTimeout(900);
+      const sousTuile = await etatPage();
+      const courbeTuile = await g.evaluate(k => { const pts = window.__serieValeur(k).pts; return pts[pts.length - 1]; }, tuile.cle);
+      verifier('R2-7 : une tuile pressée (' + tuile.cle + ') filtre le journal sur ses plans, et la courbe devient celle de cet état — sa pilule pressée, son dernier point le nombre de la tuile',
+        sousTuile.n > 0 && sousTuile.n < tous.n && sousTuile.hors.length === 0 && sousTuile.pilule === tuile.cle && courbeTuile.termine === tuile.n && !sousTuile.avis,
+        JSON.stringify({ tuile, n: sousTuile.n, hors: sousTuile.hors, pilule: sousTuile.pilule, der: courbeTuile }));
+      verifier('R2-7 : sous la tuile, Par ATA dit que ses rythmes comptent tous les états',
+        /quel que soit leur état/.test(sousTuile.notesATA), sousTuile.notesATA);
+      await g.locator('#etats button[aria-pressed="true"]').click(); await g.waitForTimeout(900);
+      const relache = await etatPage();
+      verifier('R2-7 : la tuile relâchée, la courbe des validés revient, et le journal entier', relache.pilule === '' && relache.n === tous.n, JSON.stringify({ pilule: relache.pilule, n: relache.n }));
+      await g.fill('#recherche', 'zzzqqq'); await g.waitForTimeout(1200);
+      const vide = await g.evaluate(() => ({ journal: (document.querySelector('#zone-journal .etat-vide') || {}).textContent || '',
+        courbe: (document.querySelector('#zone-graphe .etat-vide') || {}).textContent || '', resume: document.getElementById('resume-graphe').textContent,
+        puce: document.getElementById('echeance-titre').className }));
+      verifier('R2-7 : une recherche sans résultat — le journal dit « Aucun changement pour les plans de la sélection », la courbe « Aucun plan dans la sélection » (plus de « périmètre null » ni de ligne « 0 sur 0 »)',
+        /^Aucun changement pour les plans de la sélection/.test(vide.journal) && /^Aucun plan dans la sélection/.test(vide.courbe) && /^Aucun plan dans la sélection/.test(vide.resume) &&
+        !/null|undefined/.test(vide.journal + vide.courbe) && /sans-plan/.test(vide.puce), JSON.stringify(vide));
+      const aide = await g.evaluate(() => document.querySelector('#aide-corps section[aria-labelledby="aide-filtres"]').textContent.replace(/\s+/g, ' '));
+      verifier('R2-7 : l’aide dit ce que fait un filtre de la page — la recherche et les filtres de colonnes en sont, la courbe et le journal les suivent',
+        /la recherche et les filtres de colonnes des Plans/.test(aide) && /la courbe, le journal/.test(aide) && /courbe de cet état/.test(aide), aide.slice(0, 400));
+      await g.__ctx.close();
+    }
+    // --- R2-7 : sans relevé gardé plan par plan, la courbe ne peut pas suivre — la page le dit sous le dessin, en clair.
+    {
+      for (const schema of ['light', 'dark']) {
+        const ctxA = await contexte({ viewport: { width: 1440, height: 900 }, colorScheme: schema });
+        const pa = await page(ctxA, 'lot R2 aperçu ' + schema);
+        await pa.evaluate(() => { const s = window.__jeuDExemple('HDK'); s.releves.forEach(r => { r.plans = null; delete r.plansConcept; }); window.__chargerSource(s); });
+        await pa.waitForTimeout(900);
+        const sans = await pa.evaluate(() => { const a = document.getElementById('avis-graphe'); return !!a && !a.hidden; });
+        /* Le champ d'abord amené à l'écran et touché, comme le ferait un lecteur. */
+        await pa.click('#recherche'); await pa.waitForTimeout(300);
+        await pa.fill('#recherche', 'GAE21'); await pa.waitForTimeout(1000);
+        const avisR = await pa.evaluate(() => { const a = document.getElementById('avis-graphe'); if (!a) return { vu: false, t: 'pas d’avis' }; const cs = getComputedStyle(a);
+          const lum = c => { const m = c.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]; };
+          let f = a, fond = 'rgba(0, 0, 0, 0)'; while (f && /rgba\(0, 0, 0, 0\)|transparent/.test(fond)) { fond = getComputedStyle(f).backgroundColor; f = f.parentElement; }
+          const x = lum(cs.color), y = lum(fond);
+          return { vu: !a.hidden && a.getClientRects().length > 0 && a.getBoundingClientRect().height > 8, t: a.textContent, cr: (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05) }; });
+        verifier('R2-7 (' + schema + ') : relevés sans détail plan par plan — sous la recherche, un avis visible sous la courbe dit qu’elle compte tous les plans, lisible (4,5:1), et rien sans filtre',
+          !sans && avisR.vu && /^La courbe compte tous les plans/.test(avisR.t) && avisR.cr >= 4.5, JSON.stringify(avisR));
+        if (schema === 'light') {
+          /* R2-10, la colonne « rythme requis » : un seul relevé, et une échéance. */
+          await pa.click('#tout-effacer'); await pa.waitForTimeout(500);
+          await pa.evaluate(() => { const s = window.__jeuDExemple('HDK'); s.releves = []; window.__chargerSource(s); }); await pa.waitForTimeout(900);
+          const requis = await pa.evaluate(() => [...document.querySelectorAll('#zone-critique .critique-effort')].slice(0, 3).map(e => ({ t: e.textContent, titre: e.getAttribute('title') || '' })));
+          verifier('R2-10 : un seul relevé, avec une échéance — le rythme requis dit « un seul relevé » sous lui, jamais « rien de validé »',
+            requis.length > 0 && requis.every(r => /un seul relevé$/.test(r.t) && !/rien de validé|aucun plan validé|il ne suffit pas/.test(r.t + r.titre)), JSON.stringify(requis));
+        }
+        await ctxA.close();
+      }
+    }
+    // --- R2-10 : la tranche toute neuve (un seul relevé) — ni « rien de validé » en rouge, ni « aucun plan validé ».
+    for (const schema of ['light', 'dark']) {
+      const g = await vivanteR2({ largeur: 1440, hauteur: 900, schema });
+      const hdk = await g.evaluate(() => document.getElementById('zone-critique').textContent);
+      const tr = await g.evaluate(() => [...document.querySelectorAll('#select-tranche option')].map(o => o.value));
+      await g.selectOption('#select-tranche', tr[1]);
+      await g.waitForFunction(() => document.documentElement.getAttribute('data-suivi-fwd') === 'pret' && !document.body.hasAttribute('data-attente'), null, { timeout: 30000 }).catch(() => {});
+      await g.waitForTimeout(1500);
+      const t2 = await g.evaluate(() => {
+        const l = [...document.querySelectorAll('#zone-critique .critique-ligne')];
+        return { n: l.length, cases: l.map(x => { const v = x.querySelector('.critique-effort .v'); return v.textContent + '|' + v.className; }),
+          fins: l.map(x => x.querySelector('.critique-date').getAttribute('title')), lus: l.map(x => x.querySelector('.masque').textContent),
+          note: [...document.querySelectorAll('#zone-critique .critique-note')].map(x => x.textContent).join(' | '),
+          vu: (n => n ? n.getClientRects().length > 0 : false)([...document.querySelectorAll('#zone-critique .critique-note')].find(x => /un seul relevé/.test(x.textContent))) };
+      });
+      verifier('R2-10 (' + schema + ') : Tranche 2 (un seul relevé) — chaque « Rythme tenu » est un tiret gris (doux), jamais « rien de validé » en rouge',
+        t2.n > 3 && t2.cases.every(c => c === '—|v critique-ecart doux'), JSON.stringify(t2.cases.slice(0, 4)));
+      verifier('R2-10 (' + schema + ') : la raison se lit en clair au-dessus de la liste (« un seul relevé pour l’instant »), dans la phrase lue et le titre de « Fin estimée »',
+        t2.vu && /un seul relevé pour l’instant/.test(t2.note) && t2.lus.every(x => /pas encore mesurable, un seul relevé/.test(x) && !/rien de validé/.test(x)) &&
+        t2.fins.every(f => /^Un seul relevé/.test(f)), JSON.stringify({ note: t2.note, lu: t2.lus[0], fin: t2.fins[0] }));
+      verifier('R2-10 (' + schema + ') : HDK, six relevés — aucune ligne ne parle d’« un seul relevé »', !/un seul relevé/.test(hdk), hdk.slice(0, 80));
+      await g.__ctx.close();
+    }
+    // --- R2-12 : après « Filtrer la page sur ATA … », la ligne ouverte se pose sous les bandeaux collés, pas dessous.
+    for (const c of [{ schema: 'dark', W: 1024, H: 768, mobile: false, idx: 6 }, { schema: 'light', W: 390, H: 844, mobile: true, idx: 2 }]) {
+      const g = await vivanteR2({ largeur: c.W, hauteur: c.H, schema: c.schema, mobile: c.mobile });
+      const mesure = val => g.evaluate(val => {
+        const z = document.getElementById('zone-critique');
+        const l = [...z.querySelectorAll('.critique-ligne')].find(x => x.dataset.groupe === val);
+        const f = document.getElementById('filtres-actifs'), fl = f.querySelector('.filtres-ligne'), s = document.getElementById('sommaire'), tete = z.querySelector('.critique-tete');
+        const bas = Math.max(getComputedStyle(s).position === 'sticky' ? s.getBoundingClientRect().bottom : 0, !f.hidden && fl ? fl.getBoundingClientRect().bottom : 0,
+          getComputedStyle(tete).position === 'sticky' ? tete.getBoundingClientRect().bottom : 0);
+        return { haut: Math.round(l.getBoundingClientRect().top), bas: Math.round(bas) };
+      }, val);
+      await versR2(g, 'section-repartition'); await g.waitForTimeout(300);
+      const ligne = g.locator('#zone-critique .critique-ligne').nth(c.idx);
+      const val = await ligne.getAttribute('data-groupe');
+      await toucherR2(g, ligne, c.mobile); await g.waitForTimeout(800);
+      await toucherR2(g, g.locator('#filtrer-groupe-page'), c.mobile); await g.waitForTimeout(900);
+      const apres = await mesure(val);
+      verifier('R2-12 (' + c.schema + ' ' + c.W + ') : « Filtrer la page sur ATA ' + val + ' » — la ligne ouverte reste visible juste sous le sommaire, la ligne FILTRES et l’en-tête collé',
+        apres.haut >= apres.bas - 1 && apres.haut <= apres.bas + 12, JSON.stringify(apres));
+      /* Une tuile déjà posée, puis une ligne ouverte près du haut. */
+      await g.click('#tout-effacer').catch(() => {}); await g.waitForTimeout(600);
+      await versR2(g, 'section-synthese'); await toucherR2(g, g.locator('#etats button').nth(1), c.mobile); await g.waitForTimeout(800);
+      await versR2(g, 'section-repartition'); await g.waitForTimeout(300);
+      const l2 = g.locator('#zone-critique .critique-ligne').nth(c.idx);
+      const val2 = await l2.getAttribute('data-groupe');
+      if (await l2.getAttribute('aria-expanded') === 'true') { await toucherR2(g, l2, c.mobile); await g.waitForTimeout(500); }
+      await toucherR2(g, l2, c.mobile); await g.waitForTimeout(900);
+      const sousTuile = await mesure(val2);
+      verifier('R2-12 (' + c.schema + ' ' + c.W + ') : une tuile posée, la ligne qu’on ouvre se pose aussi sous la ligne FILTRES',
+        sousTuile.haut >= sousTuile.bas - 1 && sousTuile.haut <= sousTuile.bas + 12, JSON.stringify(sousTuile));
+      await g.__ctx.close();
+    }
+    // --- R2-13, R2-21 : au téléphone, la rangée [Filtrer la page sur …][Copier (n)] — une ligne, 44 px, rien ne bouge au toucher ; les références à 44 px.
+    for (const schema of ['light', 'dark']) {
+      const g = await vivanteR2({ largeur: 390, hauteur: 844, schema, mobile: true });
+      await versR2(g, 'section-repartition'); await g.waitForTimeout(300);
+      await g.locator('#zone-critique .critique-ligne').nth(1).tap(); await g.waitForTimeout(800);
+      const rangee = () => g.evaluate(() => {
+        const a = document.querySelector('#zone-critique .groupe-refs .actions-groupe'), f = document.getElementById('filtrer-groupe-page'), c = a.querySelector('.copier');
+        const st = document.querySelector('#zone-critique .groupe-refs .sous-titre, #zone-critique .groupe-refs .titre-arret');
+        return { lab: f.textContent, hA: Math.round(a.getBoundingClientRect().height), hF: Math.round(f.getBoundingClientRect().height), hC: Math.round(c.getBoundingClientRect().height),
+                 memeLigne: Math.abs(c.getBoundingClientRect().top - f.getBoundingClientRect().top) < 2, dSous: Math.round(st.getBoundingClientRect().top - f.getBoundingClientRect().top) };
+      });
+      const av = await rangee();
+      await g.locator('#filtrer-groupe-page').tap(); await g.waitForTimeout(800);
+      const ap = await rangee();
+      verifier('R2-13 (' + schema + ' 390) : posé, « Retirer le filtre ATA … » garde « Copier (n) » sur sa ligne — la liste dessous ne bouge pas',
+        /^Retirer le filtre ATA \S+$/.test(ap.lab) && av.memeLigne && ap.memeLigne && ap.hA === av.hA && Math.abs(ap.dSous - av.dSous) <= 1, JSON.stringify({ av, ap }));
+      verifier('R2-21 (' + schema + ' 390) : « Copier (n) » fait 44 px de haut, comme « Filtrer la page sur … » à côté', av.hC >= 44 && av.hC === av.hF, JSON.stringify(av));
+      const refs = await g.evaluate(() => {
+        const js = [...document.querySelectorAll('#zone-critique .groupe-refs .grille .jeton-ud')].slice(0, 3);
+        const zone = el => { const r = el.getBoundingClientRect(), cx = r.left + r.width / 2; let h = 0; for (let y = Math.floor(r.top - 8); y <= r.bottom + 8; y++) { const e = document.elementFromPoint(cx, y + .5); if (e && (e === el || el.contains(e))) h++; } return h; };
+        js[1].scrollIntoView({ block: 'center' });
+        return { h: js.map(j => Math.round(j.getBoundingClientRect().height)), pas: Math.round(js[1].getBoundingClientRect().top - js[0].getBoundingClientRect().top), zone: zone(js[1]) };
+      });
+      verifier('R2-21 (' + schema + ' 390) : les références de la ligne dépliée font 36 px, 44 px à toucher chacune, sans que deux zones se chevauchent',
+        refs.h.every(h => h >= 36) && refs.pas >= 44 && refs.zone >= 43, JSON.stringify(refs));
+      await g.__ctx.close();
+    }
+    // --- R2-19 : au clavier, le « ? » de « Fin estimée » reste à l'écran quand son panneau s'ouvre au-dessus.
+    for (const c of [{ schema: 'light', W: 1440, H: 900, y: 450 }, { schema: 'dark', W: 1280, H: 720, y: 300 }]) {
+      const g = await vivanteR2({ largeur: c.W, hauteur: c.H, schema: c.schema });
+      await g.evaluate(y => { const q = document.querySelector('#zone-critique button[data-aide="fin"]'); window.scrollTo(0, q.getBoundingClientRect().top + scrollY - y); q.focus(); }, c.y);
+      await g.waitForTimeout(200);
+      await g.keyboard.press('Enter'); await g.waitForTimeout(600);
+      const r = await g.evaluate(() => { const a = document.activeElement, pf = document.getElementById('panneau-fin'), rb = a.getBoundingClientRect(), rp = pf.getBoundingClientRect();
+        const s = document.getElementById('sommaire').getBoundingClientRect();
+        return { aide: a.dataset.aide, haut: Math.round(rb.top), bas: Math.round(rb.bottom), vh: innerHeight, panneau: Math.round(rp.top), sommaire: Math.round(s.bottom) }; });
+      verifier('R2-19 (' + c.schema + ' ' + c.W + '×' + c.H + ') : Entrée sur « ? » — le panneau s’ouvre, le « ? » focalisé reste à l’écran, et le haut du panneau reste sous le sommaire',
+        r.aide === 'fin' && r.bas <= r.vh && r.haut >= 0 && r.panneau >= r.sommaire, JSON.stringify(r));
+      await g.__ctx.close();
+    }
+    // --- R2-17 : Maj+Tab dans les lignes de semaine du journal — jamais caché sous l'en-tête collé des colonnes ; R2-6 : moins d'animation.
+    for (const [schema, W] of [['light', 1440], ['dark', 1280]]) {
+      const g = await vivanteR2({ largeur: W, hauteur: 900, schema });
+      const vus = [];
+      for (const y0 of [46, 70, 94]) {
+        await g.evaluate(y0 => {
+          const btns = [...document.querySelectorAll('#zone-journal .journal-tete button')];
+          const cible = btns.filter(b => b.classList.contains('journal-plier'))[1];
+          window.scrollTo(0, cible.getBoundingClientRect().top + scrollY - y0);
+          btns[btns.indexOf(cible) + 1].focus({ preventScroll: true });
+        }, y0);
+        await g.waitForTimeout(100);
+        await g.keyboard.press('Shift+Tab'); await g.waitForTimeout(200);
+        vus.push(await g.evaluate(() => { const a = document.activeElement, r = a.getBoundingClientRect(); const e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          return { plier: a.classList.contains('journal-plier'), vu: !!e && (e === a || a.contains(e)), y: Math.round(r.top) }; }));
+      }
+      verifier('R2-17 (' + schema + ' ' + W + ') : Maj+Tab jusqu’au bouton « S42… » d’une semaine — il est dégagé de l’en-tête collé « Semaine / Passés à / Mouvements », pas caché dessous',
+        vus.every(v => v.plier && v.vu), JSON.stringify(vus));
+      await g.evaluate(() => document.querySelectorAll('#zone-journal .journal-tete .journal-plier')[1].click()); await g.waitForTimeout(600);
+      const sy0 = await g.evaluate(() => {
+        const t = document.querySelectorAll('#zone-journal .journal-tete')[1], sem = t.closest('.journal-semaine');
+        window.scrollTo(0, sem.getBoundingClientRect().top + scrollY + 200);
+        t.querySelectorAll('button')[1].focus({ preventScroll: true });
+        return Math.round(scrollY);
+      });
+      await g.waitForTimeout(150); await g.keyboard.press('Shift+Tab'); await g.waitForTimeout(250);
+      const sy1 = await g.evaluate(() => Math.round(scrollY));
+      verifier('R2-17 (' + schema + ' ' + W + ') : semaine ouverte, sa ligne collée — Maj+Tab dans ses comptes ne fait pas sauter la page', Math.abs(sy1 - sy0) <= 2, sy0 + ' → ' + sy1);
+      await g.__ctx.close();
+    }
+    {
+      const g = await vivanteR2({ largeur: 1440, hauteur: 900, schema: 'light', reducedMotion: 'reduce' });
+      await versR2(g, 'section-journal');
+      await g.evaluate(() => document.querySelectorAll('#zone-journal .journal-tete .journal-plier')[0].click()); await g.waitForTimeout(600);
+      const ref = g.locator('#zone-journal .journal-liste button[data-ref]').first();
+      await ref.scrollIntoViewIfNeeded();
+      await g.evaluate(() => { window.__syR2 = []; const t0 = performance.now(); const f = () => { window.__syR2.push(Math.round(scrollY)); if (performance.now() - t0 < 700) requestAnimationFrame(f); }; requestAnimationFrame(f); });
+      await ref.click(); await g.waitForTimeout(900);
+      const sy = await g.evaluate(() => [...new Set(window.__syR2)]);
+      verifier('R2-6 : « moins d’animation » demandé — un clic sur une référence d’une semaine ouverte saute au tableau, sans glisser', sy.length <= 2 && sy[sy.length - 1] !== sy[0], JSON.stringify(sy.slice(0, 8)));
+      // --- R2-25 : le filtre « ATA ou plan… » se dit en une phrase entière, et quand on l'efface.
+      await g.click('#tout-effacer'); await g.waitForTimeout(700);     // le clic sur la référence a filtré la page sur ce plan
+      await versR2(g, 'section-repartition');
+      await g.fill('#filtre-groupe', '21'); await g.waitForTimeout(1000);
+      const a1 = await g.evaluate(() => ({ annonce: (document.getElementById('annonce') || {}).textContent, compte: document.getElementById('compte-groupes').textContent,
+        live: document.getElementById('compte-groupes').getAttribute('aria-live'), role: document.getElementById('compte-groupes').getAttribute('role') }));
+      await g.focus('#filtre-groupe'); await g.keyboard.press('Escape'); await g.waitForTimeout(1000);
+      const a2 = await g.evaluate(() => (document.getElementById('annonce') || {}).textContent);
+      verifier('R2-25 : « 21 » dans le filtre du bloc — la page dit « ATA : 1 sur 10 pour « 21 » » (une phrase), le compte « 1 sur 10 » reste à l’œil sans parler seul',
+        /^ATA : 1 sur \d+ pour « 21 »$/.test(a1.annonce) && /^1 sur \d+$/.test(a1.compte) && a1.live === null && a1.role === null, JSON.stringify(a1));
+      verifier('R2-25 : Échap vide le filtre, et la page le dit (« ATA : filtre vidé, 10 sur 10 »)', /^ATA : filtre vidé, (\d+) sur \1$/.test(a2), a2);
+      await g.__ctx.close();
+    }
+    // --- R2-23 : au doigt, la poignée de la première colonne mobile garde 24 px de large (l'en-tête figé la recouvrait à gauche).
+    {
+      const g = await vivanteR2({ largeur: 390, hauteur: 844, schema: 'light', mobile: true });
+      const zoneP = sel => g.evaluate(async (sel) => {
+        const th = document.querySelector(sel);
+        th.scrollIntoView({ block: 'center' }); { const d = document.getElementById('defile'); if (d) d.scrollLeft += th.getBoundingClientRect().left - 250; }
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        const t = th.getBoundingClientRect(), po = th.querySelector('.poignee').getBoundingClientRect();
+        let n = 0; for (let x = Math.floor(t.left - 15); x <= t.left + 40; x++) { const e = document.elementFromPoint(x + .5, po.top + po.height / 2); if (e && e.closest('.poignee') && e.closest('th') === th) n++; }
+        return { large: n, haut: Math.round(po.height) };
+      }, sel);
+      const premiere = await zoneP('#tete-tableau .titres th.fige-fin + th');
+      const ecp = await zoneP('#tete-tableau .titres th[data-cle="ecp"]');
+      verifier('R2-23 : au doigt, « Déplacer la colonne » de la première colonne mobile se touche sur 24 × 44 px (14 px avant), les autres colonnes inchangées (26 px)',
+        premiere.large >= 24 && premiere.haut >= 44 && ecp.large >= 24, JSON.stringify({ premiere, ecp }));
+      await g.__ctx.close();
+    }
+    try { fsR2.unlinkSync(fichierR2); } catch (e) { /* déjà parti */ }
+  }
   /* (fin du lot R2) */
 
 

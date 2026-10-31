@@ -1890,7 +1890,7 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 /* Débrief 27 (D8) : la Tendance sans courbe (moins de deux relevés) — l'état
    vide à la place du dessin, et rien de ce qui n'agirait sur rien. */
 .graphe-vide #filtre-valeur-graphe, .graphe-vide .commandes-graphe, .graphe-vide #legende,
-.graphe-vide #note-graphe, .graphe-vide #donnees-graphe { display: none !important; }
+.graphe-vide #note-graphe, .graphe-vide #avis-graphe, .graphe-vide #donnees-graphe { display: none !important; }
 .graphe-vide .cadre-graphe { cursor: default; }
 .panneau.graphe-vide .feuille { border-top: 0; padding-top: 0; }
 .legende-jalon.critique .num { background: var(--alerte); }
@@ -1962,6 +1962,7 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 .echeance-titre .jours { color: var(--encre); font-variant-numeric: tabular-nums; }
 .echeance-titre .point { width: 8px; height: 8px; border-radius: 50%; background: var(--fait); flex: none; }
 .echeance-titre.en-retard .point { background: var(--alerte); }
+.echeance-titre.sans-plan .point { background: var(--encre-3); }
 /* Chaque morceau reste d'un bloc : sur un téléphone, « Prochaine échéance »
    se cassait en deux lignes au milieu de la puce. */
 .echeance-titre > span, .echeance-titre > b { white-space: nowrap; }
@@ -2028,6 +2029,9 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 
 .note-graphe { margin: 12px 0 0; text-align: center; font-size: 12px; color: var(--encre-3); }
 .note-graphe:empty { display: none; }
+/* Débrief 29 (relecture R2-7) : l'avis de ce que la courbe ne suit pas se
+   lit comme une phrase, pas comme une légende. */
+.avis-graphe { color: var(--encre-2); }
 
 .puce-delta {
   border: none; background: none; font: inherit; cursor: pointer; padding: 1px 0;
@@ -3198,7 +3202,8 @@ table.plans thead .titres th button:hover { color: var(--encre); }
    d'avant), elle ne pousse plus l'intitulé : intitulé, champ « filtrer » et
    cases partagent le même bord gauche. Les en-têtes sont collés (sticky) :
    ils servent déjà de repère à la position absolue. Zone de saisie 19 × 24
-   px (elle s'arrête au bord de l'intitulé), 25 × 44 au doigt. */
+   px (elle s'arrête au bord de l'intitulé), 25 × 44 au doigt (24 × 44 pour
+   la première colonne mobile, que l'en-tête figé recouvre à gauche). */
 table.plans thead .titres th .poignee {
   position: absolute; left: -5px; top: 50%; transform: translateY(-50%);
   width: 19px; height: 24px; display: inline-flex; align-items: center; justify-content: center;
@@ -3359,6 +3364,12 @@ button.poignee:hover, button.poignee:focus-visible { color: var(--encre-2); opac
   table.plans thead .titres th button, table.plans thead .titres-la th button { min-height: 44px; }
   table.plans thead .titres th .poignee { height: 44px; }
   table.plans thead .titres th .poignee::after { content: ""; position: absolute; top: 0; bottom: 0; left: -6px; right: 0; }
+  /* Débrief 29 (relecture R2-23) : la première colonne mobile — juste
+     après les colonnes figées. L'en-tête figé (z-index 6) recouvre les 11
+     px que la poignée prend à gauche : sa zone partait sous lui et ne
+     gardait que 14 px. Elle part ici du bord de sa colonne et mord 10 px
+     sur l'intitulé : 24 × 44. */
+  table.plans thead .titres th.fige-fin + th .poignee::after { left: 5px; right: -10px; }
   table.plans thead .filtres input { font-size: 16px; min-height: 40px; }
   .menu-colonne button { min-height: 44px; }
 }
@@ -3642,6 +3653,16 @@ kbd {
        l'adresse (rien d'autre à toucher juste au-dessus ni au-dessous). */
   #pied-responsable a { position: relative; }
   #pied-responsable a::after { content: ""; position: absolute; inset: -15px -4px; }
+  /* Débrief 29 (relecture R2-21) : la rangée de la ligne dépliée d'un
+     groupe — « Copier (n) » à la hauteur de « Filtrer la page sur … » (44
+     px) ; la règle des 30 px, plus précise, l'emportait sur .copier. Les
+     références : 36 px, 4 px de zone invisible en haut et en bas, 8 px
+     entre deux rangées — 44 px chacune, sans chevauchement (comme
+     .compte-passage). */
+  .groupe-refs .actions-groupe .copier { min-height: 44px; }
+  .groupe-refs .jeton-ud { position: relative; min-height: 36px; }
+  .groupe-refs .jeton-ud::after { content: ""; position: absolute; inset: -4px 0; }
+  .groupe-refs .grille, .groupe-refs .grille-arret { row-gap: 8px; }
 }
 /* Une rangée qui défile de côté (pastilles, sommaire au téléphone) :
    l'élément atteint au clavier s'arrête avant le fondu du bord (M13,
@@ -4052,6 +4073,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       </div>
       <p class="masque" id="resume-graphe"></p>
       <p class="note-graphe masque" id="note-graphe"></p>
+      <!-- Débrief 29 (relecture R2-7) : ce que la courbe ne suit pas des
+           filtres de la page (relevés sans détail plan par plan), en clair.
+           Caché le reste du temps. -->
+      <p class="note-graphe avis-graphe" id="avis-graphe" hidden></p>
       <div class="legende" id="legende"></div>
       <div class="legende-jalons" id="legende-jalons"></div>
       <!-- Débrief 27 (X-A7) : les chiffres de la courbe, en tableau, pour
@@ -4130,7 +4155,11 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
            dimension à l'autre — « VALIDATED » par ATA, puis par ECP —, et
            rien n'en est mémorisé. -->
       <div class="filtre-journal rangee-valeurs" id="filtre-valeur-groupe" role="group" aria-label="Ne compter dans ce bloc que les plans d'une valeur" hidden></div>
-      <span class="compte-groupes" id="compte-groupes" role="status" aria-live="polite"></span>
+      <!-- Débrief 29 (relecture R2-25) : le compte reste à l'œil, mais ne
+           parle plus seul (« 1 sur 10 », sans dire de quoi, et rien quand
+           on vide le champ) : poserFiltreGroupe dit une phrase entière par
+           annoncer(), comme les autres recherches. -->
+      <span class="compte-groupes" id="compte-groupes"></span>
       <!-- Le filtre de la colonne de gauche : il ne touche qu'aux lignes de
            ce bloc, jamais au reste de la page. Rien n'en est mémorisé. -->
       <div class="recherche recherche-groupe">
@@ -4407,7 +4436,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     </section>
     <section class="aide-bloc" aria-labelledby="aide-filtres">
       <h3 class="etiquette-carte" id="aide-filtres">Les filtres : toute la page, ou une seule partie</h3>
-      <p><b>Toute la page</b> suit le contrat, la tranche et l’avancement choisis en haut, puis le périmètre, un état cliqué dans la synthèse, un groupe filtré dans Par ATA, une référence ou une ligne de la comparaison. Ces filtres s’affichent dans la barre « Filtres », en haut de l’écran : chaque × en retire un, « Tout effacer » les retire tous.</p>
+      <!-- Débrief 29 (relecture R2-7) : ce que fait vraiment un filtre de la
+           page — la recherche et les filtres de colonnes des Plans en sont,
+           la courbe et le journal les suivent. -->
+      <p><b>Toute la page</b> suit le contrat, la tranche et l’avancement choisis en haut, puis le périmètre, un état cliqué dans la synthèse, un groupe filtré dans Par ATA, la recherche et les filtres de colonnes des Plans, une référence ou une ligne de la comparaison. La synthèse, la courbe, le journal, Par ATA et le tableau ne comptent alors que les plans gardés : la courbe se recompte relevé par relevé, et un état cliqué la change en courbe de cet état. Ces filtres s’affichent dans la barre « Filtres », en haut de l’écran : chaque × en retire un, « Tout effacer » les retire tous.</p>
       <p><b>Une seule partie</b> change avec les pastilles et le petit champ de recherche des parties Tendance, Changements, Par ATA et Comparaison. Le reste de la page ne bouge pas.</p>
     </section>
     <section class="aide-bloc" aria-labelledby="aide-clavier">
@@ -6097,9 +6129,12 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      La fiche, la puce, la droite « requis » du graphique et le bloc par
      groupe la lisent tous : un même jalon et une même portée donnent partout
      les mêmes nombres. Les comptes viennent de la même série que la courbe. */
-  function bilanEcheance(j, groupe) {
+  /* Débrief 29 (relecture R2-7) : garde — les plans que gardent la
+     recherche et les filtres de colonnes (gardeCourbe) : la fiche, la puce
+     et la droite « requis » suivent la courbe, un seul verdict par écran. */
+  function bilanEcheance(j, groupe, garde) {
     var per = perimetreEcheance(j);
-    var pts = serieDe(per, groupe || null).pts;
+    var pts = serieDe(per, groupe || null, garde || null).pts;
     var der = pts[pts.length - 1];
     var total = der.total, termines = der.termine, restants = Math.max(0, total - termines);
     var ry = rythmes(pts), rythme = ry ? ry.central : 0;
@@ -6127,15 +6162,16 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      aux autres : « tout serait validé en S8 » alors que l'ATA 24, à son
      rythme, finit en S17. Un groupe sans rythme n'a pas de fin : il ne
      compte pas. Rien quand la dimension n'existe pas. */
-  function dernierGroupe(per, dim) {
+  function dernierGroupe(per, dim, garde) {
     if (!dim || !TITRE_DIM[dim]) return null;
     var vus = {}, pire = null;
     PLANS.forEach(function (p) {
       if (per && domaineDe(p) !== per) return;
+      if (garde && !garde.refs[p.reference]) return;     // débrief 29 (relecture R2-7)
       var v = String(valeurDim(p, dim) || '\u2014');
       if (vus[v]) return;
       vus[v] = true;
-      var pts = serieDe(per, { dim: dim, val: v }).pts, der = pts[pts.length - 1];
+      var pts = serieDe(per, { dim: dim, val: v }, garde || null).pts, der = pts[pts.length - 1];
       if (!der || der.total <= der.termine) return;
       var ry = rythmes(pts), fin = semaineFin(der.termine, der.total, ry ? ry.central : 0);
       if (fin !== null && (!pire || fin > pire.fin)) pire = { nom: nomGroupe({ dim: dim, val: v }), fin: fin };
@@ -6148,8 +6184,8 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      regarde (relecture du débrief 20) — sans lui, elle donnait pour
      l'ATA 24 une autre fin que la ligne ATA 24 du bloc juste en dessous,
      sans dire pourquoi. */
-  function motDernierGroupe(finGlobale, per, dim, nommerPer) {
-    var d = dernierGroupe(per, dim);
+  function motDernierGroupe(finGlobale, per, dim, nommerPer, garde) {
+    var d = dernierGroupe(per, dim, garde);
     return d && d.fin > finGlobale ? ' ; le dernier groupe (' + d.nom + ')' + (nommerPer && per ? ', sur ses plans ' + per + ',' : '') +
       ' finirait en ' + semaineDite(d.fin) : '';
   }
@@ -6179,10 +6215,13 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     /* Un seul verdict par écran : sous un groupe ouvert dans le bloc, la
        fiche suit la portée de la courbe — ce groupe —, comme le marqueur du
        jalon, sa légende et la droite « requis », et elle le nomme. */
-    var gA = groupeAffiche();
-    var b = bilanEcheance(j, gA);
+    var gA = groupeAffiche(), garde = gardeCourbe();
+    var b = bilanEcheance(j, gA, garde);
     var passe = b.jours < 0;
     var dans = gA ? ' dans ' + nomGroupe(gA) + (b.domaine ? ' (' + b.domaine + ')' : '') : b.domaine ? ' dans ' + b.domaine : '';
+    /* Débrief 29 (relecture R2-7) : sous la recherche ou un filtre de
+       colonne, la fiche compte les plans de la sélection, et le dit. */
+    if (garde) dans = ' dans la sélection' + (gA ? ' (' + nomGroupe(gA) + (b.domaine ? ', ' + b.domaine : '') + ')' : b.domaine ? ' (' + b.domaine + ')' : '');
     /* Sans groupe, la fin est celle du rythme de tous les plans, qui
        suppose que le rythme des groupes finis passe aux autres : la phrase
        nomme le groupe qui, à son propre rythme, finirait plus tard.
@@ -6192,12 +6231,12 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        global », à côté de « rythme tenu », faisait relire ; « 82 semaines
        après » ne disait pas après quoi.) */
     var fin = 'tout serait ' + motFini(1) + ' en ' + semaineDite(b.fin);
-    var dernier = gA ? '' : motDernierGroupe(b.fin, b.domaine, vue.dimCritique, (b.domaine || '') !== (vue.perimetre || ''));
-    var dansG = gA ? dans : '';
+    var dernier = gA ? '' : motDernierGroupe(b.fin, b.domaine, vue.dimCritique, (b.domaine || '') !== (vue.perimetre || ''), garde);
+    var dansG = gA || garde ? dans : '';
     var dEch = dateEcheance(j);
     var leJour = 'le ' + JOURS_COURTS[dEch.getUTCDay()] + '\u00a0' + dEch.getUTCDate() + '\u00a0' + MOIS_COURT[dEch.getUTCMonth()];
     var verdict;
-    if (!b.total) verdict = { cls: 'mal', mot: 'Aucun plan' + (gA ? ' dans ' + nomGroupe(gA) : '') + (b.domaine ? ' dans le périmètre ' + b.domaine : '') + '.' };
+    if (!b.total) verdict = { cls: 'mal', mot: 'Aucun plan' + (garde ? ' de la sélection' : '') + (gA ? ' dans ' + nomGroupe(gA) : '') + (b.domaine ? ' dans le périmètre ' + b.domaine : '') + '.' };
     else if (!b.restants) verdict = { cls: 'bon', mot: 'Tout est ' + motFini(1) + dans + '.' };
     else if (passe) verdict = { cls: 'mal', mot: 'Échéance passée : ' + nb(b.restants) + (b.restants > 1 ? ' plans restent' : ' plan reste') + ' à valider' + dans + '.' };
     else if (b.rythme === null) verdict = { cls: 'mal', mot: 'Un seul relevé pour l’instant : il en faut deux pour mesurer un rythme.' };
@@ -6211,7 +6250,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     /* Sous quel périmètre se comptent ces plans : celui qu'on regarde, ou
        celui du jalon quand il en porte un — et s'il n'est pas celui qu'on
        regarde, la fiche le dit. */
-    var portee = (gA ? ' · ' + ech(nomGroupe(gA)) : '') +
+    var portee = (gA ? ' · ' + ech(nomGroupe(gA)) : '') + (garde ? ' · sélection' : '') +
       (b.domaine ? ' · ' + ech(b.domaine) + (!jalonDansPerimetre(j) ? ' (hors du périmètre choisi)' : '') : '');
     /* Débrief 27 (B3) : le numéro de la fiche est rouge quand l'échéance
        est manquée, comme son marqueur sur le graphique (il restait gris). */
@@ -6244,10 +6283,12 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        est le verdict de CE groupe — celui du marqueur rouge et de la droite
        « requis » —, et la puce le nomme. Un seul verdict par écran. */
     var gA = groupeAffiche();
-    var idx = jalons.indexOf(j), b = bilanEcheance(j, gA);
+    var idx = jalons.indexOf(j), b = bilanEcheance(j, gA, gardeCourbe());   // débrief 29 (relecture R2-7)
     var v = verdictEcheance(b);
     bouton.hidden = false;
-    bouton.className = 'echeance-titre' + (b.enRetard ? ' en-retard' : '');
+    /* Débrief 29 (relecture R2-7) : aucun plan à compter (la recherche n'en
+       garde aucun) — ni vert ni rouge : le point reste gris. */
+    bouton.className = 'echeance-titre' + (b.enRetard ? ' en-retard' : '') + (!b.total ? ' sans-plan' : '');
     bouton.dataset.jalon = idx;
     /* Débrief 27 (P-F2, X-A8) : le verdict dit en mots dans la puce — « en
        retard », « dans les temps » —, plus seulement par la couleur du
@@ -7010,6 +7051,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     ORDRE_FEUILLE = COLONNES.map(function (c) { return c.cle; });
 
     MEMO_DERIVE = {}; MEMO_VALEURS = {};
+    oublierGardeCourbe();              // débrief 29 (relecture R2-7)
     JOURNAL = construireJournal();
     INDEX_RELEVES = null; MEMO_ARRET = {};
 
@@ -7775,6 +7817,47 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       Object.keys(vue.filtres).some(function (k) { return vue.filtres[k]; }) ||
       Object.keys(vue.vides).some(function (k) { return vue.vides[k]; }));
   }
+  /* Débrief 29 (relecture R2-7) — « quand je filtre, ça filtre tout »
+     (Nathan, débrief 28) : la courbe et les rythmes suivent aussi la
+     recherche, les filtres de colonnes, les cellules vides, une liste de
+     plans, un groupe d'une dimension que le classeur n'archive pas. Comme
+     sous un périmètre, chaque relevé se recompte sur sa carte plan par
+     plan : parmi les plans qu'il a gardés, ceux que ces filtres gardent
+     aujourd'hui (leur nom, leurs colonnes du jour). Un relevé sans carte
+     sort de la série, et la note le dit. Le périmètre et le groupe du bloc
+     restent à part (serieDe les prend déjà) ; un état cliqué aussi : il
+     choisit la courbe de cet état (rendreFiltreValeurGraphe) — la courbe
+     des validés de 220 plans tous « en cours » resterait à zéro.
+     gardeCourbe() : { refs, memo } — les références gardées, et les
+     comptes recomptés avec elles (oubliés avec elles) —, ou null sans aucun
+     de ces filtres (ou sans assez de relevés gardés plan par plan : rien à
+     recompter). Calculée une fois par état des filtres : la courbe se
+     redessine à chaque glissement. pourBloc : la garde du bloc « Par ATA »,
+     qui liste aussi les autres groupes — sans aucun groupe. */
+  var GARDES = { courbe: null, bloc: null };
+  /* Assez de relevés gardés plan par plan pour tracer une courbe recomptée
+     (deux au moins — l'extract du jour en a toujours une) ; sinon la courbe
+     reste sur tous les plans, et la page le dit (#avis-graphe). */
+  function courbeRecomptable() { return RELEVES.filter(function (r) { return !!r.plans; }).length >= 2; }
+  function gardeCourbe(pourBloc) {
+    var groupeHors = !pourBloc && !!vue.groupe && !groupeAffiche();
+    if (!(vue.recherche || vue.refs || groupeHors ||
+          Object.keys(vue.filtres).some(function (k) { return vue.filtres[k]; }) ||
+          Object.keys(vue.vides).some(function (k) { return vue.vides[k]; })) || !courbeRecomptable()) return null;
+    var cle = JSON.stringify([vue.recherche, vue.filtres, vue.vides, groupeHors ? vue.groupe : null,
+      vue.refs ? Object.keys(vue.refs).filter(function (r) { return vue.refs[r]; }).sort() : null]);
+    var nom = pourBloc ? 'bloc' : 'courbe', g = GARDES[nom];
+    if (!g || g.cle !== cle) {
+      var refs = {}, avant = { perimetre: vue.perimetre, etat: vue.etat };
+      vue.perimetre = ''; vue.etat = '';
+      try { selection(!groupeHors).forEach(function (p) { refs[p.reference] = true; }); }
+      finally { vue.perimetre = avant.perimetre; vue.etat = avant.etat; }
+      g = GARDES[nom] = { cle: cle, refs: refs, memo: {} };
+    }
+    return g;
+  }
+  /* Un autre contrat, un autre avancement : les gardes se refont. */
+  function oublierGardeCourbe() { GARDES = { courbe: null, bloc: null }; }
   /* Débrief 20 : plus de « tout réinitialiser » à côté de « Vue essentielle »
      — il faisait exactement ce que fait « Tout effacer » dans le bandeau des
      filtres (toutEffacer), qui seul reste : un geste, un mot. */
@@ -7808,14 +7891,17 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      par plan : le total, les terminés, et — si une dimension est demandée —
      les mêmes par valeur. Un relevé sans carte ne donne rien : on ne devine
      pas. Mémorisé par relevé : la courbe se redessine à chaque glissement. */
+  /* Débrief 29 (relecture R2-7) : garde (gardeCourbe), les seuls plans à
+     compter — mémorisés avec elle, oubliés quand les filtres changent. */
   var MEMO_DERIVE = {};
-  function comptesDerives(rel, perimetre, dim) {
+  function comptesDerives(rel, perimetre, dim, garde) {
+    var memo = garde ? garde.memo : MEMO_DERIVE;
     var cle = rel.i + '|' + perimetre + '|' + (dim || '');
-    if (MEMO_DERIVE[cle]) return MEMO_DERIVE[cle];
+    if (memo[cle]) return memo[cle];
     var c = { total: 0, termine: 0, groupes: {} };
     Object.keys(rel.plans || {}).forEach(function (ref) {
       var p = planDeRef(ref);
-      if (!p || (perimetre !== null && domaineDe(p) !== perimetre)) return;
+      if (!p || (perimetre !== null && domaineDe(p) !== perimetre) || (garde && !garde.refs[p.reference])) return;
       var fini = classer(rel.plans[ref]) === 'termine';
       c.total++;
       if (fini) c.termine++;
@@ -7825,7 +7911,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       c.groupes[v].total++;
       if (fini) c.groupes[v].termine++;
     });
-    MEMO_DERIVE[cle] = c;
+    memo[cle] = c;
     return c;
   }
 
@@ -8152,13 +8238,16 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      dérivent de la carte plan par plan de chaque relevé — un relevé sans
      carte est écarté. La courbe, la fiche d'échéance et le bloc par groupe
      tirent tous leurs chiffres d'ici. */
-  function serieDe(per, groupe) {
+  /* Débrief 29 (relecture R2-7) : garde — les plans que gardent la
+     recherche et les filtres de colonnes (gardeCourbe) — se recompte de la
+     même façon que le périmètre, sur la carte de chaque relevé. */
+  function serieDe(per, groupe, garde) {
     var pts, ecartes = 0;
-    if (per) {
+    if (per || garde) {
       pts = [];
       RELEVES.forEach(function (r) {
         if (!r.plans) { ecartes++; return; }
-        var c = comptesDerives(r, per, groupe ? groupe.dim : null);
+        var c = comptesDerives(r, per || null, groupe ? groupe.dim : null, garde || null);
         var g = groupe ? (c.groupes[groupe.val] || { total: 0, termine: 0 }) : c;
         pts.push({ i: r.i, total: g.total, termine: g.termine });
       });
@@ -8185,13 +8274,16 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   function serieAffichee() {
     var groupe = groupeAffiche();
     var per = vue.perimetre;
-    var serie = serieDe(per, groupe), pts = serie.pts, ecartes = serie.ecartes;
-    var portee = groupe
-      ? nomGroupe(groupe) + (per ? ', périmètre ' + per : '')
-      : (per ? 'périmètre ' + per : null);
-    /* Le groupe choisi fait la série : seuls les AUTRES filtres ne s'y
-       appliquent pas. */
-    return { pts: pts, portee: portee, partiel: groupe ? filtreHorsGroupe() : filtreLibre(), ecartes: ecartes };
+    var garde = gardeCourbe();
+    var serie = serieDe(per, groupe, garde), pts = serie.pts, ecartes = serie.ecartes;
+    var portee = [groupe ? nomGroupe(groupe) : '', garde ? 'sélection' : '', per ? 'périmètre ' + per : '']
+      .filter(Boolean).join(', ') || null;
+    /* Le groupe choisi fait la série, la garde aussi (débrief 29) ; un état
+       cliqué choisit la courbe de cet état. Seuls des relevés sans carte
+       plan par plan laissent encore des filtres hors de la courbe
+       (partiel) : la page le dit sous le dessin (#avis-graphe). */
+    return { pts: pts, portee: portee, garde: garde,
+             partiel: !courbeRecomptable() && (groupe ? filtreHorsGroupe() : filtreLibre()), ecartes: ecartes };
   }
   /* La courbe d'une valeur (débrief 18) : relevé après relevé, combien de
      plans de la portée du graphique — son périmètre, le groupe choisi —
@@ -8200,30 +8292,34 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      de toutes les valeurs d'un relevé se font d'un seul passage, mémorisés
      comme ceux de comptesDerives. */
   var MEMO_VALEURS = {};
-  function valeursDuReleve(rel, per, groupe) {
-    var cle = rel.i + '|' + per + '|' + (groupe ? groupe.dim + '\u0001' + groupe.val : '');
-    if (MEMO_VALEURS[cle]) return MEMO_VALEURS[cle];
+  function valeursDuReleve(rel, per, groupe, garde) {
+    /* Débrief 29 (relecture R2-7) : sous une garde (gardeCourbe), ses seuls
+       plans — mémorisés avec elle, à part. */
+    var memo = garde ? garde.memo : MEMO_VALEURS;
+    var cle = 'v|' + rel.i + '|' + per + '|' + (groupe ? groupe.dim + '\u0001' + groupe.val : '');
+    if (memo[cle]) return memo[cle];
     /* Sans prototype : une clé de valeur peut s'écrire n'importe comment.
        « brut » garde la première écriture de chaque clé, pour nommer une
        valeur que plus aucun plan ne porte aujourd'hui. */
-    var c = { total: 0, par: Object.create(null), brut: Object.create(null) }, tous = !per && !groupe;
+    var c = { total: 0, par: Object.create(null), brut: Object.create(null) }, tous = !per && !groupe && !garde;
     Object.keys(rel.plans).forEach(function (ref) {
       if (!tous) {
         var p = planDeRef(ref);
-        if (!p || (per && domaineDe(p) !== per) || (groupe && String(valeurDim(p, groupe.dim) || '\u2014') !== groupe.val)) return;
+        if (!p || (per && domaineDe(p) !== per) || (groupe && String(valeurDim(p, groupe.dim) || '\u2014') !== groupe.val) ||
+            (garde && !garde.refs[p.reference])) return;
       }
       var k = cleValeur(rel.plans[ref]);
       c.total++;
       c.par[k] = (c.par[k] || 0) + 1;
       if (!(k in c.brut)) c.brut[k] = rel.plans[ref];
     });
-    return (MEMO_VALEURS[cle] = c);
+    return (memo[cle] = c);
   }
   function serieValeur(k) {
-    var groupe = groupeAffiche(), per = vue.perimetre, pts = [], ecartes = 0;
+    var groupe = groupeAffiche(), per = vue.perimetre, garde = gardeCourbe(), pts = [], ecartes = 0;
     RELEVES.forEach(function (r) {
       if (!r.plans) { ecartes++; return; }
-      var c = valeursDuReleve(r, per, groupe);
+      var c = valeursDuReleve(r, per, groupe, garde);
       pts.push({ i: r.i, total: c.total, termine: c.par[k] || 0 });
     });
     if (!pts.length) pts.push({ i: AUJ, total: 0, termine: 0 });
@@ -8241,18 +8337,33 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      qu'on veut voir descendre. Nommées par leur première écriture, de la
      couleur de leur mot (couleurConnue). Refaites à chaque rangée. */
   var HIER_GRAPHE = {};
+  /* Débrief 29 (relecture R2-7) : un état cliqué dans la synthèse filtre
+     toute la page — la courbe devient celle de cet état (sa pilule se
+     presse) : combien de plans le portaient, relevé après relevé, et le
+     dernier point est le nombre de la tuile. Retirer l'état ramène la
+     courbe des validés, si on ne l'a pas changée entre-temps. Une autre
+     pilule reste à un clic. ETAT_COURBE : l'état que la courbe a suivi au
+     dernier dessin — la tuile, le × du bandeau, « Tout effacer », le bloc,
+     tous passent par ici. */
+  var ETAT_COURBE = '';
   function rendreFiltreValeurGraphe() {
     var z = $('filtre-valeur-graphe');
     HIER_GRAPHE = {};
+    var etatSuivi = vue.etat && courbeRecomptable() ? vue.etat : '';
+    if (etatSuivi !== ETAT_COURBE) {
+      if (etatSuivi) vue.valeurGraphe = etatSuivi;
+      else if (vue.valeurGraphe === ETAT_COURBE) vue.valeurGraphe = '';
+      ETAT_COURBE = etatSuivi;
+    }
     if (!z || !VALEURS_COLONNE.length || !RELEVES.some(function (r) { return r.plans; })) {
       vue.valeurGraphe = '';
       if (z) { z.hidden = true; z.innerHTML = ''; }
       return '';
     }
-    var groupe = groupeAffiche(), per = vue.perimetre, vues = {}, hier = [];
+    var groupe = groupeAffiche(), per = vue.perimetre, garde = gardeCourbe(), vues = {}, hier = [];
     RELEVES.forEach(function (r) {
       if (!r.plans) return;
-      var c = valeursDuReleve(r, per, groupe);
+      var c = valeursDuReleve(r, per, groupe, garde);
       Object.keys(c.par).forEach(function (k) {
         if (!c.par[k]) return;
         vues[k] = true;
@@ -8487,11 +8598,24 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         ' : aucun changement depuis le relevé d\u2019avant, plan par plan';
     }
     $('note-graphe').textContent = note;
+    /* Débrief 29 (relecture R2-7) : la phrase « N relevés… » reste cachée
+       (débrief 28). Mais quand des filtres de la page ne peuvent pas
+       s'appliquer à la courbe — des relevés archivés sans le détail plan
+       par plan —, la page le dit sous le dessin, en clair, au lieu de
+       montrer sans un mot d'autres nombres que la synthèse. */
+    var avis = $('avis-graphe');
+    if (avis) {
+      avis.textContent = vueSerie.partiel
+        ? 'La courbe compte tous les plans' + (vueSerie.portee ? ' (' + vueSerie.portee + ')' : '') +
+          ' : les relevés archivés ne gardent pas le détail de chaque plan, les autres filtres de la page ne peuvent pas s’y appliquer.'
+        : '';
+      avis.hidden = !vueSerie.partiel;
+    }
     var prochain = prochainJalon();
     /* L'échéance se lit sur la portée du graphique : son périmètre, et le
        groupe choisi dans le bloc s'il y en a un — la même formule que la
        fiche et le bloc (bilanEcheance). */
-    var bilan = prochain ? bilanEcheance(prochain, groupeAffiche()) : null;
+    var bilan = prochain ? bilanEcheance(prochain, groupeAffiche(), vueSerie.garde) : null;
     var depart = semaineDepart();
 
     var d0 = vue.fen.debut, span = vue.fen.span, d1 = d0 + span - 1;
@@ -9084,10 +9208,16 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        rien. Un état calme à la place : ce qui manque et quand cela viendra ;
        les pilules, la période, la légende et les chiffres se cachent
        (.graphe-vide), les jalons restent listés dessous. */
-    var vide = trace.length < 2;
+    /* Débrief 29 (relecture R2-7) : la recherche ou un filtre de colonne ne
+       gardent aucun plan — la synthèse dit « Aucun plan dans la sélection »,
+       la courbe aussi, au lieu d'une ligne plate « 0 sur 0 ». */
+    var sansPlan = !!vueSerie.garde && !dernier.total;
+    var vide = trace.length < 2 || sansPlan;
     $('section-tendance').classList.toggle('graphe-vide', vide);
     cadreGraphe.tabIndex = vide ? -1 : 0;
     $('zone-graphe').innerHTML = !vide ? s.join('')
+      : sansPlan ? '<div class="etat-vide graphe-vide-bloc"><p class="etat-vide-phrase">Aucun plan dans la sélection</p>' +
+        '<p class="etat-vide-detail">Les filtres de la page ne gardent aucun plan : la courbe n’a rien à compter. « Tout effacer », en haut de la page, la ramène.</p></div>'
       : '<div class="etat-vide graphe-vide-bloc"><p class="etat-vide-phrase">La courbe commence au deuxième relevé</p>' +
         '<p class="etat-vide-detail">' + (trace.length
           ? 'Un seul relevé pour l’instant (' + ech(semaineDite(trace[0].i)) + ') : ' + nb(trace[0].termine) + ' sur ' + nb(trace[0].total) + ' plans ' + motFini(2) + '. '
@@ -9202,7 +9332,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     derniereAnalyse = { pts: pts, total: total, atteint: atteint, restants: restants, vitesse: vitesse,
                         projIdx: projIdx, trace: trace, valeur: vVal,
                         prochain: prochain, requis: requis, enRetard: enRetard, span: span, d0: d0,
-                        bilan: bilan, ryt: ryt,
+                        bilan: bilan, ryt: ryt, sansPlan: sansPlan,
                         echelle: { d0: d0, pasX: pasX, mHaut: mHaut, plotH: plotH, haut: haut, H: H } };
     majBoutonsZoom();
     /* Débrief 27 : après un glissement ou un zoom à la main, le retour au
@@ -9234,6 +9364,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var serie = a.trace || a.pts, der = serie[serie.length - 1], v = a.valeur, b = a.bilan;
     var phrase;
     if (!der) phrase = 'Aucun relevé.';
+    else if (a.sansPlan) phrase = 'Aucun plan dans la sélection : la courbe n’a rien à compter.';   // débrief 29 (relecture R2-7)
     else if (v) phrase = nb(der.termine) + ' plans « ' + v.libelle + ' » sur ' + nb(der.total) + ', en ' + semaineDite(der.i) + '.';
     else {
       phrase = nb(a.atteint) + ' ' + (a.total > 1 ? 'plans ' : 'plan ') + motFini(a.total) + ' sur ' + nb(a.total) + ', en ' + semaineDite(der.i) + '. ' +
@@ -9552,16 +9683,14 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   /* Sous les deux lignes de tête, le résumé de la semaine — les lignes du
      journal, mot pour mot : « +6 » ne dit pas ce qui s'est passé. Quand la
      courbe est celle d'un groupe, les comptes se limitent à ses plans. */
+  /* Débrief 29 (relecture R2-7) : les lignes du journal tel que la page le
+     montre (journalAffiche) — le périmètre, le groupe, la recherche, les
+     filtres de colonnes, une tuile : les mêmes plans que la courbe et que la
+     partie « Changements », mot pour mot. */
   function comptesDeLaSemaine(i) {
-    var sem = JOURNAL.filter(function (s) { return s.i === i; })[0];
+    var sem = journalAffiche().filter(function (s) { return s.i === i; })[0];
     if (!sem) return '';
-    var evts = sem.evenements.filter(dansPerimetreEvt);
-    if (vue.groupe && CLES_DIM.indexOf(vue.groupe.dim) !== -1) {
-      evts = evts.filter(function (e) {
-        var p = planDeRef(e.ref);
-        return p && String(valeurDim(p, vue.groupe.dim) || '—') === vue.groupe.val;
-      });
-    }
+    var evts = sem.evenements;
     var lignes = resumeEvenements(evts).map(function (l) {
       return '<div class="bulle-ligne">' + pastilleResume(l) + ech(libelleLot(l, l.n)) +
         '<span class="n">' + nb(l.n) + '</span></div>';
@@ -9806,10 +9935,15 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      toute la page est devenue 6 sur 80 ». Ouvrir une ligne ne fait plus que
      la déplier ; filtrer toute la page sur ce groupe est ce bouton-ci, dit
      en toutes lettres — posé, il dit comment le retirer. */
+  /* Débrief 29 (relecture R2-13) : posé, le bouton dit « Retirer le
+     filtre ATA 25 » — plus court que « Filtrer la page sur ATA 25 » : au
+     téléphone (390 px), « Copier (61) » reste sur sa ligne et la liste ne
+     descend pas au toucher. Le bandeau FILTRES et le title disent déjà que
+     c'est toute la page. */
   function boutonFiltrerPage(val, nomG, pose) {
     return '<button type="button" class="filtrer-page' + (pose ? ' pose' : '') + '" id="filtrer-groupe-page" data-filtrer-groupe="' + ech(val) +
       '" title="' + ech(pose ? 'La page entière revient à tous les plans' : 'Synthèse, courbe, tableau : toute la page ne montrera que les plans de ' + nomG) + '">' +
-      iconeEntonnoir() + ech(pose ? 'Retirer le filtre ' + nomG + ' de la page' : 'Filtrer la page sur ' + nomG) + '</button>';
+      iconeEntonnoir() + ech(pose ? 'Retirer le filtre ' + nomG : 'Filtrer la page sur ' + nomG) + '</button>';
   }
 
   function jetonUD(p) {
@@ -9940,6 +10074,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if ($('surtitre-groupe')) $('surtitre-groupe').textContent = mot;
   }
 
+  /* Débrief 29 (relecture R2-25) : le compte du dernier dessin du bloc —
+     combien de groupes le filtre de gauche garde, sur combien —, pour la
+     phrase qu'annonce poserFiltreGroupe. null quand le bloc est vide. */
+  var COMPTE_GROUPES = null;
   function rendreCritique(liste) {
     var dim = vue.dimCritique;
     /* L'échéance — le jalon qui pilote l'effort demandé sous le périmètre
@@ -9956,6 +10094,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       libellerSommaireGroupe();
       $('indice-dim').textContent = '';
       $('compte-groupes').textContent = '';
+      COMPTE_GROUPES = null;           // débrief 29 (relecture R2-25)
       libellerFiltreGroupe(dim);
       rendreFiltreValeurBloc(null);
       $('zone-critique').classList.remove('sans-jalon');
@@ -9990,10 +10129,13 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     /* Le rythme, la fin estimée et le rythme requis d'un groupe se lisent
        sur sa série — celle que dessine le graphique quand on choisit la
        ligne, celle que lit la fiche d'échéance : les relevés archivés, sous
-       le périmètre choisi. Un relevé archivé ne se refiltre pas : ces trois
-       colonnes portent sur tous les plans du groupe, quels que soient les
-       autres filtres, et le bloc le dit quand il y en a. */
-    var per = vue.perimetre;
+       le périmètre choisi. Débrief 29 (relecture R2-7) : comme la courbe,
+       elles se recomptent sur les plans que gardent la recherche, les
+       filtres de colonnes ou une liste de plans (gardeCourbe), relevé par
+       relevé, sur sa carte plan par plan. Un état cliqué ne les change pas
+       (la fin d'un groupe compte tous ses plans, quel que soit leur état),
+       ni, sans carte plan par plan, les autres filtres : le bloc le dit. */
+    var per = vue.perimetre, gardeBloc = gardeCourbe(true);
     var depart = semaineDepart();
     var arretParRef = RELEVES.length > 1 ? plansALArret().parRef : {};
     /* « 3 à l'arrêt » sous le compte d'un groupe est un bouton : il montre
@@ -10016,7 +10158,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var rangs = Object.keys(groupes).map(function (k) {
       var g = groupes[k];
       var grp = { dim: dim, val: k };
-      var serie = serieDe(per, grp).pts;
+      var serie = serieDe(per, grp, gardeBloc).pts;
       var derG = serie[serie.length - 1];
       var restantsGroupe = Math.max(0, derG.total - derG.termine);
       var rg = rythmes(serie);
@@ -10024,7 +10166,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       /* Le rythme requis : la formule de la fiche (bilanEcheance), sur ce
          groupe — sous « Tout », un jalon BASE/OPTION ne lui demande que ses
          plans BASE/OPTION. */
-      var b = prochain ? bilanEcheance(prochain, grp) : null;
+      var b = prochain ? bilanEcheance(prochain, grp, gardeBloc) : null;
       var nValeur = vb ? (g.parValeur[vb] || 0) : g.total;
       return {
         rythme: rg, bilan: b,
@@ -10106,6 +10248,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
             'Les filtres posés sur la page ne laissent aucun plan à répartir ; « Tout effacer », en haut de la page, les retire.')
         : etatVideCritique('Aucun plan à répartir.', 'Cette source n’a encore aucun plan.');
       $('compte-groupes').textContent = '';
+      COMPTE_GROUPES = null;           // débrief 29 (relecture R2-25)
       return;
     }
     blocCritiqueVide(false);
@@ -10116,6 +10259,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var tous = rangs.length;
     rangs = rangs.filter(retenuParFiltreGroupe);
     $('compte-groupes').textContent = rangs.length === tous ? '' : nb(rangs.length) + ' sur ' + nb(tous);
+    COMPTE_GROUPES = { n: rangs.length, tous: tous, mot: TITRE_DIM[dim].replace(/ \(.*\)$/, '') };   // débrief 29 (relecture R2-25)
     marquerDebord($('filtre-valeur-groupe'));     // le compte prend sa place sur la ligne
 
     var motDim = TITRE_DIM[dim].replace(/ \(.*\)$/, '');
@@ -10185,13 +10329,26 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     /* Sous une valeur, ce que comptent les colonnes : « plans » et la
        barre suivent la valeur, la fin estimée et les rythmes restent ceux
        de tout le groupe — sinon on lirait « la fin des TO_CONFIRM ». */
+    /* Débrief 29 (relecture R2-7) : ce que les rythmes ne suivent pas, et
+       seulement cela — un état cliqué, ou, faute de carte plan par plan, les
+       autres filtres de la page. */
+    var sansCarte = filtreHorsGroupe() && !courbeRecomptable();
+    var surQui = (gardeBloc ? ' de la sélection' : '') +
+      (sansCarte ? ' — les relevés archivés ne gardent pas le détail de chaque plan'
+        : vue.etat ? ', quel que soit leur état' : '');
+    /* Débrief 29 (relecture R2-10) : un seul relevé — les tirets de « Fin
+       estimée » et « Rythme tenu » disent pourquoi, en clair, pas seulement
+       au survol. */
+    if (rangs.length && rangs.every(function (r) { return !r.rythme; })) {
+      html += '<div class="critique-note">Fin estimée et rythmes : un seul relevé pour l’instant, ils se mesureront au prochain relevé archivé.</div>';
+    }
     if (vVal) {
       html += '<div class="critique-note note-valeur">' + pastilleValeur(vb, vVal.famille) + '<span>Plans et répartition : les plans « ' + ech(vVal.libelle) +
         ' » de chaque groupe, sur son total' + (gains && gains.sem !== null ? ', et ceux qui y sont arrivés ' + ech(quandDesGains(gains.sem)) : '') +
-        '. Fin estimée et rythmes : sur tous ses plans' + (filtreHorsGroupe() ? ' — un relevé archivé ne se refiltre pas' : '') + '.</span></div>';
-    } else if (filtreHorsGroupe()) {
-      /* Les autres filtres ne touchent pas l'historique : le bloc le dit. */
-      html += '<div class="critique-note">Fin estimée et rythmes : sur tous les plans de chaque groupe — un relevé archivé ne se refiltre pas.</div>';
+        '. Fin estimée et rythmes : sur tous ses plans' + surQui + '.</span></div>';
+    } else if (sansCarte || vue.etat) {
+      html += '<div class="critique-note">Fin estimée et rythmes : sur tous les plans' + (gardeBloc ? ' de la sélection' : '') + ' de chaque groupe' +
+        (sansCarte ? ' — les relevés archivés ne gardent pas le détail de chaque plan.' : ', quel que soit leur état.') + '</div>';
     }
 
     if (vue.aideFin) html += panneauAide(rangs, prochain);
@@ -10257,7 +10414,17 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
          requis s'écrivait « 38,1/sem. » ici, « 38 » partout ailleurs (la
          fiche de l'échéance, le graphique, la Vue d'ensemble). */
       var col2, b = r.bilan, rythmeLu;
-      if (!prochain) {
+      /* Débrief 29 (relecture R2-10) : un seul relevé (une tranche toute
+         neuve) ne mesure aucun rythme — ce n'est pas « rien de validé », en
+         rouge, à côté d'une barre à 18 % validés. Un tiret gris, et la
+         raison ; le rouge reste à « aucun validé » sur au moins deux
+         relevés. r.rythme est null sans rythme mesurable, un objet (central
+         0) quand rien n'a été validé entre deux relevés. */
+      if (!prochain && !r.rythme) {
+        col2 = '<span class="critique-effort" data-libelle="rythme tenu" aria-hidden="true" title="Un seul relevé : le rythme se mesurera au prochain relevé archivé.">' +
+          '<span class="v critique-ecart doux">—</span></span>';
+        rythmeLu = 'Rythme tenu : pas encore mesurable, un seul relevé.';
+      } else if (!prochain) {
         col2 = '<span class="critique-effort" data-libelle="rythme tenu" aria-hidden="true"><span class="v critique-ecart' +
           (r.vitesse > 0 ? '' : ' arret') + '">' +
           (r.vitesse > 0 ? virgule(r.vitesse) + '/sem.' : 'rien de validé') +
@@ -10274,13 +10441,13 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         var atteint = b.rythme > 0 ? Math.min(1, b.rythme / b.requis) : 0;
         col2 = '<span class="critique-effort" data-libelle="rythme requis" aria-hidden="true" title="' + ech(nb(b.restants) + (b.restants > 1 ? ' plans' : ' plan') +
           ' à valider' + (b.domaine && b.domaine !== per ? ' dans ' + b.domaine : '') + ' en ' + b.semaines + (b.semaines > 1 ? ' semaines' : ' semaine') +
-          ' : ' + rythmeDit(b.requis) + ' par semaine ; rythme tenu : ' + (b.rythme > 0 ? virgule(b.rythme) + ' par semaine' : 'aucun plan validé') +
-          (b.enRetard ? ', il ne suffit pas.' : ', il suffit.')) +
+          ' : ' + rythmeDit(b.requis) + ' par semaine ; rythme tenu : ' + (b.rythme > 0 ? virgule(b.rythme) + ' par semaine' : b.rythme === null ? 'pas encore mesurable, un seul relevé' : 'aucun plan validé') +
+          (b.rythme === null ? '.' : b.enRetard ? ', il ne suffit pas.' : ', il suffit.')) +
           '"><span class="v critique-ecart"><span class="requis">' + rythmeDit(b.requis) + '/sem.</span>' +
           '<small><span class="jauge-rythme' + (b.enRetard ? '' : ' suffit') + '"><i style="width:' + (b.enRetard ? (100 * atteint).toFixed(1) : '100') + '%"></i></span>' +
-          (b.rythme > 0 ? 'tenu ' + virgule(b.rythme) + '/sem.' : 'rien de validé') + '</small></span></span>';
-        rythmeLu = 'Rythme requis : ' + rythmeDit(b.requis) + ' plans par semaine ; tenu : ' + (b.rythme > 0 ? virgule(b.rythme) : 'aucun') +
-          (b.enRetard ? ', en retard.' : ', suffisant.');
+          (b.rythme > 0 ? 'tenu ' + virgule(b.rythme) + '/sem.' : b.rythme === null ? 'un seul relevé' : 'rien de validé') + '</small></span></span>';
+        rythmeLu = 'Rythme requis : ' + rythmeDit(b.requis) + ' plans par semaine ; tenu : ' +
+          (b.rythme === null ? 'pas encore mesurable, un seul relevé.' : (b.rythme > 0 ? virgule(b.rythme) : 'aucun') + (b.enRetard ? ', en retard.' : ', suffisant.'));
       }
 
       // --- colonne chiffree 3 : la semaine d'arrivee au rythme tenu
@@ -10288,6 +10455,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       var col3 = '<span class="critique-date' + (r.fin === null && r.restantsGroupe !== 0 ? ' doux' : '') +
         '" data-libelle="fin estimée" aria-hidden="true" title="' +
         (r.restantsGroupe === 0 ? 'Plus rien à valider dans ce groupe.'
+          : r.fin === null && !r.rythme ? 'Un seul relevé : pas encore de rythme, donc pas de date.'
           : r.fin === null ? 'Aucun plan validé depuis le premier relevé : pas de rythme, donc pas de date.'
           : ech(nb(r.restantsGroupe) + ' plans à valider à ' + virgule(r.vitesse) + ' par semaine : ' + (r.fin - depart) + ' semaines, fin ' + semaineDite(r.fin) + '.')) +
         '"><span class="v">' + texteFin + '</span></span>';
@@ -10302,7 +10470,8 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         (vVal ? nb(r.nValeur) + ' ' + vVal.libelle + ' sur ' : '') + nb(r.total) + ' plan' + (r.total > 1 ? 's' : '') +
         (vVal && r.gain ? ' (' + nb(r.gain) + (r.gain > 1 ? ' arrivés' : ' arrivé') + ' au dernier relevé)' : '') +
         ' : ' + detailDit + '. Fin estimée : ' +
-        (r.restantsGroupe === 0 ? 'tout est validé' : r.fin === null ? 'aucune, rien de validé depuis le premier relevé' : semaineEnClair(r.fin)) + '. ' +
+        (r.restantsGroupe === 0 ? 'tout est validé' : r.fin === null && !r.rythme ? 'pas encore, un seul relevé'
+          : r.fin === null ? 'aucune, rien de validé depuis le premier relevé' : semaineEnClair(r.fin)) + '. ' +
         rythmeLu + (filtrePage ? ' Filtre posé sur toute la page.' : '');
 
       return '<div class="critique-rangee" role="row"' + (i >= montres ? ' hidden' : '') + '>' +
@@ -11286,10 +11455,34 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   /* Le journal affiché : sous un périmètre, seuls les événements des plans
      qui en font partie ; une semaine qui n'en a plus disparaît. */
   function journalAffiche() {
-    if (!vue.perimetre && !vue.groupe && !vue.refs) return JOURNAL;
+    if (!vue.perimetre && !filtreLibre()) return JOURNAL;
+    /* Débrief 29 (relecture R2-7) : la recherche, les filtres de colonnes,
+       les cellules vides et un état cliqué dans la synthèse filtrent aussi le
+       journal — les plans de la sélection, ceux que comptent la Synthèse et
+       Par ATA (Nathan, débrief 28 : « quand je filtre par l'ECP, ça filtre
+       tout, sauf semaine par semaine. Est-ce normal ? » — non). Un plan se
+       retrouve par sa référence ou sa racine (planDeRef) : un plan réémis
+       garde ses changements d'avant. */
+    var garde = journalGarde();
     return JOURNAL.map(function (sem) {
-      return { i: sem.i, avant: sem.avant, evenements: sem.evenements.filter(function (e) { return dansPerimetreEvt(e) && dansFiltresPageEvt(e); }) };
+      return { i: sem.i, avant: sem.avant, evenements: sem.evenements.filter(function (e) {
+        if (!dansPerimetreEvt(e) || !dansFiltresPageEvt(e)) return false;
+        if (!garde) return true;
+        var p = planDeRef(e.ref);
+        return !!p && !!garde[p.reference];
+      }) };
     }).filter(function (sem) { return sem.evenements.length > 0; });
+  }
+  /* Les références de la sélection, quand un filtre de la page porte sur
+     les colonnes ou l'état des plans ; null sinon (le périmètre, un groupe
+     et une liste de plans se testent déjà événement par événement). */
+  function journalGarde() {
+    if (!(vue.recherche || vue.etat ||
+          Object.keys(vue.filtres).some(function (k) { return vue.filtres[k]; }) ||
+          Object.keys(vue.vides).some(function (k) { return vue.vides[k]; }))) return null;
+    var garde = {};
+    selection().forEach(function (p) { garde[p.reference] = true; });
+    return garde;
   }
   /* Débrief 28 : le journal suit aussi les filtres de la page qui portent sur
      des plans — un groupe (« Filtrer la page sur ECP-2108 », un ATA…) ou une
@@ -11542,8 +11735,14 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       return;
     }
     if (!journal.length) {
-      zone.innerHTML = etatVideJournal({ phrase: 'Aucun changement dans le périmètre ' + vue.perimetre,
-        detail: 'Aucun plan du périmètre ' + vue.perimetre + ' n’a changé de valeur d’un relevé à l’autre. « Tout », dans Périmètre, montre le journal entier.' });
+      /* Débrief 29 (relecture R2-7) : vide sous un autre filtre de la page
+         que le périmètre (une recherche, un état, un groupe…), le message ne
+         parle plus d'un périmètre — il aurait dit « le périmètre  ». */
+      zone.innerHTML = etatVideJournal(vue.perimetre && !filtreLibre()
+        ? { phrase: 'Aucun changement dans le périmètre ' + vue.perimetre,
+            detail: 'Aucun plan du périmètre ' + vue.perimetre + ' n’a changé de valeur d’un relevé à l’autre. « Tout », dans Périmètre, montre le journal entier.' }
+        : { phrase: 'Aucun changement pour les plans de la sélection',
+            detail: 'Aucun des plans que gardent les filtres de la page n’a changé de valeur d’un relevé à l’autre. « Tout effacer », en haut de la page, montre le journal entier.' });
       return;
     }
     var filtre = vue.journal;
@@ -14684,11 +14883,17 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   /* Le filtre de la colonne de gauche : il ne redessine que le bloc. Échap
      le vide ; le type « search » du champ fait de même par sa croix. */
   var minuteurGroupe = null;
+  /* Débrief 29 (relecture R2-25) : le résultat du filtre se dit en une
+     phrase, une fois le bloc redessiné — « ATA : 1 sur 10 pour « 21 » »,
+     et « ATA : filtre vidé, 10 sur 10 » quand on l'efface (Échap, × du
+     champ). Le nom de la dimension suit le bloc : ECP, mois… */
   function poserFiltreGroupe(v) {
     clearTimeout(minuteurGroupe);
     if (v === vue.filtreGroupe) return;
     vue.filtreGroupe = v;
     rendreCritique(selection());
+    var c = COMPTE_GROUPES, t = String(v || '').trim();
+    if (c) annoncer(c.mot + ' : ' + (t ? nb(c.n) + ' sur ' + nb(c.tous) + ' pour « ' + t + ' »' : 'filtre vidé, ' + nb(c.tous) + ' sur ' + nb(c.tous)));
   }
   $('filtre-groupe').addEventListener('input', function (e) {
     var v = e.target.value;
@@ -14714,9 +14919,14 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   /* Mesuré sur la page, pas lu dans --bas-sommaire : le bandeau FILTRES
      qu'un clic vient de faire paraître n'y est compté qu'à l'image
      suivante (MutationObserver). */
+  /* Débrief 29 (relecture R2-12) : la ligne FILTRES se mesure par sa
+     ligne visible (hauteurFiltres) — le conteneur collé n'a plus de
+     hauteur depuis le débrief 27 (lot H) : il comptait 0, et la ligne
+     dépliée d'un groupe restait sous les bandeaux après « Filtrer la page
+     sur ATA … ». */
   function hautSommaire() {
-    var f = $('filtres-actifs'), s = $('sommaire');
-    return (f && !f.hidden ? f.getBoundingClientRect().height : 0) +
+    var s = $('sommaire');
+    return hauteurFiltres() +
       (s && s.getClientRects().length && getComputedStyle(s).position === 'sticky' ? s.getBoundingClientRect().height : 0);
   }
   function hautLibreCritique() {
@@ -14777,7 +14987,18 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       var haut = $('panneau-fin').getBoundingClientRect().top - hautSommaire() - 8;
       if (haut < 0) window.scrollBy(0, haut);
     }
-    focaliser($('zone-critique').querySelector('button[data-aide="' + aideOuvertePar + '"]') || $('zone-critique').querySelector('button[data-aide]'));
+    var boutonAide = $('zone-critique').querySelector('button[data-aide="' + aideOuvertePar + '"]') || $('zone-critique').querySelector('button[data-aide]');
+    /* Débrief 29 (relecture R2-19) : le panneau s'ouvre au-dessus de
+       l'en-tête et pousse le « ? » vers le bas, souvent sous le bord de
+       l'écran — au clavier, le focus disparaissait. La page descend juste
+       assez pour que le « ? » reste à l'écran, sans glisser le haut du
+       panneau sous le sommaire collé. */
+    if (ouvrir && boutonAide && $('panneau-fin')) {
+      var deborde = boutonAide.getBoundingClientRect().bottom + 8 - window.innerHeight;
+      var marge = $('panneau-fin').getBoundingClientRect().top - hautSommaire() - 8;
+      if (deborde > 0 && marge > 0) window.scrollBy(0, Math.min(deborde, marge));
+    }
+    focaliser(boutonAide);
   }
   /* Au clavier, le navigateur amène ce qui prend le focus au bord haut de
      l'écran — sous l'en-tête collé de la liste, focus et nom invisibles.
@@ -15093,7 +15314,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       }
       rendre();
       var cadre = $('cadre-tableau');
-      if (!meme) defilerVers(cadre, { behavior: 'smooth', block: 'center' });
+      /* Débrief 29 (relecture R2-6) : « moins d'animation » demandé, la page
+         saute au tableau au lieu d'y glisser (lisse()). */
+      if (!meme) defilerVers(cadre, { behavior: lisse(), block: 'center' });
       return;
     }
     /* Ailleurs sur la ligne d'une semaine (hors de ses comptes) : on la plie
@@ -15111,7 +15334,27 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      la croit visible (elle est dans la fenêtre) : on la dégage. */
   $('zone-journal').addEventListener('focusin', function (e) {
     var b = e.target;
-    if (!b || !b.closest || !b.closest('.journal-liste')) return;
+    if (!b || !b.closest) return;
+    /* Débrief 29 (relecture R2-17) : la ligne d'une semaine — son bouton
+       « S42… », ses comptes « 4 passés à … » — reçue en remontant
+       (Maj+Tab) : Chrome la croit visible sous l'en-tête collé des colonnes
+       (elle est dans la marge du haut) et ne défile pas ; elle restait
+       cachée dessous. On la dégage. Collée (semaine ouverte), elle est déjà
+       juste sous l'en-tête : rien ne bouge. Au clavier seulement, et à
+       l'image suivante : une semaine qu'on plie ou déplie rend le focus à
+       son bouton (garderFocus) et se remet d'abord elle-même sous le doigt
+       (basculerSemaineJournal) — on ne la pousse pas de 8 px de plus. */
+    if (b.closest('.journal-tete')) {
+      try { if (!b.matches(':focus-visible')) return; } catch (err) { /* navigateur sans :focus-visible : on dégage quand même */ }
+      var degager = function () {
+        if (document.activeElement !== b) return;
+        var hautT = basCollesJournal(), rt = b.getBoundingClientRect();
+        if (rt.top < hautT - 1) window.scrollBy(0, rt.top - hautT - 8);
+      };
+      if (window.requestAnimationFrame) requestAnimationFrame(degager); else setTimeout(degager, 0);
+      return;
+    }
+    if (!b.closest('.journal-liste')) return;
     var sem = b.closest('.journal-semaine'), tete = sem && sem.querySelector('.journal-tete');
     /* Au téléphone, la ligne s'efface (display: contents) : c'est son bouton qui se colle. */
     var colle = tete && getComputedStyle(tete).display !== 'contents' ? tete : sem && sem.querySelector('.journal-plier');

@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "6ea8cca";
+  --suivi-fwd-edition: "a8d7f0e";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -1886,7 +1886,7 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 /* Débrief 27 (D8) : la Tendance sans courbe (moins de deux relevés) — l'état
    vide à la place du dessin, et rien de ce qui n'agirait sur rien. */
 .graphe-vide #filtre-valeur-graphe, .graphe-vide .commandes-graphe, .graphe-vide #legende,
-.graphe-vide #note-graphe, .graphe-vide #donnees-graphe { display: none !important; }
+.graphe-vide #note-graphe, .graphe-vide #avis-graphe, .graphe-vide #donnees-graphe { display: none !important; }
 .graphe-vide .cadre-graphe { cursor: default; }
 .panneau.graphe-vide .feuille { border-top: 0; padding-top: 0; }
 .legende-jalon.critique .num { background: var(--alerte); }
@@ -1958,6 +1958,7 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 .echeance-titre .jours { color: var(--encre); font-variant-numeric: tabular-nums; }
 .echeance-titre .point { width: 8px; height: 8px; border-radius: 50%; background: var(--fait); flex: none; }
 .echeance-titre.en-retard .point { background: var(--alerte); }
+.echeance-titre.sans-plan .point { background: var(--encre-3); }
 /* Chaque morceau reste d'un bloc : sur un téléphone, « Prochaine échéance »
    se cassait en deux lignes au milieu de la puce. */
 .echeance-titre > span, .echeance-titre > b { white-space: nowrap; }
@@ -2024,6 +2025,9 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 
 .note-graphe { margin: 12px 0 0; text-align: center; font-size: 12px; color: var(--encre-3); }
 .note-graphe:empty { display: none; }
+/* Débrief 29 (relecture R2-7) : l'avis de ce que la courbe ne suit pas se
+   lit comme une phrase, pas comme une légende. */
+.avis-graphe { color: var(--encre-2); }
 
 .puce-delta {
   border: none; background: none; font: inherit; cursor: pointer; padding: 1px 0;
@@ -3194,7 +3198,8 @@ table.plans thead .titres th button:hover { color: var(--encre); }
    d'avant), elle ne pousse plus l'intitulé : intitulé, champ « filtrer » et
    cases partagent le même bord gauche. Les en-têtes sont collés (sticky) :
    ils servent déjà de repère à la position absolue. Zone de saisie 19 × 24
-   px (elle s'arrête au bord de l'intitulé), 25 × 44 au doigt. */
+   px (elle s'arrête au bord de l'intitulé), 25 × 44 au doigt (24 × 44 pour
+   la première colonne mobile, que l'en-tête figé recouvre à gauche). */
 table.plans thead .titres th .poignee {
   position: absolute; left: -5px; top: 50%; transform: translateY(-50%);
   width: 19px; height: 24px; display: inline-flex; align-items: center; justify-content: center;
@@ -3355,6 +3360,12 @@ button.poignee:hover, button.poignee:focus-visible { color: var(--encre-2); opac
   table.plans thead .titres th button, table.plans thead .titres-la th button { min-height: 44px; }
   table.plans thead .titres th .poignee { height: 44px; }
   table.plans thead .titres th .poignee::after { content: ""; position: absolute; top: 0; bottom: 0; left: -6px; right: 0; }
+  /* Débrief 29 (relecture R2-23) : la première colonne mobile — juste
+     après les colonnes figées. L'en-tête figé (z-index 6) recouvre les 11
+     px que la poignée prend à gauche : sa zone partait sous lui et ne
+     gardait que 14 px. Elle part ici du bord de sa colonne et mord 10 px
+     sur l'intitulé : 24 × 44. */
+  table.plans thead .titres th.fige-fin + th .poignee::after { left: 5px; right: -10px; }
   table.plans thead .filtres input { font-size: 16px; min-height: 40px; }
   .menu-colonne button { min-height: 44px; }
 }
@@ -3638,6 +3649,16 @@ kbd {
        l'adresse (rien d'autre à toucher juste au-dessus ni au-dessous). */
   #pied-responsable a { position: relative; }
   #pied-responsable a::after { content: ""; position: absolute; inset: -15px -4px; }
+  /* Débrief 29 (relecture R2-21) : la rangée de la ligne dépliée d'un
+     groupe — « Copier (n) » à la hauteur de « Filtrer la page sur … » (44
+     px) ; la règle des 30 px, plus précise, l'emportait sur .copier. Les
+     références : 36 px, 4 px de zone invisible en haut et en bas, 8 px
+     entre deux rangées — 44 px chacune, sans chevauchement (comme
+     .compte-passage). */
+  .groupe-refs .actions-groupe .copier { min-height: 44px; }
+  .groupe-refs .jeton-ud { position: relative; min-height: 36px; }
+  .groupe-refs .jeton-ud::after { content: ""; position: absolute; inset: -4px 0; }
+  .groupe-refs .grille, .groupe-refs .grille-arret { row-gap: 8px; }
 }
 /* Une rangée qui défile de côté (pastilles, sommaire au téléphone) :
    l'élément atteint au clavier s'arrête avant le fondu du bord (M13,
