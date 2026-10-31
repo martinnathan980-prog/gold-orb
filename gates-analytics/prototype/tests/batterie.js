@@ -132,6 +132,31 @@ async function deplierFiltresColonne(pg) {
     await attendrePrete(pg, 1300);
     return pg;
   }
+  /* Débrief 29 : rouvrir une page (ou la « recharger ») avec le stockage
+     local que la précédente a laissé. Chromium sans fenêtre, sur une page
+     file://, ne le rend pas toujours : rechargée, ou rouverte dans un nouvel
+     onglet du même navigateur, la page trouve parfois un stockage vide dès
+     son premier instant (4 fois sur 10 dans un nouvel onglet, mesuré),
+     pendant que l'ancien onglet voit toujours ce qu'il a écrit — aucun code
+     de la page n'y est pour rien. Ce que ces vérifications vérifient, c'est
+     que la page relit ce qu'elle a écrit : on recopie donc ce stockage dans
+     la page rouverte, avant que son code ne tourne. adresse : celle de la
+     page à rouvrir (par défaut, l'adresse nue, comme un nouvel onglet). */
+  async function rouvrir(ctx, ancienne, etiquette, adresse = URL) {
+    const stock = await ancienne.evaluate(() => {
+      const o = {};
+      for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); o[k] = localStorage.getItem(k); }
+      return o;
+    });
+    const pg = await ctx.newPage();
+    await pg.addInitScript(s => {
+      try { localStorage.clear(); Object.keys(s).forEach(k => localStorage.setItem(k, s[k])); } catch (e) { /* sans stockage */ }
+    }, stock);
+    brancher(pg, etiquette);
+    await pg.goto(adresse);
+    await attendrePrete(pg, 1300);
+    return pg;
+  }
 
   const ctx = await contexte();
   let p = await page(ctx, 'principal');
@@ -3470,12 +3495,9 @@ async function deplierFiltresColonne(pg) {
   {
     const ctxPrefs = await contexte();
     let pp = await page(ctxPrefs, 'préférences');
-    /* Débrief 29 : « rechargée » = rouverte dans un nouvel onglet du même
-       navigateur. Chromium sans fenêtre, sur une page file:// rechargée,
-       perd parfois tout le stockage local (une fois sur cinq environ, même
-       une seconde et demie après l'écriture ; aucun code de la page n'efface
-       rien) ; un nouvel onglet le relit à chaque fois (12 sur 12). */
-    const rouvrirPrefs = async () => { const q = await page(ctxPrefs, 'préférences (rouverte)'); await pp.close(); pp = q; };
+    /* Débrief 29 : « rechargée » = rouverte dans un nouvel onglet, avec le
+       stockage que la page a laissé (voir rouvrir()). */
+    const rouvrirPrefs = async () => { const q = await rouvrir(ctxPrefs, pp, 'préférences (rouverte)'); await pp.close(); pp = q; };
     await pp.click('#vue-tableau button[data-vue="essentielle"]');
     /* Débrief 29 (batterie) : la page retient le choix 400 ms après le geste
        (regroupé) ; sur une machine chargée, un délai fixe de 800 ms
@@ -6994,11 +7016,10 @@ async function deplierFiltresColonne(pg) {
     return b ? b.dataset.trig : null;
   });
   await p.waitForTimeout(700);
-  /* Débrief 29 : la page rouverte se lit dans un nouvel onglet du même
-     navigateur (voir « préférences » plus haut : une page file:// rechargée
-     perd parfois son stockage dans Chromium sans fenêtre) ; la page
-     principale est ensuite rechargée comme avant, pour la suite. */
-  const pRouverte = await page(ctx, 'principal (rouverte)');
+  /* Débrief 29 : la page rouverte se lit dans un nouvel onglet, avec le
+     stockage que la page a laissé (voir rouvrir()) ; la page principale est
+     ensuite rechargée comme avant, pour la suite. */
+  const pRouverte = await rouvrir(ctx, p, 'principal (rouverte)');
   const apresRech = await pRouverte.evaluate(() => {
     const b = document.querySelector('button[data-trig][data-actif="true"]');
     return { tri: b ? b.dataset.trig : null, jalons: window.__jeuDExemple('HDK').jalons.length,
@@ -7391,7 +7412,7 @@ async function deplierFiltresColonne(pg) {
   brancher(pc, 'corrompu');
   await pc.goto(URL); await pc.waitForTimeout(600);
   await pc.evaluate(() => localStorage.setItem('suivi-fwd:v1', '{ceci n\'est pas du JSON'));
-  await pc.reload(); await attendrePrete(pc, 1300);
+  { const q = await rouvrir(ctxCorrompu, pc, 'corrompu', pc.url()); await pc.close(); pc = q; }  // rechargée (débrief 29 : voir rouvrir())
   verifier('un stockage illisible ne bloque pas le démarrage',
     await pc.evaluate(t => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === t, TOTAL));
   await pc.evaluate(() => localStorage.setItem('suivi-fwd:v1', JSON.stringify({
@@ -7401,7 +7422,7 @@ async function deplierFiltresColonne(pg) {
     /* Débrief 27 : l'extract entier, pour que la vérification porte sur « cachees ». */
     vueTable: 'toutes', videsMontrees: true
   })));
-  await pc.reload(); await attendrePrete(pc, 1300);
+  { const q = await rouvrir(ctxCorrompu, pc, 'corrompu', pc.url()); await pc.close(); pc = q; }  // rechargée (débrief 29 : voir rouvrir())
   await pc.click('.segmente button[data-span="0"]'); await pc.waitForTimeout(400);
   const survie = await pc.evaluate(() => ({
     lignes: (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length),
@@ -8533,7 +8554,7 @@ async function deplierFiltresColonne(pg) {
   section('Débrief 27 : le tableau des plans (lot D)');
   {
     const cD = await contexte({ prefsVierges: true });
-    const d = await page(cD, 'lot D');
+    let d = await page(cD, 'lot D');
     await d.evaluate(() => document.getElementById('section-plans').scrollIntoView());
     await d.waitForTimeout(300);
     const neuf = await d.evaluate(() => {
@@ -8659,7 +8680,7 @@ async function deplierFiltresColonne(pg) {
     const affichees = await d.evaluate(() => ({ n: document.querySelectorAll('tr.titres th').length, vides: document.getElementById('colonnes-vides').textContent }));
     verifier('« Afficher » les remet toutes (137), « Masquer » les retire', affichees.n === 137 && /affichées/.test(affichees.vides) && /Masquer$/.test(affichees.vides), JSON.stringify(affichees));
     await d.waitForTimeout(600);
-    await d.reload(); await attendrePrete(d, 1300);
+    { const q = await rouvrir(cD, d, 'lot D', d.url()); await d.close(); d = q; }  // rechargée (débrief 29 : voir rouvrir())
     const rouvert = await d.evaluate(() => ({ presse: [...document.querySelectorAll('#vue-tableau button[aria-pressed="true"]')].map(b => b.dataset.vue).join(), n: document.querySelectorAll('tr.titres th').length }));
     verifier('les deux choix se retiennent : la page rouverte est sur « Toutes les colonnes », colonnes vides affichées', rouvert.presse === 'toutes' && rouvert.n === 137, JSON.stringify(rouvert));
 
