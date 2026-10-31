@@ -70,7 +70,7 @@
 <script>
   /* La livraison de ce fichier, posée par la construction : la page la compare
      à celles de Code, Styles et Javascript, et nomme celui qui diffère. */
-  window.SUIVI_FWD_LIVRAISON_INDEX = '6ea8cca';
+  window.SUIVI_FWD_LIVRAISON_INDEX = 'a8d7f0e';
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
@@ -392,6 +392,10 @@
       </div>
       <p class="masque" id="resume-graphe"></p>
       <p class="note-graphe masque" id="note-graphe"></p>
+      <!-- Débrief 29 (relecture R2-7) : ce que la courbe ne suit pas des
+           filtres de la page (relevés sans détail plan par plan), en clair.
+           Caché le reste du temps. -->
+      <p class="note-graphe avis-graphe" id="avis-graphe" hidden></p>
       <div class="legende" id="legende"></div>
       <div class="legende-jalons" id="legende-jalons"></div>
       <!-- Débrief 27 (X-A7) : les chiffres de la courbe, en tableau, pour
@@ -470,7 +474,11 @@
            dimension à l'autre — « VALIDATED » par ATA, puis par ECP —, et
            rien n'en est mémorisé. -->
       <div class="filtre-journal rangee-valeurs" id="filtre-valeur-groupe" role="group" aria-label="Ne compter dans ce bloc que les plans d'une valeur" hidden></div>
-      <span class="compte-groupes" id="compte-groupes" role="status" aria-live="polite"></span>
+      <!-- Débrief 29 (relecture R2-25) : le compte reste à l'œil, mais ne
+           parle plus seul (« 1 sur 10 », sans dire de quoi, et rien quand
+           on vide le champ) : poserFiltreGroupe dit une phrase entière par
+           annoncer(), comme les autres recherches. -->
+      <span class="compte-groupes" id="compte-groupes"></span>
       <!-- Le filtre de la colonne de gauche : il ne touche qu'aux lignes de
            ce bloc, jamais au reste de la page. Rien n'en est mémorisé. -->
       <div class="recherche recherche-groupe">
@@ -747,7 +755,10 @@
     </section>
     <section class="aide-bloc" aria-labelledby="aide-filtres">
       <h3 class="etiquette-carte" id="aide-filtres">Les filtres : toute la page, ou une seule partie</h3>
-      <p><b>Toute la page</b> suit le contrat, la tranche et l’avancement choisis en haut, puis le périmètre, un état cliqué dans la synthèse, un groupe filtré dans Par ATA, une référence ou une ligne de la comparaison. Ces filtres s’affichent dans la barre « Filtres », en haut de l’écran : chaque × en retire un, « Tout effacer » les retire tous.</p>
+      <!-- Débrief 29 (relecture R2-7) : ce que fait vraiment un filtre de la
+           page — la recherche et les filtres de colonnes des Plans en sont,
+           la courbe et le journal les suivent. -->
+      <p><b>Toute la page</b> suit le contrat, la tranche et l’avancement choisis en haut, puis le périmètre, un état cliqué dans la synthèse, un groupe filtré dans Par ATA, la recherche et les filtres de colonnes des Plans, une référence ou une ligne de la comparaison. La synthèse, la courbe, le journal, Par ATA et le tableau ne comptent alors que les plans gardés : la courbe se recompte relevé par relevé, et un état cliqué la change en courbe de cet état. Ces filtres s’affichent dans la barre « Filtres », en haut de l’écran : chaque × en retire un, « Tout effacer » les retire tous.</p>
       <p><b>Une seule partie</b> change avec les pastilles et le petit champ de recherche des parties Tendance, Changements, Par ATA et Comparaison. Le reste de la page ne bouge pas.</p>
     </section>
     <section class="aide-bloc" aria-labelledby="aide-clavier">
