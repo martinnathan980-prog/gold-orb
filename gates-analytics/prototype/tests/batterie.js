@@ -11988,6 +11988,30 @@ async function deplierFiltresColonne(pg) {
   }
   /* (fin du lot I) */
 
+  // =================================================================
+  //  Débrief 29, R1 — relecture : sommaire, loupe, en-tête : ses vérifications se placent ici,
+  //  dans un bloc { … } qui ouvre et ferme ses propres pages.
+  // =================================================================
+  /* (début du lot R1) */
+  /* (fin du lot R1) */
+
+
+  // =================================================================
+  //  Débrief 29, R2 — relecture : filtres, Par ATA, journal : ses vérifications se placent ici,
+  //  dans un bloc { … } qui ouvre et ferme ses propres pages.
+  // =================================================================
+  /* (début du lot R2) */
+  /* (fin du lot R2) */
+
+
+  // =================================================================
+  //  Débrief 29, R3 — relecture : administration, impression, téléphone : ses vérifications se placent ici,
+  //  dans un bloc { … } qui ouvre et ferme ses propres pages.
+  // =================================================================
+  /* (début du lot R3) */
+  /* (fin du lot R3) */
+
+
   await ctx.close();
   await nav.close();
 
