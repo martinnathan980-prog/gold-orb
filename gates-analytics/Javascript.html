@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '28b1016';
+  var EDITION = '52e5e75';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -1224,8 +1224,9 @@
     var v = verdictEcheance(b);
     bouton.hidden = false;
     /* Débrief 29 (relecture R2-7) : aucun plan à compter (la recherche n'en
-       garde aucun) — ni vert ni rouge : le point reste gris. */
-    bouton.className = 'echeance-titre' + (b.enRetard ? ' en-retard' : '') + (!b.total ? ' sans-plan' : '');
+       garde aucun) — ni vert ni rouge : le point reste gris. De même sans
+       verdict (un seul relevé : le rythme ne se mesure pas encore). */
+    bouton.className = 'echeance-titre' + (b.enRetard ? ' en-retard' : '') + (!b.total ? ' sans-plan' : v.cls === 'neutre' ? ' sans-verdict' : '');
     bouton.dataset.jalon = idx;
     /* Débrief 27 (P-F2, X-A8) : le verdict dit en mots dans la puce — « en
        retard », « dans les temps » —, plus seulement par la couleur du
@@ -1235,8 +1236,10 @@
       '\x3Cspan class="jours">' + ech(motJours(b.jours)) + '\x3C/span>' +
       (v.mot ? '\x3Cspan class="verdict-mot ' + v.cls + '">' + ech(v.mot) + '\x3C/span>' : '');
     var pour = gA ? ' pour ' + nomGroupe(gA) : '';
-    bouton.title = b.enRetard ? 'Au rythme tenu, cette échéance ne sera pas tenue' + pour + ' — cliquez pour le détail'
-                              : 'Au rythme tenu, cette échéance est tenue' + pour + ' — cliquez pour le détail';
+    bouton.title = !b.total ? 'Aucun plan dans la sélection — cliquez pour le détail'
+      : v.cls === 'neutre' ? 'Rythme pas encore mesurable (un seul relevé)' + pour + ' — cliquez pour le détail'
+      : b.enRetard ? 'Au rythme tenu, cette échéance ne sera pas tenue' + pour + ' — cliquez pour le détail'
+      : 'Au rythme tenu, cette échéance est tenue' + pour + ' — cliquez pour le détail';
     rendreVerdictSynthese(j, b, gA, idx);
   }
   /* Débrief 27 : le verdict d'une échéance en un mot, le même pour la puce
@@ -7447,6 +7450,12 @@
     var zone = $('ensemble');
     preparerEnsemble();
     zone.hidden = false;
+    /* Débrief 29 : la page derrière ne défile plus tant que la fenêtre est
+       ouverte, comme derrière l'administration (M8) — la molette sur la
+       fenêtre faisait défiler la page. */
+    var racine = document.documentElement;
+    racine.style.setProperty('--barre-admin', Math.max(0, window.innerWidth - racine.clientWidth) + 'px');
+    racine.classList.add('ensemble-ouvert');
     if (typeof zone.showModal === 'function') { if (!zone.open) zone.showModal(); } else zone.setAttribute('open', '');
     $('voir-ensemble').setAttribute('aria-expanded', 'true');
     /* Le focus sur le titre : un lecteur d'écran dit où l'on est. */
@@ -7496,6 +7505,7 @@
     demandeEnsemble++;
     var zone = $('ensemble');
     if (zone.open) { if (typeof zone.close === 'function') zone.close(); else zone.removeAttribute('open'); }
+    document.documentElement.classList.remove('ensemble-ouvert');
     zone.hidden = true;
     zone.innerHTML = '';
     $('voir-ensemble').setAttribute('aria-expanded', 'false');
@@ -11869,8 +11879,11 @@
     ADMIN.confirmer = ''; ADMIN.garde = null; ADMIN.erreurs = {}; ADMIN.avertissements = {}; ADMIN.echec = null;
     ADMIN.vue = vueParDefaut();
     ADMIN.edition = null;
-    /* Une saisie gardée à la fermeture revient, et le dit. */
+    /* Une saisie gardée à la fermeture revient, et le dit — avec la liste
+       qu'on regardait (débrief 29 : un jalon de THS revenait au-dessus des
+       « Jalons de HDK › Tranche 1 »). */
     if (ADMIN.brouillon) {
+      if (ADMIN.brouillon.vue) ADMIN.vue = ADMIN.brouillon.vue;
       ADMIN.edition = ADMIN.brouillon; ADMIN.edition.focusPose = false; ADMIN.brouillon = null; ADMIN.onglet = 'jalons';
       if (DROITS.coherent !== false) messageAdmin('Votre jalon non enregistré vous attendait : le voici.', '');
     }
@@ -11905,6 +11918,7 @@
     if (ADMIN.edition && formulaireModifie()) {
       capturerSaisies($('admin-corps'));
       ADMIN.brouillon = ADMIN.edition;
+      ADMIN.brouillon.vue = ADMIN.vue;
     }
     ADMIN.garde = null; ADMIN.confirmer = '';
     clearTimeout(ADMIN.minuteurMessage);
@@ -12773,5 +12787,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = '28b1016';
+window.SUIVI_FWD_FIN = '52e5e75';
 </script>

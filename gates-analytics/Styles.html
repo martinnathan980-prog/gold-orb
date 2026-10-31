@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "28b1016";
+  --suivi-fwd-edition: "52e5e75";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -1987,7 +1987,7 @@ svg.graphe text.grad[opacity] { opacity: .95; }
 .echeance-titre .jours { color: var(--encre); font-variant-numeric: tabular-nums; }
 .echeance-titre .point { width: 8px; height: 8px; border-radius: 50%; background: var(--fait); flex: none; }
 .echeance-titre.en-retard .point { background: var(--alerte); }
-.echeance-titre.sans-plan .point { background: var(--encre-3); }
+.echeance-titre.sans-plan .point, .echeance-titre.sans-verdict .point { background: var(--encre-3); }
 /* Chaque morceau reste d'un bloc : sur un téléphone, « Prochaine échéance »
    se cassait en deux lignes au milieu de la puce. */
 .echeance-titre > span, .echeance-titre > b { white-space: nowrap; }
@@ -3089,7 +3089,7 @@ dialog.admin[aria-busy="true"] .admin-corps:not(.en-attente) { opacity: .6; }
 /* La page derrière ne défile plus tant que le panneau est ouvert (M8) ; la
    place de la barre de défilement qui s'efface est rendue en marge
    (--barre-admin, mesurée à l'ouverture) : rien ne bouge derrière le voile. */
-html.admin-ouvert { overflow: hidden; padding-right: var(--barre-admin, 0px); }
+html.admin-ouvert, html.ensemble-ouvert { overflow: hidden; padding-right: var(--barre-admin, 0px); }
 @media (prefers-reduced-motion: reduce) {
   dialog.admin[aria-busy="true"]::before { animation: none; background: var(--accent); opacity: .6; transition: none; }
   .admin-table td { transition: none; }

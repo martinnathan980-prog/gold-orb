@@ -12495,6 +12495,17 @@ async function deplierFiltresColonne(pg) {
           const requis = await pa.evaluate(() => [...document.querySelectorAll('#zone-critique .critique-effort')].slice(0, 3).map(e => ({ t: e.textContent, titre: e.getAttribute('title') || '' })));
           verifier('R2-10 : un seul relevé, avec une échéance — le rythme requis dit « un seul relevé » sous lui, jamais « rien de validé »',
             requis.length > 0 && requis.every(r => /un seul relevé$/.test(r.t) && !/rien de validé|aucun plan validé|il ne suffit pas/.test(r.t + r.titre)), JSON.stringify(requis));
+          /* Débrief 29 (relecture, à côté de R2-10) : sans verdict, le point
+             de la puce d'échéance est gris — il restait vert, et son survol
+             disait « cette échéance est tenue ». */
+          const puceR4 = await pa.evaluate(() => {
+            const teinte = v => { const e = document.createElement('i'); e.style.background = v; document.body.appendChild(e); const c = getComputedStyle(e).backgroundColor; e.remove(); return c; };
+            const b = document.getElementById('echeance-titre'), pt = b && b.querySelector('.point');
+            return { vu: !!b && !b.hidden, cls: b ? b.className : '', titre: b ? b.title : '', gris: !!pt && getComputedStyle(pt).backgroundColor === teinte('var(--encre-3)'),
+                     vert: !!pt && getComputedStyle(pt).backgroundColor === teinte('var(--fait)') };
+          });
+          verifier('un seul relevé : le point de la puce « Prochaine échéance » est gris (ni vert ni rouge) et son survol dit que le rythme ne se mesure pas encore',
+            puceR4.vu && puceR4.gris && !puceR4.vert && /sans-verdict/.test(puceR4.cls) && /pas encore mesurable/.test(puceR4.titre) && !/est tenue/.test(puceR4.titre), JSON.stringify(puceR4));
         }
         await ctxA.close();
       }
@@ -12740,7 +12751,8 @@ async function deplierFiltresColonne(pg) {
         const formR3 = () => np.evaluate(() => {
           const f = document.querySelector('#admin-corps form[data-form="jalon"]');
           return { ouvert: document.getElementById('admin').open, texte: f ? f.elements.texte.value : null, pour: f ? f.elements.pour.value : null,
-                   message: document.getElementById('admin-message').textContent };
+                   message: document.getElementById('admin-message').textContent,
+                   liste: (document.getElementById('admin-jalons-titre') || {}).textContent || '' };
         });
         await np.click('#voir-ensemble'); await ensembleFiniR3(np);
         await np.click('#ensemble [data-ajouter-jalon="THS"]');
@@ -12756,6 +12768,11 @@ async function deplierFiltresColonne(pg) {
         verifier('R3-0 : un jalon gardé en brouillon revient quand on presse « + Ajouter un jalon » pour un autre contrat — le nom tapé et son contrat, sous un message vrai qui dit quoi faire',
           repris.ouvert && repris.texte === 'Revue CDR harnais' && repris.pour === 'THS' &&
           /vous attendait : le voici\. Enregistrez-le ou annulez-le avant d’en commencer un autre\./.test(repris.message), JSON.stringify(repris));
+        /* Débrief 29 (relecture, à côté de R3-0) : la liste sous le formulaire
+           revient avec lui — celle du contrat qu'on regardait (THS), plus
+           « Jalons de HDK › Tranche 1 ». */
+        verifier('R3-0 : le brouillon de THS revient avec sa liste — « Jalons de THS », pas ceux du contrat à l’écran',
+          /^Jalons de .*THS/.test(repris.liste) && !/HDK/.test(repris.liste), JSON.stringify(repris.liste));
         await np.click('#admin-fermer'); await np.waitForTimeout(400);
         const question = await np.evaluate(() => ({ ouvert: document.getElementById('admin').open,
           texte: [...document.querySelectorAll('#admin-corps button')].map(b => b.textContent.trim()).filter(t => /Abandonner|Continuer/.test(t)).join('|') }));
@@ -12968,6 +12985,32 @@ async function deplierFiltresColonne(pg) {
     } finally {
       try { fsR3.unlinkSync(fichierR3); } catch (e) { /* déjà parti */ }
     }
+  }
+  /* Débrief 29 (relecture, à côté de R3-15) : la Vue d'ensemble ouverte, la
+     molette ne fait plus défiler la page derrière (elle passait de 0 à
+     3000 px), comme derrière l'administration ; fermée, la page est où on
+     l'avait laissée. */
+  {
+    const cE = await contexte({ viewport: { width: 1440, height: 900 } });
+    const e = await page(cE, 'Vue d’ensemble, molette');
+    await e.evaluate(() => window.scrollTo(0, 600)); await e.waitForTimeout(300);
+    await e.click('#voir-ensemble');
+    await e.waitForFunction(() => document.querySelectorAll('#ensemble tbody tr').length > 0, null, { timeout: 15000 }).catch(() => {});
+    await e.waitForTimeout(400);
+    const avant = await e.evaluate(() => scrollY);
+    const centre = await e.evaluate(() => { const r = document.getElementById('ensemble').getBoundingClientRect(); return { x: r.left + r.width / 2, haut: r.top + 30, milieu: r.top + r.height / 2 }; });
+    await e.mouse.move(centre.x, centre.haut); await e.mouse.wheel(0, 900); await e.waitForTimeout(500);
+    await e.mouse.move(centre.x, centre.milieu); await e.mouse.wheel(0, 1500); await e.waitForTimeout(500);
+    const pendant = await e.evaluate(() => ({ y: scrollY, ouverte: document.getElementById('ensemble').open, verrou: document.documentElement.classList.contains('ensemble-ouvert') }));
+    await e.keyboard.press('Escape'); await e.waitForTimeout(500);
+    const apres = await e.evaluate(() => ({ y: scrollY, verrou: document.documentElement.classList.contains('ensemble-ouvert'), focus: document.activeElement.id }));
+    await e.evaluate(() => window.scrollBy(0, 300)); await e.waitForTimeout(300);
+    const libre = await e.evaluate(() => scrollY);
+    verifier('Vue d’ensemble ouverte (1440 px) : la molette, sur son titre comme sur sa liste, ne fait pas défiler la page derrière',
+      avant === 600 && pendant.ouverte && pendant.verrou && pendant.y === 600, JSON.stringify({ avant, pendant }));
+    verifier('Vue d’ensemble fermée : la page est où on l’avait laissée, défile de nouveau, et le focus revient au bouton',
+      apres.y === 600 && !apres.verrou && libre > 600 && apres.focus === 'voir-ensemble', JSON.stringify({ apres, libre }));
+    await cE.close();
   }
   /* (fin du lot R3) */
 
