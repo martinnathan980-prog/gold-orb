@@ -32,7 +32,7 @@ RACCOURCIS = [
     ('1 - Preparer (une seule fois).bat', 'preparer'),
     ('2 - Apprendre un export.bat', 'apprendre'),
     ('3 - Essayer.bat', 'essayer'),
-    ('4 - Activer chaque matin.bat', 'activer'),
+    ('4 - Activer (tout seul, une fois par jour).bat', 'activer'),
     ('Lancer maintenant.bat', 'lancer'),
     ('Etat du robot.bat', 'etat'),
     ('Desactiver le lancement automatique.bat', 'desactiver'),
@@ -59,6 +59,11 @@ def main():
         (dossier / nom).write_bytes(zlib.decompress(base64.b64decode(donnees)))
     raccourcis = bureau() / 'Robot Suivi FWD'
     raccourcis.mkdir(parents=True, exist_ok=True)
+    for ancien in ('4 - Activer chaque matin.bat',):   # renommé : l'ancien ne reste pas à côté
+        try:
+            (raccourcis / ancien).unlink()
+        except OSError:
+            pass
     for nom, action in RACCOURCIS:
         (raccourcis / nom).write_text(
             '@echo off\r\nchcp 65001 >nul\r\n"%%s" "%%s" %%s\r\npause\r\n' %% (sys.executable, dossier / 'robot.py', action),

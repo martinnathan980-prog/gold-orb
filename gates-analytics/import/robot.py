@@ -8,7 +8,8 @@ tableau de bord.
     python robot.py apprendre    montrer un export (GATES d'un contrat, SEE…)
     python robot.py essayer      le robot refait les exports appris, devant vous
     python robot.py lancer       exports + dépôt dans le tableau de bord
-    python robot.py activer      Windows le lance chaque matin (et à l'ouverture de session)
+    python robot.py activer      Windows le lance tout seul (ouverture de session, retour
+                                 devant l'écran, et à l'heure du matin) — une fois par jour
     python robot.py desactiver   plus de lancement automatique
     python robot.py etat         ce que le robot sait, et son dernier passage
     python robot.py navigateur   Chrome ou Edge (Edge reconnaît la session Windows)
@@ -24,9 +25,13 @@ Ses fichiers vivent dans %LOCALAPPDATA%\\SuiviFWD (ailleurs : ~/.suivi-fwd) :
     chrome/             le profil du Chrome du robot (connexions gardées)
     telechargements/    où ses fichiers arrivent
     journal.txt         ce qu'il a fait, jour par jour
+    dernier-passage.txt le passage du jour (« ok » : plus rien jusqu'à demain)
+    essais-du-jour.txt  combien de passages ratés aujourd'hui (trois au plus)
+    en-cours.txt        un passage est en route : un second attend son tour
 """
 
 import base64
+import contextlib
 import datetime
 import json
 import os
@@ -78,6 +83,42 @@ def noter(texte):
     print(texte)
     with open(racine() / 'journal.txt', 'a', encoding='utf-8') as f:
         f.write(ligne + '\n')
+
+
+@contextlib.contextmanager
+def verrou(silencieux=False):
+    """Un seul robot à la fois : un passage du matin qui part pendant qu'on
+    apprend un export, ou l'ouverture de session et le retour devant l'écran
+    presque ensemble, se marcheraient dessus (même fenêtre, même profil).
+    Le second voit le passage en route et s'en va. Un verrou de plus de deux
+    heures est celui d'un passage coupé net (ordinateur éteint) : il ne
+    bloque plus rien."""
+    f = racine() / 'en-cours.txt'
+    for _ in range(2):
+        try:
+            fd = os.open(str(f), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            try:
+                age = time.time() - f.stat().st_mtime
+            except OSError:
+                continue
+            if age > 2 * 3600:
+                with contextlib.suppress(OSError):
+                    f.unlink()
+                continue
+            if not silencieux:
+                print('Le robot travaille déjà (depuis %d min). Réessayez quand il a fini.' % (age // 60 + 1))
+            yield False
+            return
+        os.write(fd, ('%d %s' % (os.getpid(), datetime.datetime.now().isoformat(timespec='seconds'))).encode())
+        os.close(fd)
+        try:
+            yield True
+        finally:
+            with contextlib.suppress(OSError):
+                f.unlink()
+        return
+    yield False
 
 
 def nom_de_fichier(nom):
@@ -390,12 +431,14 @@ def apprendre():
         if not recus:
             print('\nAucun fichier n\'est arrivé : l\'export n\'a pas été enregistré. Recommencez quand vous voulez.')
             return
+        print('\nJe regarde les cases de la fenêtre d\'import du tableau de bord…')
+        cases = cases_du_tableau(c, cfg)
     fichier = sorted(recus)[-1]
     extension = pathlib.Path(fichier).suffix or '.xlsx'
     scenario = {'nom': nom, 'depart': depart, 'etapes': pas, 'fichier': '*' + extension,
                 'appris': datetime.datetime.now().isoformat(timespec='seconds')}
     proposee = 'SEE' if nom.upper().startswith('SEE') else (nom if nom.upper().startswith('GATES') else 'GATES ' + nom)
-    case = input('\nDans quelle case du tableau ce fichier va-t-il ? (Entrée = « %s ») :\n> ' % proposee).strip() or proposee
+    case = choisir_case(cases, proposee)
     scenario['case'] = case
     f = racine() / 'exports' / (nom_de_fichier(nom) + '.json')
     f.write_text(json.dumps(scenario, ensure_ascii=False, indent=2), encoding='utf-8')
@@ -404,6 +447,44 @@ def apprendre():
     noter('Appris : %s (%d gestes, fichier %s, case %s).' % (nom, len(pas), fichier, case))
     if input('\nLe robot essaie tout de suite, devant vous ? (o/n) ').strip().lower().startswith('o'):
         essayer([nom])
+
+
+def cases_du_tableau(c, cfg):
+    """Les cases de la fenêtre d'import du tableau de bord, comme elles s'y
+    lisent (« GATES HDK », « GATES HDK Tranche 2 »…, et celle de SEE) : le
+    fichier appris ira dans l'une d'elles, choisie dans la liste plutôt que
+    tapée (une lettre de travers, et le dépôt ne la trouvait pas). Vide si
+    la fenêtre ne s'ouvre pas : on demande alors le nom, comme avant."""
+    if not cfg.get('tableau'):
+        return []
+    try:
+        c.ouvrir(cfg['tableau'] + ('&' if '?' in cfg['tableau'] else '?') + 'page=import')
+        cadre, ctx = cadre_import(c, delai=60)
+        try:
+            time.sleep(2)
+            noms = dans_le_cadre(cadre, ctx, '[].map.call(document.querySelectorAll(".case:not(.nouvelle) .etiquette"), '
+                                             'function (e) { return e.textContent.replace(/\\s+/g, " ").trim(); })')
+        finally:
+            cadre._canal.fermer()
+        return [n for n in (noms or []) if n]
+    except (ErreurPilote, OSError, ValueError):
+        return []
+
+
+def choisir_case(cases, proposee):
+    if not cases:
+        return input('\nDans quelle case du tableau ce fichier va-t-il ? (Entrée = « %s ») :\n> ' % proposee).strip() or proposee
+    print('\nDans quelle case du tableau de bord ce fichier va-t-il ? Tapez son numéro :')
+    for i, n in enumerate(cases, 1):
+        print('  %d = %s' % (i, n))
+    defaut = next((i for i, n in enumerate(cases, 1) if n.lower() == proposee.lower()), None)
+    while True:
+        rep = input('> ' + ('(Entrée = %d) ' % defaut if defaut else '')).strip()
+        if not rep and defaut:
+            return cases[defaut - 1]
+        if rep.isdigit() and 1 <= int(rep) <= len(cases):
+            return cases[int(rep) - 1]
+        print('Un numéro entre 1 et %d, s\'il vous plaît.' % len(cases))
 
 
 # ---------------------------------------------------------------- rejouer
@@ -610,18 +691,70 @@ def deposer(c, cfg, sortis):
 
 
 # ---------------------------------------------------------------- lancer
+ESSAIS_PAR_JOUR = 3        # passages ratés au plus par jour, en automatique
+ATTENTE_AUTO = 90          # secondes : laisser le réseau (VPN) et Windows se poser
+
+
+def fait_aujourd_hui():
+    etat = racine() / 'dernier-passage.txt'
+    return etat.exists() and etat.read_text(encoding='utf-8').startswith(datetime.date.today().isoformat() + ' ok')
+
+
+def essais_du_jour():
+    f = racine() / 'essais-du-jour.txt'
+    try:
+        jour, n = f.read_text(encoding='utf-8').split()
+        return int(n) if jour == datetime.date.today().isoformat() else 0
+    except (OSError, ValueError):
+        return 0
+
+
+def compter_essai():
+    n = essais_du_jour() + 1
+    (racine() / 'essais-du-jour.txt').write_text('%s %d' % (datetime.date.today().isoformat(), n), encoding='utf-8')
+    return n
+
+
+def prevenir(texte):
+    """Un passage automatique raté : une petite fenêtre le dit (Windows), au
+    lieu d'un journal que personne ne lit. Ailleurs, le journal suffit."""
+    if os.name != 'nt':
+        return
+    try:
+        import ctypes
+        ctypes.windll.user32.MessageBoxW(0, texte, 'Suivi FWD — le robot', 0x30 | 0x40000)   # ⚠, au premier plan
+    except (AttributeError, OSError):
+        pass
+
+
 def lancer(auto=False):
+    """auto : lancé par Windows. Une fois par jour : un passage réussi, et
+    plus rien jusqu'au lendemain, quels que soient les redémarrages et les
+    ouvertures de session ; raté, il réessaie au prochain déclenchement,
+    trois fois au plus dans la journée. « Lancer maintenant » (sans auto)
+    passe toujours, sauf si un passage est déjà en route."""
+    if auto and (fait_aujourd_hui() or essais_du_jour() >= ESSAIS_PAR_JOUR):
+        return 0
+    with verrou(silencieux=auto) as libre:
+        if not libre:
+            return 0 if auto else 1
+        if auto:
+            time.sleep(ATTENTE_AUTO)
+            if fait_aujourd_hui():                 # un « Lancer maintenant » est passé entre-temps
+                return 0
+        return _passage(auto)
+
+
+def _passage(auto):
     cfg, liste = exports_choisis()
     etat = racine() / 'dernier-passage.txt'
     aujourd_hui = datetime.date.today().isoformat()
-    if auto and etat.exists() and etat.read_text(encoding='utf-8').startswith(aujourd_hui + ' ok'):
-        return 0                                   # déjà fait aujourd'hui
     if not liste or not cfg.get('tableau'):
         noter('Rien à faire : le robot n\'est pas encore préparé ou n\'a rien appris.')
         return 1
     dossier = racine() / 'deposes' / datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
     dossier.mkdir(parents=True, exist_ok=True)
-    noter('=== Passage du robot ===')
+    noter('=== Passage du robot%s ===' % (' (automatique)' if auto else ''))
     try:
         with chrome(True, grand=not auto) as c:
             sortis = faire_les_exports(c, liste, dossier)
@@ -629,6 +762,14 @@ def lancer(auto=False):
     except (ErreurPilote, OSError, ValueError) as err:
         noter('✗ Passage interrompu : %s' % err)
         etat.write_text('%s échec %s' % (aujourd_hui, err), encoding='utf-8')
+        if auto:
+            n = compter_essai()
+            reste = ESSAIS_PAR_JOUR - n
+            prevenir('Le robot n\'a pas pu mettre le tableau de bord à jour.\n\n%s\n\n%s\n\n'
+                     'Pour le détail : double-cliquez « Etat du robot ».'
+                     % (str(err).split('\n')[0][:300],
+                        'Il réessaiera tout seul à la prochaine ouverture de session (encore %d fois aujourd\'hui).' % reste
+                        if reste > 0 else 'Il ne réessaiera plus aujourd\'hui : double-cliquez « Lancer maintenant » quand vous voulez.'))
         return 1
     etat.write_text('%s ok %s' % (aujourd_hui, datetime.datetime.now().strftime('%H:%M')), encoding='utf-8')
     noter('✓ Passage réussi.')
@@ -663,25 +804,121 @@ def commande_robot(action):
     return '"%s" "%s" %s' % (sans_fenetre if sans_fenetre.exists() else exe, pathlib.Path(__file__).resolve(), action)
 
 
+TACHE = 'Suivi FWD - robot'
+ANCIENNES_TACHES = ('Suivi FWD - robot (matin)', 'Suivi FWD - robot (ouverture de session)')
+
+
+def xml_tache(heure, commande, arguments, utilisateur, jour):
+    """La tâche planifiée, en une : trois déclencheurs, une seule tâche.
+    — l'ouverture de session (l'ordinateur allumé ou redémarré) ;
+    — le retour devant l'écran (déverrouillage : un portable refermé la
+      veille se rouvre sans nouvelle ouverture de session) ;
+    — l'heure du matin (un ordinateur resté allumé, session ouverte).
+    Le robot ne passe qu'une fois par jour (lancer) : les déclenchements
+    suivants le trouvent fait et s'arrêtent aussitôt. Windows n'en lance
+    jamais deux à la fois (IgnoreNew), rattrape l'heure manquée
+    (StartWhenAvailable), et laisse faire sur batterie. Déclencheurs et
+    compte : ceux de la personne connectée — c'est ce qu'un poste sans
+    droits d'administrateur peut créer."""
+    e = lambda t: (str(t).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;'))   # noqa: E731
+    u = e(utilisateur)
+    return ('<?xml version="1.0" encoding="UTF-16"?>\n'
+            '<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">\n'
+            '  <RegistrationInfo>\n'
+            '    <Description>Suivi FWD : exports GATES et SEE, déposés dans le tableau de bord, une fois par jour.</Description>\n'
+            '  </RegistrationInfo>\n'
+            '  <Triggers>\n'
+            '    <LogonTrigger>\n'
+            '      <Enabled>true</Enabled>\n'
+            '      <UserId>%(u)s</UserId>\n'
+            '    </LogonTrigger>\n'
+            '    <SessionStateChangeTrigger>\n'
+            '      <Enabled>true</Enabled>\n'
+            '      <StateChange>SessionUnlock</StateChange>\n'
+            '      <UserId>%(u)s</UserId>\n'
+            '    </SessionStateChangeTrigger>\n'
+            '    <CalendarTrigger>\n'
+            '      <StartBoundary>%(jour)sT%(heure)s:00</StartBoundary>\n'
+            '      <Enabled>true</Enabled>\n'
+            '      <ScheduleByDay>\n'
+            '        <DaysInterval>1</DaysInterval>\n'
+            '      </ScheduleByDay>\n'
+            '    </CalendarTrigger>\n'
+            '  </Triggers>\n'
+            '  <Principals>\n'
+            '    <Principal id="Author">\n'
+            '      <UserId>%(u)s</UserId>\n'
+            '      <LogonType>InteractiveToken</LogonType>\n'
+            '      <RunLevel>LeastPrivilege</RunLevel>\n'
+            '    </Principal>\n'
+            '  </Principals>\n'
+            '  <Settings>\n'
+            '    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>\n'
+            '    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>\n'
+            '    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>\n'
+            '    <AllowHardTerminate>true</AllowHardTerminate>\n'
+            '    <StartWhenAvailable>true</StartWhenAvailable>\n'
+            '    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>\n'
+            '    <IdleSettings>\n'
+            '      <StopOnIdleEnd>false</StopOnIdleEnd>\n'
+            '      <RestartOnIdle>false</RestartOnIdle>\n'
+            '    </IdleSettings>\n'
+            '    <AllowStartOnDemand>true</AllowStartOnDemand>\n'
+            '    <Enabled>true</Enabled>\n'
+            '    <Hidden>false</Hidden>\n'
+            '    <RunOnlyIfIdle>false</RunOnlyIfIdle>\n'
+            '    <WakeToRun>false</WakeToRun>\n'
+            '    <ExecutionTimeLimit>PT2H</ExecutionTimeLimit>\n'
+            '    <Priority>7</Priority>\n'
+            '  </Settings>\n'
+            '  <Actions Context="Author">\n'
+            '    <Exec>\n'
+            '      <Command>%(cmd)s</Command>\n'
+            '      <Arguments>%(args)s</Arguments>\n'
+            '    </Exec>\n'
+            '  </Actions>\n'
+            '</Task>\n') % {'u': u, 'jour': jour, 'heure': heure, 'cmd': e(commande), 'args': e(arguments)}
+
+
 def activer():
-    heure = input('À quelle heure le robot passe-t-il le matin ? (Entrée = 08:15) ').strip() or '08:15'
+    heure = input('Si l\'ordinateur reste allumé la nuit, à quelle heure le robot passe-t-il le matin ? '
+                  '(Entrée = 08:15) ').strip() or '08:15'
+    if not re.match(r'^([01]\d|2[0-3]):[0-5]\d$', heure):
+        heure = '08:15'
+    exe = pathlib.Path(sys.executable)
+    sans_fenetre = exe.with_name('pythonw.exe')
+    utilisateur = ('%s\\%s' % (os.environ.get('USERDOMAIN', ''), os.environ.get('USERNAME', ''))).lstrip('\\')
+    f = racine() / 'tache.xml'
+    f.write_text(xml_tache(heure, sans_fenetre if sans_fenetre.exists() else exe,
+                           '"%s" auto' % pathlib.Path(__file__).resolve(), utilisateur,
+                           datetime.date.today().isoformat()), encoding='utf-16')
+    r = subprocess.run(['schtasks', '/create', '/tn', TACHE, '/xml', str(f), '/f'], capture_output=True, text=True)
+    if r.returncode == 0:
+        for nom in ANCIENNES_TACHES:               # celles d'avant (deux tâches) : remplacées
+            subprocess.run(['schtasks', '/delete', '/tn', nom, '/f'], capture_output=True, text=True)
+        noter('Lancement automatique activé : à l\'ouverture de session, au retour devant l\'écran, '
+              'et à %s si l\'ordinateur est resté allumé — une seule fois par jour.' % heure)
+        return
+    # Repli : la tâche en une a été refusée — les deux tâches simples d'avant.
+    noter('La tâche complète a été refusée (%s) : repli sur deux tâches simples.' % (r.stderr or r.stdout).strip()[:200])
     taches = [
-        ['schtasks', '/create', '/tn', 'Suivi FWD - robot (matin)', '/tr', commande_robot('auto'),
+        ['schtasks', '/create', '/tn', ANCIENNES_TACHES[0], '/tr', commande_robot('auto'),
          '/sc', 'daily', '/st', heure, '/f'],
-        ['schtasks', '/create', '/tn', 'Suivi FWD - robot (ouverture de session)', '/tr', commande_robot('auto'),
-         '/sc', 'onlogon', '/delay', '0005:00', '/f'],
+        ['schtasks', '/create', '/tn', ANCIENNES_TACHES[1], '/tr', commande_robot('auto'),
+         '/sc', 'onlogon', '/f'],
     ]
     for t in taches:
         r = subprocess.run(t, capture_output=True, text=True)
         print((r.stdout or r.stderr).strip())
-    noter('Lancement automatique activé : chaque jour à %s, et 5 min après l\'ouverture de session '
+    noter('Lancement automatique activé (repli) : chaque jour à %s, et à l\'ouverture de session '
           '(une seule fois par jour).' % heure)
 
 
 def desactiver():
-    for nom in ('Suivi FWD - robot (matin)', 'Suivi FWD - robot (ouverture de session)'):
+    for nom in (TACHE,) + ANCIENNES_TACHES:
         r = subprocess.run(['schtasks', '/delete', '/tn', nom, '/f'], capture_output=True, text=True)
-        print((r.stdout or r.stderr).strip())
+        if r.returncode == 0:
+            print((r.stdout or r.stderr).strip())
     noter('Lancement automatique désactivé.')
 
 
@@ -692,18 +929,29 @@ def montrer_etat():
     print('Exports appris  : %s' % (', '.join('%s → %s' % (e['nom'], e.get('case')) for e in cfg.get('exports', [])) or 'aucun'))
     etat = racine() / 'dernier-passage.txt'
     print('Dernier passage : %s' % (etat.read_text(encoding='utf-8') if etat.exists() else 'jamais'))
+    n = essais_du_jour()
+    if n and not fait_aujourd_hui():
+        print('Aujourd\'hui     : %d passage(s) raté(s) sur %d permis' % (n, ESSAIS_PAR_JOUR))
+    if os.name == 'nt':
+        actif = any(subprocess.run(['schtasks', '/query', '/tn', t], capture_output=True, text=True).returncode == 0
+                    for t in (TACHE,) + ANCIENNES_TACHES)
+        print('Tout seul       : %s' % ('oui, une fois par jour' if actif else 'non (double-cliquez « 4 - Activer… »)'))
     print('Dossier         : %s' % racine())
 
 
 def main(argv):
     action = argv[1] if len(argv) > 1 else 'etat'
     try:
-        if action == 'preparer':
-            preparer()
-        elif action == 'apprendre':
-            apprendre()
-        elif action == 'essayer':
-            essayer(argv[2:] or None)
+        if action in ('preparer', 'apprendre', 'essayer'):
+            with verrou() as libre:                # pas pendant un passage du robot
+                if not libre:
+                    return 1
+                if action == 'preparer':
+                    preparer()
+                elif action == 'apprendre':
+                    apprendre()
+                else:
+                    essayer(argv[2:] or None)
         elif action in ('lancer', 'auto'):
             return lancer(auto=(action == 'auto'))
         elif action == 'activer':
