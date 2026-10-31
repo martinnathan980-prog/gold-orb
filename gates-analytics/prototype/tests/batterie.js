@@ -3458,7 +3458,13 @@ async function deplierFiltresColonne(pg) {
   // Les préférences : l'ordre mémorisé est celui de la vue complète ; le tri survit au rechargement.
   {
     const ctxPrefs = await contexte();
-    const pp = await page(ctxPrefs, 'préférences');
+    let pp = await page(ctxPrefs, 'préférences');
+    /* Débrief 29 : « rechargée » = rouverte dans un nouvel onglet du même
+       navigateur. Chromium sans fenêtre, sur une page file:// rechargée,
+       perd parfois tout le stockage local (une fois sur cinq environ, même
+       une seconde et demie après l'écriture ; aucun code de la page n'efface
+       rien) ; un nouvel onglet le relit à chaque fois (12 sur 12). */
+    const rouvrirPrefs = async () => { const q = await page(ctxPrefs, 'préférences (rouverte)'); await pp.close(); pp = q; };
     await pp.click('#vue-tableau button[data-vue="essentielle"]');
     /* Débrief 29 (batterie) : la page retient le choix 400 ms après le geste
        (regroupé) ; sur une machine chargée, un délai fixe de 800 ms
@@ -3466,7 +3472,7 @@ async function deplierFiltresColonne(pg) {
     const retenu = (cle, val) => pp.waitForFunction(([k, v]) => { try { return JSON.stringify((JSON.parse(localStorage.getItem('suivi-fwd:v1')) || {})[k]) === JSON.stringify(v); } catch (e) { return false; } },
       [cle, val], { timeout: 5000 }).catch(() => {});
     await retenu('vueTable', 'essentielle');
-    await pp.reload(); await attendrePrete(pp, 1400);
+    await rouvrirPrefs();
     /* Débrief 27, lot D (P-F15) : la vue choisie se retient — la page
        rouverte est sur « Vue essentielle » ; « Toutes les colonnes » rend
        ensuite l'extract dans l'ordre de la feuille (l'ordre mémorisé sous la
@@ -3483,7 +3489,7 @@ async function deplierFiltresColonne(pg) {
       JSON.stringify([rouverteEss, apresEssentielle]));
     await pp.click('tr.titres button[data-tri="ata"]');
     await retenu('tri', { cle: 'ata', asc: true });
-    await pp.reload(); await attendrePrete(pp, 1400);
+    await rouvrirPrefs();
     verifier('le tri d’une colonne survit au rechargement',
       await pp.evaluate(() => document.querySelector('th[data-cle="ata"]').getAttribute('aria-sort') === 'ascending'));
     await ctxPrefs.close();
@@ -6977,14 +6983,20 @@ async function deplierFiltresColonne(pg) {
     return b ? b.dataset.trig : null;
   });
   await p.waitForTimeout(700);
-  await p.reload(); await attendrePrete(p, 1400);
-  const apresRech = await p.evaluate(() => {
+  /* Débrief 29 : la page rouverte se lit dans un nouvel onglet du même
+     navigateur (voir « préférences » plus haut : une page file:// rechargée
+     perd parfois son stockage dans Chromium sans fenêtre) ; la page
+     principale est ensuite rechargée comme avant, pour la suite. */
+  const pRouverte = await page(ctx, 'principal (rouverte)');
+  const apresRech = await pRouverte.evaluate(() => {
     const b = document.querySelector('button[data-trig][data-actif="true"]');
     return { tri: b ? b.dataset.trig : null, jalons: window.__jeuDExemple('HDK').jalons.length,
              stockes: /"jalons"/.test(localStorage.getItem('suivi-fwd:v1') || ''),
              zoom: [...document.querySelectorAll('.commandes-graphe .segmente button[aria-pressed="true"]')].map(x => x.textContent).join(),
              cadrageStocke: /"fen"|"cadrage"/.test(localStorage.getItem('suivi-fwd:v1') || '') };
   });
+  await pRouverte.close();
+  await p.reload(); await attendrePrete(p, 1400);
   verifier('débrief 19 : après un clic sur « Tout », la page rouverte est sur « Échéances » — le cadrage ne se mémorise plus',
     apresRech.zoom === 'Échéances' && !apresRech.cadrageStocke, JSON.stringify(apresRech));
   verifier('le tri du bloc par groupe survit au rechargement',
