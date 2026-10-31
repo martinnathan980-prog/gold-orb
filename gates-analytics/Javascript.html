@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '6ea8cca';
+  var EDITION = '852c42f';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -7250,6 +7250,22 @@
         if (c.tagName === 'TD' && c.colSpan === 1 && COLONNES_ENSEMBLE[k]) c.setAttribute('data-libelle', COLONNES_ENSEMBLE[k][0]);
       });
     });
+    majFonduEnsemble();
+  }
+  /* Débrief 29 (D10) : au téléphone, la fenêtre défile d'un bloc ; son bas
+     fond tant qu'il reste à lire dessous, comme le cadre du tableau. Lu à
+     l'image suivante (les cartes viennent d'être écrites). */
+  var fonduEnsemblePrevu = false;
+  function majFonduEnsemble() {
+    if (fonduEnsemblePrevu) return;
+    fonduEnsemblePrevu = true;
+    var lire = function () {
+      fonduEnsemblePrevu = false;
+      var d = $('ensemble');
+      if (d.hidden) { d.removeAttribute('data-plus-bas'); return; }
+      d.setAttribute('data-plus-bas', d.scrollHeight - d.clientHeight - d.scrollTop > 4 ? 'true' : 'false');
+    };
+    if (window.requestAnimationFrame) requestAnimationFrame(lire); else setTimeout(lire, 16);
   }
   /* Débrief 29 (A-F25, S8) : sous « aucun jalon », un administrateur de ce
      contrat trouve le geste — « + Ajouter un jalon » ouvre l'administration
@@ -7322,6 +7338,8 @@
     if ($('ensemble').hidden) ouvrirEnsemble(); else fermerEnsemble();
   });
   $('ensemble').addEventListener('close', function () { if (!$('ensemble').hidden) fermerEnsemble(); });
+  $('ensemble').addEventListener('scroll', majFonduEnsemble, { passive: true });
+  window.addEventListener('resize', function () { if (!$('ensemble').hidden) majFonduEnsemble(); });
   /* Un clic sur le voile ferme la fenêtre — appuyé et relâché hors de son
      cadre (comme l'administration). */
   function horsDeLEnsemble(e) {
@@ -11600,7 +11618,14 @@
       ADMIN.edition = ADMIN.brouillon; ADMIN.edition.focusPose = false; ADMIN.brouillon = null; ADMIN.onglet = 'jalons';
       if (DROITS.coherent !== false) messageAdmin('Votre jalon non enregistré vous attendait : le voici.', '');
     }
-    if (o.ajouter) { ADMIN.onglet = 'jalons'; ADMIN.vue = o.ajouter; ADMIN.edition = nouvelleEdition(null, o.ajouter); }
+    /* Débrief 29 : « + Ajouter un jalon » (Vue d'ensemble) n'efface jamais
+       un jalon gardé — le formulaire vide l'écrasait, sous un message qui
+       disait le contraire. Le brouillon gagne ; s'il est pour un autre
+       contrat, le message dit quoi faire pour commencer celui demandé. */
+    if (o.ajouter && !ADMIN.edition) { ADMIN.onglet = 'jalons'; ADMIN.vue = o.ajouter; ADMIN.edition = nouvelleEdition(null, o.ajouter); }
+    else if (o.ajouter && DROITS.coherent !== false && (ADMIN.edition.saisie || ADMIN.edition.initial).pour !== o.ajouter) {
+      messageAdmin('Votre jalon non enregistré vous attendait : le voici. Enregistrez-le ou annulez-le avant d’en commencer un autre.', '');
+    }
     if (!ongletPermis(ADMIN.onglet)) ADMIN.onglet = 'jalons';
     var racine = document.documentElement, barre = Math.max(0, window.innerWidth - racine.clientWidth);
     if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
@@ -12492,5 +12517,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = '6ea8cca';
+window.SUIVI_FWD_FIN = '852c42f';
 </script>

@@ -682,8 +682,23 @@ body {
 /* Débrief 27 (B23) : une tuile pressée garde la répartition — les autres
    segments pâlissent à 35 % ; dans les autres tuiles, la pastille pâlit et
    le texte passe au gris tertiaire (4,5:1 : ce sont toujours des boutons,
-   un texte à 35 % ne se lirait plus). Le survol et le focus les rallument. */
-.barre.avec-choix span:not(.choisi) { opacity: .35; }
+   un texte à 35 % ne se lirait plus). Le survol et le focus les rallument.
+   Débrief 29 : dans la barre aussi, seul le FOND pâlit — un voile de la
+   surface à 65 % (l'aspect de l'ancienne opacité de .35), posé entre le
+   fond et le chiffre, qui passe à l'encre : « 8 % » et « 52 % » tombaient
+   à 1,7:1, et au téléphone la barre est le seul endroit qui montre ces
+   parts. Même voile quand une tuile est survolée ou a le focus (.focalise,
+   autrefois une opacité de .3) ; le segment allumé (.eclaire) n'en a pas.
+   L'encre des segments colorés est posée en ligne (blanche sur les
+   teintes foncées) : !important la remplace sous le voile. */
+.barre span { position: relative; isolation: isolate; }
+.barre span::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: var(--surface); opacity: 0; transition: opacity .15s;
+}
+.barre.avec-choix span:not(.choisi):not(.eclaire)::before, .barre.focalise span:not(.eclaire)::before { opacity: .65; }
+.barre.avec-choix span:not(.choisi):not(.eclaire), .barre.focalise span:not(.eclaire) { color: var(--encre) !important; }
+.barre.avec-choix span.hachure:not(.choisi):not(.eclaire), .barre.focalise span.hachure:not(.eclaire) { border-color: var(--filet); }
 .etats.avec-choix .etat-btn:not([aria-pressed="true"]) .pastille { opacity: .35; }
 .etats.avec-choix .etat-btn:not([aria-pressed="true"]) .etat-haut,
 .etats.avec-choix .etat-btn:not([aria-pressed="true"]) .etat-n { color: var(--encre-3); }
@@ -694,9 +709,8 @@ body {
 .etats.avec-choix .etat-btn:not([aria-pressed="true"]):focus-visible .etat-n,
 .etats.avec-choix .etat-btn.eclaire .etat-n { color: var(--encre); }
 .phrase .phrase-part { color: var(--encre-2); white-space: nowrap; }
-.barre.focalise span { opacity: .3; transition: opacity .15s; }
-.barre.focalise span.eclaire { opacity: 1; box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--encre); position: relative; z-index: 1; }
-@media (prefers-reduced-motion: reduce) { .barre.focalise span, .etats.en-legende .etat-btn { transition: none; } }
+.barre.focalise span.eclaire { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--encre); z-index: 1; }
+@media (prefers-reduced-motion: reduce) { .barre span::before, .etats.en-legende .etat-btn { transition: none; } }
 /* Le contraste élevé de Windows repeint tout aux couleurs du système : la
    barre et les pastilles, qui ne sont QUE de la couleur, disparaîtraient, et
    un bouton pressé ne se distinguerait plus des autres. */
@@ -2093,8 +2107,20 @@ dialog.ensemble::backdrop { background: var(--voile-dialogue); }
   .ensemble-tete h2 { flex: 1 1 0; min-width: 0; font-size: 20px; }
   .ensemble-tete .fiche-plan-fermer { flex: none; margin-top: 2px; }
   .ensemble-tete .indice { order: 3; flex-basis: 100%; }
-  .defile-ensemble { overflow-x: visible; overflow-y: auto; padding: 0 16px; }
+  /* Débrief 29 : toute la fenêtre défile d'un bloc, et la note vient après
+     la dernière carte. Collée sous une boîte qui défilait seule, elle
+     coupait THS après « Validés » comme s'il n'avait qu'une ligne (à
+     667 px de haut, THS ne se voyait pas du tout). Le titre et la croix
+     restent en haut ; le bas fond tant qu'il reste à lire (D10). */
+  dialog.ensemble[open] { overflow-y: auto; overscroll-behavior: contain; }
+  .ensemble-tete { position: sticky; top: 0; z-index: 2; background: var(--surface); }
+  .defile-ensemble { flex: none; overflow: visible; padding: 0 16px; }
   .ensemble-note { padding: 10px 16px 16px; }
+  dialog.ensemble[open]::after {
+    content: ""; position: sticky; bottom: 0; flex: none; height: 32px; margin-top: -32px; pointer-events: none;
+    background: linear-gradient(to bottom, transparent, var(--surface)); opacity: 0; transition: opacity .15s;
+  }
+  dialog.ensemble[data-plus-bas="true"]::after { opacity: 1; }
   .ensemble-table { min-width: 0; table-layout: auto; }
   .ensemble-table, .ensemble-table tbody, .ensemble-table tr { display: block; }
   .ensemble-table colgroup { display: none; }
@@ -2116,6 +2142,7 @@ dialog.ensemble::backdrop { background: var(--voile-dialogue); }
   .ensemble-table td[data-libelle] > .jauge-ensemble { justify-self: end; }
   .ensemble-table td:not([data-libelle]) { display: block; }
 }
+@media (prefers-reduced-motion: reduce) { dialog.ensemble::after { transition: none; } }
 @media (max-width: 560px) {
   dialog.ensemble { width: 100vw; height: 100vh; height: 100dvh; max-height: none; margin: 0; border: 0; border-radius: 0; }
 }
@@ -2147,6 +2174,16 @@ dialog.ensemble::backdrop { background: var(--voile-dialogue); }
 .fiche-plan-resume.doux { color: var(--encre-3); }
 .fiche-plan-etapes { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 12px; color: var(--encre-2); }
 .fiche-plan-etapes .sem { display: inline-block; min-width: 130px; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--encre-3); }
+/* Débrief 29 : un retrait suspendu — quand une étape tient sur deux lignes
+   (au téléphone), la suite repart sous le changement, jamais sous la date
+   (elle se lisait comme une étape sans date). Le retrait s'hérite dans la
+   date (inline-block) : elle le remet à zéro. */
+.fiche-plan-etapes > li { padding-left: 130px; text-indent: -130px; }
+.fiche-plan-etapes .sem { text-indent: 0; }
+@media (max-width: 480px) {
+  .fiche-plan-etapes > li { padding-left: 100px; text-indent: -100px; }
+  .fiche-plan-etapes .sem { min-width: 100px; }
+}
 .fiche-plan-etapes .indice { color: var(--indice); }
 .fiche-plan-etapes .recul, .fiche-plan-etapes .mot-recul { color: var(--alerte); }
 .fiche-plan-etapes .mot-recul { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; }
@@ -2405,7 +2442,12 @@ table.plans tbody tr.ancien .pastille { opacity: .4; }
 .legende-detail[hidden] { display: none; }
 @media (pointer: coarse) {
   .legende-mot { position: relative; }
-  .legende-mot::after { content: ""; position: absolute; inset: -12px -4px; }
+  /* Débrief 29 : des rangées de 22 px, 22 px d'écart et 11 px de zone
+     au-dessus et dessous — 44 px chacune, jointives sans se chevaucher.
+     Avec 8 px d'écart et 12 px de zone, le mot de la rangée du bas
+     prenait le pointillé de celui du dessus. */
+  .legende { row-gap: 22px; }
+  .legende-mot::after { content: ""; position: absolute; inset: -11px -4px; }
 }
 /* Débrief 27 (X-A7) : « Voir les chiffres » — les relevés de la courbe en
    tableau, sous les jalons. Replié par défaut. */
@@ -3585,6 +3627,13 @@ kbd {
   .pied-actions { flex-direction: column; align-items: flex-start; gap: 6px; }
   .pied-point { display: none; }
 }
+/* Débrief 29 : au doigt, les deux gestes empilés ont chacun 44 px à
+   toucher, jointifs (27 + 9 + 9) : la zone de « Copier le lien » mordait
+   de 4 px sur le bas de « Aide », juste sous son soulignement. */
+@media (pointer: coarse) and (max-width: 560px) {
+  .pied-actions { gap: 18px; }
+  .pied-actions .lien-doux::after { inset: -9px -4px; }
+}
 /* Le sigle du titre se lit au survol et à la voix ; il ne se souligne pas. */
 #titre-page abbr { text-decoration: none; cursor: help; }
 /* Le lien copié : le bouton le dit, le temps de le lire. */
@@ -3704,9 +3753,12 @@ kbd {
     font: 12px/1.5 "IBM Plex Sans", system-ui, sans-serif; color: var(--encre-2); font-variant-numeric: tabular-nums;
   }
   .entete-impression b { color: var(--encre); font-weight: 500; }
+  /* Débrief 29 : le fondu du bas du tableau (.ombre-bas, « il reste des
+     lignes ») ne veut rien dire sur papier, où toutes les lignes sortent —
+     il délavait la dernière. */
   .evitements, .filtres-actifs, .reglages, .sommaire, .haut-de-page, dialog, .bulle,
   .ligne-filtres, .recherche, .segmente, .commandes-graphe, #choix-base, .outils, .incomplets,
-  .copier, .pied-actions, .pied-technique, .ombre-defile, thead .filtres, .poignee, tr.ligne-suite,
+  .copier, .pied-actions, .pied-technique, .ombre-defile, .ombre-bas, thead .filtres, .poignee, tr.ligne-suite,
   .aide, .aide-panneau, .lien-a-copier, .lien-etat { display: none !important; }
   /* Un panneau qui tient sur une page n'y est jamais coupé (il passe à la
      suivante) ; le tableau des plans, plus long qu'une page, se coupe entre
@@ -12281,6 +12333,22 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         if (c.tagName === 'TD' && c.colSpan === 1 && COLONNES_ENSEMBLE[k]) c.setAttribute('data-libelle', COLONNES_ENSEMBLE[k][0]);
       });
     });
+    majFonduEnsemble();
+  }
+  /* Débrief 29 (D10) : au téléphone, la fenêtre défile d'un bloc ; son bas
+     fond tant qu'il reste à lire dessous, comme le cadre du tableau. Lu à
+     l'image suivante (les cartes viennent d'être écrites). */
+  var fonduEnsemblePrevu = false;
+  function majFonduEnsemble() {
+    if (fonduEnsemblePrevu) return;
+    fonduEnsemblePrevu = true;
+    var lire = function () {
+      fonduEnsemblePrevu = false;
+      var d = $('ensemble');
+      if (d.hidden) { d.removeAttribute('data-plus-bas'); return; }
+      d.setAttribute('data-plus-bas', d.scrollHeight - d.clientHeight - d.scrollTop > 4 ? 'true' : 'false');
+    };
+    if (window.requestAnimationFrame) requestAnimationFrame(lire); else setTimeout(lire, 16);
   }
   /* Débrief 29 (A-F25, S8) : sous « aucun jalon », un administrateur de ce
      contrat trouve le geste — « + Ajouter un jalon » ouvre l'administration
@@ -12353,6 +12421,8 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if ($('ensemble').hidden) ouvrirEnsemble(); else fermerEnsemble();
   });
   $('ensemble').addEventListener('close', function () { if (!$('ensemble').hidden) fermerEnsemble(); });
+  $('ensemble').addEventListener('scroll', majFonduEnsemble, { passive: true });
+  window.addEventListener('resize', function () { if (!$('ensemble').hidden) majFonduEnsemble(); });
   /* Un clic sur le voile ferme la fenêtre — appuyé et relâché hors de son
      cadre (comme l'administration). */
   function horsDeLEnsemble(e) {
@@ -16631,7 +16701,14 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       ADMIN.edition = ADMIN.brouillon; ADMIN.edition.focusPose = false; ADMIN.brouillon = null; ADMIN.onglet = 'jalons';
       if (DROITS.coherent !== false) messageAdmin('Votre jalon non enregistré vous attendait : le voici.', '');
     }
-    if (o.ajouter) { ADMIN.onglet = 'jalons'; ADMIN.vue = o.ajouter; ADMIN.edition = nouvelleEdition(null, o.ajouter); }
+    /* Débrief 29 : « + Ajouter un jalon » (Vue d'ensemble) n'efface jamais
+       un jalon gardé — le formulaire vide l'écrasait, sous un message qui
+       disait le contraire. Le brouillon gagne ; s'il est pour un autre
+       contrat, le message dit quoi faire pour commencer celui demandé. */
+    if (o.ajouter && !ADMIN.edition) { ADMIN.onglet = 'jalons'; ADMIN.vue = o.ajouter; ADMIN.edition = nouvelleEdition(null, o.ajouter); }
+    else if (o.ajouter && DROITS.coherent !== false && (ADMIN.edition.saisie || ADMIN.edition.initial).pour !== o.ajouter) {
+      messageAdmin('Votre jalon non enregistré vous attendait : le voici. Enregistrez-le ou annulez-le avant d’en commencer un autre.', '');
+    }
     if (!ongletPermis(ADMIN.onglet)) ADMIN.onglet = 'jalons';
     var racine = document.documentElement, barre = Math.max(0, window.innerWidth - racine.clientWidth);
     if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
