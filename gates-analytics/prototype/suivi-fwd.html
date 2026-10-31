@@ -839,13 +839,16 @@ header.entete {
    quatre icônes (4 × 34 + 3 × 6) même sans le ⚙ — à 1024 px, la liste,
    centrée sur la place qui reste, glissait de 40 px quand il s'effaçait. */
 @media (min-width: 721px) { .sommaire .outils-page { min-width: 154px; } }
-.sommaire .outil-page {
+.sommaire .outil-page, .sommaire .cherche-plan-ouvrir {
   position: relative;
   width: 34px; height: 34px; min-height: 0; padding: 0; justify-content: center;
   border: 1px solid var(--filet); border-radius: 50%; color: var(--encre-2); background: var(--surface);
 }
-.sommaire .outil-page:hover, .sommaire .outil-page[aria-expanded="true"] { color: var(--encre); border-color: var(--filet-fort); background: var(--creux); }
-.sommaire .outil-page svg { width: 16px; height: 16px; }
+/* Débrief 29 : la loupe, dans le groupe depuis ce débrief, en a le dessin —
+   elle gardait celui du débrief 28 (un cercle plus foncé, un anneau noir au
+   survol, un glyphe plus petit, 34 px à côté d'icônes de 32). */
+.sommaire .outil-page:hover, .sommaire .outil-page[aria-expanded="true"], .sommaire .cherche-plan-ouvrir:hover { color: var(--encre); border-color: var(--filet-fort); background: var(--creux); }
+.sommaire .outil-page svg, .sommaire .cherche-plan-ouvrir svg { width: 16px; height: 16px; }
 /* Débrief 29 (D9) : le nom de chaque icône dans une bulle, au survol de la
    souris (après un court instant) ET au clavier (focus visible) — le title
    ne se montrait qu'à la souris, avec retard, et jamais au clavier. Calée à
@@ -869,7 +872,7 @@ header.entete {
 @media print { .sommaire .outil-page::before, .cherche-plan-ouvrir::before { display: none; } }
 @media (max-width: 720px) {
   .sommaire .outils-page { grid-column: 2; gap: 4px; }
-  .sommaire .outil-page { width: 32px; height: 32px; }
+  .sommaire .outil-page, .sommaire .cherche-plan-ouvrir { width: 32px; height: 32px; }
 }
 /* Débrief 28 : le tableau des plans sans « Filtrer par colonne » (les
    filtres sont toujours là), ni « Copier le tableau », ni « Télécharger ». */
@@ -884,7 +887,15 @@ header.entete {
   .outil-page { position: relative; }
   .outil-page::after { content: ""; position: absolute; inset: -8px -6px; }
 }
-@media (pointer: coarse) and (max-width: 480px) { .sommaire .outil-page::after { inset: -8px; } }
+/* Débrief 29 (relecture) : dans le groupe d'icônes du sommaire, les zones
+   de toucher se touchent au milieu de l'écart, sans entrer dans le cercle
+   voisin — elles débordaient de 6 px sur lui (le bord droit du ⚙ ouvrait la
+   loupe, celui de Vue d'ensemble l'Aide). L'inset se compte depuis
+   l'intérieur de la bordure (1 px) : 1 px + la moitié de l'écart. Au
+   téléphone, la zone prend aussi toute la hauteur du sommaire (44 px). */
+@media (pointer: coarse) { .sommaire .outil-page::after, .sommaire .cherche-plan-ouvrir::after { inset: -8px -4px; } }
+@media (pointer: coarse) and (max-width: 720px) { .sommaire .outil-page::after, .sommaire .cherche-plan-ouvrir::after { inset: -8px -3px; } }
+@media (pointer: coarse) and (max-width: 480px) { .sommaire .outil-page::after, .sommaire .cherche-plan-ouvrir::after { inset: -9px -2px; } }
 /* Le téléphone : une grille compacte — le contrat et la tranche côte à côte,
    leurs menus sur le reste de leur case ; l'avancement, puis le périmètre,
    chacun sur sa ligne, son mot devant lui (au-dessus si la ligne manque de
@@ -953,9 +964,11 @@ header.entete {
 
 /* Débrief 27 (lot H, D8, A-F5) : un contrat qui n'a pas pu se charger — le
    bandeau d'erreur, posé sous la barre et par-dessus le haut du titre (rien
-   ne descend), calé à droite sous les menus. */
+   ne descend), calé à droite sous les menus. Débrief 29 (relecture) : au
+   téléphone, il descend jusque sur le sommaire — il passe au-dessus (32
+   contre 31) : sa croix et « Réessayer » répondaient au sommaire. */
 .alerte-contrat {
-  position: absolute; z-index: 31; top: calc(100% + 10px); right: var(--retrait-panneau);
+  position: absolute; z-index: 32; top: calc(100% + 10px); right: var(--retrait-panneau);
   width: min(600px, calc(100% - 2 * var(--retrait-panneau))); align-items: center;
   box-shadow: var(--flottant-ombre); text-align: left;
 }
@@ -1555,7 +1568,8 @@ header.entete .alerte-source {
    collée), les outils calés au bord du contenu. Au-dessus du bandeau des
    filtres (z-index 31 contre 30) : la liste des plans trouvés et les bulles
    des icônes passaient dessous. Les deux barres ne se recouvrent jamais
-   autrement. */
+   autrement. Seul le bandeau d'erreur du contrat (32) passe sur le sommaire,
+   au téléphone, en haut de la page. */
 .sommaire {
   position: sticky; top: 0; z-index: 31;
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(max-content, 1fr); column-gap: 12px;
@@ -1633,14 +1647,15 @@ header.entete .alerte-source {
 }
 /* Débrief 29 : au téléphone, trois sections se lisent à côté des icônes —
    des noms un peu moins espacés, des icônes de 28 px serrées (leur zone de
-   toucher reste de 44 px, voir pointer: coarse). */
+   toucher : 44 px de haut, 30 de large, côte à côte sans empiéter sur la
+   voisine — voir pointer: coarse). */
 @media (max-width: 480px) {
   .sommaire-liste { gap: 0 12px; }
   .sommaire-liste a { letter-spacing: .06em; }
   .sommaire a::before { margin-right: 6px; }
   .sommaire .outils-page { gap: 2px; }
   .sommaire .outil-page, .sommaire .cherche-plan-ouvrir { width: 28px; height: 28px; }
-  .sommaire .outil-page svg { width: 15px; height: 15px; }
+  .sommaire .outil-page svg, .sommaire .cherche-plan-ouvrir svg { width: 15px; height: 15px; }
 }
 /* Débrief 29 : un contrat ou un classeur vide n'a pas de sections, mais
    garde ses outils — Vue d'ensemble (les autres contrats), Aide,
@@ -3937,7 +3952,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       </div>
       <button type="button" class="outil-page" id="voir-ensemble" data-nom="Vue d’ensemble des contrats" aria-haspopup="dialog" aria-expanded="false" aria-controls="ensemble" hidden>
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
-        <span class="masque">Vue d’ensemble</span>
+        <span class="masque">Vue d’ensemble des contrats</span>
       </button>
       <!-- Débrief 27 : l'aide de la page (le lot G y branche sa fenêtre). -->
       <button type="button" class="outil-page" id="ouvrir-aide" data-nom="Aide" aria-haspopup="dialog">
@@ -13874,13 +13889,23 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     /* Débrief 29 (S9) : la section qu'on lit est celle qui occupe le plus
        d'écran sous le sommaire et les filtres collés — le seuil de 35 %
        marquait « Par ATA » quand les Plans prenaient déjà le bas de l'écran
-       (l'ATA 37→365 px, les Plans 405→900). À égalité, celle du dessus. */
+       (l'ATA 37→365 px, les Plans 405→900). À égalité, celle du dessus.
+       Débrief 29 (relecture) : sauf si le haut d'une section est dans les
+       premiers 35 % de l'écran sous les barres — elle l'emporte alors. La
+       Synthèse (280 px) n'avait jamais plus d'écran que la Tendance qui la
+       suit : « 01 Synthèse » cliqué, ou la page ouverte sur un grand écran,
+       marquaient « 02 Tendance ». */
     var seuil = Math.max(0, sommaireColle() ? boite.bottom : 0) + hauteurFiltres(), basEcran = window.innerHeight, vuMax = 0;
     presents.forEach(function (a) {
       var r = chapitreDe(a).getBoundingClientRect();
       var vu = Math.min(r.bottom, basEcran) - Math.max(r.top, seuil);
       if (vu > vuMax + 0.5) { vuMax = vu; courant = a; }
     });
+    var ligneTete = seuil + 0.35 * (basEcran - seuil);
+    for (var i = 0; i < presents.length; i++) {
+      var tete = chapitreDe(presents[i]).getBoundingClientRect().top;
+      if (tete >= seuil - 1 && tete <= ligneTete) { courant = presents[i]; break; }
+    }
     var fond = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
     if (fond && presents.length && window.scrollY > 0) courant = presents[presents.length - 1];
     if (courant === chapitreCourant) return;
@@ -13990,9 +14015,25 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   $('cherche-plan-champ').addEventListener('keydown', function (e) {
     if (/^(ArrowLeft|ArrowRight|Home|End)$/.test(e.key)) garderPlaceSaisie();
   }, true);
+  /* Débrief 29 (relecture) : glisser pour sélectionner dans le champ de la
+     loupe — Chrome amenait la sélection sous la marge du haut, la page
+     remontait à chaque mouvement (de y 2500 à 1228) ; elle garde sa place
+     tant que le bouton de la souris est enfoncé dans le champ. */
+  var Y_SOURIS_CHAMP = null;
+  $('cherche-plan-champ').addEventListener('mousedown', function (e) { if (e.button === 0 && sommaireColle()) Y_SOURIS_CHAMP = window.scrollY; });
+  document.addEventListener('mouseup', function () { Y_SOURIS_CHAMP = null; }, true);
+  document.addEventListener('mousemove', function (e) { if (Y_SOURIS_CHAMP !== null && !(e.buttons & 1)) Y_SOURIS_CHAMP = null; }, true);
+  window.addEventListener('blur', function () { Y_SOURIS_CHAMP = null; });
+  window.addEventListener('scroll', function () {
+    if (Y_SOURIS_CHAMP !== null && window.scrollY !== Y_SOURIS_CHAMP) window.scrollTo(window.scrollX, Y_SOURIS_CHAMP);
+  }, { passive: true });
+  /* Seulement les boutons : dans le champ, le navigateur place le curseur
+     sous la souris et sélectionne au glisser (le focus n'y fait pas sauter
+     la page : scroll-margin-top, plus haut). Débrief 29 (relecture) : le
+     clic y était annulé — le curseur tombait au bout du texte. */
   [SOMMAIRE, $('filtres-actifs')].forEach(function (barre) {
     barre.addEventListener('mousedown', function (e) {
-      var b = e.target.closest && e.target.closest('button, input');
+      var b = e.target.closest && e.target.closest('button');
       if (!b || b.disabled || e.button !== 0 || document.activeElement === b || !sommaireColle()) return;
       e.preventDefault();
       try { b.focus({ preventScroll: true }); } catch (err) { b.focus(); }
@@ -15610,7 +15651,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      liste suit aria-activedescendant. Sous 1280 px, une loupe l'ouvre
      par-dessus le sommaire.
      ============================================================ */
-  var CHERCHE = { refs: [], actif: -1, minuteur: 0 };
+  var CHERCHE = { refs: [], actif: -1, minuteur: 0, retour: null };
   function plansTrouves(texte) {
     var q = motCherche(texte);
     if (!q || !PLANS) return { q: q, debut: [], dedans: [], anciens: [] };
@@ -15686,19 +15727,32 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   function focusSurPlace(el) {
     try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); }
   }
+  /* Débrief 29 (relecture) : sur un écran bas couché, le sommaire ne colle
+     pas (M5) — la loupe reste en haut de la page. « / » y donnait le focus à
+     un champ à 2 800 px au-dessus de l'écran (rien ne se voyait, puis la
+     page sautait en haut à la première lettre et y restait). Le champ vient
+     maintenant à l'écran ; Échap (ou la croix) ramène la page où on lisait,
+     et le focus là où il était (CHERCHE.retour, posé par « / »). */
   function ouvrirCherche() {
-    var bloc = $('cherche-plan');
+    var bloc = $('cherche-plan'), champ = $('cherche-plan-champ');
     bloc.setAttribute('data-ouvert', 'true');
     $('cherche-plan-ouvrir').setAttribute('aria-expanded', 'true');
-    focusSurPlace($('cherche-plan-champ'));
+    if (sommaireColle()) focusSurPlace(champ); else champ.focus();
   }
   function replierCherche(rendreFocus) {
     var bloc = $('cherche-plan');
     fermerListeCherche();
     if (bloc.getAttribute('data-ouvert') !== 'true') return;
+    var retour = CHERCHE.retour;
+    CHERCHE.retour = null;
     bloc.setAttribute('data-ouvert', 'false');
     $('cherche-plan-ouvrir').setAttribute('aria-expanded', 'false');
-    if (rendreFocus) focusSurPlace($('cherche-plan-ouvrir'));
+    if (!rendreFocus) return;
+    if (retour && !sommaireColle()) {
+      window.scrollTo(window.scrollX, retour.y);
+      if (retour.el && retour.el !== document.body && document.contains(retour.el) && retour.el.getClientRects().length) focusSurPlace(retour.el);
+      else $('cherche-plan-champ').blur();
+    } else focusSurPlace($('cherche-plan-ouvrir'));
   }
   function choisirPlanCherche(ref) {
     var p = PLAN_PAR_REF[ref];
@@ -15714,6 +15768,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        28) — elle est toujours ce qui a ouvert la fiche : Échap y ramène le
        focus. Au-delà de 1280 px, il tombait sur le titre des plans. */
     OUVREUR_PLAN = { ref: ref, g: empreinteFocus($('cherche-plan-ouvrir')), y: depart };
+    CHERCHE.retour = null;              // la fiche du plan prend la place
     $('cherche-plan').setAttribute('data-ouvert', 'false');
     $('cherche-plan-ouvrir').setAttribute('aria-expanded', 'false');
   }
@@ -15758,12 +15813,15 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     e.preventDefault();
     if (o) choisirPlanCherche(o.getAttribute('data-ref'));
   });
+  /* Débrief 29 (relecture) : le focus qui quitte la loupe la replie, même
+     avec du texte (il revient à la réouverture) — le champ ouvert couvre
+     tout le sommaire, et Tab ou Maj+Tab menaient à des liens et des icônes
+     cachés dessous (pas d'anneau visible, Entrée les ouvrait). */
   $('cherche-plan').addEventListener('focusout', function () {
     setTimeout(function () {
       var bloc = $('cherche-plan');
       if (bloc.contains(document.activeElement)) return;
-      fermerListeCherche();
-      if (!$('cherche-plan-champ').value) replierCherche(false);
+      replierCherche(false);
     }, 0);
   });
 
@@ -15808,7 +15866,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        La loupe cherche dans GATES et dans SEE. */
     var loupe = $('cherche-plan-ouvrir');
     if (!focusVisible(loupe)) return;
-    e.preventDefault(); ouvrirCherche();
+    e.preventDefault();
+    CHERCHE.retour = sommaireColle() ? null : { el: document.activeElement, y: window.scrollY };
+    ouvrirCherche();
   });
   var minuteurTaille = null;
   window.addEventListener('resize', function () {

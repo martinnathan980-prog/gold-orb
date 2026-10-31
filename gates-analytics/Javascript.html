@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = '6ea8cca';
+  var EDITION = '92f7bb4';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -8843,13 +8843,23 @@
     /* Débrief 29 (S9) : la section qu'on lit est celle qui occupe le plus
        d'écran sous le sommaire et les filtres collés — le seuil de 35 %
        marquait « Par ATA » quand les Plans prenaient déjà le bas de l'écran
-       (l'ATA 37→365 px, les Plans 405→900). À égalité, celle du dessus. */
+       (l'ATA 37→365 px, les Plans 405→900). À égalité, celle du dessus.
+       Débrief 29 (relecture) : sauf si le haut d'une section est dans les
+       premiers 35 % de l'écran sous les barres — elle l'emporte alors. La
+       Synthèse (280 px) n'avait jamais plus d'écran que la Tendance qui la
+       suit : « 01 Synthèse » cliqué, ou la page ouverte sur un grand écran,
+       marquaient « 02 Tendance ». */
     var seuil = Math.max(0, sommaireColle() ? boite.bottom : 0) + hauteurFiltres(), basEcran = window.innerHeight, vuMax = 0;
     presents.forEach(function (a) {
       var r = chapitreDe(a).getBoundingClientRect();
       var vu = Math.min(r.bottom, basEcran) - Math.max(r.top, seuil);
       if (vu > vuMax + 0.5) { vuMax = vu; courant = a; }
     });
+    var ligneTete = seuil + 0.35 * (basEcran - seuil);
+    for (var i = 0; i < presents.length; i++) {
+      var tete = chapitreDe(presents[i]).getBoundingClientRect().top;
+      if (tete >= seuil - 1 && tete <= ligneTete) { courant = presents[i]; break; }
+    }
     var fond = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
     if (fond && presents.length && window.scrollY > 0) courant = presents[presents.length - 1];
     if (courant === chapitreCourant) return;
@@ -8959,9 +8969,25 @@
   $('cherche-plan-champ').addEventListener('keydown', function (e) {
     if (/^(ArrowLeft|ArrowRight|Home|End)$/.test(e.key)) garderPlaceSaisie();
   }, true);
+  /* Débrief 29 (relecture) : glisser pour sélectionner dans le champ de la
+     loupe — Chrome amenait la sélection sous la marge du haut, la page
+     remontait à chaque mouvement (de y 2500 à 1228) ; elle garde sa place
+     tant que le bouton de la souris est enfoncé dans le champ. */
+  var Y_SOURIS_CHAMP = null;
+  $('cherche-plan-champ').addEventListener('mousedown', function (e) { if (e.button === 0 && sommaireColle()) Y_SOURIS_CHAMP = window.scrollY; });
+  document.addEventListener('mouseup', function () { Y_SOURIS_CHAMP = null; }, true);
+  document.addEventListener('mousemove', function (e) { if (Y_SOURIS_CHAMP !== null && !(e.buttons & 1)) Y_SOURIS_CHAMP = null; }, true);
+  window.addEventListener('blur', function () { Y_SOURIS_CHAMP = null; });
+  window.addEventListener('scroll', function () {
+    if (Y_SOURIS_CHAMP !== null && window.scrollY !== Y_SOURIS_CHAMP) window.scrollTo(window.scrollX, Y_SOURIS_CHAMP);
+  }, { passive: true });
+  /* Seulement les boutons : dans le champ, le navigateur place le curseur
+     sous la souris et sélectionne au glisser (le focus n'y fait pas sauter
+     la page : scroll-margin-top, plus haut). Débrief 29 (relecture) : le
+     clic y était annulé — le curseur tombait au bout du texte. */
   [SOMMAIRE, $('filtres-actifs')].forEach(function (barre) {
     barre.addEventListener('mousedown', function (e) {
-      var b = e.target.closest && e.target.closest('button, input');
+      var b = e.target.closest && e.target.closest('button');
       if (!b || b.disabled || e.button !== 0 || document.activeElement === b || !sommaireColle()) return;
       e.preventDefault();
       try { b.focus({ preventScroll: true }); } catch (err) { b.focus(); }
@@ -10579,7 +10605,7 @@
      liste suit aria-activedescendant. Sous 1280 px, une loupe l'ouvre
      par-dessus le sommaire.
      ============================================================ */
-  var CHERCHE = { refs: [], actif: -1, minuteur: 0 };
+  var CHERCHE = { refs: [], actif: -1, minuteur: 0, retour: null };
   function plansTrouves(texte) {
     var q = motCherche(texte);
     if (!q || !PLANS) return { q: q, debut: [], dedans: [], anciens: [] };
@@ -10655,19 +10681,32 @@
   function focusSurPlace(el) {
     try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); }
   }
+  /* Débrief 29 (relecture) : sur un écran bas couché, le sommaire ne colle
+     pas (M5) — la loupe reste en haut de la page. « / » y donnait le focus à
+     un champ à 2 800 px au-dessus de l'écran (rien ne se voyait, puis la
+     page sautait en haut à la première lettre et y restait). Le champ vient
+     maintenant à l'écran ; Échap (ou la croix) ramène la page où on lisait,
+     et le focus là où il était (CHERCHE.retour, posé par « / »). */
   function ouvrirCherche() {
-    var bloc = $('cherche-plan');
+    var bloc = $('cherche-plan'), champ = $('cherche-plan-champ');
     bloc.setAttribute('data-ouvert', 'true');
     $('cherche-plan-ouvrir').setAttribute('aria-expanded', 'true');
-    focusSurPlace($('cherche-plan-champ'));
+    if (sommaireColle()) focusSurPlace(champ); else champ.focus();
   }
   function replierCherche(rendreFocus) {
     var bloc = $('cherche-plan');
     fermerListeCherche();
     if (bloc.getAttribute('data-ouvert') !== 'true') return;
+    var retour = CHERCHE.retour;
+    CHERCHE.retour = null;
     bloc.setAttribute('data-ouvert', 'false');
     $('cherche-plan-ouvrir').setAttribute('aria-expanded', 'false');
-    if (rendreFocus) focusSurPlace($('cherche-plan-ouvrir'));
+    if (!rendreFocus) return;
+    if (retour && !sommaireColle()) {
+      window.scrollTo(window.scrollX, retour.y);
+      if (retour.el && retour.el !== document.body && document.contains(retour.el) && retour.el.getClientRects().length) focusSurPlace(retour.el);
+      else $('cherche-plan-champ').blur();
+    } else focusSurPlace($('cherche-plan-ouvrir'));
   }
   function choisirPlanCherche(ref) {
     var p = PLAN_PAR_REF[ref];
@@ -10683,6 +10722,7 @@
        28) — elle est toujours ce qui a ouvert la fiche : Échap y ramène le
        focus. Au-delà de 1280 px, il tombait sur le titre des plans. */
     OUVREUR_PLAN = { ref: ref, g: empreinteFocus($('cherche-plan-ouvrir')), y: depart };
+    CHERCHE.retour = null;              // la fiche du plan prend la place
     $('cherche-plan').setAttribute('data-ouvert', 'false');
     $('cherche-plan-ouvrir').setAttribute('aria-expanded', 'false');
   }
@@ -10727,12 +10767,15 @@
     e.preventDefault();
     if (o) choisirPlanCherche(o.getAttribute('data-ref'));
   });
+  /* Débrief 29 (relecture) : le focus qui quitte la loupe la replie, même
+     avec du texte (il revient à la réouverture) — le champ ouvert couvre
+     tout le sommaire, et Tab ou Maj+Tab menaient à des liens et des icônes
+     cachés dessous (pas d'anneau visible, Entrée les ouvrait). */
   $('cherche-plan').addEventListener('focusout', function () {
     setTimeout(function () {
       var bloc = $('cherche-plan');
       if (bloc.contains(document.activeElement)) return;
-      fermerListeCherche();
-      if (!$('cherche-plan-champ').value) replierCherche(false);
+      replierCherche(false);
     }, 0);
   });
 
@@ -10777,7 +10820,9 @@
        La loupe cherche dans GATES et dans SEE. */
     var loupe = $('cherche-plan-ouvrir');
     if (!focusVisible(loupe)) return;
-    e.preventDefault(); ouvrirCherche();
+    e.preventDefault();
+    CHERCHE.retour = sommaireColle() ? null : { el: document.activeElement, y: window.scrollY };
+    ouvrirCherche();
   });
   var minuteurTaille = null;
   window.addEventListener('resize', function () {
@@ -12492,5 +12537,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = '6ea8cca';
+window.SUIVI_FWD_FIN = '92f7bb4';
 </script>
