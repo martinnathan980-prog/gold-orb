@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "a8d7f0e";
+  --suivi-fwd-edition: "c9ae0c3";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -835,13 +835,16 @@ header.entete {
    quatre icônes (4 × 34 + 3 × 6) même sans le ⚙ — à 1024 px, la liste,
    centrée sur la place qui reste, glissait de 40 px quand il s'effaçait. */
 @media (min-width: 721px) { .sommaire .outils-page { min-width: 154px; } }
-.sommaire .outil-page {
+.sommaire .outil-page, .sommaire .cherche-plan-ouvrir {
   position: relative;
   width: 34px; height: 34px; min-height: 0; padding: 0; justify-content: center;
   border: 1px solid var(--filet); border-radius: 50%; color: var(--encre-2); background: var(--surface);
 }
-.sommaire .outil-page:hover, .sommaire .outil-page[aria-expanded="true"] { color: var(--encre); border-color: var(--filet-fort); background: var(--creux); }
-.sommaire .outil-page svg { width: 16px; height: 16px; }
+/* Débrief 29 : la loupe, dans le groupe depuis ce débrief, en a le dessin —
+   elle gardait celui du débrief 28 (un cercle plus foncé, un anneau noir au
+   survol, un glyphe plus petit, 34 px à côté d'icônes de 32). */
+.sommaire .outil-page:hover, .sommaire .outil-page[aria-expanded="true"], .sommaire .cherche-plan-ouvrir:hover { color: var(--encre); border-color: var(--filet-fort); background: var(--creux); }
+.sommaire .outil-page svg, .sommaire .cherche-plan-ouvrir svg { width: 16px; height: 16px; }
 /* Débrief 29 (D9) : le nom de chaque icône dans une bulle, au survol de la
    souris (après un court instant) ET au clavier (focus visible) — le title
    ne se montrait qu'à la souris, avec retard, et jamais au clavier. Calée à
@@ -865,7 +868,7 @@ header.entete {
 @media print { .sommaire .outil-page::before, .cherche-plan-ouvrir::before { display: none; } }
 @media (max-width: 720px) {
   .sommaire .outils-page { grid-column: 2; gap: 4px; }
-  .sommaire .outil-page { width: 32px; height: 32px; }
+  .sommaire .outil-page, .sommaire .cherche-plan-ouvrir { width: 32px; height: 32px; }
 }
 /* Débrief 28 : le tableau des plans sans « Filtrer par colonne » (les
    filtres sont toujours là), ni « Copier le tableau », ni « Télécharger ». */
@@ -880,7 +883,15 @@ header.entete {
   .outil-page { position: relative; }
   .outil-page::after { content: ""; position: absolute; inset: -8px -6px; }
 }
-@media (pointer: coarse) and (max-width: 480px) { .sommaire .outil-page::after { inset: -8px; } }
+/* Débrief 29 (relecture) : dans le groupe d'icônes du sommaire, les zones
+   de toucher se touchent au milieu de l'écart, sans entrer dans le cercle
+   voisin — elles débordaient de 6 px sur lui (le bord droit du ⚙ ouvrait la
+   loupe, celui de Vue d'ensemble l'Aide). L'inset se compte depuis
+   l'intérieur de la bordure (1 px) : 1 px + la moitié de l'écart. Au
+   téléphone, la zone prend aussi toute la hauteur du sommaire (44 px). */
+@media (pointer: coarse) { .sommaire .outil-page::after, .sommaire .cherche-plan-ouvrir::after { inset: -8px -4px; } }
+@media (pointer: coarse) and (max-width: 720px) { .sommaire .outil-page::after, .sommaire .cherche-plan-ouvrir::after { inset: -8px -3px; } }
+@media (pointer: coarse) and (max-width: 480px) { .sommaire .outil-page::after, .sommaire .cherche-plan-ouvrir::after { inset: -9px -2px; } }
 /* Le téléphone : une grille compacte — le contrat et la tranche côte à côte,
    leurs menus sur le reste de leur case ; l'avancement, puis le périmètre,
    chacun sur sa ligne, son mot devant lui (au-dessus si la ligne manque de
@@ -949,9 +960,11 @@ header.entete {
 
 /* Débrief 27 (lot H, D8, A-F5) : un contrat qui n'a pas pu se charger — le
    bandeau d'erreur, posé sous la barre et par-dessus le haut du titre (rien
-   ne descend), calé à droite sous les menus. */
+   ne descend), calé à droite sous les menus. Débrief 29 (relecture) : au
+   téléphone, il descend jusque sur le sommaire — il passe au-dessus (32
+   contre 31) : sa croix et « Réessayer » répondaient au sommaire. */
 .alerte-contrat {
-  position: absolute; z-index: 31; top: calc(100% + 10px); right: var(--retrait-panneau);
+  position: absolute; z-index: 32; top: calc(100% + 10px); right: var(--retrait-panneau);
   width: min(600px, calc(100% - 2 * var(--retrait-panneau))); align-items: center;
   box-shadow: var(--flottant-ombre); text-align: left;
 }
@@ -1551,7 +1564,8 @@ header.entete .alerte-source {
    collée), les outils calés au bord du contenu. Au-dessus du bandeau des
    filtres (z-index 31 contre 30) : la liste des plans trouvés et les bulles
    des icônes passaient dessous. Les deux barres ne se recouvrent jamais
-   autrement. */
+   autrement. Seul le bandeau d'erreur du contrat (32) passe sur le sommaire,
+   au téléphone, en haut de la page. */
 .sommaire {
   position: sticky; top: 0; z-index: 31;
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(max-content, 1fr); column-gap: 12px;
@@ -1629,14 +1643,15 @@ header.entete .alerte-source {
 }
 /* Débrief 29 : au téléphone, trois sections se lisent à côté des icônes —
    des noms un peu moins espacés, des icônes de 28 px serrées (leur zone de
-   toucher reste de 44 px, voir pointer: coarse). */
+   toucher : 44 px de haut, 30 de large, côte à côte sans empiéter sur la
+   voisine — voir pointer: coarse). */
 @media (max-width: 480px) {
   .sommaire-liste { gap: 0 12px; }
   .sommaire-liste a { letter-spacing: .06em; }
   .sommaire a::before { margin-right: 6px; }
   .sommaire .outils-page { gap: 2px; }
   .sommaire .outil-page, .sommaire .cherche-plan-ouvrir { width: 28px; height: 28px; }
-  .sommaire .outil-page svg { width: 15px; height: 15px; }
+  .sommaire .outil-page svg, .sommaire .cherche-plan-ouvrir svg { width: 15px; height: 15px; }
 }
 /* Débrief 29 : un contrat ou un classeur vide n'a pas de sections, mais
    garde ses outils — Vue d'ensemble (les autres contrats), Aide,

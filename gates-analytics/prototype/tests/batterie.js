@@ -10575,9 +10575,15 @@ async function deplierFiltresColonne(pg) {
        des fondus, un fondu à gauche quand la bande est défilée. */
     for (const [w, h] of [[390, 844], [360, 740]]) {
       const pg = await vivE1({ largeur: w, hauteur: h, mobile: true, etiquette: 'téléphone ' + w });
+      /* Débrief 29 (relecture R1-4) : les zones de toucher (::after, comptées
+         depuis l'intérieur de la bordure de 1 px) font 44 px de haut et se
+         touchent au milieu de l'écart de 2 px, sans entrer dans le cercle
+         voisin — à 44 px de large, elles débordaient de 6 px sur lui (le bord
+         du ⚙ ouvrait la loupe). */
       const icones = await pg.evaluate(() => [...document.querySelectorAll('#outils-page .outil-page, #cherche-plan-ouvrir')].filter(b => b.getClientRects().length).map(b => {
-        const r = b.getBoundingClientRect(), a = getComputedStyle(b, '::after');
-        return { id: b.id, l: Math.round(r.width), zoneH: Math.round(r.height - 2 * parseFloat(a.top)), zoneL: Math.round(r.width - 2 * parseFloat(a.left)) };
+        const r = b.getBoundingClientRect(), a = getComputedStyle(b, '::after'), bord = parseFloat(getComputedStyle(b).borderLeftWidth);
+        return { id: b.id, l: Math.round(r.width), zoneH: Math.round(r.height - 2 * bord - parseFloat(a.top) - parseFloat(a.bottom)), zoneL: Math.round(r.width - 2 * bord - parseFloat(a.left) - parseFloat(a.right)),
+                 g: r.left + bord + parseFloat(a.left), d: r.right - bord - parseFloat(a.right) };
       }));
       const largeurListe = await pg.evaluate(() => Math.round(document.getElementById('sommaire-liste').getBoundingClientRect().width));
       const parSection = [];
@@ -10591,8 +10597,8 @@ async function deplierFiltresColonne(pg) {
           return { courant: a ? a.dataset.chapitre : null, lisibles, gauche: l.classList.contains('deborde-gauche'), defile: l.scrollLeft > 2, masque: getComputedStyle(l).maskImage || getComputedStyle(l).webkitMaskImage };
         }));
       }
-      verifier('téléphone ' + w + ' px : quatre icônes de 28 px, chacune touchable sur 44 × 44 px ; la bande des sections gagne la place (≥ 200 px)',
-        icones.length === 4 && icones.every(i => i.l === 28 && i.zoneH >= 44 && i.zoneL >= 44) && largeurListe >= 200, JSON.stringify({ icones, largeurListe }));
+      verifier('téléphone ' + w + ' px : quatre icônes de 28 px, chacune touchable sur 44 px de haut et 30 de large, les zones côte à côte sans chevauchement (débrief 29, relecture) ; la bande des sections gagne la place (≥ 200 px)',
+        icones.length === 4 && icones.every(i => i.l === 28 && i.zoneH >= 44 && i.zoneL >= 30) && icones.every((i, k) => !icones[k + 1] || Math.abs(i.d - icones[k + 1].g) <= 0.5) && largeurListe >= 200, JSON.stringify({ icones, largeurListe }));
       verifier('téléphone ' + w + ' px : à chaque section, son nom se lit en entier hors des fondus (avec un voisin entier presque partout) ; défilée, la bande a un fondu à gauche',
         parSection.every(s => s.courant && s.lisibles.indexOf(s.courant) !== -1) && parSection.filter(s => s.lisibles.length >= 2).length >= 4 &&
         parSection.every(s => s.gauche === s.defile) &&  parSection.filter(s => s.gauche).every(s => /^linear-gradient\(to right, (transparent|rgba\(0, 0, 0, 0\))/.test(s.masque)),
@@ -12004,6 +12010,316 @@ async function deplierFiltresColonne(pg) {
   //  dans un bloc { … } qui ouvre et ferme ses propres pages.
   // =================================================================
   /* (début du lot R1) */
+  /* Débrief 29, relecture R1 — le sommaire collé, sa loupe et ses icônes,
+     le bandeau d'erreur du contrat, sur la page VIVANTE (le vrai Code.gs du
+     simulateur derrière google.script.run, comme le lot E1) : « / » sur un
+     écran bas couché, le clic et le glisser dans le texte de la loupe, le
+     bandeau d'erreur au-dessus du sommaire au téléphone, des zones de
+     toucher qui ne se chevauchent plus, la loupe dessinée comme ses
+     voisines, « 01 Synthèse » marqué, la loupe qui se replie quand le focus
+     la quitte, le même nom pour la bulle et le lecteur d'écran. */
+  section('Débrief 29 : relecture — sommaire, loupe, icônes, bandeau d’erreur (R1)');
+  {
+    const fsR1 = require('fs'), osR1 = require('os');
+    const { construireSimulateur } = require(path.join(__dirname, '..', '..', 'tests', 'construire-simulateur.js'));
+    const { Feuille } = require(path.join(__dirname, '..', '..', 'tests', 'faux-classeur.js'));
+    const simR1 = construireSimulateur({ date: '2026-10-29', avantPage: function (c, classeur) {
+      const ths = classeur.getSheetByName('THS');
+      classeur.feuilles.splice(1, 0, new Feuille('HDK Tranche 2', ths.valeurs.map(l => l.slice()), false, ths.fusions.map(f => Object.assign({}, f))));
+    } });
+    const srvR1 = simR1.contexte;
+    simR1.classeur.proprietaire = 'nathan@airbus.com';
+    srvR1.__emailScript = 'nathan@airbus.com';
+    const fichierR1 = path.join(osR1.tmpdir(), 'suivi-fwd-r1-' + process.pid + '.html');
+    fsR1.writeFileSync(fichierR1, simR1.page.replace(/<script>\s*\/\* Simulateur : google\.script\.run[\s\S]*?<\/script>/, ''));
+    /* o.panne : le chargement des contrats qu'elle désigne échoue, avec ce
+       motif (une vraie erreur d'Apps Script, assez longue pour trois lignes
+       au téléphone). */
+    const vivR1 = async (o) => {
+      const c = await nav.newContext({ viewport: { width: o.largeur || 1440, height: o.hauteur || 900 }, colorScheme: o.schema || 'light',
+        isMobile: !!o.mobile, hasTouch: !!o.mobile, reducedMotion: o.reducedMotion || 'no-preference' });
+      const pg = await c.newPage();
+      brancher(pg, 'R1 ' + (o.etiquette || ''));
+      const email = o.email || 'nathan@airbus.com';
+      await pg.exposeFunction('__appel', (nom, args) => {
+        if (typeof srvR1[nom] !== 'function' || /_$/.test(nom)) throw new Error('fonction inconnue ' + nom);
+        if (o.panne && /^getDonneesCompactes/.test(nom) && o.panne.test(String(JSON.parse(args)[0]))) throw new Error('Exceeded maximum execution time');
+        const avant = srvR1.__emailLecteur; srvR1.__emailLecteur = email;
+        try { const r = srvR1[nom].apply(null, JSON.parse(args)); return JSON.stringify(r === undefined ? null : r); } finally { srvR1.__emailLecteur = avant; }
+      });
+      await pg.addInitScript(lent => {
+        window.SUIVI_FWD_BUDGET = 1e9;
+        function chaine(ok, ko) {
+          const c = { withSuccessHandler: f => chaine(f, ko), withFailureHandler: f => chaine(ok, f), withUserObject: () => chaine(ok, ko) };
+          return new Proxy(c, { get(t, nom) {
+            if (nom in t) return t[nom];
+            if (typeof nom !== 'string') return undefined;
+            return function () {
+              const args = Array.prototype.slice.call(arguments);
+              setTimeout(() => window.__appel(nom, JSON.stringify(args)).then(j => { if (ok) ok(JSON.parse(j)); },
+                e => { if (ko) ko({ message: String(e.message || e).replace(/^Error: /, '') }); }), lent);
+            };
+          } });
+        }
+        window.google = { script: { run: chaine(null, null) } };
+      }, o.latence === undefined ? 40 : o.latence);
+      await pg.goto('file://' + fichierR1);
+      await pg.waitForFunction(() => document.documentElement.getAttribute('data-suivi-fwd') === 'pret', null, { timeout: 30000 });
+      await pg.waitForFunction(() => document.getElementById('choix-admin').getAttribute('data-droits') !== 'attente', null, { timeout: 20000 }).catch(() => {});
+      await pg.waitForTimeout(500);
+      pg.__ctx = c;
+      return pg;
+    };
+    const etatR1 = pg => pg.evaluate(() => {
+      const a = document.activeElement, r = a.getBoundingClientRect();
+      return { y: Math.round(scrollY), actif: a.id || a.tagName, haut: Math.round(r.top), bas: Math.round(r.bottom), vh: innerHeight,
+               ouvert: document.getElementById('cherche-plan').dataset.ouvert, v: document.getElementById('cherche-plan-champ').value };
+    });
+    /* L'élément focalisé est-il celui qu'on voit sous son centre (rien ne le couvre) ? */
+    const focusVuR1 = pg => pg.evaluate(() => {
+      const a = document.activeElement;
+      if (!a || a === document.body) return { actif: 'BODY', vu: false };
+      const r = a.getBoundingClientRect(), t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { actif: a.id || a.getAttribute('data-chapitre') || a.tagName, vu: !!t && (t === a || a.contains(t)), dessous: t ? (t.id || t.tagName) : null,
+               ouvert: document.getElementById('cherche-plan').dataset.ouvert };
+    });
+    const allerAuxPlans = pg => pg.evaluate(() => { const s = document.getElementById('section-plans'); window.scrollTo(0, s.getBoundingClientRect().top + scrollY); });
+
+    /* R1-1 : sur un écran bas couché (le sommaire ne colle pas, M5), « / »
+       amène le champ de la loupe à l'écran ; Échap ramène la page là où on
+       lisait (elle restait tout en haut), le focus là où il était. */
+    for (const [w, h, mob] of [[844, 390, true], [1440, 480, false]]) {
+      const pg = await vivR1({ largeur: w, hauteur: h, mobile: mob, etiquette: 'barre oblique ' + w });
+      await allerAuxPlans(pg); await pg.waitForTimeout(400);
+      await pg.evaluate(() => document.activeElement && document.activeElement.blur());
+      const avant = await etatR1(pg);
+      await pg.keyboard.press('/'); await pg.waitForTimeout(400);
+      const apres = await etatR1(pg);
+      await pg.keyboard.type('GAE', { delay: 30 }); await pg.waitForTimeout(400);
+      const frappe = await etatR1(pg);
+      await pg.keyboard.press('Escape'); await pg.waitForTimeout(200);
+      await pg.keyboard.press('Escape'); await pg.waitForTimeout(400);
+      const esc = await etatR1(pg);
+      verifier('R1-1, ' + w + ' × ' + h + ' : « / » (sommaire pas collé) — le champ de la loupe, focalisé, est à l’écran (il était à 2 800 px au-dessus) ; la frappe ne fait plus sauter la page ; deux Échap la ramènent où on lisait (±2 px)',
+        avant.y > 1000 && apres.actif === 'cherche-plan-champ' && apres.ouvert === 'true' && apres.haut >= 0 && apres.bas <= apres.vh &&
+        frappe.y === apres.y && frappe.v === 'GAE' && esc.ouvert === 'false' && Math.abs(esc.y - avant.y) <= 2, JSON.stringify({ avant, apres, frappe, esc }));
+      if (mob) {
+        /* Le focus était sur un bouton des Plans : il y revient, à l'écran. */
+        await allerAuxPlans(pg); await pg.waitForTimeout(300);
+        const bouton = await pg.evaluate(() => {
+          const v = [...document.querySelectorAll('#section-plans button')].find(x => { const r = x.getBoundingClientRect(); return r.width > 0 && r.top > 60 && r.bottom < innerHeight; });
+          if (!v) return null; v.setAttribute('data-r1', '1'); v.focus({ preventScroll: true }); return true;
+        });
+        const y0 = await pg.evaluate(() => Math.round(scrollY));
+        await pg.keyboard.press('/'); await pg.waitForTimeout(300);
+        await pg.keyboard.press('Escape'); await pg.waitForTimeout(400);
+        const retour = await pg.evaluate(() => ({ y: Math.round(scrollY), surBouton: document.activeElement.getAttribute('data-r1') === '1' }));
+        const vu = await focusVuR1(pg);
+        verifier('R1-1, ' + w + ' × ' + h + ' : le focus sur un bouton des Plans avant « / » — Échap y revient, le bouton visible, la page à sa place',
+          bouton && retour.surBouton && vu.vu && Math.abs(retour.y - y0) <= 2, JSON.stringify({ bouton, y0, retour, vu }));
+      }
+      await pg.__ctx.close();
+    }
+
+    /* R1-2 : un clic dans le texte de la loupe y pose le curseur (il tombait
+       au bout du texte) ; glisser sélectionne, sans faire remonter la page ;
+       relâché, la page défile de nouveau. */
+    {
+      const pg = await vivR1({ largeur: 1440, hauteur: 900, etiquette: 'clic dans la loupe' });
+      await pg.evaluate(() => window.scrollTo(0, 2500)); await pg.waitForTimeout(300);
+      await pg.evaluate(() => document.getElementById('cherche-plan-ouvrir').click()); await pg.waitForTimeout(250);
+      await pg.keyboard.type('GAE2136A7'); await pg.waitForTimeout(400);
+      await pg.keyboard.press('Escape'); await pg.waitForTimeout(150);
+      await pg.evaluate(() => document.getElementById('cherche-plan-fermer').focus({ preventScroll: true }));
+      const geo = await pg.evaluate(() => {
+        const c = document.getElementById('cherche-plan-champ'), r = c.getBoundingClientRect(), cs = getComputedStyle(c);
+        const cv = document.createElement('canvas').getContext('2d'); cv.font = cs.font;
+        return { x: r.left, y: r.top + r.height / 2, car2: parseFloat(cs.paddingLeft) + parseFloat(cs.borderLeftWidth) + cv.measureText('GA').width };
+      });
+      await pg.mouse.click(geo.x + geo.car2, geo.y); await pg.waitForTimeout(200);
+      const clic = await pg.evaluate(() => { const c = document.getElementById('cherche-plan-champ'); return { actif: document.activeElement.id, s: c.selectionStart, e: c.selectionEnd, y: Math.round(scrollY) }; });
+      await pg.mouse.move(geo.x + 32, geo.y); await pg.mouse.down();
+      for (let k = 1; k <= 8; k++) { await pg.mouse.move(geo.x + 32 + k * 12, geo.y); await pg.waitForTimeout(30); }
+      await pg.mouse.up(); await pg.waitForTimeout(200);
+      const glisse = await pg.evaluate(() => { const c = document.getElementById('cherche-plan-champ'); return { s: c.selectionStart, e: c.selectionEnd, y: Math.round(scrollY) }; });
+      await pg.evaluate(() => window.scrollTo(0, 2700)); await pg.waitForTimeout(200);
+      const libre = await pg.evaluate(() => Math.round(scrollY));
+      verifier('R1-2 : le champ de la loupe sans le focus, un clic vers le 2e caractère y pose le curseur (2/2, plus 9/9) ; glisser sélectionne le texte sans faire remonter la page (y 2500 → 1228 avant) ; relâché, la page défile',
+        clic.actif === 'cherche-plan-champ' && clic.s === 2 && clic.e === 2 && clic.y === 2500 && glisse.s === 0 && glisse.e >= 8 && glisse.y === 2500 && libre === 2700,
+        JSON.stringify({ clic, glisse, libre }));
+      await pg.keyboard.press('Escape'); await pg.waitForTimeout(200);
+      await pg.evaluate(() => { document.activeElement.blur(); window.scrollTo(0, 3000); }); await pg.waitForTimeout(250);
+      const r = await pg.evaluate(() => { const b = document.getElementById('voir-ensemble').getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; });
+      await pg.mouse.click(r[0], r[1]); await pg.waitForTimeout(400);
+      const icone = await pg.evaluate(() => ({ y: Math.round(scrollY), ouverte: document.getElementById('ensemble').open }));
+      verifier('R1-2 : un clic sur une icône du sommaire collé (Vue d’ensemble) garde toujours la place de la page',
+        icone.ouverte && Math.abs(icone.y - 3000) <= 2, JSON.stringify(icone));
+      await pg.__ctx.close();
+    }
+
+    /* R1-3 : au téléphone, le bandeau d'erreur du contrat descend jusque sur
+       le sommaire — il passe au-dessus : sa croix et « Réessayer » répondent
+       au doigt (ils ouvraient « 01 Synthèse »). */
+    for (const schema of ['light', 'dark']) {
+      const pg = await vivR1({ largeur: 390, hauteur: 844, mobile: true, schema, panne: /THS/, etiquette: 'alerte téléphone ' + schema });
+      const ths = await pg.evaluate(() => ([...document.querySelectorAll('#select-contrat option')].find(o => /THS/.test(o.textContent)) || {}).value);
+      await pg.selectOption('#select-contrat', ths);
+      await pg.waitForFunction(() => !document.getElementById('alerte-contrat').hidden, null, { timeout: 15000 }).catch(() => {});
+      await pg.waitForTimeout(400);
+      await pg.evaluate(() => window.scrollTo(0, 0)); await pg.waitForTimeout(250);
+      const m = await pg.evaluate(() => {
+        const dessus = id => { const e = document.getElementById(id), q = e.getBoundingClientRect();
+          return [[.5, .5], [.85, .85], [.15, .85]].every(([fx, fy]) => { const t = document.elementFromPoint(q.left + fx * q.width, q.top + fy * q.height); return !!t && (t === e || e.contains(t)); }); };
+        const a = document.getElementById('alerte-contrat').getBoundingClientRect(), s = document.getElementById('sommaire').getBoundingClientRect();
+        return { vu: !document.getElementById('alerte-contrat').hidden, recouvre: Math.round(a.bottom) > Math.round(s.top), reessayer: dessus('reessayer-contrat'), fermer: dessus('fermer-alerte-contrat'),
+                 texte: document.getElementById('alerte-contrat-texte').textContent };
+      });
+      const x = await pg.evaluate(() => { const q = document.getElementById('fermer-alerte-contrat').getBoundingClientRect(); return [q.left + q.width / 2, q.top + q.height / 2]; });
+      await pg.touchscreen.tap(x[0], x[1]); await pg.waitForTimeout(400);
+      const apres = await pg.evaluate(() => ({ ferme: document.getElementById('alerte-contrat').hidden, y: Math.round(scrollY) }));
+      verifier('R1-3, ' + schema + ', 390 px : le bandeau d’erreur du contrat (« Exceeded maximum execution time », sur le sommaire) passe au-dessus — « Réessayer » et la croix sont sous le doigt ; un toucher sur la croix ferme le message, la page ne bouge pas',
+        m.vu && /THS/.test(m.texte) && m.recouvre && m.reessayer && m.fermer && apres.ferme && apres.y === 0, JSON.stringify({ m, apres }));
+      await pg.__ctx.close();
+    }
+    /* Le message « Contrat non chargé » que la page écrit en console est
+       voulu ici : on le retire des erreurs relevées. */
+    for (let i = erreursJS.length - 1; i >= 0; i--) if (/^R1 alerte téléphone .* : Contrat non chargé/.test(erreursJS[i])) erreursJS.splice(i, 1);
+
+    /* R1-4 (R1-9, R1-18) : au toucher, les zones des icônes du sommaire se
+       touchent au milieu de l'écart sans entrer dans le cercle voisin — le
+       bord droit du ⚙ ouvrait la loupe, ceux de Vue d'ensemble la loupe et
+       l'Aide ; au téléphone, chacune prend toute la hauteur du sommaire. */
+    for (const [w, h, schema, email] of [[390, 844, 'light', 'nathan@airbus.com'], [360, 740, 'dark', 'nathan@airbus.com'], [390, 844, 'dark', 'lecteur@airbus.com'], [700, 900, 'light', 'nathan@airbus.com'], [1024, 768, 'light', 'nathan@airbus.com']]) {
+      const pg = await vivR1({ largeur: w, hauteur: h, mobile: true, schema, email, etiquette: 'zones ' + w + ' ' + email });
+      await pg.evaluate(() => window.scrollTo(0, 1500)); await pg.waitForTimeout(350);
+      const z = await pg.evaluate(() => {
+        const ids = ['ouvrir-admin', 'cherche-plan-ouvrir', 'voir-ensemble', 'ouvrir-aide'].filter(id => document.getElementById(id).getClientRects().length);
+        const s = document.getElementById('sommaire').getBoundingClientRect();
+        const qui = (x, y) => { const t = document.elementFromPoint(x, y), b = t && t.closest('button'); return b ? b.id : (t ? t.tagName : null); };
+        const res = ids.map((id, i) => {
+          const r = document.getElementById(id).getBoundingClientRect(), cy = r.top + r.height / 2, cx = r.left + r.width / 2;
+          const suivant = ids[i + 1] ? document.getElementById(ids[i + 1]).getBoundingClientRect() : null;
+          return { id, bords: [qui(r.left + 1, cy), qui(r.left + 3, cy), qui(r.right - 3, cy), qui(r.right - 1, cy)].every(q => q === id),
+                   /* chaque pixel de l'écart répond à l'une des deux voisines */
+                   ecart: suivant ? (() => { const v = []; for (let x = Math.floor(r.right); x <= Math.ceil(suivant.left); x++) v.push(qui(x, cy)); return v; })() : null,
+                   hautBas: [qui(cx, s.top + 1), qui(cx, s.bottom - 1)] };
+        });
+        return { n: ids.length, res };
+      });
+      const tel = w <= 480;
+      verifier('R1-4, ' + w + ' px tactile, ' + schema + (email === 'lecteur@airbus.com' ? ', lecteur' : '') + ' : chaque icône du sommaire répond sur tout son cercle (à 1 et 3 px de ses bords) ; chaque pixel de l’écart répond à l’une des deux voisines (pas de bande morte)' + (tel ? ' ; chacune répond sur toute la hauteur du sommaire (44 px)' : ''),
+        z.n === (email === 'lecteur@airbus.com' ? 3 : 4) && z.res.every(r => r.bords) &&
+        z.res.every((r, i) => !r.ecart || r.ecart.every(q => q === r.id || q === z.res[i + 1].id)) &&
+        (!tel || z.res.every(r => r.hautBas[0] === r.id && r.hautBas[1] === r.id)), JSON.stringify(z));
+      if (w === 390 && email === 'nathan@airbus.com') {
+        /* De vrais touchers à 3 px du bord droit : le ⚙ ouvre l'administration
+           (plus la loupe), Vue d'ensemble sa fenêtre (plus l'Aide). */
+        const taps = {};
+        for (const [id, dlg] of [['ouvrir-admin', 'admin'], ['voir-ensemble', 'ensemble']]) {
+          const r = await pg.evaluate(id => { const q = document.getElementById(id).getBoundingClientRect(); return [q.right - 3, q.top + q.height / 2]; }, id);
+          await pg.touchscreen.tap(r[0], r[1]); await pg.waitForTimeout(500);
+          taps[id] = await pg.evaluate(() => ({ loupe: document.getElementById('cherche-plan').dataset.ouvert, dlg: [...document.querySelectorAll('dialog[open]')].map(d => d.id).join() }));
+          taps[id].attendu = dlg;
+          await pg.keyboard.press('Escape'); await pg.waitForTimeout(350);
+        }
+        verifier('R1-4, 390 px : un toucher à 3 px du bord droit du ⚙ ouvre l’administration, à 3 px du bord droit de Vue d’ensemble sa fenêtre — plus la loupe ni l’Aide',
+          Object.values(taps).every(t => t.loupe === 'false' && t.dlg === t.attendu), JSON.stringify(taps));
+      }
+      await pg.__ctx.close();
+    }
+
+    /* R1-5 : la loupe a le dessin de ses trois voisines — même cercle, même
+       taille (34, 32 puis 28 px), même glyphe, même survol. */
+    for (const [w, schema] of [[1440, 'light'], [1440, 'dark'], [700, 'light'], [600, 'dark'], [400, 'light']]) {
+      const pg = await vivR1({ largeur: w, hauteur: 900, schema, etiquette: 'loupe ' + w + ' ' + schema });
+      await pg.evaluate(() => window.scrollTo(0, 1500)); await pg.waitForTimeout(300);
+      const style = id => pg.evaluate(id => { const e = document.getElementById(id), c = getComputedStyle(e), r = e.getBoundingClientRect();
+        return { l: Math.round(r.width), h: Math.round(r.height), haut: Math.round(r.top), bord: c.borderTopColor, fond: c.backgroundColor, encre: c.color, glyphe: Math.round(e.querySelector('svg').getBoundingClientRect().width) }; }, id);
+      const loupe = await style('cherche-plan-ouvrir'), aide = await style('ouvrir-aide');
+      let survol = null;
+      if (w === 1440) {
+        const centre = id => pg.evaluate(id => { const r = document.getElementById(id).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, id);
+        await pg.mouse.move(...await centre('cherche-plan-ouvrir')); await pg.waitForTimeout(250);
+        const sl = await style('cherche-plan-ouvrir');
+        await pg.mouse.move(...await centre('ouvrir-aide')); await pg.waitForTimeout(250);
+        const sa = await style('ouvrir-aide');
+        survol = { loupe: sl, aide: sa };
+      }
+      const pareil = (a, b) => a.l === b.l && a.h === b.h && a.haut === b.haut && a.bord === b.bord && a.fond === b.fond && a.encre === b.encre && a.glyphe === b.glyphe;
+      verifier('R1-5, ' + w + ' px, ' + schema + ' : la loupe a le dessin des icônes de son groupe (taille, cercle, fond, glyphe' + (survol ? ', survol' : '') + ') — elle avait un cercle plus foncé, un anneau noir au survol, 34 px à côté d’icônes de 32',
+        pareil(loupe, aide) && loupe.l === (w > 720 ? 34 : w > 480 ? 32 : 28) && (!survol || (pareil(survol.loupe, survol.aide) && survol.loupe.fond !== loupe.fond)), JSON.stringify({ loupe, aide, survol }));
+      await pg.__ctx.close();
+    }
+
+    /* R1-8 : « 01 Synthèse » cliqué marque « 01 Synthèse » (il marquait la
+       Tendance, toujours plus grande à l'écran) ; à l'ouverture sur un grand
+       écran aussi ; chaque lien cliqué marque le sien. */
+    for (const [w, h, schema] of [[1440, 900, 'light'], [1920, 1080, 'dark']]) {
+      const pg = await vivR1({ largeur: w, hauteur: h, schema, etiquette: 'marque ' + w });
+      const marque = () => pg.evaluate(() => (document.querySelector('#sommaire-liste a[aria-current]') || { dataset: {} }).dataset.chapitre || null);
+      const charge = await marque();
+      const clics = {};
+      for (const id of ['section-synthese', 'section-tendance', 'section-journal', 'section-repartition', 'section-plans', 'rapprochement']) {
+        await pg.evaluate(() => window.scrollTo(0, 3000)); await pg.waitForTimeout(300);
+        await pg.click('#sommaire-liste a[data-chapitre="' + id + '"]'); await pg.waitForTimeout(1300);
+        clics[id] = await marque();
+      }
+      let main = null;
+      if (w === 1440) {
+        main = [];
+        for (const y of [40, 120, 200, 280]) { await pg.evaluate(y => window.scrollTo(0, y), y); await pg.waitForTimeout(150); main.push(await marque()); }
+      }
+      verifier('R1-8, ' + w + ' × ' + h + ' : « 01 Synthèse » cliqué marque la Synthèse (plus « 02 Tendance ») ; chacun des six liens cliqués marque le sien ; à l’ouverture, la Synthèse' + (main ? ' ; en descendant à la main tant que la Synthèse occupe le haut de l’écran, elle reste marquée' : ''),
+        charge === 'section-synthese' && Object.keys(clics).every(k => clics[k] === k) && (!main || main.every(m => m === 'section-synthese')), JSON.stringify({ charge, clics, main }));
+      await pg.__ctx.close();
+    }
+
+    /* R1-16 : la loupe ouverte avec du texte se replie dès que le focus la
+       quitte — Tab et Maj+Tab menaient à des liens et des icônes cachés sous
+       le champ ; le texte revient à la réouverture. */
+    for (const [w, h, schema, mob] of [[1440, 900, 'light', false], [390, 844, 'dark', true]]) {
+      const pg = await vivR1({ largeur: w, hauteur: h, schema, mobile: mob, etiquette: 'tab loupe ' + w });
+      await pg.evaluate(() => window.scrollTo(0, 2500)); await pg.waitForTimeout(300);
+      const parcours = {};
+      for (const sens of ['Shift+Tab', 'Tab']) {
+        await pg.evaluate(() => { document.getElementById('cherche-plan-champ').value = ''; if (document.getElementById('cherche-plan').dataset.ouvert === 'true') document.getElementById('cherche-plan-fermer').click(); });
+        await pg.waitForTimeout(150);
+        await pg.evaluate(() => document.getElementById('cherche-plan-ouvrir').focus({ preventScroll: true }));
+        await pg.keyboard.press('Enter'); await pg.waitForTimeout(250);
+        await pg.keyboard.type('GAE213'); await pg.waitForTimeout(400);
+        const pas = [];
+        /* Tab : d'abord la croix, dans la loupe (elle reste ouverte). */
+        if (sens === 'Tab') { await pg.keyboard.press('Tab'); await pg.waitForTimeout(200); pas.push(await focusVuR1(pg)); }
+        for (let k = 0; k < 2; k++) { await pg.keyboard.press(sens); await pg.waitForTimeout(250); pas.push(await focusVuR1(pg)); }
+        parcours[sens] = pas;
+      }
+      await pg.evaluate(() => document.getElementById('cherche-plan-ouvrir').click()); await pg.waitForTimeout(250);
+      const reouvert = await pg.evaluate(() => ({ actif: document.activeElement.id, v: document.getElementById('cherche-plan-champ').value, y: Math.round(scrollY) }));
+      const st = parcours['Shift+Tab'], t = parcours['Tab'];
+      verifier('R1-16, ' + schema + ', ' + w + ' px : loupe ouverte avec « GAE213 », Maj+Tab replie la loupe — le focus sur le ⚙ puis « Comparaison », visibles (ils étaient cachés sous le champ)',
+        st[0].actif === 'ouvrir-admin' && st[1].actif === 'rapprochement' && st.every(p => p.vu && p.ouvert === 'false'), JSON.stringify(st));
+      verifier('R1-16, ' + schema + ', ' + w + ' px : Tab va sur la croix (la loupe ouverte), puis la replie — Vue d’ensemble puis Aide, visibles ; à la réouverture, « GAE213 » est toujours là',
+        t[0].actif === 'cherche-plan-fermer' && t[0].vu && t[0].ouvert === 'true' && t[1].actif === 'voir-ensemble' && t[2].actif === 'ouvrir-aide' && t.slice(1).every(p => p.vu && p.ouvert === 'false') &&
+        reouvert.actif === 'cherche-plan-champ' && reouvert.v === 'GAE213', JSON.stringify({ t, reouvert }));
+      await pg.__ctx.close();
+    }
+
+    /* R1-24 : chaque icône du sommaire a le même nom pour les lecteurs
+       d'écran (et la commande vocale) que dans sa bulle — « Vue d’ensemble
+       des contrats » se disait « Vue d’ensemble ». */
+    {
+      const pg = await vivR1({ largeur: 1440, hauteur: 900, etiquette: 'noms' });
+      const noms = {};
+      for (const id of ['ouvrir-admin', 'cherche-plan-ouvrir', 'voir-ensemble', 'ouvrir-aide']) {
+        const nom = await pg.evaluate(id => document.getElementById(id).dataset.nom, id);
+        noms[id] = { nom, trouve: await pg.getByRole('button', { name: nom, exact: true }).count() };
+      }
+      verifier('R1-24 : le nom de chaque icône du sommaire pour les lecteurs d’écran est celui de sa bulle (Administration, Chercher un plan, Vue d’ensemble des contrats, Aide)',
+        Object.values(noms).every(n => n.nom && n.trouve === 1) && noms['voir-ensemble'].nom === 'Vue d’ensemble des contrats', JSON.stringify(noms));
+      await pg.__ctx.close();
+    }
+    try { fsR1.unlinkSync(fichierR1); } catch (e) { /* déjà parti */ }
+  }
   /* (fin du lot R1) */
 
 
