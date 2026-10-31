@@ -12997,7 +12997,7 @@ async function deplierFiltresColonne(pg) {
     await e.click('#voir-ensemble');
     await e.waitForFunction(() => document.querySelectorAll('#ensemble tbody tr').length > 0, null, { timeout: 15000 }).catch(() => {});
     await e.waitForTimeout(400);
-    const avant = await e.evaluate(() => scrollY);
+    const avant = await e.evaluate(() => scrollY);       // 600 demandés, 601 obtenus : on compare à ce qui est
     const centre = await e.evaluate(() => { const r = document.getElementById('ensemble').getBoundingClientRect(); return { x: r.left + r.width / 2, haut: r.top + 30, milieu: r.top + r.height / 2 }; });
     await e.mouse.move(centre.x, centre.haut); await e.mouse.wheel(0, 900); await e.waitForTimeout(500);
     await e.mouse.move(centre.x, centre.milieu); await e.mouse.wheel(0, 1500); await e.waitForTimeout(500);
@@ -13007,9 +13007,9 @@ async function deplierFiltresColonne(pg) {
     await e.evaluate(() => window.scrollBy(0, 300)); await e.waitForTimeout(300);
     const libre = await e.evaluate(() => scrollY);
     verifier('Vue d’ensemble ouverte (1440 px) : la molette, sur son titre comme sur sa liste, ne fait pas défiler la page derrière',
-      avant === 600 && pendant.ouverte && pendant.verrou && pendant.y === 600, JSON.stringify({ avant, pendant }));
+      avant > 500 && pendant.ouverte && pendant.verrou && pendant.y === avant, JSON.stringify({ avant, pendant }));
     verifier('Vue d’ensemble fermée : la page est où on l’avait laissée, défile de nouveau, et le focus revient au bouton',
-      apres.y === 600 && !apres.verrou && libre > 600 && apres.focus === 'voir-ensemble', JSON.stringify({ apres, libre }));
+      apres.y === avant && !apres.verrou && libre > avant && apres.focus === 'voir-ensemble', JSON.stringify({ apres, libre }));
     await cE.close();
   }
   /* (fin du lot R3) */
