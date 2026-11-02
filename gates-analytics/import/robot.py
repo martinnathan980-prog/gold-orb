@@ -28,7 +28,7 @@ Ses fichiers vivent dans %LOCALAPPDATA%\\SuiviFWD (ailleurs : ~/.suivi-fwd) :
     journal.txt         ce qu'il a fait, jour par jour
     dernier-passage.txt le passage du jour (« ok » : plus rien jusqu'à demain)
     essais-du-jour.txt  combien de passages ratés aujourd'hui (trois au plus, à 20 min)
-    en-cours.txt        un passage est en route : un second attend son tour
+    en-cours.txt        le verrou d'un passage en route (tombe de lui-même si le robot s'arrête)
 """
 
 import base64
@@ -88,38 +88,51 @@ def noter(texte):
 
 @contextlib.contextmanager
 def verrou(silencieux=False):
-    """Un seul robot à la fois : un passage du matin qui part pendant qu'on
-    apprend un export, ou l'ouverture de session et le retour devant l'écran
-    presque ensemble, se marcheraient dessus (même fenêtre, même profil).
-    Le second voit le passage en route et s'en va. Un verrou de plus de deux
-    heures est celui d'un passage coupé net (ordinateur éteint) : il ne
-    bloque plus rien."""
+    """Un seul robot à la fois : un passage automatique qui part pendant qu'on
+    apprend un export, ou deux déclenchements presque ensemble, se
+    marcheraient dessus (même fenêtre, même profil). Le second voit le
+    passage en route et s'en va.
+
+    Le verrou est celui du système (Windows : msvcrt.locking ; ailleurs :
+    flock), posé sur en-cours.txt : il tombe de lui-même dès que le robot
+    s'arrête, de quelque façon que ce soit — fenêtre noire fermée par sa
+    croix, ordinateur éteint en plein passage. (Un simple fichier posé puis
+    effacé restait derrière un robot arrêté net, et bloquait tout.)"""
     f = racine() / 'en-cours.txt'
-    for _ in range(2):
+    fh = open(f, 'a+')
+    try:
         try:
-            fd = os.open(str(f), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError:
-            try:
-                age = time.time() - f.stat().st_mtime
-            except OSError:
-                continue
-            if age > 2 * 3600:
-                with contextlib.suppress(OSError):
-                    f.unlink()
-                continue
+            if os.name == 'nt':
+                import msvcrt
+                fh.seek(0)
+                msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
             if not silencieux:
-                print('Le robot travaille déjà (depuis %d min). Réessayez quand il a fini.' % (age // 60 + 1))
+                try:
+                    age = int((time.time() - f.stat().st_mtime) // 60) + 1
+                except OSError:
+                    age = 0
+                print('Le robot travaille déjà (depuis %d min) : sa fenêtre est ouverte. Réessayez quand il a fini.' % age)
             yield False
             return
-        os.write(fd, ('%d %s' % (os.getpid(), datetime.datetime.now().isoformat(timespec='seconds'))).encode())
-        os.close(fd)
+        with contextlib.suppress(OSError):
+            os.utime(f)                        # l'heure du début, pour « depuis … min »
         try:
             yield True
         finally:
             with contextlib.suppress(OSError):
-                f.unlink()
-        return
-    yield False
+                if os.name == 'nt':
+                    import msvcrt
+                    fh.seek(0)
+                    msvcrt.locking(fh.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+    finally:
+        fh.close()
 
 
 def nom_de_fichier(nom):

@@ -9,8 +9,8 @@ Batterie du robot, sans navigateur ni Windows : ce qui décide QUAND il passe.
   quels que soient les redémarrages et les ouvertures de session ;
 — raté, il réessaie lui-même, trois passages au plus par jour, et ne le
   dit (une petite fenêtre) qu'après le dernier ;
-— jamais deux robots à la fois (verrou), et un verrou laissé par un
-  ordinateur éteint en plein passage ne bloque pas le lendemain ;
+— jamais deux robots à la fois (verrou du système), et un robot arrêté net
+  (fenêtre noire fermée par sa croix, ordinateur éteint) ne bloque rien ;
 — la tâche planifiée de Windows : un XML bien formé, trois déclencheurs
   (ouverture de session, déverrouillage, heure du matin), une seule
   instance, l'heure manquée rattrapée ;
@@ -136,18 +136,38 @@ remettre(); appels.clear()
 robot._passage = passage_reussi
 with robot.verrou() as libre:
     verifier('le premier prend le verrou', libre is True)
-    verifier('le verrou est posé (en-cours.txt)', (R / 'en-cours.txt').exists())
     robot.lancer(auto=True)
     verifier('pendant un passage (ou « apprendre »), le passage automatique s’en va sans rien faire', nb('passage') == 0 and nb('prevenu') == 0, appels)
     verifier('… et « Lancer maintenant » le dit (code 1)', robot.lancer(auto=False) == 1)
     with robot.verrou(silencieux=True) as second:
         verifier('un second verrou est refusé', second is False)
-verifier('le verrou est rendu à la fin', not (R / 'en-cours.txt').exists())
-(R / 'en-cours.txt').write_text('1234 hier', encoding='utf-8')
-vieux = datetime.datetime.now().timestamp() - 3 * 3600
-os.utime(R / 'en-cours.txt', (vieux, vieux))
+
+
+def libre_maintenant():
+    with robot.verrou(silencieux=True) as ok:
+        return ok
+
+
+verifier('le verrou est rendu à la fin', libre_maintenant() is True)
+(R / 'en-cours.txt').write_text('1234 2026-11-02T09:12:00', encoding='utf-8')   # laissé par la version d'avant
+verifier('un ancien fichier en-cours.txt (robot arrêté net avec la version d’avant) ne bloque rien', libre_maintenant() is True)
+
+# Un robot arrêté net : un autre programme prend le verrou, puis il est tué (la croix de la fenêtre noire).
+import signal  # noqa: E402
+import subprocess  # noqa: E402
+tenu = subprocess.Popen([sys.executable, '-c',
+                         'import os,sys,time; os.environ["LOCALAPPDATA"]=%r; sys.path.insert(0,%r); import robot\n'
+                         'with robot.verrou() as ok:\n    print("tenu" if ok else "refuse", flush=True); time.sleep(60)'
+                         % (DOSSIER, str(pathlib.Path(__file__).resolve().parent))], stdout=subprocess.PIPE, text=True)
+verifier('un autre robot en route tient le verrou', tenu.stdout.readline().strip() == 'tenu' and libre_maintenant() is False)
+appels.clear()
 robot.lancer(auto=True)
-verifier('un verrou de plus de deux heures (ordinateur éteint en plein passage) ne bloque plus', nb('passage') == 1, appels)
+verifier('… et le passage automatique s’en va sans rien faire', nb('passage') == 0, appels)
+tenu.send_signal(signal.SIGKILL if hasattr(signal, 'SIGKILL') else signal.SIGTERM)
+tenu.wait(10)
+verifier('ce robot tué net (fenêtre fermée par sa croix) : le verrou tombe aussitôt', libre_maintenant() is True)
+robot.lancer(auto=True)
+verifier('… et le robot repart', nb('passage') == 1, appels)
 
 
 def boum(auto):
@@ -160,7 +180,7 @@ try:
     robot.lancer(auto=True)
 except RuntimeError:
     pass
-verifier('une panne imprévue rend quand même le verrou', not (R / 'en-cours.txt').exists())
+verifier('une panne imprévue rend quand même le verrou', libre_maintenant() is True)
 
 print('\n— La tâche planifiée de Windows —')
 x = robot.xml_tache('08:15', r'C:\Program Files\Python312\pythonw.exe', r'"C:\Users\nathan\Suivi FWD & co\robot.py" auto',
