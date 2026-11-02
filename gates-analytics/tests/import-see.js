@@ -495,7 +495,7 @@ const paquetSansDate = o => { const x = JSON.parse(JSON.stringify(o)); delete x.
     const jeton = jetonDe(ctx);
     ctx.__sansInterface = true;
     const fonctions = ['importerSecondeBase', 'importSecondeBaseDebut', 'importSecondeBaseLot', 'importSecondeBaseFin', 'importSecondeBaseAbandon',
-      'importVerifierNouveauContrat', 'importArchiverReleve', 'importContrats', 'importEnregistrerPsn'];
+      'importVerifierNouveauContrat', 'importArchiverReleve', 'importContrats', 'importEnregistrerPsn', 'importRapport'];
     const refus = fonctions.map(n => {
       try { ctx[n]('faux-jeton-123', 'HDK', 3, 5); return n + ':passe'; } catch (e) { return /Geste refusé/.test(e.message) ? '' : n + ':' + e.message; }
     }).filter(Boolean);
@@ -603,9 +603,10 @@ const paquetSansDate = o => { const x = JSON.parse(JSON.stringify(o)); delete x.
       avant.rapprochement.lignes.length === 1 && apres.rapprochement.lignes.length === n && apres.rapprochement.filtre === 'PSN 4530 · WD',
       avant.rapprochement.lignes.length + ' → ' + apres.rapprochement.lignes.length);
     verifier('THS reste sans base, intact', !c.getSheetByName('SEE THS') && !!c.getSheetByName('THS'));
-    verifier('la fenêtre n’a appelé que les gestes prévus, en ordre : le début, les lots, la fin, puis la liste des contrats relue — rien pour deviner',
-      page.__appels[0] === 'importSecondeBaseDebut' && page.__appels[page.__appels.length - 2] === 'importSecondeBaseFin' &&
-      page.__appels[page.__appels.length - 1] === 'importContrats' && page.__appels.slice(1, -2).every(x => x === 'importSecondeBaseLot'), page.__appels.join(','));
+    verifier('la fenêtre n’a appelé que les gestes prévus, en ordre : le début, les lots, la fin, son compte rendu (débrief 30), puis la liste des contrats relue — rien pour deviner',
+      page.__appels[0] === 'importSecondeBaseDebut' && page.__appels[page.__appels.length - 3] === 'importSecondeBaseFin' &&
+      page.__appels[page.__appels.length - 2] === 'importRapport' &&
+      page.__appels[page.__appels.length - 1] === 'importContrats' && page.__appels.slice(1, -3).every(x => x === 'importSecondeBaseLot'), page.__appels.join(','));
     verifier('débrief 23 : l’import fait, la fenêtre lance une fois le préchauffage du tableau de bord, sans l’attendre (« Fermer » reste libre)',
       page.__prechauffages === 1 && !(await page.evaluate(() => document.getElementById('fermer').disabled)), String(page.__prechauffages));
     const apresImport = await laCase(page, 'see');
@@ -632,8 +633,8 @@ const paquetSansDate = o => { const x = JSON.parse(JSON.stringify(o)); delete x.
     verifier('un seul contrat, sans base : l’onglet créé est « SEE HDK », le nom du contrat — jamais « SEE » tout court',
       porteur(l, 'HDK').part === '— 10 lignes WD → créera « SEE HDK »' && /\bok\b/.test(r.etat.classe) && !!seul.getSheetByName('SEE HDK') && !seul.getSheetByName('SEE') &&
       nomsOnglets(seul)[nomsOnglets(seul).length - 1] === 'SEE HDK', JSON.stringify(l.porteurs) + ' / ' + nomsOnglets(seul).join(', '));
-    verifier('rien à deviner, rien à demander au serveur avant : le début, le lot, la fin, la liste relue',
-      page.__appels.join() === 'importSecondeBaseDebut,importSecondeBaseLot,importSecondeBaseFin,importContrats', page.__appels.join());
+    verifier('rien à deviner, rien à demander au serveur avant : le début, le lot, la fin, le compte rendu, la liste relue',
+      page.__appels.join() === 'importSecondeBaseDebut,importSecondeBaseLot,importSecondeBaseFin,importRapport,importContrats', page.__appels.join());
     await page.close();
 
     const inverse = classeur({ ths: true, autres: [new Feuille('HDK SEE', [['NAME', 'SOL.', 'Cust.V'], ['OLD', '1', 'A']])] });
@@ -1022,7 +1023,7 @@ const paquetSansDate = o => { const x = JSON.parse(JSON.stringify(o)); delete x.
     const r = await importer(page, 'see.xlsx', seeXlsx(9000));
     verifier('un classeur presque plein : refusé avant tout envoi, avec les nombres et quoi faire, rien de créé',
       /erreur/.test(r.etat.classe) && /limite de Google Sheets : 10 millions de cellules/.test(r.etat.texte) && /supprimer les onglets/.test(r.etat.texte) &&
-      page.__appels.filter(x => x !== 'importContrats').join() === 'importSecondeBaseDebut' && sansImport(c) && !c.getSheetByName('SEE HDK'), r.etat.texte);
+      page.__appels.filter(x => x !== 'importContrats' && x !== 'importRapport').join() === 'importSecondeBaseDebut' && sansImport(c) && !c.getSheetByName('SEE HDK'), r.etat.texte);
     await page.close();
     /* L'onglet remplacé s'en ira : il ne compte pas dans le classeur d'après ; mais le temps de l'import, l'ancien et le nouveau coexistent. */
     const c2 = classeur({ autres: [new Feuille('Archives', [['x']])] });
@@ -1190,7 +1191,7 @@ const paquetSansDate = o => { const x = JSON.parse(JSON.stringify(o)); delete x.
     verifier('l’historique, rangé sous le nom de l’onglet, est intact (case « Archiver » décochée) et se lit toujours',
       JSON.stringify(importe.getSheetByName('Historique_FWD_HDK').valeurs) === histoAvant && ctx.getHistorique(importe, 'HDK').length === 1);
     verifier('la fenêtre n’a appelé que le début, les lots et la fin — rien à deviner, pas d’archivage',
-      page.__appels[0] === 'importSecondeBaseDebut' && page.__appels.slice(-2).join() === 'importSecondeBaseFin,importContrats' && page.__appels.indexOf('importArchiverReleve') === -1 &&
+      page.__appels[0] === 'importSecondeBaseDebut' && page.__appels.slice(-3).join() === 'importSecondeBaseFin,importRapport,importContrats' && page.__appels.indexOf('importArchiverReleve') === -1 &&
       page.__cibles[0] === JSON.stringify({ sorte: 'gates', contrat: 'HDK', nouveau: false }), page.__appels.join() + ' ' + page.__cibles.join());
     await page.close();
   }
@@ -2960,6 +2961,151 @@ const paquetSansDate = o => { const x = JSON.parse(JSON.stringify(o)); delete x.
       d5.indexOf('   « THS » n’a pas de PSN : la fenêtre d’import ne lui fera pas de base SEE tant qu’il n’est pas donné — ' + IMPORT_MENU +
         ' : taper le PSN de « THS » dans la case SEE (il y est gardé), ou le mettre dans CONFIG.RAPPROCHEMENT.PSN.') !== -1 &&
       !d5.some(x => /« HDK » n’a pas de PSN/.test(x)), d5.filter(x => /PSN/.test(x)).join(' / '));
+  }
+
+  // =================================================================
+  /* Débrief 30 : un contrat ajouté dans le tableau de bord (Administration →
+     Contrats) est « prévu » : la fenêtre lui ouvre sa case, « GATES VRK »,
+     et son premier export y crée son onglet avec les colonnes de sa fiche —
+     sans rien taper ni choisir. Après chaque import, la fenêtre envoie son
+     compte rendu ; le robot envoie le sien par le pont (#pont-robot), depuis
+     son monde isolé où google.script.run n'existe pas. */
+  section('Débrief 30 : un contrat prévu, le compte rendu, le pont du robot');
+  {
+    const administre = ctx => {
+      ctx.__emailScript = 'nathan@airbus.com';
+      ctx.__emailLecteur = 'nathan@airbus.com';
+      return ctx;
+    };
+    const attributs = (page, id) => page.evaluate(i => {
+      const el = document.querySelector('[data-case="' + i + '"]');
+      if (!el) return null;
+      const a = {};
+      ['data-contrat', 'data-nom-gates', 'data-prevu', 'data-code', 'data-etat', 'class'].forEach(n => { a[n] = el.getAttribute(n); });
+      a.etiquette = el.querySelector('.etiquette').textContent;
+      a.badge = el.querySelector('.prevu-badge') ? el.querySelector('.prevu-badge').textContent : null;
+      a.invite = el.querySelector('.invite').textContent;
+      a.colonnes = !el.querySelector('.colonnes') || el.querySelector('.colonnes').hidden;
+      return a;
+    }, id);
+    /* Ce que le robot lit (import/robot.py, lire_tableau) : le même JS, à la lettre. */
+    const LIRE_TABLEAU = '(function(){var t=function(e){return e?e.textContent.replace(/\\s+/g," ").trim():"";};' +
+      'return {cases:[].map.call(document.querySelectorAll(".case:not(.nouvelle) .etiquette"),t),' +
+      'contrats:[].map.call(document.querySelectorAll(".case.gates:not(.nouvelle)"),function(k){' +
+      'return {contrat:k.getAttribute("data-contrat")||"",case:t(k.querySelector(".etiquette")),' +
+      'nom_gates:k.getAttribute("data-nom-gates")||"",prevu:k.getAttribute("data-prevu")==="1"};})};})()';
+
+    const c = new Classeur([ongletGates('HDK', gates(40))]);
+    c.proprietaire = 'nathan@airbus.com';
+    const ctx = administre(serveur(c));
+    const VRK_ELEC = 'VRK AA 011 > Avancement Définition Electrique';
+    ctx.adminEnregistrerContrat({ id: '', nom: '', nomGates: 'VRK', colonnes: { fwd: VRK_ELEC, concept: '' }, psn: '4540' });
+    const colonnesAvant = JSON.stringify(ctx.colonnesDuContrat('VRK'));
+    const page = await fenetre(ctx, rapide);
+    let a = await attributs(page, 'g:VRK'), h = await attributs(page, 'g:HDK');
+    verifier('la case du prévu : étiquette « GATES VRK » exactement, la mention « prévu » à côté ; data-contrat, data-nom-gates, data-prevu ; ni « nouvelle », ni listes de colonnes',
+      a && a.etiquette === 'GATES VRK' && a.badge === 'prévu' && a['data-contrat'] === 'VRK' && a['data-nom-gates'] === 'VRK' && a['data-prevu'] === '1' &&
+      a['class'] === 'case gates prevue' && a.colonnes === true &&
+      a.invite === 'glisser ici le premier export GATES de VRK — son onglet sera créé avec les colonnes de sa fiche — ou', JSON.stringify(a));
+    verifier('la case de HDK ne change pas : « GATES HDK », data-case g:HDK, data-contrat HDK, nom GATES vide, pas prévu',
+      h && h.etiquette === 'GATES HDK' && h['data-contrat'] === 'HDK' && h['data-nom-gates'] === '' && h['data-prevu'] === null && h['class'] === 'case gates',
+      JSON.stringify(h));
+    const lu = await page.evaluate(LIRE_TABLEAU);
+    verifier('le JS du robot (lire_tableau) lit les cases et les contrats, avec leur nom GATES et le prévu',
+      JSON.stringify(lu.cases) === JSON.stringify(['GATES HDK', 'GATES VRK', 'SEE']) &&
+      JSON.stringify(lu.contrats) === JSON.stringify([{ contrat: 'HDK', case: 'GATES HDK', nom_gates: '', prevu: false }, { contrat: 'VRK', case: 'GATES VRK', nom_gates: 'VRK', prevu: true }]),
+      JSON.stringify(lu));
+    await page.evaluate(() => document.body.setAttribute('data-robot', '1'));
+    let k = await poser(page, 'g:VRK', [{ nom: 'Export VRK.xlsx', contenu: xlsxGates(gates(25, { prefixe: 'VRK', groupe: 'VRK' })) }]);
+    verifier('l’export de VRK lu : « Créera l’onglet « VRK » : un contrat prévu… », sans liste de colonnes à choisir',
+      k.etat === 'lu' && k.cible === 'Créera l’onglet « VRK » : un contrat prévu dans le tableau de bord, qui suivra la validation ELEC « VRK AA 011 › Avancement Définition Electrique ».' &&
+      (await attributs(page, 'g:VRK')).colonnes === true, JSON.stringify(k));
+    /* L'extract SEE de tous les porteurs : 20 lignes de HDK (4530), 15 de VRK (4540), 5 d'une autre machine. */
+    const tri = i => i < 20 ? { psn: '4530', type: 'WD' } : i < 35 ? { psn: '4540', type: 'WD' } : { psn: '4700', type: 'WD' };
+    k = await poser(page, 'see', [{ nom: 'Nommage WD BFLOW.xlsx', contenu: seeComplet(40, tri) }]);
+    verifier('la case SEE a la ligne du prévu, « VRK (prévu) », son PSN de la fiche (4540), sans rien taper : 15 lignes → « SEE VRK »',
+      porteur(k, 'VRK').psn === '4540' && porteur(k, 'VRK').part === '— 15 lignes WD → créera « SEE VRK »' &&
+      (await page.textContent('[data-case="see"] .porteur[data-contrat="VRK"] .contrat')) === 'VRK (prévu)', JSON.stringify(k.porteurs));
+    let ui = await fenetreEtat(page);
+    verifier('« Importer » est prêt, rien à choisir', !ui.desactive, ui.blocage);
+    page.__appels = [];
+    const r = await lancer(page);
+    const etat = await page.evaluate(() => ({ rapport: document.getElementById('etat').getAttribute('data-rapport'), codes: document.getElementById('etat').getAttribute('data-codes') }));
+    verifier('importé : l’onglet « VRK » créé (cible « prévu », sans colonnes envoyées), le relevé archivé, « SEE VRK » a ses 15 lignes',
+      /\bok\b/.test(r.classe) && !!c.getSheetByName('VRK') && page.__cibles.indexOf(JSON.stringify({ sorte: 'gates', contrat: 'VRK', nouveau: true, prevu: true })) !== -1 &&
+      /onglet « VRK » créé \(nouveau contrat\)/.test(r.texte) && /Relevé .* archivé/.test(r.texte) && !!c.getSheetByName('SEE VRK') && c.getSheetByName('SEE VRK').valeurs.length === 17 &&
+      c.getSheetByName('SEE HDK').valeurs.length === 22, r.texte + ' / ' + page.__cibles.join(' | '));
+    verifier('les colonnes de la fiche n’ont pas bougé ; VRK n’est plus prévu', JSON.stringify(ctx.colonnesDuContrat('VRK')) === colonnesAvant && ctx.contratsPrevus_(c).length === 0 &&
+      ctx.listerContrats(c).map(x => x.id).join() === 'HDK,VRK');
+    const rap = ctx.rapportsEnregistres_();
+    verifier('le compte rendu de la fenêtre est arrivé : #etat[data-rapport="ok"], VRK et HDK au vert (plans, lignes)',
+      etat.rapport === 'ok' && etat.codes === '' && page.__appels.indexOf('importRapport') !== -1 && page.__appels.indexOf('importRapport') < page.__appels.lastIndexOf('importContrats') &&
+      rap.contrats.VRK.gates.ok === true && rap.contrats.VRK.gates.plans === 25 && rap.contrats.VRK.see.ok === true && rap.contrats.VRK.see.lignes === 15 &&
+      rap.contrats.HDK.see.ok === true && rap.contrats.HDK.see.lignes === 20 && !rap.contrats.HDK.gates, JSON.stringify([etat, rap.contrats]));
+    a = await attributs(page, 'g:VRK');
+    verifier('après relecture, la case de VRK est celle d’un contrat : data-case g:VRK, plus de data-prevu ni de mention, son résultat gardé',
+      a && a['data-prevu'] === null && a.badge === null && a['class'] === 'case gates' && a['data-etat'] === 'fait' && a.etiquette === 'GATES VRK' &&
+      (await fenetreEtat(page)).cases.join() === 'g:HDK,g:VRK,see', JSON.stringify([a, (await fenetreEtat(page)).cases]));
+    const suivi = ctx.adminContrats().actifs.filter(x => x.id === 'VRK')[0].suivi;
+    verifier('l’administration le dit : « Mis à jour aujourd’hui à … »', suivi.niveau === 'ok' && /^Mis à jour aujourd’hui à \d+ h \d\d$/.test(suivi.lignes[0]), JSON.stringify(suivi));
+
+    /* Le pont : le compte rendu du robot, écrit et envoyé depuis un monde isolé, comme le robot le fait. */
+    const cdp = await page.context().newCDPSession(page);
+    const { frameTree } = await cdp.send('Page.getFrameTree');
+    const monde = await cdp.send('Page.createIsolatedWorld', { frameId: frameTree.frame.id, worldName: 'robot' });
+    const isole = async expr => (await cdp.send('Runtime.evaluate', { contextId: monde.executionContextId, expression: expr, returnByValue: true })).result.value;
+    const rapportRobot = { source: 'robot', passage: { ok: true, message: '', heure: '14:00', debut: new Date().toISOString(), erreursFiche: 0 },
+                           contrats: [{ contrat: 'HDK', gates: { tape: 'HDK' } }, { contrat: 'VRK', gates: { tape: 'VRK' } }] };
+    const vu = await isole('typeof google + "|" + (document.getElementById("pont-robot") ? "pont" : "")');
+    await isole('(function(){var t=document.getElementById("pont-robot-rapport");t.value=' + JSON.stringify(JSON.stringify(rapportRobot)) +
+      ';document.getElementById("pont-robot-envoyer").click();return true;})()');
+    await page.waitForFunction(() => /^(ok|erreur)$/.test(document.getElementById('pont-robot').getAttribute('data-etat') || ''), null, { timeout: 30000 });
+    const pont = await page.evaluate(() => document.getElementById('pont-robot').getAttribute('data-etat'));
+    const rap2 = ctx.rapportsEnregistres_();
+    verifier('le pont : depuis un monde isolé (sans google.script.run), le robot écrit son compte rendu et clique — data-etat « ok », le passage gardé, les « tape » aussi, l’import du jour intact',
+      vu === 'undefined|pont' && pont === 'ok' && rap2.robot && rap2.robot.ok === true && rap2.robot.heure === '14:00' && rap2.contrats.HDK.gates.tape === 'HDK' &&
+      rap2.contrats.VRK.gates.tape === 'VRK' && rap2.contrats.VRK.gates.ok === true, JSON.stringify([vu, pont, rap2]));
+    await isole('(function(){document.getElementById("pont-robot-rapport").value="pas du json";document.getElementById("pont-robot-envoyer").click();return true;})()');
+    const illisible = await page.evaluate(() => ({ etat: document.getElementById('pont-robot').getAttribute('data-etat'), message: document.getElementById('pont-robot').getAttribute('data-message') }));
+    verifier('un compte rendu illisible : data-etat « erreur », « rapport illisible », rien n’est envoyé', illisible.etat === 'erreur' && illisible.message === 'rapport illisible',
+      JSON.stringify(illisible));
+    const pontCache = await page.evaluate(() => { const p = document.getElementById('pont-robot'); return p.hidden && p.getBoundingClientRect().height === 0; });
+    verifier('le pont ne se voit pas', pontCache);
+    await page.close();
+  }
+  {
+    /* Un prévu dont la colonne ELEC n'est pas dans son export ; un contrat dont le PSN n'a aucune ligne SEE. */
+    const c = new Classeur([ongletGates('HDK', gates(40)), ongletGates('THS', gates(30, { prefixe: 'THS' }))]);
+    c.proprietaire = 'nathan@airbus.com';
+    const ctx = serveur(c, psnGardes({ THS: ['4610'] }));
+    ctx.__emailScript = ctx.__emailLecteur = 'nathan@airbus.com';
+    ctx.adminEnregistrerContrat({ id: '', nomGates: 'NEO', colonnes: { fwd: 'NEO AA 011 > Avancement Definition Electrik' } });
+    const page = await fenetre(ctx, rapide);
+    let k = await poser(page, 'g:NEO', [{ nom: 'Export NEO.xlsx', contenu: xlsxGates(gates(15, { prefixe: 'NEO', groupe: 'NEO' })) }]);
+    const a = await page.evaluate(() => { const el = document.querySelector('[data-case="g:NEO"]'); return { etat: el.getAttribute('data-etat'), code: el.getAttribute('data-code') }; });
+    let ui = await fenetreEtat(page);
+    verifier('la colonne ELEC de la fiche n’est pas dans l’export : la case en erreur dès la lecture (data-code « colonne-elec »), avec les trois plus proches ; « Importer » attend',
+      a.etat === 'erreur' && a.code === 'colonne-elec' &&
+      k.lu === '✗ La colonne de la validation ELEC « NEO AA 011 › Avancement Definition Electrik » n’est pas dans cet export. Les plus proches : ' +
+        '« NEO AA 011 › Avancement Définition Electrique », « NEO AA 012 › Avancement Définition Electrique », « NEO AA 001 › Avancement Définition Electrique ». ' +
+        'Corrigez-la dans le tableau de bord → Administration → Contrats.' &&
+      ui.desactive && ui.blocage === 'Retirer « Export NEO.xlsx » de la case « GATES NEO », qui ne s’importe pas (✗) — ou y mettre le bon fichier.', JSON.stringify([a, k.lu, ui.blocage]));
+    await page.click('[data-case="g:NEO"] .retirer');
+    const apres = await page.evaluate(() => { const el = document.querySelector('[data-case="g:NEO"]'); return { etat: el.getAttribute('data-etat'), code: el.getAttribute('data-code') }; });
+    verifier('le fichier retiré : la case revient à vide, sans code', apres.etat === 'vide' && apres.code === null, JSON.stringify(apres));
+    /* L'extract : rien pour HDK (4530), 12 lignes pour THS (4610). */
+    k = await poser(page, 'see', [{ nom: 'Nommage WD BFLOW.xlsx', contenu: seeComplet(20, i => i < 12 ? { psn: '4610', type: 'WD' } : { psn: '4700', type: 'WD' }) }]);
+    ui = await fenetreEtat(page);
+    verifier('« Importer » repart', !ui.desactive && porteur(k, 'HDK').part.indexOf('— aucune ligne WD pour ce PSN') === 0, JSON.stringify([ui.blocage, k.porteurs]));
+    const r = await lancer(page);
+    const etat = await page.evaluate(() => ({ rapport: document.getElementById('etat').getAttribute('data-rapport'), codes: document.getElementById('etat').getAttribute('data-codes') }));
+    const rap = ctx.rapportsEnregistres_();
+    verifier('importé : THS a sa base ; pour HDK, aucune ligne — le compte rendu le dit en clair (data-codes « see-aucune »), et l’administration en rouge',
+      /\bok\b/.test(r.classe) && etat.rapport === 'ok' && etat.codes === 'see-aucune' && rap.contrats.HDK.see.ok === false && rap.contrats.HDK.see.code === 'see-aucune' &&
+      rap.contrats.HDK.see.message === 'Aucune ligne SEE pour le PSN 4530 dans l’extract du jour : vérifiez le PSN de ce contrat dans Administration → Contrats.' &&
+      rap.contrats.THS.see.ok === true && rap.contrats.THS.see.lignes === 12 && !rap.contrats.NEO &&
+      ctx.adminContrats().actifs.filter(x => x.id === 'HDK')[0].suivi.niveau === 'erreur', JSON.stringify([r.texte, etat, rap.contrats]));
+    await page.close();
   }
 
   await nav.close();

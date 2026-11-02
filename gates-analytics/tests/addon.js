@@ -771,8 +771,11 @@ function serveurSur(valeurs, proprietes, fichiers) {
        le jeton de la fenêtre d'import SEE (débrief 20), le PSN de chaque contrat tapé dans cette
        fenêtre (débrief 21), les temps des dernières ouvertures et l'état du préchauffage (débrief 23), les
        colonnes suivies choisies pour chaque contrat (débrief 25), les administrateurs, le responsable épinglé,
-       le journal des modifications et l'archivage coupé au menu (débrief 26). */
-    (fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8').match(/[gs]etProperty\(([A-Z_]+)/g) || []).every(x => /CLE_VERSION_DONNEES|CLE_CONSULTATIONS|CLE_JETON_IMPORT|CLE_PSN|CLE_MESURES|CLE_PRECHAUFFAGE|CLE_COLONNES|CLE_ROLES|CLE_ARCHIVAGE|CLE_PROPRIETAIRE|CLE_JOURNAL_ADMIN/.test(x)));
+       le journal des modifications et l'archivage coupé au menu (débrief 26), la fiche de chaque contrat et
+       les comptes rendus du robot et de la fenêtre (débrief 30). */
+    (fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8').match(/[gs]etProperty\(([A-Z_]+)/g) || []).every(x => /CLE_VERSION_DONNEES|CLE_CONSULTATIONS|CLE_JETON_IMPORT|CLE_PSN|CLE_MESURES|CLE_PRECHAUFFAGE|CLE_COLONNES|CLE_ROLES|CLE_ARCHIVAGE|CLE_PROPRIETAIRE|CLE_JOURNAL_ADMIN|CLE_FICHES|CLE_RAPPORTS/.test(x)) &&
+    /* Débrief 30 : les propriétés lues ou réécrites par le petit outil commun (objetDuClasseur_, changerObjetDuClasseur_) aussi. */
+    (fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8').match(/(?:changerO|o)bjetDuClasseur_\(([A-Z_]+)/g) || []).every(x => /CLE_FICHES|CLE_RAPPORTS|CLE_COLONNES|CLE_PSN/.test(x)));
   configurer([
     { semaine: '2026-s8', texte: '  Revue de définition  ' },
     { semaine: '2026-S02', texte: '' },
