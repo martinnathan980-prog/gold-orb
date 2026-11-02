@@ -899,7 +899,10 @@ def nom_de_cible(cible):
     son icône — « Export all », « icône file-excel » ; un champ, par son nom."""
     if cible.get('balise') in ('input', 'textarea', 'select'):
         return 'le champ « %s »' % (cible.get('etiquette') or cible.get('label') or cible.get('placeholder') or cible.get('nom') or '?')
-    nom = cible.get('texte') or cible.get('label') or cible.get('titre') or cible.get('bulle')
+    texte = cible.get('texte') or ''
+    if texte and not re.search(r'\w', texte):   # un simple symbole (« ⇩ », « ⋮ ») : son vrai nom d'abord
+        texte = cible.get('label') or cible.get('titre') or cible.get('bulle') or texte
+    nom = texte or cible.get('label') or cible.get('titre') or cible.get('bulle')
     if nom:
         return '« %s »' % nom
     if cible.get('icone'):
