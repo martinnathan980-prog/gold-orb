@@ -355,8 +355,11 @@ if exe:
     def taper(texte):
         return lambda: c.envoyer('Input.insertText', text=texte)
 
+    robot.DELAI_TROUVER = 10           # un élément introuvable : dit en 10 s, pas en 2 min
+
     def rejouer_sur(html, pas):
         c.ouvrir(page_de(html))
+        c.evaluer(robot.RESEAU_JS)
         try:
             for g in pas:
                 robot.faire_geste(c, g)
@@ -401,6 +404,39 @@ if exe:
         verifier('champ dans un composant à racine fantôme : appris, avec son nom « PSN »',
                  len(rempli) == 1 and rempli[0]['cible'].get('etiquette') == 'PSN', [(g['faire'], g['cible']) for g in pas])
         verifier('… et refait : « créé pour 4530 »', rejouer_sur(FANTOME, pas) == 'créé pour 4530')
+
+        # SEE après « Submit » : la page calcule, le bouton « Export all » (une icône) est grisé puis couvert, puis le menu XLSX.
+        CALCUL = ('<div class="ligne"><span>PSN</span><input></div><button id="submit">Submit</button><div id="zone"></div>'
+                  '<script>document.getElementById("submit").onclick=function(){var z=document.getElementById("zone");'
+                  'z.innerHTML=\'<div class="%(voile)s" style="position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,.2)"></div>\'+'
+                  '\'<button class="exp" %(gris)s mattooltip="Export all"><svg data-icon="file-export" width="16" height="16"><path d="M0 0h16v16H0z"/></svg></button>\'+'
+                  '\'<ul id="menu"></ul><div id="res"></div>\';'
+                  'setTimeout(function(){z.firstChild.remove();z.querySelector(".exp").disabled=false;},3000);'
+                  'z.querySelector(".exp").onclick=function(){document.getElementById("menu").innerHTML="<li>CSV</li><li>XLSX</li>";};'
+                  'document.getElementById("menu").onclick=function(e){if(e.target.tagName==="LI")document.getElementById("res").textContent='
+                  '"export "+e.target.textContent+" pour "+document.querySelector("input").value;};};</script>')
+        attente = lambda s: lambda: _time.sleep(s)   # noqa: E731
+        lent = CALCUL % {'voile': 'loading-overlay', 'gris': 'disabled'}
+        pas = apprendre_sur(lent, [clic('document.querySelector("input")'), taper('4530'), clic('document.getElementById("submit")'),
+                                   attente(3.5), clic('document.querySelector(".exp svg path")'), clic('document.querySelectorAll("#menu li")[1]')])
+        verifier('appris : le bouton icône est retenu par sa bulle « Export all » et son icône — plus un simple « cliquer »',
+                 [robot.dire_geste(g) for g in pas] == ['« 4530 » dans le champ « PSN »', '« Submit »', '« Export all »', '« XLSX »'],
+                 [robot.dire_geste(g) for g in pas])
+        verifier('… c’est le bouton qui est appris, pas le trait du dessin',
+                 pas[2]['cible'].get('balise') == 'button' and pas[2]['cible'].get('icone') == 'file-export', pas[2]['cible'])
+        verifier('refait : il attend la fin du calcul (roue de chargement), puis « Export all », puis XLSX',
+                 rejouer_sur(lent, pas) == 'export XLSX pour 4530')
+        couvert = CALCUL % {'voile': 'voile', 'gris': ''}
+        verifier('… même sans roue : bouton couvert par un voile 3 s, il attend qu’il se lève avant de cliquer',
+                 rejouer_sur(couvert, pas) == 'export XLSX pour 4530')
+        grise = CALCUL % {'voile': 'rien" hidden data-x="', 'gris': 'disabled'}
+        verifier('… et bouton grisé 3 s : il attend qu’il s’allume',
+                 rejouer_sur(grise, pas) == 'export XLSX pour 4530')
+        sans = [dict(g) for g in pas]
+        sans[2] = dict(sans[2], cible=dict(sans[2]['cible'], bulle='Exporter tout', icone='autre', chemin='nulle > part'))
+        dit = rejouer_sur(lent, sans)
+        verifier('un bouton vraiment introuvable : l’erreur dit son nom et les boutons visibles', 
+                 dit.startswith('erreur : Je ne retrouve plus « Exporter tout »') and 'Boutons visibles' in dit and '« Export all »' in dit, dit)
 
         # GATES de bout en bout : appris sur HDK, refait pour THS, et pour un contrat absent.
         GATES = ('<input placeholder="Contrat"><ul id="l"></ul><div id="res"></div>'

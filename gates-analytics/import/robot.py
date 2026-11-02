@@ -206,6 +206,33 @@ ETIQUETTE_JS = r"""
     return t;
   };
   var estChamp = function (e) { return !!(e && e.matches && e.matches('input:not([type]),input[type=text],input[type=search],input[type=email],input[type=number],input[type=date],input[type=tel],textarea,select')); };
+  /* Un bouton sans texte (une icône) : son nom est souvent dans une bulle
+     d'aide posée en attribut (mattooltip, ptooltip, data-tooltip,
+     data-original-title…), son dessin dans une icône (data-icon, fa-…,
+     pi-…, mdi-…, <use href="#…">), parfois un identifiant de test. */
+  var bulleDe = function (e) {
+    var at = e.attributes || [];
+    for (var i = 0; i < at.length; i++) {
+      var n = at[i].name, v = String(at[i].value || '').trim();
+      if (/tooltip|^data-(original-)?title$|^aria-description$/i.test(n) && v && v.length <= 80 && !/^[\[{(]/.test(v)) return v;
+    }
+    return '';
+  };
+  var iconeDe = function (e) {
+    var x = e.querySelector && e.querySelector('svg[data-icon],use,mat-icon,i[class],span[class*="icon"],[class*="fa-"],[class*="pi-"],[class*="mdi-"]');
+    if (!x) return '';
+    var b = x.tagName.toLowerCase();
+    if (x.getAttribute('data-icon')) return x.getAttribute('data-icon');
+    if (b === 'use') return String(x.getAttribute('href') || x.getAttribute('xlink:href') || '').replace(/^.*#/, '');
+    if (b === 'mat-icon') return String(x.getAttribute('svgicon') || x.getAttribute('fonticon') || x.textContent || '').trim();
+    return String(x.getAttribute('class') || '').split(/\s+/).filter(function (k) {
+      return /^(fa|pi|mdi|bi|icon|glyphicon|material-icons)-[a-z0-9-]+$/i.test(k) && !/^(fa|pi|mdi|bi)-(fw|lg|xs|sm|\dx|solid|regular|light|spin|pulse)$/i.test(k);
+    }).join(' ');
+  };
+  var testidDe = function (e) {
+    var a = function (n) { return e.getAttribute(n) || ''; };
+    return a('data-testid') || a('data-test-id') || a('data-test') || a('data-cy') || a('data-qa') || a('data-automation-id');
+  };
 """
 
 
@@ -250,7 +277,8 @@ GUETTEUR = r"""
     var saisie = estChamp(e) && !e.matches('select');      // son contenu change : ce n'est pas son nom
     return { balise: e.tagName.toLowerCase(), id: stable(e.id) ? e.id : '', nom: a('name'), role: a('role'), type: a('type'),
              label: a('aria-label'), titre: a('title'), texte: saisie ? '' : texte(e), placeholder: a('placeholder'), href: a('href'),
-             etiquette: estChamp(e) ? etiquetteDe(e) : '', chemin: chemin(e), page: location.host + location.pathname };
+             etiquette: estChamp(e) ? etiquetteDe(e) : '', bulle: bulleDe(e), icone: saisie || texte(e) ? '' : iconeDe(e),
+             testid: testidDe(e), chemin: chemin(e), page: location.host + location.pathname };
   };
   var FORT = 'a,button,input,select,textarea,label,summary,option,[role=button],[role=link],[role=menuitem],[role=option],' +
              '[role=tab],[role=checkbox],[role=radio],[role=treeitem]';
@@ -262,6 +290,13 @@ GUETTEUR = r"""
     if (fort) return fort;
     var mot = String(t.innerText || '').trim();
     if (mot && mot.length <= 40 && mot.indexOf('\n') === -1) return t;
+    /* Une icône (un dessin svg) cliquée : le bouton qui la porte — le plus
+       proche élément « à main » (cursor: pointer), pas le trait du dessin. */
+    var svg = t.closest && t.closest('svg');
+    if (svg) { while (svg.parentElement && svg.parentElement.closest('svg')) svg = svg.parentElement.closest('svg'); t = svg.parentElement || t; }
+    for (var p = t, k = 0; p && p.nodeType === 1 && k < 4 && p !== document.body; k++, p = p.parentElement) {
+      try { if (getComputedStyle(p).cursor === 'pointer') return p; } catch (x) {}
+    }
     return (t.closest && t.closest(FAIBLE)) || t;
   };
   var CONNEXION = /keycloak|login|signin|sso|\/auth\b|oauth|adfs|openid-connect|saml|authorize/i;
@@ -342,8 +377,11 @@ TROUVER = r"""
     if (d.texte && lu === norm(d.texte)) n += 6;
     else if (d.texte && lu && norm(d.texte).indexOf(lu) === 0) n += 3;   // appris avec ses sous-menus ouverts
     if (d.etiquette && estChamp(e) && norm(etiquetteDe(e)) === norm(d.etiquette)) n += 6;   // le champ « PSN »
-    if (d.titre && a('title') === d.titre) n += 3;
+    if (d.titre && a('title') === d.titre) n += 4;
     if (d.placeholder && a('placeholder') === d.placeholder) n += 4;
+    if (d.bulle && bulleDe(e) === d.bulle) n += 5;                    // « Export all », en bulle d'aide
+    if (d.testid && testidDe(e) === d.testid) n += 8;
+    if (d.icone && iconeDe(e) === d.icone) n += 3;
     if (d.href && a('href') === d.href) n += 3;
     if (d.role && a('role') === d.role) n += 1;
     if (d.type && a('type') === d.type) n += 1;
@@ -354,10 +392,81 @@ TROUVER = r"""
   var e = meilleur.e; e.scrollIntoView({ block: 'center', inline: 'center' });
   var r = e.getBoundingClientRect();
   window.__suiviCible = e;
-  return { x: meilleur.dx + r.left + r.width / 2, y: meilleur.dy + r.top + r.height / 2, note: note };
+  /* Pas encore prêt : grisé, dans une zone qui charge, ou couvert (un voile
+     de chargement par-dessus) — le robot attend avant de cliquer. */
+  var gris = e.disabled === true || e.getAttribute('aria-disabled') === 'true' || !!(e.closest && e.closest('[aria-busy="true"]'));
+  var couvert = false;
+  if (d.dessus && !meilleur.dx && !meilleur.dy && (!e.getRootNode || e.getRootNode() === document)) {
+    var h = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    couvert = !!h && h !== e && !e.contains(h) && !h.contains(e);
+  }
+  return { x: meilleur.dx + r.left + r.width / 2, y: meilleur.dy + r.top + r.height / 2, note: note,
+           attendre: gris || couvert, pourquoi: gris ? 'grisé' : couvert ? 'couvert' : '' };
 })(%s)
 """
 TROUVER = TROUVER.replace('/*ETIQUETTE*/', ETIQUETTE_JS)
+
+# Les requêtes en cours de la page (XMLHttpRequest et fetch), comptées : une
+# page qui calcule (SEE, une trentaine de secondes après « Submit ») n'est pas
+# prête. Les sondes qui ne s'arrêtent jamais (mesure d'audience, attente
+# longue) ne comptent pas.
+RESEAU_JS = r"""
+(function () {
+  if (window.__suiviReseau) return; window.__suiviReseau = true; window.__suiviEnVol = 0;
+  var sonde = /signalr|socket|poll|heartbeat|keepalive|analytics|collect|telemetry|matomo|piwik|dynatrace|newrelic|appdynamics|beacon|\/rb_/i;
+  var debut = function (u) { if (sonde.test(String(u || ''))) return false; window.__suiviEnVol++; return true; };
+  var fin = function () { window.__suiviEnVol = Math.max(0, window.__suiviEnVol - 1); };
+  var ouvrir = XMLHttpRequest.prototype.open, envoyer = XMLHttpRequest.prototype.send;
+  XMLHttpRequest.prototype.open = function (m, u) { this.__suiviUrl = u; return ouvrir.apply(this, arguments); };
+  XMLHttpRequest.prototype.send = function () {
+    if (debut(this.__suiviUrl)) { var x = this, fait = false; x.addEventListener('loadend', function () { if (!fait) { fait = true; fin(); } }); }
+    return envoyer.apply(this, arguments);
+  };
+  if (window.fetch) {
+    var chercher = window.fetch;
+    window.fetch = function (r) {
+      var compte = debut(typeof r === 'string' ? r : r && r.url), p = chercher.apply(this, arguments);
+      if (compte) p.then(fin, fin);
+      return p;
+    };
+  }
+})();
+"""
+
+# La page est-elle calme ? Aucune requête en cours, aucun signe de chargement
+# visible (aria-busy, barre de progression sans valeur, roue « spinner »,
+# « loading », « loader »…).
+CALME_JS = r"""
+(function () {
+  var vu = function (e) { var r = e.getBoundingClientRect(), s = getComputedStyle(e);
+    return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && parseFloat(s.opacity || '1') > 0.05; };
+  var roue = /(^|[-_])(spinner|loader|loading|busy|spinning)($|[-_])/i, pas = /container|wrapper|nested|blur|done|finished/i;
+  var occupe = [].slice.call(document.querySelectorAll('[aria-busy="true"],[role="progressbar"]:not([aria-valuenow]),[class*="spin"],[class*="load"],[class*="busy"]'))
+    .some(function (e) {
+      if (e.matches('[aria-busy="true"],[role="progressbar"]')) return vu(e);
+      return String(e.getAttribute('class') || '').split(/\s+/).some(function (k) { return roue.test(k) && !pas.test(k); }) && vu(e);
+    });
+  return { enVol: window.__suiviEnVol || 0, occupe: occupe };
+})()
+"""
+
+# Les boutons visibles, avec leur nom : dit dans l'erreur quand un bouton
+# n'est pas retrouvé.
+BOUTONS_VISIBLES = r"""
+(function () {
+/*ETIQUETTE*/
+  var vus = [];
+  [].slice.call(document.querySelectorAll('button,a,[role=button],[role=menuitem],[role=option],[role=tab]')).forEach(function (e) {
+    var r = e.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0 && vus.length < 20) {
+      var nom = String(e.innerText || '').split('\n')[0].trim() || e.getAttribute('aria-label') || e.getAttribute('title') || bulleDe(e) ||
+                (iconeDe(e) ? 'icône ' + iconeDe(e) : '');
+      if (nom && vus.indexOf('« ' + nom.slice(0, 40) + ' »') === -1) vus.push('« ' + nom.slice(0, 40) + ' »');
+    }
+  });
+  return vus;
+})()
+""".replace('/*ETIQUETTE*/', ETIQUETTE_JS)
 
 # Les champs visibles de la page, avec leur nom : dit dans l'erreur quand un
 # champ n'est pas retrouvé, pour comprendre sans y être.
@@ -738,26 +847,77 @@ def souris(c, x, y):
         time.sleep(0.05)
 
 
-def trouver(c, cible, delai=60):
+DELAI_TROUVER = 120   # secondes pour qu'un élément paraisse et soit prêt (SEE calcule parfois longtemps)
+
+
+def trouver(c, cible, delai=120):
+    """Retrouve ce que décrit « cible » ; attend qu'il paraisse, puis qu'il
+    soit prêt (ni grisé ni couvert par un voile de chargement). Prêt ou pas,
+    au bout du délai il est pris quand même : le geste suivant dira si le
+    clic n'a rien fait."""
     fin = time.time() + delai
+    vu, dit = None, False
     while time.time() < fin:
         try:
             r = c.evaluer(TROUVER % json.dumps(cible))
-            if r:
+            if r and not r.get('attendre'):
                 return r
+            if r:
+                vu = r
+                if not dit:
+                    print('    (attente : %s %s)' % (nom_de_cible(cible), r.get('pourquoi')))
+                    dit = True
         except ErreurPilote:
             pass
         time.sleep(0.5)
+    if vu:
+        return vu
+    champ = cible.get('balise') in ('input', 'textarea', 'select')
     quoi = ('le champ « %s »' % (cible.get('etiquette') or cible.get('label') or cible.get('placeholder') or cible.get('nom') or '?')
-            if cible.get('balise') in ('input', 'textarea', 'select') else
-            '« %s »' % (cible.get('texte') or cible.get('label') or cible.get('titre') or cible.get('chemin')))
+            if champ else nom_de_cible(cible) or '« %s »' % cible.get('chemin'))
     try:
-        vus = c.evaluer(CHAMPS_VISIBLES) or []
+        vus = c.evaluer(CHAMPS_VISIBLES if champ else BOUTONS_VISIBLES) or []
     except ErreurPilote:
         vus = []
     raise ErreurPilote('Je ne retrouve plus %s sur la page %s. La page a peut-être changé : refaites '
                        '« Apprendre » pour cet export.%s' % (quoi, cible.get('page'),
-                                                            '\n  Champs visibles à ce moment : ' + ', '.join(vus) if vus else ''))
+                                                            ('\n  %s visibles à ce moment : ' % ('Champs' if champ else 'Boutons')) + ', '.join(vus) if vus else ''))
+
+
+def nom_de_cible(cible):
+    """Ce qu'on clique, dit en clair : son texte, son nom, sa bulle d'aide,
+    son icône — « Export all », « icône file-excel »."""
+    nom = cible.get('texte') or cible.get('label') or cible.get('titre') or cible.get('bulle')
+    if nom:
+        return '« %s »' % nom
+    if cible.get('icone'):
+        return '« icône %s »' % cible['icone']
+    if cible.get('testid'):
+        return '« %s »' % cible['testid']
+    return ''
+
+
+def attendre_calme(c, delai=120):
+    """Après un clic : la page a fini de calculer — plus aucune requête en
+    cours, plus de roue de chargement —, et le reste une seconde et demie.
+    Au bout du délai, on continue quand même."""
+    fin, calme_depuis, dit = time.time() + delai, None, False
+    while time.time() < fin:
+        try:
+            e = c.evaluer(CALME_JS) or {}
+        except ErreurPilote:
+            e = {}
+        if not e.get('enVol') and not e.get('occupe'):
+            calme_depuis = calme_depuis or time.time()
+            if time.time() - calme_depuis >= 1.5:
+                return True
+        else:
+            calme_depuis = None
+            if not dit and time.time() > fin - delai + 3:
+                print('    (la page calcule, le robot attend…)')
+                dit = True
+        time.sleep(0.5)
+    return False
 
 
 def vider_telechargements():
@@ -775,15 +935,19 @@ def faire_geste(c, g):
     envoyés à la page elle-même : ni la souris ni le clavier de la personne).
     Rend False pour une page de connexion inutile ce jour-là (sautée)."""
     cible = dict(g.get('cible') or {})
+    if g['faire'] == 'cliquer':
+        cible['dessus'] = True                       # un clic : rien ne doit couvrir le bouton
     facultatif = bool(CONNEXION.search(cible.get('page', '')))
     try:
-        r = trouver(c, cible, delai=12 if facultatif else 60)
+        r = trouver(c, cible, delai=12 if facultatif else DELAI_TROUVER)
     except ErreurPilote:
         if facultatif and not CONNEXION.search(page_actuelle(c)):
             return False
         raise
     if g['faire'] == 'cliquer':
         souris(c, r['x'], r['y'])
+        time.sleep(0.4)
+        attendre_calme(c)                            # SEE calcule (« Submit ») : on attend qu'il ait fini
     elif g['faire'] == 'remplir':
         souris(c, r['x'], r['y'])                    # comme une personne : un clic dans le champ, d'abord
         c.evaluer('(function(e){e.focus(); if (e.select) e.select();})(window.__suiviCible)')
@@ -805,6 +969,8 @@ def faire_geste(c, g):
         for t in ('keyDown', 'keyUp'):
             c.envoyer('Input.dispatchKeyEvent', type=t, key='Enter', code='Enter', windowsVirtualKeyCode=13,
                       nativeVirtualKeyCode=13, **({'text': '\r'} if t == 'keyDown' else {}))
+        time.sleep(0.4)
+        attendre_calme(c)
     return True
 
 
@@ -812,17 +978,20 @@ def dire_geste(g):
     cible = g.get('cible') or {}
     if g['faire'] == 'remplir':
         return '« %s » dans le champ « %s »' % (g.get('texte', ''), cible.get('etiquette') or cible.get('label') or cible.get('placeholder') or cible.get('nom') or '?')
-    return cible.get('texte') or cible.get('label') or g.get('option') or g.get('texte') or ''
+    if g['faire'] == 'choisir':
+        return '« %s »' % (g.get('option') or g.get('valeur') or '')
+    return nom_de_cible(cible) or '(un élément sans nom)'
 
 
 def rejouer(c, scenario, dossier_sortie):
     vider_telechargements()
     avant = set()
+    with contextlib.suppress(ErreurPilote):
+        c.envoyer('Page.addScriptToEvaluateOnNewDocument', source=RESEAU_JS)   # chaque page : ses requêtes comptées
     c.ouvrir(scenario['depart'])
-    try:
-        c.evaluer(GUETTEUR)    # même onglet pour les liens « nouvel onglet »
-    except ErreurPilote:
-        pass
+    for js in (GUETTEUR, RESEAU_JS):   # même onglet pour les liens « nouvel onglet » ; requêtes comptées
+        with contextlib.suppress(ErreurPilote):
+            c.evaluer(js)
     n = len(scenario['etapes'])
     for i, g in enumerate(scenario['etapes'], 1):
         if not faire_geste(c, g):
