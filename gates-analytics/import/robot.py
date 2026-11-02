@@ -625,7 +625,7 @@ def apprendre():
             print('Un seul contrat suffit (par exemple HDK) : tapez son nom comme d\'habitude.')
         print('Quand le fichier est arrivé, revenez ici et appuyez sur Entrée.\n')
         threading.Thread(target=lambda: (input(), stop.set()), daemon=True).start()
-        recus = set()
+        recus, apres = set(), None
         while not stop.is_set():
             try:
                 for m in lire_evenements(c, 0.5):
@@ -646,6 +646,8 @@ def apprendre():
                 break
             nouveaux = fichiers(c) - avant - recus
             for n in sorted(nouveaux):
+                if not recus:
+                    apres = len(pas)                 # le fichier est venu après ce geste (avant un éventuel log out)
                 recus.add(n)
                 print('  ✓ fichier reçu : %s' % n)
         if not recus:
@@ -655,7 +657,7 @@ def apprendre():
         cases = cases_du_tableau(c, cfg)
     fichier = sorted(recus)[-1]
     extension = pathlib.Path(fichier).suffix or '.xlsx'
-    scenario = {'nom': nom, 'depart': depart, 'etapes': pas, 'fichier': '*' + extension,
+    scenario = {'nom': nom, 'depart': depart, 'etapes': pas, 'fichier': '*' + extension, 'telechargement_apres': apres,
                 'appris': datetime.datetime.now().isoformat(timespec='seconds')}
     entree = {'nom': nom}
     anciens = cfg.get('exports', [])
@@ -841,13 +843,21 @@ def choisir_case(cases, proposee):
 
 # ---------------------------------------------------------------- rejouer
 def souris(c, x, y):
-    for t in ('mouseMoved', 'mousePressed', 'mouseReleased'):
-        extra = {'button': 'left', 'clickCount': 1} if t != 'mouseMoved' else {}
-        c.envoyer('Input.dispatchMouseEvent', type=t, x=x, y=y, **extra)
-        time.sleep(0.05)
+    """Un clic comme une main : la souris arrive sur l'élément et s'y pose
+    un instant (les menus qui s'ouvrent au survol, les bulles d'aide), puis
+    le bouton gauche s'enfonce et se relâche."""
+    c.envoyer('Input.dispatchMouseEvent', type='mouseMoved', x=x, y=y, buttons=0)
+    time.sleep(0.3)
+    c.envoyer('Input.dispatchMouseEvent', type='mousePressed', x=x, y=y, button='left', buttons=1, clickCount=1)
+    time.sleep(0.08)
+    c.envoyer('Input.dispatchMouseEvent', type='mouseReleased', x=x, y=y, button='left', buttons=0, clickCount=1)
+    time.sleep(0.05)
 
 
-DELAI_TROUVER = 120   # secondes pour qu'un élément paraisse et soit prêt (SEE calcule parfois longtemps)
+DELAI_TROUVER = 300   # secondes pour qu'un élément paraisse et soit prêt (SEE calcule de 10 s à plus d'une minute)
+DELAI_CALME = 300     # secondes au plus pour qu'une page finisse de calculer
+DELAI_FICHIER = 1800  # secondes au plus pour qu'un gros fichier soit prêt et arrivé
+DELAI_SUITE = 45      # secondes : après un clic, la suite doit paraître, sinon le robot réessaie autrement
 
 
 def trouver(c, cible, delai=120):
@@ -886,7 +896,9 @@ def trouver(c, cible, delai=120):
 
 def nom_de_cible(cible):
     """Ce qu'on clique, dit en clair : son texte, son nom, sa bulle d'aide,
-    son icône — « Export all », « icône file-excel »."""
+    son icône — « Export all », « icône file-excel » ; un champ, par son nom."""
+    if cible.get('balise') in ('input', 'textarea', 'select'):
+        return 'le champ « %s »' % (cible.get('etiquette') or cible.get('label') or cible.get('placeholder') or cible.get('nom') or '?')
     nom = cible.get('texte') or cible.get('label') or cible.get('titre') or cible.get('bulle')
     if nom:
         return '« %s »' % nom
@@ -897,10 +909,11 @@ def nom_de_cible(cible):
     return ''
 
 
-def attendre_calme(c, delai=120):
+def attendre_calme(c, delai=None):
     """Après un clic : la page a fini de calculer — plus aucune requête en
     cours, plus de roue de chargement —, et le reste une seconde et demie.
     Au bout du délai, on continue quand même."""
+    delai = DELAI_CALME if delai is None else delai
     fin, calme_depuis, dit = time.time() + delai, None, False
     while time.time() < fin:
         try:
@@ -930,10 +943,121 @@ def vider_telechargements():
             pass
 
 
-def faire_geste(c, g):
+# Un clic qui ne fait rien (le menu « Export all » qui ne s'ouvre pas) : les
+# autres façons d'appuyer, essayées l'une après l'autre jusqu'à ce que la
+# suite paraisse.
+APPUI_JS = r"""
+(function (e) {
+  var r = e.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+  var o = { bubbles: true, cancelable: true, composed: true, clientX: x, clientY: y, button: 0, buttons: 1, view: window,
+            pointerId: 1, pointerType: 'mouse', isPrimary: true };
+  var tirer = function (t) { e.dispatchEvent(/^pointer/.test(t) && window.PointerEvent ? new PointerEvent(t, o) : new MouseEvent(t, o)); };
+  ['pointerover', 'pointerenter', 'mouseover', 'mouseenter', 'pointerdown', 'mousedown'].forEach(tirer);
+  if (e.focus) e.focus();
+  o.buttons = 0;
+  ['pointerup', 'mouseup', 'click'].forEach(tirer);
+})(window.__suiviCible)
+"""
+
+
+# Le bouton cliqué ouvre-t-il un menu ? (aria-haspopup, aria-expanded, une
+# classe « dropdown », « menu », « toggle », « split », « caret »)
+EST_MENU_JS = r"""
+(function (e) {
+  if (!e) return false;
+  var cls = String(e.getAttribute('class') || '') + ' ' + String((e.parentElement && e.parentElement.getAttribute('class')) || '');
+  return !!(e.getAttribute('aria-haspopup') || e.hasAttribute('aria-expanded') || /dropdown|menu|toggle|split|caret/i.test(cls));
+})(window.__suiviCible)
+"""
+
+
+def ouvre_un_menu(c, g, suivant):
+    """Réessayer un clic n'est permis que pour un bouton qui ouvre un menu
+    (« Export all » → « XLSX ») : recliquer « Submit » relancerait le calcul,
+    ou créerait deux documents."""
+    if not suivant:
+        return False
+    attendu = suivant.get('cible') or {}
+    if MOT_FICHIER.search(nom_de_cible(g.get('cible') or {})):
+        return True
+    if attendu.get('balise') in ('li', 'option') or attendu.get('role') in ('menuitem', 'option', 'menuitemradio') or \
+            re.search(r'menu|dropdown|popover|popup|overlay', attendu.get('chemin') or '', re.I):
+        return True
+    try:
+        return bool(c.evaluer(EST_MENU_JS))
+    except ErreurPilote:
+        return False
+
+
+def touche(c, nom, code, texte=None):
+    for t in ('keyDown', 'keyUp'):
+        c.envoyer('Input.dispatchKeyEvent', type=t, key=nom, code=nom if nom != ' ' else 'Space', windowsVirtualKeyCode=code,
+                  nativeVirtualKeyCode=code, **({'text': texte} if texte and t == 'keyDown' else {}))
+
+
+def present(c, cible):
+    """La cible est-elle à l'écran (prête ou pas) ?"""
+    try:
+        return bool(c.evaluer(TROUVER % json.dumps(cible)))
+    except ErreurPilote:
+        return False
+
+
+def attendre_presence(c, cible, delai):
+    fin = time.time() + delai
+    while time.time() < fin:
+        if present(c, cible):
+            return True
+        time.sleep(0.5)
+    return False
+
+
+def verifier_clic(c, g, cible, suivant):
+    """Après un clic, la suite doit paraître (le menu « XLSX » après
+    « Export all »). Sinon, et si le bouton est toujours là (le clic n'a rien
+    fait), le robot réessaie : un second clic, des événements envoyés au
+    bouton lui-même, la touche Entrée, la flèche bas, Espace. Rien n'y fait :
+    il le dit tout de suite, plutôt que de rester figé."""
+    if not suivant or CONNEXION.search((suivant.get('cible') or {}).get('page', '')):
+        return
+    attendu = dict(suivant.get('cible') or {})
+    if attendre_presence(c, attendu, DELAI_SUITE):
+        return
+    facons = [('un second clic', lambda r: souris(c, r['x'], r['y'])),
+              ('un appui envoyé au bouton lui-même', lambda r: c.evaluer(APPUI_JS)),
+              ('la touche Entrée', lambda r: (c.evaluer('window.__suiviCible.focus()'), touche(c, 'Enter', 13, '\r'))),
+              ('la flèche bas', lambda r: (c.evaluer('window.__suiviCible.focus()'), touche(c, 'ArrowDown', 40))),
+              ('la touche Espace', lambda r: (c.evaluer('window.__suiviCible.focus()'), touche(c, ' ', 32, ' ')))]
+    for nom, faire in facons:
+        try:
+            r = c.evaluer(TROUVER % json.dumps(cible))
+        except ErreurPilote:
+            r = None
+        if not r:
+            break                                   # le bouton est parti : le clic a fait quelque chose, on attend la suite
+        print('    (%s n\'est pas apparu : le robot réessaie, %s)' % (nom_de_cible(attendu) or 'la suite', nom))
+        faire(r)
+        time.sleep(0.4)
+        attendre_calme(c, 60)
+        if attendre_presence(c, attendu, 15):
+            noter('    (« %s » : il a fallu %s)' % (nom_de_cible(cible).strip('« »') or 'ce bouton', nom))
+            return
+    else:
+        try:
+            vus = c.evaluer(BOUTONS_VISIBLES) or []
+        except ErreurPilote:
+            vus = []
+        raise ErreurPilote('Après %s, %s n\'est jamais apparu (six façons d\'appuyer essayées).%s'
+                           % (nom_de_cible(cible) or 'le clic', nom_de_cible(attendu) or 'la suite',
+                              '\n  Boutons visibles à ce moment : ' + ', '.join(vus) if vus else ''))
+
+
+def faire_geste(c, g, suivant=None):
     """Un geste appris, refait dans la fenêtre du robot (souris et clavier
     envoyés à la page elle-même : ni la souris ni le clavier de la personne).
-    Rend False pour une page de connexion inutile ce jour-là (sautée)."""
+    « suivant » : le geste d'après, pour vérifier qu'un clic a bien fait
+    paraître la suite. Rend False pour une page de connexion inutile ce
+    jour-là (sautée)."""
     cible = dict(g.get('cible') or {})
     if g['faire'] == 'cliquer':
         cible['dessus'] = True                       # un clic : rien ne doit couvrir le bouton
@@ -945,9 +1069,12 @@ def faire_geste(c, g):
             return False
         raise
     if g['faire'] == 'cliquer':
+        menu = ouvre_un_menu(c, g, suivant)          # avant le clic : le bouton est encore celui-là
         souris(c, r['x'], r['y'])
         time.sleep(0.4)
         attendre_calme(c)                            # SEE calcule (« Submit ») : on attend qu'il ait fini
+        if menu:
+            verifier_clic(c, g, cible, suivant)
     elif g['faire'] == 'remplir':
         souris(c, r['x'], r['y'])                    # comme une personne : un clic dans le champ, d'abord
         c.evaluer('(function(e){e.focus(); if (e.select) e.select();})(window.__suiviCible)')
@@ -983,7 +1110,28 @@ def dire_geste(g):
     return nom_de_cible(cible) or '(un élément sans nom)'
 
 
+MOT_FICHIER = re.compile(r'xlsx|xls|csv|excel|export|t[ée]l[ée]charg|download', re.I)
+
+
+def indice_telechargement(scenario):
+    """Après quel geste le fichier arrive-t-il ? Appris : noté au moment où le
+    fichier est arrivé. Un export appris avant : le dernier geste qui parle
+    de fichier (« XLSX », « Export »…). Sinon : à la fin."""
+    etapes = scenario.get('etapes') or []
+    k = scenario.get('telechargement_apres')
+    if isinstance(k, int) and 1 <= k <= len(etapes):
+        return k
+    for i in range(len(etapes), 0, -1):
+        g = etapes[i - 1]
+        if g.get('faire') in ('cliquer', 'choisir') and MOT_FICHIER.search(dire_geste(g)):
+            return i
+    return len(etapes)
+
+
 def rejouer(c, scenario, dossier_sortie):
+    """Les gestes appris, un par un ; le fichier est attendu juste après le
+    geste qui le fait venir — un gros fichier met du temps à se préparer,
+    et le « log out » qui suit ne part qu'une fois le fichier arrivé."""
     vider_telechargements()
     avant = set()
     with contextlib.suppress(ErreurPilote):
@@ -992,15 +1140,22 @@ def rejouer(c, scenario, dossier_sortie):
     for js in (GUETTEUR, RESEAU_JS):   # même onglet pour les liens « nouvel onglet » ; requêtes comptées
         with contextlib.suppress(ErreurPilote):
             c.evaluer(js)
-    n = len(scenario['etapes'])
-    for i, g in enumerate(scenario['etapes'], 1):
-        if not faire_geste(c, g):
+    etapes = scenario['etapes']
+    n, k_fichier, chemin = len(etapes), indice_telechargement(scenario), None
+    for i, g in enumerate(etapes, 1):
+        if not faire_geste(c, g, etapes[i] if i < n and i != k_fichier else None):
             print('  %d/%d (page de connexion inutile ce matin : sautée)' % (i, n))
             continue
         print('  %d/%d %s %s' % (i, n, g['faire'], dire_geste(g)))
+        if i == k_fichier:
+            print('    (le fichier se prépare : le robot attend qu\'il soit arrivé…)')
+            chemin = c.attendre_telechargement(avant=avant, delai=DELAI_FICHIER, motif=scenario.get('fichier'))
+            print('    ✓ fichier arrivé : %s' % chemin.name)
+            attendre_calme(c, 60)
         time.sleep(1.2)
         attendre_page(c)
-    chemin = c.attendre_telechargement(avant=avant, delai=600, motif=scenario.get('fichier'))
+    if chemin is None:
+        chemin = c.attendre_telechargement(avant=avant, delai=DELAI_FICHIER, motif=scenario.get('fichier'))
     dest = pathlib.Path(dossier_sortie) / (nom_de_fichier(scenario['nom']) + chemin.suffix)
     shutil.copy2(chemin, dest)
     return dest

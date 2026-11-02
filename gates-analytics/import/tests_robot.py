@@ -355,14 +355,15 @@ if exe:
     def taper(texte):
         return lambda: c.envoyer('Input.insertText', text=texte)
 
-    robot.DELAI_TROUVER = 10           # un élément introuvable : dit en 10 s, pas en 2 min
+    robot.DELAI_TROUVER = 10           # un élément introuvable : dit en 10 s, pas en 5 min
+    robot.DELAI_SUITE = 4              # la suite d'un clic : 4 s avant de réessayer autrement
 
     def rejouer_sur(html, pas):
         c.ouvrir(page_de(html))
         c.evaluer(robot.RESEAU_JS)
         try:
-            for g in pas:
-                robot.faire_geste(c, g)
+            for i, g in enumerate(pas):
+                robot.faire_geste(c, g, pas[i + 1] if i + 1 < len(pas) else None)
                 _time.sleep(0.4)
         except robot.ErreurPilote as err:
             return 'erreur : %s' % err
@@ -438,6 +439,27 @@ if exe:
         verifier('un bouton vraiment introuvable : l’erreur dit son nom et les boutons visibles', 
                  dit.startswith('erreur : Je ne retrouve plus « Exporter tout »') and 'Boutons visibles' in dit and '« Export all »' in dit, dit)
 
+        # « Export all » dont le menu ne s'ouvre pas au premier clic : le robot réessaie autrement.
+        RETIF = ('<button id="exp" title="Export all">⇩</button><ul id="menu"></ul><div id="res"></div>'
+                 '<script>var n=0,b=document.getElementById("exp"),m=document.getElementById("menu");'
+                 'var ouvrir=function(){m.innerHTML="<li>CSV</li><li>XLSX</li>";};'
+                 '%s'
+                 'm.onclick=function(e){if(e.target.tagName==="LI")document.getElementById("res").textContent="export "+e.target.textContent;};</script>')
+        menu = [{'faire': 'cliquer', 'cible': {'balise': 'button', 'titre': 'Export all', 'texte': '⇩'}},
+                {'faire': 'cliquer', 'cible': {'balise': 'li', 'texte': 'XLSX'}}]
+        verifier('le menu ne s’ouvre qu’au second clic : le robot réessaie, le menu s’ouvre, XLSX',
+                 rejouer_sur(RETIF % 'b.onclick=function(){if(++n>=2)ouvrir();};', menu) == 'export XLSX')
+        verifier('le menu ne s’ouvre qu’au clavier (Entrée) : le robot finit par appuyer sur Entrée, XLSX',
+                 rejouer_sur(RETIF % 'b.onkeydown=function(e){if(e.key==="Enter")ouvrir();};', menu) == 'export XLSX')
+        t0 = _time.time()
+        dit = rejouer_sur(RETIF % '', menu)
+        verifier('rien ne l’ouvre : il le dit vite et clairement, au lieu de rester figé',
+                 dit.startswith('erreur : Après « Export all », « XLSX » n’est jamais apparu'.replace('’', "'")) and _time.time() - t0 < 200, dit[:160])
+        verifier('le fichier attendu juste après le geste qui le fait venir : appris, ou deviné (« XLSX ») pour un export appris avant',
+                 robot.indice_telechargement({'etapes': menu + [{'faire': 'cliquer', 'cible': {'texte': 'Log out'}}], 'telechargement_apres': 2}) == 2 and
+                 robot.indice_telechargement({'etapes': menu + [{'faire': 'cliquer', 'cible': {'texte': 'Log out'}}]}) == 2 and
+                 robot.indice_telechargement({'etapes': [{'faire': 'cliquer', 'cible': {'texte': 'OK'}}]}) == 1)
+
         # GATES de bout en bout : appris sur HDK, refait pour THS, et pour un contrat absent.
         GATES = ('<input placeholder="Contrat"><ul id="l"></ul><div id="res"></div>'
                  '<script>var C=["HDK — 634 plans","HDK Tranche 2 — 120 plans","THS — 180 plans"],i=document.querySelector("input"),l=document.getElementById("l");'
@@ -457,6 +479,31 @@ if exe:
         dit = rejouer_sur(GATES, robot.pour_le_contrat(scen, 'HDK', 'VRK', 'VRK')['etapes'])
         verifier('… pour un contrat que GATES ne montre pas (VRK) : il s’arrête, rien n’est exporté à sa place',
                  dit.startswith('erreur : Je ne retrouve plus « VRK — 634 plans »'), dit)
+
+print('\n— Un gros fichier, puis « Log out » (vrai navigateur) —')
+if exe:
+    import json as _json
+    import time as _time
+    import urllib.parse as _up
+    # XLSX : le fichier part 3 s plus tard (il se prépare) ; un « Log out » avant l'annule.
+    PAGE_LOGOUT = ('<button id="x">XLSX</button><button id="o">Log out</button><div id="res"></div>'
+                   '<script>var parti=false,dehors=false;document.getElementById("x").onclick=function(){setTimeout(function(){if(dehors)return;'
+                   'var a=document.createElement("a");a.href="data:application/octet-stream;base64,UEsDBA==";a.download="see.xlsx";document.body.appendChild(a);a.click();parti=true;},3000);};'
+                   'document.getElementById("o").onclick=function(){dehors=true;document.getElementById("res").textContent=parti?"déconnecté après le fichier":"déconnecté trop tôt";};</script>')
+    scen = {'nom': 'SEE', 'depart': 'data:text/html;charset=utf-8,' + _up.quote('<!doctype html><meta charset="utf-8"><body>' + PAGE_LOGOUT),
+            'fichier': '*.xlsx', 'telechargement_apres': 1,
+            'etapes': [{'faire': 'cliquer', 'cible': {'balise': 'button', 'texte': 'XLSX'}}, {'faire': 'cliquer', 'cible': {'balise': 'button', 'texte': 'Log out'}}]}
+    options = ['--no-sandbox'] if hasattr(os, 'geteuid') and os.geteuid() == 0 else []
+    sortie = pathlib.Path(tempfile.mkdtemp(prefix='robot-sortie-'))
+    with Chrome(port=9457, lancer=True, profil=tempfile.mkdtemp(prefix='robot-dl-'), sans_fenetre=True, delai=30, options=options,
+                telechargements=str(R / 'telechargements')) as c:
+        try:
+            f = robot.rejouer(c, scen, sortie)
+            res = c.evaluer('document.getElementById("res").textContent')
+        except robot.ErreurPilote as err:
+            f, res = None, 'erreur : %s' % err
+        verifier('le fichier (3 s à se préparer) est arrivé AVANT le « Log out » : rien n’est coupé',
+                 f is not None and f.exists() and res == 'déconnecté après le fichier', (f, res))
 
 print('\n═══════════════════════════════════════')
 print('%d vérification(s) réussie(s), %d échec(s)' % (len(faits), len(echecs)))
