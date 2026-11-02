@@ -215,7 +215,7 @@ CONTRATS = robot.contrats_du_tableau(['GATES HDK', 'GATES HDK Tranche 2', 'GATES
 verifier('les contrats du jour, lus dans les cases de la fenêtre d’import', CONTRATS == ['HDK', 'HDK Tranche 2', 'THS'], CONTRATS)
 gestes = [
     {'faire': 'cliquer', 'cible': {'texte': 'Exports', 'chemin': 'nav > a:nth-of-type(2)'}},
-    {'faire': 'remplir', 'cible': {'placeholder': 'Contrat', 'texte': ''}, 'texte': 'HDK'},
+    {'faire': 'remplir', 'cible': {'balise': 'input', 'placeholder': 'Contrat', 'texte': 'HDK'}, 'texte': 'HDK'},   # appris avec la version d'avant
     {'faire': 'cliquer', 'cible': {'texte': 'HDK — 634 plans', 'chemin': 'ul > li:nth-of-type(1)'}},
     {'faire': 'choisir', 'cible': {'label': 'Format'}, 'valeur': 'xlsx', 'option': 'Excel'},
     {'faire': 'cliquer', 'cible': {'texte': 'Exporter vers PATHS', 'titre': 'Exporter HDK'}},
@@ -225,6 +225,7 @@ appris, contrat = robot.reperer_contrat(gestes, CONTRATS)
 verifier('le nom tapé est celui d’un contrat du tableau : retrouvé seul, sans question', (appris, contrat) == ('HDK', 'HDK'), (appris, contrat))
 ths = robot.pour_le_contrat({'nom': 'GATES', 'etapes': gestes, 'depart': 'x'}, 'HDK', 'THS', 'THS')['etapes']
 verifier('pour THS : le champ reçoit « THS »', ths[1]['texte'] == 'THS', ths[1])
+verifier('… et rien n’est exigé du champ lui-même (vide quand le robot arrive)', 'contient' not in ths[1]['cible'], ths[1])
 verifier('… la ligne cliquée doit porter « THS » (exigé), sinon rien n’est cliqué',
          ths[2]['cible']['texte'] == 'THS — 634 plans' and ths[2]['cible']['contient'] == 'THS', ths[2])
 verifier('… ce qui ne parlait pas du contrat ne change pas (Exports, Format)',
@@ -291,6 +292,115 @@ else:
         verifier('fenêtre d’import : le fichier dont la fenêtre doute (GATES THS) est retiré, les autres restent',
                  douteux and len(douteux) == 1 and douteux[0].startswith('GATES THS — seulement 3 plans') and
                  c.evaluer('document.querySelectorAll(".retirer")[1].dataset.clic') == '1', douteux)
+
+print('\n— SEE : le champ PSN, appris puis refait (vrai navigateur) —')
+if exe:
+    import json as _json
+    import time as _time
+    import urllib.parse as _up
+    # Trois pages comme SEE peut les faire. La boîte de création s'ouvre, le PSN se tape, « Submit ».
+    DIALOGUE = ('<button id="creer" onclick="document.getElementById(\'dlg\').hidden=false">Create document</button>%s'
+                '<div id="dlg" hidden><div class="ligne"><span class="t">PSN</span><div><input class="x"></div></div>'
+                '<button onclick="document.getElementById(\'res\').textContent=\'créé pour \'+document.querySelector(\'#dlg input\').value">Submit</button></div>'
+                '<div id="res"></div>')
+    SUGGESTIONS = ('<div><span>PSN</span><input class="x"></div><ul id="sugg"></ul><div id="puce"></div>'
+                   '<button onclick="document.getElementById(\'res\').textContent=\'créé pour \'+document.getElementById(\'puce\').textContent">Submit</button><div id="res"></div>'
+                   '<script>var i=document.querySelector("input"),u=document.getElementById("sugg");'
+                   'i.addEventListener("input",function(){u.innerHTML=i.value?"<li>"+i.value+"</li>":"";});'
+                   'u.addEventListener("mousedown",function(e){e.preventDefault();});'
+                   'u.addEventListener("click",function(e){if(e.target.tagName==="LI"){document.getElementById("puce").textContent=e.target.textContent;i.value="";u.innerHTML="";}});</script>')
+    FANTOME = ('<champ-psn></champ-psn><button onclick="document.getElementById(\'res\').textContent=\'créé pour \'+document.querySelector(\'champ-psn\').shadowRoot.querySelector(\'input\').value">Submit</button><div id="res"></div>'
+               '<script>customElements.define("champ-psn",class extends HTMLElement{constructor(){super();'
+               'this.attachShadow({mode:"open"}).innerHTML="<div><span>PSN</span><input></div>";}});</script>')
+    page_de = lambda html: 'data:text/html;charset=utf-8,' + _up.quote('<!doctype html><meta charset="utf-8"><body>' + html)   # noqa: E731
+    centre = lambda sel: c.evaluer('(function(){var e=%s;var r=e.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};})()' % sel)   # noqa: E731
+
+    def apprendre_sur(html, gestes_personne):
+        """Ce que fait « Apprendre » : le guetteur dans la page, la personne agit (vrais clics, vraie frappe)."""
+        c.ouvrir(page_de(html))
+        c.evaluer('window.__vus=[];window.__suiviFwd=function(s){window.__vus.push(s);}')
+        c.evaluer(robot.GUETTEUR)
+        for g in gestes_personne:
+            g()
+            _time.sleep(0.3)
+        _time.sleep(1.0)                                           # la frappe regroupée part (0,8 s)
+        pas = []
+        for brut in c.evaluer('window.__vus'):
+            robot.ajouter_geste(pas, _json.loads(brut))
+        return pas
+
+    def clic(sel):
+        return lambda: robot.souris(c, centre(sel)['x'], centre(sel)['y'])
+
+    def taper(texte):
+        return lambda: c.envoyer('Input.insertText', text=texte)
+
+    def rejouer_sur(html, pas):
+        c.ouvrir(page_de(html))
+        try:
+            for g in pas:
+                robot.faire_geste(c, g)
+                _time.sleep(0.4)
+        except robot.ErreurPilote as err:
+            return 'erreur : %s' % err
+        return c.evaluer('document.getElementById("res").textContent')
+
+    options = ['--no-sandbox'] if hasattr(os, 'geteuid') and os.geteuid() == 0 else []
+    with Chrome(port=9456, lancer=True, profil=tempfile.mkdtemp(prefix='robot-see-'), sans_fenetre=True, delai=30, options=options) as c:
+        pas = apprendre_sur(DIALOGUE % '', [clic('document.getElementById("creer")'), clic('document.querySelector("#dlg input")'),
+                                            taper('4530'), clic('document.querySelector("#dlg button")')])
+        rempli = [g for g in pas if g['faire'] == 'remplir']
+        verifier('appris : le champ est retenu par son nom « PSN », pas par ce qu’on y a tapé',
+                 len(rempli) == 1 and rempli[0]['cible'].get('etiquette') == 'PSN' and rempli[0]['cible'].get('texte') == '' and rempli[0]['texte'] == '4530',
+                 [(g['faire'], g['cible'].get('etiquette'), g['cible'].get('texte'), g.get('texte')) for g in pas])
+        verifier('appris : trois gestes, dans l’ordre (Create document, PSN 4530, Submit)',
+                 [g['faire'] for g in pas] == ['cliquer', 'remplir', 'cliquer'], [g['faire'] for g in pas])
+        verifier('refait le lendemain (champ vide) : « créé pour 4530 »', rejouer_sur(DIALOGUE % '', pas) == 'créé pour 4530')
+        verifier('… même si la boîte s’ouvre ailleurs dans la page (son chemin a changé)',
+                 rejouer_sur(DIALOGUE % '<div><p>Bandeau du jour</p><div></div></div>', pas) == 'créé pour 4530')
+        ancien = [dict(g) for g in pas]
+        ancien[1] = dict(ancien[1], cible=dict(ancien[1]['cible'], texte='4530', etiquette=''))   # comme l'enregistrait la version d'avant
+        verifier('un SEE appris avec la version d’avant (le champ décrit par « 4530 ») : refait quand même',
+                 rejouer_sur(DIALOGUE % '', ancien) == 'créé pour 4530')
+        perdu = [dict(g) for g in pas]
+        perdu[1] = dict(perdu[1], cible=dict(perdu[1]['cible'], etiquette='Machine', chemin='div#nulle-part > input'))
+        dit = rejouer_sur(DIALOGUE % '', perdu)
+        verifier('un champ vraiment introuvable : l’erreur dit son nom et les champs visibles (« PSN »)',
+                 dit.startswith('erreur : Je ne retrouve plus le champ « Machine »') and '« PSN »' in dit, dit)
+
+        pas = apprendre_sur(SUGGESTIONS, [clic('document.querySelector("input")'), taper('4530'),
+                                          clic('document.querySelector("#sugg li")'), clic('document.querySelector("button")')])
+        verifier('liste de suggestions : la frappe « 4530 » est apprise AVANT le clic sur la suggestion « 4530 »',
+                 [(g['faire'], g.get('texte') or g['cible'].get('texte')) for g in pas] == [('remplir', '4530'), ('cliquer', '4530'), ('cliquer', 'Submit')],
+                 [(g['faire'], g.get('texte') or g['cible'].get('texte')) for g in pas])
+        verifier('… et refaite : « créé pour 4530 »', rejouer_sur(SUGGESTIONS, pas) == 'créé pour 4530')
+
+        pas = apprendre_sur(FANTOME, [clic('document.querySelector("champ-psn").shadowRoot.querySelector("input")'), taper('4530'),
+                                      clic('document.querySelector("button")')])
+        rempli = [g for g in pas if g['faire'] == 'remplir']
+        verifier('champ dans un composant à racine fantôme : appris, avec son nom « PSN »',
+                 len(rempli) == 1 and rempli[0]['cible'].get('etiquette') == 'PSN', [(g['faire'], g['cible']) for g in pas])
+        verifier('… et refait : « créé pour 4530 »', rejouer_sur(FANTOME, pas) == 'créé pour 4530')
+
+        # GATES de bout en bout : appris sur HDK, refait pour THS, et pour un contrat absent.
+        GATES = ('<input placeholder="Contrat"><ul id="l"></ul><div id="res"></div>'
+                 '<script>var C=["HDK — 634 plans","HDK Tranche 2 — 120 plans","THS — 180 plans"],i=document.querySelector("input"),l=document.getElementById("l");'
+                 'i.addEventListener("input",function(){var v=i.value.toLowerCase();l.innerHTML=v?C.filter(function(c){return c.toLowerCase().indexOf(v)===0;})'
+                 '.map(function(c){return "<li>"+c+"</li>";}).join(""):"";});'
+                 'l.addEventListener("click",function(e){if(e.target.tagName==="LI")document.getElementById("res").textContent="export "+e.target.textContent;});</script>')
+        pas = apprendre_sur(GATES, [clic('document.querySelector("input")'), taper('HDK'), clic('document.querySelector("#l li")')])
+        appris, contrat = robot.reperer_contrat(pas, ['HDK', 'HDK Tranche 2', 'THS'])
+        scen = {'nom': 'GATES', 'depart': 'x', 'etapes': pas}
+        verifier('GATES appris sur HDK : le nom du contrat est retrouvé seul', (appris, contrat) == ('HDK', 'HDK'), (appris, contrat, pas))
+        verifier('… refait pour THS : c’est THS qui est exporté',
+                 rejouer_sur(GATES, robot.pour_le_contrat(scen, 'HDK', 'THS', 'THS')['etapes']) == 'export THS — 180 plans')
+        verifier('… refait pour HDK Tranche 2 : la bonne tranche',
+                 rejouer_sur(GATES, robot.pour_le_contrat(scen, 'HDK', 'HDK Tranche 2', 'HDK Tranche 2')['etapes']) == 'export HDK Tranche 2 — 120 plans')
+        verifier('… refait pour HDK : HDK, pas sa tranche 2',
+                 rejouer_sur(GATES, robot.pour_le_contrat(scen, 'HDK', 'HDK', 'HDK')['etapes']) == 'export HDK — 634 plans')
+        dit = rejouer_sur(GATES, robot.pour_le_contrat(scen, 'HDK', 'VRK', 'VRK')['etapes'])
+        verifier('… pour un contrat que GATES ne montre pas (VRK) : il s’arrête, rien n’est exporté à sa place',
+                 dit.startswith('erreur : Je ne retrouve plus « VRK — 634 plans »'), dit)
 
 print('\n═══════════════════════════════════════')
 print('%d vérification(s) réussie(s), %d échec(s)' % (len(faits), len(echecs)))

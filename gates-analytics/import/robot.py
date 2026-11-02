@@ -165,6 +165,37 @@ def chrome(visible=True, grand=True):
                   profil=str(r / ('edge' if edge else 'chrome')), sans_fenetre=not visible, delai=60, options=options)
 
 
+# ---------------------------------------------------------------- le nom d'un champ
+# Un champ se reconnaît à son NOM, pas à ce qu'on y a tapé : appris rempli
+# (« 4530 »), il est vide le lendemain. Son nom : son <label>, son
+# aria-labelledby, sinon le court intitulé posé juste avant lui (« PSN »).
+# Le même calcul sert au guetteur (apprendre) et à la recherche (rejouer).
+ETIQUETTE_JS = r"""
+  var etiquetteDe = function (e) {
+    var court = function (s) { var t = String(s || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean)[0] || '';
+                               return t.length <= 40 ? t.replace(/\s+/g, ' ').replace(/\s*[:*]+\s*$/, '') : ''; };
+    var t = '';
+    try {
+      if (e.labels && e.labels.length) t = court(e.labels[0].innerText);
+      if (!t && e.getAttribute('aria-labelledby')) {
+        var racine = e.getRootNode ? e.getRootNode() : document;
+        t = court(e.getAttribute('aria-labelledby').split(/\s+/).map(function (id) {
+          var x = racine.getElementById ? racine.getElementById(id) : document.getElementById(id); return x ? x.innerText : ''; }).join(' '));
+      }
+      for (var p = e, k = 0; !t && p && k < 4; k++, p = p.parentElement) {
+        for (var s = p.previousElementSibling; !t && s; s = s.previousElementSibling) {
+          if (s.matches && s.matches('input,select,textarea,button')) break;
+          t = court(s.innerText);
+          if (s.querySelector && s.querySelector('input,select,textarea')) t = '';
+        }
+      }
+    } catch (x) {}
+    return t;
+  };
+  var estChamp = function (e) { return !!(e && e.matches && e.matches('input:not([type]),input[type=text],input[type=search],input[type=email],input[type=number],input[type=date],input[type=tel],textarea,select')); };
+"""
+
+
 # ---------------------------------------------------------------- le guetteur
 # Injecté dans chaque page : il dit au robot chaque clic, chaque champ rempli,
 # chaque choix dans une liste ; il garde tout dans le même onglet (un lien
@@ -175,7 +206,17 @@ def chrome(visible=True, grand=True):
 GUETTEUR = r"""
 (function () {
   if (window.__suiviFwdGuette) return; window.__suiviFwdGuette = true;
-  var dire = function (o) { try { window.__suiviFwd(JSON.stringify(o)); } catch (e) {} };
+  var envoyer = function (o) { try { window.__suiviFwd(JSON.stringify(o)); } catch (e) {} };
+/*ETIQUETTE*/
+  /* Ce qu'on tape s'écrit dès la frappe (« input ») : une liste de suggestions
+     (taper 4530, puis cliquer « 4530 » dans la liste) ne laisse souvent
+     passer aucun « change ». La frappe est regroupée, et toujours écrite
+     AVANT le geste suivant, pour garder l'ordre. */
+  var frappe = null;
+  var vider = function () { if (frappe) { var f = frappe; frappe = null; clearTimeout(f.m); envoyer(f.geste); } };
+  var dire = function (o) { vider(); envoyer(o); };
+  /* La vraie cible, même dans un composant à racine fantôme (shadow DOM). */
+  var cibleDe = function (ev) { var p = ev.composedPath ? ev.composedPath() : []; return (p[0] && p[0].nodeType === 1) ? p[0] : ev.target; };
   /* La première ligne seulement : un menu « GATES » qui contient ses sous-menus
      se décrit « GATES », pas « GATES Données MK1 Données MK2… ». */
   var premiere = function (s) { return String(s || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean)[0] || ''; };
@@ -193,9 +234,10 @@ GUETTEUR = r"""
   };
   var decrire = function (e) {
     var a = function (n) { return e.getAttribute(n) || ''; };
+    var saisie = estChamp(e) && !e.matches('select');      // son contenu change : ce n'est pas son nom
     return { balise: e.tagName.toLowerCase(), id: stable(e.id) ? e.id : '', nom: a('name'), role: a('role'), type: a('type'),
-             label: a('aria-label'), titre: a('title'), texte: texte(e), placeholder: a('placeholder'), href: a('href'),
-             chemin: chemin(e), page: location.host + location.pathname };
+             label: a('aria-label'), titre: a('title'), texte: saisie ? '' : texte(e), placeholder: a('placeholder'), href: a('href'),
+             etiquette: estChamp(e) ? etiquetteDe(e) : '', chemin: chemin(e), page: location.host + location.pathname };
   };
   var FORT = 'a,button,input,select,textarea,label,summary,option,[role=button],[role=link],[role=menuitem],[role=option],' +
              '[role=tab],[role=checkbox],[role=radio],[role=treeitem]';
@@ -211,22 +253,30 @@ GUETTEUR = r"""
   };
   var CONNEXION = /keycloak|login|signin|sso|\/auth\b|oauth|adfs|openid-connect|saml|authorize/i;
   var libre = function (u) { return window.top === window && !CONNEXION.test(location.href) && !CONNEXION.test(String(u || '')); };
-  var champ = function (e) { return e.matches && e.matches('input:not([type]),input[type=text],input[type=search],input[type=email],input[type=number],input[type=date],textarea'); };
+  var champ = function (e) { return estChamp(e) && !e.matches('select'); };
   document.addEventListener('click', function (ev) {
     if (!ev.isTrusted) return;            // un clic de la page elle-même (lien de téléchargement…)
-    var e = cliquable(ev.target);
+    vider();
+    var e = cliquable(cibleDe(ev));
     var a = ev.target.closest && ev.target.closest('a[target]');
     if (a && a.target !== '_self' && libre(a.href)) a.target = '_self';
     if (champ(e) || (e.matches && e.matches('select,input[type=password]'))) return;
     dire({ faire: 'cliquer', cible: decrire(e) });
   }, true);
+  document.addEventListener('input', function (ev) {
+    var e = cibleDe(ev); if (!champ(e) || !ev.isTrusted) return;
+    if (frappe && frappe.e !== e) vider();
+    if (frappe) clearTimeout(frappe.m);
+    frappe = { e: e, geste: { faire: 'remplir', cible: decrire(e), texte: e.value } };
+    frappe.m = setTimeout(vider, 800);
+  }, true);
   document.addEventListener('change', function (ev) {
-    var e = ev.target; if (!e.matches || e.matches('input[type=password]')) return;
+    var e = cibleDe(ev); if (!e.matches || e.matches('input[type=password]')) return;
     if (e.matches('select')) dire({ faire: 'choisir', cible: decrire(e), valeur: e.value, option: (e.options[e.selectedIndex] || {}).text || '' });
     else if (champ(e)) dire({ faire: 'remplir', cible: decrire(e), texte: e.value });
   }, true);
   document.addEventListener('keydown', function (ev) {
-    var e = ev.target;
+    var e = cibleDe(ev);
     if (ev.key === 'Enter' && champ(e)) { dire({ faire: 'remplir', cible: decrire(e), texte: e.value }); dire({ faire: 'entree', cible: decrire(e) }); }
   }, true);
   var ouvrir = window.open;
@@ -237,10 +287,13 @@ GUETTEUR = r"""
 })();
 """
 
+GUETTEUR = GUETTEUR.replace('/*ETIQUETTE*/', ETIQUETTE_JS)
+
 # Retrouver un élément décrit, dans la page et ses cadres de même origine ;
 # rend ses coordonnées à l'écran (pour un vrai clic de souris).
 TROUVER = r"""
 (function (d) {
+/*ETIQUETTE*/
   var norm = function (s) { return String(s || '').replace(/\s+/g, ' ').trim().toLowerCase(); };
   var premiere = function (s) { return String(s || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean)[0] || ''; };
   var vus = [];
@@ -248,6 +301,8 @@ TROUVER = r"""
   var parcourir = function (doc, dx, dy) {
     var liste = [].slice.call(doc.querySelectorAll(d.balise || '*'));
     liste.forEach(function (e) { vus.push({ e: e, dx: dx, dy: dy }); });
+    /* Les composants à racine fantôme (shadow DOM) : leurs champs aussi. */
+    [].slice.call(doc.querySelectorAll('*')).forEach(function (h) { if (h.shadowRoot) parcourir(h.shadowRoot, dx, dy); });
     [].slice.call(doc.querySelectorAll('iframe,frame')).forEach(function (f) {
       try { var r = f.getBoundingClientRect(); if (f.contentDocument) parcourir(f.contentDocument, dx + r.left, dy + r.top); } catch (x) {}
     });
@@ -273,8 +328,9 @@ TROUVER = r"""
     }
     if (d.texte && lu === norm(d.texte)) n += 6;
     else if (d.texte && lu && norm(d.texte).indexOf(lu) === 0) n += 3;   // appris avec ses sous-menus ouverts
+    if (d.etiquette && estChamp(e) && norm(etiquetteDe(e)) === norm(d.etiquette)) n += 6;   // le champ « PSN »
     if (d.titre && a('title') === d.titre) n += 3;
-    if (d.placeholder && a('placeholder') === d.placeholder) n += 3;
+    if (d.placeholder && a('placeholder') === d.placeholder) n += 4;
     if (d.href && a('href') === d.href) n += 3;
     if (d.role && a('role') === d.role) n += 1;
     if (d.type && a('type') === d.type) n += 1;
@@ -288,6 +344,29 @@ TROUVER = r"""
   return { x: meilleur.dx + r.left + r.width / 2, y: meilleur.dy + r.top + r.height / 2, note: note };
 })(%s)
 """
+TROUVER = TROUVER.replace('/*ETIQUETTE*/', ETIQUETTE_JS)
+
+# Les champs visibles de la page, avec leur nom : dit dans l'erreur quand un
+# champ n'est pas retrouvé, pour comprendre sans y être.
+CHAMPS_VISIBLES = r"""
+(function () {
+/*ETIQUETTE*/
+  var vus = [], parcourir = function (doc) {
+    [].slice.call(doc.querySelectorAll('input,textarea,select')).forEach(function (e) {
+      var r = e.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0 && estChamp(e)) vus.push(e);
+    });
+    [].slice.call(doc.querySelectorAll('*')).forEach(function (h) { if (h.shadowRoot) parcourir(h.shadowRoot); });
+    [].slice.call(doc.querySelectorAll('iframe,frame')).forEach(function (f) { try { if (f.contentDocument) parcourir(f.contentDocument); } catch (x) {} });
+  };
+  parcourir(document);
+  return vus.slice(0, 12).map(function (e) {
+    var a = function (n) { return e.getAttribute(n) || ''; };
+    return '« ' + (etiquetteDe(e) || a('aria-label') || a('placeholder') || a('name') || e.id || '?') + ' »' +
+           (a('placeholder') ? ' [' + a('placeholder') + ']' : '') + (a('name') ? ' (' + a('name') + ')' : '');
+  });
+})()
+""".replace('/*ETIQUETTE*/', ETIQUETTE_JS)
 
 
 # ---------------------------------------------------------------- outils CDP
@@ -438,12 +517,8 @@ def apprendre():
                         print('  → page %s' % m['params']['frame'].get('url', '').split('?')[0][:110])
                     if m.get('method') == 'Runtime.bindingCalled' and m['params'].get('name') == '__suiviFwd':
                         geste = json.loads(m['params']['payload'])
-                        if pas and geste.get('faire') == 'remplir' and pas[-1].get('faire') == 'remplir' and \
-                                pas[-1]['cible'].get('chemin') == geste['cible'].get('chemin'):
-                            pas[-1] = geste
-                        else:
-                            pas.append(geste)
-                        print('  ✓ %s %s' % (geste['faire'], (geste.get('cible') or {}).get('texte') or geste.get('texte') or ''))
+                        if ajouter_geste(pas, geste):
+                            print('  ✓ %s %s' % (geste['faire'], dire_geste(geste)))
             except ErreurPilote:
                 print('La fenêtre du robot s\'est fermée.')
                 break
@@ -503,6 +578,24 @@ def apprendre():
           ', tous les contrats, appris sur « %s »' % scenario['modele']['appris'] if entree.get('modele') else ', case %s' % entree['case']))
     if input('\nLe robot essaie tout de suite, devant vous ? (o/n) ').strip().lower().startswith('o'):
         essayer([nom])
+
+
+def ajouter_geste(pas, geste):
+    """Un geste vu pendant qu'on apprend. La frappe qui continue dans le même
+    champ remplace la précédente ; le même texte redit à la sortie du champ
+    (« change » après la frappe) n'est pas un geste de plus. Rend True si
+    quelque chose a changé."""
+    meme = lambda x: x.get('faire') == 'remplir' and (x.get('cible') or {}).get('chemin') == (geste.get('cible') or {}).get('chemin')   # noqa: E731
+    if geste.get('faire') == 'remplir':
+        if pas and meme(pas[-1]):
+            if pas[-1].get('texte') == geste.get('texte'):
+                return False
+            pas[-1] = geste
+            return True
+        if any(meme(x) and x.get('texte') == geste.get('texte') for x in pas[-3:]):
+            return False
+    pas.append(geste)
+    return True
 
 
 def norm(t):
@@ -571,7 +664,9 @@ def pour_le_contrat(scenario, appris, contrat, nom_gates):
     for g in scenario['etapes']:
         g2 = dict(g)
         cible = dict(g.get('cible') or {})
-        if motif.search(str(cible.get('texte') or '')):
+        # Ce qu'on clique ou choisit doit porter le nouveau nom ; un champ où l'on
+        # TAPE le nom, lui, est vide quand le robot arrive : rien à exiger de lui.
+        if g.get('faire') != 'remplir' and motif.search(str(cible.get('texte') or '')):
             cible['contient'] = nom_gates
         for k in ('texte', 'label', 'titre'):
             if k in cible:
@@ -640,9 +735,16 @@ def trouver(c, cible, delai=60):
         except ErreurPilote:
             pass
         time.sleep(0.5)
-    raise ErreurPilote('Je ne retrouve plus « %s » sur la page %s. La page a peut-être changé : refaites '
-                       '« Apprendre » pour cet export.' % (cible.get('texte') or cible.get('label') or cible.get('chemin'),
-                                                          cible.get('page')))
+    quoi = ('le champ « %s »' % (cible.get('etiquette') or cible.get('label') or cible.get('placeholder') or cible.get('nom') or '?')
+            if cible.get('balise') in ('input', 'textarea', 'select') else
+            '« %s »' % (cible.get('texte') or cible.get('label') or cible.get('titre') or cible.get('chemin')))
+    try:
+        vus = c.evaluer(CHAMPS_VISIBLES) or []
+    except ErreurPilote:
+        vus = []
+    raise ErreurPilote('Je ne retrouve plus %s sur la page %s. La page a peut-être changé : refaites '
+                       '« Apprendre » pour cet export.%s' % (quoi, cible.get('page'),
+                                                            '\n  Champs visibles à ce moment : ' + ', '.join(vus) if vus else ''))
 
 
 def vider_telechargements():
@@ -655,6 +757,51 @@ def vider_telechargements():
             pass
 
 
+def faire_geste(c, g):
+    """Un geste appris, refait dans la fenêtre du robot (souris et clavier
+    envoyés à la page elle-même : ni la souris ni le clavier de la personne).
+    Rend False pour une page de connexion inutile ce jour-là (sautée)."""
+    cible = dict(g.get('cible') or {})
+    facultatif = bool(CONNEXION.search(cible.get('page', '')))
+    try:
+        r = trouver(c, cible, delai=12 if facultatif else 60)
+    except ErreurPilote:
+        if facultatif and not CONNEXION.search(page_actuelle(c)):
+            return False
+        raise
+    if g['faire'] == 'cliquer':
+        souris(c, r['x'], r['y'])
+    elif g['faire'] == 'remplir':
+        souris(c, r['x'], r['y'])                    # comme une personne : un clic dans le champ, d'abord
+        c.evaluer('(function(e){e.focus(); if (e.select) e.select();})(window.__suiviCible)')
+        c.envoyer('Input.insertText', text=g.get('texte', ''))
+        # Une touche « Fin » : réveille les listes de suggestions qui écoutent le clavier.
+        for t in ('keyDown', 'keyUp'):
+            c.envoyer('Input.dispatchKeyEvent', type=t, key='End', code='End', windowsVirtualKeyCode=35, nativeVirtualKeyCode=35)
+        c.evaluer('window.__suiviCible.dispatchEvent(new Event("change",{bubbles:true}))')
+    elif g['faire'] == 'choisir':
+        pris = c.evaluer('(function(e,v,t){var o=[].slice.call(e.options).filter(function(x){return x.value===v;})[0]'
+                         '||[].slice.call(e.options).filter(function(x){return x.text===t;})[0]; if(!o) return false; e.value=o.value;'
+                         'e.dispatchEvent(new Event("input",{bubbles:true}));e.dispatchEvent(new Event("change",{bubbles:true}));return true;})'
+                         '(window.__suiviCible,%s,%s)' % (json.dumps(g.get('valeur', '')), json.dumps(g.get('option', ''))))
+        if pris is False:      # rien de choisi : la page garderait le choix d'avant (un autre contrat ?)
+            raise ErreurPilote('Le choix « %s » n\'existe pas dans la liste « %s ».'
+                               % (g.get('option') or g.get('valeur'), cible.get('etiquette') or cible.get('label') or cible.get('texte') or cible.get('nom') or '?'))
+    elif g['faire'] == 'entree':
+        c.evaluer('window.__suiviCible.focus()')
+        for t in ('keyDown', 'keyUp'):
+            c.envoyer('Input.dispatchKeyEvent', type=t, key='Enter', code='Enter', windowsVirtualKeyCode=13,
+                      nativeVirtualKeyCode=13, **({'text': '\r'} if t == 'keyDown' else {}))
+    return True
+
+
+def dire_geste(g):
+    cible = g.get('cible') or {}
+    if g['faire'] == 'remplir':
+        return '« %s » dans le champ « %s »' % (g.get('texte', ''), cible.get('etiquette') or cible.get('label') or cible.get('placeholder') or cible.get('nom') or '?')
+    return cible.get('texte') or cible.get('label') or g.get('option') or g.get('texte') or ''
+
+
 def rejouer(c, scenario, dossier_sortie):
     vider_telechargements()
     avant = set()
@@ -663,36 +810,12 @@ def rejouer(c, scenario, dossier_sortie):
         c.evaluer(GUETTEUR)    # même onglet pour les liens « nouvel onglet »
     except ErreurPilote:
         pass
+    n = len(scenario['etapes'])
     for i, g in enumerate(scenario['etapes'], 1):
-        cible = g.get('cible') or {}
-        facultatif = bool(CONNEXION.search(cible.get('page', '')))
-        try:
-            r = trouver(c, cible, delai=12 if facultatif else 60)
-        except ErreurPilote:
-            if facultatif and not CONNEXION.search(page_actuelle(c)):
-                print('  %d/%d (page de connexion inutile ce matin : sautée)' % (i, len(scenario['etapes'])))
-                continue
-            raise
-        if g['faire'] == 'cliquer':
-            souris(c, r['x'], r['y'])
-        elif g['faire'] == 'remplir':
-            c.evaluer('(function(e){e.focus(); if (e.select) e.select();})(window.__suiviCible)')
-            c.envoyer('Input.insertText', text=g.get('texte', ''))
-            c.evaluer('window.__suiviCible.dispatchEvent(new Event("change",{bubbles:true}))')
-        elif g['faire'] == 'choisir':
-            pris = c.evaluer('(function(e,v,t){var o=[].slice.call(e.options).filter(function(x){return x.value===v;})[0]'
-                             '||[].slice.call(e.options).filter(function(x){return x.text===t;})[0]; if(!o) return false; e.value=o.value;'
-                             'e.dispatchEvent(new Event("input",{bubbles:true}));e.dispatchEvent(new Event("change",{bubbles:true}));return true;})'
-                             '(window.__suiviCible,%s,%s)' % (json.dumps(g.get('valeur', '')), json.dumps(g.get('option', ''))))
-            if pris is False:      # rien de choisi : la page garderait le choix d'avant (un autre contrat ?)
-                raise ErreurPilote('Le choix « %s » n\'existe pas dans la liste « %s ».'
-                                   % (g.get('option') or g.get('valeur'), cible.get('label') or cible.get('texte') or cible.get('nom') or '?'))
-        elif g['faire'] == 'entree':
-            c.evaluer('window.__suiviCible.focus()')
-            for t in ('keyDown', 'keyUp'):
-                c.envoyer('Input.dispatchKeyEvent', type=t, key='Enter', code='Enter', windowsVirtualKeyCode=13,
-                          nativeVirtualKeyCode=13, **({'text': '\r'} if t == 'keyDown' else {}))
-        print('  %d/%d %s %s' % (i, len(scenario['etapes']), g['faire'], cible.get('texte') or g.get('texte') or ''))
+        if not faire_geste(c, g):
+            print('  %d/%d (page de connexion inutile ce matin : sautée)' % (i, n))
+            continue
+        print('  %d/%d %s %s' % (i, n, g['faire'], dire_geste(g)))
         time.sleep(1.2)
         attendre_page(c)
     chemin = c.attendre_telechargement(avant=avant, delai=600, motif=scenario.get('fichier'))
