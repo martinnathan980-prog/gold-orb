@@ -15,6 +15,14 @@ tableau de bord.
     python robot.py etat         ce que le robot sait, et son dernier passage
     python robot.py navigateur   Chrome ou Edge (Edge reconnaît la session Windows)
 
+Débrief 30 : tout se règle dans le tableau de bord (Administration → Contrats).
+Chaque jour, le robot lit dans la fenêtre d'import les contrats du jour — ceux
+qui ont un onglet, et ceux qu'on vient d'ajouter (« prévus ») — avec le nom
+exact de leur tranche dans GATES, exporte GATES pour chacun, SEE une seule
+fois, dépose tout, puis dit au tableau de bord ce qu'il a fait (son compte
+rendu, contrat par contrat). Ses exports appris avant (« GATES HDK », « SEE
+HDK » et « SEE ») se rangent tout seuls : rien à réapprendre.
+
 Tout tient dans la bibliothèque standard de Python, plus piloter_chrome.py (à
 côté). Le robot a son propre Chrome et son propre profil : vos onglets ne
 sont jamais touchés, et il ne voit ni ne garde aucun mot de passe (un champ
@@ -22,6 +30,7 @@ sont jamais touchés, et il ne voit ni ne garde aucun mot de passe (un champ
 
 Ses fichiers vivent dans %LOCALAPPDATA%\\SuiviFWD (ailleurs : ~/.suivi-fwd) :
     robot.json          la configuration (adresse du tableau, exports appris)
+    robot.avant-rangement.json  la même, telle qu'avant le rangement du débrief 30
     exports/*.json      un export appris = la suite des gestes
     chrome/             le profil du Chrome du robot (connexions gardées)
     telechargements/    où ses fichiers arrivent
@@ -671,12 +680,9 @@ def apprendre():
         noms = cfg.setdefault('noms_gates', {})
         if contrat and norm(appris) != norm(contrat):
             noms[contrat] = appris
-        for autre in contrats:
-            if autre != contrat and norm(appris) != norm(contrat or appris):
-                vu = noms.get(autre, autre)
-                r = input('Dans GATES, le contrat « %s » s\'écrit comment ? (Entrée = %s)\n> ' % (autre, vu)).strip()
-                if r:
-                    noms[autre] = r
+        # Débrief 30 : le nom de chaque contrat dans GATES se donne dans sa fiche,
+        # au tableau de bord : plus de question ici.
+        print('\nLes noms dans GATES se règlent dans le tableau de bord : Administration → Contrats.')
         scenario['modele'] = {'appris': appris}
         entree['modele'] = True
         # Un seul export GATES, pour tous les contrats : ceux appris un par un avant s'en vont.
@@ -693,9 +699,18 @@ def apprendre():
         entree['case'] = autres[0] if len(autres) == 1 else choisir_case(cases, 'SEE')
     else:
         entree['case'] = choisir_case(cases, nom if nom.upper().startswith('GATES') else 'GATES ' + nom)
+    if entree.get('case'):
+        # Débrief 30 : l'export qu'on vient de montrer passe en premier pour sa case
+        # (les autres de la même case restent en secours).
+        (cfg.get('reussis') or {}).pop(norm(entree['case']), None)
     f = racine() / 'exports' / (nom_de_fichier(nom) + '.json')
     f.write_text(json.dumps(scenario, ensure_ascii=False, indent=2), encoding='utf-8')
     entree['scenario'] = f.name
+    # Ses secours (les autres exportations de la même case) ne se perdent pas.
+    remplacee = next((e for e in anciens if e.get('nom') == nom and norm(e.get('case')) == norm(entree.get('case'))), None)
+    secours = [s for s in (remplacee or {}).get('secours') or [] if s != f.name]
+    if secours and not entree.get('modele'):
+        entree['secours'] = secours
     cfg['exports'] = [e for e in anciens if e.get('nom') != nom] + [entree]
     garder(cfg)
     noter('Appris : %s (%d gestes, fichier %s%s).' % (nom, len(pas), fichier,
@@ -732,18 +747,50 @@ def contrats_du_tableau(cases):
     return [n[6:].strip() for n in cases if n.upper().startswith('GATES ') and n[6:].strip()]
 
 
+def candidats_contrat(pas):
+    """Les mots des gestes qui peuvent désigner un contrat : ce qu'on a tapé,
+    choisi dans une liste ou cliqué (60 caractères au plus)."""
+    candidats = []
+    for g in pas or []:
+        faire = g.get('faire')
+        for t in ((g.get('texte'),) if faire == 'remplir' else (g.get('option'), g.get('valeur')) if faire == 'choisir'
+                  else ((g.get('cible') or {}).get('texte'),) if faire == 'cliquer' else ()):
+            t = str(t or '').strip()
+            if t and len(t) <= 60 and t not in candidats:
+                candidats.append(t)
+    return candidats
+
+
+def valeur_de(dico, cle):
+    """dico[cle], la clé comparée sans tenir compte de la casse ni des espaces."""
+    for k, v in (dico or {}).items():
+        if norm(k) == norm(cle):
+            return v
+    return None
+
+
+def mot_du_contrat(etapes, contrat, noms):
+    """Débrief 30 : dans les gestes d'un export appris pour un seul contrat
+    (« GATES HDK »), le mot qui le désigne — son nom, ou celui que le robot
+    avait retenu pour lui dans GATES. '' s'il n'y est pas. Aucune question."""
+    autre = norm(valeur_de(noms, contrat) or '')
+    for t in candidats_contrat(etapes):
+        if norm(t) == norm(contrat) or (autre and norm(t) == autre):
+            return t
+    # Sinon, un seul mot TAPÉ qui en est tout proche (« THSA » pour THS : le
+    # même début, quatre lettres d'écart au plus).
+    c = norm(contrat)
+    proches = [t for t in candidats_contrat([g for g in etapes or [] if g.get('faire') == 'remplir'])
+               if c and (norm(t).startswith(c) or c.startswith(norm(t))) and len(norm(t)) >= 2 and abs(len(norm(t)) - len(c)) <= 4]
+    return proches[0] if len(proches) == 1 else ''
+
+
 def reperer_contrat(pas, contrats):
     """Dans les gestes appris, le mot qui désigne le contrat : tapé dans un
     champ, choisi dans une liste, ou cliqué. Il est retrouvé seul quand il est
     le nom d'un contrat du tableau ; sinon on demande. Rend (le mot appris,
     le contrat du tableau qu'il désigne — ou '' si le tableau n'a rien dit)."""
-    candidats = []
-    for g in pas:
-        for t in ((g.get('texte'),) if g['faire'] == 'remplir' else (g.get('option'), g.get('valeur')) if g['faire'] == 'choisir'
-                  else ((g.get('cible') or {}).get('texte'),) if g['faire'] == 'cliquer' else ()):
-            t = str(t or '').strip()
-            if t and len(t) <= 60 and t not in candidats:
-                candidats.append(t)
+    candidats = candidats_contrat(pas)
     for t in candidats:
         for c in contrats:
             if norm(t) == norm(c):
@@ -803,26 +850,85 @@ def pour_le_contrat(scenario, appris, contrat, nom_gates):
     return dict(scenario, etapes=etapes, nom='GATES ' + contrat)
 
 
-def cases_du_tableau(c, cfg):
-    """Les cases de la fenêtre d'import du tableau de bord, comme elles s'y
-    lisent (« GATES HDK », « GATES HDK Tranche 2 »…, et celle de SEE) : le
-    fichier appris ira dans l'une d'elles, choisie dans la liste plutôt que
-    tapée (une lettre de travers, et le dépôt ne la trouvait pas). Vide si
-    la fenêtre ne s'ouvre pas : on demande alors le nom, comme avant."""
+# Débrief 30 : ce que la fenêtre d'import dit de ses cases — leurs étiquettes
+# (« GATES HDK », « SEE »), et pour chaque case GATES son contrat, le nom
+# exact de sa tranche dans GATES (la fiche du tableau de bord) et s'il est
+# « prévu » (ajouté dans le tableau de bord, pas encore d'onglet). Une
+# fenêtre d'avant n'a pas ces attributs : contrat vide, on se rabat sur les
+# étiquettes.
+TABLEAU_JS = ('(function(){var t=function(e){return e?e.textContent.replace(/\\s+/g," ").trim():"";};'
+              'return {cases:[].map.call(document.querySelectorAll(".case:not(.nouvelle) .etiquette"),t),'
+              'contrats:[].map.call(document.querySelectorAll(".case.gates:not(.nouvelle)"),function(k){'
+              'return {contrat:k.getAttribute("data-contrat")||"",case:t(k.querySelector(".etiquette")),'
+              'nom_gates:k.getAttribute("data-nom-gates")||"",prevu:k.getAttribute("data-prevu")==="1"};})};})()')
+
+
+def adresse_import(cfg):
+    return cfg['tableau'] + ('&' if '?' in cfg['tableau'] else '?') + 'page=import'
+
+
+def lire_tableau(c, cfg):
+    """La fenêtre d'import du tableau de bord, lue : {'cases': les étiquettes
+    (« GATES HDK », « GATES HDK Tranche 2 »…, et celle de SEE), 'contrats':
+    [{'contrat', 'case', 'nom_gates', 'prevu'}]}. Vide si la fenêtre ne
+    s'ouvre pas."""
+    vide = {'cases': [], 'contrats': []}
     if not cfg.get('tableau'):
-        return []
+        return vide
     try:
-        c.ouvrir(cfg['tableau'] + ('&' if '?' in cfg['tableau'] else '?') + 'page=import')
+        c.ouvrir(adresse_import(cfg))
         cadre, ctx = cadre_import(c, delai=60)
         try:
             time.sleep(2)
-            noms = dans_le_cadre(cadre, ctx, '[].map.call(document.querySelectorAll(".case:not(.nouvelle) .etiquette"), '
-                                             'function (e) { return e.textContent.replace(/\\s+/g, " ").trim(); })')
+            lu = dans_le_cadre(cadre, ctx, TABLEAU_JS) or {}
         finally:
             cadre._canal.fermer()
-        return [n for n in (noms or []) if n]
     except (ErreurPilote, OSError, ValueError):
-        return []
+        return vide
+    return {'cases': [n for n in (lu.get('cases') or []) if n],
+            'contrats': [k for k in (lu.get('contrats') or []) if isinstance(k, dict)]}
+
+
+def cases_du_tableau(c, cfg):
+    """Les cases de la fenêtre d'import, comme elles s'y lisent : le fichier
+    appris ira dans l'une d'elles, choisie dans la liste plutôt que tapée
+    (une lettre de travers, et le dépôt ne la trouvait pas). Vide si la
+    fenêtre ne s'ouvre pas : on demande alors le nom, comme avant."""
+    return lire_tableau(c, cfg)['cases']
+
+
+def en_contrat(k):
+    """Un contrat du jour, toujours sous la même forme : une chaîne (« HDK »,
+    comme avant) devient {'contrat': 'HDK', 'case': 'GATES HDK', 'nom_gates':
+    '', 'prevu': False}."""
+    if isinstance(k, dict):
+        contrat = str(k.get('contrat') or '').strip()
+        return {'contrat': contrat, 'case': str(k.get('case') or '').strip() or 'GATES ' + contrat,
+                'nom_gates': str(k.get('nom_gates') or '').strip(), 'prevu': bool(k.get('prevu'))}
+    return {'contrat': str(k).strip(), 'case': 'GATES ' + str(k).strip(), 'nom_gates': '', 'prevu': False}
+
+
+def contrats_lus(tableau):
+    """Les contrats du jour, lus dans la fenêtre : ceux dont la case dit son
+    contrat (data-contrat) ; avec une fenêtre d'avant, tirés des étiquettes
+    « GATES … »."""
+    lus = [en_contrat(k) for k in tableau.get('contrats') or [] if str(k.get('contrat') or '').strip()]
+    if lus:
+        return lus
+    return [en_contrat(k) for k in contrats_du_tableau(tableau.get('cases') or [])]
+
+
+def nom_gates_de(cfg, k):
+    """Ce que le robot tape dans GATES pour ce contrat : le nom de sa fiche
+    dans le tableau de bord d'abord (c'est là qu'il se règle), sinon ce que
+    le robot avait retenu (noms_gates), sinon le nom du contrat."""
+    k = en_contrat(k)
+    if k['nom_gates']:
+        return k['nom_gates']
+    for cle, v in (cfg.get('noms_gates') or {}).items():
+        if norm(cle) == norm(k['contrat']) and str(v or '').strip():
+            return str(v).strip()
+    return k['contrat']
 
 
 def choisir_case(cases, proposee):
@@ -1077,7 +1183,11 @@ def faire_geste(c, g, suivant=None):
         time.sleep(0.4)
         attendre_calme(c)                            # SEE calcule (« Submit ») : on attend qu'il ait fini
         if menu:
-            verifier_clic(c, g, cible, suivant)
+            try:
+                verifier_clic(c, g, cible, suivant)
+            except ErreurPilote as err:
+                err.introuvable = False              # l'élément était là : c'est sa suite qui n'est pas venue
+                raise
     elif g['faire'] == 'remplir':
         souris(c, r['x'], r['y'])                    # comme une personne : un clic dans le champ, d'abord
         c.evaluer('(function(e){e.focus(); if (e.select) e.select();})(window.__suiviCible)')
@@ -1146,13 +1256,26 @@ def rejouer(c, scenario, dossier_sortie):
     etapes = scenario['etapes']
     n, k_fichier, chemin = len(etapes), indice_telechargement(scenario), None
     for i, g in enumerate(etapes, 1):
-        if not faire_geste(c, g, etapes[i] if i < n and i != k_fichier else None):
+        # Débrief 30 : une erreur dit sur quel geste elle est venue (err.geste) :
+        # un clic qui exigeait le nom du contrat et ne l'a pas trouvé, c'est
+        # GATES qui ne montre pas cette tranche.
+        try:
+            fait = faire_geste(c, g, etapes[i] if i < n and i != k_fichier else None)
+        except ErreurPilote as err:
+            if getattr(err, 'geste', None) is None:
+                err.geste = g
+            raise
+        if not fait:
             print('  %d/%d (page de connexion inutile ce matin : sautée)' % (i, n))
             continue
         print('  %d/%d %s %s' % (i, n, g['faire'], dire_geste(g)))
         if i == k_fichier:
             print('    (le fichier se prépare : le robot attend qu\'il soit arrivé…)')
-            chemin = c.attendre_telechargement(avant=avant, delai=DELAI_FICHIER, motif=scenario.get('fichier'))
+            try:
+                chemin = c.attendre_telechargement(avant=avant, delai=DELAI_FICHIER, motif=scenario.get('fichier'))
+            except ErreurPilote as err:
+                err.geste, err.introuvable = g, False
+                raise
             print('    ✓ fichier arrivé : %s' % chemin.name)
             attendre_calme(c, 60)
         time.sleep(1.2)
@@ -1166,10 +1289,137 @@ def rejouer(c, scenario, dossier_sortie):
 
 def exports_choisis(noms=None):
     cfg = config()
+    ranger_exports(cfg)
     liste = cfg.get('exports', [])
     if noms:
         liste = [e for e in liste if e['nom'] in noms]
     return cfg, liste
+
+
+# ---------------------------------------------------------------- ranger les exports
+# Débrief 30 : le robot range tout seul ce qu'il a appris, pour que personne
+# n'ait rien à réapprendre :
+# — un ancien export GATES fait pour un seul contrat (« GATES HDK », appris
+#   avant le modèle « tous les contrats ») devient le modèle de tous, si le
+#   nom du contrat se retrouve dans ses gestes ; à côté d'un modèle, il
+#   s'efface (le nom qu'il tapait est gardé) ;
+# — deux exportations pour la même case (« SEE HDK » et « SEE », toutes deux
+#   dans la case SEE) : une seule est faite chaque jour, la plus récente (ou
+#   celle qui a marché la dernière fois), l'autre reste en secours.
+# Aucun fichier d'export n'est effacé ; robot.json est d'abord copié dans
+# robot.avant-rangement.json (une fois).
+_DEJA_DIT = set()
+
+
+def lire_scenario(nom):
+    """Le scénario d'un export appris (exports/<nom>), ou None s'il est illisible."""
+    try:
+        s = json.loads((racine() / 'exports' / str(nom or '')).read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return None
+    return s if isinstance(s, dict) and isinstance(s.get('etapes', []), list) else None
+
+
+def date_apprise(nom, scenario=None):
+    """Quand cet export a été appris : sa date « appris », sinon celle de son fichier."""
+    s = scenario if scenario is not None else lire_scenario(nom)
+    if s and s.get('appris'):
+        return str(s['appris'])
+    try:
+        return datetime.datetime.fromtimestamp((racine() / 'exports' / str(nom or '')).stat().st_mtime).isoformat(timespec='seconds')
+    except OSError:
+        return ''
+
+
+def case_de(e):
+    return str(e.get('case') or e.get('nom') or '').strip()
+
+
+def est_gates(e):
+    return bool(e.get('modele')) or case_de(e).upper().startswith('GATES')
+
+
+def ranger_exports(cfg):
+    """Range cfg['exports'] (voir plus haut). Rend True si quelque chose a
+    changé. Un second appel ne change plus rien."""
+    lus = []                                    # [entrée, scénario, date]
+    for e in cfg.get('exports') or []:
+        s = lire_scenario(e.get('scenario')) if isinstance(e, dict) else None
+        lus.append([e, s, date_apprise(e.get('scenario'), s) if s is not None else ''])
+    if not lus:
+        return False
+    avant = json.dumps(cfg, sort_keys=True, ensure_ascii=False)
+    noms = dict(cfg.get('noms_gates') or {})
+    dits, partent = [], []
+
+    def retenir_nom(e, s):
+        contrat = case_de(e)[6:].strip()
+        mot = mot_du_contrat(s.get('etapes'), contrat, noms) if contrat else ''
+        if mot and norm(mot) != norm(contrat) and valeur_de(noms, contrat) is None:
+            noms[contrat] = mot
+
+    # 1. GATES : un seul export, le modèle de tous les contrats.
+    gates = sorted([x for x in lus if x[1] is not None and est_gates(x[0])], key=lambda x: x[2], reverse=True)
+    modeles = [x for x in gates if x[0].get('modele')]
+    anciens = [x for x in gates if not x[0].get('modele')]
+    if modeles:
+        partent = modeles[1:] + anciens
+    elif anciens:
+        x = anciens[0]
+        e, s = x[0], x[1]
+        contrat = case_de(e)[6:].strip()
+        mot = mot_du_contrat(s.get('etapes'), contrat, noms) if contrat else ''
+        if mot:
+            s['modele'] = {'appris': mot, 'contrat': contrat, 'migre': True}
+            (racine() / 'exports' / e['scenario']).write_text(json.dumps(s, ensure_ascii=False, indent=2), encoding='utf-8')
+            x[0] = {'nom': 'GATES', 'scenario': e['scenario'], 'modele': True}
+            if norm(mot) != norm(contrat) and valeur_de(noms, contrat) is None:
+                noms[contrat] = mot
+            dits.append('« %s » devient l’export GATES de tous les contrats (appris sur « %s »)' % (e.get('nom'), mot))
+            partent = anciens[1:]
+        elif e.get('scenario') not in _DEJA_DIT:
+            _DEJA_DIT.add(e.get('scenario'))
+            noter('%s : le nom du contrat n’est pas retrouvé dans ses gestes ; il reste l’export de %s seul.' % (case_de(e), contrat))
+    for x in partent:
+        if not x[0].get('modele'):
+            retenir_nom(x[0], x[1])
+        dits.append('« %s » n’est plus fait : l’export GATES de tous les contrats le remplace' % x[0].get('nom'))
+    lus = [x for x in lus if not any(x is p for p in partent)]
+
+    # 2. Une seule exportation par case ; les autres en secours.
+    groupes = {}
+    for x in lus:
+        if x[1] is not None and not x[0].get('modele'):
+            groupes.setdefault(norm(case_de(x[0])), []).append(x)
+    for cle, xs in groupes.items():
+        if len(xs) < 2:
+            continue
+        xs = sorted(xs, key=lambda x: x[2], reverse=True)
+        reussi = (cfg.get('reussis') or {}).get(cle)
+        principal = next((x for x in xs if x[0].get('scenario') == reussi), xs[0])
+        autres = [x for x in xs if x is not principal]
+        fichiers = []
+        for x in [principal] + autres:
+            for f in ([] if x is principal else [x[0].get('scenario')]) + list(x[0].get('secours') or []):
+                if f and f != principal[0].get('scenario') and f not in fichiers:
+                    fichiers.append(f)
+        fichiers.sort(key=lambda f: date_apprise(f), reverse=True)
+        principal[0] = dict(principal[0], secours=fichiers)
+        dits.append('case %s : une seule exportation chaque jour, « %s » ; %s en secours' % (
+            case_de(principal[0]), principal[0].get('nom'), ', '.join('« %s »' % x[0].get('nom') for x in autres)))
+        lus = [x for x in lus if not any(x is a for a in autres)]
+
+    cfg['exports'] = [x[0] for x in lus]
+    if noms or 'noms_gates' in cfg:
+        cfg['noms_gates'] = noms
+    if json.dumps(cfg, sort_keys=True, ensure_ascii=False) == avant:
+        return False
+    f, copie = racine() / 'robot.json', racine() / 'robot.avant-rangement.json'
+    if f.exists() and not copie.exists():
+        shutil.copy2(f, copie)
+    garder(cfg)
+    noter('Exports rangés : %s. (Rien n’est effacé : la configuration d’avant est dans %s.)' % (' ; '.join(dits) or 'noms dans GATES retenus', copie.name))
+    return True
 
 
 def photo(c):
@@ -1187,52 +1437,128 @@ def photo(c):
 def a_faire(cfg, liste, contrats):
     """Les exports du jour, un par case : l'export GATES appris sur un
     contrat devient un export par contrat du tableau de bord — ceux
-    d'aujourd'hui, un contrat ajouté hier compris —, chacun dans sa case
-    « GATES <contrat> ». Rend [(entrée, scénario)]."""
+    d'aujourd'hui, un contrat ajouté hier compris (« prévu », sans onglet
+    encore) —, chacun dans sa case « GATES <contrat> », avec le nom de sa
+    tranche dans GATES (celui de sa fiche d'abord). `contrats` : des noms,
+    ou ce que lit contrats_lus. Une exportation qui a des secours les
+    emporte (e['secours'] : [(fichier, scénario)], dans l'ordre où les
+    essayer). Rend [(entrée, scénario)]."""
     travaux = []
+    contrats = [en_contrat(k) for k in contrats or []]
     for e in liste:
+        if not e.get('modele'):
+            # La dernière qui a marché d'abord, puis la principale, puis les secours.
+            fichiers = [e['scenario']] + [f for f in e.get('secours') or [] if f != e['scenario']]
+            reussi = (cfg.get('reussis') or {}).get(norm(case_de(e)))
+            if reussi in fichiers:
+                fichiers.remove(reussi)
+                fichiers.insert(0, reussi)
+            charges = [(f, lire_scenario(f)) for f in fichiers]
+            charges = [(f, s) for f, s in charges if s is not None]
+            if not charges:
+                raise ErreurPilote('L\'export appris « %s » est illisible (exports\\%s) : refaites « Apprendre » pour lui.' % (e.get('nom'), e['scenario']))
+            tache = dict(e, fichier=charges[0][0], secours=charges[1:])
+            travaux.append((tache, charges[0][1]))
+            continue
         scenario = json.loads((racine() / 'exports' / e['scenario']).read_text(encoding='utf-8'))
-        if not (e.get('modele') and scenario.get('modele')):
+        if not scenario.get('modele'):
             travaux.append((e, scenario))
             continue
         if not contrats:
             raise ErreurPilote('Je ne connais aucun contrat : la fenêtre d\'import du tableau de bord n\'en montre aucun.')
         appris = scenario['modele']['appris']
         for k in contrats:
-            nom_gates = (cfg.get('noms_gates') or {}).get(k, k)
-            travaux.append(({'nom': 'GATES ' + k, 'case': 'GATES ' + k}, pour_le_contrat(scenario, appris, k, nom_gates)))
+            ng = nom_gates_de(cfg, k)
+            travaux.append(({'nom': 'GATES ' + k['contrat'], 'case': k['case'] or 'GATES ' + k['contrat'], 'contrat': k['contrat'],
+                             'nom_gates': ng, 'prevu': k['prevu']}, pour_le_contrat(scenario, appris, k['contrat'], ng)))
     return travaux
+
+
+class Rate(str):
+    """Un export raté, dit « nom : raison » comme avant ; il garde aussi son
+    code (gates-introuvable…) et son contrat, pour le compte rendu."""
+    code, contrat = '', ''
+
+
+def rate(texte, code='', contrat=''):
+    r = Rate(texte)
+    r.code, r.contrat = code, contrat
+    return r
+
+
+def code_gates(err, nom_gates):
+    """L'export GATES d'un contrat a calé : est-ce que GATES ne montre pas
+    cette tranche (un élément qui devait porter son nom, introuvable), ou
+    autre chose ?"""
+    g = getattr(err, 'geste', None) or {}
+    if getattr(err, 'introuvable', True) is not False:
+        contient = (g.get('cible') or {}).get('contient')
+        choix = ' '.join(str(g.get(k) or '') for k in ('option', 'valeur')) if g.get('faire') == 'choisir' else ''
+        if contient or (nom_gates and norm(nom_gates) in norm(choix)):
+            return 'gates-introuvable'
+    return 'gates-export'
 
 
 def faire_les_exports(c, cfg, liste, dossier, contrats):
     """Chaque export, l'un après l'autre. Un contrat qui cale n'arrête pas
-    les autres : ce qui est sorti est rendu, et les ratés avec leur raison."""
-    sortis, rates = [], []
+    les autres : ce qui est sorti est rendu, et les ratés avec leur raison.
+    Une exportation qui rate essaie ses secours ; celle qui marche est
+    retenue pour la prochaine fois. Rend (sortis, ratés, comptes) — comptes :
+    ce que le compte rendu au tableau de bord dira de chaque contrat GATES."""
+    sortis, rates, comptes = [], [], []
     for e, scenario in a_faire(cfg, liste, contrats):
         noter('Export « %s »…' % e['nom'])
-        try:
-            sortis.append((e, rejouer(c, scenario, dossier)))
-        except ErreurPilote as err:
-            vue = photo(c)
-            noter('  ✗ %s%s' % (err, '\n  Photo de la fenêtre du robot : ' + vue if vue else ''))
-            rates.append('%s : %s' % (e['nom'], str(err).split('\n')[0]))
+        essais = [(e.get('fichier'), scenario)] + list(e.get('secours') or [])
+        premiere = None
+        for i, (fichier, s) in enumerate(essais):
+            if i:
+                noter('  … son secours « %s »' % fichier)
+            try:
+                sortis.append((e, rejouer(c, s, dossier)))
+            except ErreurPilote as err:
+                vue = photo(c)
+                noter('  ✗ %s%s' % (err, '\n  Photo de la fenêtre du robot : ' + vue if vue else ''))
+                premiere = premiere or err
+                continue
+            noter('  ✓ %s' % sortis[-1][1].name)
+            if i and fichier:
+                cfg.setdefault('reussis', {})[norm(case_de(e))] = fichier
+                garder(cfg)
+                noter('  (la prochaine fois, « %s » passe en premier pour la case %s)' % (fichier, case_de(e)))
+            break
+        else:
+            raison = str(premiere).split('\n')[0]
+            if e.get('contrat'):
+                ng = e.get('nom_gates') or e['contrat']
+                code = code_gates(premiere, ng)
+                message = ('GATES ne montre pas « %s » : vérifiez le « Nom exact de la tranche dans GATES » de ce contrat '
+                           '(tableau de bord → Administration → Contrats).' % ng if code == 'gates-introuvable'
+                           else 'L’export GATES de %s n’a pas abouti : %s' % (e['contrat'], raison))
+                comptes.append({'contrat': e['contrat'], 'gates': {'ok': False, 'code': code, 'message': message, 'tape': ng}})
+                rates.append(rate('%s : %s' % (e['nom'], raison), code, e['contrat']))
+            else:
+                rates.append(rate('%s : %s' % (e['nom'], raison)))
             continue
-        noter('  ✓ %s' % sortis[-1][1].name)
-    return sortis, rates
+        if e.get('contrat'):
+            # Réussi : le robot dit seulement ce qu'il a tapé ; c'est la fenêtre
+            # d'import qui dira si l'export s'est bien importé.
+            comptes.append({'contrat': e['contrat'], 'gates': {'tape': e.get('nom_gates') or e['contrat']}})
+    return sortis, rates, comptes
 
 
 def attendre_tableau(c, cfg, delai):
     """Le tableau de bord d'abord : ses cases disent les contrats du jour.
     Au retour devant l'écran, Google met parfois longtemps à répondre (le
     réseau de l'entreprise se remet en place) : le robot attend, sans
-    compter d'essai raté, jusqu'à « delai » secondes."""
+    compter d'essai raté, jusqu'à « delai » secondes. Rend ce que lit
+    lire_tableau."""
     if not cfg.get('tableau'):
         raise ErreurPilote('Le robot ne connaît pas encore l\'adresse du tableau de bord : double-cliquez « 1 - Preparer ».')
     fin = time.time() + delai
     while True:
-        cases = cases_du_tableau(c, cfg)
-        if cases:
-            return cases
+        tableau = lire_tableau(c, cfg)
+        if tableau['cases']:
+            return tableau
         if time.time() >= fin:
             raise ErreurPilote('Le tableau de bord ne répond pas (Google pas encore joignable, ou connexion Google à refaire : '
                                'double-cliquez « 1 - Preparer »).')
@@ -1249,8 +1575,8 @@ def essayer(noms=None):
     dossier.mkdir(parents=True, exist_ok=True)
     with chrome(True) as c:
         try:
-            contrats = contrats_du_tableau(attendre_tableau(c, cfg, 120)) if any(e.get('modele') for e in liste) else []
-            sortis, rates = faire_les_exports(c, cfg, liste, dossier, contrats)
+            contrats = contrats_lus(attendre_tableau(c, cfg, 120)) if any(e.get('modele') for e in liste) else []
+            sortis, rates, _ = faire_les_exports(c, cfg, liste, dossier, contrats)
         except ErreurPilote as err:
             noter('✗ Essai interrompu : %s' % err)
             input('\nAppuyez sur Entrée pour fermer la fenêtre du robot.')
@@ -1297,58 +1623,281 @@ def dans_le_cadre(cadre, ctx, js, objet=False):
     return r['result'] if objet else r['result'].get('value')
 
 
-def deposer(c, cfg, sortis):
-    adresse = cfg['tableau'] + ('&' if '?' in cfg['tableau'] else '?') + 'page=import'
-    c.ouvrir(adresse)
+# Débrief 30 : les erreurs « de fiche » se corrigent dans le tableau de bord
+# (Administration → Contrats) : un nouvel essai du robot n'y changerait rien.
+# (« gates-introuvable » n'en est une que si un autre export GATES a marché
+# dans le même passage : sinon c'est GATES ou CHILDNéo qui a changé.)
+CODES_DE_FICHE = ('gates-introuvable', 'colonne-elec', 'colonne-harnais', 'see-aucune', 'douteux')
+MESSAGE_MAX = 400          # caractères d'un message du compte rendu (le serveur en garde autant)
+PASSAGE_MAX = 200          # caractères du résumé d'un passage
+
+# La case où va un fichier : celle de son contrat (data-contrat), sinon par
+# son étiquette, comme avant (une fenêtre d'avant n'a pas data-contrat).
+CASE_JS = r"""
+(function (contrat, nom) {
+  var norm = function (s) { return String(s || '').replace(/\s+/g, ' ').trim().toLowerCase(); };
+  var k = null;
+  if (contrat) k = [].slice.call(document.querySelectorAll('.case.gates:not(.nouvelle)')).filter(function (x) {
+    return norm(x.getAttribute('data-contrat')) === norm(contrat); })[0] || null;
+  if (!k && norm(nom) === 'see') { var s = document.querySelector('#case-see input.fichier'); if (s) return s; }
+  if (!k) k = [].slice.call(document.querySelectorAll('.case')).filter(function (x) {
+    var t = x.querySelector('.etiquette'); return t && norm(t.textContent) === norm(nom); })[0] || null;
+  return k ? k.querySelector('input.fichier') : null;
+})(%s, %s)
+"""
+
+# Les lectures sont-elles finies ? (plus de case en attente ou en lecture,
+# plus de nom ni de PSN en cours de vérification)
+LECTURES_FINIES_JS = '!document.querySelector(\'.case[data-etat="attente"], .case[data-etat="lecture"], [data-occupe]\')'
+
+# Les cases dont la lecture a échoué (fichier illisible, colonne ELEC de la
+# fiche absente de l'export…) : ce qu'elles disent, puis leur fichier retiré
+# — les autres s'importent quand même.
+ERREURS_JS = r"""
+[].slice.call(document.querySelectorAll('.case[data-etat="erreur"]')).map(function (k) {
+  var t = function (s) { var e = k.querySelector(s); return e ? e.textContent.replace(/\s+/g, ' ').trim() : ''; };
+  var o = { see: k.classList.contains('see'), contrat: k.getAttribute('data-contrat') || '', etiquette: t('.etiquette'),
+            code: k.getAttribute('data-code') || '', message: t('.lu').replace(/^✗\s*/, ''),
+            porteurs: [].map.call(k.querySelectorAll('.porteur'), function (li) { return li.getAttribute('data-contrat') || ''; }) };
+  var r = k.querySelector('button.retirer');
+  if (r) r.click();
+  return o;
+})
+"""
+
+# Le doute de la fenêtre d'import (« seulement 3 plans sur 186 en commun avec
+# « HDK » : est-ce bien son export ? ») : à la main, on regarde ; le robot,
+# lui, n'importe pas ce fichier-là.
+DOUTEUX_JS = r"""
+[].slice.call(document.querySelectorAll('.case')).filter(function (k) {
+  var n = k.querySelector('.note'); return n && !n.hidden && n.textContent.trim(); }).map(function (k) {
+  var o = { contrat: k.getAttribute('data-contrat') || '', etiquette: k.querySelector('.etiquette').textContent.replace(/\s+/g, ' ').trim(),
+            note: k.querySelector('.note').textContent.trim() };
+  var r = k.querySelector('button.retirer'); if (r && !r.hidden) r.click();
+  return o;
+})
+"""
+
+# La fin de l'import : la consigne « ne pas fermer » est partie, « Fermer » revient.
+FIN_IMPORT_JS = 'document.getElementById("consigne").hidden && !document.getElementById("fermer").disabled'
+
+# Ce que dit la fenêtre à la fin : son bilan, s'il est en erreur, si son
+# compte rendu est arrivé au serveur (data-rapport) et ses codes en échec.
+BILAN_JS = r"""
+(function () {
+  var e = document.getElementById('etat');
+  return { texte: e.innerText || '', erreur: e.classList.contains('erreur') || !!e.querySelector('.erreur'),
+           rapport: e.getAttribute('data-rapport'), codes: e.hasAttribute('data-codes') ? e.getAttribute('data-codes') : null };
+})()
+"""
+
+# Le pont : le robot (dans son monde isolé, sans google.script.run) écrit son
+# compte rendu dans la fenêtre et clique « envoyer » : la fenêtre l'envoie au
+# serveur pour lui.
+PONT_JS = r"""
+(function (t) {
+  var p = document.getElementById('pont-robot'), a = document.getElementById('pont-robot-rapport'), b = document.getElementById('pont-robot-envoyer');
+  if (!p || !a || !b) return false;
+  p.setAttribute('data-etat', ''); p.removeAttribute('data-message');
+  a.value = t; b.click();
+  return true;
+})(%s)
+"""
+PONT_ETAT_JS = ('(function(){var p=document.getElementById("pont-robot");'
+                'return p ? {etat: p.getAttribute("data-etat") || "", message: p.getAttribute("data-message") || ""} : null;})()')
+
+
+def coupe(texte, n):
+    texte = re.sub(r'\s+', ' ', str(texte or '')).strip()
+    return texte if len(texte) <= n else texte[:n - 1].rstrip() + '…'
+
+
+def ouvrir_import(c, cfg):
+    """La fenêtre d'import du tableau de bord, ouverte par le robot : son cadre,
+    marqué « robot » (son compte rendu dira source « robot »)."""
+    c.ouvrir(adresse_import(cfg))
     cadre, ctx = cadre_import(c)
     try:
         time.sleep(3)
-        cadre.envoyer('DOM.enable')
-        for e, chemin in sortis:
-            case = e.get('case') or e['nom']
-            js = ('(function(nom){var norm=function(s){return String(s||"").replace(/\\s+/g," ").trim().toLowerCase();};'
-                  'if(norm(nom)==="see"){var s=document.querySelector("#case-see input.fichier"); if(s) return s;}'
-                  'var c=[].slice.call(document.querySelectorAll(".case")).filter(function(k){'
-                  'var t=k.querySelector(".etiquette"); return t && norm(t.textContent)===norm(nom);})[0];'
-                  'return c ? c.querySelector("input.fichier") : null;})(%s)' % json.dumps(case))
-            obj = dans_le_cadre(cadre, ctx, js, objet=True)
-            if not obj.get('objectId'):
-                raise ErreurPilote('Pas de case « %s » dans la fenêtre d\'import du tableau de bord.' % case)
-            cadre.envoyer('DOM.setFileInputFiles', files=[str(chemin)], objectId=obj['objectId'])
-            noter('  ↑ %s → case « %s »' % (chemin.name, case))
-        fin = time.time() + 600
-        while time.time() < fin and dans_le_cadre(cadre, ctx, 'document.getElementById("importer").disabled'):
-            time.sleep(1)
-        if dans_le_cadre(cadre, ctx, 'document.getElementById("importer").disabled'):
-            raise ErreurPilote('La fenêtre d\'import refuse les fichiers : %s'
-                               % dans_le_cadre(cadre, ctx, 'document.getElementById("blocage").innerText'))
-        # Le doute de la fenêtre d'import (« seulement 3 plans sur 186 en commun avec « HDK » : est-ce
-        # bien son export ? ») : à la main, on regarde ; le robot, lui, n'importe pas ce fichier-là.
-        douteux = dans_le_cadre(cadre, ctx, '[].slice.call(document.querySelectorAll(".case")).filter(function (k) {'
-                                            'var n = k.querySelector(".note"); return n && !n.hidden && n.textContent.trim(); }).map(function (k) {'
-                                            'var r = k.querySelector("button.retirer"); if (r && !r.hidden) r.click();'
-                                            'return k.querySelector(".etiquette").textContent + " — " + k.querySelector(".note").textContent.trim(); })') or []
-        for d in douteux:
-            noter('  ✗ Pas importé, par prudence : %s' % d)
-        if douteux:
-            time.sleep(2)
-            if dans_le_cadre(cadre, ctx, 'document.getElementById("importer").disabled'):
-                raise ErreurPilote('Rien d\'importé, par prudence : %s' % ' ; '.join(douteux))
-        dans_le_cadre(cadre, ctx, 'document.getElementById("importer").click()')
-        fin = time.time() + 1800
+        dans_le_cadre(cadre, ctx, 'document.body.setAttribute("data-robot","1")')
+    except ErreurPilote:
+        cadre._canal.fermer()
+        raise
+    return cadre, ctx
+
+
+def envoyer_rapport(cadre, ctx, rapport, delai=60):
+    """Le compte rendu du robot, envoyé au tableau de bord par le pont de la
+    fenêtre d'import. Rend True s'il est arrivé ; une fenêtre d'avant (sans
+    pont) rend False, sans erreur."""
+    js = PONT_JS % json.dumps(json.dumps(rapport, ensure_ascii=False))
+    fin = time.time() + delai
+    try:
+        if not dans_le_cadre(cadre, ctx, js):
+            noter('  (la fenêtre d\'import n\'a pas de pont : pas de compte rendu au tableau de bord)')
+            return False
         while time.time() < fin:
-            time.sleep(3)
-            if dans_le_cadre(cadre, ctx, 'document.getElementById("fermer").classList.contains("principal") && '
-                                         'document.getElementById("consigne").hidden'):
-                break
-        bilan = dans_le_cadre(cadre, ctx, 'document.getElementById("etat").innerText') or ''
-        rate = dans_le_cadre(cadre, ctx, '!!document.querySelector("#etat.erreur, #etat .erreur")')
-        noter(('✗ ' if rate else '✓ ') + 'Dépôt : ' + bilan.replace('\n', ' · ')[:600])
-        if rate:
-            raise ErreurPilote('Le dépôt a signalé une erreur (voir le journal).')
-        return douteux
+            time.sleep(1)
+            e = dans_le_cadre(cadre, ctx, PONT_ETAT_JS) or {}
+            if e.get('etat') == 'ok':
+                return True
+            if e.get('etat') == 'erreur':
+                noter('  ✗ Compte rendu refusé par le tableau de bord : %s' % (e.get('message') or '?'))
+                return False
+            if e.get('etat') == 'occupe':           # la fenêtre finit un import : on renvoie un peu plus tard
+                time.sleep(3)
+                dans_le_cadre(cadre, ctx, js)
+    except ErreurPilote as err:
+        noter('  ✗ Compte rendu non envoyé : %s' % str(err).split('\n')[0])
+        return False
+    noter('  ✗ Compte rendu non envoyé : le tableau de bord n\'a pas répondu en %d s.' % delai)
+    return False
+
+
+def comptes_par_contrat(comptes):
+    """Une entrée par contrat ; ce qui en est dit deux fois (ce qu'il a tapé,
+    puis l'erreur de sa case) se réunit, messages coupés à MESSAGE_MAX."""
+    vus, liste = {}, []
+    for k in comptes:
+        cle = norm(k.get('contrat'))
+        if not cle:
+            continue
+        if cle not in vus:
+            vus[cle] = {'contrat': k['contrat']}
+            liste.append(vus[cle])
+        for partie in ('gates', 'see'):
+            if isinstance(k.get(partie), dict):
+                d = vus[cle].setdefault(partie, {})
+                d.update(k[partie])
+                if 'message' in d:
+                    d['message'] = coupe(d['message'], MESSAGE_MAX)
+    return liste
+
+
+def rapport_du_robot(cfg, debut, comptes, techniques, nb_fiche):
+    """Le compte rendu d'un passage, tel que le tableau de bord le lit
+    (importRapport) : le passage (réussi ou non, en une phrase), et ce qui
+    est dit de chaque contrat."""
+    return {'source': 'robot',
+            'passage': {'ok': not techniques, 'message': coupe(' ; '.join(techniques), PASSAGE_MAX), 'heure': heure_du_robot(cfg),
+                        'debut': debut, 'erreursFiche': nb_fiche},
+            'contrats': comptes_par_contrat(comptes)}
+
+
+def nb_de_fiche(comptes):
+    return sum(1 for k in comptes_par_contrat(comptes) for p in ('gates', 'see')
+               if (k.get(p) or {}).get('ok') is False and (k.get(p) or {}).get('code') in CODES_DE_FICHE)
+
+
+def rendre_compte(c, cfg, comptes, debut, techniques):
+    """Rien à déposer (tous les exports ont calé) : la fenêtre d'import est
+    ouverte quand même, pour que le tableau de bord sache pourquoi."""
+    res = {'douteux': [], 'techniques': [], 'fiche': [], 'rapport': False}
+    try:
+        cadre, ctx = ouvrir_import(c, cfg)
+    except (ErreurPilote, OSError, ValueError) as err:
+        noter('  ✗ Compte rendu non envoyé : %s' % str(err).split('\n')[0])
+        return res
+    try:
+        n = nb_de_fiche(comptes) - sum(1 for r in techniques if getattr(r, 'code', '') in CODES_DE_FICHE)
+        res['rapport'] = envoyer_rapport(cadre, ctx, rapport_du_robot(cfg, debut, comptes, [str(r) for r in techniques], max(0, n)))
     finally:
         cadre._canal.fermer()
+    return res
+
+
+def deposer(c, cfg, sortis, comptes=(), debut='', rates_techniques=()):
+    """Les fichiers du jour, chacun dans sa case de la fenêtre d'import, puis
+    l'import, puis le compte rendu du robot (par le pont). Une case qui ne
+    s'importe pas (fichier illisible, colonne de la fiche absente, export
+    douteux) est retirée : les autres s'importent. Rend {'douteux',
+    'techniques' (ce qu'un nouvel essai pourrait réparer), 'fiche' (ce qui
+    se corrige dans le tableau de bord), 'rapport' (le compte rendu est-il
+    arrivé ?)}."""
+    comptes = list(comptes)
+    douteux, techniques, fiche, fiche_fenetre = [], [], [], 0
+    cadre, ctx = ouvrir_import(c, cfg)
+    try:
+        try:
+            cadre.envoyer('DOM.enable')
+            for e, chemin in sortis:
+                case = e.get('case') or e['nom']
+                obj = dans_le_cadre(cadre, ctx, CASE_JS % (json.dumps(e.get('contrat') or ''), json.dumps(case)), objet=True)
+                if not obj.get('objectId'):
+                    dit = 'Pas de case « %s » dans la fenêtre d\'import du tableau de bord.' % case
+                    noter('  ✗ ' + dit)
+                    techniques.append(dit)
+                    if e.get('contrat'):
+                        comptes.append({'contrat': e['contrat'], 'gates': {'ok': False, 'code': 'autre', 'message': dit}})
+                    continue
+                cadre.envoyer('DOM.setFileInputFiles', files=[str(chemin)], objectId=obj['objectId'])
+                noter('  ↑ %s → case « %s »' % (chemin.name, case))
+            time.sleep(1)
+            fin = time.time() + 600
+            while time.time() < fin and not dans_le_cadre(cadre, ctx, LECTURES_FINIES_JS):
+                time.sleep(1)
+            # Les cases qui ne s'importent pas : dites, puis retirées.
+            for k in dans_le_cadre(cadre, ctx, ERREURS_JS) or []:
+                code = k.get('code') or 'lecture'
+                qui = k.get('contrat') or k.get('etiquette') or '?'
+                noter('  ✗ Pas importé : %s — %s' % (k.get('etiquette'), k.get('message')))
+                if k.get('see'):
+                    dit = 'L’extract %s ne se lit pas : %s' % (k.get('etiquette') or 'SEE', k.get('message'))
+                    techniques.append(dit)
+                    comptes.extend({'contrat': p, 'see': {'ok': False, 'code': code, 'message': dit}} for p in k.get('porteurs') or [] if p)
+                    continue
+                comptes.append({'contrat': qui, 'gates': {'ok': False, 'code': code, 'message': k.get('message') or 'Ce fichier ne se lit pas.'}})
+                (fiche if code in CODES_DE_FICHE else techniques).append('%s : %s' % (k.get('etiquette'), k.get('message')))
+            douteux = dans_le_cadre(cadre, ctx, DOUTEUX_JS) or []
+            for d in douteux:
+                noter('  ✗ Pas importé, par prudence : %s — %s' % (d.get('etiquette'), d.get('note')))
+                comptes.append({'contrat': d.get('contrat') or d.get('etiquette'), 'gates': {'ok': False, 'code': 'douteux', 'message': d.get('note')}})
+                fiche.append('%s : %s' % (d.get('etiquette'), d.get('note')))
+            time.sleep(2)
+            actifs = dans_le_cadre(cadre, ctx, 'document.querySelectorAll(\'.case[data-etat="lu"]\').length') or 0
+            if not actifs:
+                noter('  Rien à importer : aucun fichier ne s\'importe aujourd\'hui.')
+            elif dans_le_cadre(cadre, ctx, 'document.getElementById("importer").disabled'):
+                dit = 'La fenêtre d\'import refuse les fichiers : %s' % dans_le_cadre(cadre, ctx, 'document.getElementById("blocage").innerText')
+                noter('  ✗ ' + dit)
+                techniques.append(dit)
+            else:
+                dans_le_cadre(cadre, ctx, 'document.getElementById("importer").click()')
+                fin = time.time() + 1800
+                fini = False
+                while time.time() < fin:
+                    time.sleep(3)
+                    if dans_le_cadre(cadre, ctx, FIN_IMPORT_JS):
+                        fini = True
+                        break
+                b = dans_le_cadre(cadre, ctx, BILAN_JS) or {}
+                noter(('✗ ' if b.get('erreur') else '✓ ') + 'Dépôt : ' + str(b.get('texte') or '').replace('\n', ' · ')[:600])
+                codes = [x for x in str(b.get('codes') or '').split(',') if x]
+                if not fini:
+                    techniques.append('l’import n’a pas fini en 30 minutes')
+                for x in codes:
+                    if x == 'colonne-harnais':          # un avertissement : l'import est fait, le site le dit
+                        noter('  ⚠ la colonne de la validation harnais d\'un contrat n\'est pas dans son export (voir le tableau de bord)')
+                        continue
+                    (fiche if x in CODES_DE_FICHE else techniques).append('la fenêtre d’import signale « %s »' % x)
+                    if x in CODES_DE_FICHE:
+                        fiche_fenetre += 1
+                ligne = next((l.strip() for l in str(b.get('texte') or '').split('\n') if l.strip().startswith('✗')), '')
+                codes = [x for x in codes if x != 'colonne-harnais']
+                if b.get('erreur') and not codes:
+                    techniques.append('le dépôt a signalé une erreur' + (' : ' + ligne.lstrip('✗ ') if ligne else ''))
+                elif (b.get('erreur') or codes) and b.get('rapport') != 'ok':
+                    techniques.append('le compte rendu de la fenêtre d’import n’est pas arrivé au tableau de bord')
+        except ErreurPilote as err:
+            dit = str(err).split('\n')[0]
+            noter('  ✗ Dépôt interrompu : %s' % dit)
+            techniques.append(dit)
+        tech = [str(r) for r in rates_techniques] + techniques
+        n = nb_de_fiche(comptes) + fiche_fenetre - sum(1 for r in rates_techniques if getattr(r, 'code', '') in CODES_DE_FICHE)
+        rapport = envoyer_rapport(cadre, ctx, rapport_du_robot(cfg, debut, comptes, tech, max(0, n)))
+    finally:
+        cadre._canal.fermer()
+    return {'douteux': douteux, 'techniques': techniques, 'fiche': fiche, 'rapport': rapport}
 
 
 # ---------------------------------------------------------------- lancer
@@ -1433,10 +1982,14 @@ def lancer(auto=False):
 
 
 def _passage(auto):
-    """Un passage : le tableau de bord (ses contrats du jour), les exports,
-    le dépôt. Rend (0, '') réussi, (1, la raison) sinon. Des exports ratés
+    """Un passage : le tableau de bord (ses contrats du jour, leur nom dans
+    GATES), les exports, le dépôt, puis le compte rendu au tableau de bord.
+    Rend (0, '') réussi, (1, la raison) sinon. Des exports ratés
     n'empêchent pas de déposer ceux qui sont sortis ; le passage compte
-    alors comme raté (il sera refait)."""
+    alors comme raté (il sera refait) — sauf si ce qui a raté se corrige
+    dans le tableau de bord (une erreur « de fiche » : nom GATES, colonne,
+    PSN, export douteux) et que le tableau de bord l'a bien reçu : un nouvel
+    essai n'y changerait rien, et le site le montre à côté du contrat."""
     cfg, liste = exports_choisis()
     etat = racine() / 'dernier-passage.txt'
     aujourd_hui = datetime.date.today().isoformat()
@@ -1445,21 +1998,33 @@ def _passage(auto):
         return 1, 'le robot n\'est pas encore préparé ou n\'a rien appris'
     dossier = racine() / 'deposes' / datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
     dossier.mkdir(parents=True, exist_ok=True)
+    debut = datetime.datetime.now().astimezone().isoformat(timespec='seconds')
     noter('=== Passage du robot%s ===' % (' (automatique)' if auto else ''))
     try:
         with chrome(True, grand=not auto) as c:
-            contrats = contrats_du_tableau(attendre_tableau(c, cfg, ATTENTE_GOOGLE if auto else 120))
-            sortis, rates = faire_les_exports(c, cfg, liste, dossier, contrats)
+            contrats = contrats_lus(attendre_tableau(c, cfg, ATTENTE_GOOGLE if auto else 120))
+            sortis, rates, comptes = faire_les_exports(c, cfg, liste, dossier, contrats)
+            # Une tranche que GATES ne montre pas, quand les autres sortent : c'est son nom, dans sa fiche.
+            gates_ok = any(e.get('contrat') for e, _ in sortis)
+            de_fiche = [r for r in rates if getattr(r, 'code', '') == 'gates-introuvable' and gates_ok]
+            rates_tech = [r for r in rates if not any(r is f for f in de_fiche)]
             if sortis:
-                rates += deposer(c, cfg, sortis)
-            if rates:
-                raise ErreurPilote('%s : %s' % ('pas tout' if sortis else 'rien', ' ; '.join(rates)))
+                res = deposer(c, cfg, sortis, comptes, debut, rates_tech)
+            else:
+                res = rendre_compte(c, cfg, comptes, debut, rates_tech)
+            techniques = [str(r) for r in rates_tech] + res['techniques']
+            fiche = [str(r) for r in de_fiche] + res['fiche']
+            if techniques or (fiche and not res['rapport']):
+                raise ErreurPilote('%s : %s' % ('pas tout' if sortis else 'rien', ' ; '.join(techniques + fiche)))
     except (ErreurPilote, OSError, ValueError) as err:
         noter('✗ Passage interrompu : %s' % err)
         etat.write_text('%s échec %s' % (aujourd_hui, err), encoding='utf-8')
         return 1, str(err).split('\n')[0]
     etat.write_text('%s ok %s' % (aujourd_hui, datetime.datetime.now().strftime('%H:%M')), encoding='utf-8')
-    noter('✓ Passage réussi.')
+    if fiche:
+        noter('✓ Passage réussi — %d erreur(s) de fiche, visibles dans le tableau de bord : %s' % (len(fiche), ' ; '.join(fiche)))
+    else:
+        noter('✓ Passage réussi.')
     return 0, ''
 
 
@@ -1619,11 +2184,13 @@ def montrer_etat():
     cfg = config()
     print('Tableau de bord : %s' % (cfg.get('tableau') or '(pas encore indiqué : lancez « preparer »)'))
     print('Navigateur      : %s' % nom_navigateur())
-    print('Exports appris  : %s' % (', '.join('%s → %s' % (e['nom'], 'tous les contrats du tableau' if e.get('modele') else e.get('case'))
-                                              for e in cfg.get('exports', [])) or 'aucun'))
+    print('Exports appris  : %s' % ('\n                  '.join(
+        '%s → %s%s' % (e['nom'], 'tous les contrats du tableau' if e.get('modele') else 'case ' + str(e.get('case')),
+                       ' (secours : %s)' % ', '.join(e['secours']) if e.get('secours') else '')
+        for e in cfg.get('exports', [])) or 'aucun'))
     autres = {k: v for k, v in (cfg.get('noms_gates') or {}).items() if norm(k) != norm(v)}
-    if autres:
-        print('Noms dans GATES : %s' % ', '.join('%s → « %s »' % kv for kv in sorted(autres.items())))
+    print('Noms dans GATES : réglés dans le tableau de bord (Administration → Contrats) ; à défaut : %s'
+          % (', '.join('%s → « %s »' % kv for kv in sorted(autres.items())) if autres else 'le nom du contrat'))
     print('Heure du robot  : à partir de %s, une fois par jour' % heure_du_robot(cfg))
     etat = racine() / 'dernier-passage.txt'
     print('Dernier passage : %s' % (etat.read_text(encoding='utf-8') if etat.exists() else 'jamais'))
