@@ -736,6 +736,12 @@ classeur. Dans l'ordre d'efficacité :
   plus fréquente à la plus rare, la pastille et le nombre dans la case —
   tout tombe droit d'une semaine à l'autre. Dépliée, une ligne = une
   référence et son passage, sans libellé. Les semaines s'ouvrent repliées.
+  Débrief 31 : **chaque semaine du graphique a sa ligne**. Une semaine où
+  rien n'a bougé le dit en une ligne courte (« S43 · aucun changement
+  depuis S42 ») : rien n'a changé dans GATES cette semaine-là (ou
+  l'archivage du vendredi a repris l'export d'avant). Un relevé sans le
+  détail plan par plan le dit aussi. L'extract du jour, pas encore archivé,
+  porte la mention « extract du jour, pas encore archivé ».
   **Au-dessus, une seule ligne** : les pastilles à gauche, le petit champ
   « Chercher un plan… » au bout à droite (il ne cherche que dans le
   journal). Les pastilles : **seulement les valeurs vers lesquelles des
@@ -812,7 +818,7 @@ connectée (il faut qu'elle soit du même domaine que le classeur).
 |---|---|
 | **Le responsable** (vous : le propriétaire du classeur) | Tout, et lui seul nomme ou retire les administrateurs |
 | **Un administrateur de tous les contrats** | Ajouter, modifier, supprimer les jalons de tous les contrats ; ajouter un contrat, modifier sa fiche, le masquer ou le réafficher |
-| **Un administrateur d'un contrat** (« HDK seulement ») | Les jalons de ce contrat et de ses tranches, et la fiche de ce contrat (nom GATES, colonnes, PSN) |
+| **Un administrateur d'un contrat** (« HDK seulement ») | Les jalons de ce contrat et de ses tranches, la fiche de ce contrat (nom GATES, colonnes, PSN), et ajouter une tranche à ce contrat |
 | **Tout le monde** | Lire le tableau de bord |
 
 Le panneau a trois onglets :
@@ -849,15 +855,39 @@ PSN), les dépose dans la fenêtre d'import, puis écrit son compte rendu dans
 | Champ | Ce que c'est |
 |---|---|
 | **Nom exact de la tranche dans GATES** | Ce que le robot tape dans GATES, lettre pour lettre. Vide (contrat déjà là) : il tape le nom du contrat, comme avant |
-| **Nom dans le tableau de bord** | Le nom de l'onglet. « HDK Tranche 2 » se range sous HDK |
+| **Nom dans le tableau de bord** | Le nom de l'onglet. « HDK Tranche 2 » se range sous HDK (le plus simple : **+ Ajouter une tranche**, ci-dessous) |
 | **Colonne de la validation ELEC** | « Groupe > Colonne » de l'export GATES (ex. `HDK AA 011 > Avancement Définition Electrique`) |
 | **Colonne de la validation harnais** | Facultatif. Vide : ce contrat ne suit pas le concept harnais |
 | **PSN pour SEE** | Facultatif. Plusieurs : séparés par des virgules |
+
+**Le tableau est rangé par contrat.** Chaque contrat a sa ligne de tête
+(« HDK · 2 tranches »), puis, en dessous, ses tranches. Chaque tranche a
+sa propre fiche, son état et son compte rendu. Le contrat lui-même est la
+« Tranche 1 ».
 
 **Ajouter un contrat** (le responsable, ou un administrateur de tous les
 contrats) : **+ Ajouter un contrat**, remplir la fiche, **Ajouter le
 contrat**. Il est **« Prévu »** : son onglet sera créé par le robot à son
 prochain passage, avec les colonnes de la fiche. Rien d'autre à faire.
+
+**Ajouter une tranche** (débrief 31) : sur la ligne du contrat (par exemple
+THS), **+ Ajouter une tranche**. La fiche s'ouvre avec **Contrat : THS**
+déjà rempli et la tranche suivante proposée (« Tranche 2 », ou « Tranche 3 »
+si la 2 existe ; on peut écrire « Tranche B »). Son nom dans le tableau de
+bord sera « THS Tranche 2 ».
+
+- **Nom exact de cette tranche dans GATES** : obligatoire. C'est le nom de
+  **cette** tranche, pas celui du contrat (par exemple « THS AA »). C'est
+  ce que le robot tapera dans GATES.
+- **Colonnes et PSN** : rien n'est recopié tout seul. Sous chaque champ, un
+  lien **Reprendre … de THS** remet la valeur du contrat d'un clic, si
+  c'est la bonne.
+- **Ajouter la tranche** : elle est **« Prévue »**, rangée sous THS. Au
+  prochain passage du robot, son onglet est créé avec son premier export.
+
+Le responsable, un administrateur de tous les contrats, ou un administrateur
+de ce contrat (« THS seulement ») peut ajouter une tranche. Il peut aussi la
+**Retirer** tant qu'elle est « Prévue ».
 
 **Modifier** : sur la ligne du contrat. Le nom d'un contrat qui a déjà son
 onglet ne change pas (son historique en dépend) ; le reste, oui.
@@ -879,6 +909,13 @@ bord), il ne s'efface pas.
 - En haut de l'onglet, une phrase résume le dernier passage du robot. S'il
   n'est pas passé depuis plusieurs jours, elle le dit : le PC était-il
   allumé ?
+- **⚠ Le robot regarde une autre version du site** (débrief 31) : le robot
+  a gardé un ancien lien (chaque nouveau déploiement a son propre lien
+  `…/exec`). La phrase dit les deux livraisons. À faire une fois : dans
+  Apps Script, **Déployer → Tester les déploiements**, copier le lien qui
+  finit par `/dev` (il suit toujours la dernière version) ; puis, sur le PC
+  du robot, double-cliquer **1 - Preparer** et coller ce lien. La phrase
+  disparaît au passage suivant du robot.
 
 Une erreur de fiche ne fait ni nouvel essai ni fenêtre d'alerte sur le PC :
 elle se lit et se corrige ici. Seule une vraie panne (GATES ou SEE

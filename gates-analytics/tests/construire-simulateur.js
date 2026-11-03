@@ -573,16 +573,29 @@ function construireSimulateur(options) {
   temps.regler(vendredis[0]);
   contexte.installerSuiviHebdomadaire();
   const declencheur = contexte.ScriptApp.getProjectTriggers()[0];
+  /* Débrief 31 : opts.exports dit, vendredi par vendredi, l'export que
+     porte l'onglet (son rang dans les six semaines) — [0, 1, 2, 3, 3, 3] :
+     rien d'importé les deux dernières semaines, l'archivage du vendredi
+     reprend l'export de la troisième. Sans lui, chaque vendredi a le sien. */
+  const exportDu = function (s) { return Array.isArray(opts.exports) && opts.exports[s] !== undefined ? opts.exports[s] : s; };
   vendredis.forEach(function (vendredi, s) {
-    contrats.forEach(function (c) { c.feuille.valeurs = valeursDeLaSemaine(c.gabarit, c.plans, s); });
+    contrats.forEach(function (c) { c.feuille.valeurs = valeursDeLaSemaine(c.gabarit, c.plans, exportDu(s)); });
     temps.regler(new Date(vendredi.getTime() + 5 * 60000));
     contexte.enregistrerInstantaneHebdo({ triggerUid: declencheur.getUniqueId() });
   });
 
+  /* Débrief 31 : opts.exportDuJour, l'export importé après le dernier
+     vendredi sans être archivé (le rang d'une des six semaines). */
+  if (opts.exportDuJour !== undefined) contrats.forEach(function (c) { c.feuille.valeurs = valeursDeLaSemaine(c.gabarit, c.plans, opts.exportDuJour); });
   /* L'ouverture de la page, à 13 h 15 le jour de construction. */
   temps.regler(lecture);
   /* Un banc d'essai peut compléter le classeur avant que la page soit servie. */
-  if (typeof opts.avantPage === 'function') opts.avantPage(contexte, classeur);
+  /* Débrief 31 : avec l'horloge et les exports des six semaines, pour rejouer un import. */
+  const exportDe = function (id, s) {
+    const c = contrats.filter(function (x) { return x.fiche.id === id; })[0];
+    return c ? valeursDeLaSemaine(c.gabarit, c.plans, s) : null;
+  };
+  if (typeof opts.avantPage === 'function') opts.avantPage(contexte, classeur, { horloge: temps, exportDe: exportDe, lecture: lecture });
   const servie = contexte.doGet({ parameter: {} });
   if (!servie || !servie.source || servie.source.modele !== 'Index') {
     throw new Error('doGet() ne sert pas le tableau de bord :\n' + (servie && servie.getContent ? servie.getContent().replace(/<[^>]+>/g, ' ') : servie));
@@ -661,6 +674,10 @@ function construireSimulateur(options) {
        par le vrai google.script.run (droits, jalons, administration). */
     contexte: contexte,
     classeur: classeur,
+    /* Débrief 31 : l'horloge du serveur (regler), et l'export d'une des six
+       semaines pour un contrat — de quoi rejouer un import après coup. */
+    horloge: temps,
+    exportDe: exportDe,
     edition: edition,
     vendredis: vendredis,
     lecture: lecture,
