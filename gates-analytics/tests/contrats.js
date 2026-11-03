@@ -272,6 +272,10 @@ section('Les comptes rendus : la fenêtre et le robot disent ce qui s’est pass
     l('THS').suivi.niveau === 'erreur' && prop('SUIVI_FWD_RAPPORTS').contrats.THS.see.ok === false && prop('SUIVI_FWD_RAPPORTS').contrats.THS.gates.tape === 'THS' &&
     prop('SUIVI_FWD_RAPPORTS').contrats.THS.gates.ok === undefined, JSON.stringify(prop('SUIVI_FWD_RAPPORTS').contrats.THS));
   verifier('VRK, prévu, dont le robot n’a dit que ce qu’il a tapé : toujours en attente', l('VRK').suivi.niveau === 'attente', JSON.stringify(l('VRK').suivi));
+  /* Débrief 30 (page) : la fiche dit ce que le robot a tapé — la page le
+     montre tant que le nom GATES de la fiche est vide. */
+  verifier('la fiche porte « tape », ce que le robot a tapé dans GATES (HDK : « HDKB » ; THS : « THS »)',
+    l('HDK').fiche.tape === 'HDKB' && l('THS').fiche.tape === 'THS' && l('VRK').fiche.tape === 'VRK', JSON.stringify([l('HDK').fiche, l('THS').fiche]));
   verifier('la ligne du robot : « Dernier passage du robot aujourd’hui à … : 2 contrats à corriger, ci-dessous. » (HDK et THS en erreur)',
     a.robot.niveau === 'ok' && a.robot.texte === 'Dernier passage du robot aujourd’hui à ' + heureDite(maintenant) + ' : 2 contrats à corriger, ci-dessous.' && a.robot.heure === '14:00',
     a.robot.texte);

@@ -47,7 +47,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = '52e5e75';
+const EDITION = 'd94c3f2';
 
 // =====================================================================
 //  CONFIGURATION
@@ -5836,8 +5836,11 @@ function adminContrats() {
         c.retirable = etat === 'prevu' && d.tous;
         c.prevu = etat === 'prevu';
         const k = colonnesDuContrat(c.id), p = see ? psnDuContrat(c.id) : { psn: [], source: '' };
+        /* tape : ce que le robot a tapé dans GATES à son dernier passage — la
+           page le montre tant que le nom GATES de la fiche est vide. */
+        const rap = rapportDuContrat_(rapports, c.id), tape = rap && rap.gates && rap.gates.tape ? String(rap.gates.tape) : '';
         c.fiche = { nomGates: (ficheDe_(c.id) || {}).nomGates || '', colonnes: { fwd: k.fwd, concept: k.concept, source: k.source },
-                    psn: p.psn, psnSource: p.source };
+                    psn: p.psn, psnSource: p.source, tape: tape };
         c.suivi = suiviDuContrat_(c.id, etat, rapports, maintenant);
         return c;
       };

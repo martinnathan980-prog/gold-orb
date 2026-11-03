@@ -10063,9 +10063,11 @@ async function deplierFiltresColonne(pg) {
     const contrats = await np.evaluate(() => ({ entetes: [...document.querySelectorAll('#admin-corps thead th')].map(t => t.textContent.trim()),
       tables: document.querySelectorAll('#admin-corps table').length,
       lignes: [...document.querySelectorAll('#admin-corps tbody tr[data-id]')].map(tr => [...tr.cells].map(td => td.textContent.trim())) }));
+    /* Débrief 30 : chaque ligne a aussi sa fiche (4ᵉ cellule) et « Modifier » à côté de « Masquer du tableau de bord ». */
     verifier('Contrats : un seul tableau avec sa colonne « État » ; « Tranche 1 » plutôt que « — » ; « Masquer du tableau de bord » (A-F22, A-F10, A-F3)',
       contrats.tables === 1 && contrats.entetes.slice(0, 3).join() === 'Contrat,Tranche,État' &&
-      JSON.stringify(contrats.lignes) === JSON.stringify([['HDK', 'Tranche 1', 'Visible (à l’écran)', 'Masquer du tableau de bord'], ['HDK', 'Tranche 2', 'Visible', 'Masquer du tableau de bord'], ['THS', '—', 'Visible', 'Masquer du tableau de bord']]),
+      JSON.stringify(contrats.lignes.map(l => l.slice(0, 3))) === JSON.stringify([['HDK', 'Tranche 1', 'Visible (à l’écran)'], ['HDK', 'Tranche 2', 'Visible'], ['THS', '—', 'Visible']]) &&
+      contrats.lignes.every(l => l.length === 5 && l[4] === 'ModifierMasquer du tableau de bord'),
       JSON.stringify(contrats));
     const lienThs = await rect(np, '[data-admin="masquer"][data-id="THS"]');
     await np.mouse.dblclick(lienThs.x + lienThs.w - 6, lienThs.y + lienThs.h / 2);
@@ -10158,9 +10160,11 @@ async function deplierFiltresColonne(pg) {
     await ap.waitForSelector('#admin-jalons-titre', { timeout: 15000 }).catch(() => {});
     const anne = await ap.evaluate(() => ({ qui: document.getElementById('admin-qui').textContent, portee: document.getElementById('admin-portee').textContent,
       onglets: document.getElementById('admin-onglets').hidden, titre: document.getElementById('admin-jalons-titre').textContent }));
+    /* Débrief 30 : elle modifie aussi la fiche de THS — l'onglet Contrats lui est ouvert (Jalons et Contrats : la rangée d'onglets paraît). */
     verifier('une administratrice de THS lit ce qu\'elle peut faire ; le panneau s\'ouvre sur ses jalons, sans les onglets qui ne la concernent pas (A-F11)',
-      anne.qui === 'Administrateur de THS · anne@airbus.com' && anne.portee === 'Vous pouvez ajouter et modifier les jalons de THS. Les autres jalons sont en lecture seule.' &&
-      anne.onglets === true && anne.titre === 'Jalons de THS', JSON.stringify(anne));
+      anne.qui === 'Administrateur de THS · anne@airbus.com' &&
+      anne.portee === 'Vous pouvez ajouter et modifier les jalons de THS, et modifier sa fiche (onglet Contrats). Les autres jalons et contrats sont en lecture seule.' &&
+      anne.onglets === false && anne.titre === 'Jalons de THS', JSON.stringify(anne));
     await ap.check('[data-admin="tous-jalons"]');
     const lecture = await ap.evaluate(() => [...document.querySelectorAll('#admin-corps tr[data-cle]')].filter(tr => /HDK/.test(tr.innerText))
       .map(tr => ({ pour: tr.querySelector('td[data-titre="Pour"]').textContent, raison: (tr.querySelector('.admin-lecture') || {}).textContent, boutons: tr.querySelectorAll('.actions button').length })));
@@ -13013,6 +13017,360 @@ async function deplierFiltresColonne(pg) {
     await cE.close();
   }
   /* (fin du lot R3) */
+
+  /* (début du lot C30) */
+  /* Débrief 30 — les contrats se gèrent depuis le tableau de bord :
+     Administration → Contrats montre la fiche de chaque contrat (nom exact
+     dans GATES, colonnes ELEC et harnais, PSN pour SEE) et, sous sa ligne,
+     ce que le robot et la fenêtre d'import ont dit de son dernier passage.
+     « + Ajouter un contrat » (prévu jusqu'à son premier export), « Modifier »,
+     « Retirer » un prévu. Page VIVANTE : le vrai Code.gs du simulateur
+     derrière google.script.run, comme les lots R2 et R3. */
+  section('Débrief 30 : les contrats se gèrent depuis le tableau de bord (lot C30)');
+  {
+    const fsC = require('fs'), osC = require('os');
+    const { construireSimulateur } = require(path.join(__dirname, '..', '..', 'tests', 'construire-simulateur.js'));
+    const { Feuille } = require(path.join(__dirname, '..', '..', 'tests', 'faux-classeur.js'));
+    const simC = construireSimulateur({ date: '2026-10-29', avantPage: function (c, classeur) {
+      const ths = classeur.getSheetByName('THS');
+      classeur.feuilles.splice(1, 0, new Feuille('HDK Tranche 2', ths.valeurs.map(l => l.slice()), false, ths.fusions.map(f => Object.assign({}, f))));
+    } });
+    const srvC = simC.contexte;
+    simC.classeur.proprietaire = 'nathan@airbus.com';
+    srvC.__emailScript = 'nathan@airbus.com';
+    const commeC = (email, fn) => { const avant = srvC.__emailLecteur; srvC.__emailLecteur = email; try { return fn(); } finally { srvC.__emailLecteur = avant; } };
+    commeC('nathan@airbus.com', () => srvC.adminEnregistrerAdmins([{ email: 'anne@airbus.com', contrats: ['THS'] }]));
+    const fichierC = path.join(osC.tmpdir(), 'suivi-fwd-c30-' + process.pid + '.html');
+    fsC.writeFileSync(fichierC, simC.page.replace(/<script>\s*\/\* Simulateur : google\.script\.run[\s\S]*?<\/script>/, ''));
+    const appelsC = [];
+    const vivanteC = async (o) => {
+      const c = await nav.newContext({ viewport: { width: o.largeur || 1440, height: o.hauteur || 900 }, colorScheme: o.schema || 'light',
+        isMobile: !!o.mobile, hasTouch: !!o.mobile, locale: 'en-US' });
+      const pg = await c.newPage();
+      brancher(pg, 'lot C30 ' + (o.email || 'nathan') + ' ' + (o.largeur || 1440) + ' ' + (o.schema || 'light'));
+      const email = o.email || 'nathan@airbus.com';
+      await pg.exposeFunction('__appel', (nom, args) => {
+        if (typeof srvC[nom] !== 'function' || /_$/.test(nom)) throw new Error('fonction inconnue ' + nom);
+        appelsC.push(nom);
+        return commeC(email, () => { const r = srvC[nom].apply(null, JSON.parse(args)); return JSON.stringify(r === undefined ? null : r); });
+      });
+      await pg.addInitScript(() => {
+        window.SUIVI_FWD_BUDGET = 1e9;
+        function chaine(ok, ko) {
+          const c = { withSuccessHandler: f => chaine(f, ko), withFailureHandler: f => chaine(ok, f), withUserObject: () => chaine(ok, ko) };
+          return new Proxy(c, { get(t, nom) {
+            if (nom in t) return t[nom];
+            if (typeof nom !== 'string') return undefined;
+            return function () {
+              const args = Array.prototype.slice.call(arguments);
+              setTimeout(() => window.__appel(nom, JSON.stringify(args)).then(j => { if (ok) ok(JSON.parse(j)); },
+                e => { if (ko) ko({ message: String(e.message || e).replace(/^Error: /, '') }); }), 40);
+            };
+          } });
+        }
+        window.google = { script: { run: chaine(null, null) } };
+      });
+      await pg.goto('file://' + fichierC);
+      await pg.waitForFunction(() => document.documentElement.getAttribute('data-suivi-fwd') === 'pret', null, { timeout: 30000 });
+      await pg.waitForFunction(() => {
+        const b = document.getElementById('ouvrir-admin');
+        return (b && b.getClientRects().length && getComputedStyle(b).visibility !== 'hidden') || (document.getElementById('pied-responsable') || {}).textContent;
+      }, null, { timeout: 20000 }).catch(() => {});
+      await pg.evaluate(() => { const x = document.querySelector('.simulateur-bandeau'); if (x) x.remove(); });
+      pg.__ctx = c;
+      return pg;
+    };
+    const libreC = pg => pg.waitForFunction(() => document.getElementById('admin').getAttribute('aria-busy') !== 'true', null, { timeout: 15000 }).catch(() => {});
+    const ongletC = async (pg, o) => { await pg.click('#admin-onglets [data-onglet="' + o + '"]'); await libreC(pg); };
+    const ouvrirContratsC = async pg => {
+      await pg.click('#ouvrir-admin'); await libreC(pg);
+      await ongletC(pg, 'contrats');
+      await pg.waitForSelector('#admin-corps table.admin-contrats', { timeout: 15000 }).catch(() => {});
+    };
+    const actifC = pg => pg.evaluate(() => { const a = document.activeElement; return a ? (a.getAttribute('aria-label') || a.getAttribute('data-admin') || a.id || a.tagName) : ''; });
+    const messageC = pg => pg.evaluate(() => { const m = document.getElementById('admin-message'); return { classe: m.className, texte: (m.querySelector('.admin-message-texte') || m).textContent }; });
+    const msgChamp = (pg, n) => pg.evaluate(n => { const m = document.getElementById('admin-' + n + '-msg'); return m ? m.textContent : null; }, n);
+    const ligneC = (pg, id) => pg.evaluate(id => {
+      const tr = [...document.querySelectorAll('#admin-corps tr[data-id]')].filter(t => t.getAttribute('data-id') === id)[0];
+      if (!tr) return null;
+      const s = [...document.querySelectorAll('#admin-corps tr[data-suivi]')].filter(t => t.getAttribute('data-suivi') === id)[0];
+      const fiche = {};
+      tr.querySelectorAll('.admin-fiche > div').forEach(d => { fiche[d.querySelector('dt').textContent] = d.querySelector('dd').textContent.replace(/\s+/g, ' ').trim(); });
+      return { etat: tr.cells[2].textContent.trim(), prevu: !!tr.querySelector('.etat-prevu'), recent: tr.classList.contains('recent'), fiche,
+               actions: [...tr.querySelectorAll('td.actions button')].map(b => b.getAttribute('data-admin')), lecture: (tr.querySelector('td.actions .admin-lecture') || {}).textContent || '',
+               suivi: s ? { classe: s.className, suitLaLigne: tr.nextElementSibling === s, icone: (s.querySelector('.admin-suivi-icone') || {}).textContent || '',
+                            lignes: [...s.querySelectorAll('.admin-suivi-texte')].map(x => x.textContent), colspan: s.cells[0].colSpan } : null };
+    }, id);
+    try {
+      /* C30-1 : Nathan ouvre Contrats. */
+      const np = await vivanteC({ email: 'nathan@airbus.com' });
+      await ouvrirContratsC(np);
+      const vue = await np.evaluate(() => ({
+        entetes: [...document.querySelectorAll('#admin-corps table.admin-contrats thead th')].map(t => t.textContent.trim()),
+        derniereMasquee: !!document.querySelector('#admin-corps table.admin-contrats thead th:last-child .masque'),
+        robot: (document.getElementById('admin-robot') || {}).textContent || '',
+        titre: (document.getElementById('admin-contrats-titre') || {}).textContent,
+        etiquette: (document.querySelector('#admin-corps table.admin-contrats') || {}).getAttribute('aria-labelledby'),
+        note: (document.querySelector('#admin-corps .admin-note') || {}).textContent || '',
+        ajouter: !!document.querySelector('[data-admin="ajouter-contrat"]'),
+        nLignes: document.querySelectorAll('#admin-corps tr[data-id]').length, nSuivis: document.querySelectorAll('#admin-corps tr.admin-suivi').length }));
+      const hdk = await ligneC(np, 'HDK');
+      verifier('C30 : Contrats — la ligne du robot en tête (« n’a encore rien envoyé… à partir de 14 h »), le titre « Contrats du tableau de bord » qui nomme le tableau, les en-têtes Contrat, Tranche, État, Fiche, Actions (la dernière pour les lecteurs d’écran)',
+        /^Le robot n’a encore rien envoyé\. Une fois installé et activé sur le PC, il passe chaque jour \(à partir de 14 h, PC allumé\)/.test(vue.robot) &&
+        vue.titre === 'Contrats du tableau de bord' && vue.etiquette === 'admin-contrats-titre' &&
+        vue.entetes.join() === 'Contrat,Tranche,État,Fiche,Actions' && vue.derniereMasquee && vue.ajouter && vue.nLignes === 3 && vue.nSuivis === 3, JSON.stringify(vue));
+      verifier('C30 : la fiche de HDK — GATES « à renseigner », ELEC « HDK AA 011 › Avancement Définition Electrique (par défaut) », PSN « 4530 (par défaut) » ; sa ligne de suivi juste dessous, sur toute la largeur',
+        !!hdk && hdk.fiche.GATES === 'à renseigner' && hdk.fiche.ELEC === 'HDK AA 011 › Avancement Définition Electrique (par défaut)' &&
+        hdk.fiche.PSN === '4530 (par défaut)' && /Avancement Concept Harnais/.test(hdk.fiche.Harnais) && hdk.actions.join() === 'modifier-fiche,masquer' &&
+        hdk.suivi && hdk.suivi.suitLaLigne && hdk.suivi.colspan === 5 && hdk.suivi.lignes[0] === 'Pas encore de compte rendu du robot.', JSON.stringify(hdk));
+      verifier('C30 : la note dit vrai — le robot lit chaque fiche chaque jour, SEE une seule fois pour tous ; plus de « se fera de soi-même »',
+        /^Chaque contrat a sa fiche\. Chaque jour \(à partir de 14 h, PC allumé\), le robot la lit, exporte GATES pour chaque contrat, puis SEE une seule fois pour tous/.test(vue.note) &&
+        /un contrat ajouté aujourd’hui est pris au prochain passage/.test(vue.note) && !/de soi-même|Importer/.test(vue.note), vue.note);
+
+      /* C30-2 : « + Ajouter un contrat », un envoi vide, un nom réservé (le serveur), un PSN faux. */
+      await np.click('[data-admin="ajouter-contrat"]'); await np.waitForTimeout(150);
+      const form = await np.evaluate(() => {
+        const f = document.querySelector('form[data-form="contrat"]'), g = document.getElementById('admin-nomGates');
+        return { ouvert: !!f, titre: (document.getElementById('admin-form-titre') || {}).textContent, focus: document.activeElement.id,
+                 noms: f ? [...f.querySelectorAll('input')].map(i => i.name) : [], decrit: g && g.getAttribute('aria-describedby'),
+                 aide: (document.getElementById('admin-nomGates-aide') || {}).textContent, requis: g && g.required,
+                 libelles: f ? [...f.querySelectorAll('label')].map(l => l.textContent) : [], liste: (document.getElementById('admin-fwd') || {}).getAttribute('list'),
+                 options: document.querySelectorAll('#admin-colonnes option').length, ajouterCache: !document.querySelector('[data-admin="ajouter-contrat"]'),
+                 avantTableau: f && !!(f.compareDocumentPosition(document.querySelector('table.admin-contrats')) & Node.DOCUMENT_POSITION_FOLLOWING) };
+      });
+      verifier('C30 : « + Ajouter un contrat » ouvre « Nouveau contrat » au-dessus du tableau, le focus sur « Nom exact de la tranche dans GATES » ; chaque champ a son libellé et son aide reliée (aria-describedby), ELEC propose les colonnes des exports',
+        form.ouvert && form.titre === 'Nouveau contrat' && form.focus === 'admin-nomGates' && form.noms.join() === 'nomGates,nom,fwd,concept,psn' &&
+        form.decrit === 'admin-nomGates-msg admin-nomGates-aide' && /^Ce que le robot tape dans CHILDNéo/.test(form.aide) && form.requis &&
+        form.libelles.join('|') === 'Nom exact de la tranche dans GATES|Nom dans le tableau de bord|Colonne de la validation ELEC|Colonne de la validation harnais (facultatif)|PSN pour SEE (facultatif)' &&
+        form.liste === 'admin-colonnes' && form.options > 20 && form.ajouterCache && form.avantTableau, JSON.stringify(form));
+      const avantVide = appelsC.length;
+      await np.click('form[data-form="contrat"] [type="submit"]'); await np.waitForTimeout(150);
+      const vide = await np.evaluate(() => ({ gates: document.getElementById('admin-nomGates-msg').textContent, fwd: document.getElementById('admin-fwd-msg').textContent,
+        invalides: [...document.querySelectorAll('form[data-form="contrat"] [aria-invalid="true"]')].map(i => i.name), focus: document.activeElement.id }));
+      verifier('C30 : un envoi vide — les messages sous GATES et ELEC, le focus sur le premier champ en erreur, et aucun appel au classeur',
+        vide.gates === 'Donnez le nom exact de la tranche dans GATES : ce que vous tapez dans CHILDNéo pour avoir son export.' &&
+        vide.fwd === 'Donnez la colonne de la validation ELEC (la « définition électrique » de l’export GATES), comme « HDK AA 011 > Avancement Définition Electrique ».' &&
+        vide.invalides.join() === 'nomGates,fwd' && vide.focus === 'admin-nomGates' && appelsC.length === avantVide, JSON.stringify({ vide, appels: appelsC.slice(avantVide) }));
+      await np.type('#admin-nomGates', 'V');
+      const efface = await msgChamp(np, 'nomGates');
+      await np.fill('#admin-nomGates', 'VRK');
+      const invite = await np.evaluate(() => document.getElementById('admin-nom').placeholder);
+      verifier('C30 : en tapant dans un champ en erreur, son message s’efface ; le nom dans le tableau de bord, laissé vide, montre le nom GATES tapé',
+        efface === '' && invite === 'VRK', JSON.stringify({ efface, invite }));
+      await np.fill('#admin-nom', 'SEE HDK');
+      await np.fill('#admin-fwd', 'HDK AA 011 > Avancement Définition Electrique');
+      await np.click('form[data-form="contrat"] [type="submit"]'); await libreC(np); await np.waitForTimeout(100);
+      const reserve = await np.evaluate(() => ({ nom: document.getElementById('admin-nom-msg').textContent, focus: document.activeElement.id, message: document.getElementById('admin-message').textContent }));
+      verifier('C30 : un nom réservé, que seul le classeur connaît (« SEE HDK ») — son message, sans le préfixe [nom], sous « Nom dans le tableau de bord », qui prend le focus',
+        /^« SEE HDK » est un nom réservé \(base SEE, historique, onglet de service, import ou copie\) : choisissez-en un autre, comme « VRK »\.$/.test(reserve.nom) &&
+        reserve.focus === 'admin-nom' && !reserve.message && appelsC[appelsC.length - 1] === 'adminEnregistrerContrat', JSON.stringify(reserve));
+      await np.fill('#admin-nom', 'HDK');
+      await np.click('form[data-form="contrat"] [type="submit"]'); await np.waitForTimeout(150);
+      const existe = await msgChamp(np, 'nom');
+      await np.fill('#admin-nom', '');
+      await np.fill('#admin-psn', '45 30x!');
+      await np.click('form[data-form="contrat"] [type="submit"]'); await np.waitForTimeout(150);
+      const psnFaux = await np.evaluate(() => ({ psn: document.getElementById('admin-psn-msg').textContent, focus: document.activeElement.id }));
+      verifier('C30 : nom « HDK » — « Le contrat « HDK » existe déjà : modifiez sa fiche… » ; PSN « 45 30x! » — le message du classeur, sous PSN, qui prend le focus',
+        existe === 'Le contrat « HDK » existe déjà : modifiez sa fiche plutôt que d’en ajouter un.' &&
+        psnFaux.psn === '« 30x! » n’est pas un PSN : des chiffres (des lettres au besoin), 20 caractères au plus, plusieurs séparés par des virgules — comme « 4530 ».' &&
+        psnFaux.focus === 'admin-psn', JSON.stringify({ existe, psnFaux }));
+      let serveurPsn = '';
+      commeC('nathan@airbus.com', () => { try { srvC.adminEnregistrerContrat({ id: '', nomGates: 'VRK', colonnes: { fwd: 'HDK AA 011 > Avancement Définition Electrique' }, psn: '45 30x!' }); } catch (e) { serveurPsn = e.message; } });
+      verifier('C30 : … le même mot que le classeur, au préfixe près', serveurPsn === '[psn] ' + psnFaux.psn, serveurPsn);
+
+      /* C30-3 : VRK ajouté. */
+      await np.fill('#admin-psn', '4540');
+      await np.click('form[data-form="contrat"] [type="submit"]'); await libreC(np); await np.waitForTimeout(150);
+      const ajoute = await messageC(np), focusAjout = await actifC(np), vrk = await ligneC(np, 'VRK');
+      const srvVrk = commeC('nathan@airbus.com', () => ({ fiche: srvC.ficheDe_('VRK'), prevus: srvC.adminContrats().prevus.map(p => p.id), liste: srvC.listerContrats(simC.classeur).map(c => c.id), psn: srvC.psnDuContrat('VRK').psn }));
+      verifier('C30 : VRK ajouté — « VRK est ajouté. Le robot le prendra à son prochain passage… », la fiche fermée, sa ligne « Prévu » (pointillé) éclairée, le focus sur son « Modifier »',
+        ajoute.classe === 'admin-message ok' && ajoute.texte === 'VRK est ajouté. Le robot le prendra à son prochain passage : son onglet sera créé avec son premier export GATES.' &&
+        !!vrk && vrk.etat === 'Prévu' && vrk.prevu && vrk.recent && focusAjout === 'Modifier la fiche : VRK' &&
+        !(await np.$('form[data-form="contrat"]')), JSON.stringify({ ajoute, focusAjout, vrk }));
+      verifier('C30 : sous VRK, « Prévu : son onglet sera créé au prochain passage du robot, avec son premier export GATES. » ; ses actions : Modifier, Retirer (pas de Masquer)',
+        vrk && vrk.suivi && vrk.suivi.lignes[0] === 'Prévu : son onglet sera créé au prochain passage du robot, avec son premier export GATES.' && /attente/.test(vrk.suivi.classe) &&
+        vrk.actions.join() === 'modifier-fiche,retirer-prevu' && vrk.fiche.GATES === 'VRK' && vrk.fiche.PSN === '4540', JSON.stringify(vrk));
+      verifier('C30 : côté classeur, VRK a sa fiche (nom GATES « VRK », PSN 4540), il est prévu et n’est pas encore un onglet ni un contrat du menu',
+        srvVrk.fiche && srvVrk.fiche.nomGates === 'VRK' && srvVrk.prevus.join() === 'VRK' && srvVrk.liste.indexOf('VRK') === -1 && srvVrk.psn.join() === '4540' &&
+        await np.evaluate(() => ![...document.querySelectorAll('#select-contrat option')].some(o => o.value === 'VRK')), JSON.stringify(srvVrk));
+
+      /* C30-4 : modifier HDK — une colonne ELEC mal écrite, puis corrigée. */
+      await np.click('[data-admin="modifier-fiche"][data-id="HDK"]'); await np.waitForTimeout(150);
+      const fHdk = await np.evaluate(() => ({ titre: document.getElementById('admin-form-titre').textContent, nom: document.getElementById('admin-nom').value,
+        lecture: document.getElementById('admin-nom').readOnly, aideNom: document.getElementById('admin-nom-aide').textContent, fwd: document.getElementById('admin-fwd').value,
+        psn: document.getElementById('admin-psn').value, focus: document.activeElement.id, enCours: !!document.querySelector('#admin-corps tr[data-id="HDK"] .etiquette-admin.en-cours'),
+        bouton: document.querySelector('form[data-form="contrat"] [type="submit"]').textContent }));
+      verifier('C30 : « Modifier » HDK — « Fiche de « HDK › Tranche 1 » », son nom en lecture seule (celui de son onglet), ses colonnes et son PSN repris ; sa ligne « en cours de modification »',
+        fHdk.titre === 'Fiche de « HDK › Tranche 1 »' && fHdk.nom === 'HDK' && fHdk.lecture && /ne change pas/.test(fHdk.aideNom) &&
+        fHdk.fwd === 'HDK AA 011 > Avancement Définition Electrique' && fHdk.psn === '4530' && fHdk.focus === 'admin-nomGates' && fHdk.enCours && fHdk.bouton === 'Enregistrer', JSON.stringify(fHdk));
+      await np.fill('#admin-nomGates', 'HDK');
+      await np.fill('#admin-fwd', 'HDK AA 011 > Avancement Definition Electrik');
+      await np.click('form[data-form="contrat"] [type="submit"]'); await libreC(np); await np.waitForTimeout(100);
+      const proche = await np.evaluate(() => ({ fwd: document.getElementById('admin-fwd-msg').textContent, focus: document.activeElement.id }));
+      verifier('C30 : une colonne ELEC qui n’est pas dans l’onglet de HDK — l’erreur, sous ELEC, donne les plus proches : « HDK AA 011 › Avancement Définition Electrique » d’abord',
+        /^La colonne « HDK AA 011 › Avancement Definition Electrik » n’est pas dans l’onglet « HDK » \(son dernier export\)\. Les plus proches : « HDK AA 011 › Avancement Définition Electrique », /.test(proche.fwd) &&
+        proche.focus === 'admin-fwd', JSON.stringify(proche));
+      await np.fill('#admin-fwd', 'HDK AA 011 > Avancement Définition Electrique');
+      await np.click('form[data-form="contrat"] [type="submit"]'); await libreC(np); await np.waitForTimeout(150);
+      const modifie = await messageC(np), hdk2 = await ligneC(np, 'HDK'), focusModif = await actifC(np);
+      verifier('C30 : corrigée et enregistrée — « Fiche de HDK › Tranche 1 enregistrée. » (sans « Les chiffres suivent… » : la colonne n’a pas changé) ; GATES « HDK » ; le focus revient à son « Modifier »',
+        modifie.texte === 'Fiche de HDK › Tranche 1 enregistrée.' && hdk2.fiche.GATES === 'HDK' && hdk2.fiche.ELEC === 'HDK AA 011 › Avancement Définition Electrique (par défaut)' &&
+        focusModif === 'Modifier la fiche : HDK › Tranche 1' && hdk2.recent, JSON.stringify({ modifie, hdk2: hdk2.fiche, focusModif }));
+
+      /* C30-5 : la question avant de perdre une fiche tapée. */
+      await np.click('[data-admin="ajouter-contrat"]'); await np.waitForTimeout(100);
+      await np.fill('#admin-nomGates', 'NEO');
+      await np.keyboard.press('Escape'); await np.waitForTimeout(150);
+      const garde = await np.evaluate(() => ({ ouvert: document.getElementById('admin').open, texte: (document.getElementById('admin-garde-texte') || {}).textContent, focus: document.activeElement.getAttribute('data-admin') }));
+      await np.keyboard.press('Escape'); await np.waitForTimeout(150);
+      const reprise = await np.evaluate(() => ({ garde: !!document.querySelector('.admin-garde'), focus: document.activeElement.id, valeur: document.getElementById('admin-nomGates').value }));
+      await np.click('#admin-onglets [data-onglet="jalons"]'); await np.waitForTimeout(150);
+      const gardeOnglet = await np.evaluate(() => ({ texte: (document.getElementById('admin-garde-texte') || {}).textContent, onglet: document.querySelector('#admin-onglets [aria-selected="true"]').getAttribute('data-onglet') }));
+      await np.click('[data-admin="garde-abandonner"]'); await libreC(np);
+      const parti = await np.evaluate(() => ({ onglet: document.querySelector('#admin-onglets [aria-selected="true"]').getAttribute('data-onglet'), fiche: !!document.querySelector('form[data-form="contrat"]') }));
+      verifier('C30 : Échap pendant qu’on tape un contrat — « Abandonner ce contrat non enregistré ? » (le panneau reste) ; Échap encore : on reprend la saisie là où elle était ; changer d’onglet pose la même question, « Abandonner » change d’onglet',
+        garde.ouvert && garde.texte === 'Abandonner ce contrat non enregistré ?' && garde.focus === 'garde-continuer' &&
+        !reprise.garde && reprise.focus === 'admin-nomGates' && reprise.valeur === 'NEO' &&
+        gardeOnglet.texte === 'Abandonner ce contrat non enregistré ?' && gardeOnglet.onglet === 'contrats' && parti.onglet === 'jalons' && !parti.fiche,
+        JSON.stringify({ garde, reprise, gardeOnglet, parti }));
+      await ongletC(np, 'contrats');
+
+      /* C30-6 : retirer VRK (prévu) — question, double clic sans effet, « Non », puis « Oui, retirer ». */
+      await np.click('[data-admin="retirer-prevu"][data-id="VRK"]'); await np.waitForTimeout(60);
+      await np.evaluate(() => { const o = document.querySelector('[data-admin="retirer-prevu-oui"]'); if (o) o.click(); });
+      await np.waitForTimeout(100);
+      const question = await np.evaluate(() => ({ texte: (document.getElementById('q-retirer') || {}).textContent, focus: document.activeElement.getAttribute('data-admin'),
+        ouvert: (document.querySelector('[data-admin="retirer-prevu"][data-id="VRK"]') || {}).getAttribute('aria-expanded'),
+        colspan: (document.querySelector('tr.admin-confirmation td') || {}).colSpan }));
+      const encorePrevu = commeC('nathan@airbus.com', () => srvC.adminContrats().prevus.some(p => p.id === 'VRK'));
+      verifier('C30 : « Retirer » VRK — la question « Retirer « VRK » ? Il n’a encore reçu aucune donnée : sa fiche est effacée, et le robot ne le cherchera plus. », le focus sur « Oui, retirer » ; un double clic ne confirme rien',
+        question.texte === 'Retirer « VRK » ? Il n’a encore reçu aucune donnée : sa fiche est effacée, et le robot ne le cherchera plus.' &&
+        question.focus === 'retirer-prevu-oui' && question.ouvert === 'true' && question.colspan === 5 && encorePrevu, JSON.stringify({ question, encorePrevu }));
+      await np.waitForTimeout(450);
+      await np.click('[data-admin="annuler-confirmation"]'); await np.waitForTimeout(100);
+      const non = await actifC(np);
+      await np.click('[data-admin="retirer-prevu"][data-id="VRK"]'); await np.waitForTimeout(450);
+      await np.click('[data-admin="retirer-prevu-oui"]'); await libreC(np); await np.waitForTimeout(100);
+      const retire = await messageC(np), focusRetire = await actifC(np), resteVrk = await ligneC(np, 'VRK');
+      const srvRetire = commeC('nathan@airbus.com', () => ({ fiche: srvC.ficheDe_('VRK'), prevus: srvC.adminContrats().prevus.length }));
+      verifier('C30 : « Non » rend le focus à « Retirer » ; « Oui, retirer » — « VRK est retiré : le robot ne le cherchera plus. », sa ligne partie, sa fiche effacée au classeur, le focus sur « + Ajouter un contrat »',
+        non === 'Retirer le contrat prévu : VRK' && retire.texte === 'VRK est retiré : le robot ne le cherchera plus.' && resteVrk === null &&
+        focusRetire === 'ajouter-contrat' && !srvRetire.fiche && srvRetire.prevus === 0, JSON.stringify({ non, retire, focusRetire, srvRetire }));
+
+      /* C30-7 : les comptes rendus — du robot et de la fenêtre — se lisent sous chaque contrat. */
+      commeC('nathan@airbus.com', () => {
+        const j = srvC.ouvrirJetonImport_();
+        srvC.importRapport(j, { source: 'fenetre', contrats: [{ contrat: 'HDK Tranche 2', gates: { ok: true, plans: 180 } }] });
+        srvC.importRapport(j, { source: 'robot', passage: { ok: true, message: '', heure: '14:00', erreursFiche: 1 }, contrats: [
+          { contrat: 'HDK', gates: { ok: true, code: '', tape: 'HDK', plans: 634 }, see: { ok: true, lignes: 1200 } },
+          { contrat: 'HDK Tranche 2', gates: { ok: false, code: 'gates-introuvable', tape: 'HDKB',
+            message: 'GATES ne montre pas « HDKB » : vérifiez le « Nom exact de la tranche dans GATES » de ce contrat (tableau de bord → Administration → Contrats).' } }] });
+        /* THS : sa dernière mise à jour a cinq jours (avant le passage à
+           l'heure d'hiver du 25/10 : 14 h 15 à Paris). */
+        const pr = srvC.PropertiesService.getDocumentProperties(), rap = JSON.parse(pr.getProperty('SUIVI_FWD_RAPPORTS') || '{}');
+        const vieux = new srvC.Date(new srvC.Date().getTime() - 5 * 86400000).toISOString();
+        rap.contrats = rap.contrats || {};
+        rap.contrats.THS = { gates: { quand: vieux, ok: true, code: '', message: '', tape: 'THS', dernierOk: vieux } };
+        pr.setProperty('SUIVI_FWD_RAPPORTS', JSON.stringify(rap));
+      });
+      await ongletC(np, 'jalons'); await ongletC(np, 'contrats');
+      const rHdk = await ligneC(np, 'HDK'), rT2 = await ligneC(np, 'HDK Tranche 2'), rThs = await ligneC(np, 'THS');
+      const robot = await np.evaluate(() => { const r = document.getElementById('admin-robot'); return { classe: r.className, texte: r.querySelector('.admin-suivi-texte').textContent, icone: (r.querySelector('.admin-suivi-icone') || {}).textContent }; });
+      verifier('C30 : la ligne du robot — « Dernier passage du robot aujourd’hui à 13 h 15 : 1 contrat à corriger, ci-dessous. », avec ⚠ et non ✓ (une fiche est à corriger)',
+        robot.texte === 'Dernier passage du robot aujourd’hui à 13 h 15 : 1 contrat à corriger, ci-dessous.' && robot.icone === '⚠' && / attention/.test(robot.classe), JSON.stringify(robot));
+      verifier('C30 : sans erreur, la ligne dit seulement quand — « ✓ Mis à jour aujourd’hui à 13 h 15 »',
+        rHdk.suivi.icone === '✓' && rHdk.suivi.lignes.join('|') === 'Mis à jour aujourd’hui à 13 h 15' && / ok/.test(rHdk.suivi.classe), JSON.stringify(rHdk.suivi));
+      verifier('C30 : une erreur du robot se lit à côté du contrat — « ✗ GATES ne montre pas « HDKB »… », puis « Dernière mise à jour réussie : aujourd’hui à 13 h 15. » ; la fiche dit ce que le robot a tapé',
+        rT2.suivi.icone === '✗' && / erreur/.test(rT2.suivi.classe) && /^GATES ne montre pas « HDKB » : vérifiez le « Nom exact de la tranche dans GATES »/.test(rT2.suivi.lignes[0]) &&
+        rT2.suivi.lignes[1] === 'Dernière mise à jour réussie : aujourd’hui à 13 h 15.' && rT2.fiche.GATES === 'à renseigner (le robot a tapé « HDKB »)', JSON.stringify(rT2));
+      verifier('C30 : un contrat que le robot n’a pas mis à jour depuis cinq jours — « ⚠ Pas mis à jour depuis 5 jours (…). Le PC du robot est-il allumé ? »',
+        rThs.suivi.icone === '⚠' && / attention/.test(rThs.suivi.classe) && /^Pas mis à jour depuis 5 jours \(dernière fois le 24\/10 à 1[34] h 15\)\. Le PC du robot est-il allumé \?$/.test(rThs.suivi.lignes[0]),
+        JSON.stringify(rThs.suivi));
+      await np.evaluate(() => { window.__lum = c => { const m = c.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]; };
+        window.__contraste = (a, b) => { const x = window.__lum(a), y = window.__lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }; });
+      const ressort = await np.evaluate(() => {
+        const e = document.querySelector('tr.admin-suivi.erreur .admin-suivi-corps'), o = document.querySelector('tr.admin-suivi.ok .admin-suivi-corps');
+        const se = getComputedStyle(e), so = getComputedStyle(o), alerte = getComputedStyle(document.documentElement).getPropertyValue('--alerte').trim();
+        return { fondErreur: se.backgroundColor, fondOk: so.backgroundColor, barre: se.boxShadow, contraste: window.__contraste(se.color, se.backgroundColor),
+                 icone: getComputedStyle(e.querySelector('.admin-suivi-icone')).color, alerte, sr: (e.querySelector('.masque') || {}).textContent };
+      });
+      verifier('C30 : l’erreur ressort — sur le fond rouge pâle des alertes, une barre rouge à gauche, son ✗ au rouge, le texte ≥ 4,5:1 ; « Erreur : » pour les lecteurs d’écran ; une ligne à jour reste sobre',
+        ressort.fondErreur !== 'rgba(0, 0, 0, 0)' && ressort.fondOk === 'rgba(0, 0, 0, 0)' && /inset/.test(ressort.barre) && ressort.contraste >= 4.5 && ressort.sr === 'Erreur : ', JSON.stringify(ressort));
+      await np.__ctx.close();
+
+      /* C30-8 : Anne, administratrice de THS. */
+      const ap = await vivanteC({ email: 'anne@airbus.com' });
+      await ap.click('#ouvrir-admin'); await libreC(ap);
+      const ongletsAnne = await ap.evaluate(() => ({ rangee: !document.getElementById('admin-onglets').hidden,
+        visibles: [...document.querySelectorAll('#admin-onglets [role="tab"]')].filter(b => !b.hidden).map(b => b.textContent), portee: document.getElementById('admin-portee').textContent }));
+      await ongletC(ap, 'contrats');
+      const anneL = await ap.evaluate(() => ({ ajouter: !!document.querySelector('[data-admin="ajouter-contrat"]'), masquer: document.querySelectorAll('[data-admin="masquer"],[data-admin="reafficher"],[data-admin="retirer-prevu"]').length,
+        modifier: [...document.querySelectorAll('[data-admin="modifier-fiche"]')].map(b => b.getAttribute('data-id')),
+        lecture: [...document.querySelectorAll('#admin-corps tr[data-id]')].filter(tr => tr.querySelector('.admin-lecture')).map(tr => tr.getAttribute('data-id')),
+        note: document.querySelector('#admin-corps .admin-note').textContent }));
+      verifier('C30 : Anne (administratrice de THS) — deux onglets, Jalons et Contrats ; la portée dite (« et modifier sa fiche (onglet Contrats) ») ; « Modifier » sur THS seulement, ni « + Ajouter », ni « Masquer » ; les autres lignes en « lecture seule »',
+        ongletsAnne.rangee && ongletsAnne.visibles.join() === 'Jalons,Contrats' && /et modifier sa fiche \(onglet Contrats\)\. Les autres jalons et contrats sont en lecture seule\.$/.test(ongletsAnne.portee) &&
+        !anneL.ajouter && anneL.masquer === 0 && anneL.modifier.join() === 'THS' && anneL.lecture.join() === 'HDK,HDK Tranche 2' &&
+        anneL.note === 'Seuls le responsable et les administrateurs de tous les contrats ajoutent, masquent ou retirent un contrat.', JSON.stringify({ ongletsAnne, anneL }));
+      await ap.click('[data-admin="modifier-fiche"][data-id="THS"]'); await ap.waitForTimeout(100);
+      await ap.fill('#admin-nomGates', 'THS');
+      await ap.click('form[data-form="contrat"] [type="submit"]'); await libreC(ap); await ap.waitForTimeout(100);
+      const anneOk = await messageC(ap);
+      await ap.click('[data-admin="modifier-fiche"][data-id="THS"]'); await ap.waitForTimeout(100);
+      await ap.fill('#admin-nomGates', 'THS Série');
+      commeC('nathan@airbus.com', () => srvC.adminEnregistrerAdmins([]));
+      await ap.click('form[data-form="contrat"] [type="submit"]');
+      await ap.waitForFunction(() => /retirés entre-temps/.test(document.getElementById('admin-message').textContent), null, { timeout: 15000 }).catch(() => {});
+      const anneRefus = await ap.evaluate(() => ({ msg: document.getElementById('admin-message').textContent, valeur: (document.getElementById('admin-nomGates') || {}).value,
+        lecture: (document.getElementById('admin-nomGates') || {}).readOnly, envoyer: !!document.querySelector('form[data-form="contrat"] [type="submit"]') }));
+      verifier('C30 : Anne enregistre la fiche de THS (« Fiche de THS enregistrée. ») ; ses droits retirés en chemin, la fiche suivante n’est pas enregistrée, on le dit, et sa saisie reste lisible',
+        anneOk.texte === 'Fiche de THS enregistrée.' && commeC('nathan@airbus.com', () => srvC.ficheDe_('THS').nomGates) === 'THS' &&
+        anneRefus.msg === 'Vos droits d’administration ont été retirés entre-temps. Votre fiche n’a pas été enregistrée. Pour retrouver ces droits, écrivez à nathan@airbus.com.' &&
+        anneRefus.valeur === 'THS Série' && anneRefus.lecture && !anneRefus.envoyer, JSON.stringify({ anneOk, anneRefus }));
+      await ap.__ctx.close();
+      commeC('nathan@airbus.com', () => srvC.adminEnregistrerAdmins([{ email: 'anne@airbus.com', contrats: ['THS'] }]));
+
+      /* C30-9 : le téléphone (390 px, tactile), en clair et en sombre. */
+      for (const schema of ['light', 'dark']) {
+        const tp = await vivanteC({ email: 'nathan@airbus.com', largeur: 390, hauteur: 844, mobile: true, schema });
+        await ouvrirContratsC(tp);
+        const tel = await tp.evaluate(() => {
+          const z = document.getElementById('admin-corps'), t = document.querySelector('table.admin-contrats');
+          const tr = document.querySelector('#admin-corps tr[data-id]'), s = document.querySelector('#admin-corps tr.admin-suivi');
+          const cibles = [...z.querySelectorAll('button')].filter(b => b.getClientRects().length).map(b => { const r = b.getBoundingClientRect(); return { q: b.getAttribute('data-admin'), h: Math.round(r.height) }; });
+          /* La ligne en erreur (HDK Tranche 2, posée au C30-7) : son texte et son fond. */
+          const e = document.querySelector('#admin-corps tr.admin-suivi.erreur .admin-suivi-corps');
+          return { deborde: z.scrollWidth - z.clientWidth, page: document.documentElement.scrollWidth - innerWidth, empile: getComputedStyle(tr.cells[1]).display === 'block',
+                   suivi: Math.round(s.getBoundingClientRect().width) >= Math.round(t.getBoundingClientRect().width) - 1, petites: cibles.filter(c => c.h < 44), n: cibles.length,
+                   erreur: e ? { couleur: getComputedStyle(e).color, fond: getComputedStyle(e).backgroundColor } : null };
+        });
+        await tp.click('[data-admin="ajouter-contrat"]'); await tp.waitForTimeout(150);
+        await tp.click('form[data-form="contrat"] [type="submit"]'); await tp.waitForTimeout(150);
+        const telForm = await tp.evaluate(() => {
+          const z = document.getElementById('admin-corps'), f = document.querySelector('form[data-form="contrat"]'), m = document.getElementById('admin-fwd-msg');
+          const champs = [...f.querySelectorAll('input')].map(i => ({ n: i.name, t: getComputedStyle(i).fontSize, h: Math.round(i.getBoundingClientRect().height) }));
+          return { deborde: z.scrollWidth - z.clientWidth, champs, couleur: getComputedStyle(m).color, fond: getComputedStyle(f).backgroundColor,
+                   boutons: [...f.querySelectorAll('.admin-form-boutons button')].map(b => Math.round(b.getBoundingClientRect().height)) };
+        });
+        await tp.evaluate(() => { window.__lum = c => { const m = c.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]; };
+          window.__contraste = (a, b) => { const x = window.__lum(a), y = window.__lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }; });
+        const contrasteErr = await tp.evaluate(c => window.__contraste(c.couleur, c.fond), telForm);
+        const contrasteSuivi = tel.erreur ? await tp.evaluate(c => window.__contraste(c.couleur, c.fond), tel.erreur) : 0;
+        verifier('C30 : téléphone (' + schema + ') — la ligne de suivi en erreur garde son fond rouge pâle, son texte ≥ 4,5:1 dessus',
+          !!tel.erreur && tel.erreur.fond !== 'rgba(0, 0, 0, 0)' && contrasteSuivi >= 4.5, JSON.stringify({ erreur: tel.erreur, contrasteSuivi }));
+        verifier('C30 : téléphone (390 px, ' + schema + ') — aucun défilement de côté, les contrats en lignes empilées, la ligne de suivi sur toute la largeur, chaque bouton ≥ 44 px',
+          tel.deborde <= 0 && tel.page <= 0 && tel.empile && tel.suivi && tel.n >= 5 && tel.petites.length === 0, JSON.stringify(tel));
+        verifier('C30 : téléphone (' + schema + ') — la fiche sans défilement de côté, ses champs à 16 px et ≥ 44 px, ses boutons ≥ 44 px ; le message d’erreur ≥ 4,5:1 sur le fond du formulaire',
+          telForm.deborde <= 0 && telForm.champs.length === 5 && telForm.champs.every(c => c.t === '16px' && c.h >= 44) && telForm.boutons.every(h => h >= 44) && contrasteErr >= 4.5,
+          JSON.stringify({ telForm, contrasteErr }));
+        await tp.__ctx.close();
+      }
+    } finally {
+      try { fsC.unlinkSync(fichierC); } catch (e) { /* déjà parti */ }
+    }
+  }
+  /* (fin du lot C30) */
 
 
   await ctx.close();

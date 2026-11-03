@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "52e5e75";
+  --suivi-fwd-edition: "d94c3f2";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -3000,6 +3000,46 @@ dialog.admin[aria-busy="true"] .admin-corps:not(.en-attente) { opacity: .6; }
 .etiquette-admin { display: inline-block; padding: 1px 8px; border: 1px solid var(--filet-fort); border-radius: 999px; font-size: 12px; line-height: 18px; color: var(--encre-2); margin: 1px 4px 1px 0; white-space: nowrap; }
 .etiquette-admin.en-cours { border-color: var(--accent); color: var(--accent); }
 .etiquette-admin.etat-masque { border-style: dashed; }
+/* Débrief 30 : l'onglet Contrats. Un contrat prévu (pas encore d'onglet)
+   se dit en pointillé ; sa fiche se lit en paires courtes (GATES, ELEC,
+   Harnais, PSN) ; sous chaque contrat, une ligne de suivi dit son dernier
+   passage — une erreur au rouge des alertes, à côté du contrat concerné. */
+.etiquette-admin.etat-prevu { border-style: dotted; border-color: var(--encre-3); }
+.admin-contrats td { vertical-align: top; }
+.admin-contrats td[data-titre="Tranche"], .admin-contrats td[data-titre="État"] { white-space: nowrap; }
+.admin-contrats td.actions { white-space: normal; }
+.admin-contrats td.actions .lien-doux, .admin-contrats td.actions .admin-lecture, .admin-contrats td.actions .etiquette-admin { display: block; width: max-content; margin: 0 0 4px auto; text-align: right; white-space: nowrap; }
+.admin-fiche .par-defaut { white-space: nowrap; }
+.admin-contrats tr.a-suivi td { border-bottom: 0; padding-bottom: 4px; }
+.admin-fiche { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1px 10px; font-size: 13px; line-height: 1.45; }
+.admin-fiche > div { display: contents; }
+.admin-fiche dt { color: var(--encre-3); font-size: 12px; line-height: 19px; }
+.admin-fiche dd { margin: 0; min-width: 0; overflow-wrap: anywhere; color: var(--encre); }
+.admin-table tr.est-masque .admin-fiche dd { color: var(--encre-3); }
+.admin-table tr.admin-suivi td { padding: 0 4px 10px 0; }
+.admin-suivi-corps { display: flex; flex-direction: column; gap: 2px; font-size: 12.5px; line-height: 1.45; color: var(--encre-2); }
+.admin-suivi-ligne { display: flex; gap: 6px; align-items: baseline; }
+.admin-suivi-icone { flex: none; width: 1em; text-align: center; font-weight: 600; }
+.admin-suivi-texte { min-width: 0; overflow-wrap: anywhere; }
+.admin-suivi-ligne + .admin-suivi-ligne { padding-left: calc(1em + 6px); }
+.admin-suivi.ok .admin-suivi-icone, .admin-robot.ok .admin-suivi-icone { color: var(--fait); }
+.admin-suivi.attente .admin-suivi-icone { color: var(--encre-3); }
+.admin-suivi.erreur .admin-suivi-corps, .admin-suivi.attention .admin-suivi-corps {
+  padding: 6px 10px; border-radius: 6px; color: var(--encre);
+}
+.admin-suivi.erreur .admin-suivi-corps { background: var(--alerte-fond); box-shadow: inset 3px 0 0 var(--alerte); }
+.admin-suivi.erreur .admin-suivi-ligne:first-child { font-weight: 500; }
+.admin-suivi.erreur .admin-suivi-icone, .admin-robot.erreur .admin-suivi-icone { color: var(--alerte); }
+.admin-suivi.attention .admin-suivi-corps { background: var(--creux); box-shadow: inset 3px 0 0 var(--cours); }
+.admin-suivi.attention .admin-suivi-icone, .admin-robot.attention .admin-suivi-icone { color: var(--cours); }
+.admin-table tr.admin-suivi.recent td { background: var(--accent-voile); }
+/* La ligne du robot, en tête : son dernier passage, en une phrase. */
+.admin-corps .admin-robot {
+  display: flex; gap: 8px; align-items: baseline; margin: 0 0 14px; padding: 9px 12px; border-radius: 6px;
+  background: var(--creux); font-size: 13px; line-height: 1.5; color: var(--encre);
+}
+.admin-corps .admin-robot.erreur { background: var(--alerte-fond); box-shadow: inset 3px 0 0 var(--alerte); }
+.admin-corps .admin-robot.attention { box-shadow: inset 3px 0 0 var(--cours); }
 .admin-lecture { font-size: 12px; color: var(--encre-3); white-space: nowrap; }
 /* Modifier, supprimer : deux icônes (B17) au gris tertiaire, à l'encre
    quand on survole la ligne ; la corbeille survolée passe au rouge. Leur
@@ -3064,6 +3104,9 @@ dialog.admin[aria-busy="true"] .admin-corps:not(.en-attente) { opacity: .6; }
 .admin-champ-msg:empty { display: none; }
 .admin-champ-msg.erreur { color: var(--alerte); }
 .admin-champ-msg.avertissement { color: var(--cours); }
+/* Débrief 30 : l'aide d'un champ, toujours visible, sous son message. */
+.admin-champ.avec-aide .admin-champ-pied { min-height: 0; }
+.admin-corps .admin-champ-aide { margin: 0 0 6px; font-size: 12px; line-height: 1.45; color: var(--encre-2); max-width: 80ch; }
 .admin-compteur { margin-left: auto; color: var(--encre-3); white-space: nowrap; }
 .admin-compteur.plein { color: var(--cours); }
 .admin-form-boutons { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 16px; }
@@ -3108,6 +3151,15 @@ html.admin-ouvert, html.ensemble-ouvert { overflow: hidden; padding-right: var(-
   .admin-table td.actions { text-align: left; padding-top: 6px; }
   .admin-table td[data-titre]::before { content: attr(data-titre) " · "; color: var(--encre-3); font-size: 12px; }
   .admin-table tr.admin-confirmation { padding: 0 0 10px; }
+  /* Débrief 30 : un contrat et sa ligne de suivi ne font qu'un bloc. */
+  .admin-contrats tr.a-suivi { border-bottom: 0; padding-bottom: 4px; }
+  .admin-table tr.admin-suivi { padding: 0 0 10px; }
+  .admin-table tr.admin-suivi td { padding: 0; }
+  .admin-contrats td.nom { font-weight: 500; }
+  .admin-contrats td[data-titre="Fiche"]::before { display: none; }
+  .admin-contrats td[data-titre="Fiche"] { padding-top: 4px; }
+  .admin-contrats td.actions { display: flex; flex-wrap: wrap; gap: 0 18px; }
+  .admin-contrats td.actions .lien-doux, .admin-contrats td.actions .admin-lecture, .admin-contrats td.actions .etiquette-admin { display: inline-flex; align-items: center; width: auto; margin: 0; text-align: left; }
   .admin-icone { margin-left: -6px; }
   .admin-icone + .admin-icone { margin-left: 10px; }
   .admin-icone-mot { display: inline; }
