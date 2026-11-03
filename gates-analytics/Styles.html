@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "cd9cd8e";
+  --suivi-fwd-edition: "bf732b6";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -1211,6 +1211,18 @@ header.entete .alerte-source {
   font-size: 13px; font-weight: 500; min-width: 72px; text-align: left; color: var(--encre);
 }
 .journal-tete .sem-dates { font-weight: 400; color: var(--encre-2); }
+/* Débrief 31 : l'extract du jour, dernier point de la courbe sans être un
+   relevé archivé, le dit sous sa semaine. */
+.journal-tete .sem-extrait { display: block; font-size: 12px; font-weight: 400; color: var(--encre-2); }
+/* Débrief 31 : une semaine que le journal ne détaille pas (aucun
+   changement, pas de détail plan par plan, rien pour la sélection) tient en
+   une ligne courte, alignée sur les autres : ni pli, ni survol, ni bouton. */
+.journal-calme > .journal-tete { cursor: default; }
+@media (hover: hover) { .journal-calme > .journal-tete:hover { background: none; } }
+.journal-plier-calme { cursor: default; }
+.journal-plier-calme .chevron-vide { display: block; width: 9px; flex: none; }
+.journal-calme .calme-texte { color: var(--encre-2); font-size: 13px; min-width: 0; }
+.journal-grille .journal-calme .calme-texte { grid-column: 2 / -1; }
 /* Au doigt (D11, M10) : la ligne d'une semaine offre 44 px de haut. */
 @media (pointer: coarse) {
   .journal-plier { min-height: 44px; align-items: center; }
@@ -3016,6 +3028,23 @@ dialog.admin[aria-busy="true"] .admin-corps:not(.en-attente) { opacity: .6; }
 .admin-contrats td.actions .lien-doux, .admin-contrats td.actions .admin-lecture, .admin-contrats td.actions .etiquette-admin { display: block; width: max-content; margin: 0 0 4px auto; text-align: right; white-space: nowrap; }
 .admin-fiche .par-defaut { white-space: nowrap; }
 .admin-contrats tr.a-suivi td { border-bottom: 0; padding-bottom: 4px; }
+/* Débrief 31 : le tableau des contrats rangé par famille — une ligne de
+   tête par contrat (son nom, combien de tranches, « + Ajouter une
+   tranche »), puis ses tranches, en retrait sous lui : la colonne Contrat
+   ne répète plus son nom (gardé pour les lecteurs d'écran). */
+.admin-contrats tr.admin-famille th {
+  padding: 18px 4px 8px 0; border-bottom: 1px solid var(--filet); white-space: normal;
+  font-size: 13px; font-weight: 400; color: var(--encre);
+}
+.admin-contrats tbody:first-of-type tr.admin-famille th { padding-top: 12px; }
+.admin-famille-ligne { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; min-height: 28px; }
+.admin-famille-nom { font-size: 14px; font-weight: 600; color: var(--encre); overflow-wrap: anywhere; }
+.admin-famille-compte { font-size: 12px; color: var(--encre-2); }
+.admin-famille-ligne .admin-ajouter-tranche { margin-left: auto; }
+/* La valeur du contrat, à reprendre d'un clic dans la fiche d'une nouvelle tranche. */
+.admin-champ .admin-suggestion { align-self: flex-start; text-align: left; font-size: 12px; line-height: 1.45; color: var(--encre-2); overflow-wrap: anywhere; }
+.admin-champ .admin-suggestion:hover { color: var(--encre); }
+.admin-suggestion-valeur { font-weight: 500; }
 .admin-fiche { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1px 10px; font-size: 13px; line-height: 1.45; }
 .admin-fiche > div { display: contents; }
 .admin-fiche dt { color: var(--encre-3); font-size: 12px; line-height: 19px; }
@@ -3045,6 +3074,8 @@ dialog.admin[aria-busy="true"] .admin-corps:not(.en-attente) { opacity: .6; }
 }
 .admin-corps .admin-robot.erreur { background: var(--alerte-fond); box-shadow: inset 3px 0 0 var(--alerte); }
 .admin-corps .admin-robot.attention { box-shadow: inset 3px 0 0 var(--cours); }
+/* Débrief 31 : « le robot regarde une autre version du site », collée sous la ligne du robot. */
+.admin-corps .admin-robot + .admin-robot-livraison { margin-top: -8px; }
 .admin-lecture { font-size: 12px; color: var(--encre-3); white-space: nowrap; }
 /* Modifier, supprimer : deux icônes (B17) au gris tertiaire, à l'encre
    quand on survole la ligne ; la corbeille survolée passe au rouge. Leur
@@ -3161,6 +3192,11 @@ html.admin-ouvert, html.ensemble-ouvert { overflow: hidden; padding-right: var(-
   .admin-table tr.admin-suivi { padding: 0 0 10px; }
   .admin-table tr.admin-suivi td { padding: 0; }
   .admin-contrats td.nom { font-weight: 500; }
+  /* Débrief 31 : au téléphone, la tête de famille ouvre le bloc de ses tranches. */
+  .admin-contrats tr.admin-famille { padding: 16px 0 6px; border-bottom: 1px solid var(--filet-fort); }
+  .admin-contrats tbody:first-of-type tr.admin-famille { padding-top: 4px; }
+  .admin-contrats tr.admin-famille th, .admin-contrats tbody:first-of-type tr.admin-famille th { display: block; padding: 0; border: 0; }
+  .admin-contrats tr[data-id] td.nom { padding: 0; }
   .admin-contrats td[data-titre="Fiche"]::before { display: none; }
   .admin-contrats td[data-titre="Fiche"] { padding-top: 4px; }
   .admin-contrats td.actions { display: flex; flex-wrap: wrap; gap: 0 18px; }
@@ -3206,6 +3242,8 @@ html.admin-ouvert, html.ensemble-ouvert { overflow: hidden; padding-right: var(-
   .admin-table .lien-doux, .admin-message .bouton, .admin-corps .bouton { min-height: 44px; }
   .admin-coche { min-height: 44px; }
   .admin-champ input, .admin-champ select { min-height: 44px; font-size: 16px; }
+  /* Débrief 31 : « Reprendre … de THS » se touche aussi au doigt. */
+  .admin-champ .admin-suggestion { min-height: 44px; }
 }
 /* « Copier (12) » : sur chaque liste de références de la page (verdict de
    la comparaison, semaine du journal, groupe déplié). Un petit bouton à
@@ -3596,6 +3634,8 @@ table.plans td.large:focus { white-space: normal; overflow: visible; }
   .critique-ligne[aria-expanded="true"] { padding-left: 12px; }
   .journal-grille .mot-case { white-space: normal; }
   .journal-grille .journal-tete .resume { flex: 1 1 100%; padding-left: 22px; }
+  /* Débrief 31 : la ligne courte d'une semaine sans détail, sous sa semaine, au même retrait. */
+  .journal-calme .calme-texte { flex: 1 1 100%; padding: 0 2px 4px 22px; }
 }
 .masque { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 @media (prefers-reduced-motion: reduce) { .barre span, .ombre-defile, .poignee { transition: none; } }

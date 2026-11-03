@@ -1215,6 +1215,18 @@ header.entete .alerte-source {
   font-size: 13px; font-weight: 500; min-width: 72px; text-align: left; color: var(--encre);
 }
 .journal-tete .sem-dates { font-weight: 400; color: var(--encre-2); }
+/* Débrief 31 : l'extract du jour, dernier point de la courbe sans être un
+   relevé archivé, le dit sous sa semaine. */
+.journal-tete .sem-extrait { display: block; font-size: 12px; font-weight: 400; color: var(--encre-2); }
+/* Débrief 31 : une semaine que le journal ne détaille pas (aucun
+   changement, pas de détail plan par plan, rien pour la sélection) tient en
+   une ligne courte, alignée sur les autres : ni pli, ni survol, ni bouton. */
+.journal-calme > .journal-tete { cursor: default; }
+@media (hover: hover) { .journal-calme > .journal-tete:hover { background: none; } }
+.journal-plier-calme { cursor: default; }
+.journal-plier-calme .chevron-vide { display: block; width: 9px; flex: none; }
+.journal-calme .calme-texte { color: var(--encre-2); font-size: 13px; min-width: 0; }
+.journal-grille .journal-calme .calme-texte { grid-column: 2 / -1; }
 /* Au doigt (D11, M10) : la ligne d'une semaine offre 44 px de haut. */
 @media (pointer: coarse) {
   .journal-plier { min-height: 44px; align-items: center; }
@@ -3020,6 +3032,23 @@ dialog.admin[aria-busy="true"] .admin-corps:not(.en-attente) { opacity: .6; }
 .admin-contrats td.actions .lien-doux, .admin-contrats td.actions .admin-lecture, .admin-contrats td.actions .etiquette-admin { display: block; width: max-content; margin: 0 0 4px auto; text-align: right; white-space: nowrap; }
 .admin-fiche .par-defaut { white-space: nowrap; }
 .admin-contrats tr.a-suivi td { border-bottom: 0; padding-bottom: 4px; }
+/* Débrief 31 : le tableau des contrats rangé par famille — une ligne de
+   tête par contrat (son nom, combien de tranches, « + Ajouter une
+   tranche »), puis ses tranches, en retrait sous lui : la colonne Contrat
+   ne répète plus son nom (gardé pour les lecteurs d'écran). */
+.admin-contrats tr.admin-famille th {
+  padding: 18px 4px 8px 0; border-bottom: 1px solid var(--filet); white-space: normal;
+  font-size: 13px; font-weight: 400; color: var(--encre);
+}
+.admin-contrats tbody:first-of-type tr.admin-famille th { padding-top: 12px; }
+.admin-famille-ligne { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; min-height: 28px; }
+.admin-famille-nom { font-size: 14px; font-weight: 600; color: var(--encre); overflow-wrap: anywhere; }
+.admin-famille-compte { font-size: 12px; color: var(--encre-2); }
+.admin-famille-ligne .admin-ajouter-tranche { margin-left: auto; }
+/* La valeur du contrat, à reprendre d'un clic dans la fiche d'une nouvelle tranche. */
+.admin-champ .admin-suggestion { align-self: flex-start; text-align: left; font-size: 12px; line-height: 1.45; color: var(--encre-2); overflow-wrap: anywhere; }
+.admin-champ .admin-suggestion:hover { color: var(--encre); }
+.admin-suggestion-valeur { font-weight: 500; }
 .admin-fiche { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1px 10px; font-size: 13px; line-height: 1.45; }
 .admin-fiche > div { display: contents; }
 .admin-fiche dt { color: var(--encre-3); font-size: 12px; line-height: 19px; }
@@ -3049,6 +3078,8 @@ dialog.admin[aria-busy="true"] .admin-corps:not(.en-attente) { opacity: .6; }
 }
 .admin-corps .admin-robot.erreur { background: var(--alerte-fond); box-shadow: inset 3px 0 0 var(--alerte); }
 .admin-corps .admin-robot.attention { box-shadow: inset 3px 0 0 var(--cours); }
+/* Débrief 31 : « le robot regarde une autre version du site », collée sous la ligne du robot. */
+.admin-corps .admin-robot + .admin-robot-livraison { margin-top: -8px; }
 .admin-lecture { font-size: 12px; color: var(--encre-3); white-space: nowrap; }
 /* Modifier, supprimer : deux icônes (B17) au gris tertiaire, à l'encre
    quand on survole la ligne ; la corbeille survolée passe au rouge. Leur
@@ -3165,6 +3196,11 @@ html.admin-ouvert, html.ensemble-ouvert { overflow: hidden; padding-right: var(-
   .admin-table tr.admin-suivi { padding: 0 0 10px; }
   .admin-table tr.admin-suivi td { padding: 0; }
   .admin-contrats td.nom { font-weight: 500; }
+  /* Débrief 31 : au téléphone, la tête de famille ouvre le bloc de ses tranches. */
+  .admin-contrats tr.admin-famille { padding: 16px 0 6px; border-bottom: 1px solid var(--filet-fort); }
+  .admin-contrats tbody:first-of-type tr.admin-famille { padding-top: 4px; }
+  .admin-contrats tr.admin-famille th, .admin-contrats tbody:first-of-type tr.admin-famille th { display: block; padding: 0; border: 0; }
+  .admin-contrats tr[data-id] td.nom { padding: 0; }
   .admin-contrats td[data-titre="Fiche"]::before { display: none; }
   .admin-contrats td[data-titre="Fiche"] { padding-top: 4px; }
   .admin-contrats td.actions { display: flex; flex-wrap: wrap; gap: 0 18px; }
@@ -3210,6 +3246,8 @@ html.admin-ouvert, html.ensemble-ouvert { overflow: hidden; padding-right: var(-
   .admin-table .lien-doux, .admin-message .bouton, .admin-corps .bouton { min-height: 44px; }
   .admin-coche { min-height: 44px; }
   .admin-champ input, .admin-champ select { min-height: 44px; font-size: 16px; }
+  /* Débrief 31 : « Reprendre … de THS » se touche aussi au doigt. */
+  .admin-champ .admin-suggestion { min-height: 44px; }
 }
 /* « Copier (12) » : sur chaque liste de références de la page (verdict de
    la comparaison, semaine du journal, groupe déplié). Un petit bouton à
@@ -3600,6 +3638,8 @@ table.plans td.large:focus { white-space: normal; overflow: visible; }
   .critique-ligne[aria-expanded="true"] { padding-left: 12px; }
   .journal-grille .mot-case { white-space: normal; }
   .journal-grille .journal-tete .resume { flex: 1 1 100%; padding-left: 22px; }
+  /* Débrief 31 : la ligne courte d'une semaine sans détail, sous sa semaine, au même retrait. */
+  .journal-calme .calme-texte { flex: 1 1 100%; padding: 0 2px 4px 22px; }
 }
 .masque { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 @media (prefers-reduced-motion: reduce) { .barre span, .ombre-defile, .poignee { transition: none; } }
@@ -5936,6 +5976,14 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
      (celui du vendredi, souvent) sans export recollé. Le point compte dans
      le rythme ; la note du graphique le signale (débrief 16). */
   var RELEVES_IDENTIQUES = [];
+  /* Débrief 31 (Nathan : « semaine par semaine, ça s'arrête à la semaine
+     42, or sur le graphique, j'ai des données de la semaine 44 ») : les
+     semaines que le journal ne peut pas détailler — un relevé identique au
+     précédent (l'archivage du vendredi sans nouvel export), un relevé sans
+     le détail plan par plan, ou comparé à un relevé qui ne l'a pas. Le
+     journal les dit chacune en une ligne courte, au lieu de les taire :
+     { i, avant, sorte: 'identique' | 'sans-carte' | 'avant-sans-carte' }. */
+  var SEMAINES_SANS_DETAIL = [];
   /* Les lignes écartées parce qu'elles répètent une référence déjà vue
      (voir plansUniques) ; et l'ordre des dates de la colonne de création,
      jour/mois ou mois/jour (voir ordreDesDates). */
@@ -11489,16 +11537,54 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   function construireJournal() {
     var journal = [];
     RELEVES_IDENTIQUES = [];
+    SEMAINES_SANS_DETAIL = [];
     for (var k = 1; k < RELEVES.length; k++) {
       var avant = RELEVES[k - 1].plans, apres = RELEVES[k].plans;
-      if (!avant || !apres) continue;
+      /* Débrief 31 : une semaine sans le détail plan par plan se dit — elle
+         a son point sur la courbe. */
+      if (!avant || !apres) {
+        SEMAINES_SANS_DETAIL.push({ i: RELEVES[k].i, avant: RELEVES[k - 1].i, sorte: apres ? 'avant-sans-carte' : 'sans-carte' });
+        continue;
+      }
       var evenements = apparier(avant, apres);
       /* Débrief 27 (P-F10) : « avant », la semaine du relevé comparé — la
          ligne de la semaine en dit les deux dates. */
       if (evenements.length) journal.push({ i: RELEVES[k].i, avant: RELEVES[k - 1].i, evenements: evenements });
-      else RELEVES_IDENTIQUES.push(RELEVES[k].i);
+      else {
+        RELEVES_IDENTIQUES.push(RELEVES[k].i);
+        SEMAINES_SANS_DETAIL.push({ i: RELEVES[k].i, avant: RELEVES[k - 1].i, sorte: 'identique' });
+      }
     }
+    SEMAINES_SANS_DETAIL.reverse();
     return journal.reverse();          // la semaine la plus récente en tête
+  }
+
+  /* Débrief 31 : la ligne courte d'une semaine que le journal ne détaille
+     pas — sans pli ni bouton (il n'y a rien à déplier), alignée sur les
+     autres : « S43 · du ven. 16 au ven. 23 oct. — aucun changement depuis
+     S42 ». `sorte` : celles de SEMAINES_SANS_DETAIL, ou 'selection' (des
+     plans ont changé cette semaine-là, aucun de ceux que gardent les
+     filtres de la page). */
+  function ligneSemaineCalme(sem, jours) {
+    var d = datesSemaineJournal(sem, jours), depuis = 'S' + numeroSemaine(sem.avant);
+    var dans = vue.perimetre && !filtreLibre() ? 'dans le périmètre ' + vue.perimetre : 'pour les plans de la sélection';
+    var texte = sem.sorte === 'identique' ? 'aucun changement depuis ' + depuis
+      : sem.sorte === 'selection' ? 'aucun changement ' + dans + ' depuis ' + depuis
+      : sem.sorte === 'avant-sans-carte' ? 'le relevé ' + depuis + ' n’a pas le détail plan par plan : on ne peut pas dire ce qui a changé'
+      : 'relevé sans le détail plan par plan : on ne peut pas dire ce qui a changé depuis ' + depuis;
+    /* Le lecteur d'écran lit la semaine en toutes lettres, comme sur le
+       bouton d'une semaine qui a bougé ; l'écriture courte est pour l'œil. */
+    return '<div class="journal-semaine journal-calme" data-calme="' + sem.sorte + '" data-semaine-calme="' + sem.i + '">' +
+      '<span class="journal-tete"><span class="journal-plier journal-plier-calme" aria-hidden="true"><span class="chevron-vide"></span>' +
+      '<span class="sem"><span class="sem-num">' + d.num + '</span> · <span class="sem-dates">' + d.dates + '</span>' + motExtrait(sem) + '</span></span>' +
+      '<span class="calme-texte"><span class="masque">' + ech(d.num + ', ' + d.dit + (estExtraitDuJour(sem) ? ', extract du jour, pas encore archivé' : '')) + ' : </span>' +
+      ech(texte) + '</span></span></div>';
+  }
+  /* Débrief 31 : l'extract du jour, dernier point de la courbe sans être
+     un relevé, le dit sur sa ligne du journal. */
+  function estExtraitDuJour(sem) { return EXTRAIT_EN_PLUS && !!DERNIER && sem.i === DERNIER.i; }
+  function motExtrait(sem) {
+    return estExtraitDuJour(sem) ? '<span class="sem-extrait">extract du jour, pas encore archivé</span>' : '';
   }
 
   /* Le plan derrière une référence, même ancienne : une référence qui n'est
@@ -11908,7 +11994,23 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     zone.style.gridTemplateColumns = enGrille
       ? 'max-content repeat(' + colonnes.length + ', minmax(min-content, max-content)) var(--col-jauge-journal, minmax(72px, 1fr))' : '';
     var jours = joursDesReleves();
-    var html = journal.map(function (sem) {
+    /* Débrief 31 : sous « Tout », sans recherche, chaque semaine archivée
+       après la première a sa ligne — celles qui n'ont rien à détailler en
+       une ligne courte (aucun changement, pas de détail plan par plan, rien
+       pour la sélection) : le journal n'est jamais plus court que la courbe
+       sans le dire. Sous une pastille ou une recherche, seules les semaines
+       qui ont ce qu'on cherche restent, comme avant : ni les comptes ni
+       l'annonce ne changent. */
+    var calmes = [];
+    if (!filtre && !q) {
+      calmes = SEMAINES_SANS_DETAIL.slice();
+      if (journal !== JOURNAL) {
+        var gardees = {};
+        journal.forEach(function (sem) { gardees[sem.i] = true; });
+        JOURNAL.forEach(function (sem) { if (!gardees[sem.i]) calmes.push({ i: sem.i, avant: sem.avant, sorte: 'selection' }); });
+      }
+    }
+    var rendreSemaine = function (sem) {
       var evts = retenus(sem);
       if (!evts.length) return '';
       JOURNAL_VU.lignes += evts.length;
@@ -12032,10 +12134,13 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         '" aria-label="' + ech(d.num + ', ' + d.dit) + '">' +
         '<svg class="chevron" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">' +
         '<path d="m3.5 1.5 3.5 3.5-3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
-        '<span class="sem"><span class="sem-num">' + d.num + '</span> · <span class="sem-dates">' + d.dates + '</span></span></button>' +
+        '<span class="sem"><span class="sem-num">' + d.num + '</span> · <span class="sem-dates">' + d.dates + '</span>' + motExtrait(sem) + '</span></button>' +
         '<span class="resume">' + resume.join('') + '</span>' + jauge + '</span>' +
         (ouvert ? '<ul class="journal-liste">' + lignes + '</ul>' : '') +
         '</div>';
+    };
+    var html = journal.concat(calmes).sort(function (a, b) { return b.i - a.i; }).map(function (sem) {
+      return sem.evenements ? rendreSemaine(sem) : ligneSemaineCalme(sem, jours);
     }).join('');
 
     /* Débrief 27 (B9) : l'en-tête du tableau sur deux étages — « Passés à »
@@ -17327,7 +17432,8 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   }
   function htmlGarde() {
     var j = ADMIN.edition && ADMIN.edition.jalon, F = ADMIN.garde && ADMIN.garde.form === 'contrat' ? ADMIN.fiche : null;
-    var texte = F ? (F.id ? 'Abandonner les modifications de la fiche de « ' + (F.nomAffiche || F.id) + ' » ?' : 'Abandonner ce contrat non enregistré ?')
+    var texte = F ? (F.id ? 'Abandonner les modifications de la fiche de « ' + (F.nomAffiche || F.id) + ' » ?'
+        : F.tranche ? 'Abandonner cette tranche de ' + F.famille + ' non enregistrée ?' : 'Abandonner ce contrat non enregistré ?')
       : j ? 'Abandonner les modifications de « ' + j.texte + ' » ?' : 'Abandonner ce jalon non enregistré ?';
     return '<div class="admin-garde"><span class="admin-question-texte" id="admin-garde-texte">' + ech(texte) + '</span>' +
       '<span class="admin-question-boutons"><button type="button" class="bouton petit" data-admin="garde-continuer" aria-describedby="admin-garde-texte">Continuer la saisie</button>' +
@@ -17603,6 +17709,24 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   function ligneDuContrat(id) {
     return ADMIN.contrats ? lignesDeContrats(ADMIN.contrats).filter(function (l) { return l.c.id === id; })[0] || null : null;
   }
+  /* Débrief 31 : les lignes par famille, dans leur ordre — { contrat, lignes,
+     info } ; info : ce que le classeur en dit (r.familles : « + Ajouter une
+     tranche » permis ? laquelle proposer ?). */
+  function famillesAdmin(r) {
+    var res = [], parCle = {};
+    lignesDeContrats(r).forEach(function (x) {
+      var k = norm(x.c.contrat);
+      if (!parCle[k]) { parCle[k] = { contrat: x.c.contrat, lignes: [], info: null }; res.push(parCle[k]); }
+      parCle[k].lignes.push(x);
+    });
+    (r.familles || []).forEach(function (f) { var g = parCle[norm(f.contrat)]; if (g) g.info = f; });
+    return res;
+  }
+  function familleAdmin(contrat) {
+    return ADMIN.contrats ? famillesAdmin(ADMIN.contrats).filter(function (f) { return norm(f.contrat) === norm(contrat); })[0] || null : null;
+  }
+  /* « HDK », « HDK et THS », « HDK, THS et VRK ». */
+  function listeEnFrancais(l) { return l.length > 1 ? l.slice(0, -1).join(', ') + ' et ' + l[l.length - 1] : (l[0] || ''); }
   /* Débrief 30 : une colonne se dit « Groupe › Colonne », comme dans GATES. */
   function designationDite(d) { return String(d || '').replace(/\s*>\s*/g, ' › '); }
   var ICONES_SUIVI = { ok: '✓', attention: '⚠', erreur: '✗', attente: '◌', neutre: '' };
@@ -17643,7 +17767,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var r = ADMIN.contrats;
     if (!r) return '';
     var visibles = r.actifs.length, F = ADMIN.fiche;
-    var lignes = lignesDeContrats(r).map(function (x) {
+    var ligneDeContrat = function (x) {
       var c = x.c, cle = (x.introuvable ? 'i:' : x.prevu ? 'p:' : x.masque ? 'r:' : 'a:') + c.id, actions = [];
       var enCours = !!(F && F.id && F.id === c.id);
       var etat = x.introuvable ? 'Onglet introuvable' : x.prevu ? 'Prévu' : x.masque ? 'Masqué' : c.id === CONTRAT ? 'Visible (à l’écran)' : 'Visible';
@@ -17672,7 +17796,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
          peut corriger porte son bouton, juste après le texte (dans l'ordre
          de lecture aussi). */
       var corrigeable = !!c.modifiable && (niveau === 'erreur' || niveau === 'attention');
-      var ligne = '<tr data-id="' + ech(c.id) + '" class="' + classes + '"><td class="nom">' + ech(c.contrat) + '</td>' +
+      /* Débrief 31 : la ligne de la famille, juste au-dessus, nomme le
+         contrat ; la case le garde pour les lecteurs d'écran. */
+      var ligne = '<tr data-id="' + ech(c.id) + '" class="' + classes + '"><td class="nom"><span class="masque">' + ech(c.contrat) + '</span></td>' +
         '<td data-titre="Tranche">' + (x.tranche ? ech(x.tranche) : TIRET_VIDE) + '</td>' +
         '<td data-titre="État"><span class="etiquette-admin' + (x.masque ? ' etat-masque' : x.prevu ? ' etat-prevu' : x.introuvable ? ' etat-introuvable' : '') + '">' + etat + '</span></td>' +
         '<td data-titre="Fiche">' + htmlFicheDuContrat(c, r) + '</td>' +
@@ -17698,8 +17824,23 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
           '<button type="button" class="bouton petit" data-admin="annuler-confirmation">Non</button>');
       }
       return ligne;
+    };
+    /* Débrief 31 (Nathan : « Comment je gère les tranches ? J'ai
+       l'impression que c'est que par contrat ») : le tableau se range par
+       contrat. Chaque famille a sa ligne de tête — le contrat, combien de
+       tranches, et « + Ajouter une tranche » pour qui peut l'ajouter — puis
+       ses tranches, chacune avec sa fiche, son état et son suivi. */
+    var lignes = famillesAdmin(r).map(function (fam, n) {
+      var bouton = fam.info && fam.info.ajoutTranche && !F
+        ? '<button type="button" class="bouton petit admin-ajouter-tranche" data-admin="ajouter-tranche" data-famille="' + ech(fam.contrat) + '"' +
+          ' aria-label="Ajouter une tranche au contrat ' + ech(fam.contrat) + '">+ Ajouter une tranche</button>' : '';
+      var compte = fam.lignes.length > 1 ? '<span class="admin-famille-compte">' + fam.lignes.length + ' tranches</span>' : '';
+      return '<tbody class="admin-famille-groupe" data-famille="' + ech(fam.contrat) + '"><tr class="admin-famille"><th colspan="5" scope="rowgroup" id="admin-famille-' + n + '">' +
+        '<span class="admin-famille-ligne"><span class="admin-famille-nom">' + ech(fam.contrat) + '</span>' + compte + bouton + '</span></th></tr>' +
+        fam.lignes.map(ligneDeContrat).join('') + '</tbody>';
     }).join('');
     var peut = DROITS.role === 'responsable' || DROITS.tous;
+    var tranchesAJoindre = (r.familles || []).filter(function (f) { return f.ajoutTranche; }).map(function (f) { return f.contrat; });
     var robot = r.robot || { niveau: 'neutre', texte: '' };
     var nRobot = ICONES_SUIVI.hasOwnProperty(robot.niveau) ? robot.niveau : 'neutre';
     /* Un passage qui s'est bien déroulé mais laisse des fiches à corriger
@@ -17707,16 +17848,23 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        ⚠, pour qu'on descende lire les lignes en rouge. */
     /* Débrief 30 (relu) : un contrat « à vérifier » (⚠) aussi. */
     if (nRobot === 'ok' && lignesDeContrats(r).some(function (x) { return x.c.suivi && (x.c.suivi.niveau === 'erreur' || x.c.suivi.niveau === 'attention'); })) nRobot = 'attention';
+    /* Débrief 31 : le robot regarde une autre livraison du site (il a gardé
+       un ancien lien) — une ligne à part, ⚠, sous la sienne. */
+    var autre = robot.livraison && robot.livraison.texte ? robot.livraison : null;
     return (robot.texte ? '<p class="admin-robot ' + nRobot + '" id="admin-robot">' + iconeSuivi(nRobot) + '<span class="admin-suivi-texte">' + insecables(ech(robot.texte)) + '</span></p>' : '') +
+      (autre ? '<p class="admin-robot attention admin-robot-livraison" id="admin-robot-livraison">' + iconeSuivi('attention') +
+        '<span class="admin-suivi-texte">' + insecables(ech(autre.texte)) + '</span></p>' : '') +
       '<div class="admin-ligne-outils"><h3 class="admin-titre" id="admin-contrats-titre">Contrats du tableau de bord</h3>' +
       (r.peutAjouter && !F ? '<button type="button" class="bouton principal" data-admin="ajouter-contrat">+ Ajouter un contrat</button>' : '') + '</div>' +
       (F ? htmlFormFiche() : '') +
       '<table class="admin-table admin-contrats" aria-labelledby="admin-contrats-titre"><thead><tr><th>Contrat</th><th>Tranche</th><th>État</th><th>Fiche</th>' +
-      '<th><span class="masque">Actions</span></th></tr></thead><tbody>' + lignes + '</tbody></table>' +
+      '<th><span class="masque">Actions</span></th></tr></thead>' + lignes + '</table>' +
       '<div class="admin-note">' + (peut ? 'Chaque contrat a sa fiche. Chaque jour (à partir de 14 h, PC allumé), le robot la lit, exporte GATES pour chaque contrat, ' +
         'puis SEE une seule fois pour tous, et dépose tout ici : un contrat ajouté aujourd’hui est pris au prochain passage. ' +
+        'Une tranche a sa propre fiche, rangée sous son contrat : « + Ajouter une tranche », sur la ligne du contrat. ' +
         'Masquer un contrat le cache pour tout le monde : rien n’est supprimé, il se réaffiche d’un clic.'
-        : 'Seuls le responsable et les administrateurs de tous les contrats ajoutent, masquent ou retirent un contrat.') + '</div>';
+        : 'Seuls le responsable et les administrateurs de tous les contrats ajoutent, masquent ou retirent un contrat.' +
+          (tranchesAJoindre.length ? ' Vous pouvez ajouter une tranche à ' + listeEnFrancais(tranchesAJoindre) + ' : « + Ajouter une tranche », sur la ligne du contrat.' : '')) + '</div>';
   }
   function masquerContrat(id, masquer, bouton) {
     var x = ligneDuContrat(id);
@@ -17752,9 +17900,34 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
              initial: { nomGates: f.nomGates || '', nom: c ? c.id : '', fwd: k.fwd || '', concept: k.concept || '', psn: (f.psn || []).join(', ') },
              saisie: null, focusPose: false, fige: false, numero: ++NUMERO_FICHE };
   }
+  /* Débrief 31 : « + Ajouter une tranche » — la fiche d'une nouvelle
+     tranche de `fam` (famillesAdmin) : le contrat est fixé, la tranche
+     proposée est la suivante (« Tranche 2 », ou 3 si la 2 existe). Ses
+     colonnes et son PSN ne sont jamais recopiés en douce : ceux du contrat
+     sont proposés, un clic les reprend (suggestion). */
+  function nouvelleFicheTranche(fam) {
+    var info = fam.info || {}, prochaine = info.prochaine || 'Tranche 2';
+    var base = fam.lignes.filter(function (x) { return !x.c.tranche && !x.introuvable; })[0] ||
+      fam.lignes.filter(function (x) { return x.c.fiche && x.c.fiche.colonnes && x.c.fiche.colonnes.fwd && !x.introuvable; })[0];
+    var bf = base && base.c.fiche ? base.c.fiche : { colonnes: {}, psn: [] }, bk = bf.colonnes || {};
+    return { id: '', tranche: true, famille: fam.contrat, prevu: false, aOnglet: false, nomFige: false, nomAffiche: '', tape: '',
+             suggestion: { fwd: bk.fwd || '', concept: bk.concept || '', psn: (bf.psn || []).join(', ') },
+             initial: { nomGates: '', tranche: prochaine, nom: nomDeTranche(fam.contrat, prochaine), fwd: '', concept: '', psn: '' },
+             saisie: null, focusPose: false, fige: false, numero: ++NUMERO_FICHE };
+  }
+  /* « 2 » ou « tranche-2 » → « Tranche 2 » ; vide → ''. */
+  function libelleDeTranche(t) {
+    var v = String(t == null ? '' : t).replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!v) return '';
+    return /^tranche(?![a-z\u00e0-\u00ff])/i.test(v) ? v.replace(/^tranche[\s\-\u2013\u2014_:.]*/i, 'Tranche ').trim() : 'Tranche ' + v;
+  }
+  /* Le nom de la tranche dans le tableau de bord : « THS Tranche 2 ». */
+  function nomDeTranche(famille, t) { var l = libelleDeTranche(t); return l ? famille + ' ' + l : ''; }
   function lireFormFiche(f) {
-    var x = f.elements, i = ADMIN.fiche ? ADMIN.fiche.initial : {};
-    return { nomGates: x.nomGates.value, nom: x.nom.value, fwd: x.fwd.value, concept: x.concept.value, psn: x.psn ? x.psn.value : (i.psn || '') };
+    var x = f.elements, F = ADMIN.fiche, i = F ? F.initial : {};
+    var v = { nomGates: x.nomGates.value, nom: x.nom ? x.nom.value : '', fwd: x.fwd.value, concept: x.concept.value, psn: x.psn ? x.psn.value : (i.psn || '') };
+    if (F && F.tranche && x.tranche) { v.tranche = x.tranche.value; v.nom = nomDeTranche(F.famille, x.tranche.value); }
+    return v;
   }
   function ficheModifiee() {
     var F = ADMIN.fiche;
@@ -17765,9 +17938,25 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var propre = function (s) { return String(s == null ? '' : s).replace(/\s*[,;]\s*/g, ', ').replace(/\s+/g, ' ').trim(); };
     return ['nomGates', 'nom', 'fwd', 'concept', 'psn'].some(function (k) { return propre(v[k]) !== propre(i[k]); });
   }
+  /* Débrief 31 : sous une colonne (ou le PSN) d'une nouvelle tranche, la
+     valeur du contrat, à reprendre d'un clic — jamais recopiée sans le dire. */
+  function htmlSuggestion(F, champ, mot, valeur) {
+    if (!F.tranche || F.fige || !valeur) return '';
+    var dite = champ === 'psn' ? valeur : designationDite(valeur);
+    var cache = String((F.saisie || F.initial)[champ] || '').trim() === String(valeur).trim();
+    return '<button type="button" class="lien-doux admin-suggestion" data-admin="reprendre" data-champ="' + champ + '" data-valeur="' + ech(valeur) + '"' +
+      (cache ? ' hidden' : '') + ' aria-label="Reprendre ' + ech(mot) + ' de ' + ech(F.famille) + ' : ' + ech(dite) + '">' +
+      'Reprendre ' + ech(mot) + ' de ' + ech(F.famille) + '\u00a0: <span class="admin-suggestion-valeur">' + ech(dite) + '</span></button>';
+  }
+  function aideTranche(F, t) {
+    var nom = nomDeTranche(F.famille, t);
+    /* Des espaces insécables dans les guillemets : « Tranche B » ne se coupe pas en fin de ligne. */
+    return (nom ? 'Son nom dans le tableau de bord\u00a0: «\u00a0' + nom + '\u00a0», rangé sous ' + F.famille + '. ' : '') +
+      'Une autre tranche s’écrit «\u00a0Tranche 3\u00a0» ou «\u00a0Tranche B\u00a0».';
+  }
   function htmlFormFiche() {
     var F = ADMIN.fiche, r = ADMIN.contrats || {}, s = F.saisie || F.initial, fige = !!F.fige;
-    var titre = F.id ? 'Fiche de « ' + (F.nomAffiche || F.id) + ' »' : 'Nouveau contrat';
+    var titre = F.id ? 'Fiche de « ' + (F.nomAffiche || F.id) + ' »' : F.tranche ? 'Nouvelle tranche de « ' + F.famille + ' »' : 'Nouveau contrat';
     if (fige) titre += ' (non enregistrée)';
     var ro = fige ? ' readonly' : '';
     var proposees = (r.colonnes || []).map(function (d) { return '<option value="' + ech(d) + '"></option>'; }).join('');
@@ -17783,26 +17972,36 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       : F.nomFige ? 'Seuls le responsable et les administrateurs de tous les contrats renomment un contrat prévu.'
       : 'Vide : le nom GATES. Une tranche s’écrit « HDK Tranche 2 » : elle se range sous HDK.';
     var invite = String(s.nomGates || '').replace(/\s+/g, ' ').trim() || 'Le même que dans GATES';
-    return '<form class="admin-form admin-form-fiche" data-form="contrat" data-edition="' + F.numero + '" novalidate aria-labelledby="admin-form-titre">' +
-      '<h3 id="admin-form-titre">' + ech(titre) + '</h3><div class="admin-champs">' +
-      champAdmin('nomGates', 'Nom exact de la tranche dans GATES', '<input' + attrsChamp('nomGates', false, true) + ' type="text" maxlength="80"' + (F.aOnglet ? '' : ' required') +
-        ' autocomplete="off" spellcheck="false" value="' + ech(s.nomGates) + '" placeholder="' + ech(F.aOnglet ? tapeAujourdhui : 'Par exemple : HDK Tranche 2') + '"' + ro + ' data-autofocus>', false, '', aideGates) +
-      champAdmin('nom', 'Nom dans le tableau de bord', '<input' + attrsChamp('nom', false, true) + ' type="text" maxlength="80" autocomplete="off"' +
-        ' value="' + ech(s.nom) + '"' + (F.nomFige ? ' readonly' : ' placeholder="' + ech(invite) + '"' + ro) + '>', false, '', aideNom) +
+    var sug = F.suggestion || {};
+    /* Débrief 31 : une nouvelle tranche — « Contrat : THS » fixé, la tranche
+       proposée ; le nom GATES est celui de CETTE tranche. */
+    var tete = F.tranche
+      ? champAdmin('famille', 'Contrat', '<input id="admin-famille" name="famille" type="text" readonly value="' + ech(F.famille) + '" aria-describedby="admin-famille-msg">', false, '', '') +
+        champAdmin('tranche', 'Tranche', '<input' + attrsChamp('tranche', false, true) + ' type="text" maxlength="40" required autocomplete="off" spellcheck="false"' +
+          ' value="' + ech(s.tranche) + '" placeholder="Par exemple : Tranche 2"' + ro + '>', false, '', aideTranche(F, s.tranche)) +
+        champAdmin('nomGates', 'Nom exact de cette tranche dans GATES', '<input' + attrsChamp('nomGates', false, true) + ' type="text" maxlength="80" required' +
+          ' autocomplete="off" spellcheck="false" value="' + ech(s.nomGates) + '" placeholder="Par exemple : ' + ech(F.famille) + ' AB"' + ro + ' data-autofocus>', true, '',
+          'Le nom exact de CETTE tranche dans GATES, pas celui de ' + F.famille + '\u00a0: ce que le robot tape dans CHILDNéo pour sortir son export, lettre pour lettre — par exemple «\u00a0' + F.famille + ' AB\u00a0».')
+      : champAdmin('nomGates', 'Nom exact de la tranche dans GATES', '<input' + attrsChamp('nomGates', false, true) + ' type="text" maxlength="80"' + (F.aOnglet ? '' : ' required') +
+          ' autocomplete="off" spellcheck="false" value="' + ech(s.nomGates) + '" placeholder="' + ech(F.aOnglet ? tapeAujourdhui : 'Par exemple : HDK Tranche 2') + '"' + ro + ' data-autofocus>', false, '', aideGates) +
+        champAdmin('nom', 'Nom dans le tableau de bord', '<input' + attrsChamp('nom', false, true) + ' type="text" maxlength="80" autocomplete="off"' +
+          ' value="' + ech(s.nom) + '"' + (F.nomFige ? ' readonly' : ' placeholder="' + ech(invite) + '"' + ro) + '>', false, '', aideNom);
+    return '<form class="admin-form admin-form-fiche' + (F.tranche ? ' admin-form-tranche' : '') + '" data-form="contrat" data-edition="' + F.numero + '" novalidate aria-labelledby="admin-form-titre">' +
+      '<h3 id="admin-form-titre">' + ech(titre) + '</h3><div class="admin-champs">' + tete +
       champAdmin('fwd', 'Colonne de la validation ELEC', '<input' + attrsChamp('fwd', false, true) + ' type="text" maxlength="300" list="admin-colonnes" required autocomplete="off" spellcheck="false"' +
-        ' value="' + ech(s.fwd) + '" placeholder="Par exemple : HDK AA 011 > Avancement Définition Electrique"' + ro + '>', true, '',
+        ' value="' + ech(s.fwd) + '" placeholder="Par exemple : HDK AA 011 > Avancement Définition Electrique"' + ro + '>' + htmlSuggestion(F, 'fwd', 'la colonne ELEC', sug.fwd), true, '',
         'La colonne « définition électrique » de l’export GATES : « Groupe > Colonne », ou le nom de la colonne seul s’il n’y en a qu’une.') +
       champAdmin('concept', 'Colonne de la validation harnais (facultatif)', '<input' + attrsChamp('concept', false, true) + ' type="text" maxlength="300" list="admin-colonnes" autocomplete="off" spellcheck="false"' +
-        ' value="' + ech(s.concept) + '" placeholder="Par exemple : HDK AA 011 > Avancement Concept Harnais"' + ro + '>', true, '',
+        ' value="' + ech(s.concept) + '" placeholder="Par exemple : HDK AA 011 > Avancement Concept Harnais"' + ro + '>' + htmlSuggestion(F, 'concept', 'la colonne harnais', sug.concept), true, '',
         'La colonne « concept harnais ». Vide : ce contrat n’en suit pas.') +
       (r.avecSee ? champAdmin('psn', 'PSN pour SEE (facultatif)', '<input' + attrsChamp('psn', false, true) + ' type="text" maxlength="200" autocomplete="off" spellcheck="false" inputmode="text"' +
-        ' value="' + ech(s.psn) + '" placeholder="Par exemple : 4530"' + ro + '>', true, '',
+        ' value="' + ech(s.psn) + '" placeholder="Par exemple : 4530"' + ro + '>' + htmlSuggestion(F, 'psn', 'le PSN', sug.psn), true, '',
         'Le numéro de la machine dans l’extract SEE ; plusieurs, séparés par des virgules. L’extract SEE est téléchargé une seule fois pour tous les contrats : ' +
         'chacun y prend ses lignes par son PSN. Vide : pas de comparaison SEE.') : '') +
       '</div><datalist id="admin-colonnes">' + proposees + '</datalist>' + (ADMIN.garde ? htmlGarde() : '') +
       '<div class="admin-form-boutons">' + (fige ? '<button type="button" class="bouton" data-admin="annuler-fiche">Fermer la fiche</button>'
         : '<button type="button" class="bouton" data-admin="annuler-fiche">Annuler</button>' +
-          '<button type="submit" class="bouton principal">' + (F.id ? 'Enregistrer' : 'Ajouter le contrat') + '</button>') + '</div></form>';
+          '<button type="submit" class="bouton principal">' + (F.id ? 'Enregistrer' : F.tranche ? 'Ajouter la tranche' : 'Ajouter le contrat') + '</button>') + '</div></form>';
   }
   /* Les contrôles de la page, avant d'appeler le classeur : les mêmes mots
      que le serveur, sans ce qui demande le classeur (la colonne est-elle
@@ -17825,13 +18024,25 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if (!nomGates) { if (!F.aOnglet) e.nomGates = 'Donnez le nom exact de la tranche dans GATES : ce que vous tapez dans CHILDNéo pour avoir son export.'; }
     else if (nomGates.length > 80) e.nomGates = 'Ce nom fait ' + nomGates.length + ' caractères : 80 au plus.';
     else if (/^[=+\-@]/.test(nomGates)) e.nomGates = 'Un nom ne commence pas par =, +, - ou @.';
-    if (!F.nomFige && nom) {
-      if (nom.length > 80) e.nom = 'Ce nom fait ' + nom.length + ' caractères : 80 au plus.';
-      else if (/[,;]/.test(nom)) e.nom = 'Pas de virgule ni de point-virgule dans le nom d’un contrat : elles séparent les contrats d’un jalon.';
-      else if (/^[=+\-@]/.test(nom)) e.nom = 'Un nom ne commence pas par =, +, - ou @.';
+    /* Débrief 31 : une nouvelle tranche — « Tranche 2 », « Tranche B » ; son
+       nom (« THS Tranche 2 ») se vérifie comme celui d'un contrat, et ce qui
+       ne va pas se dit sous le champ Tranche. */
+    var champNom = F.tranche ? 'tranche' : 'nom';
+    if (F.tranche) {
+      var lib = libelleDeTranche(v.tranche);
+      if (!/^Tranche [^\s\-\u2013\u2014_:.]/.test(lib)) e.tranche = 'Écrivez la tranche comme « Tranche 2 » ou « Tranche B » : elle se range alors sous ' + F.famille + '.';
+      else if (lib.length > 40) e.tranche = 'Ce nom de tranche fait ' + lib.length + ' caractères : 40 au plus.';
+    }
+    if (!F.nomFige && nom && !e[champNom]) {
+      if (nom.length > 80) e[champNom] = 'Ce nom fait ' + nom.length + ' caractères : 80 au plus.';
+      else if (/[,;]/.test(nom)) e[champNom] = 'Pas de virgule ni de point-virgule dans le nom d’un contrat : elles séparent les contrats d’un jalon.';
+      else if (/^[=+\-@]/.test(nom)) e[champNom] = 'Un nom ne commence pas par =, +, - ou @.';
       else {
         var deja = ADMIN.contrats ? lignesDeContrats(ADMIN.contrats).filter(function (x) { return cleContrat(x.c.id) === cleContrat(nom) && !(F.prevu && x.c.id === F.id); })[0] : null;
-        if (deja) e.nom = deja.prevu ? 'Le contrat « ' + deja.c.id + ' » est déjà prévu : modifiez sa fiche.'
+        if (deja && F.tranche) e.tranche = deja.prevu ? '« ' + deja.nom + ' » est déjà prévue : modifiez sa fiche.'
+          : deja.masque ? '« ' + deja.nom + ' » existe déjà, masquée : réaffichez-la plutôt que d’en ajouter une.'
+          : '« ' + deja.nom + ' » existe déjà : modifiez sa fiche plutôt que d’en ajouter une.';
+        else if (deja) e.nom = deja.prevu ? 'Le contrat « ' + deja.c.id + ' » est déjà prévu : modifiez sa fiche.'
           : deja.masque ? 'Le contrat « ' + deja.c.id + ' » existe déjà, masqué : réaffichez-le plutôt que d’en ajouter un.'
           : 'Le contrat « ' + deja.c.id + ' » existe déjà : modifiez sa fiche plutôt que d’en ajouter un.';
       }
@@ -17861,6 +18072,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       return;
     }
     var envoi = { id: F.id, nom: F.nomFige ? F.id : v.nom, nomGates: v.nomGates, colonnes: { fwd: v.fwd, concept: v.concept } };
+    /* Débrief 31 : une nouvelle tranche dit sa famille — le classeur vérifie
+       qu'elle s'y range, et les droits sur son nom. */
+    if (F.tranche) envoi.famille = F.famille;
     if (form.elements.psn) envoi.psn = v.psn;
     var dit = F.nomAffiche || F.id;
     occuperAdmin(true, form.querySelector('[type="submit"]'), 'Enregistrement…');
@@ -17881,18 +18095,21 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       /* Débrief 30 (relu) : la fiche corrige l'erreur du dernier passage —
          sa ligne le dit (« Fiche corrigée … »), le message aussi ; et les
          droits qui ont suivi un prévu renommé. */
-      messageAdmin(!F.id ? nom + ' est ajouté. Le robot le prendra à son prochain passage : son onglet sera créé avec son premier export GATES.'
+      messageAdmin(F.tranche ? nom + ' est ajoutée. Le robot la prendra à son prochain passage : son onglet sera créé avec son premier export GATES.'
+        : !F.id ? nom + ' est ajouté. Le robot le prendra à son prochain passage : son onglet sera créé avec son premier export GATES.'
         : 'Fiche de ' + nom + ' enregistrée.' + (r.colonnesChangees ? ' Les chiffres suivent la nouvelle colonne.' : '') +
           (r.corrige ? ' L’erreur signalée sous ce contrat est notée corrigée : le robot vérifiera à son prochain passage.' : '') +
           (r.messageDroits ? ' ' + r.messageDroits : ''), 'ok');
     }, function (err) {
       occuperAdmin(false);
-      var m = /^\[(nom|nomGates|fwd|concept|psn)\]\s*/.exec(err.message || '');
-      if (m && form.elements[m[1]]) {
+      var m = /^\[(nom|nomGates|fwd|concept|psn|tranche)\]\s*/.exec(err.message || '');
+      /* Débrief 31 : le nom d'une nouvelle tranche se dit sous « Tranche ». */
+      var champ = m ? (m[1] === 'nom' && F.tranche ? 'tranche' : m[1]) : '';
+      if (m && form.elements[champ]) {
         messageAdmin('');
         ADMIN.erreurs = {};
-        ADMIN.erreurs[m[1]] = err.message.slice(m[0].length);
-        ADMIN.focusApres = 'form[data-form="contrat"] [name="' + m[1] + '"]';
+        ADMIN.erreurs[champ] = err.message.slice(m[0].length);
+        ADMIN.focusApres = 'form[data-form="contrat"] [name="' + champ + '"]';
         rendreAdmin();
         return;
       }
@@ -17914,23 +18131,38 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       messageAdmin('Vos droits d’administration ont été retirés entre-temps. Votre fiche n’a pas été enregistrée.' + phraseResponsable(), 'erreur');
       return;
     }
-    var permis = F.id ? peutGererContrat(F.id) : (DROITS.role === 'responsable' || DROITS.tous);
+    var permis = F.id ? peutGererContrat(F.id) : F.tranche ? peutAjouterTranche(F.famille) : (DROITS.role === 'responsable' || DROITS.tous);
     if (permis) { rendreAdmin(); messageAdmin(err.message, 'erreur'); return; }
     F.fige = true;
-    messageAdmin('Vos droits ont changé entre-temps : vous ne pouvez plus ' + (F.id ? 'modifier la fiche de ' + dit : 'ajouter un contrat') +
+    messageAdmin('Vos droits ont changé entre-temps : vous ne pouvez plus ' + (F.id ? 'modifier la fiche de ' + dit : F.tranche ? 'ajouter une tranche à ' + F.famille : 'ajouter un contrat') +
       '. Votre fiche n’a pas été enregistrée.' + (r ? ' Pour obtenir ce droit, écrivez à ' + r + '.' : ''), 'erreur');
     choisirOngletAdmin('contrats', true);
   }
+  /* Débrief 31 : ajouter une tranche à ce contrat — le responsable, les
+     administrateurs de tous les contrats et ceux de ce contrat (le classeur
+     revérifie, sur le nom de la tranche). */
+  function peutAjouterTranche(famille) {
+    if (!DROITS) return false;
+    if (DROITS.role === 'responsable' || (DROITS.role === 'administrateur' && DROITS.tous)) return true;
+    return DROITS.role === 'administrateur' && (DROITS.contrats || []).some(function (c) { return cleContrat(c) === cleContrat(famille); });
+  }
   function retirerPrevu(id, bouton) {
     var x = ligneDuContrat(id), nom = x ? x.nom : id;
+    var famille = x ? x.c.contrat : '';
     occuperAdmin(true, bouton, 'Retrait…');
     appelerServeur('adminRetirerContratPrevu', [id], function (r) {
       occuperAdmin(false);
       ADMIN.contrats = r; ADMIN.confirmer = '';
       if (ADMIN.fiche && ADMIN.fiche.id === id) { ADMIN.fiche = null; ADMIN.erreurs = {}; }
-      ADMIN.focusApres = '[data-admin="ajouter-contrat"]';
+      /* Débrief 31 : une tranche retirée rend le focus à « + Ajouter une
+         tranche » de son contrat, s'il est encore là ; sinon (un contrat
+         prévu retiré), à « + Ajouter un contrat ». */
+      var boutonFamille = !!(x && x.c.tranche) && (r.familles || []).some(function (f) { return f.ajoutTranche && norm(f.contrat) === norm(famille); });
+      ADMIN.focusApres = boutonFamille || !(r && r.peutAjouter) ? '[data-admin="ajouter-tranche"][data-famille="' + echAttr(famille) + '"]' : '[data-admin="ajouter-contrat"]';
       if (ADMIN.onglet === 'contrats') rendreAdmin();
-      messageAdmin((x && x.introuvable ? 'La fiche de ' + nom + ' est oubliée.' : nom + ' est retiré : le robot ne le cherchera plus.') +
+      /* Débrief 31 : une tranche prévue se dit au féminin. */
+      messageAdmin((x && x.introuvable ? 'La fiche de ' + nom + ' est oubliée.' : x && x.c.tranche ? nom + ' est retirée : le robot ne la cherchera plus.'
+        : nom + ' est retiré : le robot ne le cherchera plus.') +
         (r.messageDroits ? ' ' + r.messageDroits : ''), 'ok');
     }, function (e) {
       occuperAdmin(false); ADMIN.confirmer = '';
@@ -18098,6 +18330,11 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if (sorte === 'contrat') {
       if (ADMIN.erreurs[t.name]) poserMessageChamp(t.name, '', 'erreur');
       if (t.name === 'nomGates' && f.elements.nom && !f.elements.nom.readOnly) f.elements.nom.placeholder = t.value.replace(/\s+/g, ' ').trim() || 'Le même que dans GATES';
+      /* Débrief 31 : la tranche tapée — son nom dans le tableau de bord suit ;
+         une valeur reprise du contrat (ou retapée telle quelle) cache sa suggestion. */
+      if (t.name === 'tranche' && ADMIN.fiche && ADMIN.fiche.tranche && $('admin-tranche-aide')) $('admin-tranche-aide').textContent = aideTranche(ADMIN.fiche, t.value);
+      var sg = [].filter.call(f.querySelectorAll('[data-admin="reprendre"]'), function (x) { return x.getAttribute('data-champ') === t.name; })[0];
+      if (sg) sg.hidden = t.value.trim() === sg.getAttribute('data-valeur').trim();
       return;
     }
     if (sorte !== 'jalon') return;
@@ -18146,14 +18383,29 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     else if (quoi === 'ajouter-contrat') {
       siAbandon(function () { ADMIN.fiche = nouvelleFiche(null); ADMIN.edition = null; ADMIN.confirmer = ''; ADMIN.erreurs = {}; ADMIN.avertissements = {}; z0(); rendreAdmin(); });
     }
+    /* Débrief 31 : « + Ajouter une tranche » sur la ligne d'un contrat. */
+    else if (quoi === 'ajouter-tranche') {
+      var fam = familleAdmin(b.getAttribute('data-famille'));
+      if (fam) siAbandon(function () { ADMIN.fiche = nouvelleFicheTranche(fam); ADMIN.edition = null; ADMIN.confirmer = ''; ADMIN.erreurs = {}; ADMIN.avertissements = {}; z0(); rendreAdmin(); });
+    }
+    /* La colonne (ou le PSN) du contrat, reprise d'un clic dans la fiche d'une nouvelle tranche. */
+    else if (quoi === 'reprendre') {
+      var champR = b.form && b.form.elements[b.getAttribute('data-champ')];
+      if (champR && !champR.readOnly) {
+        champR.value = b.getAttribute('data-valeur');
+        champR.dispatchEvent(new Event('input', { bubbles: true }));
+        champR.focus();
+      }
+    }
     else if (quoi === 'modifier-fiche') {
       var xf = ligneDuContrat(b.getAttribute('data-id'));
       if (xf) siAbandon(function () { ADMIN.fiche = nouvelleFiche(xf); ADMIN.edition = null; ADMIN.confirmer = ''; ADMIN.erreurs = {}; ADMIN.avertissements = {}; z0(); rendreAdmin(); });
     }
     else if (quoi === 'annuler-fiche') {
-      var idf = ADMIN.fiche ? ADMIN.fiche.id : '';
+      var idf = ADMIN.fiche ? ADMIN.fiche.id : '', famf = ADMIN.fiche && ADMIN.fiche.tranche ? ADMIN.fiche.famille : '';
       ADMIN.fiche = null; ADMIN.garde = null; ADMIN.erreurs = {}; ADMIN.avertissements = {};
-      ADMIN.focusApres = idf ? '[data-admin="modifier-fiche"][data-id="' + echAttr(idf) + '"]' : '[data-admin="ajouter-contrat"]';
+      ADMIN.focusApres = idf ? '[data-admin="modifier-fiche"][data-id="' + echAttr(idf) + '"]'
+        : famf ? '[data-admin="ajouter-tranche"][data-famille="' + echAttr(famf) + '"]' : '[data-admin="ajouter-contrat"]';
       rendreAdmin();
     }
     else if (quoi === 'retirer-prevu') confirmer('p:' + b.getAttribute('data-id'));

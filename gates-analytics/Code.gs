@@ -47,7 +47,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = 'cd9cd8e';
+const EDITION = 'bf732b6';
 
 // =====================================================================
 //  CONFIGURATION
@@ -5834,7 +5834,8 @@ function adminContrats() {
       return function (c) {
         c.gerable = etat === 'actif' ? peutGerer_(d, c.id) && d.tous : etat === 'masque' ? d.tous : false;
         c.modifiable = etat !== 'introuvable' && peutGerer_(d, c.id);
-        c.retirable = (etat === 'prevu' || etat === 'introuvable') && d.tous;
+        /* Débrief 31 : une tranche prévue se retire aussi par qui peut l'ajouter. */
+        c.retirable = (etat === 'prevu' || etat === 'introuvable') && d.tous || (etat === 'prevu' && !!trancheDe_(c.id) && peutGerer_(d, c.id));
         c.prevu = etat === 'prevu';
         c.introuvable = etat === 'introuvable';
         const k = colonnesDuContrat(c.id), p = see ? psnDuContrat(c.id) : { psn: [], source: '' };
@@ -5870,8 +5871,14 @@ function adminContrats() {
     const aVerifier = suivis.filter(function (c) { return c.suivi.niveau === 'attention'; }).length;
     rendu.colonnes = colonnes;
     rendu.robot = suiviDuRobot_(rapports, maintenant, erreurs, aVerifier);
+    /* Débrief 31 : le robot regarde-t-il cette livraison-ci ? Sinon, une
+       ligne à part, en attention, sous la sienne. */
+    const autreLivraison = phraseLivraisonDuRobot_(rapports);
+    if (autreLivraison) rendu.robot.livraison = { niveau: 'attention', texte: autreLivraison };
     rendu.avecSee = see;
     rendu.peutAjouter = (d.role === 'responsable' || (d.role === 'administrateur' && d.tous)) && !CONFIG.FEUILLE_DONNEES;
+    /* Débrief 31 : par famille, « + Ajouter une tranche » (et laquelle proposer). */
+    rendu.familles = famillesPourLaPage_(d, rendu.actifs.concat(rendu.retires, rendu.prevus, rendu.introuvables));
     rendu.droits = { role: d.role, tous: d.tous, contrats: d.contrats };
     return rendu;
   });
@@ -5936,6 +5943,9 @@ const RAPPORT_TAILLE_MAX = 8500;             // octets (UTF-8) du JSON gardé : 
 const PROPRIETE_OCTETS_MAX = 9000;
 const MESSAGE_CLASSEUR_PLEIN = 'Le classeur ne peut plus garder de nouvelle fiche : retirez un contrat prévu, ou raccourcissez les noms de colonnes. Rien n’a été changé.';
 const RAPPORT_CONTRATS_MAX = 100;
+/* Débrief 31 : la livraison du tableau de bord que le robot a lue sur le
+   pont (data-livraison, « ccb2fac ») — 20 caractères au plus. */
+const LIVRAISON_MAX = 20;
 const CODES_RAPPORT = ['gates-introuvable', 'gates-export', 'colonne-elec', 'colonne-harnais', 'see-aucune', 'see-sans-psn', 'douteux', 'lecture', 'import', 'autre'];
 
 /* Un objet gardé dans une propriété du classeur ({} s'il est absent ou illisible). */
@@ -6232,6 +6242,46 @@ function familleDuContrat_(nom) {
   return nomCompact(t ? t.parent : nom);
 }
 
+/* Débrief 31 : le contrat (la famille) que désigne `nom` dans le classeur —
+   le nom de son contrat de base, sinon celui que portent ses tranches —, s'il
+   a au moins un contrat affiché, masqué ou prévu ; sinon ''. */
+function familleConnue_(classeur, nom) {
+  const cle = familleDuContrat_(nom);
+  if (!cle) return '';
+  const membres = listerContrats(classeur).map(function (c) { return c.id; }).concat(contratsRetires_(classeur))
+    .concat(contratsPrevus_(classeur).map(function (p) { return p.id; }))
+    .filter(function (id) { return familleDuContrat_(id) === cle; });
+  if (!membres.length) return '';
+  return membres.filter(function (id) { return !trancheDe_(id); })[0] || trancheDe_(membres[0]).parent;
+}
+
+/* Débrief 31 : les familles de l'administration, dans l'ordre des lignes —
+   { contrat, tranches (combien de lignes), prochaine (« Tranche 3 » : la
+   plus grande tranche numérotée plus un ; le contrat de base est la tranche
+   1), ajoutTranche (le lecteur peut-il en ajouter une ? peutGerer_ sur le
+   nom qu'elle prendrait) }. Une famille qui n'a plus que des fiches sans
+   onglet n'en reçoit pas. */
+function famillesPourLaPage_(d, lignes) {
+  const parCle = {}, ordre = [];
+  lignes.forEach(function (c) {
+    const k = familleDuContrat_(c.id);
+    if (!parCle[k]) { parCle[k] = { contrat: c.contrat, membres: [], vivants: 0 }; ordre.push(k); }
+    parCle[k].membres.push(c);
+    if (!c.introuvable) parCle[k].vivants++;
+  });
+  return ordre.map(function (k) {
+    const f = parCle[k];
+    let plusGrande = 1;
+    f.membres.forEach(function (c) {
+      const m = /^tranche\s+0*(\d{1,4})$/i.exec(String(c.tranche || '').trim());
+      if (m) plusGrande = Math.max(plusGrande, Number(m[1]));
+    });
+    const prochaine = 'Tranche ' + (plusGrande + 1);
+    return { contrat: f.contrat, tranches: f.membres.length, prochaine: prochaine,
+             ajoutTranche: !CONFIG.FEUILLE_DONNEES && f.vivants > 0 && peutGerer_(d, f.contrat + ' ' + prochaine) };
+  });
+}
+
 /* Deux désignations de colonne se valent aux espaces autour de « > » près, casse et accents indifférents. */
 function cleDesignation_(x) { return normaliser(x).replace(/\s*>\s*/g, '>'); }
 
@@ -6467,6 +6517,29 @@ function heureDuRobotDite_(hhmm) {
   return Number(t.slice(0, 2)) + ' h' + (t.slice(3) === '00' ? '' : ' ' + t.slice(3));
 }
 
+/* Débrief 31 : la livraison lue par le robot (data-livraison du pont) :
+   une chaîne de 1 à LIVRAISON_MAX lettres, chiffres, « . », « _ » ou « - » ;
+   sinon '' (ignorée). */
+function livraisonLue_(v) {
+  if (typeof v !== 'string') return '';
+  const t = v.trim();
+  return t.length <= LIVRAISON_MAX && /^[0-9A-Za-z][0-9A-Za-z._-]*$/.test(t) ? t : '';
+}
+
+/* Débrief 31 (Nathan crée un nouveau déploiement, donc un nouveau lien, à
+   chaque livraison : le robot gardait l'ancien et voyait une ancienne
+   version) : la phrase à dire sous la ligne du robot quand la livraison
+   qu'il a lue à son dernier passage n'est pas celle-ci ; '' sinon — ou si
+   son compte rendu ne la donne pas (un robot d'avant le débrief 31). */
+function phraseLivraisonDuRobot_(rapports) {
+  const r = rapports && rapports.robot;
+  const vue = r && typeof r === 'object' ? livraisonLue_(r.livraison) : '';
+  if (!vue || vue === EDITION) return '';
+  return 'Le robot regarde une autre version du site (livraison ' + vue + ' ; celle-ci : ' + EDITION + '). ' +
+    'Donnez-lui le lien qui suit toujours la dernière version : dans Apps Script, Déployer → Tester les déploiements, ' +
+    'copiez le lien qui finit par /dev ; puis, sur le PC du robot, double-cliquez « 1 - Preparer » et collez-y ce lien.';
+}
+
 /** La ligne du robot, en tête de l'onglet Contrats : { niveau, texte, heure }. Débrief 30 (relu) : les contrats « à vérifier » (niveau attention) se comptent aussi. */
 function suiviDuRobot_(rapports, maintenant, nbErreurs, nbAttention) {
   const r = rapports && rapports.robot;
@@ -6568,10 +6641,25 @@ function adminEnregistrerContrat(fiche) {
   const idBrut = saisiePropre_(f.id);
   const ajout = !idBrut;
   const deTous = function (x) { return x.role === 'responsable' || (x.role === 'administrateur' && x.tous); };
-  const d = ajout
-    ? exigerAdmin_(deTous, 'au responsable et aux administrateurs de tous les contrats')
-    : exigerAdmin_(function (x) { return peutGerer_(x, idBrut); }, 'aux administrateurs de ' + idBrut.slice(0, 60));
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  /* Débrief 31 : une tranche ajoutée à un contrat qui existe déjà
+     (« THS Tranche 2 » sous THS) — par « + Ajouter une tranche » (fiche.famille),
+     ou tapée dans « + Ajouter un contrat ». Les droits se lisent sur le
+     NOUVEAU nom (peutGerer_) : le responsable, les administrateurs de tous
+     les contrats et ceux de THS l'ajoutent ; un nouveau contrat (une
+     nouvelle famille) reste au responsable et aux administrateurs de tous. */
+  const nomAjoute = ajout ? saisiePropre_(f.nom) || saisiePropre_(f.nomGates) : '';
+  const familleDemandee = ajout ? saisiePropre_(f.famille) : '';
+  const trancheAjoutee = ajout ? trancheDe_(nomAjoute) : null;
+  if (familleDemandee && (!trancheAjoutee || familleDuContrat_(nomAjoute) !== familleDuContrat_(familleDemandee))) {
+    throw new Error('[tranche] Écrivez la tranche comme « Tranche 2 » ou « Tranche B » : elle se range alors sous ' + familleDemandee.slice(0, 60) + '.');
+  }
+  const famille = trancheAjoutee ? familleConnue_(classeur, trancheAjoutee.parent) : '';
+  const d = ajout
+    ? (famille ? exigerAdmin_(function (x) { return peutGerer_(x, nomAjoute); }, 'au responsable et aux administrateurs de ' + famille.slice(0, 60) + ' ou de tous les contrats')
+      : exigerAdmin_(deTous, 'au responsable et aux administrateurs de tous les contrats'))
+    : exigerAdmin_(function (x) { return peutGerer_(x, idBrut); }, 'aux administrateurs de ' + idBrut.slice(0, 60));
+  if (familleDemandee && !famille) throw new Error('Le contrat « ' + familleDemandee.slice(0, 60) + ' » n’est plus dans le tableau de bord. La liste vient d’être relue.');
   const connu = ajout ? null : contratConnu_(classeur, idBrut);
   if (!ajout && !connu) throw new Error('Contrat introuvable : « ' + idBrut.slice(0, 60) + ' ». La liste vient d’être relue.');
   if (connu && connu.etat === 'introuvable') throw new Error(phraseSansOnglet_(connu.id) + ' La liste vient d’être relue.');
@@ -6634,8 +6722,14 @@ function adminEnregistrerContrat(fiche) {
     /* Relu sous le verrou : l'import a pu créer l'onglet du prévu (le
        robot passe à 14 h), ou quelqu'un a pu le retirer, entre la lecture
        et ici. */
-    if (ajout) verifierNomContrat_(classeur, voulu, '');
-    else {
+    if (ajout) {
+      verifierNomContrat_(classeur, voulu, '');
+      /* Débrief 31 : la famille a pu partir entre-temps (son seul prévu retiré) :
+         sans elle, ce serait un nouveau contrat — pas à la portée de tous. */
+      if (famille && !deTous(d) && !familleConnue_(classeur, famille)) {
+        throw new Error('Le contrat « ' + famille + ' » n’est plus dans le tableau de bord : la tranche n’est pas ajoutée. La liste vient d’être relue.');
+      }
+    } else {
       const encore = contratConnu_(classeur, connu.id);
       if (!encore || encore.etat === 'introuvable') {
         throw new Error(prevu ? 'Contrat prévu introuvable : « ' + connu.id + ' » (retiré entre-temps). La liste vient d’être relue.'
@@ -6669,7 +6763,7 @@ function adminEnregistrerContrat(fiche) {
     lot.ecrire();
     if (aOnglet && (colonnesAEcrire || psn)) marquerDonneesModifiees_();
   });
-  journaliserAdmin_(d.email, ajout ? 'contrat ajouté : ' + id + ' (GATES « ' + nomGates + ' »)'
+  journaliserAdmin_(d.email, ajout ? (famille ? 'tranche ajoutée : ' : 'contrat ajouté : ') + id + ' (GATES « ' + nomGates + ' »)'
     : 'fiche modifiée : ' + id + (renomme ? ' (avant : ' + connu.id + ')' : ''));
   return Object.assign(adminContrats(), { enregistre: id, colonnesChangees: aOnglet && colonnesAEcrire, donneesChangees: aOnglet && (colonnesAEcrire || !!psn),
                                           corrige: corrige, messageDroits: phraseDesDroits_(droits, true) });
@@ -6683,11 +6777,18 @@ function adminEnregistrerContrat(fiche) {
  * visaient qu'un prévu s'en vont avec lui.
  */
 function adminRetirerContratPrevu(id) {
-  const d = exigerAdmin_(function (x) { return x.role === 'responsable' || (x.role === 'administrateur' && x.tous); },
-    'au responsable et aux administrateurs de tous les contrats');
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
   const nom = saisiePropre_(id);
-  const c = contratConnu_(classeur, nom);
+  /* Débrief 31 : qui peut ajouter une tranche peut la retirer tant qu'elle
+     est prévue (une administratrice de THS, « THS Tranche 2 ») ; le reste
+     — un contrat prévu, une fiche sans onglet — demeure au responsable et
+     aux administrateurs de tous les contrats. */
+  const visee = contratConnu_(classeur, nom);
+  const tranchePrevue = !!visee && visee.etat === 'prevu' ? trancheDe_(visee.id) : null;
+  const d = exigerAdmin_(function (x) { return x.role === 'responsable' || (x.role === 'administrateur' && x.tous) || (!!tranchePrevue && peutGerer_(x, visee.id)); },
+    tranchePrevue ? 'au responsable et aux administrateurs de ' + tranchePrevue.parent.slice(0, 60) + ' ou de tous les contrats'
+      : 'au responsable et aux administrateurs de tous les contrats');
+  const c = visee;
   if (c && c.etat !== 'prevu' && c.etat !== 'introuvable') throw new Error('« ' + c.id + ' » a déjà reçu des données : il se masque, il ne se retire pas.');
   if (!c) throw new Error('Contrat prévu introuvable : « ' + nom.slice(0, 60) + ' ». La liste vient d’être relue.');
   let droits = [];
@@ -6698,6 +6799,7 @@ function adminRetirerContratPrevu(id) {
       throw new Error(c.etat === 'prevu' ? '« ' + c.id + ' » vient de recevoir son premier export (le robot est passé) : il se masque, il ne se retire plus. La liste vient d’être relue.'
         : '« ' + c.id + ' » a retrouvé son onglet : sa fiche reste. La liste vient d’être relue.');
     }
+    if (c.etat === 'prevu' && encore.etat !== 'prevu') throw new Error('« ' + c.id + ' » a changé entre-temps : rien n’est retiré. La liste vient d’être relue.');
     const lot = lotDeProprietes_();
     droits = oublierContrat_(c.id, lot, autresContrats_(classeur, c.id), encore.etat === 'prevu');
     lot.ecrire();
@@ -7619,11 +7721,18 @@ function importRapport(jeton, rapport) {
       tous.contrats[id] = Object.assign({}, avant, gates ? { gates: gates } : {}, see ? { see: see } : {});
       if (retenus.indexOf(id) === -1) retenus.push(id);
     });
+    /* Débrief 31 : « livraison », la version du tableau de bord que le robot
+       a lue sur le pont — gardée avec la ligne du robot (adminContrats la
+       compare à EDITION). Autre chose qu'un court mot lisible : ignoré. */
+    const livraison = r.source === 'robot' ? livraisonLue_(r.livraison) : '';
     if (r.source === 'robot' && r.passage && typeof r.passage === 'object') {
       const p = r.passage;
       tous.robot = { quand: maintenant, ok: !!p.ok, message: message(p.message) };
       if (/^\d\d:\d\d$/.test(String(p.heure || ''))) tous.robot.heure = String(p.heure);
       if (nombre(p.erreursFiche) !== undefined) tous.robot.erreursFiche = nombre(p.erreursFiche);
+      if (livraison) tous.robot.livraison = livraison;
+    } else if (livraison && tous.robot && typeof tous.robot === 'object') {
+      tous.robot.livraison = livraison;
     }
     ecrireRapports_(tous, connus.length ? connus : null);
   } finally {
@@ -8274,7 +8383,9 @@ function pageImportSecondeBase(parametres) {
     /* Débrief 30 : le pont du robot. Il travaille dans un monde isolé, sans
        google.script.run, mais partage cette page : il écrit son compte rendu
        ici et clique « envoyer » — la fenêtre l'envoie au serveur pour lui. */
-    '<div id="pont-robot" hidden data-etat=""><textarea id="pont-robot-rapport" aria-hidden="true"></textarea>' +
+    /* Débrief 31 : data-livraison, la livraison du tableau de bord que voit
+       le robot (document.getElementById('pont-robot').getAttribute('data-livraison')). */
+    '<div id="pont-robot" hidden data-etat="" data-livraison="' + ech(EDITION) + '"><textarea id="pont-robot-rapport" aria-hidden="true"></textarea>' +
     '<button type="button" id="pont-robot-envoyer" tabindex="-1" aria-hidden="true">envoyer</button></div>' +
     '<div class="pied"><div class="progres" id="progres" aria-live="polite"></div>' +
     '<p class="consigne" id="consigne" hidden>Ne pas fermer cette fenêtre avant la fin.</p>' +

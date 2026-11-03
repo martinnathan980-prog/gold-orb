@@ -13317,7 +13317,8 @@ async function deplierFiltresColonne(pg) {
       verifier('C30 : Anne (administratrice de THS) — deux onglets, Jalons et Contrats ; la portée dite (« et modifier sa fiche (onglet Contrats) ») ; « Modifier » sur THS seulement, ni « + Ajouter », ni « Masquer » ; les autres lignes en « lecture seule »',
         ongletsAnne.rangee && ongletsAnne.visibles.join() === 'Jalons,Contrats' && /et modifier sa fiche \(onglet Contrats\)\. Les autres jalons et contrats sont en lecture seule\.$/.test(ongletsAnne.portee) &&
         !anneL.ajouter && anneL.masquer === 0 && anneL.modifier.join() === 'THS' && anneL.lecture.join() === 'HDK,HDK Tranche 2' &&
-        anneL.note === 'Seuls le responsable et les administrateurs de tous les contrats ajoutent, masquent ou retirent un contrat.', JSON.stringify({ ongletsAnne, anneL }));
+        /* Débrief 31 : Anne peut maintenant ajouter une tranche à THS — la note le lui dit, après la même première phrase. */
+        anneL.note === 'Seuls le responsable et les administrateurs de tous les contrats ajoutent, masquent ou retirent un contrat. Vous pouvez ajouter une tranche à THS : « + Ajouter une tranche », sur la ligne du contrat.', JSON.stringify({ ongletsAnne, anneL }));
       await ap.click('[data-admin="modifier-fiche"][data-id="THS"]'); await ap.waitForTimeout(100);
       await ap.fill('#admin-nomGates', 'THS');
       await ap.click('form[data-form="contrat"] [type="submit"]'); await libreC(ap); await ap.waitForTimeout(100);
@@ -13450,6 +13451,414 @@ async function deplierFiltresColonne(pg) {
     }
   }
   /* (fin du lot C30) */
+  /* (début du lot C31) */
+  /* Débrief 31 — Nathan, au bureau : « Comment je gère les tranches ? J'ai
+     l'impression de voir dans le contrat que je gère pas les tranches […]
+     j'ai l'impression que c'est que par contrat. » Le tableau des contrats
+     se range par famille, et chaque contrat a « + Ajouter une tranche ».
+     Et : « quand on fait semaine par semaine, ça s'arrête à la semaine 42,
+     or sur le graphique, j'ai des données de la semaine 44 » — chaque
+     semaine archivée a désormais sa ligne dans le journal, même sans
+     changement ; l'extract du jour le dit. Page VIVANTE (le vrai Code.gs du
+     simulateur derrière google.script.run, comme le lot C30), puis le
+     simulateur rejoué semaine par semaine pour le journal. */
+  section('Débrief 31 : les tranches dans Contrats, chaque semaine du graphique dans le journal (lot C31)');
+  {
+    const fsD = require('fs'), osD = require('os');
+    const { construireSimulateur } = require(path.join(__dirname, '..', '..', 'tests', 'construire-simulateur.js'));
+    const { Feuille } = require(path.join(__dirname, '..', '..', 'tests', 'faux-classeur.js'));
+    const ELEC_D = 'HDK AA 011 > Avancement Définition Electrique';
+    const simD = construireSimulateur({ date: '2026-11-03', avantPage: function (c, classeur) {
+      const ths = classeur.getSheetByName('THS');
+      classeur.feuilles.splice(1, 0, new Feuille('HDK Tranche 2', ths.valeurs.map(l => l.slice()), false, ths.fusions.map(f => Object.assign({}, f))));
+    } });
+    const srvD = simD.contexte;
+    simD.classeur.proprietaire = 'nathan@airbus.com';
+    srvD.__emailScript = 'nathan@airbus.com';
+    const commeD = (email, fn) => { const avant = srvD.__emailLecteur; srvD.__emailLecteur = email; try { return fn(); } finally { srvD.__emailLecteur = avant; } };
+    commeD('nathan@airbus.com', () => srvD.adminEnregistrerAdmins([{ email: 'anne@airbus.com', contrats: ['THS'] }]));
+    const fichierD = path.join(osD.tmpdir(), 'suivi-fwd-c31-' + process.pid + '.html');
+    fsD.writeFileSync(fichierD, simD.page.replace(/<script>\s*\/\* Simulateur : google\.script\.run[\s\S]*?<\/script>/, ''));
+    const fichiersJ = [];
+    const vivanteD = async (o) => {
+      const c = await nav.newContext({ viewport: { width: o.largeur || 1440, height: o.hauteur || 900 }, colorScheme: o.schema || 'light',
+        isMobile: !!o.mobile, hasTouch: !!o.mobile, locale: 'en-US' });
+      const pg = await c.newPage();
+      brancher(pg, 'lot C31 ' + (o.email || 'nathan') + ' ' + (o.largeur || 1440) + ' ' + (o.schema || 'light'));
+      const email = o.email || 'nathan@airbus.com';
+      await pg.exposeFunction('__appel', (nom, args) => {
+        if (typeof srvD[nom] !== 'function' || /_$/.test(nom)) throw new Error('fonction inconnue ' + nom);
+        return commeD(email, () => { const r = srvD[nom].apply(null, JSON.parse(args)); return JSON.stringify(r === undefined ? null : r); });
+      });
+      await pg.addInitScript(() => {
+        window.SUIVI_FWD_BUDGET = 1e9;
+        function chaine(ok, ko) {
+          const c = { withSuccessHandler: f => chaine(f, ko), withFailureHandler: f => chaine(ok, f), withUserObject: () => chaine(ok, ko) };
+          return new Proxy(c, { get(t, nom) {
+            if (nom in t) return t[nom];
+            if (typeof nom !== 'string') return undefined;
+            return function () {
+              const args = Array.prototype.slice.call(arguments);
+              setTimeout(() => window.__appel(nom, JSON.stringify(args)).then(j => { if (ok) ok(JSON.parse(j)); },
+                e => { if (ko) ko({ message: String(e.message || e).replace(/^Error: /, '') }); }), 40);
+            };
+          } });
+        }
+        window.google = { script: { run: chaine(null, null) } };
+      });
+      await pg.goto('file://' + fichierD);
+      await pg.waitForFunction(() => document.documentElement.getAttribute('data-suivi-fwd') === 'pret', null, { timeout: 30000 });
+      await pg.waitForFunction(() => {
+        const b = document.getElementById('ouvrir-admin');
+        return (b && b.getClientRects().length && getComputedStyle(b).visibility !== 'hidden') || (document.getElementById('pied-responsable') || {}).textContent;
+      }, null, { timeout: 20000 }).catch(() => {});
+      await pg.evaluate(() => { const x = document.querySelector('.simulateur-bandeau'); if (x) x.remove(); });
+      pg.__ctx = c;
+      return pg;
+    };
+    const libreD = pg => pg.waitForFunction(() => document.getElementById('admin').getAttribute('aria-busy') !== 'true', null, { timeout: 15000 }).catch(() => {});
+    const ongletD = async (pg, o) => { await pg.click('#admin-onglets [data-onglet="' + o + '"]'); await libreD(pg); };
+    const ouvrirContratsD = async pg => {
+      await pg.click('#ouvrir-admin'); await libreD(pg);
+      await ongletD(pg, 'contrats');
+      await pg.waitForSelector('#admin-corps table.admin-contrats', { timeout: 15000 }).catch(() => {});
+    };
+    const actifD = pg => pg.evaluate(() => { const a = document.activeElement; return a ? (a.getAttribute('aria-label') || a.id || a.getAttribute('data-admin') || a.tagName) : ''; });
+    const messageD = pg => pg.evaluate(() => { const m = document.getElementById('admin-message'); return { classe: m.className, texte: (m.querySelector('.admin-message-texte') || m).textContent }; });
+    const msgChampD = (pg, n) => pg.evaluate(n => { const m = document.getElementById('admin-' + n + '-msg'); return m ? m.textContent : null; }, n);
+    const famillesD = pg => pg.evaluate(() => [...document.querySelectorAll('#admin-corps table.admin-contrats tbody.admin-famille-groupe')].map(tb => {
+      const th = tb.querySelector('tr.admin-famille th'), b = th && th.querySelector('[data-admin="ajouter-tranche"]');
+      return { premiere: tb.rows[0] && tb.rows[0].classList.contains('admin-famille'), scope: th && th.getAttribute('scope'), colspan: th && th.colSpan,
+               nom: th ? (th.querySelector('.admin-famille-nom') || {}).textContent : '', compte: th ? ((th.querySelector('.admin-famille-compte') || {}).textContent || '') : '',
+               bouton: b ? { texte: b.textContent, aria: b.getAttribute('aria-label'), famille: b.getAttribute('data-famille') } : null,
+               lignes: [...tb.querySelectorAll('tr[data-id]')].map(tr => ({ id: tr.getAttribute('data-id'), contrat: tr.cells[0].textContent,
+                 nomCache: !!tr.cells[0].querySelector('.masque') && tr.cells[0].textContent === tr.cells[0].querySelector('.masque').textContent && getComputedStyle(tr.cells[0].querySelector('.masque')).position === 'absolute',
+                 tranche: tr.cells[1].textContent.trim(), etat: tr.cells[2].textContent.trim() })) };
+    }));
+    try {
+      /* C31-1 : Nathan ouvre Contrats — rangé par contrat. */
+      const np = await vivanteD({ email: 'nathan@airbus.com' });
+      await ouvrirContratsD(np);
+      const f1 = await famillesD(np);
+      const vue1 = await np.evaluate(() => ({ tables: document.querySelectorAll('#admin-corps table').length, lignes: document.querySelectorAll('#admin-corps tbody tr[data-id]').length,
+        entetes: [...document.querySelectorAll('#admin-corps table.admin-contrats thead th')].map(t => t.textContent.trim()).join(),
+        ajouterContrat: !!document.querySelector('[data-admin="ajouter-contrat"]'), note: document.querySelector('#admin-corps .admin-note').textContent }));
+      verifier('C31 : Contrats rangé par contrat — un groupe par famille (HDK, THS), sa ligne de tête en premier (th scope « rowgroup » sur toute la largeur), puis ses tranches ; toujours un seul tableau, les mêmes en-têtes, 3 contrats',
+        vue1.tables === 1 && vue1.lignes === 3 && vue1.entetes === 'Contrat,Tranche,État,Fiche,Actions' && f1.length === 2 &&
+        f1.every(f => f.premiere && f.scope === 'rowgroup' && f.colspan === 5) && f1[0].nom === 'HDK' && f1[1].nom === 'THS' &&
+        f1[0].lignes.map(l => l.id).join() === 'HDK,HDK Tranche 2' && f1[1].lignes.map(l => l.id).join() === 'THS', JSON.stringify(f1));
+      verifier('C31 : la tête dit le contrat et combien de tranches (« 2 tranches » pour HDK, rien pour THS seul) ; sous elle, chaque ligne dit sa tranche (« Tranche 1 » = le contrat, « Tranche 2 ») sans répéter le nom du contrat, gardé pour les lecteurs d’écran',
+        f1[0].compte === '2 tranches' && f1[1].compte === '' && f1[0].lignes.map(l => l.tranche).join() === 'Tranche 1,Tranche 2' &&
+        f1[0].lignes.every(l => l.contrat === 'HDK' && l.nomCache) && f1[1].lignes[0].contrat === 'THS', JSON.stringify(f1));
+      verifier('C31 : « + Ajouter une tranche » sur chaque contrat, son nom pour les lecteurs d’écran (« Ajouter une tranche au contrat HDK ») ; « + Ajouter un contrat » reste en haut ; la note le dit',
+        f1.every(f => f.bouton && f.bouton.texte === '+ Ajouter une tranche' && f.bouton.aria === 'Ajouter une tranche au contrat ' + f.nom && f.bouton.famille === f.nom) &&
+        vue1.ajouterContrat && /Une tranche a sa propre fiche, rangée sous son contrat : « \+ Ajouter une tranche », sur la ligne du contrat\./.test(vue1.note), JSON.stringify([f1.map(f => f.bouton), vue1.note]));
+
+      /* C31-2 : « + Ajouter une tranche » sur THS. */
+      await np.click('[data-admin="ajouter-tranche"][data-famille="THS"]'); await np.waitForTimeout(150);
+      const form = await np.evaluate(() => {
+        const g = document.getElementById('admin-nomGates'), t = document.getElementById('admin-tranche'), fa = document.getElementById('admin-famille');
+        return { titre: document.getElementById('admin-form-titre').textContent, famille: fa && { valeur: fa.value, lecture: fa.readOnly, libelle: document.querySelector('label[for="admin-famille"]').textContent },
+                 tranche: t && { valeur: t.value, requis: t.required, libelle: document.querySelector('label[for="admin-tranche"]').textContent, decrit: t.getAttribute('aria-describedby'),
+                                 aide: document.getElementById('admin-tranche-aide').textContent },
+                 gates: { requis: g.required, libelle: document.querySelector('label[for="admin-nomGates"]').textContent, aide: document.getElementById('admin-nomGates-aide').textContent, invite: g.placeholder },
+                 focus: document.activeElement.id, nom: !!document.getElementById('admin-nom'),
+                 valeurs: ['fwd', 'concept', 'psn'].map(n => document.getElementById('admin-' + n).value),
+                 suggestions: [...document.querySelectorAll('form[data-form="contrat"] [data-admin="reprendre"]')].map(b => ({ champ: b.getAttribute('data-champ'), aria: b.getAttribute('aria-label'), cache: b.hidden })),
+                 boutons: document.querySelectorAll('[data-admin="ajouter-tranche"],[data-admin="ajouter-contrat"]').length,
+                 envoyer: document.querySelector('form[data-form="contrat"] [type="submit"]').textContent };
+      });
+      verifier('C31 : la fiche d’une nouvelle tranche — « Nouvelle tranche de « THS » », Contrat « THS » fixé (lecture seule), Tranche « Tranche 2 » proposée ; plus de champ « Nom dans le tableau de bord » ; « Ajouter la tranche »',
+        form.titre === 'Nouvelle tranche de « THS »' && form.famille && form.famille.valeur === 'THS' && form.famille.lecture && form.famille.libelle === 'Contrat' &&
+        form.tranche && form.tranche.valeur === 'Tranche 2' && form.tranche.requis && form.tranche.libelle === 'Tranche' && !form.nom && form.envoyer === 'Ajouter la tranche' && form.boutons === 0,
+        JSON.stringify(form));
+      verifier('C31 : le nom dans le tableau de bord se lit sous Tranche (« THS Tranche 2 », rangé sous THS), relié au champ ; le nom GATES est obligatoire, celui de CETTE tranche (exemple « THS AB ») ; le focus y va',
+        form.tranche.aide.replace(/ /g, ' ') === 'Son nom dans le tableau de bord : « THS Tranche 2 », rangé sous THS. Une autre tranche s’écrit « Tranche 3 » ou « Tranche B ».' &&
+        /admin-tranche-aide/.test(form.tranche.decrit) && form.gates.requis && form.gates.libelle === 'Nom exact de cette tranche dans GATES' &&
+        /^Le nom exact de CETTE tranche dans GATES, pas celui de THS/.test(form.gates.aide) && /THS AB/.test(form.gates.aide) && form.gates.invite === 'Par exemple : THS AB' &&
+        form.focus === 'admin-nomGates', JSON.stringify(form));
+      verifier('C31 : colonnes et PSN jamais recopiés en douce — les champs sont vides ; sous chacun, « Reprendre … de THS : … » (la colonne ELEC, la colonne harnais, le PSN) le propose d’un clic',
+        form.valeurs.join('|') === '||' && form.suggestions.map(x => x.champ).join() === 'fwd,concept,psn' && form.suggestions.every(x => !x.cache) &&
+        form.suggestions[0].aria === 'Reprendre la colonne ELEC de THS : HDK AA 011 › Avancement Définition Electrique' &&
+        form.suggestions[1].aria === 'Reprendre la colonne harnais de THS : HDK AA 011 › Avancement Concept Harnais' && form.suggestions[2].aria === 'Reprendre le PSN de THS : 4612',
+        JSON.stringify(form.suggestions));
+
+      /* C31-3 : une tranche mal écrite, la saisie en direct. */
+      await np.fill('#admin-tranche', 'B'); await np.waitForTimeout(50);
+      const enDirect = (await np.evaluate(() => document.getElementById('admin-tranche-aide').textContent)).replace(/ /g, ' ');
+      await np.fill('#admin-tranche', '—');
+      await np.click('form[data-form="contrat"] [type="submit"]'); await np.waitForTimeout(150);
+      const erreurs = await np.evaluate(() => ({ tranche: document.getElementById('admin-tranche-msg').textContent, gates: document.getElementById('admin-nomGates-msg').textContent,
+        fwd: document.getElementById('admin-fwd-msg').textContent, invalide: document.getElementById('admin-tranche').getAttribute('aria-invalid'), focus: document.activeElement.id }));
+      verifier('C31 : « B » tapé — le nom suit en direct (« THS Tranche B ») ; « — » : « Écrivez la tranche comme « Tranche 2 » ou « Tranche B »… » sous Tranche (le focus y va), et les champs obligatoires vides le disent',
+        /^Son nom dans le tableau de bord : « THS Tranche B », rangé sous THS\./.test(enDirect) &&
+        erreurs.tranche === 'Écrivez la tranche comme « Tranche 2 » ou « Tranche B » : elle se range alors sous THS.' && erreurs.invalide === 'true' && erreurs.focus === 'admin-tranche' &&
+        /^Donnez le nom exact de la tranche dans GATES/.test(erreurs.gates) && /^Donnez la colonne de la validation ELEC/.test(erreurs.fwd), JSON.stringify([enDirect, erreurs]));
+      await np.fill('#admin-tranche', 'Tranche 2');
+      await np.click('form[data-form="contrat"] [data-admin="reprendre"][data-champ="fwd"]'); await np.waitForTimeout(50);
+      const repris = await np.evaluate(() => ({ fwd: document.getElementById('admin-fwd').value, focus: document.activeElement.id, cache: document.querySelector('[data-admin="reprendre"][data-champ="fwd"]').hidden,
+        message: document.getElementById('admin-fwd-msg').textContent }));
+      verifier('C31 : « Reprendre la colonne ELEC de THS » — la colonne remplie, le focus dans le champ, son message effacé, la suggestion disparaît (déjà prise)',
+        repris.fwd === ELEC_D && repris.focus === 'admin-fwd' && repris.cache && repris.message === '', JSON.stringify(repris));
+      await np.fill('#admin-nomGates', 'THS AB');
+      await np.click('form[data-form="contrat"] [type="submit"]'); await libreD(np); await np.waitForTimeout(150);
+      const ajout = await messageD(np), focusAjout = await actifD(np), f2 = await famillesD(np);
+      const ficheT2 = commeD('nathan@airbus.com', () => ({ fiche: srvD.ficheDe_('THS Tranche 2'), colonnes: srvD.colonnesDuContrat('THS Tranche 2'), psn: srvD.psnDuContrat('THS Tranche 2') }));
+      verifier('C31 : « Ajouter la tranche » — « THS › Tranche 2 est ajoutée. Le robot la prendra à son prochain passage… », le focus sur son « Modifier » ; la famille THS a deux lignes (« Tranche 1 » = THS, « Tranche 2 » Prévu) et dit « 2 tranches »',
+        ajout.classe === 'admin-message ok' && ajout.texte === 'THS › Tranche 2 est ajoutée. Le robot la prendra à son prochain passage : son onglet sera créé avec son premier export GATES.' &&
+        focusAjout === 'Modifier la fiche : THS › Tranche 2' && f2[1].nom === 'THS' && f2[1].compte === '2 tranches' &&
+        JSON.stringify(f2[1].lignes.map(l => [l.id, l.tranche, l.etat])) === JSON.stringify([['THS', 'Tranche 1', 'Visible'], ['THS Tranche 2', 'Tranche 2', 'Prévu']]), JSON.stringify([ajout, focusAjout, f2[1]]));
+      verifier('C31 : au classeur — la fiche « THS Tranche 2 » (GATES « THS AB »), la colonne ELEC reprise, ni colonne harnais ni PSN recopiés (jamais en douce)',
+        ficheT2.fiche && ficheT2.fiche.nomGates === 'THS AB' && ficheT2.colonnes.fwd === ELEC_D && ficheT2.colonnes.concept === '' && ficheT2.psn.psn.length === 0, JSON.stringify(ficheT2));
+
+      /* C31-4 : la suivante, un doublon, Annuler, la question avant d'abandonner. */
+      await np.click('[data-admin="ajouter-tranche"][data-famille="THS"]'); await np.waitForTimeout(120);
+      const suivanteThs = await np.evaluate(() => document.getElementById('admin-tranche').value);
+      await np.click('[data-admin="annuler-fiche"]'); await np.waitForTimeout(120);
+      const retourThs = await actifD(np);
+      await np.click('[data-admin="ajouter-tranche"][data-famille="HDK"]'); await np.waitForTimeout(120);
+      const suivanteHdk = await np.evaluate(() => document.getElementById('admin-tranche').value);
+      await np.fill('#admin-tranche', 'Tranche 2'); await np.fill('#admin-nomGates', 'HDK AB'); await np.fill('#admin-fwd', ELEC_D);
+      await np.click('form[data-form="contrat"] [type="submit"]'); await np.waitForTimeout(150);
+      const doublon = await msgChampD(np, 'tranche');
+      verifier('C31 : la tranche proposée suit — THS « Tranche 3 », HDK « Tranche 3 » ; « Annuler » rend le focus au bouton de la famille ; « Tranche 2 » de HDK existe déjà : dit sous Tranche, rien n’est envoyé',
+        suivanteThs === 'Tranche 3' && suivanteHdk === 'Tranche 3' && retourThs === 'Ajouter une tranche au contrat THS' &&
+        doublon === '« HDK › Tranche 2 » existe déjà : modifiez sa fiche plutôt que d’en ajouter une.', JSON.stringify([suivanteThs, suivanteHdk, retourThs, doublon]));
+      await np.click('td.actions [data-admin="modifier-fiche"][data-id="THS"]'); await np.waitForTimeout(150);
+      const garde = await np.evaluate(() => ({ texte: (document.querySelector('.admin-garde .admin-question-texte') || {}).textContent, focus: document.activeElement.getAttribute('data-admin') }));
+      await np.click('[data-admin="garde-abandonner"]'); await np.waitForTimeout(150);
+      const apresGarde = await np.evaluate(() => (document.getElementById('admin-form-titre') || {}).textContent);
+      verifier('C31 : une tranche en cours de saisie, « Modifier » ailleurs — « Abandonner cette tranche de HDK non enregistrée ? » ; « Abandonner » ouvre l’autre fiche',
+        garde.texte === 'Abandonner cette tranche de HDK non enregistrée ?' && apresGarde === 'Fiche de « THS › Tranche 1 »', JSON.stringify([garde, apresGarde]));
+      await np.click('[data-admin="annuler-fiche"]'); await np.waitForTimeout(100);
+      /* Le clavier : « + Ajouter une tranche » prend le focus visible, Entrée l'ouvre. */
+      await np.focus('[data-admin="ajouter-tranche"][data-famille="HDK"]');
+      await np.keyboard.press('Shift+Tab'); await np.keyboard.press('Tab');
+      const clavier = await np.evaluate(() => { const a = document.activeElement; return { aria: a.getAttribute('aria-label'), visible: a.matches(':focus-visible'), contour: getComputedStyle(a).outlineStyle }; });
+      await np.keyboard.press('Enter'); await np.waitForTimeout(150);
+      const entree = await np.evaluate(() => ({ titre: (document.getElementById('admin-form-titre') || {}).textContent, focus: document.activeElement.id }));
+      verifier('C31 : au clavier — Tab arrive sur « Ajouter une tranche au contrat HDK », son contour se voit ; Entrée ouvre la fiche, le focus dans le nom GATES',
+        clavier.aria === 'Ajouter une tranche au contrat HDK' && clavier.visible && clavier.contour !== 'none' && entree.titre === 'Nouvelle tranche de « HDK »' && entree.focus === 'admin-nomGates',
+        JSON.stringify([clavier, entree]));
+      await np.click('[data-admin="annuler-fiche"]'); await np.waitForTimeout(100);
+      await np.__ctx.close();
+
+      /* C31-5 : Anne, administratrice de THS. */
+      const ap = await vivanteD({ email: 'anne@airbus.com' });
+      await ouvrirContratsD(ap);
+      const fA = await famillesD(ap);
+      const vueA = await ap.evaluate(() => ({ ajouterContrat: !!document.querySelector('[data-admin="ajouter-contrat"]'), note: document.querySelector('#admin-corps .admin-note').textContent,
+        actionsT2: [...document.querySelectorAll('#admin-corps tr[data-id="THS Tranche 2"] td.actions button')].map(b => b.getAttribute('data-admin')) }));
+      verifier('C31 : Anne (THS) — « + Ajouter une tranche » sur THS seulement, pas de « + Ajouter un contrat » ; la note le lui dit ; sur sa tranche prévue, « Modifier » et « Retirer »',
+        !fA[0].bouton && !!fA[1].bouton && fA[1].bouton.aria === 'Ajouter une tranche au contrat THS' && !vueA.ajouterContrat &&
+        vueA.note === 'Seuls le responsable et les administrateurs de tous les contrats ajoutent, masquent ou retirent un contrat. Vous pouvez ajouter une tranche à THS : « + Ajouter une tranche », sur la ligne du contrat.' &&
+        vueA.actionsT2.join() === 'modifier-fiche,retirer-prevu', JSON.stringify([fA.map(f => f.bouton), vueA]));
+      await ap.click('[data-admin="ajouter-tranche"][data-famille="THS"]'); await ap.waitForTimeout(120);
+      await ap.fill('#admin-nomGates', 'THS AC');
+      await ap.click('[data-admin="reprendre"][data-champ="fwd"]');
+      await ap.click('form[data-form="contrat"] [type="submit"]'); await libreD(ap); await ap.waitForTimeout(150);
+      const ajoutA = await messageD(ap);
+      await ap.click('[data-admin="retirer-prevu"][data-id="THS Tranche 3"]'); await ap.waitForTimeout(450);
+      await ap.click('[data-admin="retirer-prevu-oui"]'); await libreD(ap); await ap.waitForTimeout(150);
+      const retraitA = await messageD(ap), focusRetrait = await actifD(ap);
+      verifier('C31 : Anne ajoute « THS Tranche 3 », puis la retire (elle est prévue) — le focus revient à « + Ajouter une tranche » de THS',
+        ajoutA.texte === 'THS › Tranche 3 est ajoutée. Le robot la prendra à son prochain passage : son onglet sera créé avec son premier export GATES.' &&
+        retraitA.texte === 'THS › Tranche 3 est retirée : le robot ne la cherchera plus.' && focusRetrait === 'Ajouter une tranche au contrat THS' &&
+        !commeD('nathan@airbus.com', () => srvD.ficheDe_('THS Tranche 3')), JSON.stringify([ajoutA, retraitA, focusRetrait]));
+      /* Ses droits changent pendant qu'elle tape : le classeur refuse, la page le dit. */
+      await ap.click('[data-admin="ajouter-tranche"][data-famille="THS"]'); await ap.waitForTimeout(120);
+      await ap.fill('#admin-nomGates', 'THS AD'); await ap.fill('#admin-fwd', ELEC_D);
+      commeD('nathan@airbus.com', () => srvD.adminEnregistrerAdmins([{ email: 'anne@airbus.com', contrats: ['HDK'] }]));
+      await ap.click('form[data-form="contrat"] [type="submit"]');
+      await ap.waitForFunction(() => /entre-temps/.test(document.getElementById('admin-message').textContent), null, { timeout: 15000 }).catch(() => {});
+      const refusA = await ap.evaluate(() => ({ msg: document.getElementById('admin-message').textContent, lecture: (document.getElementById('admin-nomGates') || {}).readOnly,
+        titre: (document.getElementById('admin-form-titre') || {}).textContent }));
+      verifier('C31 : ses droits sur THS retirés pendant la saisie — « Vos droits ont changé entre-temps : vous ne pouvez plus ajouter une tranche à THS. Votre fiche n’a pas été enregistrée. » ; la saisie reste lisible, en lecture seule',
+        /^Vos droits ont changé entre-temps : vous ne pouvez plus ajouter une tranche à THS\. Votre fiche n’a pas été enregistrée\./.test(refusA.msg) && refusA.lecture === true &&
+        /\(non enregistrée\)$/.test(refusA.titre) && !commeD('nathan@airbus.com', () => srvD.ficheDe_('THS Tranche 3')), JSON.stringify(refusA));
+      commeD('nathan@airbus.com', () => srvD.adminEnregistrerAdmins([{ email: 'anne@airbus.com', contrats: ['THS'] }]));
+      await ap.__ctx.close();
+
+      /* C31-8 : la livraison que regarde le robot. Nathan crée un nouveau
+         déploiement à chaque livraison : son robot gardait l'ancien lien. Le
+         compte rendu du robot dit la livraison lue sur le pont ; la page le
+         dit, sous la ligne du robot, quand ce n'est pas celle-ci. */
+      const rapportD = livraison => commeD('nathan@airbus.com', () => srvD.importRapport(srvD.ouvrirJetonImport_(),
+        Object.assign({ source: 'robot', passage: { ok: true, heure: '14:00' }, contrats: [] }, livraison === undefined ? {} : { livraison: livraison })));
+      const lireLivraison = pg => pg.evaluate(() => {
+        const l = document.getElementById('admin-robot-livraison'), r = document.getElementById('admin-robot');
+        return l ? { texte: l.querySelector('.admin-suivi-texte').textContent.replace(/\u00a0/g, ' '), classe: l.className, icone: (l.querySelector('.admin-suivi-icone') || {}).textContent,
+                     lu: (l.querySelector('.masque') || {}).textContent, apres: l.previousElementSibling === r, robot: r.textContent } : null;
+      });
+      rapportD(simD.edition);
+      const lp = await vivanteD({ email: 'nathan@airbus.com' });
+      await ouvrirContratsD(lp);
+      const memeLiv = await lireLivraison(lp), robotMeme = await lp.evaluate(() => document.getElementById('admin-robot').textContent);
+      await lp.__ctx.close();
+      verifier('C31 : le robot regarde cette livraison-ci (« ' + simD.edition + ' ») — rien de plus sous la ligne du robot',
+        memeLiv === null && /tout s’est bien passé\.$/.test(robotMeme), JSON.stringify([memeLiv, robotMeme]));
+      rapportD('1a2b3c4');
+      const lp2 = await vivanteD({ email: 'nathan@airbus.com' });
+      await ouvrirContratsD(lp2);
+      const autreLiv = await lireLivraison(lp2);
+      const contrasteLiv = await lp2.evaluate(() => {
+        const t = document.querySelector('#admin-robot-livraison .admin-suivi-texte');
+        const lum = c => { const m = c.match(/[\d.]+/g).map(Number); const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(m[0]) + 0.7152 * f(m[1]) + 0.0722 * f(m[2]); };
+        let fond = 'rgb(255, 255, 255)'; for (let e = t; e; e = e.parentElement) { const b = getComputedStyle(e).backgroundColor; if (b && b !== 'rgba(0, 0, 0, 0)' && b !== 'transparent') { fond = b; break; } }
+        const a = lum(getComputedStyle(t).color), b = lum(fond);
+        return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+      });
+      await lp2.__ctx.close();
+      verifier('C31 : le robot regarde une autre livraison (« 1a2b3c4 ») — une ligne ⚠ à part, juste sous la sienne : les deux livraisons, le lien /dev à lui donner, « 1 - Preparer » ; lue « Attention : … » ; ≥ 4,5:1',
+        !!autreLiv && /\badmin-robot\b/.test(autreLiv.classe) && /\battention\b/.test(autreLiv.classe) && autreLiv.icone === '⚠' && autreLiv.lu === 'Attention : ' && autreLiv.apres &&
+        autreLiv.texte === 'Le robot regarde une autre version du site (livraison 1a2b3c4 ; celle-ci : ' + simD.edition + '). Donnez-lui le lien qui suit toujours la dernière version : ' +
+          'dans Apps Script, Déployer → Tester les déploiements, copiez le lien qui finit par /dev ; puis, sur le PC du robot, double-cliquez « 1 - Preparer » et collez-y ce lien.' &&
+        /tout s’est bien passé\.$/.test(autreLiv.robot) && contrasteLiv >= 4.5, JSON.stringify([autreLiv, contrasteLiv]));
+
+      /* C31-6 : téléphone, thème sombre (la ligne « autre livraison » encore là). */
+      const tp = await vivanteD({ email: 'nathan@airbus.com', largeur: 390, hauteur: 844, schema: 'dark', mobile: true });
+      await ouvrirContratsD(tp);
+      await tp.evaluate(() => {
+        window.__lum = c => { const m = c.match(/[\d.]+/g).map(Number); const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(m[0]) + 0.7152 * f(m[1]) + 0.0722 * f(m[2]); };
+        window.__fond = el => { for (let e = el; e; e = e.parentElement) { const b = getComputedStyle(e).backgroundColor; if (b && b !== 'rgba(0, 0, 0, 0)' && b !== 'transparent') return b; } return 'rgb(255, 255, 255)'; };
+        window.__contraste = el => { const a = window.__lum(getComputedStyle(el).color), b = window.__lum(window.__fond(el)); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); };
+      });
+      const tel = await tp.evaluate(() => {
+        const corps = document.getElementById('admin-corps'), th = document.querySelector('tr.admin-famille th'), b = document.querySelector('[data-admin="ajouter-tranche"]');
+        const n = document.querySelector('.admin-famille-nom'), k = document.querySelector('.admin-famille-compte');
+        return { deborde: corps.scrollWidth - corps.clientWidth, page: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+                 th: getComputedStyle(th).display, bouton: Math.round(b.getBoundingClientRect().height), droite: Math.round(b.getBoundingClientRect().right), largeur: corps.clientWidth,
+                 nom: window.__contraste(n), compte: window.__contraste(k), btn: window.__contraste(b), sombre: matchMedia('(prefers-color-scheme: dark)').matches };
+      });
+      verifier('C31 : au téléphone (390 px, sombre) — rien ne déborde ; la tête de famille en bloc ; « + Ajouter une tranche » fait 44 px au doigt ; le nom, le compte et le bouton ≥ 4,5:1',
+        tel.sombre && tel.deborde <= 0 && tel.page <= 0 && tel.th === 'block' && tel.bouton >= 44 && tel.nom >= 4.5 && tel.compte >= 4.5 && tel.btn >= 4.5, JSON.stringify(tel));
+      const telLiv = await tp.evaluate(() => {
+        const l = document.getElementById('admin-robot-livraison'), t = l && l.querySelector('.admin-suivi-texte'), corps = document.getElementById('admin-corps');
+        return l ? { droite: Math.round(l.getBoundingClientRect().right), largeur: Math.round(corps.getBoundingClientRect().right), contraste: window.__contraste(t) } : null;
+      });
+      verifier('C31 : au téléphone (390 px, sombre), la ligne « autre version du site » tient dans la largeur et se lit (≥ 4,5:1)',
+        !!telLiv && telLiv.droite <= telLiv.largeur && telLiv.contraste >= 4.5, JSON.stringify(telLiv));
+      rapportD(simD.edition);
+      await tp.click('[data-admin="ajouter-tranche"][data-famille="HDK"]'); await tp.waitForTimeout(150);
+      const telForm = await tp.evaluate(() => {
+        const corps = document.getElementById('admin-corps');
+        return { deborde: corps.scrollWidth - corps.clientWidth, champs: [...document.querySelectorAll('form[data-form="contrat"] input')].map(i => ({ t: getComputedStyle(i).fontSize, h: Math.round(i.getBoundingClientRect().height) })),
+                 suggestions: [...document.querySelectorAll('[data-admin="reprendre"]')].map(b => ({ h: Math.round(b.getBoundingClientRect().height), c: window.__contraste(b) })) };
+      });
+      verifier('C31 : la fiche d’une tranche au téléphone — rien ne déborde, chaque champ en 16 px et 44 px de haut, chaque « Reprendre … » 44 px au doigt et ≥ 4,5:1',
+        telForm.deborde <= 0 && telForm.champs.length >= 6 && telForm.champs.every(c => c.t === '16px' && c.h >= 44) &&
+        telForm.suggestions.length === 3 && telForm.suggestions.every(s => s.h >= 44 && s.c >= 4.5), JSON.stringify(telForm));
+      await tp.__ctx.close();
+
+      /* C31-7 : le journal, semaine par semaine — le simulateur rejoué. */
+      const pageJournal = async (opts, o) => {
+        const sim = construireSimulateur(Object.assign({ date: '2026-11-03' }, opts));
+        const f = path.join(osD.tmpdir(), 'suivi-fwd-c31-j' + fichiersJ.length + '-' + process.pid + '.html');
+        fichiersJ.push(f);
+        fsD.writeFileSync(f, sim.page);
+        const c = await nav.newContext({ viewport: { width: (o && o.largeur) || 1440, height: 900 }, colorScheme: (o && o.schema) || 'light',
+          isMobile: !!(o && o.mobile), hasTouch: !!(o && o.mobile), locale: 'en-US' });
+        await c.clock.setFixedTime(new Date('2026-11-03T13:15:00+01:00'));
+        const pg = await c.newPage();
+        brancher(pg, 'lot C31 journal ' + fichiersJ.length);
+        await pg.goto('file://' + f);
+        await pg.waitForFunction(() => document.documentElement.getAttribute('data-suivi-fwd') === 'pret', null, { timeout: 30000 });
+        pg.__ctx = c;
+        return pg;
+      };
+      const lireJournal = pg => pg.evaluate(() => ({
+        semaines: [...document.querySelectorAll('#zone-journal .journal-semaine')].map(s => ({
+          num: (s.querySelector('.sem-num') || {}).textContent, calme: s.getAttribute('data-calme') || '', texte: ((s.querySelector('.calme-texte') || {}).textContent || '').replace(/ /g, ' '),
+          extrait: (s.querySelector('.sem-extrait') || {}).textContent || '', bouton: !!s.querySelector('button'),
+          aria: s.querySelector('button[data-semaine]') ? s.querySelector('button[data-semaine]').getAttribute('aria-label') : '' })),
+        points: window.__serieAffichee().pts.length, journal: window.__journal().length }));
+      /* Les vacances de la Toussaint : rien d'importé en S43 ni en S44 — l'archivage du vendredi reprend l'export de S42. */
+      const jp = await pageJournal({ exports: [0, 1, 2, 3, 3, 3] });
+      const j1 = await lireJournal(jp);
+      verifier('C31 : rien d’importé en S43 ni S44 (l’archivage du vendredi a repris l’export de S42) — le graphique a 6 points (S39 à S44), le journal 5 lignes : S44 et S43 « aucun changement depuis S43 / S42 », puis S42, S41, S40',
+        j1.points === 6 && j1.semaines.length === 5 && j1.semaines.map(s => s.num).join() === 'S44,S43,S42,S41,S40' &&
+        j1.semaines[0].calme === 'identique' && /: aucun changement depuis S43$/.test(j1.semaines[0].texte) &&
+        j1.semaines[1].calme === 'identique' && /: aucun changement depuis S42$/.test(j1.semaines[1].texte) && j1.semaines.slice(2).every(s => !s.calme), JSON.stringify(j1));
+      const calme = await jp.evaluate(() => {
+        const s = document.querySelector('#zone-journal .journal-calme'), t = s.querySelector('.calme-texte'), v = s.querySelector('.journal-plier-calme');
+        const evt = document.querySelector('#zone-journal .journal-semaine:not(.journal-calme) .journal-tete .resume > *');
+        return { boutons: s.querySelectorAll('button').length, focusables: s.querySelectorAll('[tabindex],a,button,input').length, cache: v.getAttribute('aria-hidden'),
+                 lu: (t.querySelector('.masque') || {}).textContent, visible: s.querySelector('.sem').textContent.replace(/ /g, ' '),
+                 alignement: Math.round(t.getBoundingClientRect().left - evt.getBoundingClientRect().left), curseur: getComputedStyle(s.querySelector('.journal-tete')).cursor };
+      });
+      verifier('C31 : la ligne courte — ni bouton ni pli (rien à déplier), alignée sur les comptes des autres semaines ; « S44 · du ven. 23 au ven. 30 oct. » pour l’œil, « S44, semaine du vendredi 23 au vendredi 30 octobre : » pour les lecteurs d’écran',
+        calme.boutons === 0 && calme.focusables === 0 && calme.cache === 'true' && calme.visible === 'S44 · du ven. 23 au ven. 30 oct.' &&
+        calme.lu === 'S44, semaine du vendredi 23 au vendredi 30 octobre : ' && Math.abs(calme.alignement) <= 6 && calme.curseur === 'default', JSON.stringify(calme));
+      /* Les pastilles et les comptes ne bougent pas : une semaine sans changement n'est ni une ligne ni une semaine de plus. */
+      const pastilles = await jp.evaluate(() => {
+        const p = [...document.querySelectorAll('#filtre-journal button[data-journal]')].filter(b => b.getAttribute('data-journal') && b.querySelector('.n'));
+        const v = p[0], cle = v.getAttribute('data-journal');
+        const dansSemaines = [...document.querySelectorAll('#zone-journal button[data-passage]')].filter(b => b.getAttribute('data-passage') === cle).reduce((t, b) => t + Number(b.querySelector('b').textContent.replace(/\D/g, '')), 0);
+        return { cle, n: Number(v.querySelector('.n').textContent.replace(/\D/g, '')), dansSemaines };
+      });
+      const annonceD = motif => jp.waitForFunction(m => new RegExp(m).test((document.getElementById('annonce') || {}).textContent || ''), motif, { timeout: 4000 }).catch(() => {})
+        .then(() => jp.evaluate(() => (document.getElementById('annonce') || {}).textContent || ''));
+      await jp.click('#filtre-journal button[data-journal="' + pastilles.cle + '"]');
+      const annonceF = await annonceD('^Journal : \\d'), filtre = await lireJournal(jp);
+      await jp.click('#filtre-journal button[data-journal=""]');
+      const annonceT = await annonceD('tous les changements'), retour = await lireJournal(jp);
+      verifier('C31 : sous une pastille, seules les semaines qui en ont restent (pas de ligne courte) et l’annonce compte 3 semaines ; « Tout » : « tous les changements, N, sur 3 semaines » — et les lignes courtes reviennent',
+        pastilles.n === pastilles.dansSemaines && filtre.semaines.length >= 1 && filtre.semaines.every(s => !s.calme) &&
+        / sur \d semaines$|^Journal : \d+ arrivées? à « .+ »$/.test(annonceF) && !/ sur [45] semaines/.test(annonceF) &&
+        /^Journal : tous les changements, [\d  ]+, sur 3 semaines$/.test(annonceT) && retour.semaines.length === 5, JSON.stringify([pastilles, filtre.semaines.map(s => s.num), annonceF, annonceT]));
+      await jp.fill('#recherche-journal', 'ZZZZ').catch(() => {});
+      await jp.waitForTimeout(400);
+      const cherche = await jp.evaluate(() => ({ calmes: document.querySelectorAll('#zone-journal .journal-calme').length, texte: (document.querySelector('#zone-journal .journal-vide') || {}).textContent || '' }));
+      await jp.fill('#recherche-journal', '').catch(() => {});
+      await jp.waitForTimeout(300);
+      verifier('C31 : la recherche du journal ne montre pas de ligne courte (« Aucun changement pour « ZZZZ »… »)', cherche.calmes === 0 && /^Aucun changement pour « ZZZZ »/.test(cherche.texte), JSON.stringify(cherche));
+      /* Un filtre de la page : les semaines sans changement pour la sélection se disent aussi. */
+      await jp.evaluate(() => { const r = document.getElementById('recherche'); r.value = 'ECP-2108'; r.dispatchEvent(new Event('input', { bubbles: true })); });
+      await jp.waitForTimeout(700);
+      const sel = await lireJournal(jp);
+      await jp.evaluate(() => { const r = document.getElementById('recherche'); r.value = ''; r.dispatchEvent(new Event('input', { bubbles: true })); });
+      verifier('C31 : la page filtrée (« ECP-2108 ») — toujours une ligne par semaine archivée : S44, S43 sans changement, et une semaine « aucun changement pour les plans de la sélection depuis … »',
+        sel.semaines.length === 5 && sel.semaines.map(s => s.num).join() === 'S44,S43,S42,S41,S40' && sel.semaines[0].calme === 'identique' &&
+        sel.semaines.some(s => s.calme === 'selection' && /: aucun changement pour les plans de la sélection depuis S\d+$/.test(s.texte)), JSON.stringify(sel.semaines));
+      await jp.__ctx.close();
+      /* L'extract du jour, importé mardi sans être archivé, après un S44 sans changement. */
+      const xp = await pageJournal({ exports: [0, 1, 2, 3, 4, 4], exportDuJour: 5 });
+      const j2 = await lireJournal(xp);
+      verifier('C31 : l’extract du jour (S45, pas encore archivé) — sa ligne le dit (« extract du jour, pas encore archivé ») avec ses changements depuis S44 ; S44 « aucun changement depuis S43 » ; 7 points, 6 lignes',
+        j2.points === 7 && j2.semaines.length === 6 && j2.semaines[0].num === 'S45' && j2.semaines[0].extrait === 'extract du jour, pas encore archivé' && !j2.semaines[0].calme &&
+        /l’extract du jour comparé au relevé du vendredi 30 octobre$/.test(j2.semaines[0].aria) && j2.semaines[1].num === 'S44' && /: aucun changement depuis S43$/.test(j2.semaines[1].texte) &&
+        j2.semaines.slice(1).every(s => !s.extrait), JSON.stringify(j2.semaines));
+      await xp.__ctx.close();
+      /* Un relevé sans le détail plan par plan (S43) : sa semaine et la suivante le disent. */
+      const sp = await pageJournal({ avantPage: function (c, classeur) {
+        const h = classeur.getSheetByName('Historique_FWD_HDK');
+        h.valeurs.forEach((l, i) => { if (i > 0 && /S43$/.test(String(l[0]))) for (let k = 8; k < l.length; k++) l[k] = ''; });
+      } });
+      const j3 = await lireJournal(sp);
+      verifier('C31 : un relevé sans détail plan par plan (S43) — « relevé sans le détail plan par plan : on ne peut pas dire ce qui a changé depuis S42 », et S44 « le relevé S43 n’a pas le détail plan par plan… » ; rien n’est tu',
+        j3.points === 6 && j3.semaines.map(s => s.num).join() === 'S44,S43,S42,S41,S40' &&
+        j3.semaines[0].calme === 'avant-sans-carte' && /: le relevé S43 n’a pas le détail plan par plan : on ne peut pas dire ce qui a changé$/.test(j3.semaines[0].texte) &&
+        j3.semaines[1].calme === 'sans-carte' && /: relevé sans le détail plan par plan : on ne peut pas dire ce qui a changé depuis S42$/.test(j3.semaines[1].texte), JSON.stringify(j3.semaines));
+      await sp.__ctx.close();
+      /* Au téléphone, sombre : la ligne courte sous sa semaine, au retrait des comptes, lisible. */
+      const mp = await pageJournal({ exports: [0, 1, 2, 3, 3, 3] }, { largeur: 390, schema: 'dark', mobile: true });
+      const telJ = await mp.evaluate(() => {
+        const t = document.querySelector('#zone-journal .journal-calme .calme-texte'), sem = document.querySelector('#zone-journal .journal-calme .sem');
+        const lum = c => { const m = c.match(/[\d.]+/g).map(Number); const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(m[0]) + 0.7152 * f(m[1]) + 0.0722 * f(m[2]); };
+        let fond = 'rgb(0, 0, 0)'; for (let e = t; e; e = e.parentElement) { const b = getComputedStyle(e).backgroundColor; if (b && b !== 'rgba(0, 0, 0, 0)') { fond = b; break; } }
+        const a = lum(getComputedStyle(t).color), b = lum(fond);
+        return { page: document.documentElement.scrollWidth - document.documentElement.clientWidth, dessous: t.getBoundingClientRect().top >= sem.getBoundingClientRect().bottom - 1,
+                 retrait: Math.round(t.getBoundingClientRect().left - sem.getBoundingClientRect().left + parseFloat(getComputedStyle(t).paddingLeft) * 0), contraste: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) };
+      });
+      verifier('C31 : au téléphone (390 px, sombre), la ligne courte passe sous sa semaine, rien ne déborde, le texte ≥ 4,5:1',
+        telJ.page <= 0 && telJ.dessous && telJ.contraste >= 4.5, JSON.stringify(telJ));
+      await mp.__ctx.close();
+    } finally {
+      try { fsD.unlinkSync(fichierD); } catch (e) { /* déjà parti */ }
+      fichiersJ.forEach(f => { try { fsD.unlinkSync(f); } catch (e) { /* déjà parti */ } });
+    }
+  }
+  /* (fin du lot C31) */
 
 
   await ctx.close();

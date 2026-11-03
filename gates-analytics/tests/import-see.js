@@ -3071,6 +3071,11 @@ const paquetSansDate = o => { const x = JSON.parse(JSON.stringify(o)); delete x.
       JSON.stringify(illisible));
     const pontCache = await page.evaluate(() => { const p = document.getElementById('pont-robot'); return p.hidden && p.getBoundingClientRect().height === 0; });
     verifier('le pont ne se voit pas', pontCache);
+    /* Débrief 31 : le robot sait quelle livraison du tableau de bord il voit — lu exactement comme lui, depuis son monde isolé. */
+    const livraison = await isole('document.getElementById(\'pont-robot\').getAttribute(\'data-livraison\')');
+    const edition = vm.runInContext('EDITION', ctx);
+    verifier('débrief 31 : #pont-robot porte data-livraison, la livraison du Code (EDITION « ' + edition + ' »), lue par le robot depuis son monde isolé',
+      typeof livraison === 'string' && /^[0-9a-f]{7,}$/.test(livraison) && livraison === edition, JSON.stringify([livraison, edition]));
     await page.close();
   }
   {
