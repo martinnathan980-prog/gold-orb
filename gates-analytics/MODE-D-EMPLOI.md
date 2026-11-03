@@ -811,8 +811,8 @@ connectée (il faut qu'elle soit du même domaine que le classeur).
 | Qui | Ce qu'il peut faire |
 |---|---|
 | **Le responsable** (vous : le propriétaire du classeur) | Tout, et lui seul nomme ou retire les administrateurs |
-| **Un administrateur de tous les contrats** | Ajouter, modifier, supprimer les jalons de tous les contrats ; retirer un contrat du tableau de bord, ou l'y remettre |
-| **Un administrateur d'un contrat** (« HDK seulement ») | Les jalons de ce contrat et de ses tranches, et rien d'autre |
+| **Un administrateur de tous les contrats** | Ajouter, modifier, supprimer les jalons de tous les contrats ; ajouter un contrat, modifier sa fiche, le masquer ou le réafficher |
+| **Un administrateur d'un contrat** (« HDK seulement ») | Les jalons de ce contrat et de ses tranches, et la fiche de ce contrat (nom GATES, colonnes, PSN) |
 | **Tout le monde** | Lire le tableau de bord |
 
 Le panneau a trois onglets :
@@ -822,10 +822,11 @@ Le panneau a trois onglets :
   quel contrat (ou tous), quels plans (tous, `BASE/OPTION`, `PERSO`…), et
   l'avancement suivi (FWD ou concept harnais). Enregistré, il est aussitôt
   sur le graphique. **Modifier** et **Supprimer** sur chaque ligne.
-- **Contrats** : **Retirer du tableau de bord** cache un contrat (ou une
-  tranche) pour tout le monde. Rien n'est effacé, son historique reste, et
-  **Remettre au tableau de bord** le fait revenir. Le dernier contrat
-  affiché ne se retire pas.
+- **Contrats** : la fiche de chaque contrat et ce que le robot en a dit
+  (voir « Les contrats et le robot », juste en dessous). **Masquer du
+  tableau de bord** cache un contrat (ou une tranche) pour tout le monde.
+  Rien n'est effacé, son historique reste, et **Réafficher** le fait
+  revenir. Le dernier contrat affiché ne se masque pas.
 - **Administrateurs** (le responsable seul) : l'adresse Google de la
   personne et ses contrats (« Tous les contrats » ou « HDK seulement »),
   puis **Nommer**. **Retirer ses droits** sur chaque ligne.
@@ -833,6 +834,60 @@ Le panneau a trois onglets :
 Le serveur revérifie chaque modification. Ce n'est pas la page qui décide :
 quelqu'un qui n'en a pas le droit est refusé, avec le nom de la personne à
 qui le demander.
+
+### Les contrats et le robot (débrief 30)
+
+Le robot du PC (installé une fois, activé une fois) passe **tout seul, une
+fois par jour, à partir de 14 h, quand le PC est allumé**. On ne l'ouvre
+plus. Il lit la liste des contrats dans le tableau de bord, sort l'export
+GATES de **chacun**, l'extract SEE **une seule fois** (il contient tous les
+PSN), les dépose dans la fenêtre d'import, puis écrit son compte rendu dans
+**⚙ Administration → Contrats**.
+
+**La fiche d'un contrat**, ce que le robot utilise :
+
+| Champ | Ce que c'est |
+|---|---|
+| **Nom exact de la tranche dans GATES** | Ce que le robot tape dans GATES, lettre pour lettre. Vide (contrat déjà là) : il tape le nom du contrat, comme avant |
+| **Nom dans le tableau de bord** | Le nom de l'onglet. « HDK Tranche 2 » se range sous HDK |
+| **Colonne de la validation ELEC** | « Groupe > Colonne » de l'export GATES (ex. `HDK AA 011 > Avancement Définition Electrique`) |
+| **Colonne de la validation harnais** | Facultatif. Vide : ce contrat ne suit pas le concept harnais |
+| **PSN pour SEE** | Facultatif. Plusieurs : séparés par des virgules |
+
+**Ajouter un contrat** (le responsable, ou un administrateur de tous les
+contrats) : **+ Ajouter un contrat**, remplir la fiche, **Ajouter le
+contrat**. Il est **« Prévu »** : son onglet sera créé par le robot à son
+prochain passage, avec les colonnes de la fiche. Rien d'autre à faire.
+
+**Modifier** : sur la ligne du contrat. Le nom d'un contrat qui a déjà son
+onglet ne change pas (son historique en dépend) ; le reste, oui.
+
+**Retirer** : seulement un contrat encore « Prévu » (il n'a jamais reçu de
+données). Un contrat qui a des données se **masque** (Masquer du tableau de
+bord), il ne s'efface pas.
+
+**Lire le compte rendu** : sous chaque contrat, une ligne.
+
+- **✓ Mis à jour aujourd'hui à 14 h 07** : tout va bien.
+- **Encadré rouge** : quelque chose est à corriger dans la fiche (nom GATES
+  introuvable, colonne ELEC absente de l'export — les trois plus proches
+  sont proposées —, aucune ligne SEE pour son PSN). Bouton **Corriger la
+  fiche**, corriger, enregistrer : la ligne dit « Fiche corrigée… le robot
+  vérifiera à son prochain passage ».
+- **Encadré orange** : à vérifier, mais le reste a été mis à jour (par
+  exemple, la colonne harnais introuvable).
+- En haut de l'onglet, une phrase résume le dernier passage du robot. S'il
+  n'est pas passé depuis plusieurs jours, elle le dit : le PC était-il
+  allumé ?
+
+Une erreur de fiche ne fait ni nouvel essai ni fenêtre d'alerte sur le PC :
+elle se lit et se corrige ici. Seule une vraie panne (GATES ou SEE
+injoignables pour tout le monde) fait réessayer le robot (3 essais à 20 min)
+puis l'annonce sur le PC.
+
+**Onglet introuvable** : l'onglet d'un contrat a été renommé ou supprimé
+dans le classeur. Le robot ne le recrée pas. Remettre le nom de l'onglet,
+ou **Oublier la fiche**.
 
 ### Contrat, puis tranche
 
