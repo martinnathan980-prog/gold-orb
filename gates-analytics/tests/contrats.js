@@ -276,8 +276,9 @@ section('Les comptes rendus : la fenêtre et le robot disent ce qui s’est pass
      montre tant que le nom GATES de la fiche est vide. */
   verifier('la fiche porte « tape », ce que le robot a tapé dans GATES (HDK : « HDKB » ; THS : « THS »)',
     l('HDK').fiche.tape === 'HDKB' && l('THS').fiche.tape === 'THS' && l('VRK').fiche.tape === 'VRK', JSON.stringify([l('HDK').fiche, l('THS').fiche]));
-  verifier('la ligne du robot : « Dernier passage du robot aujourd’hui à … : 2 contrats à corriger, ci-dessous. » (HDK et THS en erreur)',
-    a.robot.niveau === 'ok' && a.robot.texte === 'Dernier passage du robot aujourd’hui à ' + heureDite(maintenant) + ' : 2 contrats à corriger, ci-dessous.' && a.robot.heure === '14:00',
+  /* Débrief 30 (relu) : la tranche 2 (le harnais, en attention) se compte aussi : pas de « ✓ tout s’est bien passé » au-dessus d’un ⚠. */
+  verifier('la ligne du robot : « Dernier passage du robot aujourd’hui à … : 2 contrats à corriger et 1 à vérifier, ci-dessous. » (HDK et THS en erreur, la tranche 2 en attention)',
+    a.robot.niveau === 'attention' && a.robot.texte === 'Dernier passage du robot aujourd’hui à ' + heureDite(maintenant) + ' : 2 contrats à corriger et 1 à vérifier, ci-dessous.' && a.robot.heure === '14:00',
     a.robot.texte);
   verifier('gardé : l’heure du serveur, celle du robot, son nombre d’erreurs de fiche', prop('SUIVI_FWD_RAPPORTS').robot.ok === true &&
     prop('SUIVI_FWD_RAPPORTS').robot.heure === '14:00' && prop('SUIVI_FWD_RAPPORTS').robot.erreursFiche === 1 &&
@@ -311,8 +312,8 @@ section('Les comptes rendus : la fenêtre et le robot disent ce qui s’est pass
   const r2 = ctx2.importRapport(j2, { source: 'robot', passage: { ok: false, message: long }, contrats: Array.from({ length: 60 }, (_, i) =>
     ({ contrat: 'C' + i, gates: { ok: false, code: 'gates-export', message: long }, see: { ok: false, code: 'import', message: long } })) });
   const garde = ctx2.__proprietes.SUIVI_FWD_RAPPORTS;
-  verifier('60 contrats aux messages de 500 caractères : le JSON gardé tient sous 8 500 caractères, les messages raccourcis', r2.retenus === 60 &&
-    garde.length <= 8500 && Object.keys(JSON.parse(garde).contrats).length >= 25 && Object.keys(JSON.parse(garde).contrats).every(k => /^m{59}…$/.test(JSON.parse(garde).contrats[k].gates.message)), garde.length + ' / ' + Object.keys(JSON.parse(garde).contrats).length);
+  verifier('60 contrats aux messages de 500 caractères : le JSON gardé tient sous 8 500 octets, les messages raccourcis', r2.retenus === 60 &&
+    Buffer.byteLength(garde, 'utf8') <= 8500 && Object.keys(JSON.parse(garde).contrats).length >= 20 && Object.keys(JSON.parse(garde).contrats).every(k => /^m{59}…$/.test(JSON.parse(garde).contrats[k].gates.message)), garde.length + ' / ' + Object.keys(JSON.parse(garde).contrats).length);
   const r3 = ctx2.importRapport(j2, { source: 'fenetre', contrats: [{ contrat: 'C1', gates: { ok: false, code: 'nimportequoi', message: 'a\u0007b' } }] });
   verifier('un code inconnu devient « autre », les caractères de contrôle s’en vont', r3.retenus === 1 &&
     JSON.parse(ctx2.__proprietes.SUIVI_FWD_RAPPORTS).contrats.C1.gates.code === 'autre' && JSON.parse(ctx2.__proprietes.SUIVI_FWD_RAPPORTS).contrats.C1.gates.message === 'a b');
@@ -420,6 +421,211 @@ section('Les contrats d’avant ne changent pas');
   const refus = erreurDe(() => unSeul.ctx.adminEnregistrerContrat({ id: '', nomGates: 'VRK', colonnes: { fwd: ELEC } }));
   verifier('CONFIG.FEUILLE_DONNEES : pas de nouveau contrat, ni de prévu', refus === '[nom] Ce tableau de bord suit un seul onglet (CONFIG.FEUILLE_DONNEES) : pas de nouveau contrat.' &&
     unSeul.ctx.adminContrats().peutAjouter === false && unSeul.ctx.parametresImport_(unSeul.c).prevus.length === 0, refus);
+}
+
+// =================================================================
+/* Débrief 30 (relu) : ce que la relecture a trouvé, essayé ici sur le vrai
+   Code.gs — chaque bloc rejoue le cas qu'elle a décrit. */
+section('Relu : une fiche dont l’onglet a été renommé ou supprimé dans Sheets ne redevient pas « prévue »');
+{
+  const { c, ctx, prop } = monde();
+  ctx.adminEnregistrerContrat({ id: 'HDK', nomGates: 'HDK', colonnes: { fwd: ELEC, concept: HARNAIS }, psn: '4530' });
+  verifier('modifier la fiche d’un contrat qui a son onglet la marque « cree » (elle ne sera jamais prévue)', /^\d{4}-\d\d-\d\dT/.test(prop('SUIVI_FWD_FICHES').HDK.cree), JSON.stringify(prop('SUIVI_FWD_FICHES')));
+  c.getSheetByName('HDK').setName('HDK Tranche 1');
+  const a = ctx.adminContrats(), P = ctx.parametresImport_(c);
+  verifier('onglet HDK renommé « HDK Tranche 1 » : HDK n’est PAS prévu — ni la fenêtre ni le robot ne le recevront', ctx.contratsPrevus_(c).length === 0 && P.prevus.length === 0 &&
+    a.prevus.length === 0 && a.actifs.some(x => x.id === 'HDK Tranche 1'), JSON.stringify([P.prevus, a.prevus]));
+  const hdk = a.introuvables.filter(x => x.id === 'HDK')[0];
+  verifier('l’administration le montre à part, en clair : « L’onglet de « HDK » n’existe plus dans le classeur : renommé ou supprimé dans Sheets ? … » ; pas modifiable, mais oubliable par Nathan',
+    !!hdk && hdk.introuvable === true && hdk.modifiable === false && hdk.retirable === true && hdk.suivi.niveau === 'erreur' &&
+    hdk.suivi.lignes[0] === 'L’onglet de « HDK » n’existe plus dans le classeur : renommé ou supprimé dans Sheets ? Le robot ne l’exporte plus. Redonnez-lui ce nom dans Sheets, ou oubliez cette fiche.' &&
+    /^Dernier passage|^Le robot n’a encore rien envoyé/.test(a.robot.texte), JSON.stringify(a.introuvables));
+  const modif = erreurDe(() => ctx.adminEnregistrerContrat({ id: 'HDK', nomGates: 'HDK', colonnes: { fwd: ELEC } }));
+  verifier('sa fiche ne se modifie pas (« … La liste vient d’être relue. »)', /^L’onglet de « HDK » n’existe plus dans le classeur.*La liste vient d’être relue\.$/.test(modif), modif);
+  const ajout = erreurDe(() => ctx.adminEnregistrerContrat({ id: '', nom: 'hdk', nomGates: 'HDK Neuf', colonnes: { fwd: ELEC } }));
+  verifier('un nouveau contrat ne prend pas son nom tant que la fiche est là', /^\[nom\] « HDK » a encore sa fiche, mais plus d’onglet/.test(ajout), ajout);
+  const anne = erreurDe(() => ctx.__emailLecteur === 'x' || (() => { const avant = ctx.__emailLecteur; ctx.__emailLecteur = 'anne@airbus.com'; try { return ctx.adminRetirerContratPrevu('HDK'); } finally { ctx.__emailLecteur = avant; } })());
+  verifier('Anne (THS seule) ne l’oublie pas', /^\[droits\]/.test(anne), anne);
+  const oubli = ctx.adminRetirerContratPrevu('HDK');
+  verifier('Nathan oublie la fiche : partie, ses colonnes et son PSN avec elle ; plus rien à part', oubli.introuvables.length === 0 && !('HDK' in prop('SUIVI_FWD_FICHES')) &&
+    !('HDK' in prop('SUIVI_FWD_PSN')) && JSON.parse(ctx.__proprietes.SUIVI_FWD_JOURNAL_ADMIN)[0].quoi === 'fiche sans onglet oubliée : HDK', JSON.stringify(oubli.introuvables));
+  /* Un prévu créé par l'import, puis son onglet supprimé à la main. */
+  ctx.adminEnregistrerContrat({ id: '', nomGates: 'VRK', colonnes: { fwd: 'VRK AA 011 > Avancement Définition Electrique' }, psn: '4540' });
+  importerGates(ctx, { sorte: 'gates', contrat: 'VRK', nouveau: true, prevu: true }, gates(10, 'VRK', 'VRK'));
+  verifier('l’import qui crée l’onglet d’un prévu le note dans sa fiche (« cree »)', !!prop('SUIVI_FWD_FICHES').VRK.cree && !!c.getSheetByName('VRK'), JSON.stringify(prop('SUIVI_FWD_FICHES').VRK));
+  c.deleteSheet(c.getSheetByName('VRK'));
+  verifier('son onglet supprimé à la main : VRK ne ressuscite pas — pas prévu, montré « onglet introuvable »', ctx.contratsPrevus_(c).length === 0 &&
+    ctx.parametresImport_(c).prevus.length === 0 && ctx.adminContrats().introuvables.map(x => x.id).join() === 'VRK');
+  /* Une fiche d'avant la relecture (sans « cree ») : le premier import la marque. */
+  ctx.__proprietes.SUIVI_FWD_FICHES = JSON.stringify(Object.assign(prop('SUIVI_FWD_FICHES'), { THS: { nomGates: 'THS', ajoute: '2026-10-01T10:00:00.000Z' } }));
+  importerGates(ctx, { sorte: 'gates', contrat: 'THS', nouveau: false }, gates(30, 'THS'));
+  verifier('une fiche « ajoutée » sans « cree » (d’avant) : le premier import de son contrat la marque', !!prop('SUIVI_FWD_FICHES').THS.cree, JSON.stringify(prop('SUIVI_FWD_FICHES').THS));
+  c.getSheetByName('THS').setName('THS Série');
+  const rolesAvant = ctx.__proprietes.SUIVI_FWD_ROLES, oubliTHS = ctx.adminRetirerContratPrevu('THS');
+  verifier('oublier la fiche sans onglet de THS laisse les droits d’Anne (son onglet a peut-être seulement changé de nom)',
+    ctx.__proprietes.SUIVI_FWD_ROLES === rolesAvant && oubliTHS.messageDroits === '', ctx.__proprietes.SUIVI_FWD_ROLES);
+}
+
+section('Relu : retirer ou renommer un prévu pendant que le robot l’importe');
+{
+  const { c, ctx, prop } = monde();
+  const VRK_ELEC = 'VRK AA 011 > Avancement Définition Electrique';
+  ctx.adminEnregistrerContrat({ id: '', nomGates: 'VRK', colonnes: { fwd: VRK_ELEC }, psn: '4540' });
+  /* L'import du robot passe juste avant que le verrou soit pris. */
+  const sousVerrou = ctx.sousVerrou_;
+  const pendantLImport = () => { ctx.sousVerrou_ = function (fn) { ctx.sousVerrou_ = sousVerrou; importerGates(ctx, { sorte: 'gates', contrat: 'VRK', nouveau: true, prevu: true }, gates(10, 'VRK', 'VRK')); return sousVerrou(fn); }; };
+  pendantLImport();
+  const retrait = erreurDe(() => ctx.adminRetirerContratPrevu('VRK'));
+  verifier('« Retirer » pendant l’import : refusé, en clair — « VRK vient de recevoir son premier export (le robot est passé) : il se masque, il ne se retire plus. La liste vient d’être relue. »',
+    retrait === '« VRK » vient de recevoir son premier export (le robot est passé) : il se masque, il ne se retire plus. La liste vient d’être relue.', retrait);
+  verifier('… et l’onglet né garde sa fiche, ses colonnes et son PSN', !!c.getSheetByName('VRK') && prop('SUIVI_FWD_FICHES').VRK.nomGates === 'VRK' &&
+    ctx.colonnesDuContrat('VRK').fwd === VRK_ELEC && ctx.colonnesDuContrat('VRK').source === 'fenetre' && ctx.psnDuContrat('VRK').psn.join() === '4540',
+    JSON.stringify([ctx.colonnesDuContrat('VRK'), ctx.psnDuContrat('VRK')]));
+  ctx.adminEnregistrerContrat({ id: '', nomGates: 'NEO', colonnes: { fwd: 'NEO AA 011 > Avancement Définition Electrique' }, psn: '4550' });
+  ctx.sousVerrou_ = function (fn) { ctx.sousVerrou_ = sousVerrou; importerGates(ctx, { sorte: 'gates', contrat: 'NEO', nouveau: true, prevu: true }, gates(10, 'NEO', 'NEO')); return sousVerrou(fn); };
+  const renomme = erreurDe(() => ctx.adminEnregistrerContrat({ id: 'NEO', nom: 'NEO Série 1', nomGates: 'NEO', colonnes: { fwd: 'NEO AA 011 > Avancement Définition Electrique' } }));
+  verifier('un renommage pendant l’import : refusé (« vient de recevoir son premier export… rouvrez sa fiche ») ; ni prévu fantôme « NEO Série 1 », ni colonnes perdues',
+    /^« NEO » vient de recevoir son premier export \(le robot est passé\) : sa fiche n’est pas enregistrée\. La liste vient d’être relue/.test(renomme) &&
+    ctx.contratsPrevus_(c).length === 0 && !ctx.ficheDe_('NEO Série 1') && ctx.colonnesDuContrat('NEO').source === 'fenetre' && ctx.psnDuContrat('NEO').psn.join() === '4550', renomme);
+  verifier('le verrou est rendu à chaque fois (sousVerrou_ d’origine remis)', ctx.sousVerrou_ === sousVerrou);
+}
+
+section('Relu : une administratrice limitée ne renomme pas un prévu hors de ses droits');
+{
+  const { c, ctx, comme, prop } = monde({ SUIVI_FWD_ROLES: JSON.stringify({ admins: [{ email: 'anne@airbus.com', contrats: ['HDK'] }] }) });
+  ctx.adminEnregistrerContrat({ id: '', nom: 'HDK Tranche 3', nomGates: 'HDK T3', colonnes: { fwd: ELEC } });
+  const zzz = erreurDe(() => comme('anne@airbus.com', () => ctx.adminEnregistrerContrat({ id: 'HDK Tranche 3', nom: 'ZZZ', nomGates: 'HDK T3', colonnes: { fwd: ELEC } })));
+  verifier('Anne (HDK seule) renomme le prévu « HDK Tranche 3 » en « ZZZ » : refusé, sous le champ Nom', zzz === '[nom] Seuls le responsable et les administrateurs de tous les contrats renomment un contrat prévu.' &&
+    ctx.contratsPrevus_(c).map(x => x.id).join() === 'HDK Tranche 3', zzz);
+  const ok = comme('anne@airbus.com', () => ctx.adminEnregistrerContrat({ id: 'HDK Tranche 3', nom: 'HDK Tranche 3', nomGates: 'HDK Tranche 3', colonnes: { fwd: ELEC } }));
+  verifier('… mais elle modifie sa fiche sans le renommer', ok.enregistre === 'HDK Tranche 3' && prop('SUIVI_FWD_FICHES')['HDK Tranche 3'].nomGates === 'HDK Tranche 3');
+}
+
+section('Relu : les comptes rendus tiennent dans une propriété, comptés en octets');
+{
+  const { ctx, c } = monde();
+  ctx.__octetsParValeur = 9216;
+  for (let i = 0; i < 30; i++) c.feuilles.push(onglet('Contrat numéro ' + i + ' Tranche ' + i, gates(3, 'Z' + i)));
+  const j = ctx.ouvrirJetonImport_();
+  const dire = i => 'La colonne de la validation ELEC « HDK AA 0' + i + ' › Avancement Définition Électrique » n’est pas dans l’export du jour. Les plus proches : « HDK AA 011 › Avancement Définition Électrique », « Réalisation FWD › Avancement ». Corrigez-la dans Administration → Contrats.';
+  const r = ctx.importRapport(j, { source: 'robot', passage: { ok: false, message: 'L’export SEE n’a pas abouti : « délai dépassé » — réessayé trois fois, sans succès.' },
+    contrats: Array.from({ length: 30 }, (_, i) => ({ contrat: 'Contrat numéro ' + i + ' Tranche ' + i,
+      gates: { ok: false, code: 'colonne-elec', message: dire(i), tape: 'Contrat numéro ' + i + ' – tranche ' + i + ' (série ’26)' },
+      see: { ok: false, code: 'see-aucune', message: 'Aucune ligne SEE pour le PSN 45' + i + ' dans l’extract du jour : vérifiez le PSN de ce contrat dans Administration → Contrats.' } })) });
+  const garde = ctx.__proprietes.SUIVI_FWD_RAPPORTS, lu = JSON.parse(garde);
+  verifier('30 contrats aux messages français (é, ’, « ») : accepté par la limite de 9 Ko, le JSON tient sous 8 500 OCTETS, au moins dix contrats gardés avec leur message',
+    r.ok === true && Buffer.byteLength(garde, 'utf8') <= 8500 && Object.keys(lu.contrats).length >= 10 &&
+    Object.keys(lu.contrats).every(k => /^La colonne de la validation ELEC/.test(lu.contrats[k].gates.message)), Buffer.byteLength(garde, 'utf8') + ' octets, ' + Object.keys(lu.contrats).length + ' contrats');
+  ctx.__octetsParValeur = 200;
+  const refus = erreurDe(() => ctx.importRapport(j, { source: 'robot', passage: { ok: true }, contrats: [{ contrat: 'THS', gates: { ok: true } }] }));
+  verifier('Google refuse malgré tout : un message en français, pas « Argument too large »', refus === 'Le compte rendu est trop gros pour le classeur : il n’est pas enregistré. Il sera renvoyé au prochain passage.', refus);
+  verifier('les octets se comptent comme Google : « é » 2, « ’ » 3, un émoji 4', ctx.octetsUtf8_('é’a😀') === 2 + 3 + 1 + 4);
+}
+
+section('Relu : les droits suivent un prévu renommé, et partent avec un prévu retiré');
+{
+  const { ctx, comme, prop } = monde({ SUIVI_FWD_ROLES: JSON.stringify({ admins: [{ email: 'bob@airbus.com', contrats: ['VRK'] }, { email: 'anne@airbus.com', contrats: ['THS', 'NEO'] }] }) });
+  ctx.adminEnregistrerContrat({ id: '', nomGates: 'VRK', colonnes: { fwd: ELEC } });
+  ctx.adminEnregistrerContrat({ id: '', nomGates: 'NEO', colonnes: { fwd: ELEC } });
+  const r = ctx.adminEnregistrerContrat({ id: 'VRK', nom: 'VRK Série 1', nomGates: 'VRK', colonnes: { fwd: ELEC } });
+  const roles = () => JSON.parse(ctx.__proprietes.SUIVI_FWD_ROLES).admins;
+  verifier('VRK renommé « VRK Série 1 » : la portée de Bob suit, et la page le dit (« Les droits de bob@airbus.com suivent le nouveau nom. »)',
+    JSON.stringify(roles().filter(a => a.email === 'bob@airbus.com')[0].contrats) === '["VRK Série 1"]' && r.messageDroits === 'Les droits de bob@airbus.com suivent le nouveau nom.', JSON.stringify([roles(), r.messageDroits]));
+  const bob = comme('bob@airbus.com', () => ctx.adminEnregistrerContrat({ id: 'VRK Série 1', nom: 'VRK Série 1', nomGates: 'VRK S1', colonnes: { fwd: ELEC } }));
+  verifier('… Bob modifie toujours sa fiche', bob.enregistre === 'VRK Série 1' && prop('SUIVI_FWD_FICHES')['VRK Série 1'].nomGates === 'VRK S1');
+  const ret = ctx.adminRetirerContratPrevu('NEO');
+  verifier('NEO retiré : la portée « NEO » d’Anne s’en va, THS reste', JSON.stringify(roles().filter(a => a.email === 'anne@airbus.com')[0].contrats) === '["THS"]' &&
+    ret.messageDroits === 'Les droits de anne@airbus.com sont mis à jour.', JSON.stringify([roles(), ret.messageDroits]));
+  const ret2 = ctx.adminRetirerContratPrevu('VRK Série 1');
+  verifier('VRK Série 1 retiré : Bob, qui n’avait que lui, n’est plus administrateur — jamais « contrats: [] », qui voudrait dire « tous »',
+    !roles().some(a => a.email === 'bob@airbus.com') && ret2.messageDroits === 'bob@airbus.com n’avait que ce contrat : plus de droits d’administration.' &&
+    roles().every(a => a.contrats.length > 0), JSON.stringify([roles(), ret2.messageDroits]));
+  /* Une portée de famille qui couvre encore une autre tranche reste. */
+  const m2 = monde({ SUIVI_FWD_ROLES: JSON.stringify({ admins: [{ email: 'lea@airbus.com', contrats: ['HDK'] }] }) });
+  m2.ctx.adminEnregistrerContrat({ id: '', nom: 'HDK Tranche 3', nomGates: 'HDK T3', colonnes: { fwd: ELEC } });
+  m2.ctx.adminRetirerContratPrevu('HDK Tranche 3');
+  verifier('retirer « HDK Tranche 3 » ne touche pas la portée « HDK » de Léa (elle couvre HDK et sa tranche 2)',
+    JSON.stringify(JSON.parse(m2.ctx.__proprietes.SUIVI_FWD_ROLES).admins) === '[{"email":"lea@airbus.com","contrats":["HDK"]}]', m2.ctx.__proprietes.SUIVI_FWD_ROLES);
+}
+
+section('Relu : deux contrats, même export — les contrats sans fiche comptent aussi');
+{
+  const { ctx } = monde();
+  const ths = erreurDe(() => ctx.adminEnregistrerContrat({ id: '', nom: 'NEO2', nomGates: 'THS', colonnes: { fwd: ELEC } }));
+  verifier('THS n’a pas de fiche (le robot tape « THS ») : NEO2 avec le nom GATES « THS » est refusé', ths === '[nomGates] « THS » est déjà le nom GATES de « THS » : deux contrats auraient le même export.', ths);
+  ctx.importRapport(ctx.ouvrirJetonImport_(), { source: 'robot', contrats: [{ contrat: 'VIEUX', gates: { tape: 'VX' } }, { contrat: 'THS', gates: { tape: 'THS-SERIE' } }] });
+  const tape = erreurDe(() => ctx.adminEnregistrerContrat({ id: '', nom: 'NEO3', nomGates: 'ths-serie', colonnes: { fwd: ELEC } }));
+  verifier('ce que le robot a tapé pour THS (« THS-SERIE ») compte comme son nom GATES', tape === '[nomGates] « ths-serie » est déjà le nom GATES de « THS » : deux contrats auraient le même export.', tape);
+  verifier('une tranche peut toujours partager l’export de son contrat (« HDK Tranche 3 », GATES « HDK »)',
+    ctx.adminEnregistrerContrat({ id: '', nom: 'HDK Tranche 3', nomGates: 'HDK', colonnes: { fwd: ELEC } }).enregistre === 'HDK Tranche 3');
+}
+
+section('Relu : une fiche s’écrit d’un seul coup, ou pas du tout');
+{
+  const { ctx, prop } = monde();
+  ctx.__octetsParValeur = 9216;
+  const grosses = {};
+  for (let i = 0; i < 29; i++) grosses['C' + i] = { fwd: 'Groupe très long numéro ' + i + ' > ' + 'é'.repeat(130), concept: '' };
+  ctx.__proprietes.SUIVI_FWD_COLONNES = JSON.stringify(grosses);
+  ctx.adminContrats();           // le premier geste note le responsable : pas ce qu'on mesure
+  const avant = JSON.stringify(ctx.__proprietes);
+  const plein = erreurDe(() => ctx.adminEnregistrerContrat({ id: '', nomGates: 'VRK', colonnes: { fwd: 'VRK AA 011 > ' + 'Avancement Définition Électrique très détaillée'.repeat(5) }, psn: '4540' }));
+  verifier('les colonnes ne tiennent plus : refus en français, et RIEN d’écrit (ni fiche, ni PSN) — pas de prévu à moitié enregistré',
+    plein === 'Le classeur ne peut plus garder de nouvelle fiche : retirez un contrat prévu, ou raccourcissez les noms de colonnes. Rien n’a été changé.' &&
+    JSON.stringify(ctx.__proprietes) === avant && !ctx.ficheDe_('VRK') && !('VRK' in prop('SUIVI_FWD_PSN')), plein);
+}
+
+section('Relu : colonne ELEC disparue de l’export d’un contrat existant');
+{
+  const { ctx } = monde();
+  const m = erreurDe(() => importerGates(ctx, { sorte: 'gates', contrat: 'HDK', nouveau: false }, gates(40, null, 'XYZ')));
+  verifier('le message donne les plus proches, et quoi faire si GATES a renommé la colonne',
+    /^Colonne suivie absente de cet export : « HDK AA 011 › Avancement Définition Electrique » n’y est pas, alors que l’onglet « HDK » l’a\. Est-ce bien l’export de ce contrat, avec son bloc suivi \? Les plus proches : « XYZ AA 011 › Avancement Définition Electrique », /.test(m) &&
+    / Si GATES a renommé la colonne, corrigez la colonne de la validation ELEC de ce contrat dans le tableau de bord → Administration → Contrats\./.test(m), m);
+}
+
+section('Relu : corriger une colonne sans retaper le nom GATES ; l’erreur corrigée attend le robot');
+{
+  const { ctx, prop } = monde();
+  const r = ctx.adminEnregistrerContrat({ id: 'HDK', nomGates: '', colonnes: { fwd: ELEC, concept: HARNAIS } });
+  verifier('un contrat qui a son onglet : le nom GATES peut rester vide (le robot tape ce qu’il tapait)', r.enregistre === 'HDK' && prop('SUIVI_FWD_FICHES').HDK.nomGates === '', JSON.stringify(prop('SUIVI_FWD_FICHES')));
+  verifier('un prévu, lui, doit l’avoir', erreurDe(() => ctx.adminEnregistrerContrat({ id: '', nomGates: '', nom: 'VRK', colonnes: { fwd: ELEC } })) ===
+    '[nomGates] Donnez le nom exact de la tranche dans GATES : ce que vous tapez dans CHILDNéo pour avoir son export.');
+  const j = ctx.ouvrirJetonImport_();
+  ctx.importRapport(j, { source: 'fenetre', contrats: [
+    { contrat: 'HDK', gates: { ok: false, code: 'colonne-elec', message: 'La colonne de la validation ELEC « X » n’est pas dans l’export du jour.' } },
+    { contrat: 'THS', see: { ok: false, code: 'see-aucune', message: 'Aucune ligne SEE pour le PSN 4610.' } }] });
+  ctx.importRapport(j, { source: 'robot', passage: { ok: true, heure: '14:00' }, contrats: [] });
+  const r2 = ctx.adminEnregistrerContrat({ id: 'HDK', nomGates: '', colonnes: { fwd: 'HDK AA 012 > Avancement Définition Electrique', concept: HARNAIS } });
+  const hdk = r2.actifs.filter(x => x.id === 'HDK')[0];
+  verifier('la colonne ELEC corrigée : plus de rouge — « Fiche corrigée aujourd’hui à … : le robot vérifiera à son prochain passage (chaque jour à partir de 14 h, PC allumé). »',
+    r2.corrige === true && hdk.suivi.niveau === 'attente' && /^Fiche corrigée aujourd’hui à \d+ h \d\d : le robot vérifiera à son prochain passage \(chaque jour à partir de 14 h, PC allumé\)\.$/.test(hdk.suivi.lignes[0]),
+    JSON.stringify(hdk.suivi));
+  const r3 = ctx.adminEnregistrerContrat({ id: 'THS', nomGates: 'THS', colonnes: { fwd: ELEC, concept: HARNAIS }, psn: '4611' });
+  verifier('le PSN corrigé : THS attend le robot aussi', r3.corrige === true && r3.actifs.filter(x => x.id === 'THS')[0].suivi.niveau === 'attente');
+  const r4 = ctx.adminEnregistrerContrat({ id: 'HDK Tranche 2', nomGates: 'HDK', colonnes: { fwd: ELEC, concept: HARNAIS } });
+  verifier('une fiche sans erreur à corriger : corrige faux', r4.corrige === false);
+  ctx.importRapport(j, { source: 'fenetre', contrats: [{ contrat: 'HDK', gates: { ok: false, code: 'colonne-elec', message: 'Toujours pas là.' } }] });
+  const apres = ctx.adminContrats().actifs.filter(x => x.id === 'HDK')[0];
+  verifier('le passage suivant dit à nouveau ce qu’il voit (« corrigeLe » effacé)', apres.suivi.niveau === 'erreur' && apres.suivi.lignes[0] === 'Toujours pas là.' &&
+    !('corrigeLe' in prop('SUIVI_FWD_RAPPORTS').contrats.HDK.gates), JSON.stringify(apres.suivi));
+}
+
+section('Relu : la ligne du robot et celle d’un contrat ne se contredisent pas');
+{
+  const { ctx, prop } = monde();
+  const j = ctx.ouvrirJetonImport_();
+  ctx.importRapport(j, { source: 'fenetre', contrats: [{ contrat: 'HDK', gates: { ok: true } }, { contrat: 'HDK Tranche 2', gates: { ok: true } }, { contrat: 'THS', gates: { ok: true } }] });
+  ctx.importRapport(j, { source: 'robot', passage: { ok: true, heure: '14:00' }, contrats: [] });
+  const r = prop('SUIVI_FWD_RAPPORTS'), vieux = new Date(Date.now() - 9 * 864e5).toISOString();
+  r.contrats['HDK Tranche 2'].gates.dernierOk = vieux;
+  ctx.__proprietes.SUIVI_FWD_RAPPORTS = JSON.stringify(r);
+  const a = ctx.adminContrats(), t2 = a.actifs.filter(x => x.id === 'HDK Tranche 2')[0];
+  verifier('le robot est passé aujourd’hui, la tranche 2 rien depuis 9 jours : on ne demande pas si le PC est allumé',
+    t2.suivi.niveau === 'attention' && /^Pas mis à jour depuis 9 jours \(dernière fois le \d\d\/\d\d à \d+ h \d\d\), alors que le robot est passé aujourd’hui à \d+ h \d\d sans rien en dire : vérifiez sa fiche, d’abord le nom exact de sa tranche dans GATES\.$/.test(t2.suivi.lignes[0]) &&
+    !/PC/.test(t2.suivi.lignes[0]), JSON.stringify(t2.suivi));
+  verifier('… et la ligne du robot ne dit pas « tout s’est bien passé » : « 1 contrat à vérifier, ci-dessous. »',
+    a.robot.niveau === 'attention' && /: 1 contrat à vérifier, ci-dessous\.$/.test(a.robot.texte), a.robot.texte);
 }
 
 console.log('\n═══════════════════════════════════════');

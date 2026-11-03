@@ -3009,6 +3009,11 @@ dialog.admin[aria-busy="true"] .admin-corps:not(.en-attente) { opacity: .6; }
    Harnais, PSN) ; sous chaque contrat, une ligne de suivi dit son dernier
    passage — une erreur au rouge des alertes, à côté du contrat concerné. */
 .etiquette-admin.etat-prevu { border-style: dotted; border-color: var(--encre-3); }
+/* Débrief 30 (relu) : la fiche d'un contrat dont l'onglet n'existe plus —
+   un bord au rouge des alertes (le texte garde l'encre : lisible partout) ;
+   le bouton « Corriger la fiche » d'une ligne en erreur, juste sous son texte. */
+.etiquette-admin.etat-introuvable { border-color: var(--alerte); }
+.admin-suivi-ligne.admin-suivi-action { margin-top: 4px; }
 .admin-contrats td { vertical-align: top; }
 .admin-contrats td[data-titre="Tranche"], .admin-contrats td[data-titre="État"] { white-space: nowrap; }
 .admin-contrats td.actions { white-space: normal; }
@@ -17580,7 +17585,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   function lignesDeContrats(r) {
     var toutes = r.actifs.map(function (c) { return { c: c, masque: false, prevu: false }; })
       .concat(r.retires.map(function (c) { return { c: c, masque: true, prevu: false }; }))
-      .concat((r.prevus || []).map(function (c) { return { c: c, masque: false, prevu: true }; }));
+      .concat((r.prevus || []).map(function (c) { return { c: c, masque: false, prevu: true }; }))
+      /* Débrief 30 (relu) : la fiche d'un contrat dont l'onglet n'existe plus (renommé ou supprimé dans Sheets). */
+      .concat((r.introuvables || []).map(function (c) { return { c: c, masque: false, prevu: false, introuvable: true }; }));
     var familles = {}, ordre = [], res = [];
     /* Débrief 30 : une tranche prévue (« HDK Tranche 3 ») se range dans sa
        famille, au milieu des tranches qui ont déjà des données. */
@@ -17604,6 +17611,24 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var i = ICONES_SUIVI[niveau] || '';
     return i ? '<span class="admin-suivi-icone" aria-hidden="true">' + i + '</span><span class="masque">' + MOTS_SUIVI[niveau] + ' : </span>' : '';
   }
+  /* Débrief 30 (relu) : un message du robot ou de la fenêtre dit où corriger
+     (« dans le tableau de bord → Administration → Contrats ») ; ici, on y
+     est : il renvoie au bouton « Corriger la fiche », juste dessous — ou se
+     tait pour qui ne peut pas modifier la fiche. */
+  function texteDeSuivi(t, corrigeable) {
+    var ici = corrigeable ? ' (bouton « Corriger la fiche », ci-dessous)' : '';
+    var s = String(t == null ? '' : t)
+      .replace(/ \(tableau de bord → Administration → Contrats\)/g, ici)
+      .replace(/ dans le tableau de bord → Administration → Contrats/g, ici)
+      .replace(/ dans Administration → Contrats/g, ici);
+    return insecables(ech(s));
+  }
+  /* Une heure (« 15 h 07 »), des guillemets, les deux-points ne se coupent
+     pas en fin de ligne : des espaces insécables (un téléphone, 390 px). */
+  function insecables(h) {
+    return String(h).replace(/« /g, '«\u00a0').replace(/ »/g, '\u00a0»').replace(/(\d) h (\d\d)(?!\d)/g, '$1\u00a0h\u00a0$2')
+      .replace(/(\d) h(?![\w\u00a0])/g, '$1\u00a0h').replace(/ à (\d)/g, ' à\u00a0$1').replace(/ ([:;?!])/g, '\u00a0$1');
+  }
   function htmlFicheDuContrat(c, r) {
     var f = c.fiche || { nomGates: '', colonnes: {}, psn: [], psnSource: '' }, k = f.colonnes || {};
     var defaut = ' <span class="doux par-defaut">(par défaut)</span>';
@@ -17619,9 +17644,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if (!r) return '';
     var visibles = r.actifs.length, F = ADMIN.fiche;
     var lignes = lignesDeContrats(r).map(function (x) {
-      var c = x.c, cle = (x.prevu ? 'p:' : x.masque ? 'r:' : 'a:') + c.id, actions = [];
+      var c = x.c, cle = (x.introuvable ? 'i:' : x.prevu ? 'p:' : x.masque ? 'r:' : 'a:') + c.id, actions = [];
       var enCours = !!(F && F.id && F.id === c.id);
-      var etat = x.prevu ? 'Prévu' : x.masque ? 'Masqué' : c.id === CONTRAT ? 'Visible (à l’écran)' : 'Visible';
+      var etat = x.introuvable ? 'Onglet introuvable' : x.prevu ? 'Prévu' : x.masque ? 'Masqué' : c.id === CONTRAT ? 'Visible (à l’écran)' : 'Visible';
       if (c.modifiable && !enCours) {
         actions.push('<button type="button" class="lien-doux" data-admin="modifier-fiche" data-id="' + ech(c.id) + '" aria-label="Modifier la fiche : ' + ech(x.nom) + '">Modifier</button>');
       }
@@ -17631,26 +17656,39 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         else actions.push('<button type="button" class="lien-doux" data-admin="masquer" data-id="' + ech(c.id) + '" aria-label="Masquer du tableau de bord : ' + ech(x.nom) + '"' +
           ' aria-expanded="' + (ADMIN.confirmer === cle) + '">Masquer du tableau de bord</button>');
       }
-      if (c.retirable) {
+      if (c.retirable && x.introuvable) {
+        actions.push('<button type="button" class="lien-doux" data-admin="oublier-fiche" data-id="' + ech(c.id) + '" aria-label="Oublier la fiche : ' + ech(x.nom) + '"' +
+          ' aria-expanded="' + (ADMIN.confirmer === cle) + '">Oublier la fiche</button>');
+      } else if (c.retirable) {
         actions.push('<button type="button" class="lien-doux" data-admin="retirer-prevu" data-id="' + ech(c.id) + '" aria-label="Retirer le contrat prévu : ' + ech(x.nom) + '"' +
           ' aria-expanded="' + (ADMIN.confirmer === cle) + '">Retirer</button>');
       }
       /* La ligne qu'on modifie le dit à la place de son « Modifier ». */
       if (enCours) actions.unshift('<span class="etiquette-admin en-cours">en cours de modification</span>');
       if (!actions.length) actions.push('<span class="admin-lecture">lecture seule</span>');
-      var classes = [x.masque ? 'est-masque' : '', x.prevu ? 'est-prevu' : '', enCours ? 'en-cours' : '', ADMIN.recent === c.id ? 'recent' : '', 'a-suivi'].filter(Boolean).join(' ');
+      var classes = [x.masque ? 'est-masque' : '', x.prevu ? 'est-prevu' : '', x.introuvable ? 'est-introuvable' : '', enCours ? 'en-cours' : '', ADMIN.recent === c.id ? 'recent' : '', 'a-suivi'].filter(Boolean).join(' ');
       var suivi = c.suivi || { niveau: 'neutre', lignes: [] }, niveau = ICONES_SUIVI.hasOwnProperty(suivi.niveau) ? suivi.niveau : 'neutre';
+      /* Débrief 30 (relu) : une erreur ou un avertissement que le lecteur
+         peut corriger porte son bouton, juste après le texte (dans l'ordre
+         de lecture aussi). */
+      var corrigeable = !!c.modifiable && (niveau === 'erreur' || niveau === 'attention');
       var ligne = '<tr data-id="' + ech(c.id) + '" class="' + classes + '"><td class="nom">' + ech(c.contrat) + '</td>' +
         '<td data-titre="Tranche">' + (x.tranche ? ech(x.tranche) : TIRET_VIDE) + '</td>' +
-        '<td data-titre="État"><span class="etiquette-admin' + (x.masque ? ' etat-masque' : x.prevu ? ' etat-prevu' : '') + '">' + etat + '</span></td>' +
+        '<td data-titre="État"><span class="etiquette-admin' + (x.masque ? ' etat-masque' : x.prevu ? ' etat-prevu' : x.introuvable ? ' etat-introuvable' : '') + '">' + etat + '</span></td>' +
         '<td data-titre="Fiche">' + htmlFicheDuContrat(c, r) + '</td>' +
         '<td class="actions">' + actions.join('') + '</td></tr>' +
         /* La ligne de suivi : sans data-id (on compte les contrats par
            tr[data-id]) ; une erreur s'y lit au rouge des alertes. */
         '<tr class="admin-suivi ' + niveau + (ADMIN.recent === c.id ? ' recent' : '') + '" data-suivi="' + ech(c.id) + '"><td colspan="5"><div class="admin-suivi-corps">' +
-          (suivi.lignes || []).map(function (t, i) { return '<div class="admin-suivi-ligne">' + (i === 0 ? iconeSuivi(niveau) : '') + '<span class="admin-suivi-texte">' + ech(t) + '</span></div>'; }).join('') +
+          (suivi.lignes || []).map(function (t, i) { return '<div class="admin-suivi-ligne">' + (i === 0 ? iconeSuivi(niveau) : '') + '<span class="admin-suivi-texte">' + texteDeSuivi(t, corrigeable) + '</span></div>'; }).join('') +
+          (corrigeable && !enCours ? '<div class="admin-suivi-ligne admin-suivi-action"><button type="button" class="bouton petit" data-admin="modifier-fiche" data-id="' + ech(c.id) + '"' +
+            ' aria-label="Corriger la fiche : ' + ech(x.nom) + '">Corriger la fiche</button></div>' : '') +
         '</div></td></tr>';
-      if (ADMIN.confirmer === cle && !x.prevu) {
+      if (ADMIN.confirmer === cle && x.introuvable) {
+        ligne += htmlQuestion(5, 'q-oublier', 'Oublier la fiche de « ' + x.nom + ' » ? Son onglet n’existe plus : sa fiche, ses colonnes et son PSN sont effacés. Les onglets du classeur ne changent pas.',
+          '<button type="button" class="bouton petit danger" data-admin="oublier-fiche-oui" data-id="' + ech(c.id) + '" aria-describedby="q-oublier">Oui, oublier</button>',
+          '<button type="button" class="bouton petit" data-admin="annuler-confirmation">Non</button>');
+      } else if (ADMIN.confirmer === cle && !x.prevu) {
         ligne += htmlQuestion(5, 'q-masquer', 'Masquer ' + x.nom + ' pour tout le monde ? Rien n’est supprimé : vous pourrez le réafficher.',
           '<button type="button" class="bouton petit" data-admin="masquer-oui" data-id="' + ech(c.id) + '" aria-describedby="q-masquer">Oui, masquer</button>',
           '<button type="button" class="bouton petit" data-admin="annuler-confirmation">Non</button>', true);
@@ -17667,8 +17705,9 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     /* Un passage qui s'est bien déroulé mais laisse des fiches à corriger
        (« 2 contrats à corriger, ci-dessous ») ne porte pas de ✓ : il se dit
        ⚠, pour qu'on descende lire les lignes en rouge. */
-    if (nRobot === 'ok' && lignesDeContrats(r).some(function (x) { return x.c.suivi && x.c.suivi.niveau === 'erreur'; })) nRobot = 'attention';
-    return (robot.texte ? '<p class="admin-robot ' + nRobot + '" id="admin-robot">' + iconeSuivi(nRobot) + '<span class="admin-suivi-texte">' + ech(robot.texte) + '</span></p>' : '') +
+    /* Débrief 30 (relu) : un contrat « à vérifier » (⚠) aussi. */
+    if (nRobot === 'ok' && lignesDeContrats(r).some(function (x) { return x.c.suivi && (x.c.suivi.niveau === 'erreur' || x.c.suivi.niveau === 'attention'); })) nRobot = 'attention';
+    return (robot.texte ? '<p class="admin-robot ' + nRobot + '" id="admin-robot">' + iconeSuivi(nRobot) + '<span class="admin-suivi-texte">' + insecables(ech(robot.texte)) + '</span></p>' : '') +
       '<div class="admin-ligne-outils"><h3 class="admin-titre" id="admin-contrats-titre">Contrats du tableau de bord</h3>' +
       (r.peutAjouter && !F ? '<button type="button" class="bouton principal" data-admin="ajouter-contrat">+ Ajouter un contrat</button>' : '') + '</div>' +
       (F ? htmlFormFiche() : '') +
@@ -17706,7 +17745,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   var NUMERO_FICHE = 0;
   function nouvelleFiche(x) {
     var c = x ? x.c : null, f = c && c.fiche ? c.fiche : { nomGates: '', colonnes: {}, psn: [] }, k = f.colonnes || {};
-    return { id: c ? c.id : '', prevu: !!(x && x.prevu), aOnglet: !!c && !(x && x.prevu), nomAffiche: x ? x.nom : '', tape: f.tape || '',
+    /* Débrief 30 (relu) : seuls le responsable et les administrateurs de
+       tous les contrats renomment un prévu (renommer, c'est presque ajouter). */
+    var prevu = !!(x && x.prevu), deTous = !!(DROITS && (DROITS.role === 'responsable' || DROITS.tous));
+    return { id: c ? c.id : '', prevu: prevu, aOnglet: !!c && !prevu, nomFige: !!c && (!prevu || !deTous), nomAffiche: x ? x.nom : '', tape: f.tape || '',
              initial: { nomGates: f.nomGates || '', nom: c ? c.id : '', fwd: k.fwd || '', concept: k.concept || '', psn: (f.psn || []).join(', ') },
              saisie: null, focusPose: false, fige: false, numero: ++NUMERO_FICHE };
   }
@@ -17729,17 +17771,24 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     if (fige) titre += ' (non enregistrée)';
     var ro = fige ? ' readonly' : '';
     var proposees = (r.colonnes || []).map(function (d) { return '<option value="' + ech(d) + '"></option>'; }).join('');
+    /* Débrief 30 (relu) : un contrat qui a déjà ses données n'a pas à
+       redire son nom GATES pour qu'on corrige une colonne : vide, le robot
+       tape ce qu'il tapait (ce qu'il a tapé à son dernier passage, sinon le
+       nom du contrat). */
+    var tapeAujourdhui = F.tape || F.id;
     var aideGates = 'Ce que le robot tape dans CHILDNéo pour sortir l’export de ce contrat, lettre pour lettre.' +
-      (F.tape && !F.initial.nomGates ? ' Aujourd’hui, le robot tape « ' + F.tape + ' ».' : '');
+      (F.aOnglet && !F.initial.nomGates ? ' Vide : le robot tape « ' + tapeAujourdhui + ' », comme aujourd’hui.'
+        : F.tape && !F.initial.nomGates ? ' Aujourd’hui, le robot tape « ' + F.tape + ' ».' : '');
     var aideNom = F.aOnglet ? 'Le nom d’un contrat qui a déjà des données ne change pas : c’est celui de son onglet, de son historique et de sa base SEE.'
+      : F.nomFige ? 'Seuls le responsable et les administrateurs de tous les contrats renomment un contrat prévu.'
       : 'Vide : le nom GATES. Une tranche s’écrit « HDK Tranche 2 » : elle se range sous HDK.';
     var invite = String(s.nomGates || '').replace(/\s+/g, ' ').trim() || 'Le même que dans GATES';
     return '<form class="admin-form admin-form-fiche" data-form="contrat" data-edition="' + F.numero + '" novalidate aria-labelledby="admin-form-titre">' +
       '<h3 id="admin-form-titre">' + ech(titre) + '</h3><div class="admin-champs">' +
-      champAdmin('nomGates', 'Nom exact de la tranche dans GATES', '<input' + attrsChamp('nomGates', false, true) + ' type="text" maxlength="80" required autocomplete="off" spellcheck="false"' +
-        ' value="' + ech(s.nomGates) + '" placeholder="Par exemple : HDK Tranche 2"' + ro + ' data-autofocus>', false, '', aideGates) +
+      champAdmin('nomGates', 'Nom exact de la tranche dans GATES', '<input' + attrsChamp('nomGates', false, true) + ' type="text" maxlength="80"' + (F.aOnglet ? '' : ' required') +
+        ' autocomplete="off" spellcheck="false" value="' + ech(s.nomGates) + '" placeholder="' + ech(F.aOnglet ? tapeAujourdhui : 'Par exemple : HDK Tranche 2') + '"' + ro + ' data-autofocus>', false, '', aideGates) +
       champAdmin('nom', 'Nom dans le tableau de bord', '<input' + attrsChamp('nom', false, true) + ' type="text" maxlength="80" autocomplete="off"' +
-        ' value="' + ech(s.nom) + '"' + (F.aOnglet ? ' readonly' : ' placeholder="' + ech(invite) + '"' + ro) + '>', false, '', aideNom) +
+        ' value="' + ech(s.nom) + '"' + (F.nomFige ? ' readonly' : ' placeholder="' + ech(invite) + '"' + ro) + '>', false, '', aideNom) +
       champAdmin('fwd', 'Colonne de la validation ELEC', '<input' + attrsChamp('fwd', false, true) + ' type="text" maxlength="300" list="admin-colonnes" required autocomplete="off" spellcheck="false"' +
         ' value="' + ech(s.fwd) + '" placeholder="Par exemple : HDK AA 011 > Avancement Définition Electrique"' + ro + '>', true, '',
         'La colonne « définition électrique » de l’export GATES : « Groupe > Colonne », ou le nom de la colonne seul s’il n’y en a qu’une.') +
@@ -17773,10 +17822,10 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   function erreursDeFiche(v, F) {
     var e = {}, propre = function (x) { return String(x || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim(); };
     var nomGates = propre(v.nomGates), nom = propre(v.nom) || nomGates;
-    if (!nomGates) e.nomGates = 'Donnez le nom exact de la tranche dans GATES : ce que vous tapez dans CHILDNéo pour avoir son export.';
+    if (!nomGates) { if (!F.aOnglet) e.nomGates = 'Donnez le nom exact de la tranche dans GATES : ce que vous tapez dans CHILDNéo pour avoir son export.'; }
     else if (nomGates.length > 80) e.nomGates = 'Ce nom fait ' + nomGates.length + ' caractères : 80 au plus.';
     else if (/^[=+\-@]/.test(nomGates)) e.nomGates = 'Un nom ne commence pas par =, +, - ou @.';
-    if (!F.aOnglet && nom) {
+    if (!F.nomFige && nom) {
       if (nom.length > 80) e.nom = 'Ce nom fait ' + nom.length + ' caractères : 80 au plus.';
       else if (/[,;]/.test(nom)) e.nom = 'Pas de virgule ni de point-virgule dans le nom d’un contrat : elles séparent les contrats d’un jalon.';
       else if (/^[=+\-@]/.test(nom)) e.nom = 'Un nom ne commence pas par =, +, - ou @.';
@@ -17811,7 +17860,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       rendreAdmin();
       return;
     }
-    var envoi = { id: F.id, nom: F.aOnglet ? F.id : v.nom, nomGates: v.nomGates, colonnes: { fwd: v.fwd, concept: v.concept } };
+    var envoi = { id: F.id, nom: F.nomFige ? F.id : v.nom, nomGates: v.nomGates, colonnes: { fwd: v.fwd, concept: v.concept } };
     if (form.elements.psn) envoi.psn = v.psn;
     var dit = F.nomAffiche || F.id;
     occuperAdmin(true, form.querySelector('[type="submit"]'), 'Enregistrement…');
@@ -17829,8 +17878,13 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       }
       if (ADMIN.onglet === 'contrats') rendreAdmin();
       eclairerRecent();
+      /* Débrief 30 (relu) : la fiche corrige l'erreur du dernier passage —
+         sa ligne le dit (« Fiche corrigée … »), le message aussi ; et les
+         droits qui ont suivi un prévu renommé. */
       messageAdmin(!F.id ? nom + ' est ajouté. Le robot le prendra à son prochain passage : son onglet sera créé avec son premier export GATES.'
-        : 'Fiche de ' + nom + ' enregistrée.' + (r.colonnesChangees ? ' Les chiffres suivent la nouvelle colonne.' : ''), 'ok');
+        : 'Fiche de ' + nom + ' enregistrée.' + (r.colonnesChangees ? ' Les chiffres suivent la nouvelle colonne.' : '') +
+          (r.corrige ? ' L’erreur signalée sous ce contrat est notée corrigée : le robot vérifiera à son prochain passage.' : '') +
+          (r.messageDroits ? ' ' + r.messageDroits : ''), 'ok');
     }, function (err) {
       occuperAdmin(false);
       var m = /^\[(nom|nomGates|fwd|concept|psn)\]\s*/.exec(err.message || '');
@@ -17876,7 +17930,8 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       if (ADMIN.fiche && ADMIN.fiche.id === id) { ADMIN.fiche = null; ADMIN.erreurs = {}; }
       ADMIN.focusApres = '[data-admin="ajouter-contrat"]';
       if (ADMIN.onglet === 'contrats') rendreAdmin();
-      messageAdmin(nom + ' est retiré : le robot ne le cherchera plus.', 'ok');
+      messageAdmin((x && x.introuvable ? 'La fiche de ' + nom + ' est oubliée.' : nom + ' est retiré : le robot ne le cherchera plus.') +
+        (r.messageDroits ? ' ' + r.messageDroits : ''), 'ok');
     }, function (e) {
       occuperAdmin(false); ADMIN.confirmer = '';
       messageAdmin(e.message, 'erreur');
@@ -18103,6 +18158,8 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     }
     else if (quoi === 'retirer-prevu') confirmer('p:' + b.getAttribute('data-id'));
     else if (quoi === 'retirer-prevu-oui') retirerPrevu(b.getAttribute('data-id'), b);
+    else if (quoi === 'oublier-fiche') confirmer('i:' + b.getAttribute('data-id'));
+    else if (quoi === 'oublier-fiche-oui') retirerPrevu(b.getAttribute('data-id'), b);
     else if (quoi === 'garde-continuer') continuerSaisie();
     else if (quoi === 'garde-abandonner') abandonnerSaisie();
     else if (quoi === 'reessayer') choisirOngletAdmin(ADMIN.onglet, true);
@@ -18112,6 +18169,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       ADMIN.confirmer = '';
       ADMIN.focusApres = /^a:/.test(retour) ? '[data-admin="masquer"][data-id="' + echAttr(retour.slice(2)) + '"]'
         : /^p:/.test(retour) ? '[data-admin="retirer-prevu"][data-id="' + echAttr(retour.slice(2)) + '"]'
+        : /^i:/.test(retour) ? '[data-admin="oublier-fiche"][data-id="' + echAttr(retour.slice(2)) + '"]'
         : /^x:/.test(retour) ? '[data-admin="oter"][data-email="' + echAttr(retour.slice(2)) + '"]'
         : '[data-admin="supprimer"][data-cle="' + echAttr(retour) + '"]';
       rendreAdmin();

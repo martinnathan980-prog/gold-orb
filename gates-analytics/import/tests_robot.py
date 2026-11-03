@@ -397,6 +397,43 @@ robot.garder({'tableau': 'x', 'exports': [{'nom': 'Autre', 'scenario': 'abime.js
 cfg = robot.config()
 verifier('un export au fichier illisible reste tel quel', robot.ranger_exports(cfg) is False and len(cfg['exports']) == 2)
 
+# Débrief 30 (relu) : le plus récent des anciens exports ne se change pas en
+# modèle ; un plus ancien, si — c'est lui qui devient l'export de tous.
+scenario('gates-x2.json', 'GATES X', '2026-10-10T09:00:00', [{'faire': 'remplir', 'cible': {}, 'texte': 'Projet 7'}, {'faire': 'cliquer', 'cible': {'texte': 'XLSX'}}])
+scenario('gates-hdk.json', 'GATES HDK', '2026-10-01T09:00:00', GESTES_HDK)
+robot.garder({'tableau': 'x', 'exports': [{'nom': 'GATES X', 'scenario': 'gates-x2.json', 'case': 'GATES X'},
+                                          {'nom': 'GATES HDK', 'scenario': 'gates-hdk.json', 'case': 'GATES HDK'}]})
+cfg = robot.config()
+robot.ranger_exports(cfg)
+verifier('deux anciens GATES : le plus récent (« GATES X ») n’a pas le nom de son contrat dans ses gestes — le suivant (« GATES HDK ») devient le modèle de tous',
+         cfg['exports'] == [{'nom': 'GATES', 'scenario': 'gates-hdk.json', 'modele': True}] and
+         json.loads((EXP / 'gates-hdk.json').read_text(encoding='utf-8')).get('modele', {}).get('appris') == 'HDK', cfg['exports'])
+scenario('gates-hdk.json', 'GATES HDK', '2026-10-01T09:00:00', GESTES_HDK)     # tel qu'avant la migration
+
+print('\n— Débrief 30 (relu) : sans export GATES de tous les contrats, le site le sait —')
+ANCIEN = [{'nom': 'GATES X', 'scenario': 'gates-x.json', 'case': 'GATES X'}, {'nom': 'GATES HDK', 'scenario': 'gates-hdk.json', 'case': 'GATES HDK'},
+          {'nom': 'SEE', 'scenario': 'see.json', 'case': 'SEE'}]
+DU_SITE = [{'contrat': 'X', 'case': 'GATES X', 'nom_gates': 'X T1', 'prevu': False}, {'contrat': 'HDK', 'case': 'GATES HDK', 'nom_gates': '', 'prevu': False},
+           {'contrat': 'VRK', 'case': 'GATES VRK', 'nom_gates': 'VRK-AA', 'prevu': True}]
+manque = robot.sans_export(ANCIEN, DU_SITE)
+verifier('un ancien « GATES X » qui ne tape pas « X T1 » (sa fiche), et VRK prévu sans export : dits ; HDK, que son ancien export fait, non',
+         manque == [('X', 'Le robot refait l’export appris pour X seul, sans le nom GATES de sa fiche (« X T1 »). ' + robot.REAPPRENDRE),
+                    ('VRK', robot.REAPPRENDRE)] and
+         robot.REAPPRENDRE == 'Le robot n’a pas encore d’export GATES pour tous les contrats : sur le PC du robot, refaites « Apprendre » une fois pour GATES (sur n’importe quel contrat).', manque)
+verifier('avec l’export GATES de tous les contrats : rien à dire', robot.sans_export([{'nom': 'GATES', 'scenario': 'gates.json', 'modele': True}], DU_SITE) == [])
+vrai_rejouer_r, vraie_photo_r = robot.rejouer, robot.photo
+robot.photo = lambda c: ''
+robot.rejouer = lambda c, s, dossier: (lambda f: (f.write_text('x', encoding='utf-8'), f)[1])(pathlib.Path(tempfile.mkdtemp()) / (robot.nom_de_fichier(s['nom']) + '.xlsx'))
+robot.garder({'tableau': 'x', 'exports': []})
+sortis, rates, comptes = robot.faire_les_exports(None, robot.config(), ANCIEN, pathlib.Path(tempfile.mkdtemp()), DU_SITE)
+verifier('les exports d’avant sortent toujours ; X et VRK ont leur erreur dans le compte rendu (« gates-export ») ; un seul raté, « reapprendre »',
+         [e['nom'] for e, _ in sortis] == ['GATES X', 'GATES HDK', 'SEE'] and
+         [k['contrat'] for k in comptes] == ['X', 'VRK'] and all(k['gates']['ok'] is False and k['gates']['code'] == 'gates-export' for k in comptes) and
+         rates == [robot.REAPPRENDRE] and rates[0].code == 'reapprendre', (sortis, rates, comptes))
+r_rea = robot.rapport_du_robot({}, '', comptes, [str(x) for x in rates], 0)
+verifier('… le passage dit au site, en rouge, ce qu’il faut faire sur le PC', r_rea['passage']['ok'] is False and r_rea['passage']['message'] == robot.REAPPRENDRE, r_rea['passage'])
+robot.rejouer, robot.photo = vrai_rejouer_r, vraie_photo_r
+
 print('\n— Débrief 30 : un export par contrat, le nom GATES de la fiche —')
 liste = [{'nom': 'GATES', 'scenario': 'gates.json', 'modele': True}, {'nom': 'SEE', 'scenario': 'see.json', 'case': 'SEE'}]
 travaux = robot.a_faire({'noms_gates': {'HDK': 'HDKX'}}, liste,
@@ -537,6 +574,10 @@ verifier('GATES ne montre pas VRK, mais HDK est sorti : c’est sa fiche (le nom
 simuler([({'nom': 'SEE', 'case': 'SEE'}, SORTIE / 'see.xlsx')], [introuvable], [], {'rapport': True})
 verifier('… aucun GATES sorti : GATES ou CHILDNéo a changé — erreur technique, nouvel essai',
          PASSAGE(True)[0] == 1 and outils['deposer'][2] == [introuvable])
+rea = robot.rate(robot.REAPPRENDRE, 'reapprendre')
+simuler([GHDK], [rea], [{'contrat': 'VRK', 'gates': {'ok': False, 'code': 'gates-export', 'message': robot.REAPPRENDRE}}], {'rapport': True})
+verifier('« refaites Apprendre » (relu) : envoyé au site avec le compte rendu (le passage en rouge), mais ni nouvel essai ni fenêtre — rien ne changera d’ici demain',
+         PASSAGE(True) == (0, '') and outils['deposer'][2] == [rea], outils.get('deposer'))
 simuler([], [robot.rate('SEE : SEE ne répond pas')], [], {'rapport': True})
 code, raison = PASSAGE(True)
 verifier('rien n’est sorti : la fenêtre d’import est ouverte quand même, pour envoyer le compte rendu ; le passage rate',

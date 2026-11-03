@@ -396,11 +396,23 @@ function poserEnvironnement(contexte, classeur, proprietes, fichiers) {
       };
     }
   };
+  /* Débrief 30 (relu) : la limite d'Apps Script — 9 Ko par valeur, en octets
+     UTF-8 —, appliquée quand un essai la demande (contexte.__octetsParValeur),
+     avec le message anglais de Google. */
+  const limite = function (k, v) {
+    const max = contexte.__octetsParValeur;
+    if (max && Buffer.byteLength(String(v), 'utf8') > max) throw new Error('Argument too large: value');
+  };
   contexte.PropertiesService = {
     getDocumentProperties: function () {
       return {
         getProperty: function (k) { return Object.prototype.hasOwnProperty.call(props, k) ? props[k] : null; },
-        setProperty: function (k, v) { props[k] = String(v); }
+        setProperty: function (k, v) { limite(k, v); props[k] = String(v); },
+        /* Débrief 30 (relu) : plusieurs d'un coup, tout ou rien — comme Apps Script. */
+        setProperties: function (valeurs) {
+          Object.keys(valeurs).forEach(function (k) { limite(k, valeurs[k]); });
+          Object.keys(valeurs).forEach(function (k) { props[k] = String(valeurs[k]); });
+        }
       };
     }
   };

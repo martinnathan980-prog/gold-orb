@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "d94c3f2";
+  --suivi-fwd-edition: "cd9cd8e";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -3005,6 +3005,11 @@ dialog.admin[aria-busy="true"] .admin-corps:not(.en-attente) { opacity: .6; }
    Harnais, PSN) ; sous chaque contrat, une ligne de suivi dit son dernier
    passage — une erreur au rouge des alertes, à côté du contrat concerné. */
 .etiquette-admin.etat-prevu { border-style: dotted; border-color: var(--encre-3); }
+/* Débrief 30 (relu) : la fiche d'un contrat dont l'onglet n'existe plus —
+   un bord au rouge des alertes (le texte garde l'encre : lisible partout) ;
+   le bouton « Corriger la fiche » d'une ligne en erreur, juste sous son texte. */
+.etiquette-admin.etat-introuvable { border-color: var(--alerte); }
+.admin-suivi-ligne.admin-suivi-action { margin-top: 4px; }
 .admin-contrats td { vertical-align: top; }
 .admin-contrats td[data-titre="Tranche"], .admin-contrats td[data-titre="État"] { white-space: nowrap; }
 .admin-contrats td.actions { white-space: normal; }

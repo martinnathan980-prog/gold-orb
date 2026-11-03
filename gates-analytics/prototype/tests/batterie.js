@@ -13099,7 +13099,9 @@ async function deplierFiltresColonne(pg) {
       return { etat: tr.cells[2].textContent.trim(), prevu: !!tr.querySelector('.etat-prevu'), recent: tr.classList.contains('recent'), fiche,
                actions: [...tr.querySelectorAll('td.actions button')].map(b => b.getAttribute('data-admin')), lecture: (tr.querySelector('td.actions .admin-lecture') || {}).textContent || '',
                suivi: s ? { classe: s.className, suitLaLigne: tr.nextElementSibling === s, icone: (s.querySelector('.admin-suivi-icone') || {}).textContent || '',
-                            lignes: [...s.querySelectorAll('.admin-suivi-texte')].map(x => x.textContent), colspan: s.cells[0].colSpan } : null };
+                            /* Débrief 30 (relu) : les espaces insécables (« 13 h 15 », « « HDKB » ») se lisent comme des espaces ; le lot C30-relu les vérifie à part. */
+                            lignes: [...s.querySelectorAll('.admin-suivi-texte')].map(x => x.textContent.replace(/\u00a0/g, ' ')), colspan: s.cells[0].colSpan,
+                            corriger: !!s.querySelector('[data-admin="modifier-fiche"]') } : null };
     }, id);
     try {
       /* C30-1 : Nathan ouvre Contrats. */
@@ -13108,7 +13110,7 @@ async function deplierFiltresColonne(pg) {
       const vue = await np.evaluate(() => ({
         entetes: [...document.querySelectorAll('#admin-corps table.admin-contrats thead th')].map(t => t.textContent.trim()),
         derniereMasquee: !!document.querySelector('#admin-corps table.admin-contrats thead th:last-child .masque'),
-        robot: (document.getElementById('admin-robot') || {}).textContent || '',
+        robot: ((document.getElementById('admin-robot') || {}).textContent || '').replace(/\u00a0/g, ' '),
         titre: (document.getElementById('admin-contrats-titre') || {}).textContent,
         etiquette: (document.querySelector('#admin-corps table.admin-contrats') || {}).getAttribute('aria-labelledby'),
         note: (document.querySelector('#admin-corps .admin-note') || {}).textContent || '',
@@ -13276,16 +13278,19 @@ async function deplierFiltresColonne(pg) {
       });
       await ongletC(np, 'jalons'); await ongletC(np, 'contrats');
       const rHdk = await ligneC(np, 'HDK'), rT2 = await ligneC(np, 'HDK Tranche 2'), rThs = await ligneC(np, 'THS');
-      const robot = await np.evaluate(() => { const r = document.getElementById('admin-robot'); return { classe: r.className, texte: r.querySelector('.admin-suivi-texte').textContent, icone: (r.querySelector('.admin-suivi-icone') || {}).textContent }; });
-      verifier('C30 : la ligne du robot — « Dernier passage du robot aujourd’hui à 13 h 15 : 1 contrat à corriger, ci-dessous. », avec ⚠ et non ✓ (une fiche est à corriger)',
-        robot.texte === 'Dernier passage du robot aujourd’hui à 13 h 15 : 1 contrat à corriger, ci-dessous.' && robot.icone === '⚠' && / attention/.test(robot.classe), JSON.stringify(robot));
+      const robot = await np.evaluate(() => { const r = document.getElementById('admin-robot'); return { classe: r.className, texte: r.querySelector('.admin-suivi-texte').textContent.replace(/\u00a0/g, ' '), icone: (r.querySelector('.admin-suivi-icone') || {}).textContent }; });
+      /* Débrief 30 (relu) : THS, sans nouvelles depuis cinq jours, se compte « à vérifier ». */
+      verifier('C30 : la ligne du robot — « Dernier passage du robot aujourd’hui à 13 h 15 : 1 contrat à corriger et 1 à vérifier, ci-dessous. », avec ⚠ et non ✓',
+        robot.texte === 'Dernier passage du robot aujourd’hui à 13 h 15 : 1 contrat à corriger et 1 à vérifier, ci-dessous.' && robot.icone === '⚠' && / attention/.test(robot.classe), JSON.stringify(robot));
       verifier('C30 : sans erreur, la ligne dit seulement quand — « ✓ Mis à jour aujourd’hui à 13 h 15 »',
         rHdk.suivi.icone === '✓' && rHdk.suivi.lignes.join('|') === 'Mis à jour aujourd’hui à 13 h 15' && / ok/.test(rHdk.suivi.classe), JSON.stringify(rHdk.suivi));
       verifier('C30 : une erreur du robot se lit à côté du contrat — « ✗ GATES ne montre pas « HDKB »… », puis « Dernière mise à jour réussie : aujourd’hui à 13 h 15. » ; la fiche dit ce que le robot a tapé',
         rT2.suivi.icone === '✗' && / erreur/.test(rT2.suivi.classe) && /^GATES ne montre pas « HDKB » : vérifiez le « Nom exact de la tranche dans GATES »/.test(rT2.suivi.lignes[0]) &&
         rT2.suivi.lignes[1] === 'Dernière mise à jour réussie : aujourd’hui à 13 h 15.' && rT2.fiche.GATES === 'à renseigner (le robot a tapé « HDKB »)', JSON.stringify(rT2));
-      verifier('C30 : un contrat que le robot n’a pas mis à jour depuis cinq jours — « ⚠ Pas mis à jour depuis 5 jours (…). Le PC du robot est-il allumé ? »',
-        rThs.suivi.icone === '⚠' && / attention/.test(rThs.suivi.classe) && /^Pas mis à jour depuis 5 jours \(dernière fois le 24\/10 à 1[34] h 15\)\. Le PC du robot est-il allumé \?$/.test(rThs.suivi.lignes[0]),
+      /* Débrief 30 (relu) : le robot, lui, est passé aujourd'hui — on ne demande pas si son PC est allumé. */
+      verifier('C30 : un contrat que le robot n’a pas mis à jour depuis cinq jours, alors qu’il est passé aujourd’hui — « ⚠ Pas mis à jour depuis 5 jours (…), alors que le robot est passé aujourd’hui à 13 h 15 sans rien en dire : vérifiez sa fiche… »',
+        rThs.suivi.icone === '⚠' && / attention/.test(rThs.suivi.classe) &&
+        /^Pas mis à jour depuis 5 jours \(dernière fois le 24\/10 à 1[34] h 15\), alors que le robot est passé aujourd’hui à 13 h 15 sans rien en dire : vérifiez sa fiche, d’abord le nom exact de sa tranche dans GATES\.$/.test(rThs.suivi.lignes[0]),
         JSON.stringify(rThs.suivi));
       await np.evaluate(() => { window.__lum = c => { const m = c.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]; };
         window.__contraste = (a, b) => { const x = window.__lum(a), y = window.__lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }; });
@@ -13306,7 +13311,7 @@ async function deplierFiltresColonne(pg) {
         visibles: [...document.querySelectorAll('#admin-onglets [role="tab"]')].filter(b => !b.hidden).map(b => b.textContent), portee: document.getElementById('admin-portee').textContent }));
       await ongletC(ap, 'contrats');
       const anneL = await ap.evaluate(() => ({ ajouter: !!document.querySelector('[data-admin="ajouter-contrat"]'), masquer: document.querySelectorAll('[data-admin="masquer"],[data-admin="reafficher"],[data-admin="retirer-prevu"]').length,
-        modifier: [...document.querySelectorAll('[data-admin="modifier-fiche"]')].map(b => b.getAttribute('data-id')),
+        modifier: [...document.querySelectorAll('td.actions [data-admin="modifier-fiche"]')].map(b => b.getAttribute('data-id')),
         lecture: [...document.querySelectorAll('#admin-corps tr[data-id]')].filter(tr => tr.querySelector('.admin-lecture')).map(tr => tr.getAttribute('data-id')),
         note: document.querySelector('#admin-corps .admin-note').textContent }));
       verifier('C30 : Anne (administratrice de THS) — deux onglets, Jalons et Contrats ; la portée dite (« et modifier sa fiche (onglet Contrats) ») ; « Modifier » sur THS seulement, ni « + Ajouter », ni « Masquer » ; les autres lignes en « lecture seule »',
@@ -13366,6 +13371,80 @@ async function deplierFiltresColonne(pg) {
           JSON.stringify({ telForm, contrasteErr }));
         await tp.__ctx.close();
       }
+
+      /* (début du lot C30-relu) */
+      /* Débrief 30 (relu) : ce que la relecture a trouvé dans la page. La
+         tranche 2 est en erreur (C30-7 : GATES ne montre pas « HDKB »), THS
+         sans nouvelles depuis cinq jours. */
+      const rp = await vivanteC({ email: 'nathan@airbus.com' });
+      await ouvrirContratsC(rp);
+      const bloc = await rp.evaluate(() => {
+        const s = [...document.querySelectorAll('#admin-corps tr[data-suivi]')].filter(t => t.getAttribute('data-suivi') === 'HDK Tranche 2')[0];
+        const b = s && s.querySelector('[data-admin="modifier-fiche"]'), t = s && s.querySelector('.admin-suivi-texte');
+        const ths = [...document.querySelectorAll('#admin-corps tr[data-suivi]')].filter(t => t.getAttribute('data-suivi') === 'THS')[0];
+        return { bouton: b ? { texte: b.textContent, aria: b.getAttribute('aria-label'), apres: !!(t.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) } : null,
+                 texte: t ? t.textContent : '', chemin: /Administration → Contrats/.test(s ? s.textContent : 'x'),
+                 robot: document.querySelector('#admin-robot .admin-suivi-texte').textContent, thsBouton: !!(ths && ths.querySelector('[data-admin="modifier-fiche"]')),
+                 okSansBouton: [...document.querySelectorAll('#admin-corps tr.admin-suivi.ok')].every(x => !x.querySelector('button')) };
+      });
+      verifier('C30-relu : sous l’erreur de la tranche 2, un bouton « Corriger la fiche » (aria « Corriger la fiche : HDK › Tranche 2 »), APRÈS le texte (ordre de lecture) ; aussi sous THS (à vérifier), jamais sous une ligne à jour',
+        !!bloc.bouton && bloc.bouton.texte === 'Corriger la fiche' && bloc.bouton.aria === 'Corriger la fiche : HDK › Tranche 2' && bloc.bouton.apres && bloc.thsBouton && bloc.okSansBouton, JSON.stringify(bloc));
+      verifier('C30-relu : le texte renvoie au bouton (« (bouton « Corriger la fiche », ci-dessous) ») au lieu de « tableau de bord → Administration → Contrats », où l’on est déjà',
+        /de ce contrat \(bouton «\u00a0Corriger la fiche\u00a0», ci-dessous\)\.$/.test(bloc.texte) && !bloc.chemin, bloc.texte);
+      verifier('C30-relu : l’heure et les guillemets ne se coupent pas en fin de ligne (espaces insécables : « 13 h 15 », « « HDKB » », « à 13 h »)',
+        /«\u00a0HDKB\u00a0»/.test(bloc.texte) && /à\u00a013\u00a0h\u00a015\u00a0:/.test(bloc.robot) && !/ h \d/.test(bloc.robot), JSON.stringify([bloc.texte, bloc.robot]));
+      await rp.click('#admin-corps tr[data-suivi="HDK Tranche 2"] [data-admin="modifier-fiche"]'); await rp.waitForTimeout(150);
+      const fT2 = await rp.evaluate(() => { const g = document.getElementById('admin-nomGates');
+        return { titre: document.getElementById('admin-form-titre').textContent, valeur: g.value, requis: g.required, invite: g.placeholder,
+                 aide: document.getElementById('admin-nomGates-aide').textContent, focus: document.activeElement.id }; });
+      verifier('C30-relu : « Corriger la fiche » ouvre la fiche de la tranche 2 — son nom GATES vide n’est pas obligatoire, l’invite est ce que le robot tape (« HDKB »), pas « HDK Tranche 2 » ; l’aide le dit',
+        fT2.titre === 'Fiche de « HDK › Tranche 2 »' && fT2.valeur === '' && fT2.requis === false && fT2.invite === 'HDKB' &&
+        /Vide : le robot tape « HDKB », comme aujourd’hui\.$/.test(fT2.aide) && fT2.focus === 'admin-nomGates', JSON.stringify(fT2));
+      await rp.click('form[data-form="contrat"] [type="submit"]'); await libreC(rp); await rp.waitForTimeout(150);
+      const sansNom = await messageC(rp);
+      verifier('C30-relu : enregistrer sans toucher au nom GATES n’est plus bloqué — « Fiche de HDK › Tranche 2 enregistrée. »',
+        sansNom.classe === 'admin-message ok' && sansNom.texte === 'Fiche de HDK › Tranche 2 enregistrée.', JSON.stringify(sansNom));
+      await rp.click('#admin-corps tr[data-suivi="HDK Tranche 2"] [data-admin="modifier-fiche"]'); await rp.waitForTimeout(150);
+      await rp.fill('#admin-nomGates', 'HDK');
+      await rp.click('form[data-form="contrat"] [type="submit"]'); await libreC(rp); await rp.waitForTimeout(150);
+      const corrige = await messageC(rp), t2c = await ligneC(rp, 'HDK Tranche 2');
+      verifier('C30-relu : le nom GATES corrigé — le message le dit (« … notée corrigée : le robot vérifiera à son prochain passage. »), la ligne n’est plus rouge : « ◌ Fiche corrigée aujourd’hui à … »',
+        corrige.texte === 'Fiche de HDK › Tranche 2 enregistrée. L’erreur signalée sous ce contrat est notée corrigée : le robot vérifiera à son prochain passage.' &&
+        / attente/.test(t2c.suivi.classe) && t2c.suivi.icone === '◌' && !t2c.suivi.corriger &&
+        /^Fiche corrigée aujourd’hui à \d+ h \d\d : le robot vérifiera à son prochain passage \(chaque jour à partir de 14 h, PC allumé\)\.$/.test(t2c.suivi.lignes[0]), JSON.stringify({ corrige, suivi: t2c.suivi }));
+      /* Un onglet renommé dans Sheets : sa fiche ne redevient pas « prévue ». */
+      simC.classeur.getSheetByName('THS').setName('THS Série');
+      await ongletC(rp, 'jalons'); await ongletC(rp, 'contrats');
+      const orph = await ligneC(rp, 'THS');
+      verifier('C30-relu : l’onglet THS renommé « THS Série » dans Sheets — THS n’est pas « Prévu » : « Onglet introuvable », dit en clair, et « Oublier la fiche » (pas de Modifier)',
+        !!orph && orph.etat === 'Onglet introuvable' && !orph.prevu && orph.actions.join() === 'oublier-fiche' && / erreur/.test(orph.suivi.classe) &&
+        orph.suivi.lignes[0] === 'L’onglet de « THS » n’existe plus dans le classeur : renommé ou supprimé dans Sheets ? Le robot ne l’exporte plus. Redonnez-lui ce nom dans Sheets, ou oubliez cette fiche.' &&
+        commeC('nathan@airbus.com', () => srvC.parametresImport_(simC.classeur).prevus.length) === 0, JSON.stringify(orph));
+      await rp.click('[data-admin="oublier-fiche"][data-id="THS"]'); await rp.waitForTimeout(450);
+      const qO = await rp.evaluate(() => ({ texte: (document.getElementById('q-oublier') || {}).textContent, focus: document.activeElement.getAttribute('data-admin') }));
+      await rp.click('[data-admin="annuler-confirmation"]'); await rp.waitForTimeout(100);
+      const nonO = await actifC(rp);
+      await rp.click('[data-admin="oublier-fiche"][data-id="THS"]'); await rp.waitForTimeout(450);
+      await rp.click('[data-admin="oublier-fiche-oui"]'); await libreC(rp); await rp.waitForTimeout(100);
+      const oubli = await messageC(rp), resteThs = await ligneC(rp, 'THS');
+      verifier('C30-relu : « Oublier la fiche » — la question (« Son onglet n’existe plus… Les onglets du classeur ne changent pas. »), « Non » rend le focus, « Oui, oublier » : « La fiche de THS est oubliée. »',
+        qO.texte === 'Oublier la fiche de « THS » ? Son onglet n’existe plus : sa fiche, ses colonnes et son PSN sont effacés. Les onglets du classeur ne changent pas.' &&
+        qO.focus === 'oublier-fiche-oui' && nonO === 'Oublier la fiche : THS' && oubli.texte === 'La fiche de THS est oubliée.' && resteThs === null &&
+        !!simC.classeur.getSheetByName('THS Série'), JSON.stringify({ qO, nonO, oubli }));
+      simC.classeur.getSheetByName('THS Série').setName('THS');
+      await rp.__ctx.close();
+      /* Anne (THS) ne renomme pas un prévu de sa famille. */
+      commeC('nathan@airbus.com', () => srvC.adminEnregistrerContrat({ id: '', nom: 'THS Tranche 2', nomGates: 'THS T2', colonnes: { fwd: 'HDK AA 011 > Avancement Définition Electrique' } }));
+      const ar = await vivanteC({ email: 'anne@airbus.com' });
+      await ar.click('#ouvrir-admin'); await libreC(ar); await ongletC(ar, 'contrats');
+      await ar.click('td.actions [data-admin="modifier-fiche"][data-id="THS Tranche 2"]'); await ar.waitForTimeout(150);
+      const nomAnne = await ar.evaluate(() => ({ lecture: document.getElementById('admin-nom').readOnly, valeur: document.getElementById('admin-nom').value,
+        aide: document.getElementById('admin-nom-aide').textContent, requis: document.getElementById('admin-nomGates').required }));
+      verifier('C30-relu : Anne ouvre le prévu « THS Tranche 2 » — son nom en lecture seule : « Seuls le responsable et les administrateurs de tous les contrats renomment un contrat prévu. » ; son nom GATES reste obligatoire',
+        nomAnne.lecture && nomAnne.valeur === 'THS Tranche 2' && nomAnne.aide === 'Seuls le responsable et les administrateurs de tous les contrats renomment un contrat prévu.' && nomAnne.requis, JSON.stringify(nomAnne));
+      await ar.__ctx.close();
+      commeC('nathan@airbus.com', () => srvC.adminRetirerContratPrevu('THS Tranche 2'));
+      /* (fin du lot C30-relu) */
     } finally {
       try { fsC.unlinkSync(fichierC); } catch (e) { /* déjà parti */ }
     }

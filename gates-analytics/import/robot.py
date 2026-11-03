@@ -1365,21 +1365,30 @@ def ranger_exports(cfg):
     if modeles:
         partent = modeles[1:] + anciens
     elif anciens:
-        x = anciens[0]
-        e, s = x[0], x[1]
-        contrat = case_de(e)[6:].strip()
-        mot = mot_du_contrat(s.get('etapes'), contrat, noms) if contrat else ''
-        if mot:
+        # Débrief 30 (relu) : le plus récent d'abord, puis les autres — le
+        # premier dont le nom du contrat se retrouve dans les gestes devient
+        # le modèle. (Un contrat qui n'est que dans l'adresse de départ ne
+        # suffit pas : le robot ne sait refaire que ce qu'on a tapé, choisi
+        # ou cliqué.)
+        for x in anciens:
+            e, s = x[0], x[1]
+            contrat = case_de(e)[6:].strip()
+            mot = mot_du_contrat(s.get('etapes'), contrat, noms) if contrat else ''
+            if not mot:
+                continue
             s['modele'] = {'appris': mot, 'contrat': contrat, 'migre': True}
             (racine() / 'exports' / e['scenario']).write_text(json.dumps(s, ensure_ascii=False, indent=2), encoding='utf-8')
             x[0] = {'nom': 'GATES', 'scenario': e['scenario'], 'modele': True}
             if norm(mot) != norm(contrat) and valeur_de(noms, contrat) is None:
                 noms[contrat] = mot
             dits.append('« %s » devient l’export GATES de tous les contrats (appris sur « %s »)' % (e.get('nom'), mot))
-            partent = anciens[1:]
-        elif e.get('scenario') not in _DEJA_DIT:
-            _DEJA_DIT.add(e.get('scenario'))
-            noter('%s : le nom du contrat n’est pas retrouvé dans ses gestes ; il reste l’export de %s seul.' % (case_de(e), contrat))
+            partent = [a for a in anciens if a is not x]
+            break
+        else:
+            for x in anciens:
+                if x[0].get('scenario') not in _DEJA_DIT:
+                    _DEJA_DIT.add(x[0].get('scenario'))
+                    noter('%s : le nom du contrat n’est pas retrouvé dans ses gestes ; il reste l’export de %s seul.' % (case_de(x[0]), case_de(x[0])[6:].strip()))
     for x in partent:
         if not x[0].get('modele'):
             retenir_nom(x[0], x[1])
@@ -1474,6 +1483,37 @@ def a_faire(cfg, liste, contrats):
     return travaux
 
 
+# Débrief 30 (relu) : sans export GATES « de tous les contrats » (un ancien
+# « GATES HDK » que le rangement n'a pas su changer, ou aucun GATES appris),
+# les contrats du tableau de bord qu'aucun export ne fait sont dits au site,
+# chacun à côté de son contrat — un prévu ne serait jamais créé, sans un mot.
+REAPPRENDRE = ('Le robot n’a pas encore d’export GATES pour tous les contrats : sur le PC du robot, refaites « Apprendre » '
+               'une fois pour GATES (sur n’importe quel contrat).')
+
+
+def sans_export(liste, contrats):
+    """Les contrats du tableau qu'aucun export du jour ne fait, quand il n'y
+    a pas d'export GATES « modèle » : ceux qui n'ont pas d'export à leur case
+    (un prévu, toujours), et ceux dont la fiche donne un nom GATES que leur
+    ancien export ne tape pas. Rend [(contrat, message)]."""
+    if any(e.get('modele') for e in liste):
+        return []
+    gates = [e for e in liste if est_gates(e)]
+    manque = []
+    for k in [en_contrat(x) for x in contrats or []]:
+        e = next((g for g in gates if norm(case_de(g)) == norm(k['case'] or 'GATES ' + k['contrat'])), None)
+        if e is None:
+            manque.append((k['contrat'], REAPPRENDRE))
+            continue
+        ng = k['nom_gates']
+        if ng and norm(ng) != norm(k['contrat']):
+            s = lire_scenario(e.get('scenario'))
+            if s is not None and not any(norm(t) == norm(ng) for t in candidats_contrat(s.get('etapes'))):
+                manque.append((k['contrat'], 'Le robot refait l’export appris pour %s seul, sans le nom GATES de sa fiche (« %s »). %s'
+                               % (k['contrat'], ng, REAPPRENDRE)))
+    return manque
+
+
 class Rate(str):
     """Un export raté, dit « nom : raison » comme avant ; il garde aussi son
     code (gates-introuvable…) et son contrat, pour le compte rendu."""
@@ -1506,6 +1546,13 @@ def faire_les_exports(c, cfg, liste, dossier, contrats):
     retenue pour la prochaine fois. Rend (sortis, ratés, comptes) — comptes :
     ce que le compte rendu au tableau de bord dira de chaque contrat GATES."""
     sortis, rates, comptes = [], [], []
+    manque = sans_export(liste, contrats)
+    for contrat, message in manque:
+        noter('  ✗ GATES %s : %s' % (contrat, message))
+        comptes.append({'contrat': contrat, 'gates': {'ok': False, 'code': 'gates-export', 'message': message}})
+    if manque:
+        # Un seul raté pour le passage : il se corrige sur le PC, une fois.
+        rates.append(rate(REAPPRENDRE, 'reapprendre'))
     for e, scenario in a_faire(cfg, liste, contrats):
         noter('Export « %s »…' % e['nom'])
         essais = [(e.get('fichier'), scenario)] + list(e.get('secours') or [])
@@ -2007,13 +2054,17 @@ def _passage(auto):
             # Une tranche que GATES ne montre pas, quand les autres sortent : c'est son nom, dans sa fiche.
             gates_ok = any(e.get('contrat') for e, _ in sortis)
             de_fiche = [r for r in rates if getattr(r, 'code', '') == 'gates-introuvable' and gates_ok]
-            rates_tech = [r for r in rates if not any(r is f for f in de_fiche)]
+            # Débrief 30 (relu) : « refaites Apprendre » se dit au site (le
+            # passage en rouge, chaque contrat concerné aussi) ; un nouvel
+            # essai n'y changerait rien.
+            reapprendre = [r for r in rates if getattr(r, 'code', '') == 'reapprendre']
+            rates_tech = [r for r in rates if not any(r is f for f in de_fiche + reapprendre)]
             if sortis:
-                res = deposer(c, cfg, sortis, comptes, debut, rates_tech)
+                res = deposer(c, cfg, sortis, comptes, debut, rates_tech + reapprendre)
             else:
-                res = rendre_compte(c, cfg, comptes, debut, rates_tech)
+                res = rendre_compte(c, cfg, comptes, debut, rates_tech + reapprendre)
             techniques = [str(r) for r in rates_tech] + res['techniques']
-            fiche = [str(r) for r in de_fiche] + res['fiche']
+            fiche = [str(r) for r in de_fiche + reapprendre] + res['fiche']
             if techniques or (fiche and not res['rapport']):
                 raise ErreurPilote('%s : %s' % ('pas tout' if sortis else 'rien', ' ; '.join(techniques + fiche)))
     except (ErreurPilote, OSError, ValueError) as err:

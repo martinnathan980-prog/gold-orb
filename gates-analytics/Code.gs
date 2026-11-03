@@ -47,7 +47,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = 'd94c3f2';
+const EDITION = 'cd9cd8e';
 
 // =====================================================================
 //  CONFIGURATION
@@ -5829,12 +5829,14 @@ function adminContrats() {
   return enLecture(function () {
     const see = avecSee_(), rapports = rapportsEnregistres_();
     const actifs = listerContrats(classeur), retires = contratsRetires_(classeur), prevus = contratsPrevus_(classeur);
+    const sansOnglet = fichesSansOnglet_(classeur);
     const ligne = function (etat) {
       return function (c) {
         c.gerable = etat === 'actif' ? peutGerer_(d, c.id) && d.tous : etat === 'masque' ? d.tous : false;
-        c.modifiable = peutGerer_(d, c.id);
-        c.retirable = etat === 'prevu' && d.tous;
+        c.modifiable = etat !== 'introuvable' && peutGerer_(d, c.id);
+        c.retirable = (etat === 'prevu' || etat === 'introuvable') && d.tous;
         c.prevu = etat === 'prevu';
+        c.introuvable = etat === 'introuvable';
         const k = colonnesDuContrat(c.id), p = see ? psnDuContrat(c.id) : { psn: [], source: '' };
         /* tape : ce que le robot a tapé dans GATES à son dernier passage — la
            page le montre tant que le nom GATES de la fiche est vide. */
@@ -5848,7 +5850,9 @@ function adminContrats() {
     const rendu = {
       actifs: contratsPourLaPage_(actifs).map(ligne('actif')),
       retires: contratsPourLaPage_(retires.map(function (n) { return { id: n, nom: n }; })).map(ligne('masque')),
-      prevus: contratsPourLaPage_(prevus).map(ligne('prevu'))
+      prevus: contratsPourLaPage_(prevus).map(ligne('prevu')),
+      /* Débrief 30 (relu) : les fiches dont l'onglet n'existe plus — à part, dites en clair. */
+      introuvables: contratsPourLaPage_(sansOnglet).map(ligne('introuvable'))
     };
     /* Les colonnes à proposer dans la fiche : celles des exports déjà là,
        contrat par contrat, sans doublon. */
@@ -5861,9 +5865,11 @@ function adminContrats() {
         if (colonnes.length < 400 && !vues[cle]) { vues[cle] = true; colonnes.push(o.d); }
       });
     });
-    const erreurs = rendu.actifs.concat(rendu.prevus).filter(function (c) { return c.suivi.niveau === 'erreur'; }).length;
+    const suivis = rendu.actifs.concat(rendu.prevus, rendu.introuvables);
+    const erreurs = suivis.filter(function (c) { return c.suivi.niveau === 'erreur'; }).length;
+    const aVerifier = suivis.filter(function (c) { return c.suivi.niveau === 'attention'; }).length;
     rendu.colonnes = colonnes;
-    rendu.robot = suiviDuRobot_(rapports, maintenant, erreurs);
+    rendu.robot = suiviDuRobot_(rapports, maintenant, erreurs, aVerifier);
     rendu.avecSee = see;
     rendu.peutAjouter = (d.role === 'responsable' || (d.role === 'administrateur' && d.tous)) && !CONFIG.FEUILLE_DONNEES;
     rendu.droits = { role: d.role, tous: d.tous, contrats: d.contrats };
@@ -5914,7 +5920,7 @@ function adminRetirerContrat(id, retirer) {
    de la fiche. Les comptes rendus (de la fenêtre après chaque import, du
    robot après chaque passage) sont gardés contrat par contrat, pour dire
    dans la page ce qui s'est passé — sans regarder le PC du robot. */
-const CLE_FICHES = 'SUIVI_FWD_FICHES';       // { contrat: { nomGates, ajoute, par } }
+const CLE_FICHES = 'SUIVI_FWD_FICHES';       // { contrat: { nomGates, ajoute, par, cree } }
 const CLE_RAPPORTS = 'SUIVI_FWD_RAPPORTS';   // { robot: {…} | null, contrats: { contrat: { gates: {…}, see: {…} } } }
 const NOM_GATES_MAX = 80;
 const DESIGNATION_MAX = 300;
@@ -5922,7 +5928,13 @@ const ROBOT_JOURS_ALERTE = 4;
 /* Un message dit la colonne voulue et les trois plus proches : 400
    caractères les tiennent ; le garde-fou de taille les coupe au besoin. */
 const RAPPORT_MESSAGE_MAX = 400;
-const RAPPORT_TAILLE_MAX = 8500;             // caractères du JSON gardé : une propriété tient 9 Ko
+const RAPPORT_TAILLE_MAX = 8500;             // octets (UTF-8) du JSON gardé : une propriété tient 9 Ko
+/* Débrief 30 (relu) : une propriété du classeur tient 9 Ko par valeur,
+   comptés en octets UTF-8 — « é », « ’ », « » » en font deux ou trois. Au-delà,
+   Google refuse, en anglais (« Argument too large ») : on refuse avant, en
+   français, sans rien écrire. */
+const PROPRIETE_OCTETS_MAX = 9000;
+const MESSAGE_CLASSEUR_PLEIN = 'Le classeur ne peut plus garder de nouvelle fiche : retirez un contrat prévu, ou raccourcissez les noms de colonnes. Rien n’a été changé.';
 const RAPPORT_CONTRATS_MAX = 100;
 const CODES_RAPPORT = ['gates-introuvable', 'gates-export', 'colonne-elec', 'colonne-harnais', 'see-aucune', 'see-sans-psn', 'douteux', 'lecture', 'import', 'autre'];
 
@@ -5942,6 +5954,67 @@ function changerObjetDuClasseur_(cle, changer) {
   props.setProperty(cle, JSON.stringify(rendu === undefined ? tous : rendu));
   if (MEMO_LECTURE) MEMO_LECTURE.proprietes = null;
 }
+/* Débrief 30 (relu) : la taille d'un texte en octets UTF-8 — ce que compte
+   Google pour une propriété du classeur. */
+function octetsUtf8_(texte) {
+  const s = String(texte === undefined || texte === null ? '' : texte);
+  let n = 0;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c < 0x80) n += 1;
+    else if (c < 0x800) n += 2;
+    else if (c >= 0xd800 && c <= 0xdbff && i + 1 < s.length) { n += 4; i++; }
+    else n += 3;
+  }
+  return n;
+}
+
+/* Débrief 30 (relu) : plusieurs objets du classeur changés d'un seul geste —
+   une fiche, ses colonnes, son PSN, les droits, les comptes rendus. Chaque
+   objet est lu une fois et changé en mémoire ; ecrire() vérifie d'abord la
+   taille de chacun (trop gros : un refus en français, rien d'écrit), puis
+   les écrit d'un seul appel (setProperties) : jamais un contrat à moitié
+   enregistré, ni un renommage éparpillé entre l'ancien et le nouveau nom.
+   Sous le verrou des gestes. */
+function lotDeProprietes_() {
+  const props = PropertiesService.getDocumentProperties(), objets = {};
+  const lot = {
+    objet: function (cle) {
+      if (!Object.prototype.hasOwnProperty.call(objets, cle)) {
+        let tous = null;
+        try { tous = analyserJson(props.getProperty(cle)); } catch (err) { tous = null; }
+        objets[cle] = tous && typeof tous === 'object' && !Array.isArray(tous) ? tous : {};
+      }
+      return objets[cle];
+    },
+    changer: function (cle, changer) {
+      const rendu = changer(lot.objet(cle));
+      if (rendu !== undefined) objets[cle] = rendu;
+    },
+    ecrire: function () {
+      const valeurs = {};
+      Object.keys(objets).forEach(function (cle) {
+        const json = JSON.stringify(objets[cle]);
+        if (octetsUtf8_(json) > PROPRIETE_OCTETS_MAX) throw new Error(MESSAGE_CLASSEUR_PLEIN);
+        valeurs[cle] = json;
+      });
+      if (!Object.keys(valeurs).length) return;
+      try {
+        props.setProperties(valeurs);
+      } catch (err) {
+        throw new Error('Le classeur n’a pas pu garder ce changement : rien n’a été changé. Réessayez dans une minute ; si cela recommence, menu Suivi FWD → Diagnostic.');
+      }
+      if (MEMO_LECTURE) MEMO_LECTURE.proprietes = null;
+    }
+  };
+  return lot;
+}
+/* Changer un objet du classeur : dans un lot s'il y en a un, sinon tout de suite. */
+function changerDans_(lot, cle, changer) {
+  if (lot) lot.changer(cle, changer);
+  else changerObjetDuClasseur_(cle, changer);
+}
+
 /* La clé d'un objet qui désigne ce contrat, casse et accents indifférents (comme colonnesDuContrat), ou undefined. */
 function cleDuContrat_(objet, id) {
   const n = normaliser(id === undefined || id === null ? '' : id);
@@ -5957,47 +6030,119 @@ function saisiePropre_(v) {
   return String(v === undefined || v === null ? '' : v).replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-/** Les fiches gardées : { contrat: { nomGates, ajoute, par } } ({} si rien). */
+/** Les fiches gardées : { contrat: { nomGates, ajoute, par, cree } } ({} si rien). */
 function fichesEnregistrees_() { return objetDuClasseur_(CLE_FICHES); }
 
-/** La fiche d'un contrat : { nomGates, ajoute, par }, ou null. */
+/** La fiche d'un contrat : { nomGates, ajoute, par, cree }, ou null. */
 function ficheDe_(id) {
   const tous = fichesEnregistrees_(), k = cleDuContrat_(tous, id), f = k !== undefined ? tous[k] : null;
   if (!f || typeof f !== 'object') return null;
-  return { nomGates: String(f.nomGates || ''), ajoute: String(f.ajoute || ''), par: String(f.par || '') };
+  return { nomGates: String(f.nomGates || ''), ajoute: String(f.ajoute || ''), par: String(f.par || ''), cree: String(f.cree || '') };
 }
 
-/** Écrit la fiche d'un contrat (champs fusionnés à l'ancienne) — sous le verrou des gestes. */
-function ecrireFiche_(id, champs) {
-  changerObjetDuClasseur_(CLE_FICHES, function (tous) {
+/* Débrief 30 (relu) : une fiche est « prévue » quand elle vient d'un ajout
+   (`ajoute`) et que son contrat n'a encore jamais eu d'onglet (`cree` : posé
+   par le premier import, ou dès qu'on modifie la fiche d'un contrat qui a
+   son onglet). Une fiche sans onglet qui n'est pas prévue est celle d'un
+   contrat dont l'onglet a été renommé ou supprimé dans Sheets : jamais
+   recréé tout seul par le robot. */
+function estFichePrevue_(f) {
+  return !!f && typeof f === 'object' && !!f.ajoute && !f.cree;
+}
+
+/** Écrit la fiche d'un contrat (champs fusionnés à l'ancienne) — sous le verrou des gestes ; dans `lot` s'il est donné. */
+function ecrireFiche_(id, champs, lot) {
+  changerDans_(lot, CLE_FICHES, function (tous) {
     const k = cleDuContrat_(tous, id), ancienne = k !== undefined && tous[k] && typeof tous[k] === 'object' ? tous[k] : {};
     sansClesDuContrat_(tous, id);
     tous[id] = Object.assign({}, ancienne, champs);
   });
 }
 
-/** Le PSN d'un contrat, gardé tel quel ([] : « pas de PSN », voulu) — sous le verrou des gestes. */
-function ecrirePsn_(id, psn) {
-  changerObjetDuClasseur_(CLE_PSN, function (tous) {
+/* Débrief 30 (relu) : le contrat a son onglet (créé par l'import, ou déjà
+   là) : sa fiche le retient (`cree`), elle ne redeviendra jamais « prévue ».
+   Rien à faire sans fiche, ni si c'est déjà noté. */
+function marquerFicheCree_(id, lot) {
+  const lue = lot ? lot.objet(CLE_FICHES) : fichesEnregistrees_(), k = cleDuContrat_(lue, id);
+  if (k === undefined || !lue[k] || typeof lue[k] !== 'object' || lue[k].cree) return;
+  changerDans_(lot, CLE_FICHES, function (tous) {
+    const j = cleDuContrat_(tous, id);
+    if (j !== undefined && tous[j] && typeof tous[j] === 'object' && !tous[j].cree) tous[j].cree = new Date().toISOString();
+  });
+}
+
+/** Le PSN d'un contrat, gardé tel quel ([] : « pas de PSN », voulu) — sous le verrou des gestes ; dans `lot` s'il est donné. */
+function ecrirePsn_(id, psn, lot) {
+  changerDans_(lot, CLE_PSN, function (tous) {
     sansClesDuContrat_(tous, id);
     tous[id] = psn;
   });
 }
 
-/** Un contrat prévu retiré : sa fiche, ses colonnes, son PSN et ses comptes rendus oubliés — sous le verrou des gestes. */
-function oublierContrat_(id) {
-  [CLE_FICHES, CLE_COLONNES, CLE_PSN].forEach(function (cle) {
-    changerObjetDuClasseur_(cle, function (tous) { sansClesDuContrat_(tous, id); });
-  });
-  changerObjetDuClasseur_(CLE_RAPPORTS, function (r) {
-    if (r.contrats && typeof r.contrats === 'object') sansClesDuContrat_(r.contrats, id);
-  });
+/* Une portée d'administrateur couvre-t-elle ce contrat ? Lui-même, ou sa
+   famille : « HDK » couvre « HDK Tranche 2 » (la règle de peutGerer_). */
+function porteeCouvre_(portee, contrat) {
+  const t = trancheDe_(contrat);
+  return memeContrat_(portee, contrat) || !!(t && memeContrat_(portee, t.parent));
 }
 
-/* Un prévu renommé avant d'avoir reçu son premier export : ses clés suivent son nom — sous le verrou des gestes. */
-function renommerContrat_(ancien, nouveau) {
+/*
+ * Débrief 30 (relu) : les droits suivent un contrat renommé (`nouveau`) ou
+ * retiré (`nouveau` vide). Une portée qui ne désignait que lui s'en va —
+ * elle ne donnerait pas, plus tard, les droits sur un autre contrat du même
+ * nom ; une portée qui couvre encore un autre contrat (`restants`) reste ;
+ * le nouveau nom s'ajoute s'il n'est pas déjà couvert. Un administrateur
+ * qui n'a plus aucune portée est retiré : une liste vide voudrait dire
+ * « tous les contrats ». Rend ce qui a changé, à dire dans la page.
+ */
+function suivreDansLesDroits_(lot, ancien, nouveau, restants) {
+  const changes = [];
+  lot.changer(CLE_ROLES, function (r) {
+    if (!Array.isArray(r.admins)) return;
+    const garder = [];
+    r.admins.forEach(function (a) {
+      const avant = a && Array.isArray(a.contrats) ? a.contrats.map(function (c) { return String(c).trim(); }).filter(Boolean) : [];
+      if (!avant.length || !avant.some(function (c) { return porteeCouvre_(c, ancien); })) { garder.push(a); return; }
+      const apres = avant.filter(function (c) {
+        return !(memeContrat_(c, ancien) && !(restants || []).some(function (x) { return porteeCouvre_(c, x); }));
+      });
+      if (nouveau && !apres.some(function (c) { return porteeCouvre_(c, nouveau); })) apres.push(nouveau);
+      const email = String(a.email || '').trim().toLowerCase();
+      if (!apres.length) { changes.push({ email: email, retire: true }); return; }
+      if (apres.join('\u0001') !== avant.join('\u0001')) changes.push({ email: email, retire: false });
+      garder.push(Object.assign({}, a, { contrats: apres }));
+    });
+    r.admins = garder;
+  });
+  return changes;
+}
+/* Ce que la page dit des droits qui ont suivi : « Les droits de bob@… suivent le nouveau nom. » */
+function phraseDesDroits_(changes, renomme) {
+  const suivent = changes.filter(function (c) { return !c.retire; }).map(function (c) { return c.email; });
+  const retires = changes.filter(function (c) { return c.retire; }).map(function (c) { return c.email; });
+  const liste = function (l) { return l.length > 1 ? l.slice(0, -1).join(', ') + ' et ' + l[l.length - 1] : l[0]; };
+  return [suivent.length ? (renomme ? 'Les droits de ' + liste(suivent) + ' suivent le nouveau nom.' : 'Les droits de ' + liste(suivent) + ' sont mis à jour.') : '',
+          retires.length ? liste(retires) + (retires.length > 1 ? ' n’avaient' : ' n’avait') + ' que ce contrat : plus de droits d’administration.' : '']
+    .filter(Boolean).join(' ');
+}
+
+/** Un contrat prévu (ou une fiche sans onglet) oublié : sa fiche, ses colonnes, son PSN, ses comptes rendus — dans `lot`, sous le verrou des gestes.
+    Pour un prévu (`avecDroits`), les droits qui ne visaient que lui s'en vont aussi ; une fiche sans onglet les laisse : son onglet a peut-être
+    seulement changé de nom dans Sheets, et ses administrateurs se règlent alors dans l'onglet Administrateurs. */
+function oublierContrat_(id, lot, restants, avecDroits) {
   [CLE_FICHES, CLE_COLONNES, CLE_PSN].forEach(function (cle) {
-    changerObjetDuClasseur_(cle, function (tous) {
+    lot.changer(cle, function (tous) { sansClesDuContrat_(tous, id); });
+  });
+  lot.changer(CLE_RAPPORTS, function (r) {
+    if (r.contrats && typeof r.contrats === 'object') sansClesDuContrat_(r.contrats, id);
+  });
+  return avecDroits ? suivreDansLesDroits_(lot, id, '', restants) : [];
+}
+
+/* Un prévu renommé avant d'avoir reçu son premier export : ses clés — et les droits — suivent son nom ; dans `lot`, sous le verrou des gestes. */
+function renommerContrat_(ancien, nouveau, lot, restants) {
+  [CLE_FICHES, CLE_COLONNES, CLE_PSN].forEach(function (cle) {
+    lot.changer(cle, function (tous) {
       const k = cleDuContrat_(tous, ancien);
       if (k === undefined) return;
       const v = tous[k];
@@ -6006,7 +6151,7 @@ function renommerContrat_(ancien, nouveau) {
       tous[nouveau] = v;
     });
   });
-  changerObjetDuClasseur_(CLE_RAPPORTS, function (r) {
+  lot.changer(CLE_RAPPORTS, function (r) {
     if (!r.contrats || typeof r.contrats !== 'object') return;
     const k = cleDuContrat_(r.contrats, ancien);
     if (k === undefined) return;
@@ -6014,6 +6159,7 @@ function renommerContrat_(ancien, nouveau) {
     sansClesDuContrat_(r.contrats, ancien);
     r.contrats[nouveau] = v;
   });
+  return suivreDansLesDroits_(lot, ancien, nouveau, restants);
 }
 
 /* L'onglet qui porte ce nom — à l'identique, casse et accents indifférents,
@@ -6026,15 +6172,16 @@ function ongletDuNom_(classeur, nom) {
 }
 
 /**
- * Les contrats prévus : les fiches qui n'ont aucun onglet, ni visible ni
- * masqué — [{ id, nom }], les plus anciens d'abord. Un prévu cesse de
- * l'être de lui-même dès que son onglet existe : aucun drapeau à tenir.
+ * Les contrats prévus : les fiches ajoutées depuis la page (estFichePrevue_)
+ * qui n'ont aucun onglet, ni visible ni masqué — [{ id, nom }], les plus
+ * anciens d'abord. Un prévu cesse de l'être dès que son onglet existe, et
+ * pour de bon : l'import qui le crée le note dans sa fiche (`cree`).
  * Jamais dans listerContrats : ni menu, ni historique, ni jalon pour lui.
  */
 function contratsPrevus_(classeur) {
   if (CONFIG.FEUILLE_DONNEES) return [];
   const fiches = fichesEnregistrees_();
-  return Object.keys(fiches).filter(function (k) { return saisiePropre_(k) && !ongletDuNom_(classeur, k); })
+  return Object.keys(fiches).filter(function (k) { return saisiePropre_(k) && estFichePrevue_(fiches[k]) && !ongletDuNom_(classeur, k); })
     .sort(function (a, b) {
       const x = String(fiches[a] && fiches[a].ajoute || ''), y = String(fiches[b] && fiches[b].ajoute || '');
       return x < y ? -1 : x > y ? 1 : a.localeCompare(b);
@@ -6042,14 +6189,41 @@ function contratsPrevus_(classeur) {
     .map(function (k) { return { id: k, nom: k }; });
 }
 
-/* Le contrat que désigne `id` : { id, etat: 'actif' | 'masque' | 'prevu' }, à l'identique d'abord, puis aux séparateurs près — ou null. */
+/**
+ * Débrief 30 (relu) : les fiches dont le contrat a eu son onglet, et ne l'a
+ * plus — renommé ou supprimé à la main dans Sheets : [{ id, nom }]. Ni la
+ * fenêtre d'import ni le robot ne les voient (rien n'est recréé tout seul) ;
+ * l'administration les montre à part, pour qu'on redonne son nom à
+ * l'onglet, ou qu'on oublie la fiche.
+ */
+function fichesSansOnglet_(classeur) {
+  if (CONFIG.FEUILLE_DONNEES) return [];
+  const fiches = fichesEnregistrees_();
+  return Object.keys(fiches).filter(function (k) {
+    return saisiePropre_(k) && fiches[k] && typeof fiches[k] === 'object' && !estFichePrevue_(fiches[k]) && !ongletDuNom_(classeur, k);
+  }).sort().map(function (k) { return { id: k, nom: k }; });
+}
+/* Ce que la page dit d'une fiche sans onglet. */
+function phraseSansOnglet_(id) {
+  return 'L’onglet de « ' + id + ' » n’existe plus dans le classeur : renommé ou supprimé dans Sheets ? Le robot ne l’exporte plus. ' +
+    'Redonnez-lui ce nom dans Sheets, ou oubliez cette fiche.';
+}
+
+/* Le contrat que désigne `id` : { id, etat: 'actif' | 'masque' | 'prevu' | 'introuvable' (une fiche sans onglet) }, à l'identique d'abord, puis aux séparateurs près — ou null. */
 function contratConnu_(classeur, id) {
   const n = String(id === undefined || id === null ? '' : id).trim();
   if (!n) return null;
   const tous = listerContrats(classeur).map(function (c) { return { id: c.id, etat: 'actif' }; })
     .concat(contratsRetires_(classeur).map(function (x) { return { id: x, etat: 'masque' }; }))
-    .concat(contratsPrevus_(classeur).map(function (p) { return { id: p.id, etat: 'prevu' }; }));
+    .concat(contratsPrevus_(classeur).map(function (p) { return { id: p.id, etat: 'prevu' }; }))
+    .concat(fichesSansOnglet_(classeur).map(function (p) { return { id: p.id, etat: 'introuvable' }; }));
   return tous.filter(function (c) { return c.id === n; })[0] || tous.filter(function (c) { return memeContrat_(c.id, n); })[0] || null;
+}
+/* Tous les contrats qu'on connaît (affichés, masqués, prévus, fiches sans onglet), sauf `sauf` : ce que couvrent encore les droits. */
+function autresContrats_(classeur, sauf) {
+  return listerContrats(classeur).map(function (c) { return c.id; }).concat(contratsRetires_(classeur))
+    .concat(contratsPrevus_(classeur).map(function (p) { return p.id; })).concat(fichesSansOnglet_(classeur).map(function (p) { return p.id; }))
+    .filter(function (x) { return !memeContrat_(x, sauf); });
 }
 
 /* La famille d'un contrat : lui-même, ou le contrat d'une tranche (« HDK Tranche 2 » → hdk). */
@@ -6181,9 +6355,13 @@ function rapportsEnregistres_() {
 
 /**
  * Écrit les comptes rendus — sous le verrou des gestes. Les contrats qui ne
- * sont plus connus (`connus` : actifs, masqués, prévus) s'en vont ; au-delà
- * de ce que tient une propriété, les messages se raccourcissent, puis seuls
- * les 25 contrats aux comptes rendus les plus récents restent.
+ * sont plus connus (`connus` : actifs, masqués, prévus) s'en vont. Débrief
+ * 30 (relu) : la taille se compte en octets UTF-8, comme Google la compte,
+ * et se revérifie à chaque pas jusqu'à ce qu'elle tienne — les messages se
+ * raccourcissent, seuls les 25 contrats aux comptes rendus les plus récents
+ * restent, puis les plus anciens s'en vont un par un jusqu'à dix, puis les
+ * messages et ce que le robot a tapé, puis encore les plus anciens. Un refus de Google, malgré tout, est dit
+ * en français.
  */
 function ecrireRapports_(r, connus) {
   const contrats = {};
@@ -6191,27 +6369,37 @@ function ecrireRapports_(r, connus) {
     if (!connus || connus.some(function (c) { return memeContrat_(c, k); })) contrats[k] = r.contrats[k];
   });
   const rendu = { robot: r.robot || null, contrats: contrats };
-  let json = JSON.stringify(rendu);
-  if (json.length > RAPPORT_TAILLE_MAX) {
-    Object.keys(contrats).forEach(function (k) {
-      ['gates', 'see'].forEach(function (p) {
-        const x = contrats[k] && contrats[k][p];
-        if (x && typeof x.message === 'string' && x.message.length > 60) x.message = x.message.slice(0, 59) + '…';
-      });
-    });
-    if (rendu.robot && typeof rendu.robot.message === 'string' && rendu.robot.message.length > 60) rendu.robot.message = rendu.robot.message.slice(0, 59) + '…';
-    json = JSON.stringify(rendu);
+  const taille = function () { return octetsUtf8_(JSON.stringify(rendu)); };
+  const parties = function (f) {
+    Object.keys(contrats).forEach(function (k) { ['gates', 'see'].forEach(function (p) { const x = contrats[k] && contrats[k][p]; if (x && typeof x === 'object') f(x); }); });
+    if (rendu.robot && typeof rendu.robot === 'object') f(rendu.robot);
+  };
+  const quand = function (k) {
+    const x = contrats[k] || {};
+    return [x.gates && x.gates.quand, x.see && x.see.quand, x.gates && x.gates.corrigeLe, x.see && x.see.corrigeLe].filter(Boolean).sort().pop() || '';
+  };
+  const duPlusAncien = function () {
+    return Object.keys(contrats).sort(function (a, b) { return quand(a) < quand(b) ? -1 : quand(a) > quand(b) ? 1 : 0; });
+  };
+  if (taille() > RAPPORT_TAILLE_MAX) {
+    parties(function (x) { if (typeof x.message === 'string' && x.message.length > 60) x.message = x.message.slice(0, 59) + '…'; });
   }
-  if (json.length > RAPPORT_TAILLE_MAX) {
-    const quand = function (k) {
-      const x = contrats[k] || {};
-      return [x.gates && x.gates.quand, x.see && x.see.quand].filter(Boolean).sort().pop() || '';
-    };
-    const gardes = Object.keys(contrats).sort(function (a, b) { return quand(a) < quand(b) ? 1 : quand(a) > quand(b) ? -1 : 0; }).slice(0, 25);
-    Object.keys(contrats).forEach(function (k) { if (gardes.indexOf(k) === -1) delete contrats[k]; });
-    json = JSON.stringify(rendu);
+  if (taille() > RAPPORT_TAILLE_MAX) {
+    duPlusAncien().slice(0, Math.max(0, Object.keys(contrats).length - 25)).forEach(function (k) { delete contrats[k]; });
   }
-  PropertiesService.getDocumentProperties().setProperty(CLE_RAPPORTS, json);
+  /* Les messages valent plus que les plus vieux comptes rendus : ceux-ci
+     partent d'abord, jusqu'à dix contrats gardés. */
+  const premiers = duPlusAncien();
+  while (taille() > RAPPORT_TAILLE_MAX && premiers.length > 10) delete contrats[premiers.shift()];
+  if (taille() > RAPPORT_TAILLE_MAX) parties(function (x) { if (x.message) x.message = ''; });
+  if (taille() > RAPPORT_TAILLE_MAX) parties(function (x) { delete x.tape; });
+  const ordre = duPlusAncien();
+  while (taille() > RAPPORT_TAILLE_MAX && ordre.length) delete contrats[ordre.shift()];
+  try {
+    PropertiesService.getDocumentProperties().setProperty(CLE_RAPPORTS, JSON.stringify(rendu));
+  } catch (err) {
+    throw new Error('Le compte rendu est trop gros pour le classeur : il n’est pas enregistré. Il sera renvoyé au prochain passage.');
+  }
   if (MEMO_LECTURE) MEMO_LECTURE.proprietes = null;
 }
 
@@ -6227,48 +6415,75 @@ function rapportDuContrat_(rapports, id) {
  * Ce que la page dit sous la ligne d'un contrat : { niveau ('ok',
  * 'attention', 'erreur', 'attente', 'neutre'), lignes }. Sans erreur, une
  * seule ligne : « Mis à jour aujourd’hui à 14 h 07 ». `etat` : 'actif',
- * 'masque' ou 'prevu'.
+ * 'masque', 'prevu' ou 'introuvable' (une fiche sans onglet).
+ * Débrief 30 (relu) : une erreur que la fiche vient de corriger
+ * (`corrigeLe`, posé par adminEnregistrerContrat) ne se dit plus en rouge :
+ * « Fiche corrigée … : le robot vérifiera à son prochain passage ». Et un
+ * contrat resté sans nouvelles alors que le robot, lui, est passé ne fait
+ * pas demander si le PC est allumé.
  */
 function suiviDuContrat_(id, etat, rapports, maintenant) {
   const r = rapportDuContrat_(rapports, id), g = r && r.gates && typeof r.gates === 'object' ? r.gates : null;
   const s = r && r.see && typeof r.see === 'object' ? r.see : null;
   if (etat === 'masque') return { niveau: 'neutre', lignes: ['Masqué : le robot ne l’exporte plus.'] };
+  if (etat === 'introuvable') return { niveau: 'erreur', lignes: [phraseSansOnglet_(id)] };
+  const corrigee = function (x) { return !!(x && x.corrigeLe && dateDite_(x.corrigeLe, maintenant) && (x.ok === false || x.code === 'colonne-harnais')); };
+  const robot = rapports && rapports.robot;
+  const heure = heureDuRobotDite_(robot && robot.heure);
+  const corrections = [g, s].filter(corrigee).map(function (x) { return x.corrigeLe; }).sort();
+  const ligneCorrigee = corrections.length
+    ? 'Fiche corrigée ' + dateDite_(corrections[corrections.length - 1], maintenant) + ' : le robot vérifiera à son prochain passage (chaque jour à partir de ' + heure + ', PC allumé).' : '';
   if (etat === 'prevu' && !(g && typeof g.ok === 'boolean')) {
     return { niveau: 'attente', lignes: ['Prévu : son onglet sera créé au prochain passage du robot, avec son premier export GATES.'] };
   }
   const lignes = [];
   let niveau = '';
-  if (g && g.ok === false) { niveau = 'erreur'; lignes.push(g.message || 'Le dernier export GATES n’a pas abouti.'); }
-  else if (g && g.code === 'colonne-harnais') { niveau = 'attention'; lignes.push(g.message || 'La colonne de la validation harnais n’est pas dans l’export du jour.'); }
-  if (s && s.ok === false) { niveau = 'erreur'; lignes.push(s.message || 'Le dernier import SEE n’a pas abouti.'); }
+  if (g && g.ok === false && !corrigee(g)) { niveau = 'erreur'; lignes.push(g.message || 'Le dernier export GATES n’a pas abouti.'); }
+  else if (g && g.code === 'colonne-harnais' && !corrigee(g)) { niveau = 'attention'; lignes.push(g.message || 'La colonne de la validation harnais n’est pas dans l’export du jour.'); }
+  if (s && s.ok === false && !corrigee(s)) { niveau = 'erreur'; lignes.push(s.message || 'Le dernier import SEE n’a pas abouti.'); }
   if (niveau) {
+    if (ligneCorrigee) lignes.push(ligneCorrigee);
     const dit = g && g.dernierOk ? dateDite_(g.dernierOk, maintenant) : '';
     lignes.push(dit ? 'Dernière mise à jour réussie : ' + dit + '.' : 'Pas encore de mise à jour réussie.');
     return { niveau: niveau, lignes: lignes };
   }
+  if (ligneCorrigee) return { niveau: 'attente', lignes: [ligneCorrigee] };
   if (!g || !g.dernierOk || !dateDite_(g.dernierOk, maintenant)) return { niveau: 'neutre', lignes: ['Pas encore de compte rendu du robot.'] };
   const jours = joursEntre_(g.dernierOk, maintenant);
   if (jours >= ROBOT_JOURS_ALERTE) {
-    return { niveau: 'attention', lignes: ['Pas mis à jour depuis ' + jours + ' jours (dernière fois ' + dateDite_(g.dernierOk, maintenant) + '). Le PC du robot est-il allumé ?'] };
+    const avant = 'Pas mis à jour depuis ' + jours + ' jours (dernière fois ' + dateDite_(g.dernierOk, maintenant) + ')';
+    const passe = robot && dateDite_(robot.quand, maintenant) && joursEntre_(robot.quand, maintenant) < ROBOT_JOURS_ALERTE;
+    return { niveau: 'attention', lignes: [passe
+      ? avant + ', alors que le robot est passé ' + dateDite_(robot.quand, maintenant) + ' sans rien en dire : vérifiez sa fiche, d’abord le nom exact de sa tranche dans GATES.'
+      : avant + '. Le PC du robot est-il allumé ?'] };
   }
   return { niveau: 'ok', lignes: ['Mis à jour ' + dateDite_(g.dernierOk, maintenant)] };
 }
 
-/** La ligne du robot, en tête de l'onglet Contrats : { niveau, texte, heure }. */
-function suiviDuRobot_(rapports, maintenant, nbErreurs) {
+/* « 14:00 » → « 14 h », « 14:30 » → « 14 h 30 » ; illisible : « 14 h » (l'heure du robot par défaut). */
+function heureDuRobotDite_(hhmm) {
+  const t = String(hhmm === undefined || hhmm === null ? '' : hhmm);
+  if (!/^\d\d:\d\d$/.test(t)) return '14 h';
+  return Number(t.slice(0, 2)) + ' h' + (t.slice(3) === '00' ? '' : ' ' + t.slice(3));
+}
+
+/** La ligne du robot, en tête de l'onglet Contrats : { niveau, texte, heure }. Débrief 30 (relu) : les contrats « à vérifier » (niveau attention) se comptent aussi. */
+function suiviDuRobot_(rapports, maintenant, nbErreurs, nbAttention) {
   const r = rapports && rapports.robot;
   const heure = r && /^\d\d:\d\d$/.test(String(r.heure || '')) ? String(r.heure) : '';
   if (!r || !dateDite_(r.quand, maintenant)) {
     return { niveau: 'neutre', heure: heure, texte: 'Le robot n’a encore rien envoyé. Une fois installé et activé sur le PC, il passe chaque jour (à partir de ' +
-      (heure ? Number(heure.slice(0, 2)) + ' h ' + heure.slice(3) : '14 h') + ', PC allumé) et dit ici ce qu’il a fait.' };
+      heureDuRobotDite_(heure) + ', PC allumé) et dit ici ce qu’il a fait.' };
   }
   const quand = dateDite_(r.quand, maintenant), jours = joursEntre_(r.quand, maintenant);
   if (jours >= ROBOT_JOURS_ALERTE) {
     return { niveau: 'attention', heure: heure, texte: 'Le robot n’est pas passé depuis ' + jours + ' jours (dernier passage ' + quand + '). Le PC du robot est-il allumé ?' };
   }
   if (r.ok === false) return { niveau: 'erreur', heure: heure, texte: 'Dernier passage du robot ' + quand + ' : ' + (r.message || 'il n’a pas abouti.') };
-  return { niveau: 'ok', heure: heure, texte: 'Dernier passage du robot ' + quand + ' : ' + (nbErreurs > 0
-    ? nbErreurs + ' contrat' + (nbErreurs > 1 ? 's' : '') + ' à corriger, ci-dessous.' : 'tout s’est bien passé.') };
+  const e = nbErreurs > 0 ? nbErreurs + ' contrat' + (nbErreurs > 1 ? 's' : '') + ' à corriger' : '';
+  const a = nbAttention > 0 ? (e ? nbAttention : nbAttention + ' contrat' + (nbAttention > 1 ? 's' : '')) + ' à vérifier' : '';
+  return { niveau: e || a ? 'attention' : 'ok', heure: heure, texte: 'Dernier passage du robot ' + quand + ' : ' +
+    (e || a ? [e, a].filter(Boolean).join(' et ') + ', ci-dessous.' : 'tout s’est bien passé.') };
 }
 
 /** La seconde base (SEE) se partage-t-elle par PSN ? Sinon, la fiche n'a pas de PSN. */
@@ -6299,7 +6514,38 @@ function verifierNomContrat_(classeur, brut, ancienPrevu) {
   }
   const autre = contratsPrevus_(classeur).filter(function (p) { return memeContrat_(p.id, nom) && !(ancienPrevu && p.id === ancienPrevu); })[0];
   if (autre) throw new Error('[nom] Le contrat « ' + autre.id + ' » est déjà prévu : modifiez sa fiche.');
+  /* Débrief 30 (relu) : la fiche d'un contrat dont l'onglet n'existe plus garde ce nom. */
+  const orpheline = fichesSansOnglet_(classeur).filter(function (p) { return memeContrat_(p.id, nom); })[0];
+  if (orpheline) {
+    throw new Error('[nom] « ' + orpheline.id + ' » a encore sa fiche, mais plus d’onglet (renommé ou supprimé dans Sheets ?) : ' +
+      'redonnez ce nom à son onglet, ou oubliez d’abord cette fiche (ligne « Onglet introuvable »).');
+  }
   return nom;
+}
+
+/* Débrief 30 (relu) : le nom GATES que le robot tape aujourd'hui pour chaque
+   contrat qu'il exporte — celui de sa fiche, sinon ce qu'il a tapé à son
+   dernier passage (comptes rendus), sinon le nom du contrat (décision 6) —
+   et celui des fiches des contrats masqués. Deux contrats de familles
+   différentes n'ont pas le même export : rend le contrat qui a déjà ce nom,
+   ou undefined. */
+function nomGatesDejaPris_(classeur, nomGates, id, ancien) {
+  if (!nomGates) return undefined;
+  const fiches = fichesEnregistrees_(), rapports = rapportsEnregistres_(), noms = {};
+  const sansOnglet = fichesSansOnglet_(classeur).map(function (p) { return p.id; });
+  Object.keys(fiches).forEach(function (k) {
+    const ng = saisiePropre_(fiches[k] && fiches[k].nomGates);
+    if (ng && sansOnglet.indexOf(k) === -1) noms[k] = ng;
+  });
+  listerContrats(classeur).map(function (c) { return c.id; }).concat(contratsPrevus_(classeur).map(function (p) { return p.id; })).forEach(function (k) {
+    if (cleDuContrat_(noms, k) !== undefined) return;
+    const r = rapportDuContrat_(rapports, k);
+    noms[k] = saisiePropre_(r && r.gates && r.gates.tape) || k;
+  });
+  return Object.keys(noms).filter(function (k) {
+    if (memeContrat_(k, id) || (ancien && memeContrat_(k, ancien))) return false;
+    return normaliser(noms[k]) === normaliser(nomGates) && familleDuContrat_(k) !== familleDuContrat_(id);
+  })[0];
 }
 
 /**
@@ -6308,38 +6554,48 @@ function verifierNomContrat_(classeur, brut, ancienPrevu) {
  * concept }, psn: '4530, 4531' }. Les erreurs de saisie commencent par le
  * nom du champ entre crochets (« [fwd] … ») : la page la pose sous lui.
  * Rend adminContrats(), avec { enregistre (l'id du contrat), colonnesChangees,
- * donneesChangees (colonnes ou PSN d'un contrat qui a des données) }.
+ * donneesChangees (colonnes ou PSN d'un contrat qui a des données),
+ * corrige (une erreur du dernier passage que la fiche corrige), messageDroits }.
+ * Débrief 30 (relu) : le nom GATES d'un contrat qui a son onglet peut rester
+ * vide — le robot tape alors ce qu'il tapait (décision 6) ; seuls le
+ * responsable et les administrateurs de tous les contrats renomment un
+ * prévu (renommer, c'est presque ajouter) ; l'état du contrat est relu sous
+ * le verrou — le robot a pu créer son onglet entre-temps — et tout s'écrit
+ * d'un seul coup (lotDeProprietes_).
  */
 function adminEnregistrerContrat(fiche) {
   const f = fiche !== null && typeof fiche === 'object' ? fiche : {};
   const idBrut = saisiePropre_(f.id);
   const ajout = !idBrut;
+  const deTous = function (x) { return x.role === 'responsable' || (x.role === 'administrateur' && x.tous); };
   const d = ajout
-    ? exigerAdmin_(function (x) { return x.role === 'responsable' || (x.role === 'administrateur' && x.tous); }, 'au responsable et aux administrateurs de tous les contrats')
+    ? exigerAdmin_(deTous, 'au responsable et aux administrateurs de tous les contrats')
     : exigerAdmin_(function (x) { return peutGerer_(x, idBrut); }, 'aux administrateurs de ' + idBrut.slice(0, 60));
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
   const connu = ajout ? null : contratConnu_(classeur, idBrut);
   if (!ajout && !connu) throw new Error('Contrat introuvable : « ' + idBrut.slice(0, 60) + ' ». La liste vient d’être relue.');
+  if (connu && connu.etat === 'introuvable') throw new Error(phraseSansOnglet_(connu.id) + ' La liste vient d’être relue.');
   const prevu = !!connu && connu.etat === 'prevu', aOnglet = !!connu && !prevu;
+  const ficheAvant = connu ? ficheDe_(connu.id) || { nomGates: '' } : { nomGates: '' };
 
-  /* Le nom GATES. */
+  /* Le nom GATES : obligatoire pour un contrat sans onglet (le robot n'a
+     rien d'autre à taper pour lui). */
   const nomGates = saisiePropre_(f.nomGates);
-  if (!nomGates) throw new Error('[nomGates] Donnez le nom exact de la tranche dans GATES : ce que vous tapez dans CHILDNéo pour avoir son export.');
+  if (!nomGates && !aOnglet) throw new Error('[nomGates] Donnez le nom exact de la tranche dans GATES : ce que vous tapez dans CHILDNéo pour avoir son export.');
   if (nomGates.length > NOM_GATES_MAX) throw new Error('[nomGates] Ce nom fait ' + nomGates.length + ' caractères : ' + NOM_GATES_MAX + ' au plus.');
   if (/^[=+\-@]/.test(nomGates)) throw new Error('[nomGates] Un nom ne commence pas par =, +, - ou @.');
 
   /* Le nom du contrat : celui de son onglet, s'il en a un — il ne change pas. */
   let id = connu ? connu.id : '';
   const voulu = saisiePropre_(f.nom) || nomGates;
+  const renomme = prevu && !!voulu && voulu !== connu.id;
+  if (renomme && !deTous(d)) throw new Error('[nom] Seuls le responsable et les administrateurs de tous les contrats renomment un contrat prévu.');
   if (ajout) id = verifierNomContrat_(classeur, voulu, '');
-  else if (prevu && voulu !== connu.id) id = verifierNomContrat_(classeur, voulu, connu.id);
+  else if (renomme) id = verifierNomContrat_(classeur, voulu, connu.id);
 
-  /* Deux contrats de familles différentes n'ont pas le même export. */
-  const fiches = fichesEnregistrees_();
-  const doublon = Object.keys(fiches).filter(function (k) {
-    if (memeContrat_(k, id) || (connu && memeContrat_(k, connu.id))) return false;
-    return normaliser(fiches[k] && fiches[k].nomGates) === normaliser(nomGates) && familleDuContrat_(k) !== familleDuContrat_(id);
-  })[0];
+  /* Deux contrats de familles différentes n'ont pas le même export — le nom
+     que le robot tape pour un contrat sans fiche compris. */
+  const doublon = nomGatesDejaPris_(classeur, nomGates, id, connu && connu.id);
   if (doublon) throw new Error('[nomGates] « ' + nomGates + ' » est déjà le nom GATES de « ' + doublon + ' » : deux contrats auraient le même export.');
 
   /* Les colonnes. Une colonne qui ne change pas n'est pas revérifiée : une
@@ -6355,12 +6611,13 @@ function adminEnregistrerContrat(fiche) {
   const feuille = aOnglet ? classeur.getSheetByName(connu.id) : null;
   const pasLue = function (champ, designation) {
     if (!feuille || colonneSuivieLue_(feuille, designation)) return;
-    throw new Error('[' + champ + '] La colonne « ' + designation.replace('>', '\u203a') + ' » n’est pas dans l’onglet « ' + connu.id + ' » (son dernier export).' +
+    throw new Error('[' + champ + '] La colonne « ' + designation.replace('>', '›') + ' » n’est pas dans l’onglet « ' + connu.id + ' » (son dernier export).' +
       phraseProches_(colonnesProches_(designation, entetesDeLOnglet_(feuille), 3)));
   };
-  if (cleDesignation_(fwd) !== cleDesignation_(avant.fwd)) pasLue('fwd', fwd);
-  if (concept && cleDesignation_(concept) !== cleDesignation_(avant.concept)) pasLue('concept', concept);
-  const colonnesAEcrire = !aOnglet || cleDesignation_(fwd) !== cleDesignation_(avant.fwd) || cleDesignation_(concept) !== cleDesignation_(avant.concept);
+  const fwdChange = cleDesignation_(fwd) !== cleDesignation_(avant.fwd), conceptChange = cleDesignation_(concept) !== cleDesignation_(avant.concept);
+  if (fwdChange) pasLue('fwd', fwd);
+  if (concept && conceptChange) pasLue('concept', concept);
+  const colonnesAEcrire = !aOnglet || fwdChange || conceptChange;
 
   /* Le PSN : seulement quand l'extract SEE se partage par PSN. */
   let psn = null;
@@ -6370,31 +6627,83 @@ function adminEnregistrerContrat(fiche) {
     const deja = psnDuContrat(connu ? connu.id : id).psn;
     if (psn.map(normaliser).join(',') === deja.map(normaliser).join(',')) psn = null;
   }
+  const gatesChange = normaliser(nomGates) !== normaliser(ficheAvant.nomGates);
 
+  let droits = [], corrige = false;
   sousVerrou_(function () {
-    if (prevu && id !== connu.id) renommerContrat_(connu.id, id);
-    ecrireFiche_(id, ajout ? { nomGates: nomGates, ajoute: new Date().toISOString(), par: d.email } : { nomGates: nomGates });
-    if (colonnesAEcrire) enregistrerColonnes_(id, { fwd: fwd, concept: concept });
-    if (psn) ecrirePsn_(id, psn);
+    /* Relu sous le verrou : l'import a pu créer l'onglet du prévu (le
+       robot passe à 14 h), ou quelqu'un a pu le retirer, entre la lecture
+       et ici. */
+    if (ajout) verifierNomContrat_(classeur, voulu, '');
+    else {
+      const encore = contratConnu_(classeur, connu.id);
+      if (!encore || encore.etat === 'introuvable') {
+        throw new Error(prevu ? 'Contrat prévu introuvable : « ' + connu.id + ' » (retiré entre-temps). La liste vient d’être relue.'
+          : '« ' + connu.id + ' » n’a plus d’onglet dans le classeur (renommé ou supprimé ?) : sa fiche n’est pas enregistrée. La liste vient d’être relue.');
+      }
+      if ((encore.etat === 'prevu') !== prevu) {
+        throw new Error(prevu ? '« ' + connu.id + ' » vient de recevoir son premier export (le robot est passé) : sa fiche n’est pas enregistrée. ' +
+          'La liste vient d’être relue : rouvrez sa fiche.' : '« ' + connu.id + ' » a changé entre-temps : sa fiche n’est pas enregistrée. La liste vient d’être relue.');
+      }
+      if (renomme) verifierNomContrat_(classeur, voulu, connu.id);
+    }
+    const lot = lotDeProprietes_(), maintenant = new Date().toISOString();
+    if (renomme) droits = renommerContrat_(connu.id, id, lot, autresContrats_(classeur, connu.id));
+    ecrireFiche_(id, ajout ? { nomGates: nomGates, ajoute: maintenant, par: d.email } : { nomGates: nomGates }, lot);
+    if (aOnglet) marquerFicheCree_(id, lot);
+    if (colonnesAEcrire) enregistrerColonnes_(id, { fwd: fwd, concept: concept }, lot);
+    if (psn) ecrirePsn_(id, psn, lot);
+    /* Une erreur du dernier passage que la fiche corrige : la page ne la
+       dit plus en rouge, mais « corrigée, le robot vérifiera ». */
+    if (!ajout) {
+      lot.changer(CLE_RAPPORTS, function (r) {
+        const c = r.contrats && typeof r.contrats === 'object' ? r.contrats[cleDuContrat_(r.contrats, id)] : null;
+        if (!c || typeof c !== 'object') return;
+        const g = c.gates && typeof c.gates === 'object' ? c.gates : null, s = c.see && typeof c.see === 'object' ? c.see : null;
+        if (g && g.ok === false && ((gatesChange && ['gates-introuvable', 'gates-export', 'douteux', 'colonne-elec'].indexOf(g.code) !== -1) ||
+            (fwdChange && g.code === 'colonne-elec'))) { g.corrigeLe = maintenant; corrige = true; }
+        if (g && g.code === 'colonne-harnais' && g.ok !== false && conceptChange) { g.corrigeLe = maintenant; corrige = true; }
+        if (s && s.ok === false && psn && (s.code === 'see-aucune' || s.code === 'see-sans-psn')) { s.corrigeLe = maintenant; corrige = true; }
+      });
+    }
+    lot.ecrire();
     if (aOnglet && (colonnesAEcrire || psn)) marquerDonneesModifiees_();
   });
   journaliserAdmin_(d.email, ajout ? 'contrat ajouté : ' + id + ' (GATES « ' + nomGates + ' »)'
-    : 'fiche modifiée : ' + id + (prevu && id !== connu.id ? ' (avant : ' + connu.id + ')' : ''));
-  return Object.assign(adminContrats(), { enregistre: id, colonnesChangees: aOnglet && colonnesAEcrire, donneesChangees: aOnglet && (colonnesAEcrire || !!psn) });
+    : 'fiche modifiée : ' + id + (renomme ? ' (avant : ' + connu.id + ')' : ''));
+  return Object.assign(adminContrats(), { enregistre: id, colonnesChangees: aOnglet && colonnesAEcrire, donneesChangees: aOnglet && (colonnesAEcrire || !!psn),
+                                          corrige: corrige, messageDroits: phraseDesDroits_(droits, true) });
 }
 
-/** Retire un contrat prévu — il n'a encore reçu aucune donnée : sa fiche s'efface, le robot ne le cherche plus. */
+/**
+ * Retire un contrat prévu — il n'a encore reçu aucune donnée : sa fiche
+ * s'efface, le robot ne le cherche plus. Débrief 30 (relu) : oublie aussi la
+ * fiche d'un contrat dont l'onglet n'existe plus ; l'état est relu sous le
+ * verrou (le robot a pu créer l'onglet entre-temps) ; les droits qui ne
+ * visaient qu'un prévu s'en vont avec lui.
+ */
 function adminRetirerContratPrevu(id) {
   const d = exigerAdmin_(function (x) { return x.role === 'responsable' || (x.role === 'administrateur' && x.tous); },
     'au responsable et aux administrateurs de tous les contrats');
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
   const nom = saisiePropre_(id);
   const c = contratConnu_(classeur, nom);
-  if (c && c.etat !== 'prevu') throw new Error('« ' + c.id + ' » a déjà reçu des données : il se masque, il ne se retire pas.');
+  if (c && c.etat !== 'prevu' && c.etat !== 'introuvable') throw new Error('« ' + c.id + ' » a déjà reçu des données : il se masque, il ne se retire pas.');
   if (!c) throw new Error('Contrat prévu introuvable : « ' + nom.slice(0, 60) + ' ». La liste vient d’être relue.');
-  sousVerrou_(function () { oublierContrat_(c.id); });
-  journaliserAdmin_(d.email, 'contrat prévu retiré : ' + c.id);
-  return adminContrats();
+  let droits = [];
+  sousVerrou_(function () {
+    const encore = contratConnu_(classeur, c.id);
+    if (!encore) throw new Error('Contrat prévu introuvable : « ' + c.id + ' ». La liste vient d’être relue.');
+    if (encore.etat !== 'prevu' && encore.etat !== 'introuvable') {
+      throw new Error(c.etat === 'prevu' ? '« ' + c.id + ' » vient de recevoir son premier export (le robot est passé) : il se masque, il ne se retire plus. La liste vient d’être relue.'
+        : '« ' + c.id + ' » a retrouvé son onglet : sa fiche reste. La liste vient d’être relue.');
+    }
+    const lot = lotDeProprietes_();
+    droits = oublierContrat_(c.id, lot, autresContrats_(classeur, c.id), encore.etat === 'prevu');
+    lot.ecrire();
+  });
+  journaliserAdmin_(d.email, (c.etat === 'prevu' ? 'contrat prévu retiré : ' : 'fiche sans onglet oubliée : ') + c.id);
+  return Object.assign(adminContrats(), { messageDroits: phraseDesDroits_(droits, false) });
 }
 
 // =====================================================================
@@ -7281,6 +7590,8 @@ function importRapport(jeton, rapport) {
     if (brut.tape !== undefined && brut.tape !== null) x.tape = saisiePropre_(brut.tape).slice(0, NOM_GATES_MAX);
     if (typeof brut.ok === 'boolean') {
       const code = saisiePropre_(brut.code);
+      /* Débrief 30 (relu) : un nouveau résultat remplace « fiche corrigée, le robot vérifiera ». */
+      delete x.corrigeLe;
       x.quand = maintenant;
       x.ok = brut.ok;
       x.code = CODES_RAPPORT.indexOf(code) !== -1 ? code : (brut.ok && !code ? '' : 'autre');
@@ -7647,21 +7958,29 @@ function importSecondeBaseFin(jeton, nomFeuille, cible, lignesAttendues, fusions
       const manque = [choisies.fwd].concat(choisies.concept && !c.prevu ? [choisies.concept] : [])
         .filter(function (d) { return !colonneSuivieLue_(feuille, d); })[0];
       if (manque) {
-        const proches = c.prevu ? phraseProches_(colonnesProches_(manque, entetesDeLOnglet_(feuille), 3)) : '';
+        /* Débrief 30 (relu) : les colonnes les plus proches, pour un contrat
+           qui a déjà son onglet aussi (décision 5). */
+        const proches = phraseProches_(colonnesProches_(manque, entetesDeLOnglet_(feuille), 3));
         classeur.deleteSheet(feuille);
         if (c.prevu) {
           throw new Error('La colonne de la validation ELEC « ' + manque.replace('>', '›') + ' » n’est pas dans cet export de « ' + c.onglet + ' » : son onglet n’est pas créé.' +
             proches + ' Corrigez-la dans le tableau de bord → Administration → Contrats.');
         }
-        throw new Error('Colonne « ' + manque.replace('>', '›') + ' » introuvable dans cet export : en choisir une autre dans la case de « ' + c.onglet + ' ».');
+        throw new Error('Colonne « ' + manque.replace('>', '›') + ' » introuvable dans cet export.' + proches + ' En choisir une autre dans la case de « ' + c.onglet +
+          ' », ou corriger la fiche du contrat dans le tableau de bord → Administration → Contrats.');
       }
     }
     const suivieAvant = c.sorte === 'gates' ? colonnesDuContrat(c.contrat).fwd : '';
     if (c.sorte === 'gates' && existant && suivieAvant && !choisies &&
         colonneSuivieLue_(existant, suivieAvant) && !colonneSuivieLue_(feuille, suivieAvant)) {
+      /* Débrief 30 (relu) : le robot dépose l'export d'un contrat existant
+         sans choisir de colonne — la phrase dit les plus proches, et où
+         corriger, si c'est GATES qui a renommé la colonne. */
+      const proches = phraseProches_(colonnesProches_(suivieAvant, entetesDeLOnglet_(feuille), 3));
       classeur.deleteSheet(feuille);
       throw new Error('Colonne suivie absente de cet export : « ' + suivieAvant.replace('>', '›') + ' » n’y est pas, alors que l’onglet « ' +
-        c.onglet + ' » l’a. Est-ce bien l’export de ce contrat, avec son bloc suivi ?');
+        c.onglet + ' » l’a. Est-ce bien l’export de ce contrat, avec son bloc suivi ?' + proches +
+        ' Si GATES a renommé la colonne, corrigez la colonne de la validation ELEC de ce contrat dans le tableau de bord → Administration → Contrats.');
     }
     if (c.sorte === 'gates' && c.nouveau) rattacherAuContratUnique_(classeur, renommes);
     remplace = !!existant;
@@ -7685,6 +8004,12 @@ function importSecondeBaseFin(jeton, nomFeuille, cible, lignesAttendues, fusions
     }
     if (existant) classeur.deleteSheet(existant);
     if (choisies) enregistrerColonnes_(c.onglet, choisies);
+    /* Débrief 30 (relu) : le contrat a son onglet — sa fiche, s'il en a une,
+       le retient : renommé ou supprimé plus tard dans Sheets, il ne
+       redeviendra jamais « prévu » (le robot ne le recréerait pas). */
+    if (c.sorte === 'gates') {
+      try { marquerFicheCree_(c.onglet); } catch (err) { /* l'import est fait ; le prochain le notera */ }
+    }
     marquerDonneesModifiees_();
   } finally {
     verrou.releaseLock();
@@ -7766,8 +8091,15 @@ function colonnesChoisies_(cible) {
   return { fwd: epure(k.fwd), concept: normaliser(concept) === normaliser(k.fwd) ? '' : concept };
 }
 
-/** Les colonnes suivies d'un contrat, gardées dans le classeur — appelé sous le verrou des gestes. */
-function enregistrerColonnes_(idContrat, colonnes) {
+/** Les colonnes suivies d'un contrat, gardées dans le classeur — appelé sous le verrou des gestes ; dans `lot` s'il est donné (débrief 30, relu). */
+function enregistrerColonnes_(idContrat, colonnes, lot) {
+  if (lot) {
+    lot.changer(CLE_COLONNES, function (tous) {
+      sansClesDuContrat_(tous, idContrat);
+      tous[idContrat] = { fwd: colonnes.fwd, concept: colonnes.concept || '' };
+    });
+    return;
+  }
   const props = PropertiesService.getDocumentProperties();
   let tous = {};
   try { tous = analyserJson(props.getProperty(CLE_COLONNES)) || {}; } catch (err) { tous = {}; }
@@ -11485,7 +11817,8 @@ function scriptImportSecondeBase_(P) {
     }
     var harnais = fin.conceptDemande && !fin.concept;
     return { ok: true, code: harnais ? 'colonne-harnais' : '', plans: fin.plans,
-             message: harnais ? 'La colonne de la validation harnais « ' + concept.replace('>', '›') + ' » n’est pas dans l’export du jour : le concept harnais ne se lit pas.' : '' };
+             message: harnais ? 'La colonne de la validation harnais « ' + concept.replace('>', '›') + ' » n’est pas dans l’export du jour : le concept harnais ne se lit pas. ' +
+               'Corrigez-la dans le tableau de bord → Administration → Contrats, ou videz-la si ce contrat n’en suit pas.' : '' };
   }
   function codeDeLErreur(m) {
     return /^(La colonne de la validation ELEC|Colonne suivie absente|Colonne « .* » introuvable dans cet export)/.test(String(m || '')) ? 'colonne-elec' : 'import';
