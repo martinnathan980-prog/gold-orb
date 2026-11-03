@@ -14,6 +14,28 @@ tableau de bord.
     python robot.py desactiver   plus de lancement automatique
     python robot.py etat         ce que le robot sait, et son dernier passage
     python robot.py navigateur   Chrome ou Edge (Edge reconnaît la session Windows)
+    python robot.py oublier      tout recommencer : les exports appris sont rangés de côté
+                                 (rien n'est effacé), les connexions et l'adresse restent
+    python robot.py adresse      l'adresse du tableau de bord : la voir, la changer, la vérifier
+
+Débrief 31 :
+— la fenêtre du robot travaille même quand on clique ailleurs (une autre
+  application au premier plan) : GATES et SEE la croient toujours au
+  premier plan (le « focus ») ; un menu ouvert ne se referme plus ;
+— à chaque passage, le robot dit ce qu'il a lu dans le tableau de bord :
+  son adresse, sa version (« Livraison … »), et pour chaque contrat ce
+  qu'il tapera dans GATES (« THS → tape « THS AA » ») ; une ancienne
+  version du tableau de bord est dite en clair, avec quoi faire ;
+— GATES s'apprend en lisant les fiches du tableau de bord : le nom tapé
+  (« HDK AA ») est reconnu sans question ;
+— une attente longue dit son maximum, puis où elle en est, chaque minute ;
+— l'adresse du tableau de bord se change (« Changer l'adresse du tableau de
+  bord », et « 1 - Preparer ») : le bon lien finit par /dev (Déployer →
+  Tester les déploiements), il montre toujours le dernier code enregistré —
+  une adresse /exec reste sur UN déploiement, et chaque « Nouveau
+  déploiement » en a une autre (le robot de Nathan voyait ainsi une
+  ancienne version : ni fiches, ni contrats prévus) ;
+— « oublier » : tout recommencer, sans rien effacer.
 
 Débrief 30 : tout se règle dans le tableau de bord (Administration → Contrats).
 Chaque jour, le robot lit dans la fenêtre d'import les contrats du jour — ceux
@@ -32,6 +54,8 @@ Ses fichiers vivent dans %LOCALAPPDATA%\\SuiviFWD (ailleurs : ~/.suivi-fwd) :
     robot.json          la configuration (adresse du tableau, exports appris)
     robot.avant-rangement.json  la même, telle qu'avant le rangement du débrief 30
     exports/*.json      un export appris = la suite des gestes
+    exports-oublies/    les exports mis de côté par « oublier » (un dossier daté par fois)
+    dernier-tableau.json ce que le robot a lu du tableau de bord la dernière fois
     chrome/             le profil du Chrome du robot (connexions gardées)
     telechargements/    où ses fichiers arrivent
     journal.txt         ce qu'il a fait, jour par jour
@@ -53,6 +77,7 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.parse
 import urllib.request
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
@@ -459,6 +484,69 @@ CALME_JS = r"""
 })()
 """
 
+# Débrief 31 : la page du robot se croit toujours au premier plan. Quand on
+# clique dans une autre application, la fenêtre du robot perd le « focus » :
+# GATES et SEE referment alors leurs menus (« blur » de la fenêtre), ou
+# ignorent un clic tant que la page n'a pas le focus (document.hasFocus()).
+# Deux défenses, l'une derrière l'autre :
+#  1. Chrome lui-même fait comme si la page avait le focus
+#     (Emulation.setFocusEmulationEnabled, garder_le_focus) ;
+#  2. ce script, posé dans chaque page avant les siens (et dans ses cadres
+#     de même origine) : document.hasFocus() vaut toujours vrai, la page est
+#     toujours « visible », et la perte du focus venue de l'extérieur (une
+#     autre fenêtre au premier plan) ne lui est pas dite. Un « blur » que le
+#     robot provoque lui-même en cliquant dans la page passe toujours : il
+#     n'est arrêté que si la vraie page n'a plus le focus à ce moment-là, et
+#     qu'aucun élément de la page ne le reçoit (relatedTarget vide).
+FOCUS_JS = r"""
+(function () {
+  var installer = function (w) {
+    try {
+      if (!w || w.__suiviFocus) return;
+      w.__suiviFocus = true;
+      var D = w.Document && w.Document.prototype, doc = w.document;
+      var vrai = D && D.hasFocus;
+      /* La vraie réponse, gardée pour décider (et pour les essais). */
+      var reel = function () { try { return vrai ? !!vrai.call(doc) : true; } catch (x) { return true; } };
+      w.__suiviVraiFocus = reel;
+      var poser = function (nom, desc) { try { desc.configurable = true; Object.defineProperty(D, nom, desc); } catch (x) {} };
+      if (D) {
+        poser('hasFocus', { value: function () { return true; }, writable: true });
+        poser('visibilityState', { get: function () { return 'visible'; } });
+        poser('webkitVisibilityState', { get: function () { return 'visible'; } });
+        poser('hidden', { get: function () { return false; } });
+        poser('webkitHidden', { get: function () { return false; } });
+      }
+      var taire = function (ev) { ev.stopImmediatePropagation(); };
+      /* La fenêtre perd le focus : seulement quand c'est pour de vrai (pas
+         quand le focus passe dans un cadre de la page). */
+      w.addEventListener('blur', function (ev) {
+        if (ev.target === w || ev.target === doc) { if (!reel()) taire(ev); return; }
+        if (ev.relatedTarget == null && !reel()) taire(ev);
+      }, true);
+      w.addEventListener('focusout', function (ev) { if (ev.relatedTarget == null && !reel()) taire(ev); }, true);
+      ['visibilitychange', 'webkitvisibilitychange'].forEach(function (t) {
+        w.addEventListener(t, taire, true);
+        try { doc.addEventListener(t, taire, true); } catch (x) {}
+      });
+    } catch (x) {}
+  };
+  var parcourir = function (w) {
+    installer(w);
+    try { for (var i = 0; i < w.frames.length; i++) { try { if (w.frames[i].document) parcourir(w.frames[i]); } catch (x) {} } } catch (x) {}
+  };
+  parcourir(window);
+  return true;
+})()
+"""
+
+# Les deux défenses se coupent pour les essais (tests_robot.py montre que
+# sans elles l'export rate, et que chacune suffit seule) ; le robot les garde
+# toujours toutes les deux.
+FOCUS_EMULE = True
+FOCUS_SCRIPT = True
+
+
 # Les boutons visibles, avec leur nom : dit dans l'erreur quand un bouton
 # n'est pas retrouvé.
 BOUTONS_VISIBLES = r"""
@@ -542,6 +630,58 @@ def page_actuelle(c):
         return ''
 
 
+def garder_le_focus(c, script=True):
+    """Débrief 31 : la page du robot garde le focus, même quand on clique
+    dans une autre application (voir FOCUS_JS). Redit avant chaque geste et
+    après chaque page ouverte : sans effet si c'est déjà fait. `script` :
+    le script aussi (au rejeu ; pendant « apprendre », Chrome seul)."""
+    if FOCUS_EMULE:
+        with contextlib.suppress(ErreurPilote):
+            c.envoyer('Emulation.setFocusEmulationEnabled', enabled=True)
+    if script and FOCUS_SCRIPT:
+        with contextlib.suppress(ErreurPilote):
+            c.evaluer(FOCUS_JS)
+
+
+def preparer_rejeu(c):
+    """Ce que chaque nouvelle page reçoit, avant ses propres scripts, quand
+    le robot refait un export : le focus gardé (FOCUS_JS), le guetteur (un
+    lien « nouvel onglet » reste dans l'onglet du robot, comme quand
+    l'export a été appris) et le compte des requêtes. Une seule fois par
+    fenêtre du robot."""
+    if getattr(c, '_rejeu_pret', False):
+        return
+    for js in ((FOCUS_JS,) if FOCUS_SCRIPT else ()) + (GUETTEUR, RESEAU_JS):
+        with contextlib.suppress(ErreurPilote):
+            c.envoyer('Page.addScriptToEvaluateOnNewDocument', source=js)
+    c._rejeu_pret = True
+
+
+def duree_dite(s):
+    """« 5 min », « 30 s »."""
+    s = int(round(s))
+    return '%d min' % (s // 60) if s >= 60 else '%d s' % s
+
+
+class Patience:
+    """Débrief 31 : une attente dite en clair, pour que personne ne croie le
+    robot figé — son maximum d'abord (« … j'attends jusqu'à 5 min »), puis
+    où elle en est, à peu près chaque minute (« … toujours grisé (2 min) »)."""
+    PAS = 60
+
+    def __init__(self, delai, debut=None):
+        self.delai, self.debut, self.dit = delai, debut or time.time(), None
+
+    def dire(self, premier, suite):
+        maintenant = time.time()
+        if self.dit is None:
+            print('    (%s — j\'attends jusqu\'à %s)' % (premier, duree_dite(self.delai)))
+            self.dit = maintenant
+        elif maintenant - self.dit >= self.PAS:
+            print('    … %s (%s)' % (suite, duree_dite(maintenant - self.debut)))
+            self.dit = maintenant
+
+
 # Les pages de connexion (Keycloak, SSO…) : le matin, la session est souvent
 # encore ouverte et la page ne s'affiche pas — ses gestes sont alors sautés.
 CONNEXION = re.compile(r'keycloak|login|signin|sso|/auth/|oauth|adfs|openid-connect|saml|authorize', re.I)
@@ -556,17 +696,137 @@ def preparer():
     print('  1. le tableau de bord Suivi FWD (votre compte Google @airbus.com)')
     print('  2. CHILDNéo')
     print('  3. SEE (bouton « SEE-AH-PROD »)')
+    # Débrief 31 : l'adresse se voit et se change ici (Entrée : la garder). Le
+    # bon lien finit par /dev : il ne change jamais (voir CONSEIL_DEV).
+    demander_adresse(cfg)
     if not cfg.get('tableau'):
-        adr = input('\nCollez ici l\'adresse du tableau de bord (celle qui finit par /exec), puis Entrée :\n> ').strip()
-        cfg['tableau'] = adr
-        garder(cfg)
+        print('\nSans l\'adresse du tableau de bord, le robot ne peut rien y déposer. Redouble-cliquez '
+              '« 1 - Preparer » quand vous l\'avez.')
+        return
     with chrome(True) as c:
         c.ouvrir(cfg['tableau'])
         for _, (nom, url) in sorted(ADRESSES.items()):
             nouvel_onglet(url)
         input('\nQuand les trois onglets sont ouverts et connectés, revenez ici et appuyez sur Entrée.')
-    noter('Robot préparé (tableau : %s).' % cfg['tableau'])
+        noter('Robot préparé (tableau : %s).' % cfg['tableau'])
+        # Débrief 31 : ce que le robot voit à cette adresse, tout de suite.
+        verifier_le_tableau(cfg, c)
     print('\nC\'est noté. Le robot garde ces connexions dans son propre %s.' % nom_navigateur())
+
+
+# ---------------------------------------------------------------- l'adresse du tableau de bord
+# Débrief 31 : Nathan fait un « Nouveau déploiement » à chaque livraison, et
+# chacun a sa propre adresse /exec. Le robot gardait la première : il voyait
+# donc une ancienne version du tableau de bord (ni les fiches des contrats,
+# ni les contrats prévus). Le lien de test, qui finit par /dev (Déployer →
+# Tester les déploiements), montre toujours le dernier code enregistré à
+# son propriétaire — le navigateur du robot est connecté avec le compte de
+# Nathan : ce lien-là n'est plus jamais à changer.
+CONSEIL_DEV = (
+    'Le bon lien pour le robot finit par /dev. Pour le trouver : dans le projet Apps Script du tableau de bord,\n'
+    '  Déployer → Tester les déploiements → « Application Web » : copiez l\'adresse (elle finit par /dev).\n'
+    '  Ce lien montre toujours le dernier code enregistré : plus besoin de le changer, même quand vous faites\n'
+    '  un nouveau déploiement (un nouveau lien) pour vous.')
+ATTENTION_EXEC = (
+    '⚠ Cette adresse finit par /exec : elle reste sur UN déploiement. Chaque « Nouveau déploiement » a une autre\n'
+    '  adresse, et le robot resterait sur l\'ancienne version du tableau de bord (sans les fiches des contrats).\n'
+    '  Le lien qui finit par /dev évite cela (voir plus haut). Gardée quand même.')
+
+
+def adresse_propre(adr):
+    """L'adresse collée, nettoyée : espaces, guillemets et chevrons autour,
+    ce qui suit « # », une barre après /dev ou /exec, et un « page=… »
+    (copiée depuis la fenêtre d'import : le robot ajoute le sien)."""
+    adr = str(adr or '').strip().strip('"\'<>').strip().split('#')[0]
+    base, _, requete = adr.partition('?')
+    base = re.sub(r'/(dev|exec)/+$', r'/\1', base)
+    garde = [x for x in requete.split('&') if x and not re.match(r'(?i)page=', x)]
+    return base + ('?' + '&'.join(garde) if garde else '')
+
+
+def sorte_d_adresse(adr):
+    """'dev' (le lien de test : toujours le dernier code enregistré), 'exec'
+    (un déploiement précis), ou '' (ni l'un ni l'autre)."""
+    chemin = urllib.parse.urlsplit(adresse_propre(adr)).path.rstrip('/')
+    return 'dev' if chemin.endswith('/dev') else 'exec' if chemin.endswith('/exec') else ''
+
+
+def demander_adresse(cfg):
+    """Débrief 31 : l'adresse du tableau de bord, montrée, puis remplacée si
+    l'on en colle une autre (Entrée seule : la garder). /dev ou /exec sont
+    acceptées (une /exec avec un avertissement). Rend True si elle a changé."""
+    actuelle = cfg.get('tableau') or ''
+    if actuelle:
+        sorte = sorte_d_adresse(actuelle)
+        print('\nL\'adresse du tableau de bord que le robot utilise aujourd\'hui :\n    %s' % actuelle)
+        if sorte == 'dev':
+            print('  (le lien /dev : il montre toujours la dernière version — c\'est le bon)')
+        elif sorte == 'exec':
+            print('  (un lien /exec : il reste sur UN déploiement — le lien /dev est plus sûr, voir ci-dessous)')
+    print('\n' + CONSEIL_DEV)
+    while True:
+        adr = adresse_propre(input('\nEntrée pour la garder, ou collez la nouvelle adresse, puis Entrée :\n> ' if actuelle
+                                   else '\nCollez ici l\'adresse du tableau de bord, puis Entrée :\n> '))
+        if not adr:
+            if actuelle:
+                print('Gardée : %s' % actuelle)
+            return False
+        if re.match(r'(?i)^https?://', adr):
+            break
+        print('Ce n\'est pas une adresse internet : elle commence par https://. Recollez-la (Entrée : %s).'
+              % ('garder celle d\'avant' if actuelle else 'arrêter'))
+    if actuelle and adresse_propre(actuelle) == adr:
+        print('C\'est déjà celle-ci : rien ne change.')
+        return False
+    sorte = sorte_d_adresse(adr)
+    if sorte == 'dev':
+        print('C\'est le lien /dev : le robot verra toujours la dernière version du tableau de bord.')
+    elif sorte == 'exec':
+        print(ATTENTION_EXEC)
+    else:
+        print('(Cette adresse ne finit ni par /dev ni par /exec : vérifiez-la si le robot ne trouve pas le tableau de bord.)')
+    cfg['tableau'] = adr
+    garder(cfg)
+    noter('Adresse du tableau de bord changée : %s%s.' % (adr, ' (avant : %s)' % actuelle if actuelle else ''))
+    return True
+
+
+def verifier_le_tableau(cfg, c=None):
+    """Débrief 31 : la fenêtre d'import ouverte à l'adresse du robot, et dit ce
+    qu'il y lit — la livraison (à comparer avec celle du bas du tableau de
+    bord) et, pour chaque contrat, ce qu'il tapera dans GATES. Une page de
+    connexion Google : on se connecte dans la fenêtre du robot, puis Entrée
+    pour relire. Rend ce que lit lire_tableau."""
+    if c is None:
+        with chrome(True) as c2:
+            return verifier_le_tableau(cfg, c2)
+    print('\nJe vérifie : j\'ouvre la fenêtre d\'import du tableau de bord à cette adresse…')
+    for essai in range(3):
+        tableau = lire_tableau(c, cfg)
+        if tableau['cases'] or essai == 2:
+            break
+        print('✗ Je n\'arrive pas à la lire : %s.' % (tableau.get('erreur') or 'rien de lu'))
+        if input('Si la fenêtre du robot demande de se connecter à Google, connectez-vous, puis revenez ici et appuyez '
+                 'sur Entrée pour relire (n puis Entrée : arrêter) :\n> ').strip().lower().startswith('n'):
+            break
+    dire_le_tableau(cfg, tableau, cfg.get('exports') or [])
+    if tableau['cases'] and not tableau.get('ancienne'):
+        print('\n✓ Le robot voit le tableau de bord (%s). En bas du tableau de bord, la « Livraison » doit être la même.'
+              % version_dite(tableau))
+    return tableau
+
+
+def changer_adresse():
+    """Débrief 31 (raccourci « Changer l'adresse du tableau de bord ») :
+    l'adresse montrée, changée si l'on en colle une autre (Entrée : la
+    garder), puis vérifiée tout de suite (verifier_le_tableau)."""
+    cfg = config()
+    print('\n=== L\'adresse du tableau de bord ===')
+    demander_adresse(cfg)
+    if not cfg.get('tableau'):
+        print('\nSans adresse, le robot ne peut rien déposer. Redouble-cliquez ce raccourci quand vous l\'avez.')
+        return
+    verifier_le_tableau(cfg)
 
 
 def court(url):
@@ -616,6 +876,9 @@ def apprendre():
     with chrome(True) as c:
         c.envoyer('Runtime.addBinding', name='__suiviFwd')
         c.envoyer('Page.addScriptToEvaluateOnNewDocument', source=GUETTEUR)
+        # Débrief 31 : la page garde le focus quand on revient ici (la fenêtre
+        # noire) : un menu ouvert ne se referme pas pendant qu'on lit.
+        garder_le_focus(c, script=False)
         avant = fichiers(c)
         for domaine in ('Network.enable', 'Log.enable'):
             try:
@@ -662,8 +925,16 @@ def apprendre():
         if not recus:
             print('\nAucun fichier n\'est arrivé : l\'export n\'a pas été enregistré. Recommencez quand vous voulez.')
             return
-        print('\nJe regarde les cases de la fenêtre d\'import du tableau de bord…')
-        cases = cases_du_tableau(c, cfg)
+        # Débrief 31 : les contrats ET leur nom exact dans GATES (les fiches du
+        # tableau de bord), pas seulement les étiquettes des cases.
+        print('\nJe lis la fenêtre d\'import du tableau de bord (les contrats et leur nom dans GATES)…')
+        tableau = lire_tableau(c, cfg)
+    if sorte == 'gates':
+        for ligne in entete_du_tableau(cfg, tableau):    # (ce qu'il tapera pour chaque contrat : plus bas, une fois appris)
+            noter(ligne)
+    else:
+        dire_le_tableau(cfg, tableau, cfg.get('exports') or [])
+    cases = tableau['cases']
     fichier = sorted(recus)[-1]
     extension = pathlib.Path(fichier).suffix or '.xlsx'
     scenario = {'nom': nom, 'depart': depart, 'etapes': pas, 'fichier': '*' + extension, 'telechargement_apres': apres,
@@ -671,29 +942,42 @@ def apprendre():
     entree = {'nom': nom}
     anciens = cfg.get('exports', [])
     if sorte == 'gates':
-        contrats = contrats_du_tableau(cases)
+        contrats = contrats_lus(tableau)
         appris, contrat = reperer_contrat(pas, contrats)
         if not appris:
             print('\nJe ne trouve pas le nom du contrat dans ce que vous avez fait : rien n\'est enregistré.')
             print('Recommencez en tapant le nom du contrat dans GATES, comme d\'habitude.')
             return
         noms = cfg.setdefault('noms_gates', {})
-        if contrat and norm(appris) != norm(contrat):
-            noms[contrat] = appris
+        if contrat:
+            # Débrief 31 : ce qu'on vient de montrer remplace ce que le robot avait
+            # retenu pour ce contrat — même quand on a tapé le nom du contrat seul.
+            for cle in [k for k in noms if norm(k) == norm(contrat)]:
+                del noms[cle]
+            if norm(appris) != norm(contrat):
+                noms[contrat] = appris
+        fiche = next((k['nom_gates'] for k in contrats if norm(k['contrat']) == norm(contrat)), '')
+        if contrat:
+            print('\nAppris sur %s : vous avez tapé « %s » dans GATES.' % (contrat, appris))
+        if fiche and norm(fiche) != norm(appris):
+            print('Attention : la fiche de %s dit « %s ». Chaque jour, c\'est la fiche qui compte : le robot tapera « %s ».'
+                  % (contrat, fiche, fiche))
         # Débrief 30 : le nom de chaque contrat dans GATES se donne dans sa fiche,
         # au tableau de bord : plus de question ici.
-        print('\nLes noms dans GATES se règlent dans le tableau de bord : Administration → Contrats.')
-        scenario['modele'] = {'appris': appris}
+        print('Les noms dans GATES se règlent dans le tableau de bord : Administration → Contrats.')
+        scenario['modele'] = {'appris': appris, 'contrat': contrat}
         entree['modele'] = True
         # Un seul export GATES, pour tous les contrats : ceux appris un par un avant s'en vont.
-        remplaces = [e['nom'] for e in anciens if e.get('nom') != nom and str(e.get('case', '')).upper().startswith('GATES')]
+        remplaces = [e['nom'] for e in anciens if e.get('nom') != nom and est_gates(e)]
         anciens = [e for e in anciens if e['nom'] not in remplaces]
         if remplaces:
             print('\nRemplacés par celui-ci, qui fait tous les contrats : %s.' % ', '.join(remplaces))
         if contrats:
-            print('\nChaque jour, le robot refera cet export pour : %s.' % ', '.join(
-                c + ('' if norm(noms.get(c, c)) == norm(c) else ' (« %s » dans GATES)' % noms[c]) for c in contrats))
-        print('Un contrat ajouté plus tard au tableau de bord sera pris tout seul, sous son nom.')
+            # Débrief 31 : exactement ce qui sera tapé, contrat par contrat.
+            noter('Chaque jour, le robot refera cet export pour chaque contrat du tableau de bord :')
+            for ligne in lignes_des_contrats(cfg, contrats, scenario, tableau.get('ancienne')):
+                noter(ligne)
+        print('Un contrat ajouté plus tard au tableau de bord sera pris tout seul, avec le nom GATES de sa fiche.')
     elif sorte == 'see':
         autres = [n for n in cases if not n.upper().startswith('GATES')]
         entree['case'] = autres[0] if len(autres) == 1 else choisir_case(cases, 'SEE')
@@ -703,7 +987,7 @@ def apprendre():
         # Débrief 30 : l'export qu'on vient de montrer passe en premier pour sa case
         # (les autres de la même case restent en secours).
         (cfg.get('reussis') or {}).pop(norm(entree['case']), None)
-    f = racine() / 'exports' / (nom_de_fichier(nom) + '.json')
+    f = racine() / 'exports' / fichier_libre(nom, anciens)
     f.write_text(json.dumps(scenario, ensure_ascii=False, indent=2), encoding='utf-8')
     entree['scenario'] = f.name
     # Ses secours (les autres exportations de la même case) ne se perdent pas.
@@ -717,6 +1001,23 @@ def apprendre():
           ', tous les contrats, appris sur « %s »' % scenario['modele']['appris'] if entree.get('modele') else ', case %s' % entree['case']))
     if input('\nLe robot essaie tout de suite, devant vous ? (o/n) ').strip().lower().startswith('o'):
         essayer([nom])
+
+
+def fichier_libre(nom, exports):
+    """Débrief 31 : le fichier d'un export appris (« gates.json »), sans
+    écraser celui d'un autre export qui le garde encore (un export « un
+    autre » nommé « Gates » écrasait le modèle « GATES ») : « gates-2.json »
+    alors. Celui de l'export du même nom, qu'on remplace, est repris."""
+    pris = set()
+    for e in exports or []:
+        if isinstance(e, dict) and e.get('nom') != nom:
+            pris.update(str(f or '').lower() for f in [e.get('scenario')] + list(e.get('secours') or []))
+    base, n = nom_de_fichier(nom), 1
+    while True:
+        f = base + ('' if n == 1 else '-%d' % n) + '.json'
+        if f.lower() not in pris:
+            return f
+        n += 1
 
 
 def ajouter_geste(pas, geste):
@@ -788,13 +1089,28 @@ def mot_du_contrat(etapes, contrat, noms):
 def reperer_contrat(pas, contrats):
     """Dans les gestes appris, le mot qui désigne le contrat : tapé dans un
     champ, choisi dans une liste, ou cliqué. Il est retrouvé seul quand il est
-    le nom d'un contrat du tableau ; sinon on demande. Rend (le mot appris,
+    le nom d'un contrat du tableau, ou (débrief 31) le nom GATES de sa fiche
+    (« HDK AA ») ; sinon on demande. Ce qu'on a tapé ou choisi passe avant ce
+    qu'on a cliqué, et le nom GATES d'une fiche avant le nom d'un contrat.
+    `contrats` : des noms, ou ce que lit contrats_lus. Rend (le mot appris,
     le contrat du tableau qu'il désigne — ou '' si le tableau n'a rien dit)."""
     candidats = candidats_contrat(pas)
-    for t in candidats:
-        for c in contrats:
-            if norm(t) == norm(c):
-                return t, c
+    fiches = [en_contrat(k) for k in contrats or []]
+    contrats = [k['contrat'] for k in fiches]
+    saisis = candidats_contrat([g for g in pas or [] if g.get('faire') in ('remplir', 'choisir')])
+    for groupe in (saisis, candidats):
+        for cle in ('nom_gates', 'contrat'):
+            for t in groupe:
+                for k in fiches:
+                    if k[cle] and norm(t) == norm(k[cle]):
+                        return t, k['contrat']
+    # Débrief 31 : sans nom GATES dans les fiches (une fenêtre d'avant), un mot
+    # tapé qui commence par le nom d'un seul contrat (« HDK AA » : HDK) — jamais
+    # pour une tranche (« HDK Tranche 2 » commence aussi par « HDK »).
+    proches = [(t, k['contrat']) for t in saisis for k in fiches if k['contrat'] and not est_tranche(k['contrat'])
+               and re.match(re.escape(k['contrat']) + r'(?![A-Za-z0-9])', t, re.I)]
+    if len(proches) == 1:
+        return proches[0]
     tapes = [str(g.get('texte') or '').strip() for g in pas if g['faire'] == 'remplir' and str(g.get('texte') or '').strip()]
     tapes = [t for i, t in enumerate(tapes) if t not in tapes[:i]] or candidats[:12]
     if not tapes:
@@ -823,13 +1139,31 @@ def reperer_contrat(pas, contrats):
         print('Un numéro entre 1 et %d, s\'il vous plaît.' % len(contrats))
 
 
-def pour_le_contrat(scenario, appris, contrat, nom_gates):
+def pour_le_contrat(scenario, appris, contrat, nom_gates, appris_long=''):
     """Le scénario appris sur un contrat, refait pour un autre : le mot
     appris devient le nom du contrat demandé partout où il paraissait — le
     champ tapé, l'option choisie, le texte de ce qu'on cliquait. Ce qui le
     portait doit porter le nouveau nom (« contient ») : faute de quoi le robot
-    s'arrête, plutôt que d'exporter un autre contrat à sa place."""
-    motif = re.compile(r'(?<![A-Za-z0-9])' + re.escape(appris) + r'(?![A-Za-z0-9])', re.I)   # en mot entier
+    s'arrête, plutôt que d'exporter un autre contrat à sa place.
+
+    Débrief 31 : jamais deux fois. Appris en tapant « HDK », puis en cliquant
+    « HDK AA — 634 plans » : pour THS (« THS AA » dans GATES), la ligne cliquée
+    devient « THS AA — 634 plans », pas « THS AA AA ». Le remplacement se fait
+    en une passe, la forme la plus longue d'abord : `appris_long` (le nom
+    GATES du contrat appris, s'il est plus long que le mot tapé), le mot
+    appris suivi de ce que le nom GATES ajoute au nom du contrat (« HDK » +
+    « AA »), puis le mot appris seul."""
+    formes = [appris]
+    if appris_long and mot_entier(appris).search(appris_long):
+        formes.append(appris_long)
+    if contrat.strip() and norm(nom_gates).startswith(norm(contrat)) and len(nom_gates.strip()) > len(contrat.strip()):
+        formes.append(appris + nom_gates.strip()[len(contrat.strip()):])
+    vues, uniques = set(), []
+    for f in sorted((f for f in formes if f and f.strip()), key=lambda f: -len(f)):
+        if norm(f) not in vues:
+            vues.add(norm(f))
+            uniques.append(f)
+    motif = re.compile(r'(?<![A-Za-z0-9])(?:' + '|'.join(re.escape(f) for f in uniques) + r')(?![A-Za-z0-9])', re.I)   # en mot entier
     sub = lambda t: motif.sub(lambda m: nom_gates, t) if isinstance(t, str) else t   # noqa: E731
     etapes = []
     for g in scenario['etapes']:
@@ -864,29 +1198,132 @@ TABLEAU_JS = ('(function(){var t=function(e){return e?e.textContent.replace(/\\s
 
 
 def adresse_import(cfg):
-    return cfg['tableau'] + ('&' if '?' in cfg['tableau'] else '?') + 'page=import'
+    """La fenêtre d'import : l'adresse du tableau de bord (/dev ou /exec) et
+    « page=import » — « …/dev?page=import », ou « …&page=import » quand
+    l'adresse a déjà ses paramètres (débrief 31 : nettoyée d'abord, voir
+    adresse_propre)."""
+    adr = adresse_propre(cfg['tableau'])
+    return adr + ('&' if '?' in adr else '?') + 'page=import'
+
+
+# Débrief 31 : la version de la fenêtre. Le pont du robot (#pont-robot) dit
+# sa livraison (data-livraison, celle qu'on lit en bas du tableau de bord) ;
+# une fenêtre d'avant le débrief 30 n'a ni pont, ni data-contrat sur ses
+# cases : le robot lit alors une ANCIENNE version du tableau de bord (son
+# adresse /exec sert le dernier « déploiement », pas le dernier code).
+VERSION_JS = ('(function(){var p=document.getElementById("pont-robot");'
+              'return {pont:!!p, livraison:p?(p.getAttribute("data-livraison")||""):"",'
+              'gates:document.querySelectorAll(".case.gates:not(.nouvelle)").length,'
+              'sansContrat:document.querySelectorAll(".case.gates:not(.nouvelle):not([data-contrat])").length};})()')
 
 
 def lire_tableau(c, cfg):
     """La fenêtre d'import du tableau de bord, lue : {'cases': les étiquettes
     (« GATES HDK », « GATES HDK Tranche 2 »…, et celle de SEE), 'contrats':
-    [{'contrat', 'case', 'nom_gates', 'prevu'}]}. Vide si la fenêtre ne
-    s'ouvre pas."""
-    vide = {'cases': [], 'contrats': []}
+    [{'contrat', 'case', 'nom_gates', 'prevu'}], et (débrief 31) 'adresse'
+    (celle que le robot a ouverte), 'livraison' (la version de la fenêtre,
+    '' inconnue), 'ancienne' (une version d'avant les fiches : ni pont, ni
+    contrat sur ses cases), 'erreur' (pourquoi rien n'a pu être lu, ou '')}.
+    Sans cases si la fenêtre ne s'ouvre pas — 'erreur' le dit."""
+    lu_ok = {'cases': [], 'contrats': [], 'adresse': adresse_import(cfg) if cfg.get('tableau') else '',
+             'livraison': '', 'ancienne': False, 'erreur': ''}
     if not cfg.get('tableau'):
-        return vide
+        return dict(lu_ok, erreur='le robot ne connaît pas l\'adresse du tableau de bord (double-cliquez « 1 - Preparer »)')
     try:
         c.ouvrir(adresse_import(cfg))
         cadre, ctx = cadre_import(c, delai=60)
         try:
             time.sleep(2)
             lu = dans_le_cadre(cadre, ctx, TABLEAU_JS) or {}
+            version = dans_le_cadre(cadre, ctx, VERSION_JS) or {}
         finally:
             cadre._canal.fermer()
-    except (ErreurPilote, OSError, ValueError):
-        return vide
-    return {'cases': [n for n in (lu.get('cases') or []) if n],
-            'contrats': [k for k in (lu.get('contrats') or []) if isinstance(k, dict)]}
+    except (ErreurPilote, OSError, ValueError) as err:
+        return dict(lu_ok, erreur=str(err).split('\n')[0] or err.__class__.__name__)
+    cases = [n for n in (lu.get('cases') or []) if n]
+    return dict(lu_ok, cases=cases, contrats=[k for k in (lu.get('contrats') or []) if isinstance(k, dict)],
+                livraison=str(version.get('livraison') or '').strip(),
+                ancienne=not version.get('pont') or (version.get('sansContrat') or 0) > 0,
+                erreur='' if cases else 'la fenêtre d\'import s\'est ouverte, mais ne montre aucune case')
+
+
+def adresse_du_tableau(cfg, tableau=None):
+    return (tableau or {}).get('adresse') or (adresse_import(cfg) if cfg.get('tableau') else '(aucune)')
+
+
+def version_dite(tableau):
+    """« Livraison cd9cd8e », comme en bas du tableau de bord ; « version inconnue » sinon."""
+    return 'Livraison %s' % tableau['livraison'] if (tableau or {}).get('livraison') else 'version inconnue'
+
+
+def message_ancienne(cfg, tableau):
+    """Débrief 31 : le robot lit une ancienne version du tableau de bord — dit
+    en clair, avec quoi faire : lui donner le lien /dev (raccourci « Changer
+    l'adresse du tableau de bord »), qui montre toujours le dernier code."""
+    if sorte_d_adresse(cfg.get('tableau')) == 'dev':
+        # Le lien /dev montre le dernier code ENREGISTRÉ : c'est le code du projet qui est ancien.
+        faire = ('  À faire : dans le projet Apps Script du tableau de bord, collez la dernière livraison (les quatre\n'
+                 '  fichiers) et enregistrez (💾) ; le lien /dev du robot la montrera aussitôt. Puis « 3 - Essayer ».')
+    else:
+        faire = ('  C\'est sans doute l\'adresse d\'un ancien déploiement (chaque « Nouveau déploiement » a la sienne).\n'
+                 '  À faire, une fois pour toutes :\n'
+                 '    1. Dans le projet Apps Script du tableau de bord : Déployer → Tester les déploiements\n'
+                 '       → « Application Web » : copiez l\'adresse (elle finit par /dev ; elle montre toujours\n'
+                 '       le dernier code enregistré, plus jamais à changer).\n'
+                 '    2. Double-cliquez « Changer l\'adresse du tableau de bord » et collez-la : le robot vérifie\n'
+                 '       aussitôt et dit la « Livraison » qu\'il voit — la même qu\'en bas du tableau de bord.\n'
+                 '  (Pour garder cette adresse /exec : Déployer → Gérer les déploiements → crayon ✏️ →\n'
+                 '   Version : « Nouvelle version » → Déployer, sur CE déploiement-là.)')
+    return ('⚠ Le robot voit une ANCIENNE version du tableau de bord (%s), à l\'adresse :\n'
+            '    %s\n'
+            '  Il ne voit donc pas les fiches des contrats : ni le « Nom exact de la tranche dans GATES »\n'
+            '  (il tape le nom du contrat, ou le devine), ni les contrats ajoutés depuis le tableau de bord ;\n'
+            '  et son compte rendu ne peut pas arriver.\n%s'
+            % (version_dite(tableau), adresse_du_tableau(cfg, tableau), faire))
+
+
+def entete_du_tableau(cfg, tableau):
+    """Débrief 31 : ce que le robot a lu du tableau de bord, en tête de chaque
+    passage (et dans journal.txt) : l'adresse, la version ; une ancienne
+    version, ou une lecture ratée, dites en clair."""
+    lignes = ['Tableau de bord lu : %s — %s' % (adresse_du_tableau(cfg, tableau), version_dite(tableau))]
+    if tableau.get('erreur') and not tableau.get('cases'):
+        lignes = ['✗ Le robot n\'a pas pu lire la fenêtre d\'import du tableau de bord (%s) : %s.'
+                  % (adresse_du_tableau(cfg, tableau), tableau['erreur']),
+                  '  Il ne connaît donc ni les contrats du jour ni leur nom dans GATES.']
+    elif tableau.get('ancienne'):
+        lignes.append(message_ancienne(cfg, tableau))
+    return lignes
+
+
+def modele_du_jour(liste):
+    """Le scénario de l'export GATES « tous les contrats » appris, ou None."""
+    for e in liste or []:
+        if e.get('modele'):
+            s = lire_scenario(e.get('scenario'))
+            if s and s.get('modele'):
+                return s
+    return None
+
+
+def dire_le_tableau(cfg, tableau, liste):
+    """Débrief 31 : à chaque passage (lancer, essayer), ce qui a été lu —
+    l'adresse, la version, puis une ligne par contrat avec ce que le robot
+    tapera dans GATES. Écrit aussi dans journal.txt, et gardé dans
+    dernier-tableau.json pour « Etat du robot »."""
+    for ligne in entete_du_tableau(cfg, tableau):
+        noter(ligne)
+    contrats = contrats_lus(tableau)
+    lignes = lignes_des_contrats(cfg, contrats, modele_du_jour(liste), tableau.get('ancienne')) if contrats else []
+    if lignes:
+        noter('Contrats lus dans le tableau de bord :')
+        for ligne in lignes:
+            noter(ligne)
+    with contextlib.suppress(OSError):
+        (racine() / 'dernier-tableau.json').write_text(json.dumps({
+            'quand': datetime.datetime.now().isoformat(timespec='seconds'), 'adresse': adresse_du_tableau(cfg, tableau),
+            'livraison': tableau.get('livraison') or '', 'ancienne': bool(tableau.get('ancienne')), 'erreur': tableau.get('erreur') or '',
+            'contrats': [l.strip() for l in lignes]}, ensure_ascii=False, indent=2), encoding='utf-8')
 
 
 def cases_du_tableau(c, cfg):
@@ -921,14 +1358,135 @@ def contrats_lus(tableau):
 def nom_gates_de(cfg, k):
     """Ce que le robot tape dans GATES pour ce contrat : le nom de sa fiche
     dans le tableau de bord d'abord (c'est là qu'il se règle), sinon ce que
-    le robot avait retenu (noms_gates), sinon le nom du contrat."""
+    le robot avait retenu (noms_gates), sinon le nom du contrat. (Débrief
+    31 : le même calcul que nom_du_jour, sans modèle.)"""
+    return nom_du_jour(cfg, k)[0]
+
+
+def retenu_pour(cfg, contrat):
+    """Ce que le robot avait retenu pour ce contrat (noms_gates), ou ''.
+    Débrief 31 : un nom retenu égal au nom du contrat (« THS » → « THS »,
+    une réponse à la question d'avant le débrief 30) ne dit rien de plus que
+    le nom du contrat : il ne cache pas le nom deviné sur le modèle."""
+    for cle, v in (cfg.get('noms_gates') or {}).items():
+        v = str(v or '').strip()
+        if norm(cle) == norm(contrat) and v and norm(v) != norm(contrat):
+            return v
+    return ''
+
+
+# Débrief 31 : une tranche (« HDK Tranche 2 ») — même règle que trancheDe_ du serveur.
+TRANCHE = re.compile(r'^(.*?\S)[\s\-–—_:>›]+(tranche(?![a-zà-ÿ])[\s\-–—_:.]*[^\s\-–—_:.].*)$', re.I)
+
+
+def est_tranche(nom):
+    return bool(TRANCHE.match(str(nom or '').strip()))
+
+
+def mot_entier(mot):
+    return re.compile(r'(?<![A-Za-z0-9])' + re.escape(mot) + r'(?![A-Za-z0-9])', re.I)
+
+
+def contrat_appris(cfg, modele):
+    """Le contrat sur lequel l'export GATES a été appris : noté depuis le
+    débrief 31 ; pour un export appris avant, retrouvé dans ce que le robot
+    avait retenu (« HDK » → « HDK AA »)."""
+    modele = modele or {}
+    if str(modele.get('contrat') or '').strip():
+        return str(modele['contrat']).strip()
+    appris = str(modele.get('appris') or '')
+    for cle, v in (cfg.get('noms_gates') or {}).items():
+        if appris and norm(v) == norm(appris):
+            return cle
+    return ''
+
+
+def deviner(appris, appris_sur, contrat):
+    """Débrief 31 : le nom GATES d'un contrat que rien ne donne, deviné sur
+    le modèle appris — « HDK AA » appris sur HDK : « THS AA » pour THS. Pas
+    pour une tranche (« HDK Tranche 2 AA » ne voudrait rien dire), ni si le
+    mot appris ne contient pas le nom de son contrat. '' sinon."""
+    appris, appris_sur, contrat = str(appris or '').strip(), str(appris_sur or '').strip(), str(contrat or '').strip()
+    if not (appris and appris_sur and contrat) or norm(appris) == norm(appris_sur) or est_tranche(contrat):
+        return ''
+    m = mot_entier(appris_sur)
+    if not m.search(appris):
+        return ''
+    return m.sub(lambda x: contrat, appris, count=1)
+
+
+def nom_du_jour(cfg, k, modele=None):
+    """Ce que le robot tape dans GATES pour ce contrat, et d'où il le tient :
+    (nom, source) — source « fiche » (le tableau de bord : elle l'emporte
+    toujours), « retenu » (ce que le robot avait retenu, la fiche n'en
+    disant rien), « appris » (le contrat de l'export appris : ce qui a été
+    tapé), « devine » (débrief 31 : sur le modèle appris, « THS AA »),
+    « contrat » (le nom du contrat, à défaut). Pour le contrat même de
+    l'export appris, ce qu'on vient de montrer passe avant ce que le robot
+    avait retenu."""
     k = en_contrat(k)
     if k['nom_gates']:
-        return k['nom_gates']
-    for cle, v in (cfg.get('noms_gates') or {}).items():
-        if norm(cle) == norm(k['contrat']) and str(v or '').strip():
-            return str(v).strip()
-    return k['contrat']
+        return k['nom_gates'], 'fiche'
+    sur = contrat_appris(cfg, modele) if modele else ''
+    appris = str((modele or {}).get('appris') or '').strip()
+    if sur and appris and norm(sur) == norm(k['contrat']):
+        return appris, 'appris'
+    retenu = retenu_pour(cfg, k['contrat'])
+    if retenu:
+        return retenu, 'retenu'
+    devine = deviner(appris, sur, k['contrat']) if modele else ''
+    if devine:
+        return devine, 'devine'
+    return k['contrat'], 'contrat'
+
+
+def nom_long_appris(cfg, modele, contrats):
+    """Le nom GATES du contrat appris aujourd'hui (sa fiche, ou ce que le
+    robot a retenu) : la forme longue de ce qui a été tapé (voir
+    pour_le_contrat). '' s'il n'est pas connu."""
+    sur = contrat_appris(cfg, modele)
+    if not sur:
+        return ''
+    k = next((en_contrat(x) for x in contrats or [] if norm(en_contrat(x)['contrat']) == norm(sur)), en_contrat(sur))
+    nom, source = nom_du_jour(cfg, k, None)
+    return nom if source in ('fiche', 'retenu') else ''
+
+
+DIT_DE_LA_SOURCE = {
+    'fiche': '',
+    'appris': '',
+    'retenu': ' (retenu par le robot : la fiche n\'a pas de nom GATES)',
+    'devine': ' (deviné : à écrire dans sa fiche pour être sûr)',
+    'contrat': ' (la fiche n\'a pas de nom GATES : le nom du contrat)',
+}
+
+
+# Une fenêtre d'ancienne version ne montre pas les fiches : la ligne le dit.
+DIT_SANS_FICHE = {
+    'retenu': ' (retenu par le robot : fiche non lue, ancienne version du tableau de bord)',
+    'devine': ' (deviné : fiche non lue, ancienne version du tableau de bord)',
+    'contrat': ' (le nom du contrat : fiche non lue, ancienne version du tableau de bord)',
+}
+
+
+def lignes_des_contrats(cfg, contrats, modele_scenario, ancienne=False):
+    """Débrief 31 : une ligne par contrat — « THS → tape « THS AA » »,
+    « NEO → tape « NEO AA » (prévu, nouvel onglet) ». Sans export GATES
+    pour tous les contrats, la ligne le dit. `ancienne` : la fenêtre est
+    d'une ancienne version (ses fiches ne sont pas lues)."""
+    lignes = []
+    modele = (modele_scenario or {}).get('modele')
+    dits = dict(DIT_DE_LA_SOURCE, **DIT_SANS_FICHE) if ancienne else DIT_DE_LA_SOURCE
+    for k in [en_contrat(x) for x in contrats or []]:
+        prevu = ' (prévu, nouvel onglet)' if k['prevu'] else ''
+        if not modele:
+            fiche = ('sa fiche : « %s »' % k['nom_gates'] if k['nom_gates'] else 'fiche non lue (ancienne version du tableau de bord)'
+                     if ancienne else 'sa fiche n\'a pas de nom GATES')
+            lignes.append('  %s%s → %s ; pas encore d\'export GATES « tous les contrats » appris' % (k['contrat'], prevu, fiche))
+            continue
+        nom, source = nom_du_jour(cfg, k, modele)
+        lignes.append('  %s → tape « %s »%s%s' % (k['contrat'], nom, prevu, dits.get(source, '')))
+    return lignes
 
 
 def choisir_case(cases, proposee):
@@ -971,18 +1529,22 @@ def trouver(c, cible, delai=120):
     soit prêt (ni grisé ni couvert par un voile de chargement). Prêt ou pas,
     au bout du délai il est pris quand même : le geste suivant dira si le
     clic n'a rien fait."""
-    fin = time.time() + delai
-    vu, dit = None, False
+    debut = time.time()
+    fin = debut + delai
+    vu, attentes = None, {}
     while time.time() < fin:
         try:
             r = c.evaluer(TROUVER % json.dumps(cible))
             if r and not r.get('attendre'):
                 return r
+            # Débrief 31 : l'attente dit son maximum, puis où elle en est chaque minute.
             if r:
                 vu = r
-                if not dit:
-                    print('    (attente : %s %s)' % (nom_de_cible(cible), r.get('pourquoi')))
-                    dit = True
+                attentes.setdefault(r.get('pourquoi'), Patience(delai, debut)).dire(
+                    'attente : %s %s' % (nom_de_cible(cible), r.get('pourquoi')), 'toujours %s' % r.get('pourquoi'))
+            elif time.time() - debut >= 15:
+                attentes.setdefault('absent', Patience(delai, debut)).dire(
+                    'attente : %s n\'est pas encore à l\'écran' % (nom_de_cible(cible) or 'la suite'), 'toujours pas là')
         except ErreurPilote:
             pass
         time.sleep(0.5)
@@ -1023,7 +1585,8 @@ def attendre_calme(c, delai=None):
     cours, plus de roue de chargement —, et le reste une seconde et demie.
     Au bout du délai, on continue quand même."""
     delai = DELAI_CALME if delai is None else delai
-    fin, calme_depuis, dit = time.time() + delai, None, False
+    debut = time.time()
+    fin, calme_depuis, patience = debut + delai, None, Patience(delai, debut)
     while time.time() < fin:
         try:
             e = c.evaluer(CALME_JS) or {}
@@ -1035,11 +1598,27 @@ def attendre_calme(c, delai=None):
                 return True
         else:
             calme_depuis = None
-            if not dit and time.time() > fin - delai + 3:
-                print('    (la page calcule, le robot attend…)')
-                dit = True
+            if time.time() > debut + 3:
+                patience.dire('la page calcule', 'elle calcule toujours')
         time.sleep(0.5)
     return False
+
+
+def attendre_fichier(c, avant, motif, delai=None):
+    """Le fichier de l'export, attendu jusqu'à `delai` (30 min) ; débrief 31 :
+    l'attente dit son maximum, puis où elle en est chaque minute."""
+    delai = DELAI_FICHIER if delai is None else delai
+    debut = time.time()
+    patience = Patience(delai, debut)
+    patience.dire('le fichier se prépare, le robot attend qu\'il soit arrivé', 'pas encore arrivé')
+    while True:
+        reste = debut + delai - time.time()
+        try:
+            return c.attendre_telechargement(avant=avant, delai=max(1, min(Patience.PAS, reste)), motif=motif)
+        except ErreurPilote:
+            if time.time() >= debut + delai:
+                raise ErreurPilote('Aucun fichier%s n\'est arrivé en %s.' % (' « ' + motif + ' »' if motif else '', duree_dite(delai)))
+            patience.dire('le fichier se prépare', 'pas encore arrivé')
 
 
 def vider_telechargements():
@@ -1168,6 +1747,7 @@ def faire_geste(c, g, suivant=None):
     paraître la suite. Rend False pour une page de connexion inutile ce
     jour-là (sautée)."""
     cible = dict(g.get('cible') or {})
+    garder_le_focus(c)                               # débrief 31 : même si l'on a cliqué ailleurs entre-temps
     if g['faire'] == 'cliquer':
         cible['dessus'] = True                       # un clic : rien ne doit couvrir le bouton
     facultatif = bool(CONNEXION.search(cible.get('page', '')))
@@ -1247,12 +1827,14 @@ def rejouer(c, scenario, dossier_sortie):
     et le « log out » qui suit ne part qu'une fois le fichier arrivé."""
     vider_telechargements()
     avant = set()
-    with contextlib.suppress(ErreurPilote):
-        c.envoyer('Page.addScriptToEvaluateOnNewDocument', source=RESEAU_JS)   # chaque page : ses requêtes comptées
+    # Chaque page : le focus gardé (débrief 31), le guetteur, ses requêtes comptées.
+    preparer_rejeu(c)
+    garder_le_focus(c)
     c.ouvrir(scenario['depart'])
     for js in (GUETTEUR, RESEAU_JS):   # même onglet pour les liens « nouvel onglet » ; requêtes comptées
         with contextlib.suppress(ErreurPilote):
             c.evaluer(js)
+    garder_le_focus(c)
     etapes = scenario['etapes']
     n, k_fichier, chemin = len(etapes), indice_telechargement(scenario), None
     for i, g in enumerate(etapes, 1):
@@ -1270,9 +1852,8 @@ def rejouer(c, scenario, dossier_sortie):
             continue
         print('  %d/%d %s %s' % (i, n, g['faire'], dire_geste(g)))
         if i == k_fichier:
-            print('    (le fichier se prépare : le robot attend qu\'il soit arrivé…)')
             try:
-                chemin = c.attendre_telechargement(avant=avant, delai=DELAI_FICHIER, motif=scenario.get('fichier'))
+                chemin = attendre_fichier(c, avant, scenario.get('fichier'))
             except ErreurPilote as err:
                 err.geste, err.introuvable = g, False
                 raise
@@ -1281,7 +1862,7 @@ def rejouer(c, scenario, dossier_sortie):
         time.sleep(1.2)
         attendre_page(c)
     if chemin is None:
-        chemin = c.attendre_telechargement(avant=avant, delai=DELAI_FICHIER, motif=scenario.get('fichier'))
+        chemin = attendre_fichier(c, avant, scenario.get('fichier'))
     dest = pathlib.Path(dossier_sortie) / (nom_de_fichier(scenario['nom']) + chemin.suffix)
     shutil.copy2(chemin, dest)
     return dest
@@ -1454,7 +2035,17 @@ def a_faire(cfg, liste, contrats):
     essayer). Rend [(entrée, scénario)]."""
     travaux = []
     contrats = [en_contrat(k) for k in contrats or []]
+    modele = any(e.get('modele') for e in liste)
     for e in liste:
+        if modele and not e.get('modele') and est_gates(e):
+            # Débrief 31 : un ancien export GATES d'un seul contrat, resté à côté
+            # de celui de tous les contrats (son fichier illisible au rangement,
+            # par exemple) : jamais fait — il déposerait son fichier par-dessus
+            # celui du modèle, sous l'ancien nom.
+            if e.get('scenario') not in _DEJA_DIT:
+                _DEJA_DIT.add(e.get('scenario'))
+                noter('« %s » n’est pas fait : l’export GATES de tous les contrats le remplace.' % e.get('nom'))
+            continue
         if not e.get('modele'):
             # La dernière qui a marché d'abord, puis la principale, puis les secours.
             fichiers = [e['scenario']] + [f for f in e.get('secours') or [] if f != e['scenario']]
@@ -1476,10 +2067,15 @@ def a_faire(cfg, liste, contrats):
         if not contrats:
             raise ErreurPilote('Je ne connais aucun contrat : la fenêtre d\'import du tableau de bord n\'en montre aucun.')
         appris = scenario['modele']['appris']
+        # Débrief 31 : le nom de chaque contrat — sa fiche d'abord, puis ce que
+        # le robot avait retenu, puis deviné sur le modèle (« THS AA ») — et la
+        # forme longue du contrat appris, pour ne jamais remplacer deux fois.
+        long_ = nom_long_appris(cfg, scenario['modele'], contrats)
         for k in contrats:
-            ng = nom_gates_de(cfg, k)
+            ng, source = nom_du_jour(cfg, k, scenario['modele'])
             travaux.append(({'nom': 'GATES ' + k['contrat'], 'case': k['case'] or 'GATES ' + k['contrat'], 'contrat': k['contrat'],
-                             'nom_gates': ng, 'prevu': k['prevu']}, pour_le_contrat(scenario, appris, k['contrat'], ng)))
+                             'nom_gates': ng, 'prevu': k['prevu'], 'source': source},
+                            pour_le_contrat(scenario, appris, k['contrat'], ng, long_)))
     return travaux
 
 
@@ -1578,9 +2174,17 @@ def faire_les_exports(c, cfg, liste, dossier, contrats):
             if e.get('contrat'):
                 ng = e.get('nom_gates') or e['contrat']
                 code = code_gates(premiere, ng)
-                message = ('GATES ne montre pas « %s » : vérifiez le « Nom exact de la tranche dans GATES » de ce contrat '
-                           '(tableau de bord → Administration → Contrats).' % ng if code == 'gates-introuvable'
-                           else 'L’export GATES de %s n’a pas abouti : %s' % (e['contrat'], raison))
+                if code == 'gates-introuvable' and e.get('source') in ('devine', 'contrat', 'retenu'):
+                    # Débrief 31 : un nom qui ne vient pas de la fiche (deviné, ou le nom du contrat) : la fiche le dira.
+                    message = ('GATES ne montre pas « %s » (la fiche n’a pas de nom GATES : le robot %s) : écrivez le « Nom exact '
+                               'de la tranche dans GATES » dans la fiche de ce contrat.'
+                               % (ng, {'devine': 'l’a deviné', 'contrat': 'a tapé le nom du contrat',
+                                       'retenu': 'a tapé ce qu’il avait retenu'}[e['source']]))
+                elif code == 'gates-introuvable':
+                    message = ('GATES ne montre pas « %s » : vérifiez le « Nom exact de la tranche dans GATES » de ce contrat '
+                               '(tableau de bord → Administration → Contrats).' % ng)
+                else:
+                    message = 'L’export GATES de %s n’a pas abouti : %s' % (e['contrat'], raison)
                 comptes.append({'contrat': e['contrat'], 'gates': {'ok': False, 'code': code, 'message': message, 'tape': ng}})
                 rates.append(rate('%s : %s' % (e['nom'], raison), code, e['contrat']))
             else:
@@ -1606,10 +2210,12 @@ def attendre_tableau(c, cfg, delai):
         tableau = lire_tableau(c, cfg)
         if tableau['cases']:
             return tableau
+        # Débrief 31 : pourquoi, en clair (jamais un repli sans un mot).
+        raison = tableau.get('erreur') or 'rien de lu'
         if time.time() >= fin:
             raise ErreurPilote('Le tableau de bord ne répond pas (Google pas encore joignable, ou connexion Google à refaire : '
-                               'double-cliquez « 1 - Preparer »).')
-        noter('Le tableau de bord ne répond pas encore : nouvel essai dans 2 minutes.')
+                               'double-cliquez « 1 - Preparer »). Adresse : %s — %s.' % (adresse_du_tableau(cfg, tableau), raison))
+        noter('Le tableau de bord ne répond pas encore (%s) : nouvel essai dans 2 minutes.' % raison)
         time.sleep(120)
 
 
@@ -1621,19 +2227,32 @@ def essayer(noms=None):
     dossier = racine() / 'deposes' / ('essai-' + datetime.datetime.now().strftime('%Y%m%d-%H%M%S'))
     dossier.mkdir(parents=True, exist_ok=True)
     with chrome(True) as c:
+        tableau = None
         try:
-            contrats = contrats_lus(attendre_tableau(c, cfg, 120)) if any(e.get('modele') for e in liste) else []
-            sortis, rates, _ = faire_les_exports(c, cfg, liste, dossier, contrats)
+            # Débrief 31 : le tableau de bord est toujours lu, et ce qui est lu est dit.
+            tableau = attendre_tableau(c, cfg, 120)
+            dire_le_tableau(cfg, tableau, liste)
+            sortis, rates, _ = faire_les_exports(c, cfg, liste, dossier, contrats_lus(tableau))
         except ErreurPilote as err:
             noter('✗ Essai interrompu : %s' % err)
+            rappeler_ancienne(cfg, tableau)
             input('\nAppuyez sur Entrée pour fermer la fenêtre du robot.')
             return
         if rates:
             noter('✗ Essai : %d export(s) raté(s) — %s' % (len(rates), ' ; '.join(rates)))
+            rappeler_ancienne(cfg, tableau)
             input('\nAppuyez sur Entrée pour fermer la fenêtre du robot.')
             return
     noter('Essai réussi : les fichiers sont dans %s' % dossier)
     print('\nTout est bon : le robot sait refaire %s.' % ', '.join(e['nom'] for e, _ in sortis))
+    rappeler_ancienne(cfg, tableau)
+
+
+def rappeler_ancienne(cfg, tableau):
+    """À la fin d'un essai : une ancienne version du tableau de bord, redite
+    (le haut de la fenêtre noire est loin)."""
+    if tableau and tableau.get('ancienne'):
+        print('\n' + message_ancienne(cfg, tableau))
 
 
 # ---------------------------------------------------------------- déposer
@@ -1642,10 +2261,15 @@ def cadre_import(c, delai=90):
     Script la sert dans un iframe d'une autre origine) : son canal, et le
     contexte JavaScript où vit la page d'import."""
     fin = time.time() + delai
+    mien = getattr(c, '_onglet_cree', None)
     while time.time() < fin:
-        for cible in json.loads(SANS_PROXY.open('http://127.0.0.1:%d/json/list' % PORT, timeout=5).read().decode()):
+        cibles = json.loads(SANS_PROXY.open('http://127.0.0.1:%d/json/list' % PORT, timeout=5).read().decode())
+        parents = {x.get('id'): x.get('parentId') for x in cibles}
+        for cible in cibles:
             if cible.get('type') != 'iframe' or 'googleusercontent' not in cible.get('url', ''):
                 continue
+            if mien and not de_l_onglet(cible.get('id'), mien, parents):
+                continue              # débrief 31 : la fenêtre d'import d'un autre onglet (plus ancienne ?) n'est pas lue
             cadre = Chrome(port=PORT, delai=60)
             cadre._canal = _Canal(cible['webSocketDebuggerUrl'], 60)
             arbre = cadre.envoyer('Page.getFrameTree')['frameTree']
@@ -1661,6 +2285,22 @@ def cadre_import(c, delai=90):
         time.sleep(2)
     raise ErreurPilote('La fenêtre d\'import du tableau de bord ne s\'est pas ouverte (connexion Google à refaire ? '
                        'lancez « preparer »).')
+
+
+def de_l_onglet(cible, onglet, parents):
+    """Ce cadre est-il dans l'onglet du robot ? (Chrome dit le parent de
+    chaque cadre : on remonte jusqu'à l'onglet. Un Chrome qui ne le dit pas :
+    oui, comme avant.)"""
+    vus = set()
+    while cible and cible not in vus:
+        vus.add(cible)
+        parent = parents.get(cible)
+        if parent is None:
+            return cible == onglet or len(vus) == 1
+        if parent == onglet:
+            return True
+        cible = parent
+    return False
 
 
 def dans_le_cadre(cadre, ctx, js, objet=False):
@@ -1750,6 +2390,8 @@ PONT_JS = r"""
   return true;
 })(%s)
 """
+LIVRAISON_JS = ('(function(){var p=document.getElementById("pont-robot");'
+                'return p ? (p.getAttribute("data-livraison") || "") : "";})()')
 PONT_ETAT_JS = ('(function(){var p=document.getElementById("pont-robot");'
                 'return p ? {etat: p.getAttribute("data-etat") || "", message: p.getAttribute("data-message") || ""} : null;})()')
 
@@ -1776,10 +2418,16 @@ def ouvrir_import(c, cfg):
 def envoyer_rapport(cadre, ctx, rapport, delai=60):
     """Le compte rendu du robot, envoyé au tableau de bord par le pont de la
     fenêtre d'import. Rend True s'il est arrivé ; une fenêtre d'avant (sans
-    pont) rend False, sans erreur."""
-    js = PONT_JS % json.dumps(json.dumps(rapport, ensure_ascii=False))
+    pont) rend False, sans erreur. Débrief 31 : il porte aussi « livraison »,
+    la version de la fenêtre que le robot a vue (data-livraison du pont ;
+    absente si elle ne la dit pas) — le tableau de bord avertit quand ce
+    n'est pas la sienne."""
     fin = time.time() + delai
     try:
+        livraison = str(dans_le_cadre(cadre, ctx, LIVRAISON_JS) or '').strip()
+        if livraison and not rapport.get('livraison'):
+            rapport = dict(rapport, livraison=livraison)
+        js = PONT_JS % json.dumps(json.dumps(rapport, ensure_ascii=False))
         if not dans_le_cadre(cadre, ctx, js):
             noter('  (la fenêtre d\'import n\'a pas de pont : pas de compte rendu au tableau de bord)')
             return False
@@ -2011,21 +2659,31 @@ def lancer(auto=False):
     if trop_tot() or fait_aujourd_hui() or essais_du_jour() >= ESSAIS_PAR_JOUR:
         return 0
     time.sleep(ATTENTE_AUTO)
-    while not fait_aujourd_hui() and essais_du_jour() < ESSAIS_PAR_JOUR:
-        with verrou(silencieux=True) as libre:
-            if not libre or fait_aujourd_hui():     # un autre passage en route, ou fait entre-temps
+    _VU['tableau'] = None
+    try:
+        while not fait_aujourd_hui() and essais_du_jour() < ESSAIS_PAR_JOUR:
+            with verrou(silencieux=True) as libre:
+                if not libre or fait_aujourd_hui():     # un autre passage en route, ou fait entre-temps
+                    return 0
+                code, raison = _passage(True)
+            if code == 0:
                 return 0
-            code, raison = _passage(True)
-        if code == 0:
-            return 0
-        if compter_essai() >= ESSAIS_PAR_JOUR:
-            prevenir('Le robot n\'a pas pu mettre le tableau de bord à jour aujourd\'hui (%d essais).\n\n%s\n\n'
-                     'Il réessaiera demain. Pour le faire maintenant : double-cliquez « Lancer maintenant ».\n'
-                     'Pour le détail : « Etat du robot ».' % (ESSAIS_PAR_JOUR, raison[:400]))
-            return 1
-        noter('Nouvel essai dans %d minutes.' % (PAUSE_ESSAIS // 60))
-        time.sleep(PAUSE_ESSAIS)
-    return 0
+            if compter_essai() >= ESSAIS_PAR_JOUR:
+                prevenir('Le robot n\'a pas pu mettre le tableau de bord à jour aujourd\'hui (%d essais).\n\n%s\n\n'
+                         'Il réessaiera demain. Pour le faire maintenant : double-cliquez « Lancer maintenant ».\n'
+                         'Pour le détail : « Etat du robot ».' % (ESSAIS_PAR_JOUR, raison[:400]))
+                return 1
+            noter('Nouvel essai dans %d minutes.' % (PAUSE_ESSAIS // 60))
+            time.sleep(PAUSE_ESSAIS)
+        return 0
+    finally:
+        # Débrief 31 : à la fin des passages du jour (hors du verrou : la petite
+        # fenêtre ne retient ni un nouvel essai ni un autre robot).
+        prevenir_ancienne(config(), _VU['tableau'], True)
+
+
+# Ce que le dernier passage a lu du tableau de bord (pour la petite fenêtre de la fin).
+_VU = {'tableau': None}
 
 
 def _passage(auto):
@@ -2040,16 +2698,22 @@ def _passage(auto):
     cfg, liste = exports_choisis()
     etat = racine() / 'dernier-passage.txt'
     aujourd_hui = datetime.date.today().isoformat()
-    if not liste or not cfg.get('tableau'):
-        noter('Rien à faire : le robot n\'est pas encore préparé ou n\'a rien appris.')
-        return 1, 'le robot n\'est pas encore préparé ou n\'a rien appris'
+    if not cfg.get('tableau'):
+        noter('Rien à faire : le robot n\'est pas encore préparé (double-cliquez « 1 - Preparer »).')
+        return 1, 'le robot n\'est pas encore préparé (double-cliquez « 1 - Preparer »)'
+    if not liste:
+        noter('Rien à faire : le robot ne sait encore aucun export (double-cliquez « 2 - Apprendre un export »).')
+        return 1, 'le robot ne sait encore aucun export (double-cliquez « 2 - Apprendre un export »)'
     dossier = racine() / 'deposes' / datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
     dossier.mkdir(parents=True, exist_ok=True)
     debut = datetime.datetime.now().astimezone().isoformat(timespec='seconds')
     noter('=== Passage du robot%s ===' % (' (automatique)' if auto else ''))
+    tableau = None
     try:
         with chrome(True, grand=not auto) as c:
-            contrats = contrats_lus(attendre_tableau(c, cfg, ATTENTE_GOOGLE if auto else 120))
+            tableau = attendre_tableau(c, cfg, ATTENTE_GOOGLE if auto else 120)
+            dire_le_tableau(cfg, tableau, liste)          # débrief 31 : ce qui est lu, dit (et au journal)
+            contrats = contrats_lus(tableau)
             sortis, rates, comptes = faire_les_exports(c, cfg, liste, dossier, contrats)
             # Une tranche que GATES ne montre pas, quand les autres sortent : c'est son nom, dans sa fiche.
             gates_ok = any(e.get('contrat') for e, _ in sortis)
@@ -2071,12 +2735,46 @@ def _passage(auto):
         noter('✗ Passage interrompu : %s' % err)
         etat.write_text('%s échec %s' % (aujourd_hui, err), encoding='utf-8')
         return 1, str(err).split('\n')[0]
+    finally:
+        if tableau is not None:
+            _VU['tableau'] = tableau
     etat.write_text('%s ok %s' % (aujourd_hui, datetime.datetime.now().strftime('%H:%M')), encoding='utf-8')
     if fiche:
         noter('✓ Passage réussi — %d erreur(s) de fiche, visibles dans le tableau de bord : %s' % (len(fiche), ' ; '.join(fiche)))
     else:
         noter('✓ Passage réussi.')
     return 0, ''
+
+
+def prevenir_ancienne(cfg, tableau, auto):
+    """Débrief 31 : en automatique, une ancienne version du tableau de bord se
+    dit dans une petite fenêtre à la fin des passages du jour (lancer) — son
+    compte rendu ne peut pas arriver au tableau de bord, personne ne le
+    saurait. Une fois par jour au plus (alerte-version.txt)."""
+    if not (auto and tableau and tableau.get('ancienne')):
+        return
+    f = racine() / 'alerte-version.txt'
+    aujourd_hui = datetime.date.today().isoformat()
+    try:
+        if f.read_text(encoding='utf-8').strip() == aujourd_hui:
+            return
+    except OSError:
+        pass
+    with contextlib.suppress(OSError):
+        f.write_text(aujourd_hui, encoding='utf-8')
+    if sorte_d_adresse(cfg.get('tableau')) == 'dev':
+        faire = ('À faire : dans le projet Apps Script, collez la dernière livraison et enregistrez (💾) ; '
+                 'le lien /dev du robot la montrera aussitôt.')
+    else:
+        faire = ('À faire une fois pour toutes : dans le projet Apps Script, Déployer → Tester les déploiements → '
+                 '« Application Web » : copiez l\'adresse qui finit par /dev (elle montre toujours le dernier code), '
+                 'puis double-cliquez « Changer l\'adresse du tableau de bord » et collez-la.\n'
+                 '(Ou, pour garder cette adresse : Déployer → Gérer les déploiements → crayon ✏️ → « Nouvelle version » → Déployer.)')
+    prevenir('Le robot voit une ANCIENNE version du tableau de bord (%s) :\n%s\n\n'
+             'Il ne voit pas les fiches des contrats (le « Nom exact de la tranche dans GATES », les contrats ajoutés), '
+             'et son compte rendu ne peut pas arriver au tableau de bord.\n\n%s\n\nLe détail : « Etat du robot ».'
+             % (version_dite(tableau), adresse_du_tableau(cfg, tableau), faire))
+    noter('(petite fenêtre : ancienne version du tableau de bord)')
 
 
 # ---------------------------------------------------------------- navigateur
@@ -2231,17 +2929,66 @@ def desactiver():
     noter('Lancement automatique désactivé.')
 
 
+def date_dite(iso):
+    """« 03/11/2026 » (une date ISO), ou ''."""
+    m = re.match(r'^(\d{4})-(\d\d)-(\d\d)', str(iso or ''))
+    return '%s/%s/%s' % (m.group(3), m.group(2), m.group(1)) if m else ''
+
+
+def exports_dits(cfg):
+    """Débrief 31 : les exports appris, un par ligne, en clair — pour « Etat
+    du robot » et avant « oublier »."""
+    lignes = []
+    for e in cfg.get('exports') or []:
+        if not isinstance(e, dict):
+            continue
+        s = lire_scenario(e.get('scenario')) or {}
+        quand = date_dite(date_apprise(e.get('scenario'), s if s else None))
+        if e.get('modele'):
+            m = s.get('modele') or {}
+            sur = contrat_appris(cfg, m)
+            quoi = 'pour tous les contrats du tableau de bord (appris%s sur « %s »%s)' % (
+                ' le ' + quand if quand else '', m.get('appris') or '?', ', contrat ' + sur if sur else '')
+        else:
+            quoi = 'case « %s »%s' % (e.get('case') or e.get('nom'), ' (appris le %s)' % quand if quand else '')
+        secours = [(lire_scenario(f) or {}).get('nom') or f for f in e.get('secours') or []]
+        lignes.append('  · %s — %s%s%s' % (e.get('nom'), quoi, ' ; en secours : ' + ', '.join(secours) if secours else '',
+                                           '' if s else ' — ✗ fichier illisible (exports\\%s)' % e.get('scenario')))
+    return lignes
+
+
 def montrer_etat():
     cfg = config()
-    print('Tableau de bord : %s' % (cfg.get('tableau') or '(pas encore indiqué : lancez « preparer »)'))
+    print('Tableau de bord : %s' % (cfg.get('tableau') or '(pas encore indiqué : double-cliquez « 1 - Preparer »)'))
+    sorte = sorte_d_adresse(cfg.get('tableau')) if cfg.get('tableau') else 'dev'
+    if sorte != 'dev':
+        # Débrief 31 : le lien /dev ne change jamais ; une /exec reste sur un déploiement.
+        print('                  (%s : le lien qui finit par /dev est plus sûr — « Changer l\'adresse du tableau de bord »)'
+              % ('un lien /exec, qui reste sur UN déploiement' if sorte == 'exec' else 'ni /dev ni /exec'))
     print('Navigateur      : %s' % nom_navigateur())
-    print('Exports appris  : %s' % ('\n                  '.join(
-        '%s → %s%s' % (e['nom'], 'tous les contrats du tableau' if e.get('modele') else 'case ' + str(e.get('case')),
-                       ' (secours : %s)' % ', '.join(e['secours']) if e.get('secours') else '')
-        for e in cfg.get('exports', [])) or 'aucun'))
+    lignes = exports_dits(cfg)
+    print('Exports appris  : %s' % (len(lignes) if lignes else 'aucun (double-cliquez « 2 - Apprendre un export »)'))
+    for ligne in lignes:
+        print(ligne)
+    if lignes:
+        print('                  (pour tout recommencer : « 0 - Tout oublier (recommencer les exports) »)')
     autres = {k: v for k, v in (cfg.get('noms_gates') or {}).items() if norm(k) != norm(v)}
     print('Noms dans GATES : réglés dans le tableau de bord (Administration → Contrats) ; à défaut : %s'
           % (', '.join('%s → « %s »' % kv for kv in sorted(autres.items())) if autres else 'le nom du contrat'))
+    try:
+        lu = json.loads((racine() / 'dernier-tableau.json').read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        lu = None
+    if isinstance(lu, dict):
+        print('Dernière lecture du tableau de bord (%s %s) : %s'
+              % (date_dite(lu.get('quand')), str(lu.get('quand') or '')[11:16], version_dite(lu)))
+        print('                  %s' % lu.get('adresse'))
+        if lu.get('ancienne'):
+            print('                  ⚠ une ANCIENNE version du tableau de bord : voir journal.txt (quoi faire)')
+        elif lu.get('erreur'):
+            print('                  ✗ %s' % lu['erreur'])
+        for ligne in lu.get('contrats') or []:
+            print('                  %s' % ligne)
     print('Heure du robot  : à partir de %s, une fois par jour' % heure_du_robot(cfg))
     etat = racine() / 'dernier-passage.txt'
     print('Dernier passage : %s' % (etat.read_text(encoding='utf-8') if etat.exists() else 'jamais'))
@@ -2255,10 +3002,67 @@ def montrer_etat():
     print('Dossier         : %s' % racine())
 
 
+# ---------------------------------------------------------------- tout oublier
+PROCHAINES_ETAPES = (
+    'À faire maintenant :\n'
+    '  1. Double-cliquez « 2 - Apprendre un export », choisissez 1 (GATES) : montrez UN contrat, en tapant\n'
+    '     son nom exact dans GATES (par exemple « HDK AA »). Le robot fera tous les autres contrats de la\n'
+    '     même façon, chacun avec le nom de sa fiche.\n'
+    '  2. Double-cliquez « 2 - Apprendre un export », choisissez 2 (SEE).\n'
+    '  3. Double-cliquez « 3 - Essayer » : le robot refait tout devant vous.')
+
+
+def oublier():
+    """Débrief 31 : tout recommencer. Les exports appris (exports/*.json)
+    sont rangés dans un dossier daté (exports-oublies\\…), jamais effacés ;
+    le robot oublie sa liste d'exports, les noms GATES qu'il avait retenus,
+    ceux qui avaient marché la dernière fois et leurs secours. Il garde ses
+    connexions (son profil de navigateur), l'adresse du tableau de bord, le
+    navigateur, son heure et son lancement automatique."""
+    cfg = config()
+    print('\n=== Tout oublier (recommencer les exports) ===\n')
+    lignes = exports_dits(cfg)
+    dossier_exports = racine() / 'exports'
+    fichiers_appris = sorted(p for p in dossier_exports.glob('*.json') if p.is_file())
+    if not lignes and not fichiers_appris and not cfg.get('noms_gates') and not cfg.get('reussis'):
+        print('Le robot ne sait encore aucun export : rien à oublier.\n')
+        print(PROCHAINES_ETAPES)
+        return
+    print('Le robot va oublier ce qu\'il a appris :')
+    for ligne in lignes or ['  (aucun export dans sa liste)']:
+        print(ligne)
+    if fichiers_appris:
+        print('  et met de côté %d fichier(s) d\'export (rien n\'est effacé).' % len(fichiers_appris))
+    print('\nIl garde : ses connexions (GATES, SEE, Google), l\'adresse du tableau de bord, le navigateur (%s), '
+          'son heure (%s) et son lancement automatique.' % (nom_navigateur(), heure_du_robot(cfg)))
+    if not input('\nTout oublier ? (o/n) ').strip().lower().startswith('o'):
+        print('Rien n\'est changé.')
+        return
+    pile = racine() / 'exports-oublies' / datetime.datetime.now().strftime('%Y-%m-%d %Hh%M')
+    n = 1
+    while pile.exists():
+        n += 1
+        pile = pile.with_name(pile.name.split(' (')[0] + ' (%d)' % n)
+    pile.mkdir(parents=True)
+    f = racine() / 'robot.json'
+    if f.exists():
+        shutil.copy2(f, pile / 'robot.json')               # la configuration d'avant, intacte
+    for p in fichiers_appris:
+        shutil.move(str(p), str(pile / p.name))
+    cfg['exports'] = []
+    for cle in ('noms_gates', 'reussis'):
+        cfg.pop(cle, None)
+    garder(cfg)
+    _DEJA_DIT.clear()
+    noter('Tout oublié : %d export(s) appris mis de côté dans %s (rien n\'est effacé). Gardés : l\'adresse du tableau '
+          'de bord, le navigateur, l\'heure, le lancement automatique, les connexions.' % (len(fichiers_appris), pile))
+    print('\n' + PROCHAINES_ETAPES)
+
+
 def main(argv):
     action = argv[1] if len(argv) > 1 else 'etat'
     try:
-        if action in ('preparer', 'apprendre', 'essayer'):
+        if action in ('preparer', 'apprendre', 'essayer', 'oublier', 'adresse'):
             with verrou() as libre:                # pas pendant un passage du robot
                 if not libre:
                     return 1
@@ -2266,6 +3070,10 @@ def main(argv):
                     preparer()
                 elif action == 'apprendre':
                     apprendre()
+                elif action == 'oublier':
+                    oublier()
+                elif action == 'adresse':
+                    changer_adresse()
                 else:
                     essayer(argv[2:] or None)
         elif action in ('lancer', 'auto'):

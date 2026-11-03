@@ -20,7 +20,16 @@
        → écrit sur sa sortie « PRET <port> <json des fichiers> », puis sert
          jusqu'à ce qu'on le coupe.
      GET /etat : les onglets du classeur, les comptes rendus gardés
-     (rapportsEnregistres_), les contrats encore prévus, les appels reçus. */
+     (rapportsEnregistres_), les contrats encore prévus, les appels reçus.
+
+   Débrief 31 : /exec?ancienne=1 sert la fenêtre comme une version d'avant
+   le débrief 30 la montrait (le robot de Nathan lisait un déploiement
+   ancien) : ni data-contrat / data-nom-gates / data-prevu sur les cases, ni
+   case pour les contrats prévus, ni pont du robot. /dev sert la même page
+   que /exec (le lien de test d'Apps Script, celui que le robot garde
+   désormais). GET /etat dit aussi les comptes rendus reçus tels quels
+   (recus : le champ « livraison » du robot). SUIVI_FWD_CODE_GS : un autre
+   Code.gs à servir (par exemple celui d'une autre branche). */
 'use strict';
 const fs = require('fs');
 const os = require('os');
@@ -55,7 +64,7 @@ function extractSee(psnDe, n) {
 
 const classeur = new Classeur([new Feuille('HDK', gates(40).valeurs, false, gates(40).fusions)]);
 classeur.proprietaire = 'nathan@airbus.com';
-const ctx = chargerServeur(classeur, {});
+const ctx = chargerServeur(classeur, {}, undefined, process.env.SUIVI_FWD_CODE_GS ? fs.readFileSync(process.env.SUIVI_FWD_CODE_GS, 'utf8') : undefined);
 ctx.__emailScript = ctx.__emailLecteur = 'nathan@airbus.com';
 ctx.adminEnregistrerContrat({ id: '', nom: '', nomGates: 'VRK', colonnes: { fwd: 'VRK AA 011 > Avancement Définition Electrique', concept: '' }, psn: '4540' });
 ctx.adminEnregistrerContrat({ id: '', nom: '', nomGates: 'NEO', colonnes: { fwd: 'NEO AA 011 > Avancement Definition Electrik', concept: '' } });
@@ -81,25 +90,35 @@ const DOUBLE = '<script>(function () {' +
   'window.google = { script: { run: chaine(null, null), host: { close: function () {} } } };' +
   '})();</script>';
 const appels = [];
-function fenetre() {
+const recus = [];
+/* Débrief 31 : une fenêtre d'avant les fiches (voir plus haut). */
+const ANCIENNE = '<script>(function () {' +
+  'var poser = Element.prototype.setAttribute;' +
+  'Element.prototype.setAttribute = function (n) { if (/^data-(contrat|nom-gates|prevu)$/.test(n)) return; return poser.apply(this, arguments); };' +
+  'document.addEventListener("DOMContentLoaded", function () {' +
+  '  [].slice.call(document.querySelectorAll(".case.prevue, #pont-robot")).forEach(function (e) { e.parentNode.removeChild(e); });' +
+  '});' +
+  '})();</script>';
+function fenetre(ancienne) {
   ctx.__dialogue = null;
   ctx.importerSecondeBase();
   return ctx.__dialogue.getContent().replace('"maxLignesLot":20000', '"maxLignesLot":50').replace('"pausesReprise":[2000,6000]', '"pausesReprise":[30,60]')
-    .replace('<head>', '<head>' + DOUBLE);
+    .replace('<head>', '<head>' + DOUBLE + (ancienne ? ANCIENNE : ''));
 }
 
 const serveur = http.createServer((req, res) => {
   const envoyer = (code, type, corps) => { res.writeHead(code, { 'Content-Type': type + '; charset=utf-8' }); res.end(corps); };
   const port = serveur.address().port;
-  if (req.method === 'GET' && /^\/exec/.test(req.url)) {
+  if (req.method === 'GET' && /^\/(exec|dev)(\/|\?|$)/.test(req.url)) {
+    const ancienne = /[?&]ancienne=1/.test(req.url);
     return envoyer(200, 'text/html', '<!doctype html><meta charset="utf-8"><title>Suivi FWD</title><body style="margin:0">' +
-      '<iframe src="http://localhost:' + port + '/googleusercontent/fenetre" style="border:0;width:100%;height:1400px"></iframe>');
+      '<iframe src="http://localhost:' + port + '/googleusercontent/fenetre' + (ancienne ? '?ancienne=1' : '') + '" style="border:0;width:100%;height:1400px"></iframe>');
   }
-  if (req.method === 'GET' && req.url === '/googleusercontent/fenetre') return envoyer(200, 'text/html', fenetre());
+  if (req.method === 'GET' && /^\/googleusercontent\/fenetre(\?|$)/.test(req.url)) return envoyer(200, 'text/html', fenetre(/[?&]ancienne=1/.test(req.url)));
   if (req.method === 'GET' && req.url === '/etat') {
     return envoyer(200, 'application/json', JSON.stringify({
       onglets: classeur.getSheets().map(f => f.getName()), rapports: ctx.rapportsEnregistres_(),
-      prevus: ctx.contratsPrevus_(classeur).map(p => p.id), appels
+      prevus: ctx.contratsPrevus_(classeur).map(p => p.id), appels, recus
     }));
   }
   if (req.method === 'POST' && req.url === '/appel') {
@@ -110,6 +129,7 @@ const serveur = http.createServer((req, res) => {
       try {
         const { nom, args } = JSON.parse(corps);
         appels.push(nom);
+        if (nom === 'importRapport') recus.push(args[1]);
         if (typeof ctx[nom] !== 'function' || /_$/.test(nom)) throw new Error('fonction inconnue ' + nom);
         const v = ctx[nom].apply(null, args);
         r = { ok: true, valeur: v === undefined ? null : JSON.parse(JSON.stringify(v)) };

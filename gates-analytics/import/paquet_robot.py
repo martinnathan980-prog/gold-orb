@@ -11,7 +11,9 @@ Sur le poste, une seule commande (l'extension .txt ne gêne pas Python) :
 
 Il pose le robot dans %LOCALAPPDATA%\\SuiviFWD\\robot, met sur le Bureau un
 dossier « Robot Suivi FWD » de raccourcis à double-cliquer, puis propose de
-préparer le robot tout de suite.
+préparer le robot tout de suite. Débrief 31 : deux raccourcis de plus,
+« 0 - Tout oublier (recommencer les exports) » (robot.py oublier) et
+« Changer l'adresse du tableau de bord » (robot.py adresse).
 """
 
 import base64
@@ -29,6 +31,7 @@ import base64, ctypes, os, pathlib, subprocess, sys, zlib
 FICHIERS = %(fichiers)s
 
 RACCOURCIS = [
+    ('0 - Tout oublier (recommencer les exports).bat', 'oublier'),
     ('1 - Preparer (une seule fois).bat', 'preparer'),
     ('2 - Apprendre un export.bat', 'apprendre'),
     ('3 - Essayer.bat', 'essayer'),
@@ -37,6 +40,7 @@ RACCOURCIS = [
     ('Etat du robot.bat', 'etat'),
     ('Desactiver le lancement automatique.bat', 'desactiver'),
     ('Choisir le navigateur (Chrome ou Edge).bat', 'navigateur'),
+    ("Changer l'adresse du tableau de bord.bat", 'adresse'),
 ]
 
 
