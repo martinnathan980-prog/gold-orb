@@ -91,10 +91,14 @@ livraison d'avant suffit à laisser la page blanche.
    gauche, **Ctrl+A, Suppr**, puis coller le `.txt` du même nom **en entier**
    (dans le `.txt` : Ctrl+A, Ctrl+C), **Ctrl+S**.
 2. **Si vous ouvrez la page par un lien `…/exec`** (application web) : ce lien
-   sert la version *déployée*, pas celle que vous venez de coller. Déployer →
-   Gérer les déploiements → ✏️ → Version : **Nouvelle version** → Déployer.
-   Le menu Suivi FWD → Ouvrir le tableau de bord, lui, prend toujours le code
-   enregistré. Dans ce même écran, vérifier **« Qui a accès »** : les
+   sert la version *déployée*, pas celle que vous venez de coller. Le plus
+   simple : **Déployer → Nouveau déploiement**, et ouvrir la page par ce
+   nouveau lien (un nouveau lien à chaque livraison, c'est bien). Ou :
+   Déployer → Gérer les déploiements → ✏️ → Version : **Nouvelle version** →
+   Déployer, pour garder le même lien. **Le robot, lui, garde le lien
+   `…/dev`** (§ « Les contrats et le robot ») : rien à lui redonner à chaque
+   livraison. Le menu Suivi FWD → Ouvrir le tableau de bord, lui, prend
+   toujours le code enregistré. Dans ce même écran, vérifier **« Qui a accès »** : les
    utilisateurs de votre organisation (Airbus), **jamais « Tout le monde »**
    (n'importe qui sur internet, sans connexion).
 3. Vérifier : **en bas de la page, « Livraison xxxxxxx »** — le numéro que je
@@ -874,7 +878,9 @@ prochain passage, avec les colonnes de la fiche. Rien d'autre à faire.
 THS), **+ Ajouter une tranche**. La fiche s'ouvre avec **Contrat : THS**
 déjà rempli et la tranche suivante proposée (« Tranche 2 », ou « Tranche 3 »
 si la 2 existe ; on peut écrire « Tranche B »). Son nom dans le tableau de
-bord sera « THS Tranche 2 ».
+bord sera « THS Tranche 2 ». « Tranche 1 » est refusée (c'est THS
+lui-même), comme une tranche qui existe déjà écrite autrement
+(« Tranche 02 » ou « Tranche2 » pour la tranche 2).
 
 - **Nom exact de cette tranche dans GATES** : obligatoire. C'est le nom de
   **cette** tranche, pas celui du contrat (par exemple « THS AA »). C'est
@@ -887,7 +893,16 @@ bord sera « THS Tranche 2 ».
 
 Le responsable, un administrateur de tous les contrats, ou un administrateur
 de ce contrat (« THS seulement ») peut ajouter une tranche. Il peut aussi la
-**Retirer** tant qu'elle est « Prévue ».
+**Retirer** tant qu'elle est « Prévue » — sauf si vous l'avez confiée à un
+autre administrateur (« THS Tranche 2 » seule) : le retrait lui ôterait ses
+droits, seuls vous et les administrateurs de tous les contrats le font. Le
+journal de l'administration note les droits qui changent avec un contrat
+retiré ou renommé.
+
+**Une tranche sans nom GATES** (une tranche qui existait avant les fiches,
+marquée « GATES à renseigner ») : le robot tape le nom du contrat
+(« HDK Tranche 2 ») et le dit. Écrivez son **Nom exact de la tranche dans
+GATES** dans sa fiche (**Modifier**).
 
 **Modifier** : sur la ligne du contrat. Le nom d'un contrat qui a déjà son
 onglet ne change pas (son historique en dépend) ; le reste, oui.
@@ -914,8 +929,19 @@ bord), il ne s'efface pas.
   `…/exec`). La phrase dit les deux livraisons. À faire une fois : dans
   Apps Script, **Déployer → Tester les déploiements**, copier le lien qui
   finit par `/dev` (il suit toujours la dernière version) ; puis, sur le PC
-  du robot, double-cliquer **1 - Preparer** et coller ce lien. La phrase
-  disparaît au passage suivant du robot.
+  du robot, double-cliquer **Changer l'adresse du tableau de bord** et
+  coller ce lien (le robot vérifie aussitôt et dit la « Livraison » qu'il
+  voit). La phrase disparaît au passage suivant du robot.
+- **◌ « À son dernier passage, le robot a lu la livraison … ; celle-ci est
+  … »** : le robot a déjà le lien `/dev`. Juste après une livraison, il ne
+  l'a pas encore lue : **rien à faire**, il la lira à son prochain passage.
+  Si la ligne reste après son passage, c'est le lien par lequel vous
+  regardez le tableau de bord qui est ancien : ouvrez-le par le lien de
+  votre dernier déploiement.
+- Sur le PC du robot, deux raccourcis pour tout recommencer :
+  **Changer l'adresse du tableau de bord** (son lien, vérifié aussitôt) et
+  **0 - Tout oublier (recommencer les exports)** (les exports appris sont
+  rangés de côté, rien n'est effacé ; puis « 2 - Apprendre un export »).
 
 Une erreur de fiche ne fait ni nouvel essai ni fenêtre d'alerte sur le PC :
 elle se lit et se corrige ici. Seule une vraie panne (GATES ou SEE
@@ -990,7 +1016,7 @@ onglet, et ce qui manque. Puis :
 | En tête : « Les fichiers du tableau de bord ne concordent pas. **Index** ne vient pas de la même livraison… » | Ce fichier-là est resté à une autre livraison | Le recoller depuis la dernière livraison, Ctrl+S (et nouvelle version du déploiement pour un lien `…/exec`) |
 | En tête : « La page n'a pas pu démarrer. Le fichier Javascript semble incomplet » | `Javascript` a été collé en partie (le fichier est long) | Dans `Javascript.html.txt` : Ctrl+A, Ctrl+C ; dans Apps Script : `Javascript`, Ctrl+A, Ctrl+V, Ctrl+S. Le Diagnostic dit « ✗ « Javascript » est incomplet » tant que ce n'est pas fait |
 | En tête : « La page n'a pas pu s'afficher. Une erreur l'a arrêtée » | Une panne de la page elle-même | M'envoyer une capture du cadre (il ne cite aucune valeur du classeur) : le « Détail » me dit où chercher |
-| En bas de la page, la livraison n'est pas celle que je vous ai donnée | Le lien `…/exec` sert encore l'ancienne version déployée | Déployer → Gérer les déploiements → ✏️ → Nouvelle version → Déployer |
+| En bas de la page, la livraison n'est pas celle que je vous ai donnée | Le lien `…/exec` sert encore l'ancienne version déployée | Déployer → Nouveau déploiement, et ouvrir la page par ce nouveau lien (ou : Gérer les déploiements → ✏️ → Nouvelle version → Déployer). Le robot, sur son lien `/dev`, n'a rien à changer |
 | Une page « Le tableau de bord ne peut pas s'ouvrir : les fichiers collés ne tiennent pas ensemble » | Un fichier manque au projet (`Index`, `Styles` ou `Javascript`) | Elle nomme le fichier : + → HTML, le nommer exactement, y coller le `.txt` |
 | Le Diagnostic dit « ✓ Fichier « Javascript » : 213307 caractères » alors que le `.txt` en fait 300 000 | Normal : Apps Script compte les fichiers sans leurs commentaires | Rien à faire, tant qu'il dit « ✓ … concordent, et sont entiers » |
 | « Le fichier Javascript contient deux copies » | Collé sans tout effacer (le neuf au-dessus de l'ancien) | `Javascript` : Ctrl+A, Suppr, coller, Ctrl+S |

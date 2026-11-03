@@ -810,7 +810,7 @@ def verifier_le_tableau(cfg, c=None):
                  'sur Entrée pour relire (n puis Entrée : arrêter) :\n> ').strip().lower().startswith('n'):
             break
     dire_le_tableau(cfg, tableau, cfg.get('exports') or [])
-    if tableau['cases'] and not tableau.get('ancienne'):
+    if tableau['cases'] and not tableau.get('ancienne') and not tableau.get('perimee'):
         print('\n✓ Le robot voit le tableau de bord (%s). En bas du tableau de bord, la « Livraison » doit être la même.'
               % version_dite(tableau))
     return tableau
@@ -1104,6 +1104,14 @@ def reperer_contrat(pas, contrats):
                 for k in fiches:
                     if k[cle] and norm(t) == norm(k[cle]):
                         return t, k['contrat']
+    # Débrief 31 (relu) : la ligne cliquée commence par le nom GATES d'une fiche
+    # (« HDK AA — 634 plans », après avoir tapé le début « HDK A ») : c'est ce
+    # nom-là, tel qu'il paraît, qui a été appris — le plus long s'il y en a deux.
+    cliques = [t for t in candidats if t not in saisis]
+    vus = sorted(((m.group(0), k['contrat']) for t in cliques for k in fiches if k['nom_gates']
+                  for m in [re.match(re.escape(k['nom_gates']) + r'(?![A-Za-z0-9])', t, re.I)] if m), key=lambda x: -len(x[0]))
+    if vus:
+        return vus[0]
     # Débrief 31 : sans nom GATES dans les fiches (une fenêtre d'avant), un mot
     # tapé qui commence par le nom d'un seul contrat (« HDK AA » : HDK) — jamais
     # pour une tranche (« HDK Tranche 2 » commence aussi par « HDK »).
@@ -1139,6 +1147,23 @@ def reperer_contrat(pas, contrats):
         print('Un numéro entre 1 et %d, s\'il vous plaît.' % len(contrats))
 
 
+def forme_vue(etapes, appris):
+    """Débrief 31 (relu) : le nom GATES du contrat appris tel que GATES l'a
+    montré, quand sa fiche ne le dit pas — dans ce qu'on a cliqué ou choisi,
+    le mot appris suivi d'un ou deux mots courts, jusqu'au séparateur :
+    « HDK AA » dans « HDK AA — 634 plans » (appris en tapant « HDK »). ''
+    sinon."""
+    motif = re.compile(r'(?<![A-Za-z0-9])(' + re.escape(appris) + r'(?:[ \u00a0]+[A-Za-z0-9]{1,6}){1,2})(?=\s*(?:[—–\-|:(·,]|$))', re.I)
+    for g in etapes or []:
+        if g.get('faire') == 'remplir':
+            continue
+        for t in ((g.get('cible') or {}).get('texte'), g.get('option'), g.get('valeur')):
+            m = motif.search(str(t or ''))
+            if m:
+                return m.group(1)
+    return ''
+
+
 def pour_le_contrat(scenario, appris, contrat, nom_gates, appris_long=''):
     """Le scénario appris sur un contrat, refait pour un autre : le mot
     appris devient le nom du contrat demandé partout où il paraissait — le
@@ -1150,12 +1175,25 @@ def pour_le_contrat(scenario, appris, contrat, nom_gates, appris_long=''):
     « HDK AA — 634 plans » : pour THS (« THS AA » dans GATES), la ligne cliquée
     devient « THS AA — 634 plans », pas « THS AA AA ». Le remplacement se fait
     en une passe, la forme la plus longue d'abord : `appris_long` (le nom
-    GATES du contrat appris, s'il est plus long que le mot tapé), le mot
-    appris suivi de ce que le nom GATES ajoute au nom du contrat (« HDK » +
-    « AA »), puis le mot appris seul."""
+    GATES du contrat appris, s'il est plus long que le mot tapé) — débrief 31
+    (relu) : sinon, ce que GATES en montrait dans ce qu'on a cliqué
+    (forme_vue : pour « THS Tranche 2 », « THS AB », la ligne devient « THS
+    AB — 634 plans », pas « THS AB AA — … ») —, le mot appris suivi de ce
+    que le nom GATES ajoute au nom du contrat (« HDK » + « AA »), puis le mot
+    appris seul.
+
+    Débrief 31 (relu) : un début tapé (« HDK A », au moins deux caractères,
+    puis la suggestion « HDK AA » cliquée) se tape en entier pour un autre
+    contrat (« THS AA ») : retapé tel quel, GATES ne proposait que HDK. Pour
+    le contrat appris lui-même (le même nom), les gestes restent ceux qu'on a
+    montrés."""
     formes = [appris]
     if appris_long and mot_entier(appris).search(appris_long):
         formes.append(appris_long)
+    elif norm(nom_gates) != norm(appris):
+        vue = forme_vue(scenario['etapes'], appris)
+        if vue:
+            formes.append(vue)
     if contrat.strip() and norm(nom_gates).startswith(norm(contrat)) and len(nom_gates.strip()) > len(contrat.strip()):
         formes.append(appris + nom_gates.strip()[len(contrat.strip()):])
     vues, uniques = set(), []
@@ -1165,6 +1203,11 @@ def pour_le_contrat(scenario, appris, contrat, nom_gates, appris_long=''):
             uniques.append(f)
     motif = re.compile(r'(?<![A-Za-z0-9])(?:' + '|'.join(re.escape(f) for f in uniques) + r')(?![A-Za-z0-9])', re.I)   # en mot entier
     sub = lambda t: motif.sub(lambda m: nom_gates, t) if isinstance(t, str) else t   # noqa: E731
+    autre_nom = norm(nom_gates) != norm(appris)
+
+    def debut_tape(t):
+        n = norm(t)
+        return autre_nom and len(n) >= 2 and any(norm(f).startswith(n) and norm(f) != n for f in uniques)
     etapes = []
     for g in scenario['etapes']:
         g2 = dict(g)
@@ -1179,7 +1222,7 @@ def pour_le_contrat(scenario, appris, contrat, nom_gates, appris_long=''):
         g2['cible'] = cible
         for k in ('texte', 'valeur', 'option'):
             if k in g2:
-                g2[k] = sub(g2[k])
+                g2[k] = nom_gates if (k == 'texte' and g.get('faire') == 'remplir' and isinstance(g2[k], str) and debut_tape(g2[k])) else sub(g2[k])
         etapes.append(g2)
     return dict(scenario, etapes=etapes, nom='GATES ' + contrat)
 
@@ -1223,10 +1266,13 @@ def lire_tableau(c, cfg):
     [{'contrat', 'case', 'nom_gates', 'prevu'}], et (débrief 31) 'adresse'
     (celle que le robot a ouverte), 'livraison' (la version de la fenêtre,
     '' inconnue), 'ancienne' (une version d'avant les fiches : ni pont, ni
-    contrat sur ses cases), 'erreur' (pourquoi rien n'a pu être lu, ou '')}.
+    contrat sur ses cases), 'perimee' (débrief 31, relu : une fenêtre qui a
+    le pont et les fiches mais ne dit pas sa livraison — d'avant le débrief
+    31, donc plus ancienne que ce robot), 'erreur' (pourquoi rien n'a pu être
+    lu, ou '')}.
     Sans cases si la fenêtre ne s'ouvre pas — 'erreur' le dit."""
     lu_ok = {'cases': [], 'contrats': [], 'adresse': adresse_import(cfg) if cfg.get('tableau') else '',
-             'livraison': '', 'ancienne': False, 'erreur': ''}
+             'livraison': '', 'ancienne': False, 'perimee': False, 'erreur': ''}
     if not cfg.get('tableau'):
         return dict(lu_ok, erreur='le robot ne connaît pas l\'adresse du tableau de bord (double-cliquez « 1 - Preparer »)')
     try:
@@ -1241,9 +1287,13 @@ def lire_tableau(c, cfg):
     except (ErreurPilote, OSError, ValueError) as err:
         return dict(lu_ok, erreur=str(err).split('\n')[0] or err.__class__.__name__)
     cases = [n for n in (lu.get('cases') or []) if n]
+    livraison = str(version.get('livraison') or '').strip()
+    ancienne = not version.get('pont') or (version.get('sansContrat') or 0) > 0
+    # Débrief 31 (relu) : toute fenêtre dit sa livraison depuis le débrief 31 ;
+    # un pont sans livraison est une fenêtre plus ancienne que ce robot (un
+    # déploiement /exec du débrief 30) — jamais « ✓ Le robot voit le tableau de bord ».
     return dict(lu_ok, cases=cases, contrats=[k for k in (lu.get('contrats') or []) if isinstance(k, dict)],
-                livraison=str(version.get('livraison') or '').strip(),
-                ancienne=not version.get('pont') or (version.get('sansContrat') or 0) > 0,
+                livraison=livraison, ancienne=ancienne, perimee=bool(cases) and not ancienne and not livraison,
                 erreur='' if cases else 'la fenêtre d\'import s\'est ouverte, mais ne montre aucune case')
 
 
@@ -1256,30 +1306,53 @@ def version_dite(tableau):
     return 'Livraison %s' % tableau['livraison'] if (tableau or {}).get('livraison') else 'version inconnue'
 
 
+def quoi_faire_ancienne(cfg):
+    """Débrief 31 : quoi faire quand le robot lit une version plus ancienne
+    que la dernière livraison. Débrief 31 (relu) : plus de « Gérer les
+    déploiements → crayon ✏️ → Nouvelle version » — Nathan fait un nouveau
+    déploiement à chaque livraison (les mises à jour de lien « déconnent ») ;
+    le lien /dev, donné une fois, suffit (README, § 9, pour l'autre chemin)."""
+    if sorte_d_adresse(cfg.get('tableau')) == 'dev':
+        # Le lien /dev montre le dernier code ENREGISTRÉ : c'est le code du projet qui est ancien.
+        return ('  À faire : dans le projet Apps Script du tableau de bord, collez la dernière livraison (les quatre\n'
+                '  fichiers) et enregistrez (💾) ; le lien /dev du robot la montrera aussitôt. Puis « 3 - Essayer ».')
+    return ('  C\'est sans doute l\'adresse d\'un ancien déploiement (chaque « Nouveau déploiement » a la sienne).\n'
+            '  À faire, une fois pour toutes :\n'
+            '    1. Dans le projet Apps Script du tableau de bord : Déployer → Tester les déploiements\n'
+            '       → « Application Web » : copiez l\'adresse (elle finit par /dev ; elle montre toujours\n'
+            '       le dernier code enregistré, plus jamais à changer).\n'
+            '    2. Double-cliquez « Changer l\'adresse du tableau de bord » et collez-la : le robot vérifie\n'
+            '       aussitôt et dit la « Livraison » qu\'il voit — la même qu\'en bas du tableau de bord.')
+
+
 def message_ancienne(cfg, tableau):
     """Débrief 31 : le robot lit une ancienne version du tableau de bord — dit
     en clair, avec quoi faire : lui donner le lien /dev (raccourci « Changer
     l'adresse du tableau de bord »), qui montre toujours le dernier code."""
-    if sorte_d_adresse(cfg.get('tableau')) == 'dev':
-        # Le lien /dev montre le dernier code ENREGISTRÉ : c'est le code du projet qui est ancien.
-        faire = ('  À faire : dans le projet Apps Script du tableau de bord, collez la dernière livraison (les quatre\n'
-                 '  fichiers) et enregistrez (💾) ; le lien /dev du robot la montrera aussitôt. Puis « 3 - Essayer ».')
-    else:
-        faire = ('  C\'est sans doute l\'adresse d\'un ancien déploiement (chaque « Nouveau déploiement » a la sienne).\n'
-                 '  À faire, une fois pour toutes :\n'
-                 '    1. Dans le projet Apps Script du tableau de bord : Déployer → Tester les déploiements\n'
-                 '       → « Application Web » : copiez l\'adresse (elle finit par /dev ; elle montre toujours\n'
-                 '       le dernier code enregistré, plus jamais à changer).\n'
-                 '    2. Double-cliquez « Changer l\'adresse du tableau de bord » et collez-la : le robot vérifie\n'
-                 '       aussitôt et dit la « Livraison » qu\'il voit — la même qu\'en bas du tableau de bord.\n'
-                 '  (Pour garder cette adresse /exec : Déployer → Gérer les déploiements → crayon ✏️ →\n'
-                 '   Version : « Nouvelle version » → Déployer, sur CE déploiement-là.)')
     return ('⚠ Le robot voit une ANCIENNE version du tableau de bord (%s), à l\'adresse :\n'
             '    %s\n'
             '  Il ne voit donc pas les fiches des contrats : ni le « Nom exact de la tranche dans GATES »\n'
             '  (il tape le nom du contrat, ou le devine), ni les contrats ajoutés depuis le tableau de bord ;\n'
             '  et son compte rendu ne peut pas arriver.\n%s'
-            % (version_dite(tableau), adresse_du_tableau(cfg, tableau), faire))
+            % (version_dite(tableau), adresse_du_tableau(cfg, tableau), quoi_faire_ancienne(cfg)))
+
+
+def message_perimee(cfg, tableau):
+    """Débrief 31 (relu) : une fenêtre qui lit les fiches mais ne dit pas sa
+    livraison — plus ancienne que ce robot (un déploiement du débrief 30).
+    Dit en clair, avec quoi faire (le lien /dev)."""
+    return ('⚠ Le robot voit une version du tableau de bord plus ANCIENNE que lui (elle ne dit pas sa « Livraison »),\n'
+            '  à l\'adresse :\n'
+            '    %s\n'
+            '  Il lit les fiches des contrats, mais pas ce qui a changé sur le site depuis cette version.\n%s'
+            % (adresse_du_tableau(cfg, tableau), quoi_faire_ancienne(cfg)))
+
+
+def message_de_version(cfg, tableau):
+    """Ce que le robot dit d'une version qui n'est pas la dernière (ancienne,
+    ou plus ancienne que lui), ou ''."""
+    tableau = tableau or {}
+    return message_ancienne(cfg, tableau) if tableau.get('ancienne') else message_perimee(cfg, tableau) if tableau.get('perimee') else ''
 
 
 def entete_du_tableau(cfg, tableau):
@@ -1291,8 +1364,8 @@ def entete_du_tableau(cfg, tableau):
         lignes = ['✗ Le robot n\'a pas pu lire la fenêtre d\'import du tableau de bord (%s) : %s.'
                   % (adresse_du_tableau(cfg, tableau), tableau['erreur']),
                   '  Il ne connaît donc ni les contrats du jour ni leur nom dans GATES.']
-    elif tableau.get('ancienne'):
-        lignes.append(message_ancienne(cfg, tableau))
+    elif message_de_version(cfg, tableau):
+        lignes.append(message_de_version(cfg, tableau))
     return lignes
 
 
@@ -1314,7 +1387,10 @@ def dire_le_tableau(cfg, tableau, liste):
     for ligne in entete_du_tableau(cfg, tableau):
         noter(ligne)
     contrats = contrats_lus(tableau)
-    lignes = lignes_des_contrats(cfg, contrats, modele_du_jour(liste), tableau.get('ancienne')) if contrats else []
+    # Débrief 31 (relu) : le modèle GATES se cherche dans tous les exports appris
+    # (essayer SEE seul ne doit pas dire « pas encore d'export GATES appris »).
+    modele = modele_du_jour(liste) or modele_du_jour(cfg.get('exports'))
+    lignes = lignes_des_contrats(cfg, contrats, modele, tableau.get('ancienne')) if contrats else []
     if lignes:
         noter('Contrats lus dans le tableau de bord :')
         for ligne in lignes:
@@ -1322,7 +1398,8 @@ def dire_le_tableau(cfg, tableau, liste):
     with contextlib.suppress(OSError):
         (racine() / 'dernier-tableau.json').write_text(json.dumps({
             'quand': datetime.datetime.now().isoformat(timespec='seconds'), 'adresse': adresse_du_tableau(cfg, tableau),
-            'livraison': tableau.get('livraison') or '', 'ancienne': bool(tableau.get('ancienne')), 'erreur': tableau.get('erreur') or '',
+            'livraison': tableau.get('livraison') or '', 'ancienne': bool(tableau.get('ancienne')), 'perimee': bool(tableau.get('perimee')),
+            'erreur': tableau.get('erreur') or '',
             'contrats': [l.strip() for l in lignes]}, ensure_ascii=False, indent=2), encoding='utf-8')
 
 
@@ -2232,7 +2309,12 @@ def essayer(noms=None):
             # Débrief 31 : le tableau de bord est toujours lu, et ce qui est lu est dit.
             tableau = attendre_tableau(c, cfg, 120)
             dire_le_tableau(cfg, tableau, liste)
-            sortis, rates, _ = faire_les_exports(c, cfg, liste, dossier, contrats_lus(tableau))
+            # Débrief 31 (relu) : les contrats du tableau ne servent qu'à l'export
+            # GATES « tous les contrats ». Essayer SEE seul (juste après l'avoir
+            # appris) ne compte pas les contrats « sans export » : c'était un faux
+            # « refaites Apprendre » pour GATES.
+            contrats = contrats_lus(tableau) if any(e.get('modele') for e in liste) else []
+            sortis, rates, _ = faire_les_exports(c, cfg, liste, dossier, contrats)
         except ErreurPilote as err:
             noter('✗ Essai interrompu : %s' % err)
             rappeler_ancienne(cfg, tableau)
@@ -2249,10 +2331,11 @@ def essayer(noms=None):
 
 
 def rappeler_ancienne(cfg, tableau):
-    """À la fin d'un essai : une ancienne version du tableau de bord, redite
-    (le haut de la fenêtre noire est loin)."""
-    if tableau and tableau.get('ancienne'):
-        print('\n' + message_ancienne(cfg, tableau))
+    """À la fin d'un essai (et, débrief 31 relu, de « Lancer maintenant ») :
+    une version du tableau de bord qui n'est pas la dernière, redite (le
+    haut de la fenêtre noire est loin)."""
+    if message_de_version(cfg, tableau):
+        print('\n' + message_de_version(cfg, tableau))
 
 
 # ---------------------------------------------------------------- déposer
@@ -2472,11 +2555,18 @@ def comptes_par_contrat(comptes):
 def rapport_du_robot(cfg, debut, comptes, techniques, nb_fiche):
     """Le compte rendu d'un passage, tel que le tableau de bord le lit
     (importRapport) : le passage (réussi ou non, en une phrase), et ce qui
-    est dit de chaque contrat."""
-    return {'source': 'robot',
-            'passage': {'ok': not techniques, 'message': coupe(' ; '.join(techniques), PASSAGE_MAX), 'heure': heure_du_robot(cfg),
-                        'debut': debut, 'erreursFiche': nb_fiche},
-            'contrats': comptes_par_contrat(comptes)}
+    est dit de chaque contrat. Débrief 31 (relu) : « adresse », la sorte de
+    lien du robot ('dev' : il lit toujours le dernier code ; 'exec' : un
+    déploiement) — sur /dev, le site ne lui demande pas de changer de lien
+    juste parce qu'une nouvelle livraison n'est pas encore lue."""
+    rapport = {'source': 'robot',
+               'passage': {'ok': not techniques, 'message': coupe(' ; '.join(techniques), PASSAGE_MAX), 'heure': heure_du_robot(cfg),
+                           'debut': debut, 'erreursFiche': nb_fiche},
+               'contrats': comptes_par_contrat(comptes)}
+    sorte = sorte_d_adresse(cfg.get('tableau'))
+    if sorte:
+        rapport['adresse'] = sorte
+    return rapport
 
 
 def nb_de_fiche(comptes):
@@ -2655,7 +2745,16 @@ def lancer(auto=False):
     passage est déjà en route."""
     if not auto:
         with verrou() as libre:
-            return _passage(False)[0] if libre else 1
+            if not libre:
+                return 1
+            _VU['tableau'] = None
+            code = _passage(False)[0]
+        # Débrief 31 (relu) : « Lancer maintenant » redit, après la dernière ligne
+        # (✓ ou ✗), une version du tableau de bord qui n'est pas la dernière —
+        # sinon la fin de la fenêtre noire accuse GATES (« Je ne retrouve plus
+        # « THS » ») et l'avertissement reste loin en haut.
+        rappeler_ancienne(config(), _VU['tableau'])
+        return code
     if trop_tot() or fait_aujourd_hui() or essais_du_jour() >= ESSAIS_PAR_JOUR:
         return 0
     time.sleep(ATTENTE_AUTO)
@@ -2750,8 +2849,9 @@ def prevenir_ancienne(cfg, tableau, auto):
     """Débrief 31 : en automatique, une ancienne version du tableau de bord se
     dit dans une petite fenêtre à la fin des passages du jour (lancer) — son
     compte rendu ne peut pas arriver au tableau de bord, personne ne le
-    saurait. Une fois par jour au plus (alerte-version.txt)."""
-    if not (auto and tableau and tableau.get('ancienne')):
+    saurait. Une fois par jour au plus (alerte-version.txt). Débrief 31
+    (relu) : aussi une fenêtre plus ancienne que le robot (sans livraison)."""
+    if not (auto and tableau and (tableau.get('ancienne') or tableau.get('perimee'))):
         return
     f = racine() / 'alerte-version.txt'
     aujourd_hui = datetime.date.today().isoformat()
@@ -2768,12 +2868,15 @@ def prevenir_ancienne(cfg, tableau, auto):
     else:
         faire = ('À faire une fois pour toutes : dans le projet Apps Script, Déployer → Tester les déploiements → '
                  '« Application Web » : copiez l\'adresse qui finit par /dev (elle montre toujours le dernier code), '
-                 'puis double-cliquez « Changer l\'adresse du tableau de bord » et collez-la.\n'
-                 '(Ou, pour garder cette adresse : Déployer → Gérer les déploiements → crayon ✏️ → « Nouvelle version » → Déployer.)')
-    prevenir('Le robot voit une ANCIENNE version du tableau de bord (%s) :\n%s\n\n'
-             'Il ne voit pas les fiches des contrats (le « Nom exact de la tranche dans GATES », les contrats ajoutés), '
-             'et son compte rendu ne peut pas arriver au tableau de bord.\n\n%s\n\nLe détail : « Etat du robot ».'
-             % (version_dite(tableau), adresse_du_tableau(cfg, tableau), faire))
+                 'puis double-cliquez « Changer l\'adresse du tableau de bord » et collez-la.')
+    if tableau.get('ancienne'):
+        quoi = ('Le robot voit une ANCIENNE version du tableau de bord (%s) :\n%s\n\n'
+                'Il ne voit pas les fiches des contrats (le « Nom exact de la tranche dans GATES », les contrats ajoutés), '
+                'et son compte rendu ne peut pas arriver au tableau de bord.' % (version_dite(tableau), adresse_du_tableau(cfg, tableau)))
+    else:
+        quoi = ('Le robot voit une version du tableau de bord plus ANCIENNE que lui (elle ne dit pas sa « Livraison ») :\n%s\n\n'
+                'Il lit les fiches des contrats, mais pas ce qui a changé sur le site depuis cette version.' % adresse_du_tableau(cfg, tableau))
+    prevenir('%s\n\n%s\n\nLe détail : « Etat du robot ».' % (quoi, faire))
     noter('(petite fenêtre : ancienne version du tableau de bord)')
 
 
@@ -2983,7 +3086,7 @@ def montrer_etat():
         print('Dernière lecture du tableau de bord (%s %s) : %s'
               % (date_dite(lu.get('quand')), str(lu.get('quand') or '')[11:16], version_dite(lu)))
         print('                  %s' % lu.get('adresse'))
-        if lu.get('ancienne'):
+        if lu.get('ancienne') or lu.get('perimee'):
             print('                  ⚠ une ANCIENNE version du tableau de bord : voir journal.txt (quoi faire)')
         elif lu.get('erreur'):
             print('                  ✗ %s' % lu['erreur'])

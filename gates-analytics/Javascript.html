@@ -34,7 +34,7 @@
   /* La livraison de ce fichier, posée par la construction (tests/split-
      prototype.js). « source » : la page seule, la démonstration ou le
      chargeur — un seul fichier, rien à comparer. */
-  var EDITION = 'bf732b6';
+  var EDITION = '3d35dfb';
   /* Le filet du démarrage (débrief 17). Une erreur AVANT la fin du démarrage
      — le plus souvent un élément que l'Index d'une autre livraison n'a pas,
      dès les premières lignes qui branchent les boutons — s'affiche en tête de
@@ -12588,11 +12588,13 @@
           '\x3Cbutton type="button" class="bouton petit danger" data-admin="oublier-fiche-oui" data-id="' + ech(c.id) + '" aria-describedby="q-oublier">Oui, oublier\x3C/button>',
           '\x3Cbutton type="button" class="bouton petit" data-admin="annuler-confirmation">Non\x3C/button>');
       } else if (ADMIN.confirmer === cle && !x.prevu) {
-        ligne += htmlQuestion(5, 'q-masquer', 'Masquer ' + x.nom + ' pour tout le monde ? Rien n’est supprimé : vous pourrez le réafficher.',
+        /* Débrief 31 (relu) : une tranche se dit au féminin, dans la question comme dans le message. */
+        ligne += htmlQuestion(5, 'q-masquer', 'Masquer ' + x.nom + ' pour tout le monde ? Rien n’est supprimé : vous pourrez ' + (x.c.tranche ? 'la' : 'le') + ' réafficher.',
           '\x3Cbutton type="button" class="bouton petit" data-admin="masquer-oui" data-id="' + ech(c.id) + '" aria-describedby="q-masquer">Oui, masquer\x3C/button>',
           '\x3Cbutton type="button" class="bouton petit" data-admin="annuler-confirmation">Non\x3C/button>', true);
       } else if (ADMIN.confirmer === cle) {
-        ligne += htmlQuestion(5, 'q-retirer', 'Retirer « ' + x.nom + ' » ? Il n’a encore reçu aucune donnée : sa fiche est effacée, et le robot ne le cherchera plus.',
+        ligne += htmlQuestion(5, 'q-retirer', 'Retirer « ' + x.nom + ' » ? ' + (x.c.tranche ? 'Elle' : 'Il') + ' n’a encore reçu aucune donnée : sa fiche est effacée, et le robot ne ' +
+          (x.c.tranche ? 'la' : 'le') + ' cherchera plus.',
           '\x3Cbutton type="button" class="bouton petit danger" data-admin="retirer-prevu-oui" data-id="' + ech(c.id) + '" aria-describedby="q-retirer">Oui, retirer\x3C/button>',
           '\x3Cbutton type="button" class="bouton petit" data-admin="annuler-confirmation">Non\x3C/button>');
       }
@@ -12622,10 +12624,13 @@
     /* Débrief 30 (relu) : un contrat « à vérifier » (⚠) aussi. */
     if (nRobot === 'ok' && lignesDeContrats(r).some(function (x) { return x.c.suivi && (x.c.suivi.niveau === 'erreur' || x.c.suivi.niveau === 'attention'); })) nRobot = 'attention';
     /* Débrief 31 : le robot regarde une autre livraison du site (il a gardé
-       un ancien lien) — une ligne à part, ⚠, sous la sienne. */
+       un ancien lien) — une ligne à part, ⚠, sous la sienne. Débrief 31
+       (relu) : sur le lien /dev, il n'a simplement pas encore lu la nouvelle
+       livraison — ◌ « en attente », rien à faire. */
     var autre = robot.livraison && robot.livraison.texte ? robot.livraison : null;
+    var nAutre = autre && autre.niveau === 'attente' ? 'attente' : 'attention';
     return (robot.texte ? '\x3Cp class="admin-robot ' + nRobot + '" id="admin-robot">' + iconeSuivi(nRobot) + '\x3Cspan class="admin-suivi-texte">' + insecables(ech(robot.texte)) + '\x3C/span>\x3C/p>' : '') +
-      (autre ? '\x3Cp class="admin-robot attention admin-robot-livraison" id="admin-robot-livraison">' + iconeSuivi('attention') +
+      (autre ? '\x3Cp class="admin-robot ' + nAutre + ' admin-robot-livraison" id="admin-robot-livraison">' + iconeSuivi(nAutre) +
         '\x3Cspan class="admin-suivi-texte">' + insecables(ech(autre.texte)) + '\x3C/span>\x3C/p>' : '') +
       '\x3Cdiv class="admin-ligne-outils">\x3Ch3 class="admin-titre" id="admin-contrats-titre">Contrats du tableau de bord\x3C/h3>' +
       (r.peutAjouter && !F ? '\x3Cbutton type="button" class="bouton principal" data-admin="ajouter-contrat">+ Ajouter un contrat\x3C/button>' : '') + '\x3C/div>' +
@@ -12696,6 +12701,11 @@
   }
   /* Le nom de la tranche dans le tableau de bord : « THS Tranche 2 ». */
   function nomDeTranche(famille, t) { var l = libelleDeTranche(t); return l ? famille + ' ' + l : ''; }
+  /* Débrief 31 (relu) : ce qui distingue une tranche — son numéro sans zéro
+     de tête, ou sa lettre (« Tranche 02 » → « 2 ») ; comme cleDeTranche_ du classeur. */
+  function cleDeTranchePage(t) {
+    return cleContrat(libelleDeTranche(t)).replace(/^tranche\s*/, '').replace(/(^|\s)0+(?=\d)/g, '$1');
+  }
   function lireFormFiche(f) {
     var x = f.elements, F = ADMIN.fiche, i = F ? F.initial : {};
     var v = { nomGates: x.nomGates.value, nom: x.nom ? x.nom.value : '', fwd: x.fwd.value, concept: x.concept.value, psn: x.psn ? x.psn.value : (i.psn || '') };
@@ -12725,7 +12735,8 @@
     var nom = nomDeTranche(F.famille, t);
     /* Des espaces insécables dans les guillemets : « Tranche B » ne se coupe pas en fin de ligne. */
     return (nom ? 'Son nom dans le tableau de bord\u00a0: «\u00a0' + nom + '\u00a0», rangé sous ' + F.famille + '. ' : '') +
-      'Une autre tranche s’écrit «\u00a0Tranche 3\u00a0» ou «\u00a0Tranche B\u00a0».';
+      /* Débrief 31 (relu) : aucun numéro écrit en dur — il proposait une tranche qui existait déjà. */
+      'Pour une autre, changez le numéro, ou écrivez une lettre\u00a0: «\u00a0Tranche B\u00a0».';
   }
   function htmlFormFiche() {
     var F = ADMIN.fiche, r = ADMIN.contrats || {}, s = F.saisie || F.initial, fige = !!F.fige;
@@ -12801,17 +12812,28 @@
        nom (« THS Tranche 2 ») se vérifie comme celui d'un contrat, et ce qui
        ne va pas se dit sous le champ Tranche. */
     var champNom = F.tranche ? 'tranche' : 'nom';
+    var cleT = '', famT = null;
     if (F.tranche) {
       var lib = libelleDeTranche(v.tranche);
+      famT = familleAdmin(F.famille);
+      cleT = cleDeTranchePage(lib);
       if (!/^Tranche [^\s\-\u2013\u2014_:.]/.test(lib)) e.tranche = 'Écrivez la tranche comme « Tranche 2 » ou « Tranche B » : elle se range alors sous ' + F.famille + '.';
       else if (lib.length > 40) e.tranche = 'Ce nom de tranche fait ' + lib.length + ' caractères : 40 au plus.';
+      /* Débrief 31 (relu) : la tranche 1, c'est le contrat lui-même. */
+      else if (/^[01]$/.test(cleT) && famT && famT.lignes.some(function (x) { return !x.c.tranche; })) {
+        e.tranche = '« ' + lib + ' », c’est ' + F.famille + ' lui-même : la suivante est « ' + ((famT.info || {}).prochaine || 'Tranche 2') + ' ».';
+      }
     }
     if (!F.nomFige && nom && !e[champNom]) {
       if (nom.length > 80) e[champNom] = 'Ce nom fait ' + nom.length + ' caractères : 80 au plus.';
       else if (/[,;]/.test(nom)) e[champNom] = 'Pas de virgule ni de point-virgule dans le nom d’un contrat : elles séparent les contrats d’un jalon.';
       else if (/^[=+\-@]/.test(nom)) e[champNom] = 'Un nom ne commence pas par =, +, - ou @.';
       else {
-        var deja = ADMIN.contrats ? lignesDeContrats(ADMIN.contrats).filter(function (x) { return cleContrat(x.c.id) === cleContrat(nom) && !(F.prevu && x.c.id === F.id); })[0] : null;
+        /* Débrief 31 (relu) : « Tranche 02 » ou « Tranche2 » est la tranche 2 déjà là. */
+        var deja = ADMIN.contrats ? lignesDeContrats(ADMIN.contrats).filter(function (x) {
+          return (cleContrat(x.c.id) === cleContrat(nom) || (F.tranche && cleT && x.c.tranche && norm(x.c.contrat) === norm(F.famille) && cleDeTranchePage(x.c.tranche) === cleT)) &&
+            !(F.prevu && x.c.id === F.id);
+        })[0] : null;
         if (deja && F.tranche) e.tranche = deja.prevu ? '« ' + deja.nom + ' » est déjà prévue : modifiez sa fiche.'
           : deja.masque ? '« ' + deja.nom + ' » existe déjà, masquée : réaffichez-la plutôt que d’en ajouter une.'
           : '« ' + deja.nom + ' » existe déjà : modifiez sa fiche plutôt que d’en ajouter une.';
@@ -13360,5 +13382,5 @@
      affichée, pour ne rien retarder. Voir « L'OUVERTURE EN DEUX TEMPS ». */
   demarrer();
 })();
-window.SUIVI_FWD_FIN = 'bf732b6';
+window.SUIVI_FWD_FIN = '3d35dfb';
 </script>

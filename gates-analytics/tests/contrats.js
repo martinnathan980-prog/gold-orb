@@ -709,6 +709,76 @@ section('Débrief 31 : ajouter une tranche, et qui le peut');
   verifier('un contrat masqué garde sa ligne de famille (« VIEUX ») : on peut lui ajouter une tranche', fini && parNom(famillesDe('nathan@airbus.com'), 'VIEUX').ajoutTranche === true);
 }
 
+/* Débrief 31 (relu) — trois relecteurs : une tranche écrite autrement
+   (« THS Tranche2 », « THS Tranche 02 ») passait pour une autre ; « Tranche 1 »
+   s'ajoutait (et le contrat devenait « Tranche principale ») ; une
+   administratrice de THS, en retirant une tranche prévue confiée à Bob, lui
+   ôtait ses droits sans que le responsable le voie ; une tranche prévue
+   renommée dans une autre famille donnait des droits à l'administratrice de
+   l'ancienne famille. */
+section('Débrief 31 (relu) : la même tranche écrite autrement, la tranche 1, les droits des autres administrateurs');
+{
+  const { ctx, comme, prop } = monde();
+  const journal = () => JSON.parse(ctx.__proprietes[vm.runInContext('CLE_JOURNAL_ADMIN', ctx)] || '[]');
+  const tranche = (famille, nom, gates) => ({ id: '', famille: famille, nom: nom, nomGates: gates, colonnes: { fwd: ELEC, concept: '' } });
+  ctx.adminEnregistrerContrat(tranche('THS', 'THS Tranche 2', 'THS AB'));
+  const colle = erreurDe(() => comme('anne@airbus.com', () => ctx.adminEnregistrerContrat(tranche('THS', 'THS Tranche2', 'THS AX'))));
+  const zero = erreurDe(() => comme('anne@airbus.com', () => ctx.adminEnregistrerContrat(tranche('THS', 'THS Tranche 02', 'THS AX'))));
+  const onglet = erreurDe(() => ctx.adminEnregistrerContrat(tranche('HDK', 'HDK - tranche 02', 'HDK AX')));
+  verifier('« THS Tranche2 » et « THS Tranche 02 » sont la tranche 2 déjà prévue ; « HDK - tranche 02 », celle de HDK déjà là : refusées (« [nom] … serait la même tranche que … »), rien d’écrit',
+    colle === '[nom] « THS Tranche2 » serait la même tranche que « THS Tranche 2 » : modifiez sa fiche plutôt que d’en ajouter une.' &&
+    zero === '[nom] « THS Tranche 02 » serait la même tranche que « THS Tranche 2 » : modifiez sa fiche plutôt que d’en ajouter une.' &&
+    onglet === '[nom] « HDK - tranche 02 » serait la même tranche que « HDK Tranche 2 » : modifiez sa fiche plutôt que d’en ajouter une.' &&
+    !prop('SUIVI_FWD_FICHES')['THS Tranche2'] && !prop('SUIVI_FWD_FICHES')['THS Tranche 02'], JSON.stringify([colle, zero, onglet]));
+  const vingt = ctx.adminEnregistrerContrat(tranche('THS', 'THS Tranche 20', 'THS AT'));
+  verifier('… mais « THS Tranche 20 » est une autre tranche (seuls les zéros de tête comptent pour rien)', vingt.enregistre === 'THS Tranche 20', vingt.enregistre);
+  const un = erreurDe(() => comme('anne@airbus.com', () => ctx.adminEnregistrerContrat(tranche('THS', 'THS Tranche 1', 'THS AX'))));
+  const zeroUn = erreurDe(() => ctx.adminEnregistrerContrat(tranche('HDK', 'HDK Tranche 01', 'HDK AX')));
+  const nul = erreurDe(() => ctx.adminEnregistrerContrat({ id: '', nom: 'THS Tranche 0', nomGates: 'THS AX', colonnes: { fwd: ELEC } }));
+  verifier('« Tranche 1 » (ou « 01 », « 0 ») d’un contrat qui existe : c’est le contrat lui-même — refusée, la suivante proposée',
+    un === '[nom] « Tranche 1 », c’est THS lui-même : la suivante est « Tranche 21 ».' && zeroUn === '[nom] « Tranche 01 », c’est HDK lui-même : la suivante est « Tranche 3 ».' &&
+    nul === '[nom] « Tranche 0 », c’est THS lui-même : la suivante est « Tranche 21 ».' && !prop('SUIVI_FWD_FICHES')['THS Tranche 1'], JSON.stringify([un, zeroUn, nul]));
+  ctx.adminRetirerContratPrevu('THS Tranche 20');
+  const neo = ctx.adminEnregistrerContrat({ id: '', nom: 'NEO Tranche 2', nomGates: 'NEO AB', colonnes: { fwd: ELEC } });
+  const neo1 = ctx.adminEnregistrerContrat(tranche('NEO', 'NEO Tranche 1', 'NEO AA'));
+  verifier('une famille qui n’a que des tranches (pas de contrat « NEO ») : « NEO Tranche 1 » s’ajoute', neo.enregistre === 'NEO Tranche 2' && neo1.enregistre === 'NEO Tranche 1', neo1.enregistre);
+
+  /* Bob : administrateur de « THS Tranche 2 » seule. */
+  ctx.adminEnregistrerAdmins([{ email: 'anne@airbus.com', contrats: ['THS'] }, { email: 'paul@airbus.com', contrats: [] }, { email: 'bob@airbus.com', contrats: ['THS Tranche 2'] }]);
+  const vueAnne = comme('anne@airbus.com', () => ctx.adminContrats()).prevus.filter(x => x.id === 'THS Tranche 2')[0] || {};
+  const refus = erreurDe(() => comme('anne@airbus.com', () => ctx.adminRetirerContratPrevu('THS Tranche 2')));
+  const bob = () => prop('SUIVI_FWD_ROLES').admins.filter(a => a.email === 'bob@airbus.com')[0];
+  verifier('Anne (THS) ne retire pas « THS Tranche 2 » confiée à Bob : pas de « Retirer » pour elle, et l’appel forgé est refusé en clair ; rien n’a changé',
+    vueAnne.retirable === false && vueAnne.modifiable === true &&
+    refus === '[droits] « THS Tranche 2 » est confiée à bob@airbus.com : seuls le responsable et les administrateurs de tous les contrats peuvent la retirer. Rien n’a été changé.' &&
+    !!prop('SUIVI_FWD_FICHES')['THS Tranche 2'] && !!bob() && bob().contrats.join() === 'THS Tranche 2', JSON.stringify([vueAnne.retirable, refus, bob()]));
+  /* Un prévu renommé dans une autre famille : les droits suivent qui le NOMMAIT (Bob), pas qui le couvrait par sa famille (Anne). */
+  const avantRenom = journal().length;
+  const renomme = ctx.adminEnregistrerContrat({ id: 'THS Tranche 2', nom: 'HDK Tranche 3', nomGates: 'HDK AC', colonnes: { fwd: ELEC, concept: '' } });
+  const anne = prop('SUIVI_FWD_ROLES').admins.filter(a => a.email === 'anne@airbus.com')[0];
+  const lignesRenom = journal().slice(0, journal().length - avantRenom).map(j => j.quoi);
+  const modifAnne = erreurDe(() => comme('anne@airbus.com', () => ctx.adminEnregistrerContrat({ id: 'HDK Tranche 3', nomGates: 'HDK AD', colonnes: { fwd: ELEC } })));
+  verifier('« THS Tranche 2 » renommée « HDK Tranche 3 » : Bob la suit, Anne garde THS seul (rien sur HDK : elle ne peut ni la modifier ni la retirer) ; le journal dit le changement de Bob',
+    renomme.enregistre === 'HDK Tranche 3' && renomme.messageDroits === 'Les droits de bob@airbus.com suivent le nouveau nom.' &&
+    bob().contrats.join() === 'HDK Tranche 3' && anne.contrats.join() === 'THS' &&
+    lignesRenom.indexOf('droits de bob@airbus.com : THS Tranche 2 → HDK Tranche 3') !== -1 &&
+    /^\[droits\] Réservé aux administrateurs de HDK Tranche 3/.test(modifAnne), JSON.stringify([renomme.messageDroits, bob(), anne, lignesRenom, modifAnne]));
+  /* Le responsable la retire : Bob perd ses droits — c'est dit, et noté au journal. */
+  const avantRetrait = journal().length;
+  const retrait = ctx.adminRetirerContratPrevu('HDK Tranche 3');
+  const lignesRetrait = journal().slice(0, journal().length - avantRetrait).map(j => j.quoi);
+  verifier('Nathan retire « HDK Tranche 3 » : « bob@airbus.com n’avait que ce contrat : plus de droits d’administration. » — et le journal le note',
+    retrait.messageDroits === 'bob@airbus.com n’avait que ce contrat : plus de droits d’administration.' && !bob() &&
+    lignesRetrait.join(' | ') === 'droits retirés : bob@airbus.com (n’avait que HDK Tranche 3) | contrat prévu retiré : HDK Tranche 3', JSON.stringify([retrait.messageDroits, lignesRetrait]));
+  /* Ses propres droits ne retiennent pas Anne : une tranche qu'elle était seule à nommer, elle la retire. */
+  ctx.adminEnregistrerContrat(tranche('THS', 'THS Tranche 3', 'THS AC'));
+  ctx.adminEnregistrerAdmins([{ email: 'anne@airbus.com', contrats: ['THS', 'THS Tranche 3'] }, { email: 'paul@airbus.com', contrats: [] }]);
+  const sienne = comme('anne@airbus.com', () => ctx.adminRetirerContratPrevu('THS Tranche 3'));
+  verifier('… Anne retire une tranche qu’elle seule nommait : retirée, elle garde THS',
+    !sienne.prevus.some(x => x.id === 'THS Tranche 3') && prop('SUIVI_FWD_ROLES').admins.filter(a => a.email === 'anne@airbus.com')[0].contrats.join() === 'THS',
+    JSON.stringify(prop('SUIVI_FWD_ROLES')));
+}
+
 section('Débrief 31 : un seul onglet suivi (CONFIG.FEUILLE_DONNEES) — pas de tranche à ajouter');
 {
   const { ctx } = monde();
@@ -780,10 +850,13 @@ section('Débrief 31 : la livraison que regarde le robot, vue du site');
     prop('SUIVI_FWD_RAPPORTS').robot.livraison === edition && !a.robot.livraison && a.robot.niveau === 'ok', JSON.stringify(a.robot));
   ctx.importRapport(j, { source: 'robot', livraison: '1a2b3c4', passage: passage, contrats: [] });
   a = ctx.adminContrats();
+  /* Débrief 31 (relu) : le raccourci que le robot nomme lui-même, « Changer
+     l'adresse du tableau de bord », et plus « 1 - Preparer » (« une seule
+     fois », il refait les connexions) — les deux disaient deux chemins. */
   const attendu = 'Le robot regarde une autre version du site (livraison 1a2b3c4 ; celle-ci : ' + edition + '). ' +
     'Donnez-lui le lien qui suit toujours la dernière version : dans Apps Script, Déployer → Tester les déploiements, ' +
-    'copiez le lien qui finit par /dev ; puis, sur le PC du robot, double-cliquez « 1 - Preparer » et collez-y ce lien.';
-  verifier('une autre livraison (« 1a2b3c4 ») : robot.livraison = { niveau « attention », texte en clair : les deux livraisons, le lien /dev, « 1 - Preparer » } ; la ligne du robot elle-même ne change pas',
+    'copiez le lien qui finit par /dev ; puis, sur le PC du robot, double-cliquez « Changer l’adresse du tableau de bord » et collez-y ce lien.';
+  verifier('une autre livraison (« 1a2b3c4 ») : robot.livraison = { niveau « attention », texte en clair : les deux livraisons, le lien /dev, « Changer l’adresse du tableau de bord » } ; la ligne du robot elle-même ne change pas',
     !!a.robot.livraison && a.robot.livraison.niveau === 'attention' && a.robot.livraison.texte === attendu && a.robot.niveau === 'ok' &&
     /tout s’est bien passé\.$/.test(a.robot.texte) && prop('SUIVI_FWD_RAPPORTS').robot.livraison === '1a2b3c4', JSON.stringify(a.robot));
   ctx.importRapport(j, { source: 'robot', passage: passage, contrats: [] });
@@ -802,6 +875,34 @@ section('Débrief 31 : la livraison que regarde le robot, vue du site');
   verifier('un compte rendu du robot sans « passage » met à jour la livraison de la ligne du robot, sans toucher au reste',
     prop('SUIVI_FWD_RAPPORTS').robot.livraison === 'beef123' && prop('SUIVI_FWD_RAPPORTS').robot.heure === '14:00' &&
     /\(livraison beef123 ; celle-ci : /.test(ctx.adminContrats().robot.livraison.texte), JSON.stringify(prop('SUIVI_FWD_RAPPORTS').robot));
+  /* Débrief 31 (relu) : sur le lien /dev, le robot lit toujours le dernier
+     code enregistré — juste après une livraison, il ne l'a pas encore lue :
+     le site ne lui demande pas de changer de lien (en attente, rien à faire). */
+  ctx.importRapport(j, { source: 'robot', livraison: 'cd9cd8e', adresse: 'dev', passage: passage, contrats: [] });
+  a = ctx.adminContrats();
+  verifier('le robot sur /dev a lu la livraison d’avant (« cd9cd8e ») : « adresse » gardée ; la ligne est « en attente », sans instruction — et dit que faire si elle reste',
+    prop('SUIVI_FWD_RAPPORTS').robot.adresse === 'dev' && !!a.robot.livraison && a.robot.livraison.niveau === 'attente' &&
+    a.robot.livraison.texte === 'À son dernier passage, le robot a lu la livraison cd9cd8e ; celle-ci est ' + edition + '. Rien à faire : il suit le lien /dev, ' +
+      'qui montre toujours le dernier code enregistré, et lira la dernière livraison à son prochain passage. Si cette ligne reste après son passage, ' +
+      'c’est ce lien-ci qui est ancien : ouvrez le tableau de bord par le lien de votre dernier déploiement.' &&
+    !/Changer l’adresse|Tester les déploiements/.test(a.robot.livraison.texte), JSON.stringify([a.robot, prop('SUIVI_FWD_RAPPORTS').robot]));
+  ctx.importRapport(j, { source: 'robot', livraison: edition, adresse: 'dev', passage: passage, contrats: [] });
+  verifier('… et son passage suivant, sur cette livraison-ci : plus rien', !ctx.adminContrats().robot.livraison);
+  ctx.importRapport(j, { source: 'robot', livraison: 'cd9cd8e', adresse: 'exec', passage: passage, contrats: [] });
+  a = ctx.adminContrats();
+  verifier('sur un lien /exec : l’avertissement, avec le lien /dev à donner', prop('SUIVI_FWD_RAPPORTS').robot.adresse === 'exec' &&
+    a.robot.livraison.niveau === 'attention' && /double-cliquez « Changer l’adresse du tableau de bord »/.test(a.robot.livraison.texte), JSON.stringify(a.robot));
+  const sortes = ['DEV', 'https://x/dev', 42, { a: 1 }, ''].map(v => {
+    ctx.importRapport(j, { source: 'robot', livraison: 'cd9cd8e', adresse: v, passage: passage, contrats: [] });
+    return [prop('SUIVI_FWD_RAPPORTS').robot.adresse, ctx.adminContrats().robot.livraison.niveau];
+  });
+  verifier('« adresse » : seuls « dev » et « exec » sont gardés ; autre chose (une adresse entière, un nombre…) est ignoré — l’avertissement reste',
+    sortes.every(x => x[0] === undefined && x[1] === 'attention'), JSON.stringify(sortes));
+  ctx.importRapport(j, { source: 'robot', livraison: 'cd9cd8e', adresse: 'dev', passage: passage, contrats: [] });
+  ctx.importRapport(j, { source: 'robot', livraison: 'beef124', contrats: [] });
+  verifier('un compte rendu sans « passage » ni « adresse » : l’adresse d’avant ne reste pas collée à une autre livraison',
+    prop('SUIVI_FWD_RAPPORTS').robot.adresse === undefined && prop('SUIVI_FWD_RAPPORTS').robot.livraison === 'beef124' &&
+    ctx.adminContrats().robot.livraison.niveau === 'attention', JSON.stringify(prop('SUIVI_FWD_RAPPORTS').robot));
   /* Le garde-fou de taille : 60 contrats aux messages de 500 caractères — la livraison reste. */
   const { ctx: ctx2, c: c2 } = monde();
   for (let i = 0; i < 60; i++) c2.feuilles.push(onglet('C' + i, gates(3, 'C' + i)));

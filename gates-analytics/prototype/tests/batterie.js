@@ -13572,8 +13572,9 @@ async function deplierFiltresColonne(pg) {
         form.titre === 'Nouvelle tranche de « THS »' && form.famille && form.famille.valeur === 'THS' && form.famille.lecture && form.famille.libelle === 'Contrat' &&
         form.tranche && form.tranche.valeur === 'Tranche 2' && form.tranche.requis && form.tranche.libelle === 'Tranche' && !form.nom && form.envoyer === 'Ajouter la tranche' && form.boutons === 0,
         JSON.stringify(form));
+      /* Débrief 31 (relu) : l'aide ne propose plus « Tranche 3 » écrit en dur — c'était parfois la tranche proposée, ou une tranche déjà là. */
       verifier('C31 : le nom dans le tableau de bord se lit sous Tranche (« THS Tranche 2 », rangé sous THS), relié au champ ; le nom GATES est obligatoire, celui de CETTE tranche (exemple « THS AB ») ; le focus y va',
-        form.tranche.aide.replace(/ /g, ' ') === 'Son nom dans le tableau de bord : « THS Tranche 2 », rangé sous THS. Une autre tranche s’écrit « Tranche 3 » ou « Tranche B ».' &&
+        form.tranche.aide.replace(/ /g, ' ') === 'Son nom dans le tableau de bord : « THS Tranche 2 », rangé sous THS. Pour une autre, changez le numéro, ou écrivez une lettre : « Tranche B ».' &&
         /admin-tranche-aide/.test(form.tranche.decrit) && form.gates.requis && form.gates.libelle === 'Nom exact de cette tranche dans GATES' &&
         /^Le nom exact de CETTE tranche dans GATES, pas celui de THS/.test(form.gates.aide) && /THS AB/.test(form.gates.aide) && form.gates.invite === 'Par exemple : THS AB' &&
         form.focus === 'admin-nomGates', JSON.stringify(form));
@@ -13624,6 +13625,18 @@ async function deplierFiltresColonne(pg) {
       verifier('C31 : la tranche proposée suit — THS « Tranche 3 », HDK « Tranche 3 » ; « Annuler » rend le focus au bouton de la famille ; « Tranche 2 » de HDK existe déjà : dit sous Tranche, rien n’est envoyé',
         suivanteThs === 'Tranche 3' && suivanteHdk === 'Tranche 3' && retourThs === 'Ajouter une tranche au contrat THS' &&
         doublon === '« HDK › Tranche 2 » existe déjà : modifiez sa fiche plutôt que d’en ajouter une.', JSON.stringify([suivanteThs, suivanteHdk, retourThs, doublon]));
+      /* Débrief 31 (relu) : « Tranche 1 », c'est HDK lui-même ; « 02 », la tranche 2 déjà là — dits sous Tranche, rien n'est envoyé. */
+      await np.fill('#admin-tranche', 'Tranche 1');
+      await np.click('form[data-form="contrat"] [type="submit"]'); await np.waitForTimeout(150);
+      const trancheUn = await msgChampD(np, 'tranche');
+      await np.fill('#admin-tranche', '02');
+      await np.click('form[data-form="contrat"] [type="submit"]'); await np.waitForTimeout(150);
+      const trancheZero = await msgChampD(np, 'tranche');
+      verifier('C31 (relu) : « Tranche 1 » — « « Tranche 1 », c’est HDK lui-même : la suivante est « Tranche 3 ». » ; « 02 » — « « HDK › Tranche 2 » existe déjà… » ; sous Tranche, rien d’envoyé',
+        trancheUn === '« Tranche 1 », c’est HDK lui-même : la suivante est « Tranche 3 ».' &&
+        trancheZero === '« HDK › Tranche 2 » existe déjà : modifiez sa fiche plutôt que d’en ajouter une.' &&
+        !commeD('nathan@airbus.com', () => srvD.ficheDe_('HDK Tranche 1')) && !commeD('nathan@airbus.com', () => srvD.ficheDe_('HDK Tranche 02')),
+        JSON.stringify([trancheUn, trancheZero]));
       await np.click('td.actions [data-admin="modifier-fiche"][data-id="THS"]'); await np.waitForTimeout(150);
       const garde = await np.evaluate(() => ({ texte: (document.querySelector('.admin-garde .admin-question-texte') || {}).textContent, focus: document.activeElement.getAttribute('data-admin') }));
       await np.click('[data-admin="garde-abandonner"]'); await np.waitForTimeout(150);
@@ -13659,8 +13672,11 @@ async function deplierFiltresColonne(pg) {
       await ap.click('form[data-form="contrat"] [type="submit"]'); await libreD(ap); await ap.waitForTimeout(150);
       const ajoutA = await messageD(ap);
       await ap.click('[data-admin="retirer-prevu"][data-id="THS Tranche 3"]'); await ap.waitForTimeout(450);
+      const questionA = await ap.evaluate(() => (document.getElementById('q-retirer') || {}).textContent);
       await ap.click('[data-admin="retirer-prevu-oui"]'); await libreD(ap); await ap.waitForTimeout(150);
       const retraitA = await messageD(ap), focusRetrait = await actifD(ap);
+      verifier('C31 (relu) : la question pour une tranche, au féminin comme le message qui suit — « Retirer « THS › Tranche 3 » ? Elle n’a encore reçu aucune donnée : … le robot ne la cherchera plus. »',
+        questionA === 'Retirer « THS › Tranche 3 » ? Elle n’a encore reçu aucune donnée : sa fiche est effacée, et le robot ne la cherchera plus.', JSON.stringify(questionA));
       verifier('C31 : Anne ajoute « THS Tranche 3 », puis la retire (elle est prévue) — le focus revient à « + Ajouter une tranche » de THS',
         ajoutA.texte === 'THS › Tranche 3 est ajoutée. Le robot la prendra à son prochain passage : son onglet sera créé avec son premier export GATES.' &&
         retraitA.texte === 'THS › Tranche 3 est retirée : le robot ne la cherchera plus.' && focusRetrait === 'Ajouter une tranche au contrat THS' &&
@@ -13683,8 +13699,9 @@ async function deplierFiltresColonne(pg) {
          déploiement à chaque livraison : son robot gardait l'ancien lien. Le
          compte rendu du robot dit la livraison lue sur le pont ; la page le
          dit, sous la ligne du robot, quand ce n'est pas celle-ci. */
-      const rapportD = livraison => commeD('nathan@airbus.com', () => srvD.importRapport(srvD.ouvrirJetonImport_(),
-        Object.assign({ source: 'robot', passage: { ok: true, heure: '14:00' }, contrats: [] }, livraison === undefined ? {} : { livraison: livraison })));
+      const rapportD = (livraison, adresse) => commeD('nathan@airbus.com', () => srvD.importRapport(srvD.ouvrirJetonImport_(),
+        Object.assign({ source: 'robot', passage: { ok: true, heure: '14:00' }, contrats: [] }, livraison === undefined ? {} : { livraison: livraison },
+          adresse ? { adresse: adresse } : {})));
       const lireLivraison = pg => pg.evaluate(() => {
         const l = document.getElementById('admin-robot-livraison'), r = document.getElementById('admin-robot');
         return l ? { texte: l.querySelector('.admin-suivi-texte').textContent.replace(/\u00a0/g, ' '), classe: l.className, icone: (l.querySelector('.admin-suivi-icone') || {}).textContent,
@@ -13709,11 +13726,31 @@ async function deplierFiltresColonne(pg) {
         return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
       });
       await lp2.__ctx.close();
-      verifier('C31 : le robot regarde une autre livraison (« 1a2b3c4 ») — une ligne ⚠ à part, juste sous la sienne : les deux livraisons, le lien /dev à lui donner, « 1 - Preparer » ; lue « Attention : … » ; ≥ 4,5:1',
+      /* Débrief 31 (relu) : le raccourci que le robot nomme lui-même, « Changer l'adresse du tableau de bord » (plus « 1 - Preparer »). */
+      verifier('C31 : le robot regarde une autre livraison (« 1a2b3c4 ») — une ligne ⚠ à part, juste sous la sienne : les deux livraisons, le lien /dev à lui donner, « Changer l’adresse du tableau de bord » ; lue « Attention : … » ; ≥ 4,5:1',
         !!autreLiv && /\badmin-robot\b/.test(autreLiv.classe) && /\battention\b/.test(autreLiv.classe) && autreLiv.icone === '⚠' && autreLiv.lu === 'Attention : ' && autreLiv.apres &&
         autreLiv.texte === 'Le robot regarde une autre version du site (livraison 1a2b3c4 ; celle-ci : ' + simD.edition + '). Donnez-lui le lien qui suit toujours la dernière version : ' +
-          'dans Apps Script, Déployer → Tester les déploiements, copiez le lien qui finit par /dev ; puis, sur le PC du robot, double-cliquez « 1 - Preparer » et collez-y ce lien.' &&
+          'dans Apps Script, Déployer → Tester les déploiements, copiez le lien qui finit par /dev ; puis, sur le PC du robot, double-cliquez « Changer l’adresse du tableau de bord » et collez-y ce lien.' &&
         /tout s’est bien passé\.$/.test(autreLiv.robot) && contrasteLiv >= 4.5, JSON.stringify([autreLiv, contrasteLiv]));
+      /* Débrief 31 (relu) : le robot sur le lien /dev n'a pas encore lu cette livraison — ◌ « en attente », rien à faire. */
+      rapportD('cd9cd8e', 'dev');
+      const lp3 = await vivanteD({ email: 'nathan@airbus.com' });
+      await ouvrirContratsD(lp3);
+      const devLiv = await lireLivraison(lp3);
+      const contrasteDev = await lp3.evaluate(() => {
+        const t = document.querySelector('#admin-robot-livraison .admin-suivi-texte');
+        const lum = c => { const m = c.match(/[\d.]+/g).map(Number); const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(m[0]) + 0.7152 * f(m[1]) + 0.0722 * f(m[2]); };
+        let fond = 'rgb(255, 255, 255)'; for (let e = t; e; e = e.parentElement) { const b = getComputedStyle(e).backgroundColor; if (b && b !== 'rgba(0, 0, 0, 0)' && b !== 'transparent') { fond = b; break; } }
+        const a = lum(getComputedStyle(t).color), b = lum(fond);
+        return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+      });
+      await lp3.__ctx.close();
+      verifier('C31 (relu) : le robot sur le lien /dev a lu la livraison d’avant — une ligne ◌ « en attente », sans instruction : « Rien à faire… il lira la dernière livraison à son prochain passage » ; ≥ 4,5:1',
+        !!devLiv && /\battente\b/.test(devLiv.classe) && !/\battention\b/.test(devLiv.classe) && devLiv.icone === '◌' && devLiv.lu === 'En attente : ' && devLiv.apres &&
+        devLiv.texte === 'À son dernier passage, le robot a lu la livraison cd9cd8e ; celle-ci est ' + simD.edition + '. Rien à faire : il suit le lien /dev, ' +
+          'qui montre toujours le dernier code enregistré, et lira la dernière livraison à son prochain passage. Si cette ligne reste après son passage, ' +
+          'c’est ce lien-ci qui est ancien : ouvrez le tableau de bord par le lien de votre dernier déploiement.' && contrasteDev >= 4.5, JSON.stringify([devLiv, contrasteDev]));
+      rapportD('1a2b3c4');
 
       /* C31-6 : téléphone, thème sombre (la ligne « autre livraison » encore là). */
       const tp = await vivanteD({ email: 'nathan@airbus.com', largeur: 390, hauteur: 844, schema: 'dark', mobile: true });

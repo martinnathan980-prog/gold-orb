@@ -788,12 +788,15 @@ print('\n— Débrief 31 : ce que le robot a lu, dit à chaque passage ; une ANC
 ANCIENNE31 = {'cases': ['GATES HDK', 'GATES THS', 'SEE'], 'contrats': [{'contrat': '', 'case': 'GATES HDK'}, {'contrat': '', 'case': 'GATES THS'}],
               'adresse': 'https://script.google.com/a/macros/airbus.com/s/AKvieux/exec?page=import', 'livraison': '', 'ancienne': True, 'erreur': ''}
 lignes31 = robot.entete_du_tableau({'tableau': 'x'}, ANCIENNE31)
-verifier('une ancienne version : l’adresse, « version inconnue », ce qu’il ne voit pas, et quoi faire (le lien /dev, « Changer l’adresse du tableau de bord » ; ou « Nouvelle version »)',
+# Débrief 31 (relu) : plus de « Gérer les déploiements → ✏️ → Nouvelle version » dans la fenêtre noire —
+# Nathan fait un nouveau déploiement à chaque livraison (« les mises à jour de liens, ça déconne ») : un seul
+# chemin, le lien /dev, une fois pour toutes (l'autre reste dans le README).
+verifier('une ancienne version : l’adresse, « version inconnue », ce qu’il ne voit pas, et quoi faire (le lien /dev, « Changer l’adresse du tableau de bord » — un seul chemin)',
          lignes31[0] == 'Tableau de bord lu : https://script.google.com/a/macros/airbus.com/s/AKvieux/exec?page=import — version inconnue' and
          'ANCIENNE version du tableau de bord' in lignes31[1] and 'AKvieux/exec?page=import' in lignes31[1] and
          'Déployer → Tester les déploiements' in lignes31[1] and 'finit par /dev' in lignes31[1] and
          '« Changer l\'adresse du tableau de bord »' in lignes31[1] and
-         'Déployer → Gérer les déploiements' in lignes31[1] and '« Nouvelle version »' in lignes31[1], lignes31)
+         'Gérer les déploiements' not in lignes31[1] and 'Nouvelle version' not in lignes31[1], lignes31)
 dev31 = robot.entete_du_tableau({'tableau': 'https://script.google.com/a/macros/airbus.com/s/AKfy/dev'}, dict(ANCIENNE31, adresse=''))
 verifier('… avec déjà le lien /dev : c’est le code du projet qui est ancien — recoller la dernière livraison et enregistrer',
          'AKfy/dev?page=import' in dev31[1] and 'collez la dernière livraison' in dev31[1] and 'Tester les déploiements' not in dev31[1], dev31)
@@ -827,13 +830,19 @@ avant_j = journal()
 robot.lancer(auto=True)
 remettre()                                  # (comme si le passage du jour n'était pas fait : il repasse)
 robot.lancer(auto=True)
-robot.lancer(auto=False)
+dit_lancer31, code_lancer31 = sortie_de(robot.lancer, auto=False)
 j31 = journal()[len(avant_j):]
 prev31 = [a[1] for a in appels if a[0] == 'prevenu']
+# Débrief 31 (relu) : la petite fenêtre ne propose plus « Nouvelle version » (voir plus haut) — le lien /dev seul.
 verifier('en automatique : une petite fenêtre le dit à la fin des passages — une seule fois par jour (« Lancer maintenant » : la fenêtre noire suffit)',
          nb('passage') == 3 and len(prev31) == 1 and 'ANCIENNE version du tableau de bord' in prev31[0] and 'AKvieux/exec?page=import' in prev31[0] and
          'Tester les déploiements' in prev31[0] and '/dev' in prev31[0] and '« Changer l\'adresse du tableau de bord »' in prev31[0] and
-         'Nouvelle version' in prev31[0], (appels, prev31))
+         'Nouvelle version' not in prev31[0], (appels, prev31))
+fin_lancer31 = dit_lancer31.rstrip().split('\n')
+i_fin31 = max([i for i, l in enumerate(fin_lancer31) if l.startswith(('✓ Passage', '✗ Passage'))] or [-1])
+verifier('« Lancer maintenant » (débrief 31, relu) : après la dernière ligne (✓ ou ✗), l’ANCIENNE version redite, avec quoi faire — pas seulement tout en haut',
+         i_fin31 >= 0 and 'ANCIENNE version du tableau de bord' in '\n'.join(fin_lancer31[i_fin31 + 1:]) and
+         '« Changer l\'adresse du tableau de bord »' in '\n'.join(fin_lancer31[i_fin31 + 1:]), dit_lancer31[-1500:])
 verifier('… chaque passage écrit au journal ce qu’il a lu (l’adresse, la version, l’avertissement)',
          j31.count('Tableau de bord lu : https://script.google.com/a/macros/airbus.com/s/AKvieux/exec?page=import — version inconnue') == 3 and
          j31.count('ANCIENNE version du tableau de bord') >= 3, j31[-1500:])
@@ -1055,6 +1064,129 @@ verifier('un ancien « GATES THS » resté à côté du modèle (son fichier ill
          [(e['case'], s['etapes'][2]['texte']) for e, s in travaux31] == [('GATES HDK', 'HDK AA'), ('GATES THS', 'THS AA'), ('GATES NEO', 'NEO AA')] and
          '« GATES THS » n’est pas fait : l’export GATES de tous les contrats le remplace.' in journal(), [(e['case'], e['nom']) for e, _ in travaux31])
 (R / 'exports' / 'gates-ths-vieux.json').unlink()
+
+print('\n— Débrief 31 (relu) : essayer SEE seul, un début tapé, ce que GATES montrait, une fenêtre plus ancienne que le robot, le compte rendu dit son lien —')
+# Essayer SEE juste après l'avoir appris (« Le robot essaie tout de suite ? o ») : un faux « refaites Apprendre ».
+for f31 in R.glob('exports/*.json'):
+    f31.unlink()
+scenario('gates.json', 'GATES', '2026-11-03T09:00:00', GESTES31, modele={'appris': 'HDK AA', 'contrat': 'HDK'})
+scenario('see.json', 'SEE', '2026-11-03T09:10:00', [{'faire': 'cliquer', 'cible': {'texte': 'Submit'}}])
+robot.garder({'tableau': DEV, 'heure': '14:00', 'exports': [{'nom': 'GATES', 'scenario': 'gates.json', 'modele': True},
+                                                            {'nom': 'SEE', 'scenario': 'see.json', 'case': 'SEE'}]})
+vrais_e = {n: getattr(robot, n) for n in ('chrome', 'attendre_tableau', 'rejouer', 'photo')}
+joues_e = []
+
+
+def rejouer_essai(c, s_, dossier):
+    joues_e.append(s_['nom'])
+    p_ = pathlib.Path(dossier) / (robot.nom_de_fichier(s_['nom']) + '.xlsx')
+    p_.write_text('x', encoding='utf-8')
+    return p_
+
+
+robot.chrome = lambda *a, **k: FauxChrome()
+robot.attendre_tableau = lambda c, cfg, delai: dict(TABLEAU31, adresse=robot.adresse_import(cfg))
+robot.rejouer, robot.photo = rejouer_essai, (lambda c: '')
+vieil_input = builtins.input
+builtins.input = lambda invite='': ''
+try:
+    avant_j = journal()
+    dit_e, _ = sortie_de(robot.essayer, ['SEE'])
+    j_e = journal()[len(avant_j):]
+    joues_see = list(joues_e)
+    del joues_e[:]
+    dit_g, _ = sortie_de(robot.essayer, ['GATES'])
+finally:
+    builtins.input = vieil_input
+    for n, v in vrais_e.items():
+        setattr(robot, n, v)
+verifier('essayer SEE seul (l’export GATES de tous les contrats déjà appris) : SEE refait, « Tout est bon » — pas de faux « refaites Apprendre » pour GATES',
+         joues_see == ['SEE'] and 'Tout est bon : le robot sait refaire SEE.' in dit_e and 'refaites « Apprendre »' not in dit_e and '✗' not in dit_e, dit_e[-1500:])
+verifier('… et ce qu’il dit des contrats vient du modèle appris (« THS → tape « THS AA » »), pas « pas encore d’export GATES » — au journal aussi',
+         '  THS → tape « THS AA »' in j_e and 'pas encore d\'export GATES' not in j_e, j_e[-1200:])
+verifier('… essayer GATES fait toujours chaque contrat du tableau de bord', joues_e == ['GATES HDK', 'GATES THS', 'GATES VRK', 'GATES NEO'] and
+         'Tout est bon' in dit_g, (joues_e, dit_g[-800:]))
+
+# Un début tapé (« HDK A »), puis la suggestion « HDK AA » cliquée.
+G_DEBUT = [{'faire': 'remplir', 'cible': {'balise': 'input', 'placeholder': 'Contrat'}, 'texte': 'HDK A'},
+           {'faire': 'cliquer', 'cible': {'balise': 'li', 'texte': 'HDK AA'}},
+           {'faire': 'remplir', 'cible': {'balise': 'input', 'placeholder': 'Contrat'}, 'texte': 'HDK AA'},
+           {'faire': 'cliquer', 'cible': {'balise': 'button', 'texte': 'XLSX'}}]
+s_ths = robot.pour_le_contrat({'nom': 'GATES', 'etapes': G_DEBUT}, 'HDK AA', 'THS', 'THS AA', 'HDK AA')['etapes']
+s_hdk = robot.pour_le_contrat({'nom': 'GATES', 'etapes': G_DEBUT}, 'HDK AA', 'HDK', 'HDK AA', 'HDK AA')['etapes']
+verifier('appris en tapant « HDK A » puis en cliquant « HDK AA » : pour THS, le robot tape « THS AA » en entier (retapé « HDK A », GATES ne proposait que HDK) et clique « THS AA »',
+         [g.get('texte') or g['cible'].get('texte') for g in s_ths] == ['THS AA', 'THS AA', 'THS AA', 'XLSX'] and s_ths[1]['cible']['contient'] == 'THS AA', s_ths)
+verifier('… pour HDK lui-même : exactement les gestes montrés (« HDK A », puis « HDK AA »)',
+         [g.get('texte') or g['cible'].get('texte') for g in s_hdk] == ['HDK A', 'HDK AA', 'HDK AA', 'XLSX'], s_hdk)
+G_DEBUT2 = [dict(G_DEBUT[0]), {'faire': 'cliquer', 'cible': {'balise': 'li', 'texte': 'HDK AA — 634 plans'}}, G_DEBUT[3]]
+builtins.input = lambda invite='': (_ for _ in ()).throw(AssertionError('le robot pose une question : %s' % invite))
+try:
+    vu_debut = robot.reperer_contrat(G_DEBUT2, TABLEAU31['contrats'])
+finally:
+    builtins.input = vieil_input
+verifier('« HDK A » tapé, puis « HDK AA — 634 plans » cliqué : reconnu sans question — le nom de la fiche, tel que GATES le montre (« HDK AA »), sur HDK',
+         vu_debut == ('HDK AA', 'HDK'), vu_debut)
+robot.garder({'tableau': 'x', 'exports': []})
+dit, _ = apprendre_avec(G_DEBUT2, TABLEAU31, ['1', 1.0, 'n'])
+cfg_d = robot.config()
+travaux_d = robot.a_faire(cfg_d, cfg_d['exports'], robot.contrats_lus(TABLEAU31))
+verifier('… appris ainsi : ce qu’il annonce (« THS → tape « THS AA » ») est ce qu’il tape le lendemain, pour chaque contrat',
+         'Lequel de ces mots' not in dit and '  THS → tape « THS AA »' in dit and
+         [(e['contrat'], s_['etapes'][0]['texte'], s_['etapes'][1]['cible']['texte'], s_['etapes'][1]['cible'].get('contient')) for e, s_ in travaux_d] ==
+         [('HDK', 'HDK A', 'HDK AA — 634 plans', 'HDK AA'), ('THS', 'THS AA', 'THS AA — 634 plans', 'THS AA'),
+          ('VRK', 'VRK AA', 'VRK AA — 634 plans', 'VRK AA'), ('NEO', 'NEO AA', 'NEO AA — 634 plans', 'NEO AA')],
+         [(e['contrat'], s_['etapes'][0]['texte'], s_['etapes'][1]['cible']['texte'], s_['etapes'][1]['cible'].get('contient')) for e, s_ in travaux_d])
+
+# La fiche de HDK n'a pas de nom GATES ; appris en tapant « HDK », en cliquant « HDK AA — 634 plans » : jamais « THS AB AA — … ».
+s_t2 = robot.pour_le_contrat({'nom': 'GATES', 'etapes': G31b}, 'HDK', 'THS Tranche 2', 'THS AB', '')['etapes']
+verifier('« HDK » tapé, « HDK AA — 634 plans » cliqué, sans nom GATES dans la fiche de HDK : pour « THS Tranche 2 » (« THS AB »), « THS AB — 634 plans » — jamais « THS AB AA — … »',
+         s_t2[0]['texte'] == 'THS AB' and s_t2[1]['cible']['texte'] == 'THS AB — 634 plans' and s_t2[1]['cible']['contient'] == 'THS AB', s_t2)
+(R / 'exports' / 'gates-t2.json').write_text(json.dumps({'nom': 'GATES', 'depart': 'x', 'etapes': G31b, 'modele': {'appris': 'HDK', 'contrat': 'HDK'}}), encoding='utf-8')
+travaux_t2 = robot.a_faire({}, [{'nom': 'GATES', 'scenario': 'gates-t2.json', 'modele': True}],
+                           [{'contrat': 'HDK', 'case': 'GATES HDK', 'nom_gates': '', 'prevu': False},
+                            {'contrat': 'THS', 'case': 'GATES THS', 'nom_gates': 'THS AA', 'prevu': False},
+                            {'contrat': 'THS Tranche 2', 'case': 'GATES THS Tranche 2', 'nom_gates': 'THS AB', 'prevu': True}])
+verifier('… chaque jour : HDK comme appris, THS « THS AA — 634 plans », la tranche « THS AB — 634 plans »',
+         [(e['contrat'], s_['etapes'][0]['texte'], s_['etapes'][1]['cible']['texte']) for e, s_ in travaux_t2] ==
+         [('HDK', 'HDK', 'HDK AA — 634 plans'), ('THS', 'THS AA', 'THS AA — 634 plans'), ('THS Tranche 2', 'THS AB', 'THS AB — 634 plans')],
+         [(e['contrat'], s_['etapes'][0]['texte'], s_['etapes'][1]['cible']['texte']) for e, s_ in travaux_t2])
+verifier('… « forme_vue » ne prend qu’un ou deux mots courts avant le séparateur (rien dans « HDK AA 011 > Avancement… », ni dans « HDKA — … »)',
+         robot.forme_vue([{'faire': 'cliquer', 'cible': {'texte': 'HDK AA 011 > Avancement'}}], 'HDK') == '' and
+         robot.forme_vue([{'faire': 'cliquer', 'cible': {'texte': 'HDKA — 600 plans'}}], 'HDK') == '' and
+         robot.forme_vue([{'faire': 'remplir', 'texte': 'HDK AA — x'}], 'HDK') == '' and
+         robot.forme_vue([{'faire': 'choisir', 'option': 'HDK AB (tranche)'}], 'HDK') == 'HDK AB')
+
+# Une fenêtre du débrief 30 : le pont et les fiches, mais pas de livraison — plus ancienne que ce robot.
+D30 = dict(TABLEAU31, livraison='', ancienne=False, perimee=True, adresse=EXEC1 + '?page=import')
+lignes_d30 = robot.entete_du_tableau({'tableau': EXEC1}, D30)
+verifier('une fenêtre avec pont mais sans « Livraison » (un déploiement du débrief 30) : dite plus ANCIENNE que le robot, avec l’adresse et le lien /dev à donner',
+         lignes_d30[0] == 'Tableau de bord lu : %s?page=import — version inconnue' % EXEC1 and 'plus ANCIENNE que lui' in lignes_d30[1] and
+         EXEC1 + '?page=import' in lignes_d30[1] and '« Changer l\'adresse du tableau de bord »' in lignes_d30[1] and
+         'Il lit les fiches des contrats' in lignes_d30[1], lignes_d30)
+verifier('… ses fiches sont lues : les lignes des contrats ne disent pas « fiche non lue »',
+         robot.lignes_des_contrats({}, robot.contrats_lus(D30), {'modele': MODELE}, D30['ancienne']) ==
+         ['  HDK → tape « HDK AA »', '  THS → tape « THS AA »', '  VRK → tape « VRK AA » (deviné : à écrire dans sa fiche pour être sûr)',
+          '  NEO → tape « NEO AA » (prévu, nouvel onglet)'])
+dit, _, _, _, _ = adresse_avec([''], {'tableau': EXEC1, 'heure': '14:00', 'exports': []}, lecture=lambda cfg_: dict(D30, adresse=robot.adresse_import(cfg_)))
+verifier('« Changer l’adresse » sur cette fenêtre : jamais « ✓ Le robot voit le tableau de bord » — l’avertissement à la place',
+         '✓ Le robot voit le tableau de bord' not in dit and 'plus ANCIENNE que lui' in dit, dit[-1200:])
+if (R / 'alerte-version.txt').exists():
+    (R / 'alerte-version.txt').unlink()
+appels.clear()
+robot.prevenir_ancienne({'tableau': EXEC1}, D30, True)
+robot.prevenir_ancienne({'tableau': EXEC1}, D30, False)
+prev_d30 = [a[1] for a in appels if a[0] == 'prevenu']
+verifier('… en automatique, la petite fenêtre de la fin le dit aussi (une fois ; « Lancer maintenant » : la fenêtre noire)',
+         len(prev_d30) == 1 and 'plus ANCIENNE que lui' in prev_d30[0] and 'Changer l\'adresse du tableau de bord' in prev_d30[0] and 'Nouvelle version' not in prev_d30[0], prev_d30)
+dit, _ = sortie_de(robot.rappeler_ancienne, {'tableau': DEV}, D30)
+verifier('… sur le lien /dev, c’est le code du projet qui est d’avant : recoller la dernière livraison',
+         'plus ANCIENNE que lui' in dit and 'collez la dernière livraison' in dit and 'Tester les déploiements' not in dit, dit)
+
+# Le compte rendu dit la sorte de lien du robot : sur /dev, le site ne lui demande pas d'en changer après chaque livraison.
+verifier('le compte rendu dit son lien : « adresse » = « dev » ou « exec » ; rien pour une adresse ni /dev ni /exec',
+         robot.rapport_du_robot({'tableau': DEV}, '', [], [], 0).get('adresse') == 'dev' and
+         robot.rapport_du_robot({'tableau': EXEC1}, '', [], [], 0).get('adresse') == 'exec' and
+         'adresse' not in robot.rapport_du_robot({'tableau': 'https://exemple.fr/x'}, '', [], [], 0))
 
 print('\n— Débrief 31 : une attente longue dit son maximum, puis où elle en est —')
 robot.Patience.PAS = 1
@@ -1641,8 +1773,10 @@ else:
             attendue = edition if 'data-livraison' in CODE else ''
             verifier('la vraie fenêtre : pas une ancienne version ; l’adresse lue ; sa livraison (« %s »)' % (attendue or 'version inconnue'),
                      tableau['ancienne'] is False and tableau['erreur'] == '' and tableau['adresse'] == cfg['tableau'] + '?page=import' and
-                     tableau['livraison'] == attendue and
-                     robot.entete_du_tableau(cfg, tableau) == ['Tableau de bord lu : %s?page=import — %s' % (cfg['tableau'], 'Livraison ' + attendue if attendue else 'version inconnue')],
+                     tableau['livraison'] == attendue and tableau['perimee'] is (not attendue) and
+                     robot.entete_du_tableau(cfg, tableau)[0] == 'Tableau de bord lu : %s?page=import — %s' % (cfg['tableau'], 'Livraison ' + attendue if attendue else 'version inconnue') and
+                     # Débrief 31 (relu) : un Code.gs d'avant data-livraison (SUIVI_FWD_CODE_GS) est dit plus ancien que le robot.
+                     len(robot.entete_du_tableau(cfg, tableau)) == (1 if attendue else 2),
                      (tableau, attendue))
             vieux = {'tableau': 'http://127.0.0.1:%d/exec?ancienne=1' % port}
             tableau_vieux = robot.lire_tableau(c, vieux)
@@ -1651,6 +1785,13 @@ else:
                      robot.contrats_lus(tableau_vieux) == [{'contrat': 'HDK', 'case': 'GATES HDK', 'nom_gates': '', 'prevu': False}] and
                      'ANCIENNE version du tableau de bord' in robot.entete_du_tableau(vieux, tableau_vieux)[1] and
                      vieux['tableau'] + '&page=import' in robot.entete_du_tableau(vieux, tableau_vieux)[1], tableau_vieux)
+            # Débrief 31 (relu) : la fenêtre d'un déploiement du débrief 30 — le pont et les fiches, sans data-livraison.
+            d30 = {'tableau': 'http://127.0.0.1:%d/exec?d30=1' % port}
+            tableau_d30 = robot.lire_tableau(c, d30)
+            verifier('une fenêtre du débrief 30 (pont et fiches, sans « Livraison ») : plus ancienne que le robot — dite, jamais « ✓ » ; ses fiches lues quand même',
+                     (not attendue) or (tableau_d30['perimee'] is True and tableau_d30['ancienne'] is False and tableau_d30['livraison'] == '' and
+                                        robot.contrats_lus(tableau_d30) == contrats and
+                                        'plus ANCIENNE que lui' in '\n'.join(robot.entete_du_tableau(d30, tableau_d30))), tableau_d30)
             # Un autre onglet du navigateur du robot montre l'ancienne fenêtre : le robot lit toujours la sienne.
             with Chrome(port=robot.PORT, delai=30) as onglet:
                 onglet.ouvrir(vieux['tableau'] + '&page=import')
@@ -1752,6 +1893,11 @@ if exe and NODE and SERVEUR.exists():
         verifier('… tout cela par le lien /dev : lu, déposé, compte rendu arrivé ; le journal dit l’adresse et la livraison lues',
                  'Tableau de bord lu : http://127.0.0.1:%d/dev?page=import — ' % port in nouveau_j and
                  len([r for r in e['recus'] if r.get('source') == 'robot' and 'passage' in r]) == 1, (nouveau_j[:600], e['recus']))
+        # Débrief 31 (relu) : le compte rendu dit « adresse » = « dev », gardé par le vrai Code.gs avec la ligne du robot.
+        CODE_N = pathlib.Path(os.environ.get('SUIVI_FWD_CODE_GS') or SERVEUR.parent.parent / 'Code.gs').read_text(encoding='utf-8')
+        verifier('… son compte rendu dit son lien (« adresse » : « dev ») — et le tableau de bord le garde avec la ligne du robot',
+                 [r.get('adresse') for r in e['recus'] if r.get('source') == 'robot' and 'passage' in r] == ['dev'] and
+                 (rap['robot'].get('adresse') == 'dev' or "r.adresse === 'dev'" not in CODE_N), (e['recus'], rap['robot']))
     finally:
         robot.rejouer = vrai_rejouer
         os.environ.pop('SUIVI_FWD_OPTIONS_CHROME', None)

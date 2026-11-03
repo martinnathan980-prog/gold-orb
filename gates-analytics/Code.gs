@@ -47,7 +47,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = 'bf732b6';
+const EDITION = '3d35dfb';
 
 // =====================================================================
 //  CONFIGURATION
@@ -5830,12 +5830,17 @@ function adminContrats() {
     const see = avecSee_(), rapports = rapportsEnregistres_();
     const actifs = listerContrats(classeur), retires = contratsRetires_(classeur), prevus = contratsPrevus_(classeur);
     const sansOnglet = fichesSansOnglet_(classeur);
+    let lusAdmins = null;
+    const admins = function () { if (!lusAdmins) lusAdmins = rolesEnregistres_().admins; return lusAdmins; };
     const ligne = function (etat) {
       return function (c) {
         c.gerable = etat === 'actif' ? peutGerer_(d, c.id) && d.tous : etat === 'masque' ? d.tous : false;
         c.modifiable = etat !== 'introuvable' && peutGerer_(d, c.id);
-        /* Débrief 31 : une tranche prévue se retire aussi par qui peut l'ajouter. */
-        c.retirable = (etat === 'prevu' || etat === 'introuvable') && d.tous || (etat === 'prevu' && !!trancheDe_(c.id) && peutGerer_(d, c.id));
+        /* Débrief 31 : une tranche prévue se retire aussi par qui peut l'ajouter —
+           (relu) sauf si elle est confiée à un autre administrateur (le retrait
+           lui ôterait ses droits : adminRetirerContratPrevu le refuse). */
+        c.retirable = (etat === 'prevu' || etat === 'introuvable') && d.tous ||
+          (etat === 'prevu' && !!trancheDe_(c.id) && peutGerer_(d, c.id) && !autresAdminsTouches_(d, c.id, admins(), autresContrats_(classeur, c.id)).length);
         c.prevu = etat === 'prevu';
         c.introuvable = etat === 'introuvable';
         const k = colonnesDuContrat(c.id), p = see ? psnDuContrat(c.id) : { psn: [], source: '' };
@@ -5874,7 +5879,7 @@ function adminContrats() {
     /* Débrief 31 : le robot regarde-t-il cette livraison-ci ? Sinon, une
        ligne à part, en attention, sous la sienne. */
     const autreLivraison = phraseLivraisonDuRobot_(rapports);
-    if (autreLivraison) rendu.robot.livraison = { niveau: 'attention', texte: autreLivraison };
+    if (autreLivraison) rendu.robot.livraison = autreLivraison;
     rendu.avecSee = see;
     rendu.peutAjouter = (d.role === 'responsable' || (d.role === 'administrateur' && d.tous)) && !CONFIG.FEUILLE_DONNEES;
     /* Débrief 31 : par famille, « + Ajouter une tranche » (et laquelle proposer). */
@@ -6104,27 +6109,54 @@ function porteeCouvre_(portee, contrat) {
  * le nouveau nom s'ajoute s'il n'est pas déjà couvert. Un administrateur
  * qui n'a plus aucune portée est retiré : une liste vide voudrait dire
  * « tous les contrats ». Rend ce qui a changé, à dire dans la page.
+ *
+ * Débrief 31 (relu) : le nouveau nom ne s'ajoute qu'à qui NOMMAIT l'ancien
+ * (« THS Tranche 2 ») — pas à qui le couvrait par sa famille : Anne (THS),
+ * devant « THS Tranche 2 » renommée « HDK Tranche 3 », garde THS et ne
+ * reçoit rien sur HDK. droitsSuivis_ calcule sans rien écrire (pour savoir,
+ * avant de retirer, qui serait touché).
  */
+function droitsSuivis_(admins, ancien, nouveau, restants) {
+  const changes = [], garder = [];
+  (Array.isArray(admins) ? admins : []).forEach(function (a) {
+    const avant = a && Array.isArray(a.contrats) ? a.contrats.map(function (c) { return String(c).trim(); }).filter(Boolean) : [];
+    if (!avant.length || !avant.some(function (c) { return porteeCouvre_(c, ancien); })) { garder.push(a); return; }
+    const nommait = avant.some(function (c) { return memeContrat_(c, ancien); });
+    const apres = avant.filter(function (c) {
+      return !(memeContrat_(c, ancien) && !(restants || []).some(function (x) { return porteeCouvre_(c, x); }));
+    });
+    if (nouveau && nommait && !apres.some(function (c) { return porteeCouvre_(c, nouveau); })) apres.push(nouveau);
+    const email = String(a.email || '').trim().toLowerCase();
+    if (!apres.length) { changes.push({ email: email, retire: true, avant: avant, apres: [] }); return; }
+    if (apres.join('\u0001') !== avant.join('\u0001')) changes.push({ email: email, retire: false, avant: avant, apres: apres });
+    garder.push(Object.assign({}, a, { contrats: apres }));
+  });
+  return { admins: garder, changes: changes };
+}
 function suivreDansLesDroits_(lot, ancien, nouveau, restants) {
-  const changes = [];
+  let changes = [];
   lot.changer(CLE_ROLES, function (r) {
     if (!Array.isArray(r.admins)) return;
-    const garder = [];
-    r.admins.forEach(function (a) {
-      const avant = a && Array.isArray(a.contrats) ? a.contrats.map(function (c) { return String(c).trim(); }).filter(Boolean) : [];
-      if (!avant.length || !avant.some(function (c) { return porteeCouvre_(c, ancien); })) { garder.push(a); return; }
-      const apres = avant.filter(function (c) {
-        return !(memeContrat_(c, ancien) && !(restants || []).some(function (x) { return porteeCouvre_(c, x); }));
-      });
-      if (nouveau && !apres.some(function (c) { return porteeCouvre_(c, nouveau); })) apres.push(nouveau);
-      const email = String(a.email || '').trim().toLowerCase();
-      if (!apres.length) { changes.push({ email: email, retire: true }); return; }
-      if (apres.join('\u0001') !== avant.join('\u0001')) changes.push({ email: email, retire: false });
-      garder.push(Object.assign({}, a, { contrats: apres }));
-    });
-    r.admins = garder;
+    const s = droitsSuivis_(r.admins, ancien, nouveau, restants);
+    r.admins = s.admins;
+    changes = s.changes;
   });
   return changes;
+}
+/* Débrief 31 (relu) : les AUTRES administrateurs (pas `d`) dont les droits
+   changeraient si le prévu `id` s'en allait — ceux qui le nommaient. */
+function autresAdminsTouches_(d, id, admins, restants) {
+  return droitsSuivis_(admins, id, '', restants).changes
+    .filter(function (x) { return x.email !== emailPropre_(d.email); }).map(function (x) { return x.email; });
+}
+/* Débrief 31 (relu) : les droits qui ont suivi, au journal de
+   l'administration — une ligne par administrateur touché, pour que le
+   responsable voie qui a perdu ou gagné quoi. */
+function journaliserDroits_(email, changes) {
+  (changes || []).forEach(function (c) {
+    journaliserAdmin_(email, c.retire ? 'droits retirés : ' + c.email + ' (n’avait que ' + c.avant.join(', ') + ')'
+      : 'droits de ' + c.email + ' : ' + c.avant.join(', ') + ' → ' + c.apres.join(', '));
+  });
 }
 /* Ce que la page dit des droits qui ont suivi : « Les droits de bob@… suivent le nouveau nom. » */
 function phraseDesDroits_(changes, renomme) {
@@ -6528,16 +6560,31 @@ function livraisonLue_(v) {
 
 /* Débrief 31 (Nathan crée un nouveau déploiement, donc un nouveau lien, à
    chaque livraison : le robot gardait l'ancien et voyait une ancienne
-   version) : la phrase à dire sous la ligne du robot quand la livraison
-   qu'il a lue à son dernier passage n'est pas celle-ci ; '' sinon — ou si
-   son compte rendu ne la donne pas (un robot d'avant le débrief 31). */
+   version) : ce qu'il faut dire sous la ligne du robot quand la livraison
+   qu'il a lue à son dernier passage n'est pas celle-ci — { niveau, texte } ;
+   null sinon, ou si son compte rendu ne la donne pas (un robot d'avant le
+   débrief 31).
+
+   Débrief 31 (relu) : le compte rendu dit aussi la sorte d'adresse du robot
+   (« adresse » : 'dev' ou 'exec'). Sur le lien /dev, le robot lit toujours
+   le dernier code enregistré : juste après une nouvelle livraison, il ne
+   l'a simplement pas encore lue — rien à lui redonner (en attente, pas
+   d'instruction). Si la ligne reste après son passage, c'est le lien par
+   lequel on regarde ce tableau de bord qui est ancien. Sur un lien /exec
+   (ou une adresse inconnue), le lien /dev à lui donner, par le raccourci
+   « Changer l'adresse du tableau de bord » (celui que le robot nomme). */
 function phraseLivraisonDuRobot_(rapports) {
   const r = rapports && rapports.robot;
   const vue = r && typeof r === 'object' ? livraisonLue_(r.livraison) : '';
-  if (!vue || vue === EDITION) return '';
-  return 'Le robot regarde une autre version du site (livraison ' + vue + ' ; celle-ci : ' + EDITION + '). ' +
+  if (!vue || vue === EDITION) return null;
+  if (r.adresse === 'dev') {
+    return { niveau: 'attente', texte: 'À son dernier passage, le robot a lu la livraison ' + vue + ' ; celle-ci est ' + EDITION + '. ' +
+      'Rien à faire : il suit le lien /dev, qui montre toujours le dernier code enregistré, et lira la dernière livraison à son prochain passage. ' +
+      'Si cette ligne reste après son passage, c’est ce lien-ci qui est ancien : ouvrez le tableau de bord par le lien de votre dernier déploiement.' };
+  }
+  return { niveau: 'attention', texte: 'Le robot regarde une autre version du site (livraison ' + vue + ' ; celle-ci : ' + EDITION + '). ' +
     'Donnez-lui le lien qui suit toujours la dernière version : dans Apps Script, Déployer → Tester les déploiements, ' +
-    'copiez le lien qui finit par /dev ; puis, sur le PC du robot, double-cliquez « 1 - Preparer » et collez-y ce lien.';
+    'copiez le lien qui finit par /dev ; puis, sur le PC du robot, double-cliquez « Changer l’adresse du tableau de bord » et collez-y ce lien.' };
 }
 
 /** La ligne du robot, en tête de l'onglet Contrats : { niveau, texte, heure }. Débrief 30 (relu) : les contrats « à vérifier » (niveau attention) se comptent aussi. */
@@ -6593,7 +6640,43 @@ function verifierNomContrat_(classeur, brut, ancienPrevu) {
     throw new Error('[nom] « ' + orpheline.id + ' » a encore sa fiche, mais plus d’onglet (renommé ou supprimé dans Sheets ?) : ' +
       'redonnez ce nom à son onglet, ou oubliez d’abord cette fiche (ligne « Onglet introuvable »).');
   }
+  /* Débrief 31 (relu) : une tranche se reconnaît à sa famille et à son
+     numéro (ou sa lettre), aux espaces et aux zéros près — « THS Tranche2 »
+     ou « THS Tranche 02 » est la tranche 2 de THS : deux contrats ne
+     porteraient pas la même étiquette « THS › Tranche 2 ». Et la tranche 1
+     d'un contrat, c'est lui-même. */
+  const cle = cleDeTranche_(nom);
+  if (cle) {
+    const connus = listerContrats(classeur).map(function (c) { return c.id; }).concat(contratsRetires_(classeur))
+      .concat(contratsPrevus_(classeur).map(function (p) { return p.id; })).concat(fichesSansOnglet_(classeur).map(function (p) { return p.id; }))
+      .filter(function (id) { return !(ancienPrevu && id === ancienPrevu); });
+    const meme = connus.filter(function (id) { return cleDeTranche_(id) === cle; })[0];
+    if (meme) throw new Error('[nom] « ' + nom + ' » serait la même tranche que « ' + meme + ' » : modifiez sa fiche plutôt que d’en ajouter une.');
+    const famille = familleDuContrat_(nom), t = trancheDe_(nom);
+    const base = connus.filter(function (id) { return !trancheDe_(id) && familleDuContrat_(id) === famille; })[0];
+    if (base && /^[01]$/.test(cle.split('|')[1])) {
+      throw new Error('[nom] « ' + t.tranche + ' », c’est ' + base + ' lui-même : la suivante est « ' + prochaineTranche_(connus, famille) + ' ».');
+    }
+  }
   return nom;
+}
+
+/* Débrief 31 (relu) : la clé d'une tranche — sa famille, puis son numéro
+   sans zéro de tête ou sa lettre (« THS Tranche 02 » → « ths|2 ») ; '' si
+   `nom` n'est pas une tranche. */
+function cleDeTranche_(nom) {
+  const t = trancheDe_(nom);
+  if (!t) return '';
+  return familleDuContrat_(nom) + '|' + nomCompact(t.tranche).replace(/^tranche\s*/, '').replace(/(^|\s)0+(?=\d)/g, '$1');
+}
+/* La tranche suivante d'une famille parmi `ids` : la plus grande tranche numérotée plus un (le contrat de base est la tranche 1). */
+function prochaineTranche_(ids, famille) {
+  let plusGrande = 1;
+  ids.forEach(function (id) {
+    const k = cleDeTranche_(id);
+    if (k && familleDuContrat_(id) === famille && /^\d{1,4}$/.test(k.split('|')[1])) plusGrande = Math.max(plusGrande, Number(k.split('|')[1]));
+  });
+  return 'Tranche ' + (plusGrande + 1);
 }
 
 /* Débrief 30 (relu) : le nom GATES que le robot tape aujourd'hui pour chaque
@@ -6765,6 +6848,7 @@ function adminEnregistrerContrat(fiche) {
   });
   journaliserAdmin_(d.email, ajout ? (famille ? 'tranche ajoutée : ' : 'contrat ajouté : ') + id + ' (GATES « ' + nomGates + ' »)'
     : 'fiche modifiée : ' + id + (renomme ? ' (avant : ' + connu.id + ')' : ''));
+  journaliserDroits_(d.email, droits);
   return Object.assign(adminContrats(), { enregistre: id, colonnesChangees: aOnglet && colonnesAEcrire, donneesChangees: aOnglet && (colonnesAEcrire || !!psn),
                                           corrige: corrige, messageDroits: phraseDesDroits_(droits, true) });
 }
@@ -6800,11 +6884,23 @@ function adminRetirerContratPrevu(id) {
         : '« ' + c.id + ' » a retrouvé son onglet : sa fiche reste. La liste vient d’être relue.');
     }
     if (c.etat === 'prevu' && encore.etat !== 'prevu') throw new Error('« ' + c.id + ' » a changé entre-temps : rien n’est retiré. La liste vient d’être relue.');
-    const lot = lotDeProprietes_();
-    droits = oublierContrat_(c.id, lot, autresContrats_(classeur, c.id), encore.etat === 'prevu');
+    const lot = lotDeProprietes_(), restants = autresContrats_(classeur, c.id);
+    /* Débrief 31 (relu) : une administratrice de THS retire « THS Tranche 2 »
+       — mais si la tranche est confiée à quelqu'un d'autre (Bob, administrateur
+       de « THS Tranche 2 » seule), ce serait lui retirer ses droits : seul le
+       responsable (ou un administrateur de tous les contrats) le fait. */
+    if (encore.etat === 'prevu' && !(d.role === 'responsable' || (d.role === 'administrateur' && d.tous))) {
+      const touches = autresAdminsTouches_(d, c.id, lot.objet(CLE_ROLES).admins, restants);
+      if (touches.length) {
+        throw new Error('[droits] « ' + c.id + ' » est confiée à ' + touches.slice(0, 3).join(', ') + (touches.length > 3 ? '…' : '') +
+          ' : seuls le responsable et les administrateurs de tous les contrats peuvent la retirer. Rien n’a été changé.');
+      }
+    }
+    droits = oublierContrat_(c.id, lot, restants, encore.etat === 'prevu');
     lot.ecrire();
   });
   journaliserAdmin_(d.email, (c.etat === 'prevu' ? 'contrat prévu retiré : ' : 'fiche sans onglet oubliée : ') + c.id);
+  journaliserDroits_(d.email, droits);
   return Object.assign(adminContrats(), { messageDroits: phraseDesDroits_(droits, false) });
 }
 
@@ -7664,6 +7760,7 @@ function importContrats(jeton) {
  * ce qui s'est passé — sans regarder le PC du robot.
  *   rapport = { source: 'robot' | 'fenetre',
  *               passage: { ok, message, heure: '14:00', debut, erreursFiche },   // robot seulement
+ *               livraison: 'bf732b6', adresse: 'dev' | 'exec',                  // robot seulement (débrief 31)
  *               contrats: [{ contrat, gates: { ok?, code?, message?, tape?, plans? },
  *                                     see: { ok?, code?, message?, lignes? } }] }
  * Une partie sans `ok` ne change que `tape` (ce que le robot a tapé dans
@@ -7725,14 +7822,19 @@ function importRapport(jeton, rapport) {
        a lue sur le pont — gardée avec la ligne du robot (adminContrats la
        compare à EDITION). Autre chose qu'un court mot lisible : ignoré. */
     const livraison = r.source === 'robot' ? livraisonLue_(r.livraison) : '';
+    /* Débrief 31 (relu) : « adresse », la sorte de lien du robot ('dev' : le
+       dernier code enregistré ; 'exec' : un déploiement) — autre chose est ignoré. */
+    const adresse = r.source === 'robot' && (r.adresse === 'dev' || r.adresse === 'exec') ? r.adresse : '';
     if (r.source === 'robot' && r.passage && typeof r.passage === 'object') {
       const p = r.passage;
       tous.robot = { quand: maintenant, ok: !!p.ok, message: message(p.message) };
       if (/^\d\d:\d\d$/.test(String(p.heure || ''))) tous.robot.heure = String(p.heure);
       if (nombre(p.erreursFiche) !== undefined) tous.robot.erreursFiche = nombre(p.erreursFiche);
       if (livraison) tous.robot.livraison = livraison;
+      if (adresse) tous.robot.adresse = adresse;
     } else if (livraison && tous.robot && typeof tous.robot === 'object') {
       tous.robot.livraison = livraison;
+      if (adresse) tous.robot.adresse = adresse; else delete tous.robot.adresse;
     }
     ecrireRapports_(tous, connus.length ? connus : null);
   } finally {

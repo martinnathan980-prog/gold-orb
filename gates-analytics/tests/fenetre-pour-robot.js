@@ -29,7 +29,11 @@
    que /exec (le lien de test d'Apps Script, celui que le robot garde
    désormais). GET /etat dit aussi les comptes rendus reçus tels quels
    (recus : le champ « livraison » du robot). SUIVI_FWD_CODE_GS : un autre
-   Code.gs à servir (par exemple celui d'une autre branche). */
+   Code.gs à servir (par exemple celui d'une autre branche).
+
+   Débrief 31 (relu) : /exec?d30=1 sert la fenêtre comme le débrief 30 la
+   montrait — le pont et les fiches, mais pas data-livraison sur le pont
+   (un robot d'aujourd'hui doit la dire plus ancienne que lui). */
 'use strict';
 const fs = require('fs');
 const os = require('os');
@@ -99,22 +103,28 @@ const ANCIENNE = '<script>(function () {' +
   '  [].slice.call(document.querySelectorAll(".case.prevue, #pont-robot")).forEach(function (e) { e.parentNode.removeChild(e); });' +
   '});' +
   '})();</script>';
-function fenetre(ancienne) {
+/* Débrief 31 (relu) : une fenêtre du débrief 30 (voir plus haut). */
+const D30 = '<script>document.addEventListener("DOMContentLoaded", function () {' +
+  '  var p = document.getElementById("pont-robot"); if (p) p.removeAttribute("data-livraison");' +
+  '});</script>';
+function fenetre(ancienne, d30) {
   ctx.__dialogue = null;
   ctx.importerSecondeBase();
   return ctx.__dialogue.getContent().replace('"maxLignesLot":20000', '"maxLignesLot":50').replace('"pausesReprise":[2000,6000]', '"pausesReprise":[30,60]')
-    .replace('<head>', '<head>' + DOUBLE + (ancienne ? ANCIENNE : ''));
+    .replace('<head>', '<head>' + DOUBLE + (ancienne ? ANCIENNE : '') + (d30 ? D30 : ''));
 }
 
 const serveur = http.createServer((req, res) => {
   const envoyer = (code, type, corps) => { res.writeHead(code, { 'Content-Type': type + '; charset=utf-8' }); res.end(corps); };
   const port = serveur.address().port;
   if (req.method === 'GET' && /^\/(exec|dev)(\/|\?|$)/.test(req.url)) {
-    const ancienne = /[?&]ancienne=1/.test(req.url);
+    const ancienne = /[?&]ancienne=1/.test(req.url), d30 = /[?&]d30=1/.test(req.url);
     return envoyer(200, 'text/html', '<!doctype html><meta charset="utf-8"><title>Suivi FWD</title><body style="margin:0">' +
-      '<iframe src="http://localhost:' + port + '/googleusercontent/fenetre' + (ancienne ? '?ancienne=1' : '') + '" style="border:0;width:100%;height:1400px"></iframe>');
+      '<iframe src="http://localhost:' + port + '/googleusercontent/fenetre' + (ancienne ? '?ancienne=1' : d30 ? '?d30=1' : '') + '" style="border:0;width:100%;height:1400px"></iframe>');
   }
-  if (req.method === 'GET' && /^\/googleusercontent\/fenetre(\?|$)/.test(req.url)) return envoyer(200, 'text/html', fenetre(/[?&]ancienne=1/.test(req.url)));
+  if (req.method === 'GET' && /^\/googleusercontent\/fenetre(\?|$)/.test(req.url)) {
+    return envoyer(200, 'text/html', fenetre(/[?&]ancienne=1/.test(req.url), /[?&]d30=1/.test(req.url)));
+  }
   if (req.method === 'GET' && req.url === '/etat') {
     return envoyer(200, 'application/json', JSON.stringify({
       onglets: classeur.getSheets().map(f => f.getName()), rapports: ctx.rapportsEnregistres_(),
