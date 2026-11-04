@@ -37,7 +37,11 @@ Batterie du robot, sans navigateur ni Windows : ce qui décide QUAND il passe.
   « Données MK2 » caché tant que le menu est fermé), HDK puis VRK dans le
   même onglet : menu branché tard, départ en « #… », menu au survol, clic
   perdu ; le robot rouvre le menu, recharge la page, le dit ; jamais deux
-  « Submit », jamais deux téléchargements, jamais de clic à l'aveugle.
+  « Submit », jamais deux téléchargements, jamais de clic à l'aveugle ;
+  relecture : une liste qui défile, les menus cachés autrement (display:none,
+  replié, hors de l'écran, dans un cadre), une requête en fond, jamais deux
+  fois une case, « Page suivante », « Afficher », « Se connecter », le
+  fichier, un clic qui change de page en retard ; « Quitter la page ? ».
 
 Aucune dépendance : bibliothèque standard uniquement.
 """
@@ -1406,7 +1410,8 @@ if exe:
         t0 = _time.time()
         dit = rejouer_sur(RETIF % '', menu)
         verifier('rien ne l’ouvre : il le dit vite et clairement, au lieu de rester figé',
-                 dit.startswith('erreur : Après « Export all », « XLSX » n’est jamais apparu'.replace('’', "'")) and _time.time() - t0 < 200, dit[:160])
+                 dit.startswith('erreur : Le menu « Export all » ne s’est pas ouvert (« XLSX » ne s’est pas montré), même après plusieurs essais'.replace('’', "'")) and
+                 'relancez « 3 - Essayer »' in dit and _time.time() - t0 < 200, dit[:400])
         verifier('le fichier attendu juste après le geste qui le fait venir : appris, ou deviné (« XLSX ») pour un export appris avant',
                  robot.indice_telechargement({'etapes': menu + [{'faire': 'cliquer', 'cible': {'texte': 'Log out'}}], 'telechargement_apres': 2}) == 2 and
                  robot.indice_telechargement({'etapes': menu + [{'faire': 'cliquer', 'cible': {'texte': 'Log out'}}]}) == 2 and
@@ -1527,6 +1532,9 @@ main{padding:24px;min-height:600px}
 </style></head><body><header id="app-header"></header><main id="vue"></main>
 <script>
 var V = new URLSearchParams(location.search).get('v') || '';
+/* (relecture) h — le menu fermé en display:none (Bootstrap) ; q — une petite requête toutes les 3 s (session, notifications) */
+if (V.indexOf('h') >= 0) document.head.insertAdjacentHTML('beforeend', '<style>.sous-menu{display:none}.sous-menu.ouvert{display:block}</style>');
+if (V.indexOf('q') >= 0) setInterval(function () { fetch('/lent?' + Math.random()); }, 3000);
 var n = +(sessionStorage.getItem('exports') || 0), ouvert = false, avale = V.indexOf('d') >= 0 && n === 1;
 var T = ['HDK AA (SUPER PUMA)', 'VRK AA (SUPER PUMA)', 'THS AA (TIGRE)'];
 var note = function (t) { sessionStorage.setItem('journal', (sessionStorage.getItem('journal') || '') + t + ';'); };
@@ -1670,6 +1678,11 @@ document.getElementById('fermer').onclick = function () { compte.fermer++; };
 
     # Ce que Nathan a vu : le robot planté devant « Données MK2 » caché, jusqu'à 5 minutes (ici DELAI_TROUVER).
     SANS_ATTENTE32 = '(attente : « Données MK2 » couvert'
+    # (relecture : « couvert » se dit désormais « caché derrière autre chose » ou « pas encore affiché »)
+    ATTENTES32 = (SANS_ATTENTE32, '(attente : « Données MK2 » caché derrière', '(attente : « Données MK2 » pas encore affiché')
+
+    def planté32(dit):
+        return any(a in dit for a in ATTENTES32)
 
     def resume32(r):
         return {k: r[k] for k in ('sortis', 'err', 'page', 'duree')}, r['dit'][-1500:]
@@ -1701,29 +1714,31 @@ document.getElementById('fermer').onclick = function () { compte.fermer++; };
                      'le robot reclique sur le menu, tout seul, et VRK sort',
                      r['sortis'] == ['gates-hdk.xlsx', 'gates-vrk.xlsx'] and not r['err'] and 'perdu;clic menu;' in r['page'] and
                      'export VRK AA (SUPER PUMA);' in r['page'], resume32(r))
-            verifier('… dit en clair, sans attendre 5 minutes : « (« Données MK2 » est encore caché : le menu ne s’est pas ouvert, le robot reclique dessus) », '
-                     'et au journal « il a fallu recliquer sur le menu »',
-                     '(« Données MK2 » est encore caché : le menu ne s\'est pas ouvert, le robot reclique dessus)' in r['dit'] and
-                     '(« Données MK2 » : il a fallu recliquer sur le menu' in journal() and SANS_ATTENTE32 not in r['dit'] and
+            verifier('… dit en clair, sans attendre 5 minutes, SOUS la ligne « 1/6 » : « (« Données MK2 » ne s’est pas montré : le menu ne s’est pas ouvert, '
+                     'le robot essaie de le rouvrir) », les essais numérotés, et au journal « … ne s’était pas ouvert du premier coup ; rouvert par : … »',
+                     '(« Données MK2 » ne s\'est pas montré : le menu ne s\'est pas ouvert, le robot essaie de le rouvrir)' in r['dit'] and
+                     '      … essai 1 : la souris posée sur le menu\n' in r['dit'] and
+                     r['dit'].rindex('  1/6 cliquer (le menu qui ouvre « Données MK2 »)') < r['dit'].rindex('(« Données MK2 » ne s\'est pas montré') and
+                     'ne s\'était pas ouvert du premier coup ; rouvert par : ' in journal() and not planté32(r['dit']) and
                      r['duree'] < 90, resume32(r))
 
             r = deux_contrats32(c, scen32, 'b', '#/accueil')
             verifier('b — départ « …#/accueil » : Chrome ne rechargeait pas (même document), l’application gardait l’état du 1er export — '
                      'le robot recharge la page, VRK sort',
                      r['sortis'] == ['gates-hdk.xlsx', 'gates-vrk.xlsx'] and not r['err'] and 'export VRK AA (SUPER PUMA);' in r['page'] and
-                     'il a fallu recliquer' not in r['dit'] and SANS_ATTENTE32 not in r['dit'], resume32(r))
+                     'essaie de le rouvrir' not in r['dit'] and 'il a fallu recliquer' not in r['dit'] and not planté32(r['dit']), resume32(r))
 
             r = deux_contrats32(c, scen32, 'a')
             verifier('a — l’application branche son menu 3 s après s’être dessinée (et le redessine) : le robot attend la page calme, '
                      'puis reclique sur le menu redessiné — HDK et VRK sortent, sans attendre devant « Données MK2 » caché',
                      r['sortis'] == ['gates-hdk.xlsx', 'gates-vrk.xlsx'] and not r['err'] and 'export VRK AA (SUPER PUMA);' in r['page'] and
-                     SANS_ATTENTE32 not in r['dit'], resume32(r))
+                     not planté32(r['dit']), resume32(r))
 
             r = deux_contrats32(c, scen32, 'c')
             verifier('c — un menu qui s’ouvre au survol, et qu’un clic referme : le robot le survole à nouveau — HDK et VRK sortent, '
                      'sans attendre devant « Données MK2 » caché',
                      r['sortis'] == ['gates-hdk.xlsx', 'gates-vrk.xlsx'] and not r['err'] and 'export VRK AA (SUPER PUMA);' in r['page'] and
-                     'essai : le survol' in r['dit'] and SANS_ATTENTE32 not in r['dit'], resume32(r))
+                     ('essai : le survol' in r['dit'] or 'essai 1 : la souris posée sur le menu' in r['dit']) and not planté32(r['dit']), resume32(r))
 
             # Un export appris AVANT ce débrief (le menu décrit par son seul chemin) : retrouvé exactement comme avant.
             ancien32 = dict(scen32, etapes=[dict(g, cible={k: v for k, v in g['cible'].items() if k not in ('contenu', 'alt', 'svgtitre', 'classe')})
@@ -1777,22 +1792,26 @@ document.getElementById('fermer').onclick = function () { compte.fermer++; };
                 e_ = None
             except robot.ErreurPilote as e:
                 r_, e_ = None, e
-            verifier('toujours couvert au bout du délai : une erreur claire (« … est resté caché … ne clique pas à l’aveugle »), plus de clic sur ce qui le cache',
-                     r_ is None and e_ is not None and 'caché' in str(e_) and 'aveugle' in str(e_) and getattr(e_, 'introuvable', True) is False, (r_, e_))
+            verifier('toujours couvert au bout du délai : une erreur claire (« … est resté caché … »), plus de clic sur ce qui le cache',
+                     r_ is None and e_ is not None and 'caché' in str(e_) and ('aveugle' in str(e_) or 'jamais au hasard' in str(e_)) and
+                     getattr(e_, 'introuvable', True) is False, (r_, e_))
             appels = []
 
             def leve32():
                 appels.append(1)
-                c.evaluer('document.getElementById("cache").remove()')
+                c.evaluer('document.getElementById("cache").remove();document.getElementById("aff").style.cssText=""')
                 return True
             leve32.menu = 'le menu qui ouvre « Afficher »'
+            # Relecture : « Afficher » caché LUI-MÊME (la ligne d'un menu fermé : transparente, sans clic), plus sous un voile.
+            c.evaluer('document.getElementById("cache").remove();document.getElementById("aff").style.cssText="opacity:0;pointer-events:none";'
+                      'var v=document.createElement("div");v.id="cache";document.body.appendChild(v);')
             try:
                 r_ = robot.trouver(c, AFF, delai=20, rouvrir=leve32)
             except Exception as e:  # noqa: BLE001
                 r_ = 'erreur : %s' % e
             verifier('caché, geste d’avant recliquable : au bout de DELAI_ROUVRIR (pas 5 min) le menu est rouvert, une fois, puis le clic',
                      isinstance(r_, dict) and not r_.get('attendre') and appels == [1], (r_, appels))
-            c.evaluer('var v=document.createElement("div");v.className="voile";document.body.appendChild(v);')
+            c.evaluer('document.getElementById("aff").style.cssText="opacity:0;pointer-events:none"')
             rate32 = lambda: False   # noqa: E731
             rate32.menu = 'le menu qui ouvre « Afficher »'
             try:
@@ -1801,7 +1820,8 @@ document.getElementById('fermer').onclick = function () { compte.fermer++; };
             except Exception as e:  # noqa: BLE001
                 e_ = e
             verifier('… rien n’y fait : il le dit tout de suite, en nommant l’étape du menu',
-                     e_ is not None and 'le menu qui ouvre « Afficher » ne s\'est pas ouvert' in str(e_), e_)
+                     e_ is not None and 'le menu qui ouvre « afficher » ne s\'est pas ouvert' in str(e_).lower(), e_)
+            c.evaluer('document.getElementById("aff").style.cssText=""')
 
             # Une page vraiment neuve à chaque export, même quand l'adresse ne change que par son « #… ».
             c.ouvrir(BASE32 + '#/mk2')
@@ -1830,6 +1850,236 @@ document.getElementById('fermer').onclick = function () { compte.fermer++; };
             if v is not None:
                 setattr(robot, k, v)
 # ---- fin débrief 32
+
+print('\n— Débrief 32, relecture : listes qui défilent, menus cachés autrement, clics jamais refaits, messages —')
+# Ce que les trois relecteurs ont trouvé, refait ici en vrai Chrome : une ligne au bas d'une liste qui a sa
+# propre barre de défilement ; la ligne d'un menu fermé autrement que transparente (display:none, groupe
+# replié, rangée hors de l'écran, dans un cadre) ; « Exporter (.xls) » pris pour « Exporter » ; un menu sans
+# nom dans un cadre ; jamais deux fois une case à cocher, « Page suivante », « Afficher », « Se connecter »,
+# une loupe, ce qui fait venir le fichier, ni un clic qui charge sa page en retard ; une page qui demande
+# « Quitter la page ? » ; GATES avec son menu en display:none, ou une requête en fond toutes les 3 s.
+rq = robot.recliquable
+verifier('jamais recliqués : une connexion, « Page suivante », une flèche, ce qui fait venir le fichier, une case, une poubelle',
+         not any(rq({'faire': 'cliquer', 'cible': c_}) for c_ in (
+             {'texte': 'Se connecter'}, {'texte': 'Sign in', 'role': 'button'}, {'label': 'Log in'}, {'texte': 'Connexion'}, {'texte': 'Sign On'},
+             {'texte': 'Page suivante'}, {'texte': 'Next'}, {'texte': '›'}, {'texte': 'XLSX'}, {'texte': 'Exporter (.xls)'}, {'texte': 'Télécharger'},
+             {'icone': 'fa-trash'}, {'icone': 'fa-sign-out'}, {'balise': 'input', 'type': 'checkbox'}, {'role': 'switch'}, {'classe': 'btn-save'})) and
+         all(rq({'faire': 'cliquer', 'cible': c_}) for c_ in (
+             {'texte': 'Export all'}, {'texte': 'Exporter'}, {'texte': 'Données MK2'},
+             {'chemin': 'header > div', 'contenu': 'Données MK1 Données MK2 Import Aide'})))
+mm = robot.message_menu('le menu qui ouvre « Données MK2 »', '« Données MK2 »')
+verifier('l’erreur finale dit quoi faire : ouvrir le menu soi-même, relancer « 3 - Essayer » s’il s’ouvre, réapprendre sinon',
+         mm.startswith('Le menu qui ouvre « Données MK2 » ne s\'est pas ouvert, même après plusieurs essais') and
+         'relancez « 3 - Essayer »' in mm and 'Sinon, refaites « 2 - Apprendre un export »' in mm and 'aveugle' not in mm, mm)
+verifier('un bouton qui n’a pas l’air d’un menu se dit « le bouton « Afficher » », un champ par son nom — jamais « le menu le champ »',
+         robot.nom_du_menu({'texte': 'Afficher'}, {'texte': 'Export all'}, False)[0] == 'le bouton « Afficher »' and
+         robot.nom_du_menu({'balise': 'input', 'etiquette': 'PSN'}, {'texte': 'Submit'}, True) == ('le champ « PSN »', 'le champ « PSN »', False) and
+         robot.nom_du_menu({'chemin': 'header > div'}, {'texte': 'Données MK2'}, True)[0] == 'le menu qui ouvre « Données MK2 »')
+verifier('« (le menu qui ouvre … ) » seulement suivi d’un clic ; avant un champ : « (ce qui fait paraître …) »',
+         robot.dire_geste({'faire': 'cliquer', 'cible': {'chemin': 'div'}}, {'faire': 'cliquer', 'cible': {'texte': 'Données MK2'}}) ==
+         '(le menu qui ouvre « Données MK2 »)' and
+         robot.dire_geste({'faire': 'cliquer', 'cible': {'chemin': 'div'}}, {'faire': 'remplir', 'cible': {'balise': 'input', 'etiquette': 'PSN'}}) ==
+         '(ce qui fait paraître le champ « PSN »)')
+verifier('l’attente dit « caché derrière autre chose » ou « pas encore affiché », plus « couvert »',
+         robot.DIT_ATTENTE.get('couvert') == 'caché derrière autre chose' and robot.DIT_ATTENTE.get('caché') == 'pas encore affiché')
+if exe:
+    import contextlib as _cl32r
+    import http.server as _hs32r
+    import io as _io32r
+    import json as _json32r
+    import threading as _th32r
+    import time as _t32r
+    LIGNES32R = ''.join('<div class="t" style="height:30px">Tranche %d</div>' % k for k in range(1, 21))
+    SONDE32R = ('<!doctype html><meta charset="utf-8"><body style="margin:0;font:14px sans-serif">'
+                '<div id="liste" style="height:100px;overflow:auto;width:200px;border:1px solid #888">' + LIGNES32R + '</div>'
+                '<nav style="width:200px;background:#eee;padding:4px"><div><b>Groupe</b><div style="height:0;overflow:hidden">'
+                '<a href="#" onclick="return false">Ligne accordéon</a></div></div><div><b>Autre groupe</b></div></nav>'
+                '<div style="position:absolute;left:-9999px;top:300px"><a>Ligne hors écran</a></div>'
+                '<div style="display:none"><a>Ligne non affichée</a></div>'
+                '<a id="ouverte">Ligne ouverte</a> <button type="button" id="exporter">Exporter</button><br>'
+                '<iframe id="cadre" src="/cadre" style="width:300px;height:120px;border:0"></iframe>')
+    CADRE32R = ('<!doctype html><meta charset="utf-8"><body style="margin:0"><header id="h"><div>'
+                '<div class="x" style="width:30px;height:30px;background:#36c"></div></div></header>'
+                '<div style="opacity:0;pointer-events:none"><a>Ligne du cadre</a></div>')
+    # Un voile qui ne couvre que le BAS de la page (sans requête comptée) après chaque bouton du haut.
+    SURE32R = r'''<!doctype html><meta charset="utf-8"><style>#bas{position:relative;margin-top:30px;padding:8px}
+.voile{position:absolute;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,.25);z-index:20}#menu li{cursor:pointer}</style>
+<div id="haut"><input type="checkbox" id="case"> <button id="suivant">Page suivante</button> <button id="aff">Afficher</button>
+<button type="button" id="cnx">Se connecter</button> <button id="loupe"><i class="fa fa-search"></i></button><ul id="menu"></ul></div>
+<div id="bas"><button id="exp" title="Export all">⇩</button> <button id="fermer">Fermer</button></div>
+<script>
+var compte = {case: 0, suivant: 0, aff: 0, cnx: 0, loupe: 0, exp: 0, xls: 0, fermer: 0};
+var voile = function (ms) { var v = document.createElement('div'); v.className = 'voile'; document.getElementById('bas').appendChild(v); setTimeout(function () { v.remove(); }, ms); };
+['case', 'suivant', 'aff', 'cnx', 'loupe'].forEach(function (k) { document.getElementById(k).addEventListener('click', function () { compte[k]++; voile(12000); }); });
+document.getElementById('exp').onclick = function () { compte.exp++; document.getElementById('menu').innerHTML = '<li id="xls">XLSX</li>'; };
+document.getElementById('menu').onclick = function (e) { if (e.target.id !== 'xls') return; compte.xls++;
+  var a = document.createElement('a'); a.href = 'data:application/octet-stream;base64,UEsDBA=='; a.download = 'see.xlsx'; document.body.appendChild(a); a.click(); voile(12000); };
+document.getElementById('fermer').onclick = function () { compte.fermer++; };
+</script>'''
+    # « Rapports » charge sa page 6 s après le clic (par script) ; la nouvelle page porte le même lien.
+    NAV32R = ('<!doctype html><meta charset="utf-8"><a id="rap" href="#" onclick="setTimeout(function(){location.href=\'/nav?\'+Date.now();},6000);'
+              'return false;">Rapports</a>')
+    BU32R = ('<!doctype html><meta charset="utf-8"><button id="b">x</button><script>'
+             'addEventListener("beforeunload",function(e){e.preventDefault();e.returnValue="";});</script>')
+    vus32r = {'nav': 0}
+
+    class Pages32r(_hs32r.BaseHTTPRequestHandler):
+        def do_GET(self):
+            p = self.path.split('?')[0]
+            if p == '/lent':
+                _t32r.sleep(float((self.path.split('s=') + ['1'])[1].split('&')[0]) if 's=' in self.path else 1.0)
+                corps = 'ok'
+            elif p == '/nav':
+                vus32r['nav'] += 1
+                corps = NAV32R
+            else:
+                corps = {'/sonde': SONDE32R, '/cadre': CADRE32R, '/sur2': SURE32R, '/bu': BU32R}.get(p, GATES32)
+            corps = corps.encode('utf-8')
+            with _cl32r.suppress(OSError):            # une requête que Chrome abandonne (la page quittée)
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.send_header('Cache-Control', 'no-store')
+                self.end_headers()
+                self.wfile.write(corps)
+
+        def log_message(self, *a):
+            pass
+    site32r = _hs32r.ThreadingHTTPServer(('127.0.0.1', 0), Pages32r)
+    _th32r.Thread(target=site32r.serve_forever, daemon=True).start()
+    ICI32R = 'http://127.0.0.1:%d' % site32r.server_port
+    BASE32 = ICI32R + '/gates/childneo'            # apprendre32 et deux_contrats32 (plus haut) servent cette page-ci
+    avant32r = {k: getattr(robot, k, None) for k in NOMS32}
+    robot.DELAI_TROUVER, robot.DELAI_SUITE, robot.DELAI_CACHE = 20, 4, 3
+    robot.DELAI_ROUVRIR, robot.DELAI_REOUVERTURE, robot.DELAI_PAGE_NEUVE = 4, 6, 30
+
+    def etat32r(c, texte):
+        return robot.etat_cible(c, {'balise': 'a', 'texte': texte, 'dessus': True})
+
+    try:
+        with Chrome(port=9482, lancer=True, profil=tempfile.mkdtemp(prefix='robot-d32r-'), sans_fenetre=True, delai=30, options=options32,
+                    telechargements=str(R / 'telechargements')) as c:
+            c.ouvrir(ICI32R + '/sonde')
+            _t32r.sleep(0.5)
+            t18 = c.evaluer(robot.TROUVER % _json32r.dumps({'texte': 'Tranche 18', 'dessus': True}))
+            sous = t18 and c.evaluer('(function(){var h=document.elementFromPoint(%s,%s);return [h&&h.textContent, document.getElementById("liste").scrollTop, scrollY];})()'
+                                     % (t18['x'], t18['y']))
+            verifier('une ligne au bas d’une liste qui a sa propre barre de défilement : la liste défile (pas la page), le clic tombe sur la ligne',
+                     bool(t18) and not t18.get('attendre') and sous[0] == 'Tranche 18' and sous[1] > 0 and sous[2] == 0, (t18, sous))
+            etats = {t: etat32r(c, t) for t in ('Ligne ouverte', 'Ligne accordéon', 'Ligne hors écran', 'Ligne non affichée', 'Ligne du cadre')}
+            verifier('la ligne d’un menu fermé est « cachée », quelle que soit la façon : groupe replié, rangée hors de l’écran, non affichée, '
+                     'transparente dans un cadre ; une ligne ouverte est « là »',
+                     etats == {'Ligne ouverte': 'là', 'Ligne accordéon': 'caché', 'Ligne hors écran': 'caché', 'Ligne non affichée': 'caché',
+                               'Ligne du cadre': 'caché'}, etats)
+            pris = c.evaluer(robot.TROUVER % _json32r.dumps({'balise': 'button', 'texte': 'Exporter (.xls)', 'type': 'button', 'dessus': True}))
+            verifier('« Exporter (.xls) » (pas encore là) n’est pas pris pour le bouton « Exporter » : le début du texte ne suffit pas', pris is None, pris)
+            dans = c.evaluer(robot.TROUVER % _json32r.dumps({'balise': 'div', 'chemin': 'header#h > div:nth-of-type(1) > div:nth-of-type(1)', 'dessus': True}))
+            verifier('un élément sans nom dans un cadre, décrit par son seul chemin : retrouvé (au bon endroit de la page)',
+                     bool(dans) and not dans.get('attendre') and dans['y'] > 100, dans)
+            c.evaluer(robot.RESEAU_JS)
+            c.evaluer('fetch("/lent?s=5"), 1')            # (sans attendre la réponse)
+            dit = _io32r.StringIO()
+            with _cl32r.redirect_stdout(dit):
+                robot.attendre_calme(c, 8, 'la page se charge')
+            verifier('au départ d’un export, l’attente dit « la page se charge », pas « la page calcule »',
+                     '(la page se charge' in dit.getvalue() and 'calcule' not in dit.getvalue(), dit.getvalue())
+
+            # trouver : la ligne d'un menu refermé en display:none, ou retiré de la page — rouvert au bout de DELAI_ROUVRIR.
+            appels = []
+
+            def remet32r():
+                appels.append(1)
+                c.evaluer('document.querySelector("#ligne").parentNode.style.display=""')
+                return True
+            remet32r.menu, remet32r.court = 'le menu qui ouvre « Ligne cachée »', 'le menu'
+            c.evaluer('document.body.insertAdjacentHTML("beforeend","<div style=\\"display:none\\"><a id=\\"ligne\\">Ligne cachée</a></div>")')
+            dit = _io32r.StringIO()
+            t0 = _t32r.time()
+            with _cl32r.redirect_stdout(dit):
+                r_ = robot.trouver(c, {'balise': 'a', 'texte': 'Ligne cachée', 'dessus': True}, delai=20, rouvrir=remet32r)
+            verifier('menu refermé en display:none entre la vérification et le clic : rouvert au bout de DELAI_ROUVRIR, et dit '
+                     '« (… est caché : le menu s’est refermé, le robot le rouvre dans 4 s) »',
+                     isinstance(r_, dict) and not r_.get('attendre') and appels == [1] and _t32r.time() - t0 < 10 and
+                     'le robot le rouvre dans 4 s' in dit.getvalue(), (r_, appels, dit.getvalue()))
+            appels.clear()
+
+            def reajoute32r():
+                appels.append(1)
+                c.evaluer('document.body.insertAdjacentHTML("beforeend","<a id=\\"ligne2\\">Ligne retirée</a>")')
+                return True
+            reajoute32r.menu, reajoute32r.court, reajoute32r.absent = 'le menu qui ouvre « Ligne retirée »', 'le menu', True
+            with _cl32r.redirect_stdout(_io32r.StringIO()):
+                r_ = robot.trouver(c, {'balise': 'a', 'texte': 'Ligne retirée', 'dessus': True}, delai=20, rouvrir=reajoute32r)
+            verifier('… un menu retiré de la page quand il se ferme (Material) : rouvert aussi, une fois',
+                     isinstance(r_, dict) and appels == [1], (r_, appels))
+
+            # Jamais deux fois : une case, « Page suivante », « Afficher », « Se connecter », une loupe — le bas de la page sous un voile 12 s.
+            robot.DELAI_TROUVER = 40
+
+            def sur32r(etapes, telechargement=None):
+                c.ouvrir('about:blank')
+                dit = _io32r.StringIO()
+                try:
+                    with _cl32r.redirect_stdout(dit):
+                        f = robot.rejouer(c, {'nom': 'SEE', 'depart': ICI32R + '/sur2', 'etapes': etapes, 'fichier': '*.xlsx',
+                                              'telechargement_apres': telechargement or len(etapes)}, sortie32)
+                    err = ''
+                except robot.ErreurPilote as e:
+                    f, err = None, str(e).split('\n')[0]
+                return {'f': f and f.name, 'err': err, 'compte': c.evaluer('compte'), 'coche': c.evaluer('document.getElementById("case").checked'),
+                        'dit': dit.getvalue()[-600:]}
+            EXP32R = {'faire': 'cliquer', 'cible': {'balise': 'button', 'titre': 'Export all', 'texte': '⇩', 'id': 'exp'}}
+            XLS32R = {'faire': 'cliquer', 'cible': {'balise': 'li', 'texte': 'XLSX', 'id': 'xls'}}
+            for k, cible_, quoi in (('case', {'balise': 'input', 'type': 'checkbox', 'id': 'case'}, 'une case à cocher (l’export sortirait décoché)'),
+                                    ('suivant', {'balise': 'button', 'texte': 'Page suivante', 'id': 'suivant'}, '« Page suivante » (la mauvaise page)'),
+                                    ('aff', {'balise': 'button', 'texte': 'Afficher', 'id': 'aff'}, '« Afficher » (un calcul relancé)'),
+                                    ('cnx', {'balise': 'button', 'type': 'button', 'texte': 'Se connecter', 'id': 'cnx'}, '« Se connecter » (le compte verrouillé)'),
+                                    ('loupe', {'balise': 'button', 'icone': 'fa-search', 'id': 'loupe'}, 'une loupe sans nom')):
+                r = sur32r([{'faire': 'cliquer', 'cible': cible_}, EXP32R, XLS32R])
+                verifier('voile sur le bas de la page 12 s après %s : cliqué UNE fois, le robot attend, le fichier sort' % quoi,
+                         r['f'] == 'see.xlsx' and r['compte'][k] == 1 and r['compte']['exp'] == 1 and (k != 'case' or r['coche'] is True), r)
+            r = sur32r([EXP32R, XLS32R, {'faire': 'cliquer', 'cible': {'balise': 'button', 'texte': 'Fermer', 'id': 'fermer'}}], telechargement=3)
+            verifier('le fichier noté après « Fermer » (appris ainsi) : « XLSX » n’est jamais refait, même si « Fermer » reste sous un voile 12 s',
+                     r['f'] == 'see.xlsx' and r['compte']['xls'] == 1 and r['compte']['fermer'] == 1, r)
+            robot.DELAI_TROUVER = 20
+            c.ouvrir('about:blank')
+            vus32r['nav'] = 0
+            try:
+                with _cl32r.redirect_stdout(_io32r.StringIO()):
+                    robot.rejouer(c, {'nom': 'X', 'depart': ICI32R + '/nav', 'etapes': [
+                        {'faire': 'cliquer', 'cible': {'balise': 'a', 'texte': 'Rapports', 'id': 'rap'}},
+                        {'faire': 'cliquer', 'cible': {'balise': 'li', 'texte': 'Rapport mensuel'}}], 'fichier': '*.xlsx', 'telechargement_apres': 2}, sortie32)
+            except robot.ErreurPilote:
+                pass
+            verifier('un clic qui charge sa page 6 s plus tard (par script) : pas recliqué sur la nouvelle page (la page servie 2 fois, pas plus)',
+                     vus32r['nav'] == 2, vus32r)
+
+            # GATES : le menu fermé en display:none ; une requête toutes les 3 s — le 1er clic sur le menu perdu au 2e contrat.
+            scen32r = apprendre32(c)
+            for v, quoi in (('hd', 'menu fermé en display:none'), ('qd', 'une petite requête toutes les 3 s (la page jamais tout à fait calme)')):
+                r = deux_contrats32(c, scen32r, v)
+                verifier('GATES, %s, le 1er clic sur le menu perdu au 2e contrat : le robot rouvre le menu vite, le dit sous la ligne « 1/6 », VRK sort' % quoi,
+                         r['sortis'] == ['gates-hdk.xlsx', 'gates-vrk.xlsx'] and not r['err'] and 'perdu;clic menu;' in r['page'] and
+                         r['dit'].rindex('  1/6 cliquer (le menu qui ouvre « Données MK2 »)') < r['dit'].rindex('(« Données MK2 » ne s\'est pas montré') and
+                         not planté32(r['dit']) and r['duree'] < 90, resume32(r))
+
+            # « Quitter la page ? » : le départ ne diffère que par son « #… » (détour par une page blanche) — l'onglet ne se fige pas.
+            c.ouvrir(ICI32R + '/bu#/mk2')
+            p = centre32(c, 'document.getElementById("b")')
+            robot.souris(c, p['x'], p['y'])
+            c.evaluer('window.__ici = 1')
+            try:
+                robot.page_neuve(c, ICI32R + '/bu#/accueil')
+                neuve = c.evaluer('[window.__ici === undefined, location.hash]', delai=5)
+            except robot.ErreurPilote as e:
+                neuve = 'erreur : %s' % e
+            verifier('une page qui demande « Quitter la page ? » : rechargée quand même, l’onglet du robot répond toujours',
+                     neuve == [True, '#/accueil'], neuve)
+    finally:
+        site32r.shutdown()
+        for k, v in avant32r.items():
+            if v is not None:
+                setattr(robot, k, v)
+# ---- fin débrief 32, relecture
 
 print('\n— Débrief 31 : la fenêtre du robot garde le focus quand on clique ailleurs (vrai Chrome à l’écran, sous Xvfb) —')
 XVFB = shutil.which('Xvfb')
@@ -1941,12 +2191,12 @@ else:
                     t.demarrer()
                     voles, vu_page = [], []
 
-                    def geste(c, g, suivant=None):
+                    def geste(c, g, suivant=None, **plus):
                         if voler_avant(g):
                             voles.append(voleur())
                             # Ce que la page croit, juste après qu'on a cliqué ailleurs (avant le clic du robot).
                             vu_page.append(c.evaluer('[document.hasFocus(), document.visibilityState, document.hidden]'))
-                        r = avant_focus['faire_geste'](c, g, suivant)
+                        r = avant_focus['faire_geste'](c, g, suivant, **plus)
                         if voler_apres(g):
                             voles.append(voleur())
                         return r
@@ -1972,8 +2222,10 @@ else:
                 apres_mk2 = lambda g: (g.get('cible') or {}).get('texte') == 'Ouvrir données MK2'   # noqa: E731
                 apres_psn = lambda g: g['faire'] == 'remplir' or (g.get('cible') or {}).get('bulle') == 'Export all'   # noqa: E731
                 r0 = essai(PAGE_GATES, GESTES_GATES, apres_mk2, par_l_autre_application, 'rien', 'GATES HDK')
+                # (débrief 32, relecture : la ligne du menu fermé, non affichée, se dit désormais « cachée »)
+                rate0 = ('erreur : Je ne retrouve plus « XLSX »', 'erreur : « XLSX » est resté caché')
                 verifier('GATES, sans la parade : on clique dans une autre application entre « Ouvrir données MK2 » et « XLSX » — le menu se ferme, l’export rate',
-                         r0['depart'] is True and r0['voles'] == [True] and r0['res'].startswith('erreur : Je ne retrouve plus « XLSX »') and 'blur' in r0['log'], r0)
+                         r0['depart'] is True and r0['voles'] == [True] and r0['res'].startswith(rate0) and 'blur' in r0['log'], r0)
                 r1 = essai(PAGE_GATES, GESTES_GATES, apres_mk2, par_l_autre_application, 'tout', 'GATES HDK')
                 verifier('… avec la parade (le robot d’aujourd’hui) : le menu reste ouvert, « XLSX », le fichier arrive — la page n’a rien vu',
                          r1['depart'] is True and r1['voles'] == [True] and r1['res'] == 'ok' and r1['f'] and r1['f'].exists() and

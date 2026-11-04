@@ -21,10 +21,13 @@ tableau de bord.
 Débrief 32 : le menu « GATES » (un dessin sans nom) qui ne s'ouvrait pas au
 2e contrat — « Données MK2 » restait caché, le robot attendait 5 minutes.
 Après un clic, la suite doit être là ET visible ; sinon le robot rouvre le
-menu tout seul (survol, second clic, appui, Entrée, flèche bas, Espace), le
-dit, et ne reclique jamais un bouton qui envoie ou calcule (« Submit »…), ni
-le geste du fichier ; jamais de clic à l'aveugle sur un élément caché ;
-chaque export part d'une page vraiment rechargée (même avec un « #… »).
+menu tout seul (souris posée dessus, nouveau clic, clic envoyé directement,
+Entrée, flèche vers le bas, barre d'espace), le dit, et ne reclique jamais
+un bouton qui envoie ou calcule (« Submit »…), une connexion, « Page
+suivante », une case à cocher, ni ce qui fait venir le fichier ; un bouton
+ordinaire n'est recliqué que si sa suite est là mais cachée ; jamais de
+clic à l'aveugle sur un élément caché ; chaque export part d'une page
+rechargée et calme (même avec un « #… »).
 
 Débrief 31 :
 — la fenêtre du robot travaille même quand on clique ailleurs (une autre
@@ -280,7 +283,14 @@ ETIQUETTE_JS = r"""
      il en a, d'autres indices : son texte caché (textContent), le texte de
      remplacement d'une image (alt), le titre d'un dessin (<svg><title>), une
      classe qui lui est propre (« gates-trigger »). */
-  var contenuDe = function (e) { return String(e.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 60); };
+  /* Relecture : le texte caché d'un élément qui CONTIENT d'autres boutons (un
+     menu qui porte ses lignes : « Données MK1 Données MK2 Import Aide ») n'est
+     pas son nom — pris seulement court, et sans bouton dedans. */
+  var contenuDe = function (e) {
+    if (e.querySelector && e.querySelector('a,button,input,select,textarea,li,[role]')) return '';
+    var t = String(e.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length <= 40 ? t : '';
+  };
   var altDe = function (e) {
     var im = e.matches && e.matches('img[alt],input[type=image][alt]') ? e : e.querySelector && e.querySelector('img[alt]');
     return im ? String(im.getAttribute('alt') || '').trim().slice(0, 60) : '';
@@ -414,9 +424,13 @@ TROUVER = r"""
 /*ETIQUETTE*/
   var norm = function (s) { return String(s || '').replace(/\s+/g, ' ').trim().toLowerCase(); };
   var premiere = function (s) { return String(s || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean)[0] || ''; };
-  var vus = [];
+  var vus = [], parChemins = [], nbClasse = 0;
   var visible = function (e) { var r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden'; };
   var parcourir = function (doc, dx, dy) {
+    /* Relecture : le chemin et la classe d'un élément sans nom, cherchés dans
+       chaque document (un cadre aussi), pas seulement la page du dessus. */
+    try { var pc = d.chemin && doc.querySelector ? doc.querySelector(d.chemin) : null; if (pc) parChemins.push(pc); } catch (x) {}
+    try { if (d.classe && doc.getElementsByClassName) nbClasse += doc.getElementsByClassName(d.classe).length; } catch (x) {}
     var liste = [].slice.call(doc.querySelectorAll(d.balise || '*'));
     liste.forEach(function (e) { vus.push({ e: e, dx: dx, dy: dy }); });
     /* Les composants à racine fantôme (shadow DOM) : leurs champs aussi. */
@@ -426,13 +440,8 @@ TROUVER = r"""
     });
   };
   parcourir(document, 0, 0);
-  var parChemin = null;
-  try { parChemin = d.chemin ? document.querySelector(d.chemin) : null; } catch (x) {}
-  var meilleur = null, note = 0, nbClasse = 0;
-  try { nbClasse = d.classe ? document.getElementsByClassName(d.classe).length : 0; } catch (x) {}
-  vus.forEach(function (v) {
-    var e = v.e; if (!visible(e)) return;
-    var n = 0, a = function (k) { return e.getAttribute(k) || ''; };
+  var noter = function (e) {
+    var n = 0, a = function (k) { return e.getAttribute(k) || ''; }, prefixe = false;
     if (d.id && e.id === d.id) n += 10;
     if (d.nom && a('name') === d.nom) n += 6;
     if (d.label && a('aria-label') === d.label) n += 6;
@@ -442,11 +451,11 @@ TROUVER = r"""
        sinon il n'est jamais pris (pas de clic sur un autre contrat). */
     if (d.contient) {
       var c = norm(d.contient), i = lu.indexOf(c), bord = function (k) { return k < 0 || k >= lu.length || !/[a-z0-9]/.test(lu.charAt(k)); };
-      if (i === -1 || !bord(i - 1) || !bord(i + c.length)) return;
+      if (i === -1 || !bord(i - 1) || !bord(i + c.length)) return 0;
       n += 4;
     }
     if (d.texte && lu === norm(d.texte)) n += 6;
-    else if (d.texte && lu && norm(d.texte).indexOf(lu) === 0) n += 3;   // appris avec ses sous-menus ouverts
+    else if (d.texte && lu && norm(d.texte).indexOf(lu) === 0) { n += 3; prefixe = true; }   // appris avec ses sous-menus ouverts
     if (d.etiquette && estChamp(e) && norm(etiquetteDe(e)) === norm(d.etiquette)) n += 6;   // le champ « PSN »
     if (d.titre && a('title') === d.titre) n += 4;
     if (d.placeholder && a('placeholder') === d.placeholder) n += 4;
@@ -456,38 +465,95 @@ TROUVER = r"""
     if (d.href && a('href') === d.href) n += 3;
     /* Débrief 32 : les indices d'un élément sans nom — seulement s'ils ont été
        appris (un export d'avant n'a que son chemin : noté comme avant). */
-    if (d.contenu && norm(e.textContent) === norm(d.contenu)) n += 4;
+    if (d.contenu && norm(contenuDe(e)) === norm(d.contenu)) n += 4;
     if (d.alt && altDe(e) === d.alt) n += 5;
     if (d.svgtitre && svgTitreDe(e) === d.svgtitre) n += 5;
     if (d.classe && e.classList && e.classList.contains(d.classe)) n += (nbClasse === 1 ? 5 : 2);   // à lui seul : plus sûr que sa place
-    if (d.role && a('role') === d.role) n += 1;
-    if (d.type && a('type') === d.type) n += 1;
-    if (parChemin === e) n += 4;
+    var roleType = (d.role && a('role') === d.role ? 1 : 0) + (d.type && a('type') === d.type ? 1 : 0);
+    n += roleType;
+    if (parChemins.indexOf(e) !== -1) n += 4;
+    /* Relecture : le seul début du texte (« Exporter » pour « Exporter (.xls) »)
+       et son rôle ou son type ne suffisent pas : il faut un autre indice. */
+    if (prefixe && n - 3 - roleType <= 0) n = Math.min(n, 3);
+    return n;
+  };
+  var meilleur = null, note = 0;
+  vus.forEach(function (v) {
+    if (!visible(v.e)) return;
+    var n = noter(v.e);
     if (n > note) { note = n; meilleur = v; }
   });
-  if (!meilleur || note < 4) return null;
+  if (!meilleur || note < 4) {
+    /* Relecture : pas à l'écran, mais bien dans la page, non affiché (la ligne
+       d'un menu fermé en display:none, réduit à rien) : « caché », pas
+       « absent » — le robot sait alors que c'est le menu qui ne s'est pas
+       ouvert. Seulement pour ce qu'on va cliquer ou remplir. */
+    if (!d.dessus) return null;
+    var cache = null, nc = 0;
+    vus.forEach(function (v) { if (visible(v.e)) return; var n = noter(v.e); if (n > nc) { nc = n; cache = v; } });
+    if (!cache || nc < 4) return null;
+    return { x: 0, y: 0, note: nc, attendre: true, pourquoi: 'caché', soi: true, nonrendu: true };
+  }
   var e = meilleur.e, r = e.getBoundingClientRect();
   /* Débrief 32 : défiler seulement s'il est hors de l'écran — redemandé à
      chaque coup d'œil, un défilement déplaçait la page sous la souris et
-     pouvait refermer un menu ouvert au survol. */
+     pouvait refermer un menu ouvert au survol. Relecture : ou coupé par une
+     liste qui a sa propre barre de défilement (le bas d'une liste de
+     tranches) — alors la liste seule défile, juste ce qu'il faut. */
   var fen = (e.ownerDocument && e.ownerDocument.defaultView) || window;
+  var cx = function () { return r.left + r.width / 2; }, cy = function () { return r.top + r.height / 2; };
+  var hors = function (p) { var b = p.getBoundingClientRect(); return cx() < b.left || cx() > b.right || cy() < b.top || cy() > b.bottom; };
+  var deroule = function () {
+    for (var p = e.parentElement; p && p.nodeType === 1 && p !== e.ownerDocument.body; p = p.parentElement) {
+      var s = getComputedStyle(p);
+      if ((/auto|scroll|overlay/.test(s.overflowY) && p.scrollHeight > p.clientHeight + 1 ||
+           /auto|scroll|overlay/.test(s.overflowX) && p.scrollWidth > p.clientWidth + 1) && hors(p)) return true;
+    }
+    return false;
+  };
   if (r.top < 0 || r.left < 0 || r.bottom > fen.innerHeight || r.right > fen.innerWidth) {
     e.scrollIntoView({ block: 'center', inline: 'center' });
+    r = e.getBoundingClientRect();
+  } else if (deroule()) {
+    e.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     r = e.getBoundingClientRect();
   }
   window.__suiviCible = e;
   /* Pas encore prêt : grisé, dans une zone qui charge, ou couvert (un voile
      de chargement par-dessus) — le robot attend avant de cliquer. */
   var gris = e.disabled === true || e.getAttribute('aria-disabled') === 'true' || !!(e.closest && e.closest('[aria-busy="true"]'));
-  var couvert = false;
-  if (d.dessus && !meilleur.dx && !meilleur.dy && (!e.getRootNode || e.getRootNode() === document)) {
-    var h = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-    couvert = !!h && h !== e && !e.contains(h) && !h.contains(e);
-    /* Débrief 32 : un PARENT répond à sa place, et lui ne reçoit aucun clic
-       (pointer-events: none — la ligne d'un menu fermé, devenue invisible) :
-       caché aussi, son clic tomberait à côté. */
-    if (!couvert && h && h !== e && !e.contains(h)) {
-      try { couvert = getComputedStyle(e).pointerEvents === 'none'; } catch (x) {}
+  var couvert = false, soi = false, doc = e.ownerDocument || document;
+  /* Relecture : dans un cadre aussi, avec les coordonnées du cadre. */
+  if (d.dessus && (!e.getRootNode || e.getRootNode() === doc)) {
+    var h = doc.elementFromPoint(cx(), cy());
+    /* Rien sous son centre (rangé hors de l'écran, à -9999 px) : caché. */
+    if (!h) soi = true;
+    else if (h !== e && !e.contains(h)) {
+      /* Débrief 32 : son clic tomberait à côté parce qu'il ne reçoit aucun clic
+         (pointer-events: none — la ligne d'un menu fermé, devenue invisible),
+         ou (relecture) parce qu'un parent replié le coupe (un groupe de menu
+         fermé, un menu à hauteur 0) : caché lui-même. */
+      try { soi = getComputedStyle(e).pointerEvents === 'none'; } catch (x) {}
+      if (!soi && e.tagName !== 'OPTION') {
+        for (var p = e.parentElement; p && p.nodeType === 1 && p !== doc.body && p !== doc.documentElement; p = p.parentElement) {
+          try { if (getComputedStyle(p).overflow !== 'visible' && hors(p)) { soi = true; break; } } catch (x) {}
+        }
+      }
+      if (!soi && !h.contains(e)) {
+        couvert = true;
+        /* Sous un bandeau qui ne bouge pas (un en-tête collé en haut) : la page
+           défile pour le montrer au milieu, comme avant. */
+        var fixe = false;
+        for (var f = h; f && f.nodeType === 1 && !fixe; f = f.parentElement) {
+          try { fixe = /fixed|sticky/.test(getComputedStyle(f).position); } catch (x) {}
+        }
+        if (fixe && !(e.closest && e.closest('[role=menu],[role=listbox],.dropdown-menu'))) {
+          e.scrollIntoView({ block: 'center', inline: 'nearest' });
+          r = e.getBoundingClientRect();
+          var h2 = doc.elementFromPoint(cx(), cy());
+          if (h2 && (h2 === e || e.contains(h2))) couvert = false; else if (h2) h = h2;
+        }
+      }
     }
     /* Un champ (débrief 32) : son intitulé flottant, son cadre, posés sur lui,
        ne le cachent pas. */
@@ -499,16 +565,18 @@ TROUVER = r"""
   /* Débrief 32 : couvert parce qu'il est lui-même invisible (la ligne d'un
      menu fermé : transparent, ou sans clic possible) — pas un voile posé
      par-dessus. */
-  var soi = false;
   if (couvert) {
     try {
       var op = 1;
       for (var q = e; q && q.nodeType === 1 && op >= 0.1; q = q.parentElement) op *= parseFloat(getComputedStyle(q).opacity || '1');
       soi = op < 0.1 || getComputedStyle(e).pointerEvents === 'none';
     } catch (x) {}
+    if (soi) couvert = false;
   }
+  /* « caché » : lui-même invisible (un menu fermé) ; « couvert » : quelque
+     chose par-dessus (un voile, une fenêtre). */
   return { x: meilleur.dx + r.left + r.width / 2, y: meilleur.dy + r.top + r.height / 2, note: note,
-           attendre: gris || couvert, pourquoi: gris ? 'grisé' : couvert ? 'couvert' : '', soi: soi };
+           attendre: gris || couvert || soi, pourquoi: soi ? 'caché' : gris ? 'grisé' : couvert ? 'couvert' : '', soi: soi };
 })(%s)
 """
 TROUVER = TROUVER.replace('/*ETIQUETTE*/', ETIQUETTE_JS)
@@ -627,8 +695,11 @@ BOUTONS_VISIBLES = r"""
 /*ETIQUETTE*/
   var vus = [];
   [].slice.call(document.querySelectorAll('button,a,[role=button],[role=menuitem],[role=option],[role=tab]')).forEach(function (e) {
-    var r = e.getBoundingClientRect();
-    if (r.width > 0 && r.height > 0 && vus.length < 20) {
+    var r = e.getBoundingClientRect(), op = 1;
+    /* Relecture : pas les lignes d'un menu fermé (transparentes, sans clic). */
+    try { for (var q = e; q && q.nodeType === 1 && op >= 0.1; q = q.parentElement) op *= parseFloat(getComputedStyle(q).opacity || '1');
+          if (getComputedStyle(e).pointerEvents === 'none' || getComputedStyle(e).visibility === 'hidden') op = 0; } catch (x) {}
+    if (r.width > 0 && r.height > 0 && op >= 0.1 && vus.length < 20) {
       var nom = String(e.innerText || '').split('\n')[0].trim() || e.getAttribute('aria-label') || e.getAttribute('title') || bulleDe(e) ||
                 (iconeDe(e) ? 'icône ' + iconeDe(e) : '');
       if (nom && vus.indexOf('« ' + nom.slice(0, 40) + ' »') === -1) vus.push('« ' + nom.slice(0, 40) + ' »');
@@ -966,6 +1037,8 @@ def apprendre():
             pass
         print('\nLa fenêtre du robot est ouverte. Faites votre export comme d\'habitude, jusqu\'au')
         print('fichier téléchargé. Le robot regarde (il ne garde aucun mot de passe).')
+        # Relecture du débrief 32 : un menu seulement survolé n'est pas vu par le robot.
+        print('Pour ouvrir un menu, cliquez dessus (le robot ne voit pas la souris qui passe seulement dessus).')
         if sorte == 'gates':
             print('Un seul contrat suffit (par exemple HDK) : tapez son nom comme d\'habitude.')
         print('Quand le fichier est arrivé, revenez ici et appuyez sur Entrée.\n')
@@ -985,7 +1058,10 @@ def apprendre():
                     if m.get('method') == 'Runtime.bindingCalled' and m['params'].get('name') == '__suiviFwd':
                         geste = json.loads(m['params']['payload'])
                         if ajouter_geste(pas, geste):
-                            print('  ✓ %s %s' % (geste['faire'], dire_geste(geste)))
+                            dit = dire_geste(geste)
+                            if dit == SANS_NOM:          # relecture : rassurer, sans mot technique
+                                dit = '(un bouton sans nom : le robot le retrouvera par sa place dans la page)'
+                            print('  ✓ %s %s' % (geste['faire'], dit))
             except ErreurPilote:
                 print('La fenêtre du robot s\'est fermée.')
                 break
@@ -1678,6 +1754,11 @@ DELAI_REOUVERTURE = 12  # secondes : après chaque nouvelle façon d'appuyer, le
 DELAI_PAGE_NEUVE = 60   # secondes au plus pour qu'une page de départ soit chargée et calme
 
 
+# Débrief 32, relecture : ce qu'on attend, dit en clair (« couvert » se disait
+# tel quel : caché derrière autre chose).
+DIT_ATTENTE = {'grisé': 'grisé', 'couvert': 'caché derrière autre chose', 'caché': 'pas encore affiché'}
+
+
 def trouver(c, cible, delai=120, rouvrir=None):
     """Retrouve ce que décrit « cible » ; attend qu'il paraisse, puis qu'il
     soit prêt (ni grisé ni couvert par un voile de chargement). Grisé au bout
@@ -1685,15 +1766,18 @@ def trouver(c, cible, delai=120, rouvrir=None):
     rien fait.
 
     Débrief 32 : « rouvrir » — le geste d'avant était un clic qui se refait
-    sans risque (le menu « GATES ») : ce qu'on va cliquer reste caché plus de
-    DELAI_ROUVRIR secondes (le menu s'est refermé, ou ne s'est jamais
-    ouvert), le robot rouvre le menu au lieu d'attendre 5 minutes sans rien
-    dire. Et toujours couvert au bout du délai : il le dit, sans cliquer à
-    l'aveugle (son clic tomberait sur ce qui le cache)."""
+    sans risque (le menu « GATES ») : ce qu'on va cliquer reste caché
+    lui-même plus de DELAI_ROUVRIR secondes (le menu s'est refermé, ou ne
+    s'est jamais ouvert ; relecture : aussi non affiché, display:none), ou,
+    après un menu, absent deux fois plus longtemps (un menu retiré de la page
+    quand il se ferme) : page calme, le robot rouvre le menu (une fois) au
+    lieu d'attendre 5 minutes sans rien dire. Jamais pour un voile posé
+    par-dessus (la page calcule : on attend). Toujours caché au bout du
+    délai : il le dit, sans cliquer à l'aveugle."""
     debut = time.time()
     fin = debut + delai
-    menu = getattr(rouvrir, 'menu', '')
-    vu, attentes, cache_depuis = None, {}, None
+    menu, essaye = getattr(rouvrir, 'menu', ''), False
+    vu, attentes, cache_depuis, absent_depuis, annonce = None, {}, None, None, False
     while time.time() < fin:
         try:
             r = c.evaluer(TROUVER % json.dumps(cible))
@@ -1702,25 +1786,41 @@ def trouver(c, cible, delai=120, rouvrir=None):
             continue
         if r and not r.get('attendre'):
             return r
-        # Débrief 31 : l'attente dit son maximum, puis où elle en est chaque minute.
+        maintenant = time.time()
+        pourquoi = r.get('pourquoi') if r else 'absent'
         if r:
             vu = r
-            cache_depuis = (cache_depuis or time.time()) if r.get('pourquoi') == 'couvert' else None
-            if cache_depuis and rouvrir and time.time() - cache_depuis >= DELAI_ROUVRIR:
+        cache_depuis = (cache_depuis or maintenant) if pourquoi == 'caché' else None
+        absent_depuis = (absent_depuis or maintenant) if pourquoi == 'absent' else None
+        if rouvrir:
+            if cache_depuis and not annonce:
+                print('    (%s est caché : %s s\'est refermé, le robot le rouvre dans %s)'
+                      % (nom_de_cible(cible) or 'la suite', getattr(rouvrir, 'court', 'le menu'), duree_dite(DELAI_ROUVRIR)))
+                annonce = True
+            pret = ((cache_depuis and maintenant - cache_depuis >= DELAI_ROUVRIR) or
+                    (absent_depuis and getattr(rouvrir, 'absent', False) and maintenant - absent_depuis >= 2 * DELAI_ROUVRIR))
+            if pret and page_calme(c):
                 essai, rouvrir = rouvrir, None          # une fois : ensuite, l'attente d'avant
-                if essai() is False:
-                    raise sans_clic(message_cache(cible, menu))
+                fait = essai()
+                essaye = fait is not None
+                if fait is False:
+                    raise sans_clic(message_cache(cible, menu, est_menu=getattr(essai, 'est_menu', True)))
                 continue
-            attentes.setdefault(r.get('pourquoi'), Patience(delai, debut)).dire(
-                'attente : %s %s' % (nom_de_cible(cible), r.get('pourquoi')), 'toujours %s' % r.get('pourquoi'))
-        elif time.time() - debut >= 15:
-            cache_depuis = None
+            if cache_depuis:
+                time.sleep(0.5)
+                continue
+        # Débrief 31 : l'attente dit son maximum, puis où elle en est chaque minute.
+        if r:
+            dit = DIT_ATTENTE.get(pourquoi, pourquoi)
+            attentes.setdefault(pourquoi, Patience(delai, debut)).dire(
+                'attente : %s %s' % (nom_de_cible(cible), dit), 'toujours %s' % dit)
+        elif maintenant - debut >= 15:
             attentes.setdefault('absent', Patience(delai, debut)).dire(
                 'attente : %s n\'est pas encore à l\'écran' % (nom_de_cible(cible) or 'la suite'), 'toujours pas là')
         time.sleep(0.5)
-    if vu and vu.get('pourquoi') == 'couvert':
-        raise sans_clic(message_cache(cible, menu, delai))
-    if vu:
+    if vu and vu.get('pourquoi') in ('caché', 'couvert') and not (vu.get('nonrendu') and cible.get('contient')):
+        raise sans_clic(message_cache(cible, menu if essaye else '', delai, vu.get('pourquoi') == 'caché'))
+    if vu and not vu.get('nonrendu'):
         return vu
     champ = cible.get('balise') in ('input', 'textarea', 'select')
     quoi = ('le champ « %s »' % (cible.get('etiquette') or cible.get('label') or cible.get('placeholder') or cible.get('nom') or '?')
@@ -1753,10 +1853,11 @@ def nom_de_cible(cible):
     return ''
 
 
-def attendre_calme(c, delai=None):
+def attendre_calme(c, delai=None, quoi='la page calcule'):
     """Après un clic : la page a fini de calculer — plus aucune requête en
     cours, plus de roue de chargement —, et le reste une seconde et demie.
-    Au bout du délai, on continue quand même."""
+    Au bout du délai, on continue quand même. « quoi » : ce que l'attente dit
+    (relecture : « la page se charge » au départ d'un export)."""
     delai = DELAI_CALME if delai is None else delai
     debut = time.time()
     fin, calme_depuis, patience = debut + delai, None, Patience(delai, debut)
@@ -1772,7 +1873,7 @@ def attendre_calme(c, delai=None):
         else:
             calme_depuis = None
             if time.time() > debut + 3:
-                patience.dire('la page calcule', 'elle calcule toujours')
+                patience.dire(quoi, 'toujours en cours')
         time.sleep(0.5)
     return False
 
@@ -1832,15 +1933,47 @@ EST_MENU_JS = r"""
 """
 
 
+def bascule(cible):
+    """Relecture : une case à cocher, un bouton radio, un interrupteur — un
+    second clic défait le premier (l'export sortirait décoché, sans rien
+    dire). Vu dans ce qui a été appris."""
+    return ((cible.get('balise') == 'input' and str(cible.get('type') or '').lower() in ('checkbox', 'radio')) or
+            str(cible.get('role') or '').lower() in ('checkbox', 'radio', 'switch', 'menuitemcheckbox', 'menuitemradio'))
+
+
+# Le même, vu dans la page, sur le bouton qu'on va cliquer (window.__suiviCible) :
+# aria-pressed, aria-checked, une étiquette ou une ligne qui porte une case.
+BASCULE_JS = r"""
+(function (e) {
+  if (!e || !e.matches) return false;
+  var C = 'input[type=checkbox],input[type=radio],[role=checkbox],[role=radio],[role=switch],[role=menuitemcheckbox],[role=menuitemradio]';
+  if (e.matches(C + ',[aria-pressed],[aria-checked]')) return true;
+  if (e.matches('label') && e.control && /checkbox|radio/i.test(e.control.type || '')) return true;
+  return !!(e.querySelector && e.querySelector(C));
+})(window.__suiviCible)
+"""
+
+
+def sans_nom_vers_un_clic(g, suivant):
+    """Un élément sans aucun nom (le menu « GATES », un simple dessin), suivi
+    d'un clic, et qui n'est ni un champ ni une case : il ouvre ce qu'on
+    clique ensuite — un menu."""
+    cible = g.get('cible') or {}
+    return bool(suivant and suivant.get('faire') == 'cliquer' and not nom_de_cible(cible) and
+                cible.get('balise') not in ('input', 'select', 'textarea') and not bascule(cible) and
+                nom_de_cible(suivant.get('cible') or {}))
+
+
 def ouvre_un_menu(c, g, suivant):
     """Ce bouton a-t-il l'air d'ouvrir un menu (« Export all » → « XLSX ») ?
-    Débrief 32 : ne décide plus seul de réessayer (recliquable le fait) ;
-    dit seulement combien de temps laisser à une suite absente pour
-    paraître avant de réessayer (DELAI_SUITE, le double sinon)."""
+    Relecture du débrief 32 : seul un tel bouton est recliqué quand sa suite
+    tarde (absente, ou sous un voile) ; un bouton ordinaire (« Afficher »,
+    une case, « Page suivante ») ne l'est que si sa suite est là mais cachée
+    elle-même — la ligne d'un menu fermé."""
     if not suivant:
         return False
     attendu = suivant.get('cible') or {}
-    if MOT_FICHIER.search(nom_de_cible(g.get('cible') or {})):
+    if MOT_FICHIER.search(nom_de_cible(g.get('cible') or {})) or sans_nom_vers_un_clic(g, suivant):
         return True
     if attendu.get('balise') in ('li', 'option') or attendu.get('role') in ('menuitem', 'option', 'menuitemradio') or \
             re.search(r'menu|dropdown|popover|popup|overlay', attendu.get('chemin') or '', re.I):
@@ -1865,28 +1998,55 @@ def sans_clic(texte):
     return err
 
 
-def message_cache(cible, menu='', delai=None):
-    """Débrief 32 : ce qu'on va cliquer reste caché (un menu qui ne s'ouvre
-    pas) — dit en clair, sans cliquer à l'aveugle."""
+def message_menu(menu, suite, est_menu=True):
+    """Relecture : le menu (ou le bouton) n'a rien ouvert, même après tous les
+    essais — dit en clair, avec quoi faire. Le plus souvent la page a juste
+    mal répondu : relancer suffit ; réapprendre seulement si elle a changé."""
+    if est_menu:
+        quoi = '%s ne s\'est pas ouvert' % (menu[0].upper() + menu[1:])
+        if 'qui ouvre' not in menu:
+            quoi += ' (%s ne s\'est pas montré)' % suite
+        main = 'ouvrez ce menu vous-même'
+    else:
+        quoi = 'Après le clic sur %s, %s ne s\'est jamais montré' % (menu, suite)
+        main = 'cliquez vous-même sur ce bouton'
+    return ('%s, même après plusieurs essais (clics, souris, clavier) ; le robot ne clique jamais au hasard. À faire : %s. '
+            'Si %s se montre, la page a seulement mal répondu : relancez « 3 - Essayer » (en automatique, le robot '
+            'réessaie seul). Sinon, refaites « 2 - Apprendre un export ».' % (quoi, main, suite))
+
+
+def message_cache(cible, menu='', delai=None, cache=False, est_menu=True):
+    """Débrief 32 : ce qu'on va cliquer reste caché — dit en clair, sans
+    cliquer à l'aveugle, avec quoi faire (relecture : réapprendre seulement si
+    la page a changé)."""
     nom = nom_de_cible(cible) or 'l\'élément à cliquer'
-    pendant = ' pendant %s' % duree_dite(delai) if delai else ''
     if menu:
-        return ('%s est resté caché%s : %s ne s\'est pas ouvert, même en recliquant dessus. Le robot ne clique pas '
-                'à l\'aveugle. Ouvrez ce menu à la main pour voir s\'il a changé ; sinon, refaites « Apprendre ».'
-                % (nom, pendant, menu))
-    return ('%s est resté caché derrière autre chose%s : le robot ne clique pas à l\'aveugle (son clic tomberait sur ce '
-            'qui le cache). Regardez la fenêtre du robot ; si la page a changé, refaites « Apprendre ».' % (nom, pendant))
+        return message_menu(menu, nom, est_menu)
+    pendant = ' pendant %s' % duree_dite(delai) if delai else ''
+    if cache:
+        return ('%s est resté caché%s : il est dans la page, mais pas affiché (un menu fermé ?). Le robot ne clique jamais au '
+                'hasard. À faire : regardez la page, affichez-le à la main si besoin, puis relancez « 3 - Essayer ». Refaites '
+                '« 2 - Apprendre un export » seulement s\'il n\'existe plus.' % (nom, pendant))
+    return ('%s est resté caché derrière autre chose%s (une fenêtre, un bandeau, ou la page qui calcule encore) : le robot ne '
+            'clique jamais au hasard. À faire : fermez ce qui le cache, puis relancez « 3 - Essayer ». Refaites « 2 - Apprendre '
+            'un export » seulement si ce bouton n\'existe plus sur la page.' % (nom, pendant))
 
 
 # Débrief 32 : un clic que le robot ne refait JAMAIS, même si la suite tarde :
 # il lancerait un calcul, enverrait, créerait, effacerait ou fermerait quelque
 # chose (« Submit » relancerait SEE, « Enregistrer » ferait deux documents).
+# Relecture : ni une connexion (un mot de passe refusé 5 fois verrouille le
+# compte), ni « Page suivante », ni ce qui fait venir un fichier (« XLSX »).
 NON_RECLIQUABLE = re.compile(
     r'(?<![0-9a-zà-ÿ])(?:submit|soumettre|valider|validation|confirmer|confirm|envoyer|send|rechercher|recherche|chercher|search|find|'
     r'ok|appliquer|apply|lancer|launch|run|go|start|d[ée]marrer|ex[ée]cuter|execute|calculer|calculate|compute|g[ée]n[ée]rer|generate|'
     r'enregistrer|sauvegarder|save|supprimer|delete|remove|effacer|retirer|cr[ée]er|create|ajouter|add|new|nouveau|nouvelle|'
     r'importer|import|upload|publier|publish|imprimer|print|payer|pay|commander|order|reset|r[ée]initialiser|annuler|cancel|'
-    r'fermer|close|quitter|exit|log ?out|logout|log ?off|sign ?out|signout|d[ée]connexion|d[ée]connecter)(?![0-9a-zà-ÿ])', re.I)
+    r'fermer|close|quitter|exit|log ?out|logout|log ?off|sign ?out|signout|d[ée]connexion|d[ée]connecter|trash|poubelle|'
+    r'connexion|connecter|identifier|authentifier|log ?in|login|sign ?in|signin|sign ?on|signon|'
+    r'suivant|suivante|next|pr[ée]c[ée]dent|pr[ée]c[ée]dente|previous|prev|'
+    r'xlsx|xls|csv|excel|t[ée]l[ée]charg[a-zà-ÿ]*|download[a-z]*)(?![0-9a-zà-ÿ])', re.I)
+FLECHES = {'›', '»', '>', '‹', '«', '<', '→', '←', '>>', '<<', '...', '…'}
 
 # Le document de la page, et son adresse sans le « #… » : un clic qui mène à
 # un autre document (une autre page) ne se refait pas.
@@ -1904,13 +2064,18 @@ def id_page(c):
 def recliquable(g):
     """Débrief 32 : ce clic peut-il se refaire sans risque (ouvrir un menu,
     un onglet, une liste) ? Jamais un bouton qui envoie, calcule, crée,
-    efface, ferme ou déconnecte."""
+    efface, ferme, connecte ou déconnecte, change de page, fait venir un
+    fichier ; jamais une case à cocher. Le texte caché d'un élément sans nom
+    (« contenu ») ne compte pas : ce sont souvent les lignes de son menu."""
     if g.get('faire') != 'cliquer':
         return False
     cible = g.get('cible') or {}
-    if str(cible.get('type') or '').lower() in ('submit', 'reset'):
+    if str(cible.get('type') or '').lower() in ('submit', 'reset', 'image') or bascule(cible):
         return False
-    noms = ' '.join(str(cible.get(k) or '') for k in ('texte', 'label', 'titre', 'bulle', 'alt', 'svgtitre', 'contenu', 'testid', 'nom', 'id'))
+    if str(cible.get('texte') or '').strip() in FLECHES:
+        return False
+    noms = ' '.join(str(cible.get(k) or '') for k in ('texte', 'label', 'titre', 'bulle', 'alt', 'svgtitre', 'testid', 'nom', 'id',
+                                                       'icone', 'classe'))
     return not NON_RECLIQUABLE.search(noms.replace('_', ' ').replace('-', ' '))
 
 
@@ -1926,18 +2091,18 @@ def cible_attendue(suivant):
 
 
 def etat_cible(c, cible):
-    """« absent » ; « caché » (là, mais invisible lui-même : la ligne d'un
-    menu fermé) ; « couvert » (quelque chose par-dessus : un voile, une
-    fenêtre) ; ou « là » (prêt ; grisé compte aussi : le robot l'attendra
-    ensuite comme avant)."""
+    """« absent » ; « caché » (dans la page, mais invisible lui-même : la ligne
+    d'un menu fermé, transparente ou non affichée) ; « couvert » (quelque
+    chose par-dessus : un voile, une fenêtre) ; ou « là » (prêt ; grisé
+    compte aussi : le robot l'attendra ensuite comme avant)."""
     try:
         r = c.evaluer(TROUVER % json.dumps(cible))
     except ErreurPilote:
         return 'absent'
     if not r:
         return 'absent'
-    if r.get('pourquoi') == 'couvert':
-        return 'caché' if r.get('soi') else 'couvert'
+    if r.get('pourquoi') in ('caché', 'couvert'):
+        return r['pourquoi']
     return 'là'
 
 
@@ -1970,127 +2135,185 @@ def bouton_pret(c, cible):
     return r if r and not r.get('attendre') else None
 
 
-def survol(c, r):
-    """La souris quitte le bouton, puis revient s'y poser une seconde : un
-    menu qui s'ouvre au survol (et qu'un clic referme) s'ouvre."""
+def ailleurs(c, y):
+    """Un endroit de la page loin de ce qu'on regarde (à la hauteur y)."""
     try:
         l, h = c.evaluer('[innerWidth, innerHeight]') or (1000, 800)
     except ErreurPilote:
         l, h = 1000, 800
-    ailleurs = (l * 0.5, h * 0.75) if abs(h * 0.75 - r['y']) > 60 else (l * 0.5, h * 0.25)
-    c.envoyer('Input.dispatchMouseEvent', type='mouseMoved', x=ailleurs[0], y=ailleurs[1], buttons=0)
+    return (l * 0.5, h * 0.75) if abs(h * 0.75 - y) > 60 else (l * 0.5, h * 0.25)
+
+
+def eloigner_souris(c, y):
+    x, y = ailleurs(c, y)
+    c.envoyer('Input.dispatchMouseEvent', type='mouseMoved', x=x, y=y, buttons=0)
+
+
+def survol(c, r):
+    """La souris quitte le bouton, puis revient s'y poser une seconde : un
+    menu qui s'ouvre au survol (et qu'un clic referme) s'ouvre."""
+    eloigner_souris(c, r['y'])
     time.sleep(0.4)
     c.envoyer('Input.dispatchMouseEvent', type='mouseMoved', x=r['x'], y=r['y'], buttons=0)
     time.sleep(1.0)
 
 
-def rouvrir_menu(c, cible, attendu, menu=''):
+def rouvrir_menu(c, cible, attendu, noms, page_avant=None):
     """Débrief 32 : la suite d'un clic n'est pas venue (absente), ou elle est
     là mais cachée (le menu « GATES » ne s'est pas ouvert, « Données MK2 »
     reste invisible). Le bouton est retrouvé à neuf avant chaque essai, puis
-    les autres façons d'appuyer, l'une après l'autre : le survol, un second
-    clic, un appui envoyé au bouton lui-même, Entrée, la flèche bas, Espace.
-    Rend True (la suite est prête), False (rien n'y a fait), None (rien à
-    recliquer : le bouton est parti, ou couvert lui aussi — on attend)."""
+    les autres façons d'appuyer, l'une après l'autre, numérotées : la souris
+    posée dessus (quelques secondes seulement : un menu au survol s'ouvre
+    vite), un nouveau clic, un clic envoyé directement au bouton, Entrée, la
+    flèche vers le bas, la barre d'espace. Relecture : avant chaque essai, la
+    page doit être la même (un clic qui charge sa page en retard ne se refait
+    pas sur la nouvelle). Rend True (la suite est prête), False (rien n'y a
+    fait), None (rien à recliquer : le bouton est parti, couvert lui aussi,
+    ou la page a changé — on attend)."""
+    long, court, est_menu = noms
     suite = nom_de_cible(attendu) or 'la suite'
-    court = 'le menu %s' % nom_de_cible(cible) if nom_de_cible(cible) else 'le menu'
+    quoi = 'menu' if est_menu else 'bouton'
     focus = '(function(e){if(e&&e.focus)e.focus();})(window.__suiviCible)'
-    facons = [('le survol', lambda r: survol(c, r)),
-              ('un second clic', lambda r: souris(c, r['x'], r['y'])),
-              ('un appui envoyé au bouton lui-même', lambda r: c.evaluer(APPUI_JS)),
-              ('la touche Entrée', lambda r: (c.evaluer(focus), touche(c, 'Enter', 13, '\r'))),
-              ('la flèche bas', lambda r: (c.evaluer(focus), touche(c, 'ArrowDown', 40))),
-              ('la touche Espace', lambda r: (c.evaluer(focus), touche(c, ' ', 32, ' ')))]
+    facons = [('la souris posée sur le %s' % quoi, lambda r: survol(c, r), 3),
+              ('un nouveau clic sur le %s' % quoi, lambda r: souris(c, r['x'], r['y']), DELAI_REOUVERTURE),
+              ('un clic envoyé directement au %s' % quoi, lambda r: c.evaluer(APPUI_JS), DELAI_REOUVERTURE),
+              ('la touche Entrée', lambda r: (c.evaluer(focus), touche(c, 'Enter', 13, '\r')), DELAI_REOUVERTURE),
+              ('la touche flèche vers le bas', lambda r: (c.evaluer(focus), touche(c, 'ArrowDown', 40)), DELAI_REOUVERTURE),
+              ('la barre d\'espace', lambda r: (c.evaluer(focus), touche(c, ' ', 32, ' ')), DELAI_REOUVERTURE)]
     dit = False
-    for nom, faire in facons:
-        etat = etat_cible(c, attendu)
-        if etat == 'là':
+    for k, (nom, faire, attente) in enumerate(facons, 1):
+        if page_avant is not None and id_page(c) != page_avant:
+            return None
+        if etat_cible(c, attendu) == 'là':
             return True
         r = bouton_pret(c, cible)                  # en dernier : window.__suiviCible est ce bouton-là
         if not r:
             return None
-        if etat != 'absent':
-            if not dit:
-                print('    (%s est encore caché : %s ne s\'est pas ouvert, le robot reclique dessus)' % (suite, court))
-                dit = True
-            print('      … essai : %s' % nom)
-        else:
-            print('    (%s n\'est pas apparu : le robot réessaie, %s)' % (suite, nom))
+        if not dit:
+            print('    (%s ne s\'est pas montré : %s, le robot essaie de %s)'
+                  % (suite, '%s ne s\'est pas ouvert' % court if est_menu else 'le clic sur %s n\'a rien fait' % court,
+                     'le rouvrir' if est_menu else 'recliquer'))
+            dit = True
+        print('      … essai %d : %s' % (k, nom))
         try:
             faire(r)
         except ErreurPilote:
             continue
         time.sleep(0.4)
-        attendre_calme(c, 30)
-        if attendre_la_suite(c, attendu, DELAI_REOUVERTURE):
-            if etat != 'absent':
-                noter('    (%s : il a fallu recliquer sur %s — %s)' % (suite, court, nom))
-            else:
-                noter('    (« %s » : il a fallu %s)' % (nom_de_cible(cible).strip('« »') or 'ce bouton', nom))
+        # Déjà là : on y va tout de suite (un menu qui se referme seul au bout
+        # de 2 s serait refermé le temps que la page soit calme).
+        pret = etat_cible(c, attendu) == 'là'
+        if not pret:
+            attendre_calme(c, 30)
+            pret = attendre_la_suite(c, attendu, attente)
+        if pret:
+            noter('    ✓ %s est là (essai %d) — %s %s du premier coup ; %s par : %s'
+                  % (suite, k, long, 'ne s\'était pas ouvert' if est_menu else 'n\'avait rien fait',
+                     'rouvert' if est_menu else 'refait', nom))
             return True
     return False
 
 
-def nom_du_menu(cible, attendu):
-    """« le menu « Export all » », ou, sans nom (le menu « GATES », un
-    simple dessin) : « le menu qui ouvre « Données MK2 » »."""
+def nom_du_menu(cible, attendu, est_menu=True):
+    """(long, court, est_menu) : « le menu « Export all » » ; sans nom (le
+    menu « GATES », un simple dessin) : « le menu qui ouvre « Données MK2 » »,
+    « le menu » ; relecture : un bouton qui n'a pas l'air d'un menu se dit
+    « le bouton « Afficher » », un champ « le champ « … » »."""
     nom = nom_de_cible(cible)
-    return 'le menu %s' % nom if nom else 'le menu qui ouvre %s' % (nom_de_cible(attendu) or 'la suite')
+    if nom.startswith('le champ'):
+        return nom, nom, False
+    if est_menu:
+        return ('le menu %s' % nom, 'le menu %s' % nom, True) if nom else \
+            ('le menu qui ouvre %s' % (nom_de_cible(attendu) or 'la suite'), 'le menu', True)
+    return ('le bouton %s' % nom, 'le bouton %s' % nom, False) if nom else ('le bouton sans nom', 'le bouton sans nom', False)
 
 
-def verifier_clic(c, g, cible, suivant, page_avant=None, menu=False):
+def verifier_clic(c, g, cible, suivant, page_avant=None, menu=False, refaire=True):
     """Après un clic, la suite doit paraître ET être prête (le menu « XLSX »
     après « Export all » ; débrief 32 : « Données MK2 » visible, pas
-    seulement posé dans la page, caché, menu « GATES » fermé). Sinon, une
-    fois la page calme, et si le bouton est toujours là et prêt (le clic
-    n'a rien fait), le robot réessaie autrement (rouvrir_menu) — jamais un
-    bouton qui envoie ou calcule (« Submit » : NON_RECLIQUABLE), jamais le
-    geste qui fait venir le fichier (pas de « suivant »), jamais un clic qui
-    a mené à une autre page. Rien n'y fait : il le dit tout de suite, plutôt
-    que de rester figé. Rend de quoi rouvrir le menu plus tard (trouver),
-    ou None."""
+    seulement posé dans la page, caché, menu « GATES » fermé). Sinon, et si
+    le bouton est toujours là et prêt (le clic n'a rien fait), le robot
+    réessaie autrement (rouvrir_menu).
+
+    Relecture : seulement
+      - un bouton qui a l'air d'ouvrir un menu (`menu`), dont la suite est
+        absente, cachée ou sous un voile ;
+      - ou n'importe quel bouton recliquable dont la suite est là mais cachée
+        ELLE-MÊME (la ligne d'un menu fermé) ;
+    jamais un bouton qui envoie ou calcule (NON_RECLIQUABLE), une case à
+    cocher, une connexion, le geste du fichier (`refaire`), un clic qui a
+    mené à une autre page. La suite cachée : réessai au bout de quelques
+    secondes de page calme, ou 15 s au plus même si la page fait toujours
+    quelques requêtes. Rien n'y fait : il le dit tout de suite, plutôt que de
+    rester figé. Rend de quoi rouvrir le menu plus tard (trouver), ou None."""
     if not suivant or suivant.get('faire') not in ('cliquer', 'remplir', 'choisir') or \
             CONNEXION.search((suivant.get('cible') or {}).get('page', '')):
         return None
-    if not recliquable(g):
+    if not refaire or not recliquable(g) or CONNEXION.search(cible.get('page', '')) or CONNEXION.search(page_actuelle(c)):
         return None                                 # « Submit » : la suite est attendue (trouver), jamais de second clic
-    nouvelle = id_page(c)
-    if page_avant is None or nouvelle != page_avant:
+    if page_avant is None or id_page(c) != page_avant:
         return None                                 # une autre page : on attend, comme avant
     attendu = cible_attendue(suivant)
-    nom_menu = nom_du_menu(cible, attendu)
+    noms = nom_du_menu(cible, attendu, menu)
+    suite = nom_de_cible(attendu) or 'la suite'
 
     def rouvrir():
-        return rouvrir_menu(c, cible, attendu, nom_menu) if id_page(c) == page_avant else None
-    rouvrir.menu = nom_menu
+        return rouvrir_menu(c, cible, attendu, noms, page_avant) if id_page(c) == page_avant else None
+    rouvrir.menu, rouvrir.court, rouvrir.est_menu, rouvrir.absent = noms[0], noms[1], noms[2], menu
     # La suite : prête tout de suite le plus souvent. Le temps ne compte que page
     # calme (aucune requête, aucune roue). Cachée (la ligne d'un menu fermé) :
-    # quelques secondes, puis on reclique ; couverte par autre chose (un voile ?) :
-    # trois fois plus ; absente : le temps de paraître (DELAI_SUITE ; le double
-    # pour un bouton qui n'a pas l'air d'ouvrir un menu). Une page qui calcule
-    # toujours : on ne reclique pas, trouver attendra.
+    # quelques secondes, puis on reclique (15 s au plus, même si la page n'est
+    # jamais tout à fait calme) ; couverte par autre chose (un voile ?) : trois
+    # fois plus ; absente : le temps de paraître (DELAI_SUITE). Un bouton qui n'a
+    # pas l'air d'un menu : seule une suite cachée le fait recliquer ; sinon
+    # trouver attendra, comme avant.
     debut = calme = time.time()
-    attente_absente = DELAI_SUITE if menu else 2 * DELAI_SUITE
+    dit = eloignee = False
     while True:
         etat = etat_cible(c, attendu)
         if etat == 'là':
             return rouvrir
+        if id_page(c) != page_avant:
+            return None
         maintenant = time.time()
         if not page_calme(c):
             calme = maintenant
-        passe = maintenant - calme
-        if passe >= {'caché': DELAI_CACHE, 'couvert': 3 * DELAI_CACHE}.get(etat, attente_absente):
+        passe, depuis = maintenant - calme, maintenant - debut
+        if etat == 'caché':
+            if passe >= DELAI_CACHE or depuis >= 3 * DELAI_CACHE:
+                break
+        elif not menu:
+            return rouvrir                          # un bouton ordinaire : trouver attend (et rouvrira une suite cachée)
+        elif etat == 'couvert':
+            # Ce qu'on vient d'ouvrir pend par-dessus (un menu au survol resté
+            # ouvert sur le champ) : la souris s'écarte, d'abord.
+            if not eloignee and depuis >= 1:
+                eloignee = True
+                with contextlib.suppress(ErreurPilote):
+                    r = c.evaluer(TROUVER % json.dumps(dict(cible, dessus=False))) or {'y': 0}
+                    eloigner_souris(c, r.get('y', 0))
+                if attendre_la_suite(c, attendu, 1.5):
+                    print('    (%s était resté ouvert par-dessus %s : le robot a éloigné la souris)' % (noms[1], suite))
+                    return rouvrir
+                continue
+            if passe >= 3 * DELAI_CACHE:
+                break
+        elif passe >= DELAI_SUITE:
             break
-        if maintenant - debut >= attente_absente + DELAI_SUITE:
-            return rouvrir
+        if etat != 'caché' and depuis >= 2 * DELAI_SUITE:
+            return rouvrir                          # une page qui calcule toujours : on ne reclique pas, trouver attendra
+        if not dit and depuis >= 10:
+            print('    (%s ne s\'est pas encore montré : le robot attend encore un peu, puis il %s)'
+                  % (suite, 'rouvrira le menu' if noms[2] else 'recliquera'))
+            dit = True
         time.sleep(0.5)
-    fait = rouvrir_menu(c, cible, attendu, nom_menu)
+    fait = rouvrir_menu(c, cible, attendu, noms, page_avant)
     if fait is not False:
         return rouvrir                              # prête, ou rien à recliquer pour l'instant (trouver attendra)
     etat = etat_cible(c, attendu)
     if etat in ('caché', 'couvert'):
         if suivant.get('faire') == 'cliquer':
-            raise sans_clic(message_cache(attendu, nom_menu))
+            raise sans_clic(message_cache(attendu, noms[0], est_menu=noms[2]))
         return None                                 # un champ : le robot essaiera d'y écrire quand même
     if attendu.get('contient'):
         return None                                 # le nom du contrat : trouver dira que GATES ne le montre pas
@@ -2098,17 +2321,17 @@ def verifier_clic(c, g, cible, suivant, page_avant=None, menu=False):
         vus = c.evaluer(BOUTONS_VISIBLES) or []
     except ErreurPilote:
         vus = []
-    raise ErreurPilote('Après %s, %s n\'est jamais apparu (sept façons d\'appuyer essayées).%s'
-                       % (nom_de_cible(cible) or 'le clic sur %s' % nom_menu, nom_de_cible(attendu) or 'la suite',
-                          '\n  Boutons visibles à ce moment : ' + ', '.join(vus) if vus else ''))
+    raise ErreurPilote(message_menu(noms[0], suite, noms[2]) +
+                       ('\n  Boutons visibles à ce moment : ' + ', '.join(vus) if vus else ''))
 
 
-def faire_geste(c, g, suivant=None):
+def faire_geste(c, g, suivant=None, refaire=True):
     """Un geste appris, refait dans la fenêtre du robot (souris et clavier
     envoyés à la page elle-même : ni la souris ni le clavier de la personne).
     « suivant » : le geste d'après, pour vérifier qu'un clic a bien fait
-    paraître la suite. Rend False pour une page de connexion inutile ce
-    jour-là (sautée)."""
+    paraître la suite. « refaire » : ce clic peut-il être refait si la suite
+    tarde (jamais ceux qui font venir le fichier). Rend False pour une page
+    de connexion inutile ce jour-là (sautée)."""
     cible = dict(g.get('cible') or {})
     garder_le_focus(c)                               # débrief 31 : même si l'on a cliqué ailleurs entre-temps
     # Débrief 32 : de quoi rouvrir le menu du geste d'avant, si ce qu'on va cliquer reste caché.
@@ -2124,12 +2347,16 @@ def faire_geste(c, g, suivant=None):
         raise
     if g['faire'] == 'cliquer':
         menu = ouvre_un_menu(c, g, suivant)          # avant le clic : le bouton est encore celui-là
+        try:
+            case = bool(c.evaluer(BASCULE_JS))       # relecture : une case à cocher ne se reclique jamais
+        except ErreurPilote:
+            case = True
         page = id_page(c)
         souris(c, r['x'], r['y'])
         time.sleep(0.4)
         attendre_calme(c)                            # SEE calcule (« Submit ») : on attend qu'il ait fini
         try:
-            c._rouvrir = verifier_clic(c, g, cible, suivant, page, menu)
+            c._rouvrir = verifier_clic(c, g, cible, suivant, page, menu and not case, refaire and not case)
         except ErreurPilote as err:
             err.introuvable = False                  # l'élément était là : c'est sa suite qui n'est pas venue
             raise
@@ -2159,10 +2386,14 @@ def faire_geste(c, g, suivant=None):
     return True
 
 
+SANS_NOM = '(un élément sans nom)'
+
+
 def dire_geste(g, suivant=None):
     """Le geste dit en clair. Débrief 32 : un clic sur un élément sans nom
     (le menu « GATES », un simple dessin) se dit par ce qu'il ouvre :
-    « (le menu qui ouvre « Données MK2 ») »."""
+    « (le menu qui ouvre « Données MK2 ») » — relecture : seulement s'il a
+    l'air d'un menu (suivi d'un clic, ni champ ni case)."""
     cible = g.get('cible') or {}
     if g['faire'] == 'remplir':
         return '« %s » dans le champ « %s »' % (g.get('texte', ''), cible.get('etiquette') or cible.get('label') or cible.get('placeholder') or cible.get('nom') or '?')
@@ -2171,12 +2402,17 @@ def dire_geste(g, suivant=None):
     nom = nom_de_cible(cible)
     if not nom and suivant:
         apres = nom_de_cible(suivant.get('cible') or {})
-        if apres:
-            return '(le menu qui ouvre %s)' % apres if suivant.get('faire') == 'cliquer' else '(ce qui fait paraître %s)' % apres
-    return nom or '(un élément sans nom)'
+        if sans_nom_vers_un_clic(g, suivant):
+            return '(le menu qui ouvre %s)' % apres
+        if apres and not bascule(cible):
+            return '(ce qui fait paraître %s)' % apres
+    if not nom and bascule(cible):
+        return '(une case à cocher sans nom)'
+    return nom or SANS_NOM
 
 
 MOT_FICHIER = re.compile(r'xlsx|xls|csv|excel|export|t[ée]l[ée]charg|download', re.I)
+FICHIER = re.compile(r'xlsx|xls|csv|excel|t[ée]l[ée]charg|download', re.I)   # sans « export » (« Export all » ouvre un menu)
 
 
 def indice_telechargement(scenario):
@@ -2192,6 +2428,37 @@ def indice_telechargement(scenario):
         if g.get('faire') in ('cliquer', 'choisir') and MOT_FICHIER.search(dire_geste(g)):
             return i
     return len(etapes)
+
+
+# Relecture : une page qui demande « Quitter la page ? » en partant (beforeunload)
+# figeait l'onglet du robot. Juste avant de la quitter, sa question est tue.
+QUITTER_JS = r"""
+(function () {
+  try {
+    window.onbeforeunload = null;
+    var P = window.BeforeUnloadEvent && BeforeUnloadEvent.prototype;
+    if (P) {
+      P.preventDefault = function () {};
+      Object.defineProperty(P, 'returnValue', { configurable: true, get: function () { return ''; }, set: function () {} });
+    }
+    window.addEventListener('beforeunload', function (e) { e.stopImmediatePropagation(); }, true);
+  } catch (x) {}
+  return true;
+})()
+"""
+
+
+def aller(c, url):
+    """Page.navigate, la question « Quitter la page ? » tue d'abord ; si elle
+    paraît quand même, le robot répond « Quitter »."""
+    with contextlib.suppress(ErreurPilote):
+        c.evaluer(QUITTER_JS)
+    try:
+        return c.envoyer('Page.navigate', url=url) or {}
+    except ErreurPilote:
+        with contextlib.suppress(ErreurPilote):
+            c.envoyer('Page.handleJavaScriptDialog', accept=True)
+        return {}
 
 
 def page_neuve(c, url, delai=None):
@@ -2211,17 +2478,17 @@ def page_neuve(c, url, delai=None):
     with contextlib.suppress(ErreurPilote):
         c.evaluer('window.__suiviAncienne = %s' % json.dumps(marque))
     fin = time.time() + delai
-    r = c.envoyer('Page.navigate', url=url) or {}
-    if not r.get('loaderId') and not r.get('errorText') and not r.get('isDownload'):
+    r = aller(c, url)
+    if r.get('frameId') and not r.get('loaderId') and not r.get('errorText') and not r.get('isDownload'):
         # Même document : rien n'a été rechargé. Par une page blanche, puis l'adresse
         # (un simple « recharger » reprenait parfois l'ancien « #… »).
-        c.envoyer('Page.navigate', url='about:blank')
+        aller(c, 'about:blank')
         while time.time() < fin:
             with contextlib.suppress(ErreurPilote):
                 if c.evaluer('location.href') == 'about:blank':
                     break
             time.sleep(0.2)
-        c.envoyer('Page.navigate', url=url)
+        aller(c, url)
     while time.time() < fin:
         try:
             if c.evaluer('window.__suiviAncienne !== %s && document.readyState === "complete"' % json.dumps(marque)):
@@ -2233,7 +2500,7 @@ def page_neuve(c, url, delai=None):
         with contextlib.suppress(ErreurPilote):
             c.evaluer(js)
     garder_le_focus(c)
-    attendre_calme(c, max(1, fin - time.time()))
+    attendre_calme(c, max(1, fin - time.time()), 'la page se charge')
     time.sleep(1.0)
 
 
@@ -2250,12 +2517,21 @@ def rejouer(c, scenario, dossier_sortie):
     page_neuve(c, scenario['depart'])                # débrief 32 : toujours une page rechargée, calme
     etapes = scenario['etapes']
     n, k_fichier, chemin = len(etapes), indice_telechargement(scenario), None
+    # Relecture : ce qui fait venir le fichier (« XLSX », puis jusqu'au geste après
+    # lequel il est arrivé) ne se refait jamais — un second téléchargement.
+    fichier_des = min([i for i, g in enumerate(etapes, 1) if i <= k_fichier and FICHIER.search(dire_geste(g))] or [k_fichier])
     for i, g in enumerate(etapes, 1):
         # Débrief 30 : une erreur dit sur quel geste elle est venue (err.geste) :
         # un clic qui exigeait le nom du contrat et ne l'a pas trouvé, c'est
         # GATES qui ne montre pas cette tranche.
+        # Relecture : la ligne du geste avant le geste (ce que le robot dit en le
+        # faisant vient dessous) — sauf une page de connexion, peut-être sautée.
+        ligne = '  %d/%d %s %s' % (i, n, g['faire'], dire_geste(g, etapes[i] if i < n else None))
+        connexion = bool(CONNEXION.search((g.get('cible') or {}).get('page', '')))
+        if not connexion:
+            print(ligne)
         try:
-            fait = faire_geste(c, g, etapes[i] if i < n and i != k_fichier else None)
+            fait = faire_geste(c, g, etapes[i] if i < n and i != k_fichier else None, refaire=not fichier_des <= i <= k_fichier)
         except ErreurPilote as err:
             if getattr(err, 'geste', None) is None:
                 err.geste = g
@@ -2263,7 +2539,8 @@ def rejouer(c, scenario, dossier_sortie):
         if not fait:
             print('  %d/%d (page de connexion inutile ce matin : sautée)' % (i, n))
             continue
-        print('  %d/%d %s %s' % (i, n, g['faire'], dire_geste(g, etapes[i] if i < n else None)))
+        if connexion:
+            print(ligne)
         if i == k_fichier:
             try:
                 chemin = attendre_fichier(c, avant, scenario.get('fichier'))
