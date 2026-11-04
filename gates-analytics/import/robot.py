@@ -2010,9 +2010,10 @@ def message_menu(menu, suite, est_menu=True):
     else:
         quoi = 'Après le clic sur %s, %s ne s\'est jamais montré' % (menu, suite)
         main = 'cliquez vous-même sur ce bouton'
-    return ('%s, même après plusieurs essais (clics, souris, clavier) ; le robot ne clique jamais au hasard. À faire : %s. '
+    essais = 'plusieurs essais (clics, souris, clavier)' if est_menu else 'un nouveau clic'
+    return ('%s, même après %s ; le robot ne clique jamais au hasard. À faire : %s. '
             'Si %s se montre, la page a seulement mal répondu : relancez « 3 - Essayer » (en automatique, le robot '
-            'réessaie seul). Sinon, refaites « 2 - Apprendre un export ».' % (quoi, main, suite))
+            'réessaie seul). Sinon, refaites « 2 - Apprendre un export ».' % (quoi, essais, main, suite))
 
 
 def message_cache(cible, menu='', delai=None, cache=False, est_menu=True):
@@ -2180,6 +2181,10 @@ def rouvrir_menu(c, cible, attendu, noms, page_avant=None):
               ('la touche Entrée', lambda r: (c.evaluer(focus), touche(c, 'Enter', 13, '\r')), DELAI_REOUVERTURE),
               ('la touche flèche vers le bas', lambda r: (c.evaluer(focus), touche(c, 'ArrowDown', 40)), DELAI_REOUVERTURE),
               ('la barre d\'espace', lambda r: (c.evaluer(focus), touche(c, ' ', 32, ' ')), DELAI_REOUVERTURE)]
+    if not est_menu:
+        # Vérification : un bouton ordinaire (« Rapport ») peut lancer un calcul
+        # que la page ne montre pas ; un seul nouveau clic, jamais plus.
+        facons = facons[:2]
     dit = False
     for k, (nom, faire, attente) in enumerate(facons, 1):
         if page_avant is not None and id_page(c) != page_avant:
