@@ -32,6 +32,12 @@ Batterie du robot, sans navigateur ni Windows : ce qui décide QUAND il passe.
   dite en clair ; l'adresse /dev (qui ne change jamais), changée et vérifiée ;
   GATES appris en lisant les fiches, jamais « THS AA AA » ; « oublier » ;
   les attentes longues dites ; l'installateur et ses raccourcis.
+— débrief 32 : le menu GATES (un dessin sans nom) qui ne s'ouvre pas au
+  2e contrat — une page comme GATES servie en local (adresses en « #/… »,
+  « Données MK2 » caché tant que le menu est fermé), HDK puis VRK dans le
+  même onglet : menu branché tard, départ en « #… », menu au survol, clic
+  perdu ; le robot rouvre le menu, recharge la page, le dit ; jamais deux
+  « Submit », jamais deux téléchargements, jamais de clic à l'aveugle.
 
 Aucune dépendance : bibliothèque standard uniquement.
 """
@@ -1481,6 +1487,349 @@ if exe:
         site.shutdown()
         verifier('une page suivante (une autre adresse) avec un lien « nouvel onglet » : le robot reste dans son onglet, le fichier arrive',
                  f is not None and f.exists() and c.evaluer('location.pathname') == '/p3', (f, res))
+
+# ---- début débrief 32 (bloc autonome : il se rejoue tel quel contre un ancien robot.py, pour voir l'avant/après)
+print('\n— Débrief 32 : le menu GATES qui ne s’ouvre pas au 2e contrat —')
+# Nathan, livraison 3d35dfb : HDK sort, puis pour VRK « 1/6 cliquer (un élément sans nom) », le menu GATES
+# (un simple dessin, sans texte) ne s'ouvre pas ; « Données MK2 » reste posé dans la page mais caché
+# (« couvert ») et le robot attend 5 minutes, jusqu'à ce que Nathan ouvre le menu à la main.
+# Ici, une page comme GATES (application d'une seule page, adresses en « #/… ») servie en local :
+# le menu « GATES » sans aucun nom ; « Données MK2 » caché (opacity 0, pointer-events none) tant que le
+# menu est fermé ; « Choisir une tranche » et ses suggestions ; « Exporter » ; « Exporter (.xls) » → un fichier.
+# Comme un vrai menu, la ligne d'un menu fermé ne répond à rien (pas même à un clic envoyé par script).
+# Variantes (?v=) : a — l'application branche le menu 3 s après s'être dessinée (et le redessine) ;
+# b — départ avec un « #/accueil » (Chrome ne recharge pas : l'application garde l'état du 1er export,
+# son menu se croit ouvert) ; c — le menu s'ouvre au survol, et un clic le referme ; d — au 2e export,
+# le premier clic sur le menu se perd (le cas de Nathan). Puis la sécurité (une autre page) : « Submit »
+# suivi d'un voile de chargement, un voile sur toute la page, le geste du fichier — jamais recliqués.
+if not exe:
+    print('  (pas de Chrome sur ce poste : partie sautée)')
+else:
+    import contextlib as _cl32
+    import http.server as _hs32
+    import io as _io32
+    import json as _json32
+    import threading as _th32
+    import time as _t32
+    GATES32 = r'''<!doctype html><html><head><meta charset="utf-8"><title>CHILDNéo</title><style>
+body{margin:0;font:14px sans-serif}
+#app-header{height:48px;background:#0b3d6e;display:flex;align-items:center;gap:12px;padding:0 8px}
+.menu-gates{position:relative}
+.gates-trigger{width:40px;height:40px;cursor:pointer;background:#2a6db0 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z'/%3E%3C/svg%3E") center/24px no-repeat}
+.sous-menu{position:absolute;top:44px;left:0;width:220px;background:#fff;box-shadow:0 2px 8px #0005;opacity:0;pointer-events:none;transition:opacity .12s;z-index:5}
+.sous-menu.ouvert{opacity:1;pointer-events:auto}
+.sous-menu a{display:block;padding:10px;cursor:pointer;color:#036}
+.titre{color:#fff}
+main{padding:24px;min-height:600px}
+#sugg li{cursor:pointer;padding:4px}
+#dlg{position:fixed;left:30%;top:30%;background:#fff;border:1px solid #888;padding:16px;z-index:9}
+.voile{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,.25);z-index:20}
+</style></head><body><header id="app-header"></header><main id="vue"></main>
+<script>
+var V = new URLSearchParams(location.search).get('v') || '';
+var n = +(sessionStorage.getItem('exports') || 0), ouvert = false, avale = V.indexOf('d') >= 0 && n === 1;
+var T = ['HDK AA (SUPER PUMA)', 'VRK AA (SUPER PUMA)', 'THS AA (TIGRE)'];
+var note = function (t) { sessionStorage.setItem('journal', (sessionStorage.getItem('journal') || '') + t + ';'); };
+function menu(o) { ouvert = o; var m = document.querySelector('.sous-menu'); if (m) m.classList.toggle('ouvert', o); }
+function brancher() {
+  var t = document.querySelector('.gates-trigger'), w = document.querySelector('.menu-gates');
+  t.addEventListener('click', function () { note('clic menu'); if (avale) { avale = false; note('perdu'); return; } menu(!ouvert); });
+  if (V.indexOf('c') >= 0) { w.addEventListener('mouseenter', function () { menu(true); }); w.addEventListener('mouseleave', function () { menu(false); }); }
+  [].forEach.call(document.querySelectorAll('.sous-menu a'), function (a) {
+    a.addEventListener('click', function () {
+      var m = document.querySelector('.sous-menu');
+      if (!m.classList.contains('ouvert')) { note('ligne d’un menu fermé'); return; }   /* un menu fermé ne répond pas */
+      if (V.indexOf('b') < 0) ouvert = false; m.classList.remove('ouvert'); location.hash = a.getAttribute('data-vers'); });
+  });
+}
+function entete(branche) {
+  document.getElementById('app-header').innerHTML = '<div class="menu-gates"><div class="gates-trigger"></div><div class="sous-menu">' +
+    '<a data-vers="#/mk1">Données MK1</a><a data-vers="#/mk2">Données MK2</a><a data-vers="#/aide">Aide</a></div></div><span class="titre">CHILDNéo — GATES</span>';
+  if (branche) brancher();
+}
+function route() {
+  var h = location.hash || '#/accueil', vue = document.getElementById('vue');
+  if (V.indexOf('a') >= 0) { entete(false); clearTimeout(window.__t); window.__t = setTimeout(function () { entete(true); }, 3000); }
+  if (h !== '#/mk2') { vue.innerHTML = '<h2>Bienvenue dans GATES</h2><p>Choisissez un menu.</p>'; return; }
+  vue.innerHTML = '<h2>Données MK2</h2><div class="ligne"><span>Choisir une tranche</span><div><input id="tranche" autocomplete="off"></div></div>' +
+    '<ul id="sugg"></ul><button id="exporter">Exporter</button><div id="res"></div>';
+  var i = document.getElementById('tranche'), u = document.getElementById('sugg'), choisie = '';
+  i.addEventListener('input', function () { var v = i.value.toLowerCase(); u.innerHTML = v ? T.filter(function (t) { return t.toLowerCase().indexOf(v) === 0; })
+    .map(function (t) { return '<li>' + t + '</li>'; }).join('') : ''; });
+  u.addEventListener('click', function (e) { if (e.target.tagName === 'LI') { choisie = e.target.textContent; i.value = choisie; u.innerHTML = ''; } });
+  document.getElementById('exporter').addEventListener('click', function () {
+    if (!choisie || document.getElementById('dlg')) return;
+    var d = document.createElement('div'); d.id = 'dlg'; d.innerHTML = '<p>Exporter « ' + choisie + ' »</p><button id="xls">Exporter (.xls)</button>';
+    document.body.appendChild(d);
+    document.getElementById('xls').addEventListener('click', function () {
+      var a = document.createElement('a'); a.href = 'data:application/octet-stream;base64,UEsDBA=='; a.download = 'export.xlsx';
+      document.body.appendChild(a); a.click(); d.remove(); n++; sessionStorage.setItem('exports', n); note('export ' + choisie);
+      document.getElementById('res').textContent = 'export ' + choisie;
+    });
+  });
+}
+window.addEventListener('hashchange', route);
+if (V.indexOf('a') < 0) entete(true);
+route();
+</script>'''
+    # Sécurité : « Submit » (un voile de chargement ~20 s ensuite), « Afficher » (un voile sur toute la page),
+    # puis « Export all » et son menu ; « Exporter (.xls) » suivi d'un « Fermer » qui tarde.
+    SURE32 = r'''<!doctype html><html><head><meta charset="utf-8"><style>
+.voile{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,.25);z-index:20}
+#menu li{cursor:pointer}</style></head><body>
+<button id="submit">Submit</button> <button id="aff">Afficher</button>
+<button id="exp" title="Export all">⇩</button><ul id="menu"></ul><button id="fermer">Fermer</button>
+<script>
+var compte = {submit: 0, aff: 0, exp: 0, xls: 0, fermer: 0};
+var voile = function (ms) { var v = document.createElement('div'); v.className = 'voile'; document.body.appendChild(v); setTimeout(function () { v.remove(); }, ms); };
+var V = new URLSearchParams(location.search).get('v') || '';
+document.getElementById('submit').onclick = function () { compte.submit++; voile(+(V || 20000)); };
+document.getElementById('aff').onclick = function () { compte.aff++; voile(8000); };
+document.getElementById('exp').onclick = function () { compte.exp++; document.getElementById('menu').innerHTML = '<li id="xls">Exporter (.xls)</li>'; };
+document.getElementById('menu').onclick = function (e) { if (e.target.id !== 'xls') return; compte.xls++;
+  var a = document.createElement('a'); a.href = 'data:application/octet-stream;base64,UEsDBA=='; a.download = 'see.xlsx'; document.body.appendChild(a); a.click(); voile(6000); };
+document.getElementById('fermer').onclick = function () { compte.fermer++; };
+</script>'''
+
+    class Pages32(_hs32.BaseHTTPRequestHandler):
+        def do_GET(self):
+            corps = (SURE32 if self.path.startswith('/sur') else GATES32).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            self.wfile.write(corps)
+
+        def log_message(self, *a):
+            pass
+    site32 = _hs32.ThreadingHTTPServer(('127.0.0.1', 0), Pages32)
+    _th32.Thread(target=site32.serve_forever, daemon=True).start()
+    BASE32 = 'http://127.0.0.1:%d/gates/childneo' % site32.server_port
+    NOMS32 = ('DELAI_TROUVER', 'DELAI_SUITE', 'DELAI_CACHE', 'DELAI_ROUVRIR', 'DELAI_REOUVERTURE', 'DELAI_PAGE_NEUVE')
+    avant32 = {k: getattr(robot, k, None) for k in NOMS32}
+    # Des délais courts pour la batterie (chez Nathan : 5 min, 45 s…) : l'ancien robot, lui, attend
+    # DELAI_TROUVER avec « Données MK2 » caché, puis clique à l'aveugle.
+    robot.DELAI_TROUVER, robot.DELAI_SUITE, robot.DELAI_CACHE = 20, 4, 3
+    robot.DELAI_ROUVRIR, robot.DELAI_REOUVERTURE, robot.DELAI_PAGE_NEUVE = 4, 6, 30
+    options32 = ['--no-sandbox'] if hasattr(os, 'geteuid') and os.geteuid() == 0 else []
+    sortie32 = pathlib.Path(tempfile.mkdtemp(prefix='robot-d32-'))
+
+    def centre32(c, sel):
+        return c.evaluer('(function(){var e=%s;var r=e.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};})()' % sel)
+
+    def apprendre32(c):
+        """« Apprendre » sur HDK : le vrai guetteur dans la page, de vrais clics, une vraie frappe."""
+        c.ouvrir('about:blank')
+        c.ouvrir(BASE32)
+        c.evaluer('sessionStorage.clear()')
+        c.ouvrir('about:blank')
+        c.ouvrir(BASE32)
+        c.evaluer('window.__vus=[];window.__suiviFwd=function(s){window.__vus.push(s);}')
+        c.evaluer(robot.GUETTEUR)
+        for sel, pause in (('document.querySelector(".gates-trigger")', 0.6), ('document.querySelectorAll(".sous-menu a")[1]', 0.8),
+                           ('document.getElementById("tranche")', 0.3)):
+            p = centre32(c, sel)
+            robot.souris(c, p['x'], p['y'])
+            _t32.sleep(pause)
+        c.envoyer('Input.insertText', text='HDK AA')
+        _t32.sleep(1.2)
+        for sel in ('document.querySelector("#sugg li")', 'document.getElementById("exporter")', 'document.getElementById("xls")'):
+            p = centre32(c, sel)
+            robot.souris(c, p['x'], p['y'])
+            _t32.sleep(0.8)
+        pas = []
+        for brut in c.evaluer('window.__vus'):
+            robot.ajouter_geste(pas, _json32.loads(brut))
+        return {'nom': 'GATES', 'depart': BASE32, 'etapes': pas, 'fichier': '*.xlsx', 'telechargement_apres': len(pas),
+                'modele': {'appris': 'HDK AA', 'contrat': 'HDK'}}
+
+    def deux_contrats32(c, scen, v='', diese=''):
+        """Comme « 3 - Essayer » : GATES HDK puis GATES VRK, dans le MÊME onglet (rejouer, pour_le_contrat)."""
+        c.ouvrir('about:blank')
+        c.ouvrir(BASE32 + '?v=' + v)
+        c.evaluer('sessionStorage.clear()')
+        c.ouvrir('about:blank')
+        depart = BASE32 + ('?v=' + v if v else '') + diese
+        sortis, dit, err = [], _io32.StringIO(), ''
+        t0 = _t32.time()
+        try:
+            with _cl32.redirect_stdout(dit):
+                for contrat in ('HDK', 'VRK'):
+                    s = robot.pour_le_contrat(dict(scen, depart=depart), 'HDK AA', contrat, contrat + ' AA')
+                    print('Export « %s »…' % s['nom'])
+                    sortis.append(robot.rejouer(c, s, sortie32).name)
+        except robot.ErreurPilote as e:
+            err = str(e).split('\n')[0]
+        except Exception as e:  # noqa: BLE001 — un ancien robot.py peut manquer d'une fonction
+            err = '%s: %s' % (type(e).__name__, e)
+        try:
+            journal_page = c.evaluer('sessionStorage.getItem("journal")') or ''
+        except robot.ErreurPilote:
+            journal_page = ''
+        return {'sortis': sortis, 'err': err, 'dit': dit.getvalue(), 'page': journal_page, 'duree': round(_t32.time() - t0)}
+
+    # Ce que Nathan a vu : le robot planté devant « Données MK2 » caché, jusqu'à 5 minutes (ici DELAI_TROUVER).
+    SANS_ATTENTE32 = '(attente : « Données MK2 » couvert'
+
+    def resume32(r):
+        return {k: r[k] for k in ('sortis', 'err', 'page', 'duree')}, r['dit'][-1500:]
+
+    try:
+        with Chrome(port=9481, lancer=True, profil=tempfile.mkdtemp(prefix='robot-d32-'), sans_fenetre=True, delai=30, options=options32,
+                    telechargements=str(R / 'telechargements')) as c:
+            scen32 = apprendre32(c)
+            pas32 = scen32['etapes']
+            dits32 = [robot.dire_geste(g) for g in pas32]
+            verifier('appris sur HDK par le vrai guetteur : les six gestes de Nathan (le menu sans nom, « Données MK2 », la tranche, sa suggestion, Exporter, Exporter (.xls))',
+                     [g['faire'] for g in pas32] == ['cliquer', 'cliquer', 'remplir', 'cliquer', 'cliquer', 'cliquer'] and
+                     dits32[1:] == ['« Données MK2 »', '« HDK AA » dans le champ « Choisir une tranche »', '« HDK AA (SUPER PUMA) »', '« Exporter »', '« Exporter (.xls) »'] and
+                     not robot.nom_de_cible(pas32[0]['cible']), dits32)
+            menu32 = pas32[0]['cible']
+            verifier('le menu « GATES » : ni texte, ni aria, ni titre, ni bulle, ni icône — mais un indice de plus, sa classe à lui (« gates-trigger »)',
+                     not any(menu32.get(k) for k in ('texte', 'label', 'titre', 'bulle', 'icone', 'testid', 'id')) and
+                     menu32.get('classe') == 'gates-trigger' and menu32.get('chemin', '').endswith('div:nth-of-type(1) > div:nth-of-type(1)'), menu32)
+
+            r = deux_contrats32(c, scen32)
+            verifier('témoin : la page GATES simple, HDK puis VRK dans le même onglet — les deux fichiers',
+                     r['sortis'] == ['gates-hdk.xlsx', 'gates-vrk.xlsx'] and not r['err'] and 'export HDK AA (SUPER PUMA);' in r['page'] and
+                     'export VRK AA (SUPER PUMA);' in r['page'], resume32(r))
+            verifier('… et le menu sans nom se dit par ce qu’il ouvre : « 1/6 cliquer (le menu qui ouvre « Données MK2 ») »',
+                     '  1/6 cliquer (le menu qui ouvre « Données MK2 »)\n' in r['dit'] and '(un élément sans nom)' not in r['dit'], r['dit'][:600])
+
+            r = deux_contrats32(c, scen32, 'd')
+            verifier('d — le cas de Nathan : au 2e export (VRK), le premier clic sur le menu se perd ; « Données MK2 » reste caché — '
+                     'le robot reclique sur le menu, tout seul, et VRK sort',
+                     r['sortis'] == ['gates-hdk.xlsx', 'gates-vrk.xlsx'] and not r['err'] and 'perdu;clic menu;' in r['page'] and
+                     'export VRK AA (SUPER PUMA);' in r['page'], resume32(r))
+            verifier('… dit en clair, sans attendre 5 minutes : « (« Données MK2 » est encore caché : le menu ne s’est pas ouvert, le robot reclique dessus) », '
+                     'et au journal « il a fallu recliquer sur le menu »',
+                     '(« Données MK2 » est encore caché : le menu ne s\'est pas ouvert, le robot reclique dessus)' in r['dit'] and
+                     '(« Données MK2 » : il a fallu recliquer sur le menu' in journal() and SANS_ATTENTE32 not in r['dit'] and
+                     r['duree'] < 90, resume32(r))
+
+            r = deux_contrats32(c, scen32, 'b', '#/accueil')
+            verifier('b — départ « …#/accueil » : Chrome ne rechargeait pas (même document), l’application gardait l’état du 1er export — '
+                     'le robot recharge la page, VRK sort',
+                     r['sortis'] == ['gates-hdk.xlsx', 'gates-vrk.xlsx'] and not r['err'] and 'export VRK AA (SUPER PUMA);' in r['page'] and
+                     'il a fallu recliquer' not in r['dit'] and SANS_ATTENTE32 not in r['dit'], resume32(r))
+
+            r = deux_contrats32(c, scen32, 'a')
+            verifier('a — l’application branche son menu 3 s après s’être dessinée (et le redessine) : le robot attend la page calme, '
+                     'puis reclique sur le menu redessiné — HDK et VRK sortent, sans attendre devant « Données MK2 » caché',
+                     r['sortis'] == ['gates-hdk.xlsx', 'gates-vrk.xlsx'] and not r['err'] and 'export VRK AA (SUPER PUMA);' in r['page'] and
+                     SANS_ATTENTE32 not in r['dit'], resume32(r))
+
+            r = deux_contrats32(c, scen32, 'c')
+            verifier('c — un menu qui s’ouvre au survol, et qu’un clic referme : le robot le survole à nouveau — HDK et VRK sortent, '
+                     'sans attendre devant « Données MK2 » caché',
+                     r['sortis'] == ['gates-hdk.xlsx', 'gates-vrk.xlsx'] and not r['err'] and 'export VRK AA (SUPER PUMA);' in r['page'] and
+                     'essai : le survol' in r['dit'] and SANS_ATTENTE32 not in r['dit'], resume32(r))
+
+            # Un export appris AVANT ce débrief (le menu décrit par son seul chemin) : retrouvé exactement comme avant.
+            ancien32 = dict(scen32, etapes=[dict(g, cible={k: v for k, v in g['cible'].items() if k not in ('contenu', 'alt', 'svgtitre', 'classe')})
+                                            for g in pas32])
+            r = deux_contrats32(c, ancien32, 'd')
+            verifier('un export appris avant (le menu sans nom, décrit par son seul chemin) : rien à réapprendre — HDK et VRK sortent, même au clic perdu',
+                     r['sortis'] == ['gates-hdk.xlsx', 'gates-vrk.xlsx'] and not r['err'], resume32(r))
+            # Sa place a changé (un bandeau du jour avant lui) : retrouvé par sa classe à lui ; un export d'avant, sans elle, pas pris ailleurs.
+            c.ouvrir(BASE32)
+            c.evaluer('var b=document.createElement("div");b.textContent="Bandeau";document.querySelector(".menu-gates").prepend(b);')
+            deplace = dict(menu32, chemin='header#app-header > div:nth-of-type(1) > div:nth-of-type(1)')
+            pris = c.evaluer(robot.TROUVER % _json32.dumps(deplace)) and c.evaluer('window.__suiviCible.className')
+            sans = c.evaluer(robot.TROUVER % _json32.dumps({k: v for k, v in deplace.items() if k != 'classe'})) and c.evaluer('window.__suiviCible.className')
+            verifier('… et un menu déplacé (un bandeau avant lui) : retrouvé par sa classe ; sans elle (export d’avant), c’est l’ancienne place, comme avant',
+                     pris == 'gates-trigger' and sans != 'gates-trigger', (pris, sans))
+
+            # Sécurité : jamais deux « Submit », jamais deux téléchargements.
+            def sur32(etapes, v='', telechargement=None):
+                c.ouvrir('about:blank')
+                dit = _io32.StringIO()
+                try:
+                    with _cl32.redirect_stdout(dit):
+                        f = robot.rejouer(c, {'nom': 'SEE', 'depart': BASE32.replace('/gates/childneo', '/sur') + ('?v=' + v if v else ''),
+                                              'etapes': etapes, 'fichier': '*.xlsx', 'telechargement_apres': telechargement or len(etapes)}, sortie32)
+                    err = ''
+                except robot.ErreurPilote as e:
+                    f, err = None, str(e).split('\n')[0]
+                return {'f': f and f.name, 'err': err, 'compte': c.evaluer('compte'), 'dit': dit.getvalue()[-800:]}
+            SUBMIT = {'faire': 'cliquer', 'cible': {'balise': 'button', 'texte': 'Submit', 'id': 'submit'}}
+            EXPALL = {'faire': 'cliquer', 'cible': {'balise': 'button', 'titre': 'Export all', 'texte': '⇩', 'id': 'exp'}}
+            XLS = {'faire': 'cliquer', 'cible': {'balise': 'li', 'texte': 'Exporter (.xls)'}}
+            robot.DELAI_TROUVER = 40
+            t0 = _t32.time()
+            r = sur32([SUBMIT, EXPALL, XLS])
+            verifier('« Submit » puis un voile de chargement ~20 s sur « Export all » : Submit cliqué UNE fois, le robot attend le voile, le fichier sort',
+                     r['f'] == 'see.xlsx' and r['compte']['submit'] == 1 and r['compte']['exp'] == 1 and _t32.time() - t0 >= 18, (r, round(_t32.time() - t0)))
+            r = sur32([{'faire': 'cliquer', 'cible': {'balise': 'button', 'texte': 'Afficher', 'id': 'aff'}}, EXPALL, XLS])
+            verifier('« Afficher » (rien d’interdit dans son nom) puis un voile sur TOUTE la page 8 s : pas recliqué (lui aussi sous le voile), le fichier sort',
+                     r['f'] == 'see.xlsx' and r['compte']['aff'] == 1, r)
+            r = sur32([EXPALL, XLS, {'faire': 'cliquer', 'cible': {'balise': 'button', 'texte': 'Fermer', 'id': 'fermer'}}], telechargement=2)
+            verifier('le geste qui fait venir le fichier n’est jamais refait, même si la suite (« Fermer ») reste couverte 6 s',
+                     r['f'] == 'see.xlsx' and r['compte']['xls'] == 1 and r['compte']['fermer'] == 1, r)
+            robot.DELAI_TROUVER = 20
+
+            # trouver : ce qu'on va cliquer reste caché — jamais un clic à l'aveugle ; le menu rouvert (une fois) ; sinon une erreur claire.
+            c.ouvrir(BASE32.replace('/gates/childneo', '/sur'))
+            c.evaluer('var v=document.createElement("div");v.className="voile";v.id="cache";document.body.appendChild(v);')
+            AFF = {'balise': 'button', 'texte': 'Afficher', 'dessus': True}
+            try:
+                r_ = robot.trouver(c, AFF, delai=3)
+                e_ = None
+            except robot.ErreurPilote as e:
+                r_, e_ = None, e
+            verifier('toujours couvert au bout du délai : une erreur claire (« … est resté caché … ne clique pas à l’aveugle »), plus de clic sur ce qui le cache',
+                     r_ is None and e_ is not None and 'caché' in str(e_) and 'aveugle' in str(e_) and getattr(e_, 'introuvable', True) is False, (r_, e_))
+            appels = []
+
+            def leve32():
+                appels.append(1)
+                c.evaluer('document.getElementById("cache").remove()')
+                return True
+            leve32.menu = 'le menu qui ouvre « Afficher »'
+            try:
+                r_ = robot.trouver(c, AFF, delai=20, rouvrir=leve32)
+            except Exception as e:  # noqa: BLE001
+                r_ = 'erreur : %s' % e
+            verifier('caché, geste d’avant recliquable : au bout de DELAI_ROUVRIR (pas 5 min) le menu est rouvert, une fois, puis le clic',
+                     isinstance(r_, dict) and not r_.get('attendre') and appels == [1], (r_, appels))
+            c.evaluer('var v=document.createElement("div");v.className="voile";document.body.appendChild(v);')
+            rate32 = lambda: False   # noqa: E731
+            rate32.menu = 'le menu qui ouvre « Afficher »'
+            try:
+                robot.trouver(c, AFF, delai=30, rouvrir=rate32)
+                e_ = None
+            except Exception as e:  # noqa: BLE001
+                e_ = e
+            verifier('… rien n’y fait : il le dit tout de suite, en nommant l’étape du menu',
+                     e_ is not None and 'le menu qui ouvre « Afficher » ne s\'est pas ouvert' in str(e_), e_)
+
+            # Une page vraiment neuve à chaque export, même quand l'adresse ne change que par son « #… ».
+            c.ouvrir(BASE32 + '#/mk2')
+            c.evaluer('window.__ici = 1')
+            robot.preparer_rejeu(c)
+            neuve1 = neuve2 = None
+            with _cl32.suppress(AttributeError):              # (un robot d'avant le débrief 32 n'a pas page_neuve)
+                robot.page_neuve(c, BASE32 + '#/accueil')
+                neuve1 = c.evaluer('[window.__ici === undefined, location.hash, !!window.__suiviFwdGuette, !!window.__suiviReseau, !!window.__suiviFocus]')
+                c.evaluer('window.__ici = 1')
+                robot.page_neuve(c, BASE32 + '#/accueil')
+                neuve2 = c.evaluer('[window.__ici === undefined, location.hash]')
+            verifier('page_neuve : « #/mk2 » → « #/accueil » puis la même adresse : rechargée les deux fois, scripts du robot posés (guetteur, requêtes, focus)',
+                     neuve1 == [True, '#/accueil', True, True, True] and neuve2 == [True, '#/accueil'], (neuve1, neuve2))
+            recliquable32 = getattr(robot, 'recliquable', lambda g: None)
+            verifier('les clics jamais refaits : Submit, Valider, OK, Rechercher, Enregistrer, Supprimer, Log out, un bouton type=submit ; '
+                     'refaits : le menu sans nom, « Données MK2 », « Export all », « Exporter »',
+                     getattr(robot, 'recliquable', None) is not None and not any(recliquable32({'faire': 'cliquer', 'cible': c_}) for c_ in (
+                         {'texte': 'Submit'}, {'texte': 'Valider'}, {'texte': 'OK'}, {'label': 'Rechercher'}, {'texte': 'Enregistrer le document'},
+                         {'titre': 'Supprimer'}, {'texte': 'Log out'}, {'texte': 'Déconnexion'}, {'type': 'submit', 'texte': 'Afficher'})) and
+                     all(recliquable32({'faire': 'cliquer', 'cible': c_}) for c_ in (
+                         menu32, {'texte': 'Données MK2'}, {'bulle': 'Export all'}, {'texte': 'Exporter'}, {'texte': 'HDK AA (SUPER PUMA)'})))
+    finally:
+        site32.shutdown()
+        for k, v in avant32.items():
+            if v is not None:
+                setattr(robot, k, v)
+# ---- fin débrief 32
 
 print('\n— Débrief 31 : la fenêtre du robot garde le focus quand on clique ailleurs (vrai Chrome à l’écran, sous Xvfb) —')
 XVFB = shutil.which('Xvfb')
