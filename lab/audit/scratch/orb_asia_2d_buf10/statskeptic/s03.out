@@ -1,0 +1,166 @@
+0 S1_asia_00-07ldn {'label': 'S1_asia_00-07ldn', 'stage': '1-screen', 'no_overlap': True, 'n': 2018, 'pf': 0.954, 't': -0.795, 'exp': -0.025, 'sd': 1.386, 'gross_exp': 0.135, 'gross_t': 3.125, 'cost_R': 0.16, 't_null_random_side': -5.175, 'logged_pf_unpatched': 0.954, 'logged_t_unpatched': -0.79} 4
+1 S2_ldn_08-0830 {'label': 'S2_ldn_08-0830', 'stage': '1-screen', 'no_overlap': True, 'n': 2287, 'pf': 0.879, 't': -2.117, 'exp': -0.1, 'sd': 2.254, 'gross_exp': 0.217, 'gross_t': 2.891, 'cost_R': 0.317, 't_null_random_side': -6.716, 'logged_pf_unpatched': 0.882, 'logged_t_unpatched': -2.05} 5
+2 S3_ldn_08-09 {'label': 'S3_ldn_08-09', 'stage': '1-screen', 'no_overlap': True, 'n': 2184, 'pf': 0.881, 't': -2.149, 'exp': -0.088, 'sd': 1.907, 'gross_exp': 0.106, 'gross_t': 1.777, 'cost_R': 0.193, 't_null_random_side': -4.738, 'logged_pf_unpatched': 0.884, 'logged_t_unpatched': -2.08} 7
+3 S4_comex_0820-0835 {'label': 'S4_comex_0820-0835', 'stage': '1-screen', 'no_overlap': True, 'n': 2308, 'pf': 0.688, 't': -7.087, 'exp': -0.217, 'sd': 1.472, 'gross_exp': 0.034, 'gross_t': 0.809, 'cost_R': 0.251, 't_null_random_side': -8.193, 'logged_pf_unpatched': 0.688, 'logged_t_unpatched': -7.06} 9
+4 S5_comex_0820-0850 {'label': 'S5_comex_0820-0850', 'stage': '1-screen', 'no_overlap': True, 'n': 2275, 'pf': 0.722, 't': -6.019, 'exp': -0.165, 'sd': 1.309, 'gross_exp': 0.051, 'gross_t': 1.362, 'cost_R': 0.216, 't_null_random_side': -7.874, 'logged_pf_unpatched': 0.726, 'logged_t_unpatched': -5.89} 12
+5 S6_us_0930-0945 {'label': 'S6_us_0930-0945', 'stage': '1-screen', 'no_overlap': True, 'n': 2304, 'pf': 0.844, 't': -2.907, 'exp': -0.1, 'sd': 1.659, 'gross_exp': 0.192, 'gross_t': 3.934, 'cost_R': 0.293, 't_null_random_side': -8.462, 'logged_pf_unpatched': 0.848, 'logged_t_unpatched': -2.8} 13
+6 S7_zarattini_0820_5m {'label': 'S7_zarattini_0820_5m', 'stage': '1-screen', 'no_overlap': True, 'n': 2320, 'pf': 0.571, 't': -9.976, 'exp': -0.428, 'sd': 2.066, 'gross_exp': 0.15, 'gross_t': 2.377, 'cost_R': 0.578, 't_null_random_side': -13.481, 'logged_pf_unpatched': 0.574, 'logged_t_unpatched': -9.81} 14
+7 A1_asia_atr0.5 {'label': 'A1_asia_atr0.5', 'stage': '2-cost/filters', 'no_overlap': True, 'n': 2018, 'pf': 0.96, 't': -0.696, 'exp': -0.017, 'sd': 1.065, 'gross_exp': 0.08, 'gross_t': 2.534, 'cost_R': 0.097, 't_null_random_side': -4.074, 'logged_pf_unpatched': 0.951, 'logged_t_unpatched': -0.87} 16
+8 A2_asia_cost15 {'label': 'A2_asia_cost15', 'stage': '2-cost/filters', 'no_overlap': True, 'n': 1267, 'pf': 0.969, 't': -0.441, 'exp': -0.015, 'sd': 1.199, 'gross_exp': 0.133, 'gross_t': 2.859, 'cost_R': 0.148, 't_null_random_side': -4.39, 'logged_pf_unpatched': 0.977, 'logged_t_unpatched': -0.31} 19
+9 A3_asia_hold2d {'label': 'A3_asia_hold2d', 'stage': '2-cost/filters', 'no_overlap': True, 'n': 1153, 'pf': 1.123, 't': 1.311, 'exp': 0.09, 'sd': 2.323, 'gross_exp': 0.281, 'gross_t': 3.196, 'cost_R': 0.192, 't_null_random_side': -2.801, 'logged_pf_unpatched': 1.134, 'logged_t_unpatched': 1.41} 19
+10 A4_asia_narrow0.30 {'label': 'A4_asia_narrow0.30', 'stage': '2-cost/filters', 'no_overlap': True, 'n': 693, 'pf': 0.878, 't': -1.325, 'exp': -0.081, 'sd': 1.602, 'gross_exp': 0.137, 'gross_t': 1.57, 'cost_R': 0.218, 't_null_random_side': -3.579, 'logged_pf_unpatched': 0.909, 'logged_t_unpatched': -0.96} 20
+11 A5_asia_tgt2R {'label': 'A5_asia_tgt2R', 'stage': '2-cost/filters', 'no_overlap': True, 'n': 2018, 'pf': 0.908, 't': -1.904, 'exp': -0.048, 'sd': 1.129, 'gross_exp': 0.073, 'gross_t': 2.22, 'cost_R': 0.121, 't_null_random_side': -4.821, 'logged_pf_unpatched': 0.912, 'logged_t_unpatched': -1.8} 23
+12 L1_ldn60_atr0.5 {'label': 'L1_ldn60_atr0.5', 'stage': '2-cost/filters', 'no_overlap': True, 'n': 2184, 'pf': 0.914, 't': -1.612, 'exp': -0.035, 'sd': 1.007, 'gross_exp': 0.045, 'gross_t': 1.45, 'cost_R': 0.08, 't_null_random_side': -3.698, 'logged_pf_unpatched': 0.914, 'logged_t_unpatched': -1.63} 24
+13 L2_ldn60_cost15 {'label': 'L2_ldn60_cost15', 'stage': '2-cost/filters', 'no_overlap': True, 'n': 393, 'pf': 0.904, 't': -0.731, 'exp': -0.057, 'sd': 1.549, 'gross_exp': 0.135, 'gross_t': 1.313, 'cost_R': 0.192, 't_null_random_side': -2.462, 'logged_pf_unpatched': 0.918, 'logged_t_unpatched': -0.61} 24
+14 L3_ldn60_tgt2R {'label': 'L3_ldn60_tgt2R', 'stage': '2-cost/filters', 'no_overlap': True, 'n': 2184, 'pf': 0.784, 't': -5.372, 'exp': -0.147, 'sd': 1.275, 'gross_exp': 0.038, 'gross_t': 0.969, 'cost_R': 0.184, 't_null_random_side': -6.755, 'logged_pf_unpatched': 0.787, 'logged_t_unpatched': -5.25} 26
+15 L4_ldn60_narrow0.15 {'label': 'L4_ldn60_narrow0.15', 'stage': '2-cost/filters', 'no_overlap': True, 'n': 504, 'pf': 0.813, 't': -1.569, 'exp': -0.163, 'sd': 2.334, 'gross_exp': 0.278, 'gross_t': 1.483, 'cost_R': 0.441, 't_null_random_side': -4.246, 'logged_pf_unpatched': 0.805, 'logged_t_unpatched': -1.64} 26
+16 U1_us15_atr0.5 {'label': 'U1_us15_atr0.5', 'stage': '2-cost/filters', 'no_overlap': True, 'n': 2304, 'pf': 0.85, 't': -2.928, 'exp': -0.044, 'sd': 0.714, 'gross_exp': 0.065, 'gross_t': 3.352, 'cost_R': 0.108, 't_null_random_side': -7.266, 'logged_pf_unpatched': 0.86, 'logged_t_unpatched': -2.7} 29
+17 U2_us15_cost15 {'label': 'U2_us15_cost15', 'stage': '2-cost/filters', 'no_overlap': True, 'n': 307, 'pf': 0.917, 't': -0.597, 'exp': -0.036, 'sd': 1.051, 'gross_exp': 0.12, 'gross_t': 1.667, 'cost_R': 0.156, 't_null_random_side': -2.593, 'logged_pf_unpatched': 0.954, 'logged_t_unpatched': -0.32} 29
+18 U3_us15_tgt2R {'label': 'U3_us15_tgt2R', 'stage': '2-cost/filters', 'no_overlap': True, 'n': 2304, 'pf': 0.794, 't': -5.097, 'exp': -0.127, 'sd': 1.194, 'gross_exp': 0.13, 'gross_t': 4.03, 'cost_R': 0.257, 't_null_random_side': -10.327, 'logged_pf_unpatched': 0.799, 'logged_t_unpatched': -4.92} 30
+19 C1_ctrl_short0700 {'label': 'C1_ctrl_short0700', 'stage': '2-cost/filters', 'no_overlap': True, 'n': 2321, 'pf': 0.928, 't': -1.373, 'exp': -0.036, 'sd': 1.27, 'gross_exp': 0.079, 'gross_t': 2.742, 'cost_R': 0.115, 't_null_random_side': -4.351, 'logged_pf_unpatched': 0.91, 'logged_t_unpatched': -1.76} 33
+20 C2_ctrl_long0700 {'label': 'C2_ctrl_long0700', 'stage': '2-cost/filters', 'no_overlap': True, 'n': 2321, 'pf': 0.718, 't': -6.597, 'exp': -0.155, 'sd': 1.133, 'gross_exp': -0.039, 'gross_t': -1.572, 'cost_R': 0.116, 't_null_random_side': -4.924, 'logged_pf_unpatched': 0.717, 'logged_t_unpatched': -6.57} 34
+21 A6_asia_hold1d {'label': 'A6_asia_hold1d', 'stage': '3-hold', 'no_overlap': True, 'n': 1392, 'pf': 1.034, 't': 0.428, 'exp': 0.023, 'sd': 1.99, 'gross_exp': 0.214, 'gross_t': 2.974, 'cost_R': 0.191, 't_null_random_side': -3.581, 'logged_pf_unpatched': 1.032, 'logged_t_unpatched': 0.39} 34
+22 A7_asia_hold3d {'label': 'A7_asia_hold3d', 'stage': '3-hold', 'no_overlap': True, 'n': 984, 'pf': 1.009, 't': 0.098, 'exp': 0.007, 'sd': 2.354, 'gross_exp': 0.252, 'gross_t': 2.483, 'cost_R': 0.245, 't_null_random_side': -3.264, 'logged_pf_unpatched': 0.997, 'logged_t_unpatched': -0.03} 37
+23 A8_asia_hold4d {'label': 'A8_asia_hold4d', 'stage': '3-hold', 'no_overlap': True, 'n': 877, 'pf': 1.104, 't': 0.923, 'exp': 0.084, 'sd': 2.695, 'gross_exp': 0.317, 'gross_t': 2.73, 'cost_R': 0.233, 't_null_random_side': -2.56, 'logged_pf_unpatched': 1.126, 'logged_t_unpatched': 1.1} 38
+24 L5_ldn60_hold2d {'label': 'L5_ldn60_hold2d', 'stage': '3-hold', 'no_overlap': True, 'n': 1481, 'pf': 0.987, 't': -0.146, 'exp': -0.012, 'sd': 3.041, 'gross_exp': 0.298, 'gross_t': 2.546, 'cost_R': 0.309, 't_null_random_side': -3.916, 'logged_pf_unpatched': 1.006, 'logged_t_unpatched': 0.07} 39
+25 U4_us15_hold2d {'label': 'U4_us15_hold2d', 'stage': '3-hold', 'no_overlap': True, 'n': 1586, 'pf': 0.894, 't': -1.289, 'exp': -0.1, 'sd': 3.083, 'gross_exp': 0.34, 'gross_t': 3.15, 'cost_R': 0.44, 't_null_random_side': -5.681, 'logged_pf_unpatched': 0.906, 'logged_t_unpatched': -1.12} 41
+26 F1_A3_trend_prevday {'label': 'F1_A3_trend_prevday', 'stage': '4-filters/exits', 'no_overlap': True, 'n': 751, 'pf': 1.024, 't': 0.233, 'exp': 0.018, 'sd': 2.132, 'gross_exp': 0.258, 'gross_t': 2.437, 'cost_R': 0.24, 't_null_random_side': -3.087, 'logged_pf_unpatched': 1.071, 'logged_t_unpatched': 0.62} 44
+27 F2_A3_trend_sma50 {'label': 'F2_A3_trend_sma50', 'stage': '4-filters/exits', 'no_overlap': True, 'n': 782, 'pf': 1.07, 't': 0.619, 'exp': 0.053, 'sd': 2.4, 'gross_exp': 0.219, 'gross_t': 1.977, 'cost_R': 0.166, 't_null_random_side': -1.933, 'logged_pf_unpatched': 1.08, 'logged_t_unpatched': 0.69} 45
+28 F3_A3_buf0.1 {'label': 'F3_A3_buf0.1', 'stage': '4-filters/exits', 'no_overlap': True, 'n': 1037, 'pf': 1.177, 't': 1.83, 'exp': 0.12, 'sd': 2.11, 'gross_exp': 0.184, 'gross_t': 2.287, 'cost_R': 0.064, 't_null_random_side': -0.978, 'logged_pf_unpatched': 1.196, 'logged_t_unpatched': 1.99} 46
+29 F4_A3_be1R {'label': 'F4_A3_be1R', 'stage': '4-filters/exits', 'no_overlap': True, 'n': 1278, 'pf': 1.125, 't': 1.172, 'exp': 0.067, 'sd': 2.038, 'gross_exp': 0.265, 'gross_t': 3.486, 'cost_R': 0.198, 't_null_random_side': -3.468, 'logged_pf_unpatched': 1.131, 'logged_t_unpatched': 1.23} 48
+30 F5_asia_hold4_trail1atr {'label': 'F5_asia_hold4_trail1atr', 'stage': '4-filters/exits', 'no_overlap': True, 'n': 1015, 'pf': 1.157, 't': 1.409, 'exp': 0.108, 'sd': 2.438, 'gross_exp': 0.33, 'gross_t': 3.344, 'cost_R': 0.222, 't_null_random_side': -2.904, 'logged_pf_unpatched': 1.162, 'logged_t_unpatched': 1.44} 49
+31 N01_buf0.08 {'label': 'N01_buf0.08', 'stage': '5-neighbours-F3', 'no_overlap': True, 'n': 1052, 'pf': 1.199, 't': 2.036, 'exp': 0.135, 'sd': 2.155, 'gross_exp': 0.288, 'gross_t': 3.467, 'cost_R': 0.153, 't_null_random_side': -2.299, 'logged_pf_unpatched': 1.216, 'logged_t_unpatched': 2.18} 50
+32 N02_buf0.12 {'label': 'N02_buf0.12', 'stage': '5-neighbours-F3', 'no_overlap': True, 'n': 1014, 'pf': 1.194, 't': 1.955, 'exp': 0.129, 'sd': 2.105, 'gross_exp': 0.329, 'gross_t': 3.897, 'cost_R': 0.2, 't_null_random_side': -3.02, 'logged_pf_unpatched': 1.213, 'logged_t_unpatched': 2.11} 52
+33 N03_buf0.20 {'label': 'N03_buf0.20', 'stage': '5-neighbours-F3', 'no_overlap': True, 'n': 914, 'pf': 1.155, 't': 1.535, 'exp': 0.099, 'sd': 1.955, 'gross_exp': 0.226, 'gross_t': 2.757, 'cost_R': 0.127, 't_null_random_side': -1.957, 'logged_pf_unpatched': 1.16, 'logged_t_unpatched': 1.58} 53
+34 N04_hold1 {'label': 'N04_hold1', 'stage': '5-neighbours-F3', 'no_overlap': True, 'n': 1252, 'pf': 1.044, 't': 0.534, 'exp': 0.027, 'sd': 1.775, 'gross_exp': 0.126, 'gross_t': 1.997, 'cost_R': 0.1, 't_null_random_side': -1.984, 'logged_pf_unpatched': 1.029, 'logged_t_unpatched': 0.36} 54
+35 N05_hold3 {'label': 'N05_hold3', 'stage': '5-neighbours-F3', 'no_overlap': True, 'n': 899, 'pf': 1.023, 't': 0.228, 'exp': 0.018, 'sd': 2.305, 'gross_exp': 0.104, 'gross_t': 1.137, 'cost_R': 0.086, 't_null_random_side': -1.121, 'logged_pf_unpatched': 1.021, 'logged_t_unpatched': 0.2} 56
+36 N06_rangeend06 {'label': 'N06_rangeend06', 'stage': '5-neighbours-F3', 'no_overlap': True, 'n': 1101, 'pf': 1.16, 't': 1.695, 'exp': 0.112, 'sd': 2.192, 'gross_exp': 0.254, 'gross_t': 3.122, 'cost_R': 0.142, 't_null_random_side': -2.157, 'logged_pf_unpatched': 1.151, 'logged_t_unpatched': 1.6} 57
+37 N07_rangeend08 {'label': 'N07_rangeend08', 'stage': '5-neighbours-F3', 'no_overlap': True, 'n': 892, 'pf': 1.157, 't': 1.524, 'exp': 0.102, 'sd': 1.993, 'gross_exp': 0.139, 'gross_t': 1.685, 'cost_R': 0.038, 't_null_random_side': -0.565, 'logged_pf_unpatched': 1.168, 'logged_t_unpatched': 1.61} 58
+38 N08_rangestart23 {'label': 'N08_rangestart23', 'stage': '5-neighbours-F3', 'no_overlap': True, 'n': 997, 'pf': 1.105, 't': 1.107, 'exp': 0.07, 'sd': 2.0, 'gross_exp': 0.201, 'gross_t': 2.44, 'cost_R': 0.131, 't_null_random_side': -2.074, 'logged_pf_unpatched': 1.115, 'logged_t_unpatched': 1.2} 61
+39 N09_rangestart01 {'label': 'N09_rangestart01', 'stage': '5-neighbours-F3', 'no_overlap': True, 'n': 1064, 'pf': 1.17, 't': 1.745, 'exp': 0.118, 'sd': 2.203, 'gross_exp': 0.175, 'gross_t': 2.146, 'cost_R': 0.057, 't_null_random_side': -0.842, 'logged_pf_unpatched': 1.187, 'logged_t_unpatched': 1.89} 62
+40 N10_entryend11 {'label': 'N10_entryend11', 'stage': '5-neighbours-F3', 'no_overlap': True, 'n': 1011, 'pf': 1.166, 't': 1.698, 'exp': 0.113, 'sd': 2.123, 'gross_exp': 0.199, 'gross_t': 2.387, 'cost_R': 0.086, 't_null_random_side': -1.283, 'logged_pf_unpatched': 1.185, 'logged_t_unpatched': 1.86} 63
+41 N11_entryend13 {'label': 'N11_entryend13', 'stage': '5-neighbours-F3', 'no_overlap': True, 'n': 1071, 'pf': 1.132, 't': 1.442, 'exp': 0.09, 'sd': 2.036, 'gross_exp': 0.182, 'gross_t': 2.309, 'cost_R': 0.092, 't_null_random_side': -1.485, 'logged_pf_unpatched': 1.136, 'logged_t_unpatched': 1.47} 65
+42 N12_exit14ny {'label': 'N12_exit14ny', 'stage': '5-neighbours-F3', 'no_overlap': True, 'n': 1037, 'pf': 1.162, 't': 1.69, 'exp': 0.109, 'sd': 2.081, 'gross_exp': 0.168, 'gross_t': 2.136, 'cost_R': 0.059, 't_null_random_side': -0.915, 'logged_pf_unpatched': 1.18, 'logged_t_unpatched': 1.85} 66
+43 N13_exit18ny {'label': 'N13_exit18ny', 'stage': '5-neighbours-F3', 'no_overlap': True, 'n': 1037, 'pf': 1.142, 't': 1.482, 'exp': 0.096, 'sd': 2.091, 'gross_exp': 0.174, 'gross_t': 2.164, 'cost_R': 0.078, 't_null_random_side': -1.2, 'logged_pf_unpatched': 1.159, 'logged_t_unpatched': 1.64} 67
+44 N14_stopmid {'label': 'N14_stopmid', 'stage': '5-neighbours-F3', 'no_overlap': True, 'n': 1280, 'pf': 1.139, 't': 1.338, 'exp': 0.122, 'sd': 3.259, 'gross_exp': 0.304, 'gross_t': 2.439, 'cost_R': 0.182, 't_null_random_side': -2.003, 'logged_pf_unpatched': 1.15, 'logged_t_unpatched': 1.42} 69
+45 D1_F3_overlap_hold1 {'label': 'D1_F3_overlap_hold1', 'stage': '6-diag-overlap', 'no_overlap': False, 'n': 1826, 'pf': 0.983, 't': -0.265, 'exp': -0.011, 'sd': 1.713, 'gross_exp': 0.101, 'gross_t': 1.839, 'cost_R': 0.112, 't_null_random_side': -2.79, 'logged_pf_unpatched': 0.986, 'logged_t_unpatched': -0.22} 70
+46 D2_F3_overlap_hold2 {'label': 'D2_F3_overlap_hold2', 'stage': '6-diag-overlap', 'no_overlap': False, 'n': 1826, 'pf': 1.049, 't': 0.709, 'exp': 0.035, 'sd': 2.082, 'gross_exp': 0.124, 'gross_t': 1.955, 'cost_R': 0.09, 't_null_random_side': -1.84, 'logged_pf_unpatched': 1.06, 'logged_t_unpatched': 0.85} 71
+47 D3_F3_overlap_hold3 {'label': 'D3_F3_overlap_hold3', 'stage': '6-diag-overlap', 'no_overlap': False, 'n': 1826, 'pf': 1.071, 't': 0.937, 'exp': 0.053, 'sd': 2.422, 'gross_exp': 0.12, 'gross_t': 1.75, 'cost_R': 0.067, 't_null_random_side': -1.184, 'logged_pf_unpatched': 1.078, 'logged_t_unpatched': 1.01} 73
+{
+ "n_configs": 48,
+ "meff_all": {
+  "li_ji": 23.000000000000004,
+  "nyholt": 40.21544376292549,
+  "galwey": 24.899020033259777
+ },
+ "meff_stages1_4": {
+  "M": 31,
+  "li_ji": 20.0,
+  "nyholt": 28.665178510954767,
+  "galwey": 21.95941522250012
+ },
+ "meff_asia_multiday": {
+  "M": 26,
+  "li_ji": 8.999999999999982,
+  "nyholt": 15.199570080215402,
+  "galwey": 10.143652051713422
+ },
+ "corr_F3_with": {
+  "F3_A3_buf0.1": 1.0,
+  "N12_exit14ny": 0.992,
+  "N13_exit18ny": 0.985,
+  "N01_buf0.08": 0.97,
+  "N10_entryend11": 0.968,
+  "N08_rangestart23": 0.953,
+  "N09_rangestart01": 0.951,
+  "N02_buf0.12": 0.944,
+  "N11_entryend13": 0.932,
+  "N06_rangeend06": 0.9,
+  "N03_buf0.20": 0.891,
+  "N07_rangeend08": 0.857,
+  "D2_F3_overlap_hold2": 0.796,
+  "N14_stopmid": 0.75,
+  "A3_asia_hold2d": 0.738,
+  "F2_A3_trend_sma50": 0.637,
+  "D1_F3_overlap_hold1": 0.595,
+  "F4_A3_be1R": 0.588,
+  "N04_hold1": 0.569,
+  "F1_A3_trend_prevday": 0.543,
+  "N05_hold3": 0.536,
+  "L5_ldn60_hold2d": 0.528,
+  "A7_asia_hold3d": 0.504,
+  "D3_F3_overlap_hold3": 0.471,
+  "A6_asia_hold1d": 0.471,
+  "F5_asia_hold4_trail1atr": 0.435,
+  "A8_asia_hold4d": 0.431,
+  "S1_asia_00-07ldn": 0.422,
+  "A1_asia_atr0.5": 0.373,
+  "A2_asia_cost15": 0.322,
+  "A5_asia_tgt2R": 0.301,
+  "A4_asia_narrow0.30": 0.263,
+  "S3_ldn_08-09": 0.26,
+  "L1_ldn60_atr0.5": 0.254,
+  "C1_ctrl_short0700": 0.251,
+  "U4_us15_hold2d": 0.227,
+  "S2_ldn_08-0830": 0.212,
+  "L3_ldn60_tgt2R": 0.154,
+  "S6_us_0930-0945": 0.132,
+  "L4_ldn60_narrow0.15": 0.118,
+  "U3_us15_tgt2R": 0.112,
+  "U1_us15_atr0.5": 0.106,
+  "S7_zarattini_0820_5m": 0.101,
+  "S5_comex_0820-0850": 0.071,
+  "L2_ldn60_cost15": 0.058,
+  "S4_comex_0820-0835": 0.055,
+  "C2_ctrl_long0700": 0.038,
+  "U2_us15_cost15": -0.026
+ },
+ "familywise_max_t": {
+  "all48/zero_net": {
+   "E_max_t": 1.829,
+   "p95_max_t": 2.907,
+   "P(max>=t_patched)": 0.47986,
+   "P(max>=t_unpatched)": 0.3804,
+   "P(max>=2.0)": 0.37421
+  },
+  "all48/random_side_cost_drag": {
+   "E_max_t": -0.173,
+   "p95_max_t": 1.288,
+   "P(max>=t_patched)": 0.01293,
+   "P(max>=t_unpatched)": 0.00817,
+   "P(max>=2.0)": 0.00796
+  },
+  "stages1_4/zero_net": {
+   "E_max_t": 1.791,
+   "p95_max_t": 2.858,
+   "P(max>=t_patched)": 0.45534,
+   "P(max>=t_unpatched)": 0.35679,
+   "P(max>=2.0)": 0.3506
+  },
+  "stages1_4/random_side_cost_drag": {
+   "E_max_t": -0.748,
+   "p95_max_t": 0.715,
+   "P(max>=t_patched)": 0.0027,
+   "P(max>=t_unpatched)": 0.00165,
+   "P(max>=2.0)": 0.00161
+  },
+  "asia_multiday/zero_net": {
+   "E_max_t": 1.171,
+   "p95_max_t": 2.552,
+   "P(max>=t_patched)": 0.21361,
+   "P(max>=t_unpatched)": 0.1622,
+   "P(max>=2.0)": 0.15913
+  },
+  "asia_multiday/random_side_cost_drag": {
+   "E_max_t": -0.21,
+   "p95_max_t": 1.285,
+   "P(max>=t_patched)": 0.0129,
+   "P(max>=t_unpatched)": 0.00815,
+   "P(max>=2.0)": 0.00794
+  }
+ },
+ "observed": {
+  "t_patched": 1.8296669139336559,
+  "t_unpatched": 1.99
+ }
+}

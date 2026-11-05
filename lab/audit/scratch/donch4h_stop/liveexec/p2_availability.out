@@ -1,0 +1,47 @@
+base       | IS n=499 pf=1.35 exp=0.1233 t=2.35 totR=61.5 yrs_pos=8/9 long_R=49.5 short_R=12.0 pf_long=1.631 pf_short=1.123
+           | VAL n=248 pf=1.294 exp=0.0998 t=1.49 totR=24.7 yrs_pos=3/4 long_R=34.4 short_R=-9.7 pf_long=1.686 pf_short=0.715
+S0_W1      | IS n=423 pf=1.313 exp=0.1106 t=1.94 totR=46.8 yrs_pos=7/9 long_R=35.8 short_R=11.0 pf_long=1.558 pf_short=1.129
+           | VAL n=197 pf=1.117 exp=0.044 t=0.58 totR=8.7 yrs_pos=3/4 long_R=15.5 short_R=-6.9 pf_long=1.353 pf_short=0.77
+S5_W1      | IS n=423 pf=1.203 exp=0.0758 t=1.33 totR=32.1 yrs_pos=7/9 long_R=24.2 short_R=7.9 pf_long=1.339 pf_short=1.092
+           | VAL n=197 pf=1.028 exp=0.0111 t=0.15 totR=2.2 yrs_pos=2/4 long_R=11.1 short_R=-8.9 pf_long=1.244 pf_short=0.72
+D_W1       | IS n=490 pf=1.237 exp=0.0877 t=1.67 totR=43.0 yrs_pos=8/9 long_R=27.8 short_R=15.2 pf_long=1.319 pf_short=1.162
+           | VAL n=245 pf=1.166 exp=0.0611 t=0.9 totR=15.0 yrs_pos=2/4 long_R=27.2 short_R=-12.3 pf_long=1.504 pf_short=0.662
+Donly_W1   | IS n=67 pf=1.469 exp=0.1626 t=1.19 totR=10.9 yrs_pos=5/9 long_R=3.6 short_R=7.3 pf_long=1.232 pf_short=1.951
+           | VAL n=48 pf=1.954 exp=0.2664 t=1.74 totR=12.8 yrs_pos=3/4 long_R=16.2 short_R=-3.4 pf_long=2.848 pf_short=0.272
+G0_W1      | IS n=468 pf=1.345 exp=0.1211 t=2.23 totR=56.7 yrs_pos=8/9 long_R=41.7 short_R=15.0 pf_long=1.563 pf_short=1.167
+           | VAL n=235 pf=1.161 exp=0.0583 t=0.85 totR=13.7 yrs_pos=2/4 long_R=24.3 short_R=-10.6 pf_long=1.477 pf_short=0.693
+G5_W1      | IS n=464 pf=1.236 exp=0.0875 t=1.61 totR=40.6 yrs_pos=8/9 long_R=29.2 short_R=11.3 pf_long=1.359 pf_short=1.126
+           | VAL n=234 pf=1.091 exp=0.0341 t=0.5 totR=8.0 yrs_pos=2/4 long_R=20.3 short_R=-12.4 pf_long=1.396 pf_short=0.658
+M3_W1      | IS n=454 pf=1.178 exp=0.0687 t=1.24 totR=31.2 yrs_pos=6/9 long_R=23.9 short_R=7.3 pf_long=1.287 pf_short=1.079
+           | VAL n=226 pf=1.05 exp=0.0195 t=0.29 totR=4.4 yrs_pos=3/4 long_R=18.3 short_R=-13.9 pf_long=1.361 pf_short=0.638
+P_ea_W1    | IS n=490 pf=1.359 exp=0.1258 t=2.38 totR=61.7 yrs_pos=8/9 long_R=46.9 short_R=14.8 pf_long=1.6 pf_short=1.158
+           | VAL n=247 pf=1.255 exp=0.0871 t=1.31 totR=21.5 yrs_pos=3/4 long_R=32.2 short_R=-10.7 pf_long=1.644 pf_short=0.691
+P_m3_W1    | IS n=479 pf=1.309 exp=0.1124 t=2.08 totR=53.8 yrs_pos=7/9 long_R=44.3 short_R=9.5 pf_long=1.567 pf_short=1.099
+           | VAL n=240 pf=1.182 exp=0.0659 t=0.99 totR=15.8 yrs_pos=3/4 long_R=28.5 short_R=-12.7 pf_long=1.565 pf_short=0.656
+S0_W2      | IS n=376 pf=1.276 exp=0.098 t=1.63 totR=36.8 yrs_pos=7/9 long_R=29.2 short_R=7.7 pf_long=1.498 pf_short=1.102
+           | VAL n=167 pf=1.28 exp=0.1008 t=1.17 totR=16.8 yrs_pos=3/4 long_R=18.8 short_R=-2.0 pf_long=1.524 pf_short=0.918
+S5_W2      | IS n=376 pf=1.146 exp=0.0552 t=0.93 totR=20.7 yrs_pos=6/9 long_R=18.2 short_R=2.6 pf_long=1.279 pf_short=1.034
+           | VAL n=167 pf=1.173 exp=0.0653 t=0.76 totR=10.9 yrs_pos=3/4 long_R=14.7 short_R=-3.8 pf_long=1.396 pf_short=0.854
+D_W2       | IS n=480 pf=1.241 exp=0.0877 t=1.67 totR=42.1 yrs_pos=7/9 long_R=28.2 short_R=13.9 pf_long=1.334 pf_short=1.155
+           | VAL n=237 pf=1.18 exp=0.0659 t=0.95 totR=15.6 yrs_pos=2/4 long_R=26.6 short_R=-11.0 pf_long=1.516 pf_short=0.689
+Donly_W2   | IS n=104 pf=1.666 exp=0.2054 t=1.84 totR=21.4 yrs_pos=7/9 long_R=10.0 short_R=11.3 pf_long=1.52 pf_short=1.887
+           | VAL n=70 pf=1.198 exp=0.0673 t=0.58 totR=4.7 yrs_pos=1/4 long_R=11.9 short_R=-7.2 pf_long=1.822 pf_short=0.226
+G0_W2      | IS n=449 pf=1.281 exp=0.0996 t=1.82 totR=44.7 yrs_pos=7/9 long_R=35.7 short_R=9.0 pf_long=1.492 pf_short=1.105
+           | VAL n=219 pf=1.186 exp=0.0678 t=0.94 totR=14.8 yrs_pos=2/4 long_R=23.1 short_R=-8.3 pf_long=1.476 pf_short=0.736
+G5_W2      | IS n=445 pf=1.159 exp=0.0599 t=1.1 totR=26.7 yrs_pos=7/9 long_R=23.8 short_R=2.9 pf_long=1.298 pf_short=1.033
+           | VAL n=218 pf=1.116 exp=0.0437 t=0.6 totR=9.5 yrs_pos=2/4 long_R=19.5 short_R=-10.0 pf_long=1.398 pf_short=0.699
+M3_W2      | IS n=430 pf=1.145 exp=0.0568 t=0.98 totR=24.4 yrs_pos=6/9 long_R=18.1 short_R=6.3 pf_long=1.223 pf_short=1.072
+           | VAL n=211 pf=1.078 exp=0.0306 t=0.43 totR=6.5 yrs_pos=3/4 long_R=19.1 short_R=-12.6 pf_long=1.409 pf_short=0.646
+P_ea_W2    | IS n=482 pf=1.381 exp=0.1343 t=2.48 totR=64.7 yrs_pos=9/9 long_R=45.9 short_R=18.9 pf_long=1.588 pf_short=1.206
+           | VAL n=245 pf=1.233 exp=0.0808 t=1.21 totR=19.8 yrs_pos=3/4 long_R=30.4 short_R=-10.6 pf_long=1.6 pf_short=0.692
+P_m3_W2    | IS n=468 pf=1.347 exp=0.1266 t=2.25 totR=59.2 yrs_pos=7/9 long_R=40.4 short_R=18.9 pf_long=1.518 pf_short=1.203
+           | VAL n=237 pf=1.18 exp=0.0657 t=0.98 totR=15.6 yrs_pos=3/4 long_R=27.8 short_R=-12.2 pf_long=1.55 pf_short=0.662
+M4_0       | IS n=445 pf=1.205 exp=0.0994 t=1.54 totR=44.2 yrs_pos=7/9 long_R=35.2 short_R=9.0 pf_long=1.342 pf_short=1.08
+           | VAL n=210 pf=1.35 exp=0.1556 t=1.8 totR=32.7 yrs_pos=3/4 long_R=40.7 short_R=-8.0 pf_long=1.763 pf_short=0.802
+M4_5       | IS n=438 pf=1.158 exp=0.0786 t=1.21 totR=34.4 yrs_pos=7/9 long_R=18.6 short_R=15.8 pf_long=1.164 pf_short=1.152
+           | VAL n=213 pf=1.201 exp=0.0933 t=1.11 totR=19.9 yrs_pos=3/4 long_R=33.0 short_R=-13.2 pf_long=1.596 pf_short=0.699
+IS alerts by Paris hour: {0: 23, 1: 8, 2: 11, 3: 13, 4: 6, 5: 9, 6: 5, 7: 8, 8: 10, 9: 29, 10: 18, 11: 17, 12: 12, 13: 23, 14: 88, 15: 65, 16: 48, 17: 26, 18: 17, 19: 23, 20: 19, 21: 12, 22: 8, 23: 1}
+IS share in W1 85%, in W2 75%
+IS W1: in-window R +46.8 (n 423), out-of-window R +14.7 (n 76)
+IS W2: in-window R +36.8 (n 376), out-of-window R +24.7 (n 123)
+IS trail moves per trade (engine, every M1): median/p90 [18. 67.]

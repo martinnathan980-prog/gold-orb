@@ -1,0 +1,41 @@
+{
+ "mode": "ident",
+ "seeds": 1,
+ "is_n_med": 499.0,
+ "val_n_med": 248.0,
+ "is_pf_p5_50_95_max": [
+  1.35,
+  1.35,
+  1.35,
+  1.35
+ ],
+ "is_t_p5_50_95_max": [
+  2.35,
+  2.35,
+  2.35,
+  2.35
+ ],
+ "is_t_mean_sd": [
+  2.35,
+  NaN
+ ],
+ "val_pf_p5_50_95_max": [
+  1.294,
+  1.294,
+  1.294,
+  1.294
+ ],
+ "val_t_mean_sd": [
+  1.49,
+  NaN
+ ],
+ "frac_is_pass": 1.0,
+ "frac_is_core": 1.0,
+ "frac_val_pass": 1.0,
+ "frac_both": 1.0,
+ "frac_is_pf_ge_1.35": 1.0,
+ "frac_val_pf_ge_1.294": 1.0,
+ "is_every_pf_med": 1.344,
+ "val_every_pf_med": 0.977,
+ "secs": 9.1
+}

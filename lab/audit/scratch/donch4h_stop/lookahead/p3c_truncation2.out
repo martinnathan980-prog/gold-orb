@@ -1,1 +1,3 @@
 (b') order unchanged with data cut 2 bars after the fill + garbled post-fill bar: 40/40 []
+(a') levels/ATR at random decisions identical on data truncated at the decision: 120/120
+time 56.5s

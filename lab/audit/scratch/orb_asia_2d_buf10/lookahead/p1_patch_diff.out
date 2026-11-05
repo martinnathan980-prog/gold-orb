@@ -1,0 +1,16 @@
+IS orders patched 1827 unpatched 1805
+order dates only in patched: 22  only in unpatched: 0
+common order dates 1805 side differs 0 level differs 2
+trades: both 1016 only patched 21 only unpatched 12
+common trades with different R: 6 sum dR (patched-unpatched) -1.23
+            R_unp  R_pat rs_unp rs_pat                     x_unp                     x_pat
+d                                                                                         
+2013-05-23   0.75   0.65   time   time 2013-05-28 00:00:00+00:00 2013-05-27 22:02:00+00:00
+2013-05-28  -1.02  -1.02   stop   stop 2013-05-28 15:38:00+00:00 2013-05-28 15:38:00+00:00
+2014-03-27   2.66   2.88   time   time 2014-04-01 00:00:00+00:00 2014-03-31 20:00:00+00:00
+2014-10-09   0.88  -1.04   time   stop 2014-10-13 22:00:00+00:00 2014-10-10 07:51:00+00:00
+2017-03-29  -1.81  -1.15   stop   stop 2017-03-31 00:01:00+00:00 2017-03-30 12:32:00+00:00
+2017-04-25   1.03   0.94   time   time 2017-04-28 00:00:00+00:00 2017-04-27 20:00:00+00:00
+only-patched trades R sum -10.02 n 21
+only-unpatched trades R sum -0.33 n 12
+PF of only-patched 0.447 PF only-unpatched 0.955

@@ -1,0 +1,28 @@
+# NOTE: lines up to the traceback = first run (crashed in the final count block, since fixed); the last 8 lines = tail of the second (deterministic, identical tables) run. VAL accessed twice under label rollover-x5-spike-decomposition.
+base                               | IS n=499 pf=1.35 exp=0.1233 t=2.35 totR=61.5 yrs_pos=8/9 long_R=49.5 short_R=12.0 pf_long=1.631 pf_short=1.123
+                                   | VAL n=248 pf=1.294 exp=0.0998 t=1.49 totR=24.7 yrs_pos=3/4 long_R=34.4 short_R=-9.7 pf_long=1.686 pf_short=0.715
+x5_preclose_only                   | IS n=519 pf=1.089 exp=0.0347 t=0.71 totR=18.0 yrs_pos=7/9 long_R=20.5 short_R=-2.5 pf_long=1.213 pf_short=0.976
+                                   | VAL n=246 pf=1.306 exp=0.1037 t=1.53 totR=25.5 yrs_pos=3/4 long_R=36.5 short_R=-11.0 pf_long=1.74 pf_short=0.679
+x5_preclose_only|exits-only        | IS n=499 pf=1.158 exp=0.0582 t=1.17 totR=29.1 yrs_pos=7/9 long_R=33.3 short_R=-4.3 pf_long=1.406 pf_short=0.958
+                                   | VAL n=248 pf=1.29 exp=0.0987 t=1.47 totR=24.5 yrs_pos=3/4 long_R=34.2 short_R=-9.7 pf_long=1.678 pf_short=0.714
+x5_reopen_only                     | IS n=495 pf=1.322 exp=0.1147 t=2.2 totR=56.8 yrs_pos=9/9 long_R=42.5 short_R=14.3 pf_long=1.527 pf_short=1.149
+                                   | VAL n=246 pf=1.282 exp=0.0958 t=1.43 totR=23.6 yrs_pos=3/4 long_R=33.9 short_R=-10.3 pf_long=1.683 pf_short=0.697
+x5_reopen_only|exits-only          | IS n=499 pf=1.311 exp=0.1102 t=2.14 totR=55.0 yrs_pos=8/9 long_R=44.0 short_R=11.0 pf_long=1.555 pf_short=1.113
+                                   | VAL n=248 pf=1.285 exp=0.0971 t=1.45 totR=24.1 yrs_pos=3/4 long_R=33.9 short_R=-9.8 pf_long=1.673 pf_short=0.712
+x5_both                            | IS n=519 pf=1.064 exp=0.0251 t=0.51 totR=13.0 yrs_pos=7/9 long_R=16.1 short_R=-3.0 pf_long=1.162 pf_short=0.971
+                                   | VAL n=246 pf=1.271 exp=0.0926 t=1.38 totR=22.8 yrs_pos=3/4 long_R=34.3 short_R=-11.5 pf_long=1.69 pf_short=0.665
+x5_both|exits-only                 | IS n=499 pf=1.135 exp=0.0503 t=1.01 totR=25.1 yrs_pos=7/9 long_R=30.3 short_R=-5.2 pf_long=1.366 pf_short=0.949
+                                   | VAL n=248 pf=1.281 exp=0.0962 t=1.43 totR=23.9 yrs_pos=3/4 long_R=33.7 short_R=-9.8 pf_long=1.665 pf_short=0.711
+Traceback (most recent call last):
+  File "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p4b_spike_decomp.py", line 93, in <module>
+    inx = (PRE | REO)[xi]; inf = (PRE | REO)[fi]
+          ~~~~~~~~~~~^^^^
+IndexError: arrays used as indices must be of integer (or boolean) type
+x5_both                            | IS n=519 pf=1.064 exp=0.0251 t=0.51 totR=13.0 yrs_pos=7/9 long_R=16.1 short_R=-3.0 pf_long=1.162 pf_short=0.971
+                                   | VAL n=246 pf=1.271 exp=0.0926 t=1.38 totR=22.8 yrs_pos=3/4 long_R=34.3 short_R=-11.5 pf_long=1.69 pf_short=0.665
+x5_both|exits-only                 | IS n=499 pf=1.135 exp=0.0503 t=1.01 totR=25.1 yrs_pos=7/9 long_R=30.3 short_R=-5.2 pf_long=1.366 pf_short=0.949
+                                   | VAL n=248 pf=1.281 exp=0.0962 t=1.43 totR=23.9 yrs_pos=3/4 long_R=33.7 short_R=-9.8 pf_long=1.665 pf_short=0.711
+IS base                        : fills in spike windows n= 20 R=  +2.5 | exits in spike windows n= 12 R=  +0.6
+IS x5_both                     : fills in spike windows n= 61 R= -16.1 | exits in spike windows n= 76 R= -23.2
+IS x5_preclose_only|exits-only : fills in spike windows n= 20 R=  +2.5 | exits in spike windows n= 12 R=  +0.5
+IS exits-only pre-close x5: trades changed 41, sum dR -32.5, mean dR of changed -0.79

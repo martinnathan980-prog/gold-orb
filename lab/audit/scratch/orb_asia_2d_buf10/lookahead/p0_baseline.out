@@ -1,0 +1,14 @@
+[load patched(current)] 2.0s
+patched(current) rows 4590141 index dtype datetime64[ms, UTC] 2012-12-31 00:00:00+00:00 2025-12-31 21:58:00+00:00
+[make_orders] 3.2s
+[simulate] 0.0s
+patched(current) orders 2621 IS (full-sim cut): {'n': 1037, 'pf': np.float64(1.177), 't': np.float64(1.83), 'exp': 0.1199, 'totR': 124.3, 'yrs+': '6/9', 'L_pf': np.float64(1.041), 'S_pf': np.float64(1.321)}
+patched(current) IS (harness: orders cut first): {'n': 1037, 'pf': np.float64(1.177), 't': np.float64(1.83), 'exp': 0.1199, 'totR': 124.3, 'yrs+': '6/9', 'L_pf': np.float64(1.041), 'S_pf': np.float64(1.321)}
+   by_year {2013: 86.8, 2014: 27.4, 2015: 9.5, 2016: 10.5, 2017: -1.3, 2018: -30.4, 2019: 7.6, 2020: 26.5, 2021: -12.3} {'stop': 651, 'time': 386} max_hold_h 159.2
+[load unpatched] 1.5s
+unpatched rows 4512926 index dtype datetime64[ms, UTC] 2013-01-01 00:00:00+00:00 2025-12-31 21:58:00+00:00
+[make_orders] 3.0s
+[simulate] 0.0s
+unpatched orders 2575 IS (full-sim cut): {'n': 1028, 'pf': np.float64(1.196), 't': np.float64(1.99), 'exp': 0.1315, 'totR': 135.2, 'yrs+': '7/9', 'L_pf': np.float64(1.057), 'S_pf': np.float64(1.342)}
+unpatched IS (harness: orders cut first): {'n': 1028, 'pf': np.float64(1.196), 't': np.float64(1.99), 'exp': 0.1315, 'totR': 135.2, 'yrs+': '7/9', 'L_pf': np.float64(1.057), 'S_pf': np.float64(1.342)}
+   by_year {2013: 86.9, 2014: 32.2, 2015: 9.5, 2016: 10.5, 2017: 6.0, 2018: -30.4, 2019: 6.1, 2020: 25.7, 2021: -11.2} {'stop': 640, 'time': 388} max_hold_h 159.2

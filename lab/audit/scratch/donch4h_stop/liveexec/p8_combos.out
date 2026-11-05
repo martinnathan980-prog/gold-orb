@@ -1,0 +1,17 @@
+E_auto|lab         | IS n=499 pf=1.35 exp=0.1233 t=2.35 totR=61.5 yrs_pos=8/9 long_R=49.5 short_R=12.0 pf_long=1.631 pf_short=1.123
+                   | VAL n=248 pf=1.294 exp=0.0998 t=1.49 totR=24.7 yrs_pos=3/4 long_R=34.4 short_R=-9.7 pf_long=1.686 pf_short=0.715
+P_ea_W1|lab        | IS n=490 pf=1.359 exp=0.1258 t=2.38 totR=61.7 yrs_pos=8/9 long_R=46.9 short_R=14.8 pf_long=1.6 pf_short=1.158
+                   | VAL n=247 pf=1.255 exp=0.0871 t=1.31 totR=21.5 yrs_pos=3/4 long_R=32.2 short_R=-10.7 pf_long=1.644 pf_short=0.691
+P_m3_W1|lab        | IS n=479 pf=1.309 exp=0.1124 t=2.08 totR=53.8 yrs_pos=7/9 long_R=44.3 short_R=9.5 pf_long=1.567 pf_short=1.099
+                   | VAL n=240 pf=1.182 exp=0.0659 t=0.99 totR=15.8 yrs_pos=3/4 long_R=28.5 short_R=-12.7 pf_long=1.565 pf_short=0.656
+M3_W1|lab          | IS n=454 pf=1.178 exp=0.0687 t=1.24 totR=31.2 yrs_pos=6/9 long_R=23.9 short_R=7.3 pf_long=1.287 pf_short=1.079
+                   | VAL n=226 pf=1.05 exp=0.0195 t=0.29 totR=4.4 yrs_pos=3/4 long_R=18.3 short_R=-13.9 pf_long=1.361 pf_short=0.638
+E_auto|retail      | IS n=500 pf=1.199 exp=0.0752 t=1.45 totR=37.6 yrs_pos=8/9 long_R=35.4 short_R=2.2 pf_long=1.413 pf_short=1.021
+                   | VAL n=248 pf=1.155 exp=0.0564 t=0.85 totR=14.0 yrs_pos=2/4 long_R=27.1 short_R=-13.2 pf_long=1.504 pf_short=0.637
+P_ea_W1|retail     | IS n=491 pf=1.206 exp=0.0777 t=1.48 totR=38.1 yrs_pos=7/9 long_R=32.9 short_R=5.2 pf_long=1.385 pf_short=1.053
+                   | VAL n=247 pf=1.121 exp=0.0442 t=0.67 totR=10.9 yrs_pos=2/4 long_R=25.0 short_R=-14.1 pf_long=1.467 pf_short=0.616
+P_m3_W1|retail     | IS n=480 pf=1.166 exp=0.0644 t=1.2 totR=30.9 yrs_pos=7/9 long_R=30.7 short_R=0.2 pf_long=1.36 pf_short=1.002
+                   | VAL n=240 pf=1.06 exp=0.0233 t=0.35 totR=5.6 yrs_pos=2/4 long_R=21.5 short_R=-15.9 pf_long=1.4 pf_short=0.591
+M3_W1|retail       | IS n=454 pf=1.05 exp=0.0207 t=0.38 totR=9.4 yrs_pos=5/9 long_R=11.3 short_R=-1.9 pf_long=1.127 pf_short=0.98
+                   | VAL n=227 pf=0.93 exp=-0.0295 t=-0.44 totR=-6.7 yrs_pos=1/4 long_R=10.3 short_R=-17.0 pf_long=1.186 pf_short=0.579
+IS P_ea_W1: trades where the opposite (non-OCO) pending would also be touched before the next in-window check: 0 of 490

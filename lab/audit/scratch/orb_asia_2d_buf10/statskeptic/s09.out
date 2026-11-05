@@ -1,0 +1,477 @@
+{
+ "per_trial": {
+  "N1": {
+   "seeds": 2000,
+   "emp_is_pass": 0.0,
+   "emp_is_near": 0.0,
+   "emp_val_pass": 0.02,
+   "cp95_upper_if_zero": 0.0015,
+   "normal_tail_P(t>=2)": 0.00011349417089401292,
+   "normal_tail_P(t>=1.83)": 0.0002433538091656251,
+   "cand_IS_z": 3.49,
+   "cand_VAL_z": 1.94,
+   "cand_VAL_p_one_sided": 0.026
+  },
+  "N1y": {
+   "seeds": 500,
+   "emp_is_pass": 0.0,
+   "emp_is_near": 0.0,
+   "emp_val_pass": 0.04,
+   "cp95_upper_if_zero": 0.00597,
+   "normal_tail_P(t>=2)": 0.00023210954795804817,
+   "normal_tail_P(t>=1.83)": 0.0004875465748030994,
+   "cand_IS_z": 3.3,
+   "cand_VAL_z": 1.72,
+   "cand_VAL_p_one_sided": 0.0426
+  },
+  "N1q": {
+   "seeds": 500,
+   "emp_is_pass": 0.0,
+   "emp_is_near": 0.0,
+   "emp_val_pass": 0.026,
+   "cp95_upper_if_zero": 0.00597,
+   "normal_tail_P(t>=2)": 0.00018727433565668417,
+   "normal_tail_P(t>=1.83)": 0.0003955959233226114,
+   "cand_IS_z": 3.36,
+   "cand_VAL_z": 1.76,
+   "cand_VAL_p_one_sided": 0.0393
+  },
+  "N1m": {
+   "seeds": 500,
+   "emp_is_pass": 0.002,
+   "emp_is_near": 0.002,
+   "emp_val_pass": 0.028,
+   "cp95_upper_if_zero": 0.00597,
+   "normal_tail_P(t>=2)": 0.0020947683757296387,
+   "normal_tail_P(t>=1.83)": 0.00393204148093107,
+   "cand_IS_z": 2.66,
+   "cand_VAL_z": 1.81,
+   "cand_VAL_p_one_sided": 0.0353
+  },
+  "N2": {
+   "seeds": 2000,
+   "emp_is_pass": 0.0,
+   "emp_is_near": 0.0,
+   "emp_val_pass": 0.049,
+   "cp95_upper_if_zero": 0.0015,
+   "normal_tail_P(t>=2)": 0.00013085727553008297,
+   "normal_tail_P(t>=1.83)": 0.0002554757616345382,
+   "cand_IS_z": 3.47,
+   "cand_VAL_z": 1.64,
+   "cand_VAL_p_one_sided": 0.0508
+  },
+  "zero_net(week-block centred)": {
+   "is_core": 0.0193,
+   "is_near": 0.0294,
+   "val_pass": 0.2164
+  }
+ },
+ "P_at_least_one_of_Neff": {
+  "10": {
+   "random_entry: IS core pass": 0.0013,
+   "random_entry: IS at candidate level": 0.0026,
+   "random_entry: IS core & VAL": 0.0001,
+   "zero_net: IS core pass": 0.1771,
+   "zero_net: IS at candidate level": 0.258,
+   "zero_net: IS core & VAL (if every trial got a VAL shot)": 0.041,
+   "zero_net: IS at cand. level & VAL": 0.0618
+  },
+  "23": {
+   "random_entry: IS core pass": 0.003,
+   "random_entry: IS at candidate level": 0.0059,
+   "random_entry: IS core & VAL": 0.0001,
+   "zero_net: IS core pass": 0.3612,
+   "zero_net: IS at candidate level": 0.4966,
+   "zero_net: IS core & VAL (if every trial got a VAL shot)": 0.0918,
+   "zero_net: IS at cand. level & VAL": 0.1365
+  },
+  "48": {
+   "random_entry: IS core pass": 0.0063,
+   "random_entry: IS at candidate level": 0.0122,
+   "random_entry: IS core & VAL": 0.0003,
+   "zero_net: IS core pass": 0.6076,
+   "zero_net: IS at candidate level": 0.7613,
+   "zero_net: IS core & VAL (if every trial got a VAL shot)": 0.182,
+   "zero_net: IS at cand. level & VAL": 0.2639
+  },
+  "100": {
+   "random_entry: IS core pass": 0.013,
+   "random_entry: IS at candidate level": 0.0252,
+   "random_entry: IS core & VAL": 0.0006,
+   "zero_net: IS core pass": 0.8576,
+   "zero_net: IS at candidate level": 0.9494,
+   "zero_net: IS core & VAL (if every trial got a VAL shot)": 0.342,
+   "zero_net: IS at cand. level & VAL": 0.4718
+  },
+  "200": {
+   "random_entry: IS core pass": 0.0258,
+   "random_entry: IS at candidate level": 0.0498,
+   "random_entry: IS core & VAL": 0.0013,
+   "zero_net: IS core pass": 0.9797,
+   "zero_net: IS at candidate level": 0.9974,
+   "zero_net: IS core & VAL (if every trial got a VAL shot)": 0.567,
+   "zero_net: IS at cand. level & VAL": 0.721
+  },
+  "321": {
+   "random_entry: IS core pass": 0.0411,
+   "random_entry: IS at candidate level": 0.0787,
+   "random_entry: IS core & VAL": 0.0021,
+   "zero_net: IS core pass": 0.9981,
+   "zero_net: IS at candidate level": 0.9999,
+   "zero_net: IS core & VAL (if every trial got a VAL shot)": 0.7391,
+   "zero_net: IS at cand. level & VAL": 0.8711
+  },
+  "370": {
+   "random_entry: IS core pass": 0.0473,
+   "random_entry: IS at candidate level": 0.0902,
+   "random_entry: IS core & VAL": 0.0024,
+   "zero_net: IS core pass": 0.9993,
+   "zero_net: IS at candidate level": 1.0,
+   "zero_net: IS core & VAL (if every trial got a VAL shot)": 0.7874,
+   "zero_net: IS at cand. level & VAL": 0.9057
+  }
+ },
+ "orb_family_mvn": {
+  "all48/zero_net": {
+   "E_max_t": 1.829,
+   "p95_max_t": 2.907,
+   "P(max>=t_patched)": 0.47986,
+   "P(max>=t_unpatched)": 0.3804,
+   "P(max>=2.0)": 0.37421
+  },
+  "all48/random_side_cost_drag": {
+   "E_max_t": -0.173,
+   "p95_max_t": 1.288,
+   "P(max>=t_patched)": 0.01293,
+   "P(max>=t_unpatched)": 0.00817,
+   "P(max>=2.0)": 0.00796
+  },
+  "stages1_4/zero_net": {
+   "E_max_t": 1.791,
+   "p95_max_t": 2.858,
+   "P(max>=t_patched)": 0.45534,
+   "P(max>=t_unpatched)": 0.35679,
+   "P(max>=2.0)": 0.3506
+  },
+  "stages1_4/random_side_cost_drag": {
+   "E_max_t": -0.748,
+   "p95_max_t": 0.715,
+   "P(max>=t_patched)": 0.0027,
+   "P(max>=t_unpatched)": 0.00165,
+   "P(max>=2.0)": 0.00161
+  },
+  "asia_multiday/zero_net": {
+   "E_max_t": 1.171,
+   "p95_max_t": 2.552,
+   "P(max>=t_patched)": 0.21361,
+   "P(max>=t_unpatched)": 0.1622,
+   "P(max>=2.0)": 0.15913
+  },
+  "asia_multiday/random_side_cost_drag": {
+   "E_max_t": -0.21,
+   "p95_max_t": 1.285,
+   "P(max>=t_patched)": 0.0129,
+   "P(max>=t_unpatched)": 0.00815,
+   "P(max>=2.0)": 0.00794
+  }
+ },
+ "orb_meff": {
+  "all48": {
+   "li_ji": 23.000000000000004,
+   "nyholt": 40.21544376292549,
+   "galwey": 24.899020033259777
+  },
+  "stages1_4": {
+   "M": 31,
+   "li_ji": 20.0,
+   "nyholt": 28.665178510954767,
+   "galwey": 21.95941522250012
+  },
+  "asia_multiday": {
+   "M": 26,
+   "li_ji": 8.999999999999982,
+   "nyholt": 15.199570080215402,
+   "galwey": 10.143652051713422
+  }
+ },
+ "project_level": {
+  "tracks": {
+   "orb": {
+    "meff": 23.0,
+    "P(best IS >= cand level)": 0.48,
+    "P(& VAL pass)": 0.104
+   },
+   "trend": {
+    "meff": 24.0,
+    "P(best IS >= cand level)": 0.511,
+    "P(& VAL pass)": 0.111
+   },
+   "pivots": {
+    "meff": 34.5,
+    "P(best IS >= cand level)": 0.643,
+    "P(& VAL pass)": 0.139
+   },
+   "seasonality": {
+    "meff": 11.5,
+    "P(best IS >= cand level)": 0.29,
+    "P(& VAL pass)": 0.063
+   },
+   "meanrev": {
+    "meff": 18.2,
+    "P(best IS >= cand level)": 0.419,
+    "P(& VAL pass)": 0.091
+   },
+   "crossasset": {
+    "meff": 36.9,
+    "P(best IS >= cand level)": 0.667,
+    "P(& VAL pass)": 0.144
+   }
+  },
+  "P(>=1 track yields IS>=cand level & VAL pass | global zero-net null)": 0.5
+ },
+ "dsr_noise_variance": {
+  "sr_per_trade": 0.0568,
+  "skew": 2.74,
+  "kurt": 14.12,
+  "by_N": {
+   "10": {
+    "sr0": 0.0489,
+    "dsr": 0.609
+   },
+   "23": {
+    "sr0": 0.0609,
+    "dsr": 0.443
+   },
+   "48": {
+    "sr0": 0.0702,
+    "dsr": 0.321
+   },
+   "100": {
+    "sr0": 0.0786,
+    "dsr": 0.224
+   },
+   "321": {
+    "sr0": 0.0906,
+    "dsr": 0.12
+   }
+  },
+  "note": "audit used the cross-trial SR variance (0.0635^2), which includes true cost differences between configs (e.g. COMEX/Zarattini) and inflates SR0; noise variance 1/T is the H0 variance"
+ },
+ "posterior": {
+  "EB_6_finalists_VAL_t": {
+   "mean_t": -0.475,
+   "omega": 0.85,
+   "posterior_theta_t": 0.035,
+   "posterior_sd_t": 0.648,
+   "P(edge>0)": 0.522,
+   "posterior_mean_R_per_trade": 0.0031
+  },
+  "normal_models": [
+   {
+    "prior": "flat",
+    "IS": "IS ignored",
+    "post_mean": 0.0651,
+    "post_sd": 0.1088,
+    "P(mu>0)": 0.725,
+    "P(mu>0.05)": 0.555,
+    "P(mu>=0.10)": 0.374
+   },
+   {
+    "prior": "flat",
+    "IS": "IS - Emax(stages1-4)=1.79SE",
+    "post_mean": 0.0239,
+    "post_sd": 0.0635,
+    "P(mu>0)": 0.646,
+    "P(mu>0.05)": 0.34,
+    "P(mu>=0.10)": 0.115
+   },
+   {
+    "prior": "flat",
+    "IS": "IS - Emax(asia sub)=1.17SE",
+    "post_mean": 0.0506,
+    "post_sd": 0.0635,
+    "P(mu>0)": 0.787,
+    "P(mu>0.05)": 0.504,
+    "P(mu>=0.10)": 0.219
+   },
+   {
+    "prior": "flat",
+    "IS": "IS naive",
+    "post_mean": 0.1012,
+    "post_sd": 0.0635,
+    "P(mu>0)": 0.944,
+    "P(mu>0.05)": 0.79,
+    "P(mu>=0.10)": 0.507
+   },
+   {
+    "prior": "sceptical N(-0.03,0.06)",
+    "IS": "IS ignored",
+    "post_mean": -0.0078,
+    "post_sd": 0.0525,
+    "P(mu>0)": 0.441,
+    "P(mu>0.05)": 0.136,
+    "P(mu>=0.10)": 0.02
+   },
+   {
+    "prior": "sceptical N(-0.03,0.06)",
+    "IS": "IS - Emax(stages1-4)=1.79SE",
+    "post_mean": -0.0046,
+    "post_sd": 0.0436,
+    "P(mu>0)": 0.458,
+    "P(mu>0.05)": 0.105,
+    "P(mu>=0.10)": 0.008
+   },
+   {
+    "prior": "sceptical N(-0.03,0.06)",
+    "IS": "IS - Emax(asia sub)=1.17SE",
+    "post_mean": 0.008,
+    "post_sd": 0.0436,
+    "P(mu>0)": 0.573,
+    "P(mu>0.05)": 0.168,
+    "P(mu>=0.10)": 0.017
+   },
+   {
+    "prior": "sceptical N(-0.03,0.06)",
+    "IS": "IS naive",
+    "post_mean": 0.0318,
+    "post_sd": 0.0436,
+    "P(mu>0)": 0.767,
+    "P(mu>0.05)": 0.339,
+    "P(mu>=0.10)": 0.059
+   },
+   {
+    "prior": "neutral N(0,0.08)",
+    "IS": "IS ignored",
+    "post_mean": 0.0229,
+    "post_sd": 0.0644,
+    "P(mu>0)": 0.639,
+    "P(mu>0.05)": 0.337,
+    "P(mu>=0.10)": 0.116
+   },
+   {
+    "prior": "neutral N(0,0.08)",
+    "IS": "IS - Emax(stages1-4)=1.79SE",
+    "post_mean": 0.0146,
+    "post_sd": 0.0498,
+    "P(mu>0)": 0.616,
+    "P(mu>0.05)": 0.239,
+    "P(mu>=0.10)": 0.043
+   },
+   {
+    "prior": "neutral N(0,0.08)",
+    "IS": "IS - Emax(asia sub)=1.17SE",
+    "post_mean": 0.0311,
+    "post_sd": 0.0498,
+    "P(mu>0)": 0.734,
+    "P(mu>0.05)": 0.352,
+    "P(mu>=0.10)": 0.083
+   },
+   {
+    "prior": "neutral N(0,0.08)",
+    "IS": "IS naive",
+    "post_mean": 0.062,
+    "post_sd": 0.0498,
+    "P(mu>0)": 0.894,
+    "P(mu>0.05)": 0.596,
+    "P(mu>=0.10)": 0.223
+   }
+  ],
+  "VAL_bayes_factors": {
+   "mu1=0.1 vs mu0=0.0 (iid)": 1.22,
+   "mu1=0.1 vs mu0=0.0 (with_tau)": 1.14,
+   "mu1=0.1 vs mu0=-0.07 (iid)": 3.02,
+   "mu1=0.1 vs mu0=-0.07 (with_tau)": 2.05,
+   "mu1=0.06 vs mu0=0.0 (iid)": 1.31,
+   "mu1=0.06 vs mu0=0.0 (with_tau)": 1.19,
+   "mu1=0.06 vs mu0=-0.07 (iid)": 3.26,
+   "mu1=0.06 vs mu0=-0.07 (with_tau)": 2.16
+  }
+ },
+ "neighbours": {
+  "pairs": [
+   [
+    "N12_exit14ny",
+    0.992,
+    1.162
+   ],
+   [
+    "N13_exit18ny",
+    0.985,
+    1.142
+   ],
+   [
+    "N01_buf0.08",
+    0.97,
+    1.199
+   ],
+   [
+    "N10_entryend11",
+    0.968,
+    1.166
+   ],
+   [
+    "N08_rangestart23",
+    0.953,
+    1.105
+   ],
+   [
+    "N09_rangestart01",
+    0.951,
+    1.17
+   ],
+   [
+    "N02_buf0.12",
+    0.944,
+    1.194
+   ],
+   [
+    "N11_entryend13",
+    0.932,
+    1.132
+   ],
+   [
+    "N06_rangeend06",
+    0.9,
+    1.16
+   ],
+   [
+    "N03_buf0.20",
+    0.891,
+    1.155
+   ],
+   [
+    "N07_rangeend08",
+    0.857,
+    1.157
+   ],
+   [
+    "N14_stopmid",
+    0.75,
+    1.139
+   ],
+   [
+    "A3_asia_hold2d",
+    0.738,
+    1.123
+   ],
+   [
+    "N04_hold1",
+    0.569,
+    1.044
+   ],
+   [
+    "N05_hold3",
+    0.536,
+    1.023
+   ]
+  ],
+  "fit_pf = a + b*corr": [
+   0.898,
+   0.279
+  ],
+  "median_pf_corr>=0.9": 1.162,
+  "median_pf_corr<0.9": 1.131,
+  "median_pf_corr<0.8": 1.084,
+  "spearman": 0.625
+ }
+}

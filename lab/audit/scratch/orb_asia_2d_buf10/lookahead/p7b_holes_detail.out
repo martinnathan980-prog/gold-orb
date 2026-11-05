@@ -1,0 +1,23 @@
+holes inside IS holds: 129 in 87 trades
+gap minutes distribution: {'count': 129.0, 'mean': 12.1, 'std': 19.5, 'min': 5.0, '25%': 5.0, '50%': 6.0, '75%': 9.0, 'max': 143.0}
+holes where price was within 0.25R of the stop at either edge: 3
+    trade       date  side     R reason             gap_start_utc  gap_min  dist_stop_before_R  dist_stop_after_R
+79   1244 2019-02-26    -1  2.62   time 2019-02-27 01:07:00+00:00        5                0.23               0.16
+81   1244 2019-02-26    -1  2.62   time 2019-02-27 03:06:00+00:00        6                0.13               0.14
+82   1244 2019-02-26    -1  2.62   time 2019-02-27 03:28:00+00:00       17                0.08               0.22
+largest holes (>=30 min):
+     trade       date  side     R reason             gap_start_utc  gap_min  dist_stop_before_R  dist_stop_after_R
+5      19 2013-02-01     1  1.38   time 2013-02-01 16:14:00+00:00       35                1.64               1.67
+22     80 2013-05-23     1  0.65   time 2013-05-27 17:10:00+00:00       37                1.73               1.60
+47    250 2014-03-20    -1 -1.04   stop 2014-03-20 22:00:00+00:00       60                0.67               0.47
+48    261 2014-04-04     1  4.38   time 2014-04-06 22:00:00+00:00       60                4.36               3.81
+54    345 2014-08-21    -1  0.86   time 2014-08-25 00:00:00+00:00      120                1.51               1.49
+55    489 2015-05-05     1 -1.20   stop 2015-05-06 12:31:00+00:00       64                1.94               2.10
+56    524 2015-06-29    -1  1.01   time 2015-07-01 00:00:00+00:00       45                1.47               1.46
+84   1252 2019-03-08     1  0.60   time 2019-03-10 22:59:00+00:00       61                1.18               1.24
+94   1319 2019-07-04    -1 -1.04   stop 2019-07-04 17:05:00+00:00      143                0.67               0.68
+95   1319 2019-07-04    -1 -1.04   stop 2019-07-04 19:28:00+00:00       73                0.68               0.67
+time-exit trades: with hole n=68 meanR=2.364 | without n=318 meanR=2.044
+stop-exit trades: with hole n=19 meanR=-1.070 | without n=632 meanR=-1.054
+share of time exits among trades with holes: 0.782  vs without: 0.335
+mean hold (h) with holes: 78.0  without: 38.6

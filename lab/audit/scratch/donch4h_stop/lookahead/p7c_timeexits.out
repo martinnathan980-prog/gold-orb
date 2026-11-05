@@ -1,0 +1,4 @@
+IS time exits: 8 minutes before schedule: [np.float64(0.0), np.float64(0.0), np.float64(0.0), np.float64(0.0), np.float64(0.0), np.float64(0.0), np.float64(0.0), np.float64(0.0)] hold h: [np.float64(165.8), np.float64(167.4), np.float64(167.5), np.float64(167.1), np.float64(164.5), np.float64(165.6), np.float64(165.0), np.float64(164.9)] R: [np.float64(4.02), np.float64(1.7), np.float64(3.69), np.float64(1.3), np.float64(1.42), np.float64(2.69), np.float64(0.93), np.float64(2.45)]
+IS max hold h all trades: 167.5
+VAL time exits: 4 minutes before schedule: [np.float64(0.0), np.float64(0.0), np.float64(0.0), np.float64(8997.0)] hold h: [np.float64(165.4), np.float64(167.8), np.float64(164.5), np.float64(16.1)] R: [np.float64(2.13), np.float64(3.49), np.float64(2.22), np.float64(-0.36)]
+VAL max hold h all trades: 167.8

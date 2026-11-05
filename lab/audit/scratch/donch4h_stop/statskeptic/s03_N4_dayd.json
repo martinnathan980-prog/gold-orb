@@ -1,0 +1,41 @@
+{
+ "mode": "dayd",
+ "seeds": 100,
+ "is_n_med": 532.0,
+ "val_n_med": 246.0,
+ "is_pf_p5_50_95_max": [
+  0.796,
+  0.958,
+  1.104,
+  1.161
+ ],
+ "is_t_p5_50_95_max": [
+  -2.066,
+  -0.37,
+  0.855,
+  1.25
+ ],
+ "is_t_mean_sd": [
+  -0.485,
+  0.834
+ ],
+ "val_pf_p5_50_95_max": [
+  0.791,
+  1.088,
+  1.367,
+  1.619
+ ],
+ "val_t_mean_sd": [
+  0.355,
+  0.944
+ ],
+ "frac_is_pass": 0.0,
+ "frac_is_core": 0.0,
+ "frac_val_pass": 0.48,
+ "frac_both": 0.0,
+ "frac_is_pf_ge_1.35": 0.0,
+ "frac_val_pf_ge_1.294": 0.11,
+ "is_every_pf_med": 0.906,
+ "val_every_pf_med": 1.083,
+ "secs": 570.2
+}

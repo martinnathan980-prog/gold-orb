@@ -200,5 +200,43 @@ out["regimes"] = reg
 for per, e in (("is", EI), ("val", EV)):
     out[f"every_{per}_by_year"] = {int(y): [int(len(g)), round(float(g.R.sum()), 1), round(pf(g.R), 2)]
                                    for y, g in e.groupby(e.entry_time.dt.year)}
+
+
+def cl_se(t, freq):
+    R = t.R.to_numpy()
+    mu = R.mean()
+    k = t.entry_time.dt.tz_convert(None).dt.to_period(freq)
+    s = t.groupby(k).R.sum()
+    c = t.groupby(k).R.size()
+    resid = (s - mu * c).to_numpy()
+    return float(math.sqrt((resid ** 2).sum()) / len(R) * math.sqrt(len(resid) / (len(resid) - 1)))
+
+
+# every-signal mean with overlap-robust (calendar-cluster) standard errors; skipped-only too
+for per, e, tk in (("is", EI, TI), ("val", EV, TV)):
+    sk = e[~e.oid.isin(set(tk.oid))]
+    row = {}
+    for nm, x in (("every", e), ("skipped", sk), ("taken", tk)):
+        se_w, se_m = cl_se(x, "W"), cl_se(x, "M")
+        row[nm] = {"n": len(x), "mean": round(float(x.R.mean()), 4), "se_week": round(se_w, 4), "se_month": round(se_m, 4),
+                   "z_vs_0_month": round(float(x.R.mean() / se_m), 2),
+                   "z_vs_IS_chain_0.123_month": round(float((x.R.mean() - 0.1233) / se_m), 2)}
+    # paired: taken minus skipped, month-cluster bootstrap
+    km_t = tk.entry_time.dt.tz_convert(None).dt.to_period("M")
+    km_s = sk.entry_time.dt.tz_convert(None).dt.to_period("M")
+    allm = sorted(set(km_t) | set(km_s))
+    gt = {m: g.R.to_numpy() for m, g in tk.groupby(km_t)}
+    gs = {m: g.R.to_numpy() for m, g in sk.groupby(km_s)}
+    diffs = []
+    for _ in range(5000):
+        pick = [allm[i] for i in rng.integers(0, len(allm), len(allm))]
+        a = np.concatenate([gt.get(m, np.empty(0)) for m in pick])
+        b = np.concatenate([gs.get(m, np.empty(0)) for m in pick])
+        diffs.append(a.mean() - b.mean())
+    diffs = np.array(diffs)
+    row["taken_minus_skipped"] = {"obs": round(float(tk.R.mean() - sk.R.mean()), 4),
+                                  "boot_month_q5_50_95": [round(float(np.percentile(diffs, p)), 4) for p in (5, 50, 95)],
+                                  "boot_sd": round(float(diffs.std()), 4)}
+    out[f"every_signal_inference_{per}"] = row
 json.dump(out, open(os.path.join(HERE, "s04_boot_conc.json"), "w"), indent=1, default=str)
 print(json.dumps(out, indent=1, default=str))

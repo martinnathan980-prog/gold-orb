@@ -1,0 +1,12 @@
+ticks 37,607,400  2025-06-01 22:00:01.398000+00:00 -> 2025-12-26 21:59:58.938000+00:00  (46s)
+  ticks [T,T+1m): match high 1.000 low 1.000 open 1.000 close 1.000  (n=6658)
+  ticks [T-1m,T): match high 0.081 low 0.086 open 0.061 close 0.065  (n=6652)
+  summer(EDT) Jul-2019: widest median-spread UTC minutes ['20:58', '20:59', '20:57'] (17:00 NY = 21:00 UTC)
+  winter(EST) Jan-2019: widest median-spread UTC minutes ['21:59', '21:58', '23:00'] (17:00 NY = 22:00 UTC)
+
+  trades with tick coverage: 25; same fill minute 1.00, same exit minute 1.00, same exit reason 1.00
+  entry: tick worse by mean $0.161 median $0.133 max $0.915; M1 trigger-bar range beyond level mean $1.795 -> implied entry ffrac 0.090
+  stop/trail exits (same minute, n=25): tick worse by mean $0.413 median $0.177; bar range beyond stop mean $1.931 -> implied exit ffrac 0.214
+  round trip: tick worse by mean $0.574 = 0.0135 R; engine slippage budget mean $1.120 = 0.0287 R
+  trades where tick cost > budget: 3/25
+time 53s

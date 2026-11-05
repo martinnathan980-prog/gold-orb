@@ -1,0 +1,6 @@
+2013-12-03 window start 2013-10-24 00:00:00+00:00 | differing order dates: [datetime.date(2013, 10, 24)]
+   after dropping the first window date, identical: True
+2016-05-24 window start 2016-04-14 00:00:00+00:00 | differing order dates: [datetime.date(2016, 4, 14)]
+   after dropping the first window date, identical: True
+2020-08-11 window start 2020-07-02 00:00:00+00:00 | differing order dates: [datetime.date(2020, 7, 2)]
+   after dropping the first window date, identical: True

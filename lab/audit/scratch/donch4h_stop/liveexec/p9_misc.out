@@ -1,0 +1,17 @@
+IS chase cost N= 1 min (R units of 2ATR): mean +0.031 median +0.009 p10 -0.072 p90 +0.166; share adverse 58%; in $ median +0.11
+IS chase cost N= 5 min (R units of 2ATR): mean +0.038 median +0.018 p10 -0.146 p90 +0.257; share adverse 56%; in $ median +0.20
+IS chase cost N=15 min (R units of 2ATR): mean +0.054 median +0.015 p10 -0.209 p90 +0.354; share adverse 55%; in $ median +0.22
+IS alerts/yr 56 (~1.1/week); night (23-07 Paris) alerts/yr 8; Sunday-open (first 2h of the week) fills: 18
+IS pre-alert at 0.25 ATR: lead time before the trigger (min) p10 0 p25 1 median 5 p75 23; share with lead < 5 min 47%, < 15 min 69%
+IS pre-alert at 0.5 ATR: lead time before the trigger (min) p10 1 p25 5 median 24 p75 65; share with lead < 5 min 24%, < 15 min 41%
+IS brackets with |EA - backtest| time-stop difference > 60 h (first 8):
+                 bracket_utc                   bt_exit                   ea_exit         dh
+0 2014-04-13 23:00:00+00:00 2014-04-17 20:55:00+00:00 2014-04-20 22:00:00+00:00  73.083333
+1 2017-04-07 00:00:00+00:00 2017-04-13 20:59:00+00:00 2017-04-16 22:00:00+00:00  73.016667
+2 2017-04-07 12:00:00+00:00 2017-04-13 20:59:00+00:00 2017-04-16 22:00:00+00:00  73.016667
+3 2018-03-23 00:00:00+00:00 2018-03-29 20:58:00+00:00 2018-04-01 22:00:00+00:00  73.033333
+4 2018-03-23 04:00:00+00:00 2018-03-29 20:58:00+00:00 2018-04-01 22:00:00+00:00  73.033333
+5 2018-03-23 12:00:00+00:00 2018-03-29 20:58:00+00:00 2018-04-01 22:00:00+00:00  73.033333
+6 2018-03-23 16:00:00+00:00 2018-03-29 20:58:00+00:00 2018-04-01 22:00:00+00:00  73.033333
+7 2018-03-25 22:00:00+00:00 2018-03-29 20:55:00+00:00 2018-04-01 22:00:00+00:00  73.083333
+IS max hold: backtest 167.5 h, EA deadline rule 167.5 h; IS time exits backtest 8, EA rule 8

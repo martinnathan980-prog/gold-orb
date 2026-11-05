@@ -46,7 +46,7 @@ REASONS = {0: "stop", 1: "target", 2: "time", 3: "trail", 4: "eod", 5: "nofill",
 @dataclass
 class Costs:
     commission: float = 0.07       # per unit (oz) round trip  (~$7 / lot of 100 oz)
-    slip_bps: float = 1.5          # per side on market/stop fills (1.5 bp = $0.06 at $4000)
+    slip_bps: float = 1.5          # per side on market/stop fills (1.5 bp = $0.60 at $4000)
     swap_long: float = 0.05        # annual cost of holding long overnight (5 %/yr)
     swap_short: float = 0.02       # annual cost of holding short overnight
     spread_mult: float = 1.0       # stress test: multiply the bid/ask spread

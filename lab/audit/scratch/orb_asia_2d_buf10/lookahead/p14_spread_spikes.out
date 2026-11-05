@@ -1,0 +1,7 @@
+entries whose triggering extreme had spread >= 2x the prior-hour median: 14  sumR 8.3  PF 2.40
+entries whose triggering extreme had spread >= 3x the prior-hour median: 4  sumR 8.7  PF 9.24
+entries whose triggering extreme had spread >= 5x the prior-hour median: 2  sumR 3.7  PF nan
+stop-outs whose triggering extreme had spread >= 2x prior-hour median: 29 of 651
+stop-outs whose triggering extreme had spread >= 3x prior-hour median: 12 of 651
+stop-outs whose triggering extreme had spread >= 5x prior-hour median: 2 of 651
+stop-outs NOT confirmed by the other side +- median spread (pure spread-spike stops): 24

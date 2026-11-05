@@ -1,0 +1,181 @@
+{
+ "grids": {
+  "utc+0": {
+   "is_n": 499,
+   "is_pf": 1.35,
+   "is_t": 2.35,
+   "is_years": "8/9",
+   "is_stress_pf": 1.256,
+   "is_pass": true,
+   "is_long_R": 49.5,
+   "is_short_R": 12.0,
+   "is_every_pf": 1.344,
+   "val_every_pf": 0.977,
+   "val_n": 248,
+   "val_pf": 1.294,
+   "val_t": 1.49,
+   "val_years": "3/4",
+   "val_pass": true,
+   "val_long_R": 34.4,
+   "val_short_R": -9.7
+  },
+  "utc+1": {
+   "is_n": 490,
+   "is_pf": 1.304,
+   "is_t": 2.11,
+   "is_years": "7/9",
+   "is_stress_pf": 1.223,
+   "is_pass": true,
+   "is_long_R": 40.7,
+   "is_short_R": 11.3,
+   "is_every_pf": 1.297,
+   "val_every_pf": 0.977,
+   "val_n": 236,
+   "val_pf": 1.354,
+   "val_t": 1.68,
+   "val_years": "4/4",
+   "val_pass": true,
+   "val_long_R": 43.4,
+   "val_short_R": -15.7
+  },
+  "utc+2": {
+   "is_n": 480,
+   "is_pf": 1.284,
+   "is_t": 1.94,
+   "is_years": "8/9",
+   "is_stress_pf": 1.209,
+   "is_pass": false,
+   "is_long_R": 36.4,
+   "is_short_R": 12.7,
+   "is_every_pf": 1.298,
+   "val_every_pf": 0.96,
+   "val_n": 237,
+   "val_pf": 1.264,
+   "val_t": 1.31,
+   "val_years": "3/4",
+   "val_pass": true,
+   "val_long_R": 35.5,
+   "val_short_R": -13.6
+  },
+  "utc+3": {
+   "is_n": 487,
+   "is_pf": 1.349,
+   "is_t": 2.32,
+   "is_years": "8/9",
+   "is_stress_pf": 1.263,
+   "is_pass": true,
+   "is_long_R": 39.8,
+   "is_short_R": 19.5,
+   "is_every_pf": 1.375,
+   "val_every_pf": 1.036,
+   "val_n": 242,
+   "val_pf": 1.256,
+   "val_t": 1.32,
+   "val_years": "3/4",
+   "val_pass": true,
+   "val_long_R": 31.6,
+   "val_short_R": -10.2
+  },
+  "ny17": {
+   "is_n": 482,
+   "is_pf": 1.279,
+   "is_t": 1.94,
+   "is_years": "8/9",
+   "is_stress_pf": 1.203,
+   "is_pass": false,
+   "is_long_R": 38.2,
+   "is_short_R": 10.2,
+   "is_every_pf": 1.348,
+   "val_every_pf": 0.976,
+   "val_n": 234,
+   "val_pf": 1.306,
+   "val_t": 1.47,
+   "val_years": "3/4",
+   "val_pass": true,
+   "val_long_R": 40.5,
+   "val_short_R": -15.8
+  }
+ },
+ "loyo_is": {
+  "2013": [
+   1.331,
+   2.1
+  ],
+  "2014": [
+   1.364,
+   2.28
+  ],
+  "2015": [
+   1.352,
+   2.25
+  ],
+  "2016": [
+   1.296,
+   1.91
+  ],
+  "2017": [
+   1.378,
+   2.33
+  ],
+  "2018": [
+   1.398,
+   2.48
+  ],
+  "2019": [
+   1.372,
+   2.35
+  ],
+  "2020": [
+   1.283,
+   1.83
+  ],
+  "2021": [
+   1.381,
+   2.43
+  ]
+ },
+ "loyo_val": {
+  "2022": [
+   1.415,
+   1.71
+  ],
+  "2023": [
+   1.258,
+   1.17
+  ],
+  "2024": [
+   1.378,
+   1.61
+  ],
+  "2025": [
+   1.135,
+   0.63
+  ]
+ },
+ "is_half_2013-2016": {
+  "n": 220,
+  "pf": 1.47,
+  "exp": 0.1642,
+  "t": 2.03,
+  "sumR": 36.1,
+  "long_n": 96,
+  "long_pf": 1.372,
+  "long_R": 12.6,
+  "short_n": 124,
+  "short_pf": 1.548,
+  "short_R": 23.5
+ },
+ "is_half_2017-2021": {
+  "n": 279,
+  "pf": 1.257,
+  "exp": 0.0911,
+  "t": 1.32,
+  "sumR": 25.4,
+  "long_n": 149,
+  "long_pf": 1.829,
+  "long_R": 36.9,
+  "short_n": 130,
+  "short_pf": 0.789,
+  "short_R": -11.5
+ }
+}

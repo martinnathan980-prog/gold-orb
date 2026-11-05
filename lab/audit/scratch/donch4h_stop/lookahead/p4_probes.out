@@ -1,0 +1,245 @@
+
+== base  (8s)
+  base                         IS {'n': 499, 'pf': 1.35, 'exp': 0.1233, 't': 2.35, 'long_R': 49.5, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.294, 'exp': 0.0998, 't': 1.49, 'long_R': 34.4, 'short_R': -9.7}
+
+== delay  (11s)
+  delay-5                      IS {'n': 500, 'pf': 1.342, 'exp': 0.1203, 't': 2.33, 'long_R': 48.2, 'short_R': 11.9}
+                               VAL {'n': 248, 'pf': 1.287, 'exp': 0.0979, 't': 1.46, 'long_R': 34.0, 'short_R': -9.7}
+  delay-2                      IS {'n': 499, 'pf': 1.35, 'exp': 0.1233, 't': 2.35, 'long_R': 49.6, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.294, 'exp': 0.0998, 't': 1.49, 'long_R': 34.5, 'short_R': -9.7}
+  delay-1                      IS {'n': 499, 'pf': 1.35, 'exp': 0.1233, 't': 2.35, 'long_R': 49.6, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.294, 'exp': 0.0998, 't': 1.49, 'long_R': 34.5, 'short_R': -9.7}
+  delay+1                      IS {'n': 499, 'pf': 1.347, 'exp': 0.1223, 't': 2.34, 'long_R': 49.1, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.29, 'exp': 0.0988, 't': 1.47, 'long_R': 34.2, 'short_R': -9.7}
+  delay+2                      IS {'n': 499, 'pf': 1.34, 'exp': 0.1205, 't': 2.3, 'long_R': 48.3, 'short_R': 11.9}
+                               VAL {'n': 248, 'pf': 1.289, 'exp': 0.0986, 't': 1.47, 'long_R': 34.2, 'short_R': -9.7}
+  delay+3                      IS {'n': 498, 'pf': 1.343, 'exp': 0.1214, 't': 2.31, 'long_R': 47.5, 'short_R': 13.0}
+                               VAL {'n': 248, 'pf': 1.289, 'exp': 0.0984, 't': 1.47, 'long_R': 34.1, 'short_R': -9.7}
+  delay+5                      IS {'n': 498, 'pf': 1.345, 'exp': 0.1219, 't': 2.32, 'long_R': 47.2, 'short_R': 13.5}
+                               VAL {'n': 248, 'pf': 1.284, 'exp': 0.0971, 't': 1.45, 'long_R': 33.8, 'short_R': -9.7}
+  delay+10                     IS {'n': 496, 'pf': 1.368, 'exp': 0.1288, 't': 2.45, 'long_R': 48.4, 'short_R': 15.5}
+                               VAL {'n': 248, 'pf': 1.281, 'exp': 0.0961, 't': 1.44, 'long_R': 33.6, 'short_R': -9.8}
+  delay+15                     IS {'n': 496, 'pf': 1.344, 'exp': 0.1213, 't': 2.31, 'long_R': 43.8, 'short_R': 16.4}
+                               VAL {'n': 248, 'pf': 1.275, 'exp': 0.0946, 't': 1.41, 'long_R': 33.2, 'short_R': -9.8}
+  delay+30                     IS {'n': 493, 'pf': 1.351, 'exp': 0.1232, 't': 2.35, 'long_R': 44.8, 'short_R': 16.0}
+                               VAL {'n': 248, 'pf': 1.274, 'exp': 0.0946, 't': 1.41, 'long_R': 33.1, 'short_R': -9.7}
+  delay+60                     IS {'n': 482, 'pf': 1.343, 'exp': 0.1197, 't': 2.3, 'long_R': 45.6, 'short_R': 12.0}
+                               VAL {'n': 245, 'pf': 1.228, 'exp': 0.0791, 't': 1.22, 'long_R': 32.5, 'short_R': -13.1}
+  delay+120                    IS {'n': 466, 'pf': 1.177, 'exp': 0.0665, 't': 1.27, 'long_R': 35.6, 'short_R': -4.6}
+                               VAL {'n': 236, 'pf': 1.104, 'exp': 0.0384, 't': 0.58, 'long_R': 21.9, 'short_R': -12.8}
+  delay+240                    IS {'n': 0}
+                               VAL {'n': 0}
+
+== levels_timing  (14s)
+  lag1                         IS {'n': 528, 'pf': 1.272, 'exp': 0.0974, 't': 1.94, 'long_R': 43.9, 'short_R': 7.5}
+                               VAL {'n': 259, 'pf': 1.234, 'exp': 0.0823, 't': 1.24, 'long_R': 35.5, 'short_R': -14.2}
+  lag2                         IS {'n': 545, 'pf': 1.26, 'exp': 0.0949, 't': 1.9, 'long_R': 39.0, 'short_R': 12.7}
+                               VAL {'n': 262, 'pf': 1.282, 'exp': 0.0979, 't': 1.48, 'long_R': 36.4, 'short_R': -10.8}
+  excl_current                 IS {'n': 519, 'pf': 1.285, 'exp': 0.1026, 't': 2.03, 'long_R': 43.5, 'short_R': 9.7}
+                               VAL {'n': 252, 'pf': 1.271, 'exp': 0.0944, 't': 1.41, 'long_R': 34.1, 'short_R': -10.3}
+  grid+1h                      IS {'n': 490, 'pf': 1.304, 'exp': 0.1062, 't': 2.11, 'long_R': 40.7, 'short_R': 11.3}
+                               VAL {'n': 236, 'pf': 1.354, 'exp': 0.1171, 't': 1.68, 'long_R': 43.4, 'short_R': -15.7}
+  grid+2h                      IS {'n': 480, 'pf': 1.284, 'exp': 0.1021, 't': 1.94, 'long_R': 36.4, 'short_R': 12.7}
+                               VAL {'n': 237, 'pf': 1.264, 'exp': 0.0922, 't': 1.31, 'long_R': 35.5, 'short_R': -13.6}
+  grid+3h                      IS {'n': 487, 'pf': 1.349, 'exp': 0.1218, 't': 2.32, 'long_R': 39.8, 'short_R': 19.5}
+                               VAL {'n': 242, 'pf': 1.256, 'exp': 0.0885, 't': 1.32, 'long_R': 31.6, 'short_R': -10.2}
+
+== level_source  (16s)
+  bid                          IS {'n': 496, 'pf': 1.382, 'exp': 0.1323, 't': 2.52, 'long_R': 50.9, 'short_R': 14.8}
+                               VAL {'n': 249, 'pf': 1.288, 'exp': 0.0981, 't': 1.46, 'long_R': 34.9, 'short_R': -10.4}
+  ask                          IS {'n': 499, 'pf': 1.349, 'exp': 0.1231, 't': 2.35, 'long_R': 46.9, 'short_R': 14.5}
+                               VAL {'n': 245, 'pf': 1.331, 'exp': 0.1096, 't': 1.64, 'long_R': 35.6, 'short_R': -8.7}
+  minmid                       IS {'n': 500, 'pf': 1.351, 'exp': 0.1233, 't': 2.38, 'long_R': 49.1, 'short_R': 12.6}
+                               VAL {'n': 248, 'pf': 1.297, 'exp': 0.1008, 't': 1.5, 'long_R': 34.6, 'short_R': -9.6}
+  bid_atr_mid                  IS {'n': 497, 'pf': 1.376, 'exp': 0.1307, 't': 2.49, 'long_R': 51.1, 'short_R': 13.9}
+                               VAL {'n': 249, 'pf': 1.288, 'exp': 0.0981, 't': 1.46, 'long_R': 34.9, 'short_R': -10.4}
+
+== perturb  (31s)
+  noise0.05_s0                 IS {'n': 496, 'pf': 1.381, 'exp': 0.1324, 't': 2.52, 'long_R': 50.5, 'short_R': 15.2}
+                               VAL {'n': 247, 'pf': 1.31, 'exp': 0.1045, 't': 1.56, 'long_R': 35.5, 'short_R': -9.7}
+  noise0.50_s0                 IS {'n': 492, 'pf': 1.419, 'exp': 0.1426, 't': 2.71, 'long_R': 51.5, 'short_R': 18.6}
+                               VAL {'n': 247, 'pf': 1.316, 'exp': 0.1063, 't': 1.58, 'long_R': 36.0, 'short_R': -9.7}
+  rdelay2_s0                   IS {'n': 499, 'pf': 1.344, 'exp': 0.1215, 't': 2.32, 'long_R': 48.8, 'short_R': 11.8}
+                               VAL {'n': 248, 'pf': 1.29, 'exp': 0.0987, 't': 1.47, 'long_R': 34.2, 'short_R': -9.7}
+  trail1pct_s0                 IS {'n': 495, 'pf': 1.378, 'exp': 0.1315, 't': 2.5, 'long_R': 48.4, 'short_R': 16.7}
+                               VAL {'n': 248, 'pf': 1.295, 'exp': 0.1003, 't': 1.5, 'long_R': 34.6, 'short_R': -9.7}
+  noise0.05_s1                 IS {'n': 498, 'pf': 1.357, 'exp': 0.1255, 't': 2.39, 'long_R': 50.5, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.294, 'exp': 0.0998, 't': 1.49, 'long_R': 34.5, 'short_R': -9.7}
+  noise0.50_s1                 IS {'n': 498, 'pf': 1.363, 'exp': 0.1275, 't': 2.43, 'long_R': 51.0, 'short_R': 12.5}
+                               VAL {'n': 249, 'pf': 1.282, 'exp': 0.0963, 't': 1.44, 'long_R': 33.6, 'short_R': -9.6}
+  rdelay2_s1                   IS {'n': 499, 'pf': 1.347, 'exp': 0.1224, 't': 2.34, 'long_R': 49.1, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.289, 'exp': 0.0985, 't': 1.47, 'long_R': 34.1, 'short_R': -9.7}
+  trail1pct_s1                 IS {'n': 500, 'pf': 1.352, 'exp': 0.1229, 't': 2.38, 'long_R': 48.5, 'short_R': 13.0}
+                               VAL {'n': 248, 'pf': 1.299, 'exp': 0.1012, 't': 1.51, 'long_R': 34.5, 'short_R': -9.4}
+  noise0.05_s2                 IS {'n': 499, 'pf': 1.349, 'exp': 0.1229, 't': 2.35, 'long_R': 49.4, 'short_R': 11.9}
+                               VAL {'n': 248, 'pf': 1.294, 'exp': 0.0999, 't': 1.49, 'long_R': 34.5, 'short_R': -9.7}
+  noise0.50_s2                 IS {'n': 498, 'pf': 1.357, 'exp': 0.1248, 't': 2.38, 'long_R': 50.0, 'short_R': 12.2}
+                               VAL {'n': 247, 'pf': 1.314, 'exp': 0.1055, 't': 1.57, 'long_R': 35.6, 'short_R': -9.5}
+  rdelay2_s2                   IS {'n': 499, 'pf': 1.343, 'exp': 0.1212, 't': 2.31, 'long_R': 48.5, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.291, 'exp': 0.0991, 't': 1.48, 'long_R': 34.3, 'short_R': -9.7}
+  trail1pct_s2                 IS {'n': 499, 'pf': 1.35, 'exp': 0.1228, 't': 2.38, 'long_R': 48.3, 'short_R': 13.0}
+                               VAL {'n': 247, 'pf': 1.309, 'exp': 0.1033, 't': 1.55, 'long_R': 34.9, 'short_R': -9.3}
+  noise0.05_s3                 IS {'n': 499, 'pf': 1.351, 'exp': 0.1237, 't': 2.36, 'long_R': 49.7, 'short_R': 12.0}
+                               VAL {'n': 247, 'pf': 1.31, 'exp': 0.1043, 't': 1.55, 'long_R': 35.5, 'short_R': -9.7}
+  noise0.50_s3                 IS {'n': 499, 'pf': 1.363, 'exp': 0.1268, 't': 2.42, 'long_R': 47.0, 'short_R': 16.2}
+                               VAL {'n': 247, 'pf': 1.306, 'exp': 0.1031, 't': 1.54, 'long_R': 35.4, 'short_R': -9.9}
+  rdelay2_s3                   IS {'n': 499, 'pf': 1.345, 'exp': 0.1221, 't': 2.33, 'long_R': 49.1, 'short_R': 11.8}
+                               VAL {'n': 248, 'pf': 1.291, 'exp': 0.099, 't': 1.48, 'long_R': 34.3, 'short_R': -9.7}
+  trail1pct_s3                 IS {'n': 500, 'pf': 1.343, 'exp': 0.1207, 't': 2.31, 'long_R': 49.5, 'short_R': 10.8}
+                               VAL {'n': 248, 'pf': 1.292, 'exp': 0.0982, 't': 1.48, 'long_R': 33.8, 'short_R': -9.4}
+  noise0.05_s4                 IS {'n': 498, 'pf': 1.357, 'exp': 0.1254, 't': 2.39, 'long_R': 49.4, 'short_R': 13.0}
+                               VAL {'n': 248, 'pf': 1.293, 'exp': 0.0996, 't': 1.49, 'long_R': 34.4, 'short_R': -9.7}
+  noise0.50_s4                 IS {'n': 498, 'pf': 1.359, 'exp': 0.1262, 't': 2.4, 'long_R': 49.5, 'short_R': 13.4}
+                               VAL {'n': 245, 'pf': 1.338, 'exp': 0.1124, 't': 1.67, 'long_R': 37.3, 'short_R': -9.8}
+  rdelay2_s4                   IS {'n': 499, 'pf': 1.348, 'exp': 0.1226, 't': 2.34, 'long_R': 49.3, 'short_R': 11.8}
+                               VAL {'n': 248, 'pf': 1.291, 'exp': 0.099, 't': 1.48, 'long_R': 34.3, 'short_R': -9.7}
+  trail1pct_s4                 IS {'n': 500, 'pf': 1.338, 'exp': 0.118, 't': 2.31, 'long_R': 47.1, 'short_R': 11.9}
+                               VAL {'n': 247, 'pf': 1.313, 'exp': 0.1054, 't': 1.57, 'long_R': 35.4, 'short_R': -9.3}
+  noise0.05_s5                 IS {'n': 498, 'pf': 1.357, 'exp': 0.1255, 't': 2.39, 'long_R': 49.5, 'short_R': 12.9}
+                               VAL {'n': 247, 'pf': 1.309, 'exp': 0.1043, 't': 1.55, 'long_R': 35.5, 'short_R': -9.7}
+  noise0.50_s5                 IS {'n': 501, 'pf': 1.337, 'exp': 0.1196, 't': 2.29, 'long_R': 48.1, 'short_R': 11.8}
+                               VAL {'n': 248, 'pf': 1.295, 'exp': 0.1004, 't': 1.5, 'long_R': 34.7, 'short_R': -9.8}
+  rdelay2_s5                   IS {'n': 499, 'pf': 1.349, 'exp': 0.1229, 't': 2.35, 'long_R': 49.4, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.29, 'exp': 0.0989, 't': 1.47, 'long_R': 34.2, 'short_R': -9.7}
+  trail1pct_s5                 IS {'n': 501, 'pf': 1.336, 'exp': 0.118, 't': 2.29, 'long_R': 46.4, 'short_R': 12.7}
+                               VAL {'n': 248, 'pf': 1.295, 'exp': 0.1, 't': 1.49, 'long_R': 34.4, 'short_R': -9.6}
+  noise0.05_s6                 IS {'n': 497, 'pf': 1.367, 'exp': 0.1282, 't': 2.44, 'long_R': 49.6, 'short_R': 14.1}
+                               VAL {'n': 247, 'pf': 1.31, 'exp': 0.1045, 't': 1.56, 'long_R': 35.5, 'short_R': -9.7}
+  noise0.50_s6                 IS {'n': 501, 'pf': 1.349, 'exp': 0.1226, 't': 2.35, 'long_R': 46.3, 'short_R': 15.1}
+                               VAL {'n': 247, 'pf': 1.314, 'exp': 0.1056, 't': 1.57, 'long_R': 35.6, 'short_R': -9.6}
+  rdelay2_s6                   IS {'n': 499, 'pf': 1.347, 'exp': 0.1224, 't': 2.34, 'long_R': 49.1, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.291, 'exp': 0.0991, 't': 1.48, 'long_R': 34.3, 'short_R': -9.7}
+  trail1pct_s6                 IS {'n': 498, 'pf': 1.357, 'exp': 0.1237, 't': 2.42, 'long_R': 47.5, 'short_R': 14.0}
+                               VAL {'n': 248, 'pf': 1.293, 'exp': 0.0987, 't': 1.48, 'long_R': 33.8, 'short_R': -9.3}
+  noise0.05_s7                 IS {'n': 498, 'pf': 1.356, 'exp': 0.1255, 't': 2.39, 'long_R': 50.5, 'short_R': 12.0}
+                               VAL {'n': 246, 'pf': 1.326, 'exp': 0.109, 't': 1.62, 'long_R': 36.5, 'short_R': -9.7}
+  noise0.50_s7                 IS {'n': 500, 'pf': 1.351, 'exp': 0.1236, 't': 2.37, 'long_R': 50.1, 'short_R': 11.7}
+                               VAL {'n': 247, 'pf': 1.312, 'exp': 0.105, 't': 1.56, 'long_R': 35.8, 'short_R': -9.8}
+  rdelay2_s7                   IS {'n': 499, 'pf': 1.342, 'exp': 0.1209, 't': 2.31, 'long_R': 48.3, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.291, 'exp': 0.0992, 't': 1.48, 'long_R': 34.3, 'short_R': -9.7}
+  trail1pct_s7                 IS {'n': 500, 'pf': 1.343, 'exp': 0.1207, 't': 2.34, 'long_R': 48.5, 'short_R': 11.9}
+                               VAL {'n': 247, 'pf': 1.31, 'exp': 0.1046, 't': 1.56, 'long_R': 35.5, 'short_R': -9.7}
+  noise0.05_s8                 IS {'n': 497, 'pf': 1.373, 'exp': 0.1302, 't': 2.48, 'long_R': 50.5, 'short_R': 14.2}
+                               VAL {'n': 247, 'pf': 1.31, 'exp': 0.1044, 't': 1.55, 'long_R': 35.5, 'short_R': -9.7}
+  noise0.50_s8                 IS {'n': 499, 'pf': 1.364, 'exp': 0.127, 't': 2.43, 'long_R': 49.9, 'short_R': 13.5}
+                               VAL {'n': 247, 'pf': 1.31, 'exp': 0.1044, 't': 1.55, 'long_R': 35.6, 'short_R': -9.8}
+  rdelay2_s8                   IS {'n': 499, 'pf': 1.344, 'exp': 0.1216, 't': 2.32, 'long_R': 48.7, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.293, 'exp': 0.0997, 't': 1.49, 'long_R': 34.4, 'short_R': -9.7}
+  trail1pct_s8                 IS {'n': 500, 'pf': 1.346, 'exp': 0.1208, 't': 2.35, 'long_R': 47.4, 'short_R': 13.0}
+                               VAL {'n': 248, 'pf': 1.3, 'exp': 0.1013, 't': 1.51, 'long_R': 34.5, 'short_R': -9.3}
+  noise0.05_s9                 IS {'n': 498, 'pf': 1.358, 'exp': 0.1257, 't': 2.4, 'long_R': 49.6, 'short_R': 13.0}
+                               VAL {'n': 246, 'pf': 1.326, 'exp': 0.109, 't': 1.62, 'long_R': 36.5, 'short_R': -9.7}
+  noise0.50_s9                 IS {'n': 494, 'pf': 1.408, 'exp': 0.1392, 't': 2.65, 'long_R': 50.3, 'short_R': 18.5}
+                               VAL {'n': 246, 'pf': 1.329, 'exp': 0.1098, 't': 1.63, 'long_R': 36.8, 'short_R': -9.8}
+  rdelay2_s9                   IS {'n': 499, 'pf': 1.343, 'exp': 0.1213, 't': 2.31, 'long_R': 48.6, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.292, 'exp': 0.0993, 't': 1.48, 'long_R': 34.3, 'short_R': -9.7}
+  trail1pct_s9                 IS {'n': 501, 'pf': 1.344, 'exp': 0.1211, 't': 2.33, 'long_R': 47.9, 'short_R': 12.8}
+                               VAL {'n': 248, 'pf': 1.301, 'exp': 0.1017, 't': 1.52, 'long_R': 34.6, 'short_R': -9.4}
+  noise0.05_s10                IS {'n': 498, 'pf': 1.357, 'exp': 0.1254, 't': 2.39, 'long_R': 49.5, 'short_R': 13.0}
+                               VAL {'n': 248, 'pf': 1.294, 'exp': 0.0998, 't': 1.49, 'long_R': 34.4, 'short_R': -9.7}
+  noise0.50_s10                IS {'n': 497, 'pf': 1.364, 'exp': 0.1275, 't': 2.43, 'long_R': 51.4, 'short_R': 11.9}
+                               VAL {'n': 248, 'pf': 1.294, 'exp': 0.0998, 't': 1.49, 'long_R': 34.4, 'short_R': -9.6}
+  rdelay2_s10                  IS {'n': 499, 'pf': 1.345, 'exp': 0.1218, 't': 2.32, 'long_R': 48.8, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.289, 'exp': 0.0984, 't': 1.47, 'long_R': 34.1, 'short_R': -9.7}
+  trail1pct_s10                IS {'n': 500, 'pf': 1.343, 'exp': 0.1204, 't': 2.34, 'long_R': 48.3, 'short_R': 11.9}
+                               VAL {'n': 247, 'pf': 1.309, 'exp': 0.1043, 't': 1.55, 'long_R': 35.5, 'short_R': -9.7}
+  noise0.05_s11                IS {'n': 498, 'pf': 1.356, 'exp': 0.1254, 't': 2.39, 'long_R': 50.5, 'short_R': 12.0}
+                               VAL {'n': 249, 'pf': 1.278, 'exp': 0.0953, 't': 1.42, 'long_R': 33.4, 'short_R': -9.7}
+  noise0.50_s11                IS {'n': 499, 'pf': 1.357, 'exp': 0.1247, 't': 2.39, 'long_R': 49.3, 'short_R': 12.9}
+                               VAL {'n': 249, 'pf': 1.278, 'exp': 0.0954, 't': 1.42, 'long_R': 33.3, 'short_R': -9.6}
+  rdelay2_s11                  IS {'n': 499, 'pf': 1.343, 'exp': 0.1212, 't': 2.31, 'long_R': 48.5, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.291, 'exp': 0.0991, 't': 1.48, 'long_R': 34.3, 'short_R': -9.7}
+  trail1pct_s11                IS {'n': 501, 'pf': 1.343, 'exp': 0.1207, 't': 2.32, 'long_R': 47.7, 'short_R': 12.8}
+                               VAL {'n': 248, 'pf': 1.294, 'exp': 0.0997, 't': 1.49, 'long_R': 34.4, 'short_R': -9.7}
+  noise0.05_s12                IS {'n': 498, 'pf': 1.358, 'exp': 0.1255, 't': 2.39, 'long_R': 49.5, 'short_R': 13.0}
+                               VAL {'n': 248, 'pf': 1.293, 'exp': 0.0997, 't': 1.49, 'long_R': 34.5, 'short_R': -9.7}
+  noise0.50_s12                IS {'n': 500, 'pf': 1.347, 'exp': 0.1221, 't': 2.34, 'long_R': 47.7, 'short_R': 13.4}
+                               VAL {'n': 248, 'pf': 1.287, 'exp': 0.0981, 't': 1.47, 'long_R': 34.7, 'short_R': -10.4}
+  rdelay2_s12                  IS {'n': 499, 'pf': 1.344, 'exp': 0.1215, 't': 2.32, 'long_R': 48.7, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.291, 'exp': 0.0989, 't': 1.48, 'long_R': 34.2, 'short_R': -9.7}
+  trail1pct_s12                IS {'n': 500, 'pf': 1.341, 'exp': 0.1191, 't': 2.33, 'long_R': 47.3, 'short_R': 12.2}
+                               VAL {'n': 247, 'pf': 1.308, 'exp': 0.1029, 't': 1.54, 'long_R': 34.8, 'short_R': -9.4}
+  noise0.05_s13                IS {'n': 498, 'pf': 1.359, 'exp': 0.126, 't': 2.4, 'long_R': 49.7, 'short_R': 13.0}
+                               VAL {'n': 247, 'pf': 1.31, 'exp': 0.1044, 't': 1.56, 'long_R': 35.5, 'short_R': -9.7}
+  noise0.50_s13                IS {'n': 498, 'pf': 1.364, 'exp': 0.1275, 't': 2.43, 'long_R': 48.0, 'short_R': 15.5}
+                               VAL {'n': 248, 'pf': 1.29, 'exp': 0.0984, 't': 1.48, 'long_R': 34.5, 'short_R': -10.1}
+  rdelay2_s13                  IS {'n': 499, 'pf': 1.342, 'exp': 0.1208, 't': 2.31, 'long_R': 48.5, 'short_R': 11.8}
+                               VAL {'n': 248, 'pf': 1.29, 'exp': 0.0989, 't': 1.47, 'long_R': 34.2, 'short_R': -9.7}
+  trail1pct_s13                IS {'n': 501, 'pf': 1.335, 'exp': 0.1174, 't': 2.3, 'long_R': 47.7, 'short_R': 11.1}
+                               VAL {'n': 248, 'pf': 1.293, 'exp': 0.0997, 't': 1.49, 'long_R': 34.5, 'short_R': -9.8}
+  noise0.05_s14                IS {'n': 498, 'pf': 1.357, 'exp': 0.1254, 't': 2.39, 'long_R': 49.5, 'short_R': 12.9}
+                               VAL {'n': 247, 'pf': 1.31, 'exp': 0.1044, 't': 1.55, 'long_R': 35.5, 'short_R': -9.7}
+  noise0.50_s14                IS {'n': 498, 'pf': 1.364, 'exp': 0.127, 't': 2.42, 'long_R': 48.7, 'short_R': 14.6}
+                               VAL {'n': 247, 'pf': 1.31, 'exp': 0.1043, 't': 1.56, 'long_R': 35.4, 'short_R': -9.7}
+  rdelay2_s14                  IS {'n': 499, 'pf': 1.346, 'exp': 0.1222, 't': 2.33, 'long_R': 49.0, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.291, 'exp': 0.0992, 't': 1.48, 'long_R': 34.3, 'short_R': -9.7}
+  trail1pct_s14                IS {'n': 500, 'pf': 1.344, 'exp': 0.1211, 't': 2.32, 'long_R': 49.7, 'short_R': 10.9}
+                               VAL {'n': 248, 'pf': 1.299, 'exp': 0.101, 't': 1.51, 'long_R': 34.4, 'short_R': -9.4}
+  noise0.05_s15                IS {'n': 497, 'pf': 1.364, 'exp': 0.1278, 't': 2.43, 'long_R': 50.5, 'short_R': 13.0}
+                               VAL {'n': 247, 'pf': 1.31, 'exp': 0.1044, 't': 1.56, 'long_R': 35.5, 'short_R': -9.7}
+  noise0.50_s15                IS {'n': 499, 'pf': 1.352, 'exp': 0.1241, 't': 2.36, 'long_R': 49.7, 'short_R': 12.2}
+                               VAL {'n': 247, 'pf': 1.312, 'exp': 0.1048, 't': 1.56, 'long_R': 35.4, 'short_R': -9.5}
+  rdelay2_s15                  IS {'n': 499, 'pf': 1.349, 'exp': 0.1229, 't': 2.35, 'long_R': 49.5, 'short_R': 11.8}
+                               VAL {'n': 248, 'pf': 1.293, 'exp': 0.0995, 't': 1.48, 'long_R': 34.4, 'short_R': -9.7}
+  trail1pct_s15                IS {'n': 501, 'pf': 1.338, 'exp': 0.1193, 't': 2.28, 'long_R': 49.9, 'short_R': 9.9}
+                               VAL {'n': 247, 'pf': 1.307, 'exp': 0.1037, 't': 1.54, 'long_R': 35.4, 'short_R': -9.8}
+  noise0.05_s16                IS {'n': 498, 'pf': 1.359, 'exp': 0.126, 't': 2.4, 'long_R': 49.7, 'short_R': 13.0}
+                               VAL {'n': 248, 'pf': 1.293, 'exp': 0.0996, 't': 1.49, 'long_R': 34.4, 'short_R': -9.7}
+  noise0.50_s16                IS {'n': 493, 'pf': 1.408, 'exp': 0.1394, 't': 2.65, 'long_R': 52.3, 'short_R': 16.5}
+                               VAL {'n': 247, 'pf': 1.304, 'exp': 0.1028, 't': 1.53, 'long_R': 35.2, 'short_R': -9.9}
+  rdelay2_s16                  IS {'n': 499, 'pf': 1.339, 'exp': 0.1201, 't': 2.29, 'long_R': 48.0, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.293, 'exp': 0.0997, 't': 1.49, 'long_R': 34.4, 'short_R': -9.7}
+  trail1pct_s16                IS {'n': 499, 'pf': 1.355, 'exp': 0.1236, 't': 2.4, 'long_R': 47.5, 'short_R': 14.2}
+                               VAL {'n': 247, 'pf': 1.313, 'exp': 0.1052, 't': 1.57, 'long_R': 35.4, 'short_R': -9.4}
+  noise0.05_s17                IS {'n': 499, 'pf': 1.35, 'exp': 0.1232, 't': 2.35, 'long_R': 49.5, 'short_R': 11.9}
+                               VAL {'n': 248, 'pf': 1.294, 'exp': 0.0999, 't': 1.49, 'long_R': 34.5, 'short_R': -9.7}
+  noise0.50_s17                IS {'n': 500, 'pf': 1.348, 'exp': 0.1218, 't': 2.34, 'long_R': 48.9, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.293, 'exp': 0.0994, 't': 1.49, 'long_R': 34.8, 'short_R': -10.1}
+  rdelay2_s17                  IS {'n': 499, 'pf': 1.348, 'exp': 0.1227, 't': 2.34, 'long_R': 49.4, 'short_R': 11.8}
+                               VAL {'n': 248, 'pf': 1.293, 'exp': 0.0997, 't': 1.49, 'long_R': 34.4, 'short_R': -9.7}
+  trail1pct_s17                IS {'n': 497, 'pf': 1.367, 'exp': 0.1283, 't': 2.44, 'long_R': 49.9, 'short_R': 13.9}
+                               VAL {'n': 248, 'pf': 1.296, 'exp': 0.1004, 't': 1.5, 'long_R': 34.6, 'short_R': -9.7}
+  noise0.05_s18                IS {'n': 496, 'pf': 1.382, 'exp': 0.1325, 't': 2.52, 'long_R': 49.5, 'short_R': 16.2}
+                               VAL {'n': 247, 'pf': 1.311, 'exp': 0.1046, 't': 1.56, 'long_R': 35.5, 'short_R': -9.7}
+  noise0.50_s18                IS {'n': 493, 'pf': 1.409, 'exp': 0.14, 't': 2.66, 'long_R': 49.7, 'short_R': 19.3}
+                               VAL {'n': 249, 'pf': 1.285, 'exp': 0.0974, 't': 1.45, 'long_R': 33.8, 'short_R': -9.5}
+  rdelay2_s18                  IS {'n': 499, 'pf': 1.34, 'exp': 0.1205, 't': 2.3, 'long_R': 48.2, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.29, 'exp': 0.0987, 't': 1.47, 'long_R': 34.2, 'short_R': -9.7}
+  trail1pct_s18                IS {'n': 499, 'pf': 1.349, 'exp': 0.1231, 't': 2.35, 'long_R': 49.4, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.295, 'exp': 0.0992, 't': 1.49, 'long_R': 34.0, 'short_R': -9.4}
+  noise0.05_s19                IS {'n': 499, 'pf': 1.35, 'exp': 0.1231, 't': 2.35, 'long_R': 49.5, 'short_R': 11.9}
+                               VAL {'n': 247, 'pf': 1.31, 'exp': 0.1044, 't': 1.55, 'long_R': 35.5, 'short_R': -9.7}
+  noise0.50_s19                IS {'n': 502, 'pf': 1.331, 'exp': 0.1172, 't': 2.25, 'long_R': 48.9, 'short_R': 9.9}
+                               VAL {'n': 246, 'pf': 1.327, 'exp': 0.1092, 't': 1.62, 'long_R': 36.8, 'short_R': -9.9}
+  rdelay2_s19                  IS {'n': 499, 'pf': 1.347, 'exp': 0.1223, 't': 2.33, 'long_R': 49.1, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.293, 'exp': 0.0996, 't': 1.49, 'long_R': 34.4, 'short_R': -9.7}
+  trail1pct_s19                IS {'n': 499, 'pf': 1.352, 'exp': 0.1239, 't': 2.37, 'long_R': 49.8, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.295, 'exp': 0.1001, 't': 1.49, 'long_R': 34.4, 'short_R': -9.6}
+
+perturbation PF summary:
+  noise0.05/is     {'min': 1.349, 'p10': 1.35, 'median': 1.357, 'p90': 1.374, 'max': 1.382}
+  noise0.05/val    {'min': 1.278, 'p10': 1.293, 'median': 1.31, 'p90': 1.312, 'max': 1.326}
+  noise0.50/is     {'min': 1.331, 'p10': 1.346, 'median': 1.361, 'p90': 1.408, 'max': 1.419}
+  noise0.50/val    {'min': 1.278, 'p10': 1.285, 'median': 1.308, 'p90': 1.327, 'max': 1.338}
+  rdelay2/is       {'min': 1.339, 'p10': 1.342, 'median': 1.345, 'p90': 1.348, 'max': 1.349}
+  rdelay2/val      {'min': 1.289, 'p10': 1.29, 'median': 1.291, 'p90': 1.293, 'max': 1.293}
+  trail1pct/is     {'min': 1.335, 'p10': 1.338, 'median': 1.344, 'p90': 1.358, 'max': 1.378}
+  trail1pct/val    {'min': 1.292, 'p10': 1.293, 'median': 1.299, 'p90': 1.31, 'max': 1.313}
+
+== fill_model  (31s)
+  ffrac0.1                     IS {'n': 499, 'pf': 1.292, 'exp': 0.1057, 't': 2.02, 'long_R': 45.3, 'short_R': 7.4}
+                               VAL {'n': 248, 'pf': 1.254, 'exp': 0.0882, 't': 1.32, 'long_R': 32.6, 'short_R': -10.8}
+  ffrac0.25                    IS {'n': 499, 'pf': 1.21, 'exp': 0.0792, 't': 1.52, 'long_R': 39.0, 'short_R': 0.5}
+                               VAL {'n': 248, 'pf': 1.187, 'exp': 0.0674, 't': 1.0, 'long_R': 29.9, 'short_R': -13.2}
+  ffrac0.5                     IS {'n': 499, 'pf': 1.087, 'exp': 0.035, 't': 0.67, 'long_R': 28.5, 'short_R': -11.1}
+                               VAL {'n': 248, 'pf': 1.083, 'exp': 0.0317, 't': 0.47, 'long_R': 23.6, 'short_R': -15.8}
+
+== blocked_windows  (32s)
+  no_rollover_fills            IS {'n': 496, 'pf': 1.338, 'exp': 0.1198, 't': 2.28, 'long_R': 45.3, 'short_R': 14.1}
+                               VAL {'n': 248, 'pf': 1.284, 'exp': 0.0972, 't': 1.45, 'long_R': 33.8, 'short_R': -9.7}
+  no_sunday_open_fills         IS {'n': 496, 'pf': 1.343, 'exp': 0.1212, 't': 2.31, 'long_R': 46.0, 'short_R': 14.1}
+                               VAL {'n': 248, 'pf': 1.286, 'exp': 0.0977, 't': 1.46, 'long_R': 33.9, 'short_R': -9.7}
+  no_both                      IS {'n': 495, 'pf': 1.35, 'exp': 0.1235, 't': 2.35, 'long_R': 47.0, 'short_R': 14.1}
+                               VAL {'n': 248, 'pf': 1.283, 'exp': 0.0969, 't': 1.44, 'long_R': 33.7, 'short_R': -9.7}
+total 32s

@@ -1,0 +1,24 @@
+{
+ "|gold 10m ret|<5%": {
+  "windows": 49,
+  "H1_P(pf>1)": 0.531,
+  "H1_pf_median": 1.004,
+  "H0zero_P(pf>1)": 0.367,
+  "H0zero_pf_median": 0.869
+ },
+ "5-15%": {
+  "windows": 48,
+  "H1_P(pf>1)": 0.562,
+  "H1_pf_median": 1.057,
+  "H0zero_P(pf>1)": 0.375,
+  "H0zero_pf_median": 0.916
+ },
+ ">=15%": {
+  "windows": 50,
+  "H1_P(pf>1)": 0.8,
+  "H1_pf_median": 1.311,
+  "H0zero_P(pf>1)": 0.64,
+  "H0zero_pf_median": 1.115
+ },
+ "spearman(window pf, |gold ret|)": 0.417
+}

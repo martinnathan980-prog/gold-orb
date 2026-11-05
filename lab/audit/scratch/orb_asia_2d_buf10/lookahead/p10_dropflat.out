@@ -1,0 +1,50 @@
+2013 {'dropped_weekday': 20960, 'dropped_in_range': 1037, 'range_high_raised': 57, 'dropped_in_entry_window': 105, 'earlier_buy_trigger': 0, 'dropped_in_short_holds': 6223, 'short_stop_hit_by_dropped': 0}
+2014 {'dropped_weekday': 43326, 'dropped_in_range': 1874, 'range_high_raised': 57, 'dropped_in_entry_window': 144, 'earlier_buy_trigger': 0, 'dropped_in_short_holds': 11526, 'short_stop_hit_by_dropped': 1}
+2015 {'dropped_weekday': 61972, 'dropped_in_range': 2146, 'range_high_raised': 57, 'dropped_in_entry_window': 189, 'earlier_buy_trigger': 0, 'dropped_in_short_holds': 15063, 'short_stop_hit_by_dropped': 1}
+2016 {'dropped_weekday': 80404, 'dropped_in_range': 2269, 'range_high_raised': 57, 'dropped_in_entry_window': 218, 'earlier_buy_trigger': 0, 'dropped_in_short_holds': 18159, 'short_stop_hit_by_dropped': 1}
+2017 {'dropped_weekday': 100236, 'dropped_in_range': 2464, 'range_high_raised': 57, 'dropped_in_entry_window': 253, 'earlier_buy_trigger': 0, 'dropped_in_short_holds': 21594, 'short_stop_hit_by_dropped': 1}
+2018 {'dropped_weekday': 120806, 'dropped_in_range': 2816, 'range_high_raised': 57, 'dropped_in_entry_window': 319, 'earlier_buy_trigger': 0, 'dropped_in_short_holds': 25281, 'short_stop_hit_by_dropped': 1}
+2019 {'dropped_weekday': 143349, 'dropped_in_range': 4057, 'range_high_raised': 57, 'dropped_in_entry_window': 438, 'earlier_buy_trigger': 0, 'dropped_in_short_holds': 30300, 'short_stop_hit_by_dropped': 1}
+2020 {'dropped_weekday': 162461, 'dropped_in_range': 4942, 'range_high_raised': 57, 'dropped_in_entry_window': 512, 'earlier_buy_trigger': 0, 'dropped_in_short_holds': 34977, 'short_stop_hit_by_dropped': 1}
+2021 {'dropped_weekday': 179552, 'dropped_in_range': 5107, 'range_high_raised': 57, 'dropped_in_entry_window': 521, 'earlier_buy_trigger': 0, 'dropped_in_short_holds': 38964, 'short_stop_hit_by_dropped': 1}
+TOTAL {'dropped_weekday': 179552, 'dropped_in_range': 5107, 'range_high_raised': 57, 'dropped_in_entry_window': 521, 'earlier_buy_trigger': 0, 'dropped_in_short_holds': 38964, 'short_stop_hit_by_dropped': 1}
+('range_high', Timestamp('2013-04-07 23:00:00+0000', tz='UTC'), np.float64(0.099))
+('range_high', Timestamp('2013-04-07 23:01:00+0000', tz='UTC'), np.float64(0.1))
+('range_high', Timestamp('2013-07-04 23:00:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:01:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:02:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:03:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:04:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:05:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:06:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:07:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:08:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:09:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:10:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:11:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:12:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:13:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:14:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:15:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:16:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:17:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:18:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:19:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:20:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:21:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:22:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:23:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:24:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:25:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:26:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:27:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:28:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:29:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:30:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:31:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:32:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:33:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:34:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:35:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:36:00+0000', tz='UTC'), np.float64(0.017))
+('range_high', Timestamp('2013-07-04 23:37:00+0000', tz='UTC'), np.float64(0.017))

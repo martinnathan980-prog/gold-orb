@@ -1,0 +1,8 @@
+Jun-Dec 2025 trades: 56 covered by tick data: 34
+n=34 same exit reason 1.000  tick fill in the same minute as the M1 fill 1.000
+entry jump (tick fill - level, adverse USD): mean 0.175 median 0.078 p90 0.414 max 1.163
+exit jump  (adverse USD): mean 0.120 median 0.000 p90 0.213
+slippage budget per trade (2 x 1.5bp): 1.105 USD
+R per trade: M1 0.1252  tick(+same costs) 0.1177  diff 0.0076 R/trade
+PF: M1 1.234 tick 1.218   (tiny sample, VAL period, 2025 prices)
+mean risk USD 36.74; jump as share of risk: 0.0051 R

@@ -1,0 +1,25 @@
+{'spread_x': 0.5, 'slip_bp': 1.5, 'engine_nofill': 266, 'engine_n': 874, 'engine_pf': np.float64(1.169), 'engine_t': np.float64(1.59), 'rebuilt_n': 1038, 'rebuilt_pf': np.float64(1.228), 'rebuilt_t': np.float64(2.26), 'rebuilt_yrs+': '7/9'}
+{'spread_x': 0.5, 'slip_bp': 0.5, 'engine_nofill': 266, 'engine_n': 874, 'engine_pf': np.float64(1.237), 'engine_t': np.float64(2.14), 'rebuilt_n': 1038, 'rebuilt_pf': np.float64(1.302), 'rebuilt_t': np.float64(2.86), 'rebuilt_yrs+': '7/9'}
+{'spread_x': 0.6, 'slip_bp': 1.5, 'engine_nofill': 216, 'engine_n': 902, 'engine_pf': np.float64(1.153), 'engine_t': np.float64(1.47), 'rebuilt_n': 1038, 'rebuilt_pf': np.float64(1.217), 'rebuilt_t': np.float64(2.17), 'rebuilt_yrs+': '7/9'}
+{'spread_x': 0.6, 'slip_bp': 0.5, 'engine_nofill': 216, 'engine_n': 902, 'engine_pf': np.float64(1.22), 'engine_t': np.float64(2.03), 'rebuilt_n': 1038, 'rebuilt_pf': np.float64(1.291), 'rebuilt_t': np.float64(2.78), 'rebuilt_yrs+': '7/9'}
+{'spread_x': 0.8, 'slip_bp': 1.5, 'engine_nofill': 119, 'engine_n': 963, 'engine_pf': np.float64(1.155), 'engine_t': np.float64(1.55), 'rebuilt_n': 1038, 'rebuilt_pf': np.float64(1.196), 'rebuilt_t': np.float64(1.99), 'rebuilt_yrs+': '7/9'}
+{'spread_x': 0.8, 'slip_bp': 0.5, 'engine_nofill': 119, 'engine_n': 963, 'engine_pf': np.float64(1.222), 'engine_t': np.float64(2.12), 'rebuilt_n': 1038, 'rebuilt_pf': np.float64(1.267), 'rebuilt_t': np.float64(2.6), 'rebuilt_yrs+': '7/9'}
+{'spread_x': 1.0, 'slip_bp': 1.5, 'engine_nofill': 0, 'engine_n': 1037, 'engine_pf': np.float64(1.177), 'engine_t': np.float64(1.83), 'rebuilt_n': 1037, 'rebuilt_pf': np.float64(1.177), 'rebuilt_t': np.float64(1.83), 'rebuilt_yrs+': '6/9'}
+{'spread_x': 1.0, 'slip_bp': 0.5, 'engine_nofill': 0, 'engine_n': 1037, 'engine_pf': np.float64(1.247), 'engine_t': np.float64(2.44), 'rebuilt_n': 1037, 'rebuilt_pf': np.float64(1.247), 'rebuilt_t': np.float64(2.44), 'rebuilt_yrs+': '7/9'}
+{'spread_x': 1.5, 'slip_bp': 1.5, 'engine_nofill': 0, 'engine_n': 1039, 'engine_pf': np.float64(1.16), 'engine_t': np.float64(1.66), 'rebuilt_n': 1029, 'rebuilt_pf': np.float64(1.131), 'rebuilt_t': np.float64(1.4), 'rebuilt_yrs+': '6/9'}
+{'spread_x': 1.5, 'slip_bp': 0.5, 'engine_nofill': 0, 'engine_n': 1039, 'engine_pf': np.float64(1.229), 'engine_t': np.float64(2.27), 'rebuilt_n': 1029, 'rebuilt_pf': np.float64(1.197), 'rebuilt_t': np.float64(2.01), 'rebuilt_yrs+': '7/9'}
+{'spread_x': 2.0, 'slip_bp': 1.5, 'engine_nofill': 0, 'engine_n': 1043, 'engine_pf': np.float64(1.145), 'engine_t': np.float64(1.52), 'rebuilt_n': 1030, 'rebuilt_pf': np.float64(1.084), 'rebuilt_t': np.float64(0.92), 'rebuilt_yrs+': '6/9'}
+{'spread_x': 2.0, 'slip_bp': 0.5, 'engine_nofill': 0, 'engine_n': 1043, 'engine_pf': np.float64(1.213), 'engine_t': np.float64(2.13), 'rebuilt_n': 1030, 'rebuilt_pf': np.float64(1.146), 'rebuilt_t': np.float64(1.53), 'rebuilt_yrs+': '7/9'}
+    spread_x  slip_bp  engine_nofill  engine_n  engine_pf  engine_t  rebuilt_n  rebuilt_pf  rebuilt_t rebuilt_yrs+
+0        0.5      1.5            266       874      1.169      1.59       1038       1.228       2.26          7/9
+1        0.5      0.5            266       874      1.237      2.14       1038       1.302       2.86          7/9
+2        0.6      1.5            216       902      1.153      1.47       1038       1.217       2.17          7/9
+3        0.6      0.5            216       902      1.220      2.03       1038       1.291       2.78          7/9
+4        0.8      1.5            119       963      1.155      1.55       1038       1.196       1.99          7/9
+5        0.8      0.5            119       963      1.222      2.12       1038       1.267       2.60          7/9
+6        1.0      1.5              0      1037      1.177      1.83       1037       1.177       1.83          6/9
+7        1.0      0.5              0      1037      1.247      2.44       1037       1.247       2.44          7/9
+8        1.5      1.5              0      1039      1.160      1.66       1029       1.131       1.40          6/9
+9        1.5      0.5              0      1039      1.229      2.27       1029       1.197       2.01          7/9
+10       2.0      1.5              0      1043      1.145      1.52       1030       1.084       0.92          6/9
+11       2.0      0.5              0      1043      1.213      2.13       1030       1.146       1.53          7/9

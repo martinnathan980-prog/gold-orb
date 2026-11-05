@@ -1,0 +1,2 @@
+seed,is_n,is_pf,is_t,is_exp,is_years,is_stress_pf,is_pass,is_pass_core,is_long_pf,is_short_pf,is_every_pf,is_every_n,px_2013,px_end_is,px_end,val_every_pf,val_every_n,val_n,val_pf,val_t,val_exp,val_pass,val_long_pf,val_short_pf
+0,499,1.35,2.35,0.1233,8/9,1.256,True,True,1.6312521925151244,1.1232129052862074,1.3442738670768206,1704,1657.1520000000007,1829.0580000000004,4318.679000000001,0.9768973907234928,942.0,248.0,1.294,1.49,0.0998,True,1.685705378351331,0.714804204834665

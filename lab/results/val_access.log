@@ -73,3 +73,78 @@
 {"time": "2026-11-05T16:47:26", "track": "review", "label": "statskeptic:donch4h_stop:null-N3(6 seeds, VAL reports)", "period": "val"}
 {"time": "2026-11-05T16:47:27", "track": "review", "label": "statskeptic:donch4h_stop:null-C3(1 seeds, VAL reports)", "period": "val"}
 {"time": "2026-11-05T16:47:27", "track": "review", "label": "statskeptic:donch4h_stop:null-F3(1 seeds, VAL reports)", "period": "val"}
+{"time": "2026-11-05T16:54:41", "track": "review", "label": "lookahead:donch4h_stop:base", "period": "val"}
+{"time": "2026-11-05T16:54:44", "track": "review", "label": "lookahead:donch4h_stop:delay", "period": "val"}
+{"time": "2026-11-05T16:54:47", "track": "review", "label": "lookahead:donch4h_stop:levels_timing", "period": "val"}
+{"time": "2026-11-05T16:54:49", "track": "review", "label": "lookahead:donch4h_stop:level_source", "period": "val"}
+{"time": "2026-11-05T16:55:03", "track": "review", "label": "lookahead:donch4h_stop:perturb", "period": "val"}
+{"time": "2026-11-05T16:55:04", "track": "review", "label": "lookahead:donch4h_stop:fill_model", "period": "val"}
+{"time": "2026-11-05T16:55:05", "track": "review", "label": "lookahead:donch4h_stop:blocked_windows", "period": "val"}
+{"time": "2026-11-05T16:55:17", "track": "review", "label": "statskeptic:donch4h_stop:null-N1(1000 seeds, VAL reports)", "period": "val"}
+{"time": "2026-11-05T16:57:53", "track": "review", "label": "lookahead:donch4h_stop:tick-fill-decomposition", "period": "val"}
+{"time": "2026-11-05T16:59:26", "track": "review", "label": "statskeptic:donch4h_stop:null-N1L(500 seeds, VAL reports)", "period": "val"}
+{"time": "2026-11-05T17:00:07", "track": "review", "label": "lookahead:donch4h_stop:execution-fidelity", "period": "val"}
+{"time": "2026-11-05T17:00:10", "track": "review", "label": "lookahead:donch4h_stop:engine-trade-breakdowns", "period": "val"}
+{"time": "2026-11-05T17:02:51", "track": "review", "label": "lookahead:donch4h_stop:trailing-alerts-stress", "period": "val"}
+{"time": "2026-11-05T17:02:54", "track": "review", "label": "lookahead:donch4h_stop:engine-stress", "period": "val"}
+{"time": "2026-11-05T17:02:54", "track": "review", "label": "lookahead:donch4h_stop:engine-holes", "period": "val"}
+{"time": "2026-11-05T17:02:58", "track": "review", "label": "statskeptic:donch4h_stop:null-N1S(500 seeds, VAL reports)", "period": "val"}
+{"time": "2026-11-05T17:04:42", "track": "review", "label": "lookahead:donch4h_stop:time-exit-check", "period": "val"}
+{"time": "2026-11-05T17:04:57", "track": "review", "label": "lookahead:donch4h_stop:end-of-data-trade", "period": "val"}
+{"time": "2026-11-05T17:06:29", "track": "review", "label": "lookahead:donch4h_stop:decision-hour+4h-trail", "period": "val"}
+{"time": "2026-11-05T17:06:30", "track": "review", "label": "statskeptic:donch4h_stop:null-N1q(500 seeds, VAL reports)", "period": "val"}
+{"time": "2026-11-05T17:13:05", "track": "review", "label": "statskeptic:donch4h_stop:null-N3(1000 seeds, VAL reports)", "period": "val"}
+{"time": "2026-11-05T17:13:24", "track": "review", "label": "statskeptic:donch4h_stop:null-C3(1 seeds, VAL reports)", "period": "val"}
+{"time": "2026-11-05T17:13:24", "track": "review", "label": "statskeptic:donch4h_stop:null-F3(1 seeds, VAL reports)", "period": "val"}
+{"time": "2026-11-05T17:14:28", "track": "review", "label": "statskeptic:donch4h_stop:null-N4-ident(1 synthetic histories, VAL reports)", "period": "val"}
+{"time": "2026-11-05T17:16:04", "track": "review", "label": "statskeptic:donch4h_stop:dropout-q0.05(300 seeds)", "period": "val"}
+{"time": "2026-11-05T17:16:16", "track": "review", "label": "statskeptic:donch4h_stop:dropout-q0.1(300 seeds)", "period": "val"}
+{"time": "2026-11-05T17:16:27", "track": "review", "label": "statskeptic:donch4h_stop:dropout-q0.2(300 seeds)", "period": "val"}
+{"time": "2026-11-05T17:16:39", "track": "review", "label": "statskeptic:donch4h_stop:dropout-q0.33(300 seeds)", "period": "val"}
+{"time": "2026-11-05T17:16:50", "track": "review", "label": "statskeptic:donch4h_stop:dropout-q0.5(300 seeds)", "period": "val"}
+{"time": "2026-11-05T17:16:54", "track": "review", "label": "statskeptic:donch4h_stop:entry-delay-sweep(0,1,2,5,15,60 min)", "period": "val"}
+{"time": "2026-11-05T17:18:39", "track": "review", "label": "statskeptic:donch4h_stop:holdout-H0-windows(N1,N3 x40 seeds)", "period": "val"}
+{"time": "2026-11-05T17:20:44", "track": "review", "label": "statskeptic:donch4h_stop:null-N3pq(300 seeds, side permuted within Q)", "period": "val"}
+{"time": "2026-11-05T17:22:48", "track": "review", "label": "statskeptic:donch4h_stop:null-N3pm(300 seeds, side permuted within M)", "period": "val"}
+{"time": "2026-11-05T17:24:58", "track": "review", "label": "liveexec:donch4h_stop:manual-delay-N(1,5,15,60,240)-models-A1A2BC", "period": "val"}
+{"time": "2026-11-05T17:28:20", "track": "review", "label": "liveexec:donch4h_stop:availability-W1W2-S0S5-D-G0G5-M3-M4-Pending", "period": "val"}
+{"time": "2026-11-05T17:29:41", "track": "review", "label": "liveexec:donch4h_stop:bar-grid-utc0-3-ny17-eet", "period": "val"}
+{"time": "2026-11-05T17:30:07", "track": "review", "label": "liveexec:donch4h_stop:rollover-spread-x2-x3-x5", "period": "val"}
+{"time": "2026-11-05T17:31:32", "track": "review", "label": "liveexec:donch4h_stop:rollover-x5-spike-decomposition", "period": "val"}
+{"time": "2026-11-05T17:31:40", "track": "review", "label": "statskeptic:donch4h_stop:null-N4-day(100 synthetic histories, VAL reports)", "period": "val"}
+{"time": "2026-11-05T17:32:15", "track": "review", "label": "liveexec:donch4h_stop:rollover-x5-spike-decomposition", "period": "val"}
+{"time": "2026-11-05T17:33:42", "track": "review", "label": "liveexec:donch4h_stop:sizing-2025-stop-distance-and-dollar-PF", "period": "val"}
+{"time": "2026-11-05T17:33:42", "track": "review", "label": "liveexec:donch4h_stop:sizing-2025-bracket-stop-distance", "period": "val"}
+{"time": "2026-11-05T17:34:34", "track": "review", "label": "liveexec:donch4h_stop:EA-parity-deadline-autoplacement-levels", "period": "val"}
+{"time": "2026-11-05T17:35:50", "track": "review", "label": "liveexec:donch4h_stop:news-minute-fills-slippage-swap-elasticity", "period": "val"}
+{"time": "2026-11-05T17:37:46", "track": "review", "label": "liveexec:donch4h_stop:operating-modes-x-retail-frictions", "period": "val"}
+{"time": "2026-11-05T17:37:59", "track": "review", "label": "liveexec:donch4h_stop:operating-modes-x-retail-frictions", "period": "val"}
+{"time": "2026-11-05T17:38:17", "track": "review", "label": "liveexec:donch4h_stop:operating-modes-x-retail-frictions", "period": "val"}
+{"time": "2026-11-05T17:41:18", "track": "review", "label": "statskeptic:donch4h_stop:null-N4-dayd(100 synthetic histories, VAL reports)", "period": "val"}
+{"time": "2026-11-05T17:42:43", "track": "review", "label": "statskeptic:donch4h_stop:grid-offset replications(utc+0..+3h, ny17)", "period": "val"}
+{"time": "2026-11-05T17:53:21", "track": "review", "label": "statskeptic:orb_asia_2d_buf10:candidate VAL trades normal/stress/every-signal (saved for bootstrap, concentration, holdout model)", "period": "val"}
+{"time": "2026-11-05T17:56:47", "track": "review", "label": "statskeptic:orb_asia_2d_buf10:null-C1(1 seeds, VAL reports + monthly aggregates)", "period": "val"}
+{"time": "2026-11-05T17:56:47", "track": "review", "label": "statskeptic:orb_asia_2d_buf10:null-F1(1 seeds, VAL reports + monthly aggregates)", "period": "val"}
+{"time": "2026-11-05T17:56:48", "track": "review", "label": "statskeptic:orb_asia_2d_buf10:null-L1(1 seeds, VAL reports + monthly aggregates)", "period": "val"}
+{"time": "2026-11-05T17:56:48", "track": "review", "label": "statskeptic:orb_asia_2d_buf10:null-S1(1 seeds, VAL reports + monthly aggregates)", "period": "val"}
+{"time": "2026-11-05T17:58:28", "track": "review", "label": "statskeptic:orb_asia_2d_buf10:null-N1(2000 seeds, VAL reports + monthly aggregates)", "period": "val"}
+{"time": "2026-11-05T17:59:26", "track": "review", "label": "statskeptic:orb_asia_2d_buf10:null-N1y(500 seeds, VAL reports + monthly aggregates)", "period": "val"}
+{"time": "2026-11-05T18:01:17", "track": "review", "label": "statskeptic:orb_asia_2d_buf10:null-N2(2000 seeds, VAL reports + monthly aggregates)", "period": "val"}
+{"time": "2026-11-05T18:02:07", "track": "review", "label": "statskeptic:orb_asia_2d_buf10:null-N2L(333 seeds, VAL reports + monthly aggregates)", "period": "val"}
+{"time": "2026-11-05T18:02:29", "track": "review", "label": "statskeptic:orb_asia_2d_buf10:null-N2S(333 seeds, VAL reports + monthly aggregates)", "period": "val"}
+{"time": "2026-11-05T18:06:52", "track": "review", "label": "statskeptic:orb_asia_2d_buf10:dropout-q0.05(500 seeds, VAL PF per seed)", "period": "val"}
+{"time": "2026-11-05T18:07:10", "track": "review", "label": "statskeptic:orb_asia_2d_buf10:dropout-q0.1(500 seeds, VAL PF per seed)", "period": "val"}
+{"time": "2026-11-05T18:07:27", "track": "review", "label": "statskeptic:orb_asia_2d_buf10:dropout-q0.2(500 seeds, VAL PF per seed)", "period": "val"}
+{"time": "2026-11-05T18:07:43", "track": "review", "label": "statskeptic:orb_asia_2d_buf10:dropout-q0.33(500 seeds, VAL PF per seed)", "period": "val"}
+{"time": "2026-11-05T18:07:46", "track": "review", "label": "statskeptic:orb_asia_2d_buf10:cost-scaling k=0..1.5 (VAL PF/t per k)", "period": "val"}
+{"time": "2026-11-05T18:09:10", "track": "review", "label": "statskeptic:orb_asia_2d_buf10:null-N1q(500 seeds, VAL reports + monthly aggregates)", "period": "val"}
+{"time": "2026-11-05T18:09:51", "track": "review", "label": "statskeptic:orb_asia_2d_buf10:null-N1m(500 seeds, VAL reports + monthly aggregates)", "period": "val"}
+{"time": "2026-11-05T18:10:13", "track": "review", "label": "lookahead:orb_asia_2d_buf10:decision-delay-sweep(A k=1..60, B close-fill, C range_end/arming shifts)", "period": "val"}
+{"time": "2026-11-05T18:11:20", "track": "review", "label": "statskeptic:orb_asia_2d_buf10:low-cost scenarios consistent (spread scaled in frame before make_orders) vs naive", "period": "val"}
+{"time": "2026-11-05T18:14:06", "track": "review", "label": "lookahead:orb_asia_2d_buf10:tick-fidelity-Jun-Dec2025(R terms, entry/exit jumps)", "period": "val"}
+{"time": "2026-11-05T18:16:57", "track": "review", "label": "lookahead:orb_asia_2d_buf10:ea-replica-official", "period": "val"}
+{"time": "2026-11-05T18:16:57", "track": "review", "label": "lookahead:orb_asia_2d_buf10:ea-replica-replica", "period": "val"}
+{"time": "2026-11-05T18:22:54", "track": "review", "label": "liveexec:orb_asia_2d_buf10:baseline-current-data", "period": "val"}
+{"time": "2026-11-05T18:23:32", "track": "review", "label": "liveexec:orb_asia_2d_buf10:manual-delay N=0/1/5/15/60/240 min, stop same-distance vs same-absolute", "period": "val"}
+{"time": "2026-11-05T18:24:18", "track": "review", "label": "liveexec:orb_asia_2d_buf10:manual-delay fine sweep N=1..30,45,90,120,180 (dist/abs)", "period": "val"}
+{"time": "2026-11-05T18:24:42", "track": "review", "label": "liveexec:orb_asia_2d_buf10:manual-delay abs-stop artifact check N=60/90/120/240 (risk ratio, $-PF)", "period": "val"}

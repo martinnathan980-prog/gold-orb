@@ -1,0 +1,14 @@
+{'scenario': 'prereg', 'orders': 2621, 'nofill': 0, 'is_n': 1037, 'is_pf': 1.1773, 'is_t': 1.83, 'is_exp': 0.1199}
+{'scenario': 'comm+slip x0.5, spread x1', 'orders': 2621, 'nofill': 0, 'is_n': 1037, 'is_pf': 1.2382, 'is_t': 2.363, 'is_exp': 0.1578}
+{'scenario': 'all x0.75', 'orders': 2624, 'nofill': 0, 'is_n': 1038, 'is_pf': 1.2315, 'is_t': 2.3, 'is_exp': 0.1551}
+{'scenario': 'all x0.6', 'orders': 2625, 'nofill': 0, 'is_n': 1038, 'is_pf': 1.268, 'is_t': 2.597, 'is_exp': 0.1783}
+{'scenario': 'all x0.5', 'orders': 2625, 'nofill': 0, 'is_n': 1038, 'is_pf': 1.2926, 'is_t': 2.789, 'is_exp': 0.1938}
+{'scenario': 'all x0.75 NAIVE', 'orders': 2621, 'nofill': 179, 'is_n': 949, 'is_pf': 1.183, 'is_t': 1.783, 'is_exp': 0.1226}
+                           orders  nofill  is_n   is_pf   is_t  is_exp  val_n  val_pf  val_t  val_exp
+scenario                                                                                             
+prereg                       2621       0  1037  1.1773  1.830  0.1199    445  1.1002  0.742   0.0651
+comm+slip x0.5, spread x1    2621       0  1037  1.2382  2.363  0.1578    445  1.1507  1.077   0.0963
+all x0.75                    2624       0  1038  1.2315  2.300  0.1551    447  1.1469  1.055   0.0949
+all x0.6                     2625       0  1038  1.2680  2.597  0.1783    447  1.1729  1.219   0.1111
+all x0.5                     2625       0  1038  1.2926  2.789  0.1938    447  1.1908  1.328   0.1221
+all x0.75 NAIVE              2621     179   949  1.1830  1.783  0.1226    426  1.0057  0.043   0.0038

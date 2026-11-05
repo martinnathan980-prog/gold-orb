@@ -1,0 +1,289 @@
+iid {'alpha_IS_full': np.float64(0.01435), 'alpha_IS_core(pf>=1.2&t>=2)': np.float64(0.0162), 'alpha_VAL_pass': np.float64(0.2701), 'P_VAL_pf>=1.294': 0.05215}
+week {'alpha_IS_full': np.float64(0.01485), 'alpha_IS_core(pf>=1.2&t>=2)': np.float64(0.01815), 'alpha_VAL_pass': np.float64(0.2777), 'P_VAL_pf>=1.294': 0.0552}
+{
+ "boundary": {
+  "iid": {
+   "alpha_IS_full": 0.01435,
+   "alpha_IS_core(pf>=1.2&t>=2)": 0.0162,
+   "alpha_VAL_pass": 0.2701,
+   "P_VAL_pf>=1.294": 0.05215
+  },
+  "week": {
+   "alpha_IS_full": 0.01485,
+   "alpha_IS_core(pf>=1.2&t>=2)": 0.01815,
+   "alpha_VAL_pass": 0.2777,
+   "P_VAL_pf>=1.294": 0.0552
+  }
+ },
+ "per_trial_alpha": {
+  "N1 random time+side": {
+   "seeds": 1000,
+   "alpha_IS_obs": 0.0,
+   "alpha_IS_upper95": 0.003,
+   "P_t>=2_normal_fit": 0.00038,
+   "alpha_VAL_obs": 0.12,
+   "alpha_both_obs": 0.0
+  },
+  "N3 signal times, random side": {
+   "seeds": 1000,
+   "alpha_IS_obs": 0.0,
+   "alpha_IS_upper95": 0.003,
+   "P_t>=2_normal_fit": 0.00037,
+   "alpha_VAL_obs": 0.031,
+   "alpha_both_obs": 0.0
+  },
+  "N1q random time, 63% long": {
+   "seeds": 500,
+   "alpha_IS_obs": 0.0,
+   "alpha_IS_upper95": 0.006,
+   "P_t>=2_normal_fit": 0.00061,
+   "alpha_VAL_obs": 0.238,
+   "alpha_both_obs": 0.0
+  },
+  "N1L random time, long only": {
+   "seeds": 500,
+   "alpha_IS_obs": 0.0,
+   "alpha_IS_upper95": 0.006,
+   "P_t>=2_normal_fit": 1e-05,
+   "alpha_VAL_obs": 0.76,
+   "alpha_both_obs": 0.0
+  },
+  "N3pq signal times, sides permuted within quarter (oracle tilt)": {
+   "seeds": 300,
+   "alpha_IS_obs": 0.0267,
+   "alpha_IS_upper95": 0.0267,
+   "P_t>=2_normal_fit": 0.0309,
+   "alpha_VAL_obs": 0.5833,
+   "alpha_both_obs": 0.01
+  },
+  "N3pm signal times, sides permuted within month (oracle tilt)": {
+   "seeds": 300,
+   "alpha_IS_obs": 0.87,
+   "alpha_IS_upper95": 0.87,
+   "P_t>=2_normal_fit": 0.91228,
+   "alpha_VAL_obs": 0.96,
+   "alpha_both_obs": 0.8433
+  },
+  "N4 exact rule on day-mirrored gold": {
+   "seeds": 100,
+   "alpha_IS_obs": 0.02,
+   "alpha_IS_upper95": 0.02,
+   "P_t>=2_normal_fit": 0.00182,
+   "alpha_VAL_obs": 0.16,
+   "alpha_both_obs": 0.0
+  },
+  "N4d exact rule on day-mirrored gold, yearly drift kept": {
+   "seeds": 100,
+   "alpha_IS_obs": 0.0,
+   "alpha_IS_upper95": 0.03,
+   "P_t>=2_normal_fit": 0.00145,
+   "alpha_VAL_obs": 0.48,
+   "alpha_both_obs": 0.0
+  },
+  "boundary (mean 0, candidate R shape), week-cluster": {
+   "alpha_IS_obs": 0.0148,
+   "alpha_VAL_obs": 0.2777
+  }
+ },
+ "P_at_least_one_[IS_pass, IS+VAL_pass]_by_N_eff": {
+  "N1 random time+side": {
+   "10": [
+    0.004,
+    0.0
+   ],
+   "21": [
+    0.008,
+    0.001
+   ],
+   "50": [
+    0.019,
+    0.002
+   ],
+   "130": [
+    0.048,
+    0.006
+   ],
+   "300": [
+    0.108,
+    0.014
+   ]
+  },
+  "N3 signal times, random side": {
+   "10": [
+    0.004,
+    0.0
+   ],
+   "21": [
+    0.008,
+    0.0
+   ],
+   "50": [
+    0.018,
+    0.001
+   ],
+   "130": [
+    0.047,
+    0.001
+   ],
+   "300": [
+    0.105,
+    0.003
+   ]
+  },
+  "N1q random time, 63% long": {
+   "10": [
+    0.006,
+    0.001
+   ],
+   "21": [
+    0.013,
+    0.003
+   ],
+   "50": [
+    0.03,
+    0.007
+   ],
+   "130": [
+    0.076,
+    0.019
+   ],
+   "300": [
+    0.167,
+    0.043
+   ]
+  },
+  "N1L random time, long only": {
+   "10": [
+    0.0,
+    0.0
+   ],
+   "21": [
+    0.0,
+    0.0
+   ],
+   "50": [
+    0.0,
+    0.0
+   ],
+   "130": [
+    0.001,
+    0.001
+   ],
+   "300": [
+    0.003,
+    0.002
+   ]
+  },
+  "N3pq signal times, sides permuted within quarter (oracle tilt)": {
+   "10": [
+    0.237,
+    0.145
+   ],
+   "21": [
+    0.434,
+    0.281
+   ],
+   "50": [
+    0.742,
+    0.544
+   ],
+   "130": [
+    0.97,
+    0.87
+   ],
+   "300": [
+    1.0,
+    0.991
+   ]
+  },
+  "N3pm signal times, sides permuted within month (oracle tilt)": {
+   "10": [
+    1.0,
+    1.0
+   ],
+   "21": [
+    1.0,
+    1.0
+   ],
+   "50": [
+    1.0,
+    1.0
+   ],
+   "130": [
+    1.0,
+    1.0
+   ],
+   "300": [
+    1.0,
+    1.0
+   ]
+  },
+  "N4 exact rule on day-mirrored gold": {
+   "10": [
+    0.183,
+    0.032
+   ],
+   "21": [
+    0.346,
+    0.065
+   ],
+   "50": [
+    0.636,
+    0.148
+   ],
+   "130": [
+    0.928,
+    0.341
+   ],
+   "300": [
+    0.998,
+    0.618
+   ]
+  },
+  "N4d exact rule on day-mirrored gold, yearly drift kept": {
+   "10": [
+    0.014,
+    0.007
+   ],
+   "21": [
+    0.03,
+    0.015
+   ],
+   "50": [
+    0.07,
+    0.034
+   ],
+   "130": [
+    0.172,
+    0.087
+   ],
+   "300": [
+    0.353,
+    0.189
+   ]
+  },
+  "boundary (mean 0, candidate R shape), week-cluster": {
+   "10": [
+    0.139,
+    0.04
+   ],
+   "21": [
+    0.269,
+    0.083
+   ],
+   "50": [
+    0.526,
+    0.186
+   ],
+   "130": [
+    0.856,
+    0.415
+   ],
+   "300": [
+    0.989,
+    0.709
+   ]
+  }
+ },
+ "stress_shift_R": 0.0296
+}

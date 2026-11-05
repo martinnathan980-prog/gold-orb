@@ -1,0 +1,15 @@
+bars 4590141 gaps>1min 12449
+gap size distribution (min): {'count': 12449.0, 'mean': 181.6, 'std': 679.2, 'min': 2.0, '25%': 2.0, '50%': 2.0, '75%': 61.0, 'max': 4591.0}
+weekend/holiday reopen gaps 679 | daily 18:00 NY reopen 2720 | other 9050
+reopen hour (NY) of >24h gaps: {18: 656, 19: 18, 20: 5}
+other gaps by size: {Interval(1, 2, closed='right'): 7314, Interval(2, 5, closed='right'): 1517, Interval(5, 15, closed='right'): 156, Interval(15, 60, closed='right'): 24, Interval(60, 240, closed='right'): 32, Interval(240, 1440, closed='right'): 7}
+last bar before daily break (NY hh:mm): {'16:59': 2432, '16:58': 122, '18:27': 48, '18:26': 47, '18:17': 43}
+start-label matched bars 4139 median abs err {'bo': 0.0, 'bh': 0.0, 'bl': 0.0, 'bc': 0.0, 'ah': 0.0, 'al': 0.0} share exact {'bo': 1.0, 'bh': 1.0, 'bl': 1.0, 'bc': 1.0, 'ah': 1.0, 'al': 1.0}
+end-label matched bars 4136 median abs err {'bo': 0.45299999999997453, 'bh': 0.3730000000000473, 'bl': 0.3930000000000291, 'bc': 0.45050000000014734, 'ah': 0.362999999999829, 'al': 0.38999999999987267} share exact {'bo': 0.012, 'bh': 0.024, 'bl': 0.013, 'bc': 0.022, 'ah': 0.013, 'al': 0.019}
+Traceback (most recent call last):
+  File "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p2_timestamps.py", line 42, in <module>
+    s = S.sessions(m1, P)
+  File "/home/user/gold-orb/lab/tracks/orb/strategy.py", line 175, in sessions
+    da["tr_sma"] = np.sign(da.close - da.close.rolling(int(p["trend_n"]), min_periods=int(p["trend_n"])).mean())
+                                                           ~^^^^^^^^^^^
+KeyError: 'trend_n'

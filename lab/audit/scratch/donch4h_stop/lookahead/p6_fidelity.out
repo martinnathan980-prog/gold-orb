@@ -1,0 +1,35 @@
+== A. execution variants
+  base                         IS {'n': 499, 'pf': 1.35, 'exp': 0.1233, 't': 2.35, 'long_R': 49.5, 'short_R': 12.0}
+                               VAL {'n': 248, 'pf': 1.294, 'exp': 0.0998, 't': 1.49, 'long_R': 34.4, 'short_R': -9.7}
+  calib_fills_noslip           IS {'n': 499, 'pf': 1.388, 'exp': 0.1343, 't': 2.56, 'long_R': 52.6, 'short_R': 14.5}
+                               VAL {'n': 248, 'pf': 1.35, 'exp': 0.1156, 't': 1.72, 'long_R': 36.9, 'short_R': -8.2}
+  calib_fills_plus_slip        IS {'n': 499, 'pf': 1.271, 'exp': 0.0994, 't': 1.9, 'long_R': 43.7, 'short_R': 5.8}
+                               VAL {'n': 248, 'pf': 1.236, 'exp': 0.0826, 't': 1.23, 'long_R': 31.7, 'short_R': -11.2}
+  trail_intrabar_tick_like     IS {'n': 502, 'pf': 1.319, 'exp': 0.1117, 't': 2.17, 'long_R': 47.9, 'short_R': 8.1}
+                               VAL {'n': 248, 'pf': 1.204, 'exp': 0.0705, 't': 1.1, 'long_R': 27.8, 'short_R': -10.3}
+  trail_mt5_builtin_like       IS {'n': 445, 'pf': 1.205, 'exp': 0.0994, 't': 1.54, 'long_R': 35.2, 'short_R': 9.0}
+                               VAL {'n': 210, 'pf': 1.35, 'exp': 0.1556, 't': 1.8, 'long_R': 40.7, 'short_R': -8.0}
+  skip_00_04utc_decisions      IS {'n': 473, 'pf': 1.335, 'exp': 0.1189, 't': 2.19, 'long_R': 38.8, 'short_R': 17.4}
+                               VAL {'n': 236, 'pf': 1.13, 'exp': 0.0477, 't': 0.7, 'long_R': 21.8, 'short_R': -10.6}
+  only_16_20utc_decisions      IS {'n': 260, 'pf': 1.32, 'exp': 0.1091, 't': 1.62, 'long_R': 18.7, 'short_R': 9.6}
+                               VAL {'n': 148, 'pf': 0.868, 'exp': -0.0538, 't': -0.64, 'long_R': 5.4, 'short_R': -13.4}
+
+== B1. news minutes (NY 08:30-08:34, 10:00-10:04, 14:00-14:04, 14:30-14:34)
+  IS: entries in news minutes 45/499 (R +4.9); exits in news minutes 33 (R -0.4); PF without news-entry trades 1.356 (all 1.35)
+  VAL: entries in news minutes 20/248 (R +4.9); exits in news minutes 29 (R -10.6); PF without news-entry trades 1.253 (all 1.294)
+
+== B2. first-bar fills (order filled in the first M1 bar after the 4h close)
+  IS: first-bar fills 12/499 (R +5.9); of which opened beyond the level (market-like) 7; all gap fills 10 (R +4.2)
+  VAL: first-bar fills 4/248 (R -0.6); of which opened beyond the level (market-like) 4; all gap fills 6 (R -0.2)
+
+== B3. OCO: both levels inside the first-touch M1 bar, over ALL resolved windows
+  windows 2646, ties 0
+
+== B4. swap convention: triple on Friday instead of Wednesday
+  IS: PF Wed-triple 1.35 -> Fri-triple 1.351
+  VAL: PF Wed-triple 1.294 -> Fri-triple 1.292
+
+== B5. lot-step rounding (1 oz = 0.01 lot), 1% risk per trade, min size 1 oz, equity compounding
+  IS: PF in $ by starting equity {2000: 1.35, 5000: 1.334, 10000: 1.322, 25000: 1.326, 100000: 1.324}  (PF in R 1.35, equal-size 1.202)
+  VAL: PF in $ by starting equity {2000: 1.418, 5000: 1.293, 10000: 1.329, 25000: 1.301, 100000: 1.299}  (PF in R 1.294, equal-size 1.397)
+time 9s

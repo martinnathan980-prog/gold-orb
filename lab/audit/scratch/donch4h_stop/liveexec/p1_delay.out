@@ -1,0 +1,47 @@
+base N=  0 | IS n=499 pf=1.35 exp=0.1233 t=2.35 totR=61.5 yrs_pos=8/9 long_R=49.5 short_R=12.0 pf_long=1.631 pf_short=1.123
+           | VAL n=248 pf=1.294 exp=0.0998 t=1.49 totR=24.7 yrs_pos=3/4 long_R=34.4 short_R=-9.7 pf_long=1.686 pf_short=0.715
+A1   N=  1 | IS n=499 pf=1.244 exp=0.0901 t=1.73 totR=44.9 yrs_pos=8/9 long_R=39.5 short_R=5.5 pf_long=1.475 pf_short=1.054
+           | VAL n=248 pf=1.255 exp=0.0873 t=1.31 totR=21.6 yrs_pos=3/4 long_R=31.7 short_R=-10.0 pf_long=1.622 pf_short=0.705
+A2   N=  1 | IS n=498 pf=1.246 exp=0.0908 t=1.74 totR=45.2 yrs_pos=8/9 long_R=39.5 short_R=5.7 pf_long=1.475 pf_short=1.057
+           | VAL n=247 pf=1.253 exp=0.0869 t=1.3 totR=21.5 yrs_pos=3/4 long_R=31.5 short_R=-10.0 pf_long=1.619 pf_short=0.705
+B    N=  1 | IS n=498 pf=1.256 exp=0.0934 t=1.8 totR=46.5 yrs_pos=8/9 long_R=40.2 short_R=6.4 pf_long=1.488 pf_short=1.064
+           | VAL n=247 pf=1.259 exp=0.0884 t=1.33 totR=21.8 yrs_pos=3/4 long_R=31.7 short_R=-9.8 pf_long=1.625 pf_short=0.708 chaseR_mean IS +0.032 VAL +0.016
+C    N=  1 | IS n=498 pf=1.249 exp=0.0918 t=1.76 totR=45.7 yrs_pos=8/9 long_R=39.5 short_R=6.2 pf_long=1.475 pf_short=1.062
+           | VAL n=248 pf=1.255 exp=0.0873 t=1.31 totR=21.6 yrs_pos=3/4 long_R=31.7 short_R=-10.0 pf_long=1.622 pf_short=0.705
+A1   N=  5 | IS n=499 pf=1.239 exp=0.0885 t=1.7 totR=44.2 yrs_pos=8/9 long_R=35.8 short_R=8.4 pf_long=1.417 pf_short=1.085
+           | VAL n=248 pf=1.166 exp=0.0599 t=0.89 totR=14.9 yrs_pos=2/4 long_R=26.8 short_R=-11.9 pf_long=1.499 pf_short=0.668
+A2   N=  5 | IS n=498 pf=1.239 exp=0.0886 t=1.7 totR=44.1 yrs_pos=8/9 long_R=35.8 short_R=8.3 pf_long=1.417 pf_short=1.084
+           | VAL n=247 pf=1.161 exp=0.0586 t=0.87 totR=14.5 yrs_pos=2/4 long_R=26.4 short_R=-11.9 pf_long=1.492 pf_short=0.668
+B    N=  5 | IS n=498 pf=1.238 exp=0.0864 t=1.68 totR=43.0 yrs_pos=8/9 long_R=35.9 short_R=7.1 pf_long=1.422 pf_short=1.074
+           | VAL n=247 pf=1.196 exp=0.0691 t=1.04 totR=17.1 yrs_pos=2/4 long_R=28.0 short_R=-10.9 pf_long=1.537 pf_short=0.688 chaseR_mean IS +0.039 VAL +0.035
+C    N=  5 | IS n=494 pf=1.234 exp=0.0871 t=1.66 totR=43.0 yrs_pos=8/9 long_R=35.2 short_R=7.8 pf_long=1.41 pf_short=1.08
+           | VAL n=247 pf=1.173 exp=0.0625 t=0.93 totR=15.4 yrs_pos=2/4 long_R=27.4 short_R=-11.9 pf_long=1.515 pf_short=0.668
+A1   N= 15 | IS n=499 pf=1.22 exp=0.0813 t=1.56 totR=40.6 yrs_pos=7/9 long_R=32.5 short_R=8.0 pf_long=1.379 pf_short=1.082
+           | VAL n=248 pf=1.104 exp=0.0383 t=0.58 totR=9.5 yrs_pos=2/4 long_R=21.1 short_R=-11.6 pf_long=1.372 pf_short=0.664
+A2   N= 15 | IS n=494 pf=1.212 exp=0.0789 t=1.51 totR=39.0 yrs_pos=7/9 long_R=32.4 short_R=6.6 pf_long=1.377 pf_short=1.068
+           | VAL n=245 pf=1.114 exp=0.0421 t=0.63 totR=10.3 yrs_pos=2/4 long_R=22.0 short_R=-11.7 pf_long=1.394 pf_short=0.662
+B    N= 15 | IS n=494 pf=1.198 exp=0.0712 t=1.4 totR=35.2 yrs_pos=7/9 long_R=30.8 short_R=4.4 pf_long=1.363 pf_short=1.047
+           | VAL n=245 pf=1.108 exp=0.0393 t=0.6 totR=9.6 yrs_pos=2/4 long_R=20.2 short_R=-10.6 pf_long=1.365 pf_short=0.684 chaseR_mean IS +0.063 VAL +0.067
+C    N= 15 | IS n=489 pf=1.207 exp=0.0767 t=1.47 totR=37.5 yrs_pos=7/9 long_R=33.0 short_R=4.5 pf_long=1.391 pf_short=1.046
+           | VAL n=244 pf=1.102 exp=0.0378 t=0.57 totR=9.2 yrs_pos=2/4 long_R=20.5 short_R=-11.3 pf_long=1.368 pf_short=0.67
+A1   N= 60 | IS n=499 pf=1.137 exp=0.0537 t=1.03 totR=26.8 yrs_pos=6/9 long_R=26.2 short_R=0.6 pf_long=1.279 pf_short=1.006
+           | VAL n=248 pf=1.186 exp=0.0656 t=1.0 totR=16.3 yrs_pos=2/4 long_R=28.8 short_R=-12.5 pf_long=1.557 pf_short=0.65
+A2   N= 60 | IS n=478 pf=1.158 exp=0.0617 t=1.15 totR=29.5 yrs_pos=6/9 long_R=27.9 short_R=1.6 pf_long=1.306 pf_short=1.017
+           | VAL n=235 pf=1.255 exp=0.0867 t=1.29 totR=20.4 yrs_pos=2/4 long_R=33.4 short_R=-13.1 pf_long=1.721 pf_short=0.609
+B    N= 60 | IS n=478 pf=1.137 exp=0.0503 t=0.99 totR=24.0 yrs_pos=7/9 long_R=23.9 short_R=0.1 pf_long=1.276 pf_short=1.001
+           | VAL n=235 pf=1.123 exp=0.0424 t=0.66 totR=10.0 yrs_pos=2/4 long_R=23.8 short_R=-13.8 pf_long=1.501 pf_short=0.59 chaseR_mean IS +0.104 VAL +0.103
+C    N= 60 | IS n=478 pf=1.12 exp=0.0479 t=0.89 totR=22.9 yrs_pos=6/9 long_R=25.8 short_R=-2.9 pf_long=1.285 pf_short=0.971
+           | VAL n=237 pf=1.168 exp=0.0595 t=0.89 totR=14.1 yrs_pos=2/4 long_R=27.1 short_R=-13.0 pf_long=1.555 pf_short=0.632
+A1   N=240 | IS n=499 pf=1.117 exp=0.0475 t=0.89 totR=23.7 yrs_pos=5/9 long_R=29.0 short_R=-5.4 pf_long=1.313 pf_short=0.951
+           | VAL n=248 pf=1.095 exp=0.0348 t=0.55 totR=8.6 yrs_pos=1/4 long_R=16.6 short_R=-7.9 pf_long=1.294 pf_short=0.771
+A2   N=240 | IS n=436 pf=1.109 exp=0.0444 t=0.78 totR=19.3 yrs_pos=6/9 long_R=24.6 short_R=-5.2 pf_long=1.299 pf_short=0.945
+           | VAL n=220 pf=0.988 exp=-0.0044 t=-0.07 totR=-1.0 yrs_pos=1/4 long_R=13.9 short_R=-14.8 pf_long=1.276 pf_short=0.533
+B    N=240 | IS n=436 pf=1.044 exp=0.0164 t=0.32 totR=7.1 yrs_pos=4/9 long_R=22.5 short_R=-15.4 pf_long=1.304 pf_short=0.825
+           | VAL n=220 pf=0.935 exp=-0.0237 t=-0.38 totR=-5.2 yrs_pos=1/4 long_R=9.7 short_R=-14.9 pf_long=1.197 pf_short=0.512 chaseR_mean IS +0.216 VAL +0.220
+C    N=240 | IS n=453 pf=1.127 exp=0.0521 t=0.92 totR=23.6 yrs_pos=5/9 long_R=27.5 short_R=-3.9 pf_long=1.317 pf_short=0.961
+           | VAL n=225 pf=1.161 exp=0.0578 t=0.86 totR=13.0 yrs_pos=1/4 long_R=18.3 short_R=-5.3 pf_long=1.366 pf_short=0.827
+N=  1: IS theoretical trades already closed at T+N: 1 of 499, their theo R sum -1.0
+N=  5: IS theoretical trades already closed at T+N: 1 of 499, their theo R sum -1.0
+N= 15: IS theoretical trades already closed at T+N: 5 of 499, their theo R sum -4.6
+N= 60: IS theoretical trades already closed at T+N: 21 of 499, their theo R sum -12.3
+N=240: IS theoretical trades already closed at T+N: 63 of 499, their theo R sum -38.3

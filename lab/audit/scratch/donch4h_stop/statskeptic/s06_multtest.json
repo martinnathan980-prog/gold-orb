@@ -1,0 +1,93 @@
+{
+ "M": 48,
+ "N_eff_nyholt": 37.1,
+ "N_eff_liji": 21.0,
+ "N_eff_galwey": 21.6,
+ "top_eigen_share": [
+  0.476,
+  0.105,
+  0.057,
+  0.047,
+  0.033
+ ],
+ "corr_with_candidate": {
+  "median": 0.569,
+  "q90": 0.962
+ },
+ "mvn_global_null": {
+  "P_max_t>=2.0": 0.3293,
+  "P_max_t>=2.35": 0.1722,
+  "max_t_q50_90_95": [
+   1.71,
+   2.59,
+   2.86
+  ]
+ },
+ "mvn_null_plausible_only": {
+  "n_cfg": 39,
+  "P_max_t>=2.0": 0.2549,
+  "P_max_t>=2.35": 0.1287
+ },
+ "obs_week_t_candidate": 2.32,
+ "obs_week_t_max": 2.52,
+ "obs_week_t_argmax": 43,
+ "reality_check_p_candidate": 0.1512,
+ "spa_c_p_candidate": 0.1378,
+ "rc_max_t_q50_90_95": [
+  1.59,
+  2.49,
+  2.76
+ ],
+ "single_test_p_candidate": 0.0088,
+ "dsr_variants": {
+  "empirical_var_all48|N=5": [
+   0.703,
+   0.0839
+  ],
+  "empirical_var_all48|N=10": [
+   0.447,
+   0.1107
+  ],
+  "empirical_var_all48|N=20": [
+   0.241,
+   0.1337
+  ],
+  "empirical_var_all48|N=48": [
+   0.091,
+   0.159
+  ],
+  "empirical_var_plausible|N=5": [
+   0.881,
+   0.0578
+  ],
+  "empirical_var_plausible|N=10": [
+   0.764,
+   0.0764
+  ],
+  "empirical_var_plausible|N=20": [
+   0.628,
+   0.0922
+  ],
+  "empirical_var_plausible|N=48": [
+   0.457,
+   0.1097
+  ],
+  "null_var_1_over_n|N=5": [
+   0.902,
+   0.0534
+  ],
+  "null_var_1_over_n|N=10": [
+   0.807,
+   0.0705
+  ],
+  "null_var_1_over_n|N=20": [
+   0.693,
+   0.0851
+  ],
+  "null_var_1_over_n|N=48": [
+   0.541,
+   0.1012
+  ]
+ },
+ "candidate_sr_trade": 0.1053
+}

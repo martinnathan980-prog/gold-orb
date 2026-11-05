@@ -1,0 +1,13 @@
+loop done, trades 1483
+IS: official n=1037 replica n=1037 common=1037 only_off=0 only_rep=0
+   max |dR| 0.00e+00  n(|dR|>1e-6) 0  max |dswap| 0.00e+00  side mismatch 0
+   official: {'n': 1037, 'pf': np.float64(1.177), 't': np.float64(1.83), 'exp': 0.1199, 'totR': 124.3, 'yrs+': '6/9', 'L_pf': np.float64(1.041), 'S_pf': np.float64(1.321)}
+   replica : {'n': 1037, 'pf': np.float64(1.177), 't': np.float64(1.83), 'exp': 0.1199, 'totR': 124.3, 'yrs+': '6/9', 'L_pf': np.float64(1.041), 'S_pf': np.float64(1.321)}
+VAL: official n=445 replica n=445 common=445 only_off=0 only_rep=0
+   max |dR| 0.00e+00  n(|dR|>1e-6) 0  max |dswap| 0.00e+00  side mismatch 0
+   official: {'n': 445, 'pf': np.float64(1.1), 't': np.float64(0.74), 'exp': 0.0651, 'totR': 29.0, 'yrs+': '3/4', 'L_pf': np.float64(1.22), 'S_pf': np.float64(0.968)}
+   replica : {'n': 445, 'pf': np.float64(1.1), 't': np.float64(0.74), 'exp': 0.0651, 'totR': 29.0, 'yrs+': '3/4', 'L_pf': np.float64(1.22), 'S_pf': np.float64(0.968)}
+
+real	0m17.069s
+user	0m11.144s
+sys	0m8.895s

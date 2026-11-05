@@ -1,0 +1,7 @@
+orders 2646 trades 747
+IS  n=499 pf=1.35 exp=0.1233 t=2.35 totR=61.5 yrs_pos=8/9 long_R=49.5 short_R=12.0 pf_long=1.631 pf_short=1.123
+custom simulator == engine (all 2013-2025 trades, R, entry/exit times): True
+every-signal parity: True
+IS: fills in the first M1 bar of the bracket: 12 of 499
+IS: minutes from bracket start to fill: quantiles [ 13.  42.  97. 164. 205.]
+IS exit reasons {'trail': 473, 'stop': 18, 'time': 8}

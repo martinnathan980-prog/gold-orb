@@ -1,0 +1,97 @@
+--- trade 207: date 2014-10-14 (Tue) side -1  official side -1
+  range UTC [2014-10-13 23:00, 06:00) bars 420: H=max ask high 1237.371 @ 00:59  L=min bid low 1233.411 @ 03:35  W=3.960
+  levels buy 1237.767 (Ask)  sell 1233.015 (Bid); no touch before 06:47: True; prev bar ah/bl 1233.719/1233.222
+  touch bar 2014-10-14 06:47:00+00:00 ao 1233.646 ah 1233.662 bo 1233.312 bl 1232.609 -> fill 1232.830 (official 1232.830); stop 1237.767 (official 1237.767)
+  scheduled exit 2014-10-16 20:00:00+00:00 ; exit stop @ 2014-10-14 12:09:00+00:00 px 1237.953 (official stop 2014-10-14 12:10:00+00:00 1237.953); nights 0 swap 0.000 (official 0.000)
+  R hand -1.0518 official -1.0518  MATCH=True
+--- trade 6: date 2013-01-23 (Wed) side -1  official side -1
+  range UTC [2013-01-23 00:00, 07:00) bars 416: H=max ask high 1695.287 @ 00:13  L=min bid low 1691.452 @ 06:00  W=3.835
+  levels buy 1695.670 (Ask)  sell 1691.069 (Bid); no touch before 08:15: True; prev bar ah/bl 1692.001/1691.326
+  touch bar 2013-01-23 08:15:00+00:00 ao 1691.934 ah 1691.970 bo 1691.571 bl 1690.948 -> fill 1690.815 (official 1690.815); stop 1695.670 (official 1695.670)
+  scheduled exit 2013-01-25 21:00:00+00:00 ; exit time @ 2013-01-25 21:00:00+00:00 px 1659.780 (official time 2013-01-25 21:00:00+00:00 1659.780); nights 4 swap 0.376 (official 0.376)
+  R hand 6.2997 official 6.2997  MATCH=True
+--- trade 987: date 2021-08-20 (Fri) side +1  official side +1
+  range UTC [2021-08-19 23:00, 06:00) bars 420: H=max ask high 1787.245 @ 05:51  L=min bid low 1778.628 @ 23:57  W=8.617
+  levels buy 1788.107 (Ask)  sell 1777.766 (Bid); no touch before 06:35: True; prev bar ah/bl 1787.962/1786.728
+  touch bar 2021-08-20 06:35:00+00:00 ao 1787.902 ah 1788.332 bo 1787.488 bl 1787.148 -> fill 1788.375 (official 1788.375); stop 1777.766 (official 1777.766)
+  scheduled exit 2021-08-24 20:00:00+00:00 ; exit stop @ 2021-08-22 23:00:00+00:00 px 1777.500 (official stop 2021-08-22 23:01:00+00:00 1777.500); nights 1 swap 0.248 (official 0.248)
+  R hand -1.0551 official -1.0551  MATCH=True
+--- trade 620: date 2018-06-13 (Wed) side -1  official side -1
+  range UTC [2018-06-12 23:00, 06:00) bars 420: H=max ask high 1296.241 @ 00:08  L=min bid low 1294.412 @ 05:05  W=1.829
+  levels buy 1296.424 (Ask)  sell 1294.229 (Bid); no touch before 07:35: True; prev bar ah/bl 1294.718/1294.418
+  touch bar 2018-06-13 07:35:00+00:00 ao 1294.619 ah 1294.642 bo 1294.419 bl 1294.049 -> fill 1294.035 (official 1294.035); stop 1296.424 (official 1296.424)
+  scheduled exit 2018-06-15 20:00:00+00:00 ; exit stop @ 2018-06-13 12:50:00+00:00 px 1296.618 (official stop 2018-06-13 12:51:00+00:00 1296.618); nights 0 swap 0.000 (official 0.000)
+  R hand -1.1107 official -1.1107  MATCH=True
+--- trade 973: date 2021-07-19 (Mon) side -1  official side -1
+  range UTC [2021-07-18 23:00, 06:00) bars 420: H=max ask high 1817.582 @ 00:06  L=min bid low 1810.375 @ 05:45  W=7.207
+  levels buy 1818.303 (Ask)  sell 1809.654 (Bid); no touch before 06:03: True; prev bar ah/bl 1811.245/1809.888
+  touch bar 2021-07-19 06:03:00+00:00 ao 1810.265 ah 1810.385 bo 1809.988 bl 1809.388 -> fill 1809.383 (official 1809.383); stop 1818.303 (official 1818.303)
+  scheduled exit 2021-07-21 20:00:00+00:00 ; exit stop @ 2021-07-20 01:44:00+00:00 px 1818.575 (official stop 2021-07-20 01:45:00+00:00 1818.575); nights 1 swap 0.101 (official 0.101)
+  R hand -1.0497 official -1.0497  MATCH=True
+--- trade 956: date 2021-05-27 (Thu) side +1  official side +1
+  range UTC [2021-05-26 23:00, 06:00) bars 420: H=max ask high 1902.522 @ 05:59  L=min bid low 1892.008 @ 01:23  W=10.514
+  levels buy 1903.573 (Ask)  sell 1890.957 (Bid); no touch before 06:06: True; prev bar ah/bl 1903.102/1902.265
+  touch bar 2021-05-27 06:06:00+00:00 ao 1903.092 ah 1903.945 bo 1902.725 bl 1902.635 -> fill 1903.859 (official 1903.859); stop 1890.957 (official 1890.957)
+  scheduled exit 2021-05-31 20:00:00+00:00 ; exit stop @ 2021-05-27 12:19:00+00:00 px 1890.673 (official stop 2021-05-27 12:20:00+00:00 1890.673); nights 0 swap 0.000 (official 0.000)
+  R hand -1.0274 official -1.0274  MATCH=True
+--- trade 969: date 2021-07-08 (Thu) side +1  official side +1
+  range UTC [2021-07-07 23:00, 06:00) bars 420: H=max ask high 1805.812 @ 23:05  L=min bid low 1796.128 @ 04:43  W=9.684
+  levels buy 1806.780 (Ask)  sell 1795.160 (Bid); no touch before 07:27: True; prev bar ah/bl 1804.842/1802.618
+  touch bar 2021-07-08 07:27:00+00:00 ao 1804.582 ah 1806.942 bo 1804.268 bl 1804.098 -> fill 1807.051 (official 1807.051); stop 1795.160 (official 1795.160)
+  scheduled exit 2021-07-12 20:00:00+00:00 ; exit stop @ 2021-07-08 15:15:00+00:00 px 1794.890 (official stop 2021-07-08 15:16:00+00:00 1794.890); nights 0 swap 0.000 (official 0.000)
+  R hand -1.0285 official -1.0285  MATCH=True
+--- trade 782: date 2019-11-08 (Fri) side +1  official side +1
+  range UTC [2019-11-08 00:00, 07:00) bars 419: H=max ask high 1471.222 @ 06:54  L=min bid low 1465.645 @ 00:12  W=5.577
+  levels buy 1471.780 (Ask)  sell 1465.087 (Bid); no touch before 07:54: True; prev bar ah/bl 1471.595/1470.805
+  touch bar 2019-11-08 07:54:00+00:00 ao 1471.575 ah 1471.942 bo 1471.265 bl 1471.015 -> fill 1472.000 (official 1472.000); stop 1465.087 (official 1465.087)
+  scheduled exit 2019-11-12 21:00:00+00:00 ; exit stop @ 2019-11-08 11:18:00+00:00 px 1464.868 (official stop 2019-11-08 11:19:00+00:00 1464.868); nights 0 swap 0.000 (official 0.000)
+  R hand -1.0419 official -1.0419  MATCH=True
+--- trade 189: date 2014-08-19 (Tue) side +1  official side +1
+  range UTC [2014-08-18 23:00, 06:00) bars 418: H=max ask high 1300.772 @ 05:46  L=min bid low 1297.441 @ 00:33  W=3.331
+  levels buy 1301.105 (Ask)  sell 1297.108 (Bid); no touch before 08:51: True; prev bar ah/bl 1301.070/1300.729
+  touch bar 2014-08-19 08:51:00+00:00 ao 1301.065 ah 1301.142 bo 1300.781 bl 1300.751 -> fill 1301.300 (official 1301.300); stop 1297.108 (official 1297.108)
+  scheduled exit 2014-08-21 20:00:00+00:00 ; exit stop @ 2014-08-19 13:00:00+00:00 px 1296.913 (official stop 2014-08-19 13:01:00+00:00 1296.913); nights 0 swap 0.000 (official 0.000)
+  R hand -1.0631 official -1.0631  MATCH=True
+--- trade 559: date 2017-12-13 (Wed) side -1  official side -1
+  range UTC [2017-12-13 00:00, 07:00) bars 420: H=max ask high 1245.428 @ 03:36  L=min bid low 1242.401 @ 01:35  W=3.027
+  levels buy 1245.731 (Ask)  sell 1242.098 (Bid); no touch before 07:17: True; prev bar ah/bl 1242.619/1242.258
+  touch bar 2017-12-13 07:17:00+00:00 ao 1242.512 ah 1242.519 bo 1242.282 bl 1242.061 -> fill 1241.912 (official 1241.912); stop 1245.731 (official 1245.731)
+  scheduled exit 2017-12-15 21:00:00+00:00 ; exit stop @ 2017-12-13 13:30:00+00:00 px 1245.918 (official stop 2017-12-13 13:31:00+00:00 1245.918); nights 0 swap 0.000 (official 0.000)
+  R hand -1.0673 official -1.0673  MATCH=True
+--- trade 817: date 2020-02-27 (Thu) side -1  official side -1
+  range UTC [2020-02-27 00:00, 07:00) bars 420: H=max ask high 1652.795 @ 06:17  L=min bid low 1642.885 @ 00:00  W=9.910
+  levels buy 1653.786 (Ask)  sell 1641.894 (Bid); no touch before 07:38: True; prev bar ah/bl 1644.615/1642.548
+  touch bar 2020-02-27 07:38:00+00:00 ao 1642.975 ah 1642.982 bo 1642.658 bl 1641.675 -> fill 1641.648 (official 1641.648); stop 1653.786 (official 1653.786)
+  scheduled exit 2020-03-02 21:00:00+00:00 ; exit stop @ 2020-02-27 12:53:00+00:00 px 1654.034 (official stop 2020-02-27 12:54:00+00:00 1654.034); nights 0 swap 0.000 (official 0.000)
+  R hand -1.0262 official -1.0262  MATCH=True
+--- trade 603: date 2018-05-03 (Thu) side +1  official side +1
+  range UTC [2018-05-02 23:00, 06:00) bars 419: H=max ask high 1310.691 @ 01:50  L=min bid low 1305.388 @ 23:42  W=5.303
+  levels buy 1311.221 (Ask)  sell 1304.858 (Bid); no touch before 08:43: True; prev bar ah/bl 1311.171/1310.708
+  touch bar 2018-05-03 08:43:00+00:00 ao 1310.978 ah 1311.309 bo 1310.739 bl 1310.648 -> fill 1311.418 (official 1311.418); stop 1304.858 (official 1304.858)
+  scheduled exit 2018-05-07 20:00:00+00:00 ; exit time @ 2018-05-07 20:00:00+00:00 px 1314.035 (official time 2018-05-07 20:00:00+00:00 1314.035); nights 2 swap 0.364 (official 0.364)
+  R hand 0.3327 official 0.3327  MATCH=True
+--- trade 107: date 2013-12-20 (Fri) side +1  official side +1
+  range UTC [2013-12-20 00:00, 07:00) bars 420: H=max ask high 1197.685 @ 03:59  L=min bid low 1190.775 @ 00:05  W=6.910
+  levels buy 1198.376 (Ask)  sell 1190.084 (Bid); no touch before 08:47: True; prev bar ah/bl 1197.247/1194.923
+  touch bar 2013-12-20 08:47:00+00:00 ao 1197.197 ah 1198.949 bo 1196.842 bl 1196.823 -> fill 1198.556 (official 1198.556); stop 1190.084 (official 1190.084)
+  scheduled exit 2013-12-24 21:00:00+00:00 ; exit time @ 2013-12-27 00:00:00+00:00 px 1208.895 (official time 2013-12-27 00:00:00+00:00 1208.895); nights 7 swap 1.165 (official 1.165)
+  R hand 1.0746 official 1.0746  MATCH=True
+--- trade 12: date 2013-02-08 (Fri) side +1  official side +1
+  range UTC [2013-02-08 00:00, 07:00) bars 418: H=max ask high 1672.883 @ 02:59  L=min bid low 1667.894 @ 00:38  W=4.989
+  levels buy 1673.382 (Ask)  sell 1667.395 (Bid); no touch before 08:13: True; prev bar ah/bl 1673.364/1672.633
+  touch bar 2013-02-08 08:13:00+00:00 ao 1673.326 ah 1673.442 bo 1672.993 bl 1672.378 -> fill 1673.633 (official 1673.633); stop 1667.395 (official 1667.395)
+  scheduled exit 2013-02-12 21:00:00+00:00 ; exit stop @ 2013-02-08 13:19:00+00:00 px 1667.145 (official stop 2013-02-08 13:20:00+00:00 1667.145); nights 0 swap 0.000 (official 0.000)
+  R hand -1.0513 official -1.0513  MATCH=True
+--- trade 29: date 2013-04-10 (Wed) side -1  official side -1
+  range UTC [2013-04-09 23:00, 06:00) bars 401: H=max ask high 1588.644 @ 02:43  L=min bid low 1584.152 @ 23:31  W=4.492
+  levels buy 1589.093 (Ask)  sell 1583.703 (Bid); no touch before 07:48: True; prev bar ah/bl 1585.337/1583.927
+  touch bar 2013-04-10 07:48:00+00:00 ao 1584.387 ah 1584.418 bo 1584.086 bl 1583.577 -> fill 1583.465 (official 1583.465); stop 1589.093 (official 1589.093)
+  scheduled exit 2013-04-12 20:00:00+00:00 ; exit time @ 2013-04-12 20:00:00+00:00 px 1488.571 (official time 2013-04-12 20:00:00+00:00 1488.571); nights 4 swap 0.352 (official 0.352)
+  R hand 16.7862 official 16.7862  MATCH=True
+--- trade 620: date 2018-06-13 (Wed) side -1  official side -1
+  range UTC [2018-06-12 23:00, 06:00) bars 420: H=max ask high 1296.241 @ 00:08  L=min bid low 1294.412 @ 05:05  W=1.829
+  levels buy 1296.424 (Ask)  sell 1294.229 (Bid); no touch before 07:35: True; prev bar ah/bl 1294.718/1294.418
+  touch bar 2018-06-13 07:35:00+00:00 ao 1294.619 ah 1294.642 bo 1294.419 bl 1294.049 -> fill 1294.035 (official 1294.035); stop 1296.424 (official 1296.424)
+  scheduled exit 2018-06-15 20:00:00+00:00 ; exit stop @ 2018-06-13 12:50:00+00:00 px 1296.618 (official stop 2018-06-13 12:51:00+00:00 1296.618); nights 0 swap 0.000 (official 0.000)
+  R hand -1.1107 official -1.1107  MATCH=True
+ALL MATCH: True n checked 16

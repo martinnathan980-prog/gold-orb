@@ -1,0 +1,80 @@
+[
+ {
+  "scenario": "prereg",
+  "orders": 2621,
+  "nofill": 0,
+  "is_n": 1037,
+  "is_pf": 1.1773,
+  "is_t": 1.83,
+  "is_exp": 0.1199,
+  "val_n": 445,
+  "val_pf": 1.1002,
+  "val_t": 0.742,
+  "val_exp": 0.0651
+ },
+ {
+  "scenario": "comm+slip x0.5, spread x1",
+  "orders": 2621,
+  "nofill": 0,
+  "is_n": 1037,
+  "is_pf": 1.2382,
+  "is_t": 2.363,
+  "is_exp": 0.1578,
+  "val_n": 445,
+  "val_pf": 1.1507,
+  "val_t": 1.077,
+  "val_exp": 0.0963
+ },
+ {
+  "scenario": "all x0.75",
+  "orders": 2624,
+  "nofill": 0,
+  "is_n": 1038,
+  "is_pf": 1.2315,
+  "is_t": 2.3,
+  "is_exp": 0.1551,
+  "val_n": 447,
+  "val_pf": 1.1469,
+  "val_t": 1.055,
+  "val_exp": 0.0949
+ },
+ {
+  "scenario": "all x0.6",
+  "orders": 2625,
+  "nofill": 0,
+  "is_n": 1038,
+  "is_pf": 1.268,
+  "is_t": 2.597,
+  "is_exp": 0.1783,
+  "val_n": 447,
+  "val_pf": 1.1729,
+  "val_t": 1.219,
+  "val_exp": 0.1111
+ },
+ {
+  "scenario": "all x0.5",
+  "orders": 2625,
+  "nofill": 0,
+  "is_n": 1038,
+  "is_pf": 1.2926,
+  "is_t": 2.789,
+  "is_exp": 0.1938,
+  "val_n": 447,
+  "val_pf": 1.1908,
+  "val_t": 1.328,
+  "val_exp": 0.1221
+ },
+ {
+  "scenario": "all x0.75 NAIVE",
+  "orders": 2621,
+  "nofill": 179,
+  "is_n": 949,
+  "is_pf": 1.183,
+  "is_t": 1.783,
+  "is_exp": 0.1226,
+  "val_n": 426,
+  "val_pf": 1.0057,
+  "val_t": 0.043,
+  "val_exp": 0.0038
+ }
+]

@@ -1,0 +1,19 @@
+utc+0 orders 2646 trades 747
+utc+1 orders 2657 trades 729
+utc+2 orders 2611 trades 717
+utc+3 orders 2601 trades 726
+ny17 orders 2598 trades 716
+eet orders 2601 trades 715
+utc+0  | IS n=499 pf=1.35 exp=0.1233 t=2.35 totR=61.5 yrs_pos=8/9 long_R=49.5 short_R=12.0 pf_long=1.631 pf_short=1.123
+       | VAL n=248 pf=1.294 exp=0.0998 t=1.49 totR=24.7 yrs_pos=3/4 long_R=34.4 short_R=-9.7 pf_long=1.686 pf_short=0.715
+utc+1  | IS n=487 pf=1.349 exp=0.1218 t=2.32 totR=59.3 yrs_pos=8/9 long_R=39.8 short_R=19.5 pf_long=1.48 pf_short=1.224
+       | VAL n=242 pf=1.256 exp=0.0885 t=1.32 totR=21.4 yrs_pos=3/4 long_R=31.6 short_R=-10.2 pf_long=1.634 pf_short=0.699
+utc+2  | IS n=480 pf=1.284 exp=0.1021 t=1.94 totR=49.0 yrs_pos=8/9 long_R=36.4 short_R=12.7 pf_long=1.443 pf_short=1.139
+       | VAL n=237 pf=1.264 exp=0.0922 t=1.31 totR=21.8 yrs_pos=3/4 long_R=35.5 short_R=-13.6 pf_long=1.748 pf_short=0.614
+utc+3  | IS n=490 pf=1.304 exp=0.1062 t=2.11 totR=52.0 yrs_pos=7/9 long_R=40.7 short_R=11.3 pf_long=1.522 pf_short=1.121
+       | VAL n=236 pf=1.354 exp=0.1171 t=1.68 totR=27.6 yrs_pos=4/4 long_R=43.4 short_R=-15.7 pf_long=2.03 pf_short=0.561
+ny17   | IS n=482 pf=1.279 exp=0.1003 t=1.94 totR=48.4 yrs_pos=8/9 long_R=38.2 short_R=10.2 pf_long=1.474 pf_short=1.109
+       | VAL n=234 pf=1.306 exp=0.1057 t=1.47 totR=24.7 yrs_pos=3/4 long_R=40.5 short_R=-15.8 pf_long=1.918 pf_short=0.569
+eet    | IS n=481 pf=1.283 exp=0.1018 t=1.97 totR=49.0 yrs_pos=7/9 long_R=37.8 short_R=11.2 pf_long=1.469 pf_short=1.121
+       | VAL n=234 pf=1.298 exp=0.1029 t=1.44 totR=24.1 yrs_pos=3/4 long_R=39.9 short_R=-15.8 pf_long=1.902 pf_short=0.569
+IS: share of UTC-grid trades with a same-side ny17-grid trade within 4 h: 455/499 = 91%

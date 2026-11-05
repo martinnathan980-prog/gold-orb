@@ -1,0 +1,22 @@
+base                               IS {'n': 499, 'pf': 1.35, 'exp': 0.1233, 't': 2.35, 'long_R': 49.5, 'short_R': 12.0}
+                                   VAL {'n': 248, 'pf': 1.294, 'exp': 0.0998, 't': 1.49, 'long_R': 34.4, 'short_R': -9.7}
+trail_updated_at_4h_closes_only    IS {'n': 494, 'pf': 1.267, 'exp': 0.0973, 't': 1.9, 'long_R': 44.4, 'short_R': 3.6}
+                                   VAL {'n': 242, 'pf': 1.282, 'exp': 0.1002, 't': 1.45, 'long_R': 35.1, 'short_R': -10.9}
+IS R by OCO window (UTC 4h window in which the fill occurred):
+                   count    sum    pf
+window_start_utc                    
+0                    40  11.60  1.85
+4                    43   7.20  1.53
+8                    74   1.88  1.06
+12                  221  39.89  1.53
+16                   83  -3.64  0.88
+20                   38   4.60  1.36
+VAL R by OCO window (UTC 4h window in which the fill occurred):
+                   count    sum    pf
+window_start_utc                    
+0                    35  12.22  2.87
+4                    26   2.79  1.30
+8                    20  -5.25  0.44
+12                  107  21.82  1.63
+16                   45  -8.28  0.60
+20                   15   1.45  1.38

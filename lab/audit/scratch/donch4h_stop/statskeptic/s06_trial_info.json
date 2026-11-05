@@ -1,0 +1,941 @@
+[
+ {
+  "j": 0,
+  "cfg": {
+   "family": "donchian",
+   "tf": "1h",
+   "n": 24,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0
+  },
+  "n": 1945,
+  "pf": 0.805,
+  "t": -3.63,
+  "exp": -0.0862,
+  "sr_trade": -0.08224065689840471
+ },
+ {
+  "j": 1,
+  "cfg": {
+   "family": "donchian",
+   "tf": "1h",
+   "n": 120,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0
+  },
+  "n": 812,
+  "pf": 0.9,
+  "t": -1.09,
+  "exp": -0.0415,
+  "sr_trade": -0.0382057270551634
+ },
+ {
+  "j": 2,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 20,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0
+  },
+  "n": 586,
+  "pf": 1.002,
+  "t": 0.02,
+  "exp": 0.0007,
+  "sr_trade": 0.0006309397228736413
+ },
+ {
+  "j": 3,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0
+  },
+  "n": 332,
+  "pf": 1.282,
+  "t": 1.63,
+  "exp": 0.0992,
+  "sr_trade": 0.089440321610864
+ },
+ {
+  "j": 4,
+  "cfg": {
+   "family": "donchian",
+   "tf": "D",
+   "n": 5,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0
+  },
+  "n": 301,
+  "pf": 0.977,
+  "t": -0.15,
+  "exp": -0.0061,
+  "sr_trade": -0.008707465783865456
+ },
+ {
+  "j": 5,
+  "cfg": {
+   "family": "donchian",
+   "tf": "D",
+   "n": 20,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0
+  },
+  "n": 154,
+  "pf": 1.109,
+  "t": 0.5,
+  "exp": 0.0287,
+  "sr_trade": 0.04050597054456916
+ },
+ {
+  "j": 6,
+  "cfg": {
+   "family": "vbo",
+   "anchor": "day",
+   "k": 0.3,
+   "atr_n": 14,
+   "target_r": NaN,
+   "hold_days": 1,
+   "nr": 0
+  },
+  "n": 2104,
+  "pf": 0.921,
+  "t": -1.41,
+  "exp": -0.0396,
+  "sr_trade": -0.030685217533252263
+ },
+ {
+  "j": 7,
+  "cfg": {
+   "family": "vbo",
+   "anchor": "day",
+   "k": 0.6,
+   "atr_n": 14,
+   "target_r": NaN,
+   "hold_days": 1,
+   "nr": 0
+  },
+  "n": 1313,
+  "pf": 1.029,
+  "t": 0.36,
+  "exp": 0.0146,
+  "sr_trade": 0.010022337647739224
+ },
+ {
+  "j": 8,
+  "cfg": {
+   "family": "vbo",
+   "anchor": "ldn8",
+   "k": 0.3,
+   "atr_n": 14,
+   "target_r": NaN,
+   "hold_days": 1,
+   "nr": 0
+  },
+  "n": 1984,
+  "pf": 0.953,
+  "t": -0.77,
+  "exp": -0.0216,
+  "sr_trade": -0.017319764449575892
+ },
+ {
+  "j": 9,
+  "cfg": {
+   "family": "vbo",
+   "anchor": "ldn8",
+   "k": 0.6,
+   "atr_n": 14,
+   "target_r": NaN,
+   "hold_days": 1,
+   "nr": 0
+  },
+  "n": 1103,
+  "pf": 0.86,
+  "t": -1.9,
+  "exp": -0.0724,
+  "sr_trade": -0.05734141649387062
+ },
+ {
+  "j": 10,
+  "cfg": {
+   "family": "vbo",
+   "anchor": "ny8",
+   "k": 0.3,
+   "atr_n": 14,
+   "target_r": NaN,
+   "hold_days": 1,
+   "nr": 0
+  },
+  "n": 1760,
+  "pf": 0.837,
+  "t": -2.76,
+  "exp": -0.0728,
+  "sr_trade": -0.06580834083659602
+ },
+ {
+  "j": 11,
+  "cfg": {
+   "family": "vbo",
+   "anchor": "ny8",
+   "k": 0.6,
+   "atr_n": 14,
+   "target_r": NaN,
+   "hold_days": 1,
+   "nr": 0
+  },
+  "n": 835,
+  "pf": 0.866,
+  "t": -1.56,
+  "exp": -0.0656,
+  "sr_trade": -0.05384979581437058
+ },
+ {
+  "j": 12,
+  "cfg": {
+   "family": "tsmom",
+   "tf": "D",
+   "lookback": 5,
+   "vol": "none",
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5
+  },
+  "n": 521,
+  "pf": 0.978,
+  "t": -0.21,
+  "exp": -0.0061,
+  "sr_trade": -0.008987274339185022
+ },
+ {
+  "j": 13,
+  "cfg": {
+   "family": "tsmom",
+   "tf": "D",
+   "lookback": 20,
+   "vol": "none",
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5
+  },
+  "n": 526,
+  "pf": 0.835,
+  "t": -1.63,
+  "exp": -0.048,
+  "sr_trade": -0.07085697058359104
+ },
+ {
+  "j": 14,
+  "cfg": {
+   "family": "tsmom",
+   "tf": "D",
+   "lookback": 60,
+   "vol": "none",
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5
+  },
+  "n": 510,
+  "pf": 0.949,
+  "t": -0.47,
+  "exp": -0.0142,
+  "sr_trade": -0.020696952005903695
+ },
+ {
+  "j": 15,
+  "cfg": {
+   "family": "tsmom",
+   "tf": "D",
+   "lookback": 20,
+   "vol": "hi",
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5
+  },
+  "n": 247,
+  "pf": 0.664,
+  "t": -2.52,
+  "exp": -0.0946,
+  "sr_trade": -0.16013959103014075
+ },
+ {
+  "j": 16,
+  "cfg": {
+   "family": "tsmom",
+   "tf": "D",
+   "lookback": 20,
+   "vol": "lo",
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5
+  },
+  "n": 303,
+  "pf": 1.016,
+  "t": 0.12,
+  "exp": 0.0049,
+  "sr_trade": 0.0066457574911462
+ },
+ {
+  "j": 17,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 40,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0
+  },
+  "n": 411,
+  "pf": 1.121,
+  "t": 0.84,
+  "exp": 0.0457,
+  "sr_trade": 0.04122996707522244
+ },
+ {
+  "j": 18,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 90,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0
+  },
+  "n": 268,
+  "pf": 1.325,
+  "t": 1.66,
+  "exp": 0.1153,
+  "sr_trade": 0.1016309453549343
+ },
+ {
+  "j": 19,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 120,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0
+  },
+  "n": 233,
+  "pf": 1.326,
+  "t": 1.6,
+  "exp": 0.1197,
+  "sr_trade": 0.10474965011689
+ },
+ {
+  "j": 20,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 3.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0
+  },
+  "n": 284,
+  "pf": 1.348,
+  "t": 1.75,
+  "exp": 0.1672,
+  "sr_trade": 0.10359008293504328
+ },
+ {
+  "j": 21,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 1.5,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0
+  },
+  "n": 413,
+  "pf": 1.165,
+  "t": 1.07,
+  "exp": 0.0455,
+  "sr_trade": 0.052805698189939965
+ },
+ {
+  "j": 22,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 14,
+   "stop_atr": 3.0,
+   "trail_atr": 3.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0
+  },
+  "n": 278,
+  "pf": 1.327,
+  "t": 1.67,
+  "exp": 0.1116,
+  "sr_trade": 0.10005982678851794
+ },
+ {
+  "j": 23,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": NaN,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0
+  },
+  "n": 270,
+  "pf": 1.098,
+  "t": 0.58,
+  "exp": 0.0616,
+  "sr_trade": 0.03503010957322933
+ },
+ {
+  "j": 24,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": NaN,
+   "target_r": 2.0,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0
+  },
+  "n": 335,
+  "pf": 1.061,
+  "t": 0.49,
+  "exp": 0.0356,
+  "sr_trade": 0.027026406710828912
+ },
+ {
+  "j": 25,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 3,
+   "sess": "none",
+   "trend_ma": 0
+  },
+  "n": 351,
+  "pf": 1.31,
+  "t": 1.86,
+  "exp": 0.104,
+  "sr_trade": 0.09917921155892971
+ },
+ {
+  "j": 26,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "ldn_ny",
+   "trend_ma": 0
+  },
+  "n": 274,
+  "pf": 1.322,
+  "t": 1.65,
+  "exp": 0.113,
+  "sr_trade": 0.09971173069113085
+ },
+ {
+  "j": 27,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 50
+  },
+  "n": 256,
+  "pf": 1.294,
+  "t": 1.47,
+  "exp": 0.1071,
+  "sr_trade": 0.09210866385779687
+ },
+ {
+  "j": 28,
+  "cfg": {
+   "family": "donchian",
+   "tf": "D",
+   "n": 10,
+   "atr_n": 14,
+   "stop_atr": 0.75,
+   "trail_atr": 0.75,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0
+  },
+  "n": 269,
+  "pf": 1.12,
+  "t": 0.69,
+  "exp": 0.0461,
+  "sr_trade": 0.041883484043082106
+ },
+ {
+  "j": 29,
+  "cfg": {
+   "family": "donchian",
+   "tf": "1h",
+   "n": 240,
+   "atr_n": 14,
+   "stop_atr": 4.0,
+   "trail_atr": 4.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0
+  },
+  "n": 338,
+  "pf": 1.267,
+  "t": 1.57,
+  "exp": 0.0984,
+  "sr_trade": 0.08548223150064722
+ },
+ {
+  "j": 30,
+  "cfg": {
+   "family": "vbo",
+   "anchor": "day",
+   "k": 0.6,
+   "atr_n": 14,
+   "target_r": NaN,
+   "hold_days": 3,
+   "nr": 0
+  },
+  "n": 1169,
+  "pf": 0.94,
+  "t": -0.79,
+  "exp": -0.0254,
+  "sr_trade": -0.02305500489622148
+ },
+ {
+  "j": 31,
+  "cfg": {
+   "family": "vbo",
+   "anchor": "ldn8",
+   "k": 0.6,
+   "atr_n": 14,
+   "target_r": NaN,
+   "hold_days": 3,
+   "nr": 0
+  },
+  "n": 1034,
+  "pf": 0.819,
+  "t": -2.5,
+  "exp": -0.0809,
+  "sr_trade": -0.07789888960388147
+ },
+ {
+  "j": 32,
+  "cfg": {
+   "family": "vbo",
+   "anchor": "day",
+   "k": 0.3,
+   "atr_n": 14,
+   "target_r": NaN,
+   "hold_days": 1,
+   "nr": 7
+  },
+  "n": 340,
+  "pf": 0.908,
+  "t": -0.68,
+  "exp": -0.0614,
+  "sr_trade": -0.03712156290232
+ },
+ {
+  "j": 33,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 3.0,
+   "target_r": NaN,
+   "max_days": 3,
+   "sess": "none",
+   "trend_ma": 0
+  },
+  "n": 333,
+  "pf": 1.101,
+  "t": 0.68,
+  "exp": 0.0473,
+  "sr_trade": 0.037506159645372926
+ },
+ {
+  "j": 34,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 3.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "ldn_ny",
+   "trend_ma": 0
+  },
+  "n": 241,
+  "pf": 1.338,
+  "t": 1.59,
+  "exp": 0.1689,
+  "sr_trade": 0.10272835623271502
+ },
+ {
+  "j": 35,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 3,
+   "sess": "ldn_ny",
+   "trend_ma": 0
+  },
+  "n": 286,
+  "pf": 1.331,
+  "t": 1.78,
+  "exp": 0.1135,
+  "sr_trade": 0.10538662532167271
+ },
+ {
+  "j": 36,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 3.0,
+   "target_r": NaN,
+   "max_days": 3,
+   "sess": "ldn_ny",
+   "trend_ma": 0
+  },
+  "n": 273,
+  "pf": 1.164,
+  "t": 0.96,
+  "exp": 0.0777,
+  "sr_trade": 0.057905165330150436
+ },
+ {
+  "j": 37,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0,
+   "entry": "stop"
+  },
+  "n": 499,
+  "pf": 1.35,
+  "t": 2.35,
+  "exp": 0.1233,
+  "sr_trade": 0.10534571860141012
+ },
+ {
+  "j": 38,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 48,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0,
+   "entry": "stop"
+  },
+  "n": 553,
+  "pf": 1.319,
+  "t": 2.27,
+  "exp": 0.1128,
+  "sr_trade": 0.09651021834095641
+ },
+ {
+  "j": 39,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 72,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0,
+   "entry": "stop"
+  },
+  "n": 454,
+  "pf": 1.316,
+  "t": 2.08,
+  "exp": 0.1101,
+  "sr_trade": 0.09783162217176092
+ },
+ {
+  "j": 40,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 14,
+   "stop_atr": 1.6,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0,
+   "entry": "stop"
+  },
+  "n": 509,
+  "pf": 1.359,
+  "t": 2.41,
+  "exp": 0.1531,
+  "sr_trade": 0.10685456565629599
+ },
+ {
+  "j": 41,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 14,
+   "stop_atr": 2.4,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0,
+   "entry": "stop"
+  },
+  "n": 499,
+  "pf": 1.349,
+  "t": 2.34,
+  "exp": 0.1024,
+  "sr_trade": 0.10496432563708126
+ },
+ {
+  "j": 42,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 1.6,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0,
+   "entry": "stop"
+  },
+  "n": 602,
+  "pf": 1.354,
+  "t": 2.6,
+  "exp": 0.1,
+  "sr_trade": 0.1060458607584225
+ },
+ {
+  "j": 43,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.4,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0,
+   "entry": "stop"
+  },
+  "n": 433,
+  "pf": 1.416,
+  "t": 2.52,
+  "exp": 0.1729,
+  "sr_trade": 0.12133448051000856
+ },
+ {
+  "j": 44,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 4,
+   "sess": "none",
+   "trend_ma": 0,
+   "entry": "stop"
+  },
+  "n": 506,
+  "pf": 1.333,
+  "t": 2.3,
+  "exp": 0.1171,
+  "sr_trade": 0.1020921575557812
+ },
+ {
+  "j": 45,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 11,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0,
+   "entry": "stop"
+  },
+  "n": 500,
+  "pf": 1.346,
+  "t": 2.35,
+  "exp": 0.1201,
+  "sr_trade": 0.10492511734474477
+ },
+ {
+  "j": 46,
+  "cfg": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 17,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0,
+   "entry": "stop"
+  },
+  "n": 501,
+  "pf": 1.34,
+  "t": 2.32,
+  "exp": 0.1199,
+  "sr_trade": 0.10358533126420509
+ },
+ {
+  "j": 47,
+  "cfg": {
+   "family": "donchian",
+   "tf": "1h",
+   "n": 240,
+   "atr_n": 14,
+   "stop_atr": 4.0,
+   "trail_atr": 4.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sess": "none",
+   "trend_ma": 0,
+   "entry": "stop"
+  },
+  "n": 467,
+  "pf": 1.353,
+  "t": 2.26,
+  "exp": 0.1243,
+  "sr_trade": 0.10436413048315141
+ }
+]

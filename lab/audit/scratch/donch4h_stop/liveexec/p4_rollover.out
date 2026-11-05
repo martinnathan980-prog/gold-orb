@@ -1,0 +1,16 @@
+IS trades with fill in the 1h window: 23, exit in it: 13 of 499
+IS trades with fill in the 2h window: 32, exit in it: 20 of 499
+R1_x2_1h orders 2675 trades 742 (base orders 2646 )
+R2_x2_2h orders 2683 trades 742 (base orders 2646 )
+R3_x3_2h orders 2727 trades 744 (base orders 2646 )
+R4_x5spike_x2_2h orders 2807 trades 765 (base orders 2646 )
+base               | IS n=499 pf=1.35 exp=0.1233 t=2.35 totR=61.5 yrs_pos=8/9 long_R=49.5 short_R=12.0 pf_long=1.631 pf_short=1.123
+                   | VAL n=248 pf=1.294 exp=0.0998 t=1.49 totR=24.7 yrs_pos=3/4 long_R=34.4 short_R=-9.7 pf_long=1.686 pf_short=0.715
+R1_x2_1h           | IS n=495 pf=1.36 exp=0.1261 t=2.42 totR=62.4 yrs_pos=9/9 long_R=46.9 short_R=15.5 pf_long=1.601 pf_short=1.163
+                   | VAL n=247 pf=1.302 exp=0.1019 t=1.52 totR=25.2 yrs_pos=3/4 long_R=34.8 short_R=-9.6 pf_long=1.701 pf_short=0.715
+R2_x2_2h           | IS n=495 pf=1.359 exp=0.126 t=2.42 totR=62.4 yrs_pos=9/9 long_R=46.9 short_R=15.4 pf_long=1.602 pf_short=1.162
+                   | VAL n=247 pf=1.302 exp=0.102 t=1.52 totR=25.2 yrs_pos=3/4 long_R=34.8 short_R=-9.6 pf_long=1.702 pf_short=0.716
+R3_x3_2h           | IS n=498 pf=1.3 exp=0.1085 t=2.09 totR=54.0 yrs_pos=8/9 long_R=42.8 short_R=11.2 pf_long=1.528 pf_short=1.113
+                   | VAL n=246 pf=1.301 exp=0.1018 t=1.51 totR=25.0 yrs_pos=3/4 long_R=35.0 short_R=-10.0 pf_long=1.709 pf_short=0.705
+R4_x5spike_x2_2h   | IS n=520 pf=1.065 exp=0.0257 t=0.52 totR=13.3 yrs_pos=7/9 long_R=17.4 short_R=-4.1 pf_long=1.176 pf_short=0.962
+                   | VAL n=245 pf=1.291 exp=0.0991 t=1.46 totR=24.3 yrs_pos=3/4 long_R=35.6 short_R=-11.3 pf_long=1.723 pf_short=0.67

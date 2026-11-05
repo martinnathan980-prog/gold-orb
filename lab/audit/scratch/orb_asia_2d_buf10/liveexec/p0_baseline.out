@@ -1,0 +1,7 @@
+orders 2621 trades 1483 skipped 1138 (6.2s)
+IS   n=1037 pf=1.177 exp=0.1199 t=1.83 totR=124.3 yrs_pos=6/9 pf_long=1.041 pf_short=1.321 R_long=14.6 R_short=109.7
+orders_from_levels reproduces make_orders: True
+VAL  n=445 pf=1.1 exp=0.0651 t=0.74 totR=29.0 yrs_pos=3/4 pf_long=1.22 pf_short=0.968 R_long=33.4 R_short=-4.4
+entry hour Paris (all years): {8: 684, 9: 413, 10: 199, 11: 106, 12: 81}
+exit reasons: {'stop': 919, 'time': 564}
+time exits not at 16:00 NY: 27 of 564

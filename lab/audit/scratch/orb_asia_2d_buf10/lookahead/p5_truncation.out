@@ -1,0 +1,23 @@
+T1_identical             1.000000
+prev_orders_identical    0.906667
+T0_no_order              1.000000
+T7_no_order              1.000000
+dtype: float64
+failures:
+            date  touch_bar_offset  T1_identical  prev_orders_identical  T0_no_order  T7_no_order
+14   2013-12-03                 3          True                  False         True         True
+42   2015-10-05                16          True                  False         True         True
+43   2015-10-12                22          True                  False         True         True
+50   2016-05-24                58          True                  False         True         True
+52   2016-07-19               143          True                  False         True         True
+53   2016-08-08               169          True                  False         True         True
+91   2018-05-30                42          True                  False         True         True
+92   2018-06-04                63          True                  False         True         True
+98   2018-12-03                 6          True                  False         True         True
+113  2019-11-25                71          True                  False         True         True
+114  2019-12-02                15          True                  False         True         True
+121  2020-05-13               129          True                  False         True         True
+122  2020-05-19                31          True                  False         True         True
+124  2020-08-11                15          True                  False         True         True
+touch bar offset from 07:00 (min):  {'count': 150.0, 'mean': 85.3, 'std': 72.3, 'min': 0.0, '25%': 27.0, '50%': 67.0, '75%': 122.0, 'max': 294.0}
+full-history truncations (date, n_full<=cut, n_trunc, identical): [('2013-01-10', 7, 7, True), ('2014-08-05', 336, 336, True), ('2016-05-24', 705, 705, True), ('2017-09-05', 939, 939, True), ('2019-01-02', 1220, 1220, True), ('2020-08-12', 1543, 1543, True)]

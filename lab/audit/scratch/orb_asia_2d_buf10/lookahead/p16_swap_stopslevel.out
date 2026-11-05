@@ -1,0 +1,10 @@
+IS mean swap R/trade: 0.0251  mean nights: 1.42  commission R/trade: 0.0102
+swap long 0% short 0%: {'n': 1037, 'pf': np.float64(1.217), 't': np.float64(2.19), 'exp': 0.1449, 'totR': 150.3, 'yrs+': '7/9', 'L_pf': np.float64(1.094), 'S_pf': np.float64(1.345)}
+swap long 5% short 2%: {'n': 1037, 'pf': np.float64(1.177), 't': np.float64(1.83), 'exp': 0.1199, 'totR': 124.3, 'yrs+': '6/9', 'L_pf': np.float64(1.041), 'S_pf': np.float64(1.321)}
+swap long 8% short 0%: {'n': 1037, 'pf': np.float64(1.172), 't': np.float64(1.78), 'exp': 0.1164, 'totR': 120.7, 'yrs+': '6/9', 'L_pf': np.float64(1.01), 'S_pf': np.float64(1.345)}
+swap long 8% short 3%: {'n': 1037, 'pf': np.float64(1.155), 't': np.float64(1.62), 'exp': 0.1055, 'totR': 109.4, 'yrs+': '6/9', 'L_pf': np.float64(1.01), 'S_pf': np.float64(1.309)}
+swap long 10% short 5%: {'n': 1037, 'pf': np.float64(1.133), 't': np.float64(1.4), 'exp': 0.0912, 'totR': 94.5, 'yrs+': '6/9', 'L_pf': np.float64(0.989), 'S_pf': np.float64(1.285)}
+sessions where the nearer level is < $0.3 from the 07:00 quote: 0.086%
+sessions where the nearer level is < $0.5 from the 07:00 quote: 1.938%
+sessions where the nearer level is < $1.0 from the 07:00 quote: 13.997%
+median distance to nearer level at 07:00: $ 2.02  median W $ 6.31

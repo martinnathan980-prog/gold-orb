@@ -1,0 +1,9 @@
+touch offsets (min) pct 10/50/90: [  9.  64. 204.]
+calib p_day 0.55 IS n median 846.0
+calib p_day 0.65 IS n median 934.0
+calib p_day 0.75 IS n median 1020.0
+calib p_day 0.85 IS n median 1086.0
+calib p_day 1.0 IS n median 1192.0
+chosen p_day 0.75
+N1q {"seeds": 500, "secs": 35.4, "is_n_med": 1059.5, "val_n_med": 457.5, "is_pf_p1_5_50_95_99_max": [0.769, 0.812, 0.921, 1.027, 1.082, 1.171], "is_t_mean_sd_max": [-1.006, 0.845, 1.74], "is_exp_mean": -0.0587, "val_pf_p1_5_50_95_99_max": [0.712, 0.766, 0.919, 1.07, 1.141, 1.188], "val_t_mean_sd": [-0.722, 0.832], "val_exp_mean": -0.0578, "frac_is_pass": 0.0, "frac_is_core": 0.0, "frac_is_near": 0.0, "frac_is_near_unp": 0.0, "frac_val_pass": 0.026, "frac_is_pass_and_val": 0.0, "frac_is_near_and_val": 0.0, "is_long_pf_med": 0.824, "is_short_pf_med": 1.014, "val_long_pf_med": 1.115, "val_short_pf_med": 0.715}
+N1m {"seeds": 500, "secs": 41.3, "is_n_med": 1053.0, "val_n_med": 456.0, "is_pf_p1_5_50_95_99_max": [0.827, 0.863, 0.97, 1.084, 1.145, 1.213], "is_t_mean_sd_max": [-0.371, 0.828, 2.12], "is_exp_mean": -0.0208, "val_pf_p1_5_50_95_99_max": [0.733, 0.786, 0.925, 1.07, 1.137, 1.253], "val_t_mean_sd": [-0.632, 0.76], "val_exp_mean": -0.0512, "frac_is_pass": 0.002, "frac_is_core": 0.002, "frac_is_near": 0.002, "frac_is_near_unp": 0.002, "frac_val_pass": 0.028, "frac_is_pass_and_val": 0.0, "frac_is_near_and_val": 0.0, "is_long_pf_med": 0.872, "is_short_pf_med": 1.07, "val_long_pf_med": 1.112, "val_short_pf_med": 0.73}

@@ -1,0 +1,42 @@
+{
+ "patched_is_bars": 3172985,
+ "patched_is_days": 2334,
+ "patched_is_short_days(<50% median)": 12,
+ "unpatched_is_bars": 3135407,
+ "unpatched_is_days": 2333,
+ "unpatched_is_short_days(<50% median)": 39,
+ "is_trades_patched": 1037,
+ "is_trades_unpatched": 1028,
+ "common_trades(entry_time,side)": 1016,
+ "only_patched": 21,
+ "only_unpatched": 12,
+ "patched": {
+  "n": 1037,
+  "pf": 1.1773,
+  "exp": 0.1199,
+  "t": 1.83,
+  "sumR": 124.3,
+  "long_n": 521,
+  "long_pf": 1.041,
+  "long_R": 14.6,
+  "short_n": 516,
+  "short_pf": 1.321,
+  "short_R": 109.7
+ },
+ "unpatched": {
+  "n": 1028,
+  "pf": 1.196,
+  "exp": 0.1315,
+  "t": 1.993,
+  "sumR": 135.2,
+  "long_n": 517,
+  "long_pf": 1.057,
+  "long_R": 20.3,
+  "short_n": 511,
+  "short_pf": 1.342,
+  "short_R": 114.9
+ },
+ "R_on_common_trades_patched_minus_unpatched": -1.23,
+ "sumR_only_patched": -10.0,
+ "sumR_only_unpatched": -0.3
+}

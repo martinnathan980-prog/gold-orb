@@ -1,0 +1,11 @@
+{'sd': 0.03, 'seed': 0, 'n': 1035, 'pf': np.float64(1.152), 't': np.float64(1.59), 'exp': 0.1033, 'totR': 106.9, 'yrs+': '6/9', 'L_pf': np.float64(1.022), 'S_pf': np.float64(1.288)}
+{'sd': 0.03, 'seed': 1, 'n': 1035, 'pf': np.float64(1.176), 't': np.float64(1.82), 'exp': 0.1188, 'totR': 122.9, 'yrs+': '6/9', 'L_pf': np.float64(1.035), 'S_pf': np.float64(1.325)}
+{'sd': 0.03, 'seed': 2, 'n': 1035, 'pf': np.float64(1.173), 't': np.float64(1.78), 'exp': 0.1172, 'totR': 121.3, 'yrs+': '6/9', 'L_pf': np.float64(1.035), 'S_pf': np.float64(1.317)}
+{'sd': 0.03, 'seed': 3, 'n': 1031, 'pf': np.float64(1.18), 't': np.float64(1.84), 'exp': 0.1215, 'totR': 125.2, 'yrs+': '6/9', 'L_pf': np.float64(1.035), 'S_pf': np.float64(1.332)}
+{'sd': 0.03, 'seed': 4, 'n': 1038, 'pf': np.float64(1.148), 't': np.float64(1.54), 'exp': 0.1006, 'totR': 104.4, 'yrs+': '7/9', 'L_pf': np.float64(1.006), 'S_pf': np.float64(1.297)}
+{'sd': 0.03, 'seed': 5, 'n': 1035, 'pf': np.float64(1.168), 't': np.float64(1.73), 'exp': 0.1133, 'totR': 117.2, 'yrs+': '6/9', 'L_pf': np.float64(1.028), 'S_pf': np.float64(1.315)}
+{'sd': 0.03, 'seed': 6, 'n': 1032, 'pf': np.float64(1.175), 't': np.float64(1.8), 'exp': 0.1184, 'totR': 122.2, 'yrs+': '6/9', 'L_pf': np.float64(1.042), 'S_pf': np.float64(1.312)}
+{'sd': 0.03, 'seed': 7, 'n': 1033, 'pf': np.float64(1.182), 't': np.float64(1.87), 'exp': 0.1227, 'totR': 126.8, 'yrs+': '6/9', 'L_pf': np.float64(1.045), 'S_pf': np.float64(1.325)}
+{'sd': 0.03, 'seed': 8, 'n': 1037, 'pf': np.float64(1.175), 't': np.float64(1.8), 'exp': 0.1181, 'totR': 122.5, 'yrs+': '6/9', 'L_pf': np.float64(1.045), 'S_pf': np.float64(1.309)}
+{'sd': 0.03, 'seed': 9, 'n': 1031, 'pf': np.float64(1.174), 't': np.float64(1.8), 'exp': 0.1174, 'totR': 121.1, 'yrs+': '7/9', 'L_pf': np.float64(1.039), 'S_pf': np.float64(1.315)}
+{'sd': 0.03, 'seed': 10, 'n': 1034, 'pf': np.float64(1.166), 't': np.float64(1.72), 'exp': 0.1126, 'totR': 116.4, 'yrs+': '6/9', 'L_pf': np.float64(1.038), 'S_pf': np.float64(1.3)}
