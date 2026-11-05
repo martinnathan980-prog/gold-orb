@@ -14,7 +14,7 @@
 //|              compte DEMO uniquement sauf InpAllowAutoReal)        |
 //+------------------------------------------------------------------+
 #property copyright "gold-orb lab"
-#property version   "2.10"
+#property version   "2.11"
 #property description "Cassure du canal 10 jours (H4 UTC) sur l'or. Mode observation par defaut. Regle non validee en reel."
 
 #include <Trade\Trade.mqh>
@@ -97,6 +97,7 @@ bool     g_vbuy = false, g_vsell = false;   // mode 2 : niveau trop proche pour 
 datetime g_tx_try = 0;                  // dernier essai de sortie au temps
 ulong    g_tx_warned = 0;               // position dont l'echec de sortie au temps a deja ete signale
 datetime g_tc_bucket = 0, g_tc = 0;     // = labo : cloture de la derniere bougie M1 avant la decision
+bool     g_rearm = false;               // mode 2 : re-armer la fenetre en cours apres un (re)demarrage
 
 //+------------------------------------------------------------------+
 //| Temps                                                            |
@@ -429,7 +430,8 @@ void AskOHL(const MqlRates &b, double &ao, double &ah, double &al)
    if(o > 0.0) { ao = o; ah = h; al = l; }
   }
 
-void DeletePendings();   // declaration (definie plus bas)
+void DeletePendings();                 // declarations (definies plus bas)
+void DeleteOpposite(const int side);
 
 void PaperExit(const double price, const datetime t_utc, const string why)
   {
@@ -459,7 +461,7 @@ void PaperEnter(const int side, const double price, const datetime t_utc, const 
    g.deadline_utc = DeadlineUTC(g.br_decision_utc, InpMaxDays);
    g.fill_bar = (long)bar_time;
    g.br_active = 0;
-   if(g_auto) DeletePendings();   // le compte reel ne prend jamais le cote oppose du trade papier
+   if(g_auto) DeleteOpposite(side);   // le reel ne prend jamais le cote oppose ; l'ordre du meme cote vit jusqu'a la fin de la fenetre
    Journal("ENTRY", t_utc, side, price, g.init_stop, g.atr, 0, "deadline " + TimeToString(g.deadline_utc, TIME_DATE | TIME_MINUTES));
    if(g_replay) return;
    string m;
@@ -542,7 +544,7 @@ void ProcessBar(const MqlRates &b, const datetime t_utc)
 bool Sent(const bool ok, const string what)
   {
    uint rc = g_trade.ResultRetcode();
-   if(ok && (rc == TRADE_RETCODE_DONE || rc == TRADE_RETCODE_DONE_PARTIAL || rc == TRADE_RETCODE_PLACED || rc == TRADE_RETCODE_NO_CHANGES))
+   if(rc == TRADE_RETCODE_NO_CHANGES || (ok && (rc == TRADE_RETCODE_DONE || rc == TRADE_RETCODE_DONE_PARTIAL || rc == TRADE_RETCODE_PLACED)))
       return true;
    Journal("ORDER_FAIL", TimeGMT(), 0, 0, 0, 0, 0, what + " : " + IntegerToString(rc) + " " + g_trade.ResultRetcodeDescription());
    static string   s_what = "";
@@ -562,8 +564,30 @@ void DeletePendings()
      {
       ulong t = OrderGetTicket(i);
       if(t == 0) continue;
-      if(OrderGetString(ORDER_SYMBOL) == _Symbol && OrderGetInteger(ORDER_MAGIC) == InpMagic)
-         g_trade.OrderDelete(t);
+      if(OrderGetString(ORDER_SYMBOL) != _Symbol || OrderGetInteger(ORDER_MAGIC) != InpMagic) continue;
+      if(!IsStopped()) { g_trade.OrderDelete(t); continue; }
+      // OnDeinit (EA retire) : _StopFlag est leve, CTrade refuse tout (10027) -> requete directe asynchrone
+      MqlTradeRequest rq;
+      MqlTradeResult  rs;
+      ZeroMemory(rq);
+      ZeroMemory(rs);
+      rq.action = TRADE_ACTION_REMOVE;
+      rq.order  = t;
+      if(!OrderSendAsync(rq, rs))
+         Alert("GoldOrb : ordre #", t, " NON supprime (", rs.retcode, "), supprimez-le vous-meme.");
+     }
+  }
+
+// PaperEnter : n'efface que l'ordre stop oppose. Sur la bougie de decision, Decide->PlacePendings passe juste
+// avant ProcessBar->PaperEnter : effacer aussi l'ordre du meme cote supprimerait le trade reel.
+void DeleteOpposite(const int side)
+  {
+   for(int i = OrdersTotal() - 1; i >= 0; i--)
+     {
+      ulong t = OrderGetTicket(i);
+      if(t == 0 || OrderGetString(ORDER_SYMBOL) != _Symbol || OrderGetInteger(ORDER_MAGIC) != InpMagic) continue;
+      long ot = OrderGetInteger(ORDER_TYPE);
+      if((side > 0 && ot == ORDER_TYPE_SELL_STOP) || (side < 0 && ot == ORDER_TYPE_BUY_STOP)) g_trade.OrderDelete(t);
      }
   }
 
@@ -649,6 +673,7 @@ void VirtualEntry()
 void BindManualPosition()
   {
    if(InpMode != GO_MANAGE_MANUAL || g.real_ticket != 0 || g.entry_utc == 0) return;
+   if(g.side == 0 && g.br_active != 0 && g.br_trigger_sent != 0) return;   // cassure signalee, ENTRY papier a la cloture M1 : attendre
    int sig = (g.fill > g.init_stop) ? 1 : -1;   // sens du dernier trade papier (g.side repasse a 0 a la sortie)
    for(int i = PositionsTotal() - 1; i >= 0; i--)
      {
@@ -700,7 +725,8 @@ void Reconcile()
       int n4 = Build4H(b4, dec);
       double atr = (n4 > InpATRPeriod + 2) ? WilderATR(b4, n4, InpATRPeriod) : 0.0;
       g.real_D = (atr > 0) ? InpStopATR * atr : MathAbs(g.real_fill - sl);
-      g.real_deadline_utc = DeadlineUTC(dec, InpMaxDays);
+      bool same = (g.entry_utc != 0 && BucketUTC(g.entry_utc) == dec && ((g.fill > g.init_stop) ? 1 : -1) == g.real_side);
+      g.real_deadline_utc = same ? g.deadline_utc : DeadlineUTC(dec, InpMaxDays);   // = papier : echeance depuis t_close
       g.real_best = g.real_fill;
       MqlRates r[];
       ArraySetAsSeries(r, false);
@@ -833,7 +859,7 @@ bool Decide(const datetime bucket, const datetime tc)
          Notify(StringFormat("GoldOrb %s niveaux jusqu'a %s Paris : achat > %s | vente < %s | stop %.1f",
                              _Symbol, TimeToString(ParisFromUTC(g.br_expiry_utc), TIME_MINUTES),
                              DoubleToString(hi, _Digits), DoubleToString(lo, _Digits), InpStopATR * atr));
-      if(g_auto) { Reconcile(); if(!RealPositionSelected()) PlacePendings(); }
+      if(g_auto) { g_rearm = false; Reconcile(); if(!RealPositionSelected()) PlacePendings(); }
      }
    return true;
   }
@@ -903,6 +929,17 @@ void CatchUp()
                           g.side == 0 ? "aucune" : (g.side > 0 ? "achat" : "vente")));
       if(g_auto && g.br_active != 0 && g.side == 0 && ToUTC(TimeCurrent()) < g.br_expiry_utc && !RealPositionSelected() && OffsetOK())
          PlacePendings();   // re-arme la fenetre en cours : Decide n'a rien place pendant le rattrapage
+      g_rearm = false;      // deja re-arme ci-dessus
+     }
+   if(g_rearm)   // 1re bougie traitee apres un (re)demarrage sans rattrapage (n <= 5)
+     {
+      g_rearm = false;
+      if(g_auto)
+        {
+         Reconcile();
+         if(g.br_active != 0 && g.side == 0 && ToUTC(TimeCurrent()) < g.br_expiry_utc && !RealPositionSelected() && OffsetOK())
+            PlacePendings();
+        }
      }
    SaveState();
   }
@@ -968,7 +1005,7 @@ bool AccountReady()
    if(InpMode != GO_ALERTS && !tester && (!TerminalInfoInteger(TERMINAL_TRADE_ALLOWED) || !MQLInfoInteger(MQL_TRADE_ALLOWED)))
       Notify("GoldOrb : Algo Trading desactive : le programme ne peut ni poser, ni deplacer, ni fermer vos stops.");
    g_ready = true;
-   Print("GoldOrb v2.1 demarre. Compte ", AccountInfoInteger(ACCOUNT_LOGIN), " | mode ", EnumToString(InpMode), g_auto ? " (ordres actifs)" : "",
+   Print("GoldOrb v2.11 demarre. Compte ", AccountInfoInteger(ACCOUNT_LOGIN), " | mode ", EnumToString(InpMode), g_auto ? " (ordres actifs)" : "",
          had ? " | etat recharge" : " | nouvel etat", " | position papier ", g.side, " | cumul ", DoubleToString(g.cum_R, 2), " R / ", g.n_trades, " trades");
    return true;
   }
@@ -991,6 +1028,7 @@ int OnInit()
    g_auto = false;    // decide dans AccountReady(), une fois le compte connu
    g_trade.SetExpertMagicNumber((ulong)InpMagic);
    EventSetTimer(2);
+   g_rearm = true;    // OnDeinit a pu retirer les ordres ; g_vbuy/g_vsell ne survivent pas a un redemarrage
    AccountReady();    // immediat si le terminal est deja connecte
    return INIT_SUCCEEDED;
   }
@@ -998,7 +1036,7 @@ int OnInit()
 void OnDeinit(const int reason)
   {
    EventKillTimer();
-   if(g_auto && (reason == REASON_REMOVE || reason == REASON_CHARTCLOSE)) DeletePendings();   // EA retire : pas d'ordre orphelin
+   if(g_auto && reason != REASON_CLOSE && reason != REASON_ACCOUNT) DeletePendings();   // retire, parametres, graphique, recompilation : pas d'ordre orphelin ; re-arme au redemarrage
    SaveState();
   }
 
@@ -1051,8 +1089,9 @@ void OnTradeTransaction(const MqlTradeTransaction &trans, const MqlTradeRequest 
    g.real_D = InpStopATR * g.br_atr;
    g.real_deadline_utc = DeadlineUTC(g.br_decision_utc, InpMaxDays);
    Journal("REAL_FILL", TimeGMT(), side, g.real_fill, g.real_fill - side * g.real_D, g.br_atr, 0, IntegerToString((long)pos));
-   if(PositionSelectByTicket(pos))
-      Sent(g_trade.PositionModify(pos, NormPrice(g.real_fill - side * g.real_D), PositionGetDouble(POSITION_TP)), "recalage du stop initial");
+   double sl0 = NormPrice(g.real_fill - side * g.real_D);
+   if(PositionSelectByTicket(pos) && MathAbs(PositionGetDouble(POSITION_SL) - sl0) > _Point / 2)   // rempli au niveau : stop deja juste
+      Sent(g_trade.PositionModify(pos, sl0, PositionGetDouble(POSITION_TP)), "recalage du stop initial");
    SaveState();
   }
 //+------------------------------------------------------------------+

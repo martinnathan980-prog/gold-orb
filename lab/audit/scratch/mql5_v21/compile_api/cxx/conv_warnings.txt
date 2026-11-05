@@ -1,0 +1,5 @@
+784:20: warning: conversion from 'long int' to 'double' may change value [-Wconversion]
+786:24: warning: conversion from 'long int' to 'double' may change value [-Wconversion]
+786:39: warning: conversion from 'long int' to 'double' may change value [-Wconversion]
+787:108: warning: conversion from 'long int' to 'double' may change value [-Wconversion]
+787:93: warning: conversion from 'long int' to 'double' may change value [-Wconversion]

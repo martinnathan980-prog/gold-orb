@@ -1,0 +1,18 @@
+trades 787  sumR +139.6
+A) entries on the decision bar: 16 (2.0%), sumR +6.30
+   of which price back inside at decision time (v2.10: stops placed then deleted -> no real trade): 5, sumR +6.72
+   of those, v2.0 same-side stop would have filled later in the window: 4
+                           et  side         R   why  late_fill
+60  2014-01-26 23:00:00+00:00     1 -0.505026  stop       True
+238 2017-05-03 20:00:00+00:00    -1  0.518884  stop       True
+283 2017-12-27 08:00:00+00:00     1  5.637305  stop       True
+286 2018-01-12 04:00:00+00:00     1  0.767524  stop       True
+469 2021-07-05 08:00:00+00:00     1  0.296917  stop      False
+B) same-side re-entries within 6 h of the previous paper entry: 5 of 787
+                           et  side     gap_h  dl_early_h  atr_ratio         R
+14  2013-04-15 14:40:00+00:00    -1  5.816667         4.0   1.181592  0.663901
+209 2016-11-09 04:37:00+00:00     1  2.233333         4.0   1.497940 -0.296488
+368 2019-07-31 22:00:00+00:00    -1  3.133333         4.0   1.216699 -0.198649
+651 2024-05-15 16:28:00+00:00     1  3.966667         4.0   1.157880 -0.531513
+678 2024-11-06 11:55:00+00:00    -1  5.333333         4.0   1.195630  1.146444
+paper trades shorter than 6 h: 137

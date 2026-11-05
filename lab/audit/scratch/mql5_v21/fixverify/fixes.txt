@@ -1,0 +1,607 @@
+====================================================================================================
+# 0 prio 1 sev critical line 591, 697, 710 (+ OnTick/OnTimer 759-771) by compile_api, logic_parity, live_safety
+PROBLEM: [F1] Mode 1 never manages the trader's position. BindManualPosition() has a single caller, at line 710 inside TickTrigger. TickTrigger only reaches that line when g.side == 0 (line 697), and BindManualPosition returns at once when g.side == 0 (line 591). At the tick alert the trader has not opened anything yet anyway. So g.real_ticket stays 0, and RealOnBar/RealTimeExit never act: no stop, no trailing stop, no 5-day exit and no message, although README_FR line 22 promises all three. Verified by grep (one call site) and by the control flow. The fix polls the binder on every tick and every 2 s. It also takes the side from fill vs init_stop, which PaperExit keeps, so binding still works after the paper trade has exited, and it sets the stop immediately.
+FIX:
+1) Delete line 710 (`BindManualPosition();` inside TickTrigger).
+2) In OnTick() and OnTimer(), right after `CatchUp();` add:
+   BindManualPosition();
+3) Replace BindManualPosition() (lines 588-611) with:
+// mode 1 : rattache la position manuelle du meme sens ouverte autour du dernier signal papier
+// (appelee a chaque tick et toutes les 2 s ; la position papier peut deja etre sortie)
+void BindManualPosition()
+  {
+   if(InpMode != GO_MANAGE_MANUAL || g.real_ticket != 0 || g.entry_utc == 0) return;
+   int sig = (g.fill > g.init_stop) ? 1 : -1;   // sens du dernier trade papier (g.side repasse a 0 a la sortie)
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+     {
+      ulong t = PositionGetTicket(i);
+      if(t == 0 || !PositionSelectByTicket(t)) continue;
+      if(PositionGetString(POSITION_SYMBOL) != _Symbol || PositionGetInteger(POSITION_MAGIC) != InpManualMagic) continue;
+      int side = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY) ? 1 : -1;
+      datetime opened = ToUTC((datetime)PositionGetInteger(POSITION_TIME));
+      if(side != sig || opened < g.entry_utc - 600 || opened > g.entry_utc + 6 * 3600) continue;
+      double vol = PositionGetDouble(POSITION_VOLUME), sl = PositionGetDouble(POSITION_SL), tp = PositionGetDouble(POSITION_TP);
+      g.real_ticket = t;
+      g.real_side = side;
+      g.real_fill = PositionGetDouble(POSITION_PRICE_OPEN);
+      g.real_best = g.real_fill;
+      g.real_D = InpStopATR * g.atr;
+      g.real_deadline_utc = g.deadline_utc;
+      double init = NormalizeDouble(g.real_fill - side * g.real_D, _Digits);
+      Journal("REAL_BIND", TimeGMT(), side, g.real_fill, init, g.atr, 0, IntegerToString((long)t));
+      bool stop_ok = (sl != 0.0 && ((side > 0 && sl >= init) || (side < 0 && sl <= init)));   // stop deja au moins aussi serre
+      if(!stop_ok) stop_ok = g_trade.PositionModify(t, init, tp) && g_trade.ResultRetcode() == TRADE_RETCODE_DONE;
+      Notify(StringFormat("GoldOrb : position #%I64u (%.2f lot) prise en charge : stop %s%s, suiveur %.1f, sortie %s.",
+                          t, vol, DoubleToString(init, _Digits),
+                          stop_ok ? "" : " NON POSE (" + g_trade.ResultRetcodeDescription() + "), posez-le vous-meme",
+                          g.real_D, Clocks(g.real_deadline_utc)));
+      SaveState();
+      return;
+     }
+  }
+Before telling users that mode 1 works, check on a demo account that REAL_BIND and then REAL_SL_MOD rows appear in the journal.
+====================================================================================================
+# 1 prio 1 sev critical line 662, 685-690 by compile_api, logic_parity, live_safety
+PROBLEM: [F2] The replay flag fires at every market closure even with no downtime. Line 662 compares the forming bar with the last processed bar. So the 16:59 NY bar (processed at 18:00) and the 18:00 bar (processed at 18:01) both see a 62-minute gap every day, and a 2-day gap after every weekend. Effects:
+(a) The Sunday-open window's Decide always runs in replay, which skips OffsetOK, the LEVELS push and PlacePendings. Mode 2 therefore has no order for that whole window: 4 of 120 twin trades in 2024-25 (+2.11 of +24.58 R), and 31-34 of about 790 lab trades in 2013-26 (about +9 of +140 R).
+(b) There are 525-535 spurious 'rattrapage de 1 minutes termine' popup+push+Telegram messages a year, about 2 per trading day.
+(c) ENTRY/EXIT pushes on the first bar after a closure become Print only (14 ENTRY and 9 EXIT over 2013-26), so a mode-0 trader is not told to close.
+(d) The SPREAD log skips exactly the bars around the break.
+Rejected variants: R2's bar-age rule silences the Friday last-bar exit that is processed at the Sunday open. R3's boot-time rule treats a long disconnection without restart as live, and would then run PlacePendings, including its market-entry path, for stale windows.
+FIX:
+Line 662:
+   g_replay = (n > 5);   // vrai retard (arret, reconnexion) ; une fermeture du marche ne rend qu'UNE bougie
+Lines 685-690:
+   if(g_replay)
+     {
+      g_replay = false;
+      Notify(StringFormat("GoldOrb : rattrapage de %d bougies M1 termine. Position papier : %s.", n,
+                          g.side == 0 ? "aucune" : (g.side > 0 ? "achat" : "vente")));
+      if(g_auto && g.br_active != 0 && g.side == 0 && ToUTC(TimeCurrent()) < g.br_expiry_utc && !RealPositionSelected() && OffsetOK())
+         PlacePendings();   // re-arme la fenetre en cours : Decide n'a rien place pendant le rattrapage
+     }
+R1 replayed this rule on the 2024-2025 M1 data: 0 spurious replay batches and 0 decisions taken in replay, against 525-535 batches and 62-63 decisions a year today.
+====================================================================================================
+# 2 prio 1 sev critical line 742 (OnInit guard); 262, 281, 290 (file names); 734-771 by compile_api, live_safety (shared files); consolidator (start-up guard, new)
+PROBLEM: [F3] Two start-up defects tied to account data.
+(a) New, PLAUSIBLE (forum logs, not documented): the 'auto mode refused on a REAL account' guard at line 742 runs only in OnInit. At terminal start (VPS reboot, Windows update), OnInit runs before the account connects. MQL5 forum logs show AccountInfoInteger(ACCOUNT_LOGIN) returning 0 for several seconds after start. ACCOUNT_TRADE_MODE then reads 0, which is ACCOUNT_TRADE_MODE_DEMO, so the guard passes and mode 2 trades the real account even with InpAllowAutoReal = false.
+(b) The state and journal file names depend only on _Symbol, inside FILE_COMMON, which every MT5 terminal of the Windows user shares. Under the README protocol (line 65: mode 0 on the real account plus a mode-2 copy on a demo), two terminals on one PC or Windows VPS overwrite one state_XAUUSD.bin every minute and interleave one journal_XAUUSD.csv. After a restart, each loads the other's paper position, cum_R and real_ticket, which also feeds F4.
+R1's direct fix, keying the files on ACCOUNT_LOGIN read in OnInit, would regress: the login can be 0 at that moment, so the state would be looked up under login 0 and lost on every terminal restart. Both parts therefore wait until the account is known.
+FIX:
+Globals (after line 94):
+bool     g_ready = false;   // compte connu : etat recharge, garde du mode auto evaluee
+string   g_key = "";       // suffixe des fichiers live : symbole + numero de compte
+After line 257:
+string FileKey() { return MQLInfoInteger(MQL_TESTER) ? _Symbol : g_key; }   // testeur : nom inchange pour compare_journal.py
+Lines 262, 281, 290: in the three file names replace `_Symbol` with `FileKey()`.
+First line of SaveState():
+   if(!g_ready) return;   // avant AccountReady() : ne rien ecraser
+Add before OnInit():
+// Au demarrage du terminal, OnInit tourne avant la connexion : ACCOUNT_LOGIN et ACCOUNT_TRADE_MODE valent 0 (= DEMO).
+bool AccountReady()
+  {
+   if(g_ready) return true;
+   bool tester = (MQLInfoInteger(MQL_TESTER) != 0);
+   if(!tester && (AccountInfoInteger(ACCOUNT_LOGIN) == 0 || !TerminalInfoInteger(TERMINAL_CONNECTED))) return false;
+   g_key = _Symbol + "_" + IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN));
+   bool had = LoadState();
+   g_auto = (InpMode == GO_AUTO);
+   if(g_auto && !tester && AccountInfoInteger(ACCOUNT_TRADE_MODE) == ACCOUNT_TRADE_MODE_REAL && !InpAllowAutoReal)
+     {
+      g_auto = false;
+      Notify("GoldOrb : mode automatique refuse sur compte REEL (InpAllowAutoReal = false). Mode alertes.");
+     }
+   g_ready = true;
+   Print("GoldOrb v2 demarre. Compte ", AccountInfoInteger(ACCOUNT_LOGIN), " | mode ", EnumToString(InpMode), g_auto ? " (ordres actifs)" : "",
+         had ? " | etat recharge" : " | nouvel etat", " | position papier ", g.side, " | cumul ", DoubleToString(g.cum_R, 2), " R / ", g.n_trades, " trades");
+   return true;
+  }
+In OnInit, replace lines 739-749 (from `bool had = LoadState();` through the Print) with:
+   ZeroMemory(g);
+   g_ready = false;   // un EA garde ses globales d'un OnInit a l'autre (changement de compte, de parametres)
+   g_key = "";
+   g_auto = false;    // decide dans AccountReady(), une fois le compte connu
+   g_trade.SetExpertMagicNumber((ulong)InpMagic);
+   EventSetTimer(2);
+   AccountReady();    // immediat si le terminal est deja connecte
+First line of OnTick() and of OnTimer():
+   if(!AccountReady()) return;
+OnTradeTransaction needs no change, because g_auto stays false until the account is known.
+In README_FR lines 79-80, the live files become journal_XAUUSD_<numero de compte>.csv and state_XAUUSD_<numero de compte>.bin. The tester file keeps its name. The first start after the update begins with a fresh state.
+====================================================================================================
+# 3 prio 1 sev critical line 502, 532 by compile_api, logic_parity
+PROBLEM: [F4] A real or manual position blocks the paper engine: line 502 is `if(g.side != 0 || g.real_ticket != 0) return true;`.
+(a) Mode 0: RealOnBar and RealTimeExit short-circuit on GO_ALERTS (615, 637), and the binder and OnTradeTransaction are inactive. So a non-zero real_ticket restored from the state file is never cleared. That happens after running mode 1 or 2 with an open position, or with another terminal's file (F3). Decide then returns at 502 on every 4h close: no levels, no alerts, no paper trades and no journal rows, silently and for good.
+(b) Modes 1-2: the paper reference, which compare_journal and the README's demo-vs-paper rule compare against, skips lab windows whenever the real position outlives the paper one. That happens through the paper's pessimistic same-bar stop, a refused SL move or slippage.
+FIX:
+Line 502:
+   if(g.side != 0) return true;   // une seule position PAPIER a la fois ; la position reelle ne bloque plus le papier
+Line 532:
+      if(g_auto && !RealPositionSelected()) PlacePendings();   // pas de nouvel ordre tant qu'une position reelle est ouverte
+In AccountReady() (F3), after the auto-mode guard (without F3: in OnInit after LoadState):
+   if(InpMode == GO_ALERTS) g.real_ticket = 0;   // un ticket laisse par un autre mode ne bloque plus rien
+====================================================================================================
+# 4 prio 1 sev critical line 500-503, 407, 753-757 by compile_api, logic_parity, live_safety
+PROBLEM: [F5] Mode-2 pending orders outlive their 4h window. DeletePendings() runs only inside PlacePendings (553) and on a fill (783). When the symbol lacks SYMBOL_EXPIRATION_SPECIFIED, the orders go out as GTC, or as DAY through CTrade's OrderOpen fallback (checked in Trade.mqh). Every Decide that does not reach PlacePendings then leaves the previous window's stops live: paper position open (502), OFFSET_WARN (503), DATA_WARN (509) or replay (524). Those stops can fill at stale levels hours later, and OnTradeTransaction gives the fill the current bracket's ATR and deadline (795-796). When the paper enters but the real leg did not fill (no order or a rejection), the opposite stop stays live and the real account can go the other way. Removing the EA leaves orders that nobody manages. R1's extra DeletePendings at line 456 was dropped: that branch is unreachable while br_active == 1, because for any bar of a new bucket Decide runs first and always clears br_active.
+FIX:
+After line 501 (in Decide, before the return at line 502):
+   if(g_auto) DeletePendings();   // les ordres d'une fenetre ne lui survivent jamais (GTC, retours anticipes)
+After line 407 (in PaperEnter, after `g.br_active = 0;`):
+   if(g_auto) DeletePendings();   // le compte reel ne prend jamais le cote oppose du trade papier
+OnDeinit (lines 753-757):
+void OnDeinit(const int reason)
+  {
+   EventKillTimer();
+   if(g_auto && (reason == REASON_REMOVE || reason == REASON_CHARTCLOSE)) DeletePendings();   // EA retire : pas d'ordre orphelin
+   SaveState();
+  }
+====================================================================================================
+# 5 prio 1 sev critical line 576, 578 (+ OnTick 759-764) by compile_api, logic_parity, live_safety
+PROBLEM: [F6] The 'virtual market entry on touch' for a level inside SYMBOL_TRADE_STOPS_LEVEL exists only as a journal string (lines 576 and 578). No code sends that order (grep). With a non-zero stops level, mode 2 silently has no order on that side for the whole window, while the paper and the lab trade it. R2 notes this is common right after the just-closed bar sets the new extreme. Globals replace R1's new GoState field: PlacePendings re-arms the flags after a restart (the F2 re-arm), so nothing needs to be persisted.
+FIX:
+Globals (after line 94):
+bool     g_vbuy = false;    // mode 2 : niveau d'achat trop proche pour un ordre stop -> achat au marche au toucher
+bool     g_vsell = false;   // idem vente
+In Decide after line 501, and in PlacePendings after line 553 (`DeletePendings();`):
+   g_vbuy = false;
+   g_vsell = false;
+Line 576:
+   else { g_vbuy = true; Journal("STOPSLEVEL", TimeGMT(), 1, hi, 0, 0, 0, "buy level too close: market entry on touch"); }
+Line 578:
+   else { g_vsell = true; Journal("STOPSLEVEL", TimeGMT(), -1, lo, 0, 0, 0, "sell level too close: market entry on touch"); }
+Add after RealPositionSelected(); Sent() is reused by F8-F10:
+// resultat d'une requete CTrade : journalise et signale un refus (au plus une alerte par type et par 10 min)
+bool Sent(const bool ok, const string what)
+  {
+   uint rc = g_trade.ResultRetcode();
+   if(ok && (rc == TRADE_RETCODE_DONE || rc == TRADE_RETCODE_DONE_PARTIAL || rc == TRADE_RETCODE_PLACED || rc == TRADE_RETCODE_NO_CHANGES)) return true;
+   Journal("ORDER_FAIL", TimeGMT(), 0, 0, 0, 0, 0, what + " : " + IntegerToString(rc) + " " + g_trade.ResultRetcodeDescription());
+   static string   s_what = "";
+   static datetime s_when = 0;
+   if(what != s_what || TimeLocal() - s_when >= 600)
+     {
+      s_what = what;
+      s_when = TimeLocal();
+      Notify("GoldOrb " + _Symbol + " : " + what + " REFUSE par le courtier (" + g_trade.ResultRetcodeDescription() + ").");
+     }
+   return false;
+  }
+
+// mode 2 : niveau trop proche pour un ordre stop (STOPS_LEVEL) -> ordre au marche au premier toucher, comme le labo
+void VirtualEntry()
+  {
+   if(!g_vbuy && !g_vsell) return;
+   if(!g_auto || g.br_active == 0 || g.side != 0 || ToUTC(TimeCurrent()) >= g.br_expiry_utc || RealPositionSelected())
+     {
+      g_vbuy = false;
+      g_vsell = false;
+      return;
+     }
+   MqlTick k;
+   if(!SymbolInfoTick(_Symbol, k)) return;
+   int side = (g_vbuy && k.ask >= g.br_hi) ? 1 : ((g_vsell && k.bid <= g.br_lo) ? -1 : 0);
+   if(side == 0) return;
+   g_vbuy = false;
+   g_vsell = false;
+   string m;
+   bool over;
+   double D = InpStopATR * g.br_atr;
+   double lots = LotsForRisk(D, m, over);
+   if(lots <= 0 || over) return;
+   DeletePendings();   // OCO : l'ordre stop oppose ne doit pas rester
+   if(side > 0) Sent(g_trade.Buy(lots, _Symbol, 0, NormalizeDouble(k.ask - D, _Digits), 0, "GoldOrb L touch"), "achat au toucher");
+   else         Sent(g_trade.Sell(lots, _Symbol, 0, NormalizeDouble(k.bid + D, _Digits), 0, "GoldOrb S touch"), "vente au toucher");
+  }
+In OnTick, call `VirtualEntry();` right after CatchUp() (after BindManualPosition() once F1 is applied) and before TickTrigger().
+TRADE_RETCODE_NO_CHANGES must count as success. Otherwise the SL re-anchor at line 799 raises a false alarm whenever the fill is exactly at the level.
+====================================================================================================
+# 6 prio 2 sev major line 635-647, 213-231, 766-771 by compile_api, live_safety
+PROBLEM: [F7] Notification floods.
+(a) RealTimeExit runs on every tick (763) and calls Notify on every failed PositionClose. Causes include Algo Trading off (10027), an investor login, the market not yet open, or a requote. Each Notify means an Alert popup, a SendNotification and a Telegram queue entry. The MQL5 reference limits SendNotification to 2 calls/s and 10/min and says the function 'can be disabled in case of the restriction violation', so later breakout alerts can be lost. g_queue also grows without bound, because only one message is drained every 2 s.
+(b) In normal operation one CatchUp can push LEVELS + ENTRY + EXIT within milliseconds, and F6/F8 add refusal alerts.
+(c) A true return from PositionClose is taken as a full close even for DONE_PARTIAL, and without ticks the time exit is never retried.
+FIX:
+Globals (after line 94):
+datetime g_tx_try = 0;        // dernier essai de sortie au temps
+ulong    g_tx_warned = 0;     // position dont l'echec de sortie au temps a deja ete signale
+string   g_push[];            // pushs en attente (MT5 : 2/s et 10/min au plus)
+datetime g_push_last = 0;     // heure (PC) du dernier push
+Replace RealTimeExit (lines 635-647):
+void RealTimeExit()
+  {
+   if(InpMode == GO_ALERTS || !RealPositionSelected()) return;
+   datetime now = ToUTC(TimeCurrent());
+   if(now < g.real_deadline_utc || TimeLocal() - g_tx_try < 15) return;   // au plus un essai toutes les 15 s
+   g_tx_try = TimeLocal();
+   if(g_trade.PositionClose(g.real_ticket) && g_trade.ResultRetcode() == TRADE_RETCODE_DONE)
+     {
+      Journal("REAL_CLOSE", now, g.real_side, g_trade.ResultPrice(), 0, 0, 0, "time");
+      g.real_ticket = 0;
+      SaveState();
+     }
+   else if(g_tx_warned != g.real_ticket)   // une seule alerte par position
+     {
+      g_tx_warned = g.real_ticket;
+      Notify(StringFormat("GoldOrb : fermeture au temps refusee (%s). Nouvel essai toutes les 15 s ; fermez la position #%I64u vous-meme.",
+                          g_trade.ResultRetcodeDescription(), g.real_ticket));
+     }
+  }
+In OnTimer, add `RealTimeExit();` after CatchUp() (after BindManualPosition() once F1 is applied), and `FlushPush();` before FlushTelegram().
+Add before Notify():
+void PushNow(const string p)
+  {
+   g_push_last = TimeLocal();
+   if(!SendNotification(p))
+      Print("Push : echec (", GetLastError(), "). Configurez votre MetaQuotes ID : Outils > Options > Notifications.");
+  }
+
+void FlushPush()   // OnTimer : un push en attente toutes les 7 s au plus
+  {
+   if(ArraySize(g_push) == 0 || TimeLocal() - g_push_last < 7) return;
+   PushNow(g_push[0]);
+   ArrayRemove(g_push, 0, 1);
+  }
+In Notify, replace lines 222-223 (the SendNotification call) with:
+      int q = ArraySize(g_push);
+      if(q == 0 && TimeLocal() - g_push_last >= 7) PushNow(p);       // sinon le push MT5 peut etre coupe
+      else if(q < 20) { ArrayResize(g_push, q + 1); g_push[q] = p; }  // envoye ensuite par OnTimer
+In Notify, replace lines 228-229 (the Telegram queue) with:
+      if(n < 50) { ArrayResize(g_queue, n + 1); g_queue[n] = text; }
+      else Print("Telegram : file pleine, message non envoye");
+====================================================================================================
+# 7 prio 2 sev major line 573-575, 577, 787, 799 by compile_api, live_safety
+PROBLEM: [F8] Mode 2 checks no CTrade result: market entries and stop orders (573-577), the second-leg close (787) and the SL re-anchor (799). A rejection is only printed by CTrade, while the paper trades and the user believes the orders are live. Typical causes are an invalid volume, price or expiration, a closed market, Algo Trading off, an investor password, or no money. The return value of OrderSend alone does not prove execution; ResultRetcode() must be read. R3's SetTypeFillingBySymbol/SetDeviationInPoints was dropped: CTrade's FillingCheck already picks FOK or IOC for market orders (checked in Trade.mqh).
+FIX:
+Using Sent() from F6:
+Line 573:
+   if(k.ask >= hi) { Sent(g_trade.Buy(lots, _Symbol, 0, NormalizeDouble(k.ask - D, _Digits), 0, "GoldOrb L mkt"), "achat au marche"); return; }
+Line 574:
+   if(k.bid <= lo) { Sent(g_trade.Sell(lots, _Symbol, 0, NormalizeDouble(k.bid + D, _Digits), 0, "GoldOrb S mkt"), "vente au marche"); return; }
+Line 575:
+   if(hi > k.ask + lvl) Sent(g_trade.BuyStop(lots, hi, _Symbol, NormalizeDouble(hi - D, _Digits), 0, tt, exp, "GoldOrb L"), "achat stop");
+Line 577:
+   if(lo < k.bid - lvl) Sent(g_trade.SellStop(lots, lo, _Symbol, NormalizeDouble(lo + D, _Digits), 0, tt, exp, "GoldOrb S"), "vente stop");
+Line 787:
+      Sent(g_trade.PositionClose(pos), "fermeture du 2e ordre OCO");
+Line 799:
+      Sent(g_trade.PositionModify(pos, NormalizeDouble(g.real_fill - side * g.real_D, _Digits), PositionGetDouble(POSITION_TP)), "recalage du stop initial");
+In AccountReady() (F3), before `g_ready = true;` (without F3: at the end of OnInit):
+   if(InpMode != GO_ALERTS && !MQLInfoInteger(MQL_TESTER) && (!TerminalInfoInteger(TERMINAL_TRADE_ALLOWED) || !MQLInfoInteger(MQL_TRADE_ALLOWED)))
+      Notify("GoldOrb : Algo Trading desactive : le programme ne peut ni poser, ni deplacer, ni fermer vos stops.");
+====================================================================================================
+# 8 prio 2 sev major line new Reconcile(); 532, 685-690, 766-771 by live_safety
+PROBLEM: [F9] Mode 2 never reconciles with the broker. A stop order that fills while the EA is down (VPS reboot, terminal restart, chart re-init) never reaches OnTradeTransaction. The position keeps only its fixed SL, with no trailing stop (which is where the edge comes from) and no time exit, and the opposite leg stays live. Once the paper is flat, Decide arms a new bracket on top of this orphan, which doubles the exposure.
+FIX:
+Add after VirtualEntry() (F6):
+// mode 2 : position du programme ouverte pendant un arret (ordre stop execute sans OnTradeTransaction) -> reprise en charge
+void Reconcile()
+  {
+   if(!g_auto || RealPositionSelected()) return;
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+     {
+      ulong t = PositionGetTicket(i);
+      if(t == 0 || PositionGetString(POSITION_SYMBOL) != _Symbol || PositionGetInteger(POSITION_MAGIC) != InpMagic) continue;
+      if(g.real_ticket != 0) { Sent(g_trade.PositionClose(t), "fermeture du 2e ordre OCO"); continue; }   // les deux ordres executes pendant l'arret
+      datetime op = (datetime)PositionGetInteger(POSITION_TIME);
+      double sl = PositionGetDouble(POSITION_SL);
+      g.real_ticket = t;
+      g.real_side = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY) ? 1 : -1;
+      g.real_fill = PositionGetDouble(POSITION_PRICE_OPEN);
+      datetime dec = BucketUTC(ToUTC(op));
+      Bar4 b4[];
+      int n4 = Build4H(b4, dec);
+      double atr = (n4 > InpATRPeriod + 2) ? WilderATR(b4, n4, InpATRPeriod) : 0.0;
+      g.real_D = (atr > 0) ? InpStopATR * atr : MathAbs(g.real_fill - sl);
+      g.real_deadline_utc = DeadlineUTC(dec, InpMaxDays);
+      g.real_best = g.real_fill;
+      MqlRates r[];
+      int k = CopyRates(_Symbol, PERIOD_M1, (datetime)((long)op / 60 * 60), TimeCurrent(), r);
+      for(int j = 0; j < k; j++)
+         g.real_best = (g.real_side > 0) ? MathMax(g.real_best, r[j].high) : MathMin(g.real_best, r[j].low + r[j].spread * _Point);
+      DeletePendings();
+      Journal("REAL_ADOPT", TimeGMT(), g.real_side, g.real_fill, sl, atr, 0, IntegerToString((long)t));
+      Notify(StringFormat("GoldOrb : position #%I64u ouverte pendant un arret, reprise en charge (sortie max %s).", t, Clocks(g.real_deadline_utc)));
+      SaveState();
+     }
+  }
+Call it in three places:
+(1) Line 532, as changed by F4:
+      if(g_auto) { Reconcile(); if(!RealPositionSelected()) PlacePendings(); }
+(2) In the F2 end-of-replay block, right after `g_replay = false;`:
+      Reconcile();
+(3) In OnTimer, after RealTimeExit():
+   static datetime s_rec = 0;
+   if(TimeLocal() - s_rec >= 60) { s_rec = TimeLocal(); Reconcile(); }
+RealOnBar and RealTimeExit then manage the adopted position like any other.
+====================================================================================================
+# 9 prio 2 sev major line 613-633, 685-690 by compile_api, logic_parity, live_safety
+PROBLEM: [F10] RealOnBar has four faults.
+(a) When the rule's trailing stop is already beyond the current price, lines 629-630 return every minute, forever. The real position stays on its old stop after the paper and the lab have exited. This is typical after a replay, where real_best is raised to old highs while the price has fallen, and also when a manual position is bound late.
+(b) During a replay it sends one synchronous PositionModify per replayed bar, which makes bursts and risks TOO_MANY_REQUESTS.
+(c) It trails at real_D = InpStopATR*ATR while the paper trails at InpTrailATR*ATR (399). The two only match while both inputs are 2.0.
+(d) A failed modify is silent.
+FIX:
+Replace RealOnBar (lines 613-633):
+void RealOnBar(const MqlRates &b, const datetime t_utc)
+  {
+   if(InpMode == GO_ALERTS || !RealPositionSelected()) return;
+   double spr = b.spread * _Point;
+   if(g.real_side > 0) { if(b.high > g.real_best) g.real_best = b.high; }
+   else { if(b.low + spr < g.real_best) g.real_best = b.low + spr; }
+   if(g_replay) return;   // rattrapage : on suit l'extreme ; le stop est pose une fois a la fin (CatchUp)
+   double trail = (InpStopATR > 0) ? g.real_D * InpTrailATR / InpStopATR : g.real_D;   // = papier : suiveur InpTrailATR x ATR
+   double want = NormalizeDouble(g.real_best - g.real_side * trail, _Digits);
+   double sl = PositionGetDouble(POSITION_SL), tp = PositionGetDouble(POSITION_TP);
+   double init = NormalizeDouble(g.real_fill - g.real_side * g.real_D, _Digits);
+   if(sl == 0.0) want = (g.real_side > 0) ? MathMax(want, init) : MathMin(want, init);
+   bool tighter = (sl == 0.0) || (g.real_side > 0 && want > sl + _Point) || (g.real_side < 0 && want < sl - _Point);
+   if(!tighter) return;
+   MqlTick k;
+   if(!SymbolInfoTick(_Symbol, k)) return;
+   if((g.real_side > 0 && k.bid <= want) || (g.real_side < 0 && k.ask >= want))
+     {   // stop de la regle deja franchi (souvent apres une coupure) : on sort comme le papier
+      if(Sent(g_trade.PositionClose(g.real_ticket), "fermeture au stop de la regle"))
+        {
+         Journal("REAL_CLOSE", t_utc, g.real_side, g_trade.ResultPrice(), want, g.real_D, 0, "rule stop already crossed");
+         Notify(StringFormat("GoldOrb : stop de la regle (%s) deja franchi, position #%I64u fermee a %s.",
+                             DoubleToString(want, _Digits), g.real_ticket, DoubleToString(g_trade.ResultPrice(), _Digits)));
+         g.real_ticket = 0;
+        }
+      return;
+     }
+   double lvl = (double)MathMax(SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL),
+                                SymbolInfoInteger(_Symbol, SYMBOL_TRADE_FREEZE_LEVEL)) * _Point;
+   if(g.real_side > 0 && want > k.bid - lvl) return;   // trop pres : nouvel essai a la minute suivante
+   if(g.real_side < 0 && want < k.ask + lvl) return;
+   if(Sent(g_trade.PositionModify(g.real_ticket, want, tp), "deplacement du stop"))
+      Journal("REAL_SL_MOD", t_utc, g.real_side, want, sl, g.real_D, 0, "");
+  }
+In the F2 end-of-replay block, after `g_replay = false;` (and after Reconcile() from F9):
+      RealOnBar(r[n - 1], ToUTC(r[n - 1].time));   // un seul deplacement de stop, depuis l'extreme rattrape
+====================================================================================================
+# 10 prio 2 sev major line 654-661, 504-510 by compile_api, logic_parity, live_safety
+PROBLEM: [F11] History is used without any synchronization check. The MQL5 reference says that in an EA, CopyRates returns 'the amount that will be ready by the moment of timeout expiration', and returns -1 'if data outside TERMINAL_MAXBARS is requested'.
+(a) After a restart or reconnect, the range [last_m1+60, cur-60] can come back partial. The loop then moves last_m1 past the hole, and those bars' stops, entries and 4h decisions are lost for good.
+(b) After an outage longer than the M1 history kept (about 14 weeks at 100 000 max bars), CopyRates returns -1 forever and CatchUp returns at 661 on every call. The EA is then silently dead.
+(c) With a short M5 history, Decide fails on every bar: one DATA_WARN row per minute, no levels armed and no push.
+FIX:
+In CatchUp, after line 657 (`if(cur <= g.last_m1 + 60) return;`):
+   if(!MQLInfoInteger(MQL_TESTER) && (!TerminalInfoInteger(TERMINAL_CONNECTED) || !SeriesInfoInteger(_Symbol, PERIOD_M1, SERIES_SYNCHRONIZED)))
+      return;   // historique pas encore recharge (redemarrage, reconnexion) : nouvel essai dans 2 s
+In CatchUp, after line 660 (the CopyRates call):
+   if(n < 0 && (long)(cur - g.last_m1) / 60 > TerminalInfoInteger(TERMINAL_MAXBARS))
+     {   // coupure plus longue que l'historique du terminal : CopyRates rendrait -1 pour toujours
+      Journal("GAP_RESET", ToUTC(cur), g.side, 0, 0, 0, 0, "last M1 " + TimeToString(g.last_m1, TIME_DATE | TIME_MINUTES));
+      Notify("GoldOrb : arret trop long pour etre rattrape, position papier et niveaux remis a zero.");
+      g.side = 0;
+      g.br_active = 0;
+      g.last_m1 = cur - 60;
+      g.last_bucket_utc = BucketUTC(ToUTC(cur));
+      SaveState();
+      return;
+     }
+In Decide, replace lines 506-510 with:
+   bool sync = MQLInfoInteger(MQL_TESTER) || SeriesInfoInteger(_Symbol, PERIOD_M5, SERIES_SYNCHRONIZED);
+   if(!sync || n < InpChannelBars + InpATRPeriod + 2)
+     {
+      static datetime s_warned = 0;   // une ligne et une alerte par fenetre, pas une par minute
+      if(s_warned != bucket)
+        {
+         s_warned = bucket;
+         Journal("DATA_WARN", bucket, 0, 0, 0, 0, 0, "4h bars " + IntegerToString(n) + (sync ? "" : " M5 not synchronized"));
+         if(sync && !g_replay)
+            Notify("GoldOrb : historique M5 insuffisant (" + IntegerToString(n) + " bougies H4), aucun niveau. Outils > Options > Graphiques > Nombre max. de barres = illimite.");
+        }
+      return false;   // on reessaiera a la bougie suivante
+     }
+Both synchronization checks run after iTime or CopyRates has requested the series, so they cannot block on a series that was never built.
+====================================================================================================
+# 11 prio 2 sev major line 263-267, 279-285, 738; compare_journal.py 27-35 by compile_api, logic_parity, live_safety
+PROBLEM: [F12] The mandatory parity check (README 53-61) can be corrupted. The tester journal is opened READ|WRITE and appended at SEEK_END in FILE_COMMON, which persists between runs, and nothing truncates it. compare_journal.read_journal pairs the i-th ENTRY with the i-th EXIT. So one run that ends with an open trade shifts every later pair, giving wrong exit times and R values, and repeated runs duplicate trades. Both effects reproduced on a synthetic two-run journal. SaveState also rewrites the tester state file once per simulated minute (about 355k writes a year), although LoadState never reads it in the tester.
+FIX:
+In OnInit, after line 738 (FolderCreate):
+   if(MQLInfoInteger(MQL_TESTER)) FileDelete(FilePrefix() + "journal_" + _Symbol + ".csv", FILE_COMMON);   // un journal neuf par test
+First line of SaveState():
+   if(MQLInfoInteger(MQL_TESTER)) return;   // LoadState() ne relit jamais l'etat dans le testeur
+In lab/live/compare_journal.py, replace read_journal (lines 27-35) with:
+def read_journal(path):
+    j = pd.read_csv(path, sep=";")
+    j["t"] = pd.to_datetime(j["time_utc"], format="%Y.%m.%d %H:%M:%S", utc=True)
+    # pair each EXIT with the ENTRY just before it (an ENTRY left open by a cut-off run is dropped)
+    rows, op = [], None
+    for r in j[j.event.isin(["ENTRY", "EXIT"])].itertuples(index=False):
+        if r.event == "ENTRY":
+            op = r
+        elif op is not None:
+            rows.append(dict(entry_time=op.t, side=int(op.side), entry=op.price,
+                             exit_time=r.t, R=r.R, reason=r.note))
+            op = None
+    ea = pd.DataFrame(rows, columns=["entry_time", "side", "entry", "exit_time", "R", "reason"])
+    # several tester runs appended to one file: keep one copy of each trade
+    return ea.drop_duplicates(["entry_time", "side"], keep="last").reset_index(drop=True)
+Tested on a synthetic journal where run 1 ends with an open trade and run 2 is appended. The old pairing returned 5 trades, with trade 3 carrying trade 1's R. The new pairing returns the 3 real trades.
+====================================================================================================
+# 12 prio 2 sev major line 422-423, 616-618 by compile_api, logic_parity
+PROBLEM: [F13] The paper engine builds the ask as bid + MqlRates.spread, and that field holds the bar's MINIMUM spread (MQL5 Book: 'the minimum spread value is stored in the quotes'). Whenever the spread widens inside the minute (17:00 NY rollover, news), the ask open/high/low are underestimated. Buy-stop touches and short stops are then detected late or missed, and long fills and short exits are optimistic compared with the lab's true ask. ea_twin.py --mt5like modelled the spread at the bar open (lines 58 and 84), so the README's 92 % parity figure does not cover this effect. In R2's model, the EA as coded gets 92.1 % identical entries and 86.9 % identical exits, against 94.2 % and 95.4 % with a tick-exact ask. CopyTicks can block for up to 45 s per call in an EA (MQL5 reference), so ticks are read only for live bars, never during a replay.
+FIX:
+Add before ProcessBar:
+// Cote ask d'une bougie M1 fermee. MqlRates.spread est l'ecart MINIMUM de la bougie : bid + spread sous-estime l'ask.
+// On lit les ticks, sauf en rattrapage (CopyTicksRange peut attendre jusqu'a 45 s par appel dans un EA).
+void AskOHL(const MqlRates &b, double &ao, double &ah, double &al)
+  {
+   double spr = b.spread * _Point;
+   ao = b.open + spr; ah = b.high + spr; al = b.low + spr;
+   if(g_replay) return;
+   MqlTick k[];
+   int n = CopyTicksRange(_Symbol, k, COPY_TICKS_INFO, (ulong)b.time * 1000, (ulong)b.time * 1000 + 59999);
+   double o = 0.0, h = 0.0, l = DBL_MAX;
+   for(int i = 0; i < n; i++)
+     {
+      double a = k[i].ask;
+      if(a <= 0.0) continue;
+      if(o == 0.0) o = a;
+      if(a > h) h = a;
+      if(a < l) l = a;
+     }
+   if(o > 0.0) { ao = o; ah = h; al = l; }
+  }
+In ProcessBar, replace lines 422-423 with:
+   double ao = 0.0, ah = 0.0, al = 0.0;
+   AskOHL(b, ao, ah, al);
+In RealOnBar (F10 version), replace the `double spr` line and the two best-price lines with:
+   if(g.real_side > 0) { if(b.high > g.real_best) g.real_best = b.high; }
+   else
+     {
+      double ao = 0.0, ah = 0.0, al = 0.0;
+      AskOHL(b, ao, ah, al);
+      if(al < g.real_best) g.real_best = al;
+     }
+After this fix, re-measure the README's 92 % expectation with the real MT5 tester using 'every tick based on real ticks'.
+====================================================================================================
+# 13 prio 3 sev minor line 197-200 by live_safety
+PROBLEM: [F14] Clocks() prints the UTC date next to the Paris time. For example, '2013.02.27 23:55 UTC / 00:55 Paris' actually means Thursday 28/02 at 00:55 in Paris. R3 found that 82 of 787 lab deadlines (10.4 %) would be read a day early, and a mode-0 trader closes by this 'sortie max' time.
+FIX:
+Line 199:
+   return TimeToString(ParisFromUTC(utc), TIME_DATE | TIME_MINUTES) + " Paris (" + TimeToString(utc, TIME_MINUTES) + " UTC)";   // date de Paris
+The string has the same length as before, so no push gets longer.
+====================================================================================================
+# 14 prio 3 sev minor line 558-563 by live_safety
+PROBLEM: [F15] The SKIP_SIZE push gives backwards advice and repeats every 4 h. The block triggers when the minimum lot risks more than InpMaxRiskMult x InpRiskPct (line 368), so following the advice to lower the risk makes it trigger more often. The push goes out at every 4h close, nights included, for as long as the account is too small.
+FIX:
+Replace lines 558-563 with:
+   if(lots <= 0 || over)
+     {
+      Journal("SKIP_SIZE", TimeGMT(), 0, 0, 0, g.br_atr, 0, m);
+      static datetime s_skip = 0;   // une alerte par jour, pas toutes les 4 h
+      if(TimeLocal() - s_skip >= 86400)
+        {
+         s_skip = TimeLocal();
+         Notify("GoldOrb : ordres non places (" + m + "). " + (lots <= 0 ? "Infos du symbole indisponibles." :
+                "Capital trop faible pour le lot minimum (baisser le risque n'aide pas) ; ne relevez InpRiskPct ou InpMaxRiskMult que si vous acceptez ce risque."));
+        }
+      return;
+     }
+The longest message is about 215 characters, under the 255 push limit.
+====================================================================================================
+# 15 prio 3 sev minor line 734 by compile_api, live_safety
+PROBLEM: [F16] Inputs are not validated. InpATRPeriod = 0 divides by zero at line 344, a critical runtime error that stops the EA. InpStopATR <= 0 puts the stops at the entry price. A typo of 5 instead of 0.5 in InpRiskPct sizes ten times the intended risk in mode 2.
+FIX:
+First lines of OnInit():
+   if(InpChannelBars < 1 || InpATRPeriod < 1 || InpStopATR <= 0 || InpTrailATR <= 0 || InpMaxDays < 1 || InpHistoryDays < 30 ||
+      InpRiskPct <= 0 || InpRiskPct > 2.0 || InpMaxRiskMult < 1.0 || InpWakeFrom < 0 || InpWakeTo > 24 || InpWakeFrom > InpWakeTo)
+     {
+      Alert("GoldOrb : parametre hors limites (canal et ATR >= 1, stops > 0, duree >= 1 jour, historique >= 30 jours, risque 0-2 %, heures 0-24).");
+      return INIT_PARAMETERS_INCORRECT;
+     }
+The 2 % risk cap only guards against typos; raise it if a larger risk is intended.
+====================================================================================================
+# 16 prio 3 sev minor line 364 (prices 571-577, 619, 621, 799) by compile_api, live_safety
+PROBLEM: [F17] Volumes and prices are not normalized to the broker's grid. MathFloor(...)*vstep produces values such as 0.35000000000000003 (24 of the first 199 multiples of 0.01, verified), and CTrade passes them on unchanged. Prices are rounded to _Digits, not to SYMBOL_TRADE_TICK_SIZE. This is a defensive fix against 10014 INVALID_VOLUME or INVALID_PRICE rejections on some servers.
+FIX:
+Line 364:
+   int    vd   = (int)MathMax(0.0, MathCeil(-MathLog10(vstep) - 1e-9));   // decimales du pas : 0.01 -> 2, 0.1 -> 1, 1 -> 0
+   double lots = NormalizeDouble(MathFloor(eq * InpRiskPct / 100.0 / loss_per_lot / vstep + 1e-9) * vstep, vd);
+Optional, for brokers whose SYMBOL_TRADE_TICK_SIZE differs from _Point:
+double NormPrice(const double p)
+  {
+   double ts = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
+   return (ts > 0) ? NormalizeDouble(MathRound(p / ts) * ts, _Digits) : NormalizeDouble(p, _Digits);
+  }
+Then use NormPrice(x) instead of NormalizeDouble(x, _Digits) for every order or stop price: lines 571, 573-577, 619, 621 and 799, plus the SL prices in F1, F6 and F10.
+====================================================================================================
+# 17 prio 3 sev minor line 259-277 by compile_api, live_safety
+PROBLEM: [F18] While the live CSV is open in Excel, Excel locks it and FileOpen with FILE_WRITE fails. Every event is then dropped with only a Print, including the ENTRY/EXIT rows that the demo-vs-paper check needs.
+FIX:
+Global (after line 94):
+string   g_jbuf[];   // lignes du journal pas encore ecrites (fichier verrouille, ex. ouvert dans Excel)
+Replace the body of Journal() (lines 262-276) with:
+   double meas = MQLInfoInteger(MQL_TESTER) ? 0.0 : ((double)((long)TimeTradeServer() - (long)TimeGMT())) / 3600.0;
+   string row = TimeToString(t_utc, TIME_DATE | TIME_MINUTES | TIME_SECONDS) + ";" + ev + ";" + IntegerToString(side) + ";" +
+                DoubleToString(price, _Digits) + ";" + DoubleToString(stop, _Digits) + ";" + DoubleToString(atr, _Digits) + ";" +
+                DoubleToString(R, 3) + ";" + note + ";" +
+                TimeToString(ParisFromUTC(t_utc), TIME_DATE | TIME_MINUTES) + ";" +
+                TimeToString(ToServer(t_utc), TIME_DATE | TIME_MINUTES) + ";" +
+                DoubleToString(RuleOffsetSecForUTC(t_utc) / 3600.0, 1) + ";" + DoubleToString(meas, 2) + ";" + (g_replay ? "1" : "0");
+   int q = ArraySize(g_jbuf);
+   if(q < 500) { ArrayResize(g_jbuf, q + 1); g_jbuf[q] = row; }   // gardee si le fichier est verrouille
+   string fn = FilePrefix() + "journal_" + FileKey() + ".csv";
+   int h = FileOpen(fn, FILE_READ | FILE_WRITE | FILE_CSV | FILE_ANSI | FILE_COMMON | FILE_SHARE_READ, ';');
+   if(h == INVALID_HANDLE) { Print("Journal : impossible d'ouvrir ", fn, " (", GetLastError(), "), lignes en attente : ", ArraySize(g_jbuf)); return; }
+   if(FileSize(h) == 0)
+      FileWrite(h, "time_utc", "event", "side", "price", "stop", "atr", "R", "note", "paris", "server", "offset_rule_h", "offset_measured_h", "replay");
+   FileSeek(h, 0, SEEK_END);
+   for(int i = 0; i < ArraySize(g_jbuf); i++) FileWrite(h, g_jbuf[i]);
+   FileClose(h);
+   ArrayResize(g_jbuf, 0);
+The CSV columns and format are unchanged: each row is joined once and written as a single field. Without F3, use _Symbol instead of FileKey(). Tell users in the README to open a copy of the CSV, not the live file.
+====================================================================================================
+# 18 prio 3 sev minor line 279-298 by live_safety
+PROBLEM: [F19] SaveState truncates and rewrites the state in place every minute and ignores FileWriteStruct's result. A crash during the write leaves a short file, which LoadState rejects, silently resetting the paper position, cum_R and real_ticket. LoadState also accepts a larger file with a different layout, because it only checks the number of bytes read.
+FIX:
+Replace SaveState() and LoadState() (lines 279-298) with the following. It includes F3's FileKey()/g_ready and F12's tester guard.
+void SaveState()
+  {
+   if(MQLInfoInteger(MQL_TESTER) || !g_ready) return;
+   string fn = FilePrefix() + "state_" + FileKey() + ".bin";
+   string tmp = fn + ".tmp";
+   int h = FileOpen(tmp, FILE_WRITE | FILE_BIN | FILE_COMMON);
+   if(h == INVALID_HANDLE) return;
+   bool ok = (FileWriteStruct(h, g) == (uint)sizeof(GoState));
+   FileClose(h);
+   if(ok) FileMove(tmp, FILE_COMMON, fn, FILE_COMMON | FILE_REWRITE);   // remplacement d'un coup : jamais d'etat a moitie ecrit
+  }
+
+bool LoadState()
+  {
+   ZeroMemory(g);
+   string fn = FilePrefix() + "state_" + FileKey() + ".bin";
+   if(MQLInfoInteger(MQL_TESTER) || !FileIsExist(fn, FILE_COMMON)) return false;
+   int h = FileOpen(fn, FILE_READ | FILE_BIN | FILE_COMMON);
+   if(h == INVALID_HANDLE) return false;
+   ulong sz = FileSize(h);
+   uint n = FileReadStruct(h, g);
+   FileClose(h);
+   if(n != (uint)sizeof(GoState) || sz != (ulong)sizeof(GoState)) { ZeroMemory(g); return false; }   // version d'etat differente
+   return true;
+  }
+====================================================================================================
+# 19 prio 3 sev minor line 81, 581-586, 600, 784, 791 by compile_api
+PROBLEM: [F20] g.real_ticket is used as a position ticket. The MQL5 reference says POSITION_TICKET can change 'as a result of service operations on the server, for example, when charging swaps with position re-opening', while POSITION_IDENTIFIER does not. When that happens, RealPositionSelected clears real_ticket and the position silently loses its trailing stop and time exit. This is rare and depends on the broker.
+FIX:
+In GoState, after line 81 (`int real_side;`):
+   ulong             real_id;           // POSITION_IDENTIFIER (le ticket peut etre remplace par le serveur)
+Replace RealPositionSelected() (lines 581-586):
+bool RealPositionSelected()
+  {
+   if(g.real_ticket == 0) return false;
+   if(PositionSelectByTicket(g.real_ticket)) return true;
+   for(int i = PositionsTotal() - 1; i >= 0; i--)   // ticket remplace par le serveur : meme identifiant
+     {
+      ulong t = PositionGetTicket(i);
+      if(t != 0 && g.real_id != 0 && (ulong)PositionGetInteger(POSITION_IDENTIFIER) == g.real_id) { g.real_ticket = t; return true; }
+     }
+   g.real_ticket = 0;   // fermee (stop touche...)
+   return false;
+  }
+After every `g.real_ticket = t;` (in BindManualPosition from F1 and Reconcile from F9):
+      g.real_id = (ulong)PositionGetInteger(POSITION_IDENTIFIER);
+After line 791 (`g.real_ticket = pos;`):
+   g.real_id = pos;
+Line 784:
+   if(g.real_ticket != 0 && g.real_id != pos && RealPositionSelected())
+All PositionModify/PositionClose calls keep using g.real_ticket, which now follows the current ticket. The size of GoState changes, so an old state file is rejected once; with F3 the file name changes anyway.
+====================================================================================================
+# 20 prio 3 sev minor line 498, 520, 669-671 by logic_parity
+PROBLEM: [F21] The EA counts the deadline from the bucket start. The lab counts it from t_close of the 4h bar just completed, i.e. its last M1 bar + 1 min. The two are the same for normal windows, but after weekends, holidays and data holes the EA allows more time. For the Sunday-open window the EA's deadline is Fri 15:55 NY (EDT), while the lab's is Thu 16:55 NY. R2 found the two differ in 892 of 22,150 windows, but none of the 790 historical trades changed (the longest Sunday-window hold was 3.61 days).
+FIX:
+Globals (after line 94):
+datetime g_tc_bucket = 0;   // fenetre H4 pour laquelle g_tc a ete calcule
+datetime g_tc = 0;          // = labo : cloture de la derniere bougie M1 avant la decision
+Line 671:
+         if(g_tc_bucket != bucket) { g_tc_bucket = bucket; g_tc = ToUTC(g.last_m1) + 60; }   // = labo : t_close de la bougie H4 terminee
+         if(Decide(bucket, g_tc)) g.last_bucket_utc = bucket;   // sinon on reessaiera a la bougie suivante
+Line 498:
+bool Decide(const datetime bucket, const datetime tc)
+Line 520:
+   g.br_decision_utc = tc;   // = labo : echeance comptee depuis la cloture de la derniere bougie avant la decision
+Keep line 521 (expiry = bucket + 14400) and keep the LEVELS row on bucket. R2's port gives 780 of 780 identical trades with this reference.

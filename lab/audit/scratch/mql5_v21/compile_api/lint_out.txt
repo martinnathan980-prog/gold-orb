@@ -1,0 +1,124 @@
+bytes 48965 non-ascii 0 CR 0 TAB 0
+brackets balanced
+depth at EOF 0
+functions defined/declared: 51 multi: {'DeletePendings': [432, 559]}
+
+-- declared names that are reserved or builtin math aliases --
+  check expiry declared as {'datetime'}  
+  check exp declared as None  builtin-alias
+  check tc declared as {'datetime'}  
+  check sig declared as {'int'}  
+  check vd declared as {'int'}  
+  check q declared as {'int'}  
+
+-- StringFormat / PrintFormat --
+StringFormat line 400: specifiers 3 args 3 OK
+     %.2f     <- vmin                                                                   [double]
+     %.1f     <- pct                                                                    [double]
+     %s       <- over_risk ? " (TROP RISQUE)" : ""                                      [string]
+StringFormat line 404: specifiers 2 args 2 OK
+     %.2f     <- lots                                                                   [double]
+     %.2f     <- InpRiskPct                                                             [double]
+StringFormat line 441: specifiers 9 args 9 OK
+     %s       <- _Symbol                                                                [string]
+     %s       <- g.side > 0 ? "achat" : "vente"                                         [string]
+     %s       <- why                                                                    [string]
+     %s       <- Clocks(t_utc)                                                          [string]
+     %s       <- DoubleToString(price, _Digits)                                         [string]
+     %+.2f    <- R                                                                      [double]
+     %+.1f    <- g.cum_R                                                                [double]
+     %d       <- g.n_trades                                                             [int]
+     %s       <- g_replay ? " [rattrapage]" : ""                                        [string]
+StringFormat line 468: specifiers 8 args 8 OK
+     %s       <- _Symbol                                                                [string]
+     %s       <- side > 0 ? "CASSURE HAUSSE: ACHAT" : "CASSURE BAISSE: VENTE"           [string]
+     %s       <- DoubleToString(price, _Digits)                                         [string]
+     %s       <- DoubleToString(g.init_stop, _Digits)                                   [string]
+     %.1f     <- MathAbs(price - g.init_stop)                                           [double]
+     %.1f     <- g.trail                                                                [double]
+     %s       <- Clocks(g.deadline_utc)                                                 [string]
+     %s       <- m                                                                      [string]
+StringFormat line 673: specifiers 6 args 6 OK
+     %I64u    <- t                                                                      [ulong]
+     %.2f     <- vol                                                                    [double]
+     %s       <- DoubleToString(init, _Digits)                                          [string]
+     %s       <- stop_ok ? "" : " NON POSE (" + g_trade.ResultRetcodeDescription() + ") [string]
+     %.1f     <- g.real_D                                                               [double]
+     %s       <- Clocks(g.real_deadline_utc)                                            [string]
+StringFormat line 712: specifiers 2 args 2 OK
+     %I64u    <- t                                                                      [ulong]
+     %s       <- Clocks(g.real_deadline_utc)                                            [string]
+StringFormat line 742: specifiers 3 args 3 OK
+     %s       <- DoubleToString(want, _Digits)                                          [string]
+     %I64u    <- g.real_ticket                                                          [ulong]
+     %s       <- DoubleToString(g_trade.ResultPrice(), _Digits)                         [string]
+StringFormat line 771: specifiers 2 args 2 OK
+     %s       <- g_trade.ResultRetcodeDescription()                                     [string]
+     %I64u    <- g.real_ticket                                                          [ulong]
+StringFormat line 785: specifiers 2 args 2 OK
+     %.1f     <- meas / 3600.0                                                          [double]
+     %.1f     <- rule / 3600.0                                                          [double]
+StringFormat line 787: specifiers 2 args 2 OK
+     %.2f     <- meas / 3600.0                                                          [double]
+     %.2f     <- rule / 3600.0                                                          [double]
+StringFormat line 833: specifiers 5 args 5 OK
+     %s       <- _Symbol                                                                [string]
+     %s       <- TimeToString(ParisFromUTC(g.br_expiry_utc), TIME_MINUTES)              [string]
+     %s       <- DoubleToString(hi, _Digits)                                            [string]
+     %s       <- DoubleToString(lo, _Digits)                                            [string]
+     %.1f     <- InpStopATR * atr                                                       [double]
+StringFormat line 902: specifiers 2 args 2 OK
+     %d       <- n                                                                      [int]
+     %s       <- g.side == 0 ? "aucune" : (g.side > 0 ? "achat" : "vente")              [string]
+StringFormat line 924: specifiers 5 args 5 OK
+     %s       <- _Symbol                                                                [string]
+     %s       <- side > 0 ? "HAUSSIERE : achat" : "BAISSIERE : vente"                   [string]
+     %s       <- DoubleToString(side > 0 ? k.ask : k.bid, _Digits)                      [string]
+     %.1f     <- InpStopATR * g.br_atr                                                  [double]
+     %s       <- m                                                                      [string]
+StringFormat line 937: specifiers 6 args 6 OK
+     %s       <- _Symbol                                                                [string]
+     %d       <- g.week_n                                                               [int]
+     %+.2f    <- g.week_R                                                               [double]
+     %+.1f    <- g.cum_R                                                                [double]
+     %d       <- g.n_trades                                                             [int]
+     %s       <- g.side != 0 ? " | position ouverte" : ""                               [string]
+
+-- Print / Alert arg counts --
+Print line 220: 3 args
+Print line 264: 5 args
+Print line 289: 6 args
+Print line 971: 13 args
+Print line 985: 2 args
+
+-- identifiers not declared in this file (must be MQL5/Trade.mqh builtins) --
+ACCOUNT_EQUITY ACCOUNT_LOGIN ACCOUNT_TRADE_MODE ACCOUNT_TRADE_MODE_REAL AccountInfoDouble AccountInfoInteger Alert ArrayRemove ArrayResize ArraySetAsSeries ArraySize COPY_TICKS_INFO CP_UTF8 CTrade CopyRates CopyTicksRange DBL_MAX DEAL_ENTRY DEAL_ENTRY_IN DEAL_MAGIC DEAL_POSITION_ID DEAL_PRICE DEAL_SYMBOL DEAL_TYPE DEAL_TYPE_BUY DoubleToString ENUM_ORDER_TYPE_TIME EnumToString EventKillTimer EventSetTimer FILE_ANSI FILE_BIN FILE_COMMON FILE_CSV FILE_READ FILE_REWRITE FILE_SHARE_READ FILE_WRITE FileClose FileDelete FileIsExist FileMove FileOpen FileReadStruct FileSeek FileSize FileWrite FileWriteStruct FolderCreate GetLastError HistoryDealGetDouble HistoryDealGetInteger HistoryDealGetString HistoryDealSelect INIT_PARAMETERS_INCORRECT INIT_SUCCEEDED INVALID_HANDLE IntegerToString MQLInfoInteger MQL_TESTER MQL_TRADE_ALLOWED MathAbs MathCeil MathFloor MathLog10 MathMax MathMin MathRound MqlDateTime MqlRates MqlTick MqlTradeRequest MqlTradeResult MqlTradeTransaction NormalizeDouble ORDER_MAGIC ORDER_SYMBOL ORDER_TIME_GTC ORDER_TIME_SPECIFIED OrderGetInteger OrderGetString OrderGetTicket OrdersTotal PERIOD_M1 PERIOD_M5 POSITION_IDENTIFIER POSITION_MAGIC POSITION_PRICE_OPEN POSITION_SL POSITION_SYMBOL POSITION_TIME POSITION_TP POSITION_TYPE POSITION_TYPE_BUY POSITION_VOLUME PositionGetDouble PositionGetInteger PositionGetString PositionGetTicket PositionSelectByTicket PositionsTotal Print REASON_CHARTCLOSE REASON_REMOVE SEEK_END SERIES_SYNCHRONIZED SYMBOL_EXPIRATION_MODE SYMBOL_EXPIRATION_SPECIFIED SYMBOL_TRADE_FREEZE_LEVEL SYMBOL_TRADE_STOPS_LEVEL SYMBOL_TRADE_TICK_SIZE SYMBOL_TRADE_TICK_VALUE SYMBOL_TRADE_TICK_VALUE_LOSS SYMBOL_VOLUME_MAX SYMBOL_VOLUME_MIN SYMBOL_VOLUME_STEP SendNotification SeriesInfoInteger StringFind StringFormat StringLen StringReplace StringSubstr StringToCharArray StructToTime SymbolInfoDouble SymbolInfoInteger SymbolInfoTick TERMINAL_CONNECTED TERMINAL_MAXBARS TERMINAL_TRADE_ALLOWED TIME_DATE TIME_MINUTES TIME_SECONDS TRADE_RETCODE_DONE TRADE_RETCODE_DONE_PARTIAL TRADE_RETCODE_NO_CHANGES TRADE_RETCODE_PLACED TRADE_TRANSACTION_DEAL_ADD TerminalInfoInteger TimeCurrent TimeGMT TimeLocal TimeToString TimeToStruct TimeTradeServer Trade WHOLE_ARRAY WebRequest ZeroMemory _Digits _Point _Symbol copyright description iTime include property request res result tp trans version
+
+-- non-void functions: final statement --
+  NthSunday              line  104- 114: last stmt: return StructToTime(d)
+  LastSunday             line  116- 126: last stmt: return t - x.day_of_week * 86400
+  IsUSDST                line  129- 134: last stmt: return (utc >= NthSunday(x.year, 3, 2) + 7 * 3600 && utc < N
+  IsEUDST                line  137- 142: last stmt: return (utc >= LastSunday(x.year, 3) + 3600 && utc < LastSun
+  RuleOffsetSecForUTC    line  144- 149: last stmt: return IsUSDST(utc) ? 3 * 3600 : 2 * 3600
+  ToUTC                  line  152- 152: last stmt: datetime ToUTC(const datetime server_time) { return server_t
+  ToServer               line  153- 153: last stmt: datetime ToServer(const datetime utc)      { return utc + Ru
+  NYfromUTC              line  154- 154: last stmt: datetime NYfromUTC(const datetime utc)     { return utc - (I
+  UTCfromNY              line  155- 155: last stmt: datetime UTCfromNY(const datetime ny)      { return ny + (Is
+  ParisFromUTC           line  156- 156: last stmt: datetime ParisFromUTC(const datetime utc)  { return utc + (I
+  DeadlineUTC            line  160- 195: last stmt: return UTCfromNY(ny)
+  BucketUTC              line  197- 197: last stmt: datetime BucketUTC(const datetime utc) { return (datetime)((
+  Clocks                 line  200- 203: last stmt: return TimeToString(ParisFromUTC(utc), TIME_DATE | TIME_MINU
+  JsonEscape             line  208- 214: last stmt: return s
+  FilePrefix             line  272- 272: last stmt: string FilePrefix() { return MQLInfoInteger(MQL_TESTER) ? " 
+  FileKey                line  273- 273: last stmt: string FileKey()    { return MQLInfoInteger(MQL_TESTER) ? _S
+  LoadState              line  310- 322: last stmt: return true
+  Build4H                line  329- 359: last stmt: return k + 1
+  WilderATR              line  361- 371: last stmt: return atr
+  NormPrice              line  376- 380: last stmt: return (ts > 0) ? NormalizeDouble(MathRound(p / ts) * ts, _D
+  LotsForRisk            line  382- 406: last stmt: return lots
+  Sent                   line  542- 557: last stmt: return false
+  RealPositionSelected   line  570- 581: last stmt: return false
+  OffsetOK               line  779- 789: last stmt: return false
+  Decide                 line  791- 839: last stmt: return true
+  AccountReady           line  954- 974: last stmt: return true
+  OnInit                 line  976- 996: last stmt: return INIT_SUCCEEDED

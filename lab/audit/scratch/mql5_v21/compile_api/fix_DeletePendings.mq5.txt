@@ -1,0 +1,19 @@
+void DeletePendings()
+  {
+   for(int i = OrdersTotal() - 1; i >= 0; i--)
+     {
+      ulong t = OrderGetTicket(i);
+      if(t == 0) continue;
+      if(OrderGetString(ORDER_SYMBOL) != _Symbol || OrderGetInteger(ORDER_MAGIC) != InpMagic) continue;
+      if(!IsStopped()) { g_trade.OrderDelete(t); continue; }
+      // OnDeinit (EA retire) : _StopFlag est leve, CTrade refuse tout (CTrade::IsStopped, 10027) -> requete directe
+      MqlTradeRequest rq;
+      MqlTradeResult  rs;
+      ZeroMemory(rq);
+      ZeroMemory(rs);
+      rq.action = TRADE_ACTION_REMOVE;
+      rq.order  = t;
+      if(!OrderSendAsync(rq, rs))
+         Alert("GoldOrb : ordre #", t, " NON supprime (", rs.retcode, "), supprimez-le vous-meme.");
+     }
+  }

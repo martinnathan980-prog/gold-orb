@@ -1,0 +1,264 @@
+[
+ {
+  "lens": "COMPILE & API",
+  "verdict": "COMPILE: no error found. MetaEditor (build 4000+) should report 0 errors. Not proven: no MQL5 compiler is available here, so pressing F7 is still the real test.\n\nHow this was checked:\n1) Full read of all 1058 lines, as the compiler would.\n2) Structural lint (lab/audit/scratch/mql5_v21/compile_api/lint_v21.py):\n   - braces, brackets and parentheses balanced; depth 0 at EOF;\n   - pure ASCII, LF line endings, no '//' comment ending in a backslash (which would splice the next line);\n   - all 14 StringFormat calls (lines 400, 404, 441, 468, 673, 712, 742, 771, 785, 787, 833, 902, 924, 937) match in specifier COUNT and TYPE: %I64u gets a ulong (t, g.real_ticket), %d an int, %f/%+f a double, %s a string;\n   - largest Print has 13 arguments (limit 64);\n   - every non-void function returns on all paths.\n3) The whole file was compiled as C++ (g++ 13 and clang++, -Wall -Wextra -Wshadow-all -Wconditional-uninitialized -Wunreachable-code) against a shim (cxx/mql5_shim.h) that mirrors the docs.mql5.com signatures and the 2000-2025 Trade.mqh (downloaded to ref_trade_mqh/). Result: 0 errors, 0 warnings, apart from 5 harmless long-to-double conversions in OffsetOK (784-787).\n   - The harness caught all 13 deliberately injected mistakes (cxx/mutate.py): wrong arity, struct-member typo, swapped CTrade argument, undeclared name, removed prototype, CopyTicksRange/FileMove/ArrayRemove/SeriesInfoInteger misuse, missing return value, \"lit\"+\"lit\", lost brace.\n   - So every identifier is declared before use, every user-function call has the right arity and types, every struct member exists, and every enum constant goes to the right *Info* function.\n\nSpecific points checked:\n- Forward declaration 'void DeletePendings();' (432) matches its definition (559) exactly. MQL5 docs: \"Function prototype is the function declaration, but not its definition... must exactly match\", so it is legal.\n- Reserved words: none used as an identifier. expiry, tc, sig, vd and q are ordinary names; 'exp' (a MathExp alias) is not used at all. Also absent: union, pack, offsetof, group, namespace, override.\n- The 5 static locals (548, 549, 595, 805, 1021) have constant initializers.\n- Ternaries mix only string with string (675, 599, 809...), datetime with int (610, gives datetime) and same-enum values (609).\n- No struct is passed by value, returned or copied. ZeroMemory is only applied to POD structs (GoState, MqlDateTime). GoState has no string or array, so FileWriteStruct/FileReadStruct are legal.\n- No string+number concatenation.\n- char data[] passed to StringToCharArray's uchar&[] is accepted by MQL5 (forum code \"char post[]; StringToCharArray(data, post, 0, WHOLE_ARRAY, CP_UTF8)\" ran).\n- CopyRates overloads: 334 is pos/count; 707 and 860 are datetime/datetime.\n\nAPI signatures all correct:\n- CopyTicksRange(string, MqlTick&[], uint, ulong, ulong); FileMove(string, int, string, int) with FILE_COMMON|FILE_REWRITE.\n- ArrayRemove(void&[], uint, uint) on dynamic string arrays (the only restriction is for fixed-size arrays); SeriesInfoInteger long form with SERIES_SYNCHRONIZED; TerminalInfoInteger(TERMINAL_MAXBARS) returns int; PositionGetInteger(POSITION_IDENTIFIER).\n- All 25 CTrade uses (Buy, Sell, BuyStop, SellStop, PositionClose(ulong), PositionModify(ulong, ...), OrderDelete, ResultRetcode (uint), ResultPrice (double), ResultRetcodeDescription, SetExpertMagicNumber) match Trade.mqh 2000-2025.\n- FileWrite of one pre-joined row adds no quoting: the delimiter goes only between arguments, then \"\\r\\n\".\n\nAll 21 fixes are present, wired, and compile.\n\nOne real runtime API defect (problem 1): the F5 cleanup in OnDeinit goes through CTrade, which refuses every request once _StopFlag is set, so removing the EA in mode 2 deletes nothing. It does not affect compilation or modes 0 and 1.",
+  "fix_status": [
+   {
+    "id": "F1",
+    "status": "applied - compiles, API correct",
+    "evidence": "BindManualPosition 649-680: side taken from fill vs init_stop (652), real_id set (663), PositionModify(ulong,double,double) (672), StringFormat 673 has 6 specifiers for 6 args. Polled at 1009 (OnTick) and 1019 (OnTimer); TickTrigger 910-928 no longer calls it."
+   },
+   {
+    "id": "F2",
+    "status": "applied - compiles",
+    "evidence": "873 g_replay = (n > 5). End-of-replay block 897-906: Reconcile 900; RealOnBar(r[n - 1], ...) 901 is safe because n > 5; OffsetOK and PlacePendings 904-905."
+   },
+   {
+    "id": "F3",
+    "status": "applied - compiles, API correct",
+    "evidence": "g_ready/g_key 89-90; FileKey 273 used at 287, 301, 313; SaveState guard 300; AccountReady 954-974 (ACCOUNT_LOGIN, TERMINAL_CONNECTED, ACCOUNT_TRADE_MODE_REAL are valid constants); OnInit 988-994; gates in OnTick 1007 and OnTimer 1017."
+   },
+   {
+    "id": "F4",
+    "status": "applied - compiles",
+    "evidence": "798 if(g.side != 0) return true; 836 if(g_auto) { Reconcile(); if(!RealPositionSelected()) PlacePendings(); }; 967 mode 0 clears real_ticket."
+   },
+   {
+    "id": "F5",
+    "status": "partially effective - compiles, but the OnDeinit part does nothing at runtime",
+    "evidence": "797 (Decide) works, and so does 462 (PaperEnter, via the legal prototype at 432). 1001 (OnDeinit -> DeletePendings -> g_trade.OrderDelete at 566) is a no-op on REASON_REMOVE/CHARTCLOSE: CTrade::OrderDelete returns false when IsStopped() is true (Trade.mqh 2000-2025, lines 748-752 and 796-804), and _StopFlag is already set during deinit. See problem 1."
+   },
+   {
+    "id": "F6",
+    "status": "applied - compiles",
+    "evidence": "g_vbuy/g_vsell 96; cleared at 586-587 and 795-796; set at 616 and 618. Sent 542-557 (its static string/datetime locals are legal). VirtualEntry 622-645 is called at 1010."
+   },
+   {
+    "id": "F7",
+    "status": "applied - compiles, API correct",
+    "evidence": "PushNow 216-221; FlushPush 244-249 (ArrayRemove on a dynamic string array is allowed); push and Telegram caps 232-240; RealTimeExit 756-774 called at 1012 and 1020; FlushPush 1024; StringFormat 771 has 2 specifiers for 2 args."
+   },
+   {
+    "id": "F8",
+    "status": "applied - compiles",
+    "evidence": "Sent() wraps 613, 614, 615, 617, 643, 644, 691, 739, 752, 1042 and 1055. Algo Trading warning 968-969 (TERMINAL_TRADE_ALLOWED, MQL_TRADE_ALLOWED are valid)."
+   },
+   {
+    "id": "F9",
+    "status": "applied - compiles",
+    "evidence": "Reconcile 683-715 adds PositionSelectByTicket (689) and ArraySetAsSeries (706) to the review text. CopyRates datetime/datetime overload at 707; StringFormat 712 has 2 specifiers for 2 args. Called at 836, 900 and 1022."
+   },
+   {
+    "id": "F10",
+    "status": "applied - compiles, API correct",
+    "evidence": "RealOnBar 717-754: ResultPrice() returns double and ResultRetcodeDescription() returns string, as in Trade.mqh. MathMax(long,long) at 748 gives a long that is cast to double. StringFormat 742 has 3 specifiers for 3 args. One stop move after replay at 901."
+   },
+   {
+    "id": "F11",
+    "status": "applied - compiles, API correct",
+    "evidence": "856-857 use SeriesInfoInteger(string,ENUM_TIMEFRAMES,SERIES_SYNCHRONIZED), which returns long. 861-871 GAP_RESET compares (long) minutes with TerminalInfoInteger(TERMINAL_MAXBARS), an int. Decide 802-814 DATA_WARN uses a static s_warned."
+   },
+   {
+    "id": "F12",
+    "status": "applied - compiles",
+    "evidence": "987 FileDelete(..., FILE_COMMON) runs in the tester; the tester file GoldOrb\\tester_journal_<symbol>.csv matches README and compare_journal.py; SaveState returns early in the tester (300)."
+   },
+   {
+    "id": "F13",
+    "status": "applied - compiles, API correct",
+    "evidence": "AskOHL 413-430: CopyTicksRange(const string, MqlTick&[], uint flags, ulong from_msc, ulong to_msc) matches the docs; (ulong)b.time*1000 is in server-time ms, like tick times; both bounds are inclusive. Used at 478 and 724."
+   },
+   {
+    "id": "F14",
+    "status": "applied - compiles",
+    "evidence": "Clocks 200-203 (Paris date first)."
+   },
+   {
+    "id": "F15",
+    "status": "applied - compiles",
+    "evidence": "592-603: static s_skip inside a nested block is legal; the ternary mixes two string literals."
+   },
+   {
+    "id": "F16",
+    "status": "applied - compiles",
+    "evidence": "978-983 return INIT_PARAMETERS_INCORRECT."
+   },
+   {
+    "id": "F17",
+    "status": "applied - compiles",
+    "evidence": "394-395 vd/lots with explicit (int) cast. NormPrice 376-380 is used at 611, 613-617, 643-644, 669, 729, 731 and 1055."
+   },
+   {
+    "id": "F18",
+    "status": "applied - compiles",
+    "evidence": "g_jbuf 95; Journal 275-296. FileWrite(h, row) writes the pre-joined row unquoted (the delimiter goes only between arguments), so the CSV format is unchanged."
+   },
+   {
+    "id": "F19",
+    "status": "applied - compiles, API correct",
+    "evidence": "SaveState 298-308: the uint returned by FileWriteStruct is compared with (uint)sizeof(GoState); FileMove(tmp, FILE_COMMON, fn, FILE_COMMON | FILE_REWRITE) matches the doc signature. LoadState 310-322 checks the size."
+   },
+   {
+    "id": "F20",
+    "status": "applied - compiles",
+    "evidence": "real_id 74; RealPositionSelected 570-581 (PositionGetTicket selects the position before PositionGetInteger(POSITION_IDENTIFIER)); real_id set at 663, 695 and 1047; guard at 1039. GoState is still POD."
+   },
+   {
+    "id": "F21",
+    "status": "applied - compiles",
+    "evidence": "g_tc_bucket/g_tc 99; 882-883; Decide(const datetime bucket, const datetime tc) 791; 824 br_decision_utc = tc."
+   }
+  ],
+  "problems": [
+   {
+    "severity": "major (runtime API, mode 2 only; not a compile error)",
+    "line": "1001 (OnDeinit) -> 559-568 DeletePendings, 566 g_trade.OrderDelete(t)",
+    "problem": "Removing the EA in mode 2 (REASON_REMOVE or REASON_CHARTCLOSE) does not delete its pending orders, so the F5 'pas d'ordre orphelin' cleanup is a no-op. Every CTrade trade method starts with 'if(IsStopped(__FUNCTION__)) return(false);'. CTrade::IsStopped prints 'MQL5 program is stopped. Trading is disabled', sets retcode 10027 and sends nothing (Trade.mqh 2000-2025: OrderDelete 748-752, IsStopped 796-804). _StopFlag is already true while the program is being unloaded. The MQL5 Book says: 'After a stop request has been sent to the program (and the value _StopFlag equals true), the reason for the termination can be found using UninitializeReason'. MQL5 forum threads 59570 and 376194 report exactly this when CTrade is used in OnDeinit ('trading is already stopped'; 'OrderDelete: auto trading disabled by client', which is CTrade's text for 10027). A moderator's answer there: 'You have to use OrderSend() or OrderSendAsync(), not CTrade.' DeletePendings ignores the return value, so nobody is told. Effect: a stop order left after the EA is removed can still fill and leave an unmanaged position, with no trailing stop, no time exit and no adoption unless the EA is re-attached. With ORDER_TIME_SPECIFIED the order lives at most to the end of its 4h window; on GTC or DAY symbols it lives until the user deletes it. Behaviour in normal operation is unchanged, because IsStopped() is false there.",
+    "fix": "Replace DeletePendings (lines 559-568) with the version below. The normal path still uses CTrade. While stopping, it sends a raw asynchronous remove request: OrderSendAsync does not wait, which fits the ~2.5 s deinit budget. This compiles in the g++/clang++ harness and is pure ASCII (copy at lab/audit/scratch/mql5_v21/compile_api/fix_DeletePendings.mq5.txt):\n\nvoid DeletePendings()\n  {\n   for(int i = OrdersTotal() - 1; i >= 0; i--)\n     {\n      ulong t = OrderGetTicket(i);\n      if(t == 0) continue;\n      if(OrderGetString(ORDER_SYMBOL) != _Symbol || OrderGetInteger(ORDER_MAGIC) != InpMagic) continue;\n      if(!IsStopped()) { g_trade.OrderDelete(t); continue; }\n      // OnDeinit (EA retire) : _StopFlag est leve, CTrade refuse tout (CTrade::IsStopped, 10027) -> requete directe\n      MqlTradeRequest rq;\n      MqlTradeResult  rs;\n      ZeroMemory(rq);\n      ZeroMemory(rs);\n      rq.action = TRADE_ACTION_REMOVE;\n      rq.order  = t;\n      if(!OrderSendAsync(rq, rs))\n         Alert(\"GoldOrb : ordre #\", t, \" NON supprime (\", rs.retcode, \"), supprimez-le vous-meme.\");\n     }\n  }\n\nLine 1001 stays as it is. Check on the demo account: with mode-2 stop orders live, remove the EA. The Experts log must not show 'CTrade::OrderDelete: MQL5 program is stopped' and both orders must leave the Trade tab. If the terminal also refuses raw requests during deinit, the Alert now tells the user to delete them by hand instead of failing silently."
+   }
+  ]
+ },
+ {
+  "lens": "FIX VERIFICATION & REGRESSIONS (EA v2.10 vs final.fixes F1-F21 and lab/live/ea_twin.py)",
+  "verdict": "PASS with 1 partial FAIL and 5 minor regressions; nothing blocks compiling (F7). All 21 fixes are present. 20 meet their intent. F6 fails on its requirement that 'TRADE_RETCODE_NO_CHANGES must count as success': Sent() only accepts it when OrderSend returned true, and OrderSend does not return true for a 10025 reply. The paper engine still equals ea_twin.py. The only change in ProcessBar is AskOHL (lines 477-478). Decide runs on the first M1 bar of each new bucket (lines 880-884, twin lines 96-104). tc = ToUTC(previous bar) + 60, computed once per bucket and kept across Decide retries (line 882, twin line 99). The deadline is DeadlineUTC(tc) (lines 824 and 459, twin line 139) and expiry is bucket + 4h (lines 825 and 511, twin line 128). Replay is n > 5 (line 873). The end-of-replay block runs Reconcile, RealOnBar, Notify, then re-arms after OffsetOK (lines 897-906). Mode 0 sends no orders: every trade call is behind g_auto or InpMode. A leftover real ticket no longer blocks anything (lines 798 and 967). State and journal names are symbol + login (lines 273, 287, 301, 313, 959). SaveState does nothing before AccountReady and in the tester (line 300). The tester journal is deleted at OnInit (line 987) and keeps the name tester_journal_<symbol>.csv. compare_journal.read_journal pairs v2.10 rows correctly on a synthetic journal (lab/audit/scratch/mql5_v21/fixverify/journal_check.py). Fix the 5 issues below before the mode-2 demo; issues 1-3 matter most.",
+  "fix_status": [
+   {
+    "id": "F1",
+    "status": "PASS",
+    "evidence": "TickTrigger (lines 910-928) no longer calls the binder. OnTick line 1009 and OnTimer line 1019 call BindManualPosition() right after CatchUp(). The binder (lines 649-680) has the guard at 651 and takes the side from fill vs init_stop (652), so it still works after the paper exits. Window [-600 s, +6 h] at 660 matches README line 22. real_id is set at 663. The stop is placed at once (lines 669-672, NormPrice per F17), then the REAL_BIND row and SaveState. Remaining edge case: problem 4."
+   },
+   {
+    "id": "F2",
+    "status": "PASS",
+    "evidence": "Line 873 g_replay = (n > 5). End-of-replay block (lines 897-906): g_replay=false, Reconcile, RealOnBar(r[n-1]), Notify('...bougies M1 termine'), then PlacePendings re-arm behind g_auto/br_active/side==0/expiry/!RealPositionSelected/OffsetOK. The re-arm only happens when n > 5; problem 3."
+   },
+   {
+    "id": "F3",
+    "status": "PASS",
+    "evidence": "g_ready and g_key at lines 89-90. FileKey() at line 273 is used at lines 287, 301 and 313. SaveState returns early when !g_ready (line 300). AccountReady (lines 954-974): waits for a login and a connection (958), key = symbol_login (959), LoadState (960), real-account guard now runs here (962-966). OnInit (lines 988-994) resets g/g_ready/g_key/g_auto, then calls AccountReady. OnTick and OnTimer return while it is false (lines 1007 and 1017). OnTradeTransaction does nothing while g_auto is false (line 1031). No Journal call can run before the account is ready. README lines 81-82 give the new file names."
+   },
+   {
+    "id": "F4",
+    "status": "PASS",
+    "evidence": "Decide line 798 only checks g.side. Line 836: if(g_auto) { Reconcile(); if(!RealPositionSelected()) PlacePendings(); }. AccountReady line 967 clears real_ticket in mode 0. TickTrigger and ProcessBar ignore real_ticket."
+   },
+   {
+    "id": "F5",
+    "status": "PASS",
+    "evidence": "Decide deletes the orders before any early return (line 797). PaperEnter deletes them too (line 462). OnDeinit deletes them on REMOVE or CHARTCLOSE (line 1001). The line-462 deletion introduces problem 1. The OnDeinit reason list leaves orphan orders on a mode, magic or symbol change (problem 3)."
+   },
+   {
+    "id": "F6",
+    "status": "FAIL",
+    "evidence": "Flags, PlacePendings branches, Sent() and VirtualEntry are implemented: globals at 96, reset at 586-587 and 795-796, flags set at 616/618, VirtualEntry at 622-645 called at 1010. Two of the fix's stated guarantees do not hold. (a) 'NO_CHANGES must count as success' fails: line 545 tests ok && (... || rc == TRADE_RETCODE_NO_CHANGES), and OrderSend returns false for 10025, so the false alarm on the re-anchor is still there (problem 2). (b) The fix relies on 'PlacePendings re-arms the flags after a restart (the F2 re-arm)', which is true only when n > 5. After an ordinary short restart, g_vbuy/g_vsell are lost (problem 3)."
+   },
+   {
+    "id": "F7",
+    "status": "PASS",
+    "evidence": "RealTimeExit (lines 756-774): one try every 15 s (760-761), success only on DONE (762), one alert per position (768-772), SaveState on close (766). OnTimer calls it at 1020 and FlushPush at 1024. PushNow at 216-221 and FlushPush at 244-249 pace pushes at 7 s with a queue of 20 (232-234). The Telegram queue is capped at 50 (238-240)."
+   },
+   {
+    "id": "F8",
+    "status": "PASS",
+    "evidence": "Sent() wraps the order calls at lines 613-617 and 643-644, the second-leg close at 1042, the re-anchor at 1055 and the Reconcile close at 691. The Algo Trading warning is in AccountReady (968-969). The re-anchor still raises a false alarm (problem 2)."
+   },
+   {
+    "id": "F9",
+    "status": "PASS",
+    "evidence": "Reconcile (lines 683-715) adopts a magic position opened while the EA was down. It takes the ATR from Build4H(dec), computes real_best from M1 bars since the open, deletes pending orders, writes REAL_ADOPT and saves state. It is called from Decide (836), at the end of replay (900) and every 60 s in OnTimer (1021-1022). Its deadline counts from the bucket start, not tc (problem 5)."
+   },
+   {
+    "id": "F10",
+    "status": "PASS",
+    "evidence": "RealOnBar (lines 717-754): during replay it only tracks the extreme (727). It trails at InpTrailATR x ATR (728). It closes the position when the rule stop is already crossed (737-747). Stop moves go through Sent (752). End of replay calls it once (901)."
+   },
+   {
+    "id": "F11",
+    "status": "PASS",
+    "evidence": "CatchUp waits for a connection and a synchronized M1 series (856-857). GAP_RESET when the gap exceeds TERMINAL_MAXBARS (861-871). Decide checks M5 sync and writes one DATA_WARN per bucket (802-814)."
+   },
+   {
+    "id": "F12",
+    "status": "PASS",
+    "evidence": "OnInit line 987 deletes GoldOrb/tester_journal_<symbol>.csv. SaveState skips the tester (line 300). compare_journal.read_journal (lines 27-41) pairs each EXIT with the ENTRY before it and drops duplicates. On a synthetic v2.10 journal (lab/audit/scratch/mql5_v21/fixverify/journal_check.py) it found exactly the 2 complete trades and dropped the cut-off ENTRY and the GAP_RESET ENTRY."
+   },
+   {
+    "id": "F13",
+    "status": "PASS",
+    "evidence": "AskOHL (lines 411-430) reads ticks only outside replay. ProcessBar uses it at 477-478 and RealOnBar uses it on the short side at 720-726. This is the only change to the paper engine."
+   },
+   {
+    "id": "F14",
+    "status": "PASS",
+    "evidence": "Line 202: Paris date and time first, UTC in brackets."
+   },
+   {
+    "id": "F15",
+    "status": "PASS",
+    "evidence": "PlacePendings lines 592-603: one alert per day, with the corrected advice."
+   },
+   {
+    "id": "F16",
+    "status": "PASS",
+    "evidence": "OnInit lines 978-983 return INIT_PARAMETERS_INCORRECT on out-of-range inputs."
+   },
+   {
+    "id": "F17",
+    "status": "PASS",
+    "evidence": "LotsForRisk rounds the volume to the step's decimals (394-395). NormPrice (376-380) is used at 611, 613-617, 643-644, 669, 729, 731 and 1055."
+   },
+   {
+    "id": "F18",
+    "status": "PASS",
+    "evidence": "g_jbuf global at 95. Journal (lines 278-295) builds each row once, buffers up to 500, flushes in order and keeps the same columns."
+   },
+   {
+    "id": "F19",
+    "status": "PASS",
+    "evidence": "SaveState (298-308) writes a .tmp, checks the FileWriteStruct size and swaps it in with FileMove + REWRITE. LoadState (310-322) checks both the bytes read and the file size."
+   },
+   {
+    "id": "F20",
+    "status": "PASS",
+    "evidence": "real_id field at 74. RealPositionSelected (570-581) falls back to POSITION_IDENTIFIER. real_id is set at 663, 695 and 1047. The second-leg OCO test is at 1039. The GoState size changed, so an old state file is rejected once."
+   },
+   {
+    "id": "F21",
+    "status": "PASS",
+    "evidence": "g_tc_bucket/g_tc globals at 99. CatchUp lines 882-883 set g_tc = ToUTC(last_m1) + 60 once per bucket, so it survives Decide retries. Decide(bucket, tc) at 791 stores br_decision_utc = tc (824) and expiry = bucket + 14400 (825); LEVELS row still on bucket (827). OnTradeTransaction (1052) uses the same tc. This matches ea_twin.py (dec=tc, twin lines 99/104)."
+   }
+  ],
+  "problems": [
+   {
+    "severity": "minor",
+    "line": "462 (PaperEnter) with 836 and 883-885 (Decide->PlacePendings runs before ProcessBar on the same bar)",
+    "problem": "Regression from F5 in mode 2. On the decision bar (the first M1 bar of a 4h bucket), CatchUp calls Decide at line 883. Decide calls PlacePendings at 836 using the tick that comes after that bar closed. Only then does ProcessBar at 885 run the same bar. If that bar already crossed a level, the paper enters, and PaperEnter line 462 'if(g_auto) DeletePendings();' deletes the two stops placed a few ms earlier. When the price is already back inside the channel at decision time, the market path at 613/614 does not fire either, so mode 2 gets no trade while the paper and the lab do. v2.0 kept the same-side stop live. Twin replay 2013-2026 (lab/audit/scratch/mql5_v21/fixverify/scenarios.py, out_scenarios.txt): 16 of 787 trades enter on the decision bar. 5 of those are back inside at decision time (+6.72 R in total, including +5.64 R on 2017-12-27). The v2.0 same-side stop would have filled 4 of the 5 later in the window.",
+    "fix": "Line 432 becomes:\nvoid DeletePendings();                 // declarations (definies plus bas)\nvoid DeleteOpposite(const int side);\nLine 462 becomes:\n   if(g_auto) DeleteOpposite(side);   // le reel ne prend jamais le cote oppose ; l'ordre du meme cote vit jusqu'a la fin de la fenetre (Decide l'efface)\nInsert after line 568 (end of DeletePendings):\n// PaperEnter : n'efface que l'ordre stop oppose. Sur la bougie de decision, Decide->PlacePendings passe juste\n// avant ProcessBar->PaperEnter : effacer aussi l'ordre du meme cote supprimait le trade reel.\nvoid DeleteOpposite(const int side)\n  {\n   for(int i = OrdersTotal() - 1; i >= 0; i--)\n     {\n      ulong t = OrderGetTicket(i);\n      if(t == 0 || OrderGetString(ORDER_SYMBOL) != _Symbol || OrderGetInteger(ORDER_MAGIC) != InpMagic) continue;\n      long ot = OrderGetInteger(ORDER_TYPE);\n      if((side > 0 && ot == ORDER_TYPE_SELL_STOP) || (side < 0 && ot == ORDER_TYPE_BUY_STOP)) g_trade.OrderDelete(t);\n     }\n  }\nF5 still holds: the opposite stop is deleted, and Decide (line 797) deletes the same-side stop at the next 4h close. The case where that level was within STOPS_LEVEL (virtual entry) stays uncovered; it is rare."
+   },
+   {
+    "severity": "minor",
+    "line": "1054-1055 (OnTradeTransaction stop re-anchor), 545 (Sent)",
+    "problem": "F6 requires TRADE_RETCODE_NO_CHANGES to count as success. Line 545 accepts it only when ok == true. [MQL5 OrderSend](https://www.mql5.com/en/docs/trading/ordersend) says it returns true only 'if the order is successfully accepted by the trade server'. A 10025 'No changes in request' reply ([return codes](https://mql5.com/en/docs/constants/errorswarnings/enum_trade_return_codes)) is not an acceptance, so CTrade::PositionModify returns false. The re-anchor target NormPrice(fill - D) is the SL the order already has in two common cases. One is a stop that fills exactly at NormPrice(br_hi/br_lo), whose SL is NormPrice(hi - D) or NormPrice(lo + D) (lines 615/617). The other is a market order (613/614/643/644) that fills at the requested price. Both are normal on a demo account. The result is an ORDER_FAIL row and a push 'recalage du stop initial REFUSE par le courtier (No changes)' on most mode-2 fills during the demo-vs-paper protocol. No trading impact; this rests on OrderSend returning false for 10025, which its documentation implies.",
+    "fix": "Replace lines 1054-1055 with:\n   double sl0 = NormPrice(g.real_fill - side * g.real_D);\n   if(PositionSelectByTicket(pos) && MathAbs(PositionGetDouble(POSITION_SL) - sl0) > _Point / 2)   // rempli au niveau : stop deja juste, pas de requete (10025 = faux refus)\n      Sent(g_trade.PositionModify(pos, sl0, PositionGetDouble(POSITION_TP)), \"recalage du stop initial\");\nOptional, so the F6 rule holds everywhere: line 545 becomes\n   if(rc == TRADE_RETCODE_NO_CHANGES || (ok && (rc == TRADE_RETCODE_DONE || rc == TRADE_RETCODE_DONE_PARTIAL || rc == TRADE_RETCODE_PLACED)))"
+   },
+   {
+    "severity": "minor",
+    "line": "897-906 (re-arm only when n > 5), 1001 (OnDeinit), 96, 988-991",
+    "problem": "Mode 2 is re-armed only after a replay. (a) A restart with 5 or fewer bars to catch up (a normal terminal restart or recompile) loses the globals g_vbuy/g_vsell. A level that was within STOPS_LEVEL then has no order and no virtual entry for the rest of the window. This contradicts F6's premise that the F2 re-arm restores them. (b) After remove plus re-attach within 5 minutes, OnDeinit (line 1001) has deleted both stops. Nothing re-places them until the next 4h close, while the reloaded paper still has br_active = 1. (c) OnDeinit deletes only on REASON_REMOVE or REASON_CHARTCLOSE. Switching mode 2 to 0 or 1, changing InpMagic, changing the chart symbol or applying a template leaves live stops that the new instance never manages. On a broker without SPECIFIED expiry such a GTC stop can fill days later as a position with a fixed SL, no trailing stop and no time exit.",
+    "fix": "After line 99:\nbool     g_rearm = false;               // mode 2 : re-armer la fenetre en cours apres un (re)demarrage\nIn OnInit, after line 991:\n   g_rearm = true;    // OnDeinit a pu retirer les ordres ; g_vbuy/g_vsell ne survivent pas a un redemarrage\nLine 836 becomes:\n      if(g_auto) { g_rearm = false; Reconcile(); if(!RealPositionSelected()) PlacePendings(); }\nIn the end-of-replay block, after line 905 and still inside the block:\n      g_rearm = false;                  // deja re-arme ci-dessus\nBefore line 907 (SaveState(); at the end of CatchUp):\n   if(g_rearm)   // 1re bougie traitee apres un (re)demarrage sans rattrapage (n <= 5)\n     {\n      g_rearm = false;\n      if(g_auto)\n        {\n         Reconcile();\n         if(g.br_active != 0 && g.side == 0 && ToUTC(TimeCurrent()) < g.br_expiry_utc && !RealPositionSelected() && OffsetOK())\n            PlacePendings();\n        }\n     }\nLine 1001 becomes:\n   if(g_auto && reason != REASON_CLOSE && reason != REASON_ACCOUNT) DeletePendings();   // retire, parametres, graphique, modele, recompilation : pas d'ordre orphelin ; re-arme au redemarrage\nThe re-arm runs only after a new closed M1 bar has been processed, so never while the market is closed (no false 'market closed' refusal at a weekend restart). Orders are kept on REASON_CLOSE so that Reconcile can adopt a fill made during the shutdown."
+   },
+   {
+    "severity": "minor",
+    "line": "651-660 (BindManualPosition)",
+    "problem": "Edge case of the F1 binder. While the paper is flat after a trade P1 and a new same-side breakout alert fires, a trader who opens within about a minute (before the ENTRY is recorded at the M1 close) is bound to P1: sig, entry_utc, g.atr and g.deadline_utc all still describe P1, and 'opened <= P1.entry + 6 h' holds. Twin 2013-2026 has 5 of 787 trades that re-enter on the same side within 6 h of the previous entry (2.2-5.8 h; lab/audit/scratch/mql5_v21/fixverify/out_scenarios.txt). For those, P1's ATR is 14-33% smaller, so the stop is that much tighter than the rule's. The deadline is 4 h early, and the REAL_BIND push shows the wrong exit time.",
+    "fix": "Insert after line 651 in BindManualPosition:\n   if(g.side == 0 && g.br_active != 0 && g.br_trigger_sent != 0) return;   // cassure signalee, ENTRY papier a la cloture de la M1 : attendre (sinon rattachement au trade precedent)\nbr_active is set to 0 by PaperEnter. The binder therefore resumes within about 60 s of the alert and binds to the new trade, which has the right ATR and deadline."
+   },
+   {
+    "severity": "minor",
+    "line": "698-703 (Reconcile)",
+    "problem": "F9 and F21 disagree. Reconcile sets real_deadline_utc = DeadlineUTC(BucketUTC(fill), ...), counted from the bucket start. The paper and OnTradeTransaction (line 1052) count from tc (the close of the previous bar). For the Sunday-open, holiday and data-hole windows, a position adopted after downtime gets a later time exit than the paper: Fri 15:55 NY instead of Thu 16:55 NY for the Sunday window in EDT. F21's analysis found no historical trade held long enough for this to matter.",
+    "fix": "Line 703 becomes:\n      bool same = (g.entry_utc != 0 && BucketUTC(g.entry_utc) == dec && ((g.fill > g.init_stop) ? 1 : -1) == g.real_side);\n      g.real_deadline_utc = same ? g.deadline_utc : DeadlineUTC(dec, InpMaxDays);   // = papier : echeance depuis t_close (F21)"
+   }
+  ]
+ }
+]
