@@ -1,0 +1,15 @@
+== pivots/rn100_break_fresh
+prereg        is  {'n': 227, 'trades_per_year': 25.6, 'win_rate': 0.581, 'pf': 1.37, 't_stat': 2.23, 'expectancy_R': 0.1272, 'years_pos': '8/9', 'long_R': 15.3, 'short_R': 13.5}
+prereg        val {'n': 135, 'trades_per_year': 33.9, 'win_rate': 0.489, 'pf': 0.843, 't_stat': -0.92, 'expectancy_R': -0.0681, 'years_pos': '1/4', 'long_R': 2.1, 'short_R': -11.3}
+stress_x1.5   is  {'n': 227, 'trades_per_year': 25.6, 'win_rate': 0.577, 'pf': 1.26, 't_stat': 1.64, 'expectancy_R': 0.093, 'years_pos': '7/9', 'long_R': 10.9, 'short_R': 10.2}
+stress_x1.5   val {'n': 135, 'trades_per_year': 33.9, 'win_rate': 0.474, 'pf': 0.792, 't_stat': -1.26, 'expectancy_R': -0.0922, 'years_pos': '1/4', 'long_R': 0.6, 'short_R': -13.0}
+every_signal  is  {'n': 227, 'trades_per_year': 25.6, 'win_rate': 0.581, 'pf': 1.37, 't_stat': 2.23, 'expectancy_R': 0.1272, 'years_pos': '8/9', 'long_R': 15.3, 'short_R': 13.5}
+every_signal  val {'n': 135, 'trades_per_year': 33.9, 'win_rate': 0.489, 'pf': 0.843, 't_stat': -0.92, 'expectancy_R': -0.0681, 'years_pos': '1/4', 'long_R': 2.1, 'short_R': -11.3}
+prereg IS crit: {'n>=200': True, 'pf>=1.20': True, 't>=2': True, 'years_pos>=2/3': True, 'freq 25-750/yr': True, 'max_hold<=5d': True, 'stress_pf>=1.05': True, 'pass': True} VAL: {'pf>=1.10': False, 'expectancy>0': False, 'pass': False}
+causality: {'cuts': [{'cut': '2015-12-15 00:18:00+00:00', 'n_full': 86, 'n_trunc': 86, 'identical': True}, {'cut': '2020-03-25 19:06:00+00:00', 'n_full': 160, 'n_trunc': 160, 'identical': True}, {'cut': '2020-08-11 05:06:00+00:00', 'n_full': 179, 'n_trunc': 179, 'identical': True}, {'cut': '2022-12-20 23:46:00+00:00', 'n_full': 253, 'n_trunc': 253, 'identical': True}, {'cut': '2024-11-13 11:24:00+00:00', 'n_full': 302, 'n_trunc': 302, 'identical': True}], 'pass': True}
+tick: {'n': 22, 'mean_m1_minus_tick_usd': 0.046, 'median': 0.078, 'share_m1_better': 0.545, 'share_m1_worse': 0.045, 'm1_R_sum': -2.39, 'tick_R_sum': -2.42, 'slippage_budget_per_trade_usd': 1.156}
+bootstrap IS: {'pf_p5_p50_p95': [1.082, 1.369, 1.737], 'exp_p5_p50_p95': [0.033, 0.127, 0.219], 'p_exp_le_0': 0.0126} | VAL: {'pf_p5_p50_p95': [0.626, 0.849, 1.144], 'exp_p5_p50_p95': [-0.185, -0.065, 0.052], 'p_exp_le_0': 0.8184}
+DSR IS: {'sr_per_trade': np.float64(0.1481), 'n_trials': 64, 'sr_trials_sd': 0.1114, 'sr0_expected_max': 0.264, 'psr_vs_0': 0.9848, 'dsr': 0.045}
+regimes IS: {'gold_above_60d_ma/long': {'n': 38, 'R': 10.0, 'pf': 2.088}, 'gold_above_60d_ma/short': {'n': 51, 'R': 14.2, 'pf': 1.986}, 'gold_below_60d_ma/long': {'n': 73, 'R': 5.4, 'pf': 1.197}, 'gold_below_60d_ma/short': {'n': 65, 'R': -0.7, 'pf': 0.975}}
+regimes VAL: {'gold_above_60d_ma/long': {'n': 53, 'R': 2.5, 'pf': 1.129}, 'gold_above_60d_ma/short': {'n': 55, 'R': -9.3, 'pf': 0.639}, 'gold_below_60d_ma/long': {'n': 9, 'R': -0.4, 'pf': 0.902}, 'gold_below_60d_ma/short': {'n': 18, 'R': -2.0, 'pf': 0.77}}
+top5% share: 0.88

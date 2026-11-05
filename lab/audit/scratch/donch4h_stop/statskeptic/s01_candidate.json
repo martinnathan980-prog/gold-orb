@@ -1,0 +1,204 @@
+{
+ "is_normal": {
+  "n": 499,
+  "pf": 1.35,
+  "t_stat": 2.35,
+  "expectancy_R": 0.1233,
+  "years_pos": "8/9",
+  "long_n": 245,
+  "long_R": 49.5,
+  "short_n": 254,
+  "short_R": 12.0,
+  "trades_per_year": 55.7,
+  "max_hold_h": 167.5,
+  "by_year_R": {
+   "2013": 10.1,
+   "2014": 5.4,
+   "2015": 6.7,
+   "2016": 13.9,
+   "2017": 4.1,
+   "2018": -2.0,
+   "2019": 3.5,
+   "2020": 16.3,
+   "2021": 3.5
+  }
+ },
+ "is_stress": {
+  "n": 500,
+  "pf": 1.256,
+  "t_stat": 1.82,
+  "expectancy_R": 0.0937,
+  "years_pos": "7/9",
+  "long_n": 246,
+  "long_R": 41.6,
+  "short_n": 254,
+  "short_R": 5.2,
+  "trades_per_year": 55.8,
+  "max_hold_h": 167.6,
+  "by_year_R": {
+   "2013": 8.9,
+   "2014": 3.8,
+   "2015": 5.2,
+   "2016": 12.7,
+   "2017": -0.3,
+   "2018": -2.6,
+   "2019": 2.0,
+   "2020": 15.2,
+   "2021": 2.0
+  }
+ },
+ "is_every": {
+  "n": 1704,
+  "pf": 1.344,
+  "t_stat": 4.35,
+  "expectancy_R": 0.1256,
+  "years_pos": "7/9",
+  "long_n": 956,
+  "long_R": 182.6,
+  "short_n": 748,
+  "short_R": 31.4,
+  "trades_per_year": 190.2,
+  "max_hold_h": 168.9,
+  "by_year_R": {
+   "2013": 16.5,
+   "2014": 12.0,
+   "2015": 60.5,
+   "2016": 21.7,
+   "2017": 34.1,
+   "2018": -29.7,
+   "2019": 47.1,
+   "2020": 54.4,
+   "2021": -2.7
+  }
+ },
+ "val_normal": {
+  "n": 248,
+  "pf": 1.294,
+  "t_stat": 1.49,
+  "expectancy_R": 0.0998,
+  "years_pos": "3/4",
+  "long_n": 156,
+  "long_R": 34.4,
+  "short_n": 92,
+  "short_R": -9.7,
+  "trades_per_year": 62.3,
+  "max_hold_h": 167.8,
+  "by_year_R": {
+   "2022": -1.3,
+   "2023": 8.2,
+   "2024": 2.0,
+   "2025": 15.9
+  }
+ },
+ "val_stress": {
+  "n": 248,
+  "pf": 1.215,
+  "t_stat": 1.14,
+  "expectancy_R": 0.0762,
+  "years_pos": "3/4",
+  "long_n": 156,
+  "long_R": 30.7,
+  "short_n": 92,
+  "short_R": -11.9,
+  "trades_per_year": 62.3,
+  "max_hold_h": 167.8,
+  "by_year_R": {
+   "2022": -2.7,
+   "2023": 6.4,
+   "2024": 0.7,
+   "2025": 14.6
+  }
+ },
+ "val_every": {
+  "n": 942,
+  "pf": 0.977,
+  "t_stat": -0.27,
+  "expectancy_R": -0.0086,
+  "years_pos": "1/4",
+  "long_n": 639,
+  "long_R": 51.7,
+  "short_n": 303,
+  "short_R": -59.8,
+  "trades_per_year": 236.0,
+  "max_hold_h": 168.6,
+  "by_year_R": {
+   "2022": -23.5,
+   "2023": -26.0,
+   "2024": -11.7,
+   "2025": 53.1
+  }
+ },
+ "is_criteria": {
+  "n>=200": true,
+  "pf>=1.20": true,
+  "t>=2": true,
+  "years_pos>=2/3": true,
+  "freq 25-750/yr": true,
+  "max_hold<=5d": true,
+  "stress_pf>=1.05": true,
+  "pass": true
+ },
+ "val_criteria": {
+  "pf>=1.10": true,
+  "expectancy>0": true,
+  "pass": true
+ },
+ "is_taken_vs_skipped": {
+  "taken": {
+   "n": 499,
+   "pf": 1.35,
+   "exp": 0.1233,
+   "t": 2.35,
+   "sumR": 61.5,
+   "long_n": 245,
+   "long_pf": 1.631,
+   "long_R": 49.5,
+   "short_n": 254,
+   "short_pf": 1.123,
+   "short_R": 12.0
+  },
+  "skipped": {
+   "n": 1205,
+   "pf": 1.342,
+   "exp": 0.1265,
+   "t": 3.66,
+   "sumR": 152.5,
+   "long_n": 711,
+   "long_pf": 1.536,
+   "long_R": 133.0,
+   "short_n": 494,
+   "short_pf": 1.098,
+   "short_R": 19.4
+  },
+  "subset_identical": true
+ },
+ "val_taken_vs_skipped": {
+  "taken": {
+   "n": 248,
+   "pf": 1.294,
+   "exp": 0.0998,
+   "t": 1.49,
+   "sumR": 24.7,
+   "long_n": 156,
+   "long_pf": 1.686,
+   "long_R": 34.4,
+   "short_n": 92,
+   "short_pf": 0.715,
+   "short_R": -9.7
+  },
+  "skipped": {
+   "n": 694,
+   "pf": 0.876,
+   "exp": -0.0473,
+   "t": -1.34,
+   "sumR": -32.8,
+   "long_n": 483,
+   "long_pf": 1.1,
+   "long_R": 17.2,
+   "short_n": 211,
+   "short_pf": 0.463,
+   "short_R": -50.1
+  },
+  "subset_identical": true
+ }
+}
