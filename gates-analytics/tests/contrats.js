@@ -632,6 +632,31 @@ section('Relu : la ligne du robot et celle d’un contrat ne se contredisent pas
 }
 
 // =================================================================
+/* Débrief 33 (relu) — juste après la livraison, la fiche de VRK restait en
+   rouge avec « 280 de ses 546 plans sont déjà dans « THS » … », le refus
+   d'une règle qui n'existe plus, et le bouton « Corriger la fiche » :
+   Nathan aurait cru que rien n'était réglé. */
+section('Débrief 33 (relu) : l’ancien refus « … plans sont déjà dans « THS » » ne reste pas en rouge');
+{
+  const { ctx } = monde();
+  ctx.adminEnregistrerContrat({ id: '', nom: 'VRK', nomGates: 'VRK AA', colonnes: { fwd: 'VRK AA 011 > Avancement Définition Electrique', concept: '' }, psn: '4540' });
+  const j = ctx.ouvrirJetonImport_();
+  ctx.importRapport(j, { source: 'robot', passage: { ok: true, heure: '14:00' }, contrats: [
+    { contrat: 'VRK', gates: { ok: false, code: 'douteux', message: '280 de ses 546 plans sont déjà dans « THS » : est-ce l’export de « THS » ? Il irait alors dans sa case, « GATES THS ».' } }] });
+  const vrk = ctx.adminContrats().prevus.filter(x => x.id === 'VRK')[0];
+  verifier('VRK prévu, avec l’ancien refus gardé : « Prévu : son onglet sera créé au prochain passage du robot… », en attente (pas en rouge, pas de « Corriger la fiche »), et une ligne dit que ce refus ne compte plus',
+    vrk && vrk.suivi.niveau === 'attente' && vrk.suivi.lignes[0] === 'Prévu : son onglet sera créé au prochain passage du robot, avec son premier export GATES.' &&
+    vrk.suivi.lignes[1] === 'L’ancien refus ne compte plus : ses plans en commun avec « THS » ne bloquent plus l’import.' && vrk.suivi.lignes.length === 2,
+    JSON.stringify(vrk && vrk.suivi));
+  /* Le doute d'aujourd'hui, lui (l'export d'un autre contrat dans la case de VRK), reste dit. */
+  ctx.importRapport(j, { source: 'robot', passage: { ok: true, heure: '14:00' }, contrats: [
+    { contrat: 'VRK', gates: { ok: false, code: 'douteux', message: 'Les plans de ce fichier sont ceux de « THS » (180 sur 180) : est-ce l’export de « THS » ? Il irait alors dans sa case, « GATES THS ».' } }] });
+  const vrk2 = ctx.adminContrats().prevus.filter(x => x.id === 'VRK')[0];
+  verifier('un doute de la règle d’aujourd’hui (« Les plans de ce fichier sont ceux de « THS » ») reste en rouge, tel quel',
+    vrk2 && vrk2.suivi.niveau === 'erreur' && /^Les plans de ce fichier sont ceux de « THS »/.test(vrk2.suivi.lignes[0]), JSON.stringify(vrk2 && vrk2.suivi));
+}
+
+// =================================================================
 /* Débrief 31 — Nathan : « Comment je gère les tranches ? […] j'ai
    l'impression que c'est que par contrat. » Une tranche s'ajoute depuis la
    ligne de son contrat (« + Ajouter une tranche ») : les droits se lisent

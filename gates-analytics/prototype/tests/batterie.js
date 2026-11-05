@@ -14448,9 +14448,10 @@ async function deplierFiltresColonne(pg) {
     const cxC33 = await contexte({ viewport: { width: 1440, height: 900 } });
     const pC33 = await page(cxC33, 'lot C33-ecp');
     await chargerC33(pC33);
-    /* Les noms de la photo, à quatre largeurs d'écran. */
+    /* Les noms de la photo, à quatre largeurs d'écran. Débrief 33 (relu) :
+       et à 740 et 721 px, où le tiret passait seul à la ligne. */
     const parLargeur = {};
-    for (const w of [1440, 1280, 1024, 820]) {
+    for (const w of [1440, 1280, 1024, 820, 740, 721]) {
       await redimensionner(pC33, w, 900);
       parLargeur[w] = await lireC33(pC33);
     }
@@ -14472,6 +14473,14 @@ async function deplierFiltresColonne(pg) {
     }
     verifier('C33-ecp : à 820 px, la colonne du nom s’élargit juste assez pour un code et son tiret (« APSPOP.28555 - » : plus de 118 px, 160 au plus) — la barre garde sa place',
       parseFloat(parLargeur[820].col) > 118 && parseFloat(parLargeur[820].col) <= 160, parLargeur[820].col);
+    /* Débrief 33 (relu) : de 721 à 760 px, la colonne restait à 118 px et
+       « - » passait seul à la ligne (« APSPMC.27102 / - / APSPOP.27103 »). */
+    for (const w of [740, 721]) {
+      const f = fautesC33(parLargeur[w]);
+      const barre = Math.min(...parLargeur[w].lignes.map(x => Number(String(x.xBarre).split('/')[1])));
+      verifier('C33-ecp : à ' + w + ' px, la colonne du nom prend un code et son tiret (plus de 118 px) — aucun tiret seul en début de ligne, aucun code coupé, rien ne déborde ; la barre garde au moins 55 px',
+        !f.length && parseFloat(parLargeur[w].col) > 118 && barre >= 55, JSON.stringify(f) + ' col ' + parLargeur[w].col + ' barre ' + barre);
+    }
 
     /* Sous une valeur choisie (« sur 71 » sous le compte), « à l'arrêt »
        descend d'une ligne avec sa place. */
@@ -14560,6 +14569,146 @@ async function deplierFiltresColonne(pg) {
     await cxC33.close();
   }
   /* (fin du lot C33-ecp) */
+  /* (début du lot C33-relu) */
+  /* Débrief 33, relecture — le journal jour par jour, vu par Nathan :
+     un plan passé à PWD_TO_CONTROL lundi et revenu mercredi n'existe que
+     dans les jours. L'en-tête disait « PWD_IN_PROGRESS 0 » au-dessus d'un
+     « 1 » dans le jour ; le filtre pressé laissait une semaine fermée, rien
+     que des « — », et l'annonce disait « aucun changement de ce type ». Et
+     trois retouches : « Tout » décalé de 16 px au téléphone, « Copier »
+     aligné sur rien dans une semaine ouverte sur ses jours, le compte des
+     filtres qui sortait de 9 px de son cadre dans le tableau serré. Le
+     simulateur, plus un contrat GRD (120 plans) que le robot importe le
+     vendredi 30 octobre, puis lundi, mardi et mercredi. */
+  section('Débrief 33 (relu) : le journal ne dit jamais « 0 » sur ce que montrent les jours ; marges et cadres (lot C33-relu)');
+  {
+    const fsR = require('fs'), osR = require('os');
+    const { construireSimulateur } = require(path.join(__dirname, '..', '..', 'tests', 'construire-simulateur.js'));
+    const { Feuille } = require(path.join(__dirname, '..', '..', 'tests', 'faux-classeur.js'));
+    const { feuilleGates, colonne } = require(path.join(__dirname, '..', '..', 'tests', 'feuille-gates.js'));
+    const I_REF = colonne('Référence UD'), I_ELEC = colonne('Avancement Définition Electrique', 'HDK AA 011');
+    const VAL = ['TO_TREAT', 'FWD_TO_SEIZE', 'PWD_IN_PROGRESS', 'PWD_TO_CONTROL', 'TO_CONFIRM', 'VALIDATED'];
+    const P = {};
+    const sim = construireSimulateur({ date: '2026-11-05', jours: true, avantPage(sctx, cl, o) {
+      const g = feuilleGates(120);
+      g.valeurs.forEach((l, r) => { if (r >= 3 && l[I_REF]) l[I_REF] = String(l[I_REF]).replace(/^UD-/, 'GRD-'); });
+      const grd = new Feuille('GRD', g.valeurs, false, g.fusions);
+      cl.feuilles.unshift(grd);
+      const r = grd.valeurs.slice(3).map(l => l[I_REF]).filter(Boolean);
+      const ligne = ref => grd.valeurs.findIndex(l => l[I_REF] === ref);
+      r.forEach((ref, i) => { grd.valeurs[ligne(ref)][I_ELEC] = VAL[i % 6]; });
+      const poser = (ref, v) => { grd.valeurs[ligne(ref)][I_ELEC] = v; };
+      const importer = quand => { o.horloge.regler(new Date(quand)); return sctx.importArchiverReleve(sctx.ouvrirJetonImport_(), 'GRD'); };
+      /* A1 (PWD_IN_PROGRESS) : PWD_TO_CONTROL lundi, revenu mercredi. Les
+         autres arrivent à VALIDATED ou à PWD_TO_CONTROL, jamais à PWD_IN_PROGRESS. */
+      P.A1 = r[2];
+      importer('2026-10-30T14:05:00+01:00');
+      poser(P.A1, 'PWD_TO_CONTROL'); poser(r[10], 'VALIDATED'); poser(r[14], 'VALIDATED');
+      importer('2026-11-02T14:05:00+01:00');
+      poser(r[20], 'PWD_TO_CONTROL'); poser(r[26], 'VALIDATED');
+      importer('2026-11-03T14:05:00+01:00');
+      poser(P.A1, 'PWD_IN_PROGRESS'); poser(r[32], 'VALIDATED');
+      importer('2026-11-04T14:05:00+01:00');
+      o.horloge.regler(o.lecture);
+    } });
+    const fichierR = path.join(osR.tmpdir(), 'suivi-fwd-c33-relu-' + process.pid + '.html');
+    fsR.writeFileSync(fichierR, sim.page);
+    const ouvrirR = async (largeur, schema, mobile) => {
+      const c = await nav.newContext({ viewport: { width: largeur, height: 900 }, colorScheme: schema || 'light', isMobile: !!mobile, hasTouch: !!mobile, locale: 'en-US' });
+      await c.clock.setFixedTime(new Date('2026-11-05T13:15:00+01:00'));
+      const pg = await c.newPage();
+      brancher(pg, 'lot C33-relu ' + largeur);
+      await pg.goto('file://' + fichierR);
+      await pg.waitForFunction(() => document.documentElement.getAttribute('data-suivi-fwd') === 'pret', null, { timeout: 30000 });
+      await pg.evaluate(() => { const x = document.querySelector('.simulateur-bandeau'); if (x) x.remove(); });
+      if (await pg.evaluate(() => document.getElementById('select-contrat').value) !== 'GRD') { await pg.selectOption('#select-contrat', 'GRD'); await pg.waitForTimeout(1500); }
+      await pg.evaluate(() => document.getElementById('section-journal').scrollIntoView());
+      await pg.waitForTimeout(300);
+      pg.__ctx = c;
+      return pg;
+    };
+    const lireR = pg => pg.evaluate(() => {
+      const z = document.getElementById('zone-journal'), r = e => e.getBoundingClientRect();
+      const texteX = e => { if (!e) return null; const g = document.createRange(); g.selectNodeContents(e); const q = [...g.getClientRects()].filter(x => x.width > 0.5); return q.length ? Math.round(q[0].left) : null; };
+      return {
+        serre: z.classList.contains('journal-serre'),
+        filtres: [...z.querySelectorAll('#filtre-journal button[data-journal]')].map(b => { const n = b.querySelector('.n'); return {
+          cle: b.dataset.journal, presse: b.getAttribute('aria-pressed'), n: n ? n.textContent : '', jours: !!(n && n.classList.contains('n-jours')), titre: b.title, x: Math.round(r(b).left),
+          depasse: n ? Math.round((r(n).right - (r(b).right - parseFloat(getComputedStyle(b).paddingRight))) * 10) / 10 : 0 }; }),
+        semaines: [...z.querySelectorAll('.journal-semaine')].map(s => ({ num: (s.querySelector('.sem-num') || {}).textContent, ouverte: s.classList.contains('ouverte'),
+          cases: [...s.querySelectorAll('.journal-tete .resume b')].map(b => b.textContent).join('+'),
+          jours: [...s.querySelectorAll('.journal-jour')].map(j => (j.querySelector('.jour-nom') || {}).textContent.replace(/\u00a0/g, ' ') + ' ' + [...j.querySelectorAll('.journal-tete-jour .resume b')].map(b => b.textContent).join('+')),
+          /* Le bord du bouton « Copier » (son cadre), le début du texte de la phrase et du nom du jour. */
+          copier: s.querySelector('.journal-liste-semaine > .journal-copier button') ? Math.round(r(s.querySelector('.journal-liste-semaine > .journal-copier button')).left) : null,
+          note: texteX(s.querySelector('.journal-note-jours')), jour: texteX(s.querySelector('.jour-nom')) })),
+        annonce: (document.getElementById('annonce') || {}).textContent || '',
+        page: document.documentElement.scrollWidth - document.documentElement.clientWidth
+      };
+    });
+    try {
+      const pr = await ouvrirR(1440);
+      const r1 = await lireR(pr);
+      const pip = r1.filtres.find(f => f.cle === 'pwd_in_progress');
+      verifier('C33-relu : A1 n’est revenu à PWD_IN_PROGRESS que dans un jour (mercredi) — son filtre ne dit pas « 0 » mais « 1 dans les jours », avec une bulle qui l’explique ; les autres gardent le total des semaines',
+        !!pip && pip.n === '1 dans les jours' && pip.jours && /1 arrivée à « PWD_IN_PROGRESS » dans le détail par jour, pas dans le total de la semaine/.test(pip.titre) &&
+        r1.filtres.filter(f => f.cle !== 'pwd_in_progress').every(f => /^\d+$/.test(f.n) && Number(f.n) > 0 && !f.jours), JSON.stringify(r1.filtres));
+      await pr.click('#filtre-journal button[data-journal="pwd_in_progress"]');
+      await pr.waitForTimeout(500);
+      const r2 = await lireR(pr);
+      const annonce2 = await pr.waitForFunction(() => /détail par jour/.test((document.getElementById('annonce') || {}).textContent || ''), null, { timeout: 4000 }).catch(() => null)
+        .then(() => pr.evaluate(() => (document.getElementById('annonce') || {}).textContent || ''));
+      verifier('C33-relu : un clic sur ce filtre — S45, gardée seulement par son jour, s’ouvre d’elle-même sur « mer. 4 nov. 1 » ; l’annonce dit « 1 arrivée à « PWD_IN_PROGRESS », dans le détail par jour » (plus « aucun changement de ce type »)',
+        r2.semaines.length === 1 && r2.semaines[0].num === 'S45' && r2.semaines[0].ouverte && r2.semaines[0].jours.join('|') === 'mer. 4 nov. 1' &&
+        annonce2 === 'Journal : 1 arrivée à « PWD_IN_PROGRESS », dans le détail par jour', JSON.stringify([r2.semaines, annonce2]));
+      await pr.click('#filtre-journal button[data-journal=""]');
+      await pr.waitForTimeout(300);
+      await pr.fill('#recherche-journal', P.A1);
+      await pr.waitForTimeout(700);
+      const r3 = await lireR(pr);
+      const tout3 = r3.filtres.find(f => f.cle === '');
+      const annonce3 = await pr.evaluate(() => (document.getElementById('annonce') || {}).textContent || '');
+      verifier('C33-relu : « Chercher un plan… » sur A1 — « Tout » dit « 2 dans les jours » (plus « Tout 0 »), PWD_TO_CONTROL et PWD_IN_PROGRESS « 1 dans les jours » ; S45 ouverte sur mer. 4 et lun. 2 ; l’annonce dit « 2 changements dans le détail par jour »',
+        tout3.n === '2 dans les jours' && tout3.jours && r3.filtres.filter(f => f.cle === 'pwd_to_control' || f.cle === 'pwd_in_progress').every(f => f.n === '1 dans les jours') &&
+        r3.semaines.length === 1 && r3.semaines[0].ouverte && r3.semaines[0].jours.join('|') === 'mer. 4 nov. 1|lun. 2 nov. 1' &&
+        annonce3 === 'Journal : 2 changements dans le détail par jour pour « ' + P.A1 + ' »', JSON.stringify([r3.filtres, r3.semaines, annonce3]));
+      await pr.fill('#recherche-journal', '');
+      await pr.waitForTimeout(400);
+      await pr.evaluate(() => [...document.querySelectorAll('#zone-journal button[data-semaine]')].find(b => /S45/.test(b.textContent)).click());
+      await pr.waitForTimeout(400);
+      const r4 = await lireR(pr);
+      const s45 = r4.semaines.find(s => s.num === 'S45');
+      verifier('C33-relu : S45 ouverte sur ses jours — le cadre de « Copier » au retrait de la phrase et des noms des jours (± 2 px), plus 32 px plus loin',
+        !!s45 && s45.copier !== null && Math.abs(s45.copier - s45.note) <= 2 && Math.abs(s45.copier - s45.jour) <= 2, JSON.stringify(s45));
+      await pr.__ctx.close();
+      /* Le tableau serré (1 024 et 1 100 px) : chaque compte dans son cadre, pressé ou non. */
+      const serres = [];
+      for (const w of [1100, 1024, 760]) {
+        const ps = await ouvrirR(w);
+        const a = await lireR(ps);
+        await ps.click('#filtre-journal button[data-journal="validated"]');
+        await ps.waitForTimeout(400);
+        const b = await lireR(ps);
+        serres.push({ w, serre: a.serre, depasse: Math.max(...a.filtres.map(f => f.depasse)), presse: Math.max(...b.filtres.map(f => f.depasse)), page: a.page });
+        await ps.__ctx.close();
+      }
+      verifier('C33-relu : dans le tableau serré (1 100, 1 024, 760 px), le compte de chaque filtre reste dans son cadre, pressé ou non (il sortait de 9 px)',
+        serres.some(x => x.serre) && serres.every(x => x.depasse <= 0.5 && x.presse <= 0.5 && x.page <= 0), JSON.stringify(serres));
+      /* Au téléphone : « Tout » commence où commencent les autres filtres. */
+      const pt = await ouvrirR(390, 'dark', true);
+      const t = await lireR(pt);
+      const xs = t.filtres.map(f => f.x), premier = Math.min(...xs.slice(1));
+      await pt.evaluate(() => [...document.querySelectorAll('#zone-journal button[data-semaine]')].find(b => /S45/.test(b.textContent)).click());
+      await pt.waitForTimeout(400);
+      const t2 = await lireR(pt);
+      const s45t = t2.semaines.find(s => s.num === 'S45');
+      verifier('C33-relu : au téléphone (390 px, sombre), « Tout » commence au même x que le premier filtre de chaque rangée (il était 16 px plus loin) ; « Copier » au retrait de la phrase ; rien ne déborde',
+        xs[0] === premier && !!s45t && Math.abs(s45t.copier - s45t.note) <= 2 && t.page <= 0 && t2.page <= 0, JSON.stringify([xs, s45t]));
+      await pt.__ctx.close();
+    } finally {
+      try { fsR.unlinkSync(fichierR); } catch (e) { /* déjà parti */ }
+    }
+  }
+  /* (fin du lot C33-relu) */
 
 
   await ctx.close();

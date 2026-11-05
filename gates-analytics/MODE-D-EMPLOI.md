@@ -767,9 +767,15 @@ classeur. Dans l'ordre d'efficacité :
   d'abord (« mer. 4 nov. », « mar. 3 nov. »…), avec leurs nombres dans les
   mêmes colonnes ; un clic sur un jour montre ses plans. Un jour où le
   robot est passé sans que rien ne bouge le dit (« aucun changement »).
+  Un jour où le robot n'est pas passé (PC éteint, export refusé) n'a pas
+  de ligne, même si l'archivage du vendredi ou le menu tourne ce jour-là :
+  ils reprennent l'export de la veille, rien n'a été lu dans GATES.
   **La ligne de la semaine reste le résultat de la semaine** : un plan qui
   change lundi puis revient mercredi se voit dans ses deux jours, pas dans
-  le total de la semaine (la semaine ouverte le dit en une phrase).
+  le total de la semaine (la semaine ouverte le dit en une phrase). Un
+  filtre que seuls les jours font exister (un plan passé à PWD_TO_CONTROL
+  lundi, revenu jeudi) ne dit pas « 0 » mais « 1 dans les jours » ; pressé,
+  il ouvre la semaine sur ce jour.
   « Chercher un plan… » ouvre la semaine **et** les jours où il a bougé.
   Le détail commence avec cette livraison : les semaines d'avant n'ont que
   leur total, et s'ouvrent sur leurs plans comme avant (la ligne au-dessus

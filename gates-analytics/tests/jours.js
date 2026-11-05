@@ -12,6 +12,7 @@
 process.env.TZ = 'Europe/Paris';
 
 const zlib = require('zlib');
+const vm = require('vm');
 const { chargerServeur } = require('./build-addon');
 const { Feuille, Classeur } = require('./faux-classeur');
 const { feuilleGates, colonne } = require('./feuille-gates');
@@ -130,12 +131,15 @@ section('La semaine du robot : lundi, mardi deux fois, mercredi sans changement,
   const neuf = hdk.valeurs[ligneDe(hdk, r[4])].slice(); neuf[I_REF] = 'UD-99-0001'; neuf[I_ELEC] = 'TO_TREAT'; neuf[I_HARN] = ''; hdk.valeurs.push(neuf);
   const lundi = importer(ctx, 'HDK');
   const fj = c.getSheetByName('Jours_FWD_HDK');
-  verifier('lundi : l’import archive S45 et garde le jour — onglet « Jours_FWD_HDK » créé, masqué, ses en-têtes, une ligne « 2026-S45 · 2026-11-02 · 5 changements »',
+  /* Débrief 33 (relu) : une colonne de plus, « Après un import » (oui / non),
+     avant le détail — un jour sans changement ne se montre que si un export
+     a été lu ce jour-là. */
+  verifier('lundi : l’import archive S45 et garde le jour — onglet « Jours_FWD_HDK » créé, masqué, ses en-têtes, une ligne « 2026-S45 · 2026-11-02 · 5 changements · après un import : oui »',
     lundi.ok && lundi.semaine === '2026-S45' && !!fj && fj.isSheetHidden() &&
-    JSON.stringify(fj.valeurs[0]) === JSON.stringify(['Semaine', 'Jour', 'Écrit le', 'Changements', 'Onglet historique', 'Plans']) &&
+    JSON.stringify(fj.valeurs[0]) === JSON.stringify(['Semaine', 'Jour', 'Écrit le', 'Changements', 'Onglet historique', 'Après un import', 'Plans']) &&
     fj.valeurs.length === 2 && fj.valeurs[1][0] === '2026-S45' && fj.valeurs[1][1] === '2026-11-02' && fj.valeurs[1][3] === 5 &&
-    fj.valeurs[1][4] === histo.getSheetId() && fj.formats[1] === '@',
-    JSON.stringify(fj && fj.valeurs.map(l => l.slice(0, 5))));
+    fj.valeurs[1][4] === histo.getSheetId() && fj.valeurs[1][5] === 'oui' && fj.formats[1] === '@',
+    JSON.stringify(fj && fj.valeurs.map(l => l.slice(0, 6))));
   const j1 = ctx.getJours(c, 'HDK');
   const p1 = j1[0] && j1[0].plans;
   verifier('lundi, ce que la page reçoit : la définition électrique de chaque plan changé, [avant, après] — nouveau [null, …], disparu […, null] ; le plan dont seul le concept a bougé n’y est pas',
@@ -184,10 +188,17 @@ section('La semaine du robot : lundi, mardi deux fois, mercredi sans changement,
   poser(hdk, r[8], 'VALIDATED');
   const menu = ctx.enregistrerInstantaneHebdo();
   const j5 = ctx.getJours(c, 'HDK');
-  verifier('jeudi, au menu : HDK garde son jour (r[8]) ; THS, archivé du même geste, en a un aussi (rien n’a bougé depuis S44 : vide)',
+  /* Débrief 33 (relu) : THS, archivé du même geste sans avoir été importé,
+     n'a plus de jour « aucun changement » dans la page — aucun export de
+     THS n'a été lu ce jour-là. Sa ligne est gardée (« Après un import » :
+     non), pour l'état du matin si le robot passe plus tard. Avant, on
+     attendait un jour vide montré. */
+  verifier('jeudi, au menu : HDK garde son jour (r[8], un vrai changement) ; THS, archivé du même geste sans import, n’a pas de jour dans la page (sa ligne est gardée, « Après un import » : non)',
     menu.ok && j5.length === 4 && j5[3].jour === '2026-11-05' && Object.keys(j5[3].plans).join() === r[8] &&
-    ctx.getJours(c, 'THS').length === 1 && Object.keys(ctx.getJours(c, 'THS')[0].plans).length === 0 && !!c.getSheetByName('Jours_FWD_THS'),
-    JSON.stringify([j5.map(j => j.jour), ctx.getJours(c, 'THS')]));
+    ctx.getJours(c, 'THS').length === 0 && !!c.getSheetByName('Jours_FWD_THS') && c.getSheetByName('Jours_FWD_THS').valeurs.length === 2 &&
+    c.getSheetByName('Jours_FWD_THS').valeurs[1][3] === 0 && c.getSheetByName('Jours_FWD_THS').valeurs[1][5] === 'non' &&
+    menu.contrats.filter(x => x.id === 'THS')[0].jour.montre === false && menu.contrats.filter(x => x.id === 'HDK')[0].jour.montre === true,
+    JSON.stringify([j5.map(j => j.jour), ctx.getJours(c, 'THS'), menu.contrats.map(x => [x.id, x.jour])]));
 
   /* Vendredi 6, le robot à 14 h 05 puis le déclencheur à 17 h 05. */
   h.regler('2026-11-06T14:05:00+01:00');
@@ -245,6 +256,87 @@ section('La semaine du robot : lundi, mardi deux fois, mercredi sans changement,
   const rattrape = ctx.archiverPourSemaine_(c, 'HDK', 'S45');
   verifier('une semaine passée rattrapée (S45, en S46) : archivée, sans jour écrit',
     rattrape.ok && c.getSheetByName('Jours_FWD_HDK').valeurs.length === avantRattrape, rattrape.message);
+}
+
+// =================================================================
+/* Débrief 33 (relu) : « ven. 6 nov. : aucun changement » alors que le PC du
+   robot était éteint — le déclencheur du vendredi (ou le menu) reprend
+   l'onglet tel qu'il est : rien n'a été lu dans GATES ce jour-là. */
+section('PC éteint : le vendredi et le menu n’inventent pas de jour « aucun changement »');
+{
+  const { c, ctx, h } = monde();
+  const hdk = c.getSheetByName('HDK');
+  const r = refs(hdk);
+  h.regler('2026-10-30T17:05:00+01:00'); vendredi(ctx);
+  h.regler('2026-11-02T14:05:00+01:00'); poser(hdk, r[0], 'VALIDATED'); importer(ctx, 'HDK');
+  h.regler('2026-11-03T14:05:00+01:00'); poser(hdk, r[1], 'VALIDATED'); importer(ctx, 'HDK');
+  /* Mercredi à vendredi : le PC du robot est éteint. Vendredi 17 h 05, le déclencheur. */
+  h.regler('2026-11-06T17:05:00+01:00');
+  const v = vendredi(ctx);
+  const jh = ctx.getJours(c, 'HDK');
+  verifier('PC éteint vendredi : le déclencheur n’ajoute pas de jour vide — HDK garde lundi et mardi, rien pour vendredi ; THS (jamais importé de la semaine) n’a aucun jour',
+    v.ok && jh.map(j => j.jour).join() === '2026-11-02,2026-11-03' && ctx.getJours(c, 'THS').length === 0 &&
+    v.contrats.every(x => !x.jour || x.jour.montre === false),
+    JSON.stringify([jh.map(j => [j.jour, Object.keys(j.plans).length]), ctx.getJours(c, 'THS'), v.contrats.map(x => [x.id, x.jour])]));
+  verifier('… le relevé S45, lui, est bien archivé (une ligne, mise à jour sur place) ; le paquet de la page n’a que lundi et mardi',
+    ctx.getHistorique(c, 'HDK').map(x => x.semaine).join() === '2026-S44,2026-S45' &&
+    ctx.getDonneesPourClient('HDK').jours.map(j => j.jour).join() === '2026-11-02,2026-11-03');
+  /* Le robot passe quand même vendredi, plus tard (PC rallumé à 17 h 30) : son jour compte, depuis le matin. */
+  h.regler('2026-11-06T17:30:00+01:00'); poser(hdk, r[2], 'PWD_TO_CONTROL');
+  importer(ctx, 'HDK');
+  const jv = ctx.getJours(c, 'HDK');
+  verifier('le robot passe vendredi APRÈS le déclencheur : son jour est gardé (r[2], comparé au matin), un seul jour du vendredi',
+    jv.length === 3 && jv[2].jour === '2026-11-06' && Object.keys(jv[2].plans).join() === r[2] &&
+    c.getSheetByName('Jours_FWD_HDK').valeurs.length === 4 && c.getSheetByName('Jours_FWD_HDK').valeurs[3][5] === 'oui',
+    JSON.stringify(jv.map(j => [j.jour, Object.keys(j.plans)])));
+  /* Le lundi suivant : la semaine se compare au relevé S45, rien de S45 ne se répète. */
+  h.regler('2026-11-09T14:05:00+01:00'); poser(hdk, r[3], 'VALIDATED');
+  importer(ctx, 'HDK');
+  const j9 = ctx.getJours(c, 'HDK');
+  verifier('lundi 9 (S46) : seul r[3]', j9.length === 4 && j9[3].jour === '2026-11-09' && Object.keys(j9[3].plans).join() === r[3], JSON.stringify(j9.slice(-1)));
+}
+{
+  /* Le menu le matin, sans changement, puis le robot à 14 h 05 le même jour. */
+  const { c, ctx, h } = monde();
+  const hdk = c.getSheetByName('HDK');
+  const r = refs(hdk);
+  h.regler('2026-10-30T17:05:00+01:00'); vendredi(ctx);
+  h.regler('2026-11-02T14:05:00+01:00'); poser(hdk, r[0], 'VALIDATED'); importer(ctx, 'HDK');
+  h.regler('2026-11-03T09:30:00+01:00');
+  const menu = ctx.enregistrerInstantaneHebdo();
+  verifier('mardi 9 h 30, archivé au menu sans changement : pas de jour « aucun changement » dans la page',
+    menu.ok && ctx.getJours(c, 'HDK').map(j => j.jour).join() === '2026-11-02', JSON.stringify(ctx.getJours(c, 'HDK').map(j => j.jour)));
+  h.regler('2026-11-03T14:05:00+01:00'); poser(hdk, r[1], 'PWD_TO_CONTROL');
+  importer(ctx, 'HDK');
+  const j = ctx.getJours(c, 'HDK');
+  verifier('… puis le robot à 14 h 05 : le jour de mardi est là, avec r[1] — le menu du matin ne lui a pas fait perdre son point de départ',
+    j.length === 2 && j[1].jour === '2026-11-03' && Object.keys(j[1].plans).join() === r[1], JSON.stringify(j.map(x => [x.jour, Object.keys(x.plans)])));
+  /* Mercredi : l'export du robot ne change rien — le robot est passé, cette fois. */
+  h.regler('2026-11-04T14:05:00+01:00');
+  importer(ctx, 'HDK');
+  h.regler('2026-11-04T17:00:00+01:00');
+  ctx.enregistrerInstantaneHebdo();
+  const jm = ctx.getJours(c, 'HDK');
+  verifier('mercredi, le robot sans changement puis le menu : le jour « aucun changement » reste montré (le robot est passé) — le menu ne l’efface pas',
+    jm.length === 3 && jm[2].jour === '2026-11-04' && Object.keys(jm[2].plans).length === 0, JSON.stringify(jm.map(x => [x.jour, Object.keys(x.plans).length])));
+  /* Jeudi : Nathan colle un export à la main et archive au menu — un vrai changement se montre. */
+  h.regler('2026-11-05T10:00:00+01:00'); poser(hdk, r[2], 'VALIDATED');
+  ctx.enregistrerInstantaneHebdo();
+  const jj = ctx.getJours(c, 'HDK');
+  verifier('jeudi, un export collé à la main puis le menu : le jour se montre, avec son changement (r[2])',
+    jj.length === 4 && jj[3].jour === '2026-11-05' && Object.keys(jj[3].plans).join() === r[2], JSON.stringify(jj.map(x => [x.jour, Object.keys(x.plans)])));
+}
+{
+  /* Le dépôt (Apps Script, doPost, archiver: true) : un extract vient d'être déposé. */
+  const { c, ctx, h } = monde();
+  vm.runInContext("CONFIG.DEPOT = CONFIG.DEPOT || {}; CONFIG.DEPOT.SECRET = 'secret-de-test';", ctx);
+  const hdk = c.getSheetByName('HDK');
+  h.regler('2026-10-30T17:05:00+01:00'); vendredi(ctx);
+  h.regler('2026-11-02T14:05:00+01:00');
+  const d = ctx.deposer_(JSON.stringify({ secret: 'secret-de-test', onglet: 'HDK', archiver: true, lignes: hdk.valeurs.map(l => l.map(v => String(v === null || v === undefined ? '' : v))) }));
+  verifier('un dépôt sans changement : archivé, et son jour « aucun changement » se montre (un extract a été lu ce jour-là)',
+    d.ok && d.archive && d.archive.ok && ctx.getJours(c, 'HDK').length === 1 && Object.keys(ctx.getJours(c, 'HDK')[0].plans).length === 0,
+    JSON.stringify([d.ok, d.archive, ctx.getJours(c, 'HDK')]));
 }
 
 // =================================================================
@@ -328,7 +420,8 @@ section('Un très gros jour : la limite de 50 000 caractères par cellule');
   ths.valeurs.slice(3).forEach(l => { if (l[I_REF]) { l[I_ELEC] = 'PWD_IN_PROGRESS_LONG_' + l[I_REF]; } });
   importer(ctx, 'THS');
   const fj = c.getSheetByName('Jours_FWD_THS');
-  const cellules = fj.valeurs[1].slice(5).filter(v => v !== '' && v !== undefined);
+  /* Débrief 33 (relu) : le détail commence à la 7e colonne (« Après un import » avant lui). */
+  const cellules = fj.valeurs[1].slice(6).filter(v => v !== '' && v !== undefined);
   const j = ctx.getJours(c, 'THS');
   verifier('3 000 plans changés le même jour : le détail s’étale sur plusieurs cellules, aucune au-delà de 45 000 caractères, et se relit entier',
     cellules.length >= 2 && cellules.every(v => String(v).length <= 45000) && j.length === 1 && Object.keys(j[0].plans).length === 3000,
@@ -340,7 +433,7 @@ section('Un très gros jour : la limite de 50 000 caractères par cellule');
   importer(ctx, 'THS');
   const j2 = ctx.getJours(c, 'THS');
   verifier('réimporté le même jour, presque tout revenu : une seule ligne, deux plans, les cellules d’avant vidées',
-    fj.valeurs.length === 2 && j2.length === 1 && Object.keys(j2[0].plans).length === 2 && fj.valeurs[1].slice(6).every(v => v === ''),
+    fj.valeurs.length === 2 && j2.length === 1 && Object.keys(j2[0].plans).length === 2 && fj.valeurs[1].slice(7).every(v => v === ''),
     JSON.stringify([fj.valeurs.length, j2[0] && Object.keys(j2[0].plans).length]));
 }
 

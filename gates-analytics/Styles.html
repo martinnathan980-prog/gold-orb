@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "7c783c4";
+  --suivi-fwd-edition: "2bfe3f1";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -1183,9 +1183,19 @@ header.entete .alerte-source {
    gauche, −6 à droite, dans l'écart des colonnes) : borné à la colonne, il
    se rétrécissait d'autant, et son nom touchait son filet une fois choisi. */
 .journal-grille:not(.journal-serre) #filtre-journal .filtre-col { max-width: none; }
-/* « Tout » au-dessus des semaines, son mot là où commence « S45 · … ». */
+/* Débrief 33 (relu) : dans le tableau serré aussi (de 721 à ~1 180 px,
+   les filtres passent à la ligne au-dessus des semaines) — borné à sa
+   boîte, plus étroite que lui de ses marges, le filtre laissait son compte
+   déborder de 9 px de son cadre (« Tout 15 », le 5 sur le filet). */
+#zone-journal.journal-serre #filtre-journal .filtre-col { max-width: none; }
+/* « Tout » au-dessus des semaines, son mot là où commence « S45 · … ».
+   Débrief 33 (relu) : dans le tableau seulement (plus de 720 px) — écrite
+   après la règle du téléphone (marge −4, plus haut), elle l'écrasait : au
+   téléphone, « Tout » commençait 16 px plus loin que les autres filtres. */
 #filtre-journal .filtre-tout { font-size: 13px; }
-.journal-grille:not(.journal-serre) #filtre-journal .filtre-tout { margin-left: 12px; }
+@media (min-width: 721px) {
+  .journal-grille:not(.journal-serre) #filtre-journal .filtre-tout { margin-left: 12px; }
+}
 /* Les reculs, le filtre qu'on vient chercher : en rouge, compte compris
    (6,6:1 en clair, 5,8:1 en sombre). */
 #filtre-journal .filtre-col.puce-recul, #filtre-journal .filtre-col.puce-recul .n { color: var(--alerte); }
@@ -1400,8 +1410,11 @@ header.entete .alerte-source {
    semaine, ses comptes sous ceux de la semaine. Chaque jour s'ouvre sur
    ses plans. */
 .journal-liste.journal-liste-semaine { padding: 0 0 8px; }
-.journal-liste-semaine > .journal-copier { padding: 6px 0 2px 78px; }
-@media (max-width: 720px) { .journal-liste-semaine > .journal-copier { padding-left: 0; } }
+/* Débrief 33 (relu) : « Copier » au retrait de la phrase et des noms des
+   jours (46 px ; 24 au téléphone) — 78 px, l'ancien retrait de la liste
+   des plans que ces semaines ne montrent plus, ne l'alignait sur rien. */
+.journal-liste-semaine > .journal-copier { padding: 6px 0 2px 46px; }
+@media (max-width: 720px) { .journal-liste-semaine > .journal-copier { padding-left: 24px; } }
 .journal-note-jours { margin: 4px 0 6px; padding: 0 2px 0 46px; font-size: 12px; line-height: 1.5; color: var(--encre-2); max-width: 70ch; }
 @media (max-width: 720px) { .journal-note-jours { padding-left: 24px; } }
 .journal-jour { border-top: 1px solid var(--filet); }

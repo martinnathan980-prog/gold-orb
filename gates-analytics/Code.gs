@@ -47,7 +47,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = '7c783c4';
+const EDITION = '2bfe3f1';
 
 // =====================================================================
 //  CONFIGURATION
@@ -4470,9 +4470,18 @@ function recoller(cellules) {
 //    s'empile pas.
 //  - Un jour sans changement s'écrit quand même, vide : la page peut dire
 //    « aucun changement » pour un jour où le robot est passé.
+//    Débrief 33 (relu) : seulement quand un export vient d'être lu ce
+//    jour-là — l'import (le robot, ou la fenêtre à la main) ou le dépôt.
+//    L'archivage du vendredi ou du menu reprend l'onglet tel qu'il est :
+//    le PC du robot éteint, ou l'export du jour refusé, il disait « ven.
+//    6 nov. : aucun changement » sans qu'aucun export de GATES ait été lu
+//    ce jour-là. Sans changement, il garde quand même sa ligne (« Après un
+//    import » : non) — l'état du matin, si le robot passe plus tard le
+//    même jour —, mais la page ne la reçoit pas (getJours).
 //  - Rangé dans l'onglet masqué « Jours_FWD_<contrat> », une ligne par
 //    jour : Semaine, Jour, Écrit le, Changements, Onglet historique (le
-//    numéro de l'onglet d'historique du contrat), puis le détail, découpé
+//    numéro de l'onglet d'historique du contrat), Après un import (oui /
+//    non), puis le détail, découpé
 //    comme les cartes des relevés (decouper / recoller). Le numéro relie
 //    les jours à leur historique : renommé dans Sheets (un contrat renommé,
 //    son historique avec lui), l'historique garde son numéro, et ses jours
@@ -4480,7 +4489,9 @@ function recoller(cellules) {
 //  - Le passé ne se reconstruit pas : le détail commence avec cette
 //    livraison.
 // =====================================================================
-const ENTETES_JOURS = ['Semaine', 'Jour', 'Écrit le', 'Changements', 'Onglet historique', 'Plans'];
+const ENTETES_JOURS = ['Semaine', 'Jour', 'Écrit le', 'Changements', 'Onglet historique', 'Après un import', 'Plans'];
+/* Débrief 33 (relu) : la colonne « Après un import » (oui / non). */
+const I_IMPORT_JOUR = ENTETES_JOURS.indexOf('Après un import');
 
 /** Le nom de l'onglet du détail par jour d'un contrat. */
 function nomFeuilleJours(contrat) {
@@ -4564,7 +4575,8 @@ function jourDArchivage_(classeur, semaine) {
 
 /**
  * Les lignes d'un onglet du détail par jour, dans l'ordre de l'onglet :
- * [{ ligne (1-based), semaine, jour, delta (objet, ou null si illisible) }].
+ * [{ ligne (1-based), semaine, jour, delta (objet, ou null si illisible),
+ * importe (écrite juste après un import : « Après un import » = oui) }].
  * Une ligne d'un autre historique (son numéro diffère) est laissée de côté.
  */
 function lignesDesJours_(feuille, numero, fuseau) {
@@ -4581,7 +4593,8 @@ function lignesDesJours_(feuille, numero, fuseau) {
     if (numero !== '' && lu !== '' && lu !== null && lu !== undefined && String(lu) !== String(numero)) return;
     const delta = analyserJson(recoller(l.slice(ENTETES_JOURS.length - 1)));
     lignes.push({ ligne: i + 2, semaine: semaine, jour: jour,
-                  delta: delta && typeof delta === 'object' && !Array.isArray(delta) ? delta : null });
+                  delta: delta && typeof delta === 'object' && !Array.isArray(delta) ? delta : null,
+                  importe: String(l[I_IMPORT_JOUR] === null || l[I_IMPORT_JOUR] === undefined ? '' : l[I_IMPORT_JOUR]).trim().toLowerCase() === 'oui' });
   });
   return lignes;
 }
@@ -4591,7 +4604,9 @@ function lignesDesJours_(feuille, numero, fuseau) {
  * plansConcept? }] trié par jour — `plans` : { référence: [avant, après] }
  * pour la définition électrique, `plansConcept` pour le concept harnais
  * quand les valeurs le portent (separerDelta_). Le dernier écrit d'un jour
- * l'emporte. Sans historique, ou sans onglet du détail : [].
+ * l'emporte. Débrief 33 (relu) : un jour sans changement n'est donné que
+ * si un export a été lu ce jour-là (importe) — sinon, rien ne dit que rien
+ * n'a bougé dans GATES. Sans historique, ou sans onglet du détail : [].
  */
 function getJours(classeur, contrat) {
   const histo = getFeuilleHistorique(classeur, contrat, false);
@@ -4601,6 +4616,9 @@ function getJours(classeur, contrat) {
   const parJour = {};
   lignesDesJours_(feuille, numeroOnglet_(histo), fuseauDuClasseur_(classeur)).forEach(function (l) {
     if (l.delta) parJour[l.semaine + ' ' + l.jour] = l;
+  });
+  Object.keys(parJour).forEach(function (k) {
+    if (!parJour[k].importe && !Object.keys(parJour[k].delta).length) delete parJour[k];
   });
   return Object.keys(parJour).sort(function (a, b) {
     const x = parJour[a].jour, y = parJour[b].jour;
@@ -4689,9 +4707,14 @@ function preparerJour_(classeur, histo, semaine, carte) {
 
 /**
  * Écrit le jour préparé (preparerJour_) une fois la semaine écrite, sous le
- * verrou de l'archivage : { jour, changements } — ou null quand l'état du
- * matin n'est pas connu (le tout premier relevé du contrat, un relevé
- * d'avant sans carte) : rien n'est écrit.
+ * verrou de l'archivage : { jour, changements, montre } — ou null quand
+ * l'état du matin n'est pas connu (le tout premier relevé du contrat, un
+ * relevé d'avant sans carte) : rien n'est écrit.
+ * Débrief 33 (relu) : `prepa.apresImport` — un export vient d'être lu
+ * (l'import, le dépôt). Un jour réécrit le reste s'il l'était déjà. Un jour
+ * sans changement et sans import (le vendredi ou le menu, le robot pas
+ * passé) s'écrit, pour garder l'état du matin si le robot passe plus tard
+ * le même jour, mais ne se montre pas (montre: false, getJours).
  */
 function ecrireJour_(classeur, c, histo, prepa) {
   const numero = numeroOnglet_(histo);
@@ -4724,7 +4747,8 @@ function ecrireJour_(classeur, c, histo, prepa) {
   if (!matin) return null;
   const delta = deltaDesCartes_(matin, prepa.carte);
   const n = Object.keys(delta).length;
-  const ligne = [prepa.semaine, prepa.jour, new Date(), n, numero].concat(decouper(JSON.stringify(delta), MAX_CARACTERES_CELLULE));
+  const importe = !!prepa.apresImport || !!(deja && deja.importe);
+  const ligne = [prepa.semaine, prepa.jour, new Date(), n, numero, importe ? 'oui' : 'non'].concat(decouper(JSON.stringify(delta), MAX_CARACTERES_CELLULE));
   const feuille = existante || getFeuilleJours_(classeur, c.id, histo, true);
   if (existante && existante.getName() !== nomFeuilleJours(c.id) && !classeur.getSheetByName(nomFeuilleJours(c.id))) {
     try { existante.setName(nomFeuilleJours(c.id)); } catch (err) { /* il garde son nom : son numéro suffit */ }
@@ -4739,7 +4763,7 @@ function ecrireJour_(classeur, c, histo, prepa) {
   const caseJour = feuille.getRange(rang, 2, 1, 1);
   if (caseJour.setNumberFormat) caseJour.setNumberFormat('@');
   feuille.getRange(rang, 1, 1, ligne.length).setValues([ligne]);
-  return { jour: prepa.jour, changements: n };
+  return { jour: prepa.jour, changements: n, montre: importe || n > 0 };
 }
 
 /**
@@ -5120,9 +5144,11 @@ function enregistrerInstantaneHebdo(e) {
  * { id, nom, historique, semaine, compte }. Sert au geste hebdomadaire
  * (tous les contrats) comme au dépôt automatique et à l'import (un seul).
  * Ceux qui l'appellent tiennent déjà le verrou (sousVerrou_) ; le « _ » la
- * garde hors de portée de la page.
+ * garde hors de portée de la page. `apresImport` (débrief 33, relu) : un
+ * export vient d'être lu — l'import et le dépôt seulement ; le jour sans
+ * changement ne se montre qu'alors (ecrireJour_).
  */
-function archiverContrat_(classeur, c, semaine, forcer) {
+function archiverContrat_(classeur, c, semaine, forcer, apresImport) {
   const compte = compterAvancements(c.id);
   /* L'export d'une semaine passée, rattrapé et laissé dans l'onglet
      (débrief 17) : archivé pour la semaine en cours, il écraserait en
@@ -5185,6 +5211,7 @@ function archiverContrat_(classeur, c, semaine, forcer) {
   let prepaJour = null;
   if (semaine === numeroSemaineISO(new Date())) {
     try { prepaJour = preparerJour_(classeur, getFeuilleHistorique(classeur, c.id, false), semaine, compte.plans); } catch (err) { prepaJour = null; }
+    if (prepaJour) prepaJour.apresImport = apresImport === true;
   }
   const feuille = getFeuilleHistorique(classeur, c.id, true);
   const indexLigne = ligneDeLaSemaine(feuille, semaine);
@@ -6914,8 +6941,17 @@ function rapportDuContrat_(rapports, id) {
  * pas demander si le PC est allumé.
  */
 function suiviDuContrat_(id, etat, rapports, maintenant) {
-  const r = rapportDuContrat_(rapports, id), g = r && r.gates && typeof r.gates === 'object' ? r.gates : null;
+  const r = rapportDuContrat_(rapports, id);
+  let g = r && r.gates && typeof r.gates === 'object' ? r.gates : null;
   const s = r && r.see && typeof r.see === 'object' ? r.see : null;
+  /* Débrief 33 (relu) : « 280 de ses 546 plans sont déjà dans « THS » » —
+     le refus d'une règle qui n'existe plus (des plans en commun avec un
+     autre contrat ne bloquent plus l'import). Gardé tel quel jusqu'au
+     prochain passage du robot, il restait en rouge, avec « Corriger la
+     fiche » : Nathan aurait cru que rien n'était réglé. On ne le dit plus. */
+  const refusPerime = !!(g && g.ok === false && g.code === 'douteux' && / de ses .+ plans sont déjà dans « /.test(String(g.message || '')));
+  const autreDuRefus = refusPerime ? ((/ plans sont déjà dans « ([^»]+?) »/.exec(String(g.message)) || [])[1] || '') : '';
+  if (refusPerime) g = null;
   if (etat === 'masque') return { niveau: 'neutre', lignes: ['Masqué : le robot ne l’exporte plus.'] };
   if (etat === 'introuvable') return { niveau: 'erreur', lignes: [phraseSansOnglet_(id)] };
   const corrigee = function (x) { return !!(x && x.corrigeLe && dateDite_(x.corrigeLe, maintenant) && (x.ok === false || x.code === 'colonne-harnais')); };
@@ -6925,7 +6961,8 @@ function suiviDuContrat_(id, etat, rapports, maintenant) {
   const ligneCorrigee = corrections.length
     ? 'Fiche corrigée ' + dateDite_(corrections[corrections.length - 1], maintenant) + ' : le robot vérifiera à son prochain passage (chaque jour à partir de ' + heure + ', PC allumé).' : '';
   if (etat === 'prevu' && !(g && typeof g.ok === 'boolean')) {
-    return { niveau: 'attente', lignes: ['Prévu : son onglet sera créé au prochain passage du robot, avec son premier export GATES.'] };
+    return { niveau: 'attente', lignes: ['Prévu : son onglet sera créé au prochain passage du robot, avec son premier export GATES.']
+      .concat(refusPerime ? ['L’ancien refus ne compte plus : ses plans en commun avec ' + (autreDuRefus ? '« ' + autreDuRefus + ' »' : 'un autre contrat') + ' ne bloquent plus l’import.'] : []) };
   }
   const lignes = [];
   let niveau = '';
@@ -7829,7 +7866,8 @@ function deposer_(texte) {
       resultat.archive = { ok: false, message: '« ' + feuille.getName() + ' » n\'est pas un onglet de contrat : rien à archiver.' };
     } else {
       try {
-        const detail = sousVerrou_(function () { return archiverContrat_(classeur, contrat, numeroSemaineISO(new Date())); });
+        /* Débrief 33 (relu) : un extract vient d'être déposé — son jour se montre, même sans changement. */
+        const detail = sousVerrou_(function () { return archiverContrat_(classeur, contrat, numeroSemaineISO(new Date()), false, true); });
         resultat.archive = { ok: true, semaine: detail.semaine, historique: detail.historique,
                              total: detail.compte.total, termine: detail.compte.termine };
       } catch (err) {
@@ -8796,7 +8834,8 @@ function importArchiverReleve(jeton, idContrat, nouveau) {
   /* Le verrou se prend ici, une fois (sousVerrou_) : pas obtenu, rien n'est
      écrit et la fenêtre le dit — l'archivage n'avance plus sans lui. */
   try {
-    const d = sousVerrou_(function () { return archiverContrat_(classeur, contrat, semaine); });
+    /* Débrief 33 (relu) : juste après l'import — le jour se montre, même sans changement (le robot est passé). */
+    const d = sousVerrou_(function () { return archiverContrat_(classeur, contrat, semaine, false, true); });
     return { ok: true, semaine: semaine, dite: dite, plans: d.compte.total, valides: d.compte.termine, historique: d.historique };
   } catch (err) {
     /* L'export identique à un relevé plus ancien, juste après l'avoir
