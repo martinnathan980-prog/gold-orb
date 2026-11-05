@@ -70,7 +70,7 @@
 <script>
   /* La livraison de ce fichier, posée par la construction : la page la compare
      à celles de Code, Styles et Javascript, et nomme celui qui diffère. */
-  window.SUIVI_FWD_LIVRAISON_INDEX = '3d35dfb';
+  window.SUIVI_FWD_LIVRAISON_INDEX = 'fc58294';
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
@@ -420,15 +420,14 @@
         <h2 class="titre-journal">Ce qui a changé, semaine par semaine</h2>
       </div>
     </div>
-    <!-- Débrief 19 : une seule ligne, dans toute la largeur — les pastilles
-         des passages qu'il y a, et la recherche à droite, comme dans le bloc
-         par groupe. Débrief 27 (P-F3, X-A3) : les pastilles passent à la
-         ligne au lieu de défiler sous un fondu (« Reculs » était hors du
-         cadre), en deux rangées titrées : « Passés à » (les valeurs) et
-         « Mouvements » (reculs, nouveaux, disparus, changements d'indice) ;
-         « Tout » à gauche des deux. -->
-    <div class="ligne-filtres ligne-journal">
-      <div class="filtre-journal" id="filtre-journal" role="group" aria-label="Ne montrer que certains changements" hidden></div>
+    <!-- Débrief 19 : une seule ligne, dans toute la largeur, la recherche à
+         droite. Débrief 33 (Nathan : « ça fait des gros pâtés, des
+         doublons ») : les filtres ne sont plus une rangée à part au-dessus
+         du tableau — ce sont les noms de ses colonnes (#filtre-journal,
+         dans #zone-journal). Reste ici, à gauche, ce qu'on dit une fois :
+         depuis quand le détail jour par jour existe. -->
+    <div class="ligne-filtres ligne-journal" id="ligne-journal">
+      <p class="note-jours" id="note-jours" hidden></p>
       <!-- Chercher un plan dans le journal seulement : ses semaines
            s'ouvrent sur lui, les autres s'effacent. -->
       <div class="recherche recherche-groupe">

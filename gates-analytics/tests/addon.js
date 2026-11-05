@@ -2793,7 +2793,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
     past18.journal[0] === '' && past18.journal.slice(1, jAttendu18.length + 1).join() === jAttendu18.join() &&
     past18.journal.slice(past18.journal.length - jSuite18.length).join() === jSuite18.join() &&
     ['reculs', 'indice', 'nouveaux', 'disparus'].every(k => jSuite18.indexOf(k) !== -1 || past18.journal.indexOf(k) === -1) &&
-    past18.comptes.length === past18.journal.length - 1 && past18.comptes.every(n => n > 0), JSON.stringify(past18));
+    /* Débrief 33 : les filtres sont l'en-tête du tableau, et « Tout » y porte
+       aussi son compte (tous les changements) : un compte par bouton. */
+    past18.comptes.length === past18.journal.length && past18.comptes.every(n => n > 0), JSON.stringify(past18));
   verifier('bloc : « Tout » puis chaque valeur que portent les plans, et elles seules',
     past18.blocVisible && past18.bloc.join() === ['', ...past18.portees].join(), JSON.stringify([past18.bloc, past18.portees]));
   /* Après les valeurs du jour viennent celles « d'hier » : portées par des

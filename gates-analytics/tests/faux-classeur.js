@@ -2,7 +2,11 @@
    Il permet de faire tourner le code serveur dans Node, donc de tester pour de
    vrai la détection des colonnes et l'aller-retour de l'historique. */
 
+/* Débrief 33 : chaque onglet a son numéro, comme dans Sheets (getSheetId) —
+   il ne change pas quand on le renomme. */
+let numeroFeuille = 0;
 function Feuille(nom, valeurs, cachee, fusions) {
+  this.numero = ++numeroFeuille;
   this.nom = nom;
   this.valeurs = valeurs;          // tableau de tableaux de chaînes
   this.cachee = !!cachee;
@@ -28,6 +32,7 @@ function plusLarge(lignes) {
   return (lignes || []).reduce(function (m, l) { return Math.max(m, l.length); }, 0);
 }
 Feuille.prototype.getName = function () { return this.nom; };
+Feuille.prototype.getSheetId = function () { return this.numero; };
 Feuille.prototype.isSheetHidden = function () { return this.cachee; };
 Feuille.prototype.hideSheet = function () { this.cachee = true; };
 Feuille.prototype.showSheet = function () { this.cachee = false; };
@@ -208,6 +213,8 @@ function Classeur(feuilles, nom) {
   feuilles.forEach(function (f) { f.classeur = self; });
 }
 Classeur.prototype.getName = function () { return this.nom; };
+/* Débrief 33 : le fuseau du classeur (Fichier → Paramètres), Paris sauf si un essai en pose un autre. */
+Classeur.prototype.getSpreadsheetTimeZone = function () { return this.fuseau || 'Europe/Paris'; };
 /* Le propriétaire du classeur (débrief 26) : celui que pose le test, sinon aucun (un Drive partagé). */
 Classeur.prototype.getOwner = function () { const e = this.proprietaire; return e ? { getEmail: function () { return e; } } : null; };
 Classeur.prototype.cellulesGrille = function () {

@@ -733,11 +733,12 @@ classeur. Dans l'ordre d'efficacité :
   validés. Au concept harnais sans aucun « Traité », pas de pastille pour
   lui : la courbe des validés est celle qu'on voit quand aucune n'est
   pressée, et un second clic sur la pastille pressée y revient.
-- **Ce qui a changé, semaine par semaine** : le journal — quels plans sont
+- **Ce qui a changé, semaine par semaine** (et **jour par jour**, débrief
+  33) : le journal — quels plans sont
   passés à VALIDATED, lesquels ont changé d'indice, lesquels sont apparus ou ont
   disparu de l'extract, et les **reculs**, en rouge. Les semaines forment un
-  tableau : une colonne par sorte de passage, nommée dans l'en-tête, de la
-  plus fréquente à la plus rare, la pastille et le nombre dans la case —
+  tableau : une colonne par sorte de passage, nommée dans l'en-tête, dans
+  l'ordre de la barre du haut, la pastille et le nombre dans la case —
   tout tombe droit d'une semaine à l'autre. Dépliée, une ligne = une
   référence et son passage, sans libellé. Les semaines s'ouvrent repliées.
   Débrief 31 : **chaque semaine du graphique a sa ligne**. Une semaine où
@@ -746,16 +747,39 @@ classeur. Dans l'ordre d'efficacité :
   l'archivage du vendredi a repris l'export d'avant). Un relevé sans le
   détail plan par plan le dit aussi. L'extract du jour, pas encore archivé,
   porte la mention « extract du jour, pas encore archivé ».
-  **Au-dessus, une seule ligne** : les pastilles à gauche, le petit champ
-  « Chercher un plan… » au bout à droite (il ne cherche que dans le
-  journal). Les pastilles : **seulement les valeurs vers lesquelles des
-  plans sont passés** (dans l'ordre de la barre du haut), puis Reculs et
-  Changement d'indice s'il y en a, chacune avec son nombre — combien de
-  plans y sont arrivés, toutes semaines confondues. S'il n'y a eu que des
-  validations, il n'y a que « Tout » et VALIDATED. Un clic n'affiche
-  qu'eux : « VALIDATED » montre tous les plans devenus validés, **y compris
-  ceux validés sous un nouvel indice**. Une ligne trop longue défile (un
-  fondu à droite le dit).
+  **Les filtres sont les noms des colonnes** (débrief 33 : avant, une
+  rangée de pastilles répétait l'en-tête du tableau juste dessous). Chaque
+  nom n'est écrit qu'une fois, en haut du tableau, avec sa pastille et son
+  nombre — combien de plans y sont arrivés, toutes semaines confondues — ;
+  « Passés à » et « Mouvements » une seule fois, en petit, au-dessus de
+  leurs colonnes. **Un clic sur un nom de colonne** n'affiche que ces
+  changements : « VALIDATED » montre tous les plans devenus validés, **y
+  compris ceux validés sous un nouvel indice**. Les colonnes restent : on
+  passe d'un filtre à l'autre d'un clic ; un second clic sur le filtre
+  choisi, ou **« Tout »** (en haut, au-dessus des semaines), montre tout.
+  L'en-tête reste collé en haut pendant qu'on descend. Au téléphone, les
+  mêmes filtres passent à la ligne au-dessus des semaines. Au-dessus du
+  tableau, à droite, le petit champ « Chercher un plan… » (il ne cherche
+  que dans le journal).
+  **Le détail jour par jour** (débrief 33) : le robot importe chaque jour,
+  et chaque import garde ce qui a changé **ce jour-là**. Une semaine
+  importée au moins deux jours s'ouvre sur **ses jours**, le plus récent
+  d'abord (« mer. 4 nov. », « mar. 3 nov. »…), avec leurs nombres dans les
+  mêmes colonnes ; un clic sur un jour montre ses plans. Un jour où le
+  robot est passé sans que rien ne bouge le dit (« aucun changement »).
+  **La ligne de la semaine reste le résultat de la semaine** : un plan qui
+  change lundi puis revient mercredi se voit dans ses deux jours, pas dans
+  le total de la semaine (la semaine ouverte le dit en une phrase).
+  « Chercher un plan… » ouvre la semaine **et** les jours où il a bougé.
+  Le détail commence avec cette livraison : les semaines d'avant n'ont que
+  leur total, et s'ouvrent sur leurs plans comme avant (la ligne au-dessus
+  du tableau dit depuis quand). Quand le titre devient « Ce qui a changé,
+  semaine par semaine et jour par jour », le détail est là. Il est gardé
+  dans un onglet masqué par contrat, **« Jours_FWD_<contrat> »** (une ligne
+  par jour, seulement les plans qui ont changé) : ne pas le supprimer ;
+  s'il manque, la page montre les semaines comme avant. Il suit
+  l'historique : renommer l'onglet d'historique d'un contrat (après avoir
+  renommé le contrat) lui rend aussi ses jours.
 - **Avancement FWD par…** (ou **Concept harnais par…**) : le même avancement découpé par ATA, séquence,
   CC, ECP, ou par mois de création, avec la fin estimée et le rythme requis
   (en plans par semaine, le rythme tenu dessous) par groupe, rangés par ATA
@@ -1056,7 +1080,8 @@ onglet, et ce qui manque. Puis :
 | Un onglet `HDK (import …)`, `SEE HDK (import …)` ou `… (ancien …)` en plus | La fenêtre d'import a été fermée (ou la connexion coupée) en plein envoi — l'onglet visé est intact —, ou l'échange des onglets a été coupé à mi-course (« ancien » : l'onglet d'avant, mis de côté). Ce reste n'est jamais lu, ni comme contrat ni comme base | Le supprimer, ou relancer l'import du même onglet : il le retire. Le Diagnostic le signale |
 | Un contrat en trop ou en moins | Un onglet visible en trop, ou masqué | Chaque onglet visible qui porte un export (Référence UD, ATA…) est un contrat ; un onglet « Notes » à côté est écarté tout seul (le Diagnostic le dit) |
 | « N lignes répètent une référence déjà vue » au-dessus de la barre | L'export a été collé par-dessus l'ancien sans le vider : des lignes de l'ancien restent en dessous | Le réimporter (l'onglet est remplacé en entier), ou Ctrl+A, Suppr, puis le recoller en A1 |
-| Après avoir renommé un onglet de contrat, la courbe repart d'un seul relevé | L'historique porte encore l'ancien nom (`Historique_FWD_Feuille 1`) | Le Diagnostic le signale : renommer cet onglet d'historique `Historique_FWD_<nom du contrat>` |
+| Après avoir renommé un onglet de contrat, la courbe repart d'un seul relevé | L'historique porte encore l'ancien nom (`Historique_FWD_Feuille 1`) | Le Diagnostic le signale : renommer cet onglet d'historique `Historique_FWD_<nom du contrat>` (ses jours, `Jours_FWD_…`, le suivent d'eux-mêmes) |
+| Une semaine ne s'ouvre pas sur ses jours | Elle n'a été importée qu'un jour (l'archivage du vendredi seul : ce jour est la semaine), ou elle date d'avant le détail par jour (débrief 33), ou son relevé a été refait après coup (« Archiver pour une semaine passée ») | Rien à faire : elle s'ouvre sur ses plans, comme avant. Le Diagnostic dit combien de jours sont gardés |
 | Sous le graphique : « S41 : aucun changement depuis le relevé d'avant, plan par plan » | L'archivage (celui du vendredi, souvent) a repris l'export de la semaine d'avant — ou rien n'a vraiment bougé | Si un export plus récent existe : l'importer (case « Archiver » cochée), ou le recoller puis archiver : le relevé de la semaine est remplacé |
 | Deux relevés identiques alors que j'ai bien les deux exports | La semaine passée a été archivée avec l'export d'aujourd'hui | § 4, « Rattraper une semaine passée » : remettre l'export de la semaine passée (import, case « Archiver » décochée, ou collage), **Archiver l'onglet affiché pour une semaine passée…**, puis remettre l'export du jour et archiver |
 | « Geste refusé : il ne se lance que dans le classeur, menu Suivi FWD » | Quelqu'un a essayé d'archiver, supprimer ou couper l'archivage depuis la page (la console du navigateur) | Rien à faire : la page est en consultation, elle ne modifie rien. Ces gestes se font dans le classeur, menu Suivi FWD |
