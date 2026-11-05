@@ -92,7 +92,7 @@ def patch(sym, days):
         for side in sides:
             fn = f"{sym}-m1-{side}-{a}-{b}"
             subprocess.run(["npx", "--yes", "dukascopy-node", "-i", sym, "-from", a, "-to", b, "-t", "m1",
-                            "-p", side, "-f", "csv", "-r", "3", "-re", "-dir", os.path.join(RAW, "patch"),
+                            "-p", side, "-f", "csv", "-r", "3", "-re", "-fr", "-dir", os.path.join(RAW, "patch"),
                             "-fn", fn], capture_output=True)
 
 

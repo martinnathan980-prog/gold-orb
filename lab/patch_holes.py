@@ -37,7 +37,7 @@ def main():
                 if os.path.exists(os.path.join(PATCH, name + ".gz")):
                     continue
                 cmd = ["npx", "--yes", "dukascopy-node", "-i", sym, "-from", a, "-to", b, "-t", "m1",
-                       "-p", side, "-f", "csv", "-r", "3", "-re", "-dir", PATCH, "-fn", name[:-4]]
+                       "-p", side, "-f", "csv", "-r", "3", "-re", "-fr", "-dir", PATCH, "-fn", name[:-4]]
                 r = subprocess.run(cmd, capture_output=True, text=True)
                 if r.returncode != 0:
                     print("  failed", name, r.stderr[-200:], flush=True)
