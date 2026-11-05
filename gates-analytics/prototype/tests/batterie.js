@@ -6627,8 +6627,11 @@ async function deplierFiltresColonne(pg) {
         barresAlignees: new Set(barres.map(b => Math.round(b.left) + '/' + Math.round(b.width))).size === 1,
         noms: noms.map(n => ({ t: n.textContent, coupe: n.scrollWidth > n.clientWidth + 1 || cs(n).textOverflow === 'ellipsis',
           lignes: Math.round(n.getBoundingClientRect().height / parseFloat(cs(n).lineHeight)),
-          dessus: n.parentNode.classList.contains('nom-dessus'),
-          sousBarre: n.getBoundingClientRect().bottom <= n.parentNode.querySelector('.critique-barre').getBoundingClientRect().top + 1,
+          /* Débrief 33 : plus de nom « au-dessus » de sa barre (classe
+             nom-dessus retirée) : le texte du nom finit avant la colonne
+             du compte, quel que soit son nombre de lignes. */
+          dansColonne: (() => { const rg = document.createRange(); rg.selectNodeContents(n);
+            return Math.max(...[...rg.getClientRects()].map(x => x.right)) <= n.parentNode.querySelector('.critique-plans').getBoundingClientRect().left - 1; })(),
           gauche: Math.round(n.getBoundingClientRect().left), large: Math.round(n.getBoundingClientRect().width) })),
         tete: tete ? Math.round(tete.getBoundingClientRect().width) : 0
       };
@@ -6643,21 +6646,26 @@ async function deplierFiltresColonne(pg) {
     await p23.waitForTimeout(450);
     const n1280 = await mesurerNoms();
     /* Débrief 24 : « des fois la ligne ECP est trop large ». Un nom plus
-       large que la colonne permise (240 px au plus) ne l'élargit plus : il
-       passe au-dessus de sa barre, en entier, sur une ligne ; les barres
-       restent larges et alignées. Un nom court reste à sa place. */
-    verifier('par ECP, 1280 px : chaque nom d’ECP se lit en entier, sur une ligne, sans « … » — les deux longs au-dessus de leur barre, le court à sa place',
-      n1280.noms.length === 3 && n1280.noms.every(x => !x.coupe && x.lignes === 1) &&
+       large que la colonne permise (240 px au plus) ne l'élargit plus ; les
+       barres restent larges et alignées. Un nom court reste à sa place.
+       Débrief 33 : « des fois la ligne ça déborde vraiment » — le nom trop
+       long ne passe plus au-dessus de sa barre, sur toute la largeur (il
+       courait sur le compte et la barre) : il passe à la ligne DANS sa
+       colonne, toujours en entier, sans « … ». */
+    verifier('par ECP, 1280 px : chaque nom d’ECP se lit en entier, sans « … » — les deux longs passent à la ligne dans leur colonne, sans toucher le compte ; le court sur une ligne',
+      n1280.noms.length === 3 && n1280.noms.every(x => !x.coupe && x.dansColonne) &&
       LONGS.every(l => n1280.noms.some(x => x.t === l)) &&
-      n1280.noms.filter(x => x.dessus).length === 2 && n1280.noms.every(x => !x.dessus || x.sousBarre) &&
-      !n1280.noms.find(x => x.t === 'ECP-31').dessus, JSON.stringify(n1280));
+      n1280.noms.filter(x => x.lignes >= 2).length === 2 &&
+      n1280.noms.find(x => x.t === 'ECP-31').lignes === 1, JSON.stringify(n1280));
     verifier('par ECP, 1280 px : la colonne du nom ne dépasse jamais 240 px, les noms restent alignés à gauche, les barres sont alignées et larges (400 px et plus)',
       (n1280.col === '' || parseFloat(n1280.col) <= 240) && new Set(n1280.noms.map(x => x.gauche)).size === 1 &&
       n1280.barresAlignees && n1280.barre >= 400, JSON.stringify(n1280));
     await redimensionner(p23, 900, 950);
     const n900 = await mesurerNoms();
-    verifier('par ECP, 900 px : la barre garde 220 px et plus, alignée sur les autres ; les noms trop longs passent au-dessus — toujours en entier, jamais coupés',
-      n900.barre >= 219 && n900.barresAlignees && n900.noms.every(x => !x.coupe) && n900.noms.some(x => x.dessus && x.sousBarre),
+    /* Débrief 33 : les noms trop longs passent à la ligne dans leur
+       colonne (ils passaient au-dessus de leur barre). */
+    verifier('par ECP, 900 px : la barre garde 220 px et plus, alignée sur les autres ; les noms trop longs passent à la ligne dans leur colonne — toujours en entier, jamais coupés',
+      n900.barre >= 219 && n900.barresAlignees && n900.noms.every(x => !x.coupe && x.dansColonne) && n900.noms.some(x => x.lignes >= 2),
       JSON.stringify(n900));
     await redimensionner(p23, 390, 844);
     const n390 = await mesurerNoms();
@@ -6667,8 +6675,10 @@ async function deplierFiltresColonne(pg) {
     /* Une dimension aux noms courts : la colonne revient à sa largeur d'avant. */
     await p23.selectOption('#dim-critique', 'ata'); await p23.waitForTimeout(400);
     const nAta = await mesurerNoms();
-    verifier('par ATA (noms courts) : la colonne garde sa largeur d’avant, rien à agrandir, aucun nom au-dessus',
-      nAta.col === '' && nAta.noms.every(x => !x.coupe && !x.dessus), JSON.stringify(nAta.col));
+    /* Débrief 33 : « aucun nom au-dessus » se dit maintenant « chaque nom
+       sur une ligne, dans sa colonne » (la classe nom-dessus n'existe plus). */
+    verifier('par ATA (noms courts) : la colonne garde sa largeur d’avant, rien à agrandir, chaque nom sur une ligne dans sa colonne',
+      nAta.col === '' && nAta.noms.every(x => !x.coupe && x.dansColonne && x.lignes === 1), JSON.stringify(nAta));
 
     /* « Nouveaux, supprimés… il faut un peu pour tous les filtres » : trois
        plans sortis de l'extract au dernier relevé, et les nouveaux de la
@@ -6860,7 +6870,9 @@ async function deplierFiltresColonne(pg) {
 
     /* Débrief 23, gardé : un nom MOYEN ne passe pas au-dessus, la colonne
        s'élargit pour lui (plus de 118 px, 240 au plus) et l'en-tête « ECP »
-       prend sa largeur. Un nom trop long passe au-dessus de sa barre. */
+       prend sa largeur. Un nom trop long passe au-dessus de sa barre.
+       Débrief 33 : il passe à la ligne dans sa colonne (plus au-dessus de
+       sa barre) — le nom moyen y reste sur une ligne. */
     const NOMS24 = ['ECP 2207 — Galley avant', 'ECP-31', 'ECP-2100-HARNAIS-COCKPIT-GAUCHE-MODIF-B'];
     await p24.evaluate(noms => {
       const s = window.__jeuDExemple('HDK');
@@ -6871,28 +6883,30 @@ async function deplierFiltresColonne(pg) {
     await p24.selectOption('#dim-critique', 'ecp'); await p24.waitForTimeout(450);
     const col24 = await p24.evaluate(() => {
       const z = document.getElementById('zone-critique'), tete = z.querySelector('.critique-tete > span:first-child');
-      const noms = [...z.querySelectorAll('.critique-ligne .critique-nom')].map(n => ({ t: n.textContent, dessus: n.parentNode.classList.contains('nom-dessus'),
+      const noms = [...z.querySelectorAll('.critique-ligne .critique-nom')].map(n => ({ t: n.textContent,
+        dansColonne: n.getBoundingClientRect().right <= n.parentNode.querySelector('.critique-plans').getBoundingClientRect().left - 1,
         lignes: Math.round(n.getBoundingClientRect().height / parseFloat(getComputedStyle(n).lineHeight)), large: Math.round(n.getBoundingClientRect().width) }));
       return { col: z.style.getPropertyValue('--col-nom'), tete: Math.round(tete.getBoundingClientRect().width), noms };
     });
     const moyen24 = col24.noms.find(x => x.t === NOMS24[0]) || {}, long24 = col24.noms.find(x => x.t === NOMS24[2]) || {};
-    verifier('par ECP, 1280 px : un nom moyen garde sa place, sur une ligne — la colonne s’élargit pour lui (plus de 118 px, 240 au plus) et l’en-tête « ECP » a sa largeur ; le nom trop long passe au-dessus',
-      !moyen24.dessus && moyen24.lignes === 1 && parseFloat(col24.col) > 118 && parseFloat(col24.col) <= 240 &&
-      Math.abs(col24.tete - moyen24.large) <= 1 && long24.dessus === true, JSON.stringify(col24));
+    verifier('par ECP, 1280 px : un nom moyen garde sa place, sur une ligne — la colonne s’élargit pour lui (plus de 118 px, 240 au plus) et l’en-tête « ECP » a sa largeur ; le nom trop long passe à la ligne dans sa colonne',
+      moyen24.dansColonne && moyen24.lignes === 1 && parseFloat(col24.col) > 118 && parseFloat(col24.col) <= 240 &&
+      Math.abs(col24.tete - moyen24.large) <= 1 && long24.dansColonne && long24.lignes >= 2, JSON.stringify(col24));
 
     /* À l'impression A4 (marges par défaut de Chrome), la page fait 717 px :
-       c'est la mise en page du téléphone, et rien ne remesure — la classe
-       « nom-dessus » posée à l'écran reste. Elle ne doit rien y changer :
-       le nom d'un tenant, les cellules empilées dessous, pas en escalier. */
+       c'est la mise en page du téléphone, et rien ne remesure — la largeur
+       de colonne posée à l'écran reste. Elle ne doit rien y changer :
+       le nom d'un tenant, les cellules empilées dessous, pas en escalier.
+       Débrief 33 : la classe « nom-dessus » n'existe plus (le nom passe à
+       la ligne dans sa colonne) ; on n'a plus à la poser à la main. */
     await p24.setViewportSize({ width: 717, height: 950 });
     /* Débrief 27 (lot C, M2) : la carte du téléphone a deux colonnes — le
        nom et « Plans 65 » sur une ligne, la barre dessous, puis la fin
-       estimée et le rythme côte à côte. La classe « nom-dessus » ne doit
-       rien y changer : le nom sur sa ligne, en entier, la barre sur toute
-       la largeur, la fin estimée sous le nom, rien en escalier. */
+       estimée et le rythme côte à côte : le nom sur sa ligne, en entier,
+       la barre sur toute la largeur, la fin estimée sous le nom, rien en
+       escalier. */
     const impr24 = await p24.evaluate(nom => {
       const l = [...document.querySelectorAll('#zone-critique .critique-ligne')].find(x => x.querySelector('.critique-nom').textContent === nom);
-      l.classList.add('nom-dessus');
       const n = l.querySelector('.critique-nom'), cs = getComputedStyle(l), r = e => l.querySelector(e).getBoundingClientRect();
       const rl = l.getBoundingClientRect(), rn = r('.critique-nom'), rp = r('.critique-plans'), rb = r('.critique-barre'), rf = r('.critique-date');
       return { colonnes: cs.gridTemplateColumns.split(' ').length, lignesNom: Math.round(rn.height / parseFloat(getComputedStyle(n).lineHeight)),
@@ -6900,7 +6914,7 @@ async function deplierFiltresColonne(pg) {
                barreLarge: rb.width >= rl.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 2 && rb.top >= rn.bottom - 1,
                finSousNom: Math.abs(rf.left - rl.left - parseFloat(cs.paddingLeft)) <= 2 && rf.top >= rb.bottom - 1 };
     }, NOMS24[2]);
-    verifier('impression A4 (page de 717 px) : une ligne dont le nom est passé au-dessus à l’écran s’imprime d’un tenant — le nom sur sa ligne avec « Plans » à droite, la barre sur toute la largeur, la fin estimée dessous, rien en escalier',
+    verifier('impression A4 (page de 717 px) : une ligne dont le nom passe à la ligne à l’écran s’imprime d’un tenant — le nom sur sa ligne avec « Plans » à droite, la barre sur toute la largeur, la fin estimée dessous, rien en escalier',
       impr24.colonnes === 2 && impr24.lignesNom === 1 && impr24.memeLigne && impr24.plansADroite && impr24.barreLarge && impr24.finSousNom, JSON.stringify(impr24));
     await redimensionner(p24, 1280, 950);
 
@@ -13896,6 +13910,255 @@ async function deplierFiltresColonne(pg) {
     }
   }
   /* (fin du lot C31) */
+  /* (début du lot C33-ecp) */
+  /* Débrief 33 — Nathan : « dans l'avancement par ECP, des fois la ligne ça
+     déborde vraiment et je trouve ça un petit peu moche ». Sa photo : la
+     ligne « APSPOP.28555 - APSPOP.29903 - APSPOP.29713 » courait sur les
+     colonnes du compte et de la barre, son « 1 » et sa barre tombés dessous
+     (le nom « au-dessus » du débrief 24). Le nom passe maintenant à la ligne
+     DANS sa colonne, en entier (débrief 23 : jamais de « … »), coupé après
+     le tiret entre deux ECP, un code jamais coupé en deux quand il tient ;
+     le compte, « n à l'arrêt », la barre, la fin estimée et le rythme
+     restent dans leurs colonnes, alignés sur la première ligne du nom. On le
+     mesure (getBoundingClientRect) sur des noms comme les siens, à toutes
+     les largeurs, en sombre, à l'impression, dans chaque dimension, avec et
+     sans jalon, une ligne dépliée, sous une valeur choisie. */
+  section('Débrief 33 : les lignes « Par ECP » restent dans leurs colonnes (lot C33-ecp)');
+  {
+    const NOMS_C33 = [
+      'APSPOP.29319 - APSP07.31015', 'APSPOP.29181', 'APSPOP.29167 - APSPMC.29955', 'APSPOP.29115',
+      'APSPOP.28555 - APSPOP.29903 - APSPOP.29713', 'APSPOP.28555 - APSPOP.29899',
+      'APSPOP.28555 - APSPOP.29903 - APSPOP.29713 - APSPMC.29955 - APSP07.31015',
+      'APSPOPMODIFICATIONHARNAISCOCKPITGAUCHEAVANT.29555123456789', 'ECP-31'
+    ];
+    const LONG5_C33 = NOMS_C33[6], SANS_TIRET_C33 = NOMS_C33[7];
+    /* Tout ce qu'on lit d'une liste : pour chaque ligne montrée, la place du
+       texte du nom, celle des autres colonnes, le bouton « à l'arrêt » et
+       sa place gardée, les codes coupés, les tirets en début de ligne. */
+    const lireC33 = pg => pg.evaluate(() => {
+      const z = document.getElementById('zone-critique');
+      const telephone = matchMedia('(max-width: 720px)').matches;
+      const r = e => e.getBoundingClientRect();
+      const milieu = b => (b.left + b.right) / 2;
+      const lignes = [...z.querySelectorAll('.critique-rangee')].filter(rg => rg.getClientRects().length).map(rg => {
+        const l = rg.querySelector('.critique-ligne'), n = l.querySelector('.critique-nom');
+        const plans = l.querySelector('.critique-plans'), tot = l.querySelector('.critique-total'), barre = l.querySelector('.critique-barre');
+        const date = l.querySelector('.critique-date'), dateV = l.querySelector('.critique-date .v'), eff = l.querySelector('.critique-effort');
+        const chev = l.querySelector('.chevron'), b = rg.querySelector('.arret-groupe'), place = l.querySelector('.arret-n.place');
+        const cs = getComputedStyle(n), lh = parseFloat(cs.lineHeight), pad = parseFloat(cs.paddingLeft);
+        const plage = document.createRange(); plage.selectNodeContents(n);
+        const morceaux = [...plage.getClientRects()].filter(x => x.width > 0.5);
+        const gauche = Math.min(...morceaux.map(x => x.left)), droite = Math.max(...morceaux.map(x => x.right)), haut = Math.min(...morceaux.map(x => x.top));
+        /* Un mot (un code d'ECP) écrit sur deux lignes alors qu'il tenait
+           dans la colonne ; un tiret au début d'une ligne. */
+        const place_ = n.clientWidth - pad, coupes = [], tiretsEnTete = [];
+        const marcheur = document.createTreeWalker(n, NodeFilter.SHOW_TEXT);
+        for (let t = marcheur.nextNode(); t; t = marcheur.nextNode()) {
+          if (t.parentNode.classList && t.parentNode.classList.contains('nom-colle')) continue;
+          const re = /\S+/g; let m;
+          while ((m = re.exec(t.data))) {
+            const rm = document.createRange(); rm.setStart(t, m.index); rm.setEnd(t, m.index + m[0].length);
+            const rr = [...rm.getClientRects()].filter(x => x.width > 0.5);
+            const tops = new Set(rr.map(x => Math.round(x.top)));
+            const large = rr.reduce((s, x) => s + x.width, 0);
+            if (tops.size > 1 && large <= place_ + 1) coupes.push(m[0]);
+          }
+        }
+        n.querySelectorAll('.nom-colle').forEach(s => {
+          const rr = [...s.getClientRects()].filter(x => x.width > 0.5);
+          if (rr.length !== 1 || rr[0].left <= gauche + 1) tiretsEnTete.push(s.textContent);
+        });
+        const rl = r(l), rp = r(plans), rt = r(tot), rb = r(barre), rd = r(date), re_ = r(eff), rn = r(n);
+        const o = { nom: n.textContent, lignes: Math.round(morceaux.length ? (Math.max(...morceaux.map(x => x.bottom)) - haut) / lh : 0),
+          points: /…|\.\.\./.test(n.textContent) || cs.textOverflow === 'ellipsis' || n.scrollWidth > n.clientWidth + 1,
+          coupes, tiretsEnTete, hauteur: Math.round(rl.height),
+          dansZone: Math.max(droite, rp.right, rb.right, rd.right, re_.right) <= r(z).right + 0.5,
+          texteDansNom: droite <= rn.right + 4 && gauche >= rn.left - 0.5,
+          xTotal: Math.round(milieu(rt)), xBarre: Math.round(rb.left) + '/' + Math.round(rb.width), xDate: Math.round(milieu(rd)), xEffort: Math.round(milieu(re_)) };
+        if (!telephone) {
+          /* En colonnes : le texte du nom finit avant la colonne du compte ;
+             compte, barre, fin estimée et rythme commencent sur la première
+             ligne du nom ; le chevron est à sa hauteur ; la ligne n'a pas
+             d'étage en plus (sa hauteur, celle de sa plus haute colonne). */
+          o.chevauche = droite > rp.left - 1 || droite > rb.left - 1;
+          o.premiereLigne = [rt.top, rb.top, r(dateV).top, re_.top].every(y => Math.abs(y - haut) <= 1.5);
+          const rc = r(chev); o.chevronALaLigne = milieu({ left: rc.top, right: rc.bottom }) >= haut && milieu({ left: rc.top, right: rc.bottom }) <= haut + lh;
+          o.compacte = rl.height <= 14 + Math.max(rn.height, rp.height, rb.height, rd.height, re_.height) + 1;
+        } else {
+          o.chevauche = droite > rp.left - 1 && rp.top < Math.max(...morceaux.map(x => x.bottom)) - 1;
+        }
+        if (b) {
+          const rbt = r(b);
+          if (!telephone) {
+            const rpl = r(place);
+            o.arret = { dx: Math.round(Math.abs(milieu(rbt) - milieu(rt)) * 10) / 10, dy: Math.round(Math.abs(rbt.top - rpl.top) * 10) / 10,
+              sousCompte: rbt.top >= rt.bottom - 0.5, dansLigne: rbt.bottom <= rl.bottom + 0.5, horsNom: rbt.left >= droite, avantBarre: rbt.right <= rb.left };
+          } else {
+            o.arret = { dessous: rbt.top >= rl.bottom - 1, dansZone: rbt.right <= r(z).right + 0.5 && rbt.left >= r(z).left - 0.5 };
+          }
+        }
+        return o;
+      });
+      return { telephone, n: lignes.length, lignes, sansJalon: z.classList.contains('sans-jalon'), col: z.style.getPropertyValue('--col-nom'),
+        nomDessus: document.querySelectorAll('.nom-dessus').length, page: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+    });
+    /* Le verdict d'une lecture : la liste des fautes, vide quand tout va. */
+    /* À l'impression émulée à l'écran, le tableau des plans (137
+       colonnes) élargit la page : on n'y regarde que la liste. */
+    const fautesC33 = (m, attendus, impression) => {
+      const f = [];
+      if (!m.n) f.push('aucune ligne');
+      if (m.nomDessus) f.push('classe « nom-dessus » encore posée');
+      if (m.page > 0 && !impression) f.push('la page défile en largeur de ' + m.page + ' px');
+      m.lignes.forEach(x => {
+        if (!x.dansZone) f.push('la ligne sort de la liste : ' + x.nom);
+        if (x.points) f.push('« … » ou nom coupé : ' + x.nom);
+        if (x.chevauche) f.push('le nom déborde sur le compte ou la barre : ' + x.nom);
+        if (!x.texteDansNom) f.push('le texte sort de la boîte du nom : ' + x.nom);
+        if (x.coupes.length) f.push('code coupé en deux alors qu’il tenait : ' + x.coupes.join(', '));
+        if (x.tiretsEnTete.length) f.push('tiret en début de ligne : ' + x.nom);
+        if (!m.telephone && !x.premiereLigne) f.push('chiffres pas sur la première ligne du nom : ' + x.nom);
+        if (!m.telephone && !x.chevronALaLigne) f.push('chevron pas à hauteur de la première ligne : ' + x.nom);
+        if (!m.telephone && !x.compacte) f.push('ligne plus haute que sa plus haute colonne : ' + x.nom + ' (' + x.hauteur + ' px)');
+        if (x.arret && !m.telephone && !(x.arret.dx <= 1.5 && x.arret.dy <= 1.5 && x.arret.sousCompte && x.arret.dansLigne && x.arret.horsNom && x.arret.avantBarre))
+          f.push('« à l’arrêt » hors de sa place : ' + x.nom + ' ' + JSON.stringify(x.arret));
+        if (x.arret && m.telephone && !(x.arret.dessous && x.arret.dansZone)) f.push('« à l’arrêt » mal posé au téléphone : ' + x.nom + ' ' + JSON.stringify(x.arret));
+      });
+      if (!m.telephone) {
+        ['xTotal', 'xBarre', 'xDate', 'xEffort'].forEach(k => {
+          const v = new Set(m.lignes.map(x => x[k]));
+          if (v.size > 1 && !(k !== 'xBarre' && Math.max(...v) - Math.min(...v) <= 1)) f.push(k + ' pas aligné : ' + [...v].join(' '));
+        });
+      }
+      (attendus || []).forEach(a => { const x = m.lignes.find(y => y.nom === a.nom); if (!x) f.push('ligne absente : ' + a.nom); else if (!a.test(x)) f.push(a.dit + ' : ' + JSON.stringify(x)); });
+      return f;
+    };
+    const chargerC33 = async (pg, o = {}) => {
+      await pg.evaluate(o => {
+        const s = window.__jeuDExemple('HDK');
+        s.plans.forEach((x, i) => { x[o.champ] = o.noms[i % o.noms.length]; });
+        if (o.sansJalon) s.jalons = [];
+        window.__chargerSource(s);
+      }, { noms: o.noms || NOMS_C33, champ: o.champ || 'ecp', sansJalon: !!o.sansJalon });
+      await pg.waitForTimeout(300);
+      await pg.selectOption('#dim-critique', o.dim || 'ecp');
+      await pg.waitForTimeout(450);
+    };
+    const cxC33 = await contexte({ viewport: { width: 1440, height: 900 } });
+    const pC33 = await page(cxC33, 'lot C33-ecp');
+    await chargerC33(pC33);
+    /* Les noms de la photo, à quatre largeurs d'écran. */
+    const parLargeur = {};
+    for (const w of [1440, 1280, 1024, 820]) {
+      await redimensionner(pC33, w, 900);
+      parLargeur[w] = await lireC33(pC33);
+    }
+    const m1440 = parLargeur[1440];
+    verifier('C33-ecp : à 1440 px, « APSPOP.28555 - APSPOP.29903 - APSPOP.29713 » passe à la ligne DANS sa colonne (2 lignes), après un tiret ; son compte, sa barre et sa fin estimée restent sur sa première ligne, dans leurs colonnes ; les noms à deux ECP tiennent sur une ligne ; aucun « … »',
+      !fautesC33(m1440, [
+        { nom: NOMS_C33[4], dit: 'le nom à trois ECP sur deux lignes', test: x => x.lignes === 2 },
+        { nom: NOMS_C33[5], dit: 'un nom à deux ECP sur une ligne', test: x => x.lignes === 1 },
+        { nom: NOMS_C33[1], dit: 'un code seul sur une ligne', test: x => x.lignes === 1 }
+      ]).length && m1440.n === NOMS_C33.length && parseFloat(m1440.col) <= 240, JSON.stringify(fautesC33(m1440)) + ' col ' + m1440.col);
+    verifier('C33-ecp : 5 codes d’ECP (« … - APSPMC.29955 - APSP07.31015 ») sur trois lignes au plus, chaque ligne coupée après un tiret, aucun code coupé ; un très long code sans tiret se coupe dans sa colonne, sans en sortir',
+      [1440, 1280].every(w => { const x = parLargeur[w].lignes.find(y => y.nom === LONG5_C33), s = parLargeur[w].lignes.find(y => y.nom === SANS_TIRET_C33);
+        return x && x.lignes <= 3 && !x.coupes.length && !x.tiretsEnTete.length && s && s.lignes >= 2 && !s.chevauche && s.texteDansNom; }),
+      JSON.stringify([1440, 1280].map(w => parLargeur[w].lignes.filter(y => y.nom === LONG5_C33 || y.nom === SANS_TIRET_C33))));
+    for (const w of [1280, 1024, 820]) {
+      const f = fautesC33(parLargeur[w]);
+      verifier('C33-ecp : à ' + w + ' px, aucun nom ne déborde sur le compte ou la barre ; comptes, barres, fins estimées et rythmes de toutes les lignes au même x ; « à l’arrêt » sous son compte, dans sa colonne ; aucun code coupé, aucun tiret en début de ligne',
+        !f.length, JSON.stringify(f) + ' col ' + parLargeur[w].col);
+    }
+    verifier('C33-ecp : à 820 px, la colonne du nom s’élargit juste assez pour un code et son tiret (« APSPOP.28555 - » : plus de 118 px, 160 au plus) — la barre garde sa place',
+      parseFloat(parLargeur[820].col) > 118 && parseFloat(parLargeur[820].col) <= 160, parLargeur[820].col);
+
+    /* Sous une valeur choisie (« sur 71 » sous le compte), « à l'arrêt »
+       descend d'une ligne avec sa place. */
+    await redimensionner(pC33, 1280, 900);
+    await pC33.click('#filtre-valeur-groupe button[data-valeur-bloc="encours"]'); await pC33.waitForTimeout(450);
+    const mValeur = await lireC33(pC33);
+    verifier('C33-ecp : sous la valeur « En cours » du bloc (« sur 71 » sous le compte), chaque « à l’arrêt » reste à sa place, sous « sur 71 », et rien ne déborde',
+      !fautesC33(mValeur).length && mValeur.lignes.some(x => x.arret), JSON.stringify(fautesC33(mValeur)));
+    await pC33.click('#filtre-valeur-groupe button[data-valeur-bloc="encours"]'); await pC33.waitForTimeout(400);
+
+    /* Une ligne dépliée (aria-expanded) : son bouton « à l'arrêt » ne bouge
+       pas, et « Filtrer la page sur ECP <5 codes> » ne sort pas de la liste
+       — au téléphone, il poussait la page de 350 px vers la droite. */
+    const deplier = (pg, nom) => pg.evaluate(nom => { const l = [...document.querySelectorAll('#zone-critique .critique-ligne')].find(x => x.querySelector('.critique-nom').textContent === nom); l.click(); }, nom);
+    await deplier(pC33, LONG5_C33); await pC33.waitForTimeout(400);
+    const lireFiltrer = pg => pg.evaluate(() => {
+      const f = document.getElementById('filtrer-groupe-page'), z = document.getElementById('zone-critique');
+      const o = document.querySelector('#zone-critique .critique-ligne[aria-expanded="true"]');
+      return { ouverte: o ? o.querySelector('.critique-nom').textContent : '', dedans: !!f && f.getBoundingClientRect().right <= z.getBoundingClientRect().right + 0.5,
+               texte: f ? f.textContent : '', page: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+    });
+    const mOuverte = await lireC33(pC33), fOuverte = await lireFiltrer(pC33);
+    verifier('C33-ecp : la ligne à 5 ECP dépliée — rien ne déborde, son « à l’arrêt » reste sous son compte, « Filtrer la page sur ECP … » dit le nom en entier et reste dans la liste',
+      !fautesC33(mOuverte).length && fOuverte.ouverte === LONG5_C33 && fOuverte.dedans && fOuverte.texte === 'Filtrer la page sur ECP ' + LONG5_C33 && fOuverte.page <= 0,
+      JSON.stringify({ f: fautesC33(mOuverte), fOuverte }));
+
+    /* Le téléphone (390 px), en sombre : la carte garde sa mise en page ; le
+       nom passe à la ligne après un tiret, « Plans 71 » à sa droite, rien ne
+       fait défiler la page en largeur, même la ligne dépliée. */
+    const cxTel = await contexte({ viewport: { width: 390, height: 844 }, colorScheme: 'dark' });
+    const pTel = await page(cxTel, 'lot C33-ecp téléphone');
+    await chargerC33(pTel);
+    const mTel = await lireC33(pTel);
+    await deplier(pTel, LONG5_C33); await pTel.waitForTimeout(400);
+    const fTel = await lireFiltrer(pTel);
+    verifier('C33-ecp : au téléphone (390 px, sombre), chaque nom passe à la ligne après un tiret, sans couper un code, sans toucher « Plans » ; « à l’arrêt » sous la carte ; la ligne dépliée ne fait pas défiler la page en largeur',
+      mTel.telephone && !fautesC33(mTel).length && fTel.dedans && fTel.page <= 0, JSON.stringify({ f: fautesC33(mTel), fTel }));
+    await cxTel.close();
+
+    /* En sombre à 1440 px : la même géométrie qu'en clair. */
+    const cxSombre = await contexte({ viewport: { width: 1440, height: 900 }, colorScheme: 'dark' });
+    const pSombre = await page(cxSombre, 'lot C33-ecp sombre');
+    await chargerC33(pSombre);
+    const mSombre = await lireC33(pSombre);
+    verifier('C33-ecp : en sombre, à 1440 px, les mêmes lignes que le clair (mêmes hauteurs, mêmes colonnes) et rien ne déborde',
+      !fautesC33(mSombre).length && JSON.stringify(mSombre.lignes.map(x => [x.hauteur, x.xTotal, x.xBarre])) === JSON.stringify(m1440.lignes.map(x => [x.hauteur, x.xTotal, x.xBarre])),
+      JSON.stringify(fautesC33(mSombre)));
+    await cxSombre.close();
+
+    /* Sans jalon (pas de rythme requis : le rythme tenu, sur une ligne). */
+    await redimensionner(pC33, 1280, 900);
+    await chargerC33(pC33, { sansJalon: true });
+    const mSans = await lireC33(pC33);
+    verifier('C33-ecp : sans jalon (colonne « rythme tenu »), rien ne déborde, tout reste sur la première ligne du nom et aligné',
+      mSans.sansJalon && !fautesC33(mSans).length, JSON.stringify({ sansJalon: mSans.sansJalon, f: fautesC33(mSans) }));
+
+    /* Les autres dimensions du menu (ATA, CC, Date création, Séquence…),
+       avec des noms longs là où la valeur est un texte libre. */
+    const dimsC33 = await pC33.evaluate(() => [...document.querySelectorAll('#dim-critique option')].map(o => o.value));
+    const LONGS_SEQ = ['SEQ 12 — Harnais cockpit gauche, reprise après modification client', 'SEQ 3', 'Séquence de câblage galley avant / zone 200 - lot B', 'SEQ-0004-REPRISE-HARNAIS-PLANCHER-CABINE-ARRIERE'];
+    const fautesDims = [];
+    for (const w of [1280, 1024]) {
+      await redimensionner(pC33, w, 900);
+      for (const d of dimsC33) {
+        await chargerC33(pC33, d === 'sequence' ? { dim: d, champ: 'sequence', noms: LONGS_SEQ } : { dim: d });
+        fautesC33(await lireC33(pC33)).forEach(x => fautesDims.push(w + ' ' + d + ' : ' + x));
+      }
+    }
+    verifier('C33-ecp : dans chaque dimension du menu (' + dimsC33.join(', ') + '), à 1280 et 1024 px, les noms restent dans leur colonne et les chiffres alignés — « SEQ 12 — Harnais… » passe à la ligne après son tiret',
+      dimsC33.length >= 4 && !fautesDims.length, JSON.stringify(fautesDims.slice(0, 8)));
+
+    /* À l'impression : en colonnes (page A4 à l'italienne, 1047 px), puis
+       la mise en page du téléphone (page A4 lue à 717 px). */
+    await redimensionner(pC33, 1280, 900);
+    await chargerC33(pC33);
+    await pC33.emulateMedia({ media: 'print' });
+    await pC33.waitForTimeout(300);
+    const mImpr = await lireC33(pC33);
+    await pC33.setViewportSize({ width: 717, height: 950 }); await pC33.waitForTimeout(400);
+    const mImpr717 = await lireC33(pC33);
+    await pC33.emulateMedia({ media: 'screen' });
+    await redimensionner(pC33, 1280, 900);
+    verifier('C33-ecp : à l’impression, en colonnes comme dans la mise en page du téléphone (717 px), aucun nom ne déborde, « à l’arrêt » à sa place, aucun « … »',
+      !mImpr.telephone && !fautesC33(mImpr, [], true).length && mImpr717.telephone && !fautesC33(mImpr717, [], true).length,
+      JSON.stringify({ colonnes: fautesC33(mImpr, [], true), tel: fautesC33(mImpr717, [], true) }));
+    await cxC33.close();
+  }
+  /* (fin du lot C33-ecp) */
 
 
   await ctx.close();
