@@ -27,6 +27,8 @@ from audit import load_strategy  # noqa: E402
 def read_journal(path):
     j = pd.read_csv(path, sep=";")
     j["t"] = pd.to_datetime(j["time_utc"], format="%Y.%m.%d %H:%M:%S", utc=True)
+    if "replay" in j.columns:
+        pass  # replayed events are genuine paper events (bar-based), keep them
     ent = j[j.event == "ENTRY"].reset_index(drop=True)
     ext = j[j.event == "EXIT"].reset_index(drop=True)
     n = min(len(ent), len(ext))
@@ -41,6 +43,8 @@ def main():
     ap.add_argument("--track", default="trend")
     ap.add_argument("--name", default="donch4h_stop")
     ap.add_argument("--tol_h", type=float, default=4.0)
+    ap.add_argument("--with_costs", action="store_true",
+                    help="compare with the lab's costed R (default: zero-cost lab run, like the EA's paper R)")
     a = ap.parse_args()
     ea = read_journal(a.journal)
     if ea.empty:
@@ -49,7 +53,9 @@ def main():
     t0, t1 = ea.entry_time.min() - pd.Timedelta(days=1), ea.entry_time.max() + pd.Timedelta(days=8)
     mod = load_strategy(a.track)
     m1 = gl.load_m1("xauusd", start=t0 - pd.Timedelta(days=120), end=t1)
-    lab = gl.simulate(m1, mod.make_orders(m1, **mod.FINALISTS[a.name]))
+    from goldlab.sim import Costs
+    zero = None if a.with_costs else Costs(commission=0, slip_bps=0, swap_long=0, swap_short=0)
+    lab = gl.simulate(m1, mod.make_orders(m1, **mod.FINALISTS[a.name]), costs=zero)
     lab = lab[(lab.entry_time >= ea.entry_time.min() - pd.Timedelta(hours=a.tol_h)) &
               (lab.entry_time <= ea.entry_time.max() + pd.Timedelta(hours=a.tol_h))].reset_index(drop=True)
     used, pairs = set(), []
