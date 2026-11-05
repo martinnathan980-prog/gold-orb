@@ -47,7 +47,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = '3d35dfb';
+const EDITION = '20d7359';
 
 // =====================================================================
 //  CONFIGURATION
@@ -1559,6 +1559,9 @@ function getDonneesPourClientLues(contrat) {
       releves: releves,
       jalons: getJalons(modele.feuille),
       contrats: contratsPourLaPage_(contrats),
+      /* Débrief 33 : les contrats prévus, vus dans le sélecteur « en attente
+         du robot » (prevusPourLaPage_) ; [] le plus souvent. */
+      prevus: prevusPourLaPage_(classeur, contrats),
       contrat: modele.feuille
     };
     /* La seconde base, seulement si la configuration en nomme une : la page
@@ -1591,6 +1594,36 @@ function trancheDe_(nom) {
   if (!m) return null;
   const tranche = m[2].replace(/^tranche[\s\-\u2013\u2014_:.]*/i, 'Tranche ');
   return { parent: m[1].replace(/[\s\-\u2013\u2014_:>\u203a]+$/, ''), tranche: tranche };
+}
+
+/**
+ * Débrief 33 — Nathan : « Du moment que j'en crée un, je devais le voir. »
+ * Les contrats prévus (ajoutés dans Administration → Contrats, pas encore
+ * exportés par le robot), pour le sélecteur de la page : vus, pas
+ * choisis — [{ id, contrat, tranche }], le contrat (la famille) nommé comme
+ * celui des contrats affichés, pour qu'une tranche prévue se range sous le
+ * sien. Une tranche prévue d'un contrat masqué ne s'y montre pas. Lu avec
+ * le paquet, donc gardé en cache avec lui : ajouter, renommer ou retirer un
+ * prévu rend le cache caduc (adminEnregistrerContrat, adminRetirerContratPrevu).
+ */
+function prevusPourLaPage_(classeur, contrats) {
+  let prevus = [];
+  try { prevus = contratsPrevus_(classeur); } catch (err) { return []; }
+  if (!prevus.length) return [];
+  const affiches = {}, ids = {};
+  contrats.forEach(function (c) { affiches[familleDuContrat_(c.id)] = true; });
+  prevus.forEach(function (p) { ids[p.id] = true; });
+  let masques = null;
+  return contratsPourLaPage_(contrats.concat(prevus)).filter(function (c) {
+    if (!ids[c.id]) return false;
+    const f = familleDuContrat_(c.id);
+    if (affiches[f]) return true;
+    if (masques === null) {
+      masques = {};
+      try { contratsRetires_(classeur).forEach(function (x) { masques[familleDuContrat_(x)] = true; }); } catch (err) { /* aucun masqué lu */ }
+    }
+    return !masques[f];
+  }).map(function (c) { return { id: c.id, contrat: c.contrat, tranche: c.tranche }; });
 }
 
 /**
@@ -6844,7 +6877,10 @@ function adminEnregistrerContrat(fiche) {
       });
     }
     lot.ecrire();
-    if (aOnglet && (colonnesAEcrire || psn)) marquerDonneesModifiees_();
+    /* Débrief 33 : un prévu ajouté ou renommé change aussi la page (son
+       sélecteur le montre « en attente du robot ») : le paquet en cache,
+       qui porte la liste des prévus, est caduc. */
+    if ((aOnglet && (colonnesAEcrire || psn)) || ajout || renomme) marquerDonneesModifiees_();
   });
   journaliserAdmin_(d.email, ajout ? (famille ? 'tranche ajoutée : ' : 'contrat ajouté : ') + id + ' (GATES « ' + nomGates + ' »)'
     : 'fiche modifiée : ' + id + (renomme ? ' (avant : ' + connu.id + ')' : ''));
@@ -6898,6 +6934,8 @@ function adminRetirerContratPrevu(id) {
     }
     droits = oublierContrat_(c.id, lot, restants, encore.etat === 'prevu');
     lot.ecrire();
+    /* Débrief 33 : le sélecteur de la page ne le montre plus (prevusPourLaPage_). */
+    if (encore.etat === 'prevu') marquerDonneesModifiees_();
   });
   journaliserAdmin_(d.email, (c.etat === 'prevu' ? 'contrat prévu retiré : ' : 'fiche sans onglet oubliée : ') + c.id);
   journaliserDroits_(d.email, droits);
@@ -7531,6 +7569,17 @@ const IMPORT_MAX_REFERENCES = 30000;       // par contrat : ce que la fenêtre r
    export ? » — et celle qu'il faut à l'historique orphelin pour désigner
    son contrat (proprietaireProbable_). */
 const IMPORT_SEUIL_RECOUVREMENT = 0.2;
+/* Débrief 33 : deux contrats d'un même programme ont souvent beaucoup de
+   plans en commun (VRK : 280 de ses 546 plans sont aussi dans THS) — c'est
+   normal, et la fenêtre n'en dit plus rien. L'export d'un contrat qui naît
+   n'est « celui d'un autre » que si les deux listes de plans sont presque
+   les mêmes, dans les deux sens : au moins 90 % de ses plans dans l'autre
+   contrat, et au moins 90 % des plans de l'autre dans l'export. Les 10 %
+   laissent la marge des plans ajoutés ou retirés entre le dernier import de
+   l'autre et ce fichier ; deux contrats différents, même proches, ne se
+   recouvrent pas ainsi dans les deux sens (un petit contrat tout entier
+   dans un grand n'en couvre qu'une part). */
+const IMPORT_SEUIL_COPIE = 0.9;
 const IMPORT_LIMITE_CELLULES = 10000000;   // la limite d'un classeur Google Sheets, cellules vides comprises
 /* Un vrai .xls (ou une page web archivée) se lit en entier dans la fenêtre :
    au-delà, ce n'est pas un export (un .xls s'arrête à 65 536 lignes). */
@@ -7689,6 +7738,7 @@ function parametresImport_(classeur) {
     maxOctetsXls: IMPORT_MAX_OCTETS_XLS,
     pausesReprise: [2000, 6000],
     seuilRecouvrement: IMPORT_SEUIL_RECOUVREMENT,
+    seuilCopie: IMPORT_SEUIL_COPIE,
     contrats: contratsPourImport_(classeur),
     /* Débrief 30 : les contrats prévus dans le tableau de bord, chacun sa
        case : leur premier export GATES y crée leur onglet. */
@@ -10934,8 +10984,13 @@ function scriptImportSecondeBase_(P) {
       if (k.sorte === 'gates' && fwd && optionDe(k.colonnes, fwd) === '') {
         k.etat = 'erreur';
         k.code = 'colonne-elec';
-        k.erreur = 'La colonne de la validation ELEC « ' + fwd.replace('>', '›') + ' » n’est pas dans cet export.' +
-          phraseProches(colonnesProches(fwd, k.colonnes.options, 3)) + ' Corrigez-la dans le tableau de bord → Administration → Contrats.';
+        /* Débrief 33 : l'export d'un autre contrat posé dans la case du prévu
+           (celui de THS dans celle de VRK) — refusé de même, jamais importé ;
+           la fiche n'y est pour rien : on le dit. */
+        var autre = copieDe(k, d);
+        k.erreur = 'La colonne de la validation ELEC « ' + fwd.replace('>', '›') + ' » n’est pas dans cet export.' + (autre
+          ? ' Ses plans sont ceux de « ' + autre.id + ' » : c’est sans doute l’export de « ' + autre.id + ' », pas celui de « ' + k.id + ' ». Rien n’est importé dans « ' + k.id + ' ».'
+          : phraseProches(colonnesProches(fwd, k.colonnes.options, 3)) + ' Corrigez-la dans le tableau de bord → Administration → Contrats.');
       }
     }, function (e) {
       if (k.lecture !== numeroLecture) return;
@@ -11215,6 +11270,53 @@ function scriptImportSecondeBase_(P) {
     return parts;
   }
   function saisieTexte(jetons) { return jetons.join(', ').toUpperCase(); }
+  /* Débrief 33 : « Aucune ligne SEE pour le PSN 3350 » — et lesquels y
+     sont ? Les PSN de l'extract lu (ses lignes gardées par les FILTRES), sans
+     doublon : tous s'il y en a dix au plus ; sinon les dix plus proches de
+     celui cherché — une faute de frappe (3305 pour 3350), un voisin (3360)
+     —, dits dans l'ordre. La liste se fait une fois par extract : chaque
+     morceau de cellule différent n'est réduit qu'une fois. */
+  var PSN_MONTRES = 10;
+  function phrasePsnPresents(d, jetons) {
+    if (!d || !d.psnCellules) return '';
+    if (!d.tousPsn) {
+      var bruts = {}, vus = {}, liste = [];
+      d.psnCellules.forEach(function (t) {
+        String(t).split(/[\s,;]+/).forEach(function (b) {
+          if (!b || bruts['\u0001' + b]) return;
+          bruts['\u0001' + b] = true;
+          var j = norm(b);
+          if (j && !vus['\u0001' + j]) { vus['\u0001' + j] = true; liste.push(j); }
+        });
+      });
+      d.tousPsn = liste;
+    }
+    var tous = d.tousPsn, chiffre = /^\d+$/;
+    if (!tous.length) return '';
+    var ordre = function (a, b) {
+      if (chiffre.test(a) && chiffre.test(b)) return Number(a) - Number(b);
+      return chiffre.test(a) !== chiffre.test(b) ? (chiffre.test(a) ? -1 : 1) : (a < b ? -1 : a > b ? 1 : 0);
+    };
+    var montres = tous;
+    if (tous.length > PSN_MONTRES) {
+      var voulus = (jetons || []).map(norm);
+      var ecart = function (x) {
+        var best = null;
+        voulus.forEach(function (v) {
+          var e = [distanceEdition(v, x), chiffre.test(v) && chiffre.test(x) ? Math.abs(Number(v) - Number(x)) : Infinity];
+          if (!best || e[0] < best[0] || (e[0] === best[0] && e[1] < best[1])) best = e;
+        });
+        return best || [0, 0];
+      };
+      montres = tous.map(function (x) { return { x: x, e: ecart(x) }; })
+        .sort(function (a, b) { return a.e[0] - b.e[0] || (a.e[1] === b.e[1] ? 0 : a.e[1] < b.e[1] ? -1 : 1) || ordre(a.x, b.x); })
+        .slice(0, PSN_MONTRES).map(function (o) { return o.x; });
+    }
+    montres = montres.slice().sort(ordre).map(function (x) { return x.toUpperCase(); });
+    return tous.length > PSN_MONTRES
+      ? ' PSN les plus proches dans l’extract : ' + montres.join(', ') + ' (sur ' + nb(tous.length) + ' PSN différents).'
+      : ' PSN présent' + (montres.length > 1 ? 's' : '') + ' dans l’extract : ' + montres.join(', ') + '.';
+  }
 
   // ------------------------------------------------------------ dessiner
   function majuscule(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
@@ -11451,25 +11553,63 @@ function scriptImportSecondeBase_(P) {
     return m ? { parent: m[1], tranche: m[2].replace(/^tranche[\s\-\u2013\u2014_:.]*/i, 'Tranche ') } : null;
   }
 
+  /* Débrief 33 : l'export d'un autre contrat, presque à coup sûr — presque
+     tous ses plans sont dans ce contrat, ET presque tous les plans de ce
+     contrat sont dans l'export (P.seuilCopie, dans les deux sens) : { id, n }
+     du contrat le plus recouvert, ou null. Avoir beaucoup de plans en commun
+     ne suffit pas : deux contrats d'un même programme en partagent souvent
+     la moitié. Une tranche partage ses plans avec son contrat : sa famille
+     ne compte pas. */
+  function copieDe(k, d) {
+    var nom = contratDe(k), trouve = null;
+    if (!d || !d.refs.length) return null;
+    P.contrats.forEach(function (o) {
+      if (!o.refs.length || (nom && norm(o.id) === norm(nom)) || memeFamille(nom, o.id)) return;
+      var n = communs(d, o);
+      if (n >= P.seuilCopie * d.refs.length && n >= P.seuilCopie * o.refs.length && (!trouve || n > trouve.n)) trouve = { id: o.id, n: n };
+    });
+    return trouve;
+  }
+  /* Débrief 33 : la colonne ELEC de la fiche d'un prévu, trouvée dans son
+     export, dit à elle seule que c'est le sien — les groupes de GATES sont
+     ceux de la tranche : « VRK AA 011 › … » n'est que dans l'export de VRK.
+     Il faut pour cela qu'elle nomme son groupe (« Groupe › Colonne »), et
+     qu'aucun autre contrat ne suive la même colonne. */
+  function elecDeSaFiche(k) {
+    var fleche = function (x) { return String(x || '').replace(/\u203a/g, '>'); };
+    var fwd = k.prevu && k.prevu.colonnes ? fleche(k.prevu.colonnes.fwd) : '';
+    if (fwd.indexOf('>') === -1 || !k.colonnes || !optionDe(k.colonnes, fwd)) return false;
+    var cle = cleDesignation(fwd);
+    return !P.contrats.some(function (o) { return !memeFamille(k.id, o.id) && !!o.colonnes && cleDesignation(fleche(o.colonnes.fwd)) === cle; });
+  }
+
   /* Le doute, dit sans bloquer : un export GATES qui partage peu de plans
      avec l'onglet qu'il va remplacer — l'export d'un autre contrat, peut-être
      (« seulement 3 plans sur 186 en commun avec « HDK » : est-ce bien son
-     export ? ») ; pour un contrat ajouté, un export dont les plans sont déjà
-     ceux d'un contrat du classeur. */
+     export ? ») ; pour un contrat ajouté, un export qui EST celui d'un
+     contrat du classeur (débrief 33 : copieDe). Le robot n'importe pas un
+     fichier ainsi douteux (« Pas importé, par prudence »). */
   function recouvrement(k) {
     var d = k.lu, i;
     if (!d || !d.refs.length) return '';
+    if (k.nouveau || k.prevu) {
+      /* Débrief 33 : VRK, prévu, n'était pas importé par le robot parce que
+         280 de ses 546 plans sont aussi dans THS — c'est normal. Un prévu dont
+         l'export porte la colonne ELEC de sa fiche est le sien : aucun doute.
+         Sinon (un contrat ajouté ici, à la main), le doute ne vient que d'un
+         export qui a les mêmes plans qu'un autre contrat. */
+      if (k.prevu && elecDeSaFiche(k)) return '';
+      var x = copieDe(k, d);
+      return x ? 'Les plans de ce fichier sont ceux de « ' + x.id + ' » (' + nb(x.n) + ' sur ' + nb(d.refs.length) + ') : est-ce l’export de « ' + x.id +
+        ' » ? Il irait alors dans sa case, « GATES ' + x.id + ' ».' : '';
+    }
     var ailleurs = null;
     for (i = 0; i < P.contrats.length; i++) {
       var o = P.contrats[i];
-      if (!k.nouveau && o.id === k.id) continue;
+      if (o.id === k.id) continue;
       if (memeFamille(contratDe(k), o.id)) continue;   // une tranche partage ses plans avec son contrat
       var no = o.refs.length ? communs(d, o) : 0;
       if (no / d.refs.length >= P.seuilRecouvrement && (!ailleurs || no > ailleurs.n)) ailleurs = { id: o.id, n: no };
-    }
-    if (k.nouveau || k.prevu) {
-      return ailleurs ? nb(ailleurs.n) + ' de ses ' + nb(d.refs.length) + ' plans sont déjà dans « ' + ailleurs.id + ' » : est-ce l’export de « ' + ailleurs.id +
-        ' » ? Il irait alors dans sa case, « GATES ' + ailleurs.id + ' ».' : '';
     }
     var c = contratExistant(k.id);
     if (!c || !c.refs.length) return '';
@@ -11795,15 +11935,18 @@ function scriptImportSecondeBase_(P) {
         return suivantSee();
       }
       if (!p.n) {
+        /* Débrief 33 : les PSN que l'extract porte, pour vérifier d'un coup d'œil. */
+        var presents = p.raison === 'aucune' ? phrasePsnPresents(see.lu, p.jetons) : '';
         var b = p.raison === 'aucune'
           ? { ok: true, see: true, avertissement: true, classe: 'avertissement', html: '⚠ « ' + ech(p.cible.id) + ' » : aucune ligne' + ech(motFiltres(see.lu)) + ' pour le PSN ' +
-              ech(saisieTexte(p.jetons)) + ' — ' + ech(pasTouche(p.cible, false)) + '.' }
+              ech(saisieTexte(p.jetons)) + ' — ' + ech(pasTouche(p.cible, false)) + '.' + ech(presents) }
           : { ok: true, see: true, neutre: true, classe: 'neutre', html: '– « ' + ech(p.cible.id) + ' » : ' + (p.raison === 'sans-psn' ? 'pas de PSN, pas de base ' + ech(P.base) : 'pas de base ' + ech(P.base)) +
               ' — ' + ech(pasTouche(p.cible, false)) + '.' };
         /* Débrief 30 : ce que le compte rendu en dit. */
         b.contrat = p.cible.id;
         b.rapport = p.raison === 'aucune'
-          ? { ok: false, code: 'see-aucune', message: 'Aucune ligne ' + P.base + ' pour le PSN ' + saisieTexte(p.jetons) + ' dans l’extract du jour : vérifiez le PSN de ce contrat dans Administration → Contrats.' }
+          ? { ok: false, code: 'see-aucune', message: 'Aucune ligne ' + P.base + ' pour le PSN ' + saisieTexte(p.jetons) + ' dans l’extract du jour : vérifiez le PSN de ce contrat dans Administration → Contrats.' +
+              presents }
           : p.raison === 'sans-psn' ? { ok: true, code: 'see-sans-psn' } : null;
         bilans.push(b);
         return suivantSee();

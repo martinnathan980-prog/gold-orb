@@ -310,6 +310,11 @@
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] { color-scheme: dark; }
 select option { background-color: var(--surface); color: var(--encre); }
+/* Débrief 33 : un contrat « en attente du robot » se voit dans le menu,
+   grisé — le gris du navigateur cédait à la couleur ci-dessus — sous son
+   groupe, qui suit le thème lui aussi. */
+select optgroup { background-color: var(--surface); color: var(--encre-2); }
+select option:disabled { color: var(--encre-3); }
 /* Débrief 26 : en sombre, la sélection et le cadre de panne suivent la page
    (le bleu de Chrome et un cadre crème y éblouissaient). */
 @media (prefers-color-scheme: dark) {
@@ -6016,6 +6021,11 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   }
   var DIMENSIONS, TITRE_DIM, ORDRE_FEUILLE, PLAN_PAR_REF, PLAN_PAR_RACINE, JOURNAL;
   var CONTRATS, CONTRAT;
+  /* Débrief 33 — Nathan : « Du moment que j'en crée un, je devais le voir. »
+     Les contrats prévus (ajoutés dans Administration → Contrats, pas encore
+     exportés par le robot) : [{ id, contrat, tranche }]. Les menus les
+     montrent « en attente du robot », sans qu'on puisse les choisir. */
+  var PREVUS = [];
   var vue = null;
 
   /* Le paquet arrive compacté du classeur (compacterPaquet, Code.gs) : chaque
@@ -6071,6 +6081,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       colonnes: [], plans: [], releves: [],
       jalons: Array.isArray(p.jalons) ? p.jalons : [],
       contrats: Array.isArray(p.contrats) ? p.contrats : [],
+      prevus: Array.isArray(p.prevus) ? p.prevus : [],
       contrat: p.contrat || '',
       message: String(p.message || '') || 'Le classeur n’a renvoyé aucun plan.',
       vide: true
@@ -7241,6 +7252,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         var tranche = c.contrat ? String(c.tranche || '') : coupe.length === 2 ? coupe[1] : '';
         return { id: String(c.id), nom: nom, contrat: famille, tranche: tranche };
       });
+    PREVUS = lirePrevus(src.prevus);
     CONTRAT = (src.contrat !== undefined && src.contrat !== null && src.contrat !== '')
       ? String(src.contrat) : (CONTRATS.length ? CONTRATS[0].id : '');
 
@@ -7436,29 +7448,62 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   function familleCourante(familles) {
     return (familles || famillesDeContrats()).filter(function (f) { return f.membres.some(function (m) { return m.id === CONTRAT; }); })[0] || null;
   }
+  /* Débrief 33 : un prévu lu dans un paquet ou dans l'administration. */
+  function lirePrevus(liste) {
+    return (Array.isArray(liste) ? liste : []).filter(function (p) { return p && p.id !== undefined && p.id !== null && p.id !== ''; })
+      .map(function (p) { return { id: String(p.id), contrat: String(p.contrat || p.id), tranche: String(p.tranche || '') }; });
+  }
+  /* Débrief 33 : les prévus, rangés pour les menus — une tranche prévue
+     sous son contrat affiché (menu « Tranche » : { clé de la famille :
+     [libellés] }) ; un contrat dont rien n'est encore affiché, une fois,
+     dans le menu « Contrat ». Rien tant qu'aucun contrat n'est affiché. */
+  function prevusDesMenus(familles) {
+    var r = { contrats: [], tranches: {}, nb: 0 }, vus = {};
+    if (!CONTRATS.length) return r;
+    PREVUS.forEach(function (p) {
+      var cle = cleContrat(p.contrat);
+      var f = familles.filter(function (x) { return cleContrat(x.nom) === cle; })[0];
+      if (f) {
+        var liste = r.tranches[f.cle] = r.tranches[f.cle] || [], libelle = p.tranche || 'Tranche 1';
+        if (liste.indexOf(libelle) === -1) { liste.push(libelle); liste.sort(COMPARER_REF); r.nb++; }
+      } else if (!vus[cle]) { vus[cle] = true; r.contrats.push(p.contrat); r.nb++; }
+    });
+    return r;
+  }
+  /* Vus, pas choisis : un groupe « En attente du robot » d'options
+     grisées, après les vraies — le clavier les saute, la largeur du menu
+     reste celle de ses noms. */
+  function groupeEnAttente(noms) {
+    return noms.length ? '<optgroup label="En attente du robot">' + noms.map(function (n) {
+      return '<option value="" disabled data-prevu="1">' + ech(n) + '</option>';
+    }).join('') + '</optgroup>' : '';
+  }
   function afficherContrat() {
     var plusieurs = CONTRATS.length > 1;
-    var familles = famillesDeContrats(), courante = familleCourante(familles);
+    var familles = famillesDeContrats(), courante = familleCourante(familles), attente = prevusDesMenus(familles);
     var sel = $('select-contrat'), selT = $('select-tranche');
-    $('choix-contrat').hidden = !plusieurs;
+    /* Débrief 33 : un seul contrat, et un autre qui attend le robot — le
+       menu se montre, pour qu'on voie celui qu'on vient de créer. */
+    $('choix-contrat').hidden = !plusieurs && !attente.nb;
     /* Une option par contrat : sa valeur est la tranche qu'on ouvre en le
        choisissant — l'affichée pour le contrat courant, la première sinon. */
     sel.innerHTML = familles.map(function (f) {
       return '<option value="' + ech(f === courante ? CONTRAT : f.membres[0].id) + '">' + ech(f.nom) + '</option>';
-    }).join('');
+    }).join('') + groupeEnAttente(attente.contrats);
     sel.value = CONTRAT;
     /* Une famille d'une seule tranche nommée (« HDK Tranche 2 » sans « HDK ») le dit aussi. */
-    var tranches = !!courante && (courante.membres.length > 1 || !!courante.membres[0].tranche);
+    var aVenir = courante ? attente.tranches[courante.cle] || [] : [];
+    var tranches = !!courante && (courante.membres.length > 1 || !!courante.membres[0].tranche || aVenir.length > 0);
     /* Débrief 27 (lot H, B7) : dès qu'un contrat du classeur a des tranches,
        la case « Tranche » garde sa place pour tous — un contrat sans tranche
        y lit « unique », son menu (qui n'aurait rien à proposer) caché : la
        barre ne glisse plus de 170 px sous le pointeur entre HDK et THS. */
-    $('choix-tranche').hidden = !familles.some(function (f) { return f.membres.length > 1 || !!f.membres[0].tranche; });
+    $('choix-tranche').hidden = !familles.some(function (f) { return f.membres.length > 1 || !!f.membres[0].tranche || !!attente.tranches[f.cle]; });
     selT.hidden = !tranches;
     $('tranche-unique').hidden = tranches;
     selT.innerHTML = tranches ? courante.membres.map(function (m) {
       return '<option value="' + ech(m.id) + '">' + ech(m.libelle) + '</option>';
-    }).join('') : '';
+    }).join('') + groupeEnAttente(aVenir) : '';
     if (tranches) selT.value = CONTRAT;
     /* Débrief 27 (lot H) : la vue d'ensemble n'a de sens qu'avec plusieurs
        contrats. */
@@ -12461,6 +12506,23 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     delete PAQUETS[id]; delete AVANCES[id]; delete MESSAGES_ENSEMBLE[id];
     afficherContrat();
   }
+  /* Débrief 33 : l'administration relue (un contrat ajouté, renommé,
+     retiré…) dit les prévus du moment : les menus les montrent aussitôt —
+     « je viens de le créer, je le vois » —, et les paquets déjà reçus
+     l'apprennent (changer de contrat ne le fait pas disparaître). Comme le
+     classeur : une tranche prévue d'un contrat masqué ne s'y montre pas. */
+  function suivrePrevusDeLAdmin(r) {
+    if (!r || !Array.isArray(r.prevus) || !CONTRATS) return;
+    var affichees = {}, masquees = {};
+    CONTRATS.forEach(function (c) { affichees[cleContrat(c.contrat)] = true; });
+    (r.retires || []).forEach(function (c) { masquees[cleContrat(c.contrat || c.id)] = true; });
+    var liste = lirePrevus(r.prevus).filter(function (p) { var k = cleContrat(p.contrat); return affichees[k] || !masquees[k]; });
+    var avant = JSON.stringify(PREVUS);
+    PREVUS = liste;
+    if (SRC) SRC.prevus = liste;
+    Object.keys(PAQUETS).forEach(function (k) { if (PAQUETS[k] && typeof PAQUETS[k] === 'object') PAQUETS[k].prevus = liste; });
+    if (JSON.stringify(liste) !== avant) afficherContrat();
+  }
   /* sansReessayer : un échec que redemander ne réparerait pas. */
   function montrerAlerteContrat(texte, sansReessayer) {
     var z = $('alerte-contrat');
@@ -17258,6 +17320,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       occuperAdmin(false);
       if (ADMIN.onglet !== onglet) return;
       ADMIN[onglet] = r;
+      if (onglet === 'contrats') suivrePrevusDeLAdmin(r);
       rendreAdmin();
     }, function (e) {
       occuperAdmin(false);
@@ -17879,6 +17942,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
       occuperAdmin(false);
       ADMIN.contrats = r; ADMIN.confirmer = '';
       PAQUETS = {}; AVANCES = {}; MESSAGES_ENSEMBLE = {};       // gardés avec l'ancienne liste de contrats
+      suivrePrevusDeLAdmin(r);
       /* Le focus va au bouton de la même ligne, devenu son contraire. */
       ADMIN.focusApres = '[data-admin="' + (masquer ? 'reafficher' : 'masquer') + '"][data-id="' + echAttr(id) + '"]';
       if (ADMIN.onglet === 'contrats') rendreAdmin();
@@ -18103,6 +18167,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     appelerServeur('adminEnregistrerContrat', [envoi], function (r) {
       occuperAdmin(false);
       ADMIN.contrats = r; ADMIN.fiche = null; ADMIN.erreurs = {}; ADMIN.garde = null; ADMIN.brouillonFiche = null;
+      suivrePrevusDeLAdmin(r);
       var x = ligneDuContrat(r.enregistre), nom = x ? x.nom : r.enregistre;
       ADMIN.recent = r.enregistre || '';
       if (ADMIN.recent) ADMIN.focusApres = '[data-admin="modifier-fiche"][data-id="' + echAttr(ADMIN.recent) + '"]';
@@ -18175,6 +18240,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     appelerServeur('adminRetirerContratPrevu', [id], function (r) {
       occuperAdmin(false);
       ADMIN.contrats = r; ADMIN.confirmer = '';
+      suivrePrevusDeLAdmin(r);
       if (ADMIN.fiche && ADMIN.fiche.id === id) { ADMIN.fiche = null; ADMIN.erreurs = {}; }
       /* Débrief 31 : une tranche retirée rend le focus à « + Ajouter une
          tranche » de son contrat, s'il est encore là ; sinon (un contrat

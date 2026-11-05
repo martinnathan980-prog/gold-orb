@@ -315,9 +315,19 @@ de 20 % de ses plans (`IMPORT_SEUIL_RECOUVREMENT`) avec l'onglet de sa case
 fait écrire, en ambre, « seulement 3 plans sur 186 en commun avec « HDK » :
 est-ce bien son export ? » — et, si un autre contrat en partage au moins
 20 %, « 180 sont dans « THS » : sa place serait plutôt la case « GATES THS » ».
-Pour un contrat ajouté, un export dont les plans sont déjà ceux d'un contrat
-du classeur : « 40 de ses 40 plans sont déjà dans « HDK » : est-ce l'export
-de « HDK » ? Il irait alors dans sa case, « GATES HDK » ». **Rien n'est
+Pour un contrat ajouté, débrief 33 : des plans en commun sont normaux (VRK
+a 280 de ses 546 plans dans THS) ; seul un export qui **est** celui d'un
+autre contrat fait douter — au moins 90 % de ses plans dans ce contrat ET au
+moins 90 % des plans de ce contrat dans l'export (`IMPORT_SEUIL_COPIE`) :
+« Les plans de ce fichier sont ceux de « HDK » (40 sur 40) : est-ce l'export
+de « HDK » ? Il irait alors dans sa case, « GATES HDK » ». Pour un contrat
+prévu dont l'export porte la colonne ELEC de sa fiche (« VRK AA 011 › … »,
+un groupe qu'aucun autre contrat ne suit), aucun doute : c'est le sien.
+L'export d'un autre contrat dans la case d'un prévu n'a pas sa colonne :
+refusé dès la lecture (`colonne-elec`), et la case dit « Ses plans sont ceux
+de « THS » : c'est sans doute l'export de « THS » ». Le robot n'importe pas
+un fichier qui porte une note (« Pas importé, par prudence ») : c'est ce qui
+laissait VRK sans onglet. **Rien n'est
 déplacé, rien n'est choisi** : Importer reste allumé, et l'export va dans la
 case où il a été posé. Un contrat préparé d'avance (ses en-têtes, sans plan)
 n'a rien à recouper : pas d'avertissement.

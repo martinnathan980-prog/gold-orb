@@ -13896,6 +13896,153 @@ async function deplierFiltresColonne(pg) {
     }
   }
   /* (fin du lot C31) */
+  /* (début du lot C33-vrk) */
+  /* Débrief 33 — Nathan : « je ne vois pas le contrat VRK dans Contrat, il y
+     a juste HDK et THS […] Du moment que j'en crée un, pour moi, je devais
+     le voir. » Un contrat prévu (ajouté dans Administration → Contrats, pas
+     encore exporté par le robot) se voit dans les menus, sous « En attente
+     du robot », grisé : vu, pas choisi. Page VIVANTE (le vrai Code.gs du
+     simulateur derrière google.script.run, comme les lots C30 et C31). */
+  section('Débrief 33 : un contrat créé se voit dans « Contrat », en attente du robot (lot C33-vrk)');
+  {
+    const fsV = require('fs'), osV = require('os');
+    const { construireSimulateur } = require(path.join(__dirname, '..', '..', 'tests', 'construire-simulateur.js'));
+    const fichiersV = [];
+    /* Une page vivante sur un simulateur ; `avant` complète le classeur avant que la page soit servie (Nathan connecté). */
+    const vivanteV = async (avant, o) => {
+      o = o || {};
+      const sim = construireSimulateur({ date: '2026-11-05', avantPage: function (c, classeur) {
+        classeur.proprietaire = 'nathan@airbus.com';
+        c.__emailScript = c.__emailLecteur = 'nathan@airbus.com';
+        if (avant) avant(c, classeur);
+      } });
+      const srv = sim.contexte;
+      const fichier = path.join(osV.tmpdir(), 'suivi-fwd-c33-' + process.pid + '-' + fichiersV.length + '.html');
+      fichiersV.push(fichier);
+      fsV.writeFileSync(fichier, sim.page.replace(/<script>\s*\/\* Simulateur : google\.script\.run[\s\S]*?<\/script>/, ''));
+      const c = await nav.newContext({ viewport: { width: o.largeur || 1440, height: 900 }, colorScheme: o.schema || 'light',
+        isMobile: !!o.mobile, hasTouch: !!o.mobile, locale: 'en-US' });
+      const pg = await c.newPage();
+      brancher(pg, 'lot C33-vrk ' + (o.largeur || 1440) + ' ' + (o.schema || 'light'));
+      await pg.exposeFunction('__appel', (nom, args) => {
+        if (typeof srv[nom] !== 'function' || /_$/.test(nom)) throw new Error('fonction inconnue ' + nom);
+        const r = srv[nom].apply(null, JSON.parse(args));
+        return JSON.stringify(r === undefined ? null : r);
+      });
+      await pg.addInitScript(() => {
+        window.SUIVI_FWD_BUDGET = 1e9;
+        function chaine(ok, ko) {
+          const c = { withSuccessHandler: f => chaine(f, ko), withFailureHandler: f => chaine(ok, f), withUserObject: () => chaine(ok, ko) };
+          return new Proxy(c, { get(t, nom) {
+            if (nom in t) return t[nom];
+            if (typeof nom !== 'string') return undefined;
+            return function () {
+              const args = Array.prototype.slice.call(arguments);
+              setTimeout(() => window.__appel(nom, JSON.stringify(args)).then(j => { if (ok) ok(JSON.parse(j)); },
+                e => { if (ko) ko({ message: String(e.message || e).replace(/^Error: /, '') }); }), 40);
+            };
+          } });
+        }
+        window.google = { script: { run: chaine(null, null) } };
+      });
+      await pg.goto('file://' + fichier);
+      await pg.waitForFunction(() => document.documentElement.getAttribute('data-suivi-fwd') === 'pret', null, { timeout: 30000 });
+      await pg.evaluate(() => { const x = document.querySelector('.simulateur-bandeau'); if (x) x.remove(); });
+      pg.__ctx = c; pg.__srv = srv;
+      return pg;
+    };
+    /* Ce que montrent les deux menus. */
+    const menusV = pg => pg.evaluate(() => {
+      const lire = id => {
+        const s = document.getElementById(id);
+        return { cache: s.hidden || !s.getClientRects().length, valeur: s.value,
+                 options: [...s.querySelectorAll('option')].map(o => ({ texte: o.textContent, valeur: o.value, grise: o.disabled, prevu: o.getAttribute('data-prevu') === '1',
+                   groupe: o.parentElement.tagName === 'OPTGROUP' ? o.parentElement.label : '' })),
+                 largeur: Math.round(s.getBoundingClientRect().width) };
+      };
+      return { choix: !document.getElementById('choix-contrat').hidden, choixTranche: !document.getElementById('choix-tranche').hidden,
+               unique: !document.getElementById('tranche-unique').hidden, ensemble: !document.getElementById('voir-ensemble').hidden,
+               contrat: lire('select-contrat'), tranche: lire('select-tranche') };
+    });
+    try {
+      /* C33-1 : HDK et THS, et deux prévus — VRK (un contrat) et « HDK Tranche 2 » (une tranche de HDK). */
+      const vp = await vivanteV(c => {
+        c.adminEnregistrerContrat({ id: '', nom: 'VRK', nomGates: 'VRK AA', colonnes: { fwd: 'VRK AA 011 > Avancement Définition Electrique', concept: '' }, psn: '4540' });
+        c.adminEnregistrerContrat({ id: '', famille: 'HDK', nom: 'HDK Tranche 2', nomGates: 'HDK AB', colonnes: { fwd: 'HDK AB 011 > Avancement Définition Electrique', concept: '' } });
+      });
+      const m1 = await menusV(vp);
+      verifier('C33 : « Contrat » montre HDK et THS, puis, sous « En attente du robot », VRK — grisé (on ne peut pas le choisir), après les vrais ; HDK reste affiché',
+        m1.choix && m1.contrat.valeur === 'HDK' &&
+        JSON.stringify(m1.contrat.options.map(o => [o.texte, o.grise, o.groupe])) === JSON.stringify([['HDK', false, ''], ['THS', false, ''], ['VRK', true, 'En attente du robot']]) &&
+        m1.contrat.options[2].prevu && m1.contrat.options[2].valeur === '', JSON.stringify(m1.contrat));
+      verifier('C33 : la tranche prévue se range sous son contrat — « Tranche » de HDK : Tranche 1, puis « Tranche 2 » grisée sous « En attente du robot »',
+        m1.choixTranche && !m1.tranche.cache && !m1.unique && m1.tranche.valeur === 'HDK' &&
+        JSON.stringify(m1.tranche.options.map(o => [o.texte, o.grise, o.groupe])) === JSON.stringify([['Tranche 1', false, ''], ['Tranche 2', true, 'En attente du robot']]), JSON.stringify(m1.tranche));
+      verifier('C33 : le menu « Contrat » garde la largeur de ses noms (88 px) — le groupe ne l’élargit pas ; la vue d’ensemble reste là (deux vrais contrats)',
+        m1.contrat.largeur === 88 && m1.ensemble, JSON.stringify([m1.contrat.largeur, m1.ensemble]));
+      /* Le clavier : flèche bas depuis HDK — THS ; encore — rien (VRK grisé est sauté). */
+      await vp.focus('#select-contrat');
+      await vp.keyboard.press('ArrowDown'); await vp.keyboard.press('ArrowDown');
+      await vp.waitForTimeout(1200);
+      await vp.waitForFunction(() => !document.body.hasAttribute('data-attente'), null, { timeout: 20000 }).catch(() => {});
+      const m2 = await menusV(vp);
+      verifier('C33 : au clavier (flèche bas deux fois), le menu va à THS et s’y arrête — VRK, grisé, est sauté ; THS s’affiche, et son paquet montre VRK en attente lui aussi',
+        m2.contrat.valeur === 'THS' && (await vp.evaluate(() => document.getElementById('select-contrat').selectedOptions[0].textContent)) === 'THS' &&
+        (await vp.evaluate(() => window.__parametresDeLaVue().contrat)) === 'THS' && m2.contrat.options.length === 3 && m2.contrat.options[2].texte === 'VRK' && m2.contrat.options[2].grise &&
+        m2.unique && m2.tranche.cache, JSON.stringify(m2));
+      await vp.__ctx.close();
+
+      /* C33-2 : un seul contrat affiché (THS masqué), et VRK prévu : le menu se montre. */
+      const up = await vivanteV(c => {
+        c.adminRetirerContrat('THS', true);
+        c.adminEnregistrerContrat({ id: '', nom: 'VRK', nomGates: 'VRK AA', colonnes: { fwd: 'VRK AA 011 > Avancement Définition Electrique', concept: '' }, psn: '4540' });
+      });
+      const m3 = await menusV(up);
+      verifier('C33 : un seul contrat (HDK) et VRK prévu — « Contrat » se montre, pour qu’on voie celui qu’on vient de créer : HDK, puis VRK en attente ; pas de vue d’ensemble (un seul vrai contrat)',
+        m3.choix && !m3.ensemble && JSON.stringify(m3.contrat.options.map(o => [o.texte, o.grise])) === JSON.stringify([['HDK', false], ['VRK', true]]) &&
+        m3.contrat.valeur === 'HDK', JSON.stringify(m3));
+      /* C33-3 : depuis Administration → Contrats, retirer VRK puis ajouter NEO : les menus suivent aussitôt, sans recharger. */
+      await up.click('#ouvrir-admin');
+      await up.waitForFunction(() => document.getElementById('admin').getAttribute('aria-busy') !== 'true', null, { timeout: 15000 }).catch(() => {});
+      await up.click('#admin-onglets [data-onglet="contrats"]');
+      await up.waitForSelector('#admin-corps table.admin-contrats', { timeout: 15000 });
+      /* (la confirmation n'accepte un clic qu'un instant après s'être montrée : un double clic ne confirme rien) */
+      await up.click('[data-admin="retirer-prevu"][data-id="VRK"]'); await up.waitForTimeout(450);
+      await up.click('[data-admin="retirer-prevu-oui"]');
+      await up.waitForFunction(() => !document.querySelector('#admin-corps tr[data-id="VRK"]'), null, { timeout: 15000 }).catch(() => {});
+      const m4 = await menusV(up);
+      verifier('C33 : VRK retiré dans l’administration — il quitte « Contrat » aussitôt ; seul HDK reste : le menu se cache, comme avant',
+        !m4.choix && m4.contrat.options.length === 1 && m4.contrat.options[0].texte === 'HDK', JSON.stringify(m4));
+      await up.click('[data-admin="ajouter-contrat"]'); await up.waitForTimeout(120);
+      await up.fill('#admin-nomGates', 'NEO AA');
+      await up.fill('#admin-nom', 'NEO');
+      await up.fill('#admin-fwd', 'NEO AA 011 > Avancement Définition Electrique');
+      await up.click('form[data-form="contrat"] [type="submit"]');
+      await up.waitForFunction(() => !!document.querySelector('#admin-corps tr[data-id="NEO"]'), null, { timeout: 15000 }).catch(() => {});
+      const m5 = await menusV(up);
+      verifier('C33 : NEO ajouté dans l’administration — « Contrat » se montre aussitôt, sans recharger la page : HDK, puis NEO en attente du robot',
+        m5.choix && JSON.stringify(m5.contrat.options.map(o => [o.texte, o.grise, o.groupe])) === JSON.stringify([['HDK', false, ''], ['NEO', true, 'En attente du robot']]) &&
+        m5.contrat.valeur === 'HDK', JSON.stringify(m5));
+      await up.__ctx.close();
+
+      /* C33-4 : téléphone (390 px), sombre — propre, rien ne déborde ; le gris de l'option et son groupe suivent le thème. */
+      const tp = await vivanteV(c => {
+        c.adminEnregistrerContrat({ id: '', nom: 'VRK', nomGates: 'VRK AA', colonnes: { fwd: 'VRK AA 011 > Avancement Définition Electrique', concept: '' }, psn: '4540' });
+      }, { largeur: 390, schema: 'dark', mobile: true });
+      const tel = await tp.evaluate(() => {
+        const s = document.getElementById('select-contrat'), g = s.querySelector('optgroup'), o = s.querySelector('option[disabled]'), vrai = s.querySelector('option:not([disabled])');
+        const r = s.getBoundingClientRect(), barre = document.getElementById('reglages').getBoundingClientRect();
+        return { page: document.documentElement.scrollWidth - document.documentElement.clientWidth, dedans: r.left >= barre.left - 1 && r.right <= barre.right + 1,
+                 fondGroupe: getComputedStyle(g).backgroundColor, fondOption: getComputedStyle(vrai).backgroundColor, grise: getComputedStyle(o).color, vraie: getComputedStyle(vrai).color };
+      });
+      verifier('C33 : au téléphone (390 px, sombre) — rien ne déborde, le menu dans sa barre ; l’option en attente est grisée (une autre couleur que les vraies), son groupe sur le fond des options',
+        tel.page <= 0 && tel.dedans && tel.grise !== tel.vraie && tel.fondGroupe === tel.fondOption, JSON.stringify(tel));
+      await tp.__ctx.close();
+    } finally {
+      fichiersV.forEach(f => { try { fsV.unlinkSync(f); } catch (e) { /* déjà parti */ } });
+    }
+  }
+  /* (fin du lot C33-vrk) */
 
 
   await ctx.close();

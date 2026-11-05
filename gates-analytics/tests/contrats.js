@@ -115,6 +115,9 @@ section('Ajouter un contrat : il est « prévu » jusqu’à son premier export'
     JSON.stringify(r.prevus));
   verifier('le journal de l’administration le dit', JSON.parse(ctx.__proprietes.SUIVI_FWD_JOURNAL_ADMIN)[0].quoi === 'contrat ajouté : VRK (GATES « VRK »)',
     ctx.__proprietes.SUIVI_FWD_JOURNAL_ADMIN);
+  /* Débrief 33 : la page le voit désormais, à part (le champ « prevus » du
+     paquet, section « Débrief 33 » plus bas) — mais toujours pas comme un
+     contrat qu'on choisit, ni avec un paquet à lui. */
   verifier('la page des contrats n’en sait rien : ni menu, ni paquet', ctx.contratsPourLaPage_(ctx.listerContrats(c)).every(x => x.id !== 'VRK'));
   const t2 = ctx.adminEnregistrerContrat({ id: '', nom: 'HDK Tranche 3', nomGates: 'HDK', colonnes: { fwd: 'HDK AA 012 > Avancement Définition Electrique' } });
   verifier('une tranche peut venir du même export que son contrat : « HDK Tranche 3 », nom GATES « HDK », rangée sous HDK',
@@ -912,6 +915,50 @@ section('Débrief 31 : la livraison que regarde le robot, vue du site');
   const garde = ctx2.__proprietes.SUIVI_FWD_RAPPORTS;
   verifier('60 contrats aux messages de 500 caractères : toujours sous 8 500 octets, et la livraison du robot gardée',
     Buffer.byteLength(garde, 'utf8') <= 8500 && JSON.parse(garde).robot.livraison === '9f8e7d6' && !!ctx2.adminContrats().robot.livraison, Buffer.byteLength(garde, 'utf8') + ' octets');
+}
+
+// =================================================================
+section('Débrief 33 : la page voit les contrats prévus — « en attente du robot »');
+{
+  /* Nathan : « je ne vois pas le contrat VRK dans Contrat […] Du moment que
+     j'en crée un, pour moi, je devais le voir. » Le paquet de la page porte
+     les prévus : [{ id, contrat, tranche }], le contrat nommé comme celui
+     des contrats affichés. */
+  const { c, ctx, prop } = monde();
+  const marque = () => ctx.__proprietes.SUIVI_FWD_VERSION_DONNEES;
+  let p = ctx.getDonneesPourClient();
+  verifier('sans contrat prévu : « prevus » vide', p.ok && Array.isArray(p.prevus) && p.prevus.length === 0, JSON.stringify(p.prevus));
+  let avant = marque();
+  ctx.adminEnregistrerContrat({ id: '', nom: 'VRK', nomGates: 'VRK AA', colonnes: { fwd: 'VRK AA 011 > Avancement Définition Electrique', concept: '' }, psn: '4540' });
+  verifier('ajouter un prévu rend le cache des paquets caduc (la marque des données change) : la prochaine ouverture le montre', marque() !== avant, String(marque()));
+  ctx.adminEnregistrerContrat({ id: '', famille: 'THS', nom: 'THS Tranche 2', nomGates: 'THS AB', colonnes: { fwd: 'THS AA 011 > Avancement Définition Electrique', concept: '' } });
+  /* Une tranche prévue d'un contrat masqué (VIEUX) : le tableau de bord ne montre pas VIEUX, ni elle. */
+  ctx.adminEnregistrerContrat({ id: '', famille: 'VIEUX', nom: 'VIEUX Tranche 2', nomGates: 'VIEUX AB', colonnes: { fwd: 'VIEUX AB 011 > Avancement Définition Electrique', concept: '' } });
+  p = ctx.getDonneesPourClient();
+  verifier('le paquet de la page : la tranche prévue de THS rangée sous THS, puis VRK ; pas celle de VIEUX (masqué) ; rien d’autre que { id, contrat, tranche }',
+    JSON.stringify(p.prevus) === JSON.stringify([{ id: 'THS Tranche 2', contrat: 'THS', tranche: 'Tranche 2' }, { id: 'VRK', contrat: 'VRK', tranche: '' }]) &&
+    JSON.stringify(p.prevus).length < 120 && p.contrats.every(x => x.id !== 'VRK' && x.id !== 'THS Tranche 2'), JSON.stringify(p.prevus));
+  const autre = ctx.getDonneesPourClient('THS');
+  verifier('… le même dans le paquet de chaque contrat (THS demandé)', JSON.stringify(autre.prevus) === JSON.stringify(p.prevus), JSON.stringify(autre.prevus));
+  const servi = JSON.parse(ctx.jsonDuPaquet_(ctx.paquetCompact_('')));
+  verifier('… et dans le paquet servi à l’ouverture (compacté, mis en cache)', JSON.stringify(servi.prevus) === JSON.stringify(p.prevus), JSON.stringify(servi.prevus));
+  avant = marque();
+  ctx.adminEnregistrerContrat({ id: 'VRK', nom: 'VRK', nomGates: 'VRK AB', colonnes: { fwd: 'VRK AA 011 > Avancement Définition Electrique', concept: '' } });
+  verifier('changer le nom GATES d’un prévu ne change rien pour la page : la marque des données reste', marque() === avant, String(marque()));
+  ctx.adminEnregistrerContrat({ id: 'VRK', nom: 'VRX', nomGates: 'VRK AB', colonnes: { fwd: 'VRK AA 011 > Avancement Définition Electrique', concept: '' } });
+  verifier('le renommer, si : la marque change, et le paquet dit son nouveau nom', marque() !== avant &&
+    ctx.getDonneesPourClient().prevus.map(x => x.id).join() === 'THS Tranche 2,VRX', JSON.stringify(ctx.getDonneesPourClient().prevus));
+  avant = marque();
+  ctx.adminRetirerContratPrevu('VRX');
+  verifier('le retirer aussi : la marque change, il quitte le paquet', marque() !== avant && ctx.getDonneesPourClient().prevus.map(x => x.id).join() === 'THS Tranche 2',
+    JSON.stringify(ctx.getDonneesPourClient().prevus));
+  /* Son premier export crée son onglet : ce n'est plus un prévu, c'est un contrat. */
+  importerGates(ctx, { sorte: 'gates', contrat: 'THS Tranche 2', nouveau: true, prevu: true }, gates(12, 'TT2', 'THS'));
+  p = ctx.getDonneesPourClient();
+  verifier('le robot passé (l’onglet « THS Tranche 2 » créé) : elle quitte « prevus » et devient une tranche qu’on choisit',
+    !!c.getSheetByName('THS Tranche 2') && p.prevus.length === 0 && p.contrats.some(x => x.id === 'THS Tranche 2' && x.contrat === 'THS' && x.tranche === 'Tranche 2'),
+    JSON.stringify([p.prevus, p.contrats]));
+  verifier('sa fiche le retient (« cree ») : elle ne redeviendra jamais « prévue »', typeof prop('SUIVI_FWD_FICHES')['THS Tranche 2'].cree === 'string');
 }
 
 console.log('\n═══════════════════════════════════════');

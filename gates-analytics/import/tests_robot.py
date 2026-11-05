@@ -2505,6 +2505,55 @@ if exe and NODE and SERVEUR.exists():
         serveur.terminate()
         serveur.wait(10)
 
+print('\n— Débrief 33 : VRK a la moitié de ses plans dans THS — le robot l’importe ; l’export de THS dans la case de NEO, jamais —')
+# Nathan : « je ne vois pas le contrat VRK […] 280 lignes des 546 sont déjà
+# dans THS : oui, pas de souci, beaucoup de contrats vont avoir beaucoup de
+# plans en commun. » La fenêtre doutait (« 280 de ses 546 plans sont déjà
+# dans « THS » : est-ce l’export de « THS » ? ») et le robot n’importait pas
+# un fichier douteux : VRK restait sans onglet. La vraie fenêtre (vrai
+# Code.gs), classeur du débrief 33 (tests/fenetre-pour-robot.js, d33).
+if not (exe and NODE and SERVEUR.exists()):
+    print('  (pas de Chrome ou pas de Node sur ce poste : partie sautée)')
+else:
+    import json as _json
+    import subprocess as _sp
+    serveur = _sp.Popen([NODE, str(SERVEUR)], stdout=_sp.PIPE, text=True, cwd=str(SERVEUR.parent.parent), env=dict(os.environ, SUIVI_FWD_SCENARIO='d33'))
+    try:
+        pret = serveur.stdout.readline().split(' ', 2)
+        port, fichiers = int(pret[1]), _json.loads(pret[2])
+        etat_du_serveur = lambda: _json.loads(robot.SANS_PROXY.open('http://127.0.0.1:%d/etat' % port, timeout=10).read().decode())   # noqa: E731
+        robot.PORT = 9461
+        options = ['--no-sandbox'] if hasattr(os, 'geteuid') and os.geteuid() == 0 else []
+        with Chrome(port=robot.PORT, lancer=True, profil=tempfile.mkdtemp(prefix='robot-d33-'), sans_fenetre=True, delai=30, options=options) as c:
+            cfg = {'tableau': 'http://127.0.0.1:%d/exec' % port, 'heure': '14:00'}
+            contrats = robot.contrats_lus(robot.lire_tableau(c, cfg))
+            verifier('le tableau lu : HDK et THS, puis les prévus VRK (nom GATES « VRK AA ») et NEO',
+                     [k['contrat'] for k in contrats] == ['HDK', 'THS', 'VRK', 'NEO'] and
+                     [k['prevu'] for k in contrats] == [False, False, True, True] and contrats[2]['nom_gates'] == 'VRK AA', contrats)
+            sortis = [({'nom': 'GATES ' + k['contrat'], 'case': k['case'], 'contrat': k['contrat'], 'nom_gates': k['nom_gates'] or k['contrat'], 'prevu': k['prevu']},
+                       pathlib.Path(fichiers[k['contrat']])) for k in contrats] + [({'nom': 'SEE', 'case': 'SEE'}, pathlib.Path(fichiers['SEE']))]
+            comptes = [{'contrat': k['contrat'], 'gates': {'tape': k['nom_gates'] or k['contrat']}} for k in contrats]
+            avant_j = journal()
+            res = robot.deposer(c, cfg, sortis, comptes, '2026-11-05T14:01:00+01:00', [])
+            nouveau_j = journal()[len(avant_j):]
+            e = etat_du_serveur()
+            rap = e['rapports']
+            verifier('VRK importé : son onglet créé (et « SEE VRK ») — pas « Pas importé, par prudence » : 25 de ses 49 plans dans THS n’y changent rien',
+                     res['douteux'] == [] and 'par prudence' not in nouveau_j and 'VRK' in e['onglets'] and 'SEE VRK' in e['onglets'] and
+                     rap['contrats']['VRK']['gates']['ok'] is True and rap['contrats']['VRK']['gates']['plans'] == 49 and rap['contrats']['VRK']['see']['ok'] is True,
+                     (res, e['onglets'], nouveau_j[-1200:]))
+            verifier('NEO (l’export de THS dans sa case) : retiré avant l’import, erreur de fiche « colonne-elec » qui dit que c’est l’export de THS ; pas d’onglet, NEO reste prévu',
+                     'NEO' not in e['onglets'] and e['prevus'] == ['NEO'] and len(res['fiche']) == 1 and
+                     'Ses plans sont ceux de « THS » : c’est sans doute l’export de « THS », pas celui de « NEO ».' in res['fiche'][0] and
+                     rap['contrats']['NEO']['gates']['ok'] is False and rap['contrats']['NEO']['gates']['code'] == 'colonne-elec' and
+                     res['techniques'] == [] and res['rapport'] is True, (res, rap['contrats'].get('NEO')))
+            verifier('… THS et HDK remplacés par leurs exports, comme chaque jour ; le passage du robot réussi, une erreur de fiche',
+                     rap['contrats']['THS']['gates']['ok'] is True and rap['contrats']['HDK']['gates']['ok'] is True and
+                     rap['robot']['ok'] is True and rap['robot']['erreursFiche'] == 1, (rap['contrats'], rap['robot']))
+    finally:
+        serveur.terminate()
+        serveur.wait(10)
+
 print('\n— Débrief 31 : l’installateur (suivi-fwd-robot.py.txt) — à jour, avec « 0 - Tout oublier » et « Changer l’adresse du tableau de bord » —')
 import base64 as _b64  # noqa: E402
 import re as _re  # noqa: E402
