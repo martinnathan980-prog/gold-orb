@@ -12,17 +12,17 @@ Toutes les 4 heures (00 h, 04 h, 08 h, 12 h, 16 h, 20 h **UTC**), s'il n'y a pas
 - stop initial = 2 × ATR(14) des bougies de 4 h ; stop suiveur = même distance depuis le meilleur prix, déplacé à chaque clôture de bougie d'une minute ;
 - sortie forcée 5 jours de bourse (heure de New York) après la décision, moins 5 minutes.
 
-Le programme tient une **position fictive** (« papier ») qui applique exactement les règles du simulateur du labo, bougie M1 par bougie M1. Il vous envoie une alerte quand le prix franchit un niveau, une alerte de sortie avec le résultat en R, un bilan chaque vendredi soir, et il écrit tout dans un journal CSV.
+Le programme tient une **position fictive** (« papier ») qui applique exactement les règles du simulateur du labo, bougie M1 par bougie M1. Il vous envoie une alerte quand le prix franchit un niveau (les heures sont données en heure de Paris), une alerte de sortie avec le résultat en R, un bilan chaque vendredi soir, et il écrit tout dans un journal CSV.
 
 ## Les 3 modes (`InpMode`)
 
 | Mode | Ce qu'il fait | Pour qui |
 |---|---|---|
 | **0 – Alertes** (défaut) | aucun ordre ; alertes + position fictive + journal | observer sans risque |
-| **1 – Gestion manuelle** | vous ouvrez la position vous-même après l'alerte ; le programme pose le stop, le fait suivre chaque minute et ferme au bout de 5 jours | si vous tenez à décider de chaque entrée |
+| **1 – Gestion manuelle** | vous ouvrez la position vous-même après l'alerte (même sens, entre 10 min avant et 6 h après le signal) ; le programme la prend en charge : stop posé tout de suite, stop suiveur chaque minute, fermeture au bout de 5 jours | si vous tenez à décider de chaque entrée |
 | **2 – Automatique** | ordres stop OCO chez le courtier, stop suiveur, sortie au temps | **compte démo** d'abord (refusé sur compte réel tant que `InpAllowAutoReal = false`) |
 
-Pourquoi l'automatique est recommandé à terme : dans les tests, entrer à la main 1 à 15 minutes après l'alerte a retiré 25 à 35 % de l'avantage, et les cassures de nuit (heure de Paris) ont pesé un quart des gains.
+Les modes 1 et 2 exigent le bouton **Algo Trading** activé (sinon le programme vous prévient qu'il ne peut ni poser ni déplacer les stops). Pourquoi l'automatique est recommandé à terme : dans les tests, entrer à la main 1 à 15 minutes après l'alerte a retiré 25 à 35 % de l'avantage, et les cassures de nuit (heure de Paris) ont pesé un quart des gains.
 
 ## Installation
 
@@ -45,6 +45,8 @@ Pourquoi l'automatique est recommandé à terme : dans les tests, entrer à la m
 
 - **Push MT5 (gratuit) :** installez l'appli MetaTrader 5 sur le téléphone, menu **Messages**, notez votre **MetaQuotes ID**. Sur l'ordinateur : **Outils > Options > Notifications**, cochez « Activer les notifications push », saisissez l'ID, puis **Test**.
 - **Telegram (optionnel) :** créez un bot avec @BotFather (vous obtenez un *token*), envoyez-lui un message, récupérez votre *chat_id* (par exemple avec @userinfobot). Renseignez `InpTgToken` et `InpTgChat`, puis **Outils > Options > Expert Advisors > Autoriser WebRequest** pour `https://api.telegram.org`.
+
+Les notifications push sont espacées d'au moins 7 secondes (limite de MetaTrader : 10 par minute) ; une alerte n'est jamais perdue, elle attend son tour.
 
 ## Faire tourner en continu (VPS)
 
@@ -75,9 +77,9 @@ Le programme doit tourner 24 h/24, 5 jours sur 5. Le plus simple : clic droit su
 
 ## Fichiers produits
 
-Dans `%APPDATA%\MetaQuotes\Terminal\Common\Files\GoldOrb\` :
-- `journal_XAUUSD.csv` : un événement par ligne (LEVELS, ENTRY, EXIT, WEEK, REAL_*, OFFSET_WARN, DATA_WARN, REPLAY, SPREAD, HEARTBEAT), avec l'heure UTC, l'heure de Paris, l'heure du serveur et le décalage utilisé ;
-- `state_XAUUSD.bin` : l'état (position fictive, niveaux, cumul), rechargé au redémarrage. Après une coupure, le programme **rattrape** les bougies manquées sans renvoyer les vieilles alertes.
+Dans `%APPDATA%\MetaQuotes\Terminal\Common\Files\GoldOrb\` (un jeu de fichiers par compte, pour que deux terminaux sur le même PC ne se mélangent pas) :
+- `journal_XAUUSD_<numéro de compte>.csv` : un événement par ligne (LEVELS, ENTRY, EXIT, WEEK, REAL_*, OFFSET_WARN, DATA_WARN, REPLAY, SPREAD, HEARTBEAT), avec l'heure UTC, l'heure de Paris, l'heure du serveur et le décalage utilisé ;
+- `state_XAUUSD_<numéro de compte>.bin` : l'état (position fictive, niveaux, cumul), rechargé au redémarrage. Après une coupure, le programme **rattrape** les bougies manquées sans renvoyer les vieilles alertes ; en mode automatique, il reprend aussi en charge une position ouverte pendant l'arrêt.
 
 ## Questions fréquentes
 
