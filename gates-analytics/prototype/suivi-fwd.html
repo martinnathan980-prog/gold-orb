@@ -2714,29 +2714,42 @@ button.aide[aria-expanded="true"]::before { border-color: var(--encre); backgrou
 
 .critique-ligne { position: relative; padding: 7px 0; border: none; background: none; width: 100%; text-align: center; font: inherit; color: var(--encre); cursor: pointer; }
 /* Le chevron dit qu'une ligne se déplie, comme les semaines du journal :
-   vers la droite fermée, vers le bas ouverte. */
-.critique-ligne .chevron { position: absolute; left: 8px; top: 50%; margin-top: -4.5px; color: var(--encre-3); transition: transform .12s; }
+   vers la droite fermée, vers le bas ouverte. Débrief 33 : il se pose à
+   hauteur de la première ligne du nom (7 px de marge, puis le milieu d'une
+   ligne de 17 px), comme les chiffres — plus au milieu d'un nom écrit sur
+   trois lignes. */
+.critique-ligne .chevron { position: absolute; left: 8px; top: 11px; margin-top: 0; color: var(--encre-3); transition: transform .12s; }
 .critique-ligne[aria-expanded="true"] .chevron { transform: rotate(90deg); color: var(--encre); }
 .critique-ligne:hover .chevron { color: var(--encre); }
 .critique-ligne:hover { background: var(--creux); }
 .critique-ligne[aria-expanded="true"] { background: var(--creux); box-shadow: inset 3px 0 0 var(--encre); }
 .critique-nom { font-size: 13px; text-align: left; padding-left: 24px; min-width: 0; white-space: normal; overflow-wrap: anywhere; line-height: 1.3; }
+/* Débrief 33 : le tiret entre deux ECP reste collé au code qu'il suit
+   (« APSPOP.28555 - » en fin de ligne, le code suivant au début de la
+   suivante) : l'espace devant le tiret n'est pas un endroit où couper. */
+.critique-nom .nom-colle { white-space: nowrap; }
 /* Le temps de la mesure : chaque nom sur une ligne, pour lire sa largeur. */
 #zone-critique.mesure-nom .critique-nom { white-space: nowrap; overflow-wrap: normal; }
-/* Débrief 24 : un nom trop long pour sa colonne passe au-dessus de sa barre,
-   sur toute la largeur de la ligne, en entier ; les chiffres et la barre
-   restent dessous, dans leurs colonnes, alignés sur ceux des autres lignes.
-   En colonnes seulement : la classe posée à l'écran reste à l'impression
-   (une page A4 fait moins de 720 px) et le temps d'un redimensionnement ;
-   dans la mise en page du téléphone, elle ne doit rien changer. */
+/* Débrief 33 : puis chaque nom à sa plus petite largeur sans couper de mot,
+   pour lire le plus long morceau qu'on ne coupe pas (un code d'ECP et son
+   tiret). */
+#zone-critique.mesure-mot .critique-nom { width: min-content; overflow-wrap: normal; }
+/* Débrief 33 : « dans l'avancement par ECP, des fois la ligne ça déborde
+   vraiment, je trouve ça un petit peu moche ». Le nom trop long passait
+   au-dessus de sa barre, sur toute la largeur (débrief 24) : il courait
+   sur les colonnes voisines et ses chiffres tombaient dessous. Il passe
+   maintenant à la ligne DANS sa colonne, en entier (débrief 23 : jamais de
+   « … »), coupé après le tiret entre deux ECP. Chaque colonne garde sa
+   place, et tout s'aligne sur la première ligne du nom : le chevron, le
+   compte, la barre, la fin estimée et le rythme sur une même ligne ;
+   « n à l'arrêt » et le rythme tenu dessous — qu'un nom tienne sur une
+   ligne ou sur trois. Une première ligne fait 17 px dans chaque colonne
+   (la hauteur de la barre), pour que les textes y tombent au même niveau.
+   En colonnes seulement : au téléphone, la carte a sa propre mise en page. */
 @media not all and (max-width: 720px) {
-  .critique-ligne.nom-dessus { grid-template-rows: auto auto; row-gap: 3px; }
-  .critique-ligne.nom-dessus .critique-nom { grid-column: 1 / -1; grid-row: 1; }
-  .critique-ligne.nom-dessus > .critique-plans { grid-column: 2; grid-row: 2; }
-  .critique-ligne.nom-dessus > .critique-barre { grid-column: 3; grid-row: 2; }
-  .critique-ligne.nom-dessus > .critique-date { grid-column: 4; grid-row: 2; }
-  .critique-ligne.nom-dessus > .critique-effort { grid-column: 5; grid-row: 2; }
-  .critique-ligne.nom-dessus .chevron { top: 10px; margin-top: 0; }
+  .critique-ligne { align-items: start; }
+  .critique-nom, .critique-total, .critique-date .v, .critique-ecart { line-height: 17px; }
+  .critique-ecart small { line-height: 1.25; }
 }
 .critique-tete > span:first-child { justify-content: flex-start; padding-left: 24px; }
 .critique-total {
@@ -2748,11 +2761,18 @@ button.aide[aria-expanded="true"]::before { border-color: var(--encre); backgrou
 /* « 3 à l'arrêt » est un bouton (il montre ces plans dans le tableau), et
    un bouton ne peut pas en contenir un autre : la ligne lui garde sa place
    sous le compte, et le bouton, posé juste après la ligne, remonte s'y
-   loger — même colonne, même police, au ras du bas de la ligne. */
+   loger — même colonne, même police.
+   Débrief 33 : il ne se cale plus sur le bas de la ligne (un nom sur trois
+   lignes l'éloignait de son compte) mais sur son haut, comme le compte : la
+   rangée lui sert de repère, et il descend de la marge de la ligne (7 px),
+   d'une ligne de compte (17 px) et de l'écart de sa place (3 px) — plus,
+   sous une valeur choisie, la ligne « sur 40 » (13,2 + 3 px). */
 .critique-plans .arret-n.place { visibility: hidden; }
-.critique-arret { display: grid; grid-template-columns: var(--cols); column-gap: 14px; height: 0; }
+.critique-cellule { position: relative; }
+.critique-arret { position: absolute; top: 0; left: 0; right: 0; display: grid; grid-template-columns: var(--cols); column-gap: 14px; height: 0; --haut-arret: 27px; }
+.critique-arret.sous-valeur { --haut-arret: 43.2px; }
 .arret-groupe {
-  grid-column: 2; justify-self: center; position: relative; transform: translateY(-100%); margin-top: -7px;
+  grid-column: 2; justify-self: center; position: relative; margin-top: var(--haut-arret);
   border: none; background: none; padding: 0; cursor: pointer; white-space: nowrap;
   font: 11px/1.2 "IBM Plex Sans", system-ui, sans-serif; color: var(--cours);
   text-decoration: underline dotted; text-underline-offset: 2px;
@@ -2859,17 +2879,23 @@ button.aide[aria-expanded="true"]::before { border-color: var(--encre); backgrou
    filtre de toute la page devient un geste à part, dit en toutes lettres,
    dans la liste dépliée : « Filtrer la page sur ATA 39 ». Posé, il prend
    l'aplat sombre des filtres du bandeau FILTRES et dit comment le retirer. */
+/* Débrief 33 : « Filtrer la page sur ECP APSPOP.28555 - APSPOP.29903 -
+   APSPOP.29713 - … » restait sur une ligne et, au téléphone, poussait la
+   page de 350 px vers la droite. Le bouton ne dépasse plus de sa liste : un
+   nom trop long y passe à la ligne, coupé après un tiret comme le nom de la
+   ligne ; un nom court garde ses 28 px de haut. */
 .filtrer-page {
-  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 11px 0 9px;
+  display: inline-flex; align-items: center; gap: 6px; min-height: 28px; max-width: 100%; padding: 4px 11px 4px 9px;
   border: 1px solid var(--bord-champ); border-radius: 6px; background: var(--surface); color: var(--encre);
-  font: 500 13px/1 "IBM Plex Sans", system-ui, sans-serif; cursor: pointer; white-space: nowrap;
+  font: 500 13px/1.3 "IBM Plex Sans", system-ui, sans-serif; cursor: pointer; text-align: left; overflow-wrap: anywhere;
 }
+.filtrer-page .nom-colle { white-space: nowrap; }
 .filtrer-page:hover { border-color: var(--encre); background: var(--creux); }
 .filtrer-page svg { flex: none; }
 .filtrer-page.pose { background: var(--jeton-fond); border-color: var(--jeton-bord); color: var(--jeton-encre); }
 .filtrer-page.pose:hover { background: var(--jeton-fond); box-shadow: 0 0 0 1px var(--jeton-bord); }
 @media (pointer: coarse) {
-  .filtrer-page { height: 44px; }
+  .filtrer-page { min-height: 44px; }
   .plus-liste { min-height: 44px; }
 }
 /* La part de chaque valeur, en toutes lettres, au titre de sa sous-liste
@@ -2927,8 +2953,8 @@ button.aide[aria-expanded="true"]::before { border-color: var(--encre); backgrou
   /* En colonne, plus de place à rejoindre : le bouton « à l'arrêt » se lit
      sous la ligne, au bord droit, comme les nombres. */
   .critique-plans .arret-n.place { display: none; }
-  .critique-arret { display: block; height: auto; text-align: right; padding: 5px 0 9px; }
-  .arret-groupe { transform: none; margin: 0; }
+  .critique-arret { position: static; display: block; height: auto; text-align: right; padding: 5px 0 9px; }
+  .arret-groupe { margin: 0; }
   .critique-nom { text-align: left; font-weight: 500; font-size: 16px; padding-left: 18px; padding-right: 0; }
   .critique-tete > span:first-child { padding-left: 0; }
   /* Le chevron, devant le nom, à hauteur de sa ligne. */
@@ -10257,7 +10283,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
   function boutonFiltrerPage(val, nomG, pose) {
     return '<button type="button" class="filtrer-page' + (pose ? ' pose' : '') + '" id="filtrer-groupe-page" data-filtrer-groupe="' + ech(val) +
       '" title="' + ech(pose ? 'La page entière revient à tous les plans' : 'Synthèse, courbe, tableau : toute la page ne montrera que les plans de ' + nomG) + '">' +
-      iconeEntonnoir() + ech(pose ? 'Retirer le filtre ' + nomG : 'Filtrer la page sur ' + nomG) + '</button>';
+      iconeEntonnoir() + '<span>' + (pose ? 'Retirer le filtre ' : 'Filtrer la page sur ') + nomEnMorceaux(nomG) + '</span></button>';
   }
 
   function jetonUD(p) {
@@ -10795,7 +10821,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         '<span class="masque">' + ech(phrase) + '</span>' +
         '<svg class="chevron" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">' +
         '<path d="m3.5 1.5 3.5 3.5-3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
-        '<span class="critique-nom" aria-hidden="true">' + ech(libelleGroupe(r.nom)) + (filtrePage ? iconeEntonnoir('marque-filtre') : '') + '</span>' +
+        '<span class="critique-nom" aria-hidden="true">' + nomEnMorceaux(libelleGroupe(r.nom)) + (filtrePage ? iconeEntonnoir('marque-filtre') : '') + '</span>' +
         '<span class="critique-plans" aria-hidden="true"><span class="critique-total" data-libelle="plans">' + (vVal ? r.nValeur : r.total) + '</span>' +
         (vVal ? '<small class="sur-n">sur ' + nb(r.total) + (r.gain ? ' · <b title="' + ech(nb(r.gain) + (r.gain > 1 ? ' plans arrivés' : ' plan arrivé') + ' à « ' +
           vVal.libelle + ' » ' + quandDesGains(gains.sem)) + '">+' + nb(r.gain) + '</b>' : '') + '</small>' : '') +
@@ -10806,7 +10832,7 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
         (r.arretClic ? '<small class="arret-n place" aria-hidden="true">' + r.arretClic + ' à l’arrêt</small>' : '') + '</span>' +
         '<span class="critique-barre' + (vVal ? ' focalise' : '') + '" aria-hidden="true">' + barre + '</span>' +
         col3 + col2 + '</button>' +
-        (r.arretClic ? '<div class="critique-arret"><button type="button" class="arret-groupe" data-arret-groupe="' + ech(r.nom) +
+        (r.arretClic ? '<div class="critique-arret' + (vVal ? ' sous-valeur' : '') + '"><button type="button" class="arret-groupe" data-arret-groupe="' + ech(r.nom) +
           '" aria-pressed="' + (arretPresse === r.nom) + '" aria-label="' + ech(nomG + ' : ' + r.arretClic + ' à l’arrêt — ne montrer qu’eux dans la page') +
           '" title="' + ech(r.arretClic + (r.arretClic > 1 ? ' plans en cours n’ont pas bougé' : ' plan en cours n’a pas bougé') +
           ' depuis ' + SEMAINES_ARRET + ' semaines ou plus — ' + (arretPresse === r.nom ? 'cliquez pour retirer le filtre' : 'cliquez pour ne voir qu’eux dans le tableau')) +
@@ -10877,6 +10903,13 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     return '<svg' + (classe ? ' class="' + classe + '"' : '') + ' width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">' +
       '<path d="M1.5 2h9L7 6.2V10l-2-1.1V6.2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>';
   }
+  /* Débrief 33 : le nom d'un groupe, prêt à passer à la ligne dans sa
+     colonne. Entre deux ECP (« APSPOP.28555 - APSPOP.29903 »), le tiret
+     reste collé au code qu'il suit : la ligne se coupe après lui, jamais
+     devant. Le texte lu (textContent) ne change pas. */
+  function nomEnMorceaux(v) {
+    return ech(v).replace(/ ([-\u2013\u2014])(?= )/g, '<span class="nom-colle"> $1</span>');
+  }
   function iconeDeplier() {
     return '<svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">' +
       '<path d="M2 3.5 5 6.5l3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -10913,7 +10946,6 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
     var zone = $('zone-critique');
     if (!zone) return;
     zone.style.removeProperty('--col-nom');
-    [].forEach.call(zone.querySelectorAll('.critique-ligne.nom-dessus'), function (l) { l.classList.remove('nom-dessus'); });
     if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) return;
     var noms = zone.querySelectorAll('.critique-ligne .critique-nom');
     if (!noms.length || !zone.clientWidth) return;
@@ -10921,28 +10953,40 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        ligne), plus la place du chevron : scrollWidth ne descend jamais sous
        la largeur de la colonne, il ne dirait pas qu'un nom est court. */
     zone.classList.add('mesure-nom');
-    var largeurs = [], plage = document.createRange();
+    var large = 0, plage = document.createRange();
     var marge = parseFloat(getComputedStyle(noms[0]).paddingLeft) || 0;
     for (var i = 0; i < noms.length; i++) {
       plage.selectNodeContents(noms[i]);
-      largeurs.push(plage.getBoundingClientRect().width + marge);
+      large = Math.max(large, plage.getBoundingClientRect().width + marge);
     }
     zone.classList.remove('mesure-nom');
     var sansJalon = zone.classList.contains('sans-jalon'), base = sansJalon ? 124 : 118;
     /* Débrief 24 : « des fois la ligne ECP est trop large ». La colonne du
-       nom ne s'élargit plus que jusqu'à 240 px (moins sur un écran étroit,
-       pour que la barre garde au moins 220 px). Un nom plus long que ça ne
-       la pousse pas : il passe au-dessus de sa barre, sur toute la largeur,
-       en entier — les barres restent larges et alignées sous leur en-tête. */
+       nom ne s'élargit que jusqu'à 240 px (moins sur un écran étroit, pour
+       que la barre garde au moins 220 px) : les barres restent larges et
+       alignées sous leur en-tête.
+       Débrief 33 : un nom plus long que ça passe à la ligne dans sa colonne
+       (il ne passe plus au-dessus de sa barre) ; la colonne prend alors
+       toute sa largeur permise, pour qu'il y tienne en le moins de lignes. */
     var fixes = (sansJalon ? 62 : 58) + 140 + 160 + 4 * 14;
     var plafond = Math.max(base, Math.floor(Math.min(240, zone.clientWidth * 0.22, zone.clientWidth - fixes - 220)));
-    var large = 0;
-    largeurs.forEach(function (l, k) {
-      if (l > plafond) noms[k].parentNode.classList.add('nom-dessus');
-      else large = Math.max(large, l);
-    });
+    var col = Math.min(plafond, Math.ceil(large) + 2);
+    /* Débrief 33 : et jamais un code d'ECP coupé en deux quand il peut
+       tenir. Le plus long morceau qu'on ne coupe pas (un code et son tiret,
+       « APSPOP.28555 - », 124 px avec le chevron) se lit à la plus petite
+       largeur de chaque nom ; sur un écran étroit (820 px), où la colonne
+       n'aurait que 118 px, elle s'élargit pour lui — jusqu'à 160 px, tant
+       que la barre garde 100 px. Un code plus long encore (sans tiret, sans
+       espace) se coupe dans sa colonne, sans jamais en sortir. */
+    if (large > col) {
+      zone.classList.add('mesure-mot');
+      var mot = 0;
+      for (var j = 0; j < noms.length; j++) mot = Math.max(mot, noms[j].getBoundingClientRect().width);
+      zone.classList.remove('mesure-mot');
+      col = Math.max(col, Math.min(Math.ceil(mot) + 2, Math.floor(Math.min(160, zone.clientWidth - fixes - 100))));
+    }
     if (large <= base) return;
-    zone.style.setProperty('--col-nom', Math.min(plafond, Math.ceil(large) + 2) + 'px');
+    zone.style.setProperty('--col-nom', col + 'px');
   }
 
   /* L'ordre du sélecteur est celui que donne la source : quand la liste est
@@ -16765,8 +16809,11 @@ body[data-attente="contrat"] .page > section { opacity: .5; transition: opacity 
        arrivées : son tableau tient-il encore dans la carte ? */
     new ResizeObserver(function () { aMesurer('journal'); }).observe($('zone-journal'));
   }
+  /* Débrief 33 : la colonne du nom de groupe aussi — mesurée avant
+     l'arrivée de la police, elle pouvait être trop étroite pour un code
+     d'ECP et son tiret, qui se coupait alors en deux. */
   if (document.fonts) {
-    var remesurer = function () { POLICES_VERIFIEES = {}; LARGEURS_MOTS = {}; aMesurer('barre'); aMesurer('journal'); marquerDebords(); ajusterChoixDim(); };
+    var remesurer = function () { POLICES_VERIFIEES = {}; LARGEURS_MOTS = {}; aMesurer('barre'); aMesurer('journal'); aMesurer('colonneNom'); marquerDebords(); ajusterChoixDim(); };
     if (document.fonts.ready) document.fonts.ready.then(remesurer);
     if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', remesurer);
   }
