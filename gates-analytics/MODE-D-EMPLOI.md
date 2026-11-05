@@ -873,6 +873,23 @@ sa propre fiche, son état et son compte rendu. Le contrat lui-même est la
 contrats) : **+ Ajouter un contrat**, remplir la fiche, **Ajouter le
 contrat**. Il est **« Prévu »** : son onglet sera créé par le robot à son
 prochain passage, avec les colonnes de la fiche. Rien d'autre à faire.
+Débrief 33 : dès qu'il est ajouté, il se voit dans le bandeau, dans la
+liste **Contrat**, sous **« En attente du robot »**, en gris — on ne peut
+pas encore l'ouvrir (il n'a pas de données). Il devient un contrat comme
+les autres après le premier passage du robot. Une tranche prévue se voit
+de même dans la liste **Tranche** de son contrat.
+
+**Des plans en commun, c'est normal** (débrief 33). Deux contrats d'un
+même programme partagent souvent beaucoup de plans (VRK : 280 de ses 546
+plans sont aussi dans THS). La fenêtre d'import n'en dit plus rien, et le
+robot importe le contrat. Elle ne prévient que si le fichier **est**
+l'export d'un autre contrat : presque les mêmes plans dans les deux sens
+(« Les plans de ce fichier sont ceux de « THS » (546 sur 560) : est-ce
+l'export de « THS » ? »). Pour un contrat prévu, la colonne ELEC de sa
+fiche suffit : si elle est dans l'export (« VRK AA 011 › … »), c'est le
+sien. Si l'export de THS arrive dans la case de VRK, la colonne de VRK n'y
+est pas : refusé, jamais importé, et la case le dit (« Ses plans sont ceux
+de « THS » : c'est sans doute l'export de « THS », pas celui de « VRK » »).
 
 **Ajouter une tranche** (débrief 31) : sur la ligne du contrat (par exemple
 THS), **+ Ajouter une tranche**. La fiche s'ouvre avec **Contrat : THS**
@@ -916,7 +933,9 @@ bord), il ne s'efface pas.
 - **✓ Mis à jour aujourd'hui à 14 h 07** : tout va bien.
 - **Encadré rouge** : quelque chose est à corriger dans la fiche (nom GATES
   introuvable, colonne ELEC absente de l'export — les trois plus proches
-  sont proposées —, aucune ligne SEE pour son PSN). Bouton **Corriger la
+  sont proposées —, aucune ligne SEE pour son PSN — débrief 33 : la phrase
+  dit alors les PSN que l'extract porte, ou les dix plus proches s'il y en a
+  beaucoup, pour vérifier d'un coup d'œil). Bouton **Corriger la
   fiche**, corriger, enregistrer : la ligne dit « Fiche corrigée… le robot
   vérifiera à son prochain passage ».
 - **Encadré orange** : à vérifier, mais le reste a été mis à jour (par
@@ -956,7 +975,9 @@ ou **Oublier la fiche**.
 
 Dans le bandeau, **Contrat** (HDK, THS…) puis, si ce contrat a des
 tranches, **Tranche** (Tranche 1, Tranche 2…). Le contrat lui-même est la
-« Tranche 1 ». Un contrat sans tranche n'a qu'une liste.
+« Tranche 1 ». Un contrat sans tranche n'a qu'une liste. Un contrat (ou une
+tranche) ajouté mais pas encore passé par le robot est en bas de la liste,
+en gris, sous **« En attente du robot »** (débrief 33).
 
 ### Les plans à quantité 0
 
@@ -1041,6 +1062,7 @@ onglet, et ce qui manque. Puis :
 | Diagnostic : « ⚠ SEE HDK : aucune ligne gardée sur … — le PSN … n'est dans aucune ligne gardée par les autres tris : est-ce le bon ? » | L'extract de tous les porteurs est collé dans l'onglet, mais aucune de ses lignes WD ne porte le PSN du contrat | Vérifier le PSN du contrat (case SEE de la fenêtre d'import, ou `CONFIG.RAPPROCHEMENT.PSN`) |
 | La fenêtre d'import dit « Ni un export GATES ni un export SEE » | Le fichier n'est ni l'un ni l'autre — ou SEE a renommé une de ses colonnes NAME / SOL. / Cust.V (la fenêtre cite la ligne la plus proche et ce qui lui manque) | Retirer ce fichier ; si c'est bien un export et que ses intitulés ont changé, me les envoyer (les intitulés seulement, pas les données) |
 | Dans une case GATES, en ambre : « seulement 3 plans sur 186 en commun avec « HDK » : est-ce bien son export ? » | L'export posé partage peu de plans avec l'onglet qu'il va remplacer : l'export d'un autre contrat, peut-être (la note nomme la case où ses plans se trouvent, quand elle la connaît). Rien n'est déplacé, **Importer reste allumé** | Vérifier le fichier ; s'il est d'un autre contrat, le **Retirer** et le poser dans la case de ce contrat |
+| Dans la case d'un nouveau contrat, en ambre : « Les plans de ce fichier sont ceux de « THS » (546 sur 560) : est-ce l'export de « THS » ? » (débrief 33) | Le fichier a presque les mêmes plans que THS, dans les deux sens : c'est sans doute l'export de THS. Des plans en commun ne suffisent pas à faire douter (deux contrats en partagent souvent la moitié). Le robot n'importe pas un fichier ainsi douteux | Vérifier le fichier, et le nom GATES de la fiche du nouveau contrat |
 | La fenêtre dit « Le même fichier, « … », est dans les cases « GATES HDK » et « GATES THS » » | Le même export posé dans deux cases ; la date de chaque fichier est dans sa case | **Retirer** celui qui n'est pas à sa place, et poser le bon export dans cette case |
 | La fenêtre dit « La ligne d'en-têtes de cet export GATES est en ligne 14 » | Le fichier a été retouché (des lignes ajoutées en haut) : la page ne trouverait pas ses en-têtes | Le retélécharger de GATES tel quel |
 | Dans une case GATES, ✗ « Colonne suivie absente de cet export… L'ancien onglet « HDK » est intact » | La page ne trouverait pas la colonne suivie dans cet export, alors qu'elle la trouve dans l'onglet actuel : un export d'un autre contrat ou d'un autre programme, ou un `.csv` sans sa ligne de groupes. Rien n'est remplacé, rien n'est archivé | Vérifier que l'export est dans la case de son contrat ; importer l'export **Excel** (`.xlsx`, ou `.xls` d'Excel 97-2003) de GATES de ce contrat |

@@ -1874,11 +1874,16 @@ const paquetSansDate = o => { const x = JSON.parse(JSON.stringify(o)); delete x.
     verifier('la liste des contrats relue, la case qui a créé « NEO » devient la sienne, « GATES NEO », avec son résultat ; « Ajouter un contrat… » reste là',
       apres.cases.join() === 'g:HDK,g:NEO,see' && !!caseNeo && caseNeo.etat === 'fait' && /onglet « NEO » créé/.test(caseNeo.resultat) &&
       await page.isVisible('#ajouter'), JSON.stringify([apres.cases, caseNeo]));
-    /* Un contrat ajouté dont l'export a les plans d'un contrat du classeur : la case prévient. */
+    /* Un contrat ajouté dont l'export a les plans d'un contrat du classeur : la case prévient.
+       Débrief 33 : la règle a changé (des plans en commun sont normaux ; seul
+       un export aux mêmes plans qu'un autre contrat, dans les deux sens, fait
+       douter) — celui-ci a exactement ceux de HDK : la case prévient encore,
+       avec des mots plus simples (avant : « 40 de ses 40 plans sont déjà dans
+       « HDK » : est-ce l’export de « HDK » ? … »). */
     const id2 = await ajouterContrat(page, 'VRK', { nom: 'copie.xlsx', contenu: xlsxGates(gates(40)) });
     n = await laCase(page, id2);
     verifier('un contrat ajouté dont l’export porte les plans de « HDK » : la case prévient, sans bloquer — est-ce l’export de « HDK » ?',
-      n.note === '40 de ses 40 plans sont déjà dans « HDK » : est-ce l’export de « HDK » ? Il irait alors dans sa case, « GATES HDK ».' && !(await fenetreEtat(page)).desactive,
+      n.note === 'Les plans de ce fichier sont ceux de « HDK » (40 sur 40) : est-ce l’export de « HDK » ? Il irait alors dans sa case, « GATES HDK ».' && !(await fenetreEtat(page)).desactive,
       JSON.stringify(n));
     /* Deux cases pour le même nouveau contrat, puis une case nommée sans fichier : « Importer » attend. */
     const id3 = await ajouterContrat(page, 'vrk');
@@ -3107,9 +3112,82 @@ const paquetSansDate = o => { const x = JSON.parse(JSON.stringify(o)); delete x.
     const rap = ctx.rapportsEnregistres_();
     verifier('importé : THS a sa base ; pour HDK, aucune ligne — le compte rendu le dit en clair (data-codes « see-aucune »), et l’administration en rouge',
       /\bok\b/.test(r.classe) && etat.rapport === 'ok' && etat.codes === 'see-aucune' && rap.contrats.HDK.see.ok === false && rap.contrats.HDK.see.code === 'see-aucune' &&
-      rap.contrats.HDK.see.message === 'Aucune ligne SEE pour le PSN 4530 dans l’extract du jour : vérifiez le PSN de ce contrat dans Administration → Contrats.' &&
+      /* Débrief 33 : le message dit aussi les PSN que l'extract porte (ici 4610 et 4700), pour vérifier d'un coup d'œil. */
+      rap.contrats.HDK.see.message === 'Aucune ligne SEE pour le PSN 4530 dans l’extract du jour : vérifiez le PSN de ce contrat dans Administration → Contrats. ' +
+        'PSN présents dans l’extract : 4610, 4700.' &&
       rap.contrats.THS.see.ok === true && rap.contrats.THS.see.lignes === 12 && !rap.contrats.NEO &&
       ctx.adminContrats().actifs.filter(x => x.id === 'HDK')[0].suivi.niveau === 'erreur', JSON.stringify([r.texte, etat, rap.contrats]));
+    await page.close();
+  }
+
+  // =================================================================
+  section('Débrief 33 : des plans en commun ne font plus douter — seul l’export d’un autre contrat');
+  {
+    /* Nathan : « je ne vois pas le contrat VRK […] 280 lignes des 546 sont
+       déjà dans THS : oui, pas de souci, beaucoup de contrats vont avoir
+       beaucoup de plans en commun. » Le robot n'importait pas un export
+       ainsi « douteux » (« Pas importé, par prudence ») : VRK n'avait pas
+       d'onglet, donc pas de place dans le menu « Contrat ». */
+    const c = new Classeur([ongletGates('HDK', gates(40)), ongletGates('THS', gates(50, { prefixe: 'THS', groupe: 'THS' }))]);
+    c.proprietaire = 'nathan@airbus.com';
+    const ctx = serveur(c, psnGardes({ THS: ['3350'] }));
+    ctx.__emailScript = ctx.__emailLecteur = 'nathan@airbus.com';
+    ctx.adminEnregistrerContrat({ id: '', nom: 'VRK', nomGates: 'VRK AA', colonnes: { fwd: 'VRK AA 011 > Avancement Définition Electrique', concept: '' }, psn: '4540' });
+    /* Une fiche dont la colonne ELEC ne nomme pas son groupe : elle ne dit pas à qui est l'export. */
+    ctx.adminEnregistrerContrat({ id: '', nom: 'ZED', nomGates: 'ZED AA', colonnes: { fwd: 'Avancement Définition Electrique', concept: '' } });
+    const refsTHS = gates(50, { prefixe: 'THS' }).valeurs.slice(3).map(l => l[I_REF]);
+    /* L'export de VRK : 49 plans, dont 25 sont aussi dans THS (51 %). */
+    const exportVRK = gates(49, { groupe: 'VRK', refs: i => i < 25 ? refsTHS[i] : 'VRK-' + (5000 + i) });
+    const exportTHS = gates(50, { prefixe: 'THS', groupe: 'THS' });
+    const page = await fenetre(ctx, rapide);
+    let k = await poser(page, 'g:VRK', [{ nom: 'Export THS.xlsx', contenu: xlsxGates(exportTHS) }]);
+    const code = await page.evaluate(() => document.querySelector('[data-case="g:VRK"]').getAttribute('data-code'));
+    let ui = await fenetreEtat(page);
+    verifier('l’export de THS posé dans la case du prévu VRK : refusé dès la lecture (data-code « colonne-elec » : la colonne de sa fiche n’y est pas), et la case dit que c’est l’export de THS ; « Importer » attend',
+      k.etat === 'erreur' && code === 'colonne-elec' &&
+      k.lu === '✗ La colonne de la validation ELEC « VRK AA 011 › Avancement Définition Electrique » n’est pas dans cet export. ' +
+        'Ses plans sont ceux de « THS » : c’est sans doute l’export de « THS », pas celui de « VRK ». Rien n’est importé dans « VRK ».' &&
+      ui.desactive && /qui ne s’importe pas/.test(ui.blocage), JSON.stringify([k.lu, code, ui.blocage]));
+    k = await poser(page, 'g:VRK', [{ nom: 'Export VRK.xlsx', contenu: xlsxGates(exportVRK) }]);
+    ui = await fenetreEtat(page);
+    verifier('le vrai export de VRK : 25 de ses 49 plans sont aussi dans THS (51 %), et il porte la colonne ELEC de sa fiche — aucun avertissement (le robot l’importera), « Importer » prêt',
+      k.etat === 'lu' && k.note === '' && /^Créera l’onglet « VRK » : un contrat prévu/.test(k.cible) && !ui.desactive, JSON.stringify([k, ui.blocage]));
+    /* Un prévu dont la colonne ne nomme pas son groupe : seul l'export aux mêmes plans qu'un autre fait douter. */
+    k = await poser(page, 'g:ZED', [{ nom: 'Export THS bis.xlsx', contenu: xlsxGates(exportTHS) }]);
+    verifier('un prévu dont la fiche dit la colonne ELEC sans son groupe, et l’export exact de THS dans sa case : la case prévient — mêmes plans que THS',
+      k.etat === 'lu' && k.note === 'Les plans de ce fichier sont ceux de « THS » (50 sur 50) : est-ce l’export de « THS » ? Il irait alors dans sa case, « GATES THS ».',
+      JSON.stringify(k));
+    k = await poser(page, 'g:ZED', [{ nom: 'Export ZED.xlsx', contenu: xlsxGates(gates(49, { groupe: 'ZED', refs: i => i < 25 ? refsTHS[i] : 'ZED-' + (6000 + i) })) }]);
+    verifier('… et le sien, qui partage la moitié de ses plans avec THS : aucun avertissement', k.etat === 'lu' && k.note === '', JSON.stringify(k));
+    await page.click('[data-case="g:ZED"] .retirer');
+    /* À la main, « Ajouter un contrat… » : le même principe. */
+    const n1 = await ajouterContrat(page, 'NOR', { nom: 'nor.xlsx', contenu: xlsxGates(gates(49, { groupe: 'NOR', refs: i => i < 25 ? refsTHS[i] : 'NOR-' + (7000 + i) })) });
+    let n = await laCase(page, n1);
+    verifier('un contrat ajouté à la main qui partage la moitié de ses plans avec THS : aucun avertissement', n.etat === 'lu' && n.note === '', JSON.stringify(n));
+    /* 46 des 50 plans de THS, et 4 autres : 92 % dans les deux sens — l'export de THS, une semaine plus tard. */
+    await poser(page, n1, [{ nom: 'nor2.xlsx', contenu: xlsxGates(gates(50, { groupe: 'NOR', refs: i => i < 46 ? refsTHS[i] : 'NOR-' + (7000 + i) })) }]);
+    n = await laCase(page, n1);
+    verifier('… qui a 46 des 50 plans de THS et 4 autres (92 % dans les deux sens : l’export de THS, quelques jours plus tard) : la case prévient',
+      n.note === 'Les plans de ce fichier sont ceux de « THS » (46 sur 50) : est-ce l’export de « THS » ? Il irait alors dans sa case, « GATES THS ».', JSON.stringify(n));
+    /* Tous les plans de THS, et autant d'autres : THS y est tout entier, mais ce n'est que la moitié du fichier. */
+    await poser(page, n1, [{ nom: 'nor3.xlsx', contenu: xlsxGates(gates(100, { groupe: 'NOR', refs: i => i < 50 ? refsTHS[i] : 'NOR-' + (7000 + i) })) }]);
+    n = await laCase(page, n1);
+    verifier('… qui contient tous les plans de THS, et autant d’autres : un contrat plus grand, pas l’export de THS — aucun avertissement', n.note === '', JSON.stringify(n));
+    await page.click('[data-case="' + n1 + '"] .annuler');
+    /* L'extract SEE : rien pour THS (3350) ; treize PSN différents. */
+    const autres = ['3305', '3340', '3351', '3360', '3400', '3500', '4000', '4100', '4200', '4300', '4700'];
+    k = await poser(page, 'see', [{ nom: 'Nommage WD BFLOW.xlsx', contenu: seeComplet(40, i => ({ psn: i < 12 ? '4530' : i < 20 ? '4540' : autres[i % autres.length], type: 'WD' })) }]);
+    const r = await lancer(page);
+    const rap = ctx.rapportsEnregistres_();
+    verifier('importé : VRK a son onglet (et « SEE VRK ») — les plans partagés avec THS n’ont rien empêché ; THS et HDK intacts',
+      /\bok\b/.test(r.classe) && !!c.getSheetByName('VRK') && !!c.getSheetByName('SEE VRK') && ctx.contratsPrevus_(c).map(x => x.id).join() === 'ZED' &&
+      c.getSheetByName('THS').valeurs.length === exportTHS.valeurs.length && rap.contrats.VRK.gates.ok === true && rap.contrats.VRK.gates.plans === 49,
+      r.texte + ' / ' + nomsOnglets(c).join(', '));
+    verifier('THS, sans ligne pour son PSN 3350 : le message dit les dix PSN de l’extract les plus proches (sur 13), dans l’ordre — de quoi vérifier d’un coup d’œil',
+      rap.contrats.THS.see.code === 'see-aucune' &&
+      rap.contrats.THS.see.message === 'Aucune ligne SEE pour le PSN 3350 dans l’extract du jour : vérifiez le PSN de ce contrat dans Administration → Contrats. ' +
+        'PSN les plus proches dans l’extract : 3305, 3340, 3351, 3360, 3400, 3500, 4000, 4100, 4200, 4300 (sur 13 PSN différents).' &&
+      /⚠ « THS » : aucune ligne WD pour le PSN 3350 — .*\. PSN les plus proches dans l’extract : 3305, 3340, 3351/.test(r.texte), JSON.stringify([rap.contrats.THS, r.texte]));
     await page.close();
   }
 

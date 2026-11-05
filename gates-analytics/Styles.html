@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "3d35dfb";
+  --suivi-fwd-edition: "20d7359";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -306,6 +306,11 @@
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] { color-scheme: dark; }
 select option { background-color: var(--surface); color: var(--encre); }
+/* Débrief 33 : un contrat « en attente du robot » se voit dans le menu,
+   grisé — le gris du navigateur cédait à la couleur ci-dessus — sous son
+   groupe, qui suit le thème lui aussi. */
+select optgroup { background-color: var(--surface); color: var(--encre-2); }
+select option:disabled { color: var(--encre-3); }
 /* Débrief 26 : en sombre, la sélection et le cadre de panne suivent la page
    (le bleu de Chrome et un cadre crème y éblouissaient). */
 @media (prefers-color-scheme: dark) {

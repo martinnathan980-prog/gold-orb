@@ -33,7 +33,11 @@
 
    Débrief 31 (relu) : /exec?d30=1 sert la fenêtre comme le débrief 30 la
    montrait — le pont et les fiches, mais pas data-livraison sur le pont
-   (un robot d'aujourd'hui doit la dire plus ancienne que lui). */
+   (un robot d'aujourd'hui doit la dire plus ancienne que lui).
+
+   Débrief 33 : SUIVI_FWD_SCENARIO=d33 sert un autre classeur — HDK, THS,
+   et les prévus VRK (la moitié de ses plans sont aussi dans THS) et NEO
+   (dans sa case, l'export de THS) : voir plus bas. */
 'use strict';
 const fs = require('fs');
 const os = require('os');
@@ -66,20 +70,41 @@ function extractSee(psnDe, n) {
   return xlsx({ onglets: [{ nom: 'Nommage', lignes }] });
 }
 
-const classeur = new Classeur([new Feuille('HDK', gates(40).valeurs, false, gates(40).fusions)]);
+/* Débrief 33 : SUIVI_FWD_SCENARIO=d33 — le classeur de Nathan le jour où
+   VRK n'a pas été importé : HDK, THS (50 plans, ses groupes « THS AA … »),
+   et deux prévus. VRK : 49 plans, dont 25 sont aussi dans THS (51 %),
+   avec la colonne ELEC de sa fiche — le robot doit l'importer. NEO : dans
+   sa case, l'export de THS (ses colonnes « THS AA … ») — refusé, jamais
+   importé. */
+const D33 = process.env.SUIVI_FWD_SCENARIO === 'd33';
+const ths = gates(50, { prefixe: 'THS', groupe: 'THS' });
+const classeur = new Classeur([new Feuille('HDK', gates(40).valeurs, false, gates(40).fusions)]
+  .concat(D33 ? [new Feuille('THS', ths.valeurs.map(l => l.slice()), false, ths.fusions.map(f => Object.assign({}, f)))] : []));
 classeur.proprietaire = 'nathan@airbus.com';
 const ctx = chargerServeur(classeur, {}, undefined, process.env.SUIVI_FWD_CODE_GS ? fs.readFileSync(process.env.SUIVI_FWD_CODE_GS, 'utf8') : undefined);
 ctx.__emailScript = ctx.__emailLecteur = 'nathan@airbus.com';
-ctx.adminEnregistrerContrat({ id: '', nom: '', nomGates: 'VRK', colonnes: { fwd: 'VRK AA 011 > Avancement Définition Electrique', concept: '' }, psn: '4540' });
-ctx.adminEnregistrerContrat({ id: '', nom: '', nomGates: 'NEO', colonnes: { fwd: 'NEO AA 011 > Avancement Definition Electrik', concept: '' } });
+/* (THS suit la colonne ELEC de ses groupes, comme chez Nathan.) */
+if (D33) ctx.adminEnregistrerContrat({ id: 'THS', nom: 'THS', nomGates: 'THS AA', colonnes: { fwd: 'THS AA 011 > Avancement Définition Electrique', concept: '' } });
+ctx.adminEnregistrerContrat({ id: '', nom: D33 ? 'VRK' : '', nomGates: D33 ? 'VRK AA' : 'VRK', colonnes: { fwd: 'VRK AA 011 > Avancement Définition Electrique', concept: '' }, psn: '4540' });
+ctx.adminEnregistrerContrat({ id: '', nom: '', nomGates: 'NEO', colonnes: { fwd: D33 ? 'NEO AA 011 > Avancement Définition Electrique' : 'NEO AA 011 > Avancement Definition Electrik', concept: '' } });
 
 const dossier = fs.mkdtempSync(path.join(os.tmpdir(), 'fenetre-robot-'));
 const fichiers = {
   HDK: path.join(dossier, 'gates-hdk.xlsx'), VRK: path.join(dossier, 'gates-vrk.xlsx'), NEO: path.join(dossier, 'gates-neo.xlsx'), SEE: path.join(dossier, 'see.xlsx')
 };
 fs.writeFileSync(fichiers.HDK, xlsxGates(gates(40)));
-fs.writeFileSync(fichiers.VRK, xlsxGates(gates(25, { prefixe: 'VRK', groupe: 'VRK' })));
-fs.writeFileSync(fichiers.NEO, xlsxGates(gates(15, { prefixe: 'NEO', groupe: 'NEO' })));
+if (D33) {
+  const refsTHS = ths.valeurs.slice(3).map(l => l[I_REF]);
+  const vrk = gates(49, { prefixe: 'VRK', groupe: 'VRK' });
+  vrk.valeurs.forEach((l, r) => { if (r >= 3 && r - 3 < 25) l[I_REF] = refsTHS[r - 3]; });
+  fichiers.THS = path.join(dossier, 'gates-ths.xlsx');
+  fs.writeFileSync(fichiers.THS, xlsxGates(ths));
+  fs.writeFileSync(fichiers.VRK, xlsxGates(vrk));
+  fs.writeFileSync(fichiers.NEO, xlsxGates(ths));
+} else {
+  fs.writeFileSync(fichiers.VRK, xlsxGates(gates(25, { prefixe: 'VRK', groupe: 'VRK' })));
+  fs.writeFileSync(fichiers.NEO, xlsxGates(gates(15, { prefixe: 'NEO', groupe: 'NEO' })));
+}
 fs.writeFileSync(fichiers.SEE, extractSee(i => i < 20 ? '4530' : i < 35 ? '4540' : '4700', 40));
 
 /* google.script.run, relié au serveur par POST /appel (le cadre est de la même origine que /appel). */
