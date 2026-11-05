@@ -1,0 +1,50 @@
+{
+ "frozen_at_utc": "2026-11-05T18:38",
+ "protocol": "PROTOCOL.md section 2 criterion 8 + Amendment 1. Holdout = 2026-01-01 -> latest available Dukascopy data. Downloaded ONCE after this file is committed; nothing is tuned afterwards; every result below is reported.",
+ "candidates": [
+  {
+   "track": "trend",
+   "name": "donch4h_stop",
+   "status": "PASS",
+   "decisive_scenario": "prereg",
+   "note": "passes all IS+VAL criteria under the primary cost model"
+  },
+  {
+   "track": "orb",
+   "name": "orb_asia_2d_buf10",
+   "status": "CONDITIONAL",
+   "decisive_scenario": "low_cost_ecn",
+   "note": "fails the primary-cost IS bar (PF 1.177, t 1.83 on patched data); passes all criteria under low_cost_ecn (IS 1.315 t 2.96, VAL 1.21, orders rebuilt on scenario quotes)"
+  }
+ ],
+ "cost_scenarios": {
+  "prereg": {},
+  "low_cost_ecn": {
+   "commission": 0.07,
+   "slip_bps": 0.75,
+   "swap_long": 0.046,
+   "swap_short": 0.0,
+   "spread_mult": 0.35
+  },
+  "typical_retail": {
+   "commission": 0.0,
+   "slip_bps": 1.0,
+   "swap_long": 0.06,
+   "swap_short": 0.015,
+   "spread_mult": 1.0
+  }
+ },
+ "pass_rule": "holdout PF > 1.0 under the candidate's decisive scenario",
+ "reading_bands": {
+  "strong support": "PF >= 1.4",
+  "consistent but weak": "1.0 < PF < 1.4",
+  "weakly against": "0.8 <= PF <= 1.0",
+  "strong evidence against": "PF < 0.8"
+ },
+ "reading_note": "Bands declared before the download, following the statistical review: ~10 months (~50-100 trades) has low power; a long-only profit in a rising 2026 cannot be told apart from beta, so long/short split and gold's 2026 change are reported alongside.",
+ "also_reported_not_criteria": [
+  "every-signal diagnostic (no_overlap=False)",
+  "typical_retail scenario",
+  "long vs short split"
+ ]
+}

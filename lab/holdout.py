@@ -123,6 +123,12 @@ def main():
             h.to_csv(os.path.join(OUT, f'trades__{c["track"]}__{c["name"]}__{sname}.csv'))
             print(key, sname, {k: rep.get(k) for k in ("n", "pf", "expectancy_R", "t_stat", "win_rate",
                                                           "long_R", "short_R", "weeks_pos_pct", "max_dd_R")}, flush=True)
+        # diagnostic (not a criterion): every signal traded, decisive scenario
+        dc = cands["cost_scenarios"][c["decisive_scenario"]]
+        te = gl.sim.simulate_rebuilt(m1, mod.make_orders, params, sym=sym, costs=Costs(**dc) if dc else None,
+                                     no_overlap=False)
+        he = te[te.entry_time >= START]
+        results[key]["every_signal_decisive"] = gl.report(he) if len(he) else {"n": 0}
         pf = results[key]["scenarios"].get(c["decisive_scenario"], {}).get("pf", 0) or 0
         results[key]["holdout_pf_decisive"] = pf
         results[key]["holdout_pass"] = pf > 1.0

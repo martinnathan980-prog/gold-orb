@@ -1,0 +1,12 @@
+low_cost_ecn_EA                  IS n 1038 PF 1.315 t 2.96 yrs 7/9 | VAL n 447 PF 1.21 t 1.44
+low_cost_ecn_manual5_abs         IS n 1046 PF 1.314 t 2.94 yrs 8/9 | VAL n 448 PF 1.204 t 1.4
+low_cost_ecn_manual60_abs        IS n 1043 PF 1.249 t 2.39 yrs 8/9 | VAL n 451 PF 1.196 t 1.36
+low_cost_ecn_prework_only        IS n 646 PF 1.216 t 1.67 yrs 6/9 | VAL n 277 PF 1.02 t 0.12
+typical_retail_EA                IS n 1037 PF 1.226 t 2.26 yrs 7/9 | VAL n 445 PF 1.137 t 0.99
+typical_retail_manual5_abs       IS n 1046 PF 1.226 t 2.25 yrs 7/9 | VAL n 446 PF 1.135 t 0.97
+typical_retail_manual60_abs      IS n 1043 PF 1.174 t 1.76 yrs 5/9 | VAL n 449 PF 1.129 t 0.94
+typical_retail_prework_only      IS n 636 PF 1.132 t 1.08 yrs 5/9 | VAL n 275 PF 0.957 t -0.26
+conservative_EA                  IS n 1029 PF 1.08 t 0.87 yrs 5/9 | VAL n 446 PF 1.004 t 0.03
+conservative_manual5_abs         IS n 1037 PF 1.081 t 0.88 yrs 5/9 | VAL n 447 PF 0.993 t -0.05
+conservative_manual60_abs        IS n 1034 PF 1.032 t 0.36 yrs 4/9 | VAL n 450 PF 1.0 t -0.0
+conservative_prework_only        IS n 626 PF 1.014 t 0.12 yrs 4/9 | VAL n 273 PF 0.849 t -0.99

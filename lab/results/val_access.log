@@ -231,3 +231,5 @@
 {"time": "2026-11-05T18:36:18", "track": "audit", "label": "audit:orb:orb_asia_2d_buf10", "period": "val"}
 {"time": "2026-11-05T18:37:22", "track": "audit", "label": "audit:orb:orb_asia_2d_buf10", "period": "val"}
 {"time": "2026-11-05T18:37:24", "track": "audit", "label": "audit:orb:orb_asia_2d_buf10", "period": "val"}
+{"time": "2026-11-05T18:38:15", "track": "review", "label": "liveexec:orb_asia_2d_buf10:low_cost_ecn scenario: delays, availability, clocks, rollover/reopen, policy, feed noise, combos", "period": "val"}
+{"time": "2026-11-05T18:39:00", "track": "review", "label": "liveexec:orb_asia_2d_buf10:account types (3 Amendment-1 scenarios) x EA / manual 5,60 min / pre-work only", "period": "val"}
