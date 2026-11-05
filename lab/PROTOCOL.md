@@ -56,3 +56,19 @@ résultat achat vs vente séparé (vérifier que ce n'est pas juste « l'or a mo
 
 Phase 1 : alertes uniquement (notification MT5 / Telegram) + journal de chaque signal.
 Phase 2 : comparaison réel vs backtest après 2–3 mois. Phase 3 seulement ensuite : démo auto.
+
+## Amendement 1 — 2026-11-05 (après le rapport de la piste ORB, AVANT les résultats des 5 autres pistes)
+
+Constat de la piste ORB : en intraday sur l'or, le verdict dépend surtout des frais (signal brut
++0,1 à +0,2 R, frais ~0,8 $/trade soit 0,13 à 0,5 R). Le modèle pré-enregistré reste le modèle
+**principal** et n'est pas modifié. On ajoute, pour information :
+
+1. Un scénario secondaire « courtier ECN à bas coûts », dont les paramètres sont fixés à partir
+   d'une recherche documentée sur les courtiers (`COSTS.md`) **avant** d'être appliqué au moindre
+   candidat. Chaque finaliste est rapporté sous les deux modèles.
+2. Statuts : **PASS** = passe tout avec le modèle principal ; **CONDITIONNEL** = échoue avec le modèle
+   principal mais passe tout avec le scénario bas coûts (viable seulement chez un courtier à bas
+   coûts) ; **ÉCHEC** sinon.
+3. Le test final 2026 porte sur au plus 5 candidats (PASS d'abord, puis CONDITIONNEL) ; **tous**
+   les résultats 2026 sont rapportés, pas seulement le meilleur.
+4. Tout nouvel accès à la période VAL (2022-2025) est journalisé et compté dans le rapport final.
