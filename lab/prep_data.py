@@ -44,19 +44,20 @@ def _drop_flat(df, col_o, col_h, col_l, col_c):
     return df[tday < 5]
 
 
+def _read_all(pattern):
+    """Read main files + download/patch/ files matching `pattern`; main data wins on duplicates,
+    patch files only fill minutes that are missing (failed downloads)."""
+    main = sorted(glob.glob(os.path.join(RAW, pattern)))
+    patch = sorted(glob.glob(os.path.join(RAW, "patch", pattern)))
+    df = pd.concat([_read(p) for p in main] + [_read(p) for p in patch])
+    df = df[~df.index.duplicated(keep="first")].sort_index()
+    return df, len(patch)
+
+
 def prep_gold():
-    parts = []
-    for bid_path in sorted(glob.glob(os.path.join(RAW, "xauusd-m1-bid-*.csv.gz"))):
-        ask_path = bid_path.replace("-bid-", "-ask-")
-        if not os.path.exists(ask_path):
-            print("missing ask for", bid_path, file=sys.stderr)
-            continue
-        b = _read(bid_path).add_prefix("bid_")
-        a = _read(ask_path).add_prefix("ask_")
-        m = b.join(a, how="inner")
-        parts.append(m)
-    df = pd.concat(parts).sort_index()
-    df = df[~df.index.duplicated()]
+    b, nb = _read_all("xauusd-m1-bid-*.csv.gz")
+    a, na = _read_all("xauusd-m1-ask-*.csv.gz")
+    df = b.add_prefix("bid_").join(a.add_prefix("ask_"), how="inner")
     df = _drop_flat(df, "bid_open", "bid_high", "bid_low", "bid_close")
     # sanity: ask >= bid
     bad = (df.ask_close < df.bid_close) | (df.ask_low < df.bid_low - 5)
@@ -67,15 +68,16 @@ def prep_gold():
     df = df.astype("float64")
     df.to_parquet(os.path.join(OUT, "xauusd_m1.parquet"))
     spr = df.ac - df.bc
-    print(f"xauusd: {len(df):,} bars {df.index[0]} -> {df.index[-1]}  median spread {spr.median():.3f}")
+    print(f"xauusd: {len(df):,} bars {df.index[0]} -> {df.index[-1]}  median spread {spr.median():.3f}"
+          f"  (patch files: {nb} bid, {na} ask)")
 
 
 def prep_other():
-    for path in sorted(glob.glob(os.path.join(RAW, "*-m1-bid-*.csv.gz"))):
-        sym = os.path.basename(path).split("-")[0]
+    syms = sorted({os.path.basename(p).split("-")[0] for p in glob.glob(os.path.join(RAW, "*-m1-bid-*.csv.gz"))})
+    for sym in syms:
         if sym == "xauusd":
             continue
-        b = _read(path)
+        b, nb = _read_all(f"{sym}-m1-bid-*.csv.gz")
         b = _drop_flat(b, "open", "high", "low", "close")
         s = SYNTH_SPREAD.get(sym, 0.0)
         df = pd.DataFrame({
@@ -83,7 +85,7 @@ def prep_other():
             "ao": b.open + s, "ah": b.high + s, "al": b.low + s, "ac": b.close + s,
         }).astype("float64")
         df.to_parquet(os.path.join(OUT, f"{sym}_m1.parquet"))
-        print(f"{sym}: {len(df):,} bars {df.index[0]} -> {df.index[-1]}  synthetic spread {s}")
+        print(f"{sym}: {len(df):,} bars {df.index[0]} -> {df.index[-1]}  synthetic spread {s}  (patch files: {nb})")
 
 
 if __name__ == "__main__":

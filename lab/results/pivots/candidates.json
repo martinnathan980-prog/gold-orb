@@ -149,8 +149,37 @@
     "expectancy>0": false,
     "pass": false
    },
-   "verdict": "FAIL (passes all IS criteria and robustness; fails VAL: PF 0.836, expectancy -0.071R)"
+   "verdict": "FAIL (passes all IS criteria and robustness; fails VAL: PF 0.836, expectancy -0.071R)",
+   "is_cost_multiples_pf": {
+    "x1": 1.379,
+    "x1.5": 1.28,
+    "x2": 1.181,
+    "x3": 0.984
+   },
+   "bound_no_commission_no_slippage_pf": {
+    "is": 1.575,
+    "val": 0.94,
+    "note": "from the logged trade lists (spread still paid); no new VAL access"
+   },
+   "status_amendment1": "ECHEC: fails VAL under the main cost model and would still fail with zero commission and zero slippage (VAL PF 0.94), so no low-cost scenario can make it pass",
+   "overlap_diag_no_overlap_false_is_pf": 1.379
   }
  ],
- "trial_count": 84
+ "trial_count": 84,
+ "trial_breakdown": {
+  "event_study": 20,
+  "strategy_configs": 39,
+  "placebo_runs_10_seeds": 12,
+  "finalist_neighbors": 10,
+  "diagnostics": 3,
+  "total": 84
+ },
+ "val_accesses": [
+  {
+   "label": "rn100_break_fresh"
+  },
+  {
+   "label": "rn100_break_fresh/stress1.5"
+  }
+ ]
 }

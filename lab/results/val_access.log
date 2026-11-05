@@ -11,3 +11,8 @@
 {"time": "2026-11-05T16:13:29", "track": "meanrev", "label": "meanrev-A-failedbreak-D5__overlap_diag", "period": "val"}
 {"time": "2026-11-05T16:15:36", "track": "pivots", "label": "rn100_break_fresh", "period": "val"}
 {"time": "2026-11-05T16:15:36", "track": "pivots", "label": "rn100_break_fresh/stress1.5", "period": "val"}
+{"time": "2026-11-05T16:21:40", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T16:21:42", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T16:21:42", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T16:23:00", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T16:23:02", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}

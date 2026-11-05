@@ -4,8 +4,10 @@
 
   m1      M1 frame (bid/ask) of the TRADED symbol (params['sym'], default xauusd)
   others  dict {symbol: M1 frame} of predictor markets, only for cross-asset rules
-          (e.g. {'usdjpy': m1_usdjpy}).  Bar frames (gl.bars output) are accepted too.
+          (e.g. {'usdjpy': m1_usdjpy}).  Research code may instead pass cache={(sym, tf): bars}
+          with pre-resampled gl.bars() frames (identical results, checked).
   params  'rule' selects the generator, the rest are its parameters (see each function).
+  FINALISTS is empty (nothing passed IS); REFERENCE + regenerate() rebuild the near-misses.
 
 Conventions (see lab/README.md): bars are labelled by START and known at t_close; every decision
 uses closed bars only and enters at gl.entry_index(m1, decision_time).  Predictor bars are aligned
@@ -374,4 +376,28 @@ def make_orders(m1, others=None, rule="channel", **params):
     return f(m1, **params)
 
 
+# No configuration of this track passed the pre-registered IS criteria (see
+# results/crossasset/report.md), so there is no finalist and VAL was not accessed.
 FINALISTS = {}
+
+# Best near-misses / reference rules, kept so they can be regenerated on any data (2026, live).
+# NOT validated, NOT recommended for trading.  'sym' = traded symbol, 'others' = predictor M1 frames
+# make_orders() needs:  orders = make_orders(m1[sym], {s: m1[s] for s in others}, **params)
+REFERENCE = {
+    "yen_shock_ldn_morning": dict(sym="xauusd", others=["usdjpy"], rule="yen", tf="1h", z_in=2.5, win=480,
+                                  hold_h=8, stop_k=1.5, start_hours=[7, 8, 9, 10, 11, 12]),
+    "riskoff_giveback": dict(sym="xauusd", others=["deuidxeur", "usdjpy"], rule="riskoff", z_in=1.0, win=60,
+                             mode="giveback", hold_days=3, stop_k=1.0),
+    "h4_breakout_usd_confirm": dict(sym="xauusd", others=["eurusd", "gbpusd", "usdjpy"], rule="channel_usd",
+                                    n=20, usd_n=20, mode="confirm"),
+    "orb_london_dax": dict(sym="deuidxeur", others=[], rule="orb", start_min=480, range_min=60,
+                           expiry_min=960, exit_min=1200),
+}
+
+
+def regenerate(name, m1_by_sym):
+    """Orders of a FINALISTS / REFERENCE entry from a dict {symbol: M1 frame}.
+    Returns (sym, orders); simulate with gl.simulate(m1_by_sym[sym], orders, sym=sym)."""
+    p = dict(FINALISTS.get(name) or REFERENCE[name])
+    sym, others = p.pop("sym"), p.pop("others", [])
+    return sym, make_orders(m1_by_sym[sym], {s: m1_by_sym[s] for s in others}, **p)
