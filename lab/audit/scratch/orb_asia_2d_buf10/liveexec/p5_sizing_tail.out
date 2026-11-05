@@ -1,0 +1,8 @@
+      50000 0.5%       0.000          0.476         0.405              0.50          2.5          5.0          6.6           5844               5434                   5434
+      50000 1.0%       0.000          0.970         0.911              1.00          5.0         10.0         13.3          11688              11139                  11139
+IS {'maxDD_R': 51.5, 'maxDD_%@0.5%': 23.1, 'losing_streak': 16, 'underwater_trades': 419}
+IS {'maxDD_R': 51.5, 'maxDD_%@1.0%': 41.5, 'losing_streak': 16, 'underwater_trades': 530}
+VAL {'maxDD_R': 40.2, 'maxDD_%@0.5%': 18.7, 'losing_streak': 11, 'underwater_trades': 297}
+VAL {'maxDD_R': 40.2, 'maxDD_%@1.0%': 34.8, 'losing_streak': 11, 'underwater_trades': 362}
+VAL longest time between equity highs (days): 921
+IS longest time between equity highs (days): 1310

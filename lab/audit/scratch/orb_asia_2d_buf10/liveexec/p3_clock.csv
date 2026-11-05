@@ -1,0 +1,6 @@
+variant,n_trades,same_entry_as_base,IS_n,IS_pf,IS_t,IS_yrs,VAL_n,VAL_pf,VAL_t
+C0_baseline,1483,1483,1037,1.177,1.83,6/9,445,1.1,0.74
+C1_NYclose_server_fixed_hours,1489,1421,1042,1.142,1.49,6/9,446,1.085,0.64
+C2_EET_server_fixed_hours,1483,1483,1037,1.177,1.83,6/9,445,1.098,0.73
+C3_fixed_UTC_no_DST,1419,897,972,1.171,1.68,6/9,446,0.981,-0.15
+C4_range_on_winter_hours,1419,897,972,1.183,1.8,6/9,446,0.995,-0.04

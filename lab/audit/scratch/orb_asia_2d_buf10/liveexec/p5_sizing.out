@@ -1,0 +1,29 @@
+2025: n 96 stop distance $/oz percentiles: {5: 16.15, 10: 17.04, 25: 19.68, 50: 32.2, 75: 49.55, 90: 62.16, 95: 68.07} min 10.32 max 86.38 | mean entry price 3422.0
+  2022: median stop $10.99  (p10 6.36, p90 18.66) median as % of price 0.592%
+  2023: median stop $9.14  (p10 5.55, p90 18.04) median as % of price 0.465%
+  2024: median stop $14.86  (p10 7.11, p90 28.51) median as % of price 0.603%
+  2025: median stop $32.20  (p10 17.04, p90 62.16) median as % of price 0.961%
+IS median stop $ 7.28 | as % of price 0.529
+risk 0.5%: account for 0.01 lot (1 oz) at the 2025 median stop = $6,440; at p90 $12,433; at max $17,276
+risk 1.0%: account for 0.01 lot (1 oz) at the 2025 median stop = $3,220; at p90 $6,216; at max $8,638
+ equity_usd risk  skip_share  act_risk_med%  act_risk_p5%  forced_risk_max%  margin_med%  margin_p95%  margin_max%  pnl2025_exact  pnl2025_lots_skip  pnl2025_minlot_forced
+       1000 0.5%       1.000            NaN           NaN              8.64         16.7         21.2         22.3            117                  0                   1066
+       1000 1.0%       1.000            NaN           NaN              8.64         16.7         21.2         22.3            234                  0                   1066
+       2000 0.5%       1.000            NaN           NaN              4.32          8.4         10.6         11.2            234                  0                   1066
+       2000 1.0%       0.729          0.880         0.651              4.32          8.4         10.6         11.2            468                 56                   1066
+       3000 0.5%       0.969          0.420         0.351              2.88          5.6          7.1          7.4            351                 85                   1066
+       3000 1.0%       0.531          0.661         0.540              2.88          5.6          7.2         10.0            701                199                   1151
+       5000 0.5%       0.615          0.377         0.309              1.73          3.3          4.3          5.5            584                148                   1113
+       5000 1.0%       0.250          0.764         0.561              1.73          4.1          9.0         11.1           1169                346                   1354
+      10000 0.5%       0.250          0.382         0.281              0.86          2.1          4.5          5.5           1169                346                   1354
+      10000 1.0%       0.000          0.860         0.528              1.00          4.3          9.3         12.5           2338               1759                   1759
+      20000 0.5%       0.000          0.430         0.264              0.50          2.2          4.6          6.2           2338               1759                   1759
+      20000 1.0%       0.000          0.943         0.768              1.00          5.0          9.8         13.1           4675               3852                   3852
+      50000 0.5%       0.000          0.476         0.405              0.50          2.5          5.0          6.6           5844               5434                   5434
+      50000 1.0%       0.000          0.970         0.911              1.00          5.0         10.0         13.3          11688              11139                  11139
+IS {'maxDD_R': 51.5, 'maxDD_%@0.5%': 23.1, 'losing_streak': 16, 'underwater_trades': 419}
+IS {'maxDD_R': 51.5, 'maxDD_%@1.0%': 41.5, 'losing_streak': 16, 'underwater_trades': 530}
+VAL {'maxDD_R': 40.2, 'maxDD_%@0.5%': 18.7, 'losing_streak': 11, 'underwater_trades': 297}
+VAL {'maxDD_R': 40.2, 'maxDD_%@1.0%': 34.8, 'losing_streak': 11, 'underwater_trades': 362}
+VAL longest time between equity highs (days): 921
+IS longest time between equity highs (days): 1310

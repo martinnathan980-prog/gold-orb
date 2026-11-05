@@ -1,0 +1,9 @@
+                      variant  n_trades  same_entry_as_base  IS_n  IS_pf  IS_t IS_yrs  VAL_n  VAL_pf  VAL_t
+                  C0_baseline      1483                1483  1037  1.177  1.83    6/9    445   1.100   0.74
+C1_NYclose_server_fixed_hours      1489                1421  1042  1.142  1.49    6/9    446   1.085   0.64
+    C2_EET_server_fixed_hours      1483                1483  1037  1.177  1.83    6/9    445   1.098   0.73
+          C3_fixed_UTC_no_DST      1419                 897   972  1.171  1.68    6/9    446   0.981  -0.15
+     C4_range_on_winter_hours      1419                 897   972  1.183  1.80    6/9    446   0.995  -0.04
+weekday sessions per year in US/EU DST gap: {2013: 20, 2014: 20, 2015: 20, 2016: 15, 2017: 15, 2018: 15, 2019: 20, 2020: 20, 2021: 15, 2022: 15, 2023: 15, 2024: 20, 2025: 20}
+C2_EET_server_fixed_hours time exits by NY clock: {'16:00': 501, '18:00': 56, '19:00': 4, '18:02': 1, '18:19': 1}
+C3_fixed_UTC_no_DST time exits by NY clock: {'18:00': 354, '16:00': 188, '19:00': 7, '18:01': 2, '18:02': 2}

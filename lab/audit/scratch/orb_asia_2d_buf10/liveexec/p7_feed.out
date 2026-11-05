@@ -1,0 +1,13 @@
+F3: mean H shift $ 0.194 mean L shift $ 0.198 | F1: mean H shift $ 0.374
+             variant  IS_n  IS_pf  IS_t  VAL_n  VAL_pf  VAL_t
+            baseline  1037  1.177  1.83    445   1.100   0.74
+   F1_bid_bars_range  1070  1.181  1.85    458   1.110   0.80
+F2_bid_high+spread07  1036  1.172  1.78    446   1.099   0.73
+  F3_asian_spread_x2   998  1.181  1.85    442   1.041   0.32
+     F4_shift_-1.0bp  1063  1.204  2.01    454   1.122   0.89
+     F4_shift_-0.5bp  1043  1.191  1.94    450   1.120   0.88
+     F4_shift_+0.5bp  1025  1.158  1.64    445   1.058   0.45
+     F4_shift_+1.0bp  1007  1.175  1.79    442   1.016   0.12
+F5 sigma 0.25 bp (~$0.03 at $1300, $0.09 at $3400): IS PF p5 1.163 p50 1.177 p95 1.194 min 1.145 max 1.200 | share IS>=1.20 0.03 | VAL PF p5 1.080 p50 1.095 p95 1.109 min 1.078 max 1.110 | share VAL>=1.10 0.42
+F5 sigma 0.5 bp (~$0.07 at $1300, $0.17 at $3400): IS PF p5 1.158 p50 1.178 p95 1.201 min 1.149 max 1.206 | share IS>=1.20 0.07 | VAL PF p5 1.070 p50 1.088 p95 1.112 min 1.063 max 1.122 | share VAL>=1.10 0.30
+F5 sigma 1.0 bp (~$0.13 at $1300, $0.34 at $3400): IS PF p5 1.153 p50 1.180 p95 1.202 min 1.133 max 1.210 | share IS>=1.20 0.10 | VAL PF p5 1.045 p50 1.085 p95 1.112 min 1.045 max 1.119 | share VAL>=1.10 0.15

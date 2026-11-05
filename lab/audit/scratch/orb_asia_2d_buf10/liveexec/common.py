@@ -32,6 +32,7 @@ def load_strategy():
     d = os.path.join(LAB, "tracks", "orb")
     spec = importlib.util.spec_from_file_location("strategy_orb_liveexec", os.path.join(d, "strategy.py"))
     mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod      # lets numba's on-disk cache (in NUMBA_CACHE_DIR) find the module
     spec.loader.exec_module(mod)
     return mod
 

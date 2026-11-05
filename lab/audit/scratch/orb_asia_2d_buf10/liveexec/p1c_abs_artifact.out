@@ -1,0 +1,9 @@
+IS N= 60 n=1043 PF_R=1.122 PF_$(fixed size)=1.172 | risk<50% of design: 43 | max R 14.5 | PF_R excl. risk<50%: 1.148 (n 1000)
+IS N= 90 n=1040 PF_R=1.081 PF_$(fixed size)=1.166 | risk<50% of design: 62 | max R 16.1 | PF_R excl. risk<50%: 1.136 (n 978)
+IS N=120 n=1031 PF_R=1.036 PF_$(fixed size)=1.171 | risk<50% of design: 76 | max R 12.0 | PF_R excl. risk<50%: 1.142 (n 955)
+IS N=240 n=1002 PF_R=0.997 PF_$(fixed size)=1.156 | risk<50% of design: 107 | max R 21.4 | PF_R excl. risk<50%: 1.116 (n 895)
+VAL N= 60 n=449 PF_R=1.09 PF_$(fixed size)=1.269 | risk<50% of design: 21 | max R 9.2 | PF_R excl. risk<50%: 1.19 (n 428)
+VAL N= 90 n=442 PF_R=1.398 PF_$(fixed size)=1.293 | risk<50% of design: 17 | max R 61.1 | PF_R excl. risk<50%: 1.224 (n 425)
+VAL N=120 n=443 PF_R=1.483 PF_$(fixed size)=1.239 | risk<50% of design: 21 | max R 43.6 | PF_R excl. risk<50%: 1.176 (n 422)
+VAL N=240 n=433 PF_R=1.073 PF_$(fixed size)=1.17 | risk<50% of design: 33 | max R 11.5 | PF_R excl. risk<50%: 1.152 (n 400)
+baseline VAL PF unrounded: 1.1001810192389416  IS: 1.177326963073837

@@ -39,6 +39,7 @@ def load_strategy(track):
     sys.path.insert(0, d)
     spec = importlib.util.spec_from_file_location(f"strategy_{track}", os.path.join(d, "strategy.py"))
     mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod          # lets numba's on-disk cache re-import the module
     spec.loader.exec_module(mod)
     return mod
 

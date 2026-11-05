@@ -5,10 +5,7 @@
 import sys; sys.path.insert(0, '.'); sys.path.insert(0, 'audit/scratch/orb_asia_2d_buf10/lookahead')
 from common import *
 m1 = load()
-RUN_AB = False
 idx = m1.index
-if RUN_AB:
-  pass
 gap = np.diff(idx.asi8) // 60_000  # minutes
 ny = idx[1:].tz_convert(gl.NY)
 g = pd.DataFrame({"gap": gap, "ny_h": ny.hour, "ny_m": ny.minute, "dow": ny.dayofweek, "t": idx[1:]})

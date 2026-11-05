@@ -148,3 +148,69 @@
 {"time": "2026-11-05T18:23:32", "track": "review", "label": "liveexec:orb_asia_2d_buf10:manual-delay N=0/1/5/15/60/240 min, stop same-distance vs same-absolute", "period": "val"}
 {"time": "2026-11-05T18:24:18", "track": "review", "label": "liveexec:orb_asia_2d_buf10:manual-delay fine sweep N=1..30,45,90,120,180 (dist/abs)", "period": "val"}
 {"time": "2026-11-05T18:24:42", "track": "review", "label": "liveexec:orb_asia_2d_buf10:manual-delay abs-stop artifact check N=60/90/120/240 (risk ratio, $-PF)", "period": "val"}
+{"time": "2026-11-05T18:24:55", "track": "review", "label": "liveexec:orb_asia_2d_buf10:manual-delay abs-stop artifact check N=60/90/120/240 (risk ratio, $-PF)", "period": "val"}
+{"time": "2026-11-05T18:24:55", "track": "review", "label": "liveexec:orb_asia_2d_buf10:baseline unrounded PF", "period": "val"}
+{"time": "2026-11-05T18:25:10", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T18:25:13", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T18:25:13", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T18:25:13", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T18:25:14", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T18:25:14", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T18:25:37", "track": "review", "label": "lookahead:orb_asia_2d_buf10:unrounded-VAL-PF-patched-data", "period": "val"}
+{"time": "2026-11-05T18:25:42", "track": "review", "label": "liveexec:orb_asia_2d_buf10:availability windows W0-W5 + exit-time availability E1-E4", "period": "val"}
+{"time": "2026-11-05T18:25:42", "track": "review", "label": "liveexec:orb_asia_2d_buf10:baseline trades by Paris entry hour", "period": "val"}
+{"time": "2026-11-05T18:26:09", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T18:26:10", "track": "review", "label": "lookahead:orb_asia_2d_buf10:holdout-frame-equivalence(2025-06 warm-up start)", "period": "val"}
+{"time": "2026-11-05T18:26:11", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T18:26:18", "track": "audit", "label": "audit:orb:orb_asia_2d_buf10", "period": "val"}
+{"time": "2026-11-05T18:26:19", "track": "audit", "label": "audit:orb:orb_asia_2d_buf10", "period": "val"}
+{"time": "2026-11-05T18:26:20", "track": "audit", "label": "audit:orb:orb_asia_2d_buf10", "period": "val"}
+{"time": "2026-11-05T18:26:20", "track": "audit", "label": "audit:orb:orb_asia_2d_buf10", "period": "val"}
+{"time": "2026-11-05T18:26:21", "track": "audit", "label": "audit:orb:orb_asia_2d_buf10", "period": "val"}
+{"time": "2026-11-05T18:26:21", "track": "audit", "label": "audit:orb:orb_asia_2d_buf10", "period": "val"}
+{"time": "2026-11-05T18:26:24", "track": "review", "label": "lookahead:orb_asia_2d_buf10:holdout-frame-equivalence(2025-06 warm-up start)", "period": "val"}
+{"time": "2026-11-05T18:26:49", "track": "review", "label": "liveexec:orb_asia_2d_buf10:server-clock mapping variants C0-C4 (fixed server hours / UTC / DST gaps)", "period": "val"}
+{"time": "2026-11-05T18:27:16", "track": "audit", "label": "audit:orb:orb_asia_2d_buf10", "period": "val"}
+{"time": "2026-11-05T18:27:18", "track": "audit", "label": "audit:orb:orb_asia_2d_buf10", "period": "val"}
+{"time": "2026-11-05T18:27:27", "track": "audit", "label": "audit:seasonality:WKND_LIM", "period": "val"}
+{"time": "2026-11-05T18:27:27", "track": "audit", "label": "audit:seasonality:WKND_LIM", "period": "val"}
+{"time": "2026-11-05T18:27:27", "track": "audit", "label": "audit:seasonality:WKND_LIM", "period": "val"}
+{"time": "2026-11-05T18:27:27", "track": "audit", "label": "audit:seasonality:WKND_LIM", "period": "val"}
+{"time": "2026-11-05T18:27:28", "track": "audit", "label": "audit:seasonality:WKND_LIM", "period": "val"}
+{"time": "2026-11-05T18:27:29", "track": "audit", "label": "audit:seasonality:WKND_LIM", "period": "val"}
+{"time": "2026-11-05T18:27:32", "track": "review", "label": "lookahead:orb_asia_2d_buf10:cost-scenarios engine-vs-rebuilt(low_cost_ecn,typical_retail,conservative)", "period": "val"}
+{"time": "2026-11-05T18:27:41", "track": "review", "label": "liveexec:orb_asia_2d_buf10:rollover spread x2/x3/x5 (16-17 & 18-19 NY) and +$1/$2 spikes", "period": "val"}
+{"time": "2026-11-05T18:28:23", "track": "audit", "label": "audit:seasonality:WKND_LIM", "period": "val"}
+{"time": "2026-11-05T18:28:24", "track": "review", "label": "liveexec:orb_asia_2d_buf10:sizing: 2022-2025 stop distances, lot rounding, ESMA 1:20 margin, drawdowns", "period": "val"}
+{"time": "2026-11-05T18:28:25", "track": "audit", "label": "audit:seasonality:WKND_LIM", "period": "val"}
+{"time": "2026-11-05T18:28:31", "track": "audit", "label": "audit:seasonality:FRI_PM_LIM", "period": "val"}
+{"time": "2026-11-05T18:28:31", "track": "audit", "label": "audit:seasonality:FRI_PM_LIM", "period": "val"}
+{"time": "2026-11-05T18:28:31", "track": "audit", "label": "audit:seasonality:FRI_PM_LIM", "period": "val"}
+{"time": "2026-11-05T18:28:31", "track": "audit", "label": "audit:seasonality:FRI_PM_LIM", "period": "val"}
+{"time": "2026-11-05T18:28:32", "track": "audit", "label": "audit:seasonality:FRI_PM_LIM", "period": "val"}
+{"time": "2026-11-05T18:28:32", "track": "audit", "label": "audit:seasonality:FRI_PM_LIM", "period": "val"}
+{"time": "2026-11-05T18:28:34", "track": "review", "label": "liveexec:orb_asia_2d_buf10:sizing: 2022-2025 stop distances, lot rounding, ESMA 1:20 margin, drawdowns", "period": "val"}
+{"time": "2026-11-05T18:28:35", "track": "review", "label": "liveexec:orb_asia_2d_buf10:sizing: 2022-2025 stop distances, lot rounding, ESMA 1:20 margin, drawdowns", "period": "val"}
+{"time": "2026-11-05T18:29:29", "track": "audit", "label": "audit:seasonality:FRI_PM_LIM", "period": "val"}
+{"time": "2026-11-05T18:29:31", "track": "audit", "label": "audit:seasonality:FRI_PM_LIM", "period": "val"}
+{"time": "2026-11-05T18:29:38", "track": "audit", "label": "audit:meanrev:meanrev-A-failedbreak-D5", "period": "val"}
+{"time": "2026-11-05T18:29:39", "track": "audit", "label": "audit:meanrev:meanrev-A-failedbreak-D5", "period": "val"}
+{"time": "2026-11-05T18:29:39", "track": "audit", "label": "audit:meanrev:meanrev-A-failedbreak-D5", "period": "val"}
+{"time": "2026-11-05T18:29:39", "track": "audit", "label": "audit:meanrev:meanrev-A-failedbreak-D5", "period": "val"}
+{"time": "2026-11-05T18:29:40", "track": "audit", "label": "audit:meanrev:meanrev-A-failedbreak-D5", "period": "val"}
+{"time": "2026-11-05T18:29:40", "track": "audit", "label": "audit:meanrev:meanrev-A-failedbreak-D5", "period": "val"}
+{"time": "2026-11-05T18:30:02", "track": "review", "label": "liveexec:orb_asia_2d_buf10:pitfalls: weekend-held vs not, gap fills, holiday exits", "period": "val"}
+{"time": "2026-11-05T18:30:08", "track": "review", "label": "liveexec:orb_asia_2d_buf10:pitfalls: min_bars_frac 0.5/0.9/0.97 data-completeness guard", "period": "val"}
+{"time": "2026-11-05T18:30:08", "track": "review", "label": "liveexec:orb_asia_2d_buf10:retail add-on costs: extra $/oz RT x swap rates", "period": "val"}
+{"time": "2026-11-05T18:30:41", "track": "audit", "label": "audit:meanrev:meanrev-A-failedbreak-D5", "period": "val"}
+{"time": "2026-11-05T18:30:43", "track": "audit", "label": "audit:meanrev:meanrev-A-failedbreak-D5", "period": "val"}
+{"time": "2026-11-05T18:31:23", "track": "audit", "label": "audit:pivots:rn100_break_fresh", "period": "val"}
+{"time": "2026-11-05T18:31:24", "track": "audit", "label": "audit:pivots:rn100_break_fresh", "period": "val"}
+{"time": "2026-11-05T18:31:24", "track": "audit", "label": "audit:pivots:rn100_break_fresh", "period": "val"}
+{"time": "2026-11-05T18:31:24", "track": "audit", "label": "audit:pivots:rn100_break_fresh", "period": "val"}
+{"time": "2026-11-05T18:31:25", "track": "audit", "label": "audit:pivots:rn100_break_fresh", "period": "val"}
+{"time": "2026-11-05T18:31:25", "track": "audit", "label": "audit:pivots:rn100_break_fresh", "period": "val"}
+{"time": "2026-11-05T18:31:46", "track": "review", "label": "liveexec:orb_asia_2d_buf10:feed realism: bid-bar range, Asian spread x2, level shifts, random feed noise (40 seeds x 3 sigma)", "period": "val"}
+{"time": "2026-11-05T18:32:23", "track": "audit", "label": "audit:pivots:rn100_break_fresh", "period": "val"}
+{"time": "2026-11-05T18:32:25", "track": "audit", "label": "audit:pivots:rn100_break_fresh", "period": "val"}
+{"time": "2026-11-05T18:32:37", "track": "review", "label": "liveexec:orb_asia_2d_buf10:EA position-policy variants V1-V5, un-cancelled OCO leg, weekend schedule split", "period": "val"}

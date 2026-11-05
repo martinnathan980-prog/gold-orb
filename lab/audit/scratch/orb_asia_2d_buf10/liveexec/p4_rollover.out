@@ -1,0 +1,15 @@
+  variant  IS_n  IS_pf  IS_t  IS_exp  VAL_n  VAL_pf  VAL_t  VAL_exp
+ baseline  1037  1.177  1.83  0.1199    445   1.100   0.74   0.0651
+    R1_x2  1040  1.176  1.81  0.1188    445   1.099   0.74   0.0645
+    R2_x2  1040  1.164  1.70  0.1113    445   1.091   0.68   0.0595
+    R2_x3  1041  1.150  1.57  0.1017    445   1.083   0.62   0.0539
+    R2_x5  1058  1.062  0.68  0.0434    447   1.032   0.24   0.0207
+SPK_+1usd  1038  1.174  1.80  0.1178    445   1.099   0.73   0.0645
+SPK_+2usd  1040  1.173  1.79  0.1172    445   1.098   0.73   0.0638
+R1_x2 {'levels_unchanged': True, 'stop_exits_in_window': 20, 'mean_spread_in_window_after': 0.928}
+R2_x2 {'levels_unchanged': True, 'stop_exits_in_window': 23, 'mean_spread_in_window_after': 0.86}
+R2_x3 {'levels_unchanged': True, 'stop_exits_in_window': 30, 'mean_spread_in_window_after': 1.29}
+R2_x5 {'levels_unchanged': True, 'stop_exits_in_window': 60, 'mean_spread_in_window_after': 2.149}
+SPK_+1usd {'levels_unchanged': True, 'stop_exits_in_window': 12, 'mean_spread_in_window_after': 1.544}
+SPK_+2usd {'levels_unchanged': True, 'stop_exits_in_window': 18, 'mean_spread_in_window_after': 2.544}
+baseline {'stop_exits_in_W2': 20, 'stop_exits_in_W1': 17, 'stop_exits_in_WS': 10, 'mean_spread_W2': 0.43, 'mean_spread_all': 0.357}

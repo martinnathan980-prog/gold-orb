@@ -1,0 +1,36 @@
+a) stop exits: 919 | filled beyond stop by >0.01R: 2 | by kind: {'intrasession': 1, 'daily_break': 1} | sum extra R: 0.41 | worst R: -1.4 | R < -1.25: 3
+   worst 5 gap fills:                     entry_time                 exit_time  side         R  beyond_R          kind
+1062 2018-04-19 06:40:00+00:00 2018-04-19 09:27:00+00:00     1 -1.262347  0.220865  intrasession
+1176 2018-10-24 06:07:00+00:00 2018-10-24 22:01:00+00:00    -1 -1.306819  0.193571   daily_break
+b) trades held over a weekend: 306 of 1483 | entry weekday counts: {0: 287, 1: 300, 2: 276, 3: 320, 4: 300}
+   IS: weekend-held PF 5.934 (n 201) | not held PF 0.776
+   VAL: weekend-held PF 3.943 (n 105) | not held PF 0.691
+   time exits NOT at 16:00 NY (early close / holiday -> next open): 27 | their R sum 44.3 | NY clock: {'Mon 18:00': 12, 'Sun 18:00': 5, 'Wed 18:00': 3, 'Tue 18:00': 2, 'Mon 18:02': 1, 'Thu 19:00': 1}
+c) IS: nearer pending level vs market at 07:00 London, $: p1 0.44 p5 0.68 p50 2.02 | share < $0.30: 0.001  < $0.50: 0.019  < $1.00: 0.140 | already through a level at 07:00: 0 | spread at 07:00 median $0.30 p95 $0.49 | SL distance (1.2W) p1 $2.93
+c) 2025: nearer pending level vs market at 07:00 London, $: p1 1.38 p5 2.36 p50 7.86 | share < $0.30: 0.000  < $0.50: 0.000  < $1.00: 0.004 | already through a level at 07:00: 0 | spread at 07:00 median $0.59 p95 $0.91 | SL distance (1.2W) p1 $9.43
+d) range M1 bars present (of 420): p1 401 p5 411 median 420 | sessions <90%: 11 <75%: 1 of 3354
+   sessions dropped by min_bars_frac=0.5: 0
+e) fills in the last 15 / 30 min before 12:00 London: 25 / 44 of 1483
+   min_bars_frac=0.5: IS n=1037 pf=1.177 exp=0.1199 t=1.83 totR=124.3 yrs_pos=6/9 pf_long=1.041 pf_short=1.321 R_long=14.6 R_short=109.7
+        VAL n=445 pf=1.1 exp=0.0651 t=0.74 totR=29.0 yrs_pos=3/4 pf_long=1.22 pf_short=0.968 R_long=33.4 R_short=-4.4
+   min_bars_frac=0.9: IS n=1035 pf=1.177 exp=0.1197 t=1.82 totR=123.8 yrs_pos=6/9 pf_long=1.038 pf_short=1.324 R_long=13.6 R_short=110.3
+        VAL n=445 pf=1.1 exp=0.0651 t=0.74 totR=29.0 yrs_pos=3/4 pf_long=1.22 pf_short=0.968 R_long=33.4 R_short=-4.4
+   min_bars_frac=0.97: IS n=1014 pf=1.174 exp=0.1179 t=1.72 totR=119.5 yrs_pos=6/9 pf_long=1.019 pf_short=1.34 R_long=6.8 R_short=112.7
+        VAL n=445 pf=1.1 exp=0.0651 t=0.74 totR=29.0 yrs_pos=3/4 pf_long=1.22 pf_short=0.968 R_long=33.4 R_short=-4.4
+f) extra round-trip cost $/oz x swap (long,short)/yr -> IS PF | VAL PF
+   +$0.00  swap (0.05, 0.02):  IS 1.177  (t 1.83)  | VAL 1.1  (t 0.74)
+   +$0.00  swap (0.08, 0.02):  IS 1.161  (t 1.67)  | VAL 1.082  (t 0.61)
+   +$0.00  swap (0.1, 0.04):  IS 1.138  (t 1.46)  | VAL 1.06  (t 0.46)
+   +$0.10  swap (0.05, 0.02):  IS 1.153  (t 1.61)  | VAL 1.086  (t 0.65)
+   +$0.10  swap (0.08, 0.02):  IS 1.137  (t 1.45)  | VAL 1.068  (t 0.52)
+   +$0.10  swap (0.1, 0.04):  IS 1.115  (t 1.23)  | VAL 1.047  (t 0.36)
+   +$0.25  swap (0.05, 0.02):  IS 1.119  (t 1.27)  | VAL 1.066  (t 0.5)
+   +$0.25  swap (0.08, 0.02):  IS 1.103  (t 1.11)  | VAL 1.049  (t 0.37)
+   +$0.25  swap (0.1, 0.04):  IS 1.082  (t 0.9)  | VAL 1.028  (t 0.21)
+   +$0.50  swap (0.05, 0.02):  IS 1.065  (t 0.72)  | VAL 1.034  (t 0.26)
+   +$0.50  swap (0.08, 0.02):  IS 1.05  (t 0.56)  | VAL 1.017  (t 0.13)
+   +$0.50  swap (0.1, 0.04):  IS 1.03  (t 0.34)  | VAL 0.996  (t -0.03)
+   +$1.00  swap (0.05, 0.02):  IS 0.967  (t -0.39)  | VAL 0.973  (t -0.22)
+   +$1.00  swap (0.08, 0.02):  IS 0.953  (t -0.56)  | VAL 0.957  (t -0.35)
+   +$1.00  swap (0.1, 0.04):  IS 0.935  (t -0.78)  | VAL 0.938  (t -0.51)
+   mean swap+commission per trade $/oz: 0.321 | mean swap long 0.36 short 0.136 | mean nights 1.47

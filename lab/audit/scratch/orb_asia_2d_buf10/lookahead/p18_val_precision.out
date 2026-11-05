@@ -1,0 +1,3 @@
+VAL n 445 unrounded PF 1.100181 | report() pf: 1.1 | val_criteria: {'pf>=1.10': True, 'expectancy>0': True, 'pass': True}
+IS total R 124.3 ; 2013 shorts R 79.0 ; IS PF without 2013: 1.059
+IS unrounded PF 1.177327 t 1.8297

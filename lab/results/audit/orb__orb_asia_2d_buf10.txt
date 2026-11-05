@@ -5,6 +5,15 @@ stress_x1.5   is  {'n': 1039, 'trades_per_year': 115.5, 'win_rate': 0.325, 'pf':
 stress_x1.5   val {'n': 445, 'trades_per_year': 111.6, 'win_rate': 0.337, 'pf': 1.047, 't_stat': 0.36, 'expectancy_R': 0.0312, 'years_pos': '3/4', 'long_R': 24.8, 'short_R': -10.9}
 every_signal  is  {'n': 1826, 'trades_per_year': 202.9, 'win_rate': 0.308, 'pf': 1.049, 't_stat': 0.71, 'expectancy_R': 0.0346, 'years_pos': '5/9', 'long_R': -73.5, 'short_R': 136.6}
 every_signal  val {'n': 794, 'trades_per_year': 198.9, 'win_rate': 0.311, 'pf': 1.012, 't_stat': 0.12, 'expectancy_R': 0.0082, 'years_pos': '3/4', 'long_R': 76.6, 'short_R': -70.1}
+low_cost_ecn  is  {'n': 831, 'trades_per_year': 92.4, 'win_rate': 0.331, 'pf': 1.234, 't_stat': 2.07, 'expectancy_R': 0.1535, 'years_pos': '6/9', 'long_R': 30.3, 'short_R': 97.3}
+low_cost_ecn  val {'n': 372, 'trades_per_year': 93.3, 'win_rate': 0.352, 'pf': 1.182, 't_stat': 1.09, 'expectancy_R': 0.1157, 'years_pos': '3/4', 'long_R': 43.6, 'short_R': -0.6}
+low_cost_ecn  IS crit pass=True VAL pass=True
+typical_retail is  {'n': 1037, 'trades_per_year': 115.2, 'win_rate': 0.334, 'pf': 1.226, 't_stat': 2.26, 'expectancy_R': 0.1501, 'years_pos': '7/9', 'long_R': 26.9, 'short_R': 128.8}
+typical_retail val {'n': 445, 'trades_per_year': 111.6, 'win_rate': 0.342, 'pf': 1.137, 't_stat': 0.99, 'expectancy_R': 0.0875, 'years_pos': '3/4', 'long_R': 37.8, 'short_R': 1.2}
+typical_retail IS crit pass=True VAL pass=True
+conservative  is  {'n': 1039, 'trades_per_year': 115.5, 'win_rate': 0.324, 'pf': 1.106, 't_stat': 1.14, 'expectancy_R': 0.0729, 'years_pos': '6/9', 'long_R': -15.1, 'short_R': 90.9}
+conservative  val {'n': 445, 'trades_per_year': 111.6, 'win_rate': 0.337, 'pf': 1.043, 't_stat': 0.33, 'expectancy_R': 0.0286, 'years_pos': '3/4', 'long_R': 22.6, 'short_R': -9.9}
+conservative  IS crit pass=False VAL pass=False
 prereg IS crit: {'n>=200': True, 'pf>=1.20': False, 't>=2': False, 'years_pos>=2/3': True, 'freq 25-750/yr': True, 'max_hold<=5d': True, 'stress_pf>=1.05': True, 'pass': False} VAL: {'pf>=1.10': True, 'expectancy>0': True, 'pass': True}
 causality: {'cuts': [{'cut': '2015-12-15 00:18:00+00:00', 'n_full': 609, 'n_trunc': 609, 'identical': True}, {'cut': '2020-03-25 19:06:00+00:00', 'n_full': 1460, 'n_trunc': 1460, 'identical': True}, {'cut': '2020-08-11 05:06:00+00:00', 'n_full': 1538, 'n_trunc': 1538, 'identical': True}, {'cut': '2022-12-20 23:46:00+00:00', 'n_full': 2035, 'n_trunc': 2035, 'identical': True}, {'cut': '2024-11-13 11:24:00+00:00', 'n_full': 2427, 'n_trunc': 2427, 'identical': True}], 'pass': True}
 tick: {'n': 44, 'mean_m1_minus_tick_usd': 0.335, 'median': 0.134, 'share_m1_better': 0.727, 'share_m1_worse': 0.0, 'm1_R_sum': 1.89, 'tick_R_sum': 1.44, 'slippage_budget_per_trade_usd': 1.11}
