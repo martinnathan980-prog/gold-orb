@@ -1178,6 +1178,10 @@ header.entete .alerte-source {
   .journal-grille:not(.journal-serre) .journal-entetes .filtre-col .n { margin-left: 5px; }
   .journal-grille:not(.journal-serre) #filtre-journal .filtre-tout { margin-left: -4px; }
 }
+/* Dans le tableau, le filtre déborde de sa colonne de ses marges (−4 à
+   gauche, −6 à droite, dans l'écart des colonnes) : borné à la colonne, il
+   se rétrécissait d'autant, et son nom touchait son filet une fois choisi. */
+.journal-grille:not(.journal-serre) #filtre-journal .filtre-col { max-width: none; }
 /* « Tout » au-dessus des semaines, son mot là où commence « S45 · … ». */
 #filtre-journal .filtre-tout { font-size: 13px; }
 .journal-grille:not(.journal-serre) #filtre-journal .filtre-tout { margin-left: 12px; }
