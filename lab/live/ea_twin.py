@@ -96,11 +96,12 @@ def run(m1, mt5like=False, n=60, atr_n=14, k_stop=2.0, k_trail=2.0, days=5):
         if bk != last_bucket:
             last_bucket = bk
             br = None
+            tc = (idx[i - 1] + pd.Timedelta(minutes=1)) if i > 0 else bk   # = lab t_close of the completed 4h bar
             if side == 0:
                 j = b4_index.get(bk, None)
                 jprev = (j - 1) if j is not None else np.searchsorted(t4.values, bk.to_datetime64()) - 1
                 if jprev >= n + atr_n and np.isfinite(atr4[jprev]):
-                    br = dict(hi=hi_roll[jprev], lo=lo_roll[jprev], atr=atr4[jprev], dec=bk, exp=bk + pd.Timedelta(hours=4))
+                    br = dict(hi=hi_roll[jprev], lo=lo_roll[jprev], atr=atr4[jprev], dec=tc, exp=bk + pd.Timedelta(hours=4))
         if side != 0:
             first = i == fill_i
             if not first and t >= dl:

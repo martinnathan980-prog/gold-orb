@@ -1,0 +1,13 @@
+lab trades 788 | twin trades 787 | identical entry (time+side) 786 (99.7%)
+matched: same exit time 100.0% | mean |dR| 0.0000 | max |dR| 0.000
+sum R  lab +139.5 | twin +139.6
+PF (zero costs)  lab 1.548 | twin 1.549
+unmatched (first 12):
+                 entry_time  side      _merge     R_lab    R_twin reason_lab reason_twin
+0 2013-01-17 15:11:00+00:00     1   left_only -0.108860       NaN      trail         NaN
+1 2013-01-18 13:50:00+00:00     1  right_only       NaN -0.958328        NaN       trail
+2 2013-01-22 16:20:00+00:00     1   left_only -0.945211       NaN      trail         NaN
+
+real	1m0.903s
+user	0m56.386s
+sys	0m8.552s

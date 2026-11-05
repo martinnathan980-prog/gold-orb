@@ -1,0 +1,12 @@
+brackets balanced
+StringFormat line 369: specifiers 3 args 3 OK
+StringFormat line 373: specifiers 2 args 2 OK
+StringFormat line 387: specifiers 9 args 9 OK
+StringFormat line 413: specifiers 8 args 8 OK
+StringFormat line 492: specifiers 2 args 2 OK
+StringFormat line 494: specifiers 2 args 2 OK
+StringFormat line 529: specifiers 5 args 5 OK
+StringFormat line 607: specifiers 4 args 4 OK
+StringFormat line 688: specifiers 2 args 2 OK
+StringFormat line 707: specifiers 5 args 5 OK
+StringFormat line 721: specifiers 6 args 6 OK

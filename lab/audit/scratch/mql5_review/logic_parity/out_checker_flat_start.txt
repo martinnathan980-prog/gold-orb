@@ -1,0 +1,12 @@
+2014: lab flat from first LEVELS 01-01 20:00               lab   58 ea   58 same entry   58 (100.0%) same exit 100.0% | sumR lab   +8.9 ea   +8.9
+2015: lab flat from first LEVELS 01-01 20:00               lab   55 ea   55 same entry   55 (100.0%) same exit 100.0% | sumR lab   +9.8 ea   +9.8
+2016: lab flat from first LEVELS 01-04 00:00               lab   50 ea   50 same entry   50 (100.0%) same exit 100.0% | sumR lab  +16.9 ea  +16.9
+2017: lab flat from first LEVELS 01-02 20:00               lab   65 ea   65 same entry   65 (100.0%) same exit 100.0% | sumR lab   +9.5 ea   +9.5
+2018: lab flat from first LEVELS 01-01 20:00               lab   54 ea   54 same entry   54 (100.0%) same exit 100.0% | sumR lab   +3.2 ea   +3.2
+2019: lab flat from first LEVELS 01-01 20:00               lab   53 ea   53 same entry   53 (100.0%) same exit 100.0% | sumR lab   +7.3 ea   +7.3
+2020: lab flat from first LEVELS 01-01 20:00               lab   48 ea   48 same entry   48 (100.0%) same exit 100.0% | sumR lab  +18.7 ea  +18.7
+2021: lab flat from first LEVELS 01-04 00:00               lab   61 ea   61 same entry   61 (100.0%) same exit 100.0% | sumR lab   +6.1 ea   +6.1
+2022: lab flat from first LEVELS 01-03 00:00               lab   61 ea   61 same entry   61 (100.0%) same exit 100.0% | sumR lab   +1.7 ea   +1.7
+2023: lab flat from first LEVELS 01-02 20:00               lab   66 ea   66 same entry   66 (100.0%) same exit 100.0% | sumR lab  +12.4 ea  +12.4
+2024: lab flat from first LEVELS 01-01 20:00               lab   60 ea   60 same entry   60 (100.0%) same exit 100.0% | sumR lab   +5.3 ea   +5.3
+2025: lab flat from first LEVELS 01-01 20:00               lab   61 ea   61 same entry   61 (100.0%) same exit 100.0% | sumR lab  +18.6 ea  +18.6

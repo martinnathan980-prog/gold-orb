@@ -1,0 +1,10 @@
+M5 window   3648: 4h bars min 81 median 83 | ATR rel. error max 1.49e-02 median 1.43e-03 | channel-high diff max 1.19e+00
+M5 window  51840: 4h bars min 1167 median 1172 | ATR rel. error max 1.38e-02 median 6.69e-04 | channel-high diff max 1.19e+00
+
+seeding effect only (lab 4h bars, ATR restarted at the window start):
+   1167 bars: ATR rel. error max 1.11e-15 median 4.44e-16
+     81 bars: ATR rel. error max 1.27e-02 median 9.30e-04
+     76 bars: ATR rel. error max 1.91e-02 median 1.30e-03
+
+4h high: lab (max bid-high + max ask-high)/2 minus max(M1 mid-high): mean 0.006 p99 0.150 max 1.530  (always >= 0: True)
+4h low : lab (min bid-low + min ask-low)/2 minus min(M1 mid-low):   mean -0.006 p01 -0.159 min -2.498  (always <= 0: True)

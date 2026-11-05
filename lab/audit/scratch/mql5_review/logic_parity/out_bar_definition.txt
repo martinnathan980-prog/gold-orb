@@ -1,0 +1,6 @@
+exact M1, lab 4h def                                       lab  780 ea  780 same entry  780 (100.0%) same exit 100.0% | sumR lab +135.4 ea +135.4
+exact M1, EA 4h def (max of mids)                          lab  780 ea  781 same entry  778 ( 99.7%) same exit  96.9% | sumR lab +135.4 ea +135.8
+MT5-like M1, lab 4h def on exact quotes                    lab  780 ea  781 same entry  747 ( 95.8%) same exit  90.4% | sumR lab +135.4 ea +135.1
+MT5-like M1 + EA 4h def (= twin --mt5like)                 lab  780 ea  778 same entry  718 ( 92.1%) same exit  86.9% | sumR lab +135.4 ea +139.8
+MT5-like M1 + lab-style 4h def (proposed Build4H)          lab  780 ea  776 same entry  718 ( 92.1%) same exit  86.5% | sumR lab +135.4 ea +139.1
+tick-exact M1 ask + EA 4h def from MT5-like M5 (fix #ticks) lab  780 ea  776 same entry  735 ( 94.2%) same exit  95.4% | sumR lab +135.4 ea +138.3

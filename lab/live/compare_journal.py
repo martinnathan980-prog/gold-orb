@@ -27,12 +27,18 @@ from audit import load_strategy  # noqa: E402
 def read_journal(path):
     j = pd.read_csv(path, sep=";")
     j["t"] = pd.to_datetime(j["time_utc"], format="%Y.%m.%d %H:%M:%S", utc=True)
-    ent = j[j.event == "ENTRY"].reset_index(drop=True)
-    ext = j[j.event == "EXIT"].reset_index(drop=True)
-    n = min(len(ent), len(ext))
-    ea = pd.DataFrame({"entry_time": ent.t[:n], "side": ent.side[:n].astype(int), "entry": ent.price[:n],
-                       "exit_time": ext.t[:n].to_numpy(), "R": ext.R[:n].to_numpy(), "reason": ext.note[:n].to_numpy()})
-    return ea
+    # pair each EXIT with the ENTRY just before it (an ENTRY left open by a cut-off run is dropped)
+    rows, op = [], None
+    for r in j[j.event.isin(["ENTRY", "EXIT"])].itertuples(index=False):
+        if r.event == "ENTRY":
+            op = r
+        elif op is not None:
+            rows.append(dict(entry_time=op.t, side=int(op.side), entry=op.price,
+                             exit_time=r.t, R=r.R, reason=r.note))
+            op = None
+    ea = pd.DataFrame(rows, columns=["entry_time", "side", "entry", "exit_time", "R", "reason"])
+    # several tester runs appended to one file: keep one copy of each trade
+    return ea.drop_duplicates(["entry_time", "side"], keep="last").reset_index(drop=True)
 
 
 def main():

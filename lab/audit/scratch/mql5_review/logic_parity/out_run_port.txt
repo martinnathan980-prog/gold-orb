@@ -1,0 +1,54 @@
+== full history 2013-2026, EA control flow but warm start (should equal the twin)
+2013-03..2026-10 warm, deadline_ref=bucket, exit_rule=ea   lab  780 ea  780 same entry  780 (100.0%) same exit 100.0% | sumR lab +135.4 ea +135.4
+2013-03..2026-10 warm, deadline_ref=tclose, exit_rule=lab  lab  780 ea  780 same entry  780 (100.0%) same exit 100.0% | sumR lab +135.4 ea +135.4
+
+== one-year tester runs (EA starts flat on Jan 1 and skips the first bucket) vs lab with history
+2014: EA first-run as coded                                lab   58 ea   58 same entry   58 (100.0%) same exit 100.0% | sumR lab   +8.9 ea   +8.9
+2014: EA with 21-day warm replay                           lab   58 ea   58 same entry   58 (100.0%) same exit 100.0% | sumR lab   +8.9 ea   +8.9
+2014: lab started flat at the EA start (checker fix)       lab   58 ea   58 same entry   58 (100.0%) same exit 100.0% | sumR lab   +8.9 ea   +8.9
+2015: EA first-run as coded                                lab   55 ea   55 same entry   55 (100.0%) same exit 100.0% | sumR lab   +9.8 ea   +9.8
+2015: EA with 21-day warm replay                           lab   55 ea   55 same entry   55 (100.0%) same exit 100.0% | sumR lab   +9.8 ea   +9.8
+2015: lab started flat at the EA start (checker fix)       lab   55 ea   55 same entry   55 (100.0%) same exit 100.0% | sumR lab   +9.8 ea   +9.8
+2016: EA first-run as coded                                lab   50 ea   50 same entry   50 (100.0%) same exit 100.0% | sumR lab  +16.9 ea  +16.9
+2016: EA with 21-day warm replay                           lab   50 ea   50 same entry   50 (100.0%) same exit 100.0% | sumR lab  +16.9 ea  +16.9
+2016: lab started flat at the EA start (checker fix)       lab   50 ea   50 same entry   50 (100.0%) same exit 100.0% | sumR lab  +16.9 ea  +16.9
+2017: EA first-run as coded                                lab   65 ea   65 same entry   65 (100.0%) same exit 100.0% | sumR lab   +9.5 ea   +9.5
+2017: EA with 21-day warm replay                           lab   65 ea   65 same entry   65 (100.0%) same exit 100.0% | sumR lab   +9.5 ea   +9.5
+2017: lab started flat at the EA start (checker fix)       lab   65 ea   65 same entry   65 (100.0%) same exit 100.0% | sumR lab   +9.5 ea   +9.5
+2018: EA first-run as coded                                lab   53 ea   54 same entry   53 (100.0%) same exit 100.0% | sumR lab   +1.8 ea   +3.2
+                 entry_time  side      _merge  R_lab      R_ea
+0 2018-01-01 23:30:00+00:00     1  right_only    NaN  1.380695
+2018: EA with 21-day warm replay                           lab   53 ea   53 same entry   53 (100.0%) same exit 100.0% | sumR lab   +1.8 ea   +1.8
+2018: lab started flat at the EA start (checker fix)       lab   54 ea   54 same entry   54 (100.0%) same exit 100.0% | sumR lab   +3.2 ea   +3.2
+2019: EA first-run as coded                                lab   52 ea   53 same entry   51 ( 98.1%) same exit 100.0% | sumR lab   +7.2 ea   +7.3
+                 entry_time  side      _merge     R_lab      R_ea
+0 2019-01-02 04:47:00+00:00     1  right_only       NaN -0.403417
+1 2019-01-02 23:00:00+00:00     1  right_only       NaN  0.111396
+2 2019-01-03 18:18:00+00:00     1   left_only -0.366457       NaN
+2019: EA with 21-day warm replay                           lab   52 ea   52 same entry   52 (100.0%) same exit 100.0% | sumR lab   +7.2 ea   +7.2
+2019: lab started flat at the EA start (checker fix)       lab   53 ea   53 same entry   53 (100.0%) same exit 100.0% | sumR lab   +7.3 ea   +7.3
+2020: EA first-run as coded                                lab   48 ea   48 same entry   48 (100.0%) same exit 100.0% | sumR lab  +18.7 ea  +18.7
+2020: EA with 21-day warm replay                           lab   48 ea   48 same entry   48 (100.0%) same exit 100.0% | sumR lab  +18.7 ea  +18.7
+2020: lab started flat at the EA start (checker fix)       lab   48 ea   48 same entry   48 (100.0%) same exit 100.0% | sumR lab  +18.7 ea  +18.7
+2021: EA first-run as coded                                lab   61 ea   61 same entry   60 ( 98.4%) same exit 100.0% | sumR lab   +6.7 ea   +6.1
+                 entry_time  side      _merge     R_lab      R_ea
+0 2021-01-03 23:00:00+00:00     1   left_only  1.993837       NaN
+1 2021-01-04 01:00:00+00:00     1  right_only       NaN  1.368409
+2021: EA with 21-day warm replay                           lab   61 ea   61 same entry   61 (100.0%) same exit 100.0% | sumR lab   +6.7 ea   +6.7
+2021: lab started flat at the EA start (checker fix)       lab   61 ea   61 same entry   60 ( 98.4%) same exit 100.0% | sumR lab   +6.7 ea   +6.1
+2022: EA first-run as coded                                lab   61 ea   61 same entry   61 (100.0%) same exit 100.0% | sumR lab   +1.7 ea   +1.7
+2022: EA with 21-day warm replay                           lab   61 ea   61 same entry   61 (100.0%) same exit 100.0% | sumR lab   +1.7 ea   +1.7
+2022: lab started flat at the EA start (checker fix)       lab   61 ea   61 same entry   61 (100.0%) same exit 100.0% | sumR lab   +1.7 ea   +1.7
+2023: EA first-run as coded                                lab   66 ea   66 same entry   66 (100.0%) same exit 100.0% | sumR lab  +12.4 ea  +12.4
+2023: EA with 21-day warm replay                           lab   66 ea   66 same entry   66 (100.0%) same exit 100.0% | sumR lab  +12.4 ea  +12.4
+2023: lab started flat at the EA start (checker fix)       lab   66 ea   66 same entry   66 (100.0%) same exit 100.0% | sumR lab  +12.4 ea  +12.4
+2024: EA first-run as coded                                lab   60 ea   60 same entry   60 (100.0%) same exit 100.0% | sumR lab   +5.3 ea   +5.3
+2024: EA with 21-day warm replay                           lab   60 ea   60 same entry   60 (100.0%) same exit 100.0% | sumR lab   +5.3 ea   +5.3
+2024: lab started flat at the EA start (checker fix)       lab   60 ea   60 same entry   60 (100.0%) same exit 100.0% | sumR lab   +5.3 ea   +5.3
+2025: EA first-run as coded                                lab   61 ea   61 same entry   61 (100.0%) same exit 100.0% | sumR lab  +18.6 ea  +18.6
+2025: EA with 21-day warm replay                           lab   61 ea   61 same entry   61 (100.0%) same exit 100.0% | sumR lab  +18.6 ea  +18.6
+2025: lab started flat at the EA start (checker fix)       lab   61 ea   61 same entry   61 (100.0%) same exit 100.0% | sumR lab  +18.6 ea  +18.6
+
+real	0m55.669s
+user	0m47.190s
+sys	0m13.029s
