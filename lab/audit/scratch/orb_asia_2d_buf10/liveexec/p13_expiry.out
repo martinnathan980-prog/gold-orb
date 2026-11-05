@@ -1,0 +1,8 @@
+primary_entry_end_12:00LDN         IS n 1037 PF 1.177 t 1.83 | VAL n 445 PF 1.1 t 0.74 | fills after 12:00 LDN: 0
+primary_entry_end_13:00LDN         IS n 1071 PF 1.132 t 1.44 | VAL n 452 PF 1.091 t 0.68 | fills after 12:00 LDN: 81
+primary_entry_end_16:00LDN         IS n 1123 PF 1.14 t 1.56 | VAL n 481 PF 1.135 t 1.02 | fills after 12:00 LDN: 284
+primary_entry_end_22:00LDN         IS n 1127 PF 1.153 t 1.67 | VAL n 485 PF 1.075 t 0.58 | fills after 12:00 LDN: 314
+low_cost_ecn_entry_end_12:00LDN    IS n 1038 PF 1.315 t 2.96 | VAL n 447 PF 1.21 t 1.44 | fills after 12:00 LDN: 0
+low_cost_ecn_entry_end_13:00LDN    IS n 1073 PF 1.257 t 2.58 | VAL n 454 PF 1.202 t 1.41 | fills after 12:00 LDN: 81
+low_cost_ecn_entry_end_16:00LDN    IS n 1126 PF 1.263 t 2.7 | VAL n 482 PF 1.241 t 1.69 | fills after 12:00 LDN: 282
+low_cost_ecn_entry_end_22:00LDN    IS n 1130 PF 1.257 t 2.65 | VAL n 486 PF 1.176 t 1.27 | fills after 12:00 LDN: 312

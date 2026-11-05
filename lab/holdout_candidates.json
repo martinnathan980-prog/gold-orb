@@ -43,8 +43,14 @@
  },
  "reading_note": "Bands declared before the download, following the statistical review: ~10 months (~50-100 trades) has low power; a long-only profit in a rising 2026 cannot be told apart from beta, so long/short split and gold's 2026 change are reported alongside.",
  "also_reported_not_criteria": [
-  "every-signal diagnostic (no_overlap=False)",
-  "typical_retail scenario",
-  "long vs short split"
- ]
+  "every-signal diagnostic (no_overlap=False), decisive scenario",
+  "typical_retail scenario (and the other scenario not decisive for the candidate)",
+  "long vs short split and gold's 2026 change",
+  "late market entry +5 min after the theoretical fill (alert-driven manual execution proxy)",
+  "MT5 server-time 4h grid (ny17) for trend/donch4h_stop",
+  "random-side null at the same entry times, same stop distance / trail / time exit, 200 seeds: candidate percentile",
+  "number of positions still open at the end of the data (marked to market)"
+ ],
+ "review": "Adversarial review (lab/results/review/review_workflow.json): both judges GO_TO_HOLDOUT; no look-ahead, no material simulation error. Judge pre-download fixes applied: full-history warm start, crossed-quote filter, partial-hole scan (>15 min) + re-download, extra informational diagnostics.",
+ "val_access_disclosure": "VAL (2022-2025) was accessed repeatedly after the finalists were frozen (audit + review robustness variants, no re-tuning); counts are in results/val_access.log and are reported."
 }

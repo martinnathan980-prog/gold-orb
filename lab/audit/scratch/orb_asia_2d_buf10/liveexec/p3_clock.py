@@ -4,7 +4,7 @@ M1/H1 (whole-hour offsets) and only the clock MAPPING matters.  Variants = what 
 hard-codes server hours would actually trade:
   C0 baseline (correct London / NY wall clocks)
   C1 NY-close server (UTC+2/+3 switching on US dates), fixed server hours 02:00-09:00 range,
-     orders until 14:00, exit 23:00 server  -> range/entry window 1 h late in US/EU DST-gap weeks
+     orders until 14:00, exit 23:00 server  -> range/entry window 1 h EARLY (23:00-06:00 London) in US/EU DST-gap weeks
   C2 EET server (UTC+2/+3 switching on EU dates), same fixed server hours -> range exact,
      exit 21:00 London = 17:00 NY (market closed) in DST-gap weeks
   C3 EA on fixed UTC (no DST): range 00-07 UTC, orders until 12 UTC, exit 21:00 UTC

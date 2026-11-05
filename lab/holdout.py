@@ -16,6 +16,8 @@ import os
 import subprocess
 import sys
 
+from dataclasses import replace
+
 import numpy as np
 import pandas as pd
 
@@ -47,6 +49,8 @@ def build(sym):
         a = _read(f"{sym}-m1-ask-*.csv")
         df = b.add_prefix("b_").join(a.add_prefix("a_"), how="inner")
         df = _drop_flat(df, "b_open", "b_high", "b_low", "b_close")
+        bad = (df.a_close < df.b_close) | (df.a_low < df.b_low - 5)      # same filter as prep_data.py
+        df = df[~bad]
         df = pd.DataFrame({"bo": df.b_open, "bh": df.b_high, "bl": df.b_low, "bc": df.b_close,
                            "ao": df.a_open, "ah": df.a_high, "al": df.a_low, "ac": df.a_close})
     else:
@@ -61,6 +65,23 @@ def build(sym):
 def short_days(df):
     cnt = pd.Series(1, index=gl.trading_day(df.index)).groupby(level=0).sum()
     return cnt[cnt < 0.5 * cnt.median()].index
+
+
+def gap_days(df, min_gap_min=15):
+    """Trading days containing an unexpected hole > min_gap_min minutes (not the 17:00-18:00 NY
+    daily break, not the weekend). Those days are re-downloaded once (partial download failures)."""
+    idx = df.index
+    d = np.diff(idx.asi8) / 6e10
+    out = set()
+    ny = idx.tz_convert("America/New_York")
+    for k in np.where(d > min_gap_min)[0]:
+        a, b = ny[k], ny[k + 1]
+        ta = a.hour * 60 + a.minute
+        daily_break = 16 * 60 + 40 <= ta <= 17 * 60 and (b - a) <= pd.Timedelta(hours=1, minutes=40)
+        weekend = a.dayofweek == 4 and ta >= 16 * 60 + 40 and b.dayofweek == 6
+        if not (daily_break or weekend):
+            out.add(gl.trading_day(pd.DatetimeIndex([idx[k]]))[0])
+    return sorted(out)
 
 
 def patch(sym, days):
@@ -95,13 +116,15 @@ def main():
     frames = {}
     for sym in sorted({c.get("sym", "xauusd") for c in cands["candidates"]}):
         df = build(sym)
-        sd = [d for d in short_days(df) if not (d.month == 12 and d.day >= 24) and not (d.month == 1 and d.day <= 2)]
+        hol = lambda d: (d.month == 12 and d.day >= 24) or (d.month == 1 and d.day <= 2)
+        sd = sorted({d for d in list(short_days(df)) + gap_days(df) if not hol(d)})
         if sd:
-            print(f"{sym}: re-downloading {len(sd)} short days", flush=True)
+            print(f"{sym}: re-downloading {len(sd)} days with holes", flush=True)
             patch(sym, sd)
             df = build(sym)
+            print(f"{sym}: remaining days with holes after patch: {len([d for d in gap_days(df) if not hol(d)])}", flush=True)
         df.to_parquet(os.path.join(HD, f"{sym}_m1.parquet"))
-        hist = gl.load_m1(sym, start="2025-06-01")
+        hist = gl.load_m1(sym)                      # full history: same one-position chain as the audits
         full = pd.concat([hist, df[df.index > hist.index[-1]]])
         frames[sym] = full
         print(f"{sym}: holdout bars {len(df):,} {df.index[0]} -> {df.index[-1]}", flush=True)
@@ -129,6 +152,53 @@ def main():
                                      no_overlap=False)
         he = te[te.entry_time >= START]
         results[key]["every_signal_decisive"] = gl.report(he) if len(he) else {"n": 0}
+        # informational variants (declared before the download, not criteria)
+        cc = Costs(**dc) if dc else gl.sim.COSTS["xauusd"]
+        mk = gl.sim.apply_spread_mult(m1, cc.spread_mult)
+        c1 = replace(cc, spread_mult=1.0)
+        orders = mod.make_orders(mk, **params).reset_index(drop=True)
+        base = gl.simulate(mk, orders, sym=sym, costs=c1)
+        late = orders.loc[base.index].copy()
+        late["etype"] = 0
+        late["level"] = np.nan
+        late["expiry_i"] = -1
+        late["entry_i"] = gl.entry_index(mk, base.entry_time + pd.Timedelta(minutes=5))
+        tl = gl.simulate(mk, late.reset_index(drop=True), sym=sym, costs=c1)
+        hl = tl[tl.entry_time >= START]
+        results[key]["late_market_entry_5min"] = gl.report(hl) if len(hl) else {"n": 0}
+        if "grid" in getattr(mod, "_DEFAULTS", {}) or c["track"] == "trend":
+            try:
+                tg = gl.sim.simulate_rebuilt(m1, mod.make_orders, dict(params, grid="ny17"), sym=sym, costs=cc)
+                hg = tg[tg.entry_time >= START]
+                results[key]["mt5_server_grid_ny17"] = gl.report(hg) if len(hg) else {"n": 0}
+            except Exception as e:  # noqa: BLE001
+                results[key]["mt5_server_grid_ny17"] = {"error": str(e)}
+        hb = base[base.entry_time >= START]
+        results[key]["open_at_end_of_data"] = int((hb.exit_time >= m1.index[-1]).sum())
+        # random-side null at the same entry times, same stop distance / trail / time exit (200 seeds)
+        if len(hb) >= 5:
+            o0 = orders.loc[hb.index]
+            nul = pd.DataFrame({"entry_i": gl.entry_index(mk, hb.entry_time), "stop_dist": hb.risk.to_numpy(),
+                                "trail": o0["trail"].to_numpy() if "trail" in o0 else np.nan,
+                                "exit_i": o0["exit_i"].to_numpy()})
+            rng = np.random.default_rng(2026)
+            pfs = []
+            for _ in range(200):
+                nul["side"] = rng.choice([-1, 1], len(nul))
+                tn = gl.simulate(mk, nul, sym=sym, costs=c1, no_overlap=False)
+                g_, l_ = tn.R[tn.R > 0].sum(), -tn.R[tn.R < 0].sum()
+                pfs.append(g_ / l_ if l_ > 0 else np.nan)
+            pfs = np.array(pfs, float)
+            cand_pf = results[key]["scenarios"][c["decisive_scenario"]].get("pf", np.nan)
+            results[key]["random_side_null"] = {
+                "pf_p5_p50_p95": [round(float(np.nanpercentile(pfs, q)), 3) for q in (5, 50, 95)],
+                "candidate_percentile": round(float(np.mean(pfs < cand_pf) * 100), 1)}
+        for k_ in ("every_signal_decisive", "late_market_entry_5min", "mt5_server_grid_ny17"):
+            if k_ in results[key]:
+                r_ = results[key][k_]
+                print(key, k_, {k: r_.get(k) for k in ("n", "pf", "expectancy_R", "long_R", "short_R")}, flush=True)
+        print(key, "random_side_null", results[key].get("random_side_null"), "| open at end:",
+              results[key]["open_at_end_of_data"], flush=True)
         pf = results[key]["scenarios"].get(c["decisive_scenario"], {}).get("pf", 0) or 0
         results[key]["holdout_pf_decisive"] = pf
         results[key]["holdout_pass"] = pf > 1.0

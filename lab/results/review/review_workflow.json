@@ -1,0 +1,1754 @@
+[
+ {
+  "candidate": "trend/donch4h_stop",
+  "reviews": [
+   {
+    "lens": "LOOK-AHEAD & SIMULATION-FIDELITY CODE AUDIT",
+    "candidate": "trend/donch4h_stop",
+    "verdict": "No look-ahead and no fill bug found. An independent EA rebuild reproduces all 747 IS+VAL trades exactly, and the causality and timing probes pass. But the PASS only holds for a fully automated 24/5 EA, and PF is sensitive to fill quality. Alerts-first or semi-manual execution brings VAL PF to 0.87-1.24, or IS t below 2.",
+    "issues": [
+     {
+      "severity": "info",
+      "description": "No look-ahead in the code the finalist uses (strategy._donchian_stop, _first_touch, add_trading_days, exit_index, gl.bars, gl.atr, gl.entry_index, sim._run). The OCO side is picked by a forward scan in _first_touch. That scan is equivalent to a real-time OCO: no order exists before the first touch, and nothing after the fill bar changes the order. Channel and ATR use only complete 4h bars. M1 bars are labelled by their start time, the data is in UTC, and DST is handled correctly.",
+      "evidence": "refimpl.py is a sequential bar-by-bar EA written from the text rule (my own 4h bins, Wilder ATR, zoneinfo time exit, swap). It matches the engine on 499/499 IS and 248/248 VAL trades: same side, entry/exit price (max diff 4.6e-13), exit time and R. The NY-17h vs bin-boundary decision clock gives identical results. I hand-checked 14 random IS trades from raw M1 rows by pandas slicing (channel, ATR, first touch, fill, trailing path, exit, swap nights, R): 14/14 match within 1e-13. Truncation probes: levels and ATR identical at 120/120 random decisions on data cut at the decision. With data cut just before the fill bar, no order exists (40/40). With data cut 2 bars after the fill and the post-fill bar garbled (+/-5%), the order is unchanged (40/40). Ticks (Jul 2025) match M1 bar [T,T+1m) 100% vs 6-9% for [T-1m,T). Widest spread falls at 20:58 UTC in summer and 21:59 UTC in winter, i.e. 17:00 NY in both. 0 NaT time exits. 0 OCO ties over all 2646 resolved windows.",
+      "effect_on_results": "None. Deliberate early activation by 1-2 M1 bars (a look-ahead) leaves PF unchanged (IS 1.350 / VAL 1.294). Early by 5 bars: 1.342 / 1.287. Minute-level timing does not drive the result."
+     },
+     {
+      "severity": "major",
+      "description": "The simulated execution needs a fully automated EA running 24/5. It places an OCO at every 4h close, including 00:00 and 04:00 UTC (01:00-06:00 Paris). It must cancel the other leg itself, because MT5 has no native OCO. It recomputes the trailing stop at every M1 close. The trader's alerts-first or manual plan cannot reproduce this. The variants a French retail trader would realistically run lose much of the VAL edge, or fail the IS t>=2 criterion.",
+      "evidence": "refimpl2 variants, IS / VAL PF. Skip the 00 and 04 UTC decisions: 1.335 / 1.13 (VAL t 0.70). Leave the evening OCO unchanged until the next 08:00 UTC: 1.368 / 1.236 (t 1.22). Same plus MT4/MT5 terminal-style trailing, which only starts once profit exceeds 2xATR (approximated at M1 granularity): 1.228 (IS t 1.68, fails) / 1.317. Trail moved only at each 4h alert: 1.267 (IS t 1.90, fails) / 1.282. Only 16/20 UTC decisions: 1.32 / 0.868. Orders placed late: +60 min 1.343 / 1.228; +120 min 1.177 / 1.104. Fills in the 00-08 UTC windows supply 18.8 of 61.5 R on IS (31%) and 15.0 of 24.7 R on VAL (61%).",
+      "effect_on_results": "The PASS figures (1.35 / 1.29) are valid only for the automated rule. Realistic manual or alerts variants: VAL PF 0.87-1.24, or IS PF about 1.23-1.27 with t below 2."
+     },
+     {
+      "severity": "minor",
+      "description": "Fills at the exact level in fast markets are optimistic, and PF is steeply sensitive to that. Stop entries fill at max(level, open) and trailing exits at min(stop, open), plus 1.5 bp per side. Real breakouts and stop-outs often happen in large M1 bars, e.g. 2013-06-26 01:05: $9.5 range through the sell level; 2014-09-05 12:30 NFP: $10 through the trailing stop.",
+      "evidence": "Ticks (n=25, Jun-Dec 2025): tick fills are worse than M1-at-level by $0.161 on entry and $0.413 on exit, i.e. $0.574 = 0.0135 R per round trip. The engine slippage budget is $1.12 = 0.0287 R; 3/25 trades exceed it. This implies traders pay 9% (entry) and 21% (exit) of the trigger bar's range beyond the level. Stress (extra fraction of that range on top of the 1.5 bp), IS / VAL PF: 10% 1.292 / 1.254; 25% 1.21 / 1.187; 50% 1.087 / 1.083. Tick-calibrated 9%/21% replacing the slippage: 1.388 / 1.35. Same on top of the slippage (double count): 1.271 / 1.236.",
+      "effect_on_results": "On the tick evidence the base model is adequate to slightly conservative. Sensitivity is about -0.06 PF per extra 10% of trigger-bar overshoot. The calibration rests on 25 trades from one half-year."
+     },
+     {
+      "severity": "minor",
+      "description": "Trailing granularity is ambiguous inside spike bars. An M1 bar cannot tell whether its high or low came first. The engine applies the trail only after the bar closes; tick-based trailing (OnTick EA) would exit differently in flash-spike minutes.",
+      "evidence": "Bound where the favourable extreme comes first in every bar: IS 1.319 / VAL 1.204. An open/high/low/close path heuristic gives results identical to base. 11 IS trades are affected, all in flash minutes (2013-07-21 22:12, 2015-07-20 01:29, 2017-06-26 08:01, 2021-08-08 22:51, ...), e.g. 2021-08-06 short R +8.33 vs +4.36, 2015-07-15 short +5.29 vs +8.58.",
+      "effect_on_results": "An EA trailing tick-by-tick would land between base and IS -0.03 / VAL -0.09 PF. An EA trailing exactly at M1 closes matches the sim."
+     },
+     {
+      "severity": "minor",
+      "description": "Results depend on implementation details that an MT5 EA can easily get wrong: the UTC 4h grid (MT5 brokers use NY-close server time, UTC+2/+3), and a channel that includes the just-closed bar.",
+      "evidence": "Grid offset +1h / +2h / +3h: IS 1.304 / 1.284 / 1.349 (t 2.11 / 1.94 / 2.32), VAL 1.354 / 1.264 / 1.256; the track found 1.313 IS on the broker server grid. Channel excluding the just-closed bar: IS 1.285 (t 2.03) / VAL 1.271. Levels one 4h bar stale: IS 1.272 (t 1.94) / VAL 1.234. Level source is robust: bid / ask / true per-minute mid gives IS 1.382 / 1.349 / 1.351, VAL 1.288 / 1.331 / 1.297.",
+      "effect_on_results": "A typical off-by-one or broker-grid EA would lose about 0.04-0.08 IS PF and could fail t>=2. VAL stays at 1.23-1.35. Smooth degradation, no collapse."
+     },
+     {
+      "severity": "minor",
+      "description": "The VAL result moved noticeably with data-hole patching, so it depends on data completeness. The patch files themselves are correctly aligned.",
+      "evidence": "The patch added 77,215 M1 bars, 39,637 of them in 2022-2025. Audit unpatched vs patched: VAL n 243 to 248, PF 1.232 to 1.294, R 19.3 to 24.7. IS PF 1.356 to 1.35. 30/30 sampled patch files align at shift 0 with 100% close match on overlapping minutes (shifts -180..+180 min tested).",
+      "effect_on_results": "VAL PF +0.06 from patching alone. The 2026 holdout needs the same patching (holdout.py skips Dec 24-Jan 2)."
+     },
+     {
+      "severity": "info",
+      "description": "End-of-data truncation: exit_index maps a time exit beyond the data to the last bar, and the trade is labelled 'time'.",
+      "evidence": "The last VAL trade (short, entered 2025-12-31 05:53 UTC) is force-closed at 21:58 UTC the same day as 'time' (R -0.36, 8997 min before its scheduled exit). In holdout.py this position will carry into 2026 and block new entries until it exits.",
+      "effect_on_results": "Negligible on VAL PF (one trade, -0.36 R)."
+     },
+     {
+      "severity": "info",
+      "description": "Pitfalls for live and alert tooling (not backtest leaks). On truncated or live data, make_orders drops the newest decision until at least one bar after the fill exists, because keep &= xi > hit_i and xi is clipped to the last bar. It also sets exit_i to the last bar for open trades. exit_index moves exits before closures using future knowledge of where the data exists. bars_cached is keyed on id(m1), len and endpoints, so a frame modified in place could get stale bars.",
+      "evidence": "Truncation probe (b) with data cut right after the fill: 0/40 orders emitted. Cutting 2 bars later: 40/40 identical. 309/20800 scheduled exits are moved earlier: holidays, plus 27 at end of data. Among taken trades, all 8 IS and 3 VAL time exits are at the schedule; the only moved one is the end-of-data trade. Max hold 167.8 h, never later than scheduled.",
+      "effect_on_results": "None on the reported numbers. The alert generator must not reuse make_orders unchanged."
+     },
+     {
+      "severity": "info",
+      "description": "Other fidelity checks passed.",
+      "evidence": "Cost stress x1.5 with the OCO side re-resolved under the stressed spreads: IS 1.255 / VAL 1.200 (engine 1.256 / 1.215). Fills blocked at rollover and Sunday open: IS 1.338-1.35 / VAL 1.283-1.286. Entries in news minutes: 45 IS (+4.9 R) and 20 VAL (+4.9 R); PF without them 1.356 / 1.253. Data holes inside trades: 25 IS trades, all US-holiday early closes or Christmas/New Year closures, plus 4 short outages (21-120 min) with price moves of $2.1 or less. Gap fills: 10 IS / 6 VAL. Stops hit on the fill bar: 1 / 1. Swap triple on Friday instead of Wednesday: PF +/-0.002. Lot-step rounding at 1% risk ($2k-$100k accounts): PF in $ IS 1.32-1.35, VAL 1.29-1.42. Micro-perturbations, 20 seeds each (level noise +/-$0.05 and +/-$0.50, random 0-2 min delay, trail +/-1%): IS PF 1.331-1.419, VAL 1.278-1.338. The one-position trade path is stable, so the taken vs every-signal gap is not a micro-path accident.",
+      "effect_on_results": "None material."
+     }
+    ],
+    "measurements": [
+     {
+      "name": "baseline reproduction (engine)",
+      "is_value": "PF 1.350, n 499, t 2.35",
+      "val_value": "PF 1.294, n 248, t 1.49",
+      "note": "matches the candidate summary"
+     },
+     {
+      "name": "independent sequential EA rebuild vs engine",
+      "is_value": "499/499 identical, max |dR| 9e-14",
+      "val_value": "248/248 identical, max |dR| 3e-14",
+      "note": "refimpl.py; NY-17h vs bin-boundary decision clock identical"
+     },
+     {
+      "name": "hand check, 14 random trades vs raw M1 rows",
+      "is_value": "14/14 match",
+      "val_value": "n/a",
+      "note": "needs >= 640 bins of ATR warm-up; with 214 bins one trade differs by 1e-6 (convergence only)"
+     },
+     {
+      "name": "truncation: levels/ATR at decision; no order before touch; order unchanged with post-fill bar garbled",
+      "is_value": "120/120; 40/40; 40/40",
+      "val_value": "n/a",
+      "note": "p3/p3c"
+     },
+     {
+      "name": "activation delay +1 / +5 / +30 M1 bars",
+      "is_value": "1.347 / 1.345 / 1.351",
+      "val_value": "1.290 / 1.284 / 1.274",
+      "note": "smooth"
+     },
+     {
+      "name": "activation delay +60 / +120 M1 bars",
+      "is_value": "1.343 / 1.177",
+      "val_value": "1.228 / 1.104",
+      "note": "late or manual order placement"
+     },
+     {
+      "name": "deliberate look-ahead (activate 1 / 2 / 5 bars early)",
+      "is_value": "1.350 / 1.350 / 1.342",
+      "val_value": "1.294 / 1.294 / 1.287",
+      "note": "no inflation, so minute timing is irrelevant"
+     },
+     {
+      "name": "levels one 4h bar stale / channel excludes current bar",
+      "is_value": "1.272 (t 1.94) / 1.285 (t 2.03)",
+      "val_value": "1.234 / 1.271",
+      "note": "EA off-by-one risk"
+     },
+     {
+      "name": "4h grid offset +1h / +2h / +3h",
+      "is_value": "1.304 / 1.284 / 1.349",
+      "val_value": "1.354 / 1.264 / 1.256",
+      "note": "UTC grid is the top of 4 on IS; broker grid 1.313 IS (track)"
+     },
+     {
+      "name": "level source bid / ask / true per-minute mid",
+      "is_value": "1.382 / 1.349 / 1.351",
+      "val_value": "1.288 / 1.331 / 1.297",
+      "note": "mid vs bid/ask triggers not an issue"
+     },
+     {
+      "name": "perturbation level noise +/-$0.05 (20 seeds) min-median-max",
+      "is_value": "1.349-1.357-1.382",
+      "val_value": "1.278-1.310-1.326",
+      "note": "path stable"
+     },
+     {
+      "name": "perturbation level noise +/-$0.50 / random 0-2 min delay / trail +/-1%",
+      "is_value": "1.331-1.419 / 1.339-1.349 / 1.335-1.378",
+      "val_value": "1.278-1.338 / 1.289-1.293 / 1.292-1.313",
+      "note": "ranges over 20 seeds"
+     },
+     {
+      "name": "tick fill shortfall per round trip (Jun-Dec 2025, n=25)",
+      "is_value": "n/a",
+      "val_value": "$0.574 = 0.0135 R (entry $0.161, exit $0.413) vs slippage budget 0.0287 R",
+      "note": "implied overshoot 9% entry / 21% exit of trigger-bar range; 3/25 trades exceed the budget"
+     },
+     {
+      "name": "fast-market fill stress, 10% / 25% / 50% of trigger-bar range on top of slippage",
+      "is_value": "1.292 / 1.21 / 1.087",
+      "val_value": "1.254 / 1.187 / 1.083",
+      "note": "about -0.06 PF per 10%"
+     },
+     {
+      "name": "tick-calibrated fills without slippage / with slippage",
+      "is_value": "1.388 / 1.271",
+      "val_value": "1.35 / 1.236",
+      "note": "base model adequate to conservative"
+     },
+     {
+      "name": "trailing: intrabar tick-like bound / open-high-low-close heuristic path",
+      "is_value": "1.319 / 1.350",
+      "val_value": "1.204 / 1.294",
+      "note": "11 IS spike-bar trades drive the bound"
+     },
+     {
+      "name": "trailing: terminal-style trail (starts after +2ATR) / trail moved only at 4h alerts",
+      "is_value": "1.205 (t 1.54) / 1.267 (t 1.90)",
+      "val_value": "1.35 / 1.282",
+      "note": "both fail IS t>=2"
+     },
+     {
+      "name": "alerts: skip 00/04 UTC decisions / evening OCO left until 08 UTC",
+      "is_value": "1.335 / 1.368",
+      "val_value": "1.13 (t 0.70) / 1.236",
+      "note": "with terminal-style trail added to the second: IS 1.228 (t 1.68), VAL 1.317"
+     },
+     {
+      "name": "alerts: only 16/20 UTC decisions",
+      "is_value": "1.32 (t 1.62)",
+      "val_value": "0.868",
+      "note": "evening-only trader"
+     },
+     {
+      "name": "share of total R from fills in 00-08 UTC windows",
+      "is_value": "18.8 / 61.5 R (31%)",
+      "val_value": "15.0 / 24.7 R (61%)",
+      "note": "VAL edge comes mostly from night hours (Paris)"
+     },
+     {
+      "name": "no fills at rollover (16:55-18:15 NY) and Sunday open",
+      "is_value": "1.350",
+      "val_value": "1.283",
+      "note": "no spread-spike dependence"
+     },
+     {
+      "name": "cost stress x1.5 with OCO side re-resolved",
+      "is_value": "1.255 (engine 1.256)",
+      "val_value": "1.200 (engine 1.215)",
+      "note": "engine shortcut negligible"
+     },
+     {
+      "name": "unpatched vs patched data",
+      "is_value": "1.356 to 1.350",
+      "val_value": "1.232 to 1.294",
+      "note": "77,215 bars added, 39,637 in VAL; patch timestamps aligned 30/30"
+     },
+     {
+      "name": "VAL accesses made by this audit",
+      "is_value": "n/a",
+      "val_value": "17 log lines, track=review, label prefix lookahead:donch4h_stop:",
+      "note": "one per probe family"
+     }
+    ],
+    "recommendations": [
+     "Treat the PASS as conditional on an automated EA that replicates the rule exactly. Build UTC-grid H4 bars from M1, not the broker's server-time H4 bars. Use a 60-bar mid channel that includes the just-closed bar. Implement OCO with cancel-on-fill (MT5 has none natively). Recompute the trailing SL at each M1 close from bid-high / ask-low (not OnTick, not the terminal's built-in trailing). Time exit at the decision's NY clock + 5 trading days - 5 min.",
+     "For the alerts-first phase, pre-register the manual variant that will actually be followed and report its backtest. With the evening OCO left until 08 UTC and M1 trailing via an EA: IS 1.368 / VAL 1.236. With the terminal trailing it fails IS t>=2. Do not expect the PASS figures from manual execution.",
+     "Report the 2026 holdout under the primary model and also under one execution stress: +10% trigger-bar overshoot, and the tick-like trailing bound.",
+     "Handle the open-position state at 2025-12-31 explicitly in holdout.py. The last 2025 trade is currently closed as 'time' at end of data; it should carry into 2026.",
+     "In live phase 2, log trigger level vs actual fill on every entry and stop-out. If the mean round-trip shortfall exceeds about 0.03 R (the modelled slippage), expect about -0.06 PF per extra 10% of trigger-bar overshoot.",
+     "Do not reuse make_orders unchanged as the live alert generator. It omits the newest decision until a bar after the fill exists, and sets exit_i to the last bar for open trades. Avoid the id()-keyed bar cache when frames can be modified in place.",
+     "Apply the same hole-patching to the 2026 data (holdout.py excludes Dec 24 to Jan 2): data completeness alone moved VAL PF by +0.06."
+    ],
+    "scratch_files": [
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/refimpl.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/refimpl2.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p0_baseline.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p1_refcompare.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p1_refcompare.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p2_handcheck.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p2_handcheck.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p3_truncation.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p3_truncation.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p3b_exitmoves.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p3c_truncation2.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p3c_truncation2.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p4_probes.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p4_probes.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p4_probes.json",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p5_ticks.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p5_ticks.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p6_fidelity.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p6_fidelity.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p6_fidelity.json",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p7_more.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p7_more.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p7b_holes.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p7c_timeexits.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p8_hours_manualtrail.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p8_hours_manualtrail.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p9_patchshift.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/p9_patchshift.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/orders_base.pkl",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/lookahead/trades_is_base.pkl"
+    ]
+   },
+   {
+    "lens": "STATISTICAL SKEPTIC (selection, empirical nulls, bootstrap, concentration, stability, holdout power)",
+    "candidate": "trend/donch4h_stop (Turtle-style 60x4h channel breakout, OCO stops, 2xATR14(4h) initial and trailing stop, 5-NY-day time stop, one position at a time)",
+    "verdict": "The edge is not demonstrated. Breakout persistence in 2013-21 looks real, but the IS t does not survive the search (RC p 0.15), a drift-only world passes the VAL test 48% of the time, and VAL every-signal is about 0. My estimate: P(positive after-cost edge going forward) \u2248 0.3 (range 0.15-0.45), P(as large as measured) \u2248 0.1. ~10 months of holdout cannot settle it.",
+    "issues": [
+     {
+      "severity": "major",
+      "description": "IS significance does not survive the search. The candidate was the best of 48 correlated trend configs logged before the decision, and the only PASS among 6 tracks and 301 logged trials. Tested against a zero-net-edge null, its t=2.35 is ordinary for the best of a search this size.",
+      "evidence": "Correlation of weekly R across the 48 configs gives N_eff 21 (Li-Ji) / 22 (Galwey) / 37 (Nyholt). White Reality Check p=0.151, Hansen SPA_c p=0.138. Multivariate-normal max-t: P(max t>=2.35)=0.17. Single-test p=0.009. Boundary null (candidate R recentred to 0, week clusters): alpha_IS=1.5%, alpha_VAL=27.8%. P(>=1 trial passes IS+VAL by luck) for N_eff=21/50/130/300: boundary 8/19/42/71%; exact rule on day-mirrored gold 6.5/15/34/62%; same with yearly drift kept 1.5/3.4/8.7/19%; random-entry nulls <=4% even at 300. Project N_eff is about 80-140 (181 trials have IS t>-1; trend-track N_eff/M ratio 0.44-0.77).",
+      "effect_on_results": "Against realistic nulls, a search of this size produces one 'PASS' by chance with roughly 15-40% probability. The PASS label alone is weak evidence."
+     },
+     {
+      "severity": "major",
+      "description": "The VAL criterion (PF>=1.10, expectancy>0) has little power against gold's 2022-25 rally. Strategies with no timing skill but the same long tilt pass it often, and the candidate's VAL PF is not extreme under those nulls.",
+      "evidence": "Exact rule on day-mirrored gold with the calendar-year drift kept (100 histories): VAL pass 48%, P(VAL PF>=1.294)=11%. Random long-only entries with the identical exits: VAL pass 76%, P(PF>=1.294)=28%. Random entries 63% long: 24% / 4.2%. Random side: 12% / 1.6%. Signal times with random side: 3.1% / 0%. Candidate VAL t=1.49 (month-cluster t 1.48). Week-cluster bootstrap P(exp<=0)=6.3%, PF 90% CI [0.98, 1.68].",
+      "effect_on_results": "Passing VAL is worth a likelihood ratio of only about 1-2 for edge versus no edge. It is mostly what gold's 2022-25 drift would produce for a long-tilted trend rule."
+     },
+     {
+      "severity": "major",
+      "description": "At the signal level the breakout has no edge in VAL. The chain passes only because, in VAL, the first breakout after being flat beat the continuation breakouts that the one-position rule skips. That pattern was absent in IS (taken \u2248 skipped).",
+      "evidence": "Every-signal mean R \u00b1 month-clustered SE: IS +0.126 \u00b1 0.079, VAL -0.009 \u00b1 0.068 (z=-1.95 vs the IS chain mean). VAL skipped trades -0.047 \u00b1 0.076 (z=-2.24). Taken minus skipped: IS -0.003 (bootstrap sd 0.073), VAL +0.147 (sd 0.061). That gap sits at the 98th percentile of the day-mirror null. Real VAL every-signal PF 0.977 is below the drift-kept null median of 1.083. Joint GLS estimate of a common VAL edge (taken and skipped, corr 0.64): +0.051 \u00b1 0.064 R, z=0.79; likelihood ratio for edge-as-measured vs none = 0.83. Random alert dropout pulls VAL PF toward 0.98: median 1.26 at q=0.10, 1.19 at q=0.33, 1.13 at q=0.50, while IS stays 1.29-1.33. The pattern repeats on every 4h grid alignment (VAL every-signal 0.96-1.04, chain 1.26-1.35).",
+      "effect_on_results": "If, as IS indicates, which signals the chain takes is unrelated to their outcome, VAL is close to neutral evidence. The VAL pass depends on a VAL-specific chain effect that is not expected to carry forward."
+     },
+     {
+      "severity": "major",
+      "description": "The result rests on a handful of fat-tailed trades, weeks and one year in each period.",
+      "evidence": "Skew 2.1 (IS) / 1.7 (VAL). Top 5% of trades = 145% (IS) / 150% (VAL) of net R. Removing the top 15 IS trades (3.0%) or top 7 VAL trades (2.8%) wipes out net R. PF without the top 10 trades: IS 1.079, VAL 0.905. Weeks needed to wipe out net R: 14 of 346 (IS), 6 of 164 (VAL). 2025 = 64% of VAL R; VAL without 2025: PF 1.135, t 0.63; without 2025 and 2023: PF 1.015, t 0.06. IS without 2020: t 1.83; without 2016: t 1.91 (both below 2); without the best two years: t 1.34.",
+      "effect_on_results": "Small changes in which trades occur flip the conclusion, for example a missed alert or a different 2025. PF in a short window is extremely noisy."
+     },
+     {
+      "severity": "major",
+      "description": "The edge has been long-side, regime-dependent beta since 2017, and the in-sample edge weakened over time.",
+      "evidence": "IS halves: 2013-16 PF 1.47 (t 2.03, shorts PF 1.55); 2017-21 PF 1.26 (t 1.32, shorts PF 0.79). Shorts 2017-2025: -21.2 R over 222 trades. VAL long PF 1.69 (t 2.40) vs short 0.72 (t -1.20), Welch p=0.011. VAL profit comes entirely from longs while gold is above its 60-day MA (+35.0 R, t 2.56); every other regime/side cell is -10.3 R. Every-signal VAL longs PF 1.10 vs random-timed longs 1.20; shorts 0.50 vs 0.63. In IS, all profit came from the lowest ATR tercile (+63.5 R, t 3.11); in VAL the terciles are even, so that subgroup is unstable.",
+      "effect_on_results": "2026 results will be driven mainly by gold's direction. A long-only profit in a rising 2026 cannot be told apart from beta."
+     },
+     {
+      "severity": "major",
+      "description": "The edge is thin compared with execution latency. The IS pass needs resting OCO stop orders at every 4h close. Entering after an alert, even one minute late, fails the pre-registered IS criteria.",
+      "evidence": "True side, market entry d minutes after the first touch. IS: d=1 PF 1.25, t 1.78 (fails t>=2); d=5 1.238/1.70; d=15 1.175/1.28 (also fails PF>=1.2); d=60 1.106/0.82. VAL: 1.246 / 1.186 / 1.124 / 1.192. Each minute of latency at the breakout costs about 0.03 R of a 0.12 R edge.",
+      "effect_on_results": "For an 'alerts first, I decide' workflow, realistic latency removes 25-50% of the measured edge. Manual coverage of the 00/04 UTC decisions is impractical."
+     },
+     {
+      "severity": "minor",
+      "description": "A ~10-month holdout (~50 trades) cannot discriminate edge from no edge. The protocol's PF>1 criterion is close to a coin flip under both hypotheses.",
+      "evidence": "2-week block resampling, ~50 trades. H1 (edge as measured, +0.115 R): PF median 1.30, 90% interval [0.55, 2.79], P(PF>1)=0.70. Half the measured edge: 1.12 [0.47, 2.41], 0.59. H0 (zero edge): 0.97 [0.39, 2.11], 0.47. H0 with random-entry cost drag: 0.87 [0.35, 1.89], 0.39. Empirical 10-month windows of random-entry nulls: median 0.84-0.87, P>1 0.33-0.34. Likelihood ratios H1 vs H0 by PF bin (<0.6 / 0.6-0.8 / 0.8-1.0 / 1.0-1.2 / 1.2-1.5 / >=1.5): 0.29-0.37 / 0.51-0.57 / 0.75-0.77 / 0.95-1.02 / 1.23-1.40 / 2.1-3.0. Protocol pass: 1.5-1.8; fail: 0.5-0.6. Confirming +0.115 R at 80% power needs ~590 trades (~10 years); +0.058 R needs ~2300 trades.",
+      "effect_on_results": "Starting from 0.30: a pass gives about 0.39-0.43, a fail about 0.17-0.20, PF>=1.5 about 0.48-0.57, PF<0.6 about 0.11-0.14. No 10-month outcome is decisive; a clear loss is the most informative."
+     },
+     {
+      "severity": "minor",
+      "description": "The audit's deflated Sharpe ratio (0.07) is mis-specified. It counts all 50 logged trials, including post-decision checks and the overlapping every-signal t of 4.32, and uses a cross-trial SR variance inflated by cost-negative 1h/VBO configs.",
+      "evidence": "Recomputed DSR: 0.09 with the empirical variance of all 48 and N=48 (similar to the audit); 0.46-0.63 with the variance of plausible configs and N=48/20; 0.54-0.90 with the null variance 1/n and N=48 to 5. With N_eff \u2248 20: about 0.63-0.69.",
+      "effect_on_results": "The DSR is inconclusive in both directions. Reality Check / SPA (p \u2248 0.14-0.15) is the better selection-adjusted measure."
+     },
+     {
+      "severity": "info",
+      "description": "This is not luck relative to random timing. In 2013-21 the breakout timing carried real information, and the exit structure alone loses.",
+      "evidence": "Candidate IS PF 1.35 exceeds all 1000 random time+side runs (median 0.865, max 1.202; t mean -1.21, sd 0.95), all 1000 signal-time random-side runs (max 1.202), and all 200 synthetic day-mirrored histories (max 1.31; 2/100 passed IS, both failed VAL). IS every-signal PF 1.344 exceeds all 200 synthetic histories (max 1.27). At the signal times with the same entry mechanism: follow 1.25, fade 0.66, random 0.90; true side beats a quarter-tilt-preserving side permutation at p=0.03 in IS but only p=0.18 in VAL. No serial correlation (lag-1 -0.01, Ljung-Box p 0.75); cluster-robust t 2.32-2.34.",
+      "effect_on_results": "The question is not whether gold breakouts persisted in 2013-21 (they did) but whether that survives costs, selection and regime change. VAL says not at the signal level."
+     },
+     {
+      "severity": "info",
+      "description": "Conclusion on probability: P(the traded chain has positive expectancy after the modelled costs going forward) \u2248 0.30, plausible range 0.15-0.45. P(edge >= the measured ~0.1 R/trade) \u2248 0.10. If real, the expected size is about +0.03 to +0.06 R/trade (PF \u2248 1.08-1.15), which execution latency or extra slippage can erase.",
+      "evidence": "Prior 0.10-0.15 for a short-horizon single-market breakout after retail costs (IS variance ratios \u2248 1; time-series momentum is documented mainly at 1-12 months). IS Bayes factor \u2248 2-5 (selection-adjusted p 0.14-0.17 vs zero net edge; far stronger vs random-entry nulls). VAL Bayes factor \u2248 0.8-1.4 (taken and skipped jointly) and at most 2-3 for the chain alone, discounted for long tilt. Cross-market \u2248 1: same parameters give IS PF 0.98-1.34 (mean ~1.12) and VAL 0.60-1.47 (mean ~0.97). Posterior odds \u2248 0.11-0.18 \u00d7 3 \u00d7 1.2 \u2248 0.4-0.65.",
+      "effect_on_results": "Treat the candidate as an unproven, low-conviction hypothesis, not a validated rule."
+     }
+    ],
+    "measurements": [
+     {
+      "name": "Candidate (patched data): PF / t / n",
+      "is_value": "1.350 / 2.35 / 499",
+      "val_value": "1.294 / 1.49 / 248",
+      "note": "Reproduced exactly. Week/month cluster-robust t: IS 2.32/2.34, VAL 1.49/1.48."
+     },
+     {
+      "name": "Week-cluster bootstrap: PF 90% CI; P(exp<=0)",
+      "is_value": "[1.10, 1.64]; 0.0095",
+      "val_value": "[0.98, 1.68]; 0.063",
+      "note": "10k resamples, single test (no selection adjustment). 13-week moving block: IS 0.0002, VAL 0.062."
+     },
+     {
+      "name": "N1 null: random time+side, exact exits/costs, n matched (1000 seeds)",
+      "is_value": "PF median 0.865 (p95 1.047, max 1.202); IS pass 0/1000",
+      "val_value": "PF median 0.899 (max 1.433); VAL pass 12.0%; P(PF>=1.294)=1.6%",
+      "note": "Cost drag -0.054 R/trade IS, -0.039 VAL. Candidate is ~3.7 sd above in IS."
+     },
+     {
+      "name": "N3 null: candidate's own signal times, random side (1000 seeds)",
+      "is_value": "PF median 0.903 (max 1.202); pass 0/1000",
+      "val_value": "PF median 0.863 (max 1.249); VAL pass 3.1%; P(PF>=1.294)=0",
+      "note": "Same entry mechanism (market at the bar after the touch): true side 1.25 IS / 1.246 VAL; always fade 0.66 / 0.69."
+     },
+     {
+      "name": "Same-side random entries: long-only / short-only / 63% long (500 seeds each)",
+      "is_value": "PF median 0.831 / 0.892 / 0.856; IS pass 0 / 0 / 0",
+      "val_value": "PF median 1.198 / 0.629 / 0.985; VAL pass 76% / 0% / 23.8%; P(PF>=1.294) 28.2% / 0% / 4.2%",
+      "note": "The VAL criterion is passed by 3 in 4 random long-only strategies with the same exits."
+     },
+     {
+      "name": "N4: exact rule on day-mirrored synthetic gold (no cross-day persistence, no drift; 100 histories)",
+      "is_value": "PF median 0.913 (max 1.31); IS pass 2/100 (PF 1.31 t 2.25; PF 1.30 t 2.13); every-signal max 1.244 vs real 1.344",
+      "val_value": "PF median 0.952; VAL pass 16%; P(PF>=1.294)=3%; IS+VAL 0/100; real every-signal 0.977 has 29% of nulls at or above it",
+      "note": "Identity transform reproduces the candidate exactly. VAL taken-minus-every PF gap 0.317 is at the 98th percentile of this null."
+     },
+     {
+      "name": "N4d: exact rule, day-mirrored, calendar-year drift kept (100 histories)",
+      "is_value": "PF median 0.958 (max 1.16); IS pass 0/100",
+      "val_value": "PF median 1.088; VAL pass 48%; P(PF>=1.294)=11%; null every-signal median 1.083 > real 0.977",
+      "note": "A drift-only world passes the VAL criterion about half the time."
+     },
+     {
+      "name": "Boundary null (true edge = 0 after costs; candidate R recentred, week-cluster resampling)",
+      "is_value": "alpha_IS 1.5% (PF>=1.2 & t>=2 only: 1.8%)",
+      "val_value": "alpha_VAL 27.8%; P(PF>=1.294) 5.5%",
+      "note": "Per-trial alpha for IS+VAL = 0.41%."
+     },
+     {
+      "name": "P(>=1 of N_eff trials passes by luck), N_eff = 21 / 50 / 130 / 300",
+      "is_value": "IS only: boundary 27 / 53 / 86 / 99%; N4 35 / 64 / 93 / 100%",
+      "val_value": "IS+VAL: boundary 8 / 19 / 42 / 71%; N4 6.5 / 15 / 34 / 62%; N4d 1.5 / 3.4 / 8.7 / 19%; random-entry nulls <=4% at 300",
+      "note": "Project N_eff \u2248 80-140: 301 logged trials, 181 with IS t>-1; trend-track N_eff/M = 0.44-0.77."
+     },
+     {
+      "name": "Within-track selection (48 pre-decision trend configs)",
+      "is_value": "N_eff 21 / 22 / 37 (Li-Ji / Galwey / Nyholt); RC p 0.151; SPA_c p 0.138; MVN P(max t>=2.35) 0.17; single-test p 0.009",
+      "val_value": "n/a",
+      "note": "Weekly R correlation with the candidate: median 0.57, p90 0.96. Stationary block bootstrap, mean block 4 weeks."
+     },
+     {
+      "name": "Deflated Sharpe ratio, recomputed",
+      "is_value": "0.09 (empirical variance, N=48; like the audit's 0.07) to 0.69 (null variance, N=20) to 0.90 (N=5)",
+      "val_value": "n/a",
+      "note": "Highly assumption-dependent, so not decisive."
+     },
+     {
+      "name": "Every-signal (no_overlap=False) mean R \u00b1 month-cluster SE",
+      "is_value": "+0.126 \u00b1 0.079 (n 1704); skipped +0.127 \u00b1 0.096",
+      "val_value": "-0.009 \u00b1 0.068 (n 942); skipped -0.047 \u00b1 0.076",
+      "note": "Taken minus skipped: IS -0.003 (bootstrap sd 0.073), VAL +0.147 (sd 0.061). Joint GLS VAL estimate: +0.051 \u00b1 0.064 R."
+     },
+     {
+      "name": "Alert dropout (random fraction q of signals missed): PF median [5-95%], 300 seeds",
+      "is_value": "q=0.10: 1.33 [1.28, 1.40]; q=0.33: 1.31 [1.21, 1.43]; q=0.50: 1.29 [1.15, 1.44]",
+      "val_value": "q=0.10: 1.26 [1.19, 1.33]; q=0.33: 1.19 [1.06, 1.33]; q=0.50: 1.13 [0.97, 1.32]",
+      "note": "IS is insensitive; VAL decays toward every-signal 0.98."
+     },
+     {
+      "name": "Execution delay: market entry d minutes after the touch (true side)",
+      "is_value": "d=1: PF 1.25 t 1.78 (fail); d=5: 1.238/1.70; d=15: 1.175/1.28 (fail); d=60: 1.106/0.82",
+      "val_value": "d=1: 1.246; d=5: 1.186; d=15: 1.124; d=60: 1.192",
+      "note": "About 0.03 R lost per minute at the breakout; the IS pass needs resting stop orders."
+     },
+     {
+      "name": "Concentration: trades / weeks needed to wipe out net R; PF without top 10 trades; top-5% share",
+      "is_value": "15 trades (3.0%) / 14 of 346 weeks; 1.079; 145%",
+      "val_value": "7 trades (2.8%) / 6 of 164 weeks; 0.905; 150%",
+      "note": "Largest win: +8.3 R (IS), +5.1 R (VAL)."
+     },
+     {
+      "name": "Year dependence (leave-one-year-out / best years)",
+      "is_value": "Without 2020: PF 1.283, t 1.83; without 2016: t 1.91; without best 2 years: t 1.34; 2013-16 PF 1.47 (t 2.03), 2017-21 PF 1.26 (t 1.32)",
+      "val_value": "2025 = 64% of R; without 2025: PF 1.135, t 0.63; without 2025 and 2023: PF 1.015, t 0.06",
+      "note": "Year ANOVA in IS p=0.84 (low power). Rolling 12-month PF>1: IS 92%, VAL 84%."
+     },
+     {
+      "name": "Side split: PF / t / n",
+      "is_value": "long 1.63 / 2.74 / 245; short 1.12 / 0.64 / 254 (Welch p 0.14)",
+      "val_value": "long 1.69 / 2.40 / 156; short 0.72 / -1.20 / 92 (Welch p 0.011)",
+      "note": "Shorts 2017-2025: -21.2 R over 222 trades. VAL every-signal: longs PF 1.10 vs random longs 1.20."
+     },
+     {
+      "name": "Regime: gold vs its 60-day MA at the decision, by side",
+      "is_value": "long & gold above MA: +46.7 R (PF 2.07, t 3.24); all other cells +14.8 R",
+      "val_value": "long & gold above MA: +35.0 R (PF 1.86, t 2.56); all other cells -10.3 R",
+      "note": "IS ATR terciles: lowest +63.5 R (t 3.11), middle and highest -4.7 R combined. VAL terciles even."
+     },
+     {
+      "name": "Direction decomposition at signal times (same entry mechanism): random side -> quarter-permuted sides -> true side -> stop fill",
+      "is_value": "0.90 -> 1.09 -> 1.25 (p=0.03 vs permutation) -> 1.35",
+      "val_value": "0.86 -> 1.13 -> 1.246 (p=0.18) -> 1.294",
+      "note": "The within-quarter permutation is an oracle (it knows each quarter's breakout mix), so it is an upper bound for 'tilt only'. The within-month version reaches IS PF 1.385."
+     },
+     {
+      "name": "4h grid alignment replications (UTC +1h / +2h / +3h / NY-17:00 grid)",
+      "is_value": "PF 1.304 / 1.284 / 1.349 / 1.279; t 2.11 / 1.94 / 2.32 / 1.94 (2 of 4 fail t>=2)",
+      "val_value": "PF 1.354 / 1.264 / 1.256 / 1.306 (all pass); every-signal 0.977 / 0.960 / 1.036 / 0.976",
+      "note": "The chain result does not depend on the grid; the signal-level VAL result is flat on every grid."
+     },
+     {
+      "name": "2026 holdout PF (~10 months, ~50 trades, 2-week block resampling): median [5%, 95%], P(PF>1). Under H1 / under H0",
+      "is_value": "H1 (edge as measured, +0.115 R): 1.30 [0.55, 2.79], 0.70. Half the edge: 1.12 [0.47, 2.41], 0.59",
+      "val_value": "H0 (edge 0): 0.97 [0.39, 2.11], 0.47. H0 with random-entry drag: 0.87 [0.35, 1.89], 0.39",
+      "note": "In this row is_value = H1 and val_value = H0. The candidate's own 10-month windows 2013-25: median 1.21 [0.86, 2.35], P>1 0.83 (optimistic, selected). Random-entry nulls: median 0.84-0.87."
+     },
+     {
+      "name": "Holdout likelihood ratio H1 vs H0 by PF bin (<0.6 / 0.6-0.8 / 0.8-1.0 / 1.0-1.2 / 1.2-1.5 / >=1.5)",
+      "is_value": "vs zero edge: 0.37 / 0.57 / 0.77 / 0.95 / 1.23 / 2.12; protocol pass 1.48, fail 0.57",
+      "val_value": "vs random-entry drag: 0.29 / 0.51 / 0.75 / 1.02 / 1.40 / 3.04; pass 1.79, fail 0.49",
+      "note": "Starting from 0.30: PF>=1.5 gives ~0.48-0.57; PF<0.6 ~0.11-0.14; pass ~0.39-0.43; fail ~0.17-0.20."
+     },
+     {
+      "name": "Trades needed to confirm (80% power, one-sided 5%, sd 1.12 R)",
+      "is_value": "edge +0.115 R: ~590 trades (~10 years)",
+      "val_value": "edge +0.058 R: ~2300 trades (~40 years)",
+      "note": "An expected likelihood ratio of 10 needs ~440 / ~1700 trades."
+     }
+    ],
+    "recommendations": [
+     "Keep the PASS label as a protocol fact, but report it as low conviction: P(real) \u2248 0.3, expected true edge \u2248 +0.03 to +0.06 R/trade (PF \u2248 1.1), not the measured +0.12 R. No real-money trading on the current evidence.",
+     "Before downloading 2026, write down how the holdout will be read. Compare it with same-period nulls run on 2026 data with this engine: signal times with random side, random long-only and short-only entries, and the drift-kept synthetic. Also report the every-signal PF and the long/short split. Bands: PF>=1.5 = weak support (LR 2-3); 0.8-1.5 = inconclusive; <0.7 = meaningful evidence against. A profit made only on longs while gold rises in 2026 does not count as evidence.",
+     "Replace the one-look holdout decision with sequential forward monitoring on paper/demo using resting OCO stops. Update a Bayesian posterior or run an SPRT on per-trade R (H1 +0.06 R, H0 0, sd 1.12 R) with a kill rule fixed in advance (for example cumulative R <= -10 R or posterior < 0.15). Expect to need roughly 450-600 trades even if the edge is as measured.",
+     "If ever implemented, use only pending OCO stop orders placed at every 4h close (EA or MT5 pending orders). An alert followed by a manual market order (>=1 min latency) loses 25-50% of the edge and fails the IS criteria, and the 00:00 and 04:00 UTC decisions cannot be covered by hand.",
+     "Do not adopt fixes suggested by these diagnostics (long-only, low-ATR filter, first-breakout-only logic, dropping shorts, a different grid). Each would be a new selection that has seen VAL. Register them as separate hypotheses for forward data only.",
+     "If it is ever traded: fixed-fractional risk <= 0.25-0.5% per trade, and never skip signals at discretion, since net R comes from about 3% of trades. Expect 8-11 R drawdowns and about 2/3 of weeks not positive.",
+     "Fix the audit's DSR (use N_eff \u2248 20, the null SR variance, and exclude post-decision and overlapping trials), and report Reality Check / SPA p \u2248 0.14-0.15 as the selection-adjusted IS significance.",
+     "Count this review's 28 logged diagnostic VAL accesses (label prefix statskeptic:donch4h_stop) in the final report, as Amendment 1 \u00a74 requires. None was used for tuning."
+    ],
+    "scratch_files": [
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/common.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s01_candidate.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s01_candidate.json",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s02_nulls_random.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s02_nulls_random.json",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s02b_perm.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s02b_perm.json",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s03_synth.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s03_N4_day.csv",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s03_N4_dayd.csv",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s04_boot_conc.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s04_boot_conc.json",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s05_dropout_delay.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s05_dropout_delay.json",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s06_multtest.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s06_multtest.json",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s07_holdout.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s07_holdout.json",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s08_boundary.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s08_boundary.json",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s09_grid_years.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s09_grid_years.json",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/cand_trades_is.parquet",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/cand_trades_val.parquet"
+    ]
+   },
+   {
+    "lens": "LIVE-EXECUTION REALISM for an MT5 retail account (EU/ESMA, French client)",
+    "candidate": "trend/donch4h_stop",
+    "verdict": "The PASS does not carry over to the trader's planned 'alerts first, he decides' mode. Even a 1-minute-late market entry cuts IS PF from 1.35 to 1.24-1.26 (t<2), human hours lose the night trades (15% of IS trades but 24% of IS R; 65% of VAL R), and MT5's own trailing stop changes the exit rule (IS 1.21). Only broker-side OCO stops plus per-minute EA trailing on a 24/5 VPS reproduce the backtest, and plausible retail frictions still bring that down to IS 1.20 / VAL 1.16. The edge is small and fragile, and 0.5% risk needs about EUR 6-9k because of the 0.01-lot minimum.",
+    "issues": [
+     {
+      "severity": "critical",
+      "description": "Entering at market after the alert is a different and weaker strategy. Any delay of 1 minute or more fails the pre-registered IS t>=2, so the planned execution mode ('alert, then he decides and enters') is not the strategy that passed.",
+      "evidence": "p1_delay.out, base IS PF 1.350 (t 2.35) / VAL 1.294. Model A1 (market entry N min after the theoretical stop fill, stop and trail re-anchored at 2 ATR, same time stop), IS / VAL PF: N=1 1.244 (t 1.73) / 1.255; N=5 1.239 (t 1.70) / 1.166; N=15 1.220 (t 1.56) / 1.104; N=60 1.137 (t 1.03) / 1.186; N=240 1.117 (t 0.89) / 1.095. Model B (EA mode 1 puts the fictive stop on the manual position, so exits match and only the entry is late; R in planned-risk units), IS / VAL: N=1 1.256 / 1.259; N=5 1.238 / 1.196; N=15 1.198 / 1.108; N=60 1.137 / 1.123; N=240 1.044 / 0.935. Model C (alerts only when the REAL position is flat, sequential) gives similar values: N=1 1.249 / 1.255, N=15 1.207 / 1.102. Mean IS chase cost, i.e. how much worse the late entry is, in R: +0.031 (N=1), +0.038 (N=5), +0.054 (N=15). It is skewed: median +0.009 R, p90 +0.17 R. The fastest breakouts, which are the winners, are the ones that run away. The engine's stop fill is realistic for a stop order sitting at the broker (the audit's tick check stays within the slippage budget), so the loss comes from the human delay, not from optimistic backtesting.",
+      "effect_on_results": "About 25% of the expectancy (0.123 to 0.090 R) is lost at N=1, about 30-35% at N=5-15, and more than 50% at N >= 60. IS criterion 2 (t>=2) fails for every N>=1. VAL PF is 1.10-1.20 for N = 5-15 and below 1 for N=240 under model B."
+     },
+     {
+      "severity": "major",
+      "description": "Human availability. Breakouts that trigger at night (Paris time) are disproportionately profitable, so a trader who only acts while awake keeps the weaker part of the signal stream.",
+      "evidence": "p2_availability.out, instant execution of the subset whose trigger falls in the window: W1 (07-23 Paris, every day) IS PF 1.313 (t 1.94, n 423) / VAL 1.117 (n 197); W2 (Mon-Fri 08-20 Paris) IS 1.276 (t 1.63, n 376) / VAL 1.280 (n 167). Same subsets with a 5-min market entry: W1 1.203 / 1.028; W2 1.146 / 1.173. The 76 IS trades outside W1 (15% of trades) make +14.7 R (0.19 R/trade, against 0.11 inside W1). In VAL, the 51 trades outside W1 make +16.0 of the 24.7 R. Alerts cluster at 14-16h Paris (40%, US data releases); about 8 alerts per year fall at night. Entering night signals at 07:00 instead (if the theoretical trade is still open): IS 1.237 / VAL 1.166. Flat-gated (night triggers ignored, sequential) with a 5-min entry: W1 1.236 / 1.091; W2 1.159 / 1.116.",
+      "effect_on_results": "IS t falls below 2 even with instant fills. VAL PF drops to about 1.12 (W1) with instant fills and to 1.03-1.17 with a realistic 5-minute reaction."
+     },
+     {
+      "severity": "major",
+      "description": "The every-minute 2-ATR trailing stop is part of the edge, and MT5 gives a retail trader no faithful way to run it without an EA on an always-on terminal. MT5's built-in trailing works differently: it is client-side, runs only while the desktop terminal is open, the mobile app does not have it, and it starts moving the SL only once open profit reaches the trailing distance.",
+      "evidence": "p2_availability.out. Built-in-style trailing (SL stays at the initial stop until profit >= 2 ATR, then trails) with entries from pending stops: IS PF 1.205 (t 1.54, n 445) / VAL 1.350; with 5-min manual entries: 1.158 / 1.201. Phone-only mode (5-min market entry while awake, SL moved by hand only at the in-window 4h closes, time exit brought forward into the window): W1 IS 1.178 (t 1.24) / VAL 1.050; W2 1.145 / 1.078. The lookahead lens's 'trail updated at 4h closes only' (p8_hours_manualtrail.out) gives IS 1.267 / VAL 1.282. The MT4 official help states the activation rule ('as soon as profit in points becomes equal to or higher than the specified level') and that the trailing stop does not work if the terminal is off; an MT5 forum post and broker manuals describe the same behaviour and its absence from the mobile app.",
+      "effect_on_results": "Exit realism alone moves IS PF from 1.35 to 1.18-1.27 and IS t below 2, unless an EA on a VPS pushes the server-side SL at every M1 close (median 18, p90 67 SL modifications per trade)."
+     },
+     {
+      "severity": "major",
+      "description": "The edge is thin compared with plausible retail execution costs. Each extra basis point of slippage per side costs about 0.023 R per trade, out of an expectancy of about 0.10-0.12 R.",
+      "evidence": "p7_costs_news.out, IS / VAL PF: slippage 3 bp per side on every market or stop fill 1.232 (t 1.66) / 1.186; 5 bp 1.102 / 1.061. Broker-like swaps of 8%/3% per year (long/short) 1.313 (t 2.15) / 1.259; 10%/4% 1.287 (t 1.99) / 1.235. p8_combos.out, retail combination (3 bp plus 8%/3% swaps): EA auto 1.199 (t 1.45) / 1.155; pending-orders-while-awake with EA trailing 1.206 / 1.121; same with hand-moved SL 1.166 / 1.060; phone-only mode 1.050 / 0.930. Fills in the first 5 minutes after 08:30, 10:00 or 14:00 ET are 43 of 499 IS trades; even +20 bp extra entry slippage on them only reaches IS 1.280 / VAL 1.232.",
+      "effect_on_results": "Under plausible retail frictions the best implementation sits at IS PF about 1.20 (t 1.45) and VAL about 1.16. That still meets the PF thresholds but fails the IS t threshold, and it leaves no margin for the human-execution losses above."
+     },
+     {
+      "severity": "major",
+      "description": "Sensitivity to the broker's spread spike at the daily close (17:00 New York). The requested 'spreads x2 around the rollover' is harmless, but a retail-style spike in the 10 minutes before the 17:00 NY break stops out open trailing positions.",
+      "evidence": "p4_rollover.out, IS / VAL PF: x2 on 16:30-17:00 and 18:00-18:30 NY 1.360 / 1.302; x2 on 16:00-17:00 and 18:00-19:00 NY 1.359 / 1.302; x3 over the 2 hours 1.300 (t 2.09) / 1.301; x5 on 16:50-17:00 and 18:00-18:20 NY plus x2 on the rest of the 2 hours 1.065 (t 0.52) / 1.291. p4b_spike_decomp.out: x5 before the close only 1.089 / 1.306 (with entries unchanged, exits only: 1.158 / 1.290; 41 IS trades stopped by the spike, mean -0.79 R each); x5 at the reopen only 1.322 / 1.282. The Dukascopy data already have no bars from 17:00 to 17:59 NY, and the average close spread at 16:59 NY is about $1.0 (2013-21) and $1.4 (2025). The exit-only path reproduces the engine exactly (p4c_exitonly_parity.out).",
+      "effect_on_results": "Depends on the broker and is not visible in Dukascopy data. A large pre-close spike can remove about half of the IS edge. VAL is unaffected because 2022-25 stops are wider relative to the spread."
+     },
+     {
+      "severity": "major",
+      "description": "Minimum lot size and economics. With 1 lot = 100 oz, the smallest trade (0.01 lot = 1 oz) already risks a full 2-ATR stop. Below a certain account size the trader cannot risk 0.5%, so actual risk per trade drifts and the R-based statistics stop describing the money outcome. On the smallest viable accounts, the expected profit is about the cost of the VPS that is needed to run the trailing stop.",
+      "evidence": "p5_sizing.out. Stop distance (2 x ATR14 on 4h bars) per oz: 2025 median $34.9 (p10 23.4, p90 65.7); Q4-2025 median $55.0 (p90 93.4); IS median $11.6. Account needed for 0.01 lot to equal the target risk: 0.5% needs $7.0k (EUR 6.0k) at the 2025 median and $11.0k (EUR 9.4k) at the Q4 median; 1% needs $3.5k (EUR 3.0k) and $5.5k. Keeping rounding error at 10% or less needs 10 times that. ESMA 1:20 margin is $168 per 0.01 lot at $3,358 and $211 at $4,227, i.e. 2.4% of equity at 0.5% risk and 4.8% at 1%, so leverage is not the constraint. A $2k account at a 0.5% target is forced to the minimum lot on 98% of VAL trades, with effective risk median 1.0%, p90 2.1%, max 5.1%. PF in dollars with minimum-lot sizing: IS $2k at 0.5% gives 1.20 against 1.35 in R; VAL gives 1.40 against 1.29. Expected return at 0.5% risk is about 3%/yr at lab costs (audit CAGR 3.1-3.4%) and about 2%/yr with retail frictions.",
+      "effect_on_results": "Below about EUR 6-9k the backtest's sizing assumption fails. On a EUR 6-10k account the expected EUR 100-300 per year is close to the cost of a 24/5 VPS (about EUR 10-15 per month)."
+     },
+     {
+      "severity": "minor",
+      "description": "Bars aligned on the MT5 server clock. The rule is only sensitive to the 4h bar grid at the margin, but the track report quotes the server-grid check from unpatched data; on patched data the MT5 server grid fails IS t>=2. The existing EA correctly builds UTC-grid bars, but a trader reading the native H4 chart sees different bars.",
+      "evidence": "p3_grid.out, IS / VAL PF: fixed UTC+0/+1/+2/+3 grids 1.350/1.349/1.284/1.304 and 1.294/1.256/1.264/1.354. NY-17:00 server grid (UTC+2/+3 with US DST) 1.279 (t 1.94, n 482) / 1.306. Athens-time grid (EU DST) 1.283 (t 1.97) / 1.298. 91% of UTC-grid IS trades have a same-side server-grid trade within 4h. trials.jsonl line 49 (unpatched) shows PF 1.313, t 2.12, n 474, which is the figure in report.md.",
+      "effect_on_results": "Using the native MT5 H4 bars is a slightly different rule (IS PF -0.07, t below 2). The UTC grid is the best or equal best of the 4 phases on IS, which points to mild phase luck."
+     },
+     {
+      "severity": "minor",
+      "description": "Time-stop parity bug in the EA. DeadlineUTC (line 141, called at line 457 with the bucket start) counts calendar weekdays from the start of the current 4h UTC bucket. The backtest instead uses the NY-17:00 trading-day convention from the previous bar's close time, minus 5 minutes, falling back to the last bar before a market closure.",
+      "evidence": "p6_ea_parity.out and p9_misc.out: 226 of 2646 brackets get a different time-stop bar. Trades entered at the Sunday open from the Friday-close bracket exit about 23h later; Sunday-evening decisions exit 50-54h earlier (Friday 16:55 NY instead of Sunday evening of the next week); Good Friday cases exit 73h later (the EA waits for the first tick after Easter). Re-simulating with the EA's deadlines gives IS 1.352 / VAL 1.294, with IS time exits 8 against 8 and the same IS maximum hold.",
+      "effect_on_results": "No measurable PF effect (time exits are rare), but it breaks trade-by-trade parity and can hold through holiday closures."
+     },
+     {
+      "severity": "minor",
+      "description": "Time-zone handling in the EA. GO_TZ_AUTO applies today's measured server offset to all 90 days of M5 history, and GO_TZ_FIXED applies one fixed offset, so both are wrong across a DST change. GO_TZ_NY_CLOSE assumes US DST dates, so on an EET (EU-DST) server it is 1 hour off for about 3 weeks a year. The offset is checked only once, in OnInit (line 598).",
+      "evidence": "Source: ServerOffsetSec lines 112-120 (the AUTO branch uses TimeTradeServer()-TimeGMT() for every bar); Build4H line 183 converts every M5 bar with that offset. The grid tests above show that a 1-hour grid shift gives IS PF 1.28-1.35 (p3_grid.out).",
+      "effect_on_results": "Small PF effect, but during the mismatch weeks the levels, deadlines and journal timestamps are off by 1 hour, which spoils parity checks."
+     },
+     {
+      "severity": "minor",
+      "description": "In auto mode (line 407), PlacePendings silently skips a side when the price is already at or beyond the level, or within StopsLevel, at the first tick. The backtest instead fills a gap through the level at the open. MT5 also refuses pending orders while the market is closed, so the Sunday bracket can only be armed after the gap has happened.",
+      "evidence": "p6_ea_parity.out: sides that cannot be placed at the first tick: 82 (StopsLevel $0), 275 ($0.5), 562 ($1), 1284 ($2). IS / VAL PF with those trades removed: 1.347 / 1.285, 1.338 / 1.281, 1.358 / 1.264, 1.240 / 1.214. 16 baseline trades (12 IS) fill on the bracket's first M1 bar, for +5.2 R in total.",
+      "effect_on_results": "Small for StopsLevel up to $1; IS falls to 1.24 at $2."
+     },
+     {
+      "severity": "minor",
+      "description": "Robustness gaps in the EA. (1) No deterministic replay after downtime, and the bracket state is not persisted: a breakout missed while offline, or a bracket re-armed mid-window after a restart, makes the fictive position diverge from the backtest. (2) No SERIES_SYNCHRONIZED or gap check on CopyRates; when history is short (line 425) the bracket is skipped for 4 hours with only a Print. (3) LotsForRisk (lines 308-324) falls back to the minimum lot even when that is several times the target risk, and auto mode trades it anyway. (4) The Telegram WebRequest is synchronous with a 5-second timeout inside OnTick (line 247). (5) OnNewM1 (line 491) processes only the last closed M1 bar, so trailing updates are lost after a disconnection. (6) Mode 1 manages any magic-0 position on the same side, with no ticket binding. (7) The 0.25 ATR pre-alert gives too little warning.",
+      "evidence": "Source lines cited. p9_misc.out: pre-alert lead before the trigger at 0.25 ATR has median 5 min (47% under 5 min); at 0.5 ATR, median 24 min (24% under 5 min). p5_sizing.out shows effective risk up to 5% under the minimum-lot fallback.",
+      "effect_on_results": "Silent divergence between the EA journal and the backtest, and accidental over-risking on small accounts. These undermine the planned phase-2 comparison of real results against the backtest."
+     },
+     {
+      "severity": "info",
+      "description": "Pending orders placed by hand at the 4h closes inside waking hours, and left in place overnight, keep the IS edge and leave VAL only modestly lower. This is the only manual mode tested that does so. These variants were built after VAL and are informational only.",
+      "evidence": "p2_availability.out and p8_combos.out. Pending orders refreshed only at in-window 4h closes, GTC overnight with stale levels, EA trailing: W1 IS 1.359 (t 2.38) / VAL 1.255; W2 1.381 (t 2.48) / 1.233. Same with the SL moved by hand at those checks: W1 1.309 (t 2.08) / 1.182; W2 1.347 (t 2.25) / 1.180. Risk of both pending orders filling (MT5 has no OCO): the opposite level was touched before the next check in 0 of 490 IS trades.",
+      "effect_on_results": "Gives a practical 'he decides' mode that roughly preserves the IS edge (VAL 1.18-1.26), provided the trader places stops rather than chasing at market."
+     },
+     {
+      "severity": "info",
+      "description": "EA level construction from M5 bid plus spread/2 matches the backtest's mid-price levels. Weekend gap exposure is modest.",
+      "evidence": "p6_ea_parity.out. EA-style channel minus backtest channel: high median $0.00 (p5 -0.09, p95 +0.07); low median $0.00 (p5 -0.20, p95 +0.07). PF with EA-style levels: IS 1.381-1.382 / VAL 1.294-1.307. 109 of 499 IS trades are held over a weekend; 3 exit at the post-weekend gap (R -1.50, -0.78, -0.87); the worst IS R is -1.50.",
+      "effect_on_results": "None material."
+     },
+     {
+      "severity": "info",
+      "description": "VAL access accounting for this lens.",
+      "evidence": "results/val_access.log has 13 lines with label prefix 'liveexec:donch4h_stop:': 10 distinct experiments plus 3 deterministic re-runs (the x5 spike decomposition twice, the operating-modes run three times). Nothing was tuned on VAL.",
+      "effect_on_results": "To be counted in the final report per Amendment 1.4."
+     }
+    ],
+    "measurements": [
+     {
+      "name": "baseline reproduction (primary costs)",
+      "is_value": "PF 1.350, t 2.35, n 499",
+      "val_value": "PF 1.294, t 1.49, n 248",
+      "note": "Custom simulator matches the engine exactly on all 747 trades and on the 2646 every-signal trades (p0_baseline.out)."
+     },
+     {
+      "name": "manual market entry, N=1 min (A1 re-anchored / B EA-managed exit / C flat-gated)",
+      "is_value": "1.244 (t 1.73) / 1.256 (t 1.80) / 1.249",
+      "val_value": "1.255 / 1.259 / 1.255",
+      "note": "p1_delay.out. A2 (skip if the theoretical trade already closed): IS 1.246 / VAL 1.253."
+     },
+     {
+      "name": "manual market entry, N=5 min (A1/B/C)",
+      "is_value": "1.239 (t 1.70) / 1.238 / 1.234",
+      "val_value": "1.166 / 1.196 / 1.173",
+      "note": "A2: 1.239 / 1.161."
+     },
+     {
+      "name": "manual market entry, N=15 min (A1/B/C)",
+      "is_value": "1.220 (t 1.56) / 1.198 / 1.207",
+      "val_value": "1.104 / 1.108 / 1.102",
+      "note": "A2: 1.212 / 1.114."
+     },
+     {
+      "name": "manual market entry, N=60 min (A1/B/C)",
+      "is_value": "1.137 (t 1.03) / 1.137 / 1.120",
+      "val_value": "1.186 / 1.123 / 1.168",
+      "note": "A2: 1.158 / 1.255. At this delay 21 IS losers (-12.3 R) have already exited before entry."
+     },
+     {
+      "name": "manual market entry, N=240 min (A1/B/C)",
+      "is_value": "1.117 (t 0.89) / 1.044 / 1.127",
+      "val_value": "1.095 / 0.935 / 1.161",
+      "note": "A2: 1.109 / 0.988."
+     },
+     {
+      "name": "chase cost of a late entry (mean R; median; p90)",
+      "is_value": "N=1 +0.031 (+0.009; +0.166); N=5 +0.038; N=15 +0.054",
+      "val_value": "model B means: N=1 +0.016, N=5 +0.035, N=15 +0.067",
+      "note": "p9_misc.out and p1_delay.out."
+     },
+     {
+      "name": "availability W1 07-23 Paris, instant fill / +5 min",
+      "is_value": "1.313 (t 1.94, n 423) / 1.203 (t 1.33)",
+      "val_value": "1.117 (n 197) / 1.028",
+      "note": "p2_availability.out."
+     },
+     {
+      "name": "availability W2 Mon-Fri 08-20 Paris, instant fill / +5 min",
+      "is_value": "1.276 (t 1.63, n 376) / 1.146",
+      "val_value": "1.280 (n 167) / 1.173",
+      "note": "p2_availability.out."
+     },
+     {
+      "name": "R from trades outside W1 (night)",
+      "is_value": "n 76, +14.7 R of 61.5 (0.19 R/trade vs 0.11 inside)",
+      "val_value": "n 51, +16.0 R of 24.7",
+      "note": "About 8 night alerts per year; 85% of IS alerts fall inside W1."
+     },
+     {
+      "name": "phone-only mode (5-min entry while awake, SL moved at in-window 4h closes), W1 / W2",
+      "is_value": "1.178 (t 1.24) / 1.145",
+      "val_value": "1.050 / 1.078",
+      "note": "Retail frictions on W1: IS 1.050 / VAL 0.930 (p8_combos.out)."
+     },
+     {
+      "name": "pending OCO set by hand at in-window 4h closes, EA trailing, W1 / W2",
+      "is_value": "1.359 (t 2.38) / 1.381 (t 2.48)",
+      "val_value": "1.255 / 1.233",
+      "note": "Post-VAL variant, informational. Retail frictions on W1: 1.206 / 1.121."
+     },
+     {
+      "name": "same pending orders, SL moved by hand at the same checks, W1 / W2",
+      "is_value": "1.309 (t 2.08) / 1.347 (t 2.25)",
+      "val_value": "1.182 / 1.180",
+      "note": "Retail frictions on W1: 1.166 / 1.060. Both pending orders filling (no OCO): 0 of 490 IS."
+     },
+     {
+      "name": "MT5 built-in trailing (activates at +2 ATR), pending entries / 5-min manual entries",
+      "is_value": "1.205 (t 1.54, n 445) / 1.158",
+      "val_value": "1.350 (n 210) / 1.201",
+      "note": "Different exit logic; client-side only."
+     },
+     {
+      "name": "bar grid: fixed UTC+0 / +1 / +2 / +3",
+      "is_value": "1.350 / 1.349 (t 2.32) / 1.284 (t 1.94) / 1.304 (t 2.11)",
+      "val_value": "1.294 / 1.256 / 1.264 / 1.354",
+      "note": "p3_grid.out."
+     },
+     {
+      "name": "bar grid: MT5 server NY-17:00 (US DST) / Athens time (EU DST)",
+      "is_value": "1.279 (t 1.94, n 482) / 1.283 (t 1.97)",
+      "val_value": "1.306 / 1.298",
+      "note": "The report's 1.313 / t 2.12 is from unpatched data."
+     },
+     {
+      "name": "rollover spread x2 over 1h / 2h around 17:00 NY",
+      "is_value": "1.360 (t 2.42) / 1.359",
+      "val_value": "1.302 / 1.302",
+      "note": "Requested test: no harm. x3 over 2h: IS 1.300 (t 2.09) / VAL 1.301."
+     },
+     {
+      "name": "retail spike x5 at 16:50-17:00 and 18:00-18:20 NY (+x2 rest of the 2h)",
+      "is_value": "1.065 (t 0.52)",
+      "val_value": "1.291",
+      "note": "Pre-close spike only: 1.089 / 1.306 (exits only 1.158 / 1.290). Reopen spike only: 1.322 / 1.282."
+     },
+     {
+      "name": "slippage 3 / 5 bp per side on all market and stop fills",
+      "is_value": "1.232 (t 1.66) / 1.102 (t 0.78)",
+      "val_value": "1.186 / 1.061",
+      "note": "1 bp per side = 0.023 R per round trip (IS median stop 85 bp of price)."
+     },
+     {
+      "name": "swaps 8%/3% and 10%/4% per year (long/short)",
+      "is_value": "1.313 (t 2.15) / 1.287 (t 1.99)",
+      "val_value": "1.259 / 1.235",
+      "note": "Lab assumption is 5%/2%."
+     },
+     {
+      "name": "retail combination (3 bp + swaps 8/3), EA auto on VPS",
+      "is_value": "1.199 (t 1.45), exp 0.075 R",
+      "val_value": "1.155, exp 0.056 R",
+      "note": "About 2%/yr at 0.5% risk."
+     },
+     {
+      "name": "stop distance 2 x ATR14(4h) per oz",
+      "is_value": "IS median $11.6 (p90 20.0)",
+      "val_value": "2025 median $34.9 (p10 23.4, p90 65.7); Q4-2025 median $55.0 (p90 93.4)",
+      "note": "0.01 lot = 1 oz risks the full stop in dollars."
+     },
+     {
+      "name": "account needed for 0.01 lot to equal target risk",
+      "is_value": "n/a",
+      "val_value": "0.5%: $7.0k / EUR 6.0k (2025 median), $11.0k / EUR 9.4k (Q4-2025); 1%: $3.5k / EUR 3.0k and $5.5k / EUR 4.7k; 10x that for at most 10% rounding error",
+      "note": "EURUSD 1.17 assumed."
+     },
+     {
+      "name": "ESMA 1:20 margin",
+      "is_value": "n/a",
+      "val_value": "$168 per 0.01 lot at $3,358; $211 at $4,227; 2.4% (0.5% risk) to 4.8% (1% risk) of equity at the median stop, 7.2% at the p10 stop with 1% risk",
+      "note": "Leverage is not binding; the minimum lot is."
+     },
+     {
+      "name": "small account, minimum lot forced ($2k at 0.5% target)",
+      "is_value": "PF$ 1.20 vs PF R 1.35; minimum lot forced on 64.5% of trades",
+      "val_value": "PF$ 1.40 vs 1.29; forced on 98%; effective risk median 1.0%, p90 2.1%, max 5.1%",
+      "note": "p5_sizing.out."
+     },
+     {
+      "name": "EA deadline parity",
+      "is_value": "226 of 2646 brackets differ; PF 1.352",
+      "val_value": "PF 1.294",
+      "note": "+23h (Sunday-open trades), -50 to -54h (Sunday-evening decisions), +73h (Good Friday)."
+     },
+     {
+      "name": "EA auto-mode placement with StopsLevel $0 / 0.5 / 1 / 2",
+      "is_value": "1.347 / 1.338 / 1.358 / 1.240",
+      "val_value": "1.285 / 1.281 / 1.264 / 1.214",
+      "note": "Gap or too-close sides are skipped instead of filled."
+     },
+     {
+      "name": "EA-style levels (M5 bid + spread/2)",
+      "is_value": "1.381 / 1.382",
+      "val_value": "1.307 / 1.294",
+      "note": "Channel difference median $0.00, p5-p95 about +/-$0.1-0.2."
+     },
+     {
+      "name": "pre-alert lead time before the trigger (0.25 / 0.5 ATR)",
+      "is_value": "median 5 min (47% under 5 min) / median 24 min",
+      "val_value": "n/a",
+      "note": "0.25 ATR is too short to act on."
+     },
+     {
+      "name": "SL modifications per trade with EA trailing",
+      "is_value": "median 18, p90 67",
+      "val_value": "n/a",
+      "note": "Respect StopsLevel and FreezeLevel."
+     },
+     {
+      "name": "weekend exposure",
+      "is_value": "109 of 499 trades held over a weekend; 3 gap exits (-1.50, -0.78, -0.87 R)",
+      "val_value": "n/a",
+      "note": "Losses can exceed 1 R."
+     },
+     {
+      "name": "VAL accesses by this lens",
+      "is_value": "n/a",
+      "val_value": "13 log lines (10 experiments + 3 re-runs)",
+      "note": "Label prefix liveexec:donch4h_stop."
+     }
+    ],
+    "recommendations": [
+     "EXECUTION MODE. Never enter at market from a trigger alert: a 1-minute delay already gives IS PF 1.24-1.26 with t<2. The manual version that survives uses pending orders. At each 4h close inside waking hours (08/12/16/20 UTC, i.e. 09/13/17/21h Paris in winter and 10/14/18/22h in summer), if flat, place BOTH a buy-stop and a sell-stop at the alerted levels, each with its SL attached at level -/+ 2 ATR, as GTC orders. Leave them until the next check, and delete the other order as soon as one fills. This gives IS 1.36 / VAL 1.26 with EA trailing, or 1.31 / 1.18 with the SL moved by hand at the same checks. These are post-VAL variants and informational only. If a trigger alert arrives and no pending order was in place, skip the trade.",
+     "EXITS. Run the EA on a 24/5 VPS that pushes the server-side SL to best price -/+ 2 ATR at every M1 close (mode 1 for manual positions, mode 2 later), bound to a specific ticket. Do not use MT5's built-in trailing (client-side, starts only at +2 ATR, IS PF 1.205), and do not rely on phone-only SL updates (IS 1.18 / VAL 1.05).",
+     "ACCOUNT AND SIZING. Read SYMBOL_TRADE_CONTRACT_SIZE, VOLUME_MIN and VOLUME_STEP at the broker. With 100-oz lots, 0.5% risk needs at least about EUR 6.0k (2025 median stop $35/oz) and about EUR 9.4k at Q4-2025 volatility ($55/oz); 1% risk needs half that. Below this, do not trade, or accept 1% risk. The EA should block, or ask for confirmation, whenever the minimum lot implies more than 1.5x the target risk. Expect about 3%/yr at 0.5% risk under lab costs and about 2%/yr under retail frictions, with max drawdown around 8-10 R. Compare that with the VPS cost (about EUR 10-15 per month) before going live.",
+     "BROKER DUE DILIGENCE BEFORE ANY REAL MONEY (EA journal, at least 3 weeks). Log the spread every minute from 16:45 to 18:30 NY; StopsLevel, FreezeLevel and allowed expiration modes; digits; long and short swap and the triple-swap day; the server UTC offset and whether DST follows US or EU dates; and, on demo, stop-order slippage and latency. Re-run the lab with these numbers (scripts in the scratch folder). Each extra bp of slippage per side costs 0.023 R per trade, and a x5 pre-close spread spike cuts IS PF to 1.09.",
+     "HOLDOUT. Keep the single 2026 look on the unchanged rule. Before downloading 2026, pre-declare and then report beside it, as information only, these as-executed variants: EA auto with retail frictions (3 bp, swaps 8/3); pending orders while awake with EA trailing; the same with hand-moved SL; market entry 5 min late; and the NY-17:00 server grid. Never use them to pick or retune the rule.",
+     "EA SPEC, PHASE 1 (alert-only, always-on VPS). (1) Bars: build UTC-grid 4h mid-price bars from M1, at least 30 trading days back. Check SERIES_SYNCHRONIZED and the bar count, and look for unexplained gaps over 15 min in the 60-bar window. If anything is wrong, send a DATA_WARN alert and arm no bracket; retry for the first 10 minutes. (2) Clock: convert server time to UTC with a per-bar offset from a selectable DST rule (US NY-close, EU/EET, or fixed). Re-check it at every 4h close against TimeTradeServer()-TimeGMT(), and alert on mismatch. (3) Decision: at each 4h close (the bar's last M1 + 1 min), if the fictive position is flat, compute the 60-bar mid high and low (including the just-closed bar), Wilder ATR14, and stop = trail = 2 ATR. Compute the deadline exactly as the lab does: NY time + 7h, + BDay(5), - 7h, - 5 min, falling back to the last bar before a closure. (4) Fictive fills: ask >= buy level or bid <= sell level, at max(level, quote) so a gap fills at the open; per-M1 trailing from the best bid-high or ask-low; time stop; if both levels are touched in the same minute, take the adverse side. (5) On startup, replay M1 history since the last saved state to rebuild the fictive position and brackets, tag those events REPLAY, and never arm a bracket mid-window unless the replay shows the fictive position was flat at that window's start. (6) Send notifications outside OnTick (Telegram asynchronously), with a daily heartbeat and a weekly summary.",
+     "ALERT TEXTS (French, push + Telegram). Each alert opens with 'XAUUSD', a type and an id. NIVEAUX (only at in-window decisions, only when flat): 'XAUUSD NIVEAUX 4h id B260312-12 | valables jusqu'a 17:00 Paris | ACHAT STOP 2945.30 (SL 2913.70) / VENTE STOP 2871.10 (SL 2902.70) | 2 ATR = 31.6 $ | lot 0.01 = 0.53 % du capital (cible 0.5 %) | marge ~150 EUR | Placez les DEUX ordres stop (GTC), supprimez l'autre des qu'un est execute'. DECLENCHE: 'XAUUSD CASSURE HAUSSE id T... | 14:31:07 Paris | niveau 2945.30, prix 2945.62, spread 0.32, gap non | SL serveur 2914.02 | suiveur 31.6 $ gere par l'EA | sortie max jeu 19/03 21:55 Paris | sans ordre stop deja en place : NE PAS acheter au marche'. SL (only if the EA is not managing the SL, at in-window 4h closes): 'XAUUSD deplacez le SL de l'achat id T... a 2951.20 (jamais plus loin)'. SORTIE: 'XAUUSD SORTIE achat id T... (suiveur/stop/temps) a 2968.40, +0.72 R fictif, cumul +5.3 R / 14 trades, verifiez que votre position est close'. ALERTE: 'XAUUSD DONNEES INCOMPLETES / decalage serveur 3 h != 2 h attendu : pas de niveaux ce creneau'.",
+     "JOURNAL (CSV, one row per event). Fields: ts_utc, ts_paris, ts_server, offset_used, offset_measured, event, bracket_id, trade_id, side, buy_lvl, sell_lvl, atr, stop, trail, best, fictive_fill, fictive_exit, R_fictive, deadline_utc, bid, ask, spread, m1_bars_used, max_gap_min, data_ok, real_ticket, real_price, real_volume, real_slippage, alert_to_fill_latency_s, notif_status, ea_version and inputs hash. Event types: LEVELS, ARM_SKIPPED_IN_POSITION, TRIGGER, SL_MOVE, EXIT, REAL_FILL / REAL_SL_MOD / REAL_CLOSE (from OnTradeTransaction for every XAUUSD deal), DATA_WARN, OFFSET_WARN, REPLAY, DISCONNECT / RECONNECT (from TERMINAL_CONNECTED in OnTimer), HEARTBEAT (daily), and SPREAD (every minute 16:45-18:30 NY). Also store weekly fictive R against real R.",
+     "FIXES TO lab/live/mql5/GoldOrb_Donchian4H.mq5. (a) DeadlineUTC (line 141, called at 457): use the bar close time and the lab's trading-day convention with the last-bar-before-closure fallback. (b) ServerOffsetSec / Build4H (lines 112-128 and 183): use a per-bar offset under a DST rule, not today's offset; re-check at every decision, not only in OnInit (line 598). (c) PlacePendings (line 407): if the level is already crossed at arming, send a market order (as the backtest's gap fill does), and alert if a side cannot be placed because of StopsLevel. (d) Persist bracket state and replay history after downtime. (e) Treat CopyRates failure or unsynchronized history as an alert plus retry, not a silent 4h skip (line 425). (f) LotsForRisk (lines 308-324): refuse when the minimum lot exceeds 1.5x the target risk. (g) OnNewM1 (line 491): process every M1 bar missed since the last update. (h) Mode 1: bind to a ticket, not to 'any magic-0 position on the same side' (line 334). (i) Move WebRequest out of the tick path. (j) Replace the 0.25 ATR pre-alert (median lead 5 min) with the NIVEAUX alert at each 4h close (or 0.5 ATR, median lead 24 min).",
+     "MT5 PITFALLS FOR THIS RULE. (1) Pending orders: ORDER_TIME_SPECIFIED only works if SYMBOL_EXPIRATION_MODE allows it, and expiry is in server time. Pending orders are refused while the market is closed (weekend and the 17:00-18:00 NY break), so the Sunday bracket is armed after the gap. MT5 has no OCO: delete the other order on DEAL_ENTRY_IN, and know whether the account is hedging or netting. (2) StopsLevel and FreezeLevel: pending orders closer than StopsLevel are rejected, and SL changes inside FreezeLevel are refused, so retry each minute and never move the SL further away. (3) Weekend and holiday gaps: the SL and the pending stops fill at the first price after the gap; 22% of trades are held over a weekend and losses can exceed 1 R (worst IS -1.50 R). (4) Trailing: EA-managed server-side SL, not terminal trailing (client-side, starts at +2 ATR, missing from the mobile app). (5) H4 timestamps: native H4 bars follow server time (NY-17:00 grid), a different rule (IS t 1.94), so never read levels off the native chart; the EA must build UTC bars. (6) Partial data at startup: history may still be syncing, the 'Max bars in chart' setting may cap it, or there may be gaps after a disconnection, so check before arming. (7) DST: the UTC grid itself does not move, but the server offset changes; US and EU DST dates differ for 2-3 weeks in March and 1 week in October/November, and the 17:00 NY rollover moves between 21:00 and 22:00 UTC. (8) Rollover: retail spread spikes are larger than in Dukascopy data; measure them. (9) Symbol specifics: contract size (100 oz or 1 oz), 2 or 3 digits, suffixes, tick value in EUR. (10) Notifications: push needs the MetaQuotes ID and is limited to about 2 per second and 10 per minute; Alert() popups are not seen on a VPS; Telegram needs the URL whitelisted.",
+     "PARITY PROCEDURE. Run the MT5 tester in 'Every tick based on real ticks' mode on 2025 with InpServerTZ = NY_CLOSE (AUTO is disabled in the tester), then lab/live/compare_journal.py. Add a bracket-level check: levels within $0.5 and ATR within 2% of the lab. During phase 1, compare each week the EA's fictive trades with a lab re-run on Dukascopy data, and the real fills with the fictive ones (slippage, latency). Any persistent difference above 0.03 R per trade is material, since the edge is about 0.10 R."
+    ],
+    "scratch_files": [
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/common.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p0_baseline.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p0_baseline.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p1_delay.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p1_delay.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p1_delay.csv",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p2_availability.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p2_availability.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p2_availability.csv",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p3_grid.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p3_grid.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p3_grid.csv",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p4_rollover.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p4_rollover.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p4_rollover.csv",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p4b_spike_decomp.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p4b_spike_decomp.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p4c_exitonly_parity.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p5_sizing.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p5_sizing.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p6_ea_parity.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p6_ea_parity.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p7_costs_news.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p7_costs_news.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p8_combos.py",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p8_combos.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/p9_misc.out",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/orders_base.pkl",
+     "/home/user/gold-orb/lab/audit/scratch/donch4h_stop/liveexec/trades_base.pkl"
+    ]
+   }
+  ],
+  "judge": {
+   "candidate": "trend/donch4h_stop",
+   "decision": "GO_TO_HOLDOUT",
+   "reasons": [
+    "Protocol test: DISQUALIFY requires an invalid backtest (look-ahead, a simulation error that materially flatters results, or an implementation impossibility). None of the three reviews found one. Statistical weakness is explicitly not grounds, so the 2026 holdout decides.",
+    "No look-ahead. The independent sequential EA rebuild reproduces 499/499 IS and 248/248 VAL trades (max |dR| 9e-14). Hand checks pass 14/14 and the truncation probes pass 120/120, 40/40 and 40/40. A deliberate 1-5-bar look-ahead does not raise PF. My own end-to-end check (/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/judge_causality.py, IS only): with all prices garbled after 5 cut dates (2014-2021), every trade closed before the cut is bit-identical (66/66 up to 469/469) through make_orders, simulate and the one-position chain. My code read agrees: bars are labelled by start, the decision is at last M1 + 1 min, fills start at the first bar at or after the decision, channel and Wilder ATR use completed bars, the trail updates after the bar's stop check, and ties take the adverse side. The main data ends 2025-12-31 21:58 UTC; no 2026 data is on disk.",
+    "No simulation error that materially flatters results. The tick re-sim fill shortfall is 0.0135 R against 0.0287 R modelled. Costs x1.5 with the OCO side re-resolved: IS 1.255 / VAL 1.200. With fills blocked at rollover and Sunday open: 1.338-1.35 / 1.283. Bid/ask/mid triggers, 0-2 min delays, +/-$0.50 level noise, lot rounding and swap timing are all stable. The patch files align 30/30, and the unpatched data also passes (VAL 1.232).",
+    "Implementable. An MT5 EA on a 24/5 VPS reproduces the exact rule: UTC-grid bars built from M1, cancel-on-fill OCO, and a server-side SL moved at each M1 close (median 18, p90 67 modifications per trade). ESMA 1:20 margin is not binding. Alert/manual execution failing, and the minimum lot setting an account floor, are deployment constraints, not an impossibility.",
+    "Low conviction even so. Selection-adjusted IS p is about 0.14-0.15 (Reality Check / SPA). VAL every-signal PF is 0.977. VAL profit is all long (+34.4 R against -9.7 R on shorts), and 64% of it is from 2025. Read the holdout against bands declared in advance; a PF > 1 alone does not justify real money."
+   ],
+   "p_edge_real": "About 0.30 (plausible 0.20-0.40) that the rule, executed exactly by an EA, has positive expectancy after the pre-registered costs going forward. About 0.10 that the edge is as large as measured (>= +0.10 R/trade, PF >= 1.3). If it is real, the likely size is +0.03 to +0.06 R/trade (PF about 1.08-1.15). That is small enough for 1-2 bp/side of extra slippage, broker rollover spikes or manual entry to erase it. For alert-driven manual market entries, below 0.15. Basis: strong IS evidence against random-timing nulls (beats all 1000 runs, 3.7 sd), offset by search selection (best of 48, N_eff about 21, RC p 0.15), a VAL signal-level null (every-signal PF 0.977, below the drift-kept null median of 1.083), long-only VAL profit, and weak cross-market support (VAL mean PF about 0.97).",
+   "expected_holdout": "The holdout runs from 2026-01-01 to early Nov 2026: about 10 months and 45-55 trades. Blended forecast: PF median about 1.0, 90% range about 0.4-2.2, and P(PF > 1, the protocol pass) about 0.45-0.50, close to a coin flip. Reference cases: with the edge as measured, median 1.30 [0.55, 2.79] and P(PF > 1) 0.70; with half the edge, 1.12 and 0.59; with no edge, 0.87-0.97 [0.35-0.39, 1.9-2.1] and 0.39-0.47. Expect an 8-11 R max drawdown, about one week in three positive, a result decided by 2-4 large trend trades, and a long/short split that follows gold's 2026 direction. Reading declared in advance, starting from 0.30: PF >= 1.5 is weak support (to about 0.5); 1.0-1.5 is a protocol pass but inconclusive (about 0.4); 0.8-1.0 is mild evidence against (about 0.25); below 0.7 is meaningful evidence against (about 0.12). A profit made only on longs while gold rises counts for nothing. Report alongside it, as information only: every-signal PF, the long/short split, and same-period 2026 nulls (signal times with random side; random long-only and short-only entries with identical exits). Also report the as-executed variants: the EA with 3 bp slippage and 8%/3% swaps; hand-placed pending stops with EA trailing; 5-min market entry; and the NY-17 server grid.",
+   "manual_trading_viable": "No, not as 'alert, then decide, then market order'. That is a weaker strategy that fails the IS t >= 2 criterion at any delay. Late market entry, IS PF / VAL PF: 1 min 1.24-1.26 (t 1.73-1.80) / 1.26; 5 min 1.23-1.24 / 1.17-1.20; 15 min 1.18-1.22 / 1.10-1.12; 60 min 1.11-1.14 / 1.12-1.19. Chasing costs +0.03 to +0.05 R/trade against an edge of about 0.12 R, and the loss falls on the fastest winners. Availability makes it worse. Waking hours only (07-23 Paris) with instant fills: IS 1.313 (t 1.94) / VAL 1.117; with 5-min entries: 1.203 / 1.028. Night triggers are 15% of IS trades but carry 24% of IS R and 65% of VAL R. Mon-Fri 08-20 Paris with 5-min entries: 1.146 / 1.173. Exits fail too: MT5 terminal trailing gives IS 1.205 (t 1.54). Phone-only SL management gives 1.178 / 1.050, and 1.050 / 0.930 with retail frictions. Only one semi-manual mode holds up. At each waking-hours 4h close the trader places BOTH resting stop orders (GTC, SL attached) and leaves them overnight, while a VPS EA cancels the other order on fill and trails per M1. That gives IS 1.36-1.38 (t 2.38-2.48) / VAL 1.23-1.26, or 1.31-1.35 / 1.18 with the SL moved by hand. These variants were built after VAL and are not validated. Use alerts only for the journal and paper tracking. Execute through resting broker-side orders with a VPS EA; fully automated is preferred.",
+   "ea_spec": [
+    "Execution: a fully automated MT5 EA on a 24/5 VPS, XAUUSD, one position at a time, with resting broker-side orders and a server-side SL. The Phase 1 alert mode tracks the fictive position as the forward paper record; run a demo-auto copy in parallel to measure real fills.",
+    "Bars and clock: 4h mid bars on the fixed UTC grid (00/04/08/12/16/20), built from broker M1 (or M5) bid + spread/2. Never use the native H4 chart: its NY-17 server grid gives IS 1.279, t 1.94. Convert server time to UTC with a per-bar DST rule (US NY-close, EU/EET or fixed), and re-check it against TimeTradeServer()-TimeGMT() at every 4h close; on a mismatch send OFFSET_WARN and arm no bracket. Keep at least 640 4h bars of history so the ATR matches the lab exactly.",
+    "Decision: at each 4h close, only if flat at that moment. up = max mid-high and dn = min mid-low over the last 60 completed 4h bars, INCLUDING the bar just closed. ATR = Wilder ATR14 on mid 4h bars (alpha 1/14, TR uses the previous mid close). D = 2.0 x ATR, frozen for the trade. Excluding the current bar or using stale levels costs 0.06-0.08 IS PF.",
+    "Entry: BuyStop at up (triggers on ask) and SellStop at dn (triggers on bid), each with an attached SL at level -/+ D, valid until the next 4h close; delete it at the next decision. OCO: on DEAL_ENTRY_IN, delete the other order; if both fill, close the second at once. If price is already through a level when arming (gap, Sunday open), enter at market, matching the backtest's fill at the open. If StopsLevel blocks a side, log and alert. After the fill, reset the SL to fill -/+ D.",
+    "Trailing: at each M1 close, best = highest bid-high (long) or lowest ask-low (short) since the fill, including the M1 bar just closed. Set SL = best -/+ D whenever that tightens it, send it to the server, and never loosen it. Process every M1 bar missed after a disconnect. When StopsLevel or FreezeLevel blocks a change, retry each minute. Do not use MT5 terminal trailing (IS 1.205) or OnTick trailing.",
+    "Time stop: close at market at the decision's NY wall-clock time + 5 NY business days - 5 min. The lab computes this as NY time + 7h, + BDay(5), - 7h, - 5 min. If that time falls in a closure (weekend, holiday or early close, with the next quote more than 30 min later), close on the last bar before it. Fix DeadlineUTC (lines 141/457) to match.",
+    "Sizing: lots = floor(equity x risk% / loss-per-lot at D / VOLUME_STEP) x VOLUME_STEP, with risk at 0.25-0.5%. Block, or ask for confirmation, when VOLUME_MIN would mean more than 1.5x the target risk. With 100-oz lots, 0.5% risk needs at least EUR 6.0k at the 2025 median stop ($35/oz) and EUR 9.4k at Q4-2025 volatility ($55/oz). Never skip signals at discretion.",
+    "Resilience: persist the bracket and position state. On restart, replay M1 since the last save (tagged REPLAY), and never arm mid-window unless the replay shows the position was flat at that window's start. Check SERIES_SYNCHRONIZED, the bar count and any gap over 15 min in the 60-bar window; on failure send DATA_WARN, arm no bracket and retry for 10 min. Bind management to the position ticket. Keep WebRequest/Telegram out of OnTick. Send a daily heartbeat. Replace the 0.25-ATR pre-alert (median lead 5 min) with a NIVEAUX alert at each 4h close.",
+    "Journal: a CSV with one row per event. Fields: UTC, Paris and server time; offset used vs measured; event type (LEVELS, TRIGGER, SL_MOVE, EXIT, REAL_FILL, REAL_SL_MOD, REAL_CLOSE, DATA_WARN, OFFSET_WARN, REPLAY, DISCONNECT, HEARTBEAT); levels; ATR; fictive vs real price; slippage; latency; spread. Also log the spread every minute from 16:45 to 18:30 NY, and compare fictive R with a lab re-run every week.",
+    "Gates before real money: run the MT5 tester in 'every tick based on real ticks' mode on 2025, then compare_journal.py; require levels within $0.5, ATR within 2% and at least 90% of trades matched. Then run at least 3 weeks of demo to measure the rollover and pre-close spread, stop slippage, swaps and StopsLevel/FreezeLevel. A x5 pre-close spike cuts IS PF to 1.07-1.09. Keep slippage at or below about 1.5 bp/side; at 3 bp, IS falls to 1.23 (t 1.66). Treat a persistent real-vs-fictive gap above 0.03 R/trade as material."
+   ],
+   "open_risks": [
+    "Selection: the candidate is the best of 48 correlated trend configs (N_eff about 21). White Reality Check p is 0.151 and SPA p is 0.138. The audit's DSR of 0.07 is mis-specified; recomputed, it ranges from 0.09 to 0.69 depending on assumptions.",
+    "VAL is weak evidence. Every-signal VAL PF is 0.977. The chain passes only because the signals it took beat the ones it skipped: +0.147 R in VAL (98th percentile of the null) against -0.003 R in IS. A drift-only null passes the VAL test 48% of the time. Data patching alone moved VAL PF from 1.232 to 1.294.",
+    "Concentration: the top 5% of trades make 145-150% of net R. Removing 15 IS trades or 7 VAL trades wipes out net R. PF without the top 10 trades: IS 1.08, VAL 0.91. IS t drops below 2 without 2020 or without 2016.",
+    "Regime and beta: since 2017 the profit has come from longs in a rising gold market (shorts -21.2 R over 222 trades in 2017-25). A long-only profit in 2026 cannot be told apart from beta.",
+    "Holdout power: about 50 trades. P(PF > 1) is 0.70 if the edge is as measured and 0.39-0.47 if there is none, so no 10-month outcome settles it. Confirming the edge would take roughly 600-2300 trades. A pass should lead to sequential demo monitoring with a kill rule fixed in advance (for example cumulative R <= -10 or posterior < 0.15), not to real money.",
+    "Execution fragility: each extra bp/side of slippage costs about 0.023 R/trade against an edge of about 0.10 R. Each extra 10% of trigger-bar overshoot costs about 0.06 PF, and the tick calibration rests on only 25 trades. A x5 pre-close broker spread spike cuts IS PF to 1.07-1.09. The MT5 server grid, an off-by-one channel or terminal trailing each push IS t below 2.",
+    "Small-account economics: a 0.01-lot trade risks the full 2-ATR stop, $35-55/oz in 2025. Expect about 2-3%/yr at 0.5% risk, which is roughly the VPS cost on a EUR 6-10k account. Expect 8-11 R drawdowns; weekend gaps can lose more than 1 R (worst -1.5 R).",
+    "Holdout process: lab/holdout_candidates.json does not exist yet and must be frozen before get_holdout.sh runs. It needs trend/donch4h_stop, the FINALISTS params, a 'prereg': {} cost key (holdout.py reads that key for the pass flag), the three COSTS.md scenarios, the reading bands and the as-executed variants. Keep the 2026 hole-patching. Warm-start from full history, or check that the 2025-06 warm start reproduces the audited Dec-2025 chain, so the short still open on 2025-12-31 carries into 2026. Flag the trade still open at the end of the data, which is marked to market as 'time'.",
+    "Forking paths: do not adopt any fix the diagnostics suggest (long-only, a low-ATR filter, first-breakout-only, session or grid changes). Each of them has seen VAL; register them only as new hypotheses for forward data.",
+    "The existing EA (lab/live/mql5/GoldOrb_Donchian4H.mq5) is not ready for parity testing. DeadlineUTC uses a different deadline convention and ignores holidays. DST uses a single offset: AUTO and FIXED are wrong across DST changes, NY_CLOSE is 1 h off on EET servers about 3 weeks a year, and the offset is checked only in OnInit. PlacePendings silently skips sides that are gapped through or too close. The bracket is not persisted and there is no replay after downtime. A CopyRates failure silently skips the 4h bracket. LotsForRisk falls back to the minimum lot even when that over-risks. OnNewM1 processes only the last M1 bar. Mode 1 manages any magic-0 position on the same side. WebRequest runs synchronously inside OnTick."
+   ]
+  }
+ },
+ {
+  "candidate": "orb/orb_asia_2d_buf10",
+  "reviews": [
+   {
+    "lens": "LOOK-AHEAD & SIMULATION-FIDELITY CODE AUDIT",
+    "candidate": "orb/orb_asia_2d_buf10",
+    "verdict": "No look-ahead and no fill better than reality in the code path. An independent EA-style replica reproduces all 1037 IS and 445 VAL trades exactly, and the exact-cut truncation and 16 hand checks pass. But the quoted metrics are stale: on the current patched data IS PF is 1.177, t 1.83, 6/9 years, and VAL PF 1.100. And simulate()'s spread_mult silently drops 462 orders in the low_cost_ecn scenario that decides CONDITIONAL: IS PF 1.234 on 831 trades, vs 1.315 on 1038 trades when the orders are rebuilt.",
+    "issues": [
+     {
+      "severity": "major",
+      "description": "The candidate's quoted metrics come from the unpatched data, which still had download holes. They are no longer the numbers the current data gives. The quoted figures are IS PF 1.196, t 1.99, 7/9 years, n 1028, stress 1.121, VAL PF 1.115. On lab/data/xauusd_m1.parquet (patched) the same code gives IS PF 1.177 (1.1773), t 1.83, 6/9 years (exactly at the 2/3 floor), n 1037. Stress x1.5 gives 1.104 and the neighbour median 1.155. VAL gives PF 1.100181, t 0.74, n 445 (longs 1.22, shorts 0.97). 2013 shorts are 79.0 of 124.3 IS R, and IS PF without 2013 is 1.059. The miss on criterion 2 is not 'by a hair': it is 0.023 PF and 0.17 t. Under the primary costs, no patched neighbour clears PF >= 1.20 and t >= 2 either (best is buf0.08 at 1.199 / 2.04).",
+      "evidence": "p0_baseline.out reproduces the unpatched data exactly (1028 / 1.196 / 1.99 / 7/9) and gives 1037 / 1.177 / 1.83 / 6/9 on the patched data. p1_patch_diff.out: the patch adds 22 sessions that were missing; their 21 trades have PF 0.447 and sum to -10.0 R. It also changes 6 trade outcomes: hidden stop-outs, e.g. 2014-10-09 goes from a +0.88R time exit to a -1.04R stop. p11_patched_neighbours.out gives the full neighbour table for both datasets. p18_val_precision.out gives the unrounded VAL PF.",
+      "effect_on_results": "IS PF -0.019 (1.196 -> 1.177), t -0.16, one fewer positive year. VAL PF -0.015 (1.115 -> 1.100). The status label does not change: the candidate fails the primary model either way. But every number quoted for it must be replaced."
+     },
+     {
+      "severity": "major",
+      "description": "Engine/strategy interaction: Costs.spread_mult is applied inside simulate() to quotes that differ from the quotes make_orders used to pre-resolve the OCO first touch. Those orders have entry_i = expiry_i = the touch bar, a one-bar window. With spread_mult < 1, the lowered Ask or raised Bid on the touch bar may no longer reach the level. The order then NOFILLs silently and the day is lost, with no later touch and no earlier one. With spread_mult > 1, fills stay forced on the old bar and the levels are not widened, so the result is optimistic. audit.py scenarios and holdout.py both apply Costs(**c) to the normal-quote orders. The low_cost_ecn scenario (spread_mult 0.35) is what decides CONDITIONAL under Amendment 1, so it is computed on the wrong trade list.",
+      "evidence": "p20_lowcost_ecn.out, engine convention vs orders rebuilt on the scenario quotes:\n- low_cost_ecn: 462 NOFILL orders. IS n 831, PF 1.234, t 2.07, 6/9 years, stress 1.198, vs rebuilt n 1038, PF 1.315, t 2.96, 7/9, stress 1.257. VAL n 372, PF 1.182 vs rebuilt n 447, PF 1.210.\n- conservative (spread x1.5): IS PF 1.106 vs rebuilt 1.080 (5/9 years). VAL 1.043 vs 1.004.\n- Protocol x1.5 stress: 1.104 vs rebuilt 1.078 (p11).\n- p13_spreadmult_bug.out: spread x0.8 / 0.6 / 0.5 gives 119 / 216 / 266 IS NOFILLs. PF falls when costs fall (x0.6: engine 1.153 vs rebuilt 1.217).",
+      "effect_on_results": "low_cost_ecn IS PF is understated by 0.081 with 20% of trades missing (VAL by 0.028 with 16% missing). The protocol stress PF is overstated by 0.026, and the conservative scenario by 0.026 IS and 0.039 VAL. The CONDITIONAL label survives either way, but the reported scenario numbers are wrong. A holdout run through holdout.py under low_cost_ecn would also silently drop about 18% of 2026 sessions."
+     },
+     {
+      "severity": "minor",
+      "description": "Under the primary model the pass/fail call sits inside the execution and feed noise band. Cent-level feed noise and 1-minute timing shifts move PF by about \u00b10.02-0.03, which is the size of the IS gap to 1.20. VAL PF 1.1002 clears the 1.10 bar by 0.0002, so criterion 7 is effectively a coin flip under small execution differences.",
+      "evidence": "p17_feed_jitter.out (per-minute mid noise, orders rebuilt): sd $0.03 gives IS PF 1.148-1.182; sd $0.10 gives 1.131-1.193; 0 of 24 runs reach PF >= 1.20 with t >= 2. p6_delay.out:\n- range_end 07:01: IS 1.158, VAL 1.078\n- arming +1 bar: IS 1.175, VAL 1.099\n- next-bar market entry: IS 1.163, VAL 1.101\n- fill at the touch-bar close: IS 1.132, VAL 1.077",
+      "effect_on_results": "Plus or minus 0.02-0.03 PF. A primary-model result within about 0.03 of either threshold carries no information about the edge."
+     },
+     {
+      "severity": "minor",
+      "description": "Intrabar fill fidelity: stop entries and stop exits fill at exactly the level, plus 1.5 bp. A tick replay of Jun-Dec 2025 shows the real trigger tick jumps past the level. This is covered by the primary slippage budget, but it uses up more than half of the low_cost_ecn budget (0.75 bp per side).",
+      "evidence": "p8_ticks.out (34 covered trades, logged VAL): the tick fill is in the same minute and the exit reason is the same in 100% of trades. Mean adverse entry jump is $0.175 (median 0.078, p90 0.414) and mean exit jump $0.120, against a 2x1.5 bp budget of $1.105 per trade. The R gap is 0.0076 R per trade (PF 1.234 M1 vs 1.218 tick, with the same costs on both). The bound for filling at the touch-minute close is IS PF 1.132 (p6 variant B).",
+      "effect_on_results": "About -0.015 PF if slippage were zero. Under the primary costs there is no net bias. Under low_cost_ecn the effective cushion is about $0.25 per trade."
+     },
+     {
+      "severity": "minor",
+      "description": "The time exit uses pd.offsets.BDay(2), which ignores holidays. When 16:00 NY falls in a closed market (US holidays, early closes, Good Friday, Christmas, Thanksgiving), the exit happens at the reopen, 2 to 51 hours late. The longest IS hold is 159 h: entry 2013-12-20, exit 2013-12-27 00:00 UTC. That is still within 5 trading days. The engine charges swap for the extra nights.",
+      "evidence": "p7_holes_holidays.out: 19 IS time exits came more than 30 min after schedule, summing to +30.9 R. Closing at the last quote before the scheduled time would give +28.5 R. The hand check of trade 205 (p4_handcheck.out) shows 7 swap nights.",
+      "effect_on_results": "-2.4 R over IS if the EA closes before early closes, about -0.003 PF. The EA convention needs to be documented."
+     },
+     {
+      "severity": "minor",
+      "description": "Holdout pipeline data prep differs from the IS/VAL prep.\n- holdout.py only re-downloads days with fewer than 50% of the median bar count, so partial-day holes stay unpatched. The patch changed IS PF by -0.019 (issue 1).\n- build() skips prep_data's crossed-quote filter (ask < bid, or ask_low < bid_low - 5).\n- Cost scenarios reuse the normal-quote orders (issue 2).\nThe warm-up frame itself is fine: starting at 2025-06-01 gives identical orders, and the trade path re-converges within 3 days.",
+      "evidence": "lab/holdout.py build() / short_days() / main(). p19_holdout_frame.out: orders identical; only 2025-06-02/03/05 trades differ (warm-up). p15_remaining_holes.out: the current IS/VAL data has only holiday short days and 30 unexpected gaps of 15 min or more over 13 years.",
+      "effect_on_results": "An unpatched 2026 file with holes biased the same way as before could move the single-look PF by about 0.02. It cannot be redone after the look."
+     },
+     {
+      "severity": "minor",
+      "description": "A few entries were triggered by Dukascopy spread spikes: the triggering Ask high or Bid low came with 3x or more the prior-hour median spread. Their outcome depends on the feed. A broker feed without the same spike would not have taken them.",
+      "evidence": "p14_spread_spikes.out: 14 IS entries at 2x or more (+8.3 R) and 4 at 3x or more (+8.7 R). 24 stop-outs were pure spread spikes, which is conservative against the strategy.",
+      "effect_on_results": "About -0.012 PF if the 3x-or-more spike entries were absent."
+     },
+     {
+      "severity": "info",
+      "description": "No look-ahead in strategy.py or goldlab: every decision uses only completed bars before the decision.\n- The range is built from bars starting 00:00-06:59 London (ask high / bid low), and orders are live from the first bar starting at or after 07:00.\n- The first touch is scanned forward causally. The both-levels-in-one-bar tie never occurs in IS.\n- The 4 gap fills are taken at the worse of level and open. The stop check on the fill bar is pessimistic.\n- There are no whole-series statistics. Daily ATR and trend are computed but unused, and orders do not change under truncation.\n- M1 bars are start-labelled. DST is handled for London and NY, including the mismatch weeks.",
+      "evidence": "p5_truncation.out, 150 random IS sessions:\n- data ending at the touch bar gives an identical order 150/150\n- data ending one bar earlier gives no order 150/150\n- data ending at 06:59 London gives no order 150/150\n- 6/6 full-history cuts are identical\n- the 14 'previous orders' mismatches are a window-start artefact (p5b_prevcheck.out)\np3_ea_replica.out: an independent bar-by-bar EA written from the report rules gives IS 1037/1037 and VAL 445/445 trades, max |dR| 0, identical swaps. p4_handcheck.out: 16 trades (12 random plus the longest hold, a Friday entry, the max R and the min risk) match raw M1 rows to 1e-6. p2_timestamps.out: tick-to-M1 aggregation is 100% exact with start labels and about 1-2% with end labels. p2c_sessions.out: range start is 00:00 UTC in winter and 23:00 UTC in BST; the exit is 21:00 / 20:00 UTC.",
+      "effect_on_results": "None. The backtest is what an EA following the stated rules would have done on this feed."
+     },
+     {
+      "severity": "info",
+      "description": "Decision-time and fill-timing shifts degrade results smoothly, with no cliff. Entering by alert at market 1-60 minutes after the touch keeps most of the result. The apparent collapse at +60 minutes (IS PF 0.847) is an R-normalisation artefact: one entry landed $0.004 from the stop, giving R = -217.",
+      "evidence": "p6_delay.out:\n- arming +1/+5/+15 bars: PF 1.175 / 1.170 / 1.195\n- range_end 06:59 / 07:01 / 07:05: PF 1.180 / 1.158 / 1.156\n- VAL for market entries at k=1..60 bars: PF 1.089-1.101\np6b_delay_outliers.out: PF on planned risk for k=1..60 is 1.158-1.179. Adding a rule to skip when less than 50% of the planned risk remains gives 1.134-1.164 on actual R.",
+      "effect_on_results": "For alert mode: -0.01 to -0.02 PF for a 1-30 minute manual delay, provided a 'skip if price has already moved halfway to the stop' rule is used."
+     },
+     {
+      "severity": "info",
+      "description": "Other fidelity points checked, all negligible:\n- Data holes remaining inside holds.\n- prep_data._drop_flat removing flat-bid minutes, which also drops their ask information.\n- Rollover and reopen spread blow-outs at retail brokers.\n- The broker stops-level for pending orders.\nThe high PF of 'trades containing a hole' is a hold-length effect, not hidden stop-outs.",
+      "evidence": "p7b_holes_detail.out: 87 IS holds contain unexpected gaps of 5 min or more. Only 1 trade (2019-02-26, +2.62R) had price within 0.25R of the stop at a hole edge. Mean R of time exits is 2.36 with a hole vs 2.04 without; holds average 78 h vs 39 h. p10_dropflat.out: dropped minutes raised the range high on 2 days by at most $0.10, caused 0 earlier buy triggers and 0 hidden short stops. p9_rollover.out: spread x3 / +$1 / +$2 in 16:55-18:30 NY gives PF 1.172 / 1.174 / 1.165. p16 (p16_swap_stopslevel.out): the nearer level is within $0.5 of the 07:00 quote in 1.9% of sessions.",
+      "effect_on_results": "Each between 0 and -0.012 PF. The worst case from a hidden stop is -0.006."
+     },
+     {
+      "severity": "info",
+      "description": "The swap model (a fixed 5% / 2% per year) matters for a strategy held about 1.4 nights on average. Real gold swaps move with USD rates, so this is a period-dependent error rather than a fixed one.",
+      "evidence": "p16_swap_stopslevel.out: swap costs 0.025 R per trade.\n- zero swap: PF 1.217\n- long 8% / short 0%: 1.172\n- long 8% / short 3%: 1.155\n- long 10% / short 5%: 1.133",
+      "effect_on_results": "-0.045 to +0.04 PF across plausible swap regimes."
+     },
+     {
+      "severity": "info",
+      "description": "The deterministic audit's causality check (audit.py causality()) only compares orders activated more than 8 days before each cut. It cannot detect look-ahead shorter than 8 days. My exact-cut test (issue 'No look-ahead') closes that gap for this candidate.",
+      "evidence": "lab/audit/audit.py causality(margin_days=8); compare with p5_truncation.out.",
+      "effect_on_results": "None for this candidate. It is a weakness of the test for other finalists."
+     }
+    ],
+    "measurements": [
+     {
+      "name": "PF, data as quoted (unpatched) -> current (patched)",
+      "is_value": "1.196 -> 1.177",
+      "val_value": "1.115 -> 1.100 (unrounded 1.100181)",
+      "note": "n IS 1028 -> 1037, VAL 438 -> 445; t IS 1.99 -> 1.83, VAL 0.84 -> 0.74; IS years 7/9 -> 6/9"
+     },
+     {
+      "name": "Long / short PF (patched)",
+      "is_value": "1.041 / 1.321",
+      "val_value": "1.220 / 0.968",
+      "note": "2013 shorts = 79.0 of 124.3 IS R; IS PF without 2013 = 1.059"
+     },
+     {
+      "name": "Stress x1.5 PF: engine vs orders rebuilt on x1.5 quotes",
+      "is_value": "1.104 vs 1.078",
+      "val_value": "1.047 (engine, audit JSON) / not rebuilt",
+      "note": "criterion 6 (>= 1.05) still passes; the engine overstates by 0.026"
+     },
+     {
+      "name": "low_cost_ecn (spread x0.35): engine vs rebuilt",
+      "is_value": "PF 1.234, t 2.07, n 831 (462 NOFILL) vs PF 1.315, t 2.96, n 1038",
+      "val_value": "PF 1.182, n 372 vs PF 1.210, n 447",
+      "note": "decides CONDITIONAL; passes either way but the engine trade list is about 20% short"
+     },
+     {
+      "name": "conservative scenario: engine vs rebuilt",
+      "is_value": "1.106 vs 1.080 (5/9 years)",
+      "val_value": "1.043 vs 1.004",
+      "note": "spread x1.5 is optimistic under the engine convention"
+     },
+     {
+      "name": "typical_retail scenario (spread x1.0, so unaffected)",
+      "is_value": "PF 1.226, t 2.26, 7/9",
+      "val_value": "PF 1.137",
+      "note": "the status is extremely cost-dependent"
+     },
+     {
+      "name": "Neighbour median PF (patched)",
+      "is_value": "1.155 (unpatched 1.159)",
+      "val_value": "n/a",
+      "note": "hold 1 / 3 days: 1.044 / 1.023; buf 0.08 / 0.12: 1.199 / 1.194"
+     },
+     {
+      "name": "Independent EA replica match",
+      "is_value": "1037/1037 trades, max |dR| = 0",
+      "val_value": "445/445 trades, max |dR| = 0",
+      "note": "written from the report rules, no strategy.py or sim.py code"
+     },
+     {
+      "name": "Exact-cut truncation (150 random IS sessions)",
+      "is_value": "cut at touch bar: identical 150/150; one bar earlier: no order 150/150; at 06:59: no order 150/150; 6/6 full-history cuts identical",
+      "val_value": "n/a",
+      "note": "no information after the decision bar is used"
+     },
+     {
+      "name": "Hand check against raw M1 rows",
+      "is_value": "16/16 match to 1e-6 (fill, stop, exit bar and price, swap nights, R)",
+      "val_value": "n/a",
+      "note": "includes the 159 h holiday hold, a weekend gap stop, max R +16.8, min risk $2.2"
+     },
+     {
+      "name": "Market entry k bars after the touch (alert mode), PF on actual R",
+      "is_value": "k=1: 1.163; k=5: 1.177; k=15: 1.161; k=30: 1.129",
+      "val_value": "k=1: 1.101; k=5: 1.098; k=15: 1.089; k=30: 1.099",
+      "note": "PF on planned risk is 1.158-1.179 for k=1..60; the k=60 actual-R collapse comes from one trade at R=-217"
+     },
+     {
+      "name": "Decision clock shifts (range_end 06:59 / 07:01 / 07:05)",
+      "is_value": "1.180 / 1.158 / 1.156",
+      "val_value": "1.103 / 1.078 / 1.079",
+      "note": "smooth degradation"
+     },
+     {
+      "name": "Fill at the worse of level and touch-bar close (bound)",
+      "is_value": "1.132",
+      "val_value": "1.077",
+      "note": "upper bound on intrabar fill optimism"
+     },
+     {
+      "name": "Tick vs M1 (Jun-Dec 2025, same costs on both)",
+      "is_value": "n/a",
+      "val_value": "PF 1.234 vs 1.218; 0.0076 R/trade; entry jump $0.175, exit jump $0.120 vs $1.105 slippage budget",
+      "note": "n=34; covered by the primary 1.5 bp slippage"
+     },
+     {
+      "name": "Feed noise ensemble (per-minute mid noise, orders rebuilt)",
+      "is_value": "sd $0.03: PF 1.148-1.182; sd $0.10: 1.131-1.193",
+      "val_value": "n/a",
+      "note": "0 of 24 runs pass PF >= 1.20 and t >= 2"
+     },
+     {
+      "name": "Holiday late time exits",
+      "is_value": "19 trades, +30.9 R; +28.5 R if closed at the last quote before the scheduled time",
+      "val_value": "n/a",
+      "note": "about -0.003 PF; max hold 159 h"
+     },
+     {
+      "name": "Rollover-window spread x3 / +$1 / +$2",
+      "is_value": "1.172 / 1.174 / 1.165",
+      "val_value": "n/a",
+      "note": "robust: stops are 1.2W away"
+     },
+     {
+      "name": "Swap regimes (long/short per year): 0/0, 5/2, 8/3, 10/5",
+      "is_value": "1.217 / 1.177 / 1.155 / 1.133",
+      "val_value": "n/a",
+      "note": "swap = 0.025 R per trade"
+     }
+    ],
+    "recommendations": [
+     "Replace every quoted metric for this candidate with the patched-data values: IS PF 1.177, t 1.83, 6/9 years, n 1037; stress 1.104 (1.078 consistent); neighbour median 1.155; VAL PF 1.100, t 0.74, n 445. Drop 'fails by a hair'.",
+     "Before using any cost scenario with spread_mult != 1 for this strategy, rebuild the orders on scenario-transformed quotes and then simulate with spread_mult = 1. Alternatively, pass the spread transform into make_orders. Re-run audit.py scenarios this way. A cheap guard: make simulate() warn when pending orders with expiry_i == entry_i NOFILL. Use p20_lowcost_ecn.py as the reference implementation.",
+     "Patch lab/holdout.py before the single 2026 look: rebuild orders per cost scenario, as above; apply prep_data's crossed-quote filter in build(); and scan for unexpected weekday gaps of 5 min or more (not only days below 50% bars) and re-download them. A missed hole cannot be corrected after the look.",
+     "Report the CONDITIONAL evidence with the rebuilt low_cost_ecn numbers: IS PF 1.315, t 2.96, 7/9, stress 1.257; VAL 1.210 on 447 trades. Do not use the engine's 831-trade version.",
+     "Treat primary-model results within about 0.03 PF of a threshold as undecided. VAL 1.1002 against the 1.10 bar says nothing about the edge.",
+     "For alert/manual mode: a market entry within 1-15 minutes of the alert keeps IS PF about 1.16-1.18. Add 'skip if price has already covered 50% of the distance to the stop'. Compute the London and NY wall clocks from GMT, not broker server time. Use a virtual OCO: in 1.9% of sessions a level is less than $0.5 from price at 07:00.",
+     "Document the holiday exit convention: close before early closes, or at the reopen. It is worth about 0.003 PF. Consider an interest-rate-dependent swap model, since the swap moves PF by \u00b10.04."
+    ],
+    "scratch_files": [
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/common.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p0_baseline.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p0_baseline.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p1_patch_diff.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p2_timestamps.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p2c_sessions.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p3_ea_replica.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p3_ea_replica.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p4_handcheck.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p4_handcheck.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p5_truncation.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p5_truncation.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p5b_prevcheck.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p6_delay.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p6b_delay_outliers.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p7_holes_holidays.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p7b_holes_detail.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p8_ticks.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p9_rollover.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p10_dropflat.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p11_patched_neighbours.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p12_cost_needed.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p13_spreadmult_bug.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p13_spreadmult_bug.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p14_spread_spikes.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p15_remaining_holes.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p16_swap_stopslevel.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p17_feed_jitter.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p18_val_precision.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p19_holdout_frame.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p20_lowcost_ecn.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/lookahead/p20_lowcost_ecn.out"
+    ]
+   },
+   {
+    "lens": "STATISTICAL SKEPTIC",
+    "candidate": "orb/orb_asia_2d_buf10",
+    "verdict": "Not pure luck: breakout direction carries real gross information (VAL z 1.8-1.9 against permutation nulls). But the net edge is about 0 \u00b1 0.06 R/trade once selection, year effects and path dependence are counted. Best estimate P(net edge > 0) \u2248 0.4 and P(\u2265 +0.05 R/trade) \u2248 0.15. The VAL pass is knife-edge (PF 1.1002), and a 10-month holdout cannot tell H1 from H0 (likelihood ratio \u2264 2 for pass/fail).",
+    "issues": [
+     {
+      "severity": "critical",
+      "description": "Once selection is counted, the IS result is what you would expect if the net edge were zero. Under a zero-net null (true expectancy exactly 0, all trials), the best of the ORB track's correlated configs reaches the candidate's IS t of 1.83 about half the time. Project-wide, one 'IS near-pass + VAL pass' candidate appearing by luck is a coin flip.",
+      "evidence": "s03: the weekly-R correlation matrix of the 48 re-simulated ORB configs gives M_eff = 23 (Li-Ji) / 24.9 (Galwey) / 40 (Nyholt). Stages 1-4 give 20-22 of 31; the Asia multi-day sub-family gives 9-10 of 26. Correlated-normal simulation of the max t under the zero-net null: P(max \u2265 1.83) = 0.48 (all 48), 0.46 (stages 1-4), 0.21 (Asia sub-family). Week-block centred bootstrap: P(IS \u2265 candidate level) = 2.9% and P(VAL pass) = 21.6% per trial. P(\u22651 of N_eff reaches the candidate's IS level): N=10 0.26, N=23 0.50, N=48 0.76, N=100 0.95, N=321/370 \u2248 1.0. Project level (best config per track, one VAL shot each, 6 tracks): P(\u22651 track yields IS \u2265 this level and passes VAL) \u2248 0.50. Corrected deflated Sharpe (noise variance 1/T): 0.44 (N=23), 0.32 (N=48), 0.12 (N=321). The audit's DSR of 0.0012 overstates the penalty, because the cross-trial SR variance it uses includes real cost differences between configs. Empirical Bayes over the project's 6 finalists' VAL t (-1.84, 0.74, -0.92, -0.79, -1.53, 1.49; mean -0.48) shrinks this candidate to +0.003 R/trade, P(>0) = 0.52.",
+      "effect_on_results": "The IS near-pass (and the unpatched 1.196/1.99) carries a Bayes factor of about 1 against 'gross edge just equals cost'. Nearly all the selection-free evidence is the single VAL look, which is weak (t 0.74)."
+     },
+     {
+      "severity": "major",
+      "description": "The VAL pass is knife-edge and fragile. On the current (patched) data the VAL PF is 1.1002 against the 1.10 threshold. Small, equally valid changes in execution or path push it below 1.10. The VAL bar also cannot tell a breakout edge from long drift: in the 2022-2025 bull market a random-time always-long rule with the same structure passes it most of the time.",
+      "evidence": "s01: VAL n 445, PF 1.10018 unrounded, t 0.742 (gl.report rounds it to 1.1). Week-block bootstrap: P(VAL PF \u2265 1.10) = 49.5%, P(exp \u2264 0) = 21.6%, 90% CI 0.90-1.33. Entering at market one minute after the touch (C1) gives VAL PF 1.080. Randomly missing 5%/10%/20%/33% of signals (500 seeds each) gives VAL median PF 1.084/1.077/1.060/1.030, with P(VAL \u2265 1.10) = 36%/33%/28%/23%. Always long at the candidate's signal times (L1): VAL PF 1.135, passes. Random-time always-long (N2L, 333 seeds): VAL median PF 1.123, 63% pass. The candidate's VAL profit is all longs (+33.4 R; shorts -4.4 R).",
+      "effect_on_results": "Criterion 7 gives about no evidence (VAL Bayes factor 1.14-1.31 for an edge of 0.06-0.10 vs 0). A live alert-follower who misses a few signals should expect a VAL-like PF of about 1.06-1.08, i.e. a fail."
+     },
+     {
+      "severity": "major",
+      "description": "Year and regime dependence, plus concentration. Profit comes from a few trend years and a handful of trades. Which side earns follows each year's drift. The iid per-trade t overstates the evidence once between-year heterogeneity is modelled.",
+      "evidence": "s04, random effects over years (DerSimonian-Laird): tau = 0.17 R/trade (IS, Q p = 0.058, I\u00b2 0.47) and 0.13 (IS+VAL). RE mean 0.069 \u00b1 0.062 (t 1.12, IS+VAL); IS alone t 0.88 (vs iid 1.83). 2013 gives 86.8 of 124.3 IS R. Without 2013: IS PF 1.059 (t 0.62), IS+VAL PF 1.072 (t 0.92). The top 1% of IS trades = 89% of IS R; dropping the top 10 IS trades gives PF 1.02. In VAL the top 4 trades = 132% of VAL R; dropping the top 5 gives PF 0.94. IS top 10 weeks = 98% of R; VAL top 5 weeks = 135%. Short minus long: IS +0.185 (t 1.41), VAL -0.161 (t -0.91). corr(yearly long-minus-short R, gold annual return) = 0.78. Spearman(yearly total R, |gold return|) = 0.62. Losing years (2018, 2021, 2022) are range years; 2013, 2020, 2024 and 2025 (|ret| \u2265 20%) had PF 1.26-2.43. Regime splits reverse between IS and VAL: high-vol PF 0.80 vs 1.17; choppy (ER20) 1.39 vs 0.96; 20-day-trend-aligned 1.12 vs 1.15 with counter-trend 1.24 vs 1.06. No stable conditioning variable.",
+      "effect_on_results": "The edge behaves like trend-year exposure: positive in years with large gold moves, negative in range years. Its persistence depends on the regime, and a new year's mean R has a predictive SD of about 0.25 R/trade at ~95 trades."
+     },
+     {
+      "severity": "major",
+      "description": "Path dependence of the one-position-at-a-time result. The headline PF depends on which signals no_overlap happens to skip. Variants that keep the same entries but change the path are near breakeven. Most 'robust' neighbours re-measure the same trades.",
+      "evidence": "Every signal traded (overlap allowed): IS PF 1.049 (t 0.71), VAL 1.012 (t 0.12). Taken vs skipped signals: IS +0.120 vs -0.078 R/trade (t 2.02), VAL +0.065 vs -0.064 (t 0.93). Random 5-33% dropout lowers the IS median PF steadily, 1.168 to 1.124, VAL 1.084 to 1.030. Hold 1 or 3 days: PF 1.044 / 1.023 (weekly-R corr with F3 0.57 / 0.54). 11 of the 14 stage-5 neighbours have corr \u2265 0.85 with F3. Neighbours with corr \u2265 0.9: median PF 1.162; corr < 0.8: 1.084; Spearman(neighbour PF, corr) = 0.63. Data version (s08): patching the data holes changed 33 of ~1030 IS trades (21 new ones sum to -10.0 R) and moved IS t from 1.99 to 1.83, PF from 1.196 to 1.177, years positive from 7/9 to 6/9. Every frictionless re-run takes a different path, so the per-config 'gross' differs by up to 0.15 R/trade between near-identical configs (F3 0.18 vs N02 0.33).",
+      "effect_on_results": "The neighbour criterion (median 1.159) gives little independent support. The path-free estimate of the signal's net value is about +0.01 to +0.035 R/trade, not +0.065 to +0.12."
+     },
+     {
+      "severity": "major",
+      "description": "The CONDITIONAL status rests on a low-cost scenario that does not exist on disk. The amendment that created that status came after this candidate's near-miss. The scenario machinery in audit.py and holdout.py (spread_mult applied inside simulate to orders built with the original quotes) silently drops fills for this strategy, because each pending order is live only on its pre-computed touch bar (expiry_i = entry_i).",
+      "evidence": "No lab/COSTS.md and no lab/audit/cost_scenarios.json exist, and the audit's 'scenarios' block is {}. Amendment 1 is dated after the ORB report. s06, consistent method (spread scaled in the M1 frame before make_orders, then commission/slippage scaled): all costs x0.75 gives IS PF 1.232 (t 2.30), VAL 1.147 (t 1.06). Commission+slippage x0.5 only: IS 1.238 (t 2.36), VAL 1.151 (t 1.08). All x0.5: IS 1.293 (t 2.79), VAL 1.191 (t 1.33). Naive method at x0.75: 179 NOFILLs (7%), IS n 949, PF 1.183 (t 1.78, fails IS), VAL PF 1.006 (fails VAL).",
+      "effect_on_results": "Depending on implementation, the status flips between CONDITIONAL and FAIL. Even when consistent, lower costs only shift the mean by about 0.035 R/trade; the VAL t stays at about 1.1 and the selection problem is unchanged."
+     },
+     {
+      "severity": "major",
+      "description": "A ~10-month 2026 holdout (~96 trades) has almost no power. Contrary to the protocol's note that 'a clear failure = strong information', even a bad holdout only halves the odds, and its reading is driven by gold's 2026 regime.",
+      "evidence": "s07, rolling 10-month windows 2013-2025. H1 as measured (mean +0.103 R): median PF 1.11, 90% range 0.71-1.61, P(PF>1) = 0.63. H1 shrunk to +0.05: median 1.04, P = 0.54. H0 zero-net: median 0.97, 0.61-1.39, P = 0.46. H0 random entry (N1/N2): median 0.87-0.88, 0.53-1.37, P = 0.30-0.32. Likelihood ratio for a pass (PF>1): 1.37 vs zero-net, 1.98-2.10 vs random. LR for a fail: 0.68 / 0.53. PF \u2265 1.4: LR 3.7-4.8. PF < 0.8: LR 0.37-0.51 (happens in 14% of H1 windows). Rejecting zero-net at 5% needs PF \u2265 1.39, with 18% power. s10: in windows where gold moved \u2265 15%, P(PF>1) = 0.80 under H1 and 0.64 even under zero-net; in flat windows (< 5%), 0.53 vs 0.37. 80% power against zero needs about 2,400 trades (~21 years).",
+      "effect_on_results": "From a 30% prior, a pass moves P(H1) to 0.37-0.46 and a fail to 0.19-0.23. Only PF \u2265 ~1.4, or PF < ~0.8 (especially in a big-trend year), is informative."
+     },
+     {
+      "severity": "info",
+      "description": "Pure luck from random entries is not a viable explanation. The breakout direction carries real gross (momentum) information beyond random sides and beyond the monthly long/short tilt, consistently in IS and VAL. The weakness is the net margin over costs.",
+      "evidence": "s02, 2000 seeds each, same engine, costs, risk (1.2x range width), time exit and no_overlap. N1 (coin-flip side at the candidate's signal times): IS PF median 0.906, max 1.146; 0/2000 pass IS or reach the candidate level; VAL pass 2.0%. N2 (random times with the candidate's time-of-day profile, random side): IS median 0.878, max 1.123; 0/2000; VAL pass 4.9%. Normal-tail estimate of P(IS pass) \u2248 1.1-1.3e-4 per trial, so P(\u22651 of 370 at the candidate's IS level) \u2248 0.09 and with VAL \u2248 0.002. Candidate z vs N1: IS 3.49, VAL 1.94 (p 0.026). Side permuted within year / quarter / month: IS z 3.30 / 3.36 / 2.66, VAL z 1.72 / 1.76 / 1.81 (p 0.035 within month). Decomposition, R/trade: IS -0.067 random baseline + 0.047 monthly tilt + 0.141 within-month timing = 0.120; VAL -0.078 + 0.027 + 0.116 = 0.065.",
+      "effect_on_results": "Raises P(the gross signal is real) to about 0.85. It does not establish a net edge: timing \u2248 +0.12-0.14 minus baseline cost \u2248 0.07-0.08 leaves a net that is a small difference of two noisy numbers."
+     },
+     {
+      "severity": "minor",
+      "description": "The candidate numbers quoted in the task and in the track report are from the unpatched data file; the current data give weaker IS numbers.",
+      "evidence": "Current data: IS n 1037, PF 1.1773, t 1.830, 6/9 years positive (2017 now -1.3 R), stress PF 1.104; VAL PF 1.1002, t 0.742. Unpatched (track report): IS 1028 / 1.196 / 1.99 / 7/9; VAL 1.115.",
+      "effect_on_results": "The IS miss is larger than 'by a hair' (PF -0.023, t -0.17), and the VAL margin shrinks from 0.015 to 0.0002."
+     }
+    ],
+    "measurements": [
+     {
+      "name": "Candidate on current data: n / PF / t",
+      "is_value": "1037 / 1.1773 / 1.830 (6/9 years)",
+      "val_value": "445 / 1.1002 / 0.742",
+      "note": "Unpatched file (track report): IS 1028 / 1.196 / 1.99 / 7/9; VAL 1.115"
+     },
+     {
+      "name": "Stress costs x1.5, PF",
+      "is_value": "1.104",
+      "val_value": "1.047",
+      "note": "s01"
+     },
+     {
+      "name": "Every signal traded (overlap), PF / t",
+      "is_value": "1.049 / 0.71",
+      "val_value": "1.012 / 0.12",
+      "note": "Path-free version of the same signal"
+     },
+     {
+      "name": "Null N1: coin-flip side at signal times (2000 seeds), PF median [max]; pass rate",
+      "is_value": "0.906 [1.146]; IS pass 0/2000, at candidate level 0/2000",
+      "val_value": "0.886 [1.236]; VAL pass 2.0%",
+      "note": "Candidate z: IS 3.49, VAL 1.94 (p 0.026)"
+     },
+     {
+      "name": "Null N2: random time + random side (2000 seeds, p_day 0.75)",
+      "is_value": "PF median 0.878 [max 1.123]; 0/2000 pass; t mean -1.54, sd 0.97",
+      "val_value": "PF median 0.900; VAL pass 4.9%",
+      "note": "Normal-tail P(IS t\u22652) \u2248 1.3e-4 per trial; Clopper-Pearson upper bound 1.5e-3"
+     },
+     {
+      "name": "Side permuted within year / quarter / month (500 seeds each): candidate z",
+      "is_value": "3.30 / 3.36 / 2.66 (1/500 within-month seeds passes IS)",
+      "val_value": "1.72 / 1.76 / 1.81",
+      "note": "The within-month permutation keeps the monthly long/short tilt; the residual is day-level timing"
+     },
+     {
+      "name": "Drift baselines at signal times: always long / always short, PF",
+      "is_value": "0.798 / 1.029",
+      "val_value": "1.135 (passes VAL) / 0.698",
+      "note": "Random-time always-long (N2L): IS median 0.80, VAL median 1.123, 63% pass VAL"
+     },
+     {
+      "name": "Mechanism control C1: market entry 1 min after the touch, PF",
+      "is_value": "1.184 (t 1.87)",
+      "val_value": "1.080 (fails VAL)",
+      "note": "s02"
+     },
+     {
+      "name": "Zero-net centred week-block bootstrap: per-trial pass probabilities",
+      "is_value": "P(core pass) 1.9%; P(\u2265 candidate level) 2.9%",
+      "val_value": "P(VAL pass) 21.6%",
+      "note": "s04"
+     },
+     {
+      "name": "ORB track effective number of trials",
+      "is_value": "Li-Ji 23, Galwey 24.9, Nyholt 40 of 48; stages 1-4: 20-22 of 31; Asia multi-day: 9-10 of 26",
+      "val_value": "n/a",
+      "note": "Weekly-R correlation of the 48 configs re-simulated on patched IS data"
+     },
+     {
+      "name": "Family-wise P(max IS t \u2265 1.83)",
+      "is_value": "Zero-net: 0.48 (48), 0.46 (stages 1-4), 0.21 (Asia sub-family). Random-side cost drag: 0.013 / 0.003",
+      "val_value": "n/a",
+      "note": "Correlated-normal simulation with the empirical correlation matrix"
+     },
+     {
+      "name": "P(\u22651 of N_eff reaches the candidate's IS level by luck), N = 10/23/48/100/321/370",
+      "is_value": "Zero-net: 0.26/0.50/0.76/0.95/1.0/1.0. Random entry: 0.003/0.006/0.012/0.025/0.079/0.090",
+      "val_value": "Also passing VAL (if every trial got a VAL shot), zero-net: 0.06/0.14/0.26/0.47/0.87/0.91",
+      "note": "Project level, best per track with one VAL shot: \u22480.50 under the global zero-net null"
+     },
+     {
+      "name": "Deflated Sharpe, noise variance 1/T, N = 10/23/48/100/321",
+      "is_value": "0.61/0.44/0.32/0.22/0.12",
+      "val_value": "n/a",
+      "note": "Per-trade SR 0.0568, skew 2.74, kurtosis 14.1. The audit's 0.0012 uses cross-trial SR dispersion"
+     },
+     {
+      "name": "Week-block bootstrap PF 90% CI; P(exp \u2264 0)",
+      "is_value": "[1.017, 1.358]; 3.2%",
+      "val_value": "[0.901, 1.334]; 21.6%; P(PF \u2265 1.10) 49.5%",
+      "note": "iid and month-block bootstraps are nearly identical"
+     },
+     {
+      "name": "Random effects across years: tau; RE t",
+      "is_value": "tau 0.17; RE t 0.88 (iid t 1.83)",
+      "val_value": "IS+VAL: tau 0.13; RE mean 0.069 \u00b1 0.062, t 1.12",
+      "note": "Cochran Q p: 0.058 (IS), 0.11 (IS+VAL)"
+     },
+     {
+      "name": "Concentration",
+      "is_value": "Top 1% trades = 89% of R; PF without top 10 = 1.02; top 10 weeks = 98%; 2013 = 86.8 of 124.3 R; without 2013 PF 1.059, t 0.62",
+      "val_value": "Top 1% trades = 132% of R; PF without top 5 = 0.94; top 5 weeks = 135%",
+      "note": "IS+VAL without 2013: PF 1.072, t 0.92"
+     },
+     {
+      "name": "Side split, PF long / short",
+      "is_value": "1.041 / 1.321 (short minus long +0.185 R, t 1.41)",
+      "val_value": "1.220 / 0.968 (short minus long -0.161 R, t -0.91)",
+      "note": "Flip test t 1.57; corr(yearly long-minus-short R, gold return) 0.78"
+     },
+     {
+      "name": "Taken vs skipped signals (no_overlap), mean R",
+      "is_value": "+0.120 vs -0.078 (t diff 2.02)",
+      "val_value": "+0.065 vs -0.064 (t diff 0.93)",
+      "note": "s05"
+     },
+     {
+      "name": "Random signal dropout 5/10/20/33%: median PF",
+      "is_value": "1.168 / 1.159 / 1.134 / 1.124",
+      "val_value": "1.084 / 1.077 / 1.060 / 1.030; P(VAL \u2265 1.10) 36/33/28/23%",
+      "note": "500 seeds each; this is the realistic case for a manual alert-follower"
+     },
+     {
+      "name": "Neighbour PF vs weekly-R correlation with F3",
+      "is_value": "corr \u2265 0.9: median 1.162; corr < 0.8: 1.084; hold 1d / 3d: 1.044 / 1.023",
+      "val_value": "n/a",
+      "note": "Spearman 0.63; 11 of 14 neighbours have corr \u2265 0.85"
+     },
+     {
+      "name": "Low-cost scenarios (consistent method), PF (t)",
+      "is_value": "x0.75 all: 1.232 (2.30); comm+slip x0.5: 1.238 (2.36); x0.5 all: 1.293 (2.79)",
+      "val_value": "1.147 (1.06); 1.151 (1.08); 1.191 (1.33)",
+      "note": "Naive spread_mult x0.75 inside simulate: 179 nofills, IS 1.183 (1.78), VAL 1.006"
+     },
+     {
+      "name": "Data version: patched vs unpatched IS trades",
+      "is_value": "33 of ~1030 trades differ; t 1.99 \u2192 1.83",
+      "val_value": "PF 1.115 \u2192 1.100",
+      "note": "s08"
+     },
+     {
+      "name": "2026 holdout PF (10 months, ~96 trades): median [5-95%]; P(PF>1)",
+      "is_value": "H1 as measured: 1.11 [0.71, 1.61], 0.63. H1 shrunk to 0.05: 1.04, 0.54",
+      "val_value": "H0 zero-net: 0.97 [0.61, 1.39], 0.46. H0 random: 0.87-0.88 [0.53, 1.37], 0.30-0.32",
+      "note": "Rolling windows 2013-2025; parametric check with tau gives P(PF>1) 0.68 / 0.52 / 0.40"
+     },
+     {
+      "name": "Holdout likelihood ratios (H1 as measured vs H0)",
+      "is_value": "Pass: 1.37 (vs zero-net), 2.0-2.1 (vs random); fail: 0.68 / 0.53",
+      "val_value": "PF \u2265 1.4: 3.7-4.8; PF 1.2-1.4: 1.7-3.0; PF < 0.8: 0.37-0.51; 0.85-1.2: ~0.6-1.2",
+      "note": "A 5% rejection of zero-net needs PF \u2265 1.39 (power 0.18); 80% power needs ~2,400 trades"
+     },
+     {
+      "name": "Holdout conditioned on gold's 10-month move",
+      "is_value": "|ret| \u2265 15%: H1 P(PF>1) 0.80 (median 1.31), zero-net 0.64",
+      "val_value": "|ret| < 5%: H1 0.53 (median 1.00), zero-net 0.37",
+      "note": "s10; Spearman(window PF, |gold return|) 0.42"
+     },
+     {
+      "name": "Posterior for net edge mu (R/trade, primary costs)",
+      "is_value": "P(mu>0): 0.44-0.79 across models (flat prior + VAL only 0.73; neutral prior + bias-corrected IS 0.62; sceptical prior 0.44-0.57); empirical Bayes over 6 finalists 0.52",
+      "val_value": "P(mu \u2265 0.05): 0.10-0.35; P(mu \u2265 0.10): 0.01-0.12",
+      "note": "Best estimate after path and regime fragility: P(mu>0) \u2248 0.4, P(mu \u2265 0.05) \u2248 0.15, P(as measured) \u2248 0.05"
+     }
+    ],
+    "recommendations": [
+     "Report the current-data numbers (IS PF 1.177, t 1.83, 6/9 years; VAL PF 1.1002, t 0.74), not the unpatched 1.196 / 1.115. State that the VAL pass is by 0.0002 PF and that resampling gives a 50% chance of passing.",
+     "Do not assign CONDITIONAL until the low-cost scenario is written down in COSTS.md / cost_scenarios.json first, as Amendment 1 requires, and evaluated consistently: scale the spread in the M1 frame before make_orders, or rebuild orders under the scenario quotes. audit.py and holdout.py apply spread_mult only inside simulate on pre-built orders; for this strategy that drops about 7% of fills and gives VAL PF 1.006 instead of 1.147.",
+     "Pre-register the holdout reading now. PF > 1 is weak (LR \u2264 2). Count it as support only if PF \u2265 ~1.4, and as a meaningful negative only if PF \u2264 ~0.8. Report gold's 2026 10-month move next to it, because in \u226515%-move windows even a zero-net version shows PF > 1 64% of the time. Also report the every-signal variant, the side split, and a 5-10% dropout distribution.",
+     "Treat the edge as unproven: a real but small gross momentum effect (about +0.12-0.14 R/trade of timing value) against roughly 0.07-0.08 R/trade of costs. Do not automate or size up on it. Alert-only paper trading should expect about PF 1.05 \u00b1 0.25 per 10 months; if signals are missed, the expected PF drops to about 1.06-1.08 even under H1.",
+     "Do not rescue it with more filters. Every regime split (volatility, trendiness, trend alignment, MA60 x side) reverses between IS and VAL, and any new filter would be another fork in the search.",
+     "For project-level reporting: count VAL accesses and use M_eff-based family-wise p-values (ORB \u2248 23 effective of 48). Replace the audit's DSR (cross-trial SR variance) with the 1/T-variance version (0.32-0.44 here). Report random-effects-across-years t (1.12) alongside iid t. Weight neighbour robustness by independence: neighbours with corr < 0.8 have median PF 1.08."
+    ],
+    "scratch_files": [
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/common.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s01_candidate.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s01_candidate.json",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s02_nulls.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s02_nulls.json",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s02_N1.csv",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s02_N2.csv",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s02_N1m.csv",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s02_N2L.csv",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s03_family.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s03_family.json",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s04_boot_conc.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s04_boot_conc.json",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s05_paths.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s05_paths.json",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s06_lowcost.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s06_lowcost.json",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s07_holdout.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s07_holdout.json",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s08_dataversion.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s08_dataversion.json",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s09_synthesis.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s09_synthesis.json",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s10_regime_holdout.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/statskeptic/s10_regime_holdout.json"
+    ]
+   },
+   {
+    "lens": "LIVE-EXECUTION REALISM (MT5 retail account, EU/ESMA, French client): manual delays, human availability, server clock/DST, rollover spreads, sizing/margin, MT5 implementation pitfalls, EA specification",
+    "candidate": "orb/orb_asia_2d_buf10",
+    "verdict": "Live-implementable only as an EA, or by a trader at the screen 08:00-13:00 Paris who acts within ~15 min. It also needs a low-cost ECN account, the exact one-position/first-touch policy, DST-correct London/NY clocks and a cancelled OCO leg. At primary-model costs, any one realistic friction drops VAL below 1.10 (current-data margin is only 0.0002). A salaried manual trader gets VAL PF 0.92-1.03 (primary costs) or 1.02-1.17 (low-cost broker).",
+    "issues": [
+     {
+      "severity": "critical",
+      "description": "The edge exists only under the backtest's exact position policy: take the first touch of the day only if flat at that moment, no second chance, never overlap, never reverse. Natural EA or discretionary alternatives remove it, and an alert-first trader who 'decides' or keeps overlapping positions in a hedging account is running one of them.",
+      "evidence": "p8_ea_logic.out / p11_lowcost.out. V1 replica = baseline (verified identical): IS 1.177 / VAL 1.100. V2 'arm only if flat at 07:00 London': 1.170 / 1.108 (harmless). V3 every signal (hedging): 1.049 / 1.012 (low-cost ECN 1.180 / 1.119). V4 newest signal closes the old one: 0.958 / 0.877 (low-cost 1.097 / 0.978). V5 reverse on an opposite signal only: 1.072 / 0.953.",
+      "effect_on_results": "A policy deviation moves PF by -0.10 to -0.22. That is larger than any cost or timing friction tested. Live results are only comparable to the backtest if the EA enforces V1 or V2 exactly and logs every skipped or vetoed signal."
+     },
+     {
+      "severity": "major",
+      "description": "Human availability. All 2,621 signals (first touches) fall on weekdays 08:00-13:00 Paris, 46% of them in 08:00-09:00. The requested windows (07-23 Paris any day, weekdays 08-20) therefore keep 100% of signals and leave PF unchanged. The real constraint is a salaried trader who cannot act 09:00-12:00 Paris.",
+      "evidence": "p2_availability.out, p11_lowcost.out, p12_account_types.out. Pre-work 08-09 Paris only: IS 1.085 (n 636) / VAL 0.924 (low-cost 1.216 with t 1.67 / 1.020). Pre-work + lunch 12-13: 1.035 / 0.955 (low-cost 1.171 / 1.051). 09-12 signals executed at market at 12:00 Paris: 1.116 / 0.999 (low-cost 1.248 / 1.134); with a next-morning exit added: 1.089 / 1.033 (low-cost 1.226 / 1.170). PF by Paris entry hour is unstable across periods: IS 08h 1.09, 09h 1.26, 10h 1.34, 11h 1.34, 12h 0.95; VAL 08h 1.07, 09h 0.77, 10h 1.28, 11h 1.76, 12h 2.24.",
+      "effect_on_results": "Manual execution by someone with a day job fails VAL at primary costs (PF 0.92-1.03) and is marginal even at the low-cost broker. The rule needs an EA or a trader at the screen all morning."
+     },
+     {
+      "severity": "major",
+      "description": "At primary costs there is no buffer for live frictions. On the current (patched) data the baseline is IS PF 1.177 (t 1.83, 6/9 years), not the documented 1.196 / t 1.99 / 7/9. VAL PF is 1.10018, a pass by 0.0002. Every realistic friction tested pushes VAL below 1.10 on its own.",
+      "evidence": "p0_baseline.out, p1c_abs_artifact.out (unrounded PF), p6_pitfalls.out, p9_combos.out. Extra round-trip cost per oz: +$0.10 gives IS 1.153 / VAL 1.086; +$0.25 gives 1.119 / 1.066; +$0.50 gives 1.065 / 1.034. Retail swap 8% long / 2% short per year: 1.161 / 1.082; 10% / 4%: 1.138 / 1.060. Each $0.10/oz costs about 0.024 IS PF. IS reaches PF \u2265 1.20 with t \u2265 2 only if all-in costs are at least $0.10/oz below the model (IS 1.202, t 2.05). Account types, scenario-consistent and matching the recomputed official audit: low_cost_ecn 1.315 (t 2.96) / 1.210; typical_retail 1.226 (t 2.26) / 1.137; conservative 1.080 / 1.004.",
+      "effect_on_results": "The CONDITIONAL status holds on current data, but in practice the broker's real all-in cost decides viability. Phase 2 must verify spread, stop slippage and swap against the low_cost_ecn assumptions before trusting any live PF."
+     },
+     {
+      "severity": "major",
+      "description": "Manual market entry N minutes after the stop would have filled. Within 15 minutes there is no systematic price decay (the delayed fill is only 0.006-0.015 R worse), but PF jitters by about \u00b10.03-0.06 depending on which trades flip or get skipped. That jitter is the size of the margin to both thresholds. Delays of 60 minutes or more degrade IS; 3-4 hours removes the edge.",
+      "evidence": "p1_delay.out, p1b_delay_sweep.out, p11_lowcost.out. Primary costs, same stop distance / same absolute stop, IS then VAL: N=1 1.184/1.163 and 1.080/1.101; N=5 1.218/1.177 and 1.010/1.098; N=15 1.214/1.164 and 1.050/1.089; N=60 1.078/1.122 and 1.135/1.090; N=240 0.995/0.997 and 1.051/1.073. Sweep N=1..15, same distance: IS 1.182-1.222, VAL 1.001-1.128, only 3 of 15 delays keep VAL \u2265 1.10. Same absolute stop: IS 1.152-1.182, VAL 1.088-1.109. Low-cost ECN, same distance: N=1/5/15/60/240 IS 1.336/1.370/1.364/1.197/1.114, VAL 1.208/1.140/1.197/1.222/1.141.",
+      "effect_on_results": "At the low-cost broker, a manual trader who acts within 15-60 min keeps the backtest's PF. At primary costs, a delay of only a few minutes is enough to decide pass or fail at VAL. An alert should be marked 'do not chase' after about 15 min."
+     },
+     {
+      "severity": "major",
+      "description": "Clock and DST mapping. The range uses London time, the exit New York time, and the MT5 server is UTC+2/+3. The M1/H1 bar grid of a UTC+2/+3 server is identical to the UTC grid (whole-hour offsets), and this finalist uses no D/H4 bars, so 'server-grid bars' do not matter in themselves. What breaks results is an EA that hard-codes server or UTC hours. The US/EU DST gap covers 15-20 weekday sessions a year.",
+      "evidence": "p3_clock.out, p11_lowcost.out. NY-close server with fixed hours 02-09 / 14 / 23 (range becomes 23:00-06:00 London in gap weeks; 62 trades change): IS 1.142 / VAL 1.085 (low-cost 1.276 / 1.193). EET server with fixed hours: range exact, but in gap weeks the exit lands at 17:00 NY when the market is closed and fills at the 18:00 reopen: 1.177 / 1.098. Fixed UTC with no DST: 1.171 / 0.981 (low-cost 1.303 / 1.097). Range on winter hours all summer: 1.183 / 0.995 (low-cost 1.311 / 1.108).",
+      "effect_on_results": "A common EA shortcut costs up to 0.12 VAL PF. The only way to protect against this is to compute London and NY times from UTC with explicit EU and US DST rules. Note also that MT5's Strategy Tester returns TimeGMT() equal to simulated server time, so tester validation of DST handling is not sufficient."
+     },
+     {
+      "severity": "major",
+      "description": "The broker's quotes are not Dukascopy's. The Asian range (max Ask / min Bid) and the first touch depend on quote details. Wider Asian-session retail spreads push both levels outward and hurt VAL. MT5 M1 bars are Bid-based, so the Ask high needs ticks.",
+      "evidence": "p7_feed.out, p11_lowcost.out. Broker Asian spread x2 while the range forms (levels about $0.20 wider): IS 1.181 / VAL 1.041. Levels +1 bp wider: 1.175 / 1.016; 1 bp narrower: 1.204 / 1.122. Random per-session feed noise \u03c3 0.25 / 0.5 / 1 bp, 40 seeds each: VAL p5-p95 1.080-1.109 / 1.070-1.112 / 1.045-1.112, VAL \u2265 1.10 in 42 / 30 / 15% of seeds; IS \u2265 1.20 in 3 / 7 / 10%. Low-cost ECN with \u03c3 0.5 bp: IS 1.295-1.331 / VAL 1.172-1.219 (100% pass). Range from Bid bars: 1.181 / 1.110. Bid high + 07:00 spread: 1.172 / 1.099.",
+      "effect_on_results": "At primary costs the VAL pass is a coin flip under realistic feed differences; at the low-cost broker it is robust. The EA's range definition must be fixed and the backtest re-run with that exact definition, ideally on the broker's own data."
+     },
+     {
+      "severity": "major",
+      "description": "MT5 has no native OCO. With manual pending orders and no EA, or an EA that fails to delete the second leg, the opposite stop order sits at exactly the stop-loss price of the first trade. When the first trade is stopped before 12:00 London, a second position opens, in both hedging and netting accounts.",
+      "evidence": "p8_ea_logic.out: 122 of 1,483 sessions are stopped before 12:00 London. The second legs have IS PF 0.636 (n 92) / VAL 0.553 (n 30). Total with second legs: IS 1.123 / VAL 1.056.",
+      "effect_on_results": "About -0.05 PF. A salaried trader who places the OCO pair at 08:00 Paris by hand cannot cancel in time, so this is the realistic outcome for unassisted semi-manual execution."
+     },
+     {
+      "severity": "major",
+      "description": "Practical sizing. Stops are 1.2x the Asian range and widened sharply in 2025, so the 0.01-lot (1 oz) minimum binds for small accounts. Drawdown depth and duration are also hard for a retail trader to sit through.",
+      "evidence": "p5_sizing.out. 2025 stop distance: median $32.20/oz (p10 $17.0, p90 $62.2, max $86.4; 0.96% of price), against $7.28 in IS. Account needed for 0.01 lot: $3,220 (median) / $6,216 (p90) / $8,638 (max) at 1% risk; $6,440 / $12,433 / $17,276 at 0.5%. With $5k, 25% (1%) or 61.5% (0.5%) of 2025 signals cannot be sized. With $10k at 0.5%, 25% cannot be sized and the realised median risk is 0.38%. Forcing the minimum lot on $1k means up to 8.6% risk. ESMA 1:20 margin is not binding (median 2-5% of equity, max 13.3%). Max drawdown: IS 51.5R (23.1% at 0.5%, 41.5% at 1%), VAL 40.2R (18.7% / 34.8%). Losing streaks 16 / 11. Longest time between equity highs: 1,310 days (IS) / 921 days (VAL).",
+      "effect_on_results": "An account of about $9-10k (1%) or $17-20k (0.5%) is needed to follow the rule as tested. Smaller accounts must skip signals they cannot size, which changes the path. The multi-year underwater periods make abandonment likely."
+     },
+     {
+      "severity": "minor",
+      "description": "Rollover spreads. Gold is closed 17:00-18:00 NY in the data. The x2 stress hits the 16:00 NY time exit (38% of trades) and stops near the break or reopen. The stops are wide, so stop hunting by spread spikes is negligible.",
+      "evidence": "p4_rollover.out, p11_lowcost.out. x2 in 16:30-17:00 and 18:00-18:30 NY: IS 1.176 / VAL 1.099. x2 in 16-17 and 18-19 NY: 1.164 / 1.091. x3: 1.150 / 1.083. x5: 1.062 / 1.032. +$1 or +$2 spike at 16:55-17:00 and 18:00-18:15: 1.174 / 1.099 and 1.173 / 1.098. Low-cost ECN, x2 for 2h and reopen x10 at 18:00-18:05 (COSTS.md quotes x8-11 at ECNs): 1.310 / 1.206.",
+      "effect_on_results": "About -0.01 PF at x2. Only large sustained widening around the 16:00 NY exit matters."
+     },
+     {
+      "severity": "minor",
+      "description": "Pending-order expiry misuse. ORDER_TIME_DAY expires at server day end (17:00 NY), not 12:00 London, so the entry window silently stretches by about 10 hours. Some brokers do not allow ORDER_TIME_SPECIFIED on metals (SYMBOL_EXPIRATION_MODE).",
+      "evidence": "p13_expiry.out. Entry window to 13:00 London: IS 1.132 / VAL 1.091. To 16:00 London: 1.140 / 1.135. To 22:00 London (\u2248 ORDER_TIME_DAY): 1.153 / 1.075, with 314 extra afternoon fills (low-cost 1.257 / 1.176). Correctly expired windows still see 25 / 44 of 1,483 fills in the last 15 / 30 minutes before 12:00 London.",
+      "effect_on_results": "-0.02 to -0.05 PF, plus a different trade set."
+     },
+     {
+      "severity": "minor",
+      "description": "Closed-market exits and weekend gaps.",
+      "evidence": "p6_pitfalls.out, p10_misc.out, p8_ea_logic.out. 27 of 564 time exits fall in a closed market (US holidays, early closes, Good Friday) and fill at the 18:00 NY reopen or later. Positions crossed 315 weekend or holiday gaps; adverse gap p1 -0.77R, worst -1.39R, none jumped a stop (minimum room before a gap 0.08R; 4 cases under 0.25R). Only 2 of 919 stops filled beyond the stop by more than 0.01R (0.41R in total; worst trade -1.40R). Splitting by schedule, Thu/Fri entries give IS 1.092 / VAL 1.169 and Mon-Wed entries 1.240 / 1.050, so no consistent weekend effect. Note that a naive 'held over the weekend' split shows PF 5.9 vs 0.78 purely through survivorship.",
+      "effect_on_results": "Historically negligible, but the tail is real: a -1.4R Sunday gap with less room would have jumped a stop. The EA must handle TRADE_RETCODE_MARKET_CLOSED at the exit time and retry at the reopen."
+     },
+     {
+      "severity": "info",
+      "description": "Not binding: StopsLevel/FreezeLevel, data completeness, fill-time spreads, trailing stop.",
+      "evidence": "p6_pitfalls.out, p10_misc.out. Distance from the market to the nearer pending level at 07:00 London: IS p1 $0.44 (1.9% under $0.50); 2025 p1 $1.38 (0% under $0.50). Stop-loss distance p1: $2.93 IS / $9.43 in 2025. A level is never already crossed at 07:00. Range minutes present: median 420 of 420; 11 of 3,354 sessions under 90%. Completeness guard 0.9 / 0.97 gives IS 1.177 / 1.174 with VAL unchanged. 69 fills in 07:00-07:04 London; spread at fill relative to the day's median has p90 1.15. The rule has no trailing stop.",
+      "effect_on_results": "None material. Do not add a terminal trailing stop: it runs client-side only and changes the rule."
+     },
+     {
+      "severity": "info",
+      "description": "Method caveat: R-normalisation artifact for manual entry with the absolute stop after long delays. When price drifts back toward the fixed stop, remaining risk shrinks and R balloons.",
+      "evidence": "p1c_abs_artifact.out: VAL N=90 / 120 show R-based PF 1.398 / 1.483 with max R 61.1 / 43.6, against $-PF 1.29 / 1.24. Excluding trades with risk under 50% of the designed risk: 1.224 / 1.176.",
+      "effect_on_results": "Long-delay absolute-stop R-PFs overstate results and would imply huge positions at fixed % risk. Do not read them as an improvement, and do not adopt a 'skip if retraced' filter: it was not pre-registered."
+     }
+    ],
+    "measurements": [
+     {
+      "name": "baseline, primary costs, current patched data",
+      "is_value": "PF 1.177, t 1.83, n 1037, 6/9 yrs",
+      "val_value": "PF 1.1002 (unrounded), t 0.74, n 445",
+      "note": "the documented 1.196 / 1.115 come from the unpatched data; VAL passes \u2265 1.10 by 0.0002"
+     },
+     {
+      "name": "baseline, low_cost_ecn (scenario-consistent rebuild)",
+      "is_value": "PF 1.315, t 2.96, 7/9; x1.5 stress 1.257",
+      "val_value": "PF 1.210, t 1.44; x1.5 stress 1.167",
+      "note": "identical to the recomputed official audit"
+     },
+     {
+      "name": "manual entry N=1 min (same distance / same absolute stop)",
+      "is_value": "1.184 / 1.163",
+      "val_value": "1.080 / 1.101",
+      "note": "low-cost ECN: IS 1.336 / 1.299, VAL 1.208 / 1.208"
+     },
+     {
+      "name": "manual entry N=5 min (same distance / same absolute stop)",
+      "is_value": "1.218 (t 2.17) / 1.177",
+      "val_value": "1.010 / 1.098",
+      "note": "low-cost ECN: IS 1.370 / 1.314, VAL 1.140 / 1.204"
+     },
+     {
+      "name": "manual entry N=15 min (same distance / same absolute stop)",
+      "is_value": "1.214 / 1.164",
+      "val_value": "1.050 / 1.089",
+      "note": "low-cost ECN: IS 1.364 / 1.306, VAL 1.197 / 1.194"
+     },
+     {
+      "name": "manual entry N=60 min (same distance / same absolute stop)",
+      "is_value": "1.078 / 1.122",
+      "val_value": "1.135 / 1.090",
+      "note": "low-cost ECN: IS 1.197 / 1.249, VAL 1.222 / 1.196"
+     },
+     {
+      "name": "manual entry N=240 min (same distance / same absolute stop)",
+      "is_value": "0.995 / 0.997",
+      "val_value": "1.051 / 1.073",
+      "note": "low-cost ECN: IS 1.114 / 1.118, VAL 1.141 / 1.196; about 8% of baseline trades are already stopped before entry"
+     },
+     {
+      "name": "delay sweep N=1..15 min, primary costs",
+      "is_value": "same distance 1.182-1.222 (median 1.201); same absolute 1.152-1.182",
+      "val_value": "same distance 1.001-1.128 (3/15 \u2265 1.10); same absolute 1.088-1.109 (6/15)",
+      "note": "low-cost ECN: IS 1.29-1.37 in all cases; VAL \u2265 1.10 in 14/15 (same distance) and 15/15 (same absolute)"
+     },
+     {
+      "name": "availability 07-23 Paris any day / weekdays 08-20 Paris (entries)",
+      "is_value": "1.177 (100% of 2,621 signals kept)",
+      "val_value": "1.100",
+      "note": "every signal falls on a weekday 08:00-13:00 Paris"
+     },
+     {
+      "name": "availability: pre-work 08-09 Paris only",
+      "is_value": "1.085 (n 636)",
+      "val_value": "0.924 (n 275)",
+      "note": "low-cost ECN 1.216 (t 1.67) / 1.020"
+     },
+     {
+      "name": "availability: pre-work + lunch 12-13 Paris",
+      "is_value": "1.035",
+      "val_value": "0.955",
+      "note": "low-cost ECN 1.171 / 1.051"
+     },
+     {
+      "name": "salaried: 09-12 signals executed at 12:00 Paris (others at touch + 1 min)",
+      "is_value": "1.116",
+      "val_value": "0.999",
+      "note": "with a next-morning 08:00 Paris exit: 1.089 / 1.033; low-cost ECN 1.248 / 1.134 and 1.226 / 1.170"
+     },
+     {
+      "name": "time exit moved to 20:00 Paris / next day 08:00 Paris",
+      "is_value": "1.165 / 1.142",
+      "val_value": "1.105 / 1.151",
+      "note": "the 16:00 NY exit is 22:00 Paris (21:00 in DST-gap weeks); exit timing is not critical"
+     },
+     {
+      "name": "server clock C1: NY-close server with fixed server hours",
+      "is_value": "1.142",
+      "val_value": "1.085",
+      "note": "range becomes 23:00-06:00 London in 15-20 gap weekdays a year; low-cost ECN 1.276 / 1.193"
+     },
+     {
+      "name": "server clock C2: EET server with fixed hours",
+      "is_value": "1.177",
+      "val_value": "1.098",
+      "note": "in gap weeks the exit falls in the closed market and fills at the 18:00 NY reopen"
+     },
+     {
+      "name": "server clock C3: fixed UTC / C4: range on winter hours",
+      "is_value": "1.171 / 1.183",
+      "val_value": "0.981 / 0.995",
+      "note": "low-cost ECN VAL 1.097 / 1.108"
+     },
+     {
+      "name": "rollover spread x2: 1 trading hour (16:30-17:00 and 18:00-18:30 NY)",
+      "is_value": "1.176",
+      "val_value": "1.099",
+      "note": "market closed 17-18 NY in the data"
+     },
+     {
+      "name": "rollover spread x2 / x3 / x5: 16-17 and 18-19 NY",
+      "is_value": "1.164 / 1.150 / 1.062",
+      "val_value": "1.091 / 1.083 / 1.032",
+      "note": "main channel is the 16:00 NY time exit; low-cost ECN x2 1.310 / 1.206"
+     },
+     {
+      "name": "rollover spikes +$1 / +$2 (16:55-17:00 and 18:00-18:15 NY)",
+      "is_value": "1.174 / 1.173",
+      "val_value": "1.099 / 1.098",
+      "note": "low-cost ECN reopen x10 at 18:00-18:05: 1.310 / 1.206"
+     },
+     {
+      "name": "stop distance ($/oz)",
+      "is_value": "median 7.28 (0.53% of price)",
+      "val_value": "2025: median 32.20, p10 17.04, p90 62.16, max 86.38 (0.96% of price)",
+      "note": "2022-2024 medians 11.0 / 9.1 / 14.9"
+     },
+     {
+      "name": "account needed for 0.01 lot (1 oz), 2025 stops",
+      "is_value": "n/a",
+      "val_value": "1% risk: $3,220 (median) / $6,216 (p90) / $8,638 (max); 0.5%: $6,440 / $12,433 / $17,276",
+      "note": "EUR \u2248 USD/1.1-1.17 in 2025"
+     },
+     {
+      "name": "share of 2025 signals that cannot be sized at min lot",
+      "is_value": "n/a",
+      "val_value": "$5k: 25% (1%) / 61.5% (0.5%); $10k: 0% / 25%; $20k: 0% / 0%",
+      "note": "lot rounding: realised median risk 0.38% at $10k / 0.5% and 0.86% at $10k / 1%"
+     },
+     {
+      "name": "ESMA 1:20 margin as % of equity",
+      "is_value": "n/a",
+      "val_value": "median 2-5%, p95 \u2264 10%, max 13.3%",
+      "note": "not binding; the 50% margin close-out is irrelevant with one position"
+     },
+     {
+      "name": "drawdown and underwater duration",
+      "is_value": "51.5R = 23.1% at 0.5% / 41.5% at 1%; losing streak 16; 1,310 days between highs",
+      "val_value": "40.2R = 18.7% / 34.8%; streak 11; 921 days",
+      "note": "abandonment risk for a retail trader"
+     },
+     {
+      "name": "position policy V3 every signal / V4 newest wins / V5 reverse-only",
+      "is_value": "1.049 / 0.958 / 1.072",
+      "val_value": "1.012 / 0.877 / 0.953",
+      "note": "low-cost ECN V3 1.180 / 1.119, V4 1.097 / 0.978; V2 'arm only if flat at 07:00' gives 1.170 / 1.108"
+     },
+     {
+      "name": "OCO leg not cancelled (second legs / total)",
+      "is_value": "0.636 (n 92) / 1.123",
+      "val_value": "0.553 (n 30) / 1.056",
+      "note": "122 of 1,483 sessions are stopped before 12:00 London"
+     },
+     {
+      "name": "feed: Asian spread x2 / Bid-bar range / Bid high + 07:00 spread",
+      "is_value": "1.181 / 1.181 / 1.172",
+      "val_value": "1.041 / 1.110 / 1.099",
+      "note": "levels +1 bp wider: 1.175 / 1.016; 1 bp narrower: 1.204 / 1.122"
+     },
+     {
+      "name": "feed noise \u03c3 0.25 / 0.5 / 1 bp on H and L (40 seeds each), p5-p95",
+      "is_value": "1.163-1.194 / 1.158-1.201 / 1.153-1.202 (\u2265 1.20 in 3 / 7 / 10%)",
+      "val_value": "1.080-1.109 / 1.070-1.112 / 1.045-1.112 (\u2265 1.10 in 42 / 30 / 15%)",
+      "note": "low-cost ECN \u03c3 0.5: IS 1.295-1.331, VAL 1.172-1.219"
+     },
+     {
+      "name": "extra round-trip cost per oz: +$0.10 / +$0.25 / +$0.50 / +$1.00",
+      "is_value": "1.153 / 1.119 / 1.065 / 0.967",
+      "val_value": "1.086 / 1.066 / 1.034 / 0.973",
+      "note": "-$0.10 gives IS 1.202 (t 2.05) / VAL 1.114; retail swap 8%/2% gives 1.161 / 1.082"
+     },
+     {
+      "name": "account types: low_cost_ecn / typical_retail / conservative (EA)",
+      "is_value": "1.315 / 1.226 (t 2.26) / 1.080",
+      "val_value": "1.210 / 1.137 / 1.004",
+      "note": "manual 60 min (same absolute stop): 1.249 / 1.174 / 1.032 IS; 1.196 / 1.129 / 1.000 VAL"
+     },
+     {
+      "name": "combined primary (swap 8/2, rollover x2, +$0.10, noise 0.5 bp; 20 seeds) EA / manual 5 min / manual 15 min / salaried",
+      "is_value": "p50 1.121 / 1.116 / 1.137 / 1.046",
+      "val_value": "p50 1.046 / 1.039 / 0.994 / 0.988 (\u2265 1.10 in 0% of seeds)",
+      "note": "pessimistic but realistic retail stack"
+     },
+     {
+      "name": "combined low-cost ECN (noise 0.5 bp, rollover x2, reopen x10; 20 seeds) EA / manual 5 min (same absolute stop)",
+      "is_value": "1.283-1.320 / 1.293-1.321",
+      "val_value": "1.166-1.212 / 1.155-1.200 (\u2265 1.10 in 100%)",
+      "note": "robust when the trader is available and the policy is exact"
+     },
+     {
+      "name": "ORDER_TIME_DAY misuse (entry window to ~17:00 NY)",
+      "is_value": "1.153",
+      "val_value": "1.075",
+      "note": "low-cost ECN 1.257 / 1.176"
+     },
+     {
+      "name": "weekend gaps / holiday exits",
+      "is_value": "315 gap crossings, worst adverse gap -1.39R, 0 stops jumped",
+      "val_value": "27 of 564 time exits filled at the 18:00 NY reopen or later",
+      "note": "2 of 919 stops filled beyond the stop (0.41R total)"
+     },
+     {
+      "name": "StopsLevel distance at arming (nearer level vs market, 07:00 London)",
+      "is_value": "p1 $0.44; 1.9% under $0.50",
+      "val_value": "2025 p1 $1.38; 0% under $0.50",
+      "note": "stop-loss distance p1 $2.93 IS / $9.43 in 2025: never binding"
+     },
+     {
+      "name": "data completeness guard (min_bars_frac 0.5 / 0.9 / 0.97)",
+      "is_value": "1.177 / 1.177 / 1.174",
+      "val_value": "1.100 / 1.100 / 1.100",
+      "note": "median 420 of 420 range minutes; 11 of 3,354 sessions under 90%"
+     },
+     {
+      "name": "VAL accesses by this lens",
+      "is_value": "n/a",
+      "val_value": "22 logged (track 'review', label prefix 'liveexec:orb_asia_2d_buf10:'), including 4 re-runs after bug fixes",
+      "note": "no tuning: every variant is an execution model of the frozen finalist"
+     }
+    ],
+    "recommendations": [
+     "Do not run this rule manually if the trader has a day job. Phase 1 should be an EA in SHADOW mode: it computes everything, places nothing, sends alerts and journals. Manual execution is acceptable only if the trader is at the screen every weekday 08:00-13:00 Paris and enters within 15 min of the alert. After 15 min, skip the signal and do not chase.",
+     "Broker and account: use a low-cost raw/ECN MT5 account, the only setting in which the CONDITIONAL label holds. Before trusting any result, verify in the journal over the first 2-3 months: spread at 07:00-12:00 London of about $0.10-0.20, stop-entry slippage \u2264 0.75 bp, long swap \u2264 about 4.6%/yr, and the reopen spread. A standard account (typical_retail) also passes on current data, with a thin margin (VAL 1.137).",
+     "Enforce the backtest policy exactly: at most one position; only the first touch of each level each day counts; if a position is open at the moment of the touch, the day is skipped with no re-entry or second chance; never overlap, reverse or replace. 'Arm at 07:00 London only if flat' is an acceptable variant (1.170 / 1.108). Every discretionary veto must be journalled with a reason.",
+     "OCO: delete the other leg in OnTradeTransaction as soon as one fills, then verify the deletion. Never leave a stop order resting at the stop-loss price, in either a netting or a hedging account.",
+     "Expiry: give pending orders ORDER_TIME_SPECIFIED expiry at 12:00 London converted to server time. Check SYMBOL_EXPIRATION_MODE first; if specified expiry is not allowed, the EA deletes the orders at 12:00 London and retries if FreezeLevel refuses. Never use ORDER_TIME_DAY or GTC.",
+     "Clocks: derive London and New York wall-clock times from UTC (TimeGMT() live) with explicit EU and US DST rules. Never hard-code server hours. Log the measured server offset (TimeTradeServer() - TimeGMT()) at every event. In the Strategy Tester, TimeGMT() equals simulated server time, so supply the broker's DST policy as an input there. Use M1 bars or ticks: server H4 bars (00/04/08) do not align with the 00:00-07:00 London range (02:00-09:00 server in normal weeks).",
+     "Range definition: Ask high and Bid low come from ticks (CopyTicksRange with COPY_TICKS_INFO, recomputed after any restart), not from MT5 bars, which are Bid-based. Persist H, L, the armed flag and the traded-today flag (file or GlobalVariables). Journal the range from both ticks and Bid bars. Before go-live, re-run the lab backtest with the EA's exact definition on the broker's own exported M1 and tick history.",
+     "Time exit: close at the first tradable tick at or after 16:00 New York on the 2nd weekday after the entry date (skip weekends, not holidays). On TRADE_RETCODE_MARKET_CLOSED, retry at the reopen. For manual fallback, pre-commit to either 20:00 Paris (1.165 / 1.105) or next-day 08:00 Paris (1.142 / 1.151); the time exit is not the fragile part.",
+     "Sizing: risk = |fill - stop| in USD per oz, converted to account currency at the current EURUSD. Lots = floor(risk% \u00d7 equity / (stop \u00d7 100 oz)) at 0.01-lot steps. If that is below 0.01 lot, skip the signal and journal it; never force the minimum lot (that means 2-9% risk on small accounts). Plan for at least about $9-10k (EUR 8-9k) at 1% or $17-20k at 0.5%, a 35-42% drawdown at 1% (19-23% at 0.5%), and underwater periods of 2.5-3.6 years.",
+     "Alert text (example, all clocks shown): '[ORB-ASIA XAUUSD] SELL triggered 2026-03-12 08:41 Paris / 07:41 London / 03:41 NY / 10:41 server(UTC+3). Bid 2898.31 <= sell level 2898.37. Range 00:00-07:00 London: H 2932.10 (max Ask), L 2901.74 (min Bid), W 30.36, 420/420 min. STOP 2935.14 (= buy level, absolute), distance 36.83 $/oz. Size at 1% of 10,000 EUR: 0.02 lot (actual risk 0.80%). ENTER AT MARKET; alert valid until 08:56 Paris, then SKIP. Cancel the opposite pending order if you placed one. Time exit: Mon 2026-03-16 16:00 NY = 21:00 Paris (US/EU DST gap week). Spread now 0.17. Open position: none. Day status: first touch, take it.' Keep the rule's absolute stop for manual entries: it is more stable than same-distance (VAL 1.088-1.109 vs 1.001-1.128 for 1-15 min).",
+     "Journal (one CSV row per session, plus one per event): UTC, server, London, NY and Paris timestamps; server offset and DST flags; range bar count; H/L from ticks and from Bid bars; W; both levels; spread, StopsLevel and FreezeLevel at arming; distance from market to each level; position state at arming and at touch; touch time, side and price; alert send time; user or EA order time, fill price and volume; slippage vs level in $ and R; SL actually placed; OCO-cancel time and retcode; every retcode or error, terminal restart or history gap; exit time, price and reason; swap and commission charged; P&L in $ and R; the lab replica of the same session on broker data for the phase-2 trade-by-trade comparison; any veto or skip with its reason.",
+     "For the lead: describe this candidate with the current-data numbers (IS 1.177 / t 1.83 / 6/9 years, VAL 1.1002), not the stale 1.196 / 1.115. State in the final report that live viability depends on broker cost, trader availability and exact policy replication, each of which can move VAL PF by 0.05-0.2. A 2026 holdout PF above 1.0 in the backtest says nothing about manual or salaried execution."
+    ],
+    "scratch_files": [
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/common.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p0_baseline.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p0_baseline.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p1_delay.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p1_delay.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p1_delay.csv",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p1b_delay_sweep.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p1b_delay_sweep.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p1b_delay_sweep.csv",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p1c_abs_artifact.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p2_availability.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p2_availability.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p2_availability.csv",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p3_clock.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p3_clock.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p4_rollover.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p4_rollover.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p5_sizing.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p5_sizing.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p5_sizing.csv",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p6_pitfalls.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p6_pitfalls.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p7_feed.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p7_feed.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p7_feed.csv",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p8_ea_logic.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p8_ea_logic.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p9_combos.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p9_combos.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p10_misc.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p10_misc.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p11_lowcost.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p11_lowcost.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p11_lowcost.csv",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p12_account_types.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p12_account_types.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p13_expiry.py",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/p13_expiry.out",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/orders_base.pkl",
+     "/home/user/gold-orb/lab/audit/scratch/orb_asia_2d_buf10/liveexec/trades_base.pkl"
+    ]
+   }
+  ],
+  "judge": {
+   "candidate": "orb/orb_asia_2d_buf10",
+   "decision": "GO_TO_HOLDOUT",
+   "reasons": [
+    "No look-ahead. An independent bar-by-bar EA replica, written from the rules, reproduces 1037/1037 IS and 445/445 VAL trades (max |dR| = 0). Cutting the data at the touch bar gives identical orders 150/150; cutting one bar earlier gives no order 150/150. 16 hand checks match raw M1 to 1e-6. I read lab/tracks/orb/strategy.py and lab/goldlab/sim.py myself: the range uses only bars starting 00:00-06:59 London; the first-touch scan starts at the first bar at or after 07:00; fills are at the worse of level and open, plus slippage; a stop on the fill bar is checked pessimistically.",
+    "The one engine error that flattered results is fixed, and fixing it does not change the status. spread_mult was applied to orders already resolved on unscaled quotes, which overstated the x1.5 stress by 0.026 and dropped 462 low-cost fills. simulate_rebuilt (commit a795f81) now rebuilds orders per scenario in audit.py and holdout.py. Corrected results: primary stress 1.078 (bar 1.05, pass). low_cost_ecn IS PF 1.315, t 2.96, 7/9 years, stress 1.257; VAL 1.21 (t 1.44). typical_retail also passes (1.226 / 1.137).",
+    "The quoted metrics are stale (unpatched data), not invalid. On the patched data the primary model gives IS PF 1.177, t 1.83, 6/9 years, n 1037, and VAL PF 1.1002, t 0.74, n 445. So the IS miss is 0.023 PF / 0.17 t, not 'by a hair', and VAL passes by 0.0002. lab/holdout_candidates.json already uses the corrected figures. CONDITIONAL stands under Amendment 1.",
+    "The remaining fidelity items are small and do not flip the low-cost pass. Tick-vs-M1 fills use about $0.30 of the $0.55 low-cost slippage budget. Spread-spike entries cost about -0.012 PF, holiday-delayed exits -0.003, rollover spread x2 about -0.01, and swap-rate regimes move PF by about \u00b10.04.",
+    "Implementable. Every rule maps to an MT5 primitive: a tick-based Ask-high / Bid-low range, server-side stop orders with an SL, specified expiry, and a time exit. EU raw/ECN accounts are documented and open to a French retail client. ESMA 1:20 margin is not binding (max 13% of equity).",
+    "The statistical weakness is real, but under the protocol it is not grounds to disqualify. The IS t of 1.83 is roughly what the best of ~23 effective configs gives with zero net edge. 2013 supplies 70% of IS R. Holding 1 or 3 days drops PF to 1.02-1.04. The result depends on which signals the one-position rule skips. The CONDITIONAL route itself is post hoc: Amendment 1 was committed 82 s after the ORB report showing this near-miss. Amendment 1 allows up to 5 holdout candidates and only one PASS exists, so the 2026 look is the pre-registered arbiter. Read it through the pre-declared bands, not the bare PF > 1."
+   ],
+   "p_edge_real": "About 0.55 that the EA has a positive long-run net expectancy at a low-cost ECN broker, which is the condition the CONDITIONAL label requires. Components: (1) the breakout direction carries real gross information, about 0.8 (z 3.5 IS / 1.9 VAL against coin-flip sides at the same signal times; trading every signal at low cost gives PF 1.18 IS / 1.12 VAL). (2) Net expectancy is positive at primary-model costs, about 0.35. (3) The edge is as large as measured (+0.13 to +0.21 R/trade at low cost), about 0.15.",
+   "expected_holdout": "About 10 months (2026-01-01 to the download date), roughly 95 trades. Decisive scenario low_cost_ecn; pass rule PF > 1.0. Forecast: median PF about 1.1, 90% interval about 0.7-1.65. P(pass) about 0.6; P(PF >= 1.4, 'strong support') about 0.2; P(PF < 0.8, 'strong evidence against') about 0.15. The primary-model PF should come in about 0.11-0.14 lower (median about 1.0), with typical_retail in between. A pass is weak evidence (likelihood ratio about 1.5-2): an edge of exactly zero at low cost still passes about 46% of the time, and about 64% if gold moves 15% or more over the window. Only PF >= 1.4 or PF < 0.8 is informative. Read the result next to gold's 2026 change and the long/short split, because the winning side has followed the year's drift (shorts in IS, longs in VAL). Also read the every-signal diagnostic: a no-overlap PF above 1 alongside an every-signal PF below 1 points to path luck. PF < 0.8 retires the candidate.",
+   "manual_trading_viable": "Only conditionally; the default should be an EA. Every signal falls on a weekday between 08:00 and 13:00 Paris, 46% of them between 08:00 and 09:00. At low_cost_ecn, a trader at the screen all morning who enters at market within 5-15 min of the alert, using the rule's absolute stop, matches the EA: IS 1.30-1.31, VAL 1.19-1.21. A 60-min delay still gives 1.25 / 1.20, and moving the exit to 20:00 Paris costs nothing (1.30 / 1.21). At primary costs, a few minutes of delay decides the VAL bar (VAL 1.00-1.13 across 1-15 min delays). Not viable with a day job: pre-work only (08:00-09:00 Paris) gives VAL 0.92 at primary costs and 1.02 at low cost; executing at lunch gives VAL 1.00 / 1.13. A hand-placed OCO whose other leg is not cancelled costs -0.05 PF. Position-policy errors (overlapping, newest signal wins, reversing) cost -0.10 to -0.22. Manual alert-following is acceptable only with full 08:00-13:00 Paris availability, a low-cost ECN account, the absolute stop, sizing on the planned distance, and a strict first-touch / one-position rule. Otherwise run the EA, in shadow mode first, then on demo.",
+   "ea_spec": [
+    "Instrument and account: XAUUSD on an MT5 raw/ECN account (1 lot = 100 oz). One position at a time under the EA's magic number; hedging and netting accounts both work. The CONDITIONAL premise assumes: spread about 0.35x Dukascopy ($0.10-0.20), commission <= $7/lot round trip, stop/market slippage <= 0.75 bp per side, long swap <= 4.6%/yr, no short-swap credit.",
+    "Clocks: derive Europe/London and America/New_York wall-clock time from UTC (TimeGMT() live), with explicit DST rules: EU last Sunday of March to last Sunday of October at 01:00 UTC; US second Sunday of March to first Sunday of November at 02:00 local. Never hard-code server hours. In the Strategy Tester TimeGMT() returns server time, so supply the broker's GMT offset and DST rule as an input there. Log TimeTradeServer() - TimeGMT() at every event.",
+    "Range (each weekday, London date D): H = max Ask and L = min Bid over ticks in [00:00, 07:00) London, from CopyTicksRange. MT5 M1 bars are Bid-only, so the Ask high must come from ticks. W = H - L. No trade if W <= 0 or fewer than 210 of the 420 range minutes have quotes. Persist H, L and the day state, and recompute from ticks after any restart. A Bid-bar range is an acceptable fallback only if frozen before go-live (IS 1.181 / VAL 1.110).",
+    "Levels and stop: BuyLevel = H + 0.10*W (triggers on Ask); SellLevel = L - 0.10*W (triggers on Bid). A long's SL = SellLevel and a short's SL = BuyLevel, as absolute prices (risk about 1.2*W). No target, no break-even, no trailing stop. If a fill lands at or beyond its SL (a gap), close at market immediately.",
+    "Entry window [07:00, 12:00) London. If flat at 07:00, place a BuyStop at BuyLevel and a SellStop at SellLevel, each with its SL attached and ORDER_TIME_SPECIFIED expiry at 12:00 London converted to server time. If SYMBOL_EXPIRATION_MODE forbids specified expiry, the EA deletes the orders at 12:00 London and retries until confirmed. Never use ORDER_TIME_DAY or GTC. If a level is inside SYMBOL_TRADE_STOPS_LEVEL of the price, trigger that leg virtually with a market order on the first tick at or through the level.",
+    "OCO: on the first fill, delete the other leg in OnTradeTransaction and verify the deletion. Never leave a pending order resting at the open position's SL price.",
+    "Position policy, exactly as backtested (V1): only the day's FIRST touch of either level counts. If a position is open at 07:00, place nothing but track touches virtually. If that position closes before any touch and before 12:00 London, place the OCO pair then. If the first touch comes while a position is open, or in the same minute it exits, the day is consumed: no second chance, never overlap, reverse or replace. The only acceptable simplification is 'arm only if flat at 07:00' (V2: IS 1.170 / VAL 1.108), and it must be chosen before go-live.",
+    "Time exit: close at the first tradable tick at or after 16:00 New York on the 2nd weekday after D (Mon->Wed, Thu->Mon, Fri->Tue). Weekends are skipped; holidays are not. On TRADE_RETCODE_MARKET_CLOSED (US holiday or early close), retry at the reopen. This matches the backtest; the longest IS hold was 159 h.",
+    "Sizing: lots = floor(risk% x equity / (|level - SL| x 100 oz x USD->account FX) / 0.01) x 0.01, computed on the planned distance. If that is below 0.01 lot, skip the signal and journal it; never force the minimum lot. Recommended risk is 0.5%: max drawdown 51.5R is about 23% at 0.5%, with losing streaks of 16 and up to 3.6 years underwater. With 2025-size stops (median $32/oz, max $86/oz) that needs about $17-20k of equity (about $9-10k at 1%).",
+    "Modes and go/no-go gate: Phase 1 shadow (compute, alert, journal; no orders). Phase 2: compare trade by trade against the lab replica run on the broker's exported ticks. Phase 3: automatic trading on demo. After 2-3 months, the measured 07:00-12:00 London spread, stop-entry slippage, commission and swap must be at or below the low_cost_ecn assumptions; if not, the CONDITIONAL premise has failed and trading stops.",
+    "Alert for the manual fallback, sent at the touch: side, level, absolute SL, lot size, all clocks (Paris / London / NY / server), the time-exit expressed in Paris time, and the day status ('flat, first touch: take it' or 'consumed: skip'). Enter at market within 15 min (up to 60 min is tolerable at low cost) with the rule's absolute SL; after that, skip and journal.",
+    "Journal, one row per session plus one per event: UTC / server / London / NY / Paris timestamps and the server offset; range tick and minute counts; H/L from ticks and from Bid bars; W; both levels; spread, StopsLevel and FreezeLevel at arming; position state at arming and at the touch; touch time, side and price; order and fill time, fill price, and slippage vs the level in $ and R; the SL actually placed; OCO-cancel time and retcode; every retcode, restart or data gap; exit time, price and reason; swap and commission; P&L in $ and R; any skip or veto with its reason."
+   ],
+   "open_risks": [
+    "Fix before the single holdout download: lab/holdout.py build() lacks prep_data's crossed-quote filter (ask_close < bid_close, or ask_low < bid_low - 5). short_days() only re-downloads days with fewer than 50% of the median bar count, so partial-day holes stay (holes moved IS PF by -0.019 and VAL by -0.015 before). Add a scan for unexpected weekday gaps of 5 min or more and re-download those days. A missed hole cannot be fixed after the look.",
+    "The candidate reaches the holdout only through the CONDITIONAL route, which is a post-hoc fork: Amendment 1 was committed 82 s after the ORB report showed this near-miss. The low-cost parameters (lab/COSTS.md) were researched and frozen before use and are defensible, but a low-cost holdout pass should be discounted accordingly.",
+    "Selection and fragility: 48 ORB configs (about 23 effective) and about 370 configs project-wide. 2013 supplies 70% of IS R, and without it PF is 1.059. Holding 1 or 3 days gives PF 1.02-1.04. Trading every signal gives PF 1.049 / 1.012 at primary costs. The top 5 VAL trades are 132% of VAL R.",
+    "Regime dependence: profit follows gold's trend years (correlation 0.78 between yearly long-minus-short R and gold's annual return), and range years (2018, 2021, 2022) lose. A 10-month holdout largely measures whether gold trended in 2026.",
+    "Cost dependence: viability rests on the low_cost_ecn assumptions (spread 0.35x Dukascopy, 0.75 bp per side, long swap 4.6%). Each extra $0.10/oz round trip costs about -0.024 PF. Under conservative costs IS PF is 1.080 and VAL 1.004. Swap-rate regimes move PF by about \u00b10.04.",
+    "Execution fragility: a position-policy deviation costs -0.10 to -0.22 PF; an uncancelled OCO leg -0.05; hard-coded server or UTC hours up to -0.12 VAL PF; ORDER_TIME_DAY -0.02 to -0.05. A different broker feed or range definition also moves results (Asian spread x2 gives VAL 1.04 at primary costs).",
+    "Survivability: max drawdown 51.5R, 16-trade losing streaks, and up to 1,310 days between equity highs make abandonment likely. The minimum lot binds for accounts below about $17-20k at 0.5% risk.",
+    "VAL is no longer clean: 70 logged VAL accesses for this candidate (1 research, 21 audit, 48 review). All were execution or robustness variants of the frozen config with no re-tuning, but they must be disclosed under Amendment 1 item 4. Do not use VAL to justify later changes (V2 policy, exit-time variants, a 'skip if halfway to the stop' filter); the holdout must run the frozen rules exactly."
+   ]
+  }
+ }
+]
