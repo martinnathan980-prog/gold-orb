@@ -22,3 +22,9 @@
 {"time": "2026-11-05T16:24:50", "track": "audit", "label": "crossmkt:trend:donch4h_stop:usdjpy", "period": "val"}
 {"time": "2026-11-05T16:24:51", "track": "audit", "label": "crossmkt:trend:donch4h_stop:deuidxeur", "period": "val"}
 {"time": "2026-11-05T16:24:52", "track": "audit", "label": "crossmkt:trend:donch4h_stop:lightcmdusd", "period": "val"}
+{"time": "2026-11-05T16:28:50", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T16:28:53", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T16:28:53", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T16:29:56", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T16:29:59", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T16:30:49", "track": "audit", "label": "audit:trend:donch4h_stop:profile", "period": "is+val"}
