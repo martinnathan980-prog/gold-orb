@@ -27,8 +27,6 @@ from audit import load_strategy  # noqa: E402
 def read_journal(path):
     j = pd.read_csv(path, sep=";")
     j["t"] = pd.to_datetime(j["time_utc"], format="%Y.%m.%d %H:%M:%S", utc=True)
-    if "replay" in j.columns:
-        pass  # replayed events are genuine paper events (bar-based), keep them
     ent = j[j.event == "ENTRY"].reset_index(drop=True)
     ext = j[j.event == "EXIT"].reset_index(drop=True)
     n = min(len(ent), len(ext))
