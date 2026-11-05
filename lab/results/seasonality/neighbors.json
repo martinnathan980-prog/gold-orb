@@ -1,0 +1,336 @@
+{
+ "FRI_PM_LIM": {
+  "median_neighbor_pf": 0.953,
+  "neighbors": [
+   {
+    "neighbor": "entry 13:00",
+    "params": {
+     "entry_time": "13:00",
+     "exit_time": "16:45",
+     "exit_days": 0,
+     "stop_atr": 3.0,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 60
+    },
+    "n": 374,
+    "pf": 0.871,
+    "t": -0.99,
+    "exp": -0.0149,
+    "years_pos": "4/9",
+    "stress_pf": 0.644
+   },
+   {
+    "neighbor": "entry 14:00",
+    "params": {
+     "entry_time": "14:00",
+     "exit_time": "16:45",
+     "exit_days": 0,
+     "stop_atr": 3.0,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 60
+    },
+    "n": 368,
+    "pf": 0.88,
+    "t": -0.92,
+    "exp": -0.0102,
+    "years_pos": "4/9",
+    "stress_pf": 0.617
+   },
+   {
+    "neighbor": "exit 16:30",
+    "params": {
+     "entry_time": "13:30",
+     "exit_time": "16:30",
+     "exit_days": 0,
+     "stop_atr": 3.0,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 60
+    },
+    "n": 361,
+    "pf": 0.901,
+    "t": -0.71,
+    "exp": -0.0094,
+    "years_pos": "4/9",
+    "stress_pf": 0.667
+   },
+   {
+    "neighbor": "exit 16:55",
+    "params": {
+     "entry_time": "13:30",
+     "exit_time": "16:55",
+     "exit_days": 0,
+     "stop_atr": 3.0,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 60
+    },
+    "n": 360,
+    "pf": 0.96,
+    "t": -0.28,
+    "exp": -0.0039,
+    "years_pos": "4/9",
+    "stress_pf": 0.7
+   },
+   {
+    "neighbor": "k 2.4",
+    "params": {
+     "entry_time": "13:30",
+     "exit_time": "16:45",
+     "exit_days": 0,
+     "stop_atr": 2.4,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 60
+    },
+    "n": 360,
+    "pf": 0.939,
+    "t": -0.43,
+    "exp": -0.0073,
+    "years_pos": "4/9",
+    "stress_pf": 0.697
+   },
+   {
+    "neighbor": "k 3.6",
+    "params": {
+     "entry_time": "13:30",
+     "exit_time": "16:45",
+     "exit_days": 0,
+     "stop_atr": 3.6,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 60
+    },
+    "n": 360,
+    "pf": 0.953,
+    "t": -0.33,
+    "exp": -0.0037,
+    "years_pos": "4/9",
+    "stress_pf": 0.706
+   },
+   {
+    "neighbor": "lim 48m",
+    "params": {
+     "entry_time": "13:30",
+     "exit_time": "16:45",
+     "exit_days": 0,
+     "stop_atr": 3.0,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 48
+    },
+    "n": 355,
+    "pf": 0.975,
+    "t": -0.17,
+    "exp": -0.0024,
+    "years_pos": "4/9",
+    "stress_pf": 0.721
+   },
+   {
+    "neighbor": "lim 72m",
+    "params": {
+     "entry_time": "13:30",
+     "exit_time": "16:45",
+     "exit_days": 0,
+     "stop_atr": 3.0,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 72
+    },
+    "n": 363,
+    "pf": 0.962,
+    "t": -0.26,
+    "exp": -0.0035,
+    "years_pos": "4/9",
+    "stress_pf": 0.705
+   },
+   {
+    "neighbor": "off 0.1",
+    "params": {
+     "entry_time": "13:30",
+     "exit_time": "16:45",
+     "exit_days": 0,
+     "stop_atr": 3.0,
+     "entry": "limit",
+     "limit_off": 0.1,
+     "limit_min": 60
+    },
+    "n": 283,
+    "pf": 1.022,
+    "t": 0.13,
+    "exp": 0.002,
+    "years_pos": "5/9",
+    "stress_pf": 0.813
+   }
+  ]
+ },
+ "WKND_LIM": {
+  "median_neighbor_pf": 1.026,
+  "neighbors": [
+   {
+    "neighbor": "entry 13:00",
+    "params": {
+     "entry_time": "13:00",
+     "exit_time": "22:00",
+     "exit_days": 2,
+     "stop_atr": 3.0,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 60
+    },
+    "n": 382,
+    "pf": 1.054,
+    "t": 0.38,
+    "exp": 0.0105,
+    "years_pos": "4/9",
+    "stress_pf": 0.942
+   },
+   {
+    "neighbor": "entry 14:00",
+    "params": {
+     "entry_time": "14:00",
+     "exit_time": "22:00",
+     "exit_days": 2,
+     "stop_atr": 3.0,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 60
+    },
+    "n": 369,
+    "pf": 0.963,
+    "t": -0.27,
+    "exp": -0.0068,
+    "years_pos": "4/9",
+    "stress_pf": 0.801
+   },
+   {
+    "neighbor": "exit Sun 21:00",
+    "params": {
+     "entry_time": "13:30",
+     "exit_time": "21:00",
+     "exit_days": 2,
+     "stop_atr": 3.0,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 60
+    },
+    "n": 368,
+    "pf": 1.025,
+    "t": 0.17,
+    "exp": 0.0042,
+    "years_pos": "5/9",
+    "stress_pf": 0.838
+   },
+   {
+    "neighbor": "exit Sun 23:00",
+    "params": {
+     "entry_time": "13:30",
+     "exit_time": "23:00",
+     "exit_days": 2,
+     "stop_atr": 3.0,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 60
+    },
+    "n": 368,
+    "pf": 1.036,
+    "t": 0.24,
+    "exp": 0.0067,
+    "years_pos": "3/9",
+    "stress_pf": 0.86
+   },
+   {
+    "neighbor": "k 2.4",
+    "params": {
+     "entry_time": "13:30",
+     "exit_time": "22:00",
+     "exit_days": 2,
+     "stop_atr": 2.4,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 60
+    },
+    "n": 368,
+    "pf": 0.989,
+    "t": -0.07,
+    "exp": -0.0025,
+    "years_pos": "4/9",
+    "stress_pf": 0.834
+   },
+   {
+    "neighbor": "k 3.6",
+    "params": {
+     "entry_time": "13:30",
+     "exit_time": "22:00",
+     "exit_days": 2,
+     "stop_atr": 3.6,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 60
+    },
+    "n": 368,
+    "pf": 1.01,
+    "t": 0.07,
+    "exp": 0.0016,
+    "years_pos": "4/9",
+    "stress_pf": 0.855
+   },
+   {
+    "neighbor": "lim 48m",
+    "params": {
+     "entry_time": "13:30",
+     "exit_time": "22:00",
+     "exit_days": 2,
+     "stop_atr": 3.0,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 48
+    },
+    "n": 363,
+    "pf": 1.026,
+    "t": 0.18,
+    "exp": 0.0048,
+    "years_pos": "4/9",
+    "stress_pf": 0.843
+   },
+   {
+    "neighbor": "lim 72m",
+    "params": {
+     "entry_time": "13:30",
+     "exit_time": "22:00",
+     "exit_days": 2,
+     "stop_atr": 3.0,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 72
+    },
+    "n": 371,
+    "pf": 1.03,
+    "t": 0.21,
+    "exp": 0.0056,
+    "years_pos": "4/9",
+    "stress_pf": 0.844
+   },
+   {
+    "neighbor": "off 0.1",
+    "params": {
+     "entry_time": "13:30",
+     "exit_time": "22:00",
+     "exit_days": 2,
+     "stop_atr": 3.0,
+     "entry": "limit",
+     "limit_off": 0.1,
+     "limit_min": 60
+    },
+    "n": 288,
+    "pf": 1.047,
+    "t": 0.28,
+    "exp": 0.0091,
+    "years_pos": "5/9",
+    "stress_pf": 0.95
+   }
+  ]
+ }
+}

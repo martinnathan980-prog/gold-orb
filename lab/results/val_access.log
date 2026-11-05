@@ -1,0 +1,9 @@
+{"time": "2026-11-05T16:04:27", "track": "orb", "label": "orb_asia_2d_buf10", "period": "val"}
+{"time": "2026-11-05T16:05:39", "track": "trend", "label": "donch4h_stop", "period": "val"}
+{"time": "2026-11-05T16:05:39", "track": "trend", "label": "donch4h_stop-costx1.5", "period": "val"}
+{"time": "2026-11-05T16:06:27", "track": "trend", "label": "benchmark-random-entry", "period": "val"}
+{"time": "2026-11-05T16:07:44", "track": "seasonality", "label": "WKND_LIM", "period": "val"}
+{"time": "2026-11-05T16:07:45", "track": "seasonality", "label": "FRI_PM_LIM", "period": "val"}
+{"time": "2026-11-05T16:07:45", "track": "seasonality", "label": "diagnostic-placebo-MonThu-13:30-16:45", "period": "val"}
+{"time": "2026-11-05T16:08:41", "track": "meanrev", "label": "meanrev-A-failedbreak-D5", "period": "val"}
+{"time": "2026-11-05T16:09:26", "track": "trend", "label": "donch4h_stop-detail (same frozen config: by-year x side + trade list)", "period": "val"}

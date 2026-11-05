@@ -1,0 +1,112 @@
+{
+ "S1_asia_00-07ldn": {
+  "n": 1993,
+  "net": -0.025,
+  "cost": 0.134,
+  "gross": 0.109,
+  "gross_long": 0.046,
+  "gross_short": 0.172,
+  "risk_usd": 6.19,
+  "cost_usd": 0.82
+ },
+ "S2_ldn_08-0830": {
+  "n": 2260,
+  "net": -0.097,
+  "cost": 0.288,
+  "gross": 0.19,
+  "gross_long": 0.116,
+  "gross_short": 0.264,
+  "risk_usd": 2.86,
+  "cost_usd": 0.8
+ },
+ "S3_ldn_08-09": {
+  "n": 2159,
+  "net": -0.085,
+  "cost": 0.229,
+  "gross": 0.143,
+  "gross_long": 0.067,
+  "gross_short": 0.215,
+  "risk_usd": 3.63,
+  "cost_usd": 0.81
+ },
+ "S4_comex_0820-0835": {
+  "n": 2281,
+  "net": -0.216,
+  "cost": 0.235,
+  "gross": 0.018,
+  "gross_long": 0.012,
+  "gross_short": 0.025,
+  "risk_usd": 3.66,
+  "cost_usd": 0.81
+ },
+ "S5_comex_0820-0850": {
+  "n": 2248,
+  "net": -0.162,
+  "cost": 0.191,
+  "gross": 0.028,
+  "gross_long": 0.034,
+  "gross_short": 0.023,
+  "risk_usd": 4.57,
+  "cost_usd": 0.81
+ },
+ "S6_us_0930-0945": {
+  "n": 2278,
+  "net": -0.098,
+  "cost": 0.26,
+  "gross": 0.162,
+  "gross_long": 0.145,
+  "gross_short": 0.18,
+  "risk_usd": 3.2,
+  "cost_usd": 0.81
+ },
+ "S7_zarattini_0820_5m": {
+  "n": 2293,
+  "net": -0.424,
+  "cost": 0.512,
+  "gross": 0.088,
+  "gross_long": 0.022,
+  "gross_short": 0.154,
+  "risk_usd": 1.66,
+  "cost_usd": 0.8
+ },
+ "C1_ctrl_short0700": {
+  "n": 2293,
+  "net": -0.046,
+  "cost": 0.114,
+  "gross": 0.068,
+  "gross_long": null,
+  "gross_short": 0.068,
+  "risk_usd": 7.01,
+  "cost_usd": 0.82
+ },
+ "C2_ctrl_long0700": {
+  "n": 2293,
+  "net": -0.156,
+  "cost": 0.114,
+  "gross": -0.041,
+  "gross_long": -0.041,
+  "gross_short": null,
+  "risk_usd": 7.01,
+  "cost_usd": 0.83
+ },
+ "A3_asia_hold2d": {
+  "n": 1146,
+  "net": 0.097,
+  "cost": 0.16,
+  "gross": 0.257,
+  "gross_long": 0.22,
+  "gross_short": 0.292,
+  "risk_usd": 6.11,
+  "cost_usd": 0.98
+ },
+ "F3_A3_buf0.1": {
+  "n": 1028,
+  "net": 0.132,
+  "cost": 0.139,
+  "gross": 0.27,
+  "gross_long": 0.188,
+  "gross_short": 0.353,
+  "risk_usd": 7.28,
+  "cost_usd": 1.01
+ }
+}

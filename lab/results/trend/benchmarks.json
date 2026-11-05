@@ -1,0 +1,41 @@
+{
+ "note": "POST-VALIDATION DIAGNOSTIC (not a candidate rule, not used for any selection).\n\nQuestion: is the finalist's profit just 'trend beta' (gold went up)?  Benchmark = random\nentries at H4 bar closes with EXACTLY the finalist's exit (stop 2xATR14(H4), trail 2xATR14(H4),\ntime stop 5 NY trading days, one position at a time), at a similar trade frequency.\n20 seeds x {random side, long only, short only}; distribution of PF on IS and on VAL.\nVAL access is logged by gl.cut (label 'benchmark-random-entry').  Output: benchmarks.json.\n",
+ "results": {
+  "random": {
+   "is_n_median": 757.5,
+   "val_n_median": 337.0,
+   "is_pf_median": 0.847,
+   "is_pf_p90": 0.986,
+   "is_pf_max": 1.025,
+   "val_pf_median": 0.929,
+   "val_pf_p90": 1.086,
+   "val_pf_max": 1.133,
+   "is_exp_median": -0.0636,
+   "val_exp_median": -0.0288
+  },
+  "long": {
+   "is_n_median": 746.0,
+   "val_n_median": 324.5,
+   "is_pf_median": 0.83,
+   "is_pf_p90": 0.907,
+   "is_pf_max": 0.926,
+   "val_pf_median": 1.193,
+   "val_pf_p90": 1.32,
+   "val_pf_max": 1.444,
+   "is_exp_median": -0.0714,
+   "val_exp_median": 0.0733
+  },
+  "short": {
+   "is_n_median": 763.0,
+   "val_n_median": 349.5,
+   "is_pf_median": 0.873,
+   "is_pf_p90": 0.907,
+   "is_pf_max": 0.984,
+   "val_pf_median": 0.644,
+   "val_pf_p90": 0.701,
+   "val_pf_max": 0.727,
+   "is_exp_median": -0.0522,
+   "val_exp_median": -0.1649
+  }
+ }
+}

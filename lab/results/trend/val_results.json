@@ -1,0 +1,87 @@
+{
+ "donch4h_stop": {
+  "params": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "target_r": NaN,
+   "max_days": 5,
+   "sides": "both",
+   "sess": "none",
+   "trend_ma": 0,
+   "entry": "stop"
+  },
+  "val": {
+   "n": 243,
+   "trades_per_year": 61.0,
+   "win_rate": 0.383,
+   "avg_win_R": 1.103,
+   "avg_loss_R": -0.555,
+   "expectancy_R": 0.0796,
+   "t_stat": 1.19,
+   "pf": 1.232,
+   "total_R": 19.3,
+   "max_dd_R": 10.7,
+   "years_pos": "3/4",
+   "weeks_pos_pct": 33.5,
+   "weeks_neg_pct": 45.5,
+   "months_pos_pct": 52.1,
+   "worst_week_R": -2.1,
+   "long_n": 152,
+   "long_R": 28.8,
+   "short_n": 91,
+   "short_R": -9.4,
+   "avg_hold_h": 39.3,
+   "max_hold_h": 167.8,
+   "pf_ret": 1.223,
+   "equity_x_0.5pct": 1.1,
+   "cagr_0.5pct": 2.4,
+   "maxdd_0.5pct": 5.3,
+   "by_year_R": {
+    "2022": -2.1,
+    "2023": 4.2,
+    "2024": 3.0,
+    "2025": 14.2
+   },
+   "exit_reasons": {
+    "trail": 232,
+    "stop": 7,
+    "time": 4
+   }
+  },
+  "val_stress_pf": 1.158,
+  "val_stress_exp": 0.0563,
+  "val_sides": {
+   "long": {
+    "n": 152,
+    "sum_R": 28.8,
+    "exp_R": 0.1893,
+    "pf": 1.577,
+    "win_rate": 0.421
+   },
+   "short": {
+    "n": 91,
+    "sum_R": -9.4,
+    "exp_R": -0.1037,
+    "pf": 0.717,
+    "win_rate": 0.319
+   }
+  },
+  "val_top5pct_R": 37.3,
+  "val_top5pct_share": 1.93,
+  "val_criteria": {
+   "pf>=1.10": true,
+   "expectancy>0": true,
+   "pass": true
+  },
+  "is_check": {
+   "n": 494,
+   "pf": 1.356,
+   "t_stat": 2.37,
+   "total_R": 61.8
+  }
+ }
+}

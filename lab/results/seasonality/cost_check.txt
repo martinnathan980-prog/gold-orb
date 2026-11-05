@@ -1,0 +1,4 @@
+T01 FRI_PM mkt   n=437 | mean net -0.12 bp | gross fill-to-fill +0.39 bp | mid-to-mid (time exits) +6.22 bp | swap 0.00 bp | comm 0.51 bp | net sd 25.2 bp | pf_ret 0.986
+T03 FRI_PM lim   n=360 | mean net +1.26 bp | gross fill-to-fill +1.77 bp | mid-to-mid (time exits) +3.98 bp | swap 0.00 bp | comm 0.51 bp | net sd 25.5 bp | pf_ret 1.165
+T02 WKND mkt     n=447 | mean net +1.59 bp | gross fill-to-fill +3.52 bp | mid-to-mid (time exits) +13.50 bp | swap 1.41 bp | comm 0.51 bp | net sd 46.7 bp | pf_ret 1.101
+T04 WKND lim     n=368 | mean net +2.38 bp | gross fill-to-fill +4.32 bp | mid-to-mid (time exits) +10.95 bp | swap 1.43 bp | comm 0.51 bp | net sd 47.2 bp | pf_ret 1.156

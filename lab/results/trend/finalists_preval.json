@@ -1,0 +1,66 @@
+{
+ "decided_at_utc": "2026-11-05T16:04:37",
+ "trials_so_far": 48,
+ "finalists": {
+  "donch4h_stop": {
+   "params": {
+    "family": "donchian",
+    "tf": "4h",
+    "n": 60,
+    "entry": "stop",
+    "stop_atr": 2.0,
+    "trail_atr": 2.0,
+    "max_days": 5,
+    "atr_n": 14,
+    "target_r": NaN,
+    "sides": "both",
+    "sess": "none",
+    "trend_ma": 0
+   },
+   "is": {
+    "n": 494,
+    "trades_per_year": 55.1,
+    "win_rate": 0.401,
+    "avg_win_R": 1.19,
+    "avg_loss_R": -0.587,
+    "expectancy_R": 0.1251,
+    "pf": 1.356,
+    "t_stat": 2.37,
+    "years_pos": "8/9",
+    "weeks_pos_pct": 31.1,
+    "max_dd_R": 9.4,
+    "long_n": 242,
+    "long_R": 49.2,
+    "short_n": 252,
+    "short_R": 12.6,
+    "long_pf": 1.63,
+    "short_pf": 1.132,
+    "top5pct_share": 1.44,
+    "stress_pf": 1.261
+   },
+   "is_criteria": {
+    "n>=200": true,
+    "pf>=1.20": true,
+    "t>=2": true,
+    "years_pos>=2/3": true,
+    "freq 25-750/yr": true,
+    "max_hold<=5d": true,
+    "stress_pf>=1.05": true,
+    "pass": true
+   },
+   "neighbour_pfs": [
+    1.308,
+    1.321,
+    1.338,
+    1.348,
+    1.354,
+    1.358,
+    1.359,
+    1.36,
+    1.405
+   ],
+   "neighbour_median_pf": 1.354
+  }
+ },
+ "note": "single finalist; decided on IS only before any VAL access"
+}

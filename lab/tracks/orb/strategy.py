@@ -15,10 +15,15 @@ Mechanics (all causal, implementable in an MT5 EA):
   * entry="first_bar": direction of the opening range itself (close vs open, mid prices); market
     order at the open of the first bar after the range (Zarattini & Aziz style).
   * stop: "opp" opposite side of the range (+buf), "mid" range midpoint, "atr" k x daily ATR(14).
-  * target: target_R x initial risk (None = no target); optional break-even at be_R x risk.
+  * target: target_R x initial risk (None = no target); optional break-even at be_R x risk;
+    optional trailing stop at trail_atr x daily ATR.
   * forced exit at exit_time (exit_tz wall clock) on the same date (+ hold_days business days).
+  * entry="market": unconditional market entry after the range (drift control, sides long/short).
   * filters: range width / daily ATR(14) of the last COMPLETED trading day (17:00 NY boundary),
-    sides, weekdays.
+    sides, weekdays, trend ("prev_day": sign of the last completed day's close-open; "sma": sign of
+    close - SMA(trend_n) of daily closes; only the matching side is armed), and max_cost_R =
+    estimated round-trip cost / initial risk (cost estimate = mean spread observed during the
+    range + commission + 2 x 1.5 bp slippage).
 
 Every row has a stop and an exit_i; the max hold is bounded by hold_days <= 4 (5 trading days).
 """
@@ -40,13 +45,22 @@ DEFAULTS = dict(
     entry="stop", buf_frac=0.0, buf_abs=0.0,
     stop_mode="opp", stop_atr=0.5, target_R=None, be_R=None,
     min_width_atr=None, max_width_atr=None, sides="both", skip_dow=(),
-    min_bars_frac=0.5, atr_n=14,
+    min_bars_frac=0.5, atr_n=14, max_cost_R=None,
+    trend=None, trend_n=50, trail_atr=None,
 )
+
+# cost estimate used by the optional cost-share filter (known before the trade: spread observed
+# during the range, commission, assumed slippage 1.5 bp per side as in PROTOCOL.md)
+EST_COMMISSION = 0.07
+EST_SLIP_BPS = 1.5
 
 
 def _hm(s):
-    h, m = s.split(":")
-    return pd.Timedelta(hours=int(h), minutes=int(m))
+    """'HH:MM' local wall clock; a leading '-' means the previous evening ('-01:00' = 23:00 the day before)."""
+    neg = s.startswith("-")
+    h, m = s.lstrip("-").split(":")
+    td = pd.Timedelta(hours=int(h), minutes=int(m))
+    return -td if neg else td
 
 
 def _local_times(dates, hm, tz):
@@ -56,22 +70,26 @@ def _local_times(dates, hm, tz):
 
 
 @nb.njit(cache=True)
-def _range_stats(ah, bl, i0, i1):
+def _range_stats(ah, bl, ac, bc, i0, i1):
     n = len(i0)
     hi = np.full(n, np.nan)
     lo = np.full(n, np.nan)
+    spr = np.full(n, np.nan)
     for k in range(n):
         if i1[k] > i0[k]:
             h = -1e300
             l = 1e300
+            sp = 0.0
             for i in range(i0[k], i1[k]):
                 if ah[i] > h:
                     h = ah[i]
                 if bl[i] < l:
                     l = bl[i]
+                sp += ac[i] - bc[i]
             hi[k] = h
             lo[k] = l
-    return hi, lo
+            spr[k] = sp / (i1[k] - i0[k])
+    return hi, lo, spr
 
 
 @nb.njit(cache=True)
@@ -112,7 +130,8 @@ def daily_atr(m1, n=14):
         a = gl.atr(d, n)
         _daily_cache.clear()
         _daily_cache[key] = pd.DataFrame({"t_close": pd.DatetimeIndex(d.t_close).as_unit("ns"),
-                                          "atr": a.to_numpy(), "close": d.c.to_numpy()}
+                                          "atr": a.to_numpy(), "close": d.c.to_numpy(),
+                                          "open": d.o.to_numpy()}
                                          ).sort_values("t_close").reset_index(drop=True)
     return _daily_cache[key]
 
@@ -128,10 +147,9 @@ def sessions(m1, p):
     re = _local_times(dates, p["range_end"], tz)
     ee = _local_times(dates, p["entry_end"], tz)
     xdates = dates + pd.offsets.BDay(int(p["hold_days"])) if p["hold_days"] else dates
+    # exit on the same calendar date (+hold_days business days) in the exit zone's wall clock;
+    # London and New York calendar dates coincide during the London/NY trading day
     xt = _local_times(xdates, p["exit_time"], TZ[p["exit_tz"]])
-    if p["tz"] != p["exit_tz"]:
-        # same wall-clock date in the exit zone; London and NY dates coincide during the day
-        pass
     ok = ~(rs.isna() | re.isna() | ee.isna() | xt.isna())
     dates, rs, re, ee, xt = dates[ok], rs[ok], re[ok], ee[ok], xt[ok]
     v = idx.values
@@ -141,16 +159,22 @@ def sessions(m1, p):
     ix = np.searchsorted(v, xt.values)
     ah = m1["ah"].to_numpy(np.float64)
     bl = m1["bl"].to_numpy(np.float64)
-    hi, lo = _range_stats(ah, bl, i0, i1)
+    ac = m1["ac"].to_numpy(np.float64)
+    bc = m1["bc"].to_numpy(np.float64)
+    hi, lo, spr = _range_stats(ah, bl, ac, bc, i0, i1)
     s = pd.DataFrame({"date": dates, "t_rs": rs.as_unit("ns"), "t_re": re.as_unit("ns"), "t_ee": ee, "t_x": xt,
-                      "i0": i0, "i1": i1, "ie": ie, "ix": ix, "hi": hi, "lo": lo})
+                      "i0": i0, "i1": i1, "ie": ie, "ix": ix, "hi": hi, "lo": lo, "spread": spr})
     exp_min = (s.t_re - s.t_rs).dt.total_seconds() / 60
     s["nbars"] = s.i1 - s.i0
     s = s[(s.nbars >= p["min_bars_frac"] * exp_min) & (s.i1 < len(m1)) & (s.ie > s.i1)].copy()
     s["width"] = s.hi - s.lo
     # daily ATR of the last trading day completed before the range end
-    da = daily_atr(m1, p["atr_n"])
-    s = pd.merge_asof(s.sort_values("t_re"), da.rename(columns={"t_close": "t_re"})[["t_re", "atr"]],
+    da = daily_atr(m1, p["atr_n"]).copy()
+    # trend state of the last COMPLETED trading day: +1 / -1
+    da["tr_prev_day"] = np.sign(da.close - da.open)
+    da["tr_sma"] = np.sign(da.close - da.close.rolling(int(p["trend_n"]), min_periods=int(p["trend_n"])).mean())
+    s = pd.merge_asof(s.sort_values("t_re"),
+                      da.rename(columns={"t_close": "t_re"})[["t_re", "atr", "tr_prev_day", "tr_sma"]],
                       on="t_re", direction="backward", allow_exact_matches=True)
     s["w_atr"] = s.width / s.atr
     s["dow"] = s.date.dt.dayofweek
@@ -163,6 +187,8 @@ def make_orders(m1, **params):
     if unknown:
         raise ValueError(f"unknown params {unknown}")
     p.update(params)
+    if not 0 <= int(p["hold_days"]) <= 4:
+        raise ValueError("hold_days must be 0..4 (forced exit within 5 trading days)")
     s = sessions(m1, p)
     keep = np.ones(len(s), bool)
     if p["min_width_atr"] is not None:
@@ -178,6 +204,10 @@ def make_orders(m1, **params):
     sell_lv = s.lo.to_numpy() - buf
     allow_l = np.full(len(s), p["sides"] in ("both", "long"))
     allow_s = np.full(len(s), p["sides"] in ("both", "short"))
+    if p["trend"] is not None:
+        tr = s["tr_" + p["trend"]].to_numpy()  # "prev_day" or "sma"
+        allow_l &= tr > 0
+        allow_s &= tr < 0
     ah, bl, ao, bo = (m1[k].to_numpy(np.float64) for k in ("ah", "bl", "ao", "bo"))
     if p["entry"] == "stop":
         fi, side = _first_touch(ah, bl, ao, bo, s.i1.to_numpy(np.int64), s.ie.to_numpy(np.int64),
@@ -196,7 +226,16 @@ def make_orders(m1, **params):
         side[(side < 0) & ~allow_s] = 0
         ok = side != 0
         fi = i1.astype(np.int64)
-        level = np.where(side > 0, buy_lv, sell_lv)  # reference entry level (for target calc only)
+        # reference entry price (fill = this quote + slippage) used for the target / ATR stop
+        level = np.where(side > 0, ao[np.minimum(fi, len(m1) - 1)], bo[np.minimum(fi, len(m1) - 1)])
+        etype = 0
+    elif p["entry"] == "market":
+        # unconditional market entry at the first bar after the range (control / drift test)
+        if p["sides"] not in ("long", "short"):
+            raise ValueError("entry='market' needs sides='long' or 'short'")
+        fi = s.i1.to_numpy().astype(np.int64)
+        side = np.full(len(s), 1 if p["sides"] == "long" else -1, np.int64)
+        ok = np.ones(len(s), bool)
         level = np.where(side > 0, ao[np.minimum(fi, len(m1) - 1)], bo[np.minimum(fi, len(m1) - 1)])
         etype = 0
     else:
@@ -213,13 +252,18 @@ def make_orders(m1, **params):
     else:
         raise ValueError(p["stop_mode"])
     risk = np.abs(level - stop)
+    if p["max_cost_R"] is not None:
+        est_cost = s.spread.to_numpy() + EST_COMMISSION + 2 * EST_SLIP_BPS * 1e-4 * level
+        okc = est_cost <= p["max_cost_R"] * risk
+        s, fi, side, level, stop, risk = s[okc].reset_index(drop=True), fi[okc], side[okc], level[okc], stop[okc], risk[okc]
     tgt = level + side * p["target_R"] * risk if p["target_R"] else np.full(len(s), np.nan)
     be = p["be_R"] * risk if p["be_R"] else np.full(len(s), np.nan)
+    trail = p["trail_atr"] * s.atr.to_numpy() if p["trail_atr"] else np.full(len(s), np.nan)
     o = pd.DataFrame({
         "entry_i": fi, "side": side, "etype": etype,
         "level": level if etype == 1 else np.nan,
         "expiry_i": fi if etype == 1 else -1,
-        "stop": stop, "target": tgt, "exit_i": s.ix.to_numpy(np.int64), "be": be,
+        "stop": stop, "target": tgt, "exit_i": s.ix.to_numpy(np.int64), "be": be, "trail": trail,
         "date": s.date.values, "w_atr": s.w_atr.values, "width": s.width.values,
     })
     # forced exit must come after the entry bar; drop sessions whose exit time precedes entry
@@ -227,4 +271,17 @@ def make_orders(m1, **params):
     return o.reset_index(drop=True)
 
 
-FINALISTS = {}
+# Single finalist, chosen on IS only (2013-2021) BEFORE any validation access.  It narrowly FAILS
+# IS criterion 2 (PF 1.196 < 1.20, t 1.99 < 2.0); see results/orb/report.md.
+FINALISTS = {
+    "orb_asia_2d_buf10": dict(
+        tz="LDN", range_start="00:00", range_end="07:00",   # Asian range, London wall clock
+        entry_end="12:00",                                   # OCO stop orders live 07:00-12:00 London
+        entry="stop", buf_frac=0.1, buf_abs=0.0,             # levels = range high/low +/- 10% of width
+        stop_mode="opp",                                     # stop = the opposite pending level
+        target_R=None, be_R=None, trail_atr=None,
+        exit_time="16:00", exit_tz="NY", hold_days=2,        # time exit 16:00 NY, 2 business days later
+        min_width_atr=None, max_width_atr=None, max_cost_R=None, trend=None,
+        sides="both", skip_dow=(), min_bars_frac=0.5, atr_n=14,
+    ),
+}

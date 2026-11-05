@@ -1,0 +1,72 @@
+[
+ {
+  "param": "n",
+  "value": 4,
+  "n": 366,
+  "pf": 1.002,
+  "exp": 0.0006,
+  "t": 0.02,
+  "years_pos": "4/9",
+  "stress_pf": 0.953
+ },
+ {
+  "param": "n",
+  "value": 6,
+  "n": 328,
+  "pf": 1.009,
+  "exp": 0.0027,
+  "t": 0.07,
+  "years_pos": "5/9",
+  "stress_pf": 0.959
+ },
+ {
+  "param": "min_age",
+  "value": 2,
+  "n": 178,
+  "pf": 0.875,
+  "exp": -0.0397,
+  "t": -0.7,
+  "years_pos": "3/9",
+  "stress_pf": 0.832
+ },
+ {
+  "param": "stop_buf",
+  "value": 0.8,
+  "n": 352,
+  "pf": 1.012,
+  "exp": 0.0039,
+  "t": 0.09,
+  "years_pos": "5/9",
+  "stress_pf": 0.952
+ },
+ {
+  "param": "stop_buf",
+  "value": 1.2,
+  "n": 344,
+  "pf": 1.003,
+  "exp": 0.0008,
+  "t": 0.02,
+  "years_pos": "5/9",
+  "stress_pf": 0.953
+ },
+ {
+  "param": "max_bars",
+  "value": 2,
+  "n": 384,
+  "pf": 1.0,
+  "exp": -0.0001,
+  "t": -0.0,
+  "years_pos": "5/9",
+  "stress_pf": 0.937
+ },
+ {
+  "param": "max_bars",
+  "value": 4,
+  "n": 306,
+  "pf": 1.07,
+  "exp": 0.021,
+  "t": 0.45,
+  "years_pos": "4/9",
+  "stress_pf": 1.021
+ }
+]

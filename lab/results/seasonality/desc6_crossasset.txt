@@ -1,0 +1,5 @@
+xauusd       13:30->16:45 NY: Fri +6.01 (t +5.0, n 437, yrs 8/9) | Mon-Thu -1.38 (t -1.8, n 1785, yrs 8/9)
+eurusd       13:30->16:45 NY: Fri +0.41 (t +0.7, n 464, yrs 5/9) | Mon-Thu +0.18 (t +0.5, n 1858, yrs 7/9)
+usdjpy       13:30->16:45 NY: Fri -0.29 (t -0.5, n 465, yrs 6/9) | Mon-Thu +1.37 (t +3.3, n 1854, yrs 9/9)
+deuidxeur    13:30->16:45 NY: Fri -19.69 (t -1.1, n 21, yrs 4/8) | Mon-Thu +1.61 (t +0.4, n 92, yrs 5/9)
+lightcmdusd  13:30->16:45 NY: Fri +11.26 (t +2.0, n 271, yrs 6/9) | Mon-Thu +0.00 (t +0.0, n 1669, yrs 5/9)
