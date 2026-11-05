@@ -414,7 +414,7 @@ def make_orders(m1, **params):
     kk, jj = np.nonzero(hit >= 0)
     if len(kk) == 0:
         return pd.DataFrame(columns=["entry_i", "side", "etype", "level", "expiry_i", "stop",
-                                     "target", "exit_i"])
+                                     "target", "exit_i", "lvl", "day", "atr_d", "dec_i"])
     i_hit = hit[kk, jj]
     rl = role[kk, jj].astype(np.int64)
     L = lv_tr[kk, jj]
@@ -504,4 +504,15 @@ def make_orders(m1, **params):
     return o.sort_values("entry_i", kind="stable").reset_index(drop=True)
 
 
-FINALISTS = {}
+# Chosen on IS (2013-2021) only, before any validation access.  Rationale: round-number levels
+# (Osler 2003: stop-losses cluster just beyond round numbers; Aggarwal & Lucey 2007: '00' barriers in
+# gold) break through at their first touch of the day far more often than random levels.
+#   * resting buy-stop at the nearest $100 level above / sell-stop at the nearest $100 level below the
+#     price at the start of the trading day (17:00 NY), live only 08:00 London -> 12:00 New York and
+#     only if that level has NOT been touched since 17:00 NY ("fresh");
+#   * stop 0.4 x ATR14(daily) back through the level, target 1R, forced exit 16:00 New York.
+FINALISTS = {
+    "rn100_break_fresh": dict(family="round", levels=("RB", "RA"), grid=100.0, mode="tbreak",
+                              stop_atr=0.4, tgt=1.0, fresh=True,
+                              win=("LDN", 480, "NY", 720), eod=960, hold_days=0, offset_atr=0.0),
+}

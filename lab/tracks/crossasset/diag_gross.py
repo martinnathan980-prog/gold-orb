@@ -25,17 +25,19 @@ def stats(t):
 
 def main():
     trials = [json.loads(l) for l in open(os.path.join(RES, "trials.jsonl"))]
+    trials = [tr for tr in trials if "diag" not in tr["config"]]   # skip diagnostic re-runs
     rows = []
     # Part B (bug-fix re-runs supersede the first runs of the same config)
     pb = {}
     for tr in trials:
         c = tr["config"]
         if c.get("part") == "B":
-            pb[(c["sym"], c["rule"])] = tr
+            pb[(c["sym"], c["rule"] + ("_d" if c.get("rule_tf") == "D" else ""))] = tr
     for sym in ["xauusd", "eurusd", "gbpusd", "usdjpy", "deuidxeur", "lightcmdusd"]:
         m1 = gl.load_m1(sym)
-        bars = {"channel": load_bars(sym, "4h"), "rsi2": load_bars(sym, "D"), "orb": None}
-        for rule in ["orb", "channel", "rsi2"]:
+        bars = {"channel": load_bars(sym, "4h"), "rsi2": load_bars(sym, "D"), "orb": None,
+                "channel_d": load_bars(sym, "D")}
+        for rule in ["orb", "channel", "rsi2", "channel_d"]:
             tr = pb[(sym, rule)]
             p = {k: v for k, v in tr["config"].items() if k not in ("part", "sym", "rerun")}
             o = S.make_orders(m1, rule=p.pop("rule"), bars=bars[rule], **p)

@@ -1,0 +1,63 @@
+{
+ "note": "Coordinator-requested diagnostic (engine caveat 3): frozen finalist simulated with no_overlap=False (every signal traded). Not used for selection. One logged VAL access.",
+ "is_every_signal": {
+  "n": 1694,
+  "pf": 1.343,
+  "expectancy_R": 0.1255,
+  "t_stat_overlapping_trades_not_valid": 4.32,
+  "years_pos": "7/9",
+  "long_pf": 1.548,
+  "short_pf": 1.115,
+  "stress_pf": 1.257,
+  "max_concurrent_positions": 19,
+  "by_year_R": {
+   "2013": 16.2,
+   "2014": 10.6,
+   "2015": 60.5,
+   "2016": 21.7,
+   "2017": 35.3,
+   "2018": -29.7,
+   "2019": 48.4,
+   "2020": 50.8,
+   "2021": -1.2
+  }
+ },
+ "val_every_signal": {
+  "n": 925,
+  "pf": 0.913,
+  "expectancy_R": -0.0331,
+  "years_pos": "1/4",
+  "long_R": 32.8,
+  "long_pf": 1.146,
+  "short_R": -63.4,
+  "short_pf": 0.496,
+  "max_concurrent_positions": 16,
+  "by_year_R": {
+   "2022": -28.8,
+   "2023": -28.6,
+   "2024": -18.1,
+   "2025": 44.9
+  }
+ },
+ "taken_vs_skipped": {
+  "is_taken": {
+   "n": 494,
+   "exp_R": 0.125,
+   "pf": 1.356
+  },
+  "is_skipped": {
+   "n": 1200,
+   "exp_R": 0.126,
+   "pf": 1.338
+  },
+  "val_taken": {
+   "n": 243,
+   "exp_R": 0.079
+  },
+  "val_skipped_derived": {
+   "n": 682,
+   "exp_R": -0.073
+  },
+  "check": "no_overlap trades verified (IS) to be an exact subset of every-signal trades with identical R"
+ }
+}

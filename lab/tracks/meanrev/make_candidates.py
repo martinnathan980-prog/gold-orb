@@ -38,6 +38,7 @@ for name, params in FINALISTS.items():
         "val_long": {k: val["val_long"][k] for k in ("n", "win_rate", "expectancy_R", "pf", "t_stat", "total_R")},
         "val_short": {k: val["val_short"][k] for k in ("n", "win_rate", "expectancy_R", "pf", "t_stat", "total_R")},
         "val_criteria": val["val_criteria"],
+        "overlap_allowed_diagnostic": json.load(open(os.path.join(R, "overlap_diag_A.json"))),
     })
 json.dump(out, open(os.path.join(R, "candidates.json"), "w"), indent=1)
 print(json.dumps(out["finalists"][0]["is_criteria"]), json.dumps(out["finalists"][0]["val_criteria"]))

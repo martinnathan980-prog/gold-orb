@@ -13,6 +13,11 @@ Families (param `family`):
         session reference open -> fade; stop beyond session extreme, optional retrace target,
         forced exit at a NY clock time the same day.
   gap   weekend-gap fade: Sunday reopen vs Friday close, target = Friday close.
+  soup  failed-breakout fade of the prior n-bar extreme (Connors-Raschke "Turtle Soup"):
+        'close_inside' (pierced and closed back inside -> fade next session) or 'stop_entry'.
+        Finalist A = soup D n=5: low < prior 5-day low but close back above it -> buy (mirror sell),
+        stop = today's extreme -/+ stop_buf x ATR14(D), exit at the 3rd daily close.
+  ret   multi-day return-extreme reversal (n-day log return z-score vs rolling daily vol).
 
 Causality rules used everywhere:
   * a bar from goldlab.bars() is only known at its t_close; every indicator is a rolling /

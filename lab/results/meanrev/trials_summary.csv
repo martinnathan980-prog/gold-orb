@@ -36,3 +36,4 @@ id,stage,note,n,tpy,win,pf,exp,t,yrs,stress_pf,long_pf,short_pf,gross,cost
 35,R,neighbour of finalist A: stop_buf=1.2,344,38.5,0.462,1.003,0.0008,0.02,5/9,0.953,1.142,0.871,0.045,0.044
 36,R,neighbour of finalist A: max_bars=2,384,43.0,0.5,1.0,-0.0001,-0.0,5/9,0.937,1.05,0.951,0.044,0.044
 37,R,neighbour of finalist A: max_bars=4,306,34.2,0.484,1.07,0.021,0.45,4/9,1.021,1.15,0.988,0.076,0.055
+38,diag,overlap-allowed diagnostic of finalist A (coordinator request),538,60.1,0.459,0.946,-0.0155,-0.5,3/9,0.897,1.047,0.84,,

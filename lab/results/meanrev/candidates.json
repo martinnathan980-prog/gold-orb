@@ -1,6 +1,6 @@
 {
  "track": "meanrev",
- "n_trials_logged": 37,
+ "n_trials_logged": 38,
  "verdict": "NOTHING SURVIVES: no meanrev configuration met the pre-registered IS criteria; the best-effort finalist also fails VAL.",
  "finalists": [
   {
@@ -198,6 +198,73 @@
     "pf>=1.10": false,
     "expectancy>0": false,
     "pass": false
+   },
+   "overlap_allowed_diagnostic": {
+    "is": {
+     "n": 538,
+     "trades_per_year": 60.1,
+     "win_rate": 0.459,
+     "avg_win_R": 0.59,
+     "avg_loss_R": -0.529,
+     "expectancy_R": -0.0155,
+     "pf": 0.946,
+     "t_stat": -0.5,
+     "years_pos": "3/9",
+     "max_dd_R": 40.1,
+     "worst_week_R": -4.8,
+     "long_n": 284,
+     "long_R": 3.7,
+     "short_n": 254,
+     "short_R": -12.0
+    },
+    "is_stress_pf": 0.897,
+    "is_side": {
+     "long_pf": 1.047,
+     "long_exp": 0.0131,
+     "short_pf": 0.84,
+     "short_exp": -0.0474
+    },
+    "is_by_year": {
+     "2013": -0.6,
+     "2014": -9.7,
+     "2015": -0.3,
+     "2016": -5.8,
+     "2017": -17.4,
+     "2018": 5.4,
+     "2019": 7.9,
+     "2020": 16.0,
+     "2021": -3.8
+    },
+    "is_max_concurrent": 4,
+    "val": {
+     "n": 236,
+     "trades_per_year": 59.2,
+     "win_rate": 0.449,
+     "avg_win_R": 0.566,
+     "avg_loss_R": -0.614,
+     "expectancy_R": -0.0839,
+     "pf": 0.752,
+     "t_stat": -1.7,
+     "years_pos": "1/4",
+     "max_dd_R": 28.5,
+     "worst_week_R": -2.6,
+     "long_n": 108,
+     "long_R": -5.3,
+     "short_n": 128,
+     "short_R": -14.5
+    },
+    "val_side": {
+     "long_pf": 0.838,
+     "long_exp": -0.0494,
+     "short_pf": 0.691,
+     "short_exp": -0.1131
+    },
+    "val_by_year": {
+     "2022": -9.7,
+     "2023": -4.0,
+     "2024": -7.5,
+     "2025": 1.4
+    }
    }
   }
  ]
