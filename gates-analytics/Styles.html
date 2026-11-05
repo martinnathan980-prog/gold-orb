@@ -2,7 +2,7 @@
 :root {
   /* La livraison de ce fichier, posée par la construction : la page la
      compare à celles des trois autres (voir ecartsDeLivraison). */
-  --suivi-fwd-edition: "20d7359";
+  --suivi-fwd-edition: "901c7f2";
   --papier:     #f4f2ed;
   --surface:    #ffffff;
   --creux:      #faf9f6;
@@ -1136,60 +1136,69 @@ header.entete .alerte-source {
 .rangee-valeurs { display: flex; }
 /* Débrief 27 (P-F19) : le nom d'une rangée de pilules (« Courbe : »). */
 .rangee-valeurs .mot-rangee { flex: none; align-self: center; padding: 0 6px 0 2px; font-size: 13px; color: var(--encre-2); white-space: nowrap; }
-/* Débrief 27 (P-F3, X-A3) — la rangée du journal ne défile plus sous un
-   fondu (« Reculs », « Disparus » étaient hors du cadre, leur anneau du
-   focus avec eux) : « Tout » à gauche, puis deux rangées titrées qui
-   passent à la ligne — « Passés à » (les valeurs) et « Mouvements » (les
-   reculs d'abord). Les deux titres tombent l'un sous l'autre (sous-grille),
-   leurs pastilles aussi. La recherche reste au bout de la première. */
-.ligne-filtres.ligne-journal { align-items: flex-start; }
+/* Débrief 33 — la ligne au-dessus du journal ne porte plus les filtres
+   (ce sont les noms des colonnes du tableau) : à gauche, une fois, depuis
+   quand le détail jour par jour existe ; la recherche à droite. */
+.ligne-filtres.ligne-journal { align-items: center; }
 .ligne-filtres.ligne-journal[hidden] { display: none; }
 .ligne-journal[hidden] + .feuille { border-top: 0; padding-top: 0; }
-.ligne-journal > .recherche-groupe { margin-top: 2px; }
-/* Sous 1 180 px, la recherche passe sur sa ligne, sous les pastilles (B10) :
-   les rangées gardent la largeur. */
-@media (max-width: 1179px) {
-  .ligne-filtres.ligne-journal { flex-wrap: wrap; }
-  .ligne-journal > #filtre-journal { flex-basis: 100%; }
+.ligne-journal .note-jours { margin: 0; font-size: 13px; color: var(--encre-2); min-width: 0; }
+.ligne-journal .note-jours[hidden] { display: none; }
+@media (max-width: 720px) { .ligne-journal .note-jours { flex-basis: 100%; } }
+/* Débrief 33 — les filtres du journal, en-tête de son tableau : chaque nom
+   de colonne est un bouton à bascule (sa pastille, son nom, son compte),
+   cerné d'un filet quand il est choisi, comme les pastilles d'avant. Même
+   retrait que les comptes des semaines (marge −4, bord 1, retrait 8) :
+   pastilles et nombres tombent pile sous le nom de leur colonne. */
+#filtre-journal .filtre-col {
+  display: inline-flex; align-items: flex-start; gap: 6px; max-width: 100%; box-sizing: border-box;
+  margin: 0 -6px 0 -4px; padding: 3px 8px; border: 1px solid transparent; border-radius: 12px; background: none;
+  font: inherit; font-size: 12px; font-weight: 500; line-height: 16px; color: var(--encre-2); text-align: left; cursor: pointer;
 }
-#filtre-journal {
-  display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 6px 12px;
-  flex: 1 1 auto; min-width: 0; margin: 0; padding: 0; overflow: visible;
-  -webkit-mask-image: none; mask-image: none;
+#filtre-journal .filtre-col:hover { background: var(--creux); color: var(--encre); }
+#filtre-journal .filtre-col[aria-pressed="true"] { border-color: var(--filet-fort); background: var(--surface); color: var(--encre); }
+/* La pastille au milieu de la première ligne du nom. */
+#filtre-journal .filtre-col .pastille { width: 7px; height: 7px; flex: none; margin-top: 4.5px; }
+#filtre-journal .filtre-col .texte-filtre { min-width: 0; }
+#filtre-journal .filtre-col .code-entete { font: 500 11px/16px "IBM Plex Mono", monospace; }
+#filtre-journal .filtre-col .fin-code { display: inline-block; }
+/* Le compte, en chiffres alignés, gris tertiaire ; choisi, gris secondaire
+   — sans changer de graisse : pressé, un filtre ne s'élargit pas, et
+   l'en-tête ne repasse pas à la ligne autrement sous le pointeur. */
+#filtre-journal .filtre-col .n { font-size: 12px; font-weight: 400; font-variant-numeric: tabular-nums; color: var(--encre-3); white-space: nowrap; }
+#filtre-journal .filtre-col:hover .n, #filtre-journal .filtre-col[aria-pressed="true"] .n { color: var(--encre-2); }
+/* Hors du tableau (téléphone, tableau serré), chaque filtre tient sur une
+   ligne : sa pastille, son nom, son compte. Dans le tableau, le compte
+   passe sous le nom (les comptes alignés en bas de l'en-tête). */
+.journal-entetes .filtre-col .texte-filtre { white-space: nowrap; }
+.journal-entetes .filtre-col .n { margin-left: 5px; }
+.journal-grille:not(.journal-serre) .journal-entetes .filtre-col .texte-filtre { white-space: normal; display: flex; flex-direction: column; }
+.journal-grille:not(.journal-serre) .journal-entetes .filtre-col .n { margin-left: 0; }
+@media (max-width: 720px) {
+  .journal-grille:not(.journal-serre) .journal-entetes .filtre-col .texte-filtre { white-space: nowrap; display: inline; }
+  .journal-grille:not(.journal-serre) .journal-entetes .filtre-col .n { margin-left: 5px; }
+  .journal-grille:not(.journal-serre) #filtre-journal .filtre-tout { margin-left: -4px; }
 }
-#filtre-journal[hidden] { display: none; }
-#filtre-journal .tout-journal {
-  grid-column: 1; grid-row: 1 / span var(--rangs-journal, 2); align-self: stretch;
-  display: flex; align-items: center; padding-right: 12px; border-right: 1px solid var(--filet);
-}
-#filtre-journal .rang-journal { grid-column: 2 / -1; display: grid; grid-template-columns: subgrid; align-items: start; min-width: 0; }
-@supports not (grid-template-columns: subgrid) {
-  #filtre-journal .rang-journal { grid-template-columns: 90px minmax(0, 1fr); column-gap: 12px; }
-}
-/* Le titre tombe sur la première ligne de pastilles, même si elles
-   passent à la ligne. */
-#filtre-journal .mot-rang { white-space: nowrap; line-height: 28px; }
-@media (pointer: coarse) { #filtre-journal .mot-rang { line-height: 36px; } }
-#filtre-journal .puces-rang { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
-/* Le nom et le compte gardent la place de leur version grasse : pressée,
-   une pastille ne s'élargit pas, et sa rangée ne repasse pas à la ligne
-   autrement sous le pointeur. */
-#filtre-journal .libelle, #filtre-journal .n { display: inline-grid; }
-#filtre-journal .libelle::after, #filtre-journal .n::after {
-  content: attr(data-texte); font-weight: 500; height: 0; overflow: hidden; visibility: hidden;
-}
-/* Les reculs, la pastille qu'on vient chercher : en rouge, compte compris
+/* Dans le tableau, le filtre déborde de sa colonne de ses marges (−4 à
+   gauche, −6 à droite, dans l'écart des colonnes) : borné à la colonne, il
+   se rétrécissait d'autant, et son nom touchait son filet une fois choisi. */
+.journal-grille:not(.journal-serre) #filtre-journal .filtre-col { max-width: none; }
+/* « Tout » au-dessus des semaines, son mot là où commence « S45 · … ». */
+#filtre-journal .filtre-tout { font-size: 13px; }
+.journal-grille:not(.journal-serre) #filtre-journal .filtre-tout { margin-left: 12px; }
+/* Les reculs, le filtre qu'on vient chercher : en rouge, compte compris
    (6,6:1 en clair, 5,8:1 en sombre). */
-#filtre-journal button.puce-recul, #filtre-journal button.puce-recul .n,
-#filtre-journal button.puce-recul:hover .n, #filtre-journal button.puce-recul[aria-pressed="true"] .n { color: var(--alerte); }
-#filtre-journal button.puce-recul[aria-pressed="true"] { border-color: var(--alerte); }
-@media (max-width: 560px) {
-  /* Au téléphone : « Tout », puis chaque titre au-dessus de ses pastilles. */
-  #filtre-journal { grid-template-columns: minmax(0, 1fr); row-gap: 8px; }
-  #filtre-journal .tout-journal { grid-row: auto; padding-right: 0; border-right: 0; }
-  #filtre-journal .rang-journal { grid-column: 1; grid-template-columns: minmax(0, 1fr); row-gap: 2px; }
+#filtre-journal .filtre-col.puce-recul, #filtre-journal .filtre-col.puce-recul .n { color: var(--alerte); }
+#filtre-journal .filtre-col.puce-recul[aria-pressed="true"] { border-color: var(--alerte); }
+/* Au doigt : 36 px, plus 4 px de zone invisible en haut et en bas (44) ;
+   8 px entre deux rangées de filtres, pour que deux zones se touchent sans
+   se chevaucher. */
+@media (pointer: coarse) {
+  #filtre-journal .filtre-col { position: relative; min-height: 36px; align-items: center; }
+  #filtre-journal .filtre-col .pastille { margin-top: 0; }
+  #filtre-journal .filtre-col::after { content: ""; position: absolute; inset: -4px 0; }
+  .journal-entetes { row-gap: 8px; }
 }
-@media (pointer: coarse) { #filtre-journal .puces-rang { row-gap: 8px; } }
 .journal-semaine {
   border-bottom: 1px solid var(--filet);
 }
@@ -1252,7 +1261,8 @@ header.entete .alerte-source {
    bouton se colle alors dans toute la semaine) ; les comptes défilent. */
 @media (max-width: 720px) {
   .journal-semaine.ouverte > .journal-tete { display: contents; }
-  .journal-semaine.ouverte .journal-plier {
+  /* Débrief 33 : le bouton de la semaine seulement — pas ceux de ses jours. */
+  .journal-semaine.ouverte > .journal-tete > .journal-plier {
     position: sticky; top: var(--bas-sommaire, 40px); z-index: 1; width: 100%; box-sizing: border-box;
     padding: 11px 2px; border-radius: 0; background: var(--surface); box-shadow: 0 1px 0 var(--filet);
     /* Débrief 29 (M10) : 2 px au-dessus, comme quand la semaine est
@@ -1260,7 +1270,7 @@ header.entete .alerte-source {
        au ras du sommaire (la marge ne compte pas). */
     margin-top: 2px;
   }
-  .journal-semaine.ouverte .journal-tete > .resume { padding: 0 2px 10px 24px; }
+  .journal-semaine.ouverte > .journal-tete > .resume { padding: 0 2px 10px 24px; }
 }
 .journal-tete .resume {
   color: var(--encre-2); font-size: 13px; flex: 1; min-width: 0;
@@ -1305,37 +1315,45 @@ header.entete .alerte-source {
 .journal-grille .journal-tete .resume { display: contents; }
 .journal-grille .journal-liste { grid-column: 1 / -1; }
 .journal-grille .journal-tete .mini-jauge { margin-left: 0; justify-self: end; width: 100%; max-width: 96px; }
-/* L'en-tête du tableau : chaque colonne nommée une fois, collée en haut du
-   cadre qui défile ; dessous, les cases ne portent que pastille et nombre. */
-.journal-entetes { display: none; }
-/* Débrief 27 (B9) : deux étages — « Passés à » et « Mouvements » au-dessus
-   de leurs colonnes, puis la pastille et le nom seul, le code de GATES en
-   Plex Mono 11 d'un seul tenant (au pire coupé une fois, après son dernier
-   « _ »). Collé sous le sommaire (le journal n'a plus son cadre à lui). */
+/* L'en-tête du tableau : chaque colonne nommée une fois, collée en haut ;
+   dessous, les cases ne portent que pastille et nombre. Débrief 33 : ce
+   nom est aussi le filtre de la colonne (voir #filtre-journal .filtre-col).
+   Hors du tableau — téléphone, tableau trop serré, navigateur sans
+   sous-grille —, la même rangée passe à la ligne au-dessus des semaines,
+   « Passés à » et « Mouvements » chacun au-dessus de ses filtres. */
+.journal-entetes {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px;
+  padding: 2px 6px 12px; margin-bottom: 4px; border-bottom: 1px solid var(--filet-fort);
+}
+.journal-entetes > .entete-groupe {
+  flex: 1 1 100%; margin: 4px 0 -2px; font-size: 11px; font-weight: 500; line-height: 1.4; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--encre-3);
+}
+.journal-entetes > .entete-semaine, .journal-entetes > .entete-col { display: flex; min-width: 0; }
+.journal-entetes > .entete-jauge { display: none; }
+/* Débrief 27 (B9) : dans le tableau, deux étages légers — « Passés à » et
+   « Mouvements » au-dessus de leurs colonnes, une seule fois —, puis les
+   filtres, le code de GATES en Plex Mono 11 d'un seul tenant (au pire
+   coupé une fois, après son dernier « _ »). Collé sous le sommaire. */
 .journal-grille .journal-entetes {
   grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; grid-template-rows: auto auto; align-items: end;
   position: sticky; top: var(--bas-sommaire, 0px); z-index: 2; background: var(--surface);
-  padding: 8px 2px 7px; border-bottom: 1px solid var(--filet-fort);
+  padding: 8px 2px 6px; margin-bottom: 0; gap: 0; column-gap: normal; border-bottom: 1px solid var(--filet-fort);
   font-size: 12px; font-weight: 500; color: var(--encre-2); line-height: 1.3;
 }
 .journal-grille .journal-entetes > span { grid-row: 2; }
 .journal-grille .journal-entetes > .entete-groupe {
   grid-row: 1; align-self: end; margin: 0 0 6px; padding: 0 0 3px 4px; border-bottom: 1px solid var(--filet);
-  font-size: 11px; font-weight: 500; line-height: 1.4; letter-spacing: .08em; text-transform: uppercase; color: var(--encre-3);
 }
-.journal-grille .entete-col { display: flex; align-items: center; gap: 6px; }
-.journal-grille .entete-col .pastille { width: 7px; height: 7px; flex: none; }
-.journal-grille .entete-col .code-entete { font: 500 11px/1.3 "IBM Plex Mono", monospace; }
-.journal-grille .entete-semaine { padding-left: 21px; }
-.journal-grille .entete-jauge { justify-self: end; width: 100%; max-width: 96px; }
+.journal-grille .entete-col { align-items: center; }
+.journal-grille .entete-jauge { display: block; justify-self: end; width: 100%; max-width: 96px; padding-bottom: 4px; color: var(--encre-3); }
 .journal-grille .mot-case { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .journal-grille .compte-passage, .journal-grille .doux-compte { justify-self: start; }
 /* Le contenu d'une case bouton commence 5 px après le bord de sa colonne
-   (marge −4, bord 1, retrait 8) : l'en-tête et les cases sans bouton
-   prennent le même retrait, pour que pastilles et nombres tombent pile sous
-   le nom de leur colonne. */
-.journal-grille .entete-col { padding-left: 5px; }
-.journal-grille .journal-tete .resume .doux-compte { padding-left: 5px; }
+   (marge −4, bord 1, retrait 8) : les filtres de l'en-tête ont la même
+   boîte, et les cases sans bouton prennent le même retrait, pour que
+   pastilles et nombres tombent pile sous le nom de leur colonne. */
+.journal-grille .journal-tete .resume .doux-compte, .journal-grille .journal-tete-jour .resume .doux-compte { padding-left: 5px; }
 /* Débrief 27 (B10, X-A14) : un tableau qui ne tient pas dans la carte —
    1 024 px avec les sept valeurs de GATES et les quatre mouvements, ou un
    texte espacé par la lectrice — prend la forme des petits écrans (chaque
@@ -1346,7 +1364,11 @@ header.entete .alerte-source {
 #zone-journal.journal-serre .journal-tete { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 12px; }
 #zone-journal.journal-serre .journal-tete .mini-jauge { align-self: center; }
 #zone-journal.journal-serre .journal-tete .resume { display: flex; flex-wrap: wrap; }
-#zone-journal.journal-serre .journal-tete .case-vide, #zone-journal.journal-serre .journal-entetes { display: none; }
+#zone-journal.journal-serre .journal-tete .case-vide, #zone-journal.journal-serre .journal-tete-jour .case-vide { display: none; }
+/* Débrief 33 : l'en-tête, qui porte les filtres, reste — en rangée qui passe à la ligne. */
+#zone-journal.journal-serre .journal-entetes { display: flex; position: static; padding: 2px 6px 12px; margin-bottom: 4px; gap: 6px 14px; }
+#zone-journal.journal-serre .journal-entetes > .entete-groupe { margin: 4px 0 -2px; padding: 0; border-bottom: 0; }
+#zone-journal.journal-serre .journal-entetes > .entete-jauge { display: none; }
 #zone-journal.journal-serre .mot-case { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
 #zone-journal.journal-serre .journal-tete .mini-jauge { margin-left: auto; width: 96px; }
 /* En ligne, le compte garde son retrait à gauche (sa pastille sous celle
@@ -1358,8 +1380,13 @@ header.entete .alerte-source {
   .journal-grille .journal-semaine { display: block; }
   .journal-grille .journal-tete { display: flex; flex-wrap: wrap; column-gap: 12px; }
   .journal-grille .journal-tete .resume { display: flex; flex-wrap: wrap; }
-  .journal-tete .case-vide { display: none; }
-  .journal-grille .journal-entetes { display: none; }
+  .journal-tete .case-vide, .journal-tete-jour .case-vide { display: none; }
+  /* Débrief 33 : au téléphone, les filtres restent, en rangée qui passe à
+     la ligne au-dessus des semaines — la seule fois où leurs noms
+     s'écrivent : les comptes des semaines portent leurs mots. */
+  .journal-grille .journal-entetes { display: flex; position: static; padding: 2px 6px 12px; margin-bottom: 4px; gap: 6px 14px; }
+  .journal-grille .journal-entetes > .entete-groupe { margin: 4px 0 -2px; padding: 0; border-bottom: 0; }
+  .journal-grille .journal-entetes > .entete-jauge { display: none; }
   .journal-grille .mot-case { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
 }
 .journal-tete .chevron { color: var(--encre-3); transition: transform .12s; flex: none; }
@@ -1367,6 +1394,54 @@ header.entete .alerte-source {
 @media (prefers-reduced-motion: reduce) { .journal-tete .chevron { transition: none; } }
 .journal-liste { margin: 0 0 12px; padding: 0 0 0 78px; list-style: none; }
 @media (max-width: 720px) { .journal-liste { padding-left: 0; } }
+/* Débrief 33 — les jours d'une semaine ouverte : sous la ligne de la
+   semaine, une ligne par jour (le plus récent d'abord), sur les mêmes
+   colonnes : « jeu. 5 nov. », un peu en retrait et plus discret que la
+   semaine, ses comptes sous ceux de la semaine. Chaque jour s'ouvre sur
+   ses plans. */
+.journal-liste.journal-liste-semaine { padding: 0 0 8px; }
+.journal-liste-semaine > .journal-copier { padding: 6px 0 2px 78px; }
+@media (max-width: 720px) { .journal-liste-semaine > .journal-copier { padding-left: 0; } }
+.journal-note-jours { margin: 4px 0 6px; padding: 0 2px 0 46px; font-size: 12px; line-height: 1.5; color: var(--encre-2); max-width: 70ch; }
+@media (max-width: 720px) { .journal-note-jours { padding-left: 24px; } }
+.journal-jour { border-top: 1px solid var(--filet); }
+.journal-liste-semaine > .journal-jour:first-of-type { border-top-style: dashed; }
+.journal-tete-jour { display: flex; align-items: center; gap: 12px; width: 100%; padding: 4px 2px; cursor: pointer; }
+@media (hover: hover) { .journal-tete-jour:hover { background: var(--creux); } }
+.journal-jour-calme > .journal-tete-jour { cursor: default; }
+@media (hover: hover) { .journal-jour-calme > .journal-tete-jour:hover { background: none; } }
+.journal-plier-jour { padding-left: 24px; }
+.journal-tete-jour .jour-nom { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--encre-2); white-space: nowrap; }
+.journal-plier-jour[aria-expanded="true"] .chevron { transform: rotate(90deg); }
+.journal-tete-jour .chevron { color: var(--encre-3); transition: transform .12s; flex: none; }
+@media (prefers-reduced-motion: reduce) { .journal-tete-jour .chevron { transition: none; } }
+.journal-tete-jour .resume { color: var(--encre-2); font-size: 13px; flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.journal-tete-jour .resume .doux-compte { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.journal-tete-jour .resume .doux-compte .pastille { width: 7px; height: 7px; }
+.journal-tete-jour .resume .doux-compte b { font-variant-numeric: tabular-nums; font-weight: 500; color: var(--encre); }
+.journal-tete-jour .case-vide { color: var(--encre-3); padding-left: 5px; }
+.journal-jour-calme .calme-texte { color: var(--encre-2); font-size: 13px; }
+.journal-liste.journal-liste-jour { margin: 0 0 8px; padding-left: 100px; }
+@media (max-width: 720px) { .journal-liste.journal-liste-jour { padding-left: 24px; } }
+@media (pointer: coarse) { .journal-plier-jour { min-height: 44px; align-items: center; } .journal-tete-jour { padding-block: 0; } }
+.journal-grille .journal-liste-semaine { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
+.journal-grille .journal-liste-semaine > * { grid-column: 1 / -1; }
+.journal-grille .journal-jour { display: grid; grid-template-columns: subgrid; }
+.journal-grille .journal-tete-jour { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; column-gap: normal; align-items: center; }
+.journal-grille .journal-tete-jour .resume { display: contents; }
+.journal-grille .journal-jour .journal-liste-jour { grid-column: 1 / -1; }
+.journal-grille .journal-jour-calme .calme-texte { grid-column: 2 / -1; }
+/* Hors du tableau (tableau serré, téléphone) : chaque jour en ligne, ses
+   comptes avec leurs mots — au téléphone, sous son nom, au même retrait. */
+#zone-journal.journal-serre .journal-jour, #zone-journal.journal-serre .journal-liste-semaine { display: block; }
+#zone-journal.journal-serre .journal-tete-jour { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 12px; }
+#zone-journal.journal-serre .journal-tete-jour .resume { display: flex; flex-wrap: wrap; }
+@media (max-width: 720px) {
+  .journal-grille .journal-jour, .journal-grille .journal-liste-semaine { display: block; }
+  .journal-grille .journal-tete-jour { display: flex; flex-wrap: wrap; column-gap: 12px; }
+  .journal-grille .journal-tete-jour .resume, .journal-tete-jour .resume { display: flex; flex-wrap: wrap; flex: 1 1 100%; padding: 0 2px 8px 46px; }
+  .journal-jour-calme .calme-texte { flex: 1 1 100%; padding: 0 2px 6px 46px; }
+}
 /* Deux colonnes alignées : la référence, puis où elle va. Le regard descend
    une colonne au lieu de chercher la flèche au milieu du texte. */
 .journal-ligne {
@@ -3920,7 +3995,9 @@ kbd {
      tient pas toujours dans la largeur d'une page. */
   #zone-journal.journal-grille, .journal-grille .journal-semaine { display: block; }
   .journal-grille .journal-tete, .journal-grille .journal-tete .resume { display: flex; flex-wrap: wrap; gap: 2px 12px; }
-  .journal-grille .journal-entetes, .journal-tete .case-vide, .journal-tete .mini-jauge { display: none; }
+  .journal-grille .journal-entetes, .journal-entetes, .journal-tete .case-vide, .journal-tete-jour .case-vide, .journal-tete .mini-jauge { display: none; }
+  .journal-grille .journal-jour, .journal-grille .journal-liste-semaine { display: block; }
+  .journal-grille .journal-tete-jour, .journal-grille .journal-tete-jour .resume { display: flex; flex-wrap: wrap; gap: 2px 12px; }
   .journal-grille .mot-case { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
   .journal-liste { padding-left: 0; }
   .pied { margin-top: 16px; padding-bottom: 0; grid-template-columns: minmax(0, 1fr); }

@@ -71,10 +71,13 @@ const racine = path.join(__dirname, '..');
    ARGUMENTS
    ===================================================================== */
 function lireArguments(argv) {
-  const opts = { sortie: null, date: process.env.SIMULATEUR_DATE || '' };
+  /* Débrief 33 : le simulateur qu'on ouvre a le détail par jour des deux
+     dernières semaines (le robot passe chaque jour) ; --sans-jours le retire. */
+  const opts = { sortie: null, date: process.env.SIMULATEUR_DATE || '', jours: true };
   argv.forEach(function (a) {
     let m;
     if ((m = /^--date=(.*)$/.exec(a))) opts.date = m[1];
+    else if (a === '--sans-jours') opts.jours = false;
     else if (a === '-h' || a === '--help') opts.aide = true;
     else if (/^--/.test(a)) throw new Error('option inconnue : ' + a);
     else if (!opts.sortie) opts.sortie = a;
@@ -341,6 +344,53 @@ function valeursDeLaSemaine(gabarit, plans, s) {
   return valeurs;
 }
 
+/* Débrief 33 — un jour de la semaine, pour le robot qui importe chaque
+   jour : l'onglet porte la semaine sA, sauf les plans dont le changement
+   vers sB est déjà arrivé (vers(p) vrai) — un plan nouveau n'y est qu'une
+   fois arrivé, un plan disparu y reste jusqu'au jour de son départ.
+   `retouche(p, l)` peut encore changer la ligne d'un plan ce jour-là. */
+function valeursDuJour(gabarit, plans, etats, sA, sB, vers, retouche) {
+  const valeurs = gabarit.entete.map(function (l) { return l.slice(); });
+  plans.forEach(function (p) {
+    const ici = function (s) { return s >= p.debut && s < (s === 6 ? (p.fin === NB_SEMAINES ? 7 : p.fin) : p.fin); };
+    const s = vers(p) ? sB : sA;
+    if (!ici(s)) return;
+    const l = gabarit.lignes[p.rang].slice();
+    l[COL.ref] = referenceDe(p, s);
+    l[COL.libelle] = p.libelle;
+    l[COL.domaine] = p.domaine;
+    l[COL.creation] = p.creation;
+    l[COL.installation] = p.installation;
+    l[COL.cc] = p.cc;
+    l[COL.ata] = p.ata;
+    l[COL.sequence] = p.sequence;
+    l[COL.ecp] = p.ecp;
+    const def = s === 6 ? etats.def[p.rang] : p.def[s];
+    l[COL.vde] = EN_DEFINITION[def] || p.vde ? 'true' : 'false';
+    l[COL.def] = def;
+    l[COL.concept] = s === 6 ? etats.concept[p.rang] : p.concept[s];
+    if (retouche) retouche(p, l);
+    valeurs.push(l);
+  });
+  return valeurs;
+}
+/* Le jour (0 = lundi … 4 = vendredi) où le changement d'un plan arrive, à
+   graine fixe : les changements de la semaine s'étalent sur ses jours. */
+function jourDuChangement(fiche, p, s) { return (p.rang * 7 + s * 3 + fiche.graine) % 5; }
+/* La semaine en cours (débrief 33) : une septième semaine, qui continue la
+   sixième — tirée à part, pour que les six premières restent identiques. */
+function semaineEnCours(fiche, plans) {
+  const g = generateur(fiche.graine + 33);
+  const etats = { def: {}, concept: {} };
+  plans.forEach(function (p) {
+    if (p.fin !== NB_SEMAINES) return;
+    etats.def[p.rang] = g.suite(p.def[NB_SEMAINES - 1], SUITE_DEF);
+    const avant = p.concept[NB_SEMAINES - 1];
+    etats.concept[p.rang] = avant === 'À traiter' ? (g.alea() < 0.03 ? 'Traité' : avant) : avant;
+  });
+  return etats;
+}
+
 /* =====================================================================
    3. LA BASE SEE D'UN CONTRAT
    Un plan présent dans SEE est un plan créé : presque tous les VALIDATED y
@@ -578,11 +628,48 @@ function construireSimulateur(options) {
      rien d'importé les deux dernières semaines, l'archivage du vendredi
      reprend l'export de la troisième. Sans lui, chaque vendredi a le sien. */
   const exportDu = function (s) { return Array.isArray(opts.exports) && opts.exports[s] !== undefined ? opts.exports[s] : s; };
+  /* Débrief 33 : opts.jours — le robot passe chaque jour ouvré à 14 h 05 la
+     dernière semaine et la semaine en cours : la fenêtre d'import archive
+     (importArchiverReleve), et le classeur garde le détail de chaque jour.
+     Les changements de la semaine arrivent chacun un jour ; un plan
+     PWD_IN_PROGRESS passe PWD_TO_CONTROL le mardi et revient le jeudi (le
+     total de la semaine ne le compte pas, ses jours si). */
+  const robot = function (c, jourMs, valeurs) {
+    temps.regler(new Date(jourMs + 14 * 3600000 + 5 * 60000));
+    c.feuille.valeurs = valeurs;
+    contexte.importArchiverReleve(contexte.ouvrirJetonImport_(), c.fiche.id);
+  };
+  const minuit = function (d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); };
+  const allerRetour = {};
   vendredis.forEach(function (vendredi, s) {
+    if (opts.jours && s === NB_SEMAINES - 1 && exportDu(s) === s && exportDu(s - 1) === s - 1) {
+      contrats.forEach(function (c) {
+        const p = c.plans.filter(function (x) { return x.fin === NB_SEMAINES && x.debut === 0 && x.def[s - 1] === 'PWD_IN_PROGRESS' && x.def[s] === 'PWD_IN_PROGRESS' && x.reemis === -1; })[0];
+        if (p) allerRetour[c.fiche.id] = p.rang;
+        for (let d = 0; d < 5; d++) {
+          const jourMs = minuit(new Date(vendredi.getFullYear(), vendredi.getMonth(), vendredi.getDate() - 4 + d));
+          robot(c, jourMs, valeursDuJour(c.gabarit, c.plans, null, s - 1, s, function (x) { return jourDuChangement(c.fiche, x, s) <= d; },
+            function (x, l) { if (x.rang === allerRetour[c.fiche.id] && d >= 1 && d < 3) l[COL.def] = 'PWD_TO_CONTROL'; }));
+        }
+      });
+    }
     contrats.forEach(function (c) { c.feuille.valeurs = valeursDeLaSemaine(c.gabarit, c.plans, exportDu(s)); });
     temps.regler(new Date(vendredi.getTime() + 5 * 60000));
     contexte.enregistrerInstantaneHebdo({ triggerUid: declencheur.getUniqueId() });
   });
+  /* La semaine en cours : chaque jour ouvré depuis lundi, avant le jour de
+     la lecture (le robot passe à 14 h 05, la page est lue à 13 h 15). */
+  if (opts.jours && opts.exportDuJour === undefined && exportDu(NB_SEMAINES - 1) === NB_SEMAINES - 1) {
+    const dernier = vendredis[NB_SEMAINES - 1];
+    contrats.forEach(function (c) {
+      const etats = semaineEnCours(c.fiche, c.plans);
+      for (let d = 0; d < 5; d++) {
+        const jourMs = minuit(new Date(dernier.getFullYear(), dernier.getMonth(), dernier.getDate() + 3 + d));
+        if (jourMs >= minuit(jour)) break;
+        robot(c, jourMs, valeursDuJour(c.gabarit, c.plans, etats, NB_SEMAINES - 1, 6, function (x) { return jourDuChangement(c.fiche, x, 6) <= d; }));
+      }
+    });
+  }
 
   /* Débrief 31 : opts.exportDuJour, l'export importé après le dernier
      vendredi sans être archivé (le rang d'une des six semaines). */

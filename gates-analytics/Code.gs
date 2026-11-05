@@ -47,7 +47,7 @@
  * Diagnostic comparent les quatre : un fichier resté à une livraison
  * précédente, ou coupé au collage, est nommé — au lieu d'une page blanche.
  */
-const EDITION = '20d7359';
+const EDITION = '901c7f2';
 
 // =====================================================================
 //  CONFIGURATION
@@ -69,6 +69,16 @@ const CONFIG = {
    * garde tel quel.
    */
   FEUILLE_HISTORIQUE: 'Historique_FWD',
+
+  /**
+   * Débrief 33 : préfixe des onglets du détail par jour — celui d'un
+   * contrat s'appelle « Jours_FWD_<nom du contrat> », masqué, à côté de son
+   * historique. Chaque archivage de la semaine en cours y garde ce qui a
+   * changé CE JOUR-LÀ (le relevé de la semaine, lui, reste tel quel). Tout
+   * onglet dont le nom commence par ce préfixe est un onglet de service,
+   * jamais un contrat.
+   */
+  FEUILLE_JOURS: 'Jours_FWD',
 
   /**
    * Onglets de service, jamais pris pour des contrats — en plus de ceux du
@@ -725,8 +735,16 @@ function estOngletInterne(nom) {
     if (compact === base || compact.indexOf(base + ' ') === 0 ||
         compact.slice(-(base.length + 1)) === ' ' + base) return true;
   }
+  /* Débrief 33 : l'onglet du détail par jour d'un contrat non plus. */
+  if (estOngletJours(nom)) return true;
   const prefixe = normaliser(CONFIG.FEUILLE_HISTORIQUE);
   return !!prefixe && n.indexOf(prefixe) === 0;
+}
+
+/** Débrief 33 : un onglet du détail par jour (le préfixe de CONFIG.FEUILLE_JOURS). */
+function estOngletJours(nom) {
+  const prefixe = CONFIG.FEUILLE_JOURS ? normaliser(CONFIG.FEUILLE_JOURS) : '';
+  return !!prefixe && normaliser(nom).indexOf(prefixe) === 0;
 }
 
 /**
@@ -1528,6 +1546,13 @@ function getDonneesPourClientLues(contrat) {
       avisHistorique = 'L\'historique de « ' + modele.feuille + ' » n\'a pas pu être lu (' +
         (err && err.message ? err.message : err) + ') : la page montre l\'extract du jour, sans courbe ni journal. Recharger la page.';
     }
+    /* Débrief 33 : le détail par jour — seulement ce qui a changé chaque
+       jour, jamais une carte entière. Illisible, il ne prive de rien
+       d'autre : le journal montre alors ses semaines, comme avant. */
+    let jours = [];
+    if (releves.length) {
+      try { jours = mesurer_('historique', function () { return getJours(classeur, modele.feuille); }); } catch (err) { jours = []; }
+    }
     const paquet = {
       ok: true,
       edition: EDITION,
@@ -1566,6 +1591,8 @@ function getDonneesPourClientLues(contrat) {
     };
     /* La seconde base, seulement si la configuration en nomme une : la page
        masque la section quand la clé est absente. */
+    /* Seulement s'il y en a : un paquet sans détail par jour reste celui d'avant. */
+    if (jours.length) paquet.jours = jours;
     const rapprochement = mesurer_('see', function () { return getRapprochement(classeur, modele.feuille); });
     if (rapprochement) paquet.rapprochement = rapprochement;
     return paquet;
@@ -2524,7 +2551,37 @@ function compacterPaquet(paquet) {
       })
     };
     delete sortie.releves;
+    /* Débrief 33 : le détail par jour, avec les mêmes références et les
+       mêmes valeurs que les relevés — trois nombres par plan changé ce
+       jour-là : [référence, avant, après], -1 pour « absent » (nouveau,
+       disparu). Jamais une carte entière : la page refait chaque jour en
+       partant du relevé de la semaine d'avant. */
+    if (Array.isArray(paquet.jours) && paquet.jours.length) {
+      const paires = function (carte) {
+        if (!carte || typeof carte !== 'object') return null;
+        const plat = [];
+        const rangDe = function (v) {
+          if (v === null || v === undefined) return -1;
+          const cleV = JSON.stringify(v);
+          if (rangVal[cleV] === undefined) { rangVal[cleV] = vals.length; vals.push(v); }
+          return rangVal[cleV];
+        };
+        Object.keys(carte).forEach(function (ref) {
+          const p = carte[ref];
+          if (!Array.isArray(p)) return;
+          if (rangRef[ref] === undefined) { rangRef[ref] = refs.length; refs.push(ref); }
+          plat.push(rangRef[ref], rangDe(p[0]), rangDe(p[1]));
+        });
+        return plat;
+      };
+      sortie.relevesTab.jours = paquet.jours.map(function (j) {
+        const o = { s: j.semaine, j: j.jour, p: paires(j.plans) || [] };
+        if (j.plansConcept) o.c = paires(j.plansConcept);
+        return o;
+      });
+    }
   }
+  delete sortie.jours;
 
   if (paquet.rapprochement && Array.isArray(paquet.rapprochement.lignes)) {
     const rap = {};
@@ -3987,6 +4044,16 @@ function diagnostiquerContrat(classeur, contrat, dire) {
       if (cellulesCarte > 1) {
         dire('  carte plan par plan sur ' + cellulesCarte + ' cellules par relevé, au plus');
       }
+      /* Débrief 33 : le détail par jour, en une ligne. */
+      try {
+        const jours = getJours(classeur, contrat.id);
+        const fJ = getFeuilleJours_(classeur, contrat.id, feuilleHisto, false);
+        dire(jours.length
+          ? '✓ Détail par jour : ' + jours.length + ' jour' + (jours.length > 1 ? 's' : '') + ' gardé' + (jours.length > 1 ? 's' : '') +
+            ', du ' + jours[0].jour + ' au ' + jours[jours.length - 1].jour + ' (onglet « ' + (fJ ? fJ.getName() : nomFeuilleJours(contrat.id)) + ' »)'
+          : '• Détail par jour : aucun jour gardé pour l’instant — il commence au prochain import de la semaine (onglet « ' +
+            nomFeuilleJours(contrat.id) + ' », créé à ce moment-là).');
+      } catch (err) { /* le détail par jour ne fait pas tomber le diagnostic */ }
       direJournal(dire, histo, modele, sansPlan);
     }
     return true;
@@ -4384,6 +4451,295 @@ function analyserJson(valeur) {
  */
 function recoller(cellules) {
   return cellules.map(function (v) { return v === null || v === undefined ? '' : String(v); }).join('');
+}
+
+// =====================================================================
+//  Débrief 33 — LE DÉTAIL PAR JOUR
+//  Nathan : « maintenant qu'on le lance tous les jours, est-ce qu'on ne
+//  mettrait pas aussi une granulométrie par jour ? » Le robot importe et
+//  archive chaque jour : le relevé de la semaine est mis à jour sur place
+//  (rien ne change pour lui), et chaque archivage de la semaine en cours
+//  garde, en plus, ce qui a changé CE JOUR-LÀ — seulement les plans qui ont
+//  bougé : { référence: [avant, après] }, avec les valeurs telles que le
+//  relevé les garde (une chaîne, ou [définition, concept]) ; avant = null
+//  pour un plan nouveau, après = null pour un plan disparu.
+//  - Le point de départ d'un jour est l'état du matin : le relevé de la
+//    semaine tel qu'il était avant le premier archivage du jour (au premier
+//    jour de la semaine, le dernier relevé de la semaine d'avant). Réarchiver
+//    le même jour remplace le jour, recalculé depuis le matin — il ne
+//    s'empile pas.
+//  - Un jour sans changement s'écrit quand même, vide : la page peut dire
+//    « aucun changement » pour un jour où le robot est passé.
+//  - Rangé dans l'onglet masqué « Jours_FWD_<contrat> », une ligne par
+//    jour : Semaine, Jour, Écrit le, Changements, Onglet historique (le
+//    numéro de l'onglet d'historique du contrat), puis le détail, découpé
+//    comme les cartes des relevés (decouper / recoller). Le numéro relie
+//    les jours à leur historique : renommé dans Sheets (un contrat renommé,
+//    son historique avec lui), l'historique garde son numéro, et ses jours
+//    le suivent.
+//  - Le passé ne se reconstruit pas : le détail commence avec cette
+//    livraison.
+// =====================================================================
+const ENTETES_JOURS = ['Semaine', 'Jour', 'Écrit le', 'Changements', 'Onglet historique', 'Plans'];
+
+/** Le nom de l'onglet du détail par jour d'un contrat. */
+function nomFeuilleJours(contrat) {
+  return CONFIG.FEUILLE_JOURS + '_' + String(contrat);
+}
+
+/** Le numéro d'un onglet (getSheetId), ou '' si Sheets ne le donne pas. */
+function numeroOnglet_(f) {
+  try {
+    const n = f && f.getSheetId ? f.getSheetId() : '';
+    return n === null || n === undefined ? '' : n;
+  } catch (err) { return ''; }
+}
+
+/**
+ * L'onglet du détail par jour d'un contrat : « Jours_FWD_<contrat> » ; à
+ * défaut, celui dont les lignes portent le numéro de son historique (le
+ * contrat a été renommé, son historique avec lui) — renommé à son tour quand
+ * on y écrit (`creer`). `creer` : l'ouvrir s'il n'existe pas. null sinon.
+ */
+function getFeuilleJours_(classeur, id, histo, creer) {
+  const nom = nomFeuilleJours(id);
+  let feuille = ongletNomme_(classeur, nom);
+  const numero = numeroOnglet_(histo);
+  if (!feuille && numero !== '') {
+    const candidats = ongletsDuClasseur_(classeur).filter(function (f) {
+      return estOngletJours(nomOnglet_(f)) && derniereLigne_(f) >= 2;
+    });
+    for (let i = 0; i < candidats.length && !feuille; i++) {
+      let lu = '';
+      try { lu = candidats[i].getRange(2, 5, 1, 1).getValues()[0][0]; } catch (err) { lu = ''; }
+      if (lu !== '' && lu !== null && lu !== undefined && String(lu) === String(numero)) feuille = candidats[i];
+    }
+    if (feuille && creer && !classeur.getSheetByName(nom)) {
+      try { feuille.setName(nom); } catch (err) { /* il garde son nom : son numéro suffit */ }
+    }
+  }
+  if (!feuille && creer) {
+    feuille = classeur.insertSheet(nom);
+    feuille.appendRow(ENTETES_JOURS);
+    feuille.getRange(1, 1, 1, ENTETES_JOURS.length).setFontWeight('bold');
+    feuille.setFrozenRows(1);
+    feuille.hideSheet();
+  }
+  return feuille;
+}
+
+/** Le fuseau du classeur (à défaut, celui du projet ; à défaut, Paris). */
+function fuseauDuClasseur_(classeur) {
+  let fuseau = '';
+  try { fuseau = classeur && classeur.getSpreadsheetTimeZone ? classeur.getSpreadsheetTimeZone() : ''; } catch (err) { fuseau = ''; }
+  if (!fuseau) { try { fuseau = Session.getScriptTimeZone(); } catch (err) { fuseau = ''; } }
+  return fuseau || 'Europe/Paris';
+}
+
+/** « 2026-11-05 » : un jour écrit en texte, ou une date que Sheets aurait convertie. */
+function lireJour_(v, fuseau) {
+  if (v && typeof v === 'object' && typeof v.getTime === 'function') {
+    try { return Utilities.formatDate(v, fuseau || 'Europe/Paris', 'yyyy-MM-dd'); } catch (err) { return ''; }
+  }
+  const m = /^\s*'?(\d{4})-(\d{2})-(\d{2})\s*$/.exec(String(v === null || v === undefined ? '' : v));
+  return m ? m[1] + '-' + m[2] + '-' + m[3] : '';
+}
+
+/**
+ * Le jour d'un archivage, « AAAA-MM-JJ », dans le fuseau du classeur. Un jour
+ * appartient à sa semaine : la semaine se compte à l'horloge du projet
+ * (numeroSemaineISO) ; si le fuseau du classeur, autre, la faisait tomber
+ * dans la voisine (un dimanche vers minuit), on garde le jour du projet.
+ */
+function jourDArchivage_(classeur, semaine) {
+  const maintenant = new Date();
+  const deux = function (n) { return (n < 10 ? '0' : '') + n; };
+  const local = maintenant.getFullYear() + '-' + deux(maintenant.getMonth() + 1) + '-' + deux(maintenant.getDate());
+  let jour = '';
+  try { jour = Utilities.formatDate(maintenant, fuseauDuClasseur_(classeur), 'yyyy-MM-dd'); } catch (err) { jour = ''; }
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(jour);
+  if (!m || numeroSemaineISO(new Date(+m[1], +m[2] - 1, +m[3])) !== semaine) jour = local;
+  return jour;
+}
+
+/**
+ * Les lignes d'un onglet du détail par jour, dans l'ordre de l'onglet :
+ * [{ ligne (1-based), semaine, jour, delta (objet, ou null si illisible) }].
+ * Une ligne d'un autre historique (son numéro diffère) est laissée de côté.
+ */
+function lignesDesJours_(feuille, numero, fuseau) {
+  const derniere = derniereLigne_(feuille);
+  if (derniere < 2) return [];
+  const largeur = Math.max(ENTETES_JOURS.length, derniereColonne_(feuille));
+  const valeurs = feuille.getRange(2, 1, derniere - 1, largeur).getValues();
+  const lignes = [];
+  valeurs.forEach(function (l, i) {
+    const semaine = normaliserSemaine(l[0]);
+    const jour = lireJour_(l[1], fuseau);
+    if (!semaine || !jour) return;
+    const lu = l[4];
+    if (numero !== '' && lu !== '' && lu !== null && lu !== undefined && String(lu) !== String(numero)) return;
+    const delta = analyserJson(recoller(l.slice(ENTETES_JOURS.length - 1)));
+    lignes.push({ ligne: i + 2, semaine: semaine, jour: jour,
+                  delta: delta && typeof delta === 'object' && !Array.isArray(delta) ? delta : null });
+  });
+  return lignes;
+}
+
+/**
+ * Le détail par jour d'un contrat, pour la page : [{ semaine, jour, plans,
+ * plansConcept? }] trié par jour — `plans` : { référence: [avant, après] }
+ * pour la définition électrique, `plansConcept` pour le concept harnais
+ * quand les valeurs le portent (separerDelta_). Le dernier écrit d'un jour
+ * l'emporte. Sans historique, ou sans onglet du détail : [].
+ */
+function getJours(classeur, contrat) {
+  const histo = getFeuilleHistorique(classeur, contrat, false);
+  if (!histo) return [];
+  const feuille = getFeuilleJours_(classeur, idContrat(classeur, contrat), histo, false);
+  if (!feuille) return [];
+  const parJour = {};
+  lignesDesJours_(feuille, numeroOnglet_(histo), fuseauDuClasseur_(classeur)).forEach(function (l) {
+    if (l.delta) parJour[l.semaine + ' ' + l.jour] = l;
+  });
+  return Object.keys(parJour).sort(function (a, b) {
+    const x = parJour[a].jour, y = parJour[b].jour;
+    return x < y ? -1 : x > y ? 1 : 0;
+  }).map(function (k) {
+    const l = parJour[k], s = separerDelta_(l.delta);
+    const o = { semaine: l.semaine, jour: l.jour, plans: s.plans };
+    if (s.plansConcept) o.plansConcept = s.plansConcept;
+    return o;
+  });
+}
+
+/**
+ * Un jour en deux : la définition électrique et, si toutes ses valeurs le
+ * portent, le concept harnais — comme separerCartes pour une carte. Un plan
+ * dont seule l'autre colonne a bougé n'apparaît pas dans celle-ci.
+ */
+function separerDelta_(delta) {
+  const def = {}, concept = {};
+  let avecConcept = true;
+  const texte = function (x) { return String(x === null || x === undefined ? '' : x); };
+  const enDef = function (v) { return v === null || v === undefined ? null : Array.isArray(v) ? texte(v[0]) : texte(v); };
+  const enConcept = function (v) { return v === null || v === undefined ? null : texte(v[1]); };
+  const sansConcept = function (v) { return v !== null && v !== undefined && !Array.isArray(v); };
+  Object.keys(delta || {}).forEach(function (ref) {
+    const p = delta[ref];
+    if (!Array.isArray(p) || p.length !== 2) return;
+    const a = p[0], b = p[1];
+    if (enDef(a) !== enDef(b)) def[ref] = [enDef(a), enDef(b)];
+    if (sansConcept(a) || sansConcept(b)) { avecConcept = false; return; }
+    if (enConcept(a) !== enConcept(b)) concept[ref] = [enConcept(a), enConcept(b)];
+  });
+  return { plans: def, plansConcept: avecConcept ? concept : null };
+}
+
+/** Débrief 33 : retire les jours d'une semaine (son relevé vient d'être supprimé), du bas vers le haut. */
+function oublierJoursDeLaSemaine_(classeur, c, histo, semaine) {
+  const feuille = getFeuilleJours_(classeur, c.id, histo, false);
+  if (!feuille) return 0;
+  const lignes = lignesDesJours_(feuille, numeroOnglet_(histo), fuseauDuClasseur_(classeur))
+    .filter(function (l) { return l.semaine === semaine; });
+  for (let i = lignes.length - 1; i >= 0; i--) feuille.deleteRow(lignes[i].ligne);
+  return lignes.length;
+}
+
+/** Ce qui sépare deux cartes : { référence: [avant | null, après | null] }. */
+function deltaDesCartes_(depart, arrivee) {
+  const a = Object.prototype.hasOwnProperty, d = {};
+  Object.keys(arrivee).forEach(function (ref) {
+    if (!a.call(depart, ref)) d[ref] = [null, arrivee[ref]];
+    else if (JSON.stringify(depart[ref]) !== JSON.stringify(arrivee[ref])) d[ref] = [depart[ref], arrivee[ref]];
+  });
+  Object.keys(depart).forEach(function (ref) { if (!a.call(arrivee, ref)) d[ref] = [depart[ref], null]; });
+  return d;
+}
+
+/**
+ * Ce qu'il faut savoir du jour AVANT que la ligne de la semaine soit
+ * réécrite (archiverContrat_, sous son verrou) : le jour, la ligne de la
+ * semaine telle qu'elle est (sa carte, sa date d'écriture) et la carte du
+ * dernier relevé d'une semaine d'avant. `histo` peut être null (le tout
+ * premier archivage du contrat).
+ */
+function preparerJour_(classeur, histo, semaine, carte) {
+  const fuseau = fuseauDuClasseur_(classeur);
+  let ligneSemaine = null, precedent = null;
+  const derniere = histo ? histo.getLastRow() : 0;
+  if (derniere >= 2) {
+    const largeur = Math.max(ENTETES_HISTORIQUE.length, histo.getLastColumn());
+    const valeurs = histo.getRange(2, 1, derniere - 1, largeur).getValues();
+    let semPrec = '';
+    valeurs.forEach(function (l) {
+      const s = normaliserSemaine(l[0]);
+      if (!s) return;
+      if (s === semaine) ligneSemaine = l;                       // la dernière ligne de la semaine l'emporte, comme à la lecture
+      else if (s < semaine && s >= semPrec) { semPrec = s; precedent = l; }
+    });
+  }
+  const carteDe = function (l) {
+    const c = l ? analyserJson(recoller(l.slice(ENTETES_HISTORIQUE.length - 1))) : null;
+    return c && typeof c === 'object' && !Array.isArray(c) ? c : null;
+  };
+  return { semaine: semaine, jour: jourDArchivage_(classeur, semaine), fuseau: fuseau, carte: carte,
+           ligneSemaine: ligneSemaine, carteSemaine: carteDe(ligneSemaine), cartePrecedente: carteDe(precedent) };
+}
+
+/**
+ * Écrit le jour préparé (preparerJour_) une fois la semaine écrite, sous le
+ * verrou de l'archivage : { jour, changements } — ou null quand l'état du
+ * matin n'est pas connu (le tout premier relevé du contrat, un relevé
+ * d'avant sans carte) : rien n'est écrit.
+ */
+function ecrireJour_(classeur, c, histo, prepa) {
+  const numero = numeroOnglet_(histo);
+  const existante = getFeuilleJours_(classeur, c.id, histo, false);
+  const lignes = existante ? lignesDesJours_(existante, numero, prepa.fuseau) : [];
+  const duJour = lignes.filter(function (l) { return l.semaine === prepa.semaine && l.jour === prepa.jour; });
+  const deja = duJour.length ? duJour[duJour.length - 1] : null;
+  /* L'état du matin. */
+  let matin = null;
+  if (deja) {
+    /* Réarchivé le même jour : la carte de la semaine, avec les valeurs
+       d'avant le premier archivage du jour remises. */
+    if (deja.delta && prepa.carteSemaine) {
+      matin = JSON.parse(JSON.stringify(prepa.carteSemaine));
+      Object.keys(deja.delta).forEach(function (ref) {
+        const p = deja.delta[ref];
+        if (!Array.isArray(p)) return;
+        if (p[0] === null || p[0] === undefined) delete matin[ref]; else matin[ref] = p[0];
+      });
+    }
+  } else if (prepa.ligneSemaine) {
+    /* La semaine a déjà son relevé, écrit un autre jour : c'est le matin.
+       Écrit aujourd'hui sans jour gardé (le tout premier relevé, ou un
+       relevé d'avant sans carte), le matin n'est pas connu. */
+    if (prepa.carteSemaine && lireJour_(prepa.ligneSemaine[1], prepa.fuseau) !== prepa.jour) matin = prepa.carteSemaine;
+  } else {
+    /* Premier archivage de la semaine : le dernier relevé d'avant. */
+    matin = prepa.cartePrecedente;
+  }
+  if (!matin) return null;
+  const delta = deltaDesCartes_(matin, prepa.carte);
+  const n = Object.keys(delta).length;
+  const ligne = [prepa.semaine, prepa.jour, new Date(), n, numero].concat(decouper(JSON.stringify(delta), MAX_CARACTERES_CELLULE));
+  const feuille = existante || getFeuilleJours_(classeur, c.id, histo, true);
+  if (existante && existante.getName() !== nomFeuilleJours(c.id) && !classeur.getSheetByName(nomFeuilleJours(c.id))) {
+    try { existante.setName(nomFeuilleJours(c.id)); } catch (err) { /* il garde son nom : son numéro suffit */ }
+  }
+  const rang = deja ? deja.ligne : Math.max(1, feuille.getLastRow()) + 1;
+  /* Réécrire un jour : on couvre aussi les cellules qu'un détail plus long
+     occupait — sinon sa queue resterait collée au nouveau. */
+  if (deja) while (ligne.length < feuille.getLastColumn()) ligne.push('');
+  assurerColonnes(feuille, ligne.length);
+  assurerLignes(feuille, rang);
+  /* Le jour en texte : écrit tel quel, Sheets en ferait une date. */
+  const caseJour = feuille.getRange(rang, 2, 1, 1);
+  if (caseJour.setNumberFormat) caseJour.setNumberFormat('@');
+  feuille.getRange(rang, 1, 1, ligne.length).setValues([ligne]);
+  return { jour: prepa.jour, changements: n };
 }
 
 /**
@@ -4820,6 +5176,16 @@ function archiverContrat_(classeur, c, semaine, forcer) {
     const orphelins = historiquesOrphelins(classeur, contrats);
     if (orphelins.length) throw new Error(messageOrphelin(orphelins[0], c, classeur, contrats));
   }
+  /* Débrief 33 : le jour, pour la semaine en cours — tous les chemins qui
+     archivent passent ici (le robot par la fenêtre d'import, la fenêtre à
+     la main, le menu, le vendredi, le dépôt). Ce qu'était la semaine avant
+     cet archivage se lit avant de la réécrire. Une semaine passée
+     rattrapée (archiverSemainePassee) n'a pas de jour : on ne sait pas
+     lequel. Une panne ici ne coûte jamais le relevé. */
+  let prepaJour = null;
+  if (semaine === numeroSemaineISO(new Date())) {
+    try { prepaJour = preparerJour_(classeur, getFeuilleHistorique(classeur, c.id, false), semaine, compte.plans); } catch (err) { prepaJour = null; }
+  }
   const feuille = getFeuilleHistorique(classeur, c.id, true);
   const indexLigne = ligneDeLaSemaine(feuille, semaine);
   if (indexLigne === -1) {
@@ -4833,8 +5199,14 @@ function archiverContrat_(classeur, c, semaine, forcer) {
     assurerColonnes(feuille, ligne.length);
     feuille.getRange(indexLigne, 1, 1, ligne.length).setValues([ligne]);
   }
+  let jour = null;
+  if (prepaJour) {
+    try { jour = ecrireJour_(classeur, c, feuille, prepaJour); } catch (err) { jour = { erreur: err && err.message ? err.message : String(err) }; }
+  }
   marquerDonneesModifiees_();
-  return { id: c.id, nom: c.nom, historique: feuille.getName(), semaine: semaine, compte: compte };
+  const rendu = { id: c.id, nom: c.nom, historique: feuille.getName(), semaine: semaine, compte: compte };
+  if (jour) rendu.jour = jour;
+  return rendu;
 }
 
 /**
@@ -5003,6 +5375,10 @@ function supprimerDernierReleve() {
         const indexLigne = feuille ? ligneDeLaSemaine(feuille, semaine) : -1;
         if (indexLigne === -1) { sans.push(c.nom); return; }
         feuille.deleteRow(indexLigne);
+        /* Débrief 33 : les jours de la semaine partent avec son relevé —
+           ils racontaient comment on y était arrivé. Le prochain import de
+           la semaine repart du relevé de la semaine d'avant. */
+        try { oublierJoursDeLaSemaine_(classeur, c, feuille, semaine); } catch (err) { /* le relevé est retiré ; les jours restés ne se montrent pas (la page vérifie qu'ils mènent au relevé) */ }
         supprimes.push(c.nom);
       });
       if (supprimes.length) marquerDonneesModifiees_();
@@ -7490,6 +7866,7 @@ function estOngletHistorique(nom) {
  */
 function ongletProtege(nom) {
   if (estOngletHistorique(nom)) return 'un onglet d\'historique';
+  if (estOngletJours(nom)) return 'un onglet du détail par jour';
   const n = normaliser(nom);
   const seconde = feuilleRapprochement() ? normaliser(feuilleRapprochement()) : '';
   if (seconde && n === seconde) return '';

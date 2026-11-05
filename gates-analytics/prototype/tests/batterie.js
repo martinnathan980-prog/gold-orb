@@ -3932,12 +3932,20 @@ async function deplierFiltresColonne(pg) {
       if (!c.classList.contains('case-vide') && cols[k]) cols[k].push(Math.round(c.getBoundingClientRect().left));
     }));
     const jauges = semaines.map(sem => sem.querySelector('.mini-jauge')).filter(Boolean).map(j => Math.round(j.getBoundingClientRect().right));
+    /* Débrief 33 : les colonnes sont les filtres — une valeur atteinte
+       seulement par des reculs ou des réémissions garde son filtre, ses
+       cases restent vides (ces plans comptent sous « Reculs » ou
+       « Changements d'indice »). */
+    const estRecul33 = e => e.type === 'change' && ((e.avant === 'termine' && e.apres !== 'termine') || (e.avant === 'encours' && e.apres === 'afaire'));
+    const passages33 = new Set([].concat(...window.__journalAffiche().map(s => s.evenements)).filter(e => e.type === 'change' && !estRecul33(e) && e.cApres).map(e => 'v:' + e.cApres));
+    const clesCol33 = [...zone.querySelectorAll('.journal-entetes .entete-col button')].map(b => b.dataset.journal);
+    const sansPassage33 = clesCol33.map(k => ['reculs', 'nouveaux', 'disparus', 'indice'].indexOf(k) === -1 && !passages33.has('v:' + k));
     const semLeft = semaines.map(sem => Math.round(sem.querySelector('.journal-plier').getBoundingClientRect().left));
     return {
       grille: zone.classList.contains('journal-grille'), semaines: semaines.length, nCol,
       casesParSemaine: [...new Set(cases.map(cs => cs.length))],
       ecartsColonnes: cols.map(c => c.length ? Math.max(...c) - Math.min(...c) : 0),
-      remplies: cols.map(c => c.length),
+      remplies: cols.map(c => c.length), sansPassage33,
       /* Ce que l'œil compare : le début du contenu (la pastille, sinon le
          texte) de chaque en-tête et de la première case remplie dessous. */
       entetesX: entetes.slice(1, -1).map(debutContenu),
@@ -3956,7 +3964,7 @@ async function deplierFiltresColonne(pg) {
   });
   verifier('le journal est un tableau : une case par colonne dans chaque semaine, vide quand la semaine n’a pas cette sorte de passage',
     carre.grille && carre.semaines >= 5 && carre.nCol >= 3 && carre.casesParSemaine.length === 1 && carre.casesParSemaine[0] === carre.nCol &&
-    carre.remplies.every(n => n >= 1), JSON.stringify(carre));
+    carre.remplies.every((n, k) => n >= 1 || carre.sansPassage33[k]) && carre.remplies.filter(n => n >= 1).length >= 3, JSON.stringify(carre));
   verifier('chaque sorte de passage tombe dans sa colonne, au pixel près, d’une semaine à l’autre',
     carre.ecartsColonnes.every(e => e <= 1), JSON.stringify(carre.ecartsColonnes));
   /* Débrief 27 (lot B, B9) : « passés à » n'est plus répété dans chaque
@@ -3970,16 +3978,21 @@ async function deplierFiltresColonne(pg) {
     carre.motsVisibles === 0, String(carre.motsVisibles));
   verifier('les semaines et les jauges sont alignées elles aussi, et rien ne déborde',
     carre.ecartJauges <= 1 && carre.ecartSemaines <= 1 && !carre.deborde, JSON.stringify(carre));
-  /* Un filtre qui retire une sorte de passage retire sa colonne : le tableau
-     reste plein, sans colonne vide de bout en bout. */
+  /* Débrief 33 : les noms des colonnes sont les filtres — filtrer ne retire
+     plus les autres colonnes (on passe d'un filtre à l'autre d'un clic) :
+     elles restent, vides (« — »), et seule la colonne choisie a des nombres. */
   const filtreJ = await p.$('#filtre-journal button[data-journal="indice"]');
   if (filtreJ) {
     await filtreJ.click(); await p.waitForTimeout(350);
-    const seul = await p.evaluate(() => ({
-      entetes: [...document.querySelectorAll('#zone-journal .journal-entetes > span')].length - 2,
-      cases: [...new Set([...document.querySelectorAll('#zone-journal .journal-semaine .resume')].map(r => r.children.length))]
-    }));
-    verifier('filtrer sur les changements d’indice ne laisse que leur colonne', seul.entetes === 1 && seul.cases.join() === '1', JSON.stringify(seul));
+    const seul = await p.evaluate(() => {
+      const cles = [...document.querySelectorAll('#zone-journal .journal-entetes .entete-col button')].map(b => b.dataset.journal);
+      const k = cles.indexOf('indice');
+      const lignes = [...document.querySelectorAll('#zone-journal .journal-semaine .journal-tete .resume')].map(r => [...r.children]);
+      return { entetes: [...document.querySelectorAll('#zone-journal .journal-entetes > span')].length - 2, k,
+        cases: [...new Set(lignes.map(l => l.length))], pleines: [...new Set([].concat(...lignes.map(l => l.map((c, j) => c.classList.contains('case-vide') ? -1 : j).filter(j => j !== -1))))] };
+    });
+    verifier('filtrer sur les changements d’indice garde toutes les colonnes (les filtres), et seule la leur a des nombres',
+      seul.entetes === carre.nCol && seul.cases.join() === String(carre.nCol) && seul.pleines.join() === String(seul.k), JSON.stringify(seul));
     await p.click('#filtre-journal button[data-journal=""]'); await p.waitForTimeout(350);
   }
   await reinitialiser(p);
@@ -4006,7 +4019,8 @@ async function deplierFiltresColonne(pg) {
     const compte = document.querySelector('.journal-semaine .compte-passage.recul');
     return {
       parSemaine, semaines,
-      entetes: [...document.querySelectorAll('.journal-entetes .entete-col')].map(e => e.textContent.trim()),
+      /* Débrief 33 : chaque en-tête est un filtre — son nom dans .libelle, son compte à côté. */
+      entetes: [...document.querySelectorAll('.journal-entetes .entete-col')].map(e => (e.querySelector('.libelle') || e).textContent.trim()),
       compte: compte ? { texte: compte.textContent.replace(/\s+/g, ' ').trim(), rouge: getComputedStyle(compte.querySelector('b')).color } : null,
       alerte: getComputedStyle(document.body).getPropertyValue('--alerte').trim(),
       filtre: !!document.querySelector('#filtre-journal button[data-journal="reculs"] .pastille.recul')
@@ -4042,7 +4056,8 @@ async function deplierFiltresColonne(pg) {
      mouvements : reculs, nouveaux, disparus, changements d'indice. L'œil
      passe de la pastille à sa colonne sans chercher. */
   const ordre = await p.evaluate(() => {
-    const entetes = [...document.querySelectorAll('.journal-entetes .entete-col')].map(e => e.textContent.trim());
+    /* Débrief 33 : le nom de la colonne (le filtre porte aussi son compte). */
+    const entetes = [...document.querySelectorAll('.journal-entetes .entete-col')].map(e => (e.querySelector('.libelle') || e).textContent.trim());
     const vals = window.__valeurs().map(v => v.libelle);
     const filtres = [...document.querySelectorAll('#filtre-journal button[data-journal]:not([data-journal=""])')].map(b => b.querySelector('.libelle').textContent);
     return { entetes, vals, filtres };
@@ -4537,8 +4552,9 @@ async function deplierFiltresColonne(pg) {
     const s = window.__jeuDExemple('HDK');
     s.releves = s.releves.slice(-1);
     window.__chargerSource(s);
+    /* Débrief 33 : les filtres sont l'en-tête du tableau — un journal vide n'en a pas du tout. */
     const r = document.getElementById('filtre-journal');
-    return { boutons: r.querySelectorAll('button').length, cachee: r.hidden, journal: window.__vueValeurs().journal,
+    return { boutons: r ? r.querySelectorAll('button').length : 0, cachee: !r || r.hidden, journal: window.__vueValeurs().journal,
              message: !!document.querySelector('#zone-journal .journal-vide'),
              recherche: !!document.getElementById('recherche-journal').offsetParent };
   });
@@ -4932,6 +4948,15 @@ async function deplierFiltresColonne(pg) {
     const lire = id => {
       const r = document.getElementById(id), l = r.closest('.ligne-filtres') || r, rech = l.querySelector('.recherche-groupe');
       const rr = r.getBoundingClientRect(), lr = l.getBoundingClientRect();
+      /* Débrief 33 : les filtres du journal sont l'en-tête de son tableau ;
+         la recherche reste au bout de la ligne du dessus. */
+      if (id === 'filtre-journal') {
+        const l2 = document.getElementById('ligne-journal'), sr2 = l2.querySelector('.recherche-groupe').getBoundingClientRect(), lr2 = l2.getBoundingClientRect();
+        return { visible: rr.height > 0, dansTableau: !!r.closest('#zone-journal'), fondu: r.classList.contains('deborde-droite'),
+                 deborde: r.scrollWidth - r.clientWidth - r.scrollLeft > 2, droite: Math.round(lr2.right - sr2.right),
+                 caches: [...r.querySelectorAll('button')].filter(b => { const x = b.getBoundingClientRect(); return x.right > rr.right + 1 || x.left < rr.left - 3 || x.width < 2; }).length,
+                 titres: [...r.querySelectorAll('.entete-groupe')].map(m => m.textContent).join() };
+      }
       const o = { visible: !r.hidden && rr.height > 0, rangs: new Set([...r.querySelectorAll('button')].map(b => Math.round(b.getBoundingClientRect().top))).size,
                   gauche: Math.round(rr.left - lr.left), fondu: r.classList.contains('deborde-droite'),
                   deborde: r.scrollWidth - r.clientWidth - r.scrollLeft > 2 };
@@ -4958,12 +4983,16 @@ async function deplierFiltresColonne(pg) {
      ligne, en deux rangées titrées, « Passés à » et « Mouvements » ; la
      recherche reste au bout de la première ligne, et passe dessous sous
      1 180 px. Aucune pastille hors du cadre, aucun fondu. */
-  const journalRange27 = (o, w, souple) => o.visible && o.gauche <= 2 && o.droite <= 1 && !o.deborde && !o.fondu && o.caches === 0 &&
-    (souple ? /^(Passés à,Mouvements|Passés à|Mouvements)$/ : /^Passés à,Mouvements$/).test(o.titres) && (w >= 1180 ? o.premiereLigne && !o.chevauche : o.dessous);
+  /* Débrief 33 : plus de rangée au-dessus du tableau — les filtres sont
+     ses noms de colonnes, « Passés à » et « Mouvements » une fois chacun ;
+     aucun filtre caché, rien sous un fondu ; la recherche au bout à droite
+     de la ligne du dessus, à toute largeur. */
+  const journalRange27 = (o, w, souple) => o.visible && o.dansTableau && o.droite <= 1 && !o.deborde && !o.fondu && o.caches === 0 &&
+    (souple ? /^(Passés à,Mouvements|Passés à|Mouvements)$/ : /^Passés à,Mouvements$/).test(o.titres);
   for (const w of [1440, 1280, 1024]) {
     await redimensionner(p, w, 950);
     const l = await ligne19();
-    verifier('à ' + w + ' px, journal : les pastilles à gauche, en deux rangées titrées qui passent à la ligne — aucune cachée —, « Chercher un plan » au bout à droite' + (w >= 1180 ? ', sur la première ligne' : ', dessous'),
+    verifier('à ' + w + ' px, journal : les filtres sont les noms des colonnes, « Passés à » et « Mouvements » une fois — aucun caché —, « Chercher un plan » au bout à droite de la ligne du dessus',
       journalRange27(l.journal, w), JSON.stringify(l.journal));
     verifier('à ' + w + ' px, bloc par groupe : la même ligne — pastilles à gauche, compte et recherche à droite',
       bienAligne19(l.bloc), JSON.stringify(l.bloc));
@@ -5066,11 +5095,14 @@ async function deplierFiltresColonne(pg) {
      (lot C, X-A3) ; celles du graphique, inchangées. Débrief 29 (lot T,
      B10) : celles du graphique aussi passent à la ligne au large (à 1024 px
      la rangée « Courbe : » coupait « Non r… ») — plus rien n'y est rogné. */
+  /* Débrief 33 : les filtres du journal sont l'en-tête de son tableau —
+     rien n'y défile, et ses colonnes ont l'écart du tableau (10 px). */
   const styleJ27 = await p.evaluate(() => { const r = document.getElementById('filtre-journal'), g = r.querySelector('.puces-rang');
-    return { x: getComputedStyle(r).overflowX, y: getComputedStyle(r).overflowY, ecart: g ? getComputedStyle(g).columnGap : null }; });
+    return { x: getComputedStyle(r).overflowX, y: getComputedStyle(r).overflowY, ecart: g ? getComputedStyle(g).columnGap : null,
+             entete: r.classList.contains('journal-entetes') ? getComputedStyle(document.getElementById('zone-journal')).columnGap : null }; });
   verifier('les trois rangées : le même écart entre pastilles, 4 px autour pour l’anneau du focus (le journal, le bloc par groupe et la courbe : rien de rogné), sans barre de défilement',
     style19.filter(x => !/^filtre-journal:/.test(x)).every(x => { const id = x.split(':')[0]; return /^:4px\/4px\/none\/visible$/.test(x.slice(id.length)); }) &&
-    styleJ27.x === 'visible' && styleJ27.y === 'visible' && styleJ27.ecart === '4px', JSON.stringify([style19, styleJ27]));
+    styleJ27.x === 'visible' && styleJ27.y === 'visible' && (styleJ27.ecart === '4px' || styleJ27.entete === '10px'), JSON.stringify([style19, styleJ27]));
 
   // Une valeur que seul PERSO porte : sous BASE/OPTION, ni tuile, ni pastille au bloc, ni pilule au graphique ; pressée, sa tuile reste.
   const perso19 = await p.evaluate(() => {
@@ -5453,8 +5485,9 @@ async function deplierFiltresColonne(pg) {
     // Défaut 3a : les en-têtes du journal ne se coupent plus mot à mot entre 768 et 900 px.
     for (const w of [900, 820, 768]) {
       await redimensionner(p, w, 950);
-      const ent = await p.evaluate(() => [...document.querySelectorAll('.journal-entetes .entete-col')].map(e => {
-        const lh = parseFloat(getComputedStyle(e.parentNode).lineHeight) || 15;
+      /* Débrief 33 : le nom de chaque filtre-colonne (son compte passe dessous, sur sa ligne à lui). */
+      const ent = await p.evaluate(() => [...document.querySelectorAll('.journal-entetes .entete-col .libelle')].map(e => {
+        const lh = parseFloat(getComputedStyle(e).lineHeight) || 15;
         return { texte: e.textContent, lignes: Math.round(e.getBoundingClientRect().height / lh) };
       }));
       verifier('à ' + w + ' px, chaque en-tête du journal tient sur deux lignes au plus (« passés à » / « « Terminé » »)',
@@ -8177,7 +8210,8 @@ async function deplierFiltresColonne(pg) {
        plus en opacité (3,7:1 avant). */
     const comptes = await q.evaluate(() => {
       const fond = e => { for (let x = e; x; x = x.parentElement) { const f = getComputedStyle(x).backgroundColor; if (f && !/rgba\(.*,\s*0\)$/.test(f) && f !== 'transparent') return f; } return 'rgb(255,255,255)'; };
-      return [...document.querySelectorAll('#choix-perimetre .n, .filtre-journal .n')].filter(n => n.getClientRects().length)
+      /* Débrief 33 : les filtres du journal (l'en-tête de son tableau) aussi. */
+      return [...document.querySelectorAll('#choix-perimetre .n, .filtre-journal .n, #filtre-journal .n')].filter(n => n.getClientRects().length)
         .map(n => ({ t: n.textContent, c: +window.__contraste(getComputedStyle(n).color, fond(n)).toFixed(2), o: getComputedStyle(n).opacity }));
     });
     verifier('les comptes du périmètre et des pastilles tiennent 4,5:1, sans opacité', comptes.length > 0 && comptes.every(x => x.c >= 4.5 && x.o === '1'), JSON.stringify(comptes.slice(0, 6)));
@@ -9559,29 +9593,31 @@ async function deplierFiltresColonne(pg) {
     await qB.waitForTimeout(500);
 
     // --- 1. La rangée : « Tout », puis « Passés à » et « Mouvements », tout visible, à toute largeur.
+    /* Débrief 33 (« Passés à, Mouvements, dessous Semaine, Passés à,
+       Mouvements : ça fait des doublons ») : la rangée des pastilles et
+       l'en-tête du tableau ne font plus qu'un — « Tout », puis les noms des
+       colonnes, chacun filtre ; « Passés à » et « Mouvements » une fois
+       chacun ; le groupe des filtres se nomme pour les lecteurs d'écran. */
     const rangee = () => qB.evaluate(() => {
-      const r = document.getElementById('filtre-journal'), l = r.closest('.ligne-filtres'), rech = l.querySelector('.recherche-groupe');
+      const r = document.getElementById('filtre-journal'), l = document.getElementById('ligne-journal'), rech = l.querySelector('.recherche-groupe');
       const rr = r.getBoundingClientRect(), lr = l.getBoundingClientRect(), sr = rech.getBoundingClientRect();
       const boutons = [...r.querySelectorAll('button')];
-      const premier = r.querySelector('.rang-journal .puces-rang button');
-      const mouv = [...r.querySelectorAll('.rang-journal')].find(g => /Mouvements/.test(g.textContent));
+      const cles = boutons.map(b => b.dataset.journal);
       return {
-        tout: boutons[0] && boutons[0].dataset.journal === '' && boutons[0].textContent.trim() === 'Tout',
-        titres: [...r.querySelectorAll('.rang-journal')].map(g => g.querySelector('.mot-rang').textContent + ':' + g.getAttribute('role') + ':' + !!document.getElementById(g.getAttribute('aria-labelledby'))),
-        mouvements: mouv ? [...mouv.querySelectorAll('button')].map(b => b.dataset.journal) : [],
-        caches: boutons.filter(b => { const x = b.getBoundingClientRect(); return x.width < 2 || x.right > rr.right + 1 || x.left < rr.left - 1 || x.bottom > rr.bottom + 1; }).map(b => b.dataset.journal),
+        tout: boutons[0] && boutons[0].dataset.journal === '' && boutons[0].querySelector('.libelle').textContent === 'Tout',
+        titres: [...r.querySelectorAll('.entete-groupe')].map(g => g.textContent).concat([r.getAttribute('role') + ':' + /^Filtres du journal/.test(r.getAttribute('aria-label') || '')]),
+        mouvements: cles.filter(k => ['reculs', 'nouveaux', 'disparus', 'indice'].indexOf(k) !== -1),
+        caches: boutons.filter(b => { const x = b.getBoundingClientRect(); return x.width < 2 || x.right > rr.right + 1 || x.left < rr.left - 3 || x.bottom > rr.bottom + 1; }).map(b => b.dataset.journal),
         deborde: r.scrollWidth > r.clientWidth + 1, fondu: r.classList.contains('deborde-droite'), defile: getComputedStyle(r).overflowX,
-        droite: Math.round(lr.right - sr.right), memeLigne: !!premier && Math.abs(sr.top - premier.getBoundingClientRect().top) <= 6,
-        dessous: sr.top >= rr.bottom - 1, page: document.documentElement.scrollWidth <= window.innerWidth
+        droite: Math.round(lr.right - sr.right), dansTableau: !!r.closest('#zone-journal'), page: document.documentElement.scrollWidth <= window.innerWidth
       };
     });
     for (const w of [1440, 1280, 1024, 800]) {
       await redimensionner(qB, w, 950);
       const r = await rangee();
-      verifier('à ' + w + ' px, la rangée du journal : « Tout », puis « Passés à » et « Mouvements » (deux groupes nommés) ; chaque pastille en vue, rien sous un fondu ni hors du cadre ; la recherche ' +
-        (w >= 1180 ? 'au bout de la première rangée' : 'sur sa ligne, dessous'),
-        r.tout && r.titres.join() === 'Passés à:group:true,Mouvements:group:true' && !r.caches.length && !r.deborde && !r.fondu && r.defile === 'visible' &&
-        r.droite <= 1 && (w >= 1180 ? r.memeLigne : r.dessous) && r.page, JSON.stringify(r));
+      verifier('à ' + w + ' px, les filtres du journal sont l’en-tête de son tableau : « Tout », puis « Passés à » et « Mouvements » une fois chacun (un groupe nommé « Filtres du journal ») ; chaque filtre en vue, rien sous un fondu ni hors du cadre ; la recherche au bout de la ligne du dessus',
+        r.tout && r.titres.join() === 'Passés à,Mouvements,group:true' && r.dansTableau && !r.caches.length && !r.deborde && !r.fondu && r.defile === 'visible' &&
+        r.droite <= 1 && r.page, JSON.stringify(r));
       if (w === 1440) {
         verifier('« Mouvements » : les reculs d’abord, puis les nouveaux, les disparus, les changements d’indice',
           r.mouvements[0] === 'reculs' && r.mouvements.join() === ['reculs', 'nouveaux', 'disparus', 'indice'].filter(k => r.mouvements.indexOf(k) !== -1).join(), JSON.stringify(r.mouvements));
@@ -9602,7 +9638,7 @@ async function deplierFiltresColonne(pg) {
     const largeurs = await qB.evaluate(async () => {
       const lire = () => [...document.querySelectorAll('#filtre-journal button')].map(b => Math.round(b.getBoundingClientRect().width));
       const avant = lire();
-      document.querySelector('#filtre-journal .puces-rang button').click();
+      document.querySelector('#filtre-journal .entete-col button').click();   // débrief 33 : le premier filtre-colonne
       await new Promise(f => setTimeout(f, 200));
       const apres = lire();
       return { avant, apres };
@@ -9631,7 +9667,9 @@ async function deplierFiltresColonne(pg) {
         /* Où le code passe à la ligne : jamais au milieu d'un mot. */
         const coupes = [];
         let haut = null;
-        const texte = [...c.childNodes].filter(t => t.nodeType === 3);
+        /* Débrief 33 : tout le texte du code (la fin, après le dernier « _ », a sa boîte). */
+        const texte = [];
+        for (let w = document.createTreeWalker(c, NodeFilter.SHOW_TEXT), n = w.nextNode(); n; n = w.nextNode()) texte.push(n);
         let prec = '';
         texte.forEach(t => { for (let i = 0; i < t.textContent.length; i++) {
           const rg = document.createRange(); rg.setStart(t, i); rg.setEnd(t, i + 1); const r = rg.getClientRects()[0]; if (!r) continue;
@@ -9641,12 +9679,12 @@ async function deplierFiltresColonne(pg) {
         return { t: c.textContent, police: cs.fontFamily.split(',')[0].replace(/"/g, ''), taille: parseFloat(cs.fontSize), lignes: Math.round(c.getBoundingClientRect().height / lh), coupes };
       });
       const vals = window.__valeurs().map(v => v.libelle);
-      const noms = cols.slice(1, -1).map(c => c.textContent.trim());
+      const noms = cols.slice(1, -1).map(c => (c.querySelector('.libelle') || c).textContent.trim());   // débrief 33 : le nom du filtre-colonne
       const passes = noms.filter(t => vals.indexOf(t) !== -1);
       return {
         groupes: groupes.map(g => ({ t: g.textContent, x: x(g) })), noms, passes, vals,
         premierPasse: x(cols[1]), dernierPasse: x(cols[passes.length]), premierMouv: cols[passes.length + 1] ? x(cols[passes.length + 1]) : null, dernierMouv: x(cols[cols.length - 2]),
-        semaine: cols[0].textContent, jauge: cols[cols.length - 1].textContent, jaugeVue: cols[cols.length - 1].getClientRects().length > 0, codes,
+        semaine: (cols[0].querySelector('.libelle') || cols[0]).textContent, jauge: cols[cols.length - 1].textContent, jaugeVue: cols[cols.length - 1].getClientRects().length > 0, codes,
         colle: getComputedStyle(e).position, deborde: z.scrollWidth > z.clientWidth + 1, serre: z.classList.contains('journal-serre')
       };
     });
@@ -9658,9 +9696,11 @@ async function deplierFiltresColonne(pg) {
     verifier('les colonnes dans l’ordre de la légende : VALIDATED, PWD_IN_PROGRESS, PWD_TO_CONTROL, TO_CONFIRM, FWD_TO_SEIZE, TO_TREAT…, puis reculs, nouveaux, disparus, changements d’indice',
       tete.passes.join() === tete.vals.filter(v => tete.passes.indexOf(v) !== -1).join() && tete.passes[0] === 'VALIDATED' && tete.passes.length >= 5 &&
       tete.noms.slice(tete.passes.length).join() === ordreMouv.filter(m => tete.noms.indexOf(m) !== -1).join() && tete.noms.length > tete.passes.length, JSON.stringify(tete.noms));
-    verifier('sous « Passés à », le code seul, en Plex Mono 11 px — coupé une fois au plus, et seulement après un « _ » ; la semaine a son mot, la jauge « Répartition » ; l’en-tête reste collé',
+    /* Débrief 33 : au-dessus des semaines, le filtre « Tout » (les dates
+       des semaines disent assez que ce sont des semaines). */
+    verifier('sous « Passés à », le code seul, en Plex Mono 11 px — coupé une fois au plus, et seulement après un « _ » ; au-dessus des semaines, « Tout », la jauge « Répartition » ; l’en-tête reste collé',
       tete.codes.length >= 5 && tete.codes.every(c => c.police === 'IBM Plex Mono' && c.taille === 11 && c.lignes <= 2 && c.coupes.every(k => k === '_')) &&
-      tete.semaine === 'Semaine' && tete.jauge === 'Répartition' && tete.jaugeVue && tete.colle === 'sticky' && !tete.deborde && !tete.serre, JSON.stringify(tete.codes));
+      tete.semaine === 'Tout' && tete.jauge === 'Répartition' && tete.jaugeVue && tete.colle === 'sticky' && !tete.deborde && !tete.serre, JSON.stringify(tete.codes));
     // À 1 024 px : plus de jauge ; les onze colonnes ne tiennent pas — chaque compte prend ses mots, rien n'est coupé.
     await redimensionner(qB, 1024, 900);
     const etroit = await qB.evaluate(() => {
@@ -9796,7 +9836,7 @@ async function deplierFiltresColonne(pg) {
     await qT.waitForTimeout(300);
     const doigt = await qT.evaluate(() => {
       const t = document.querySelector('#zone-journal .journal-plier'), p = document.querySelector('#zone-journal .journal-plus');
-      const puce = document.querySelector('#filtre-journal .puces-rang button');
+      const puce = document.querySelector('#filtre-journal .entete-col button');   // débrief 33 : un filtre-colonne
       const zone = puce ? parseFloat(getComputedStyle(puce, '::after').top) : 0;
       return { plier: Math.round(t.getBoundingClientRect().height), plus: p ? Math.round(p.getBoundingClientRect().height) : null,
                puce: puce ? Math.round(puce.getBoundingClientRect().height - 2 * zone) : 0 };
@@ -9821,7 +9861,8 @@ async function deplierFiltresColonne(pg) {
     const sombre = await qS.evaluate(() => {
       const fond = getComputedStyle(document.getElementById('section-journal')).backgroundColor;
       const c = sel => { const e = document.querySelector(sel); return e ? +window.__contraste(getComputedStyle(e).color, fond).toFixed(2) : 0; };
-      return { dates: c('#zone-journal .sem-dates'), groupe: c('#zone-journal .entete-groupe'), mot: c('#filtre-journal .mot-rang'), reculs: c('#filtre-journal button[data-journal="reculs"] .n'),
+      /* Débrief 33 : plus de titres de rangées — le nom d'un filtre-colonne à leur place. */
+      return { dates: c('#zone-journal .sem-dates'), groupe: c('#zone-journal .entete-groupe'), mot: c('#filtre-journal .entete-col .libelle'), reculs: c('#filtre-journal button[data-journal="reculs"] .n'),
                tiret: c('#zone-journal .case-vide .tiret-vide'), code: c('#zone-journal .entete-col') };
     });
     verifier('en sombre, dates des semaines, étages de l’en-tête, titres des rangées, reculs et tirets se lisent à 4,5:1 au moins',
@@ -14043,6 +14084,219 @@ async function deplierFiltresColonne(pg) {
     }
   }
   /* (fin du lot C33-vrk) */
+  /* (début du lot C33-journal) */
+  /* Débrief 33 — Nathan : « dans ce qui a changé semaine par semaine, Passés
+     à, Mouvements, dessous Semaine, Passés à, Mouvements : ça fait des gros
+     pâtés, des doublons, j'ai peur qu'on se repère mal » ; « maintenant
+     qu'on le lance tous les jours, est-ce que dans semaine, on ne mettrait
+     pas aussi une granulométrie par jour ? Autant en profiter. » Les filtres
+     sont désormais les noms des colonnes (chacun une seule fois), et une
+     semaine que le robot a importée jour après jour s'ouvre sur ses jours.
+     Le simulateur avec le détail par jour (le robot chaque jour ouvré la
+     semaine dernière et cette semaine), lu le jeudi 5 novembre à 13 h 15. */
+  section('Débrief 33 : le journal sans doublons, et le détail jour par jour (lot C33-journal)');
+  {
+    const fsJ = require('fs'), osJ = require('os');
+    const { construireSimulateur } = require(path.join(__dirname, '..', '..', 'tests', 'construire-simulateur.js'));
+    const fichiersJ33 = [];
+    const pageJ33 = async (opts, o) => {
+      const sim = construireSimulateur(Object.assign({ date: '2026-11-05' }, opts));
+      const f = path.join(osJ.tmpdir(), 'suivi-fwd-c33-' + fichiersJ33.length + '-' + process.pid + '.html');
+      fichiersJ33.push(f);
+      fsJ.writeFileSync(f, sim.page);
+      const c = await nav.newContext({ viewport: { width: (o && o.largeur) || 1440, height: (o && o.hauteur) || 900 }, colorScheme: (o && o.schema) || 'light',
+        isMobile: !!(o && o.mobile), hasTouch: !!(o && o.mobile), locale: 'en-US' });
+      await c.clock.setFixedTime(new Date('2026-11-05T13:15:00+01:00'));
+      const pg = await c.newPage();
+      brancher(pg, 'lot C33-journal ' + fichiersJ33.length);
+      await pg.goto('file://' + f);
+      await pg.waitForFunction(() => document.documentElement.getAttribute('data-suivi-fwd') === 'pret', null, { timeout: 30000 });
+      await pg.evaluate(() => { const x = document.querySelector('.simulateur-bandeau'); if (x) x.remove(); });
+      pg.__ctx = c;
+      return pg;
+    };
+    const annonceJ33 = (pg, motif) => pg.waitForFunction(m => new RegExp(m).test((document.getElementById('annonce') || {}).textContent || ''), motif, { timeout: 4000 }).catch(() => {})
+      .then(() => pg.evaluate(() => (document.getElementById('annonce') || {}).textContent || ''));
+    const lireJ33 = pg => pg.evaluate(() => {
+      const z = document.getElementById('zone-journal'), sec = document.getElementById('section-journal');
+      const nets = t => t.replace(/\s+/g, ' ').trim();
+      return {
+        titre: sec.querySelector('.titre-journal').textContent, note: document.getElementById('note-jours').hidden ? '' : document.getElementById('note-jours').textContent.replace(/\u00a0/g, ' '),
+        grille: z.className, passes: (sec.textContent.match(/Passés à/g) || []).length, mouvements: (sec.textContent.match(/Mouvements/g) || []).length,
+        dansZone: !!z.querySelector('#filtre-journal'), entete: z.querySelector('#filtre-journal') ? z.querySelector('#filtre-journal').className : '',
+        groupe: !!z.querySelector('#filtre-journal[role="group"]') && /^Filtres du journal/.test(z.querySelector('#filtre-journal').getAttribute('aria-label')),
+        filtres: [...document.querySelectorAll('#filtre-journal button[data-journal]')].map(b => ({ cle: b.getAttribute('data-journal'), presse: b.getAttribute('aria-pressed'),
+          nom: (b.querySelector('.libelle') || {}).textContent, n: b.querySelector('.n') ? Number(b.querySelector('.n').textContent.replace(/\D/g, '')) : null, lu: nets(b.textContent) })),
+        ancienneRangee: document.querySelectorAll('.rang-journal, .tout-journal, .mot-rang').length,
+        semaines: [...z.querySelectorAll('.journal-semaine')].map(s => ({ num: (s.querySelector('.sem-num') || {}).textContent, jours: s.classList.contains('avec-jours'), ouverte: s.classList.contains('ouverte'),
+          calme: s.getAttribute('data-calme') || '' })),
+        jours: [...z.querySelectorAll('.journal-jour')].map(j => ({ nom: (j.querySelector('.jour-nom') || {}).textContent.replace(/ /g, ' '), calme: j.classList.contains('journal-jour-calme'),
+          ouvert: j.classList.contains('ouvert'), aria: (j.querySelector('button[data-jour]') || { getAttribute: () => '' }).getAttribute('aria-label'),
+          cases: [...j.querySelectorAll('.journal-tete-jour .resume b')].reduce((t, b) => t + Number(b.textContent.replace(/\D/g, '')), 0),
+          lignes: [...j.querySelectorAll('.journal-ligne')].map(l => l.getAttribute('data-ref')) })),
+        deborde: document.documentElement.scrollWidth - document.documentElement.clientWidth
+      };
+    });
+    try {
+      const p = await pageJ33({ jours: true });
+      const v1 = await lireJ33(p);
+      const valeurs = v1.filtres.filter(f => f.cle && ['reculs', 'nouveaux', 'disparus', 'indice'].indexOf(f.cle) === -1);
+      verifier('C33 : chaque mot une seule fois — « Passés à » et « Mouvements » une fois chacun dans toute la section, plus de rangée de pastilles au-dessus (les filtres SONT l’en-tête du tableau, dans le journal)',
+        v1.passes === 1 && v1.mouvements === 1 && v1.ancienneRangee === 0 && v1.dansZone && /journal-entetes/.test(v1.entete) && /journal-grille/.test(v1.grille) && !/journal-serre/.test(v1.grille),
+        JSON.stringify([v1.passes, v1.mouvements, v1.ancienneRangee, v1.entete, v1.grille]));
+      const noms = v1.filtres.map(f => f.nom);
+      verifier('C33 : l’en-tête — « Tout » (pressé) au-dessus des semaines, puis un filtre par colonne, chacun sa pastille, son nom et son compte ; chaque nom n’y est qu’une fois ; le lecteur d’écran entre dans « Filtres du journal » et entend « VALIDATED, 38 »',
+        v1.filtres[0].cle === '' && v1.filtres[0].presse === 'true' && v1.filtres.slice(1).every(f => f.presse === 'false' && f.n > 0) && v1.groupe &&
+        new Set(noms).size === noms.length && valeurs.length >= 5 && v1.filtres.every(f => /^[^,]+, [\d  ]+$/.test(f.lu)) &&
+        v1.filtres.slice(-4).map(f => f.cle).join() === 'reculs,nouveaux,disparus,indice', JSON.stringify(v1.filtres));
+      const colonnes = await p.evaluate(() => {
+        const en = [...document.querySelectorAll('#filtre-journal .entete-col')].map(c => Math.round(c.getBoundingClientRect().left));
+        const s = document.querySelector('#zone-journal .journal-semaine .journal-tete .resume');
+        const cases = [...s.children].map(c => Math.round(c.getBoundingClientRect().left));
+        const past = [...document.querySelectorAll('#filtre-journal .entete-col .pastille')].map(x => Math.round(x.getBoundingClientRect().left));
+        const pastS = [...s.children].map(c => c.querySelector('.pastille') ? Math.round(c.querySelector('.pastille').getBoundingClientRect().left) : null);
+        const e = document.getElementById('filtre-journal');
+        return { en, cases, past, pastS, colle: getComputedStyle(e).position, nEn: en.length, nCases: cases.length };
+      });
+      verifier('C33 : les comptes d’une semaine tombent sous leur filtre — autant de cases que de colonnes, chaque pastille d’une case sous celle de son filtre (± 2 px) ; l’en-tête reste collé en haut',
+        colonnes.nEn === colonnes.nCases && colonnes.pastS.every((x, i) => x === null || Math.abs(x - colonnes.past[i]) <= 2) && colonnes.colle === 'sticky', JSON.stringify(colonnes));
+      verifier('C33 : le détail jour par jour se dit une fois, à côté de la recherche (« Détail jour par jour depuis le lun. 26 oct. ; avant, le total de chaque semaine. ») et le titre le dit',
+        v1.note === 'Détail jour par jour depuis le lun. 26 oct. ; avant, le total de chaque semaine.' && v1.titre === 'Ce qui a changé, semaine par semaine et jour par jour' &&
+        v1.semaines.map(s => s.num + (s.jours ? '+' : '')).join() === 'S45+,S44+,S43,S42,S41,S40', JSON.stringify([v1.note, v1.titre, v1.semaines]));
+
+      /* Un filtre : les colonnes restent, la colonne choisie est cernée. */
+      const v = valeurs[0];
+      await p.click('#filtre-journal button[data-journal="' + v.cle + '"]');
+      const aF = await annonceJ33(p, '^Journal : \\d');
+      const f1 = await lireJ33(p);
+      const vuF = await p.evaluate(cle => ({ focus: document.activeElement && document.activeElement.getAttribute('data-journal'),
+        lignes: [...document.querySelectorAll('#zone-journal .journal-semaine > .journal-tete .resume b')].reduce((t, b) => t + Number(b.textContent.replace(/\D/g, '')), 0) }), v.cle);
+      verifier('C33 : un clic sur « ' + v.nom + ' » — il est pressé, « Tout » ne l’est plus, TOUTES les colonnes restent (on passe à un autre filtre sans revenir à « Tout ») ; les semaines comptent ses ' + v.n + ' arrivées ; le focus reste sur lui ; l’annonce le dit',
+        f1.filtres.length === v1.filtres.length && f1.filtres.find(f => f.cle === v.cle).presse === 'true' && f1.filtres[0].presse === 'false' &&
+        vuF.lignes === v.n && vuF.focus === v.cle && new RegExp('^Journal : ' + v.n + ' arrivées? à « ' + v.nom + ' »').test(aF), JSON.stringify([vuF, aF]));
+      const autre = valeurs[1];
+      await p.click('#filtre-journal button[data-journal="' + autre.cle + '"]');
+      const f2 = await lireJ33(p);
+      await p.click('#filtre-journal button[data-journal="' + autre.cle + '"]');
+      const f3 = await lireJ33(p);
+      verifier('C33 : d’un filtre à l’autre d’un seul clic ; un second clic sur le filtre pressé revient à « Tout »',
+        f2.filtres.find(f => f.cle === autre.cle).presse === 'true' && f2.filtres.find(f => f.cle === v.cle).presse === 'false' &&
+        f3.filtres[0].presse === 'true' && f3.semaines.length === v1.semaines.length, JSON.stringify([f2.filtres.map(f => f.presse), f3.filtres[0]]));
+      /* Au clavier : Tab jusqu'au filtre, Entrée. */
+      await p.focus('#filtre-journal button[data-journal="reculs"]');
+      await p.keyboard.press('Enter');
+      const kb = await p.evaluate(() => ({ presse: document.querySelector('#filtre-journal button[data-journal="reculs"]').getAttribute('aria-pressed'), focus: document.activeElement.getAttribute('data-journal'),
+        rouge: getComputedStyle(document.querySelector('#filtre-journal button[data-journal="reculs"]')).color }));
+      await p.keyboard.press('Enter');
+      verifier('C33 : au clavier, Entrée sur « Reculs » le presse et garde le focus ; « Reculs » reste rouge', kb.presse === 'true' && kb.focus === 'reculs' && /rgb\((1[5-9]\d|2\d\d), \d{1,2}, \d{1,2}\)/.test(kb.rouge), JSON.stringify(kb));
+
+      /* Les jours de S45. */
+      await p.click('#zone-journal button[data-semaine]');
+      const j1 = await lireJ33(p);
+      const jsJ = await p.evaluate(() => { const J = window.__joursSemaine(); return Object.keys(J).map(k => ({ i: k, jours: J[k].map(j => ({ jour: j.jour, n: j.evenements.length })) })); });
+      const s45 = jsJ.find(x => x.jours.some(j => j.jour === '2026-11-04'));
+      verifier('C33 : S45 ouverte — ses jours, le plus récent d’abord : « mer. 4 nov. », « mar. 3 nov. », « lun. 2 nov. », chacun ses comptes sur les colonnes (la somme de ses cases = ses changements) ; repliés',
+        j1.jours.length === 3 && j1.jours.map(j => j.nom).join() === 'mer. 4 nov.,mar. 3 nov.,lun. 2 nov.' && j1.jours.every(j => !j.ouvert && !j.calme) &&
+        !!s45 && j1.jours.every((j, k) => j.cases === s45.jours[2 - k].n && /^(mercredi|mardi|lundi) \d+ novembre, \d+ changements?$/.test(j.aria)), JSON.stringify([j1.jours, s45]));
+      const alignJ = await p.evaluate(() => {
+        const past = [...document.querySelectorAll('#filtre-journal .entete-col .pastille')].map(x => Math.round(x.getBoundingClientRect().left));
+        const r = document.querySelector('#zone-journal .journal-jour .journal-tete-jour .resume');
+        return [...r.children].map((c, i) => c.querySelector('.pastille') ? Math.abs(Math.round(c.querySelector('.pastille').getBoundingClientRect().left) - past[i]) : 0);
+      });
+      verifier('C33 : les comptes d’un jour tombent sous leur filtre (± 2 px), comme ceux de la semaine', alignJ.length > 0 && alignJ.every(d => d <= 2), JSON.stringify(alignJ));
+      await p.click('#zone-journal button[data-jour]');
+      const j2 = await lireJ33(p);
+      const focusJ = await p.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-jour'));
+      verifier('C33 : un clic sur « mer. 4 nov. » l’ouvre sur ses plans (autant de lignes que ses changements), le focus reste sur lui',
+        j2.jours[0].ouvert && j2.jours[0].lignes.length === j2.jours[0].cases && /\|2026-11-04$/.test(focusJ || ''), JSON.stringify([j2.jours[0], focusJ]));
+      await p.click('#zone-journal button[data-jour]');
+
+      /* S44 : un plan passé PWD_TO_CONTROL le mardi, revenu le jeudi. */
+      const s44 = await p.evaluate(() => {
+        const J = window.__joursSemaine(), sem = window.__journal()[1];
+        const jours = J[sem.i] || [];
+        const net = sem.evenements.map(e => e.ref);
+        const parRef = {};
+        jours.forEach(j => j.evenements.forEach(e => { (parRef[e.ref] = parRef[e.ref] || []).push(j.jour); }));
+        const ar = Object.keys(parRef).filter(r => parRef[r].length === 2 && net.indexOf(r) === -1)[0];
+        return { ar, jours: ar ? parRef[ar] : [], somme: jours.reduce((t, j) => t + j.evenements.length, 0), net: net.length };
+      });
+      await p.evaluate(() => document.querySelectorAll('#zone-journal button[data-semaine]')[1].click());
+      await p.waitForTimeout(300);
+      const j3 = await p.evaluate(() => { const s = document.querySelectorAll('#zone-journal .journal-semaine')[1];
+        return { num: s.querySelector('.sem-num').textContent, ouverte: s.classList.contains('ouverte'), note: (s.querySelector('.journal-note-jours') || {}).textContent || '',
+                 copier: ((s.querySelector('.journal-copier .copier') || {}).textContent || '') }; });
+      verifier('C33 : S44 — le plan allé et revenu (PWD_TO_CONTROL mardi, de retour jeudi) se voit dans deux jours, pas dans le total de la semaine ; une phrase le dit, sans plus (« La semaine ne compte que le résultat : … ») ; « Copier » garde les ' + s44.net + ' plans de la semaine',
+        !!s44.ar && s44.jours.join() === '2026-10-27,2026-10-29' && s44.somme > s44.net && j3.num === 'S44' && j3.ouverte &&
+        j3.note === 'La semaine ne compte que le résultat : un plan qui change lundi puis revient mercredi se voit dans ses jours, pas dans son total.' &&
+        j3.copier === 'Copier (' + s44.net + ')', JSON.stringify([s44, j3]));
+      await p.evaluate(() => document.querySelectorAll('#zone-journal button[data-semaine]')[1].click());
+      await p.evaluate(() => document.querySelector('#zone-journal button[data-semaine]').click());
+
+      /* Chercher le plan allé et revenu : la semaine et ses deux jours s'ouvrent. */
+      await p.fill('#recherche-journal', s44.ar);
+      await p.waitForTimeout(700);
+      const c1 = await lireJ33(p);
+      verifier('C33 : « Chercher un plan… » sur lui — S44 reste (alors que son total ne le compte pas) et s’ouvre, avec seulement ses deux jours, ouverts sur lui ; les autres semaines s’effacent',
+        c1.semaines.length === 1 && c1.semaines[0].num === 'S44' && c1.semaines[0].ouverte && c1.jours.length === 2 && c1.jours.every(j => j.ouvert && j.lignes.join() === s44.ar) &&
+        c1.jours.map(j => j.nom).join() === 'jeu. 29 oct.,mar. 27 oct.', JSON.stringify(c1.semaines.concat(c1.jours)));
+      await p.fill('#recherche-journal', '');
+      await p.waitForTimeout(400);
+      /* Une semaine sans détail par jour s'ouvre sur ses plans, comme avant. */
+      await p.evaluate(() => document.querySelectorAll('#zone-journal button[data-semaine]')[2].click());
+      await p.waitForTimeout(300);
+      const s43 = await p.evaluate(() => { const s = document.querySelector('#zone-journal .journal-semaine.ouverte'); return { num: s.querySelector('.sem-num').textContent, jours: s.querySelectorAll('.journal-jour').length, lignes: s.querySelectorAll('.journal-ligne').length }; });
+      verifier('C33 : S43 (d’avant le détail par jour) s’ouvre sur ses plans, comme avant — pas de jours', s43.num === 'S43' && s43.jours === 0 && s43.lignes > 0, JSON.stringify(s43));
+      await p.__ctx.close();
+
+      /* Sans le robot de chaque jour (l'archivage du vendredi seul : un jour par semaine) : pas de détail, rien ne change. */
+      const pv = await pageJ33({});
+      const v2 = await lireJ33(pv);
+      verifier('C33 : l’archivage du vendredi seul (un seul jour par semaine, qui EST la semaine) — pas de détail par jour, ni phrase, ni titre changé : rien ne se dédouble',
+        v2.semaines.every(s => !s.jours) && v2.note === '' && v2.titre === 'Ce qui a changé, semaine par semaine' && v2.passes === 1 && v2.mouvements === 1, JSON.stringify([v2.semaines, v2.note, v2.titre]));
+      await pv.__ctx.close();
+
+      /* Au téléphone, sombre. */
+      const tp = await pageJ33({ jours: true }, { largeur: 390, hauteur: 844, schema: 'dark', mobile: true });
+      await tp.evaluate(() => document.querySelector('#zone-journal button[data-semaine]').click());
+      await tp.waitForTimeout(300);
+      const tel = await tp.evaluate(() => {
+        const lum = c => { const m = c.match(/[\d.]+/g).map(Number); const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(m[0]) + 0.7152 * f(m[1]) + 0.0722 * f(m[2]); };
+        const fond = el => { for (let e = el; e; e = e.parentElement) { const b = getComputedStyle(e).backgroundColor; if (b && b !== 'rgba(0, 0, 0, 0)') return b; } return 'rgb(0,0,0)'; };
+        const contraste = el => { const a = lum(getComputedStyle(el).color), b = lum(fond(el)); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); };
+        const e = document.getElementById('filtre-journal'), boutons = [...e.querySelectorAll('button')];
+        const jour = document.querySelector('#zone-journal .journal-jour .journal-tete-jour'), nom = jour.querySelector('.jour-nom'), cpt = jour.querySelector('.resume > *');
+        return { page: document.documentElement.scrollWidth - document.documentElement.clientWidth, position: getComputedStyle(e).position, affichage: getComputedStyle(e).display,
+                 hauteurs: boutons.map(b => Math.round(b.getBoundingClientRect().height)), lignesNom: boutons.map(b => Math.round(b.querySelector('.libelle').getBoundingClientRect().height)),
+                 groupes: [...e.querySelectorAll('.entete-groupe')].map(g => g.getBoundingClientRect().width > 300),
+                 dessous: cpt.getBoundingClientRect().top >= nom.getBoundingClientRect().bottom - 1, retrait: Math.round(cpt.getBoundingClientRect().left - nom.getBoundingClientRect().left),
+                 contrastes: [contraste(document.getElementById('note-jours')), contraste(boutons[1].querySelector('.n')), contraste(nom)] };
+      });
+      verifier('C33 : au téléphone (390 px, sombre) — les filtres passent à la ligne au-dessus des semaines (non collés), chacun sur une ligne, 36 px au doigt ; « Passés à » et « Mouvements » chacun au-dessus des siens ; rien ne déborde',
+        tel.page <= 0 && tel.position === 'static' && tel.affichage === 'flex' && tel.hauteurs.every(h => h >= 36) && tel.lignesNom.every(h => h <= 18) && tel.groupes.every(Boolean), JSON.stringify(tel));
+      verifier('C33 : au téléphone, un jour — ses comptes sous son nom, au retrait des plans ; la phrase du détail, les comptes des filtres et le nom du jour ≥ 4,5:1',
+        tel.dessous && tel.retrait >= 0 && tel.contrastes.every(c => c >= 4.5), JSON.stringify(tel));
+      await tp.__ctx.close();
+
+      /* Sombre, au bureau : le filtre pressé, les comptes. */
+      const sp = await pageJ33({ jours: true }, { schema: 'dark' });
+      await sp.click('#filtre-journal button[data-journal="nouveaux"]');
+      const sombre = await sp.evaluate(() => {
+        const lum = c => { const m = c.match(/[\d.]+/g).map(Number); const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(m[0]) + 0.7152 * f(m[1]) + 0.0722 * f(m[2]); };
+        const fond = el => { for (let e = el; e; e = e.parentElement) { const b = getComputedStyle(e).backgroundColor; if (b && b !== 'rgba(0, 0, 0, 0)') return b; } return 'rgb(0,0,0)'; };
+        const contraste = el => { const a = lum(getComputedStyle(el).color), b = lum(fond(el)); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); };
+        const b = document.querySelector('#filtre-journal button[aria-pressed="true"]'), autre = document.querySelector('#filtre-journal button[aria-pressed="false"] .n');
+        return { cle: b.getAttribute('data-journal'), bord: getComputedStyle(b).borderTopColor !== 'rgba(0, 0, 0, 0)', nom: contraste(b.querySelector('.libelle')), n: contraste(b.querySelector('.n')), autre: contraste(autre),
+                 serre: document.getElementById('zone-journal').className };
+      });
+      verifier('C33 : sombre — le filtre pressé est cerné, son nom et son compte ≥ 4,5:1, le compte d’un autre filtre aussi ; le tableau tient à 1 440 px',
+        sombre.cle === 'nouveaux' && sombre.bord && sombre.nom >= 4.5 && sombre.n >= 4.5 && sombre.autre >= 4.5 && !/journal-serre/.test(sombre.serre), JSON.stringify(sombre));
+      await sp.__ctx.close();
+    } finally {
+      fichiersJ33.forEach(f => { try { fsJ.unlinkSync(f); } catch (e) { /* déjà parti */ } });
+    }
+  }
+  /* (fin du lot C33-journal) */
 
 
   await ctx.close();
