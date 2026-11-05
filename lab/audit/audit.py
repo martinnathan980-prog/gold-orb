@@ -160,7 +160,8 @@ def main():
 
     t = run()
     rep_is, rep_val = gl.report(gl.cut(t, "is")), gl.report(gl.cut(t, "val", track="audit", label=lab))
-    ts_ = run(stressed_costs("xauusd"))
+    from goldlab.sim import simulate_rebuilt
+    ts_ = simulate_rebuilt(m1, mod.make_orders, params, costs=stressed_costs("xauusd"))
     res["prereg"] = {"is": rep_is, "val": rep_val,
                      "is_criteria": is_criteria(rep_is, gl.report(gl.cut(ts_, "is"))),
                      "val_criteria": val_criteria(rep_val)}
@@ -171,12 +172,12 @@ def main():
     if os.path.exists(scen_path):
         for sname, c in json.load(open(scen_path)).items():
             cc = Costs(**c)
-            tt = run(cc)
+            tt = simulate_rebuilt(m1, mod.make_orders, params, costs=cc)
             ri = gl.report(gl.cut(tt, "is"))
             rv = gl.report(gl.cut(tt, "val", track="audit", label=lab))
             stress = replace(cc, commission=cc.commission * 1.5, slip_bps=cc.slip_bps * 1.5,
                              spread_mult=cc.spread_mult * 1.5)
-            rs = gl.report(gl.cut(run(stress), "is"))
+            rs = gl.report(gl.cut(simulate_rebuilt(m1, mod.make_orders, params, costs=stress), "is"))
             res["scenarios"][sname] = {"costs": c, "is": ri, "val": rv,
                                        "is_criteria": is_criteria(ri, rs), "val_criteria": val_criteria(rv)}
     te = run(no_overlap=False)

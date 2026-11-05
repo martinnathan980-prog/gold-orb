@@ -1,0 +1,5 @@
+positions open across a >24h market gap: 315 | gap in R (side-signed): p1 -0.77 p5 -0.29 median 0.03 min -1.39 max 2.64
+   cases where the adverse gap exceeded the remaining room to the stop: 0 | min remaining room before gap (R): 0.08 | cases with remaining room < 0.25R: 4
+fills in minute 0 / 0-4 / 0-14 after 07:00 London: 16 69 215 of 1483
+spread at fill / that day's median spread: median 1.00  p90 1.15  p99 1.46 | fills in 07:00-07:04 London: median 1.00 p90 1.19
+VAL accesses logged by this lens so far: 19

@@ -212,6 +212,31 @@ _DEFAULTS = {"etype": 0, "level": np.nan, "expiry_i": -1, "stop": np.nan, "stop_
              "target": np.nan, "target_dist": np.nan, "exit_i": -1, "trail": np.nan, "be": np.nan}
 
 
+def apply_spread_mult(m1, k):
+    """Return a copy of `m1` whose bid/ask spread is scaled by k around the mid (same transform
+    simulate() applies for Costs.spread_mult). Build orders on THIS frame when a strategy
+    pre-resolves fills from the quotes, then simulate it with spread_mult=1."""
+    if k == 1.0:
+        return m1
+    half = (m1["ac"] - m1["bc"]) * (k - 1) / 2
+    out = m1.copy()
+    for c in ("bo", "bh", "bl", "bc"):
+        out[c] = m1[c] - half
+    for c in ("ao", "ah", "al", "ac"):
+        out[c] = m1[c] + half
+    return out
+
+
+def simulate_rebuilt(m1, make_orders, params, sym="xauusd", costs=None, no_overlap=True):
+    """Scenario-consistent simulation: orders are rebuilt on the spread-scaled quotes, so
+    strategies that pre-resolve first touches see the same quotes as the fill engine."""
+    c = costs or COSTS.get(sym, Costs())
+    mk = apply_spread_mult(m1, c.spread_mult)
+    from dataclasses import replace as _replace
+    return simulate(mk, make_orders(mk, **params), sym=sym, costs=_replace(c, spread_mult=1.0),
+                    no_overlap=no_overlap)
+
+
 def simulate(m1, orders, sym="xauusd", costs=None, no_overlap=True):
     """Run `orders` (DataFrame, see module doc) on M1 frame `m1`.
     Returns a DataFrame of filled trades with pnl in price units per 1 unit, R multiple, etc.

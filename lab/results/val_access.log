@@ -214,3 +214,20 @@
 {"time": "2026-11-05T18:32:23", "track": "audit", "label": "audit:pivots:rn100_break_fresh", "period": "val"}
 {"time": "2026-11-05T18:32:25", "track": "audit", "label": "audit:pivots:rn100_break_fresh", "period": "val"}
 {"time": "2026-11-05T18:32:37", "track": "review", "label": "liveexec:orb_asia_2d_buf10:EA position-policy variants V1-V5, un-cancelled OCO leg, weekend schedule split", "period": "val"}
+{"time": "2026-11-05T18:34:22", "track": "review", "label": "liveexec:orb_asia_2d_buf10:cost margin -0.30..+0.75 $/oz and combined live scenarios A-D x 21 feed seeds", "period": "val"}
+{"time": "2026-11-05T18:34:31", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T18:34:38", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T18:34:40", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T18:34:43", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T18:34:53", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T18:34:55", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T18:35:46", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T18:35:48", "track": "audit", "label": "audit:trend:donch4h_stop", "period": "val"}
+{"time": "2026-11-05T18:35:55", "track": "audit", "label": "audit:orb:orb_asia_2d_buf10", "period": "val"}
+{"time": "2026-11-05T18:35:57", "track": "audit", "label": "audit:orb:orb_asia_2d_buf10", "period": "val"}
+{"time": "2026-11-05T18:36:00", "track": "audit", "label": "audit:orb:orb_asia_2d_buf10", "period": "val"}
+{"time": "2026-11-05T18:36:05", "track": "audit", "label": "audit:orb:orb_asia_2d_buf10", "period": "val"}
+{"time": "2026-11-05T18:36:14", "track": "audit", "label": "audit:orb:orb_asia_2d_buf10", "period": "val"}
+{"time": "2026-11-05T18:36:18", "track": "audit", "label": "audit:orb:orb_asia_2d_buf10", "period": "val"}
+{"time": "2026-11-05T18:37:22", "track": "audit", "label": "audit:orb:orb_asia_2d_buf10", "period": "val"}
+{"time": "2026-11-05T18:37:24", "track": "audit", "label": "audit:orb:orb_asia_2d_buf10", "period": "val"}

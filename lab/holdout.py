@@ -111,18 +111,29 @@ def main():
         m1 = frames[sym]
         mod = load_strategy(c["track"])
         params = mod.FINALISTS[c["name"]]
-        orders = mod.make_orders(m1, **params)
         key = f'{c["track"]}/{c["name"]}'
-        results[key] = {"status_before_holdout": c.get("status"), "scenarios": {}}
+        results[key] = {"status_before_holdout": c.get("status"), "decisive_scenario": c["decisive_scenario"],
+                        "scenarios": {}}
         for sname, cdict in cands["cost_scenarios"].items():
-            t = gl.simulate(m1, orders, sym=sym, costs=Costs(**cdict) if cdict else None)
+            t = gl.sim.simulate_rebuilt(m1, mod.make_orders, params, sym=sym,
+                                        costs=Costs(**cdict) if cdict else None)
             h = t[t.entry_time >= START]
             rep = gl.report(h) if len(h) else {"n": 0}
             results[key]["scenarios"][sname] = rep
             h.to_csv(os.path.join(OUT, f'trades__{c["track"]}__{c["name"]}__{sname}.csv'))
             print(key, sname, {k: rep.get(k) for k in ("n", "pf", "expectancy_R", "t_stat", "win_rate",
                                                           "long_R", "short_R", "weeks_pos_pct", "max_dd_R")}, flush=True)
-        results[key]["holdout_pass_prereg"] = results[key]["scenarios"].get("prereg", {}).get("pf", 0) > 1.0
+        pf = results[key]["scenarios"].get(c["decisive_scenario"], {}).get("pf", 0) or 0
+        results[key]["holdout_pf_decisive"] = pf
+        results[key]["holdout_pass"] = pf > 1.0
+        results[key]["reading"] = ("strong support" if pf >= 1.4 else "consistent but weak" if pf > 1.0 else
+                                   "weakly against" if pf >= 0.8 else "strong evidence against")
+    m = frames["xauusd"]
+    h = m[m.index >= START]
+    results["_context"] = {"gold_2026_first_bid": float(h.bc.iloc[0]), "gold_2026_last_bid": float(h.bc.iloc[-1]),
+                           "gold_2026_change_pct": round(float(h.bc.iloc[-1] / h.bc.iloc[0] - 1) * 100, 1),
+                           "last_bar": str(h.index[-1])}
+    print("context:", results["_context"])
     json.dump(results, open(os.path.join(OUT, "results.json"), "w"), indent=1, default=str)
 
 

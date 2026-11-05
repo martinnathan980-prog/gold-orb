@@ -1,0 +1,15 @@
+  variant  IS_n  IS_pf  IS_t IS_yrs  VAL_n  VAL_pf  VAL_t
+cost-0.30  1037  1.253  2.50    7/9    445   1.143   1.03
+cost-0.20  1037  1.227  2.27    7/9    445   1.129   0.93
+cost-0.15  1037  1.214  2.16    7/9    445   1.121   0.89
+cost-0.10  1037  1.202  2.05    7/9    445   1.114   0.84
+cost-0.05  1037  1.190  1.94    6/9    445   1.107   0.79
+cost+0.00  1037  1.177  1.83    6/9    445   1.100   0.74
+cost+0.10  1037  1.153  1.61    6/9    445   1.086   0.65
+cost+0.25  1037  1.119  1.27    6/9    445   1.066   0.50
+cost+0.50  1037  1.065  0.72    4/9    445   1.034   0.26
+cost+0.75  1037  1.014  0.16    4/9    445   1.003   0.02
+A_EA: no-noise IS 1.124 (t 1.32) VAL 1.06 (t 0.45) | 20 noise seeds: IS PF p5/p50/p95 1.097/1.121/1.136  VAL PF 1.029/1.046/1.071  share VAL>=1.10 0.00  share VAL>1.0 1.00
+B_manual5_abs: no-noise IS 1.122 (t 1.29) VAL 1.058 (t 0.44) | 20 noise seeds: IS PF p5/p50/p95 1.088/1.116/1.138  VAL PF 1.014/1.039/1.060  share VAL>=1.10 0.00  share VAL>1.0 1.00
+C_manual15_dist: no-noise IS 1.15 (t 1.56) VAL 1.011 (t 0.09) | 20 noise seeds: IS PF p5/p50/p95 1.118/1.137/1.164  VAL PF 0.943/0.994/1.056  share VAL>=1.10 0.00  share VAL>1.0 0.40
+D_salaried: no-noise IS 1.045 (t 0.48) VAL 0.998 (t -0.02) | 20 noise seeds: IS PF p5/p50/p95 1.034/1.046/1.068  VAL PF 0.955/0.988/1.020  share VAL>=1.10 0.00  share VAL>1.0 0.30
