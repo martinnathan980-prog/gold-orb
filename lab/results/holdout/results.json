@@ -1,0 +1,419 @@
+{
+ "trend/donch4h_stop": {
+  "status_before_holdout": "PASS",
+  "decisive_scenario": "prereg",
+  "scenarios": {
+   "prereg": {
+    "n": 43,
+    "trades_per_year": 52.9,
+    "win_rate": 0.419,
+    "avg_win_R": 1.448,
+    "avg_loss_R": -0.68,
+    "expectancy_R": 0.2109,
+    "t_stat": 1.05,
+    "pf": 1.533,
+    "total_R": 9.1,
+    "max_dd_R": 7.4,
+    "years_pos": "1/1",
+    "weeks_pos_pct": 30.2,
+    "weeks_neg_pct": 39.5,
+    "months_pos_pct": 54.5,
+    "worst_week_R": -2.4,
+    "long_n": 21,
+    "long_R": 4.6,
+    "short_n": 22,
+    "short_R": 4.4,
+    "avg_hold_h": 37.1,
+    "max_hold_h": 107.8,
+    "pf_ret": 1.593,
+    "equity_x_0.5pct": 1.05,
+    "cagr_0.5pct": 5.6,
+    "maxdd_0.5pct": 3.7,
+    "by_year_R": {
+     "2026": 9.1
+    },
+    "exit_reasons": {
+     "trail": 43
+    }
+   },
+   "low_cost_ecn": {
+    "n": 43,
+    "trades_per_year": 52.9,
+    "win_rate": 0.419,
+    "avg_win_R": 1.467,
+    "avg_loss_R": -0.665,
+    "expectancy_R": 0.2275,
+    "t_stat": 1.13,
+    "pf": 1.589,
+    "total_R": 9.8,
+    "max_dd_R": 7.2,
+    "years_pos": "1/1",
+    "weeks_pos_pct": 32.6,
+    "weeks_neg_pct": 37.2,
+    "months_pos_pct": 54.5,
+    "worst_week_R": -2.4,
+    "long_n": 21,
+    "long_R": 5.0,
+    "short_n": 22,
+    "short_R": 4.8,
+    "avg_hold_h": 37.1,
+    "max_hold_h": 107.8,
+    "pf_ret": 1.649,
+    "equity_x_0.5pct": 1.05,
+    "cagr_0.5pct": 6.1,
+    "maxdd_0.5pct": 3.6,
+    "by_year_R": {
+     "2026": 9.8
+    },
+    "exit_reasons": {
+     "trail": 43
+    }
+   },
+   "typical_retail": {
+    "n": 43,
+    "trades_per_year": 52.9,
+    "win_rate": 0.419,
+    "avg_win_R": 1.454,
+    "avg_loss_R": -0.673,
+    "expectancy_R": 0.2172,
+    "t_stat": 1.08,
+    "pf": 1.555,
+    "total_R": 9.3,
+    "max_dd_R": 7.3,
+    "years_pos": "1/1",
+    "weeks_pos_pct": 30.2,
+    "weeks_neg_pct": 39.5,
+    "months_pos_pct": 54.5,
+    "worst_week_R": -2.4,
+    "long_n": 21,
+    "long_R": 4.7,
+    "short_n": 22,
+    "short_R": 4.6,
+    "avg_hold_h": 37.1,
+    "max_hold_h": 107.8,
+    "pf_ret": 1.614,
+    "equity_x_0.5pct": 1.05,
+    "cagr_0.5pct": 5.8,
+    "maxdd_0.5pct": 3.6,
+    "by_year_R": {
+     "2026": 9.3
+    },
+    "exit_reasons": {
+     "trail": 43
+    }
+   }
+  },
+  "every_signal_decisive": {
+   "n": 151,
+   "trades_per_year": 185.7,
+   "win_rate": 0.437,
+   "avg_win_R": 1.233,
+   "avg_loss_R": -0.64,
+   "expectancy_R": 0.1787,
+   "t_stat": 1.89,
+   "pf": 1.496,
+   "total_R": 27.0,
+   "max_dd_R": 18.9,
+   "years_pos": "1/1",
+   "weeks_pos_pct": 27.9,
+   "weeks_neg_pct": 41.9,
+   "months_pos_pct": 36.4,
+   "worst_week_R": -6.0,
+   "long_n": 81,
+   "long_R": 9.8,
+   "short_n": 70,
+   "short_R": 17.2,
+   "avg_hold_h": 33.8,
+   "max_hold_h": 117.5,
+   "pf_ret": 1.578,
+   "equity_x_0.5pct": 1.14,
+   "cagr_0.5pct": 17.7,
+   "maxdd_0.5pct": 9.1,
+   "by_year_R": {
+    "2026": 27.0
+   },
+   "exit_reasons": {
+    "trail": 149,
+    "stop": 2
+   }
+  },
+  "late_market_entry_5min": {
+   "n": 43,
+   "trades_per_year": 52.9,
+   "win_rate": 0.419,
+   "avg_win_R": 1.397,
+   "avg_loss_R": -0.742,
+   "expectancy_R": 0.1529,
+   "t_stat": 0.76,
+   "pf": 1.354,
+   "total_R": 6.6,
+   "max_dd_R": 8.3,
+   "years_pos": "1/1",
+   "weeks_pos_pct": 32.6,
+   "weeks_neg_pct": 37.2,
+   "months_pos_pct": 54.5,
+   "worst_week_R": -2.7,
+   "long_n": 21,
+   "long_R": 3.5,
+   "short_n": 22,
+   "short_R": 3.1,
+   "avg_hold_h": 37.9,
+   "max_hold_h": 107.8,
+   "pf_ret": 1.394,
+   "equity_x_0.5pct": 1.03,
+   "cagr_0.5pct": 4.0,
+   "maxdd_0.5pct": 4.1,
+   "by_year_R": {
+    "2026": 6.6
+   },
+   "exit_reasons": {
+    "trail": 43
+   }
+  },
+  "mt5_server_grid_ny17": {
+   "n": 43,
+   "trades_per_year": 52.9,
+   "win_rate": 0.419,
+   "avg_win_R": 1.319,
+   "avg_loss_R": -0.7,
+   "expectancy_R": 0.1449,
+   "t_stat": 0.76,
+   "pf": 1.356,
+   "total_R": 6.2,
+   "max_dd_R": 7.4,
+   "years_pos": "1/1",
+   "weeks_pos_pct": 30.2,
+   "weeks_neg_pct": 37.2,
+   "months_pos_pct": 54.5,
+   "worst_week_R": -2.3,
+   "long_n": 21,
+   "long_R": 3.2,
+   "short_n": 22,
+   "short_R": 3.0,
+   "avg_hold_h": 39.0,
+   "max_hold_h": 107.8,
+   "pf_ret": 1.397,
+   "equity_x_0.5pct": 1.03,
+   "cagr_0.5pct": 3.8,
+   "maxdd_0.5pct": 3.6,
+   "by_year_R": {
+    "2026": 6.2
+   },
+   "exit_reasons": {
+    "trail": 42,
+    "time": 1
+   }
+  },
+  "open_at_end_of_data": 0,
+  "random_side_null": {
+   "pf_p5_p50_p95": [
+    0.617,
+    1.131,
+    1.8
+   ],
+   "candidate_percentile": 81.5
+  },
+  "holdout_pf_decisive": 1.533,
+  "holdout_pass": true,
+  "reading": "strong support"
+ },
+ "orb/orb_asia_2d_buf10": {
+  "status_before_holdout": "CONDITIONAL",
+  "decisive_scenario": "low_cost_ecn",
+  "scenarios": {
+   "prereg": {
+    "n": 70,
+    "trades_per_year": 83.3,
+    "win_rate": 0.429,
+    "avg_win_R": 1.551,
+    "avg_loss_R": -0.935,
+    "expectancy_R": 0.1306,
+    "t_stat": 0.59,
+    "pf": 1.245,
+    "total_R": 9.1,
+    "max_dd_R": 6.3,
+    "years_pos": "1/1",
+    "weeks_pos_pct": 46.7,
+    "weeks_neg_pct": 51.1,
+    "months_pos_pct": 45.5,
+    "worst_week_R": -3.1,
+    "long_n": 33,
+    "long_R": -6.1,
+    "short_n": 37,
+    "short_R": 15.3,
+    "avg_hold_h": 53.9,
+    "max_hold_h": 109.9,
+    "pf_ret": 1.174,
+    "equity_x_0.5pct": 1.04,
+    "cagr_0.5pct": 5.2,
+    "maxdd_0.5pct": 3.1,
+    "by_year_R": {
+     "2026": 9.1
+    },
+    "exit_reasons": {
+     "stop": 35,
+     "time": 34,
+     "eod": 1
+    }
+   },
+   "low_cost_ecn": {
+    "n": 70,
+    "trades_per_year": 83.3,
+    "win_rate": 0.429,
+    "avg_win_R": 1.604,
+    "avg_loss_R": -0.925,
+    "expectancy_R": 0.1591,
+    "t_stat": 0.7,
+    "pf": 1.301,
+    "total_R": 11.1,
+    "max_dd_R": 5.9,
+    "years_pos": "1/1",
+    "weeks_pos_pct": 46.7,
+    "weeks_neg_pct": 51.1,
+    "months_pos_pct": 45.5,
+    "worst_week_R": -3.0,
+    "long_n": 33,
+    "long_R": -5.6,
+    "short_n": 37,
+    "short_R": 16.7,
+    "avg_hold_h": 53.9,
+    "max_hold_h": 109.9,
+    "pf_ret": 1.224,
+    "equity_x_0.5pct": 1.05,
+    "cagr_0.5pct": 6.5,
+    "maxdd_0.5pct": 2.9,
+    "by_year_R": {
+     "2026": 11.1
+    },
+    "exit_reasons": {
+     "stop": 35,
+     "time": 34,
+     "eod": 1
+    }
+   },
+   "typical_retail": {
+    "n": 70,
+    "trades_per_year": 83.3,
+    "win_rate": 0.429,
+    "avg_win_R": 1.565,
+    "avg_loss_R": -0.93,
+    "expectancy_R": 0.1392,
+    "t_stat": 0.62,
+    "pf": 1.262,
+    "total_R": 9.7,
+    "max_dd_R": 6.2,
+    "years_pos": "1/1",
+    "weeks_pos_pct": 46.7,
+    "weeks_neg_pct": 51.1,
+    "months_pos_pct": 45.5,
+    "worst_week_R": -3.1,
+    "long_n": 33,
+    "long_R": -6.0,
+    "short_n": 37,
+    "short_R": 15.8,
+    "avg_hold_h": 53.9,
+    "max_hold_h": 109.9,
+    "pf_ret": 1.189,
+    "equity_x_0.5pct": 1.05,
+    "cagr_0.5pct": 5.6,
+    "maxdd_0.5pct": 3.1,
+    "by_year_R": {
+     "2026": 9.7
+    },
+    "exit_reasons": {
+     "stop": 35,
+     "time": 34,
+     "eod": 1
+    }
+   }
+  },
+  "every_signal_decisive": {
+   "n": 121,
+   "trades_per_year": 144.0,
+   "win_rate": 0.405,
+   "avg_win_R": 1.66,
+   "avg_loss_R": -0.972,
+   "expectancy_R": 0.0938,
+   "t_stat": 0.58,
+   "pf": 1.162,
+   "total_R": 11.3,
+   "max_dd_R": 13.3,
+   "years_pos": "1/1",
+   "weeks_pos_pct": 46.7,
+   "weeks_neg_pct": 51.1,
+   "months_pos_pct": 36.4,
+   "worst_week_R": -4.1,
+   "long_n": 58,
+   "long_R": -5.3,
+   "short_n": 63,
+   "short_R": 16.7,
+   "avg_hold_h": 53.1,
+   "max_hold_h": 109.9,
+   "pf_ret": 1.113,
+   "equity_x_0.5pct": 1.05,
+   "cagr_0.5pct": 6.4,
+   "maxdd_0.5pct": 6.5,
+   "by_year_R": {
+    "2026": 11.3
+   },
+   "exit_reasons": {
+    "stop": 65,
+    "time": 55,
+    "eod": 1
+   }
+  },
+  "late_market_entry_5min": {
+   "n": 70,
+   "trades_per_year": 83.3,
+   "win_rate": 0.443,
+   "avg_win_R": 1.701,
+   "avg_loss_R": -0.949,
+   "expectancy_R": 0.2245,
+   "t_stat": 0.83,
+   "pf": 1.425,
+   "total_R": 15.7,
+   "max_dd_R": 5.8,
+   "years_pos": "1/1",
+   "weeks_pos_pct": 48.9,
+   "weeks_neg_pct": 48.9,
+   "months_pos_pct": 54.5,
+   "worst_week_R": -3.1,
+   "long_n": 33,
+   "long_R": -5.7,
+   "short_n": 37,
+   "short_R": 21.4,
+   "avg_hold_h": 53.8,
+   "max_hold_h": 109.8,
+   "pf_ret": 1.267,
+   "equity_x_0.5pct": 1.08,
+   "cagr_0.5pct": 9.2,
+   "maxdd_0.5pct": 2.9,
+   "by_year_R": {
+    "2026": 15.7
+   },
+   "exit_reasons": {
+    "stop": 35,
+    "time": 34,
+    "eod": 1
+   }
+  },
+  "open_at_end_of_data": 1,
+  "random_side_null": {
+   "pf_p5_p50_p95": [
+    0.474,
+    0.816,
+    1.274
+   ],
+   "candidate_percentile": 96.0
+  },
+  "holdout_pf_decisive": 1.301,
+  "holdout_pass": true,
+  "reading": "consistent but weak"
+ },
+ "_context": {
+  "gold_2026_first_bid": 4328.198,
+  "gold_2026_last_bid": 4102.885,
+  "gold_2026_change_pct": -5.2,
+  "last_bar": "2026-11-05 19:01:00+00:00"
+ }
+}

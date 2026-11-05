@@ -1,163 +1,179 @@
 //+------------------------------------------------------------------+
 //|                                          GoldOrb_Donchian4H.mq5  |
-//|  Cassure du canal 10 jours (60 bougies H4 en grille UTC) - XAUUSD |
-//|  Regle testee dans lab/tracks/trend (finaliste "donch4h_stop").   |
+//|  Cassure du canal 10 jours (60 bougies H4, grille UTC) - XAUUSD   |
+//|  Regle du laboratoire : lab/tracks/trend, finaliste donch4h_stop. |
 //|                                                                  |
-//|  MODE PAR DEFAUT = ALERTES + JOURNAL (aucun ordre n'est passe).   |
-//|  - Toutes les 4 h (00/04/08/12/16/20 UTC), si aucune position :   |
-//|    niveau ACHAT = plus haut des 60 dernieres bougies H4,          |
-//|    niveau VENTE = plus bas des 60 dernieres bougies H4,           |
-//|    valables jusqu'a la prochaine cloture H4 (OCO).                |
-//|  - Stop initial = 2 x ATR14(H4) ; stop suiveur = 2 x ATR depuis    |
-//|    le meilleur prix, mis a jour a chaque cloture M1 ;             |
-//|    sortie forcee apres 5 jours de bourse (heure de New York).     |
-//|  Modes : 0 alertes | 1 alertes + gestion de VOS positions        |
-//|          manuelles (stop/suiveur/sortie) | 2 automatique (DEMO).  |
+//|  v2 - moteur "papier" identique au simulateur du labo :          |
+//|  il traite chaque bougie M1 FERMEE avec les memes regles de       |
+//|  remplissage (stop au pire du niveau / de l'ouverture, stop       |
+//|  suiveur mis a jour apres la cloture de la bougie, sortie au      |
+//|  temps a l'ouverture). Le meme code sert au rattrapage apres une  |
+//|  coupure (REPLAY).                                                |
+//|                                                                  |
+//|  Modes : 0 = ALERTES + JOURNAL (defaut, aucun ordre)             |
+//|          1 = alertes + gestion de VOTRE position manuelle         |
+//|              (stop initial, stop suiveur, sortie au temps)        |
+//|          2 = AUTOMATIQUE (ordres stop OCO chez le courtier ;      |
+//|              compte DEMO uniquement sauf InpAllowAutoReal)        |
 //+------------------------------------------------------------------+
 #property copyright "gold-orb lab"
-#property version   "1.00"
-#property description "Alertes de cassure du canal 10 jours (H4 UTC) sur l'or. Mode observation par defaut."
+#property version   "2.00"
+#property description "Cassure du canal 10 jours (H4 UTC) sur l'or. Mode observation par defaut. Regle non validee en reel."
 
 #include <Trade\Trade.mqh>
 
 enum ENUM_GO_MODE
   {
    GO_ALERTS = 0,        // Alertes + journal (aucun ordre)
-   GO_MANAGE_MANUAL = 1, // Alertes + gestion de mes positions manuelles
-   GO_AUTO = 2           // Automatique (compte DEMO uniquement par defaut)
+   GO_MANAGE_MANUAL = 1, // Alertes + gestion de ma position manuelle
+   GO_AUTO = 2           // Automatique (DEMO par defaut)
   };
 
 enum ENUM_GO_TZ
   {
-   GO_TZ_NY_CLOSE = 0,   // Serveur aligne sur 17h New York (UTC+2 hiver / UTC+3 ete US)
-   GO_TZ_AUTO = 1,       // Automatique (TimeTradeServer - TimeGMT), compte reel uniquement
-   GO_TZ_FIXED = 2       // Decalage fixe (heures)
+   GO_TZ_US = 0,         // Serveur = New York + 7h (UTC+2 / UTC+3 selon l'heure d'ete US) - le plus courant
+   GO_TZ_EU = 1,         // Serveur UTC+2 / UTC+3 selon l'heure d'ete EUROPEENNE (EET)
+   GO_TZ_FIXED = 2       // Decalage fixe toute l'annee
   };
 
-input ENUM_GO_MODE InpMode          = GO_ALERTS;   // Mode de fonctionnement
-input ENUM_GO_TZ   InpServerTZ      = GO_TZ_NY_CLOSE; // Fuseau du serveur du courtier
-input int          InpFixedOffsetH  = 2;           // Decalage fixe serveur-UTC (si mode fixe)
+input ENUM_GO_MODE InpMode          = GO_ALERTS;   // Mode
+input ENUM_GO_TZ   InpServerTZ      = GO_TZ_US;    // Fuseau horaire du serveur du courtier
+input int          InpFixedOffsetH  = 2;           // Decalage fixe serveur - UTC (heures), si "fixe"
 input int          InpChannelBars   = 60;          // Bougies H4 du canal (60 = 10 jours)
-input int          InpATRPeriod     = 14;          // Periode ATR (H4, Wilder)
+input int          InpATRPeriod     = 14;          // ATR Wilder (H4)
 input double       InpStopATR       = 2.0;         // Stop initial (x ATR)
 input double       InpTrailATR      = 2.0;         // Stop suiveur (x ATR)
-input int          InpMaxDays       = 5;           // Duree max (jours de bourse)
-input double       InpRiskPct       = 0.5;         // Risque par trade (% du capital) pour le calcul du lot
-input double       InpPreAlertATR   = 0.25;        // Pre-alerte a X ATR du niveau (0 = desactive)
-input bool         InpNotifyLevels  = false;       // Notifier les niveaux a chaque cloture H4
+input int          InpMaxDays       = 5;           // Duree max (jours de bourse New York)
+input double       InpRiskPct       = 0.5;         // Risque par trade (% du capital) pour la taille
+input double       InpMaxRiskMult   = 1.5;         // Bloquer si le lot minimum risque plus que X fois le risque vise
+input bool         InpNotifyLevels  = true;        // Notifier les niveaux a chaque cloture H4 (heures eveillees)
+input int          InpWakeFrom      = 7;           // Heures eveillees : debut (heure de Paris)
+input int          InpWakeTo        = 23;          // Heures eveillees : fin (heure de Paris)
 input bool         InpPush          = true;        // Notifications push (appli MT5 mobile)
 input bool         InpPopup         = true;        // Fenetre d'alerte dans le terminal
 input string       InpTgToken       = "";          // Telegram : token du bot (optionnel)
 input string       InpTgChat        = "";          // Telegram : chat_id (optionnel)
 input bool         InpAllowAutoReal = false;       // Autoriser le mode auto sur compte REEL (deconseille)
 input long         InpMagic         = 20261105;    // Numero magique (mode auto)
-input long         InpManualMagic   = 0;           // Numero magique des positions manuelles a gerer
-input int          InpHistoryDays   = 90;          // Historique M5 charge pour construire les H4
+input long         InpManualMagic   = 0;           // Numero magique de vos positions manuelles (0 = manuel)
+input int          InpHistoryDays   = 180;         // Historique M5 charge (>= 640 bougies H4)
+input bool         InpLogSpread     = true;        // Journaliser l'ecart 16:45-18:30 New York
 
-//--- position fictive (journal / "paper trading")
+#define SLIP_NONE 0.0
+
+//--- etat persistant (fichier binaire)
 struct GoState
   {
-   int               side;          // 0 = aucune, +1 achat, -1 vente
-   double            fill;          // prix d'entree theorique
-   double            stop;          // stop courant
-   double            init_stop;     // stop initial
-   double            trail;         // distance du suiveur
-   double            best;          // meilleur prix depuis l'entree
-   double            atr;
-   datetime          entry_utc;
-   datetime          deadline_utc;
-   double            cum_R;         // cumul depuis le debut
-   int               n_trades;
-   double            week_R;
-   int               week_n;
-   datetime          week_sent_utc; // derniere synthese hebdo envoyee
+   // position papier
+   int               side;
+   double            fill, stop, init_stop, trail, best, atr;
+   datetime          entry_utc, deadline_utc, decision_utc;
+   long              fill_bar;          // heure serveur de la bougie M1 d'entree
+   // niveaux (bracket) de la fenetre H4 en cours
+   int               br_active;
+   double            br_hi, br_lo, br_atr;
+   datetime          br_decision_utc, br_expiry_utc;
+   int               br_trigger_sent;
+   // reel (modes 1 et 2)
+   ulong             real_ticket;
+   double            real_fill, real_best, real_D;
+   datetime          real_deadline_utc;
+   int               real_side;
+   // tenue de compte
+   datetime          last_m1;           // derniere bougie M1 traitee (heure serveur d'ouverture)
+   datetime          last_bucket_utc;   // derniere decision H4 traitee
+   double            cum_R, week_R;
+   int               n_trades, week_n;
+   datetime          week_sent_utc, heartbeat_utc;
   };
 
 GoState  g;
-bool     g_br_active = false;
-double   g_br_hi = 0, g_br_lo = 0, g_br_atr = 0;
-datetime g_br_expiry_utc = 0;
-bool     g_pre_hi = false, g_pre_lo = false;
-datetime g_bucket = 0;       // debut (UTC) de la bougie H4 en cours
-datetime g_last_m1 = 0;      // derniere bougie M1 traitee (heure serveur)
 bool     g_auto = false;
+bool     g_replay = false;
 CTrade   g_trade;
+string   g_queue[];                     // messages Telegram en attente (envoyes dans OnTimer)
 
 //+------------------------------------------------------------------+
-//| Outils de temps                                                  |
+//| Temps                                                            |
 //+------------------------------------------------------------------+
 datetime NthSunday(const int year, const int month, const int n)
   {
    MqlDateTime d;
    ZeroMemory(d);
    d.year = year; d.mon = month; d.day = 1;
-   datetime t = StructToTime(d);
    MqlDateTime x;
-   TimeToStruct(t, x);
+   TimeToStruct(StructToTime(d), x);
    int first = (x.day_of_week == 0) ? 1 : 1 + (7 - x.day_of_week);
    d.day = first + 7 * (n - 1);
    return StructToTime(d);
   }
 
-// Heure d'ete US : du 2e dimanche de mars 07:00 UTC au 1er dimanche de novembre 06:00 UTC
+datetime LastSunday(const int year, const int month)
+  {
+   MqlDateTime d;
+   ZeroMemory(d);
+   d.year = year; d.mon = month + 1; d.day = 1;
+   if(d.mon == 13) { d.mon = 1; d.year = year + 1; }
+   datetime t = StructToTime(d) - 86400;          // dernier jour du mois
+   MqlDateTime x;
+   TimeToStruct(t, x);
+   return t - x.day_of_week * 86400;
+  }
+
+// heure d'ete US : 2e dimanche de mars 07:00 UTC -> 1er dimanche de novembre 06:00 UTC
 bool IsUSDST(const datetime utc)
   {
    MqlDateTime x;
    TimeToStruct(utc, x);
-   datetime s = NthSunday(x.year, 3, 2) + 7 * 3600;
-   datetime e = NthSunday(x.year, 11, 1) + 6 * 3600;
-   return (utc >= s && utc < e);
+   return (utc >= NthSunday(x.year, 3, 2) + 7 * 3600 && utc < NthSunday(x.year, 11, 1) + 6 * 3600);
   }
 
-int ServerOffsetSec(const datetime server_time)
+// heure d'ete UE : dernier dimanche de mars 01:00 UTC -> dernier dimanche d'octobre 01:00 UTC
+bool IsEUDST(const datetime utc)
   {
-   if(InpServerTZ == GO_TZ_FIXED)
-      return InpFixedOffsetH * 3600;
-   if(InpServerTZ == GO_TZ_AUTO && !MQLInfoInteger(MQL_TESTER))
-     {
-      long d = (long)TimeTradeServer() - (long)TimeGMT();
-      return (int)(MathRound((double)d / 900.0) * 900);
-     }
-   return IsUSDST(server_time - 2 * 3600) ? 3 * 3600 : 2 * 3600;
+   MqlDateTime x;
+   TimeToStruct(utc, x);
+   return (utc >= LastSunday(x.year, 3) + 3600 && utc < LastSunday(x.year, 10) + 3600);
   }
 
-datetime ToUTC(const datetime server_time)    { return server_time - ServerOffsetSec(server_time); }
-datetime ToServer(const datetime utc)
+int RuleOffsetSecForUTC(const datetime utc)
   {
-   if(InpServerTZ == GO_TZ_FIXED) return utc + InpFixedOffsetH * 3600;
-   if(InpServerTZ == GO_TZ_AUTO && !MQLInfoInteger(MQL_TESTER)) return utc + ServerOffsetSec(TimeTradeServer());
-   return utc + (IsUSDST(utc) ? 3 * 3600 : 2 * 3600);
-  }
-datetime NowUTC()                             { return ToUTC(TimeCurrent()); }
-datetime NYfromUTC(const datetime utc)        { return utc - (IsUSDST(utc) ? 4 : 5) * 3600; }
-datetime UTCfromNY(const datetime ny)
-  {
-   datetime guess = ny + 5 * 3600;
-   return ny + (IsUSDST(guess) ? 4 : 5) * 3600;
+   if(InpServerTZ == GO_TZ_FIXED) return InpFixedOffsetH * 3600;
+   if(InpServerTZ == GO_TZ_EU) return IsEUDST(utc) ? 3 * 3600 : 2 * 3600;
+   return IsUSDST(utc) ? 3 * 3600 : 2 * 3600;
   }
 
-// decision + N jours de bourse (lun-ven, meme heure de New York) - 5 min ;
-// si cela tombe dans la fermeture du week-end : vendredi 16:55 New York.
+datetime ToUTC(const datetime server_time)
+  {
+   // les changements d'heure ont lieu le dimanche, marche ferme : l'approximation est exacte
+   return server_time - RuleOffsetSecForUTC(server_time - 2 * 3600);
+  }
+datetime ToServer(const datetime utc)     { return utc + RuleOffsetSecForUTC(utc); }
+datetime NYfromUTC(const datetime utc)    { return utc - (IsUSDST(utc) ? 4 : 5) * 3600; }
+datetime UTCfromNY(const datetime ny)     { return ny + (IsUSDST(ny + 5 * 3600) ? 4 : 5) * 3600; }
+datetime ParisFromUTC(const datetime utc) { return utc + (IsEUDST(utc) ? 2 : 1) * 3600; }
+
+// = labo : heure de New York + 7h, + N jours ouvres, - 7h, - 5 min ; si cela tombe dans la
+// pause 17:00-18:00 New York ou le week-end : derniere minute avant la fermeture (16:59 NY).
 datetime DeadlineUTC(const datetime decision_utc, const int days)
   {
-   datetime ny = NYfromUTC(decision_utc);
+   datetime td = NYfromUTC(decision_utc) + 7 * 3600;
    int added = 0;
    while(added < days)
      {
-      ny += 86400;
+      td += 86400;
       MqlDateTime x;
-      TimeToStruct(ny, x);
+      TimeToStruct(td, x);
       if(x.day_of_week >= 1 && x.day_of_week <= 5) added++;
      }
-   ny -= 300;
+   datetime ny = td - 7 * 3600 - 300;
    MqlDateTime y;
    TimeToStruct(ny, y);
    int mins = y.hour * 60 + y.min;
-   bool closed = (y.day_of_week == 6) || (y.day_of_week == 0 && mins < 18 * 60) ||
-                 (y.day_of_week == 5 && mins >= 17 * 60);
-   if(closed)
+   bool weekend = (y.day_of_week == 6) || (y.day_of_week == 0 && mins < 18 * 60) || (y.day_of_week == 5 && mins >= 17 * 60);
+   bool brk = (mins >= 17 * 60 && mins < 18 * 60);
+   if(weekend)
      {
-      // recule jusqu'au vendredi 16:55 New York
       while(true)
         {
          MqlDateTime z;
@@ -165,9 +181,12 @@ datetime DeadlineUTC(const datetime decision_utc, const int days)
          if(z.day_of_week == 5) break;
          ny -= 86400;
         }
+     }
+   if(weekend || brk)
+     {
       MqlDateTime w;
       TimeToStruct(ny, w);
-      w.hour = 16; w.min = 55; w.sec = 0;
+      w.hour = 16; w.min = 59; w.sec = 0;
       ny = StructToTime(w);
      }
    return UTCfromNY(ny);
@@ -175,8 +194,111 @@ datetime DeadlineUTC(const datetime decision_utc, const int days)
 
 datetime BucketUTC(const datetime utc) { return (datetime)(((long)utc / 14400) * 14400); }
 
+string Clocks(const datetime utc)
+  {
+   return TimeToString(utc, TIME_DATE | TIME_MINUTES) + " UTC / " + TimeToString(ParisFromUTC(utc), TIME_MINUTES) + " Paris";
+  }
+
 //+------------------------------------------------------------------+
-//| Bougies H4 en grille UTC (prix milieu) a partir du M5 du courtier |
+//| Notifications (push et popup immediats ; Telegram via OnTimer)    |
+//+------------------------------------------------------------------+
+string JsonEscape(string s)
+  {
+   StringReplace(s, "\\", "\\\\");
+   StringReplace(s, "\"", "\\\"");
+   StringReplace(s, "\n", "\\n");
+   return s;
+  }
+
+void Notify(const string text)
+  {
+   Print(text);
+   if(MQLInfoInteger(MQL_TESTER)) return;
+   if(InpPopup) Alert(text);
+   if(InpPush)
+     {
+      string p = text;
+      if(StringLen(p) > 255) p = StringSubstr(p, 0, 252) + "...";
+      if(!SendNotification(p))
+         Print("Push : echec (", GetLastError(), "). Configurez votre MetaQuotes ID : Outils > Options > Notifications.");
+     }
+   if(InpTgToken != "" && InpTgChat != "")
+     {
+      int n = ArraySize(g_queue);
+      ArrayResize(g_queue, n + 1);
+      g_queue[n] = text;
+     }
+  }
+
+void FlushTelegram()
+  {
+   if(ArraySize(g_queue) == 0 || MQLInfoInteger(MQL_TESTER)) return;
+   string text = g_queue[0];
+   string url = "https://api.telegram.org/bot" + InpTgToken + "/sendMessage";
+   string body = "{\"chat_id\":\"" + InpTgChat + "\",\"text\":\"" + JsonEscape(text) + "\"}";
+   char data[], res[];
+   string rh;
+   int len = StringToCharArray(body, data, 0, WHOLE_ARRAY, CP_UTF8);
+   if(len > 0) ArrayResize(data, len - 1);
+   int code = WebRequest("POST", url, "Content-Type: application/json\r\n", 5000, data, res, rh);
+   if(code != 200)
+      Print("Telegram : echec (code ", code, ", erreur ", GetLastError(),
+            "). Ajoutez https://api.telegram.org dans Outils > Options > Expert Advisors > WebRequest.");
+   // on retire le message dans tous les cas (pas de boucle infinie)
+   int n = ArraySize(g_queue);
+   for(int i = 1; i < n; i++) g_queue[i - 1] = g_queue[i];
+   ArrayResize(g_queue, n - 1);
+  }
+
+//+------------------------------------------------------------------+
+//| Journal CSV (dossier commun : %APPDATA%\MetaQuotes\Terminal\     |
+//| Common\Files\GoldOrb\)                                           |
+//+------------------------------------------------------------------+
+string FilePrefix() { return MQLInfoInteger(MQL_TESTER) ? "GoldOrb\\tester_" : "GoldOrb\\"; }
+
+void Journal(const string ev, const datetime t_utc, const int side, const double price, const double stop,
+             const double atr, const double R, const string note)
+  {
+   string fn = FilePrefix() + "journal_" + _Symbol + ".csv";
+   int h = FileOpen(fn, FILE_READ | FILE_WRITE | FILE_CSV | FILE_ANSI | FILE_COMMON | FILE_SHARE_READ, ';');
+   if(h == INVALID_HANDLE) { Print("Journal : impossible d'ouvrir ", fn, " (", GetLastError(), ")"); return; }
+   if(FileSize(h) == 0)
+      FileWrite(h, "time_utc", "event", "side", "price", "stop", "atr", "R", "note", "paris", "server", "offset_rule_h", "offset_measured_h", "replay");
+   FileSeek(h, 0, SEEK_END);
+   double meas = MQLInfoInteger(MQL_TESTER) ? 0.0 : ((double)((long)TimeTradeServer() - (long)TimeGMT())) / 3600.0;
+   FileWrite(h, TimeToString(t_utc, TIME_DATE | TIME_MINUTES | TIME_SECONDS), ev, side,
+             DoubleToString(price, _Digits), DoubleToString(stop, _Digits), DoubleToString(atr, _Digits),
+             DoubleToString(R, 3), note,
+             TimeToString(ParisFromUTC(t_utc), TIME_DATE | TIME_MINUTES),
+             TimeToString(ToServer(t_utc), TIME_DATE | TIME_MINUTES),
+             DoubleToString(RuleOffsetSecForUTC(t_utc) / 3600.0, 1), DoubleToString(meas, 2),
+             g_replay ? 1 : 0);
+   FileClose(h);
+  }
+
+void SaveState()
+  {
+   int h = FileOpen(FilePrefix() + "state_" + _Symbol + ".bin", FILE_WRITE | FILE_BIN | FILE_COMMON);
+   if(h == INVALID_HANDLE) return;
+   FileWriteStruct(h, g);
+   FileClose(h);
+  }
+
+bool LoadState()
+  {
+   ZeroMemory(g);
+   string fn = FilePrefix() + "state_" + _Symbol + ".bin";
+   if(MQLInfoInteger(MQL_TESTER) || !FileIsExist(fn, FILE_COMMON)) return false;
+   int h = FileOpen(fn, FILE_READ | FILE_BIN | FILE_COMMON);
+   if(h == INVALID_HANDLE) return false;
+   uint n = FileReadStruct(h, g);
+   FileClose(h);
+   if(n != sizeof(GoState)) { ZeroMemory(g); return false; }   // version d'etat differente
+   return true;
+  }
+
+//+------------------------------------------------------------------+
+//| Bougies H4 (grille UTC, prix milieu) depuis le M5 du courtier     |
 //+------------------------------------------------------------------+
 struct Bar4 { datetime t; double o, h, l, c; };
 
@@ -184,16 +306,16 @@ int Build4H(Bar4 &out[], const datetime upto_bucket)
   {
    MqlRates r[];
    ArraySetAsSeries(r, false);
-   int n = CopyRates(_Symbol, PERIOD_M5, 0, InpHistoryDays * 288, r);
    ArrayResize(out, 0);
-   if(n <= 0) return 0;
+   int n = CopyRates(_Symbol, PERIOD_M5, 0, InpHistoryDays * 288, r);
+   if(n <= 0) return -1;
    int k = -1;
    datetime cur = 0;
    for(int i = 0; i < n; i++)
      {
       datetime b = BucketUTC(ToUTC(r[i].time));
-      if(b >= upto_bucket) break;                      // bougie H4 en cours exclue
-      double hs = r[i].spread * _Point * 0.5;          // bid -> milieu
+      if(b >= upto_bucket) break;
+      double hs = r[i].spread * _Point * 0.5;
       double mh = r[i].high + hs, ml = r[i].low + hs, mo = r[i].open + hs, mc = r[i].close + hs;
       if(b != cur)
         {
@@ -225,88 +347,11 @@ double WilderATR(const Bar4 &b[], const int n, const int period)
   }
 
 //+------------------------------------------------------------------+
-//| Notifications et journal                                         |
+//| Taille de position                                               |
 //+------------------------------------------------------------------+
-string JsonEscape(string s)
+double LotsForRisk(const double stop_dist, string &msg, bool &over_risk)
   {
-   StringReplace(s, "\\", "\\\\");
-   StringReplace(s, "\"", "\\\"");
-   StringReplace(s, "\n", "\\n");
-   return s;
-  }
-
-void Telegram(const string text)
-  {
-   if(InpTgToken == "" || InpTgChat == "" || MQLInfoInteger(MQL_TESTER)) return;
-   string url = "https://api.telegram.org/bot" + InpTgToken + "/sendMessage";
-   string body = "{\"chat_id\":\"" + InpTgChat + "\",\"text\":\"" + JsonEscape(text) + "\"}";
-   char data[], res[];
-   string rh;
-   int len = StringToCharArray(body, data, 0, WHOLE_ARRAY, CP_UTF8);
-   if(len > 0) ArrayResize(data, len - 1);
-   int code = WebRequest("POST", url, "Content-Type: application/json\r\n", 5000, data, res, rh);
-   if(code != 200)
-      Print("Telegram: echec (code ", code, ", erreur ", GetLastError(),
-            "). Ajoutez https://api.telegram.org dans Outils > Options > Expert Advisors > WebRequest.");
-  }
-
-void Notify(const string text)
-  {
-   Print(text);
-   if(MQLInfoInteger(MQL_TESTER)) return;
-   if(InpPopup) Alert(text);
-   if(InpPush)
-     {
-      string p = text;
-      if(StringLen(p) > 255) p = StringSubstr(p, 0, 252) + "...";
-      if(!SendNotification(p))
-         Print("Push: echec (", GetLastError(), "). Configurez votre MetaQuotes ID dans Outils > Options > Notifications.");
-     }
-   Telegram(text);
-  }
-
-string FilePrefix() { return MQLInfoInteger(MQL_TESTER) ? "GoldOrb\\tester_" : "GoldOrb\\"; }
-
-void Journal(const string ev, const int side, const double price, const double stop,
-             const double atr, const double R, const string note)
-  {
-   string fn = FilePrefix() + "journal_" + _Symbol + ".csv";
-   int h = FileOpen(fn, FILE_READ | FILE_WRITE | FILE_CSV | FILE_ANSI | FILE_COMMON | FILE_SHARE_READ, ';');
-   if(h == INVALID_HANDLE) { Print("Journal: impossible d'ouvrir ", fn, " (", GetLastError(), ")"); return; }
-   if(FileSize(h) == 0)
-      FileWrite(h, "time_utc", "event", "side", "price", "stop", "atr", "R", "note");
-   FileSeek(h, 0, SEEK_END);
-   FileWrite(h, TimeToString(NowUTC(), TIME_DATE | TIME_MINUTES | TIME_SECONDS), ev, side,
-             DoubleToString(price, _Digits), DoubleToString(stop, _Digits), DoubleToString(atr, _Digits),
-             DoubleToString(R, 3), note);
-   FileClose(h);
-  }
-
-void SaveState()
-  {
-   string fn = FilePrefix() + "state_" + _Symbol + ".bin";
-   int h = FileOpen(fn, FILE_WRITE | FILE_BIN | FILE_COMMON);
-   if(h == INVALID_HANDLE) return;
-   FileWriteStruct(h, g);
-   FileClose(h);
-  }
-
-void LoadState()
-  {
-   ZeroMemory(g);
-   string fn = FilePrefix() + "state_" + _Symbol + ".bin";
-   if(MQLInfoInteger(MQL_TESTER) || !FileIsExist(fn, FILE_COMMON)) return;
-   int h = FileOpen(fn, FILE_READ | FILE_BIN | FILE_COMMON);
-   if(h == INVALID_HANDLE) return;
-   FileReadStruct(h, g);
-   FileClose(h);
-  }
-
-//+------------------------------------------------------------------+
-//| Taille de position pour InpRiskPct % du capital                   |
-//+------------------------------------------------------------------+
-double LotsForRisk(const double stop_dist, string &msg)
-  {
+   over_risk = false;
    double eq = AccountInfoDouble(ACCOUNT_EQUITY);
    double tick_size = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
    double tick_val = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE_LOSS);
@@ -314,70 +359,184 @@ double LotsForRisk(const double stop_dist, string &msg)
    double vmin = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
    double vstep = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
    double vmax = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
-   if(tick_size <= 0 || tick_val <= 0 || vstep <= 0 || stop_dist <= 0) { msg = "lot: n/a"; return 0.0; }
+   if(eq <= 0 || tick_size <= 0 || tick_val <= 0 || vstep <= 0 || stop_dist <= 0) { msg = "lot n/d"; return 0.0; }
    double loss_per_lot = stop_dist / tick_size * tick_val;
-   double lots = MathFloor(eq * InpRiskPct / 100.0 / loss_per_lot / vstep) * vstep;
+   double lots = MathFloor(eq * InpRiskPct / 100.0 / loss_per_lot / vstep + 1e-9) * vstep;
    if(lots < vmin)
      {
       double pct = vmin * loss_per_lot / eq * 100.0;
-      msg = StringFormat("lot min %.2f = %.1f%% du capital (> %.1f%% vise)", vmin, pct, InpRiskPct);
+      over_risk = (pct > InpMaxRiskMult * InpRiskPct);
+      msg = StringFormat("lot min %.2f = %.1f%% du capital%s", vmin, pct, over_risk ? " (TROP RISQUE)" : "");
       return vmin;
      }
    lots = MathMin(lots, vmax);
-   msg = StringFormat("lot %.2f (%.1f%% du capital)", lots, InpRiskPct);
+   msg = StringFormat("lot %.2f (%.2f%%)", lots, InpRiskPct);
    return lots;
   }
 
 //+------------------------------------------------------------------+
-//| Positions reelles (modes 1 et 2)                                  |
+//| Moteur papier - une bougie M1 fermee a la fois (regles du labo)   |
 //+------------------------------------------------------------------+
-bool SelectManagedPosition(ulong &ticket)
+void PaperExit(const double price, const datetime t_utc, const string why)
   {
-   long magic = (InpMode == GO_AUTO) ? InpMagic : InpManualMagic;
-   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   double risk = MathAbs(g.fill - g.init_stop);
+   double R = (risk > 0) ? g.side * (price - g.fill) / risk : 0.0;
+   g.cum_R += R; g.n_trades++;
+   g.week_R += R; g.week_n++;
+   Journal("EXIT", t_utc, g.side, price, g.stop, g.atr, R, why);
+   string txt = StringFormat("GoldOrb %s SORTIE %s (%s) %s a %s : %+.2f R | cumul %+.1f R / %d trades%s",
+                             _Symbol, g.side > 0 ? "achat" : "vente", why, Clocks(t_utc),
+                             DoubleToString(price, _Digits), R, g.cum_R, g.n_trades, g_replay ? " [rattrapage]" : "");
+   if(!g_replay) Notify(txt); else Print(txt);
+   g.side = 0;
+  }
+
+void PaperEnter(const int side, const double price, const datetime t_utc, const datetime bar_time)
+  {
+   g.side = side;
+   g.fill = price;
+   g.atr = g.br_atr;
+   g.trail = InpTrailATR * g.br_atr;
+   g.init_stop = price - side * InpStopATR * g.br_atr;
+   g.stop = g.init_stop;
+   g.best = price;
+   g.entry_utc = t_utc;
+   g.decision_utc = g.br_decision_utc;
+   g.deadline_utc = DeadlineUTC(g.br_decision_utc, InpMaxDays);
+   g.fill_bar = (long)bar_time;
+   g.br_active = 0;
+   Journal("ENTRY", t_utc, side, price, g.init_stop, g.atr, 0, "deadline " + TimeToString(g.deadline_utc, TIME_DATE | TIME_MINUTES));
+   if(g_replay) return;
+   string m;
+   bool over;
+   LotsForRisk(MathAbs(price - g.init_stop), m, over);
+   Notify(StringFormat("GoldOrb %s %s ~%s | stop %s (%.1f) | suiveur %.1f | sortie max %s | %s | REGLE NON VALIDEE EN REEL",
+                       _Symbol, side > 0 ? "CASSURE HAUSSE: ACHAT" : "CASSURE BAISSE: VENTE",
+                       DoubleToString(price, _Digits), DoubleToString(g.init_stop, _Digits), MathAbs(price - g.init_stop),
+                       g.trail, Clocks(g.deadline_utc), m));
+  }
+
+// Une bougie M1 fermee (b = prix BID, spread en points) ; t_utc = heure d'ouverture en UTC
+void ProcessBar(const MqlRates &b, const datetime t_utc)
+  {
+   double spr = b.spread * _Point;
+   double ao = b.open + spr, ah = b.high + spr, al = b.low + spr;
+   // 1) position : sortie au temps (a l'ouverture), puis stop, puis mise a jour du suiveur
+   if(g.side != 0)
      {
-      ulong t = PositionGetTicket(i);
-      if(t == 0 || !PositionSelectByTicket(t)) continue;
-      if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;
-      if(PositionGetInteger(POSITION_MAGIC) != magic) continue;
-      long type = PositionGetInteger(POSITION_TYPE);
-      int side = (type == POSITION_TYPE_BUY) ? 1 : -1;
-      if(side != g.side) continue;
-      ticket = t;
-      return true;
+      bool first = ((long)b.time == g.fill_bar);
+      if(!first && t_utc >= g.deadline_utc)
+        {
+         PaperExit(g.side > 0 ? b.open : ao, t_utc, "temps");
+        }
+      else if(g.side > 0)
+        {
+         if(b.low <= g.stop)
+            PaperExit(first ? g.stop : MathMin(g.stop, b.open), t_utc + 60, g.stop > g.init_stop ? "suiveur" : "stop");
+         else
+           {
+            if(b.high > g.best) g.best = b.high;
+            if(g.best - g.trail > g.stop) g.stop = g.best - g.trail;
+           }
+        }
+      else
+        {
+         if(ah >= g.stop)
+            PaperExit(first ? g.stop : MathMax(g.stop, ao), t_utc + 60, g.stop < g.init_stop ? "suiveur" : "stop");
+         else
+           {
+            if(al < g.best) g.best = al;
+            if(g.best + g.trail < g.stop) g.stop = g.best + g.trail;
+           }
+        }
+      return;
      }
+   // 2) aucune position : cassure dans la fenetre des niveaux ?
+   if(g.br_active == 0) return;
+   if(t_utc >= g.br_expiry_utc) { g.br_active = 0; return; }
+   bool hu = ah >= g.br_hi, hd = b.low <= g.br_lo;
+   if(!hu && !hd) return;
+   int side = (hu && hd) ? (b.close >= b.open ? -1 : 1) : (hu ? 1 : -1);   // les deux : cote adverse (labo)
+   double px = (side > 0) ? MathMax(g.br_hi, ao) : MathMin(g.br_lo, b.open);
+   PaperEnter(side, px, t_utc, b.time);
+   // meme bougie : le stop peut deja etre touche ; sinon le suiveur part des extremes de la bougie
+   if(side > 0)
+     {
+      if(b.low <= g.stop) PaperExit(g.stop, t_utc + 60, "stop");
+      else
+        {
+         if(b.high > g.best) g.best = b.high;
+         if(g.best - g.trail > g.stop) g.stop = g.best - g.trail;
+        }
+     }
+   else
+     {
+      if(ah >= g.stop) PaperExit(g.stop, t_utc + 60, "stop");
+      else
+        {
+         if(al < g.best) g.best = al;
+         if(g.best + g.trail < g.stop) g.stop = g.best + g.trail;
+        }
+     }
+  }
+
+//+------------------------------------------------------------------+
+//| Decision H4 : niveaux si aucune position                         |
+//+------------------------------------------------------------------+
+bool OffsetOK()
+  {
+   if(MQLInfoInteger(MQL_TESTER)) return true;
+   long meas = (long)TimeTradeServer() - (long)TimeGMT();
+   long rule = RuleOffsetSecForUTC(TimeGMT());
+   if(MathAbs(meas - rule) <= 1800) return true;
+   Notify(StringFormat("GoldOrb OFFSET_WARN : decalage serveur mesure %.1f h, regle choisie %.1f h. Aucun niveau arme. Verifiez InpServerTZ.",
+                       meas / 3600.0, rule / 3600.0));
+   Journal("OFFSET_WARN", TimeGMT(), 0, 0, 0, 0, 0, StringFormat("measured %.2f rule %.2f", meas / 3600.0, rule / 3600.0));
    return false;
   }
 
-void SyncRealStop()
+bool Decide(const datetime bucket)
   {
-   if(InpMode == GO_ALERTS || g.side == 0) return;
-   ulong t;
-   if(!SelectManagedPosition(t)) return;
-   double sl = PositionGetDouble(POSITION_SL), tp = PositionGetDouble(POSITION_TP);
-   double want = NormalizeDouble(g.stop, _Digits);
-   bool better = (sl == 0.0) || (g.side > 0 && want > sl + _Point) || (g.side < 0 && want < sl - _Point);
-   if(!better) return;
-   MqlTick k;
-   if(!SymbolInfoTick(_Symbol, k)) return;
-   double lvl = (double)SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL) * _Point;
-   if(g.side > 0 && want > k.bid - lvl) return;   // trop pres du prix : reessai plus tard
-   if(g.side < 0 && want < k.ask + lvl) return;
-   if(!g_trade.PositionModify(t, want, tp))
-      Print("Modification du stop refusee : ", g_trade.ResultRetcodeDescription());
-  }
-
-void CloseRealPosition(const string why)
-  {
-   if(InpMode == GO_ALERTS) return;
-   ulong t;
-   if(SelectManagedPosition(t))
+   g.br_active = 0;
+   g.br_trigger_sent = 0;
+   if(g.side != 0 || g.real_ticket != 0) return true;           // une seule position a la fois
+   if(!g_replay && !OffsetOK()) return true;
+   Bar4 b[];
+   int n = Build4H(b, bucket);
+   if(n < InpChannelBars + InpATRPeriod + 2)
      {
-      if(!g_trade.PositionClose(t))
-         Notify("GoldOrb: fermeture refusee (" + why + ") : " + g_trade.ResultRetcodeDescription() + ". Fermez manuellement.");
+      Journal("DATA_WARN", bucket, 0, 0, 0, 0, 0, "4h bars " + IntegerToString(n));
+      return false;                                              // on reessaiera a la bougie suivante
      }
+   double hi = -DBL_MAX, lo = DBL_MAX;
+   for(int i = n - InpChannelBars; i < n; i++)
+     {
+      if(b[i].h > hi) hi = b[i].h;
+      if(b[i].l < lo) lo = b[i].l;
+     }
+   double atr = WilderATR(b, n, InpATRPeriod);
+   if(atr <= 0) return false;
+   g.br_hi = hi; g.br_lo = lo; g.br_atr = atr;
+   g.br_decision_utc = bucket;
+   g.br_expiry_utc = bucket + 14400;
+   g.br_active = 1;
+   Journal("LEVELS", bucket, 0, hi, lo, atr, 0, "until " + TimeToString(g.br_expiry_utc, TIME_DATE | TIME_MINUTES));
+   if(!g_replay)
+     {
+      MqlDateTime p;
+      TimeToStruct(ParisFromUTC(bucket), p);
+      if(InpNotifyLevels && p.hour >= InpWakeFrom && p.hour < InpWakeTo)
+         Notify(StringFormat("GoldOrb %s niveaux jusqu'a %s Paris : achat > %s | vente < %s | stop %.1f",
+                             _Symbol, TimeToString(ParisFromUTC(g.br_expiry_utc), TIME_MINUTES),
+                             DoubleToString(hi, _Digits), DoubleToString(lo, _Digits), InpStopATR * atr));
+      if(g_auto) PlacePendings();
+     }
+   return true;
   }
 
+//+------------------------------------------------------------------+
+//| Reel : mode 2 (ordres) et mode 1 (gestion de la position manuelle)|
+//+------------------------------------------------------------------+
 void DeletePendings()
   {
    for(int i = OrdersTotal() - 1; i >= 0; i--)
@@ -391,217 +550,203 @@ void DeletePendings()
 
 void PlacePendings()
   {
-   if(!g_auto) return;
    DeletePendings();
    string m;
-   double lots = LotsForRisk(InpStopATR * g_br_atr, m);
-   if(lots <= 0) return;
+   bool over;
+   double D = InpStopATR * g.br_atr;
+   double lots = LotsForRisk(D, m, over);
+   if(lots <= 0 || over)
+     {
+      Notify("GoldOrb : niveaux non places (" + m + "). Augmentez le capital ou baissez le risque.");
+      Journal("SKIP_SIZE", TimeGMT(), 0, 0, 0, g.br_atr, 0, m);
+      return;
+     }
    MqlTick k;
    if(!SymbolInfoTick(_Symbol, k)) return;
    double lvl = (double)SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL) * _Point;
    long emode = SymbolInfoInteger(_Symbol, SYMBOL_EXPIRATION_MODE);
    bool spec = (emode & SYMBOL_EXPIRATION_SPECIFIED) != 0;
    ENUM_ORDER_TYPE_TIME tt = spec ? ORDER_TIME_SPECIFIED : ORDER_TIME_GTC;
-   datetime exp = spec ? ToServer(g_br_expiry_utc) : 0;
-   double hi = NormalizeDouble(g_br_hi, _Digits), lo = NormalizeDouble(g_br_lo, _Digits);
-   if(hi > k.ask + lvl)
-      g_trade.BuyStop(lots, hi, _Symbol, NormalizeDouble(hi - InpStopATR * g_br_atr, _Digits), 0, tt, exp, "GoldOrb L");
-   if(lo < k.bid - lvl)
-      g_trade.SellStop(lots, lo, _Symbol, NormalizeDouble(lo + InpStopATR * g_br_atr, _Digits), 0, tt, exp, "GoldOrb S");
+   datetime exp = spec ? ToServer(g.br_expiry_utc) : 0;
+   double hi = NormalizeDouble(g.br_hi, _Digits), lo = NormalizeDouble(g.br_lo, _Digits);
+   // prix deja au-dela d'un niveau (gap, ouverture du dimanche) : entree au marche, comme le labo
+   if(k.ask >= hi) { g_trade.Buy(lots, _Symbol, 0, NormalizeDouble(k.ask - D, _Digits), 0, "GoldOrb L mkt"); return; }
+   if(k.bid <= lo) { g_trade.Sell(lots, _Symbol, 0, NormalizeDouble(k.bid + D, _Digits), 0, "GoldOrb S mkt"); return; }
+   if(hi > k.ask + lvl) g_trade.BuyStop(lots, hi, _Symbol, NormalizeDouble(hi - D, _Digits), 0, tt, exp, "GoldOrb L");
+   else Journal("STOPSLEVEL", TimeGMT(), 1, hi, 0, 0, 0, "buy level too close: virtual market entry on touch");
+   if(lo < k.bid - lvl) g_trade.SellStop(lots, lo, _Symbol, NormalizeDouble(lo + D, _Digits), 0, tt, exp, "GoldOrb S");
+   else Journal("STOPSLEVEL", TimeGMT(), -1, lo, 0, 0, 0, "sell level too close: virtual market entry on touch");
   }
 
-//+------------------------------------------------------------------+
-//| Logique de la strategie                                          |
-//+------------------------------------------------------------------+
-void NewBracket(const datetime bucket)
+bool RealPositionSelected()
   {
-   g_br_active = false;
-   g_pre_hi = false; g_pre_lo = false;
-   if(g.side != 0) return;                         // on ne place des niveaux que sans position
-   Bar4 b[];
-   int n = Build4H(b, bucket);
-   if(n < InpChannelBars + InpATRPeriod + 2)
+   if(g.real_ticket == 0) return false;
+   if(!PositionSelectByTicket(g.real_ticket)) { g.real_ticket = 0; return false; }   // fermee (stop touche...)
+   return true;
+  }
+
+// mode 1 : rattache la premiere position manuelle du meme sens ouverte autour du signal
+void BindManualPosition()
+  {
+   if(InpMode != GO_MANAGE_MANUAL || g.side == 0 || g.real_ticket != 0) return;
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
      {
-      Print("GoldOrb: historique insuffisant (", n, " bougies H4). Augmentez InpHistoryDays ou ouvrez un graphique M5.");
+      ulong t = PositionGetTicket(i);
+      if(t == 0 || !PositionSelectByTicket(t)) continue;
+      if(PositionGetString(POSITION_SYMBOL) != _Symbol || PositionGetInteger(POSITION_MAGIC) != InpManualMagic) continue;
+      int side = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY) ? 1 : -1;
+      datetime opened = ToUTC((datetime)PositionGetInteger(POSITION_TIME));
+      if(side != g.side || opened < g.entry_utc - 600 || opened > g.entry_utc + 6 * 3600) continue;
+      g.real_ticket = t;
+      g.real_side = side;
+      g.real_fill = PositionGetDouble(POSITION_PRICE_OPEN);
+      g.real_best = g.real_fill;
+      g.real_D = InpStopATR * g.atr;
+      g.real_deadline_utc = g.deadline_utc;
+      Journal("REAL_BIND", TimeGMT(), side, g.real_fill, g.real_fill - side * g.real_D, g.atr, 0, IntegerToString((long)t));
+      Notify(StringFormat("GoldOrb : position #%I64u prise en charge (stop %.2f, suiveur %.1f, sortie %s).",
+                          t, g.real_fill - side * g.real_D, g.real_D, Clocks(g.real_deadline_utc)));
       return;
      }
-   double hi = -DBL_MAX, lo = DBL_MAX;
-   for(int i = n - InpChannelBars; i < n; i++)
+  }
+
+void RealOnBar(const MqlRates &b, const datetime t_utc)
+  {
+   if(InpMode == GO_ALERTS || !RealPositionSelected()) return;
+   double spr = b.spread * _Point;
+   if(g.real_side > 0) { if(b.high > g.real_best) g.real_best = b.high; }
+   else { if(b.low + spr < g.real_best) g.real_best = b.low + spr; }
+   double want = NormalizeDouble(g.real_best - g.real_side * g.real_D, _Digits);
+   double sl = PositionGetDouble(POSITION_SL), tp = PositionGetDouble(POSITION_TP);
+   double init = NormalizeDouble(g.real_fill - g.real_side * g.real_D, _Digits);
+   if(sl == 0.0) want = (g.real_side > 0) ? MathMax(want, init) : MathMin(want, init);
+   bool tighter = (sl == 0.0) || (g.real_side > 0 && want > sl + _Point) || (g.real_side < 0 && want < sl - _Point);
+   if(!tighter) return;
+   MqlTick k;
+   if(!SymbolInfoTick(_Symbol, k)) return;
+   double lvl = (double)MathMax(SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL),
+                                SymbolInfoInteger(_Symbol, SYMBOL_TRADE_FREEZE_LEVEL)) * _Point;
+   if(g.real_side > 0 && want > k.bid - lvl) return;   // trop pres : nouvel essai a la minute suivante
+   if(g.real_side < 0 && want < k.ask + lvl) return;
+   if(g_trade.PositionModify(g.real_ticket, want, tp))
+      Journal("REAL_SL_MOD", t_utc, g.real_side, want, sl, g.real_D, 0, "");
+  }
+
+void RealTimeExit()
+  {
+   if(InpMode == GO_ALERTS || !RealPositionSelected()) return;
+   datetime now = ToUTC(TimeCurrent());
+   if(now < g.real_deadline_utc) return;
+   if(g_trade.PositionClose(g.real_ticket))
      {
-      if(b[i].h > hi) hi = b[i].h;
-      if(b[i].l < lo) lo = b[i].l;
-     }
-   g_br_hi = hi; g_br_lo = lo;
-   g_br_atr = WilderATR(b, n, InpATRPeriod);
-   g_br_expiry_utc = bucket + 14400;
-   if(g_br_atr <= 0) return;
-   g_br_active = true;
-   Journal("LEVELS", 0, hi, lo, g_br_atr, 0, "valid_until_utc " + TimeToString(g_br_expiry_utc, TIME_DATE | TIME_MINUTES));
-   if(InpNotifyLevels)
-      Notify(StringFormat("GoldOrb %s niveaux jusqu'a %s UTC : achat > %s | vente < %s | ATR %.2f",
-                          _Symbol, TimeToString(g_br_expiry_utc, TIME_MINUTES), DoubleToString(hi, _Digits),
-                          DoubleToString(lo, _Digits), g_br_atr));
-   PlacePendings();
-  }
-
-void Enter(const int side, const double price)
-  {
-   g.side = side;
-   g.fill = price;
-   g.atr = g_br_atr;
-   g.trail = InpTrailATR * g_br_atr;
-   g.init_stop = price - side * InpStopATR * g_br_atr;
-   g.stop = g.init_stop;
-   g.best = price;
-   g.entry_utc = NowUTC();
-   g.deadline_utc = DeadlineUTC(g_br_expiry_utc - 14400, InpMaxDays);
-   g_br_active = false;
-   string m;
-   LotsForRisk(MathAbs(price - g.init_stop), m);
-   string txt = StringFormat("GoldOrb %s %s ~%s | stop %s (%.1f) | suiveur %.1f | sortie max %s UTC | %s | NON VALIDE EN REEL",
-                             _Symbol, side > 0 ? "CASSURE HAUSSE: ACHAT" : "CASSURE BAISSE: VENTE",
-                             DoubleToString(price, _Digits), DoubleToString(g.init_stop, _Digits),
-                             MathAbs(price - g.init_stop), g.trail,
-                             TimeToString(g.deadline_utc, TIME_DATE | TIME_MINUTES), m);
-   Notify(txt);
-   Journal("ENTRY", side, price, g.init_stop, g.atr, 0, TimeToString(g.deadline_utc, TIME_DATE | TIME_MINUTES));
-   SaveState();
-  }
-
-void Exit(const double price, const string why)
-  {
-   double risk = MathAbs(g.fill - g.init_stop);
-   double R = (risk > 0) ? g.side * (price - g.fill) / risk : 0.0;
-   g.cum_R += R; g.n_trades++;
-   g.week_R += R; g.week_n++;
-   string txt = StringFormat("GoldOrb %s SORTIE %s (%s) a %s : %+.2f R | cumul %+.1f R sur %d trades",
-                             _Symbol, g.side > 0 ? "achat" : "vente", why, DoubleToString(price, _Digits),
-                             R, g.cum_R, g.n_trades);
-   Notify(txt);
-   Journal("EXIT", g.side, price, g.stop, g.atr, R, why);
-   CloseRealPosition(why);
-   g.side = 0;
-   SaveState();
-  }
-
-void OnNewM1()
-  {
-   if(g.side == 0) return;
-   // la bougie M1 qui vient de se fermer : index 1
-   double hi = iHigh(_Symbol, PERIOD_M1, 1);
-   double lo = iLow(_Symbol, PERIOD_M1, 1);
-   long spr = iSpread(_Symbol, PERIOD_M1, 1);
-   if(hi <= 0 || lo <= 0) return;
-   if(g.side > 0)
-     {
-      if(hi > g.best) g.best = hi;                                   // plus haut bid
-      if(g.best - g.trail > g.stop) g.stop = g.best - g.trail;
+      Journal("REAL_CLOSE", now, g.real_side, 0, 0, 0, 0, "time");
+      g.real_ticket = 0;
      }
    else
+      Notify("GoldOrb : fermeture au temps refusee (" + g_trade.ResultRetcodeDescription() + "). Fermez manuellement.");
+  }
+
+//+------------------------------------------------------------------+
+//| Boucle : traite toutes les bougies M1 fermees non encore vues     |
+//+------------------------------------------------------------------+
+void CatchUp()
+  {
+   datetime cur = iTime(_Symbol, PERIOD_M1, 0);
+   if(cur == 0) return;
+   if(g.last_m1 == 0) { g.last_m1 = cur - 60; g.last_bucket_utc = BucketUTC(ToUTC(cur)); return; }  // 1er lancement
+   if(cur <= g.last_m1 + 60) return;
+   MqlRates r[];
+   ArraySetAsSeries(r, false);
+   int n = CopyRates(_Symbol, PERIOD_M1, g.last_m1 + 60, cur - 60, r);
+   if(n <= 0) return;
+   g_replay = (cur - g.last_m1 > 5 * 60);       // plus de quelques minutes de retard : rattrapage
+   if(g_replay) Journal("REPLAY", ToUTC(cur), 0, 0, 0, 0, 0, IntegerToString(n) + " M1 bars");
+   for(int i = 0; i < n; i++)
      {
-      double alo = lo + spr * _Point;                               // plus bas ask
-      if(alo < g.best) g.best = alo;
-      if(g.best + g.trail < g.stop) g.stop = g.best + g.trail;
+      if(r[i].time <= g.last_m1) continue;
+      datetime t_utc = ToUTC(r[i].time);
+      datetime bucket = BucketUTC(t_utc);
+      if(bucket != g.last_bucket_utc)
+        {
+         if(Decide(bucket)) g.last_bucket_utc = bucket;            // sinon on reessaiera a la bougie suivante
+        }
+      ProcessBar(r[i], t_utc);
+      RealOnBar(r[i], t_utc);
+      if(InpLogSpread && !g_replay)
+        {
+         MqlDateTime x;
+         TimeToStruct(NYfromUTC(t_utc), x);
+         int mm = x.hour * 60 + x.min;
+         if(mm >= 16 * 60 + 45 && mm <= 18 * 60 + 30)
+            Journal("SPREAD", t_utc, 0, r[i].close, 0, 0, 0, DoubleToString(r[i].spread * _Point, 3));
+        }
+      g.last_m1 = r[i].time;
      }
-   SyncRealStop();
+   if(g_replay)
+     {
+      g_replay = false;
+      Notify(StringFormat("GoldOrb : rattrapage de %d minutes termine. Position papier : %s.", n,
+                          g.side == 0 ? "aucune" : (g.side > 0 ? "achat" : "vente")));
+     }
    SaveState();
   }
 
-void WeeklySummary()
+void TickTrigger()
   {
-   datetime now = NowUTC();
+   // alerte instantanee au franchissement (la position papier est enregistree a la cloture M1)
+   if(g.side != 0 || g.br_active == 0 || g.br_trigger_sent != 0) return;
+   MqlTick k;
+   if(!SymbolInfoTick(_Symbol, k)) return;
+   if(k.ask >= g.br_hi || k.bid <= g.br_lo)
+     {
+      g.br_trigger_sent = 1;
+      int side = (k.ask >= g.br_hi) ? 1 : -1;
+      string m;
+      bool over;
+      LotsForRisk(InpStopATR * g.br_atr, m, over);
+      Notify(StringFormat("GoldOrb %s CASSURE %s maintenant (%s) | stop a %.1f du prix d'entree | %s",
+                          _Symbol, side > 0 ? "HAUSSIERE : achat" : "BAISSIERE : vente",
+                          DoubleToString(side > 0 ? k.ask : k.bid, _Digits), InpStopATR * g.br_atr, m));
+      BindManualPosition();
+     }
+  }
+
+void Housekeeping()
+  {
+   datetime now = ToUTC(TimeCurrent());
    MqlDateTime x;
    TimeToStruct(now, x);
-   if(x.day_of_week != 5 || x.hour < 20) return;      // vendredi apres 20:00 UTC (le marche ferme vers 21-22h)
-   if(now - g.week_sent_utc < 3 * 86400) return;
-   Notify(StringFormat("GoldOrb %s semaine : %d trade(s), %+.2f R | cumul %+.1f R sur %d trades%s",
-                       _Symbol, g.week_n, g.week_R, g.cum_R, g.n_trades,
-                       g.side != 0 ? " | position ouverte" : ""));
-   Journal("WEEK", 0, 0, 0, 0, g.week_R, IntegerToString(g.week_n) + " trades");
-   g.week_R = 0; g.week_n = 0; g.week_sent_utc = now;
-   SaveState();
-  }
-
-void Process()
-  {
-   MqlTick k;
-   if(!SymbolInfoTick(_Symbol, k) || k.bid <= 0 || k.ask <= 0) return;
-   datetime now = NowUTC();
-   // 1) nouvelle bougie M1 -> mise a jour du suiveur
-   datetime m1 = iTime(_Symbol, PERIOD_M1, 0);
-   if(m1 != 0 && m1 != g_last_m1)
+   if(x.day_of_week == 5 && x.hour >= 20 && now - g.week_sent_utc > 3 * 86400)
      {
-      if(g_last_m1 != 0) OnNewM1();
-      g_last_m1 = m1;
+      Notify(StringFormat("GoldOrb %s semaine : %d trade(s) %+.2f R | cumul %+.1f R / %d trades%s",
+                          _Symbol, g.week_n, g.week_R, g.cum_R, g.n_trades, g.side != 0 ? " | position ouverte" : ""));
+      Journal("WEEK", now, 0, 0, 0, 0, g.week_R, IntegerToString(g.week_n));
+      g.week_R = 0; g.week_n = 0; g.week_sent_utc = now;
      }
-   // 2) nouvelle bougie H4 (grille UTC) -> nouveaux niveaux si aucune position
-   datetime bucket = BucketUTC(now);
-   if(bucket != g_bucket)
+   if(now - g.heartbeat_utc > 86400)
      {
-      g_bucket = bucket;
-      NewBracket(bucket);
+      Journal("HEARTBEAT", now, g.side, g.stop, 0, 0, g.cum_R, g.br_active ? "levels armed" : "");
+      g.heartbeat_utc = now;
      }
-   // 3) position en cours : stop / suiveur / sortie au temps
-   if(g.side > 0)
-     {
-      if(k.bid <= g.stop) Exit(k.bid, g.stop > g.init_stop ? "suiveur" : "stop");
-      else if(now >= g.deadline_utc) Exit(k.bid, "temps");
-     }
-   else if(g.side < 0)
-     {
-      if(k.ask >= g.stop) Exit(k.ask, g.stop < g.init_stop ? "suiveur" : "stop");
-      else if(now >= g.deadline_utc) Exit(k.ask, "temps");
-     }
-   // 4) aucune position : cassure ?
-   else if(g_br_active)
-     {
-      if(now >= g_br_expiry_utc) g_br_active = false;
-      else if(k.ask >= g_br_hi) Enter(1, k.ask);
-      else if(k.bid <= g_br_lo) Enter(-1, k.bid);
-      else if(InpPreAlertATR > 0)
-        {
-         if(!g_pre_hi && k.ask >= g_br_hi - InpPreAlertATR * g_br_atr)
-           {
-            g_pre_hi = true;
-            Notify(StringFormat("GoldOrb %s : le prix approche du niveau d'ACHAT %s (ecart %.1f). Preparez-vous.",
-                                _Symbol, DoubleToString(g_br_hi, _Digits), g_br_hi - k.ask));
-           }
-         if(!g_pre_lo && k.bid <= g_br_lo + InpPreAlertATR * g_br_atr)
-           {
-            g_pre_lo = true;
-            Notify(StringFormat("GoldOrb %s : le prix approche du niveau de VENTE %s (ecart %.1f). Preparez-vous.",
-                                _Symbol, DoubleToString(g_br_lo, _Digits), k.bid - g_br_lo));
-           }
-        }
-     }
-   WeeklySummary();
   }
 
 //+------------------------------------------------------------------+
 int OnInit()
   {
    if(StringFind(_Symbol, "XAU") < 0 && StringFind(_Symbol, "GOLD") < 0)
-      Print("GoldOrb: attention, regle testee uniquement sur l'or (XAUUSD). Symbole actuel : ", _Symbol);
+      Print("GoldOrb : attention, regle testee uniquement sur l'or (XAUUSD). Symbole : ", _Symbol);
    FolderCreate("GoldOrb", FILE_COMMON);
-   LoadState();
-   g_trade.SetExpertMagicNumber(InpMagic);
+   bool had = LoadState();
+   g_trade.SetExpertMagicNumber((ulong)InpMagic);
    g_auto = (InpMode == GO_AUTO);
    if(g_auto && AccountInfoInteger(ACCOUNT_TRADE_MODE) == ACCOUNT_TRADE_MODE_REAL && !InpAllowAutoReal)
      {
       g_auto = false;
-      Notify("GoldOrb: mode automatique refuse sur compte REEL (InpAllowAutoReal=false). Passage en mode alertes.");
+      Notify("GoldOrb : mode automatique refuse sur compte REEL (InpAllowAutoReal = false). Mode alertes.");
      }
-   if(InpServerTZ == GO_TZ_NY_CLOSE && !MQLInfoInteger(MQL_TESTER))
-     {
-      long d = (long)TimeTradeServer() - (long)TimeGMT();
-      int expected = ServerOffsetSec(TimeTradeServer());
-      if(MathAbs(d - expected) > 1800)
-         Print("GoldOrb: ATTENTION le decalage serveur mesure (", d / 3600.0, " h) differe de l'hypothese 17h New York (",
-               expected / 3600, " h). Choisissez InpServerTZ = Automatique ou Fixe.");
-     }
-   EventSetTimer(30);
-   Print("GoldOrb demarre. Mode ", EnumToString(InpMode), " | position fictive : ", g.side,
-         " | cumul ", DoubleToString(g.cum_R, 2), " R sur ", g.n_trades, " trades");
+   EventSetTimer(2);
+   Print("GoldOrb v2 demarre. Mode ", EnumToString(InpMode), had ? " | etat recharge" : " | nouvel etat",
+         " | position papier ", g.side, " | cumul ", DoubleToString(g.cum_R, 2), " R / ", g.n_trades, " trades");
    return INIT_SUCCEEDED;
   }
 
@@ -611,10 +756,21 @@ void OnDeinit(const int reason)
    SaveState();
   }
 
-void OnTick()  { Process(); }
-void OnTimer() { Process(); }
+void OnTick()
+  {
+   CatchUp();
+   TickTrigger();
+   RealTimeExit();
+  }
 
-// Mode auto : quand un ordre en attente est execute, on aligne la position fictive sur le vrai prix
+void OnTimer()
+  {
+   CatchUp();
+   Housekeeping();
+   FlushTelegram();
+  }
+
+// Mode auto : sur execution d'un ordre stop -> annule l'autre, recale le stop sur le vrai prix
 void OnTradeTransaction(const MqlTradeTransaction &trans, const MqlTradeRequest &request, const MqlTradeResult &result)
   {
    if(!g_auto || trans.type != TRADE_TRANSACTION_DEAL_ADD) return;
@@ -622,20 +778,25 @@ void OnTradeTransaction(const MqlTradeTransaction &trans, const MqlTradeRequest 
    if(HistoryDealGetString(trans.deal, DEAL_SYMBOL) != _Symbol) return;
    if(HistoryDealGetInteger(trans.deal, DEAL_MAGIC) != InpMagic) return;
    if(HistoryDealGetInteger(trans.deal, DEAL_ENTRY) != DEAL_ENTRY_IN) return;
-   long dtype = HistoryDealGetInteger(trans.deal, DEAL_TYPE);
-   int side = (dtype == DEAL_TYPE_BUY) ? 1 : -1;
-   double px = HistoryDealGetDouble(trans.deal, DEAL_PRICE);
+   int side = (HistoryDealGetInteger(trans.deal, DEAL_TYPE) == DEAL_TYPE_BUY) ? 1 : -1;
+   ulong pos = (ulong)HistoryDealGetInteger(trans.deal, DEAL_POSITION_ID);
    DeletePendings();
-   if(g.side == 0) Enter(side, px);
-   else if(g.side == side)
+   if(g.real_ticket != 0 && g.real_ticket != pos)
      {
-      // la position fictive a deja ete ouverte sur ce tick : on recale sur le prix reel
-      g.fill = px;
-      g.init_stop = px - side * InpStopATR * g.atr;
-      g.stop = g.init_stop;
-      g.best = px;
-      SaveState();
+      // les deux ordres ont ete executes : on ferme le second immediatement
+      g_trade.PositionClose(pos);
+      Journal("REAL_CLOSE", TimeGMT(), side, 0, 0, 0, 0, "second OCO leg");
+      return;
      }
-   SyncRealStop();
+   g.real_ticket = pos;
+   g.real_side = side;
+   g.real_fill = HistoryDealGetDouble(trans.deal, DEAL_PRICE);
+   g.real_best = g.real_fill;
+   g.real_D = InpStopATR * g.br_atr;
+   g.real_deadline_utc = DeadlineUTC(g.br_decision_utc, InpMaxDays);
+   Journal("REAL_FILL", TimeGMT(), side, g.real_fill, g.real_fill - side * g.real_D, g.br_atr, 0, IntegerToString((long)pos));
+   if(PositionSelectByTicket(pos))
+      g_trade.PositionModify(pos, NormalizeDouble(g.real_fill - side * g.real_D, _Digits), PositionGetDouble(POSITION_TP));
+   SaveState();
   }
 //+------------------------------------------------------------------+
