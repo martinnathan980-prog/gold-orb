@@ -1,59 +1,59 @@
 {
  "xauusd": {
   "is": {
-   "n": 494,
-   "pf": 1.356,
-   "t_stat": 2.37,
-   "expectancy_R": 0.1251,
+   "n": 499,
+   "pf": 1.35,
+   "t_stat": 2.35,
+   "expectancy_R": 0.1233,
    "years_pos": "8/9",
-   "long_R": 49.2,
-   "short_R": 12.6
+   "long_R": 49.5,
+   "short_R": 12.0
   },
   "val": {
-   "n": 243,
-   "pf": 1.232,
-   "t_stat": 1.19,
-   "expectancy_R": 0.0796,
+   "n": 248,
+   "pf": 1.294,
+   "t_stat": 1.49,
+   "expectancy_R": 0.0998,
    "years_pos": "3/4",
-   "long_R": 28.8,
-   "short_R": -9.4
+   "long_R": 34.4,
+   "short_R": -9.7
   }
  },
  "eurusd": {
   "is": {
-   "n": 510,
-   "pf": 0.975,
-   "t_stat": -0.22,
-   "expectancy_R": -0.0093,
+   "n": 512,
+   "pf": 0.982,
+   "t_stat": -0.15,
+   "expectancy_R": -0.0066,
    "years_pos": "4/9",
-   "long_R": 5.5,
-   "short_R": -10.3
+   "long_R": 5.9,
+   "short_R": -9.3
   },
   "val": {
    "n": 249,
-   "pf": 0.768,
-   "t_stat": -1.64,
-   "expectancy_R": -0.0981,
+   "pf": 0.771,
+   "t_stat": -1.61,
+   "expectancy_R": -0.0968,
    "years_pos": "1/4",
-   "long_R": -15.7,
+   "long_R": -15.4,
    "short_R": -8.7
   }
  },
  "gbpusd": {
   "is": {
-   "n": 530,
-   "pf": 1.05,
-   "t_stat": 0.4,
-   "expectancy_R": 0.0171,
-   "years_pos": "5/9",
-   "long_R": -2.9,
-   "short_R": 12.0
+   "n": 532,
+   "pf": 1.062,
+   "t_stat": 0.5,
+   "expectancy_R": 0.0212,
+   "years_pos": "4/9",
+   "long_R": -3.8,
+   "short_R": 15.1
   },
   "val": {
    "n": 242,
    "pf": 0.858,
-   "t_stat": -0.85,
-   "expectancy_R": -0.0564,
+   "t_stat": -0.86,
+   "expectancy_R": -0.0565,
    "years_pos": "1/4",
    "long_R": -11.3,
    "short_R": -2.3
@@ -61,19 +61,19 @@
  },
  "usdjpy": {
   "is": {
-   "n": 498,
-   "pf": 1.039,
-   "t_stat": 0.31,
-   "expectancy_R": 0.0146,
+   "n": 501,
+   "pf": 1.045,
+   "t_stat": 0.35,
+   "expectancy_R": 0.0165,
    "years_pos": "5/9",
-   "long_R": 19.6,
-   "short_R": -12.4
+   "long_R": 20.4,
+   "short_R": -12.1
   },
   "val": {
    "n": 227,
    "pf": 1.474,
    "t_stat": 2.18,
-   "expectancy_R": 0.1771,
+   "expectancy_R": 0.1772,
    "years_pos": "3/4",
    "long_R": 38.6,
    "short_R": 1.6
@@ -81,22 +81,22 @@
  },
  "deuidxeur": {
   "is": {
-   "n": 429,
-   "pf": 1.17,
-   "t_stat": 1.2,
-   "expectancy_R": 0.0617,
-   "years_pos": "7/9",
-   "long_R": 2.7,
-   "short_R": 23.8
+   "n": 448,
+   "pf": 1.148,
+   "t_stat": 1.08,
+   "expectancy_R": 0.0533,
+   "years_pos": "6/9",
+   "long_R": 5.0,
+   "short_R": 18.9
   },
   "val": {
-   "n": 228,
-   "pf": 0.983,
-   "t_stat": -0.09,
-   "expectancy_R": -0.0066,
-   "years_pos": "2/4",
-   "long_R": 24.1,
-   "short_R": -25.6
+   "n": 235,
+   "pf": 1.145,
+   "t_stat": 0.74,
+   "expectancy_R": 0.053,
+   "years_pos": "3/4",
+   "long_R": 28.3,
+   "short_R": -15.8
   }
  },
  "lightcmdusd": {
@@ -104,19 +104,19 @@
    "n": 513,
    "pf": 1.343,
    "t_stat": 2.47,
-   "expectancy_R": 0.117,
+   "expectancy_R": 0.1169,
    "years_pos": "7/9",
    "long_R": 16.4,
    "short_R": 43.5
   },
   "val": {
-   "n": 259,
-   "pf": 0.607,
-   "t_stat": -3.09,
-   "expectancy_R": -0.1678,
+   "n": 261,
+   "pf": 0.599,
+   "t_stat": -3.19,
+   "expectancy_R": -0.1729,
    "years_pos": "0/4",
-   "long_R": -20.4,
-   "short_R": -23.0
+   "long_R": -21.3,
+   "short_R": -23.8
   }
  }
 }
