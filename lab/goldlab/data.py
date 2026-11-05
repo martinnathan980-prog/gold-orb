@@ -23,10 +23,15 @@ def load_m1(sym="xauusd", start=None, end=None):
         _cache[sym] = pd.read_parquet(os.path.join(DATA, f"{sym}_m1.parquet"))
     df = _cache[sym]
     if start is not None:
-        df = df[df.index >= pd.Timestamp(start, tz="UTC")]
+        df = df[df.index >= _utc(start)]
     if end is not None:
-        df = df[df.index < pd.Timestamp(end, tz="UTC")]
+        df = df[df.index < _utc(end)]
     return df
+
+
+def _utc(x):
+    t = pd.Timestamp(x)
+    return t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC")
 
 
 def trading_day(ts):

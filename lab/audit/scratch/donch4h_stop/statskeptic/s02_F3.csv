@@ -1,0 +1,2 @@
+seed,is_n,is_pf,is_t,is_exp,is_years,is_stress_pf,is_pass,is_pass_core,is_long_pf,is_short_pf,is_long_share,val_n,val_pf,val_t,val_exp,val_pass,val_long_pf,val_short_pf,val_long_share
+0,775,0.661,-4.63,-0.1612,1/9,0.612,False,False,0.6524332789031466,0.6690061501646161,0.472258064516129,396.0,0.691,-2.84,-0.1423,False,1.0068147293246528,0.5627737809019037,0.33080808080808083

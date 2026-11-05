@@ -1,0 +1,6 @@
+calib p 0.045 IS n median 457.0
+calib p 0.05 IS n median 495.0
+calib p 0.055 IS n median 527.0
+calib p 0.06 IS n median 569.0
+calib p 0.065 IS n median 597.0
+chosen p_place 0.05

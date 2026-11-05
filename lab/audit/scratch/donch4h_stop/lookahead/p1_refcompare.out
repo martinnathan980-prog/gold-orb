@@ -1,0 +1,12 @@
+== dec=engine: ties (both levels in one M1 bar) among taken trades: 0
+   ref IS  n=499 PF=1.3500 t=2.353  | engine IS PF=1.3500
+   ref VAL n=248 PF=1.2937 t=1.488 | engine VAL PF=1.2937
+[engine/IS] ref n=499 eng n=499 common=499 only_ref=0 only_eng=0 same_side=1.0000 max|d_entry|=0.00e+00 max|d_exit|=2.27e-13 same_exit_time=1.0000 max|dR|=8.97e-14
+[engine/VAL] ref n=248 eng n=248 common=248 only_ref=0 only_eng=0 same_side=1.0000 max|d_entry|=0.00e+00 max|d_exit|=4.55e-13 same_exit_time=1.0000 max|dR|=3.38e-14
+== dec=boundary: ties (both levels in one M1 bar) among taken trades: 0
+   ref IS  n=499 PF=1.3500 t=2.353  | engine IS PF=1.3500
+   ref VAL n=248 PF=1.2937 t=1.488 | engine VAL PF=1.2937
+[boundary/IS] ref n=499 eng n=499 common=499 only_ref=0 only_eng=0 same_side=1.0000 max|d_entry|=0.00e+00 max|d_exit|=2.27e-13 same_exit_time=1.0000 max|dR|=8.97e-14
+[boundary/VAL] ref n=248 eng n=248 common=248 only_ref=0 only_eng=0 same_side=1.0000 max|d_entry|=0.00e+00 max|d_exit|=4.55e-13 same_exit_time=1.0000 max|dR|=3.38e-14
+engine orders: all resolved OCO windows 2646
+time 9.6s

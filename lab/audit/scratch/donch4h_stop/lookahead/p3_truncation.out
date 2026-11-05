@@ -1,0 +1,6 @@
+{'a_ok': 40, 'b_ok': 0, 'c_ok': 40, 'n': 40} fails: [('2013-01-25 12:00:00+00:00', True, False, True, 0), ('2013-06-20 16:00:00+00:00', True, False, True, 0), ('2013-12-31 12:00:00+00:00', True, False, True, 0), ('2014-02-10 04:00:00+00:00', True, False, True, 0), ('2014-10-30 04:00:00+00:00', True, False, True, 0), ('2015-02-11 12:00:00+00:00', True, False, True, 0), ('2015-04-24 12:00:00+00:00', True, False, True, 0), ('2015-04-28 12:00:00+00:00', True, False, True, 0), ('2015-06-03 16:00:00+00:00', True, False, True, 0), ('2015-07-07 12:00:00+00:00', True, False, True, 0)]
+decision bars: 20800  NaT time-exit (dropped): 0
+time-exit bar has the decision's NY wall clock - 5 min: 0.9814  (others = exit moved before a closure or data hole)
+  moved earlier: n 387  by hours: median 2.933333333333333 max 167.93333333333334  any exit AFTER scheduled time: 0
+max scheduled hold from decision (h): 168.91666666666666
+time 34.9s

@@ -65,3 +65,11 @@
 {"time": "2026-11-05T16:46:27", "track": "audit", "label": "audit:meanrev:meanrev-A-failedbreak-D5", "period": "val"}
 {"time": "2026-11-05T16:46:29", "track": "audit", "label": "audit:meanrev:meanrev-A-failedbreak-D5", "period": "val"}
 {"time": "2026-11-05T16:46:31", "track": "review", "label": "statskeptic:donch4h_stop:candidate-trades(normal,stress,every-signal)", "period": "val"}
+{"time": "2026-11-05T16:47:15", "track": "review", "label": "lookahead:donch4h_stop:refimpl-compare", "period": "val"}
+{"time": "2026-11-05T16:47:19", "track": "review", "label": "statskeptic:donch4h_stop:null-N1(6 seeds, VAL reports)", "period": "val"}
+{"time": "2026-11-05T16:47:21", "track": "review", "label": "statskeptic:donch4h_stop:null-N1L(3 seeds, VAL reports)", "period": "val"}
+{"time": "2026-11-05T16:47:22", "track": "review", "label": "statskeptic:donch4h_stop:null-N1S(3 seeds, VAL reports)", "period": "val"}
+{"time": "2026-11-05T16:47:24", "track": "review", "label": "statskeptic:donch4h_stop:null-N1q(3 seeds, VAL reports)", "period": "val"}
+{"time": "2026-11-05T16:47:26", "track": "review", "label": "statskeptic:donch4h_stop:null-N3(6 seeds, VAL reports)", "period": "val"}
+{"time": "2026-11-05T16:47:27", "track": "review", "label": "statskeptic:donch4h_stop:null-C3(1 seeds, VAL reports)", "period": "val"}
+{"time": "2026-11-05T16:47:27", "track": "review", "label": "statskeptic:donch4h_stop:null-F3(1 seeds, VAL reports)", "period": "val"}
