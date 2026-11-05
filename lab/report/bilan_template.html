@@ -1,0 +1,403 @@
+<title>Bilan Gold-Orb</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one assay-report reading column (≈ 64ch) with figures allowed to widen to 960px. */
+:root {
+  --bg: #f6f7f4;
+  --paper: #ffffff;
+  --fg: #161915;
+  --muted: #5a6058;
+  --line: #dde1d9;
+  --band-a: #eef1ea;
+  --band-b: #e6eadf;
+  --band-c: #f6eccd;
+  --gold: #8a6510;
+  --gold-soft: #f3e6bf;
+  --series: #2a78d6;
+  --good: #0ca30c;
+  --warn: #b97f00;
+  --bad: #d03b3b;
+  --display: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111310; --paper: #181b17; --fg: #ebeee7; --muted: #a2a99d; --line: #2c3129;
+    --band-a: #1c201b; --band-b: #222720; --band-c: #2f2a19; --gold: #e0bb55; --gold-soft: #3a3118;
+    --series: #3987e5; --good: #2fbf2f; --warn: #e5a91f; --bad: #e66767; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111310; --paper: #181b17; --fg: #ebeee7; --muted: #a2a99d; --line: #2c3129;
+  --band-a: #1c201b; --band-b: #222720; --band-c: #2f2a19; --gold: #e0bb55; --gold-soft: #3a3118;
+  --series: #3987e5; --good: #2fbf2f; --warn: #e5a91f; --bad: #e66767; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 16px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 64px;
+}
+main { max-width: 960px; margin: 0 auto; display: grid; gap: 56px; }
+.col { max-width: 66ch; }
+h1, h2, h3 { font-family: var(--display); font-stretch: 82%; line-height: 1.15; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2.3rem, 6vw, 3.6rem); font-weight: 800; letter-spacing: -0.01em; }
+h2 { font-size: clamp(1.45rem, 3vw, 1.9rem); font-weight: 750; }
+h3 { font-size: 1.1rem; font-weight: 700; font-stretch: 90%; }
+p { margin: 0; }
+section { display: grid; gap: 18px; }
+.eyebrow { font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 1.12rem; }
+.muted { color: var(--muted); }
+.small { font-size: 0.88rem; }
+a { color: var(--fg); text-decoration-color: var(--gold); text-underline-offset: 3px; }
+code, .mono { font-family: var(--mono); font-size: 0.9em; }
+header { display: grid; gap: 14px; border-bottom: 1px solid var(--line); padding-bottom: 28px; }
+.hallmark { display: inline-flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 0.8rem; color: var(--gold); }
+.hallmark span { border: 1.5px solid var(--gold); padding: 2px 8px; border-radius: 3px; letter-spacing: 0.06em; }
+
+/* key figures */
+.figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px; display: grid; gap: 4px; align-content: start; }
+.fig .v { font-family: var(--display); font-stretch: 85%; font-weight: 750; font-size: 2.1rem; line-height: 1.1; }
+.fig .k { font-size: 0.86rem; color: var(--muted); }
+
+/* protocol strip: real chronological sequence */
+.strip { display: grid; grid-template-columns: 9fr 4fr minmax(118px, 1.2fr); gap: 2px; border-radius: 6px; overflow: hidden; min-width: 0; }
+.strip div { padding: 12px 12px; display: grid; gap: 2px; align-content: start; min-width: 0; }
+.strip .a { background: var(--band-a); } .strip .b { background: var(--band-b); } .strip .c { background: var(--band-c); }
+.strip b { font-family: var(--display); font-stretch: 85%; font-size: 1rem; }
+.strip span { font-size: 0.8rem; color: var(--muted); }
+@media (max-width: 620px) { .strip { grid-template-columns: 1fr; } }
+
+/* tables */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 500; white-space: nowrap; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 0.74rem; font-weight: 500; letter-spacing: 0.04em; white-space: nowrap; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; }
+.chip::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.chip.pass { color: var(--good); } .chip.cond { color: var(--warn); } .chip.fail { color: var(--bad); }
+
+/* charts */
+.chart { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 16px 12px 10px; position: relative; display: grid; gap: 8px; min-width: 0; }
+.chart svg { display: block; width: 100%; overflow: visible; }
+.chart svg:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; border-radius: 4px; }
+.chart .cap { font-size: 0.86rem; color: var(--muted); padding: 0 6px; }
+.tip { position: absolute; pointer-events: none; background: var(--fg); color: var(--bg); padding: 6px 10px; border-radius: 4px; font-size: 0.82rem; line-height: 1.35; white-space: nowrap; transform: translate(-50%, -110%); opacity: 0; transition: opacity .08s; }
+.tip strong { font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .tip { transition: none; } }
+details { border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
+details summary { cursor: pointer; padding: 10px 14px; font-size: 0.9rem; color: var(--muted); }
+details summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+details .tablewrap { border: 0; border-top: 1px solid var(--line); border-radius: 0; }
+
+/* lists */
+ul.points { margin: 0; padding-left: 1.1rem; display: grid; gap: 10px; }
+ol.steps { margin: 0; padding-left: 1.3rem; display: grid; gap: 12px; }
+ol.steps li::marker { font-family: var(--display); font-weight: 750; color: var(--gold); }
+.note { border-left: 3px solid var(--gold); background: var(--gold-soft); padding: 12px 16px; border-radius: 0 6px 6px 0; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.two > * { min-width: 0; }
+footer { border-top: 1px solid var(--line); padding-top: 20px; font-size: 0.86rem; color: var(--muted); display: grid; gap: 8px; }
+</style>
+
+<main>
+  <header>
+    <div class="hallmark"><span>XAU · 999.9</span> labo de recherche · 5 novembre 2026</div>
+    <h1>Bilan Gold-Orb</h1>
+    <p class="lede col">J'ai cherché sur l'or une règle qui gagne plus qu'elle ne perd, frais réels compris, avec des trades de quelques heures à 5 jours. Sur <strong>321 réglages</strong> testés dans 6 familles d'idées, <strong>une seule règle</strong> a franchi tous les filtres fixés à l'avance, puis le test final sur 2026, une période que personne n'avait vue. Elle gagne, mais peu, et sa réussite peut encore être en partie de la chance.</p>
+  </header>
+
+  <section aria-labelledby="s-verdict">
+    <p class="eyebrow" id="s-verdict">Le verdict en trois chiffres</p>
+    <div class="figs">
+      <div class="fig"><div class="v">1,53</div><div class="k">€ gagné pour 1 € perdu sur le test final 2026 (43 trades, or en baisse de 5 % sur la période)</div></div>
+      <div class="fig"><div class="v">≈ +3 %/an</div><div class="k">en risquant 0,5 % du compte par trade (≈ +7 %/an à 1 %), moyenne 2013-2026</div></div>
+      <div class="fig"><div class="v">1 / semaine</div><div class="k">trade en moyenne ; 4 sur 10 gagnants ; 1 semaine sur 3 positive</div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-proto">
+    <h2 id="s-proto">Comment j'ai évité de me raconter des histoires</h2>
+    <p class="col">Le piège classique, c'est de tester des milliers de variantes et de garder celle qui a « marché » par hasard. J'ai fixé les règles du jeu avant de regarder le moindre résultat, et découpé l'historique en trois blocs utilisés dans l'ordre.</p>
+    <div class="strip" role="list">
+      <div class="a" role="listitem"><b>2013 → 2021 · recherche</b><span>libre : idées et réglages, 9 ans</span></div>
+      <div class="b" role="listitem"><b>2022 → 2025 · validation</b><span>un seul regard par finaliste</span></div>
+      <div class="c" role="listitem"><b>2026 · test final</b><span>téléchargé à la fin</span></div>
+    </div>
+    <ul class="points col">
+      <li><strong>Frais réels :</strong> écart achat/vente réel minute par minute, glissement sur les ordres stop, commission et frais de nuit. Des entrées tirées au hasard perdent 0,25 R par trade : le simulateur ne fabrique pas d'argent.</li>
+      <li><strong>Critères figés :</strong> au moins 200 trades, 1,20 gagné pour 1 perdu, 2 années sur 3 positives, résistance à +50 % de frais, voisins de réglage aussi bons.</li>
+      <li><strong>Contre-expertise :</strong> des agents indépendants ont relu chaque finaliste pour y chercher une triche (information du futur), une erreur de simulation ou un coup de chance. Ils ont reproduit les trades à l'identique.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="s-tracks">
+    <h2 id="s-tracks">Ce que chaque piste a donné</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Piste</th><th>Ce qu'on a appris</th><th>Statut</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Tendance courte</strong><br><span class="muted small">canaux, cassures, momentum</span></td><td>La cassure du canal de 10 jours sur bougies de 4 h, avec stop suiveur, passe tout. Les versions plus rapides sont mangées par les frais.</td><td><span class="chip pass">PASS</span></td></tr>
+          <tr><td><strong>Cassure du range d'ouverture</strong><br><span class="muted small">Asie, Londres, New York</span></td><td>Signal réel mais plus petit que les frais. Seule la cassure du range asiatique tient, et seulement chez un courtier à bas coûts.</td><td><span class="chip cond">CONDITIONNEL</span></td></tr>
+          <tr><td><strong>Points pivots</strong><br><span class="muted small">ton ancien style</span></td><td>P, S1, R1, Camarilla : pas mieux que des lignes tracées au hasard. Les nombres ronds et le plus haut/bas de la veille sont traversés plus qu'ils ne repoussent.</td><td><span class="chip fail">ÉCHEC</span></td></tr>
+          <tr><td><strong>Saisonnalité</strong><br><span class="muted small">heures, fixing, NFP, Fed</span></td><td>Des effets réels (vendredi après-midi, fixing de Londres) mais de 1 à 2 points de base, contre 5,7 de frais.</td><td><span class="chip fail">ÉCHEC</span></td></tr>
+          <tr><td><strong>Retour à la moyenne</strong><br><span class="muted small">RSI(2), Bollinger, faux breakouts</span></td><td>Après un gros mouvement, l'or a plutôt tendance à continuer. Acheter les creux perd, même avant frais.</td><td><span class="chip fail">ÉCHEC</span></td></tr>
+          <tr><td><strong>Autres marchés</strong><br><span class="muted small">dollar, yen, DAX, pétrole</span></td><td>L'or absorbe un mouvement du dollar en moins de 5 minutes. Aucun autre marché ne fait mieux que l'or avec des règles simples.</td><td><span class="chip fail">ÉCHEC</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-rule">
+    <h2 id="s-rule">La règle retenue</h2>
+    <p class="col">Toutes les 4 heures (00 h, 04 h, 08 h, 12 h, 16 h, 20 h UTC), s'il n'y a pas de position : un ordre d'<strong>achat</strong> au-dessus du plus haut des 10 derniers jours, un ordre de <strong>vente</strong> sous le plus bas. Le premier touché déclenche le trade, l'autre est annulé. Stop initial à 2 fois la volatilité moyenne (ATR), stop suiveur à la même distance du meilleur prix, déplacé chaque minute. Sortie forcée après 5 jours de bourse. En 2025, le stop faisait en moyenne 35 $ par once.</p>
+
+    <figure class="chart" id="c-cum" style="margin:0">
+      <svg id="svg-cum" role="img" tabindex="0" aria-label="Gains cumulés en R de la règle, mois par mois, de janvier 2013 à octobre 2026"></svg>
+      <div class="tip" id="tip-cum" role="status" aria-live="polite"></div>
+      <figcaption class="cap">Gains cumulés en R, frais du protocole inclus, une position à la fois. 1 R = la somme risquée sur un trade. Les bandes marquent les trois blocs du protocole. Flèches du clavier pour parcourir les mois.</figcaption>
+    </figure>
+
+    <figure class="chart" id="c-year" style="margin:0">
+      <svg id="svg-year" role="img" aria-label="Résultat en R par année, 2013 à 2026"></svg>
+      <div class="tip" id="tip-year" role="status" aria-live="polite"></div>
+      <figcaption class="cap">Résultat par année, en R. 2026 s'arrête au 5 novembre.</figcaption>
+    </figure>
+    <details>
+      <summary>Voir le tableau par année</summary>
+      <div class="tablewrap"><table id="t-year"><thead><tr><th>Année</th><th class="num">Trades</th><th class="num">Gagnants</th><th class="num">Résultat</th></tr></thead><tbody></tbody></table></div>
+    </details>
+  </section>
+
+  <section aria-labelledby="s-test">
+    <h2 id="s-test">Le test final 2026, en détail</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Variante (même règle)</th><th class="num">Trades</th><th class="num">Gain / perte</th><th class="num">Achats</th><th class="num">Ventes</th></tr></thead>
+        <tbody>
+          <tr><td>Frais du protocole (prudents)</td><td class="num">43</td><td class="num"><strong>1,53</strong></td><td class="num">+4,6 R</td><td class="num">+4,4 R</td></tr>
+          <tr><td>Courtier à bas coûts (compte ECN)</td><td class="num">43</td><td class="num">1,59</td><td class="num">+5,0 R</td><td class="num">+4,8 R</td></tr>
+          <tr><td>Chaque signal pris (positions cumulées)</td><td class="num">151</td><td class="num">1,50</td><td class="num">+9,8 R</td><td class="num">+17,2 R</td></tr>
+          <tr><td>Entrée à la main 5 min après l'alerte</td><td class="num">43</td><td class="num">1,35</td><td class="num">+3,5 R</td><td class="num">+3,1 R</td></tr>
+          <tr><td>Bougies 4 h à l'heure du serveur MT5</td><td class="num">43</td><td class="num">1,36</td><td class="num">+3,2 R</td><td class="num">+3,0 R</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="col small muted">Contrôle de hasard : en gardant les mêmes heures d'entrée mais en tirant le sens (achat ou vente) au hasard 200 fois, la règle fait mieux que 81 % des tirages. Seuils de lecture fixés avant le téléchargement : 1,4 ou plus = soutien fort, entre 1,0 et 1,4 = cohérent mais faible, sous 0,8 = contre. L'ORB d'Asie (conditionnelle) a fait 1,30 sur 70 trades, surtout en vente.</p>
+  </section>
+
+  <section aria-labelledby="s-caution">
+    <h2 id="s-caution">Pourquoi rester prudent</h2>
+    <ul class="points col">
+      <li><strong>43 trades, c'est peu.</strong> Le test 2026 est encourageant mais ne prouve rien seul. Avant ce test, les relecteurs estimaient à environ 30 % la probabilité que l'avantage soit réel ; un résultat comme celui-ci la remonte vers 50 %.</li>
+      <li><strong>Quelques gros trades font tout.</strong> Sans les 10 meilleurs trades, 2013-2021 tombe à 1,08 gagné pour 1 perdu. C'est normal pour du suivi de tendance, mais rater un seul gros trade coûte cher.</li>
+      <li><strong>Ce n'est pas « un peu chaque semaine ».</strong> Seule 1 semaine sur 3 est positive, 43 % sont négatives et 25 % sans trade. Il y a eu des passages de 2 ans sans nouveau sommet et jusqu'à 9 pertes d'affilée.</li>
+      <li><strong>À la main, ça ne marche pas aussi bien.</strong> Entrer 1 à 15 minutes après l'alerte retire 25 à 35 % de l'avantage, et les cassures de nuit (heure de Paris) ont pesé un quart des gains. Il faut un programme qui tourne 24 h/24 avec de vrais ordres stop chez le courtier.</li>
+      <li><strong>Les frais comptent.</strong> Chaque point de base de glissement en plus retire environ 0,02 R par trade. Un compte ECN à frais bas améliore nettement les chiffres.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="s-money">
+    <h2 id="s-money">Ce que ça représente sur un compte</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Risque par trade</th><th class="num">Rendement moyen 2013-2026</th><th class="num">Pire baisse depuis un sommet</th><th class="num">Compte minimum (lot de 0,01)</th></tr></thead>
+        <tbody>
+          <tr><td>0,5 % du compte</td><td class="num">≈ +3,4 %/an</td><td class="num">≈ 4 %</td><td class="num">≈ 7 000 à 11 000 $</td></tr>
+          <tr><td>1 % du compte</td><td class="num">≈ +6,7 %/an</td><td class="num">≈ 8 %</td><td class="num">≈ 3 500 à 5 500 $</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="col small muted">Le plus petit lot sur l'or (0,01 = 1 once) risque déjà tout le stop, soit 35 à 55 $ en 2025-2026. Avec un compte plus petit, chaque trade risquerait plus que prévu. Si l'avantage réel n'est que la moitié de celui mesuré, divisez ces rendements par deux.</p>
+  </section>
+
+  <section aria-labelledby="s-how">
+    <h2 id="s-how">Mode d'emploi, dans cet ordre</h2>
+    <ol class="steps col">
+      <li><strong>Compiler et vérifier.</strong> Copier <code>GoldOrb_Donchian4H.mq5</code> dans MetaTrader 5, compiler (F7), le lancer dans le testeur de stratégie sur 2025 en mode « chaque tick basé sur les ticks réels », puis comparer son journal au labo avec <code>compare_journal.py</code>. Objectif : au moins 90 % de trades identiques.</li>
+      <li><strong>Observer 2 à 3 mois sans argent réel.</strong> Le programme en mode alertes sur ton compte (il ne passe aucun ordre), plus une copie en mode automatique sur un compte démo, sur un serveur toujours allumé (le VPS de MetaQuotes suffit). Tu reçois les alertes sur ton téléphone et un bilan chaque vendredi.</li>
+      <li><strong>Règle d'arrêt fixée d'avance.</strong> On arrête si le cumul descend à −10 R, ou si la démo s'écarte du papier de plus de 0,03 R par trade.</li>
+      <li><strong>Seulement ensuite</strong>, en réel : 0,25 à 0,5 % de risque par trade, exécution automatique, chez un courtier ECN à frais bas. Jamais de signal sauté « au feeling ».</li>
+    </ol>
+    <div class="note col small">Ton idée de recevoir une alerte puis de décider reste possible : le programme te prévient, suit une position fictive et tient le journal. Mais les chiffres ci-dessus montrent que la décision à la main coûte de l'avantage. Garde ce mode pour observer, et laisse l'automatique exécuter quand tu passeras au réel.</div>
+  </section>
+
+  <section aria-labelledby="s-limits">
+    <h2 id="s-limits">Limites de ce travail</h2>
+    <ul class="points col small">
+      <li>Les prix viennent de Dukascopy, pas de ton courtier. Les écarts et l'heure du serveur peuvent différer : c'est le rôle de l'étape 1.</li>
+      <li>Le programme MT5 n'a pas pu être compilé ici. Sa logique a été vérifiée par un jumeau Python, qui retrouve 786 trades sur 788 du labo ; une relecture indépendante du code MQL5 est en cours.</li>
+      <li>La période 2022-2025 a été reconsultée plusieurs fois pendant les audits, sans aucun réglage : c'est pourquoi le test 2026 compte autant.</li>
+      <li>Le passé ne garantit pas l'avenir, et ce document n'est pas un conseil financier personnalisé.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <p>Tout est dans le dépôt <span class="mono">martinnathan980-prog/gold-orb</span>, branche <span class="mono">lab</span> : protocole (<span class="mono">lab/PROTOCOL.md</span>), frais documentés (<span class="mono">lab/COSTS.md</span>), rapports des 6 pistes (<span class="mono">lab/results/*/report.md</span>), test final (<span class="mono">lab/results/holdout/</span>), programme MT5 et mode d'emploi (<span class="mono">lab/live/</span>).</p>
+  </footer>
+</main>
+
+<script>
+const D = /*__DATA__*/null;
+const fmt1 = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1, signDisplay: 'always' });
+const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+const NS = 'http://www.w3.org/2000/svg';
+function el(name, attrs, parent) {
+  const e = document.createElementNS(NS, name);
+  for (const k in attrs) {
+    const v = attrs[k];
+    // theme tokens must go through CSS (presentation attributes do not resolve var())
+    if (typeof v === 'string' && v.indexOf('var(') >= 0) e.style.setProperty(k, v); else e.setAttribute(k, v);
+  }
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function txt(parent, x, y, s, attrs) {
+  const t = el('text', Object.assign({ x, y, fill: 'var(--muted)', 'font-size': 11, 'font-family': 'var(--mono)' }, attrs || {}), parent);
+  t.textContent = s;
+  return t;
+}
+function monthLabel(m) { const [y, mm] = m.split('-'); return MONTHS[+mm - 1] + ' ' + y; }
+
+function drawCum() {
+  const svg = document.getElementById('svg-cum'), tip = document.getElementById('tip-cum');
+  const W = svg.parentElement.clientWidth - 24, H = Math.max(240, Math.min(340, W * 0.45));
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('height', H);
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  const m = { l: 40, r: 56, t: 30, b: 26 };
+  const n = D.cum.length, iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const ymax = 100, ymin = -10;
+  const x = i => m.l + (i / (n - 1)) * iw;
+  const y = v => m.t + ih - ((v - ymin) / (ymax - ymin)) * ih;
+  const idx = s => D.months.indexOf(s);
+  const bands = [
+    { a: 0, b: idx('2021-12'), cls: 'var(--band-a)', lab: 'recherche' },
+    { a: idx('2022-01'), b: idx('2025-12'), cls: 'var(--band-b)', lab: 'validation' },
+    { a: idx('2026-01'), b: n - 1, cls: 'var(--band-c)', lab: '2026' },
+  ];
+  for (const bd of bands) {
+    const x0 = bd.a === 0 ? m.l : (x(bd.a - 1) + x(bd.a)) / 2, x1 = bd.b === n - 1 ? m.l + iw : (x(bd.b) + x(bd.b + 1)) / 2;
+    el('rect', { x: x0, y: m.t, width: Math.max(0, x1 - x0), height: ih, fill: bd.cls }, svg);
+    txt(svg, x0 + 6, m.t - 10, bd.lab, { 'font-size': 10.5, 'letter-spacing': '0.04em' });
+  }
+  for (let v = Math.ceil(ymin / 20) * 20; v <= ymax; v += 20) {
+    el('line', { x1: m.l, x2: m.l + iw, y1: y(v), y2: y(v), stroke: 'var(--line)', 'stroke-width': 1 }, svg);
+    txt(svg, m.l - 8, y(v) + 4, String(v), { 'text-anchor': 'end' });
+  }
+  txt(svg, m.l - 8, m.t - 10, 'R', { 'text-anchor': 'end' });
+  for (const yr of [2013, 2016, 2019, 2022, 2025]) {
+    const i = idx(yr + '-01');
+    if (i >= 0) txt(svg, x(i), H - 6, String(yr), { 'text-anchor': i === 0 ? 'start' : 'middle' });
+  }
+  let dA = `M${x(0)},${y(Math.max(ymin, 0))}`, dL = '';
+  D.cum.forEach((v, i) => { dA += ` L${x(i)},${y(v)}`; dL += (i ? ' L' : 'M') + `${x(i)},${y(v)}`; });
+  dA += ` L${x(n - 1)},${y(Math.max(ymin, 0))} Z`;
+  el('path', { d: dA, fill: 'var(--series)', 'fill-opacity': 0.1, stroke: 'none' }, svg);
+  el('path', { d: dL, fill: 'none', stroke: 'var(--series)', 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
+  const last = D.cum[n - 1];
+  el('circle', { cx: x(n - 1), cy: y(last), r: 4, fill: 'var(--series)', stroke: 'var(--paper)', 'stroke-width': 2 }, svg);
+  txt(svg, x(n - 1) + 8, y(last) + 4, fmt1.format(last) + ' R', { fill: 'var(--fg)', 'font-weight': 500 });
+  const cross = el('line', { y1: m.t, y2: m.t + ih, stroke: 'var(--muted)', 'stroke-width': 1, opacity: 0 }, svg);
+  const dot = el('circle', { r: 4, fill: 'var(--series)', stroke: 'var(--paper)', 'stroke-width': 2, opacity: 0 }, svg);
+  const hit = el('rect', { x: m.l, y: m.t, width: iw, height: ih, fill: 'transparent' }, svg);
+  let cur = n - 1;
+  function show(i) {
+    cur = Math.max(0, Math.min(n - 1, i));
+    const cx = x(cur), cy = y(D.cum[cur]);
+    cross.setAttribute('x1', cx); cross.setAttribute('x2', cx); cross.setAttribute('opacity', 1);
+    dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.setAttribute('opacity', 1);
+    tip.replaceChildren();
+    const s = document.createElement('strong'); s.textContent = fmt1.format(D.cum[cur]) + ' R cumulés';
+    const l1 = document.createElement('div'); l1.textContent = monthLabel(D.months[cur]);
+    const l2 = document.createElement('div'); l2.textContent = 'mois : ' + fmt1.format(D.mR[cur]) + ' R, ' + D.mn[cur] + ' trade' + (D.mn[cur] > 1 ? 's' : '');
+    tip.append(s, l1, l2);
+    const box = svg.getBoundingClientRect(), fb = svg.parentElement.getBoundingClientRect(), scale = box.width / W;
+    const ox = box.left - fb.left, oy = box.top - fb.top;
+    tip.style.left = (ox + Math.min(Math.max(cx * scale, 90), box.width - 90)) + 'px';
+    tip.style.top = (oy + cy * scale - 8) + 'px';
+    tip.style.opacity = 1;
+  }
+  function hide() { cross.setAttribute('opacity', 0); dot.setAttribute('opacity', 0); tip.style.opacity = 0; }
+  hit.addEventListener('pointermove', e => {
+    const box = svg.getBoundingClientRect(), px = (e.clientX - box.left) * (W / box.width);
+    show(Math.round(((px - m.l) / iw) * (n - 1)));
+  });
+  hit.addEventListener('pointerleave', hide);
+  svg.onkeydown = e => {
+    if (e.key === 'ArrowLeft') { show(cur - 1); e.preventDefault(); }
+    if (e.key === 'ArrowRight') { show(cur + 1); e.preventDefault(); }
+  };
+  svg.onfocus = () => show(cur);
+  svg.onblur = hide;
+}
+
+function drawYear() {
+  const svg = document.getElementById('svg-year'), tip = document.getElementById('tip-year');
+  const W = svg.parentElement.clientWidth - 24, H = 220;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('height', H);
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  const m = { l: 40, r: 12, t: 22, b: 26 };
+  const n = D.years.length, iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const ymax = 20, ymin = -5;
+  const y = v => m.t + ((ymax - v) / (ymax - ymin)) * ih;
+  const slot = iw / n, bw = Math.min(24, slot * 0.6);
+  for (const v of [-5, 0, 5, 10, 15, 20]) {
+    el('line', { x1: m.l, x2: m.l + iw, y1: y(v), y2: y(v), stroke: v === 0 ? 'var(--muted)' : 'var(--line)', 'stroke-width': 1 }, svg);
+    txt(svg, m.l - 8, y(v) + 4, String(v), { 'text-anchor': 'end' });
+  }
+  const maxV = Math.max(...D.yR), minV = Math.min(...D.yR);
+  D.years.forEach((yr, i) => {
+    const v = D.yR[i], cx = m.l + slot * (i + 0.5), x0 = cx - bw / 2;
+    const top = y(Math.max(v, 0)), bot = y(Math.min(v, 0)), h = Math.max(1, bot - top), r = Math.min(4, h);
+    // rounded data-end (top for gains, bottom for losses), square at the zero line
+    const d = v >= 0
+      ? `M${x0},${bot} L${x0},${top + r} Q${x0},${top} ${x0 + r},${top} L${x0 + bw - r},${top} Q${x0 + bw},${top} ${x0 + bw},${top + r} L${x0 + bw},${bot} Z`
+      : `M${x0},${top} L${x0},${bot - r} Q${x0},${bot} ${x0 + r},${bot} L${x0 + bw - r},${bot} Q${x0 + bw},${bot} ${x0 + bw},${bot - r} L${x0 + bw},${top} Z`;
+    const bar = el('path', { d, fill: 'var(--series)', 'fill-opacity': yr === 2026 ? 0.55 : 1, tabindex: 0, role: 'img', 'aria-label': `${yr} : ${fmt1.format(v)} R sur ${D.yN[i]} trades` }, svg);
+    const hitR = el('rect', { x: cx - slot / 2, y: m.t, width: slot, height: ih, fill: 'transparent' }, svg);
+    // wide: every year; narrow: 2014, 2017, 2020, 2023, 2026 (no colliding labels)
+    if (slot >= 40 || i % 3 === 1) txt(svg, cx, H - 6, String(yr), { 'text-anchor': 'middle' });
+    if (v === maxV || v === minV || i === n - 1)
+      txt(svg, cx, v >= 0 ? top - 6 : bot + 14, fmt1.format(v), { 'text-anchor': 'middle', fill: 'var(--fg)' });
+    const show = () => {
+      bar.setAttribute('fill-opacity', 0.75);
+      tip.replaceChildren();
+      const s = document.createElement('strong'); s.textContent = fmt1.format(v) + ' R';
+      const l = document.createElement('div'); l.textContent = yr + (yr === 2026 ? ' (jusqu’au 5 nov.)' : '') + ' · ' + D.yN[i] + ' trades, ' + D.yW[i] + ' % gagnants';
+      tip.append(s, l);
+      const box = svg.getBoundingClientRect(), fb = svg.parentElement.getBoundingClientRect(), sc = box.width / W;
+      const ox = box.left - fb.left, oy = box.top - fb.top;
+      tip.style.left = (ox + Math.min(Math.max(cx * sc, 110), box.width - 110)) + 'px';
+      tip.style.top = (oy + Math.min(top, bot) * sc - 8) + 'px';
+      tip.style.opacity = 1;
+    };
+    const hide = () => { bar.setAttribute('fill-opacity', yr === 2026 ? 0.55 : 1); tip.style.opacity = 0; };
+    hitR.addEventListener('pointermove', show); hitR.addEventListener('pointerleave', hide);
+    bar.addEventListener('focus', show); bar.addEventListener('blur', hide);
+  });
+}
+
+function fillTable() {
+  const tb = document.querySelector('#t-year tbody');
+  tb.replaceChildren();
+  D.years.forEach((yr, i) => {
+    const tr = document.createElement('tr');
+    [String(yr) + (yr === 2026 ? ' (au 5 nov.)' : ''), String(D.yN[i]), D.yW[i] + ' %', fmt1.format(D.yR[i]) + ' R'].forEach((c, k) => {
+      const td = document.createElement('td'); td.textContent = c; if (k) td.className = 'num'; tr.appendChild(td);
+    });
+    tb.appendChild(tr);
+  });
+}
+function drawAll() { drawCum(); drawYear(); }
+fillTable();
+drawAll();
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(drawAll, 120); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+</script>
