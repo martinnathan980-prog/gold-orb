@@ -25,7 +25,7 @@
 
 #include <Trade\Trade.mqh>
 
-input double InpMaxRiskPct     = 10.0;      // Perte max par trade si le stop est touche (% du solde)
+input double InpMaxRiskPct     = 5.0;       // Perte max par trade si le stop est touche (% du solde)
 input double InpDailyLossPct   = 10.0;      // Perte max du jour (% des fonds au debut du jour) : tout ferme + blocage
 input int    InpCooldownHours  = 6;         // Pause apres chaque entree et apres chaque perte (heures)
 input int    InpMaxPositions   = 1;         // Positions ouvertes en meme temps (tous symboles surveilles)

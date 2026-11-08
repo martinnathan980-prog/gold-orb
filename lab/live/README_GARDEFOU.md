@@ -5,7 +5,7 @@ Programme MT5 qui **ne prend aucun trade** : tu décides, il protège. Il survei
 ## Les règles (réglages par défaut)
 - **Stop obligatoire.** Sans stop au bout de 60 s, il le pose à la distance du risque maximum.
 - **Stop jamais éloigné ni retiré.** Il est remis immédiatement.
-- **Risque maximum par trade : 10 % du solde.** Au-delà, il réduit la taille.
+- **Risque maximum par trade : 5 % du solde.** Au-delà, il réduit la taille.
 - **Une seule position à la fois, pas d'ajout.**
 - **Pause de 6 h** après chaque entrée et après chaque perte.
 - **Perte maximale du jour : 10 %.** Tout est fermé, blocage jusqu'au lendemain.
@@ -30,4 +30,4 @@ Chaque intervention est notée dans `%APPDATA%\MetaQuotes\Terminal\Common\Files\
 ## Limites (honnêtes)
 - Si tu **retires** le programme ou coupes Algo Trading, il ne protège plus. Il te prévient quand Algo Trading est coupé. Pour plus de friction, fais-le tourner sur un **VPS** (VPS MetaQuotes, environ 10-15 $/mois).
 - Supprimer son fichier d'état remet les règles à zéro : c'est de la friction, pas un coffre-fort.
-- À 10 % par trade et 10 % par jour, **un seul stop plein bloque la journée**.
+- À 5 % par trade et 10 % par jour, **deux stops pleins bloquent la journée**.
