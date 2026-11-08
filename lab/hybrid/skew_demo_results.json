@@ -1,0 +1,102 @@
+{
+ "sans stop (attendre 20 j)": {
+  "trades": 721,
+  "gagnants_pct": 84.7,
+  "gain_moyen_pct_prix": 0.634,
+  "perte_moyenne_pct_prix": -4.59,
+  "pire_trade_pct_prix": -12.37,
+  "pf": 0.768,
+  "somme_pct_prix": -117.4,
+  "levier_10": {
+   "mois_+50pct_ou_plus": 1,
+   "mois_-50pct_ou_pire": 2,
+   "meilleur_mois_pct": 60,
+   "pire_mois_pct": -116,
+   "capital_final_x": 0.0,
+   "compte_detruit_en": "2013-06"
+  },
+  "levier_20": {
+   "mois_+50pct_ou_plus": 1,
+   "mois_-50pct_ou_pire": 1,
+   "meilleur_mois_pct": 148,
+   "pire_mois_pct": -141,
+   "capital_final_x": 0.0,
+   "compte_detruit_en": "2013-02"
+  }
+ },
+ "stop 3 ATR": {
+  "trades": 3011,
+  "gagnants_pct": 53.5,
+  "gain_moyen_pct_prix": 0.662,
+  "perte_moyenne_pct_prix": -0.879,
+  "pire_trade_pct_prix": -7.13,
+  "pf": 0.868,
+  "somme_pct_prix": -161.8,
+  "levier_10": {
+   "mois_+50pct_ou_plus": 2,
+   "mois_-50pct_ou_pire": 2,
+   "meilleur_mois_pct": 77,
+   "pire_mois_pct": -56,
+   "capital_final_x": 0.01,
+   "compte_detruit_en": "2014-09"
+  },
+  "levier_20": {
+   "mois_+50pct_ou_plus": 1,
+   "mois_-50pct_ou_pire": 3,
+   "meilleur_mois_pct": 126,
+   "pire_mois_pct": -89,
+   "capital_final_x": 0.008,
+   "compte_detruit_en": "2013-06"
+  }
+ },
+ "stop 2 ATR": {
+  "trades": 3967,
+  "gagnants_pct": 43.4,
+  "gain_moyen_pct_prix": 0.665,
+  "perte_moyenne_pct_prix": -0.589,
+  "pire_trade_pct_prix": -4.15,
+  "pf": 0.865,
+  "somme_pct_prix": -179.1,
+  "levier_10": {
+   "mois_+50pct_ou_plus": 1,
+   "mois_-50pct_ou_pire": 3,
+   "meilleur_mois_pct": 78,
+   "pire_mois_pct": -62,
+   "capital_final_x": 0.01,
+   "compte_detruit_en": "2014-10"
+  },
+  "levier_20": {
+   "mois_+50pct_ou_plus": 1,
+   "mois_-50pct_ou_pire": 3,
+   "meilleur_mois_pct": 203,
+   "pire_mois_pct": -91,
+   "capital_final_x": 0.009,
+   "compte_detruit_en": "2013-06"
+  }
+ },
+ "stop 1 ATR": {
+  "trades": 6040,
+  "gagnants_pct": 27.9,
+  "gain_moyen_pct_prix": 0.643,
+  "perte_moyenne_pct_prix": -0.297,
+  "pire_trade_pct_prix": -2.38,
+  "pf": 0.838,
+  "somme_pct_prix": -209.4,
+  "levier_10": {
+   "mois_+50pct_ou_plus": 0,
+   "mois_-50pct_ou_pire": 1,
+   "meilleur_mois_pct": 30,
+   "pire_mois_pct": -57,
+   "capital_final_x": 0.01,
+   "compte_detruit_en": "2014-08"
+  },
+  "levier_20": {
+   "mois_+50pct_ou_plus": 0,
+   "mois_-50pct_ou_pire": 3,
+   "meilleur_mois_pct": 23,
+   "pire_mois_pct": -72,
+   "capital_final_x": 0.009,
+   "compte_detruit_en": "2013-09"
+  }
+ }
+}
