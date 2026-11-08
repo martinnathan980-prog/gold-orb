@@ -42,6 +42,7 @@ struct Rules
   {
    double            max_risk, daily_loss;
    int               cooldown_h, max_pos, news_min, grace_s;
+   uchar             syms[128], magics[64], ccys[64];   // filtres : tout changement attend 24 h
   };
 
 struct GState
@@ -51,6 +52,9 @@ struct GState
    datetime          pending_at;        // heure serveur d'application de l'assouplissement (0 = rien)
    datetime          day_key;           // jour serveur (00:00) de la reference de perte du jour
    double            day_start_eq;
+   datetime          day_hit;           // jour (00:00) ou la limite a ete atteinte
+   ulong             last_id;           // derniere position acceptee
+   double            last_best;         // son stop le plus serre (p_best)
    datetime          blocked_until;     // heure serveur
    int               block_reason;      // 1 pause apres entree, 2 pause apres perte, 3 limite du jour
    datetime          last_entry;
@@ -78,6 +82,8 @@ datetime n_time[];
 string   n_name[];
 datetime n_loaded = 0;
 datetime n_warned = 0;
+datetime n_warned_cal = 0;
+datetime g_fail = 0;   // dernier refus d'un ordre du garde-fou
 datetime g_algo_warned = 0;
 
 //+------------------------------------------------------------------+
@@ -103,8 +109,9 @@ bool InList(const string list, const string item)
 
 bool Managed(const string sym, const long magic)
   {
-   if(InList(InpIgnoreMagics, IntegerToString(magic))) return false;
-   if(InpSymbols != "" && !InList(InpSymbols, sym)) return false;
+   string syms = CharArrayToString(s.active.syms);
+   if(InList(CharArrayToString(s.active.magics), IntegerToString(magic))) return false;
+   if(syms != "" && !InList(syms, sym)) return false;
    return true;
   }
 
@@ -182,6 +189,10 @@ datetime DayStart(const datetime t) { return (datetime)(((long)t / 86400) * 8640
 Rules FromInputs()
   {
    Rules r;
+   ZeroMemory(r);
+   StringToCharArray(InpSymbols, r.syms, 0, 127);
+   StringToCharArray(InpIgnoreMagics, r.magics, 0, 63);
+   StringToCharArray(InpNewsCurrencies, r.ccys, 0, 63);
    r.max_risk = InpMaxRiskPct;
    r.daily_loss = InpDailyLossPct;
    r.cooldown_h = InpCooldownHours;
@@ -194,7 +205,8 @@ Rules FromInputs()
 bool SameRules(const Rules &a, const Rules &b)
   {
    return MathAbs(a.max_risk - b.max_risk) < 1e-9 && MathAbs(a.daily_loss - b.daily_loss) < 1e-9 &&
-          a.cooldown_h == b.cooldown_h && a.max_pos == b.max_pos && a.news_min == b.news_min && a.grace_s == b.grace_s;
+          a.cooldown_h == b.cooldown_h && a.max_pos == b.max_pos && a.news_min == b.news_min && a.grace_s == b.grace_s &&
+          ArrayCompare(a.syms, b.syms) == 0 && ArrayCompare(a.magics, b.magics) == 0 && ArrayCompare(a.ccys, b.ccys) == 0;
   }
 
 void SyncRules()
@@ -258,10 +270,11 @@ void LoadNews()
    datetime now = TimeTradeServer();
    if(n_loaded != 0 && now - n_loaded < 1800) return;
    n_loaded = now;
+   string ccys = CharArrayToString(s.active.ccys);
    ArrayResize(n_time, 0);
    ArrayResize(n_name, 0);
    string cur[];
-   int nc = StringSplit(InpNewsCurrencies, ',', cur);
+   int nc = StringSplit(ccys, ',', cur);
    for(int c = 0; c < nc; c++)
      {
       string ccy = cur[c];
@@ -269,7 +282,15 @@ void LoadNews()
       StringTrimRight(ccy);
       if(ccy == "") continue;
       MqlCalendarValue v[];
-      if(!CalendarValueHistory(v, now - 3600, now + 2 * 86400, NULL, ccy)) continue;
+      ResetLastError();
+      int got = (int)CalendarValueHistory(v, now - s.active.news_min * 60 - 3600, now + 2 * 86400, NULL, ccy);
+      int err = GetLastError();
+      if(got < 0 || (got == 0 && err != 0))
+        {   // souvent 5401 au 1er appel (calendrier en chargement) : nouvel essai dans 1 min
+         n_loaded = now - 1740;
+         if(now - n_warned_cal > 3600) { n_warned_cal = now; Notify("GardeFou : calendrier economique illisible (erreur " + IntegerToString(err) + ") : blocage des annonces inactif pour l'instant."); }
+         continue;
+        }
       int n = ArraySize(v);
       for(int i = 0; i < n; i++)
         {
@@ -367,16 +388,39 @@ int ManagedCount(const ulong except_id)
    return n;
   }
 
+bool TradeOk()
+  {
+   return TerminalInfoInteger(TERMINAL_TRADE_ALLOWED) && MQLInfoInteger(MQL_TRADE_ALLOWED) && TimeLocal() - g_fail >= 10;
+  }
+
 bool CloseTicket(const ulong ticket, const string why)
   {
+   static ulong s_warned = 0;
+   if(!PositionSelectByTicket(ticket)) return true;   // deja fermee
    bool ok = g_trade.PositionClose(ticket);
    uint rc = g_trade.ResultRetcode();
    if(!ok || (rc != TRADE_RETCODE_DONE && rc != TRADE_RETCODE_DONE_PARTIAL))
      {
-      Notify("GardeFou : fermeture refusee (" + g_trade.ResultRetcodeDescription() + ") - " + why + ". Fermez la position vous-meme.");
+      g_fail = TimeLocal();
+      string m = "GardeFou : fermeture refusee (" + g_trade.ResultRetcodeDescription() + ") - " + why + ". Fermez la position vous-meme.";
+      if(s_warned != ticket) { s_warned = ticket; Notify(m); }
+      else Print(m);
       return false;
      }
    return true;
+  }
+
+// fermeture partielle : CTrade::PositionClosePartial ne marche qu'en hedging (Trade.mqh : "for hedging mode only")
+bool ClosePart(const ulong ticket, const double vol)
+  {
+   if(!PositionSelectByTicket(ticket)) return false;
+   g_trade.SetMarginMode();   // CTrade lit le mode une seule fois, a la construction (compte parfois pas encore charge)
+   if(AccountInfoInteger(ACCOUNT_MARGIN_MODE) == ACCOUNT_MARGIN_MODE_RETAIL_HEDGING)
+      return g_trade.PositionClosePartial(ticket, vol);
+   string sym = PositionGetString(POSITION_SYMBOL);
+   double v = MathMin(vol, PositionGetDouble(POSITION_VOLUME));
+   bool buy = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY);
+   return buy ? g_trade.Sell(v, sym) : g_trade.Buy(v, sym);   // netting : ordre oppose plus petit = reduction
   }
 
 void Block(const datetime until, const int reason)
@@ -400,11 +444,20 @@ void OnNewPosition(const ulong ticket)
    int side = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY) ? 1 : -1;
    double sl = PositionGetDouble(POSITION_SL);
    datetime now = TimeTradeServer();
+   datetime pt = (datetime)PositionGetInteger(POSITION_TIME);   // heure serveur d'ouverture
+   if(pt < s.last_entry || (id == s.last_id && pt == s.last_entry))
+     {   // deja acceptee (redemarrage, resynchro) : reprise sans fermeture ni delai de grace
+      AddPos(id, side, sl);
+      p_open[ArraySize(p_open) - 1] = now - 3600;
+      if(id == s.last_id && s.last_best != 0.0)   // stop elargi pendant l'arret : la boucle le remettra
+         p_best[ArraySize(p_best) - 1] = (sl == 0.0) ? s.last_best : (side > 0 ? MathMax(sl, s.last_best) : MathMin(sl, s.last_best));
+      return;
+     }
    string why = "";
    string news;
-   if(s.blocked_until > now) why = BlockText();
+   if(s.blocked_until > pt) why = BlockText();
    else if(ManagedCount(id) >= s.active.max_pos) why = "une position a la fois";
-   else if(NewsNear(now, news)) why = "annonce forte : " + news;
+   else if(NewsNear(pt, news)) why = "annonce forte : " + news;
    if(why != "")
      {
       int k = ArraySize(blocked_ids);
@@ -418,8 +471,10 @@ void OnNewPosition(const ulong ticket)
       return;
      }
    AddPos(id, side, sl);
-   s.last_entry = now;
-   Block(now + s.active.cooldown_h * 3600, 1);
+   s.last_entry = pt;
+   s.last_id = id;
+   s.last_best = sl;
+   Block(pt + s.active.cooldown_h * 3600, 1);
    Journal("ENTRY", sym, id, PositionGetDouble(POSITION_VOLUME), side > 0 ? "buy" : "sell");
    SaveState();
   }
@@ -435,8 +490,7 @@ void CheckPosition(const ulong ticket)
    if(i < 0)
      {   // ouverte apres le demarrage et pas encore vue : c'est une NOUVELLE position (les blocages s'appliquent)
       if(!WasBlocked(id)) { OnNewPosition(ticket); return; }
-      static datetime s_retry = 0;   // position bloquee dont la fermeture a echoue : nouvel essai toutes les 10 s
-      if(TimeLocal() - s_retry >= 10) { s_retry = TimeLocal(); CloseTicket(ticket, "position ouverte pendant un blocage"); }
+      if(TradeOk()) CloseTicket(ticket, "position ouverte pendant un blocage");   // au plus toutes les 10 s apres un refus
       return;
      }
    int side = p_side[i];
@@ -456,7 +510,7 @@ void CheckPosition(const ulong ticket)
    // 1) pas de stop apres le delai : on le pose au risque maximum (ou on ferme si le prix y est deja)
    if(sl == 0.0)
      {
-      if(in_grace) return;
+      if(in_grace || !TradeOk()) return;
       double want = (p_best[i] != 0.0) ? p_best[i] : NormPriceSym(sym, open - side * max_dist);   // stop retire : on remet le dernier
       if((side > 0 && px <= want + lvl) || (side < 0 && px >= want - lvl))
         {
@@ -474,36 +528,14 @@ void CheckPosition(const ulong ticket)
          Notify("GardeFou : impossible de poser le stop sur " + sym + " : position fermee.");
       return;
      }
-   // 2) risque trop grand (taille ou stop trop loin) : on reduit la taille
-   double risk = MathAbs(open - sl) * vol * vpu;
-   bool beyond_entry = (side > 0 && sl < open) || (side < 0 && sl > open);
-   if(!in_grace && beyond_entry && risk > max_money * 1.02)
-     {
-      double vstep = SymbolInfoDouble(sym, SYMBOL_VOLUME_STEP), vmin = SymbolInfoDouble(sym, SYMBOL_VOLUME_MIN);
-      double keep = MathFloor(max_money / (MathAbs(open - sl) * vpu) / vstep + 1e-9) * vstep;
-      int vd = (int)MathMax(0.0, MathCeil(-MathLog10(vstep) - 1e-9));
-      keep = NormalizeDouble(keep, vd);
-      if(keep < vmin)
-        {
-         Journal("CLOSED_RISK", sym, id, risk, "even min lot exceeds max risk");
-         if(CloseTicket(ticket, "risque superieur au maximum")) Notify("GardeFou : " + sym + " : risque au-dela du maximum meme au lot minimum, position fermee.");
-         return;
-        }
-      double cut = NormalizeDouble(vol - keep, vd);
-      if(cut >= vstep && g_trade.PositionClosePartial(ticket, cut))
-        {
-         Journal("SIZE_REDUCED", sym, id, cut, StringFormat("risk %.2f > max %.2f", risk, max_money));
-         Notify(StringFormat("GardeFou : taille %s reduite de %.2f lot (risque %.0f > maximum %.0f).", sym, cut, risk, max_money));
-        }
-      return;
-     }
-   // 3) le stop ne peut que se rapprocher (apres le delai de grace)
+   // 2) le stop ne peut que se rapprocher (apres le delai de grace) - AVANT le controle du risque
    if(in_grace) { p_best[i] = sl; return; }
    if(p_best[i] == 0.0) p_best[i] = sl;
    bool widened = (side > 0 && sl < p_best[i] - SymbolInfoDouble(sym, SYMBOL_POINT) / 2) ||
                   (side < 0 && sl > p_best[i] + SymbolInfoDouble(sym, SYMBOL_POINT) / 2);
    if(widened)
      {
+      if(!TradeOk()) return;
       double back = p_best[i];
       if((side > 0 && px <= back + lvl) || (side < 0 && px >= back - lvl))
         {   // le prix a deja depasse le stop d'origine : on sort comme le stop l'aurait fait
@@ -519,7 +551,35 @@ void CheckPosition(const ulong ticket)
         }
       return;
      }
-   if((side > 0 && sl > p_best[i]) || (side < 0 && sl < p_best[i])) p_best[i] = sl;   // stop resserre : nouvelle reference
+   if((side > 0 && sl > p_best[i]) || (side < 0 && sl < p_best[i]))
+     {   // stop resserre : nouvelle reference (persistee)
+      p_best[i] = sl;
+      if(id == s.last_id) { s.last_best = sl; SaveState(); }
+     }
+   // 3) risque trop grand (taille, ou stop choisi pendant la grace) : on reduit la taille
+   double risk = MathAbs(open - sl) * vol * vpu;
+   bool beyond_entry = (side > 0 && sl < open) || (side < 0 && sl > open);
+   if(beyond_entry && risk > max_money * 1.02)
+     {
+      if(!TradeOk()) return;
+      double vstep = SymbolInfoDouble(sym, SYMBOL_VOLUME_STEP), vmin = SymbolInfoDouble(sym, SYMBOL_VOLUME_MIN);
+      double keep = MathFloor(max_money / (MathAbs(open - sl) * vpu) / vstep + 1e-9) * vstep;
+      int vd = (int)MathMax(0.0, MathCeil(-MathLog10(vstep) - 1e-9));
+      keep = NormalizeDouble(keep, vd);
+      if(keep < vmin)
+        {
+         Journal("CLOSED_RISK", sym, id, risk, "even min lot exceeds max risk");
+         if(CloseTicket(ticket, "risque superieur au maximum")) Notify("GardeFou : " + sym + " : risque au-dela du maximum meme au lot minimum, position fermee.");
+         return;
+        }
+      double cut = NormalizeDouble(vol - keep, vd);
+      if(cut >= vstep && ClosePart(ticket, cut))
+        {
+         Journal("SIZE_REDUCED", sym, id, cut, StringFormat("risk %.2f > max %.2f", risk, max_money));
+         Notify(StringFormat("GardeFou : taille %s reduite de %.2f lot (risque %.0f > maximum %.0f).", sym, cut, risk, max_money));
+        }
+      return;
+     }
   }
 
 void CloseAllManaged(const string why)
@@ -559,17 +619,17 @@ void Enforce()
       Journal("ALGO_OFF", "", 0, 0, "");
      }
    // limite de perte du jour (fonds, pertes latentes comprises)
-   if(s.day_start_eq > 0 && eq <= s.day_start_eq * (1.0 - s.active.daily_loss / 100.0) && s.block_reason != 3)
+   if(s.day_hit != dk && s.day_start_eq > 0 && eq <= s.day_start_eq * (1.0 - s.active.daily_loss / 100.0))
      {
-      Block(dk + 86400, 3);
-      s.blocked_until = dk + 86400;
-      s.block_reason = 3;
+      s.day_hit = dk;
+      Block(dk + 86400, 3);   // ne raccourcit jamais une pause plus longue
       Journal("DAILY_LIMIT", "", 0, eq, StringFormat("start %.2f", s.day_start_eq));
-      CloseAllManaged("limite de perte du jour");
       Notify(StringFormat("GardeFou : limite de perte du jour atteinte (%.1f%%). Tout est ferme. Trading bloque jusqu'a %s.",
                           s.active.daily_loss, DayHm(s.blocked_until)));
       SaveState();
      }
+   static datetime s_dl = 0;
+   if(s.day_hit == dk && TradeOk() && TimeLocal() - s_dl >= 5) { s_dl = TimeLocal(); CloseAllManaged("limite de perte du jour"); }   // jusqu'a etre a plat
    // positions : nouvelles et controles
    for(int i = PositionsTotal() - 1; i >= 0; i--)
      {
@@ -620,15 +680,19 @@ bool AccountReady()
    bool had = LoadState();
    SyncRules();
    g_ready = true;
+   LoadNews();
    for(int i = PositionsTotal() - 1; i >= 0; i--)   // positions deja ouvertes au demarrage : prises en charge sans fermeture
      {
       ulong t = PositionGetTicket(i);
       if(t == 0 || !PositionSelectByTicket(t)) continue;
       if(!Managed(PositionGetString(POSITION_SYMBOL), PositionGetInteger(POSITION_MAGIC))) continue;
       ulong id = (ulong)PositionGetInteger(POSITION_IDENTIFIER);
-      if(FindPos(id) >= 0) continue;
+      if(FindPos(id) >= 0 || WasBlocked(id)) continue;   // bloquee (re-init) : la boucle la referme
+      if(had) { OnNewPosition(t); continue; }            // connue -> reprise ; ouverte pendant l'arret -> regles a son heure
+      datetime pt = (datetime)PositionGetInteger(POSITION_TIME);
       AddPos(id, (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY) ? 1 : -1, PositionGetDouble(POSITION_SL));
       p_open[ArraySize(p_open) - 1] = TimeTradeServer() - 3600;   // pas de delai de grace pour elles
+      if(pt >= s.last_entry) { s.last_entry = pt; s.last_id = id; }
       Journal("ADOPTED", PositionGetString(POSITION_SYMBOL), id, PositionGetDouble(POSITION_VOLUME), "already open at start");
      }
    if(!TerminalInfoInteger(TERMINAL_TRADE_ALLOWED) || !MQLInfoInteger(MQL_TRADE_ALLOWED))
@@ -681,11 +745,24 @@ void OnTimer()
    FlushPush();
   }
 
+// ticket de la position d'identifiant id (en netting, le ticket change apres un retournement) ; 0 si fermee
+ulong TicketOf(const ulong id)
+  {
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+     {
+      ulong t = PositionGetTicket(i);
+      if(t != 0 && PositionSelectByTicket(t) && (ulong)PositionGetInteger(POSITION_IDENTIFIER) == id) return t;
+     }
+   return 0;
+  }
+
 // reaction immediate aux executions : nouvelle position, ajout, sortie
 void OnTradeTransaction(const MqlTradeTransaction &trans, const MqlTradeRequest &request, const MqlTradeResult &result)
   {
    if(!g_ready || trans.type != TRADE_TRANSACTION_DEAL_ADD) return;
    if(!HistoryDealSelect(trans.deal)) return;
+   long dreason = HistoryDealGetInteger(trans.deal, DEAL_REASON);
+   if(dreason == DEAL_REASON_ROLLOVER || dreason == DEAL_REASON_VMARGIN || dreason == DEAL_REASON_SPLIT) return;   // operations de service
    string sym = HistoryDealGetString(trans.deal, DEAL_SYMBOL);
    long magic = HistoryDealGetInteger(trans.deal, DEAL_MAGIC);
    long entry = HistoryDealGetInteger(trans.deal, DEAL_ENTRY);
@@ -695,25 +772,27 @@ void OnTradeTransaction(const MqlTradeTransaction &trans, const MqlTradeRequest 
       // le garde-fou ferme lui-meme : ses propres deals (magic de CTrade) ne sont pas des entrees
       if(!Managed(sym, magic)) return;
       double add = HistoryDealGetDouble(trans.deal, DEAL_VOLUME);
-      bool exists = PositionSelectByTicket(pid);
-      bool is_add = exists && PositionGetDouble(POSITION_VOLUME) > add + 1e-8;   // volume deja present avant ce deal
+      bool fill = ((ulong)HistoryDealGetInteger(trans.deal, DEAL_ORDER) == pid);   // fill partiel de l'ordre d'ouverture
+      ulong tk = TicketOf(pid);
+      bool exists = (tk != 0);
+      bool is_add = exists && !fill && PositionGetDouble(POSITION_VOLUME) > add + 1e-8;
       if(FindPos(pid) >= 0 && !is_add) return;   // deal d'ouverture deja traite par la boucle principale
       if(is_add)
         {   // ajout a une position deja ouverte (compte "netting") : on retire le volume ajoute
          s.w_blocks++;
          Journal("BLOCKED_ADD", sym, pid, add, "adding to an open position");
-         if(g_trade.PositionClosePartial(pid, add))
+         if(ClosePart(tk, add))
             Notify("GardeFou : ajout a la position " + sym + " annule (pas d'ajout a une position ouverte).");
          SaveState();
          return;
         }
-      if(exists && !WasBlocked(pid)) OnNewPosition(pid);
+      if(exists && !WasBlocked(pid)) OnNewPosition(tk);
       return;
      }
    if(entry == DEAL_ENTRY_OUT || entry == DEAL_ENTRY_OUT_BY || entry == DEAL_ENTRY_INOUT)
      {
       if(!Managed(sym, magic) && FindPos(pid) < 0) return;
-      bool closed = !PositionSelectByTicket(pid);
+      bool closed = (entry == DEAL_ENTRY_INOUT) || (TicketOf(pid) == 0);   // INOUT : ancienne position close, meme identifiant
       if(!closed || WasBlocked(pid)) return;   // sortie partielle, ou position fermee a l'ouverture par le garde-fou
       // resultat total de la position fermee
       double pnl = 0.0;
@@ -722,7 +801,10 @@ void OnTradeTransaction(const MqlTradeTransaction &trans, const MqlTradeRequest 
            {
             ulong d = HistoryDealGetTicket(i);
             if(d == 0) continue;
-            pnl += HistoryDealGetDouble(d, DEAL_PROFIT) + HistoryDealGetDouble(d, DEAL_SWAP) + HistoryDealGetDouble(d, DEAL_COMMISSION);
+            if(d != trans.deal && HistoryDealGetInteger(d, DEAL_ENTRY) == DEAL_ENTRY_INOUT) { pnl = 0.0; continue; }   // retournement anterieur
+            pnl += HistoryDealGetDouble(d, DEAL_PROFIT) + HistoryDealGetDouble(d, DEAL_SWAP) +
+                   HistoryDealGetDouble(d, DEAL_COMMISSION) + HistoryDealGetDouble(d, DEAL_FEE);
+            if(d == trans.deal) break;
            }
       s.w_trades++;
       s.w_pnl += pnl;
@@ -736,6 +818,7 @@ void OnTradeTransaction(const MqlTradeTransaction &trans, const MqlTradeRequest 
         }
       int i = FindPos(pid);
       if(i >= 0) RemovePos(i);
+      if(entry == DEAL_ENTRY_INOUT && s.last_id == pid) s.last_id = 0;   // la position retournee sera jugee comme nouvelle
       SaveState();
      }
   }

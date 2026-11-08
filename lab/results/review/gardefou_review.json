@@ -1,0 +1,92 @@
+[
+ {
+  "lens": "Sécurité trading & logique (hedging + netting)",
+  "verdict": "Pas prêt pour le réel : 2 critiques, 4 majeurs, 3 mineurs. Les 9 correctifs, appliqués ensemble, compilent à 0 erreur dans le shim : /home/user/gold-orb/lab/audit/scratch/gardefou/trading/fix.mq5 (généré par patch.py, même dossier). Questions : 1) Compte hedging ou netting ? En netting, le n°1 est bloquant. 2) 10 %/trade et 10 %/jour : un seul stop plein déclenche la limite du jour, donc blocage jusqu'au lendemain. C'est voulu ?",
+  "issues": [
+   {
+    "severity": "critique",
+    "line": "493, 705 (+ return L498)",
+    "scenario": "Dans Trade.mqh (2025), PositionClosePartial commence par `if(!IsHedging()) return(false);` et n'envoie rien. Sur un compte NETTING : l'ajout n'est jamais retiré (L705, échec sans message) et la réduction de taille échoue aussi (L493). Ensuite le `return` de la L498 empêche d'atteindre le contrôle « stop jamais éloigné » : il suffit d'éloigner le stop au-delà du risque max pour qu'il soit accepté. Ça peut aussi toucher un compte HEDGING : CTrade lit le mode de marge une seule fois, dans son constructeur, au chargement de l'EA. Si l'EA est chargé avant la connexion, il peut lire 0, c'est-à-dire netting.",
+    "fix": "Après CloseTicket (L380) :\nbool ClosePart(const ulong ticket, const double vol)\n  {\n   if(!PositionSelectByTicket(ticket)) return false;\n   g_trade.SetMarginMode();   // CTrade ne lit le mode qu'au chargement\n   if(AccountInfoInteger(ACCOUNT_MARGIN_MODE) == ACCOUNT_MARGIN_MODE_RETAIL_HEDGING)\n      return g_trade.PositionClosePartial(ticket, vol);\n   string sym = PositionGetString(POSITION_SYMBOL);\n   double v = MathMin(vol, PositionGetDouble(POSITION_VOLUME));\n   return (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY) ? g_trade.Sell(v, sym) : g_trade.Buy(v, sym);   // netting : ordre oppose plus petit = reduction\n  }\nL493 : ClosePart(ticket, cut)    L705 : ClosePart(pid, add)"
+   },
+   {
+    "severity": "critique",
+    "line": "33, 35-36 (lus L106-107 et L264)",
+    "scenario": "InpSymbols, InpIgnoreMagics et InpNewsCurrencies ne font pas partie de Rules : un changement s'applique tout de suite. Avec InpIgnoreMagics=\"0\" (le magic des trades manuels) ou InpSymbols=\"EURUSD\", toutes les règles sur l'or sautent immédiatement. Avec InpNewsCurrencies=\"\", le blocage annonces saute. La règle « assouplir seulement 24 h plus tard » se contourne en un clic.",
+    "fix": "Rules (L44), ajouter :\n   uchar syms[128], magics[64], ccys[64];   // filtres : tout changement attend 24 h\nFromInputs, après `Rules r;` :\n   ZeroMemory(r);\n   StringToCharArray(InpSymbols, r.syms, 0, 127);\n   StringToCharArray(InpIgnoreMagics, r.magics, 0, 63);\n   StringToCharArray(InpNewsCurrencies, r.ccys, 0, 63);\nSameRules, ajouter à la fin de l'expression :\n   && ArrayCompare(a.syms, b.syms) == 0 && ArrayCompare(a.magics, b.magics) == 0 && ArrayCompare(a.ccys, b.ccys) == 0\nL106-107 :\n   string syms = CharArrayToString(s.active.syms);\n   if(InList(CharArrayToString(s.active.magics), IntegerToString(magic))) return false;\n   if(syms != \"\" && !InList(syms, sym)) return false;\nL264 : int nc = StringSplit(CharArrayToString(s.active.ccys), ',', cur);\nSyncRules ne change pas : strict = cur garde les anciens filtres, donc tout changement attend 24 h."
+   },
+   {
+    "severity": "majeur",
+    "line": "562-572",
+    "scenario": "(a) Limite du jour atteinte à 19:00 serveur. La sortie perdante pose une pause jusqu'à 01:00 (reason=2). Au passage suivant, `block_reason != 3` redevient vrai : 2e DAILY_LIMIT, et la L565 ramène blocked_until à 00:00. La pause après perte est raccourcie (jusqu'à 6 h) et une 2e alerte contradictoire part. Ça arrive à chaque fois que la limite tombe après 18:00 serveur (séance US). (b) CloseAllManaged n'est tenté qu'une fois. Si la fermeture est refusée (pas de prix, coupure, Algo Trading coupé), ou si une position est reprise au redémarrage pendant le blocage, elle reste ouverte et continue de perdre.",
+    "fix": "GState (après L53) : datetime day_hit;\nL562-572 :\n   if(s.day_hit != dk && s.day_start_eq > 0 && eq <= s.day_start_eq * (1.0 - s.active.daily_loss / 100.0))\n     {\n      s.day_hit = dk;\n      Block(dk + 86400, 3);   // ne raccourcit jamais une pause plus longue\n      Journal(\"DAILY_LIMIT\", \"\", 0, eq, StringFormat(\"start %.2f\", s.day_start_eq));\n      Notify(StringFormat(\"GardeFou : limite de perte du jour atteinte (%.1f%%). Tout est ferme. Trading bloque jusqu'a %s.\", s.active.daily_loss, DayHm(s.blocked_until)));\n      SaveState();\n     }\n   static datetime s_dl = 0;\n   if(s.day_hit == dk && TimeLocal() - s_dl >= 5) { s_dl = TimeLocal(); CloseAllManaged(\"limite de perte du jour\"); }   // re-essai jusqu'a etre a plat\nEn tête de CloseTicket : if(!PositionSelectByTicket(ticket)) return true;   // deja fermee"
+   },
+   {
+    "severity": "majeur",
+    "line": "477-522",
+    "scenario": "Compte hedging, après la grâce : achat 1 lot à 2010, stop 2000 (risque = max, 1 000 $). Le trader descend le stop à 1990. Le contrôle du risque (L480) passe avant le contrôle « stop éloigné » (L503) : 0,5 lot est fermé à perte, puis au passage suivant le stop est quand même remis à 2000. Double sanction : taille coupée et stop remis.",
+    "fix": "Déplacer le bloc L500-522 (avec `if(in_grace) { p_best[i] = sl; return; }`) juste avant la L477, et retirer `!in_grace &&` à la L480 (il devient implicite). Le contrôle du risque ne porte alors plus que sur le stop choisi pendant la grâce ou après un durcissement des règles."
+   },
+   {
+    "severity": "majeur",
+    "line": "699",
+    "scenario": "Ordre de 1 lot exécuté en 2 deals (0,6 + 0,4 : liquidité ECN, ou ordre limite rempli en plusieurs fois). Le 2e deal IN porte le même DEAL_POSITION_ID, donc is_add est vrai et 0,4 lot est refermé. Si l'événement du 1er deal est traité après le 2e fill, ce sont 0,6 lot qui partent. En hedging, cette branche ne peut se déclencher que dans ce cas : elle se trompe donc à chaque fois.",
+    "fix": "L698-699 :\n      bool fill = ((ulong)HistoryDealGetInteger(trans.deal, DEAL_ORDER) == pid);   // POSITION_IDENTIFIER = ticket de l'ordre d'ouverture\n      bool exists = PositionSelectByTicket(pid);\n      bool is_add = exists && !fill && PositionGetDouble(POSITION_VOLUME) > add + 1e-8;"
+   },
+   {
+    "severity": "majeur",
+    "line": "623-633, 402-422",
+    "scenario": "Tout (re)démarrage, y compris un simple changement de paramètre (OnInit vide p_id), « adopte » les positions ouvertes sans contrôle, en partant de leur stop actuel. Contournement : couper Algo Trading, ouvrir pendant une pause ou élargir le stop, modifier un paramètre, réactiver. La position et le stop sont alors légitimés, sans pause de 6 h. Reste non couvert par ce correctif : une perte encaissée pendant l'arrêt ne déclenche pas de pause.",
+    "fix": "GState : ulong last_id; double last_best;\nOnNewPosition, L402-407 :\n   datetime now = TimeTradeServer();\n   datetime pt = (datetime)PositionGetInteger(POSITION_TIME);   // heure serveur d'ouverture\n   if(pt < s.last_entry || (id == s.last_id && pt == s.last_entry))\n     {   // deja acceptee (redemarrage, resynchro) : reprise\n      AddPos(id, side, sl);\n      p_open[ArraySize(p_open) - 1] = now - 3600;\n      if(id == s.last_id && s.last_best != 0.0)\n         p_best[ArraySize(p_best) - 1] = (sl == 0.0) ? s.last_best : (side > 0 ? MathMax(sl, s.last_best) : MathMin(sl, s.last_best));\n      return;\n     }\n   string why = \"\", news;\n   if(s.blocked_until > pt) why = BlockText();\n   else if(ManagedCount(id) >= s.active.max_pos) why = \"une position a la fois\";\n   else if(NewsNear(pt, news)) why = \"annonce forte : \" + news;\nL421-422 : s.last_entry = pt; s.last_id = id; s.last_best = sl; Block(pt + s.active.cooldown_h * 3600, 1);\nAprès chaque mise à jour de p_best[i] (L469 et L522) : if(id == s.last_id) { s.last_best = p_best[i]; SaveState(); }\nAccountReady : LoadNews(); avant la boucle, puis L629 :\n      if(FindPos(id) >= 0 || WasBlocked(id)) continue;\n      if(had) { OnNewPosition(t); continue; }   // connue -> reprise ; ouverte pendant l'arret -> regles a son heure\n(Au 1er démarrage : après AddPos, mémoriser last_entry et last_id de la position la plus récente.)"
+   },
+   {
+    "severity": "mineur",
+    "line": "370-380, 438-439, 457-475",
+    "scenario": "Quand une fermeture ou une modification est refusée en boucle (Algo Trading coupé, ou marché fermé / pause quotidienne avec une position sans stop), l'EA réessaie à chaque tick et chaque seconde, et CloseTicket notifie à chaque échec. Résultat : une Alert par tick, une file push pleine puis 1 push toutes les 7 s sans fin, et environ 2 requêtes/s au serveur.",
+    "fix": "datetime g_fail = 0;\nbool TradeOk() { return TerminalInfoInteger(TERMINAL_TRADE_ALLOWED) && MQLInfoInteger(MQL_TRADE_ALLOWED) && TimeLocal() - g_fail >= 10; }\nCloseTicket : static ulong s_warned = 0; if(!PositionSelectByTicket(ticket)) return true;\n   en cas d'échec : g_fail = TimeLocal(); if(s_warned != ticket) { s_warned = ticket; Notify(m); } else Print(m);\nL459 : if(in_grace || !TradeOk()) return;\nEn tête des blocs L480 et L507 : if(!TradeOk()) return;\nL438-439 : if(TradeOk()) CloseTicket(ticket, \"position ouverte pendant un blocage\");"
+   },
+   {
+    "severity": "mineur",
+    "line": "259-260, 272",
+    "scenario": "Le 1er CalendarValueHistory après un démarrage échoue souvent (erreur 5401, calendrier en cours de chargement). Comme n_loaded est déjà posé, l'EA ne réessaie pas avant 30 min et n'alerte pas : pas de blocage annonces après chaque démarrage, et jamais si le calendrier reste inaccessible.",
+    "fix": "datetime n_warned_cal = 0;\nL272 :\n      if(!CalendarValueHistory(v, now - 3600, now + 2 * 86400, NULL, ccy))\n        {\n         n_loaded = now - 1740;   // nouvel essai dans 1 min\n         if(now - n_warned_cal > 6 * 3600) { n_warned_cal = now; Notify(\"GardeFou : calendrier economique illisible (\" + IntegerToString(GetLastError()) + \") : blocage annonces inactif.\"); }\n         continue;\n        }"
+   },
+   {
+    "severity": "mineur",
+    "line": "698, 705, 710, 716",
+    "scenario": "En netting, PositionSelectByTicket(pid) suppose que ticket = identifiant. Après un retournement accepté, le ticket change mais pas l'identifiant. Une sortie partielle est alors lue comme une sortie totale (pause, stats, retrait de p_id). La boucle revoit ensuite la position comme « nouvelle » pendant la pause et la ferme à tort. Les ajouts ne sont plus retirés non plus.",
+    "fix": "ulong TicketOf(const ulong id)   // en netting le ticket change au retournement\n  {\n   for(int i = PositionsTotal() - 1; i >= 0; i--)\n     {\n      ulong t = PositionGetTicket(i);\n      if(t != 0 && PositionSelectByTicket(t) && (ulong)PositionGetInteger(POSITION_IDENTIFIER) == id) return t;\n     }\n   return 0;\n  }\nL698 : ulong tk = TicketOf(pid); bool exists = (tk != 0);\nL705 : ClosePart(tk, add)    L710 : OnNewPosition(tk)    L716 : bool closed = (TicketOf(pid) == 0);"
+   }
+  ]
+ },
+ {
+  "lens": "Sémantique de l'API MQL5",
+  "verdict": "4 vrais problèmes. Le n°1 n'est critique que sur un compte netting. Points vérifiés sans problème :\n- heures du calendrier = heure serveur, comme le code (TimeTradeServer partout) ;\n- CALENDAR_IMPORTANCE_HIGH est la bonne valeur ;\n- le calendrier est ignoré dans le testeur ;\n- l'historique est déjà lisible dans DEAL_ADD ;\n- TimeTradeServer est le bon choix pour le changement de jour (TimeCurrent se fige sans tick ; TimeTradeServer suit l'horloge du PC) ;\n- push : 1 toutes les 7 s, donc 10/min au plus, 255 caractères max ;\n- StringSplit(',') et StringTrim (modifie en place) ;\n- FileMove et FileWriteStruct en FILE_COMMON.\nLes correctifs passent la vérification de syntaxe du shim C++ étendu (rien n'a tourné dans MT5) : /home/user/gold-orb/lab/audit/scratch/gardefou/api/fix.diff\nQUESTIONS : 1) Votre compte MT5 est-il hedging ou netting ? 2) Si le calendrier ne répond pas, faut-il bloquer toute nouvelle position, ou seulement prévenir ?",
+  "issues": [
+   {
+    "severity": "critical",
+    "line": "493, 705",
+    "scenario": "Compte netting : CTrade::PositionClosePartial commence par `if(!IsHedging()) return(false);` (Trade.mqh 2024-2025, l.605) et n'envoie aucun ordre. La réduction de taille (risque max) et l'annulation d'un ajout ne font donc jamais rien. Aucun message non plus : Notify n'est appelé qu'en cas de succès. La doc MqlTradeRequest accepte le ticket `position` en netting, donc un TRADE_ACTION_DEAL partiel marche dans les deux modes.",
+    "fix": "bool ReducePos(const ulong ticket, const double vol)   // hedging ET netting\n  {\n   if(!PositionSelectByTicket(ticket)) return false;\n   MqlTradeRequest rq; MqlTradeResult rs;\n   ZeroMemory(rq); ZeroMemory(rs);\n   bool buy = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY);\n   rq.action    = TRADE_ACTION_DEAL;\n   rq.position  = ticket;   // volume > position => 10038, jamais de retournement\n   rq.symbol    = PositionGetString(POSITION_SYMBOL);\n   rq.volume    = MathMin(vol, PositionGetDouble(POSITION_VOLUME));\n   rq.type      = buy ? ORDER_TYPE_SELL : ORDER_TYPE_BUY;\n   rq.price     = SymbolInfoDouble(rq.symbol, buy ? SYMBOL_BID : SYMBOL_ASK);\n   rq.deviation = 50;\n   long fm = SymbolInfoInteger(rq.symbol, SYMBOL_FILLING_MODE);\n   rq.type_filling = ((fm & SYMBOL_FILLING_FOK) != 0) ? ORDER_FILLING_FOK : (((fm & SYMBOL_FILLING_IOC) != 0) ? ORDER_FILLING_IOC : ORDER_FILLING_RETURN);\n   bool ok = OrderSend(rq, rs) && (rs.retcode == TRADE_RETCODE_DONE || rs.retcode == TRADE_RETCODE_DONE_PARTIAL);\n   static datetime s_warn = 0;\n   if(!ok && TimeLocal() - s_warn >= 60)\n     {\n      s_warn = TimeLocal();\n      Notify(\"GardeFou : reduction de \" + rq.symbol + \" refusee (code \" + IntegerToString(rs.retcode) + \"). Reduisez vous-meme.\");\n     }\n   return ok;\n  }\n// l.493 :  if(cut >= vstep && ReducePos(ticket, cut))\n// l.705 :  if(ReducePos(tk, add))      (tk : voir n°3)"
+   },
+   {
+    "severity": "high",
+    "line": "562-572",
+    "scenario": "Limite du jour : CloseAllManaged n'est tenté qu'une fois, à cause de la condition `s.block_reason != 3`. Si une fermeture échoue (10004 requote, 10021 pas de prix, 10027 Algo Trading coupé), la position reste ouverte toute la journée. Une position déjà connue n'est jamais re-vérifiée contre le blocage.",
+    "fix": "// juste apres le bloc l.562-572 :\n   static datetime s_dl_retry = 0;   // limite du jour active : re-fermer ce qui reste ouvert\n   if(s.block_reason == 3 && s.blocked_until > now && ManagedCount(0) > 0 && TimeLocal() - s_dl_retry >= 30)\n     {\n      s_dl_retry = TimeLocal();\n      CloseAllManaged(\"limite de perte du jour\");\n     }"
+   },
+   {
+    "severity": "medium",
+    "line": "698, 699, 705, 710, 716, 725",
+    "scenario": "Le code utilise DEAL_POSITION_ID comme si c'était le ticket. Doc POSITION_IDENTIFIER : en netting, un retournement (DEAL_ENTRY_INOUT) garde l'identifiant mais change POSITION_TICKET. Même chose lors d'une réouverture par le serveur (swap). Conséquences :\n- après un retournement accepté, une sortie partielle est lue comme une fermeture ; la boucle revoit ensuite la position comme NOUVELLE et la ferme (pause après entrée) ;\n- le test d'ajout par volume (l.699) prend un ordre exécuté en plusieurs deals pour un ajout et coupe une entrée légitime, en hedging aussi ;\n- le P&L recompte la partie d'avant le retournement et oublie DEAL_FEE ;\n- les deals de service (ROLLOVER, VMARGIN) sont lus comme sortie + nouvelle entrée.",
+    "fix": "ulong TicketById(const ulong id)   // ticket ACTUEL d'apres POSITION_IDENTIFIER (0 = fermee) ; selectionne la position\n  {\n   for(int i = PositionsTotal() - 1; i >= 0; i--)\n     {\n      ulong t = PositionGetTicket(i);\n      if(t != 0 && (ulong)PositionGetInteger(POSITION_IDENTIFIER) == id) return t;\n     }\n   return 0;\n  }\n// apres l.692 :\n   long reason = HistoryDealGetInteger(trans.deal, DEAL_REASON);\n   if(reason == DEAL_REASON_ROLLOVER || reason == DEAL_REASON_VMARGIN || reason == DEAL_REASON_SPLIT) return;   // operations de service\n// l.698-699 :\n      ulong tk = TicketById(pid);\n      bool is_add = (tk != 0 && (ulong)HistoryDealGetInteger(trans.deal, DEAL_ORDER) != pid);   // autre ordre que l'ordre d'ouverture = ajout\n// l.705 :  if(ReducePos(tk, add))\n// l.710 :  if(tk != 0 && !WasBlocked(pid)) OnNewPosition(tk);\n// l.716 :\n      bool closed = (entry == DEAL_ENTRY_INOUT) || TicketById(pid) == 0;   // INOUT = ancienne position close, meme identifiant\n// l.724-725 :\n            if(d == 0) continue;\n            if(d != trans.deal && HistoryDealGetInteger(d, DEAL_ENTRY) == DEAL_ENTRY_INOUT) { pnl = 0.0; continue; }   // retournement anterieur\n            pnl += HistoryDealGetDouble(d, DEAL_PROFIT) + HistoryDealGetDouble(d, DEAL_SWAP) + HistoryDealGetDouble(d, DEAL_COMMISSION) + HistoryDealGetDouble(d, DEAL_FEE);\n            if(d == trans.deal) break;"
+   },
+   {
+    "severity": "medium",
+    "line": "259-272",
+    "scenario": "Doc : CalendarValueHistory renvoie un int (nombre de valeurs, -1 en cas d'erreur 5401 ou 5402), pas un bool. Ici l'échec passe inaperçu. De plus, n_loaded est posé avant l'appel : un échec (par exemple au démarrage, calendrier pas encore synchronisé) donne 30 min sans filtre annonces, sans alerte. Enfin, la borne `now - 3600` coupe la fenêtre après l'annonce si news_min > 60.",
+    "fix": "// l.260 : supprimer \"n_loaded = now;\" ; avant la boucle : int err = 0;\n// l.272 :\n      ResetLastError();\n      int got = CalendarValueHistory(v, now - s.active.news_min * 60 - 3600, now + 2 * 86400, NULL, ccy);   // int : nb de valeurs, -1 = erreur\n      if(got < 0 || (ArraySize(v) == 0 && GetLastError() != 0)) { err = GetLastError(); continue; }\n// apres la boucle, avant la } finale de LoadNews :\n   n_loaded = (err == 0) ? now : now - 1800 + 60;   // echec : nouvel essai dans 1 min\n   static datetime s_cal_warned = 0;\n   if(err != 0 && now - s_cal_warned > 3600)\n     {\n      s_cal_warned = now;\n      Notify(\"GardeFou : calendrier economique indisponible (erreur \" + IntegerToString(err) + \") : blocage des annonces inactif.\");\n     }"
+   }
+  ]
+ }
+]
