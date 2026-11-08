@@ -34,11 +34,11 @@ enum ENUM_SERIES_INFO_INTEGER { SERIES_BARS_COUNT, SERIES_SYNCHRONIZED = 5 };
 enum ENUM_TERMINAL_INFO_INTEGER { TERMINAL_CONNECTED, TERMINAL_TRADE_ALLOWED, TERMINAL_MAXBARS };
 enum ENUM_MQL_INFO_INTEGER { MQL_TESTER, MQL_TRADE_ALLOWED };
 enum ENUM_ACCOUNT_INFO_INTEGER { ACCOUNT_LOGIN, ACCOUNT_TRADE_MODE };
-enum ENUM_ACCOUNT_INFO_DOUBLE { ACCOUNT_EQUITY };
+enum ENUM_ACCOUNT_INFO_DOUBLE { ACCOUNT_BALANCE, ACCOUNT_EQUITY };
 enum ENUM_ACCOUNT_TRADE_MODE { ACCOUNT_TRADE_MODE_DEMO, ACCOUNT_TRADE_MODE_CONTEST, ACCOUNT_TRADE_MODE_REAL };
-enum ENUM_SYMBOL_INFO_INTEGER { SYMBOL_TRADE_STOPS_LEVEL, SYMBOL_TRADE_FREEZE_LEVEL, SYMBOL_EXPIRATION_MODE };
+enum ENUM_SYMBOL_INFO_INTEGER { SYMBOL_TRADE_STOPS_LEVEL, SYMBOL_TRADE_FREEZE_LEVEL, SYMBOL_EXPIRATION_MODE, SYMBOL_DIGITS };
 enum ENUM_SYMBOL_INFO_DOUBLE { SYMBOL_TRADE_TICK_SIZE, SYMBOL_TRADE_TICK_VALUE, SYMBOL_TRADE_TICK_VALUE_LOSS,
-                               SYMBOL_VOLUME_MIN, SYMBOL_VOLUME_STEP, SYMBOL_VOLUME_MAX };
+                               SYMBOL_VOLUME_MIN, SYMBOL_VOLUME_STEP, SYMBOL_VOLUME_MAX, SYMBOL_POINT };
 const int SYMBOL_EXPIRATION_GTC = 1, SYMBOL_EXPIRATION_DAY = 2, SYMBOL_EXPIRATION_SPECIFIED = 4;
 enum ENUM_ORDER_PROPERTY_INTEGER { ORDER_MAGIC, ORDER_TYPE };
 enum ENUM_ORDER_TYPE { ORDER_TYPE_BUY = 0, ORDER_TYPE_SELL = 1, ORDER_TYPE_BUY_LIMIT = 2, ORDER_TYPE_SELL_LIMIT = 3, ORDER_TYPE_BUY_STOP = 4, ORDER_TYPE_SELL_STOP = 5 };
@@ -48,9 +48,9 @@ enum ENUM_POSITION_PROPERTY_DOUBLE { POSITION_VOLUME, POSITION_PRICE_OPEN, POSIT
 enum ENUM_POSITION_PROPERTY_STRING { POSITION_SYMBOL };
 enum ENUM_POSITION_TYPE { POSITION_TYPE_BUY, POSITION_TYPE_SELL };
 enum ENUM_DEAL_PROPERTY_INTEGER { DEAL_MAGIC, DEAL_ENTRY, DEAL_TYPE, DEAL_POSITION_ID };
-enum ENUM_DEAL_PROPERTY_DOUBLE { DEAL_PRICE };
+enum ENUM_DEAL_PROPERTY_DOUBLE { DEAL_VOLUME, DEAL_PRICE, DEAL_COMMISSION, DEAL_SWAP, DEAL_PROFIT };
 enum ENUM_DEAL_PROPERTY_STRING { DEAL_SYMBOL };
-enum ENUM_DEAL_ENTRY { DEAL_ENTRY_IN, DEAL_ENTRY_OUT };
+enum ENUM_DEAL_ENTRY { DEAL_ENTRY_IN, DEAL_ENTRY_OUT, DEAL_ENTRY_INOUT, DEAL_ENTRY_OUT_BY };
 enum ENUM_DEAL_TYPE { DEAL_TYPE_BUY, DEAL_TYPE_SELL };
 enum ENUM_INIT_RETCODE { INIT_SUCCEEDED = 0, INIT_FAILED = 1, INIT_PARAMETERS_INCORRECT = 32767 };
 enum ENUM_FILE_POSITION { SEEK_SET, SEEK_CUR, SEEK_END };
@@ -163,6 +163,8 @@ public:
    bool   PositionModify(const ulong ticket, const double sl, const double tp);
    bool   PositionClose(const string symbol, const ulong deviation = ULONG_MAX);
    bool   PositionClose(const ulong ticket, const ulong deviation = ULONG_MAX);
+   bool   PositionClosePartial(const string symbol, const double volume, const ulong deviation = ULONG_MAX);
+   bool   PositionClosePartial(const ulong ticket, const double volume, const ulong deviation = ULONG_MAX);
    bool   OrderDelete(const ulong ticket);
    bool   Buy(const double volume, const string symbol = "", double price = 0.0, const double sl = 0.0, const double tp = 0.0,
               const string comment = "");
@@ -176,3 +178,16 @@ public:
 
 bool OrderSendAsync(const MqlTradeRequest &request, MqlTradeResult &result);
 bool IsStopped();
+
+// --- added for GardeFou.mq5 (docs.mql5.com signatures)
+int StringSplit(const string string_value, const ushort separator, MqlArray<string> &result);
+int StringTrimLeft(string &string_var);
+int StringTrimRight(string &string_var);
+bool HistorySelectByPosition(long position_id);
+int HistoryDealsTotal();
+ulong HistoryDealGetTicket(int index);
+enum ENUM_CALENDAR_EVENT_IMPORTANCE { CALENDAR_IMPORTANCE_NONE, CALENDAR_IMPORTANCE_LOW, CALENDAR_IMPORTANCE_MODERATE, CALENDAR_IMPORTANCE_HIGH };
+struct MqlCalendarValue { ulong id; ulong event_id; datetime time; datetime period; int revision; long actual_value; long prev_value; long revised_prev_value; long forecast_value; };
+struct MqlCalendarEvent { ulong id; ulong country_id; ENUM_CALENDAR_EVENT_IMPORTANCE importance; uint digits; string source_url; string event_code; string name; };
+bool CalendarValueHistory(MqlArray<MqlCalendarValue> &values, datetime datetime_from, datetime datetime_to = 0, const char *country_code = nullptr, const string currency = "");
+bool CalendarEventById(ulong event_id, MqlCalendarEvent &event);
