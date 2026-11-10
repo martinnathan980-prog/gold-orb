@@ -310,3 +310,14 @@
 {"time": "2026-11-10T11:31:28", "track": "overnight", "label": "MONTH_END_NIGHT:basket:us500:stress", "period": "val"}
 {"time": "2026-11-10T11:31:29", "track": "overnight", "label": "MONTH_END_NIGHT:basket:us500:every", "period": "val"}
 {"time": "2026-11-10T11:31:30", "track": "overnight", "label": "MONTH_END_NIGHT:us100", "period": "val"}
+{"time": "2026-11-10T11:31:31", "track": "overnight", "label": "MONTH_END_NIGHT:us100:stress", "period": "val"}
+{"time": "2026-11-10T11:31:31", "track": "overnight", "label": "MONTH_END_NIGHT:us100:every", "period": "val"}
+{"time": "2026-11-10T11:31:32", "track": "overnight", "label": "MONTH_END_NIGHT:basket:us100:fp", "period": "val"}
+{"time": "2026-11-10T11:31:33", "track": "overnight", "label": "MONTH_END_NIGHT:basket:us100:stress", "period": "val"}
+{"time": "2026-11-10T11:31:34", "track": "overnight", "label": "MONTH_END_NIGHT:basket:us100:every", "period": "val"}
+{"time": "2026-11-10T11:31:35", "track": "overnight", "label": "MONTH_END_NIGHT:ger40", "period": "val"}
+{"time": "2026-11-10T11:31:36", "track": "overnight", "label": "MONTH_END_NIGHT:ger40:stress", "period": "val"}
+{"time": "2026-11-10T11:31:37", "track": "overnight", "label": "MONTH_END_NIGHT:ger40:every", "period": "val"}
+{"time": "2026-11-10T11:31:38", "track": "overnight", "label": "MONTH_END_NIGHT:basket:ger40:fp", "period": "val"}
+{"time": "2026-11-10T11:31:39", "track": "overnight", "label": "MONTH_END_NIGHT:basket:ger40:stress", "period": "val"}
+{"time": "2026-11-10T11:31:39", "track": "overnight", "label": "MONTH_END_NIGHT:basket:ger40:every", "period": "val"}
