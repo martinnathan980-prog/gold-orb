@@ -10,13 +10,13 @@ import sys; sys.path.insert(0, "/home/user/gold-orb/lab")
 import goldlab as gl
 from goldlab import r2
 
-m1 = r2.load("us100")        # FP-cost frame: bid/ask already carry today's FP Markets Standard spread
+m1 = r2.load("us100")        # FP-cost frame: bid/ask already carry today's FP Markets Raw-account cost (COSTS_FP.md)
 # symbols: xauusd xagusd us100 us500 us30 ger40 btcusd ethusd      (UTC, M1, cols bo bh bl bc ao ah al ac)
 r2.SPEC["us100"]             # spread, slippage, swaps, lot size, min lot, leverage (r2/fp_costs.json)
 r2.free()                    # frames are ~330 MB each: load ONE symbol at a time, free when you switch
 ```
-- Indices: ~23 h/day, daily break around 16:15–18:00 New York, closed weekends. Crypto: 24/7 if the data
-  has it (check). Session clocks: `gl.local(idx, gl.NY)`, `gl.local(idx, "Europe/Berlin")`, `gl.LDN`.
+- Indices: ~23 h/day, daily break around 16:15–18:00 New York, closed weekends. Crypto: 24/5 like the broker
+  (no bars from Friday 16:55 to Sunday 17:00 New York). Session clocks: `gl.local(idx, gl.NY)`, `gl.local(idx, "Europe/Berlin")`, `gl.LDN`.
 - `gl.bars(m1, "5min"|"15min"|"1h"|"4h"|"D")` — bars are labelled by START; a bar is known at `t_close`.
   `gl.full_days(m1)` = daily bars without holiday stubs. `gl.atr(bars, n)`.
 - `gl.entry_index(m1, t)` = first tradable M1 bar at/after a decision time.
@@ -58,7 +58,7 @@ basis points of price; `ev["is_gross_bps_per_trade"]` = before any cost.
 8. A long-only profit on a market that rose (indices, bitcoin, gold) is not an edge: show long and short
    separately and pass the random-entry null.
 
-## Account constraints (1,000 EUR, FP Markets Standard, 1:500)
+## Account constraints (1,000 EUR, FP Markets Raw, 1:500)
 Position size is rounded down to the lot step; the minimum lot sets the smallest possible risk.
 Report, for each finalist, the median stop distance in price units in 2024–2025 and the money it
 represents on the minimum lot (`r2.SPEC[sym]`): above ~30 EUR it cannot be sized properly on this account.

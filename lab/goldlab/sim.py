@@ -30,7 +30,7 @@ Fill rules (pessimistic):
     their fill bar.
   * trailing / break-even stops are updated with the bar's extreme AFTER the bar closes.
 Costs added afterwards: commission per unit round-trip, overnight swap per 17:00 NY rollover
-(Wednesday counts triple), as an annual % of price.
+(one rollover counts triple: Wednesday by default, `Costs.swap_triple`), as an annual % of price.
 """
 from dataclasses import dataclass
 
@@ -52,6 +52,7 @@ class Costs:
     swap_long: float = 0.05        # annual cost of holding long overnight (5 %/yr)
     swap_short: float = 0.02       # annual cost of holding short overnight
     spread_mult: float = 1.0       # stress test: multiply the bid/ask spread
+    swap_triple: str = "Wed"       # rollover that counts three nights ("Wed": FX / metals; "Fri": FP Markets indices, crypto)
 
 
 COSTS = {
@@ -290,10 +291,10 @@ def simulate(m1, orders, sym="xauusd", costs=None, no_overlap=True):
         # an order column that has the name of an engine output is carried as "o_<name>" (never overwrites)
         t[("o_" + extra) if extra in reserved else extra] = o.loc[t.index, extra].to_numpy()
     gross = t.side * (t.exit - t.entry)
-    # swap: rollovers at 17:00 NY between entry and exit trading days, Wednesday x3
+    # swap: rollovers at 17:00 NY between entry and exit trading days, triple on c.swap_triple (Wednesday by default)
     d0 = trading_day(t.entry_time).values.astype("datetime64[D]")
     d1 = trading_day(t.exit_time - pd.Timedelta(seconds=1)).values.astype("datetime64[D]")
-    nights = np.busday_count(d0, d1) + 2 * np.busday_count(d0, d1, weekmask="Wed")
+    nights = np.busday_count(d0, d1) + 2 * np.busday_count(d0, d1, weekmask=c.swap_triple)
     rate = np.where(t.side > 0, c.swap_long, c.swap_short)
     t["swap"] = t.entry * rate / 360.0 * nights
     t["commission"] = c.commission

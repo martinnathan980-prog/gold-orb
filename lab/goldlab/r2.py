@@ -3,7 +3,7 @@
     import goldlab as gl
     from goldlab import r2
 
-    m1 = r2.load("us100")                      # FP-cost M1 frame (bid/ask = FP Standard model), research data only
+    m1 = r2.load("us100")                      # FP-cost M1 frame (bid/ask = FP Raw-account model), research data only
     orders = make_orders(m1, **params)          # your strategy; indices into m1
     ev = r2.evaluate("us100", make_orders, params)   # IS metrics under FP costs, FP stress, gross
     r2.log_trial("idx_us", "us100", params, ev)      # log EVERY configuration you evaluate
@@ -58,10 +58,12 @@ def free(sym=None):
 
 
 def costs(sym, stress=1.0):
-    """FP Markets Standard costs for the simulator (spread is already inside the FP frame)."""
+    """FP Markets costs for the simulator (the spread, and the Raw commission where there is one, are
+    already inside the FP frame)."""
     s = SPEC[sym]
     return Costs(commission=0.0, slip_bps=s["slip_stop_bps"] * stress, slip_mkt_bps=s["slip_mkt_bps"] * stress,
-                 swap_long=s["swap_long"], swap_short=s["swap_short"], spread_mult=1.0)
+                 swap_long=s["swap_long"], swap_short=s["swap_short"], spread_mult=1.0,
+                 swap_triple=s.get("swap_triple", "Wed"))
 
 
 GROSS = Costs(commission=0.0, slip_bps=0.0, slip_mkt_bps=0.0, swap_long=0.0, swap_short=0.0, spread_mult=1.0)

@@ -1,10 +1,13 @@
 """Build the FP Markets cost frames used by round 2:  lab/data/fp/<sym>_m1.parquet
 
 Forward-looking cost model (PROTOCOL_V2 section 3): mid prices come from Dukascopy; the bid/ask
-spread is today's FP Markets Standard spread expressed in basis points of price (r2/fp_costs.json,
-converted at the average price of the last 60 trading days of the research data), with Dukascopy's
-own intraday spread shape (spread / that trading day's median spread, clipped to [0.7, 6]) so that
-rollover / off-hours / news widening is kept.
+spread is today's FP Markets cost (r2/fp_costs.json: Raw-account spread, plus the commission where
+there is one) expressed in basis points of price at `spread_ref_price` (the price when that spread
+was observed; without it, the average price of the last 60 trading days of the research data), with
+Dukascopy's own intraday spread shape (spread / that trading day's median spread, clipped to
+[0.7, 6]) so that rollover / off-hours / news widening is kept.
+`weekdays_only` (crypto): FP Markets quotes crypto 24/5, so the bars between Friday 23:55 and Monday
+00:00 server time (server = New York + 7 h) are removed: the robot cannot trade them.
 
 Usage: python3 lab/build_fp_frames.py [sym ...]
 """
@@ -17,7 +20,7 @@ import pandas as pd
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ROOT)
-from goldlab.data import DATA, trading_day  # noqa: E402
+from goldlab.data import DATA, NY, trading_day  # noqa: E402
 
 SPEC = json.load(open(os.path.join(ROOT, "r2", "fp_costs.json")))
 
@@ -25,12 +28,15 @@ SPEC = json.load(open(os.path.join(ROOT, "r2", "fp_costs.json")))
 def build(sym, write=True):
     raw = pd.read_parquet(os.path.join(DATA, f"{sym}_m1.parquet"))
     raw = raw[raw.index < pd.Timestamp("2026-01-01", tz="UTC")]          # holdout is built separately
+    if SPEC[sym].get("weekdays_only"):
+        srv = raw.index.tz_convert(NY).tz_localize(None) + pd.Timedelta(hours=7)     # FP server wall clock
+        raw = raw[(srv.dayofweek < 5) & ~((srv.dayofweek == 4) & (srv.hour == 23) & (srv.minute >= 55))]
     spr = (raw.ac - raw.bc).clip(lower=0)
     mid_c = (raw.ac + raw.bc) / 2
     td = trading_day(raw.index)
     day_med = spr.groupby(td).transform("median").replace(0, np.nan)
     shape = (spr / day_med).clip(0.7, 6.0).fillna(1.0)
-    ref = float(mid_c.iloc[-60 * 1380:].mean())
+    ref = float(SPEC[sym].get("spread_ref_price") or mid_c.iloc[-60 * 1380:].mean())
     bps = SPEC[sym]["spread"] / ref * 1e4
     hs = 0.5 * bps * 1e-4 * mid_c * shape
     out = pd.DataFrame(index=raw.index)
