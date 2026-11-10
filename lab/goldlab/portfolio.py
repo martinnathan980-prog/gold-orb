@@ -49,8 +49,10 @@ def _prep(sleeves):
 
 
 def run_account(sleeves, start=1000.0, risk_pct=1.0, kill_dd=0.5, max_open_risk_pct=None,
-                force_min_lot=False, weights=None, frame=None):
+                force_min_lot=False, weights=None, frame=None, max_positions=None, max_per_sym=None, log=None):
     """Replay on one account. `weights`: optional {sleeve: multiplier of risk_pct}.
+    `max_positions` / `max_per_sym`: caps on simultaneously open positions (the limits of the MT5 "hands").
+    `log`: optional list that receives one dict per trade taken (sleeve, sym, times, lots, money result).
     Returns (equity_events DataFrame indexed by time, summary dict)."""
     d = _prep(sleeves) if frame is None else frame
     if len(d) == 0:
@@ -62,7 +64,8 @@ def run_account(sleeves, start=1000.0, risk_pct=1.0, kill_dd=0.5, max_open_risk_
     open_pos = {}                      # i -> (lots, margin, risk_money)
     j = 0
     ev_t, ev_eq = [], []
-    taken = skipped_small = skipped_margin = skipped_risk = 0
+    taken = skipped_small = skipped_margin = skipped_risk = skipped_cap = 0
+    sym = d.sym.to_numpy()
     killed_at = None
     kill_level = start * (1 - kill_dd)
     w = weights or {}
@@ -90,6 +93,10 @@ def run_account(sleeves, start=1000.0, risk_pct=1.0, kill_dd=0.5, max_open_risk_
                 continue
             lots = d.min_lot[i]
         risk_money = lots * risk_money_per_lot
+        if (max_positions is not None and len(open_pos) >= max_positions) or \
+                (max_per_sym is not None and sum(1 for q in open_pos if sym[q] == sym[i]) >= max_per_sym):
+            skipped_cap += 1
+            continue
         if max_open_risk_pct is not None:
             open_risk = sum(v[2] for v in open_pos.values())
             if (open_risk + risk_money) > eq * max_open_risk_pct / 100.0:
@@ -102,6 +109,9 @@ def run_account(sleeves, start=1000.0, risk_pct=1.0, kill_dd=0.5, max_open_risk_
             continue
         open_pos[i] = (lots, margin, risk_money)
         taken += 1
+        if log is not None:
+            log.append({"sleeve": d.sleeve[i], "sym": sym[i], "t_in": d.t_in[i], "t_out": d.t_out[i], "lots": float(lots),
+                        "risk_money": float(risk_money), "money": float(d.pnl[i] * lots * d.upl[i] * d.fx[i])})
     if killed_at is None:
         while j < len(order_out):
             k = order_out[j]
@@ -115,7 +125,7 @@ def run_account(sleeves, start=1000.0, risk_pct=1.0, kill_dd=0.5, max_open_risk_
                     break
     curve = pd.Series(ev_eq, index=pd.to_datetime(ev_t, utc=True), name="equity")
     summ = {"n": int(taken), "skipped_min_lot": int(skipped_small), "skipped_margin": int(skipped_margin),
-            "skipped_risk_cap": int(skipped_risk), "final": round(float(eq), 2),
+            "skipped_risk_cap": int(skipped_risk), "skipped_position_cap": int(skipped_cap), "final": round(float(eq), 2),
             "killed_at": None if killed_at is None else str(pd.Timestamp(killed_at, tz="UTC"))}
     if len(curve):
         peak = np.maximum.accumulate(np.r_[start, curve.to_numpy()])
