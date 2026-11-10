@@ -1,0 +1,11 @@
+{
+ "request": {
+  "cmd": "probe",
+  "name": "probe_opus55",
+  "model": "claude-opus-5-5",
+  "workers": 3
+ },
+ "status": "ok",
+ "finished_utc": "2026-11-10T19:58:41+00:00",
+ "output": "probe_opus55: 143 sheets | exact year 55% | within one year 62% | rank correlation guess~year +0.68 (LEAK: tighten the sheet)\n"
+}

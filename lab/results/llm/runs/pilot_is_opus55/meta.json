@@ -1,0 +1,8 @@
+{
+ "model": "claude-opus-5-5",
+ "effort": "medium",
+ "period": "is",
+ "per_sleeve": 12,
+ "mode": "live",
+ "prompt": "511fa216c1fc"
+}
