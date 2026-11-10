@@ -334,6 +334,13 @@ def probe(name, model, n=150):
     cl = judge.client()
 
     def one(row):
+        try:
+            return ask(row)
+        except Exception as e:                                   # noqa: BLE001  (a failed call is one sheet less, not a crash)
+            print("error", row["id"], f"{type(e).__name__}: {e}"[:200], flush=True)
+            return {"id": row["id"], "year": row["year"], "guess": None}
+
+    def ask(row):
         msg = cl.messages.create(
             model=model, max_tokens=judge.MAX_TOKENS,
             system="This is a snapshot of a financial market at one moment between 2013 and 2025, with the date removed. "
@@ -343,7 +350,7 @@ def probe(name, model, n=150):
         txt = next((b.text for b in msg.content if b.type == "text"), None) if msg.stop_reason == "end_turn" else None
         return {"id": row["id"], "year": row["year"], "guess": json.loads(txt)["year"] if txt else None}
 
-    with cf.ThreadPoolExecutor(4) as ex:
+    with cf.ThreadPoolExecutor(2) as ex:
         d = pd.DataFrame(list(ex.map(one, c.to_dict("records")))).dropna()
     d.to_json(os.path.join(_run_dir(name), "probe.jsonl"), orient="records", lines=True)
     rho = d.year.rank().corr(d.guess.rank())
