@@ -90,3 +90,23 @@ def atr(b, n=14):
     pc = b["c"].shift(1)
     tr = np.maximum(b["h"] - b["l"], np.maximum((b["h"] - pc).abs(), (b["l"] - pc).abs()))
     return tr.ewm(alpha=1.0 / n, adjust=False).mean()
+
+
+def exit_index(m1, times, max_gap_min=30):
+    """M1 index at whose OPEN a time exit scheduled at `times` executes (use it for `exit_i`).
+    If a time falls inside a market closure (weekend, daily break, holiday, data gap: next bar more
+    than `max_gap_min` later), the exit is done on the LAST bar before the closure instead of after it."""
+    idx = m1.index.values
+    xv = pd.DatetimeIndex(times).tz_convert("UTC").tz_localize(None).values.astype(idx.dtype)
+    xi = np.searchsorted(idx, xv, side="left").astype(np.int64)
+    nxt = idx[np.clip(xi, 0, len(idx) - 1)]
+    gap = (xi >= len(idx)) | ((nxt - xv) > np.timedelta64(max_gap_min, "m"))
+    return np.where(gap & (xi > 0), xi - 1, xi).astype(np.int64)
+
+
+def full_days(m1, min_minutes=600):
+    """Daily bars ('D' = trading day ending 17:00 New York) keeping only days with enough data:
+    drops holiday stubs and holes, whose tiny ranges would distort daily ATR / previous-day levels."""
+    d = bars(m1, "D")
+    cnt = m1.groupby(trading_day(m1.index)).size()
+    return d[cnt.reindex(d.index).fillna(0).to_numpy() >= min_minutes]

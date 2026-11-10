@@ -155,3 +155,90 @@ def log_trial(track, sym, params, ev):
             row[k] = {q: ev[k].get(q) for q in ("n", "pf", "expectancy_R", "t_stat")}
     with open(os.path.join(d, "trials.jsonl"), "a") as f:
         f.write(json.dumps(row, default=str) + "\n")
+
+
+# ----------------------------------------------------------------------------------------------
+# Random-entry null (PROTOCOL_V2 section 4): does the rule beat chance with the SAME trade structure?
+# ----------------------------------------------------------------------------------------------
+_null_cache = {}
+
+
+def _minute_groups(m1, period_end="2022-01-01", period_start=None):
+    """Bars grouped by New-York minute of day, restricted to [period_start, period_end)."""
+    key = (id(m1), len(m1), period_start, period_end)
+    if key not in _null_cache:
+        _null_cache.clear()
+        idx = m1.index
+        lo = 0 if period_start is None else int(idx.searchsorted(_data._utc(period_start)))
+        hi = int(idx.searchsorted(_data._utc(period_end)))
+        ny = idx[lo:hi].tz_convert(_data.NY)
+        mod = (ny.hour * 60 + ny.minute).to_numpy()
+        order = np.argsort(mod, kind="stable")
+        bounds = np.searchsorted(mod[order], np.arange(1441))
+        _null_cache[key] = (lo, hi, mod, order, bounds)
+    return _null_cache[key]
+
+
+def null_test(sym, make_orders, params, n_seeds=200, mode="day", period="is", no_overlap=True, seed=0):
+    """Compare the rule with random entries that keep its structure.
+
+    The filled trades of the rule (FP costs) are re-entered AT MARKET at random moments:
+      mode="day"  : same New-York time of day, random day of the period   (use for signal-based rules)
+      mode="time" : random day AND random time                              (use for calendar / time-of-day rules)
+    keeping for each trade its side, its stop / target / trailing / break-even distances (scaled with the
+    price level) and its time-exit delay. Returns the percentile of the rule's mean R among `n_seeds`
+    random replays, plus the null's mean and 95th percentile. Criterion: percentile >= 97.5 on IS.
+    period: 'is' (free) only; validation-period nulls are for the lead."""
+    if period != "is":
+        raise ValueError("null_test is for the in-sample period")
+    m1 = load(sym)
+    orders = make_orders(m1, **params).reset_index(drop=True)
+    c = costs(sym)
+    t = simulate(m1, orders, sym=sym, costs=c, no_overlap=no_overlap)
+    t = cut(t, "is")
+    if len(t) < 30:
+        return {"n": int(len(t))}
+    o = orders.loc[t.index]
+    idx = m1.index
+    fill_i = idx.searchsorted(t.entry_time.to_numpy())
+    entry = t.entry.to_numpy(float)
+    side = t.side.to_numpy()
+    rel = lambda v: np.asarray(v, float) / entry
+    stop_rel = rel(t.risk.to_numpy(float))
+    tgt_rel = np.full(len(t), np.nan)
+    if "target" in o and o["target"].notna().any():
+        tgt_rel = np.where(o["target"].notna(), (o["target"].to_numpy(float) - entry) * side / entry, tgt_rel)
+    if "target_dist" in o and o["target_dist"].notna().any():
+        tgt_rel = np.where(o["target_dist"].notna(), o["target_dist"].to_numpy(float) / entry, tgt_rel)
+    tgt_rel = np.where(tgt_rel > 0, tgt_rel, np.nan)
+    trail_rel = rel(o["trail"].to_numpy(float)) if "trail" in o else np.full(len(t), np.nan)
+    be_rel = rel(o["be"].to_numpy(float)) if "be" in o else np.full(len(t), np.nan)
+    xi = o["exit_i"].to_numpy(np.int64) if "exit_i" in o else np.full(len(t), -1, np.int64)
+    dur = np.where(xi >= 0, np.maximum(xi - fill_i, 1), -1)
+    lo, hi, mod, order, bounds = _minute_groups(m1)
+    mod_c = mod[np.clip(fill_i - lo, 0, hi - lo - 1)]
+    mid = ((m1["bc"].to_numpy() + m1["ac"].to_numpy()) / 2)
+    rng = np.random.default_rng(seed)
+    means = []
+    n_bars = len(m1)
+    for _ in range(n_seeds):
+        if mode == "day":
+            a, b = bounds[mod_c], bounds[mod_c + 1]
+            ok = b > a
+            pos = (a + (rng.random(len(t)) * np.maximum(b - a, 1)).astype(np.int64))
+            ei = lo + order[np.minimum(pos, len(order) - 1)]
+        else:
+            ok = np.ones(len(t), bool)
+            ei = lo + rng.integers(0, hi - lo - 2, len(t))
+        px = mid[ei]
+        no = pd.DataFrame({"entry_i": ei, "side": side, "stop_dist": stop_rel * px, "target_dist": tgt_rel * px,
+                           "trail": trail_rel * px, "be": be_rel * px,
+                           "exit_i": np.where(dur >= 0, np.minimum(ei + dur, n_bars - 1), -1)})[ok]
+        tn = simulate(m1, no, sym=sym, costs=c, no_overlap=no_overlap)
+        tn = cut(tn, "is")
+        means.append(float(tn.R.mean()) if len(tn) else 0.0)
+    means = np.array(means)
+    cand = float(t.R.mean())
+    return {"n": int(len(t)), "mode": mode, "rule_mean_R": round(cand, 4), "null_mean_R": round(float(means.mean()), 4),
+            "null_p95_R": round(float(np.percentile(means, 95)), 4), "null_max_R": round(float(means.max()), 4),
+            "percentile": round(float((means < cand).mean() * 100), 1), "pass": bool((means < cand).mean() >= 0.975)}

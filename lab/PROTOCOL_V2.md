@@ -37,7 +37,13 @@ le maximum, puis donner pour chaque niveau de mise le gain médian par mois, la 
 
 Sur IS : ≥ 250 trades ; gain/perte (PF) ≥ 1,12 ; t ≥ 2,5 ; ≥ 60 % des années positives ; PF ≥ 1,04 avec
 frais ×1,5 ; voisins de réglage : PF médian ≥ 1,06 ; espérance > 0 aussi quand **chaque signal** est pris
-(leçon du protocole n°1) ; durée max ≤ 5 jours de bourse.
+(leçon du protocole n°1) ; durée max ≤ 5 jours de bourse ; et **battre le hasard à structure identique** :
+l'espérance de la règle doit dépasser 97,5 % de 200 rejeux où les mêmes trades (même sens, mêmes stops,
+mêmes durées) sont pris à des moments tirés au sort (`r2.null_test` ; même heure / jour au hasard pour une
+règle à signal, moment entièrement au hasard pour une règle de calendrier). Ce test écarte ce qui n'est
+que « le marché a monté ».
+Une même règle appliquée avec les mêmes réglages à plusieurs marchés peut être jugée en **panier** (trades
+réunis) si son espérance est positive sur chaque marché du panier.
 Sur VAL : PF ≥ 1,06, espérance > 0, et espérance > 0 quand chaque signal est pris.
 Pas de retouche après VAL. Les pistes or réutilisent un VAL déjà consulté au protocole n°1 pour d'autres
 règles : c'est signalé, et le test 2026 + la démo font foi.

@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(ROOT, "data", "raw_r2")
 SYMS = {"usatechidxusd": 2013, "usa500idxusd": 2013, "usa30idxusd": 2013, "xagusd": 2013,
-        "btcusd": 2017, "ethusd": 2018}
+        "btcusd": 2017, "ethusd": 2018, "deuidxeur": 2013}
 LAST_YEAR = 2025
 
 
@@ -31,7 +31,8 @@ def job(sym, year, side):
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    jobs = [(s, y, side) for s, y0 in SYMS.items() for y in range(y0, LAST_YEAR + 1) for side in ("bid", "ask")]
+    only = sys.argv[2].split(",") if len(sys.argv) > 2 else list(SYMS)
+    jobs = [(s, y, side) for s, y0 in SYMS.items() if s in only for y in range(y0, LAST_YEAR + 1) for side in ("bid", "ask")]
     workers = int(sys.argv[1]) if len(sys.argv) > 1 else 6
     with ThreadPoolExecutor(workers) as ex:
         for name, status in ex.map(lambda a: job(*a), jobs):

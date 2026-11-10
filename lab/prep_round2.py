@@ -21,16 +21,21 @@ CRYPTO = {"btcusd", "ethusd"}          # trade on weekends: keep Saturday / Sund
 
 def _read(sym, side):
     fr = []
-    for p in sorted(glob.glob(os.path.join(RAW, f"{sym}-m1-{side}-*.csv.gz"))):
-        d = pd.read_csv(p)
+    files = sorted(glob.glob(os.path.join(RAW, f"{sym}-m1-{side}-*.csv.gz"))) + \
+        sorted(glob.glob(os.path.join(RAW, "patch", f"{sym}-m1-{side}-*.csv.gz")))   # main first: patches only fill holes
+    for p in files:
+        try:
+            d = pd.read_csv(p)
+        except pd.errors.EmptyDataError:      # a patch request that returned nothing (market closed)
+            continue
         if len(d) == 0:
             continue
         d["ts"] = pd.to_datetime(d["timestamp"], unit="ms", utc=True)
         fr.append(d.drop(columns="timestamp").set_index("ts"))
     if not fr:
         return None
-    df = pd.concat(fr).sort_index()
-    return df[~df.index.duplicated(keep="first")]
+    df = pd.concat(fr)
+    return df[~df.index.duplicated(keep="first")].sort_index()   # de-duplicate BEFORE sorting: the main file wins
 
 
 def build(alias):
