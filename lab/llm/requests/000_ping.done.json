@@ -1,0 +1,8 @@
+{
+ "request": {
+  "cmd": "ping"
+ },
+ "status": "error",
+ "finished_utc": "2026-11-10T19:40:38+00:00",
+ "output": "\nRuntimeError: the repository secret ANTHROPIC_API_KEY is not set\n"
+}
