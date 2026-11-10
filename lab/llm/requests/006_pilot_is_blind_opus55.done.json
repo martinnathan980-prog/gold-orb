@@ -1,0 +1,16 @@
+{
+ "request": {
+  "cmd": "run",
+  "name": "pilot_is_blind_opus55",
+  "period": "is",
+  "per_sleeve": 12,
+  "model": "claude-opus-5-5",
+  "effort": "medium",
+  "workers": 3,
+  "mode": "blind",
+  "sheets": "sheets_blind.parquet"
+ },
+ "status": "ok",
+ "finished_utc": "2026-11-10T20:17:05+00:00",
+ "output": "20/120 done, 0.39 USD so far\n40/120 done, 0.70 USD so far\n60/120 done, 1.03 USD so far\n80/120 done, 1.34 USD so far\n100/120 done, 1.62 USD so far\n120/120 done, 1.91 USD so far\npilot_is_blind_opus55: 120 calls, 1.91 USD\npilot_is_blind_opus55: model claude-opus-5-5, effort medium, 120 answers, no decision 0 ({'end_turn': 120})\ntokens per call: in 2576 (+ cache read 955, write 147), out 234 | 1.91 USD = 1.59 cents per call\n\n== pilot_is_blind_opus55 (is): n 120, skipped 23.3% | R(take) - R(skip) = +0.2486 (p 0.1068) | R(skip) = 0.1956 | H1 False H2 False | rank corr quality~R +0.0940 (p 0.1644)\n                  sleeve   n  skip_pct   R_all  R_take  R_skip  total_all  total_take  pf_all  pf_take\nF2_brk_unfiltered_btcusd  12      41.7  1.3699  1.8394  0.7127       16.4        12.9  10.711   10.702\nF2_brk_unfiltered_ethusd  12      66.7  0.4104  0.7774  0.2269        4.9         3.1   3.064    4.082\n      GOLD_FRI_PM_xauusd  12       0.0 -0.0038 -0.0038     NaN       -0.0        -0.0   0.943    0.943\n     brk72_24h_wd_btcusd  12      41.7  0.8489  1.4786 -0.0326       10.2        10.4   4.177   11.197\n     brk72_24h_wd_ethusd  12       8.3  0.6940  0.7699 -0.1404        8.3         8.5   4.323    4.580\n     donch4h_stop_xauusd  12      25.0  0.3628  0.3427  0.4231        4.4         3.1   2.281    2.004\n           noise30_us100  12       0.0  0.4453  0.4453     NaN        5.3         5.3   3.128    3.128\n    nq_btc_follow_btcusd  12      25.0 -0.0733 -0.1451  0.1420       -0.9        -1.3   0.766    0.643\n              ocm4_us100  12       8.3 -0.2029 -0.2583  0.4061       -2.4        -2.8   0.631    0.570\norb_asia_2d_buf10_xauusd  12      16.7  0.0111  0.1833 -0.8496        0.1         1.8   1.017    1.296\n                     ALL 120      23.3  0.3862  0.4442  0.1956       46.3        40.9   2.333    2.430\n"
+}
