@@ -325,7 +325,7 @@ def analyse(name):
     show_stats(st, f"{name} ({'/'.join(sorted(d.period.unique()))})")
 
 
-def probe(name, model, n=150):
+def probe(name, model, n=150, workers=2):
     """Leak probe: can the model tell the year from an anonymous sheet?"""
     cases, sheets, _ = load()
     c = cases.assign(year=pd.DatetimeIndex(cases.entry_time).year)
@@ -350,7 +350,7 @@ def probe(name, model, n=150):
         txt = next((b.text for b in msg.content if b.type == "text"), None) if msg.stop_reason == "end_turn" else None
         return {"id": row["id"], "year": row["year"], "guess": json.loads(txt)["year"] if txt else None}
 
-    with cf.ThreadPoolExecutor(2) as ex:
+    with cf.ThreadPoolExecutor(workers) as ex:
         d = pd.DataFrame(list(ex.map(one, c.to_dict("records")))).dropna()
     d.to_json(os.path.join(_run_dir(name), "probe.jsonl"), orient="records", lines=True)
     rho = d.year.rank().corr(d.guess.rank())

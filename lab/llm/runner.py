@@ -46,7 +46,7 @@ def execute(r):
         ex.run(name, r.get("period", "is"), r.get("per_sleeve"), model, effort, workers=int(r.get("workers", 4)))
         ex.analyse(name)
     elif cmd == "probe":
-        ex.probe(name, model)
+        ex.probe(name, model, workers=int(r.get("workers", 2)))
     elif cmd == "submit":
         ex.submit(name, r.get("period", "val"), r.get("per_sleeve"), model, effort)
     elif cmd == "collect":
