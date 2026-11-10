@@ -1,0 +1,62 @@
+{
+ "reproduction_identical": true,
+ "timing_probes": {
+  "delay_1min": {
+   "n": 1030,
+   "pf": 1.267,
+   "t": 2.77,
+   "exp_R": 0.0952,
+   "gross_exp_R": 0.1748,
+   "every_exp_R": 0.1021
+  },
+  "delay_5min": {
+   "n": 1018,
+   "pf": 1.271,
+   "t": 2.78,
+   "exp_R": 0.0959,
+   "gross_exp_R": 0.1756,
+   "every_exp_R": 0.0961
+  },
+  "delay_30min": {
+   "n": 952,
+   "pf": 1.248,
+   "t": 2.5,
+   "exp_R": 0.089,
+   "gross_exp_R": 0.1695,
+   "every_exp_R": 0.0794
+  }
+ },
+ "stop_2024-2025": {
+  "n_orders": 420,
+  "median_stop_usd": 11.99,
+  "p10_usd": 7.34,
+  "p90_usd": 23.81,
+  "median_stop_bp": 44.1,
+  "min_lot_oz": 1.0,
+  "min_lot_stop_usd": 11.99,
+  "min_lot_stop_eur": 10.43,
+  "p90_min_lot_stop_eur": 20.71
+ },
+ "stop_2025": {
+  "n_orders": 216,
+  "median_stop_usd": 18.08,
+  "p10_usd": 10.87,
+  "p90_usd": 26.33,
+  "median_stop_bp": 52.1,
+  "min_lot_oz": 1.0,
+  "min_lot_stop_usd": 18.08,
+  "min_lot_stop_eur": 15.73,
+  "p90_min_lot_stop_eur": 22.91
+ },
+ "stop_2013-2021": {
+  "n_orders": 1763,
+  "median_stop_usd": 5.13,
+  "p10_usd": 3.42,
+  "p90_usd": 8.79,
+  "median_stop_bp": 38.0,
+  "min_lot_oz": 1.0,
+  "min_lot_stop_usd": 5.13,
+  "min_lot_stop_eur": 4.46,
+  "p90_min_lot_stop_eur": 7.65
+ }
+}

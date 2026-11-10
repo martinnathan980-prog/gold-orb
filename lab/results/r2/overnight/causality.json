@@ -1,0 +1,1094 @@
+{
+ "btc_late": {
+  "sym": "btcusd",
+  "params": {
+   "tz": "NY",
+   "entry": "17:05",
+   "exit": "19:00",
+   "stop_atr": 2.0,
+   "atr_tf": "1h"
+  },
+  "pass": true,
+  "cuts": [
+   {
+    "cut": "2019-04-10 13:31:00+00:00",
+    "orders_cut": 441,
+    "orders_full_before_cut": 441,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-07-21 16:57:00+00:00",
+    "orders_cut": 829,
+    "orders_full_before_cut": 829,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-09-22 20:08:00+00:00",
+    "orders_cut": 884,
+    "orders_full_before_cut": 884,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-12-05 01:30:00+00:00",
+    "orders_cut": 958,
+    "orders_full_before_cut": 958,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-03-29 04:47:00+00:00",
+    "orders_cut": 1070,
+    "orders_full_before_cut": 1070,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-06-08 19:56:00+00:00",
+    "orders_cut": 1141,
+    "orders_full_before_cut": 1141,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-08-26 11:34:00+00:00",
+    "orders_cut": 1219,
+    "orders_full_before_cut": 1219,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-10-24 13:12:00+00:00",
+    "orders_cut": 1277,
+    "orders_full_before_cut": 1277,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   }
+  ]
+ },
+ "idx_fade_long": {
+  "sym": "us100",
+  "params": {
+   "tz": "NY",
+   "entry": "09:30",
+   "exit": "16:00",
+   "weekdays": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "cond": "prev_sess_down",
+   "stop_atr": 1.0,
+   "atr_tf": "D"
+  },
+  "pass": true,
+  "cuts": [
+   {
+    "cut": "2016-06-24 18:01:00+00:00",
+    "orders_cut": 349,
+    "orders_full_before_cut": 349,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2019-05-15 18:40:00+00:00",
+    "orders_cut": 672,
+    "orders_full_before_cut": 672,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2019-08-29 04:38:00+00:00",
+    "orders_cut": 710,
+    "orders_full_before_cut": 710,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-01-13 14:01:00+00:00",
+    "orders_cut": 751,
+    "orders_full_before_cut": 751,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-08-10 23:25:00+00:00",
+    "orders_cut": 811,
+    "orders_full_before_cut": 811,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-12-18 04:45:00+00:00",
+    "orders_cut": 851,
+    "orders_full_before_cut": 851,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-05-13 14:34:00+00:00",
+    "orders_cut": 897,
+    "orders_full_before_cut": 897,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 1
+   },
+   {
+    "cut": "2021-08-30 05:59:00+00:00",
+    "orders_cut": 927,
+    "orders_full_before_cut": 927,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   }
+  ]
+ },
+ "idx_fade_ls": {
+  "sym": "us500",
+  "params": {
+   "tz": "NY",
+   "entry": "09:30",
+   "exit": "16:00",
+   "weekdays": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "cond": "fade_prev_sess",
+   "stop_atr": 1.0,
+   "atr_tf": "D"
+  },
+  "pass": true,
+  "cuts": [
+   {
+    "cut": "2016-05-26 08:21:00+00:00",
+    "orders_cut": 732,
+    "orders_full_before_cut": 732,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2019-05-27 02:47:00+00:00",
+    "orders_cut": 1503,
+    "orders_full_before_cut": 1503,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2019-09-12 09:12:00+00:00",
+    "orders_cut": 1581,
+    "orders_full_before_cut": 1581,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-02-05 13:16:00+00:00",
+    "orders_cut": 1683,
+    "orders_full_before_cut": 1683,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-08-25 01:18:00+00:00",
+    "orders_cut": 1820,
+    "orders_full_before_cut": 1820,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-12-29 23:48:00+00:00",
+    "orders_cut": 1910,
+    "orders_full_before_cut": 1910,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-05-19 03:36:00+00:00",
+    "orders_cut": 2008,
+    "orders_full_before_cut": 2008,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-09-02 04:01:00+00:00",
+    "orders_cut": 2084,
+    "orders_full_before_cut": 2084,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   }
+  ]
+ },
+ "idx_night_up": {
+  "sym": "us100",
+  "params": {
+   "tz": "NY",
+   "entry": "15:55",
+   "exit": "09:30",
+   "exit_next": true,
+   "weekdays": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "cond": "sess_up",
+   "stop_atr": 1.0,
+   "atr_tf": "D"
+  },
+  "pass": true,
+  "cuts": [
+   {
+    "cut": "2016-06-24 18:01:00+00:00",
+    "orders_cut": 378,
+    "orders_full_before_cut": 378,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2019-05-15 18:40:00+00:00",
+    "orders_cut": 766,
+    "orders_full_before_cut": 766,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2019-08-29 04:38:00+00:00",
+    "orders_cut": 802,
+    "orders_full_before_cut": 802,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 1
+   },
+   {
+    "cut": "2020-01-13 14:01:00+00:00",
+    "orders_cut": 853,
+    "orders_full_before_cut": 853,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-08-10 23:25:00+00:00",
+    "orders_cut": 934,
+    "orders_full_before_cut": 934,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-12-18 04:45:00+00:00",
+    "orders_cut": 987,
+    "orders_full_before_cut": 987,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 1
+   },
+   {
+    "cut": "2021-05-13 14:34:00+00:00",
+    "orders_cut": 1037,
+    "orders_full_before_cut": 1037,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-08-30 05:59:00+00:00",
+    "orders_cut": 1081,
+    "orders_full_before_cut": 1081,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 1
+   }
+  ]
+ },
+ "ger_night": {
+  "sym": "ger40",
+  "params": {
+   "tz": "BER",
+   "entry": "17:25",
+   "exit": "09:00",
+   "exit_next": true,
+   "weekdays": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "cond": "sess_up",
+   "sess_open": "09:00",
+   "sess_close": "17:30",
+   "stop_atr": 1.0,
+   "atr_tf": "D"
+  },
+  "pass": true,
+  "cuts": [
+   {
+    "cut": "2016-11-18 12:45:00+00:00",
+    "orders_cut": 378,
+    "orders_full_before_cut": 378,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2019-07-15 16:26:00+00:00",
+    "orders_cut": 732,
+    "orders_full_before_cut": 732,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 1
+   },
+   {
+    "cut": "2019-10-22 17:08:00+00:00",
+    "orders_cut": 776,
+    "orders_full_before_cut": 776,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-03-02 06:12:00+00:00",
+    "orders_cut": 823,
+    "orders_full_before_cut": 823,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-09-09 18:10:00+00:00",
+    "orders_cut": 886,
+    "orders_full_before_cut": 886,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 1
+   },
+   {
+    "cut": "2021-01-12 08:21:00+00:00",
+    "orders_cut": 937,
+    "orders_full_before_cut": 937,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-05-26 23:46:00+00:00",
+    "orders_cut": 988,
+    "orders_full_before_cut": 988,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-09-06 18:21:00+00:00",
+    "orders_cut": 1034,
+    "orders_full_before_cut": 1034,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 1
+   }
+  ]
+ },
+ "btc_late_limit": {
+  "sym": "btcusd",
+  "params": {
+   "tz": "NY",
+   "entry": "17:05",
+   "exit": "19:00",
+   "stop_atr": 2.0,
+   "atr_tf": "1h",
+   "entry_type": "limit",
+   "limit_min": 30
+  },
+  "pass": true,
+  "cuts": [
+   {
+    "cut": "2019-04-10 13:31:00+00:00",
+    "orders_cut": 441,
+    "orders_full_before_cut": 441,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-07-21 16:57:00+00:00",
+    "orders_cut": 829,
+    "orders_full_before_cut": 829,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-09-22 20:08:00+00:00",
+    "orders_cut": 884,
+    "orders_full_before_cut": 884,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-12-05 01:30:00+00:00",
+    "orders_cut": 958,
+    "orders_full_before_cut": 958,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-03-29 04:47:00+00:00",
+    "orders_cut": 1070,
+    "orders_full_before_cut": 1070,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-06-08 19:56:00+00:00",
+    "orders_cut": 1141,
+    "orders_full_before_cut": 1141,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-08-26 11:34:00+00:00",
+    "orders_cut": 1219,
+    "orders_full_before_cut": 1219,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-10-24 13:12:00+00:00",
+    "orders_cut": 1277,
+    "orders_full_before_cut": 1277,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   }
+  ]
+ },
+ "FINALIST GOLD_FRI_PM xauusd": {
+  "sym": "xauusd",
+  "params": {
+   "tz": "NY",
+   "entry": "13:30",
+   "exit": "16:45",
+   "weekdays": [
+    4
+   ],
+   "side": 1,
+   "stop_atr": 3.0,
+   "atr_n": 14,
+   "atr_tf": "1h",
+   "entry_type": "limit",
+   "limit_min": 60,
+   "min_prev": 0,
+   "skip_early_close": true
+  },
+  "pass": true,
+  "cuts": [
+   {
+    "cut": "2016-02-02 05:16:00+00:00",
+    "orders_cut": 150,
+    "orders_full_before_cut": 150,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2018-10-10 05:39:00+00:00",
+    "orders_cut": 285,
+    "orders_full_before_cut": 285,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2019-02-20 10:44:00+00:00",
+    "orders_cut": 303,
+    "orders_full_before_cut": 303,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2019-08-05 14:28:00+00:00",
+    "orders_cut": 326,
+    "orders_full_before_cut": 326,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-04-17 05:10:00+00:00",
+    "orders_cut": 360,
+    "orders_full_before_cut": 360,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-09-24 12:38:00+00:00",
+    "orders_cut": 382,
+    "orders_full_before_cut": 382,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-03-22 15:38:00+00:00",
+    "orders_cut": 405,
+    "orders_full_before_cut": 405,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-08-02 10:29:00+00:00",
+    "orders_cut": 423,
+    "orders_full_before_cut": 423,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   }
+  ]
+ },
+ "FINALIST MONTH_END_NIGHT us500": {
+  "sym": "us500",
+  "params": {
+   "tz": "NY",
+   "entry": "15:55",
+   "exit": "09:30",
+   "exit_next": true,
+   "weekdays": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "side": 1,
+   "stop_atr": 1.0,
+   "atr_n": 14,
+   "atr_tf": "D",
+   "cond": "month_end"
+  },
+  "pass": true,
+  "cuts": [
+   {
+    "cut": "2016-05-26 08:21:00+00:00",
+    "orders_cut": 30,
+    "orders_full_before_cut": 30,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2019-05-27 02:47:00+00:00",
+    "orders_cut": 65,
+    "orders_full_before_cut": 65,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2019-09-12 09:12:00+00:00",
+    "orders_cut": 69,
+    "orders_full_before_cut": 69,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-02-05 13:16:00+00:00",
+    "orders_cut": 73,
+    "orders_full_before_cut": 73,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-08-25 01:18:00+00:00",
+    "orders_cut": 79,
+    "orders_full_before_cut": 79,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-12-29 23:48:00+00:00",
+    "orders_cut": 83,
+    "orders_full_before_cut": 83,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-05-19 03:36:00+00:00",
+    "orders_cut": 88,
+    "orders_full_before_cut": 88,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-09-02 04:01:00+00:00",
+    "orders_cut": 91,
+    "orders_full_before_cut": 91,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   }
+  ]
+ },
+ "FINALIST MONTH_END_NIGHT us100": {
+  "sym": "us100",
+  "params": {
+   "tz": "NY",
+   "entry": "15:55",
+   "exit": "09:30",
+   "exit_next": true,
+   "weekdays": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "side": 1,
+   "stop_atr": 1.0,
+   "atr_n": 14,
+   "atr_tf": "D",
+   "cond": "month_end"
+  },
+  "pass": true,
+  "cuts": [
+   {
+    "cut": "2016-06-24 18:01:00+00:00",
+    "orders_cut": 31,
+    "orders_full_before_cut": 31,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2019-05-15 18:40:00+00:00",
+    "orders_cut": 65,
+    "orders_full_before_cut": 65,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2019-08-29 04:38:00+00:00",
+    "orders_cut": 68,
+    "orders_full_before_cut": 68,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-01-13 14:01:00+00:00",
+    "orders_cut": 72,
+    "orders_full_before_cut": 72,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-08-10 23:25:00+00:00",
+    "orders_cut": 79,
+    "orders_full_before_cut": 79,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-12-18 04:45:00+00:00",
+    "orders_cut": 83,
+    "orders_full_before_cut": 83,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-05-13 14:34:00+00:00",
+    "orders_cut": 88,
+    "orders_full_before_cut": 88,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-08-30 05:59:00+00:00",
+    "orders_cut": 90,
+    "orders_full_before_cut": 90,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   }
+  ]
+ },
+ "FINALIST MONTH_END_NIGHT ger40": {
+  "sym": "ger40",
+  "params": {
+   "tz": "BER",
+   "entry": "17:25",
+   "exit": "09:00",
+   "sess_open": "09:00",
+   "sess_close": "17:30",
+   "exit_next": true,
+   "weekdays": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "side": 1,
+   "stop_atr": 1.0,
+   "atr_n": 14,
+   "atr_tf": "D",
+   "cond": "month_end"
+  },
+  "pass": true,
+  "cuts": [
+   {
+    "cut": "2016-11-18 12:45:00+00:00",
+    "orders_cut": 32,
+    "orders_full_before_cut": 32,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2019-07-15 16:26:00+00:00",
+    "orders_cut": 62,
+    "orders_full_before_cut": 62,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2019-10-22 17:08:00+00:00",
+    "orders_cut": 65,
+    "orders_full_before_cut": 65,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2020-03-02 06:12:00+00:00",
+    "orders_cut": 70,
+    "orders_full_before_cut": 70,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 1
+   },
+   {
+    "cut": "2020-09-09 18:10:00+00:00",
+    "orders_cut": 76,
+    "orders_full_before_cut": 76,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-01-12 08:21:00+00:00",
+    "orders_cut": 80,
+    "orders_full_before_cut": 80,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-05-26 23:46:00+00:00",
+    "orders_cut": 84,
+    "orders_full_before_cut": 84,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   },
+   {
+    "cut": "2021-09-06 18:21:00+00:00",
+    "orders_cut": 88,
+    "orders_full_before_cut": 88,
+    "same_n": true,
+    "same_entry": true,
+    "same_side": true,
+    "same_stop": true,
+    "same_exit_when_done": true,
+    "open_at_cut": 0
+   }
+  ]
+ }
+}

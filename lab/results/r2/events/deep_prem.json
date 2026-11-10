@@ -1,0 +1,119 @@
+{
+ "us500": {
+  "by_kind": {
+   "cpi": {
+    "n": 100,
+    "net_bps": -0.15,
+    "gross_bps": 1.01,
+    "expR": 0.0012,
+    "t": 0.08,
+    "win": 0.52
+   },
+   "fomc": {
+    "n": 68,
+    "net_bps": 8.85,
+    "gross_bps": 9.92,
+    "expR": 0.0958,
+    "t": 2.13,
+    "win": 0.62
+   },
+   "nfp": {
+    "n": 100,
+    "net_bps": 5.55,
+    "gross_bps": 6.71,
+    "expR": 0.046,
+    "t": 1.92,
+    "win": 0.58
+   }
+  },
+  "by_year": {
+   "2013": 1.86,
+   "2014": 2.65,
+   "2015": -0.2,
+   "2016": 0.2,
+   "2017": 2.08,
+   "2018": 0.07,
+   "2019": 1.84,
+   "2020": 0.75,
+   "2021": 1.98
+  },
+  "gross_first_half_bps": 4.81,
+  "gross_second_half_bps": 5.93,
+  "net_first_half_R": 0.0484,
+  "net_second_half_R": 0.036,
+  "t_wins": 2.98,
+  "t_drop5": 1.78,
+  "exits": {
+   "time": 267,
+   "stop": 1
+  },
+  "crit": {
+   "n>=250": true,
+   "pf>=1.12": true,
+   "t>=2.5": true,
+   "years_pos>=60%": true,
+   "max_hold<=5d": true,
+   "stress_pf>=1.04": true,
+   "every_signal_exp>0": true,
+   "pass": true
+  }
+ },
+ "us100": {
+  "by_kind": {
+   "cpi": {
+    "n": 101,
+    "net_bps": 0.6,
+    "gross_bps": 1.6,
+    "expR": 0.0023,
+    "t": 0.13,
+    "win": 0.55
+   },
+   "fomc": {
+    "n": 68,
+    "net_bps": 11.45,
+    "gross_bps": 12.37,
+    "expR": 0.0952,
+    "t": 2.36,
+    "win": 0.68
+   },
+   "nfp": {
+    "n": 98,
+    "net_bps": 5.17,
+    "gross_bps": 6.18,
+    "expR": 0.0425,
+    "t": 1.89,
+    "win": 0.6
+   }
+  },
+  "by_year": {
+   "2013": 1.52,
+   "2014": 2.9,
+   "2015": 0.53,
+   "2016": 0.23,
+   "2017": 1.78,
+   "2018": -0.2,
+   "2019": 1.79,
+   "2020": -0.1,
+   "2021": 2.44
+  },
+  "gross_first_half_bps": 5.07,
+  "gross_second_half_bps": 6.86,
+  "net_first_half_R": 0.0522,
+  "net_second_half_R": 0.0306,
+  "t_wins": 3.02,
+  "t_drop5": 1.91,
+  "exits": {
+   "time": 267
+  },
+  "crit": {
+   "n>=250": true,
+   "pf>=1.12": true,
+   "t>=2.5": true,
+   "years_pos>=60%": true,
+   "max_hold<=5d": true,
+   "stress_pf>=1.04": true,
+   "every_signal_exp>0": true,
+   "pass": true
+  }
+ }
+}

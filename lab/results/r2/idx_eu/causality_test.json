@@ -1,0 +1,491 @@
+{
+ "mom_default": {
+  "params": {
+   "family": "mom"
+  },
+  "cuts": [
+   {
+    "cut": "2019-07-15 16:31:00+00:00",
+    "orders_before_cut": 230,
+    "orders_truncated": 230,
+    "identical": true
+   },
+   {
+    "cut": "2019-10-22 17:14:00+00:00",
+    "orders_before_cut": 240,
+    "orders_truncated": 240,
+    "identical": true
+   },
+   {
+    "cut": "2020-03-02 06:18:00+00:00",
+    "orders_before_cut": 253,
+    "orders_truncated": 253,
+    "identical": true
+   },
+   {
+    "cut": "2020-09-09 18:17:00+00:00",
+    "orders_before_cut": 271,
+    "orders_truncated": 271,
+    "identical": true
+   },
+   {
+    "cut": "2021-05-26 23:54:00+00:00",
+    "orders_before_cut": 296,
+    "orders_truncated": 296,
+    "identical": true
+   },
+   {
+    "cut": "2021-09-06 18:31:00+00:00",
+    "orders_before_cut": 305,
+    "orders_truncated": 305,
+    "identical": true
+   },
+   {
+    "cut": "2019-06-12 08:17:00+00:00",
+    "orders_before_cut": 228,
+    "orders_truncated": 228,
+    "identical": true
+   },
+   {
+    "cut": "2016-03-09 15:43:00+00:00",
+    "orders_before_cut": 98,
+    "orders_truncated": 98,
+    "identical": true
+   },
+   {
+    "cut": "2021-02-25 16:29:00+00:00",
+    "orders_before_cut": 286,
+    "orders_truncated": 286,
+    "identical": true
+   }
+  ],
+  "all_identical": true
+ },
+ "mom_grid": {
+  "params": {
+   "family": "mom",
+   "times": [
+    "09:30",
+    "10:00",
+    "10:30",
+    "11:00",
+    "11:30",
+    "12:00",
+    "12:30",
+    "13:00",
+    "13:30",
+    "14:00",
+    "14:30",
+    "15:00",
+    "15:30",
+    "16:00",
+    "16:30"
+   ]
+  },
+  "cuts": [
+   {
+    "cut": "2019-07-15 16:31:00+00:00",
+    "orders_before_cut": 478,
+    "orders_truncated": 478,
+    "identical": true
+   },
+   {
+    "cut": "2019-10-22 17:14:00+00:00",
+    "orders_before_cut": 502,
+    "orders_truncated": 502,
+    "identical": true
+   },
+   {
+    "cut": "2020-03-02 06:18:00+00:00",
+    "orders_before_cut": 531,
+    "orders_truncated": 531,
+    "identical": true
+   },
+   {
+    "cut": "2020-09-09 18:17:00+00:00",
+    "orders_before_cut": 568,
+    "orders_truncated": 568,
+    "identical": true
+   },
+   {
+    "cut": "2021-05-26 23:54:00+00:00",
+    "orders_before_cut": 622,
+    "orders_truncated": 622,
+    "identical": true
+   },
+   {
+    "cut": "2021-09-06 18:31:00+00:00",
+    "orders_before_cut": 643,
+    "orders_truncated": 643,
+    "identical": true
+   },
+   {
+    "cut": "2019-06-12 08:17:00+00:00",
+    "orders_before_cut": 473,
+    "orders_truncated": 473,
+    "identical": true
+   },
+   {
+    "cut": "2016-03-09 15:43:00+00:00",
+    "orders_before_cut": 203,
+    "orders_truncated": 203,
+    "identical": true
+   },
+   {
+    "cut": "2021-02-25 16:29:00+00:00",
+    "orders_before_cut": 600,
+    "orders_truncated": 600,
+    "identical": true
+   }
+  ],
+  "all_identical": true
+ },
+ "orb_default": {
+  "params": {
+   "family": "orb"
+  },
+  "cuts": [
+   {
+    "cut": "2019-07-15 16:31:00+00:00",
+    "orders_before_cut": 1454,
+    "orders_truncated": 1454,
+    "identical": true
+   },
+   {
+    "cut": "2019-10-22 17:14:00+00:00",
+    "orders_before_cut": 1525,
+    "orders_truncated": 1525,
+    "identical": true
+   },
+   {
+    "cut": "2020-03-02 06:18:00+00:00",
+    "orders_before_cut": 1614,
+    "orders_truncated": 1614,
+    "identical": true
+   },
+   {
+    "cut": "2020-09-09 18:17:00+00:00",
+    "orders_before_cut": 1749,
+    "orders_truncated": 1749,
+    "identical": true
+   },
+   {
+    "cut": "2021-05-26 23:54:00+00:00",
+    "orders_before_cut": 1926,
+    "orders_truncated": 1926,
+    "identical": true
+   },
+   {
+    "cut": "2021-09-06 18:31:00+00:00",
+    "orders_before_cut": 1999,
+    "orders_truncated": 1999,
+    "identical": true
+   },
+   {
+    "cut": "2019-06-12 08:17:00+00:00",
+    "orders_before_cut": 1430,
+    "orders_truncated": 1430,
+    "identical": true
+   },
+   {
+    "cut": "2016-03-09 15:43:00+00:00",
+    "orders_before_cut": 603,
+    "orders_truncated": 603,
+    "identical": true
+   },
+   {
+    "cut": "2021-02-25 16:29:00+00:00",
+    "orders_before_cut": 1866,
+    "orders_truncated": 1866,
+    "identical": true
+   }
+  ],
+  "all_identical": true
+ },
+ "orb_us": {
+  "params": {
+   "family": "orb",
+   "rs": "09:30@NY",
+   "re": "10:00@NY",
+   "entry_end": "21:00",
+   "exit": "21:45"
+  },
+  "cuts": [
+   {
+    "cut": "2019-07-15 16:31:00+00:00",
+    "orders_before_cut": 1454,
+    "orders_truncated": 1454,
+    "identical": true
+   },
+   {
+    "cut": "2019-10-22 17:14:00+00:00",
+    "orders_before_cut": 1524,
+    "orders_truncated": 1524,
+    "identical": true
+   },
+   {
+    "cut": "2020-03-02 06:18:00+00:00",
+    "orders_before_cut": 1612,
+    "orders_truncated": 1612,
+    "identical": true
+   },
+   {
+    "cut": "2020-09-09 18:17:00+00:00",
+    "orders_before_cut": 1749,
+    "orders_truncated": 1749,
+    "identical": true
+   },
+   {
+    "cut": "2021-05-26 23:54:00+00:00",
+    "orders_before_cut": 1931,
+    "orders_truncated": 1931,
+    "identical": true
+   },
+   {
+    "cut": "2021-09-06 18:31:00+00:00",
+    "orders_before_cut": 2004,
+    "orders_truncated": 2004,
+    "identical": true
+   },
+   {
+    "cut": "2019-06-12 08:17:00+00:00",
+    "orders_before_cut": 1430,
+    "orders_truncated": 1430,
+    "identical": true
+   },
+   {
+    "cut": "2016-03-09 15:43:00+00:00",
+    "orders_before_cut": 608,
+    "orders_truncated": 608,
+    "identical": true
+   },
+   {
+    "cut": "2021-02-25 16:29:00+00:00",
+    "orders_before_cut": 1868,
+    "orders_truncated": 1868,
+    "identical": true
+   }
+  ],
+  "all_identical": true
+ },
+ "finalist:late_mom_1600": {
+  "params": {
+   "family": "mom",
+   "times": [
+    "16:00"
+   ],
+   "anchor": "17:30",
+   "lb": 20,
+   "k": 1.5,
+   "direction": 1,
+   "stop_k": 0.5,
+   "exit": "17:30",
+   "sides": "both",
+   "tol_min": 5
+  },
+  "cuts": [
+   {
+    "cut": "2015-02-06 20:31:00+00:00",
+    "orders_before_cut": 53,
+    "orders_truncated": 53,
+    "identical": true
+   },
+   {
+    "cut": "2016-01-04 18:18:00+00:00",
+    "orders_before_cut": 94,
+    "orders_truncated": 94,
+    "identical": true
+   },
+   {
+    "cut": "2016-01-21 07:01:00+00:00",
+    "orders_before_cut": 95,
+    "orders_truncated": 95,
+    "identical": true
+   },
+   {
+    "cut": "2016-03-07 20:03:00+00:00",
+    "orders_before_cut": 98,
+    "orders_truncated": 98,
+    "identical": true
+   },
+   {
+    "cut": "2018-06-08 18:19:00+00:00",
+    "orders_before_cut": 181,
+    "orders_truncated": 181,
+    "identical": true
+   },
+   {
+    "cut": "2018-12-14 18:04:00+00:00",
+    "orders_before_cut": 206,
+    "orders_truncated": 206,
+    "identical": true
+   },
+   {
+    "cut": "2019-01-22 00:11:00+00:00",
+    "orders_before_cut": 210,
+    "orders_truncated": 210,
+    "identical": true
+   },
+   {
+    "cut": "2019-08-08 17:19:00+00:00",
+    "orders_before_cut": 235,
+    "orders_truncated": 235,
+    "identical": true
+   },
+   {
+    "cut": "2019-09-03 01:16:00+00:00",
+    "orders_before_cut": 236,
+    "orders_truncated": 236,
+    "identical": true
+   },
+   {
+    "cut": "2020-04-30 07:40:00+00:00",
+    "orders_before_cut": 258,
+    "orders_truncated": 258,
+    "identical": true
+   },
+   {
+    "cut": "2020-10-23 12:01:00+00:00",
+    "orders_before_cut": 274,
+    "orders_truncated": 274,
+    "identical": true
+   },
+   {
+    "cut": "2021-08-02 07:05:00+00:00",
+    "orders_before_cut": 302,
+    "orders_truncated": 302,
+    "identical": true
+   },
+   {
+    "cut": "2019-06-12 08:17:00+00:00",
+    "orders_before_cut": 228,
+    "orders_truncated": 228,
+    "identical": true
+   },
+   {
+    "cut": "2016-03-09 15:43:00+00:00",
+    "orders_before_cut": 98,
+    "orders_truncated": 98,
+    "identical": true
+   },
+   {
+    "cut": "2021-02-25 16:29:00+00:00",
+    "orders_before_cut": 286,
+    "orders_truncated": 286,
+    "identical": true
+   }
+  ],
+  "all_identical": true,
+  "explicit_params_equal_logged_trial": true
+ },
+ "finalist:close_run_1725": {
+  "params": {
+   "family": "mom",
+   "times": [
+    "17:25"
+   ],
+   "anchor": "17:30",
+   "lb": 20,
+   "k": 0.5,
+   "direction": 1,
+   "stop_k": 0.25,
+   "exit": "17:30",
+   "sides": "both",
+   "tol_min": 5
+  },
+  "cuts": [
+   {
+    "cut": "2015-02-06 20:31:00+00:00",
+    "orders_before_cut": 187,
+    "orders_truncated": 187,
+    "identical": true
+   },
+   {
+    "cut": "2016-01-04 18:18:00+00:00",
+    "orders_before_cut": 324,
+    "orders_truncated": 324,
+    "identical": true
+   },
+   {
+    "cut": "2016-01-21 07:01:00+00:00",
+    "orders_before_cut": 331,
+    "orders_truncated": 331,
+    "identical": true
+   },
+   {
+    "cut": "2016-03-07 20:03:00+00:00",
+    "orders_before_cut": 353,
+    "orders_truncated": 353,
+    "identical": true
+   },
+   {
+    "cut": "2018-06-08 18:19:00+00:00",
+    "orders_before_cut": 670,
+    "orders_truncated": 670,
+    "identical": true
+   },
+   {
+    "cut": "2018-12-14 18:04:00+00:00",
+    "orders_before_cut": 753,
+    "orders_truncated": 753,
+    "identical": true
+   },
+   {
+    "cut": "2019-01-22 00:11:00+00:00",
+    "orders_before_cut": 761,
+    "orders_truncated": 761,
+    "identical": true
+   },
+   {
+    "cut": "2019-08-08 17:19:00+00:00",
+    "orders_before_cut": 833,
+    "orders_truncated": 833,
+    "identical": true
+   },
+   {
+    "cut": "2019-09-03 01:16:00+00:00",
+    "orders_before_cut": 841,
+    "orders_truncated": 841,
+    "identical": true
+   },
+   {
+    "cut": "2020-04-30 07:40:00+00:00",
+    "orders_before_cut": 937,
+    "orders_truncated": 937,
+    "identical": true
+   },
+   {
+    "cut": "2020-10-23 12:01:00+00:00",
+    "orders_before_cut": 1003,
+    "orders_truncated": 1003,
+    "identical": true
+   },
+   {
+    "cut": "2021-08-02 07:05:00+00:00",
+    "orders_before_cut": 1096,
+    "orders_truncated": 1096,
+    "identical": true
+   },
+   {
+    "cut": "2019-06-12 08:17:00+00:00",
+    "orders_before_cut": 813,
+    "orders_truncated": 813,
+    "identical": true
+   },
+   {
+    "cut": "2016-03-09 15:43:00+00:00",
+    "orders_before_cut": 354,
+    "orders_truncated": 354,
+    "identical": true
+   },
+   {
+    "cut": "2021-02-25 16:29:00+00:00",
+    "orders_before_cut": 1045,
+    "orders_truncated": 1045,
+    "identical": true
+   }
+  ],
+  "all_identical": true,
+  "explicit_params_equal_logged_trial": true
+ }
+}

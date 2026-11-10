@@ -1,0 +1,160 @@
+{
+ "by_year": {
+  "2017": {
+   "n": 97,
+   "gross_bps": 38.17,
+   "net_bps": 34.06,
+   "net_R": 12.6,
+   "net_pf": 1.925
+  },
+  "2018": {
+   "n": 246,
+   "gross_bps": 2.02,
+   "net_bps": -1.03,
+   "net_R": -7.7,
+   "net_pf": 0.847
+  },
+  "2019": {
+   "n": 199,
+   "gross_bps": 1.5,
+   "net_bps": -2.28,
+   "net_R": -4.1,
+   "net_pf": 0.881
+  },
+  "2020": {
+   "n": 232,
+   "gross_bps": 18.46,
+   "net_bps": 15.44,
+   "net_R": 34.7,
+   "net_pf": 1.841
+  },
+  "2021": {
+   "n": 289,
+   "gross_bps": 25.35,
+   "net_bps": 22.32,
+   "net_R": 41.4,
+   "net_pf": 1.853
+  }
+ },
+ "halves": {
+  "first_half_2017-06..2019-09": {
+   "n": 489,
+   "gross_bps": 9.08,
+   "net_bps": 5.83,
+   "net_expR": 0.0081
+  },
+  "second_half_2019-10..2021-12": {
+   "n": 574,
+   "gross_bps": 20.32,
+   "net_bps": 17.04,
+   "net_expR": 0.1272
+  }
+ },
+ "concentration": {
+  "total_R": 76.9,
+  "n_days_traded": 621,
+  "top5_days_R": 22.8,
+  "top10_days_R": 37.2,
+  "top10_days": [
+   "2017-11-29",
+   "2021-11-30",
+   "2020-08-27",
+   "2018-02-06",
+   "2021-10-04",
+   "2019-09-26",
+   "2021-01-06",
+   "2020-03-12",
+   "2021-11-03",
+   "2018-11-20"
+  ],
+  "worst5_days_R": -10.8,
+  "share_days_positive": 0.522
+ },
+ "ex_covid_crash_2020-02-20..04-14": {
+  "n": 1003,
+  "expR": 0.0702,
+  "pf": 1.403,
+  "t": 3.67,
+  "R_in_window": 6.6,
+  "n_in_window": 60
+ },
+ "months": {
+  "n": 56,
+  "positive": 33,
+  "best": 13.5,
+  "worst": -4.3
+ },
+ "t_by_day_cluster": 3.63,
+ "t_by_week_cluster": 3.43,
+ "by_entry_time_NY": {
+  "09:30": {
+   "n": 408,
+   "expR": 0.0198,
+   "bps": 4.42
+  },
+  "10:00": {
+   "n": 168,
+   "expR": 0.1821,
+   "bps": 25.57
+  },
+  "11:00": {
+   "n": 111,
+   "expR": 0.0732,
+   "bps": 15.29
+  },
+  "12:00": {
+   "n": 74,
+   "expR": 0.0585,
+   "bps": 22.13
+  },
+  "13:00": {
+   "n": 62,
+   "expR": 0.1871,
+   "bps": 33.74
+  },
+  "14:00": {
+   "n": 102,
+   "expR": 0.1102,
+   "bps": 18.03
+  },
+  "15:00": {
+   "n": 138,
+   "expR": 0.0217,
+   "bps": -5.31
+  }
+ },
+ "side": {
+  "long": {
+   "n": 461,
+   "expR": 0.082,
+   "bps": 11.58,
+   "gross_bps": 14.66
+  },
+  "short": {
+   "n": 602,
+   "expR": 0.065,
+   "bps": 12.12,
+   "gross_bps": 15.53
+  }
+ },
+ "exit_reason": {
+  "stop": {
+   "n": 84,
+   "meanR": -1.012
+  },
+  "time": {
+   "n": 979,
+   "meanR": 0.165
+  }
+ },
+ "cost_per_trade_bps": 3.27,
+ "stop_bps_of_price_IS_median": 135.9,
+ "stop_2024_25": {
+  "n_orders": 1226,
+  "median_stop_dist_usd": 791.2,
+  "p90": 1147.4,
+  "min_lot": 0.01,
+  "units_per_lot": 1,
+  "money_on_min_lot_usd": 7.91
+ }
+}

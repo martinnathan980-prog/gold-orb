@@ -1,0 +1,12 @@
+[ 68] F:mom-full         xauusd  n=  70 pf=2.311 t=+2.57 expR=+0.6655 win=0.49 yrs=7/9 bps=+45.70 L=+15.1 S=+31.5 hold=17.6h dd=15.4 | stress pf=2.279 gross bps=48.9 gross pf=2.481 every expR=0.6655  (2s)
+[ 69] N:mom k=4          xauusd  n=  70 pf=1.958 t=+2.03 expR=+0.5214 win=0.44 yrs=7/9 bps=+36.19 L=+13.0 S=+23.5 hold=16.6h dd=14.6  (0s)
+[ 70] N:mom k=6          xauusd  n=  70 pf=2.546 t=+2.94 expR=+0.6813 win=0.56 yrs=7/9 bps=+46.70 L=+13.0 S=+34.7 hold=18.7h dd=5.9  (0s)
+[ 71] N:mom k=3          xauusd  n=  70 pf=1.644 t=+1.55 expR=+0.3613 win=0.41 yrs=6/9 bps=+26.95 L=+5.3 S=+20.0 hold=15.6h dd=14.3  (0s)
+[ 72] N:mom k=10         xauusd  n=  70 pf=1.778 t=+1.83 expR=+0.4185 win=0.47 yrs=6/9 bps=+27.86 L=+5.5 S=+23.8 hold=16.9h dd=10.7  (0s)
+[ 73] N:mom stop_atr=0.4 xauusd  n=  70 pf=2.466 t=+2.66 expR=+0.8393 win=0.44 yrs=7/9 bps=+45.02 L=+20.9 S=+37.8 hold=15.7h dd=15.5  (0s)
+[ 74] N:mom stop_atr=0.6 xauusd  n=  70 pf=2.177 t=+2.45 expR=+0.5391 win=0.53 yrs=6/9 bps=+44.14 L=+14.3 S=+23.4 hold=18.8h dd=12.1  (0s)
+[ 75] N:mom atr_n=11     xauusd  n=  70 pf=2.248 t=+2.48 expR=+0.6541 win=0.47 yrs=7/9 bps=+45.04 L=+14.6 S=+31.1 hold=17.4h dd=16.3  (1s)
+[ 76] N:mom atr_n=17     xauusd  n=  70 pf=2.384 t=+2.64 expR=+0.6824 win=0.50 yrs=7/9 bps=+46.16 L=+16.2 S=+31.5 hold=18.0h dd=13.8  (1s)
+[ 77] N:mom exit_hhmm=15:00 xauusd  n=  70 pf=2.318 t=+2.55 expR=+0.6647 win=0.49 yrs=7/9 bps=+45.37 L=+16.4 S=+30.1 hold=17.1h dd=15.2  (0s)
+[ 78] N:mom exit_hhmm=16:45 xauusd  n=  70 pf=2.318 t=+2.57 expR=+0.6705 win=0.49 yrs=7/9 bps=+46.22 L=+14.9 S=+32.1 hold=18.0h dd=15.4  (0s)
+xauusd {'neighbors': {'k=4': 1.958, 'k=6': 2.546, 'k=3': 1.644, 'k=10': 1.778, 'stop_atr=0.4': 2.466, 'stop_atr=0.6': 2.177, 'atr_n=11': 2.248, 'atr_n=17': 2.384, 'exit_hhmm=15:00': 2.318, 'exit_hhmm=16:45': 2.318}, 'median_pf_pm20': 2.318, 'median_pf_all': 2.2830000000000004}

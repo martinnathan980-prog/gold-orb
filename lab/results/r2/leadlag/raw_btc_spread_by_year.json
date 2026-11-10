@@ -1,0 +1,41 @@
+{
+ "note": "raw Dukascopy BTCUSD quoted spread (bp of price) by year; FP model uses 2.18 bp for the whole history",
+ "by_year": {
+  "2017": {
+   "median_bp": 3.9,
+   "p90_bp": 16.05
+  },
+  "2018": {
+   "median_bp": 181.04,
+   "p90_bp": 276.2
+  },
+  "2019": {
+   "median_bp": 145.25,
+   "p90_bp": 324.94
+  },
+  "2020": {
+   "median_bp": 116.0,
+   "p90_bp": 159.53
+  },
+  "2021": {
+   "median_bp": 18.93,
+   "p90_bp": 25.42
+  },
+  "2022": {
+   "median_bp": 34.71,
+   "p90_bp": 44.51
+  },
+  "2023": {
+   "median_bp": 25.39,
+   "p90_bp": 37.73
+  },
+  "2024": {
+   "median_bp": 11.23,
+   "p90_bp": 18.48
+  },
+  "2025": {
+   "median_bp": 5.24,
+   "p90_bp": 13.06
+  }
+ }
+}

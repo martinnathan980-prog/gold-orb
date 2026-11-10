@@ -1,0 +1,45 @@
+{
+ "noise30_us100 (IS)": {
+  "trades": 1643,
+  "total_R": 127.3,
+  "R_per_year": 15.9,
+  "months": 96,
+  "median_month_R": 0.75,
+  "mean_month_R": 1.33,
+  "months_pos_pct": 60.4,
+  "worst_month_R": -6.3,
+  "best_month_R": 12.9,
+  "max_dd_R": 12.1,
+  "monthly_sharpe_annualised": 1.13,
+  "trades_per_session_day(of ~1990)": 0.83
+ },
+ "ocm4_us100 (IS)": {
+  "trades": 999,
+  "total_R": 131.2,
+  "R_per_year": 16.4,
+  "months": 96,
+  "median_month_R": 1.08,
+  "mean_month_R": 1.37,
+  "months_pos_pct": 62.5,
+  "worst_month_R": -9.0,
+  "best_month_R": 13.3,
+  "max_dd_R": 37.1,
+  "monthly_sharpe_annualised": 1.01,
+  "trades_per_session_day(of ~1990)": 0.5
+ },
+ "both sleeves, equal risk per trade (IS)": {
+  "trades": 2642,
+  "total_R": 258.4,
+  "R_per_year": 32.3,
+  "months": 96,
+  "median_month_R": 2.21,
+  "mean_month_R": 2.69,
+  "months_pos_pct": 61.5,
+  "worst_month_R": -12.5,
+  "best_month_R": 21.2,
+  "max_dd_R": 43.7,
+  "monthly_sharpe_annualised": 1.37,
+  "trades_per_session_day(of ~1990)": 1.33
+ },
+ "daily_R_correlation_IS": 0.32
+}

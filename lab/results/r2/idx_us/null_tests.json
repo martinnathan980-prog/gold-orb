@@ -1,0 +1,71 @@
+{
+ "noise_us100": {
+  "n": 1643,
+  "mode": "day",
+  "rule_mean_R": 0.0775,
+  "null_mean_R": -0.021,
+  "null_p95_R": 0.0136,
+  "null_max_R": 0.0302,
+  "percentile": 100.0,
+  "pass": true,
+  "secs": 4.4,
+  "params": {
+   "rule": "noise",
+   "lookback": 14,
+   "first_min": 600,
+   "step": 30,
+   "last_min": 930,
+   "exit_min": 955,
+   "vm": 1.0
+  },
+  "sym": "us100"
+ },
+ "ocm_atr0.3_us100": {
+  "n": 1987,
+  "mode": "day",
+  "rule_mean_R": 0.0882,
+  "null_mean_R": -0.0305,
+  "null_p95_R": 0.0242,
+  "null_max_R": 0.0928,
+  "percentile": 99.5,
+  "pass": true,
+  "secs": 3.1,
+  "params": {
+   "rule": "ocm",
+   "n": 5,
+   "stop": "atr",
+   "k": 0.3,
+   "exit_min": 955,
+   "size_min": 0.0,
+   "size_win": 20,
+   "target_r": null,
+   "atr_n": 14,
+   "sides": "both"
+  },
+  "sym": "us100"
+ },
+ "ocm4_us100": {
+  "n": 999,
+  "mode": "day",
+  "rule_mean_R": 0.1313,
+  "null_mean_R": -0.0254,
+  "null_p95_R": 0.0537,
+  "null_max_R": 0.1113,
+  "percentile": 100.0,
+  "pass": true,
+  "secs": 3.7,
+  "params": {
+   "rule": "ocm",
+   "n": 4,
+   "stop": "atr",
+   "k": 0.3,
+   "exit_min": 955,
+   "size_min": 1.0,
+   "size_win": 20,
+   "target_r": null,
+   "atr_n": 14,
+   "sides": "both"
+  },
+  "sym": "us100"
+ }
+}

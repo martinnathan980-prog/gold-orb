@@ -1,0 +1,49 @@
+===== us500: nights (prev close -> open) by trading day of month of the session they END on (IS, mid, bp)
+night ending on TDM -3 open        n=   92 mean=   7.19bp t=  1.16 tw=  1.55 med= 10.64 sd=  59.5 hit=0.652 yrs=7/9
+night ending on TDM -2 open        n=   97 mean=   5.11bp t=  1.07 tw=  1.23 med=  4.61 sd=  47.2 hit=0.567 yrs=7/9
+night ending on TDM -1 open        n=   94 mean=  -1.34bp t= -0.25 tw=  0.14 med= -2.78 sd=  51.6 hit=0.457 yrs=2/9
+night ending on TDM +1 open        n=   75 mean=  17.65bp t=  2.01 tw=  2.41 med= 24.19 sd=  76.1 hit=0.773 yrs=6/9  | 13:+32.4 14:-7.0 15:+0.9 16:-4.1 17:+30.1 18:+32.4 19:+42.0 20:-8.4 21:+59.5
+night ending on TDM +2 open        n=   87 mean=   0.68bp t=  0.12 tw=  0.12 med= -1.14 sd=  53.0 hit=0.483 yrs=5/9
+night ending on TDM +3 open        n=   81 mean=   9.89bp t=  1.57 tw=  1.53 med=  4.29 sd=  56.8 hit=0.543 yrs=5/9
+night ending on TDM +4 open        n=   89 mean=   5.35bp t=  0.72 tw=  0.65 med=  4.23 sd=  70.0 hit=0.584 yrs=5/9
+month-end night | prev 21d month UP n=   50 mean=  23.36bp t=  3.07 tw=  3.37 med= 23.20 sd=  53.7 hit=0.820 yrs=7/9
+month-end night | prev 21d month DOWN n=   24 mean=   6.35bp t=  0.28 tw=  0.36 med= 32.32 sd= 110.7 hit=0.667 yrs=4/9
+last cash session of month         n=  102 mean=  -7.69bp t= -1.19 tw= -1.34 med=-13.69 sd=  65.0 hit=0.412 yrs=6/9
+last 30 min of the month           n=  102 mean=   0.68bp t=  0.19 tw= -0.30 med= -0.10 sd=  36.2 hit=0.490 yrs=3/9
+month-end night | 2013..2017H1     n=   36 mean=   4.55bp t=  0.48 tw=  0.70 med= 10.89 sd=  56.4 hit=0.694 yrs=3/5
+month-end night | 2017H2..2021     n=   39 mean=  29.74bp t=  2.07 tw=  2.48 med= 39.78 sd=  89.5 hit=0.846 yrs=4/5
+quarter-end night                  n=   22 mean=   6.61bp t=  0.31 tw=  0.51 med= 24.80 sd=  99.1 hit=0.682 yrs=6/9
+other month-end nights             n=   53 mean=  22.23bp t=  2.50 tw=  2.66 med= 23.64 sd=  64.8 hit=0.811 yrs=7/9
+===== us100: nights (prev close -> open) by trading day of month of the session they END on (IS, mid, bp)
+night ending on TDM -3 open        n=   93 mean=   7.25bp t=  1.07 tw=  1.29 med=  8.90 sd=  65.3 hit=0.624 yrs=6/9
+night ending on TDM -2 open        n=   94 mean=   6.71bp t=  1.06 tw=  1.32 med=  4.75 sd=  61.4 hit=0.543 yrs=6/9
+night ending on TDM -1 open        n=   95 mean=   5.29bp t=  0.83 tw=  1.31 med=  6.14 sd=  62.2 hit=0.558 yrs=7/9
+night ending on TDM +1 open        n=   76 mean=  24.71bp t=  2.72 tw=  2.82 med= 25.61 sd=  79.2 hit=0.776 yrs=7/9  | 13:+43.0 14:-2.4 15:+3.9 16:-2.4 17:+36.5 18:+39.4 19:+49.5 20:+7.7 21:+64.8
+night ending on TDM +2 open        n=   86 mean=   0.56bp t=  0.08 tw=  0.15 med=  1.88 sd=  61.8 hit=0.523 yrs=5/9
+night ending on TDM +3 open        n=   82 mean=   8.24bp t=  1.03 tw=  0.99 med=  9.02 sd=  72.8 hit=0.585 yrs=6/9
+night ending on TDM +4 open        n=   88 mean=   2.25bp t=  0.29 tw=  0.16 med=  6.56 sd=  73.9 hit=0.545 yrs=4/9
+month-end night | prev 21d month UP n=   53 mean=  29.92bp t=  3.28 tw=  3.63 med= 32.43 sd=  66.5 hit=0.792 yrs=7/9
+month-end night | prev 21d month DOWN n=   22 mean=  12.48bp t=  0.55 tw=  0.57 med= 23.90 sd= 105.9 hit=0.727 yrs=5/8
+last cash session of month         n=   98 mean=  -6.74bp t= -0.81 tw= -1.09 med= -8.36 sd=  82.7 hit=0.439 yrs=5/9
+last 30 min of the month           n=   98 mean=   2.91bp t=  0.75 tw=  0.37 med=  5.37 sd=  38.3 hit=0.561 yrs=5/9
+month-end night | 2013..2017H1     n=   37 mean=   9.88bp t=  1.01 tw=  1.32 med= 17.67 sd=  59.3 hit=0.757 yrs=3/5
+month-end night | 2017H2..2021     n=   39 mean=  38.78bp t=  2.61 tw=  2.74 med= 45.47 sd=  92.9 hit=0.795 yrs=5/5
+quarter-end night                  n=   22 mean=  20.83bp t=  1.02 tw=  1.19 med= 22.81 sd=  95.8 hit=0.682 yrs=6/9
+other month-end nights             n=   54 mean=  26.29bp t=  2.67 tw=  2.76 med= 27.23 sd=  72.3 hit=0.815 yrs=7/9
+===== ger40: nights (prev close -> open) by trading day of month of the session they END on (IS, mid, bp)
+night ending on TDM -3 open        n=   97 mean=   4.36bp t=  0.61 tw=  0.69 med=  2.32 sd=  70.0 hit=0.526 yrs=5/9
+night ending on TDM -2 open        n=   97 mean=  -0.78bp t= -0.11 tw=  0.25 med=  1.93 sd=  72.3 hit=0.505 yrs=4/9
+night ending on TDM -1 open        n=   99 mean=  -3.49bp t= -0.48 tw= -0.21 med=  3.08 sd=  72.1 hit=0.535 yrs=5/9
+night ending on TDM +1 open        n=   87 mean=  17.94bp t=  1.90 tw=  2.08 med= 22.93 sd=  87.9 hit=0.701 yrs=7/9  | 13:+13.1 14:-15.9 15:-1.8 16:+18.9 17:+31.5 18:+12.7 19:+24.8 20:+31.3 21:+39.3
+night ending on TDM +2 open        n=   95 mean=   7.95bp t=  1.33 tw=  1.49 med=  3.20 sd=  58.3 hit=0.516 yrs=6/9
+night ending on TDM +3 open        n=   94 mean=  11.57bp t=  1.70 tw=  1.76 med=  7.37 sd=  66.1 hit=0.564 yrs=6/9
+night ending on TDM +4 open        n=   97 mean=  -2.11bp t= -0.26 tw= -0.58 med=  1.00 sd=  80.5 hit=0.515 yrs=4/9
+month-end night | prev 21d month UP n=   47 mean=  16.24bp t=  1.47 tw=  1.46 med= 20.25 sd=  75.9 hit=0.681 yrs=7/9
+month-end night | prev 21d month DOWN n=   39 mean=  19.94bp t=  1.21 tw=  1.36 med= 31.67 sd= 102.5 hit=0.718 yrs=7/8
+last cash session of month         n=   99 mean= -12.36bp t= -1.49 tw= -1.62 med=  2.81 sd=  82.8 hit=0.535 yrs=6/9
+last 30 min of the month           n=   99 mean=   0.14bp t=  0.05 tw= -0.04 med=  2.45 sd=  26.0 hit=0.566 yrs=5/9
+month-end night | 2013..2017H1     n=   38 mean=   4.75bp t=  0.42 tw=  0.46 med= 17.04 sd=  69.1 hit=0.632 yrs=3/5
+month-end night | 2017H2..2021     n=   49 mean=  28.16bp t=  1.98 tw=  2.11 med= 36.67 sd=  99.6 hit=0.755 yrs=5/5
+quarter-end night                  n=   23 mean=   5.24bp t=  0.23 tw=  0.30 med= 36.67 sd= 107.7 hit=0.696 yrs=3/8
+other month-end nights             n=   64 mean=  22.50bp t=  2.25 tw=  2.26 med= 20.16 sd=  80.2 hit=0.703 yrs=7/9
+windows examined in this file: 39

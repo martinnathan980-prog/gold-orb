@@ -1,0 +1,54 @@
+{
+ "brk72_24h_wd:btcusd": {
+  "slice": "2020-09-01..2021-07-01",
+  "n_mine": 118,
+  "n_engine": 118,
+  "matched": 118,
+  "only_mine": 0,
+  "only_engine": 0,
+  "side_equal": true,
+  "max_abs_entry_diff": 0.0,
+  "max_abs_exit_diff": 0.0,
+  "reason_equal": true,
+  "max_abs_gross_R_diff": 0.0
+ },
+ "sess_8_8_13_wd:btcusd": {
+  "slice": "2020-09-01..2021-07-01",
+  "n_mine": 215,
+  "n_engine": 215,
+  "matched": 215,
+  "only_mine": 0,
+  "only_engine": 0,
+  "side_equal": true,
+  "max_abs_entry_diff": 0.0,
+  "max_abs_exit_diff": 0.0,
+  "reason_equal": true,
+  "max_abs_gross_R_diff": 0.0
+ },
+ "brk72_24h_wd:ethusd": {
+  "slice": "2018-01-01..2018-11-01",
+  "n_mine": 98,
+  "n_engine": 98,
+  "matched": 98,
+  "only_mine": 0,
+  "only_engine": 0,
+  "side_equal": true,
+  "max_abs_entry_diff": 0.0,
+  "max_abs_exit_diff": 0.0,
+  "reason_equal": true,
+  "max_abs_gross_R_diff": 0.0
+ },
+ "sess_8_8_13_wd:ethusd": {
+  "slice": "2018-01-01..2018-11-01",
+  "n_mine": 213,
+  "n_engine": 213,
+  "matched": 213,
+  "only_mine": 0,
+  "only_engine": 0,
+  "side_equal": true,
+  "max_abs_entry_diff": 0.0,
+  "max_abs_exit_diff": 0.0,
+  "reason_equal": true,
+  "max_abs_gross_R_diff": 0.0
+ }
+}

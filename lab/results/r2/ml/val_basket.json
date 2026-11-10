@@ -1,0 +1,46 @@
+{
+ "F1_brk_ridge_filter": {
+  "val": {
+   "n": 1070,
+   "expectancy_R": 0.1085,
+   "pf": 1.275,
+   "t_stat": 2.99,
+   "total_R": 116.1,
+   "by_year_R": {
+    "2022": 22.9,
+    "2023": 27.1,
+    "2024": 44.7,
+    "2025": 21.3
+   },
+   "years_pos": "4/4",
+   "long_R": 54.0,
+   "short_R": 62.1
+  },
+  "val_stress_pf": 1.231,
+  "val_every_signal_exp_R": 0.1289,
+  "val_pass": true,
+  "note": "computed from the two per-sleeve validation reports (no extra validation access); PF and t reconstructed from win rate, average win/loss and per-sleeve t"
+ },
+ "F2_brk_unfiltered": {
+  "val": {
+   "n": 1842,
+   "expectancy_R": 0.0537,
+   "pf": 1.136,
+   "t_stat": 2.06,
+   "total_R": 98.8,
+   "by_year_R": {
+    "2022": 16.1,
+    "2023": 39.8,
+    "2024": 31.4,
+    "2025": 11.8
+   },
+   "years_pos": "4/4",
+   "long_R": 33.5,
+   "short_R": 65.4
+  },
+  "val_stress_pf": 1.092,
+  "val_every_signal_exp_R": 0.0758,
+  "val_pass": true,
+  "note": "computed from the two per-sleeve validation reports (no extra validation access); PF and t reconstructed from win rate, average win/loss and per-sleeve t"
+ }
+}

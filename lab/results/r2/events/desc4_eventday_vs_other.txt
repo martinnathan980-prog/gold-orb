@@ -1,0 +1,27 @@
+
+===== us500
+  NFP+CPI days 08:25->15:55 vs other days        event n= 198 mean=+11.06 (t +2.10) | other n=1847 mean= +2.79 (t +1.56) | diff= +8.27 t=+1.49 | yrs diff>0: 6/9
+  FOMC days 13:55->15:55 vs other days           event n=  70 mean= +3.29 (t +0.39) | other n=1952 mean= +0.38 (t +0.40) | diff= +2.91 t=+0.34 | yrs diff>0: 6/9
+  all release days close->close vs other         event n= 269 mean=+12.08 (t +2.14) | other n=1862 mean= +4.85 (t +2.04) | diff= +7.23 t=+1.18 | yrs diff>0: 6/9
+  NFP+CPI days prev close->08:25 vs other        event n= 198 mean= +0.31 (t +0.09) | other n=1825 mean= +3.25 (t +2.42) | diff= -2.94 t=-0.77 | yrs diff>0: 5/9
+  event window long (T-5m -> 15:55), all kinds: n=268 mean=+9.03 t=+2.02 by year: {2013: 7.3, 2014: 13.4, 2015: 14.8, 2016: 3.9, 2017: 15.6, 2018: -18.2, 2019: 37.0, 2020: -4.6, 2021: 12.5}
+    2013-2017: mean +11.17 (t +2.04, n 144) | 2018-2021: mean +6.55 (t +0.90, n 124)
+  ordinary days: 08:25->15:55 by year {2013: 0.4, 2014: 2.2, 2015: -3.2, 2016: 5.1, 2017: 4.0, 2018: -3.1, 2019: 1.4, 2020: 8.4, 2021: 8.6}
+
+===== us100
+  NFP+CPI days 08:25->15:55 vs other days        event n= 197 mean=+15.70 (t +2.35) | other n=1842 mean= +2.37 (t +1.05) | diff=+13.33 t=+1.89 | yrs diff>0: 7/9
+  FOMC days 13:55->15:55 vs other days           event n=  70 mean=+10.09 (t +1.00) | other n=1943 mean= +0.45 (t +0.41) | diff= +9.64 t=+0.95 | yrs diff>0: 7/9
+  all release days close->close vs other         event n= 266 mean=+16.85 (t +2.49) | other n=1849 mean= +6.65 (t +2.37) | diff=+10.20 t=+1.39 | yrs diff>0: 6/9
+  NFP+CPI days prev close->08:25 vs other        event n= 197 mean= +1.43 (t +0.36) | other n=1824 mean= +5.98 (t +3.85) | diff= -4.55 t=-1.06 | yrs diff>0: 5/9
+  event window long (T-5m -> 15:55), all kinds: n=267 mean=+14.23 t=+2.55 by year: {2013: 17.3, 2014: 8.8, 2015: 24.1, 2016: 5.1, 2017: 20.8, 2018: -5.3, 2019: 42.7, 2020: -3.6, 2021: 17.8}
+    2013-2017: mean +15.07 (t +2.26, n 143) | 2018-2021: mean +13.26 (t +1.43, n 124)
+  ordinary days: 08:25->15:55 by year {2013: -0.7, 2014: 0.7, 2015: -3.8, 2016: 3.8, 2017: 4.4, 2018: -5.1, 2019: 2.5, 2020: 12.2, 2021: 5.5}
+
+===== xauusd
+  NFP+CPI days 08:25->15:55 vs other days        event n= 212 mean= +5.91 (t +0.97) | other n=1977 mean= -2.76 (t -1.93) | diff= +8.67 t=+1.39 | yrs diff>0: 6/9
+  FOMC days 13:55->15:55 vs other days           event n=  70 mean= +9.66 (t +0.81) | other n=1977 mean= -0.86 (t -1.81) | diff=+10.52 t=+0.89 | yrs diff>0: 6/9
+  all release days close->close vs other         event n= 271 mean= +9.94 (t +1.65) | other n=1896 mean= -1.66 (t -0.79) | diff=+11.60 t=+1.81 | yrs diff>0: 7/9
+  NFP+CPI days prev close->08:25 vs other        event n= 210 mean= +3.11 (t +0.83) | other n=1958 mean= +2.07 (t +1.48) | diff= +1.04 t=+0.26 | yrs diff>0: 4/9
+  event window long (T-5m -> 15:55), all kinds: n=282 mean=+6.84 t=+1.26 by year: {2013: 9.4, 2014: 1.2, 2015: -4.4, 2016: 15.4, 2017: 11.7, 2018: 19.7, 2019: -12.5, 2020: -6.4, 2021: 27.1}
+    2013-2017: mean +6.70 (t +0.81, n 157) | 2018-2021: mean +7.02 (t +1.09, n 125)
+  ordinary days: 08:25->15:55 by year {2013: -7.5, 2014: -1.6, 2015: -5.5, 2016: -7.1, 2017: 2.0, 2018: -6.3, 2019: 2.2, 2020: 4.6, 2021: -5.8}

@@ -1,0 +1,104 @@
+
+===== sess_8_8_13 btcusd n=1404 meanR=0.1071 | reasons {'time': 1091, 'stop': 313}
+-- by year x side
+            size   mean     sum   bps    win
+year sidec                                  
+2017 long     85  0.287  24.412  67.0  0.565
+     short    59 -0.061  -3.574 -22.7  0.508
+2018 long    115  0.128  14.772  23.0  0.470
+     short   142  0.294  41.739  56.1  0.556
+2019 long    125  0.318  39.715  56.1  0.528
+     short   185 -0.032  -5.978 -11.2  0.405
+2020 long    153  0.329  50.406  69.5  0.582
+     short   176  0.002   0.330   0.7  0.432
+2021 long    187 -0.030  -5.544 -12.9  0.476
+     short   177 -0.033  -5.918 -24.8  0.429
+-- by weekday/weekend (2019-2021, when weekends exist)
+         size   mean     sum   bps    win
+wk                                       
+weekday   780  0.112  87.105  19.8  0.487
+weekend   223 -0.063 -14.093 -29.1  0.408
+-- by year x weekday/weekend
+              size   mean     sum   bps    win
+year wk                                       
+2019 weekday   259  0.115  29.836  20.1  0.452
+     weekend    51  0.076   3.901  -5.0  0.471
+2020 weekday   261  0.203  53.083  41.0  0.517
+     weekend    68 -0.035  -2.347   0.8  0.441
+2021 weekday   260  0.016   4.186  -2.0  0.492
+     weekend   104 -0.150 -15.648 -60.4  0.356
+-- by decision hour block (UTC)
+          size   mean     sum   bps    win
+sess                                      
+08-13 eu  1404  0.107  150.36  17.0  0.486
+-- halves (net) split at 2019-09-05: first n=611 R=+0.1470 bps=+31.6 | second n=793 R=+0.0764 bps=+5.8 | 2021 only n=364 R=-0.0315 bps=-18.7
+-- halves (gross) split at 2019-09-05: first n=611 R=+0.1662 bps=+36.2 | second n=793 R=+0.0913 bps=+9.7 | 2021 only n=364 R=-0.0185 bps=-13.9
+-- top 5% of trades (70) = 235.6R of total 150.4R; avg win 0.89 avg loss -0.63
+-- by |Asia move| in ATR
+     size   mean     sum    bps    win
+mv                                    
+<1    682  0.063  43.293   21.2  0.490
+1-2   403  0.119  47.826    4.8  0.462
+2-4   257  0.089  22.873    1.6  0.482
+>4     62  0.587  36.368  114.3  0.613
+
+===== sess_8_8_13 ethusd n=1245 meanR=0.1041 | reasons {'time': 1002, 'stop': 243}
+-- by year x side
+            size   mean     sum    bps    win
+year sidec                                   
+2018 long    112 -0.002  -0.248  -17.2  0.384
+     short   140  0.270  37.868   71.9  0.593
+2019 long    121  0.201  24.328   55.5  0.512
+     short   179  0.095  16.999   27.0  0.508
+2020 long    153  0.356  54.538  102.5  0.654
+     short   176  0.050   8.750    8.7  0.472
+2021 long    188  0.014   2.663    0.8  0.505
+     short   176 -0.087 -15.306  -45.1  0.420
+-- by weekday/weekend (2019-2021, when weekends exist)
+         size   mean     sum   bps    win
+wk                                       
+weekday   774  0.111  86.226  30.9  0.523
+weekend   219  0.026   5.746 -13.4  0.457
+-- by year x weekday/weekend
+              size   mean     sum   bps    win
+year wk                                       
+2019 weekday   253  0.114  28.916  38.1  0.514
+     weekend    47  0.264  12.411  40.7  0.489
+2020 weekday   261  0.214  55.896  59.3  0.559
+     weekend    68  0.109   7.392  25.6  0.544
+2021 weekday   260  0.005   1.414  -4.6  0.496
+     weekend   104 -0.135 -14.057 -63.4  0.385
+-- by decision hour block (UTC)
+          size   mean      sum   bps    win
+sess                                       
+08-13 eu  1245  0.104  129.592  23.4  0.507
+-- halves (net) split at 2020-01-02: first n=553 R=+0.1436 bps=+35.8 | second n=692 R=+0.0725 bps=+13.4 | 2021 only n=364 R=-0.0347 bps=-21.4
+-- halves (gross) split at 2020-01-02: first n=553 R=+0.1713 bps=+45.0 | second n=692 R=+0.0934 bps=+20.6 | 2021 only n=364 R=-0.0180 bps=-14.7
+-- top 5% of trades (62) = 174.5R of total 129.6R; avg win 0.81 avg loss -0.62
+-- by |Asia move| in ATR
+     size   mean     sum    bps    win
+mv                                    
+<1    608  0.128  77.795   40.9  0.526
+1-2   370  0.023   8.407  -14.9  0.462
+2-4   219  0.017   3.619  -14.4  0.489
+>4     48  0.829  39.771  269.3  0.688
+
+Daily-R correlation (days by entry date, flat days = 0):
+             btcusd             ethusd            
+               sess trail   t24   sess trail   t24
+btcusd sess    1.00  0.24  0.30   0.51  0.14  0.16
+       trail   0.24  1.00  0.59   0.17  0.32  0.26
+       t24     0.30  0.59  1.00   0.20  0.33  0.35
+ethusd sess    0.51  0.17  0.20   1.00  0.34  0.35
+       trail   0.14  0.32  0.33   0.34  1.00  0.73
+       t24     0.16  0.26  0.35   0.35  0.73  1.00
+
+Weekly-R correlation:
+             btcusd             ethusd            
+               sess trail   t24   sess trail   t24
+btcusd sess    1.00  0.21  0.28   0.46  0.17  0.16
+       trail   0.21  1.00  0.84   0.15  0.38  0.37
+       t24     0.28  0.84  1.00   0.17  0.36  0.43
+ethusd sess    0.46  0.15  0.17   1.00  0.36  0.34
+       trail   0.17  0.38  0.36   0.36  1.00  0.85
+       t24     0.16  0.37  0.43   0.34  0.85  1.00

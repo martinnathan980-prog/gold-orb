@@ -1,0 +1,340 @@
+{
+ "written_utc": "2026-11-10T11:13:09",
+ "track": "events",
+ "trials_logged_before_validation": 78,
+ "validation_accesses_by_this_track_before_this_file": 0,
+ "decision": "ONE finalist rule (2 index sleeves). Fixed on in-sample data (entries < 2022-01-01) only.",
+ "finalists": {
+  "EV_PREM_LONG": {
+   "rule": "Buy at market 5 minutes before every scheduled FOMC statement (14:00 NY), NFP and CPI release (08:30 NY); stop 1.0 x ATR_D(14) below the fill; time exit 15 minutes after the release.",
+   "syms": [
+    "us500",
+    "us100"
+   ],
+   "params": {
+    "rule": "long",
+    "kinds": "fomc+nfp+cpi",
+    "lead": 5,
+    "k": 5,
+    "min_move": 0.0,
+    "pre_win": 30,
+    "buf_atr": 0.0,
+    "valid": 30,
+    "exit": "hold",
+    "hold": 15,
+    "exit_hhmm": "15:55",
+    "exit_days": 0,
+    "stop_atr": 1.0,
+    "atr_n": 14,
+    "tol": 3
+   },
+   "sleeves": {
+    "us500": {
+     "is": {
+      "n": 268,
+      "trades_per_year": 31.4,
+      "win_rate": 0.567,
+      "avg_win_R": 0.197,
+      "avg_loss_R": -0.161,
+      "expectancy_R": 0.0419,
+      "t_stat": 2.65,
+      "pf": 1.602,
+      "total_R": 11.2,
+      "max_dd_R": 2.8,
+      "years_pos": "8/9",
+      "weeks_pos_pct": 29.1,
+      "weeks_neg_pct": 23.1,
+      "months_pos_pct": 66.0,
+      "worst_week_R": -1.0,
+      "long_n": 268,
+      "long_R": 11.2,
+      "short_n": 0,
+      "short_R": 0.0,
+      "avg_hold_h": 0.3,
+      "max_hold_h": 0.6,
+      "pf_ret": 1.54,
+      "equity_x_0.5pct": 1.06,
+      "cagr_0.5pct": 0.7,
+      "maxdd_0.5pct": 1.4,
+      "by_year_R": {
+       "2013": 1.9,
+       "2014": 2.6,
+       "2015": -0.2,
+       "2016": 0.2,
+       "2017": 2.1,
+       "2018": 0.1,
+       "2019": 1.8,
+       "2020": 0.8,
+       "2021": 2.0
+      }
+     },
+     "is_bps_per_trade": 4.26,
+     "is_gross_bps_per_trade": 5.4,
+     "is_gross": {
+      "n": 268,
+      "pf": 1.822,
+      "t_stat": 3.38,
+      "expectancy_R": 0.0534
+     },
+     "is_stress": {
+      "n": 268,
+      "pf": 1.502,
+      "t_stat": 2.29,
+      "expectancy_R": 0.0362
+     },
+     "is_every_signal": {
+      "n": 268,
+      "pf": 1.602,
+      "t_stat": 2.65,
+      "expectancy_R": 0.0419
+     },
+     "neighbors": {
+      "neighbors": {
+       "lead=4": 1.565,
+       "lead=6": 1.646,
+       "lead=3": 1.544,
+       "lead=10": 1.674,
+       "hold=12": 1.543,
+       "hold=18": 1.531,
+       "hold=10": 1.424,
+       "hold=20": 1.556,
+       "stop_atr=0.8": 1.566,
+       "stop_atr=1.2": 1.636,
+       "atr_n=11": 1.582,
+       "atr_n=17": 1.63
+      },
+      "median_pf_pm20": 1.574,
+      "median_pf_all": 1.5655000000000001
+     },
+     "is_criteria": {
+      "n>=250": true,
+      "pf>=1.12": true,
+      "t>=2.5": true,
+      "years_pos>=60%": true,
+      "max_hold<=5d": true,
+      "stress_pf>=1.04": true,
+      "every_signal_exp>0": true,
+      "neighbors_median_pf>=1.06": true,
+      "pass": true
+     },
+     "null_time": {
+      "n": 268,
+      "mode": "time",
+      "rule_mean_R": 0.0419,
+      "null_mean_R": -0.0096,
+      "null_p95_R": 0.0046,
+      "null_max_R": 0.0163,
+      "percentile": 100.0,
+      "pass": true
+     },
+     "gross_bps_first_half": 4.81,
+     "gross_bps_second_half": 5.93,
+     "cost_x3": {
+      "pf": 1.236,
+      "expR": 0.0189,
+      "t": 1.2,
+      "bps": 1.99
+     },
+     "median_stop_2024_25": 66.22,
+     "min_lot_stop_money_usd": 6.62,
+     "historical_cost_model_is": {
+      "n": 268,
+      "pf": 1.386,
+      "t": 1.84,
+      "expR": 0.0291,
+      "years_pos": "6/9",
+      "bps": 2.99,
+      "median_spread_bp_at_entry": 2.22,
+      "by_year_R": {
+       "2013": 1.5,
+       "2014": 2.2,
+       "2015": -0.6,
+       "2016": -0.4,
+       "2017": 1.4,
+       "2018": -0.3,
+       "2019": 1.5,
+       "2020": 0.6,
+       "2021": 1.8
+      },
+      "median_spread_bp_by_year_at_entry": {
+       "2013": 2.58,
+       "2014": 2.33,
+       "2015": 1.98,
+       "2016": 2.62,
+       "2017": 2.21,
+       "2018": 2.37,
+       "2019": 2.22,
+       "2020": 2.06,
+       "2021": 1.62
+      }
+     }
+    },
+    "us100": {
+     "is": {
+      "n": 267,
+      "trades_per_year": 31.4,
+      "win_rate": 0.603,
+      "avg_win_R": 0.173,
+      "avg_loss_R": -0.16,
+      "expectancy_R": 0.0407,
+      "t_stat": 2.75,
+      "pf": 1.639,
+      "total_R": 10.9,
+      "max_dd_R": 2.3,
+      "years_pos": "7/9",
+      "weeks_pos_pct": 30.4,
+      "weeks_neg_pct": 21.8,
+      "months_pos_pct": 64.1,
+      "worst_week_R": -0.7,
+      "long_n": 267,
+      "long_R": 10.9,
+      "short_n": 0,
+      "short_R": 0.0,
+      "avg_hold_h": 0.3,
+      "max_hold_h": 0.6,
+      "pf_ret": 1.556,
+      "equity_x_0.5pct": 1.06,
+      "cagr_0.5pct": 0.6,
+      "maxdd_0.5pct": 1.1,
+      "by_year_R": {
+       "2013": 1.5,
+       "2014": 2.9,
+       "2015": 0.5,
+       "2016": 0.2,
+       "2017": 1.8,
+       "2018": -0.2,
+       "2019": 1.8,
+       "2020": -0.1,
+       "2021": 2.4
+      }
+     },
+     "is_bps_per_trade": 5.04,
+     "is_gross_bps_per_trade": 6.02,
+     "is_gross": {
+      "n": 267,
+      "pf": 1.798,
+      "t_stat": 3.27,
+      "expectancy_R": 0.0484
+     },
+     "is_stress": {
+      "n": 267,
+      "pf": 1.565,
+      "t_stat": 2.49,
+      "expectancy_R": 0.0369
+     },
+     "is_every_signal": {
+      "n": 267,
+      "pf": 1.639,
+      "t_stat": 2.75,
+      "expectancy_R": 0.0407
+     },
+     "neighbors": {
+      "neighbors": {
+       "lead=4": 1.599,
+       "lead=6": 1.681,
+       "lead=3": 1.59,
+       "lead=10": 1.711,
+       "hold=12": 1.646,
+       "hold=18": 1.524,
+       "hold=10": 1.493,
+       "hold=20": 1.547,
+       "stop_atr=0.8": 1.54,
+       "stop_atr=1.2": 1.639,
+       "atr_n=11": 1.628,
+       "atr_n=17": 1.672
+      },
+      "median_pf_pm20": 1.6335,
+      "median_pf_all": 1.6135
+     },
+     "is_criteria": {
+      "n>=250": true,
+      "pf>=1.12": true,
+      "t>=2.5": true,
+      "years_pos>=60%": true,
+      "max_hold<=5d": true,
+      "stress_pf>=1.04": true,
+      "every_signal_exp>0": true,
+      "neighbors_median_pf>=1.06": true,
+      "pass": true
+     },
+     "null_time": {
+      "n": 267,
+      "mode": "time",
+      "rule_mean_R": 0.0407,
+      "null_mean_R": -0.0066,
+      "null_p95_R": 0.0043,
+      "null_max_R": 0.013,
+      "percentile": 100.0,
+      "pass": true
+     },
+     "gross_bps_first_half": 5.07,
+     "gross_bps_second_half": 6.86,
+     "cost_x3": {
+      "pf": 1.36,
+      "expR": 0.0253,
+      "t": 1.71,
+      "bps": 3.08
+     },
+     "median_stop_2024_25": 311.35,
+     "min_lot_stop_money_usd": 31.14,
+     "historical_cost_model_is": {
+      "n": 267,
+      "pf": 1.282,
+      "t": 1.38,
+      "expR": 0.0204,
+      "years_pos": "6/9",
+      "bps": 2.42,
+      "median_spread_bp_at_entry": 2.72,
+      "by_year_R": {
+       "2013": 0.6,
+       "2014": 1.6,
+       "2015": 0.0,
+       "2016": -0.2,
+       "2017": 1.2,
+       "2018": -0.7,
+       "2019": 1.2,
+       "2020": -0.4,
+       "2021": 2.2
+      },
+      "median_spread_bp_by_year_at_entry": {
+       "2013": 6.94,
+       "2014": 5.6,
+       "2015": 2.46,
+       "2016": 2.27,
+       "2017": 1.84,
+       "2018": 4.19,
+       "2019": 3.89,
+       "2020": 3.05,
+       "2021": 2.33
+      }
+     }
+    }
+   },
+   "basket_is": {
+    "n_pooled": 535,
+    "pf_pooled": 1.62,
+    "expR_pooled": 0.0413,
+    "t_pooled_naive": 3.82,
+    "n_events": 269,
+    "t_event_clustered": 2.7,
+    "corr_R_us500_us100": 0.936,
+    "years_pos": "8/9"
+   },
+   "known_weaknesses": [
+    "us500 and us100 are one bet (R correlation 0.94): event-clustered basket t = 2.70, not the naive 3.82",
+    "in-sample edge comes from FOMC and NFP; CPI contributed nothing in 2013-2021",
+    "t without the 5 best trades: 1.78 (us500) / 1.91 (us100)",
+    "found after ~630 overlapping descriptive cells and a grid of 8: the in-sample t is biased upward",
+    "fails t >= 2.5 under the historical Dukascopy spread (PF 1.39 / 1.28, t 1.84 / 1.38): needs today's tight index spread",
+    "long only; the position is held THROUGH the release (stop slippage in the release minute is not modelled; 1 stop in 268 trades)"
+   ]
+  }
+ },
+ "not_finalist": {
+  "XAU_FOMC_MOM": {
+   "rule": "gold, 5 min after the FOMC statement follow the first move, stop 0.5 ATR_D, exit next day 15:55 NY",
+   "is": "n 70, PF 2.31, t 2.57, +45.7 bp/trade",
+   "why_rejected": "n = 70 can never reach 250 (8 events a year); the gross edge is +103.9 bp/trade in 2013-mid 2017 and -6.1 bp/trade in mid 2017-2021 (eroded). Not sent to validation."
+  }
+ }
+}

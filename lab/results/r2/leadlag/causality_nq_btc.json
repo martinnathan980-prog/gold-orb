@@ -1,0 +1,18 @@
+{
+ "finalist": "nq_btc_follow",
+ "params": {
+  "rule": "xlead",
+  "leader": "us100",
+  "pred": "lead",
+  "sess": "uscash",
+  "dirn": 1,
+  "k": 1,
+  "z": 6,
+  "hold": 60,
+  "stop": 2.0
+ },
+ "n_cuts": 6,
+ "identical": true,
+ "n_orders_full": 4829,
+ "method": "orders rebuilt on the follower frame AND the leader series both cut at 6 random times (2019-2021) equal the full-data orders whose entry and exit are before the cut"
+}

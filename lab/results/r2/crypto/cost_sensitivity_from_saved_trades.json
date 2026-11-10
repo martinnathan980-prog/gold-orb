@@ -1,0 +1,66 @@
+{
+ "brk72_24h_wd:btcusd:is": {
+  "breakeven_extra_roundtrip_cost_bp": 73.0,
+  "R_per_extra_bp": 0.0043,
+  "pf_with_+2bp": 1.746,
+  "pf_with_+5bp": 1.703,
+  "pf_with_+10bp": 1.635,
+  "median_stop_pct": 2.73
+ },
+ "brk72_24h_wd:btcusd:val": {
+  "breakeven_extra_roundtrip_cost_bp": 7.3,
+  "R_per_extra_bp": 0.0056,
+  "pf_with_+2bp": 1.06,
+  "pf_with_+5bp": 1.025,
+  "pf_with_+10bp": 0.971,
+  "median_stop_pct": 1.95
+ },
+ "brk72_24h_wd:ethusd:is": {
+  "breakeven_extra_roundtrip_cost_bp": 93.9,
+  "R_per_extra_bp": 0.003,
+  "pf_with_+2bp": 1.649,
+  "pf_with_+5bp": 1.621,
+  "pf_with_+10bp": 1.576,
+  "median_stop_pct": 3.74
+ },
+ "brk72_24h_wd:ethusd:val": {
+  "breakeven_extra_roundtrip_cost_bp": 15.2,
+  "R_per_extra_bp": 0.0042,
+  "pf_with_+2bp": 1.115,
+  "pf_with_+5bp": 1.088,
+  "pf_with_+10bp": 1.044,
+  "median_stop_pct": 2.64
+ },
+ "sess_8_8_13_wd:btcusd:is": {
+  "breakeven_extra_roundtrip_cost_bp": 33.4,
+  "R_per_extra_bp": 0.0042,
+  "pf_with_+2bp": 1.402,
+  "pf_with_+5bp": 1.356,
+  "pf_with_+10bp": 1.284,
+  "median_stop_pct": 2.83
+ },
+ "sess_8_8_13_wd:btcusd:val": {
+  "breakeven_extra_roundtrip_cost_bp": 2.2,
+  "R_per_extra_bp": 0.0053,
+  "pf_with_+2bp": 1.003,
+  "pf_with_+5bp": 0.961,
+  "pf_with_+10bp": 0.896,
+  "median_stop_pct": 2.05
+ },
+ "sess_8_8_13_wd:ethusd:is": {
+  "breakeven_extra_roundtrip_cost_bp": 43.0,
+  "R_per_extra_bp": 0.0028,
+  "pf_with_+2bp": 1.381,
+  "pf_with_+5bp": 1.349,
+  "pf_with_+10bp": 1.296,
+  "median_stop_pct": 3.85
+ },
+ "sess_8_8_13_wd:ethusd:val": {
+  "breakeven_extra_roundtrip_cost_bp": 4.3,
+  "R_per_extra_bp": 0.0041,
+  "pf_with_+2bp": 1.025,
+  "pf_with_+5bp": 0.993,
+  "pf_with_+10bp": 0.941,
+  "median_stop_pct": 2.7
+ }
+}

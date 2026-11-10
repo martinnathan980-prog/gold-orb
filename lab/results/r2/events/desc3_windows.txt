@@ -1,0 +1,209 @@
+
+================ us500 ================
+--- us500 / fomc  (n events 70)
+ unconditional drift windows (long side, bp)
+   pre: T-24h -> T-5m                       n=  70 mean=  +6.18 t=+0.98 med=  -0.61 wins_t=+1.14 sd=  52.8 hit=0.49 yrs=6/9
+   pre: prev 15:55 -> T-5m                  n=  70 mean=  +8.13 t=+1.23 med=  +0.92 wins_t=+1.30 sd=  55.5 hit=0.51 yrs=6/9
+   pre: T-4h -> T-5m                        n=  70 mean=  -3.59 t=-1.18 med=  -6.85 wins_t=-1.21 sd=  25.5 hit=0.37 yrs=7/9
+   reaction: T-1m(last) -> T+5m             n=  70 mean=  +5.59 t=+1.38 med=  +7.60 wins_t=+2.03 sd=  33.9 hit=0.64 yrs=8/9
+   post: T+5m -> 15:55                      n=  70 mean=  -5.14 t=-0.76 med=  +2.50 wins_t=-0.89 sd=  56.9 hit=0.53 yrs=4/9
+   T-5m -> 15:55                            n=  70 mean=  +3.29 t=+0.39 med=  +7.79 wins_t=+0.59 sd=  70.7 hit=0.53 yrs=6/9
+   day: prev 15:55 -> 15:55                 n=  70 mean= +11.42 t=+1.10 med=  -0.11 wins_t=+1.31 sd=  87.0 hit=0.49 yrs=7/9
+   next day: 15:55 -> next 15:55            n=  70 mean= -13.93 t=-0.99 med=  +2.39 wins_t=-0.93 sd= 117.8 hit=0.51 yrs=5/9
+ continuation: sign(P(T+k) - P(last before T)) x return from T+k to horizon (bp)
+   k= 1m  mean|r0|= 16.6bp | T+30:  -5.55 (t -1.39, n 69) | T+60:  +2.16 (t +0.35, n 67) | T+120: -10.14 (t -1.03, n 59) | 15:55: -11.48 (t -1.40, n 69) | next 15:55: +23.28 (t +1.40, n 69)
+   k= 2m  mean|r0|= 18.3bp | T+30:  -4.03 (t -1.23, n 70) | T+60:  -0.59 (t -0.10, n 68) | T+120: -11.68 (t -1.27, n 60) | 15:55: -11.70 (t -1.54, n 70) | next 15:55:  -2.83 (t -0.17, n 70)
+   k= 5m  mean|r0|= 23.5bp | T+30:  -4.65 (t -1.57, n 70) | T+60:  +2.37 (t +0.45, n 68) | T+120:  -3.22 (t -0.39, n 60) | 15:55:  -2.33 (t -0.34, n 70) | next 15:55: +13.97 (t +0.87, n 70)
+   k=15m  mean|r0|= 27.6bp | T+30:  -2.96 (t -1.25, n 68) | T+60:  +1.24 (t +0.27, n 68) | T+120:  +4.99 (t +0.66, n 58) | 15:55:  +2.00 (t +0.32, n 68) | next 15:55:  +3.89 (t +0.23, n 68)
+   k=30m  mean|r0|= 28.9bp | T+60:  +4.69 (t +1.02, n 68) | T+120:  +5.41 (t +0.69, n 60) | 15:55:  +3.85 (t +0.60, n 70) | next 15:55: +10.98 (t +0.66, n 70)
+--- us500 / nfp  (n events 108)
+ unconditional drift windows (long side, bp)
+   pre: T-24h -> T-5m                       n=  99 mean=  +7.54 t=+0.89 med= +20.69 wins_t=+1.58 sd=  84.0 hit=0.68 yrs=6/9
+   pre: prev 15:55 -> T-5m                  n=  97 mean=  +6.34 t=+1.23 med= +12.30 wins_t=+2.11 sd=  50.8 hit=0.66 yrs=6/9
+   pre: T-4h -> T-5m                        n= 100 mean=  -0.74 t=-0.28 med=  +0.91 wins_t=+0.14 sd=  26.6 hit=0.55 yrs=5/9
+   reaction: T-1m(last) -> T+5m             n= 100 mean=  +5.00 t=+1.77 med=  +5.70 wins_t=+2.41 sd=  28.2 hit=0.59 yrs=7/9
+   post: T+5m -> 15:55                      n=  99 mean= +10.44 t=+1.28 med=  +9.21 wins_t=+1.44 sd=  81.5 hit=0.57 yrs=7/9
+   T-5m -> 15:55                            n=  97 mean= +15.52 t=+1.89 med= +10.06 wins_t=+1.98 sd=  80.8 hit=0.58 yrs=6/9
+   day: prev 15:55 -> 15:55                 n= 102 mean= +25.08 t=+2.60 med= +30.07 wins_t=+2.58 sd=  97.4 hit=0.64 yrs=7/9
+   next day: 15:55 -> next 15:55            n=  97 mean=  +8.19 t=+0.63 med= +15.68 wins_t=+1.26 sd= 127.3 hit=0.58 yrs=6/9
+ continuation: sign(P(T+k) - P(last before T)) x return from T+k to horizon (bp)
+   k= 1m  mean|r0|= 16.0bp | T+30:  +2.10 (t +0.94, n 100) | T+60:  +1.54 (t +0.56, n 98) | T+120:  +9.82 (t +2.05, n 98) | 15:55:  +8.09 (t +0.98, n 97) | next 15:55:  -9.34 (t -0.57, n 91)
+   k= 2m  mean|r0|= 17.3bp | T+30:  -2.61 (t -1.14, n 100) | T+60:  -3.52 (t -1.33, n 98) | T+120:  +2.60 (t +0.55, n 98) | 15:55:  -2.97 (t -0.36, n 97) | next 15:55: -13.90 (t -0.85, n 91)
+   k= 5m  mean|r0|= 20.9bp | T+30:  -2.39 (t -1.15, n 100) | T+60:  -3.89 (t -1.51, n 98) | T+120:  -6.02 (t -1.26, n 98) | 15:55:  -8.73 (t -1.06, n 97) | next 15:55:  -1.77 (t -0.11, n 91)
+   k=15m  mean|r0|= 22.1bp | T+30:  -0.87 (t -0.66, n 100) | T+60:  -1.49 (t -0.90, n 98) | T+120:  -3.35 (t -0.71, n 98) | 15:55:  -3.49 (t -0.43, n 97) | next 15:55:  -6.61 (t -0.41, n 91)
+   k=30m  mean|r0|= 24.2bp | T+60:  -1.77 (t -1.36, n 98) | T+120:  -5.37 (t -1.17, n 98) | 15:55:  -9.67 (t -1.20, n 97) | next 15:55:  +1.74 (t +0.11, n 91)
+--- us500 / cpi  (n events 108)
+ unconditional drift windows (long side, bp)
+   pre: T-24h -> T-5m                       n= 100 mean=  -2.75 t=-0.34 med=  +6.43 wins_t=+0.11 sd=  80.1 hit=0.53 yrs=6/9
+   pre: prev 15:55 -> T-5m                  n= 101 mean=  -5.47 t=-1.12 med=  +0.87 wins_t=-0.76 sd=  49.1 hit=0.50 yrs=6/9
+   pre: T-4h -> T-5m                        n= 101 mean=  +0.18 t=+0.09 med=  +1.79 wins_t=-0.07 sd=  19.6 hit=0.52 yrs=5/9
+   reaction: T-1m(last) -> T+5m             n= 102 mean=  +0.02 t=+0.01 med=  +2.06 wins_t=+1.10 sd=  21.1 hit=0.57 yrs=6/9
+   post: T+5m -> 15:55                      n= 102 mean=  +6.83 t=+0.99 med=  +9.31 wins_t=+0.92 sd=  69.4 hit=0.59 yrs=6/9
+   T-5m -> 15:55                            n= 101 mean=  +6.78 t=+1.01 med= +11.49 wins_t=+1.16 sd=  67.3 hit=0.57 yrs=5/9
+   day: prev 15:55 -> 15:55                 n= 106 mean=  +1.76 t=+0.21 med=  +8.36 wins_t=+0.60 sd=  88.0 hit=0.57 yrs=4/9
+   next day: 15:55 -> next 15:55            n= 101 mean=  +2.75 t=+0.20 med= +11.21 wins_t=+1.33 sd= 137.0 hit=0.58 yrs=6/9
+ continuation: sign(P(T+k) - P(last before T)) x return from T+k to horizon (bp)
+   k= 1m  mean|r0|=  8.5bp | T+30:  +1.02 (t +0.61, n 102) | T+60:  +3.00 (t +1.74, n 101) | T+120:  -3.13 (t -0.78, n 102) | 15:55:  -5.81 (t -0.85, n 102) | next 15:55: -17.17 (t -1.04, n 98)
+   k= 2m  mean|r0|=  9.8bp | T+30:  +0.28 (t +0.18, n 102) | T+60:  +1.30 (t +0.77, n 101) | T+120:  -3.83 (t -0.95, n 102) | 15:55:  -2.35 (t -0.34, n 102) | next 15:55:  -9.88 (t -0.60, n 98)
+   k= 5m  mean|r0|= 11.8bp | T+30:  +0.47 (t +0.36, n 102) | T+60:  -1.20 (t -0.78, n 101) | T+120:  -5.57 (t -1.39, n 102) | 15:55:  -5.37 (t -0.78, n 102) | next 15:55:  +5.88 (t +0.36, n 98)
+   k=15m  mean|r0|= 12.7bp | T+30:  +1.62 (t +1.61, n 102) | T+60:  +0.23 (t +0.14, n 101) | T+120:  +2.40 (t +0.61, n 102) | 15:55:  -5.91 (t -0.86, n 102) | next 15:55: +12.72 (t +0.78, n 98)
+   k=30m  mean|r0|= 15.6bp | T+60:  -0.91 (t -0.57, n 101) | T+120:  -3.54 (t -0.90, n 102) | 15:55:  -7.71 (t -1.12, n 102) | next 15:55:  +1.15 (t +0.07, n 98)
+--- us500 / all  (n events 286)
+ unconditional drift windows (long side, bp)
+   pre: T-24h -> T-5m                       n= 269 mean=  +3.36 t=+0.73 med=  +8.49 wins_t=+1.46 sd=  75.4 hit=0.57 yrs=7/9
+   pre: prev 15:55 -> T-5m                  n= 268 mean=  +2.36 t=+0.75 med=  +4.13 wins_t=+1.46 sd=  51.6 hit=0.56 yrs=7/9
+   pre: T-4h -> T-5m                        n= 271 mean=  -1.13 t=-0.78 med=  -0.33 wins_t=-0.67 sd=  23.9 hit=0.49 yrs=6/9
+   reaction: T-1m(last) -> T+5m             n= 272 mean=  +3.28 t=+1.97 med=  +4.60 wins_t=+3.12 sd=  27.5 hit=0.60 yrs=7/9
+   post: T+5m -> 15:55                      n= 271 mean=  +5.06 t=+1.17 med=  +8.23 wins_t=+1.13 sd=  71.3 hit=0.56 yrs=6/9
+   T-5m -> 15:55                            n= 268 mean=  +9.03 t=+2.02 med= +10.47 wins_t=+2.29 sd=  73.2 hit=0.56 yrs=7/9
+   day: prev 15:55 -> 15:55                 n= 278 mean= +12.75 t=+2.32 med=  +9.28 wins_t=+2.56 sd=  91.6 hit=0.57 yrs=7/9
+   next day: 15:55 -> next 15:55            n= 268 mean=  +0.36 t=+0.05 med= +10.36 wins_t=+0.78 sd= 128.5 hit=0.56 yrs=5/9
+ continuation: sign(P(T+k) - P(last before T)) x return from T+k to horizon (bp)
+   k= 1m  mean|r0|= 13.3bp | T+30:  -0.26 (t -0.18, n 271) | T+60:  +2.25 (t +1.16, n 266) | T+120:  +0.17 (t +0.05, n 259) | 15:55:  -2.24 (t -0.50, n 268) | next 15:55:  -3.59 (t -0.37, n 258)
+   k= 2m  mean|r0|= 14.7bp | T+30:  -1.89 (t -1.43, n 272) | T+60:  -0.95 (t -0.51, n 267) | T+120:  -3.22 (t -1.01, n 260) | 15:55:  -5.01 (t -1.13, n 269) | next 15:55:  -9.39 (t -0.98, n 259)
+   k= 5m  mean|r0|= 18.2bp | T+30:  -1.90 (t -1.60, n 272) | T+60:  -1.28 (t -0.73, n 267) | T+120:  -5.20 (t -1.71, n 260) | 15:55:  -5.79 (t -1.34, n 269) | next 15:55:  +5.38 (t +0.57, n 259)
+   k=15m  mean|r0|= 19.9bp | T+30:  -0.45 (t -0.52, n 270) | T+60:  -0.14 (t -0.10, n 267) | T+120:  +0.80 (t +0.28, n 258) | 15:55:  -3.02 (t -0.71, n 267) | next 15:55:  +3.54 (t +0.37, n 257)
+   k=30m  mean|r0|= 22.2bp | T+60:  +0.20 (t +0.14, n 267) | T+120:  -2.16 (t -0.74, n 260) | 15:55:  -5.41 (t -1.27, n 269) | next 15:55:  +4.01 (t +0.42, n 259)
+
+================ us100 ================
+--- us100 / fomc  (n events 70)
+ unconditional drift windows (long side, bp)
+   pre: T-24h -> T-5m                       n=  70 mean=  +7.17 t=+0.85 med=  +0.45 wins_t=+0.74 sd=  70.9 hit=0.50 yrs=5/9
+   pre: prev 15:55 -> T-5m                  n=  70 mean=  +9.87 t=+1.16 med= +11.87 wins_t=+1.05 sd=  71.5 hit=0.61 yrs=5/9
+   pre: T-4h -> T-5m                        n=  70 mean=  -9.98 t=-2.79 med=  -8.79 wins_t=-2.92 sd=  29.9 hit=0.30 yrs=7/9
+   reaction: T-1m(last) -> T+5m             n=  70 mean=  +6.01 t=+1.38 med=  +7.79 wins_t=+2.18 sd=  36.4 hit=0.64 yrs=8/9
+   post: T+5m -> 15:55                      n=  70 mean=  +0.74 t=+0.09 med=  +8.91 wins_t=-0.10 sd=  69.1 hit=0.57 yrs=5/9
+   T-5m -> 15:55                            n=  70 mean= +10.09 t=+1.00 med= +18.61 wins_t=+1.16 sd=  84.4 hit=0.60 yrs=7/9
+   day: prev 15:55 -> 15:55                 n=  70 mean= +19.96 t=+1.57 med= +15.13 wins_t=+1.57 sd= 106.1 hit=0.59 yrs=7/9
+   next day: 15:55 -> next 15:55            n=  70 mean=  -8.81 t=-0.57 med= +14.21 wins_t=-0.44 sd= 129.4 hit=0.56 yrs=6/9
+ continuation: sign(P(T+k) - P(last before T)) x return from T+k to horizon (bp)
+   k= 1m  mean|r0|= 17.7bp | T+30:  -5.76 (t -1.27, n 70) | T+60:  -0.24 (t -0.03, n 68) | T+120: -13.49 (t -1.19, n 61) | 15:55: -13.67 (t -1.40, n 70) | next 15:55: +18.66 (t +1.06, n 70)
+   k= 2m  mean|r0|= 19.9bp | T+30:  -3.12 (t -0.81, n 70) | T+60:  +3.03 (t +0.43, n 68) | T+120: -11.93 (t -1.10, n 61) | 15:55: -13.13 (t -1.42, n 70) | next 15:55: -11.10 (t -0.63, n 70)
+   k= 5m  mean|r0|= 25.6bp | T+30:  -3.27 (t -0.93, n 70) | T+60:  +5.18 (t +0.82, n 68) | T+120:  +5.27 (t +0.55, n 61) | 15:55:  +3.69 (t +0.45, n 70) | next 15:55:  +9.31 (t +0.55, n 70)
+   k=15m  mean|r0|= 32.2bp | T+30:  -5.37 (t -1.90, n 68) | T+60:  -5.25 (t -0.94, n 68) | T+120:  -7.93 (t -0.89, n 59) | 15:55:  -8.20 (t -1.08, n 68) | next 15:55: -22.49 (t -1.27, n 68)
+   k=30m  mean|r0|= 32.7bp | T+60: +11.37 (t +2.07, n 68) | T+120:  +8.89 (t +0.96, n 61) | 15:55:  +7.24 (t +0.92, n 70) | next 15:55:  +8.48 (t +0.48, n 70)
+--- us100 / nfp  (n events 108)
+ unconditional drift windows (long side, bp)
+   pre: T-24h -> T-5m                       n=  99 mean=  -0.06 t=-0.01 med= +12.22 wins_t=+0.45 sd= 110.6 hit=0.64 yrs=5/9
+   pre: prev 15:55 -> T-5m                  n=  96 mean=  +3.89 t=+0.66 med= +14.63 wins_t=+1.49 sd=  58.1 hit=0.68 yrs=7/9
+   pre: T-4h -> T-5m                        n=  99 mean=  -0.83 t=-0.26 med=  +1.19 wins_t=+0.13 sd=  31.7 hit=0.53 yrs=4/9
+   reaction: T-1m(last) -> T+5m             n=  99 mean=  +5.16 t=+1.68 med=  +7.38 wins_t=+2.47 sd=  30.6 hit=0.60 yrs=7/9
+   post: T+5m -> 15:55                      n=  98 mean= +10.70 t=+0.99 med= +10.87 wins_t=+1.02 sd= 106.7 hit=0.54 yrs=6/9
+   T-5m -> 15:55                            n=  96 mean= +15.07 t=+1.40 med=  +8.91 wins_t=+1.55 sd= 105.6 hit=0.55 yrs=7/9
+   day: prev 15:55 -> 15:55                 n= 100 mean= +20.37 t=+1.66 med= +25.45 wins_t=+1.77 sd= 122.9 hit=0.62 yrs=5/9
+   next day: 15:55 -> next 15:55            n=  96 mean= +11.86 t=+0.86 med= +20.45 wins_t=+1.00 sd= 134.7 hit=0.61 yrs=5/9
+ continuation: sign(P(T+k) - P(last before T)) x return from T+k to horizon (bp)
+   k= 1m  mean|r0|= 16.2bp | T+30:  +2.27 (t +1.02, n 99) | T+60:  -0.46 (t -0.16, n 98) | T+120:  +4.81 (t +0.72, n 98) | 15:55:  -7.91 (t -0.73, n 96) | next 15:55:  +3.01 (t +0.16, n 90)
+   k= 2m  mean|r0|= 18.4bp | T+30:  -4.17 (t -1.79, n 99) | T+60:  -6.93 (t -2.32, n 98) | T+120:  +1.22 (t +0.19, n 98) | 15:55: -12.23 (t -1.12, n 96) | next 15:55:  -7.53 (t -0.39, n 90)
+   k= 5m  mean|r0|= 21.6bp | T+30:  -4.90 (t -2.27, n 98) | T+60:  -5.65 (t -1.94, n 97) | T+120:  -7.65 (t -1.19, n 97) | 15:55: -12.44 (t -1.14, n 95) | next 15:55:  +1.71 (t +0.09, n 89)
+   k=15m  mean|r0|= 23.5bp | T+30:  -2.08 (t -1.54, n 99) | T+60:  -3.18 (t -1.57, n 98) | T+120:  -8.34 (t -1.26, n 98) | 15:55: -11.37 (t -1.06, n 96) | next 15:55: -12.69 (t -0.66, n 90)
+   k=30m  mean|r0|= 24.1bp | T+60:  -2.01 (t -1.29, n 98) | T+120:  -0.95 (t -0.15, n 98) | 15:55:  -5.41 (t -0.51, n 96) | next 15:55: +14.91 (t +0.78, n 90)
+--- us100 / cpi  (n events 108)
+ unconditional drift windows (long side, bp)
+   pre: T-24h -> T-5m                       n= 101 mean=  +3.35 t=+0.30 med= +17.36 wins_t=+0.57 sd= 112.6 hit=0.58 yrs=3/9
+   pre: prev 15:55 -> T-5m                  n= 101 mean=  -0.91 t=-0.17 med=  +6.60 wins_t=+0.37 sd=  54.9 hit=0.55 yrs=4/9
+   pre: T-4h -> T-5m                        n= 101 mean=  +1.47 t=+0.60 med=  +3.40 wins_t=+0.41 sd=  24.5 hit=0.58 yrs=6/9
+   reaction: T-1m(last) -> T+5m             n= 101 mean=  +0.83 t=+0.31 med=  +3.54 wins_t=+1.22 sd=  26.8 hit=0.60 yrs=6/9
+   post: T+5m -> 15:55                      n= 101 mean= +15.50 t=+1.87 med= +18.33 wins_t=+1.81 sd=  83.4 hit=0.60 yrs=6/9
+   T-5m -> 15:55                            n= 101 mean= +16.30 t=+2.02 med= +21.46 wins_t=+2.27 sd=  81.1 hit=0.62 yrs=6/9
+   day: prev 15:55 -> 15:55                 n= 105 mean= +14.90 t=+1.56 med= +21.76 wins_t=+2.03 sd=  98.2 hit=0.56 yrs=6/9
+   next day: 15:55 -> next 15:55            n= 101 mean=  +6.95 t=+0.49 med= +13.80 wins_t=+1.20 sd= 143.2 hit=0.59 yrs=5/9
+ continuation: sign(P(T+k) - P(last before T)) x return from T+k to horizon (bp)
+   k= 1m  mean|r0|= 10.4bp | T+30:  +3.84 (t +1.80, n 101) | T+60:  +6.02 (t +2.38, n 100) | T+120:  -1.82 (t -0.32, n 101) | 15:55:  +3.73 (t +0.45, n 101) | next 15:55:  +9.05 (t +0.55, n 98)
+   k= 2m  mean|r0|= 12.4bp | T+30:  +1.65 (t +0.80, n 101) | T+60:  +2.37 (t +0.94, n 100) | T+120:  -5.74 (t -1.00, n 101) | 15:55:  +0.01 (t +0.00, n 101) | next 15:55:  +0.93 (t +0.06, n 98)
+   k= 5m  mean|r0|= 15.2bp | T+30:  +0.96 (t +0.55, n 101) | T+60:  +0.26 (t +0.12, n 100) | T+120:  -7.19 (t -1.26, n 101) | 15:55:  +0.08 (t +0.01, n 101) | next 15:55: +10.03 (t +0.61, n 98)
+   k=15m  mean|r0|= 16.7bp | T+30:  +1.90 (t +1.29, n 101) | T+60:  +0.36 (t +0.16, n 100) | T+120:  -4.49 (t -0.79, n 101) | 15:55:  -7.15 (t -0.84, n 101) | next 15:55: +10.49 (t +0.63, n 98)
+   k=30m  mean|r0|= 20.4bp | T+60:  -0.22 (t -0.13, n 100) | T+120:  -4.36 (t -0.80, n 101) | 15:55:  -6.75 (t -0.81, n 101) | next 15:55:  -4.51 (t -0.27, n 98)
+--- us100 / all  (n events 286)
+ unconditional drift windows (long side, bp)
+   pre: T-24h -> T-5m                       n= 270 mean=  +3.09 t=+0.50 med= +10.70 wins_t=+1.19 sd= 102.3 hit=0.58 yrs=6/9
+   pre: prev 15:55 -> T-5m                  n= 267 mean=  +3.64 t=+0.98 med= +10.44 wins_t=+1.40 sd=  60.7 hit=0.61 yrs=6/9
+   pre: T-4h -> T-5m                        n= 270 mean=  -2.35 t=-1.33 med=  -0.16 wins_t=-1.41 sd=  29.0 hit=0.49 yrs=7/9
+   reaction: T-1m(last) -> T+5m             n= 270 mean=  +3.76 t=+2.00 med=  +4.97 wins_t=+3.27 sd=  30.9 hit=0.61 yrs=7/9
+   post: T+5m -> 15:55                      n= 269 mean=  +9.91 t=+1.82 med= +12.72 wins_t=+2.20 sd=  89.3 hit=0.57 yrs=6/9
+   T-5m -> 15:55                            n= 267 mean= +14.23 t=+2.55 med= +17.27 wins_t=+3.04 sd=  91.2 hit=0.59 yrs=7/9
+   day: prev 15:55 -> 15:55                 n= 275 mean= +18.18 t=+2.76 med= +21.76 wins_t=+2.98 sd= 109.4 hit=0.59 yrs=7/9
+   next day: 15:55 -> next 15:55            n= 267 mean=  +4.58 t=+0.55 med= +17.81 wins_t=+1.05 sd= 136.4 hit=0.59 yrs=6/9
+ continuation: sign(P(T+k) - P(last before T)) x return from T+k to horizon (bp)
+   k= 1m  mean|r0|= 14.4bp | T+30:  +0.78 (t +0.47, n 270) | T+60:  +2.03 (t +0.86, n 266) | T+120:  -2.06 (t -0.48, n 260) | 15:55:  -5.02 (t -0.89, n 267) | next 15:55:  +9.55 (t +0.93, n 258)
+   k= 2m  mean|r0|= 16.5bp | T+30:  -1.72 (t -1.13, n 270) | T+60:  -0.89 (t -0.38, n 266) | T+120:  -4.57 (t -1.09, n 260) | 15:55:  -7.83 (t -1.40, n 267) | next 15:55:  -5.29 (t -0.51, n 258)
+   k= 5m  mean|r0|= 20.2bp | T+30:  -2.28 (t -1.65, n 269) | T+60:  -0.64 (t -0.30, n 265) | T+120:  -4.43 (t -1.11, n 259) | 15:55:  -3.44 (t -0.63, n 266) | next 15:55:  +6.96 (t +0.69, n 257)
+   k=15m  mean|r0|= 23.1bp | T+30:  -1.41 (t -1.35, n 268) | T+60:  -2.38 (t -1.31, n 266) | T+120:  -6.74 (t -1.73, n 258) | 15:55:  -8.95 (t -1.65, n 265) | next 15:55:  -6.42 (t -0.62, n 256)
+   k=30m  mean|r0|= 24.9bp | T+60:  +2.08 (t +1.25, n 266) | T+120:  +0.03 (t +0.01, n 260) | 15:55:  -2.60 (t -0.49, n 267) | next 15:55:  +5.79 (t +0.56, n 258)
+
+================ xauusd ================
+--- xauusd / fomc  (n events 70)
+ unconditional drift windows (long side, bp)
+   pre: T-24h -> T-5m                       n=  70 mean=  +5.64 t=+0.75 med=  -0.99 wins_t=+0.65 sd=  63.3 hit=0.50 yrs=6/9
+   pre: prev 15:55 -> T-5m                  n=  70 mean=  +4.65 t=+0.64 med=  +1.43 wins_t=+0.47 sd=  61.2 hit=0.51 yrs=6/9
+   pre: T-4h -> T-5m                        n=  70 mean=  +4.09 t=+1.20 med=  +4.35 wins_t=+1.14 sd=  28.5 hit=0.59 yrs=7/9
+   reaction: T-1m(last) -> T+5m             n=  70 mean=  +2.82 t=+0.56 med=  +0.39 wins_t=+0.35 sd=  42.3 hit=0.50 yrs=7/9
+   post: T+5m -> 15:55                      n=  70 mean=  +5.46 t=+0.67 med=  +7.02 wins_t=+0.61 sd=  68.1 hit=0.54 yrs=5/9
+   T-5m -> 15:55                            n=  70 mean=  +9.66 t=+0.81 med= +15.52 wins_t=+0.53 sd=  99.2 hit=0.56 yrs=6/9
+   day: prev 15:55 -> 15:55                 n=  70 mean= +14.31 t=+1.12 med= +27.46 wins_t=+1.02 sd= 106.6 hit=0.54 yrs=7/9
+   next day: 15:55 -> next 15:55            n=  70 mean= -23.03 t=-1.49 med= -23.18 wins_t=-1.51 sd= 129.3 hit=0.43 yrs=8/9
+ continuation: sign(P(T+k) - P(last before T)) x return from T+k to horizon (bp)
+   k= 1m  mean|r0|= 27.1bp | T+30:  +2.90 (t +0.65, n 70) | T+60:  +7.40 (t +1.07, n 70) | T+120: +12.62 (t +1.43, n 70) | 15:55: +11.83 (t +1.36, n 70) | next 15:55: +32.78 (t +1.71, n 70)
+   k= 2m  mean|r0|= 29.6bp | T+30:  +2.68 (t +0.61, n 70) | T+60:  +9.69 (t +1.44, n 70) | T+120: +15.74 (t +1.81, n 70) | 15:55: +14.94 (t +1.75, n 70) | next 15:55: +32.88 (t +1.70, n 70)
+   k= 5m  mean|r0|= 28.8bp | T+30:  +8.31 (t +2.39, n 70) | T+60: +13.51 (t +2.27, n 70) | T+120: +22.69 (t +2.89, n 70) | 15:55: +21.51 (t +2.78, n 70) | next 15:55: +41.62 (t +2.23, n 70)
+   k=15m  mean|r0|= 40.5bp | T+30:  -0.38 (t -0.18, n 70) | T+60:  -0.28 (t -0.05, n 70) | T+120: +10.35 (t +1.49, n 70) | 15:55: +10.16 (t +1.48, n 70) | next 15:55: +44.12 (t +2.46, n 70)
+   k=30m  mean|r0|= 43.8bp | T+60:  +6.41 (t +1.38, n 70) | T+120: +17.51 (t +2.69, n 70) | 15:55: +16.14 (t +2.47, n 70) | next 15:55: +45.69 (t +2.59, n 70)
+--- xauusd / nfp  (n events 108)
+ unconditional drift windows (long side, bp)
+   pre: T-24h -> T-5m                       n= 106 mean=  -6.75 t=-0.84 med=  -4.01 wins_t=-0.88 sd=  82.7 hit=0.49 yrs=5/9
+   pre: prev 15:55 -> T-5m                  n= 104 mean=  -7.49 t=-1.65 med=  -1.45 wins_t=-1.65 sd=  46.4 hit=0.48 yrs=7/9
+   pre: T-4h -> T-5m                        n= 106 mean=  -3.83 t=-1.49 med=  -2.83 wins_t=-1.58 sd=  26.5 hit=0.45 yrs=7/9
+   reaction: T-1m(last) -> T+5m             n= 106 mean=  +1.41 t=+0.25 med=  +2.52 wins_t=+0.21 sd=  58.3 hit=0.52 yrs=6/9
+   post: T+5m -> 15:55                      n= 106 mean=  +8.08 t=+1.12 med=  +4.28 wins_t=+1.21 sd=  74.5 hit=0.56 yrs=6/9
+   T-5m -> 15:55                            n= 106 mean=  +9.00 t=+0.96 med= +19.52 wins_t=+0.93 sd=  96.9 hit=0.60 yrs=6/9
+   day: prev 15:55 -> 15:55                 n= 104 mean=  +3.80 t=+0.36 med= +10.78 wins_t=+0.41 sd= 108.5 hit=0.59 yrs=4/9
+   next day: 15:55 -> next 15:55            n=  97 mean=  -2.52 t=-0.27 med=  -0.78 wins_t=-0.10 sd=  91.9 hit=0.49 yrs=5/9
+ continuation: sign(P(T+k) - P(last before T)) x return from T+k to horizon (bp)
+   k= 1m  mean|r0|= 38.8bp | T+30:  -0.85 (t -0.20, n 106) | T+60:  +2.04 (t +0.39, n 106) | T+120:  +6.26 (t +0.90, n 106) | 15:55:  +8.71 (t +1.15, n 106) | next 15:55: +16.32 (t +1.38, n 97)
+   k= 2m  mean|r0|= 41.9bp | T+30:  +3.01 (t +0.76, n 106) | T+60:  +5.01 (t +1.02, n 106) | T+120:  +6.42 (t +0.96, n 106) | 15:55:  +7.13 (t +0.95, n 106) | next 15:55:  +3.61 (t +0.30, n 97)
+   k= 5m  mean|r0|= 46.9bp | T+30:  -4.82 (t -1.27, n 106) | T+60:  -5.30 (t -1.06, n 106) | T+120:  +1.06 (t +0.16, n 106) | 15:55:  +2.09 (t +0.29, n 106) | next 15:55:  +5.14 (t +0.44, n 97)
+   k=15m  mean|r0|= 48.5bp | T+30:  -1.08 (t -0.46, n 106) | T+60:  +0.05 (t +0.01, n 106) | T+120:  +3.90 (t +0.70, n 106) | 15:55:  +1.45 (t +0.21, n 106) | next 15:55: -15.96 (t -1.37, n 97)
+   k=30m  mean|r0|= 51.9bp | T+60:  -0.86 (t -0.30, n 106) | T+120:  +2.45 (t +0.47, n 106) | 15:55:  -2.83 (t -0.44, n 106) | next 15:55: -20.53 (t -1.80, n 97)
+--- xauusd / cpi  (n events 108)
+ unconditional drift windows (long side, bp)
+   pre: T-24h -> T-5m                       n= 106 mean=  +2.45 t=+0.28 med=  +3.69 wins_t=+0.42 sd=  91.1 hit=0.52 yrs=5/9
+   pre: prev 15:55 -> T-5m                  n= 106 mean= +13.52 t=+2.33 med= +12.36 wins_t=+2.65 sd=  59.7 hit=0.63 yrs=8/9
+   pre: T-4h -> T-5m                        n= 106 mean=  +4.26 t=+1.22 med=  +2.61 wins_t=+1.30 sd=  35.8 hit=0.53 yrs=5/9
+   reaction: T-1m(last) -> T+5m             n= 106 mean=  +0.44 t=+0.18 med=  +2.35 wins_t=+0.20 sd=  25.6 hit=0.57 yrs=4/9
+   post: T+5m -> 15:55                      n= 106 mean=  +2.71 t=+0.34 med=  +1.42 wins_t=+0.28 sd=  81.3 hit=0.53 yrs=4/9
+   T-5m -> 15:55                            n= 106 mean=  +2.82 t=+0.36 med=  +6.32 wins_t=+0.37 sd=  80.0 hit=0.56 yrs=3/9
+   day: prev 15:55 -> 15:55                 n= 106 mean= +16.34 t=+1.95 med= +22.77 wins_t=+2.09 sd=  86.4 hit=0.58 yrs=6/9
+   next day: 15:55 -> next 15:55            n= 103 mean=  -3.94 t=-0.41 med=  +8.73 wins_t=-0.57 sd=  98.1 hit=0.54 yrs=6/9
+ continuation: sign(P(T+k) - P(last before T)) x return from T+k to horizon (bp)
+   k= 1m  mean|r0|= 14.1bp | T+30:  -1.74 (t -0.57, n 106) | T+60:  -3.67 (t -1.05, n 106) | T+120:  -3.24 (t -0.64, n 106) | 15:55:  -4.53 (t -0.57, n 106) | next 15:55: +13.97 (t +1.10, n 103)
+   k= 2m  mean|r0|= 16.4bp | T+30:  -2.00 (t -0.67, n 106) | T+60:  -6.08 (t -1.78, n 106) | T+120: -10.05 (t -2.01, n 106) | 15:55: -12.10 (t -1.51, n 106) | next 15:55:  -6.33 (t -0.49, n 103)
+   k= 5m  mean|r0|= 19.2bp | T+30:  +0.21 (t +0.10, n 106) | T+60:  -1.77 (t -0.64, n 106) | T+120:  -5.45 (t -1.17, n 106) | 15:55: -12.63 (t -1.62, n 106) | next 15:55:  -5.53 (t -0.44, n 103)
+   k=15m  mean|r0|= 24.7bp | T+30:  -1.54 (t -1.01, n 105) | T+60:  -2.55 (t -1.17, n 105) | T+120:  -3.06 (t -0.69, n 105) | 15:55: -12.63 (t -1.61, n 105) | next 15:55: -10.09 (t -0.79, n 102)
+   k=30m  mean|r0|= 26.3bp | T+60:  -3.17 (t -1.79, n 106) | T+120:  -3.11 (t -0.76, n 106) | 15:55: -13.33 (t -1.75, n 106) | next 15:55:  -7.94 (t -0.63, n 103)
+--- xauusd / all  (n events 286)
+ unconditional drift windows (long side, bp)
+   pre: T-24h -> T-5m                       n= 282 mean=  -0.22 t=-0.04 med=  +0.02 wins_t=+0.01 sd=  81.7 hit=0.50 yrs=4/9
+   pre: prev 15:55 -> T-5m                  n= 280 mean=  +3.50 t=+1.04 med=  +4.76 wins_t=+1.19 sd=  56.1 hit=0.55 yrs=6/9
+   pre: T-4h -> T-5m                        n= 282 mean=  +1.17 t=+0.64 med=  +1.11 wins_t=+0.70 sd=  30.9 hit=0.51 yrs=6/9
+   reaction: T-1m(last) -> T+5m             n= 282 mean=  +1.39 t=+0.53 med=  +2.21 wins_t=+0.20 sd=  44.2 hit=0.53 yrs=5/9
+   post: T+5m -> 15:55                      n= 282 mean=  +5.41 t=+1.20 med=  +3.86 wins_t=+1.23 sd=  75.4 hit=0.54 yrs=7/9
+   T-5m -> 15:55                            n= 282 mean=  +6.84 t=+1.26 med= +14.74 wins_t=+1.06 sd=  91.3 hit=0.57 yrs=6/9
+   day: prev 15:55 -> 15:55                 n= 280 mean= +11.18 t=+1.87 med= +18.89 wins_t=+2.00 sd= 100.0 hit=0.57 yrs=8/9
+   next day: 15:55 -> next 15:55            n= 270 mean=  -8.38 t=-1.31 med=  -1.72 wins_t=-1.48 sd= 105.0 hit=0.50 yrs=7/9
+ continuation: sign(P(T+k) - P(last before T)) x return from T+k to horizon (bp)
+   k= 1m  mean|r0|= 26.6bp | T+30:  -0.25 (t -0.11, n 282) | T+60:  +1.23 (t +0.42, n 282) | T+120:  +4.27 (t +1.09, n 282) | 15:55:  +4.51 (t +0.96, n 282) | next 15:55: +19.69 (t +2.42, n 270)
+   k= 2m  mean|r0|= 29.2bp | T+30:  +1.04 (t +0.49, n 282) | T+60:  +2.00 (t +0.71, n 282) | T+120:  +2.54 (t +0.66, n 282) | 15:55:  +1.84 (t +0.40, n 282) | next 15:55:  +7.40 (t +0.90, n 270)
+   k= 5m  mean|r0|= 32.0bp | T+30:  +0.33 (t +0.18, n 282) | T+60:  +0.69 (t +0.26, n 282) | T+120:  +3.98 (t +1.08, n 282) | 15:55:  +1.38 (t +0.31, n 282) | next 15:55: +10.52 (t +1.30, n 270)
+   k=15m  mean|r0|= 37.6bp | T+30:  -1.08 (t -0.92, n 281) | T+60:  -1.01 (t -0.49, n 281) | T+120:  +2.90 (t +0.91, n 281) | 15:55:  -1.64 (t -0.38, n 281) | next 15:55:  +1.90 (t +0.24, n 269)
+   k=30m  mean|r0|= 40.3bp | T+60:  +0.08 (t +0.04, n 282) | T+120:  +4.10 (t +1.37, n 282) | 15:55:  -2.07 (t -0.50, n 282) | next 15:55:  +1.44 (t +0.18, n 270)
+
+cells examined: 384; expected |t|>=2.5 by chance (two-sided, independent): 4.8
+cells with |t| >= 2.5:
+   ('us500', 'nfp', 'day: prev 15:55 -> 15:55', 25.08, 2.6)
+   ('us100', 'fomc', 'pre: T-4h -> T-5m', -9.98, -2.79)
+   ('us100', 'all', 'T-5m -> 15:55', 14.23, 2.55)
+   ('us100', 'all', 'day: prev 15:55 -> 15:55', 18.18, 2.76)
+   ('xauusd', 'fomc', 'cont k=5 -> T+120', 22.69, 2.89)
+   ('xauusd', 'fomc', 'cont k=5 -> 15:55', 21.51, 2.78)
+   ('xauusd', 'fomc', 'cont k=30 -> T+120', 17.51, 2.69)
+   ('xauusd', 'fomc', 'cont k=30 -> next 15:55', 45.69, 2.59)

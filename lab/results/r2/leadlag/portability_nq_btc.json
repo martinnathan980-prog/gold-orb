@@ -1,0 +1,8 @@
+{
+ "set_leader_hook_identical": true,
+ "n_orders_full_frame": 4829,
+ "short_frame_from": "2025-06-01 00:00:00+00:00",
+ "first_order_on_short_frame": "2025-06-05 13:32:00+00:00",
+ "orders_from_2025-07-01_identical_to_full_frame": true,
+ "n_compared": 329
+}

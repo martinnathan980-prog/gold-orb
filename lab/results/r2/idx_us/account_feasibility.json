@@ -1,0 +1,44 @@
+{
+ "noise30": {
+  "sym": "us100",
+  "orders_2024_2025": 396,
+  "median_stop_points": 120.1,
+  "p10_stop_points": 72.1,
+  "p90_stop_points": 208.1,
+  "median_stop_bp": 57.6,
+  "median_price": 20399.0,
+  "min_lot": 0.1,
+  "units_per_lot": 1,
+  "min_lot_stop_money_usd": 12.01,
+  "min_lot_stop_money_usd_p90": 20.81,
+  "min_lot_notional_usd": 2040.0,
+  "min_lot_margin_usd_at_1:200": 10.2
+ },
+ "ocm4": {
+  "sym": "us100",
+  "orders_2024_2025": 256,
+  "median_stop_points": 96.3,
+  "p10_stop_points": 69.2,
+  "p90_stop_points": 147.9,
+  "median_stop_bp": 45.7,
+  "median_price": 20320.0,
+  "min_lot": 0.1,
+  "units_per_lot": 1,
+  "min_lot_stop_money_usd": 9.63,
+  "min_lot_stop_money_usd_p90": 14.79,
+  "min_lot_notional_usd": 2032.0,
+  "min_lot_margin_usd_at_1:200": 10.16
+ },
+ "warmup_parity_2021-09-01_start": {
+  "noise30": {
+   "orders_full_frame": 37,
+   "orders_short_frame": 37,
+   "identical_after_2_months_warmup": true
+  },
+  "ocm4": {
+   "orders_full_frame": 25,
+   "orders_short_frame": 25,
+   "identical_after_2_months_warmup": true
+  }
+ }
+}

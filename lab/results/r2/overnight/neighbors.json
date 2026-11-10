@@ -1,0 +1,526 @@
+{
+ "gold": {
+  "median_neighbor_pf": 1.421,
+  "neighbors": [
+   {
+    "neighbor": "entry 13:00",
+    "params": {
+     "entry_time": "13:00",
+     "entry_tz": "NY",
+     "weekdays": [
+      4
+     ],
+     "exit_time": "16:45",
+     "exit_tz": "NY",
+     "exit_days": 0,
+     "side": 1,
+     "stop_atr": 3.0,
+     "atr_n": 14,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 60
+    },
+    "n": 420,
+    "pf": 1.357,
+    "t": 2.32,
+    "exp": 0.0338,
+    "years_pos": "6/9",
+    "bp": 3.96
+   },
+   {
+    "neighbor": "entry 14:00",
+    "params": {
+     "entry_time": "14:00",
+     "entry_tz": "NY",
+     "weekdays": [
+      4
+     ],
+     "exit_time": "16:45",
+     "exit_tz": "NY",
+     "exit_days": 0,
+     "side": 1,
+     "stop_atr": 3.0,
+     "atr_n": 14,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 60
+    },
+    "n": 414,
+    "pf": 1.406,
+    "t": 2.59,
+    "exp": 0.0273,
+    "years_pos": "6/9",
+    "bp": 3.5
+   },
+   {
+    "neighbor": "exit 16:30",
+    "params": {
+     "entry_time": "13:30",
+     "entry_tz": "NY",
+     "weekdays": [
+      4
+     ],
+     "exit_time": "16:30",
+     "exit_tz": "NY",
+     "exit_days": 0,
+     "side": 1,
+     "stop_atr": 3.0,
+     "atr_n": 14,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 60
+    },
+    "n": 409,
+    "pf": 1.332,
+    "t": 2.07,
+    "exp": 0.0251,
+    "years_pos": "7/9",
+    "bp": 3.23
+   },
+   {
+    "neighbor": "exit 16:55",
+    "params": {
+     "entry_time": "13:30",
+     "entry_tz": "NY",
+     "weekdays": [
+      4
+     ],
+     "exit_time": "16:55",
+     "exit_tz": "NY",
+     "exit_days": 0,
+     "side": 1,
+     "stop_atr": 3.0,
+     "atr_n": 14,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 60
+    },
+    "n": 408,
+    "pf": 1.456,
+    "t": 2.72,
+    "exp": 0.0349,
+    "years_pos": "6/9",
+    "bp": 4.55
+   },
+   {
+    "neighbor": "k 2.4",
+    "params": {
+     "entry_time": "13:30",
+     "entry_tz": "NY",
+     "weekdays": [
+      4
+     ],
+     "exit_time": "16:45",
+     "exit_tz": "NY",
+     "exit_days": 0,
+     "side": 1,
+     "stop_atr": 2.4,
+     "atr_n": 14,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 60
+    },
+    "n": 408,
+    "pf": 1.394,
+    "t": 2.38,
+    "exp": 0.0374,
+    "years_pos": "6/9",
+    "bp": 4.04
+   },
+   {
+    "neighbor": "k 3.6",
+    "params": {
+     "entry_time": "13:30",
+     "entry_tz": "NY",
+     "weekdays": [
+      4
+     ],
+     "exit_time": "16:45",
+     "exit_tz": "NY",
+     "exit_days": 0,
+     "side": 1,
+     "stop_atr": 3.6,
+     "atr_n": 14,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 60
+    },
+    "n": 408,
+    "pf": 1.421,
+    "t": 2.53,
+    "exp": 0.0261,
+    "years_pos": "7/9",
+    "bp": 4.16
+   },
+   {
+    "neighbor": "lim 48m",
+    "params": {
+     "entry_time": "13:30",
+     "entry_tz": "NY",
+     "weekdays": [
+      4
+     ],
+     "exit_time": "16:45",
+     "exit_tz": "NY",
+     "exit_days": 0,
+     "side": 1,
+     "stop_atr": 3.0,
+     "atr_n": 14,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 48
+    },
+    "n": 404,
+    "pf": 1.425,
+    "t": 2.53,
+    "exp": 0.0316,
+    "years_pos": "6/9",
+    "bp": 4.21
+   },
+   {
+    "neighbor": "lim 72m",
+    "params": {
+     "entry_time": "13:30",
+     "entry_tz": "NY",
+     "weekdays": [
+      4
+     ],
+     "exit_time": "16:45",
+     "exit_tz": "NY",
+     "exit_days": 0,
+     "side": 1,
+     "stop_atr": 3.0,
+     "atr_n": 14,
+     "entry": "limit",
+     "limit_off": 0.0,
+     "limit_min": 72
+    },
+    "n": 411,
+    "pf": 1.436,
+    "t": 2.62,
+    "exp": 0.0323,
+    "years_pos": "7/9",
+    "bp": 4.29
+   },
+   {
+    "neighbor": "off 0.1",
+    "params": {
+     "entry_time": "13:30",
+     "entry_tz": "NY",
+     "weekdays": [
+      4
+     ],
+     "exit_time": "16:45",
+     "exit_tz": "NY",
+     "exit_days": 0,
+     "side": 1,
+     "stop_atr": 3.0,
+     "atr_n": 14,
+     "entry": "limit",
+     "limit_off": 0.1,
+     "limit_min": 60
+    },
+    "n": 324,
+    "pf": 1.549,
+    "t": 2.86,
+    "exp": 0.039,
+    "years_pos": "7/9",
+    "bp": 4.66
+   }
+  ]
+ },
+ "btc": {
+  "neighbors": [
+   {
+    "neighbor": "exit 18:30",
+    "params": {
+     "tz": "NY",
+     "entry": "17:05",
+     "exit": "18:30",
+     "weekdays": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "side": 1,
+     "stop_atr": 2.0,
+     "atr_tf": "1h"
+    },
+    "n": 1345,
+    "pf": 1.152,
+    "t": 1.88,
+    "exp": 0.0209,
+    "years_pos": "4/5",
+    "bp": 6.32
+   },
+   {
+    "neighbor": "exit 19:30",
+    "params": {
+     "tz": "NY",
+     "entry": "17:05",
+     "exit": "19:30",
+     "weekdays": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "side": 1,
+     "stop_atr": 2.0,
+     "atr_tf": "1h"
+    },
+    "n": 1345,
+    "pf": 1.195,
+    "t": 2.34,
+    "exp": 0.036,
+    "years_pos": "4/5",
+    "bp": 7.04
+   },
+   {
+    "neighbor": "Mon-Fri only",
+    "params": {
+     "tz": "NY",
+     "entry": "17:05",
+     "exit": "19:00",
+     "weekdays": [
+      0,
+      1,
+      2,
+      3,
+      4
+     ],
+     "side": 1,
+     "stop_atr": 2.0,
+     "atr_tf": "1h"
+    },
+    "n": 1022,
+    "pf": 1.138,
+    "t": 1.48,
+    "exp": 0.0209,
+    "years_pos": "3/5",
+    "bp": 6.82
+   }
+  ]
+ },
+ "month_end": {
+  "median_neighbor_pf": 1.9329999999999998,
+  "median_neighbor_pf_by_sleeve": {
+   "us500": 1.767,
+   "us100": 2.019,
+   "ger40": 1.9195000000000002
+  },
+  "neighbors": [
+   {
+    "neighbor": "stop 0.8",
+    "us": {
+     "stop_atr": 0.8
+    },
+    "de": {
+     "stop_atr": 0.8
+    },
+    "basket_n": 282,
+    "basket_pf": 1.852,
+    "basket_t": 4.06,
+    "basket_exp": 0.151,
+    "basket_years_pos": "6/9",
+    "sleeves": {
+     "us500": {
+      "n": 95,
+      "pf": 1.737,
+      "t": 2.11,
+      "exp": 0.1439
+     },
+     "us100": {
+      "n": 95,
+      "pf": 1.996,
+      "t": 2.66,
+      "exp": 0.1646
+     },
+     "ger40": {
+      "n": 92,
+      "pf": 1.842,
+      "t": 2.26,
+      "exp": 0.1444
+     }
+    }
+   },
+   {
+    "neighbor": "stop 1.2",
+    "us": {
+     "stop_atr": 1.2
+    },
+    "de": {
+     "stop_atr": 1.2
+    },
+    "basket_n": 282,
+    "basket_pf": 1.999,
+    "basket_t": 4.46,
+    "basket_exp": 0.1111,
+    "basket_years_pos": "6/9",
+    "sleeves": {
+     "us500": {
+      "n": 95,
+      "pf": 1.994,
+      "t": 2.56,
+      "exp": 0.1146
+     },
+     "us100": {
+      "n": 95,
+      "pf": 2.007,
+      "t": 2.63,
+      "exp": 0.1117
+     },
+     "ger40": {
+      "n": 92,
+      "pf": 1.997,
+      "t": 2.5,
+      "exp": 0.1066
+     }
+    }
+   },
+   {
+    "neighbor": "entry earlier",
+    "us": {
+     "entry": "15:30"
+    },
+    "de": {
+     "entry": "17:00"
+    },
+    "basket_n": 282,
+    "basket_pf": 1.882,
+    "basket_t": 4.14,
+    "basket_exp": 0.1285,
+    "basket_years_pos": "6/9",
+    "sleeves": {
+     "us500": {
+      "n": 95,
+      "pf": 1.797,
+      "t": 2.2,
+      "exp": 0.1246
+     },
+     "us100": {
+      "n": 95,
+      "pf": 2.031,
+      "t": 2.72,
+      "exp": 0.138
+     },
+     "ger40": {
+      "n": 92,
+      "pf": 1.835,
+      "t": 2.25,
+      "exp": 0.1226
+     }
+    }
+   },
+   {
+    "neighbor": "entry later",
+    "us": {
+     "entry": "16:10"
+    },
+    "de": {
+     "entry": "17:45"
+    },
+    "basket_n": 207,
+    "basket_pf": 2.109,
+    "basket_t": 4.16,
+    "basket_exp": 0.1318,
+    "basket_years_pos": "7/9",
+    "sleeves": {
+     "us500": {
+      "n": 58,
+      "pf": 2.111,
+      "t": 2.18,
+      "exp": 0.1335
+     },
+     "us100": {
+      "n": 58,
+      "pf": 2.129,
+      "t": 2.23,
+      "exp": 0.1278
+     },
+     "ger40": {
+      "n": 91,
+      "pf": 2.097,
+      "t": 2.74,
+      "exp": 0.1332
+     }
+    }
+   },
+   {
+    "neighbor": "exit earlier",
+    "us": {
+     "exit": "09:00"
+    },
+    "de": {
+     "exit": "08:30"
+    },
+    "basket_n": 282,
+    "basket_pf": 1.798,
+    "basket_t": 3.77,
+    "basket_exp": 0.1089,
+    "basket_years_pos": "6/9",
+    "sleeves": {
+     "us500": {
+      "n": 95,
+      "pf": 1.663,
+      "t": 1.88,
+      "exp": 0.1008
+     },
+     "us100": {
+      "n": 95,
+      "pf": 1.984,
+      "t": 2.56,
+      "exp": 0.1253
+     },
+     "ger40": {
+      "n": 92,
+      "pf": 1.773,
+      "t": 2.09,
+      "exp": 0.1004
+     }
+    }
+   },
+   {
+    "neighbor": "exit later",
+    "us": {
+     "exit": "10:00"
+    },
+    "de": {
+     "exit": "09:30"
+    },
+    "basket_n": 282,
+    "basket_pf": 1.984,
+    "basket_t": 4.56,
+    "basket_exp": 0.1471,
+    "basket_years_pos": "6/9",
+    "sleeves": {
+     "us500": {
+      "n": 95,
+      "pf": 1.693,
+      "t": 2.0,
+      "exp": 0.1158
+     },
+     "us100": {
+      "n": 95,
+      "pf": 2.048,
+      "t": 2.83,
+      "exp": 0.1595
+     },
+     "ger40": {
+      "n": 92,
+      "pf": 2.295,
+      "t": 3.12,
+      "exp": 0.1666
+     }
+    }
+   }
+  ]
+ }
+}

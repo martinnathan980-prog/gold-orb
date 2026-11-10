@@ -1,0 +1,26 @@
+[ 42] F:prem-full        us500   n= 268 pf=1.602 t=+2.65 expR=+0.0419 win=0.57 yrs=8/9 bps=+4.26 L=+11.2 S=+0.0 hold=0.3h dd=2.8 | stress pf=1.502 gross bps=5.4 gross pf=1.822 every expR=0.0419  (2s)
+--- us500: exits {'time': 267, 'stop': 1} | R: min -1.01 p5 -0.36 med 0.032 p95 0.44 max 1.34 sd 0.259
+    stop distance bp: median 101; MAE/stop: p50 0.10 p90 0.42 p99 0.87 max 0.91
+    cpi   {'n': 100, 'net_bps': np.float64(-0.15), 'gross_bps': np.float64(1.01), 'expR': np.float64(0.0012), 't': 0.08, 'win': np.float64(0.52)}
+    fomc  {'n': 68, 'net_bps': np.float64(8.85), 'gross_bps': np.float64(9.92), 'expR': np.float64(0.0958), 't': 2.13, 'win': np.float64(0.62)}
+    nfp   {'n': 100, 'net_bps': np.float64(5.55), 'gross_bps': np.float64(6.71), 'expR': np.float64(0.046), 't': 1.92, 'win': np.float64(0.58)}
+    by year: {2013: (18, 1.86, 9.66), 2014: (30, 2.65, 7.73), 2015: (32, -0.2, -1.28), 2016: (32, 0.2, 0.06), 2017: (31, 2.08, 4.02), 2018: (32, 0.07, -0.75), 2019: (31, 1.84, 6.41), 2020: (30, 0.75, 4.89), 2021: (32, 1.98, 10.29)}
+    GROSS bps/trade: first half (2013-06..2017-06) +4.81 (t +1.69, n 127) | second half (2017-07..2021-12) +5.93 (t +2.51, n 141)
+    NET   bps/trade: first half +3.64 | second half +4.82 ; net R first +0.0484 second +0.0360
+    worst: [('2021-06-16 17:55', 'fomc', -1.01, -70.7, 'stop'), ('2015-10-02 12:27', 'nfp', -0.8, -147.9, 'time'), ('2015-10-28 17:55', 'fomc', -0.77, -75.0, 'time'), ('2018-02-14 13:25', 'cpi', -0.61, -138.3, 'time'), ('2018-12-19 18:55', 'fomc', -0.51, -114.1, 'time')]
+    best:  [('2015-03-18 17:55', 'fomc', 1.34, 136.9, 'time'), ('2013-12-18 18:55', 'fomc', 1.06, 88.0, 'time'), ('2013-09-18 17:56', 'fomc', 0.92, 91.0, 'time'), ('2014-12-17 18:55', 'fomc', 0.75, 90.5, 'time'), ('2015-05-08 12:25', 'nfp', 0.61, 68.3, 'time')]
+    t winsorised(2.5%) +2.98 | t without 5 best +1.78 | sign test: 152/268 wins
+    criteria: {'n>=250': True, 'pf>=1.12': True, 't>=2.5': True, 'years_pos>=60%': True, 'max_hold<=5d': True, 'stress_pf>=1.04': True, 'every_signal_exp>0': True, 'pass': True}
+[ 43] F:prem-full        us100   n= 267 pf=1.639 t=+2.75 expR=+0.0407 win=0.60 yrs=7/9 bps=+5.04 L=+10.9 S=+0.0 hold=0.3h dd=2.3 | stress pf=1.565 gross bps=6.02 gross pf=1.798 every expR=0.0407  (2s)
+--- us100: exits {'time': 267} | R: min -0.73 p5 -0.33 med 0.035 p95 0.45 max 1.21 sd 0.242
+    stop distance bp: median 130; MAE/stop: p50 0.09 p90 0.35 p99 0.83 max 0.92
+    cpi   {'n': 101, 'net_bps': np.float64(0.6), 'gross_bps': np.float64(1.6), 'expR': np.float64(0.0023), 't': 0.13, 'win': np.float64(0.55)}
+    fomc  {'n': 68, 'net_bps': np.float64(11.45), 'gross_bps': np.float64(12.37), 'expR': np.float64(0.0952), 't': 2.36, 'win': np.float64(0.68)}
+    nfp   {'n': 98, 'net_bps': np.float64(5.17), 'gross_bps': np.float64(6.18), 'expR': np.float64(0.0425), 't': 1.89, 'win': np.float64(0.6)}
+    by year: {2013: (17, 1.52, 9.02), 2014: (30, 2.9, 9.34), 2015: (31, 0.53, 0.17), 2016: (32, 0.23, -0.87), 2017: (31, 1.78, 5.3), 2018: (32, -0.2, -0.32), 2019: (32, 1.79, 7.61), 2020: (30, -0.1, -0.09), 2021: (32, 2.44, 16.9)}
+    GROSS bps/trade: first half (2013-06..2017-06) +5.07 (t +1.80, n 125) | second half (2017-07..2021-12) +6.86 (t +2.19, n 142)
+    NET   bps/trade: first half +4.06 | second half +5.90 ; net R first +0.0522 second +0.0306
+    worst: [('2021-06-16 17:55', 'fomc', -0.73, -79.5, 'time'), ('2015-10-02 12:27', 'nfp', -0.7, -153.8, 'time'), ('2015-10-28 17:55', 'fomc', -0.67, -83.8, 'time'), ('2018-02-14 13:25', 'cpi', -0.64, -158.7, 'time'), ('2018-12-19 18:55', 'fomc', -0.59, -152.9, 'time')]
+    best:  [('2015-03-18 17:55', 'fomc', 1.21, 128.3, 'time'), ('2013-12-18 18:55', 'fomc', 0.96, 82.1, 'time'), ('2021-05-07 12:25', 'nfp', 0.77, 119.1, 'time'), ('2014-12-17 18:55', 'fomc', 0.7, 97.8, 'time'), ('2019-03-20 17:55', 'fomc', 0.61, 72.4, 'time')]
+    t winsorised(2.5%) +3.02 | t without 5 best +1.91 | sign test: 161/267 wins
+    criteria: {'n>=250': True, 'pf>=1.12': True, 't>=2.5': True, 'years_pos>=60%': True, 'max_hold<=5d': True, 'stress_pf>=1.04': True, 'every_signal_exp>0': True, 'pass': True}

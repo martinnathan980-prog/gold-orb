@@ -1,0 +1,130 @@
+{
+ "stage": "D-neighbours",
+ "declared_before_running": true,
+ "sym": "xauusd",
+ "base": {
+  "SQ": {
+   "family": "donch",
+   "tf": 60,
+   "atr_n": 14,
+   "max_days": 5,
+   "n": 24,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "squeeze": 0.7,
+   "squeeze_ref": 480
+  },
+  "TR": {
+   "family": "donch",
+   "tf": 60,
+   "atr_n": 14,
+   "max_days": 5,
+   "n": 48,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "trend_n": 240
+  }
+ },
+ "neighbours": {
+  "SQ": {
+   "n=19": {
+    "n": 19
+   },
+   "n=29": {
+    "n": 29
+   },
+   "squeeze=0.56": {
+    "squeeze": 0.56
+   },
+   "squeeze=0.84": {
+    "squeeze": 0.84
+   },
+   "squeeze_ref=384": {
+    "squeeze_ref": 384
+   },
+   "squeeze_ref=576": {
+    "squeeze_ref": 576
+   },
+   "stop_atr=1.6": {
+    "stop_atr": 1.6
+   },
+   "stop_atr=2.4": {
+    "stop_atr": 2.4
+   },
+   "trail_atr=1.6": {
+    "trail_atr": 1.6
+   },
+   "trail_atr=2.4": {
+    "trail_atr": 2.4
+   },
+   "atr_n=11": {
+    "atr_n": 11
+   },
+   "atr_n=17": {
+    "atr_n": 17
+   },
+   "max_days=4": {
+    "max_days": 4
+   }
+  },
+  "TR": {
+   "n=38": {
+    "n": 38
+   },
+   "n=58": {
+    "n": 58
+   },
+   "trend_n=192": {
+    "trend_n": 192
+   },
+   "trend_n=288": {
+    "trend_n": 288
+   },
+   "stop_atr=1.6": {
+    "stop_atr": 1.6
+   },
+   "stop_atr=2.4": {
+    "stop_atr": 2.4
+   },
+   "trail_atr=1.6": {
+    "trail_atr": 1.6
+   },
+   "trail_atr=2.4": {
+    "trail_atr": 2.4
+   },
+   "atr_n=11": {
+    "atr_n": 11
+   },
+   "atr_n=17": {
+    "atr_n": 17
+   },
+   "max_days=4": {
+    "max_days": 4
+   }
+  }
+ },
+ "controls": {
+  "SQ": {
+   "ctrl_no_squeeze": {
+    "squeeze": 0.0,
+    "squeeze_ref": 0
+   },
+   "ctrl_2h_bars": {
+    "tf": 120,
+    "n": 12,
+    "squeeze_ref": 240
+   }
+  },
+  "TR": {
+   "ctrl_no_trend": {
+    "trend_n": 0
+   },
+   "ctrl_2h_bars": {
+    "tf": 120,
+    "n": 24,
+    "trend_n": 120
+   }
+  }
+ },
+ "rationale": "Stage D -- neighbour robustness of the two shortlisted rules on gold (declared before running).\n\nShortlist after stages A-C (gold in-sample, FP costs):\n  SQ  = B5_sq1h_n24_07       volatility-contraction breakout (1h bars, 24-bar channel, width <= 0.7 x its\n                             20-day median) -- the only stage-B pass that is NOT mostly inside legacy trades\n                             (13 % of its trades, weekly-R correlation 0.15).\n  TR  = B3_d1h_n48_tr240_k2  2-day channel breakout taken only on the side of the 10-day channel state --\n                             of the channel variants that pass, the one that duplicates the legacy sleeve\n                             least (weekly-R correlation 0.57) and trades most (133 / year, 9/9 years).\nNot shortlisted: B1 n240 (98 % of trades inside legacy trades), B1 n120 k3 (correlation 0.77).\n\nNeighbours: each tuned parameter at -20 % / +20 % (max_days: adjacent value 4), one at a time.\nControls (reported, not part of the neighbour median): the rule with its defining condition switched off,\nand the same channel duration on 2h bars."
+}

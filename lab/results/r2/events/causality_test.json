@@ -1,0 +1,44 @@
+{
+ "us500:long_pre_hold": {
+  "cuts": 8,
+  "orders_compared": 1680,
+  "mismatching_cuts": 0
+ },
+ "us500:long_pre_close": {
+  "cuts": 8,
+  "orders_compared": 1680,
+  "mismatching_cuts": 0
+ },
+ "us500:mom_fomc_close": {
+  "cuts": 8,
+  "orders_compared": 423,
+  "mismatching_cuts": 0
+ },
+ "us500:mom_nextday": {
+  "cuts": 8,
+  "orders_compared": 1080,
+  "mismatching_cuts": 0
+ },
+ "us500:fade": {
+  "cuts": 8,
+  "orders_compared": 616,
+  "mismatching_cuts": 0
+ },
+ "us500:brk": {
+  "cuts": 8,
+  "orders_compared": 1559,
+  "mismatching_cuts": 0
+ },
+ "us500:EV_PREM_LONG(finalist)": {
+  "cuts": 12,
+  "orders_compared": 1950,
+  "mismatching_cuts": 0
+ },
+ "us500:short_frame_equals_full": true,
+ "us100:EV_PREM_LONG(finalist)": {
+  "cuts": 12,
+  "orders_compared": 1939,
+  "mismatching_cuts": 0
+ },
+ "us100:short_frame_equals_full": true
+}

@@ -1,0 +1,39 @@
+{
+ "dukascopy_spread_fp_slippage": {
+  "n": 1048,
+  "pf": 1.115,
+  "t_stat": 1.33,
+  "expectancy_R": 0.0441,
+  "years_pos": "6/9",
+  "long_R": 8.5,
+  "short_R": 37.7
+ },
+ "dukascopy_spread_fp_slippage_every_signal": {
+  "n": 1862,
+  "pf": 1.157,
+  "t_stat": 2.38,
+  "expectancy_R": 0.0592,
+  "years_pos": "6/9",
+  "long_R": 32.2,
+  "short_R": 78.1
+ },
+ "round1_conservative": {
+  "n": 1049,
+  "pf": 1.006,
+  "t_stat": 0.07,
+  "expectancy_R": 0.0023,
+  "years_pos": "5/9",
+  "long_R": -12.2,
+  "short_R": 14.6
+ },
+ "round1_conservative_every_signal": {
+  "n": 1862,
+  "pf": 1.041,
+  "t_stat": 0.66,
+  "expectancy_R": 0.0164,
+  "years_pos": "5/9",
+  "long_R": -6.9,
+  "short_R": 37.5
+ },
+ "median_dukascopy_spread_usd_is": 0.301
+}

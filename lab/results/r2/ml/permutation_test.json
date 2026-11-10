@@ -1,0 +1,61 @@
+{
+ "n_perm": 500,
+ "q": "0.5",
+ "statistic": "mean R of selected OOF candidates minus mean R of all OOF candidates (every candidate on its own)",
+ "us100": {
+  "real_gain_R": 0.0044,
+  "perm_mean": -0.0,
+  "perm_sd": 0.0171,
+  "perm_p95": 0.0285,
+  "perm_max": 0.0554,
+  "percentile_of_real": 61.6
+ },
+ "ger40": {
+  "real_gain_R": 0.0119,
+  "perm_mean": 0.001,
+  "perm_sd": 0.017,
+  "perm_p95": 0.0292,
+  "perm_max": 0.0491,
+  "percentile_of_real": 73.8
+ },
+ "xauusd": {
+  "real_gain_R": -0.0257,
+  "perm_mean": -0.0002,
+  "perm_sd": 0.0192,
+  "perm_p95": 0.0311,
+  "perm_max": 0.0648,
+  "percentile_of_real": 9.6
+ },
+ "btcusd": {
+  "real_gain_R": 0.1056,
+  "perm_mean": 0.0014,
+  "perm_sd": 0.0311,
+  "perm_p95": 0.0514,
+  "perm_max": 0.0872,
+  "percentile_of_real": 100.0
+ },
+ "pool4": {
+  "real_gain_R": 0.026,
+  "perm_mean": 0.0026,
+  "perm_sd": 0.0107,
+  "perm_p95": 0.0197,
+  "perm_max": 0.0398,
+  "percentile_of_real": 99.0
+ },
+ "ethusd": {
+  "real_gain_R": 0.0907,
+  "perm_mean": 0.0022,
+  "perm_sd": 0.0238,
+  "perm_p95": 0.0425,
+  "perm_max": 0.0697,
+  "percentile_of_real": 100.0
+ },
+ "btc+eth": {
+  "real_gain_R": 0.1004,
+  "perm_mean": 0.0013,
+  "perm_sd": 0.0199,
+  "perm_p95": 0.0352,
+  "perm_max": 0.0664,
+  "percentile_of_real": 100.0
+ }
+}

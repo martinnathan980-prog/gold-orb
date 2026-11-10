@@ -1,0 +1,21 @@
+{
+ "_note": "leadlag track - grids declared BEFORE any engine evaluation (2026-11-10), after the in-sample descriptive study (results/r2/leadlag/descriptive/). Budget 120 logged evaluations in total.",
+ "descriptive_summary": {
+  "us_indices_1_15min_leadlag": "no effect above cost at the 1% tails (<= ~1 bp vs 0.8-1.2 bp round trip): NOT turned into a rule",
+  "gold_silver": "silver after gold: 0.4-4 bp at the 1% tail vs 6.7 bp cost; gold after silver: 0.3-1.1 bp vs 1.3 bp: NOT turned into a rule",
+  "btc_eth": "1-minute burst continuation (own and cross) 3-7 bp at the 1% tail vs 3.1 bp (BTC) / 7.8 bp (ETH) cost; only the 0.1% tail clears 2x cost: 2-3 confirmatory trials on BTC only",
+  "nasdaq_to_btc": "after a 1% -tail Nasdaq move in US cash hours bitcoin drifts +6 to +8 bp over 15-30 min (t 4-5, cost 3.2 bp): rule family R1",
+  "dax_vs_sp500": "DAX moves not matched by the S&P revert in thin hours (08:00-09:00 Berlin: +6 bp / 30 min at the 1% tail, 8/8 years; 17:30-22:00 Berlin: +1.5 to +3 bp), cost 1.2 bp: rule family R2; mirror on us500 in Xetra hours (+2.2 bp / 30 min vs 1.1 bp)",
+  "relative_strength_us": "strongest-minus-weakest of us100/us500/us30 ranked at 10:00 NY on the return since 09:30 continues to the close: +2.7 bp (t 2.9), +8 bp on the top quartile of dispersion (t 3.2) vs ~2 bp for two legs: rule family R3 (task-specified)"
+ },
+ "R1_nasdaq_to_btc": {"rule": "xlead", "sym": "btcusd", "fixed": {"leader": "us100", "pred": "lead", "sess": "uscash", "dirn": 1},
+   "stage1": {"k": [1, 5], "z": [4, 5, 6], "hold": [15, 30], "stop": [2.0]},
+   "stage2": "on the best 1-2 cells: stop 1.0 / 3.0, hold 60; then full evaluation, neighbours, null"},
+ "R2_dax_resid": {"rule": "xlead", "sym": "ger40", "fixed": {"leader": "us500", "pred": "resid", "dirn": 1, "hold": 30, "stop": 2.0},
+   "stage1": {"eu_am": {"k": [5, 15], "z": [3, 4]}, "eurex_pm": {"k": [5, 15], "z": [2, 3]}},
+   "stage2": "best cells: stop 1.0 / 3.0, hold 15 / 60, ablation pred=own; mirror us500 (leader ger40, sess xetra, k 5, z 4 and 5)"},
+ "R3_relative_strength": {"rule": "relstr", "syms": ["us100", "us500", "us30"], "fixed": {"T": 600, "ref": "open", "xmin": 959, "stop": 3.0},
+   "stage1": {"disp": [0.0, 1.0, 1.5]}, "stage2": "if promising: T 630, ref prevclose"},
+ "R4_crypto_burst": {"rule": "xlead", "sym": "btcusd", "fixed": {"leader": "ethusd", "pred": "lead", "k": 1, "sess": "all", "dirn": 1, "hold": 5, "stop": 2.0},
+   "stage1": {"z": [5, 8]}}
+}

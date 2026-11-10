@@ -1,0 +1,42 @@
+{
+ "us500:time": {
+  "n": 268,
+  "mode": "time",
+  "rule_mean_R": 0.0419,
+  "null_mean_R": -0.0096,
+  "null_p95_R": 0.0046,
+  "null_max_R": 0.0163,
+  "percentile": 100.0,
+  "pass": true
+ },
+ "us500:day": {
+  "n": 268,
+  "mode": "day",
+  "rule_mean_R": 0.0419,
+  "null_mean_R": -0.0111,
+  "null_p95_R": 0.0053,
+  "null_max_R": 0.0166,
+  "percentile": 100.0,
+  "pass": true
+ },
+ "us100:time": {
+  "n": 267,
+  "mode": "time",
+  "rule_mean_R": 0.0407,
+  "null_mean_R": -0.0066,
+  "null_p95_R": 0.0043,
+  "null_max_R": 0.013,
+  "percentile": 100.0,
+  "pass": true
+ },
+ "us100:day": {
+  "n": 267,
+  "mode": "day",
+  "rule_mean_R": 0.0407,
+  "null_mean_R": -0.0062,
+  "null_p95_R": 0.0076,
+  "null_max_R": 0.0147,
+  "percentile": 100.0,
+  "pass": true
+ }
+}

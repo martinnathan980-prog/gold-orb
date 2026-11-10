@@ -1,0 +1,33 @@
+{
+ "params": {
+  "rule": "xlead",
+  "leader": "us100",
+  "pred": "lead",
+  "sess": "uscash",
+  "dirn": 1,
+  "k": 1,
+  "z": 6,
+  "hold": 60,
+  "stop": 2.0
+ },
+ "day": {
+  "n": 1063,
+  "mode": "day",
+  "rule_mean_R": 0.0724,
+  "null_mean_R": -0.0214,
+  "null_p95_R": 0.0145,
+  "null_max_R": 0.0338,
+  "percentile": 100.0,
+  "pass": true
+ },
+ "time": {
+  "n": 1063,
+  "mode": "time",
+  "rule_mean_R": 0.0724,
+  "null_mean_R": -0.0242,
+  "null_p95_R": 0.0037,
+  "null_max_R": 0.0522,
+  "percentile": 100.0,
+  "pass": true
+ }
+}

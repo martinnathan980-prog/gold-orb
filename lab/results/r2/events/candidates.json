@@ -1,0 +1,766 @@
+{
+ "track": "events",
+ "n_trials_logged": 78,
+ "n_distinct_sym_params": 75,
+ "verdict": "NOTHING SURVIVES: the only rule that passed the in-sample criteria failed the single-shot validation.",
+ "finalists": {
+  "EV_PREM_LONG": {
+   "rule": "Buy at market 5 minutes before every scheduled FOMC statement (14:00 NY), NFP and CPI release (08:30 NY); stop 1.0 x ATR_D(14) below the fill; time exit 15 minutes after the release.",
+   "params": {
+    "rule": "long",
+    "kinds": "fomc+nfp+cpi",
+    "lead": 5,
+    "exit": "hold",
+    "hold": 15,
+    "stop_atr": 1.0,
+    "atr_n": 14
+   },
+   "syms": [
+    "us500",
+    "us100"
+   ],
+   "sleeves": {
+    "us500": {
+     "is": {
+      "n": 268,
+      "trades_per_year": 31.4,
+      "win_rate": 0.567,
+      "avg_win_R": 0.197,
+      "avg_loss_R": -0.161,
+      "expectancy_R": 0.0419,
+      "t_stat": 2.65,
+      "pf": 1.602,
+      "total_R": 11.2,
+      "max_dd_R": 2.8,
+      "years_pos": "8/9",
+      "weeks_pos_pct": 29.1,
+      "weeks_neg_pct": 23.1,
+      "months_pos_pct": 66.0,
+      "worst_week_R": -1.0,
+      "long_n": 268,
+      "long_R": 11.2,
+      "short_n": 0,
+      "short_R": 0.0,
+      "avg_hold_h": 0.3,
+      "max_hold_h": 0.6,
+      "pf_ret": 1.54,
+      "equity_x_0.5pct": 1.06,
+      "cagr_0.5pct": 0.7,
+      "maxdd_0.5pct": 1.4,
+      "by_year_R": {
+       "2013": 1.9,
+       "2014": 2.6,
+       "2015": -0.2,
+       "2016": 0.2,
+       "2017": 2.1,
+       "2018": 0.1,
+       "2019": 1.8,
+       "2020": 0.8,
+       "2021": 2.0
+      }
+     },
+     "is_bps_per_trade": 4.26,
+     "is_gross_bps_per_trade": 5.4,
+     "is_gross_pf": 1.822,
+     "is_stress_pf": 1.502,
+     "is_every_signal_expR": 0.0419,
+     "neighbor_median_pf": 1.574,
+     "null_percentile": 100.0,
+     "gross_bps_first_half": 4.81,
+     "gross_bps_second_half": 5.93,
+     "median_stop_2024_25": 66.22,
+     "min_lot_stop_money_usd": 6.62,
+     "is_criteria": {
+      "n>=250": true,
+      "pf>=1.12": true,
+      "t>=2.5": true,
+      "years_pos>=60%": true,
+      "max_hold<=5d": true,
+      "stress_pf>=1.04": true,
+      "every_signal_exp>0": true,
+      "neighbors_median_pf>=1.06": true,
+      "pass": true
+     },
+     "val": {
+      "n": 126,
+      "trades_per_year": 31.9,
+      "win_rate": 0.532,
+      "avg_win_R": 0.293,
+      "avg_loss_R": -0.366,
+      "expectancy_R": -0.0157,
+      "t_stat": -0.4,
+      "pf": 0.909,
+      "total_R": -2.0,
+      "max_dd_R": 6.1,
+      "years_pos": "2/4",
+      "weeks_pos_pct": 30.0,
+      "weeks_neg_pct": 24.2,
+      "months_pos_pct": 52.1,
+      "worst_week_R": -1.2,
+      "long_n": 126,
+      "long_R": -2.0,
+      "short_n": 0,
+      "short_R": 0.0,
+      "avg_hold_h": 0.3,
+      "max_hold_h": 0.3,
+      "pf_ret": 0.784,
+      "equity_x_0.5pct": 0.99,
+      "cagr_0.5pct": -0.3,
+      "maxdd_0.5pct": 3.0,
+      "by_year_R": {
+       "2022": -5.0,
+       "2023": 2.0,
+       "2024": -0.9,
+       "2025": 1.9
+      },
+      "exit_reasons": {
+       "time": 119,
+       "stop": 7
+      }
+     },
+     "val_bps_per_trade": -5.79,
+     "val_stress_pf": 0.885,
+     "val_every_signal_expR": -0.0157,
+     "val_criteria": {
+      "pf>=1.06": false,
+      "expectancy>0": false,
+      "every_signal_exp>0": false,
+      "pass": false
+     },
+     "val_by_kind": {
+      "cpi": {
+       "n": 47,
+       "net_bps": -0.88,
+       "expR": 0.0442,
+       "t": 0.52,
+       "win": 0.55
+      },
+      "fomc": {
+       "n": 32,
+       "net_bps": -15.7,
+       "expR": -0.1072,
+       "t": -1.84,
+       "win": 0.38
+      },
+      "nfp": {
+       "n": 47,
+       "net_bps": -3.96,
+       "expR": -0.0132,
+       "t": -0.28,
+       "win": 0.62
+      }
+     },
+     "val_by_year": {
+      "2022": {
+       "n": 32,
+       "R": -4.97,
+       "net_bps": -37.21
+      },
+      "2023": {
+       "n": 32,
+       "R": 2.03,
+       "net_bps": 7.26
+      },
+      "2024": {
+       "n": 32,
+       "R": -0.91,
+       "net_bps": -1.23
+      },
+      "2025": {
+       "n": 30,
+       "R": 1.87,
+       "net_bps": 8.93
+      }
+     }
+    },
+    "us100": {
+     "is": {
+      "n": 267,
+      "trades_per_year": 31.4,
+      "win_rate": 0.603,
+      "avg_win_R": 0.173,
+      "avg_loss_R": -0.16,
+      "expectancy_R": 0.0407,
+      "t_stat": 2.75,
+      "pf": 1.639,
+      "total_R": 10.9,
+      "max_dd_R": 2.3,
+      "years_pos": "7/9",
+      "weeks_pos_pct": 30.4,
+      "weeks_neg_pct": 21.8,
+      "months_pos_pct": 64.1,
+      "worst_week_R": -0.7,
+      "long_n": 267,
+      "long_R": 10.9,
+      "short_n": 0,
+      "short_R": 0.0,
+      "avg_hold_h": 0.3,
+      "max_hold_h": 0.6,
+      "pf_ret": 1.556,
+      "equity_x_0.5pct": 1.06,
+      "cagr_0.5pct": 0.6,
+      "maxdd_0.5pct": 1.1,
+      "by_year_R": {
+       "2013": 1.5,
+       "2014": 2.9,
+       "2015": 0.5,
+       "2016": 0.2,
+       "2017": 1.8,
+       "2018": -0.2,
+       "2019": 1.8,
+       "2020": -0.1,
+       "2021": 2.4
+      }
+     },
+     "is_bps_per_trade": 5.04,
+     "is_gross_bps_per_trade": 6.02,
+     "is_gross_pf": 1.798,
+     "is_stress_pf": 1.565,
+     "is_every_signal_expR": 0.0407,
+     "neighbor_median_pf": 1.6335,
+     "null_percentile": 100.0,
+     "gross_bps_first_half": 5.07,
+     "gross_bps_second_half": 6.86,
+     "median_stop_2024_25": 311.35,
+     "min_lot_stop_money_usd": 31.14,
+     "is_criteria": {
+      "n>=250": true,
+      "pf>=1.12": true,
+      "t>=2.5": true,
+      "years_pos>=60%": true,
+      "max_hold<=5d": true,
+      "stress_pf>=1.04": true,
+      "every_signal_exp>0": true,
+      "neighbors_median_pf>=1.06": true,
+      "pass": true
+     },
+     "val": {
+      "n": 126,
+      "trades_per_year": 31.9,
+      "win_rate": 0.54,
+      "avg_win_R": 0.262,
+      "avg_loss_R": -0.345,
+      "expectancy_R": -0.017,
+      "t_stat": -0.47,
+      "pf": 0.893,
+      "total_R": -2.1,
+      "max_dd_R": 6.3,
+      "years_pos": "2/4",
+      "weeks_pos_pct": 30.0,
+      "weeks_neg_pct": 24.2,
+      "months_pos_pct": 54.2,
+      "worst_week_R": -1.0,
+      "long_n": 126,
+      "long_R": -2.1,
+      "short_n": 0,
+      "short_R": 0.0,
+      "avg_hold_h": 0.3,
+      "max_hold_h": 0.3,
+      "pf_ret": 0.782,
+      "equity_x_0.5pct": 0.99,
+      "cagr_0.5pct": -0.3,
+      "maxdd_0.5pct": 3.1,
+      "by_year_R": {
+       "2022": -5.0,
+       "2023": 1.9,
+       "2024": -0.9,
+       "2025": 2.0
+      },
+      "exit_reasons": {
+       "time": 121,
+       "stop": 5
+      }
+     },
+     "val_bps_per_trade": -7.5,
+     "val_stress_pf": 0.877,
+     "val_every_signal_expR": -0.017,
+     "val_criteria": {
+      "pf>=1.06": false,
+      "expectancy>0": false,
+      "every_signal_exp>0": false,
+      "pass": false
+     },
+     "val_by_kind": {
+      "cpi": {
+       "n": 47,
+       "net_bps": 1.31,
+       "expR": 0.0504,
+       "t": 0.63,
+       "win": 0.57
+      },
+      "fomc": {
+       "n": 32,
+       "net_bps": -18.34,
+       "expR": -0.089,
+       "t": -1.84,
+       "win": 0.41
+      },
+      "nfp": {
+       "n": 47,
+       "net_bps": -8.94,
+       "expR": -0.0354,
+       "t": -0.79,
+       "win": 0.6
+      }
+     },
+     "val_by_year": {
+      "2022": {
+       "n": 32,
+       "R": -5.02,
+       "net_bps": -46.65
+      },
+      "2023": {
+       "n": 32,
+       "R": 1.86,
+       "net_bps": 8.41
+      },
+      "2024": {
+       "n": 32,
+       "R": -0.94,
+       "net_bps": -2.38
+      },
+      "2025": {
+       "n": 30,
+       "R": 1.96,
+       "net_bps": 11.82
+      }
+     }
+    }
+   },
+   "basket_is": {
+    "n_pooled": 535,
+    "pf_pooled": 1.62,
+    "expR_pooled": 0.0413,
+    "t_pooled_naive": 3.82,
+    "n_events": 269,
+    "t_event_clustered": 2.7,
+    "corr_R_us500_us100": 0.936,
+    "years_pos": "8/9"
+   },
+   "basket_val": {
+    "n_pooled": 252,
+    "pf_pooled": 0.901,
+    "expR_pooled": -0.0163,
+    "t_pooled_naive": -0.61,
+    "n_events": 126,
+    "t_event_clustered": -0.43,
+    "years_pos": "2/4"
+   },
+   "passes": false
+  }
+ },
+ "rejected_is": {
+  "gold FOMC reaction momentum (not sent to validation: n=70, edge gone after mid-2017)": [
+   {
+    "sym": "xauusd",
+    "tag": "C:fomc-mom",
+    "n": 70,
+    "pf": 1.99,
+    "t": 2.45,
+    "expR": 0.2841,
+    "bps": 22.54,
+    "years_pos": "6/9",
+    "params": {
+     "rule": "mom",
+     "kinds": "fomc",
+     "hold": 120,
+     "stop_atr": 0.5
+    }
+   },
+   {
+    "sym": "xauusd",
+    "tag": "C:fomc-mom",
+    "n": 70,
+    "pf": 1.903,
+    "t": 2.22,
+    "expR": 0.2607,
+    "bps": 20.84,
+    "years_pos": "6/9",
+    "params": {
+     "rule": "mom",
+     "kinds": "fomc",
+     "exit": "hhmm",
+     "stop_atr": 0.5
+    }
+   },
+   {
+    "sym": "xauusd",
+    "tag": "C:fomc-mom",
+    "n": 70,
+    "pf": 2.311,
+    "t": 2.57,
+    "expR": 0.6655,
+    "bps": 45.7,
+    "years_pos": "7/9",
+    "params": {
+     "rule": "mom",
+     "kinds": "fomc",
+     "exit": "hhmm",
+     "exit_days": 1,
+     "stop_atr": 0.5
+    }
+   },
+   {
+    "sym": "xauusd",
+    "tag": "C:fomc-mom",
+    "n": 70,
+    "pf": 2.078,
+    "t": 2.43,
+    "expR": 0.2365,
+    "bps": 14.86,
+    "years_pos": "7/9",
+    "params": {
+     "rule": "mom",
+     "kinds": "fomc",
+     "k": 30,
+     "exit": "hhmm",
+     "stop_atr": 0.5
+    }
+   },
+   {
+    "sym": "xauusd",
+    "tag": "C:fomc-mom",
+    "n": 70,
+    "pf": 2.611,
+    "t": 2.88,
+    "expR": 0.7092,
+    "bps": 45.01,
+    "years_pos": "6/9",
+    "params": {
+     "rule": "mom",
+     "kinds": "fomc",
+     "k": 30,
+     "exit": "hhmm",
+     "exit_days": 1,
+     "stop_atr": 0.5
+    }
+   },
+   {
+    "sym": "xauusd",
+    "tag": "F:mom-full",
+    "n": 70,
+    "pf": 2.311,
+    "t": 2.57,
+    "expR": 0.6655,
+    "bps": 45.7,
+    "years_pos": "7/9",
+    "params": {
+     "rule": "mom",
+     "kinds": "fomc",
+     "exit": "hhmm",
+     "exit_days": 1,
+     "stop_atr": 0.5
+    }
+   }
+  ],
+  "index long from T-5m to the close / from T+5m to the close": [
+   {
+    "sym": "us500",
+    "tag": "A:day",
+    "n": 262,
+    "pf": 1.17,
+    "t": 1.08,
+    "expR": 0.071,
+    "bps": 1.7,
+    "years_pos": "6/9",
+    "params": {
+     "exit": "hhmm",
+     "stop_atr": 0.5
+    }
+   },
+   {
+    "sym": "us500",
+    "tag": "A:day",
+    "n": 259,
+    "pf": 1.337,
+    "t": 1.86,
+    "expR": 0.0706,
+    "bps": 5.74,
+    "years_pos": "7/9",
+    "params": {
+     "exit": "hhmm"
+    }
+   },
+   {
+    "sym": "us100",
+    "tag": "A:day",
+    "n": 258,
+    "pf": 1.305,
+    "t": 1.81,
+    "expR": 0.1199,
+    "bps": 5.05,
+    "years_pos": "6/9",
+    "params": {
+     "exit": "hhmm",
+     "stop_atr": 0.5
+    }
+   },
+   {
+    "sym": "us100",
+    "tag": "A:day",
+    "n": 258,
+    "pf": 1.439,
+    "t": 2.33,
+    "expR": 0.0875,
+    "bps": 8.11,
+    "years_pos": "7/9",
+    "params": {
+     "exit": "hhmm"
+    }
+   },
+   {
+    "sym": "us500",
+    "tag": "A:post",
+    "n": 262,
+    "pf": 1.264,
+    "t": 1.51,
+    "expR": 0.0521,
+    "bps": 4.72,
+    "years_pos": "7/9",
+    "params": {
+     "lead": -5,
+     "exit": "hhmm"
+    }
+   },
+   {
+    "sym": "us100",
+    "tag": "A:post",
+    "n": 260,
+    "pf": 1.373,
+    "t": 2.03,
+    "expR": 0.0713,
+    "bps": 6.27,
+    "years_pos": "7/9",
+    "params": {
+     "lead": -5,
+     "exit": "hhmm"
+    }
+   }
+  ],
+  "gold long through the release": [
+   {
+    "sym": "xauusd",
+    "tag": "B:prem",
+    "n": 280,
+    "pf": 1.207,
+    "t": 1.16,
+    "expR": 0.0277,
+    "bps": 2.21,
+    "years_pos": "6/9",
+    "params": {}
+   },
+   {
+    "sym": "xauusd",
+    "tag": "B:day",
+    "n": 271,
+    "pf": 1.217,
+    "t": 1.28,
+    "expR": 0.0508,
+    "bps": 4.09,
+    "years_pos": "7/9",
+    "params": {
+     "exit": "hhmm"
+    }
+   }
+  ],
+  "reaction momentum, all releases": [
+   {
+    "sym": "xauusd",
+    "tag": "D:mom-all",
+    "n": 275,
+    "pf": 1.07,
+    "t": 0.46,
+    "expR": 0.026,
+    "bps": 2.65,
+    "years_pos": "4/9",
+    "params": {
+     "rule": "mom",
+     "exit": "hhmm",
+     "stop_atr": 0.5
+    }
+   },
+   {
+    "sym": "us500",
+    "tag": "D:mom-all",
+    "n": 263,
+    "pf": 0.836,
+    "t": -1.22,
+    "expR": -0.0709,
+    "bps": -3.63,
+    "years_pos": "2/9",
+    "params": {
+     "rule": "mom",
+     "exit": "hhmm",
+     "stop_atr": 0.5
+    }
+   },
+   {
+    "sym": "us100",
+    "tag": "D:mom-all",
+    "n": 261,
+    "pf": 0.941,
+    "t": -0.41,
+    "expR": -0.0246,
+    "bps": -1.02,
+    "years_pos": "2/9",
+    "params": {
+     "rule": "mom",
+     "exit": "hhmm",
+     "stop_atr": 0.5
+    }
+   }
+  ],
+  "breakout bracket on the pre-release range (active from T+2m)": [
+   {
+    "sym": "us100",
+    "tag": "D:brk",
+    "n": 265,
+    "pf": 0.923,
+    "t": -0.51,
+    "expR": -0.0235,
+    "bps": -2.29,
+    "years_pos": "4/9",
+    "params": {
+     "rule": "brk",
+     "k": 2,
+     "hold": 120,
+     "stop_atr": 0.5
+    }
+   },
+   {
+    "sym": "us500",
+    "tag": "D:brk",
+    "n": 267,
+    "pf": 0.814,
+    "t": -1.31,
+    "expR": -0.0614,
+    "bps": -3.38,
+    "years_pos": "3/9",
+    "params": {
+     "rule": "brk",
+     "k": 2,
+     "hold": 120,
+     "stop_atr": 0.5
+    }
+   },
+   {
+    "sym": "xauusd",
+    "tag": "D:brk",
+    "n": 271,
+    "pf": 0.939,
+    "t": -0.43,
+    "expR": -0.0229,
+    "bps": 0.04,
+    "years_pos": "5/9",
+    "params": {
+     "rule": "brk",
+     "k": 2,
+     "hold": 120,
+     "stop_atr": 0.5
+    }
+   }
+  ],
+  "pre-FOMC 24h drift (Lucca-Moench)": [
+   {
+    "sym": "us500",
+    "tag": "D:pre-fomc",
+    "n": 68,
+    "pf": 0.807,
+    "t": -0.63,
+    "expR": -0.0335,
+    "bps": 1.47,
+    "years_pos": "5/9",
+    "params": {
+     "kinds": "fomc",
+     "lead": 1440,
+     "hold": -5
+    }
+   },
+   {
+    "sym": "us100",
+    "tag": "D:pre-fomc",
+    "n": 68,
+    "pf": 1.061,
+    "t": 0.19,
+    "expR": 0.0112,
+    "bps": 2.07,
+    "years_pos": "4/9",
+    "params": {
+     "kinds": "fomc",
+     "lead": 1440,
+     "hold": -5
+    }
+   }
+  ],
+  "FOMC reaction momentum on the indices": [
+   {
+    "sym": "us500",
+    "tag": "D:fomc-mom-idx",
+    "n": 68,
+    "pf": 1.029,
+    "t": 0.09,
+    "expR": 0.0172,
+    "bps": 5.37,
+    "years_pos": "5/9",
+    "params": {
+     "rule": "mom",
+     "kinds": "fomc",
+     "exit": "hhmm",
+     "exit_days": 1,
+     "stop_atr": 0.5
+    }
+   },
+   {
+    "sym": "us100",
+    "tag": "D:fomc-mom-idx",
+    "n": 68,
+    "pf": 1.18,
+    "t": 0.56,
+    "expR": 0.0974,
+    "bps": 5.71,
+    "years_pos": "5/9",
+    "params": {
+     "rule": "mom",
+     "kinds": "fomc",
+     "exit": "hhmm",
+     "exit_days": 1,
+     "stop_atr": 0.5
+    }
+   }
+  ],
+  "fade of the NFP reaction on the indices": [
+   {
+    "sym": "us500",
+    "tag": "D:nfp-fade",
+    "n": 99,
+    "pf": 1.007,
+    "t": 0.02,
+    "expR": 0.001,
+    "bps": 1.28,
+    "years_pos": "5/9",
+    "params": {
+     "rule": "fade",
+     "kinds": "nfp",
+     "hold": 60,
+     "stop_atr": 0.5
+    }
+   },
+   {
+    "sym": "us100",
+    "tag": "D:nfp-fade",
+    "n": 98,
+    "pf": 1.349,
+    "t": 1.09,
+    "expR": 0.0404,
+    "bps": 3.78,
+    "years_pos": "5/9",
+    "params": {
+     "rule": "fade",
+     "kinds": "nfp",
+     "hold": 60,
+     "stop_atr": 0.5
+    }
+   }
+  ]
+ }
+}

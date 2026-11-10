@@ -1,0 +1,13 @@
+sym,cell,event_mean,other_mean,diff,t_diff
+us500,NFP+CPI days 08:25->15:55 vs other days,11.06,2.79,8.27,1.49
+us500,FOMC days 13:55->15:55 vs other days,3.29,0.38,2.91,0.34
+us500,all release days close->close vs other,12.08,4.85,7.23,1.18
+us500,NFP+CPI days prev close->08:25 vs other,0.31,3.25,-2.94,-0.77
+us100,NFP+CPI days 08:25->15:55 vs other days,15.7,2.37,13.33,1.89
+us100,FOMC days 13:55->15:55 vs other days,10.09,0.45,9.64,0.95
+us100,all release days close->close vs other,16.85,6.65,10.2,1.39
+us100,NFP+CPI days prev close->08:25 vs other,1.43,5.98,-4.55,-1.06
+xauusd,NFP+CPI days 08:25->15:55 vs other days,5.91,-2.76,8.67,1.39
+xauusd,FOMC days 13:55->15:55 vs other days,9.66,-0.86,10.52,0.89
+xauusd,all release days close->close vs other,9.94,-1.66,11.6,1.81
+xauusd,NFP+CPI days prev close->08:25 vs other,3.11,2.07,1.04,0.26

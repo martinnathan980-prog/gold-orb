@@ -1,0 +1,198 @@
+[
+ {
+  "name": "orb/S1_asia",
+  "n_r1": 2027,
+  "n_gold2": 2027,
+  "diff_entry_i": 0,
+  "diff_side": 0,
+  "diff_level": 0,
+  "diff_stop": 0,
+  "diff_exit_i": 52,
+  "exit_diff_examples": [
+   [
+    47136,
+    47135
+   ],
+   [
+    141189,
+    141188
+   ],
+   [
+    179291,
+    179290
+   ],
+   [
+    236696,
+    236695
+   ],
+   [
+    277534,
+    277533
+   ]
+  ]
+ },
+ {
+  "name": "orb/S2_ldn30",
+  "n_r1": 2287,
+  "n_gold2": 2287,
+  "diff_entry_i": 0,
+  "diff_side": 0,
+  "diff_level": 0,
+  "diff_stop": 0,
+  "diff_exit_i": 69,
+  "exit_diff_examples": [
+   [
+    20057,
+    20056
+   ],
+   [
+    47136,
+    47135
+   ],
+   [
+    141189,
+    141188
+   ],
+   [
+    179291,
+    179290
+   ],
+   [
+    236696,
+    236695
+   ]
+  ]
+ },
+ {
+  "name": "orb/S3_ldn60",
+  "n_r1": 2184,
+  "n_gold2": 2184,
+  "diff_entry_i": 0,
+  "diff_side": 0,
+  "diff_level": 0,
+  "diff_stop": 0,
+  "diff_exit_i": 66,
+  "exit_diff_examples": [
+   [
+    20057,
+    20056
+   ],
+   [
+    47136,
+    47135
+   ],
+   [
+    141189,
+    141188
+   ],
+   [
+    179291,
+    179290
+   ],
+   [
+    236696,
+    236695
+   ]
+  ]
+ },
+ {
+  "name": "orb/S6_us15",
+  "n_r1": 2305,
+  "n_gold2": 2305,
+  "diff_entry_i": 0,
+  "diff_side": 0,
+  "diff_level": 0,
+  "diff_stop": 0,
+  "diff_exit_i": 69,
+  "exit_diff_examples": [
+   [
+    20057,
+    20056
+   ],
+   [
+    47136,
+    47135
+   ],
+   [
+    141189,
+    141188
+   ],
+   [
+    179291,
+    179290
+   ],
+   [
+    236696,
+    236695
+   ]
+  ]
+ },
+ {
+  "name": "orb/F3_asia2d",
+  "n_r1": 1826,
+  "n_gold2": 1826,
+  "diff_entry_i": 0,
+  "diff_side": 0,
+  "diff_level": 0,
+  "diff_stop": 0,
+  "diff_exit_i": 87,
+  "exit_diff_examples": [
+   [
+    20057,
+    20056
+   ],
+   [
+    47136,
+    47135
+   ],
+   [
+    85362,
+    85361
+   ],
+   [
+    141189,
+    141188
+   ],
+   [
+    179291,
+    179290
+   ]
+  ]
+ },
+ {
+  "name": "pivots/rn100_break_fresh",
+  "n_r1": 228,
+  "n_gold2": 228,
+  "diff_entry_i": 0,
+  "diff_side": 0,
+  "diff_level": 0,
+  "diff_expiry_i": 0,
+  "diff_stop": 0,
+  "diff_target": 0,
+  "diff_exit_i": 0
+ },
+ {
+  "name": "trend/donch4h_stop",
+  "n_r1": 1660,
+  "n_gold2": 1660,
+  "diff_entry_i": 0,
+  "diff_side": 0,
+  "diff_level": 0,
+  "diff_expiry_i": 0,
+  "diff_stop_dist": 0,
+  "diff_trail": 0,
+  "diff_exit_i": 0
+ },
+ {
+  "name": "trend/donch1h_240",
+  "n_r1": 2726,
+  "n_gold2": 2726,
+  "diff_entry_i": 0,
+  "diff_side": 0,
+  "diff_level": 0,
+  "diff_expiry_i": 0,
+  "diff_stop_dist": 0,
+  "diff_trail": 0,
+  "diff_exit_i": 0
+ }
+]

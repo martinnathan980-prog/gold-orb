@@ -1,0 +1,1347 @@
+{
+ "decided_at_utc": "2026-11-10T11:20:17+00:00",
+ "track": "crypto",
+ "trials_logged_lines": 118,
+ "distinct_configurations": 94,
+ "validation_access_before_this_file": "none",
+ "finalists": {
+  "brk72_24h_wd": {
+   "syms": [
+    "btcusd",
+    "ethusd"
+   ],
+   "params": {
+    "family": "brk",
+    "n": 72,
+    "stop_atr": 3.0,
+    "hold_h": 24,
+    "dow": "weekday"
+   },
+   "rule": "H1 bars of mid prices on the UTC hour grid. At the end of each H1 bar whose end time falls on Monday-Friday (UTC), if no trade of this sleeve is open: go LONG at market if the close of the bar just finished is above the highest close of the previous 72 H1 bars, SHORT if it is below the lowest close of the previous 72 H1 bars. Initial and only stop: 3 x ATR(24) from the fill (ATR = mean true range of the last 24 H1 bars, frozen at the decision). No target, no trailing. Time exit at market 24 hours after the decision. A signal that arrives while a trade is open (including the minute at which that trade is closed by its time exit) is ignored. Signal skipped if no quote within 5 minutes after the bar end.",
+   "sleeves": {
+    "btcusd": {
+     "is": {
+      "n": 679,
+      "trades_per_year": 147.1,
+      "win_rate": 0.477,
+      "avg_win_R": 1.512,
+      "avg_loss_R": -0.777,
+      "expectancy_R": 0.3152,
+      "t_stat": 4.57,
+      "pf": 1.775,
+      "total_R": 214.0,
+      "max_dd_R": 10.7,
+      "years_pos": "5/5",
+      "weeks_pos_pct": 58.3,
+      "weeks_neg_pct": 41.3,
+      "months_pos_pct": 78.6,
+      "worst_week_R": -4.7,
+      "long_n": 381,
+      "long_R": 164.4,
+      "short_n": 298,
+      "short_R": 49.6,
+      "avg_hold_h": 20.9,
+      "max_hold_h": 93.0,
+      "pf_ret": 1.454,
+      "equity_x_0.5pct": 2.84,
+      "cagr_0.5pct": 25.3,
+      "maxdd_0.5pct": 5.2,
+      "by_year_R": {
+       "2017": 52.4,
+       "2018": 31.8,
+       "2019": 67.6,
+       "2020": 50.2,
+       "2021": 12.1
+      },
+      "exit_reasons": {
+       "time": 472,
+       "stop": 207
+      }
+     },
+     "is_bps_per_trade": 58.46,
+     "is_stress": {
+      "n": 679,
+      "trades_per_year": 147.1,
+      "win_rate": 0.477,
+      "avg_win_R": 1.505,
+      "avg_loss_R": -0.783,
+      "expectancy_R": 0.3086,
+      "t_stat": 4.48,
+      "pf": 1.753,
+      "total_R": 209.5,
+      "max_dd_R": 10.8,
+      "years_pos": "5/5",
+      "weeks_pos_pct": 57.9,
+      "weeks_neg_pct": 41.7,
+      "months_pos_pct": 78.6,
+      "worst_week_R": -4.8,
+      "long_n": 381,
+      "long_R": 162.1,
+      "short_n": 298,
+      "short_R": 47.4,
+      "avg_hold_h": 20.9,
+      "max_hold_h": 93.0,
+      "pf_ret": 1.44,
+      "equity_x_0.5pct": 2.77,
+      "cagr_0.5pct": 24.7,
+      "maxdd_0.5pct": 5.3,
+      "by_year_R": {
+       "2017": 52.0,
+       "2018": 31.0,
+       "2019": 66.0,
+       "2020": 49.1,
+       "2021": 11.4
+      },
+      "exit_reasons": {
+       "time": 471,
+       "stop": 208
+      }
+     },
+     "is_gross": {
+      "n": 679,
+      "trades_per_year": 147.1,
+      "win_rate": 0.485,
+      "avg_win_R": 1.53,
+      "avg_loss_R": -0.766,
+      "expectancy_R": 0.3464,
+      "t_stat": 4.99,
+      "pf": 1.877,
+      "total_R": 235.2,
+      "max_dd_R": 10.3,
+      "years_pos": "5/5",
+      "weeks_pos_pct": 59.1,
+      "weeks_neg_pct": 40.5,
+      "months_pos_pct": 76.8,
+      "worst_week_R": -4.7,
+      "long_n": 381,
+      "long_R": 179.7,
+      "short_n": 298,
+      "short_R": 55.6,
+      "avg_hold_h": 21.0,
+      "max_hold_h": 93.0,
+      "pf_ret": 1.523,
+      "equity_x_0.5pct": 3.15,
+      "cagr_0.5pct": 28.2,
+      "maxdd_0.5pct": 5.1,
+      "by_year_R": {
+       "2017": 54.3,
+       "2018": 34.7,
+       "2019": 74.0,
+       "2020": 56.5,
+       "2021": 15.7
+      },
+      "exit_reasons": {
+       "time": 476,
+       "stop": 203
+      }
+     },
+     "is_gross_bps_per_trade": 65.77,
+     "is_every_signal": {
+      "n": 3033,
+      "trades_per_year": 656.7,
+      "win_rate": 0.472,
+      "avg_win_R": 1.66,
+      "avg_loss_R": -0.769,
+      "expectancy_R": 0.3769,
+      "t_stat": 10.6,
+      "pf": 1.928,
+      "total_R": 1143.2,
+      "max_dd_R": 70.0,
+      "years_pos": "5/5",
+      "weeks_pos_pct": 45.5,
+      "weeks_neg_pct": 54.1,
+      "months_pos_pct": 60.7,
+      "worst_week_R": -14.6,
+      "long_n": 1773,
+      "long_R": 934.6,
+      "short_n": 1260,
+      "short_R": 208.6,
+      "avg_hold_h": 21.2,
+      "max_hold_h": 93.0,
+      "pf_ret": 1.403,
+      "equity_x_0.5pct": 262.44,
+      "cagr_0.5pct": 234.0,
+      "maxdd_0.5pct": 29.8,
+      "by_year_R": {
+       "2017": 230.4,
+       "2018": 164.4,
+       "2019": 456.2,
+       "2020": 283.4,
+       "2021": 8.8
+      },
+      "exit_reasons": {
+       "time": 2093,
+       "stop": 940
+      }
+     },
+     "neighbor_pfs": [
+      1.722,
+      1.728,
+      1.734,
+      1.749,
+      1.758,
+      1.845
+     ],
+     "neighbor_median_pf": 1.7415,
+     "null_day": {
+      "n": 679,
+      "mode": "day",
+      "rule_mean_R": 0.3152,
+      "null_mean_R": 0.028,
+      "null_p95_R": 0.1394,
+      "null_max_R": 0.2432,
+      "percentile": 100.0,
+      "pass": true
+     },
+     "null_time_for_information": {
+      "n": 679,
+      "mode": "time",
+      "rule_mean_R": 0.3152,
+      "null_mean_R": 0.0263,
+      "null_p95_R": 0.136,
+      "null_max_R": 0.2103,
+      "percentile": 100.0,
+      "pass": true
+     },
+     "is_criteria": {
+      "n>=250": true,
+      "pf>=1.12": true,
+      "t>=2.5": true,
+      "years_pos>=60%": true,
+      "max_hold<=5d": true,
+      "stress_pf>=1.04": true,
+      "every_signal_exp>0": true,
+      "neighbors_median_pf>=1.06": true,
+      "pass": true,
+      "null>=97.5pct": true
+     },
+     "long": {
+      "n": 381,
+      "exp_R": 0.4316,
+      "pf": 2.159,
+      "t": 4.27,
+      "bps": 81.52,
+      "sum_R": 164.4,
+      "win": 0.507
+     },
+     "short": {
+      "n": 298,
+      "exp_R": 0.1664,
+      "pf": 1.37,
+      "t": 1.87,
+      "bps": 28.97,
+      "sum_R": 49.6,
+      "win": 0.44
+     },
+     "gross_first_half": {
+      "n": 316,
+      "exp_R": 0.5085,
+      "pf": 2.275,
+      "t": 4.14,
+      "bps": 91.58,
+      "sum_R": 160.7,
+      "win": 0.506
+     },
+     "gross_second_half": {
+      "n": 363,
+      "exp_R": 0.2054,
+      "pf": 1.525,
+      "t": 2.82,
+      "bps": 43.3,
+      "sum_R": 74.5,
+      "win": 0.466
+     },
+     "halves_split_at": "2019-09-09",
+     "gross_2021": {
+      "n": 160,
+      "exp_R": 0.0979,
+      "pf": 1.265,
+      "t": 1.18,
+      "bps": 23.31,
+      "sum_R": 15.7,
+      "win": 0.481
+     },
+     "is_excluding_closure_delayed_exits": {
+      "n": 645,
+      "exp_R": 0.2757,
+      "pf": 1.668,
+      "t": 3.96,
+      "bps": 48.12,
+      "sum_R": 177.9,
+      "win": 0.467,
+      "n_excluded": 34,
+      "years_pos": "5/5"
+     },
+     "top5pct_share_of_total_R": 0.86,
+     "stop_2024_25": {
+      "median_stop_dist": 1639.82,
+      "p10": 1091.9,
+      "p90": 2782.44,
+      "median_stop_pct_of_price": 2.044,
+      "min_lot_units": 0.01,
+      "min_lot_stop_usd": 16.4,
+      "min_lot_stop_eur": 14.27,
+      "mean_price": 84237.2,
+      "min_lot_margin_usd": 42.12
+     },
+     "historical_dukascopy_spread_for_information": {
+      "n": 1041,
+      "pf": 0.398,
+      "expectancy_R": -0.4432,
+      "t_stat": -12.24,
+      "years_pos": "2/5",
+      "by_year_R": {
+       "2017": 51.8,
+       "2018": -191.0,
+       "2019": -237.2,
+       "2020": -87.5,
+       "2021": 2.5
+      },
+      "bps": -75.1
+     },
+     "truncation_test_all_equal": true
+    },
+    "ethusd": {
+     "is": {
+      "n": 536,
+      "trades_per_year": 134.6,
+      "win_rate": 0.468,
+      "avg_win_R": 1.487,
+      "avg_loss_R": -0.786,
+      "expectancy_R": 0.2788,
+      "t_stat": 4.15,
+      "pf": 1.668,
+      "total_R": 149.5,
+      "max_dd_R": 7.5,
+      "years_pos": "4/4",
+      "weeks_pos_pct": 56.5,
+      "weeks_neg_pct": 43.5,
+      "months_pos_pct": 79.2,
+      "worst_week_R": -3.5,
+      "long_n": 290,
+      "long_R": 87.2,
+      "short_n": 246,
+      "short_R": 62.3,
+      "avg_hold_h": 21.0,
+      "max_hold_h": 72.0,
+      "pf_ret": 1.309,
+      "equity_x_0.5pct": 2.08,
+      "cagr_0.5pct": 20.1,
+      "maxdd_0.5pct": 3.7,
+      "by_year_R": {
+       "2018": 58.6,
+       "2019": 21.7,
+       "2020": 53.8,
+       "2021": 15.4
+      },
+      "exit_reasons": {
+       "time": 369,
+       "stop": 167
+      }
+     },
+     "is_bps_per_trade": 54.44,
+     "is_stress": {
+      "n": 537,
+      "trades_per_year": 134.8,
+      "win_rate": 0.466,
+      "avg_win_R": 1.482,
+      "avg_loss_R": -0.793,
+      "expectancy_R": 0.2661,
+      "t_stat": 3.97,
+      "pf": 1.628,
+      "total_R": 142.9,
+      "max_dd_R": 7.6,
+      "years_pos": "4/4",
+      "weeks_pos_pct": 56.5,
+      "weeks_neg_pct": 43.5,
+      "months_pos_pct": 79.2,
+      "worst_week_R": -3.5,
+      "long_n": 291,
+      "long_R": 83.8,
+      "short_n": 246,
+      "short_R": 59.1,
+      "avg_hold_h": 20.8,
+      "max_hold_h": 72.0,
+      "pf_ret": 1.282,
+      "equity_x_0.5pct": 2.01,
+      "cagr_0.5pct": 19.2,
+      "maxdd_0.5pct": 3.8,
+      "by_year_R": {
+       "2018": 57.5,
+       "2019": 19.6,
+       "2020": 52.4,
+       "2021": 13.5
+      },
+      "exit_reasons": {
+       "time": 367,
+       "stop": 170
+      }
+     },
+     "is_gross": {
+      "n": 536,
+      "trades_per_year": 134.6,
+      "win_rate": 0.472,
+      "avg_win_R": 1.519,
+      "avg_loss_R": -0.765,
+      "expectancy_R": 0.3134,
+      "t_stat": 4.63,
+      "pf": 1.776,
+      "total_R": 168.0,
+      "max_dd_R": 7.0,
+      "years_pos": "4/4",
+      "weeks_pos_pct": 57.4,
+      "weeks_neg_pct": 42.6,
+      "months_pos_pct": 81.2,
+      "worst_week_R": -3.4,
+      "long_n": 290,
+      "long_R": 98.2,
+      "short_n": 246,
+      "short_R": 69.8,
+      "avg_hold_h": 21.1,
+      "max_hold_h": 72.0,
+      "pf_ret": 1.389,
+      "equity_x_0.5pct": 2.28,
+      "cagr_0.5pct": 23.0,
+      "maxdd_0.5pct": 3.5,
+      "by_year_R": {
+       "2018": 62.9,
+       "2019": 25.7,
+       "2020": 59.6,
+       "2021": 19.8
+      },
+      "exit_reasons": {
+       "time": 372,
+       "stop": 164
+      }
+     },
+     "is_gross_bps_per_trade": 66.3,
+     "is_every_signal": {
+      "n": 2442,
+      "trades_per_year": 613.0,
+      "win_rate": 0.444,
+      "avg_win_R": 1.338,
+      "avg_loss_R": -0.768,
+      "expectancy_R": 0.1668,
+      "t_stat": 6.01,
+      "pf": 1.39,
+      "total_R": 407.2,
+      "max_dd_R": 54.4,
+      "years_pos": "3/4",
+      "weeks_pos_pct": 39.7,
+      "weeks_neg_pct": 60.3,
+      "months_pos_pct": 66.7,
+      "worst_week_R": -28.0,
+      "long_n": 1352,
+      "long_R": 206.3,
+      "short_n": 1090,
+      "short_R": 200.9,
+      "avg_hold_h": 20.9,
+      "max_hold_h": 74.0,
+      "pf_ret": 1.114,
+      "equity_x_0.5pct": 7.23,
+      "cagr_0.5pct": 64.3,
+      "maxdd_0.5pct": 24.0,
+      "by_year_R": {
+       "2018": 199.8,
+       "2019": 80.3,
+       "2020": 128.9,
+       "2021": -1.8
+      },
+      "exit_reasons": {
+       "time": 1657,
+       "stop": 785
+      }
+     },
+     "neighbor_pfs": [
+      1.506,
+      1.627,
+      1.627,
+      1.627,
+      1.651,
+      1.699
+     ],
+     "neighbor_median_pf": 1.627,
+     "null_day": {
+      "n": 536,
+      "mode": "day",
+      "rule_mean_R": 0.2788,
+      "null_mean_R": 0.0052,
+      "null_p95_R": 0.1054,
+      "null_max_R": 0.2076,
+      "percentile": 100.0,
+      "pass": true
+     },
+     "null_time_for_information": {
+      "n": 536,
+      "mode": "time",
+      "rule_mean_R": 0.2788,
+      "null_mean_R": -0.0049,
+      "null_p95_R": 0.1012,
+      "null_max_R": 0.1767,
+      "percentile": 100.0,
+      "pass": true
+     },
+     "is_criteria": {
+      "n>=250": true,
+      "pf>=1.12": true,
+      "t>=2.5": true,
+      "years_pos>=60%": true,
+      "max_hold<=5d": true,
+      "stress_pf>=1.04": true,
+      "every_signal_exp>0": true,
+      "neighbors_median_pf>=1.06": true,
+      "pass": true,
+      "null>=97.5pct": true
+     },
+     "long": {
+      "n": 290,
+      "exp_R": 0.3007,
+      "pf": 1.725,
+      "t": 3.21,
+      "bps": 60.49,
+      "sum_R": 87.2,
+      "win": 0.472
+     },
+     "short": {
+      "n": 246,
+      "exp_R": 0.2531,
+      "pf": 1.601,
+      "t": 2.63,
+      "bps": 47.3,
+      "sum_R": 62.3,
+      "win": 0.463
+     },
+     "gross_first_half": {
+      "n": 246,
+      "exp_R": 0.3574,
+      "pf": 1.854,
+      "t": 3.36,
+      "bps": 75.59,
+      "sum_R": 87.9,
+      "win": 0.455
+     },
+     "gross_second_half": {
+      "n": 290,
+      "exp_R": 0.2761,
+      "pf": 1.706,
+      "t": 3.18,
+      "bps": 58.43,
+      "sum_R": 80.1,
+      "win": 0.486
+     },
+     "halves_split_at": "2020-01-03",
+     "gross_2021": {
+      "n": 160,
+      "exp_R": 0.1236,
+      "pf": 1.313,
+      "t": 1.37,
+      "bps": 16.77,
+      "sum_R": 19.8,
+      "win": 0.475
+     },
+     "is_excluding_closure_delayed_exits": {
+      "n": 518,
+      "exp_R": 0.2586,
+      "pf": 1.627,
+      "t": 3.94,
+      "bps": 50.99,
+      "sum_R": 134.0,
+      "win": 0.467,
+      "n_excluded": 18,
+      "years_pos": "4/4"
+     },
+     "top5pct_share_of_total_R": 0.89,
+     "stop_2024_25": {
+      "median_stop_dist": 91.67,
+      "p10": 53.35,
+      "p90": 146.59,
+      "median_stop_pct_of_price": 2.882,
+      "min_lot_units": 0.01,
+      "min_lot_stop_usd": 0.92,
+      "min_lot_stop_eur": 0.8,
+      "mean_price": 3119.8,
+      "min_lot_margin_usd": 1.56
+     },
+     "historical_dukascopy_spread_for_information": {
+      "n": 1002,
+      "pf": 0.241,
+      "expectancy_R": -0.6225,
+      "t_stat": -20.47,
+      "years_pos": "1/4",
+      "by_year_R": {
+       "2018": -233.5,
+       "2019": -349.3,
+       "2020": -51.4,
+       "2021": 10.4
+      },
+      "bps": -248.24
+     },
+     "truncation_test_all_equal": true
+    }
+   },
+   "basket_is": {
+    "fp": {
+     "n": 1215,
+     "trades_per_year": 263.2,
+     "win_rate": 0.473,
+     "pf": 1.727,
+     "t_stat": 6.16,
+     "expectancy_R": 0.2992,
+     "years_pos": "5/5",
+     "long_R": 251.6,
+     "short_R": 111.8,
+     "max_dd_R": 12.8,
+     "by_year_R": {
+      "2017": 52.4,
+      "2018": 90.4,
+      "2019": 89.3,
+      "2020": 104.0,
+      "2021": 27.5
+     },
+     "weeks_pos_pct": 60.3,
+     "months_pos_pct": 82.1
+    },
+    "stress": {
+     "n": 1216,
+     "trades_per_year": 263.4,
+     "win_rate": 0.472,
+     "pf": 1.697,
+     "t_stat": 5.97,
+     "expectancy_R": 0.2898,
+     "years_pos": "5/5",
+     "long_R": 245.9,
+     "short_R": 106.5,
+     "max_dd_R": 13.0,
+     "by_year_R": {
+      "2017": 52.0,
+      "2018": 88.4,
+      "2019": 85.6,
+      "2020": 101.6,
+      "2021": 24.9
+     },
+     "weeks_pos_pct": 59.9,
+     "months_pos_pct": 82.1
+    },
+    "gross": {
+     "n": 1215,
+     "trades_per_year": 263.2,
+     "win_rate": 0.479,
+     "pf": 1.832,
+     "t_stat": 6.78,
+     "expectancy_R": 0.3319,
+     "years_pos": "5/5",
+     "long_R": 277.8,
+     "short_R": 125.4,
+     "max_dd_R": 12.2,
+     "by_year_R": {
+      "2017": 54.3,
+      "2018": 97.6,
+      "2019": 99.7,
+      "2020": 116.1,
+      "2021": 35.5
+     },
+     "weeks_pos_pct": 60.7,
+     "months_pos_pct": 82.1
+    },
+    "every": {
+     "n": 5475,
+     "trades_per_year": 1185.4,
+     "win_rate": 0.459,
+     "pf": 1.681,
+     "t_stat": 12.15,
+     "expectancy_R": 0.2832,
+     "years_pos": "5/5",
+     "long_R": 1141.0,
+     "short_R": 409.5,
+     "max_dd_R": 94.8,
+     "by_year_R": {
+      "2017": 230.4,
+      "2018": 364.2,
+      "2019": 536.5,
+      "2020": 412.3,
+      "2021": 7.0
+     },
+     "weeks_pos_pct": 49.2,
+     "months_pos_pct": 67.9
+    }
+   }
+  },
+  "sess_8_8_13_wd": {
+   "syms": [
+    "btcusd",
+    "ethusd"
+   ],
+   "params": {
+    "family": "sess",
+    "dec_h": 8,
+    "look_h": 8,
+    "stop_atr": 3.0,
+    "hold_h": 13,
+    "dow": "weekday"
+   },
+   "rule": "H1 bars of mid prices on the UTC hour grid. Every Monday-Friday at 08:00 UTC: move = close of the H1 bar ending at 08:00 UTC minus the close of the H1 bar ending at 00:00 UTC. LONG at market if move > 0, SHORT if move < 0 (no trade if either bar is missing). Stop: 3 x ATR(24) from the fill (mean true range of the last 24 H1 bars). No target, no trailing. Time exit at market at 21:00 UTC the same day (13 hours after the decision). Signal skipped if no quote within 5 minutes after 08:00 UTC.",
+   "sleeves": {
+    "btcusd": {
+     "is": {
+      "n": 1181,
+      "trades_per_year": 254.3,
+      "win_rate": 0.5,
+      "avg_win_R": 0.921,
+      "avg_loss_R": -0.644,
+      "expectancy_R": 0.1392,
+      "t_stat": 3.94,
+      "pf": 1.433,
+      "total_R": 164.5,
+      "max_dd_R": 13.1,
+      "years_pos": "5/5",
+      "weeks_pos_pct": 57.2,
+      "weeks_neg_pct": 42.8,
+      "months_pos_pct": 64.9,
+      "worst_week_R": -4.3,
+      "long_n": 554,
+      "long_R": 132.0,
+      "short_n": 627,
+      "short_R": 32.5,
+      "avg_hold_h": 12.8,
+      "max_hold_h": 64.0,
+      "pf_ret": 1.249,
+      "equity_x_0.5pct": 2.23,
+      "cagr_0.5pct": 18.8,
+      "maxdd_0.5pct": 6.5,
+      "by_year_R": {
+       "2017": 20.8,
+       "2018": 56.5,
+       "2019": 29.8,
+       "2020": 53.1,
+       "2021": 4.2
+      },
+      "exit_reasons": {
+       "time": 917,
+       "stop": 264
+      }
+     },
+     "is_bps_per_trade": 25.72,
+     "is_stress": {
+      "n": 1181,
+      "trades_per_year": 254.3,
+      "win_rate": 0.49,
+      "avg_win_R": 0.93,
+      "avg_loss_R": -0.64,
+      "expectancy_R": 0.1302,
+      "t_stat": 3.68,
+      "pf": 1.399,
+      "total_R": 153.7,
+      "max_dd_R": 13.8,
+      "years_pos": "5/5",
+      "weeks_pos_pct": 57.2,
+      "weeks_neg_pct": 42.8,
+      "months_pos_pct": 64.9,
+      "worst_week_R": -5.2,
+      "long_n": 554,
+      "long_R": 125.6,
+      "short_n": 627,
+      "short_R": 28.1,
+      "avg_hold_h": 12.7,
+      "max_hold_h": 64.0,
+      "pf_ret": 1.226,
+      "equity_x_0.5pct": 2.11,
+      "cagr_0.5pct": 17.5,
+      "maxdd_0.5pct": 6.8,
+      "by_year_R": {
+       "2017": 17.3,
+       "2018": 54.6,
+       "2019": 27.4,
+       "2020": 51.3,
+       "2021": 3.1
+      },
+      "exit_reasons": {
+       "time": 913,
+       "stop": 268
+      }
+     },
+     "is_gross": {
+      "n": 1181,
+      "trades_per_year": 254.3,
+      "win_rate": 0.507,
+      "avg_win_R": 0.927,
+      "avg_loss_R": -0.638,
+      "expectancy_R": 0.1555,
+      "t_stat": 4.38,
+      "pf": 1.495,
+      "total_R": 183.7,
+      "max_dd_R": 11.4,
+      "years_pos": "5/5",
+      "weeks_pos_pct": 60.1,
+      "weeks_neg_pct": 39.9,
+      "months_pos_pct": 64.9,
+      "worst_week_R": -4.2,
+      "long_n": 554,
+      "long_R": 141.2,
+      "short_n": 627,
+      "short_R": 42.5,
+      "avg_hold_h": 12.8,
+      "max_hold_h": 64.0,
+      "pf_ret": 1.294,
+      "equity_x_0.5pct": 2.45,
+      "cagr_0.5pct": 21.3,
+      "maxdd_0.5pct": 5.6,
+      "by_year_R": {
+       "2017": 22.7,
+       "2018": 62.7,
+       "2019": 34.1,
+       "2020": 56.9,
+       "2021": 7.2
+      },
+      "exit_reasons": {
+       "time": 921,
+       "stop": 260
+      }
+     },
+     "is_gross_bps_per_trade": 29.77,
+     "is_every_signal": {
+      "n": 1181,
+      "trades_per_year": 254.3,
+      "win_rate": 0.5,
+      "avg_win_R": 0.921,
+      "avg_loss_R": -0.644,
+      "expectancy_R": 0.1392,
+      "t_stat": 3.94,
+      "pf": 1.433,
+      "total_R": 164.5,
+      "max_dd_R": 13.1,
+      "years_pos": "5/5",
+      "weeks_pos_pct": 57.2,
+      "weeks_neg_pct": 42.8,
+      "months_pos_pct": 64.9,
+      "worst_week_R": -4.3,
+      "long_n": 554,
+      "long_R": 132.0,
+      "short_n": 627,
+      "short_R": 32.5,
+      "avg_hold_h": 12.8,
+      "max_hold_h": 64.0,
+      "pf_ret": 1.249,
+      "equity_x_0.5pct": 2.23,
+      "cagr_0.5pct": 18.8,
+      "maxdd_0.5pct": 6.5,
+      "by_year_R": {
+       "2017": 20.8,
+       "2018": 56.5,
+       "2019": 29.8,
+       "2020": 53.1,
+       "2021": 4.2
+      },
+      "exit_reasons": {
+       "time": 917,
+       "stop": 264
+      }
+     },
+     "neighbor_pfs": [
+      1.216,
+      1.344,
+      1.37,
+      1.381,
+      1.419,
+      1.457,
+      1.471,
+      1.628
+     ],
+     "neighbor_median_pf": 1.4,
+     "null_day": {
+      "n": 1181,
+      "mode": "day",
+      "rule_mean_R": 0.1392,
+      "null_mean_R": 0.014,
+      "null_p95_R": 0.0808,
+      "null_max_R": 0.1077,
+      "percentile": 100.0,
+      "pass": true
+     },
+     "null_time_for_information": {
+      "n": 1181,
+      "mode": "time",
+      "rule_mean_R": 0.1392,
+      "null_mean_R": -0.0081,
+      "null_p95_R": 0.0535,
+      "null_max_R": 0.1066,
+      "percentile": 100.0,
+      "pass": true
+     },
+     "is_criteria": {
+      "n>=250": true,
+      "pf>=1.12": true,
+      "t>=2.5": true,
+      "years_pos>=60%": true,
+      "max_hold<=5d": true,
+      "stress_pf>=1.04": true,
+      "every_signal_exp>0": true,
+      "neighbors_median_pf>=1.06": true,
+      "pass": true,
+      "null>=97.5pct": true
+     },
+     "long": {
+      "n": 554,
+      "exp_R": 0.2383,
+      "pf": 1.827,
+      "t": 4.19,
+      "bps": 49.61,
+      "sum_R": 132.0,
+      "win": 0.543
+     },
+     "short": {
+      "n": 627,
+      "exp_R": 0.0518,
+      "pf": 1.147,
+      "t": 1.19,
+      "bps": 4.61,
+      "sum_R": 32.5,
+      "win": 0.463
+     },
+     "gross_first_half": {
+      "n": 578,
+      "exp_R": 0.1791,
+      "pf": 1.588,
+      "t": 3.57,
+      "bps": 38.69,
+      "sum_R": 103.5,
+      "win": 0.521
+     },
+     "gross_second_half": {
+      "n": 603,
+      "exp_R": 0.133,
+      "pf": 1.411,
+      "t": 2.65,
+      "bps": 21.21,
+      "sum_R": 80.2,
+      "win": 0.494
+     },
+     "halves_split_at": "2019-09-05",
+     "gross_2021": {
+      "n": 260,
+      "exp_R": 0.0277,
+      "pf": 1.084,
+      "t": 0.5,
+      "bps": 1.87,
+      "sum_R": 7.2,
+      "win": 0.5
+     },
+     "is_excluding_closure_delayed_exits": {
+      "n": 1139,
+      "exp_R": 0.1126,
+      "pf": 1.351,
+      "t": 3.36,
+      "bps": 21.96,
+      "sum_R": 128.3,
+      "win": 0.493,
+      "n_excluded": 42,
+      "years_pos": "5/5"
+     },
+     "top5pct_share_of_total_R": 1.27,
+     "stop_2024_25": {
+      "median_stop_dist": 1658.19,
+      "p10": 1050.99,
+      "p90": 2802.58,
+      "median_stop_pct_of_price": 2.048,
+      "min_lot_units": 0.01,
+      "min_lot_stop_usd": 16.58,
+      "min_lot_stop_eur": 14.43,
+      "mean_price": 83781.9,
+      "min_lot_margin_usd": 41.89
+     },
+     "historical_dukascopy_spread_for_information": {
+      "n": 1181,
+      "pf": 0.416,
+      "expectancy_R": -0.3345,
+      "t_stat": -12.07,
+      "years_pos": "1/5",
+      "by_year_R": {
+       "2017": 19.8,
+       "2018": -150.9,
+       "2019": -178.8,
+       "2020": -77.4,
+       "2021": -7.6
+      },
+      "bps": -79.14
+     },
+     "truncation_test_all_equal": true
+    },
+    "ethusd": {
+     "is": {
+      "n": 1026,
+      "trades_per_year": 257.0,
+      "win_rate": 0.518,
+      "avg_win_R": 0.811,
+      "avg_loss_R": -0.62,
+      "expectancy_R": 0.1207,
+      "t_stat": 3.84,
+      "pf": 1.404,
+      "total_R": 123.8,
+      "max_dd_R": 11.4,
+      "years_pos": "4/4",
+      "weeks_pos_pct": 58.4,
+      "weeks_neg_pct": 41.6,
+      "months_pos_pct": 73.5,
+      "worst_week_R": -4.7,
+      "long_n": 463,
+      "long_R": 70.7,
+      "short_n": 563,
+      "short_R": 53.2,
+      "avg_hold_h": 12.9,
+      "max_hold_h": 64.0,
+      "pf_ret": 1.246,
+      "equity_x_0.5pct": 1.83,
+      "cagr_0.5pct": 16.4,
+      "maxdd_0.5pct": 5.7,
+      "by_year_R": {
+       "2018": 37.6,
+       "2019": 28.9,
+       "2020": 55.9,
+       "2021": 1.4
+      },
+      "exit_reasons": {
+       "time": 831,
+       "stop": 195
+      }
+     },
+     "is_bps_per_trade": 31.25,
+     "is_stress": {
+      "n": 1026,
+      "trades_per_year": 257.0,
+      "win_rate": 0.51,
+      "avg_win_R": 0.812,
+      "avg_loss_R": -0.619,
+      "expectancy_R": 0.1103,
+      "t_stat": 3.52,
+      "pf": 1.363,
+      "total_R": 113.2,
+      "max_dd_R": 12.6,
+      "years_pos": "3/4",
+      "weeks_pos_pct": 57.9,
+      "weeks_neg_pct": 42.1,
+      "months_pos_pct": 67.3,
+      "worst_week_R": -4.7,
+      "long_n": 463,
+      "long_R": 66.5,
+      "short_n": 563,
+      "short_R": 46.7,
+      "avg_hold_h": 12.8,
+      "max_hold_h": 64.0,
+      "pf_ret": 1.214,
+      "equity_x_0.5pct": 1.74,
+      "cagr_0.5pct": 14.9,
+      "maxdd_0.5pct": 6.2,
+      "by_year_R": {
+       "2018": 35.3,
+       "2019": 25.4,
+       "2020": 53.0,
+       "2021": -0.6
+      },
+      "exit_reasons": {
+       "time": 830,
+       "stop": 196
+      }
+     },
+     "is_gross": {
+      "n": 1026,
+      "trades_per_year": 257.0,
+      "win_rate": 0.522,
+      "avg_win_R": 0.829,
+      "avg_loss_R": -0.607,
+      "expectancy_R": 0.1442,
+      "t_stat": 4.57,
+      "pf": 1.5,
+      "total_R": 148.0,
+      "max_dd_R": 9.8,
+      "years_pos": "4/4",
+      "weeks_pos_pct": 63.6,
+      "weeks_neg_pct": 36.4,
+      "months_pos_pct": 73.5,
+      "worst_week_R": -4.6,
+      "long_n": 463,
+      "long_R": 81.9,
+      "short_n": 563,
+      "short_R": 66.1,
+      "avg_hold_h": 12.9,
+      "max_hold_h": 64.0,
+      "pf_ret": 1.32,
+      "equity_x_0.5pct": 2.07,
+      "cagr_0.5pct": 20.0,
+      "maxdd_0.5pct": 4.8,
+      "by_year_R": {
+       "2018": 44.8,
+       "2019": 34.9,
+       "2020": 62.6,
+       "2021": 5.6
+      },
+      "exit_reasons": {
+       "time": 839,
+       "stop": 187
+      }
+     },
+     "is_gross_bps_per_trade": 39.55,
+     "is_every_signal": {
+      "n": 1026,
+      "trades_per_year": 257.0,
+      "win_rate": 0.518,
+      "avg_win_R": 0.811,
+      "avg_loss_R": -0.62,
+      "expectancy_R": 0.1207,
+      "t_stat": 3.84,
+      "pf": 1.404,
+      "total_R": 123.8,
+      "max_dd_R": 11.4,
+      "years_pos": "4/4",
+      "weeks_pos_pct": 58.4,
+      "weeks_neg_pct": 41.6,
+      "months_pos_pct": 73.5,
+      "worst_week_R": -4.7,
+      "long_n": 463,
+      "long_R": 70.7,
+      "short_n": 563,
+      "short_R": 53.2,
+      "avg_hold_h": 12.9,
+      "max_hold_h": 64.0,
+      "pf_ret": 1.246,
+      "equity_x_0.5pct": 1.83,
+      "cagr_0.5pct": 16.4,
+      "maxdd_0.5pct": 5.7,
+      "by_year_R": {
+       "2018": 37.6,
+       "2019": 28.9,
+       "2020": 55.9,
+       "2021": 1.4
+      },
+      "exit_reasons": {
+       "time": 831,
+       "stop": 195
+      }
+     },
+     "neighbor_pfs": [
+      1.261,
+      1.297,
+      1.349,
+      1.354,
+      1.371,
+      1.397,
+      1.413,
+      1.471
+     ],
+     "neighbor_median_pf": 1.3625,
+     "null_day": {
+      "n": 1026,
+      "mode": "day",
+      "rule_mean_R": 0.1207,
+      "null_mean_R": -0.0083,
+      "null_p95_R": 0.0504,
+      "null_max_R": 0.0927,
+      "percentile": 100.0,
+      "pass": true
+     },
+     "null_time_for_information": {
+      "n": 1026,
+      "mode": "time",
+      "rule_mean_R": 0.1207,
+      "null_mean_R": -0.028,
+      "null_p95_R": 0.0283,
+      "null_max_R": 0.0616,
+      "percentile": 100.0,
+      "pass": true
+     },
+     "is_criteria": {
+      "n>=250": true,
+      "pf>=1.12": true,
+      "t>=2.5": true,
+      "years_pos>=60%": true,
+      "max_hold<=5d": true,
+      "stress_pf>=1.04": true,
+      "every_signal_exp>0": true,
+      "neighbors_median_pf>=1.06": true,
+      "pass": true,
+      "null>=97.5pct": true
+     },
+     "long": {
+      "n": 463,
+      "exp_R": 0.1526,
+      "pf": 1.536,
+      "t": 3.35,
+      "bps": 43.58,
+      "sum_R": 70.7,
+      "win": 0.531
+     },
+     "short": {
+      "n": 563,
+      "exp_R": 0.0945,
+      "pf": 1.304,
+      "t": 2.18,
+      "bps": 21.11,
+      "sum_R": 53.2,
+      "win": 0.506
+     },
+     "gross_first_half": {
+      "n": 506,
+      "exp_R": 0.1587,
+      "pf": 1.548,
+      "t": 3.26,
+      "bps": 44.64,
+      "sum_R": 80.3,
+      "win": 0.512
+     },
+     "gross_second_half": {
+      "n": 520,
+      "exp_R": 0.1302,
+      "pf": 1.452,
+      "t": 3.22,
+      "bps": 34.59,
+      "sum_R": 67.7,
+      "win": 0.533
+     },
+     "halves_split_at": "2020-01-02",
+     "gross_2021": {
+      "n": 260,
+      "exp_R": 0.0216,
+      "pf": 1.065,
+      "t": 0.39,
+      "bps": 2.17,
+      "sum_R": 5.6,
+      "win": 0.508
+     },
+     "is_excluding_closure_delayed_exits": {
+      "n": 998,
+      "exp_R": 0.1002,
+      "pf": 1.338,
+      "t": 3.42,
+      "bps": 26.86,
+      "sum_R": 100.0,
+      "win": 0.515,
+      "n_excluded": 28,
+      "years_pos": "4/4"
+     },
+     "top5pct_share_of_total_R": 1.17,
+     "stop_2024_25": {
+      "median_stop_dist": 89.97,
+      "p10": 51.42,
+      "p90": 145.01,
+      "median_stop_pct_of_price": 2.848,
+      "min_lot_units": 0.01,
+      "min_lot_stop_usd": 0.9,
+      "min_lot_stop_eur": 0.78,
+      "mean_price": 3058.2,
+      "min_lot_margin_usd": 1.53
+     },
+     "historical_dukascopy_spread_for_information": {
+      "n": 1026,
+      "pf": 0.308,
+      "expectancy_R": -0.4298,
+      "t_stat": -16.76,
+      "years_pos": "0/4",
+      "by_year_R": {
+       "2018": -152.3,
+       "2019": -226.1,
+       "2020": -56.3,
+       "2021": -6.3
+      },
+      "bps": -176.85
+     },
+     "truncation_test_all_equal": true
+    }
+   },
+   "basket_is": {
+    "fp": {
+     "n": 2207,
+     "trades_per_year": 475.3,
+     "win_rate": 0.508,
+     "pf": 1.42,
+     "t_stat": 5.46,
+     "expectancy_R": 0.1306,
+     "years_pos": "5/5",
+     "long_R": 202.7,
+     "short_R": 85.6,
+     "max_dd_R": 24.4,
+     "by_year_R": {
+      "2017": 20.8,
+      "2018": 94.1,
+      "2019": 58.8,
+      "2020": 109.0,
+      "2021": 5.6
+     },
+     "weeks_pos_pct": 59.7,
+     "months_pos_pct": 66.7
+    },
+    "stress": {
+     "n": 2207,
+     "trades_per_year": 475.3,
+     "win_rate": 0.499,
+     "pf": 1.383,
+     "t_stat": 5.06,
+     "expectancy_R": 0.1209,
+     "years_pos": "5/5",
+     "long_R": 192.1,
+     "short_R": 74.8,
+     "max_dd_R": 26.3,
+     "by_year_R": {
+      "2017": 17.3,
+      "2018": 90.0,
+      "2019": 52.8,
+      "2020": 104.3,
+      "2021": 2.6
+     },
+     "weeks_pos_pct": 59.7,
+     "months_pos_pct": 66.7
+    },
+    "gross": {
+     "n": 2207,
+     "trades_per_year": 475.3,
+     "win_rate": 0.514,
+     "pf": 1.497,
+     "t_stat": 6.26,
+     "expectancy_R": 0.1503,
+     "years_pos": "5/5",
+     "long_R": 223.1,
+     "short_R": 108.6,
+     "max_dd_R": 20.1,
+     "by_year_R": {
+      "2017": 22.7,
+      "2018": 107.5,
+      "2019": 69.1,
+      "2020": 119.5,
+      "2021": 12.8
+     },
+     "weeks_pos_pct": 61.3,
+     "months_pos_pct": 66.7
+    },
+    "every": {
+     "n": 2207,
+     "trades_per_year": 475.3,
+     "win_rate": 0.508,
+     "pf": 1.42,
+     "t_stat": 5.46,
+     "expectancy_R": 0.1306,
+     "years_pos": "5/5",
+     "long_R": 202.7,
+     "short_R": 85.6,
+     "max_dd_R": 24.4,
+     "by_year_R": {
+      "2017": 20.8,
+      "2018": 94.1,
+      "2019": 58.8,
+      "2020": 109.0,
+      "2021": 5.6
+     },
+     "weeks_pos_pct": 59.7,
+     "months_pos_pct": 66.7
+    }
+   }
+  }
+ },
+ "validation_plan": [
+  "one r2.validate call per finalist sleeve: (brk72_24h_wd, btcusd), (brk72_24h_wd, ethusd), (sess_8_8_13_wd, btcusd), (sess_8_8_13_wd, ethusd)",
+  "each sleeve is judged alone on PROTOCOL_V2 section 4 (PF >= 1.06, expectancy > 0, every-signal expectancy > 0)",
+  "in addition each finalist is reported as a two-instrument basket (pooled trades, same parameters); the basket passes only if pooled PF >= 1.06, pooled expectancy > 0, pooled every-signal expectancy > 0 AND the expectancy is positive on each instrument (strict reading of the basket clause)",
+  "no parameter, filter or instrument is changed after the validation run, whatever the result"
+ ],
+ "decision_notes": [
+  "Both rules were first screened and neighbour-tested WITHOUT a day filter (trials 1-86). The weekday-only form was adopted before validation because the in-sample data cannot support weekend trading: no weekend quotes at all in 2017-2018, partial ones in 2019-2020, and where weekend decisions exist (2019-2021) their expectancy is about zero in all four sleeves (-0.05R / +0.12R for the breakout on BTC / ETH, -0.06R / +0.03R for the session rule) against +0.11R to +0.26R on weekdays. The choice was made after looking at that split: the in-sample numbers of the weekday-only form are therefore slightly flattering (the all-days numbers are in trials 45-50 and finalist_diag_alldays.json).",
+  "Known weaknesses stated before validation: (1) the gross edge shrinks through the sample - for the BTC breakout 92 bp per trade in the first half vs 43 bp in the second and 23 bp in 2021; the session rule earns ~2 bp gross per trade in 2021 on both instruments; (2) in 2021 - the only in-sample year with clean 24/7 quotes - the every-signal run of the breakout is flat on both instruments (BTC +8.8R on 703 signals, ETH -1.8R on 709 signals) although the one-position run made +12.1R and +15.4R (160 trades each): per signal there was no edge left in 2021; (3) in 2017-2018 the trades whose exit waited for the weekend reopening of the Dukascopy feed made about +1R each (31 BTC / 14 ETH breakout trades, 41 / 27 session trades); without every closure-delayed exit (34 / 18 / 42 / 28 trades) each sleeve still passes (PF 1.34-1.67, t 3.4-4.0); (4) the 2017 BTC quotes are noisy and the 2018-2020 Dukascopy spreads were 1-4 % of price - the mid prices are usable at H1 but that market was not tradable at those quotes (historical-spread run: PF 0.24-0.42).",
+  "My own expectation before the run: more likely than not the validation fails (the 2021 collapse looks like decay, not noise); the breakout has a better chance than the session rule."
+ ]
+}

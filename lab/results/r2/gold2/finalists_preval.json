@@ -1,0 +1,630 @@
+{
+ "written_utc": "2026-11-10T11:26:21+00:00",
+ "track": "gold2",
+ "configurations_logged_before_validation": 64,
+ "validation_accesses_by_this_track_before_this_file": 0,
+ "honesty_note": "Gold validation data (2022-2025) was consulted in round 1 for OTHER rules and I have read those reports (legacy 4h breakout: VAL PF 1.23 one-position, 0.91 every-signal, profit long-only; rn100: VAL fail; orb_asia_2d: VAL nominal pass and 2026 holdout already used). No validation number of any gold2 configuration was seen before this file was written.",
+ "decision": "ONE finalist, one sleeve (xauusd). Chosen on in-sample evidence only: the pre-declared volatility-contraction breakout B5_sq1h_n24_07 is the only stage-B rule that passes every in-sample criterion AND is not spanned by the legacy 4h sleeve (weekly-R correlation 0.15, spanning alpha t = 2.3, 87 % of its trades entered while the legacy sleeve is flat or opposite).",
+ "not_selected": {
+  "B3_d1h_n48_tr240_k2 (trend-aligned 2-day breakout)": "passes IS (PF 1.23, t 2.55, 9/9 years) but is spanned by the legacy sleeve (weekly correlation 0.57, alpha t 1.1); its trades unrelated to a legacy entry lose (-0.11 R, t -2.0).",
+  "B1 1h multi-day channels (n240 k2/k3, n120 k3)": "pass IS but duplicate the legacy sleeve (98 % / 55 % of trades inside legacy trades, weekly correlation 0.72-0.82, alpha t ~1.0).",
+  "A5_orb_asia_2d_buf10 (round-1 ORB finalist)": "passes IS under FP costs (PF 1.31, t 2.94) but its VAL and the 2026 holdout were already consumed in round 1: no clean test is left. Lead's call as a legacy candidate; not submitted.",
+  "A6_rn100_break_fresh": "n 228 < 250, and it already failed VAL in round 1 (PF 0.84; 0.94 at zero commission/slippage).",
+  "2h-bar version of the finalist (control)": "IS PF 1.28, sturdier to costs (PF 1.13 at costs x2 vs 1.04) but more correlated with the legacy sleeve (0.33, alpha t 1.65); the pre-declared 1h base is kept (no selection among bar sizes)."
+ },
+ "finalists": {
+  "sq24_breakout_1h": {
+   "syms": [
+    "xauusd"
+   ],
+   "params": {
+    "family": "donch",
+    "tf": 60,
+    "n": 24,
+    "atr_n": 14,
+    "stop_atr": 2.0,
+    "trail_atr": 2.0,
+    "max_days": 5,
+    "sides": "both",
+    "sess_start": -1,
+    "sess_end": -1,
+    "trend_n": 0,
+    "squeeze": 0.7,
+    "squeeze_ref": 480
+   },
+   "rule": "XAUUSD, 1h bars on UTC hours (mid prices). After every 1h bar close, if the sleeve is flat: H = highest mid-high and L = lowest mid-low of the last 24 bars (the bar just closed included), W = H - L, Wref = median of W over the previous 480 bars (at least 240 values). If W <= 0.7 x Wref, place an OCO pair valid until the next 1h bar closes: buy-stop at H (triggers on ask), sell-stop at L (triggers on bid); the first touched is the trade, the other is cancelled. Stop-loss 2 x ATR14(1h, Wilder, value at the decision bar) from the fill price; trailing stop at the same distance from the best bid-high (long) / ask-low (short) since entry, updated at each M1 close; time stop 5 New-York trading days after the decision bar close minus 5 minutes (last bar before a closure). One position at a time; fixed % risk per trade.",
+   "sleeves": {
+    "xauusd": {
+     "is": {
+      "n": 1030,
+      "trades_per_year": 115.1,
+      "win_rate": 0.409,
+      "avg_win_R": 1.089,
+      "avg_loss_R": -0.603,
+      "expectancy_R": 0.0883,
+      "t_stat": 2.63,
+      "pf": 1.248,
+      "total_R": 90.9,
+      "max_dd_R": 17.5,
+      "years_pos": "6/9",
+      "weeks_pos_pct": 45.7,
+      "weeks_neg_pct": 41.2,
+      "months_pos_pct": 64.8,
+      "worst_week_R": -4.3,
+      "long_n": 513,
+      "long_R": 37.8,
+      "short_n": 517,
+      "short_R": 53.2,
+      "avg_hold_h": 9.2,
+      "max_hold_h": 90.3,
+      "pf_ret": 1.183,
+      "equity_x_0.5pct": 1.55,
+      "cagr_0.5pct": 5.0,
+      "maxdd_0.5pct": 8.5,
+      "by_year_R": {
+       "2013": 10.7,
+       "2014": 28.6,
+       "2015": 21.9,
+       "2016": -4.3,
+       "2017": 10.8,
+       "2018": 13.8,
+       "2019": -10.4,
+       "2020": 22.8,
+       "2021": -2.8
+      },
+      "exit_reasons": {
+       "trail": 993,
+       "stop": 37
+      }
+     },
+     "is_bps_per_trade": 2.66,
+     "is_stress": {
+      "n": 1036,
+      "pf": 1.127,
+      "expectancy_R": 0.0481,
+      "t_stat": 1.44
+     },
+     "is_gross": {
+      "n": 1025,
+      "pf": 1.531,
+      "expectancy_R": 0.1664,
+      "t_stat": 4.93,
+      "long_R": 80.2,
+      "short_R": 90.3,
+      "long_n": 512,
+      "short_n": 513
+     },
+     "is_gross_bps_per_trade": 5.6,
+     "is_every_signal": {
+      "n": 1763,
+      "pf": 1.291,
+      "expectancy_R": 0.1028,
+      "t_stat": 3.99,
+      "years_pos": "8/9",
+      "long_R": 69.2,
+      "short_R": 112.1,
+      "max_dd_R": 43.1
+     },
+     "neighbours": {
+      "neighbour_median_pf": 1.265,
+      "neighbour_min_pf": 1.069,
+      "neighbour_max_pf": 1.552,
+      "n_neighbours": 13,
+      "n_pass_all_is_criteria": 10,
+      "neighbours": {
+       "n=19": {
+        "n": 1535,
+        "pf": 1.069,
+        "t": 0.97,
+        "exp_R": 0.0264,
+        "years_pos": "6/9",
+        "stress_pf": 0.965,
+        "every_exp_R": 0.041,
+        "pass": false
+       },
+       "n=29": {
+        "n": 918,
+        "pf": 1.288,
+        "t": 2.81,
+        "exp_R": 0.1022,
+        "years_pos": "7/9",
+        "stress_pf": 1.181,
+        "every_exp_R": 0.0912,
+        "pass": true
+       },
+       "squeeze=0.56": {
+        "n": 443,
+        "pf": 1.552,
+        "t": 3.32,
+        "exp_R": 0.1824,
+        "years_pos": "9/9",
+        "stress_pf": 1.414,
+        "every_exp_R": 0.1572,
+        "pass": true
+       },
+       "squeeze=0.84": {
+        "n": 1627,
+        "pf": 1.177,
+        "t": 2.42,
+        "exp_R": 0.0658,
+        "years_pos": "6/9",
+        "stress_pf": 1.072,
+        "every_exp_R": 0.0546,
+        "pass": false
+       },
+       "squeeze_ref=384": {
+        "n": 1033,
+        "pf": 1.349,
+        "t": 3.49,
+        "exp_R": 0.121,
+        "years_pos": "8/9",
+        "stress_pf": 1.224,
+        "every_exp_R": 0.123,
+        "pass": true
+       },
+       "squeeze_ref=576": {
+        "n": 1039,
+        "pf": 1.242,
+        "t": 2.56,
+        "exp_R": 0.0868,
+        "years_pos": "7/9",
+        "stress_pf": 1.132,
+        "every_exp_R": 0.0976,
+        "pass": true
+       },
+       "stop_atr=1.6": {
+        "n": 1046,
+        "pf": 1.227,
+        "t": 2.45,
+        "exp_R": 0.0998,
+        "years_pos": "6/9",
+        "stress_pf": 1.103,
+        "every_exp_R": 0.1105,
+        "pass": false
+       },
+       "stop_atr=2.4": {
+        "n": 1030,
+        "pf": 1.275,
+        "t": 2.89,
+        "exp_R": 0.0813,
+        "years_pos": "7/9",
+        "stress_pf": 1.154,
+        "every_exp_R": 0.0901,
+        "pass": true
+       },
+       "trail_atr=1.6": {
+        "n": 1088,
+        "pf": 1.373,
+        "t": 3.78,
+        "exp_R": 0.106,
+        "years_pos": "8/9",
+        "stress_pf": 1.209,
+        "every_exp_R": 0.1121,
+        "pass": true
+       },
+       "trail_atr=2.4": {
+        "n": 959,
+        "pf": 1.298,
+        "t": 2.95,
+        "exp_R": 0.1272,
+        "years_pos": "7/9",
+        "stress_pf": 1.17,
+        "every_exp_R": 0.1163,
+        "pass": true
+       },
+       "atr_n=11": {
+        "n": 1038,
+        "pf": 1.247,
+        "t": 2.65,
+        "exp_R": 0.0883,
+        "years_pos": "6/9",
+        "stress_pf": 1.132,
+        "every_exp_R": 0.1022,
+        "pass": true
+       },
+       "atr_n=17": {
+        "n": 1023,
+        "pf": 1.265,
+        "t": 2.81,
+        "exp_R": 0.0952,
+        "years_pos": "6/9",
+        "stress_pf": 1.154,
+        "every_exp_R": 0.1062,
+        "pass": true
+       },
+       "max_days=4": {
+        "n": 1030,
+        "pf": 1.248,
+        "t": 2.63,
+        "exp_R": 0.0883,
+        "years_pos": "6/9",
+        "stress_pf": 1.127,
+        "every_exp_R": 0.1028,
+        "pass": true
+       }
+      },
+      "controls": {
+       "ctrl_no_squeeze": {
+        "n": 2917,
+        "pf": 1.068,
+        "t": 1.32,
+        "exp_R": 0.0261,
+        "years_pos": "6/9",
+        "gross_pf": 1.283,
+        "every_exp_R": 0.0009
+       },
+       "ctrl_2h_bars": {
+        "n": 840,
+        "pf": 1.284,
+        "t": 2.56,
+        "exp_R": 0.1029,
+        "years_pos": "8/9",
+        "gross_pf": 1.522,
+        "every_exp_R": 0.1573
+       }
+      }
+     },
+     "null_test_day": {
+      "n": 1030,
+      "mode": "day",
+      "rule_mean_R": 0.0883,
+      "null_mean_R": -0.037,
+      "null_p95_R": 0.0185,
+      "null_max_R": 0.0482,
+      "percentile": 100.0,
+      "pass": true,
+      "secs": 5.6
+     },
+     "null_test_time": {
+      "n": 1030,
+      "mode": "time",
+      "rule_mean_R": 0.0883,
+      "null_mean_R": -0.0401,
+      "null_p95_R": 0.0232,
+      "null_max_R": 0.0763,
+      "percentile": 100.0,
+      "pass": true,
+      "secs": 3.9
+     },
+     "long_net": {
+      "n": 513,
+      "exp_R": 0.0736,
+      "pf": 1.2,
+      "t": 1.56,
+      "bps": 2.48,
+      "win": 0.39
+     },
+     "short_net": {
+      "n": 517,
+      "exp_R": 0.1028,
+      "pf": 1.299,
+      "t": 2.16,
+      "bps": 2.84,
+      "win": 0.427
+     },
+     "long_gross": {
+      "n": 512,
+      "exp_R": 0.1567,
+      "pf": 1.486,
+      "t": 3.3,
+      "bps": 5.59,
+      "win": 0.412
+     },
+     "short_gross": {
+      "n": 513,
+      "exp_R": 0.1761,
+      "pf": 1.577,
+      "t": 3.66,
+      "bps": 5.6,
+      "win": 0.454
+     },
+     "gross_first_half_2013-2017H1": {
+      "n": 538,
+      "exp_R": 0.1843,
+      "pf": 1.584,
+      "t": 3.9,
+      "bps": 6.29,
+      "win": 0.444
+     },
+     "gross_second_half_2017H2-2021": {
+      "n": 487,
+      "exp_R": 0.1466,
+      "pf": 1.471,
+      "t": 3.05,
+      "bps": 4.82,
+      "win": 0.421
+     },
+     "net_first_half": {
+      "n": 540,
+      "exp_R": 0.1122,
+      "pf": 1.317,
+      "t": 2.39,
+      "bps": 3.45,
+      "win": 0.417
+     },
+     "net_second_half": {
+      "n": 490,
+      "exp_R": 0.062,
+      "pf": 1.173,
+      "t": 1.3,
+      "bps": 1.79,
+      "win": 0.4
+     },
+     "gross_by_year": {
+      "2013": {
+       "n": 122,
+       "exp_R": 0.1457,
+       "pf": 1.48,
+       "t": 1.58,
+       "bps": 5.86,
+       "win": 0.418
+      },
+      "2014": {
+       "n": 115,
+       "exp_R": 0.3229,
+       "pf": 2.113,
+       "t": 3.0,
+       "bps": 10.72,
+       "win": 0.513
+      },
+      "2015": {
+       "n": 122,
+       "exp_R": 0.2441,
+       "pf": 1.723,
+       "t": 2.13,
+       "bps": 7.79,
+       "win": 0.418
+      },
+      "2016": {
+       "n": 120,
+       "exp_R": 0.0513,
+       "pf": 1.153,
+       "t": 0.56,
+       "bps": 2.09,
+       "win": 0.425
+      },
+      "2017": {
+       "n": 114,
+       "exp_R": 0.1932,
+       "pf": 1.688,
+       "t": 2.09,
+       "bps": 5.58,
+       "win": 0.5
+      },
+      "2018": {
+       "n": 88,
+       "exp_R": 0.2437,
+       "pf": 2.01,
+       "t": 2.11,
+       "bps": 7.55,
+       "win": 0.443
+      },
+      "2019": {
+       "n": 118,
+       "exp_R": -0.0019,
+       "pf": 0.995,
+       "t": -0.02,
+       "bps": -0.25,
+       "win": 0.339
+      },
+      "2020": {
+       "n": 107,
+       "exp_R": 0.2813,
+       "pf": 1.918,
+       "t": 2.32,
+       "bps": 11.12,
+       "win": 0.449
+      },
+      "2021": {
+       "n": 119,
+       "exp_R": 0.0533,
+       "pf": 1.163,
+       "t": 0.64,
+       "bps": 1.04,
+       "win": 0.403
+      }
+     },
+     "net_by_session": {
+      "asia_18-02ny": {
+       "n": 230,
+       "exp_R": 0.126,
+       "pf": 1.37,
+       "t": 1.85,
+       "bps": 3.45,
+       "win": 0.435
+      },
+      "london_02-08ny": {
+       "n": 273,
+       "exp_R": 0.1944,
+       "pf": 1.615,
+       "t": 2.71,
+       "bps": 7.52,
+       "win": 0.432
+      },
+      "ny_am_08-12": {
+       "n": 343,
+       "exp_R": 0.079,
+       "pf": 1.221,
+       "t": 1.42,
+       "bps": 2.53,
+       "win": 0.402
+      },
+      "ny_pm_12-17": {
+       "n": 184,
+       "exp_R": -0.099,
+       "pf": 0.773,
+       "t": -1.32,
+       "bps": -5.3,
+       "win": 0.353
+      }
+     },
+     "top5pct_share_of_total_R": 1.82,
+     "total_R_without_top5pct": -74.7,
+     "cost_R_per_trade": 0.0781,
+     "cost_sensitivity_pf_exp_t": {
+      "1.0": {
+       "n": 1030,
+       "pf": 1.248,
+       "exp_R": 0.0883,
+       "t": 2.63
+      },
+      "1.5": {
+       "n": 1036,
+       "pf": 1.127,
+       "exp_R": 0.0481,
+       "t": 1.44
+      },
+      "2.0": {
+       "n": 1037,
+       "pf": 1.042,
+       "exp_R": 0.0168,
+       "t": 0.5
+      },
+      "3.0": {
+       "n": 1048,
+       "pf": 0.874,
+       "exp_R": -0.056,
+       "t": -1.69
+      }
+     },
+     "timing_probes": {
+      "delay_1min": {
+       "n": 1030,
+       "pf": 1.267,
+       "t": 2.77,
+       "exp_R": 0.0952,
+       "gross_exp_R": 0.1748,
+       "every_exp_R": 0.1021
+      },
+      "delay_5min": {
+       "n": 1018,
+       "pf": 1.271,
+       "t": 2.78,
+       "exp_R": 0.0959,
+       "gross_exp_R": 0.1756,
+       "every_exp_R": 0.0961
+      },
+      "delay_30min": {
+       "n": 952,
+       "pf": 1.248,
+       "t": 2.5,
+       "exp_R": 0.089,
+       "gross_exp_R": 0.1695,
+       "every_exp_R": 0.0794
+      }
+     },
+     "stop_2024_2025": {
+      "n_orders": 420,
+      "median_stop_usd": 11.99,
+      "p10_usd": 7.34,
+      "p90_usd": 23.81,
+      "median_stop_bp": 44.1,
+      "min_lot_oz": 1.0,
+      "min_lot_stop_usd": 11.99,
+      "min_lot_stop_eur": 10.43,
+      "p90_min_lot_stop_eur": 20.71
+     },
+     "stop_2025": {
+      "n_orders": 216,
+      "median_stop_usd": 18.08,
+      "p10_usd": 10.87,
+      "p90_usd": 26.33,
+      "median_stop_bp": 52.1,
+      "min_lot_oz": 1.0,
+      "min_lot_stop_usd": 18.08,
+      "min_lot_stop_eur": 15.73,
+      "p90_min_lot_stop_eur": 22.91
+     },
+     "relation_to_legacy_sleeve": {
+      "spanning": {
+       "mean_R_per_week": 0.1939,
+       "sd": 1.519,
+       "causal_same_side_legacy_open": {
+        "n": 134,
+        "sum_R": 26.2,
+        "exp_R": 0.1953,
+        "pf": 1.536,
+        "t": 1.94
+       },
+       "causal_legacy_flat_or_opposite": {
+        "n": 896,
+        "sum_R": 64.8,
+        "exp_R": 0.0723,
+        "pf": 1.203,
+        "t": 2.04
+       },
+       "spanning_weekly": {
+        "alpha_R_per_week": 0.1616,
+        "t_alpha": 2.3,
+        "beta": 0.182,
+        "t_beta": 3.24,
+        "corr": 0.148
+       },
+       "spanning_weekly_unrelated_trades_only": {
+        "alpha_R_per_week": 0.0068,
+        "t_alpha": 0.11,
+        "beta": 0.04,
+        "t_beta": 0.78,
+        "corr": 0.036
+       }
+      },
+      "decomposition": {
+       "all": {
+        "n": 1030,
+        "sum_R": 90.9,
+        "exp_R": 0.0883,
+        "pf": 1.248,
+        "t": 2.63
+       },
+       "A_same_breakout_as_legacy": {
+        "n": 97,
+        "sum_R": 72.6,
+        "exp_R": 0.7486,
+        "pf": 5.173,
+        "t": 5.68
+       },
+       "B_later_inside_legacy_trade": {
+        "n": 109,
+        "sum_R": 11.9,
+        "exp_R": 0.1088,
+        "pf": 1.286,
+        "t": 1.02
+       },
+       "C_independent_of_legacy": {
+        "n": 824,
+        "sum_R": 6.5,
+        "exp_R": 0.0078,
+        "pf": 1.021,
+        "t": 0.22
+       },
+       "C_by_year_R": {
+        "2013": -5.3,
+        "2014": 21.7,
+        "2015": 3.8,
+        "2016": -9.1,
+        "2017": 2.7,
+        "2018": 13.0,
+        "2019": -19.5,
+        "2020": 4.6,
+        "2021": -5.5
+       }
+      }
+     },
+     "is_criteria": {
+      "n>=250": true,
+      "pf>=1.12": true,
+      "t>=2.5": true,
+      "years_pos>=60%": true,
+      "max_hold<=5d": true,
+      "stress_pf>=1.04": true,
+      "every_signal_exp>0": true,
+      "pass": true,
+      "neighbors_median_pf>=1.06": true,
+      "null_percentile>=97.5": true
+     }
+    }
+   },
+   "silver_same_params": "xagusd IS: gross PF 1.40 (+0.139 R) but net PF 0.98 (-0.009 R) under FP costs -> no silver sleeve, no basket."
+  }
+ }
+}

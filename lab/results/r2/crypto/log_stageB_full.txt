@@ -1,0 +1,24 @@
+# 45 btcusd n=  979 ( 212.1/y) win=0.387 PF=1.460 t= 3.64 exp=+0.1655R bps= +14.37 yrs=4/5 L= +124.4(529) S=  +37.6(450) hold= 12.6h dd= 11.9 by={2017: 26.5, 2018: 18.1, 2019: 79.7, 2020: 43.2, 2021: -5.5} | stressPF=1.419 grossPF=1.579 grossbps=21.24 every: n=3519 exp=0.1689 pf=1.46 | family=brk,n=72,stop_atr=2.5,trail_atr=2.5,hold_h=72 [3s]
+   criteria: {'n>=250': True, 'pf>=1.12': True, 't>=2.5': True, 'years_pos>=60%': True, 'max_hold<=5d': True, 'stress_pf>=1.04': True, 'every_signal_exp>0': True, 'pass': True}
+   every-signal: {'n': 3519, 'pf': 1.46, 'expectancy_R': 0.1689, 't_stat': 6.8, 'years_pos': '4/5', 'long_R': 560.0, 'short_R': 34.5}
+   stress: {'n': 980, 'pf': 1.419, 'expectancy_R': 0.1537, 't_stat': 3.39} gross: {'n': 979, 'pf': 1.579, 'expectancy_R': 0.1982, 't_stat': 4.34}
+# 46 btcusd n=  789 ( 170.9/y) win=0.455 PF=1.544 t= 3.83 exp=+0.2382R bps= +38.52 yrs=4/5 L= +143.4(448) S=  +44.5(341) hold= 20.4h dd= 16.7 by={2017: 47.2, 2018: 34.3, 2019: 68.8, 2020: 39.1, 2021: -1.4} | stressPF=1.526 grossPF=1.625 grossbps=45.11 every: n=3519 exp=0.3248 pf=1.764 | family=brk,n=72,stop_atr=3.0,hold_h=24 [2s]
+   criteria: {'n>=250': True, 'pf>=1.12': True, 't>=2.5': True, 'years_pos>=60%': True, 'max_hold<=5d': True, 'stress_pf>=1.04': True, 'every_signal_exp>0': True, 'pass': True}
+   every-signal: {'n': 3519, 'pf': 1.764, 'expectancy_R': 0.3248, 't_stat': 10.16, 'years_pos': '4/5', 'long_R': 955.0, 'short_R': 187.9}
+   stress: {'n': 789, 'pf': 1.526, 'expectancy_R': 0.2318, 't_stat': 3.73} gross: {'n': 789, 'pf': 1.625, 'expectancy_R': 0.2666, 't_stat': 4.26}
+# 47 btcusd n= 1404 ( 302.4/y) win=0.486 PF=1.332 t= 3.45 exp=+0.1071R bps= +17.01 yrs=4/5 L= +123.8(665) S=  +26.6(739) hold= 12.6h dd= 25.0 by={2017: 20.8, 2018: 56.5, 2019: 33.7, 2020: 50.7, 2021: -11.5} | stressPF=1.301 grossPF=1.393 grossbps=21.22 every: n=1404 exp=0.1071 pf=1.332 | family=sess,dec_h=8,look_h=8,stop_atr=3.0,hold_h=13 [2s]
+   criteria: {'n>=250': True, 'pf>=1.12': True, 't>=2.5': True, 'years_pos>=60%': True, 'max_hold<=5d': True, 'stress_pf>=1.04': True, 'every_signal_exp>0': True, 'pass': True}
+   every-signal: {'n': 1404, 'pf': 1.332, 'expectancy_R': 0.1071, 't_stat': 3.45, 'years_pos': '4/5', 'long_R': 123.8, 'short_R': 26.6}
+   stress: {'n': 1404, 'pf': 1.301, 'expectancy_R': 0.0984, 't_stat': 3.17} gross: {'n': 1404, 'pf': 1.393, 'expectancy_R': 0.1239, 't_stat': 3.98}
+# 48 ethusd n=  800 ( 201.0/y) win=0.438 PF=1.482 t= 3.99 exp=+0.1636R bps= +27.70 yrs=4/4 L=  +79.8(423) S=  +51.1(377) hold= 11.9h dd= 10.8 by={2018: 36.7, 2019: 21.0, 2020: 53.1, 2021: 20.1} | stressPF=1.425 grossPF=1.636 grossbps=38.92 every: n=2992 exp=0.0616 pf=1.164 | family=brk,n=72,stop_atr=2.5,trail_atr=2.5,hold_h=72 [2s]
+   criteria: {'n>=250': True, 'pf>=1.12': True, 't>=2.5': True, 'years_pos>=60%': True, 'max_hold<=5d': True, 'stress_pf>=1.04': True, 'every_signal_exp>0': True, 'pass': True}
+   every-signal: {'n': 2992, 'pf': 1.164, 'expectancy_R': 0.0616, 't_stat': 3.1, 'years_pos': '3/4', 'long_R': 76.7, 'short_R': 107.7}
+   stress: {'n': 800, 'pf': 1.425, 'expectancy_R': 0.1477, 't_stat': 3.61} gross: {'n': 800, 'pf': 1.636, 'expectancy_R': 0.2032, 't_stat': 4.93}
+# 49 ethusd n=  636 ( 159.7/y) win=0.459 PF=1.609 t= 4.21 exp=+0.2558R bps= +53.54 yrs=4/4 L= +110.0(352) S=  +52.7(284) hold= 20.8h dd= 11.3 by={2018: 57.8, 2019: 28.6, 2020: 62.0, 2021: 14.3} | stressPF=1.573 grossPF=1.707 grossbps=64.39 every: n=2992 exp=0.1761 pf=1.403 | family=brk,n=72,stop_atr=3.0,hold_h=24 [1s]
+   criteria: {'n>=250': True, 'pf>=1.12': True, 't>=2.5': True, 'years_pos>=60%': True, 'max_hold<=5d': True, 'stress_pf>=1.04': True, 'every_signal_exp>0': True, 'pass': True}
+   every-signal: {'n': 2992, 'pf': 1.403, 'expectancy_R': 0.1761, 't_stat': 6.73, 'years_pos': '4/4', 'long_R': 334.1, 'short_R': 192.8}
+   stress: {'n': 637, 'pf': 1.573, 'expectancy_R': 0.2439, 't_stat': 4.02} gross: {'n': 636, 'pf': 1.707, 'expectancy_R': 0.2877, 't_stat': 4.7}
+# 50 ethusd n= 1245 ( 311.9/y) win=0.507 PF=1.339 t= 3.69 exp=+0.1041R bps= +23.39 yrs=3/4 L=  +81.3(574) S=  +48.3(671) hold= 12.6h dd= 23.2 by={2018: 37.6, 2019: 41.3, 2020: 63.3, 2021: -12.6} | stressPF=1.299 grossPF=1.432 grossbps=31.46 every: n=1245 exp=0.1041 pf=1.339 | family=sess,dec_h=8,look_h=8,stop_atr=3.0,hold_h=13 [1s]
+   criteria: {'n>=250': True, 'pf>=1.12': True, 't>=2.5': True, 'years_pos>=60%': True, 'max_hold<=5d': True, 'stress_pf>=1.04': True, 'every_signal_exp>0': True, 'pass': True}
+   every-signal: {'n': 1245, 'pf': 1.339, 'expectancy_R': 0.1041, 't_stat': 3.69, 'years_pos': '3/4', 'long_R': 81.3, 'short_R': 48.3}
+   stress: {'n': 1245, 'pf': 1.299, 'expectancy_R': 0.0934, 't_stat': 3.31} gross: {'n': 1245, 'pf': 1.432, 'expectancy_R': 0.128, 't_stat': 4.51}

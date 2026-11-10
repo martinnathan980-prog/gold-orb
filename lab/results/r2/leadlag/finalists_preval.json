@@ -1,0 +1,129 @@
+{
+ "decided_utc": "2026-11-10T11:23:28",
+ "statement": "Finalists of track leadlag, chosen on in-sample data only (entries before 2022-01-01). No validation access before this file (leadlag lines in results/val_access.log at this moment: 0).",
+ "trials_logged_so_far": 61,
+ "finalists": {
+  "nq_btc_follow": {
+   "syms": [
+    "btcusd"
+   ],
+   "params": {
+    "rule": "xlead",
+    "leader": "us100",
+    "pred": "lead",
+    "sess": "uscash",
+    "dirn": 1,
+    "k": 1,
+    "z": 6,
+    "hold": 60,
+    "stop": 2.0
+   },
+   "rule": "During New-York cash hours (09:30-16:00 NY, Mon-Fri): if the last closed 1-minute bar of US100 moved by >= 6 sigma (sigma = RMS of US100 1-minute log returns over the M1 bars of the previous 20 calendar days), enter BTCUSD at market at the next minute in the direction of the move; stop = 2 * sigma_btc(1 min, same window) * sqrt(60) from the fill; time exit 60 minutes after entry; one position at a time.",
+   "is": {
+    "n": 1063,
+    "trades_per_year": 229.9,
+    "win_rate": 0.528,
+    "pf": 1.409,
+    "t_stat": 3.86,
+    "expectancy_R": 0.0724,
+    "years_pos": "3/5",
+    "long_R": 37.8,
+    "short_R": 39.1,
+    "avg_hold_h": 1.0,
+    "max_hold_h": 1.4,
+    "max_dd_R": 16.5,
+    "by_year_R": {
+     "2017": 12.6,
+     "2018": -7.7,
+     "2019": -4.1,
+     "2020": 34.7,
+     "2021": 41.4
+    }
+   },
+   "is_bps_per_trade": 11.88,
+   "gross_bps_per_trade": 15.15,
+   "stress_pf": 1.32,
+   "gross_pf": 1.586,
+   "every_signal": {
+    "n": 2611,
+    "pf": 1.291,
+    "expectancy_R": 0.0599,
+    "t_stat": 4.42
+   },
+   "neighbor_median_pf": 1.3415,
+   "neighbor_pfs": {
+    "z5": 1.186,
+    "z7": 1.364,
+    "hold48": 1.273,
+    "hold72": 1.297,
+    "stop1.6": 1.382,
+    "stop2.4": 1.402,
+    "k2": 1.123,
+    "k5": 1.522,
+    "sig_days16": 1.319,
+    "sig_days24": 1.369
+   },
+   "null_day": {
+    "n": 1063,
+    "mode": "day",
+    "rule_mean_R": 0.0724,
+    "null_mean_R": -0.0214,
+    "null_p95_R": 0.0145,
+    "null_max_R": 0.0338,
+    "percentile": 100.0,
+    "pass": true
+   },
+   "null_time": {
+    "n": 1063,
+    "mode": "time",
+    "rule_mean_R": 0.0724,
+    "null_mean_R": -0.0242,
+    "null_p95_R": 0.0037,
+    "null_max_R": 0.0522,
+    "percentile": 100.0,
+    "pass": true
+   },
+   "is_criteria": {
+    "n>=250": true,
+    "pf>=1.12": true,
+    "t>=2.5": true,
+    "years_pos>=60%": true,
+    "max_hold<=5d": true,
+    "stress_pf>=1.04": true,
+    "every_signal_exp>0": true,
+    "neighbors_median_pf>=1.06": true,
+    "pass": true,
+    "null_percentile>=97.5": true
+   },
+   "known_weaknesses": [
+    "the edge is a 2020-2021 phenomenon (2018 and 2019 slightly negative): 3/5 years positive is the minimum allowed",
+    "with us500 as the leader instead of us100 the same rule gives PF 1.145 (t 1.46); with k=2 PF 1.123 (t 1.23)",
+    "38% of the trades are entered 09:30-10:00 NY where the expectancy is weak (+0.02 R); not tuned away",
+    "Dukascopy's own BTC spread was 120-190 bp in 2018-2020 and 18 bp in 2021: the in-sample edge was not capturable on Dukascopy then; the forward-looking FP cost model (2.2 bp) assumes the same mid dynamics on FP's quote",
+    "entry delayed by 1 / 2 / 5 minutes: PF 1.35 / 1.30 / 1.34 (degrades smoothly, does not collapse)"
+   ]
+  }
+ },
+ "not_finalists": {
+  "nq_btc_follow on ethusd (same parameters)": {
+   "is_pf": 1.139,
+   "is_t": 1.44,
+   "years_pos": "2/4",
+   "reason": "fails t >= 2.5 and years >= 60% in-sample; not validated"
+  },
+  "eth_burst_btc (xlead leader ethusd k=1 z=5/8 hold 5 on btcusd)": {
+   "is_pf_z5": 1.498,
+   "is_t_z5": 6.78,
+   "is_pf_z8": 1.871,
+   "reason": "passes every formal IS criterion but is NOT nominated: the edge is a quote-lag effect of Dukascopy's very wide crypto quote (spread 19-440 bp at the time vs a 12-21 bp gross edge), it collapses when the entry is delayed (delay 1 min: PF 1.19, 2 min: PF 1.03; in 2021, when the quote was tighter, nothing is left after one minute), and every trade is in a burst minute where real spreads blow out (not modelled). Fill realism fails; VAL not accessed for it."
+  },
+  "dax_resid (ger40 vs us500, thin hours)": {
+   "best_is": "eurex_pm k15 z2 hold60: PF 1.174 t 2.06, 5/9 years; eu_am k5 z3: PF 1.149 t 1.42",
+   "reason": "t < 2.5"
+  },
+  "relstr (us100/us500/us30 relative strength 10:00 -> close)": {
+   "best_is": "us100 leg disp 1.5: PF 1.206 t 1.79; us500 and us30 legs <= 1.07 or negative",
+   "reason": "fails per leg and as a basket"
+  }
+ }
+}

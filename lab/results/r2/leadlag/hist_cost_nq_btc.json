@@ -1,0 +1,40 @@
+{
+ "model": "raw Dukascopy bid/ask of the time + FP slippage, no commission",
+ "n": 1687,
+ "pf": 0.103,
+ "t": -46.02,
+ "expectancy_R": -0.6801,
+ "net_bps": -78.1,
+ "by_year": {
+  "2017": {
+   "n": 97,
+   "net_bps": 30.4,
+   "R": 11.5,
+   "median_spread_bps_at_entry": 3.7
+  },
+  "2018": {
+   "n": 509,
+   "net_bps": -120.3,
+   "R": -480.6,
+   "median_spread_bps_at_entry": 186.6
+  },
+  "2019": {
+   "n": 358,
+   "net_bps": -104.3,
+   "R": -341.7,
+   "median_spread_bps_at_entry": 158.0
+  },
+  "2020": {
+   "n": 432,
+   "net_bps": -87.7,
+   "R": -349.0,
+   "median_spread_bps_at_entry": 122.1
+  },
+  "2021": {
+   "n": 291,
+   "net_bps": 6.0,
+   "R": 12.3,
+   "median_spread_bps_at_entry": 17.9
+  }
+ }
+}

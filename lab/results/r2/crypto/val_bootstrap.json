@@ -1,0 +1,118 @@
+{
+ "brk72_24h_wd:btcusd": {
+  "n": 681,
+  "mean_R": 0.0406,
+  "pf": 1.084,
+  "boot_weeks_P(mean>0)": 0.77,
+  "boot_P(pf>=1.06)": 0.588,
+  "mean_R_90ci": [
+   -0.0453,
+   0.1281
+  ],
+  "pf_90ci": [
+   0.91,
+   1.278
+  ]
+ },
+ "brk72_24h_wd:ethusd": {
+  "n": 638,
+  "mean_R": 0.0636,
+  "pf": 1.134,
+  "boot_weeks_P(mean>0)": 0.902,
+  "boot_P(pf>=1.06)": 0.766,
+  "mean_R_90ci": [
+   -0.0173,
+   0.147
+  ],
+  "pf_90ci": [
+   0.965,
+   1.324
+  ]
+ },
+ "brk72_24h_wd:basket": {
+  "n": 1319,
+  "mean_R": 0.0517,
+  "pf": 1.108,
+  "boot_weeks_P(mean>0)": 0.858,
+  "boot_P(pf>=1.06)": 0.672,
+  "mean_R_90ci": [
+   -0.0252,
+   0.1298
+  ],
+  "pf_90ci": [
+   0.949,
+   1.281
+  ]
+ },
+ "sess_8_8_13_wd:btcusd": {
+  "n": 1037,
+  "mean_R": 0.0118,
+  "pf": 1.032,
+  "boot_weeks_P(mean>0)": 0.663,
+  "boot_P(pf>=1.06)": 0.368,
+  "mean_R_90ci": [
+   -0.0364,
+   0.057
+  ],
+  "pf_90ci": [
+   0.905,
+   1.164
+  ]
+ },
+ "sess_8_8_13_wd:ethusd": {
+  "n": 1039,
+  "mean_R": 0.0175,
+  "pf": 1.047,
+  "boot_weeks_P(mean>0)": 0.711,
+  "boot_P(pf>=1.06)": 0.442,
+  "mean_R_90ci": [
+   -0.0338,
+   0.0696
+  ],
+  "pf_90ci": [
+   0.912,
+   1.2
+  ]
+ },
+ "sess_8_8_13_wd:basket": {
+  "n": 2076,
+  "mean_R": 0.0147,
+  "pf": 1.04,
+  "boot_weeks_P(mean>0)": 0.706,
+  "boot_P(pf>=1.06)": 0.379,
+  "mean_R_90ci": [
+   -0.028,
+   0.0557
+  ],
+  "pf_90ci": [
+   0.927,
+   1.159
+  ]
+ },
+ "val_weekly_R_correlation": {
+  "brk72_24h_wd:btcusd": {
+   "brk72_24h_wd:btcusd": 1.0,
+   "brk72_24h_wd:ethusd": 0.639,
+   "sess_8_8_13_wd:btcusd": 0.36,
+   "sess_8_8_13_wd:ethusd": 0.186
+  },
+  "brk72_24h_wd:ethusd": {
+   "brk72_24h_wd:btcusd": 0.639,
+   "brk72_24h_wd:ethusd": 1.0,
+   "sess_8_8_13_wd:btcusd": 0.275,
+   "sess_8_8_13_wd:ethusd": 0.304
+  },
+  "sess_8_8_13_wd:btcusd": {
+   "brk72_24h_wd:btcusd": 0.36,
+   "brk72_24h_wd:ethusd": 0.275,
+   "sess_8_8_13_wd:btcusd": 1.0,
+   "sess_8_8_13_wd:ethusd": 0.556
+  },
+  "sess_8_8_13_wd:ethusd": {
+   "brk72_24h_wd:btcusd": 0.186,
+   "brk72_24h_wd:ethusd": 0.304,
+   "sess_8_8_13_wd:btcusd": 0.556,
+   "sess_8_8_13_wd:ethusd": 1.0
+  }
+ }
+}

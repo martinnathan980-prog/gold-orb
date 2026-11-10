@@ -1,0 +1,156 @@
+{
+ "brk72_24h:btcusd": {
+  "descriptive": {
+   "n_signals": 3519,
+   "move_first_1min_bp": 1.95,
+   "t_1min": 4.89,
+   "move_first_2min_bp": 1.72,
+   "t_2min": 2.89,
+   "move_first_5min_bp": -0.13,
+   "t_5min": -0.16,
+   "move_first_15min_bp": 0.56,
+   "t_15min": 0.46,
+   "move_first_30min_bp": 1.09,
+   "t_30min": 0.69,
+   "move_first_60min_bp": -1.18,
+   "t_60min": -0.53,
+   "move_to_sched_exit_bp(no stop)": 52.6,
+   "first_5min_bp_by_year": {
+    "2017": -0.81,
+    "2018": -1.18,
+    "2019": 5.17,
+    "2020": -1.93,
+    "2021": -2.1
+   }
+  },
+  "engine_delay_5min": {
+   "n": 800,
+   "pf": 1.55,
+   "t": 3.83,
+   "exp_R": 0.2371,
+   "bps": 35.61
+  },
+  "engine_delay_30min": {
+   "n": 802,
+   "pf": 1.555,
+   "t": 3.86,
+   "exp_R": 0.236,
+   "bps": 33.87
+  }
+ },
+ "sess_8_8_13:btcusd": {
+  "descriptive": {
+   "n_signals": 1404,
+   "move_first_1min_bp": 1.49,
+   "t_1min": 4.6,
+   "move_first_2min_bp": 1.83,
+   "t_2min": 3.93,
+   "move_first_5min_bp": 2.03,
+   "t_5min": 2.39,
+   "move_first_15min_bp": 0.31,
+   "t_15min": 0.24,
+   "move_first_30min_bp": 1.26,
+   "t_30min": 0.69,
+   "move_first_60min_bp": -1.05,
+   "t_60min": -0.41,
+   "move_to_sched_exit_bp(no stop)": 9.58,
+   "first_5min_bp_by_year": {
+    "2017": 5.34,
+    "2018": 2.7,
+    "2019": 1.73,
+    "2020": 0.29,
+    "2021": 2.11
+   }
+  },
+  "engine_delay_5min": {
+   "n": 1403,
+   "pf": 1.297,
+   "t": 3.14,
+   "exp_R": 0.0976,
+   "bps": 13.85
+  },
+  "engine_delay_30min": {
+   "n": 1404,
+   "pf": 1.314,
+   "t": 3.28,
+   "exp_R": 0.1002,
+   "bps": 14.28
+  }
+ },
+ "brk72_24h:ethusd": {
+  "descriptive": {
+   "n_signals": 2992,
+   "move_first_1min_bp": 4.16,
+   "t_1min": 8.57,
+   "move_first_2min_bp": 3.18,
+   "t_2min": 4.44,
+   "move_first_5min_bp": 0.43,
+   "t_5min": 0.39,
+   "move_first_15min_bp": 2.81,
+   "t_15min": 1.74,
+   "move_first_30min_bp": 3.18,
+   "t_30min": 1.48,
+   "move_first_60min_bp": 1.02,
+   "t_60min": 0.35,
+   "move_to_sched_exit_bp(no stop)": 48.16,
+   "first_5min_bp_by_year": {
+    "2018": 1.52,
+    "2019": 7.4,
+    "2020": -2.63,
+    "2021": -2.66
+   }
+  },
+  "engine_delay_5min": {
+   "n": 645,
+   "pf": 1.555,
+   "t": 3.91,
+   "exp_R": 0.2332,
+   "bps": 48.76
+  },
+  "engine_delay_30min": {
+   "n": 645,
+   "pf": 1.51,
+   "t": 3.71,
+   "exp_R": 0.2148,
+   "bps": 41.86
+  }
+ },
+ "sess_8_8_13:ethusd": {
+  "descriptive": {
+   "n_signals": 1245,
+   "move_first_1min_bp": 2.66,
+   "t_1min": 6.37,
+   "move_first_2min_bp": 3.89,
+   "t_2min": 5.84,
+   "move_first_5min_bp": 1.99,
+   "t_5min": 1.77,
+   "move_first_15min_bp": -0.5,
+   "t_15min": -0.29,
+   "move_first_30min_bp": -0.37,
+   "t_30min": -0.15,
+   "move_first_60min_bp": -0.73,
+   "t_60min": -0.24,
+   "move_to_sched_exit_bp(no stop)": 31.31,
+   "first_5min_bp_by_year": {
+    "2018": 1.47,
+    "2019": 1.35,
+    "2020": 1.33,
+    "2021": 3.35
+   }
+  },
+  "engine_delay_5min": {
+   "n": 1240,
+   "pf": 1.315,
+   "t": 3.46,
+   "exp_R": 0.0975,
+   "bps": 20.3
+  },
+  "engine_delay_30min": {
+   "n": 1241,
+   "pf": 1.308,
+   "t": 3.41,
+   "exp_R": 0.095,
+   "bps": 19.99
+  }
+ }
+}

@@ -1,0 +1,494 @@
+{
+ "btcusd": {
+  "baseline": [
+   {
+    "cut_time": "2021-01-11 03:02:00+00:00",
+    "orders_before_cut": 1660,
+    "orders_on_cut_data": 1660,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2021-03-07 22:58:00+00:00",
+    "orders_before_cut": 1738,
+    "orders_on_cut_data": 1738,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2021-09-25 10:13:00+00:00",
+    "orders_before_cut": 2008,
+    "orders_on_cut_data": 2008,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2021-11-09 14:20:00+00:00",
+    "orders_before_cut": 2070,
+    "orders_on_cut_data": 2070,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   }
+  ],
+  "model_frozen": [
+   {
+    "cut_time": "2021-01-11 03:02:00+00:00",
+    "orders_before_cut": 988,
+    "orders_on_cut_data": 988,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2021-03-07 22:58:00+00:00",
+    "orders_before_cut": 1029,
+    "orders_on_cut_data": 1029,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2021-09-25 10:13:00+00:00",
+    "orders_before_cut": 1169,
+    "orders_on_cut_data": 1169,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2021-11-09 14:20:00+00:00",
+    "orders_before_cut": 1201,
+    "orders_on_cut_data": 1201,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   }
+  ],
+  "model_oof": [
+   {
+    "cut_time": "2021-01-11 03:02:00+00:00",
+    "orders_before_cut": 1033,
+    "orders_on_cut_data": 1033,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2021-03-07 22:58:00+00:00",
+    "orders_before_cut": 1073,
+    "orders_on_cut_data": 1073,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2021-09-25 10:13:00+00:00",
+    "orders_before_cut": 1218,
+    "orders_on_cut_data": 1218,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2021-11-09 14:20:00+00:00",
+    "orders_before_cut": 1250,
+    "orders_on_cut_data": 1250,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   }
+  ]
+ },
+ "ethusd": {
+  "baseline": [
+   {
+    "cut_time": "2020-04-01 21:07:00+00:00",
+    "orders_before_cut": 901,
+    "orders_on_cut_data": 901,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2021-02-04 01:31:00+00:00",
+    "orders_before_cut": 1288,
+    "orders_on_cut_data": 1288,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2021-07-08 21:49:00+00:00",
+    "orders_before_cut": 1511,
+    "orders_on_cut_data": 1511,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2021-08-23 08:41:00+00:00",
+    "orders_before_cut": 1578,
+    "orders_on_cut_data": 1578,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   }
+  ],
+  "model_frozen": [
+   {
+    "cut_time": "2020-04-01 21:07:00+00:00",
+    "orders_before_cut": 527,
+    "orders_on_cut_data": 527,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2021-02-04 01:31:00+00:00",
+    "orders_before_cut": 752,
+    "orders_on_cut_data": 752,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2021-07-08 21:49:00+00:00",
+    "orders_before_cut": 874,
+    "orders_on_cut_data": 874,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2021-08-23 08:41:00+00:00",
+    "orders_before_cut": 905,
+    "orders_on_cut_data": 905,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   }
+  ],
+  "model_oof": [
+   {
+    "cut_time": "2020-04-01 21:07:00+00:00",
+    "orders_before_cut": 534,
+    "orders_on_cut_data": 534,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2021-02-04 01:31:00+00:00",
+    "orders_before_cut": 762,
+    "orders_on_cut_data": 762,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2021-07-08 21:49:00+00:00",
+    "orders_before_cut": 884,
+    "orders_on_cut_data": 884,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2021-08-23 08:41:00+00:00",
+    "orders_before_cut": 912,
+    "orders_on_cut_data": 912,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   }
+  ]
+ },
+ "xauusd": {
+  "baseline": [
+   {
+    "cut_time": "2016-06-27 06:22:00+00:00",
+    "orders_before_cut": 1354,
+    "orders_on_cut_data": 1354,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2017-10-26 09:43:00+00:00",
+    "orders_before_cut": 1956,
+    "orders_on_cut_data": 1956,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2017-11-28 08:28:00+00:00",
+    "orders_before_cut": 1992,
+    "orders_on_cut_data": 1992,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2021-04-08 13:49:00+00:00",
+    "orders_before_cut": 3523,
+    "orders_on_cut_data": 3523,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   }
+  ],
+  "model_frozen": [
+   {
+    "cut_time": "2016-06-27 06:22:00+00:00",
+    "orders_before_cut": 706,
+    "orders_on_cut_data": 706,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2017-10-26 09:43:00+00:00",
+    "orders_before_cut": 988,
+    "orders_on_cut_data": 988,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2017-11-28 08:28:00+00:00",
+    "orders_before_cut": 1007,
+    "orders_on_cut_data": 1007,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2021-04-08 13:49:00+00:00",
+    "orders_before_cut": 1777,
+    "orders_on_cut_data": 1777,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   }
+  ],
+  "model_oof": [
+   {
+    "cut_time": "2016-06-27 06:22:00+00:00",
+    "orders_before_cut": 127,
+    "orders_on_cut_data": 127,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2017-10-26 09:43:00+00:00",
+    "orders_before_cut": 442,
+    "orders_on_cut_data": 442,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2017-11-28 08:28:00+00:00",
+    "orders_before_cut": 461,
+    "orders_on_cut_data": 461,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   },
+   {
+    "cut_time": "2021-04-08 13:49:00+00:00",
+    "orders_before_cut": 1254,
+    "orders_on_cut_data": 1254,
+    "identical": true,
+    "cols": {
+     "entry_i": true,
+     "side": true,
+     "cid": true,
+     "stop_dist": true,
+     "exit_i": true
+    }
+   }
+  ]
+ }
+}

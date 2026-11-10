@@ -1,0 +1,10 @@
+{
+ "btcusd:F1_brk_ridge_filter:2021-08-01": true,
+ "btcusd:F1_brk_ridge_filter:2021-07-01": true,
+ "btcusd:F2_brk_unfiltered:2021-08-01": true,
+ "btcusd:F2_brk_unfiltered:2021-07-01": true,
+ "ethusd:F1_brk_ridge_filter:2021-08-01": true,
+ "ethusd:F1_brk_ridge_filter:2021-07-01": true,
+ "ethusd:F2_brk_unfiltered:2021-08-01": true,
+ "ethusd:F2_brk_unfiltered:2021-07-01": true
+}

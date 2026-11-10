@@ -1,0 +1,150 @@
+{
+ "B4:us100": {
+  "base_pf": 1.243,
+  "neighbors": [
+   {
+    "param": "n",
+    "value": 3,
+    "n": 981,
+    "pf": 1.13,
+    "t": 1.52,
+    "expR": 0.0727,
+    "years_pos": "7/8",
+    "bp": 2.52
+   },
+   {
+    "param": "n",
+    "value": 5,
+    "n": 987,
+    "pf": 1.314,
+    "t": 3.32,
+    "expR": 0.1705,
+    "years_pos": "7/8",
+    "bp": 6.48
+   },
+   {
+    "param": "k",
+    "value": 0.24,
+    "n": 999,
+    "pf": 1.308,
+    "t": 3.2,
+    "expR": 0.185,
+    "years_pos": "6/8",
+    "bp": 5.45
+   },
+   {
+    "param": "k",
+    "value": 0.36,
+    "n": 999,
+    "pf": 1.22,
+    "t": 2.5,
+    "expR": 0.1067,
+    "years_pos": "7/8",
+    "bp": 4.38
+   },
+   {
+    "param": "size_min",
+    "value": 0.8,
+    "n": 1168,
+    "pf": 1.167,
+    "t": 2.07,
+    "expR": 0.0917,
+    "years_pos": "6/8",
+    "bp": 2.07
+   },
+   {
+    "param": "size_min",
+    "value": 1.2,
+    "n": 836,
+    "pf": 1.201,
+    "t": 2.07,
+    "expR": 0.1114,
+    "years_pos": "6/8",
+    "bp": 2.51
+   },
+   {
+    "param": "size_win",
+    "value": 16,
+    "n": 991,
+    "pf": 1.219,
+    "t": 2.45,
+    "expR": 0.1194,
+    "years_pos": "6/8",
+    "bp": 3.63
+   },
+   {
+    "param": "size_win",
+    "value": 24,
+    "n": 1018,
+    "pf": 1.21,
+    "t": 2.39,
+    "expR": 0.1146,
+    "years_pos": "6/8",
+    "bp": 3.22
+   },
+   {
+    "param": "atr_n",
+    "value": 11,
+    "n": 999,
+    "pf": 1.26,
+    "t": 2.85,
+    "expR": 0.1399,
+    "years_pos": "7/8",
+    "bp": 4.46
+   },
+   {
+    "param": "atr_n",
+    "value": 17,
+    "n": 999,
+    "pf": 1.241,
+    "t": 2.67,
+    "expR": 0.1306,
+    "years_pos": "7/8",
+    "bp": 4.76
+   },
+   {
+    "param": "exit_min",
+    "value": 930,
+    "n": 999,
+    "pf": 1.271,
+    "t": 2.95,
+    "expR": 0.1414,
+    "years_pos": "7/8",
+    "bp": 4.6
+   },
+   {
+    "param": "exit_min",
+    "value": 959,
+    "n": 999,
+    "pf": 1.237,
+    "t": 2.63,
+    "expR": 0.1287,
+    "years_pos": "6/8",
+    "bp": 4.15
+   },
+   {
+    "param": "delay",
+    "value": 1,
+    "n": 999,
+    "pf": 1.234,
+    "t": 2.6,
+    "expR": 0.1259,
+    "years_pos": "7/8",
+    "bp": 4.61
+   }
+  ],
+  "median_pf": 1.234,
+  "min_pf": 1.13,
+  "criteria": {
+   "n>=250": true,
+   "pf>=1.12": true,
+   "t>=2.5": true,
+   "years_pos>=60%": true,
+   "max_hold<=5d": true,
+   "stress_pf>=1.04": true,
+   "every_signal_exp>0": true,
+   "neighbors_median_pf>=1.06": true,
+   "pass": true
+  }
+ }
+}

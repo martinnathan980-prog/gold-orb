@@ -1,0 +1,72 @@
+{
+ "SQ_finalist": {
+  "sym": "xauusd",
+  "params": {
+   "family": "donch",
+   "tf": 60,
+   "n": 24,
+   "atr_n": 14,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "max_days": 5,
+   "sides": "both",
+   "sess_start": -1,
+   "sess_end": -1,
+   "trend_n": 0,
+   "squeeze": 0.7,
+   "squeeze_ref": 480
+  },
+  "n_orders_full": 2610,
+  "cuts": [
+   {
+    "cut_time": "2013-12-23 08:26:00+00:00",
+    "n_full_before_cut": 206,
+    "n_truncated": 206,
+    "identical": true
+   },
+   {
+    "cut_time": "2014-08-26 10:52:00+00:00",
+    "n_full_before_cut": 353,
+    "n_truncated": 353,
+    "identical": true
+   },
+   {
+    "cut_time": "2015-11-13 18:57:00+00:00",
+    "n_full_before_cut": 564,
+    "n_truncated": 564,
+    "identical": true
+   },
+   {
+    "cut_time": "2018-03-05 17:50:00+00:00",
+    "n_full_before_cut": 1029,
+    "n_truncated": 1029,
+    "identical": true
+   },
+   {
+    "cut_time": "2018-03-27 14:06:00+00:00",
+    "n_full_before_cut": 1035,
+    "n_truncated": 1035,
+    "identical": true
+   },
+   {
+    "cut_time": "2019-06-10 01:52:00+00:00",
+    "n_full_before_cut": 1214,
+    "n_truncated": 1214,
+    "identical": true
+   },
+   {
+    "cut_time": "2021-07-26 19:06:00+00:00",
+    "n_full_before_cut": 1676,
+    "n_truncated": 1676,
+    "identical": true
+   },
+   {
+    "cut_time": "2024-03-04 19:53:00+00:00",
+    "n_full_before_cut": 2228,
+    "n_truncated": 2228,
+    "identical": true
+   }
+  ],
+  "pass": true
+ }
+}

@@ -1,0 +1,12 @@
+{
+ "stage": "C-silver-replication",
+ "declared_before_running": true,
+ "sym": "xagusd",
+ "configs": [
+  "B1_d1h_n240_k2",
+  "B1_d1h_n240_k3",
+  "B1_d1h_n120_k3",
+  "B3_d1h_n48_tr240_k2",
+  "B5_sq1h_n24_07"
+ ]
+}

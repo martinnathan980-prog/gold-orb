@@ -1,0 +1,56 @@
+EA SPECIFICATION -- track ml, finalist F1_brk_ridge_filter (and F2_brk_unfiltered = same EA with UseFilter=false)
+Instruments: BTCUSD and ETHUSD CFDs (one independent instance / magic number per symbol). FP Markets Standard, MT5.
+
+CLOCKS
+  All rule times are New-York wall-clock times. On a broker whose server time is "New York + 7 h" all year
+  (GMT+2 in winter, GMT+3 in US summer time -- to be verified on the FP Markets server at install):
+      NY hour = (server hour + 24 - 7) % 24 ;  NY weekday = weekday of (server time - 7 h).
+  If the server does not follow the US daylight-saving calendar, compute New-York time from TimeGMT() with the
+  US DST rule (2nd Sunday of March 02:00 -> 1st Sunday of November 02:00) and convert bar open times the same way.
+
+BARS
+  H1 chart bars (BID prices, standard MT5 bars). SESSION BARS = H1 bars whose open time is 02:00..15:00 New York,
+  Monday..Friday (server 09:00..22:00): 14 bars a day. Every look-back below counts SESSION bars only; all other H1
+  bars (nights, week-ends) are ignored. Notation: S[0] = the session bar that has just closed, S[k] = k session bars
+  earlier. Needed history: 300 session bars (22 sessions).
+
+DECISION (once per hour, at the first tick of the H1 bars opening 03:00..15:00 New York, i.e. when S[0] has closed)
+  HH = max High(S[1..14]) ;  LL = min Low(S[1..14])
+  if Close(S[0]) > HH -> LONG candidate (side = +1) ;  if Close(S[0]) < LL -> SHORT candidate (side = -1) ; else nothing.
+  A  = average of (High - Low) over S[0..69]                                  (volatility unit; must be > 0)
+
+FILTER (F1 only) -- score = intercept + sum coef_i * clip((x_i - mean_i) / std_i, -4, +4) + sum coef_j * dummy_j
+  Constants: lab/r2/tracks/ml/models/F1_frozen_scorecard.json (13 numeric features, 5 dummies, intercept, threshold).
+  Trade the candidate only if score >= threshold (0.0279223804...).
+  x:  brk   = (Close - HH)/A  (long)   or (LL - Close)/A  (short)
+      bar   = (High(S[0]) - Low(S[0])) / A
+      body  = side * (Close(S[0]) - Open(S[0])) / A
+      ret4  = side * (Close(S[0]) - Close(S[4]))  / A
+      ret14 = side * (Close(S[0]) - Close(S[14])) / A
+      ret70 = side * (Close(S[0]) - Close(S[70])) / A
+      chan  = (HH - LL) / A
+      vol   = A / average of (High - Low) over S[0..279]
+      pos   = long: (Close - L280)/(H280 - L280) ; short: (H280 - Close)/(H280 - L280) ; H280/L280 = max High / min Low of S[0..279]
+      seq   = number of j in 1..14 such that S[j] was itself a breakout in the SAME direction
+              (long: Close(S[j]) > max High(S[j+1..j+14]) ; short: Close(S[j]) < min Low(S[j+1..j+14]))
+      opp   = same count for the OPPOSITE direction
+      pdd   = long: (Close - PDH)/A ; short: (PDL - Close)/A ; PDH/PDL = max High / min Low of the session bars of the
+              previous session day (the latest New-York date before today that has session bars)
+      dret  = side * (Close - PDC)/A ; PDC = Close of the last session bar of that previous session day
+  dummies: decision hour (NY) in 8..10 ; in 11..12 ; in 13..15 ; weekday = Monday ; weekday = Friday.
+
+ORDERS
+  One position at a time per symbol. If flat and the candidate passes: market order at once (skip if no tick within 5 min
+  of the hour). Stop-loss = fill price -/+ 2.0 * A (fixed, never moved). No take-profit, no trailing, no break-even.
+  Time exit: close at market at 15:55 New York the same day (server 22:55). Nothing is ever held overnight or over a week-end
+  -> no swap. A candidate that appears while a position is open is ignored.
+
+SIZING (portfolio decision of the lead): lots = floor(risk_money / (2*A * contract_size) / lot_step) * lot_step.
+  2024-25 median stop distance: BTCUSD 1,227 USD (1.56 % of price) -> 12.3 USD on the 0.01 minimum lot;
+  ETHUSD 63.6 USD (2.06 %) -> 0.64 USD on the 0.01 minimum lot.
+
+STATE TO PERSIST: none beyond the open position (everything is recomputed from the H1 history); log per decision:
+  time, side, A, the 15 inputs, score, action, fill, stop, exit time, exit price, result in R.
+
+PYTHON REFERENCE: lab/r2/tracks/ml/strategy.py -> candidates() / score_model() / make_orders();
+  FINALISTS["F1_brk_ridge_filter"]["params"] = {"stop_k": 2.0, "hold_h": 13.0, "model": "B1_ridge_full.json", "q": "0.5"}.

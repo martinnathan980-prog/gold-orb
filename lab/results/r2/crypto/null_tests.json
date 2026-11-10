@@ -1,0 +1,162 @@
+{
+ "brk72_24h:btcusd:day": {
+  "n": 789,
+  "mode": "day",
+  "rule_mean_R": 0.2382,
+  "null_mean_R": 0.0283,
+  "null_p95_R": 0.127,
+  "null_max_R": 0.1906,
+  "percentile": 100.0,
+  "pass": true
+ },
+ "brk72_24h:btcusd:time": {
+  "n": 789,
+  "mode": "time",
+  "rule_mean_R": 0.2382,
+  "null_mean_R": 0.0278,
+  "null_p95_R": 0.1452,
+  "null_max_R": 0.2467,
+  "percentile": 99.5,
+  "pass": true
+ },
+ "sess_8_8_13:btcusd:day": {
+  "n": 1404,
+  "mode": "day",
+  "rule_mean_R": 0.1071,
+  "null_mean_R": 0.0111,
+  "null_p95_R": 0.0791,
+  "null_max_R": 0.1388,
+  "percentile": 98.5,
+  "pass": true
+ },
+ "sess_8_8_13:btcusd:time": {
+  "n": 1404,
+  "mode": "time",
+  "rule_mean_R": 0.1071,
+  "null_mean_R": -0.0154,
+  "null_p95_R": 0.0428,
+  "null_max_R": 0.0781,
+  "percentile": 100.0,
+  "pass": true
+ },
+ "brk72_24h:ethusd:day": {
+  "n": 636,
+  "mode": "day",
+  "rule_mean_R": 0.2558,
+  "null_mean_R": -0.0025,
+  "null_p95_R": 0.0897,
+  "null_max_R": 0.153,
+  "percentile": 100.0,
+  "pass": true
+ },
+ "brk72_24h:ethusd:time": {
+  "n": 636,
+  "mode": "time",
+  "rule_mean_R": 0.2558,
+  "null_mean_R": -0.0003,
+  "null_p95_R": 0.1023,
+  "null_max_R": 0.1453,
+  "percentile": 100.0,
+  "pass": true
+ },
+ "sess_8_8_13:ethusd:day": {
+  "n": 1245,
+  "mode": "day",
+  "rule_mean_R": 0.1041,
+  "null_mean_R": -0.0063,
+  "null_p95_R": 0.0534,
+  "null_max_R": 0.084,
+  "percentile": 100.0,
+  "pass": true
+ },
+ "sess_8_8_13:ethusd:time": {
+  "n": 1245,
+  "mode": "time",
+  "rule_mean_R": 0.1041,
+  "null_mean_R": -0.026,
+  "null_p95_R": 0.0318,
+  "null_max_R": 0.0847,
+  "percentile": 100.0,
+  "pass": true
+ },
+ "brk72_24h_wd:btcusd:day": {
+  "n": 679,
+  "mode": "day",
+  "rule_mean_R": 0.3152,
+  "null_mean_R": 0.028,
+  "null_p95_R": 0.1394,
+  "null_max_R": 0.2432,
+  "percentile": 100.0,
+  "pass": true
+ },
+ "brk72_24h_wd:btcusd:time": {
+  "n": 679,
+  "mode": "time",
+  "rule_mean_R": 0.3152,
+  "null_mean_R": 0.0263,
+  "null_p95_R": 0.136,
+  "null_max_R": 0.2103,
+  "percentile": 100.0,
+  "pass": true
+ },
+ "sess_8_8_13_wd:btcusd:day": {
+  "n": 1181,
+  "mode": "day",
+  "rule_mean_R": 0.1392,
+  "null_mean_R": 0.014,
+  "null_p95_R": 0.0808,
+  "null_max_R": 0.1077,
+  "percentile": 100.0,
+  "pass": true
+ },
+ "sess_8_8_13_wd:btcusd:time": {
+  "n": 1181,
+  "mode": "time",
+  "rule_mean_R": 0.1392,
+  "null_mean_R": -0.0081,
+  "null_p95_R": 0.0535,
+  "null_max_R": 0.1066,
+  "percentile": 100.0,
+  "pass": true
+ },
+ "brk72_24h_wd:ethusd:day": {
+  "n": 536,
+  "mode": "day",
+  "rule_mean_R": 0.2788,
+  "null_mean_R": 0.0052,
+  "null_p95_R": 0.1054,
+  "null_max_R": 0.2076,
+  "percentile": 100.0,
+  "pass": true
+ },
+ "brk72_24h_wd:ethusd:time": {
+  "n": 536,
+  "mode": "time",
+  "rule_mean_R": 0.2788,
+  "null_mean_R": -0.0049,
+  "null_p95_R": 0.1012,
+  "null_max_R": 0.1767,
+  "percentile": 100.0,
+  "pass": true
+ },
+ "sess_8_8_13_wd:ethusd:day": {
+  "n": 1026,
+  "mode": "day",
+  "rule_mean_R": 0.1207,
+  "null_mean_R": -0.0083,
+  "null_p95_R": 0.0504,
+  "null_max_R": 0.0927,
+  "percentile": 100.0,
+  "pass": true
+ },
+ "sess_8_8_13_wd:ethusd:time": {
+  "n": 1026,
+  "mode": "time",
+  "rule_mean_R": 0.1207,
+  "null_mean_R": -0.028,
+  "null_p95_R": 0.0283,
+  "null_max_R": 0.0616,
+  "percentile": 100.0,
+  "pass": true
+ }
+}

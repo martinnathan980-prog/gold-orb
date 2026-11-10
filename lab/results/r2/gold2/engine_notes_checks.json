@@ -1,0 +1,13 @@
+{
+ "rn100_orders": 228,
+ "rn100_orders_triggered_before_600_bars_of_the_day_were_known": 23,
+ "rn100_example": {
+  "trigger_time": "2013-02-26 08:36:00+00:00",
+  "bars_of_day_known_at_trigger": 573,
+  "order_present_in_full_frame": true,
+  "order_present_when_data_is_cut_3_min_after_trigger": false
+ },
+ "sq_is_trades": 1030,
+ "sq_is_trades_stopped_on_fill_bar": 18,
+ "sq_is_R_of_those": -18.5
+}

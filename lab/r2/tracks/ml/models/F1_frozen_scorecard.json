@@ -1,0 +1,141 @@
+{
+ "name": "F1_brk_ridge_filter frozen scorecard (trained on all in-sample candidates of us100+ger40+xauusd+btcusd, decisions before 2021-12-27)",
+ "score": "intercept + sum_i coef_i * clip((x_i - mean_i) / std_i, -4, +4) + sum_j coef_j * dummy_j ; trade the candidate if score >= threshold",
+ "threshold": 0.027922380451488427,
+ "intercept": 0.032528141279623765,
+ "clip": 4.0,
+ "numeric_features": [
+  {
+   "name": "brk",
+   "mean": 0.7130850053209267,
+   "std": 1.0511332012630918,
+   "coef": 0.03552716609187457
+  },
+  {
+   "name": "bar",
+   "mean": 1.5512737966187637,
+   "std": 1.0720187093476934,
+   "coef": -0.050994331929108266
+  },
+  {
+   "name": "body",
+   "mean": 0.9642096091306807,
+   "std": 0.9167367836470663,
+   "coef": 0.034536705278292515
+  },
+  {
+   "name": "ret4",
+   "mean": 2.4333467452078184,
+   "std": 1.731594003005934,
+   "coef": -0.0015449850158405674
+  },
+  {
+   "name": "ret14",
+   "mean": 3.8241508644527737,
+   "std": 2.4829650691631393,
+   "coef": -0.03041653852494267
+  },
+  {
+   "name": "ret70",
+   "mean": 4.082462916443775,
+   "std": 6.721327798603996,
+   "coef": -0.01640644279761903
+  },
+  {
+   "name": "chan",
+   "mean": 4.434932354526533,
+   "std": 2.1091572540703774,
+   "coef": -0.0070119590679045395
+  },
+  {
+   "name": "vol",
+   "mean": 1.007871903532214,
+   "std": 0.2221913816827734,
+   "coef": 0.0024333042070126937
+  },
+  {
+   "name": "pos",
+   "mean": 0.6848422266014509,
+   "std": 0.2847654889450958,
+   "coef": 0.030212171905429814
+  },
+  {
+   "name": "seq",
+   "mean": 1.7847717168865993,
+   "std": 1.7956728607877703,
+   "coef": -0.021233724822965584
+  },
+  {
+   "name": "opp",
+   "mean": 0.36221861548232304,
+   "std": 0.7715447740854365,
+   "coef": 0.0046822092122707215
+  },
+  {
+   "name": "pdd",
+   "mean": 1.648923938576519,
+   "std": 2.259449159342728,
+   "coef": 0.0516482285357755
+  },
+  {
+   "name": "dret",
+   "mean": 3.001951073502862,
+   "std": 2.2025607863709356,
+   "coef": 0.021970078931120976
+  }
+ ],
+ "dummies": [
+  {
+   "feature": "hour",
+   "from": 8,
+   "to": 10,
+   "coef": 0.008314671341412672
+  },
+  {
+   "feature": "hour",
+   "from": 11,
+   "to": 12,
+   "coef": -0.021782492699578576
+  },
+  {
+   "feature": "hour",
+   "from": 13,
+   "to": 15,
+   "coef": -0.038427865708166545
+  },
+  {
+   "feature": "dow",
+   "from": 0,
+   "to": 0,
+   "coef": 0.02139595170103322
+  },
+  {
+   "feature": "dow",
+   "from": 4,
+   "to": 4,
+   "coef": 0.009439332113573746
+  }
+ ],
+ "feature_definitions": {
+  "session bars": "H1 BID bars starting 02:00..15:00 New-York time Mon-Fri (FP server hours 09..22). S[0] = bar just closed, S[k] = k session bars earlier",
+  "side": "+1 if close(S[0]) > max high(S[1..14]) ; -1 if close(S[0]) < min low(S[1..14])",
+  "A": "mean(high-low) of S[0..69]",
+  "brk": "(close - max high(S[1..14])) / A for a long ; (min low(S[1..14]) - close) / A for a short",
+  "bar": "(high(S[0]) - low(S[0])) / A",
+  "body": "side * (close(S[0]) - open(S[0])) / A",
+  "ret4": "side * (close(S[0]) - close(S[4])) / A",
+  "ret14": "side * (close(S[0]) - close(S[14])) / A",
+  "ret70": "side * (close(S[0]) - close(S[70])) / A",
+  "chan": "(max high(S[1..14]) - min low(S[1..14])) / A",
+  "vol": "A / mean(high-low) of S[0..279]",
+  "pos": "long: (close - LL) / (HH - LL) ; short: (HH - close) / (HH - LL), HH/LL = max high / min low of S[0..279]",
+  "seq": "number of bars among S[1..14] that were breakouts in the SAME direction (close beyond the 14-bar channel of the bars before them)",
+  "opp": "same count for the OPPOSITE direction",
+  "pdd": "long: (close - previous session day's high) / A ; short: (previous session day's low - close) / A (session bars of the previous New-York date that has bars)",
+  "dret": "side * (close - last session close of the previous session day) / A",
+  "hour": "New-York hour of the decision (3..15)",
+  "dow": "New-York weekday of the decision (Monday = 0)"
+ },
+ "source_file": "models/B1_ridge_full.json (key 'frozen')",
+ "sha256_of_source": "d191cbbcc2fc4d2cae31182f14f412069a194b69c2a9d9ae6bca0d0f5dee644e"
+}

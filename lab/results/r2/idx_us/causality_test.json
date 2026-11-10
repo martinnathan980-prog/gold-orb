@@ -1,0 +1,12 @@
+{
+ "sym": "us100",
+ "cuts": 66,
+ "comparisons": 132,
+ "orders_compared": 101794,
+ "orders_full": {
+  "noise30": 1643,
+  "ocm4": 999
+ },
+ "problems": [],
+ "pass": true
+}

@@ -285,8 +285,10 @@ def simulate(m1, orders, sym="xauusd", costs=None, no_overlap=True):
         "reason": pd.Series(reason[ok]).map(REASONS).to_numpy(),
         "mfe": mfe[ok], "mae": mae[ok],
     }, index=o.index[ok])
+    reserved = set(t.columns) | {"swap", "commission", "pnl", "risk", "R", "ret", "hold_min"}
     for extra in [col for col in orders.columns if col not in _DEFAULTS and col not in ("entry_i", "side")]:
-        t[extra] = o.loc[t.index, extra].to_numpy()
+        # an order column that has the name of an engine output is carried as "o_<name>" (never overwrites)
+        t[("o_" + extra) if extra in reserved else extra] = o.loc[t.index, extra].to_numpy()
     gross = t.side * (t.exit - t.entry)
     # swap: rollovers at 17:00 NY between entry and exit trading days, Wednesday x3
     d0 = trading_day(t.entry_time).values.astype("datetime64[D]")

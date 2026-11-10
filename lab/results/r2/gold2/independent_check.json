@@ -1,0 +1,28 @@
+{
+ "2015-01-01..2016-04-01": {
+  "slice": "2015-01-01..2016-04-01",
+  "n_naive": 223,
+  "n_strategy": 223,
+  "max_abs_diff_entry_i": 0.0,
+  "max_abs_diff_side": 0.0,
+  "max_abs_diff_level": 0.0,
+  "max_abs_diff_expiry_i": 0.0,
+  "max_abs_diff_stop_dist": 1.0658141036401503e-14,
+  "max_abs_diff_trail": 1.0658141036401503e-14,
+  "max_abs_diff_exit_i": 0.0,
+  "max_abs_diff_trig_i": 0.0
+ },
+ "2019-10-01..2021-01-01": {
+  "slice": "2019-10-01..2021-01-01",
+  "n_naive": 269,
+  "n_strategy": 269,
+  "max_abs_diff_entry_i": 0.0,
+  "max_abs_diff_side": 0.0,
+  "max_abs_diff_level": 0.0,
+  "max_abs_diff_expiry_i": 0.0,
+  "max_abs_diff_stop_dist": 1.4210854715202004e-14,
+  "max_abs_diff_trail": 1.4210854715202004e-14,
+  "max_abs_diff_exit_i": 0.0,
+  "max_abs_diff_trig_i": 0.0
+ }
+}

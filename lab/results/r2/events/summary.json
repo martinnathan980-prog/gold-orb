@@ -1,0 +1,59 @@
+{
+ "track": "events",
+ "verdict": "NOTHING SURVIVES",
+ "trials_logged": 78,
+ "distinct_sym_params": 75,
+ "distinct_parameter_sets": 42,
+ "budget": 120,
+ "descriptive_cells_examined_is_only": "about 740 overlapping cells (desc3 384, desc4 21, desc5 108, desc6 21, desc7 204); the pre-validation file says ~630 (desc7 under-counted)",
+ "finalists": {
+  "EV_PREM_LONG": {
+   "syms": [
+    "us500",
+    "us100"
+   ],
+   "is_pass": true,
+   "val_pass": false,
+   "is": {
+    "us500": {
+     "n": 268,
+     "pf": 1.602,
+     "t": 2.65,
+     "expR": 0.0419
+    },
+    "us100": {
+     "n": 267,
+     "pf": 1.639,
+     "t": 2.75,
+     "expR": 0.0407
+    }
+   },
+   "val": {
+    "us500": {
+     "n": 126,
+     "pf": 0.909,
+     "t": -0.4,
+     "expR": -0.0157
+    },
+    "us100": {
+     "n": 126,
+     "pf": 0.893,
+     "t": -0.47,
+     "expR": -0.017
+    }
+   }
+  }
+ },
+ "validation_accesses": [
+  "EV_PREM_LONG:us500 (+:stress, :every, :diag = same trades split by kind/year)",
+  "EV_PREM_LONG:us100 (+:stress, :every, :diag)"
+ ],
+ "files": {
+  "strategy": "lab/r2/tracks/events/strategy.py",
+  "calendar": "lab/r2/tracks/events/calendars.py",
+  "preval": "lab/results/r2/events/finalists_preval.json",
+  "validation": "lab/results/r2/events/validation.json",
+  "candidates": "lab/results/r2/events/candidates.json",
+  "trials": "lab/results/r2/events/trials.jsonl"
+ }
+}

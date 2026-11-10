@@ -1,0 +1,6 @@
+{
+ "brk72_24h_wd": {"syms": ["btcusd", "ethusd"], "params": {"family": "brk", "n": 72, "stop_atr": 3.0, "hold_h": 24, "dow": "weekday"}},
+ "sess_8_8_13_wd": {"syms": ["btcusd", "ethusd"], "params": {"family": "sess", "dec_h": 8, "look_h": 8, "stop_atr": 3.0, "hold_h": 13, "dow": "weekday"}},
+ "brk_trail_vc_gap (other code paths)": {"syms": ["btcusd"], "params": {"family": "brk", "n": 24, "stop_atr": 2.5, "trail_atr": 2.5, "hold_h": 72, "vc_max": 1.0, "gap_bars": 6}},
+ "pull (other code path)": {"syms": ["ethusd"], "params": {"family": "pull", "trend_n": 168, "pb_n": 12, "hold_h": 24}}
+}

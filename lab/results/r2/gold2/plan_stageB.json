@@ -1,0 +1,158 @@
+{
+ "stage": "B-new-sleeves",
+ "declared_before_running": true,
+ "sym": "xauusd",
+ "configs": {
+  "B1_d1h_n240_k2": {
+   "family": "donch",
+   "tf": 60,
+   "atr_n": 14,
+   "max_days": 5,
+   "n": 240,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0
+  },
+  "B1_d1h_n240_k3": {
+   "family": "donch",
+   "tf": 60,
+   "atr_n": 14,
+   "max_days": 5,
+   "n": 240,
+   "stop_atr": 3.0,
+   "trail_atr": 3.0
+  },
+  "B1_d1h_n120_k2": {
+   "family": "donch",
+   "tf": 60,
+   "atr_n": 14,
+   "max_days": 5,
+   "n": 120,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0
+  },
+  "B1_d1h_n120_k3": {
+   "family": "donch",
+   "tf": 60,
+   "atr_n": 14,
+   "max_days": 5,
+   "n": 120,
+   "stop_atr": 3.0,
+   "trail_atr": 3.0
+  },
+  "B2_d1h_n240_k2_ldnny": {
+   "family": "donch",
+   "tf": 60,
+   "atr_n": 14,
+   "max_days": 5,
+   "n": 240,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "sess_start": 420,
+   "sess_end": 1020
+  },
+  "B2_d1h_n240_k2_overlap": {
+   "family": "donch",
+   "tf": 60,
+   "atr_n": 14,
+   "max_days": 5,
+   "n": 240,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "sess_start": 780,
+   "sess_end": 1020
+  },
+  "B2_d1h_n120_k2_ldnny": {
+   "family": "donch",
+   "tf": 60,
+   "atr_n": 14,
+   "max_days": 5,
+   "n": 120,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "sess_start": 420,
+   "sess_end": 1020
+  },
+  "B2_d1h_n120_k2_overlap": {
+   "family": "donch",
+   "tf": 60,
+   "atr_n": 14,
+   "max_days": 5,
+   "n": 120,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "sess_start": 780,
+   "sess_end": 1020
+  },
+  "B3_d1h_n120_tr480_k2": {
+   "family": "donch",
+   "tf": 60,
+   "atr_n": 14,
+   "max_days": 5,
+   "n": 120,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "trend_n": 480
+  },
+  "B3_d1h_n120_tr480_k3": {
+   "family": "donch",
+   "tf": 60,
+   "atr_n": 14,
+   "max_days": 5,
+   "n": 120,
+   "stop_atr": 3.0,
+   "trail_atr": 3.0,
+   "trend_n": 480
+  },
+  "B3_d1h_n48_tr240_k2": {
+   "family": "donch",
+   "tf": 60,
+   "atr_n": 14,
+   "max_days": 5,
+   "n": 48,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "trend_n": 240
+  },
+  "B4_pb1h_tr240_pb12": {
+   "family": "pullback",
+   "tf": 60,
+   "trend_n": 240,
+   "pb_n": 12,
+   "stop_buf": 0.25,
+   "trail_atr": 2.0,
+   "max_days": 5
+  },
+  "B4_pb1h_tr240_pb24": {
+   "family": "pullback",
+   "tf": 60,
+   "trend_n": 240,
+   "pb_n": 24,
+   "stop_buf": 0.25,
+   "trail_atr": 2.0,
+   "max_days": 5
+  },
+  "B5_sq1h_n24_07": {
+   "family": "donch",
+   "tf": 60,
+   "atr_n": 14,
+   "max_days": 5,
+   "n": 24,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "squeeze": 0.7,
+   "squeeze_ref": 480
+  },
+  "B5_sq1h_n48_07": {
+   "family": "donch",
+   "tf": 60,
+   "atr_n": 14,
+   "max_days": 5,
+   "n": 48,
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "squeeze": 0.7,
+   "squeeze_ref": 480
+  }
+ },
+ "rationale": "Stage B -- NEW sleeves on gold (grid declared here before running; in-sample only).\n\nWhat stage A showed (FP costs, 2013-2021): the intraday session breakouts stay below the bar on gold\n(PF 1.08-1.11, t 1.2-1.8, profit only on the short side) and have no gross edge on silver; the only\neffect that holds on both metals is the multi-day channel breakout with a trailing stop (legacy rule:\ngold PF 1.51, silver gross PF 1.38 / net 1.14).  EDA 1: no follow-through after large bars -> no rule.\nStage B therefore asks whether the channel-breakout effect can be traded FASTER (1h bars, tighter\nstops, shorter channels, session / trend / contraction conditions, pullback entries)."
+}
