@@ -1,0 +1,15 @@
+{
+ "request": {
+  "cmd": "submit",
+  "name": "val_blind_opus55",
+  "period": "val",
+  "per_sleeve": null,
+  "model": "claude-opus-5-5",
+  "effort": "medium",
+  "mode": "blind",
+  "sheets": "sheets_blind.parquet"
+ },
+ "status": "ok",
+ "finished_utc": "2026-11-10T22:39:38+00:00",
+ "output": "val_blind_opus55: batch msgbatch_019XpGgiR7jNpYoCh2vNDeeb submitted with 6174 requests\n"
+}

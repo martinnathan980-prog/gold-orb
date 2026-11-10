@@ -1,0 +1,10 @@
+{
+ "request": {
+  "cmd": "collect",
+  "name": "val_blind_opus55",
+  "wait": true
+ },
+ "status": "ok",
+ "finished_utc": "2026-11-10T22:50:43+00:00",
+ "output": "val_blind_opus55: in_progress | MessageBatchRequestCounts(canceled=0, errored=0, expired=0, processing=6174, succeeded=0)\nval_blind_opus55: in_progress | MessageBatchRequestCounts(canceled=0, errored=0, expired=0, processing=6174, succeeded=0)\nval_blind_opus55: in_progress | MessageBatchRequestCounts(canceled=0, errored=0, expired=0, processing=6174, succeeded=0)\nval_blind_opus55: in_progress | MessageBatchRequestCounts(canceled=0, errored=0, expired=0, processing=6174, succeeded=0)\nval_blind_opus55: in_progress | MessageBatchRequestCounts(canceled=0, errored=0, expired=0, processing=6174, succeeded=0)\nval_blind_opus55: in_progress | MessageBatchRequestCounts(canceled=0, errored=0, expired=0, processing=6174, succeeded=0)\nval_blind_opus55: in_progress | MessageBatchRequestCounts(canceled=0, errored=0, expired=0, processing=6174, succeeded=0)\nval_blind_opus55: in_progress | MessageBatchRequestCounts(canceled=0, errored=0, expired=0, processing=6174, succeeded=0)\nval_blind_opus55: in_progress | MessageBatchRequestCounts(canceled=0, errored=0, expired=0, processing=6174, succeeded=0)\nval_blind_opus55: in_progress | MessageBatchRequestCounts(canceled=0, errored=0, expired=0, processing=6174, succeeded=0)\nval_blind_opus55: in_progress | MessageBatchRequestCounts(canceled=0, errored=0, expired=0, processing=6174, succeeded=0)\nval_blind_opus55: ended | MessageBatchRequestCounts(canceled=0, errored=0, expired=0, processing=0, succeeded=6174)\nval_blind_opus55: 6174 results, 44.75 USD\n"
+}

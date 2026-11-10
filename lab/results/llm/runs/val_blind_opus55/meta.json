@@ -1,0 +1,14 @@
+{
+ "model": "claude-opus-5-5",
+ "effort": "medium",
+ "period": "val",
+ "per_sleeve": null,
+ "mode": "batch",
+ "batch_id": "msgbatch_019XpGgiR7jNpYoCh2vNDeeb",
+ "n": 6174,
+ "sheet_mode": "blind",
+ "sheets": "sheets_blind.parquet",
+ "prompt": "035d9f8d98bf",
+ "collected": 6174,
+ "cost_usd": 44.75
+}
