@@ -35,6 +35,18 @@ Decision.
                  news / calendar veto (forward test only) and supervision of the robot.
 Each model / effort configuration is run once on validation; every run is kept in results/llm/runs.
 
+AMENDMENTS of 2026-11-10, written before any validation run.
+1. The leak probe failed on the first sheets (prices in % and basis points, market named): the model named
+   the year 55 % of the time (rank correlation +0.68). As planned, the sheets were tightened: every price is
+   now a distance in units of the market's own volatility and the market's name is hidden (mode "blind",
+   sheets_blind.parquet). Second probe on the same cases: exact year 10 %, rank correlation +0.15 (with the
+   name given: 25 %, +0.48). The validation test uses the blind sheets. The two in-sample pilots (120 cases)
+   are not evidence: +0.46 R with the leaking sheets, +0.25 R (p 0.11) with the blind ones.
+2. Robustness to an exceptional year (asked by the user). H3: the gap "taken minus skipped" is computed for
+   each calendar year 2022, 2023, 2024, 2025 and for the test with each year removed in turn. The result is
+   called robust only if the gap is positive in at least three of the four years AND stays positive with any
+   single year removed. Claude gets the final say only if H1, H2 and H3 all hold.
+
 Commands (from lab/):
   python3 llm/experiment.py build                         cases + sheets (no API call)
   python3 llm/experiment.py show [case_id]                the exact prompt of one case
@@ -342,6 +354,20 @@ def collect(name, wait=False):
     print(f"{name}: {n} results, {spent:.2f} USD")
 
 
+def by_year(d):
+    """H3: gap taken - skipped per calendar year, and with each year left out."""
+    rows = []
+    for y, g in list(d.groupby("year")) + [(f"without {y}", d[d.year != y]) for y in sorted(d.year.unique())]:
+        tk, sk = g[g["take"]], g[~g["take"]]
+        rows.append({"year": str(y), "n": len(g), "skip_pct": round(100 * len(sk) / len(g), 1), "R_take": round(tk.R.mean(), 4),
+                     "R_skip": round(sk.R.mean(), 4) if len(sk) else None,
+                     "gap": round(tk.R.mean() - sk.R.mean(), 4) if len(sk) and len(tk) else None})
+    yrs = [r for r in rows if not r["year"].startswith("without")]
+    out = [r for r in rows if r["year"].startswith("without")]
+    h3 = sum((r["gap"] or 0) > 0 for r in yrs) >= 3 and all((r["gap"] or 0) > 0 for r in out)
+    return {"H3": bool(h3), "table": rows}
+
+
 def analyse(name):
     cases, _, _ = load()
     m = _meta(name)
@@ -353,12 +379,16 @@ def analyse(name):
           f"({d.stop_reason.value_counts().to_dict()})")
     print(f"tokens per call: in {u['in'].mean():.0f} (+ cache read {u.cache_read.mean():.0f}, write {u.cache_write.mean():.0f}), "
           f"out {u.out.mean():.0f} | {spent:.2f} USD = {spent / len(d) * 100:.2f} cents per call")
-    d = d[d.decision.notna()].merge(cases[["id", "sleeve", "R", "period"]], on="id")
+    d = d[d.decision.notna()].merge(cases[["id", "sleeve", "R", "period", "entry_time"]], on="id")
     d["take"] = d.decision == "take"
+    d["year"] = pd.DatetimeIndex(d.entry_time).year
     st = stats_of(d)
     st["usd"] = round(spent, 2)
+    st["by_year"] = by_year(d)
     json.dump(st, open(os.path.join(_run_dir(name), "summary.json"), "w"), indent=1)
     show_stats(st, f"{name} ({'/'.join(sorted(d.period.unique()))})")
+    print(f"\nH3 (robust to any single year): {st['by_year']['H3']}")
+    print(pd.DataFrame(st["by_year"]["table"]).to_string(index=False))
 
 
 def probe(name, model, n=150, workers=2, sheets=None, named=True):

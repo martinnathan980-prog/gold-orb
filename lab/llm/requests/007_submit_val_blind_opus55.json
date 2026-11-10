@@ -1,0 +1,1 @@
+{"cmd": "submit", "name": "val_blind_opus55", "period": "val", "per_sleeve": null, "model": "claude-opus-5-5", "effort": "medium", "mode": "blind", "sheets": "sheets_blind.parquet"}
