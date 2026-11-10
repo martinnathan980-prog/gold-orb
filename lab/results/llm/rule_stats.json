@@ -1,0 +1,102 @@
+{
+ "noise30_us100": {
+  "n": 1643,
+  "win_rate": 0.383,
+  "avg_win_R": 0.9237,
+  "avg_loss_R": -0.4418,
+  "exp_R": 0.0818,
+  "med_hold_h": 1.0,
+  "long_exp_R": 0.0994,
+  "short_exp_R": 0.0619
+ },
+ "ocm4_us100": {
+  "n": 999,
+  "win_rate": 0.412,
+  "avg_win_R": 1.6363,
+  "avg_loss_R": -0.9153,
+  "exp_R": 0.137,
+  "med_hold_h": 6.35,
+  "long_exp_R": 0.0832,
+  "short_exp_R": 0.1961
+ },
+ "brk72_24h_wd_btcusd": {
+  "n": 645,
+  "win_rate": 0.465,
+  "avg_win_R": 1.415,
+  "avg_loss_R": -0.7294,
+  "exp_R": 0.268,
+  "med_hold_h": 24.0,
+  "long_exp_R": 0.3396,
+  "short_exp_R": 0.1787
+ },
+ "brk72_24h_wd_ethusd": {
+  "n": 519,
+  "win_rate": 0.447,
+  "avg_win_R": 1.3474,
+  "avg_loss_R": -0.7279,
+  "exp_R": 0.1998,
+  "med_hold_h": 24.0,
+  "long_exp_R": 0.1523,
+  "short_exp_R": 0.2571
+ },
+ "nq_btc_follow_btcusd": {
+  "n": 1063,
+  "win_rate": 0.52,
+  "avg_win_R": 0.4597,
+  "avg_loss_R": -0.3683,
+  "exp_R": 0.0624,
+  "med_hold_h": 1.0,
+  "long_exp_R": 0.0717,
+  "short_exp_R": 0.0553
+ },
+ "F2_brk_unfiltered_btcusd": {
+  "n": 1047,
+  "win_rate": 0.467,
+  "avg_win_R": 1.1643,
+  "avg_loss_R": -0.7045,
+  "exp_R": 0.1683,
+  "med_hold_h": 7.73,
+  "long_exp_R": 0.2094,
+  "short_exp_R": 0.1196
+ },
+ "F2_brk_unfiltered_ethusd": {
+  "n": 864,
+  "win_rate": 0.457,
+  "avg_win_R": 1.0262,
+  "avg_loss_R": -0.6954,
+  "exp_R": 0.0917,
+  "med_hold_h": 7.5,
+  "long_exp_R": 0.114,
+  "short_exp_R": 0.0676
+ },
+ "GOLD_FRI_PM_xauusd": {
+  "n": 414,
+  "win_rate": 0.541,
+  "avg_win_R": 0.2002,
+  "avg_loss_R": -0.1627,
+  "exp_R": 0.0336,
+  "med_hold_h": 3.25,
+  "long_exp_R": 0.0336,
+  "short_exp_R": null
+ },
+ "donch4h_stop_xauusd": {
+  "n": 495,
+  "win_rate": 0.426,
+  "avg_win_R": 1.1642,
+  "avg_loss_R": -0.5683,
+  "exp_R": 0.1702,
+  "med_hold_h": 23.95,
+  "long_exp_R": 0.2373,
+  "short_exp_R": 0.105
+ },
+ "orb_asia_2d_buf10_xauusd": {
+  "n": 1039,
+  "win_rate": 0.336,
+  "avg_win_R": 2.6237,
+  "avg_loss_R": -0.9936,
+  "exp_R": 0.2214,
+  "med_hold_h": 30.43,
+  "long_exp_R": 0.1203,
+  "short_exp_R": 0.3232
+ }
+}
