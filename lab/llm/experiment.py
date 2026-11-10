@@ -57,12 +57,14 @@ import pandas as pd
 
 LAB = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, LAB)
-from goldlab import r2  # noqa: E402
 from llm import judge  # noqa: E402
-from llm.context import ASSET, Market  # noqa: E402
+
+ASSET = {"us100": "Nasdaq-100 index CFD", "btcusd": "Bitcoin / US dollar", "ethusd": "Ether / US dollar",
+         "xauusd": "Gold / US dollar"}          # same labels as llm/context.py (not imported: it needs the market data toolkit)
 
 OUT = os.path.join(LAB, "results", "llm")
-DATA = os.path.join(LAB, "data", "llm")                       # sheets: large and regenerable, not in git
+SHEETS = os.path.join(OUT, "sheets.parquet")                  # what the model reads, one text per case (in git: the
+                                                              # test must be runnable where the API key is, without the market data)
 TRADES = os.path.join(LAB, "results", "r2", "recalc", "trades")
 SPLIT = pd.Timestamp("2022-01-01", tz="UTC")
 SLEEVES = [("noise30", "us100"), ("ocm4", "us100"), ("brk72_24h_wd", "btcusd"), ("brk72_24h_wd", "ethusd"),
@@ -80,8 +82,10 @@ def _rule_stats(t):
 
 
 def build():
+    from goldlab import r2
+    from llm.context import ASSET as ASSET_CTX, Market
+    assert ASSET_CTX == ASSET
     os.makedirs(OUT, exist_ok=True)
-    os.makedirs(DATA, exist_ok=True)
     ref = Market("us100")
     r2.free()
     rows, sheets, stats, mk = [], [], {}, None
@@ -110,7 +114,7 @@ def build():
         print(f"{key}: {len(t)} trades, {skipped} without enough history", flush=True)
     cases = pd.DataFrame(rows)
     cases.to_parquet(os.path.join(OUT, "cases.parquet"))
-    pd.DataFrame(sheets).to_parquet(os.path.join(DATA, "sheets.parquet"))
+    pd.DataFrame(sheets).to_parquet(SHEETS, compression="zstd", compression_level=19, index=False)
     json.dump(stats, open(os.path.join(OUT, "rule_stats.json"), "w"), indent=1)
     print(cases.groupby(["sleeve", "period"]).size().unstack().to_string())
     print("sheet length (chars): median", int(pd.DataFrame(sheets).text.str.len().median()))
@@ -118,7 +122,7 @@ def build():
 
 def load():
     cases = pd.read_parquet(os.path.join(OUT, "cases.parquet"))
-    sheets = pd.read_parquet(os.path.join(DATA, "sheets.parquet")).set_index("id").text
+    sheets = pd.read_parquet(SHEETS).set_index("id").text
     stats = json.load(open(os.path.join(OUT, "rule_stats.json")))
     return cases, sheets, stats
 

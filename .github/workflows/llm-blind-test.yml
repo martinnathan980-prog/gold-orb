@@ -1,0 +1,39 @@
+# Blind test of "the algorithm proposes, Claude decides" (lab/llm/experiment.py).
+# Runs only when a request file is pushed to lab/llm/requests/ on the branch `lab`.
+# The API key is the repository secret ANTHROPIC_API_KEY; it is never printed.
+name: llm-blind-test
+on:
+  push:
+    branches: [lab]
+    paths: ["lab/llm/requests/*.json"]
+permissions:
+  contents: write
+concurrency:
+  group: llm-blind-test
+  cancel-in-progress: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: lab
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -q anthropic pandas pyarrow numpy
+      - name: Run queued requests
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python3 lab/llm/runner.py
+      - name: Save results to the branch
+        run: |
+          git config user.name "llm-blind-test"
+          git config user.email "llm-blind-test@users.noreply.github.com"
+          git add lab/llm/requests lab/results/llm
+          if git diff --cached --quiet; then echo "nothing to save"; exit 0; fi
+          git commit -q -m "llm blind test: results of queued requests"
+          for i in 1 2 3 4; do git pull -q --rebase origin lab && git push -q origin HEAD:lab && exit 0; sleep $((i * 5)); done
+          exit 1

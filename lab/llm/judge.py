@@ -86,9 +86,12 @@ PRICES = {"claude-opus-5-5": (4.0, 20.0, 0.20, 5.0), "claude-sonnet-5-5": (2.0, 
 
 
 def client():
-    """API client. On the user's machine the key comes from ANTHROPIC_API_KEY; in the cloud session the network
-    proxy injects the saved credential, so a placeholder is enough for the SDK to start."""
-    return anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY") or "injected-by-the-session-proxy", max_retries=4)
+    """API client with the user's own key (ANTHROPIC_API_KEY: a GitHub Actions secret, or the user's shell).
+    The address is explicit so that a session-level ANTHROPIC_BASE_URL is never used by mistake."""
+    key = os.environ.get("ANTHROPIC_API_KEY")
+    if not key:
+        raise RuntimeError("ANTHROPIC_API_KEY is not set")
+    return anthropic.Anthropic(api_key=key, base_url="https://api.anthropic.com", max_retries=4)
 
 
 def rule_sheet(name, asset, st):
