@@ -77,7 +77,23 @@ def idx_month_end():
                         cond="month_end", sess_open="09:00", sess_close="17:30"), "month-end night 17:25->09:00 Berlin")
 
 
-BATCHES = {f.__name__: f for f in (gold_predeclared, btc_stops, idx_night, idx_night_up, idx_evening, idx_fade, idx_month_end)}
+def btc_full():
+    """Bitcoin late-day drift, base config with cost stress / gross / every-signal (re-run of trial 4 -> trial 23)."""
+    trial("btcusd", dict(tz="NY", entry="17:05", exit="19:00", weekdays=ALL, side=1, stop_atr=2.0, atr_tf="1h"),
+          "btc 17:05->19:00 NY stop 2.0xATR1h (FULL re-run of trial 4)", full=True, extra={"rerun_of": 4})
+
+
+def btc_limit():
+    """Bitcoin late-day drift with a passive entry: buy-limit at the last bid, valid 30 minutes (trial 27)."""
+    trial("btcusd", dict(tz="NY", entry="17:05", exit="19:00", weekdays=ALL, side=1, stop_atr=2.0, atr_tf="1h",
+                         entry_type="limit", limit_min=30), "btc 17:05->19:00 NY, LIMIT at last bid 30min, stop 2.0xATR1h", full=True)
+
+
+# order in which the batches were run on 2026-11-10 (then neighbors.py gold btc month_end, finalists_is.py,
+# validate_finalists.py, diag_gold.py market):
+#   gold_predeclared, btc_stops, idx_night, idx_night_up, idx_evening, idx_fade, btc_full, idx_month_end, btc_limit
+BATCHES = {f.__name__: f for f in (gold_predeclared, btc_stops, idx_night, idx_night_up, idx_evening, idx_fade, idx_month_end,
+                                   btc_full, btc_limit)}
 
 if __name__ == "__main__":
     for b in sys.argv[1:]:

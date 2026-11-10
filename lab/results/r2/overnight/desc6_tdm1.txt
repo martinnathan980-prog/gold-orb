@@ -5,7 +5,7 @@ TDM+1 cash session                 n=   93 mean=   4.55bp t=  0.58 tw=  0.50 med
 TDM+1 open->12:00                  n=   93 mean=  -2.76bp t= -0.51 tw= -0.44 med=  1.65 sd=  52.7 hit=0.527 yrs=5/9  | 13:+4.8 14:-18.2 15:-16.1 16:+5.5 17:-3.9 18:-8.6 19:+0.4 20:+21.3 21:-11.7
 TDM+1 12:00->close                 n=   93 mean=   7.32bp t=  1.27 tw=  1.39 med= 12.04 sd=  55.5 hit=0.602 yrs=6/9  | 13:-11.5 14:+5.8 15:+20.2 16:+23.0 17:+17.1 18:+31.1 19:-20.3 20:+15.1 21:-10.3
 all other days close->close        n= 1749 mean=   6.60bp t=  2.84 tw=  2.69 med=  6.84 sd=  97.3 hit=0.551 yrs=7/9
-all other days cash session        n= 1837 mean=   2.55bp t=  1.49 tw=  1.56 med=  6.06 sd=  73.5 hit=0.549 yrs=7/9
+all other days cash session        n= 1837 mean=   2.55bp t=  1.49 tw=  1.56 med=  6.06 sd=  73.5 hit=0.548 yrs=7/9
 TDM+1 close->close by calendar month: {1: (nan, 0), 2: (70.1, 5), 3: (159.3, 7), 4: (-19.7, 7), 5: (-10.3, 8), 6: (23.1, 8), 7: (54.6, 8), 8: (0.5, 9), 9: (-40.1, 5), 10: (-8.2, 7), 11: (38.8, 7), 12: (16.7, 4)}
 ===== us100: first trading day of the month (TDM+1), IS, mid, bp; months=92
 TDM+1 close->close                 n=   76 mean=  42.52bp t=  2.81 tw=  2.96 med= 45.02 sd= 132.1 hit=0.697 yrs=8/9  | 13:+22.1 14:+8.7 15:+16.7 16:+56.4 17:+45.5 18:+105.3 19:-0.3 20:+61.4 21:+61.4

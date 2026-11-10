@@ -1,0 +1,23 @@
+{
+ "model": "historical Dukascopy spread + FP slippage/swap, no commission (information only, IS)",
+ "is": {
+  "n": 365,
+  "pf": 1.18,
+  "t_stat": 1.12,
+  "expectancy_R": 0.0151,
+  "years_pos": "4/9",
+  "win_rate": 0.49,
+  "by_year_R": {
+   "2013": 2.9,
+   "2014": 2.8,
+   "2015": 2.7,
+   "2016": 1.9,
+   "2017": -0.6,
+   "2018": -0.6,
+   "2019": -2.1,
+   "2020": -0.2,
+   "2021": -1.4
+  }
+ },
+ "is_bps_per_trade": 2.83
+}

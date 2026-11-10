@@ -1,0 +1,186 @@
+{
+ "btcusd": {
+  "rows": 4122191,
+  "first": "2017-05-07 00:00:00+00:00",
+  "last": "2025-12-31 14:58:00+00:00",
+  "tz": "UTC",
+  "monotonic_strict": true,
+  "second_or_ms_offsets": 0,
+  "engine_is": {
+   "n": 679,
+   "pf": 1.775,
+   "t_stat": 4.57,
+   "expectancy_R": 0.3152,
+   "years_pos": "5/5",
+   "long_R": 164.4,
+   "short_R": 49.6,
+   "avg_hold_h": 20.9,
+   "max_hold_h": 93.0,
+   "max_dd_R": 10.7,
+   "win_rate": 0.477,
+   "by_year_R": {
+    "2017": 52.4,
+    "2018": 31.8,
+    "2019": 67.6,
+    "2020": 50.2,
+    "2021": 12.1
+   },
+   "exit_reasons": {
+    "time": 472,
+    "stop": 207
+   }
+  },
+  "engine_is_bps": 58.46,
+  "orders_total": 5849,
+  "orders_is": 3033,
+  "is_rows": 2092615,
+  "consecutive_minute_pairs": 2073693,
+  "share_open_equals_prev_close(mid)": 0.0313,
+  "median_abs_open_minus_prev_close_bp": 0.139,
+  "h1_by_year": {
+   "2017": {
+    "bars": 3892,
+    "full60": 0.595,
+    "cnt_lt_30": 52,
+    "cnt_lt_10": 48,
+    "first_row_not_min0": 0.0265,
+    "last_row_not_min59": 0.0396,
+    "bars_after_gap(>1h)": 135,
+    "hours_in_year_missing": 1794
+   },
+   "2018": {
+    "bars": 6252,
+    "full60": 0.821,
+    "cnt_lt_30": 62,
+    "cnt_lt_10": 56,
+    "first_row_not_min0": 0.0445,
+    "last_row_not_min59": 0.0392,
+    "bars_after_gap(>1h)": 108,
+    "hours_in_year_missing": 2557
+   },
+   "2019": {
+    "bars": 8346,
+    "full60": 0.692,
+    "cnt_lt_30": 65,
+    "cnt_lt_10": 58,
+    "first_row_not_min0": 0.0306,
+    "last_row_not_min59": 0.0277,
+    "bars_after_gap(>1h)": 110,
+    "hours_in_year_missing": 414
+   },
+   "2020": {
+    "bars": 8309,
+    "full60": 0.898,
+    "cnt_lt_30": 40,
+    "cnt_lt_10": 37,
+    "first_row_not_min0": 0.0096,
+    "last_row_not_min59": 0.0085,
+    "bars_after_gap(>1h)": 68,
+    "hours_in_year_missing": 474
+   },
+   "2021": {
+    "bars": 8731,
+    "full60": 0.978,
+    "cnt_lt_30": 4,
+    "cnt_lt_10": 1,
+    "first_row_not_min0": 0.001,
+    "last_row_not_min59": 0.0026,
+    "bars_after_gap(>1h)": 3,
+    "hours_in_year_missing": 24
+   }
+  },
+  "fp_spread_bp_by_year_median": {
+   "2017": 2.18,
+   "2018": 2.18,
+   "2019": 2.18,
+   "2020": 2.18,
+   "2021": 2.18
+  }
+ },
+ "ethusd": {
+  "rows": 3766026,
+  "first": "2018-01-01 00:00:00+00:00",
+  "last": "2025-12-31 14:58:00+00:00",
+  "tz": "UTC",
+  "monotonic_strict": true,
+  "second_or_ms_offsets": 0,
+  "engine_is": {
+   "n": 536,
+   "pf": 1.668,
+   "t_stat": 4.15,
+   "expectancy_R": 0.2788,
+   "years_pos": "4/4",
+   "long_R": 87.2,
+   "short_R": 62.3,
+   "avg_hold_h": 21.0,
+   "max_hold_h": 72.0,
+   "max_dd_R": 7.5,
+   "win_rate": 0.468,
+   "by_year_R": {
+    "2018": 58.6,
+    "2019": 21.7,
+    "2020": 53.8,
+    "2021": 15.4
+   },
+   "exit_reasons": {
+    "time": 369,
+    "stop": 167
+   }
+  },
+  "engine_is_bps": 54.44,
+  "orders_total": 5153,
+  "orders_is": 2442,
+  "is_rows": 1734593,
+  "consecutive_minute_pairs": 1654076,
+  "share_open_equals_prev_close(mid)": 0.0613,
+  "median_abs_open_minus_prev_close_bp": 1.919,
+  "h1_by_year": {
+   "2018": {
+    "bars": 6231,
+    "full60": 0.606,
+    "cnt_lt_30": 281,
+    "cnt_lt_10": 62,
+    "first_row_not_min0": 0.0766,
+    "last_row_not_min59": 0.0722,
+    "bars_after_gap(>1h)": 103,
+    "hours_in_year_missing": 2527
+   },
+   "2019": {
+    "bars": 8308,
+    "full60": 0.17,
+    "cnt_lt_30": 777,
+    "cnt_lt_10": 76,
+    "first_row_not_min0": 0.144,
+    "last_row_not_min59": 0.2022,
+    "bars_after_gap(>1h)": 110,
+    "hours_in_year_missing": 452
+   },
+   "2020": {
+    "bars": 8309,
+    "full60": 0.425,
+    "cnt_lt_30": 123,
+    "cnt_lt_10": 37,
+    "first_row_not_min0": 0.0415,
+    "last_row_not_min59": 0.0722,
+    "bars_after_gap(>1h)": 68,
+    "hours_in_year_missing": 475
+   },
+   "2021": {
+    "bars": 8731,
+    "full60": 0.962,
+    "cnt_lt_30": 4,
+    "cnt_lt_10": 2,
+    "first_row_not_min0": 0.0005,
+    "last_row_not_min59": 0.0027,
+    "bars_after_gap(>1h)": 3,
+    "hours_in_year_missing": 24
+   }
+  },
+  "fp_spread_bp_by_year_median": {
+   "2018": 6.48,
+   "2019": 6.48,
+   "2020": 6.48,
+   "2021": 6.48
+  }
+ }
+}

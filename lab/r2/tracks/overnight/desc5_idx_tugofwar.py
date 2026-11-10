@@ -8,13 +8,12 @@ import sys
 import numpy as np
 import pandas as pd
 
-from desc import RES, fmt, summ, tstat
+from desc import RES, fmt, load_grid, summ, tstat
 
-SCR = "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad"
 
 
 def run(sym):
-    P = pd.read_pickle(f"{SCR}/P_{sym}.pkl")
+    P = load_grid(sym)
     us = sym != "ger40"
     cl, op = ("16:00", "09:30") if us else ("17:30", "09:00")
     pc = "p" + cl

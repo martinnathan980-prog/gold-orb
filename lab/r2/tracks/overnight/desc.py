@@ -123,3 +123,18 @@ def window_ret(px, dates, t0, t1, tz, d1=0, **kw):
     a = px.at(local_times(dates, t0, tz), **kw)
     b = px.at(local_times(pd.DatetimeIndex(dates) + pd.Timedelta(days=d1), t1, tz), **kw)
     return (b / a - 1) * 1e4
+
+
+GRIDS = os.path.join(RES, "grids")
+
+
+def save_grid(P, sym):
+    """Price grid (IS only) written by desc1 and reused by desc2 / desc5 / desc6 / desc7."""
+    os.makedirs(GRIDS, exist_ok=True)
+    P.to_csv(os.path.join(GRIDS, f"P_{sym}.csv"), float_format="%.6f")
+
+
+def load_grid(sym):
+    P = pd.read_csv(os.path.join(GRIDS, f"P_{sym}.csv"), index_col=0, parse_dates=True)
+    assert P.index[-1] < pd.Timestamp(IS_END)
+    return P

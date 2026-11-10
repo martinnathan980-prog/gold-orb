@@ -1,0 +1,277 @@
+{
+ "btc_fp_by_year": {
+  "2017": {
+   "bars": 225327,
+   "bars_per_cash_window_day(450 possible)": 415.8,
+   "weekday_days_with_cash_bars": 165,
+   "gaps>=5min": 231,
+   "gaps>=30min": 139,
+   "max_gap_min": 4321,
+   "weekend_bars": 9483,
+   "median_spread_bp": 2.177
+  },
+  "2018": {
+   "bars": 363542,
+   "bars_per_cash_window_day(450 possible)": 439.6,
+   "weekday_days_with_cash_bars": 259,
+   "gaps>=5min": 445,
+   "gaps>=30min": 109,
+   "max_gap_min": 3031,
+   "weekend_bars": 7085,
+   "median_spread_bp": 2.177
+  },
+  "2019": {
+   "bars": 486138,
+   "bars_per_cash_window_day(450 possible)": 443.3,
+   "weekday_days_with_cash_bars": 260,
+   "gaps>=5min": 377,
+   "gaps>=30min": 111,
+   "max_gap_min": 1561,
+   "weekend_bars": 126786,
+   "median_spread_bp": 2.177
+  },
+  "2020": {
+   "bars": 494403,
+   "bars_per_cash_window_day(450 possible)": 447.2,
+   "weekday_days_with_cash_bars": 262,
+   "gaps>=5min": 111,
+   "gaps>=30min": 71,
+   "max_gap_min": 1681,
+   "weekend_bars": 124835,
+   "median_spread_bp": 2.177
+  },
+  "2021": {
+   "bars": 523205,
+   "bars_per_cash_window_day(450 possible)": 448.7,
+   "weekday_days_with_cash_bars": 260,
+   "gaps>=5min": 41,
+   "gaps>=30min": 3,
+   "max_gap_min": 1320,
+   "weekend_bars": 149467,
+   "median_spread_bp": 2.177
+  },
+  "2022": {
+   "bars": 498247,
+   "bars_per_cash_window_day(450 possible)": 433.4,
+   "weekday_days_with_cash_bars": 260,
+   "gaps>=5min": 1492,
+   "gaps>=30min": 44,
+   "max_gap_min": 840,
+   "weekend_bars": 137968,
+   "median_spread_bp": 2.177
+  },
+  "2023": {
+   "bars": 486658,
+   "bars_per_cash_window_day(450 possible)": 435.7,
+   "weekday_days_with_cash_bars": 260,
+   "gaps>=5min": 1795,
+   "gaps>=30min": 12,
+   "max_gap_min": 1260,
+   "weekend_bars": 133847,
+   "median_spread_bp": 2.177
+  },
+  "2024": {
+   "bars": 521446,
+   "bars_per_cash_window_day(450 possible)": 446.5,
+   "weekday_days_with_cash_bars": 262,
+   "gaps>=5min": 107,
+   "gaps>=30min": 12,
+   "max_gap_min": 1272,
+   "weekend_bars": 147314,
+   "median_spread_bp": 2.177
+  },
+  "2025": {
+   "bars": 523225,
+   "bars_per_cash_window_day(450 possible)": 448.2,
+   "weekday_days_with_cash_bars": 261,
+   "gaps>=5min": 12,
+   "gaps>=30min": 2,
+   "max_gap_min": 845,
+   "weekend_bars": 149031,
+   "median_spread_bp": 2.177
+  }
+ },
+ "btc_is_gaps_ge3_in_cash_window": {
+  "n": 1239,
+  "by_len": {
+   "3": 692,
+   "4": 195,
+   "5": 92,
+   "6": 39,
+   "7": 9,
+   "8": 9,
+   "9": 5,
+   "10": 3,
+   "11": 1,
+   "12": 1,
+   "14": 1,
+   "16": 1,
+   "55": 1,
+   "61": 13,
+   "95": 1,
+   "121": 26,
+   "181": 50,
+   "182": 3,
+   "183": 1,
+   "241": 2,
+   "360": 1,
+   "361": 4,
+   "362": 1,
+   "422": 1,
+   "1561": 14,
+   "1562": 10,
+   "1563": 1,
+   "1621": 23,
+   "1622": 29,
+   "1625": 1,
+   "1681": 3,
+   "1801": 2,
+   "3001": 1,
+   "3031": 1,
+   "3061": 2
+  }
+ },
+ "btc_is_big_gaps": {
+  "n": 434,
+  "start_ny_top": {
+   "Fri 16": 162,
+   "Sat 20": 61,
+   "Fri 20": 55,
+   "Fri 19": 28,
+   "Sat 19": 25,
+   "Thu 20": 5,
+   "Mon 13": 5,
+   "Fri 15": 4,
+   "Mon 20": 3,
+   "Mon 17": 3,
+   "Wed 20": 2,
+   "Thu 01": 2
+  }
+ },
+ "btc_zero_range_share": 0.002695168661520051,
+ "us100_by_year": {
+  "2017": {
+   "session_days": 257,
+   "bars_per_session_day(390 possible)": 383.49,
+   "session_bars_after_hole": 48,
+   "after_hole_2to4min": 47,
+   "after_hole_gt4min": 1
+  },
+  "2018": {
+   "session_days": 257,
+   "bars_per_session_day(390 possible)": 383.57,
+   "session_bars_after_hole": 22,
+   "after_hole_2to4min": 16,
+   "after_hole_gt4min": 6
+  },
+  "2019": {
+   "session_days": 258,
+   "bars_per_session_day(390 possible)": 383.86,
+   "session_bars_after_hole": 6,
+   "after_hole_2to4min": 5,
+   "after_hole_gt4min": 1
+  },
+  "2020": {
+   "session_days": 259,
+   "bars_per_session_day(390 possible)": 384.3,
+   "session_bars_after_hole": 12,
+   "after_hole_2to4min": 7,
+   "after_hole_gt4min": 5
+  },
+  "2021": {
+   "session_days": 258,
+   "bars_per_session_day(390 possible)": 385.15,
+   "session_bars_after_hole": 2,
+   "after_hole_2to4min": 2,
+   "after_hole_gt4min": 0
+  },
+  "2022": {
+   "session_days": 258,
+   "bars_per_session_day(390 possible)": 384.4,
+   "session_bars_after_hole": 4,
+   "after_hole_2to4min": 2,
+   "after_hole_gt4min": 2
+  },
+  "2023": {
+   "session_days": 256,
+   "bars_per_session_day(390 possible)": 383.88,
+   "session_bars_after_hole": 11,
+   "after_hole_2to4min": 10,
+   "after_hole_gt4min": 1
+  },
+  "2024": {
+   "session_days": 259,
+   "bars_per_session_day(390 possible)": 383.01,
+   "session_bars_after_hole": 7,
+   "after_hole_2to4min": 3,
+   "after_hole_gt4min": 4
+  },
+  "2025": {
+   "session_days": 257,
+   "bars_per_session_day(390 possible)": 382.92,
+   "session_bars_after_hole": 9,
+   "after_hole_2to4min": 5,
+   "after_hole_gt4min": 4
+  }
+ },
+ "us100_range_around_events_bp": {
+  "08:30": {
+   "-2": 2.83,
+   "-1": 3.14,
+   "+0": 6.58,
+   "+1": 4.86,
+   "+2": 4.51
+  },
+  "09:30": {
+   "-2": 5.76,
+   "-1": 4.53,
+   "+0": 14.7,
+   "+1": 13.39,
+   "+2": 12.32
+  },
+  "10:00": {
+   "-2": 7.88,
+   "-1": 7.89,
+   "+0": 11.04,
+   "+1": 9.5,
+   "+2": 8.78
+  },
+  "14:00": {
+   "-2": 4.55,
+   "-1": 4.65,
+   "+0": 7.37,
+   "+1": 6.4,
+   "+2": 6.02
+  }
+ },
+ "btc_range_around_events_bp": {
+  "08:30": {
+   "-2": 10.69,
+   "-1": 10.52,
+   "+0": 15.05,
+   "+1": 12.97,
+   "+2": 12.08
+  },
+  "09:30": {
+   "-2": 11.86,
+   "-1": 11.3,
+   "+0": 15.79,
+   "+1": 14.95,
+   "+2": 14.96
+  },
+  "10:00": {
+   "-2": 11.9,
+   "-1": 11.3,
+   "+0": 17.66,
+   "+1": 14.78,
+   "+2": 13.78
+  },
+  "14:00": {
+   "-2": 9.76,
+   "-1": 9.75,
+   "+0": 14.64,
+   "+1": 11.91,
+   "+2": 11.17
+  }
+ }
+}

@@ -9,7 +9,6 @@ import pandas as pd
 
 from desc import RES, NY, Px, cal_dates, fmt, load_is, local_times, r2, summ
 
-SCR = "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad"
 
 
 def run(sym="btcusd"):
@@ -75,7 +74,6 @@ def run(sym="btcusd"):
     print(txt, flush=True)
     with open(f"{RES}/desc3_btc.txt", "w") as f:
         f.write(txt + "\n")
-    P.to_pickle(f"{SCR}/P_btc_hours.pkl")
     r2.free()
 
 

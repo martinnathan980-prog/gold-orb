@@ -9,9 +9,7 @@ import sys
 import numpy as np
 import pandas as pd
 
-from desc import RES, NY, BER, Px, cal_dates, fmt, load_is, local_times, r2, summ
-
-SCR = "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad"
+from desc import RES, NY, BER, Px, cal_dates, fmt, load_is, local_times, r2, save_grid, summ
 
 
 def hh(a, b):
@@ -84,7 +82,7 @@ def run(sym):
     with open(f"{RES}/desc1_grid_{sym}.txt", "w") as f:
         f.write(txt + "\n")
     json.dump({"cells": cells, "agg": agg}, open(f"{RES}/desc1_grid_{sym}.json", "w"))
-    P.to_pickle(f"{SCR}/P_{sym}.pkl")
+    save_grid(P, sym)
     r2.free()
 
 

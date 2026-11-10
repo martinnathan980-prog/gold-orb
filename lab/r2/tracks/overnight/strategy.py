@@ -226,6 +226,11 @@ def make_orders(m1, tz="NY", entry="17:05", exit="19:00", exit_next=False, weekd
 #                  us500 / us100: 15:55 -> next 09:30 New York;  ger40: 17:25 -> next 09:00 Frankfurt.
 #                  Judged as a basket (PROTOCOL_V2 section 4).  A long index position held one night a
 #                  month: in a crash it behaves like a leveraged long (stop at 1 daily ATR).
+#
+# Outcome of the single-shot validation (2022-2025, results/r2/overnight/finalists_val.json), nothing re-tuned:
+#   GOLD_FRI_PM      IS pass, VAL pass (PF 1.28, n 184) -- weak, decaying, VAL not independent (seen in round 1)
+#   MONTH_END_NIGHT  IS pass (basket), VAL FAIL (basket PF 0.81) -- rejected, kept here for the record only
+# History needed before the first decision: 14 completed 1h bars (gold) / 14 full trading days (month-end).
 # ----------------------------------------------------------------------------------------------------------
 _WD = (0, 1, 2, 3, 4)
 _ME_COMMON = dict(exit_next=True, weekdays=_WD, side=1, stop_atr=1.0, atr_n=14, atr_tf="D", cond="month_end")

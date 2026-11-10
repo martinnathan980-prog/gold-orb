@@ -122,3 +122,5 @@
        by year R: {"2013": 1.8, "2014": -1.8, "2015": 0.1, "2016": -0.4, "2017": 3.3, "2018": 0.2, "2019": 4.2, "2020": 2.3, "2021": 3.4} exits: {"time": 90, "stop": 5}
 [ 62] ger40   FINAL MONTH_END_NIGHT ger40 (full, final code) n=  92 /yr= 11.4 win=0.674 PF=2.016 t= 2.57 expR=+0.1292 yrs=6/9 ddR=  3.2 L=+11.9/S=+0.0 bp=+14.85 hold=39.8h | stressPF=1.981 grossPF=2.258 gross_bp=17.97 everyR=0.1292  (3s)
        by year R: {"2013": -0.1, "2014": -1.7, "2015": -1.1, "2016": 0.1, "2017": 3.8, "2018": 0.6, "2019": 3.7, "2020": 3.5, "2021": 3.0} exits: {"time": 88, "stop": 4}
+[ 63] xauusd  DIAG gold Fri 13:30->16:45 MARKET entry (IS only; finalist frozen) n= 443 /yr= 49.3 win=0.551 PF=1.456 t= 2.86 expR=+0.0353 yrs=6/9 ddR=  3.6 L=+15.6/S=+0.0 bp=+4.44 hold=3.2h | stressPF=1.32 grossPF=1.792 gross_bp=5.91 everyR=0.0353  (4s)
+       by year R: {"2013": 4.8, "2014": 3.7, "2015": 4.7, "2016": 3.6, "2017": 0.2, "2018": -0.3, "2019": -1.9, "2020": 1.7, "2021": -0.9} exits: {"time": 442, "stop": 1}

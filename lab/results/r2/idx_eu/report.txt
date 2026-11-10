@@ -1,0 +1,353 @@
+# Track `idx_eu` — DAX CFD (ger40), round 2
+
+## Verdict
+
+**Nothing on this track survives convincingly.**
+
+- **Opening-range breakouts, the reason this track existed, are not an edge on the DAX.** Under the real FP
+  costs the round-1 rule (09:00–10:00 Berlin range) gives PF 1.08, t 1.3, and all of it is the long side
+  (+81.5 R long, −12.5 R short). Seven ORB variants (cash open 15/30/60 min, pre-market range, US open):
+  net PF 0.94–1.08, none with t above 1.3.
+- **One in-sample effect looked real: momentum into the Xetra close, measured from the previous cash
+  close.** Both finalists come from it.
+  - `late_mom_1600` (IS PF 1.67, t 3.5) **failed validation**: PF 0.98, −0.008 R/trade on 151 trades.
+  - `close_run_1725` (IS PF 1.50, t 5.1) **passes the letter of the validation criteria** (PF 1.105,
+    +0.0105 R/trade on 618 trades). It is a weak pass: t 0.93, 2 of 4 years positive (2022 makes +13.0 R,
+    the other three years −6.5 R together), and with costs ×1.5 it loses (PF 0.89). What is left is
+    0.38 bp net per trade on a five-minute trade. I do not consider it confirmed and would not fund it
+    before checking FP's own price history (section 6).
+- 64 configurations evaluated (budget 120), every one logged. Two validation runs, one per finalist sleeve,
+  decided beforehand in `finalists_preval.json`. No re-tuning afterwards.
+
+## 1. Data and set-up
+
+- Instrument: ger40 FP-cost frame, research data only (2026 never loaded). In-sample = entries before
+  2022-01-01 (first bar 2013-09-30, so "2013" is three months).
+- Data hours differ by year (Berlin clock): about 00:00–22:14 in 2014 and 2018–2021, only 08:00–22:00 in
+  2015–2017, sparse in 2013. Every rule here uses 08:00–21:59 only.
+- All clock times are Europe/Berlin wall clock (DST handled per date); the US open is taken as 09:30 New York.
+- Engine: `r2.evaluate(full=True)` for every trial (FP costs, costs ×1.5 with orders rebuilt on the widened
+  quotes, zero-cost run, every-signal run). All rules trade at most once a day and are flat the same day, so
+  the every-signal run equals the base run.
+- Causality: orders built on frames cut at random times and inside a trading day equal the orders of the
+  full frame up to the cut: 15 cuts for each finalist's exact parameters, 9 cuts for each rule family
+  (`causality_test.json`). A 4-month frame gives the same orders as the long frame once six weeks have
+  passed (the scale needs 20 earlier days).
+- us500 was read once, in-sample, as a control for the close run-up (section 2); it is not used by any rule.
+
+## 2. What was tested (64 trials, 5 stages, each list written before it was run)
+
+| Stage | Trials | Question |
+|---|---|---|
+| 1 screen | 12 | 7 opening-range breakouts and 5 momentum rules, canonical settings |
+| 2 | 25 | Late momentum: one change at a time around the 16:00 rule (17). Morning/gap momentum (8) |
+| 3 | 5 | Where the 16:00 plateau starts (15:45, 16:15), anchor ±5 min, morning rule closed at 16:00 |
+| 4 | 7 | "Close run": entry 17:15 / 17:20 / 17:25, threshold 0 / 0.5 / 1.0 |
+| 5 | 15 | Neighbours of the 17:25 close-run rule |
+
+Not counted as trials: descriptive statistics on in-sample prices (`descriptive_is.txt`), 8 random-entry null
+runs, and trade break-downs of configurations already logged.
+
+### Stage 1 — screen (IS, FP costs)
+
+| rule | n | PF | t | yrs+ | long R | short R | gross PF | stress PF |
+|---|---|---|---|---|---|---|---|---|
+| ORB 09:00–10:00, exit 21:00 (round-1 rule) | 2049 | 1.076 | 1.29 | 6/9 | +81.5 | −12.5 | 1.147 | 1.041 |
+| ORB 09:00–10:00, exit 17:30 | 2049 | 1.069 | 1.16 | 5/9 | +69.1 | −10.6 | 1.143 | 1.033 |
+| ORB 09:00–09:30, exit 17:30 | 2082 | 1.072 | 1.20 | 6/9 | +74.3 | +3.3 | 1.153 | 1.035 |
+| ORB 09:00–09:15, exit 17:30 | 2090 | 1.032 | 0.53 | 7/9 | +50.8 | −8.1 | 1.117 | 0.993 |
+| ORB 08:00–09:00 (pre-market), exit 17:30 | 2064 | 1.061 | 0.98 | 7/9 | 0.0 | +83.6 | 1.160 | 1.024 |
+| ORB US open 09:30–10:00 NY, exit 21:45 | 2085 | 0.937 | −1.16 | 2/9 | −0.6 | −64.6 | 1.044 | 0.890 |
+| ORB US open, exit 17:30 | 2022 | 0.982 | −0.31 | 4/9 | −5.5 | −7.9 | 1.120 | 0.924 |
+| Momentum 16:00, z≥1.5, exit 17:30 | 318 | 1.667 | 3.49 | 7/9 | +42.7 | +20.9 | 1.773 | 1.618 |
+| Momentum 12:00, z≥1.5 | 301 | 1.354 | 2.07 | 7/9 | +40.1 | +18.6 | 1.412 | 1.318 |
+| Momentum, first 30-min mark 09:30–16:30 | 665 | 1.420 | 3.27 | 8/9 | +146.5 | +22.1 | 1.505 | 1.364 |
+| Gap 09:05, z≥1.0, exit 17:30 | 622 | 1.365 | 2.66 | 7/9 | +145.0 | +15.2 | 1.498 | 1.332 |
+| Last half-hour, every day (17:00→17:30) | 2084 | 1.042 | 0.70 | 6/9 | +74.5 | −47.1 | 1.217 | 0.968 |
+
+ORB stop = the other side of the range, no target, first touch resolved on M1 (both sides in one minute →
+adverse side). z = move since the previous 17:30 close ÷ its 20-day standard deviation; in the tables
+"z≥1.5" means its absolute value, written |z| elsewhere.
+
+Reading: the breakout rules have a small gross edge (gross PF 1.12–1.16, about 3 bp per trade) that costs
+and the short side remove. The momentum rules anchored on the previous cash close are the only family
+with t above 2.5.
+
+### What the descriptive statistics say (IS)
+
+- No tradable drift by time of day: every 30-minute bucket is within ±1.1 bp. Overnight (17:30→09:00) is
+  +4.1 bp (t 2.4), the cash day −1.4 bp.
+- No continuation between sessions in general (opening half-hour → rest of morning: +0.2 bp; US-open
+  half-hour → rest of afternoon: +0.3 bp). No gap fade either (gap → first hour: −0.3 bp, t −0.3).
+- Continuation exists only after a LARGE move from the previous cash close (|z| ≥ 1.5): to 17:30 it is
+  +10 bp from 09:30 (t 1.8), +15 bp from 12:00 (t 3.0), +13 bp from 15:45 (t 4.7), +12 bp from 16:00
+  (t 4.5), +9 bp from 16:30 (t 4.4). With the 09:00 open as anchor it is weak (16:00: +6 bp, t 2.0), and it
+  does not last into the evening (16:00→21:55: +7 bp, t 1.9).
+- Most of it sits in the last minutes. On big-move days 17:15→17:30 gives about +6 bp of the 12. On ALL days
+  the trend-signed move is +0.55 bp over 17:25–17:28, +0.70 bp in 17:28–17:29 (t 6.7), +0.62 bp in
+  17:29–17:30 (t 4.6), then −0.57 bp in the first minute after the close (t −5.0) and −0.84 bp over
+  17:36–17:45. The 17:25→17:30 piece is positive in all nine IS years (0.8–3.1 bp).
+- It is in the raw Dukascopy quotes too (buy at the ask 17:25, sell at the bid 17:30, days with |z| ≥ 0.5:
+  +1.51 bp, t 4.1), it is inside the 17:28 and 17:29 bars and not a jump at the bar boundary, and the same
+  provider's US500 CFD shows nothing similar before the New York close. So it is a price move in this
+  feed, not a quoting artefact that I can identify. Whether FP's feed has it is not known.
+
+### Stage 2–3 — the late rule and the morning rule
+
+Late rule (16:00, |z| ≥ 1.5, stop 0.5, exit 17:30), one change at a time, PF (t):
+threshold 1.0 → 1.338 (2.79) · 1.25 → 1.558 (3.59) · 1.75 → 1.528 (2.50) · 2.0 → 1.561 (2.10);
+time 15:30 → **1.126 (0.81)** · 15:45 → 1.602 (3.23) · 16:15 → 1.518 (2.84) · 16:30 → 1.686 (3.44) ·
+17:00 → 1.505 (2.67); stop 0.25 → 1.607 · 0.35 → 1.585 · 0.75 → 1.622 · 1.0 → 1.796;
+exit 17:25 → 1.485 (2.67) · 17:35 → 1.621 (3.30); look-back 10 → 1.430 · 40 → 1.549;
+anchor 17:25 → 1.637 · 17:35 → 1.642; checks at 16:00/16:30/17:00 → 1.556 (397 trades, no extra R);
+checks from 15:00 → 1.274 (1.94).
+The one weak neighbour is entering in the very minute of the US open (15:30).
+
+Morning rule (first of 09:30 / 10:00 / 10:30 with |z| ≥ 1.5, stop 0.5): exit 17:30 → PF 1.580, t 3.41;
+exit 16:00 → PF 1.407, t 2.66; single entry 09:30 → 1.482 (2.54); 09:05 → 1.623 (2.72); stop 1.0 → 1.301
+(1.90); stop 0.25 → 1.487 (2.02); threshold 2.0 → 1.697 (2.24); exit 21:45 → 1.328 (1.82).
+
+### Stage 4–5 — the close run
+
+Entry 17:15: every day PF 1.154 (t 2.42), |z| ≥ 0.5 → 1.265 (2.99), ≥ 1.0 → 1.451 (3.43).
+Entry 17:20: 1.110 / 1.208 / 1.297 (t 1.75–2.38). Entry 17:25, |z| ≥ 0.5: **PF 1.502, t 5.09**.
+
+## 3. Finalists (chosen on IS, written to `finalists_preval.json` before any validation access)
+
+Both are family `mom` in `strategy.py`. Definitions shared by both, precise enough for an EA:
+
+1. Clock: Europe/Berlin wall time (convert from the MT5 server clock, DST included).
+2. P(t) = mid price (bid+ask)/2 at the close of the last M1 bar that started before t. If no bar started in
+   the 5 minutes before t, or none starts in the 5 minutes after t, there is no trade that day.
+3. A = P(17:30) of the most recent earlier weekday that was quoted at 17:30 (yesterday's cash close).
+4. x = P(T)/A − 1. vol = sample standard deviation (n−1) of x over the 20 most recent earlier days on which
+   x exists (today excluded; 20 values required).
+5. If |x| ≥ k·vol: market order at T, long if x > 0, short if x < 0.
+6. Stop-loss at stop_k·vol·P(T) from the fill price. No target, no trailing.
+7. Market exit at 17:30:00. One trade per day.
+
+| | `late_mom_1600` | `close_run_1725` |
+|---|---|---|
+| T | 16:00 | 17:25 |
+| k | 1.5 | 0.5 |
+| stop_k | 0.5 | 0.25 |
+| holding time | 90 min | 5 min |
+
+### In-sample (2013-10 → 2021-12, FP costs)
+
+| | `late_mom_1600` | `close_run_1725` |
+|---|---|---|
+| trades (per year) | 318 (39.3) | 1160 (142.4) |
+| win rate | 56.3% | 57.9% |
+| average win / loss (R) | +0.888 / −0.686 | +0.325 / −0.298 |
+| expectancy (R/trade) | +0.2000 | +0.0628 |
+| profit factor | 1.667 | 1.502 |
+| t | 3.49 | 5.09 |
+| years positive | 7/9 | 8/9 |
+| max drawdown (R) | 8.9 | 4.7 |
+| long: n / R / R per trade / t | 157 / +42.7 / +0.272 / 4.07 | 627 / +31.3 / +0.050 / 3.61 |
+| short: n / R / R per trade / t | 161 / +20.9 / +0.130 / 1.41 | 533 / +41.6 / +0.078 / 3.64 |
+| net per trade (bp of price) | 8.76 | 1.73 |
+| gross per trade (bp) / gross PF | 9.73 / 1.773 | 2.71 / 2.012 |
+| cost per trade (bp); gross ÷ cost | 0.97; 10.0 | 0.98; 2.8 |
+| costs ×1.5: PF | 1.618 | 1.295 |
+| every signal taken: R/trade | +0.2000 | +0.0628 |
+| neighbours (14 each): median PF; range | 1.571; 1.126–1.686 | 1.432; 1.132–1.587 |
+| random-entry null (200 replays, mode "day") | 99.5th percentile | 100th percentile |
+| gross bp/trade, 2013–17 → 2018–21 | 9.93 → 9.53 | 2.87 → 2.53 |
+| net t, first / second half | 2.49 / 2.45 | 3.43 / 3.88 |
+| exits: time / stop | 244 / 74 | 1129 / 31 |
+| without the 10 best trades: R/trade (t) | +0.105 (2.09) | +0.050 (4.25) |
+| real Dukascopy spread instead of FP (info) | PF 1.632, t 3.35 | PF 1.305, t 3.33 |
+| median stop 2024–25 | 67.4 points (32.6 bp) | 41.2 points (19.7 bp) |
+| that stop on the 0.1 minimum lot | 6.74 EUR | 4.12 EUR |
+| IS criteria (all eight) | pass | pass |
+
+R by year, `late_mom_1600`: 2013 +1.3 · 2014 +12.7 · 2015 +14.8 · 2016 +6.8 · 2017 −5.4 · 2018 −2.2 ·
+2019 +15.1 · 2020 +5.4 · 2021 +15.1.
+R by year, `close_run_1725`: 2013 −0.6 · 2014 +11.8 · 2015 +15.8 · 2016 +7.8 · 2017 +4.1 · 2018 +22.7 ·
+2019 +0.7 · 2020 +7.7 · 2021 +2.9. Its net edge in calm years was already close to zero in sample
+(2017: 0.40 bp, 2019: 0.47 bp, 2021: 0.56 bp per trade).
+
+Neighbours of `close_run_1725`, PF (t): entry 17:23 → 1.509 (5.10) · 17:27 → 1.508 (5.02) · 17:20 → 1.208
+(2.37); threshold 0.25 → 1.386 (4.79) · 0.75 → 1.587 (4.87) · [0 → 1.253, 1.0 → 1.686]; stop 0.15 → 1.428 ·
+0.35 → 1.479; **exit 17:29 → 1.132 (1.55, stress PF 0.96) · exit 17:31 → 1.169 (2.00, stress PF 1.02)** ·
+exit 17:35 → 1.250 (2.89); look-back 10 → 1.390 · 40 → 1.468; anchor 17:25 → 1.498 · 17:35 → 1.436.
+The exit minute is a knife edge: one minute early or late roughly halves the net edge.
+
+### Validation 2022–2025 (one run per sleeve, reported as it came out)
+
+| | `late_mom_1600` | `close_run_1725` |
+|---|---|---|
+| trades (per year) | 151 (37.9) | 618 (154.8) |
+| win rate | 48.3% | 49.7% |
+| average win / loss (R) | +0.739 / −0.708 | +0.222 / −0.198 |
+| expectancy (R/trade) | −0.0084 | +0.0105 |
+| profit factor | 0.977 | 1.105 |
+| t | −0.12 | 0.93 |
+| years positive | 2/4 | 2/4 |
+| R by year 2022 / 23 / 24 / 25 | −2.6 / +3.4 / −8.3 / +6.3 | +13.0 / −5.8 / +2.7 / −3.4 |
+| long R (n) / short R (n) | −3.8 (78) / +2.6 (73) | −4.6 (340) / +11.0 (278) |
+| max drawdown (R) | 14.1 | 9.0 |
+| net per trade (bp) | −0.69 | +0.38 |
+| costs ×1.5: PF (R/trade) | 0.934 (−0.025) | 0.894 (−0.012) |
+| every signal taken: R/trade | −0.0084 | +0.0105 |
+| criteria (PF ≥ 1.06, expectancy > 0, every-signal > 0) | **FAIL** | **pass** |
+
+How I read it:
+
+- `late_mom_1600`: the continuation of big moves into the close, stable across both halves of the sample
+  (9.9 and 9.5 bp gross), is absent after 2021. Failed, dropped.
+- `close_run_1725`: the run-up into 17:30 still exists but is about half its in-sample size (net 0.38 bp
+  against 1.73 bp; the cost is about 0.93 bp, so gross is roughly 1.3 bp against 2.7 bp). A t of 0.93 is not
+  distinguishable from zero, one year carries the result, and the costs-×1.5 run is negative. Gross is now
+  1.4 times the cost, below the "2× its cost" line of the toolkit README. At face value it would add about
+  +1.6 R a year (155 trades × 0.0105 R), which changes nothing for the user's target.
+
+## 4. Candidate that was NOT made a finalist (validation data untouched)
+
+Morning momentum, first of 09:30 / 10:00 / 10:30 with |z| ≥ 1.5, stop 0.5, closed at 16:00 (trial 42):
+n 426 (52.6/yr), PF 1.407, t 2.66, +0.247 R/trade, 7/9 years, drawdown 17.5 R, null 99th percentile.
+It clears the IS thresholds. I left it out for three reasons. The short side is flat (+0.058 R/trade,
+t 0.45, against +0.420 R long). More than half of its trades end at the −1 R stop (win rate 38%) and the
+result rests on a few trend days (without its 10 best trades: +0.085 R, t 1.07). And on the single-entry
+09:30 version the t moves between 1.9 and 2.5 with the stop size. Held to 17:30 it reads PF 1.58, t 3.41,
+but a third of that is the late-day effect that has now failed validation. If the lead wants it tested
+later, trial 42 exactly as logged is the version to use. I rate it low.
+
+## 5. Rejected ideas (one line each)
+
+- **ORB 09:00–10:00, exit 21:00 (round-1 rule, real costs)**: PF 1.076, t 1.29; long +81.5 R, short −12.5 R.
+- **ORB 09:00–10:00 / 09:00–09:30 / 09:00–09:15, exit 17:30**: PF 1.069 / 1.072 / 1.032, t ≤ 1.2; long side only.
+- **Pre-market range 08:00–09:00 broken after the cash open**: PF 1.061, t 0.98; short side only (+83.6 R, long 0).
+- **US-open range 09:30–10:00 New York**: PF 0.937 held to 21:45, 0.982 held to 17:30.
+- **Midday momentum (12:00, |z| ≥ 1.5)**: PF 1.354 but t 2.07 and drawdown 25 R.
+- **First 30-min mark of the whole day (09:30–16:30)**: PF 1.42, t 3.27, but entries from 11:00 to 16:30 add nothing (+12 R on 239 trades).
+- **Gap continuation at 09:05, |z| ≥ 1**: PF 1.365, t 2.66; long +145 R, short +15 R; gaps between 1 and 1.5 deviations add little (+0.09 R/trade).
+- **Morning momentum 09:30/10:00/10:30, closed at 16:00**: clears IS (PF 1.407, t 2.66) but long-only and tail-dependent; not selected (section 4).
+- **Last half-hour momentum every day (17:00→17:30)**: PF 1.042, t 0.70; stop-outs before the final run-up and costs take the 1.7 bp gross.
+- **Late momentum entered in the US-open minute (15:30)**: PF 1.126, t 0.81; with checks from 15:00: PF 1.274, t 1.94.
+- **Late momentum with lower threshold (|z| ≥ 1.0)**: PF 1.338; the extra trades between 1.0 and 1.5 carry about 2 bp gross.
+- **Close run every day, no threshold (17:15 / 17:20 / 17:25)**: PF 1.154 / 1.110 / 1.253; on small-move days the run-up is about the cost.
+- **Close run from 17:15 or 17:20**: PF 1.21–1.45, t 2.4–3.4; weaker than 17:25 (a signed dip sits at 17:20–17:21).
+- **Close run left one minute early or late**: PF 1.132 (17:29) and 1.169 (17:31); both fail costs ×1.5 (PF 0.96 and 1.02).
+- **Gap fade after 09:00**: not run; the gap is neither faded nor continued in the first hour (−0.3 bp, t −0.3).
+- **Overnight long 17:30→09:00**: not run; +4.1 bp gross (t 2.4) against about 3 bp of spread, slippage and swap.
+- **Pre-open drift 08:15→09:00** (+1.6 bp, t 3.6): not run; about 1 bp of cost leaves +0.6 bp, long only.
+- **US-session move after 17:30 as a predictor of the next cash day** (measured on the DAX CFD itself, 17:30→21:55, so us500 was not needed): not built; +4.3 bp (t 2.1), but −0.04 bp in 2013–17 against +8.8 bp in 2018–21.
+
+## 6. What would settle `close_run_1725`
+
+Its doubt is not mainly statistical, it is whether FP's GER40 price shows the same last-minutes move.
+MT5 keeps M1 history: on FP's own bars, take the sign of (17:24 close ÷ previous day's 17:29 close − 1) and
+average the signed move from the 17:25 open to the 17:30 open on days where that move exceeds half its
+20-day deviation. In this data it is +2.7 bp in 2013–2021 and roughly +1.3 bp in 2022–2025 (validation
+result plus the modelled cost). The round trip costs about 1 bp: below that the sleeve loses, and the
+in-sample performance needs the full 2.7 bp.
+
+## 7. Engine and data concerns (nothing in `goldlab/` was changed)
+
+1. **Cash-hours spread in the FP frame is 0.7× the nominal spread from 2018 on.** The intraday shape is
+   Dukascopy's spread divided by that trading day's MEDIAN spread. From 2018 Dukascopy quotes the cash
+   session tighter than the evening and the night, and the median minute of a 23-hour day is an evening
+   minute, so the cash session gets a factor below 1 (clipped at 0.7). Modelled spread 09:00–17:29 Berlin:
+   0.62 bp in 2013–2017, 0.436 bp in 2018–2025, against a nominal 1.5 points = 0.62 bp. The whole
+   validation period is therefore charged about 1.05 points (at today's price) in cash hours. That is right
+   only if FP's 1.5 points is an all-day figure and not its cash-hours spread; to be checked against the
+   verified FP costs. For my two finalists the effect is small (about 0.09 bp per trade, entry side only:
+   the 17:30 exit bar already carries 0.62 bp), but any cash-hours rule on an index is affected, and the
+   in-sample years are charged unevenly.
+2. **Bar-level spread at session switches.** The modelled spread of a bar comes from its closing quote, so
+   the 17:30:00 open is charged the evening spread although Dukascopy's quote is still tight then
+   (conservative by about 0.09 bp for exits at 17:30).
+3. **M1 granularity.** `close_run_1725` depends on leaving at 17:30:00; the engine cannot say what a
+   2-second delay costs. Exits at 17:29 and 17:31 are the bounds I can give (PF 1.13 and 1.17 in sample).
+4. **Data hours change by year** (2015–2017 have no night session; 2013 is sparse), so nothing using the
+   night session can be tested consistently on ger40.
+5. `r2.null_test` groups bars by New York minute of day; for a European-clock rule the "same time of day"
+   is one hour off during the 3–4 weeks a year when US and EU daylight saving differ. Minor.
+6. `years_pos` counts 2013 (three months) as a year.
+7. No engine bug found. Disclosure: `finalize.py` reads the stop distances of the 2024–2025 orders (asked
+   for by the brief), and after the validation run I tabulated the modelled spread and the median price
+   by year to 2025 for concern 1. No return of any 2022+ trade was computed outside `r2.validate`.
+
+## 8. Files
+
+Code, `/home/user/gold-orb/lab/r2/tracks/idx_eu/`: `strategy.py` (`make_orders`, `FINALISTS`, `VAL_STATUS`),
+`research.py` (harness, cache, one log line per configuration), `stage1.py` … `stage5.py` (declared trial
+lists), `nulls.py`, `causality_test.py`, `descriptive.py`, `finalize.py` (IS dossier and the pre-validation
+decision), `val_run.py` (refuses a second run), `post_val.py`.
+
+Results, `/home/user/gold-orb/lab/results/r2/idx_eu/`: `trials.jsonl` (64), `trials_summary.csv`,
+`research_cache.jsonl`, `finalists_preval.json`, `val_results.json`, `candidates.json`, `null_tests.jsonl`,
+`causality_test.json`, `descriptive_is.txt`, `desc_intraday_momentum_is.csv`, `trades_is_late_mom_1600.csv`,
+`trades_is_close_run_1725.csv`, `report.txt` (this text).
+
+## Appendix — all 64 in-sample trials (FP costs; stress = costs ×1.5)
+
+| # | tag | n | /yr | win | exp R | PF | t | yrs+ | DD R | long R | short R | net bp | gross PF | gross bp | stress PF |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | S1_O1_orb0900_60_x2100 | 2049 | 248.4 | 0.442 | +0.0337 | 1.076 | +1.29 | 6/9 | 34.1 | +81.5 | -12.5 | +2.34 | 1.147 | +3.71 | 1.041 |
+| 2 | S1_O2_orb0900_60_x1730 | 2049 | 248.4 | 0.450 | +0.0286 | 1.069 | +1.16 | 5/9 | 42.7 | +69.1 | -10.6 | +1.75 | 1.143 | +3.08 | 1.033 |
+| 3 | S1_O3_orb0900_30_x1730 | 2082 | 252.4 | 0.404 | +0.0372 | 1.072 | +1.20 | 6/9 | 42.5 | +74.3 | +3.3 | +1.79 | 1.153 | +3.17 | 1.035 |
+| 4 | S1_O4_orb0900_15_x1730 | 2090 | 253.4 | 0.338 | +0.0204 | 1.032 | +0.53 | 7/9 | 55.5 | +50.8 | -8.1 | +1.05 | 1.117 | +2.46 | 0.993 |
+| 5 | S1_O5_orb0800_60_x1730 | 2064 | 252.6 | 0.320 | +0.0405 | 1.061 | +0.98 | 7/9 | 79.9 | +0.0 | +83.6 | +1.06 | 1.160 | +2.73 | 1.024 |
+| 6 | S1_O6_orbUS_30_x2145 | 2085 | 252.8 | 0.406 | -0.0313 | 0.937 | -1.16 | 2/9 | 74.7 | -0.6 | -64.6 | -1.32 | 1.044 | +0.16 | 0.890 |
+| 7 | S1_O7_orbUS_30_x1730 | 2022 | 245.1 | 0.448 | -0.0067 | 0.982 | -0.31 | 4/9 | 38.2 | -5.5 | -7.9 | +0.30 | 1.120 | +1.71 | 0.924 |
+| 8 | S1_M1_mom1600_k1.5 | 318 | 39.3 | 0.563 | +0.2000 | 1.667 | +3.49 | 7/9 | 8.9 | +42.7 | +20.9 | +8.76 | 1.773 | +9.73 | 1.618 |
+| 9 | S1_M2_mom1200_k1.5 | 301 | 37.2 | 0.419 | +0.1949 | 1.354 | +2.07 | 7/9 | 25.4 | +40.1 | +18.6 | +9.94 | 1.412 | +10.84 | 1.318 |
+| 10 | S1_M3_momgrid_k1.5 | 665 | 81.9 | 0.380 | +0.2536 | 1.420 | +3.27 | 8/9 | 26.0 | +146.5 | +22.1 | +8.13 | 1.505 | +9.29 | 1.364 |
+| 11 | S1_M4_gap0905_k1.0 | 622 | 77.0 | 0.302 | +0.2575 | 1.365 | +2.66 | 7/9 | 21.9 | +145.0 | +15.2 | +7.15 | 1.498 | +9.02 | 1.332 |
+| 12 | S1_M5_last30_all | 2084 | 255.5 | 0.481 | +0.0131 | 1.042 | +0.70 | 6/9 | 54.6 | +74.5 | -47.1 | +0.62 | 1.217 | +1.69 | 0.968 |
+| 13 | S2_A01_k1.0 | 613 | 75.5 | 0.538 | +0.1057 | 1.338 | +2.79 | 8/9 | 17.1 | +40.1 | +24.7 | +4.54 | 1.446 | +5.75 | 1.299 |
+| 14 | S2_A02_k1.25 | 444 | 54.8 | 0.554 | +0.1664 | 1.558 | +3.59 | 8/9 | 11.4 | +40.7 | +33.2 | +7.30 | 1.656 | +8.24 | 1.512 |
+| 15 | S2_A03_k1.75 | 227 | 28.3 | 0.542 | +0.1703 | 1.528 | +2.50 | 6/9 | 9.0 | +27.6 | +11.1 | +7.92 | 1.617 | +8.77 | 1.482 |
+| 16 | S2_A04_k2.0 | 143 | 17.9 | 0.531 | +0.1997 | 1.561 | +2.10 | 7/9 | 8.1 | +19.3 | +9.2 | +8.66 | 1.643 | +9.49 | 1.519 |
+| 17 | S2_A05_T1530 | 311 | 38.3 | 0.466 | +0.0558 | 1.126 | +0.81 | 4/9 | 17.0 | +32.1 | -14.8 | +3.81 | 1.193 | +4.81 | 1.088 |
+| 18 | S2_A06_T1630 | 318 | 39.3 | 0.582 | +0.1607 | 1.686 | +3.44 | 8/9 | 5.0 | +27.9 | +23.2 | +7.03 | 1.833 | +7.98 | 1.617 |
+| 19 | S2_A07_T1700 | 317 | 39.3 | 0.555 | +0.0861 | 1.505 | +2.67 | 7/9 | 6.4 | +13.6 | +13.7 | +4.44 | 1.707 | +5.44 | 1.421 |
+| 20 | S2_A08_stop0.25 | 318 | 39.3 | 0.440 | +0.3220 | 1.607 | +3.22 | 6/9 | 26.7 | +74.6 | +27.8 | +6.75 | 1.783 | +8.08 | 1.534 |
+| 21 | S2_A09_stop0.35 | 318 | 39.3 | 0.509 | +0.2451 | 1.585 | +3.16 | 7/9 | 13.8 | +58.5 | +19.5 | +7.11 | 1.725 | +8.39 | 1.541 |
+| 22 | S2_A10_stop0.75 | 318 | 39.3 | 0.585 | +0.1319 | 1.622 | +3.24 | 8/9 | 6.6 | +27.9 | +14.0 | +8.58 | 1.719 | +9.50 | 1.575 |
+| 23 | S2_A11_stop1.0 | 318 | 39.3 | 0.591 | +0.1173 | 1.796 | +3.79 | 7/9 | 2.6 | +25.2 | +12.1 | +9.61 | 1.958 | +10.86 | 1.740 |
+| 24 | S2_A12_exit1725 | 318 | 39.3 | 0.522 | +0.1455 | 1.485 | +2.67 | 7/9 | 10.6 | +32.3 | +13.9 | +6.01 | 1.585 | +6.95 | 1.440 |
+| 25 | S2_A13_exit1735 | 318 | 39.3 | 0.544 | +0.1964 | 1.621 | +3.30 | 7/9 | 17.3 | +39.8 | +22.6 | +8.79 | 1.725 | +9.80 | 1.572 |
+| 26 | S2_A14_lb10 | 343 | 42.2 | 0.528 | +0.1489 | 1.430 | +2.58 | 7/9 | 9.1 | +34.9 | +16.2 | +7.11 | 1.531 | +7.97 | 1.379 |
+| 27 | S2_A15_lb40 | 303 | 37.7 | 0.568 | +0.1646 | 1.549 | +3.02 | 6/9 | 7.5 | +36.9 | +13.0 | +7.55 | 1.670 | +8.69 | 1.508 |
+| 28 | S2_A16_grid1600-1700 | 397 | 49.0 | 0.552 | +0.1615 | 1.556 | +3.34 | 7/9 | 8.9 | +42.7 | +21.4 | +6.96 | 1.662 | +7.92 | 1.508 |
+| 29 | S2_A17_grid1500-1700 | 445 | 54.8 | 0.488 | +0.1095 | 1.274 | +1.94 | 7/9 | 11.0 | +59.4 | -10.7 | +4.79 | 1.354 | +5.79 | 1.230 |
+| 30 | S2_B01_T0930_k1.5 | 319 | 39.4 | 0.348 | +0.3181 | 1.482 | +2.54 | 6/9 | 22.7 | +88.5 | +13.0 | +8.57 | 1.580 | +9.93 | 1.403 |
+| 31 | S2_B02_T0905_k1.5 | 291 | 36.0 | 0.292 | +0.4511 | 1.623 | +2.72 | 7/9 | 20.8 | +113.9 | +17.4 | +12.01 | 1.726 | +13.21 | 1.580 |
+| 32 | S2_B03_grid0930-1030 | 426 | 52.6 | 0.366 | +0.3666 | 1.580 | +3.41 | 8/9 | 17.9 | +131.1 | +25.1 | +12.07 | 1.678 | +13.33 | 1.510 |
+| 33 | S2_B04_T0930_stop1.0 | 319 | 39.4 | 0.489 | +0.1385 | 1.301 | +1.90 | 6/9 | 11.4 | +46.7 | -2.5 | +9.61 | 1.350 | +10.52 | 1.269 |
+| 34 | S2_B05_T0930_stop0.25 | 319 | 39.4 | 0.194 | +0.4087 | 1.487 | +2.02 | 5/9 | 27.9 | +134.8 | -4.4 | +4.74 | 1.621 | +5.69 | 1.451 |
+| 35 | S2_B06_T0930_k2.0 | 142 | 17.7 | 0.338 | +0.4720 | 1.697 | +2.24 | 6/9 | 12.8 | +60.3 | +6.7 | +12.39 | 1.839 | +14.14 | 1.669 |
+| 36 | S2_B07_T0930_exit2145 | 319 | 39.4 | 0.307 | +0.2268 | 1.328 | +1.82 | 6/9 | 20.8 | +77.8 | -5.4 | +5.46 | 1.414 | +6.73 | 1.262 |
+| 37 | S2_B08_T0930_exit1600 | 319 | 39.4 | 0.354 | +0.1886 | 1.294 | +1.78 | 6/9 | 22.9 | +55.3 | +4.8 | +4.03 | 1.375 | +5.15 | 1.229 |
+| 38 | S3_A18_T1545 | 316 | 38.9 | 0.560 | +0.2028 | 1.602 | +3.23 | 7/9 | 10.6 | +36.0 | +28.0 | +9.11 | 1.694 | +10.02 | 1.555 |
+| 39 | S3_A19_T1615 | 333 | 41.1 | 0.571 | +0.1443 | 1.518 | +2.84 | 7/9 | 6.9 | +38.2 | +9.9 | +6.40 | 1.639 | +7.35 | 1.445 |
+| 40 | S3_A20_anchor1725 | 329 | 40.6 | 0.562 | +0.1936 | 1.637 | +3.46 | 7/9 | 9.6 | +40.9 | +22.8 | +8.15 | 1.734 | +9.03 | 1.588 |
+| 41 | S3_A21_anchor1735 | 319 | 39.7 | 0.564 | +0.1934 | 1.642 | +3.39 | 8/9 | 8.9 | +39.4 | +22.2 | +8.46 | 1.738 | +9.33 | 1.596 |
+| 42 | S3_B09_grid_exit1600 | 426 | 52.6 | 0.378 | +0.2467 | 1.407 | +2.66 | 7/9 | 17.5 | +93.2 | +11.9 | +7.70 | 1.494 | +8.79 | 1.347 |
+| 43 | S4_C1_T1715_k0 | 2083 | 255.4 | 0.518 | +0.0327 | 1.154 | +2.42 | 6/9 | 29.2 | +43.6 | +24.4 | +1.25 | 1.410 | +2.27 | 1.042 |
+| 44 | S4_C2_T1715_k0.5 | 1160 | 142.5 | 0.537 | +0.0602 | 1.265 | +2.99 | 6/9 | 21.3 | +21.6 | +48.2 | +2.08 | 1.532 | +3.14 | 1.154 |
+| 45 | S4_C3_T1715_k1.0 | 599 | 74.0 | 0.568 | +0.1074 | 1.451 | +3.43 | 7/9 | 12.6 | +17.1 | +47.3 | +3.13 | 1.756 | +4.29 | 1.328 |
+| 46 | S4_C4_T1720_k0 | 2084 | 255.5 | 0.521 | +0.0203 | 1.110 | +1.75 | 6/9 | 32.6 | +33.7 | +8.6 | +0.91 | 1.401 | +1.91 | 0.994 |
+| 47 | S4_C5_T1720_k0.5 | 1152 | 141.7 | 0.536 | +0.0410 | 1.208 | +2.37 | 7/9 | 17.0 | +13.6 | +33.6 | +1.46 | 1.512 | +2.48 | 1.095 |
+| 48 | S4_C6_T1720_k1.0 | 602 | 74.3 | 0.551 | +0.0647 | 1.297 | +2.38 | 7/9 | 14.2 | +7.0 | +32.0 | +2.04 | 1.605 | +3.08 | 1.189 |
+| 49 | S4_C7_T1725_k0.5 | 1160 | 142.4 | 0.579 | +0.0628 | 1.502 | +5.09 | 8/9 | 4.7 | +31.3 | +41.6 | +1.73 | 2.012 | +2.71 | 1.295 |
+| 50 | S5_N01_T1723 | 1163 | 142.8 | 0.582 | +0.0743 | 1.509 | +5.10 | 9/9 | 5.9 | +34.8 | +51.6 | +2.13 | 1.971 | +3.14 | 1.317 |
+| 51 | S5_N02_T1727 | 1156 | 141.9 | 0.578 | +0.0520 | 1.508 | +5.02 | 8/9 | 5.1 | +30.4 | +29.7 | +1.31 | 2.135 | +2.30 | 1.254 |
+| 52 | S5_N03_k0.25 | 1595 | 195.6 | 0.558 | +0.0486 | 1.386 | +4.79 | 8/9 | 5.8 | +39.0 | +38.5 | +1.40 | 1.869 | +2.38 | 1.191 |
+| 53 | S5_N04_k0.75 | 821 | 101.3 | 0.587 | +0.0762 | 1.587 | +4.87 | 7/9 | 5.6 | +25.4 | +37.1 | +2.03 | 2.088 | +3.01 | 1.380 |
+| 54 | S5_N05_k0 | 2082 | 255.4 | 0.531 | +0.0322 | 1.253 | +3.77 | 7/9 | 9.9 | +43.0 | +24.0 | +1.01 | 1.718 | +1.99 | 1.073 |
+| 55 | S5_N06_k1.0 | 602 | 74.3 | 0.601 | +0.0918 | 1.686 | +4.74 | 6/9 | 4.5 | +22.1 | +33.1 | +2.40 | 2.186 | +3.37 | 1.481 |
+| 56 | S5_N07_stop0.15 | 1160 | 142.4 | 0.571 | +0.0924 | 1.428 | +4.61 | 9/9 | 11.1 | +45.9 | +61.3 | +1.50 | 1.948 | +2.52 | 1.223 |
+| 57 | S5_N08_stop0.35 | 1160 | 142.4 | 0.579 | +0.0435 | 1.479 | +4.84 | 8/9 | 3.0 | +22.2 | +28.3 | +1.69 | 1.971 | +2.67 | 1.274 |
+| 58 | S5_N09_exit1729 | 1160 | 142.4 | 0.514 | +0.0163 | 1.132 | +1.55 | 5/9 | 16.7 | +4.7 | +14.2 | +0.74 | 1.580 | +1.69 | 0.960 |
+| 59 | S5_N10_exit1731 | 1160 | 142.4 | 0.530 | +0.0260 | 1.169 | +2.00 | 6/9 | 14.0 | +4.5 | +25.7 | +0.76 | 1.558 | +1.79 | 1.016 |
+| 60 | S5_N11_exit1735 | 1160 | 142.4 | 0.524 | +0.0494 | 1.250 | +2.89 | 7/9 | 15.1 | +3.9 | +53.4 | +1.34 | 1.553 | +2.36 | 1.124 |
+| 61 | S5_N12_lb10 | 1203 | 147.0 | 0.572 | +0.0558 | 1.390 | +4.12 | 7/9 | 6.5 | +30.3 | +36.7 | +1.61 | 1.896 | +2.60 | 1.188 |
+| 62 | S5_N13_lb40 | 1112 | 137.8 | 0.574 | +0.0589 | 1.468 | +4.68 | 9/9 | 7.0 | +25.0 | +40.6 | +1.60 | 1.940 | +2.59 | 1.279 |
+| 63 | S5_N14_anchor1725 | 1171 | 143.8 | 0.582 | +0.0621 | 1.498 | +5.08 | 8/9 | 4.7 | +32.5 | +40.3 | +1.74 | 2.006 | +2.72 | 1.288 |
+| 64 | S5_N15_anchor1735 | 1168 | 143.9 | 0.564 | +0.0566 | 1.436 | +4.55 | 8/9 | 5.4 | +29.5 | +36.6 | +1.52 | 1.923 | +2.50 | 1.239 |

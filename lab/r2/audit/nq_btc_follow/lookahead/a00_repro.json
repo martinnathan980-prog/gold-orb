@@ -1,0 +1,43 @@
+{
+ "is_report": {
+  "n": 1063,
+  "trades_per_year": 229.9,
+  "win_rate": 0.528,
+  "avg_win_R": 0.472,
+  "avg_loss_R": -0.375,
+  "expectancy_R": 0.0724,
+  "t_stat": 3.86,
+  "pf": 1.409,
+  "total_R": 76.9,
+  "max_dd_R": 16.5,
+  "years_pos": "3/5",
+  "weeks_pos_pct": 47.1,
+  "weeks_neg_pct": 40.9,
+  "months_pos_pct": 58.9,
+  "worst_week_R": -3.4,
+  "long_n": 461,
+  "long_R": 37.8,
+  "short_n": 602,
+  "short_R": 39.1,
+  "avg_hold_h": 1.0,
+  "max_hold_h": 1.4,
+  "pf_ret": 1.409,
+  "equity_x_0.5pct": 1.46,
+  "cagr_0.5pct": 8.6,
+  "maxdd_0.5pct": 8.0,
+  "by_year_R": {
+   "2017": 12.6,
+   "2018": -7.7,
+   "2019": -4.1,
+   "2020": 34.7,
+   "2021": 41.4
+  },
+  "exit_reasons": {
+   "time": 979,
+   "stop": 84
+  }
+ },
+ "is_bps": 11.88,
+ "n_orders_total": 4829,
+ "n_orders_is": 2611
+}
