@@ -387,3 +387,4 @@
 {"time": "2026-11-10T12:00:09", "track": "r1_orb", "label": "orb_asia_2d_buf10:xauusd:recalc_raw:stress", "period": "val"}
 {"time": "2026-11-10T12:00:09", "track": "r1_orb", "label": "orb_asia_2d_buf10:xauusd:recalc_raw:gross", "period": "val"}
 {"time": "2026-11-10T12:00:09", "track": "r1_orb", "label": "orb_asia_2d_buf10:xauusd:recalc_raw:every", "period": "val"}
+{"time": "2026-11-10T15:46:03", "track": "llm", "label": "baseline_ridge:all_sleeves (pre-registered in llm/experiment.py)", "period": "val"}
