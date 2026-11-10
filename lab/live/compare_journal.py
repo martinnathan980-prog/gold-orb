@@ -56,7 +56,7 @@ def main():
         return
     t0, t1 = ea.entry_time.min() - pd.Timedelta(days=1), ea.entry_time.max() + pd.Timedelta(days=8)
     mod = load_strategy(a.track)
-    m1 = gl.load_m1("xauusd", start=t0 - pd.Timedelta(days=120), end=t1)
+    m1 = gl.load_m1("xauusd", start=t0 - pd.Timedelta(days=120), end=t1, include_holdout=True)
     from goldlab.sim import Costs
     zero = None if a.with_costs else Costs(commission=0, slip_bps=0, swap_long=0, swap_short=0)
     lab = gl.simulate(m1, mod.make_orders(m1, **mod.FINALISTS[a.name]), costs=zero)

@@ -21,7 +21,8 @@ Every trade MUST have a stop (stop or stop_dist).
 
 Fill rules (pessimistic):
   * longs buy at ASK, sell at BID; shorts sell at BID, buy back at ASK.
-  * market and stop fills pay slippage (slip_bps of price); limit/target fills don't.
+  * stop fills (stop entries, stop-loss exits) pay slip_bps of price; plain market fills (entry at
+    a bar open, time exits) pay slip_mkt_bps (defaults to slip_bps); limit/target fills pay none.
   * gaps: stop entries fill at the worse of level/open; stops exit at worse of stop/open.
   * if stop and target are both inside the same bar -> STOP is assumed first.
   * on the fill bar of a stop entry the stop can be hit; the target can be hit only if the
@@ -46,7 +47,8 @@ REASONS = {0: "stop", 1: "target", 2: "time", 3: "trail", 4: "eod", 5: "nofill",
 @dataclass
 class Costs:
     commission: float = 0.07       # per unit (oz) round trip  (~$7 / lot of 100 oz)
-    slip_bps: float = 1.5          # per side on market/stop fills (1.5 bp = $0.60 at $4000)
+    slip_bps: float = 1.5          # per side on STOP fills (stop entries, stop-loss exits); 1.5 bp = $0.60 at $4000
+    slip_mkt_bps: float = -1.0     # per side on plain MARKET fills (entry at bar open, time exit); < 0 = same as slip_bps
     swap_long: float = 0.05        # annual cost of holding long overnight (5 %/yr)
     swap_short: float = 0.02       # annual cost of holding short overnight
     spread_mult: float = 1.0       # stress test: multiply the bid/ask spread
@@ -65,7 +67,7 @@ COSTS = {
 @nb.njit(cache=True)
 def _run(bo, bh, bl, bc, ao, ah, al, ac,
          entry_i, side, etype, level, expiry_i, stop, stop_dist, target, target_dist,
-         exit_i, trail, be, slip, no_overlap,
+         exit_i, trail, be, slip, slip_m, no_overlap,
          fill_i, fill_px, x_i, x_px, reason, init_stop, mfe, mae):
     N = len(bo)
     last_exit = -1
@@ -83,7 +85,7 @@ def _run(bo, bh, bl, bc, ao, ah, al, ac,
         et = etype[k]
         if et == 0:
             fi = i0
-            fp = ao[i0] * (1 + slip) if s > 0 else bo[i0] * (1 - slip)
+            fp = ao[i0] * (1 + slip_m) if s > 0 else bo[i0] * (1 - slip_m)
         else:
             lv = level[k]
             jmax = min(expiry_i[k], N - 1)
@@ -133,7 +135,7 @@ def _run(bo, bh, bl, bc, ao, ah, al, ac,
         while i < N:
             if xe >= 0 and i >= xe and i > fi:
                 x_i[k] = i
-                x_px[k] = bo[i] * (1 - slip) if s > 0 else ao[i] * (1 + slip)
+                x_px[k] = bo[i] * (1 - slip_m) if s > 0 else ao[i] * (1 + slip_m)
                 reason[k] = TIME
                 done = True
                 break
@@ -271,7 +273,7 @@ def simulate(m1, orders, sym="xauusd", costs=None, no_overlap=True):
          o["stop_dist"].to_numpy(np.float64), o["target"].to_numpy(np.float64),
          o["target_dist"].to_numpy(np.float64), o["exit_i"].to_numpy(np.int64),
          o["trail"].to_numpy(np.float64), o["be"].to_numpy(np.float64),
-         c.slip_bps * 1e-4, bool(no_overlap),
+         c.slip_bps * 1e-4, (c.slip_mkt_bps if c.slip_mkt_bps >= 0 else c.slip_bps) * 1e-4, bool(no_overlap),
          fill_i, fill_px, x_i, x_px, reason, init_stop, mfe, mae)
     ok = fill_i >= 0
     idx = m1.index

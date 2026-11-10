@@ -15,18 +15,26 @@ NY = "America/New_York"
 LDN = "Europe/London"
 
 _cache = {}
+HOLDOUT_START = "2026-01-01"   # research never sees data from this date on (PROTOCOL / PROTOCOL_V2)
 
 
-def load_m1(sym="xauusd", start=None, end=None):
-    """Load M1 bid/ask bars for `sym` (xauusd, eurusd, gbpusd, usdjpy, deuidxeur, lightcmdusd)."""
+def load_m1(sym="xauusd", start=None, end=None, include_holdout=False):
+    """Load M1 bid/ask bars for `sym`.
+    Round 1: xauusd, eurusd, gbpusd, usdjpy, deuidxeur, lightcmdusd.
+    Round 2 (real bid+ask): us100, us500, us30, ger40, xagusd, btcusd, ethusd.
+    Data from 2026-01-01 on is the HOLDOUT: it is cut off unless include_holdout=True
+    (reserved to the lead's final test and to live/parity tools)."""
     if sym not in _cache:
         _cache[sym] = pd.read_parquet(os.path.join(DATA, f"{sym}_m1.parquet"))
     df = _cache[sym]
-    if start is not None:
-        df = df[df.index >= _utc(start)]
-    if end is not None:
-        df = df[df.index < _utc(end)]
-    return df
+    idx = df.index
+    lo = 0 if start is None else int(idx.searchsorted(_utc(start), side="left"))
+    cap = _utc(end) if end is not None else None
+    if not include_holdout:
+        h = _utc(HOLDOUT_START)
+        cap = h if cap is None or cap > h else cap
+    hi = len(df) if cap is None else int(idx.searchsorted(cap, side="left"))
+    return df.iloc[lo:hi]
 
 
 def _utc(x):

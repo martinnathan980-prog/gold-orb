@@ -162,7 +162,7 @@ def main():
     ap.add_argument("--start", default="2013-01-01")
     ap.add_argument("--end", default="2026-12-31")
     a = ap.parse_args()
-    m1 = gl.load_m1("xauusd", start=a.start, end=a.end)
+    m1 = gl.load_m1("xauusd", start=a.start, end=a.end, include_holdout=True)
     twin = run(m1, mt5like=a.mt5like)
     mod = load_strategy("trend")
     lab = gl.simulate(m1, mod.make_orders(m1, **mod.FINALISTS["donch4h_stop"]),

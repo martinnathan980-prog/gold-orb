@@ -1,0 +1,12 @@
+{
+ "_status": "PROVISIONAL (quick web look, 2026-11-10); replaced by the verified FP Markets research when it lands",
+ "_model": "forward-looking: today's FP Markets Standard spread, expressed in basis points of price, applied to the whole history (intraday shape taken from Dukascopy's own spread); slippage in bp per side; swaps as annual % of notional (cost > 0)",
+ "xauusd": {"spread": 0.29,  "slip_stop_bps": 1.0, "slip_mkt_bps": 0.3, "swap_long": 0.06,  "swap_short": 0.0,  "units_per_lot": 100, "min_lot": 0.01, "lot_step": 0.01, "leverage": 500, "quote": "USD"},
+ "xagusd": {"spread": 0.03,  "slip_stop_bps": 1.5, "slip_mkt_bps": 0.5, "swap_long": 0.06,  "swap_short": 0.0,  "units_per_lot": 5000, "min_lot": 0.01, "lot_step": 0.01, "leverage": 500, "quote": "USD"},
+ "us100":  {"spread": 1.5,   "slip_stop_bps": 0.5, "slip_mkt_bps": 0.2, "swap_long": 0.07,  "swap_short": 0.0,  "units_per_lot": 1,   "min_lot": 0.1,  "lot_step": 0.1,  "leverage": 200, "quote": "USD"},
+ "us500":  {"spread": 0.5,   "slip_stop_bps": 0.5, "slip_mkt_bps": 0.2, "swap_long": 0.07,  "swap_short": 0.0,  "units_per_lot": 1,   "min_lot": 0.1,  "lot_step": 0.1,  "leverage": 200, "quote": "USD"},
+ "us30":   {"spread": 2.0,   "slip_stop_bps": 0.5, "slip_mkt_bps": 0.2, "swap_long": 0.07,  "swap_short": 0.0,  "units_per_lot": 1,   "min_lot": 0.1,  "lot_step": 0.1,  "leverage": 200, "quote": "USD"},
+ "ger40":  {"spread": 1.5,   "slip_stop_bps": 0.5, "slip_mkt_bps": 0.2, "swap_long": 0.055, "swap_short": 0.0,  "units_per_lot": 1,   "min_lot": 0.1,  "lot_step": 0.1,  "leverage": 200, "quote": "EUR"},
+ "btcusd": {"spread": 20.0,  "slip_stop_bps": 1.5, "slip_mkt_bps": 0.5, "swap_long": 0.20,  "swap_short": 0.10, "units_per_lot": 1,   "min_lot": 0.01, "lot_step": 0.01, "leverage": 20,  "quote": "USD"},
+ "ethusd": {"spread": 2.0,   "slip_stop_bps": 2.0, "slip_mkt_bps": 0.7, "swap_long": 0.20,  "swap_short": 0.10, "units_per_lot": 1,   "min_lot": 0.01, "lot_step": 0.01, "leverage": 20,  "quote": "USD"}
+}
