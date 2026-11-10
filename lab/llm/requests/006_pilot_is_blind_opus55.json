@@ -1,0 +1,1 @@
+{"cmd": "run", "name": "pilot_is_blind_opus55", "period": "is", "per_sleeve": 12, "model": "claude-opus-5-5", "effort": "medium", "workers": 3, "mode": "blind", "sheets": "sheets_blind.parquet"}
