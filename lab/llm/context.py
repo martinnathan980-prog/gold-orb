@@ -51,6 +51,7 @@ class Market:
         self.spr = (m1["ac"] - m1["bc"]).to_numpy(np.float64)
         day = trading_day(m1.index).asi8                     # trading day = MT5 server day (17:00 New York)
         self.first = np.r_[0, np.flatnonzero(np.diff(day)) + 1]
+        self.day_ids = day[self.first]                       # one id per trading day, increasing
         cnt = np.diff(np.r_[self.first, len(day)])
         self.day_of_bar = np.repeat(np.arange(len(self.first)), cnt)
         self.d_o = self.o[self.first]
@@ -60,11 +61,12 @@ class Market:
         self.d_full = cnt >= MIN_FULL_DAY
 
     # ------------------------------------------------------------------------------------------
-    def _windows(self, i, width, n_max, look):
+    def _windows(self, i, width, n_max, look, t0=None):
         """Up to n_max non-empty windows of `width` minutes ending at the decision time, most recent first.
-        Rows: age (minutes from the window start to the decision), open, high, low, close."""
-        b = self.tmin[i] - width * np.arange(look + 1)
-        ix = np.searchsorted(self.tmin, b, side="left")       # ix[0] == i: only bars < i are ever read
+        Rows: age (minutes from the window start to the decision), open, high, low, close.
+        The decision time is the start of bar i, or the minute t0 (for a market that has no bar at that minute)."""
+        b = (self.tmin[i] if t0 is None else t0) - width * np.arange(look + 1)
+        ix = np.searchsorted(self.tmin, b, side="left")       # ix[0] = number of bars before the decision: only those are read
         out = []
         for k in range(look):
             a, z = ix[k + 1], ix[k]
@@ -254,3 +256,154 @@ class Market:
         for r in M[:N_M][::-1]:
             L.append(f"-{r[0]:.0f}m: {bp(r[1]):+.1f} {bp(r[2]):+.1f} {bp(r[3]):+.1f} {bp(r[4]):+.1f}")
         return "\n".join(L), {k_: (float(v) if v is not None else np.nan) for k_, v in f.items()}
+
+    # ------------------------------------------------------------------------------------------
+    # Blind version (leak probe of 2026-11-10: with % and basis points the model could name the year of a
+    # sheet 55 % of the time). Here every price is a distance from the current price in units of the market's
+    # OWN recent volatility, and nothing gives the scale of the market: no %, no basis points, no spread
+    # level, and (unless named=True) no market name.
+    def _day_pos(self, ts):
+        """Number of trading days of this market strictly before the trading day of the timestamp ts."""
+        return int(np.searchsorted(self.day_ids, trading_day(pd.DatetimeIndex([ts])).asi8[0], side="left"))
+
+    def _scales(self, ts):
+        """Daily ATR14 ("dATR"), hourly ATR24 ("hATR") and the windows they come from, for a decision at the timestamp
+        ts (only bars that started before it are read), or None when the history is too short."""
+        full = np.flatnonzero(self.d_full[:self._day_pos(ts)])[-260:]
+        H = self._windows(None, 60, 72, 240, t0=int(ts.timestamp() // 60))
+        if len(full) < 30 or len(H) < 30:
+            return None
+        Dh, Dl, Dc = self.d_h[full], self.d_l[full], self.d_c[full]
+        tr = np.maximum(Dh[1:] - Dl[1:], np.maximum(np.abs(Dh[1:] - Dc[:-1]), np.abs(Dl[1:] - Dc[:-1])))
+        Hc = H[::-1]
+        trh = np.maximum(Hc[1:, 2] - Hc[1:, 3], np.maximum(np.abs(Hc[1:, 2] - Hc[:-1, 4]), np.abs(Hc[1:, 3] - Hc[:-1, 4])))
+        return full, H, tr, float(tr[-14:].mean()), float(trh[-24:].mean())
+
+    def sheet_blind(self, i, side, entry, stop, ref=None, named=False):
+        """Scale-free context sheet for an order filled on bar i (data used: bars < i). Returns the text, or None
+        when the history is too short."""
+        i, side, px = int(i), int(side), float(entry)
+        sc = self._scales(self.index[i])
+        if sc is None:
+            return None
+        full, H, tr, A, a = sc                                   # A = dATR, a = hATR (price units)
+        M = self._windows(i, 5, 36, 120)
+        k = self.day_of_bar[i]
+        Do, Dh, Dl, Dc = self.d_o[full], self.d_h[full], self.d_l[full], self.d_c[full]
+        cap = lambda v: float(np.clip(v, -20.0, 20.0))
+        dA = lambda v: cap((v - px) / A)                         # where a price sits, in dATR from the current price
+        dh = lambda v: cap((v - px) / a)                         # the same in hATR
+        risk = abs(px - float(stop))
+
+        first = self.first[k]
+        t_o = self.o[first] if i > first else px
+        t_h = max(self.h[first:i].max(), px) if i > first else px
+        t_l = min(self.l[first:i].min(), px) if i > first else px
+        pos_day = (px - t_l) / (t_h - t_l) if t_h > t_l else 0.5
+        pdh, pdl, pdc = Dh[-1], Dl[-1], Dc[-1]
+        piv = (pdh + pdl + pdc) / 3
+        lev = {"prev day high": pdh, "prev day low": pdl, "prev day close": pdc, "pivot": piv,
+               "R1": 2 * piv - pdl, "S1": 2 * piv - pdh, "R2": piv + (pdh - pdl), "S2": piv - (pdh - pdl),
+               "20-day high": Dh[-20:].max(), "20-day low": Dl[-20:].min(), "1-year high": Dh.max(), "1-year low": Dl.min()}
+        z = lambda n: cap((px - Dc[-n]) / (A * np.sqrt(n))) if len(Dc) >= n else np.nan
+        ma = lambda n: cap((px - Dc[-n:].mean()) / A) if len(Dc) >= n else np.nan
+        sg = np.sign(np.diff(Dc[-12:]))
+        streak = 0
+        for s in sg[::-1]:
+            if s == sg[-1] and s != 0:
+                streak += 1
+            else:
+                break
+        streak = int(streak * sg[-1])
+        Hc = H[::-1]
+        rsi_h, rsi_m = _rsi(np.r_[Hc[:, 4], px]), _rsi(np.r_[M[::-1, 4], px])
+        b20 = Hc[-20:, 4]
+        pb = (px - (b20.mean() - 2 * b20.std())) / (4 * b20.std()) if b20.std() > 0 else 0.5
+        ch = (px - Hc[:, 4].min()) / (Hc[:, 4].max() - Hc[:, 4].min()) if Hc[:, 4].max() > Hc[:, 4].min() else 0.5
+        m30, m60, m240 = ((px - self._ago(i, m)) / a for m in (30, 60, 240))
+        rv = pd.Series(np.diff(np.log(Dc))).rolling(20).std().to_numpy()
+        past = rv[:-1][np.isfinite(rv[:-1])][-250:]
+        vol_pct = float((past < rv[-1]).mean() * 100) if len(past) >= 60 else np.nan
+        spr_ratio = float(self.spr[i - 1] / max(np.median(self.spr[max(0, i - 1440):i]), 1e-12))
+
+        ts = self.index[i]
+        ny, ld = ts.tz_convert(NY), ts.tz_convert(LDN)
+        mny = ny.hour * 60 + ny.minute
+        if ny.weekday() < 5 and 570 <= mny < 960:
+            cash = f"open for {mny - 570} min, closes in {960 - mny} min"
+        elif ny.weekday() < 5 and mny < 570:
+            cash = f"closed, opens in {570 - mny} min"
+        else:
+            cash = "closed"
+        wk_min = 16 * 60 + 55 if self.sym in r2.CRYPTO else 17 * 60
+        to_close = ((4 - ny.weekday()) % 7) * 24 + (wk_min - mny) / 60.0
+        if to_close < 0:
+            to_close += 7 * 24
+
+        L = ["SIGNAL",
+             f"market: {ASSET.get(self.sym, self.sym) if named else '(name hidden)'} | side: {'LONG (buy)' if side > 0 else 'SHORT (sell)'} | "
+             f"entry: at market, now",
+             f"stop: {risk / A:.2f} dATR from entry = {risk / a:.1f} hATR",
+             "Units: dATR = this market's average daily range over the last 14 days; hATR = its average hourly range over the "
+             "last 24 hours. Every distance below is in these units (values beyond 20 are shown as 20).",
+             "", "CLOCK",
+             f"New York {WD[ny.weekday()]} {ny:%H:%M} | London {WD[ld.weekday()]} {ld:%H:%M} | US cash session: {cash} | "
+             f"weekly close in {to_close:.0f} h",
+             "", "TODAY (trading day so far)",
+             f"since the day's open {(px - t_o) / A:+.2f} dATR | since the previous close {(px - pdc) / A:+.2f} dATR | "
+             f"range so far {(t_h - t_l) / A:.2f} dATR | position in today's range {pos_day:.2f} (0 = low, 1 = high)"]
+        if self.sym == "us100" and ny.weekday() < 5 and mny >= 570:
+            t_open, _ = self._ny_minute(ny, 9, 30)
+            io = int(np.searchsorted(self.tmin, t_open, side="left"))
+            if io < i and self.tmin[io] - t_open <= 5:
+                c_o = self.o[io]
+                c_h, c_l = max(self.h[io:i].max(), px), min(self.l[io:i].min(), px)
+                pc = np.nan
+                for back in range(1, 6):
+                    t_pc, wd = self._ny_minute(ny, 16, 0, back)
+                    j = int(np.searchsorted(self.tmin, t_pc, side="left")) - 1
+                    if wd < 5 and j >= 0 and t_pc - self.tmin[j] <= 10:
+                        pc = self.c[j]
+                        break
+                L.append(f"cash session: opening gap {_f((c_o - pc) / A, '+.2f')} dATR | since the cash open {(px - c_o) / A:+.2f} dATR | "
+                         f"session high {dh(c_h):+.1f} hATR, session low {dh(c_l):+.1f} hATR from the current price")
+        L += ["", "LEVELS (distance from the current price in dATR; + = above the price)",
+              " | ".join(f"{n} {dA(v):+.1f}" for n, v in lev.items()),
+              "", "TREND AND MOMENTUM",
+              f"move over 5 days {z(5):+.1f} | 20 days {z(20):+.1f} | 60 days {_f(z(60), '+.1f')}   (in dATR x square root of the number "
+              f"of days: about 1 is ordinary, beyond 2 is strong)",
+              f"distance to the 20-day average {ma(20):+.1f} dATR | 50-day {_f(ma(50), '+.1f')} | 200-day {_f(ma(200), '+.1f')} | "
+              f"daily closes in a row {streak:+d}",
+              f"hourly RSI14 {rsi_h:.0f} | hourly Bollinger %B {pb:.2f} | position in the 72-hour close channel {ch:.2f} | "
+              f"5-min RSI14 {_f(rsi_m, '.0f')} | last 30 min {_f(m30, '+.1f')} hATR | last 60 min {_f(m60, '+.1f')} hATR | "
+              f"last 4 h {_f(m240, '+.1f')} hATR",
+              "", "VOLATILITY AND LIQUIDITY",
+              f"20-day volatility at percentile {_f(vol_pct, '.0f')} of the past year | daily ATR14 = {A / tr[-250:].mean():.2f} x its "
+              f"one-year average | hATR = {a / A:.2f} dATR | spread = {spr_ratio:.1f} x its 24-hour median"]
+        if ref is not None and ref.sym != self.sym:
+            t0 = self.tmin[i]
+            j = int(np.searchsorted(ref.tmin, t0, side="left"))
+            rs = ref._scales(self.index[i]) if j > 1 and t0 - ref.tmin[j - 1] <= 15 else None
+            label = ASSET[ref.sym] if named else "a major equity index"
+            if rs is not None:
+                rA, ra = rs[3], rs[4]
+                rp = ref.c[j - 1]
+                rf = rs[0]                                       # the reference market's complete days before today
+                j60 = int(np.searchsorted(ref.tmin, t0 - 60, side="left"))
+                h_chg = (rp - ref.o[j60]) / ra if j60 < j and t0 - ref.tmin[j60] <= 60 else np.nan
+                m_chg = (rp - ref.c[j - 2]) / ra if ref.tmin[j - 1] - ref.tmin[j - 2] <= 2 else np.nan
+                L += ["", f"BACKDROP  {label}, in its own units: {(rp - ref.d_c[rf[-1]]) / rA:+.2f} dATR since its previous close | "
+                          f"{_f(h_chg, '+.1f')} hATR over the last 60 min | last 1-minute bar {_f(m_chg, '+.2f')} hATR"]
+            else:
+                L += ["", f"BACKDROP  {label}: market closed"]
+        L += ["", "DAILY BARS, oldest first (open high low close: distance from the current price in dATR; d-1 = yesterday)"]
+        for q in range(min(10, len(Dc)), 0, -1):
+            L.append(f"d-{q}: {dA(Do[-q]):+.1f} {dA(Dh[-q]):+.1f} {dA(Dl[-q]):+.1f} {dA(Dc[-q]):+.1f}")
+        L += ["", "HOURLY BARS, oldest first (start of the hour in hours before now: open high low close, in hATR from the "
+                  "current price; missing hours = market closed)"]
+        for r in H[:N_H][::-1]:
+            L.append(f"-{r[0] / 60:.0f}h: {dh(r[1]):+.1f} {dh(r[2]):+.1f} {dh(r[3]):+.1f} {dh(r[4]):+.1f}")
+        L += ["", "5-MINUTE BARS, oldest first (start in minutes before now: open high low close, in hATR)"]
+        for r in M[:N_M][::-1]:
+            L.append(f"-{r[0]:.0f}m: {dh(r[1]):+.2f} {dh(r[2]):+.2f} {dh(r[3]):+.2f} {dh(r[4]):+.2f}")
+        return "\n".join(L)

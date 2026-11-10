@@ -43,12 +43,13 @@ def execute(r):
     if cmd == "ping":
         ping()
     elif cmd == "run":
-        ex.run(name, r.get("period", "is"), r.get("per_sleeve"), model, effort, workers=int(r.get("workers", 4)))
+        ex.run(name, r.get("period", "is"), r.get("per_sleeve"), model, effort, workers=int(r.get("workers", 4)),
+               mode=r.get("mode", "pct"), sheets=r.get("sheets"))
         ex.analyse(name)
     elif cmd == "probe":
-        ex.probe(name, model, workers=int(r.get("workers", 2)))
+        ex.probe(name, model, workers=int(r.get("workers", 2)), sheets=r.get("sheets"), named=bool(r.get("named", True)))
     elif cmd == "submit":
-        ex.submit(name, r.get("period", "val"), r.get("per_sleeve"), model, effort)
+        ex.submit(name, r.get("period", "val"), r.get("per_sleeve"), model, effort, mode=r.get("mode", "pct"), sheets=r.get("sheets"))
     elif cmd == "collect":
         ex.collect(name, bool(r.get("wait", True)))
     elif cmd == "analyse":

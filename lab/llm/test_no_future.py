@@ -1,5 +1,5 @@
-"""No-future test of the context sheet: for a random sample of cases, the sheet built from the full frame
-must be identical to the sheet built from a frame that stops at the decision (the entry bar itself and
+"""No-future test of the context sheets (both versions: first one and scale-free one): for a random sample of
+cases, the sheet built from the full frame must be identical to the sheet built from a frame that stops at the decision (the entry bar itself and
 everything after it are destroyed; the backdrop market is cut at the same instant).
 
     python3 llm/test_no_future.py [cases per sleeve, default 25]
@@ -30,13 +30,16 @@ def main(per_sleeve=25):
         for r in t.itertuples(index=False):
             i = int(m1.index.searchsorted(r.entry_time))
             full = mk.sheet(i, r.side, r.entry, r.stop, ref=ref)
+            blind = mk.sheet_blind(i, r.side, r.entry, r.stop, ref=ref)
             cut = m1.iloc[max(0, i - BACK): i + 1].copy()
             cut.iloc[-1] = np.nan                                    # the entry bar: its prices must never be read
             j = int(ref_m1.index.searchsorted(r.entry_time))
             rcut = ref_m1.iloc[max(0, j - BACK): j]                  # backdrop: bars that started before the decision
-            trunc = Market(sym, cut).sheet(len(cut) - 1, r.side, r.entry, r.stop, ref=Market("us100", rcut))
+            mk_cut, ref_cut = Market(sym, cut), Market("us100", rcut)
+            trunc = mk_cut.sheet(len(cut) - 1, r.side, r.entry, r.stop, ref=ref_cut)
+            trunc_blind = mk_cut.sheet_blind(len(cut) - 1, r.side, r.entry, r.stop, ref=ref_cut)
             n += 1
-            if (full is None) != (trunc is None) or (full is not None and full[0] != trunc[0]):
+            if (full is None) != (trunc is None) or (full is not None and full[0] != trunc[0]) or blind != trunc_blind:
                 bad += 1
                 print("DIFFERENT:", name, sym, r.entry_time)
         if sym != "us100":

@@ -35,7 +35,7 @@ How the robot works
 
 What you are given
 - The rule that fired and its measured statistics on past data (below). On average the rule makes a little money: most of its signals are ordinary, and a good part of them lose.
-- A context sheet built only from prices known at the moment of the decision: the clock, today's session, key levels, trend and momentum, volatility and liquidity, and the recent bars on three time scales. Prices are expressed relative to the current price (in % or in basis points; ATR = average true range). The sheet deliberately contains no date and no news.
+- A context sheet built only from prices known at the moment of the decision: the clock, today's session, key levels, trend and momentum, volatility and liquidity, and the recent bars on three time scales. {GIVEN}
 
 Your job
 - Judge whether THIS signal, in THIS context, is better or worse than an ordinary signal of this rule, then decide.
@@ -46,6 +46,22 @@ Answer with the JSON object only:
 - decision: "take" or "skip"
 - quality: an integer from 0 to 100, your estimate of this signal against the rule's ordinary signals (50 = ordinary, 0 = among the worst, 100 = among the best)
 - reason_fr: one short sentence in French (25 words at most) with the main reason"""
+
+GIVEN = {
+    # first version (leak probe failed: the year of a sheet could be guessed 55 % of the time)
+    "pct": "Prices are expressed relative to the current price (in % or in basis points; ATR = average true range). "
+           "The sheet deliberately contains no date and no news.",
+    # blind versions: every price is a distance in units of the market's own recent volatility
+    "blind": "Every price is a distance from the current price, measured in units of the market's own recent volatility "
+             "(dATR and hATR, explained in the sheet). The sheet deliberately contains no date, no news, and nothing that "
+             "gives the name or the price level of the market.",
+    "blind_named": "Every price is a distance from the current price, measured in units of the market's own recent "
+                   "volatility (dATR and hATR, explained in the sheet). The sheet deliberately contains no date, no news, "
+                   "and nothing that gives the price level of the market.",
+}
+ASSET = {"us100": "Nasdaq-100 index CFD", "btcusd": "Bitcoin / US dollar", "ethusd": "Ether / US dollar",
+         "xauusd": "Gold / US dollar"}
+CLASS = {"us100": "an equity index", "btcusd": "a cryptocurrency", "ethusd": "a cryptocurrency", "xauusd": "a precious metal"}
 
 RULES = {
     "noise30": "Intraday trend-following on the Nasdaq-100 during the US cash session. Around the session's reference "
@@ -79,6 +95,40 @@ RULES = {
                          "16:00 New York two business days later.",
 }
 
+# The same rules without any market name or price scale (blind test).
+RULES_BLIND = {
+    "noise30": "Intraday trend-following on an equity index during its main cash session. Around the session's reference "
+               "price (the cash open and the previous cash close) the rule draws a 'noise band': the average absolute move "
+               "from the open at that time of day over the last 14 sessions. At each half-hour check, from 30 minutes "
+               "after the open to 30 minutes before the close, if the price is outside the band, it enters in that "
+               "direction. It exits when the price is back inside the band at a later check, 5 minutes before the close "
+               "at the latest, or on the stop (the centre of the band).",
+    "ocm4": "Opening momentum on an equity index. If the move of the first 4 minutes of the cash session is at least as "
+            "large as the median opening move of the previous 20 sessions, it enters in that direction. Stop 0.3 dATR. "
+            "Exit 5 minutes before the cash close at the latest.",
+    "brk72_24h_wd": "Breakout on hourly closes of a cryptocurrency. At the end of an hourly bar (Monday to Friday) it goes "
+                    "long when the close is above the highest close of the previous 72 hourly bars, short when it is "
+                    "below the lowest. Stop 3 hATR. Exit 24 hours after the entry, or at the weekly close.",
+    "nq_btc_follow": "A cryptocurrency follows a shock in a major equity index. During that index's cash session, when "
+                     "its last 1-minute bar moved by at least 6 times its usual 1-minute move, the rule enters the "
+                     "cryptocurrency in the same direction at the next minute. Stop about twice the cryptocurrency's "
+                     "usual one-hour move. Exit 60 minutes after the entry.",
+    "F2_brk_unfiltered": "Hourly breakout on a cryptocurrency during the European and US day (02:00 to 16:00 New York, "
+                         "Monday to Friday). At an hourly close it goes long when the close is above the highest high of "
+                         "the previous 14 session bars, short when it is below their lowest low. Stop 2 x the average "
+                         "hourly range. Exit 13 hours after the decision, and at 15:55 New York the same day at the latest.",
+    "GOLD_FRI_PM": "Friday afternoon on a precious metal. Every Friday at 13:30 New York it buys with a limit order at "
+                   "the current bid (valid 60 minutes). Stop 3 hATR. Exit at 16:45 New York.",
+    "donch4h_stop": "Channel breakout on 4-hour bars of a precious metal. A buy-stop sits at the highest high and a "
+                    "sell-stop at the lowest low of the last 60 four-hour bars (10 trading days); one of them has just "
+                    "been triggered. Initial stop 2 x the average range of the 4-hour bars, then a trailing stop at the "
+                    "same distance from the best price. Exit after 5 trading days at the latest.",
+    "orb_asia_2d_buf10": "Asian-range breakout on a precious metal. The range is the high and low of 00:00 to 07:00 "
+                         "London. From 07:00 to 12:00 London a stop order sits beyond each side of the range (10% of its "
+                         "width further out); one of them has just been triggered. Stop at the opposite order level. "
+                         "Exit at 16:00 New York two business days later.",
+}
+
 # USD per million tokens: input, output, cache read, 5-minute cache write (shared/models.md of the claude-api
 # skill, 2026-11; cache write = 1.25 x input; the Haiku cache-read price is an assumption). Batch = half.
 PRICES = {"claude-opus-5-5": (4.0, 20.0, 0.20, 5.0), "claude-sonnet-5-5": (2.0, 10.0, 0.10, 2.5),
@@ -94,21 +144,27 @@ def client():
     return anthropic.Anthropic(api_key=key, base_url="https://api.anthropic.com", max_retries=4)
 
 
-def rule_sheet(name, asset, st):
+def rule_sheet(name, sym, st, mode="pct"):
     side = lambda v: "none" if v is None else f"{v:+.3f} R on average"
-    return (f"RULE THAT FIRED: {name} on {asset}\n{RULES[name]}\n"
+    head = (f"RULE THAT FIRED, on {CLASS[sym]} (its name is hidden)\n{RULES_BLIND[name]}\n" if mode == "blind"
+            else f"RULE THAT FIRED: {name} on {ASSET[sym]}\n{RULES[name]}\n")
+    return (head +
             f"Measured on past data: {st['n']} trades, {st['win_rate'] * 100:.0f}% winners, average win "
             f"+{st['avg_win_R']:.2f} R, average loss {st['avg_loss_R']:.2f} R, average result {st['exp_R']:+.3f} R per trade "
             f"(R = the amount risked between entry and stop), median holding time {st['med_hold_h']:.1f} h. "
             f"Long trades: {side(st['long_exp_R'])}; short trades: {side(st['short_exp_R'])}.")
 
 
-def system_blocks(name, asset, st):
-    return [{"type": "text", "text": SYSTEM + "\n\n" + rule_sheet(name, asset, st), "cache_control": {"type": "ephemeral"}}]
+def system_blocks(name, sym, st, mode="pct"):
+    """mode: "pct" (first version), "blind" (volatility units, market name hidden), "blind_named" (volatility units)."""
+    text = SYSTEM.replace("{GIVEN}", GIVEN[mode]) + "\n\n" + rule_sheet(name, sym, st, mode)
+    return [{"type": "text", "text": text, "cache_control": {"type": "ephemeral"}}]
 
 
-def prompt_hash():
-    return hashlib.sha256((SYSTEM + json.dumps(RULES, sort_keys=True) + json.dumps(SCHEMA, sort_keys=True)).encode()).hexdigest()[:12]
+def prompt_hash(mode="pct"):
+    rules = RULES_BLIND if mode == "blind" else RULES
+    blob = SYSTEM.replace("{GIVEN}", GIVEN[mode]) + json.dumps(rules, sort_keys=True) + json.dumps(SCHEMA, sort_keys=True)
+    return hashlib.sha256(blob.encode()).hexdigest()[:12]
 
 
 def request(model, system, sheet, effort):

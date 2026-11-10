@@ -59,8 +59,7 @@ LAB = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, LAB)
 from llm import judge  # noqa: E402
 
-ASSET = {"us100": "Nasdaq-100 index CFD", "btcusd": "Bitcoin / US dollar", "ethusd": "Ether / US dollar",
-         "xauusd": "Gold / US dollar"}          # same labels as llm/context.py (not imported: it needs the market data toolkit)
+ASSET = judge.ASSET                         # same labels as llm/context.py (not imported here: it needs the market data toolkit)
 
 OUT = os.path.join(LAB, "results", "llm")
 SHEETS = os.path.join(OUT, "sheets.parquet")                  # what the model reads, one text per case (in git: the
@@ -120,15 +119,51 @@ def build():
     print("sheet length (chars): median", int(pd.DataFrame(sheets).text.str.len().median()))
 
 
-def load():
+def make_blind(out, named=False, ids=None):
+    """Scale-free sheets (context.Market.sheet_blind) for the given case ids (default: every case) -> results/llm/<out>."""
+    from goldlab import r2
+    from llm.context import Market
     cases = pd.read_parquet(os.path.join(OUT, "cases.parquet"))
-    sheets = pd.read_parquet(SHEETS).set_index("id").text
+    want = set(cases.id if ids is None else ids)
+    ref = Market("us100")
+    r2.free()
+    rows, mk = [], None
+    for name, sym in SLEEVES:
+        key = f"{name}_{sym}"
+        todo = sorted(int(c.split("-")[-1]) for c in want if c.rsplit("-", 1)[0] == key)
+        if not todo:
+            continue
+        t = pd.read_parquet(os.path.join(TRADES, f"{name}__{sym}.parquet"))
+        if sym == "us100":
+            mk = ref
+        elif mk is None or mk.sym != sym:
+            mk = Market(sym)
+            r2.free()
+        ii = mk.index.searchsorted(pd.DatetimeIndex(t.entry_time))
+        for n in todo:
+            r = t.iloc[n]
+            rows.append({"id": f"{key}-{n:05d}", "text": mk.sheet_blind(ii[n], r.side, r.entry, r.stop, ref=ref, named=named)})
+    d = pd.DataFrame(rows)
+    assert d.text.notna().all() and len(d) == len(want)
+    d.to_parquet(os.path.join(OUT, out), compression="zstd", compression_level=19, index=False)
+    print(f"{out}: {len(d)} sheets, median length {int(d.text.str.len().median())} chars")
+
+
+def probe_ids(cases, n=150):
+    """The sheets of the leak probe: the same number per calendar year, fixed seed."""
+    c = cases.assign(year=pd.DatetimeIndex(cases.entry_time).year)
+    return pd.concat([g.sample(min(len(g), max(1, n // c.year.nunique())), random_state=0) for _, g in c.groupby("year")])
+
+
+def load(sheets=None):
+    cases = pd.read_parquet(os.path.join(OUT, "cases.parquet"))
+    texts = pd.read_parquet(os.path.join(OUT, sheets) if sheets else SHEETS).set_index("id").text
     stats = json.load(open(os.path.join(OUT, "rule_stats.json")))
-    return cases, sheets, stats
+    return cases, texts, stats
 
 
-def system_for(row, stats):
-    return judge.system_blocks(row["name"], ASSET[row["sym"]], stats[row["sleeve"]])
+def system_for(row, stats, mode="pct"):
+    return judge.system_blocks(row["name"], row["sym"], stats[row["sleeve"]], mode)
 
 
 def pick(cases, period, per_sleeve=None, seed=0):
@@ -239,17 +274,18 @@ def _done(name):
     return {json.loads(x)["id"] for x in open(p)} if os.path.exists(p) else set()
 
 
-def run(name, period, per_sleeve, model, effort, workers=4):
+def run(name, period, per_sleeve, model, effort, workers=4, mode="pct", sheets=None):
     """Live (synchronous) calls: for the in-sample pilot and small checks."""
-    cases, sheets, stats = load()
+    cases, texts, stats = load(sheets)
     todo = pick(cases, period, per_sleeve)
     todo = todo[~todo.id.isin(_done(name))]
-    _meta(name, model=model, effort=effort, period=period, per_sleeve=per_sleeve, mode="live", prompt=judge.prompt_hash())
+    _meta(name, model=model, effort=effort, period=period, per_sleeve=per_sleeve, mode="live", sheet_mode=mode,
+          sheets=sheets or "sheets.parquet", prompt=judge.prompt_hash(mode))
     cl = judge.client()
 
     def one(row):
         try:
-            return {"id": row["id"], **judge.decide(cl, model, system_for(row, stats), sheets[row["id"]], effort)}
+            return {"id": row["id"], **judge.decide(cl, model, system_for(row, stats, mode), texts[row["id"]], effort)}
         except Exception as e:                                   # noqa: BLE001  (logged, the case stays undone)
             return {"id": row["id"], "error": f"{type(e).__name__}: {e}"[:300]}
 
@@ -267,17 +303,17 @@ def run(name, period, per_sleeve, model, effort, workers=4):
     print(f"{name}: {len(todo)} calls, {spent:.2f} USD")
 
 
-def submit(name, period, per_sleeve, model, effort):
+def submit(name, period, per_sleeve, model, effort, mode="pct", sheets=None):
     """Batch API (half price, results usually within the hour)."""
     from anthropic.types.message_create_params import MessageCreateParamsNonStreaming
     from anthropic.types.messages.batch_create_params import Request
-    cases, sheets, stats = load()
+    cases, texts, stats = load(sheets)
     todo = pick(cases, period, per_sleeve)
     reqs = [Request(custom_id=row["id"], params=MessageCreateParamsNonStreaming(
-        **judge.request(model, system_for(row, stats), sheets[row["id"]], effort))) for row in todo.to_dict("records")]
+        **judge.request(model, system_for(row, stats, mode), texts[row["id"]], effort))) for row in todo.to_dict("records")]
     b = judge.client().messages.batches.create(requests=reqs)
     _meta(name, model=model, effort=effort, period=period, per_sleeve=per_sleeve, mode="batch", batch_id=b.id,
-          n=len(reqs), prompt=judge.prompt_hash())
+          n=len(reqs), sheet_mode=mode, sheets=sheets or "sheets.parquet", prompt=judge.prompt_hash(mode))
     print(f"{name}: batch {b.id} submitted with {len(reqs)} requests")
 
 
@@ -325,11 +361,10 @@ def analyse(name):
     show_stats(st, f"{name} ({'/'.join(sorted(d.period.unique()))})")
 
 
-def probe(name, model, n=150, workers=2):
-    """Leak probe: can the model tell the year from an anonymous sheet?"""
-    cases, sheets, _ = load()
-    c = cases.assign(year=pd.DatetimeIndex(cases.entry_time).year)
-    c = pd.concat([g.sample(min(len(g), max(1, n // c.year.nunique())), random_state=0) for _, g in c.groupby("year")])
+def probe(name, model, n=150, workers=2, sheets=None, named=True):
+    """Leak probe: can the model tell the year from an anonymous sheet? (named: the market's name is given)"""
+    cases, texts, _ = load(sheets)
+    c = probe_ids(cases, n)
     schema = {"type": "object", "properties": {"year": {"type": "integer"}}, "required": ["year"], "additionalProperties": False}
     cl = judge.client()
 
@@ -345,7 +380,7 @@ def probe(name, model, n=150, workers=2):
             model=model, max_tokens=judge.MAX_TOKENS,
             system="This is a snapshot of a financial market at one moment between 2013 and 2025, with the date removed. "
                    "Guess the calendar year. Answer with the JSON object only.",
-            messages=[{"role": "user", "content": f"Asset: {ASSET[row['sym']]}\n\n" + sheets[row["id"]]}],
+            messages=[{"role": "user", "content": (f"Asset: {ASSET[row['sym']]}\n\n" if named else "") + texts[row["id"]]}],
             output_config={"effort": "medium", "format": {"type": "json_schema", "schema": schema}})
         txt = next((b.text for b in msg.content if b.type == "text"), None) if msg.stop_reason == "end_turn" else None
         return {"id": row["id"], "year": row["year"], "guess": json.loads(txt)["year"] if txt else None}
@@ -359,17 +394,21 @@ def probe(name, model, n=150, workers=2):
           f"({'LEAK: tighten the sheet' if rho > 0.3 else 'anonymous enough'})")
 
 
-def show(cid=None):
-    cases, sheets, stats = load()
+def show(cid=None, mode="pct", sheets=None):
+    cases, texts, stats = load(sheets)
+    cases = cases[cases.id.isin(texts.index)]
     row = (cases[cases.id == cid] if cid else cases[cases.period == "is"].sample(1, random_state=1)).iloc[0].to_dict()
-    sysb = system_for(row, stats)[0]["text"]
-    print("=" * 30, "SYSTEM", "=" * 30, "\n" + sysb, "\n" + "=" * 30, "USER (the sheet)", "=" * 30, "\n" + sheets[row["id"]])
-    print("=" * 78, f"\ncase {row['id']} | system {len(sysb)} chars | sheet {len(sheets[row['id']])} chars | prompt {judge.prompt_hash()}")
+    sysb = system_for(row, stats, mode)[0]["text"]
+    print("=" * 30, "SYSTEM", "=" * 30, "\n" + sysb, "\n" + "=" * 30, "USER (the sheet)", "=" * 30, "\n" + texts[row["id"]])
+    print("=" * 78, f"\ncase {row['id']} | system {len(sysb)} chars | sheet {len(texts[row['id']])} chars | prompt {judge.prompt_hash(mode)}")
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["build", "show", "baseline", "run", "submit", "collect", "probe", "analyse"])
+    ap.add_argument("cmd", choices=["build", "blind", "show", "baseline", "run", "submit", "collect", "probe", "analyse"])
+    ap.add_argument("--mode", default="pct", choices=["pct", "blind", "blind_named"])
+    ap.add_argument("--sheets")
+    ap.add_argument("--probe-only", action="store_true")
     ap.add_argument("case", nargs="?")
     ap.add_argument("--name")
     ap.add_argument("--period", default="is", choices=["is", "val"])
@@ -380,17 +419,20 @@ if __name__ == "__main__":
     a = ap.parse_args()
     if a.cmd == "build":
         build()
+    elif a.cmd == "blind":        # scale-free sheets: --mode blind | blind_named ; --probe-only = the leak-probe sample
+        ids = probe_ids(pd.read_parquet(os.path.join(OUT, "cases.parquet"))).id if a.probe_only else None
+        make_blind(a.sheets, named=a.mode == "blind_named", ids=ids)
     elif a.cmd == "show":
-        show(a.case)
+        show(a.case, a.mode, a.sheets)
     elif a.cmd == "baseline":
         baseline()
     elif a.cmd == "run":
-        run(a.name, a.period, a.per_sleeve, a.model, a.effort)
+        run(a.name, a.period, a.per_sleeve, a.model, a.effort, mode=a.mode, sheets=a.sheets)
     elif a.cmd == "submit":
-        submit(a.name, a.period, a.per_sleeve, a.model, a.effort)
+        submit(a.name, a.period, a.per_sleeve, a.model, a.effort, mode=a.mode, sheets=a.sheets)
     elif a.cmd == "collect":
         collect(a.name, a.wait)
     elif a.cmd == "probe":
-        probe(a.name, a.model)
+        probe(a.name, a.model, sheets=a.sheets, named=a.mode != "blind")
     elif a.cmd == "analyse":
         analyse(a.name)

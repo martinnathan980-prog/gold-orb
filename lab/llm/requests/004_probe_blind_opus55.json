@@ -1,0 +1,1 @@
+{"cmd": "probe", "name": "probe_blind_opus55", "model": "claude-opus-5-5", "workers": 3, "sheets": "probe_blind.parquet", "named": false}
