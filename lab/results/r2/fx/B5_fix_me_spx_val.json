@@ -1,0 +1,180 @@
+{
+ "name": "B5_fix_me_spx",
+ "period": "val",
+ "params": {
+  "dec": "16:02",
+  "exit": "16:30",
+  "stop_atr": 1.5,
+  "atr_n": 24
+ },
+ "per_date": {
+  "dates": 48,
+  "trades": 288,
+  "net_bp_per_date": 0.72,
+  "t_dates": 0.57,
+  "dates_pos_pct": 54.2,
+  "pairs_pos": "5/6",
+  "by_pair_bp": {
+   "audusd": 1.86,
+   "eurusd": 0.37,
+   "gbpusd": 0.66,
+   "nzdusd": -0.89,
+   "usdcad": 0.15,
+   "usdchf": 2.16
+  },
+  "years_pos": "2/4",
+  "by_year_bp": {
+   "2022": 1.23,
+   "2023": -0.74,
+   "2024": 2.43,
+   "2025": -0.05
+  },
+  "without_best5_bp": -0.78,
+  "worst_date_bp": -26.4,
+  "best_date_bp": 15.4,
+  "stops": 10,
+  "up_months": {
+   "n": 30,
+   "bp": 1.74,
+   "t": 1.11
+  },
+  "down_months": {
+   "n": 18,
+   "bp": -0.99,
+   "t": -0.47
+  }
+ },
+ "pooled_R": {
+  "n": 288,
+  "pf": 1.287,
+  "expectancy_R": 0.0464,
+  "total_R": 13.4,
+  "t_trades": 1.68,
+  "t_daily": 0.82,
+  "n_days": 48,
+  "trades_per_weekday": 0.28,
+  "years_pos": "3/4",
+  "by_year_R": {
+   "2022": 4.5,
+   "2023": -3.0,
+   "2024": 10.6,
+   "2025": 1.2
+  },
+  "win_days_pct": 56.2,
+  "weeks_pos_pct": 13.2,
+  "long_n": 132,
+  "long_R": 4.5,
+  "short_n": 156,
+  "short_R": 8.9,
+  "bps_per_trade": 0.72,
+  "pairs_pos": "5/6",
+  "max_pair_share": 0.433,
+  "by_sym": {
+   "audusd": {
+    "n": 48,
+    "exp_R": 0.0636,
+    "total_R": 3.1
+   },
+   "eurusd": {
+    "n": 48,
+    "exp_R": 0.0281,
+    "total_R": 1.3
+   },
+   "gbpusd": {
+    "n": 48,
+    "exp_R": 0.0461,
+    "total_R": 2.2
+   },
+   "nzdusd": {
+    "n": 48,
+    "exp_R": -0.0231,
+    "total_R": -1.1
+   },
+   "usdcad": {
+    "n": 48,
+    "exp_R": 0.0434,
+    "total_R": 2.1
+   },
+   "usdchf": {
+    "n": 48,
+    "exp_R": 0.1204,
+    "total_R": 5.8
+   }
+  }
+ },
+ "costs_x2_bp_per_date": -0.53,
+ "costs_x1.5_pooled": {
+  "n": 288,
+  "pf": 1.098,
+  "expectancy_R": 0.0172,
+  "total_R": 5.0,
+  "t_trades": 0.63,
+  "t_daily": 0.31,
+  "n_days": 48,
+  "trades_per_weekday": 0.28,
+  "years_pos": "2/4",
+  "by_year_R": {
+   "2022": 3.0,
+   "2023": -5.0,
+   "2024": 8.1,
+   "2025": -1.1
+  },
+  "win_days_pct": 52.1,
+  "weeks_pos_pct": 12.2,
+  "long_n": 132,
+  "long_R": 0.5,
+  "short_n": 156,
+  "short_R": 4.4,
+  "bps_per_trade": 0.09,
+  "pairs_pos": "5/6",
+  "max_pair_share": 0.861,
+  "by_sym": {
+   "audusd": {
+    "n": 48,
+    "exp_R": 0.0335,
+    "total_R": 1.6
+   },
+   "eurusd": {
+    "n": 48,
+    "exp_R": 0.0071,
+    "total_R": 0.3
+   },
+   "gbpusd": {
+    "n": 48,
+    "exp_R": 0.0226,
+    "total_R": 1.1
+   },
+   "nzdusd": {
+    "n": 48,
+    "exp_R": -0.0603,
+    "total_R": -2.9
+   },
+   "usdcad": {
+    "n": 48,
+    "exp_R": 0.0114,
+    "total_R": 0.5
+   },
+   "usdchf": {
+    "n": 48,
+    "exp_R": 0.0889,
+    "total_R": 4.3
+   }
+  }
+ },
+ "criteria": {
+  "net>=1.5bp": false,
+  "t_dates>=2.0": false,
+  "dates_pos>=60%": false,
+  "pairs_pos>=5/6": true,
+  "years_pos>=75%": false,
+  "costs_x2>0": false,
+  "pooled_pf>=1.06": true,
+  "expectancy_R>0": true,
+  "years_pos_R>=75%": true,
+  "pass": false
+ },
+ "sign_check_us500_frame": {
+  "dates_compared": 48,
+  "different": []
+ }
+}

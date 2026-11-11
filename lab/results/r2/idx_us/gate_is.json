@@ -1,0 +1,136 @@
+{
+ "period": "is",
+ "n": 1643,
+ "exp_R": 0.077,
+ "G": {
+  "flag_n": 591,
+  "flag_exp_R": 0.169,
+  "flag_pf": 1.62,
+  "flag_t": 3.73,
+  "flag_win_pct": 41.6,
+  "rest_n": 1052,
+  "rest_exp_R": 0.026,
+  "rest_pf": 1.09,
+  "diff_R": 0.143,
+  "z": 2.66,
+  "flag_days_pct": 34.9,
+  "years_flag_better": "6/8",
+  "by_year": {
+   "2014": {
+    "flag_n": 61,
+    "flag_R": 0.003,
+    "rest_n": 145,
+    "rest_R": 0.069
+   },
+   "2015": {
+    "flag_n": 131,
+    "flag_R": 0.116,
+    "rest_n": 79,
+    "rest_R": -0.036
+   },
+   "2016": {
+    "flag_n": 52,
+    "flag_R": 0.377,
+    "rest_n": 158,
+    "rest_R": -0.081
+   },
+   "2017": {
+    "flag_n": 33,
+    "flag_R": 0.243,
+    "rest_n": 164,
+    "rest_R": 0.032
+   },
+   "2018": {
+    "flag_n": 113,
+    "flag_R": 0.283,
+    "rest_n": 98,
+    "rest_R": 0.099
+   },
+   "2019": {
+    "flag_n": 49,
+    "flag_R": 0.154,
+    "rest_n": 142,
+    "rest_R": -0.05
+   },
+   "2020": {
+    "flag_n": 78,
+    "flag_R": 0.159,
+    "rest_n": 128,
+    "rest_R": 0.064
+   },
+   "2021": {
+    "flag_n": 74,
+    "flag_R": 0.069,
+    "rest_n": 138,
+    "rest_R": 0.121
+   }
+  }
+ },
+ "P": {
+  "flag_n": 662,
+  "flag_exp_R": 0.161,
+  "flag_pf": 1.54,
+  "flag_t": 3.61,
+  "flag_win_pct": 40.0,
+  "rest_n": 981,
+  "rest_exp_R": 0.021,
+  "rest_pf": 1.08,
+  "diff_R": 0.141,
+  "z": 2.65,
+  "flag_days_pct": 39.1,
+  "years_flag_better": "6/8",
+  "by_year": {
+   "2014": {
+    "flag_n": 87,
+    "flag_R": 0.171,
+    "rest_n": 119,
+    "rest_R": -0.04
+   },
+   "2015": {
+    "flag_n": 93,
+    "flag_R": 0.136,
+    "rest_n": 117,
+    "rest_R": -0.002
+   },
+   "2016": {
+    "flag_n": 73,
+    "flag_R": 0.129,
+    "rest_n": 137,
+    "rest_R": -0.019
+   },
+   "2017": {
+    "flag_n": 56,
+    "flag_R": 0.241,
+    "rest_n": 141,
+    "rest_R": -0.001
+   },
+   "2018": {
+    "flag_n": 111,
+    "flag_R": 0.296,
+    "rest_n": 100,
+    "rest_R": 0.088
+   },
+   "2019": {
+    "flag_n": 55,
+    "flag_R": 0.211,
+    "rest_n": 136,
+    "rest_R": -0.081
+   },
+   "2020": {
+    "flag_n": 91,
+    "flag_R": 0.099,
+    "rest_n": 115,
+    "rest_R": 0.101
+   },
+   "2021": {
+    "flag_n": 96,
+    "flag_R": 0.031,
+    "rest_n": 116,
+    "rest_R": 0.163
+   }
+  }
+ },
+ "both_flags_n": 450,
+ "neither_exp_R": -0.0,
+ "neither_n": 840
+}
