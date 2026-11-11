@@ -119,12 +119,22 @@ static bool mock_tick(long s, double &bid, double &ask)
    if(s % 997 == 0) bid = 0.0;                              // a broken tick now and then
    return true;
   }
+// One day (two days before "today") comes back INCOMPLETE with error 4403 (history not yet synchronised):
+// for ETHUSD on the first request only (the script's retry gets the full day), for US500 on every request.
+static const long MOCK_PARTIAL_DAY = MOCK_NOW - MOCK_NOW % 86400 - 2 * 86400;
+static std::map<string, int> g_day_calls;
 int CopyTicksRange(const string name, MqlArray<MqlTick> &t, uint flags, ulong from_msc, ulong to_msc)
   {
    g_copy_calls++;
    t.v.clear();
    if(!mock_known(name) || flags != (uint)COPY_TICKS_INFO) { g_last_error = 4301; return -1; }
-   for(long s = (long)(from_msc / 1000); s <= (long)(to_msc / 1000); s++)
+   long last = (long)(to_msc / 1000);
+   if((long)(from_msc / 1000) == MOCK_PARTIAL_DAY && (name == "US500" || (name == "ETHUSD" && g_day_calls[name]++ == 0)))
+     {
+      last = MOCK_PARTIAL_DAY + 43200 - 1;                  // only the first half of the day
+      g_last_error = 4403;
+     }
+   for(long s = (long)(from_msc / 1000); s <= last; s++)
      {
       double b, a;
       if(!mock_tick(s, b, a)) continue;

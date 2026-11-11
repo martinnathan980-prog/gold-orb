@@ -77,6 +77,12 @@ def main():
         assert np.abs(got[c] - exp[c]).max() < 0.0051, c
     assert (got.n == exp.n).all()
     assert np.abs(got.sp_mean - exp.sp_mean).max() < 0.00006 and np.abs(got.sp_max - exp.sp_max).max() < 0.0051
+    # a day that comes back incomplete (error 4403) is requested again: recovered for ETHUSD, counted for US500
+    eth = pd.read_csv(d / "m1_ETHUSD.csv")
+    us500 = pd.read_csv(d / "m1_US500.csv")
+    assert len(eth) == len(exp) and "jours_incomplets=0" in fini["ETHUSD"], fini["ETHUSD"]
+    assert len(us500) == len(exp) - 720 and "jours_incomplets=1" in fini["US500"], (len(us500), fini["US500"])
+    assert "jours_incomplets=0" in fini["BTCUSD"]
     # the loop stops after 6 empty days in a row: 9 symbols x (11 days with history + weekends + 6 empty) calls at most
     assert calls <= 9 * 20, calls
     # the Python reader
@@ -86,7 +92,62 @@ def main():
     assert df.index[-1] == pd.Timestamp(int(exp.index[-1]) - 7200, unit="s", tz="UTC")     # November: server = UTC+2
     print(f"minute rows: {len(got)} identical to the recomputation; {calls} tick requests; reader ok "
           f"({df.index[0]} -> {df.index[-1]})")
+    sonde()
     print("ReleveFP : tous les tests passent")
+
+
+def sonde():
+    """The demo probe against fake hands that publish a position's deals late (as ClaudeMains did before it exported
+    them after each transaction) and charge part of the cost as a fee."""
+    import time
+    import releve
+    import test_pont as TP
+    from pont import Hands
+
+    class LateDeals(TP.FakeHands):
+        rows, pending = "", []
+
+        def export(self):
+            super().export()
+            now = time.time()
+            for at, row in list(self.pending):
+                if at <= now:
+                    self.rows += row
+                    self.pending.remove((at, row))
+            self.put("deals.csv", "deal,position,time,symbol,type,entry,volume,price,profit,swap,commission,fee,magic,reason,comment\n" + self.rows)
+
+        def handle(self, f):
+            kv = dict(ln.split("=", 1) for ln in f.read_bytes().decode("latin-1").splitlines() if "=" in ln)
+            before = set(self.pos)
+            super().handle(f)
+            now = int(time.time()) + 7200
+            if kv.get("action") == "open":
+                for t in set(self.pos) - before:
+                    p = self.pos[t]
+                    self.pending.append((time.time(), f"{t + 5000},{t},{now},XAUUSD.r,buy,0,{p['volume']:.4f},{p['price']:.2f},0.00,0.00,-0.02,-0.01,20261110,3,CM sonde\n"))
+            if kv.get("action") == "close" and int(kv["ticket"]) in before:
+                t = int(kv["ticket"])
+                self.pending.append((time.time() + 1.2, f"{t + 6000},{t},{now},XAUUSD.r,sell,1,0.0100,{self.bid:.2f},-0.12,0.00,-0.02,-0.01,20261110,3,\n"))
+
+        def run(self):
+            while not self.stop:
+                for f in sorted((self.d / "cmd").glob("*.txt")):
+                    self.handle(f)
+                self.export()
+                time.sleep(0.05)
+
+    d = tempfile.mkdtemp()
+    fake = LateDeals(d)
+    fake.start()
+    releve.OUT = tempfile.mkdtemp()
+    out = releve.sonde(("XAUUSD", "ETHUSD"), h=Hands(d), pause=0.2)
+    fake.stop = True
+    m = out["marches"]["XAUUSD"]
+    assert m["transactions"] == 2 and abs(m["commission_aller_retour"] - 0.06) < 1e-9, m       # both deals, commission + fee
+    assert abs(m["commission_par_lot"] - 6.0) < 1e-9 and abs(m["commission_en_prix"] - 6.0 / 0.89 * 0.01) < 1e-6, m
+    assert "erreur" in out["marches"]["ETHUSD"]
+    assert abs(releve.commissions_mesurees()["xauusd"] - m["commission_en_prix"]) < 1e-12
+    print("sonde: both deals seen although the exit deal was published late; commission + fee =", m["commission_par_lot"], "per lot")
 
 
 if __name__ == "__main__":

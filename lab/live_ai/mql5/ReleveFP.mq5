@@ -11,6 +11,8 @@
 //|   3. la liste de tous les marches du courtier                     |
 //|                                  -> claude\releve\tous.csv        |
 //|  A la fin : claude\releve\fini.txt (resume) et une alerte.        |
+//|  Il peut rester plusieurs minutes sur un marche pendant que le    |
+//|  terminal telecharge l'historique : c'est normal.                 |
 //|  Les heures ecrites sont celles du serveur (secondes).            |
 //|  La commission n'est pas dans les fiches : elle se lit sur un     |
 //|  aller-retour en demo (voir releve.py).                           |
@@ -187,7 +189,7 @@ long Minutes(const string base, const string nm, const int pos, const int count,
    long now = (long)TimeTradeServer();
    long day0 = now - now % 86400;
    long rows = 0, ticks = 0, oldest = 0, newest = 0;
-   int empty = 0, days = 0, lasterr = 0;
+   int empty = 0, days = 0, lasterr = 0, partial = 0;
    for(int d = 0; d < InpDays && !IsStopped(); d++)
      {
       long from = day0 - (long)d * 86400;
@@ -196,16 +198,19 @@ long Minutes(const string base, const string nm, const int pos, const int count,
       MqlTick t[];
       ResetLastError();
       int got = CopyTicksRange(nm, t, COPY_TICKS_INFO, f_msc, t_msc);
-      if(got < 0)
+      int err = GetLastError();
+      if(got < 0 || err == 4403)                    // 4403 = ERR_HISTORY_TIMEOUT : erreur, ou jour rendu incomplet
         {
-         lasterr = GetLastError();
-         Sleep(500);
+         lasterr = err;
+         Sleep(1000);
          ResetLastError();
          got = CopyTicksRange(nm, t, COPY_TICKS_INFO, f_msc, t_msc);
+         err = GetLastError();
+         if(got > 0 && err == 4403) partial++;      // toujours incomplet : le jour est ecrit, mais compte a part
         }
       if(got <= 0)
         {
-         if(got < 0) lasterr = GetLastError();
+         if(got < 0) lasterr = err;
          empty++;
          if(empty >= InpMaxEmpty) break;
          continue;
@@ -261,7 +266,7 @@ long Minutes(const string base, const string nm, const int pos, const int count,
    FileClose(h);
    info = "jours=" + IntegerToString(days) + " minutes=" + IntegerToString(rows) + " ticks=" + IntegerToString(ticks)
           + " du=" + TimeToString((datetime)oldest, TIME_DATE | TIME_MINUTES) + " au=" + TimeToString((datetime)newest, TIME_DATE | TIME_MINUTES)
-          + " derniere_erreur=" + IntegerToString(lasterr);
+          + " derniere_erreur=" + IntegerToString(lasterr) + " jours_incomplets=" + IntegerToString(partial);
    return rows;
   }
 

@@ -276,23 +276,29 @@ def sonde(bases=("XAUUSD", "US100", "BTCUSD", "ETHUSD", "EURUSD", "USDJPY"), h=N
         h.alive()
         c = h.close(o["ticket"])
         d = None
-        for _ in range(20):                                           # deals.csv est réécrit après chaque transaction
+        for _ in range(int(90 / pause) + 1):                          # au pire deals.csv n'est réécrit qu'une fois par minute
             time.sleep(pause)
+            h.alive()
             d = h.deals()
             d = d[d["position"] == o["ticket"]]
-            if len(d) >= 2:
+            if d["entry"].isin([1, 3]).any():                         # la transaction de sortie est arrivée
                 break
-        com = -float(d["commission"].sum()) if d is not None and len(d) else float("nan")
+        if d is None or not d["entry"].isin([1, 3]).any():
+            out["marches"][base] = {"erreur": "sortie non vue dans deals.csv", "ticket": o["ticket"], "fermeture_ok": c.get("ok")}
+            continue
+        fee = d["fee"] if "fee" in d.columns else 0.0                  # certains courtiers facturent en « fee »
+        com = -float((d["commission"] + fee).sum())
         vol = float(o["volume"])
         com_price = com / vol / float(r["tick_value"]) * float(r["tick_size"])
         out["marches"][base] = {
-            "nom": r["name"], "volume": vol, "prix_demande_achat": ask, "prix_obtenu_achat": o["price"],
-            "prix_obtenu_vente": c.get("price"), "fermeture_ok": c["ok"], "transactions": int(len(d)) if d is not None else 0,
+            "nom": r["name"], "volume": vol, "prix_obtenu_achat": o["price"], "prix_obtenu_vente": c.get("price"),
+            "ecart_realise": round(o["price"] - c["price"], 8) if c.get("price") else None,
+            "fermeture_ok": c["ok"], "transactions": int(len(d)),
             "commission_aller_retour": round(com, 4), "commission_par_lot": round(com / vol, 4),
             "commission_en_prix": round(com_price, 8), "commission_pb": round(com_price / ask * 1e4, 3),
-            "resultat": round(float(d["profit"].sum()), 2) if d is not None and len(d) else None}
+            "resultat": round(float(d["profit"].sum()), 2)}
         m = out["marches"][base]
-        print(f"  {base}: {vol:g} lot acheté {o['price']} (demandé {ask}), revendu {c.get('price')} ; commission aller-retour "
+        print(f"  {base}: {vol:g} lot acheté {o['price']}, revendu {c.get('price')} ; commission aller-retour "
               f"{com:.2f} {a['currency']} = {m['commission_par_lot']:.2f} par lot = {m['commission_pb']:.2f} pb")
     os.makedirs(OUT, exist_ok=True)
     stamp = pd.Timestamp.now("UTC").strftime("%Y-%m-%d")

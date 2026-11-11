@@ -28,7 +28,7 @@
 
 #include <Trade\Trade.mqh>
 
-input string InpSymbols         = "XAUUSD,US100,BTCUSD"; // Marches (noms de base ; le suffixe du courtier est trouve tout seul)
+input string InpSymbols         = "XAUUSD,US100,BTCUSD,ETHUSD,EURUSD,USDJPY"; // Marches (noms de base ; le suffixe du courtier est trouve tout seul)
 input double InpMaxRiskPct      = 1.0;      // Risque max par trade si le stop est touche (% du solde)
 input int    InpMaxPositions    = 6;        // Positions ouvertes en meme temps (total)
 input int    InpMaxPerSymbol    = 2;        // Positions ouvertes en meme temps par marche
@@ -311,7 +311,7 @@ void ExportDeals()
   {
    datetime now = TimeTradeServer();
    if(!HistorySelect(now - 7 * 86400, now + 86400)) return;
-   string s = "deal,position,time,symbol,type,entry,volume,price,profit,swap,commission,magic,reason,comment\n";
+   string s = "deal,position,time,symbol,type,entry,volume,price,profit,swap,commission,fee,magic,reason,comment\n";
    int total = HistoryDealsTotal();
    for(int i = 0; i < total; i++)
      {
@@ -326,6 +326,7 @@ void ExportDeals()
            + IntegerToString(HistoryDealGetInteger(d, DEAL_ENTRY)) + "," + DoubleToString(HistoryDealGetDouble(d, DEAL_VOLUME), 4) + ","
            + DoubleToString(HistoryDealGetDouble(d, DEAL_PRICE), dg) + "," + DoubleToString(HistoryDealGetDouble(d, DEAL_PROFIT), 2) + ","
            + DoubleToString(HistoryDealGetDouble(d, DEAL_SWAP), 2) + "," + DoubleToString(HistoryDealGetDouble(d, DEAL_COMMISSION), 2) + ","
+           + DoubleToString(HistoryDealGetDouble(d, DEAL_FEE), 2) + ","
            + IntegerToString(HistoryDealGetInteger(d, DEAL_MAGIC)) + "," + IntegerToString(HistoryDealGetInteger(d, DEAL_REASON)) + ","
            + HistoryDealGetString(d, DEAL_COMMENT) + "\n";
      }
@@ -632,10 +633,12 @@ void OnTimer()
    Watch();
    if(g_dirty || now - g_last_fast >= 5)
      {
+      bool traded = g_dirty;
       g_dirty = false;
       g_last_fast = now;
       ExportAccount();
       ExportPositions();
+      if(traded) ExportDeals();                    // le cerveau voit ses transactions tout de suite, pas a la minute suivante
      }
    datetime minute = now - now % 60;
    if(minute != g_last_min)
