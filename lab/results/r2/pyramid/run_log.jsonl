@@ -64,3 +64,6 @@
 {"time": "2026-11-11T19:32:08+00:00", "step": "configuration_run", "name": "F2_k2_n1_trend"}
 {"time": "2026-11-11T19:32:08+00:00", "step": "configuration_run", "name": "F2_k2_n2_trend"}
 {"time": "2026-11-11T19:32:08+00:00", "step": "zero_edge_control", "draws": 200, "variants": ["coin", "kept"]}
+{"time": "2026-11-11T19:32:58+00:00", "step": "selection", "finalist": "NONE", "passing": []}
+{"time": "2026-11-11T19:32:58+00:00", "step": "small_accounts", "starts": [1000.0, 5000.0, 12000.0]}
+{"time": "2026-11-11T19:33:03+00:00", "step": "run_end", "seconds": 168, "finalist": "NONE"}

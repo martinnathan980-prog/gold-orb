@@ -51,6 +51,12 @@
      7.92
     ],
     "share_of_draws_with_gain": 0.84,
+    "G_part_from_the_addons_results_mean": 3.58,
+    "G_part_from_shrinking_a_losing_reference_mean": 3.31,
+    "G_part_from_the_addons_results_ci95": [
+     2.04,
+     5.11
+    ],
     "ratio_equivalent_mean": 1.0088,
     "ratio_equivalent_ci95_of_mean": [
      1.0075,
@@ -86,6 +92,12 @@
      14.79
     ],
     "share_of_draws_with_gain": 0.84,
+    "G_part_from_the_addons_results_mean": 6.8,
+    "G_part_from_shrinking_a_losing_reference_mean": 6.11,
+    "G_part_from_the_addons_results_ci95": [
+     3.96,
+     9.64
+    ],
     "ratio_equivalent_mean": 1.0164,
     "ratio_equivalent_ci95_of_mean": [
      1.014,
@@ -121,6 +133,12 @@
      10.7
     ],
     "share_of_draws_with_gain": 0.835,
+    "G_part_from_the_addons_results_mean": 4.52,
+    "G_part_from_shrinking_a_losing_reference_mean": 4.75,
+    "G_part_from_the_addons_results_ci95": [
+     2.33,
+     6.72
+    ],
     "ratio_equivalent_mean": 1.0118,
     "ratio_equivalent_ci95_of_mean": [
      1.01,
@@ -156,6 +174,12 @@
      19.63
     ],
     "share_of_draws_with_gain": 0.84,
+    "G_part_from_the_addons_results_mean": 8.4,
+    "G_part_from_shrinking_a_losing_reference_mean": 8.65,
+    "G_part_from_the_addons_results_ci95": [
+     4.47,
+     12.33
+    ],
     "ratio_equivalent_mean": 1.0216,
     "ratio_equivalent_ci95_of_mean": [
      1.0184,
@@ -191,6 +215,12 @@
      3.42
     ],
     "share_of_draws_with_gain": 0.71,
+    "G_part_from_the_addons_results_mean": 1.1,
+    "G_part_from_shrinking_a_losing_reference_mean": 1.65,
+    "G_part_from_the_addons_results_ci95": [
+     0.14,
+     2.05
+    ],
     "ratio_equivalent_mean": 1.0035,
     "ratio_equivalent_ci95_of_mean": [
      1.0026,
@@ -226,6 +256,12 @@
      6.81
     ],
     "share_of_draws_with_gain": 0.725,
+    "G_part_from_the_addons_results_mean": 2.31,
+    "G_part_from_shrinking_a_losing_reference_mean": 3.21,
+    "G_part_from_the_addons_results_ci95": [
+     0.48,
+     4.14
+    ],
     "ratio_equivalent_mean": 1.007,
     "ratio_equivalent_ci95_of_mean": [
      1.0054,
@@ -261,6 +297,12 @@
      3.14
     ],
     "share_of_draws_with_gain": 0.63,
+    "G_part_from_the_addons_results_mean": -0.14,
+    "G_part_from_shrinking_a_losing_reference_mean": 2.43,
+    "G_part_from_the_addons_results_ci95": [
+     -1.35,
+     1.07
+    ],
     "ratio_equivalent_mean": 1.0029,
     "ratio_equivalent_ci95_of_mean": [
      1.0018,
@@ -296,6 +338,12 @@
      6.29
     ],
     "share_of_draws_with_gain": 0.65,
+    "G_part_from_the_addons_results_mean": 0.08,
+    "G_part_from_shrinking_a_losing_reference_mean": 4.61,
+    "G_part_from_the_addons_results_ci95": [
+     -2.19,
+     2.35
+    ],
     "ratio_equivalent_mean": 1.006,
     "ratio_equivalent_ci95_of_mean": [
      1.0039,
@@ -331,6 +379,12 @@
      2.43
     ],
     "share_of_draws_with_gain": 0.615,
+    "G_part_from_the_addons_results_mean": 1.03,
+    "G_part_from_shrinking_a_losing_reference_mean": 0.59,
+    "G_part_from_the_addons_results_ci95": [
+     0.03,
+     2.02
+    ],
     "ratio_equivalent_mean": 1.0021,
     "ratio_equivalent_ci95_of_mean": [
      1.001,
@@ -366,6 +420,12 @@
      5.14
     ],
     "share_of_draws_with_gain": 0.615,
+    "G_part_from_the_addons_results_mean": 2.35,
+    "G_part_from_shrinking_a_losing_reference_mean": 1.2,
+    "G_part_from_the_addons_results_ci95": [
+     0.39,
+     4.3
+    ],
     "ratio_equivalent_mean": 1.0045,
     "ratio_equivalent_ci95_of_mean": [
      1.0025,
@@ -401,6 +461,12 @@
      4.5
     ],
     "share_of_draws_with_gain": 0.62,
+    "G_part_from_the_addons_results_mean": 2.53,
+    "G_part_from_shrinking_a_losing_reference_mean": 0.77,
+    "G_part_from_the_addons_results_ci95": [
+     1.02,
+     4.03
+    ],
     "ratio_equivalent_mean": 1.0042,
     "ratio_equivalent_ci95_of_mean": [
      1.0027,
@@ -436,6 +502,12 @@
      9.61
     ],
     "share_of_draws_with_gain": 0.625,
+    "G_part_from_the_addons_results_mean": 5.5,
+    "G_part_from_shrinking_a_losing_reference_mean": 1.69,
+    "G_part_from_the_addons_results_ci95": [
+     2.54,
+     8.46
+    ],
     "ratio_equivalent_mean": 1.0091,
     "ratio_equivalent_ci95_of_mean": [
      1.0061,
@@ -471,6 +543,12 @@
      2.02
     ],
     "share_of_draws_with_gain": 0.66,
+    "G_part_from_the_addons_results_mean": 1.37,
+    "G_part_from_shrinking_a_losing_reference_mean": 0.15,
+    "G_part_from_the_addons_results_ci95": [
+     0.75,
+     1.99
+    ],
     "ratio_equivalent_mean": 1.0019,
     "ratio_equivalent_ci95_of_mean": [
      1.0013,
@@ -506,6 +584,12 @@
      4.2
     ],
     "share_of_draws_with_gain": 0.665,
+    "G_part_from_the_addons_results_mean": 2.88,
+    "G_part_from_shrinking_a_losing_reference_mean": 0.32,
+    "G_part_from_the_addons_results_ci95": [
+     1.63,
+     4.12
+    ],
     "ratio_equivalent_mean": 1.0041,
     "ratio_equivalent_ci95_of_mean": [
      1.0028,
@@ -541,6 +625,12 @@
      2.61
     ],
     "share_of_draws_with_gain": 0.615,
+    "G_part_from_the_addons_results_mean": 1.73,
+    "G_part_from_shrinking_a_losing_reference_mean": 0.2,
+    "G_part_from_the_addons_results_ci95": [
+     0.91,
+     2.54
+    ],
     "ratio_equivalent_mean": 1.0025,
     "ratio_equivalent_ci95_of_mean": [
      1.0016,
@@ -576,6 +666,12 @@
      5.49
     ],
     "share_of_draws_with_gain": 0.615,
+    "G_part_from_the_addons_results_mean": 3.66,
+    "G_part_from_shrinking_a_losing_reference_mean": 0.47,
+    "G_part_from_the_addons_results_ci95": [
+     2.02,
+     5.29
+    ],
     "ratio_equivalent_mean": 1.0052,
     "ratio_equivalent_ci95_of_mean": [
      1.0035,
@@ -611,6 +707,12 @@
      2.77
     ],
     "share_of_draws_with_gain": 0.6,
+    "G_part_from_the_addons_results_mean": 2.38,
+    "G_part_from_shrinking_a_losing_reference_mean": -0.6,
+    "G_part_from_the_addons_results_ci95": [
+     1.18,
+     3.58
+    ],
     "ratio_equivalent_mean": 1.0023,
     "ratio_equivalent_ci95_of_mean": [
      1.001,
@@ -646,6 +748,12 @@
      8.54
     ],
     "share_of_draws_with_gain": 0.57,
+    "G_part_from_the_addons_results_mean": 7.56,
+    "G_part_from_shrinking_a_losing_reference_mean": -1.28,
+    "G_part_from_the_addons_results_ci95": [
+     4.98,
+     10.15
+    ],
     "ratio_equivalent_mean": 1.008,
     "ratio_equivalent_ci95_of_mean": [
      1.0051,
@@ -681,6 +789,12 @@
      5.32
     ],
     "share_of_draws_with_gain": 0.595,
+    "G_part_from_the_addons_results_mean": 4.62,
+    "G_part_from_shrinking_a_losing_reference_mean": -0.73,
+    "G_part_from_the_addons_results_ci95": [
+     3.06,
+     6.18
+    ],
     "ratio_equivalent_mean": 1.0049,
     "ratio_equivalent_ci95_of_mean": [
      1.0031,
@@ -716,6 +830,12 @@
      9.75
     ],
     "share_of_draws_with_gain": 0.5,
+    "G_part_from_the_addons_results_mean": 6.18,
+    "G_part_from_shrinking_a_losing_reference_mean": 0.34,
+    "G_part_from_the_addons_results_ci95": [
+     2.52,
+     9.84
+    ],
     "ratio_equivalent_mean": 1.0083,
     "ratio_equivalent_ci95_of_mean": [
      1.0042,
@@ -751,6 +871,12 @@
      2.77
     ],
     "share_of_draws_with_gain": 0.6,
+    "G_part_from_the_addons_results_mean": 2.38,
+    "G_part_from_shrinking_a_losing_reference_mean": -0.6,
+    "G_part_from_the_addons_results_ci95": [
+     1.18,
+     3.58
+    ],
     "ratio_equivalent_mean": 1.0023,
     "ratio_equivalent_ci95_of_mean": [
      1.001,
@@ -786,6 +912,12 @@
      8.54
     ],
     "share_of_draws_with_gain": 0.57,
+    "G_part_from_the_addons_results_mean": 7.56,
+    "G_part_from_shrinking_a_losing_reference_mean": -1.28,
+    "G_part_from_the_addons_results_ci95": [
+     4.98,
+     10.15
+    ],
     "ratio_equivalent_mean": 1.008,
     "ratio_equivalent_ci95_of_mean": [
      1.0051,
@@ -821,6 +953,12 @@
      5.32
     ],
     "share_of_draws_with_gain": 0.595,
+    "G_part_from_the_addons_results_mean": 4.62,
+    "G_part_from_shrinking_a_losing_reference_mean": -0.73,
+    "G_part_from_the_addons_results_ci95": [
+     3.06,
+     6.18
+    ],
     "ratio_equivalent_mean": 1.0049,
     "ratio_equivalent_ci95_of_mean": [
      1.0031,
@@ -856,6 +994,12 @@
      9.75
     ],
     "share_of_draws_with_gain": 0.5,
+    "G_part_from_the_addons_results_mean": 6.18,
+    "G_part_from_shrinking_a_losing_reference_mean": 0.34,
+    "G_part_from_the_addons_results_ci95": [
+     2.52,
+     9.84
+    ],
     "ratio_equivalent_mean": 1.0083,
     "ratio_equivalent_ci95_of_mean": [
      1.0042,
@@ -906,6 +1050,12 @@
      10.43
     ],
     "share_of_draws_with_gain": 0.885,
+    "G_part_from_the_addons_results_mean": 8.22,
+    "G_part_from_shrinking_a_losing_reference_mean": 1.07,
+    "G_part_from_the_addons_results_ci95": [
+     6.64,
+     9.8
+    ],
     "ratio_equivalent_mean": 1.0118,
     "ratio_equivalent_ci95_of_mean": [
      1.0104,
@@ -941,6 +1091,12 @@
      19.67
     ],
     "share_of_draws_with_gain": 0.895,
+    "G_part_from_the_addons_results_mean": 15.33,
+    "G_part_from_shrinking_a_losing_reference_mean": 2.22,
+    "G_part_from_the_addons_results_ci95": [
+     12.41,
+     18.24
+    ],
     "ratio_equivalent_mean": 1.0223,
     "ratio_equivalent_ci95_of_mean": [
      1.0196,
@@ -976,6 +1132,12 @@
      14.42
     ],
     "share_of_draws_with_gain": 0.86,
+    "G_part_from_the_addons_results_mean": 10.94,
+    "G_part_from_shrinking_a_losing_reference_mean": 1.84,
+    "G_part_from_the_addons_results_ci95": [
+     8.7,
+     13.17
+    ],
     "ratio_equivalent_mean": 1.0162,
     "ratio_equivalent_ci95_of_mean": [
      1.0141,
@@ -1011,6 +1173,12 @@
      26.34
     ],
     "share_of_draws_with_gain": 0.865,
+    "G_part_from_the_addons_results_mean": 19.84,
+    "G_part_from_shrinking_a_losing_reference_mean": 3.53,
+    "G_part_from_the_addons_results_ci95": [
+     15.85,
+     23.84
+    ],
     "ratio_equivalent_mean": 1.0297,
     "ratio_equivalent_ci95_of_mean": [
      1.0259,
@@ -1046,6 +1214,12 @@
      4.6
     ],
     "share_of_draws_with_gain": 0.79,
+    "G_part_from_the_addons_results_mean": 3.12,
+    "G_part_from_shrinking_a_losing_reference_mean": 0.72,
+    "G_part_from_the_addons_results_ci95": [
+     2.2,
+     4.03
+    ],
     "ratio_equivalent_mean": 1.0049,
     "ratio_equivalent_ci95_of_mean": [
      1.0039,
@@ -1081,6 +1255,12 @@
      9.02
     ],
     "share_of_draws_with_gain": 0.8,
+    "G_part_from_the_addons_results_mean": 6.2,
+    "G_part_from_shrinking_a_losing_reference_mean": 1.37,
+    "G_part_from_the_addons_results_ci95": [
+     4.42,
+     7.97
+    ],
     "ratio_equivalent_mean": 1.0096,
     "ratio_equivalent_ci95_of_mean": [
      1.0078,
@@ -1116,6 +1296,12 @@
      4.64
     ],
     "share_of_draws_with_gain": 0.705,
+    "G_part_from_the_addons_results_mean": 2.52,
+    "G_part_from_shrinking_a_losing_reference_mean": 1.15,
+    "G_part_from_the_addons_results_ci95": [
+     1.33,
+     3.7
+    ],
     "ratio_equivalent_mean": 1.0047,
     "ratio_equivalent_ci95_of_mean": [
      1.0034,
@@ -1151,6 +1337,12 @@
      9.06
     ],
     "share_of_draws_with_gain": 0.72,
+    "G_part_from_the_addons_results_mean": 5.08,
+    "G_part_from_shrinking_a_losing_reference_mean": 2.16,
+    "G_part_from_the_addons_results_ci95": [
+     2.82,
+     7.33
+    ],
     "ratio_equivalent_mean": 1.0092,
     "ratio_equivalent_ci95_of_mean": [
      1.0069,
@@ -1186,6 +1378,12 @@
      2.63
     ],
     "share_of_draws_with_gain": 0.57,
+    "G_part_from_the_addons_results_mean": 1.32,
+    "G_part_from_shrinking_a_losing_reference_mean": 0.38,
+    "G_part_from_the_addons_results_ci95": [
+     0.28,
+     2.36
+    ],
     "ratio_equivalent_mean": 1.0022,
     "ratio_equivalent_ci95_of_mean": [
      1.001,
@@ -1221,6 +1419,12 @@
      5.51
     ],
     "share_of_draws_with_gain": 0.575,
+    "G_part_from_the_addons_results_mean": 2.89,
+    "G_part_from_shrinking_a_losing_reference_mean": 0.79,
+    "G_part_from_the_addons_results_ci95": [
+     0.86,
+     4.93
+    ],
     "ratio_equivalent_mean": 1.0047,
     "ratio_equivalent_ci95_of_mean": [
      1.0023,
@@ -1256,6 +1460,12 @@
      5.05
     ],
     "share_of_draws_with_gain": 0.625,
+    "G_part_from_the_addons_results_mean": 3.23,
+    "G_part_from_shrinking_a_losing_reference_mean": 0.45,
+    "G_part_from_the_addons_results_ci95": [
+     1.69,
+     4.77
+    ],
     "ratio_equivalent_mean": 1.0047,
     "ratio_equivalent_ci95_of_mean": [
      1.0029,
@@ -1291,6 +1501,12 @@
      10.32
     ],
     "share_of_draws_with_gain": 0.625,
+    "G_part_from_the_addons_results_mean": 6.75,
+    "G_part_from_shrinking_a_losing_reference_mean": 0.9,
+    "G_part_from_the_addons_results_ci95": [
+     3.75,
+     9.74
+    ],
     "ratio_equivalent_mean": 1.0097,
     "ratio_equivalent_ci95_of_mean": [
      1.0063,
@@ -1326,6 +1542,12 @@
      2.47
     ],
     "share_of_draws_with_gain": 0.685,
+    "G_part_from_the_addons_results_mean": 1.84,
+    "G_part_from_shrinking_a_losing_reference_mean": 0.07,
+    "G_part_from_the_addons_results_ci95": [
+     1.23,
+     2.45
+    ],
     "ratio_equivalent_mean": 1.0024,
     "ratio_equivalent_ci95_of_mean": [
      1.0017,
@@ -1361,6 +1583,12 @@
      4.98
     ],
     "share_of_draws_with_gain": 0.685,
+    "G_part_from_the_addons_results_mean": 3.76,
+    "G_part_from_shrinking_a_losing_reference_mean": 0.12,
+    "G_part_from_the_addons_results_ci95": [
+     2.54,
+     4.98
+    ],
     "ratio_equivalent_mean": 1.0049,
     "ratio_equivalent_ci95_of_mean": [
      1.0035,
@@ -1396,6 +1624,12 @@
      3.47
     ],
     "share_of_draws_with_gain": 0.67,
+    "G_part_from_the_addons_results_mean": 2.57,
+    "G_part_from_shrinking_a_losing_reference_mean": 0.14,
+    "G_part_from_the_addons_results_ci95": [
+     1.73,
+     3.4
+    ],
     "ratio_equivalent_mean": 1.0034,
     "ratio_equivalent_ci95_of_mean": [
      1.0025,
@@ -1431,6 +1665,12 @@
      6.96
     ],
     "share_of_draws_with_gain": 0.67,
+    "G_part_from_the_addons_results_mean": 5.27,
+    "G_part_from_shrinking_a_losing_reference_mean": 0.18,
+    "G_part_from_the_addons_results_ci95": [
+     3.61,
+     6.93
+    ],
     "ratio_equivalent_mean": 1.0069,
     "ratio_equivalent_ci95_of_mean": [
      1.005,
@@ -1466,6 +1706,12 @@
      2.69
     ],
     "share_of_draws_with_gain": 0.54,
+    "G_part_from_the_addons_results_mean": 1.91,
+    "G_part_from_shrinking_a_losing_reference_mean": -0.28,
+    "G_part_from_the_addons_results_ci95": [
+     0.73,
+     3.1
+    ],
     "ratio_equivalent_mean": 1.0021,
     "ratio_equivalent_ci95_of_mean": [
      1.0007,
@@ -1501,6 +1747,12 @@
      7.29
     ],
     "share_of_draws_with_gain": 0.595,
+    "G_part_from_the_addons_results_mean": 5.75,
+    "G_part_from_shrinking_a_losing_reference_mean": -0.65,
+    "G_part_from_the_addons_results_ci95": [
+     3.33,
+     8.18
+    ],
     "ratio_equivalent_mean": 1.0065,
     "ratio_equivalent_ci95_of_mean": [
      1.0037,
@@ -1536,6 +1788,12 @@
      4.33
     ],
     "share_of_draws_with_gain": 0.62,
+    "G_part_from_the_addons_results_mean": 3.5,
+    "G_part_from_shrinking_a_losing_reference_mean": -0.48,
+    "G_part_from_the_addons_results_ci95": [
+     2.07,
+     4.94
+    ],
     "ratio_equivalent_mean": 1.0038,
     "ratio_equivalent_ci95_of_mean": [
      1.0022,
@@ -1571,6 +1829,12 @@
      6.42
     ],
     "share_of_draws_with_gain": 0.44,
+    "G_part_from_the_addons_results_mean": 3.87,
+    "G_part_from_shrinking_a_losing_reference_mean": -0.07,
+    "G_part_from_the_addons_results_ci95": [
+     1.11,
+     6.64
+    ],
     "ratio_equivalent_mean": 1.0048,
     "ratio_equivalent_ci95_of_mean": [
      1.0015,
@@ -1606,6 +1870,12 @@
      2.69
     ],
     "share_of_draws_with_gain": 0.54,
+    "G_part_from_the_addons_results_mean": 1.91,
+    "G_part_from_shrinking_a_losing_reference_mean": -0.28,
+    "G_part_from_the_addons_results_ci95": [
+     0.73,
+     3.1
+    ],
     "ratio_equivalent_mean": 1.0021,
     "ratio_equivalent_ci95_of_mean": [
      1.0007,
@@ -1641,6 +1911,12 @@
      7.29
     ],
     "share_of_draws_with_gain": 0.595,
+    "G_part_from_the_addons_results_mean": 5.75,
+    "G_part_from_shrinking_a_losing_reference_mean": -0.65,
+    "G_part_from_the_addons_results_ci95": [
+     3.33,
+     8.18
+    ],
     "ratio_equivalent_mean": 1.0065,
     "ratio_equivalent_ci95_of_mean": [
      1.0037,
@@ -1676,6 +1952,12 @@
      4.33
     ],
     "share_of_draws_with_gain": 0.62,
+    "G_part_from_the_addons_results_mean": 3.5,
+    "G_part_from_shrinking_a_losing_reference_mean": -0.48,
+    "G_part_from_the_addons_results_ci95": [
+     2.07,
+     4.94
+    ],
     "ratio_equivalent_mean": 1.0038,
     "ratio_equivalent_ci95_of_mean": [
      1.0022,
@@ -1711,6 +1993,12 @@
      6.42
     ],
     "share_of_draws_with_gain": 0.44,
+    "G_part_from_the_addons_results_mean": 3.87,
+    "G_part_from_shrinking_a_losing_reference_mean": -0.07,
+    "G_part_from_the_addons_results_ci95": [
+     1.11,
+     6.64
+    ],
     "ratio_equivalent_mean": 1.0048,
     "ratio_equivalent_ci95_of_mean": [
      1.0015,
