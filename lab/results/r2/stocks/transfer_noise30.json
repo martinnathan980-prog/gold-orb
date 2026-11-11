@@ -1,0 +1,86 @@
+{
+ "params": {
+  "rule": "noise",
+  "lookback": 14,
+  "first_min": 600,
+  "step": 30,
+  "last_min": 930,
+  "exit_min": 955,
+  "vm": 1.0
+ },
+ "basket": {
+  "n": 2019,
+  "tickers": 2,
+  "trades_per_day": 2.1,
+  "pf": 0.873,
+  "exp_R": -0.0371,
+  "win_rate": 0.33,
+  "total_R": -74.9,
+  "t_daily_sums": -1.95,
+  "t_per_trade_naive": -2.14,
+  "win_days_pct": 34.2,
+  "days": 953,
+  "tickers_positive_pct": 0.0,
+  "max_ticker_share_of_profit": null,
+  "long_R": -37.1,
+  "short_R": -37.9,
+  "by_year_R": {
+   "2017": -40.0,
+   "2018": 6.6,
+   "2019": -50.9,
+   "2020": 6.0,
+   "2021": 3.3
+  },
+  "bps_per_trade": -3.16
+ },
+ "basket_stress": {
+  "n": 2019,
+  "tickers": 2,
+  "trades_per_day": 2.1,
+  "pf": 0.751,
+  "exp_R": -0.0788,
+  "win_rate": 0.308,
+  "total_R": -159.0,
+  "t_daily_sums": -4.2,
+  "t_per_trade_naive": -4.64,
+  "win_days_pct": 32.1,
+  "days": 953,
+  "tickers_positive_pct": 0.0,
+  "max_ticker_share_of_profit": null,
+  "long_R": -84.6,
+  "short_R": -74.4,
+  "by_year_R": {
+   "2017": -62.5,
+   "2018": -13.6,
+   "2019": -67.8,
+   "2020": -5.2,
+   "2021": -9.9
+  },
+  "bps_per_trade": -6.55
+ },
+ "basket_gross": {
+  "n": 2019,
+  "tickers": 2,
+  "trades_per_day": 2.1,
+  "pf": 1.22,
+  "exp_R": 0.0538,
+  "win_rate": 0.381,
+  "total_R": 108.6,
+  "t_daily_sums": 2.73,
+  "t_per_trade_naive": 2.94,
+  "win_days_pct": 41.0,
+  "days": 953,
+  "tickers_positive_pct": 100.0,
+  "max_ticker_share_of_profit": 0.615,
+  "long_R": 66.3,
+  "short_R": 42.2,
+  "by_year_R": {
+   "2017": 10.4,
+   "2018": 52.1,
+   "2019": -14.3,
+   "2020": 29.0,
+   "2021": 31.5
+  },
+  "bps_per_trade": 3.57
+ }
+}

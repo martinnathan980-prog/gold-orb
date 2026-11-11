@@ -1,0 +1,12 @@
+{
+ "_written": "2026-11-11, before any engine run on currencies",
+ "pairs": ["eurusd","gbpusd","usdjpy","audusd","usdcad","usdchf","nzdusd","eurjpy"],
+ "judgement": "basket of the 8 pairs, PROTOCOL_V3 section 4 (t on daily sums of R, pooled PF>=1.12, >=65% pairs positive, no pair >25% of profit, >=60% years positive); IS entries < 2022-01-01 only; frames truncated at 2022-01-15 before any run",
+ "configs": [
+  {"id": "A1", "name": "donch4h_stop", "module": "tracks/trend/strategy.py as strategy_trend", "params": "FINALISTS['donch4h_stop'] unchanged"},
+  {"id": "A2", "name": "orb_asia_2d_buf10", "module": "tracks/orb/strategy.py as strategy_orb", "params": "FINALISTS['orb_asia_2d_buf10'] unchanged"},
+  {"id": "A3", "name": "brk72_24h_wd", "module": "r2/tracks/crypto/strategy.py", "params": "FINALISTS['brk72_24h_wd']['params'] unchanged, with the FP-hours exit wrapper of r2/recalc.py (time exit inside the weekend closure done on the last bar before it), as in the recalculated version"},
+  {"id": "A4", "name": "outer_close_ride", "module": "pivbb/tracks/run/strategy.py", "params": "FINALISTS['outer_close_ride'] unchanged"}
+ ],
+ "budget_used": 4
+}

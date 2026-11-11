@@ -1,0 +1,21 @@
+{
+ "_written": "2026-11-11, after the descriptive stage B (descB*.csv, 360 cells counted: 192 hourly + 40 window + 80 fix/open + 48 spill-over), before any engine run of these rules",
+ "descriptive_cells": 360,
+ "selected_for_rules": {
+  "fix_monthend_reversal": "post-fix 16:00->16:30 London move against the 15:00->16:00 run-up, last business day of the month: negative on 8/8 pairs (-0.2 to -6.0 bp, mean -2.2 bp; Evans et al. 2018, Melvin & Prins 2015: month-end hedge rebalancing at the WM/R fix); all days: -0.3 to -0.8 bp (< cost, not a rule)",
+  "usd_eu_morning": "USD firms 07:00->12:00 London on 8/8 pairs (eurusd -1.9 bp 9/9 yrs, gbpusd -1.6 9/9; others 0.3-1.3 bp, below 2x cost) (Ranaldo 2009, Breedon & Ranaldo 2013)",
+  "ldn_open_break": "first break of the 00-07 London range between 07 and 10 London, followed to 16:00: only usdjpy (+2.9 bp) and eurjpy (+2.1) above 2x cost; others -1.0 to +1.3",
+  "rejected_descriptively": "us100 spill-over (<= 0.9 bp after the minute, 1.1-2.0 bp inside the non-tradable same minute), NY-open momentum (<= 1.1 bp), fix momentum into the fix (<= 0.5 bp all days), fix reversal on all days (<= 0.8 bp), US-afternoon leg except eurjpy/eurusd (<= 1.0 bp), Asia-window drift (opposite of the 'own region' hypothesis for JPY/AUD/NZD, <= 1.7 bp)"
+ },
+ "common": "market entry at the open of the first M1 bar at/after the decision time (skip if > 5 min late); stop = stop_atr x ATR24 of H1 mid bars (mean true range of the last 24 complete hourly bars) from the fill; market time exit; weekdays; one position per pair",
+ "configs": [
+  {"id": "B1", "family": "fix", "params": {"dec": "16:00", "look_min": 60, "exit": "16:30", "stop_atr": 1.5, "monthend": true}, "pairs": "all 8"},
+  {"id": "B2", "family": "tod", "params": {"start": "07:00", "end": "12:00", "dir": "usd_long", "stop_atr": 2.0}, "pairs": "all 8"},
+  {"id": "B3", "family": "ldnbrk", "params": {"range": "00:00-07:00", "entry_end": "10:00", "exit": "16:00", "entry": "stop at range high/low, first touch only", "stop": "opposite side of the range"}, "pairs": "all 8"}
+ ],
+ "neighbours_if_candidate": {
+  "B1": ["exit 16:20", "exit 16:45", "exit 17:00", "look_min 30", "look_min 120", "stop_atr 1.0", "stop_atr 2.5", "last TWO business days of the month"],
+  "B2": ["start 06:00", "start 08:00", "end 11:00", "end 13:00", "stop_atr 1.0", "stop_atr 3.0"]
+ },
+ "budget_so_far": "4 transfers (stage A)"
+}
