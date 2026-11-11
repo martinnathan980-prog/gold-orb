@@ -2414,6 +2414,17 @@ def k_floating(W):
         w.tick(3)
         a = w.h.account()
         assert abs(a["equity"] - 1092.83) < 0.011 and (a["start_balance"], a["kill_level"]) == (1100.0, 550.0), a   # max(1000 + 100, 1092.83)
+    with W() as w:                                                              # the same when the withdrawal is only seen just before the stop
+        w.h.alive()
+        w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)
+        w.set({"price.XAUUSD.r": "4130.10,4130.23"})                            # +85.99 floating
+        w.tick(2)
+        w.set(balance_quiet=1)
+        w.do("balance -700")                                                    # 385.94 left, under the stop level of 500
+        w.wait(lambda: w.h.account()["balance"] == 299.95, 8, "account.txt to show the withdrawal")
+        w.tick(2)
+        a = w.h.account()
+        assert a["blocked"] == "" and abs(a["start_balance"] - 385.94) < 0.011 and len(w.robot()) == 1, a      # max(1000 - 700, 385.94)
 
 
 @test("K16", "only deposits and withdrawals move the reference: a charge, a correction, a credit, a bonus and the robot's own trades do not",
