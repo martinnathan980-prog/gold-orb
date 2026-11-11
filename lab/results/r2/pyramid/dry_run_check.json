@@ -1,0 +1,27 @@
+{
+ "time": "2026-11-11T19:36:10+00:00",
+ "identical": true,
+ "differences": {
+  "reference_and_24_configurations": null,
+  "criteria": null,
+  "finalist": null,
+  "zero_edge_control": null,
+  "small_accounts": null,
+  "descriptive_table_common_period": null
+ },
+ "self_checks": {
+  "parents_replayed": 5207,
+  "replay_vs_simulator_mismatches": 0,
+  "saved_vs_resimulated_mismatches": 2,
+  "of_which_open_at_the_end_of_the_price_frame": 2,
+  "unexplained_mismatches": 0,
+  "reach_vs_simulator_mfe_mismatches": 0,
+  "addons_checked": 6670,
+  "prefix_test_mismatches": 0,
+  "addon_resimulated_alone_fill_mismatches": 0,
+  "addon_resimulated_alone_exit_mismatches": 0,
+  "addon_resimulated_alone_max_abs_pnl_diff": 0.0,
+  "addon_exit_equals_parent_exit_all": true,
+  "addons_on_parents_open_at_the_end_of_the_frame": 4
+ }
+}

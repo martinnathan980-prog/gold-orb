@@ -415,3 +415,5 @@
 {"time": "2026-11-11T15:03:13", "track": "fx", "label": "B5_fix_me_spx:lead_single_look:usdchf:x15", "period": "val"}
 {"time": "2026-11-11T15:04:16", "track": "idx_us", "label": "noise30_stress_gate:lead_single_look", "period": "val"}
 {"time": "2026-11-11T16:36:14+00:00", "track": "stake", "label": "stake_profiles:cushion_only+soft+strong:lead_single_look", "period": "val"}
+{"time": "2026-11-11T19:48:50+00:00", "track": "stake", "label": "growth_paths:risk_schedules:illustration_no_selection", "period": "val"}
+{"time": "2026-11-11T19:50:59+00:00", "track": "stake", "label": "growth_paths:risk_schedules:illustration_no_selection", "period": "val"}
