@@ -297,3 +297,24 @@ read (`results/r2/stake/review.json`). Written before the look:
    does not lower the risk, it moves it from the number of red weeks to their size.**
 5. On 1,000 EUR at today's prices the profiles take a quarter to a third of the signals (the reference itself 42 %):
    mostly the two ether rules. This is reported as what it is.
+
+### Addendum E — outcome of the single look (2026-11-11, `results/r2/stake/val_look.json`)
+2022–2025, ten rules, 5,400 signals. Reference at an equal stake of 1 %: 53.1 % winning weeks (55.0 % on week-end
+equity), 48.1 % winning days, 72.9 % winning months, total +428.6 %, worst week −13.7 %, maximum drawdown 36.8 %,
+longest run of red weeks 5.
+- **`cushion_only` passes on every reading**: 69.9 % winning weeks (66.0 % on equity), total +433.9 %, worst week
+  −11.8 %, drawdown 29.8 %, longest red run 2; on a 1,000 EUR account at today's prices 66.5 % against 52.6 %, the
+  same worst week (−7.1 %), drawdown 22.3 % against 24.8 %, +40.9 % a year against +45.6 %. The rule: the realised
+  result w of the current server week, in base stakes; stake multiplier 1 if w ≤ 0, min(1, max(0.25, w / 4)) if
+  w > 0. **Adopted for the robot** (the user may refuse). What it is not: evidence of an edge (with no edge it still
+  shows +4 to +11 points of winning weeks); it leaves the share of winning days unchanged (48.5 %); green weeks are
+  smaller (+5.0 % on average against +7.5 %), red weeks the same size (−4.7 %).
+- `soft` and `strong` pass as designed (73.2 % and 77.0 % winning weeks, 84 % and 76 % of the reference's profit)
+  but **fail on 1,000 EUR** (worst week 1.8 and 1.6 times the reference's): described as "from about 20,000 EUR",
+  not offered for this account.
+- **Winning days:** no construction passes. Stake rules add 1 to 6 points; a daily target on the account buys 65 %
+  of green days for 86 % of the profit (in sample); the funding carry on bitcoin no longer pays more than a savings
+  account for a French retail resident (`results/r2/carry/`, `results/r2/jours/`).
+- Note on the 1,000 EUR account: at today's price levels the minimum lots let through only 45 % of the signals
+  (reference) or 36 % (cushion); the earlier simulation `sim1000.py` (1,000 → 18,175 EUR) compounded and used the
+  lower prices of 2022–2023.
