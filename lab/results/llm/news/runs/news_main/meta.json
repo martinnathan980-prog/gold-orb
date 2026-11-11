@@ -1,0 +1,12 @@
+{
+ "model": "claude-fable-5-2",
+ "effort": "medium",
+ "n": 2147,
+ "mode": "batch",
+ "kind": "news",
+ "batch_ids": [
+  "msgbatch_017rFuBSCDrmLh3pgeL1BMpo"
+ ],
+ "collected": 2147,
+ "cost_usd": 23.06
+}

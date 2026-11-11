@@ -1,0 +1,10 @@
+{
+ "request": {
+  "cmd": "news_collect",
+  "name": "news_main",
+  "wait": true
+ },
+ "status": "ok",
+ "finished_utc": "2026-11-11T12:31:17+00:00",
+ "output": "news_main: [('in_progress', 0, 2147)]\nnews_main: [('in_progress', 0, 2147)]\nnews_main: [('in_progress', 0, 2147)]\nnews_main: [('in_progress', 0, 2147)]\nnews_main: [('ended', 2147, 0)]\nnews_main: 2147 answers, 23.06 USD = 1.07 cents per post | tokens in 2195 out 98 | impact {'none': 2080, 'minor': 53, 'major': 14} | stop reasons {'end_turn': 2147} | projected batch cost for 2147 posts at this effort: 23.1 USD\n"
+}

@@ -1,0 +1,10 @@
+{
+ "request": {
+  "cmd": "news_submit",
+  "name": "news_main",
+  "effort": "medium"
+ },
+ "status": "ok",
+ "finished_utc": "2026-11-11T12:27:15+00:00",
+ "output": "news_main: batch msgbatch_017rFuBSCDrmLh3pgeL1BMpo submitted with 2147 requests\n"
+}
