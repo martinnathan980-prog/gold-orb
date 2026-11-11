@@ -44,5 +44,35 @@
   "fx": 22,
   "stocks": 2,
   "validation_looks": 2
+ },
+ "green_weeks_addendum_E": {
+  "date": "2026-11-11",
+  "validation_look": "results/r2/stake/val_look.json (2022-2025, one logged look, three profiles)",
+  "reference": {
+   "win_weeks_pct": 53.1,
+   "win_weeks_equity_pct": 55.0,
+   "total_pct": 428.6,
+   "worst_week_pct": -13.65
+  },
+  "cushion_only": {
+   "verdict": "PASS as designed and on 1,000 EUR",
+   "win_weeks_pct": 69.9,
+   "win_weeks_equity_pct": 66.0,
+   "total_pct": 433.9,
+   "worst_week_pct": -11.82,
+   "on_1000_eur_win_weeks_pct": 66.5,
+   "reference_on_1000_eur_win_weeks_pct": 52.6
+  },
+  "soft": {
+   "verdict": "PASS as designed, FAIL on 1,000 EUR (worst week 1.8x)",
+   "win_weeks_pct": 73.2,
+   "total_pct": 359.37
+  },
+  "strong": {
+   "verdict": "PASS as designed, FAIL on 1,000 EUR (worst week 1.6x)",
+   "win_weeks_pct": 77.0,
+   "total_pct": 326.55
+  },
+  "green_days": "no honest construction: stake rules +1 to +6 points; daily account target 65 % green days for 14 % of the profit (in sample); carry no longer pays (results/r2/carry/, results/r2/jours/)"
  }
 }
