@@ -31,14 +31,18 @@ DAY = 86400 * 10 ** 9
 WEEK = 7 * DAY
 MONTH = int(30.4375 * DAY)
 CFG = S.INFO_ONLY["cushion_only"]["config"]
-SCHEDULES = {                                   # (balance thresholds in EUR, risk % per trade below each, then above the last)
+SCHEDULES = {                                   # (thresholds in EUR, risk % per trade below each, then above the last)
     "A": ((), (1.0,)),
     "B": ((5000.0,), (2.0, 1.0)),
     "C": ((3000.0, 10000.0, 20000.0), (5.0, 3.0, 2.0, 1.0)),
     "D": ((3000.0, 10000.0, 20000.0), (10.0, 5.0, 2.0, 1.0)),
     "E": ((3000.0, 10000.0, 20000.0), (20.0, 10.0, 5.0, 2.0)),
+    "C2": ((3000.0, 10000.0, 20000.0), (5.0, 3.0, 2.0, 1.0)),       # clarification of addendum G: thresholds compared with
+    "D2": ((3000.0, 10000.0, 20000.0), (10.0, 5.0, 2.0, 1.0)),      # max(balance, money paid in)
 }
-EDGES = (1.0, 0.5, 0.25, 0.0)
+KEYED_ON_PAID = ("C2", "D2")
+EDGES = (1.0, 0.5, 0.25, 0.0, -0.5)
+NO_2024 = "1.0_no2024"                          # edge x1 with the weeks of 2024 left out of the draw
 MILESTONES = (15000.0, 26000.0, 52000.0)
 MONTHS = 36
 N_PATHS = 2000
@@ -57,8 +61,14 @@ def _pct(eq, thr, pct):
 
 
 @njit(cache=True)
+def _risk(eq, paid, thr, pct, key):
+    """Risk % of the schedule: key 0 = by the balance, key 1 = by the larger of the balance and the money paid in."""
+    return _pct(max(eq, paid) if key == 1 else eq, thr, pct)
+
+
+@njit(cache=True)
 def engine(t_in, t_out, order_out, wk_in, dy_in, wk_out, dy_out, fam, symid, pnl, risk, entry, upl, minlot, step, lev,
-           dep_t, dep_wk, dep_amt, thr, pct, p, famcap, start, max_pos, max_per_sym, kill_dd, stop_on_kill, usd_eur, nwk):
+           dep_t, dep_wk, dep_amt, thr, pct, key, p, famcap, start, max_pos, max_per_sym, kill_dd, stop_on_kill, usd_eur, nwk):
     """One account. Returns (balance at the end of each week, money paid in at the end of each week, counts) where
     counts = [taken, skipped by the rule, by the minimum lot, by the position caps, by the margin, week of the first
     time the -50 % rule fires (-1 = never), times the balance reached zero, 1 if the account was stopped]."""
@@ -75,7 +85,8 @@ def engine(t_in, t_out, order_out, wk_in, dy_in, wk_out, dy_out, fam, symid, pnl
     o_margin = np.zeros(max_pos)
     o_boost = np.zeros(max_pos)
     cur_wk, cur_dy = -1, -1
-    wk_bal, dy_bal, wk_dep, dy_dep = start, start, 0.0, 0.0
+    wk_paid = start
+    wk_bal, dy_bal, wk_base, dy_base = start, start, start, start     # *_base = balance at the start + payments since
     prev_wk, prev_res = -2, 0.0
     rec = 0                                   # weeks < rec already have their end-of-week figures
     j, q = 0, 0
@@ -97,8 +108,10 @@ def engine(t_in, t_out, order_out, wk_in, dy_in, wk_out, dy_out, fam, symid, pnl
             if not stopped:
                 eq += dep_amt[q]
                 paid += dep_amt[q]
-                wk_dep += dep_amt[q]
-                dy_dep += dep_amt[q]
+                wk_base += dep_amt[q]
+                dy_base += dep_amt[q]
+                if eq == dep_amt[q]:           # the account was empty: nothing of the week is left to measure against
+                    wk_base, dy_base = eq, eq
                 ref = max(ref + dep_amt[q], eq)
             q += 1
             continue
@@ -117,10 +130,10 @@ def engine(t_in, t_out, order_out, wk_in, dy_in, wk_out, dy_out, fam, symid, pnl
                 rec += 1
             if w_ev != cur_wk:
                 if cur_wk >= 0:
-                    prev_wk, prev_res = cur_wk, (eq - wk_bal - wk_dep) / max(_pct(wk_bal, thr, pct) / 100.0 * wk_bal, 1e-9)
-                cur_wk, wk_bal, wk_dep = w_ev, eq, 0.0
+                    prev_wk, prev_res = cur_wk, (eq - wk_base) / max(_risk(wk_bal, wk_paid, thr, pct, key) / 100.0 * wk_bal, 1e-9)
+                cur_wk, wk_bal, wk_base, wk_paid = w_ev, eq, eq, paid
             if dy_out[k] != cur_dy:
-                cur_dy, dy_bal, dy_dep = dy_out[k], eq, 0.0
+                cur_dy, dy_bal, dy_base = dy_out[k], eq, eq
             eq += pnl[k] * o_lots[slot] * upl[k] * usd_eur
             o_idx[slot] = -1
             if eq <= 0.0:                      # the account is empty: nothing left to trade with until the next payment
@@ -151,13 +164,13 @@ def engine(t_in, t_out, order_out, wk_in, dy_in, wk_out, dy_out, fam, symid, pnl
             continue
         if w_ev != cur_wk:
             if cur_wk >= 0:
-                prev_wk, prev_res = cur_wk, (eq - wk_bal - wk_dep) / max(_pct(wk_bal, thr, pct) / 100.0 * wk_bal, 1e-9)
-            cur_wk, wk_bal, wk_dep = w_ev, eq, 0.0
+                prev_wk, prev_res = cur_wk, (eq - wk_base) / max(_risk(wk_bal, wk_paid, thr, pct, key) / 100.0 * wk_bal, 1e-9)
+            cur_wk, wk_bal, wk_base, wk_paid = w_ev, eq, eq, paid
         if dy_in[i] != cur_dy:
-            cur_dy, dy_bal, dy_dep = dy_in[i], eq, 0.0
-        unit = max(_pct(wk_bal, thr, pct) / 100.0 * wk_bal, 1e-9)
-        w = (eq - wk_bal - wk_dep) / unit
-        d = (eq - dy_bal - dy_dep) / unit
+            cur_dy, dy_bal, dy_base = dy_in[i], eq, eq
+        unit = max(_risk(wk_bal, wk_paid, thr, pct, key) / 100.0 * wk_bal, 1e-9)
+        w = (eq - wk_base) / unit
+        d = (eq - dy_base) / unit
         pw = prev_res if prev_wk == w_ev - 1 else 0.0
         open_boost, n_open, n_sym = 0.0, 0, 0
         used = 0.0
@@ -174,7 +187,7 @@ def engine(t_in, t_out, order_out, wk_in, dy_in, wk_out, dy_out, fam, symid, pnl
             i += 1
             continue
         per_lot = risk[i] * upl[i] * usd_eur
-        lots = np.floor(eq * _pct(eq, thr, pct) * m / 100.0 / per_lot / step[i] + 1e-9) * step[i]
+        lots = np.floor(eq * _risk(eq, paid, thr, pct, key) * m / 100.0 / per_lot / step[i] + 1e-9) * step[i]
         if lots < minlot[i]:
             cnt[2] += 1.0
             i += 1
@@ -263,7 +276,7 @@ def run_one(pk, pnl, sched, dep_t, dep_wk, dep_amt, start=1000.0, stop_on_kill=F
     """`pk` = pack(...) ; `pnl` = the per-trade result in price units for the whole frame (the edge scenario)."""
     p, famcap = S.params(CFG)
     thr, pct = (np.array(v, dtype=np.float64) for v in SCHEDULES[sched])
-    return engine(*pk["head"], pnl[pk["idx"]], *pk["tail"], dep_t, dep_wk, dep_amt, thr, pct, p, famcap, start,
+    return engine(*pk["head"], pnl[pk["idx"]], *pk["tail"], dep_t, dep_wk, dep_amt, thr, pct, 1 if sched in KEYED_ON_PAID else 0, p, famcap, start,
                   A.LIMITS["max_positions"], A.LIMITS["max_per_sym"], kill_dd, stop_on_kill, A.USD_EUR, pk["nwk"])
 
 
@@ -317,12 +330,16 @@ def real_order(x):
     return {"week_end": week_end, "schedules": out}
 
 
-def draw_paths(x, n_paths, months, rng):
-    """Resampled calendars: for each path, the original week placed at each position (blocks of mean length BLOCK)."""
+def draw_paths(x, n_paths, months, rng, without_year=None):
+    """Resampled calendars: for each path, the original week placed at each position (blocks of mean length BLOCK).
+    `without_year`: the weeks whose Monday falls in that year are left out of the draw (blocks run over the others)."""
     weeks_with = np.unique(x["wk_in"])
     lo, hi = int(weeks_with.min()), int(weeks_with.max())
+    allowed = np.arange(lo, hi + 1)
+    if without_year is not None:
+        allowed = allowed[x["week_monday"].year.to_numpy()[allowed] != without_year]
     n_weeks = int(np.ceil(months * 30.4375 / 7.0))
-    span = hi - lo + 1
+    span = len(allowed)
     plan = np.zeros((n_paths, n_weeks), np.int64)
     for k in range(n_paths):
         pos = 0
@@ -332,7 +349,7 @@ def draw_paths(x, n_paths, months, rng):
             for q in range(length):
                 if pos >= n_weeks:
                     break
-                plan[k, pos] = lo + (startw + q) % span
+                plan[k, pos] = allowed[(startw + q) % span]
                 pos += 1
     return plan, n_weeks
 
@@ -342,8 +359,9 @@ def resampled(x, months=MONTHS, n_paths=N_PATHS, seed=SEED, only=None):
     whatever `only` is)."""
     rng = np.random.default_rng(seed)
     plan, n_weeks = draw_paths(x, n_paths, months, rng)
+    plan_no24, _ = draw_paths(x, n_paths, months, np.random.default_rng(seed + 1), without_year=2024)   # its own draws
     if only is not None:
-        plan, n_paths = plan[:only], only
+        plan, plan_no24, n_paths = plan[:only], plan_no24[:only], only
     order = np.argsort(x["wk_in"], kind="stable")                # trades are already sorted by entry time
     wk_sorted = x["wk_in"][order]
     first = np.searchsorted(wk_sorted, np.arange(x["nwk"] + 1), side="left")
@@ -354,25 +372,27 @@ def resampled(x, months=MONTHS, n_paths=N_PATHS, seed=SEED, only=None):
     month_wk = np.minimum(((np.arange(months + 1) * MONTH) // WEEK).astype(np.int64), n_weeks) - 1     # last full week before each month end
     month_wk[0] = -1
     pnls = {f: with_edge(x, f) for f in EDGES}
-    res = {s: {f: np.zeros((n_paths, months + 1)) for f in EDGES} for s in SCHEDULES}
-    fired = {s: {f: np.zeros(n_paths) for f in EDGES} for s in SCHEDULES}
-    zero = {s: {f: np.zeros(n_paths) for f in EDGES} for s in SCHEDULES}
+    keys = list(EDGES) + [NO_2024]
+    res = {s: {f: np.zeros((n_paths, months + 1)) for f in keys} for s in SCHEDULES}
+    fired = {s: {f: np.zeros(n_paths) for f in keys} for s in SCHEDULES}
+    zero = {s: {f: np.zeros(n_paths) for f in keys} for s in SCHEDULES}
     paid_m = 1000.0 * np.maximum(np.arange(months + 1), 1)       # paid in by the end of month h: payments at months 0 .. h-1
     for k in range(n_paths):
-        parts = [order[first[w]:first[w + 1]] for w in plan[k]]
-        idx = np.concatenate(parts)
-        pos = np.repeat(np.arange(n_weeks), [len(q) for q in parts]).astype(np.int64)
-        t_in = pos * WEEK + x["off_in"][idx]
-        t_out = pos * WEEK + x["off_out"][idx]
-        t = (t_in, t_out, pos, pos + (x["wk_out"][idx] - x["wk_in"][idx]), t_in // DAY, t_out // DAY)
-        pk = pack(x, idx, t, n_weeks)
-        for s in SCHEDULES:
-            for f in EDGES:
-                eq, _, c = run_one(pk, pnls[f], s, dep_t, dep_wk, dep_amt)
-                res[s][f][k, 0] = 1000.0
-                res[s][f][k, 1:] = eq[month_wk[1:]]
-                fired[s][f][k] = c[5]
-                zero[s][f][k] = c[6]
+        for the_plan, the_keys in ((plan, EDGES), (plan_no24, (NO_2024,))):
+            parts = [order[first[w]:first[w + 1]] for w in the_plan[k]]
+            idx = np.concatenate(parts)
+            pos = np.repeat(np.arange(n_weeks), [len(q) for q in parts]).astype(np.int64)
+            t_in = pos * WEEK + x["off_in"][idx]
+            t_out = pos * WEEK + x["off_out"][idx]
+            t = (t_in, t_out, pos, pos + (x["wk_out"][idx] - x["wk_in"][idx]), t_in // DAY, t_out // DAY)
+            pk = pack(x, idx, t, n_weeks)
+            for s in SCHEDULES:
+                for f in the_keys:
+                    eq, _, c = run_one(pk, pnls[1.0 if f == NO_2024 else f], s, dep_t, dep_wk, dep_amt)
+                    res[s][f][k, 0] = 1000.0
+                    res[s][f][k, 1:] = eq[month_wk[1:]]
+                    fired[s][f][k] = c[5]
+                    zero[s][f][k] = c[6]
     return res, fired, zero, paid_m, n_weeks
 
 
@@ -381,7 +401,7 @@ def summarise(res, fired, zero, paid_m):
     q = (10, 25, 50, 75, 90)
     for s in SCHEDULES:
         out[s] = {}
-        for f in EDGES:
+        for f in res[s]:
             m = res[s][f]
             pc = np.percentile(m, q, axis=0)
             row = {"percentiles_by_month": {str(p): [round(float(v), 0) for v in pc[i]] for i, p in enumerate(q)},
@@ -401,6 +421,12 @@ def summarise(res, fired, zero, paid_m):
                 reach[str(int(x))] = {"within_36_months_pct": round(float(100 * ever.mean()), 1),
                                       "median_month": (int(np.median(when)) if ever.mean() >= 0.5 else None)}
             row["first_reach"] = reach
+            # the first month from which the median path gains at least 1,000 EUR a month, on a 6-month average, for good
+            g = np.median(m, axis=0) - paid_m
+            ok = np.array([(g[h + 6] - g[h]) / 6.0 >= 1000.0 for h in range(len(g) - 6)])
+            later_all_ok = np.flip(np.cumprod(np.flip(ok))).astype(bool)
+            row["month_of_a_lasting_1000_a_month"] = int(np.argmax(later_all_ok)) if later_all_ok.any() else None
+            row["gain_per_month_by_year_median_path"] = [round(float((g[12 * (y + 1)] - g[12 * y]) / 12.0), 0) for y in range(3)]
             row["stop_rule_fires_pct"] = round(float(100 * (fired[s][f] >= 0).mean()), 1)
             row["balance_reaches_zero_pct"] = round(float(100 * (zero[s][f] > 0).mean()), 1)
             out[s][str(f)] = row
@@ -424,21 +450,22 @@ def main(period):
     res, fired, zero, paid_m, n_weeks = resampled(x)
     summ = summarise(res, fired, zero, paid_m)
     for s in SCHEDULES:
-        for f in EDGES:
+        for f in list(EDGES) + [NO_2024]:
             r = summ[s][str(f)]["at_36_months"]
-            print(f"{s} edge x{f:<4}: at 36 months median {r['median']:>10,.0f} (10 %: {r['p10']:>9,.0f}, 90 %: {r['p90']:>10,.0f}) for {r['paid']:,.0f} paid | "
-                  f"below paid {r['below_paid_pct']:5.1f} % | >=26k {r['above_26000_pct']:5.1f} % | stop rule {summ[s][str(f)]['stop_rule_fires_pct']:5.1f} % | "
-                  f"zero {summ[s][str(f)]['balance_reaches_zero_pct']:5.1f} %")
+            print(f"{s:2s} edge x{str(f):<10}: at 36 months median {r['median']:>10,.0f} (10 %: {r['p10']:>9,.0f}, 90 %: {r['p90']:>10,.0f}) for {r['paid']:,.0f} paid | "
+                  f"below paid {r['below_paid_pct']:5.1f} % | lasting 1,000 a month from month {summ[s][str(f)]['month_of_a_lasting_1000_a_month']} | "
+                  f"stop rule {summ[s][str(f)]['stop_rule_fires_pct']:5.1f} % | zero {summ[s][str(f)]['balance_reaches_zero_pct']:5.1f} %")
     out = {"protocol": "PROTOCOL_V3 addendum G", "period": [str(v.date()) for v in WINDOW[period]], "n_signals": int(len(d)),
            "schedules": {k: {"thresholds_eur": list(v[0]), "risk_pct": list(v[1])} for k, v in SCHEDULES.items()},
-           "edges": list(EDGES), "months": MONTHS, "paths": N_PATHS, "block_weeks": BLOCK, "seed": SEED, "payment_eur": 1000.0,
+           "edges": list(EDGES), "extra_scenario": {NO_2024: "edge x1, the weeks of 2024 left out of the draw (its own draws, seed + 1)"},
+           "keyed_on_max_of_balance_and_paid": list(KEYED_ON_PAID), "months": MONTHS, "paths": N_PATHS, "block_weeks": BLOCK, "seed": SEED, "payment_eur": 1000.0,
            "paid_by_month": [float(v) for v in paid_m], "self_check": checks, "real_order": ro, "resampled": summ,
            "not_modelled": "slippage on larger sizes, broker margin call, daily-loss lock, minimum stop distance; the -50 % stop is recorded, not applied"}
     json.dump(out, open(os.path.join(S.OUT, "growth.json"), "w"), indent=1)
 
 
 def summarise_small(res, paid_m):
-    return {s: {str(f): round(float(np.median(res[s][f][:, -1])), 0) for f in EDGES} for s in SCHEDULES}
+    return {s: {str(f): round(float(np.median(res[s][f][:, -1])), 0) for f in res[s]} for s in SCHEDULES}
 
 
 def dump(path, k=30):
@@ -446,8 +473,8 @@ def dump(path, k=30):
     (2022-2025 trades: the access is logged)."""
     x = arrays(load("val"), "today")
     res, fired, zero, paid_m, n_weeks = resampled(x, only=k)
-    np.savez(path, **{f"{s}_{f}": res[s][f] for s in SCHEDULES for f in EDGES},
-             **{f"fired_{s}_{f}": fired[s][f] for s in SCHEDULES for f in EDGES}, paid=paid_m)
+    np.savez(path, **{f"{s}_{f}": res[s][f] for s in SCHEDULES for f in res[s]},
+             **{f"fired_{s}_{f}": fired[s][f] for s in SCHEDULES for f in res[s]}, paid=paid_m)
     print("written", path, "paths", k, "weeks", n_weeks)
 
 

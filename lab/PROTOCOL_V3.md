@@ -347,3 +347,39 @@ curves replay the same 2022–2025 trades that validated the rules (they flatter
   `results/r2/stake/val_look.json`.
 - **To be said with every figure:** past, on paper, same years as the validation; slippage on larger sizes, the
   broker's margin call and the minimum stop distance are not modelled beyond `account.py`'s margin check.
+
+### Addendum F — adding to winning trades ("pyramiding"): in sample only, no finalist, no validation look (2026-11-11)
+The user's question: "when a trade is winning, should we add trades to blow up the gain?". Definitions, grid (24
+configurations: fixed-risk and free-risk add-ons at +1R / +2R, one or two adds, all sleeves or the trend sleeves) and
+selection rule were fixed by the lead, written in `r2/tracks/pyramid/pyramid.py` and logged in
+`results/r2/pyramid/run_log.jsonl` before any add-on result was computed. In sample (2018-02..2021, reference +787.4
+stakes, drawdown 29.1): an add-on opened once the trade is +1R earns +0.134 R per unit of its own risk against +0.160 R
+for a fresh trade; every configuration raises the total and raises the drawdown at least as much; profit at equal
+drawdown is 0.82 to 1.08 times the reference (1.15 was required); winning weeks 58.3 % → 55.3–58.7 %; on a 1,000 EUR
+account fewer than one add-on in ten can be placed and the account ends lower. An independent reviewer rebuilt it by
+another method (add-ons as rows of the lab's own order table) and reproduced it exactly. **Finalist: none. No 2022–2025
+look was made** (`results/r2/pyramid/`, `results/r2/pyramid/panel.json`).
+
+### Addendum G — clarification of 2026-11-11 (late night), after the independent recomputation and critique
+(`results/r2/stake/growth_review.json`), written BEFORE the corrected run
+- **Defect corrected.** The first run let a payment leak into the stake rule's week result through a floating-point
+  residue (balance + 1,000 − balance − 1,000 ≠ 0), which cut some stakes to a quarter after a payment. The real-order
+  figures were unaffected; of the 3,940 published resampled figures 3,748 were within 1 %. The week and day results are
+  now measured against a base that receives the payment itself; the self-check against `account.py` is unchanged.
+- **Two scenarios added** (the first run had nothing below "the rules exactly cover their costs"): edge × −0.5 ("the
+  rules are noise and the costs are paid": the reviewer puts a zero gross edge near × −0.44) and edge × 1 with the
+  weeks of 2024 excluded from the draw (2024 carries 42 % of the total).
+- **Two schedules added, declared here before any run:** C2 and D2 = the percentages and thresholds of C and D, the
+  thresholds being compared with the larger of the balance and the money paid in, so that the risk also falls as money
+  is paid in (in C and D it stays at its maximum for as long as the account does not grow, i.e. exactly when the rules
+  earn nothing).
+- **Schedule E is no longer shown** (kept in the result file): all its open stops together exceed the balance in 95 to
+  99.7 % of paths; it is not executable.
+- **Reporting.** Gains (balance minus money paid in) instead of milestones on the balance, which are reached by the
+  payments alone; the gain the worst path in ten shows after one year; the first month from which the median path
+  gains at least 1,000 EUR a month on a 6-month average for good; every amount rounded to two significant digits; the
+  real-order curves are not shown (they end at sizes the cost model was never built for and are a top-decile sequence).
+- **Assumed settings of the hands, to be said with the figures:** the risk cap follows the schedule, the daily lock is 6
+  stakes instead of 6 % of the balance, the −50 % stop is off. Not in the curves: the 20× size limit (nothing up to 5 %
+  risk, about one trade in ten at 10 %), the broker's real leverage per market (unverified), margin calls, taxes, the
+  Friday-night closure of the hands.
