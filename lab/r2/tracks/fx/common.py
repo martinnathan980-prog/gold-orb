@@ -119,14 +119,15 @@ def basket_criteria(b):
     return c
 
 
-def basket(name, make_orders, params, syms=PAIRS, full=False, log=True, save_trades=False, tag=None):
+def basket(name, make_orders, params, syms=PAIRS, full=False, log=True, save_trades=False, tag=None, pass_pair=False):
     """Run one configuration on every pair; one r2.log_trial per pair; pooled statistics."""
     pools = {}
     per = {}
     for sym in syms:
-        ev, tr = evaluate(sym, make_orders, params, full=full)
+        pr = dict(params, pair=sym) if pass_pair else params
+        ev, tr = evaluate(sym, make_orders, pr, full=full)
         if log:
-            r2.log_trial("fx", sym, {"name": name, **params} if tag is None else {"name": name, "tag": tag, **params}, ev)
+            r2.log_trial("fx", sym, {"name": name, **pr} if tag is None else {"name": name, "tag": tag, **pr}, ev)
         per[sym] = {k: v for k, v in ev.items() if k != "sym"}
         for k, t in tr.items():
             if len(t):
