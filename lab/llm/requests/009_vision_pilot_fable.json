@@ -1,0 +1,1 @@
+{"cmd": "vision_run", "name": "vision_pilot_is_fable", "period": "is", "n": 40, "model": "claude-fable-5-2", "effort": "high", "workers": 3}

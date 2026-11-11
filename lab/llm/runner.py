@@ -54,6 +54,17 @@ def execute(r):
         ex.collect(name, bool(r.get("wait", True)))
     elif cmd == "analyse":
         ex.analyse(name)
+    elif cmd in ("vision_run", "vision_submit", "vision_collect", "vision_probe"):      # blind test with chart images (llm/vision.py)
+        from llm import vision
+        vm, ve = r.get("model", vision.MODEL), r.get("effort", "high")
+        if cmd == "vision_run":
+            vision.run_sync(name, r.get("period", "is"), r.get("n"), vm, ve, workers=int(r.get("workers", 3)))
+        elif cmd == "vision_submit":
+            vision.submit(name, r.get("period", "val"), r.get("n"), vm, ve)
+        elif cmd == "vision_collect":
+            vision.collect(name, bool(r.get("wait", True)))
+        else:
+            vision.probe(name, int(r.get("n", 60)), vm, workers=int(r.get("workers", 3)))
     else:
         raise ValueError(f"unknown cmd {cmd}")
 

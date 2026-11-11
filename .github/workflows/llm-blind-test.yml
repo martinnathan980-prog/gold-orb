@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install
-        run: pip install -q anthropic pandas pyarrow numpy
+        run: pip install -q anthropic pandas pyarrow numpy matplotlib
       - name: Run queued requests
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
