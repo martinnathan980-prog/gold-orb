@@ -2210,6 +2210,16 @@ def k_deposit_after_gain(W):
         assert (a["balance"], a["start_balance"], a["blocked"]) == (round(bal + 500, 2), round(bal + 500, 2), ""), (bal, a)
         assert abs(a["kill_level"] - (bal + 500) / 2) < 0.006, a
         assert ops(w) and ops(w)[0].startswith(f"Depot de 500.00 : capital de reference {bal + 500:.2f}, arret definitif a "), ops(w)
+    with W(inputs={"InpKillPct": 20}) as w:                                     # another percentage: the level follows it
+        w.h.alive()
+        w.tick(2)
+        a = w.h.account()
+        assert (a["start_balance"], a["kill_level"], a["kill_pct"]) == (1000.0, 800.0, 20.0), a
+        w.do("balance 500")
+        w.tick(3)
+        a = w.h.account()
+        assert (a["start_balance"], a["kill_level"]) == (1500.0, 1200.0), a
+        assert ops(w) == ["Depot de 500.00 : capital de reference 1500.00, arret definitif a 1200.00."], ops(w)
 
 
 AFTER_600 = ["Robot Claude : Retrait de 600.00 : capital de reference 400.00, arret definitif a 200.00."]
@@ -2291,8 +2301,10 @@ def k_once(W):
         w.tick(2)
         w.set(connected=None)
         same("a reconnection")
+        saved = (w.mock / "globals.txt").stat().st_mtime_ns
         w.advance(61)
         same("the next look at the history")
+        assert (w.mock / "globals.txt").stat().st_mtime_ns == saved, "nothing new in the history, yet the global variables were written to disk again"
         w.set({"do.3": "balance 200", "do.4": "balance -50", "do.5": "balance 25"})      # the three in the same pass of the broker
         w.ndo = 5
         w.tick(3)
@@ -2305,8 +2317,12 @@ def k_once(W):
         w.h.alive()
         w.tick(3)
         assert ops(w) == three and w.h.account()["start_balance"] == 1775.0, (ops(w), w.h.account())
+        w.do("balance 40 30")                                                   # an operation the history shows late: dated 30 s ago,
+        w.tick(3)                                                               # before the three above were counted
+        four = three + ["Depot de 40.00 : capital de reference 1815.00, arret definitif a 907.50."]
+        assert ops(w) == four and w.h.account()["start_balance"] == 1815.0, (ops(w), w.h.account())
         pushed = [n for n in w.log("NOTIFY") if "capital de reference" in n]
-        assert 1 <= len(pushed) <= 4 and len(set(pushed)) == len(pushed), pushed
+        assert 1 <= len(pushed) <= 5 and len(set(pushed)) == len(pushed), pushed
     with W(history_empty=1, **{"do.1": "balance 500 3600"}) as w:               # first start before the terminal shows the history
         w.ndo = 1
         w.h.alive()
@@ -2317,8 +2333,10 @@ def k_once(W):
         w.advance(61)
         w.tick(3)
         assert w.h.account()["start_balance"] == 1500.0 and not ops(w), (w.h.account(), ops(w))
-        w.do("balance 100")
+        since = int(float(dict(ln.split("=") for ln in (w.mock / "globals.txt").read_text().split())["CM_bal_from"]))
+        w.do(f"balance 100 {w.now() - since}")                                  # dated the very second of the first reading: counted
         w.tick(3)
+        assert w.state()["deals"][-1]["time"] in (since, since + 1), (since, w.state()["deals"][-1])
         assert w.h.account()["start_balance"] == 1600.0 and ops(w) == one, (w.h.account(), ops(w))
 
 
@@ -2415,6 +2433,60 @@ def k_only_balance(W):
         w.tick(3)
         a = w.h.account()
         assert (a["start_balance"], a["kill_level"]) == (1100.0, 550.0) and len(ops(w)) == 1, (a, ops(w))
+
+
+@test("K17", "a withdrawal and a deposit made while the hands were stopped (seen in the same look at the history): each is counted against "
+             "the funds right after it, not against the funds of now", covers="R9")
+def k_two_unseen(W):
+    with W() as w:
+        w.h.alive()
+        bal = grow(w, 3000)
+        w.stop()
+        w.do("balance -2600")                                                   # about 400 left: the reference comes down to it...
+        w.do("balance 600")                                                     # ... and goes up by the deposit: about 1000
+        w.start()
+        w.h.alive()
+        w.tick(3)
+        a, left = w.h.account(), round(bal - 2600, 2)
+        assert len(ops(w)) == 2 and ops(w)[0].startswith(f"Retrait de 2600.00 : capital de reference {left:.2f}, ") \
+            and ops(w)[1].startswith(f"Depot de 600.00 : capital de reference {left + 600:.2f}, "), (left, ops(w))
+        assert (a["balance"], a["start_balance"], a["blocked"]) == (round(left + 600, 2), round(left + 600, 2), ""), a
+        assert abs(a["kill_level"] - (left + 600) / 2) < 0.006, a
+
+
+@test("K18", "the whole account history is not read again at every pass: after a trade event, once a minute, and before a permanent stop", covers="R9")
+def k_history_reads(W):
+    def reads():
+        return int(dict(ln.split("=") for ln in (w.mock / "ack.txt").read_text().split())["hist"])
+    with W() as w:
+        w.h.alive()
+        w.tick(3)
+        n0 = reads()
+        w.tick(40)
+        assert reads() - n0 <= 5, f"{reads() - n0} calls of HistorySelect in 40 idle passes"
+
+
+@test("K19", "the terminal lists the history from the newest deal to the oldest (nothing is promised about that order): every operation is "
+             "still counted once, and the daily result is the same", covers="R9")
+def k_reverse(W):
+    with W(history_reverse=1) as w:
+        w.h.alive()
+        t = w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)["ticket"]
+        assert w.shut(t)["ok"]
+        w.do("balance 100")
+        w.tick(3)
+        w.set({"do.2": "balance 200", "do.3": "balance -50"})
+        w.ndo = 3
+        w.tick(3)
+        for _ in range(2):
+            a = w.h.account()
+            assert (a["balance"], a["start_balance"], a["kill_level"], a["day_result"]) == (1249.68, 1250.0, 625.0, -0.32), a      # the round trip: 2 x 0.05 commission, 0.22 spread
+            assert sorted(o.split(" : ")[0] for o in ops(w)) == ["Depot de 100.00", "Depot de 200.00", "Retrait de 50.00"], ops(w)
+            w.stop()
+            w.start()
+            w.h.alive()
+            w.advance(61)
+            w.tick(3)
 
 
 # {TICK} stops and targets on the market's tick size: the US100 quoted in steps of 0.25 (two digits, point 0.01); the tick values

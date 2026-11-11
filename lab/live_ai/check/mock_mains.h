@@ -46,6 +46,8 @@
 //                           history_fail=1           HistorySelect returns false
 //                           history_empty=1          HistorySelect succeeds but lists nothing (history not synchronised yet;
 //                                                    ASSUMPTION, not verified on a real terminal)
+//                           history_reverse=1        HistorySelect lists the deals from the newest to the oldest (the
+//                                                    documentation promises nothing about the order of that list)
 //                           do.<n>=sltp TICKET SL TP     stop / target changed outside the EA (by hand)
 //                           do.<n>=reticket TICKET       the server gives the position a new ticket (same identifier)
 //   _mock/state.txt       the broker: balance, positions, deals (kept across restarts of the binary, as a broker does)
@@ -53,7 +55,8 @@
 //                         (the real terminal saves them when it closes; env MOCK_GV_SAVE=always saves on every change)
 //   _mock/log.txt         Print / Alert / SendNotification / Comment / every trade request and its answer /
 //                         "PASS n" for every OnTimer call that answered n orders (n > 0)
-//   _mock/ack.txt         seq of the last control fully applied   |   _mock/stop : the binary ends (OnDeinit) when it appears
+//   _mock/ack.txt         seq of the last control fully applied, loops run, hist = number of HistorySelect calls so far
+//   _mock/stop            the binary ends (OnDeinit) when it appears
 // Env: MOCK_MISSING=a,b  symbols the broker does not have; MOCK_CRLF_ONLY=1  FileReadString only ends a line at "\r\n";
 //      MOCK_INPUT_<InpName>=value  another value for an input (test_mains.py rewrites the inputs of the TRANSLATED file).
 // CTrade is a transcription of the Standard Library's Trade.mqh (2000-2025) for the methods the EA uses.
@@ -154,7 +157,7 @@ static std::map<string, double> mk_gv;
 static bool   mk_gv_always = false, mk_crlf_only = false, mk_timer = false;
 static ulong  mk_selected = 0;
 static int    mk_pending_tx = 0;
-static long   mk_loops = 0;
+static long   mk_loops = 0, mk_hist_calls = 0;
 // control
 static string mk_control_raw = "\x01";
 static long   mk_seq = 0, mk_acked = -1;
@@ -164,7 +167,7 @@ static uint   mk_rc_all = 0, mk_rc_open = 0, mk_rc_close = 0, mk_rc_sltp = 0;
 static bool   mk_send_true = false, mk_lag = false, mk_hold = false;
 static int    mk_term_allowed = 1, mk_mql_allowed = 1, mk_acc_allowed = 1, mk_acc_expert = 1, mk_connected = 1;
 static bool   mk_drop_sl = false, mk_sl_magic0 = false, mk_race = false, mk_stopped = false, mk_timer_fail = false;
-static bool   mk_balance_quiet = false, mk_history_fail = false, mk_history_empty = false;
+static bool   mk_balance_quiet = false, mk_history_fail = false, mk_history_empty = false, mk_history_reverse = false;
 static long   mk_margin_mode = 2, mk_send_delay_ms = 0;
 static int    mk_answers = 0;                  // files moved into claude/res during the running handler
 static std::map<long, string> mk_do;
@@ -734,9 +737,11 @@ string PositionGetString(ENUM_POSITION_PROPERTY_STRING p)
 bool HistorySelect(datetime from, datetime to)
   {
    mk_hist.clear();
+   mk_hist_calls++;
    if(mk_history_fail) return false;
    for(int i = 0; i < (int)mk_deals.size() && !mk_history_empty; i++)
       if(mk_deals[i].time >= from && mk_deals[i].time <= to) mk_hist.push_back(i);
+   if(mk_history_reverse) std::reverse(mk_hist.begin(), mk_hist.end());
    return true;
   }
 int HistoryDealsTotal() { return (int)mk_hist.size(); }
@@ -1110,7 +1115,7 @@ static void mk_apply_control()
    mk_seq = 0; mk_gmt_skew = 0; mk_rc_all = mk_rc_open = mk_rc_close = mk_rc_sltp = 0;
    mk_send_true = false; mk_term_allowed = mk_mql_allowed = mk_acc_allowed = mk_acc_expert = mk_connected = 1;
    mk_drop_sl = mk_sl_magic0 = mk_race = mk_stopped = mk_timer_fail = false;
-   mk_balance_quiet = mk_history_fail = mk_history_empty = false;
+   mk_balance_quiet = mk_history_fail = mk_history_empty = mk_history_reverse = false;
    mk_margin_mode = 2; mk_send_delay_ms = 0;
    bool lag = false;
    mk_hold = false;
@@ -1145,6 +1150,7 @@ static void mk_apply_control()
       else if(k == "balance_quiet") mk_balance_quiet = atoi(v.c_str()) != 0;
       else if(k == "history_fail") mk_history_fail = atoi(v.c_str()) != 0;
       else if(k == "history_empty") mk_history_empty = atoi(v.c_str()) != 0;
+      else if(k == "history_reverse") mk_history_reverse = atoi(v.c_str()) != 0;
       else if(k == "margin_mode") mk_margin_mode = atol(v.c_str());
       else if(k == "ordersend_delay_ms") mk_send_delay_ms = atol(v.c_str());
       else if(k.compare(0, 3, "do.") == 0) mk_do[atol(k.c_str() + 3)] = v;
@@ -1287,7 +1293,7 @@ int main()
       if(mk_seq != mk_acked)
         {
          mk_acked = mk_seq;
-         mk_write("_mock/ack.txt", mk_fmt("seq=%ld\nloops=%ld\n", mk_seq, mk_loops));
+         mk_write("_mock/ack.txt", mk_fmt("seq=%ld\nloops=%ld\nhist=%ld\n", mk_seq, mk_loops, mk_hist_calls));
         }
       usleep(15000);
      }
