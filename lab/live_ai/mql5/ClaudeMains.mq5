@@ -99,6 +99,15 @@ string KV(const string &keys[], const string &vals[], const string key, const st
    return def;
   }
 
+// un texte libre (etiquette, commentaire) ne doit jamais casser une ligne des fichiers csv
+string Clean(string s)
+  {
+   StringReplace(s, ",", " ");
+   StringReplace(s, "\r", " ");
+   StringReplace(s, "\n", " ");
+   return s;
+  }
+
 bool HasKey(const string &keys[], const string key)
   {
    for(int i = 0; i < ArraySize(keys); i++)
@@ -301,7 +310,7 @@ void ExportPositions()
            + DoubleToString(PositionGetDouble(POSITION_SL), dg) + "," + DoubleToString(PositionGetDouble(POSITION_TP), dg) + ","
            + DoubleToString(PositionGetDouble(POSITION_PRICE_CURRENT), dg) + "," + DoubleToString(PositionGetDouble(POSITION_PROFIT), 2) + ","
            + DoubleToString(PositionGetDouble(POSITION_SWAP), 2) + "," + IntegerToString(PositionGetInteger(POSITION_TIME)) + ","
-           + IntegerToString(GlobalVariableCheck(gv) ? (long)GlobalVariableGet(gv) : 0) + "," + PositionGetString(POSITION_COMMENT) + "\n";
+           + IntegerToString(GlobalVariableCheck(gv) ? (long)GlobalVariableGet(gv) : 0) + "," + Clean(PositionGetString(POSITION_COMMENT)) + "\n";
      }
    Put("positions.csv", s);
   }
@@ -328,7 +337,7 @@ void ExportDeals()
            + DoubleToString(HistoryDealGetDouble(d, DEAL_SWAP), 2) + "," + DoubleToString(HistoryDealGetDouble(d, DEAL_COMMISSION), 2) + ","
            + DoubleToString(HistoryDealGetDouble(d, DEAL_FEE), 2) + ","
            + IntegerToString(HistoryDealGetInteger(d, DEAL_MAGIC)) + "," + IntegerToString(HistoryDealGetInteger(d, DEAL_REASON)) + ","
-           + HistoryDealGetString(d, DEAL_COMMENT) + "\n";
+           + Clean(HistoryDealGetString(d, DEAL_COMMENT)) + "\n";
      }
    Put("deals.csv", s);
   }
@@ -350,17 +359,25 @@ void ExportMinute()
 //+------------------------------------------------------------------+
 //| Limites (suite)                                                  |
 //+------------------------------------------------------------------+
-void CloseAll(const string why)
+// renvoie le nombre de positions du robot qui n'ont PAS pu etre fermees
+int CloseAll(const string why)
   {
+   int failed = 0;
    for(int i = PositionsTotal() - 1; i >= 0; i--)
      {
       ulong t = PositionGetTicket(i);
       if(t == 0 || PositionGetInteger(POSITION_MAGIC) != InpMagic) continue;
       g_trade.SetTypeFillingBySymbol(PositionGetString(POSITION_SYMBOL));
-      if(!g_trade.PositionClose(t))
-         Print("ClaudeMains: fermeture refusee (", why, ") ticket ", t, " : ", g_trade.ResultRetcode(), " ", g_trade.ResultRetcodeDescription());
+      bool ok = g_trade.PositionClose(t);
+      uint rc = g_trade.ResultRetcode();
+      if(!ok || (rc != TRADE_RETCODE_DONE && rc != TRADE_RETCODE_PLACED && rc != TRADE_RETCODE_DONE_PARTIAL))
+        {
+         failed++;
+         Print("ClaudeMains: fermeture refusee (", why, ") ticket ", t, " : ", rc, " ", g_trade.ResultRetcodeDescription());
+        }
      }
    g_dirty = true;
+   return failed;
   }
 
 void Watch()
@@ -368,38 +385,52 @@ void Watch()
    datetime now = TimeTradeServer();
    datetime day = now - now % 86400;
    double bal = AccountInfoDouble(ACCOUNT_BALANCE), eq = AccountInfoDouble(ACCOUNT_EQUITY);
+   if(!TerminalInfoInteger(TERMINAL_CONNECTED) || bal <= 0) return;     // compte pas encore charge (MT5 vient de demarrer) : ne rien conclure
+   if(GlobalVariableGet("CM_start") <= 0)
+     {
+      GlobalVariableSet("CM_start", InpStartBalance > 0 ? InpStartBalance : bal);
+      GlobalVariablesFlush();
+     }
    if((datetime)GlobalVariableGet("CM_day") != day)                     // nouvelle journee serveur
      {
       GlobalVariableSet("CM_day", (double)day);
       GlobalVariableSet("CM_day_bal", bal);
       GlobalVariableSet("CM_day_lock", 0.0);
+      GlobalVariablesFlush();                                           // ecrit sur le disque tout de suite (sinon perdu si MT5 plante)
      }
    double start = GlobalVariableGet("CM_start");
    if(GlobalVariableGet("CM_killed") == 0 && start > 0 && eq <= start * (1.0 - InpKillPct / 100.0))
      {
       GlobalVariableSet("CM_killed", 1.0);
+      GlobalVariablesFlush();
       Notify("ARRET DEFINITIF : fonds " + DoubleToString(eq, 2) + ", capital de depart " + DoubleToString(start, 2) + ". Tout est ferme.");
      }
    double dbal = GlobalVariableGet("CM_day_bal");
    if(GlobalVariableGet("CM_day_lock") == 0 && InpDailyLossPct > 0 && dbal > 0 && eq <= dbal * (1.0 - InpDailyLossPct / 100.0))
      {
       GlobalVariableSet("CM_day_lock", 1.0);
+      GlobalVariablesFlush();
       Notify("Perte max du jour atteinte : tout est ferme, reprise demain.");
      }
    bool flat = GlobalVariableGet("CM_killed") != 0 || GlobalVariableGet("CM_day_lock") != 0 || FridayClosed(now);
-   if(flat && CountPositions() > 0 && now - g_last_close >= 10)        // on insiste toutes les 10 s tant qu'il reste une position
+   if(flat && CountPositions() > 0 && (now - g_last_close >= 10 || now < g_last_close))   // on insiste toutes les 10 s tant qu'il reste une position
      {
       g_last_close = now;
       CloseAll("blocage");
      }
    // duree max par position (posee a l'ouverture par le cerveau) ; nettoyage des echeances des positions disparues
+   bool due = (now - g_last_close >= 10 || now < g_last_close);         // une tentative toutes les 10 s, pour TOUTES les positions arrivees a echeance
    for(int i = GlobalVariablesTotal() - 1; i >= 0; i--)
      {
       string gv = GlobalVariableName(i);
       if(StringFind(gv, "CM_ttl_") != 0) continue;
       ulong t = (ulong)StringToInteger(StringSubstr(gv, 7));
-      if(!PositionSelectByTicket(t)) { GlobalVariableDel(gv); continue; }
-      if(now >= (datetime)GlobalVariableGet(gv) && now - g_last_close >= 10)
+      if(!PositionSelectByTicket(t))                                    // pas (encore) dans la liste du terminal : on garde l'echeance jusqu'a son heure
+        {
+         if(now >= (datetime)GlobalVariableGet(gv)) GlobalVariableDel(gv);
+         continue;
+        }
+      if(now >= (datetime)GlobalVariableGet(gv) && due)
         {
          g_last_close = now;
          g_trade.SetTypeFillingBySymbol(PositionGetString(POSITION_SYMBOL));
@@ -438,11 +469,14 @@ string DoOpen(const string &k[], const string &v[], string &extra)
    MqlTick tk;
    if(!SymbolInfoTick(nm, tk) || tk.bid <= 0 || tk.ask <= 0) return "pas de prix";
    if(SymbolInfoInteger(nm, SYMBOL_TRADE_MODE) != SYMBOL_TRADE_MODE_FULL) return "marche ferme ou non negociable";
+   if((SymbolInfoInteger(nm, SYMBOL_ORDER_MODE) & SYMBOL_ORDER_SL) == 0) return "ce marche n'accepte pas de stop chez le courtier";   // sinon CTrade enleve le stop sans rien dire
    int dg = (int)SymbolInfoInteger(nm, SYMBOL_DIGITS);
    double lvl = (double)SymbolInfoInteger(nm, SYMBOL_TRADE_STOPS_LEVEL) * SymbolInfoDouble(nm, SYMBOL_POINT);
    double price = (dir > 0) ? tk.ask : tk.bid;
    double sl = NormalizeDouble(StringToDouble(KV(k, v, "sl", "0")), dg);
    double tp = NormalizeDouble(StringToDouble(KV(k, v, "tp", "0")), dg);
+   double want = StringToDouble(KV(k, v, "volume", "0"));
+   if(!MathIsValidNumber(sl) || !MathIsValidNumber(tp) || !MathIsValidNumber(want)) return "nombre illisible dans l'ordre";
    if(sl <= 0) return "stop obligatoire";
    if((dir > 0 && sl >= tk.bid - lvl) || (dir < 0 && sl <= tk.ask + lvl)) return "stop du mauvais cote ou trop pres";
    if(tp > 0 && ((dir > 0 && tp <= tk.ask + lvl) || (dir < 0 && tp >= tk.bid - lvl))) return "objectif du mauvais cote ou trop pres";
@@ -450,11 +484,11 @@ string DoOpen(const string &k[], const string &v[], string &extra)
    double vmax = SymbolInfoDouble(nm, SYMBOL_VOLUME_MAX);
    if(vstep <= 0) vstep = vmin;
    double r1 = RiskMoney(nm, price, sl, 1.0);
-   if(r1 <= 0 || vmin <= 0) return "risque impossible a calculer";
+   if(!MathIsValidNumber(r1) || r1 <= 0 || vmin <= 0) return "risque impossible a calculer";
+   if(want < vmin) return "volume demande nul ou inferieur au lot minimum (" + DoubleToString(vmin, 2) + ")";
    double cap = AccountInfoDouble(ACCOUNT_BALANCE) * InpMaxRiskPct / 100.0;
-   double vol = MathMin(StringToDouble(KV(k, v, "volume", "0")), MathMin(cap / r1, vmax));
-   int vd = (int)MathMax(0, MathMin(4, MathRound(-MathLog10(vstep))));
-   vol = NormalizeDouble(MathFloor(vol / vstep + 1e-9) * vstep, vd);    // taille reduite d'office a la limite de risque
+   double vol = MathMin(want, MathMin(cap / r1, vmax));
+   vol = NormalizeDouble(MathFloor(vol / vstep + 1e-9) * vstep, 8);     // taille reduite d'office a la limite de risque (multiple exact du pas, jamais arrondie vers le haut)
    if(vol < vmin)
       return "limite de risque : le lot minimum (" + DoubleToString(vmin, 2) + ") risquerait " + DoubleToString(r1 * vmin, 2)
              + ", limite " + DoubleToString(cap, 2);
@@ -464,12 +498,16 @@ string DoOpen(const string &k[], const string &v[], string &extra)
    if(OrderCalcMargin(dir > 0 ? ORDER_TYPE_BUY : ORDER_TYPE_SELL, nm, vol, price, need) && need > AccountInfoDouble(ACCOUNT_MARGIN_FREE))
       return "marge insuffisante";
    g_trade.SetTypeFillingBySymbol(nm);
-   string cm = StringSubstr("CM " + KV(k, v, "tag"), 0, 27);
+   string cm = StringSubstr("CM " + Clean(KV(k, v, "tag")), 0, 27);
    bool ok = (dir > 0) ? g_trade.Buy(vol, nm, 0.0, sl, tp, cm) : g_trade.Sell(vol, nm, 0.0, sl, tp, cm);
    if(!Done(ok)) return Refusal();
    ulong pos = g_trade.ResultOrder();
    long ttl = StringToInteger(KV(k, v, "ttl_min", "0"));
-   if(ttl > 0 && pos > 0) GlobalVariableSet("CM_ttl_" + IntegerToString((long)pos), (double)(TimeTradeServer() + ttl * 60));
+   if(ttl > 0 && pos > 0)
+     {
+      GlobalVariableSet("CM_ttl_" + IntegerToString((long)pos), (double)(TimeTradeServer() + ttl * 60));
+      GlobalVariablesFlush();
+     }
    extra = "ticket=" + IntegerToString((long)pos) + "\nprice=" + DoubleToString(g_trade.ResultPrice(), dg) + "\nvolume="
            + DoubleToString(g_trade.ResultVolume(), 4) + "\nsl=" + DoubleToString(sl, dg) + "\nrisk_money=" + DoubleToString(r1 * vol, 2) + "\n";
    return "";
@@ -503,10 +541,12 @@ string DoModify(const string &k[], const string &v[], string &extra)
    double tp = HasKey(k, "tp") ? NormalizeDouble(StringToDouble(KV(k, v, "tp")), dg) : cur_tp;
    MqlTick tk;
    if(!SymbolInfoTick(nm, tk)) return "pas de prix";
+   if(!MathIsValidNumber(sl) || !MathIsValidNumber(tp)) return "nombre illisible dans l'ordre";
    if(sl <= 0) return "stop obligatoire";
    if(cur_sl > 0 && ((buy && sl < cur_sl - pt / 2) || (!buy && sl > cur_sl + pt / 2))) return "le stop ne peut que se rapprocher du prix";
    if(MathAbs(sl - cur_sl) > pt / 2 && ((buy && sl >= tk.bid - lvl) || (!buy && sl <= tk.ask + lvl))) return "stop trop pres du prix";
-   if(!Done(g_trade.PositionModify(t, sl, tp))) return Refusal();
+   if(MathAbs(sl - cur_sl) > pt / 2 || MathAbs(tp - cur_tp) > pt / 2)   // rien a changer = deja fait (le serveur repondrait 10025 "no changes")
+      if(!Done(g_trade.PositionModify(t, sl, tp))) return Refusal();
    extra = "sl=" + DoubleToString(sl, dg) + "\ntp=" + DoubleToString(tp, dg) + "\n";
    return "";
   }
@@ -517,17 +557,27 @@ void RunCommand(const string file)
    string id = StringSubstr(file, 0, StringLen(file) - 4);
    string path = DIR + "cmd\\" + file;
    string why = "", extra = "";
-   if(ReadKV(path, k, v) < 0) return;                                  // encore en cours d'ecriture : au prochain tour
+   // l'ordre est d'abord retire du dossier cmd : quoi qu'il arrive ensuite, il ne peut pas etre execute deux fois
+   string taken = DIR + "done\\" + file;
+   if(!FileMove(path, 0, taken, FILE_REWRITE))
+     {
+      FolderCreate("claude\\done");                                     // dossier efface ? on le recree
+      if(!FileMove(path, 0, taken, FILE_REWRITE)) return;               // encore en cours d'ecriture, ou deja pris : au prochain tour
+     }
+   ReadKV(taken, k, v);                                                 // illisible = aucune cle = "action inconnue"
    string action = KV(k, v, "action");
    if(action == "open") why = DoOpen(k, v, extra);
    else if(action == "close") why = DoClose(k, v, extra);
    else if(action == "modify") why = DoModify(k, v, extra);
-   else if(action == "close_all") CloseAll("ordre du cerveau");
+   else if(action == "close_all")
+     {
+      int failed = CloseAll("ordre du cerveau");
+      if(failed > 0) why = IntegerToString(failed) + " position(s) non fermee(s)";
+     }
    else if(action == "ping") extra = "pong=1\n";
    else why = "action inconnue";
    Put("res\\" + id + ".txt", "id=" + id + "\naction=" + action + "\nok=" + (why == "" ? "1" : "0") + "\nreason=" + why + "\n" + extra
        + "server_time=" + IntegerToString((long)TimeTradeServer()) + "\n");
-   FileMove(path, 0, DIR + "done\\" + file, FILE_REWRITE);
    if(action != "ping") g_last_msg = TimeToString(TimeTradeServer(), TIME_MINUTES) + " " + action + " " + KV(k, v, "symbol") + " "
                                      + KV(k, v, "side") + (why == "" ? " : execute" : " : refuse (" + why + ")");
    g_dirty = true;
@@ -604,12 +654,13 @@ int OnInit()
      {
       GlobalVariableSet("CM_killed", 0.0);
       GlobalVariableSet("CM_day_lock", 0.0);
+      GlobalVariableSet("CM_day", 0.0);                                 // la reference du jour repart du solde actuel, sinon le blocage revient aussitot
       GlobalVariableDel("CM_start");
      }
-   if(!GlobalVariableCheck("CM_start") || GlobalVariableGet("CM_start") <= 0)
-      GlobalVariableSet("CM_start", InpStartBalance > 0 ? InpStartBalance : AccountInfoDouble(ACCOUNT_BALANCE));
+   if(!GlobalVariableCheck("CM_start")) GlobalVariableSet("CM_start", 0.0);   // fixe dans Watch() des que le compte est charge
    if(!GlobalVariableCheck("CM_killed")) GlobalVariableSet("CM_killed", 0.0);
    if(!GlobalVariableCheck("CM_day_lock")) GlobalVariableSet("CM_day_lock", 0.0);
+   GlobalVariablesFlush();
    EventSetTimer(1);
    Watch();
    ExportAccount();
@@ -631,7 +682,7 @@ void OnTimer()
    ReadBrain();
    ProcessCommands();
    Watch();
-   if(g_dirty || now - g_last_fast >= 5)
+   if(g_dirty || now - g_last_fast >= 5 || now < g_last_fast)          // (now < ... : l'horloge du serveur a recule)
      {
       bool traded = g_dirty;
       g_dirty = false;

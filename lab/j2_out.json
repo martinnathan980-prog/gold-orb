@@ -1,0 +1,389 @@
+{
+ "draws": 1000,
+ "summary": {
+  "reference": {
+   "win_weeks_pct": {
+    "median": 49.3,
+    "p05": 36.56,
+    "p95": 56.1
+   },
+   "win_days_pct": {
+    "median": 49.7,
+    "p05": 43.09,
+    "p95": 52.9
+   },
+   "win_months_pct": {
+    "median": 48.9,
+    "p05": 20.0,
+    "p95": 61.7
+   },
+   "worst_week_pct": {
+    "median": -15.8,
+    "p05": -41.5,
+    "p95": -9.8
+   },
+   "worst_day_pct": {
+    "median": -13.7,
+    "p05": -32.0,
+    "p95": -8.7
+   },
+   "per_year_pct": {
+    "median": -3.15,
+    "p05": -81.95,
+    "p95": 26.3
+   },
+   "max_dd_pct": {
+    "median": 60.75,
+    "p05": 33.5,
+    "p95": 91.81
+   },
+   "avg_green_week_pct": {
+    "median": 3.0,
+    "p05": 2.3,
+    "p95": 3.55
+   },
+   "avg_red_week_pct": {
+    "median": -3.09,
+    "p05": -4.73,
+    "p95": -2.55
+   },
+   "avg_green_day_pct": {
+    "median": 1.32,
+    "p05": 1.19,
+    "p95": 1.43
+   },
+   "avg_red_day_pct": {
+    "median": -1.32,
+    "p05": -1.81,
+    "p95": -1.2
+   },
+   "taken_pct": {
+    "median": 41.6,
+    "p05": 8.6,
+    "p95": 41.6
+   },
+   "lose_half_pct": 41.4,
+   "mean_final_eur": 992.0
+  },
+  "cushion_only": {
+   "win_weeks_pct": {
+    "median": 64.9,
+    "p05": 53.2,
+    "p95": 70.7
+   },
+   "win_days_pct": {
+    "median": 50.5,
+    "p05": 45.7,
+    "p95": 53.6
+   },
+   "win_months_pct": {
+    "median": 53.2,
+    "p05": 30.0,
+    "p95": 66.0
+   },
+   "worst_week_pct": {
+    "median": -14.1,
+    "p05": -32.91,
+    "p95": -9.1
+   },
+   "worst_day_pct": {
+    "median": -10.4,
+    "p05": -31.7,
+    "p95": -6.8
+   },
+   "per_year_pct": {
+    "median": -1.0,
+    "p05": -63.21,
+    "p95": 20.1
+   },
+   "max_dd_pct": {
+    "median": 51.2,
+    "p05": 25.8,
+    "p95": 76.52
+   },
+   "avg_green_week_pct": {
+    "median": 1.62,
+    "p05": 1.3,
+    "p95": 1.92
+   },
+   "avg_red_week_pct": {
+    "median": -3.07,
+    "p05": -4.7,
+    "p95": -2.51
+   },
+   "avg_green_day_pct": {
+    "median": 0.96,
+    "p05": 0.87,
+    "p95": 1.09
+   },
+   "avg_red_day_pct": {
+    "median": -0.99,
+    "p05": -1.44,
+    "p95": -0.88
+   },
+   "taken_pct": {
+    "median": 30.9,
+    "p05": 7.4,
+    "p95": 32.4
+   },
+   "lose_half_pct": 29.6,
+   "mean_final_eur": 992.0
+  },
+  "soft": {
+   "win_weeks_pct": {
+    "median": 72.7,
+    "p05": 62.19,
+    "p95": 78.0
+   },
+   "win_days_pct": {
+    "median": 51.4,
+    "p05": 46.1,
+    "p95": 54.4
+   },
+   "win_months_pct": {
+    "median": 57.4,
+    "p05": 33.3,
+    "p95": 70.2
+   },
+   "worst_week_pct": {
+    "median": -16.25,
+    "p05": -49.5,
+    "p95": -9.3
+   },
+   "worst_day_pct": {
+    "median": -12.65,
+    "p05": -45.2,
+    "p95": -6.7
+   },
+   "per_year_pct": {
+    "median": -0.7,
+    "p05": -67.53,
+    "p95": 19.41
+   },
+   "max_dd_pct": {
+    "median": 46.65,
+    "p05": 21.2,
+    "p95": 80.02
+   },
+   "avg_green_week_pct": {
+    "median": 1.03,
+    "p05": 0.82,
+    "p95": 1.39
+   },
+   "avg_red_week_pct": {
+    "median": -2.82,
+    "p05": -6.27,
+    "p95": -2.09
+   },
+   "avg_green_day_pct": {
+    "median": 0.72,
+    "p05": 0.62,
+    "p95": 0.93
+   },
+   "avg_red_day_pct": {
+    "median": -0.76,
+    "p05": -1.54,
+    "p95": -0.63
+   },
+   "taken_pct": {
+    "median": 24.7,
+    "p05": 5.4,
+    "p95": 25.8
+   },
+   "lose_half_pct": 25.7,
+   "mean_final_eur": 989.0
+  },
+  "strong": {
+   "win_weeks_pct": {
+    "median": 76.1,
+    "p05": 68.29,
+    "p95": 81.0
+   },
+   "win_days_pct": {
+    "median": 51.7,
+    "p05": 47.2,
+    "p95": 54.5
+   },
+   "win_months_pct": {
+    "median": 61.7,
+    "p05": 43.3,
+    "p95": 74.5
+   },
+   "worst_week_pct": {
+    "median": -15.85,
+    "p05": -38.54,
+    "p95": -8.3
+   },
+   "worst_day_pct": {
+    "median": -13.55,
+    "p05": -33.32,
+    "p95": -6.1
+   },
+   "per_year_pct": {
+    "median": -0.5,
+    "p05": -55.6,
+    "p95": 16.4
+   },
+   "max_dd_pct": {
+    "median": 40.1,
+    "p05": 18.0,
+    "p95": 70.2
+   },
+   "avg_green_week_pct": {
+    "median": 0.73,
+    "p05": 0.57,
+    "p95": 0.99
+   },
+   "avg_red_week_pct": {
+    "median": -2.38,
+    "p05": -5.55,
+    "p95": -1.62
+   },
+   "avg_green_day_pct": {
+    "median": 0.55,
+    "p05": 0.46,
+    "p95": 0.69
+   },
+   "avg_red_day_pct": {
+    "median": -0.59,
+    "p05": -1.19,
+    "p95": -0.47
+   },
+   "taken_pct": {
+    "median": 23.0,
+    "p05": 5.7,
+    "p95": 24.2
+   },
+   "lose_half_pct": 21.6,
+   "mean_final_eur": 984.0
+  },
+  "flat_0.58": {
+   "win_weeks_pct": {
+    "median": 49.8,
+    "p05": 42.29,
+    "p95": 56.1
+   },
+   "win_days_pct": {
+    "median": 49.9,
+    "p05": 46.4,
+    "p95": 52.9
+   },
+   "win_months_pct": {
+    "median": 51.1,
+    "p05": 33.25,
+    "p95": 61.7
+   },
+   "worst_week_pct": {
+    "median": -11.3,
+    "p05": -20.8,
+    "p95": -4.9
+   },
+   "worst_day_pct": {
+    "median": -12.1,
+    "p05": -17.4,
+    "p95": -4.0
+   },
+   "per_year_pct": {
+    "median": -0.2,
+    "p05": -24.9,
+    "p95": 12.9
+   },
+   "max_dd_pct": {
+    "median": 32.95,
+    "p05": 16.5,
+    "p95": 58.9
+   },
+   "avg_green_week_pct": {
+    "median": 1.31,
+    "p05": 1.1,
+    "p95": 1.56
+   },
+   "avg_red_week_pct": {
+    "median": -1.32,
+    "p05": -1.8,
+    "p95": -1.1
+   },
+   "avg_green_day_pct": {
+    "median": 0.64,
+    "p05": 0.6,
+    "p95": 0.7
+   },
+   "avg_red_day_pct": {
+    "median": -0.64,
+    "p05": -0.81,
+    "p95": -0.58
+   },
+   "taken_pct": {
+    "median": 22.4,
+    "p05": 11.7,
+    "p95": 22.4
+   },
+   "lose_half_pct": 10.0,
+   "mean_final_eur": 992.0
+  },
+  "flat_0.39": {
+   "win_weeks_pct": {
+    "median": 50.2,
+    "p05": 43.9,
+    "p95": 55.6
+   },
+   "win_days_pct": {
+    "median": 50.0,
+    "p05": 47.1,
+    "p95": 52.9
+   },
+   "win_months_pct": {
+    "median": 48.9,
+    "p05": 38.3,
+    "p95": 61.7
+   },
+   "worst_week_pct": {
+    "median": -4.4,
+    "p05": -16.8,
+    "p95": -2.9
+   },
+   "worst_day_pct": {
+    "median": -3.8,
+    "p05": -14.5,
+    "p95": -2.5
+   },
+   "per_year_pct": {
+    "median": -0.1,
+    "p05": -7.91,
+    "p95": 7.9
+   },
+   "max_dd_pct": {
+    "median": 20.2,
+    "p05": 10.0,
+    "p95": 40.9
+   },
+   "avg_green_week_pct": {
+    "median": 0.8,
+    "p05": 0.68,
+    "p95": 0.95
+   },
+   "avg_red_week_pct": {
+    "median": -0.8,
+    "p05": -0.97,
+    "p95": -0.68
+   },
+   "avg_green_day_pct": {
+    "median": 0.4,
+    "p05": 0.38,
+    "p95": 0.44
+   },
+   "avg_red_day_pct": {
+    "median": -0.4,
+    "p05": -0.45,
+    "p95": -0.37
+   },
+   "taken_pct": {
+    "median": 20.3,
+    "p05": 20.3,
+    "p95": 20.3
+   },
+   "lose_half_pct": 0.8,
+   "mean_final_eur": 994.0
+  }
+ }
+}
