@@ -1,0 +1,131 @@
+{
+ "period": "val",
+ "n": 850,
+ "exp_R": 0.057,
+ "pf": 1.23,
+ "G": {
+  "flag_n": 278,
+  "flag_exp_R": 0.062,
+  "flag_pf": 1.24,
+  "flag_t": 1.18,
+  "flag_win_pct": 43.5,
+  "rest_n": 572,
+  "rest_exp_R": 0.055,
+  "rest_pf": 1.22,
+  "diff_R": 0.007,
+  "z": 0.11,
+  "flag_days_pct": 32.5,
+  "years_flag_better": "2/4",
+  "by_year": {
+   "2022": {
+    "flag_n": 143,
+    "flag_R": 0.038,
+    "rest_n": 107,
+    "rest_R": 0.05
+   },
+   "2023": {
+    "flag_n": 39,
+    "flag_R": -0.002,
+    "rest_n": 165,
+    "rest_R": 0.106
+   },
+   "2024": {
+    "flag_n": 26,
+    "flag_R": 0.19,
+    "rest_n": 172,
+    "rest_R": 0.052
+   },
+   "2025": {
+    "flag_n": 70,
+    "flag_R": 0.098,
+    "rest_n": 128,
+    "rest_R": -0.003
+   }
+  },
+  "criteria": {
+   "diff>=0.10R": false,
+   "flag_pf>=1.25": false,
+   "better_in>=3/4_years": false,
+   "pass": false
+  },
+  "sizing": {
+   "flat": {
+    "avg_weight": 1.0,
+    "sum_R": 48.6,
+    "daily_t": 2.05,
+    "worst_day_R": -2.05,
+    "max_dd_R": -9.4
+   },
+   "1.5x/0.75x": {
+    "avg_weight": 0.995,
+    "sum_R": 49.4,
+    "daily_t": 1.98,
+    "worst_day_R": -2.48,
+    "max_dd_R": -8.9
+   }
+  }
+ },
+ "P": {
+  "flag_n": 338,
+  "flag_exp_R": 0.019,
+  "flag_pf": 1.06,
+  "flag_t": 0.39,
+  "flag_win_pct": 39.1,
+  "rest_n": 512,
+  "rest_exp_R": 0.083,
+  "rest_pf": 1.36,
+  "diff_R": -0.064,
+  "z": -1.07,
+  "flag_days_pct": 38.9,
+  "years_flag_better": "1/4",
+  "by_year": {
+   "2022": {
+    "flag_n": 121,
+    "flag_R": -0.034,
+    "rest_n": 129,
+    "rest_R": 0.115
+   },
+   "2023": {
+    "flag_n": 53,
+    "flag_R": 0.142,
+    "rest_n": 151,
+    "rest_R": 0.066
+   },
+   "2024": {
+    "flag_n": 74,
+    "flag_R": 0.067,
+    "rest_n": 124,
+    "rest_R": 0.072
+   },
+   "2025": {
+    "flag_n": 90,
+    "flag_R": -0.024,
+    "rest_n": 108,
+    "rest_R": 0.08
+   }
+  },
+  "criteria": {
+   "diff>=0.10R": false,
+   "flag_pf>=1.25": false,
+   "better_in>=3/4_years": false,
+   "pass": false
+  },
+  "sizing": {
+   "flat": {
+    "avg_weight": 1.0,
+    "sum_R": 48.6,
+    "daily_t": 2.05,
+    "worst_day_R": -2.05,
+    "max_dd_R": -9.4
+   },
+   "1.5x/0.75x": {
+    "avg_weight": 1.048,
+    "sum_R": 41.1,
+    "daily_t": 1.56,
+    "worst_day_R": -2.48,
+    "max_dd_R": -9.2
+   }
+  }
+ },
+ "decision": "no gate"
+}

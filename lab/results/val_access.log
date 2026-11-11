@@ -413,3 +413,4 @@
 {"time": "2026-11-11T15:03:11", "track": "fx", "label": "B5_fix_me_spx:lead_single_look:usdchf:fp", "period": "val"}
 {"time": "2026-11-11T15:03:12", "track": "fx", "label": "B5_fix_me_spx:lead_single_look:usdchf:x2", "period": "val"}
 {"time": "2026-11-11T15:03:13", "track": "fx", "label": "B5_fix_me_spx:lead_single_look:usdchf:x15", "period": "val"}
+{"time": "2026-11-11T15:04:16", "track": "idx_us", "label": "noise30_stress_gate:lead_single_look", "period": "val"}
