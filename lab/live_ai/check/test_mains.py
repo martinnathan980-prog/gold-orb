@@ -8,8 +8,10 @@ file for the fake world (server clock, prices, broker answers).  One test per pr
     python3 live_ai/check/test_mains.py --lag           the same tests on a terminal that lists a new position only after
                                                         the handler that opened it has returned (worst case of the real one)
 
-One line per test:  PASS / FAIL, or for a test tied to a known defect of the EA (finding id in brackets):
-XFAIL = fails as reported (the promise is NOT kept), XPASS = passes now (the defect is gone: remove the mark).
+One line per test:  PASS / FAIL.  A title ending in {H2 S1 L11} names the findings of the review of 2026-11-11
+(lab/results/live/veille_2026-11-11.json) that the test covers: it failed on version 1.00 of the EA and passes since 1.10
+(`-k H2` runs the tests of a finding).  A test can still be marked xfail="id" for a defect that is known and not yet
+corrected (XFAIL = fails as reported, XPASS = passes now: remove the mark); none is at the moment.
 Exit code 0 only if every test that should pass passes.
 
 Inputs: the translation turns `input` variables into constants; here their initial values are wrapped, in the
@@ -28,7 +30,13 @@ Standard Library's Trade.mqh; it is not MetaTrader):
   * file sharing between MetaTrader under Wine and Python on macOS (locks, renames seen half-way, FileReadString on
     "\n"-only files - the documentation only promises "\r\n" -, FileMove into a missing folder);
   * TimeGMT() / TimeTradeServer() of the real terminal against the Mac's clock (brain timeout, Friday close, day change);
-  * that global variables really survive in the user's terminal (they are saved when it closes normally).
+  * that global variables really survive in the user's terminal (they are saved when it closes normally);
+  * whether the cases added for version 1.10 ever happen at FP Markets - the tests only show what the EA does IF they do:
+    a fill worse than the quote (control slip), a tick older than 10 s while trading is open (tick_age; the age is measured
+    against TimeTradeServer(), i.e. the computer's clock), a stop not kept by the broker (drop_sl), a position that
+    disappears between two looks (race), stop / target deals carrying magic number 0 (sl_magic0; reported on forums, not
+    in the documentation), a position ticket changed by the server (reticket), an OrderSend that blocks (ordersend_delay_ms),
+    global variables purged after 4 weeks (the test deletes the mock's globals.txt).
 """
 import argparse
 import calendar
@@ -93,7 +101,7 @@ def build(mq5, work):
 class World:
     """One fake terminal + broker (the compiled EA) on its own temporary directory, and a Hands on its bridge folder."""
 
-    def __init__(self, binary, server=THU, inputs=None, env=None, **ctl):
+    def __init__(self, binary, server=THU, inputs=None, env=None, expect_fail=False, **ctl):
         self.binary = binary
         self.root = Path(tempfile.mkdtemp(prefix="mains_"))
         self.files = self.root / "Files"
@@ -107,7 +115,10 @@ class World:
             self.ctl["lag"] = 1
         self.ctl.update(ctl)
         self.seq, self.ndo, self.proc = 0, 0, None
-        self.start()
+        if expect_fail:
+            self.start_refused()
+        else:
+            self.start()
 
     # ---------------------------------------------------------------- process
     def start(self, inputs=None):
@@ -122,6 +133,22 @@ class World:
         self.err = open(self.root / "stderr.txt", "ab")
         self.proc = subprocess.Popen([str(self.binary)], env=e, stdout=self.err, stderr=self.err)
         self._wait_ack()
+
+    def start_refused(self):
+        """the EA must refuse to start (OnInit returns INIT_FAILED: the terminal unloads it); returns nothing, see log('ALERT')"""
+        e = dict(os.environ, MOCK_FILES=str(self.files))
+        e.update(self.env)
+        e.update({"MOCK_INPUT_" + k: str(v) for k, v in self.inputs.items()})
+        self._write_control()
+        self.err = open(self.root / "stderr.txt", "ab")
+        proc = subprocess.Popen([str(self.binary)], env=e, stdout=self.err, stderr=self.err)
+        try:
+            rc = proc.wait(4)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(10)
+            raise AssertionError("the EA started although it should have refused to")
+        assert rc == 3, f"exit code {rc}"
 
     def running(self):
         return self.proc is not None and self.proc.poll() is None
@@ -255,9 +282,27 @@ class World:
             return []
         return [ln.split("\t", 1)[1] for ln in raw.splitlines() if ln.startswith(kind + "\t")]
 
+    def notes(self, text):
+        """the push notifications that contain `text`"""
+        return [n for n in self.log("NOTIFY") if text in n]
+
+    def flood(self, texts, prefix="f", timeout=20):
+        """many command files written while the timer is held, then released together; returns the answers in order"""
+        self.set(hold=1)
+        for i, t in enumerate(texts):
+            self.raw(f"{prefix}{i:04d}", t, wait=False)
+        self.set(hold=None)
+        self.wait(lambda: all((self.dir / "res" / f"{prefix}{i:04d}.txt").exists() for i in range(len(texts))), timeout, "the answers to the flood")
+        self.tick(3)
+        return [self.h._kv(f"res/{prefix}{i:04d}.txt") for i in range(len(texts))]
+
     def trades(self, kind=None):
         """every request that reached the trade server ("open", "close" or "sltp")"""
         return [t for t in self.log("TRADE") if kind is None or t.startswith(kind + " ")]
+
+    def pos_time(self, ticket):
+        """when the position was opened (from the broker's deals)"""
+        return next(d["time"] for d in self.state()["deals"] if d["position"] == ticket and d["entry"] == 0)
 
     def untouched(self, before):
         """a position that the EA must never touch is still exactly as it was, and no request ever named it"""
@@ -310,7 +355,8 @@ def cmd(**kw):
 
 XAU = dict(symbol="XAUUSD", side="buy", volume="0.0500", sl="4075.23")       # a plain valid order (ask 4080.23)
 
-# the known defects of the EA that the XFAIL tests demonstrate (ClaudeMains.mq5 as of 2026-11-11)
+# the defects of version 1.00 found by the harness on 2026-11-11 (all corrected in 1.10; the compile review's S*/C* and the
+# limits audit's L* findings are described in lab/results/live/veille_2026-11-11.json)
 FINDINGS = {
     "H1": "the ttl deadline is deleted in the very pass that opened the position if the terminal does not list it yet",
     "H2": "locks, starting capital and ttl deadlines live in terminal global variables that are only written to disk when "
@@ -333,9 +379,10 @@ TESTS = []
 LAG = False                            # --lag: every test runs with the terminal's list of positions refreshed late
 
 
-def test(tid, title, xfail=None):
+def test(tid, title, xfail=None, covers=""):
+    """covers: ids of the findings of 2026-11-11 this test demonstrated on version 1.00 (it passes since their correction)"""
     def deco(fn):
-        TESTS.append((tid, title, xfail, fn))
+        TESTS.append((tid, title + (f"  {{{covers}}}" if covers else ""), xfail, fn))
         return fn
     return deco
 
@@ -349,7 +396,8 @@ def e_account(W):
         assert (a["currency"], a["leverage"], a["demo"], a["hedging"], a["trade_allowed"]) == ("EUR", 500, 1, 1, 1), a
         assert (a["start_balance"], a["day_start_balance"]) == (1000.0, 1000.0), a
         assert (a["max_risk_pct"], a["max_positions"], a["max_per_symbol"], a["daily_loss_pct"], a["kill_pct"]) == (1.0, 6, 2, 6.0, 50.0), a
-        assert a["magic"] == str(MAGIC) and a["ea_version"] == "1.00" and a["server"] == "FPMarketsSC-Demo", a
+        assert a["magic"] == str(MAGIC) and a["ea_version"] == "1.10" and a["server"] == "FPMarketsSC-Demo", a
+        assert (a["day_result"], a["max_notional_x"], a["min_stop_spreads"], a["max_tick_age_sec"]) == (0.0, 20.0, 3.0, 10), a
         assert abs(a["ea_time_gmt"] - time.time()) <= 3 and abs(a["server_time"] - w.now()) <= 3, a
         assert abs(a["server_minus_gmt_sec"] - w.ctl["server_offset"]) <= 1, a
         assert a["blocked"] == "cerveau muet", a                               # the brain has not spoken yet
@@ -362,6 +410,7 @@ def e_account(W):
         assert a["balance"] == 999.95 and abs(a["equity"] - (999.95 - 0.22)) < 0.011, a      # commission, then the spread
         assert abs(a["margin"] - 0.02 * 100 * 4080.23 * 0.8621 / 500) < 0.011 and abs(a["margin_free"] - (a["equity"] - a["margin"])) < 0.011, a
         assert r["ticket"] == w.robot()[0]["ticket"]
+        assert a["day_result"] == round(-0.05 - 0.22, 2) and a["day_start_balance"] == 1000.0, a      # commission paid + floating result
 
 
 @test("E2", "symbols.csv: six markets, broker names found, the missing market gives an empty row")
@@ -522,10 +571,11 @@ def o_stopslevel(W):
         r = w.must_open("US100", "buy", 1.0, sl=24970.00)
         assert r["volume"] == 0.3, r
         w.set({"sym.XAUUSD.r.stops_level": 50})
-        r = w.open("XAUUSD", "buy", 0.05, sl=4079.80)                           # 0.30 under the bid, level 0.50
-        assert not r["ok"] and r["reason"] == "stop du mauvais cote ou trop pres", r
+        for sl in (4079.70, 4079.60):                                           # 0.40 and 0.50 under the bid, level 0.50
+            r = w.open("XAUUSD", "buy", 0.05, sl=sl)
+            assert not r["ok"] and r["reason"] == "stop du mauvais cote ou trop pres", (sl, r)
         w.set({"sym.XAUUSD.r.stops_level": 0})
-        assert w.must_open("XAUUSD", "buy", 0.05, sl=4079.80)["volume"] == 0.05   # the same order passes when the level is 0
+        assert w.must_open("XAUUSD", "buy", 0.05, sl=4079.60)["volume"] == 0.05   # the same order passes when the level is 0
 
 
 @test("O4", "open on an unknown market: refused; the broker's own name is accepted")
@@ -572,7 +622,8 @@ def cap_case(w, base, side, req, dist):
     w.tick(2)
     cap = w.h.account()["balance"] * 0.01
     r1 = abs(price - sl) / s.tick_size * s.tick_value_loss                      # EUR lost by 1 lot at the stop
-    exp = math.floor(min(req, cap / r1, s.vol_max) / s.vol_step + 1e-9) * s.vol_step
+    n1 = price / s.tick_size * s.tick_value_loss                                # EUR value of 1 lot
+    exp = math.floor(min(req, cap / r1, s.vol_max, 20 * cap * 100 / n1) / s.vol_step + 1e-9) * s.vol_step
     r = w.must_open(base, side, req, sl=sl)
     p = w.pos(r["ticket"])
     assert abs(r["volume"] - exp) < 1e-9 and abs(p["volume"] - exp) < 1e-9, (base, r, exp)
@@ -704,6 +755,7 @@ def o_ttl(W):
         w.wait(lambda: [q["ticket"] for q in w.robot()] == [b["ticket"]], 3, "the position to be closed at its deadline")
         out = [d for d in w.state()["deals"] if d["position"] == a["ticket"] and d["entry"] == 1][0]
         assert out["reason"] == 3 and abs(out["time"] - (p.loc[a["ticket"], "ttl_deadline"] + 10)) <= 12, out
+        w.tick(2)                                                               # (the log is written just after the broker's state)
         assert f"Robot Claude : Duree max atteinte : position {a['ticket']} fermee." in w.log("NOTIFY")
         w.wait(lambda: len(w.h.positions()) == 1, 3, "positions.csv")
 
@@ -724,7 +776,7 @@ def o_ttl_restart(W):
         w.wait(lambda: not w.robot(), 3, "the position to be closed at its deadline after the restart")
 
 
-@test("O14c", "ttl: still enforced after a CRASH of the terminal (global variables are only saved when it closes)", xfail="H2")
+@test("O14c", "ttl: still enforced after a CRASH of the terminal (global variables are only saved when it closes)", covers="H2 S1 L11")
 def o_ttl_crash(W):
     with W() as w:
         w.h.alive()
@@ -737,7 +789,7 @@ def o_ttl_crash(W):
         w.wait(lambda: not w.robot(), 3, "the position to be closed at its deadline after the crash")
 
 
-@test("O14d", "ttl: kept when the terminal shows the new position a moment after OrderSend has returned", xfail="H1")
+@test("O14d", "ttl: kept when the terminal shows the new position a moment after OrderSend has returned", covers="H1 L5")
 def o_ttl_lag(W):
     with W(lag=1) as w:
         w.h.alive()
@@ -749,7 +801,7 @@ def o_ttl_lag(W):
         assert a["ticket"]
 
 
-@test("O14e", "ttl: three positions due together are all closed, even when one of them cannot be (its market is closed)", xfail="H14")
+@test("O14e", "ttl: three positions due together are all closed, even when one of them cannot be (its market is closed)", covers="H14 L5")
 def o_ttl_starved(W):
     with W() as w:
         w.h.alive()
@@ -798,7 +850,7 @@ def o_algo(W):
         assert w.shut(a["ticket"])["ok"] and w.must_open("EURUSD", "buy", 0.05, sl=1.158)
 
 
-@test("O17", "risk cap on a market whose lot step is 0.5: the volume is rounded DOWN to the step", xfail="H3")
+@test("O17", "risk cap on a market whose lot step is 0.5: the volume is rounded DOWN to the step", covers="H3 L14")
 def o_step(W):
     with W(**{"sym.NAS100.vol_step": 0.5, "sym.NAS100.vol_min": 0.5}) as w:
         w.h.alive()
@@ -807,7 +859,7 @@ def o_step(W):
         assert r["volume"] == 0.5 and r["risk_money"] <= 10.0, f"0.5 lot allowed (6.47 EUR), {r['volume']} lot opened: risk {r['risk_money']} EUR for a cap of 10.00"
 
 
-@test("O18", "sl=nan / volume=nan in an order: refused by the hands themselves", xfail="H4")
+@test("O18", "sl=nan / volume=nan in an order: refused by the hands themselves", covers="H4")
 def o_nan(W):
     with W() as w:
         w.h.alive()
@@ -821,13 +873,14 @@ def o_nan(W):
         assert r["ok"] == "0" and not w.trades("sltp") and w.pos(t)["sl"] == 1.158, f"modify sl=nan was sent to the broker: {w.trades('sltp')[-1][:80]}"
 
 
-@test("O19", "a market where the broker does not take a stop inside the order: no position is opened without a stop", xfail="H5")
+@test("O19", "a market where the broker does not take a stop inside the order: no position is opened without a stop", covers="H5 L16")
 def o_ordermode(W):
     with W(**{"sym.XAUUSD.r.order_mode": 127 - 16}) as w:                       # SYMBOL_ORDER_MODE without SYMBOL_ORDER_SL
         w.h.alive()
         r = w.open("XAUUSD", "buy", 0.02, sl=4075.23)
         p = w.robot()
         assert not r["ok"] and not p, f"answer ok={r['ok']} sl={r.get('sl')} but at the broker the position has sl={p[0]['sl'] if p else None}: CTrade removed the stop"
+        assert r["reason"] == "ce marche n'accepte pas de stop chez le courtier" and not w.trades(), r      # refused before anything is sent
 
 
 # ====================================================================== 3. modify
@@ -890,7 +943,7 @@ def m_magic(W):
         assert w.h.positions().empty and not w.trades()
 
 
-@test("M4", "modify with exactly the values already in place is answered ok", xfail="H10")
+@test("M4", "modify with exactly the values already in place is answered ok", covers="H10")
 def m_same(W):
     with W() as w:
         w.h.alive()
@@ -946,7 +999,7 @@ def c_closeall(W):
         assert w.close_all()["ok"]                                              # nothing to close: still ok
 
 
-@test("C4", "close_all answers ok=False when a position could not be closed", xfail="H6")
+@test("C4", "close_all answers ok=False when a position could not be closed", covers="H6 L8")
 def c_closeall_fail(W):
     with W() as w:
         w.h.alive()
@@ -1025,7 +1078,8 @@ def d_daily(W):
         w.h.alive()
         w.tick(3)
         a2 = w.h.account()
-        assert a2["blocked"] == "perte max du jour atteinte" and a2["day_start_balance"] == 1000.0, a2
+        assert a2["blocked"] == "perte max du jour atteinte" and a2["day_start_balance"] == 999.97, a2   # (0.03: the hand position's commission)
+        assert a2["day_result"] == round(a2["balance"] - 999.97, 2) and a2["day_result"] < -60, a2
         assert not w.open("XAUUSD", "buy", 0.01, sl=4035.13)["ok"]
         w.at("2026-11-12 23:59:50")
         assert w.h.account()["blocked"] == "perte max du jour atteinte"
@@ -1038,7 +1092,7 @@ def d_daily(W):
         w.untouched(hand)
 
 
-@test("D2", "daily loss limit: still locked after a CRASH of the terminal", xfail="H2")
+@test("D2", "daily loss limit: still locked after a CRASH of the terminal", covers="H2 S1 L11")
 def d_crash(W):
     with W() as w:
         lose(w, 4040.00)
@@ -1051,7 +1105,7 @@ def d_crash(W):
         assert a["blocked"] == "perte max du jour atteinte", f"after the crash blocked={a['blocked']!r}, day_start_balance={a['day_start_balance']}: a new daily allowance"
 
 
-@test("D3", "InpResetLocks=true lifts the daily lock (as its description says)", xfail="H9")
+@test("D3", "InpResetLocks=true lifts the daily lock (as its description says)", covers="H9 L4")
 def d_reset(W):
     with W() as w:
         lose(w, 4040.00)
@@ -1102,7 +1156,7 @@ def k_kill(W):
         assert len(w.trades()) == 4 and w.log("NOTIFY") == n                    # 2 opens, 1 forced close, 1 open after the reset
 
 
-@test("K2", "kill switch: still on after a CRASH of the terminal", xfail="H2")
+@test("K2", "kill switch: still on after a CRASH of the terminal", covers="H2 S1 L11")
 def k_crash(W):
     with W() as w:
         lose(w, 3780.00)
@@ -1131,7 +1185,7 @@ def k_startbalance(W):
                 "as long as the funds are under half of InpStartBalance (InpStartBalance must be lowered too)")
 
 
-@test("K4", "terminal restarted before it is connected (IF the account then reads 0, not verified on a real terminal): no false kill, no false daily lock", xfail="H13")
+@test("K4", "terminal restarted before it is connected (IF the account then reads 0, not verified on a real terminal): no false kill, no false daily lock", covers="H13")
 def k_notconnected(W):
     with W() as w:
         w.h.alive()
@@ -1166,6 +1220,7 @@ def f_friday(W):
         w.tick(3)
         assert len(w.robot()) == 6
         w.wait(lambda: not w.robot(), 6, "everything to be closed at 23:50")
+        w.tick(2)                                                               # (the log is written just after the broker's state)
         assert w.now() >= ts("2026-11-13 23:50:00") and len(w.trades("close")) == 6
         w.untouched(hand)
         for when in ("2026-11-13 23:50:10", "2026-11-14 12:00:00", "2026-11-15 23:59:40"):
@@ -1187,7 +1242,8 @@ def f_friday(W):
         assert len(w.robot()) == 1 and w.h.account()["blocked"] == ""
 
 
-@test("F2", "Friday close when a market is already closed: the hands insist every 10 s and close as soon as the broker accepts")
+@test("F2", "Friday close refused: retried every 60 s while the market is closed, every 10 s for another refusal, closed as soon "
+            "as the broker accepts; the user is warned once", covers="L8")
 def f_retry(W):
     with W(server="2026-11-13 23:48:00") as w:
         w.h.alive()
@@ -1199,10 +1255,62 @@ def f_retry(W):
         assert len(w.trades("close")) == 1 and len(w.robot()) == 1             # not hammering the server
         assert any("fermeture refusee (blocage)" in p and "10018 market closed" in p for p in w.log("PRINT")), w.log("PRINT")[-1]
         w.advance(11)
-        w.wait(lambda: len(w.trades("close")) == 2, 3, "the second attempt 10 s later")
+        w.tick(3)
+        assert len(w.trades("close")) == 1, "market closed: one attempt a minute is enough (thousands of requests over a week-end otherwise)"
+        w.advance(50)
+        w.wait(lambda: len(w.trades("close")) == 2, 3, "the second attempt 60 s later")
+        w.set(retcode_close=10006)                                              # another refusal than 'market closed'
+        w.advance(61)
+        w.wait(lambda: len(w.trades("close")) == 3, 3, "the third attempt")
+        w.advance(11)
+        w.wait(lambda: len(w.trades("close")) == 4, 3, "the next attempt 10 s later")
+        warn = w.notes("ATTENTION")
+        assert warn == ["Robot Claude : ATTENTION : 1 position(s) du robot devraient etre fermees et ne le sont pas (marche ferme)."], warn
         w.set(retcode_close=None)
         w.advance(11)
         w.wait(lambda: not w.robot(), 3, "the close once the broker accepts")
+
+
+@test("F3", "week-end close missed (terminal off on Friday evening): the position is closed at the first opportunity on Monday, with a "
+            "notification; what was opened since is left alone", covers="L9 L8")
+def f_missed(W):
+    with W(server="2026-11-13 22:00:00") as w:
+        w.h.alive()
+        hand = w.pos(w.outside("USDJPY.r", "buy", 0.01))
+        a = w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)["ticket"]
+        w.stop()                                                                # the Mac sleeps through Friday 23:50 and the week-end
+        w.set(server_offset=ts("2026-11-16 00:10:00") - time.time(), retcode_close=10018)   # Monday; gold not open yet
+        w.start()
+        w.wait(lambda: len(w.trades("close")) == 1, 3, "a first attempt as soon as the hands are back")
+        w.tick(3)
+        assert len(w.robot()) == 1
+        assert w.notes("ATTENTION") == ["Robot Claude : ATTENTION : 1 position(s) du robot devraient etre fermees et ne le sont pas (marche ferme)."]
+        w.set(retcode_close=None)
+        w.h.alive()
+        b = w.must_open("EURUSD", "buy", 0.05, sl=1.158)["ticket"]              # opened this week: nothing to do with last Friday
+        w.advance(61)
+        w.wait(lambda: [p["ticket"] for p in w.robot()] == [b], 3, "the position kept over the week-end to be closed, and only that one")
+        w.tick(2)
+        assert w.notes("week-end manquee") == [f"Robot Claude : Fermeture du week-end manquee : position {a} fermee."], w.log("NOTIFY")
+        w.advance(30)
+        w.tick(3)
+        assert [p["ticket"] for p in w.robot()] == [b] and len(w.trades("close")) == 2
+        w.untouched(hand)
+
+
+@test("F4", "a forced close that fails because the Algo Trading button is off: the user is told so", covers="L8")
+def f_algo_off(W):
+    with W(server="2026-11-13 23:48:00") as w:
+        w.h.alive()
+        w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)
+        w.set(terminal_trade_allowed=0)
+        w.at("2026-11-13 23:50:01")
+        w.wait(lambda: w.notes("ATTENTION"), 5, "a notification")
+        assert w.notes("ATTENTION") == ["Robot Claude : ATTENTION : 1 position(s) du robot devraient etre fermees et ne le sont pas "
+                                        "(trading automatique desactive dans MT5)."], w.notes("ATTENTION")
+        w.set(terminal_trade_allowed=None)
+        w.advance(11)
+        w.wait(lambda: not w.robot(), 3, "the close once the button is back on")
 
 
 # ====================================================================== 9. robustness
@@ -1284,7 +1392,7 @@ def r_longtag(W):
         assert w.pos(r["ticket"])["comment"] == "CM " + "t" * 20
 
 
-@test("R6", "a tag containing a comma does not break positions.csv / deals.csv for the brain", xfail="H7")
+@test("R6", "a tag containing a comma does not break positions.csv / deals.csv for the brain", covers="H7")
 def r_comma(W):
     with W() as w:
         w.h.alive()
@@ -1292,6 +1400,7 @@ def r_comma(W):
         try:
             p, d = w.h.positions(), w.h.deals()
             ok = len(p) == 1 and p.ticket.iloc[0] == r["ticket"] and len(d) == 1 and d.position.iloc[0] == r["ticket"]
+            ok = ok and w.robot()[0]["comment"] == "CM pivot v2" == p.comment.iloc[0]      # no comma goes to the broker either
             what = f"columns shifted: positions().ticket = {p.ticket.iloc[0] if len(p) else None!r}, deals().position = {d.position.iloc[0] if len(d) else None!r}"
         except Exception as e:
             ok, what = False, f"{type(e).__name__}: {str(e).strip()[:90]}"
@@ -1357,7 +1466,7 @@ def r_res(W):
         assert not list((w.dir / "cmd").glob("*")) and len(list((w.dir / "res").glob("*.txt"))) == 6 == len(list((w.dir / "done").glob("*.txt")))
 
 
-@test("R10", "an order is executed once even if its file cannot be moved to done/ (folder removed)", xfail="H8")
+@test("R10", "an order is executed once even if its file cannot be moved to done/ (folder removed)", covers="H8 L7")
 def r_done(W):
     with W() as w:
         w.h.alive()
@@ -1368,7 +1477,7 @@ def r_done(W):
         assert r["ok"] and n == 1 and left == 0, f"one order sent, {n} positions opened; the order file is still in cmd/ ({left}) and is run again on every pass"
 
 
-@test("R11", "150 orders at once: all answered (100 per pass), in the order of their ids")
+@test("R11", "150 orders at once: all answered (5 per pass)")
 def r_flood(W):
     with W() as w:
         w.set(hold=1)
@@ -1379,7 +1488,7 @@ def r_flood(W):
         assert not list((w.dir / "cmd").glob("*.txt")) and w.h.ping()
 
 
-@test("R12", "the server clock steps back one hour (winter time, clock correction): account.txt is still refreshed", xfail="H11")
+@test("R12", "the server clock steps back one hour (winter time, clock correction): account.txt is still refreshed", covers="H11")
 def r_back(W):
     with W() as w:
         w.h.alive()
@@ -1388,6 +1497,492 @@ def r_back(W):
         time.sleep(8.0)
         age = time.time() - w.h.account()["ea_time_gmt"]
         assert age <= 6.5, f"account.txt is {age:.0f} s old and will not be rewritten for an hour: pont.ea_alive() turns false after 30 s, forced closes are not retried"
+
+
+# ====================================================================== 10. the limits audit and the compile review of 2026-11-11
+@test("O20", "a stop glued to the price (closer than 3 spreads) is refused: it would give a huge volume for the same announced risk", covers="L1")
+def o_tight(W):
+    with W() as w:
+        w.h.alive()
+        for side, sl in (("buy", 4080.09), ("buy", 4079.72), ("sell", 4080.24), ("sell", 4080.61)):     # bid 4080.10, ask 4080.23: 3 spreads = 0.39
+            r = w.open("XAUUSD", side, 50.0, sl=sl)
+            assert not r["ok"] and r["reason"] == "stop trop serre : il doit etre a au moins 3 ecarts achat-vente du prix (0.39)", (side, sl, r)
+        r = w.open("EURUSD", "buy", 50.0, sl=1.15997)                           # 3 points under the bid, spread 2 points
+        assert not r["ok"] and r["reason"].startswith("stop trop serre"), r
+        assert not w.trades()
+        for side, sl in (("buy", 4079.71), ("sell", 4080.62)):                  # exactly 3 spreads: accepted
+            assert w.must_open("XAUUSD", side, 0.01, sl=sl)["volume"] == 0.01
+
+
+@test("O21", "the value of a position is capped at 20 times the balance (InpMaxNotionalX), whatever the stop allows", covers="L1")
+def o_notional(W):
+    with W() as w:
+        w.h.alive()
+        r = w.must_open("XAUUSD", "buy", 50.0, sl=4079.71)                      # risk alone would allow 0.22 lot = 77 000 EUR on 1 000 EUR
+        assert r["volume"] == 0.05 and r["volume"] * 100 * 4080.23 * 0.8625 <= 20000 < 0.06 * 100 * 4080.23 * 0.8625, r
+        assert w.shut(r["ticket"])["ok"]
+        r = w.must_open("EURUSD", "sell", 50.0, sl=1.16010)                     # risk alone would allow 0.96 lot = 96 000 EUR
+        assert r["volume"] == 0.19 and w.pos(r["ticket"])["volume"] == 0.19, r
+        assert w.shut(r["ticket"])["ok"]
+    with W(inputs={"InpMaxNotionalX": 5}) as w:
+        w.h.alive()
+        assert w.must_open("XAUUSD", "buy", 0.5, sl=4075.23)["volume"] == 0.01  # 5 000 EUR at most: 0.01 lot (3 519 EUR)
+        r = w.open("BTCUSD", "buy", 1.0, sl=99512.0)                            # needs 0.01 lot... which is 862 EUR: allowed
+        assert r["ok"] and r["volume"] == 0.02, r
+    with W(inputs={"InpMaxNotionalX": 3}) as w:
+        w.h.alive()
+        r = w.open("XAUUSD", "buy", 0.5, sl=4075.23)                            # even the minimum lot is worth more than 3 x the balance
+        assert not r["ok"] and r["reason"] == "limite de taille : le lot minimum (0.01) vaut 3519.20, limite 3000.00" and not w.trades(), r
+
+
+@test("O22", "an old price (last tick older than InpMaxTickAgeSec = 10 s): the open is refused, the volume would be sized on it", covers="L12")
+def o_stale(W):
+    with W() as w:
+        w.h.alive()
+        w.set({"sym.XAUUSD.r.tick_age": 30})                                    # quotes paused for 30 s
+        r = w.open("XAUUSD", "buy", 0.02, sl=4075.23)
+        assert not r["ok"] and r["reason"] == "prix trop ancien (marche ferme ou en pause)" and not w.trades(), r
+        assert w.must_open("EURUSD", "buy", 0.05, sl=1.158)["ok"]               # the other markets are not concerned
+        w.set({"sym.XAUUSD.r.tick_age": 8})
+        assert w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)["ok"]
+    with W(inputs={"InpMaxTickAgeSec": 0}, **{"sym.XAUUSD.r.tick_age": 30}) as w:     # 0 = no check
+        w.h.alive()
+        assert w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)["ok"]
+
+
+@test("O23", "fill worse than the quote: risk_money is the risk at the price really obtained; more than 25 % over the cap, the position is "
+             "closed at once and the answer is ok=0", covers="S2 L12")
+def o_slip(W):
+    with W() as w:
+        w.h.alive()
+        w.set({"sym.XAUUSD.r.slip": 2.0})                                       # filled 2.00 above the quote
+        r = w.must_open("XAUUSD", "buy", 0.5, sl=4075.23)                       # sized for 5.00 of risk per ounce, really 7.00
+        assert r["price"] == 4082.23 and r["volume"] == 0.02 and abs(r["risk_money"] - 7.00 * 100 * 0.8625 * 0.02) < 0.006, r
+        assert len(w.robot()) == 1 and not w.notes("Ouverture annulee")         # 12.08 for a cap of 10.00: within 25 %, kept
+        assert w.shut(r["ticket"])["ok"]
+        w.set({"sym.XAUUSD.r.slip": 3.0})
+        cap = w.h.account()["balance"] * 0.01                                   # (a little under 10.00 after the first trade)
+        r = w.open("XAUUSD", "buy", 0.5, sl=4075.23)                            # really 8.00 per ounce: 13.80 for a cap of 10
+        assert not r["ok"] and r["reason"] == f"glissement trop fort (risque 13.80 pour une limite de {cap:.2f}) : position refermee d'office", r
+        assert r["ticket"] > 0 and r["price"] == 4083.23 and r["risk_money"] == 13.8, r
+        w.wait(lambda: not w.robot(), 3, "the position to be closed at once")
+        w.tick(2)
+        out = [d for d in w.state()["deals"] if d["position"] == r["ticket"] and d["entry"] == 1]
+        assert len(out) == 1 and out[0]["reason"] == 3 and out[0]["time"] - w.pos_time(r["ticket"]) <= 2, out
+        assert len(w.notes("Ouverture annulee, glissement trop fort")) == 1, w.log("NOTIFY")
+        w.set({"sym.XAUUSD.r.slip": None})
+        assert w.must_open("XAUUSD", "sell", 0.5, sl=4085.10)["risk_money"] == 8.62
+
+
+@test("O24", "a robot position without a stop at the broker (stop not kept at the fill, or removed by hand) is closed; a modify cannot "
+             "legalise it with a stop beyond the risk cap", covers="L16")
+def o_naked(W):
+    with W(drop_sl=1) as w:                                                     # the broker fills the order but keeps no stop
+        w.h.alive()
+        r = w.open("XAUUSD", "buy", 0.02, sl=4075.23)
+        if not LAG:                                                             # the hands see it at once and place the stop themselves
+            assert r["ok"] and w.pos(r["ticket"])["sl"] == 4075.23 and len(w.trades("sltp")) == 1, (r, w.robot())
+            assert w.shut(r["ticket"])["ok"]
+            w.set(retcode_sltp=10016)                                           # ... and when the broker refuses that too: closed, answer ok=0
+            r = w.open("XAUUSD", "buy", 0.02, sl=4075.23)
+            assert not r["ok"] and r["reason"] == "le courtier n'a pas pose le stop : position refermee d'office" and r["ticket"] > 0, r
+        else:                                                                   # (with --lag the hands cannot see the new position yet:
+            w.advance(6)                                                        #  it is closed a few seconds later, as below)
+        w.wait(lambda: not w.robot(), 3, "the position without a stop to be closed")
+    with W() as w:
+        w.h.alive()
+        t = w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)["ticket"]
+        w.do(f"sltp {t} 0 0")                                                   # the stop is removed by hand in MetaTrader
+        assert w.pos(t)["sl"] == 0
+        r = w.modify(t, sl=100.0)                                               # 3 980 away: 6 865 EUR at risk instead of 10
+        assert not r["ok"] and r["reason"] == "position sans stop : le stop demande depasse la limite de risque" and w.pos(t)["sl"] == 0, r
+        assert w.modify(t, sl=4075.23)["ok"] and w.pos(t)["sl"] == 4075.23      # the original stop can be put back
+        w.advance(8)
+        w.tick(3)
+        assert len(w.robot()) == 1                                              # it has a stop again: left alone
+        hand = w.pos(w.outside("EURUSD.r", "buy", 0.01))                        # a hand position without a stop is none of the robot's business
+        w.do(f"sltp {t} 0 0")
+        w.advance(8)
+        w.wait(lambda: not w.robot(), 3, "the position without a stop to be closed by the hands")
+        w.tick(2)
+        assert w.notes("sans stop") == [f"Robot Claude : Position sans stop chez le courtier : position {t} fermee."], w.log("NOTIFY")
+        w.untouched(hand)
+
+
+@test("O14f", "ttl: kept and enforced when the server gives the position a new ticket (the deadline follows the position identifier)", covers="C5")
+def o_ttl_reticket(W):
+    with W() as w:
+        w.h.alive()
+        t = w.must_open("XAUUSD", "buy", 0.02, sl=4075.23, ttl_min=30)["ticket"]
+        dl = w.h.positions().iloc[0].ttl_deadline
+        w.do(f"reticket {t}")                                                   # e.g. swap charged by re-opening the position
+        w.tick(3)
+        p = w.h.positions()
+        assert len(p) == 1 and p.iloc[0].ticket != t and p.iloc[0].ttl_deadline == dl > 0, p
+        w.advance(31 * 60)
+        w.wait(lambda: not w.robot(), 3, "the position to be closed at its deadline under its new ticket")
+
+
+@test("O14g", "ttl: the deadline of a position that no longer exists is dropped a day later (hourly tidying); never the one of a position "
+              "that is still open, however late")
+def o_ttl_tidy(W):
+    with W() as w:
+        w.h.alive()
+        a = w.must_open("XAUUSD", "buy", 0.02, sl=4075.23, ttl_min=30)["ticket"]
+        b = w.must_open("EURUSD", "buy", 0.05, sl=1.158, ttl_min=30)["ticket"]
+        w.set({"price.XAUUSD.r": "4075.00,4075.13"})                            # gold is closed by its stop
+        w.wait(lambda: [p["ticket"] for p in w.robot()] == [b], 3, "the stop")
+        w.set(retcode_close=10018)                                              # and the euro cannot be closed by the hands for more than a day
+        w.advance(3700)
+        w.tick(3)
+        w.stop()
+        g = (w.mock / "globals.txt").read_text()
+        assert f"CM_ttl_{a}=" in g and f"CM_ttl_{b}=" in g, g                    # not yet: a deadline is never dropped early
+        w.start()
+        w.advance(86400 + 3700)
+        w.tick(3)
+        w.stop()
+        g = (w.mock / "globals.txt").read_text()
+        assert f"CM_ttl_{a}=" not in g and f"CM_ttl_{b}=" in g, g
+        w.start()
+        assert w.h.positions().iloc[0].ttl_deadline > 0 and len(w.robot()) == 1
+        w.set(retcode_close=None)
+        w.advance(61)
+        w.wait(lambda: not w.robot(), 3, "the late position to be closed as soon as the broker accepts")
+
+
+@test("C5", "a position that disappears (its stop is hit) just as the hands close or modify it: the answer does not show the code of the "
+            "PREVIOUS order; nor when MetaTrader is stopping", covers="C2")
+def c_race(W):
+    with W() as w:
+        w.h.alive()
+        a = w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)["ticket"]            # the last answer of the server is now 10009 'done'
+        b = w.must_open("EURUSD", "buy", 0.05, sl=1.158)["ticket"]
+        w.set(race=1)
+        r = w.shut(a)
+        assert not r["ok"] and r["reason"] == "position introuvable (deja fermee)", r
+        r = w.modify(b, sl=1.159)
+        assert not r["ok"] and r["reason"] == "position introuvable (deja fermee)", r
+        assert not w.robot() and not w.trades("close") and not w.trades("sltp")
+        w.set(race=None)
+        c = w.must_open("USDJPY", "buy", 0.05, sl=154.654)["ticket"]
+        w.set(stopped=1)                                                        # CTrade gives up before sending (the program is being stopped)
+        for r in (w.shut(c), w.modify(c, sl=154.7), w.shut(c, 0.01)):
+            assert not r["ok"] and r["reason"] == "refuse avant l'envoi au serveur (rien n'a ete envoye)", r
+        w.set(stopped=None)
+        assert w.shut(c)["ok"]
+
+
+@test("S3", "a brain heartbeat dated in the future (wrong clock, milliseconds): ignored, the brain counts as silent, one notification", covers="L3")
+def s_future(W):
+    with W(inputs={"InpBrainTimeoutSec": 3}) as w:
+        for val in (int(time.time()) + 86400, int(time.time() * 1000), int(time.time()) + 7):
+            (w.dir / "brain_alive.txt").write_bytes(f"time_gmt={val}\r\n".encode())
+            w.tick(3)
+            r = w.open("XAUUSD", "buy", 0.02, sl=4075.23)
+            assert not r["ok"] and r["reason"] == "cerveau muet", (val, r)
+            assert w.h.account()["blocked"] == "cerveau muet" and "Cerveau : MUET" in (w.mock / "comment.txt").read_text()
+        assert not w.trades()
+        told = w.notes("date dans le futur")
+        assert told == ["Robot Claude : Signe de vie du cerveau date dans le futur : ignore, cerveau considere comme muet (verifier son horloge)."], w.log("NOTIFY")
+        (w.dir / "brain_alive.txt").write_bytes(f"time_gmt={int(time.time()) + 3}\r\n".encode())     # clocks 3 s apart: accepted
+        t = w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)["ticket"]
+        time.sleep(6.5)                                                         # ... and it expires like any other
+        w.wait(lambda: w.h.account()["blocked"] == "cerveau muet", 8, "blocked=cerveau muet")
+        assert w.pos(t)["sl"] == 4075.23
+
+
+@test("K5", "InpResetLocks left on true acts once only: a later permanent stop survives the restarts; false then true lifts it again", covers="L4")
+def k_reset_once(W):
+    with W() as w:
+        lose(w, 3780.00)
+        w.wait(lambda: w.h.account()["blocked"] == "arret definitif (-50 %)", 3, "the kill switch")
+        w.wait(lambda: not w.robot(), 3, "the robot's positions to be closed")
+        w.at("2026-11-13 00:00:05")
+        w.stop()
+        w.start(inputs={"InpResetLocks": "true"})                               # the user lifts the stop... and forgets the switch
+        w.h.alive()
+        w.wait(lambda: w.h.account()["blocked"] == "", 8, "InpResetLocks to clear the kill switch")
+        s1 = w.h.account()["start_balance"]
+        assert 470 < s1 < 490, s1
+        w.must_open("XAUUSD", "sell", 0.01, sl=3785.00)
+        w.set({"price.XAUUSD.r": "4080.10,4080.23"})                            # a gap through the stop: about -259 EUR
+        w.wait(lambda: w.h.account()["blocked"] == "arret definitif (-50 %)", 3, "the second kill")
+        w.wait(lambda: not w.robot(), 3, "closed")
+        for when in ("2026-11-16 00:00:05", "2026-11-17 00:00:05"):             # plain restarts, the switch still on true
+            w.set(server_offset=ts(when) - time.time())
+            w.stop()
+            w.start()
+            w.h.alive()
+            w.tick(3)
+            a = w.h.account()
+            assert a["blocked"] == "arret definitif (-50 %)" and a["start_balance"] == s1, f"blocked={a['blocked']!r}, start_balance={a['start_balance']}: the 'permanent' stop was lifted by a restart"
+        assert any("InpResetLocks est reste sur true : ignore" in p for p in w.log("PRINT"))
+        assert "InpResetLocks est reste sur true" in (w.mock / "comment.txt").read_text()
+        w.stop()
+        w.start(inputs={})                                                      # back to false: still stopped
+        w.h.alive()
+        w.tick(3)
+        assert w.h.account()["blocked"] == "arret definitif (-50 %)"
+        w.stop()
+        w.start(inputs={"InpResetLocks": "true"})                               # and true again: honoured
+        w.h.alive()
+        w.wait(lambda: w.h.account()["blocked"] == "", 8, "the second reset")
+        assert 200 < w.h.account()["start_balance"] < 240
+
+
+@test("K6", "kill switch: still on when MetaTrader has forgotten its global variables (4 weeks without use), thanks to the file "
+            "ClaudeMains_arret.txt; InpResetLocks removes the file", covers="L11")
+def k_file(W):
+    with W() as w:
+        lose(w, 3780.00)
+        w.wait(lambda: w.h.account()["blocked"] == "arret definitif (-50 %)", 3, "the kill switch")
+        w.wait(lambda: not w.robot(), 3, "the robot's positions to be closed")
+        kf = w.files / "ClaudeMains_arret.txt"
+        assert kf.exists() and kf.read_text().strip() == "start=1000.00", "the permanent stop is not written in the file ClaudeMains_arret.txt"
+        for inputs in ({}, {"InpResetLocks": "true"}):                          # (a reset is not honoured either: the hands have no memory of a 'false')
+            w.stop()
+            (w.mock / "globals.txt").unlink()                                   # MetaTrader has purged its global variables
+            w.set(server_offset=w.ctl["server_offset"] + 30 * 86400)
+            w.start(inputs=inputs)
+            w.h.alive()
+            w.tick(3)
+            a = w.h.account()
+            assert a["blocked"] == "arret definitif (-50 %)" and a["start_balance"] == 1000.0, f"blocked={a['blocked']!r}, start_balance={a['start_balance']}: the stop is forgotten"
+        w.stop()
+        w.start(inputs={})
+        w.stop()
+        w.start(inputs={"InpResetLocks": "true"})
+        w.h.alive()
+        w.wait(lambda: w.h.account()["blocked"] == "", 8, "the reset")
+        assert not kf.exists()
+
+
+@test("D4", "daily loss limit after a deposit: 6 % of the new funds, counted on the robot's own result", covers="L6")
+def d_deposit(W):
+    with W() as w:
+        w.h.alive()
+        w.do("balance 1000")
+        w.tick(3)
+        a = w.h.account()
+        assert (a["balance"], a["day_start_balance"], a["blocked"]) == (2000.0, 2000.0, ""), f"balance {a['balance']}, day_start_balance {a['day_start_balance']}: the deposit is not in the day's reference"
+        assert a["day_result"] == 0.0, a
+        for _ in range(2):
+            assert w.must_open("XAUUSD", "buy", 1.0, sl=4075.23)["volume"] == 0.04
+        w.set({"price.XAUUSD.r": "4050.00,4050.13"})                            # both stops filled in a gap: -208 EUR = 10.4 % of the funds
+        w.wait(lambda: w.h.account()["blocked"] == "perte max du jour atteinte", 3, "the daily lock")
+        a = w.h.account()
+        assert a["day_start_balance"] == 2000.0 and abs(a["day_result"] - (a["balance"] - 2000.0)) < 0.011 and a["day_result"] < -120, a
+
+
+@test("D5", "a withdrawal is not a loss: no daily lock, the robot's positions stay open", covers="L6")
+def d_withdrawal(W):
+    with W() as w:
+        w.h.alive()
+        t = w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)["ticket"]
+        w.do("balance -100")
+        w.tick(3)
+        w.advance(61)
+        w.tick(3)
+        a = w.h.account()
+        assert a["blocked"] == "" and [p["ticket"] for p in w.robot()] == [t] and not w.log("NOTIFY"), (a, w.log("NOTIFY"))
+        assert (a["balance"], a["day_start_balance"], a["day_result"]) == (899.95, 900.0, -0.27), a
+
+
+@test("D6", "the hands asleep over midnight while stops are hit: at wake-up the day starts from the balance of midnight, not from what is left",
+      covers="L6")
+def d_asleep(W):
+    with W(server="2026-11-11 23:50:00") as w:
+        w.h.alive()
+        for base, sl in (("XAUUSD", 4075.23), ("XAUUSD", 4075.23), ("EURUSD", 1.158), ("EURUSD", 1.158), ("USDJPY", 154.654), ("USDJPY", 154.654)):
+            w.must_open(base, "buy", 5.0, sl=sl)
+        b0 = w.state()["balance"]
+        w.set(hold=1)                                                           # the Mac sleeps: no OnTimer
+        w.set(server_offset=ts("2026-11-12 03:00:00") - time.time())
+        w.set({"price.XAUUSD.r": "4075.00,4075.13", "price.EURUSD.r": "1.15790,1.15792", "price.USDJPY.r": "154.600,154.604"})
+        w.wait(lambda: not w.robot(), 3, "the broker to execute the six stops")
+        w.set(server_offset=ts("2026-11-12 09:00:00") - time.time())
+        w.set(hold=None)                                                        # the Mac wakes up
+        w.h.alive()
+        w.sync()
+        w.tick(3)
+        a = w.h.account()
+        lost = round(b0 - a["balance"], 2)
+        assert lost > 55 and abs(a["day_start_balance"] - b0) < 0.011 and abs(a["day_result"] + lost) < 0.011, (
+            f"balance at midnight {b0}, {lost} lost at 03:00, day_start_balance={a['day_start_balance']}: the losses of the night are not counted today")
+        r = w.must_open("XAUUSD", "buy", 0.02, sl=4070.13)                      # one more loss today and the limit is reached
+        w.set({"price.XAUUSD.r": "4070.00,4070.13"})
+        w.wait(lambda: w.h.account()["blocked"] == "perte max du jour atteinte", 3, "the daily lock, counting the night's losses")
+        assert r["ok"]
+
+
+@test("D7", "daily loss limit when the broker's own closing deals (stop, target) carry magic number 0: still counted as the robot's; "
+            "the stop of a position opened by hand is not the robot's loss", covers="L6")
+def d_magic0(W):
+    with W(sl_magic0=1) as w:
+        hand, a, b = lose(w, 4040.00)
+        w.wait(lambda: w.h.account()["blocked"] == "perte max du jour atteinte", 3, "the daily lock")
+        w.wait(lambda: not w.robot(), 3, "the robot's positions to be closed")
+        d = w.h.deals()
+        assert d[(d.position == a) & (d.entry == 1)].magic.iloc[0] == 0, d
+        w.untouched(hand)
+    with W(sl_magic0=1) as w:                                                   # ... and a hand position's stop is not the robot's loss
+        w.h.alive()
+        w.outside("XAUUSD.r", "buy", 0.05, sl=4075.23)
+        w.set({"price.XAUUSD.r": "4040.00,4040.13"})                            # -173 EUR by hand
+        w.tick(3)
+        w.advance(61)
+        w.tick(3)
+        a = w.h.account()
+        assert a["blocked"] == "" and a["day_result"] == 0.0 and a["balance"] < 830 and a["day_start_balance"] == a["balance"], a
+
+
+@test("D8", "daily loss limit reached by the floating loss of open positions alone (no stop hit yet): locked, positions closed by the hands")
+def d_floating(W):
+    with W(inputs={"InpDailyLossPct": 1.5}) as w:
+        w.h.alive()
+        a = w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)["ticket"]
+        b = w.must_open("EURUSD", "buy", 0.05, sl=1.158)["ticket"]
+        w.set({"price.XAUUSD.r": "4075.40,4075.53", "price.EURUSD.r": "1.15810,1.15812"})      # just above both stops: -8.33 and -8.28 EUR floating
+        w.wait(lambda: w.h.account()["blocked"] == "perte max du jour atteinte", 3, "the daily lock")
+        w.wait(lambda: not w.robot(), 3, "the robot's positions to be closed")
+        why = {d["position"]: d["reason"] for d in w.state()["deals"] if d["entry"] == 1}
+        assert why == {a: 3, b: 3}, why                                         # both closed by the hands, not by their stops
+
+
+@test("N1", "never more than 2 push notifications in the same second (MetaTrader's limit); the others stay in the log")
+def n_limit(W):
+    with W() as w:
+        w.h.alive()
+        w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)
+        w.must_open("EURUSD", "buy", 0.05, sl=1.158)
+        w.set({"retcode_close": 10018, "price.XAUUSD.r": "3780.00,3780.13"})    # kill + daily lock + a forced close that fails, all at once
+        w.wait(lambda: any("ATTENTION" in p for p in w.log("PRINT")), 5, "the warning in the log")
+        w.tick(2)
+        n = w.log("NOTIFY")
+        assert len(n) == 2 and n[0].startswith("Robot Claude : ARRET DEFINITIF") and n[1].startswith("Robot Claude : Perte max du jour"), n
+
+
+@test("R13", "the locks are evaluated again before EACH order: an open queued behind a loss that reaches the daily limit is refused", covers="L2")
+def r_locks_first(W):
+    with W() as w:
+        w.h.alive()
+        w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)
+        n = len(w.trades("open"))
+        w.set(hold=1)                                                           # the hands are busy / the timer is late
+        w.set({"price.XAUUSD.r": "4010.00,4010.13"})                            # the stop is filled in a gap: -121 EUR, 12 % of the day's balance
+        w.wait(lambda: not w.robot(), 3, "the broker to execute the stop")
+        w.raw("z1", cmd(action="open", symbol="EURUSD", side="buy", volume="0.05", sl="1.158", expire=w.now() + 60), wait=False)
+        w.h.alive()
+        w.set(hold=None)
+        w.wait((w.dir / "res" / "z1.txt").exists, 5, "the answer")
+        r = w.h._kv("res/z1.txt")
+        assert r["ok"] == "0" and r["reason"] == "perte max du jour atteinte" and len(w.trades("open")) == n, (
+            f"ok={r['ok']} reason={r['reason']!r}: the order was executed before the hands had looked at the account")
+
+
+@test("R14", "at most 5 orders per timer pass, and a pass ends once a position has been opened", covers="L2")
+def r_five(W):
+    with W() as w:
+        w.h.alive()
+        w.tick(2)
+        n0 = len(w.log("PASS"))
+        res = w.flood([cmd(action="ping")] * 12, "p")
+        passes = [int(x) for x in w.log("PASS")[n0:]]
+        assert all(r["pong"] == "1" for r in res) and passes == [5, 5, 2], f"answers per pass: {passes}"
+        n0 = len(w.log("PASS"))
+        res = w.flood([cmd(action="open", symbol=sym, side="buy", volume="0.01", sl=sl, expire=w.now() + 60)
+                       for sym, sl in (("XAUUSD", "4075.23"), ("EURUSD", "1.158"), ("USDJPY", "154.654"))] + [cmd(action="ping")] * 2, "o")
+        passes = [int(x) for x in w.log("PASS")[n0:]]
+        assert [r["ok"] for r in res] == ["1"] * 5 and passes == [1, 1, 1, 2], f"answers per pass: {passes} (one open per pass)"
+
+
+@test("R18", "order files that cannot be taken out of cmd/ do not keep the orders behind them from being executed")
+def r_stuck(W):
+    with W() as w:
+        w.h.alive()
+        for i in range(7):                                                      # more than a pass takes; their names sort before pont's ids
+            (w.dir / "done" / f"0000_{i}.txt").mkdir()
+            (w.dir / "done" / f"0000_{i}.txt" / "x").write_text("x")            # the move to done/ fails: a folder of that name is in the way
+            w.raw(f"0000_{i}", cmd(action="ping"), wait=False)
+        w.tick(3)
+        assert w.h.ping() and w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)["ok"]
+        assert len(list((w.dir / "cmd").glob("0000_*.txt"))) == 7 and not list((w.dir / "res").glob("0000_*"))      # never executed, still there
+
+
+@test("R15", "24 opens at once on a terminal that lists new positions late: still 6 positions at most, 2 per market", covers="L2")
+def r_count_lag(W):
+    with W(lag=1) as w:
+        w.h.alive()
+        w.tick(2)
+        res = w.flood([cmd(action="open", symbol=sym, side="buy", volume="0.01", sl=sl, expire=w.now() + 60)
+                       for sym, sl in (("XAUUSD", "4075.23"), ("EURUSD", "1.158"), ("USDJPY", "154.654")) for _ in range(8)])
+        per = {}
+        for p in w.robot():
+            per[p["symbol"]] = per.get(p["symbol"], 0) + 1
+        assert per == {"XAUUSD.r": 2, "EURUSD.r": 2, "USDJPY.r": 2}, f"{len(w.robot())} positions open (limit 6), per market {per} (limit 2)"
+        assert sum(r["ok"] == "1" for r in res) == 6
+        assert {r["reason"] for r in res if r["ok"] == "0"} <= {"trop de positions sur ce marche", "trop de positions ouvertes"}, res
+
+
+@test("R16", "150 orders waiting, an open first and close_all in the middle: executed in the order of their ids whatever the order of the directory", covers="L17")
+def r_order(W):
+    with W() as w:
+        w.h.alive()
+        w.tick(2)
+        res = w.flood([cmd(action="open", symbol="XAUUSD", side="buy", volume="0.02", sl="4075.23", expire=w.now() + 60)]
+                      + [cmd(action="ping")] * 51 + [cmd(action="close_all")] + [cmd(action="ping")] * 97)
+        assert res[0]["ok"] == "1" and res[52]["ok"] == "1" and not w.robot() and len(w.trades("close")) == 1, (
+            f"open ok={res[0]['ok']}, close_all ok={res[52]['ok']}, positions left open: {len(w.robot())} (close_all was run BEFORE the open)")
+
+
+@test("R17", "the answers (res/) and executed orders (done/) older than 24 h are deleted every hour; nothing younger, nothing in cmd/, "
+             "no file named otherwise", covers="L19")
+def r_purge(W):
+    with W() as w:
+        w.h.alive()
+        r = w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)
+        old = [f"{int((time.time() - h * 3600) * 1000):013d}_{i:04d}.txt" for i, h in enumerate((25, 48, 24.1))]
+        young = [f"{int((time.time() - h * 3600) * 1000):013d}_{i:04d}.txt" for i, h in enumerate((23.8, 1))] + ["a1.txt", f"{r['id']}.txt"]
+        for sub in ("res", "done"):
+            for name in old + young[:3]:
+                (w.dir / sub / name).write_text("id=x\r\n")
+        w.tick(3)
+        assert all((w.dir / "res" / name).exists() for name in old)             # not at every pass: once an hour
+        w.advance(3601)
+        w.wait(lambda: not any((w.dir / sub / name).exists() for sub in ("res", "done") for name in old), 5, "the old files to be deleted")
+        left = [name for sub in ("res", "done") for name in young if not (w.dir / sub / name).exists()]
+        assert not left and w.h.ping(), f"deleted although younger than 24 h or not an order id: {left}"
+
+
+@test("E7", "pont: an order the hands have already taken (slow OrderSend) is waited for: the brain gets the real answer, never 'pas de "
+            "reponse' for an order that is being executed", covers="L18")
+def e_slow(W):
+    with W() as w:
+        w.h.alive()
+        w.tick(2)
+        w.set(ordersend_delay_ms=1500)
+        r = w.h.send("open", timeout=1.0, symbol="XAUUSD", side="buy", volume="0.0200", sl="4075.23", expire=w.now() + 20)
+        w.set(ordersend_delay_ms=None)
+        w.tick(2)
+        assert r["ok"] and r.get("ticket") == w.robot()[0]["ticket"], f"answer {r} while the broker holds {len(w.robot())} position(s)"
+
+
+@test("I1", "the hands refuse to start with magic number 0, on a netting account, or without their timer (alert in plain words)", covers="L20")
+def i_refuse(W):
+    for kw, text in ((dict(inputs={"InpMagic": 0}), "le numero magique (InpMagic) ne doit pas etre 0"),
+                     (dict(margin_mode=0), "ce compte n'est pas en mode hedging"),
+                     (dict(timer_fail=1), "la minuterie de MT5 n'a pas pu etre lancee")):
+        with W(expect_fail=True, **kw) as w:
+            alerts = w.log("ALERT")
+            assert len(alerts) == 1 and alerts[0].startswith("ClaudeMains ne demarre pas : ") and text in alerts[0], alerts
+            assert not w.trades() and not (w.dir / "account.txt").exists()
+    with W(connected=0, margin_mode=0) as w:                                    # account not loaded at start-up: found out later, nothing is opened
+        w.set(connected=None)
+        w.h.alive()
+        w.wait(lambda: w.h.account()["blocked"] == "compte sans hedging", 8, "blocked")
+        r = w.open("XAUUSD", "buy", 0.02, sl=4075.23)
+        assert not r["ok"] and r["reason"] == "compte sans hedging" and not w.trades(), r
 
 
 # ====================================================================== runner

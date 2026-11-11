@@ -10,6 +10,8 @@
 //                           price.<symbol>=bid,ask
 //                           sym.<symbol>.<prop>=v    stops_level freeze_level trade_mode order_mode vol_min vol_step vol_max
 //                                                    tick_value tick_value_loss leverage
+//                                                    tick_age (the last tick is that many seconds old)
+//                                                    slip (a new position is filled that much worse than the quote)
 //                           retcode=R                every trade request is answered with R (0 = normal behaviour)
 //                           retcode_open / retcode_close / retcode_sltp = R      same, per kind of request
 //                           ordersend_true=1         OrderSend returns true even with a failing retcode
@@ -21,12 +23,24 @@
 //                                                    handler has returned (as OrderSend may return before the terminal
 //                                                    has processed the trade events)
 //                           hold=1                   OnTimer is not called (the real timer only fires once a second)
+//                           drop_sl=1                the broker opens the position but does not keep the stop of the order
+//                           sl_magic0=1              the deals the broker makes itself (stop, target) carry magic number 0
+//                           race=1                   the broker closes the position (as its stop would) and the terminal's
+//                                                    list is refreshed between the EA's own look at the position and the
+//                                                    look CTrade takes before sending a close / modify
+//                           stopped=1                IsStopped() is true: CTrade gives up before sending anything
+//                           margin_mode=0            netting account (2 = hedging, the default)
+//                           timer_fail=1             EventSetTimer fails
+//                           ordersend_delay_ms=N     OrderSend blocks that long (network round trip)
 //                           do.<n>=open SYM buy|sell VOL SL TP MAGIC [COMMENT]   a position opened outside the EA
 //                           do.<n>=close TICKET | balance AMOUNT                 (each n is executed once, in order)
+//                           do.<n>=sltp TICKET SL TP     stop / target changed outside the EA (by hand)
+//                           do.<n>=reticket TICKET       the server gives the position a new ticket (same identifier)
 //   _mock/state.txt       the broker: balance, positions, deals (kept across restarts of the binary, as a broker does)
 //   _mock/globals.txt     the terminal's global variables: written on GlobalVariablesFlush() and at a clean exit only
 //                         (the real terminal saves them when it closes; env MOCK_GV_SAVE=always saves on every change)
-//   _mock/log.txt         Print / SendNotification / Comment / every trade request and its answer
+//   _mock/log.txt         Print / Alert / SendNotification / Comment / every trade request and its answer /
+//                         "PASS n" for every OnTimer call that answered n orders (n > 0)
 //   _mock/ack.txt         seq of the last control fully applied   |   _mock/stop : the binary ends (OnDeinit) when it appears
 // Env: MOCK_MISSING=a,b  symbols the broker does not have; MOCK_CRLF_ONLY=1  FileReadString only ends a line at "\r\n";
 //      MOCK_INPUT_<InpName>=value  another value for an input (test_mains.py rewrites the inputs of the TRANSLATED file).
@@ -85,6 +99,8 @@ struct MkSym
    double bid, ask;
    double swap_long, swap_short;
    bool   hidden;
+   long   tick_age;        // age of the last tick, seconds
+   double slip;            // a new position is filled that much worse than the quote
   };
 static const double MK_USD_EUR = 0.8621;
 static const MkSym MK_DEFAULTS[] = {
@@ -103,7 +119,7 @@ static const MkSym MK_DEFAULTS[] = {
 static const int MK_NSYM = (int)(sizeof MK_DEFAULTS / sizeof *MK_DEFAULTS);
 static MkSym mk_sym[MK_NSYM];
 
-struct MkPos { ulong ticket; string symbol; int type; double volume, price_open, sl, tp, swap; long magic, time; string comment; };
+struct MkPos { ulong ticket; string symbol; int type; double volume, price_open, sl, tp, swap; long magic, time; string comment; ulong ident; };
 struct MkDeal
   {
    ulong  deal, order, position;
@@ -135,6 +151,9 @@ static long   mk_gmt_skew = 0;
 static uint   mk_rc_all = 0, mk_rc_open = 0, mk_rc_close = 0, mk_rc_sltp = 0;
 static bool   mk_send_true = false, mk_lag = false, mk_hold = false;
 static int    mk_term_allowed = 1, mk_mql_allowed = 1, mk_acc_allowed = 1, mk_acc_expert = 1, mk_connected = 1;
+static bool   mk_drop_sl = false, mk_sl_magic0 = false, mk_race = false, mk_stopped = false, mk_timer_fail = false;
+static long   mk_margin_mode = 2, mk_send_delay_ms = 0;
+static int    mk_answers = 0;                  // files moved into claude/res during the running handler
 static std::map<long, string> mk_do;
 // the single CTrade object of the EA (the shim's class has no data members)
 static MqlTradeRequest mk_req = MqlTradeRequest();
@@ -225,7 +244,7 @@ static void mk_save_state()
    string s = mk_fmt("balance=%.2f\nnext_order=%lu\nnext_deal=%lu\nlast_do=%ld\n", mk_balance, mk_next_order, mk_next_deal, mk_last_do);
    for(const MkPos &p : mk_pos)
       s += mk_fmt("P|%lu|%s|%d|%.8g|%.10g|%.10g|%.10g|%.2f|%ld|%ld|", p.ticket, p.symbol.c_str(), p.type, p.volume, p.price_open, p.sl,
-                  p.tp, p.swap, p.magic, p.time) + mk_flat(p.comment) + "\n";
+                  p.tp, p.swap, p.magic, p.time) + mk_flat(p.comment) + mk_fmt("|%lu", p.ident) + "\n";
    for(const MkDeal &d : mk_deals)
       s += mk_fmt("D|%lu|%lu|%lu|%ld|%s|%d|%d|%.8g|%.10g|%.2f|%.2f|%.2f|%.2f|%ld|%ld|", d.deal, d.order, d.position, d.time,
                   d.symbol.c_str(), d.type, d.entry, d.volume, d.price, d.profit, d.swap, d.commission, d.fee, d.magic, d.reason)
@@ -247,7 +266,8 @@ static void mk_load_state()
          std::vector<string> f = mk_split(ln, '|');
          if(f.size() < 12) continue;
          MkPos p = {strtoul(f[1].c_str(), nullptr, 10), f[2], atoi(f[3].c_str()), atof(f[4].c_str()), atof(f[5].c_str()), atof(f[6].c_str()),
-                    atof(f[7].c_str()), atof(f[8].c_str()), atol(f[9].c_str()), atol(f[10].c_str()), f[11]};
+                    atof(f[7].c_str()), atof(f[8].c_str()), atol(f[9].c_str()), atol(f[10].c_str()), f[11],
+                    strtoul(f.size() > 12 ? f[12].c_str() : f[1].c_str(), nullptr, 10)};
          mk_pos.push_back(p);
         }
       else if(ln.compare(0, 2, "D|") == 0)
@@ -397,7 +417,9 @@ bool FileMove(const string src, int, const string dst, int flags)
   {
    struct stat st;
    if(!(flags & FILE_REWRITE) && stat(mk_path(dst).c_str(), &st) == 0) return false;
-   return rename(mk_path(src).c_str(), mk_path(dst).c_str()) == 0;
+   if(rename(mk_path(src).c_str(), mk_path(dst).c_str()) != 0) return false;
+   if(dst.compare(0, 11, "claude\\res\\") == 0) mk_answers++;
+   return true;
   }
 int FileOpen(const string name, int flags, short, uint)
   {
@@ -549,7 +571,7 @@ bool SymbolInfoTick(const string name, MqlTick &k)
    MkSym *s = mk_find(name);
    if(!s) return false;
    k = MqlTick();
-   k.bid = s->bid; k.ask = s->ask; k.time = TimeTradeServer(); k.time_msc = k.time * 1000;
+   k.bid = s->bid; k.ask = s->ask; k.time = TimeTradeServer() - s->tick_age; k.time_msc = k.time * 1000;
    return true;
   }
 static double mk_margin(const MkSym &s, double volume, double price)
@@ -628,7 +650,7 @@ long AccountInfoInteger(ENUM_ACCOUNT_INFO_INTEGER p)
    if(p == ACCOUNT_LOGIN) return 7654321;
    if(p == ACCOUNT_TRADE_MODE) return ACCOUNT_TRADE_MODE_DEMO;
    if(p == ACCOUNT_LEVERAGE) return 500;
-   if(p == ACCOUNT_MARGIN_MODE) return ACCOUNT_MARGIN_MODE_RETAIL_HEDGING;
+   if(p == ACCOUNT_MARGIN_MODE) return mk_margin_mode;
    if(p == ACCOUNT_TRADE_ALLOWED) return mk_acc_allowed;
    if(p == ACCOUNT_TRADE_EXPERT) return mk_acc_expert;
    return 0;
@@ -641,10 +663,10 @@ string AccountInfoString(ENUM_ACCOUNT_INFO_STRING p)
   }
 int TerminalInfoInteger(ENUM_TERMINAL_INFO_INTEGER p) { return p == TERMINAL_TRADE_ALLOWED ? mk_term_allowed : (p == TERMINAL_CONNECTED ? mk_connected : 1); }
 int MQLInfoInteger(ENUM_MQL_INFO_INTEGER p) { return p == MQL_TRADE_ALLOWED ? mk_mql_allowed : 0; }
-bool IsStopped() { return false; }
+bool IsStopped() { return mk_stopped; }
 int GetLastError() { return 0; }
 void ResetLastError() {}
-bool EventSetTimer(int) { mk_timer = true; return true; }
+bool EventSetTimer(int) { if(mk_timer_fail) return false; mk_timer = true; return true; }
 void EventKillTimer() { mk_timer = false; }
 
 static const MkPos *mk_view_find(ulong ticket)
@@ -670,7 +692,8 @@ long PositionGetInteger(ENUM_POSITION_PROPERTY_INTEGER p)
   {
    const MkPos *q = mk_view_find(mk_selected);
    if(!q) return 0;
-   if(p == POSITION_TICKET || p == POSITION_IDENTIFIER) return (long)q->ticket;
+   if(p == POSITION_TICKET) return (long)q->ticket;
+   if(p == POSITION_IDENTIFIER) return (long)q->ident;
    if(p == POSITION_TIME) return q->time;
    if(p == POSITION_TYPE) return q->type == 0 ? POSITION_TYPE_BUY : POSITION_TYPE_SELL;
    if(p == POSITION_MAGIC) return q->magic;
@@ -767,7 +790,7 @@ static void mk_add_deal(const MkPos &p, int type, int entry, double volume, doub
                         const string &comment, ulong order)
   {
    const MkSym *s = mk_find(p.symbol);
-   MkDeal d = {mk_next_deal++, order, p.ticket, (long)TimeTradeServer(), p.symbol, type, entry, volume, price, profit, 0.0,
+   MkDeal d = {mk_next_deal++, order, p.ident, (long)TimeTradeServer(), p.symbol, type, entry, volume, price, profit, 0.0,
                s ? -mk_round2(s->commission_lot * volume) : 0.0, s ? -mk_round2(s->fee_lot * volume) : 0.0, magic, reason, comment};
    if(d.commission == 0.0) d.commission = 0.0;             // no "-0.00"
    if(d.fee == 0.0) d.fee = 0.0;
@@ -777,8 +800,9 @@ static void mk_add_deal(const MkPos &p, int type, int entry, double volume, doub
 static ulong mk_open(const MkSym &s, int type, double volume, double sl, double tp, long magic, const string &comment, long reason,
                      double &price)
   {
-   price = (type == 0) ? s.ask : s.bid;
-   MkPos p = {mk_next_order++, s.name, type, volume, price, sl, tp, 0.0, magic, (long)TimeTradeServer(), comment};
+   price = (type == 0) ? s.ask + s.slip : s.bid - s.slip;
+   MkPos p = {mk_next_order++, s.name, type, volume, price, sl, tp, 0.0, magic, (long)TimeTradeServer(), comment, 0};
+   p.ident = p.ticket;
    mk_pos.push_back(p);
    mk_add_deal(p, type, 0, volume, price, 0.0, magic, reason, comment, p.ticket);
    mk_changed();
@@ -814,7 +838,7 @@ static void mk_broker_tick()
       if(!hit_sl && !hit_tp) { i++; continue; }
       string c = mk_fmt("[%s %.*f]", hit_sl ? "sl" : "tp", s->digits, hit_sl ? p.sl : p.tp);
       mk_log("BROKER", mk_fmt("position %lu closed by its %s at %.*f", p.ticket, hit_sl ? "stop" : "target", s->digits, px));
-      mk_close(p.ticket, p.volume, px, p.magic, hit_sl ? 4 : 5, c);     // filled at the market price (gap = slippage)
+      mk_close(p.ticket, p.volume, px, mk_sl_magic0 ? 0 : p.magic, hit_sl ? 4 : 5, c);   // filled at the market price (gap = slippage)
      }
   }
 static bool mk_answer(MqlTradeResult &res, uint retcode, const MkSym *s)
@@ -827,6 +851,7 @@ static bool mk_answer(MqlTradeResult &res, uint retcode, const MkSym *s)
 bool OrderSend(const MqlTradeRequest &req, MqlTradeResult &res)
   {
    res = MqlTradeResult();
+   if(mk_send_delay_ms > 0) usleep((useconds_t)mk_send_delay_ms * 1000);
    MkSym *s = mk_find(req.symbol);
    bool ret = false;
    const char *kind = req.action == TRADE_ACTION_SLTP ? "sltp" : (req.position != 0 ? "close" : "open");
@@ -847,7 +872,7 @@ bool OrderSend(const MqlTradeRequest &req, MqlTradeResult &res)
       else if(mk_margin(*s, req.volume, type == 0 ? s->ask : s->bid) > mk_equity() - mk_used_margin()) ret = mk_answer(res, MK_NO_MONEY, s);
       else
         {
-         res.order = mk_open(*s, type, req.volume, req.sl, req.tp, (long)req.magic, req.comment, 3, price);
+         res.order = mk_open(*s, type, req.volume, mk_drop_sl ? 0.0 : req.sl, req.tp, (long)req.magic, req.comment, 3, price);
          res.deal = mk_next_deal - 1; res.volume = req.volume; res.price = price;
          ret = mk_answer(res, MK_DONE, s);
         }
@@ -918,9 +943,24 @@ static bool mk_order_type_check(const string &symbol)       // OrderTypeCheck():
      }
    return true;
   }
+// control race=1: the position disappears at the broker (its stop) and from the terminal's list just before CTrade looks
+static void mk_race_now(ulong ticket)
+  {
+   if(!mk_race) return;
+   for(const MkPos &p : mk_pos)
+      if(p.ticket == ticket)
+        {
+         MkSym *s = mk_find(p.symbol);
+         mk_log("BROKER", mk_fmt("position %lu closed by its stop while the EA was working on it", p.ticket));
+         mk_close(p.ticket, p.volume, s ? (p.type == 0 ? s->bid : s->ask) : p.price_open, p.magic, 4, "[sl]");
+         break;
+        }
+   mk_view = mk_pos;
+  }
 static bool mk_position_open(const string &symbol, ENUM_ORDER_TYPE type, double volume, double price, double sl, double tp,
                              const string &comment)
   {
+   if(IsStopped()) return false;                              // as in Trade.mqh: before ClearStructures()
    mk_clear();
    mk_req.action = TRADE_ACTION_DEAL; mk_req.symbol = symbol; mk_req.magic = mk_magic; mk_req.volume = volume; mk_req.type = type;
    mk_req.price = price; mk_req.sl = sl; mk_req.tp = tp; mk_req.deviation = mk_deviation;
@@ -999,6 +1039,8 @@ bool CTrade::Sell(const double volume, const string symbol, double price, const 
   }
 bool CTrade::PositionModify(const ulong ticket, const double sl, const double tp)
   {
+   if(IsStopped()) return false;
+   mk_race_now(ticket);
    if(!PositionSelectByTicket(ticket)) return false;        // as in Trade.mqh: the previous result is NOT cleared here
    mk_clear();
    mk_req.action = TRADE_ACTION_SLTP; mk_req.position = ticket; mk_req.symbol = PositionGetString(POSITION_SYMBOL);
@@ -1020,12 +1062,16 @@ static bool mk_position_close(const ulong ticket, double volume, const ulong dev
   }
 bool CTrade::PositionClose(const ulong ticket, const ulong deviation)
   {
+   if(IsStopped()) return false;
+   mk_race_now(ticket);
    if(!PositionSelectByTicket(ticket)) return false;
    return mk_position_close(ticket, -1.0, deviation);
   }
 bool CTrade::PositionClosePartial(const ulong ticket, const double volume, const ulong deviation)
   {
+   if(IsStopped()) return false;
    if(!mk_hedging()) return false;
+   mk_race_now(ticket);
    if(!PositionSelectByTicket(ticket)) return false;
    return mk_position_close(ticket, volume, deviation);
   }
@@ -1040,6 +1086,8 @@ static void mk_apply_control()
    for(int i = 0; i < MK_NSYM; i++) { hidden[i] = mk_sym[i].hidden; mk_sym[i] = MK_DEFAULTS[i]; mk_sym[i].hidden = hidden[i]; }
    mk_seq = 0; mk_gmt_skew = 0; mk_rc_all = mk_rc_open = mk_rc_close = mk_rc_sltp = 0;
    mk_send_true = false; mk_term_allowed = mk_mql_allowed = mk_acc_allowed = mk_acc_expert = mk_connected = 1;
+   mk_drop_sl = mk_sl_magic0 = mk_race = mk_stopped = mk_timer_fail = false;
+   mk_margin_mode = 2; mk_send_delay_ms = 0;
    bool lag = false;
    mk_hold = false;
    mk_do.clear();
@@ -1065,6 +1113,13 @@ static void mk_apply_control()
       else if(k == "connected") mk_connected = atoi(v.c_str());
       else if(k == "lag") lag = atoi(v.c_str()) != 0;
       else if(k == "hold") mk_hold = atoi(v.c_str()) != 0;
+      else if(k == "drop_sl") mk_drop_sl = atoi(v.c_str()) != 0;
+      else if(k == "sl_magic0") mk_sl_magic0 = atoi(v.c_str()) != 0;
+      else if(k == "race") mk_race = atoi(v.c_str()) != 0;
+      else if(k == "stopped") mk_stopped = atoi(v.c_str()) != 0;
+      else if(k == "timer_fail") mk_timer_fail = atoi(v.c_str()) != 0;
+      else if(k == "margin_mode") mk_margin_mode = atol(v.c_str());
+      else if(k == "ordersend_delay_ms") mk_send_delay_ms = atol(v.c_str());
       else if(k.compare(0, 3, "do.") == 0) mk_do[atol(k.c_str() + 3)] = v;
       else if(k.compare(0, 6, "price.") == 0)
         {
@@ -1090,6 +1145,8 @@ static void mk_apply_control()
             else if(prop == "tick_value") s.tick_value = x;
             else if(prop == "tick_value_loss") s.tick_value_loss = x;
             else if(prop == "leverage") s.leverage = x;
+            else if(prop == "tick_age") s.tick_age = (long)x;
+            else if(prop == "slip") s.slip = x;
            }
         }
      }
@@ -1118,6 +1175,18 @@ static void mk_apply_control()
                mk_close(t, p.volume, p.type == 0 ? s->bid : s->ask, 0, 0, "");
                break;
               }
+        }
+      else if(a[0] == "sltp" && a.size() >= 4)
+        {
+         for(MkPos &p : mk_pos)
+            if(p.ticket == strtoul(a[1].c_str(), nullptr, 10)) { p.sl = atof(a[2].c_str()); p.tp = atof(a[3].c_str()); }
+         mk_changed();
+        }
+      else if(a[0] == "reticket" && a.size() >= 2)
+        {
+         for(MkPos &p : mk_pos)
+            if(p.ticket == strtoul(a[1].c_str(), nullptr, 10)) p.ticket = mk_next_order++;
+         mk_changed();
         }
       else if(a[0] == "balance" && a.size() >= 2)
         {
@@ -1165,7 +1234,12 @@ int main()
    mk_log("MOCK", "start");
    int rc = OnInit();
    mk_deliver();
-   if(rc != INIT_SUCCEEDED) { mk_log("MOCK", "OnInit failed"); return 3; }
+   if(rc != INIT_SUCCEEDED)                                   // the EA is unloaded (docs: Deinit event, reason REASON_INITFAILED)
+     {
+      OnDeinit(8);
+      mk_log("MOCK", "OnInit failed");
+      return 3;
+     }
    struct stat st;
    while(stat(mk_path("_mock/stop").c_str(), &st) != 0)
      {
@@ -1174,7 +1248,9 @@ int main()
       mk_deliver();
       if(mk_timer && !mk_hold)
         {
+         mk_answers = 0;
          OnTimer();
+         if(mk_answers > 0) mk_log("PASS", std::to_string(mk_answers));
          mk_deliver();
         }
       mk_loops++;

@@ -19,6 +19,7 @@ class FakeHands(threading.Thread):
         for sub in ("cmd", "res", "done"):
             (self.d / sub).mkdir(parents=True, exist_ok=True)
         self.pos, self.next_ticket, self.stop = {}, 1000, False
+        self.delay, self.mute = 0.0, False               # mains lentes (OrderSend qui dure) ; mains qui prennent l'ordre sans répondre
         self.bid, self.ask = 4080.10, 4080.23
         self.export()
 
@@ -29,10 +30,11 @@ class FakeHands(threading.Thread):
 
     def export(self):
         now = int(time.time())
-        self.put("account.txt", f"ea_version=1.00\nea_time_gmt={now}\nserver_time={now + 7200}\nserver_minus_gmt_sec=7200\n"
+        self.put("account.txt", f"ea_version=1.10\nea_time_gmt={now}\nserver_time={now + 7200}\nserver_minus_gmt_sec=7200\n"
                  "balance=1000.00\nequity=1000.00\nmargin=0.00\nmargin_free=1000.00\ncurrency=EUR\nleverage=500\ndemo=1\n"
                  "hedging=1\nserver=FPMarkets-Demo\ntrade_allowed=1\nblocked=\nstart_balance=1000.00\nday_start_balance=1000.00\n"
-                 "max_risk_pct=1.00\nmax_positions=6\nmax_per_symbol=2\ndaily_loss_pct=6.00\nkill_pct=50.00\nmagic=20261110\n")
+                 "day_result=-1.25\nmax_risk_pct=1.00\nmax_notional_x=20.00\nmin_stop_spreads=3.00\nmax_tick_age_sec=10\n"
+                 "max_positions=6\nmax_per_symbol=2\ndaily_loss_pct=6.00\nkill_pct=50.00\nmagic=20261110\n")
         self.put("symbols.csv", "base,name,digits,point,tick_size,tick_value,tick_value_loss,contract_size,vol_min,vol_step,vol_max,"
                  "stops_level,freeze_level,spread_points,bid,ask,tick_time,trade_mode,swap_long,swap_short,swap_mode,swap_3days,"
                  "margin_1lot,ccy_profit,ccy_margin\n"
@@ -42,13 +44,18 @@ class FakeHands(threading.Thread):
         rows = "".join(f"{t},XAUUSD.r,{p['side']},{p['volume']:.4f},{p['price']:.2f},{p['sl']:.2f},{p['tp']:.2f},{self.bid:.2f},0.00,0.00,"
                        f"{now + 7200},0,CM {p['tag']}\n" for t, p in self.pos.items())
         self.put("positions.csv", "ticket,symbol,side,volume,price_open,sl,tp,price_current,profit,swap,time_open,ttl_deadline,comment\n" + rows)
-        self.put("deals.csv", "deal,position,time,symbol,type,entry,volume,price,profit,swap,commission,magic,reason,comment\n")
+        self.put("deals.csv", "deal,position,time,symbol,type,entry,volume,price,profit,swap,commission,fee,magic,reason,comment\n")
         t0 = (now + 7200) // 60 * 60
         self.put("bars_XAUUSD_M1.csv", "time,open,high,low,close,tick_volume,spread\n" + "".join(
             f"{t0 - 60 * (240 - i)},4080.00,4081.00,4079.50,4080.{i % 100:02d},50,13\n" for i in range(240)))
 
     def handle(self, f):
-        raw = f.read_bytes().decode("latin-1")
+        done = self.d / "done" / f.name
+        f.replace(done)                                         # comme les vraies mains : l'ordre quitte cmd/ AVANT d'être exécuté
+        raw = done.read_bytes().decode("latin-1")
+        if self.mute:
+            return
+        time.sleep(self.delay)
         assert "\r\n" in raw                                    # le cerveau écrit des fins de ligne Windows pour MT5
         kv = dict(ln.split("=", 1) for ln in raw.splitlines() if "=" in ln)
         why, extra, a = "", "", kv.get("action")
@@ -87,7 +94,6 @@ class FakeHands(threading.Thread):
         else:
             why = "action inconnue"
         self.put(f"res/{f.stem}.txt", f"id={f.stem}\naction={a}\nok={'0' if why else '1'}\nreason={why}\n{extra}server_time={int(time.time()) + 7200}\n")
-        f.replace(self.d / "done" / f.name)
         self.export()
 
     def run(self):
@@ -109,6 +115,9 @@ def main():
         fake.start()
         h = Hands(d)
         assert h.ea_alive() and h.account()["balance"] == 1000.0 and h.account()["blocked"] == ""
+        a = h.account()                                                                    # les clés ajoutées par les mains 1.10
+        assert (a["day_result"], a["max_notional_x"], a["min_stop_spreads"], a["max_tick_age_sec"]) == (-1.25, 20.0, 3.0, 10), a
+        assert h.deals().empty and "fee" in h.deals().columns
         s = h.symbols()
         assert s.loc["XAUUSD", "name"] == "XAUUSD.r" and s.loc["XAUUSD", "vol_min"] == 0.01 and pd.isna(s.loc["US100", "name"])
         b = h.bars("XAUUSD", "M1")
@@ -124,9 +133,44 @@ def main():
         assert h.modify(r["ticket"], sl=4078.0)["ok"]                                      # le rapprocher -> accepté
         assert h.close(r["ticket"])["ok"] and len(h.positions()) == 0
         assert not h.close(424242)["ok"]
+
+        # un nombre non fini (indicateur sans données) n'est jamais envoyé aux mains
+        n = len(list((Path(d) / "done").glob("*.txt")))
+        for bad in (dict(volume=float("nan"), sl=4075.23), dict(volume=0.05, sl=float("nan")), dict(volume=0.05, sl=4075.23, tp=float("inf"))):
+            r = h.open("XAUUSD", "buy", **bad)
+            assert not r["ok"] and r["reason"].startswith("nombre invalide"), r
+        r = h.modify(1001, sl=float("nan"))
+        assert not r["ok"] and r["reason"].startswith("nombre invalide"), r
+        assert len(list((Path(d) / "done").glob("*.txt"))) == n and not list((Path(d) / "cmd").glob("*.txt"))
+
+        # l'attente d'une ouverture dépasse la validité de l'ordre (expire) d'au moins 10 s
+        class Spy(Hands):
+            def send(self, action, timeout=20.0, **kw):
+                self.seen = (timeout, kw)
+                return {"ok": False}
+        spy = Spy(d)
+        for valid in (20, 45, 5):
+            spy.open("XAUUSD", "buy", 0.05, sl=4075.23, valid_sec=valid)
+            assert spy.seen[0] >= valid + 10 and spy.seen[1]["expire"] - h.account()["server_time"] in (valid - 1, valid, valid + 1), spy.seen
+
+        # mains lentes : l'ordre a été pris (il n'est plus dans cmd/) mais la réponse tarde -> le pont attend la vraie réponse
+        fake.delay = 1.5
+        t0 = time.time()
+        r = h.send("ping", timeout=1.0)
+        assert r["ok"] and r.get("pong") == "1" and time.time() - t0 >= 1.4, r
+        fake.delay = 0.0
+        # mains qui prennent l'ordre et ne répondent jamais : le cerveau est prévenu que l'ordre a peut-être été exécuté
+        fake.mute = True
+        r = h.send("ping", timeout=0.6)
+        assert not r["ok"] and r["taken"] is True and "pris par les mains" in r["reason"], r
+        fake.mute = False
+        assert h.ping()
+
+        # mains arrêtées : l'ordre n'a pas été pris, le pont le retire -> il ne sera jamais exécuté « en retard »
         fake.stop = True
         fake.join(1)
-        assert h.send("ping", timeout=1.0)["reason"] == "pas de réponse des mains" and not list((Path(d) / "cmd").glob("*.txt"))
+        r = h.send("ping", timeout=1.0)
+        assert r["reason"] == "pas de réponse des mains" and r["taken"] is False and not list((Path(d) / "cmd").glob("*.txt")), r
     print("pont : tous les tests passent")
 
 

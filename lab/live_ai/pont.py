@@ -11,10 +11,16 @@ mql5/ClaudeMains.mq5) :
     r = h.open("XAUUSD", "buy", volume=0.05, sl=4051.20, ttl_min=240, tag="pivot")
     h.modify(r["ticket"], sl=4055.00);  h.close(r["ticket"])
 
+Les mains (version 1.10) exécutent au plus 5 ordres par seconde et une seule ouverture par seconde ; elles déplacent
+l'ordre dans done/ AVANT de l'exécuter. Une réponse ok=False peut porter un ticket : la position a été ouverte puis
+refermée d'office (glissement trop fort, stop non posé par le courtier). Après une réponse "taken": True (ordre pris mais
+resté sans réponse), relire positions() avant de renvoyer l'ordre.
+
 Test du branchement (aucun ordre n'est passé) :   python3 pont.py
 """
 import glob
 import itertools
+import math
 import os
 import sys
 import time
@@ -84,6 +90,9 @@ class Hands:
         for k in ("ea_time_gmt", "server_time", "server_minus_gmt_sec", "leverage", "demo", "hedging", "trade_allowed",
                   "max_positions", "max_per_symbol"):
             a[k] = int(a[k])
+        for k, conv in (("day_result", float), ("max_notional_x", float), ("min_stop_spreads", float), ("max_tick_age_sec", int)):
+            if k in a:                               # clés ajoutées par les mains 1.10
+                a[k] = conv(a[k])
         return a
 
     def ea_alive(self, max_age=30):
@@ -122,12 +131,8 @@ class Hands:
     def alive(self):
         self._put("brain_alive.txt", f"time_gmt={int(time.time())}\r\n")
 
-    def send(self, action, timeout=20.0, **kw):
-        """Envoie un ordre aux mains et attend leur réponse : dict avec ok (bool), reason, et selon l'ordre
-        ticket, price, volume, sl... Si les mains ne répondent pas à temps : ok=False, reason="pas de réponse"."""
-        cid = f"{int(time.time() * 1000):013d}_{next(self._ids):04d}"
-        lines = [f"action={action}"] + [f"{k}={v}" for k, v in kw.items() if v is not None]
-        self._put(f"cmd/{cid}.txt", "\r\n".join(lines) + "\r\n")
+    def _answer(self, cid, timeout):
+        """Attend la réponse res/<id>.txt au plus `timeout` secondes ; None si elle n'est pas venue."""
         res, t0 = self.dir / "res" / f"{cid}.txt", time.time()
         while time.time() - t0 < timeout:
             if res.exists():
@@ -141,11 +146,29 @@ class Hands:
                         r[k] = float(r[k])
                 return r
             time.sleep(0.2)
-        try:                                           # jamais d'ordre « en retard » : on le retire s'il n'a pas été pris
+        return None
+
+    def send(self, action, timeout=20.0, **kw):
+        """Envoie un ordre aux mains et attend leur réponse : dict avec ok (bool), reason, et selon l'ordre
+        ticket, price, volume, sl... Sans réponse à temps : ok=False et
+          taken=False, reason="pas de réponse des mains" : l'ordre a été retiré, il ne sera jamais exécuté ;
+          taken=True : les mains avaient déjà pris l'ordre et n'ont pas répondu ; il a PEUT-ÊTRE été exécuté."""
+        cid = f"{int(time.time() * 1000):013d}_{next(self._ids):04d}"
+        lines = [f"action={action}"] + [f"{k}={v}" for k, v in kw.items() if v is not None]
+        self._put(f"cmd/{cid}.txt", "\r\n".join(lines) + "\r\n")
+        r = self._answer(cid, timeout)
+        if r is not None:
+            return r
+        try:                                           # jamais d'ordre « en retard » : on le retire...
             (self.dir / "cmd" / f"{cid}.txt").unlink()
-        except FileNotFoundError:
-            pass
-        return {"id": cid, "action": action, "ok": False, "reason": "pas de réponse des mains"}
+            return {"id": cid, "action": action, "ok": False, "taken": False, "reason": "pas de réponse des mains"}
+        except OSError:                                # ... sauf s'il n'est plus là : les mains l'ont pris (elles le déplacent
+            pass                                       # dans done/ AVANT de l'exécuter) et sont en train de l'exécuter
+        r = self._answer(cid, timeout)                 # on attend donc encore leur réponse
+        if r is not None:
+            return r
+        return {"id": cid, "action": action, "ok": False, "taken": True,
+                "reason": "ordre pris par les mains mais resté sans réponse : relire positions() avant de le renvoyer"}
 
     def ping(self):
         return self.send("ping", timeout=10).get("pong") == "1"
@@ -153,15 +176,21 @@ class Hands:
     def open(self, symbol, side, volume, sl, tp=0.0, ttl_min=0, tag="", valid_sec=20):
         """Ordre au marché avec stop obligatoire. Les mains réduisent la taille au risque maximum autorisé.
         ttl_min : durée de vie maximale de la position (les mains la ferment même si le cerveau s'arrête)."""
+        if not all(math.isfinite(float(x)) for x in (volume, sl, tp)):
+            return {"action": "open", "ok": False, "reason": "nombre invalide (volume, sl ou tp) : ordre non envoyé"}
         expire = int(self.account()["server_time"]) + valid_sec
-        return self.send("open", symbol=symbol, side=side, volume=f"{volume:.4f}", sl=repr(float(sl)), tp=repr(float(tp)),
-                         ttl_min=int(ttl_min), tag=str(tag)[:20], expire=expire)
+        # on attend plus longtemps que la validité de l'ordre : passé `expire` les mains le refusent, donc une absence de
+        # réponse après ce délai veut vraiment dire « pas exécuté »
+        return self.send("open", timeout=max(20.0, valid_sec + 10), symbol=symbol, side=side, volume=f"{volume:.4f}",
+                         sl=repr(float(sl)), tp=repr(float(tp)), ttl_min=int(ttl_min), tag=str(tag)[:20], expire=expire)
 
     def close(self, ticket, volume=0.0):
         return self.send("close", ticket=int(ticket), volume=f"{volume:.4f}")
 
     def modify(self, ticket, sl=None, tp=None):
         """Le stop ne peut que se rapprocher du prix (les mains refusent sinon) ; l'objectif est libre."""
+        if not all(math.isfinite(float(x)) for x in (sl, tp) if x is not None):
+            return {"action": "modify", "ok": False, "reason": "nombre invalide (sl ou tp) : ordre non envoyé"}
         return self.send("modify", ticket=int(ticket), sl=None if sl is None else repr(float(sl)),
                          tp=None if tp is None else repr(float(tp)))
 

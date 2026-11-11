@@ -264,3 +264,10 @@ const int SYMBOL_ORDER_MARKET = 1, SYMBOL_ORDER_LIMIT = 2, SYMBOL_ORDER_STOP = 4
           SYMBOL_ORDER_TP = 32, SYMBOL_ORDER_CLOSEBY = 64;
 void GlobalVariablesFlush();
 bool MathIsValidNumber(double number);
+
+// --- added for ClaudeMains.mq5 v1.10 (signatures and values read on the documentation pages, 2026-11-11):
+// docs/constants/errorswarnings/enum_trade_return_codes : TRADE_RETCODE_MARKET_CLOSED = 10018 "Market is closed"
+// (the other built-ins v1.10 newly uses were already declared above and were re-read on their pages: FileIsExist, FileDelete,
+//  Alert, bool EventSetTimer, ArrayResize with reserve_size, StringReplace, POSITION_IDENTIFIER, TERMINAL_CONNECTED,
+//  GlobalVariablesFlush, MathIsValidNumber, SYMBOL_ORDER_MODE / SYMBOL_ORDER_SL = 16)
+const uint TRADE_RETCODE_MARKET_CLOSED = 10018;
