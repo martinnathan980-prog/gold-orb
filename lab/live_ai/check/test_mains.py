@@ -12,6 +12,8 @@ One line per test:  PASS / FAIL.  A title ending in {H2 S1 L11} names the findin
 (lab/results/live/veille_2026-11-11.json) that the test covers: it failed on version 1.00 of the EA and passes since 1.10
 (`-k H2` runs the tests of a finding).  A test can still be marked xfail="id" for a defect that is known and not yet
 corrected (XFAIL = fails as reported, XPASS = passes now: remove the mark); none is at the moment.
+The tests of section 11 fail on version 1.10 and pass since 1.11: {R9} the permanent stop follows deposits and withdrawals,
+{TICK} stops and targets are put on the market's tick size.
 Exit code 0 only if every test that should pass passes.
 
 Inputs: the translation turns `input` variables into constants; here their initial values are wrapped, in the
@@ -36,7 +38,14 @@ Standard Library's Trade.mqh; it is not MetaTrader):
     against TimeTradeServer(), i.e. the computer's clock), a stop not kept by the broker (drop_sl), a position that
     disappears between two looks (race), stop / target deals carrying magic number 0 (sl_magic0; reported on forums, not
     in the documentation), a position ticket changed by the server (reticket), an OrderSend that blocks (ordersend_delay_ms),
-    global variables purged after 4 weeks (the test deletes the mock's globals.txt).
+    global variables purged after 4 weeks (the test deletes the mock's globals.txt);
+  * for version 1.11: that a deposit / withdrawal appears in the history as a DEAL_TYPE_BALANCE deal whose amount is in
+    DEAL_PROFIT (the documentation lists the type but does not say where the amount is; forum code reads DEAL_PROFIT), that
+    deal tickets grow with time (the hands remember the last ticket counted), whether such an operation raises
+    OnTradeTransaction (the tests cover both: balance_quiet), and whether the real terminal can show the new balance BEFORE
+    the deal is in the history it gives to HistorySelect (then a withdrawal below the stop level would still be taken for a
+    loss: the imitation always shows both together); that a real server refuses a stop off the tick size (the imitation
+    does, 10016) and accepts every multiple of it.
 """
 import argparse
 import calendar
@@ -394,9 +403,9 @@ def e_account(W):
         a = w.h.account()
         assert (a["balance"], a["equity"], a["margin"], a["margin_free"]) == (1000.0, 1000.0, 0.0, 1000.0), a
         assert (a["currency"], a["leverage"], a["demo"], a["hedging"], a["trade_allowed"]) == ("EUR", 500, 1, 1, 1), a
-        assert (a["start_balance"], a["day_start_balance"]) == (1000.0, 1000.0), a
+        assert (a["start_balance"], a["kill_level"], a["day_start_balance"]) == (1000.0, 500.0, 1000.0), a
         assert (a["max_risk_pct"], a["max_positions"], a["max_per_symbol"], a["daily_loss_pct"], a["kill_pct"]) == (1.0, 6, 2, 6.0, 50.0), a
-        assert a["magic"] == str(MAGIC) and a["ea_version"] == "1.10" and a["server"] == "FPMarketsSC-Demo", a
+        assert a["magic"] == str(MAGIC) and a["ea_version"] == "1.11" and a["server"] == "FPMarketsSC-Demo", a
         assert (a["day_result"], a["max_notional_x"], a["min_stop_spreads"], a["max_tick_age_sec"]) == (0.0, 20.0, 3.0, 10), a
         assert abs(a["ea_time_gmt"] - time.time()) <= 3 and abs(a["server_time"] - w.now()) <= 3, a
         assert abs(a["server_minus_gmt_sec"] - w.ctl["server_offset"]) <= 1, a
@@ -1128,7 +1137,7 @@ def k_kill(W):
         w.tick(2)
         w.untouched(hand)
         n = w.log("NOTIFY")
-        assert len(n) == 2 and n[0].startswith("Robot Claude : ARRET DEFINITIF : fonds ") and n[0].endswith("capital de depart 1000.00. Tout est ferme."), n
+        assert len(n) == 2 and n[0].startswith("Robot Claude : ARRET DEFINITIF : fonds ") and n[0].endswith("capital de reference 1000.00. Tout est ferme."), n
         bal = w.state()["balance"]
         assert 470 < bal < 490 and w.h.account()["start_balance"] == 1000.0, bal
         r = w.open("XAUUSD", "buy", 0.01, sl=3775.13)
@@ -1785,7 +1794,8 @@ def d_withdrawal(W):
         w.advance(61)
         w.tick(3)
         a = w.h.account()
-        assert a["blocked"] == "" and [p["ticket"] for p in w.robot()] == [t] and not w.log("NOTIFY"), (a, w.log("NOTIFY"))
+        assert a["blocked"] == "" and [p["ticket"] for p in w.robot()] == [t], a
+        assert w.log("NOTIFY") == ["Robot Claude : Retrait de 100.00 : capital de reference 900.00, arret definitif a 450.00."], w.log("NOTIFY")
         assert (a["balance"], a["day_start_balance"], a["day_result"]) == (899.95, 900.0, -0.27), a
 
 
@@ -2091,6 +2101,387 @@ def o_naked_cap(W):
         r = w.modify(t, sl=4072.23)                                             # 8.00 from the open price: 13.80 EUR, cap 10 x 1.25 = 12.50
         assert not r["ok"] and r["reason"] == "position sans stop : le stop demande depasse la limite de risque", r
         assert w.modify(t, sl=4073.23)["ok"] and w.pos(t)["sl"] == 4073.23      # 7.00: 12.08 EUR, inside
+
+# ====================================================================== 11. version 1.11
+# {R9} the permanent stop follows deposits and withdrawals: reference = max(reference + amount, funds right after the operation)
+def grow(w, to):
+    """a position opened and closed by hand wins or loses until the balance is about `to` (no deposit); returns the balance"""
+    bal = w.state()["balance"]
+    t = w.outside("XAUUSD.r", "buy", 0.5)
+    move = (to - bal) / (50 * (0.8621 if to > bal else 0.8625))                 # EUR for 1.00 of price on 0.5 lot
+    w.set({"price.XAUUSD.r": f"{4080.23 + move:.2f},{4080.36 + move:.2f}"})
+    w.do(f"close {t}")
+    w.set({"price.XAUUSD.r": "4080.10,4080.23"})
+    w.tick(2)
+    return w.state()["balance"]
+
+
+def sink(w, funds):
+    """with 0.5 lot of gold bought by hand at 4080.23 still open, the price falls until the funds are about `funds`"""
+    eq = w.state()["balance"] + sum(-0.13 * 100 * 0.8625 * p["volume"] for p in w.state()["positions"] if p["symbol"] == "XAUUSD.r")
+    bid = 4080.10 - (eq - funds) / (50 * 0.8625)
+    w.set({"price.XAUUSD.r": f"{bid:.2f},{bid + 0.13:.2f}"})
+    w.tick(3)
+
+
+def ops(w):
+    """the deposits and withdrawals the hands have counted, from their log (the push itself may be dropped by the limits)"""
+    return [p.split("ClaudeMains: ", 1)[1] for p in w.log("PRINT") if p.startswith(("ClaudeMains: Depot de ", "ClaudeMains: Retrait de "))]
+
+
+KILLED = "arret definitif (-50 %)"
+
+
+@test("K7", "withdrawing the gains does not move the permanent stop: 1000 grown to 1300, the gains withdrawn -> reference 1000, stop at 500; "
+            "account.txt (kill_level), the chart and one push notification say so", covers="R9")
+def k_withdraw_gains(W):
+    with W() as w:
+        w.h.alive()
+        bal = grow(w, 1300)
+        assert 1290 < bal < 1300, bal
+        gains = round(bal - 1000, 2)
+        w.do(f"balance {-gains:.2f}")
+        w.tick(3)
+        a = w.h.account()
+        assert (a["balance"], a["equity"], a["start_balance"], a["kill_level"], a["blocked"]) == (1000.0, 1000.0, 1000.0, 500.0, ""), a
+        assert w.log("NOTIFY") == [f"Robot Claude : Retrait de {gains:.2f} : capital de reference 1000.00, arret definitif a 500.00."], w.log("NOTIFY")
+        assert "capital de reference : 1000.00   arret definitif a : 500.00" in (w.mock / "comment.txt").read_text()
+        w.outside("XAUUSD.r", "buy", 0.5)
+        sink(w, 520)
+        assert w.h.account()["blocked"] == "", w.h.account()                    # 520 left: above the stop
+        sink(w, 480)
+        w.wait(lambda: w.h.account()["blocked"] == KILLED, 8, "the permanent stop under 500")
+
+
+@test("K8", "withdrawing most of the account is not a loss: 1000 grown to 3000, 2600 withdrawn (about 400 left) -> no permanent stop, the "
+            "robot's position stays open; the reference is what the account holds, the stop is at half of it and still works", covers="R9")
+def k_withdraw_most(W):
+    with W() as w:
+        w.h.alive()
+        bal = grow(w, 3000)
+        t = w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)["ticket"]           # commission 0.05, floating result -0.22
+        w.do("balance -2600")
+        w.tick(3)
+        w.advance(61)
+        w.tick(3)
+        a = w.h.account()
+        left = round(bal - 2600 - 0.05 - 0.22, 2)
+        assert a["blocked"] == "" and [p["ticket"] for p in w.robot()] == [t] and not w.notes("ARRET"), (a, w.log("NOTIFY"))
+        assert 390 < left < 400 and abs(a["equity"] - left) < 0.011 and abs(a["start_balance"] - left) < 0.011, (left, a)
+        assert abs(a["kill_level"] - left / 2) < 0.011 and abs(a["balance"] - 0.22 - a["start_balance"]) < 0.011, (left, a)
+        assert len(w.notes("Retrait de 2600.00 : capital de reference ")) == 1, w.log("NOTIFY")
+        w.outside("XAUUSD.r", "buy", 0.5)
+        w.set({"price.XAUUSD.r": "4077.00,4077.13"})                            # about 250 left: above the stop (about 199)
+        w.tick(3)
+        assert w.h.account()["blocked"] == "", w.h.account()
+        w.set({"price.XAUUSD.r": "4075.40,4075.53"})                            # about 180 left
+        w.wait(lambda: w.h.account()["blocked"] == KILLED, 3, "the permanent stop at half of what was left after the withdrawal")
+        assert w.notes("ARRET")[0].endswith(f"capital de reference {a['start_balance']:.2f}. Tout est ferme."), w.notes("ARRET")
+
+
+@test("K9", "a deposit after a loss: 1000 down to 700, 300 deposited -> reference 1300, permanent stop at 650 (not at 500 any more)", covers="R9")
+def k_deposit_after_loss(W):
+    with W() as w:
+        w.h.alive()
+        bal = grow(w, 700)
+        assert 690 < bal < 700, bal
+        w.do("balance 300")
+        w.tick(3)
+        a = w.h.account()
+        assert (a["balance"], a["start_balance"], a["kill_level"], a["blocked"]) == (round(bal + 300, 2), 1300.0, 650.0, ""), a
+        assert w.log("NOTIFY") == ["Robot Claude : Depot de 300.00 : capital de reference 1300.00, arret definitif a 650.00."], w.log("NOTIFY")
+        w.outside("XAUUSD.r", "buy", 0.5)
+        sink(w, 670)
+        assert w.h.account()["blocked"] == "", w.h.account()
+        sink(w, 630)
+        w.wait(lambda: w.h.account()["blocked"] == KILLED, 8, "the permanent stop under 650")
+        assert w.notes("ARRET")[0].endswith("capital de reference 1300.00. Tout est ferme."), w.notes("ARRET")
+
+
+@test("K10", "a deposit after gains: 1000 grown to 1500, 500 deposited -> the reference is what the account holds (2000), stop at 1000", covers="R9")
+def k_deposit_after_gain(W):
+    with W() as w:
+        w.h.alive()
+        bal = grow(w, 1500)
+        assert 1490 < bal < 1500, bal
+        w.do("balance 500")
+        w.tick(3)
+        a = w.h.account()
+        assert (a["balance"], a["start_balance"], a["blocked"]) == (round(bal + 500, 2), round(bal + 500, 2), ""), (bal, a)
+        assert abs(a["kill_level"] - (bal + 500) / 2) < 0.006, a
+        assert ops(w) and ops(w)[0].startswith(f"Depot de 500.00 : capital de reference {bal + 500:.2f}, arret definitif a "), ops(w)
+
+
+AFTER_600 = ["Robot Claude : Retrait de 600.00 : capital de reference 400.00, arret definitif a 200.00."]
+
+
+@test("K11", "a withdrawal that takes the funds under the stop level, made while the hands were not running, or of which nothing tells them, "
+             "or while the history cannot be read: never a permanent stop; the reference follows once the history shows the withdrawal",
+      covers="R9")
+def k_withdraw_unseen(W):
+    with W() as w:                                                              # MetaTrader closed, 600 of the 1000 withdrawn, reopened
+        w.h.alive()
+        w.stop()
+        w.do("balance -600")
+        w.start()
+        w.h.alive()
+        w.tick(3)
+        a = w.h.account()
+        assert (a["balance"], a["blocked"], a["start_balance"], a["kill_level"]) == (400.0, "", 400.0, 200.0), (a, w.log("NOTIFY"))
+        assert w.log("NOTIFY") == AFTER_600 and not (w.files / "ClaudeMains_arret.txt").exists(), w.log("NOTIFY")
+    with W() as w:                                                              # the hands run but no trade event tells them
+        w.h.alive()
+        w.tick(2)
+        w.set(balance_quiet=1)
+        w.do("balance -600")
+        w.wait(lambda: w.h.account()["balance"] == 400.0, 8, "account.txt to show the withdrawal")
+        w.tick(2)
+        a = w.h.account()
+        assert (a["blocked"], a["start_balance"], a["kill_level"]) == ("", 400.0, 200.0) and w.log("NOTIFY") == AFTER_600, (a, w.log("NOTIFY"))
+    with W() as w:                                                              # ... and the history cannot be read at that moment
+        w.h.alive()
+        w.tick(2)
+        w.set(balance_quiet=1, history_fail=1)
+        w.do("balance -600")
+        w.wait(lambda: w.h.account()["balance"] == 400.0, 8, "account.txt to show the withdrawal")
+        w.tick(3)
+        a = w.h.account()
+        assert (a["blocked"], a["start_balance"]) == ("", 1000.0) and not w.log("NOTIFY"), (a, w.log("NOTIFY"))      # nothing is concluded
+        w.set(history_fail=None)
+        w.wait(lambda: w.h.account()["start_balance"] == 400.0, 8, "the reference to follow once the history can be read")
+        a = w.h.account()
+        assert (a["blocked"], a["kill_level"]) == ("", 200.0) and w.log("NOTIFY") == AFTER_600, (a, w.log("NOTIFY"))
+        w.set(history_fail=1)                                                   # a real loss while the history cannot be read:
+        w.outside("XAUUSD.r", "buy", 0.5)
+        sink(w, 150)
+        w.advance(6)
+        assert w.h.account()["blocked"] == "", w.h.account()                    # the question is put again at every pass...
+        w.set(history_fail=None)
+        w.wait(lambda: w.h.account()["blocked"] == KILLED, 8, "the permanent stop as soon as the history can be read again")
+        return "while HistorySelect fails the permanent stop is not set (it cannot be told from a withdrawal); it is set at the first pass where it works"
+
+
+@test("K12", "an operation is counted once: not the deposit that funded the account before the first start, not again after a restart, a "
+             "crash, a reconnection or the next look at the history; three operations in the same second are each counted", covers="R9")
+def k_once(W):
+    one = ["Depot de 100.00 : capital de reference 1600.00, arret definitif a 800.00."]
+    with W(**{"do.1": "balance 500 3600"}) as w:                                # the account was funded an hour before the first start
+        w.ndo = 1
+        w.h.alive()
+        w.tick(3)
+        a = w.h.account()
+        assert (a["balance"], a["start_balance"], a["kill_level"]) == (1500.0, 1500.0, 750.0) and not ops(w), (a, ops(w))
+        w.do("balance 100")
+        w.tick(3)
+
+        def same(what):
+            w.h.alive()
+            w.tick(3)
+            w.wait(lambda: w.h.account()["balance"] == 1600.0, 8, "the account")
+            a = w.h.account()
+            assert (a["start_balance"], a["kill_level"], a["blocked"]) == (1600.0, 800.0, "") and ops(w) == one, (what, a, ops(w))
+        same("the deposit")
+        w.stop()
+        w.start()
+        same("a restart")
+        w.kill()
+        w.start()
+        same("a crash")
+        w.set(connected=0)
+        w.tick(2)
+        w.set(connected=None)
+        same("a reconnection")
+        w.advance(61)
+        same("the next look at the history")
+        w.set({"do.3": "balance 200", "do.4": "balance -50", "do.5": "balance 25"})      # the three in the same pass of the broker
+        w.ndo = 5
+        w.tick(3)
+        three = one + ["Depot de 200.00 : capital de reference 1800.00, arret definitif a 900.00.",
+                       "Retrait de 50.00 : capital de reference 1750.00, arret definitif a 875.00.",
+                       "Depot de 25.00 : capital de reference 1775.00, arret definitif a 887.50."]
+        assert ops(w) == three and w.h.account()["start_balance"] == 1775.0, (ops(w), w.h.account())
+        w.kill()
+        w.start()
+        w.h.alive()
+        w.tick(3)
+        assert ops(w) == three and w.h.account()["start_balance"] == 1775.0, (ops(w), w.h.account())
+        pushed = [n for n in w.log("NOTIFY") if "capital de reference" in n]
+        assert 1 <= len(pushed) <= 4 and len(set(pushed)) == len(pushed), pushed
+    with W(history_empty=1, **{"do.1": "balance 500 3600"}) as w:               # first start before the terminal shows the history
+        w.ndo = 1
+        w.h.alive()
+        w.tick(2)
+        assert w.h.account()["start_balance"] == 1500.0
+        w.set(history_empty=None)                                               # the funding deposit appears afterwards
+        w.tick(2)
+        w.advance(61)
+        w.tick(3)
+        assert w.h.account()["start_balance"] == 1500.0 and not ops(w), (w.h.account(), ops(w))
+        w.do("balance 100")
+        w.tick(3)
+        assert w.h.account()["start_balance"] == 1600.0 and ops(w) == one, (w.h.account(), ops(w))
+
+
+@test("K13", "a deposit made after the permanent stop: the reference kept in ClaudeMains_arret.txt follows, it is still right when "
+             "MetaTrader has forgotten its global variables, and the deposit is not counted again", covers="R9")
+def k_file_follows(W):
+    with W() as w:
+        lose(w, 3780.00)
+        w.wait(lambda: w.h.account()["blocked"] == KILLED, 3, "the kill switch")
+        w.wait(lambda: not w.robot(), 3, "the robot's positions to be closed")
+        kf = w.files / "ClaudeMains_arret.txt"
+        assert kf.read_text().strip() == "start=1000.00"
+        w.do("balance 1000")
+        w.tick(3)
+        a = w.h.account()
+        assert (a["blocked"], a["start_balance"], a["kill_level"]) == (KILLED, 2000.0, 1000.0), a
+        assert kf.read_text().strip() == "start=2000.00", kf.read_text()
+        w.stop()
+        (w.mock / "globals.txt").unlink()                                       # MetaTrader has purged its global variables
+        w.set(server_offset=w.ctl["server_offset"] + 30 * 86400)
+        w.start()
+        w.h.alive()
+        w.tick(3)
+        a = w.h.account()
+        assert (a["blocked"], a["start_balance"]) == (KILLED, 2000.0) and len(ops(w)) == 1, (a, ops(w))
+
+
+@test("K14", "InpStartBalance (1500) is the reference at the first start, then follows deposits and withdrawals like any other; an honoured "
+             "InpResetLocks restarts from the current capital and forgets the operations made before it", covers="R9")
+def k_startbalance_follows(W):
+    with W(inputs={"InpStartBalance": 1500}) as w:
+        w.h.alive()
+        w.tick(2)
+        a = w.h.account()
+        assert (a["balance"], a["start_balance"], a["kill_level"]) == (1000.0, 1500.0, 750.0), a
+        w.do("balance 300")
+        w.tick(3)
+        a = w.h.account()
+        assert (a["start_balance"], a["kill_level"]) == (1800.0, 900.0), a
+        w.do("balance -100")
+        w.tick(3)
+        a = w.h.account()
+        assert (a["balance"], a["start_balance"], a["kill_level"], a["blocked"]) == (1200.0, 1700.0, 850.0, ""), a
+        w.stop()
+        w.do("balance 200")                                                     # deposited before the reset
+        w.start(inputs={"InpResetLocks": "true"})
+        w.h.alive()
+        w.tick(3)
+        a = w.h.account()
+        assert (a["balance"], a["start_balance"], a["kill_level"]) == (1400.0, 1400.0, 700.0) and len(ops(w)) == 2, (a, ops(w))
+        w.do("balance 50")
+        w.tick(3)
+        assert w.h.account()["start_balance"] == 1450.0 and len(ops(w)) == 3, (w.h.account(), ops(w))
+
+
+@test("K15", "a deposit while a position is open: 'the funds right after the operation' are the funds the hands read when they count it, "
+             "floating result included", covers="R9")
+def k_floating(W):
+    with W() as w:
+        w.h.alive()
+        w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)
+        w.set({"price.XAUUSD.r": "4130.10,4130.23"})                            # +85.99 floating
+        w.tick(2)
+        w.do("balance 100")
+        w.tick(3)
+        a = w.h.account()
+        assert a["balance"] == 1099.95 and abs(a["equity"] - 1185.94) < 0.011, a
+        assert abs(a["start_balance"] - 1185.94) < 0.011 and abs(a["kill_level"] - 1185.94 / 2) < 0.011, a      # max(1000 + 100, 1185.94)
+    with W() as w:
+        w.h.alive()
+        w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)
+        w.set({"price.XAUUSD.r": "4076.10,4076.23"})                            # -7.12 floating
+        w.tick(2)
+        w.do("balance 100")
+        w.tick(3)
+        a = w.h.account()
+        assert abs(a["equity"] - 1092.83) < 0.011 and (a["start_balance"], a["kill_level"]) == (1100.0, 550.0), a   # max(1000 + 100, 1092.83)
+
+
+@test("K16", "only deposits and withdrawals move the reference: a charge, a correction, a credit, a bonus and the robot's own trades do not",
+      covers="R9")
+def k_only_balance(W):
+    with W() as w:
+        w.h.alive()
+        for op in ("balance -30 0 4", "balance 10 0 5", "balance 500 0 3", "balance 500 0 6"):
+            w.do(op)
+        t = w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)["ticket"]
+        assert w.shut(t)["ok"]
+        w.advance(61)
+        w.tick(3)
+        a = w.h.account()
+        assert a["balance"] == round(980 - 0.10 - 0.22, 2) and (a["start_balance"], a["kill_level"]) == (1000.0, 500.0) and not ops(w), (a, ops(w))
+        w.do("balance 100")
+        w.tick(3)
+        a = w.h.account()
+        assert (a["start_balance"], a["kill_level"]) == (1100.0, 550.0) and len(ops(w)) == 1, (a, ops(w))
+
+
+# {TICK} stops and targets on the market's tick size: the US100 quoted in steps of 0.25 (two digits, point 0.01); the tick values
+# are per tick, so they are scaled with the tick size. The imitation refuses a stop that is not on the step (10016).
+TICK25 = {"sym.NAS100.tick_size": 0.25, "sym.NAS100.tick_value": 0.008621 * 25, "sym.NAS100.tick_value_loss": 0.008625 * 25}
+
+
+@test("T1", "a market quoted in steps of 0.25: a stop and a target that are not on the step are sent on the nearest step and accepted; "
+            "the answer, the volume and the risk are those of the stop really placed; a stop already on the step is unchanged", covers="TICK")
+def t_open(W):
+    with W(**TICK25) as w:
+        w.h.alive()
+        assert w.h.symbols().loc["US100", "tick_size"] == 0.25
+        r = w.must_open("US100", "buy", 0.1, sl=24950.10, tp=25100.13)          # ask 25001.50; rounded down / up
+        p = w.pos(r["ticket"])
+        assert (r["sl"], p["sl"], p["tp"]) == (24950.0, 24950.0, 25100.25), (r, p)
+        assert r["risk_money"] == 4.44, r                                       # 206 steps x 0.215625 x 0.1 lot (4.43 with the stop as asked)
+        assert " sl=24950 tp=25100.25 " in w.trades("open")[0], w.trades("open")
+        s = w.must_open("US100", "sell", 0.1, sl=25050.13, tp=24900.38)         # bid 25000.00; rounded up
+        q = w.pos(s["ticket"])
+        assert (s["sl"], q["sl"], q["tp"], s["risk_money"]) == (25050.25, 25050.25, 24900.5, 4.33), (s, q)
+        assert w.shut(r["ticket"])["ok"]
+        g = w.must_open("US100", "buy", 0.1, sl=24950.25, tp=25100.5)           # already on the step: unchanged
+        assert (g["sl"], w.pos(g["ticket"])["sl"], w.pos(g["ticket"])["tp"]) == (24950.25, 24950.25, 25100.5), g
+        assert len(w.trades("open")) == 3 and all("retcode=10009" in t for t in w.trades("open")), w.trades("open")
+    with W(**TICK25) as w:                                                      # the volume is sized on the stop really placed
+        w.h.alive()
+        r = w.must_open("US100", "buy", 5.0, sl=24943.60)                       # -> 24943.50, 58.00 away: 50.03 EUR a lot, 0.1 lot
+        assert (r["sl"], r["volume"], r["risk_money"]) == (24943.5, 0.1, 5.0), r    # (57.90 away would give 0.2 lot: 10.005 EUR at 24943.50)
+    with W(**{"sym.NAS100.tick_size": 0}) as w:                                 # a market without a tick size: refused, as before
+        w.h.alive()
+        r = w.open("US100", "buy", 0.1, sl=24950.10)
+        assert not r["ok"] and r["reason"] == "risque impossible a calculer" and not w.trades(), r
+
+
+@test("T2", "a market quoted in steps of 0.25: a modify is put on the step before every check (the stop may only move closer); the answer "
+            "shows what is really placed", covers="TICK")
+def t_modify(W):
+    with W(**TICK25) as w:
+        w.h.alive()
+        t = w.must_open("US100", "buy", 0.1, sl=24950.0)["ticket"]
+        r = w.modify(t, sl=24960.10, tp=25200.38)
+        assert r["ok"] and (r["sl"], r["tp"]) == (24960.0, 25200.5) and (w.pos(t)["sl"], w.pos(t)["tp"]) == (24960.0, 25200.5), (r, w.pos(t))
+        n = len(w.trades("sltp"))
+        r = w.modify(t, sl=24959.95)                                            # on the step: the stop already in place, nothing to send
+        assert r["ok"] and r["sl"] == 24960.0 and len(w.trades("sltp")) == n, r
+        r = w.modify(t, sl=24959.80)                                            # on the step: 24959.75, further from the price
+        assert not r["ok"] and r["reason"] == "le stop ne peut que se rapprocher du prix" and w.pos(t)["sl"] == 24960.0, r
+        r = w.modify(t, sl=24970.25)                                            # already on the step: unchanged
+        assert r["ok"] and r["sl"] == 24970.25 and (w.pos(t)["sl"], w.pos(t)["tp"]) == (24970.25, 25200.5), (r, w.pos(t))
+        s = w.must_open("US100", "sell", 0.1, sl=25050.25)["ticket"]
+        r = w.modify(s, sl=25040.13, tp=24800.12)
+        assert r["ok"] and (r["sl"], r["tp"]) == (25040.25, 24800.0) and (w.pos(s)["sl"], w.pos(s)["tp"]) == (25040.25, 24800.0), (r, w.pos(s))
+        assert len(w.trades("sltp")) == n + 2 and all("retcode=10009" in x for x in w.trades("sltp")), w.trades("sltp")
+
+
+@test("T3", "a market quoted in steps of 0.25 where the broker does not keep the stop of the order: the stop the hands put back is on the "
+            "step too", covers="TICK")
+def t_putback(W):
+    if LAG:
+        return "not applicable with --lag: the hands do not see the new position in the pass that opened it (see O24)"
+    with W(drop_sl=1, **TICK25) as w:
+        w.h.alive()
+        r = w.must_open("US100", "buy", 0.1, sl=24950.10)
+        assert w.pos(r["ticket"])["sl"] == 24950.0 and len(w.trades("sltp")) == 1, (w.pos(r["ticket"]), w.trades("sltp"))
+        assert " sl=24950 " in w.trades("sltp")[0] and "retcode=10009" in w.trades("sltp")[0], w.trades("sltp")
+
 
 # ====================================================================== runner
 def run_one(binary, keep, item):
