@@ -240,3 +240,32 @@ account size from which it works.
 reference: winning weeks / days / months, each year, worst day and week, maximum drawdown. A profile is offered to
 the user only if: winning weeks ≥ reference + 8 points; worst week and maximum drawdown ≤ 1.25 × the reference's;
 total profit > 0. No re-tuning after the look.
+
+### Addendum D — clarification of 2026-11-11 (late evening), after the independent attack and BEFORE any 2022+ result
+Two reviewers and a verifier re-implemented the rule (identical trades, no look-ahead found) and attacked the
+evidence (`results/r2/fx/tokyo_review.json`). Nothing below changes the frozen rule or the pass criteria as coded.
+1. **Units.** In the criteria, t, PF and "years positive" are computed on R = P&L / stop distance
+   (`goldlab.metrics.report`), the mean is in basis points. On a fixed lot the same trades have t 2.04 at 0.95 bp
+   (2.34 at 0.71): the in-sample bar is met in R only.
+2. **Sample.** About 270 trades in 2022–2025 (68, 69, 67, 66 by calendar), not 290.
+3. **How to read the look.** After correcting for the variants examined before the freeze, the in-sample t is worth
+   about 1.8 to 2.7, not 3.06. Power of the registered look: about two thirds if the edge is intact, a quarter to a
+   half realistically; false pass 2–6 %. A pass means "not contradicted"; a fail is final. "Mechanism visible but
+   net fails" closes the idea, and no ten-minute version will be tested afterwards (the profit is a late-morning
+   drift that is not specific to settlement days; the fixing leg only pays the cost).
+4. **Cost rule, fixed before the cost is measured.** The measured cost is the HIGHER of two readings: the first
+   session, and a settlement-day morning (Friday 13 November 2026, 00:50–01:00 UTC). If it is above 1.10 bp, the
+   1.20 row passes in sample only thanks to the trade of 24 June 2016 (t 2.32 without it) and **the look is not
+   spent on B6**. The fallback B7 stays as registered, with the same test (its in-sample pass at the measured cost
+   must survive the removal of its best trade).
+5. **A pass is not a go-live.** One minute late fails in sample (entry 09:56 at 0.95 bp: t 2.14). The order must be
+   sent on a timer at 09:54:58–09:55:00 Tokyo; the loss inside the first seconds (32 days measured: none within
+   1 s, about 0.3 bp at 2–5 s) is to be measured on every in-sample day before any live order. Size: risk about 2 %
+   of equity against the 3 × ATR stop, at most 0.10 lot. Order of magnitude, in sample: about 50 EUR a year on
+   1,000 EUR; 0.3 point of winning days for the portfolio.
+6. **Citation.** Krohn, Mueller and Whelan cover all days on 1999–2019 with a longer window and report a decay since
+   2013; the settlement-day restriction and the two-hour exit are the lab's own choices; outside the paper's sample
+   the evidence is t 1.7 on 138 trades (2020–2021).
+7. **Diagnostics printed by the same single run, declared here as NON-criteria:** t on a fixed lot (basis points);
+   the result without the trades of 25 December (a retail broker is closed that day); entry at 09:54 and at 09:56
+   (execution sensitivity; no variant can be adopted from them).

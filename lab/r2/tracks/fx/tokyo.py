@@ -6,6 +6,7 @@ cover at market at 11:55 Tokyo, disaster stop 3 x ATR(24) of hourly bars.  Fallb
 on gotobi days or Fridays.  Tokyo has no daylight saving time: 09:55 Tokyo = 00:55 UTC.
 
     python3 r2/tracks/fx/tokyo.py is       # in sample (2013-2021) on a grid of all-in costs; nothing after 2021 is read
+    python3 r2/tracks/fx/tokyo.py dry B6_tokyo_gotobi 0.95     # the validation code path on the in-sample frame (dry run)
     python3 r2/tracks/fx/tokyo.py val B6_tokyo_gotobi 0.95     # the lead's single look, at the measured cost (logged)
 """
 import json
@@ -99,13 +100,13 @@ def _eval(name, params, bp, base, log=False, null=False):
     if null:
         nt = r2.null_test(SYM, make_orders, params, n_seeds=200, mode="time")
         out["null_percentile"] = nt.get("percentile")
-        out["null_mean_R"] = nt.get("null_mean")
+        out["null_mean_R"] = nt.get("null_mean_R")
     return ev, out
 
 
 def run_is():
     base = C.load_is(SYM)
-    res = {"sym": SYM, "frame_cost_bp": FRAME_BP, "rules": RULES, "boj_days_skipped_is": int(sum(d < pd.Timestamp("2022-01-01") and d >= pd.Timestamp("2013-01-01") for d in BOJ)),
+    res = {"sym": SYM, "frame_cost_bp": FRAME_BP, "rules": RULES, "gotobi_days_skipped_for_boj_is": len(set(gotobi("2013-01-01", "2022-01-01")) & BOJ),
            "grid": {}}
     for name, params in RULES.items():
         res["grid"][name] = []
@@ -153,36 +154,56 @@ def mechanism(mid, start, end):
     return out
 
 
-def run_val(name, bp):
-    """The lead's single look at 2022-2025 (addendum D), at the measured all-in cost `bp`. Logged."""
+def run_val(name, bp, period="val"):
+    """period="val": the lead's single look at 2022-2025 (addendum D and its clarification), at the measured all-in
+    cost `bp`; logged. period="is": the same code path on the in-sample frame (dry run, nothing logged or saved)."""
     bp = float(bp)
+    val = period == "val"
+    a, b = ("2022-01-01", "2026-01-01") if val else ("2013-01-01", "2022-01-01")
     params = RULES[name]
     r2.free()
-    base = r2.load(SYM)
+    base = r2.load(SYM) if val else C.load_is(SYM)
     f = at_cost(base, bp)
     lab = f"{name}:lead_single_look:cost_{bp:g}bp"
-    t = gl.cut(simulate(f, make_orders(f, **params), sym=SYM, costs=r2.costs(SYM), no_overlap=True), "val", track="fx", label=lab)
-    fs = apply_spread_mult(f, 1.5)
-    ts = gl.cut(simulate(fs, make_orders(fs, **params), sym=SYM, costs=r2.costs(SYM, 1.5), no_overlap=True), "val", track="fx", label=lab + ":stress")
+
+    def cut(t, suffix=""):
+        return gl.cut(t, "val", track="fx", label=lab + suffix) if val else gl.cut(t, "is")
+
+    def sim(frame, prm, stress=1.0):
+        return simulate(frame, make_orders(frame, **prm), sym=SYM, costs=r2.costs(SYM, stress), no_overlap=True)
+
+    t = cut(sim(f, params))
+    ts = cut(sim(apply_spread_mult(f, 1.5), params, 1.5), ":stress")
     r = report(t)
     bp_net = t.pnl / t.entry * 1e4
     day = t.entry_time.dt.tz_convert("UTC").dt.tz_localize(None).dt.normalize()
     by_day = bp_net.groupby(day).sum()
     wo_best = bp_net.drop(bp_net.idxmax())
     yp, yn = (int(x) for x in r["years_pos"].split("/"))
-    mech = mechanism((base.bo + base.ao) / 2, "2022-01-01", "2026-01-01")
-    c = {"mean>0": float(bp_net.mean()) > 0, "t>=1.5": r["t_stat"] >= 1.5, "pf>=1.06": r["pf"] >= 1.06, "years_pos>=3/4": yp >= 3,
+    mech = mechanism((base.bo + base.ao) / 2, a, b)
+    c = {"mean>0": float(bp_net.mean()) > 0, "t>=1.5": r["t_stat"] >= 1.5, "pf>=1.06": r["pf"] >= 1.06, "years_pos>=75%": yp >= 0.75 * yn,
          "positive_without_best_day": float(wo_best.mean()) > 0,
          "mechanism_t>=3": (mech["bank_days"]["t"] or 0) >= 3,
          "absent_on_holidays": (mech["holidays"]["t"] is None) or mech["holidays"]["t"] < 2}
     c["pass"] = all(c.values())
-    out = {"name": name, "cost_bp": bp, "params": params, "val": {k: r.get(k) for k in ("n", "pf", "t_stat", "expectancy_R", "total_R", "years_pos", "by_year_R", "win_rate")},
+    # diagnostics declared as NON-criteria in the clarification of addendum D
+    diag = {"t_on_bp_fixed_lot": round(float(bp_net.mean() / bp_net.std(ddof=1) * math.sqrt(len(bp_net))), 2)}
+    x25 = t[~((t.entry_time.dt.month == 12) & (t.entry_time.dt.day == 25))]
+    r25 = report(x25)
+    diag["without_25_december"] = {"n": r25["n"], "pf": r25["pf"], "t": r25["t_stat"], "net_bp": round(float((x25.pnl / x25.entry).mean() * 1e4), 2)}
+    for e in ("09:54", "09:56"):
+        td = cut(sim(f, dict(params, entry=e)), ":diag_entry_" + e)
+        rd = report(td)
+        diag["entry_" + e] = {"n": rd["n"], "pf": rd["pf"], "t": rd["t_stat"], "net_bp": round(float((td.pnl / td.entry).mean() * 1e4), 2)}
+    out = {"name": name, "period": period, "cost_bp": bp, "params": params,
+           "result": {k: r.get(k) for k in ("n", "pf", "t_stat", "expectancy_R", "total_R", "years_pos", "by_year_R", "win_rate")},
            "net_bp_per_trade": round(float(bp_net.mean()), 2), "net_bp_without_best_day": round(float(wo_best.mean()), 2),
            "best_day": str(by_day.idxmax().date()), "stress": {k: report(ts).get(k) for k in ("pf", "expectancy_R", "t_stat")},
-           "mechanism_val": mech, "criteria": c}
-    t[[k for k in ("side", "entry_time", "exit_time", "entry", "exit", "stop", "reason", "pnl", "risk", "R") if k in t.columns]].to_parquet(
-        os.path.join(C.OUT, f"trades_{name}_val.parquet"))
-    C.save(out, f"tokyo_val_{name}.json")
+           "mechanism": mech, "criteria": c, "diagnostics_not_criteria": diag}
+    if val:
+        t[[k for k in ("side", "entry_time", "exit_time", "entry", "exit", "stop", "reason", "pnl", "risk", "R") if k in t.columns]].to_parquet(
+            os.path.join(C.OUT, f"trades_{name}_val.parquet"))
+        C.save(out, f"tokyo_val_{name}.json")
     print(json.dumps(out, indent=1, default=str))
     r2.free()
     return out
@@ -193,3 +214,5 @@ if __name__ == "__main__":
         run_is()
     elif sys.argv[1] == "val":
         run_val(sys.argv[2], sys.argv[3])
+    elif sys.argv[1] == "dry":                     # same code path on the in-sample frame, nothing logged
+        run_val(sys.argv[2], sys.argv[3], period="is")

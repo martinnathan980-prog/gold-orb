@@ -1,0 +1,29 @@
+{
+ "label": "portage (funding carry, long spot / short perpetual, BTC and ETH)",
+ "script": "lab/r2/tracks/carry/funding.py (full results: lab/results/r2/carry/funding_carry.json)",
+ "data": {
+  "binance_public_archive": "https://data.binance.vision (futures/um fundingRate monthly 2020-01..2026-10, spot + perp + markPrice 1h klines, 1m on event days)",
+  "okx_public_api": "https://www.okx.com/api/v5/public/funding-rate-history (2026-08-10..2026-11-11; used for 2026-11-01..10; corr with Binance 0.57 BTC / 0.66 ETH per print, same mean)",
+  "ecb": "https://data-api.ecb.europa.eu (EXR D.USD.EUR, EST euro short-term rate)",
+  "blocked": "fapi.binance.com and api.binance.com return HTTP 451, api.bybit.com 403, bitmex 403 from this machine",
+  "period": "2020-01-01 .. 2026-11-10 (2026 = 314 days, figures annualised)"
+ },
+ "headline_BTC_ETH_5050_USD_terms": {
+  "off5x_gross": {"green_days": 80.7, "green_weeks": 89.7, "green_months": 92.8, "annual_pct": 9.91, "worst_day": -7.25, "worst_week": -6.76, "maxdd": -7.51},
+  "off5x_offshore_taker": {"green_days": 77.6, "green_weeks": 86.9, "annual_pct": 8.86},
+  "eu2x_gross": {"green_days": 80.7, "green_weeks": 89.7, "annual_pct": 8.22, "worst_day": -3.64, "maxdd": -3.86},
+  "eu2x_eu_taker": {"green_days": 72.8, "green_weeks": 79.4, "annual_pct": 6.04},
+  "by_year_annual_pct_off5x_gross": {"2023": 6.8, "2024": 10.98, "2025": 4.29, "2026": 2.22},
+  "by_year_green_weeks_off5x_gross": {"2023": 98.1, "2024": 94.3, "2025": 98.1, "2026": 71.7},
+  "2026_eu2x": {"gross_annual_pct": 1.78, "eu_taker_annual_pct": 0.70, "green_weeks_gross": 71.7, "green_weeks_eu_taker": 54.3}
+ },
+ "eur_account": {
+  "unhedged_off5x_gross": {"green_days": 61.6, "green_weeks": 61.6, "maxdd": -12.24, "2025_pct": -7.79},
+  "hedged_long_EURUSD_at_FP_2.03pct_yr_off5x_gross": {"green_weeks": 81.3, "2025": {"annual_pct": 2.2, "green_weeks": 88.7}, "2026": {"annual_pct": 0.17, "green_weeks": 56.5}},
+  "hedged_eu2x_eu_taker": {"2025": {"annual_pct": -0.08, "green_weeks": 54.7}, "2026": {"annual_pct": -1.32, "green_weeks": 43.5}}
+ },
+ "zero_edge_control_funding_set_to_0": {"green_days": 50.2, "green_weeks": 46.8, "annual_pct_gross": -0.57, "annual_pct_eu_taker": -2.57, "green_weeks_eu_taker": 27.3},
+ "benchmarks": {"estr_mean_pct": {"2020": -0.547, "2021": -0.568, "2022": -0.007, "2023": 3.205, "2024": 3.645, "2025": 2.178, "2026": 2.099}, "estr_2026_11_10": 2.442,
+   "livret_A": "1.7 %/yr tax free, 2026-08-01..2027-01-31 (https://www.moneyvox.fr/placement/actualites/111060/livret-a-assurance-vie-lep-compte-a-terme-le-barometre-de-votre-epargne-sans-risque-en-novembre-2026)",
+   "stablecoin_yield_regulated_EU": "none: MiCA bars issuers and CASPs from paying interest on e-money tokens; Coinbase ended USDC rewards for EEA on 2024-12-01 (https://crypto.news/coinbase-will-end-usdc-rewards-for-eu-clients-due-to-mica/)"}
+}

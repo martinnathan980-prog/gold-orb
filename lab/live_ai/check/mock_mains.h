@@ -15,6 +15,8 @@
 //                           ordersend_true=1         OrderSend returns true even with a failing retcode
 //                           terminal_trade_allowed=0 the "Algo Trading" button is off (also mql_/account_trade_allowed,
 //                                                    account_trade_expert)
+//                           connected=0              the terminal has no connection yet: balance / equity / margin read 0
+//                                                    (ASSUMPTION, not verified on a real terminal), requests answer 10031
 //                           lag=1                    the terminal's list of positions is refreshed only after the running
 //                                                    handler has returned (as OrderSend may return before the terminal
 //                                                    has processed the trade events)
@@ -132,7 +134,7 @@ static double mk_server_offset = 7200.0;
 static long   mk_gmt_skew = 0;
 static uint   mk_rc_all = 0, mk_rc_open = 0, mk_rc_close = 0, mk_rc_sltp = 0;
 static bool   mk_send_true = false, mk_lag = false, mk_hold = false;
-static int    mk_term_allowed = 1, mk_mql_allowed = 1, mk_acc_allowed = 1, mk_acc_expert = 1;
+static int    mk_term_allowed = 1, mk_mql_allowed = 1, mk_acc_allowed = 1, mk_acc_expert = 1, mk_connected = 1;
 static std::map<long, string> mk_do;
 // the single CTrade object of the EA (the shim's class has no data members)
 static MqlTradeRequest mk_req = MqlTradeRequest();
@@ -614,6 +616,7 @@ static double mk_used_margin()
   }
 double AccountInfoDouble(ENUM_ACCOUNT_INFO_DOUBLE p)
   {
+   if(!mk_connected) return 0.0;
    if(p == ACCOUNT_BALANCE) return mk_balance;
    if(p == ACCOUNT_EQUITY) return mk_equity();
    if(p == ACCOUNT_MARGIN) return mk_used_margin();
@@ -636,7 +639,7 @@ string AccountInfoString(ENUM_ACCOUNT_INFO_STRING p)
    if(p == ACCOUNT_SERVER) return "FPMarketsSC-Demo";
    return "FP Markets (mock)";
   }
-int TerminalInfoInteger(ENUM_TERMINAL_INFO_INTEGER p) { return p == TERMINAL_TRADE_ALLOWED ? mk_term_allowed : 1; }
+int TerminalInfoInteger(ENUM_TERMINAL_INFO_INTEGER p) { return p == TERMINAL_TRADE_ALLOWED ? mk_term_allowed : (p == TERMINAL_CONNECTED ? mk_connected : 1); }
 int MQLInfoInteger(ENUM_MQL_INFO_INTEGER p) { return p == MQL_TRADE_ALLOWED ? mk_mql_allowed : 0; }
 bool IsStopped() { return false; }
 int GetLastError() { return 0; }
@@ -829,6 +832,7 @@ bool OrderSend(const MqlTradeRequest &req, MqlTradeResult &res)
    const char *kind = req.action == TRADE_ACTION_SLTP ? "sltp" : (req.position != 0 ? "close" : "open");
    uint forced = mk_rc_all ? mk_rc_all : (req.action == TRADE_ACTION_SLTP ? mk_rc_sltp : (req.position != 0 ? mk_rc_close : mk_rc_open));
    if(!mk_term_allowed || !mk_mql_allowed || !mk_acc_allowed || !mk_acc_expert) { res.retcode = MK_CLIENT_DISABLES_AT; ret = false; }
+   else if(!mk_connected) ret = mk_answer(res, 10031, s);
    else if(forced) ret = mk_answer(res, forced, s);
    else if(!s) ret = mk_answer(res, MK_INVALID, s);
    else if(req.action == TRADE_ACTION_DEAL && req.position == 0)
@@ -1035,7 +1039,7 @@ static void mk_apply_control()
    bool hidden[MK_NSYM];
    for(int i = 0; i < MK_NSYM; i++) { hidden[i] = mk_sym[i].hidden; mk_sym[i] = MK_DEFAULTS[i]; mk_sym[i].hidden = hidden[i]; }
    mk_seq = 0; mk_gmt_skew = 0; mk_rc_all = mk_rc_open = mk_rc_close = mk_rc_sltp = 0;
-   mk_send_true = false; mk_term_allowed = mk_mql_allowed = mk_acc_allowed = mk_acc_expert = 1;
+   mk_send_true = false; mk_term_allowed = mk_mql_allowed = mk_acc_allowed = mk_acc_expert = mk_connected = 1;
    bool lag = false;
    mk_hold = false;
    mk_do.clear();
@@ -1058,6 +1062,7 @@ static void mk_apply_control()
       else if(k == "mql_trade_allowed") mk_mql_allowed = atoi(v.c_str());
       else if(k == "account_trade_allowed") mk_acc_allowed = atoi(v.c_str());
       else if(k == "account_trade_expert") mk_acc_expert = atoi(v.c_str());
+      else if(k == "connected") mk_connected = atoi(v.c_str());
       else if(k == "lag") lag = atoi(v.c_str()) != 0;
       else if(k == "hold") mk_hold = atoi(v.c_str()) != 0;
       else if(k.compare(0, 3, "do.") == 0) mk_do[atol(k.c_str() + 3)] = v;

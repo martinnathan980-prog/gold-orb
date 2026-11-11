@@ -1,0 +1,112 @@
+{
+ "brk72_24h_wd__btcusd": {
+  "n_saved_net": 645,
+  "n_rerun_net": 645,
+  "rerun_net_identical": true,
+  "sum_R_saved_net": 172.87,
+  "sum_R_rerun_net": 172.87,
+  "n_gross": 644,
+  "sum_R_gross": 189.65,
+  "mean_R_net": 0.268,
+  "mean_R_gross": 0.2945
+ },
+ "nq_btc_follow__btcusd": {
+  "n_saved_net": 1063,
+  "n_rerun_net": 1063,
+  "rerun_net_identical": true,
+  "sum_R_saved_net": 66.35,
+  "sum_R_rerun_net": 66.35,
+  "n_gross": 1063,
+  "sum_R_gross": 98.07,
+  "mean_R_net": 0.0624,
+  "mean_R_gross": 0.0923
+ },
+ "F1_brk_ridge_filter__btcusd": {
+  "n_saved_net": 631,
+  "n_rerun_net": 631,
+  "rerun_net_identical": true,
+  "sum_R_saved_net": 226.39,
+  "sum_R_rerun_net": 226.39,
+  "n_gross": 631,
+  "sum_R_gross": 243.15,
+  "mean_R_net": 0.3588,
+  "mean_R_gross": 0.3853
+ },
+ "brk72_24h_wd__ethusd": {
+  "n_saved_net": 519,
+  "n_rerun_net": 519,
+  "rerun_net_identical": true,
+  "sum_R_saved_net": 103.69,
+  "sum_R_rerun_net": 103.69,
+  "n_gross": 517,
+  "sum_R_gross": 128.98,
+  "mean_R_net": 0.1998,
+  "mean_R_gross": 0.2495
+ },
+ "F1_brk_ridge_filter__ethusd": {
+  "n_saved_net": 517,
+  "n_rerun_net": 517,
+  "rerun_net_identical": true,
+  "sum_R_saved_net": 104.41,
+  "sum_R_rerun_net": 104.41,
+  "n_gross": 516,
+  "sum_R_gross": 137.74,
+  "mean_R_net": 0.2019,
+  "mean_R_gross": 0.2669
+ },
+ "noise30__us100": {
+  "n_saved_net": 1643,
+  "n_rerun_net": 1643,
+  "rerun_net_identical": true,
+  "sum_R_saved_net": 134.4,
+  "sum_R_rerun_net": 134.4,
+  "n_gross": 1643,
+  "sum_R_gross": 163.04,
+  "mean_R_net": 0.0818,
+  "mean_R_gross": 0.0992
+ },
+ "ocm4__us100": {
+  "n_saved_net": 999,
+  "n_rerun_net": 999,
+  "rerun_net_identical": true,
+  "sum_R_saved_net": 136.88,
+  "sum_R_rerun_net": 136.88,
+  "n_gross": 999,
+  "sum_R_gross": 156.03,
+  "mean_R_net": 0.137,
+  "mean_R_gross": 0.1562
+ },
+ "GOLD_FRI_PM__xauusd": {
+  "n_saved_net": 414,
+  "n_rerun_net": 414,
+  "rerun_net_identical": true,
+  "sum_R_saved_net": 13.92,
+  "sum_R_rerun_net": 13.92,
+  "n_gross": 432,
+  "sum_R_gross": 21.02,
+  "mean_R_net": 0.0336,
+  "mean_R_gross": 0.0486
+ },
+ "donch4h_stop__xauusd": {
+  "n_saved_net": 495,
+  "n_rerun_net": 495,
+  "rerun_net_identical": true,
+  "sum_R_saved_net": 84.24,
+  "sum_R_rerun_net": 84.24,
+  "n_gross": 494,
+  "sum_R_gross": 106.45,
+  "mean_R_net": 0.1702,
+  "mean_R_gross": 0.2155
+ },
+ "orb_asia_2d_buf10__xauusd": {
+  "n_saved_net": 1039,
+  "n_rerun_net": 1038,
+  "rerun_net_identical": false,
+  "sum_R_saved_net": 230.07,
+  "sum_R_rerun_net": 227.96,
+  "n_gross": 1039,
+  "sum_R_gross": 306.14,
+  "mean_R_net": 0.2214,
+  "mean_R_gross": 0.2946
+ }
+}

@@ -1,0 +1,59 @@
+construction,config,kind,green_days,green_weeks,red_in_greens,total,worst_day,worst_week,zero_edge_green_days,scale,total_at_ref_worst_week,pct_of_ref_profit,worst_day_scaled
+"(a) exit shaping, ten rules",base,gross,50.9,61.2,0.47,964.4,-7.56,-12.24,41.7,1.0,964.0,100,-7.6
+"(a) exit shaping, ten rules",base,net,49.7,58.3,0.53,788.4,-7.72,-12.58,41.7,1.0,788.0,100,-7.7
+"(a) exit shaping, ten rules",T0.5_S1,gross,55.0,64.1,0.71,441.9,-6.44,-11.34,52.4,1.0793650793650793,477.0,49,-7.0
+"(a) exit shaping, ten rules",T0.5_S1,net,50.3,58.3,0.77,228.0,-6.59,-11.61,52.4,1.0835486649440138,247.0,31,-7.1
+"(a) exit shaping, ten rules",T0.5_S3,gross,57.9,59.7,0.93,394.9,-10.41,-11.42,57.9,1.0718038528896672,423.0,44,-11.2
+"(a) exit shaping, ten rules",T0.5_S3,net,54.6,57.3,0.99,196.1,-10.65,-11.67,57.9,1.0779777206512424,211.0,27,-11.5
+"(a) exit shaping, ten rules",T0.3_S3,gross,59.2,58.3,1.07,260.2,-10.01,-11.35,60.5,1.0784140969162996,281.0,29,-10.8
+"(a) exit shaping, ten rules",T0.3_S3,net,55.1,51.9,1.17,41.0,-11.05,-12.06,60.5,1.043117744610282,43.0,5,-11.5
+"(a) exit shaping, ten rules",T0.2_S3,gross,60.9,62.0,1.23,174.7,-10.31,-12.99,62.8,0.9422632794457275,165.0,17,-9.7
+"(a) exit shaping, ten rules",T0.2_S3,net,56.1,51.2,1.37,-53.0,-10.36,-13.24,62.8,0.9501510574018127,-50.0,-6,-9.8
+"(a) exit shaping, ten rules",T0.2_S3_eve,gross,60.8,61.0,1.19,169.9,-10.31,-10.77,61.2,1.136490250696379,193.0,20,-11.7
+"(a) exit shaping, ten rules",T0.2_S3_eve,net,55.8,51.7,1.38,-56.1,-10.44,-11.77,61.2,1.0688190314358539,-60.0,-8,-11.2
+"(b) intraday martingale (4 rules), ten rules view",ref,gross,50.9,61.2,0.47,964.4,-7.56,-12.24,50.0,1.0,964.0,100,-7.6
+"(b) intraday martingale, the 4 rules alone",ref,gross,46.9,61.5,0.55,243.8,-3.66,-6.38,50.0,1.9184952978056427,468.0,49,-7.0
+"(b) intraday martingale (4 rules), ten rules view",ref,net,49.6,58.3,0.52,787.4,-7.7,-12.54,50.0,1.003189792663477,790.0,100,-7.7
+"(b) intraday martingale, the 4 rules alone",ref,net,44.5,59.5,0.55,193.3,-3.74,-6.81,50.0,1.8472834067547725,357.0,45,-6.9
+"(b) intraday martingale (4 rules), ten rules view",lock0,gross,50.8,59.7,0.48,945.5,-7.56,-12.24,53.7,1.0,946.0,98,-7.6
+"(b) intraday martingale, the 4 rules alone",lock0,gross,49.1,61.0,0.62,224.9,-3.66,-6.38,53.7,1.9184952978056427,431.0,45,-7.0
+"(b) intraday martingale (4 rules), ten rules view",lock0,net,49.5,57.3,0.52,776.1,-7.7,-12.54,53.7,1.003189792663477,779.0,99,-7.7
+"(b) intraday martingale, the 4 rules alone",lock0,net,46.8,57.6,0.62,181.9,-3.74,-6.81,53.7,1.8472834067547725,336.0,43,-6.9
+"(b) intraday martingale (4 rules), ten rules view",rec5_lock0,gross,51.6,61.7,0.49,969.5,-10.02,-12.34,54.4,0.9918962722852512,962.0,100,-9.9
+"(b) intraday martingale, the 4 rules alone",rec5_lock0,gross,50.3,61.5,0.62,248.9,-9.43,-7.26,54.4,1.6859504132231407,420.0,44,-15.9
+"(b) intraday martingale (4 rules), ten rules view",rec5_lock0,net,50.1,57.3,0.53,798.1,-10.25,-12.87,54.4,0.9774669774669775,780.0,99,-10.0
+"(b) intraday martingale, the 4 rules alone",rec5_lock0,net,48.3,59.0,0.63,204.0,-9.62,-7.8,54.4,1.6128205128205129,329.0,42,-15.5
+"(b) intraday martingale (4 rules), ten rules view",dbl4_lock0,gross,53.0,58.7,0.52,1004.0,-10.28,-16.01,56.6,0.764522173641474,768.0,80,-7.9
+"(b) intraday martingale, the 4 rules alone",dbl4_lock0,gross,54.0,60.5,0.74,283.4,-9.72,-10.74,56.6,1.1396648044692737,323.0,33,-11.1
+"(b) intraday martingale (4 rules), ten rules view",dbl4_lock0,net,50.8,55.8,0.55,827.0,-10.63,-16.91,56.6,0.7439384979302188,615.0,78,-7.9
+"(b) intraday martingale, the 4 rules alone",dbl4_lock0,net,52.0,57.6,0.75,232.8,-9.95,-11.37,56.6,1.106420404573439,258.0,33,-11.0
+"(b) intraday martingale (4 rules), ten rules view",dbl8_lock0,gross,53.3,58.7,0.52,1029.1,-14.37,-20.01,56.8,0.6116941529235382,629.0,65,-8.8
+"(b) intraday martingale, the 4 rules alone",dbl8_lock0,gross,54.7,61.0,0.74,308.5,-15.45,-14.74,56.8,0.830393487109905,256.0,27,-12.8
+"(b) intraday martingale (4 rules), ten rules view",dbl8_lock0,net,51.2,56.3,0.55,873.6,-14.67,-20.94,56.8,0.600764087870105,525.0,67,-8.8
+"(b) intraday martingale, the 4 rules alone",dbl8_lock0,net,52.5,58.0,0.73,279.4,-15.83,-15.27,56.8,0.8238375900458416,230.0,29,-13.0
+"(c) one trade a day alone (mom us500 T0.10 S0.60, size 1)",p2_00_mom_us500,gross,81.9,61.0,3.57,28.2,-1.13,-2.28,,5.36842105263158,151.0,16,-6.1
+"(c) one trade a day alone (mom us500 T0.10 S0.60, size 1)",p2_00_mom_us500,net,80.9,57.6,3.64,18.6,-1.14,-2.29,,5.493449781659389,102.0,13,-6.3
+(d) ten rules + s x daily structure,s=5,gross,57.5,63.9,0.61,1106.5,-9.83,-18.35,54.3,0.6670299727520436,738.0,77,-6.6
+(d) ten rules + s x daily structure,s=5,net,55.0,60.5,0.65,881.4,-10.01,-19.21,54.3,0.6548672566371682,577.0,73,-6.6
+(d) ten rules + s x daily structure,s=8,gross,65.0,65.4,0.87,1191.2,-12.83,-23.38,58.6,0.523524379811805,624.0,65,-6.7
+(d) ten rules + s x daily structure,s=8,net,62.5,61.5,0.92,937.0,-13.04,-24.33,58.6,0.5170571311138512,484.0,61,-6.7
+(d) ten rules + s x daily structure,s=12,gross,71.1,69.3,1.25,1304.2,-16.83,-30.1,63.9,0.40664451827242526,530.0,55,-6.8
+(d) ten rules + s x daily structure,s=12,net,68.5,64.9,1.29,1011.2,-17.08,-31.16,63.9,0.4037227214377407,408.0,52,-6.9
+(d) ten rules + s x daily structure,s=20,gross,77.9,68.8,2.03,1530.1,-24.83,-43.54,71.4,0.28112080845199816,430.0,45,-7.0
+(d) ten rules + s x daily structure,s=20,net,76.1,65.9,2.1,1159.7,-25.16,-44.81,71.4,0.2807409060477572,326.0,41,-7.1
+"(e) account daily target, ten rules",none,gross,50.3,62.0,0.49,967.9,-8.37,-11.38,50.0,1.0755711775043937,1041.0,108,-9.0
+"(e) account daily target, ten rules",none,net,48.2,59.5,0.51,791.0,-8.39,-11.83,50.0,1.0633981403212172,841.0,107,-8.9
+"(e) account daily target, ten rules",g3.0,gross,53.8,66.8,0.74,463.6,-7.83,-11.19,51.1,1.093833780160858,507.0,53,-8.6
+"(e) account daily target, ten rules",g3.0,net,51.8,64.9,0.78,328.7,-7.96,-11.53,51.1,1.0910667823070253,359.0,46,-8.7
+"(e) account daily target, ten rules",g2.0,gross,57.8,64.4,0.93,335.8,-7.83,-11.19,53.5,1.093833780160858,367.0,38,-8.6
+"(e) account daily target, ten rules",g2.0,net,55.6,60.5,0.98,221.4,-7.96,-11.53,53.5,1.0910667823070253,242.0,31,-8.7
+"(e) account daily target, ten rules",g1.5,gross,61.4,67.3,1.12,271.5,-7.83,-8.83,56.7,1.3861834654586636,376.0,39,-10.9
+"(e) account daily target, ten rules",g1.5,net,59.5,62.0,1.18,176.3,-7.96,-9.36,56.7,1.3440170940170941,237.0,30,-10.7
+"(e) account daily target, ten rules",g1.0,gross,67.9,64.9,1.56,190.1,-7.43,-9.02,62.9,1.3569844789356986,258.0,27,-10.1
+"(e) account daily target, ten rules",g1.0,net,65.6,58.0,1.67,86.1,-7.59,-9.97,62.9,1.2617853560682046,109.0,14,-9.6
+"(e) account daily target, ten rules",g0.5,gross,77.1,62.9,2.88,66.7,-5.52,-9.21,75.0,1.3289902280130292,89.0,9,-7.3
+"(e) account daily target, ten rules",g0.5,net,75.4,58.5,2.98,13.4,-5.55,-9.97,75.0,1.2617853560682046,17.0,2,-7.0
+"(e) account daily target, ten rules",g0.25,gross,85.8,63.4,5.42,28.0,-5.39,-7.27,84.6,1.6836313617606604,47.0,5,-9.1
+"(e) account daily target, ten rules",g0.25,net,83.5,57.1,5.63,-31.7,-5.49,-9.26,84.6,1.3585313174946005,-43.0,-5,-7.5
+"(e) account daily target, ten rules",g1_L3,gross,67.2,63.9,1.54,180.4,-3.96,-8.62,61.3,1.4199535962877032,256.0,27,-5.6
+"(e) account daily target, ten rules",g1_L3,net,64.8,57.1,1.62,85.7,-4.02,-8.83,61.3,1.4246885617214042,122.0,15,-5.7
