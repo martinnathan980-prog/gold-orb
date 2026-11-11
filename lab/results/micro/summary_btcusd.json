@@ -1,0 +1,102 @@
+[
+ {
+  "move_bp": 10.0,
+  "usd_at_4000": 76.0,
+  "minutes_median": 3.0,
+  "undecidable_pct": 2.5,
+  "no_move_pct": 0.1,
+  "accuracy_all": 0.5229,
+  "auc": 0.5329,
+  "accuracy_best_tenth": 0.563,
+  "needed_optimistic": 0.648,
+  "needed_lab": 0.7105,
+  "net_bp_best_tenth_optimistic": -1.7,
+  "net_bp_best_tenth_lab": -2.95,
+  "best_tenth_trades_per_day": 24.5,
+  "accuracy_best_tenth_by_year": {
+   "2019": 0.557,
+   "2020": 0.581,
+   "2021": 0.548
+  }
+ },
+ {
+  "move_bp": 20.0,
+  "usd_at_4000": 152.0,
+  "minutes_median": 8.0,
+  "undecidable_pct": 0.6,
+  "no_move_pct": 0.4,
+  "accuracy_all": 0.5145,
+  "auc": 0.5202,
+  "accuracy_best_tenth": 0.5394,
+  "needed_optimistic": 0.574,
+  "needed_lab": 0.6053,
+  "net_bp_best_tenth_optimistic": -1.39,
+  "net_bp_best_tenth_lab": -2.64,
+  "best_tenth_trades_per_day": 24.7,
+  "accuracy_best_tenth_by_year": {
+   "2019": 0.533,
+   "2020": 0.552,
+   "2021": 0.533
+  }
+ },
+ {
+  "move_bp": 40.0,
+  "usd_at_4000": 304.0,
+  "minutes_median": 23.0,
+  "undecidable_pct": 0.1,
+  "no_move_pct": 3.4,
+  "accuracy_all": 0.5185,
+  "auc": 0.5261,
+  "accuracy_best_tenth": 0.5615,
+  "needed_optimistic": 0.537,
+  "needed_lab": 0.5526,
+  "net_bp_best_tenth_optimistic": 1.96,
+  "net_bp_best_tenth_lab": 0.71,
+  "best_tenth_trades_per_day": 23.9,
+  "accuracy_best_tenth_by_year": {
+   "2019": 0.553,
+   "2020": 0.59,
+   "2021": 0.526
+  }
+ },
+ {
+  "move_bp": 80.0,
+  "usd_at_4000": 608.0,
+  "minutes_median": 62.0,
+  "undecidable_pct": 0.0,
+  "no_move_pct": 14.7,
+  "accuracy_all": 0.5111,
+  "auc": 0.5188,
+  "accuracy_best_tenth": 0.542,
+  "needed_optimistic": 0.5185,
+  "needed_lab": 0.5263,
+  "net_bp_best_tenth_optimistic": 3.76,
+  "net_bp_best_tenth_lab": 2.51,
+  "best_tenth_trades_per_day": 21.0,
+  "accuracy_best_tenth_by_year": {
+   "2019": 0.491,
+   "2020": 0.658,
+   "2021": 0.494
+  }
+ },
+ {
+  "move_bp": 160.0,
+  "usd_at_4000": 1216.0,
+  "minutes_median": 132.0,
+  "undecidable_pct": 0.0,
+  "no_move_pct": 40.0,
+  "accuracy_all": 0.5263,
+  "auc": 0.5421,
+  "accuracy_best_tenth": 0.559,
+  "needed_optimistic": 0.5092,
+  "needed_lab": 0.5132,
+  "net_bp_best_tenth_optimistic": 15.91,
+  "net_bp_best_tenth_lab": 14.66,
+  "best_tenth_trades_per_day": 15.8,
+  "accuracy_best_tenth_by_year": {
+   "2019": 0.537,
+   "2020": 0.64,
+   "2021": 0.457
+  }
+ }
+]

@@ -74,8 +74,11 @@ def other(sym, index):
     return p.reindex(index, method="ffill", tolerance=pd.Timedelta(minutes=3))
 
 
-def build():
-    m1 = r2.load("xauusd", end="2022-01-01")
+OTHERS = {"xauusd": ("us100", "eurusd", "usdjpy"), "us100": ("xauusd", "eurusd", "usdjpy"), "btcusd": ("us100", "xauusd", "eurusd")}
+
+
+def build(sym="xauusd", barriers=BARRIERS):
+    m1 = r2.load(sym, end="2022-01-01")
     idx = m1.index
     c = ((m1["bc"] + m1["ac"]) / 2)
     h = ((m1["bh"] + m1["ah"]) / 2).to_numpy()
@@ -109,10 +112,10 @@ def build():
     ny = idx.tz_convert(NY)
     F["ny_min"] = ny.hour * 60 + ny.minute
     F["dow"] = ny.dayofweek
-    for sym in ("us100", "eurusd", "usdjpy"):
-        p = other(sym, idx)
+    for o_ in OTHERS[sym]:
+        p = other(o_, idx)
         for n in (1, 5, 15):
-            F[f"{sym}_{n}"] = (p - p.shift(n)) * 1e4 / (sig * 1e4 * np.sqrt(n))
+            F[f"{o_}_{n}"] = (p - p.shift(n)) * 1e4 / (sig * 1e4 * np.sqrt(n))
     # decisions: every STEP minutes between 03:00 and 15:30 New York, Monday to Friday; the trade must end the same trading day
     td = trading_day(idx).asi8
     last_of_day = np.r_[np.flatnonzero(np.diff(td)), len(td) - 1]
@@ -122,15 +125,15 @@ def build():
     X = F.iloc[pos].astype("float32")
     Y = {}
     cv = c.to_numpy()
-    for b in BARRIERS:
+    for b in barriers:
         y, d = passage(cv, h, l, pos.astype(np.int64), end_all[pos].astype(np.int64), b)
         Y[b] = (y, d)
     return X, Y, idx[pos]
 
 
-def study():
+def study(sym="xauusd", BARRIERS=BARRIERS, COST_OPT=COST_OPT, COST_LAB=COST_LAB, first_year=2017, price=4000.0):
     os.makedirs(OUT, exist_ok=True)
-    X, Y, t = build()
+    X, Y, t = build(sym, BARRIERS)
     year = t.year.to_numpy()
     print(f"decision minutes: {len(X)} ({len(X) / len(np.unique(t.date)):.0f} a day), features: {X.shape[1]}", flush=True)
     rows = []
@@ -141,7 +144,7 @@ def study():
         yy = (y[use] == 1).astype(int)
         Xu, yr = X[use], year[use]
         p = np.full(len(yy), np.nan)
-        for Yr in range(2017, 2022):
+        for Yr in range(first_year, 2022):
             tr, te = yr < Yr, yr == Yr
             if tr.sum() > 200_000:                       # enough to learn from, and keeps the fit fast
                 sel = np.random.default_rng(0).choice(np.flatnonzero(tr), 200_000, replace=False)
@@ -158,7 +161,7 @@ def study():
         acc_top = float(((p[te][top] > 0.5) == yy[te][top]).mean())
         days = len(np.unique(t[use][te].date))
         be_opt, be_lab = (b + COST_OPT) / (2 * b), (b + COST_LAB) / (2 * b)
-        rows.append({"move_bp": b, "usd_at_4000": round(b * 0.4, 1), "minutes_median": float(np.median(d[use])),
+        rows.append({"move_bp": b, "usd_at_4000": round(b * price / 1e4, 1), "minutes_median": float(np.median(d[use])),
                      "undecidable_pct": round(100 * amb, 1), "no_move_pct": round(100 * none, 1),
                      "accuracy_all": round(acc, 4), "auc": round(auc, 4), "accuracy_best_tenth": round(acc_top, 4),
                      "needed_optimistic": round(be_opt, 4), "needed_lab": round(be_lab, 4),
@@ -166,10 +169,16 @@ def study():
                      "net_bp_best_tenth_lab": round((2 * acc_top - 1) * b - COST_LAB, 2),
                      "best_tenth_trades_per_day": round(top.sum() / days, 1),
                      "accuracy_best_tenth_by_year": {int(Y_): round(float(((p[te][top & (yr[te] == Y_)] > 0.5) == yy[te][top & (yr[te] == Y_)]).mean()), 3)
-                                                     for Y_ in range(2017, 2022)}})
+                                                     for Y_ in range(first_year, 2022)}})
         print(json.dumps(rows[-1]), flush=True)
-    json.dump(rows, open(os.path.join(OUT, "summary.json"), "w"), indent=1)
+    json.dump(rows, open(os.path.join(OUT, "summary.json" if sym == "xauusd" else f"summary_{sym}.json"), "w"), indent=1)
 
 
 if __name__ == "__main__":
-    study()
+    which = sys.argv[1] if len(sys.argv) > 1 else "xauusd"
+    if which == "xauusd":
+        study()
+    elif which == "us100":       # spread 1.0 pt at 27,000 = 0.37 bp; lab = + 0.2 bp entry slippage + 0.5 bp on the half of exits that are stops
+        study("us100", [2.5, 5.0, 7.5, 12.5, 25.0, 50.0], 0.37, 0.82, 2017, 27000.0)
+    elif which == "btcusd":      # spread 22.5 USD at 76,000 = 2.96 bp; lab = + 0.5 bp + 0.75 bp
+        study("btcusd", [10.0, 20.0, 40.0, 80.0, 160.0], 2.96, 4.21, 2019, 76000.0)
