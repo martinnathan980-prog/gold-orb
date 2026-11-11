@@ -62,6 +62,23 @@ def look(build_start, win_start, end, price_end, last_year, n_draws=200, t_min=2
     return out
 
 
+def totals(rep):
+    t = {"parents_replayed": sum(v["n_resimulated"] for v in rep.values()),
+         "replay_vs_simulator_mismatches": sum(v["replay_vs_simulator_mismatches"] for v in rep.values()),
+         "saved_vs_resimulated_mismatches": sum(v["saved_vs_resimulated_mismatches"] for v in rep.values()),
+         "of_which_open_at_the_end_of_the_price_frame": sum(v["of_which_open_at_the_end_of_the_price_frame"] for v in rep.values()),
+         "unexplained_mismatches": sum(v["unexplained_mismatches"] for v in rep.values()),
+         "reach_vs_simulator_mfe_mismatches": sum(v["reach_vs_simulator_mfe_mismatches"] for v in rep.values()),
+         "addons_checked": sum(v.get("prefix_test_addons_checked", 0) for v in rep.values()),
+         "prefix_test_mismatches": sum(v.get("prefix_test_mismatches", 0) for v in rep.values()),
+         "addon_resimulated_alone_fill_mismatches": sum(v.get("addon_resimulated_alone_fill_mismatches", 0) for v in rep.values()),
+         "addon_resimulated_alone_exit_mismatches": sum(v.get("addon_resimulated_alone_exit_mismatches", 0) for v in rep.values()),
+         "addon_resimulated_alone_max_abs_pnl_diff": max(v.get("addon_resimulated_alone_max_abs_pnl_diff", 0.0) for v in rep.values()),
+         "addon_exit_equals_parent_exit_all": all(v.get("addon_exit_equals_parent_exit", True) for v in rep.values()),
+         "addons_on_parents_open_at_the_end_of_the_frame": sum(v["addons_on_parents_open_at_the_end_of_the_frame"] for v in rep.values())}
+    return t
+
+
 def public(out):
     return _plain({k: v for k, v in out.items() if not k.startswith("_")})
 

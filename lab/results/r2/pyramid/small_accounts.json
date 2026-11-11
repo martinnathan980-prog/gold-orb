@@ -1,0 +1,3380 @@
+{
+ "1000": {
+  "reference": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2166,
+   "parents_taken_pct": 41.6,
+   "addons_designed": 0,
+   "addons_taken": 0,
+   "addons_taken_pct": null,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 30,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 0,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 0,
+     "margin": 0
+    }
+   },
+   "final": 5475.36,
+   "killed_at": null,
+   "total_pct": 447.5,
+   "per_year_pct": 114.4,
+   "addons_total_pct": 0.0,
+   "by_year_pct": {
+    "2018": 149.8,
+    "2019": 124.2,
+    "2020": 132.2,
+    "2021": 41.3
+   },
+   "max_dd_pct": 16.0,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 61.0,
+   "win_months_pct": 85.1,
+   "avg_real_risk_parent_eur": 8.78,
+   "avg_real_risk_addon_eur": null,
+   "total_per_max_dd": 27.97
+  },
+  "F1_k1_n1_f0.5_all": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2074,
+   "parents_taken_pct": 39.8,
+   "addons_designed": 1659,
+   "addons_taken": 166,
+   "addons_taken_pct": 10.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 122,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 976,
+     "no_budget": 0,
+     "min_lot": 334,
+     "position_cap": 183,
+     "margin": 0
+    }
+   },
+   "final": 5263.85,
+   "killed_at": null,
+   "total_pct": 426.4,
+   "per_year_pct": 109.0,
+   "addons_total_pct": 4.7,
+   "by_year_pct": {
+    "2018": 143.8,
+    "2019": 115.5,
+    "2020": 133.4,
+    "2021": 33.7
+   },
+   "max_dd_pct": 13.3,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.2,
+   "win_weeks_pct": 59.5,
+   "win_months_pct": 83.0,
+   "avg_real_risk_parent_eur": 8.74,
+   "avg_real_risk_addon_eur": 4.24,
+   "total_per_max_dd": 32.06,
+   "profit_at_equal_dd_vs_ref": 1.146
+  },
+  "F1_k1_n1_f1_all": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2070,
+   "parents_taken_pct": 39.8,
+   "addons_designed": 1659,
+   "addons_taken": 175,
+   "addons_taken_pct": 10.5,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 126,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 978,
+     "no_budget": 0,
+     "min_lot": 313,
+     "position_cap": 193,
+     "margin": 0
+    }
+   },
+   "final": 5310.98,
+   "killed_at": null,
+   "total_pct": 431.1,
+   "per_year_pct": 110.2,
+   "addons_total_pct": 12.9,
+   "by_year_pct": {
+    "2018": 147.0,
+    "2019": 118.9,
+    "2020": 136.7,
+    "2021": 28.5
+   },
+   "max_dd_pct": 13.8,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 49.6,
+   "win_weeks_pct": 59.0,
+   "win_months_pct": 78.7,
+   "avg_real_risk_parent_eur": 8.74,
+   "avg_real_risk_addon_eur": 9.13,
+   "total_per_max_dd": 31.24,
+   "profit_at_equal_dd_vs_ref": 1.117
+  },
+  "F1_k1_n2_f0.5_all": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2070,
+   "parents_taken_pct": 39.8,
+   "addons_designed": 2391,
+   "addons_taken": 180,
+   "addons_taken_pct": 7.5,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 126,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 1397,
+     "no_budget": 0,
+     "min_lot": 497,
+     "position_cap": 317,
+     "margin": 0
+    }
+   },
+   "final": 5190.46,
+   "killed_at": null,
+   "total_pct": 419.0,
+   "per_year_pct": 107.1,
+   "addons_total_pct": 4.3,
+   "by_year_pct": {
+    "2018": 144.1,
+    "2019": 115.4,
+    "2020": 125.1,
+    "2021": 34.5
+   },
+   "max_dd_pct": 13.3,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.2,
+   "win_weeks_pct": 59.5,
+   "win_months_pct": 83.0,
+   "avg_real_risk_parent_eur": 8.74,
+   "avg_real_risk_addon_eur": 4.21,
+   "total_per_max_dd": 31.5,
+   "profit_at_equal_dd_vs_ref": 1.126
+  },
+  "F1_k1_n2_f1_all": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2066,
+   "parents_taken_pct": 39.7,
+   "addons_designed": 2391,
+   "addons_taken": 189,
+   "addons_taken_pct": 7.9,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 130,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 1401,
+     "no_budget": 0,
+     "min_lot": 473,
+     "position_cap": 328,
+     "margin": 0
+    }
+   },
+   "final": 5234.86,
+   "killed_at": null,
+   "total_pct": 423.5,
+   "per_year_pct": 108.2,
+   "addons_total_pct": 12.3,
+   "by_year_pct": {
+    "2018": 147.1,
+    "2019": 118.5,
+    "2020": 128.9,
+    "2021": 29.0
+   },
+   "max_dd_pct": 13.8,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 49.5,
+   "win_weeks_pct": 59.0,
+   "win_months_pct": 80.9,
+   "avg_real_risk_parent_eur": 8.74,
+   "avg_real_risk_addon_eur": 9.12,
+   "total_per_max_dd": 30.69,
+   "profit_at_equal_dd_vs_ref": 1.097
+  },
+  "F1_k2_n1_f0.5_all": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2141,
+   "parents_taken_pct": 41.1,
+   "addons_designed": 732,
+   "addons_taken": 54,
+   "addons_taken_pct": 7.4,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 55,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 401,
+     "no_budget": 0,
+     "min_lot": 163,
+     "position_cap": 114,
+     "margin": 0
+    }
+   },
+   "final": 5340.26,
+   "killed_at": null,
+   "total_pct": 434.0,
+   "per_year_pct": 110.9,
+   "addons_total_pct": -1.4,
+   "by_year_pct": {
+    "2018": 151.7,
+    "2019": 120.3,
+    "2020": 123.0,
+    "2021": 39.1
+   },
+   "max_dd_pct": 15.3,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.5,
+   "win_weeks_pct": 61.0,
+   "win_months_pct": 87.2,
+   "avg_real_risk_parent_eur": 8.77,
+   "avg_real_risk_addon_eur": 4.11,
+   "total_per_max_dd": 28.37,
+   "profit_at_equal_dd_vs_ref": 1.014
+  },
+  "F1_k2_n1_f1_all": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2141,
+   "parents_taken_pct": 41.1,
+   "addons_designed": 732,
+   "addons_taken": 54,
+   "addons_taken_pct": 7.4,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 55,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 401,
+     "no_budget": 0,
+     "min_lot": 162,
+     "position_cap": 115,
+     "margin": 0
+    }
+   },
+   "final": 5327.23,
+   "killed_at": null,
+   "total_pct": 432.7,
+   "per_year_pct": 110.6,
+   "addons_total_pct": -2.7,
+   "by_year_pct": {
+    "2018": 151.0,
+    "2019": 120.1,
+    "2020": 123.2,
+    "2021": 38.4
+   },
+   "max_dd_pct": 15.5,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.5,
+   "win_weeks_pct": 61.0,
+   "win_months_pct": 87.2,
+   "avg_real_risk_parent_eur": 8.77,
+   "avg_real_risk_addon_eur": 9.06,
+   "total_per_max_dd": 27.92,
+   "profit_at_equal_dd_vs_ref": 0.998
+  },
+  "F1_k2_n2_f0.5_all": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2138,
+   "parents_taken_pct": 41.1,
+   "addons_designed": 934,
+   "addons_taken": 64,
+   "addons_taken_pct": 6.9,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 58,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 500,
+     "no_budget": 0,
+     "min_lot": 224,
+     "position_cap": 146,
+     "margin": 0
+    }
+   },
+   "final": 5366.98,
+   "killed_at": null,
+   "total_pct": 436.7,
+   "per_year_pct": 111.6,
+   "addons_total_pct": -1.7,
+   "by_year_pct": {
+    "2018": 152.6,
+    "2019": 120.0,
+    "2020": 125.1,
+    "2021": 39.0
+   },
+   "max_dd_pct": 15.3,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.5,
+   "win_weeks_pct": 61.0,
+   "win_months_pct": 87.2,
+   "avg_real_risk_parent_eur": 8.77,
+   "avg_real_risk_addon_eur": 4.04,
+   "total_per_max_dd": 28.54,
+   "profit_at_equal_dd_vs_ref": 1.021
+  },
+  "F1_k2_n2_f1_all": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2138,
+   "parents_taken_pct": 41.1,
+   "addons_designed": 934,
+   "addons_taken": 65,
+   "addons_taken_pct": 7.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 58,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 500,
+     "no_budget": 0,
+     "min_lot": 219,
+     "position_cap": 150,
+     "margin": 0
+    }
+   },
+   "final": 5352.41,
+   "killed_at": null,
+   "total_pct": 435.2,
+   "per_year_pct": 111.3,
+   "addons_total_pct": -3.2,
+   "by_year_pct": {
+    "2018": 152.0,
+    "2019": 119.5,
+    "2020": 125.6,
+    "2021": 38.2
+   },
+   "max_dd_pct": 15.5,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.5,
+   "win_weeks_pct": 61.0,
+   "win_months_pct": 87.2,
+   "avg_real_risk_parent_eur": 8.77,
+   "avg_real_risk_addon_eur": 8.86,
+   "total_per_max_dd": 28.08,
+   "profit_at_equal_dd_vs_ref": 1.004
+  },
+  "F1_k1_n1_f0.5_trend": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2166,
+   "parents_taken_pct": 41.6,
+   "addons_designed": 306,
+   "addons_taken": 0,
+   "addons_taken_pct": 0.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 30,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 292,
+     "no_budget": 0,
+     "min_lot": 14,
+     "position_cap": 0,
+     "margin": 0
+    }
+   },
+   "final": 5475.36,
+   "killed_at": null,
+   "total_pct": 447.5,
+   "per_year_pct": 114.4,
+   "addons_total_pct": 0.0,
+   "by_year_pct": {
+    "2018": 149.8,
+    "2019": 124.2,
+    "2020": 132.2,
+    "2021": 41.3
+   },
+   "max_dd_pct": 16.0,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 61.0,
+   "win_months_pct": 85.1,
+   "avg_real_risk_parent_eur": 8.78,
+   "avg_real_risk_addon_eur": null,
+   "total_per_max_dd": 27.97,
+   "profit_at_equal_dd_vs_ref": 1.0
+  },
+  "F1_k1_n1_f1_trend": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2166,
+   "parents_taken_pct": 41.6,
+   "addons_designed": 306,
+   "addons_taken": 0,
+   "addons_taken_pct": 0.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 30,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 292,
+     "no_budget": 0,
+     "min_lot": 14,
+     "position_cap": 0,
+     "margin": 0
+    }
+   },
+   "final": 5475.36,
+   "killed_at": null,
+   "total_pct": 447.5,
+   "per_year_pct": 114.4,
+   "addons_total_pct": 0.0,
+   "by_year_pct": {
+    "2018": 149.8,
+    "2019": 124.2,
+    "2020": 132.2,
+    "2021": 41.3
+   },
+   "max_dd_pct": 16.0,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 61.0,
+   "win_months_pct": 85.1,
+   "avg_real_risk_parent_eur": 8.78,
+   "avg_real_risk_addon_eur": null,
+   "total_per_max_dd": 27.97,
+   "profit_at_equal_dd_vs_ref": 1.0
+  },
+  "F1_k1_n2_f0.5_trend": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2166,
+   "parents_taken_pct": 41.6,
+   "addons_designed": 466,
+   "addons_taken": 0,
+   "addons_taken_pct": 0.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 30,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 445,
+     "no_budget": 0,
+     "min_lot": 21,
+     "position_cap": 0,
+     "margin": 0
+    }
+   },
+   "final": 5475.36,
+   "killed_at": null,
+   "total_pct": 447.5,
+   "per_year_pct": 114.4,
+   "addons_total_pct": 0.0,
+   "by_year_pct": {
+    "2018": 149.8,
+    "2019": 124.2,
+    "2020": 132.2,
+    "2021": 41.3
+   },
+   "max_dd_pct": 16.0,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 61.0,
+   "win_months_pct": 85.1,
+   "avg_real_risk_parent_eur": 8.78,
+   "avg_real_risk_addon_eur": null,
+   "total_per_max_dd": 27.97,
+   "profit_at_equal_dd_vs_ref": 1.0
+  },
+  "F1_k1_n2_f1_trend": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2166,
+   "parents_taken_pct": 41.6,
+   "addons_designed": 466,
+   "addons_taken": 0,
+   "addons_taken_pct": 0.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 30,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 445,
+     "no_budget": 0,
+     "min_lot": 21,
+     "position_cap": 0,
+     "margin": 0
+    }
+   },
+   "final": 5475.36,
+   "killed_at": null,
+   "total_pct": 447.5,
+   "per_year_pct": 114.4,
+   "addons_total_pct": 0.0,
+   "by_year_pct": {
+    "2018": 149.8,
+    "2019": 124.2,
+    "2020": 132.2,
+    "2021": 41.3
+   },
+   "max_dd_pct": 16.0,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 61.0,
+   "win_months_pct": 85.1,
+   "avg_real_risk_parent_eur": 8.78,
+   "avg_real_risk_addon_eur": null,
+   "total_per_max_dd": 27.97,
+   "profit_at_equal_dd_vs_ref": 1.0
+  },
+  "F1_k2_n1_f0.5_trend": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2166,
+   "parents_taken_pct": 41.6,
+   "addons_designed": 160,
+   "addons_taken": 0,
+   "addons_taken_pct": 0.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 30,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 153,
+     "no_budget": 0,
+     "min_lot": 7,
+     "position_cap": 0,
+     "margin": 0
+    }
+   },
+   "final": 5475.36,
+   "killed_at": null,
+   "total_pct": 447.5,
+   "per_year_pct": 114.4,
+   "addons_total_pct": 0.0,
+   "by_year_pct": {
+    "2018": 149.8,
+    "2019": 124.2,
+    "2020": 132.2,
+    "2021": 41.3
+   },
+   "max_dd_pct": 16.0,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 61.0,
+   "win_months_pct": 85.1,
+   "avg_real_risk_parent_eur": 8.78,
+   "avg_real_risk_addon_eur": null,
+   "total_per_max_dd": 27.97,
+   "profit_at_equal_dd_vs_ref": 1.0
+  },
+  "F1_k2_n1_f1_trend": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2166,
+   "parents_taken_pct": 41.6,
+   "addons_designed": 160,
+   "addons_taken": 0,
+   "addons_taken_pct": 0.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 30,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 153,
+     "no_budget": 0,
+     "min_lot": 7,
+     "position_cap": 0,
+     "margin": 0
+    }
+   },
+   "final": 5475.36,
+   "killed_at": null,
+   "total_pct": 447.5,
+   "per_year_pct": 114.4,
+   "addons_total_pct": 0.0,
+   "by_year_pct": {
+    "2018": 149.8,
+    "2019": 124.2,
+    "2020": 132.2,
+    "2021": 41.3
+   },
+   "max_dd_pct": 16.0,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 61.0,
+   "win_months_pct": 85.1,
+   "avg_real_risk_parent_eur": 8.78,
+   "avg_real_risk_addon_eur": null,
+   "total_per_max_dd": 27.97,
+   "profit_at_equal_dd_vs_ref": 1.0
+  },
+  "F1_k2_n2_f0.5_trend": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2166,
+   "parents_taken_pct": 41.6,
+   "addons_designed": 213,
+   "addons_taken": 0,
+   "addons_taken_pct": 0.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 30,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 200,
+     "no_budget": 0,
+     "min_lot": 13,
+     "position_cap": 0,
+     "margin": 0
+    }
+   },
+   "final": 5475.36,
+   "killed_at": null,
+   "total_pct": 447.5,
+   "per_year_pct": 114.4,
+   "addons_total_pct": 0.0,
+   "by_year_pct": {
+    "2018": 149.8,
+    "2019": 124.2,
+    "2020": 132.2,
+    "2021": 41.3
+   },
+   "max_dd_pct": 16.0,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 61.0,
+   "win_months_pct": 85.1,
+   "avg_real_risk_parent_eur": 8.78,
+   "avg_real_risk_addon_eur": null,
+   "total_per_max_dd": 27.97,
+   "profit_at_equal_dd_vs_ref": 1.0
+  },
+  "F1_k2_n2_f1_trend": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2166,
+   "parents_taken_pct": 41.6,
+   "addons_designed": 213,
+   "addons_taken": 0,
+   "addons_taken_pct": 0.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 30,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 200,
+     "no_budget": 0,
+     "min_lot": 13,
+     "position_cap": 0,
+     "margin": 0
+    }
+   },
+   "final": 5475.36,
+   "killed_at": null,
+   "total_pct": 447.5,
+   "per_year_pct": 114.4,
+   "addons_total_pct": 0.0,
+   "by_year_pct": {
+    "2018": 149.8,
+    "2019": 124.2,
+    "2020": 132.2,
+    "2021": 41.3
+   },
+   "max_dd_pct": 16.0,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 61.0,
+   "win_months_pct": 85.1,
+   "avg_real_risk_parent_eur": 8.78,
+   "avg_real_risk_addon_eur": null,
+   "total_per_max_dd": 27.97,
+   "profit_at_equal_dd_vs_ref": 1.0
+  },
+  "F2_k1_n1_all": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2166,
+   "parents_taken_pct": 41.6,
+   "addons_designed": 94,
+   "addons_taken": 0,
+   "addons_taken_pct": 0.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 30,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 94,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 0,
+     "margin": 0
+    }
+   },
+   "final": 5475.36,
+   "killed_at": null,
+   "total_pct": 447.5,
+   "per_year_pct": 114.4,
+   "addons_total_pct": 0.0,
+   "by_year_pct": {
+    "2018": 149.8,
+    "2019": 124.2,
+    "2020": 132.2,
+    "2021": 41.3
+   },
+   "max_dd_pct": 16.0,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 61.0,
+   "win_months_pct": 85.1,
+   "avg_real_risk_parent_eur": 8.78,
+   "avg_real_risk_addon_eur": null,
+   "total_per_max_dd": 27.97,
+   "profit_at_equal_dd_vs_ref": 1.0
+  },
+  "F2_k1_n2_all": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2166,
+   "parents_taken_pct": 41.6,
+   "addons_designed": 126,
+   "addons_taken": 0,
+   "addons_taken_pct": 0.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 30,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 126,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 0,
+     "margin": 0
+    }
+   },
+   "final": 5475.36,
+   "killed_at": null,
+   "total_pct": 447.5,
+   "per_year_pct": 114.4,
+   "addons_total_pct": 0.0,
+   "by_year_pct": {
+    "2018": 149.8,
+    "2019": 124.2,
+    "2020": 132.2,
+    "2021": 41.3
+   },
+   "max_dd_pct": 16.0,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 61.0,
+   "win_months_pct": 85.1,
+   "avg_real_risk_parent_eur": 8.78,
+   "avg_real_risk_addon_eur": null,
+   "total_per_max_dd": 27.97,
+   "profit_at_equal_dd_vs_ref": 1.0
+  },
+  "F2_k2_n1_all": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2166,
+   "parents_taken_pct": 41.6,
+   "addons_designed": 32,
+   "addons_taken": 0,
+   "addons_taken_pct": 0.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 30,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 32,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 0,
+     "margin": 0
+    }
+   },
+   "final": 5475.36,
+   "killed_at": null,
+   "total_pct": 447.5,
+   "per_year_pct": 114.4,
+   "addons_total_pct": 0.0,
+   "by_year_pct": {
+    "2018": 149.8,
+    "2019": 124.2,
+    "2020": 132.2,
+    "2021": 41.3
+   },
+   "max_dd_pct": 16.0,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 61.0,
+   "win_months_pct": 85.1,
+   "avg_real_risk_parent_eur": 8.78,
+   "avg_real_risk_addon_eur": null,
+   "total_per_max_dd": 27.97,
+   "profit_at_equal_dd_vs_ref": 1.0
+  },
+  "F2_k2_n2_all": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2166,
+   "parents_taken_pct": 41.6,
+   "addons_designed": 36,
+   "addons_taken": 0,
+   "addons_taken_pct": 0.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 30,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 36,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 0,
+     "margin": 0
+    }
+   },
+   "final": 5475.36,
+   "killed_at": null,
+   "total_pct": 447.5,
+   "per_year_pct": 114.4,
+   "addons_total_pct": 0.0,
+   "by_year_pct": {
+    "2018": 149.8,
+    "2019": 124.2,
+    "2020": 132.2,
+    "2021": 41.3
+   },
+   "max_dd_pct": 16.0,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 61.0,
+   "win_months_pct": 85.1,
+   "avg_real_risk_parent_eur": 8.78,
+   "avg_real_risk_addon_eur": null,
+   "total_per_max_dd": 27.97,
+   "profit_at_equal_dd_vs_ref": 1.0
+  },
+  "F2_k1_n1_trend": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2166,
+   "parents_taken_pct": 41.6,
+   "addons_designed": 94,
+   "addons_taken": 0,
+   "addons_taken_pct": 0.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 30,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 94,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 0,
+     "margin": 0
+    }
+   },
+   "final": 5475.36,
+   "killed_at": null,
+   "total_pct": 447.5,
+   "per_year_pct": 114.4,
+   "addons_total_pct": 0.0,
+   "by_year_pct": {
+    "2018": 149.8,
+    "2019": 124.2,
+    "2020": 132.2,
+    "2021": 41.3
+   },
+   "max_dd_pct": 16.0,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 61.0,
+   "win_months_pct": 85.1,
+   "avg_real_risk_parent_eur": 8.78,
+   "avg_real_risk_addon_eur": null,
+   "total_per_max_dd": 27.97,
+   "profit_at_equal_dd_vs_ref": 1.0
+  },
+  "F2_k1_n2_trend": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2166,
+   "parents_taken_pct": 41.6,
+   "addons_designed": 126,
+   "addons_taken": 0,
+   "addons_taken_pct": 0.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 30,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 126,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 0,
+     "margin": 0
+    }
+   },
+   "final": 5475.36,
+   "killed_at": null,
+   "total_pct": 447.5,
+   "per_year_pct": 114.4,
+   "addons_total_pct": 0.0,
+   "by_year_pct": {
+    "2018": 149.8,
+    "2019": 124.2,
+    "2020": 132.2,
+    "2021": 41.3
+   },
+   "max_dd_pct": 16.0,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 61.0,
+   "win_months_pct": 85.1,
+   "avg_real_risk_parent_eur": 8.78,
+   "avg_real_risk_addon_eur": null,
+   "total_per_max_dd": 27.97,
+   "profit_at_equal_dd_vs_ref": 1.0
+  },
+  "F2_k2_n1_trend": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2166,
+   "parents_taken_pct": 41.6,
+   "addons_designed": 32,
+   "addons_taken": 0,
+   "addons_taken_pct": 0.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 30,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 32,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 0,
+     "margin": 0
+    }
+   },
+   "final": 5475.36,
+   "killed_at": null,
+   "total_pct": 447.5,
+   "per_year_pct": 114.4,
+   "addons_total_pct": 0.0,
+   "by_year_pct": {
+    "2018": 149.8,
+    "2019": 124.2,
+    "2020": 132.2,
+    "2021": 41.3
+   },
+   "max_dd_pct": 16.0,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 61.0,
+   "win_months_pct": 85.1,
+   "avg_real_risk_parent_eur": 8.78,
+   "avg_real_risk_addon_eur": null,
+   "total_per_max_dd": 27.97,
+   "profit_at_equal_dd_vs_ref": 1.0
+  },
+  "F2_k2_n2_trend": {
+   "start": 1000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 2166,
+   "parents_taken_pct": 41.6,
+   "addons_designed": 36,
+   "addons_taken": 0,
+   "addons_taken_pct": 0.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 3011,
+     "position_cap": 30,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 36,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 0,
+     "margin": 0
+    }
+   },
+   "final": 5475.36,
+   "killed_at": null,
+   "total_pct": 447.5,
+   "per_year_pct": 114.4,
+   "addons_total_pct": 0.0,
+   "by_year_pct": {
+    "2018": 149.8,
+    "2019": 124.2,
+    "2020": 132.2,
+    "2021": 41.3
+   },
+   "max_dd_pct": 16.0,
+   "worst_week_pct": -6.8,
+   "worst_day_pct": -4.8,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 61.0,
+   "win_months_pct": 85.1,
+   "avg_real_risk_parent_eur": 8.78,
+   "avg_real_risk_addon_eur": null,
+   "total_per_max_dd": 27.97,
+   "profit_at_equal_dd_vs_ref": 1.0
+  }
+ },
+ "5000": {
+  "reference": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4831,
+   "parents_taken_pct": 92.8,
+   "addons_designed": 0,
+   "addons_taken": 0,
+   "addons_taken_pct": null,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 305,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 0,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 0,
+     "margin": 0
+    }
+   },
+   "final": 41072.64,
+   "killed_at": null,
+   "total_pct": 721.5,
+   "per_year_pct": 184.0,
+   "addons_total_pct": 0.0,
+   "by_year_pct": {
+    "2018": 225.2,
+    "2019": 184.0,
+    "2020": 231.7,
+    "2021": 80.6
+   },
+   "max_dd_pct": 24.6,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -6.3,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 58.7,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.53,
+   "avg_real_risk_addon_eur": null,
+   "total_per_max_dd": 29.33
+  },
+  "F1_k1_n1_f0.5_all": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4536,
+   "parents_taken_pct": 87.1,
+   "addons_designed": 1659,
+   "addons_taken": 436,
+   "addons_taken_pct": 26.3,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 600,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 162,
+     "no_budget": 0,
+     "min_lot": 673,
+     "position_cap": 388,
+     "margin": 0
+    }
+   },
+   "final": 39012.13,
+   "killed_at": null,
+   "total_pct": 680.2,
+   "per_year_pct": 173.5,
+   "addons_total_pct": 25.9,
+   "by_year_pct": {
+    "2018": 208.8,
+    "2019": 171.5,
+    "2020": 226.7,
+    "2021": 73.2
+   },
+   "max_dd_pct": 22.8,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -5.7,
+   "win_days_pct": 49.9,
+   "win_weeks_pct": 57.8,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.44,
+   "avg_real_risk_addon_eur": 21.06,
+   "total_per_max_dd": 29.83,
+   "profit_at_equal_dd_vs_ref": 1.017
+  },
+  "F1_k1_n1_f1_all": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4313,
+   "parents_taken_pct": 82.8,
+   "addons_designed": 1659,
+   "addons_taken": 714,
+   "addons_taken_pct": 43.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 823,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 229,
+     "no_budget": 0,
+     "min_lot": 124,
+     "position_cap": 592,
+     "margin": 0
+    }
+   },
+   "final": 40327.52,
+   "killed_at": null,
+   "total_pct": 706.6,
+   "per_year_pct": 180.2,
+   "addons_total_pct": 65.3,
+   "by_year_pct": {
+    "2018": 204.0,
+    "2019": 180.1,
+    "2020": 248.4,
+    "2021": 74.0
+   },
+   "max_dd_pct": 26.5,
+   "worst_week_pct": -10.9,
+   "worst_day_pct": -6.5,
+   "win_days_pct": 49.1,
+   "win_weeks_pct": 57.8,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.58,
+   "avg_real_risk_addon_eur": 41.06,
+   "total_per_max_dd": 26.66,
+   "profit_at_equal_dd_vs_ref": 0.909
+  },
+  "F1_k1_n2_f0.5_all": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4527,
+   "parents_taken_pct": 86.9,
+   "addons_designed": 2391,
+   "addons_taken": 455,
+   "addons_taken_pct": 19.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 609,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 241,
+     "no_budget": 0,
+     "min_lot": 1089,
+     "position_cap": 606,
+     "margin": 0
+    }
+   },
+   "final": 38770.78,
+   "killed_at": null,
+   "total_pct": 675.4,
+   "per_year_pct": 172.3,
+   "addons_total_pct": 25.4,
+   "by_year_pct": {
+    "2018": 210.7,
+    "2019": 171.2,
+    "2020": 218.6,
+    "2021": 74.9
+   },
+   "max_dd_pct": 22.8,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -5.7,
+   "win_days_pct": 50.0,
+   "win_weeks_pct": 57.3,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.43,
+   "avg_real_risk_addon_eur": 21.17,
+   "total_per_max_dd": 29.62,
+   "profit_at_equal_dd_vs_ref": 1.01
+  },
+  "F1_k1_n2_f1_all": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4303,
+   "parents_taken_pct": 82.6,
+   "addons_designed": 2391,
+   "addons_taken": 747,
+   "addons_taken_pct": 31.2,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 833,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 332,
+     "no_budget": 0,
+     "min_lot": 270,
+     "position_cap": 1042,
+     "margin": 0
+    }
+   },
+   "final": 39964.95,
+   "killed_at": null,
+   "total_pct": 699.3,
+   "per_year_pct": 178.4,
+   "addons_total_pct": 63.4,
+   "by_year_pct": {
+    "2018": 205.0,
+    "2019": 179.3,
+    "2020": 240.2,
+    "2021": 74.8
+   },
+   "max_dd_pct": 26.5,
+   "worst_week_pct": -10.9,
+   "worst_day_pct": -6.5,
+   "win_days_pct": 49.2,
+   "win_weeks_pct": 57.3,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.58,
+   "avg_real_risk_addon_eur": 41.14,
+   "total_per_max_dd": 26.39,
+   "profit_at_equal_dd_vs_ref": 0.9
+  },
+  "F1_k2_n1_f0.5_all": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4764,
+   "parents_taken_pct": 91.5,
+   "addons_designed": 732,
+   "addons_taken": 102,
+   "addons_taken_pct": 13.9,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 372,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 34,
+     "no_budget": 0,
+     "min_lot": 435,
+     "position_cap": 161,
+     "margin": 0
+    }
+   },
+   "final": 39984.96,
+   "killed_at": null,
+   "total_pct": 699.7,
+   "per_year_pct": 178.5,
+   "addons_total_pct": 3.5,
+   "by_year_pct": {
+    "2018": 224.1,
+    "2019": 175.7,
+    "2020": 220.8,
+    "2021": 79.2
+   },
+   "max_dd_pct": 24.0,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -6.3,
+   "win_days_pct": 50.0,
+   "win_weeks_pct": 59.2,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.5,
+   "avg_real_risk_addon_eur": 22.73,
+   "total_per_max_dd": 29.15,
+   "profit_at_equal_dd_vs_ref": 0.994
+  },
+  "F1_k2_n1_f1_all": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4687,
+   "parents_taken_pct": 90.0,
+   "addons_designed": 732,
+   "addons_taken": 212,
+   "addons_taken_pct": 29.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 449,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 46,
+     "no_budget": 0,
+     "min_lot": 156,
+     "position_cap": 318,
+     "margin": 0
+    }
+   },
+   "final": 39653.08,
+   "killed_at": null,
+   "total_pct": 693.1,
+   "per_year_pct": 176.8,
+   "addons_total_pct": 15.9,
+   "by_year_pct": {
+    "2018": 219.1,
+    "2019": 173.0,
+    "2020": 221.8,
+    "2021": 79.3
+   },
+   "max_dd_pct": 25.9,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -6.3,
+   "win_days_pct": 49.4,
+   "win_weeks_pct": 58.7,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.54,
+   "avg_real_risk_addon_eur": 41.06,
+   "total_per_max_dd": 26.76,
+   "profit_at_equal_dd_vs_ref": 0.912
+  },
+  "F1_k2_n2_f0.5_all": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4761,
+   "parents_taken_pct": 91.4,
+   "addons_designed": 934,
+   "addons_taken": 114,
+   "addons_taken_pct": 12.2,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 375,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 42,
+     "no_budget": 0,
+     "min_lot": 575,
+     "position_cap": 203,
+     "margin": 0
+    }
+   },
+   "final": 40107.57,
+   "killed_at": null,
+   "total_pct": 702.2,
+   "per_year_pct": 179.1,
+   "addons_total_pct": 2.9,
+   "by_year_pct": {
+    "2018": 225.0,
+    "2019": 175.1,
+    "2020": 223.0,
+    "2021": 79.1
+   },
+   "max_dd_pct": 24.0,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -6.3,
+   "win_days_pct": 50.0,
+   "win_weeks_pct": 59.2,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.5,
+   "avg_real_risk_addon_eur": 22.71,
+   "total_per_max_dd": 29.26,
+   "profit_at_equal_dd_vs_ref": 0.998
+  },
+  "F1_k2_n2_f1_all": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4682,
+   "parents_taken_pct": 89.9,
+   "addons_designed": 934,
+   "addons_taken": 228,
+   "addons_taken_pct": 24.4,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 454,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 58,
+     "no_budget": 0,
+     "min_lot": 242,
+     "position_cap": 406,
+     "margin": 0
+    }
+   },
+   "final": 39763.21,
+   "killed_at": null,
+   "total_pct": 695.3,
+   "per_year_pct": 177.4,
+   "addons_total_pct": 14.4,
+   "by_year_pct": {
+    "2018": 219.9,
+    "2019": 171.8,
+    "2020": 223.9,
+    "2021": 79.6
+   },
+   "max_dd_pct": 25.9,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -6.3,
+   "win_days_pct": 49.4,
+   "win_weeks_pct": 58.7,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.53,
+   "avg_real_risk_addon_eur": 41.42,
+   "total_per_max_dd": 26.85,
+   "profit_at_equal_dd_vs_ref": 0.915
+  },
+  "F1_k1_n1_f0.5_trend": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4797,
+   "parents_taken_pct": 92.1,
+   "addons_designed": 306,
+   "addons_taken": 40,
+   "addons_taken_pct": 13.1,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 339,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 20,
+     "no_budget": 0,
+     "min_lot": 214,
+     "position_cap": 32,
+     "margin": 0
+    }
+   },
+   "final": 41087.24,
+   "killed_at": null,
+   "total_pct": 721.7,
+   "per_year_pct": 184.1,
+   "addons_total_pct": -1.7,
+   "by_year_pct": {
+    "2018": 219.2,
+    "2019": 187.4,
+    "2020": 233.7,
+    "2021": 81.4
+   },
+   "max_dd_pct": 24.6,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -6.7,
+   "win_days_pct": 50.2,
+   "win_weeks_pct": 58.3,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 43.55,
+   "avg_real_risk_addon_eur": 21.08,
+   "total_per_max_dd": 29.34,
+   "profit_at_equal_dd_vs_ref": 1.0
+  },
+  "F1_k1_n1_f1_trend": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4690,
+   "parents_taken_pct": 90.1,
+   "addons_designed": 306,
+   "addons_taken": 136,
+   "addons_taken_pct": 44.4,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 446,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 42,
+     "no_budget": 0,
+     "min_lot": 48,
+     "position_cap": 80,
+     "margin": 0
+    }
+   },
+   "final": 41067.63,
+   "killed_at": null,
+   "total_pct": 721.4,
+   "per_year_pct": 184.0,
+   "addons_total_pct": -3.2,
+   "by_year_pct": {
+    "2018": 216.9,
+    "2019": 181.1,
+    "2020": 235.3,
+    "2021": 88.0
+   },
+   "max_dd_pct": 25.4,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -7.1,
+   "win_days_pct": 49.4,
+   "win_weeks_pct": 57.8,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.66,
+   "avg_real_risk_addon_eur": 37.24,
+   "total_per_max_dd": 28.4,
+   "profit_at_equal_dd_vs_ref": 0.968
+  },
+  "F1_k1_n2_f0.5_trend": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4796,
+   "parents_taken_pct": 92.1,
+   "addons_designed": 466,
+   "addons_taken": 41,
+   "addons_taken_pct": 8.8,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 340,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 34,
+     "no_budget": 0,
+     "min_lot": 344,
+     "position_cap": 47,
+     "margin": 0
+    }
+   },
+   "final": 41114.15,
+   "killed_at": null,
+   "total_pct": 722.3,
+   "per_year_pct": 184.3,
+   "addons_total_pct": -1.4,
+   "by_year_pct": {
+    "2018": 219.2,
+    "2019": 187.4,
+    "2020": 234.2,
+    "2021": 81.4
+   },
+   "max_dd_pct": 24.6,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -6.7,
+   "win_days_pct": 50.2,
+   "win_weeks_pct": 58.3,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 43.55,
+   "avg_real_risk_addon_eur": 21.12,
+   "total_per_max_dd": 29.36,
+   "profit_at_equal_dd_vs_ref": 1.001
+  },
+  "F1_k1_n2_f1_trend": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4689,
+   "parents_taken_pct": 90.1,
+   "addons_designed": 466,
+   "addons_taken": 139,
+   "addons_taken_pct": 29.8,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 447,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 64,
+     "no_budget": 0,
+     "min_lot": 109,
+     "position_cap": 154,
+     "margin": 0
+    }
+   },
+   "final": 41077.72,
+   "killed_at": null,
+   "total_pct": 721.6,
+   "per_year_pct": 184.1,
+   "addons_total_pct": -3.2,
+   "by_year_pct": {
+    "2018": 216.9,
+    "2019": 181.1,
+    "2020": 236.1,
+    "2021": 87.5
+   },
+   "max_dd_pct": 25.4,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -7.1,
+   "win_days_pct": 49.4,
+   "win_weeks_pct": 57.8,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.66,
+   "avg_real_risk_addon_eur": 37.17,
+   "total_per_max_dd": 28.41,
+   "profit_at_equal_dd_vs_ref": 0.969
+  },
+  "F1_k2_n1_f0.5_trend": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4822,
+   "parents_taken_pct": 92.6,
+   "addons_designed": 160,
+   "addons_taken": 4,
+   "addons_taken_pct": 2.5,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 314,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 9,
+     "no_budget": 0,
+     "min_lot": 135,
+     "position_cap": 12,
+     "margin": 0
+    }
+   },
+   "final": 41192.25,
+   "killed_at": null,
+   "total_pct": 723.8,
+   "per_year_pct": 184.7,
+   "addons_total_pct": 1.4,
+   "by_year_pct": {
+    "2018": 225.2,
+    "2019": 185.8,
+    "2020": 232.2,
+    "2021": 80.6
+   },
+   "max_dd_pct": 24.6,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -6.3,
+   "win_days_pct": 50.2,
+   "win_weeks_pct": 58.7,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.54,
+   "avg_real_risk_addon_eur": 23.06,
+   "total_per_max_dd": 29.42,
+   "profit_at_equal_dd_vs_ref": 1.003
+  },
+  "F1_k2_n1_f1_trend": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4791,
+   "parents_taken_pct": 92.0,
+   "addons_designed": 160,
+   "addons_taken": 37,
+   "addons_taken_pct": 23.1,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 345,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 9,
+     "no_budget": 0,
+     "min_lot": 67,
+     "position_cap": 47,
+     "margin": 0
+    }
+   },
+   "final": 41249.77,
+   "killed_at": null,
+   "total_pct": 725.0,
+   "per_year_pct": 184.9,
+   "addons_total_pct": 1.9,
+   "by_year_pct": {
+    "2018": 225.5,
+    "2019": 185.3,
+    "2020": 232.5,
+    "2021": 81.7
+   },
+   "max_dd_pct": 24.6,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -6.3,
+   "win_days_pct": 50.0,
+   "win_weeks_pct": 58.3,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.56,
+   "avg_real_risk_addon_eur": 38.82,
+   "total_per_max_dd": 29.47,
+   "profit_at_equal_dd_vs_ref": 1.005
+  },
+  "F1_k2_n2_f0.5_trend": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4822,
+   "parents_taken_pct": 92.6,
+   "addons_designed": 213,
+   "addons_taken": 5,
+   "addons_taken_pct": 2.3,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 314,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 10,
+     "no_budget": 0,
+     "min_lot": 183,
+     "position_cap": 15,
+     "margin": 0
+    }
+   },
+   "final": 41181.47,
+   "killed_at": null,
+   "total_pct": 723.6,
+   "per_year_pct": 184.6,
+   "addons_total_pct": 1.2,
+   "by_year_pct": {
+    "2018": 225.2,
+    "2019": 185.6,
+    "2020": 232.2,
+    "2021": 80.6
+   },
+   "max_dd_pct": 24.6,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -6.3,
+   "win_days_pct": 50.2,
+   "win_weeks_pct": 58.7,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.54,
+   "avg_real_risk_addon_eur": 21.42,
+   "total_per_max_dd": 29.41,
+   "profit_at_equal_dd_vs_ref": 1.003
+  },
+  "F1_k2_n2_f1_trend": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4791,
+   "parents_taken_pct": 92.0,
+   "addons_designed": 213,
+   "addons_taken": 38,
+   "addons_taken_pct": 17.8,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 345,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 10,
+     "no_budget": 0,
+     "min_lot": 108,
+     "position_cap": 57,
+     "margin": 0
+    }
+   },
+   "final": 41217.42,
+   "killed_at": null,
+   "total_pct": 724.3,
+   "per_year_pct": 184.8,
+   "addons_total_pct": 1.3,
+   "by_year_pct": {
+    "2018": 225.5,
+    "2019": 184.6,
+    "2020": 232.5,
+    "2021": 81.7
+   },
+   "max_dd_pct": 24.6,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -6.3,
+   "win_days_pct": 50.0,
+   "win_weeks_pct": 58.3,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.56,
+   "avg_real_risk_addon_eur": 38.97,
+   "total_per_max_dd": 29.44,
+   "profit_at_equal_dd_vs_ref": 1.004
+  },
+  "F2_k1_n1_all": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4814,
+   "parents_taken_pct": 92.5,
+   "addons_designed": 94,
+   "addons_taken": 27,
+   "addons_taken_pct": 28.7,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 322,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 6,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 61,
+     "margin": 0
+    }
+   },
+   "final": 40689.76,
+   "killed_at": null,
+   "total_pct": 713.8,
+   "per_year_pct": 182.1,
+   "addons_total_pct": -9.9,
+   "by_year_pct": {
+    "2018": 224.7,
+    "2019": 176.6,
+    "2020": 231.4,
+    "2021": 81.1
+   },
+   "max_dd_pct": 24.6,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -6.3,
+   "win_days_pct": 50.0,
+   "win_weeks_pct": 58.7,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.54,
+   "avg_real_risk_addon_eur": 37.68,
+   "total_per_max_dd": 29.02,
+   "profit_at_equal_dd_vs_ref": 0.989
+  },
+  "F2_k1_n2_all": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4813,
+   "parents_taken_pct": 92.4,
+   "addons_designed": 126,
+   "addons_taken": 32,
+   "addons_taken_pct": 25.4,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 323,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 10,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 84,
+     "margin": 0
+    }
+   },
+   "final": 40699.6,
+   "killed_at": null,
+   "total_pct": 714.0,
+   "per_year_pct": 182.1,
+   "addons_total_pct": -9.9,
+   "by_year_pct": {
+    "2018": 224.7,
+    "2019": 176.6,
+    "2020": 231.7,
+    "2021": 81.0
+   },
+   "max_dd_pct": 24.6,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -6.3,
+   "win_days_pct": 50.0,
+   "win_weeks_pct": 59.2,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.54,
+   "avg_real_risk_addon_eur": 42.64,
+   "total_per_max_dd": 29.02,
+   "profit_at_equal_dd_vs_ref": 0.99
+  },
+  "F2_k2_n1_all": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4830,
+   "parents_taken_pct": 92.8,
+   "addons_designed": 32,
+   "addons_taken": 5,
+   "addons_taken_pct": 15.6,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 306,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 4,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 23,
+     "margin": 0
+    }
+   },
+   "final": 41000.15,
+   "killed_at": null,
+   "total_pct": 720.0,
+   "per_year_pct": 183.7,
+   "addons_total_pct": -1.6,
+   "by_year_pct": {
+    "2018": 225.2,
+    "2019": 184.0,
+    "2020": 230.3,
+    "2021": 80.5
+   },
+   "max_dd_pct": 24.6,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -6.3,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 59.2,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.53,
+   "avg_real_risk_addon_eur": 80.99,
+   "total_per_max_dd": 29.27,
+   "profit_at_equal_dd_vs_ref": 0.998
+  },
+  "F2_k2_n2_all": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4830,
+   "parents_taken_pct": 92.8,
+   "addons_designed": 36,
+   "addons_taken": 6,
+   "addons_taken_pct": 16.7,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 306,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 4,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 26,
+     "margin": 0
+    }
+   },
+   "final": 40870.77,
+   "killed_at": null,
+   "total_pct": 717.4,
+   "per_year_pct": 183.0,
+   "addons_total_pct": -4.2,
+   "by_year_pct": {
+    "2018": 225.2,
+    "2019": 181.4,
+    "2020": 230.3,
+    "2021": 80.5
+   },
+   "max_dd_pct": 24.6,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -6.3,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 59.2,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.53,
+   "avg_real_risk_addon_eur": 97.19,
+   "total_per_max_dd": 29.16,
+   "profit_at_equal_dd_vs_ref": 0.994
+  },
+  "F2_k1_n1_trend": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4814,
+   "parents_taken_pct": 92.5,
+   "addons_designed": 94,
+   "addons_taken": 27,
+   "addons_taken_pct": 28.7,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 322,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 6,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 61,
+     "margin": 0
+    }
+   },
+   "final": 40689.76,
+   "killed_at": null,
+   "total_pct": 713.8,
+   "per_year_pct": 182.1,
+   "addons_total_pct": -9.9,
+   "by_year_pct": {
+    "2018": 224.7,
+    "2019": 176.6,
+    "2020": 231.4,
+    "2021": 81.1
+   },
+   "max_dd_pct": 24.6,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -6.3,
+   "win_days_pct": 50.0,
+   "win_weeks_pct": 58.7,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.54,
+   "avg_real_risk_addon_eur": 37.68,
+   "total_per_max_dd": 29.02,
+   "profit_at_equal_dd_vs_ref": 0.989
+  },
+  "F2_k1_n2_trend": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4813,
+   "parents_taken_pct": 92.4,
+   "addons_designed": 126,
+   "addons_taken": 32,
+   "addons_taken_pct": 25.4,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 323,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 10,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 84,
+     "margin": 0
+    }
+   },
+   "final": 40699.6,
+   "killed_at": null,
+   "total_pct": 714.0,
+   "per_year_pct": 182.1,
+   "addons_total_pct": -9.9,
+   "by_year_pct": {
+    "2018": 224.7,
+    "2019": 176.6,
+    "2020": 231.7,
+    "2021": 81.0
+   },
+   "max_dd_pct": 24.6,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -6.3,
+   "win_days_pct": 50.0,
+   "win_weeks_pct": 59.2,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.54,
+   "avg_real_risk_addon_eur": 42.64,
+   "total_per_max_dd": 29.02,
+   "profit_at_equal_dd_vs_ref": 0.99
+  },
+  "F2_k2_n1_trend": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4830,
+   "parents_taken_pct": 92.8,
+   "addons_designed": 32,
+   "addons_taken": 5,
+   "addons_taken_pct": 15.6,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 306,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 4,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 23,
+     "margin": 0
+    }
+   },
+   "final": 41000.15,
+   "killed_at": null,
+   "total_pct": 720.0,
+   "per_year_pct": 183.7,
+   "addons_total_pct": -1.6,
+   "by_year_pct": {
+    "2018": 225.2,
+    "2019": 184.0,
+    "2020": 230.3,
+    "2021": 80.5
+   },
+   "max_dd_pct": 24.6,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -6.3,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 59.2,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.53,
+   "avg_real_risk_addon_eur": 80.99,
+   "total_per_max_dd": 29.27,
+   "profit_at_equal_dd_vs_ref": 0.998
+  },
+  "F2_k2_n2_trend": {
+   "start": 5000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4830,
+   "parents_taken_pct": 92.8,
+   "addons_designed": 36,
+   "addons_taken": 6,
+   "addons_taken_pct": 16.7,
+   "skipped": {
+    "parent": {
+     "min_lot": 71,
+     "position_cap": 306,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 4,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 26,
+     "margin": 0
+    }
+   },
+   "final": 40870.77,
+   "killed_at": null,
+   "total_pct": 717.4,
+   "per_year_pct": 183.0,
+   "addons_total_pct": -4.2,
+   "by_year_pct": {
+    "2018": 225.2,
+    "2019": 181.4,
+    "2020": 230.3,
+    "2021": 80.5
+   },
+   "max_dd_pct": 24.6,
+   "worst_week_pct": -11.0,
+   "worst_day_pct": -6.3,
+   "win_days_pct": 50.1,
+   "win_weeks_pct": 59.2,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 43.53,
+   "avg_real_risk_addon_eur": 97.19,
+   "total_per_max_dd": 29.16,
+   "profit_at_equal_dd_vs_ref": 0.994
+  }
+ },
+ "12000": {
+  "reference": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4875,
+   "parents_taken_pct": 93.6,
+   "addons_designed": 0,
+   "addons_taken": 0,
+   "addons_taken_pct": null,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 329,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 0,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 0,
+     "margin": 0
+    }
+   },
+   "final": 103682.0,
+   "killed_at": null,
+   "total_pct": 764.0,
+   "per_year_pct": 194.9,
+   "addons_total_pct": 0.0,
+   "by_year_pct": {
+    "2018": 240.2,
+    "2019": 187.1,
+    "2020": 245.8,
+    "2021": 90.9
+   },
+   "max_dd_pct": 27.8,
+   "worst_week_pct": -11.3,
+   "worst_day_pct": -6.7,
+   "win_days_pct": 50.0,
+   "win_weeks_pct": 56.3,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 113.02,
+   "avg_real_risk_addon_eur": null,
+   "total_per_max_dd": 27.48
+  },
+  "F1_k1_n1_f0.5_all": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4318,
+   "parents_taken_pct": 82.9,
+   "addons_designed": 1659,
+   "addons_taken": 750,
+   "addons_taken_pct": 45.2,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 886,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 228,
+     "no_budget": 0,
+     "min_lot": 71,
+     "position_cap": 610,
+     "margin": 0
+    }
+   },
+   "final": 97909.32,
+   "killed_at": null,
+   "total_pct": 715.9,
+   "per_year_pct": 182.6,
+   "addons_total_pct": 36.4,
+   "by_year_pct": {
+    "2018": 210.6,
+    "2019": 166.7,
+    "2020": 249.8,
+    "2021": 88.8
+   },
+   "max_dd_pct": 25.7,
+   "worst_week_pct": -11.2,
+   "worst_day_pct": -6.6,
+   "win_days_pct": 49.1,
+   "win_weeks_pct": 59.2,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 113.13,
+   "avg_real_risk_addon_eur": 49.59,
+   "total_per_max_dd": 27.86,
+   "profit_at_equal_dd_vs_ref": 1.014
+  },
+  "F1_k1_n1_f1_all": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4288,
+   "parents_taken_pct": 82.4,
+   "addons_designed": 1659,
+   "addons_taken": 783,
+   "addons_taken_pct": 47.2,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 916,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 236,
+     "no_budget": 0,
+     "min_lot": 7,
+     "position_cap": 633,
+     "margin": 0
+    }
+   },
+   "final": 102749.4,
+   "killed_at": null,
+   "total_pct": 756.2,
+   "per_year_pct": 192.9,
+   "addons_total_pct": 72.9,
+   "by_year_pct": {
+    "2018": 215.5,
+    "2019": 183.8,
+    "2020": 261.7,
+    "2021": 95.2
+   },
+   "max_dd_pct": 28.3,
+   "worst_week_pct": -12.0,
+   "worst_day_pct": -7.0,
+   "win_days_pct": 49.1,
+   "win_weeks_pct": 57.8,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 113.21,
+   "avg_real_risk_addon_eur": 108.37,
+   "total_per_max_dd": 26.72,
+   "profit_at_equal_dd_vs_ref": 0.972
+  },
+  "F1_k1_n2_f0.5_all": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4308,
+   "parents_taken_pct": 82.7,
+   "addons_designed": 2391,
+   "addons_taken": 784,
+   "addons_taken_pct": 32.8,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 896,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 326,
+     "no_budget": 0,
+     "min_lot": 157,
+     "position_cap": 1124,
+     "margin": 0
+    }
+   },
+   "final": 97110.06,
+   "killed_at": null,
+   "total_pct": 709.3,
+   "per_year_pct": 180.9,
+   "addons_total_pct": 35.1,
+   "by_year_pct": {
+    "2018": 211.8,
+    "2019": 166.0,
+    "2020": 241.5,
+    "2021": 90.0
+   },
+   "max_dd_pct": 25.7,
+   "worst_week_pct": -11.2,
+   "worst_day_pct": -6.6,
+   "win_days_pct": 49.3,
+   "win_weeks_pct": 59.2,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 113.12,
+   "avg_real_risk_addon_eur": 49.7,
+   "total_per_max_dd": 27.6,
+   "profit_at_equal_dd_vs_ref": 1.004
+  },
+  "F1_k1_n2_f1_all": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4274,
+   "parents_taken_pct": 82.1,
+   "addons_designed": 2391,
+   "addons_taken": 822,
+   "addons_taken_pct": 34.4,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 930,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 338,
+     "no_budget": 0,
+     "min_lot": 17,
+     "position_cap": 1214,
+     "margin": 0
+    }
+   },
+   "final": 101688.46,
+   "killed_at": null,
+   "total_pct": 747.4,
+   "per_year_pct": 190.7,
+   "addons_total_pct": 69.9,
+   "by_year_pct": {
+    "2018": 217.7,
+    "2019": 183.8,
+    "2020": 251.8,
+    "2021": 94.0
+   },
+   "max_dd_pct": 28.3,
+   "worst_week_pct": -12.0,
+   "worst_day_pct": -7.0,
+   "win_days_pct": 49.3,
+   "win_weeks_pct": 57.8,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 113.2,
+   "avg_real_risk_addon_eur": 108.32,
+   "total_per_max_dd": 26.41,
+   "profit_at_equal_dd_vs_ref": 0.961
+  },
+  "F1_k2_n1_f0.5_all": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4705,
+   "parents_taken_pct": 90.4,
+   "addons_designed": 732,
+   "addons_taken": 246,
+   "addons_taken_pct": 33.6,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 499,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 44,
+     "no_budget": 0,
+     "min_lot": 90,
+     "position_cap": 352,
+     "margin": 0
+    }
+   },
+   "final": 99550.3,
+   "killed_at": null,
+   "total_pct": 729.6,
+   "per_year_pct": 186.1,
+   "addons_total_pct": 8.6,
+   "by_year_pct": {
+    "2018": 231.1,
+    "2019": 170.7,
+    "2020": 237.2,
+    "2021": 90.6
+   },
+   "max_dd_pct": 26.8,
+   "worst_week_pct": -11.3,
+   "worst_day_pct": -6.7,
+   "win_days_pct": 49.8,
+   "win_weeks_pct": 56.8,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 113.04,
+   "avg_real_risk_addon_eur": 48.4,
+   "total_per_max_dd": 27.22,
+   "profit_at_equal_dd_vs_ref": 0.991
+  },
+  "F1_k2_n1_f1_all": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4669,
+   "parents_taken_pct": 89.7,
+   "addons_designed": 732,
+   "addons_taken": 286,
+   "addons_taken_pct": 39.1,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 535,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 47,
+     "no_budget": 0,
+     "min_lot": 11,
+     "position_cap": 388,
+     "margin": 0
+    }
+   },
+   "final": 100478.11,
+   "killed_at": null,
+   "total_pct": 737.3,
+   "per_year_pct": 188.1,
+   "addons_total_pct": 16.6,
+   "by_year_pct": {
+    "2018": 235.6,
+    "2019": 176.3,
+    "2020": 238.5,
+    "2021": 86.9
+   },
+   "max_dd_pct": 27.7,
+   "worst_week_pct": -11.5,
+   "worst_day_pct": -6.7,
+   "win_days_pct": 49.8,
+   "win_weeks_pct": 56.8,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 113.11,
+   "avg_real_risk_addon_eur": 103.64,
+   "total_per_max_dd": 26.62,
+   "profit_at_equal_dd_vs_ref": 0.969
+  },
+  "F1_k2_n2_f0.5_all": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4700,
+   "parents_taken_pct": 90.3,
+   "addons_designed": 934,
+   "addons_taken": 262,
+   "addons_taken_pct": 28.1,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 504,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 56,
+     "no_budget": 0,
+     "min_lot": 156,
+     "position_cap": 460,
+     "margin": 0
+    }
+   },
+   "final": 99903.62,
+   "killed_at": null,
+   "total_pct": 732.5,
+   "per_year_pct": 186.9,
+   "addons_total_pct": 7.9,
+   "by_year_pct": {
+    "2018": 232.1,
+    "2019": 170.0,
+    "2020": 239.3,
+    "2021": 91.1
+   },
+   "max_dd_pct": 26.8,
+   "worst_week_pct": -11.3,
+   "worst_day_pct": -6.7,
+   "win_days_pct": 49.8,
+   "win_weeks_pct": 56.8,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 113.04,
+   "avg_real_risk_addon_eur": 48.76,
+   "total_per_max_dd": 27.33,
+   "profit_at_equal_dd_vs_ref": 0.995
+  },
+  "F1_k2_n2_f1_all": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4664,
+   "parents_taken_pct": 89.6,
+   "addons_designed": 934,
+   "addons_taken": 304,
+   "addons_taken_pct": 32.5,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 540,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 60,
+     "no_budget": 0,
+     "min_lot": 22,
+     "position_cap": 548,
+     "margin": 0
+    }
+   },
+   "final": 100679.0,
+   "killed_at": null,
+   "total_pct": 739.0,
+   "per_year_pct": 188.5,
+   "addons_total_pct": 14.6,
+   "by_year_pct": {
+    "2018": 236.5,
+    "2019": 175.0,
+    "2020": 240.6,
+    "2021": 86.9
+   },
+   "max_dd_pct": 27.7,
+   "worst_week_pct": -11.5,
+   "worst_day_pct": -6.7,
+   "win_days_pct": 49.8,
+   "win_weeks_pct": 56.8,
+   "win_months_pct": 85.4,
+   "avg_real_risk_parent_eur": 113.1,
+   "avg_real_risk_addon_eur": 103.96,
+   "total_per_max_dd": 26.68,
+   "profit_at_equal_dd_vs_ref": 0.971
+  },
+  "F1_k1_n1_f0.5_trend": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4707,
+   "parents_taken_pct": 90.4,
+   "addons_designed": 306,
+   "addons_taken": 156,
+   "addons_taken_pct": 51.0,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 497,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 36,
+     "no_budget": 0,
+     "min_lot": 27,
+     "position_cap": 87,
+     "margin": 0
+    }
+   },
+   "final": 104114.51,
+   "killed_at": null,
+   "total_pct": 767.6,
+   "per_year_pct": 195.8,
+   "addons_total_pct": 0.5,
+   "by_year_pct": {
+    "2018": 235.8,
+    "2019": 186.5,
+    "2020": 248.4,
+    "2021": 96.9
+   },
+   "max_dd_pct": 26.0,
+   "worst_week_pct": -11.3,
+   "worst_day_pct": -7.2,
+   "win_days_pct": 49.4,
+   "win_weeks_pct": 57.8,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 113.2,
+   "avg_real_risk_addon_eur": 44.88,
+   "total_per_max_dd": 29.52,
+   "profit_at_equal_dd_vs_ref": 1.074
+  },
+  "F1_k1_n1_f1_trend": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4688,
+   "parents_taken_pct": 90.0,
+   "addons_designed": 306,
+   "addons_taken": 171,
+   "addons_taken_pct": 55.9,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 516,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 39,
+     "no_budget": 0,
+     "min_lot": 4,
+     "position_cap": 92,
+     "margin": 0
+    }
+   },
+   "final": 104301.4,
+   "killed_at": null,
+   "total_pct": 769.2,
+   "per_year_pct": 196.2,
+   "addons_total_pct": 3.1,
+   "by_year_pct": {
+    "2018": 229.9,
+    "2019": 183.8,
+    "2020": 253.4,
+    "2021": 102.1
+   },
+   "max_dd_pct": 27.5,
+   "worst_week_pct": -11.3,
+   "worst_day_pct": -7.7,
+   "win_days_pct": 49.2,
+   "win_weeks_pct": 57.3,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 113.26,
+   "avg_real_risk_addon_eur": 102.62,
+   "total_per_max_dd": 27.97,
+   "profit_at_equal_dd_vs_ref": 1.018
+  },
+  "F1_k1_n2_f0.5_trend": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4706,
+   "parents_taken_pct": 90.4,
+   "addons_designed": 466,
+   "addons_taken": 159,
+   "addons_taken_pct": 34.1,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 498,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 52,
+     "no_budget": 0,
+     "min_lot": 65,
+     "position_cap": 190,
+     "margin": 0
+    }
+   },
+   "final": 104109.51,
+   "killed_at": null,
+   "total_pct": 767.6,
+   "per_year_pct": 195.8,
+   "addons_total_pct": 0.2,
+   "by_year_pct": {
+    "2018": 235.8,
+    "2019": 186.5,
+    "2020": 248.8,
+    "2021": 96.5
+   },
+   "max_dd_pct": 26.0,
+   "worst_week_pct": -11.3,
+   "worst_day_pct": -7.2,
+   "win_days_pct": 49.4,
+   "win_weeks_pct": 57.8,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 113.2,
+   "avg_real_risk_addon_eur": 45.04,
+   "total_per_max_dd": 29.52,
+   "profit_at_equal_dd_vs_ref": 1.074
+  },
+  "F1_k1_n2_f1_trend": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4684,
+   "parents_taken_pct": 90.0,
+   "addons_designed": 466,
+   "addons_taken": 176,
+   "addons_taken_pct": 37.8,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 520,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 56,
+     "no_budget": 0,
+     "min_lot": 9,
+     "position_cap": 225,
+     "margin": 0
+    }
+   },
+   "final": 104029.21,
+   "killed_at": null,
+   "total_pct": 766.9,
+   "per_year_pct": 195.6,
+   "addons_total_pct": 1.9,
+   "by_year_pct": {
+    "2018": 229.9,
+    "2019": 183.8,
+    "2020": 252.9,
+    "2021": 100.2
+   },
+   "max_dd_pct": 27.5,
+   "worst_week_pct": -11.5,
+   "worst_day_pct": -7.7,
+   "win_days_pct": 49.2,
+   "win_weeks_pct": 57.3,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 113.26,
+   "avg_real_risk_addon_eur": 102.33,
+   "total_per_max_dd": 27.89,
+   "profit_at_equal_dd_vs_ref": 1.015
+  },
+  "F1_k2_n1_f0.5_trend": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4819,
+   "parents_taken_pct": 92.5,
+   "addons_designed": 160,
+   "addons_taken": 51,
+   "addons_taken_pct": 31.9,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 385,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 4,
+     "no_budget": 0,
+     "min_lot": 41,
+     "position_cap": 64,
+     "margin": 0
+    }
+   },
+   "final": 103815.26,
+   "killed_at": null,
+   "total_pct": 765.1,
+   "per_year_pct": 195.2,
+   "addons_total_pct": -0.8,
+   "by_year_pct": {
+    "2018": 240.4,
+    "2019": 188.9,
+    "2020": 245.2,
+    "2021": 90.5
+   },
+   "max_dd_pct": 27.8,
+   "worst_week_pct": -11.3,
+   "worst_day_pct": -6.7,
+   "win_days_pct": 50.0,
+   "win_weeks_pct": 56.8,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 113.08,
+   "avg_real_risk_addon_eur": 46.42,
+   "total_per_max_dd": 27.52,
+   "profit_at_equal_dd_vs_ref": 1.001
+  },
+  "F1_k2_n1_f1_trend": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4799,
+   "parents_taken_pct": 92.2,
+   "addons_designed": 160,
+   "addons_taken": 67,
+   "addons_taken_pct": 41.9,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 405,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 4,
+     "no_budget": 0,
+     "min_lot": 6,
+     "position_cap": 83,
+     "margin": 0
+    }
+   },
+   "final": 103718.6,
+   "killed_at": null,
+   "total_pct": 764.3,
+   "per_year_pct": 195.0,
+   "addons_total_pct": -0.8,
+   "by_year_pct": {
+    "2018": 240.6,
+    "2019": 189.5,
+    "2020": 245.3,
+    "2021": 88.9
+   },
+   "max_dd_pct": 27.8,
+   "worst_week_pct": -11.5,
+   "worst_day_pct": -6.7,
+   "win_days_pct": 50.0,
+   "win_weeks_pct": 56.3,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 113.13,
+   "avg_real_risk_addon_eur": 98.68,
+   "total_per_max_dd": 27.49,
+   "profit_at_equal_dd_vs_ref": 1.0
+  },
+  "F1_k2_n2_f0.5_trend": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4819,
+   "parents_taken_pct": 92.5,
+   "addons_designed": 213,
+   "addons_taken": 52,
+   "addons_taken_pct": 24.4,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 385,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 4,
+     "no_budget": 0,
+     "min_lot": 75,
+     "position_cap": 82,
+     "margin": 0
+    }
+   },
+   "final": 103772.14,
+   "killed_at": null,
+   "total_pct": 764.8,
+   "per_year_pct": 195.1,
+   "addons_total_pct": -1.2,
+   "by_year_pct": {
+    "2018": 240.4,
+    "2019": 188.6,
+    "2020": 245.2,
+    "2021": 90.5
+   },
+   "max_dd_pct": 27.8,
+   "worst_week_pct": -11.3,
+   "worst_day_pct": -6.7,
+   "win_days_pct": 50.0,
+   "win_weeks_pct": 56.8,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 113.08,
+   "avg_real_risk_addon_eur": 46.67,
+   "total_per_max_dd": 27.51,
+   "profit_at_equal_dd_vs_ref": 1.001
+  },
+  "F1_k2_n2_f1_trend": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4799,
+   "parents_taken_pct": 92.2,
+   "addons_designed": 213,
+   "addons_taken": 68,
+   "addons_taken_pct": 31.9,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 405,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 4,
+     "no_budget": 0,
+     "min_lot": 14,
+     "position_cap": 127,
+     "margin": 0
+    }
+   },
+   "final": 103632.35,
+   "killed_at": null,
+   "total_pct": 763.6,
+   "per_year_pct": 194.8,
+   "addons_total_pct": -1.6,
+   "by_year_pct": {
+    "2018": 240.6,
+    "2019": 188.8,
+    "2020": 245.3,
+    "2021": 88.9
+   },
+   "max_dd_pct": 27.8,
+   "worst_week_pct": -11.5,
+   "worst_day_pct": -6.7,
+   "win_days_pct": 50.0,
+   "win_weeks_pct": 56.3,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 113.13,
+   "avg_real_risk_addon_eur": 98.97,
+   "total_per_max_dd": 27.47,
+   "profit_at_equal_dd_vs_ref": 0.999
+  },
+  "F2_k1_n1_all": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4859,
+   "parents_taken_pct": 93.3,
+   "addons_designed": 94,
+   "addons_taken": 25,
+   "addons_taken_pct": 26.6,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 345,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 2,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 67,
+     "margin": 0
+    }
+   },
+   "final": 102832.68,
+   "killed_at": null,
+   "total_pct": 756.9,
+   "per_year_pct": 193.1,
+   "addons_total_pct": -10.8,
+   "by_year_pct": {
+    "2018": 239.1,
+    "2019": 180.9,
+    "2020": 245.6,
+    "2021": 91.3
+   },
+   "max_dd_pct": 27.8,
+   "worst_week_pct": -11.3,
+   "worst_day_pct": -6.7,
+   "win_days_pct": 49.9,
+   "win_weeks_pct": 56.3,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 113.03,
+   "avg_real_risk_addon_eur": 108.61,
+   "total_per_max_dd": 27.23,
+   "profit_at_equal_dd_vs_ref": 0.991
+  },
+  "F2_k1_n2_all": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4857,
+   "parents_taken_pct": 93.3,
+   "addons_designed": 126,
+   "addons_taken": 31,
+   "addons_taken_pct": 24.6,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 347,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 3,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 92,
+     "margin": 0
+    }
+   },
+   "final": 102840.83,
+   "killed_at": null,
+   "total_pct": 757.0,
+   "per_year_pct": 193.1,
+   "addons_total_pct": -11.9,
+   "by_year_pct": {
+    "2018": 239.1,
+    "2019": 180.9,
+    "2020": 246.4,
+    "2021": 90.5
+   },
+   "max_dd_pct": 27.8,
+   "worst_week_pct": -11.3,
+   "worst_day_pct": -6.7,
+   "win_days_pct": 49.9,
+   "win_weeks_pct": 56.8,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 113.03,
+   "avg_real_risk_addon_eur": 128.19,
+   "total_per_max_dd": 27.23,
+   "profit_at_equal_dd_vs_ref": 0.991
+  },
+  "F2_k2_n1_all": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4873,
+   "parents_taken_pct": 93.6,
+   "addons_designed": 32,
+   "addons_taken": 6,
+   "addons_taken_pct": 18.8,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 331,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 1,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 25,
+     "margin": 0
+    }
+   },
+   "final": 103508.71,
+   "killed_at": null,
+   "total_pct": 762.6,
+   "per_year_pct": 194.5,
+   "addons_total_pct": -2.6,
+   "by_year_pct": {
+    "2018": 240.2,
+    "2019": 187.1,
+    "2020": 245.2,
+    "2021": 90.1
+   },
+   "max_dd_pct": 27.8,
+   "worst_week_pct": -11.3,
+   "worst_day_pct": -6.7,
+   "win_days_pct": 50.0,
+   "win_weeks_pct": 56.8,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 113.02,
+   "avg_real_risk_addon_eur": 224.0,
+   "total_per_max_dd": 27.43,
+   "profit_at_equal_dd_vs_ref": 0.998
+  },
+  "F2_k2_n2_all": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4873,
+   "parents_taken_pct": 93.6,
+   "addons_designed": 36,
+   "addons_taken": 7,
+   "addons_taken_pct": 19.4,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 331,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 1,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 28,
+     "margin": 0
+    }
+   },
+   "final": 103196.04,
+   "killed_at": null,
+   "total_pct": 760.0,
+   "per_year_pct": 193.9,
+   "addons_total_pct": -5.2,
+   "by_year_pct": {
+    "2018": 240.2,
+    "2019": 184.5,
+    "2020": 245.2,
+    "2021": 90.1
+   },
+   "max_dd_pct": 27.8,
+   "worst_week_pct": -11.3,
+   "worst_day_pct": -6.7,
+   "win_days_pct": 50.0,
+   "win_weeks_pct": 56.8,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 113.02,
+   "avg_real_risk_addon_eur": 253.52,
+   "total_per_max_dd": 27.34,
+   "profit_at_equal_dd_vs_ref": 0.995
+  },
+  "F2_k1_n1_trend": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4859,
+   "parents_taken_pct": 93.3,
+   "addons_designed": 94,
+   "addons_taken": 25,
+   "addons_taken_pct": 26.6,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 345,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 2,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 67,
+     "margin": 0
+    }
+   },
+   "final": 102832.68,
+   "killed_at": null,
+   "total_pct": 756.9,
+   "per_year_pct": 193.1,
+   "addons_total_pct": -10.8,
+   "by_year_pct": {
+    "2018": 239.1,
+    "2019": 180.9,
+    "2020": 245.6,
+    "2021": 91.3
+   },
+   "max_dd_pct": 27.8,
+   "worst_week_pct": -11.3,
+   "worst_day_pct": -6.7,
+   "win_days_pct": 49.9,
+   "win_weeks_pct": 56.3,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 113.03,
+   "avg_real_risk_addon_eur": 108.61,
+   "total_per_max_dd": 27.23,
+   "profit_at_equal_dd_vs_ref": 0.991
+  },
+  "F2_k1_n2_trend": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4857,
+   "parents_taken_pct": 93.3,
+   "addons_designed": 126,
+   "addons_taken": 31,
+   "addons_taken_pct": 24.6,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 347,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 3,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 92,
+     "margin": 0
+    }
+   },
+   "final": 102840.83,
+   "killed_at": null,
+   "total_pct": 757.0,
+   "per_year_pct": 193.1,
+   "addons_total_pct": -11.9,
+   "by_year_pct": {
+    "2018": 239.1,
+    "2019": 180.9,
+    "2020": 246.4,
+    "2021": 90.5
+   },
+   "max_dd_pct": 27.8,
+   "worst_week_pct": -11.3,
+   "worst_day_pct": -6.7,
+   "win_days_pct": 49.9,
+   "win_weeks_pct": 56.8,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 113.03,
+   "avg_real_risk_addon_eur": 128.19,
+   "total_per_max_dd": 27.23,
+   "profit_at_equal_dd_vs_ref": 0.991
+  },
+  "F2_k2_n1_trend": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4873,
+   "parents_taken_pct": 93.6,
+   "addons_designed": 32,
+   "addons_taken": 6,
+   "addons_taken_pct": 18.8,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 331,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 1,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 25,
+     "margin": 0
+    }
+   },
+   "final": 103508.71,
+   "killed_at": null,
+   "total_pct": 762.6,
+   "per_year_pct": 194.5,
+   "addons_total_pct": -2.6,
+   "by_year_pct": {
+    "2018": 240.2,
+    "2019": 187.1,
+    "2020": 245.2,
+    "2021": 90.1
+   },
+   "max_dd_pct": 27.8,
+   "worst_week_pct": -11.3,
+   "worst_day_pct": -6.7,
+   "win_days_pct": 50.0,
+   "win_weeks_pct": 56.8,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 113.02,
+   "avg_real_risk_addon_eur": 224.0,
+   "total_per_max_dd": 27.43,
+   "profit_at_equal_dd_vs_ref": 0.998
+  },
+  "F2_k2_n2_trend": {
+   "start": 12000.0,
+   "base_pct": 1.0,
+   "parents": 5207,
+   "parents_taken": 4873,
+   "parents_taken_pct": 93.6,
+   "addons_designed": 36,
+   "addons_taken": 7,
+   "addons_taken_pct": 19.4,
+   "skipped": {
+    "parent": {
+     "min_lot": 3,
+     "position_cap": 331,
+     "margin": 0
+    },
+    "addon": {
+     "parent_not_taken": 1,
+     "no_budget": 0,
+     "min_lot": 0,
+     "position_cap": 28,
+     "margin": 0
+    }
+   },
+   "final": 103196.04,
+   "killed_at": null,
+   "total_pct": 760.0,
+   "per_year_pct": 193.9,
+   "addons_total_pct": -5.2,
+   "by_year_pct": {
+    "2018": 240.2,
+    "2019": 184.5,
+    "2020": 245.2,
+    "2021": 90.1
+   },
+   "max_dd_pct": 27.8,
+   "worst_week_pct": -11.3,
+   "worst_day_pct": -6.7,
+   "win_days_pct": 50.0,
+   "win_weeks_pct": 56.8,
+   "win_months_pct": 87.5,
+   "avg_real_risk_parent_eur": 113.02,
+   "avg_real_risk_addon_eur": 253.52,
+   "total_per_max_dd": 27.34,
+   "profit_at_equal_dd_vs_ref": 0.995
+  }
+ }
+}

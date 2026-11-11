@@ -1,0 +1,1726 @@
+{
+ "meta": {
+  "draws": 200,
+  "seed": 20261111,
+  "asked": {
+   "coin": 1041400,
+   "kept": 1041400
+  },
+  "skipped_because_the_rule_was_already_in_a_trade": {
+   "coin": 222743,
+   "kept": 223178
+  }
+ },
+ "control": {
+  "coin": {
+   "reference": {
+    "draws": 200,
+    "total_mean": -47.59,
+    "total_p05_p95": [
+     -163.68,
+     81.45
+    ],
+    "max_dd_median": 113.59,
+    "worst_week_median": -13.59,
+    "win_weeks_pct_mean": 43.63,
+    "win_days_pct_mean": 41.83,
+    "longest_red_weeks_mean": 7.96
+   },
+   "F1_k1_n1_f0.5_all": {
+    "addons_mean": 1022.3,
+    "addon_mean_R_mean": 0.0072,
+    "addons_total_mean": 3.71,
+    "total_mean": -43.87,
+    "total_p05_p95": [
+     -176.76,
+     98.47
+    ],
+    "max_dd_vs_ref_mean": 1.094,
+    "worst_week_vs_ref_median": 1.12,
+    "win_weeks_pct_mean": 43.27,
+    "win_days_pct_mean": 40.61,
+    "longest_red_weeks_mean": 8.02,
+    "G_mean": 6.89,
+    "G_median": 5.98,
+    "G_p2.5_p97.5": [
+     -2.8,
+     26.19
+    ],
+    "G_ci95_of_mean": [
+     5.87,
+     7.92
+    ],
+    "share_of_draws_with_gain": 0.84,
+    "ratio_equivalent_mean": 1.0088,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0075,
+     1.0101
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9964,
+     1.0333
+    ]
+   },
+   "F1_k1_n1_f1_all": {
+    "addons_mean": 1022.3,
+    "addon_mean_R_mean": 0.0072,
+    "addons_total_mean": 7.43,
+    "total_mean": -40.16,
+    "total_p05_p95": [
+     -189.22,
+     116.95
+    ],
+    "max_dd_vs_ref_mean": 1.197,
+    "worst_week_vs_ref_median": 1.265,
+    "win_weeks_pct_mean": 43.01,
+    "win_days_pct_mean": 39.75,
+    "longest_red_weeks_mean": 8.09,
+    "G_mean": 12.91,
+    "G_median": 10.72,
+    "G_p2.5_p97.5": [
+     -4.84,
+     46.97
+    ],
+    "G_ci95_of_mean": [
+     11.04,
+     14.79
+    ],
+    "share_of_draws_with_gain": 0.84,
+    "ratio_equivalent_mean": 1.0164,
+    "ratio_equivalent_ci95_of_mean": [
+     1.014,
+     1.0188
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9938,
+     1.0597
+    ]
+   },
+   "F1_k1_n2_f0.5_all": {
+    "addons_mean": 1452.2,
+    "addon_mean_R_mean": 0.0064,
+    "addons_total_mean": 4.74,
+    "total_mean": -42.85,
+    "total_p05_p95": [
+     -179.61,
+     101.71
+    ],
+    "max_dd_vs_ref_mean": 1.142,
+    "worst_week_vs_ref_median": 1.172,
+    "win_weeks_pct_mean": 42.81,
+    "win_days_pct_mean": 40.06,
+    "longest_red_weeks_mean": 8.14,
+    "G_mean": 9.28,
+    "G_median": 7.01,
+    "G_p2.5_p97.5": [
+     -5.96,
+     36.73
+    ],
+    "G_ci95_of_mean": [
+     7.85,
+     10.7
+    ],
+    "share_of_draws_with_gain": 0.835,
+    "ratio_equivalent_mean": 1.0118,
+    "ratio_equivalent_ci95_of_mean": [
+     1.01,
+     1.0136
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9924,
+     1.0466
+    ]
+   },
+   "F1_k1_n2_f1_all": {
+    "addons_mean": 1452.2,
+    "addon_mean_R_mean": 0.0064,
+    "addons_total_mean": 9.47,
+    "total_mean": -38.12,
+    "total_p05_p95": [
+     -196.5,
+     125.88
+    ],
+    "max_dd_vs_ref_mean": 1.302,
+    "worst_week_vs_ref_median": 1.409,
+    "win_weeks_pct_mean": 42.34,
+    "win_days_pct_mean": 38.84,
+    "longest_red_weeks_mean": 8.31,
+    "G_mean": 17.05,
+    "G_median": 12.64,
+    "G_p2.5_p97.5": [
+     -8.71,
+     65.27
+    ],
+    "G_ci95_of_mean": [
+     14.46,
+     19.63
+    ],
+    "share_of_draws_with_gain": 0.84,
+    "ratio_equivalent_mean": 1.0216,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0184,
+     1.0249
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9889,
+     1.0829
+    ]
+   },
+   "F1_k2_n1_f0.5_all": {
+    "addons_mean": 429.9,
+    "addon_mean_R_mean": 0.0049,
+    "addons_total_mean": 1.02,
+    "total_mean": -46.57,
+    "total_p05_p95": [
+     -167.08,
+     86.53
+    ],
+    "max_dd_vs_ref_mean": 1.043,
+    "worst_week_vs_ref_median": 1.04,
+    "win_weeks_pct_mean": 43.2,
+    "win_days_pct_mean": 41.2,
+    "longest_red_weeks_mean": 8.05,
+    "G_mean": 2.75,
+    "G_median": 2.5,
+    "G_p2.5_p97.5": [
+     -6.68,
+     12.99
+    ],
+    "G_ci95_of_mean": [
+     2.08,
+     3.42
+    ],
+    "share_of_draws_with_gain": 0.71,
+    "ratio_equivalent_mean": 1.0035,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0026,
+     1.0043
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9915,
+     1.0165
+    ]
+   },
+   "F1_k2_n1_f1_all": {
+    "addons_mean": 429.9,
+    "addon_mean_R_mean": 0.0049,
+    "addons_total_mean": 2.04,
+    "total_mean": -45.54,
+    "total_p05_p95": [
+     -175.47,
+     93.68
+    ],
+    "max_dd_vs_ref_mean": 1.092,
+    "worst_week_vs_ref_median": 1.087,
+    "win_weeks_pct_mean": 42.74,
+    "win_days_pct_mean": 40.62,
+    "longest_red_weeks_mean": 8.1,
+    "G_mean": 5.52,
+    "G_median": 5.07,
+    "G_p2.5_p97.5": [
+     -12.1,
+     26.36
+    ],
+    "G_ci95_of_mean": [
+     4.23,
+     6.81
+    ],
+    "share_of_draws_with_gain": 0.725,
+    "ratio_equivalent_mean": 1.007,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0054,
+     1.0087
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9846,
+     1.0335
+    ]
+   },
+   "F1_k2_n2_f0.5_all": {
+    "addons_mean": 547.5,
+    "addon_mean_R_mean": -0.0013,
+    "addons_total_mean": -0.36,
+    "total_mean": -47.94,
+    "total_p05_p95": [
+     -169.93,
+     83.23
+    ],
+    "max_dd_vs_ref_mean": 1.064,
+    "worst_week_vs_ref_median": 1.05,
+    "win_weeks_pct_mean": 42.87,
+    "win_days_pct_mean": 41.09,
+    "longest_red_weeks_mean": 8.06,
+    "G_mean": 2.29,
+    "G_median": 1.79,
+    "G_p2.5_p97.5": [
+     -9.27,
+     13.92
+    ],
+    "G_ci95_of_mean": [
+     1.44,
+     3.14
+    ],
+    "share_of_draws_with_gain": 0.63,
+    "ratio_equivalent_mean": 1.0029,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0018,
+     1.004
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9882,
+     1.0177
+    ]
+   },
+   "F1_k2_n2_f1_all": {
+    "addons_mean": 547.5,
+    "addon_mean_R_mean": -0.0013,
+    "addons_total_mean": -0.71,
+    "total_mean": -48.3,
+    "total_p05_p95": [
+     -189.7,
+     87.33
+    ],
+    "max_dd_vs_ref_mean": 1.136,
+    "worst_week_vs_ref_median": 1.123,
+    "win_weeks_pct_mean": 42.3,
+    "win_days_pct_mean": 40.41,
+    "longest_red_weeks_mean": 8.27,
+    "G_mean": 4.69,
+    "G_median": 3.55,
+    "G_p2.5_p97.5": [
+     -16.46,
+     27.31
+    ],
+    "G_ci95_of_mean": [
+     3.08,
+     6.29
+    ],
+    "share_of_draws_with_gain": 0.65,
+    "ratio_equivalent_mean": 1.006,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0039,
+     1.008
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9791,
+     1.0347
+    ]
+   },
+   "F1_k1_n1_f0.5_trend": {
+    "addons_mean": 185.5,
+    "addon_mean_R_mean": 0.0098,
+    "addons_total_mean": 0.86,
+    "total_mean": -46.73,
+    "total_p05_p95": [
+     -167.74,
+     81.47
+    ],
+    "max_dd_vs_ref_mean": 1.021,
+    "worst_week_vs_ref_median": 1.026,
+    "win_weeks_pct_mean": 43.4,
+    "win_days_pct_mean": 41.39,
+    "longest_red_weeks_mean": 7.97,
+    "G_mean": 1.62,
+    "G_median": 0.97,
+    "G_p2.5_p97.5": [
+     -10.31,
+     14.58
+    ],
+    "G_ci95_of_mean": [
+     0.81,
+     2.43
+    ],
+    "share_of_draws_with_gain": 0.615,
+    "ratio_equivalent_mean": 1.0021,
+    "ratio_equivalent_ci95_of_mean": [
+     1.001,
+     1.0031
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9869,
+     1.0185
+    ]
+   },
+   "F1_k1_n1_f1_trend": {
+    "addons_mean": 185.5,
+    "addon_mean_R_mean": 0.0098,
+    "addons_total_mean": 1.71,
+    "total_mean": -45.87,
+    "total_p05_p95": [
+     -172.35,
+     92.73
+    ],
+    "max_dd_vs_ref_mean": 1.049,
+    "worst_week_vs_ref_median": 1.059,
+    "win_weeks_pct_mean": 43.0,
+    "win_days_pct_mean": 41.02,
+    "longest_red_weeks_mean": 8.06,
+    "G_mean": 3.54,
+    "G_median": 2.22,
+    "G_p2.5_p97.5": [
+     -19.86,
+     31.51
+    ],
+    "G_ci95_of_mean": [
+     1.95,
+     5.14
+    ],
+    "share_of_draws_with_gain": 0.615,
+    "ratio_equivalent_mean": 1.0045,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0025,
+     1.0065
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9748,
+     1.04
+    ]
+   },
+   "F1_k1_n2_f0.5_trend": {
+    "addons_mean": 278.9,
+    "addon_mean_R_mean": 0.0153,
+    "addons_total_mean": 2.16,
+    "total_mean": -45.43,
+    "total_p05_p95": [
+     -170.7,
+     90.23
+    ],
+    "max_dd_vs_ref_mean": 1.029,
+    "worst_week_vs_ref_median": 1.031,
+    "win_weeks_pct_mean": 43.05,
+    "win_days_pct_mean": 41.19,
+    "longest_red_weeks_mean": 8.07,
+    "G_mean": 3.3,
+    "G_median": 2.52,
+    "G_p2.5_p97.5": [
+     -10.77,
+     23.33
+    ],
+    "G_ci95_of_mean": [
+     2.1,
+     4.5
+    ],
+    "share_of_draws_with_gain": 0.62,
+    "ratio_equivalent_mean": 1.0042,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0027,
+     1.0057
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9863,
+     1.0296
+    ]
+   },
+   "F1_k1_n2_f1_trend": {
+    "addons_mean": 278.9,
+    "addon_mean_R_mean": 0.0153,
+    "addons_total_mean": 4.32,
+    "total_mean": -43.27,
+    "total_p05_p95": [
+     -177.11,
+     94.48
+    ],
+    "max_dd_vs_ref_mean": 1.075,
+    "worst_week_vs_ref_median": 1.078,
+    "win_weeks_pct_mean": 42.48,
+    "win_days_pct_mean": 40.65,
+    "longest_red_weeks_mean": 8.15,
+    "G_mean": 7.19,
+    "G_median": 5.09,
+    "G_p2.5_p97.5": [
+     -20.55,
+     47.32
+    ],
+    "G_ci95_of_mean": [
+     4.77,
+     9.61
+    ],
+    "share_of_draws_with_gain": 0.625,
+    "ratio_equivalent_mean": 1.0091,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0061,
+     1.0122
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9739,
+     1.0601
+    ]
+   },
+   "F1_k2_n1_f0.5_trend": {
+    "addons_mean": 93.4,
+    "addon_mean_R_mean": 0.0287,
+    "addons_total_mean": 1.3,
+    "total_mean": -46.29,
+    "total_p05_p95": [
+     -162.41,
+     80.85
+    ],
+    "max_dd_vs_ref_mean": 1.005,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 43.54,
+    "win_days_pct_mean": 41.6,
+    "longest_red_weeks_mean": 7.96,
+    "G_mean": 1.53,
+    "G_median": 1.28,
+    "G_p2.5_p97.5": [
+     -5.17,
+     8.43
+    ],
+    "G_ci95_of_mean": [
+     1.03,
+     2.02
+    ],
+    "share_of_draws_with_gain": 0.66,
+    "ratio_equivalent_mean": 1.0019,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0013,
+     1.0026
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9934,
+     1.0107
+    ]
+   },
+   "F1_k2_n1_f1_trend": {
+    "addons_mean": 93.4,
+    "addon_mean_R_mean": 0.0287,
+    "addons_total_mean": 2.6,
+    "total_mean": -44.98,
+    "total_p05_p95": [
+     -163.85,
+     87.67
+    ],
+    "max_dd_vs_ref_mean": 1.013,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 43.25,
+    "win_days_pct_mean": 41.41,
+    "longest_red_weeks_mean": 8.04,
+    "G_mean": 3.2,
+    "G_median": 2.64,
+    "G_p2.5_p97.5": [
+     -9.18,
+     17.81
+    ],
+    "G_ci95_of_mean": [
+     2.2,
+     4.2
+    ],
+    "share_of_draws_with_gain": 0.665,
+    "ratio_equivalent_mean": 1.0041,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0028,
+     1.0053
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9883,
+     1.0226
+    ]
+   },
+   "F1_k2_n2_f0.5_trend": {
+    "addons_mean": 124.3,
+    "addon_mean_R_mean": 0.0251,
+    "addons_total_mean": 1.61,
+    "total_mean": -45.97,
+    "total_p05_p95": [
+     -162.59,
+     80.57
+    ],
+    "max_dd_vs_ref_mean": 1.008,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 43.41,
+    "win_days_pct_mean": 41.57,
+    "longest_red_weeks_mean": 7.99,
+    "G_mean": 1.93,
+    "G_median": 0.94,
+    "G_p2.5_p97.5": [
+     -7.24,
+     11.27
+    ],
+    "G_ci95_of_mean": [
+     1.26,
+     2.61
+    ],
+    "share_of_draws_with_gain": 0.615,
+    "ratio_equivalent_mean": 1.0025,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0016,
+     1.0033
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9908,
+     1.0143
+    ]
+   },
+   "F1_k2_n2_f1_trend": {
+    "addons_mean": 124.3,
+    "addon_mean_R_mean": 0.0251,
+    "addons_total_mean": 3.23,
+    "total_mean": -44.36,
+    "total_p05_p95": [
+     -162.78,
+     86.97
+    ],
+    "max_dd_vs_ref_mean": 1.021,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 43.04,
+    "win_days_pct_mean": 41.34,
+    "longest_red_weeks_mean": 8.1,
+    "G_mean": 4.12,
+    "G_median": 2.01,
+    "G_p2.5_p97.5": [
+     -13.96,
+     22.74
+    ],
+    "G_ci95_of_mean": [
+     2.76,
+     5.49
+    ],
+    "share_of_draws_with_gain": 0.615,
+    "ratio_equivalent_mean": 1.0052,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0035,
+     1.007
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9823,
+     1.0289
+    ]
+   },
+   "F2_k1_n1_all": {
+    "addons_mean": 55.3,
+    "addon_mean_R_mean": 0.0377,
+    "addons_total_mean": 2.07,
+    "total_mean": -45.52,
+    "total_p05_p95": [
+     -162.77,
+     80.98
+    ],
+    "max_dd_vs_ref_mean": 1.003,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 43.68,
+    "win_days_pct_mean": 41.51,
+    "longest_red_weeks_mean": 7.9,
+    "G_mean": 1.78,
+    "G_median": 0.94,
+    "G_p2.5_p97.5": [
+     -13.56,
+     17.39
+    ],
+    "G_ci95_of_mean": [
+     0.78,
+     2.77
+    ],
+    "share_of_draws_with_gain": 0.6,
+    "ratio_equivalent_mean": 1.0023,
+    "ratio_equivalent_ci95_of_mean": [
+     1.001,
+     1.0035
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9828,
+     1.0221
+    ]
+   },
+   "F2_k1_n2_all": {
+    "addons_mean": 75.0,
+    "addon_mean_R_mean": 0.0533,
+    "addons_total_mean": 6.42,
+    "total_mean": -41.17,
+    "total_p05_p95": [
+     -157.15,
+     84.28
+    ],
+    "max_dd_vs_ref_mean": 1.005,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 43.3,
+    "win_days_pct_mean": 41.22,
+    "longest_red_weeks_mean": 7.96,
+    "G_mean": 6.28,
+    "G_median": 1.91,
+    "G_p2.5_p97.5": [
+     -18.19,
+     40.26
+    ],
+    "G_ci95_of_mean": [
+     4.02,
+     8.54
+    ],
+    "share_of_draws_with_gain": 0.57,
+    "ratio_equivalent_mean": 1.008,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0051,
+     1.0108
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9769,
+     1.0511
+    ]
+   },
+   "F2_k2_n1_all": {
+    "addons_mean": 19.9,
+    "addon_mean_R_mean": 0.1099,
+    "addons_total_mean": 4.12,
+    "total_mean": -43.47,
+    "total_p05_p95": [
+     -159.23,
+     80.27
+    ],
+    "max_dd_vs_ref_mean": 0.995,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 43.58,
+    "win_days_pct_mean": 41.56,
+    "longest_red_weeks_mean": 7.89,
+    "G_mean": 3.89,
+    "G_median": 1.41,
+    "G_p2.5_p97.5": [
+     -13.11,
+     27.28
+    ],
+    "G_ci95_of_mean": [
+     2.46,
+     5.32
+    ],
+    "share_of_draws_with_gain": 0.595,
+    "ratio_equivalent_mean": 1.0049,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0031,
+     1.0068
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9833,
+     1.0346
+    ]
+   },
+   "F2_k2_n2_all": {
+    "addons_mean": 22.7,
+    "addon_mean_R_mean": 0.0902,
+    "addons_total_mean": 4.0,
+    "total_mean": -43.58,
+    "total_p05_p95": [
+     -170.2,
+     92.84
+    ],
+    "max_dd_vs_ref_mean": 1.033,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 43.31,
+    "win_days_pct_mean": 41.5,
+    "longest_red_weeks_mean": 7.98,
+    "G_mean": 6.52,
+    "G_median": 0.01,
+    "G_p2.5_p97.5": [
+     -24.84,
+     69.72
+    ],
+    "G_ci95_of_mean": [
+     3.29,
+     9.75
+    ],
+    "share_of_draws_with_gain": 0.5,
+    "ratio_equivalent_mean": 1.0083,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0042,
+     1.0124
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9685,
+     1.0885
+    ]
+   },
+   "F2_k1_n1_trend": {
+    "addons_mean": 55.3,
+    "addon_mean_R_mean": 0.0377,
+    "addons_total_mean": 2.07,
+    "total_mean": -45.52,
+    "total_p05_p95": [
+     -162.77,
+     80.98
+    ],
+    "max_dd_vs_ref_mean": 1.003,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 43.68,
+    "win_days_pct_mean": 41.51,
+    "longest_red_weeks_mean": 7.9,
+    "G_mean": 1.78,
+    "G_median": 0.94,
+    "G_p2.5_p97.5": [
+     -13.56,
+     17.39
+    ],
+    "G_ci95_of_mean": [
+     0.78,
+     2.77
+    ],
+    "share_of_draws_with_gain": 0.6,
+    "ratio_equivalent_mean": 1.0023,
+    "ratio_equivalent_ci95_of_mean": [
+     1.001,
+     1.0035
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9828,
+     1.0221
+    ]
+   },
+   "F2_k1_n2_trend": {
+    "addons_mean": 75.0,
+    "addon_mean_R_mean": 0.0533,
+    "addons_total_mean": 6.42,
+    "total_mean": -41.17,
+    "total_p05_p95": [
+     -157.15,
+     84.28
+    ],
+    "max_dd_vs_ref_mean": 1.005,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 43.3,
+    "win_days_pct_mean": 41.22,
+    "longest_red_weeks_mean": 7.96,
+    "G_mean": 6.28,
+    "G_median": 1.91,
+    "G_p2.5_p97.5": [
+     -18.19,
+     40.26
+    ],
+    "G_ci95_of_mean": [
+     4.02,
+     8.54
+    ],
+    "share_of_draws_with_gain": 0.57,
+    "ratio_equivalent_mean": 1.008,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0051,
+     1.0108
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9769,
+     1.0511
+    ]
+   },
+   "F2_k2_n1_trend": {
+    "addons_mean": 19.9,
+    "addon_mean_R_mean": 0.1099,
+    "addons_total_mean": 4.12,
+    "total_mean": -43.47,
+    "total_p05_p95": [
+     -159.23,
+     80.27
+    ],
+    "max_dd_vs_ref_mean": 0.995,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 43.58,
+    "win_days_pct_mean": 41.56,
+    "longest_red_weeks_mean": 7.89,
+    "G_mean": 3.89,
+    "G_median": 1.41,
+    "G_p2.5_p97.5": [
+     -13.11,
+     27.28
+    ],
+    "G_ci95_of_mean": [
+     2.46,
+     5.32
+    ],
+    "share_of_draws_with_gain": 0.595,
+    "ratio_equivalent_mean": 1.0049,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0031,
+     1.0068
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9833,
+     1.0346
+    ]
+   },
+   "F2_k2_n2_trend": {
+    "addons_mean": 22.7,
+    "addon_mean_R_mean": 0.0902,
+    "addons_total_mean": 4.0,
+    "total_mean": -43.58,
+    "total_p05_p95": [
+     -170.2,
+     92.84
+    ],
+    "max_dd_vs_ref_mean": 1.033,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 43.31,
+    "win_days_pct_mean": 41.5,
+    "longest_red_weeks_mean": 7.98,
+    "G_mean": 6.52,
+    "G_median": 0.01,
+    "G_p2.5_p97.5": [
+     -24.84,
+     69.72
+    ],
+    "G_ci95_of_mean": [
+     3.29,
+     9.75
+    ],
+    "share_of_draws_with_gain": 0.5,
+    "ratio_equivalent_mean": 1.0083,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0042,
+     1.0124
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9685,
+     1.0885
+    ]
+   }
+  },
+  "kept": {
+   "reference": {
+    "draws": 200,
+    "total_mean": -26.72,
+    "total_p05_p95": [
+     -130.45,
+     96.91
+    ],
+    "max_dd_median": 95.22,
+    "worst_week_median": -13.74,
+    "win_weeks_pct_mean": 44.39,
+    "win_days_pct_mean": 41.91,
+    "longest_red_weeks_mean": 8.08
+   },
+   "F1_k1_n1_f0.5_all": {
+    "addons_mean": 1022.5,
+    "addon_mean_R_mean": 0.0171,
+    "addons_total_mean": 8.73,
+    "total_mean": -17.98,
+    "total_p05_p95": [
+     -137.64,
+     123.16
+    ],
+    "max_dd_vs_ref_mean": 1.081,
+    "worst_week_vs_ref_median": 1.124,
+    "win_weeks_pct_mean": 44.08,
+    "win_days_pct_mean": 40.78,
+    "longest_red_weeks_mean": 8.1,
+    "G_mean": 9.29,
+    "G_median": 7.9,
+    "G_p2.5_p97.5": [
+     -2.79,
+     27.4
+    ],
+    "G_ci95_of_mean": [
+     8.16,
+     10.43
+    ],
+    "share_of_draws_with_gain": 0.885,
+    "ratio_equivalent_mean": 1.0118,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0104,
+     1.0132
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9965,
+     1.0348
+    ]
+   },
+   "F1_k1_n1_f1_all": {
+    "addons_mean": 1022.5,
+    "addon_mean_R_mean": 0.0171,
+    "addons_total_mean": 17.46,
+    "total_mean": -9.25,
+    "total_p05_p95": [
+     -144.48,
+     149.3
+    ],
+    "max_dd_vs_ref_mean": 1.178,
+    "worst_week_vs_ref_median": 1.267,
+    "win_weeks_pct_mean": 43.82,
+    "win_days_pct_mean": 39.93,
+    "longest_red_weeks_mean": 8.2,
+    "G_mean": 17.55,
+    "G_median": 15.4,
+    "G_p2.5_p97.5": [
+     -5.52,
+     52.57
+    ],
+    "G_ci95_of_mean": [
+     15.43,
+     19.67
+    ],
+    "share_of_draws_with_gain": 0.895,
+    "ratio_equivalent_mean": 1.0223,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0196,
+     1.025
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.993,
+     1.0668
+    ]
+   },
+   "F1_k1_n2_f0.5_all": {
+    "addons_mean": 1453.6,
+    "addon_mean_R_mean": 0.0162,
+    "addons_total_mean": 11.85,
+    "total_mean": -14.87,
+    "total_p05_p95": [
+     -137.45,
+     129.18
+    ],
+    "max_dd_vs_ref_mean": 1.123,
+    "worst_week_vs_ref_median": 1.176,
+    "win_weeks_pct_mean": 43.66,
+    "win_days_pct_mean": 40.25,
+    "longest_red_weeks_mean": 8.27,
+    "G_mean": 12.78,
+    "G_median": 10.87,
+    "G_p2.5_p97.5": [
+     -5.99,
+     40.32
+    ],
+    "G_ci95_of_mean": [
+     11.14,
+     14.42
+    ],
+    "share_of_draws_with_gain": 0.86,
+    "ratio_equivalent_mean": 1.0162,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0141,
+     1.0183
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9924,
+     1.0512
+    ]
+   },
+   "F1_k1_n2_f1_all": {
+    "addons_mean": 1453.6,
+    "addon_mean_R_mean": 0.0162,
+    "addons_total_mean": 23.7,
+    "total_mean": -3.02,
+    "total_p05_p95": [
+     -151.71,
+     167.6
+    ],
+    "max_dd_vs_ref_mean": 1.272,
+    "worst_week_vs_ref_median": 1.401,
+    "win_weeks_pct_mean": 43.21,
+    "win_days_pct_mean": 39.06,
+    "longest_red_weeks_mean": 8.34,
+    "G_mean": 23.37,
+    "G_median": 20.63,
+    "G_p2.5_p97.5": [
+     -10.29,
+     73.5
+    ],
+    "G_ci95_of_mean": [
+     20.41,
+     26.34
+    ],
+    "share_of_draws_with_gain": 0.865,
+    "ratio_equivalent_mean": 1.0297,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0259,
+     1.0334
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9869,
+     1.0933
+    ]
+   },
+   "F1_k2_n1_f0.5_all": {
+    "addons_mean": 431.2,
+    "addon_mean_R_mean": 0.0144,
+    "addons_total_mean": 3.12,
+    "total_mean": -23.6,
+    "total_p05_p95": [
+     -132.93,
+     103.75
+    ],
+    "max_dd_vs_ref_mean": 1.037,
+    "worst_week_vs_ref_median": 1.043,
+    "win_weeks_pct_mean": 43.92,
+    "win_days_pct_mean": 41.3,
+    "longest_red_weeks_mean": 8.21,
+    "G_mean": 3.84,
+    "G_median": 3.5,
+    "G_p2.5_p97.5": [
+     -6.13,
+     16.01
+    ],
+    "G_ci95_of_mean": [
+     3.09,
+     4.6
+    ],
+    "share_of_draws_with_gain": 0.79,
+    "ratio_equivalent_mean": 1.0049,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0039,
+     1.0058
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9922,
+     1.0203
+    ]
+   },
+   "F1_k2_n1_f1_all": {
+    "addons_mean": 431.2,
+    "addon_mean_R_mean": 0.0144,
+    "addons_total_mean": 6.23,
+    "total_mean": -20.49,
+    "total_p05_p95": [
+     -133.98,
+     113.56
+    ],
+    "max_dd_vs_ref_mean": 1.079,
+    "worst_week_vs_ref_median": 1.098,
+    "win_weeks_pct_mean": 43.6,
+    "win_days_pct_mean": 40.76,
+    "longest_red_weeks_mean": 8.21,
+    "G_mean": 7.57,
+    "G_median": 6.82,
+    "G_p2.5_p97.5": [
+     -11.23,
+     30.65
+    ],
+    "G_ci95_of_mean": [
+     6.12,
+     9.02
+    ],
+    "share_of_draws_with_gain": 0.8,
+    "ratio_equivalent_mean": 1.0096,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0078,
+     1.0115
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9857,
+     1.0389
+    ]
+   },
+   "F1_k2_n2_f0.5_all": {
+    "addons_mean": 549.0,
+    "addon_mean_R_mean": 0.0087,
+    "addons_total_mean": 2.43,
+    "total_mean": -24.28,
+    "total_p05_p95": [
+     -136.4,
+     103.61
+    ],
+    "max_dd_vs_ref_mean": 1.055,
+    "worst_week_vs_ref_median": 1.056,
+    "win_weeks_pct_mean": 43.67,
+    "win_days_pct_mean": 41.18,
+    "longest_red_weeks_mean": 8.22,
+    "G_mean": 3.67,
+    "G_median": 3.25,
+    "G_p2.5_p97.5": [
+     -10.66,
+     18.87
+    ],
+    "G_ci95_of_mean": [
+     2.69,
+     4.64
+    ],
+    "share_of_draws_with_gain": 0.705,
+    "ratio_equivalent_mean": 1.0047,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0034,
+     1.0059
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9865,
+     1.024
+    ]
+   },
+   "F1_k2_n2_f1_all": {
+    "addons_mean": 549.0,
+    "addon_mean_R_mean": 0.0087,
+    "addons_total_mean": 4.87,
+    "total_mean": -21.85,
+    "total_p05_p95": [
+     -143.44,
+     116.28
+    ],
+    "max_dd_vs_ref_mean": 1.118,
+    "worst_week_vs_ref_median": 1.14,
+    "win_weeks_pct_mean": 43.18,
+    "win_days_pct_mean": 40.55,
+    "longest_red_weeks_mean": 8.38,
+    "G_mean": 7.23,
+    "G_median": 6.49,
+    "G_p2.5_p97.5": [
+     -18.42,
+     36.68
+    ],
+    "G_ci95_of_mean": [
+     5.4,
+     9.06
+    ],
+    "share_of_draws_with_gain": 0.72,
+    "ratio_equivalent_mean": 1.0092,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0069,
+     1.0115
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9766,
+     1.0466
+    ]
+   },
+   "F1_k1_n1_f0.5_trend": {
+    "addons_mean": 185.5,
+    "addon_mean_R_mean": 0.0123,
+    "addons_total_mean": 1.15,
+    "total_mean": -25.57,
+    "total_p05_p95": [
+     -136.89,
+     98.61
+    ],
+    "max_dd_vs_ref_mean": 1.027,
+    "worst_week_vs_ref_median": 1.023,
+    "win_weeks_pct_mean": 44.03,
+    "win_days_pct_mean": 41.5,
+    "longest_red_weeks_mean": 8.18,
+    "G_mean": 1.7,
+    "G_median": 0.9,
+    "G_p2.5_p97.5": [
+     -10.36,
+     15.21
+    ],
+    "G_ci95_of_mean": [
+     0.77,
+     2.63
+    ],
+    "share_of_draws_with_gain": 0.57,
+    "ratio_equivalent_mean": 1.0022,
+    "ratio_equivalent_ci95_of_mean": [
+     1.001,
+     1.0033
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9868,
+     1.0193
+    ]
+   },
+   "F1_k1_n1_f1_trend": {
+    "addons_mean": 185.5,
+    "addon_mean_R_mean": 0.0123,
+    "addons_total_mean": 2.3,
+    "total_mean": -24.42,
+    "total_p05_p95": [
+     -142.52,
+     103.8
+    ],
+    "max_dd_vs_ref_mean": 1.065,
+    "worst_week_vs_ref_median": 1.058,
+    "win_weeks_pct_mean": 43.66,
+    "win_days_pct_mean": 41.13,
+    "longest_red_weeks_mean": 8.24,
+    "G_mean": 3.68,
+    "G_median": 1.78,
+    "G_p2.5_p97.5": [
+     -17.46,
+     31.59
+    ],
+    "G_ci95_of_mean": [
+     1.85,
+     5.51
+    ],
+    "share_of_draws_with_gain": 0.575,
+    "ratio_equivalent_mean": 1.0047,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0023,
+     1.007
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9778,
+     1.0401
+    ]
+   },
+   "F1_k1_n2_f0.5_trend": {
+    "addons_mean": 277.5,
+    "addon_mean_R_mean": 0.0204,
+    "addons_total_mean": 2.94,
+    "total_mean": -23.78,
+    "total_p05_p95": [
+     -138.34,
+     100.77
+    ],
+    "max_dd_vs_ref_mean": 1.038,
+    "worst_week_vs_ref_median": 1.027,
+    "win_weeks_pct_mean": 43.79,
+    "win_days_pct_mean": 41.31,
+    "longest_red_weeks_mean": 8.22,
+    "G_mean": 3.68,
+    "G_median": 2.08,
+    "G_p2.5_p97.5": [
+     -12.86,
+     26.37
+    ],
+    "G_ci95_of_mean": [
+     2.3,
+     5.05
+    ],
+    "share_of_draws_with_gain": 0.625,
+    "ratio_equivalent_mean": 1.0047,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0029,
+     1.0064
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9837,
+     1.0335
+    ]
+   },
+   "F1_k1_n2_f1_trend": {
+    "addons_mean": 277.5,
+    "addon_mean_R_mean": 0.0204,
+    "addons_total_mean": 5.88,
+    "total_mean": -20.84,
+    "total_p05_p95": [
+     -141.39,
+     113.74
+    ],
+    "max_dd_vs_ref_mean": 1.094,
+    "worst_week_vs_ref_median": 1.068,
+    "win_weeks_pct_mean": 43.13,
+    "win_days_pct_mean": 40.78,
+    "longest_red_weeks_mean": 8.34,
+    "G_mean": 7.64,
+    "G_median": 4.57,
+    "G_p2.5_p97.5": [
+     -22.85,
+     51.82
+    ],
+    "G_ci95_of_mean": [
+     4.96,
+     10.32
+    ],
+    "share_of_draws_with_gain": 0.625,
+    "ratio_equivalent_mean": 1.0097,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0063,
+     1.0131
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.971,
+     1.0658
+    ]
+   },
+   "F1_k2_n1_f0.5_trend": {
+    "addons_mean": 92.0,
+    "addon_mean_R_mean": 0.0391,
+    "addons_total_mean": 1.79,
+    "total_mean": -24.93,
+    "total_p05_p95": [
+     -131.68,
+     100.79
+    ],
+    "max_dd_vs_ref_mean": 1.006,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 44.19,
+    "win_days_pct_mean": 41.7,
+    "longest_red_weeks_mean": 8.18,
+    "G_mean": 1.91,
+    "G_median": 1.51,
+    "G_p2.5_p97.5": [
+     -5.72,
+     10.67
+    ],
+    "G_ci95_of_mean": [
+     1.35,
+     2.47
+    ],
+    "share_of_draws_with_gain": 0.685,
+    "ratio_equivalent_mean": 1.0024,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0017,
+     1.0031
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9927,
+     1.0135
+    ]
+   },
+   "F1_k2_n1_f1_trend": {
+    "addons_mean": 92.0,
+    "addon_mean_R_mean": 0.0391,
+    "addons_total_mean": 3.58,
+    "total_mean": -23.13,
+    "total_p05_p95": [
+     -133.6,
+     102.76
+    ],
+    "max_dd_vs_ref_mean": 1.016,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 44.03,
+    "win_days_pct_mean": 41.51,
+    "longest_red_weeks_mean": 8.19,
+    "G_mean": 3.88,
+    "G_median": 3.17,
+    "G_p2.5_p97.5": [
+     -10.79,
+     20.98
+    ],
+    "G_ci95_of_mean": [
+     2.77,
+     4.98
+    ],
+    "share_of_draws_with_gain": 0.685,
+    "ratio_equivalent_mean": 1.0049,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0035,
+     1.0063
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9863,
+     1.0266
+    ]
+   },
+   "F1_k2_n2_f0.5_trend": {
+    "addons_mean": 122.4,
+    "addon_mean_R_mean": 0.0395,
+    "addons_total_mean": 2.48,
+    "total_mean": -24.24,
+    "total_p05_p95": [
+     -132.14,
+     102.18
+    ],
+    "max_dd_vs_ref_mean": 1.009,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 44.09,
+    "win_days_pct_mean": 41.66,
+    "longest_red_weeks_mean": 8.24,
+    "G_mean": 2.71,
+    "G_median": 1.85,
+    "G_p2.5_p97.5": [
+     -5.97,
+     15.43
+    ],
+    "G_ci95_of_mean": [
+     1.94,
+     3.47
+    ],
+    "share_of_draws_with_gain": 0.67,
+    "ratio_equivalent_mean": 1.0034,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0025,
+     1.0044
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9924,
+     1.0196
+    ]
+   },
+   "F1_k2_n2_f1_trend": {
+    "addons_mean": 122.4,
+    "addon_mean_R_mean": 0.0395,
+    "addons_total_mean": 4.96,
+    "total_mean": -21.76,
+    "total_p05_p95": [
+     -135.14,
+     106.41
+    ],
+    "max_dd_vs_ref_mean": 1.023,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 43.83,
+    "win_days_pct_mean": 41.45,
+    "longest_red_weeks_mean": 8.28,
+    "G_mean": 5.45,
+    "G_median": 3.5,
+    "G_p2.5_p97.5": [
+     -11.85,
+     30.15
+    ],
+    "G_ci95_of_mean": [
+     3.94,
+     6.96
+    ],
+    "share_of_draws_with_gain": 0.67,
+    "ratio_equivalent_mean": 1.0069,
+    "ratio_equivalent_ci95_of_mean": [
+     1.005,
+     1.0088
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.985,
+     1.0383
+    ]
+   },
+   "F2_k1_n1_all": {
+    "addons_mean": 55.9,
+    "addon_mean_R_mean": 0.03,
+    "addons_total_mean": 1.66,
+    "total_mean": -25.05,
+    "total_p05_p95": [
+     -133.13,
+     96.87
+    ],
+    "max_dd_vs_ref_mean": 1.008,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 44.34,
+    "win_days_pct_mean": 41.59,
+    "longest_red_weeks_mean": 8.04,
+    "G_mean": 1.63,
+    "G_median": 0.57,
+    "G_p2.5_p97.5": [
+     -11.03,
+     18.67
+    ],
+    "G_ci95_of_mean": [
+     0.58,
+     2.69
+    ],
+    "share_of_draws_with_gain": 0.54,
+    "ratio_equivalent_mean": 1.0021,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0007,
+     1.0034
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.986,
+     1.0237
+    ]
+   },
+   "F2_k1_n2_all": {
+    "addons_mean": 75.7,
+    "addon_mean_R_mean": 0.0412,
+    "addons_total_mean": 4.97,
+    "total_mean": -21.75,
+    "total_p05_p95": [
+     -135.93,
+     112.17
+    ],
+    "max_dd_vs_ref_mean": 1.016,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 44.0,
+    "win_days_pct_mean": 41.3,
+    "longest_red_weeks_mean": 8.2,
+    "G_mean": 5.1,
+    "G_median": 2.9,
+    "G_p2.5_p97.5": [
+     -23.64,
+     41.5
+    ],
+    "G_ci95_of_mean": [
+     2.92,
+     7.29
+    ],
+    "share_of_draws_with_gain": 0.595,
+    "ratio_equivalent_mean": 1.0065,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0037,
+     1.0093
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.97,
+     1.0527
+    ]
+   },
+   "F2_k2_n1_all": {
+    "addons_mean": 20.0,
+    "addon_mean_R_mean": 0.0858,
+    "addons_total_mean": 3.22,
+    "total_mean": -23.5,
+    "total_p05_p95": [
+     -133.85,
+     95.41
+    ],
+    "max_dd_vs_ref_mean": 1.004,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 44.24,
+    "win_days_pct_mean": 41.63,
+    "longest_red_weeks_mean": 8.16,
+    "G_mean": 3.03,
+    "G_median": 1.78,
+    "G_p2.5_p97.5": [
+     -15.66,
+     22.82
+    ],
+    "G_ci95_of_mean": [
+     1.72,
+     4.33
+    ],
+    "share_of_draws_with_gain": 0.62,
+    "ratio_equivalent_mean": 1.0038,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0022,
+     1.0055
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9801,
+     1.029
+    ]
+   },
+   "F2_k2_n2_all": {
+    "addons_mean": 22.9,
+    "addon_mean_R_mean": 0.0663,
+    "addons_total_mean": 3.25,
+    "total_mean": -23.47,
+    "total_p05_p95": [
+     -137.88,
+     95.5
+    ],
+    "max_dd_vs_ref_mean": 1.027,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 44.01,
+    "win_days_pct_mean": 41.57,
+    "longest_red_weeks_mean": 8.22,
+    "G_mean": 3.81,
+    "G_median": -1.1,
+    "G_p2.5_p97.5": [
+     -20.52,
+     57.48
+    ],
+    "G_ci95_of_mean": [
+     1.19,
+     6.42
+    ],
+    "share_of_draws_with_gain": 0.44,
+    "ratio_equivalent_mean": 1.0048,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0015,
+     1.0082
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9739,
+     1.073
+    ]
+   },
+   "F2_k1_n1_trend": {
+    "addons_mean": 55.9,
+    "addon_mean_R_mean": 0.03,
+    "addons_total_mean": 1.66,
+    "total_mean": -25.05,
+    "total_p05_p95": [
+     -133.13,
+     96.87
+    ],
+    "max_dd_vs_ref_mean": 1.008,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 44.34,
+    "win_days_pct_mean": 41.59,
+    "longest_red_weeks_mean": 8.04,
+    "G_mean": 1.63,
+    "G_median": 0.57,
+    "G_p2.5_p97.5": [
+     -11.03,
+     18.67
+    ],
+    "G_ci95_of_mean": [
+     0.58,
+     2.69
+    ],
+    "share_of_draws_with_gain": 0.54,
+    "ratio_equivalent_mean": 1.0021,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0007,
+     1.0034
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.986,
+     1.0237
+    ]
+   },
+   "F2_k1_n2_trend": {
+    "addons_mean": 75.7,
+    "addon_mean_R_mean": 0.0412,
+    "addons_total_mean": 4.97,
+    "total_mean": -21.75,
+    "total_p05_p95": [
+     -135.93,
+     112.17
+    ],
+    "max_dd_vs_ref_mean": 1.016,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 44.0,
+    "win_days_pct_mean": 41.3,
+    "longest_red_weeks_mean": 8.2,
+    "G_mean": 5.1,
+    "G_median": 2.9,
+    "G_p2.5_p97.5": [
+     -23.64,
+     41.5
+    ],
+    "G_ci95_of_mean": [
+     2.92,
+     7.29
+    ],
+    "share_of_draws_with_gain": 0.595,
+    "ratio_equivalent_mean": 1.0065,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0037,
+     1.0093
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.97,
+     1.0527
+    ]
+   },
+   "F2_k2_n1_trend": {
+    "addons_mean": 20.0,
+    "addon_mean_R_mean": 0.0858,
+    "addons_total_mean": 3.22,
+    "total_mean": -23.5,
+    "total_p05_p95": [
+     -133.85,
+     95.41
+    ],
+    "max_dd_vs_ref_mean": 1.004,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 44.24,
+    "win_days_pct_mean": 41.63,
+    "longest_red_weeks_mean": 8.16,
+    "G_mean": 3.03,
+    "G_median": 1.78,
+    "G_p2.5_p97.5": [
+     -15.66,
+     22.82
+    ],
+    "G_ci95_of_mean": [
+     1.72,
+     4.33
+    ],
+    "share_of_draws_with_gain": 0.62,
+    "ratio_equivalent_mean": 1.0038,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0022,
+     1.0055
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9801,
+     1.029
+    ]
+   },
+   "F2_k2_n2_trend": {
+    "addons_mean": 22.9,
+    "addon_mean_R_mean": 0.0663,
+    "addons_total_mean": 3.25,
+    "total_mean": -23.47,
+    "total_p05_p95": [
+     -137.88,
+     95.5
+    ],
+    "max_dd_vs_ref_mean": 1.027,
+    "worst_week_vs_ref_median": 1.0,
+    "win_weeks_pct_mean": 44.01,
+    "win_days_pct_mean": 41.57,
+    "longest_red_weeks_mean": 8.22,
+    "G_mean": 3.81,
+    "G_median": -1.1,
+    "G_p2.5_p97.5": [
+     -20.52,
+     57.48
+    ],
+    "G_ci95_of_mean": [
+     1.19,
+     6.42
+    ],
+    "share_of_draws_with_gain": 0.44,
+    "ratio_equivalent_mean": 1.0048,
+    "ratio_equivalent_ci95_of_mean": [
+     1.0015,
+     1.0082
+    ],
+    "ratio_equivalent_p2.5_p97.5": [
+     0.9739,
+     1.073
+    ]
+   }
+  }
+ }
+}

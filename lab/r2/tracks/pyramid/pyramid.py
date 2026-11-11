@@ -78,9 +78,10 @@ from numba import njit
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LAB = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
-for _p in (LAB, os.path.join(LAB, "r2", "tracks", "stake")):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+if LAB not in sys.path:
+    sys.path.insert(0, LAB)
+if os.path.join(LAB, "r2", "tracks", "stake") not in sys.path:
+    sys.path.append(os.path.join(LAB, "r2", "tracks", "stake"))      # after this folder: stake.py, account.py
 
 from goldlab import r2  # noqa: E402
 from goldlab.data import NY, trading_day  # noqa: E402

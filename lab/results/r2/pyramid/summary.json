@@ -1,0 +1,45 @@
+{
+ "window": [
+  "2018-02-01",
+  "2022-01-01"
+ ],
+ "finalist_by_the_declared_rule": "NONE",
+ "passing": [],
+ "reference": {
+  "total": 787.4,
+  "max_dd": 29.14,
+  "worst_week": -12.54,
+  "worst_day": -7.7,
+  "worst_month": -16.99,
+  "best_week": 55.12,
+  "win_days_pct": 49.6,
+  "win_weeks_pct": 58.3,
+  "win_months_pct": 85.4,
+  "longest_red_weeks": 7,
+  "days": 1014,
+  "weeks": 206,
+  "months": 48,
+  "avg_green_week": 9.57,
+  "avg_red_week": -4.2,
+  "n_parents": 5207,
+  "n_addons": 0,
+  "addons_total": 0.0,
+  "addons_avg_stake": 0.0,
+  "addons_max_stake": 0.0,
+  "by_year": {
+   "2018": 231.4,
+   "2019": 180.1,
+   "2020": 270.2,
+   "2021": 105.8
+  },
+  "addons_by_year": {
+   "2018": 0.0,
+   "2019": 0.0,
+   "2020": 0.0,
+   "2021": 0.0
+  },
+  "avg_open_risk": 1.741,
+  "max_open_risk": 9.0,
+  "total_exact": 787.4452912489602
+ }
+}

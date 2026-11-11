@@ -1,0 +1,525 @@
+{
+ "totals_whole_in_sample": {
+  "parents_replayed": 7965,
+  "replay_vs_simulator_mismatches": 0,
+  "saved_vs_resimulated_mismatches": 2,
+  "of_which_open_at_the_end_of_the_price_frame": 2,
+  "unexplained_mismatches": 0,
+  "reach_vs_simulator_mfe_mismatches": 0,
+  "addons_checked": 10648,
+  "prefix_test_mismatches": 0,
+  "addon_resimulated_alone_fill_mismatches": 0,
+  "addon_resimulated_alone_exit_mismatches": 1,
+  "addon_resimulated_alone_max_abs_pnl_diff": 0.0,
+  "addon_exit_equals_parent_exit_all": true,
+  "addons_on_parents_open_at_the_end_of_the_frame": 4
+ },
+ "stake_study": {
+  "reference_vs_stake_study_in_sample": {
+   "total": [
+    787.4,
+    787.4
+   ],
+   "max_dd": [
+    29.14,
+    29.14
+   ],
+   "worst_week": [
+    -12.54,
+    -12.54
+   ],
+   "worst_day": [
+    -7.7,
+    -7.7
+   ],
+   "win_days_pct": [
+    49.6,
+    49.6
+   ],
+   "win_weeks_pct": [
+    58.3,
+    58.3
+   ],
+   "win_months_pct": [
+    85.4,
+    85.4
+   ],
+   "longest_red_weeks": [
+    7,
+    7
+   ],
+   "n_trades": [
+    5207,
+    5207
+   ]
+  },
+  "reference_equals_stake_study": true,
+  "parents_frame_identical_to_stake_frame": true,
+  "small_account_reference_vs_stake_account_loop": {
+   "1000": {
+    "final": [
+     5475.36,
+     5475.36
+    ],
+    "taken": [
+     2166,
+     2166
+    ],
+    "max_dd_pct": [
+     16.0,
+     16.0
+    ],
+    "worst_week_pct": [
+     -6.8,
+     -6.8
+    ]
+   },
+   "5000": {
+    "final": [
+     41072.64,
+     41072.64
+    ],
+    "taken": [
+     4831,
+     4831
+    ],
+    "max_dd_pct": [
+     24.6,
+     24.6
+    ],
+    "worst_week_pct": [
+     -11.0,
+     -11.0
+    ]
+   },
+   "12000": {
+    "final": [
+     103682.0,
+     103682.0
+    ],
+    "taken": [
+     4875,
+     4875
+    ],
+    "max_dd_pct": [
+     27.8,
+     27.8
+    ],
+    "worst_week_pct": [
+     -11.3,
+     -11.3
+    ]
+   }
+  },
+  "small_account_reference_equals_stake_account_loop": true,
+  "account_loop_without_constraints_vs_ideal": {
+   "F1_k1_n1_f1_all": {
+    "account_total_pct": 988.5,
+    "ideal_total": 988.5,
+    "account_addons": 1659,
+    "ideal_addons": 1659,
+    "account_max_dd_pct": 41.2,
+    "ideal_max_dd": 41.2
+   },
+   "F1_k2_n2_f0.5_all": {
+    "account_total_pct": 838.8,
+    "ideal_total": 838.8,
+    "account_addons": 934,
+    "ideal_addons": 934,
+    "account_max_dd_pct": 31.0,
+    "ideal_max_dd": 31.0
+   },
+   "F2_k1_n2_all": {
+    "account_total_pct": 794.7,
+    "ideal_total": 794.7,
+    "account_addons": 126,
+    "ideal_addons": 126,
+    "account_max_dd_pct": 30.9,
+    "ideal_max_dd": 30.9
+   },
+   "F2_k2_n1_trend": {
+    "account_total_pct": 794.4,
+    "ideal_total": 794.4,
+    "account_addons": 32,
+    "ideal_addons": 32,
+    "account_max_dd_pct": 29.1,
+    "ideal_max_dd": 29.1
+   }
+  },
+  "account_loop_without_constraints_equals_ideal": true
+ },
+ "per_rule": {
+  "noise30__us100": {
+   "n_saved": 1643,
+   "n_resimulated": 1643,
+   "same_entries_as_saved": true,
+   "replay_vs_simulator_mismatches": 0,
+   "saved_vs_resimulated_mismatches": 0,
+   "of_which_open_at_the_end_of_the_price_frame": 0,
+   "unexplained_mismatches": 0,
+   "max_abs_pnl_diff_non_straddlers": 0.0,
+   "reach_vs_simulator_mfe_mismatches": 0,
+   "swap_formula_max_abs_diff": 0.0,
+   "addons_opened": {
+    "0.5": 727,
+    "1": 395,
+    "1.5": 221,
+    "2": 147,
+    "3": 58,
+    "4": 29
+   },
+   "addons_on_parents_open_at_the_end_of_the_frame": 0,
+   "addon_resimulated_alone_fill_mismatches": 0,
+   "addon_resimulated_alone_exit_mismatches": 0,
+   "addon_resimulated_alone_max_abs_pnl_diff": 0.0,
+   "addon_exit_equals_parent_exit": true,
+   "prefix_test_addons_checked": 1577,
+   "prefix_test_mismatches": 0
+  },
+  "ocm4__us100": {
+   "n_saved": 999,
+   "n_resimulated": 999,
+   "same_entries_as_saved": true,
+   "replay_vs_simulator_mismatches": 0,
+   "saved_vs_resimulated_mismatches": 0,
+   "of_which_open_at_the_end_of_the_price_frame": 0,
+   "unexplained_mismatches": 0,
+   "max_abs_pnl_diff_non_straddlers": 0.0,
+   "reach_vs_simulator_mfe_mismatches": 0,
+   "swap_formula_max_abs_diff": 0.0,
+   "addons_opened": {
+    "0.5": 677,
+    "1": 482,
+    "1.5": 333,
+    "2": 230,
+    "3": 112,
+    "4": 59
+   },
+   "addons_on_parents_open_at_the_end_of_the_frame": 0,
+   "addon_resimulated_alone_fill_mismatches": 0,
+   "addon_resimulated_alone_exit_mismatches": 0,
+   "addon_resimulated_alone_max_abs_pnl_diff": 0.0,
+   "addon_exit_equals_parent_exit": true,
+   "prefix_test_addons_checked": 1893,
+   "prefix_test_mismatches": 0
+  },
+  "GOLD_FRI_PM__xauusd": {
+   "n_saved": 414,
+   "n_resimulated": 414,
+   "same_entries_as_saved": true,
+   "replay_vs_simulator_mismatches": 0,
+   "saved_vs_resimulated_mismatches": 0,
+   "of_which_open_at_the_end_of_the_price_frame": 0,
+   "unexplained_mismatches": 0,
+   "max_abs_pnl_diff_non_straddlers": 0.0,
+   "reach_vs_simulator_mfe_mismatches": 0,
+   "swap_formula_max_abs_diff": 0.0,
+   "addons_opened": {
+    "0.5": 30,
+    "1": 6,
+    "1.5": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0
+   },
+   "addons_on_parents_open_at_the_end_of_the_frame": 0,
+   "addon_resimulated_alone_fill_mismatches": 0,
+   "addon_resimulated_alone_exit_mismatches": 0,
+   "addon_resimulated_alone_max_abs_pnl_diff": 0.0,
+   "addon_exit_equals_parent_exit": true,
+   "prefix_test_addons_checked": 36,
+   "prefix_test_mismatches": 0
+  },
+  "donch4h_stop__xauusd": {
+   "n_saved": 495,
+   "n_resimulated": 495,
+   "same_entries_as_saved": true,
+   "replay_vs_simulator_mismatches": 0,
+   "saved_vs_resimulated_mismatches": 1,
+   "of_which_open_at_the_end_of_the_price_frame": 1,
+   "unexplained_mismatches": 0,
+   "max_abs_pnl_diff_non_straddlers": 0.0,
+   "reach_vs_simulator_mfe_mismatches": 0,
+   "swap_formula_max_abs_diff": 0.0,
+   "addons_opened": {
+    "0.5": 338,
+    "1": 218,
+    "1.5": 138,
+    "2": 87,
+    "3": 34,
+    "4": 14
+   },
+   "addons_on_parents_open_at_the_end_of_the_frame": 1,
+   "addon_resimulated_alone_fill_mismatches": 0,
+   "addon_resimulated_alone_exit_mismatches": 1,
+   "addon_resimulated_alone_max_abs_pnl_diff": 0.0,
+   "addon_exit_equals_parent_exit": true,
+   "prefix_test_addons_checked": 829,
+   "prefix_test_mismatches": 0
+  },
+  "orb_asia_2d_buf10__xauusd": {
+   "n_saved": 1039,
+   "n_resimulated": 1039,
+   "same_entries_as_saved": true,
+   "replay_vs_simulator_mismatches": 0,
+   "saved_vs_resimulated_mismatches": 1,
+   "of_which_open_at_the_end_of_the_price_frame": 1,
+   "unexplained_mismatches": 0,
+   "max_abs_pnl_diff_non_straddlers": 0.0,
+   "reach_vs_simulator_mfe_mismatches": 0,
+   "swap_formula_max_abs_diff": 0.0,
+   "addons_opened": {
+    "0.5": 674,
+    "1": 505,
+    "1.5": 395,
+    "2": 315,
+    "3": 188,
+    "4": 128
+   },
+   "addons_on_parents_open_at_the_end_of_the_frame": 3,
+   "addon_resimulated_alone_fill_mismatches": 0,
+   "addon_resimulated_alone_exit_mismatches": 0,
+   "addon_resimulated_alone_max_abs_pnl_diff": 0.0,
+   "addon_exit_equals_parent_exit": true,
+   "prefix_test_addons_checked": 2205,
+   "prefix_test_mismatches": 0
+  },
+  "brk72_24h_wd__btcusd": {
+   "n_saved": 645,
+   "n_resimulated": 645,
+   "same_entries_as_saved": true,
+   "replay_vs_simulator_mismatches": 0,
+   "saved_vs_resimulated_mismatches": 0,
+   "of_which_open_at_the_end_of_the_price_frame": 0,
+   "unexplained_mismatches": 0,
+   "max_abs_pnl_diff_non_straddlers": 0.0,
+   "reach_vs_simulator_mfe_mismatches": 0,
+   "swap_formula_max_abs_diff": 0.0,
+   "addons_opened": {
+    "0.5": 388,
+    "1": 242,
+    "1.5": 163,
+    "2": 120,
+    "3": 57,
+    "4": 31
+   },
+   "addons_on_parents_open_at_the_end_of_the_frame": 0,
+   "addon_resimulated_alone_fill_mismatches": 0,
+   "addon_resimulated_alone_exit_mismatches": 0,
+   "addon_resimulated_alone_max_abs_pnl_diff": 0.0,
+   "addon_exit_equals_parent_exit": true,
+   "prefix_test_addons_checked": 1001,
+   "prefix_test_mismatches": 0
+  },
+  "nq_btc_follow__btcusd": {
+   "n_saved": 1063,
+   "n_resimulated": 1063,
+   "same_entries_as_saved": true,
+   "replay_vs_simulator_mismatches": 0,
+   "saved_vs_resimulated_mismatches": 0,
+   "of_which_open_at_the_end_of_the_price_frame": 0,
+   "unexplained_mismatches": 0,
+   "max_abs_pnl_diff_non_straddlers": 0.0,
+   "reach_vs_simulator_mfe_mismatches": 0,
+   "swap_formula_max_abs_diff": 0.0,
+   "addons_opened": {
+    "0.5": 329,
+    "1": 126,
+    "1.5": 48,
+    "2": 27,
+    "3": 4,
+    "4": 2
+   },
+   "addons_on_parents_open_at_the_end_of_the_frame": 0,
+   "addon_resimulated_alone_fill_mismatches": 0,
+   "addon_resimulated_alone_exit_mismatches": 0,
+   "addon_resimulated_alone_max_abs_pnl_diff": 0.0,
+   "addon_exit_equals_parent_exit": true,
+   "prefix_test_addons_checked": 536,
+   "prefix_test_mismatches": 0
+  },
+  "F1_brk_ridge_filter__btcusd": {
+   "n_saved": 631,
+   "n_resimulated": 631,
+   "same_entries_as_saved": true,
+   "replay_vs_simulator_mismatches": 0,
+   "saved_vs_resimulated_mismatches": 0,
+   "of_which_open_at_the_end_of_the_price_frame": 0,
+   "unexplained_mismatches": 0,
+   "max_abs_pnl_diff_non_straddlers": 0.0,
+   "reach_vs_simulator_mfe_mismatches": 0,
+   "swap_formula_max_abs_diff": 0.0,
+   "addons_opened": {
+    "0.5": 387,
+    "1": 254,
+    "1.5": 164,
+    "2": 112,
+    "3": 59,
+    "4": 35
+   },
+   "addons_on_parents_open_at_the_end_of_the_frame": 0,
+   "addon_resimulated_alone_fill_mismatches": 0,
+   "addon_resimulated_alone_exit_mismatches": 0,
+   "addon_resimulated_alone_max_abs_pnl_diff": 0.0,
+   "addon_exit_equals_parent_exit": true,
+   "prefix_test_addons_checked": 1011,
+   "prefix_test_mismatches": 0
+  },
+  "brk72_24h_wd__ethusd": {
+   "n_saved": 519,
+   "n_resimulated": 519,
+   "same_entries_as_saved": true,
+   "replay_vs_simulator_mismatches": 0,
+   "saved_vs_resimulated_mismatches": 0,
+   "of_which_open_at_the_end_of_the_price_frame": 0,
+   "unexplained_mismatches": 0,
+   "max_abs_pnl_diff_non_straddlers": 0.0,
+   "reach_vs_simulator_mfe_mismatches": 0,
+   "swap_formula_max_abs_diff": 0.0,
+   "addons_opened": {
+    "0.5": 295,
+    "1": 202,
+    "1.5": 134,
+    "2": 92,
+    "3": 47,
+    "4": 28
+   },
+   "addons_on_parents_open_at_the_end_of_the_frame": 0,
+   "addon_resimulated_alone_fill_mismatches": 0,
+   "addon_resimulated_alone_exit_mismatches": 0,
+   "addon_resimulated_alone_max_abs_pnl_diff": 0.0,
+   "addon_exit_equals_parent_exit": true,
+   "prefix_test_addons_checked": 798,
+   "prefix_test_mismatches": 0
+  },
+  "F1_brk_ridge_filter__ethusd": {
+   "n_saved": 517,
+   "n_resimulated": 517,
+   "same_entries_as_saved": true,
+   "replay_vs_simulator_mismatches": 0,
+   "saved_vs_resimulated_mismatches": 0,
+   "of_which_open_at_the_end_of_the_price_frame": 0,
+   "unexplained_mismatches": 0,
+   "max_abs_pnl_diff_non_straddlers": 0.0,
+   "reach_vs_simulator_mfe_mismatches": 0,
+   "swap_formula_max_abs_diff": 0.0,
+   "addons_opened": {
+    "0.5": 298,
+    "1": 194,
+    "1.5": 122,
+    "2": 86,
+    "3": 40,
+    "4": 22
+   },
+   "addons_on_parents_open_at_the_end_of_the_frame": 0,
+   "addon_resimulated_alone_fill_mismatches": 0,
+   "addon_resimulated_alone_exit_mismatches": 0,
+   "addon_resimulated_alone_max_abs_pnl_diff": 0.0,
+   "addon_exit_equals_parent_exit": true,
+   "prefix_test_addons_checked": 762,
+   "prefix_test_mismatches": 0
+  }
+ },
+ "trend_scope": {
+  "rule": "trailing stop in the rule's orders, or mean hold of the parents > 1,440 minutes",
+  "sleeves": [
+   "donch4h_stop_xauusd",
+   "orb_asia_2d_buf10_xauusd"
+  ],
+  "table": {
+   "F1_brk_ridge_filter_btcusd": {
+    "trailing_stop": false,
+    "mean_hold_h": 8.6
+   },
+   "F1_brk_ridge_filter_ethusd": {
+    "trailing_stop": false,
+    "mean_hold_h": 8.2
+   },
+   "GOLD_FRI_PM_xauusd": {
+    "trailing_stop": false,
+    "mean_hold_h": 3.2
+   },
+   "brk72_24h_wd_btcusd": {
+    "trailing_stop": false,
+    "mean_hold_h": 18.1
+   },
+   "brk72_24h_wd_ethusd": {
+    "trailing_stop": false,
+    "mean_hold_h": 18.4
+   },
+   "donch4h_stop_xauusd": {
+    "trailing_stop": true,
+    "mean_hold_h": 39.3
+   },
+   "noise30_us100": {
+    "trailing_stop": false,
+    "mean_hold_h": 2.0
+   },
+   "nq_btc_follow_btcusd": {
+    "trailing_stop": false,
+    "mean_hold_h": 1.0
+   },
+   "ocm4_us100": {
+    "trailing_stop": false,
+    "mean_hold_h": 3.9
+   },
+   "orb_asia_2d_buf10_xauusd": {
+    "trailing_stop": false,
+    "mean_hold_h": 42.0
+   }
+  },
+  "equals_frozen_TREND": true
+ },
+ "f2_addons_per_rule_common": {
+  "F1_brk_ridge_filter_btcusd": {
+   "k1": 0,
+   "k2": 0,
+   "candidates_k1": 213
+  },
+  "F1_brk_ridge_filter_ethusd": {
+   "k1": 0,
+   "k2": 0,
+   "candidates_k1": 193
+  },
+  "GOLD_FRI_PM_xauusd": {
+   "k1": 0,
+   "k2": 0,
+   "candidates_k1": 1
+  },
+  "brk72_24h_wd_btcusd": {
+   "k1": 0,
+   "k2": 0,
+   "candidates_k1": 202
+  },
+  "brk72_24h_wd_ethusd": {
+   "k1": 0,
+   "k2": 0,
+   "candidates_k1": 199
+  },
+  "donch4h_stop_xauusd": {
+   "k1": 94,
+   "k2": 32,
+   "candidates_k1": 94
+  },
+  "noise30_us100": {
+   "k1": 0,
+   "k2": 0,
+   "candidates_k1": 202
+  },
+  "nq_btc_follow_btcusd": {
+   "k1": 0,
+   "k2": 0,
+   "candidates_k1": 110
+  },
+  "ocm4_us100": {
+   "k1": 0,
+   "k2": 0,
+   "candidates_k1": 233
+  },
+  "orb_asia_2d_buf10_xauusd": {
+   "k1": 0,
+   "k2": 0,
+   "candidates_k1": 212
+  }
+ }
+}

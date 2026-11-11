@@ -60,7 +60,7 @@ class Collector:
         dur = np.where(xe >= 0, np.maximum(xe - fi, 1), -1)
         lo, hi = int(idx.searchsorted(self.wstart)), int(idx.searchsorted(self.wend))
         ny = idx[lo:hi].tz_convert(NY)
-        how = (ny.dayofweek * 24 + ny.hour).to_numpy()
+        how = np.array(ny.dayofweek * 24 + ny.hour, dtype=np.int64)
         how[-2:] = -1                                         # never the last two bars of the window
         order = np.argsort(how, kind="stable")
         bounds = np.searchsorted(how[order], np.arange(170))
@@ -127,7 +127,12 @@ def summary(arr, real_ref_total):
                          "longest_red_weeks_mean": f(ref[:, 6].mean())}}
     for name, _ in P.CONFIGS:
         x = arr[name]
-        G = x[:, 0] * ref[:, 1] / x[:, 1] - ref[:, 0]
+        sc = ref[:, 1] / x[:, 1]                               # equal-drawdown scale of the draw
+        G = x[:, 0] * sc - ref[:, 0]
+        # G = (add-ons' total x scale) + (reference total x (scale - 1)). The second part is positive whenever the
+        # reference of the draw LOSES (costs) and the scheme enlarges the drawdown: shrinking a loser counts as a
+        # "gain". Both parts are reported (diagnostic added after the first run; the criterion is unchanged).
+        g_add, g_shrink = (x[:, 0] - ref[:, 0]) * sc, ref[:, 0] * (sc - 1.0)
         n = len(G)
         se = G.std(ddof=1) / np.sqrt(n)
         req = 1.0 + G / real_ref_total
@@ -143,6 +148,9 @@ def summary(arr, real_ref_total):
             "G_mean": f(G.mean()), "G_median": f(np.median(G)), "G_p2.5_p97.5": [f(np.percentile(G, 2.5)), f(np.percentile(G, 97.5))],
             "G_ci95_of_mean": [f(G.mean() - 1.96 * se), f(G.mean() + 1.96 * se)],
             "share_of_draws_with_gain": f((G > 0).mean(), 3),
+            "G_part_from_the_addons_results_mean": f(g_add.mean()),
+            "G_part_from_shrinking_a_losing_reference_mean": f(g_shrink.mean()),
+            "G_part_from_the_addons_results_ci95": [f(g_add.mean() - 1.96 * g_add.std(ddof=1) / np.sqrt(n)), f(g_add.mean() + 1.96 * g_add.std(ddof=1) / np.sqrt(n))],
             "ratio_equivalent_mean": f(req.mean(), 4),
             "ratio_equivalent_ci95_of_mean": [f(1.0 + (G.mean() - 1.96 * se) / real_ref_total, 4), f(1.0 + (G.mean() + 1.96 * se) / real_ref_total, 4)],
             "ratio_equivalent_p2.5_p97.5": [f(np.percentile(req, 2.5), 4), f(np.percentile(req, 97.5), 4)],
