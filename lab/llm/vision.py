@@ -21,7 +21,18 @@ PRE-REGISTERED 2026-11-11, before any model call of this test.
   Model: the most capable one, claude-fable-5-2, at its default effort (high). No server-side fallback, on
   purpose: another model answering would contaminate the measurement; a refusal counts as "wait".
 
-Local (needs the market data):  python3 llm/vision.py build | analyse --name N
+AMENDMENT 2026-11-11, after the pilot (40 in-sample moments) and the leak probe, before any test call.
+  The probe failed badly: from the charts and the sheet, claude-fable-5-2 named the year of 69 % of the
+  moments (rank correlation +0.66). With pictures, the strongest model recognises the period, so a test on
+  years it has seen would measure memory. The test therefore moves to the only data the model cannot know:
+  gold after its knowledge cutoff (June 2026), from 2026-08-01 to 2026-11-04 (cases "post"; 30 minutes apart
+  instead of 45 to get about 1,000 moments; no Nasdaq backdrop line, that market has no 2026 data here).
+  Evaluation unchanged, with one fixed cost for every trade: 0.47 bp spread and commission + 0.3 bp entry
+  slippage, + 1 bp when stopped. The four-year robustness check becomes a month-by-month table.
+  Gold's 2026 prices were already consulted once for the round-1 rules; here only the model's trades and the
+  always-buy / always-sell references are computed from them.
+
+Local (needs the market data):  python3 llm/vision.py build | build_post | analyse --name N
 Remote (needs the API key):     requests "vision_run" / "vision_submit" / "vision_probe" handled by runner.py
 """
 import base64
@@ -38,6 +49,8 @@ sys.path.insert(0, LAB)
 OUT = os.path.join(LAB, "results", "llm")
 NPZ = os.path.join(OUT, "vision_cases.npz")
 META = os.path.join(OUT, "vision_cases.parquet")
+_files = lambda tag: (NPZ.replace(".npz", f"_{tag}.npz"), META.replace(".parquet", f"_{tag}.parquet")) if tag else (NPZ, META)
+COST_BP, STOP_SLIP_BP = 0.77, 1.0          # per trade: spread + commission + entry slippage; extra slippage when stopped
 MODEL = "claude-fable-5-2"
 N15, N60, ND = 96, 96, 60
 PIV = ["S3", "S2", "S1", "P", "R1", "R2", "R3"]
@@ -141,9 +154,10 @@ def content(case, text, head=""):
     return imgs + [{"type": "text", "text": head + text}]
 
 
-def load_cases():
-    z = np.load(NPZ)
-    meta = pd.read_parquet(META)
+def load_cases(tag=""):
+    npz, metaf = _files(tag)
+    z = np.load(npz)
+    meta = pd.read_parquet(metaf)
     cases = {cid: {k: z[k][n] for k in ("b15", "bb15", "b60", "bb60", "bD", "piv")} for n, cid in enumerate(meta.id)}
     return meta, cases
 
@@ -179,11 +193,15 @@ def _grid(mk, width):
     return b
 
 
-def build(n_is=150, n_val=800, seed=0):
+def build(spec=(("is", "2014-01-01", "2022-01-01", 150), ("val", "2022-01-01", "2026-01-01", 800)), tag="", spacing=45, seed=0):
+    import goldlab as gl
     from goldlab import r2
     from goldlab.data import NY
     from llm.context import Market
-    mk, ref = Market("xauusd"), Market("us100")
+    if tag == "post":            # data after the model's knowledge cutoff: real quotes including 2026, no backdrop market
+        mk, ref = Market("xauusd", m1=gl.load_m1("xauusd", include_holdout=True)), None
+    else:
+        mk, ref = Market("xauusd"), Market("us100")
     r2.free()
     ny = mk.index.tz_convert(NY)
     nym = (ny.hour * 60 + ny.minute).to_numpy()
@@ -192,14 +210,14 @@ def build(n_is=150, n_val=800, seed=0):
     e15, e60 = g15.end.to_numpy(), g60.end.to_numpy()
     rng = np.random.default_rng(seed)
     rows, arr = [], {k: [] for k in ("b15", "bb15", "b60", "bb60", "bD", "piv")}
-    for period, a, b, n in (("is", "2014-01-01", "2022-01-01", n_is), ("val", "2022-01-01", "2026-01-01", n_val)):
+    for period, a, b, n in spec:
         lo, hi = mk.index.searchsorted(pd.Timestamp(a, tz="UTC")), mk.index.searchsorted(pd.Timestamp(b, tz="UTC"))
         cand = np.flatnonzero(ok[lo:hi]) + lo
         pick, taken = [], np.zeros(0, np.int64)
         for i in rng.permutation(cand):
             if len(pick) >= n:
                 break
-            if len(taken) and np.abs(mk.tmin[taken] - mk.tmin[i]).min() < 45:
+            if len(taken) and np.abs(mk.tmin[taken] - mk.tmin[i]).min() < spacing:
                 continue
             sc = mk._scales(mk.index[i])
             if sc is None:
@@ -232,26 +250,28 @@ def build(n_is=150, n_val=800, seed=0):
             pick.append(i)
             taken = np.array(pick)
         print(period, len(pick), "cases", flush=True)
-    np.savez_compressed(NPZ, **{k: np.stack(v) for k, v in arr.items()})
-    pd.DataFrame(rows).to_parquet(META, index=False)
-    print("saved", len(rows), "cases |", round(os.path.getsize(NPZ) / 1e6, 1), "MB")
+    npz, metaf = _files(tag)
+    np.savez_compressed(npz, **{k: np.stack(v) for k, v in arr.items()})
+    pd.DataFrame(rows).to_parquet(metaf, index=False)
+    print("saved", len(rows), "cases |", round(os.path.getsize(npz) / 1e6, 1), "MB")
 
 
 # ------------------------------------------------------------------------------------------ outcome and analysis (local)
 def outcome(mk, i, px, atr, spread, action, stop_k, target, eod):
-    """Net R of one decision (0 for wait). Mid-price path, stop first when both are hit inside one minute."""
+    """Net R of one decision (0 for wait). Mid-price path, stop first when both are hit inside one minute.
+    (`spread` is kept in the signature for the first pilot; the cost is the fixed one of the amendment.)"""
     if action == "wait":
         return 0.0, 0.0
     s = 1 if action == "buy" else -1
     risk = stop_k * atr
     stop = px - s * risk
     tgt = px + s * risk * {"1R": 1, "2R": 2, "3R": 3}.get(target, 1e9)
-    cost = spread + 0.3e-4 * px
+    cost = COST_BP * 1e-4 * px
     for j in range(i, eod):
         hit_s = mk.l[j] <= stop if s == 1 else mk.h[j] >= stop
         hit_t = mk.h[j] >= tgt if s == 1 else mk.l[j] <= tgt
         if hit_s:
-            return -1.0 - (cost + 1e-4 * px) / risk, -1.0
+            return -1.0 - (cost + STOP_SLIP_BP * 1e-4 * px) / risk, -1.0
         if hit_t:
             g = abs(tgt - px) / risk
             return g - cost / risk, g
@@ -260,13 +280,15 @@ def outcome(mk, i, px, atr, spread, action, stop_k, target, eod):
 
 
 def analyse(name, n_perm=5000):
+    import goldlab as gl
     from goldlab import r2
     from goldlab.data import NY
     from llm.context import Market
-    mk = Market("xauusd")
-    r2.free()
-    meta = pd.read_parquet(META).set_index("id")
     run = os.path.join(OUT, "runs", name)
+    tag = json.load(open(os.path.join(run, "meta.json"))).get("cases", "")
+    mk = Market("xauusd", m1=gl.load_m1("xauusd", include_holdout=True)) if tag == "post" else Market("xauusd")
+    r2.free()
+    meta = pd.read_parquet(_files(tag)[1]).set_index("id")
     d = pd.DataFrame([json.loads(x) for x in open(os.path.join(run, "decisions.jsonl"))]).set_index("id")
     d = d.join(meta[["period", "t", "i", "px", "atr", "spread"]])
     wait = {"action": "wait", "size": "1", "stop_datr": "0.25", "target": "2R", "conviction": 0, "reason_fr": ""}
@@ -305,9 +327,9 @@ def analyse(name, n_perm=5000):
     unit = res[trade] / mult[trade]
     print(f"trades {int(trade.sum())} ({100 * trade.mean():.0f}% of moments) | mean net R per trade {obs:+.4f} | total {res.sum():+.1f} R | winners "
           f"{100 * (unit > 0).mean():.1f}% | same answers on other moments: mean {null.mean():+.4f} | p {pval:.4f}")
-    yr = pd.DatetimeIndex(tr.t).year
+    yr = pd.DatetimeIndex(tr.t).strftime("%Y-%m") if tag == "post" else pd.DatetimeIndex(tr.t).year
     by = tr.groupby(yr).R.agg(["size", "mean", "sum"]).round(3)
-    print("by year:\n", by.to_string())
+    print("by period:\n", by.to_string())
     print("by action:", tr.groupby("action").R.agg(["size", "mean"]).round(3).to_dict("index"))
     print("size 1 vs 2 (per unit):", {k: round(float((g.R / (2 if k == "2" else 1)).mean()), 3) for k, g in tr.groupby("size")})
     if len(tr) >= 30:
@@ -317,7 +339,7 @@ def analyse(name, n_perm=5000):
     print("for reference, always buy / always sell at every moment (stop 0.25, target 2R):", always)
     json.dump({"n": int(len(d)), "trades": int(trade.sum()), "mean_R": round(obs, 4), "total_R": round(float(res.sum()), 1),
                "winners": round(float((unit > 0).mean()), 3), "null_mean": round(float(null.mean()), 4), "p": round(float(pval), 4),
-               "by_year": {int(k): float(v) for k, v in by["mean"].items()}, "always": always},
+               "by_period": {str(k): float(v) for k, v in by["mean"].items()}, "always": always},
               open(os.path.join(run, "summary.json"), "w"), indent=1)
 
 
@@ -333,14 +355,14 @@ def _pick(meta, period, n):
     return m.head(n) if n else m
 
 
-def run_sync(name, period, n, model=MODEL, effort="high", workers=3):
+def run_sync(name, period, n, model=MODEL, effort="high", workers=3, tag=""):
     """Live calls (pilot)."""
     import concurrent.futures as cf
     from llm import judge
-    meta, cases = load_cases()
+    meta, cases = load_cases(tag)
     todo = _pick(meta, period, n)
     cl = judge.client()
-    json.dump({"model": model, "effort": effort, "period": period, "n": len(todo), "mode": "live", "kind": "vision"},
+    json.dump({"model": model, "effort": effort, "period": period, "n": len(todo), "mode": "live", "kind": "vision", "cases": tag},
               open(os.path.join(_run_dir(name), "meta.json"), "w"), indent=1)
 
     def one(r):
@@ -364,11 +386,11 @@ def run_sync(name, period, n, model=MODEL, effort="high", workers=3):
           f"(+cache {u.cache_read.mean():.0f}) out {u.out.mean():.0f} | actions {acts} | stop reasons {d.stop_reason.value_counts().to_dict()}")
 
 
-def submit(name, period, n, model=MODEL, effort="high"):
+def submit(name, period, n, model=MODEL, effort="high", tag=""):
     from anthropic.types.message_create_params import MessageCreateParamsNonStreaming
     from anthropic.types.messages.batch_create_params import Request
     from llm import judge
-    meta, cases = load_cases()
+    meta, cases = load_cases(tag)
     todo = _pick(meta, period, n)
     recs = todo.to_dict("records")
     cl, ids = judge.client(), []
@@ -377,7 +399,7 @@ def submit(name, period, n, model=MODEL, effort="high"):
                 for r in recs[k:k + 300]]
         ids.append(cl.messages.batches.create(requests=reqs).id)
         print(f"{name}: batch {ids[-1]} submitted with {len(reqs)} requests", flush=True)
-    json.dump({"model": model, "effort": effort, "period": period, "n": len(recs), "mode": "batch", "kind": "vision", "batch_ids": ids},
+    json.dump({"model": model, "effort": effort, "period": period, "n": len(recs), "mode": "batch", "kind": "vision", "cases": tag, "batch_ids": ids},
               open(os.path.join(_run_dir(name), "meta.json"), "w"), indent=1)
 
 
@@ -442,5 +464,7 @@ def probe(name, n=60, model=MODEL, workers=3):
 if __name__ == "__main__":
     if sys.argv[1] == "build":
         build()
+    elif sys.argv[1] == "build_post":
+        build(spec=(("post", "2026-08-01", "2026-11-05", 1000),), tag="post", spacing=30)
     elif sys.argv[1] == "analyse":
         analyse(sys.argv[sys.argv.index("--name") + 1])

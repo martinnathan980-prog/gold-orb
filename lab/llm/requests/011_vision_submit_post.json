@@ -1,0 +1,1 @@
+{"cmd": "vision_submit", "name": "vision_post_fable", "period": "post", "n": null, "model": "claude-fable-5-2", "effort": "high", "cases": "post"}

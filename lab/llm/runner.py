@@ -58,9 +58,9 @@ def execute(r):
         from llm import vision
         vm, ve = r.get("model", vision.MODEL), r.get("effort", "high")
         if cmd == "vision_run":
-            vision.run_sync(name, r.get("period", "is"), r.get("n"), vm, ve, workers=int(r.get("workers", 3)))
+            vision.run_sync(name, r.get("period", "is"), r.get("n"), vm, ve, workers=int(r.get("workers", 3)), tag=r.get("cases", ""))
         elif cmd == "vision_submit":
-            vision.submit(name, r.get("period", "val"), r.get("n"), vm, ve)
+            vision.submit(name, r.get("period", "val"), r.get("n"), vm, ve, tag=r.get("cases", ""))
         elif cmd == "vision_collect":
             vision.collect(name, bool(r.get("wait", True)))
         else:
