@@ -153,5 +153,75 @@
   "leverage": 500,
   "quote": "JPY"
  },
- "_fx_note": "FX majors added 2026-11-11 for the diversification tracks: Raw spread (about 0.1-0.3 pip) + 6 USD per lot commission folded in (EURUSD 0.75 pip, GBPUSD 1.0 pip, USDJPY 1.1 pip all-in); swaps from the 2026-11-10 table (credits ignored). Mid prices from round-1 Dukascopy bid files with a synthetic, flat intraday spread: avoid the 17:00 New York rollover hour."
+ "audusd": {
+  "spread": 9e-05,
+  "slip_stop_bps": 0.3,
+  "slip_mkt_bps": 0.1,
+  "swap_long": 0.01,
+  "swap_short": 0.005,
+  "swap_triple": "Wed",
+  "units_per_lot": 100000,
+  "min_lot": 0.01,
+  "lot_step": 0.01,
+  "leverage": 500,
+  "quote": "USD"
+ },
+ "usdcad": {
+  "spread": 0.000125,
+  "slip_stop_bps": 0.3,
+  "slip_mkt_bps": 0.1,
+  "swap_long": 0.0,
+  "swap_short": 0.02,
+  "swap_triple": "Wed",
+  "units_per_lot": 100000,
+  "min_lot": 0.01,
+  "lot_step": 0.01,
+  "leverage": 500,
+  "quote": "CAD"
+ },
+ "usdchf": {
+  "spread": 0.0001,
+  "slip_stop_bps": 0.3,
+  "slip_mkt_bps": 0.1,
+  "swap_long": 0.0,
+  "swap_short": 0.045,
+  "swap_triple": "Wed",
+  "units_per_lot": 100000,
+  "min_lot": 0.01,
+  "lot_step": 0.01,
+  "leverage": 500,
+  "quote": "CHF"
+ },
+ "nzdusd": {
+  "spread": 0.00011,
+  "slip_stop_bps": 0.3,
+  "slip_mkt_bps": 0.1,
+  "swap_long": 0.015,
+  "swap_short": 0.0,
+  "swap_triple": "Wed",
+  "units_per_lot": 100000,
+  "min_lot": 0.01,
+  "lot_step": 0.01,
+  "leverage": 500,
+  "quote": "USD"
+ },
+ "eurjpy": {
+  "spread": 0.0155,
+  "slip_stop_bps": 0.3,
+  "slip_mkt_bps": 0.1,
+  "swap_long": 0.0,
+  "swap_short": 0.03,
+  "swap_triple": "Wed",
+  "units_per_lot": 100000,
+  "min_lot": 0.01,
+  "lot_step": 0.01,
+  "leverage": 500,
+  "quote": "JPY"
+ },
+ "_fx_note": "FX pairs added 2026-11-11 for round 3. All-in cost = typical FP Markets Raw spread + the 6 USD per lot round-trip commission expressed in price (EURUSD 0.75 pip, GBPUSD 1.0, USDJPY 1.1, AUDUSD 0.9, USDCAD 1.25, USDCHF 1.0, NZDUSD 1.1, EURJPY 1.55): estimates to be read in the user's MT5; swaps = rough rate differential + mark-up, credits ignored. Frames: real Dukascopy bid/ask (data/raw_r3), intraday spread shape kept.",
+ "_stocks": {
+  "commission_per_share": 0.02,
+  "min_commission_per_side_usd": 2.0,
+  "note": "US share CFDs on MT5, PROVISIONAL and unverified (fpmarkets.com could not be read on 2026-11-11): 0.02 USD per share per side added to Dukascopy's quoted bid/ask; a minimum of about 2 USD per side is reported by search snippets and is NOT in the frames (it depends on the position size): it is applied in the account-level study. Margin 5-20 %."
+ }
 }

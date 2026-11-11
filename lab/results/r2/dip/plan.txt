@@ -1,0 +1,33 @@
+dip track -- pre-declared configuration lists (written before each stage is run)
+
+Descriptive look before any trial: desc1_next_session.txt (44 buckets x 3 periods, next-session gross return).
+
+STAGE 1 (12 trials): entry signals, common settings: long, entry at the cash-close bar, stop 2.5 x session ATR14,
+exit "hi" (first later close above the previous session's high), time stop 5 business days, no trend filter
+unless stated.  Markets: us500, us100.
+  S1 ibs thr=0.2 | S2 ibs thr=0.3 | S3 rsi2 thr=10 | S4 rsi2 thr=10 trend=True | S5 down3 (3 lower closes) | S6 bb (20,2)
+Selection rule for stage 2: the signal with the highest mean t-stat over us500 and us100 among those with
+n >= 250 on both; if none has n >= 250, the highest mean t.
+
+Stage 1 result: only S2 (ibs<0.3) has n >= 250 on both markets -> stage 2 uses signal ibs thr=0.3.
+Bug fix after stage 1 (before stage 2): the time stop now exits at C of the day `hold` business days after
+entry (exit_index), not at the first TRADABLE session >= hold days; trials 1-12 had a few trades held up to
+240 h because intermediate sessions were untradable (data holes).  Trials 1-12 stay logged as they are.
+
+STAGE 2 (10 trials): signal ibs thr=0.3, long, stop 2.5 ATR, on us500 and us100:
+  X1 exit="up" hold=5 | X2 exit="sma5" hold=5 | X3 exit="time" hold=1 (next close) | X4 exit="time" hold=3 |
+  X5 swap-free: entry="1830" (18:30 NY), exit 16:00 NY next business day
+Plus no new trial of S2 with exit "hi" (stage 1 already has it).
+Selection for stage 3: highest mean t over us500 and us100 (n >= 250 on both).
+
+Stage 2 result: mean t (us500, us100): X1 1.495, X2 1.535, X3 1.255, X4 0.465, X5 1.535 -> X2 and X5 tie: both go on
+as candidate finalists A = X2 (ibs<0.3, exit sma5, hold 5, stop 2.5 ATR, entry at close) and
+B = X5 (ibs<0.3, swap-free 18:30 NY -> 16:00 NY next business day, stop 2.5 ATR).
+us500 is far from significant for both (t 0.47 / 0.97); us100 is the candidate traded market.
+
+STAGE 3 (fixed list, <= 22 trials):
+  replications: A on us30, ger40; B on us30                                     (3)
+  mirror (side=-1, ibs > 0.7, symmetric exit) quick: A and B on us500, us100      (4)
+  neighbours on us100: thr 0.2 / 0.4 and stop_atr 2.0 / 3.0, one at a time, A and B (8)
+  full evaluations (stress, gross, every-signal): A on us500 us100 us30 ger40; B on us500 us100 us30 (7)
+Nulls (r2.null_test mode="day", 200 seeds) on the full-evaluated sleeves: not extra configurations.
