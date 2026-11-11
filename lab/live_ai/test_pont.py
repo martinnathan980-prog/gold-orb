@@ -1,5 +1,6 @@
 """Test du pont côté ordinateur, sans MT5 : de fausses mains écrivent les mêmes fichiers que ClaudeMains.mq5
 et répondent aux ordres (mêmes formats, mêmes refus de base).   python3 test_pont.py"""
+import os
 import tempfile
 import threading
 import time
@@ -109,6 +110,40 @@ def main():
     got = server_to_utc([ts("2026-01-15 12:00"), ts("2026-07-15 12:00"), ts("2026-03-08 08:30"), ts("2026-03-08 10:30"), ts("2026-11-10 20:00")])
     want = ["2026-01-15 10:00", "2026-07-15 09:00", "2026-03-08 06:30", "2026-03-08 07:30", "2026-11-10 18:00"]
     assert list(got.strftime("%Y-%m-%d %H:%M")) == want, got
+
+    # recherche du dossier des mains : emplacements connus seulement, jamais de recherche récursive (sous Wine, le lien
+    # dosdevices/z: pointe sur tout le disque)
+    with tempfile.TemporaryDirectory() as home:
+        os.environ.pop("CLAUDE_MAINS_DIR", None)
+        try:
+            Hands.find(home)
+            raise AssertionError("un dossier a été trouvé dans un compte vide")
+        except FileNotFoundError:
+            pass
+        pre = Path(home) / "Library" / "Application Support" / "net.metaquotes.wine.metatrader5"
+        mac = pre / "drive_c" / "Program Files" / "MetaTrader 5" / "MQL5" / "Files" / "claude"
+        mac.mkdir(parents=True)
+        (pre / "dosdevices").mkdir()
+        os.symlink("/", pre / "dosdevices" / "z:")                                         # comme Wine : z: = tout le disque
+        os.symlink(pre / "drive_c", pre / "dosdevices" / "c:")
+        t0 = time.time()
+        assert Hands.find(home).dir == mac and time.time() - t0 < 2.0
+        other = Path(home) / ".wine" / "drive_c" / "users" / "moi" / "AppData" / "Roaming" / "MetaQuotes" / "Terminal" / "ABC123" / "MQL5" / "Files" / "claude"
+        other.mkdir(parents=True)
+        (other / "account.txt").write_text("server_time=1\n")                              # deux terminaux : celui où les mains écrivent
+        assert Hands.find(home).dir == other
+        (mac / "account.txt").write_text("server_time=2\n")
+        os.utime(other / "account.txt", (time.time() - 3600, time.time() - 3600))
+        assert Hands.find(home).dir == mac
+        os.environ["CLAUDE_MAINS_DIR"] = str(other)                                        # emplacement imposé
+        assert Hands.find(home).dir == other
+        os.environ["CLAUDE_MAINS_DIR"] = str(Path(home) / "absent")
+        try:
+            Hands.find(home)
+            raise AssertionError("un dossier imposé qui n'existe pas a été accepté")
+        except FileNotFoundError:
+            pass
+        os.environ.pop("CLAUDE_MAINS_DIR")
 
     with tempfile.TemporaryDirectory() as d:
         fake = FakeHands(d)

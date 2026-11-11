@@ -9,7 +9,8 @@
 //                           server_offset=S          TimeTradeServer() = real clock + S seconds  (TimeGMT() = real clock)
 //                           price.<symbol>=bid,ask
 //                           sym.<symbol>.<prop>=v    stops_level freeze_level trade_mode order_mode vol_min vol_step vol_max
-//                                                    tick_value tick_value_loss leverage
+//                                                    tick_size tick_value tick_value_loss leverage
+//                                                    (a stop that is not a multiple of tick_size is refused: 10016)
 //                                                    tick_age (the last tick is that many seconds old)
 //                                                    slip (a new position is filled that much worse than the quote)
 //                           retcode=R                every trade request is answered with R (0 = normal behaviour)
@@ -779,9 +780,18 @@ static bool mk_volume_ok(const MkSym &s, double v)
    return std::fabs(k - std::round(k)) < 1e-6;
   }
 // SL / TP against the price at which the position would be closed now (bid for a buy, ask for a sell)
+// ASSUMPTION (from memory, not found in the documentation): a server refuses a stop or a target that is not a multiple
+// of the market's tick size
+static bool mk_on_tick(const MkSym &s, double x)
+  {
+   if(x == 0 || s.tick_size <= 0) return true;
+   double q = x / s.tick_size;
+   return std::fabs(q - std::round(q)) < 1e-6;
+  }
 static bool mk_stops_ok(const MkSym &s, int type, double sl, double tp)
   {
    if(std::isnan(sl) || std::isnan(tp) || sl < 0 || tp < 0) return false;
+   if(!mk_on_tick(s, sl) || !mk_on_tick(s, tp)) return false;
    double lvl = s.stops_level * s.point, px = (type == 0) ? s.bid : s.ask;
    if(type == 0) return (sl == 0 || sl < px - lvl + 1e-9 * px) && (sl == 0 || sl < px) && (tp == 0 || tp > px + lvl - 1e-9 * px);
    return (sl == 0 || (sl > px + lvl - 1e-9 * px && sl > px)) && (tp == 0 || tp < px - lvl + 1e-9 * px);
@@ -1142,6 +1152,7 @@ static void mk_apply_control()
             else if(prop == "vol_min") s.vol_min = x;
             else if(prop == "vol_step") s.vol_step = x;
             else if(prop == "vol_max") s.vol_max = x;
+            else if(prop == "tick_size") s.tick_size = x;
             else if(prop == "tick_value") s.tick_value = x;
             else if(prop == "tick_value_loss") s.tick_value_loss = x;
             else if(prop == "leverage") s.leverage = x;

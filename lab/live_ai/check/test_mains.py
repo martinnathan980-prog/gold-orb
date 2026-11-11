@@ -1968,22 +1968,129 @@ def e_slow(W):
         assert r["ok"] and r.get("ticket") == w.robot()[0]["ticket"], f"answer {r} while the broker holds {len(w.robot())} position(s)"
 
 
-@test("I1", "the hands refuse to start with magic number 0, on a netting account, or without their timer (alert in plain words)", covers="L20")
+@test("I1", "the hands refuse to start with magic number 0 or without their timer (alert in plain words); on a netting account they "
+            "start, say so in an alert and open nothing", covers="L20")
 def i_refuse(W):
     for kw, text in ((dict(inputs={"InpMagic": 0}), "le numero magique (InpMagic) ne doit pas etre 0"),
-                     (dict(margin_mode=0), "ce compte n'est pas en mode hedging"),
                      (dict(timer_fail=1), "la minuterie de MT5 n'a pas pu etre lancee")):
         with W(expect_fail=True, **kw) as w:
             alerts = w.log("ALERT")
             assert len(alerts) == 1 and alerts[0].startswith("ClaudeMains ne demarre pas : ") and text in alerts[0], alerts
             assert not w.trades() and not (w.dir / "account.txt").exists()
+    # a netting account read at start-up: no unloading (the account may simply not be loaded yet, and unloaded hands would stop
+    # watching the positions already open); an alert, and nothing can be opened
+    with W(margin_mode=0) as w:
+        alerts = w.log("ALERT")
+        assert len(alerts) == 1 and "ce compte n'est pas en mode hedging" in alerts[0] and "Aucune position ne sera ouverte" in alerts[0], alerts
+        w.h.alive()
+        w.wait(lambda: w.h.account()["blocked"] == "compte sans hedging", 8, "blocked")
+        r = w.open("XAUUSD", "buy", 0.02, sl=4075.23)
+        assert not r["ok"] and r["reason"] == "compte sans hedging" and not w.trades(), r
     with W(connected=0, margin_mode=0) as w:                                    # account not loaded at start-up: found out later, nothing is opened
+        assert not w.log("ALERT")
         w.set(connected=None)
         w.h.alive()
         w.wait(lambda: w.h.account()["blocked"] == "compte sans hedging", 8, "blocked")
         r = w.open("XAUUSD", "buy", 0.02, sl=4075.23)
         assert not r["ok"] and r["reason"] == "compte sans hedging" and not w.trades(), r
 
+
+@test("E8", "a comma in excess in the list of markets (an empty name) is ignored: no market is taken in its place, and an order "
+            "without a market name is refused", covers="C4")
+def e_empty_name(W):
+    with W(inputs={"InpSymbols": "XAUUSD,,EURUSD,"}) as w:
+        s = (w.dir / "symbols.csv").read_text().splitlines()
+        named = [ln.split(",")[:2] for ln in s[1:]]
+        assert [n for n in named if n[1]] == [["XAUUSD", "XAUUSD.r"], ["EURUSD", "EURUSD.r"]], named
+        assert not [n for n in named if n[0] == "" and n[1] != ""], named
+        w.h.alive()
+        r = w.raw("e8", cmd(action="open", symbol="", side="buy", volume="0.0100", sl="1.10000"))
+        assert r["ok"] == "0" and r["reason"] == "marche inconnu" and not w.trades(), r
+        assert w.must_open("EURUSD", "buy", 0.01, sl=1.15)["ticket"] > 0
+
+
+@test("D9", "a lock that falls while a forced close waits for its retry (market not tradable) closes the robot's other positions at "
+            "once, not at the next retry", covers="L5")
+def d_lock_during_backoff(W):
+    with W(inputs={"InpDailyLossPct": 0.8}) as w:
+        w.h.alive()
+        j = w.must_open("USDJPY", "buy", 0.05, sl=154.654, ttl_min=1)["ticket"]
+        a = w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)["ticket"]
+        w.set({"sym.USDJPY.r.trade_mode": 0})                                   # the yen cannot be traded for now
+        w.advance(61)                                                           # its deadline: one attempt, refused; next one in 10 s
+        w.wait(lambda: len(w.trades("close")) == 1, 3, "the refused ttl close")
+        w.set({"price.XAUUSD.r": "4075.40,4075.53"})                            # -8.33 EUR floating on gold: the daily lock falls
+        w.wait(lambda: w.notes("Perte max du jour atteinte"), 3, "the daily lock")
+        w.wait(lambda: w.pos(a) is None, 2, "gold to be closed at once, not 10 s later")
+        assert w.pos(j) is not None
+
+
+@test("R19", "the server clock steps back one hour while forced closes wait for their retry: the retries go on", covers="H11")
+def r_clock_back_close(W):
+    with W() as w:
+        w.set(retcode_close=10006)
+        hand, a, b = lose(w, 3780.00)                                           # permanent stop (gold is stopped out); the close of the euro is refused
+        w.wait(lambda: len(w.trades("close")) >= 1, 3, "the refused close")
+        w.set(retcode_close=None)
+        w.advance(-3600)
+        w.wait(lambda: not w.robot(), 3, "the closes to go on after the clock stepped back")
+        w.untouched(hand)
+
+
+@test("O25", "fill worse than the quote and the hands' own close refused: the position is closed by the next passes", covers="S2")
+def o_slip_close_refused(W):
+    with W() as w:
+        w.h.alive()
+        w.set({"sym.XAUUSD.r.slip": 3.0, "retcode_close": 10006})
+        r = w.open("XAUUSD", "buy", 0.5, sl=4075.23)
+        assert not r["ok"] and r["ticket"] > 0 and r["reason"].endswith("position refermee d'office"), r
+        assert len(w.robot()) == 1
+        w.set({"sym.XAUUSD.r.slip": None, "retcode_close": None})
+        w.advance(11)
+        w.wait(lambda: not w.robot(), 3, "the position the hands could not close at once")
+
+
+@test("N2", "never more than 10 push notifications in a minute (MetaTrader's other limit), even when every open slips")
+def n_minute(W):
+    with W(server="2026-11-12 10:30:00", inputs={"InpDailyLossPct": 0}) as w:
+        w.h.alive()
+        w.set({"sym.XAUUSD.r.slip": 3.0})
+        for _ in range(12):
+            r = w.open("XAUUSD", "buy", 0.5, sl=4075.23)
+            assert not r["ok"] and r["ticket"] > 0, r
+            w.advance(2)
+            w.h.alive()
+        assert w.now() - ts("2026-11-12 10:30:00") < 60
+        assert len([p for p in w.log("PRINT") if "Ouverture annulee" in p]) == 12
+        n = w.log("NOTIFY")
+        assert 3 <= len(n) <= 10, f"{len(n)} push notifications in less than a minute (12 events, each in its own second)"
+        w.at("2026-11-12 10:31:05")                                             # the next minute: pushes go out again
+        w.h.alive()
+        assert not w.open("XAUUSD", "buy", 0.5, sl=4075.23)["ok"]
+        assert len(w.log("NOTIFY")) > len(n), w.log("NOTIFY")
+
+
+@test("N3", "the warning that positions cannot be closed is not lost when the push limit of the second is already used")
+def n_warn_kept(W):
+    with W() as w:
+        w.h.alive()
+        w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)
+        w.must_open("EURUSD", "buy", 0.05, sl=1.158)
+        w.set({"retcode_close": 10018, "price.XAUUSD.r": "3780.00,3780.13"})    # kill + daily lock + a forced close that fails
+        w.wait(lambda: any("ATTENTION" in p for p in w.log("PRINT")), 5, "the warning in the log")
+        w.advance(61)
+        w.wait(lambda: w.notes("ATTENTION"), 3, "the warning as a push at the next attempt")
+
+
+@test("O26", "a position left without a stop: a modify may put back a stop worth up to 1.25 times the risk cap, not more", covers="L16")
+def o_naked_cap(W):
+    with W() as w:
+        w.h.alive()
+        t = w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)["ticket"]
+        w.do(f"sltp {t} 0 0")                                                   # the stop is removed by hand
+        r = w.modify(t, sl=4072.23)                                             # 8.00 from the open price: 13.80 EUR, cap 10 x 1.25 = 12.50
+        assert not r["ok"] and r["reason"] == "position sans stop : le stop demande depasse la limite de risque", r
+        assert w.modify(t, sl=4073.23)["ok"] and w.pos(t)["sl"] == 4073.23      # 7.00: 12.08 EUR, inside
 
 # ====================================================================== runner
 def run_one(binary, keep, item):

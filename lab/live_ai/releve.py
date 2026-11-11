@@ -156,6 +156,8 @@ def analyser(folder):
     commission = dict(COMMISSION)
     lue = commissions_mesurees(folder)
     commission.update(lue)
+    commission_pire = dict(commission)                   # la même, marge d'arrondi de la sonde comprise
+    commission_pire.update(commissions_mesurees(folder, au_pire=True) if lue else {})
     res_com = "lue sur un aller-retour en démo" if lue else "supposée (pas encore de sonde)"
     res = {"serveur": fini.get("server"), "demo": fini.get("demo"), "commission": res_com, "fiches": {}, "marches": {}, "regles": {}}
     print("FICHES DES MARCHÉS")
@@ -174,7 +176,8 @@ def analyser(folder):
         res["sonde"] = sonde_mt5
         print("\nSONDE (aller-retour au lot minimum sur le compte démo)")
         for b, m in sonde_mt5.items():
-            print(f"  {b:7s} commission {m['commission_par_lot']:.2f} par lot aller-retour = {m['commission_pb']:.2f} pb ; "
+            pm = f" (à {m['commission_par_lot_marge']:.2f} près : arrondi au centime sur {m['volume']:g} lot)" if m["commission_par_lot_marge"] else ""
+            print(f"  {b:7s} commission {m['commission_par_lot']:.2f} par lot aller-retour{pm} = {m['commission_pb']:.2f} pb ; "
                   f"écart payé {m['ecart_realise']:g} = {m['ecart_realise_pb']:.2f} pb ({m['transactions']} transactions)")
     frames = {}
     print("\nÉCART ACHETEUR - VENDEUR MESURÉ (points de base du prix ; médiane, moyenne, 9e décile)")
@@ -239,12 +242,20 @@ def analyser(folder):
         got = r.get("mesure_aux_signaux", {})
         mes = got.get("mediane") if got.get("n", 0) >= 10 else r.get("mesure_ponderee_par_heure")
         r["source"] = "signaux rejoués" if got.get("n", 0) >= 10 else "pondération par heure"
+        pire = ""
         if ref and mes:
             r["ratio"] = round(mes / ref, 2)
             r["verdict"] = verdict(r["ratio"], grille.get(key))
+            # la même mesure avec la commission au pire (marge d'arrondi de la sonde) : dite seulement si elle change le verdict
+            extra = float(np.median((commission_pire.get(sym, 0.0) - commission.get(sym, 0.0)) / mid * 1e4))
+            if extra > 0:
+                r["ratio_au_pire"] = round((mes + extra) / ref, 2)
+                r["verdict_au_pire"] = verdict(r["ratio_au_pire"], grille.get(key))
+                if r["verdict_au_pire"] != r["verdict"]:
+                    pire = f" | commission au pire : ratio {r['ratio_au_pire']:.2f} -> {r['verdict_au_pire']}"
         res["regles"][key] = r
         print(f"  {key:28s} modèle {ref if ref else float('nan'):6.2f} pb | mesuré {mes if mes else float('nan'):6.2f} pb "
-              f"({r['source']}, {got.get('n', 0)} signaux) | ratio {r.get('ratio', float('nan')):.2f} -> {r.get('verdict', 'non calculable')}")
+              f"({r['source']}, {got.get('n', 0)} signaux) | ratio {r.get('ratio', float('nan')):.2f} -> {r.get('verdict', 'non calculable')}{pire}")
     os.makedirs(OUT, exist_ok=True)
     stamp = pd.Timestamp.now("UTC").strftime("%Y-%m-%d")
     json.dump(res, open(os.path.join(OUT, f"releve_{stamp}.json"), "w"), indent=1, default=str)
@@ -324,26 +335,34 @@ def lire_sonde(folder):
     df = pd.read_csv(StringIO(p.read_text(encoding="latin-1")), comment="#")
     out = {}
     for _, r in df.iterrows():
-        if r.get("status") != "ok" or not r["volume"] > 0 or not r["tick_value"] > 0:
+        # une ligne ne vaut mesure que si l'achat ET la revente ont été relus dans l'historique (sinon commission fausse)
+        if r.get("status") != "ok" or not r["volume"] > 0 or not r["tick_value"] > 0 or not r["deals"] >= 2:
             continue
         com = -(float(r["commission"]) + float(r["fee"])) + 0.0              # devise du compte, pour `volume` lots
+        # le courtier arrondit la commission de chaque transaction au centime : au lot minimum, la commission par lot
+        # n'est donc connue qu'à 0,005 x transactions / volume près. Une lecture nulle reste nulle (pas de commission).
+        marge = 0.005 * int(r["deals"]) / float(r["volume"]) if com > 0 else 0.0
         out[r["base"]] = {"nom": r["name"], "volume": float(r["volume"]), "transactions": int(r["deals"]),
                           "commission_aller_retour": round(com, 4), "commission_par_lot": round(com / r["volume"], 4),
+                          "commission_par_lot_marge": round(marge, 4),
                           "commission_en_prix": float(com / r["volume"] / r["tick_value"] * r["tick_size"]),
+                          "commission_en_prix_au_pire": float((com / r["volume"] + marge) / r["tick_value"] * r["tick_size"]),
                           "commission_pb": round(float(com / r["volume"] / r["tick_value"] * r["tick_size"] / r["buy_price"] * 1e4), 3),
                           "ecart_realise": round(float(r["buy_price"] - r["sell_price"]), 8),
                           "ecart_realise_pb": round(float((r["buy_price"] - r["sell_price"]) / r["buy_price"] * 1e4), 3)}
     return out
 
 
-def commissions_mesurees(folder=None):
+def commissions_mesurees(folder=None, au_pire=False):
     """Commission en prix par unité (aller-retour) lue par la sonde, par marché du labo : d'abord le fichier
-    sonde.csv du relevé (script MT5), sinon la dernière sonde faite par le pont (sonde_<date>.json)."""
+    sonde.csv du relevé (script MT5), sinon la dernière sonde faite par le pont (sonde_<date>.json).
+    au_pire=True : la lecture plus sa marge d'arrondi (voir lire_sonde)."""
     import glob
     if folder is not None:
         s = lire_sonde(folder)
         if s:
-            return {BASE2SYM[b]: m["commission_en_prix"] for b, m in s.items() if b in BASE2SYM}
+            k = "commission_en_prix_au_pire" if au_pire else "commission_en_prix"
+            return {BASE2SYM[b]: m[k] for b, m in s.items() if b in BASE2SYM}
     files = sorted(glob.glob(os.path.join(OUT, "sonde_*.json")))
     if not files:
         return {}

@@ -39,8 +39,8 @@
 //|   8. Tout est ferme le vendredi soir si MT5 tourne a ce moment ;  |
 //|      sinon a la premiere occasion, des la reprise.                |
 //|  Il ne touche jamais aux positions ouvertes a la main.            |
-//|  Il refuse de demarrer avec le numero magique 0 ou sur un compte  |
-//|  qui n'est pas en mode "hedging".                                 |
+//|  Il refuse de demarrer avec le numero magique 0. Il n'ouvre rien  |
+//|  sur un compte qui n'est pas en mode "hedging".                   |
 //+------------------------------------------------------------------+
 #property copyright "gold-orb lab"
 #property version   "1.10"
@@ -83,6 +83,8 @@ datetime g_brain_ts   = 0;    // dernier signe de vie du cerveau (UTC)
 bool     g_brain_told = false;// l'horloge du cerveau en avance a deja ete signalee
 datetime g_push_sec   = 0;    // seconde de la derniere notification push
 int      g_push_n     = 0;    // notifications push envoyees dans cette seconde
+datetime g_push_min   = 0;    // minute de la derniere notification push
+int      g_push_m     = 0;    // notifications push envoyees dans cette minute
 bool     g_flat       = false;// un blocage impose de tout fermer (etat au passage precedent)
 double   g_day_done   = 0.0;  // resultat du robot aujourd'hui, transactions faites (positions encore ouvertes non comprises)
 double   g_day_bal    = 0.0;  // solde du debut de journee
@@ -149,21 +151,29 @@ bool HasKey(const string &keys[], const string key)
    return false;
   }
 
-void Notify(const string msg)
+// MT5 accepte au plus 2 notifications push par seconde et 10 par minute, sinon il peut couper le service : ici 5 par minute
+// au plus (donc jamais 10 en 60 s), dont 2 gardees pour les messages urgents. Renvoie false si la notification a ete omise.
+bool Notify(const string msg, const bool urgent = false)
   {
    datetime now = TimeTradeServer();
    g_last_msg = TimeToString(now, TIME_DATE | TIME_MINUTES) + " " + msg;
    Print("ClaudeMains: ", msg);
+   if(!InpPush) return true;
    if(now != g_push_sec)
      {
       g_push_sec = now;
       g_push_n = 0;
      }
-   if(InpPush && g_push_n < 2)                                          // MT5 tolere 2 notifications par seconde ; au-dela il peut couper le service
+   if(now - now % 60 != g_push_min)
      {
-      g_push_n++;
-      SendNotification("Robot Claude : " + msg);
+      g_push_min = now - now % 60;
+      g_push_m = 0;
      }
+   if(g_push_n >= 2 || g_push_m >= (urgent ? 5 : 3)) return false;
+   g_push_n++;
+   g_push_m++;
+   SendNotification("Robot Claude : " + msg);
+   return true;
   }
 
 // l'arret definitif est aussi note dans un fichier : MT5 n'ecrit ses variables globales sur le disque qu'a sa fermeture
@@ -550,14 +560,14 @@ bool Locks()
       GlobalVariableSet("CM_killed", 1.0);
       GlobalVariablesFlush();
       KillFile(true);
-      Notify("ARRET DEFINITIF : fonds " + DoubleToString(eq, 2) + ", capital de depart " + DoubleToString(start, 2) + ". Tout est ferme.");
+      Notify("ARRET DEFINITIF : fonds " + DoubleToString(eq, 2) + ", capital de depart " + DoubleToString(start, 2) + ". Tout est ferme.", true);
      }
    if(GlobalVariableGet("CM_day_lock") == 0 && InpDailyLossPct > 0 && g_day_bal > 0
       && g_day_done + RobotFloating() <= -g_day_bal * InpDailyLossPct / 100.0)
      {
       GlobalVariableSet("CM_day_lock", 1.0);
       GlobalVariablesFlush();
-      Notify("Perte max du jour atteinte : tout est ferme, reprise demain.");
+      Notify("Perte max du jour atteinte : tout est ferme, reprise demain.", true);
      }
    return true;
   }
@@ -614,9 +624,9 @@ void Watch()
    if(told != "") Notify(StringSubstr(told, 0, 230) + ".");
    if(bad > 0 && (now - g_last_warn >= 3600 || now < g_last_warn))    // l'utilisateur doit le savoir (une fois par heure au plus)
      {
-      g_last_warn = now;
-      Notify("ATTENTION : " + IntegerToString(bad) + " position(s) du robot devraient etre fermees et ne le sont pas ("
-             + (shut == bad ? "marche ferme" : (TradeAllowed() ? "refus du courtier" : "trading automatique desactive dans MT5")) + ").");
+      if(Notify("ATTENTION : " + IntegerToString(bad) + " position(s) du robot devraient etre fermees et ne le sont pas ("
+                + (shut == bad ? "marche ferme" : (TradeAllowed() ? "refus du courtier" : "trading automatique desactive dans MT5")) + ").", true))
+         g_last_warn = now;                                             // omise (limite des notifications) : redite a la tentative suivante
      }
   }
 
@@ -935,11 +945,10 @@ int OnInit()
       Alert("ClaudeMains ne demarre pas : le numero magique (InpMagic) ne doit pas etre 0, c'est celui des positions ouvertes a la main.");
       return INIT_FAILED;
      }
+   // pas de refus de demarrer ici : au lancement de MT5 le compte peut ne pas etre encore charge, et des mains dechargees
+   // ne surveilleraient plus les positions deja ouvertes. Aucune ouverture n'est possible tant que le compte n'est pas hedging.
    if(TerminalInfoInteger(TERMINAL_CONNECTED) != 0 && !Hedging())
-     {
-      Alert("ClaudeMains ne demarre pas : ce compte n'est pas en mode hedging (plusieurs positions par marche). Il faut un compte hedging.");
-      return INIT_FAILED;
-     }
+      Alert("ClaudeMains : ce compte n'est pas en mode hedging (plusieurs positions par marche). Aucune position ne sera ouverte.");
    FolderCreate("claude");
    FolderCreate("claude\\cmd");
    FolderCreate("claude\\res");
@@ -951,7 +960,7 @@ int OnInit()
      {
       StringTrimLeft(g_base[i]);
       StringTrimRight(g_base[i]);
-      g_name[i] = Resolve(g_base[i]);
+      g_name[i] = (g_base[i] == "") ? "" : Resolve(g_base[i]);         // virgule en trop dans InpSymbols : element vide ignore
       Print("ClaudeMains: ", g_base[i], " -> ", g_name[i] == "" ? "INTROUVABLE" : g_name[i]);
      }
    int total = SymbolsTotal(false);

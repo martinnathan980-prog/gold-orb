@@ -47,16 +47,32 @@ class Hands:
 
     # ------------------------------------------------------------------ localisation
     @staticmethod
-    def find():
-        """Dossier .../MQL5/Files/claude créé par les mains au premier lancement."""
-        home = str(Path.home())
-        pats = [home + "/Library/Application Support/**/MQL5/Files/claude",            # MetaTrader 5 pour Mac
-                os.environ.get("APPDATA", "") + "/MetaQuotes/Terminal/*/MQL5/Files/claude",   # Windows
-                home + "/.wine/**/MQL5/Files/claude", home + "/.mt5/**/MQL5/Files/claude"]    # Linux (Wine)
-        found = [p for pat in pats if pat for p in glob.glob(pat, recursive=True)]
+    def find(home=None):
+        """Dossier .../MQL5/Files/claude créé par les mains au premier lancement.
+
+        Les emplacements connus sont essayés un par un, sans recherche récursive : sous Wine (MetaTrader pour Mac) le
+        dossier dosdevices/z: pointe sur tout le disque, une recherche « partout » s'y perdrait. Pour un emplacement
+        inhabituel : variable d'environnement CLAUDE_MAINS_DIR, ou Hands("/chemin/vers/MQL5/Files/claude")."""
+        forced = os.environ.get("CLAUDE_MAINS_DIR", "")
+        if forced:
+            if not os.path.isdir(forced):
+                raise FileNotFoundError(f"CLAUDE_MAINS_DIR = {forced} : ce dossier n'existe pas")
+            return Hands(forced)
+        home = str(Path.home()) if home is None else str(home)
+        tail = "/MQL5/Files/claude"
+        prefixes = [home + "/Library/Application Support/net.metaquotes.wine.metatrader5",     # MetaTrader 5 pour Mac
+                    home + "/Library/Application Support/*", home + "/.wine", home + "/.mt5"]   # autres préfixes Wine (Mac, Linux)
+        pats = []
+        for pre in prefixes:
+            pats += [pre + "/drive_c/Program Files/*" + tail, pre + "/drive_c/Program Files (x86)/*" + tail,
+                     pre + "/drive_c/users/*/AppData/Roaming/MetaQuotes/Terminal/*" + tail]
+        if os.environ.get("APPDATA"):
+            pats.append(os.environ["APPDATA"] + "/MetaQuotes/Terminal/*" + tail)                # Windows
+        found = sorted({p for pat in pats for p in glob.glob(pat)})
         if not found:
             raise FileNotFoundError("dossier MQL5/Files/claude introuvable : les mains (ClaudeMains) ont-elles été "
                                     "lancées une fois sur un graphique de MT5 ?")
+        # plusieurs terminaux : celui dont les mains ont écrit le plus récemment
         found.sort(key=lambda p: os.path.getmtime(os.path.join(p, "account.txt")) if os.path.exists(os.path.join(p, "account.txt")) else 0)
         return Hands(found[-1])
 

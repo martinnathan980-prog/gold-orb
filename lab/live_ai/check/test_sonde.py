@@ -8,9 +8,10 @@ with the real Python reader (releve.lire_sonde / releve.commissions_mesurees).
     python3 live_ai/check/test_sonde.py --mq5 /path/Copy.mq5     test another copy of the script (e.g. a corrected one)
     python3 live_ai/check/test_sonde.py --keep             keep the temporary directories (log in Files/_mock/log.txt)
 
-One line per test: PASS / FAIL. Each test states what the script SHOULD do. A test marked [F3] is an EXPECTED FAILURE:
-it fails on the script as it is because of finding F3 (list printed at the end), and passes on a copy where the
-finding is corrected (XPASS). Exit code 0 only if every test that should pass passes.
+One line per test: PASS / FAIL. Each test states what the script SHOULD do. A title ending with {F3} says which finding
+of the first run (2026-11-11, script 1.00) the test guards: findings F1 to F8 and F10 are corrected in 1.10, and each of
+these tests fails on the 1.00 script. (A test can still be declared an EXPECTED FAILURE, marked [F3], for a defect that
+is known and not corrected yet; there is none today.) Exit code 0 only if every test that should pass passes.
 
 Inputs: as in test_mains.py, the `input` values are wrapped, in the TRANSLATED file only, in mock_input<T>() so that a
 test can run the same binary with another value (env MOCK_INPUT_InpSymbols ...). The .mq5 is never modified.
@@ -66,6 +67,7 @@ B = {
     "ETHUSD": dict(dg=2, ts=0.01, tv=0.008621, tvl=0.008625, contract=1.0, vmin=0.10, stops=0.0, com=0.0, fee=0.60, bid=3500.00, ask=3501.20, eur=USD_EUR),
     "JPN225": dict(dg=2, ts=0.01, tv=0.005561, tvl=0.005565, contract=1.0, vmin=0.10, stops=0.0, com=0.0, fee=0.0, bid=50000.00, ask=50008.00, eur=100 * JPY_EUR),
 }
+# the defects of script 1.00 found on 2026-11-11 (all corrected in 1.10)
 FINDINGS = {
     "F1": "status 'ok' is written although the two deals of the round trip were not read back (history late, or no order "
           "ticket in the answer): the commission is then 0 or half, and lire_sonde takes it as measured",
@@ -84,6 +86,8 @@ FINDINGS = {
           "from memory, not in the documentation)",
     "F8": "with the 'Algo Trading' button on but trading not allowed for this script, the alert tells the user to press "
           "the button (which is already on)",
+    "F10": "the stop is rounded to the number of digits, not to the tick size: on a market whose tick size is larger than "
+           "its point the server may refuse the buy (IF servers refuse such stops: from memory)",
 }
 
 
@@ -581,6 +585,19 @@ def t_rerun(b):
     assert state.count("\nP|") == 1 and f"P|{FIRST}|" in state, "the position left by the first run was closed by the second"
 
 
+def t_tick_size(b):
+    """index quoted in steps of 0.25 with two digits: a stop rounded to the digits only (24953.62) is refused by the fake
+    broker (ASSUMPTION of mock_mains.h: stops must be multiples of the tick size); the script must send 24953.50"""
+    r = Run(b, symbols="US100", ctl={"sym.NAS100.tick_size": 0.25, "sym.NAS100.tick_value": 0.008621 * 25,
+                                     "sym.NAS100.tick_value_loss": 0.008625 * 25})
+    sl, dist = expected_sl("NAS100")
+    assert near(dist, 46.3768, 1e-3) and near(round(sl / 0.25) * 0.25, 24953.50)
+    assert r.status("US100") == "ok", r.rows["US100"]
+    sent = r.kinds("open", "NAS100")
+    assert len(sent) == 1 and near(sent[0][3], 24953.50) and sent[0][4] == 10009, sent
+    assert near(r.row("US100")["tick_size"], 0.25) and not r.positions and len(r.deals) == 2
+
+
 TESTS = [
     ("N1", "normal run on the default markets: requests, stops, csv, lire_sonde, commission conversion", t_normal, None),
     ("N2", "price moving while the position is open", t_move, None),
@@ -588,30 +605,31 @@ TESTS = [
     ("N4", "terminal listing the new position late", t_lag, None),
     ("D1", "large demo balance: stop capped at 1.5 % of the price", t_big_balance, None),
     ("Q1", "market without any price", t_no_price, None),
-    ("Q2", "first quote of a market arriving a moment late", t_first_tick, "F7"),
+    ("Q2", "first quote of a market arriving a moment late {F7}", t_first_tick, None),
     ("R1", "REAL / contest account: refusal, nothing sent", t_real, None),
     ("A1", "Algo Trading button off", t_algo_off, None),
-    ("A2", "trading not allowed for this script only", t_algo_script, "F8"),
+    ("A2", "trading not allowed for this script only {F8}", t_algo_script, None),
     ("L1", "minimum lot too large for the stop budget", t_lot_too_big, None),
     ("M1", "margin too small", t_margin, None),
     ("B1", "buy refused by the server / closed session / account", t_refused, None),
     ("C1", "sale failing five times: position left open, status line and alert", t_close_fails, None),
     ("C2", "sale failing twice then accepted", t_close_retry, None),
     ("H1", "exit deal 3 s late in the history", t_history_late, None),
-    ("H2", "exit deal later than the script waits", t_history_never_out, "F1"),
-    ("H3", "no deal in the history in time", t_history_never, "F1"),
-    ("O1", "buy answered without the order ticket", t_no_ticket, "F1"),
+    ("H2", "exit deal later than the script waits {F1}", t_history_never_out, None),
+    ("H3", "no deal in the history in time {F1}", t_history_never, None),
+    ("O1", "buy answered without the order ticket {F1}", t_no_ticket, None),
     ("P1", "buy answered 'placed' without price", t_placed, None),
     ("K1", "position ticket changed by the server", t_reticket, None),
-    ("S1", "stop silently removed by CTrade (market without stop orders)", t_stop_removed_by_ctrade, "F2"),
-    ("S2", "stop removed by CTrade and sale failing: naked position behind 'elle a un stop'", t_stop_removed_left_open, "F2"),
-    ("S3", "stop not kept by the broker and sale failing", t_stop_dropped_by_broker, "F2"),
-    ("T1", "stop hit before the resale", t_stop_hit, "F3"),
+    ("S1", "stop silently removed by CTrade (market without stop orders) {F2}", t_stop_removed_by_ctrade, None),
+    ("S2", "stop removed by CTrade and sale failing: naked position behind 'elle a un stop' {F2}", t_stop_removed_left_open, None),
+    ("S3", "stop not kept by the broker and sale failing {F2}", t_stop_dropped_by_broker, None),
+    ("T1", "stop hit before the resale {F3}", t_stop_hit, None),
     ("X1", "script removed while the position is open", t_removed, None),
-    ("E1", "empty name in the list of markets", t_empty_name, "F6"),
-    ("W1", "sonde.csv cannot be written; older file", t_file, "F5"),
-    ("G1", "account not in hedging mode", t_netting, "F4"),
+    ("E1", "empty name in the list of markets {F6}", t_empty_name, None),
+    ("W1", "sonde.csv cannot be written; older file {F5}", t_file, None),
+    ("G1", "account not in hedging mode {F4}", t_netting, None),
     ("V1", "second run after a position was left open", t_rerun, None),
+    ("Z1", "market whose tick size is larger than its point: the stop is a multiple of the tick size {F10}", t_tick_size, None),
 ]
 
 
