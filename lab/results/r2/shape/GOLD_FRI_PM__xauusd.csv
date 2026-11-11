@@ -1,0 +1,6 @@
+sleeve,variant,n,win,pf,exp,t,total_R,keep
+GOLD_FRI_PM:xauusd,base,414,0.5411,1.45,0.0336,2.71,13.9,1.0
+GOLD_FRI_PM:xauusd,T0.5,414,0.5435,1.403,0.0301,2.65,12.4,0.894
+GOLD_FRI_PM:xauusd,half:T0.5,414,0.5435,1.427,0.0318,2.72,13.2,0.948
+GOLD_FRI_PM:xauusd,T1,414,0.5411,1.458,0.0342,2.76,14.2,1.019
+GOLD_FRI_PM:xauusd,half:T1,414,0.5411,1.454,0.0339,2.74,14.0,1.01

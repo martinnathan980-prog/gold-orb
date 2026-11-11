@@ -1,0 +1,4 @@
+scenario,trades,days,win_days,win_weeks,win_months,total_R,worst_day,worst_week,longest_losing_streak_days,best_day
+baseline,5509,1033,0.4956,0.5874,0.8333,831.3,-8.73,-12.75,9,48.68
+selected,5642,1035,0.4957,0.6019,0.8333,804.8,-8.73,-13.18,9,49.06
+T1_all,6758,1045,0.5206,0.6019,0.7708,492.8,-7.68,-12.2,8,16.2

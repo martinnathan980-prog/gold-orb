@@ -1,0 +1,8 @@
+sleeve,variant,n,win,pf,exp,t,total_R,keep
+nq_btc_follow:btcusd,base,1063,0.5202,1.353,0.0624,3.41,66.3,1.0
+nq_btc_follow:btcusd,T0.5,1191,0.5668,1.303,0.0485,3.75,57.8,0.778
+nq_btc_follow:btcusd,half:T0.5,1063,0.5409,1.307,0.0495,3.32,52.6,0.794
+nq_btc_follow:btcusd,T1,1106,0.5316,1.358,0.0619,3.84,68.4,0.991
+nq_btc_follow:btcusd,half:T1,1063,0.5212,1.347,0.0591,3.53,62.8,0.947
+nq_btc_follow:btcusd,T1.5,1080,0.5231,1.365,0.0649,3.68,70.1,1.04
+nq_btc_follow:btcusd,half:T1.5,1063,0.5212,1.348,0.0611,3.45,65.0,0.98

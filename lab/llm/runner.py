@@ -11,6 +11,7 @@ A request is a small JSON file in lab/llm/requests/:
     {"cmd": "submit", "name": "...", "period": "val", "per_sleeve": null, "model": "...", "effort": "medium"}
     {"cmd": "collect", "name": "...", "wait": true}
     {"cmd": "analyse", "name": "..."}
+    {"cmd": "news_run" | "news_submit" | "news_collect", "name": "...", "effort": "medium"}      (llm/news.py)
 Each request runs once; its outcome is written next to it as <file>.done.json (status and the end of the output).
 """
 import contextlib
@@ -65,6 +66,15 @@ def execute(r):
             vision.collect(name, bool(r.get("wait", True)))
         else:
             vision.probe(name, int(r.get("n", 60)), vm, workers=int(r.get("workers", 3)))
+    elif cmd in ("news_run", "news_submit", "news_collect"):                              # a model reads market-moving posts (llm/news.py)
+        from llm import news
+        nm, ne = r.get("model", news.MODEL), r.get("effort", "medium")
+        if cmd == "news_run":
+            news.run_sync(name, int(r.get("n", 40)), nm, ne, workers=int(r.get("workers", 4)))
+        elif cmd == "news_submit":
+            news.submit(name, nm, ne)
+        else:
+            news.collect(name, bool(r.get("wait", True)))
     else:
         raise ValueError(f"unknown cmd {cmd}")
 

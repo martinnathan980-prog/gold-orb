@@ -1,0 +1,10 @@
+sleeve,variant,n,win,pf,exp,t,total_R,keep
+donch4h_stop:xauusd,base,495,0.4263,1.522,0.1702,3.22,84.2,1.0
+donch4h_stop:xauusd,T0.5,854,0.671,1.266,0.0696,3.32,59.4,0.409
+donch4h_stop:xauusd,half:T0.5,495,0.6606,1.492,0.1262,3.49,62.5,0.742
+donch4h_stop:xauusd,T1,670,0.4478,1.381,0.1224,3.89,82.0,0.719
+donch4h_stop:xauusd,half:T1,495,0.4404,1.434,0.1413,3.37,69.9,0.83
+donch4h_stop:xauusd,T1.5,575,0.44,1.453,0.144,3.72,82.8,0.846
+donch4h_stop:xauusd,half:T1.5,495,0.4263,1.452,0.1475,3.25,73.0,0.867
+donch4h_stop:xauusd,T2,540,0.4296,1.457,0.1479,3.43,79.9,0.869
+donch4h_stop:xauusd,half:T2,495,0.4263,1.471,0.1535,3.23,76.0,0.902
