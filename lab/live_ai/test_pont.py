@@ -31,9 +31,9 @@ class FakeHands(threading.Thread):
 
     def export(self):
         now = int(time.time())
-        self.put("account.txt", f"ea_version=1.10\nea_time_gmt={now}\nserver_time={now + 7200}\nserver_minus_gmt_sec=7200\n"
+        self.put("account.txt", f"ea_version=1.11\nea_time_gmt={now}\nserver_time={now + 7200}\nserver_minus_gmt_sec=7200\n"
                  "balance=1000.00\nequity=1000.00\nmargin=0.00\nmargin_free=1000.00\ncurrency=EUR\nleverage=500\ndemo=1\n"
-                 "hedging=1\nserver=FPMarkets-Demo\ntrade_allowed=1\nblocked=\nstart_balance=1000.00\nday_start_balance=1000.00\n"
+                 "hedging=1\nserver=FPMarkets-Demo\ntrade_allowed=1\nblocked=\nstart_balance=1000.00\nkill_level=500.00\nday_start_balance=1000.00\n"
                  "day_result=-1.25\nmax_risk_pct=1.00\nmax_notional_x=20.00\nmin_stop_spreads=3.00\nmax_tick_age_sec=10\n"
                  "max_positions=6\nmax_per_symbol=2\ndaily_loss_pct=6.00\nkill_pct=50.00\nmagic=20261110\n")
         self.put("symbols.csv", "base,name,digits,point,tick_size,tick_value,tick_value_loss,contract_size,vol_min,vol_step,vol_max,"
@@ -152,6 +152,12 @@ def main():
         assert h.ea_alive() and h.account()["balance"] == 1000.0 and h.account()["blocked"] == ""
         a = h.account()                                                                    # les clés ajoutées par les mains 1.10
         assert (a["day_result"], a["max_notional_x"], a["min_stop_spreads"], a["max_tick_age_sec"]) == (-1.25, 20.0, 3.0, 10), a
+        assert a["ea_version"] == "1.11" and (a["start_balance"], a["kill_level"]) == (1000.0, 500.0), a   # 1.11 : niveau de l'arrêt définitif
+        with tempfile.TemporaryDirectory() as old:                                         # des mains 1.10 n'écrivent pas kill_level
+            text = (Path(d) / "account.txt").read_text(encoding="latin-1")
+            (Path(old) / "account.txt").write_text(text.replace("kill_level=500.00\n", ""), encoding="latin-1")
+            b = Hands(old).account()
+            assert "kill_level" not in b and b["start_balance"] == 1000.0 and b["day_result"] == -1.25, b
         assert h.deals().empty and "fee" in h.deals().columns
         s = h.symbols()
         assert s.loc["XAUUSD", "name"] == "XAUUSD.r" and s.loc["XAUUSD", "vol_min"] == 0.01 and pd.isna(s.loc["US100", "name"])

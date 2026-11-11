@@ -11,10 +11,13 @@ mql5/ClaudeMains.mq5) :
     r = h.open("XAUUSD", "buy", volume=0.05, sl=4051.20, ttl_min=240, tag="pivot")
     h.modify(r["ticket"], sl=4055.00);  h.close(r["ticket"])
 
-Les mains (version 1.10) exécutent au plus 5 ordres par seconde et une seule ouverture par seconde ; elles déplacent
+Les mains (version 1.11) exécutent au plus 5 ordres par seconde et une seule ouverture par seconde ; elles déplacent
 l'ordre dans done/ AVANT de l'exécuter. Une réponse ok=False peut porter un ticket : la position a été ouverte puis
 refermée d'office (glissement trop fort, stop non posé par le courtier). Après une réponse "taken": True (ordre pris mais
 resté sans réponse), relire positions() avant de renvoyer l'ordre.
+Elles arrondissent le stop et l'objectif au pas de cotation du marché (tick_size de symbols()) : le stop réellement posé
+est le "sl" de la réponse. Dans account(), start_balance est le capital de référence de l'arrêt définitif (capital de
+départ, plus les dépôts, moins les retraits) et kill_level le niveau des fonds auquel cet arrêt se déclenche.
 
 Test du branchement (aucun ordre n'est passé) :   python3 pont.py
 """
@@ -106,8 +109,9 @@ class Hands:
         for k in ("ea_time_gmt", "server_time", "server_minus_gmt_sec", "leverage", "demo", "hedging", "trade_allowed",
                   "max_positions", "max_per_symbol"):
             a[k] = int(a[k])
-        for k, conv in (("day_result", float), ("max_notional_x", float), ("min_stop_spreads", float), ("max_tick_age_sec", int)):
-            if k in a:                               # clés ajoutées par les mains 1.10
+        for k, conv in (("day_result", float), ("max_notional_x", float), ("min_stop_spreads", float), ("max_tick_age_sec", int),
+                        ("kill_level", float)):
+            if k in a:                               # clés ajoutées par les mains 1.10 (kill_level : 1.11)
                 a[k] = conv(a[k])
         return a
 

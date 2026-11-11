@@ -53,7 +53,7 @@ enum ENUM_DEAL_REASON { DEAL_REASON_CLIENT, DEAL_REASON_MOBILE, DEAL_REASON_WEB,
 enum ENUM_DEAL_PROPERTY_DOUBLE { DEAL_VOLUME, DEAL_PRICE, DEAL_COMMISSION, DEAL_SWAP, DEAL_PROFIT, DEAL_FEE };
 enum ENUM_DEAL_PROPERTY_STRING { DEAL_SYMBOL };
 enum ENUM_DEAL_ENTRY { DEAL_ENTRY_IN, DEAL_ENTRY_OUT, DEAL_ENTRY_INOUT, DEAL_ENTRY_OUT_BY };
-enum ENUM_DEAL_TYPE { DEAL_TYPE_BUY, DEAL_TYPE_SELL };
+enum ENUM_DEAL_TYPE { DEAL_TYPE_BUY, DEAL_TYPE_SELL, DEAL_TYPE_BALANCE, DEAL_TYPE_CREDIT, DEAL_TYPE_CHARGE, DEAL_TYPE_CORRECTION, DEAL_TYPE_BONUS };   // (the last five: see the end of the file)
 enum ENUM_INIT_RETCODE { INIT_SUCCEEDED = 0, INIT_FAILED = 1, INIT_PARAMETERS_INCORRECT = 32767 };
 enum ENUM_FILE_POSITION { SEEK_SET, SEEK_CUR, SEEK_END };
 const int REASON_REMOVE = 1, REASON_CHARTCLOSE = 4, REASON_ACCOUNT = 6, REASON_CLOSE = 9;
@@ -271,3 +271,13 @@ bool MathIsValidNumber(double number);
 //  Alert, bool EventSetTimer, ArrayResize with reserve_size, StringReplace, POSITION_IDENTIFIER, TERMINAL_CONNECTED,
 //  GlobalVariablesFlush, MathIsValidNumber, SYMBOL_ORDER_MODE / SYMBOL_ORDER_SL = 16)
 const uint TRADE_RETCODE_MARKET_CLOSED = 10018;
+
+// --- added for ClaudeMains.mq5 v1.11 (pages read on 2026-11-11):
+// docs/constants/tradingconstants/dealproperties : ENUM_DEAL_TYPE lists, in this order, DEAL_TYPE_BUY "Buy", DEAL_TYPE_SELL "Sell",
+//   DEAL_TYPE_BALANCE "Balance", DEAL_TYPE_CREDIT "Credit", DEAL_TYPE_CHARGE "Additional charge", DEAL_TYPE_CORRECTION
+//   "Correction", DEAL_TYPE_BONUS "Bonus", ... (added to the enum above; the page does not print the numeric values, and it does
+//   NOT say which field holds the amount of a balance operation: DEAL_PROFIT is from forum code, see ClaudeMains.mq5 Capital()).
+// docs/math/mathround : double MathRound(double value)  "Value rounded till to the nearest integer"   (declared above)
+// docs/math/mathmax   : double MathMax(double value1, double value2)                                  (declared above)
+// docs/trading/historyselect, historydealgetticket, historydealgetdouble : signatures as declared above; HistorySelect "creates a
+//   list of orders and a list of trades in a mql5-program"; nothing is promised about the order of that list.

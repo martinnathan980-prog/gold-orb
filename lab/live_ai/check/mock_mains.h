@@ -34,7 +34,18 @@
 //                           timer_fail=1             EventSetTimer fails
 //                           ordersend_delay_ms=N     OrderSend blocks that long (network round trip)
 //                           do.<n>=open SYM buy|sell VOL SL TP MAGIC [COMMENT]   a position opened outside the EA
-//                           do.<n>=close TICKET | balance AMOUNT                 (each n is executed once, in order)
+//                           do.<n>=close TICKET                                  (each n is executed once, in order)
+//                           do.<n>=balance AMOUNT [AGE [TYPE]]   a deposit (AMOUNT > 0) or a withdrawal (< 0): the balance
+//                                                    changes and a deal of type 2 (DEAL_TYPE_BALANCE) dated AGE seconds ago
+//                                                    (default 0) is added to the history, its amount in DEAL_PROFIT (ASSUMPTION:
+//                                                    the documentation does not say which field holds it; forum code reads
+//                                                    DEAL_PROFIT). TYPE = another non-trading deal type: 4 charge and
+//                                                    5 correction change the balance too; 3 credit and 6 bonus are only
+//                                                    recorded (the credit of an account is a separate figure, not imitated)
+//                           balance_quiet=1          a balance operation raises no trade event (OnTradeTransaction is not called)
+//                           history_fail=1           HistorySelect returns false
+//                           history_empty=1          HistorySelect succeeds but lists nothing (history not synchronised yet;
+//                                                    ASSUMPTION, not verified on a real terminal)
 //                           do.<n>=sltp TICKET SL TP     stop / target changed outside the EA (by hand)
 //                           do.<n>=reticket TICKET       the server gives the position a new ticket (same identifier)
 //   _mock/state.txt       the broker: balance, positions, deals (kept across restarts of the binary, as a broker does)
@@ -126,7 +137,7 @@ struct MkDeal
    ulong  deal, order, position;
    long   time;
    string symbol;
-   int    type, entry;      // type: 0 buy, 1 sell, 2 balance ; entry: 0 in, 1 out
+   int    type, entry;      // type: 0 buy, 1 sell, 2 balance (3 credit, 4 charge, 5 correction, 6 bonus) ; entry: 0 in, 1 out
    double volume, price, profit, swap, commission, fee;
    long   magic, reason;    // reason: 0 client, 3 expert, 4 sl, 5 tp
    string comment;
@@ -153,6 +164,7 @@ static uint   mk_rc_all = 0, mk_rc_open = 0, mk_rc_close = 0, mk_rc_sltp = 0;
 static bool   mk_send_true = false, mk_lag = false, mk_hold = false;
 static int    mk_term_allowed = 1, mk_mql_allowed = 1, mk_acc_allowed = 1, mk_acc_expert = 1, mk_connected = 1;
 static bool   mk_drop_sl = false, mk_sl_magic0 = false, mk_race = false, mk_stopped = false, mk_timer_fail = false;
+static bool   mk_balance_quiet = false, mk_history_fail = false, mk_history_empty = false;
 static long   mk_margin_mode = 2, mk_send_delay_ms = 0;
 static int    mk_answers = 0;                  // files moved into claude/res during the running handler
 static std::map<long, string> mk_do;
@@ -722,7 +734,8 @@ string PositionGetString(ENUM_POSITION_PROPERTY_STRING p)
 bool HistorySelect(datetime from, datetime to)
   {
    mk_hist.clear();
-   for(int i = 0; i < (int)mk_deals.size(); i++)
+   if(mk_history_fail) return false;
+   for(int i = 0; i < (int)mk_deals.size() && !mk_history_empty; i++)
       if(mk_deals[i].time >= from && mk_deals[i].time <= to) mk_hist.push_back(i);
    return true;
   }
@@ -1097,6 +1110,7 @@ static void mk_apply_control()
    mk_seq = 0; mk_gmt_skew = 0; mk_rc_all = mk_rc_open = mk_rc_close = mk_rc_sltp = 0;
    mk_send_true = false; mk_term_allowed = mk_mql_allowed = mk_acc_allowed = mk_acc_expert = mk_connected = 1;
    mk_drop_sl = mk_sl_magic0 = mk_race = mk_stopped = mk_timer_fail = false;
+   mk_balance_quiet = mk_history_fail = mk_history_empty = false;
    mk_margin_mode = 2; mk_send_delay_ms = 0;
    bool lag = false;
    mk_hold = false;
@@ -1128,6 +1142,9 @@ static void mk_apply_control()
       else if(k == "race") mk_race = atoi(v.c_str()) != 0;
       else if(k == "stopped") mk_stopped = atoi(v.c_str()) != 0;
       else if(k == "timer_fail") mk_timer_fail = atoi(v.c_str()) != 0;
+      else if(k == "balance_quiet") mk_balance_quiet = atoi(v.c_str()) != 0;
+      else if(k == "history_fail") mk_history_fail = atoi(v.c_str()) != 0;
+      else if(k == "history_empty") mk_history_empty = atoi(v.c_str()) != 0;
       else if(k == "margin_mode") mk_margin_mode = atol(v.c_str());
       else if(k == "ordersend_delay_ms") mk_send_delay_ms = atol(v.c_str());
       else if(k.compare(0, 3, "do.") == 0) mk_do[atol(k.c_str() + 3)] = v;
@@ -1201,10 +1218,12 @@ static void mk_apply_control()
         }
       else if(a[0] == "balance" && a.size() >= 2)
         {
-         MkDeal d = {mk_next_deal++, 0, 0, (long)TimeTradeServer(), "", 2, 0, 0.0, 0.0, atof(a[1].c_str()), 0.0, 0.0, 0.0, 0, 0, "deposit"};
-         mk_balance = mk_round2(mk_balance + d.profit);
+         MkDeal d = {mk_next_deal++, 0, 0, (long)TimeTradeServer() - (a.size() >= 3 ? atol(a[2].c_str()) : 0), "",
+                     a.size() >= 4 ? atoi(a[3].c_str()) : 2, 0, 0.0, 0.0, atof(a[1].c_str()), 0.0, 0.0, 0.0, 0, 0, "deposit"};
+         if(d.type != 3 && d.type != 6) mk_balance = mk_round2(mk_balance + d.profit);
          mk_deals.push_back(d);
          mk_changed();
+         if(mk_balance_quiet) mk_pending_tx--;                // the EA is not told (no OnTradeTransaction)
         }
       mk_save_state();
      }

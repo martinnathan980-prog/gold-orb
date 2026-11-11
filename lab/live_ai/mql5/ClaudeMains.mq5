@@ -19,7 +19,8 @@
 //|  Les limites sont ICI et le cerveau ne peut pas les contourner :  |
 //|   1. Aucun ordre sans stop ; le stop est pose chez le courtier    |
 //|      (verifie apres l'execution ; une position du robot restee    |
-//|      sans stop est refermee).                                     |
+//|      sans stop est refermee). Stop et objectif sont arrondis au   |
+//|      pas de cotation du marche (indices cotes par 0.25 ou 0.5).   |
 //|   2. Un stop ne peut que se rapprocher du prix, jamais s'eloigner.|
 //|   3. Risque max par trade : la taille est reduite d'office.       |
 //|      Stop a 3 ecarts achat-vente du prix au moins ; valeur de la  |
@@ -31,8 +32,12 @@
 //|      serveur, relu dans l'historique du compte : un depot ou un   |
 //|      retrait ne compte pas) : tout est ferme, blocage jusqu'a     |
 //|      demain.                                                      |
-//|   6. Arret definitif a -50 % du capital de depart (note aussi     |
-//|      dans le fichier MQL5\Files\ClaudeMains_arret.txt).           |
+//|   6. Arret definitif a -50 % du capital de reference (note aussi  |
+//|      dans le fichier MQL5\Files\ClaudeMains_arret.txt). Le capital|
+//|      de reference est le capital de depart, plus les depots,      |
+//|      moins les retraits, sans jamais etre plus petit que les      |
+//|      fonds du compte juste apres l'operation : retirer ses gains  |
+//|      ne rapproche pas l'arret, et apres un depot l'arret suit.    |
 //|   7. Cerveau muet, ou dont l'horloge avance : plus aucune         |
 //|      nouvelle position (les stops restent en place) ; duree max   |
 //|      par position respectee.                                      |
@@ -43,7 +48,7 @@
 //|  sur un compte qui n'est pas en mode "hedging".                   |
 //+------------------------------------------------------------------+
 #property copyright "gold-orb lab"
-#property version   "1.10"
+#property version   "1.11"
 #property description "Les mains de Claude : exporte les donnees, execute les ordres du cerveau, impose les limites (stop obligatoire, risque max, perte du jour, arret a -50 %)."
 
 #include <Trade\Trade.mqh>
@@ -55,8 +60,8 @@ input int    InpMaxTickAgeSec   = 10;       // Age max du dernier prix pour ouvr
 input int    InpMaxPositions    = 6;        // Positions ouvertes en meme temps (total)
 input int    InpMaxPerSymbol    = 2;        // Positions ouvertes en meme temps par marche
 input double InpDailyLossPct    = 6.0;      // Perte max du jour (% du solde du debut de journee) : tout ferme + blocage
-input double InpKillPct         = 50.0;     // Arret definitif si les fonds perdent ce % du capital de depart
-input double InpStartBalance    = 0.0;      // Capital de depart (0 = solde au premier lancement)
+input double InpKillPct         = 50.0;     // Arret definitif si les fonds perdent ce % du capital de reference (depart + depots - retraits)
+input double InpStartBalance    = 0.0;      // Capital de depart (0 = solde au premier lancement) ; il suit ensuite les depots et les retraits
 input int    InpBrainTimeoutSec = 180;      // Cerveau muet depuis ce delai (secondes) : plus de nouvelle position
 input int    InpFridayClose     = 2350;     // Vendredi, heure serveur HHMM ou tout est ferme (0 = desactive) ; plus tot les semaines de jour ferie
 input long   InpMagic           = 20261110; // Numero magique des positions du robot (jamais 0)
@@ -65,7 +70,7 @@ input bool   InpPush            = true;     // Notifications push (appli MT5 mob
 input bool   InpResetLocks      = false;    // Mettre true UNE fois pour lever un blocage ou l'arret, puis remettre false (laisse sur true, il est ignore)
 
 const string DIR              = "claude\\";
-const string VERSION          = "1.10";
+const string VERSION          = "1.11";
 const string KILL_FILE        = "ClaudeMains_arret.txt";   // l'arret definitif est aussi note dans ce fichier (dans MQL5\Files)
 const double MIN_STOP_SPREADS = 3.0;                       // distance minimale du stop a l'ouverture, en ecarts achat-vente
 const int    MAX_PER_PASS     = 5;                         // ordres du cerveau executes par passage (un passage par seconde)
@@ -248,6 +253,18 @@ double RiskMoney(const string nm, const double price, const double sl, const dou
    return MathAbs(price - sl) / ts * tv * vol;
   }
 
+// arrondit un stop ou un objectif au pas de cotation du marche (le multiple le plus proche), puis au nombre de decimales.
+// Sur un marche cote par pas plus grands que le point (indices cotes par 0.25 ou 0.5), un serveur peut refuser un stop qui
+// n'est pas sur ce pas ("invalid stops"). Fait AVANT tout controle : cote du prix, distance, risque, sens de deplacement.
+// 0 (pas d'objectif) reste 0.
+double ToTick(const string nm, const double x)
+  {
+   int dg = (int)SymbolInfoInteger(nm, SYMBOL_DIGITS);
+   double ts = SymbolInfoDouble(nm, SYMBOL_TRADE_TICK_SIZE);
+   if(ts <= 0) return NormalizeDouble(x, dg);                           // pas inconnu : pas de division par zero (l'ordre sera refuse plus loin)
+   return NormalizeDouble(MathRound(x / ts) * ts, dg);
+  }
+
 //+------------------------------------------------------------------+
 //| Limites                                                          |
 //+------------------------------------------------------------------+
@@ -293,6 +310,12 @@ string Blocked()
    if(!Hedging()) return "compte sans hedging";
    if(TimeGMT() - g_brain_ts > InpBrainTimeoutSec) return "cerveau muet";
    return "";
+  }
+
+// fonds du compte auxquels l'arret definitif se declenche
+double KillLevel()
+  {
+   return GlobalVariableGet("CM_start") * (1.0 - InpKillPct / 100.0);
   }
 
 // resultat latent des positions ouvertes du robot
@@ -413,7 +436,8 @@ void ExportAccount()
    s += "server=" + AccountInfoString(ACCOUNT_SERVER) + "\n";
    s += "trade_allowed=" + IntegerToString(TradeAllowed() ? 1 : 0) + "\n";
    s += "blocked=" + Blocked() + "\n";
-   s += "start_balance=" + DoubleToString(GlobalVariableGet("CM_start"), 2) + "\n";
+   s += "start_balance=" + DoubleToString(GlobalVariableGet("CM_start"), 2) + "\n";      // le capital de reference
+   s += "kill_level=" + DoubleToString(KillLevel(), 2) + "\n";                           // fonds auxquels l'arret definitif se declenche
    s += "day_start_balance=" + DoubleToString(g_day_bal, 2) + "\n";
    s += "day_result=" + DoubleToString(g_day_done + RobotFloating(), 2) + "\n";
    s += "max_risk_pct=" + DoubleToString(InpMaxRiskPct, 2) + "\n";
@@ -517,6 +541,55 @@ int CloseAll(const string why)
    return failed;
   }
 
+// Le capital de reference (CM_start) suit les depots et les retraits : les operations de type "balance" de l'historique du
+// compte, et elles seules (credit, bonus, frais, correction et transactions de trading n'y changent rien). A chaque
+// operation de montant A (depot : A > 0, retrait : A < 0) :
+//      reference = le plus grand de (reference + A) et (fonds du compte juste apres l'operation)
+// c'est-a-dire ce que l'utilisateur a mis, moins ce qu'il a repris, mais jamais moins que ce que le compte contient a ce
+// moment. Retirer ses gains ne rapproche donc pas l'arret definitif, et apres un depot l'arret suit.
+// "Les fonds juste apres l'operation" sont ceux lus au moment ou les mains traitent l'operation, resultat latent des
+// positions ouvertes compris (pour plusieurs operations vues ensemble : ces fonds, moins les operations qui ont suivi).
+// Une operation n'est jamais comptee deux fois : le numero de la derniere traitee est garde dans CM_bal_deal, ecrit sur le
+// disque aussitot (les numeros de transaction du serveur sont supposes croissants). Rien de ce qui date d'avant le releve
+// qui a fixe le capital de depart (CM_bal_from) n'est compte : le depot qui a ouvert le compte est deja dans ce releve.
+// Renvoie false si l'historique n'a pas pu etre lu.
+bool Capital(const double eq)
+  {
+   datetime now = TimeTradeServer();
+   if(!HistorySelect(0, now + 86400)) return false;
+   bool first = !GlobalVariableCheck("CM_bal_deal");                    // premier releve (premier lancement, InpResetLocks) : rien a compter
+   ulong last = (ulong)GlobalVariableGet("CM_bal_deal"), top = last;
+   datetime since = (datetime)GlobalVariableGet("CM_bal_from");
+   double amt[];                                                        // montants des operations pas encore comptees
+   double rest = 0.0;                                                   // leur somme
+   int n = 0, total = HistoryDealsTotal();
+   for(int i = 0; i < total; i++)
+     {
+      ulong d = HistoryDealGetTicket(i);
+      if(d <= last || HistoryDealGetInteger(d, DEAL_TYPE) != DEAL_TYPE_BALANCE) continue;
+      if(d > top) top = d;
+      if(first || HistoryDealGetInteger(d, DEAL_TIME) < since) continue;
+      ArrayResize(amt, n + 1, 16);
+      amt[n] = HistoryDealGetDouble(d, DEAL_PROFIT);                    // le montant d'un depot ou d'un retrait est dans ce champ
+      rest += amt[n++];
+     }
+   if(!first && top == last) return true;                               // rien de nouveau
+   double start = GlobalVariableGet("CM_start");
+   for(int j = 0; j < n; j++)
+     {
+      rest -= amt[j];
+      start = MathMax(start + amt[j], eq - rest);
+      GlobalVariableSet("CM_start", start);
+      Notify((amt[j] < 0 ? "Retrait de " + DoubleToString(-amt[j], 2) : "Depot de " + DoubleToString(amt[j], 2)) + " : capital de reference "
+             + DoubleToString(start, 2) + ", arret definitif a " + DoubleToString(KillLevel(), 2) + ".");
+     }
+   if(first) GlobalVariableSet("CM_bal_from", (double)now);
+   GlobalVariableSet("CM_bal_deal", (double)top);
+   GlobalVariablesFlush();                                              // tout de suite : sinon recompte apres un plantage de MT5
+   if(GlobalVariableGet("CM_killed") != 0) KillFile(true);              // le fichier de l'arret definitif garde le meme capital
+   return true;
+  }
+
 // releve le compte et pose les blocages (arret definitif, perte max du jour). Appelee a chaque passage ET avant chaque
 // ordre du cerveau. Renvoie false tant que le compte n'est pas charge (MT5 vient de demarrer) : rien n'est alors conclu.
 bool Locks()
@@ -528,6 +601,7 @@ bool Locks()
    if(GlobalVariableGet("CM_start") <= 0)
      {
       GlobalVariableSet("CM_start", InpStartBalance > 0 ? InpStartBalance : bal);
+      GlobalVariableDel("CM_bal_deal");                                 // depots et retraits ne comptent qu'a partir de ce releve (voir Capital)
       GlobalVariablesFlush();                                           // ecrit sur le disque tout de suite (sinon perdu si MT5 plante)
      }
    if(GlobalVariableGet("CM_day_from") < 0)                             // InpResetLocks vient d'agir : la perte du jour repart de maintenant
@@ -552,15 +626,19 @@ bool Locks()
          g_day_done = sum;
          g_last_sum = now;
         }
+      Capital(eq);                                                      // depots et retraits : le capital de reference les suit
      }
    g_day_bal = bal - g_day_done;                                        // solde du debut de journee (un depot ou un retrait du jour y est compte)
-   double start = GlobalVariableGet("CM_start");
-   if(GlobalVariableGet("CM_killed") == 0 && start > 0 && eq <= start * (1.0 - InpKillPct / 100.0))
+   // L'arret definitif n'est jamais pose sur une baisse des fonds qui est un retrait : l'historique est relu juste avant
+   // (retrait tout juste fait, ou fait pendant que les mains ne tournaient pas). Historique illisible : rien n'est conclu a
+   // ce passage, la question est reposee au suivant.
+   if(GlobalVariableGet("CM_killed") == 0 && GlobalVariableGet("CM_start") > 0 && eq <= KillLevel() && Capital(eq) && eq <= KillLevel())
      {
       GlobalVariableSet("CM_killed", 1.0);
       GlobalVariablesFlush();
       KillFile(true);
-      Notify("ARRET DEFINITIF : fonds " + DoubleToString(eq, 2) + ", capital de depart " + DoubleToString(start, 2) + ". Tout est ferme.", true);
+      Notify("ARRET DEFINITIF : fonds " + DoubleToString(eq, 2) + ", capital de reference " + DoubleToString(GlobalVariableGet("CM_start"), 2)
+             + ". Tout est ferme.", true);
      }
    if(GlobalVariableGet("CM_day_lock") == 0 && InpDailyLossPct > 0 && g_day_bal > 0
       && g_day_done + RobotFloating() <= -g_day_bal * InpDailyLossPct / 100.0)
@@ -670,8 +748,8 @@ string DoOpen(const string &k[], const string &v[], string &extra)
    double pt = SymbolInfoDouble(nm, SYMBOL_POINT);
    double lvl = (double)SymbolInfoInteger(nm, SYMBOL_TRADE_STOPS_LEVEL) * pt;
    double price = (dir > 0) ? tk.ask : tk.bid;
-   double sl = NormalizeDouble(StringToDouble(KV(k, v, "sl", "0")), dg);
-   double tp = NormalizeDouble(StringToDouble(KV(k, v, "tp", "0")), dg);
+   double sl = ToTick(nm, StringToDouble(KV(k, v, "sl", "0")));         // stop et objectif sur le pas de cotation, avant tout controle
+   double tp = ToTick(nm, StringToDouble(KV(k, v, "tp", "0")));
    double want = StringToDouble(KV(k, v, "volume", "0"));
    if(!MathIsValidNumber(sl) || !MathIsValidNumber(tp) || !MathIsValidNumber(want)) return "nombre illisible dans l'ordre";
    if(sl <= 0) return "stop obligatoire";
@@ -727,7 +805,7 @@ string DoOpen(const string &k[], const string &v[], string &extra)
    if(risk > cap * 1.25) bad = "glissement trop fort (risque " + DoubleToString(risk, 2) + " pour une limite de " + DoubleToString(cap, 2) + ")";
    else if(seen && PositionGetDouble(POSITION_SL) <= 0)                 // stop absent chez le courtier : on le pose ; s'il est refuse, on referme
      {
-      bool placed = g_trade.PositionModify(pos, sl, tp);
+      bool placed = g_trade.PositionModify(pos, sl, tp);                // (sl et tp sont deja sur le pas de cotation)
       if(!Done(placed) && g_trade.ResultRetcode() != TRADE_RETCODE_NO_CHANGES) bad = "le courtier n'a pas pose le stop";
      }
    long ttl = StringToInteger(KV(k, v, "ttl_min", "0"));
@@ -775,8 +853,8 @@ string DoModify(const string &k[], const string &v[], string &extra)
    double lvl = (double)SymbolInfoInteger(nm, SYMBOL_TRADE_STOPS_LEVEL) * pt;
    bool buy = PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY;
    double cur_sl = PositionGetDouble(POSITION_SL), cur_tp = PositionGetDouble(POSITION_TP);
-   double sl = HasKey(k, "sl") ? NormalizeDouble(StringToDouble(KV(k, v, "sl")), dg) : cur_sl;
-   double tp = HasKey(k, "tp") ? NormalizeDouble(StringToDouble(KV(k, v, "tp")), dg) : cur_tp;
+   double sl = HasKey(k, "sl") ? ToTick(nm, StringToDouble(KV(k, v, "sl"))) : cur_sl;   // sur le pas de cotation, avant tout controle
+   double tp = HasKey(k, "tp") ? ToTick(nm, StringToDouble(KV(k, v, "tp"))) : cur_tp;
    MqlTick tk;
    if(!SymbolInfoTick(nm, tk)) return "pas de prix";
    if(!MathIsValidNumber(sl) || !MathIsValidNumber(tp)) return "nombre illisible dans l'ordre";
@@ -926,7 +1004,8 @@ void Show()
    s += "\n";
    s += "Nouvelles positions : " + (why == "" ? "autorisees" : "BLOQUEES (" + why + ")") + "\n";
    s += "Positions du robot : " + IntegerToString(CountPositions()) + " / " + IntegerToString(InpMaxPositions) + "\n";
-   s += "Fonds : " + DoubleToString(AccountInfoDouble(ACCOUNT_EQUITY), 2) + "   depart : " + DoubleToString(GlobalVariableGet("CM_start"), 2) + "\n";
+   s += "Fonds : " + DoubleToString(AccountInfoDouble(ACCOUNT_EQUITY), 2) + "   capital de reference : " + DoubleToString(GlobalVariableGet("CM_start"), 2)
+        + "   arret definitif a : " + DoubleToString(KillLevel(), 2) + "\n";
    string mk = "";
    for(int i = 0; i < ArraySize(g_base); i++) mk += g_base[i] + " -> " + (g_name[i] == "" ? "INTROUVABLE" : g_name[i]) + "   ";
    s += "Marches : " + mk + "\n";
@@ -975,7 +1054,7 @@ int OnInit()
       GlobalVariableSet("CM_killed", 0.0);
       GlobalVariableSet("CM_day_lock", 0.0);
       GlobalVariableSet("CM_day_from", -1.0);                           // la perte du jour repart de zero (voir Locks)
-      GlobalVariableDel("CM_start");                                    // le capital de depart redevient le solde actuel
+      GlobalVariableDel("CM_start");                                    // le capital de reference repart du solde actuel (voir Locks)
       KillFile(false);
       g_last_msg = "blocages leves (InpResetLocks) ; remettre InpResetLocks sur false";
       Print("ClaudeMains: ", g_last_msg);
