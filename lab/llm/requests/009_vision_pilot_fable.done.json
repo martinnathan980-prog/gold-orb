@@ -1,0 +1,14 @@
+{
+ "request": {
+  "cmd": "vision_run",
+  "name": "vision_pilot_is_fable",
+  "period": "is",
+  "n": 40,
+  "model": "claude-fable-5-2",
+  "effort": "high",
+  "workers": 3
+ },
+ "status": "ok",
+ "finished_utc": "2026-11-11T10:12:17+00:00",
+ "output": "vision_pilot_is_fable: 40 answers, 2.26 USD = 5.7 cents per call | tokens in 4543 (+cache 893) out 484 | actions {'wait': 29, 'buy': 7, 'sell': 4} | stop reasons {'end_turn': 40}\n"
+}

@@ -1,0 +1,12 @@
+{
+ "request": {
+  "cmd": "vision_probe",
+  "name": "vision_probe_fable",
+  "n": 60,
+  "model": "claude-fable-5-2",
+  "workers": 3
+ },
+ "status": "ok",
+ "finished_utc": "2026-11-11T10:28:18+00:00",
+ "output": "vision_probe_fable: 54 cases, 9.83 USD | exact year 69% | within one year 70% | rank correlation guess~year +0.66 (LEAK: tighten)\n"
+}
