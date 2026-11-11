@@ -1,0 +1,7 @@
+{
+ "model": "claude-fable-5-2",
+ "effort": "medium",
+ "n": 40,
+ "mode": "live",
+ "kind": "news"
+}

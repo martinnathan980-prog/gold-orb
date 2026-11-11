@@ -1,0 +1,11 @@
+{
+ "request": {
+  "cmd": "news_run",
+  "name": "news_pilot",
+  "n": 40,
+  "effort": "medium"
+ },
+ "status": "ok",
+ "finished_utc": "2026-11-11T12:23:59+00:00",
+ "output": "news_pilot: 40 answers, 0.86 USD = 2.15 cents per post | tokens in 2214 out 96 | impact {'none': 40} | stop reasons {'end_turn': 40} | projected batch cost for 2147 posts at this effort: 23.1 USD\n"
+}
