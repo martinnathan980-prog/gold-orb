@@ -283,7 +283,9 @@ def score(d, delay=2, horizons=(15, 60, 240)):
         ok60 = np.abs((ts[60:] - ts[:-60]) / np.timedelta64(1, "m") - 60) <= 5
         x["sd60_bp"] = float(np.std(r60[ok60]) * 1e4)
         x["entry_i"] = e
-        x["entry_t"] = np.where(e >= 0, ts[np.maximum(e, 0)], np.datetime64("NaT"))
+        et = ts[np.maximum(e, 0)].copy()
+        et[e < 0] = np.datetime64("NaT")
+        x["entry_t"] = et
         for h in horizons:
             xi = _at(ts, np.where(e >= 0, ts[np.maximum(e, 0)], ts[0]) + np.timedelta64(h, "m"))
             good = (e >= 0) & (xi >= 0)
