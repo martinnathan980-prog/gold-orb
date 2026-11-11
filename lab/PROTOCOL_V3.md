@@ -269,3 +269,31 @@ evidence (`results/r2/fx/tokyo_review.json`). Nothing below changes the frozen r
 7. **Diagnostics printed by the same single run, declared here as NON-criteria:** t on a fixed lot (basis points);
    the result without the trades of 25 December (a retail broker is closed that day); entry at 09:54 and at 09:56
    (execution sensitivity; no variant can be adopted from them).
+
+### Addendum E — clarification of 2026-11-11 (night), after the design and its independent attack, BEFORE any 2022+ result
+The designer logged 39 stake configurations and froze two profiles by the selection rule (`r2/tracks/stake/`,
+`results/r2/stake/`); a reviewer re-implemented everything, found no look-ahead and corrected how the result must be
+read (`results/r2/stake/review.json`). Written before the look:
+1. **Three profiles get the single look, not two.** `soft` (trial 28: catch-up on the crypto rules up to 3×, small
+   stake once the week is ahead; base stake 0.58 of the reference's) and `strong` (trial 36: crypto up to 5×, us100
+   up to 3×; base 0.39) are the two frozen by the rule. **`cushion_only`** (trial 33: no catch-up at all, only a
+   small stake once the week is ahead; base 1.0) is added by the lead, as a declared deviation, because it is the
+   only rule whose stake never exceeds the normal one and the only one that keeps the reference's worst week on a
+   small account.
+2. **Two readings of every criterion** (winning weeks ≥ reference + 8 points; worst week and maximum drawdown ≤ 1.25 ×
+   the reference's; profit > 0): **as designed** (every signal taken, no compounding, the frozen base stake; the
+   accounting of the search) and **on 1,000 EUR** (account loop with minimum lots, 6 positions, 2 per market, the
+   account kept at 1,000 EUR, stop distances at TODAY's price level because the minimum lots bite at today's
+   prices; the reference simulated the same way at 1 %). A profile is offered for the user's account only if it
+   passes on 1,000 EUR; if it passes only as designed it is described as "from N EUR".
+3. **Winning weeks are also counted on week-end equity** (trades still open at the end of the server week marked at
+   the last price), because that is what the user sees: in sample the gain is then +12 points (soft), +16.5 (strong),
+   +7 (cushion) instead of +17, +21, +9. The "+8 points" criterion must hold on this reading too.
+4. **Reported with every profile, as the reviewer requires:** the number of weeks worse than −8 %; the same profit
+   earned with a plain flat stake (its worst week and its weeks worse than −8 %); the in-sample behaviour at half
+   the edge and with no edge (real order of the trades: 44.7 % winning weeks for the reference, 53.9 % soft, 61.2 %
+   strong, 48.5 % cushion; the rule manufactures +4 to +22 points by itself); the chance of losing half the account
+   with no edge (soft 53 %, strong 47 %, against 38 % and 22 % for a flat stake of the same size): **the stake rule
+   does not lower the risk, it moves it from the number of red weeks to their size.**
+5. On 1,000 EUR at today's prices the profiles take a quarter to a third of the signals (the reference itself 42 %):
+   mostly the two ether rules. This is reported as what it is.
