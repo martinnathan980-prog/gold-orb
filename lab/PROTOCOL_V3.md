@@ -102,3 +102,67 @@ weeks: this deviation is declared here.
 **Before any real use.** FP Markets' own instrument (symbol, contract size, minimum lot, spread, how the
 monthly roll is charged, swap, trading hours) is unknown and must be read in the user's MT5; the vendor's CFD
 on the same future (VOL.IDX/USD, history from October 2022) will be compared with the futures-based result.
+
+## Addendum B (2026-11-11, written before this rule is run in the lab engine and before any 2022+ result): `fx`, month-end fix with the S&P 500 sign
+**Origin.** Idea panel of 2026-11-11 (`results/panel/panel_2026-11-11.json`, rank 2; a designer and an independent
+reviewer measured it in sample only, scripts in `lab/panel/monthend_*.py`). **Mechanism.** Funds that hedge the
+currency risk of their US shares must re-set their dollar hedge at the month-end 16:00 London benchmark: after a
+month in which US shares rose they sell dollars into the fix, after a falling month they buy; once the forced order
+is done the price comes back. The lab's earlier month-end rule (`B1_fix_me_rev`, sign = against the previous hour's
+move) is a different sign rule; this is configuration n°16 of the track, the neighbours below n°17–22.
+
+**Frozen rule `B5_fix_me_spx`.** Pairs: eurusd, gbpusd, audusd, nzdusd, usdcad, usdchf (the yen stays out).
+Date: the last weekday of the calendar month that is neither an England bank holiday nor a New York Stock Exchange
+holiday (python `holidays` 0.108: `country_holidays("GB", subdiv="ENG")`, `financial_holidays("NYSE")`).
+Sign: official S&P 500 daily closes (public file, column `price` of https://squeezemetrics.com/monitor/static/DIX.csv):
+if the close of the previous New York session is above the last close of the previous calendar month, **buy dollars**
+against the six currencies; if below, **sell dollars**; no trade if equal. Entry: market, at the open of the first
+M1 bar at or after 16:02 London (dropped if more than 5 minutes late). Stop: 1.5 × ATR(24) of complete hourly mid
+bars, from the fill. Exit: market at the open of the first M1 bar at or after 16:30 London. Equal risk per pair.
+No filter. Costs: FP Markets Raw frames (`r2/fp_costs.json`).
+
+**Statistic.** "Basket net bp of a date" = mean over the pairs traded that date of 10,000 × P&L / entry price, from
+the lab engine (spread, commission, slippage and stops included).
+
+**In sample (2013–2021, 108 dates).** PROTOCOL_V3 section 4 basket criteria: n ≥ 250, t on daily sums of R ≥ 2.5,
+pooled PF ≥ 1.12, PF ≥ 1.04 with costs ×1.5, ≥ 60 % of years positive, ≥ 4 of 6 pairs positive, no pair above 25 %
+of the profit; neighbours (entry 16:00 / 16:01 / 16:03 / 16:04 with exit 16:30; entry 16:02 with exit 16:20 /
+16:45): median pooled PF ≥ 1.06; null: the same dates replaced by random weekdays on which both centres are open
+(same clock, same side for the six pairs, 1,000 draws): the rule's mean basket bp ≥ 97.5th percentile. The engine must
+also roughly reproduce the panel's figure (about +3.9 bp net per date); a result below +2.5 bp is investigated
+before anything else. The sign from the lab's us500 frame (16:00 New York) is compared with the official one
+(diagnostic).
+
+**Validation (lead, one logged look, 48 dates of 2022–2025).** Pass = all of: basket net ≥ +1.5 bp per date;
+t on the 48 dates ≥ 2.0; ≥ 60 % of dates positive; ≥ 5 of 6 pairs with a positive mean; ≥ 3 of 4 years positive;
+basket net still > 0 with spread and slippage doubled; and the round's own rule (pooled PF ≥ 1.06, expectancy in
+R > 0, ≥ 3 of 4 years positive in R). Reported, not part of the pass: up months and down months separately; after
+a pass the "sell dollars after a down month" half is traded only if its own validation mean is above zero.
+**A fail is final**: no other window, sign, pair list or filter is tried on 2022–2025.
+
+**Before any money.** Log FP Markets' bid and ask on the six pairs every second from 15:55 to 16:35 London on
+30 November and 31 December 2026; live only if the median all-in cost at 16:02–16:03 is at most twice the frame's.
+Live size 0.01 lot per pair; stop after 24 month-ends with a negative sum.
+
+## Addendum C (2026-11-11, written before any 2022+ result of this split): "stressed market" gate on `noise30` (us100)
+**Origin.** Idea panel, rank 3 (`lab/panel/gate_*.py`). **Idea.** When option dealers are short gamma, or simply
+after a bad week for the S&P 500, hedgers have to trade with the move and intraday trends run further: the
+validated us100 noise-area momentum sleeve would earn more per trade on those days. It adds no trade; a pass only
+buys a size tilt.
+
+**Two flags, both known before 09:30 New York** (file as in addendum B; columns `price`, `gex`). For a daily series
+x, pct(x) = share of the previous 251 values that are strictly below today's value (window 252, at least 126).
+- **G**: pct(previous day's `gex`) < 0.33.
+- **P**: pct(sum of the last five daily log returns of `price`, up to the previous close) < 0.33.
+
+**In sample.** `results/r2/idx_us/trades_is_noise30_us100.csv`; the script must reproduce the reviewer's split
+(G: about +0.169 R on 591 trades against +0.026 R on 1,052; P: about +0.161 R against +0.021 R).
+
+**Validation (lead, one logged look).** Trades of 2022–2025 already saved (`results/r2/recalc/trades/noise30__us100.parquet`,
+about 850). For each flag, pass = all three: expectancy(flagged) − expectancy(unflagged) ≥ +0.10 R; PF of the
+flagged trades ≥ 1.25; flagged better than unflagged in at least 3 of the 4 years. Decision table: neither passes
+= no gate, the sleeve stays at equal risk and no other threshold, window or source is tried on 2022–2025; P passes
+= the live gate is P alone; only G passes = G, after 60 demo sessions showing that the gamma estimate can be had
+every morning. On a pass: 1.5 × risk on flagged days, 0.75 × otherwise (never more), never applied to the
+opening-candle sleeve, reviewed once a year (off if flagged trades do not earn more per trade than the others
+after at least 400 trades under the gate). Chance of a false pass: about 7 % per flag, 11 % for the pair.
