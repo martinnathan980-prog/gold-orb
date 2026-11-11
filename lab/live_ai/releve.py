@@ -7,6 +7,8 @@ modèle de frais du labo, aux minutes où les règles entrent.
                                                 compare au modèle -> results/live/releve_<date>.json
     python3 live_ai/releve.py sonde [marchés]   compte DÉMO seulement : un aller-retour au lot minimum par marché, pour
                                                 lire la commission réelle -> results/live/sonde_<date>.json
+                                                (même chose sans Python : le script mql5/SondeFP.mq5 écrit sonde.csv
+                                                dans le dossier du relevé, lu automatiquement)
     python3 live_ai/releve.py faux <dossier>    (test) fabrique un faux relevé à partir des données du labo
 
 Règle fixée d'avance (panel du 2026-11-11, rang 1, étape 1) : toutes les règles ont été testées avec des frais
@@ -152,7 +154,7 @@ def analyser(folder):
     mod = json.load(open(MODELE)) if os.path.exists(MODELE) else {}
     grille = json.load(open(GRILLE)) if os.path.exists(GRILLE) else {}
     commission = dict(COMMISSION)
-    lue = commissions_mesurees()
+    lue = commissions_mesurees(folder)
     commission.update(lue)
     res_com = "lue sur un aller-retour en démo" if lue else "supposée (pas encore de sonde)"
     res = {"serveur": fini.get("server"), "demo": fini.get("demo"), "commission": res_com, "fiches": {}, "marches": {}, "regles": {}}
@@ -167,6 +169,13 @@ def analyser(folder):
         res["fiches"][f["base"]] = d
         print(f"  {f['base']} -> {d['name']}: lot minimum {d['vol_min']:g} (pas {d['vol_step']:g}), contrat {d['contract_size']:g}, "
               f"marge pour 1 lot {d['margin_1lot']:.0f}, swaps {d['swap_long']:g} / {d['swap_short']:g} (mode {d['swap_mode']})")
+    sonde_mt5 = lire_sonde(folder)
+    if sonde_mt5:
+        res["sonde"] = sonde_mt5
+        print("\nSONDE (aller-retour au lot minimum sur le compte démo)")
+        for b, m in sonde_mt5.items():
+            print(f"  {b:7s} commission {m['commission_par_lot']:.2f} par lot aller-retour = {m['commission_pb']:.2f} pb ; "
+                  f"écart payé {m['ecart_realise']:g} = {m['ecart_realise_pb']:.2f} pb ({m['transactions']} transactions)")
     frames = {}
     print("\nÉCART ACHETEUR - VENDEUR MESURÉ (points de base du prix ; médiane, moyenne, 9e décile)")
     for p in sorted(folder.glob("m1_*.csv")):
@@ -306,9 +315,35 @@ def sonde(bases=("XAUUSD", "US100", "BTCUSD", "ETHUSD", "EURUSD", "USDJPY"), h=N
     return out
 
 
-def commissions_mesurees():
-    """Commission en prix par unité (aller-retour) lue par la dernière sonde, par marché du labo."""
+def lire_sonde(folder):
+    """Fichier sonde.csv écrit par mql5/SondeFP.mq5 (aller-retour au lot minimum sur le compte démo) : par marché,
+    commission + frais de l'aller-retour, convertis en prix par unité, et écart réellement payé (achat - vente)."""
+    p = Path(folder) / "sonde.csv"
+    if not p.exists():
+        return {}
+    df = pd.read_csv(StringIO(p.read_text(encoding="latin-1")), comment="#")
+    out = {}
+    for _, r in df.iterrows():
+        if r.get("status") != "ok" or not r["volume"] > 0 or not r["tick_value"] > 0:
+            continue
+        com = -(float(r["commission"]) + float(r["fee"])) + 0.0              # devise du compte, pour `volume` lots
+        out[r["base"]] = {"nom": r["name"], "volume": float(r["volume"]), "transactions": int(r["deals"]),
+                          "commission_aller_retour": round(com, 4), "commission_par_lot": round(com / r["volume"], 4),
+                          "commission_en_prix": float(com / r["volume"] / r["tick_value"] * r["tick_size"]),
+                          "commission_pb": round(float(com / r["volume"] / r["tick_value"] * r["tick_size"] / r["buy_price"] * 1e4), 3),
+                          "ecart_realise": round(float(r["buy_price"] - r["sell_price"]), 8),
+                          "ecart_realise_pb": round(float((r["buy_price"] - r["sell_price"]) / r["buy_price"] * 1e4), 3)}
+    return out
+
+
+def commissions_mesurees(folder=None):
+    """Commission en prix par unité (aller-retour) lue par la sonde, par marché du labo : d'abord le fichier
+    sonde.csv du relevé (script MT5), sinon la dernière sonde faite par le pont (sonde_<date>.json)."""
     import glob
+    if folder is not None:
+        s = lire_sonde(folder)
+        if s:
+            return {BASE2SYM[b]: m["commission_en_prix"] for b, m in s.items() if b in BASE2SYM}
     files = sorted(glob.glob(os.path.join(OUT, "sonde_*.json")))
     if not files:
         return {}
