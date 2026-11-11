@@ -60,7 +60,7 @@ input int    InpMaxTickAgeSec   = 10;       // Age max du dernier prix pour ouvr
 input int    InpMaxPositions    = 6;        // Positions ouvertes en meme temps (total)
 input int    InpMaxPerSymbol    = 2;        // Positions ouvertes en meme temps par marche
 input double InpDailyLossPct    = 6.0;      // Perte max du jour (% du solde du debut de journee) : tout ferme + blocage
-input double InpKillPct         = 50.0;     // Arret definitif si les fonds perdent ce % du capital de reference (depart + depots - retraits)
+input double InpKillPct         = 50.0;     // Arret definitif si les fonds perdent ce % du capital de reference (depart + depots - retraits) ; 0 = desactive
 input double InpStartBalance    = 0.0;      // Capital de depart (0 = solde au premier lancement) ; il suit ensuite les depots et les retraits
 input int    InpBrainTimeoutSec = 180;      // Cerveau muet depuis ce delai (secondes) : plus de nouvelle position
 input int    InpFridayClose     = 2350;     // Vendredi, heure serveur HHMM ou tout est ferme (0 = desactive) ; plus tot les semaines de jour ferie
@@ -74,6 +74,7 @@ const string VERSION          = "1.11";
 const string KILL_FILE        = "ClaudeMains_arret.txt";   // l'arret definitif est aussi note dans ce fichier (dans MQL5\Files)
 const double MIN_STOP_SPREADS = 3.0;                       // distance minimale du stop a l'ouverture, en ecarts achat-vente
 const int    MAX_PER_PASS     = 5;                         // ordres du cerveau executes par passage (un passage par seconde)
+const int    SETTLE_SEC       = 60;                        // solde et historique du compte en desaccord : rien n'est conclu, ce delai au plus
 
 CTrade   g_trade;
 string   g_base[];            // noms de base demandes (XAUUSD, US100, ...)
@@ -94,6 +95,7 @@ bool     g_flat       = false;// un blocage impose de tout fermer (etat au passa
 double   g_day_done   = 0.0;  // resultat du robot aujourd'hui, transactions faites (positions encore ouvertes non comprises)
 double   g_day_bal    = 0.0;  // solde du debut de journee
 bool     g_dirty      = true; // une transaction vient d'avoir lieu : exporter tout de suite
+datetime g_gap_since  = 0;    // depuis quand le solde et l'historique du compte ne disent pas la meme chose (0 = ils sont d'accord)
 string   g_last_msg   = "";   // dernier evenement (affiche sur le graphique)
 
 //+------------------------------------------------------------------+
@@ -262,7 +264,7 @@ double ToTick(const string nm, const double x)
    int dg = (int)SymbolInfoInteger(nm, SYMBOL_DIGITS);
    double ts = SymbolInfoDouble(nm, SYMBOL_TRADE_TICK_SIZE);
    if(ts <= 0) return NormalizeDouble(x, dg);                           // pas inconnu : pas de division par zero (l'ordre sera refuse plus loin)
-   return NormalizeDouble(MathRound(x / ts) * ts, dg);
+   return NormalizeDouble(MathRound(NormalizeDouble(x, dg) / ts) * ts, dg);   // (pas = point : exactement NormalizeDouble(x, dg), comme avant)
   }
 
 //+------------------------------------------------------------------+
@@ -312,9 +314,10 @@ string Blocked()
    return "";
   }
 
-// fonds du compte auxquels l'arret definitif se declenche
+// fonds du compte auxquels l'arret definitif se declenche (0 = jamais : InpKillPct = 0 desactive l'arret definitif)
 double KillLevel()
   {
+   if(InpKillPct <= 0) return 0.0;
    return GlobalVariableGet("CM_start") * (1.0 - InpKillPct / 100.0);
   }
 
@@ -552,27 +555,52 @@ int CloseAll(const string why)
 // Une operation n'est jamais comptee deux fois : le numero de la derniere traitee est garde dans CM_bal_deal, ecrit sur le
 // disque aussitot (les numeros de transaction du serveur sont supposes croissants). Rien de ce qui date d'avant le releve
 // qui a fixe le capital de depart (CM_bal_from) n'est compte : le depot qui a ouvert le compte est deja dans ce releve.
-// Renvoie false si l'historique n'a pas pu etre lu.
-bool Capital(const double eq)
+// Le solde et l'historique doivent dire la meme chose : MT5 peut montrer le nouveau solde un instant avant la transaction
+// dans l'historique (ou l'inverse), et au demarrage l'historique peut ne pas etre encore complet. Or le solde ne change que
+// par des transactions : (solde - somme de toutes les transactions de l'historique) ne bouge donc pas. S'il a bouge depuis
+// le dernier releve, rien n'est conclu (ni capital de reference, ni arret definitif) et la question est reposee au passage
+// suivant, pendant SETTLE_SEC secondes au plus ; passe ce delai l'ecart est accepte tel quel (historique raccourci par le
+// courtier, operation d'un type inconnu).
+// Renvoie false si l'historique n'a pas pu etre lu ou n'est pas (encore) d'accord avec le solde.
+bool Capital(const double bal, const double eq)
   {
    datetime now = TimeTradeServer();
    if(!HistorySelect(0, now + 86400)) return false;
    bool first = !GlobalVariableCheck("CM_bal_deal");                    // premier releve (premier lancement, InpResetLocks) : rien a compter
    ulong last = (ulong)GlobalVariableGet("CM_bal_deal"), top = last;
    datetime since = (datetime)GlobalVariableGet("CM_bal_from");
+   if(now < since)                                                      // l'horloge du serveur a recule depuis le premier releve : la date
+     {                                                                  // ne trie plus rien, le numero de transaction suffit
+      since = 0;
+      GlobalVariableSet("CM_bal_from", 0.0);
+     }
    double amt[];                                                        // montants des operations pas encore comptees
    double rest = 0.0;                                                   // leur somme
+   double all = 0.0;                                                    // somme de toutes les transactions de l'historique
    int n = 0, total = HistoryDealsTotal();
    for(int i = 0; i < total; i++)
      {
       ulong d = HistoryDealGetTicket(i);
-      if(d <= last || HistoryDealGetInteger(d, DEAL_TYPE) != DEAL_TYPE_BALANCE) continue;
+      if(d == 0) continue;
+      long type = HistoryDealGetInteger(d, DEAL_TYPE);
+      if(type != DEAL_TYPE_CREDIT)                                      // (un credit n'entre pas dans le solde)
+         all += HistoryDealGetDouble(d, DEAL_PROFIT) + HistoryDealGetDouble(d, DEAL_SWAP) + HistoryDealGetDouble(d, DEAL_COMMISSION)
+                + HistoryDealGetDouble(d, DEAL_FEE);
+      if(d <= last || type != DEAL_TYPE_BALANCE) continue;
       if(d > top) top = d;
       if(first || HistoryDealGetInteger(d, DEAL_TIME) < since) continue;
       ArrayResize(amt, n + 1, 16);
       amt[n] = HistoryDealGetDouble(d, DEAL_PROFIT);                    // le montant d'un depot ou d'un retrait est dans ce champ
       rest += amt[n++];
      }
+   double gap = bal - all;
+   if(GlobalVariableCheck("CM_bal_gap") && MathAbs(gap - GlobalVariableGet("CM_bal_gap")) > 0.011)
+     {
+      if(g_gap_since == 0 || now < g_gap_since) g_gap_since = now;
+      if(now - g_gap_since < SETTLE_SEC) return false;                  // pas d'accord : rien n'est conclu a ce passage
+     }
+   g_gap_since = 0;
+   GlobalVariableSet("CM_bal_gap", gap);
    if(!first && top == last) return true;                               // rien de nouveau
    double start = GlobalVariableGet("CM_start");
    for(int j = 0; j < n; j++)
@@ -626,13 +654,15 @@ bool Locks()
          g_day_done = sum;
          g_last_sum = now;
         }
-      Capital(eq);                                                      // depots et retraits : le capital de reference les suit
+      Capital(bal, eq);                                                 // depots et retraits : le capital de reference les suit
      }
+   else if(g_gap_since != 0) Capital(bal, eq);                          // solde et historique pas encore d'accord : question reposee a chaque passage
    g_day_bal = bal - g_day_done;                                        // solde du debut de journee (un depot ou un retrait du jour y est compte)
    // L'arret definitif n'est jamais pose sur une baisse des fonds qui est un retrait : l'historique est relu juste avant
-   // (retrait tout juste fait, ou fait pendant que les mains ne tournaient pas). Historique illisible : rien n'est conclu a
-   // ce passage, la question est reposee au suivant.
-   if(GlobalVariableGet("CM_killed") == 0 && GlobalVariableGet("CM_start") > 0 && eq <= KillLevel() && Capital(eq) && eq <= KillLevel())
+   // (retrait tout juste fait, ou fait pendant que les mains ne tournaient pas). Historique illisible, ou pas d'accord avec
+   // le solde : rien n'est conclu a ce passage, la question est reposee au suivant.
+   if(GlobalVariableGet("CM_killed") == 0 && InpKillPct > 0 && GlobalVariableGet("CM_start") > 0 && eq <= KillLevel() && Capital(bal, eq)
+      && eq <= KillLevel())
      {
       GlobalVariableSet("CM_killed", 1.0);
       GlobalVariablesFlush();

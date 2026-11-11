@@ -42,6 +42,10 @@
 //                                                    DEAL_PROFIT). TYPE = another non-trading deal type: 4 charge and
 //                                                    5 correction change the balance too; 3 credit and 6 bonus are only
 //                                                    recorded (the credit of an account is a separate figure, not imitated)
+//                           do.<n>=balonly AMOUNT    the balance changes but the deal is not in the history yet, and
+//                           do.<n>=dealonly AMOUNT   the deal is in the history but the balance has not changed yet: the two halves
+//                                                    of "balance AMOUNT", for a terminal that shows one before the other
+//                                                    (ASSUMPTION: nothing in the documentation says they are shown together)
 //                           balance_quiet=1          a balance operation raises no trade event (OnTradeTransaction is not called)
 //                           history_fail=1           HistorySelect returns false
 //                           history_empty=1          HistorySelect succeeds but lists nothing (history not synchronised yet;
@@ -1221,6 +1225,19 @@ static void mk_apply_control()
          for(MkPos &p : mk_pos)
             if(p.ticket == strtoul(a[1].c_str(), nullptr, 10)) p.ticket = mk_next_order++;
          mk_changed();
+        }
+      else if(a[0] == "balonly" && a.size() >= 2)              // the balance changes, the deal is not in the history yet
+        {
+         mk_balance = mk_round2(mk_balance + atof(a[1].c_str()));
+         mk_changed();
+         mk_pending_tx--;
+        }
+      else if(a[0] == "dealonly" && a.size() >= 2)             // the deal is in the history, the balance has not changed yet
+        {
+         MkDeal d = {mk_next_deal++, 0, 0, (long)TimeTradeServer(), "", 2, 0, 0.0, 0.0, atof(a[1].c_str()), 0.0, 0.0, 0.0, 0, 0, "deposit"};
+         mk_deals.push_back(d);
+         mk_changed();
+         if(mk_balance_quiet) mk_pending_tx--;
         }
       else if(a[0] == "balance" && a.size() >= 2)
         {

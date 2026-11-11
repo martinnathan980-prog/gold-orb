@@ -2333,6 +2333,9 @@ def k_once(W):
         w.advance(61)
         w.tick(3)
         assert w.h.account()["start_balance"] == 1500.0 and not ops(w), (w.h.account(), ops(w))
+        w.advance(61)                                                           # (the history has changed without the balance: the
+        w.tick(3)                                                               # hands conclude nothing for one minute, then accept it)
+        assert w.h.account()["start_balance"] == 1500.0 and not ops(w), (w.h.account(), ops(w))
         since = int(float(dict(ln.split("=") for ln in (w.mock / "globals.txt").read_text().split())["CM_bal_from"]))
         w.do(f"balance 100 {w.now() - since}")                                  # dated the very second of the first reading: counted
         w.tick(3)
@@ -2564,6 +2567,478 @@ def t_putback(W):
         r = w.must_open("US100", "buy", 0.1, sl=24950.10)
         assert w.pos(r["ticket"])["sl"] == 24950.0 and len(w.trades("sltp")) == 1, (w.pos(r["ticket"]), w.trades("sltp"))
         assert " sl=24950 " in w.trades("sltp")[0] and "retcode=10009" in w.trades("sltp")[0], w.trades("sltp")
+
+
+# ---------------------------------------------------------------------- added by the review of version 1.11 (pass on 1.11 as delivered)
+# {RV} sequences that had no test, and the three mutants of the new lines that survived the suite (X16, X17, X18)
+@test("X4", "REVIEW everything withdrawn then a new deposit: the reference is the new deposit, no stop, InpStartBalance or not", covers="RV")
+def x_withdraw_all(W):
+    for inputs in ({}, {"InpStartBalance": 1000}):
+        with W(inputs=inputs) as w:
+            w.h.alive()
+            w.tick(2)
+            w.do("balance -1000")
+            w.tick(3)
+            w.do("balance 200")
+            w.tick(3)
+            w.h.alive()
+            w.wait(lambda: w.h.account()["balance"] == 200.0, 8, "account")
+            w.tick(2)
+            a = w.h.account()
+            assert (a["blocked"], a["start_balance"], a["kill_level"]) == ("", 200.0, 100.0), (inputs, a, ops(w), w.log("NOTIFY"))
+
+
+@test("X6", "REVIEW a withdrawal larger than the reference (gains withdrawn in two steps): reference never negative, stop still works", covers="RV")
+def x_larger(W):
+    with W() as w:
+        w.h.alive()
+        bal = grow(w, 3000)
+        w.do("balance -2600")
+        w.tick(3)
+        left = round(bal - 2600, 2)
+        a = w.h.account()
+        assert (a["blocked"], a["start_balance"]) == ("", left), a
+        w.do(f"balance {-(left - 10):.2f}")                                    # 10 left
+        w.tick(3)
+        a = w.h.account()
+        assert (a["blocked"], a["start_balance"], a["kill_level"]) == ("", 10.0, 5.0), a
+
+
+@test("X7", "REVIEW a deposit and a withdrawal while the permanent stop is set, then an honoured reset: reference = balance, earlier operations forgotten", covers="RV")
+def x_killed_ops(W):
+    with W() as w:
+        lose(w, 3780.00)
+        w.wait(lambda: w.h.account()["blocked"] == KILLED, 3, "the kill switch")
+        w.wait(lambda: not w.robot(), 3, "closed")
+        w.do("balance 1000")
+        w.tick(3)
+        w.do("balance -200")
+        w.tick(3)
+        a = w.h.account()
+        assert (a["blocked"], a["start_balance"]) == (KILLED, 1800.0), a
+        assert (w.files / "ClaudeMains_arret.txt").read_text().strip() == "start=1800.00"
+        w.stop()
+        w.start(inputs={"InpResetLocks": "true"})
+        w.h.alive()
+        w.tick(3)
+        a = w.h.account()
+        assert a["blocked"] == "" and a["start_balance"] == a["balance"] and len(ops(w)) == 2, (a, ops(w))
+        w.stop()
+        w.start(inputs={})
+        w.h.alive()
+        w.advance(61)
+        w.tick(3)
+        b = w.h.account()
+        assert b["start_balance"] == a["start_balance"] and len(ops(w)) == 2, (b, ops(w))
+
+
+@test("X8", "REVIEW daily-loss baseline: day_start_balance and day_result after a deposit and a withdrawal are those of 1.10", covers="RV")
+def x_daily(W):
+    with W() as w:
+        w.h.alive()
+        t = w.must_open("XAUUSD", "buy", 0.02, sl=4075.23)["ticket"]
+        assert w.shut(t)["ok"]
+        w.do("balance 500")
+        w.do("balance -200")
+        w.tick(3)
+        a = w.h.account()
+        assert (a["balance"], a["day_start_balance"], a["day_result"]) == (1299.68, 1300.0, -0.32), a
+
+
+@test("X9", "REVIEW tick 0.25: a stop that rounds to the wrong side of / too close to the price is refused, nothing sent", covers="RV")
+def x_tick_side(W):
+    with W(**TICK25) as w:
+        w.h.alive()
+        # bid 25000.00 ask 25001.50 (spread 1.5 -> 3 spreads = 4.5)
+        r = w.open("US100", "buy", 0.1, sl=24995.60)                           # -> 24995.50: 4.50 away = exactly 3 spreads: accepted
+        r2 = w.open("US100", "buy", 0.1, sl=24995.70)                          # -> 24995.75: 4.25 away: refused
+        assert not r2["ok"] and r2["reason"].startswith("stop trop serre"), r2
+        r3 = w.open("US100", "buy", 0.1, sl=24999.95)                          # -> 25000.00 = bid: wrong side / too close
+        assert not r3["ok"] and r3["reason"] == "stop du mauvais cote ou trop pres", r3
+        assert len(w.trades("open")) == (1 if r["ok"] else 0), (r, w.trades("open"))
+        return f"sl 24995.60 -> ok={r['ok']} sl={r.get('sl')} reason={r.get('reason')!r}"
+
+
+@test("X10", "REVIEW tick 0.25: target rounded onto the price side is refused; tp=0 stays 0", covers="RV")
+def x_tick_tp(W):
+    with W(**TICK25) as w:
+        w.h.alive()
+        r = w.open("US100", "buy", 0.1, sl=24950.0, tp=25001.55)               # -> 25001.50 = ask
+        assert not r["ok"] and r["reason"] == "objectif du mauvais cote ou trop pres" and not w.trades("open"), r
+        r = w.must_open("US100", "buy", 0.1, sl=24950.0)
+        assert w.pos(r["ticket"])["tp"] == 0.0
+        m = w.modify(r["ticket"], tp=0)
+        assert m["ok"] and w.pos(r["ticket"])["tp"] == 0.0, m
+
+
+@test("X11", "REVIEW tick 0.5 on a one-digit market and tick 0.03 (not a divisor of anything round): the stop sent is a multiple of the tick", covers="RV")
+def x_tick_odd(W):
+    with W(**{"sym.NAS100.tick_size": 0.5, "sym.NAS100.tick_value": 0.008621 * 50, "sym.NAS100.tick_value_loss": 0.008625 * 50}) as w:
+        w.h.alive()
+        r = w.must_open("US100", "buy", 0.1, sl=24950.30, tp=25100.20)
+        p = w.pos(r["ticket"])
+        assert (p["sl"], p["tp"]) == (24950.5, 25100.0), p
+    with W(**{"sym.NAS100.tick_size": 0.03, "sym.NAS100.tick_value": 0.008621 * 3, "sym.NAS100.tick_value_loss": 0.008625 * 3}) as w:
+        w.h.alive()
+        r = w.open("US100", "buy", 0.1, sl=24950.30)
+        assert r["ok"], r
+        p = w.pos(r["ticket"])
+        k = p["sl"] / 0.03
+        assert abs(k - round(k)) < 1e-6, p
+
+
+@test("X12", "REVIEW modify on tick 0.25: a position left without a stop gets a stop on the step, risk checked on the rounded stop", covers="RV")
+def x_tick_naked(W):
+    with W(**TICK25) as w:
+        w.h.alive()
+        t = w.must_open("US100", "buy", 0.1, sl=24950.0)["ticket"]
+        w.do(f"sltp {t} 0 0")
+        r = w.modify(t, sl=24960.10)
+        assert r["ok"] and r["sl"] == 24960.0 and w.pos(t)["sl"] == 24960.0, r
+
+
+@test("X14", "REVIEW account.txt: the key list is that of 1.10 plus kill_level, in order", covers="RV")
+def x_keys(W):
+    with W() as w:
+        keys = [ln.split("=")[0] for ln in (w.dir / "account.txt").read_text().splitlines()]
+        want = ["ea_version", "ea_time_gmt", "server_time", "server_minus_gmt_sec", "balance", "equity", "margin", "margin_free", "currency",
+                "leverage", "demo", "hedging", "server", "trade_allowed", "blocked", "start_balance", "kill_level", "day_start_balance",
+                "day_result", "max_risk_pct", "max_notional_x", "min_stop_spreads", "max_tick_age_sec", "max_positions", "max_per_symbol",
+                "daily_loss_pct", "kill_pct", "magic"]
+        assert keys == want, keys
+
+
+@test("X16", "REVIEW a withdrawal made two days ago while the hands were stopped for five days is still counted at the restart", covers="RV")
+def x_old_unseen(W):
+    with W() as w:
+        w.h.alive()
+        w.tick(2)
+        w.stop()
+        w.set(server_offset=w.ctl["server_offset"] + 5 * 86400)                 # Tuesday of the next week
+        w.do("balance -600 172800")
+        w.start()
+        w.h.alive()
+        w.tick(3)
+        a = w.h.account()
+        assert (a["balance"], a["blocked"], a["start_balance"], a["kill_level"]) == (400.0, "", 400.0, 200.0), (a, w.log("NOTIFY"))
+
+
+@test("X17", "REVIEW a withdrawal whose deal is dated a few seconds AFTER the hands' own clock (computer clock a little late): seen at once", covers="RV")
+def x_future_deal(W):
+    with W() as w:
+        w.h.alive()
+        w.tick(2)
+        w.do("balance -600 -30")
+        w.tick(3)
+        a = w.h.account()
+        assert (a["blocked"], a["start_balance"], a["kill_level"]) == ("", 400.0, 200.0), (a, w.log("NOTIFY"))
+
+
+@test("X18", "REVIEW funds exactly AT the stop level: the permanent stop is set (as in 1.10: at or under)", covers="RV")
+def x_exactly(W):
+    with W(inputs={"InpStartBalance": 2000}) as w:                              # funds 1000.00 = exactly half of 2000
+        w.h.alive()
+        w.wait(lambda: w.h.account()["blocked"] == KILLED, 8, "the permanent stop at exactly the level")
+        assert w.h.account().get("kill_level", 1000.0) == 1000.0
+
+
+@test("X19", "REVIEW the funding deposit is dated a few seconds AFTER the first reading by the hands' clock (computer clock a little "
+             "late) and is in the history at that reading: never counted, also at the later looks and after a restart", covers="RV")
+def x_funding_same_second(W):
+    with W(**{"do.1": "balance 500 -5"}) as w:
+        w.ndo = 1
+        w.h.alive()
+        w.tick(3)
+        w.advance(61)
+        w.tick(3)
+        w.stop()
+        w.start()
+        w.h.alive()
+        w.tick(3)
+        a = w.h.account()
+        assert (a["balance"], a["start_balance"], a["kill_level"]) == (1500.0, 1500.0, 750.0) and not ops(w), (a, ops(w))
+
+
+@test("X21", "REVIEW MetaTrader has forgotten its global variables (no permanent stop): the reference restarts from the balance, the "
+             "operations already in the history are not counted again, later ones are", covers="RV")
+def x_globals_lost(W):
+    with W() as w:
+        w.h.alive()
+        w.do("balance 100")
+        w.tick(3)
+        assert w.h.account()["start_balance"] == 1100.0 and len(ops(w)) == 1, (w.h.account(), ops(w))
+        w.stop()
+        (w.mock / "globals.txt").unlink()
+        w.set(server_offset=w.ctl["server_offset"] + 5 * 86400)                 # Tuesday of the next week
+        w.start()
+        w.h.alive()
+        w.tick(3)
+        w.advance(61)
+        w.tick(3)
+        a = w.h.account()
+        assert (a["balance"], a["start_balance"], a["kill_level"], a["blocked"]) == (1100.0, 1100.0, 550.0, "") and len(ops(w)) == 1, (a, ops(w))
+        w.do("balance -50")
+        w.tick(3)
+        a = w.h.account()
+        assert (a["start_balance"], a["kill_level"]) == (1050.0, 525.0) and len(ops(w)) == 2, (a, ops(w))
+
+
+# ---------------------------------------------------------------------- added by the review of version 1.11: these FAIL on 1.11 as
+# delivered (except the guards Y6 and Y9) and pass with the corrections proposed by the review. {SYNC} balance and history not shown
+# together (Y1-Y5, Y8 need the operations 'balonly' / 'dealonly' of the imitation), {CLOCK} server clock stepping back, {TIE} tick
+# size = point, {KILL0} InpKillPct = 0
+@test("X1", "REVIEW a withdrawal made while the hands were stopped, and at the restart the terminal shows the new balance before the "
+            "history (history not synchronised yet): no permanent stop", covers="RV")
+def x_restart_partial(W):
+    with W() as w:
+        w.h.alive()
+        w.stop()
+        w.do("balance -600")
+        w.set(history_empty=1)
+        w.start()
+        w.h.alive()
+        w.tick(3)
+        a = w.h.account()
+        assert a["blocked"] == "", f"blocked={a['blocked']!r} start_balance={a['start_balance']} with the history still empty: {w.log('NOTIFY')}"
+        w.set(history_empty=None)
+        w.advance(61)
+        w.tick(3)
+        a = w.h.account()
+        assert (a["blocked"], a["start_balance"]) == ("", 400.0), a
+
+
+@test("X2", "REVIEW the hands run, a withdrawal shows in the balance one pass before its deal is in the history: no permanent stop", covers="RV")
+def x_running_partial(W):
+    with W() as w:
+        w.h.alive()
+        w.tick(2)
+        w.set(history_empty=1)
+        w.do("balance -600")
+        w.tick(2)
+        w.set(history_empty=None)
+        w.tick(3)
+        assert w.h.account()["blocked"] == "", (w.h.account(), w.log("NOTIFY"))
+        w.wait(lambda: w.h.account()["start_balance"] == 400.0, 8, "the reference to follow once the history shows the withdrawal")
+        assert w.h.account()["blocked"] == "", (w.h.account(), w.log("NOTIFY"))
+
+
+@test("X3", "REVIEW the server clock steps back one hour after the first start, then a withdrawal under the stop level: counted, no permanent stop", covers="RV")
+def x_clock_back(W):
+    with W() as w:
+        w.h.alive()
+        w.tick(2)
+        w.advance(-3600)
+        w.h.alive()
+        w.tick(2)
+        w.do("balance -600")
+        w.tick(3)
+        a = w.h.account()
+        assert (a["blocked"], a["start_balance"]) == ("", 400.0), (a, w.log("NOTIFY"), ops(w))
+
+
+@test("X20", "REVIEW the server clock steps back two hours after the first start: a later deposit is still counted, the funding deposit "
+             "(now dated 'later' than the clock) still is not", covers="RV")
+def x_clock_back_deposit(W):
+    with W(**{"do.1": "balance 500 3600"}) as w:
+        w.ndo = 1
+        w.h.alive()
+        w.tick(3)
+        w.advance(-7200)
+        w.h.alive()
+        w.tick(2)
+        w.do("balance 100")
+        w.tick(3)
+        w.advance(61)
+        w.tick(3)
+        a = w.h.account()
+        assert (a["balance"], a["start_balance"]) == (1600.0, 1600.0) and len(ops(w)) == 1, (a, ops(w))
+
+
+@test("Y10", "CLOCK the server clock steps back while the hands run, they are stopped, a withdrawal is made, and they restart after the "
+             "clock has passed the first reading again: the withdrawal is counted, no permanent stop", covers="CLOCK")
+def y_clock_restart(W):
+    with W() as w:
+        w.h.alive()
+        w.tick(2)
+        w.advance(-7200)
+        w.h.alive()
+        w.tick(3)
+        w.stop()
+        w.set(server_offset=w.ctl["server_offset"] + 10800)
+        w.do("balance -600 10740")                                              # made one minute after the clock stepped back
+        w.start()
+        w.h.alive()
+        w.tick(3)
+        a = w.h.account()
+        assert (a["blocked"], a["start_balance"]) == ("", 400.0), (a, w.log("NOTIFY"))
+
+
+@test("Y1", "SYNC the balance shows a withdrawal before its deal is in the history (hands running): nothing is concluded meanwhile, no "
+            "permanent stop; the reference follows once the deal is listed", covers="SYNC")
+def y_balance_first(W):
+    with W() as w:
+        w.h.alive()
+        w.tick(2)
+        w.do("balonly -600")
+        w.wait(lambda: w.h.account()["balance"] == 400.0, 8, "account.txt to show the withdrawal")
+        w.tick(3)
+        a = w.h.account()
+        assert (a["blocked"], a["start_balance"]) == ("", 1000.0) and not w.log("NOTIFY"), (a, w.log("NOTIFY"))
+        w.do("dealonly -600")
+        w.tick(3)
+        a = w.h.account()
+        assert (a["blocked"], a["start_balance"], a["kill_level"]) == ("", 400.0, 200.0) and w.log("NOTIFY") == AFTER_600, (a, w.log("NOTIFY"))
+
+
+@test("Y2", "SYNC the deal of a withdrawal is in the history before the balance shows it: the reference is not computed on the funds "
+            "of before the withdrawal, no permanent stop", covers="SYNC")
+def y_deal_first(W):
+    with W() as w:
+        w.h.alive()
+        bal = grow(w, 3000)
+        w.do("dealonly -2600")
+        w.tick(3)
+        a = w.h.account()
+        assert (a["blocked"], a["start_balance"]) == ("", 1000.0) and not ops(w), (a, ops(w))
+        w.do("balonly -2600")
+        left = round(bal - 2600, 2)
+        w.wait(lambda: w.h.account()["balance"] == left and w.h.account()["start_balance"] != 1000.0, 8, "account.txt to show the withdrawal and the new reference")
+        w.tick(2)
+        a = w.h.account()
+        assert (a["balance"], a["blocked"], a["start_balance"]) == (left, "", left), (left, a, ops(w))
+        assert abs(a["kill_level"] - left / 2) < 0.006 and len(ops(w)) == 1, (a, ops(w))
+
+
+@test("Y3", "SYNC a withdrawal made while the hands were stopped; at the restart the balance is there before the history is complete: "
+            "no permanent stop, the reference follows when the deal is listed; also after a crash", covers="SYNC")
+def y_restart(W):
+    for crash in (False, True):
+        with W() as w:
+            w.h.alive()
+            w.tick(2)
+            w.kill() if crash else w.stop()
+            w.do("balonly -600")
+            w.start()
+            w.h.alive()
+            w.tick(3)
+            a = w.h.account()
+            assert (a["balance"], a["blocked"], a["start_balance"]) == (400.0, "", 1000.0), (crash, a, w.log("NOTIFY"))
+            w.do("dealonly -600")
+            w.tick(3)
+            a = w.h.account()
+            assert (a["blocked"], a["start_balance"]) == ("", 400.0) and w.log("NOTIFY") == AFTER_600, (crash, a, w.log("NOTIFY"))
+
+
+@test("Y4", "SYNC a balance that the history never explains: nothing is concluded for one minute, then the permanent stop is set "
+            "(the limit is not switched off for ever)", covers="SYNC")
+def y_never(W):
+    with W() as w:
+        w.h.alive()
+        w.tick(2)
+        w.do("balonly -600")
+        w.wait(lambda: w.h.account()["balance"] == 400.0, 8, "account.txt")
+        w.advance(30)
+        w.tick(3)
+        assert w.h.account()["blocked"] == "", w.h.account()
+        w.advance(31)
+        w.wait(lambda: w.h.account()["blocked"] == KILLED, 8, "the permanent stop after the minute")
+        assert w.h.account()["start_balance"] == 1000.0
+
+
+@test("Y5", "SYNC a deposit whose deal and balance do not arrive together (both orders): counted once, on the funds after the deposit", covers="SYNC")
+def y_deposit(W):
+    for first, second in (("balonly 300", "dealonly 300"), ("dealonly 300", "balonly 300")):
+        with W() as w:
+            w.h.alive()
+            bal = grow(w, 700)
+            w.do(first)
+            w.tick(3)
+            assert w.h.account()["start_balance"] == 1000.0 and not ops(w), (first, w.h.account(), ops(w))
+            w.do(second)
+            w.wait(lambda: w.h.account()["balance"] == round(bal + 300, 2) and w.h.account()["start_balance"] != 1000.0, 8, "account.txt to show the deposit and the new reference")
+            w.tick(2)
+            a = w.h.account()
+            assert (a["balance"], a["start_balance"], a["kill_level"], a["blocked"]) == (round(bal + 300, 2), 1300.0, 650.0, ""), (first, a)
+            assert ops(w) == ["Depot de 300.00 : capital de reference 1300.00, arret definitif a 650.00."], ops(w)
+            w.advance(61)
+            w.tick(3)
+            assert w.h.account()["start_balance"] == 1300.0 and len(ops(w)) == 1, ops(w)
+
+
+@test("Y6", "SYNC a real trading loss is not delayed: the permanent stop falls at once although the reconciliation is on", covers="SYNC")
+def y_real_loss(W):
+    with W() as w:
+        lose(w, 3780.00)
+        w.wait(lambda: w.h.account()["blocked"] == KILLED, 3, "the kill switch")
+
+
+@test("Y8", "SYNC the minute granted to a disagreement starts afresh at each new disagreement (not at the first one ever seen)", covers="SYNC")
+def y_fresh_minute(W):
+    with W() as w:
+        w.h.alive()
+        w.tick(2)
+        w.do("dealonly 300")                                                    # a first disagreement, seen (trade event)...
+        w.tick(2)
+        w.do("balonly 300")                                                     # ... and resolved
+        w.wait(lambda: w.h.account()["start_balance"] == 1300.0, 8, "the deposit to be counted")
+        w.advance(120)
+        w.do("balonly -900")                                                    # 400 left, under the level of 650
+        w.wait(lambda: w.h.account()["balance"] == 400.0, 8, "account.txt to show the withdrawal")
+        w.tick(3)
+        a = w.h.account()
+        assert (a["blocked"], a["start_balance"]) == ("", 1300.0), (a, w.log("NOTIFY"))
+        w.do("dealonly -900")
+        w.tick(3)
+        a = w.h.account()
+        assert (a["blocked"], a["start_balance"], a["kill_level"]) == ("", 400.0, 200.0), (a, w.log("NOTIFY"))
+
+
+@test("Y9", "SYNC a credit (not part of the balance) does not look like a disagreement: a withdrawal right after it is counted at once", covers="SYNC")
+def y_credit(W):
+    with W() as w:
+        w.h.alive()
+        w.tick(2)
+        w.do("balance 500 0 3")
+        w.tick(2)
+        w.do("balance -600")
+        w.tick(3)
+        a = w.h.account()
+        assert (a["blocked"], a["start_balance"], a["kill_level"]) == ("", 400.0, 200.0), (a, w.log("NOTIFY"))
+
+
+def c_round(v):
+    """round() of C / MathRound: to the nearest integer, halves away from zero"""
+    r = math.floor(abs(v))
+    return math.copysign(r + 1 if abs(v) - r >= 0.5 else r, v)
+
+
+@test("Y7", "TIE tick size = point: a stop with one decimal too many, exactly half-way between two points, is placed where version 1.10 "
+            "placed it (NormalizeDouble of the stop asked)", covers="TIE")
+def y_tie(W):
+    ties = [k / 1000 for k in range(4072005, 4079000, 10)]                      # 4072.005, 4072.015, ... (gold: two digits)
+    v110 = {x: c_round(x * 100.0) / 100.0 for x in ties}                        # NormalizeDouble(x, 2)
+    naive = {x: c_round(c_round(x / 0.01) * 0.01 * 100.0) / 100.0 for x in ties}    # rounding x / tick_size directly
+    differ = [x for x in ties if v110[x] != naive[x]][:5]
+    assert len(differ) == 5, differ                                             # (the two ways of rounding do differ on such values)
+    with W() as w:
+        w.h.alive()
+        for x in differ:
+            r = w.must_open("XAUUSD", "buy", 0.01, sl=x)
+            assert r["sl"] == v110[x] and w.pos(r["ticket"])["sl"] == v110[x], (x, r["sl"], v110[x])
+            assert w.shut(r["ticket"])["ok"]
+
+
+@test("Z1", "KILL0 InpKillPct = 0 switches the permanent stop off (like InpDailyLossPct = 0 for the daily limit): no stop at the start, "
+            "none after a loss; account.txt says kill_level=0", covers="KILL0")
+def z_killpct0(W):
+    with W(inputs={"InpKillPct": 0, "InpDailyLossPct": 0}) as w:
+        hand, a, b = lose(w, 3780.00)                                           # -517.90 EUR on gold
+        w.tick(3)
+        w.advance(61)
+        w.tick(3)
+        acc = w.h.account()
+        assert acc["blocked"] == "" and acc["kill_level"] == 0.0 and acc["balance"] < 500, acc
+        assert not w.notes("ARRET") and not (w.files / "ClaudeMains_arret.txt").exists(), w.log("NOTIFY")
 
 
 # ====================================================================== runner
