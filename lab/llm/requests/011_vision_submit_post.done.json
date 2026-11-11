@@ -1,0 +1,14 @@
+{
+ "request": {
+  "cmd": "vision_submit",
+  "name": "vision_post_fable",
+  "period": "post",
+  "n": null,
+  "model": "claude-fable-5-2",
+  "effort": "high",
+  "cases": "post"
+ },
+ "status": "ok",
+ "finished_utc": "2026-11-11T10:38:53+00:00",
+ "output": "vision_post_fable: batch msgbatch_01DaUtW8qux12b8MaDJF75CJ submitted with 300 requests\nvision_post_fable: batch msgbatch_01Xkifguo1sftH7Qi5vaexw7 submitted with 300 requests\nvision_post_fable: batch msgbatch_01LN51LdQam4bM3JiSTLppGd submitted with 300 requests\nvision_post_fable: batch msgbatch_01D86gfQLF1mFiVipq1GBsCS submitted with 100 requests\n"
+}

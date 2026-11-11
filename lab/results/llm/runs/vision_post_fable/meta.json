@@ -1,0 +1,17 @@
+{
+ "model": "claude-fable-5-2",
+ "effort": "high",
+ "period": "post",
+ "n": 1000,
+ "mode": "batch",
+ "kind": "vision",
+ "cases": "post",
+ "batch_ids": [
+  "msgbatch_01DaUtW8qux12b8MaDJF75CJ",
+  "msgbatch_01Xkifguo1sftH7Qi5vaexw7",
+  "msgbatch_01LN51LdQam4bM3JiSTLppGd",
+  "msgbatch_01D86gfQLF1mFiVipq1GBsCS"
+ ],
+ "collected": 1000,
+ "cost_usd": 28.08
+}

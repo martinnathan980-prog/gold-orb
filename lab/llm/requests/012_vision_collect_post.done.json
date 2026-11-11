@@ -1,0 +1,10 @@
+{
+ "request": {
+  "cmd": "vision_collect",
+  "name": "vision_post_fable",
+  "wait": true
+ },
+ "status": "ok",
+ "finished_utc": "2026-11-11T10:40:57+00:00",
+ "output": "vision_post_fable: [('ended', 300, 0), ('ended', 300, 0), ('in_progress', 0, 300), ('in_progress', 0, 100)]\nvision_post_fable: [('ended', 300, 0), ('ended', 300, 0), ('in_progress', 0, 300), ('in_progress', 0, 100)]\nvision_post_fable: [('ended', 300, 0), ('ended', 300, 0), ('ended', 300, 0), ('ended', 100, 0)]\nvision_post_fable: 1000 results, 28.08 USD\n"
+}
