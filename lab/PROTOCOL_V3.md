@@ -204,3 +204,39 @@ filter, no third variant.
 
 **After a pass only.** Three months at 0.01 lot to measure the real cost at 09:55 Tokyo; stop if the median all-in
 cost over 20 trades exceeds 1.5 bp.
+
+## Addendum E (2026-11-11, evening; written before any 2022+ result of this kind): "green weeks, green days"
+**The user's revised objective.** "Too many weeks in the red: emotionally too hard. Statistically green days, even
+with small gains." The size of the gain is now secondary; the **share of winning weeks** comes first, the share of
+winning days second. Costs are set aside while searching (gross first) but every figure shown to the user is given
+both without and with costs.
+
+**What is already known (in sample, common period 2018-02 → 2021, the ten validated rules, equal stake):** 49.6 % of
+days, 58.3 % of weeks and 85.4 % of months are winning. Profit targets on every trade buy almost nothing (52.1 % of
+days for −41 % of the profit). First scout of this addendum (seven stake rules, all logged below as trials 1–7):
+raising the stake when the WEEK is in the red (cap 3×) gives 71–74 % winning weeks, 51–54 % winning days, with the
+worst week 2.4 times larger at an unchanged base stake. Raising the stake within the day gives 52–54 % of days.
+**Arithmetic that no rule escapes:** with little or no edge at the daily scale, a share p of winning days means the
+average losing day is about p / (1 − p) average winning days (80 % → 4; 90 % → 9); the same holds for weeks.
+
+**Families allowed.** (1) **Stake rules** on the trades of the validated rules (entries, stops and exits untouched):
+catch-up within the week or the day, weekly / daily profit locks and loss stops, scaling of the base stake. The
+stake of a trade may depend only on results CLOSED before its entry. (2) Exit shaping (already measured). (3) Other
+structures with a high share of winning days, whatever the venue (carry), reported as such.
+
+**Design, in sample only** (entries before 2022-01-01). At most 40 stake configurations, every one logged in
+`results/r2/stake/trials.jsonl`. Reference = the ten rules at an equal stake. **Selection rule, fixed now:** scale
+the base stake of each configuration so that its in-sample worst week equals the reference's; among the
+configurations whose in-sample maximum drawdown is then no worse than the reference's, take the highest share of
+winning weeks (tie: highest total). At most two frozen profiles ("soft", "strong").
+**Zero-edge control, mandatory for every profile:** the same stake rule on the same trades with each trade's result
+replaced by a draw with no edge (the trade's own R with a random sign after removing the sleeve's mean; 1,000
+draws): share of winning weeks, worst week, probability of losing half the account. The user is shown it.
+**Account realism:** the 1,000 EUR account (`goldlab/portfolio.py::run_account`: minimum lots, 6 positions, 2 per
+market, stop at −50 %); a stake rule that the minimum lots make impossible on 1,000 EUR is reported as such, with the
+account size from which it works.
+
+**Validation (lead, one logged look per frozen profile, 2022–2025, account simulator).** Reported against the
+reference: winning weeks / days / months, each year, worst day and week, maximum drawdown. A profile is offered to
+the user only if: winning weeks ≥ reference + 8 points; worst week and maximum drawdown ≤ 1.25 × the reference's;
+total profit > 0. No re-tuning after the look.
