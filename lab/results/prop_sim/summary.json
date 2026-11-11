@@ -1,0 +1,70 @@
+{
+ "days": 1043,
+ "trades": 5400,
+ "mean_R_per_day": 0.41,
+ "sd_R_per_day": 3.19,
+ "worst_day_R": -7.42,
+ "weekend_R_ignored": 1.4,
+ "by_risk": {
+  "0.25%": {
+   "starts": 159,
+   "step1_pass_pct": 100.0,
+   "step1_fail_pct": 0.0,
+   "both_steps_pass_pct": 100.0,
+   "median_trading_days_to_pass": 136,
+   "p90_days_to_pass": 340,
+   "funded_12m_cases": 147,
+   "funded_12m_breach_pct": 0.0,
+   "funded_12m_median_gain_pct_of_balance": 38.2,
+   "avg_gain_per_day_pct": 0.102
+  },
+  "0.5%": {
+   "starts": 159,
+   "step1_pass_pct": 88.1,
+   "step1_fail_pct": 11.9,
+   "both_steps_pass_pct": 81.1,
+   "median_trading_days_to_pass": 57,
+   "p90_days_to_pass": 161,
+   "funded_12m_cases": 123,
+   "funded_12m_breach_pct": 11.4,
+   "funded_12m_median_gain_pct_of_balance": 64.4,
+   "avg_gain_per_day_pct": 0.205
+  },
+  "0.75%": {
+   "starts": 159,
+   "step1_pass_pct": 67.9,
+   "step1_fail_pct": 32.1,
+   "both_steps_pass_pct": 50.9,
+   "median_trading_days_to_pass": 29,
+   "p90_days_to_pass": 50,
+   "funded_12m_cases": 81,
+   "funded_12m_breach_pct": 39.5,
+   "funded_12m_median_gain_pct_of_balance": 90.9,
+   "avg_gain_per_day_pct": 0.307
+  },
+  "1%": {
+   "starts": 159,
+   "step1_pass_pct": 59.7,
+   "step1_fail_pct": 40.3,
+   "both_steps_pass_pct": 37.7,
+   "median_trading_days_to_pass": 18,
+   "p90_days_to_pass": 30,
+   "funded_12m_cases": 60,
+   "funded_12m_breach_pct": 100.0,
+   "funded_12m_median_gain_pct_of_balance": 0.0,
+   "avg_gain_per_day_pct": 0.41
+  },
+  "1.5%": {
+   "starts": 159,
+   "step1_pass_pct": 47.8,
+   "step1_fail_pct": 52.2,
+   "both_steps_pass_pct": 27.0,
+   "median_trading_days_to_pass": 13,
+   "p90_days_to_pass": 21,
+   "funded_12m_cases": 43,
+   "funded_12m_breach_pct": 100.0,
+   "funded_12m_median_gain_pct_of_balance": 0.0,
+   "avg_gain_per_day_pct": 0.614
+  }
+ }
+}
