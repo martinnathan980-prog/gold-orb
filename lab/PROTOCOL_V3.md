@@ -383,3 +383,28 @@ look was made** (`results/r2/pyramid/`, `results/r2/pyramid/panel.json`).
   stakes instead of 6 % of the balance, the −50 % stop is off. Not in the curves: the 20× size limit (nothing up to 5 %
   risk, about one trade in ten at 10 %), the broker's real leverage per market (unverified), margin calls, taxes, the
   Friday-night closure of the hands.
+
+### Addendum G — second clarification (2026-11-11, night), written BEFORE any run: plans that bound the loss
+The user, after seeing the corrected figures: "how do we reduce the loss? we must increase the gain at the start and
+reduce the risk". No rule creates gain and removes risk at once; what can be done is to bound the loss by construction
+and pay for the risk with the robot's own gains. Declared plans, all on the same ten rules, the same 2,000 draws and the
+same six scenarios, compared with A (1 % always) and C2 (5 % → 1 %, keyed on max(balance, money paid in)); nothing else
+will be run:
+- **P "steps"**: risk as C2. The first three payments (3,000 EUR) are made whatever happens; from the fourth on, the
+  1,000 EUR of a month is paid in only if, at that moment, the balance is at least the money already paid in; otherwise
+  that money stays outside the robot (it is not lost and not paid later). **P2**: the same, and a month that is paid
+  also pays up to 1,000 EUR of the months skipped before.
+- **G "gains pay for the risk"**: risk per trade = base + 10 % of the accumulated gain (balance minus money paid in, if
+  positive), capped by the C2 percentage for the size (never under the base); base = 1 % of the balance, 0.5 % when the
+  balance is more than 10 % under the money paid in, 0.25 % when more than 20 % under.
+- **K70 / K50 "floor"**: risk per trade = 10 % of the cushion, the cushion being the balance minus 70 % (K70) or 50 %
+  (K50) of the money paid in, capped by the C2 percentage for the size; no trade when the cushion is used up, until a
+  payment rebuilds it.
+- **GP, K70P**: G and K70 with the steps of P.
+- **Reported:** for each plan and scenario, the gain or loss of the robot (balance minus the money really paid in) at 12
+  and 36 months (median, 1 in 10 low and high), the money really paid in (median), the share of paths in loss, the
+  month of a lasting 1,000 EUR a month on the median path, and the share of paths where the −50 % rule would have fired.
+  Rounded to two significant digits on the page. The existing plans must come out unchanged (regression check).
+- **To be said with it:** a bounded loss is paid for by a lower result when the robot works but starts badly; the plans
+  are sizing rules chosen on simulations of the validation years; the cheapest protection is information obtained
+  before real money (the measured costs, the untouched year 2026, the demo account).
