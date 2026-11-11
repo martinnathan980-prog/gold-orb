@@ -1,0 +1,470 @@
+[
+ {
+  "cut": "2018-11-29 15:45:00+00:00",
+  "config": "market",
+  "orders_before_cut": 6792,
+  "identical": true
+ },
+ {
+  "cut": "2018-11-29 15:45:00+00:00",
+  "config": "limit",
+  "orders_before_cut": 6792,
+  "identical": true
+ },
+ {
+  "cut": "2018-11-29 15:45:00+00:00",
+  "config": "confirm_m5_close_mid15",
+  "orders_before_cut": 211,
+  "identical": true
+ },
+ {
+  "cut": "2018-11-29 15:45:00+00:00",
+  "config": "confirm_m15_wick_prev",
+  "orders_before_cut": 1434,
+  "identical": true
+ },
+ {
+  "cut": "2018-11-29 15:45:00+00:00",
+  "config": "confirm_m15_engulf",
+  "orders_before_cut": 1195,
+  "identical": true
+ },
+ {
+  "cut": "2018-11-29 15:45:00+00:00",
+  "config": "fail_m1_hold60",
+  "orders_before_cut": 870,
+  "identical": true
+ },
+ {
+  "cut": "2018-11-29 15:45:00+00:00",
+  "config": "conf_any_div",
+  "orders_before_cut": 2385,
+  "identical": true
+ },
+ {
+  "cut": "2018-11-29 15:45:00+00:00",
+  "config": "div",
+  "orders_before_cut": 997,
+  "identical": true
+ },
+ {
+  "cut": "2018-11-29 15:45:00+00:00",
+  "config": "wm",
+  "orders_before_cut": 3800,
+  "identical": true
+ },
+ {
+  "cut": "2018-11-29 15:45:00+00:00",
+  "config": "placebo3",
+  "orders_before_cut": 6956,
+  "identical": true
+ },
+ {
+  "cut": "2018-11-29 15:45:00+00:00",
+  "config": "range_exhausted_1.5",
+  "orders_before_cut": 367,
+  "identical": true
+ },
+ {
+  "cut": "2018-11-29 15:45:00+00:00",
+  "config": "all_lines_range1.5",
+  "orders_before_cut": 805,
+  "identical": true
+ },
+ {
+  "cut": "2018-11-29 15:45:00+00:00",
+  "config": "asia_squeeze_hold240",
+  "orders_before_cut": 710,
+  "identical": true
+ },
+ {
+  "cut": "2019-04-05 09:49:00+00:00",
+  "config": "market",
+  "orders_before_cut": 7216,
+  "identical": true
+ },
+ {
+  "cut": "2019-04-05 09:49:00+00:00",
+  "config": "limit",
+  "orders_before_cut": 7216,
+  "identical": true
+ },
+ {
+  "cut": "2019-04-05 09:49:00+00:00",
+  "config": "confirm_m5_close_mid15",
+  "orders_before_cut": 229,
+  "identical": true
+ },
+ {
+  "cut": "2019-04-05 09:49:00+00:00",
+  "config": "confirm_m15_wick_prev",
+  "orders_before_cut": 1519,
+  "identical": true
+ },
+ {
+  "cut": "2019-04-05 09:49:00+00:00",
+  "config": "confirm_m15_engulf",
+  "orders_before_cut": 1267,
+  "identical": true
+ },
+ {
+  "cut": "2019-04-05 09:49:00+00:00",
+  "config": "fail_m1_hold60",
+  "orders_before_cut": 928,
+  "identical": true
+ },
+ {
+  "cut": "2019-04-05 09:49:00+00:00",
+  "config": "conf_any_div",
+  "orders_before_cut": 2529,
+  "identical": true
+ },
+ {
+  "cut": "2019-04-05 09:49:00+00:00",
+  "config": "div",
+  "orders_before_cut": 1050,
+  "identical": true
+ },
+ {
+  "cut": "2019-04-05 09:49:00+00:00",
+  "config": "wm",
+  "orders_before_cut": 4032,
+  "identical": true
+ },
+ {
+  "cut": "2019-04-05 09:49:00+00:00",
+  "config": "placebo3",
+  "orders_before_cut": 7401,
+  "identical": true
+ },
+ {
+  "cut": "2019-04-05 09:49:00+00:00",
+  "config": "range_exhausted_1.5",
+  "orders_before_cut": 389,
+  "identical": true
+ },
+ {
+  "cut": "2019-04-05 09:49:00+00:00",
+  "config": "all_lines_range1.5",
+  "orders_before_cut": 850,
+  "identical": true
+ },
+ {
+  "cut": "2019-04-05 09:49:00+00:00",
+  "config": "asia_squeeze_hold240",
+  "orders_before_cut": 763,
+  "identical": true
+ },
+ {
+  "cut": "2019-09-10 17:30:00+00:00",
+  "config": "market",
+  "orders_before_cut": 7749,
+  "identical": true
+ },
+ {
+  "cut": "2019-09-10 17:30:00+00:00",
+  "config": "limit",
+  "orders_before_cut": 7749,
+  "identical": true
+ },
+ {
+  "cut": "2019-09-10 17:30:00+00:00",
+  "config": "confirm_m5_close_mid15",
+  "orders_before_cut": 252,
+  "identical": true
+ },
+ {
+  "cut": "2019-09-10 17:30:00+00:00",
+  "config": "confirm_m15_wick_prev",
+  "orders_before_cut": 1632,
+  "identical": true
+ },
+ {
+  "cut": "2019-09-10 17:30:00+00:00",
+  "config": "confirm_m15_engulf",
+  "orders_before_cut": 1375,
+  "identical": true
+ },
+ {
+  "cut": "2019-09-10 17:30:00+00:00",
+  "config": "fail_m1_hold60",
+  "orders_before_cut": 1006,
+  "identical": true
+ },
+ {
+  "cut": "2019-09-10 17:30:00+00:00",
+  "config": "conf_any_div",
+  "orders_before_cut": 2716,
+  "identical": true
+ },
+ {
+  "cut": "2019-09-10 17:30:00+00:00",
+  "config": "div",
+  "orders_before_cut": 1131,
+  "identical": true
+ },
+ {
+  "cut": "2019-09-10 17:30:00+00:00",
+  "config": "wm",
+  "orders_before_cut": 4325,
+  "identical": true
+ },
+ {
+  "cut": "2019-09-10 17:30:00+00:00",
+  "config": "placebo3",
+  "orders_before_cut": 7941,
+  "identical": true
+ },
+ {
+  "cut": "2019-09-10 17:30:00+00:00",
+  "config": "range_exhausted_1.5",
+  "orders_before_cut": 429,
+  "identical": true
+ },
+ {
+  "cut": "2019-09-10 17:30:00+00:00",
+  "config": "all_lines_range1.5",
+  "orders_before_cut": 930,
+  "identical": true
+ },
+ {
+  "cut": "2019-09-10 17:30:00+00:00",
+  "config": "asia_squeeze_hold240",
+  "orders_before_cut": 827,
+  "identical": true
+ },
+ {
+  "cut": "2020-05-12 16:55:00+00:00",
+  "config": "market",
+  "orders_before_cut": 8597,
+  "identical": true
+ },
+ {
+  "cut": "2020-05-12 16:55:00+00:00",
+  "config": "limit",
+  "orders_before_cut": 8597,
+  "identical": true
+ },
+ {
+  "cut": "2020-05-12 16:55:00+00:00",
+  "config": "confirm_m5_close_mid15",
+  "orders_before_cut": 287,
+  "identical": true
+ },
+ {
+  "cut": "2020-05-12 16:55:00+00:00",
+  "config": "confirm_m15_wick_prev",
+  "orders_before_cut": 1826,
+  "identical": true
+ },
+ {
+  "cut": "2020-05-12 16:55:00+00:00",
+  "config": "confirm_m15_engulf",
+  "orders_before_cut": 1545,
+  "identical": true
+ },
+ {
+  "cut": "2020-05-12 16:55:00+00:00",
+  "config": "fail_m1_hold60",
+  "orders_before_cut": 1124,
+  "identical": true
+ },
+ {
+  "cut": "2020-05-12 16:55:00+00:00",
+  "config": "conf_any_div",
+  "orders_before_cut": 3050,
+  "identical": true
+ },
+ {
+  "cut": "2020-05-12 16:55:00+00:00",
+  "config": "div",
+  "orders_before_cut": 1246,
+  "identical": true
+ },
+ {
+  "cut": "2020-05-12 16:55:00+00:00",
+  "config": "wm",
+  "orders_before_cut": 4834,
+  "identical": true
+ },
+ {
+  "cut": "2020-05-12 16:55:00+00:00",
+  "config": "placebo3",
+  "orders_before_cut": 8763,
+  "identical": true
+ },
+ {
+  "cut": "2020-05-12 16:55:00+00:00",
+  "config": "range_exhausted_1.5",
+  "orders_before_cut": 533,
+  "identical": true
+ },
+ {
+  "cut": "2020-05-12 16:55:00+00:00",
+  "config": "all_lines_range1.5",
+  "orders_before_cut": 1121,
+  "identical": true
+ },
+ {
+  "cut": "2020-05-12 16:55:00+00:00",
+  "config": "asia_squeeze_hold240",
+  "orders_before_cut": 922,
+  "identical": true
+ },
+ {
+  "cut": "2021-03-30 15:39:00+00:00",
+  "config": "market",
+  "orders_before_cut": 9676,
+  "identical": true
+ },
+ {
+  "cut": "2021-03-30 15:39:00+00:00",
+  "config": "limit",
+  "orders_before_cut": 9676,
+  "identical": true
+ },
+ {
+  "cut": "2021-03-30 15:39:00+00:00",
+  "config": "confirm_m5_close_mid15",
+  "orders_before_cut": 328,
+  "identical": true
+ },
+ {
+  "cut": "2021-03-30 15:39:00+00:00",
+  "config": "confirm_m15_wick_prev",
+  "orders_before_cut": 2053,
+  "identical": true
+ },
+ {
+  "cut": "2021-03-30 15:39:00+00:00",
+  "config": "confirm_m15_engulf",
+  "orders_before_cut": 1759,
+  "identical": true
+ },
+ {
+  "cut": "2021-03-30 15:39:00+00:00",
+  "config": "fail_m1_hold60",
+  "orders_before_cut": 1273,
+  "identical": true
+ },
+ {
+  "cut": "2021-03-30 15:39:00+00:00",
+  "config": "conf_any_div",
+  "orders_before_cut": 3487,
+  "identical": true
+ },
+ {
+  "cut": "2021-03-30 15:39:00+00:00",
+  "config": "div",
+  "orders_before_cut": 1381,
+  "identical": true
+ },
+ {
+  "cut": "2021-03-30 15:39:00+00:00",
+  "config": "wm",
+  "orders_before_cut": 5491,
+  "identical": true
+ },
+ {
+  "cut": "2021-03-30 15:39:00+00:00",
+  "config": "placebo3",
+  "orders_before_cut": 9915,
+  "identical": true
+ },
+ {
+  "cut": "2021-03-30 15:39:00+00:00",
+  "config": "range_exhausted_1.5",
+  "orders_before_cut": 622,
+  "identical": true
+ },
+ {
+  "cut": "2021-03-30 15:39:00+00:00",
+  "config": "all_lines_range1.5",
+  "orders_before_cut": 1309,
+  "identical": true
+ },
+ {
+  "cut": "2021-03-30 15:39:00+00:00",
+  "config": "asia_squeeze_hold240",
+  "orders_before_cut": 1043,
+  "identical": true
+ },
+ {
+  "cut": "2021-08-04 00:13:00+00:00",
+  "config": "market",
+  "orders_before_cut": 10111,
+  "identical": true
+ },
+ {
+  "cut": "2021-08-04 00:13:00+00:00",
+  "config": "limit",
+  "orders_before_cut": 10111,
+  "identical": true
+ },
+ {
+  "cut": "2021-08-04 00:13:00+00:00",
+  "config": "confirm_m5_close_mid15",
+  "orders_before_cut": 346,
+  "identical": true
+ },
+ {
+  "cut": "2021-08-04 00:13:00+00:00",
+  "config": "confirm_m15_wick_prev",
+  "orders_before_cut": 2136,
+  "identical": true
+ },
+ {
+  "cut": "2021-08-04 00:13:00+00:00",
+  "config": "confirm_m15_engulf",
+  "orders_before_cut": 1852,
+  "identical": true
+ },
+ {
+  "cut": "2021-08-04 00:13:00+00:00",
+  "config": "fail_m1_hold60",
+  "orders_before_cut": 1339,
+  "identical": true
+ },
+ {
+  "cut": "2021-08-04 00:13:00+00:00",
+  "config": "conf_any_div",
+  "orders_before_cut": 3667,
+  "identical": true
+ },
+ {
+  "cut": "2021-08-04 00:13:00+00:00",
+  "config": "div",
+  "orders_before_cut": 1435,
+  "identical": true
+ },
+ {
+  "cut": "2021-08-04 00:13:00+00:00",
+  "config": "wm",
+  "orders_before_cut": 5708,
+  "identical": true
+ },
+ {
+  "cut": "2021-08-04 00:13:00+00:00",
+  "config": "placebo3",
+  "orders_before_cut": 10372,
+  "identical": true
+ },
+ {
+  "cut": "2021-08-04 00:13:00+00:00",
+  "config": "range_exhausted_1.5",
+  "orders_before_cut": 632,
+  "identical": true
+ },
+ {
+  "cut": "2021-08-04 00:13:00+00:00",
+  "config": "all_lines_range1.5",
+  "orders_before_cut": 1327,
+  "identical": true
+ },
+ {
+  "cut": "2021-08-04 00:13:00+00:00",
+  "config": "asia_squeeze_hold240",
+  "orders_before_cut": 1094,
+  "identical": true
+ }
+]

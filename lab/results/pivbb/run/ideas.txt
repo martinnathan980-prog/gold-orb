@@ -1,0 +1,44 @@
+Track "run" - list of ideas written BEFORE any engine run (2026-11-11). In-sample only (< 2022-01-01).
+Common frame: gold, signals on mid prices, 15-minute bars + Bollinger(20,2), levels from the previous full trading day
+(17:00 New York), dATR = 14-day mean true range. Core levels = R1, S1, R2, S2, yesterday's high and low
+(chosen from the first-pass table: these are the levels that break more than placebo; P does not).
+Baseline exits: stop 0.25 dATR behind the broken level, target = next daily pivot, forced exit 16:50 New York.
+
+Block A - entry type (core levels, all hours)                                       5 configs
+  A1 15-minute close beyond the level, market on the next minute
+  A2 stop order resting at the level (first armed touch)
+  A3 same touch, market on the next minute
+  A4 retest of the broken level within 2 hours, limit order at the level (optimistic fill)
+  A5 same retest, market on the minute after the touch
+Block B - which levels (entry A1)                                                    8 configs
+  B1 P | B2 R1/S1 | B3 R2/S2 | B4 PDH/PDL | B5 weekly P/R1/S1 | B6 R3/S3 | B7 core, outward only | B8 core, toward P only
+Block C - time of day, New York clock (entry A1, core)                               5 configs
+  C1 18-02 Asia | C2 02-08 London | C3 08-12 New York morning | C4 12-16 afternoon | C5 02-12
+Block D - first break of the level today vs later ones                               2 configs
+Block E - Bollinger state before the break (entry A1, core)                          6 configs
+  E1 squeeze (band width < 0.7 x its 24 h median) | E2 expansion (>= 1.6 x) | E3 band walk (>= 2 of last 8 closes outside)
+  E4 breaking bar closes outside the band | E5 breaking bar closes inside the band | E6 squeeze AND close outside the band
+Block F - stop and exit (entry A1, core)                                             9 configs
+  F1 no target (forced exit only) | F2 no target, trail behind the 15-minute middle band | F3 target + middle-band trail
+  F4 stop behind the middle band, target next pivot | F5 stop behind the middle band + middle-band trail, no target
+  F6 stop 0.15 dATR | F7 stop 0.40 dATR | F8 target 1 R | F9 middle-band trail, held up to the next day
+Block G - at most 5 combinations of the dimensions that looked best in A-F (declared as combinations, counted as trials)
+Then, for at most 2 candidates: <= 8 neighbours each, 10 placebo level sets each (logged, counted in the 80).
+Stopping rule: if no configuration of A-G has PF >= 1.05 net with n >= 250, no finalist is named.
+
+Block G, declared after A-F and before running it (A-F: only the outer pivots R2/S2 and R3/S3 are net positive; 02-12 New York
+and "no target" are the only other net-positive dimensions; every Bollinger filter and both retest entries are negative):
+  G1 outer pivots R2/S2/R3/S3, baseline exits
+  G2 R2/S2, decisions 02-12 New York
+  G3 R2/S2, no target (forced exit 16:50 New York)
+  G4 R2/S2/R3/S3, 02-12 New York, no target
+  G5 R2/S2, entry at the touch with a market order on the next minute (A3 had the best gross result of the entries)
+
+Candidates chosen after block G (40 trials used), before any neighbour / placebo / null run:
+  cand A = G5: R2/S2, first armed touch, market on the next minute, stop 0.25 dATR behind the level, target next pivot, exit 16:50 NY
+  cand B = G4: R2/S2/R3/S3, 15-minute close beyond, decisions 02-12 NY, stop 0.25 dATR behind the level, no target, exit 16:50 NY
+Neighbours A (7 new + B3 reused): stop 0.15 | stop 0.40 | no target | stop order at the level instead of market | hours 02-16 |
+  first touch only | + R3/S3 | (B3 = same levels with the close15 entry)
+Neighbours B (8 new): stop 0.15 | stop 0.40 | hours 02-14 | all hours | R2/S2 only | middle-band trail | exit 15:00 NY | touch-market entry
+Then 10 placebo level sets for each, and a control with no pivot arithmetic (yesterday's close +/- k x dATR, k matched to the
+median distance of R2/S2 from yesterday's close).

@@ -1,0 +1,402 @@
+[
+ {
+  "params": {},
+  "cut": "2019-06-21 02:56:00+00:00",
+  "orders_before_cut": 11345,
+  "identical": true
+ },
+ {
+  "params": {},
+  "cut": "2019-10-01 04:07:00+00:00",
+  "orders_before_cut": 11837,
+  "identical": true
+ },
+ {
+  "params": {},
+  "cut": "2020-02-07 14:16:00+00:00",
+  "orders_before_cut": 12513,
+  "identical": true
+ },
+ {
+  "params": {},
+  "cut": "2021-05-18 18:30:00+00:00",
+  "orders_before_cut": 15091,
+  "identical": true
+ },
+ {
+  "params": {},
+  "cut": "2021-08-30 07:42:00+00:00",
+  "orders_before_cut": 15588,
+  "identical": true
+ },
+ {
+  "params": {
+   "entry": "touch",
+   "fill": "pending"
+  },
+  "cut": "2019-06-21 02:56:00+00:00",
+  "orders_before_cut": 7583,
+  "identical": true
+ },
+ {
+  "params": {
+   "entry": "touch",
+   "fill": "pending"
+  },
+  "cut": "2019-10-01 04:07:00+00:00",
+  "orders_before_cut": 7928,
+  "identical": true
+ },
+ {
+  "params": {
+   "entry": "touch",
+   "fill": "pending"
+  },
+  "cut": "2020-02-07 14:16:00+00:00",
+  "orders_before_cut": 8385,
+  "identical": true
+ },
+ {
+  "params": {
+   "entry": "touch",
+   "fill": "pending"
+  },
+  "cut": "2021-05-18 18:30:00+00:00",
+  "orders_before_cut": 10053,
+  "identical": true
+ },
+ {
+  "params": {
+   "entry": "touch",
+   "fill": "pending"
+  },
+  "cut": "2021-08-30 07:42:00+00:00",
+  "orders_before_cut": 10405,
+  "identical": true
+ },
+ {
+  "params": {
+   "entry": "touch"
+  },
+  "cut": "2019-06-21 02:56:00+00:00",
+  "orders_before_cut": 7366,
+  "identical": true
+ },
+ {
+  "params": {
+   "entry": "touch"
+  },
+  "cut": "2019-10-01 04:07:00+00:00",
+  "orders_before_cut": 7707,
+  "identical": true
+ },
+ {
+  "params": {
+   "entry": "touch"
+  },
+  "cut": "2020-02-07 14:16:00+00:00",
+  "orders_before_cut": 8156,
+  "identical": true
+ },
+ {
+  "params": {
+   "entry": "touch"
+  },
+  "cut": "2021-05-18 18:30:00+00:00",
+  "orders_before_cut": 9805,
+  "identical": true
+ },
+ {
+  "params": {
+   "entry": "touch"
+  },
+  "cut": "2021-08-30 07:42:00+00:00",
+  "orders_before_cut": 10145,
+  "identical": true
+ },
+ {
+  "params": {
+   "entry": "retest",
+   "fill": "pending"
+  },
+  "cut": "2019-06-21 02:56:00+00:00",
+  "orders_before_cut": 9204,
+  "identical": true
+ },
+ {
+  "params": {
+   "entry": "retest",
+   "fill": "pending"
+  },
+  "cut": "2019-10-01 04:07:00+00:00",
+  "orders_before_cut": 9597,
+  "identical": true
+ },
+ {
+  "params": {
+   "entry": "retest",
+   "fill": "pending"
+  },
+  "cut": "2020-02-07 14:16:00+00:00",
+  "orders_before_cut": 10170,
+  "identical": true
+ },
+ {
+  "params": {
+   "entry": "retest",
+   "fill": "pending"
+  },
+  "cut": "2021-05-18 18:30:00+00:00",
+  "orders_before_cut": 12361,
+  "identical": true
+ },
+ {
+  "params": {
+   "entry": "retest",
+   "fill": "pending"
+  },
+  "cut": "2021-08-30 07:42:00+00:00",
+  "orders_before_cut": 12775,
+  "identical": true
+ },
+ {
+  "params": {
+   "entry": "retest"
+  },
+  "cut": "2019-06-21 02:56:00+00:00",
+  "orders_before_cut": 9156,
+  "identical": true
+ },
+ {
+  "params": {
+   "entry": "retest"
+  },
+  "cut": "2019-10-01 04:07:00+00:00",
+  "orders_before_cut": 9546,
+  "identical": true
+ },
+ {
+  "params": {
+   "entry": "retest"
+  },
+  "cut": "2020-02-07 14:16:00+00:00",
+  "orders_before_cut": 10114,
+  "identical": true
+ },
+ {
+  "params": {
+   "entry": "retest"
+  },
+  "cut": "2021-05-18 18:30:00+00:00",
+  "orders_before_cut": 12290,
+  "identical": true
+ },
+ {
+  "params": {
+   "entry": "retest"
+  },
+  "cut": "2021-08-30 07:42:00+00:00",
+  "orders_before_cut": 12701,
+  "identical": true
+ },
+ {
+  "params": {
+   "trail_mid": true,
+   "target": null,
+   "stop": "mid",
+   "stop_atr": 0.05
+  },
+  "cut": "2019-06-21 02:56:00+00:00",
+  "orders_before_cut": 8954,
+  "identical": true
+ },
+ {
+  "params": {
+   "trail_mid": true,
+   "target": null,
+   "stop": "mid",
+   "stop_atr": 0.05
+  },
+  "cut": "2019-10-01 04:07:00+00:00",
+  "orders_before_cut": 9343,
+  "identical": true
+ },
+ {
+  "params": {
+   "trail_mid": true,
+   "target": null,
+   "stop": "mid",
+   "stop_atr": 0.05
+  },
+  "cut": "2020-02-07 14:16:00+00:00",
+  "orders_before_cut": 9885,
+  "identical": true
+ },
+ {
+  "params": {
+   "trail_mid": true,
+   "target": null,
+   "stop": "mid",
+   "stop_atr": 0.05
+  },
+  "cut": "2021-05-18 18:30:00+00:00",
+  "orders_before_cut": 11906,
+  "identical": true
+ },
+ {
+  "params": {
+   "trail_mid": true,
+   "target": null,
+   "stop": "mid",
+   "stop_atr": 0.05
+  },
+  "cut": "2021-08-30 07:42:00+00:00",
+  "orders_before_cut": 12317,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "W_P",
+    "W_R1",
+    "W_S1"
+   ],
+   "hold_days": 1,
+   "trail_mid": true
+  },
+  "cut": "2019-06-21 02:56:00+00:00",
+  "orders_before_cut": 4132,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "W_P",
+    "W_R1",
+    "W_S1"
+   ],
+   "hold_days": 1,
+   "trail_mid": true
+  },
+  "cut": "2019-10-01 04:07:00+00:00",
+  "orders_before_cut": 4427,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "W_P",
+    "W_R1",
+    "W_S1"
+   ],
+   "hold_days": 1,
+   "trail_mid": true
+  },
+  "cut": "2020-02-07 14:16:00+00:00",
+  "orders_before_cut": 4602,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "W_P",
+    "W_R1",
+    "W_S1"
+   ],
+   "hold_days": 1,
+   "trail_mid": true
+  },
+  "cut": "2021-05-18 18:30:00+00:00",
+  "orders_before_cut": 5442,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "W_P",
+    "W_R1",
+    "W_S1"
+   ],
+   "hold_days": 1,
+   "trail_mid": true
+  },
+  "cut": "2021-08-30 07:42:00+00:00",
+  "orders_before_cut": 5655,
+  "identical": true
+ },
+ {
+  "params": {
+   "sq_max": 0.7,
+   "bbout": true,
+   "hours": [
+    2,
+    12
+   ],
+   "nth": "first",
+   "away": 1
+  },
+  "cut": "2019-06-21 02:56:00+00:00",
+  "orders_before_cut": 225,
+  "identical": true
+ },
+ {
+  "params": {
+   "sq_max": 0.7,
+   "bbout": true,
+   "hours": [
+    2,
+    12
+   ],
+   "nth": "first",
+   "away": 1
+  },
+  "cut": "2019-10-01 04:07:00+00:00",
+  "orders_before_cut": 234,
+  "identical": true
+ },
+ {
+  "params": {
+   "sq_max": 0.7,
+   "bbout": true,
+   "hours": [
+    2,
+    12
+   ],
+   "nth": "first",
+   "away": 1
+  },
+  "cut": "2020-02-07 14:16:00+00:00",
+  "orders_before_cut": 239,
+  "identical": true
+ },
+ {
+  "params": {
+   "sq_max": 0.7,
+   "bbout": true,
+   "hours": [
+    2,
+    12
+   ],
+   "nth": "first",
+   "away": 1
+  },
+  "cut": "2021-05-18 18:30:00+00:00",
+  "orders_before_cut": 269,
+  "identical": true
+ },
+ {
+  "params": {
+   "sq_max": 0.7,
+   "bbout": true,
+   "hours": [
+    2,
+    12
+   ],
+   "nth": "first",
+   "away": 1
+  },
+  "cut": "2021-08-30 07:42:00+00:00",
+  "orders_before_cut": 277,
+  "identical": true
+ }
+]

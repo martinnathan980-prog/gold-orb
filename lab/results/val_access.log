@@ -389,3 +389,9 @@
 {"time": "2026-11-10T12:00:09", "track": "r1_orb", "label": "orb_asia_2d_buf10:xauusd:recalc_raw:every", "period": "val"}
 {"time": "2026-11-10T15:46:03", "track": "llm", "label": "baseline_ridge:all_sleeves (pre-registered in llm/experiment.py)", "period": "val"}
 {"time": "2026-11-10T22:52:04", "track": "llm", "label": "val_blind_opus55: pre-registered primary test (claude-opus-5-5, default effort, blind sheets)", "period": "val"}
+{"time": "2026-11-11T09:45:21", "track": "pivbb_run", "label": "r2s2_touch_run:lead_review_single_look", "period": "val"}
+{"time": "2026-11-11T09:45:21", "track": "pivbb_run", "label": "r2s2_touch_run:lead_review_single_look:stress", "period": "val"}
+{"time": "2026-11-11T09:45:21", "track": "pivbb_run", "label": "r2s2_touch_run:lead_review_single_look:every", "period": "val"}
+{"time": "2026-11-11T09:45:25", "track": "pivbb_run", "label": "outer_close_ride:lead_review_single_look", "period": "val"}
+{"time": "2026-11-11T09:45:25", "track": "pivbb_run", "label": "outer_close_ride:lead_review_single_look:stress", "period": "val"}
+{"time": "2026-11-11T09:45:25", "track": "pivbb_run", "label": "outer_close_ride:lead_review_single_look:every", "period": "val"}

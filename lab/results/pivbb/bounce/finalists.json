@@ -1,0 +1,92 @@
+{
+ "track": "bounce",
+ "verdict": "nothing_survives",
+ "finalists": {},
+ "n_trials": 64,
+ "n_engine_configurations": 62,
+ "n_model_specifications": 2,
+ "criteria_passed_by_any_configuration": false,
+ "best_candidate_not_a_finalist": {
+  "name": "I3_range_used_1.5",
+  "params": {
+   "range_used": [
+    1.5,
+    99
+   ]
+  },
+  "rule": "fade (market, next minute) a touch of a daily pivot once the day's range is already >= 1.5 daily ATR; stop 0.25 dATR beyond the touch extreme, target 1R, exit 16:50 New York",
+  "is": {
+   "n": 444,
+   "trades_per_year": 50.5,
+   "pf": 1.199,
+   "t": 1.82,
+   "exp_R": 0.0789,
+   "years_pos": "7/9",
+   "long_R": 4.0,
+   "short_R": 31.1,
+   "stress_pf": 1.156,
+   "every_signal_exp_R": 0.0633,
+   "gross_exp_R": 0.1271
+  },
+  "fails": [
+   "t >= 2.5 (1.82; day-clustered 1.86)"
+  ],
+  "neighbours_median_pf": 1.168,
+  "neighbours_pf": {
+   "N1_I3_range1.35": 1.065,
+   "N2_I3_range1.65": 1.334,
+   "N3_I3_range1.8": 1.335,
+   "N4_I3_stop0.20": 1.075,
+   "N5_I3_stop0.30": 1.227,
+   "N6_I3_tgt0.8R": 1.126,
+   "N7_I3_tgt1.25R": 1.184,
+   "N8_I3_hold240": 1.152
+  },
+  "null_test": {
+   "n": 444,
+   "mode": "day",
+   "rule_mean_R": 0.0789,
+   "null_mean_R": -0.0371,
+   "null_p95_R": 0.0232,
+   "null_max_R": 0.0922,
+   "percentile": 99.5,
+   "pass": true
+  },
+  "level_placebo": {
+   "pf_median": 1.147,
+   "pf_min": 1.013,
+   "pf_max": 1.262,
+   "exp_R_median": 0.0581,
+   "exp_R_max": 0.0989
+  },
+  "specific_to_pivots": false,
+  "same_rule_on_all_lines_J1": {
+   "n": 689,
+   "pf": 1.034,
+   "t": 0.41,
+   "stress_pf": 0.996
+  },
+  "concentration": "trades on 182 days; the 5 best days make 52 % of the total R; shorts +31.1 R, longs +4.0 R",
+  "erosion_gross_R_per_trade": {
+   "2013-2017": 0.0909,
+   "2018-2021": 0.1659
+  },
+  "novelty_corr": {
+   "corr_donch4h_stop": -0.068,
+   "corr_orb_asia_2d_buf10": 0.058,
+   "days": 1364
+  },
+  "median_stop_usd_2020_2021": 6.11
+ },
+ "files": [
+  "trials.jsonl",
+  "trials_summary.csv",
+  "ideas.txt",
+  "descriptive_events.txt",
+  "verification_I3.json",
+  "diagnostic_I3.txt",
+  "clustered_t.json",
+  "novelty.json",
+  "causality.json"
+ ]
+}

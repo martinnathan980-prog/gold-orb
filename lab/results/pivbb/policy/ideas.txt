@@ -1,0 +1,48 @@
+Track "policy" - list of ideas written BEFORE any model fit or engine run (2026-11-11). In-sample only (< 2022-01-01).
+
+Frame: gold, touches of the 17 levels of the shared event builder (daily P/R1-3/S1-3, weekly P/R1/R2/S1/S2, monthly P/R1/S1,
+yesterday's high/low), same arming rule (0.15 dATR). Decision at the close of the touch minute, MARKET order at the open of
+the next minute (preferred version). Three actions: wait / fade / follow. Costs: FP frame, engine fills.
+Walk-forward: years 2016..2021, each predicted by a model trained on the years before it (2013..Y-1). Hyper-parameters are
+fixed in advance (HistGradientBoosting depth 3, lr 0.05, 200 trees, min leaf 200, l2 1.0 - the first-pass values), never tuned.
+"Rich" features (all causal, mid prices, no spread so that cost-stress runs select the same touches):
+  first-pass 20 + day type (range used, levels already crossed, new extreme of the day, open vs P), yesterday's day type
+  (range / ATR, close location, body), gap, Bollinger on 15 min / 1 h / 4 h (stretch, squeeze, RSI), the last eight 15-min
+  bars (8 signed returns, last bar range and close location, efficiency ratio), M1 momentum 15 / 60 min, penetration of the
+  touch bar, room to the next level ahead / behind (all families), distance to the nearest weekly / monthly level,
+  distance to round numbers ($10, $50), volatility regime (ATR % of price, ATR vs its 60-day median).
+
+Concrete trades used as targets (net R from the engine, every touch, both directions):
+  T1  stop 0.25 dATR, target 0.25 dATR, forced exit 16:50 New York            (the first-pass bounce / break question)
+  T2  stop 0.25 dATR, target 0.50 dATR, forced exit 16:50 NY                   (asymmetric: "run to the next pivot")
+  T3  stop 0.25 dATR, no target, forced exit after 120 minutes                 (time-limited)
+  T4  stop 0.25 dATR, no target, forced exit 16:50 NY                          (let it run)
+
+Block M - model specifications, event level, walk-forward (each = 1 configuration, each also run on placebo levels)   10
+  M1 first-pass features, classifier bounce vs break (y25)          [reproduction of scout2]
+  M2 rich features, classifier bounce vs break (y25)
+  M3 rich features, regression of net R: follow T1 and fade T1
+  M4 rich features, regression of net R: follow T2 and fade T2
+  M5 rich features, regression of net R: follow T3 and fade T3
+  M6 rich features, regression of net R: follow T4 and fade T4
+  M7 first-pass features, regression follow / fade T4 (does the rich set add anything?)
+  M8 rich features, ridge regression (linear) on follow / fade T4 (or the best target of M3-M6)
+  M9 depth-2 regression tree (a 3-threshold scorecard found by the machine) on the best target
+  M10 rich features, daily levels only, best target
+  Read-out for each: rank correlation prediction / outcome out of fold, net R of the touches the model would trade
+  (prediction above the 80th and 90th percentile of its own training predictions), by year, real vs 10 placebo level sets.
+
+Block P - the three-way policy as an engine rule, model frozen per fold                                              <= 12
+  P1-P4 policy from M3..M6: follow if predicted follow R >= its 90 % training quantile, fade likewise, else wait
+  P5-P6 best two of P1-P4 at the 80 % quantile (more trades)
+  P7 follow-only arm of the best; P8 fade-only arm of the best
+  P9 best with limit entry at the level for the fade arm / stop entry for the follow arm (optimistic, for comparison only)
+  P10-P12 reserve (declared before running)
+
+Block S - scorecards: 2-3 thresholds read from the model's importances and from the descriptive tables              <= 10
+  written down before being run in the engine, each run once.
+
+Finalists (<= 2): <= 8 neighbours each, 10 placebo level sets each through the engine, null test, novelty, erosion.
+Stopping rule: if neither block P nor block S gives a rule with net PF >= 1.08 and n >= 250 over the out-of-fold years,
+no neighbours / placebo budget is spent and no finalist is named.
+Total budget: 80 configurations.

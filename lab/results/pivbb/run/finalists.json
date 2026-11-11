@@ -1,0 +1,422 @@
+{
+ "r2s2_touch_run": {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2"
+   ],
+   "entry": "touch",
+   "fill": "market",
+   "stop": "level",
+   "stop_atr": 0.25,
+   "target": "next",
+   "eod": 1010
+  },
+  "is": {
+   "n": 1197,
+   "trades_per_year": 133.9,
+   "win_rate": 0.495,
+   "pf": 1.246,
+   "t_stat": 3.26,
+   "expectancy_R": 0.1098,
+   "years_pos": "7/9",
+   "long_R": 82.9,
+   "short_R": 48.6,
+   "max_dd_R": 17.6,
+   "avg_hold_h": 2.8,
+   "max_hold_h": 16.4
+  },
+  "by_year_R": {
+   "2013": 38.1,
+   "2014": 18.2,
+   "2015": 6.4,
+   "2016": 16.1,
+   "2017": -2.2,
+   "2018": -4.8,
+   "2019": 27.8,
+   "2020": 1.5,
+   "2021": 30.3
+  },
+  "stress_pf": 1.188,
+  "gross_pf": 1.359,
+  "gross_exp_R": 0.1531,
+  "every_signal": {
+   "n": 1783,
+   "pf": 1.149,
+   "expectancy_R": 0.0676
+  },
+  "net_bps_per_trade": 3.34,
+  "gross_bps_per_trade": 4.51,
+  "neighbours": {
+   "nA stop 0.15": 1.142,
+   "nA stop 0.40": 1.246,
+   "nA no target": 1.249,
+   "nA stop-order at level": 1.109,
+   "nA hours 02-16": 1.253,
+   "nA first touch": 1.255,
+   "nA + R3/S3": 1.222,
+   "B3 R2/S2": 1.17
+  },
+  "neighbours_median_pf": 1.234,
+  "criteria": {
+   "n>=250": true,
+   "pf>=1.12": true,
+   "t>=2.5": true,
+   "years_pos>=60%": true,
+   "max_hold<=5d": true,
+   "stress_pf>=1.04": true,
+   "every_signal_exp>0": true,
+   "neighbors_median_pf>=1.06": true,
+   "pass": true
+  },
+  "null_test": {
+   "n": 1197,
+   "mode": "day",
+   "rule_mean_R": 0.1098,
+   "null_mean_R": -0.0463,
+   "null_p95_R": 0.0082,
+   "null_max_R": 0.0565,
+   "percentile": 100.0,
+   "pass": true
+  },
+  "placebo_engine_10_sets": {
+   "pf": [
+    1.03,
+    1.056,
+    1.227,
+    1.105,
+    1.091,
+    1.111,
+    1.14,
+    1.105,
+    1.108,
+    1.055
+   ],
+   "pf_median": 1.105,
+   "pf_min": 1.03,
+   "pf_max": 1.227,
+   "exp_R_median": 0.049850000000000005,
+   "exp_R_max": 0.1044,
+   "sets_at_or_above_real_pf": 0
+  },
+  "placebo_descriptive_40_sets_gross_every_signal": {
+   "real": {
+    "n": 1783,
+    "mean_R": 0.11210479824010676,
+    "pf": 1.2588427013275274
+   },
+   "placebo_n_seeds": 40,
+   "placebo_mean_R": {
+    "mean": 0.04038467144908218,
+    "sd": 0.0218243171485204,
+    "median": 0.04003571431504013,
+    "min": 0.004517828291976363,
+    "max": 0.09601808502848738
+   },
+   "placebo_pf": {
+    "median": 1.0858287009594636,
+    "min": 1.0093521711208893,
+    "max": 1.2128331766772986
+   },
+   "z_mean_R": 3.286248376201173,
+   "seeds_at_or_above_real": 0,
+   "placebo_n_median": 2134.0
+  },
+  "novelty_daily_corr": {
+   "donch4h_stop": 0.273,
+   "orb_asia_2d_buf10": 0.226
+  },
+  "novelty_weekly_corr": {
+   "donch4h_stop": 0.251,
+   "orb_asia_2d_buf10": 0.242
+  },
+  "novelty_overlap": {
+   "donch4h_stop": {
+    "days_both_active": 465,
+    "days_cand_active": 789,
+    "corr_on_days_both_active": 0.328,
+    "cand_mean_R_per_day_when_legacy_flat": -0.1479,
+    "cand_mean_R_per_day_when_legacy_active": 0.3857,
+    "share_entered_while_legacy_open_same_side": 0.306,
+    "exp_R_same_side": 0.2229,
+    "share_legacy_open_opposite": 0.053,
+    "exp_R_opposite": 0.1605,
+    "share_legacy_flat": 0.642,
+    "exp_R_legacy_flat": 0.0518,
+    "n_legacy_flat": 768
+   },
+   "orb_asia_2d_buf10": {
+    "days_both_active": 715,
+    "days_cand_active": 789,
+    "corr_on_days_both_active": 0.256,
+    "cand_mean_R_per_day_when_legacy_flat": 0.0521,
+    "cand_mean_R_per_day_when_legacy_active": 0.1785,
+    "share_entered_while_legacy_open_same_side": 0.493,
+    "exp_R_same_side": 0.182,
+    "share_legacy_open_opposite": 0.12,
+    "exp_R_opposite": 0.1135,
+    "share_legacy_flat": 0.387,
+    "exp_R_legacy_flat": 0.0167,
+    "n_legacy_flat": 463
+   }
+  },
+  "novelty_regression": {
+   "alpha_R_per_day": 0.03759,
+   "alpha_t": 2.34,
+   "beta_donch": 0.326,
+   "beta_orb": 0.072,
+   "raw_mean_R_per_day": 0.05634,
+   "raw_t": 3.37,
+   "alpha_R_per_year": 9.7,
+   "raw_R_per_year": 14.6
+  },
+  "erosion": {
+   "gross_R_2013_2017": 0.1565,
+   "gross_R_2018_2021": 0.149,
+   "net_R_2013_2017": 0.1159,
+   "net_R_2018_2021": 0.1023,
+   "gross_bps_2013_2017": 5.16,
+   "gross_bps_2018_2021": 3.69,
+   "by_year_gross_meanR": {
+    "2013": 0.379,
+    "2014": 0.169,
+    "2015": 0.095,
+    "2016": 0.145,
+    "2017": 0.036,
+    "2018": 0.021,
+    "2019": 0.257,
+    "2020": 0.046,
+    "2021": 0.285
+   }
+  },
+  "median_stop_usd_2020_2021": 6.13,
+  "p90_stop_usd_2020_2021": 9.59,
+  "min_lot_risk_usd_2020_2021": 6.13,
+  "tails": {
+   "top5_R": [
+    7.54,
+    5.21,
+    5.05,
+    4.56,
+    4.45
+   ],
+   "sum_R": 131.4,
+   "sum_R_without_top10": 86.1,
+   "t_winsor_3R": 2.99,
+   "t_daily_cluster": 3.32
+  }
+ },
+ "outer_close_ride": {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2",
+    "D_R3",
+    "D_S3"
+   ],
+   "entry": "close15",
+   "fill": "market",
+   "hours": [
+    2,
+    12
+   ],
+   "stop": "level",
+   "stop_atr": 0.25,
+   "target": null,
+   "eod": 1010
+  },
+  "is": {
+   "n": 686,
+   "trades_per_year": 76.8,
+   "win_rate": 0.461,
+   "pf": 1.395,
+   "t_stat": 3.14,
+   "expectancy_R": 0.1781,
+   "years_pos": "8/9",
+   "long_R": 25.9,
+   "short_R": 96.3,
+   "max_dd_R": 15.1,
+   "avg_hold_h": 6.2,
+   "max_hold_h": 14.8
+  },
+  "by_year_R": {
+   "2013": 47.3,
+   "2014": 21.1,
+   "2015": 5.7,
+   "2016": 2.9,
+   "2017": 2.5,
+   "2018": -4.6,
+   "2019": 9.4,
+   "2020": 25.8,
+   "2021": 12.0
+  },
+  "stress_pf": 1.35,
+  "gross_pf": 1.498,
+  "gross_exp_R": 0.2171,
+  "every_signal": {
+   "n": 2188,
+   "pf": 1.212,
+   "expectancy_R": 0.1005
+  },
+  "net_bps_per_trade": 8.72,
+  "gross_bps_per_trade": 10.1,
+  "neighbours": {
+   "nB stop 0.15": 1.333,
+   "nB stop 0.40": 1.41,
+   "nB hours 02-14": 1.351,
+   "nB all hours": 1.32,
+   "nB R2/S2 only": 1.416,
+   "nB trail mid": 1.367,
+   "nB exit 15:00": 1.358,
+   "nB touch market": 1.394
+  },
+  "neighbours_median_pf": 1.3625,
+  "criteria": {
+   "n>=250": true,
+   "pf>=1.12": true,
+   "t>=2.5": true,
+   "years_pos>=60%": true,
+   "max_hold<=5d": true,
+   "stress_pf>=1.04": true,
+   "every_signal_exp>0": true,
+   "neighbors_median_pf>=1.06": true,
+   "pass": true
+  },
+  "null_test": {
+   "n": 686,
+   "mode": "day",
+   "rule_mean_R": 0.1781,
+   "null_mean_R": -0.0221,
+   "null_p95_R": 0.0621,
+   "null_max_R": 0.1396,
+   "percentile": 100.0,
+   "pass": true
+  },
+  "placebo_engine_10_sets": {
+   "pf": [
+    1.089,
+    1.124,
+    1.235,
+    1.125,
+    1.163,
+    1.098,
+    1.404,
+    1.242,
+    1.076,
+    1.193
+   ],
+   "pf_median": 1.1440000000000001,
+   "pf_min": 1.076,
+   "pf_max": 1.404,
+   "exp_R_median": 0.07139999999999999,
+   "exp_R_max": 0.1844,
+   "sets_at_or_above_real_pf": 1
+  },
+  "placebo_descriptive_40_sets_gross_every_signal": {
+   "real": {
+    "n": 2188,
+    "mean_R": 0.13734004381076137,
+    "pf": 1.3003933241924608
+   },
+   "placebo_n_seeds": 40,
+   "placebo_mean_R": {
+    "mean": 0.09720913032954608,
+    "sd": 0.023458068397276825,
+    "median": 0.09610370263474008,
+    "min": 0.050651656434722775,
+    "max": 0.16283432232416933
+   },
+   "placebo_pf": {
+    "median": 1.2044004181281145,
+    "min": 1.1051060836090325,
+    "max": 1.350999907689219
+   },
+   "z_mean_R": 1.7107509792184752,
+   "seeds_at_or_above_real": 1,
+   "placebo_n_median": 2723.5
+  },
+  "novelty_daily_corr": {
+   "donch4h_stop": 0.318,
+   "orb_asia_2d_buf10": 0.339
+  },
+  "novelty_weekly_corr": {
+   "donch4h_stop": 0.265,
+   "orb_asia_2d_buf10": 0.317
+  },
+  "novelty_overlap": {
+   "donch4h_stop": {
+    "days_both_active": 346,
+    "days_cand_active": 576,
+    "corr_on_days_both_active": 0.379,
+    "cand_mean_R_per_day_when_legacy_flat": -0.1917,
+    "cand_mean_R_per_day_when_legacy_active": 0.4806,
+    "share_entered_while_legacy_open_same_side": 0.345,
+    "exp_R_same_side": 0.1394,
+    "share_legacy_open_opposite": 0.045,
+    "exp_R_opposite": 0.2135,
+    "share_legacy_flat": 0.609,
+    "exp_R_legacy_flat": 0.1975,
+    "n_legacy_flat": 418
+   },
+   "orb_asia_2d_buf10": {
+    "days_both_active": 528,
+    "days_cand_active": 576,
+    "corr_on_days_both_active": 0.445,
+    "cand_mean_R_per_day_when_legacy_flat": 0.3449,
+    "cand_mean_R_per_day_when_legacy_active": 0.2001,
+    "share_entered_while_legacy_open_same_side": 0.585,
+    "exp_R_same_side": 0.2372,
+    "share_legacy_open_opposite": 0.122,
+    "exp_R_opposite": -0.0101,
+    "share_legacy_flat": 0.293,
+    "exp_R_legacy_flat": 0.139,
+    "n_legacy_flat": 201
+   }
+  },
+  "novelty_regression": {
+   "alpha_R_per_day": 0.02782,
+   "alpha_t": 1.81,
+   "beta_donch": 0.303,
+   "beta_orb": 0.14,
+   "raw_mean_R_per_day": 0.05238,
+   "raw_t": 3.17,
+   "alpha_R_per_year": 7.2,
+   "raw_R_per_year": 13.6
+  },
+  "erosion": {
+   "gross_R_2013_2017": 0.2452,
+   "gross_R_2018_2021": 0.1823,
+   "net_R_2013_2017": 0.21,
+   "net_R_2018_2021": 0.1388,
+   "gross_bps_2013_2017": 10.47,
+   "gross_bps_2018_2021": 9.64,
+   "by_year_gross_meanR": {
+    "2013": 0.821,
+    "2014": 0.288,
+    "2015": 0.103,
+    "2016": 0.067,
+    "2017": 0.079,
+    "2018": -0.014,
+    "2019": 0.169,
+    "2020": 0.383,
+    "2021": 0.192
+   }
+  },
+  "median_stop_usd_2020_2021": 7.82,
+  "p90_stop_usd_2020_2021": 13.25,
+  "min_lot_risk_usd_2020_2021": 7.82,
+  "tails": {
+   "top5_R": [
+    10.66,
+    9.61,
+    8.3,
+    6.74,
+    5.81
+   ],
+   "sum_R": 122.2,
+   "sum_R_without_top10": 55.3,
+   "t_winsor_3R": 2.17,
+   "t_daily_cluster": 3.19
+  }
+ }
+}

@@ -1,0 +1,116 @@
+{
+ "n_trades": {
+  "donch4h_stop": 495,
+  "orb_asia_2d_buf10": 1038,
+  "r2s2_touch_run": 1197,
+  "outer_close_ride": 686
+ },
+ "daily_mtm_corr": {
+  "donch4h_stop": {
+   "donch4h_stop": 1.0,
+   "orb_asia_2d_buf10": 0.488,
+   "r2s2_touch_run": 0.273,
+   "outer_close_ride": 0.318
+  },
+  "orb_asia_2d_buf10": {
+   "donch4h_stop": 0.488,
+   "orb_asia_2d_buf10": 1.0,
+   "r2s2_touch_run": 0.226,
+   "outer_close_ride": 0.339
+  },
+  "r2s2_touch_run": {
+   "donch4h_stop": 0.273,
+   "orb_asia_2d_buf10": 0.226,
+   "r2s2_touch_run": 1.0,
+   "outer_close_ride": 0.386
+  },
+  "outer_close_ride": {
+   "donch4h_stop": 0.318,
+   "orb_asia_2d_buf10": 0.339,
+   "r2s2_touch_run": 0.386,
+   "outer_close_ride": 1.0
+  }
+ },
+ "weekly_corr": {
+  "donch4h_stop": {
+   "donch4h_stop": 1.0,
+   "orb_asia_2d_buf10": 0.559,
+   "r2s2_touch_run": 0.251,
+   "outer_close_ride": 0.265
+  },
+  "orb_asia_2d_buf10": {
+   "donch4h_stop": 0.559,
+   "orb_asia_2d_buf10": 1.0,
+   "r2s2_touch_run": 0.242,
+   "outer_close_ride": 0.317
+  },
+  "r2s2_touch_run": {
+   "donch4h_stop": 0.251,
+   "orb_asia_2d_buf10": 0.242,
+   "r2s2_touch_run": 1.0,
+   "outer_close_ride": 0.374
+  },
+  "outer_close_ride": {
+   "donch4h_stop": 0.265,
+   "orb_asia_2d_buf10": 0.317,
+   "r2s2_touch_run": 0.374,
+   "outer_close_ride": 1.0
+  }
+ },
+ "r2s2_touch_run|donch4h_stop": {
+  "days_both_active": 465,
+  "days_cand_active": 789,
+  "corr_on_days_both_active": 0.328,
+  "cand_mean_R_per_day_when_legacy_flat": -0.1479,
+  "cand_mean_R_per_day_when_legacy_active": 0.3857,
+  "share_entered_while_legacy_open_same_side": 0.306,
+  "exp_R_same_side": 0.2229,
+  "share_legacy_open_opposite": 0.053,
+  "exp_R_opposite": 0.1605,
+  "share_legacy_flat": 0.642,
+  "exp_R_legacy_flat": 0.0518,
+  "n_legacy_flat": 768
+ },
+ "r2s2_touch_run|orb_asia_2d_buf10": {
+  "days_both_active": 715,
+  "days_cand_active": 789,
+  "corr_on_days_both_active": 0.256,
+  "cand_mean_R_per_day_when_legacy_flat": 0.0521,
+  "cand_mean_R_per_day_when_legacy_active": 0.1785,
+  "share_entered_while_legacy_open_same_side": 0.493,
+  "exp_R_same_side": 0.182,
+  "share_legacy_open_opposite": 0.12,
+  "exp_R_opposite": 0.1135,
+  "share_legacy_flat": 0.387,
+  "exp_R_legacy_flat": 0.0167,
+  "n_legacy_flat": 463
+ },
+ "outer_close_ride|donch4h_stop": {
+  "days_both_active": 346,
+  "days_cand_active": 576,
+  "corr_on_days_both_active": 0.379,
+  "cand_mean_R_per_day_when_legacy_flat": -0.1917,
+  "cand_mean_R_per_day_when_legacy_active": 0.4806,
+  "share_entered_while_legacy_open_same_side": 0.345,
+  "exp_R_same_side": 0.1394,
+  "share_legacy_open_opposite": 0.045,
+  "exp_R_opposite": 0.2135,
+  "share_legacy_flat": 0.609,
+  "exp_R_legacy_flat": 0.1975,
+  "n_legacy_flat": 418
+ },
+ "outer_close_ride|orb_asia_2d_buf10": {
+  "days_both_active": 528,
+  "days_cand_active": 576,
+  "corr_on_days_both_active": 0.445,
+  "cand_mean_R_per_day_when_legacy_flat": 0.3449,
+  "cand_mean_R_per_day_when_legacy_active": 0.2001,
+  "share_entered_while_legacy_open_same_side": 0.585,
+  "exp_R_same_side": 0.2372,
+  "share_legacy_open_opposite": 0.122,
+  "exp_R_opposite": -0.0101,
+  "share_legacy_flat": 0.293,
+  "exp_R_legacy_flat": 0.139,
+  "n_legacy_flat": 201
+ }
+}

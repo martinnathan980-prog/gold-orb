@@ -1,0 +1,61 @@
+DIAGNOSTIC of I3 (range used >= 1.5 dATR, fade at market, stop 0.25, 1R), in-sample, no-overlap trades. Descriptive cuts of ONE logged configuration.
+-- direction of the fade against the day's move so far
+                                                                          n  mean_R   sum_R    win
+with_day                                                                                          
+fade goes AGAINST the day's move (level beyond the open)                210   0.093  19.498  0.557
+fade goes WITH the day's move (pullback to a level, then continuation)  234   0.066  15.546  0.543
+-- side (+1 long / -1 short)
+        n  mean_R   sum_R    win
+side                            
+-1    206   0.151  31.090  0.587
+ 1    238   0.017   3.953  0.517
+-- level
+       n  mean_R   sum_R    win
+lvl                            
+D_P   46   0.167   7.669  0.565
+D_R1  47   0.210   9.886  0.638
+D_R2  81   0.024   1.960  0.506
+D_R3  89   0.127  11.283  0.573
+D_S1  51   0.234  11.924  0.647
+D_S2  55   0.013   0.712  0.527
+D_S3  75  -0.112  -8.389  0.453
+-- New York hour
+         n  mean_R   sum_R    win
+sess                             
+00-03    7  -0.179  -1.251  0.429
+03-08   56   0.227  12.736  0.625
+08-12  183   0.135  24.701  0.590
+12-17  157   0.019   2.995  0.503
+17-24   41  -0.101  -4.137  0.463
+-- year
+        n  mean_R   sum_R    win
+year                            
+2013   40   0.002   0.079  0.500
+2014   43   0.192   8.247  0.581
+2015   32   0.234   7.486  0.688
+2016   77  -0.139 -10.714  0.416
+2017   36   0.210   7.577  0.583
+2018   31   0.077   2.400  0.516
+2019   39   0.324  12.648  0.692
+2020  110   0.159  17.498  0.609
+2021   36  -0.283 -10.178  0.389
+-- exit reason
+          n  mean_R    sum_R    win
+reason                             
+stop    161  -1.031 -165.938  0.000
+target  201   0.962  193.266  0.995
+time     82   0.094    7.716  0.537
+risk per trade (USD): median 4.55 | 2020-2021 median 6.11 | avg hold min 76.0
+gross R per trade 2013-2017: 0.0909 n 229 | 2018-2021: 0.1659 n 214
+net   R per trade 2013-2017: 0.0556 | 2018-2021: 0.1036
+days with a trade: 176 | top 5 days' share of total R: 0.53
+-- placebo levels, 10 seeds pooled: direction of the fade against the day's move
+                           n  mean_R    sum_R    win
+with_day                                            
+AGAINST the day's move  2131   0.026   55.153  0.538
+WITH the day's move     2478   0.077  189.738  0.551
+-- placebo levels pooled: side
+         n  mean_R    sum_R    win
+side                              
+-1    2303   0.106  244.989  0.563
+ 1    2306  -0.000   -0.098  0.526

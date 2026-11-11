@@ -1,0 +1,56 @@
+TRACK bounce -- list of ideas, written BEFORE any engine run (2026-11-11). Budget: 80 configurations, all logged.
+Free descriptive table already seen: descriptive_events.txt (30 cells x 2 barriers, daily pivots, bounce rate real vs placebo).
+Common defaults unless stated: daily Traditional pivots P,R1-R3,S1-S3 from the previous full day; touch = events.py logic
+(armed after a close 0.15 dATR away); FADE the touch; market entry at the open of the next minute; stop 0.25 dATR beyond the
+level (or beyond the extreme since the touch for confirmation entries); target 1R; forced exit 16:50 New York.
+
+A. blind touch (4)
+ A1 limit order at the level (optimistic fill)          A2 market next minute
+ A3 market, target = 15-min middle band (min 0.5R)      A4 market, target = previous daily pivot (min 0.5R)
+B. confirmation instead of a blind touch (8)
+ B1 M5 bar closes back on the arrival side (within 3 bars)       B2 same on M15 (within 2 bars)
+ B3 M5 rejection wick (wick >= 50 % of the bar's range)          B4 same on M15
+ B5 M15 engulfing (a bar closes beyond the far end of the bar that touched)   B6 same on M5
+ B7 failure to hold: M1 close >= 0.05 dATR beyond the level, then an M1 close back inside within 15 min
+ B8 failure to hold within 60 min (M5 closes)
+C. repeated touches and confluence (7)
+ C1 first touch of the level today only     C2 second or later touch only
+ C3 daily pivot within 0.10 dATR of a weekly / monthly pivot     C4 within 0.10 dATR of yesterday's high / low
+ C5 within $1.5 of a $10 round number        C6 any confluence (W/M/PDH/PDL) + B1 confirmation
+ C7 the weekly and monthly pivots themselves as levels
+D. session and low volatility (7)
+ D1 Asia (18:00-03:00 NY)   D2 Asia + 15-min band narrower than usual (squeeze < 1)   D3 range day: range used < 0.5 dATR and squeeze < 1
+ D4 London morning (03-08 NY)   D5 New York morning (08-12)   D6 afternoon (12-17)   D7 Asia, target = middle band
+E. exhaustion (8)
+ E1 level beyond the 1-hour band (stretch60 >= 1)   E2 stretch60 >= 1.5   E3 fast approach (mom4 >= 2 ATR15 in the last hour)
+ E4 slow approach (mom4 < 0.5)   E5 RSI divergence (new extreme vs the last 3 h, RSI lower than at the previous extreme)
+ E6 level beyond the 15-min band and RSI >= 70 (the classic fade)   E7 band walk (>= 3 of last 8 closes outside)   E8 day's range >= 1.2 dATR already used
+F. the user's asymmetric version: fade AGAINST a stretched move that arrives at a pivot beyond the outer band (6)
+ F1 stretch15 >= 1, market, target middle band   F2 stretch15 >= 1 + M5 close back inside the band and inside the level, target middle band
+ F3 stretch15 >= 1.5 and mom4 >= 2, + M5 confirmation, target middle band   F4 F2 with a wide stop (0.5 dATR)   F5 F2 with a tight stop (0.15 dATR)
+ F6 F2 with classic roles only (R levels from below, S levels from above)
+G. exits on the best rule of A-F (5). "Best" = highest PF under costs x1.5 among rules with n >= 250 (fixed now).
+ G1 stop 0.15   G2 stop 0.50   G3 time stop 60 min   G4 time stop 240 min   G5 no target (stop or end of day)
+H. model (1): walk-forward gradient boosting (train on years < Y) on the context of M5-confirmed touches, predicting the fade's result;
+   trade its top fifth out-of-fold. Only taken to the engine if the out-of-fold top fifth is positive after costs at event level.
+Neighbours for at most 2 finalists: up to 8 each (counted in the 80). Level-placebo runs and null tests of a finalist are verification, logged separately.
+Finalist rule (fixed now): a configuration must pass r2.is_criteria in its MARKET-entry version; otherwise no finalist.
+
+--- Added after stages A-H (47 configurations, none with PF > 1.03 or t > 0.3), written BEFORE running stage I ---
+Only three contexts were positive BEFORE costs: a day whose range is already exhausted (E8, gross +0.055 R), quiet / Asian
+contexts (D2, D3, D7: gross +0.02 R) and failure to hold beyond the level (B8, gross +0.02 R). Stage I digs the first one
+(the only one near break-even after costs) and stops there:
+ I1 E8 with a limit order at the level (optimistic bound)      I2 range used >= 1.0      I3 range used >= 1.5
+ I4 E8 + failure to hold (B8 confirmation)                     I5 E8 + M15 rejection wick (B4)
+ I6 E8 on the outer pivots only (R2, R3, S2, S3)               I7 E8 + level beyond the 15-min band (stretch15 >= 1)
+ I8 E8 + Asian / quiet context (squeeze < 1)
+Then, whatever the result, the best of E8 / I is put through the level placebo (10 seeds) and the random-entry null as documentation.
+
+--- After stage I (55 configurations). Best: I3 (range used >= 1.5 dATR, market entry): PF 1.20, t 1.82 -> FAILS t >= 2.5. ---
+Documentation of I3 (written before running): 8 neighbours, one parameter at a time (range threshold 1.35 / 1.65 / 1.8; stop 0.20 / 0.30;
+target 0.8R / 1.25R; time stop 240 min), 10 level-placebo seeds, random-entry null (day mode). No further search after this.
+
+--- After the documentation of I3 (63 configurations). I3 works as well on shifted lines (placebo PF median 1.15), i.e. the lines do not
+matter; its trades sit on 176 days and 5 days make 53 % of the result. ONE last configuration, written before running it:
+ J1 the same rule (range used >= 1.5, same threshold as I3, not the best neighbour) on ALL the user's lines (daily + weekly + monthly pivots
+    + yesterday's high / low) to see whether more lines give enough independent trades to reach t >= 2.5. Whatever it gives, the search stops.

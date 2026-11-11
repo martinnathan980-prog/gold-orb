@@ -1,0 +1,38 @@
+{
+ "I3_range1.5": {
+  "n": 444,
+  "days": 182,
+  "t_trades": 1.82,
+  "t_day_clustered": 1.86,
+  "top5_days_share": 0.52,
+  "long_R": 4.0,
+  "short_R": 31.1
+ },
+ "N2_range1.65": {
+  "n": 318,
+  "days": 124,
+  "t_trades": 2.47,
+  "t_day_clustered": 2.6,
+  "top5_days_share": 0.4,
+  "long_R": 10.6,
+  "short_R": 29.8
+ },
+ "J1_all_lines_range1.5": {
+  "n": 689,
+  "days": 239,
+  "t_trades": 0.41,
+  "t_day_clustered": 0.41,
+  "top5_days_share": 1.87,
+  "long_R": -2.7,
+  "short_R": 12.7
+ },
+ "E8_range1.2": {
+  "n": 976,
+  "days": 433,
+  "t_trades": 0.22,
+  "t_day_clustered": 0.23,
+  "top5_days_share": 3.13,
+  "long_R": -12.6,
+  "short_R": 18.8
+ }
+}

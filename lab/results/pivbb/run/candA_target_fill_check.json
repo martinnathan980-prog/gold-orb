@@ -1,0 +1,22 @@
+{
+ "through_by_0.00_usd": {
+  "share_of_target_exits": 1.0,
+  "mean_R_if_others_scratch": 0.1098,
+  "pf_if_others_scratch": 1.246
+ },
+ "through_by_0.10_usd": {
+  "share_of_target_exits": 0.945,
+  "mean_R_if_others_scratch": 0.0824,
+  "pf_if_others_scratch": 1.185
+ },
+ "through_by_0.20_usd": {
+  "share_of_target_exits": 0.861,
+  "mean_R_if_others_scratch": 0.0372,
+  "pf_if_others_scratch": 1.083
+ },
+ "through_by_0.50_usd": {
+  "share_of_target_exits": 0.658,
+  "mean_R_if_others_scratch": -0.0604,
+  "pf_if_others_scratch": 0.865
+ }
+}

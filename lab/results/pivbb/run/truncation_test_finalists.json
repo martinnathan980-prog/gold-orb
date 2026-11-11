@@ -1,0 +1,402 @@
+[
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2"
+   ],
+   "entry": "touch",
+   "fill": "market",
+   "stop": "level",
+   "stop_atr": 0.25,
+   "target": "next",
+   "eod": 1010
+  },
+  "cut": "2019-06-21 02:56:00+00:00",
+  "orders_before_cut": 1288,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2"
+   ],
+   "entry": "touch",
+   "fill": "market",
+   "stop": "level",
+   "stop_atr": 0.25,
+   "target": "next",
+   "eod": 1010
+  },
+  "cut": "2019-10-01 04:07:00+00:00",
+  "orders_before_cut": 1352,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2"
+   ],
+   "entry": "touch",
+   "fill": "market",
+   "stop": "level",
+   "stop_atr": 0.25,
+   "target": "next",
+   "eod": 1010
+  },
+  "cut": "2020-02-07 14:16:00+00:00",
+  "orders_before_cut": 1424,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2"
+   ],
+   "entry": "touch",
+   "fill": "market",
+   "stop": "level",
+   "stop_atr": 0.25,
+   "target": "next",
+   "eod": 1010
+  },
+  "cut": "2021-05-18 18:30:00+00:00",
+  "orders_before_cut": 1666,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2"
+   ],
+   "entry": "touch",
+   "fill": "market",
+   "stop": "level",
+   "stop_atr": 0.25,
+   "target": "next",
+   "eod": 1010
+  },
+  "cut": "2021-08-30 07:42:00+00:00",
+  "orders_before_cut": 1718,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2",
+    "D_R3",
+    "D_S3"
+   ],
+   "entry": "close15",
+   "fill": "market",
+   "hours": [
+    2,
+    12
+   ],
+   "stop": "level",
+   "stop_atr": 0.25,
+   "target": null,
+   "eod": 1010
+  },
+  "cut": "2019-06-21 02:56:00+00:00",
+  "orders_before_cut": 1563,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2",
+    "D_R3",
+    "D_S3"
+   ],
+   "entry": "close15",
+   "fill": "market",
+   "hours": [
+    2,
+    12
+   ],
+   "stop": "level",
+   "stop_atr": 0.25,
+   "target": null,
+   "eod": 1010
+  },
+  "cut": "2019-10-01 04:07:00+00:00",
+  "orders_before_cut": 1615,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2",
+    "D_R3",
+    "D_S3"
+   ],
+   "entry": "close15",
+   "fill": "market",
+   "hours": [
+    2,
+    12
+   ],
+   "stop": "level",
+   "stop_atr": 0.25,
+   "target": null,
+   "eod": 1010
+  },
+  "cut": "2020-02-07 14:16:00+00:00",
+  "orders_before_cut": 1700,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2",
+    "D_R3",
+    "D_S3"
+   ],
+   "entry": "close15",
+   "fill": "market",
+   "hours": [
+    2,
+    12
+   ],
+   "stop": "level",
+   "stop_atr": 0.25,
+   "target": null,
+   "eod": 1010
+  },
+  "cut": "2021-05-18 18:30:00+00:00",
+  "orders_before_cut": 2032,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2",
+    "D_R3",
+    "D_S3"
+   ],
+   "entry": "close15",
+   "fill": "market",
+   "hours": [
+    2,
+    12
+   ],
+   "stop": "level",
+   "stop_atr": 0.25,
+   "target": null,
+   "eod": 1010
+  },
+  "cut": "2021-08-30 07:42:00+00:00",
+  "orders_before_cut": 2106,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2"
+   ],
+   "entry": "touch",
+   "fill": "pending"
+  },
+  "cut": "2019-06-21 02:56:00+00:00",
+  "orders_before_cut": 1302,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2"
+   ],
+   "entry": "touch",
+   "fill": "pending"
+  },
+  "cut": "2019-10-01 04:07:00+00:00",
+  "orders_before_cut": 1366,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2"
+   ],
+   "entry": "touch",
+   "fill": "pending"
+  },
+  "cut": "2020-02-07 14:16:00+00:00",
+  "orders_before_cut": 1439,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2"
+   ],
+   "entry": "touch",
+   "fill": "pending"
+  },
+  "cut": "2021-05-18 18:30:00+00:00",
+  "orders_before_cut": 1681,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2"
+   ],
+   "entry": "touch",
+   "fill": "pending"
+  },
+  "cut": "2021-08-30 07:42:00+00:00",
+  "orders_before_cut": 1733,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2"
+   ],
+   "entry": "retest"
+  },
+  "cut": "2019-06-21 02:56:00+00:00",
+  "orders_before_cut": 1388,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2"
+   ],
+   "entry": "retest"
+  },
+  "cut": "2019-10-01 04:07:00+00:00",
+  "orders_before_cut": 1445,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2"
+   ],
+   "entry": "retest"
+  },
+  "cut": "2020-02-07 14:16:00+00:00",
+  "orders_before_cut": 1523,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2"
+   ],
+   "entry": "retest"
+  },
+  "cut": "2021-05-18 18:30:00+00:00",
+  "orders_before_cut": 1797,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2"
+   ],
+   "entry": "retest"
+  },
+  "cut": "2021-08-30 07:42:00+00:00",
+  "orders_before_cut": 1857,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2"
+   ],
+   "target": null,
+   "trail_mid": true,
+   "stop": "mid",
+   "stop_atr": 0.05
+  },
+  "cut": "2019-06-21 02:56:00+00:00",
+  "orders_before_cut": 1270,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2"
+   ],
+   "target": null,
+   "trail_mid": true,
+   "stop": "mid",
+   "stop_atr": 0.05
+  },
+  "cut": "2019-10-01 04:07:00+00:00",
+  "orders_before_cut": 1319,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2"
+   ],
+   "target": null,
+   "trail_mid": true,
+   "stop": "mid",
+   "stop_atr": 0.05
+  },
+  "cut": "2020-02-07 14:16:00+00:00",
+  "orders_before_cut": 1386,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2"
+   ],
+   "target": null,
+   "trail_mid": true,
+   "stop": "mid",
+   "stop_atr": 0.05
+  },
+  "cut": "2021-05-18 18:30:00+00:00",
+  "orders_before_cut": 1633,
+  "identical": true
+ },
+ {
+  "params": {
+   "levels": [
+    "D_R2",
+    "D_S2"
+   ],
+   "target": null,
+   "trail_mid": true,
+   "stop": "mid",
+   "stop_atr": 0.05
+  },
+  "cut": "2021-08-30 07:42:00+00:00",
+  "orders_before_cut": 1691,
+  "identical": true
+ }
+]

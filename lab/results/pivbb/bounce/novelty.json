@@ -1,0 +1,12 @@
+{
+ "I3_range1.5": {
+  "corr_donch4h_stop": -0.068,
+  "corr_orb_asia_2d_buf10": 0.058,
+  "days": 1364
+ },
+ "A2_market_1R": {
+  "corr_donch4h_stop": -0.068,
+  "corr_orb_asia_2d_buf10": -0.033,
+  "days": 2343
+ }
+}

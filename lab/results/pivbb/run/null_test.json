@@ -1,0 +1,22 @@
+{
+ "r2s2_touch_run": {
+  "n": 1197,
+  "mode": "day",
+  "rule_mean_R": 0.1098,
+  "null_mean_R": -0.0463,
+  "null_p95_R": 0.0082,
+  "null_max_R": 0.0565,
+  "percentile": 100.0,
+  "pass": true
+ },
+ "outer_close_ride": {
+  "n": 686,
+  "mode": "day",
+  "rule_mean_R": 0.1781,
+  "null_mean_R": -0.0221,
+  "null_p95_R": 0.0621,
+  "null_max_R": 0.1396,
+  "percentile": 100.0,
+  "pass": true
+ }
+}
