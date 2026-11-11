@@ -74,3 +74,31 @@ baseline of section 1, on VAL, without any weight optimisation. "Nothing survive
 Trials so far: round 1 = 321, round 2 = about 560, pivots + Bollinger = 76, micro = 8, language-model
 tests = 2 pre-registered primary tests. Every configuration of this round is logged
 (`results/r2/<track>/trials.jsonl`).
+
+## Addendum A (2026-11-11, written before any look at the data): track `vol`, "selling insurance"
+**Idea.** Futures on the VIX usually trade above where the VIX ends up (contango) and slide down as they
+approach expiry; whoever is short the front contract is paid a little on most days and loses violently when
+volatility spikes (February 2018, March 2020, August 2024, April 2025). It is the one liquid retail CFD whose
+payoff is by construction "a little most days". It is a **risk premium** (being paid to carry crash risk), not
+a forecasting skill, and it is labelled as such in every report.
+
+**Data.** Daily open / high / low / settlement of every monthly VX contract from the exchange's public history
+(`lab/data/vx/`), cut at 2025-12-31. IS = 2013–2021, VAL = 2022–2025 (lead only, once).
+
+**Rule family (at most 24 configurations, every one logged in `results/r2/vol/trials.jsonl`).**
+Short the front contract, rolled 5 business days before expiry, only when a causal filter says "calm":
+contango (second / front − 1 ≥ c), and / or front future below its n-day average; out otherwise; protective
+exit when the future closes more than s above the entry. Baseline to beat: always short.
+Decision and execution at the daily settlement. Cost: 0.16 index point per round trip (spread 0.10 +
+slippage) for every entry, exit and roll; stress ×1.5. P&L in R, with 1 R = the stop distance s × entry price.
+
+**Criteria (IS).** t of the daily P&L ≥ 2.5 (flat days count as zero); ≥ 60 % of years positive; t ≥ 2.0 with
+costs ×1.5; the pick's neighbours keep at least 70 % of its Sharpe ratio; the filter must beat "always short";
+worst day, worst week, worst drawdown (R) and the share of winning days / weeks / months are reported.
+PROTOCOL_V2's "hold ≤ 5 trading days" and the random-entry null do not apply to a carry position held for
+weeks: this deviation is declared here.
+**VAL.** Total > 0, Sharpe ≥ 0.5, at least 3 of the 4 years positive.
+
+**Before any real use.** FP Markets' own instrument (symbol, contract size, minimum lot, spread, how the
+monthly roll is charged, swap, trading hours) is unknown and must be read in the user's MT5; the vendor's CFD
+on the same future (VOL.IDX/USD, history from October 2022) will be compared with the futures-based result.
