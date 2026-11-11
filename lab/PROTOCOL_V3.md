@@ -318,3 +318,32 @@ longest run of red weeks 5.
 - Note on the 1,000 EUR account: at today's price levels the minimum lots let through only 45 % of the signals
   (reference) or 36 % (cushion); the earlier simulation `sim1000.py` (1,000 → 18,175 EUR) compounded and used the
   lower prices of 2022–2023.
+
+## Addendum G (2026-11-11, night; written before any run): growth paths with a risk that starts high and falls as the account grows
+The user's request: "at the start you can take much more risk to go much faster, and the higher the account, the lower
+the risk; 1,000 EUR added every month; show me tables and charts". This is an ILLUSTRATION OF SIZING, not a selection
+study: the lab selects no rule, parameter or schedule from its output. The user chooses a schedule, knowing that the
+curves replay the same 2022–2025 trades that validated the rules (they flatter any sizing that leans on those years).
+- **Trades:** the ten sleeves' 2022–2025 trades at FP costs, with the adopted `cushion_only` stake rule, at today's
+  price level (minimum lots), read through one access logged in `results/val_access.log` (label
+  `growth_paths:risk_schedules:illustration_no_selection`).
+- **Account mechanics:** those of `r2/tracks/stake/account.py` (lots rounded down, a trade is skipped when the minimum
+  lot is too large for its budget, 6 positions, 2 per market, margin check), compounding, plus 1,000 EUR paid in at
+  the start of each month. No daily-loss lock. The −50 % stop is NOT applied (the user asked for no brake); the first
+  time the hands' rule would have fired (balance at or below half of the reference capital, the reference following
+  the payments as in the hands 1.11) is recorded. A balance that reaches zero stays at zero until the next payment.
+- **Declared schedules** (risk per trade, % of the balance, by size of the balance): A 1 % always; B 2 % below
+  5,000 EUR, then 1 %; C 5 % below 3,000, 3 % below 10,000, 2 % below 20,000, then 1 %; D 10 % / 5 % / 2 % / 1 % at the
+  same three thresholds; E 20 % / 10 % / 5 % / 2 %. Nothing else is shown.
+- **Edge scenarios:** each sleeve's mean result per trade multiplied by 1 (as in 2022–2025), 0.5, 0.25 and 0 (a
+  constant per sleeve is subtracted from every trade's R; the spread of results is unchanged).
+- **Two readings:** (1) the real order of 2022–2025 from 1,000 EUR, one path per schedule, edge ×1; (2) 2,000
+  resampled paths of 36 months per schedule and scenario (weeks drawn in blocks of mean length 8 weeks, fixed seed,
+  the same draws for every schedule and scenario), reported as percentiles of the balance by month, the share of paths
+  above 15,000 / 26,000 / 52,000 EUR at 12, 24 and 36 months, the share of paths that hold less than the money paid
+  in, and the share where the −50 % rule would have fired.
+- **Self-check before the run:** with schedule A, no payment and the −50 % stop, the engine must reproduce
+  `account.py` exactly (final balance, trades taken, skips), in sample and on the stored figures of
+  `results/r2/stake/val_look.json`.
+- **To be said with every figure:** past, on paper, same years as the validation; slippage on larger sizes, the
+  broker's margin call and the minimum stop distance are not modelled beyond `account.py`'s margin check.
