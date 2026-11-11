@@ -1,0 +1,28 @@
+{
+ "track": "fx",
+ "frozen": "2026-11-11, in-sample only (entries < 2022-01-01; frames cut at 2022-01-15; no validation call, no 2022+ trade read)",
+ "decision": "NO FINALIST. Nothing survives on the eight currency pairs at FP Markets Raw costs.",
+ "finalists": {},
+ "configurations_evaluated": 15,
+ "trials_logged": 120,
+ "descriptive_cells_counted": 360,
+ "frozen_transfers_basket_IS": {
+  "A1_donch4h_stop":      {"n": 4103,  "pf": 0.977, "t_daily": -0.46, "net_bp": -1.35, "gross_bp": 1.14, "stress_pf": 0.928, "every_exp_R": -0.053, "years_pos": "3/9", "pairs_pos": "3/8"},
+  "A2_orb_asia_2d_buf10": {"n": 8715,  "pf": 0.977, "t_daily": -0.64, "net_bp": -0.22, "gross_bp": 1.70, "stress_pf": 0.940, "every_exp_R": -0.031, "years_pos": "3/9", "pairs_pos": "2/8"},
+  "A3_brk72_24h_wd":      {"n": 10932, "pf": 0.956, "t_daily": -1.39, "net_bp": -1.18, "gross_bp": 0.84, "stress_pf": 0.907, "every_exp_R": -0.030, "years_pos": "3/9", "pairs_pos": "2/8"},
+  "A4_outer_close_ride":  {"n": 5021,  "pf": 0.918, "t_daily": -1.89, "net_bp": -1.08, "gross_bp": 0.35, "stress_pf": 0.857, "every_exp_R": -0.057, "years_pos": "2/9", "pairs_pos": "2/8"}
+ },
+ "fx_rules_basket_IS": {
+  "B1_fix_me_rev": {"rule": "last weekday of the month, 16:00 London: trade against the 15:00->16:00 mid move, market, stop 1.5 x ATR24(H1), exit 16:30 London; 8 pairs",
+                    "n": 864, "pf": 1.175, "t_daily": 1.32, "net_bp": 0.85, "gross_bp": 1.96, "gross_pf": 1.539, "gross_t_daily": 3.53, "stress_pf": 1.016,
+                    "years_pos": "6/9", "pairs_pos": "5/8", "max_pair_share": 0.415, "long_R": -0.4, "short_R": 27.9,
+                    "fails": ["t_daily>=2.5", "pairs_pos>=65%", "max_pair_share<=25%", "stress_pf>=1.04"],
+                    "neighbours_8_predeclared": "PF median 1.08; t_daily 0.37-1.55 (none >= 2.5)"},
+  "B2_usd_eu_am":  {"rule": "buy USD against each currency 07:00->12:00 London (EURJPY: sell EUR), stop 2 x ATR24(H1)",
+                    "n": 18719, "pf": 0.969, "t_daily": -0.98, "net_bp": -0.18, "gross_bp": 1.12, "gross_t_daily": 3.63, "stress_pf": 0.898, "pairs_pos": "2/8 (eurusd, gbpusd)"},
+  "B3_ldn_open_brk": {"rule": "first touch of the 00:00-07:00 London mid range between 07:00 and 10:00, stop order, stop at the opposite side, exit 16:00 London",
+                    "n": 16178, "pf": 0.952, "t_daily": -1.70, "net_bp": -0.29, "gross_bp": 1.19, "gross_t_daily": 2.87, "stress_pf": 0.892, "pairs_pos": "3/8 (usdjpy, eurjpy, gbpusd)"}
+ },
+ "why": "The effects that exist are real before costs (gross daily t 2.9-4.1 for the fix reversal, 3.6 for the European-morning USD drift) but measure 1-2 bp per trade against about 1 bp of all-in cost; the lab's trend / breakout families have 0.4-1.7 bp of gross edge per trade on currencies.",
+ "not_pursued_by_choice": "yen pairs only (usdjpy, eurjpy) for the breakout families: positive in A1-A3 and B3 but chosen after the fact, and the six dropped pairs lose together in every case."
+}
