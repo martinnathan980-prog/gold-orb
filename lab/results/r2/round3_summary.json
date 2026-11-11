@@ -1,0 +1,48 @@
+{
+ "date": "2026-11-11",
+ "protocol": "PROTOCOL_V3.md (+ addenda A, B, C)",
+ "question": "more winning days / a new sleeve, without paying in expectancy",
+ "baseline_2022_2025": {
+  "sleeves": 10,
+  "trades": 5400,
+  "total_R": 428.6,
+  "win_days_pct": 45.0,
+  "win_weeks_pct": 56.0,
+  "win_months_pct": 72.9
+ },
+ "tracks": {
+  "daily_lock": "rejected: locking the day at +0.5 / +1 / +1.5 R leaves winning days at 44.5-44.9 % and costs 4-9 % of the profit",
+  "shape": "no gain (in sample, common period): winning days 49.6 % -> 49.6 %, weeks 58.7 -> 60.2 %, total R 831 -> 805; 48 variants; no validation look",
+  "dip": "no finalist: IBS < 0.3 on us100 PF 1.48, t 2.60 but random-entry null at the 85th percentile (market beta); 44 configurations",
+  "vol": "no configuration passes: always short the front VIX future t 0.89, Sharpe 0.30, worst day -4.5 R; 24 configurations; no validation look",
+  "fx": "no finalist from the 15 first configurations; n\u00b016 (addendum B, month-end fix signed by the S&P 500 month-to-date): in sample +3.95 bp per date, t 4.65, 8/9 years, all criteria pass -> VALIDATION FAIL: +0.72 bp per date, t 0.57, 54 % of dates, 2/4 years, negative at costs x2 (results/r2/fx/B5_fix_me_spx_*.json)",
+  "stocks": "frozen us100 opening rules on 40 US shares: gross PF 1.07-1.08 (t 2.35-2.41 on daily sums), net PF 0.68-0.73 after share costs; no finalist",
+  "news": "language model reading 2,147 presidential posts after its knowledge cut-off: 115 calls, -5.8 bp net per call, p 0.77: third negative blind test of the model as trader",
+  "gate": "addendum C, stressed-market gate on noise30 (us100): in sample +0.169 R vs +0.026 R (gamma flag) and +0.161 R vs +0.021 R (price flag) -> VALIDATION FAIL: +0.062 vs +0.055 R and +0.019 vs +0.083 R; no gate (results/r2/idx_us/gate_*.json)"
+ },
+ "panel": {
+  "file": "results/panel/panel_2026-11-11.json",
+  "agents": 13,
+  "ranking": [
+   "1 forward-truth harness (real costs, paper twins, forward record) - 35 %",
+   "2 month-end fix reversal - 35 % -> tested, FAILED validation",
+   "3 stressed-market gate on us100 - 25 % -> tested, FAILED validation",
+   "4 Tokyo fixing on settlement days, USD/JPY - 17 % -> needs the real USD/JPY cost first",
+   "5 opening-candle momentum on the Japanese index - 8 % -> needs the real JP225 cost first"
+  ]
+ },
+ "ready_for_the_first_live_reading": {
+  "mt5_script": "live_ai/mql5/ReleveFP.mq5 (specifications + per-minute bid/ask from tick history; sends no order)",
+  "reader": "live_ai/releve.py (measured cost at each sleeve's signal minutes vs the model; demo-only probe for commissions)",
+  "model_cost_at_signals": "results/live/modele_frais.json",
+  "cost_tolerance_in_sample": "results/live/cost_grid.json (r2/cost_grid.py): spread multiplier up to which each sleeve keeps PF >= 1.12, t >= 2.5 and stress PF >= 1.04: brk72 btc 4, F1 btc 4, F2 btc 3, nq_btc_follow 1.5, brk72 eth 2, F1 eth 1.5, F2 eth fails at 1 (t), noise30 3, ocm4 2, gold Friday 1.5, gold Donchian 4, gold Asian range 4"
+ },
+ "trials_round3": {
+  "shape": 48,
+  "dip": 44,
+  "vol": 24,
+  "fx": 22,
+  "stocks": 2,
+  "validation_looks": 2
+ }
+}

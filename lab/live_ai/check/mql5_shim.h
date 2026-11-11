@@ -244,3 +244,15 @@ bool GlobalVariableDel(const string name);
 int GlobalVariablesTotal();
 string GlobalVariableName(int index);
 template <typename... A> void Comment(A... a);
+
+// --- added for ReleveFP.mq5 (docs.mql5.com signatures)
+enum ENUM_DAY_OF_WEEK { SUNDAY, MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY };
+bool SymbolInfoSessionTrade(const string name, ENUM_DAY_OF_WEEK day_of_week, uint session_index, datetime &from, datetime &to);
+void Sleep(int milliseconds);
+void FileFlush(int file_handle);
+template <typename T> void ArrayFree(MqlArray<T> &array);
+uint GetTickCount();
+const ENUM_SYMBOL_INFO_STRING SYMBOL_PATH = (ENUM_SYMBOL_INFO_STRING)100, SYMBOL_CURRENCY_BASE = (ENUM_SYMBOL_INFO_STRING)101;
+const ENUM_SYMBOL_INFO_INTEGER SYMBOL_TRADE_CALC_MODE = (ENUM_SYMBOL_INFO_INTEGER)104, SYMBOL_TRADE_EXEMODE = (ENUM_SYMBOL_INFO_INTEGER)105,
+      SYMBOL_SPREAD_FLOAT = (ENUM_SYMBOL_INFO_INTEGER)106;
+const ENUM_SYMBOL_INFO_DOUBLE SYMBOL_MARGIN_INITIAL = (ENUM_SYMBOL_INFO_DOUBLE)103;
