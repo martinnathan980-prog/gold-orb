@@ -1,0 +1,420 @@
+{
+ "name": "B5_fix_me_spx",
+ "params": {
+  "dec": "16:02",
+  "exit": "16:30",
+  "stop_atr": 1.5,
+  "atr_n": 24
+ },
+ "pairs": [
+  "eurusd",
+  "gbpusd",
+  "audusd",
+  "nzdusd",
+  "usdcad",
+  "usdchf"
+ ],
+ "fp": {
+  "n": 648,
+  "pf": 2.515,
+  "expectancy_R": 0.168,
+  "total_R": 108.9,
+  "t_trades": 8.84,
+  "t_daily": 4.65,
+  "n_days": 108,
+  "trades_per_weekday": 0.28,
+  "years_pos": "8/9",
+  "by_year_R": {
+   "2013": -1.9,
+   "2014": 7.9,
+   "2015": 12.4,
+   "2016": 11.0,
+   "2017": 15.5,
+   "2018": 12.7,
+   "2019": 18.3,
+   "2020": 17.5,
+   "2021": 15.5
+  },
+  "win_days_pct": 62.0,
+  "weeks_pos_pct": 14.4,
+  "long_n": 270,
+  "long_R": 48.5,
+  "short_n": 378,
+  "short_R": 60.4,
+  "bps_per_trade": 3.95,
+  "pairs_pos": "6/6",
+  "max_pair_share": 0.204,
+  "by_sym": {
+   "audusd": {
+    "n": 108,
+    "exp_R": 0.1671,
+    "total_R": 18.0
+   },
+   "eurusd": {
+    "n": 108,
+    "exp_R": 0.1595,
+    "total_R": 17.2
+   },
+   "gbpusd": {
+    "n": 108,
+    "exp_R": 0.1424,
+    "total_R": 15.4
+   },
+   "nzdusd": {
+    "n": 108,
+    "exp_R": 0.1508,
+    "total_R": 16.3
+   },
+   "usdcad": {
+    "n": 108,
+    "exp_R": 0.1825,
+    "total_R": 19.7
+   },
+   "usdchf": {
+    "n": 108,
+    "exp_R": 0.2059,
+    "total_R": 22.2
+   }
+  }
+ },
+ "stress": {
+  "n": 648,
+  "pf": 2.126,
+  "expectancy_R": 0.1379,
+  "total_R": 89.4,
+  "t_trades": 7.24,
+  "t_daily": 3.8,
+  "n_days": 108,
+  "trades_per_weekday": 0.28,
+  "years_pos": "8/9",
+  "by_year_R": {
+   "2013": -3.9,
+   "2014": 5.2,
+   "2015": 10.9,
+   "2016": 9.4,
+   "2017": 13.4,
+   "2018": 10.6,
+   "2019": 15.5,
+   "2020": 15.2,
+   "2021": 13.2
+  },
+  "win_days_pct": 59.3,
+  "weeks_pos_pct": 13.7,
+  "long_n": 270,
+  "long_R": 39.9,
+  "short_n": 378,
+  "short_R": 49.5,
+  "bps_per_trade": 3.32,
+  "pairs_pos": "6/6",
+  "max_pair_share": 0.202,
+  "by_sym": {
+   "audusd": {
+    "n": 108,
+    "exp_R": 0.1374,
+    "total_R": 14.8
+   },
+   "eurusd": {
+    "n": 108,
+    "exp_R": 0.1378,
+    "total_R": 14.9
+   },
+   "gbpusd": {
+    "n": 108,
+    "exp_R": 0.1214,
+    "total_R": 13.1
+   },
+   "nzdusd": {
+    "n": 108,
+    "exp_R": 0.1116,
+    "total_R": 12.1
+   },
+   "usdcad": {
+    "n": 108,
+    "exp_R": 0.1525,
+    "total_R": 16.5
+   },
+   "usdchf": {
+    "n": 108,
+    "exp_R": 0.1668,
+    "total_R": 18.0
+   }
+  }
+ },
+ "gross": {
+  "n": 648,
+  "pf": 3.459,
+  "expectancy_R": 0.2261,
+  "total_R": 146.5,
+  "t_trades": 11.84,
+  "t_daily": 6.22,
+  "n_days": 108,
+  "trades_per_weekday": 0.28,
+  "years_pos": "9/9",
+  "by_year_R": {
+   "2013": 2.2,
+   "2014": 13.0,
+   "2015": 15.4,
+   "2016": 14.1,
+   "2017": 19.7,
+   "2018": 17.0,
+   "2019": 24.2,
+   "2020": 21.3,
+   "2021": 19.7
+  },
+  "win_days_pct": 71.3,
+  "weeks_pos_pct": 16.5,
+  "long_n": 270,
+  "long_R": 64.7,
+  "short_n": 378,
+  "short_R": 81.8,
+  "bps_per_trade": 5.19,
+  "pairs_pos": "6/6",
+  "max_pair_share": 0.202,
+  "by_sym": {
+   "audusd": {
+    "n": 108,
+    "exp_R": 0.2272,
+    "total_R": 24.5
+   },
+   "eurusd": {
+    "n": 108,
+    "exp_R": 0.203,
+    "total_R": 21.9
+   },
+   "gbpusd": {
+    "n": 108,
+    "exp_R": 0.1843,
+    "total_R": 19.9
+   },
+   "nzdusd": {
+    "n": 108,
+    "exp_R": 0.2254,
+    "total_R": 24.3
+   },
+   "usdcad": {
+    "n": 108,
+    "exp_R": 0.242,
+    "total_R": 26.1
+   },
+   "usdchf": {
+    "n": 108,
+    "exp_R": 0.2747,
+    "total_R": 29.7
+   }
+  }
+ },
+ "every": {
+  "n": 648,
+  "pf": 2.515,
+  "expectancy_R": 0.168,
+  "total_R": 108.9,
+  "t_trades": 8.84,
+  "t_daily": 4.65,
+  "n_days": 108,
+  "trades_per_weekday": 0.28,
+  "years_pos": "8/9",
+  "by_year_R": {
+   "2013": -1.9,
+   "2014": 7.9,
+   "2015": 12.4,
+   "2016": 11.0,
+   "2017": 15.5,
+   "2018": 12.7,
+   "2019": 18.3,
+   "2020": 17.5,
+   "2021": 15.5
+  },
+  "win_days_pct": 62.0,
+  "weeks_pos_pct": 14.4,
+  "long_n": 270,
+  "long_R": 48.5,
+  "short_n": 378,
+  "short_R": 60.4,
+  "bps_per_trade": 3.95,
+  "pairs_pos": "6/6",
+  "max_pair_share": 0.204,
+  "by_sym": {
+   "audusd": {
+    "n": 108,
+    "exp_R": 0.1671,
+    "total_R": 18.0
+   },
+   "eurusd": {
+    "n": 108,
+    "exp_R": 0.1595,
+    "total_R": 17.2
+   },
+   "gbpusd": {
+    "n": 108,
+    "exp_R": 0.1424,
+    "total_R": 15.4
+   },
+   "nzdusd": {
+    "n": 108,
+    "exp_R": 0.1508,
+    "total_R": 16.3
+   },
+   "usdcad": {
+    "n": 108,
+    "exp_R": 0.1825,
+    "total_R": 19.7
+   },
+   "usdchf": {
+    "n": 108,
+    "exp_R": 0.2059,
+    "total_R": 22.2
+   }
+  }
+ },
+ "criteria": {
+  "n>=250": true,
+  "pf>=1.12": true,
+  "t_daily>=2.5": true,
+  "years_pos>=60%": true,
+  "pairs_pos>=65%": true,
+  "max_pair_share<=25%": true,
+  "stress_pf>=1.04": true,
+  "every_signal_exp>0": true,
+  "pass": true
+ },
+ "per_date": {
+  "dates": 108,
+  "trades": 648,
+  "net_bp_per_date": 3.95,
+  "t_dates": 4.42,
+  "dates_pos_pct": 64.8,
+  "pairs_pos": "6/6",
+  "by_pair_bp": {
+   "audusd": 4.57,
+   "eurusd": 3.35,
+   "gbpusd": 3.23,
+   "nzdusd": 4.53,
+   "usdcad": 3.69,
+   "usdchf": 4.35
+  },
+  "years_pos": "8/9",
+  "by_year_bp": {
+   "2013": -0.67,
+   "2014": 1.42,
+   "2015": 5.15,
+   "2016": 3.88,
+   "2017": 4.44,
+   "2018": 4.27,
+   "2019": 4.28,
+   "2020": 7.86,
+   "2021": 4.95
+  },
+  "without_best5_bp": 2.82,
+  "worst_date_bp": -28.0,
+  "best_date_bp": 35.5,
+  "stops": 20,
+  "up_months": {
+   "n": 81,
+   "bp": 3.88,
+   "t": 3.9
+  },
+  "down_months": {
+   "n": 27,
+   "bp": 4.17,
+   "t": 2.08
+  },
+  "gross_bp_per_date": 5.19
+ },
+ "neighbours": [
+  {
+   "params": {
+    "dec": "16:00",
+    "exit": "16:30",
+    "stop_atr": 1.5,
+    "atr_n": 24
+   },
+   "pf": 2.475,
+   "t_daily": 4.73,
+   "bps": 3.81
+  },
+  {
+   "params": {
+    "dec": "16:01",
+    "exit": "16:30",
+    "stop_atr": 1.5,
+    "atr_n": 24
+   },
+   "pf": 2.492,
+   "t_daily": 4.74,
+   "bps": 3.63
+  },
+  {
+   "params": {
+    "dec": "16:03",
+    "exit": "16:30",
+    "stop_atr": 1.5,
+    "atr_n": 24
+   },
+   "pf": 1.919,
+   "t_daily": 3.28,
+   "bps": 2.65
+  },
+  {
+   "params": {
+    "dec": "16:04",
+    "exit": "16:30",
+    "stop_atr": 1.5,
+    "atr_n": 24
+   },
+   "pf": 1.538,
+   "t_daily": 2.21,
+   "bps": 1.79
+  },
+  {
+   "params": {
+    "dec": "16:02",
+    "exit": "16:20",
+    "stop_atr": 1.5,
+    "atr_n": 24
+   },
+   "pf": 2.265,
+   "t_daily": 4.14,
+   "bps": 3.12
+  },
+  {
+   "params": {
+    "dec": "16:02",
+    "exit": "16:45",
+    "stop_atr": 1.5,
+    "atr_n": 24
+   },
+   "pf": 1.947,
+   "t_daily": 3.5,
+   "bps": 3.52
+  }
+ ],
+ "neighbours_median_pf": 2.106,
+ "null": {
+  "real_bp": 3.95,
+  "null_mean_bp": -1.45,
+  "null_p95_bp": -0.37,
+  "null_p975_bp": -0.22,
+  "percentile": 100.0,
+  "other_days_buy_usd_bp": -1.62,
+  "other_days_sell_usd_bp": -0.91
+ },
+ "sign_check_us500_frame": {
+  "dates_compared": 107,
+  "different": [
+   "2013-02-28"
+  ]
+ },
+ "is_criteria": {
+  "n>=250": true,
+  "pf>=1.12": true,
+  "t_daily>=2.5": true,
+  "years_pos>=60%": true,
+  "pairs_pos>=65%": true,
+  "max_pair_share<=25%": true,
+  "stress_pf>=1.04": true,
+  "every_signal_exp>0": true,
+  "pass": true,
+  "neighbours_median_pf>=1.06": true,
+  "null>=97.5": true
+ }
+}
