@@ -166,3 +166,41 @@ flagged trades ≥ 1.25; flagged better than unflagged in at least 3 of the 4 ye
 every morning. On a pass: 1.5 × risk on flagged days, 0.75 × otherwise (never more), never applied to the
 opening-candle sleeve, reviewed once a year (off if flagged trades do not earn more per trade than the others
 after at least 400 trades under the gate). Chance of a false pass: about 7 % per flag, 11 % for the pair.
+
+## Addendum D (2026-11-11, written before this rule is run in the lab engine and before any 2022+ result): `fx`, Tokyo fixing on settlement days
+**Origin.** Idea panel, rank 4 (`lab/panel/tokyo_*.py`: a designer and a reviewer, in sample only). **Mechanism.** On
+Japanese settlement days ("gotobi": the 5th, 10th, 15th, 20th, 25th and the last day of the month) banks buy dollars
+for importers at the 09:55 Tokyo fixing, which pushes USD/JPY up into that minute; once the flow is done the price
+falls back (Krohn, Mueller and Whelan, Journal of Finance 2024).
+
+**Frozen rule `B6_tokyo_gotobi`.** USDJPY only. Days: each gotobi date, moved back to the previous Japanese bank
+business day when it falls on a weekend or a bank holiday (bank business day = Monday–Friday, not a Japanese national
+holiday — python `holidays` 0.108 `country_holidays("JP")` — and not 31 December, 2 or 3 January); **Bank of Japan
+decision days are skipped** (last day of each Monetary Policy Meeting, list taken from the Bank's own schedule pages
+https://www.boj.or.jp/en/mopo/mpmsche_minu/ and saved in `r2/tracks/fx/boj_decisions.json`). Entry: **sell** USDJPY
+at market at the open of the first M1 bar at or after 09:55 Tokyo (00:55 UTC; dropped if more than 5 minutes late).
+Exit: market at the open of the first M1 bar at or after 11:55 Tokyo. Disaster stop: 3 × ATR(24) of complete hourly
+mid bars, from the fill. No filter.
+Fallback, examined only if the frozen rule fails its in-sample bars at the measured cost: the same trade on
+"gotobi days or Fridays" (`B7_tokyo_gotobi_fri`; found after the fact by the reviewer, +2.33 bp net in sample).
+**Exactly one** of the two may go to validation.
+
+**Cost.** The lab frame charges 0.71 bp all-in on USD/JPY (1.1 pip at 155). The Raw commission alone (6 USD per
+100,000 USD) is 0.6 bp at any price, so the real figure is probably nearer 0.9–1.0 bp; it is read in the user's MT5
+(commission from a demo round trip, spread between 00:50 and 01:00 UTC). Tonight the in-sample test is run on a
+**grid of all-in costs** (0.71, 0.80, 0.90, 0.95, 1.00, 1.10, 1.20, 1.40 bp; slippage 0.1 bp per side on top), and
+the row at or just above the measured cost is the one that counts.
+
+**In sample (2013–2021).** PROTOCOL_V2 section 4 at that cost: n ≥ 250, PF ≥ 1.12, t ≥ 2.5, ≥ 60 % of years positive,
+PF ≥ 1.04 with costs ×1.5, neighbours (entry 09:50 / 10:00 with exit 11:55; entry 09:55 with exit 11:00 / 13:00 /
+15:00) median PF ≥ 1.06, random-entry null (lab `null_test`, mode "time": same side, stop and holding time at a random
+day and time) ≥ 97.5th percentile.
+
+**Validation (lead, one logged look, about 290 trades of 2022–2025, at the measured cost).** Pass = all of: mean net
+result > 0 with t ≥ 1.5; PF ≥ 1.06; ≥ 3 of 4 years positive; still positive without its best day; and the mechanism
+still visible: the fall of USD/JPY from 09:55 to 10:05 Tokyo on Japanese bank business days is positive with t ≥ 3 and
+absent on Japanese bank holidays. Mechanism visible but net fails = closed as "real but too thin". No volatility
+filter, no third variant.
+
+**After a pass only.** Three months at 0.01 lot to measure the real cost at 09:55 Tokyo; stop if the median all-in
+cost over 20 trades exceeds 1.5 bp.
