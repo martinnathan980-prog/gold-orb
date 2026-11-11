@@ -408,3 +408,22 @@ will be run:
 - **To be said with it:** a bounded loss is paid for by a lower result when the robot works but starts badly; the plans
   are sizing rules chosen on simulations of the validation years; the cheapest protection is information obtained
   before real money (the measured costs, the untouched year 2026, the demo account).
+
+### Addendum G — outcome of the plans that bound the loss (2026-11-11, `results/r2/stake/growth.json`, `growth_protect_review.json`)
+An independent plain-Python implementation, written from the text above and frozen before reading the lab's code,
+reproduces all 2,000 paths of every plan to the cent (5.77 million balances); the earlier plans are unchanged.
+Robot's gain or loss after three years, median (worst path in ten), for 36,000 EUR set aside:
+- rules worthless (edge × −0.5): flat 1 % −16,600 (−23,000); fast start C2 −18,800 (−24,400); **steps P −2,900 (−5,800),
+  3,000 EUR paid in**; floor K70 −10,500 (never under −10,800 by construction); gains-funded G −8,400.
+- half of the paper edge: flat 1 % +32,600 (+3,000); C2 +42,800 (+5,500); P +29,000 (−2,600), 31,000 EUR paid in on the
+  median path; P2 +33,400; K70 +31,100; G +26,200.
+- GP and K70P cut the loss under 1,000 EUR and kill the gain (median about −300 and −900 at half edge).
+What the adversarial reading adds, to be said with these figures: P is not a ceiling (worst of 2,000 paths −15,700;
+if the robot works for a year and then turns to noise the typical loss is about −7,400 against −9,500 to −13,100);
+its protection comes from paying less into a losing robot, not from timing (the switch is slow: at month 4 it refuses
+the payment in 44 % of the paths of a robot at half edge); at half edge P ends below C2 in nine paths out of ten and in
+one path in ten the robot receives 5,000 EUR or less; no advantage when the rules just cover their costs (−2,800
+against −2,300) nor in the first year; the −50 % stop of the hands must be off (with it P is stopped in three paths out
+of four at half edge); the quarter-edge median is about zero (−900 to +1,500 across draws). A trial budget at 1 %
+instead of 5 % (diagnostic, not a declared plan) loses about 1,000 EUR in the first year instead of 2,500 when the
+rules are worthless and gains about 22,000 instead of 29,000 at half edge.
