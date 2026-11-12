@@ -638,7 +638,7 @@ trades must earn about 0.35 R on average instead of 0.08. Sizing cannot close th
 The user: "understand the losses and correct them to turn them into gains; as a human I cut at once a trade that goes
 hard the wrong way and I let run the one that goes well; the algorithm must adapt; do not stop where the others stop".
 A study of the trades themselves, on the ten frozen sleeves, **in sample only** (entries before 2022-01-01; price frames
-cut at 2021-12-31 before anything else; no 2022+ row is read, simulated or looked at). Five lenses, each with its own
+cut at 2021-12-31 before anything else; no 2022+ row is read, simulated or looked at). Six lenses, each with its own
 directory under `r2/tracks/autopsy/` and `results/r2/autopsy/`, each logging every variant it simulates:
 - **path** — what a trade shows after its entry: adverse and favourable excursions, the expectancy of the rest of a trade
   given its state after a given time; rules that cut early or exit on no progress (at most 12 variants per sleeve).
@@ -650,6 +650,10 @@ directory under `r2/tracks/autopsy/` and `results/r2/autopsy/`, each logging eve
   direction, pauses after losses, weights by trailing results, a daily lock (at most 30 variants).
 - **breadth** — the frozen rules, unchanged, on instruments never tried, after an inventory of what the earlier tracks
   already tried (each rule × instrument pair is one trial).
+- **entry** (added at the launch, before any of its simulations) — getting in better: the path of the price right after
+  the signal; limit entries on a pullback, entries delayed until a close in the trade's direction, entries in two
+  halves, a retest entry for the two gold stop-entry sleeves (their buffers are not retuned); filled and missed signals
+  are both reported (at most 12 variants per sleeve).
 - **What makes a candidate, fixed here:** for its sleeve (for the portfolio in `cluster`), net of FP costs: expectancy per
   trade up by at least 20 %, or average loss down by at least 20 % at an expectancy at least equal; total R not lower;
   the improvement has the same sign in at least 3 of the 4 years 2018–2021; it holds with costs × 1.5; the neighbouring
