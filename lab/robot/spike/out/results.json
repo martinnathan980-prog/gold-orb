@@ -1,6 +1,6 @@
 {
  "build": {
-  "seconds": 2.65,
+  "seconds": 2.59,
   "warnings": []
  },
  "window": {
@@ -12,13 +12,13 @@
    "spread_points_median": 1175.0
   },
   "speed": {
-   "replay_stdout_debug": "events 217308 from 1606788000 to 1625108340  load 0.105 s  replay 0.216 s  timer calls 217308  copyrates 434617 (failed 0)  open positions 0",
-   "wall_s_debug": 0.325,
-   "replay_stdout": "events 217308 from 1606788000 to 1625108340  load 0.107 s  replay 0.207 s  timer calls 217308  copyrates 434617 (failed 0)  open positions 0",
-   "wall_s": 0.317,
+   "replay_stdout_debug": "events 217308 from 1606788000 to 1625108340  load 0.104 s  replay 0.217 s  timer calls 217308  copyrates 434617 (failed 0)  open positions 0",
+   "wall_s_debug": 0.324,
+   "replay_stdout": "events 217308 from 1606788000 to 1625108340  load 0.104 s  replay 0.199 s  timer calls 217308  copyrates 434617 (failed 0)  open positions 0",
+   "wall_s": 0.306,
    "simulated_months": 6.93,
-   "months_per_second": 21.9,
-   "lab_python_s": 0.398
+   "months_per_second": 22.7,
+   "lab_python_s": 0.587
   },
   "a_hours": {
    "lab_hours": 3626,
@@ -280,7 +280,7 @@
   },
   "faults": {
    "0.05": {
-    "stdout": "events 217308 from 1606788000 to 1625108340  load 0.121 s  replay 0.263 s  timer calls 651924  copyrates 880617 (failed 44268)  open positions 0",
+    "stdout": "events 217308 from 1606788000 to 1625108340  load 0.135 s  replay 0.230 s  timer calls 651924  copyrates 880617 (failed 44268)  open positions 0",
     "paper_trades_identical": true,
     "decisions_identical": true,
     "status": {
@@ -293,7 +293,7 @@
     "broker_trades": 82
    },
    "0.3": {
-    "stdout": "events 217308 from 1606788000 to 1625108340  load 0.102 s  replay 0.217 s  timer calls 651924  copyrates 921288 (failed 275977)  open positions 0",
+    "stdout": "events 217308 from 1606788000 to 1625108340  load 0.104 s  replay 0.222 s  timer calls 651924  copyrates 921288 (failed 275977)  open positions 0",
     "paper_trades_identical": true,
     "decisions_identical": false,
     "status": {
@@ -309,8 +309,8 @@
   }
  },
  "window_eth": {
-  "stdout": "events 217350 from 1606788000 to 1625108340  load 0.229 s  replay 0.411 s  timer calls 217350  copyrates 869102 (failed 0)  open positions 1",
-  "wall_s": 0.645,
+  "stdout": "events 217350 from 1606788000 to 1625108340  load 0.233 s  replay 0.409 s  timer calls 217350  copyrates 869102 (failed 0)  open positions 1",
+  "wall_s": 0.646,
   "btc_trades_identical_to_btc_only_run": true,
   "btc_decisions_identical": true,
   "eth_frame_bars": 217092,
@@ -354,19 +354,376 @@
   },
   "eth_broker": {
    "lab_trades": 78,
-   "broker_trades": 79,
+   "broker_trades": 78,
    "same_entry_minute_and_side": 78,
    "only_lab": 0,
-   "only_broker": 1,
+   "only_broker": 0,
    "same_exit_minute_and_reason": 78,
-   "entry_bitwise_equal": 0,
-   "entry_max_abs_diff": 0.08360439999887603,
-   "exit_bitwise_equal": 0,
-   "exit_max_abs_diff": 0.10623624807976739,
+   "entry_bitwise_equal": 78,
+   "entry_max_abs_diff": 0.0,
+   "exit_bitwise_equal": 54,
+   "exit_max_abs_diff": 0.009862527100040097,
    "exit_stop_bitwise_equal": "0/24",
-   "exit_stop_max_abs_diff": 0.10623624807976739,
-   "exit_time_bitwise_equal": "0/54",
-   "exit_time_max_abs_diff": 0.07915359999924476
+   "exit_stop_max_abs_diff": 0.009862527100040097,
+   "exit_time_bitwise_equal": "54/54",
+   "exit_time_max_abs_diff": 0.0
+  }
+ },
+ "long": {
+  "frame": {
+   "start": "2017-05-07 23:59:00+00:00",
+   "end": "2021-12-31 16:58:00+00:00",
+   "bars": 1699217,
+   "rounding_max_abs_bid": 0.005000000004656613,
+   "spread_points_median": 274.0
+  },
+  "speed": {
+   "replay_stdout_debug": "events 1699217 from 1494212340 to 1640977080  load 0.960 s  replay 1.682 s  timer calls 1699217  copyrates 3398435 (failed 0)  open positions 0",
+   "wall_s_debug": 2.649,
+   "replay_stdout": "events 1699217 from 1494212340 to 1640977080  load 0.841 s  replay 1.553 s  timer calls 1699217  copyrates 3398435 (failed 0)  open positions 0",
+   "wall_s": 2.403,
+   "simulated_months": 55.79,
+   "months_per_second": 23.2,
+   "lab_python_s": 0.158
+  },
+  "a_hours": {
+   "lab_hours": 28700,
+   "ea_hours": 28700,
+   "both": 28700,
+   "only_lab": [],
+   "only_ea": [],
+   "bitwise_equal": {
+    "o": 28700,
+    "h": 28700,
+    "l": 28700,
+    "c": 28700,
+    "cnt": 28700
+   }
+  },
+  "a_evaluations": {
+   "evaluations": 28628,
+   "lab_evaluable": 28628,
+   "ea_evaluations": 28628,
+   "side_equal": 28628,
+   "hi_lo_bitwise_equal": 28628,
+   "atr_bitwise_equal": 28568,
+   "atr_max_rel_diff": 4.307813679568925e-16,
+   "atr_max_ulps": 3.0
+  },
+  "a_decisions": {
+   "lab_orders": 2915,
+   "ea_eligible_signals": 2915,
+   "both": 2915,
+   "only_lab": [],
+   "only_ea": [],
+   "side_equal": 2915,
+   "entry_bar_equal": 2915,
+   "stop_dist_bitwise_equal": 2915,
+   "stop_dist_max_abs_diff": 0.0,
+   "ea_status_counts": {
+    "busy": 2228,
+    "taken": 645,
+    "weekend": 108,
+    "exit_bar": 42,
+    "late_bar": 29
+   }
+  },
+  "a_trades": {
+   "lab_trades": 645,
+   "ea_trades": 645,
+   "same_entry_minute_and_side": 645,
+   "only_lab": 0,
+   "only_ea": 0,
+   "same_exit_minute_and_reason": 632,
+   "entry_bitwise_equal": 632,
+   "entry_max_abs_diff": 0.0,
+   "stop_bitwise_equal": 632,
+   "stop_max_abs_diff": 0.0,
+   "exit_bitwise_equal": 632,
+   "exit_max_abs_diff": 0.0,
+   "exit_stop_bitwise_equal": "194/194",
+   "exit_stop_max_abs_diff": 0.0,
+   "exit_time_bitwise_equal": "438/438",
+   "exit_time_max_abs_diff": 0.0,
+   "lab_trades_excluded_as_frame_end_artefacts": 0,
+   "ea_trade_open_at_end": 0,
+   "mismatches": [
+    {
+     "entry_time": "2017-06-26 09:00:00+00:00",
+     "side": -1,
+     "in": "both",
+     "exit_lab": "2017-06-27 08:59:00+00:00 time",
+     "exit_ea": "2017-06-27 10:00:00+00:00 time",
+     "why": "unscheduled closure of 61 min after Tue 2017-06-27 11:59 server (scheduled exit 2017-06-27 09:00:00+00:00): the lab exits on the last bar before it (gl.exit_index, 30-minute rule, needs future data); the EA has no holiday calendar and exits at the first bar at/after the scheduled time"
+    },
+    {
+     "entry_time": "2017-07-20 12:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2017-07-21 00:00:00+00:00 time",
+     "exit_ea": "2017-07-21 19:00:00+00:00 time",
+     "why": "unscheduled closure of 1140 min after Fri 2017-07-21 03:00 server (scheduled exit 2017-07-21 12:00:00+00:00): the lab exits on the last bar before it (gl.exit_index, 30-minute rule, needs future data); the EA has no holiday calendar and exits at the first bar at/after the scheduled time"
+    },
+    {
+     "entry_time": "2017-08-04 09:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2017-08-04 20:53:00+00:00 time",
+     "exit_ea": "2017-08-06 21:00:00+00:00 time",
+     "why": "weekly closure earlier than usual: last Friday bar 2017-08-04 23:53 server, not 23:54; the lab exits on it (it sees the closure in the data), the EA waits for 23:54 and exits at the reopening"
+    },
+    {
+     "entry_time": "2017-08-11 08:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2017-08-11 20:52:00+00:00 time",
+     "exit_ea": "2017-08-13 21:00:00+00:00 time",
+     "why": "weekly closure earlier than usual: last Friday bar 2017-08-11 23:52 server, not 23:54; the lab exits on it (it sees the closure in the data), the EA waits for 23:54 and exits at the reopening"
+    },
+    {
+     "entry_time": "2017-08-31 03:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2017-08-31 23:59:00+00:00 time",
+     "exit_ea": "2017-09-04 00:00:00+00:00 time",
+     "why": "unscheduled closure of 4321 min after Fri 2017-09-01 02:59 server (scheduled exit 2017-09-01 03:00:00+00:00): the lab exits on the last bar before it (gl.exit_index, 30-minute rule, needs future data); the EA has no holiday calendar and exits at the first bar at/after the scheduled time"
+    },
+    {
+     "entry_time": "2018-03-09 04:00:00+00:00",
+     "side": -1,
+     "in": "both",
+     "exit_lab": "2018-03-09 21:29:00+00:00 time",
+     "exit_ea": "2018-03-12 00:00:00+00:00 time",
+     "why": "weekly closure earlier than usual: last Friday bar 2018-03-09 23:29 server, not 23:54; the lab exits on it (it sees the closure in the data), the EA waits for 23:54 and exits at the reopening"
+    },
+    {
+     "entry_time": "2018-12-24 01:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2018-12-25 00:00:00+00:00 time",
+     "exit_ea": "2018-12-25 00:00:00+00:00 stop",
+     "why": "unscheduled closure of 1321 min after Tue 2018-12-25 02:00 server (scheduled exit 2018-12-25 01:00:00+00:00): the lab exits on the last bar before it (gl.exit_index, 30-minute rule, needs future data); the EA has no holiday calendar and exits at the first bar at/after the scheduled time"
+    },
+    {
+     "entry_time": "2019-03-08 07:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2019-03-08 21:53:00+00:00 time",
+     "exit_ea": "2019-03-10 21:00:00+00:00 time",
+     "why": "weekly closure earlier than usual: last Friday bar 2019-03-08 23:53 server, not 23:54; the lab exits on it (it sees the closure in the data), the EA waits for 23:54 and exits at the reopening"
+    },
+    {
+     "entry_time": "2019-03-15 12:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2019-03-15 20:53:00+00:00 time",
+     "exit_ea": "2019-03-17 21:00:00+00:00 time",
+     "why": "weekly closure earlier than usual: last Friday bar 2019-03-15 23:53 server, not 23:54; the lab exits on it (it sees the closure in the data), the EA waits for 23:54 and exits at the reopening"
+    },
+    {
+     "entry_time": "2019-12-13 17:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2019-12-13 21:53:00+00:00 time",
+     "exit_ea": "2019-12-15 22:00:00+00:00 time",
+     "why": "weekly closure earlier than usual: last Friday bar 2019-12-13 23:53 server, not 23:54; the lab exits on it (it sees the closure in the data), the EA waits for 23:54 and exits at the reopening"
+    },
+    {
+     "entry_time": "2020-07-31 16:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2020-07-31 19:59:00+00:00 time",
+     "exit_ea": "2020-08-02 21:00:00+00:00 time",
+     "why": "weekly closure earlier than usual: last Friday bar 2020-07-31 22:59 server, not 23:54; the lab exits on it (it sees the closure in the data), the EA waits for 23:54 and exits at the reopening"
+    },
+    {
+     "entry_time": "2020-08-14 17:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2020-08-14 19:59:00+00:00 time",
+     "exit_ea": "2020-08-16 21:01:00+00:00 time",
+     "why": "weekly closure earlier than usual: last Friday bar 2020-08-14 22:59 server, not 23:54; the lab exits on it (it sees the closure in the data), the EA waits for 23:54 and exits at the reopening"
+    },
+    {
+     "entry_time": "2020-12-31 21:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2021-01-01 00:00:00+00:00 time",
+     "exit_ea": "2021-01-03 22:00:00+00:00 time",
+     "why": "unscheduled closure of 4200 min after Fri 2021-01-01 02:00 server (scheduled exit 2021-01-01 21:00:00+00:00): the lab exits on the last bar before it (gl.exit_index, 30-minute rule, needs future data); the EA has no holiday calendar and exits at the first bar at/after the scheduled time"
+    }
+   ]
+  },
+  "a_broker": {
+   "lab_trades": 645,
+   "broker_trades": 645,
+   "same_entry_minute_and_side": 645,
+   "only_lab": 0,
+   "only_broker": 0,
+   "same_exit_minute_and_reason": 632,
+   "entry_bitwise_equal": 632,
+   "entry_max_abs_diff": 0.0,
+   "exit_bitwise_equal": 439,
+   "exit_max_abs_diff": 0.009955006527889054,
+   "exit_stop_bitwise_equal": "1/194",
+   "exit_stop_max_abs_diff": 0.009955006527889054,
+   "exit_time_bitwise_equal": "438/438",
+   "exit_time_max_abs_diff": 0.0,
+   "mismatches": [
+    {
+     "entry_time": "2017-06-26 09:00:00+00:00",
+     "side": -1,
+     "in": "both",
+     "exit_lab": "2017-06-27 08:59:00+00:00 time",
+     "exit_broker": "2017-06-27 10:00:00+00:00 time",
+     "why": "unscheduled closure of 61 min after Tue 2017-06-27 11:59 server (scheduled exit 2017-06-27 09:00:00+00:00): the lab exits on the last bar before it (gl.exit_index, 30-minute rule, needs future data); the EA has no holiday calendar and exits at the first bar at/after the scheduled time"
+    },
+    {
+     "entry_time": "2017-07-20 12:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2017-07-21 00:00:00+00:00 time",
+     "exit_broker": "2017-07-21 19:00:00+00:00 time",
+     "why": "unscheduled closure of 1140 min after Fri 2017-07-21 03:00 server (scheduled exit 2017-07-21 12:00:00+00:00): the lab exits on the last bar before it (gl.exit_index, 30-minute rule, needs future data); the EA has no holiday calendar and exits at the first bar at/after the scheduled time"
+    },
+    {
+     "entry_time": "2017-08-04 09:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2017-08-04 20:53:00+00:00 time",
+     "exit_broker": "2017-08-06 21:00:00+00:00 time",
+     "why": "weekly closure earlier than usual: last Friday bar 2017-08-04 23:53 server, not 23:54; the lab exits on it (it sees the closure in the data), the EA waits for 23:54 and exits at the reopening"
+    },
+    {
+     "entry_time": "2017-08-11 08:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2017-08-11 20:52:00+00:00 time",
+     "exit_broker": "2017-08-13 21:00:00+00:00 time",
+     "why": "weekly closure earlier than usual: last Friday bar 2017-08-11 23:52 server, not 23:54; the lab exits on it (it sees the closure in the data), the EA waits for 23:54 and exits at the reopening"
+    },
+    {
+     "entry_time": "2017-08-31 03:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2017-08-31 23:59:00+00:00 time",
+     "exit_broker": "2017-09-04 00:00:00+00:00 time",
+     "why": "unscheduled closure of 4321 min after Fri 2017-09-01 02:59 server (scheduled exit 2017-09-01 03:00:00+00:00): the lab exits on the last bar before it (gl.exit_index, 30-minute rule, needs future data); the EA has no holiday calendar and exits at the first bar at/after the scheduled time"
+    },
+    {
+     "entry_time": "2018-03-09 04:00:00+00:00",
+     "side": -1,
+     "in": "both",
+     "exit_lab": "2018-03-09 21:29:00+00:00 time",
+     "exit_broker": "2018-03-12 00:00:00+00:00 time",
+     "why": "weekly closure earlier than usual: last Friday bar 2018-03-09 23:29 server, not 23:54; the lab exits on it (it sees the closure in the data), the EA waits for 23:54 and exits at the reopening"
+    },
+    {
+     "entry_time": "2018-12-24 01:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2018-12-25 00:00:00+00:00 time",
+     "exit_broker": "2018-12-25 00:00:00+00:00 stop",
+     "why": "unscheduled closure of 1321 min after Tue 2018-12-25 02:00 server (scheduled exit 2018-12-25 01:00:00+00:00): the lab exits on the last bar before it (gl.exit_index, 30-minute rule, needs future data); the EA has no holiday calendar and exits at the first bar at/after the scheduled time"
+    },
+    {
+     "entry_time": "2019-03-08 07:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2019-03-08 21:53:00+00:00 time",
+     "exit_broker": "2019-03-10 21:00:00+00:00 time",
+     "why": "weekly closure earlier than usual: last Friday bar 2019-03-08 23:53 server, not 23:54; the lab exits on it (it sees the closure in the data), the EA waits for 23:54 and exits at the reopening"
+    },
+    {
+     "entry_time": "2019-03-15 12:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2019-03-15 20:53:00+00:00 time",
+     "exit_broker": "2019-03-17 21:00:00+00:00 time",
+     "why": "weekly closure earlier than usual: last Friday bar 2019-03-15 23:53 server, not 23:54; the lab exits on it (it sees the closure in the data), the EA waits for 23:54 and exits at the reopening"
+    },
+    {
+     "entry_time": "2019-12-13 17:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2019-12-13 21:53:00+00:00 time",
+     "exit_broker": "2019-12-15 22:00:00+00:00 time",
+     "why": "weekly closure earlier than usual: last Friday bar 2019-12-13 23:53 server, not 23:54; the lab exits on it (it sees the closure in the data), the EA waits for 23:54 and exits at the reopening"
+    },
+    {
+     "entry_time": "2020-07-31 16:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2020-07-31 19:59:00+00:00 time",
+     "exit_broker": "2020-08-02 21:00:00+00:00 time",
+     "why": "weekly closure earlier than usual: last Friday bar 2020-07-31 22:59 server, not 23:54; the lab exits on it (it sees the closure in the data), the EA waits for 23:54 and exits at the reopening"
+    },
+    {
+     "entry_time": "2020-08-14 17:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2020-08-14 19:59:00+00:00 time",
+     "exit_broker": "2020-08-16 21:01:00+00:00 time",
+     "why": "weekly closure earlier than usual: last Friday bar 2020-08-14 22:59 server, not 23:54; the lab exits on it (it sees the closure in the data), the EA waits for 23:54 and exits at the reopening"
+    },
+    {
+     "entry_time": "2020-12-31 21:00:00+00:00",
+     "side": 1,
+     "in": "both",
+     "exit_lab": "2021-01-01 00:00:00+00:00 time",
+     "exit_broker": "2021-01-03 22:00:00+00:00 time",
+     "why": "unscheduled closure of 4200 min after Fri 2021-01-01 02:00 server (scheduled exit 2021-01-01 21:00:00+00:00): the lab exits on the last bar before it (gl.exit_index, 30-minute rule, needs future data); the EA has no holiday calendar and exits at the first bar at/after the scheduled time"
+    }
+   ]
+  },
+  "a_real_actions": {
+   "modify": 645,
+   "close_time": 450,
+   "open_buy": 358,
+   "open_sell": 287
+  },
+  "b_official_vs_rounded": {
+   "off_trades": 645,
+   "rnd_trades": 645,
+   "same_entry_minute_and_side": 645,
+   "only_off": 0,
+   "only_rnd": 0,
+   "same_exit_minute_and_reason": 645,
+   "entry_bitwise_equal": 0,
+   "entry_max_abs_diff": 0.0074881061154883355,
+   "stop_bitwise_equal": 0,
+   "stop_max_abs_diff": 0.012760125320710358,
+   "exit_bitwise_equal": 0,
+   "exit_max_abs_diff": 0.012197252286568983,
+   "exit_stop_bitwise_equal": "0/194",
+   "exit_stop_max_abs_diff": 0.012197252286568983,
+   "exit_time_bitwise_equal": "0/451",
+   "exit_time_max_abs_diff": 0.00749215090445432,
+   "R_sum_official": 172.87427904090976,
+   "R_sum_rounded": 172.8705019180274,
+   "orders_official": 2914,
+   "orders_rounded": 2915,
+   "signals_only_official": 0,
+   "signals_only_rounded": 1,
+   "differences": []
+  },
+  "b_official_vs_ea": {
+   "official_trades": 645,
+   "ea_trades": 645,
+   "same_entry_minute_and_side": 645,
+   "only_official": 0,
+   "only_ea": 0,
+   "same_exit_minute_and_reason": 632,
+   "entry_bitwise_equal": 0,
+   "entry_max_abs_diff": 0.0074881061154883355,
+   "stop_bitwise_equal": 0,
+   "stop_max_abs_diff": 0.012760125320710358,
+   "exit_bitwise_equal": 0,
+   "exit_max_abs_diff": 0.012197252286568983,
+   "exit_stop_bitwise_equal": "0/194",
+   "exit_stop_max_abs_diff": 0.012197252286568983,
+   "exit_time_bitwise_equal": "0/438",
+   "exit_time_max_abs_diff": 0.00749215090445432
   }
  }
 }

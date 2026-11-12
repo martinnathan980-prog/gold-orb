@@ -135,7 +135,7 @@ public:
      }
 
    // ask price of a bar field as the broker quotes it: bid + spread, on the price grid
-   double Ask(const double bid, const int spread) { return NormalizeDouble(bid + spread * point, digits); }
+   double AskOf(const double bid, const int spread) { return NormalizeDouble(bid + spread * point, digits); }
 
    // ------------------------------------------------------------- persistence (terminal restart: OnInit again)
    string GvName(const string k) { return "SPK_" + code + "_" + k; }
@@ -286,7 +286,7 @@ public:
      {
       datetime u = ClkServerToUtc(t);
       double bo = bid_open;
-      double ao = Ask(bid_open, spread);
+      double ao = AskOf(bid_open, spread);
       // 1) the hour accumulated so far is complete once a bar starts at or after its end
       if(acc_on && acc.start + 3600 <= u) PushHour();
       // 2) paper time exit at this open (never on the fill bar)
@@ -300,7 +300,7 @@ public:
         {
          string st;
          if(last_closed != 0 && ClkServerToUtc(last_closed) >= sig_dec) st = "no_entry_bar";
-         else if(u - sig_dec > max_delay_sec) st = "late_bar";
+         else if((long)u - (long)sig_dec > max_delay_sec) st = "late_bar";
          else
            {
             int dow = ClkDow(sig_dec);
@@ -330,7 +330,7 @@ public:
    void AtClose(const MqlRates &b)
      {
       double bo = b.open, bh = b.high, bl = b.low, bc = b.close;
-      double ao = Ask(bo, b.spread), ah = Ask(bh, b.spread), al = Ask(bl, b.spread), ac = Ask(bc, b.spread);
+      double ao = AskOf(bo, b.spread), ah = AskOf(bh, b.spread), al = AskOf(bl, b.spread), ac = AskOf(bc, b.spread);
       if(pos_side != 0 && b.time >= pos_fill_bar)
         {
          bool first = (b.time == pos_fill_bar);
@@ -363,8 +363,8 @@ public:
         {
          if(r[i].time >= upto) break;
          if(restored && r[i].time > lc) break;
-         double ao = Ask(r[i].open, r[i].spread), ah = Ask(r[i].high, r[i].spread);
-         double al = Ask(r[i].low, r[i].spread), ac = Ask(r[i].close, r[i].spread);
+         double ao = AskOf(r[i].open, r[i].spread), ah = AskOf(r[i].high, r[i].spread);
+         double al = AskOf(r[i].low, r[i].spread), ac = AskOf(r[i].close, r[i].spread);
          Accumulate(r[i].time, (r[i].open + ao) / 2, (r[i].high + ah) / 2, (r[i].low + al) / 2, (r[i].close + ac) / 2);
         }
       quiet = false;

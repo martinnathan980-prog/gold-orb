@@ -231,7 +231,7 @@ def read_deals(files, code="B72B"):
     ins, outs = d[d.entry == 0].set_index("position"), d[d.entry == 1].set_index("position")
     t = pd.DataFrame({"entry_time": ins.utc, "side": np.where(ins.type == 0, 1, -1), "entry": ins.price})
     t = t.join(pd.DataFrame({"exit_bar": outs.utc, "exit": outs.price, "reason": np.where(outs.reason == 4, "stop", "time")}))
-    return t.reset_index()
+    return t[t.exit_bar.notna()].reset_index()                # positions still open at the end of the replay are left out
 
 
 # ----------------------------------------------------------------------------------------------- comparisons
@@ -466,7 +466,8 @@ def eth_run(exe, start, end, tag, btc_bars, J_btc):
     export(m1_off, bars)
     m1_reb = rebuild(bars)
     files = OUT / f"run_{tag}_btc_eth"
-    so, wall = replay(exe, {SYM: btc_bars, "ETHUSD": bars}, files, debug=False, extra_env={"MOCK_INPUT_InpSymEth": "ETHUSD"})
+    so, wall = replay(exe, {SYM: btc_bars, "ETHUSD": bars}, files, debug=False,
+                      extra_env={"MOCK_INPUT_InpSymEth": "ETHUSD", "MOCK_SLIP_MKT_BPS_ETHUSD": "0.7", "MOCK_SLIP_STOP_BPS_ETHUSD": "2.0"})
     Jb, Je = read_journal(files, "B72B"), read_journal(files, "B72E")
     tr, dec = same_journal(J_btc, Jb)
     reb_o, reb_t = lab_run(m1_reb, "ethusd")
