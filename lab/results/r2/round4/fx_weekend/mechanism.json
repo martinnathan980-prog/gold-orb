@@ -1,0 +1,33 @@
+{
+ "weekend_move_bp": {
+  "median": 21.9,
+  "mean": 29.0
+ },
+ "sun_22:00": {
+  "mean_reversal_bp": -0.25,
+  "share_of_mean_weekend_move_pct": -0.9,
+  "share_reverting_trades_pct": 50.8
+ },
+ "mon_03:00": {
+  "mean_reversal_bp": 0.49,
+  "share_of_mean_weekend_move_pct": 1.7,
+  "share_reverting_trades_pct": 50.4
+ },
+ "mon_08:00": {
+  "mean_reversal_bp": 0.08,
+  "share_of_mean_weekend_move_pct": 0.3,
+  "share_reverting_trades_pct": 49.3
+ },
+ "mon_16:00": {
+  "mean_reversal_bp": 0.63,
+  "share_of_mean_weekend_move_pct": 2.2,
+  "share_reverting_trades_pct": 47.3
+ },
+ "top_quartile_abs_z_of_signals": {
+  "n": 197,
+  "mean_weekend_move_bp": 55.4,
+  "mean_reversal_at_mon16_bp": 2.71,
+  "share_pct": 4.9
+ },
+ "note": "from the main configuration trades only (unstopped mid move from the entry bar mid open in the fade direction); information, not a configuration"
+}

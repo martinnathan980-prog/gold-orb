@@ -1,0 +1,16 @@
+{
+ "idxrs_common_sha256": "6b311074156e6a286bf5d03d1039c284015eb3b5f2bb7b8420ed31ee18f0c555",
+ "n_pairs": 355,
+ "filled_all": true,
+ "same_exit_reason": 355,
+ "same_stop_decision_bar": 355,
+ "R_max_abs_diff": 2.55351295663786e-15,
+ "R_equal_to_1e-9": 355,
+ "mean_R_this_engine": -0.097864,
+ "mean_R_idxrs_engine": -0.097864,
+ "pf_this_engine": 0.7548,
+ "pf_idxrs_engine": 0.7548,
+ "idxrs_exit_fallback": 0,
+ "differing_pairs": [],
+ "pass": true
+}

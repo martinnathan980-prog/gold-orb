@@ -1,0 +1,448 @@
+{
+ "rule": "IDXRS_1000 (PROTOCOL_V3 Addendum J, rule 1), in sample only",
+ "declared_json_sha256": "62ea5088c09963ac5a62ef151c83a3b9e7cbf46103978b348aaba464b277594a",
+ "period": "entries 2014-03-07 .. 2021-12-28 (sessions from 2013-09-30, warm-up)",
+ "verdict_main": "FAIL",
+ "criteria": [
+  {
+   "criterion": "n >= 250",
+   "value": 518,
+   "pass": true
+  },
+  {
+   "criterion": "PF >= 1.12",
+   "value": 1.288,
+   "pass": true
+  },
+  {
+   "criterion": "t >= 2.5",
+   "value": 2.15,
+   "pass": false
+  },
+  {
+   "criterion": ">= 60 % of years positive",
+   "value": "7/8 (87.5%)",
+   "pass": true
+  },
+  {
+   "criterion": "PF >= 1.04 with costs x1.5",
+   "value": 1.22,
+   "pass": true
+  },
+  {
+   "criterion": "neighbours' median PF >= 1.06",
+   "value": 1.335,
+   "pass": true
+  },
+  {
+   "criterion": "every-signal expectancy > 0",
+   "value": 0.0844,
+   "pass": true
+  },
+  {
+   "criterion": "hold <= 5 trading days",
+   "value": "max 5.9 h",
+   "pass": true
+  },
+  {
+   "criterion": "random-entry null >= 97.5th percentile",
+   "value": 100.0,
+   "pass": true
+  },
+  {
+   "criterion": "extra: |weekly R corr with ocm4 + noise30| <= 0.30 (2014-2021)",
+   "value": 0.234,
+   "pass": true
+  },
+  {
+   "criterion": "extra: >= 2 of 3 pair types with positive expectancy",
+   "value": "2 (us100/us500, us100/us30)",
+   "pass": true
+  }
+ ],
+ "main": {
+  "n": 518,
+  "trades_per_year": 66.3,
+  "win_rate": 0.508,
+  "avg_win_R": 0.744,
+  "avg_loss_R": -0.596,
+  "expectancy_R": 0.0844,
+  "t_stat": 2.15,
+  "pf": 1.288,
+  "total_R": 43.7,
+  "max_dd_R": 9.0,
+  "years_pos": "7/8",
+  "by_year_R": {
+   "2014": 6.5,
+   "2015": 2.2,
+   "2016": 3.6,
+   "2017": 5.0,
+   "2018": 6.1,
+   "2019": -4.1,
+   "2020": 19.7,
+   "2021": 4.7
+  },
+  "by_year_n": {
+   "2014": 56,
+   "2015": 57,
+   "2016": 72,
+   "2017": 68,
+   "2018": 71,
+   "2019": 53,
+   "2020": 76,
+   "2021": 65
+  },
+  "exit_reasons": {
+   "time": 436,
+   "stop": 82
+  },
+  "avg_hold_h": 5.4,
+  "max_hold_h": 5.9,
+  "net_bp_per_pair": 4.436,
+  "cost_bp_per_pair": 1.584,
+  "gross_bp_per_pair": 6.114,
+  "gross_pf": 1.443,
+  "gross_expectancy_R": 0.1212,
+  "money_expectancy_R": 0.0838,
+  "money_pf": 1.286,
+  "sd_pi_bp_median": 30.6,
+  "h_median": 0.975,
+  "stop_share": 0.158,
+  "by_pair_type": {
+   "us100/us30": {
+    "n": 445,
+    "expectancy_R": 0.0742,
+    "pf": 1.244,
+    "total_R": 33.0,
+    "net_bp": 4.32,
+    "t": 1.79
+   },
+   "us100/us500": {
+    "n": 65,
+    "expectancy_R": 0.191,
+    "pf": 1.897,
+    "total_R": 12.4,
+    "net_bp": 6.87,
+    "t": 1.47
+   },
+   "us500/us30": {
+    "n": 8,
+    "expectancy_R": -0.2171,
+    "pf": 0.354,
+    "total_R": -1.7,
+    "net_bp": -8.82,
+    "t": -1.12
+   }
+  },
+  "by_side_of_us100": {
+   "us100_short": {
+    "n": 252,
+    "expectancy_R": 0.0696,
+    "pf": 1.255,
+    "total_R": 17.5
+   },
+   "us100_not_in_pair": {
+    "n": 8,
+    "expectancy_R": -0.2171,
+    "pf": 0.354,
+    "total_R": -1.7
+   },
+   "us100_long": {
+    "n": 258,
+    "expectancy_R": 0.1081,
+    "pf": 1.347,
+    "total_R": 27.9
+   }
+  },
+  "worst_week_R": -3.2,
+  "weeks_pos_pct": 36.4
+ },
+ "main_gross_t": 3.1,
+ "neighbours": {
+  "n_entry_0955": {
+   "n": 497,
+   "pf": 1.313,
+   "t_stat": 2.25,
+   "expectancy_R": 0.0913,
+   "years_pos": "7/8",
+   "net_bp_per_pair": 4.05
+  },
+  "n_entry_1015": {
+   "n": 511,
+   "pf": 1.166,
+   "t_stat": 1.38,
+   "expectancy_R": 0.0494,
+   "years_pos": "6/8",
+   "net_bp_per_pair": 2.369
+  },
+  "n_q67": {
+   "n": 664,
+   "pf": 1.335,
+   "t_stat": 2.78,
+   "expectancy_R": 0.0922,
+   "years_pos": "6/8",
+   "net_bp_per_pair": 4.743
+  },
+  "n_q80": {
+   "n": 409,
+   "pf": 1.441,
+   "t_stat": 2.72,
+   "expectancy_R": 0.1247,
+   "years_pos": "7/8",
+   "net_bp_per_pair": 6.145
+  },
+  "n_win40": {
+   "n": 512,
+   "pf": 1.43,
+   "t_stat": 3.05,
+   "expectancy_R": 0.1174,
+   "years_pos": "7/8",
+   "net_bp_per_pair": 5.522
+  },
+  "n_win80": {
+   "n": 498,
+   "pf": 1.352,
+   "t_stat": 2.47,
+   "expectancy_R": 0.1027,
+   "years_pos": "6/8",
+   "net_bp_per_pair": 4.867
+  },
+  "n_stop125": {
+   "n": 518,
+   "pf": 1.259,
+   "t_stat": 1.97,
+   "expectancy_R": 0.0907,
+   "years_pos": "6/8",
+   "net_bp_per_pair": 3.854
+  },
+  "n_stop175": {
+   "n": 518,
+   "pf": 1.291,
+   "t_stat": 2.15,
+   "expectancy_R": 0.0731,
+   "years_pos": "7/8",
+   "net_bp_per_pair": 4.416
+  },
+  "n_exit_1559": {
+   "n": 518,
+   "pf": 1.337,
+   "t_stat": 2.45,
+   "expectancy_R": 0.0966,
+   "years_pos": "7/8",
+   "net_bp_per_pair": 4.898
+  }
+ },
+ "neighbours_median_pf": 1.335,
+ "stress": {
+  "n": 518,
+  "pf": 1.22,
+  "t_stat": 1.69,
+  "expectancy_R": 0.0665,
+  "years_pos": "7/8",
+  "net_bp_per_pair": 3.622,
+  "cost_bp_per_pair": 2.381,
+  "by_year_R": {
+   "2014": 5.3,
+   "2015": 0.8,
+   "2016": 2.3,
+   "2017": 2.8,
+   "2018": 5.1,
+   "2019": -5.0,
+   "2020": 19.0,
+   "2021": 4.1
+  }
+ },
+ "null": {
+  "n_trades": 518,
+  "n_seeds": 200,
+  "seed": 0,
+  "rule_mean_R": 0.08437,
+  "null_mean_R": -0.03033,
+  "null_sd_of_means": 0.03477,
+  "null_p50_R": -0.03223,
+  "null_p95_R": 0.02786,
+  "null_p975_R": 0.039,
+  "null_max_R": 0.0612,
+  "null_stop_share_mean": 0.194,
+  "percentile": 100.0,
+  "pass": true,
+  "eligible_sessions": {
+   "us30>us100": 2041,
+   "us100>us30": 2041,
+   "us100>us500": 2041,
+   "us500>us100": 2041,
+   "us500>us30": 2050,
+   "us30>us500": 2050
+  }
+ },
+ "correlation": {
+  "period_weeks": "2013-12-30/2014-01-05 .. 2021-12-27/2022-01-02",
+  "n_weeks": 418,
+  "pair_weeks_with_trades": 299,
+  "convention": "weekly sums of R by exit week (W-SUN, UTC), every calendar week counted, Pearson; official trades read with entry_time < 2022-01-01",
+  "declared_condition": {
+   "corr_with_ocm4_plus_noise30": 0.234,
+   "bar_abs_le": 0.3,
+   "pass": true
+  },
+  "corr_with_sum_of_ten": 0.188,
+  "corr_with_clusters": {
+   "us100 (ocm4 + noise30)": 0.234,
+   "gold (donch4h_stop + orb_asia_2d_buf10 + GOLD_FRI_PM)": 0.127,
+   "crypto (brk72_24h_wd x2 + F1_brk_ridge_filter x2 + nq_btc_follow)": 0.042
+  },
+  "corr_with_each_sleeve": {
+   "noise30:us100": {
+    "rho": 0.256,
+    "weeks_with_trades": 413,
+    "trades_2014_2021": 1643
+   },
+   "ocm4:us100": {
+    "rho": 0.128,
+    "weeks_with_trades": 399,
+    "trades_2014_2021": 999
+   },
+   "brk72_24h_wd:btcusd": {
+    "rho": -0.017,
+    "weeks_with_trades": 240,
+    "trades_2014_2021": 645
+   },
+   "brk72_24h_wd:ethusd": {
+    "rho": 0.063,
+    "weeks_with_trades": 207,
+    "trades_2014_2021": 519
+   },
+   "F1_brk_ridge_filter:btcusd": {
+    "rho": 0.031,
+    "weeks_with_trades": 236,
+    "trades_2014_2021": 631
+   },
+   "F1_brk_ridge_filter:ethusd": {
+    "rho": 0.039,
+    "weeks_with_trades": 201,
+    "trades_2014_2021": 517
+   },
+   "nq_btc_follow:btcusd": {
+    "rho": 0.054,
+    "weeks_with_trades": 213,
+    "trades_2014_2021": 1063
+   },
+   "GOLD_FRI_PM:xauusd": {
+    "rho": 0.092,
+    "weeks_with_trades": 368,
+    "trades_2014_2021": 414
+   },
+   "donch4h_stop:xauusd": {
+    "rho": 0.111,
+    "weeks_with_trades": 305,
+    "trades_2014_2021": 494
+   },
+   "orb_asia_2d_buf10:xauusd": {
+    "rho": 0.104,
+    "weeks_with_trades": 418,
+    "trades_2014_2021": 1038
+   }
+  },
+  "information_daily_on_pair_days": {
+   "n_days": 518,
+   "corr": 0.246,
+   "share_of_pair_days_with_an_us100_sleeve_trade": 0.851
+  }
+ },
+ "causality_truncation": {
+  "decisions_checked": {
+   "entry": 60,
+   "stop": 50,
+   "no_stop": 25
+  },
+  "total": 135,
+  "pass": true,
+  "problems": []
+ },
+ "reproduction_check": {
+  "reproduced": {
+   "days": 1982,
+   "spread_bp": 2.69,
+   "t": 2.92,
+   "long_leg": 3.12,
+   "short_leg": -0.43,
+   "top50%disp": 4.71,
+   "t50": 3.03,
+   "top25%disp": 8.06,
+   "t75": 3.19,
+   "by_year": {
+    "2014": 2.4,
+    "2015": -1.94,
+    "2016": 3.68,
+    "2017": 3.62,
+    "2018": 4.74,
+    "2019": 2.22,
+    "2020": 1.34,
+    "2021": 5.37
+   }
+  },
+  "difference": {
+   "days": 0,
+   "spread_bp": 0.0,
+   "t": 0.0,
+   "long_leg": 0.0,
+   "short_leg": 0.0,
+   "top50%disp": 0.0,
+   "t50": 0.0,
+   "top25%disp": 0.0,
+   "t75": 0.0,
+   "by_year": {
+    "2014": 0.0,
+    "2015": 0.0,
+    "2016": 0.0,
+    "2017": 0.0,
+    "2018": 0.0,
+    "2019": 0.0,
+    "2020": 0.0,
+    "2021": 0.0
+   }
+  },
+  "pass": true
+ },
+ "handcheck": {
+  "days": 6,
+  "pass": true
+ },
+ "account_1000eur_reported": {
+  "start_eur": 1000.0,
+  "end_eur": 1063.04,
+  "total_return_pct": 6.3,
+  "cagr_pct": 0.79,
+  "max_drawdown_pct": 5.0,
+  "signals": 518,
+  "taken": 56,
+  "skipped": {
+   "us30_below_4000": 453,
+   "min_lot_risk_above_1.5pct": 9
+  },
+  "taken_by_pair_type": {
+   "us100/us500": 56
+  },
+  "pnl_eur_by_pair_type": {
+   "us100/us500": 63.04
+  },
+  "raised_to_min_lot": 17,
+  "eff_hedge_over_h_median": 1.045,
+  "eff_hedge_over_h_p10_p90": [
+   0.802,
+   1.491
+  ],
+  "balance_by_year_end": {
+   "2014": 1019.07,
+   "2015": 1000.87,
+   "2016": 1002.11,
+   "2017": 1050.06,
+   "2018": 1050.25,
+   "2019": 1050.11,
+   "2020": 1063.04
+  },
+  "losing_trades_share": 0.482,
+  "worst_trade_eur": -17.09
+ },
+ "trials": 12
+}

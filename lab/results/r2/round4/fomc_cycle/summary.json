@@ -1,0 +1,429 @@
+{
+ "rule": "FOMC-cycle even/odd weeks, long-short on US500",
+ "short_name": "fomc_cycle",
+ "addendum": "PROTOCOL_V3.md Addendum J, rule 4",
+ "declared_utc": "2026-11-12T16:56:54+00:00",
+ "trials": 10,
+ "passes_in_sample": false,
+ "criteria": {
+  "n>=250": {
+   "value": 375,
+   "pass": true
+  },
+  "pf>=1.12": {
+   "value": 0.977,
+   "pass": false
+  },
+  "t>=2.5": {
+   "value": -0.17,
+   "pass": false
+  },
+  "years_pos>=60%": {
+   "value": "3/9",
+   "pass": false
+  },
+  "stress_pf>=1.04": {
+   "value": 0.925,
+   "pass": false
+  },
+  "neighbours_median_pf>=1.06": {
+   "value": 0.975,
+   "neighbours": {
+    "n_clock_1530": 0.989,
+    "n_shift_p1": 0.828,
+    "n_stop2": 0.989,
+    "n_stop4": 0.975,
+    "n_wm1_short": 0.958
+   },
+   "pass": false
+  },
+  "every_signal_exp>0": {
+   "value": -0.0047,
+   "pass": false
+  },
+  "hold<=5_nyse_days": {
+   "value": 5,
+   "max_hold_h": 212.9,
+   "trades_over_192h": 2,
+   "pass": true
+  },
+  "null>=97.5pct": {
+   "value": 71.5,
+   "pass": false
+  },
+  "ger40_expectancy>0": {
+   "value": -0.005,
+   "pass": false
+  }
+ },
+ "main": {
+  "n": 375,
+  "pf": 0.977,
+  "t_stat": -0.17,
+  "expectancy_R": -0.0047,
+  "total_R": -1.7,
+  "years_pos": "3/9",
+  "win_rate": 0.496,
+  "bp_net_per_trade": -6.29,
+  "bp_swap_per_trade": 5.57,
+  "bp_swap_per_long_trade": 10.04,
+  "mean_risk_bp": 355.3,
+  "max_hold_nyse_days": 5,
+  "max_hold_h": 212.9,
+  "n_hold_over_192h": 2,
+  "n_partial_weeks": 59,
+  "n_stop_exits": 27,
+  "long": {
+   "n": 208,
+   "mean_R": 0.0345,
+   "sum_R": 7.18,
+   "pf": 1.197,
+   "bp_net": 10.65
+  },
+  "short": {
+   "n": 167,
+   "mean_R": -0.0535,
+   "sum_R": -8.93,
+   "pf": 0.772,
+   "bp_net": -27.38
+  },
+  "by_year": {
+   "2013": {
+    "n": 25,
+    "R": -2.35,
+    "mean_R": -0.0938,
+    "pf": 0.628
+   },
+   "2014": {
+    "n": 44,
+    "R": -0.56,
+    "mean_R": -0.0127,
+    "pf": 0.937
+   },
+   "2015": {
+    "n": 44,
+    "R": 6.47,
+    "mean_R": 0.147,
+    "pf": 2.063
+   },
+   "2016": {
+    "n": 44,
+    "R": 5.09,
+    "mean_R": 0.1156,
+    "pf": 2.085
+   },
+   "2017": {
+    "n": 44,
+    "R": 0.44,
+    "mean_R": 0.0099,
+    "pf": 1.056
+   },
+   "2018": {
+    "n": 45,
+    "R": -3.62,
+    "mean_R": -0.0804,
+    "pf": 0.688
+   },
+   "2019": {
+    "n": 45,
+    "R": -1.44,
+    "mean_R": -0.032,
+    "pf": 0.851
+   },
+   "2020": {
+    "n": 41,
+    "R": -2.66,
+    "mean_R": -0.0648,
+    "pf": 0.74
+   },
+   "2021": {
+    "n": 43,
+    "R": -3.12,
+    "mean_R": -0.0726,
+    "pf": 0.698
+   }
+  },
+  "by_week_label": {
+   "W0": {
+    "n": 68,
+    "side": 1,
+    "mean_R": 0.0079,
+    "sum_R": 0.54,
+    "pf": 1.038,
+    "bp_net": -9.04,
+    "full_weeks": 68
+   },
+   "W1": {
+    "n": 68,
+    "side": -1,
+    "mean_R": -0.0476,
+    "sum_R": -3.24,
+    "pf": 0.806,
+    "bp_net": -33.32,
+    "full_weeks": 68
+   },
+   "W2": {
+    "n": 67,
+    "side": 1,
+    "mean_R": 0.0472,
+    "sum_R": 3.16,
+    "pf": 1.264,
+    "bp_net": 36.13,
+    "full_weeks": 67
+   },
+   "W3": {
+    "n": 67,
+    "side": -1,
+    "mean_R": -0.0443,
+    "sum_R": -2.97,
+    "pf": 0.816,
+    "bp_net": -20.65,
+    "full_weeks": 67
+   },
+   "W4": {
+    "n": 67,
+    "side": 1,
+    "mean_R": 0.0851,
+    "sum_R": 5.7,
+    "pf": 1.749,
+    "bp_net": 25.8,
+    "full_weeks": 38
+   },
+   "W5": {
+    "n": 32,
+    "side": -1,
+    "mean_R": -0.0852,
+    "sum_R": -2.73,
+    "pf": 0.572,
+    "bp_net": -28.88,
+    "full_weeks": 7
+   },
+   "W6": {
+    "n": 6,
+    "side": 1,
+    "mean_R": -0.3695,
+    "sum_R": -2.22,
+    "pf": 0.188,
+    "bp_net": -219.87,
+    "full_weeks": 1
+   }
+  },
+  "decisions_by_status": {
+   "ok": 375,
+   "no_atr20": 17,
+   "exit_after_sample": 1
+  }
+ },
+ "main_first_entry": "2013-06-17 19:55:00+00:00",
+ "main_last_exit": "2021-12-28 14:59:00+00:00",
+ "main_gross_accounting": {
+  "n": 375,
+  "pf": 1.087,
+  "expectancy_R": 0.0169,
+  "t_stat": 0.61,
+  "bp_gross_per_trade": 0.15,
+  "bp_gross_long": 21.54,
+  "bp_gross_short": -26.5
+ },
+ "market_move_even_minus_odd_weeks_bp": {
+  "diff": -4.96,
+  "se": 20.49,
+  "t": -0.24,
+  "n_even": 208,
+  "n_odd": 167,
+  "by_week_mean_bp": {
+   "W0": 1.99,
+   "W1": 32.43,
+   "W2": 47.63,
+   "W3": 19.77,
+   "W4": 36.28,
+   "W5": 27.98,
+   "W6": -212.96
+  }
+ },
+ "every_signal": {
+  "note": "calendar rule: every week is a signal; all taken (no_overlap=False); identical trades",
+  "overlapping_trades": 0,
+  "n": 375,
+  "expectancy_R": -0.0047
+ },
+ "configs": {
+  "main": {
+   "n": 375,
+   "pf": 0.977,
+   "t_stat": -0.17,
+   "expectancy_R": -0.0047,
+   "total_R": -1.7,
+   "years_pos": "3/9",
+   "bp_net_per_trade": -6.29
+  },
+  "n_clock_1530": {
+   "n": 375,
+   "pf": 0.989,
+   "t_stat": -0.08,
+   "expectancy_R": -0.0022,
+   "total_R": -0.8,
+   "years_pos": "3/9",
+   "bp_net_per_trade": -5.98
+  },
+  "n_shift_p1": {
+   "n": 375,
+   "pf": 0.828,
+   "t_stat": -1.34,
+   "expectancy_R": -0.0371,
+   "total_R": -13.9,
+   "years_pos": "2/9",
+   "bp_net_per_trade": -11.12
+  },
+  "n_stop2": {
+   "n": 375,
+   "pf": 0.989,
+   "t_stat": -0.08,
+   "expectancy_R": -0.0032,
+   "total_R": -1.2,
+   "years_pos": "4/9",
+   "bp_net_per_trade": -4.9
+  },
+  "n_stop4": {
+   "n": 375,
+   "pf": 0.975,
+   "t_stat": -0.18,
+   "expectancy_R": -0.0038,
+   "total_R": -1.4,
+   "years_pos": "4/9",
+   "bp_net_per_trade": -7.12
+  },
+  "n_wm1_short": {
+   "n": 442,
+   "pf": 0.958,
+   "t_stat": -0.34,
+   "expectancy_R": -0.0085,
+   "total_R": -3.8,
+   "years_pos": "3/9",
+   "bp_net_per_trade": -8.37
+  },
+  "mech_ger40": {
+   "n": 356,
+   "pf": 0.976,
+   "t_stat": -0.17,
+   "expectancy_R": -0.005,
+   "total_R": -1.8,
+   "years_pos": "4/9",
+   "bp_net_per_trade": -3.81
+  },
+  "diag_long_even": {
+   "n": 208,
+   "pf": 1.197,
+   "t_stat": 0.98,
+   "expectancy_R": 0.0345,
+   "total_R": 7.2,
+   "years_pos": "6/9",
+   "bp_net_per_trade": 10.65
+  },
+  "stress_x1.5": {
+   "n": 375,
+   "pf": 0.925,
+   "t_stat": -0.56,
+   "expectancy_R": -0.0154,
+   "total_R": -5.8,
+   "years_pos": "2/9",
+   "bp_net_per_trade": -9.51
+  },
+  "null_time_200": {
+   "n_trades": 375,
+   "replays": 200,
+   "seed": 0,
+   "mode": "time",
+   "rule_mean_R": -0.0047,
+   "null_mean_R": -0.0206,
+   "null_sd_R": 0.0304,
+   "null_p50_R": -0.0223,
+   "null_p95_R": 0.029,
+   "null_p975_R": 0.0418,
+   "null_max_R": 0.0915,
+   "null_long_trades_mean_R": 0.036,
+   "null_short_trades_mean_R": -0.0912,
+   "percentile": 71.5,
+   "pass": false
+  }
+ },
+ "stress_info_only_swap_x1": {
+  "pf": 0.97,
+  "expectancy_R": -0.0061,
+  "note": "the lab's usual stress (spread and slippage x1.5, swap unchanged), by exact arithmetic on the same trades; not used"
+ },
+ "null_main": {
+  "n_trades": 375,
+  "replays": 200,
+  "seed": 0,
+  "mode": "time",
+  "rule_mean_R": -0.0047,
+  "null_mean_R": -0.0206,
+  "null_sd_R": 0.0304,
+  "null_p50_R": -0.0223,
+  "null_p95_R": 0.029,
+  "null_p975_R": 0.0418,
+  "null_max_R": 0.0915,
+  "null_long_trades_mean_R": 0.036,
+  "null_short_trades_mean_R": -0.0912,
+  "percentile": 71.5,
+  "pass": false
+ },
+ "null_diag_long_even": {
+  "n_trades": 208,
+  "replays": 200,
+  "seed": 0,
+  "mode": "time",
+  "rule_mean_R": 0.0345,
+  "null_mean_R": 0.0399,
+  "null_sd_R": 0.0435,
+  "null_p50_R": 0.0385,
+  "null_p95_R": 0.1079,
+  "null_p975_R": 0.1176,
+  "null_max_R": 0.1748,
+  "null_long_trades_mean_R": 0.0399,
+  "null_short_trades_mean_R": null,
+  "percentile": 44.5,
+  "pass": false
+ },
+ "correlation_2014_2021": {
+  "main": {
+   "corr_with_sum_of_ten": 0.026,
+   "corr_with_clusters": {
+    "us100 opening momentum (ocm4 + noise30)": -0.042,
+    "gold (donch4h_stop + orb_asia_2d_buf10 + GOLD_FRI_PM)": -0.016,
+    "crypto (brk72_24h_wd x2 + F1_brk_ridge_filter x2 + nq_btc_follow)": 0.07
+   }
+  },
+  "diag_long_even": {
+   "corr_with_sum_of_ten": -0.007,
+   "corr_with_clusters": {
+    "us100 opening momentum (ocm4 + noise30)": -0.078,
+    "gold (donch4h_stop + orb_asia_2d_buf10 + GOLD_FRI_PM)": -0.002,
+    "crypto (brk72_24h_wd x2 + F1_brk_ridge_filter x2 + nq_btc_follow)": 0.036
+   }
+  },
+  "n_weeks": 418
+ },
+ "causality": {
+  "decisions_tested": 61,
+  "a_decisions_identical": 61,
+  "b_outcomes_identical": 61,
+  "pass": true,
+  "all_trades_checks": {
+   "n_trades": 375,
+   "entry_bar_at_or_after_decision": 375,
+   "atr_day_complete_before_decision": 375,
+   "atr_day_is_previous_trading_day_or_earlier": 375,
+   "time_exits": 348,
+   "time_exit_at_or_after_schedule": 343,
+   "time_exit_moved_before_a_closure": 5,
+   "stop_exits": 27
+  }
+ },
+ "handcheck": {
+  "n_checked": 15,
+  "all_match": true,
+  "max_abs_R_diff": 0.0
+ }
+}

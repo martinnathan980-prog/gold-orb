@@ -1,0 +1,41 @@
+{
+ "convention": "weekly sums of R by calendar week of the exit (pandas W, Monday-Sunday, UTC), every week from 2013-12-30/2014-01-05 to 2021-12-27/2022-01-02 counted (empty weeks = 0), 1 R per trade, FP costs, Pearson",
+ "weeks": 418,
+ "main_weeks_with_trades": 407,
+ "corr_with_sum_of_ten": -0.018,
+ "extra_condition_abs_rho_le_0.30": true,
+ "corr_with_clusters": {
+  "us100": 0.05,
+  "gold": -0.039,
+  "crypto": -0.026
+ },
+ "corr_with_each_sleeve": {
+  "noise30:us100": 0.092,
+  "ocm4:us100": -0.002,
+  "brk72_24h_wd:btcusd": -0.018,
+  "brk72_24h_wd:ethusd": -0.015,
+  "nq_btc_follow:btcusd": 0.1,
+  "F1_brk_ridge_filter:btcusd": -0.06,
+  "F1_brk_ridge_filter:ethusd": -0.039,
+  "GOLD_FRI_PM:xauusd": 0.048,
+  "donch4h_stop:xauusd": -0.079,
+  "orb_asia_2d_buf10:xauusd": -0.02
+ },
+ "ten_trades_2014_2021": {
+  "noise30:us100": 1643,
+  "ocm4:us100": 999,
+  "brk72_24h_wd:btcusd": 645,
+  "brk72_24h_wd:ethusd": 519,
+  "nq_btc_follow:btcusd": 1063,
+  "F1_brk_ridge_filter:btcusd": 631,
+  "F1_brk_ridge_filter:ethusd": 517,
+  "GOLD_FRI_PM:xauusd": 368,
+  "donch4h_stop:xauusd": 437,
+  "orb_asia_2d_buf10:xauusd": 927
+ },
+ "information_weekly_sharpe": {
+  "main": 0.142,
+  "ten": 2.537,
+  "ten_plus_main_1R": 2.507
+ }
+}

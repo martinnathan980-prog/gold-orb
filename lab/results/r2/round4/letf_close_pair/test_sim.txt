@@ -1,0 +1,30 @@
+OK   flat d>0: no stop, exit column = x
+OK   flat d>0: long us100 at ask open, short us30 at bid open, market slippage
+OK   flat d>0: net = both legs' spread + slippage, us30 weighted by h
+OK   flat d>0: mid result 0
+OK   flat d<0: short us100 at bid open, long us30 at ask open
+OK   flat d<0: exits at the opposite quotes, net = -ln(eA/fA) + h ln(eB/fB)
+OK   stop d>0: decided on the close of bar 40 (offset 10)
+OK   stop d>0: executed at the open of bar 41
+OK   stop d>0: us100 sold at bid open x (1 - stop slip), us30 bought at ask open x (1 + stop slip)
+OK   stop d<0: mark at the ask close of us100 and the bid close of us30
+OK   stop d<0: decided at bar 45 and executed at 46
+OK   open spike without a close beyond the stop: no stop
+OK   missing bars: no spurious stop, time exit column x
+OK   missing exit bar of us30: first open at / after the exit minute (62), no fallback flag
+OK   entry bar missing: not filled, no stop
+OK   no exit bar until 16:59: last close (bid close of bar 58) x (1 - slip), fallback flagged
+OK   h = 1.0: no stop
+OK   h = 1.4: stop decided at bar 50, executed at 51
+OK   h = 1.4: mark value at the stop bar
+OK   stop on the close of bar x-1: executed at x with stop slippage
+OK   mid mode on flat prices: net 0
+OK   stop floor refuses a stop closer than 3 spreads
+OK   stop floor accepts 1.5 x 30 bp against 3 x (2 + 4) bp
+OK   R3: d missing on the session after an early close
+OK   R2: d = ln(mid close 15:29 / previous session's mid close 15:59)
+OK   R5: sd_d over the previous 20 sessions (current excluded)
+OK   R4: with thr = 0 the condition is exactly 'same sign'
+OK   R6: h = sd(us100) / sd(us30) of the previous 20 sessions' 15:30 -> 15:59 mid returns
+OK   R7: sd_pi over the previous sessions' direction-signed hedged returns
+all synthetic checks passed

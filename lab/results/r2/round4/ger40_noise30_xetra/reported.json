@@ -1,0 +1,181 @@
+{
+ "long": {
+  "n": 995,
+  "total_R": 41.9,
+  "expectancy_R": 0.0421,
+  "pf": 1.156,
+  "t": 1.39
+ },
+ "short": {
+  "n": 1017,
+  "total_R": -25.9,
+  "expectancy_R": -0.0255,
+  "pf": 0.922,
+  "t": -0.83
+ },
+ "by_year": {
+  "2014": {
+   "n": 265,
+   "total_R": 10.0,
+   "expectancy_R": 0.0377,
+   "pf": 1.129,
+   "t": 0.64
+  },
+  "2015": {
+   "n": 278,
+   "total_R": 10.6,
+   "expectancy_R": 0.038,
+   "pf": 1.133,
+   "t": 0.67
+  },
+  "2016": {
+   "n": 257,
+   "total_R": -10.8,
+   "expectancy_R": -0.0421,
+   "pf": 0.853,
+   "t": -0.73
+  },
+  "2017": {
+   "n": 237,
+   "total_R": -13.5,
+   "expectancy_R": -0.0571,
+   "pf": 0.825,
+   "t": -0.96
+  },
+  "2018": {
+   "n": 253,
+   "total_R": 9.1,
+   "expectancy_R": 0.0359,
+   "pf": 1.124,
+   "t": 0.59
+  },
+  "2019": {
+   "n": 271,
+   "total_R": -1.9,
+   "expectancy_R": -0.007,
+   "pf": 0.977,
+   "t": -0.11
+  },
+  "2020": {
+   "n": 231,
+   "total_R": -3.1,
+   "expectancy_R": -0.0133,
+   "pf": 0.957,
+   "t": -0.23
+  },
+  "2021": {
+   "n": 220,
+   "total_R": 15.7,
+   "expectancy_R": 0.0714,
+   "pf": 1.236,
+   "t": 0.95
+  }
+ },
+ "gross_by_year_R_information": {
+  "2014": 16.4,
+  "2015": 15.6,
+  "2016": -6.0,
+  "2017": -4.6,
+  "2018": 14.5,
+  "2019": 4.1,
+  "2020": 0.5,
+  "2021": 21.0
+ },
+ "z_split_trial10": {
+  "definition": "z = (P(T)/PC - 1) / sample sd (ddof 1) of the same quantity at the same check over the previous 20 sessions with a value (20 required); T = the entry check",
+  "abs_z_ge_1.5": {
+   "n": 474,
+   "total_R": 5.2,
+   "expectancy_R": 0.0109,
+   "pf": 1.036,
+   "t": 0.26
+  },
+  "abs_z_lt_1.5": {
+   "n": 1538,
+   "total_R": 10.9,
+   "expectancy_R": 0.0071,
+   "pf": 1.024,
+   "t": 0.28
+  },
+  "z_undefined": {
+   "n": 0
+  },
+  "abs_z_ge_1.5_long": {
+   "n": 235,
+   "total_R": 20.6,
+   "expectancy_R": 0.0878,
+   "pf": 1.333,
+   "t": 1.45
+  },
+  "abs_z_ge_1.5_short": {
+   "n": 239,
+   "total_R": -15.5,
+   "expectancy_R": -0.0648,
+   "pf": 0.811,
+   "t": -1.17
+  },
+  "abs_z_ge_1.5_with_trend_of_move": {
+   "n": 474,
+   "total_R": 5.2,
+   "expectancy_R": 0.0109,
+   "pf": 1.036,
+   "t": 0.26
+  }
+ },
+ "noise30_us100_flat_days": {
+  "definition": "no official noise30 trade entered on that New York date (official file rows entry and exit < 2022-01-01)",
+  "flat": {
+   "n": 807,
+   "total_R": -4.2,
+   "expectancy_R": -0.0053,
+   "pf": 0.982,
+   "t": -0.16
+  },
+  "noise30_traded": {
+   "n": 1205,
+   "total_R": 20.3,
+   "expectancy_R": 0.0168,
+   "pf": 1.055,
+   "t": 0.59
+  },
+  "noise30_trades_2014_2021": 1643
+ },
+ "exit_kind": {
+  "check_exit": {
+   "n": 1206,
+   "total_R": -324.6,
+   "expectancy_R": -0.2691,
+   "pf": 0.122,
+   "t": -29.86
+  },
+  "stop": {
+   "n": 200,
+   "total_R": -203.0,
+   "expectancy_R": -1.0151,
+   "pf": 0.0,
+   "t": -1781.86
+  },
+  "exit_1725": {
+   "n": 606,
+   "total_R": 543.6,
+   "expectancy_R": 0.8971,
+   "pf": 19.346,
+   "t": 17.36
+  }
+ },
+ "first_session_after_whit_monday_oct3_2017_10_31": {
+  "n": 18,
+  "total_R": 0.8,
+  "expectancy_R": 0.0435,
+  "pf": 1.131,
+  "t": 0.18
+ },
+ "trades_per_session": {
+  "1": 764,
+  "2": 376,
+  "3": 117,
+  "4": 30,
+  "5": 5
+ },
+ "same_check_reversals": 9
+}

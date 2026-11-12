@@ -1,0 +1,53 @@
+{
+ "what": "reported, not judged: main in-sample pairs (2014-2021) on 1,000 EUR, sizes at today's prices",
+ "assumptions": {
+  "risk_per_pair": 0.01,
+  "max_risk_at_min_lot": 0.015,
+  "us30_pairs_from_eur": 4000.0,
+  "usd_eur": 0.89,
+  "today_price_per_lot_usd": {
+   "us100": 27000,
+   "us500": 7377,
+   "us30": 51286
+  },
+  "min_lot": 0.1,
+  "lot_step": 0.1,
+  "leverage": 200
+ },
+ "run": {
+  "start_eur": 1000.0,
+  "end_eur": 1063.04,
+  "total_return_pct": 6.3,
+  "cagr_pct": 0.79,
+  "max_drawdown_pct": 5.0,
+  "signals": 518,
+  "taken": 56,
+  "skipped": {
+   "us30_below_4000": 453,
+   "min_lot_risk_above_1.5pct": 9
+  },
+  "taken_by_pair_type": {
+   "us100/us500": 56
+  },
+  "pnl_eur_by_pair_type": {
+   "us100/us500": 63.04
+  },
+  "raised_to_min_lot": 17,
+  "eff_hedge_over_h_median": 1.045,
+  "eff_hedge_over_h_p10_p90": [
+   0.802,
+   1.491
+  ],
+  "balance_by_year_end": {
+   "2014": 1019.07,
+   "2015": 1000.87,
+   "2016": 1002.11,
+   "2017": 1050.06,
+   "2018": 1050.25,
+   "2019": 1050.11,
+   "2020": 1063.04
+  },
+  "losing_trades_share": 0.482,
+  "worst_trade_eur": -17.09
+ }
+}

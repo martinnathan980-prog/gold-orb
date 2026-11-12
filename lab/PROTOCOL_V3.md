@@ -789,3 +789,16 @@ that file say, which are frozen here:
 - **Said before the run** (the judge's arithmetic): about 0.18 of the five are expected to pass validation (none: about
   83 %); if one passes with a forward Sharpe of about 0.6 and a low correlation, the account's weekly Sharpe (2.02 on
   2022–2025) rises by 2–4 %; the user's demand needs about ×4.4, which breadth from this pool cannot reach.
+
+### Addendum J — outcome (2026-11-12, `results/r2/round4/synthesis.json`)
+**None of the five passes in sample, so nothing is attacked, nothing is kept and no look at 2022–2025 is declared.**
+55 configurations logged (12 + 11 + 11 + 10 + 11), each declared in its `declared.json` before its run. The lead analyst
+recomputed every verdict from the engineers' files and got the same figures.
+- **IDXRS_1000** fails one bar: t 2.15 against 2.5 (518 pairs, PF 1.288, +0.084 R per pair, 7/8 years, null
+  percentile 100, PF 1.22 at costs ×1.5). Before costs t 3.10 (+6.1 bp per pair); FP costs of 1.6 bp take it under.
+  2020 gives +19.7 of its +43.7 R (without 2020, t 1.29). Its neighbours with t ≥ 2.5 cannot replace it (selection).
+- **FX weekend fade**: PF 0.870, no gross edge (−0.19 bp per trade before costs). **ger40 on the Xetra clock**: PF
+  1.027, t 0.37 (+0.66 bp gross against about 0.96 bp of cost). **FOMC even/odd weeks**: PF 0.977, the published effect
+  is absent (−5 bp a week, t −0.24). **LETF close pair**: PF 0.755, loses in 7 of 8 years.
+- Information only: even at its in-sample face value, IDXRS_1000 would have moved the ten's weekly Sharpe from 2.51 to
+  2.53 (+0.8 %). The account stays the ten rules. The 2026 holdout was not touched.

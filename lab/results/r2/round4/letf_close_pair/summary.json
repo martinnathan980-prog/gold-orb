@@ -1,0 +1,466 @@
+{
+ "rule": "LETF_CLOSE_PAIR (PROTOCOL_V3 Addendum J, rule 5), in sample only",
+ "declared_json_sha256": "304e3318cd2e8dfd3523d6cb7f5410cca04e2c5fc2695d96910072b900c3cfe5",
+ "period": "entries 2014-03-03 .. 2021-12-27 (sessions 2013-09-30 .. 2021-12-31, warm-up), frames ts < 2022-01-01",
+ "costs": "FP frames (spreads us100 0.37 / us30 0.35 / us500 0.54 bp at the reference price, Dukascopy shape), market slippage 0.2 bp per side per leg, stop slippage 0.5 bp per leg, no swap; stress x1.5",
+ "verdict_main": "FAIL",
+ "criteria": [
+  {
+   "criterion": "n >= 250",
+   "value": 355,
+   "pass": true
+  },
+  {
+   "criterion": "PF >= 1.12",
+   "value": 0.755,
+   "pass": false
+  },
+  {
+   "criterion": "t >= 2.5",
+   "value": -2.09,
+   "pass": false
+  },
+  {
+   "criterion": ">= 60 % of years positive",
+   "value": "1/8 (12.5%)",
+   "pass": false
+  },
+  {
+   "criterion": "PF >= 1.04 with costs x1.5",
+   "value": 0.604,
+   "pass": false
+  },
+  {
+   "criterion": "neighbours' median PF >= 1.06 (configurations 2-9)",
+   "value": 0.6995,
+   "pass": false
+  },
+  {
+   "criterion": "every-signal expectancy > 0 (= main, one pair a day)",
+   "value": -0.0979,
+   "pass": false
+  },
+  {
+   "criterion": "hold <= 5 trading days",
+   "value": "max 0.5 h",
+   "pass": true
+  },
+  {
+   "criterion": "random-entry null >= 97.5th percentile",
+   "value": 79.0,
+   "pass": false
+  },
+  {
+   "criterion": "extra (knife-edge): PF of exit 15:57 >= 1.06 and PF of exit 16:05 >= 1.06",
+   "value": "0.697 / 0.662",
+   "pass": false
+  }
+ ],
+ "main": {
+  "n": 355,
+  "trades_per_year": 45.4,
+  "win_rate": 0.454,
+  "avg_win_R": 0.664,
+  "avg_loss_R": -0.73,
+  "expectancy_R": -0.0979,
+  "t_stat": -2.09,
+  "pf": 0.755,
+  "total_R": -34.7,
+  "max_dd_R": 38.5,
+  "years_pos": "1/8",
+  "by_year_R": {
+   "2014": -11.0,
+   "2015": -4.7,
+   "2016": 0.5,
+   "2017": -1.1,
+   "2018": -4.0,
+   "2019": -1.9,
+   "2020": -7.7,
+   "2021": -4.9
+  },
+  "by_year_n": {
+   "2014": 28,
+   "2015": 51,
+   "2016": 41,
+   "2017": 38,
+   "2018": 59,
+   "2019": 37,
+   "2020": 59,
+   "2021": 42
+  },
+  "by_year_pf": {
+   "2014": 0.246,
+   "2015": 0.743,
+   "2016": 1.031,
+   "2017": 0.907,
+   "2018": 0.841,
+   "2019": 0.84,
+   "2020": 0.744,
+   "2021": 0.681
+  },
+  "by_year_net_bp": {
+   "2014": -4.82,
+   "2015": -0.75,
+   "2016": 0.1,
+   "2017": -0.56,
+   "2018": -0.82,
+   "2019": -0.51,
+   "2020": -2.56,
+   "2021": -2.07
+  },
+  "exit_reasons": {
+   "time": 279,
+   "stop": 76
+  },
+  "avg_hold_h": 0.4,
+  "max_hold_h": 0.5,
+  "net_bp_per_pair": -1.396,
+  "mid_bp_per_pair_same_exits": 0.313,
+  "cost_bp_per_pair": 1.709,
+  "gross_bp_per_pair": 0.243,
+  "gross_pf": 1.068,
+  "gross_expectancy_R": 0.0228,
+  "gross_t": 0.49,
+  "money_expectancy_R": -0.0983,
+  "money_pf": 0.754,
+  "sd_pi_bp_median": 8.63,
+  "h_median": 1.172,
+  "stop_share": 0.214,
+  "by_direction": {
+   "d<0: short us100 / long leg2": {
+    "n": 155,
+    "expectancy_R": -0.2132,
+    "pf": 0.586,
+    "total_R": -33.1,
+    "t": -2.79,
+    "net_bp": -2.66,
+    "stop_share": 0.31
+   },
+   "d>0: long us100 / short leg2": {
+    "n": 200,
+    "expectancy_R": -0.0085,
+    "pf": 0.973,
+    "total_R": -1.7,
+    "t": -0.15,
+    "net_bp": -0.42,
+    "stop_share": 0.14
+   }
+  },
+  "worst_week_R": -4.6,
+  "weeks_pos_pct": 23.2,
+  "first_entry": "2014-03-03 20:30:00+00:00",
+  "last_entry": "2021-12-27 20:30:00+00:00"
+ },
+ "main_counts": {
+  "signals": 355,
+  "not_filled_missing_entry_bar": 0,
+  "refused_stop_floor": 0,
+  "trades": 355,
+  "exit_fallback_last_close": 0,
+  "exit_fallback_by_year": {
+   "2014": 0,
+   "2015": 0,
+   "2016": 0,
+   "2017": 0,
+   "2018": 0,
+   "2019": 0,
+   "2020": 0,
+   "2021": 0
+  }
+ },
+ "information_unstopped_mid_pair_return_on_the_main_days": {
+  "d<0": {
+   "days": 155,
+   "mean_bp": -0.389,
+   "t": -0.33
+  },
+  "d>0": {
+   "days": 200,
+   "mean_bp": 0.992,
+   "t": 0.96
+  },
+  "all": {
+   "days": 355,
+   "mean_bp": 0.391,
+   "t": 0.51
+  }
+ },
+ "neighbours": {
+  "n_thr_1.0": {
+   "n": 486,
+   "pf": 0.681,
+   "t_stat": -3.32,
+   "expectancy_R": -0.1266,
+   "years_pos": "0/8",
+   "net_bp_per_pair": -1.754,
+   "gross_bp_per_pair": -0.083,
+   "stop_share": 0.204
+  },
+  "n_thr_1.5": {
+   "n": 261,
+   "pf": 0.758,
+   "t_stat": -1.83,
+   "expectancy_R": -0.1064,
+   "years_pos": "2/8",
+   "net_bp_per_pair": -1.318,
+   "gross_bp_per_pair": 0.347,
+   "stop_share": 0.245
+  },
+  "n_entry_1540": {
+   "n": 354,
+   "pf": 0.588,
+   "t_stat": -3.94,
+   "expectancy_R": -0.1602,
+   "years_pos": "1/8",
+   "net_bp_per_pair": -2.316,
+   "gross_bp_per_pair": -0.688,
+   "stop_share": 0.186
+  },
+  "n_exit_1557": {
+   "n": 355,
+   "pf": 0.697,
+   "t_stat": -2.67,
+   "expectancy_R": -0.1178,
+   "years_pos": "1/8",
+   "net_bp_per_pair": -1.74,
+   "gross_bp_per_pair": -0.146,
+   "stop_share": 0.189
+  },
+  "n_exit_1605": {
+   "n": 355,
+   "pf": 0.662,
+   "t_stat": -3.05,
+   "expectancy_R": -0.1621,
+   "years_pos": "1/8",
+   "net_bp_per_pair": -2.053,
+   "gross_bp_per_pair": -0.414,
+   "stop_share": 0.279
+  },
+  "n_stop_1.25": {
+   "n": 355,
+   "pf": 0.74,
+   "t_stat": -2.26,
+   "expectancy_R": -0.1224,
+   "years_pos": "1/8",
+   "net_bp_per_pair": -1.401,
+   "gross_bp_per_pair": 0.213,
+   "stop_share": 0.285
+  },
+  "n_stop_1.75": {
+   "n": 355,
+   "pf": 0.723,
+   "t_stat": -2.38,
+   "expectancy_R": -0.0989,
+   "years_pos": "0/8",
+   "net_bp_per_pair": -1.598,
+   "gross_bp_per_pair": 0.031,
+   "stop_share": 0.18
+  },
+  "n_us100_us500": {
+   "n": 373,
+   "pf": 0.702,
+   "t_stat": -2.7,
+   "expectancy_R": -0.1263,
+   "years_pos": "2/8",
+   "net_bp_per_pair": -1.142,
+   "gross_bp_per_pair": 0.675,
+   "stop_share": 0.255
+  }
+ },
+ "neighbours_median_pf": 0.6995,
+ "neighbour_6_exit_quality": {
+  "exit_fallback_by_year": {
+   "2014": 0,
+   "2015": 28,
+   "2016": 34,
+   "2017": 35,
+   "2018": 18,
+   "2019": 0,
+   "2020": 0,
+   "2021": 0
+  },
+  "split": {
+   "exit at a real 16:05 quote": {
+    "n": 240,
+    "pf": 0.479,
+    "expectancy_R": -0.3045,
+    "years": [
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021
+    ]
+   },
+   "fallback: last close before 16:05 (no quote after 16:00)": {
+    "n": 115,
+    "pf": 1.516,
+    "expectancy_R": 0.135,
+    "years": [
+     2015,
+     2016,
+     2017,
+     2018
+    ]
+   }
+  },
+  "why": "the frames carry no us100 / us30 quote after the 16:00 bar on 2016-2017 and on part of 2015 and 2018 (data_after1600.json); declared R10 fallback = last close"
+ },
+ "stress": {
+  "n": 355,
+  "pf": 0.604,
+  "t_stat": -3.75,
+  "expectancy_R": -0.1778,
+  "years_pos": "0/8",
+  "net_bp_per_pair": -2.424,
+  "cost_bp_per_pair": 2.596,
+  "by_year_R": {
+   "2014": -13.2,
+   "2015": -9.6,
+   "2016": -3.8,
+   "2017": -4.6,
+   "2018": -10.5,
+   "2019": -4.0,
+   "2020": -10.6,
+   "2021": -6.8
+  }
+ },
+ "null": {
+  "n_trades": 355,
+  "n_seeds": 200,
+  "seed": 0,
+  "pool_sessions": 2044,
+  "rule_mean_R": -0.09786,
+  "null_mean_R": -0.12951,
+  "null_sd_of_means": 0.04535,
+  "null_p50_R": -0.13469,
+  "null_p95_R": -0.04939,
+  "null_p975_R": -0.03151,
+  "null_max_R": 0.01913,
+  "null_stop_share_mean": 0.179,
+  "percentile": 79.0,
+  "pass": false
+ },
+ "correlation": {
+  "period_weeks": "2013-12-30/2014-01-05 .. 2021-12-27/2022-01-02",
+  "n_weeks": 418,
+  "pair_weeks_with_trades": 230,
+  "convention": "weekly sums of R by exit week (W-SUN, UTC), every calendar week counted (0 without a trade), Pearson; trades read with entry_time < 2022-01-01",
+  "reported_by_the_judge": {
+   "corr_with_IDXRS_1000_main": 0.06,
+   "IDXRS_1000_trades_2014_2021": 518,
+   "corr_with_noise30": 0.092
+  },
+  "corr_with_sum_of_ten": 0.031,
+  "corr_with_clusters": {
+   "us100 (ocm4 + noise30)": 0.127,
+   "gold (donch4h_stop + orb_asia_2d_buf10 + GOLD_FRI_PM)": -0.006,
+   "crypto (brk72_24h_wd x2 + F1_brk_ridge_filter x2 + nq_btc_follow)": -0.024
+  },
+  "corr_with_each_sleeve": {
+   "noise30:us100": {
+    "rho": 0.092,
+    "weeks_with_trades": 413,
+    "trades_2014_2021": 1643
+   },
+   "ocm4:us100": {
+    "rho": 0.106,
+    "weeks_with_trades": 399,
+    "trades_2014_2021": 999
+   },
+   "brk72_24h_wd:btcusd": {
+    "rho": -0.045,
+    "weeks_with_trades": 240,
+    "trades_2014_2021": 645
+   },
+   "brk72_24h_wd:ethusd": {
+    "rho": 0.009,
+    "weeks_with_trades": 207,
+    "trades_2014_2021": 519
+   },
+   "F1_brk_ridge_filter:btcusd": {
+    "rho": -0.027,
+    "weeks_with_trades": 236,
+    "trades_2014_2021": 631
+   },
+   "F1_brk_ridge_filter:ethusd": {
+    "rho": 0.001,
+    "weeks_with_trades": 201,
+    "trades_2014_2021": 517
+   },
+   "nq_btc_follow:btcusd": {
+    "rho": 0.001,
+    "weeks_with_trades": 213,
+    "trades_2014_2021": 1063
+   },
+   "GOLD_FRI_PM:xauusd": {
+    "rho": 0.041,
+    "weeks_with_trades": 368,
+    "trades_2014_2021": 414
+   },
+   "donch4h_stop:xauusd": {
+    "rho": -0.051,
+    "weeks_with_trades": 305,
+    "trades_2014_2021": 494
+   },
+   "orb_asia_2d_buf10:xauusd": {
+    "rho": 0.01,
+    "weeks_with_trades": 418,
+    "trades_2014_2021": 1038
+   }
+  },
+  "information_daily_on_pair_days": {
+   "noise30": {
+    "n_pair_days": 355,
+    "corr_on_pair_days": 0.056,
+    "share_of_pair_days_with_a_trade_of_it": 0.87
+   },
+   "IDXRS_1000": {
+    "n_pair_days": 355,
+    "corr_on_pair_days": 0.026,
+    "share_of_pair_days_with_a_trade_of_it": 0.363
+   },
+   "us100 cluster": {
+    "n_pair_days": 355,
+    "corr_on_pair_days": 0.044,
+    "share_of_pair_days_with_a_trade_of_it": 0.938
+   }
+  }
+ },
+ "causality_truncation": {
+  "decisions_checked": {
+   "entry": 60,
+   "stop": 50,
+   "no_stop": 25
+  },
+  "total": 135,
+  "pass": true,
+  "problems": []
+ },
+ "handcheck": {
+  "days": 6,
+  "pass": true,
+  "problems": []
+ },
+ "crosscheck_idxrs_engine": {
+  "n_pairs": 355,
+  "same_exit_reason": 355,
+  "same_stop_decision_bar": 355,
+  "R_max_abs_diff": 2.55351295663786e-15,
+  "pass": true,
+  "idxrs_common_sha256": "6b311074156e6a286bf5d03d1039c284015eb3b5f2bb7b8420ed31ee18f0c555"
+ },
+ "data": {
+  "sessions": 2061,
+  "sessions_after_an_early_close": 19,
+  "R19_drop_rule_of_6": {
+   "share_of_sessions_with_us100_and_us30_bar_in_16:00-16:10": 0.9044,
+   "threshold": 0.5,
+   "config_6_dropped": false
+  }
+ },
+ "trials": 11
+}

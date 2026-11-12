@@ -1,0 +1,86 @@
+{
+ "period_weeks": "2013-12-30/2014-01-05 .. 2021-12-27/2022-01-02",
+ "n_weeks": 418,
+ "pair_weeks_with_trades": 230,
+ "convention": "weekly sums of R by exit week (W-SUN, UTC), every calendar week counted (0 without a trade), Pearson; trades read with entry_time < 2022-01-01",
+ "reported_by_the_judge": {
+  "corr_with_IDXRS_1000_main": 0.06,
+  "IDXRS_1000_trades_2014_2021": 518,
+  "corr_with_noise30": 0.092
+ },
+ "corr_with_sum_of_ten": 0.031,
+ "corr_with_clusters": {
+  "us100 (ocm4 + noise30)": 0.127,
+  "gold (donch4h_stop + orb_asia_2d_buf10 + GOLD_FRI_PM)": -0.006,
+  "crypto (brk72_24h_wd x2 + F1_brk_ridge_filter x2 + nq_btc_follow)": -0.024
+ },
+ "corr_with_each_sleeve": {
+  "noise30:us100": {
+   "rho": 0.092,
+   "weeks_with_trades": 413,
+   "trades_2014_2021": 1643
+  },
+  "ocm4:us100": {
+   "rho": 0.106,
+   "weeks_with_trades": 399,
+   "trades_2014_2021": 999
+  },
+  "brk72_24h_wd:btcusd": {
+   "rho": -0.045,
+   "weeks_with_trades": 240,
+   "trades_2014_2021": 645
+  },
+  "brk72_24h_wd:ethusd": {
+   "rho": 0.009,
+   "weeks_with_trades": 207,
+   "trades_2014_2021": 519
+  },
+  "F1_brk_ridge_filter:btcusd": {
+   "rho": -0.027,
+   "weeks_with_trades": 236,
+   "trades_2014_2021": 631
+  },
+  "F1_brk_ridge_filter:ethusd": {
+   "rho": 0.001,
+   "weeks_with_trades": 201,
+   "trades_2014_2021": 517
+  },
+  "nq_btc_follow:btcusd": {
+   "rho": 0.001,
+   "weeks_with_trades": 213,
+   "trades_2014_2021": 1063
+  },
+  "GOLD_FRI_PM:xauusd": {
+   "rho": 0.041,
+   "weeks_with_trades": 368,
+   "trades_2014_2021": 414
+  },
+  "donch4h_stop:xauusd": {
+   "rho": -0.051,
+   "weeks_with_trades": 305,
+   "trades_2014_2021": 494
+  },
+  "orb_asia_2d_buf10:xauusd": {
+   "rho": 0.01,
+   "weeks_with_trades": 418,
+   "trades_2014_2021": 1038
+  }
+ },
+ "information_daily_on_pair_days": {
+  "noise30": {
+   "n_pair_days": 355,
+   "corr_on_pair_days": 0.056,
+   "share_of_pair_days_with_a_trade_of_it": 0.87
+  },
+  "IDXRS_1000": {
+   "n_pair_days": 355,
+   "corr_on_pair_days": 0.026,
+   "share_of_pair_days_with_a_trade_of_it": 0.363
+  },
+  "us100 cluster": {
+   "n_pair_days": 355,
+   "corr_on_pair_days": 0.044,
+   "share_of_pair_days_with_a_trade_of_it": 0.938
+  }
+ }
+}

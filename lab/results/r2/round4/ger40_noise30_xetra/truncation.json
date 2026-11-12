@@ -1,0 +1,2059 @@
+{
+ "configuration": 1,
+ "decisions_tested": 70,
+ "entries": 40,
+ "check_exits": 30,
+ "seed": 7,
+ "variants": [
+  "flat",
+  "up3pct",
+  "down3pct"
+ ],
+ "identical": 70,
+ "reversal_entries_in_sample": 0,
+ "all_orders_execute_at_or_after_decision": true,
+ "all_check_exits_execute_at_or_after_decision": true,
+ "sec": 43.6,
+ "cases": [
+  {
+   "kind": "entry",
+   "T_berlin": "2014-01-21 15:00:00+01:00",
+   "cut_after_bar": "2014-01-21 13:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 11
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 11
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 11
+    }
+   },
+   "entry_bar": "2014-01-21 14:00:00+00:00",
+   "side": 1,
+   "stop": 9732.8,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2014-06-20 15:00:00+02:00",
+   "cut_after_bar": "2014-06-20 12:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 111
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 111
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 111
+    }
+   },
+   "entry_bar": "2014-06-20 13:00:00+00:00",
+   "side": 1,
+   "stop": 10004.0,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2014-12-04 15:00:00+01:00",
+   "cut_after_bar": "2014-12-04 13:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 238
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 238
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 238
+    }
+   },
+   "entry_bar": "2014-12-04 14:00:00+00:00",
+   "side": -1,
+   "stop": 9980.9,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2014-12-19 15:00:00+01:00",
+   "cut_after_bar": "2014-12-19 13:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 262
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 262
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 262
+    }
+   },
+   "entry_bar": "2014-12-19 14:00:00+00:00",
+   "side": -1,
+   "stop": 9796.0,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2015-09-01 09:30:00+02:00",
+   "cut_after_bar": "2015-09-01 07:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 446
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 446
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 446
+    }
+   },
+   "entry_bar": "2015-09-01 07:30:00+00:00",
+   "side": -1,
+   "stop": 10087.879,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2015-11-19 09:30:00+01:00",
+   "cut_after_bar": "2015-11-19 08:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 510
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 510
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 510
+    }
+   },
+   "entry_bar": "2015-11-19 08:30:00+00:00",
+   "side": 1,
+   "stop": 11062.467,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2016-01-18 09:30:00+01:00",
+   "cut_after_bar": "2016-01-18 08:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 556
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 556
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 556
+    }
+   },
+   "entry_bar": "2016-01-18 08:30:00+00:00",
+   "side": 1,
+   "stop": 9516.514500000001,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2016-01-28 16:30:00+01:00",
+   "cut_after_bar": "2016-01-28 15:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 566
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 566
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 566
+    }
+   },
+   "entry_bar": "2016-01-28 15:30:00+00:00",
+   "side": -1,
+   "stop": 9831.014500000001,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2016-03-09 10:30:00+01:00",
+   "cut_after_bar": "2016-03-09 09:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 595
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 595
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 595
+    }
+   },
+   "entry_bar": "2016-03-09 09:30:00+00:00",
+   "side": 1,
+   "stop": 9701.207,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2016-03-24 10:30:00+01:00",
+   "cut_after_bar": "2016-03-24 09:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 605
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 605
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 605
+    }
+   },
+   "entry_bar": "2016-03-24 09:30:00+00:00",
+   "side": -1,
+   "stop": 9971.224999999999,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2016-07-05 15:30:00+02:00",
+   "cut_after_bar": "2016-07-05 13:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 682
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 682
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 682
+    }
+   },
+   "entry_bar": "2016-07-05 13:30:00+00:00",
+   "side": -1,
+   "stop": 9627.1795,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2016-07-07 11:00:00+02:00",
+   "cut_after_bar": "2016-07-07 08:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 686
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 686
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 686
+    }
+   },
+   "entry_bar": "2016-07-07 09:00:00+00:00",
+   "side": 1,
+   "stop": 9429.273000000001,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2017-06-01 11:00:00+02:00",
+   "cut_after_bar": "2017-06-01 08:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 891
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 891
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 891
+    }
+   },
+   "entry_bar": "2017-06-01 09:00:00+00:00",
+   "side": 1,
+   "stop": 12639.0,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2017-07-21 12:30:00+02:00",
+   "cut_after_bar": "2017-07-21 10:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 933
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 933
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 933
+    }
+   },
+   "entry_bar": "2017-07-21 10:30:00+00:00",
+   "side": -1,
+   "stop": 12413.0,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2017-08-14 13:00:00+02:00",
+   "cut_after_bar": "2017-08-14 10:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 957
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 957
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 957
+    }
+   },
+   "entry_bar": "2017-08-14 11:00:00+00:00",
+   "side": 1,
+   "stop": 12106.425,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2017-10-25 17:00:00+02:00",
+   "cut_after_bar": "2017-10-25 14:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 994
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 994
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 994
+    }
+   },
+   "entry_bar": "2017-10-25 15:00:00+00:00",
+   "side": -1,
+   "stop": 13001.5,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2017-11-15 09:30:00+01:00",
+   "cut_after_bar": "2017-11-15 08:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1011
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1011
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1011
+    }
+   },
+   "entry_bar": "2017-11-15 08:30:00+00:00",
+   "side": -1,
+   "stop": 12967.0,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2017-11-30 09:30:00+01:00",
+   "cut_after_bar": "2017-11-30 08:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1022
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1022
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1022
+    }
+   },
+   "entry_bar": "2017-11-30 08:30:00+00:00",
+   "side": 1,
+   "stop": 13056.5,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2018-05-03 17:00:00+02:00",
+   "cut_after_bar": "2018-05-03 14:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1110
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1110
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1110
+    }
+   },
+   "entry_bar": "2018-05-03 15:00:00+00:00",
+   "side": -1,
+   "stop": 12774.8,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2018-06-18 11:30:00+02:00",
+   "cut_after_bar": "2018-06-18 09:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1144
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1144
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1144
+    }
+   },
+   "entry_bar": "2018-06-18 09:30:00+00:00",
+   "side": -1,
+   "stop": 12953.5005,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2018-07-25 13:30:00+02:00",
+   "cut_after_bar": "2018-07-25 11:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1167
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1167
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1167
+    }
+   },
+   "entry_bar": "2018-07-25 11:30:00+00:00",
+   "side": -1,
+   "stop": 12678.979,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2018-10-19 10:30:00+02:00",
+   "cut_after_bar": "2018-10-19 08:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1234
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1234
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1234
+    }
+   },
+   "entry_bar": "2018-10-19 08:30:00+00:00",
+   "side": -1,
+   "stop": 11596.3,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2018-11-12 12:30:00+01:00",
+   "cut_after_bar": "2018-11-12 11:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1251
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1251
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1251
+    }
+   },
+   "entry_bar": "2018-11-12 11:30:00+00:00",
+   "side": -1,
+   "stop": 11523.8,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2019-04-02 13:00:00+02:00",
+   "cut_after_bar": "2019-04-02 10:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1352
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1352
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1352
+    }
+   },
+   "entry_bar": "2019-04-02 11:00:00+00:00",
+   "side": 1,
+   "stop": 11684.3,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2019-06-06 16:30:00+02:00",
+   "cut_after_bar": "2019-06-06 14:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1407
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1407
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1407
+    }
+   },
+   "entry_bar": "2019-06-06 14:30:00+00:00",
+   "side": -1,
+   "stop": 11981.5,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2019-07-17 16:30:00+02:00",
+   "cut_after_bar": "2019-07-17 14:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1437
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1437
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1437
+    }
+   },
+   "entry_bar": "2019-07-17 14:30:00+00:00",
+   "side": -1,
+   "stop": 12425.65,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2019-11-19 09:30:00+01:00",
+   "cut_after_bar": "2019-11-19 08:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1535
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1535
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1535
+    }
+   },
+   "entry_bar": "2019-11-19 08:30:00+00:00",
+   "side": 1,
+   "stop": 13232.8,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2020-02-12 09:30:00+01:00",
+   "cut_after_bar": "2020-02-12 08:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1587
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1587
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1587
+    }
+   },
+   "entry_bar": "2020-02-12 08:30:00+00:00",
+   "side": 1,
+   "stop": 13658.385,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2020-02-25 11:00:00+01:00",
+   "cut_after_bar": "2020-02-25 09:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1592
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1592
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1592
+    }
+   },
+   "entry_bar": "2020-02-25 10:00:00+00:00",
+   "side": -1,
+   "stop": 13028.8,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2020-03-19 09:30:00+01:00",
+   "cut_after_bar": "2020-03-19 08:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1621
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1621
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1621
+    }
+   },
+   "entry_bar": "2020-03-19 08:30:00+00:00",
+   "side": 1,
+   "stop": 8500.295,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2020-04-07 10:00:00+02:00",
+   "cut_after_bar": "2020-04-07 07:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1628
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1628
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1628
+    }
+   },
+   "entry_bar": "2020-04-07 08:00:00+00:00",
+   "side": 1,
+   "stop": 10424.060000000001,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2020-04-21 09:30:00+02:00",
+   "cut_after_bar": "2020-04-21 07:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1633
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1633
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1633
+    }
+   },
+   "entry_bar": "2020-04-21 07:30:00+00:00",
+   "side": -1,
+   "stop": 10509.15,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2020-05-11 12:30:00+02:00",
+   "cut_after_bar": "2020-05-11 10:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1650
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1650
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1650
+    }
+   },
+   "entry_bar": "2020-05-11 10:30:00+00:00",
+   "side": -1,
+   "stop": 10910.57,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2020-09-07 10:00:00+02:00",
+   "cut_after_bar": "2020-09-07 07:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1734
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1734
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1734
+    }
+   },
+   "entry_bar": "2020-09-07 08:00:00+00:00",
+   "side": 1,
+   "stop": 12927.935000000001,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2020-11-30 13:30:00+01:00",
+   "cut_after_bar": "2020-11-30 12:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1773
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1773
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1773
+    }
+   },
+   "entry_bar": "2020-11-30 12:30:00+00:00",
+   "side": 1,
+   "stop": 13361.78,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2021-02-17 14:30:00+01:00",
+   "cut_after_bar": "2021-02-17 13:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1812
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1812
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1812
+    }
+   },
+   "entry_bar": "2021-02-17 13:30:00+00:00",
+   "side": -1,
+   "stop": 14029.02,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2021-05-07 12:30:00+02:00",
+   "cut_after_bar": "2021-05-07 10:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1865
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1865
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1865
+    }
+   },
+   "entry_bar": "2021-05-07 10:30:00+00:00",
+   "side": 1,
+   "stop": 15318.935000000001,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2021-11-16 12:30:00+01:00",
+   "cut_after_bar": "2021-11-16 11:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1980
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1980
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1980
+    }
+   },
+   "entry_bar": "2021-11-16 11:30:00+00:00",
+   "side": 1,
+   "stop": 16170.231,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2021-11-26 12:00:00+01:00",
+   "cut_after_bar": "2021-11-26 10:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1990
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1990
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1990
+    }
+   },
+   "entry_bar": "2021-11-26 11:00:00+00:00",
+   "side": -1,
+   "stop": 15501.51,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "entry",
+   "T_berlin": "2021-12-06 16:30:00+01:00",
+   "cut_after_bar": "2021-12-06 15:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1997
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1997
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1997
+    }
+   },
+   "entry_bar": "2021-12-06 15:30:00+00:00",
+   "side": 1,
+   "stop": 15297.399,
+   "reversal": false,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2014-05-08 16:30:00+02:00",
+   "cut_after_bar": "2014-05-08 14:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 83
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 83
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 83
+    }
+   },
+   "exit_bar": "2014-05-08 14:30:00+00:00",
+   "side": 1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2014-06-25 16:00:00+02:00",
+   "cut_after_bar": "2014-06-25 13:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 114
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 114
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 114
+    }
+   },
+   "exit_bar": "2014-06-25 14:00:00+00:00",
+   "side": -1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2014-09-11 17:00:00+02:00",
+   "cut_after_bar": "2014-09-11 14:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 182
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 182
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 182
+    }
+   },
+   "exit_bar": "2014-09-11 15:00:00+00:00",
+   "side": -1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2014-10-30 14:00:00+01:00",
+   "cut_after_bar": "2014-10-30 12:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 219
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 219
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 219
+    }
+   },
+   "exit_bar": "2014-10-30 13:00:00+00:00",
+   "side": -1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2015-02-17 10:30:00+01:00",
+   "cut_after_bar": "2015-02-17 09:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 302
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 302
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 302
+    }
+   },
+   "exit_bar": "2015-02-17 09:30:00+00:00",
+   "side": -1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2015-05-20 12:30:00+02:00",
+   "cut_after_bar": "2015-05-20 10:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 375
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 375
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 375
+    }
+   },
+   "exit_bar": "2015-05-20 10:30:00+00:00",
+   "side": -1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2015-10-28 13:30:00+01:00",
+   "cut_after_bar": "2015-10-28 12:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 492
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 492
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 492
+    }
+   },
+   "exit_bar": "2015-10-28 12:30:00+00:00",
+   "side": 1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2015-12-14 10:00:00+01:00",
+   "cut_after_bar": "2015-12-14 08:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 533
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 533
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 533
+    }
+   },
+   "exit_bar": "2015-12-14 09:00:00+00:00",
+   "side": 1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2016-08-30 10:30:00+02:00",
+   "cut_after_bar": "2016-08-30 08:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 725
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 725
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 725
+    }
+   },
+   "exit_bar": "2016-08-30 08:30:00+00:00",
+   "side": 1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2016-11-28 15:30:00+01:00",
+   "cut_after_bar": "2016-11-28 14:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 780
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 780
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 780
+    }
+   },
+   "exit_bar": "2016-11-28 14:30:00+00:00",
+   "side": -1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2017-07-26 13:30:00+02:00",
+   "cut_after_bar": "2017-07-26 11:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 938
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 938
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 938
+    }
+   },
+   "exit_bar": "2017-07-26 11:30:00+00:00",
+   "side": 1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2017-11-13 16:30:00+01:00",
+   "cut_after_bar": "2017-11-13 15:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1006
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1006
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1006
+    }
+   },
+   "exit_bar": "2017-11-13 15:30:00+00:00",
+   "side": -1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2017-11-14 17:00:00+01:00",
+   "cut_after_bar": "2017-11-14 15:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1010
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1010
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1010
+    }
+   },
+   "exit_bar": "2017-11-14 16:00:00+00:00",
+   "side": -1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2018-01-31 10:30:00+01:00",
+   "cut_after_bar": "2018-01-31 09:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1051
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1051
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1051
+    }
+   },
+   "exit_bar": "2018-01-31 09:30:00+00:00",
+   "side": 1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2018-03-16 12:30:00+01:00",
+   "cut_after_bar": "2018-03-16 11:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1080
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1080
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1080
+    }
+   },
+   "exit_bar": "2018-03-16 11:30:00+00:00",
+   "side": 1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2018-09-13 15:00:00+02:00",
+   "cut_after_bar": "2018-09-13 12:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1204
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1204
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1204
+    }
+   },
+   "exit_bar": "2018-09-13 13:00:00+00:00",
+   "side": 1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2018-09-20 11:00:00+02:00",
+   "cut_after_bar": "2018-09-20 08:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1208
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1208
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1208
+    }
+   },
+   "exit_bar": "2018-09-20 09:00:00+00:00",
+   "side": 1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2018-10-18 10:30:00+02:00",
+   "cut_after_bar": "2018-10-18 08:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1232
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1232
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1232
+    }
+   },
+   "exit_bar": "2018-10-18 08:30:00+00:00",
+   "side": 1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2018-11-27 17:00:00+01:00",
+   "cut_after_bar": "2018-11-27 15:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1272
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1272
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1272
+    }
+   },
+   "exit_bar": "2018-11-27 16:00:00+00:00",
+   "side": -1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2018-12-21 12:00:00+01:00",
+   "cut_after_bar": "2018-12-21 10:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1290
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1290
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1290
+    }
+   },
+   "exit_bar": "2018-12-21 11:00:00+00:00",
+   "side": -1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2019-02-22 15:00:00+01:00",
+   "cut_after_bar": "2019-02-22 13:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1325
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1325
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1325
+    }
+   },
+   "exit_bar": "2019-02-22 14:00:00+00:00",
+   "side": 1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2019-04-29 13:00:00+02:00",
+   "cut_after_bar": "2019-04-29 10:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1369
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1369
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1369
+    }
+   },
+   "exit_bar": "2019-04-29 11:00:00+00:00",
+   "side": -1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2019-05-28 11:30:00+02:00",
+   "cut_after_bar": "2019-05-28 09:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1398
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1398
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1398
+    }
+   },
+   "exit_bar": "2019-05-28 09:30:00+00:00",
+   "side": -1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2019-07-23 10:00:00+02:00",
+   "cut_after_bar": "2019-07-23 07:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1441
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1441
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1441
+    }
+   },
+   "exit_bar": "2019-07-23 08:00:00+00:00",
+   "side": 1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2019-08-14 10:30:00+02:00",
+   "cut_after_bar": "2019-08-14 08:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1463
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1463
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1463
+    }
+   },
+   "exit_bar": "2019-08-14 08:30:00+00:00",
+   "side": -1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2020-06-05 11:30:00+02:00",
+   "cut_after_bar": "2020-06-05 09:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1669
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1669
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1669
+    }
+   },
+   "exit_bar": "2020-06-05 09:30:00+00:00",
+   "side": 1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2020-08-25 10:00:00+02:00",
+   "cut_after_bar": "2020-08-25 07:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1726
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1726
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1726
+    }
+   },
+   "exit_bar": "2020-08-25 08:00:00+00:00",
+   "side": 1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2020-08-28 10:30:00+02:00",
+   "cut_after_bar": "2020-08-28 08:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1727
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1727
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1727
+    }
+   },
+   "exit_bar": "2020-08-28 08:30:00+00:00",
+   "side": -1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2021-04-19 13:30:00+02:00",
+   "cut_after_bar": "2021-04-19 11:29:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1850
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1850
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1850
+    }
+   },
+   "exit_bar": "2021-04-19 11:30:00+00:00",
+   "side": -1,
+   "identical": true
+  },
+  {
+   "kind": "exit",
+   "T_berlin": "2021-07-07 11:00:00+02:00",
+   "cut_after_bar": "2021-07-07 08:59:00+00:00",
+   "variants": {
+    "flat": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1896
+    },
+    "up3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1896
+    },
+    "down3pct": {
+     "same_decision": true,
+     "same_set_decided_by_T": true,
+     "same_exits_decided_by_T": true,
+     "orders_decided_by_T": 1896
+    }
+   },
+   "exit_bar": "2021-07-07 09:00:00+00:00",
+   "side": 1,
+   "identical": true
+  }
+ ]
+}

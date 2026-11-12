@@ -1,0 +1,12 @@
+{
+ "config": "main",
+ "decisions_checked": {
+  "entry": 60,
+  "stop": 50,
+  "no_stop": 25
+ },
+ "total": 135,
+ "problems": [],
+ "pass": true,
+ "method": "the three in-sample frames are cut at the decision time and the whole pipeline is rebuilt; entry decisions cut at 10:00 New York (bars that started before 10:00 only), stop decisions cut at the end of the decision bar, no-stop checks cut at a random minute of the hold"
+}

@@ -1,0 +1,67 @@
+{
+ "kept_rules": [],
+ "convention": "PROTOCOL_V3 Addendum J, round 4 lead synthesis, step 2: the ten's weekly Sharpe in sample, with and without the\nkept rules, at equal weekly swing. IN SAMPLE ONLY (common.read_is: entry_time AND exit_time < 2022-01-01 in the read).\n\nNo round-4 rule passed in sample (verification.json), so the kept set is empty and \"with\" equals \"without\".\nThe ten are measured as the lab's syntheses do: plain sum of the official one-position chains, 1 R per trade, weekly\nsums of R booked at the exit, every calendar week of 2014-2021 counted (empty weeks = 0), Sharpe x sqrt(52); FP costs\nas in the official trade files. Both week conventions are given (server weeks NY+7h, and UTC W-SUN weeks), and the\nengineers' variant (trades ENTERED 2014-2021 only) for comparison with their 2.537.\n\nINFORMATION ONLY, deciding nothing: the in-sample main of IDXRS_1000 (failed the t bar, not kept) added at 1 R per pair,\nthe account then scaled back to the ten's weekly swing; and the judge's break-even (a newcomer of weekly Sharpe s and\ncorrelation c adds only if s > c x S_account) with the best-weighting bound S^2 + (s - cS)^2 / (1 - c^2).",
+ "ten_server": {
+  "weeks": 418,
+  "sharpe": 2.5124,
+  "mean_week_R": 2.7534,
+  "sd_week_R": 7.9028,
+  "total_R": 1150.92,
+  "losing_weeks_pct": 43.78,
+  "worst_week_R": -12.54,
+  "trades_booked": 7752
+ },
+ "ten_wsun": {
+  "weeks": 418,
+  "sharpe": 2.5327,
+  "mean_week_R": 2.7534,
+  "sd_week_R": 7.8395,
+  "total_R": 1150.92,
+  "losing_weeks_pct": 43.78,
+  "worst_week_R": -11.83,
+  "trades_booked": 7752
+ },
+ "ten_wsun_entries_2014_2021": {
+  "weeks": 418,
+  "sharpe": 2.537,
+  "mean_week_R": 2.7575,
+  "sd_week_R": 7.8379,
+  "total_R": 1152.63,
+  "losing_weeks_pct": 43.54,
+  "worst_week_R": -11.83,
+  "trades": 7749
+ },
+ "with_kept_rules": "identical to the ten alone: no rule kept",
+ "information_only_idxrs_1000_not_kept": {
+  "server": {
+   "idxrs_weekly_sharpe": 0.8051,
+   "corr_with_ten": 0.1923,
+   "break_even_s=c*S": 0.4831,
+   "ten": 2.5124,
+   "ten_plus_idxrs_1R": 2.5334,
+   "ratio_1R": 1.0083,
+   "scale_to_equal_swing": 0.9715,
+   "mean_week_R_equal_swing": {
+    "ten": 2.7534,
+    "ten_plus_idxrs": 2.7764
+   },
+   "best_weighting_bound": 2.5337,
+   "best_ratio": 1.0085
+  },
+  "wsun": {
+   "idxrs_weekly_sharpe": 0.8051,
+   "corr_with_ten": 0.1884,
+   "break_even_s=c*S": 0.4771,
+   "ten": 2.5327,
+   "ten_plus_idxrs_1R": 2.5543,
+   "ratio_1R": 1.0085,
+   "scale_to_equal_swing": 0.9716,
+   "mean_week_R_equal_swing": {
+    "ten": 2.7534,
+    "ten_plus_idxrs": 2.7768
+   },
+   "best_weighting_bound": 2.5546,
+   "best_ratio": 1.0087
+  }
+ }
+}

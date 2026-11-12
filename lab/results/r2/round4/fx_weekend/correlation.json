@@ -1,0 +1,61 @@
+{
+ "convention": "sum of R per calendar week of the exit (Mon-Sun, UTC), every week counted, 1 R per trade, FP costs; Pearson correlation of weekly sums",
+ "window_2014_2021": {
+  "weeks": 418,
+  "main_trades": 785,
+  "main_total_R": -26.5,
+  "main_weekly_sharpe_ann": -0.348,
+  "corr_sum_of_ten": -0.131,
+  "corr_clusters": {
+   "us100": -0.034,
+   "gold": -0.004,
+   "crypto": -0.157
+  },
+  "corr_sleeves": {
+   "noise30:us100": -0.045,
+   "ocm4:us100": -0.013,
+   "brk72_24h_wd:btcusd": -0.099,
+   "brk72_24h_wd:ethusd": -0.104,
+   "nq_btc_follow:btcusd": -0.066,
+   "F1_brk_ridge_filter:btcusd": -0.098,
+   "F1_brk_ridge_filter:ethusd": -0.169,
+   "GOLD_FRI_PM:xauusd": 0.022,
+   "donch4h_stop:xauusd": 0.044,
+   "orb_asia_2d_buf10:xauusd": -0.024
+  },
+  "ten_weekly_sharpe_ann": 2.537,
+  "ten_total_R": 1152.6,
+  "ten_plus_main_weekly_sharpe_ann": 2.498,
+  "delta_sharpe_adding_main_at_1R": -0.039,
+  "ten_trades": 7751
+ },
+ "window_2018_02_2021 (common window of the ten, information)": {
+  "weeks": 205,
+  "main_trades": 390,
+  "main_total_R": -29.5,
+  "main_weekly_sharpe_ann": -0.753,
+  "corr_sum_of_ten": -0.195,
+  "corr_clusters": {
+   "us100": -0.064,
+   "gold": -0.031,
+   "crypto": -0.202
+  },
+  "corr_sleeves": {
+   "noise30:us100": -0.121,
+   "ocm4:us100": 0.007,
+   "brk72_24h_wd:btcusd": -0.123,
+   "brk72_24h_wd:ethusd": -0.131,
+   "nq_btc_follow:btcusd": -0.077,
+   "F1_brk_ridge_filter:btcusd": -0.128,
+   "F1_brk_ridge_filter:ethusd": -0.22,
+   "GOLD_FRI_PM:xauusd": -0.035,
+   "donch4h_stop:xauusd": 0.081,
+   "orb_asia_2d_buf10:xauusd": -0.07
+  },
+  "ten_weekly_sharpe_ann": 2.9,
+  "ten_total_R": 788.6,
+  "ten_plus_main_weekly_sharpe_ann": 2.842,
+  "delta_sharpe_adding_main_at_1R": -0.058,
+  "ten_trades": 5207
+ }
+}

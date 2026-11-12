@@ -1,0 +1,181 @@
+{
+ "what": "FOMC-cycle even/odd weeks (PROTOCOL_V3 Addendum J rule 4), in sample only, verdict on (1)",
+ "criteria": {
+  "n>=250": {
+   "value": 375,
+   "pass": true
+  },
+  "pf>=1.12": {
+   "value": 0.977,
+   "pass": false
+  },
+  "t>=2.5": {
+   "value": -0.17,
+   "pass": false
+  },
+  "years_pos>=60%": {
+   "value": "3/9",
+   "pass": false
+  },
+  "stress_pf>=1.04": {
+   "value": 0.925,
+   "pass": false
+  },
+  "neighbours_median_pf>=1.06": {
+   "value": 0.975,
+   "neighbours": {
+    "n_clock_1530": 0.989,
+    "n_shift_p1": 0.828,
+    "n_stop2": 0.989,
+    "n_stop4": 0.975,
+    "n_wm1_short": 0.958
+   },
+   "pass": false
+  },
+  "every_signal_exp>0": {
+   "value": -0.0047,
+   "pass": false
+  },
+  "hold<=5_nyse_days": {
+   "value": 5,
+   "max_hold_h": 212.9,
+   "trades_over_192h": 2,
+   "pass": true
+  },
+  "null>=97.5pct": {
+   "value": 71.5,
+   "pass": false
+  },
+  "ger40_expectancy>0": {
+   "value": -0.005,
+   "pass": false
+  }
+ },
+ "passes_in_sample": false,
+ "configs": {
+  "main": {
+   "n": 375,
+   "pf": 0.977,
+   "t_stat": -0.17,
+   "expectancy_R": -0.0047,
+   "total_R": -1.7,
+   "years_pos": "3/9",
+   "bp_net_per_trade": -6.29,
+   "bp_swap_per_trade": 5.57
+  },
+  "n_clock_1530": {
+   "n": 375,
+   "pf": 0.989,
+   "t_stat": -0.08,
+   "expectancy_R": -0.0022,
+   "total_R": -0.8,
+   "years_pos": "3/9",
+   "bp_net_per_trade": -5.98,
+   "bp_swap_per_trade": 5.56
+  },
+  "n_shift_p1": {
+   "n": 375,
+   "pf": 0.828,
+   "t_stat": -1.34,
+   "expectancy_R": -0.0371,
+   "total_R": -13.9,
+   "years_pos": "2/9",
+   "bp_net_per_trade": -11.12,
+   "bp_swap_per_trade": 5.62
+  },
+  "n_stop2": {
+   "n": 375,
+   "pf": 0.989,
+   "t_stat": -0.08,
+   "expectancy_R": -0.0032,
+   "total_R": -1.2,
+   "years_pos": "4/9",
+   "bp_net_per_trade": -4.9,
+   "bp_swap_per_trade": 5.26
+  },
+  "n_stop4": {
+   "n": 375,
+   "pf": 0.975,
+   "t_stat": -0.18,
+   "expectancy_R": -0.0038,
+   "total_R": -1.4,
+   "years_pos": "4/9",
+   "bp_net_per_trade": -7.12,
+   "bp_swap_per_trade": 5.69
+  },
+  "n_wm1_short": {
+   "n": 442,
+   "pf": 0.958,
+   "t_stat": -0.34,
+   "expectancy_R": -0.0085,
+   "total_R": -3.8,
+   "years_pos": "3/9",
+   "bp_net_per_trade": -8.37,
+   "bp_swap_per_trade": 4.73
+  },
+  "mech_ger40": {
+   "n": 356,
+   "pf": 0.976,
+   "t_stat": -0.17,
+   "expectancy_R": -0.005,
+   "total_R": -1.8,
+   "years_pos": "4/9",
+   "bp_net_per_trade": -3.81,
+   "bp_swap_per_trade": 4.15
+  },
+  "diag_long_even": {
+   "n": 208,
+   "pf": 1.197,
+   "t_stat": 0.98,
+   "expectancy_R": 0.0345,
+   "total_R": 7.2,
+   "years_pos": "6/9",
+   "bp_net_per_trade": 10.65,
+   "bp_swap_per_trade": 10.04
+  },
+  "stress_x1.5": {
+   "n": 375,
+   "pf": 0.925,
+   "t_stat": -0.56,
+   "expectancy_R": -0.0154,
+   "total_R": -5.8,
+   "years_pos": "2/9",
+   "bp_net_per_trade": -9.51,
+   "bp_swap_per_trade": 8.35
+  }
+ },
+ "null_main": {
+  "n_trades": 375,
+  "replays": 200,
+  "seed": 0,
+  "mode": "time",
+  "rule_mean_R": -0.0047,
+  "null_mean_R": -0.0206,
+  "null_sd_R": 0.0304,
+  "null_p50_R": -0.0223,
+  "null_p95_R": 0.029,
+  "null_p975_R": 0.0418,
+  "null_max_R": 0.0915,
+  "null_long_trades_mean_R": 0.036,
+  "null_short_trades_mean_R": -0.0912,
+  "percentile": 71.5,
+  "pass": false
+ },
+ "null_diag_long_even": {
+  "n_trades": 208,
+  "replays": 200,
+  "seed": 0,
+  "mode": "time",
+  "rule_mean_R": 0.0345,
+  "null_mean_R": 0.0399,
+  "null_sd_R": 0.0435,
+  "null_p50_R": 0.0385,
+  "null_p95_R": 0.1079,
+  "null_p975_R": 0.1176,
+  "null_max_R": 0.1748,
+  "null_long_trades_mean_R": 0.0399,
+  "null_short_trades_mean_R": null,
+  "percentile": 44.5,
+  "pass": false
+ }
+}
