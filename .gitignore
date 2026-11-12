@@ -3,3 +3,6 @@ lab/results/pivbb/events.parquet
 lab/robot/spike/out/build/
 # robot spike: raw M1 bar exports written by the replay (large, rebuilt from lab/data by run_spike.py)
 lab/robot/spike/out/*_m1_*.csv
+# robot: bar exports, generated tables, C++ builds and binaries (rebuilt by lab/robot/check and tools)
+lab/robot/check/out/
+lab/robot/build/
