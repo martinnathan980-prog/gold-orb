@@ -1,0 +1,870 @@
+{
+ "what": "first check (rule 2) and base tables of the clock lens",
+ "sleeves": {
+  "ocm4__us100": {
+   "check": {
+    "orders": 999,
+    "n_mine_entered": 999,
+    "n_official_entered": 999,
+    "n_mine_open_at_slice_end": 0,
+    "n_official_closed_in_2022": 0,
+    "n_mine_closed": 999,
+    "n_official_closed": 999,
+    "matched_closed": 999,
+    "only_mine": 0,
+    "only_official": 0,
+    "rows_differing": 0,
+    "totR_mine_closed": 136.879,
+    "totR_official_closed": 136.879,
+    "max_abs_R_diff": 0.0,
+    "open_trades_entry": [],
+    "reproduced": true
+   },
+   "fp": {
+    "orders": 999,
+    "filled_alone": 999,
+    "refused_alone": 0,
+    "chain_refused_3spreads": 0,
+    "chain_boundary_dropped": 0,
+    "chain_all": {
+     "n": 999,
+     "exp": 0.137,
+     "total": 136.88,
+     "win": 0.4124,
+     "avg_loss": -0.9153,
+     "pf": 1.255
+    },
+    "chain_2018_02_2021": {
+     "n": 492,
+     "exp": 0.1093,
+     "total": 53.78,
+     "win": 0.4085,
+     "avg_loss": -0.9029,
+     "pf": 1.205
+    },
+    "chain_2019_2021": {
+     "n": 377,
+     "exp": 0.1056,
+     "total": 39.82,
+     "win": 0.4085,
+     "avg_loss": -0.8942,
+     "pf": 1.2
+    }
+   },
+   "stress": {
+    "orders": 999,
+    "filled_alone": 999,
+    "refused_alone": 0,
+    "chain_refused_3spreads": 0,
+    "chain_boundary_dropped": 0,
+    "chain_all": {
+     "n": 999,
+     "exp": 0.124,
+     "total": 123.86,
+     "win": 0.4084,
+     "avg_loss": -0.9201,
+     "pf": 1.228
+    },
+    "chain_2018_02_2021": {
+     "n": 492,
+     "exp": 0.1033,
+     "total": 50.8,
+     "win": 0.4085,
+     "avg_loss": -0.9083,
+     "pf": 1.192
+    },
+    "chain_2019_2021": {
+     "n": 377,
+     "exp": 0.0995,
+     "total": 37.53,
+     "win": 0.4085,
+     "avg_loss": -0.8997,
+     "pf": 1.187
+    }
+   },
+   "sec": 2.8
+  },
+  "noise30__us100": {
+   "check": {
+    "orders": 1643,
+    "n_mine_entered": 1643,
+    "n_official_entered": 1643,
+    "n_mine_open_at_slice_end": 0,
+    "n_official_closed_in_2022": 0,
+    "n_mine_closed": 1643,
+    "n_official_closed": 1643,
+    "matched_closed": 1643,
+    "only_mine": 0,
+    "only_official": 0,
+    "rows_differing": 0,
+    "totR_mine_closed": 134.4007,
+    "totR_official_closed": 134.4007,
+    "max_abs_R_diff": 0.0,
+    "open_trades_entry": [],
+    "reproduced": true
+   },
+   "fp": {
+    "orders": 1643,
+    "filled_alone": 1643,
+    "refused_alone": 0,
+    "chain_refused_3spreads": 0,
+    "chain_boundary_dropped": 0,
+    "chain_all": {
+     "n": 1643,
+     "exp": 0.0818,
+     "total": 134.4,
+     "win": 0.3834,
+     "avg_loss": -0.4418,
+     "pf": 1.3
+    },
+    "chain_2018_02_2021": {
+     "n": 795,
+     "exp": 0.1072,
+     "total": 85.24,
+     "win": 0.395,
+     "avg_loss": -0.4397,
+     "pf": 1.403
+    },
+    "chain_2019_2021": {
+     "n": 609,
+     "exp": 0.0733,
+     "total": 44.65,
+     "win": 0.3941,
+     "avg_loss": -0.43,
+     "pf": 1.281
+    }
+   },
+   "stress": {
+    "orders": 1643,
+    "filled_alone": 1643,
+    "refused_alone": 0,
+    "chain_refused_3spreads": 0,
+    "chain_boundary_dropped": 0,
+    "chain_all": {
+     "n": 1643,
+     "exp": 0.0732,
+     "total": 120.33,
+     "win": 0.3749,
+     "avg_loss": -0.4423,
+     "pf": 1.265
+    },
+    "chain_2018_02_2021": {
+     "n": 795,
+     "exp": 0.1007,
+     "total": 80.05,
+     "win": 0.3912,
+     "avg_loss": -0.4421,
+     "pf": 1.374
+    },
+    "chain_2019_2021": {
+     "n": 609,
+     "exp": 0.0669,
+     "total": 40.77,
+     "win": 0.3892,
+     "avg_loss": -0.4315,
+     "pf": 1.254
+    }
+   },
+   "sec": 1.1
+  },
+  "donch4h_stop__xauusd": {
+   "check": {
+    "orders": 1654,
+    "n_mine_entered": 495,
+    "n_official_entered": 495,
+    "n_mine_open_at_slice_end": 1,
+    "n_official_closed_in_2022": 1,
+    "n_mine_closed": 494,
+    "n_official_closed": 494,
+    "matched_closed": 494,
+    "only_mine": 0,
+    "only_official": 0,
+    "rows_differing": 0,
+    "totR_mine_closed": 84.3014,
+    "totR_official_closed": 84.3014,
+    "max_abs_R_diff": 0.0,
+    "open_trades_entry": [
+     "2021-12-31 07:06:00+00:00"
+    ],
+    "reproduced": true
+   },
+   "fp": {
+    "orders": 1654,
+    "filled_alone": 1654,
+    "refused_alone": 0,
+    "chain_refused_3spreads": 0,
+    "chain_boundary_dropped": 1,
+    "chain_all": {
+     "n": 494,
+     "exp": 0.1707,
+     "total": 84.3,
+     "win": 0.4271,
+     "avg_loss": -0.5701,
+     "pf": 1.523
+    },
+    "chain_2018_02_2021": {
+     "n": 207,
+     "exp": 0.1451,
+     "total": 30.03,
+     "win": 0.4444,
+     "avg_loss": -0.5934,
+     "pf": 1.44
+    },
+    "chain_2019_2021": {
+     "n": 158,
+     "exp": 0.1906,
+     "total": 30.11,
+     "win": 0.443,
+     "avg_loss": -0.6212,
+     "pf": 1.551
+    }
+   },
+   "stress": {
+    "orders": 1660,
+    "filled_alone": 1660,
+    "refused_alone": 0,
+    "chain_refused_3spreads": 0,
+    "chain_boundary_dropped": 1,
+    "chain_all": {
+     "n": 494,
+     "exp": 0.1579,
+     "total": 78.01,
+     "win": 0.419,
+     "avg_loss": -0.5745,
+     "pf": 1.473
+    },
+    "chain_2018_02_2021": {
+     "n": 207,
+     "exp": 0.1319,
+     "total": 27.31,
+     "win": 0.43,
+     "avg_loss": -0.5916,
+     "pf": 1.391
+    },
+    "chain_2019_2021": {
+     "n": 158,
+     "exp": 0.1786,
+     "total": 28.22,
+     "win": 0.4304,
+     "avg_loss": -0.6196,
+     "pf": 1.506
+    }
+   },
+   "sec": 1.8
+  },
+  "orb_asia_2d_buf10__xauusd": {
+   "check": {
+    "orders": 1829,
+    "n_mine_entered": 1039,
+    "n_official_entered": 1039,
+    "n_mine_open_at_slice_end": 1,
+    "n_official_closed_in_2022": 1,
+    "n_mine_closed": 1038,
+    "n_official_closed": 1038,
+    "matched_closed": 1038,
+    "only_mine": 0,
+    "only_official": 0,
+    "rows_differing": 0,
+    "totR_mine_closed": 231.1453,
+    "totR_official_closed": 231.1453,
+    "max_abs_R_diff": 0.0,
+    "open_trades_entry": [
+     "2021-12-31 07:03:00+00:00"
+    ],
+    "reproduced": true
+   },
+   "fp": {
+    "orders": 1829,
+    "filled_alone": 1829,
+    "refused_alone": 0,
+    "chain_refused_3spreads": 0,
+    "chain_boundary_dropped": 1,
+    "chain_all": {
+     "n": 1038,
+     "exp": 0.2227,
+     "total": 231.15,
+     "win": 0.3362,
+     "avg_loss": -0.9935,
+     "pf": 1.338
+    },
+    "chain_2018_02_2021": {
+     "n": 464,
+     "exp": 0.0583,
+     "total": 27.06,
+     "win": 0.3125,
+     "avg_loss": -0.9939,
+     "pf": 1.085
+    },
+    "chain_2019_2021": {
+     "n": 348,
+     "exp": 0.1551,
+     "total": 53.98,
+     "win": 0.3218,
+     "avg_loss": -0.9886,
+     "pf": 1.231
+    }
+   },
+   "stress": {
+    "orders": 1826,
+    "filled_alone": 1826,
+    "refused_alone": 0,
+    "chain_refused_3spreads": 0,
+    "chain_boundary_dropped": 1,
+    "chain_all": {
+     "n": 1038,
+     "exp": 0.1935,
+     "total": 200.89,
+     "win": 0.3353,
+     "avg_loss": -1.0023,
+     "pf": 1.29
+    },
+    "chain_2018_02_2021": {
+     "n": 464,
+     "exp": 0.0326,
+     "total": 15.11,
+     "win": 0.3103,
+     "avg_loss": -1.0012,
+     "pf": 1.047
+    },
+    "chain_2019_2021": {
+     "n": 348,
+     "exp": 0.1284,
+     "total": 44.68,
+     "win": 0.319,
+     "avg_loss": -0.9943,
+     "pf": 1.19
+    }
+   },
+   "sec": 2.8
+  },
+  "GOLD_FRI_PM__xauusd": {
+   "check": {
+    "orders": 443,
+    "n_mine_entered": 414,
+    "n_official_entered": 414,
+    "n_mine_open_at_slice_end": 0,
+    "n_official_closed_in_2022": 0,
+    "n_mine_closed": 414,
+    "n_official_closed": 414,
+    "matched_closed": 414,
+    "only_mine": 0,
+    "only_official": 0,
+    "rows_differing": 0,
+    "totR_mine_closed": 13.921,
+    "totR_official_closed": 13.921,
+    "max_abs_R_diff": 0.0,
+    "open_trades_entry": [],
+    "reproduced": true
+   },
+   "fp": {
+    "orders": 443,
+    "filled_alone": 414,
+    "refused_alone": 0,
+    "chain_refused_3spreads": 0,
+    "chain_boundary_dropped": 0,
+    "chain_all": {
+     "n": 414,
+     "exp": 0.0336,
+     "total": 13.92,
+     "win": 0.5411,
+     "avg_loss": -0.1627,
+     "pf": 1.45
+    },
+    "chain_2018_02_2021": {
+     "n": 183,
+     "exp": -0.0071,
+     "total": -1.3,
+     "win": 0.4754,
+     "avg_loss": -0.1595,
+     "pf": 0.915
+    },
+    "chain_2019_2021": {
+     "n": 139,
+     "exp": -0.0117,
+     "total": -1.63,
+     "win": 0.4317,
+     "avg_loss": -0.1535,
+     "pf": 0.865
+    }
+   },
+   "stress": {
+    "orders": 443,
+    "filled_alone": 408,
+    "refused_alone": 0,
+    "chain_refused_3spreads": 0,
+    "chain_boundary_dropped": 0,
+    "chain_all": {
+     "n": 408,
+     "exp": 0.0294,
+     "total": 12.01,
+     "win": 0.5319,
+     "avg_loss": -0.1613,
+     "pf": 1.39
+    },
+    "chain_2018_02_2021": {
+     "n": 180,
+     "exp": -0.0122,
+     "total": -2.19,
+     "win": 0.4667,
+     "avg_loss": -0.1609,
+     "pf": 0.858
+    },
+    "chain_2019_2021": {
+     "n": 137,
+     "exp": -0.0164,
+     "total": -2.25,
+     "win": 0.4234,
+     "avg_loss": -0.1546,
+     "pf": 0.816
+    }
+   },
+   "sec": 0.8
+  },
+  "brk72_24h_wd__btcusd": {
+   "check": {
+    "orders": 2914,
+    "n_mine_entered": 645,
+    "n_official_entered": 645,
+    "n_mine_open_at_slice_end": 0,
+    "n_official_closed_in_2022": 0,
+    "n_mine_closed": 645,
+    "n_official_closed": 645,
+    "matched_closed": 645,
+    "only_mine": 0,
+    "only_official": 0,
+    "rows_differing": 0,
+    "totR_mine_closed": 172.8743,
+    "totR_official_closed": 172.8743,
+    "max_abs_R_diff": 0.0,
+    "open_trades_entry": [],
+    "reproduced": true
+   },
+   "fp": {
+    "orders": 2914,
+    "filled_alone": 2914,
+    "refused_alone": 0,
+    "chain_refused_3spreads": 0,
+    "chain_boundary_dropped": 0,
+    "chain_all": {
+     "n": 645,
+     "exp": 0.268,
+     "total": 172.87,
+     "win": 0.4651,
+     "avg_loss": -0.7294,
+     "pf": 1.687
+    },
+    "chain_2018_02_2021": {
+     "n": 549,
+     "exp": 0.2563,
+     "total": 140.68,
+     "win": 0.4536,
+     "avg_loss": -0.7261,
+     "pf": 1.646
+    },
+    "chain_2019_2021": {
+     "n": 420,
+     "exp": 0.2489,
+     "total": 104.52,
+     "win": 0.4643,
+     "avg_loss": -0.7273,
+     "pf": 1.639
+    }
+   },
+   "stress": {
+    "orders": 2914,
+    "filled_alone": 2914,
+    "refused_alone": 0,
+    "chain_refused_3spreads": 0,
+    "chain_boundary_dropped": 0,
+    "chain_all": {
+     "n": 645,
+     "exp": 0.259,
+     "total": 167.02,
+     "win": 0.462,
+     "avg_loss": -0.7345,
+     "pf": 1.655
+    },
+    "chain_2018_02_2021": {
+     "n": 549,
+     "exp": 0.2468,
+     "total": 135.52,
+     "win": 0.4499,
+     "avg_loss": -0.7311,
+     "pf": 1.614
+    },
+    "chain_2019_2021": {
+     "n": 420,
+     "exp": 0.2408,
+     "total": 101.12,
+     "win": 0.4595,
+     "avg_loss": -0.7285,
+     "pf": 1.611
+    }
+   },
+   "sec": 0.4
+  },
+  "F1_brk_ridge_filter__btcusd": {
+   "check": {
+    "orders": 1235,
+    "n_mine_entered": 631,
+    "n_official_entered": 631,
+    "n_mine_open_at_slice_end": 0,
+    "n_official_closed_in_2022": 0,
+    "n_mine_closed": 631,
+    "n_official_closed": 631,
+    "matched_closed": 631,
+    "only_mine": 0,
+    "only_official": 0,
+    "rows_differing": 0,
+    "totR_mine_closed": 226.3891,
+    "totR_official_closed": 226.3891,
+    "max_abs_R_diff": 0.0,
+    "open_trades_entry": [],
+    "reproduced": true
+   },
+   "fp": {
+    "orders": 1235,
+    "filled_alone": 1235,
+    "refused_alone": 0,
+    "chain_refused_3spreads": 0,
+    "chain_boundary_dropped": 0,
+    "chain_all": {
+     "n": 631,
+     "exp": 0.3588,
+     "total": 226.39,
+     "win": 0.5182,
+     "avg_loss": -0.7286,
+     "pf": 2.022
+    },
+    "chain_2018_02_2021": {
+     "n": 545,
+     "exp": 0.3448,
+     "total": 187.92,
+     "win": 0.5046,
+     "avg_loss": -0.727,
+     "pf": 1.957
+    },
+    "chain_2019_2021": {
+     "n": 422,
+     "exp": 0.2738,
+     "total": 115.53,
+     "win": 0.5024,
+     "avg_loss": -0.7317,
+     "pf": 1.752
+    }
+   },
+   "stress": {
+    "orders": 1234,
+    "filled_alone": 1234,
+    "refused_alone": 0,
+    "chain_refused_3spreads": 0,
+    "chain_boundary_dropped": 0,
+    "chain_all": {
+     "n": 632,
+     "exp": 0.3454,
+     "total": 218.27,
+     "win": 0.5158,
+     "avg_loss": -0.7347,
+     "pf": 1.971
+    },
+    "chain_2018_02_2021": {
+     "n": 546,
+     "exp": 0.3316,
+     "total": 181.05,
+     "win": 0.5018,
+     "avg_loss": -0.7331,
+     "pf": 1.908
+    },
+    "chain_2019_2021": {
+     "n": 423,
+     "exp": 0.2603,
+     "total": 110.13,
+     "win": 0.5012,
+     "avg_loss": -0.7397,
+     "pf": 1.706
+    }
+   },
+   "sec": 0.5
+  },
+  "nq_btc_follow__btcusd": {
+   "check": {
+    "orders": 2611,
+    "n_mine_entered": 1063,
+    "n_official_entered": 1063,
+    "n_mine_open_at_slice_end": 0,
+    "n_official_closed_in_2022": 0,
+    "n_mine_closed": 1063,
+    "n_official_closed": 1063,
+    "matched_closed": 1063,
+    "only_mine": 0,
+    "only_official": 0,
+    "rows_differing": 0,
+    "totR_mine_closed": 66.346,
+    "totR_official_closed": 66.346,
+    "max_abs_R_diff": 0.0,
+    "open_trades_entry": [],
+    "reproduced": true
+   },
+   "fp": {
+    "orders": 2611,
+    "filled_alone": 2611,
+    "refused_alone": 0,
+    "chain_refused_3spreads": 0,
+    "chain_boundary_dropped": 0,
+    "chain_all": {
+     "n": 1063,
+     "exp": 0.0624,
+     "total": 66.35,
+     "win": 0.5202,
+     "avg_loss": -0.3683,
+     "pf": 1.353
+    },
+    "chain_2018_02_2021": {
+     "n": 943,
+     "exp": 0.0589,
+     "total": 55.54,
+     "win": 0.5217,
+     "avg_loss": -0.374,
+     "pf": 1.329
+    },
+    "chain_2019_2021": {
+     "n": 720,
+     "exp": 0.0883,
+     "total": 63.54,
+     "win": 0.5444,
+     "avg_loss": -0.3737,
+     "pf": 1.518
+    }
+   },
+   "stress": {
+    "orders": 2611,
+    "filled_alone": 2611,
+    "refused_alone": 0,
+    "chain_refused_3spreads": 0,
+    "chain_boundary_dropped": 0,
+    "chain_all": {
+     "n": 1063,
+     "exp": 0.048,
+     "total": 51.01,
+     "win": 0.5071,
+     "avg_loss": -0.3728,
+     "pf": 1.261
+    },
+    "chain_2018_02_2021": {
+     "n": 943,
+     "exp": 0.0438,
+     "total": 41.35,
+     "win": 0.509,
+     "avg_loss": -0.3795,
+     "pf": 1.235
+    },
+    "chain_2019_2021": {
+     "n": 720,
+     "exp": 0.0731,
+     "total": 52.66,
+     "win": 0.5375,
+     "avg_loss": -0.3835,
+     "pf": 1.412
+    }
+   },
+   "sec": 2.9
+  },
+  "brk72_24h_wd__ethusd": {
+   "check": {
+    "orders": 2355,
+    "n_mine_entered": 519,
+    "n_official_entered": 519,
+    "n_mine_open_at_slice_end": 0,
+    "n_official_closed_in_2022": 0,
+    "n_mine_closed": 519,
+    "n_official_closed": 519,
+    "matched_closed": 519,
+    "only_mine": 0,
+    "only_official": 0,
+    "rows_differing": 0,
+    "totR_mine_closed": 103.6871,
+    "totR_official_closed": 103.6871,
+    "max_abs_R_diff": 0.0,
+    "open_trades_entry": [],
+    "reproduced": true
+   },
+   "fp": {
+    "orders": 2355,
+    "filled_alone": 2355,
+    "refused_alone": 0,
+    "chain_refused_3spreads": 0,
+    "chain_boundary_dropped": 0,
+    "chain_all": {
+     "n": 519,
+     "exp": 0.1998,
+     "total": 103.69,
+     "win": 0.447,
+     "avg_loss": -0.7279,
+     "pf": 1.496
+    },
+    "chain_2018_02_2021": {
+     "n": 511,
+     "exp": 0.2086,
+     "total": 106.61,
+     "win": 0.4501,
+     "avg_loss": -0.7258,
+     "pf": 1.523
+    },
+    "chain_2019_2021": {
+     "n": 395,
+     "exp": 0.1243,
+     "total": 49.08,
+     "win": 0.438,
+     "avg_loss": -0.7045,
+     "pf": 1.314
+    }
+   },
+   "stress": {
+    "orders": 2355,
+    "filled_alone": 2355,
+    "refused_alone": 0,
+    "chain_refused_3spreads": 0,
+    "chain_boundary_dropped": 0,
+    "chain_all": {
+     "n": 521,
+     "exp": 0.179,
+     "total": 93.24,
+     "win": 0.4376,
+     "avg_loss": -0.7316,
+     "pf": 1.435
+    },
+    "chain_2018_02_2021": {
+     "n": 513,
+     "exp": 0.1875,
+     "total": 96.2,
+     "win": 0.4405,
+     "avg_loss": -0.7295,
+     "pf": 1.459
+    },
+    "chain_2019_2021": {
+     "n": 397,
+     "exp": 0.1029,
+     "total": 40.86,
+     "win": 0.4257,
+     "avg_loss": -0.7064,
+     "pf": 1.254
+    }
+   },
+   "sec": 0.4
+  },
+  "F1_brk_ridge_filter__ethusd": {
+   "check": {
+    "orders": 995,
+    "n_mine_entered": 517,
+    "n_official_entered": 517,
+    "n_mine_open_at_slice_end": 0,
+    "n_official_closed_in_2022": 0,
+    "n_mine_closed": 517,
+    "n_official_closed": 517,
+    "matched_closed": 517,
+    "only_mine": 0,
+    "only_official": 0,
+    "rows_differing": 0,
+    "totR_mine_closed": 104.4067,
+    "totR_official_closed": 104.4067,
+    "max_abs_R_diff": 0.0,
+    "open_trades_entry": [],
+    "reproduced": true
+   },
+   "fp": {
+    "orders": 995,
+    "filled_alone": 995,
+    "refused_alone": 0,
+    "chain_refused_3spreads": 0,
+    "chain_boundary_dropped": 0,
+    "chain_all": {
+     "n": 517,
+     "exp": 0.2019,
+     "total": 104.41,
+     "win": 0.4971,
+     "avg_loss": -0.7375,
+     "pf": 1.545
+    },
+    "chain_2018_02_2021": {
+     "n": 516,
+     "exp": 0.1996,
+     "total": 103.02,
+     "win": 0.4961,
+     "avg_loss": -0.7375,
+     "pf": 1.537
+    },
+    "chain_2019_2021": {
+     "n": 393,
+     "exp": 0.1431,
+     "total": 56.22,
+     "win": 0.4784,
+     "avg_loss": -0.7198,
+     "pf": 1.381
+    }
+   },
+   "stress": {
+    "orders": 995,
+    "filled_alone": 995,
+    "refused_alone": 1,
+    "chain_refused_3spreads": 0,
+    "chain_boundary_dropped": 0,
+    "chain_all": {
+     "n": 519,
+     "exp": 0.1681,
+     "total": 87.27,
+     "win": 0.4836,
+     "avg_loss": -0.7425,
+     "pf": 1.439
+    },
+    "chain_2018_02_2021": {
+     "n": 518,
+     "exp": 0.1658,
+     "total": 85.9,
+     "win": 0.4826,
+     "avg_loss": -0.7425,
+     "pf": 1.432
+    },
+    "chain_2019_2021": {
+     "n": 394,
+     "exp": 0.1167,
+     "total": 45.97,
+     "win": 0.467,
+     "avg_loss": -0.7261,
+     "pf": 1.301
+    }
+   },
+   "sec": 0.6
+  }
+ },
+ "frames": {
+  "us100": {
+   "bars": 2513306,
+   "first": "2013-01-01 00:00:00+00:00",
+   "last": "2021-12-31 21:14:00+00:00"
+  },
+  "xauusd": {
+   "bars": 3172985,
+   "first": "2012-12-31 00:00:00+00:00",
+   "last": "2021-12-31 21:59:00+00:00"
+  },
+  "btcusd": {
+   "bars": 1699217,
+   "first": "2017-05-07 23:59:00+00:00",
+   "last": "2021-12-31 16:58:00+00:00"
+  },
+  "ethusd": {
+   "bars": 1397208,
+   "first": "2018-01-01 00:00:00+00:00",
+   "last": "2021-12-31 16:58:00+00:00"
+  }
+ },
+ "P0_fp": {
+  "n": 5205,
+  "total_R": 788.58
+ },
+ "P0_stress": {
+  "n": 5207,
+  "total_R": 711.1
+ },
+ "all_reproduced": true
+}

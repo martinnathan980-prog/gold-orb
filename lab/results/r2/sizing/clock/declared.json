@@ -1,0 +1,248 @@
+{
+ "written": "2026-11-12T13:58:45Z",
+ "status": "written BEFORE any band or weekday statistic of this lens was computed and before any variant was simulated",
+ "protocol": "PROTOCOL_V3 Addendum I, lens clock (stakes or skips by hour band and weekday), in sample only",
+ "data_rule": "price rows ts < 2022-01-01 (pyarrow filter at read); official trades entry_time < 2022-01-01 in the read; nothing 2022+ read, simulated or looked at",
+ "first_check": "done before this declaration (s1_build.py, results s1_info.json): ten sleeves reproduced row by row; P0 2018-02..2021-12 fp 5,205 trades +788.58 R",
+ "disclosure": "Before writing this declaration the author had read: the autopsy clock findings quoted in the task (noise30 12:00-15:30 about 0 R vs +0.10 at 10:00-10:30; nq_btc_follow 09:30-09:46 about 0; Friday entries +0.08 vs +0.16..+0.22; after 12:00 NY +0.04 vs +0.19), the context lens's noise30 fill-hour terciles (10.0-10.5 / 10.5-12 / 12-15.5) and the cluster lens table of mean R by sleeve and weekday on 2018-02..2021 (e.g. orb_asia_2d_buf10 Wednesday -0.52 R on 88 trades, ocm4 Friday -0.04, brk72_24h_wd btcusd Friday -0.01, F1 ethusd Friday -0.04). These overlap the out-of-fold years. To avoid aligning the bands with them, the hour bands are equal-length parts of each sleeve's own window of decision times; weekdays are the five trading days.",
+ "account": "PLAIN SUM of the ten sleeves' one-position chains (P0 convention of synthesis_B): each sleeve one position at a time, 3-spread refusal, trades still open at the end of the slice dropped, no cap across sleeves; stake = 1 R x the variant's multiplier, no compounding. Kept the same throughout.",
+ "clock": {
+  "time_of_a_signal": "start of its FILL bar (entry_time of the trade; for an order never filled there is no trade). Market-entry sleeves fill 0-5 minutes after the decision; the two gold stop-entry sleeves (donch4h_stop, orb_asia_2d_buf10) at the touch, which is known when it happens (a robot that emulates stop entries at market decides the stake at the touch).",
+  "hour_bands": {
+   "ocm4__us100": null,
+   "noise30__us100": {
+    "clock": "NY",
+    "bands_decimal_hours": [
+     [
+      10.0,
+      12.0
+     ],
+     [
+      12.0,
+      14.0
+     ],
+     [
+      14.0,
+      16.0
+     ]
+    ]
+   },
+   "donch4h_stop__xauusd": {
+    "clock": "NY",
+    "bands_decimal_hours": [
+     [
+      0.0,
+      6.0
+     ],
+     [
+      6.0,
+      12.0
+     ],
+     [
+      12.0,
+      18.0
+     ],
+     [
+      18.0,
+      24.0
+     ]
+    ]
+   },
+   "orb_asia_2d_buf10__xauusd": {
+    "clock": "LDN",
+    "bands_decimal_hours": [
+     [
+      7.0,
+      8.666667
+     ],
+     [
+      8.666667,
+      10.333333
+     ],
+     [
+      10.333333,
+      12.025
+     ]
+    ]
+   },
+   "GOLD_FRI_PM__xauusd": null,
+   "brk72_24h_wd__btcusd": {
+    "clock": "NY",
+    "bands_decimal_hours": [
+     [
+      0.0,
+      6.0
+     ],
+     [
+      6.0,
+      12.0
+     ],
+     [
+      12.0,
+      18.0
+     ],
+     [
+      18.0,
+      24.0
+     ]
+    ]
+   },
+   "brk72_24h_wd__ethusd": {
+    "clock": "NY",
+    "bands_decimal_hours": [
+     [
+      0.0,
+      6.0
+     ],
+     [
+      6.0,
+      12.0
+     ],
+     [
+      12.0,
+      18.0
+     ],
+     [
+      18.0,
+      24.0
+     ]
+    ]
+   },
+   "F1_brk_ridge_filter__btcusd": {
+    "clock": "NY",
+    "bands_decimal_hours": [
+     [
+      3.0,
+      7.0
+     ],
+     [
+      7.0,
+      11.0
+     ],
+     [
+      11.0,
+      16.0
+     ]
+    ]
+   },
+   "F1_brk_ridge_filter__ethusd": {
+    "clock": "NY",
+    "bands_decimal_hours": [
+     [
+      3.0,
+      7.0
+     ],
+     [
+      7.0,
+      11.0
+     ],
+     [
+      11.0,
+      16.0
+     ]
+    ]
+   },
+   "nq_btc_follow__btcusd": {
+    "clock": "NY",
+    "bands_decimal_hours": [
+     [
+      9.5,
+      11.5
+     ],
+     [
+      11.5,
+      13.5
+     ],
+     [
+      13.5,
+      16.1
+     ]
+    ]
+   }
+  },
+  "hour_band_rule": "equal-length parts of the sleeve's window of decision times: 3 parts for windows of 12 h or less, 4 parts (quarters of the New York day) for 24 h sleeves; lower bound included, upper excluded; orb on the London clock because its window is set in London time",
+  "no_hour_band": [
+   "ocm4__us100 (single decision time 09:34 NY)",
+   "GOLD_FRI_PM__xauusd (single decision time Friday 13:30 NY)"
+  ],
+  "weekday": "day of week of the fill time on the FP server clock (New York + 7 h), Monday..Friday",
+  "untouched": "GOLD_FRI_PM__xauusd keeps stake 1 in every variant (one time, one weekday)"
+ },
+ "training": {
+  "data": "the sleeve's own reference chain trades (stake 1, same cost mode as the run) whose exit_time < 1 January of the applied year 00:00 UTC minus 7 days (expanding window from the first in-sample trade)",
+  "eligibility": "the sleeve acts in a year only with >= 100 training trades; a band or weekday is eligible with >= 20 training trades; at least 2 eligible bands",
+  "statistics": "training mean of a band = mean R of its training trades; sleeve training mean = mean R of all its training trades",
+  "refit": "every year Y in 2018..2021 (2018 reported apart, judges nothing); applied to signals whose fill time is in calendar year Y (UTC)"
+ },
+ "rules": {
+  "worst(T, m)": "b* = eligible band with the lowest training mean; if mean(b*) <= T then multiplier m for the sleeve's signals filling in b* during year Y",
+  "best(F)": "b^ = eligible band with the highest training mean; if sleeve training mean > 0 and mean(b^) >= F x sleeve training mean then multiplier 1.5 in b^ during year Y",
+  "skip": "multiplier 0 = the order is removed before simulation (its fill time taken from the signal table: every order simulated alone) and the sleeve's chain is re-simulated one position at a time with the 3-spread refusal, so a skipped signal frees the sleeve for a later one",
+  "combination": "for rules on two dimensions (hour band and weekday) a trade in both selected cells gets the smaller multiplier (never the product)"
+ },
+ "variants_stage_A": [
+  {
+   "id": "P1_H0",
+   "rule": "worst(T=+0.02, m=0) on hour bands",
+   "fitted_per_sleeve": 1
+  },
+  {
+   "id": "P2_Hhalf",
+   "rule": "worst(T=+0.02, m=0.5) on hour bands",
+   "fitted_per_sleeve": 1
+  },
+  {
+   "id": "P3_D0",
+   "rule": "worst(T=+0.02, m=0) on weekdays",
+   "fitted_per_sleeve": 1
+  },
+  {
+   "id": "P4_Dhalf",
+   "rule": "worst(T=+0.02, m=0.5) on weekdays",
+   "fitted_per_sleeve": 1
+  },
+  {
+   "id": "P5_Hbest",
+   "rule": "best(F=2) on hour bands",
+   "fitted_per_sleeve": 1
+  },
+  {
+   "id": "P6_Dbest",
+   "rule": "best(F=2) on weekdays",
+   "fitted_per_sleeve": 1
+  },
+  {
+   "id": "P7_HD0",
+   "rule": "worst(T=+0.02, m=0) on hour bands AND worst(T=+0.02, m=0) on weekdays",
+   "fitted_per_sleeve": 2
+  },
+  {
+   "id": "P8_HDhalf",
+   "rule": "worst(T=+0.02, m=0.5) on hour bands AND worst(T=+0.02, m=0.5) on weekdays",
+   "fitted_per_sleeve": 2
+  },
+  {
+   "id": "P9_FDhalf",
+   "rule": "family-pooled weekday: families us100 = {ocm4, noise30}, gold = {donch4h_stop, orb_asia_2d_buf10}, crypto = {brk72_24h_wd btc, brk72_24h_wd eth, F1 btc, F1 eth, nq_btc_follow}; training trades of the family's sleeves pooled (family acts with >= 100, weekday eligible with >= 20); worst(T=+0.02, m=0.5) applied to every sleeve of the family",
+   "fitted_per_family": 1
+  }
+ ],
+ "variants_stage_B_rule": "neighbours, evaluated only for primaries that pass (a), (b) and (c), at most 3 primaries (the 3 with the largest pooled fp Sharpe gain), 2 neighbours each: worst-band rules T in {0.00, +0.04} (same m); best-band rules F in {1.5, 2.5}; P7/P8 both dimensions at T in {0.00, +0.04}. The exact list is appended to declared_stageB.json before they are run. Budget: 9 + at most 6 = at most 15 variants.",
+ "measure": {
+  "book": "trades of the ten chains whose fill time is in [2019-01-01, 2022-01-01) UTC, each counting multiplier x R, booked at the FP server week (Monday-Sunday, server = New York + 7 h) of its exit",
+  "weeks": "every server week whose Thursday is in 2019, 2020 or 2021 (157 weeks), empty weeks = 0; per year: the weeks of that year",
+  "weekly_sharpe": "mean / standard deviation (ddof 1) of the weekly sums x sqrt(52)",
+  "equal_swing": "the variant's stakes are multiplied by k = sd(reference weekly R) / sd(variant weekly R) over the 157 pooled weeks (fp and stress each against its own reference); reported at that scale: total R, share of losing weeks (weekly sum < 0, all weeks counted), worst week, longest run of losing weeks, max drawdown of the weekly curve, losing trades per month (trades with multiplier > 0 and R < 0 over 36 months), weekly Sharpe (scale-free)",
+  "reference": "the same book with every multiplier = 1"
+ },
+ "criteria": {
+  "a": "pooled 2019-2021 fp weekly Sharpe of the variant >= 1.10 x the reference's",
+  "b": "fp weekly Sharpe of the variant above the reference's in at least 2 of the 3 years 2019, 2020, 2021",
+  "c": "with costs x1.5 (orders rebuilt on the widened quotes, chains, fits and stakes all recomputed in mode stress): pooled 2019-2021 weekly Sharpe >= 1.10 x the stress reference's",
+  "d": "both declared neighbours have a pooled 2019-2021 fp weekly Sharpe above the reference's",
+  "e": "truncation test: (e1) for every sleeve and every fold, the reference chain rebuilt on the frame cut at the fold's cutoff (rows ts < 1 Jan - 7 days) gives the same training trades and the same fitted choices; (e2) for 20 random trades per sleeve of the variant in 2019-2021 (and up to 20 skipped orders per sleeve for a skip variant), the frame cut two bars after the fill bar, orders rebuilt, skip rule applied with the year's fit and the chain re-simulated: same trade, same fill time, side and multiplier (a skipped order absent)",
+  "f": "multipliers in {0, 0.5, 1, 1.5}; after the equal-swing scale k, k x 1.5 <= 2; at most 3 fitted choices per sleeve (here 1 or 2)"
+ },
+ "part1": "description after this declaration: per sleeve, mean R of the reference chain (fp, stake 1) by hour band and by weekday, by year, and walk-forward (training means by fold, the fold's worst / best band and how it did the next year)",
+ "to_be_said": "found on the years that built the rules: optimistic; the measure that counts is the validation look, then the demo account"
+}

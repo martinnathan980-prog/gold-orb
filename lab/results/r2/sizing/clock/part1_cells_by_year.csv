@@ -1,0 +1,453 @@
+sleeve,dim,cell,label,year,n,mean,total
+ocm4__us100,D,0,Mon,2014,20,0.1002,2.0
+ocm4__us100,D,1,Tue,2014,26,0.5703,14.83
+ocm4__us100,D,2,Wed,2014,26,0.1287,3.35
+ocm4__us100,D,3,Thu,2014,25,0.4217,10.54
+ocm4__us100,D,4,Fri,2014,26,0.1544,4.01
+ocm4__us100,D,0,Mon,2015,25,0.2266,5.66
+ocm4__us100,D,1,Tue,2015,26,-0.6056,-15.75
+ocm4__us100,D,2,Wed,2015,26,-0.2616,-6.8
+ocm4__us100,D,3,Thu,2015,17,0.3172,5.39
+ocm4__us100,D,4,Fri,2015,30,-0.1697,-5.09
+ocm4__us100,D,0,Mon,2016,24,0.2813,6.75
+ocm4__us100,D,1,Tue,2016,18,0.2821,5.08
+ocm4__us100,D,2,Wed,2016,28,0.4562,12.77
+ocm4__us100,D,3,Thu,2016,24,0.3223,7.73
+ocm4__us100,D,4,Fri,2016,31,0.1829,5.67
+ocm4__us100,D,0,Mon,2017,22,0.9013,19.83
+ocm4__us100,D,1,Tue,2017,26,-0.2102,-5.47
+ocm4__us100,D,2,Wed,2017,21,0.2531,5.32
+ocm4__us100,D,3,Thu,2017,28,0.4857,13.6
+ocm4__us100,D,4,Fri,2017,29,-0.1151,-3.34
+ocm4__us100,D,0,Mon,2018,29,-0.1296,-3.76
+ocm4__us100,D,1,Tue,2018,24,0.0925,2.22
+ocm4__us100,D,2,Wed,2018,24,0.8607,20.66
+ocm4__us100,D,3,Thu,2018,23,0.0176,0.41
+ocm4__us100,D,4,Fri,2018,24,-0.357,-8.57
+ocm4__us100,D,0,Mon,2019,24,0.4469,10.73
+ocm4__us100,D,1,Tue,2019,22,-0.1233,-2.71
+ocm4__us100,D,2,Wed,2019,25,0.0276,0.69
+ocm4__us100,D,3,Thu,2019,28,0.0615,1.72
+ocm4__us100,D,4,Fri,2019,24,0.2415,5.8
+ocm4__us100,D,0,Mon,2020,19,0.2125,4.04
+ocm4__us100,D,1,Tue,2020,27,-0.1375,-3.71
+ocm4__us100,D,2,Wed,2020,30,0.1516,4.55
+ocm4__us100,D,3,Thu,2020,26,0.0472,1.23
+ocm4__us100,D,4,Fri,2020,22,-0.1545,-3.4
+ocm4__us100,D,0,Mon,2021,30,0.3078,9.23
+ocm4__us100,D,1,Tue,2021,26,0.1795,4.67
+ocm4__us100,D,2,Wed,2021,24,-0.239,-5.74
+ocm4__us100,D,3,Thu,2021,25,0.4545,11.36
+ocm4__us100,D,4,Fri,2021,25,0.0548,1.37
+noise30__us100,H,0,10:00-12:00 NY,2014,112,0.0993,11.12
+noise30__us100,H,1,12:00-14:00 NY,2014,51,-0.0468,-2.39
+noise30__us100,H,2,14:00-16:00 NY,2014,43,0.057,2.45
+noise30__us100,H,0,10:00-12:00 NY,2015,120,0.0965,11.58
+noise30__us100,H,1,12:00-14:00 NY,2015,46,0.0967,4.45
+noise30__us100,H,2,14:00-16:00 NY,2015,44,-0.0589,-2.59
+noise30__us100,H,0,10:00-12:00 NY,2016,131,0.0544,7.13
+noise30__us100,H,1,12:00-14:00 NY,2016,45,0.0748,3.36
+noise30__us100,H,2,14:00-16:00 NY,2016,34,-0.0717,-2.44
+noise30__us100,H,0,10:00-12:00 NY,2017,117,0.1144,13.39
+noise30__us100,H,1,12:00-14:00 NY,2017,42,-0.0442,-1.86
+noise30__us100,H,2,14:00-16:00 NY,2017,38,0.0854,3.25
+noise30__us100,H,0,10:00-12:00 NY,2018,124,0.3046,37.77
+noise30__us100,H,1,12:00-14:00 NY,2018,48,0.0257,1.23
+noise30__us100,H,2,14:00-16:00 NY,2018,39,0.0845,3.3
+noise30__us100,H,0,10:00-12:00 NY,2019,122,0.0062,0.75
+noise30__us100,H,1,12:00-14:00 NY,2019,37,0.0765,2.83
+noise30__us100,H,2,14:00-16:00 NY,2019,32,-0.0767,-2.45
+noise30__us100,H,0,10:00-12:00 NY,2020,113,0.1454,16.43
+noise30__us100,H,1,12:00-14:00 NY,2020,54,-0.0118,-0.64
+noise30__us100,H,2,14:00-16:00 NY,2020,39,0.1338,5.22
+noise30__us100,H,0,10:00-12:00 NY,2021,126,0.2235,28.16
+noise30__us100,H,1,12:00-14:00 NY,2021,45,-0.1818,-8.18
+noise30__us100,H,2,14:00-16:00 NY,2021,41,0.0617,2.53
+noise30__us100,D,0,Mon,2014,41,-0.0454,-1.86
+noise30__us100,D,1,Tue,2014,46,0.1148,5.28
+noise30__us100,D,2,Wed,2014,42,0.0848,3.56
+noise30__us100,D,3,Thu,2014,43,0.0837,3.6
+noise30__us100,D,4,Fri,2014,34,0.0174,0.59
+noise30__us100,D,0,Mon,2015,41,0.1927,7.9
+noise30__us100,D,1,Tue,2015,37,-0.0517,-1.91
+noise30__us100,D,2,Wed,2015,39,-0.0695,-2.71
+noise30__us100,D,3,Thu,2015,51,0.0873,4.45
+noise30__us100,D,4,Fri,2015,42,0.1357,5.7
+noise30__us100,D,0,Mon,2016,39,0.1449,5.65
+noise30__us100,D,1,Tue,2016,52,0.1212,6.3
+noise30__us100,D,2,Wed,2016,40,-0.0004,-0.02
+noise30__us100,D,3,Thu,2016,42,-0.0593,-2.49
+noise30__us100,D,4,Fri,2016,37,-0.0374,-1.38
+noise30__us100,D,0,Mon,2017,42,-0.0792,-3.33
+noise30__us100,D,1,Tue,2017,39,-0.0437,-1.7
+noise30__us100,D,2,Wed,2017,39,0.1661,6.48
+noise30__us100,D,3,Thu,2017,47,0.0281,1.32
+noise30__us100,D,4,Fri,2017,30,0.4005,12.01
+noise30__us100,D,0,Mon,2018,39,0.3047,11.88
+noise30__us100,D,1,Tue,2018,41,0.0513,2.1
+noise30__us100,D,2,Wed,2018,50,0.2116,10.58
+noise30__us100,D,3,Thu,2018,44,0.0899,3.96
+noise30__us100,D,4,Fri,2018,37,0.3724,13.78
+noise30__us100,D,0,Mon,2019,37,-0.0451,-1.67
+noise30__us100,D,1,Tue,2019,40,0.0526,2.11
+noise30__us100,D,2,Wed,2019,29,-0.0977,-2.83
+noise30__us100,D,3,Thu,2019,45,-0.0528,-2.38
+noise30__us100,D,4,Fri,2019,40,0.1475,5.9
+noise30__us100,D,0,Mon,2020,46,0.102,4.69
+noise30__us100,D,1,Tue,2020,40,0.3329,13.32
+noise30__us100,D,2,Wed,2020,44,-0.0031,-0.14
+noise30__us100,D,3,Thu,2020,44,0.1053,4.63
+noise30__us100,D,4,Fri,2020,32,-0.0466,-1.49
+noise30__us100,D,0,Mon,2021,47,0.1184,5.56
+noise30__us100,D,1,Tue,2021,41,0.2389,9.79
+noise30__us100,D,2,Wed,2021,49,-0.0498,-2.44
+noise30__us100,D,3,Thu,2021,42,0.244,10.25
+noise30__us100,D,4,Fri,2021,33,-0.0199,-0.66
+donch4h_stop__xauusd,H,0,00:00-06:00 NY,2013,8,0.248,1.98
+donch4h_stop__xauusd,H,1,06:00-12:00 NY,2013,34,0.0717,2.44
+donch4h_stop__xauusd,H,2,12:00-18:00 NY,2013,9,0.525,4.73
+donch4h_stop__xauusd,H,3,18:00-24:00 NY,2013,6,0.3707,2.22
+donch4h_stop__xauusd,H,0,00:00-06:00 NY,2014,11,0.854,9.39
+donch4h_stop__xauusd,H,1,06:00-12:00 NY,2014,25,0.2267,5.67
+donch4h_stop__xauusd,H,2,12:00-18:00 NY,2014,11,-0.2567,-2.82
+donch4h_stop__xauusd,H,3,18:00-24:00 NY,2014,10,-0.3471,-3.47
+donch4h_stop__xauusd,H,0,00:00-06:00 NY,2015,12,0.0279,0.33
+donch4h_stop__xauusd,H,1,06:00-12:00 NY,2015,33,0.237,7.82
+donch4h_stop__xauusd,H,2,12:00-18:00 NY,2015,8,0.1716,1.37
+donch4h_stop__xauusd,H,3,18:00-24:00 NY,2015,2,-0.3598,-0.72
+donch4h_stop__xauusd,H,0,00:00-06:00 NY,2016,2,0.2554,0.51
+donch4h_stop__xauusd,H,1,06:00-12:00 NY,2016,23,0.2059,4.74
+donch4h_stop__xauusd,H,2,12:00-18:00 NY,2016,11,0.1154,1.27
+donch4h_stop__xauusd,H,3,18:00-24:00 NY,2016,14,0.653,9.14
+donch4h_stop__xauusd,H,0,00:00-06:00 NY,2017,14,0.5369,7.52
+donch4h_stop__xauusd,H,1,06:00-12:00 NY,2017,28,0.189,5.29
+donch4h_stop__xauusd,H,2,12:00-18:00 NY,2017,13,-0.0157,-0.2
+donch4h_stop__xauusd,H,3,18:00-24:00 NY,2017,9,-0.4092,-3.68
+donch4h_stop__xauusd,H,0,00:00-06:00 NY,2018,14,0.1082,1.51
+donch4h_stop__xauusd,H,1,06:00-12:00 NY,2018,29,-0.0938,-2.72
+donch4h_stop__xauusd,H,2,12:00-18:00 NY,2018,5,0.073,0.36
+donch4h_stop__xauusd,H,3,18:00-24:00 NY,2018,5,0.3009,1.5
+donch4h_stop__xauusd,H,0,00:00-06:00 NY,2019,6,-0.4048,-2.43
+donch4h_stop__xauusd,H,1,06:00-12:00 NY,2019,25,0.1052,2.63
+donch4h_stop__xauusd,H,2,12:00-18:00 NY,2019,11,-0.1826,-2.01
+donch4h_stop__xauusd,H,3,18:00-24:00 NY,2019,9,0.8453,7.61
+donch4h_stop__xauusd,H,0,00:00-06:00 NY,2020,8,0.2218,1.77
+donch4h_stop__xauusd,H,1,06:00-12:00 NY,2020,27,0.4104,11.08
+donch4h_stop__xauusd,H,2,12:00-18:00 NY,2020,7,0.2587,1.81
+donch4h_stop__xauusd,H,3,18:00-24:00 NY,2020,5,0.8308,4.15
+donch4h_stop__xauusd,H,0,00:00-06:00 NY,2021,11,0.0655,0.72
+donch4h_stop__xauusd,H,1,06:00-12:00 NY,2021,36,0.2007,7.23
+donch4h_stop__xauusd,H,2,12:00-18:00 NY,2021,6,-0.0163,-0.1
+donch4h_stop__xauusd,H,3,18:00-24:00 NY,2021,7,-0.3372,-2.36
+donch4h_stop__xauusd,D,0,Mon,2013,9,0.2082,1.87
+donch4h_stop__xauusd,D,1,Tue,2013,12,-0.0687,-0.82
+donch4h_stop__xauusd,D,2,Wed,2013,9,1.0464,9.42
+donch4h_stop__xauusd,D,3,Thu,2013,15,-0.1146,-1.72
+donch4h_stop__xauusd,D,4,Fri,2013,12,0.2187,2.62
+donch4h_stop__xauusd,D,0,Mon,2014,18,0.0219,0.39
+donch4h_stop__xauusd,D,1,Tue,2014,9,-0.055,-0.49
+donch4h_stop__xauusd,D,2,Wed,2014,10,0.5485,5.48
+donch4h_stop__xauusd,D,3,Thu,2014,11,0.181,1.99
+donch4h_stop__xauusd,D,4,Fri,2014,9,0.1547,1.39
+donch4h_stop__xauusd,D,0,Mon,2015,5,-0.6147,-3.07
+donch4h_stop__xauusd,D,1,Tue,2015,11,-0.2832,-3.12
+donch4h_stop__xauusd,D,2,Wed,2015,16,0.3818,6.11
+donch4h_stop__xauusd,D,3,Thu,2015,11,0.6269,6.9
+donch4h_stop__xauusd,D,4,Fri,2015,12,0.1662,1.99
+donch4h_stop__xauusd,D,0,Mon,2016,7,0.1276,0.89
+donch4h_stop__xauusd,D,1,Tue,2016,7,0.9651,6.76
+donch4h_stop__xauusd,D,2,Wed,2016,15,0.3193,4.79
+donch4h_stop__xauusd,D,3,Thu,2016,11,0.0849,0.93
+donch4h_stop__xauusd,D,4,Fri,2016,10,0.2287,2.29
+donch4h_stop__xauusd,D,0,Mon,2017,17,-0.1027,-1.75
+donch4h_stop__xauusd,D,1,Tue,2017,9,0.3046,2.74
+donch4h_stop__xauusd,D,2,Wed,2017,16,0.4874,7.8
+donch4h_stop__xauusd,D,3,Thu,2017,12,0.016,0.19
+donch4h_stop__xauusd,D,4,Fri,2017,10,-0.0064,-0.06
+donch4h_stop__xauusd,D,0,Mon,2018,10,0.1739,1.74
+donch4h_stop__xauusd,D,1,Tue,2018,10,0.0662,0.66
+donch4h_stop__xauusd,D,2,Wed,2018,12,-0.1718,-2.06
+donch4h_stop__xauusd,D,3,Thu,2018,10,-0.0595,-0.59
+donch4h_stop__xauusd,D,4,Fri,2018,11,0.0834,0.92
+donch4h_stop__xauusd,D,0,Mon,2019,11,0.0442,0.49
+donch4h_stop__xauusd,D,1,Tue,2019,8,0.3966,3.17
+donch4h_stop__xauusd,D,2,Wed,2019,8,-0.1883,-1.51
+donch4h_stop__xauusd,D,3,Thu,2019,14,-0.0119,-0.17
+donch4h_stop__xauusd,D,4,Fri,2019,10,0.3815,3.81
+donch4h_stop__xauusd,D,0,Mon,2020,10,0.4687,4.69
+donch4h_stop__xauusd,D,1,Tue,2020,6,0.45,2.7
+donch4h_stop__xauusd,D,2,Wed,2020,9,0.1844,1.66
+donch4h_stop__xauusd,D,3,Thu,2020,7,0.4371,3.06
+donch4h_stop__xauusd,D,4,Fri,2020,15,0.4476,6.71
+donch4h_stop__xauusd,D,0,Mon,2021,13,-0.025,-0.32
+donch4h_stop__xauusd,D,1,Tue,2021,11,-0.3716,-4.09
+donch4h_stop__xauusd,D,2,Wed,2021,10,0.0296,0.3
+donch4h_stop__xauusd,D,3,Thu,2021,12,0.1222,1.47
+donch4h_stop__xauusd,D,4,Fri,2021,14,0.5812,8.14
+orb_asia_2d_buf10__xauusd,H,0,07:00-08:40 LDN,2012,1,2.1059,2.11
+orb_asia_2d_buf10__xauusd,H,0,07:00-08:40 LDN,2013,65,0.611,39.71
+orb_asia_2d_buf10__xauusd,H,1,08:40-10:20 LDN,2013,35,1.7172,60.1
+orb_asia_2d_buf10__xauusd,H,2,10:20-12:02 LDN,2013,10,0.4134,4.13
+orb_asia_2d_buf10__xauusd,H,0,07:00-08:40 LDN,2014,78,0.0541,4.22
+orb_asia_2d_buf10__xauusd,H,1,08:40-10:20 LDN,2014,31,0.6317,19.58
+orb_asia_2d_buf10__xauusd,H,2,10:20-12:02 LDN,2014,13,1.3601,17.68
+orb_asia_2d_buf10__xauusd,H,0,07:00-08:40 LDN,2015,78,0.1595,12.44
+orb_asia_2d_buf10__xauusd,H,1,08:40-10:20 LDN,2015,26,0.3448,8.96
+orb_asia_2d_buf10__xauusd,H,2,10:20-12:02 LDN,2015,8,0.0721,0.58
+orb_asia_2d_buf10__xauusd,H,0,07:00-08:40 LDN,2016,73,0.2021,14.75
+orb_asia_2d_buf10__xauusd,H,1,08:40-10:20 LDN,2016,19,0.3495,6.64
+orb_asia_2d_buf10__xauusd,H,2,10:20-12:02 LDN,2016,11,-0.2662,-2.93
+orb_asia_2d_buf10__xauusd,H,0,07:00-08:40 LDN,2017,81,0.0668,5.41
+orb_asia_2d_buf10__xauusd,H,1,08:40-10:20 LDN,2017,21,0.5549,11.65
+orb_asia_2d_buf10__xauusd,H,2,10:20-12:02 LDN,2017,16,-0.4112,-6.58
+orb_asia_2d_buf10__xauusd,H,0,07:00-08:40 LDN,2018,93,-0.2679,-24.92
+orb_asia_2d_buf10__xauusd,H,1,08:40-10:20 LDN,2018,24,-0.0056,-0.14
+orb_asia_2d_buf10__xauusd,H,2,10:20-12:02 LDN,2018,7,0.5369,3.76
+orb_asia_2d_buf10__xauusd,H,0,07:00-08:40 LDN,2019,89,0.1932,17.19
+orb_asia_2d_buf10__xauusd,H,1,08:40-10:20 LDN,2019,18,-0.1639,-2.95
+orb_asia_2d_buf10__xauusd,H,2,10:20-12:02 LDN,2019,6,0.6435,3.86
+orb_asia_2d_buf10__xauusd,H,0,07:00-08:40 LDN,2020,72,0.4346,31.29
+orb_asia_2d_buf10__xauusd,H,1,08:40-10:20 LDN,2020,24,0.5047,12.11
+orb_asia_2d_buf10__xauusd,H,2,10:20-12:02 LDN,2020,13,-0.3835,-4.99
+orb_asia_2d_buf10__xauusd,H,0,07:00-08:40 LDN,2021,85,-0.0703,-5.98
+orb_asia_2d_buf10__xauusd,H,1,08:40-10:20 LDN,2021,23,-0.0523,-1.2
+orb_asia_2d_buf10__xauusd,H,2,10:20-12:02 LDN,2021,18,0.2575,4.63
+orb_asia_2d_buf10__xauusd,D,0,Mon,2012,1,2.1059,2.11
+orb_asia_2d_buf10__xauusd,D,0,Mon,2013,21,0.8267,17.36
+orb_asia_2d_buf10__xauusd,D,1,Tue,2013,21,0.155,3.26
+orb_asia_2d_buf10__xauusd,D,2,Wed,2013,23,2.1963,50.52
+orb_asia_2d_buf10__xauusd,D,3,Thu,2013,22,0.9812,21.59
+orb_asia_2d_buf10__xauusd,D,4,Fri,2013,23,0.4882,11.23
+orb_asia_2d_buf10__xauusd,D,0,Mon,2014,24,0.7426,17.82
+orb_asia_2d_buf10__xauusd,D,1,Tue,2014,20,-0.5126,-10.25
+orb_asia_2d_buf10__xauusd,D,2,Wed,2014,19,0.9452,17.96
+orb_asia_2d_buf10__xauusd,D,3,Thu,2014,34,0.1023,3.48
+orb_asia_2d_buf10__xauusd,D,4,Fri,2014,25,0.4989,12.47
+orb_asia_2d_buf10__xauusd,D,0,Mon,2015,23,0.0085,0.2
+orb_asia_2d_buf10__xauusd,D,1,Tue,2015,32,0.4074,13.04
+orb_asia_2d_buf10__xauusd,D,2,Wed,2015,16,1.8329,29.33
+orb_asia_2d_buf10__xauusd,D,3,Thu,2015,20,-0.2181,-4.36
+orb_asia_2d_buf10__xauusd,D,4,Fri,2015,21,-0.7723,-16.22
+orb_asia_2d_buf10__xauusd,D,0,Mon,2016,22,0.3335,7.34
+orb_asia_2d_buf10__xauusd,D,1,Tue,2016,26,0.5587,14.53
+orb_asia_2d_buf10__xauusd,D,2,Wed,2016,17,0.0014,0.02
+orb_asia_2d_buf10__xauusd,D,3,Thu,2016,21,0.0316,0.66
+orb_asia_2d_buf10__xauusd,D,4,Fri,2016,17,-0.2403,-4.09
+orb_asia_2d_buf10__xauusd,D,0,Mon,2017,21,-0.1312,-2.76
+orb_asia_2d_buf10__xauusd,D,1,Tue,2017,27,0.5293,14.29
+orb_asia_2d_buf10__xauusd,D,2,Wed,2017,22,-0.1925,-4.24
+orb_asia_2d_buf10__xauusd,D,3,Thu,2017,24,-0.0554,-1.33
+orb_asia_2d_buf10__xauusd,D,4,Fri,2017,24,0.188,4.51
+orb_asia_2d_buf10__xauusd,D,0,Mon,2018,22,-0.0821,-1.81
+orb_asia_2d_buf10__xauusd,D,1,Tue,2018,27,-0.1983,-5.35
+orb_asia_2d_buf10__xauusd,D,2,Wed,2018,21,-0.3154,-6.62
+orb_asia_2d_buf10__xauusd,D,3,Thu,2018,29,-0.071,-2.06
+orb_asia_2d_buf10__xauusd,D,4,Fri,2018,25,-0.218,-5.45
+orb_asia_2d_buf10__xauusd,D,0,Mon,2019,21,-0.0857,-1.8
+orb_asia_2d_buf10__xauusd,D,1,Tue,2019,19,0.6413,12.18
+orb_asia_2d_buf10__xauusd,D,2,Wed,2019,22,-0.7116,-15.66
+orb_asia_2d_buf10__xauusd,D,3,Thu,2019,27,0.2919,7.88
+orb_asia_2d_buf10__xauusd,D,4,Fri,2019,24,0.6454,15.49
+orb_asia_2d_buf10__xauusd,D,0,Mon,2020,24,0.7464,17.91
+orb_asia_2d_buf10__xauusd,D,1,Tue,2020,19,0.8862,16.84
+orb_asia_2d_buf10__xauusd,D,2,Wed,2020,22,-0.1332,-2.93
+orb_asia_2d_buf10__xauusd,D,3,Thu,2020,19,0.2292,4.36
+orb_asia_2d_buf10__xauusd,D,4,Fri,2020,25,0.0898,2.24
+orb_asia_2d_buf10__xauusd,D,0,Mon,2021,22,0.4896,10.77
+orb_asia_2d_buf10__xauusd,D,1,Tue,2021,27,-0.6478,-17.49
+orb_asia_2d_buf10__xauusd,D,2,Wed,2021,25,-0.6174,-15.44
+orb_asia_2d_buf10__xauusd,D,3,Thu,2021,31,0.2699,8.37
+orb_asia_2d_buf10__xauusd,D,4,Fri,2021,21,0.5353,11.24
+brk72_24h_wd__btcusd,H,0,00:00-06:00 NY,2017,20,0.6003,12.01
+brk72_24h_wd__btcusd,H,1,06:00-12:00 NY,2017,33,0.3827,12.63
+brk72_24h_wd__btcusd,H,2,12:00-18:00 NY,2017,14,0.0145,0.2
+brk72_24h_wd__btcusd,H,3,18:00-24:00 NY,2017,19,0.2436,4.63
+brk72_24h_wd__btcusd,H,0,00:00-06:00 NY,2018,33,0.4523,14.93
+brk72_24h_wd__btcusd,H,1,06:00-12:00 NY,2018,29,0.03,0.87
+brk72_24h_wd__btcusd,H,2,12:00-18:00 NY,2018,30,0.1312,3.94
+brk72_24h_wd__btcusd,H,3,18:00-24:00 NY,2018,47,0.4075,19.15
+brk72_24h_wd__btcusd,H,0,00:00-06:00 NY,2019,23,0.1322,3.04
+brk72_24h_wd__btcusd,H,1,06:00-12:00 NY,2019,32,0.2843,9.1
+brk72_24h_wd__btcusd,H,2,12:00-18:00 NY,2019,38,0.2365,8.99
+brk72_24h_wd__btcusd,H,3,18:00-24:00 NY,2019,47,0.4958,23.3
+brk72_24h_wd__btcusd,H,0,00:00-06:00 NY,2020,25,0.0815,2.04
+brk72_24h_wd__btcusd,H,1,06:00-12:00 NY,2020,35,0.4594,16.08
+brk72_24h_wd__btcusd,H,2,12:00-18:00 NY,2020,33,-0.066,-2.18
+brk72_24h_wd__btcusd,H,3,18:00-24:00 NY,2020,42,0.7885,33.12
+brk72_24h_wd__btcusd,H,0,00:00-06:00 NY,2021,27,-0.0534,-1.44
+brk72_24h_wd__btcusd,H,1,06:00-12:00 NY,2021,27,-0.0416,-1.12
+brk72_24h_wd__btcusd,H,2,12:00-18:00 NY,2021,33,0.0493,1.63
+brk72_24h_wd__btcusd,H,3,18:00-24:00 NY,2021,58,0.2065,11.98
+brk72_24h_wd__btcusd,D,0,Mon,2017,23,0.1287,2.96
+brk72_24h_wd__btcusd,D,1,Tue,2017,17,0.205,3.49
+brk72_24h_wd__btcusd,D,2,Wed,2017,12,0.6057,7.27
+brk72_24h_wd__btcusd,D,3,Thu,2017,18,0.8305,14.95
+brk72_24h_wd__btcusd,D,4,Fri,2017,16,0.0502,0.8
+brk72_24h_wd__btcusd,D,0,Mon,2018,33,0.1257,4.15
+brk72_24h_wd__btcusd,D,1,Tue,2018,24,0.6832,16.4
+brk72_24h_wd__btcusd,D,2,Wed,2018,28,0.3027,8.48
+brk72_24h_wd__btcusd,D,3,Thu,2018,29,0.1948,5.65
+brk72_24h_wd__btcusd,D,4,Fri,2018,25,0.1686,4.22
+brk72_24h_wd__btcusd,D,0,Mon,2019,36,0.3512,12.64
+brk72_24h_wd__btcusd,D,1,Tue,2019,24,1.1754,28.21
+brk72_24h_wd__btcusd,D,2,Wed,2019,23,-0.2147,-4.94
+brk72_24h_wd__btcusd,D,3,Thu,2019,29,0.1936,5.61
+brk72_24h_wd__btcusd,D,4,Fri,2019,28,0.1034,2.9
+brk72_24h_wd__btcusd,D,0,Mon,2020,37,0.2156,7.98
+brk72_24h_wd__btcusd,D,1,Tue,2020,20,0.7253,14.51
+brk72_24h_wd__btcusd,D,2,Wed,2020,23,0.4098,9.43
+brk72_24h_wd__btcusd,D,3,Thu,2020,36,0.7415,26.69
+brk72_24h_wd__btcusd,D,4,Fri,2020,19,-0.5025,-9.55
+brk72_24h_wd__btcusd,D,0,Mon,2021,37,0.1418,5.25
+brk72_24h_wd__btcusd,D,1,Tue,2021,23,-0.0287,-0.66
+brk72_24h_wd__btcusd,D,2,Wed,2021,26,0.1848,4.8
+brk72_24h_wd__btcusd,D,3,Thu,2021,28,-0.0737,-2.06
+brk72_24h_wd__btcusd,D,4,Fri,2021,31,0.1197,3.71
+brk72_24h_wd__ethusd,H,0,00:00-06:00 NY,2018,32,0.6872,21.99
+brk72_24h_wd__ethusd,H,1,06:00-12:00 NY,2018,29,0.3009,8.73
+brk72_24h_wd__ethusd,H,2,12:00-18:00 NY,2018,24,0.4285,10.28
+brk72_24h_wd__ethusd,H,3,18:00-24:00 NY,2018,39,0.3489,13.61
+brk72_24h_wd__ethusd,H,0,00:00-06:00 NY,2019,20,0.3221,6.44
+brk72_24h_wd__ethusd,H,1,06:00-12:00 NY,2019,28,0.0364,1.02
+brk72_24h_wd__ethusd,H,2,12:00-18:00 NY,2019,29,-0.0945,-2.74
+brk72_24h_wd__ethusd,H,3,18:00-24:00 NY,2019,42,0.153,6.43
+brk72_24h_wd__ethusd,H,0,00:00-06:00 NY,2020,33,0.2135,7.04
+brk72_24h_wd__ethusd,H,1,06:00-12:00 NY,2020,26,0.8078,21.0
+brk72_24h_wd__ethusd,H,2,12:00-18:00 NY,2020,30,-0.1122,-3.37
+brk72_24h_wd__ethusd,H,3,18:00-24:00 NY,2020,41,0.2811,11.52
+brk72_24h_wd__ethusd,H,0,00:00-06:00 NY,2021,27,0.0989,2.67
+brk72_24h_wd__ethusd,H,1,06:00-12:00 NY,2021,40,-0.0307,-1.23
+brk72_24h_wd__ethusd,H,2,12:00-18:00 NY,2021,31,-0.025,-0.78
+brk72_24h_wd__ethusd,H,3,18:00-24:00 NY,2021,48,0.0222,1.07
+brk72_24h_wd__ethusd,D,0,Mon,2018,30,0.3011,9.03
+brk72_24h_wd__ethusd,D,1,Tue,2018,24,0.4109,9.86
+brk72_24h_wd__ethusd,D,2,Wed,2018,18,1.3506,24.31
+brk72_24h_wd__ethusd,D,3,Thu,2018,27,0.3591,9.7
+brk72_24h_wd__ethusd,D,4,Fri,2018,25,0.0683,1.71
+brk72_24h_wd__ethusd,D,0,Mon,2019,36,0.1194,4.3
+brk72_24h_wd__ethusd,D,1,Tue,2019,19,0.2618,4.97
+brk72_24h_wd__ethusd,D,2,Wed,2019,21,0.2406,5.05
+brk72_24h_wd__ethusd,D,3,Thu,2019,21,-0.1498,-3.15
+brk72_24h_wd__ethusd,D,4,Fri,2019,22,-0.0015,-0.03
+brk72_24h_wd__ethusd,D,0,Mon,2020,36,-0.0851,-3.06
+brk72_24h_wd__ethusd,D,1,Tue,2020,17,0.3852,6.55
+brk72_24h_wd__ethusd,D,2,Wed,2020,21,0.8877,18.64
+brk72_24h_wd__ethusd,D,3,Thu,2020,33,0.3391,11.19
+brk72_24h_wd__ethusd,D,4,Fri,2020,23,0.1255,2.89
+brk72_24h_wd__ethusd,D,0,Mon,2021,33,0.2292,7.56
+brk72_24h_wd__ethusd,D,1,Tue,2021,25,0.1487,3.72
+brk72_24h_wd__ethusd,D,2,Wed,2021,37,-0.2021,-7.48
+brk72_24h_wd__ethusd,D,3,Thu,2021,26,-0.0697,-1.81
+brk72_24h_wd__ethusd,D,4,Fri,2021,25,-0.0103,-0.26
+F1_brk_ridge_filter__btcusd,H,0,03:00-07:00 NY,2017,51,0.5275,26.9
+F1_brk_ridge_filter__btcusd,H,1,07:00-11:00 NY,2017,20,0.4103,8.21
+F1_brk_ridge_filter__btcusd,H,2,11:00-16:00 NY,2017,4,0.3208,1.28
+F1_brk_ridge_filter__btcusd,H,0,03:00-07:00 NY,2018,102,0.6168,62.92
+F1_brk_ridge_filter__btcusd,H,1,07:00-11:00 NY,2018,18,0.3841,6.91
+F1_brk_ridge_filter__btcusd,H,2,11:00-16:00 NY,2018,14,0.3309,4.63
+F1_brk_ridge_filter__btcusd,H,0,03:00-07:00 NY,2019,95,0.2753,26.15
+F1_brk_ridge_filter__btcusd,H,1,07:00-11:00 NY,2019,23,1.3062,30.04
+F1_brk_ridge_filter__btcusd,H,2,11:00-16:00 NY,2019,17,0.5387,9.16
+F1_brk_ridge_filter__btcusd,H,0,03:00-07:00 NY,2020,92,0.3826,35.2
+F1_brk_ridge_filter__btcusd,H,1,07:00-11:00 NY,2020,35,0.3804,13.31
+F1_brk_ridge_filter__btcusd,H,2,11:00-16:00 NY,2020,13,-0.0741,-0.96
+F1_brk_ridge_filter__btcusd,H,0,03:00-07:00 NY,2021,98,0.0244,2.39
+F1_brk_ridge_filter__btcusd,H,1,07:00-11:00 NY,2021,31,-0.0321,-1.0
+F1_brk_ridge_filter__btcusd,H,2,11:00-16:00 NY,2021,18,0.0685,1.23
+F1_brk_ridge_filter__btcusd,D,0,Mon,2017,20,0.5453,10.91
+F1_brk_ridge_filter__btcusd,D,1,Tue,2017,14,0.3909,5.47
+F1_brk_ridge_filter__btcusd,D,2,Wed,2017,11,0.1481,1.63
+F1_brk_ridge_filter__btcusd,D,3,Thu,2017,15,0.9035,13.55
+F1_brk_ridge_filter__btcusd,D,4,Fri,2017,15,0.3222,4.83
+F1_brk_ridge_filter__btcusd,D,0,Mon,2018,36,0.5388,19.4
+F1_brk_ridge_filter__btcusd,D,1,Tue,2018,21,0.8828,18.54
+F1_brk_ridge_filter__btcusd,D,2,Wed,2018,29,1.0169,29.49
+F1_brk_ridge_filter__btcusd,D,3,Thu,2018,23,0.0265,0.61
+F1_brk_ridge_filter__btcusd,D,4,Fri,2018,25,0.2571,6.43
+F1_brk_ridge_filter__btcusd,D,0,Mon,2019,42,0.4221,17.73
+F1_brk_ridge_filter__btcusd,D,1,Tue,2019,21,0.4334,9.1
+F1_brk_ridge_filter__btcusd,D,2,Wed,2019,23,0.5213,11.99
+F1_brk_ridge_filter__btcusd,D,3,Thu,2019,23,0.1328,3.06
+F1_brk_ridge_filter__btcusd,D,4,Fri,2019,26,0.9028,23.47
+F1_brk_ridge_filter__btcusd,D,0,Mon,2020,44,0.0884,3.89
+F1_brk_ridge_filter__btcusd,D,1,Tue,2020,23,0.0474,1.09
+F1_brk_ridge_filter__btcusd,D,2,Wed,2020,25,0.9097,22.74
+F1_brk_ridge_filter__btcusd,D,3,Thu,2020,29,0.737,21.37
+F1_brk_ridge_filter__btcusd,D,4,Fri,2020,19,-0.081,-1.54
+F1_brk_ridge_filter__btcusd,D,0,Mon,2021,37,-0.1153,-4.27
+F1_brk_ridge_filter__btcusd,D,1,Tue,2021,25,-0.0778,-1.94
+F1_brk_ridge_filter__btcusd,D,2,Wed,2021,29,0.0344,1.0
+F1_brk_ridge_filter__btcusd,D,3,Thu,2021,24,-0.0161,-0.39
+F1_brk_ridge_filter__btcusd,D,4,Fri,2021,32,0.2572,8.23
+F1_brk_ridge_filter__ethusd,H,0,03:00-07:00 NY,2018,88,0.5708,50.23
+F1_brk_ridge_filter__ethusd,H,1,07:00-11:00 NY,2018,23,-0.0268,-0.62
+F1_brk_ridge_filter__ethusd,H,2,11:00-16:00 NY,2018,13,-0.1098,-1.43
+F1_brk_ridge_filter__ethusd,H,0,03:00-07:00 NY,2019,87,0.2371,20.62
+F1_brk_ridge_filter__ethusd,H,1,07:00-11:00 NY,2019,11,0.0952,1.05
+F1_brk_ridge_filter__ethusd,H,2,11:00-16:00 NY,2019,18,0.1675,3.01
+F1_brk_ridge_filter__ethusd,H,0,03:00-07:00 NY,2020,87,0.2659,23.13
+F1_brk_ridge_filter__ethusd,H,1,07:00-11:00 NY,2020,30,0.0949,2.85
+F1_brk_ridge_filter__ethusd,H,2,11:00-16:00 NY,2020,24,-0.0845,-2.03
+F1_brk_ridge_filter__ethusd,H,0,03:00-07:00 NY,2021,83,0.0684,5.68
+F1_brk_ridge_filter__ethusd,H,1,07:00-11:00 NY,2021,33,0.0211,0.7
+F1_brk_ridge_filter__ethusd,H,2,11:00-16:00 NY,2021,20,0.0606,1.21
+F1_brk_ridge_filter__ethusd,D,0,Mon,2018,33,0.1901,6.27
+F1_brk_ridge_filter__ethusd,D,1,Tue,2018,22,0.2977,6.55
+F1_brk_ridge_filter__ethusd,D,2,Wed,2018,20,1.6277,32.55
+F1_brk_ridge_filter__ethusd,D,3,Thu,2018,20,0.1612,3.22
+F1_brk_ridge_filter__ethusd,D,4,Fri,2018,29,-0.0143,-0.41
+F1_brk_ridge_filter__ethusd,D,0,Mon,2019,39,0.064,2.5
+F1_brk_ridge_filter__ethusd,D,1,Tue,2019,14,1.171,16.39
+F1_brk_ridge_filter__ethusd,D,2,Wed,2019,23,0.0582,1.34
+F1_brk_ridge_filter__ethusd,D,3,Thu,2019,18,0.2968,5.34
+F1_brk_ridge_filter__ethusd,D,4,Fri,2019,22,-0.0403,-0.89
+F1_brk_ridge_filter__ethusd,D,0,Mon,2020,43,0.0229,0.99
+F1_brk_ridge_filter__ethusd,D,1,Tue,2020,19,0.2967,5.64
+F1_brk_ridge_filter__ethusd,D,2,Wed,2020,26,0.4425,11.51
+F1_brk_ridge_filter__ethusd,D,3,Thu,2020,30,0.2498,7.49
+F1_brk_ridge_filter__ethusd,D,4,Fri,2020,23,-0.0728,-1.67
+F1_brk_ridge_filter__ethusd,D,0,Mon,2021,33,0.1173,3.87
+F1_brk_ridge_filter__ethusd,D,1,Tue,2021,20,0.2959,5.92
+F1_brk_ridge_filter__ethusd,D,2,Wed,2021,28,-0.0235,-0.66
+F1_brk_ridge_filter__ethusd,D,3,Thu,2021,19,-0.0009,-0.02
+F1_brk_ridge_filter__ethusd,D,4,Fri,2021,36,-0.0424,-1.53
+nq_btc_follow__btcusd,H,0,09:30-11:30 NY,2017,67,0.1067,7.15
+nq_btc_follow__btcusd,H,1,11:30-13:30 NY,2017,10,0.1264,1.26
+nq_btc_follow__btcusd,H,2,13:30-16:06 NY,2017,20,0.196,3.92
+nq_btc_follow__btcusd,H,0,09:30-11:30 NY,2018,145,-0.0446,-6.46
+nq_btc_follow__btcusd,H,1,11:30-13:30 NY,2018,43,0.0323,1.39
+nq_btc_follow__btcusd,H,2,13:30-16:06 NY,2018,58,-0.0769,-4.46
+nq_btc_follow__btcusd,H,0,09:30-11:30 NY,2019,115,-0.0391,-4.5
+nq_btc_follow__btcusd,H,1,11:30-13:30 NY,2019,37,0.011,0.41
+nq_btc_follow__btcusd,H,2,13:30-16:06 NY,2019,47,-0.0391,-1.84
+nq_btc_follow__btcusd,H,0,09:30-11:30 NY,2020,125,0.1867,23.33
+nq_btc_follow__btcusd,H,1,11:30-13:30 NY,2020,33,0.001,0.03
+nq_btc_follow__btcusd,H,2,13:30-16:06 NY,2020,74,0.1061,7.85
+nq_btc_follow__btcusd,H,0,09:30-11:30 NY,2021,183,0.0823,15.06
+nq_btc_follow__btcusd,H,1,11:30-13:30 NY,2021,37,0.3085,11.41
+nq_btc_follow__btcusd,H,2,13:30-16:06 NY,2021,69,0.1708,11.78
+nq_btc_follow__btcusd,D,0,Mon,2017,11,0.3168,3.49
+nq_btc_follow__btcusd,D,1,Tue,2017,11,0.0644,0.71
+nq_btc_follow__btcusd,D,2,Wed,2017,32,0.3327,10.65
+nq_btc_follow__btcusd,D,3,Thu,2017,25,0.0269,0.67
+nq_btc_follow__btcusd,D,4,Fri,2017,18,-0.1765,-3.18
+nq_btc_follow__btcusd,D,0,Mon,2018,45,-0.1867,-8.4
+nq_btc_follow__btcusd,D,1,Tue,2018,55,0.0945,5.2
+nq_btc_follow__btcusd,D,2,Wed,2018,49,0.0126,0.62
+nq_btc_follow__btcusd,D,3,Thu,2018,57,-0.0445,-2.54
+nq_btc_follow__btcusd,D,4,Fri,2018,40,-0.1102,-4.41
+nq_btc_follow__btcusd,D,0,Mon,2019,32,-0.0541,-1.73
+nq_btc_follow__btcusd,D,1,Tue,2019,38,-0.0822,-3.12
+nq_btc_follow__btcusd,D,2,Wed,2019,40,-0.0218,-0.87
+nq_btc_follow__btcusd,D,3,Thu,2019,53,0.0076,0.41
+nq_btc_follow__btcusd,D,4,Fri,2019,36,-0.0169,-0.61
+nq_btc_follow__btcusd,D,0,Mon,2020,37,0.1233,4.56
+nq_btc_follow__btcusd,D,1,Tue,2020,49,0.1756,8.6
+nq_btc_follow__btcusd,D,2,Wed,2020,41,0.1091,4.47
+nq_btc_follow__btcusd,D,3,Thu,2020,52,0.2138,11.12
+nq_btc_follow__btcusd,D,4,Fri,2020,53,0.0464,2.46
+nq_btc_follow__btcusd,D,0,Mon,2021,54,0.1533,8.28
+nq_btc_follow__btcusd,D,1,Tue,2021,62,0.1133,7.02
+nq_btc_follow__btcusd,D,2,Wed,2021,64,0.1016,6.5
+nq_btc_follow__btcusd,D,3,Thu,2021,51,0.1891,9.64
+nq_btc_follow__btcusd,D,4,Fri,2021,58,0.1174,6.81

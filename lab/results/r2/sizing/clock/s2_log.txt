@@ -1,0 +1,86 @@
+--- ocm4__us100 D
+   2018: worst Fri tr -0.011 -> yr -0.357 (n 24) vs rest 0.1952; best Thu tr +0.397 -> 0.0176 | sleeve tr +0.169
+   2019: worst Fri tr -0.045 -> yr 0.241 (n 24) vs rest 0.1053; best Thu tr +0.333 -> 0.0615 | sleeve tr +0.162
+   2020: worst Tue tr -0.023 -> yr -0.138 (n 27) vs rest 0.0661; best Mon tr +0.273 -> 0.2125 | sleeve tr +0.148
+   2021: worst Tue tr -0.033 -> yr 0.179 (n 26) vs rest 0.1561; best Mon tr +0.286 -> 0.3078 | sleeve tr +0.135
+--- noise30__us100 H
+   2018: worst 14:00-16:00 NY tr +0.004 -> yr 0.085 (n 39) vs rest 0.2268; best 10:00-12:00 NY tr +0.093 -> 0.3046 | sleeve tr +0.059
+   2019: worst 14:00-16:00 NY tr +0.020 -> yr -0.077 (n 32) vs rest 0.0225; best 10:00-12:00 NY tr +0.128 -> 0.0062 | sleeve tr +0.084
+   2020: worst 14:00-16:00 NY tr +0.007 -> yr 0.134 (n 39) vs rest 0.0946; best 10:00-12:00 NY tr +0.112 -> 0.1454 | sleeve tr +0.074
+   2021: worst 12:00-14:00 NY tr +0.022 -> yr -0.182 (n 45) vs rest 0.1838; best 10:00-12:00 NY tr +0.118 -> 0.2235 | sleeve tr +0.079
+--- noise30__us100 D
+   2018: worst Thu tr +0.038 -> yr 0.09 (n 44) vs rest 0.2296; best Fri tr +0.121 -> 0.3724 | sleeve tr +0.059
+   2019: worst Tue tr +0.047 -> yr 0.053 (n 40) vs rest -0.0065; best Fri tr +0.177 -> 0.1475 | sleeve tr +0.084
+   2020: worst Thu tr +0.028 -> yr 0.105 (n 44) vs rest 0.1011; best Fri tr +0.166 -> -0.0466 | sleeve tr +0.074
+   2021: worst Thu tr +0.041 -> yr 0.244 (n 42) vs rest 0.0721; best Fri tr +0.139 -> -0.0199 | sleeve tr +0.079
+--- donch4h_stop__xauusd H
+   2018: worst 12:00-18:00 NY tr +0.084 -> yr 0.073 (n 5) vs rest 0.0062; best 00:00-06:00 NY tr +0.258 -> 0.1082 | sleeve tr +0.162
+   2019: worst 12:00-18:00 NY tr +0.083 -> yr -0.183 (n 11) vs rest 0.1952; best 00:00-06:00 NY tr +0.330 -> -0.4048 | sleeve tr +0.157
+   2020: worst 12:00-18:00 NY tr +0.040 -> yr 0.259 (n 7) vs rest 0.4253; best 00:00-06:00 NY tr +0.281 -> 0.2218 | sleeve tr +0.147
+   2021: worst 12:00-18:00 NY tr +0.060 -> yr -0.016 (n 6) vs rest 0.1034; best 18:00-24:00 NY tr +0.279 -> -0.3372 | sleeve tr +0.182
+--- donch4h_stop__xauusd D
+   2018: worst Mon tr -0.030 -> yr 0.174 (n 10) vs rest -0.025; best Wed tr +0.398 -> -0.1718 | sleeve tr +0.162
+   2019: worst Mon tr -0.003 -> yr 0.044 (n 11) vs rest 0.1329; best Wed tr +0.404 -> -0.1883 | sleeve tr +0.157
+   2020: worst Mon tr +0.007 -> yr 0.469 (n 10) vs rest 0.382; best Wed tr +0.349 -> 0.1844 | sleeve tr +0.147
+   2021: worst Mon tr +0.060 -> yr -0.025 (n 13) vs rest 0.1237; best Wed tr +0.334 -> 0.0296 | sleeve tr +0.182
+--- orb_asia_2d_buf10__xauusd H
+   2018: worst 07:00-08:40 LDN tr +0.174 -> yr -0.268 (n 93) vs rest 0.1169; best 08:40-10:20 LDN tr +0.810 -> -0.0056 | sleeve tr +0.328
+   2019: worst 07:00-08:40 LDN tr +0.110 -> yr 0.193 (n 89) vs rest 0.0379; best 08:40-10:20 LDN tr +0.685 -> -0.1639 | sleeve tr +0.254
+   2020: worst 07:00-08:40 LDN tr +0.126 -> yr 0.435 (n 72) vs rest 0.1927; best 08:40-10:20 LDN tr +0.597 -> 0.5047 | sleeve tr +0.243
+   2021: worst 07:00-08:40 LDN tr +0.162 -> yr -0.07 (n 85) vs rest 0.0837; best 08:40-10:20 LDN tr +0.586 -> -0.0523 | sleeve tr +0.257
+--- orb_asia_2d_buf10__xauusd D
+   2018: worst Fri tr +0.032 -> yr -0.218 (n 25) vs rest -0.16; best Wed tr +0.882 -> -0.3154 | sleeve tr +0.328
+   2019: worst Fri tr +0.019 -> yr 0.645 (n 24) vs rest 0.0293; best Wed tr +0.737 -> -0.7116 | sleeve tr +0.254
+   2020: worst Fri tr +0.113 -> yr 0.09 (n 25) vs rest 0.4307; best Wed tr +0.509 -> -0.1332 | sleeve tr +0.243
+   2021: worst Fri tr +0.110 -> yr 0.535 (n 21) vs rest -0.1313; best Wed tr +0.422 -> -0.6174 | sleeve tr +0.257
+--- brk72_24h_wd__btcusd H
+   2018: no action (n_train 84)
+   2019: worst 12:00-18:00 NY tr +0.120 -> yr 0.236 (n 38) vs rest 0.3474; best 00:00-06:00 NY tr +0.515 -> 0.1322 | sleeve tr +0.319
+   2020: worst 12:00-18:00 NY tr +0.160 -> yr -0.066 (n 33) vs rest 0.5023; best 18:00-24:00 NY tr +0.417 -> 0.7885 | sleeve tr +0.311
+   2021: worst 12:00-18:00 NY tr +0.096 -> yr 0.049 (n 33) vs rest 0.084; best 18:00-24:00 NY tr +0.524 -> 0.2065 | sleeve tr +0.328
+--- brk72_24h_wd__btcusd D
+   2018: no action (n_train 84)
+   2019: worst Fri tr +0.122 -> yr 0.103 (n 28) vs rest 0.3708; best Tue tr +0.485 -> 1.1754 | sleeve tr +0.319
+   2020: worst Fri tr +0.123 -> yr -0.502 (n 19) vs rest 0.5052; best Tue tr +0.740 -> 0.7253 | sleeve tr +0.311
+   2021: worst Fri tr -0.007 -> yr 0.12 (n 31) vs rest 0.0643; best Tue tr +0.737 -> -0.0287 | sleeve tr +0.328
+--- brk72_24h_wd__ethusd H
+   2018: no action (n_train 0)
+   2019: worst 06:00-12:00 NY tr +0.301 -> yr 0.036 (n 28) vs rest 0.1113; best 00:00-06:00 NY tr +0.687 -> 0.3221 | sleeve tr +0.477
+   2020: worst 12:00-18:00 NY tr +0.165 -> yr -0.112 (n 30) vs rest 0.3957; best 00:00-06:00 NY tr +0.577 -> 0.2135 | sleeve tr +0.287
+   2021: worst 12:00-18:00 NY tr +0.063 -> yr -0.025 (n 31) vs rest 0.0218; best 00:00-06:00 NY tr +0.417 -> 0.0989 | sleeve tr +0.277
+--- brk72_24h_wd__ethusd D
+   2018: no action (n_train 0)
+   2019: worst Fri tr +0.113 -> yr -0.002 (n 22) vs rest 0.1152; best Tue tr +0.411 -> 0.2618 | sleeve tr +0.477
+   2020: worst Fri tr +0.058 -> yr 0.126 (n 23) vs rest 0.3114; best Wed tr +0.753 -> 0.8877 | sleeve tr +0.287
+   2021: worst Fri tr +0.065 -> yr -0.01 (n 25) vs rest 0.0164; best Wed tr +0.831 -> -0.2021 | sleeve tr +0.277
+--- F1_brk_ridge_filter__btcusd H
+   2018: no action (n_train 73)
+   2019: worst 07:00-11:00 NY tr +0.398 -> yr 1.306 (n 23) vs rest 0.3152; best 03:00-07:00 NY tr +0.591 -> 0.2753 | sleeve tr +0.534
+   2020: worst 11:00-16:00 NY tr +0.431 -> yr -0.074 (n 13) vs rest 0.382; best 07:00-11:00 NY tr +0.740 -> 0.3804 | sleeve tr +0.520
+   2021: worst 11:00-16:00 NY tr +0.302 -> yr 0.069 (n 18) vs rest 0.0108; best 07:00-11:00 NY tr +0.609 -> -0.0321 | sleeve tr +0.466
+--- F1_brk_ridge_filter__btcusd D
+   2018: no action (n_train 73)
+   2019: worst Fri tr +0.272 -> yr 0.903 (n 26) vs rest 0.3842; best Wed tr +0.798 -> 0.5213 | sleeve tr +0.534
+   2020: worst Thu tr +0.282 -> yr 0.737 (n 29) vs rest 0.2359; best Wed tr +0.684 -> 0.9097 | sleeve tr +0.520
+   2021: worst Mon tr +0.370 -> yr -0.115 (n 37) vs rest 0.0627; best Wed tr +0.778 -> 0.0344 | sleeve tr +0.466
+--- F1_brk_ridge_filter__ethusd H
+   2018: no action (n_train 0)
+   2019: worst 07:00-11:00 NY tr -0.027 -> yr 0.095 (n 11) vs rest 0.2251; best 03:00-07:00 NY tr +0.571 -> 0.2371 | sleeve tr +0.379
+   2020: worst 07:00-11:00 NY tr +0.044 -> yr 0.095 (n 30) vs rest 0.1901; best 03:00-07:00 NY tr +0.421 -> 0.2659 | sleeve tr +0.322
+   2021: worst 11:00-16:00 NY tr -0.004 -> yr 0.061 (n 20) vs rest 0.055; best 03:00-07:00 NY tr +0.360 -> 0.0684 | sleeve tr +0.256
+--- F1_brk_ridge_filter__ethusd D
+   2018: no action (n_train 0)
+   2019: worst Fri tr -0.049 -> yr -0.04 (n 22) vs rest 0.2721; best Wed tr +1.628 -> 0.0582 | sleeve tr +0.379
+   2020: worst Fri tr -0.006 -> yr -0.073 (n 23) vs rest 0.2171; best Wed tr +0.788 -> 0.4425 | sleeve tr +0.322
+   2021: worst Fri tr -0.045 -> yr -0.042 (n 36) vs rest 0.0911; best Wed tr +0.671 -> -0.0235 | sleeve tr +0.256
+--- nq_btc_follow__btcusd H
+   2018: no action (n_train 95)
+   2019: worst 13:30-16:06 NY tr -0.007 -> yr -0.039 (n 47) vs rest -0.0269; best 11:30-13:30 NY tr +0.050 -> 0.011 | sleeve tr +0.008
+   2020: worst 13:30-16:06 NY tr -0.019 -> yr 0.106 (n 74) vs rest 0.1479; best 11:30-13:30 NY tr +0.034 -> 0.001 | sleeve tr -0.007
+   2021: worst 11:30-13:30 NY tr +0.025 -> yr 0.308 (n 37) vs rest 0.1065; best 09:30-11:30 NY tr +0.043 -> 0.0823 | sleeve tr +0.036
+--- nq_btc_follow__btcusd D
+   2018: no action (n_train 95)
+   2019: worst Fri tr -0.131 -> yr -0.017 (n 36) vs rest -0.0326; best Wed tr +0.141 -> -0.0218 | sleeve tr +0.008
+   2020: worst Fri tr -0.087 -> yr 0.046 (n 53) vs rest 0.1607; best Wed tr +0.086 -> 0.1091 | sleeve tr -0.007
+   2021: worst Fri tr -0.039 -> yr 0.117 (n 58) vs rest 0.1361; best Wed tr +0.092 -> 0.1016 | sleeve tr +0.036
+{'H': {'sleeve_folds': 24, 'worst_cell': {'folds': 24, 'folds_in_expected_direction': 17, 'mean_diff_year_cell_minus_rest_R': -0.0695, 'median_diff': -0.085, 'trade_weighted_diff': -0.0368}, 'best_cell': {'folds': 24, 'folds_in_expected_direction': 13, 'mean_diff_year_cell_minus_rest_R': -0.0334, 'median_diff': 0.0166, 'trade_weighted_diff': 0.0092}, 'mean_spearman_train_vs_next_year': 0.145, 'n_spearman': 22}, 'D': {'sleeve_folds': 27, 'worst_cell': {'folds': 27, 'folds_in_expected_direction': 15, 'mean_diff_year_cell_minus_rest_R': -0.0214, 'median_diff': -0.0267, 'trade_weighted_diff': -0.0123}, 'best_cell': {'folds': 27, 'folds_in_expected_direction': 12, 'mean_diff_year_cell_minus_rest_R': -0.0089, 'median_diff': -0.0395, 'trade_weighted_diff': -0.0025}, 'mean_spearman_train_vs_next_year': 0.041, 'n_spearman': 27}, 'FD': {'sleeve_folds': 27, 'worst_cell': {'folds': 27, 'folds_in_expected_direction': 14, 'mean_diff_year_cell_minus_rest_R': -0.0024, 'median_diff': -0.0143, 'trade_weighted_diff': -0.0552}, 'best_cell': {'folds': 27, 'folds_in_expected_direction': 11, 'mean_diff_year_cell_minus_rest_R': -0.1478, 'median_diff': -0.0615, 'trade_weighted_diff': -0.0675}, 'mean_spearman_train_vs_next_year': -0.137, 'n_spearman': 27}}
