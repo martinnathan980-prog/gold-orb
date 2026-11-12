@@ -802,3 +802,47 @@ recomputed every verdict from the engineers' files and got the same figures.
   is absent (−5 bp a week, t −0.24). **LETF close pair**: PF 0.755, loses in 7 of 8 years.
 - Information only: even at its in-sample face value, IDXRS_1000 would have moved the ten's weekly Sharpe from 2.51 to
   2.53 (+0.8 %). The account stays the ten rules. The 2026 holdout was not touched.
+
+### Addendum H — declaration of the single look at 2022–2025 (2026-11-12, 19:07 UTC), written BEFORE it is run
+Track `autopsy_HI_look`. Spec `lab/r2/tracks/validation_hi/look_spec.json`, sha256
+`b71f69d59999bdb97442bf0a1beff9a8512b883396886323426e69e55e277960` (the exact bytes that run). Harness
+`lab/r2/tracks/validation_hi/`: every proof passes (`results/r2/validation_hi/proofs.json`: 13 proofs, 3,344 checks, 0 failed, at the in-sample CUT 2022-01-01).
+Two independent rechecks (`results/r2/validation_hi/harness_final_recheck.json`, `harness_last_recheck.json`) found
+no way for the look to read 2026 data, a holdout path or a declaration other than this protocol; their last two
+hardening items were done by the lead and proven (`harness_lead_last_fix.json`): the protocol's identity is pinned
+before the path rule, and the look runs only if this text equals the protocol committed at HEAD. Command, run ONCE:
+`LOOK_DECLARED=/home/user/gold-orb/lab/PROTOCOL_V3.md NUMBA_CACHE_DIR=/tmp/numba_validation_hi PYTHONDONTWRITEBYTECODE=1 python3 /home/user/gold-orb/lab/r2/tracks/validation_hi/look.py --spec /home/user/gold-orb/lab/r2/tracks/validation_hi/look_spec.json --cut 2026-01-01`.
+Trades entered 2022-01-01 to 2025-12-31. The 2026 holdout stays untouched: the guard refuses any read at or after
+2026-01-01 and any holdout path. The single access line with track `autopsy_HI_look`, written to
+`results/val_access.log` before anything is read, replaces the per-read logging that both syntheses named (synthesis
+A: `goldlab.split.cut` with track `autopsy_synthesis_A`; synthesis B: track `autopsy_synthesis_B`).
+- **Eight changes are judged, nothing else.** From synthesis B: **K1** (brk72_24h_wd ethusd skips a signal when its
+  risk in bp is at or above T(Y), refitted every 1 January; T(2022) = 478.284 bp, skip side 'hi', 2,345 training
+  signals, binding); **K2** and **K3** (the frozen gold rule orb_asia_2d_buf10 as a new sleeve on ethusd and on btcusd).
+  From synthesis A: **ocm4 us100 T1**, **F1_brk_ridge_filter ethusd H2**, **brk72_24h_wd btcusd S0.75r**,
+  **donch4h_stop xauusd S0.75r**, **orb_asia_2d_buf10 xauusd S0.75r**, at their frozen equal-swing factors 0.682408,
+  0.750978, 0.771793, 0.885978, 0.764081. They run through the payoff lens's `variants.py`, which has the same logic as
+  synthesis A's frozen functions in `synth.py` (checked by the recheck). No stake rule (Addendum I kept none) and no
+  plugin.
+- **Criteria**, as written in the spec. K1: with the skip, the sleeve's expectancy per trade is higher and its total R
+  is not lower, with FP costs and with costs ×1.5, and the skipped signals taken alone earn less on average than the
+  kept ones. K2 and K3, each: with FP costs PF ≥ 1.06, expectancy > 0, every-signal expectancy > 0, total R positive
+  in at least 3 of the 4 years, expectancy > 0 with costs ×1.5, and the weekly mean / sd of the ten plus the sleeve at
+  least that of the ten alone (the robot-as-is reading, entry one minute late and close-all on Friday 16:50 New York,
+  is reported beside it: if it is ≤ 0, the sleeve waits for a robot that holds over the weekend). Synthesis A's five,
+  each: V1 the sleeve's weekly Sharpe is higher with the change AND the ten-sleeve weekly Sharpe with the change at its
+  frozen factor is higher (FP); V2 total R at a constant stake not lower (FP); V3 V1 and V2 also with costs ×1.5; V4 the
+  equal-swing gain positive in at least 3 of the 4 entry years (FP); V5 expectancy > 0 and PF ≥ 1.06 (FP).
+- **Check first**: the ten unchanged sleeves rebuilt by the harness must equal the official 2022–2025 trades (count,
+  total R, trade by trade). In the harness it gates synthesis A's five only. Declared here, stricter: if it fails,
+  nothing at all is adopted from this look (K1–K3's mechanical verdicts are recorded but not acted on); the failure is
+  reported to the user and investigated.
+- **Declared choices**: K1 labels with FP costs in both cost modes; live semantics 'entry_bar' with the Friday block on
+  the decision and the entry; accounts judged on the plain sum; FP server weeks; synthesis B's convention for the ten,
+  the payoff lens's for synthesis A's five.
+- **Multiple testing, said before the run**: the eight changes were picked from about 845 in-sample variants (synthesis
+  A: about 360 lens variants plus a post-hoc ranking; synthesis B: 330 + 29 + 126 lens trials). Synthesis A expected a
+  gain of about zero for its five (verdicts weakened; on 2013–2017 they left the weekly Sharpe unchanged). A pass here
+  is therefore weaker evidence than it reads; even with no real effect, some of the eight may pass by chance.
+- **What follows**: a change that passes goes to the demo account first, never straight to real money; a change that
+  fails is dropped for good; nothing is re-tuned after the look. The result is reported to the user whatever it is.
