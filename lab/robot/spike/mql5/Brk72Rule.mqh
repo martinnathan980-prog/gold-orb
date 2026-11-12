@@ -82,6 +82,7 @@ public:
    datetime last_closed;         // last closed M1 bar processed
    datetime cur_bar;             // forming M1 bar seen at the last call
    int      retry;               // calls that could not read the bar that just closed
+   bool     started;             // Start() has read the history
    // ---- signal of the hour just completed
    datetime sig_dec;             // D (UTC), 0 = none
    int      sig_side;
@@ -119,6 +120,7 @@ public:
       last_closed = 0;
       cur_bar = 0;
       retry = 0;
+      started = false;
       sig_dec = 0;
       sig_side = 0;
       sig_atr = 0.0;
@@ -342,15 +344,19 @@ public:
      }
 
    // ------------------------------------------------------------- drivers
-   // OnInit: rebuild the hour bars from history; after a restart, replay the bars closed while the robot was off
-   void Start(BrkAction &act)
+   // OnInit (and OnTimer until it succeeds): rebuild the hour bars from history; after a restart, replay the bars that
+   // closed while the robot was off. False (nothing changed) when the terminal cannot give the bars yet.
+   bool Start(BrkAction &act)
      {
-      bool restored = RestoreState();
-      datetime lc = last_closed, cb = cur_bar;
       MqlRates cur[];
-      datetime upto = (CopyRates(sym, PERIOD_M1, 0, 1, cur) == 1) ? cur[0].time : TimeTradeServer();
+      if(CopyRates(sym, PERIOD_M1, 0, 1, cur) != 1) return false;
+      datetime upto = cur[0].time;
       MqlRates r[];
       int n = CopyRates(sym, PERIOD_M1, upto - warmup_days * 86400, upto - 1, r);
+      if(n < 0) return false;                             // history not available yet (e.g. just after a restart)
+      bool restored = RestoreState();
+      datetime lc = last_closed, cb = cur_bar;
+      started = true;
       int i = 0;
       quiet = true;
       for(; i < n; i++)
@@ -367,7 +373,7 @@ public:
         {
          last_closed = (i > 0) ? r[i - 1].time : 0;
          cur_bar = 0;
-         return;
+         return true;
         }
       last_closed = lc;
       cur_bar = cb;
@@ -377,6 +383,7 @@ public:
          if(r[i].time != cb) AtOpen(r[i].time, r[i].open, r[i].spread, false, act);
          AtClose(r[i]);
         }
+      return true;
      }
 
    // every timer tick: true when a new M1 bar has started (act then says what to do now)
@@ -385,6 +392,7 @@ public:
       act.open_side = 0;
       act.stop_dist = 0.0;
       act.close_now = false;
+      if(!started) return Start(act);                     // the history could not be read in OnInit: try again now
       MqlRates cur[];
       if(CopyRates(sym, PERIOD_M1, 0, 1, cur) != 1) return false;
       datetime t0 = cur[0].time;

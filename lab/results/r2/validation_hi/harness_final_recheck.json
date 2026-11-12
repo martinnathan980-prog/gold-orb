@@ -1,0 +1,118 @@
+{
+ "what": "Independent recheck of the harness final fixes, workflow wf_8a622b02-7fe",
+ "report": {
+  "verdict": "ready_with_fixes",
+  "spec_sha256_seen": "b71f69d59999bdb97442bf0a1beff9a8512b883396886323426e69e55e277960",
+  "checks": [
+   {
+    "what": "1. Proofs re-run myself (proofs.py unchanged, at CUT 2022-01-01, proof k at 2021-01-01, every output redirected to /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/validation_hi_final/out/)",
+    "ok": true,
+    "note": "13 proofs, 3,269 checks, 203 s (peak 1.6 GB parent, 1.9 GB look.py child). Proofs a-h and j-m pass with the engineer's check counts. Compared value by value with the engineer's files: a-h, l and m are identical (0 differences); j and k differ only in timings and output paths. Proof i: 154 checks, 10 failed. All 10 come from my redirection: guard_probes writes its harmless CSV and names its absent CSVs under OUT, which was my folder, outside lab/, so the lab/-only A3 rule correctly did not apply. The 10 missing rows: the before-write targets did not exist yet in my empty folder, and my no-write net skipped the copy into the harness folder. I re-probed all ten readers on lab/ paths: all refused (check 11). Files: .../validation_hi_final/out/proofs.json, .../validation_hi_final/compare_with_engineer.json, .../validation_hi_final/rerun.log"
+   },
+   {
+    "what": "1b. Rehearsal: look.py --cut 2022-01-01 with the spec as it stands, its own process",
+    "ok": true,
+    "note": "Identical to the engineer's rehearsal (timing and path fields only). Both trade files are identical row by row: 82,647 rows, and 85,145 for the CUT-2021 run; every exit falls before its CUT. The run has 23 sleeves, 10 portfolios, 9 comparisons, 6 sleeve comparisons and 8 verdicts with no error. changes_in_look is K1, K2, K3, ocm4_T1, F1eth_H2, brk72btc_S0.75r, donch4h_S0.75r, orbxau_S0.75r; there is no stake rule and no plugin. It made 24 parquet reads, every one bounded at 2022-01-01: 4 frames on ts, 20 official reads on entry_time, 10 of which also filter on exit_time. Its opens are code and configuration only. meta.is_look is false, there is no marker, and nothing was logged."
+   },
+   {
+    "what": "3a. Check first (synthesis A item 3, which the lead set to be the harness's official check): computed, first key, loud on failure, gating",
+    "ok": true,
+    "note": "In the rehearsal it is the first key, PASSED. The ten unchanged sleeves are rebuilt (FP, one position, no refusal, as recalc.py) and equal results/r2/recalc/trades on the whole frame and on the window, 0 rows differing (window counts include ocm4 492/492, nq 943/943, donch4h 208/208 with 1 open, orb gold 465/465 with 1 open). Synthesis A's own rule-2 check in synth.py did the same: the pure frozen run, with no refusal and no censoring, against the official rows. I then made a real run at CUT 2022 on a reduced xauusd spec with one official GOLD_FRI_PM row changed in memory (.../validation_hi_final/loud/). It printed MISMATCH and a '!!!' banner during the run, then the FAILED banner after the check, at the end of run_spec and after writing, and 'CHECK FIRST FAILED' on stderr. The output's first key is check_first, status 'FAILED -- STOP AND REPORT', naming GOLD_FRI_PM and the 7 missing sleeves and showing the changed row. orbxau_S0.75r has adopted null, adopted_if_judged true and stopped_by_check_first; the synthesis A block lists it as not_judged. One gap: look.py still exits with code 0."
+   },
+   {
+    "what": "3b. Synthesis A's five changes implemented as its text says",
+    "ok": true,
+    "note": "The harness keeps the payoff lens's variants.py, as the lead decided. I compared it with synthesis A's frozen synth.py functions:\n- S: stop at k x r0, the absolute stop cleared, the donch trail scaled by k.\n- T: trail m x unit, stop min(r0, trail), cap at 15:55 NY + 4 business days, never before the rule's exit.\n- H: the ahead test at the close of the bar before the clock exit; the extension to 15:55 NY + 2 business days of the decision date, capped at the Friday 23:54 server bar.\n- hold_decision and refuse are the same logic; fills, exit_bar, censored, friday_close_time, ny_clock and server_time are the same code (fills differs only by a temporary variable).\n- The @payoff references get the same refusal, refuse(r0, spread).\nOne generalisation is deliberate. At a CUT outside the crypto weekend closure (the look's CUT is a Wednesday evening in New York), a crypto 'time' exit at the last bar is censored on both sides. This follows synthesis A's text ('a trade still open when the 2025 data ends is excluded on both sides').\nParameters: T1 m=1, H2 j=2, S0.75r k=0.75 with re-entry over all signals. Every file synthesis A froze that the run uses still has its frozen sha256: goldlab sim/r2/data/split, recalc.py, fp_costs.json, six strategy files, the F1 model and portfolio.py. synth.py is unchanged and not used."
+   },
+   {
+    "what": "3c. V1-V5 at the frozen factors, recomputed independently",
+    "ok": true,
+    "note": "verify_criteria.py uses plain pandas and my own server-week calendar (205 weeks) and imports no harness module. On my rehearsal's trades: 108 checks, 0 failed. Every verdict value (sleeve and portfolio weekly Sharpe, total R, gain by entry year, expectancy, PF) equals mine to 1e-9, and equals synthesis A's published in-sample rehearsal to its rounding. The rules match the text:\n- V1: two strict '>' (the sleeve; P0 with that sleeve replaced by the changed sleeve at the frozen factor, against P0).\n- V2: '>='.\n- V3: the same three tests in x1.5, same factor.\n- V4: factor x R_changed(Y) minus R_unchanged(Y) > 0 in at least 3 entry years (UTC; years from the spec window, 2022-2025 for the look).\n- V5: expectancy > 0 and PF >= 1.06.\n- adopted: all of V1-V5 and the check first passed.\nThe spec's factors equal synthesis A's text and its equal_swing_factors: 0.682408 / 0.750978 / 0.771793 / 0.885978 / 0.764081. 'Passing together vs unchanged', recomputed: FP weekly Sharpe 2.8729 -> 3.4777 and 788.59 -> 925.24 R; x1.5 2.6100 -> 3.2344 and 711.09 -> 855.09 R. File: .../validation_hi_final/verify_criteria.json"
+   },
+   {
+    "what": "3d. Synthesis_B's criteria for K1, K2, K3 (kept as implemented, F10)",
+    "ok": true,
+    "note": "k1_skip and new_sleeve are unchanged since the recheck: git diff HEAD on vhi_verdicts.py only adds synthesis A. Recomputed from the trades:\n- K1: expectancy and total R with and without the skip, FP and x1.5, to 1e-12. The skipped-vs-kept row applies '<' to its values and uses FP labels.\n- K2 and K3: PF, expectancy, every-signal expectancy, positive years (3 of 4 required), x1.5 expectancy, and weekly mean/sd of P0 plus the sleeve against P0. Each value matches to 1e-9, with the right pass flag.\nThe live reading is outside the criteria. The thresholds (PF 1.06, 3 of 4 years) are synthesis_B's."
+   },
+   {
+    "what": "2a. A1: LOOK_DECLARED accepted only at the real path of lab/PROTOCOL_V3.md",
+    "ok": true,
+    "note": "I tried 27 candidates through resolve_cut and look.plan, using environment dicts; all were refused.\n- 18 by the path rule, marked (A1): the engineer's proofs.json, proof_i_guard.json, rehearsal JSON, rehearsal_in_sample.json, proof_j, proof_m and harness_fixes_recheck.json; my re-run's proofs.json, rehearsal JSON and proof_i_guard.json; two copies in my folder, one named PROTOCOL_V3.md; a symlink to proofs.json; the spec itself; absent paths under lab/results/, the harness folder and /tmp, and the look's own output path. Nine of these quote both strings, so the content rule alone would accept them.\n- 7 protocol path variants by the content rule; one trailing-slash path as unreadable; an empty value as unset.\nThen end to end through the real look.main, in child processes with vhi_run stubbed and the log and look folder redirected: LOOK_DECLARED set in the environment to 7 of these files gives 'REFUSED ... (A1)', with nothing logged, no marker, no guard installed and run_spec never reached. The real val_access.log is unchanged. File: .../validation_hi_final/probes_entry.json"
+   },
+   {
+    "what": "2b. PROTOCOL_V3.md as it stands (without the spec sha) is refused",
+    "ok": true,
+    "note": "The path rule accepts it, also through '.', '..', '//', /proc/self/root, a symlink and a chain of two symlinks. The content rule refuses it: the text contains neither 'autopsy_HI_look' nor the spec sha256. Shown through resolve_cut and plan, and end to end through look.main with the protocol injected into resolve_cut's env dict, so that LOOK_DECLARED never named the protocol in any process. The protocol changed during my review, in the lead's commit cef364f at 17:43 (Addendum J outcome): sha256 97c1569a... became 5212480224282e6d8d0d414b34f4f4fd155bd278c083ebe8f7bb1335ff139a14. Re-checked after the change: still refused. The refusal message prints neither string."
+   },
+   {
+    "what": "2c. F2 run once, end to end (positive control)",
+    "ok": true,
+    "note": "A dummy spec, with a test text standing in for the protocol (DECLARED_PATH redirected in the child only), log and look folder in my folder, vhi_run stubbed. The first run writes 1 log line, then the .started marker, then installs the guard, then reaches run_spec. A second run is refused ('the look is run once'). --second-access with a reason writes the reason into the label and creates the __access2 marker."
+   },
+   {
+    "what": "2d. Earlier leaks L2 and L3 (parquet row filter, source forms)",
+    "ok": true,
+    "note": "152 probes in one process at CUT 2022, with every wrapped reader replaced by a stub and open() behind a safety net, so nothing could be read.\n- L2, 26 refused: no filter, a bound after the CUT, CUT + 1 min, '<=', entry_time on lab/data, 'TS', a DNF OR, official trades without a filter or on exit_time only, stat_skeptic validation trades without a filter or with entry_time < 2023, a parquet outside lab/ without a filter, read_table, core.read_table, read_pandas, ParquetFile, read_schema, read_metadata, ParquetDataset without a filter, dataset, parquet_dataset, a filesystem argument, a positional argument, and holdout or 2026 names. A pyarrow Expression filter raises before any read.\n- L3, 12 refused: BytesIO, NativeFile, bytes, file://, 'file:', a list, '~', a PathLike without a filter, a symlink to a frame, a /proc/self/root path, an open() handle.\n- The controls reach the stub: ts < CUT, entry_time < CUT on trades, ParquetDataset with a filter.\nNo refused probe recorded a read. File: .../validation_hi_final/probes_guard.json"
+   },
+   {
+    "what": "2e. Earlier leak L4c / A3 (CSV under lab/ through any reader)",
+    "ok": true,
+    "note": "26 refused:\n- pandas: read_csv (C and pyarrow engines), read_table, read_fwf, a buffer;\n- open() in text, rb, r+ and a+ modes; csv.reader(open()); pathlib read_text; a symlink named .txt pointing to the validation CSV;\n- numpy.loadtxt and genfromtxt (numpy's opener is wrapped);\n- pyarrow.csv read_csv, open_csv and a buffer;\n- a '.CSV' name in capitals; .csv.gz, .bz2, .xz and .zip through open() and through gzip, bz2 and lzma; shutil.copyfile.\nControls: the allowlisted variants_table.csv opens; the guard allows write modes (checked on G._open_check, so nothing was created). This also covers the 10 rows of my proof i re-run."
+   },
+   {
+    "what": "2f. Earlier leak L4b / A2 (any 'holdout' component under lab/, and results/holdout_run.log)",
+    "ok": true,
+    "note": "21 refused: open() of results/holdout/holdout_stdout.txt and results.json; holdout_run.log through an absolute path, a relative path from lab/results, /proc/self/root and a '..' path; pathlib; a symlink in my folder; append and write modes in an absent holdout folder; lab/holdout.py, holdout_candidates.json, 'HoldOut' in capitals, holdout_raw and data/holdout; pandas CSV, pyarrow.json, numpy.loadtxt and shutil.copyfile; lab/data through pathlib; a 2026-dated file. The sha256 of the holdout log, the validation CSV and val_access.log are unchanged."
+   },
+   {
+    "what": "A4: binding of the K1 2022 fold (q_hi, skip side 'hi', n_train 2345)",
+    "ok": true,
+    "note": "The spec declares {'2022': {'q_hi': 478.284, 'skip': 'hi', 'n_train': 2345}} with labels_mode fp. 13 pure tests of bind_declared_T at CUTs 2026 and 2022:\n- accepted: T within 0.009 bp, side hi, n_train 2345;\n- DeclaredThresholdError: side 'lo' or None; n_train 2344, 2346 or missing; T 0.011 bp off; no 2022 fold; and, under require_full (the look), a bare T or a dict without n_train;\n- an unknown key raises ValueError.\nIn my re-run, proof b (482 checks) binds 478.28396 / hi / 2345 in both cost modes, and proof k binds 465.1178 / hi / 1703 at CUT 2021. At CUT 2026 the 2022 fold trains on signals decided before 2021-12-25, all closed before 2022, so n_train cannot change."
+   },
+   {
+    "what": "A5: the meta records the sha256 of every file the run imports",
+    "ok": true,
+    "note": "My rehearsal's meta.code_sha256 lists 31 lab files: the 9 harness modules (look.py included), synthesis_B common/s1_run/s2_portfolio, payoff common/variants, synthesis A's portfolio.py, the strategy modules and idxus_lib, recalc.py and goldlab. Each equals its file. files_opened_sha256 adds fp_costs.json and the F1 model; versions are python 3.13.18, numpy 2.5.3, pandas 3.0.5, pyarrow 26.0.1. The hashes are recorded after the run, not checked before it; only portfolio.py's frozen sha256 is enforced, before it is used."
+   },
+   {
+    "what": "C: changes_in_look and nothing else",
+    "ok": true,
+    "note": "K1, K2, K3 and synthesis A's five. No stake rule and no plugin (proof j). nq_T1 and noise30_S0.25 stay available but are not listed. Every listed change has its declared criterion and no error."
+   },
+   {
+    "what": "New probe: the A1 path check and the read of the declared text are not atomic",
+    "ok": false,
+    "note": "resolve_cut checks os.path.realpath(path) is the protocol; declaration_check then opens `path` again. I set LOOK_DECLARED to a symlink that pointed to the protocol when the path rule ran and was re-pointed to a harness output right after it, which simulates the race deterministically. resolve_cut ACCEPTED: the text it read was my re-run's proofs.json. Exploiting this needs a concurrent process re-pointing a symlink, so it cannot happen with the documented command, which names the protocol's own path (not a link)."
+   },
+   {
+    "what": "New probe: a look CUT that the spec's window rejects is refused only after the access is logged",
+    "ok": false,
+    "note": "Tested with a valid declaration (a dummy copy of the spec and a test text; plan only, nothing logged). look.plan accepts --cut 2024-01-01 and --cut 2025-12-31. run_spec would then stop at the windows_for assert (the window ends 2026-01-01), after open_run has written the access line and the marker but before any frame is read. A mistyped --cut would therefore use up the single access, and a second one then needs --second-access. This is not a data leak."
+   },
+   {
+    "what": "Readers the guard does not cover (none on the look's code path; no plugin, no stake rule)",
+    "ok": true,
+    "note": "Confirmed on absent paths, nothing read. Documented in the guard: io.FileIO, os.open, io.open_code, pyarrow OSFile and fs input files. Not documented: tokenize.open and tarfile.open(..., 'r:') (they keep the builtin open captured at import), and hard links (analysis only, see leaks). The guard is stronger than its docstring in two places: numpy.fromfile of a path and tarfile's auto-detect mode both go through the guarded open, so the A3/A2 rules apply. As documented, results/r2/recalc/summary.json can still be opened (recorded only)."
+   },
+   {
+    "what": "Process and state",
+    "ok": true,
+    "note": "- LOOK_DECLARED never named the protocol in any process. It was set only to files other than the protocol and to a test text, in child processes with vhi_run stubbed and the log redirected.\n- I wrote nothing under the repository: my safety net logged one skipped copy into the harness folder and nothing else.\n- val_access.log: 502 lines, sha c1e4e5fb..., 0 autopsy_HI_look lines, before and after. No look/ folder, no marker, no bytecode.\n- Git: read-only commands only (status, diff, show, log). One heavy process at a time.\n- Reviewed sha256 (unchanged at the end): look_spec.json b71f69d5...e277960, vhi_guard.py 89baf871..., vhi_run.py b942e1e3..., vhi_sleeves.py f9b504a5..., vhi_verdicts.py 674cb01c..., look.py 642980d1..., vhi_lens.py 67fa8127..., vhi_data.py 2553cb38..., vhi_book.py 053b3f1c..., vhi_stakes.py 99bdca8a..., proofs.py a3855c2f....\n- Two files changed during the review that are not mine: PROTOCOL_V3.md (lead's commit cef364f, still refused) and a new lab/r2/tracks/validation_hi/look_chart.py (17:48). look_chart.py is a picture script that reads only a harness output JSON and is not imported by the look.\n- The documented look command is correct: LOOK_DECLARED=/home/user/gold-orb/lab/PROTOCOL_V3.md NUMBA_CACHE_DIR=/tmp/numba_validation_hi PYTHONDONTWRITEBYTECODE=1 python3 /home/user/gold-orb/lab/r2/tracks/validation_hi/look.py --spec /home/user/gold-orb/lab/r2/tracks/validation_hi/look_spec.json --cut 2026-01-01"
+   }
+  ],
+  "leaks_found": [
+   "NEW (A1, narrow): a race between the path rule and the read of the text. resolve_cut accepts LOOK_DECLARED when os.path.realpath(path) is the protocol, and declaration_check then opens `path` again. A symlink re-pointed from the protocol to a harness output between the two (simulated deterministically) gets the look ACCEPTED on proofs.json's text, which quotes the track and the spec sha256. It needs a concurrent process and a symlinked LOOK_DECLARED; the documented command names the protocol directly and cannot be raced this way. No data was read.",
+   "NEW (coverage, not on the look's code path): tokenize.open (also used by linecache) and tarfile.open(..., 'r:') call the builtin open they captured at import, so the guard never sees them. Paths it refuses elsewhere (results/holdout/, lab/ CSVs) were not refused (probed on absent paths, nothing read). tarfile's auto-detect mode is refused, through its gzip attempt.",
+   "NEW (coverage, analysis only, not demonstrated so as not to touch lab/ inodes): every lab/ path rule (holdout, CSV, lab/data, 2026 names) keys on os.path.realpath, which does not resolve hard links, and /tmp and lab/ are on the same filesystem (/dev/vda). A hard link made outside lab/ to a lab file escapes those rules. It needs os.link inside the process, the same class as os.open / io.FileIO, but it is not listed in the guard's docstring.",
+   "Residual, documented, outside the decisions (L4): non-CSV, non-holdout files under lab/ can still be opened and are only recorded. Examples: results/r2/recalc/summary.json, which holds the 2022-2025 validation metrics, and the .pkl/.npy files in lab/audit/scratch. io.FileIO, os.open, io.open_code and pyarrow OSFile / fs files are not covered. For a trades file the guard accepts entry_time < CUT alone, so code other than the harness's own readers (which add exit_time < CUT) could see results realised after the CUT. None of this is on the look's code path: no plugin, no stake rule. Earlier leaks L1, L1b, L2, L3, L4b and L4c are closed (checks 2a-2f)."
+  ],
+  "fixes_needed": [
+   "Recommended before the declaration (small, vhi_guard.py only; the spec sha256 does not change; re-run proofs.py afterwards): make A1 atomic. In resolve_cut / declaration_check, open DECLARED_PATH (or the resolved path) once. Accept it only if os.fstat(fd) matches os.stat(DECLARED_PATH) on st_dev and st_ino, and read the text from that descriptor. Add the symlink-race probe to proof i.",
+   "Recommended (small, look.py plan()): for a look, refuse any CUT other than the end of spec['windows']['look']['eval'] (2026-01-01) before anything is logged, so that a mistyped --cut cannot use up the single access. Today run_spec stops on it only after the access line and the marker are written.",
+   "Optional: exit with a non-zero status after writing the output when the check first fails. Today look.py exits 0; the output file and the console are already loud.",
+   "Optional (documentation or wraps): re-point tokenize._builtin_open and tarfile.bltn_open as bz2._builtin_open is, or list them in the guard's not-covered list together with hard links. Also note that numpy.fromfile of a path goes through open() in numpy 2.5.",
+   "Declaration text in PROTOCOL_V3.md itself: quote the string autopsy_HI_look and spec sha256 b71f69d59999bdb97442bf0a1beff9a8512b883396886323426e69e55e277960. State that the single access line with track autopsy_HI_look replaces the per-read logging both syntheses name (synthesis A: goldlab.split.cut with track autopsy_synthesis_A; synthesis_B: track autopsy_synthesis_B). Also state that synthesis A's five changes run through the payoff lens's variants.py, which has the same logic as synth.py's frozen functions, and that the check first gates synthesis A's five only.",
+   "Optional: check synthesis A's frozen sha256 of the files the run uses (sim.py, r2.py, data.py, split.py, recalc.py, fp_costs.json, the strategies, the F1 model) before the access line; today they are only recorded after the run. Also show in check_first any '@payoff' reference that is not identical to its P0 sleeve inside the window; today this appears only in payoff_reference_vs_sB and in each verdict's readings."
+  ]
+ }
+}

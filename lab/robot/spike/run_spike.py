@@ -221,7 +221,7 @@ def read_deals(files):
     d = pd.read_csv(p, header=None, names=["deal", "position", "time", "symbol", "type", "entry", "volume", "price", "reason", "magic",
                                            "comment"], float_precision="round_trip")
     import pont
-    d["utc"] = pont.server_to_utc(d["time"].to_numpy())
+    d["utc"] = pont.server_to_utc((d["time"] - d["time"] % 60).to_numpy())       # the minute of the deal = its bar
     ins, outs = d[d.entry == 0].set_index("position"), d[d.entry == 1].set_index("position")
     t = pd.DataFrame({"entry_time": ins.utc, "side": np.where(ins.type == 0, 1, -1), "entry": ins.price})
     t = t.join(pd.DataFrame({"exit_bar": outs.utc, "exit": outs.price, "reason": np.where(outs.reason == 4, "stop", "time")}))
@@ -283,12 +283,54 @@ def cmp_trades(a, b, key=("entry_time", "side"), names=("lab", "ea")):
     res = {f"{n0}_trades": int(len(a)), f"{n1}_trades": int(len(b)), "same_entry_minute_and_side": int(len(both)),
            f"only_{n0}": int((m._merge == "left_only").sum()), f"only_{n1}": int((m._merge == "right_only").sum()),
            "same_exit_minute_and_reason": int(same_exit.sum())}
+    same = both[same_exit]                                       # prices compared on the trades that are the same trade
     for c in ("entry", "stop", "exit"):
-        if f"{c}_{n0}" in both and f"{c}_{n1}" in both:
-            d = (both[f"{c}_{n0}"] - both[f"{c}_{n1}"]).abs()
+        if f"{c}_{n0}" in same and f"{c}_{n1}" in same:
+            d = (same[f"{c}_{n0}"] - same[f"{c}_{n1}"]).abs()
             res[f"{c}_bitwise_equal"] = int((d == 0).sum())
             res[f"{c}_max_abs_diff"] = float(d.max()) if len(d) else 0.0
+            if c == "exit":
+                for why in ("stop", "time"):
+                    dd = d[same[f"reason_{n0}"] == why]
+                    res[f"exit_{why}_bitwise_equal"] = f"{int((dd == 0).sum())}/{len(dd)}"
+                    res[f"exit_{why}_max_abs_diff"] = float(dd.max()) if len(dd) else 0.0
     return res, m
+
+
+def classify(m, m1, n0="lab", n1="ea"):
+    """why a trade differs between the lab and the EA (rows of cmp_trades' merge that are not the same trade)"""
+    idx = m1.index
+    srv = idx.tz_convert(NY).tz_localize(None) + pd.Timedelta(hours=7)
+    m = m.sort_values("entry_time").reset_index(drop=True)
+    out, prev_bad = [], False
+    for _, r in m.iterrows():
+        same = r._merge == "both" and r[f"exit_bar_{n0}"] == r[f"exit_bar_{n1}"] and r[f"reason_{n0}"] == r[f"reason_{n1}"]
+        if same:
+            prev_bad = False
+            continue
+        row = {"entry_time": str(r.entry_time), "side": int(r.side), "in": str(r._merge),
+               f"exit_{n0}": f"{r[f'exit_bar_{n0}']} {r[f'reason_{n0}']}", f"exit_{n1}": f"{r[f'exit_bar_{n1}']} {r[f'reason_{n1}']}"}
+        if r._merge == "both" and r[f"reason_{n0}"] == "time":
+            i = int(idx.searchsorted(r[f"exit_bar_{n0}"]))
+            gap = (idx[i + 1] - idx[i]) / pd.Timedelta(minutes=1) if i + 1 < len(idx) else float("nan")
+            sched = r.get(f"sched_exit_{n0}", r.get("sched_exit"))
+            s = srv[i]
+            if s.dayofweek == 4 and s.hour == 23 and s.minute < 54 and gap > 30:
+                row["why"] = (f"Friday whose last bar is {s:%H:%M} server, not 23:54: the lab exits on it (it sees the closure in the "
+                              f"data), the EA waits for 23:54 and exits at the reopening")
+            elif gap > 30:
+                row["why"] = (f"unscheduled closure of {gap:.0f} min after {s:%a %Y-%m-%d %H:%M} server (scheduled exit {sched}): the lab "
+                              f"exits on the last bar before it (gl.exit_index, 30-minute rule, needs future data); the EA has no "
+                              f"holiday calendar and exits at the first bar at/after the scheduled time")
+            else:
+                row["why"] = "UNEXPLAINED"
+        elif prev_bad:
+            row["why"] = "chain: the previous trade of the sleeve ended at another minute, so this signal is taken/skipped differently"
+        else:
+            row["why"] = "UNEXPLAINED"
+        prev_bad = True
+        out.append(row)
+    return out
 
 
 def explain_official_vs_rounded(off_o, off_t, reb_o, reb_t, m1_off, m1_reb, labh_off, labh_reb):
@@ -362,14 +404,13 @@ def window_run(exe, start, end, tag, restarts=True):
     res, m = cmp_trades(lab_in, ea_t)
     res["lab_trades_excluded_as_frame_end_artefacts"] = int(lt.artefact.sum())
     res["ea_trade_open_at_end"] = int(len(J["DEC"][J["DEC"].status == "taken"]) - len(ea_t))
-    res["mismatches"] = m[(m._merge != "both") | (m.exit_bar_lab != m.exit_bar_ea) | (m.reason_lab != m.reason_ea)][
-        ["entry_time", "side", "_merge", "exit_bar_lab", "reason_lab", "exit_bar_ea", "reason_ea"]].astype(str).to_dict("records")
+    res["mismatches"] = classify(m, m1_reb)
     rep["a_trades"] = res
     # broker (the mock's deals) against the lab
     deals = read_deals(files)
     resb, mb = cmp_trades(lab_in[["entry_time", "side", "entry", "exit", "exit_bar", "reason"]], deals, names=("lab", "broker"))
-    resb["mismatches"] = mb[(mb._merge != "both") | (mb.exit_bar_lab != mb.exit_bar_broker)][
-        ["entry_time", "side", "_merge", "exit_bar_lab", "reason_lab", "exit_bar_broker", "reason_broker"]].astype(str).to_dict("records")
+    resb["mismatches"] = classify(mb.merge(lab_in[["entry_time", "side", "sched_exit"]], on=["entry_time", "side"], how="left"),
+                                  m1_reb, "lab", "broker")
     rep["a_broker"] = resb
     rep["a_real_actions"] = J["REAL"].what.value_counts().to_dict() if J["REAL"] is not None else {}
     # ---- (b) the official frame
@@ -427,9 +468,16 @@ def restart_tests(exe, bars, t_srv, J_full):
     same2 = a.astype(str).to_csv(index=False) == b.astype(str).to_csv(index=False)
     deals2 = read_deals(files)
     st = J2["DEC"].status.value_counts().to_dict()
+    pb, mpb = cmp_trades(b[["entry_time", "side", "entry", "exit", "exit_bar", "reason"]], deals2, names=("paper", "broker"))
+    late = mpb[(mpb._merge == "both") & (mpb.exit_bar_paper != mpb.exit_bar_broker)]
+    pb["broker_differs"] = [{"entry_time": str(r.entry_time), "paper_exit": f"{r.exit_bar_paper} {r.reason_paper}",
+                             "broker_exit": f"{r.exit_bar_broker} {r.reason_broker}"} for _, r in late.iterrows()]
+    pb["paper_only"] = [str(x) for x in mpb.loc[mpb._merge == "left_only", "entry_time"]]
+    win = [(str(pd.Timestamp(int(a_), unit="s")), str(pd.Timestamp(int(b_), unit="s"))) for a_, b_ in edges]
     out["outages"] = {"outages_min": [int(x // 60) for x in downs], "paper_trades_identical": bool(same2),
                       "paper_trades": int(len(b)), "broker_trades": int(len(deals2)),
-                      "decisions_status": st, "real_actions": J2["REAL"].what.value_counts().to_dict() if J2["REAL"] is not None else {}}
+                      "decisions_status": st, "real_actions": J2["REAL"].what.value_counts().to_dict() if J2["REAL"] is not None else {},
+                      "outage_windows_server": win, "paper_vs_broker": pb}
     return out
 
 

@@ -24,6 +24,9 @@
 //                             restart: OnDeinit, then a new process, OnInit at FROM)
 //   MOCK_SLIP_MKT_BPS / MOCK_SLIP_STOP_BPS   broker slippage (default 0.5 / 1.5: btcusd in lab/r2/fp_costs.json)
 //   MOCK_INPUT_<InpName>=v    another value for an input of the EA
+//   MOCK_TIMER_CALLS=n        OnTimer() n times per event, at T, T+1 s, ... (the real timer fires every second; default 1)
+//   MOCK_COPY_FAIL=p          every CopyRates call fails (-1, error 4066 "history in update state") with probability p
+//                             (deterministic pseudo-random sequence, MOCK_SEED)
 #pragma once
 #include "mql5_shim.h"
 #include <algorithm>
@@ -84,6 +87,18 @@ static int    rp_last_error = 0;
 static FILE  *rp_log = nullptr;
 static long   rp_copy_calls = 0, rp_timer_calls = 0;
 static MqlTradeResult rp_res = MqlTradeResult();
+static double rp_copy_fail = 0.0;
+static unsigned long long rp_rng = 88172645463325252ULL;
+static long rp_copy_failed = 0;
+static bool rp_fail_now()                                   // fault injection: a terminal whose history is not ready
+  {
+   if(rp_copy_fail <= 0.0) return false;
+   rp_rng ^= rp_rng << 13; rp_rng ^= rp_rng >> 7; rp_rng ^= rp_rng << 17;
+   if((double)(rp_rng % 1000000) / 1e6 >= rp_copy_fail) return false;
+   rp_last_error = 4066;
+   rp_copy_failed++;
+   return true;
+  }
 
 static string rp_path(string name)
   {
@@ -262,6 +277,7 @@ int CopyRates(const string name, ENUM_TIMEFRAMES tf, int start_pos, int count, M
    rp_copy_calls++;
    RpSym *s = rp_find(name);
    r.v.clear();
+   if(rp_fail_now()) return -1;
    if(!s || tf != PERIOD_M1 || s->cur < 0 || count <= 0 || start_pos < 0) { rp_last_error = 4401; return -1; }
    long hi = s->cur - start_pos;
    if(hi < 0) { rp_last_error = 4401; return -1; }
@@ -278,6 +294,7 @@ int CopyRates(const string name, ENUM_TIMEFRAMES tf, datetime start_time, dateti
    rp_copy_calls++;
    RpSym *s = rp_find(name);
    r.v.clear();
+   if(rp_fail_now()) return -1;
    if(!s || tf != PERIOD_M1 || s->cur < 0) { rp_last_error = 4401; return -1; }
    long a = rp_lower(*s, start_time), b = std::min(rp_lower(*s, stop_time + 1) - 1, s->cur);
    if(b < a) return 0;
@@ -289,6 +306,7 @@ int CopyRates(const string name, ENUM_TIMEFRAMES tf, datetime start_time, int co
    rp_copy_calls++;
    RpSym *s = rp_find(name);
    r.v.clear();
+   if(rp_fail_now()) return -1;
    if(!s || tf != PERIOD_M1 || s->cur < 0 || count <= 0) { rp_last_error = 4401; return -1; }
    long b = std::min(rp_lower(*s, start_time + 1) - 1, s->cur);
    rp_fill(*s, b - count + 1, b, r);
@@ -325,9 +343,9 @@ bool GlobalVariableDel(const string name) { return rp_gv.erase(name) > 0; }
 void GlobalVariablesFlush() {}                                // saved at the end of the process (a clean terminal stop)
 
 // ------------------------------------------------------------------ broker: positions, deals, CTrade
-static void rp_deal(const RpPos &p, int type, int entry, double price, int reason)
+static void rp_deal(const RpPos &p, int type, int entry, double price, int reason, long when)
   {
-   rp_deals.push_back({rp_next_deal++, p.ticket, rp_now, p.symbol, type, entry, p.volume, price, reason, p.magic, p.comment});
+   rp_deals.push_back({rp_next_deal++, p.ticket, when, p.symbol, type, entry, p.volume, price, reason, p.magic, p.comment});
   }
 static bool rp_on_grid(const RpSym &s, double v) { return std::fabs(v - rp_norm(v, s.digits)) < 1e-9 * std::max(1.0, std::fabs(v)); }
 static bool rp_open(const string symbol, int type, double volume, double sl, double tp, const string comment)
@@ -341,7 +359,7 @@ static bool rp_open(const string symbol, int type, double volume, double sl, dou
    double px = (type == 0) ? ask * (1 + rp_slip_mkt) : bid * (1 - rp_slip_mkt);
    RpPos p = {rp_next_ticket++, symbol, type, volume, px, sl, tp, (long)rp_magic, rp_now, comment};
    rp_pos.push_back(p);
-   rp_deal(p, type, 0, px, 3);
+   rp_deal(p, type, 0, px, 3, rp_now);
    rp_res.retcode = TRADE_RETCODE_DONE; rp_res.order = p.ticket; rp_res.deal = rp_next_deal - 1; rp_res.price = px; rp_res.volume = volume;
    rp_res.bid = bid; rp_res.ask = ask;
    rp_logf("OPEN %s %s %.2f px=%.10g sl=%.10g t=%ld ticket=%lu", symbol.c_str(), type == 0 ? "buy" : "sell", volume, px, sl, rp_now, p.ticket);
@@ -353,11 +371,13 @@ static long rp_pos_index(ulong ticket)
       if(rp_pos[i].ticket == ticket) return (long)i;
    return -1;
   }
-static void rp_close_at(long i, double px, int reason)
+// `when`: the deal's time. A stop fills DURING its bar: stamped at the last second of that bar (the mock does not know
+// the tick); a close asked by the EA is stamped at the current time (the forming bar's first tick)
+static void rp_close_at(long i, double px, int reason, long when)
   {
    RpPos p = rp_pos[i];
-   rp_deal(p, p.type == 0 ? 1 : 0, 1, px, reason);
-   rp_logf("CLOSE %s ticket=%lu px=%.10g reason=%d t=%ld", p.symbol.c_str(), p.ticket, px, reason, rp_now);
+   rp_deal(p, p.type == 0 ? 1 : 0, 1, px, reason, when);
+   rp_logf("CLOSE %s ticket=%lu px=%.10g reason=%d t=%ld", p.symbol.c_str(), p.ticket, px, reason, when);
    rp_pos.erase(rp_pos.begin() + i);
    rp_selected = -1;
   }
@@ -397,7 +417,7 @@ bool CTrade::PositionClose(const ulong ticket, const ulong)
    const MqlRates &b = s->bars[s->cur];
    double px = (rp_pos[i].type == 0) ? b.open * (1 - rp_slip_mkt) : rp_ask(*s, b.open, b.spread) * (1 + rp_slip_mkt);
    rp_res.retcode = TRADE_RETCODE_DONE; rp_res.price = px; rp_res.order = ticket;
-   rp_close_at(i, px, 3);
+   rp_close_at(i, px, 3, rp_now);
    return true;
   }
 int PositionsTotal() { return (int)rp_pos.size(); }
@@ -439,9 +459,9 @@ static void rp_broker_stops(RpSym &s, long i)
       if(p.symbol != s.name || p.sl == 0.0 || p.time > b.time) continue;
       bool first = (p.time == b.time);
       if(p.type == 0 && b.low <= p.sl)
-         rp_close_at(k, (first ? p.sl : std::min(p.sl, b.open)) * (1 - rp_slip_stop), 4);
+         rp_close_at(k, (first ? p.sl : std::min(p.sl, b.open)) * (1 - rp_slip_stop), 4, b.time + 59);
       else if(p.type == 1 && rp_ask(s, b.high, b.spread) >= p.sl)
-         rp_close_at(k, (first ? p.sl : std::max(p.sl, rp_ask(s, b.open, b.spread))) * (1 + rp_slip_stop), 4);
+         rp_close_at(k, (first ? p.sl : std::max(p.sl, rp_ask(s, b.open, b.spread))) * (1 + rp_slip_stop), 4, b.time + 59);
      }
   }
 
@@ -537,6 +557,9 @@ int main()
    rp_log = fopen(rp_path("_mock/log.txt").c_str(), "a");
    if((e = getenv("MOCK_SLIP_MKT_BPS"))) rp_slip_mkt = atof(e) * 1e-4;
    if((e = getenv("MOCK_SLIP_STOP_BPS"))) rp_slip_stop = atof(e) * 1e-4;
+   if((e = getenv("MOCK_COPY_FAIL"))) rp_copy_fail = atof(e);
+   if((e = getenv("MOCK_SEED"))) rp_rng ^= strtoull(e, nullptr, 10) * 2654435761ULL;
+   int timer_calls = getenv("MOCK_TIMER_CALLS") ? std::max(1, atoi(getenv("MOCK_TIMER_CALLS"))) : 1;
    string syms = getenv("MOCK_SYMS") ? getenv("MOCK_SYMS") : "BTCUSD";
    std::stringstream ss(syms);
    string name;
@@ -581,14 +604,18 @@ int main()
      {
       rp_now = T;
       advance(T);
-      OnTimer();
-      rp_timer_calls++;
+      for(int c = 0; c < timer_calls; c++)
+        {
+         rp_now = T + c;
+         OnTimer();
+         rp_timer_calls++;
+        }
      }
    OnDeinit(REASON_CLOSE);
    double run_s = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
    rp_save_state();
-   printf("events %zu from %ld to %ld  load %.3f s  replay %.3f s  copyrates %ld  open positions %zu\n", ev.size(), ev.front(), ev.back(),
-          load_s, run_s, rp_copy_calls, rp_pos.size());
+   printf("events %zu from %ld to %ld  load %.3f s  replay %.3f s  timer calls %ld  copyrates %ld (failed %ld)  open positions %zu\n",
+          ev.size(), ev.front(), ev.back(), load_s, run_s, rp_timer_calls, rp_copy_calls, rp_copy_failed, rp_pos.size());
    if(rp_log) fclose(rp_log);
    return 0;
   }
