@@ -746,3 +746,20 @@ Three lenses, each with its own directories `r2/tracks/sizing/<lens>/` and `resu
   before it is run. The 2026 holdout stays untouched.
 - **To be said with any result**: found on the years that built the rules, so optimistic; the measure that counts is the
   validation look, then the demo account. Stakes below the broker's minimum lot are skipped on a small account (Addendum E).
+
+### Addendum I — outcome (2026-11-12, `results/r2/sizing/synthesis.json`, `results/r2/sizing/workflow_result.json`)
+**No stake rule survives.** On the out-of-fold years 2019–2021, FP costs, plain sum of the ten chains at equal weekly
+swing (reference: 3,985 trades, weekly Sharpe 2.747, +556.2 R, 44.6 % losing weeks, worst week −12.5 R):
+- **clock** (9 declared rules): ×0.933 to ×1.000; stakes chosen with perfect hindsight of each year reach ×1.18 (hour
+  bands) and ×1.38 (weekdays), below the median of the same bound on shuffled labels (×1.22, ×1.41): no structure beyond
+  noise.
+- **weights** (15 variants): mean/variance ×0.938–0.985; inverse volatility ×1.007–1.059 with 2019 down at every
+  shrinkage; switching a sleeve off on a non-positive trailing expectancy ×0.959–0.990; rank weights ×0.919–0.981.
+- **conviction** (30 variants): per-sleeve descriptor terciles ×0.942–1.047 (on the six non-crypto sleeves every rule
+  lowered the total); "agreement" stakes ×0.952–0.997 (the cluster lens's +0.24 against +0.14 R does not hold out of
+  fold); the best, a pooled ridge score on the four crypto breakouts (V05), ×1.095 (2019 ×1.006, 2020 ×1.047, 2021
+  ×1.339; the earlier 2018 fold ×0.944; on a 1,000 EUR account run as the live program would, ×0.954): below the ×1.10
+  bar, verdict weakened, dropped. Nothing of Addendum I enters the look. Measured the same way, Addendum H's kept set
+  (K1 + K2 + K3) gives ×1.123 in sample, mostly from 2019, with a deeper worst week (−14.0 against −12.5 R).
+Lesson recorded for the user: staking by the odds, by the clock or by sleeve does not raise the gain per unit of swing
+on these rules; the remaining gap to the user's demand (about ×4.4) is untouched by Addenda H and I.
