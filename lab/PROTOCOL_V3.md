@@ -539,3 +539,25 @@ will be run): the same plan with a slower start, so that the speed of the start 
 - **To be said with it:** this is sizing on simulations of the validation years, not a selection study; the earlier
   plans must come out unchanged apart from the corrected measure; no sizing changes how long the robot's own gain
   stays under its high, nor how often losing runs come.
+
+### Addendum G — seventh clarification (2026-11-12), written BEFORE the run: a monthly check before the stop is armed
+The user asked what would make us cut the robot ("if I lose too much: how much in euros? I leave it to you"). From the
+twelfth payment on, the answer is the stop of the plan (−25 % of the reference capital). Before that, nothing stops a
+robot whose rules are worthless. Declared now, before any run, for the five plans of the ladder (same engine, same
+draws, nothing else will be run):
+- **The figure looked at:** at each month end m = 1..11, the robot's gain G(m) = balance minus money paid in.
+- **Orange line:** the 10th percentile of G(m) over the 2,000 half-edge paths. **Red line:** the q-th percentile of G(m)
+  over the same paths, the same q every month, q being the largest value (on a grid of 0.1 %) for which at most 5 % of
+  the half-edge paths are below the red line at one month end or more among months 1 to 11. **Rule tested:** the robot
+  is stopped for good at the first month end where its gain is below the red line, and nothing more is paid in.
+- **Reported, per plan:** q and the red line month by month; in each scenario (paper, without 2024, half, quarter,
+  covers its costs, worthless) the share of paths cut and the median month of the cut; the gain or loss after 36
+  months with and without the rule (median and one path in ten), the stop of the plan staying in place in both; what
+  the half-edge paths that are cut would have earned without the rule.
+- **What decides whether the rule is offered to the user, fixed here:** it is offered only if, for the plan he chooses,
+  it cuts at least half of the worthless robots before month 9 AND lowers the median loss with worthless rules by at
+  least 500 EUR (false cuts at half edge are at most 5 % by construction). Otherwise the result is: "the stop at the
+  twelfth payment is the rule; nothing earlier tells a worthless robot from bad luck", and the two lines are shown as
+  information only.
+- The red line is calibrated and tested on the same paths; the false-cut rate is therefore checked on other draws
+  (seed + 2), and reported as measured there.
