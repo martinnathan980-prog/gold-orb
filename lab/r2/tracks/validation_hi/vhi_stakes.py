@@ -18,7 +18,8 @@ A rule that should SKIP signals (re-simulating the chain, so a skipped signal fr
 it is a change (vhi_sleeves.register_change), like K1. A stake of 0 here leaves the sleeve's chain unchanged (the
 cluster lens's convention for a trade the account does not take).
 
-Built-in rules (JSON form in a look spec: {"kind": ..., ...}):
+Built-in rules (JSON form in a look spec: {"kind": ..., "id": ..., ...}; in look_spec.json a stake rule is a change:
+it carries an "id" and enters the look only when the list "changes_in_look" names that id, vhi_run.select_changes):
     const              {"kind": "const", "m": 1.0}
     sleeve_year        {"kind": "sleeve_year", "table": {"<year>": m, ...}, "default": 1.0}   a stake per year for the
                        sleeve (e.g. Addendum I `weights`, fitted before each year and written into the look's text)

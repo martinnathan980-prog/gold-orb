@@ -1,248 +1,494 @@
 {
- "what": "the guard of the harness (vhi_guard): CUT rules, refused reads, the access log untouched",
+ "what": "the guard of the harness (vhi_guard): F1 the declaration bound to the spec (PROTOCOL_V3.md as it stands refused), F2 run once / fixed output / second access, F3 the hardened read guard (probes refused before any byte is read), CUT rules, the access log untouched, every read of the process with its filter",
+ "plan_tests": {
+  "the real spec with LOOK_DECLARED = PROTOCOL_V3.md as it stands: refused (F1)": "CUT 2026-01-01 00:00:00+00:00: the text of LOOK_DECLARED='/home/user/gold-orb/lab/PROTOCOL_V3.md' must contain the string 'autopsy_HI_look' and the full sha256 of the spec (f097ab176413972beec5ee32c729a796ba99bb1dcaad0bcf509ff3ea58eb67d6); contains 'autopsy_HI_look': False, contains the spec sha256:",
+  "the real spec without LOOK_DECLARED: refused": "CUT 2026-01-01 00:00:00+00:00 is after 2022-01-01: the look is refused until LOOK_DECLARED=<path of the protocol addendum that declares it> is set",
+  "a dummy spec whose sha256 the declaration does not quote (the real spec + the test text): refused": "CUT 2026-01-01 00:00:00+00:00: the text of LOOK_DECLARED='/tmp/vhi_plan_k80hdzmc/addendum_test.md' must contain the string 'autopsy_HI_look' and the full sha256 of the spec (f097ab176413972beec5ee32c729a796ba99bb1dcaad0bcf509ff3ea58eb67d6); contains 'autopsy_HI_look': True, contains the spec sha256:",
+  "a look of the dummy spec, declaration quoting its sha256, no earlier access: allowed (plan only)": {
+   "out": "/tmp/vhi_plan_k80hdzmc/look/vhi_proof_dummy_spec__cut2026-01-01.json",
+   "marker": "/tmp/vhi_plan_k80hdzmc/look/vhi_proof_dummy_spec__cut2026-01-01.started",
+   "label": "look:vhi_proof_dummy_spec:1932165d9f29",
+   "stem": "vhi_proof_dummy_spec__cut2026-01-01",
+   "is_look": true
+  },
+  "a look with --out: refused (F2: fixed output path)": "--out is refused for a look: its output path is fixed (/tmp/vhi_plan_k80hdzmc/look/vhi_proof_dummy_spec__cut2026-01-01.json)",
+  "a look when val_access.log already holds an autopsy_HI_look line: refused (F2: run once)": "the look is run once: val_access.log already holds 1 line(s) with track 'autopsy_HI_look' and 0 '.started' marker(s) exist; a second access needs --second-access '<reason>'",
+  "a look when a '.started' marker exists: refused (F2)": "the look is run once: val_access.log already holds 0 line(s) with track 'autopsy_HI_look' and 1 '.started' marker(s) exist; a second access needs --second-access '<reason>'",
+  "a second access with its reason after a logged first access: allowed (plan only)": {
+   "out": "/tmp/vhi_plan_k80hdzmc/look/vhi_proof_dummy_spec__cut2026-01-01__access2.json",
+   "marker": "/tmp/vhi_plan_k80hdzmc/look/vhi_proof_dummy_spec__cut2026-01-01__access2.started",
+   "label": "look:vhi_proof_dummy_spec:1932165d9f29:second_access:the first run crashed after its access line",
+   "stem": "vhi_proof_dummy_spec__cut2026-01-01__access2",
+   "is_look": true
+  },
+  "a second access with an empty reason: refused": "--second-access needs a reason (it is written into the access label)",
+  "--second-access without an earlier access: refused": "--second-access is for a look whose first access is already logged; there is none",
+  "a rehearsal (CUT 2022-01-01) with --out: allowed": {
+   "out": "/tmp/vhi_plan_k80hdzmc/rehearsal.json",
+   "marker": null,
+   "label": "look:vhi_proof_dummy_spec:1932165d9f29",
+   "stem": "vhi_proof_dummy_spec__cut2022-01-01",
+   "is_look": false
+  },
+  "a rehearsal with --second-access: refused": "--second-access is for a look only (CUT after 2022-01-01)",
+  "CUT 2026-01-02 with a declaration quoting the spec's sha256: refused": "CUT 2026-01-02 00:00:00+00:00 is after 2026-01-01: the 2026 holdout is never read, whatever LOOK_DECLARED says"
+ },
+ "opens_under_lab": [
+  "PROTOCOL_V3.md",
+  "goldlab/sim.py",
+  "r2/fp_costs.json",
+  "r2/tracks/autopsy/payoff/common.py",
+  "r2/tracks/ml/models/B1_ridge_full.json",
+  "r2/tracks/stake/stake.py",
+  "r2/tracks/validation_hi/look_spec.json",
+  "results/r2/autopsy/cluster/engine_check.json",
+  "results/r2/autopsy/payoff/trials.jsonl",
+  "results/r2/autopsy/synthesis_B.json",
+  "results/val_access.log",
+  "tracks/orb/strategy.py",
+  "tracks/trend/strategy.py"
+ ],
  "reads": [
   {
+   "path": "goldlab/sim.py",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "r2/fp_costs.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "r2/tracks/validation_hi/look_spec.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "results/r2/autopsy/synthesis_B.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
    "path": "data/fp/us100_m1.parquet",
-   "kind": "parquet",
-   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
+  },
+  {
+   "path": "tracks/trend/strategy.py",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "tracks/orb/strategy.py",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
   },
   {
    "path": "results/r2/recalc/trades/ocm4__us100.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/recalc/trades/ocm4__us100.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
+  },
+  {
+   "path": "r2/tracks/autopsy/payoff/common.py",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
   },
   {
    "path": "results/r2/recalc/trades/noise30__us100.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/recalc/trades/noise30__us100.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "data/fp/xauusd_m1.parquet",
-   "kind": "parquet",
-   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/recalc/trades/donch4h_stop__xauusd.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/recalc/trades/donch4h_stop__xauusd.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/recalc/trades/orb_asia_2d_buf10__xauusd.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/recalc/trades/orb_asia_2d_buf10__xauusd.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/recalc/trades/GOLD_FRI_PM__xauusd.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/recalc/trades/GOLD_FRI_PM__xauusd.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "data/fp/btcusd_m1.parquet",
-   "kind": "parquet",
-   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/recalc/trades/brk72_24h_wd__btcusd.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/recalc/trades/brk72_24h_wd__btcusd.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
+  },
+  {
+   "path": "r2/tracks/ml/models/B1_ridge_full.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
   },
   {
    "path": "results/r2/recalc/trades/F1_brk_ridge_filter__btcusd.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/recalc/trades/F1_brk_ridge_filter__btcusd.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/recalc/trades/nq_btc_follow__btcusd.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/recalc/trades/nq_btc_follow__btcusd.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "data/fp/ethusd_m1.parquet",
-   "kind": "parquet",
-   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/recalc/trades/brk72_24h_wd__ethusd.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/recalc/trades/brk72_24h_wd__ethusd.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/recalc/trades/F1_brk_ridge_filter__ethusd.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/recalc/trades/F1_brk_ridge_filter__ethusd.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
+  },
+  {
+   "path": "data/fp/us100_m1.parquet",
+   "kind": "pandas.read_parquet",
+   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
+  },
+  {
+   "path": "data/fp/xauusd_m1.parquet",
+   "kind": "pandas.read_parquet",
+   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
+  },
+  {
+   "path": "data/fp/btcusd_m1.parquet",
+   "kind": "pandas.read_parquet",
+   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
+  },
+  {
+   "path": "data/fp/ethusd_m1.parquet",
+   "kind": "pandas.read_parquet",
+   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
+  },
+  {
+   "path": "results/r2/autopsy/payoff/variants_table.csv",
+   "kind": "pandas.read_csv",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "results/r2/autopsy/payoff/trials.jsonl",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "r2/tracks/validation_hi/look_spec.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "r2/tracks/validation_hi/look_spec.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "r2/tracks/validation_hi/look_spec.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "r2/tracks/validation_hi/look_spec.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "results/r2/autopsy/cluster/engine_check.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "r2/tracks/stake/stake.py",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "r2/fp_costs.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
   },
   {
    "path": "results/r2/autopsy/cluster/trades_is/noise30__us100__fp.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/autopsy/cluster/trades_is/ocm4__us100__fp.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/autopsy/cluster/trades_is/brk72_24h_wd__btcusd__fp.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/autopsy/cluster/trades_is/brk72_24h_wd__ethusd__fp.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/autopsy/cluster/trades_is/nq_btc_follow__btcusd__fp.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/autopsy/cluster/trades_is/F1_brk_ridge_filter__btcusd__fp.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/autopsy/cluster/trades_is/F1_brk_ridge_filter__ethusd__fp.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/autopsy/cluster/trades_is/GOLD_FRI_PM__xauusd__fp.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/autopsy/cluster/trades_is/donch4h_stop__xauusd__fp.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/autopsy/cluster/trades_is/orb_asia_2d_buf10__xauusd__fp.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/autopsy/cluster/trades_is/noise30__us100__stress.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/autopsy/cluster/trades_is/ocm4__us100__stress.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/autopsy/cluster/trades_is/brk72_24h_wd__btcusd__stress.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/autopsy/cluster/trades_is/brk72_24h_wd__ethusd__stress.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/autopsy/cluster/trades_is/nq_btc_follow__btcusd__stress.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/autopsy/cluster/trades_is/F1_brk_ridge_filter__btcusd__stress.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/autopsy/cluster/trades_is/F1_brk_ridge_filter__ethusd__stress.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/autopsy/cluster/trades_is/GOLD_FRI_PM__xauusd__stress.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/autopsy/cluster/trades_is/donch4h_stop__xauusd__stress.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
    "path": "results/r2/autopsy/cluster/trades_is/orb_asia_2d_buf10__xauusd__stress.parquet",
-   "kind": "parquet",
-   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "kind": "pandas.read_parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+   "bound": "2022-01-01 00:00:00+00:00"
   },
   {
-   "path": "data/fp/us100_m1.parquet",
-   "kind": "parquet",
-   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "path": "r2/tracks/validation_hi/look_spec.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
   },
   {
-   "path": "data/fp/xauusd_m1.parquet",
-   "kind": "parquet",
-   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "path": "PROTOCOL_V3.md",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
   },
   {
-   "path": "data/fp/btcusd_m1.parquet",
-   "kind": "parquet",
-   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "path": "PROTOCOL_V3.md",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
   },
   {
-   "path": "data/fp/ethusd_m1.parquet",
-   "kind": "parquet",
-   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+   "path": "r2/tracks/validation_hi/look_spec.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "PROTOCOL_V3.md",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "results/val_access.log",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "results/val_access.log",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "results/val_access.log",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
   }
  ],
- "checks": 25,
+ "checks": 91,
  "failed": 0,
  "ok": true,
  "failures": [],
@@ -263,40 +509,114 @@
    "field": "guard.cut_2023_without_env_refused",
    "expected": false,
    "got": false,
-   "ok": true
+   "ok": true,
+   "why": "CUT 2023-01-01 00:00:00+00:00 is after 2022-01-01: the look is refused until LOOK_DECLARED=<path of the protocol addendum that declares it> is set"
   },
   {
    "field": "guard.cut_2026_without_env_refused",
    "expected": false,
    "got": false,
-   "ok": true
+   "ok": true,
+   "why": "CUT 2026-01-01 00:00:00+00:00 is after 2022-01-01: the look is refused until LOOK_DECLARED=<path of the protocol addendum that declares it> is set"
   },
   {
    "field": "guard.cut_2026_env_not_a_file_refused",
    "expected": false,
    "got": false,
-   "ok": true
+   "ok": true,
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/nonexistent/addendum.md' is not a readable file"
   },
   {
-   "field": "guard.cut_2026_env_file_without_word_refused",
+   "field": "guard.cut_2026_text_with_word_declared_only_refused (the old gate)",
    "expected": false,
    "got": false,
-   "ok": true
+   "ok": true,
+   "why": "CUT 2026-01-01 00:00:00+00:00: the text of LOOK_DECLARED='/tmp/vhi_selftest_aaoispdj/addendum_word_declared_only.txt' must contain the string 'autopsy_HI_look' and the full sha256 of the spec (80169f9799866919f60d14c777f2cf536cf76d4a7ec6bb14b7715d0c1d35f9f6); contains 'autopsy_HI_look': False, conta"
   },
   {
-   "field": "guard.cut_2026_env_file_with_word_allowed (resolve only, nothing opened)",
+   "field": "guard.cut_2026_text_with_track_only_refused",
+   "expected": false,
+   "got": false,
+   "ok": true,
+   "why": "CUT 2026-01-01 00:00:00+00:00: the text of LOOK_DECLARED='/tmp/vhi_selftest_aaoispdj/addendum_track_only.txt' must contain the string 'autopsy_HI_look' and the full sha256 of the spec (80169f9799866919f60d14c777f2cf536cf76d4a7ec6bb14b7715d0c1d35f9f6); contains 'autopsy_HI_look': True, contains the s"
+  },
+  {
+   "field": "guard.cut_2026_text_with_sha_only_refused",
+   "expected": false,
+   "got": false,
+   "ok": true,
+   "why": "CUT 2026-01-01 00:00:00+00:00: the text of LOOK_DECLARED='/tmp/vhi_selftest_aaoispdj/addendum_sha_only.txt' must contain the string 'autopsy_HI_look' and the full sha256 of the spec (80169f9799866919f60d14c777f2cf536cf76d4a7ec6bb14b7715d0c1d35f9f6); contains 'autopsy_HI_look': False, contains the sp"
+  },
+  {
+   "field": "guard.cut_2026_text_with_track_and_sha12_refused",
+   "expected": false,
+   "got": false,
+   "ok": true,
+   "why": "CUT 2026-01-01 00:00:00+00:00: the text of LOOK_DECLARED='/tmp/vhi_selftest_aaoispdj/addendum_track_and_sha12.txt' must contain the string 'autopsy_HI_look' and the full sha256 of the spec (80169f9799866919f60d14c777f2cf536cf76d4a7ec6bb14b7715d0c1d35f9f6); contains 'autopsy_HI_look': True, contains "
+  },
+  {
+   "field": "guard.cut_2026_text_with_track_and_another_specs_sha_refused",
+   "expected": false,
+   "got": false,
+   "ok": true,
+   "why": "CUT 2026-01-01 00:00:00+00:00: the text of LOOK_DECLARED='/tmp/vhi_selftest_aaoispdj/addendum_track_and_other_sha.txt' must contain the string 'autopsy_HI_look' and the full sha256 of the spec (80169f9799866919f60d14c777f2cf536cf76d4a7ec6bb14b7715d0c1d35f9f6); contains 'autopsy_HI_look': True, conta"
+  },
+  {
+   "field": "guard.cut_2026_text_unwritten_refused",
+   "expected": false,
+   "got": false,
+   "ok": true,
+   "why": "CUT 2026-01-01 00:00:00+00:00: the text of LOOK_DECLARED='/tmp/vhi_selftest_aaoispdj/addendum_unwritten.txt' must contain the string 'autopsy_HI_look' and the full sha256 of the spec (80169f9799866919f60d14c777f2cf536cf76d4a7ec6bb14b7715d0c1d35f9f6); contains 'autopsy_HI_look': False, contains the s"
+  },
+  {
+   "field": "guard.cut_2026_full_declaration_but_no_spec_sha_refused",
+   "expected": false,
+   "got": false,
+   "ok": true,
+   "why": "CUT 2026-01-01 00:00:00+00:00 is after 2022-01-01: the look needs the full sha256 of its spec file (look.py passes it); got None"
+  },
+  {
+   "field": "guard.cut_2026_full_declaration_but_short_spec_sha_refused",
+   "expected": false,
+   "got": false,
+   "ok": true,
+   "why": "CUT 2026-01-01 00:00:00+00:00 is after 2022-01-01: the look needs the full sha256 of its spec file (look.py passes it); got '80169f979986'"
+  },
+  {
+   "field": "guard.cut_2026_text_with_track_and_full_sha_allowed (resolve only, nothing opened)",
    "expected": true,
    "got": true,
    "ok": true
   },
   {
-   "field": "guard.cut_2026_01_02_refused_even_with_declared_file",
-   "expected": false,
-   "got": false,
+   "field": "guard.cut_2026_text_with_track_and_full_sha_in_capitals_allowed (resolve only)",
+   "expected": true,
+   "got": true,
    "ok": true
   },
   {
-   "field": "guard.cut_2027_refused_even_with_declared_file",
+   "field": "guard.cut_2026_01_02_refused_even_with_full_declaration",
+   "expected": false,
+   "got": false,
+   "ok": true,
+   "why": "CUT 2026-01-02 00:00:00+00:00 is after 2026-01-01: the 2026 holdout is never read, whatever LOOK_DECLARED says"
+  },
+  {
+   "field": "guard.cut_2027_refused_even_with_full_declaration",
+   "expected": false,
+   "got": false,
+   "ok": true,
+   "why": "CUT 2027-01-01 00:00:00+00:00 is after 2026-01-01: the 2026 holdout is never read, whatever LOOK_DECLARED says"
+  },
+  {
+   "field": "guard.cut_2026_LOOK_DECLARED_PROTOCOL_V3.md_as_it_stands_refused",
+   "expected": false,
+   "got": false,
+   "ok": true,
+   "why": "CUT 2026-01-01 00:00:00+00:00: the text of LOOK_DECLARED='/home/user/gold-orb/lab/PROTOCOL_V3.md' must contain the string 'autopsy_HI_look' and the full sha256 of the spec (f097ab176413972beec5ee32c729a796ba99bb1dcaad0bcf509ff3ea58eb67d6); contains 'autopsy_HI_look': False, contains the spec sha256:"
+  },
+  {
+   "field": "guard.PROTOCOL_V3.md_as_it_stands",
    "expected": false,
    "got": false,
    "ok": true
@@ -320,6 +640,54 @@
    "ok": true
   },
   {
+   "field": "guard.any_file_dated_2026_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.source_str_path_accepted",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "guard.source_bytes_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.source_file_uri_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.source_scheme_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.source_buffer_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.source_list_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.source_tilde_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
    "field": "guard.frame_with_ts_filter_at_cut",
    "expected": true,
    "got": true,
@@ -332,43 +700,351 @@
    "ok": true
   },
   {
+   "field": "guard.frame_with_entry_time_filter_refused (lab/data needs ts)",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
    "field": "guard.frame_with_filter_after_cut",
    "expected": false,
    "got": false,
    "ok": true
   },
   {
-   "field": "refused in process: frame_without_row_filter",
+   "field": "guard.frame_with_le_filter_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.trades_with_t_dec_filter_at_cut",
    "expected": true,
    "got": true,
    "ok": true
+  },
+  {
+   "field": "guard.dnf_with_two_conjunctions_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "F1: LOOK_DECLARED=PROTOCOL_V3.md as it stands is refused for the look (resolve_cut with an environment dict; the process environment is never set)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "protocol_sha256": "2cadb7df8c279b39b1b882726acff72401eba17a184e0cf1ed17b12016ccd095",
+   "protocol_contains_autopsy_HI_look": false,
+   "protocol_contains_the_spec_sha256": false,
+   "spec_sha256": "f097ab176413972beec5ee32c729a796ba99bb1dcaad0bcf509ff3ea58eb67d6"
+  },
+  {
+   "field": "plan: the real spec with LOOK_DECLARED = PROTOCOL_V3.md as it stands: refused (F1)",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "plan: the real spec without LOOK_DECLARED: refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "plan: a dummy spec whose sha256 the declaration does not quote (the real spec + the test text): refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "plan: a look of the dummy spec, declaration quoting its sha256, no earlier access: allowed (plan only)",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "plan: the look's output and '.started' marker paths are fixed, the label carries the spec sha256[:12]; nothing was created",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "plan: a look with --out: refused (F2: fixed output path)",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "plan: a look when val_access.log already holds an autopsy_HI_look line: refused (F2: run once)",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "plan: a look when a '.started' marker exists: refused (F2)",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "plan: a second access with its reason after a logged first access: allowed (plan only)",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "plan: a second access writes its reason into the label and gets the suffix __access2",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "plan: a second access with an empty reason: refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "plan: --second-access without an earlier access: refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "plan: a rehearsal (CUT 2022-01-01) with --out: allowed",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "plan: a rehearsal with --second-access: refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "plan: CUT 2026-01-02 with a declaration quoting the spec's sha256: refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "the real val_access.log has no autopsy_HI_look line and results/r2/validation_hi/look/ no '.started' marker (check_run_once passes)",
+   "expected": [
+    0,
+    0
+   ],
+   "got": [
+    0,
+    0
+   ],
+   "ok": true
+  },
+  {
+   "field": "refused in process: frame_without_row_filter",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: /home/user/gold-orb/lab/data/fp/ethusd_m1.parquet read without a row filter (ts) < t with t <= CUT (2022-01-01 00:00:00+00:00); filters=None"
   },
   {
    "field": "refused in process: frame_with_filter_after_cut",
    "expected": true,
    "got": true,
-   "ok": true
+   "ok": true,
+   "why": "refused: /home/user/gold-orb/lab/data/fp/ethusd_m1.parquet read without a row filter (ts) < t with t <= CUT (2022-01-01 00:00:00+00:00); filters=[('ts', '<', Timestamp('2022-01-02 00:00:00+0000', tz='"
+  },
+  {
+   "field": "refused in process: frame_with_entry_time_filter (lab/data needs ts)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: /home/user/gold-orb/lab/data/fp/ethusd_m1.parquet read without a row filter (ts) < t with t <= CUT (2022-01-01 00:00:00+00:00); filters=[('entry_time', '<', Timestamp('2022-01-01 00:00:00+000"
+  },
+  {
+   "field": "refused in process: frame_with_filesystem_argument",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: pandas.read_parquet of /home/user/gold-orb/lab/data/fp/ethusd_m1.parquet with a filesystem argument"
   },
   {
    "field": "refused in process: official_trades_without_entry_filter",
    "expected": true,
    "got": true,
-   "ok": true
+   "ok": true,
+   "why": "refused: /home/user/gold-orb/lab/results/r2/recalc/trades/brk72_24h_wd__ethusd.parquet read without a row filter (ts | entry_time | t_dec) < t with t <= CUT (2022-01-01 00:00:00+00:00); filters=None"
   },
   {
    "field": "refused in process: holdout_dir",
    "expected": true,
    "got": true,
-   "ok": true
+   "ok": true,
+   "why": "refused: /home/user/gold-orb/lab/data/holdout/anything.parquet is holdout data (never read by this harness)"
+  },
+  {
+   "field": "refused in process: F3a open file object (builtins.open of an FP frame)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of /home/user/gold-orb/lab/data/fp/ethusd_m1.parquet: lab/data is read only through the guarded parquet readers, with a row filter"
+  },
+  {
+   "field": "refused in process: F3a buffer source",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: pandas.read_parquet of a BytesIO (only a str or os.PathLike path is accepted)"
+  },
+  {
+   "field": "refused in process: F3a bytes path",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: pandas.read_parquet of a bytes (only a str or os.PathLike path is accepted)"
+  },
+  {
+   "field": "refused in process: F3a file:// URI",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: pandas.read_parquet of a URI 'file:///home/user/gold-orb/lab/data/fp/ethusd_m1.parquet'"
+  },
+  {
+   "field": "refused in process: F3a symlink to an FP frame, no filter (realpath)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: /home/user/gold-orb/lab/data/fp/ethusd_m1.parquet read without a row filter (ts) < t with t <= CUT (2022-01-01 00:00:00+00:00); filters=None"
+  },
+  {
+   "field": "refused in process: F3b validation trades outside lab/data and lab/results, no filter (stat_skeptic every_val_ethusd)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: /home/user/gold-orb/lab/r2/audit/brk72_24h_wd/stat_skeptic/trades/every_val_ethusd.parquet read without a row filter (ts | entry_time | t_dec) < t with t <= CUT (2022-01-01 00:00:00+00:00); f"
+  },
+  {
+   "field": "refused in process: F3b the same with an entry_time filter after the CUT",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: /home/user/gold-orb/lab/r2/audit/brk72_24h_wd/stat_skeptic/trades/every_val_ethusd.parquet read without a row filter (ts | entry_time | t_dec) < t with t <= CUT (2022-01-01 00:00:00+00:00); f"
+  },
+  {
+   "field": "refused in process: F3c pyarrow.parquet.core.read_table without filter",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: /home/user/gold-orb/lab/data/fp/ethusd_m1.parquet read without a row filter (ts) < t with t <= CUT (2022-01-01 00:00:00+00:00); filters=None"
+  },
+  {
+   "field": "refused in process: F3c pyarrow.parquet.read_pandas without filter",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: /home/user/gold-orb/lab/data/fp/ethusd_m1.parquet read without a row filter (ts) < t with t <= CUT (2022-01-01 00:00:00+00:00); filters=None"
+  },
+  {
+   "field": "refused in process: F3c pyarrow.parquet.ParquetFile",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: pyarrow.parquet.ParquetFile (no row filter; use pandas.read_parquet / pyarrow.parquet.read_table with filters)"
+  },
+  {
+   "field": "refused in process: F3c pyarrow.parquet.ParquetDataset without filter",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: /home/user/gold-orb/lab/data/fp/ethusd_m1.parquet read without a row filter (ts) < t with t <= CUT (2022-01-01 00:00:00+00:00); filters=None"
+  },
+  {
+   "field": "refused in process: F3c pyarrow.dataset.dataset",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: pyarrow.dataset.dataset (no row filter can be checked at its creation: use pandas.read_parquet with filters)"
+  },
+  {
+   "field": "refused in process: F3c pyarrow.parquet.read_metadata (row-group statistics)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: pyarrow.parquet.read_metadata (row-group statistics cannot be cut at CUT)"
+  },
+  {
+   "field": "refused in process: F3d csv under lab/ not on the allowlist (results/trend/trades_val_donch4h_stop.csv)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: csv results/trend/trades_val_donch4h_stop.csv under lab/ (allowed: results/r2/autopsy/payoff/variants_table.csv)"
+  },
+  {
+   "field": "refused in process: F3d csv from a buffer",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: pandas.read_csv of a StringIO (only a str or os.PathLike path is accepted)"
+  },
+  {
+   "field": "refused in process: F3d raw data csv dated 2026 (lab/data/vx)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: /home/user/gold-orb/lab/data/vx/VX_2026-01-21.csv is dated 2026"
+  },
+  {
+   "field": "refused in process: open() of lab/data via pathlib",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of /home/user/gold-orb/lab/data/fp/ethusd_m1.parquet: lab/data is read only through the guarded parquet readers, with a row filter"
+  },
+  {
+   "field": "refused in process: open() of lab/holdout_raw",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of /home/user/gold-orb/lab/holdout_raw/download/xauusd-m1-bid-2026-01-01-2026-11-05.csv (holdout data)"
+  },
+  {
+   "field": "refused in process: open() of a file dated 2026 (results/live/brain_maps_2026-11-11.json)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of /home/user/gold-orb/lab/results/live/brain_maps_2026-11-11.json: dated 2026"
   },
   {
    "field": "refused in process: nq_default_leader_loader",
    "expected": true,
    "got": true,
-   "ok": true
+   "ok": true,
+   "why": "refused: /home/user/gold-orb/lab/data/fp/us100_m1.parquet read without a row filter (ts) < t with t <= CUT (2022-01-01 00:00:00+00:00); filters=None"
   },
   {
    "field": "refused in process: val_access_log_at_cut_2022",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "val_access.log is written only by a run whose CUT is after 2022-01-01"
+  },
+  {
+   "field": "refused in process: open_run of a look in this process (no LOOK_DECLARED; one CUT per process)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "CUT 2026-01-01 00:00:00+00:00 is after 2022-01-01: the look is refused until LOOK_DECLARED=<path of the protocol addendum that declares it> is set"
+  },
+  {
+   "field": "the refused probes recorded no read and wrote no marker",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "the guard wraps pandas.read_parquet / read_csv, pyarrow.parquet(.core).read_table, read_pandas, pyarrow.dataset.dataset, builtins.open and io.open",
    "expected": true,
    "got": true,
    "ok": true
@@ -388,19 +1064,53 @@
    "message": "REFUSED: CUT 2026-01-02 00:00:00+00:00 is after 2026-01-01: the 2026 holdout is never read, whatever LOOK_DECLARED says"
   },
   {
-   "field": "val_access.log lines with track autopsy_HI_look: before and after the proofs",
+   "field": "val_access.log lines mentioning / with track autopsy_HI_look: before and after the proofs",
    "expected": [
-    0,
-    0
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ]
    ],
    "got": [
-    0,
-    0
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ]
    ],
    "ok": true
   },
   {
-   "field": "every frame / official trades read of the run carries a row filter at 2022-01-01",
+   "field": "no '.started' marker in results/r2/validation_hi/look/",
+   "expected": [],
+   "got": [],
+   "ok": true
+  },
+  {
+   "field": "F3b every parquet read of the process carries a row filter (ts | entry_time | t_dec) < t with t <= 2022-01-01",
+   "expected": 0,
+   "got": 0,
+   "ok": true,
+   "parquet_reads": 48
+  },
+  {
+   "field": "F3d every CSV read under lab/ is on the allowlist (results/r2/autopsy/payoff/variants_table.csv)",
+   "expected": 0,
+   "got": 0,
+   "ok": true,
+   "csv_reads": [
+    "results/r2/autopsy/payoff/variants_table.csv"
+   ]
+  },
+  {
+   "field": "every open() under lab/ of the process: none under lab/data or the holdout, none dated 2026",
    "expected": 0,
    "got": 0,
    "ok": true

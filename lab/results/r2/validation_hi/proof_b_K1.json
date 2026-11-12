@@ -210,9 +210,15 @@
      "declared": 478.284,
      "fitted": 478.28395861996614,
      "fitted_from": "fit_for_year_starting_at_cut",
-     "same_to_0.01bp": true
+     "fitted_skip_side": "hi",
+     "abs_diff_bp": 4.13800338492365e-05,
+     "same_to_0.01bp": true,
+     "binding": "checked: within 0.01 bp"
     }
    },
+   "labels_mode": "fp",
+   "refused_alone_in_labels_mode": 0,
+   "max_abs_riskbp_diff_run_vs_labels_mode": 0.0,
    "skipped_alone_vs_kept_alone_window": {
     "skipped_signals_alone": {
      "n": 518,
@@ -250,8 +256,8 @@
      "2019": {
       "q_lo": 339.0566,
       "q_hi": 505.8534,
-      "E_lo": 0.7648,
-      "E_hi": -0.24,
+      "E_lo": 0.7958,
+      "E_hi": -0.233,
       "skip": "hi",
       "n_train": 586,
       "n_test": 509,
@@ -260,8 +266,8 @@
      "2020": {
       "q_lo": 366.7953,
       "q_hi": 496.7461,
-      "E_lo": 0.4924,
-      "E_hi": -0.1387,
+      "E_lo": 0.5172,
+      "E_hi": -0.1306,
       "skip": "hi",
       "n_train": 1089,
       "n_test": 612,
@@ -270,8 +276,8 @@
      "2021": {
       "q_lo": 336.0096,
       "q_hi": 465.1178,
-      "E_lo": 0.3934,
-      "E_hi": -0.0619,
+      "E_lo": 0.4189,
+      "E_hi": -0.0486,
       "skip": "hi",
       "n_train": 1703,
       "n_test": 646,
@@ -281,8 +287,8 @@
     "fit_for_2022": {
      "q_lo": 348.5868,
      "q_hi": 478.284,
-     "E_lo": 0.3187,
-     "E_hi": -0.1449,
+     "E_lo": 0.3424,
+     "E_hi": -0.1309,
      "skip": "hi",
      "n_train": 2345
     },
@@ -438,36 +444,165 @@
      "declared": 478.284,
      "fitted": 478.28395861996614,
      "fitted_from": "fit_for_year_starting_at_cut",
-     "same_to_0.01bp": true
+     "fitted_skip_side": "hi",
+     "abs_diff_bp": 4.13800338492365e-05,
+     "same_to_0.01bp": true,
+     "binding": "checked: within 0.01 bp"
     }
    },
+   "labels_mode": "fp",
+   "refused_alone_in_labels_mode": 0,
+   "max_abs_riskbp_diff_run_vs_labels_mode": 2.2737367544323206e-13,
    "skipped_alone_vs_kept_alone_window": {
     "skipped_signals_alone": {
      "n": 518,
-     "exp": -0.1189,
-     "total": -61.58,
-     "win": 0.3398,
-     "avg_win": 0.9818,
-     "avg_loss": -0.6853,
-     "pf": 0.737,
-     "sd": 1.0397,
-     "mean_over_sd": -0.1143
+     "exp": -0.1051,
+     "total": -54.44,
+     "win": 0.3436,
+     "avg_win": 0.9882,
+     "avg_loss": -0.6775,
+     "pf": 0.764,
+     "sd": 1.0424,
+     "mean_over_sd": -0.1008
     },
     "kept_signals_alone": {
      "n": 1807,
-     "exp": 0.196,
-     "total": 354.13,
-     "win": 0.4599,
-     "avg_win": 1.269,
-     "avg_loss": -0.7177,
-     "pf": 1.506,
-     "sd": 1.3204,
-     "mean_over_sd": 0.1484
+     "exp": 0.2159,
+     "total": 390.14,
+     "win": 0.4671,
+     "avg_win": 1.2734,
+     "avg_loss": -0.7109,
+     "pf": 1.57,
+     "sd": 1.3251,
+     "mean_over_sd": 0.1629
+    }
+   }
+  },
+  "F4_labels": {
+   "declared": "every signal taken alone with FP costs, in both cost modes (labels_mode 'fp')",
+   "x1.5_folds_identical": true,
+   "T_2022_fp_labels": 478.28395861996614,
+   "T_2022_x1.5_labels": 478.28395861996614,
+   "x1.5_chain_identical": true,
+   "x1.5_base_chain_identical": true,
+   "x1.5_E_values": {
+    "2019": {
+     "E_lo": {
+      "fp_labels": 0.7958,
+      "x1.5_labels_synthesis_B": 0.7648
+     },
+     "E_hi": {
+      "fp_labels": -0.233,
+      "x1.5_labels_synthesis_B": -0.24
+     }
+    },
+    "2020": {
+     "E_lo": {
+      "fp_labels": 0.5172,
+      "x1.5_labels_synthesis_B": 0.4924
+     },
+     "E_hi": {
+      "fp_labels": -0.1306,
+      "x1.5_labels_synthesis_B": -0.1387
+     }
+    },
+    "2021": {
+     "E_lo": {
+      "fp_labels": 0.4189,
+      "x1.5_labels_synthesis_B": 0.3934
+     },
+     "E_hi": {
+      "fp_labels": -0.0486,
+      "x1.5_labels_synthesis_B": -0.0619
+     }
+    },
+    "fit_for_2022": {
+     "E_lo": {
+      "fp_labels": 0.3424,
+      "x1.5_labels_synthesis_B": 0.3187
+     },
+     "E_hi": {
+      "fp_labels": -0.1309,
+      "x1.5_labels_synthesis_B": -0.1449
+     }
+    }
+   },
+   "x1.5_2019_2021_fp_labels": {
+    "base": {
+     "n": 397,
+     "exp": 0.1029,
+     "total": 40.86,
+     "win": 0.4257,
+     "avg_win": 1.1947,
+     "avg_loss": -0.7064,
+     "pf": 1.254,
+     "sd": 1.2744,
+     "mean_over_sd": 0.0808
+    },
+    "var": {
+     "n": 306,
+     "exp": 0.1843,
+     "total": 56.4,
+     "win": 0.4673,
+     "avg_win": 1.2153,
+     "avg_loss": -0.7201,
+     "pf": 1.48,
+     "sd": 1.3295,
+     "mean_over_sd": 0.1386
+    }
+   }
+  },
+  "F5_binding": {
+   "T(2022) = 478.284 (the spec)": {
+    "2022": {
+     "declared": 478.284,
+     "fitted": 478.28395861996614,
+     "fitted_from": "fit_for_year_starting_at_cut",
+     "fitted_skip_side": "hi",
+     "abs_diff_bp": 4.13800338492365e-05,
+     "same_to_0.01bp": true,
+     "binding": "checked: within 0.01 bp"
+    }
+   },
+   "T(2022) = 478.28 (synthesis_B's text)": {
+    "2022": {
+     "declared": 478.28,
+     "fitted": 478.28395861996614,
+     "fitted_from": "fit_for_year_starting_at_cut",
+     "fitted_skip_side": "hi",
+     "abs_diff_bp": 0.003958619966169863,
+     "same_to_0.01bp": true,
+     "binding": "checked: within 0.01 bp"
+    }
+   },
+   "T(2022) = 478.3 (0.016 bp off)": "K1: the walk-forward's T(2022) = 478.2840 bp (fit_for_year_starting_at_cut) differs from the declared 478.3 bp by 0.0160 bp (> 0.01 bp): the run stops",
+   "T(2021) = 465.1178 through a fold": {
+    "2021": {
+     "declared": 465.1178,
+     "fitted": 465.1178140105435,
+     "fitted_from": "fold",
+     "fitted_skip_side": "hi",
+     "abs_diff_bp": 1.4010543509357376e-05,
+     "same_to_0.01bp": true,
+     "binding": "checked: within 0.01 bp"
+    }
+   },
+   "T(2020) = 496.0 through a fold (0.75 bp off)": "K1: the walk-forward's T(2020) = 496.7461 bp (fold) differs from the declared 496.0 bp by 0.7461 bp (> 0.01 bp): the run stops",
+   "T(2018) = 500 (no fit for 2018: a declared year without a fit)": "K1: declared T(2018) = 500.0 bp but the walk-forward has no fit for 2018 at CUT 2022-01-01 00:00:00+00:00",
+   "T(2023) = 480 (a later year: not checkable at CUT 2022, recorded)": {
+    "2023": {
+     "declared": 480.0,
+     "fitted": null,
+     "fitted_from": null,
+     "fitted_skip_side": null,
+     "abs_diff_bp": null,
+     "same_to_0.01bp": false,
+     "binding": "not checkable at this CUT (a later year)"
     }
    }
   }
  },
- "checks": 309,
+ "checks": 468,
  "failed": 0,
  "ok": true,
  "failures": [],
@@ -1409,6 +1544,12 @@
    "ok": true
   },
   {
+   "field": "fp.labels_mode (declared: FP labels in both cost modes)",
+   "expected": "fp",
+   "got": "fp",
+   "ok": true
+  },
+  {
    "field": "fp.walk_forward_skip_mask_identical_to_s1_run",
    "expected": true,
    "got": true,
@@ -1455,6 +1596,20 @@
    "ok": true
   },
   {
+   "field": "fp.F5 declared T(2022) = 478.284 bound in the run: fitted within 0.01 bp",
+   "expected": [
+    true,
+    "fit_for_year_starting_at_cut"
+   ],
+   "got": [
+    true,
+    "fit_for_year_starting_at_cut"
+   ],
+   "ok": true,
+   "fitted": 478.28395861996614,
+   "abs_diff_bp": 4.13800338492365e-05
+  },
+  {
    "field": "stress.signals",
    "expected": 2355,
    "got": 2355,
@@ -1488,18 +1643,6 @@
    "field": "stress.folds.2019.q_hi",
    "expected": 505.8534,
    "got": 505.8534,
-   "ok": true
-  },
-  {
-   "field": "stress.folds.2019.E_lo",
-   "expected": 0.7648,
-   "got": 0.7648,
-   "ok": true
-  },
-  {
-   "field": "stress.folds.2019.E_hi",
-   "expected": -0.24,
-   "got": -0.24,
    "ok": true
   },
   {
@@ -1539,18 +1682,6 @@
    "ok": true
   },
   {
-   "field": "stress.folds.2020.E_lo",
-   "expected": 0.4924,
-   "got": 0.4924,
-   "ok": true
-  },
-  {
-   "field": "stress.folds.2020.E_hi",
-   "expected": -0.1387,
-   "got": -0.1387,
-   "ok": true
-  },
-  {
    "field": "stress.folds.2020.skip",
    "expected": "hi",
    "got": "hi",
@@ -1587,18 +1718,6 @@
    "ok": true
   },
   {
-   "field": "stress.folds.2021.E_lo",
-   "expected": 0.3934,
-   "got": 0.3934,
-   "ok": true
-  },
-  {
-   "field": "stress.folds.2021.E_hi",
-   "expected": -0.0619,
-   "got": -0.0619,
-   "ok": true
-  },
-  {
    "field": "stress.folds.2021.skip",
    "expected": "hi",
    "got": "hi",
@@ -1632,18 +1751,6 @@
    "field": "stress.fit_for_2022.q_hi",
    "expected": 478.284,
    "got": 478.284,
-   "ok": true
-  },
-  {
-   "field": "stress.fit_for_2022.E_lo",
-   "expected": 0.3187,
-   "got": 0.3187,
-   "ok": true
-  },
-  {
-   "field": "stress.fit_for_2022.E_hi",
-   "expected": -0.1449,
-   "got": -0.1449,
    "ok": true
   },
   {
@@ -2355,6 +2462,12 @@
    "ok": true
   },
   {
+   "field": "stress.labels_mode (declared: FP labels in both cost modes)",
+   "expected": "fp",
+   "got": "fp",
+   "ok": true
+  },
+  {
    "field": "stress.walk_forward_skip_mask_identical_to_s1_run",
    "expected": true,
    "got": true,
@@ -2371,16 +2484,16 @@
    "expected": {
     "q_lo": 348.5868,
     "q_hi": 478.284,
-    "E_lo": 0.3187,
-    "E_hi": -0.1449,
+    "E_lo": 0.3424,
+    "E_hi": -0.1309,
     "skip": "hi",
     "n_train": 2345
    },
    "got": {
     "q_lo": 348.5868,
     "q_hi": 478.284,
-    "E_lo": 0.3187,
-    "E_hi": -0.1449,
+    "E_lo": 0.3424,
+    "E_hi": -0.1309,
     "skip": "hi",
     "n_train": 2345
    },
@@ -2399,6 +2512,1015 @@
     false
    ],
    "ok": true
+  },
+  {
+   "field": "stress.F5 declared T(2022) = 478.284 bound in the run: fitted within 0.01 bp",
+   "expected": [
+    true,
+    "fit_for_year_starting_at_cut"
+   ],
+   "got": [
+    true,
+    "fit_for_year_starting_at_cut"
+   ],
+   "ok": true,
+   "fitted": 478.28395861996614,
+   "abs_diff_bp": 4.13800338492365e-05
+  },
+  {
+   "field": "F4 x1.5: folds with FP labels == folds with x1.5 labels (q_lo, q_hi to 1e-9 bp; skip side, n_train, n_test, n_skipped exact)",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F4 x1.5: T(2022) with FP labels == with x1.5 labels == 478.284 bp",
+   "expected": [
+    478.284,
+    478.284
+   ],
+   "got": [
+    478.284,
+    478.284
+   ],
+   "ok": true,
+   "exact": [
+    478.28395861996614,
+    478.28395861996614
+   ]
+  },
+  {
+   "field": "F4 x1.5: skip mask identical",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F4 x1.5: the x1.5 chain (with the skip) identical trade for trade",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F4 x1.5: the x1.5 base chain (without the skip) identical trade for trade",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.signals",
+   "expected": 2355,
+   "got": 2355,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.refused",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.refused_in_chain_extra",
+   "expected": [
+    0,
+    0
+   ],
+   "got": [
+    0,
+    0
+   ],
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2019.q_lo",
+   "expected": 339.0566,
+   "got": 339.0566,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2019.q_hi",
+   "expected": 505.8534,
+   "got": 505.8534,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2019.E_lo",
+   "expected": 0.7648,
+   "got": 0.7648,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2019.E_hi",
+   "expected": -0.24,
+   "got": -0.24,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2019.skip",
+   "expected": "hi",
+   "got": "hi",
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2019.n_train",
+   "expected": 586,
+   "got": 586,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2019.n_test",
+   "expected": 509,
+   "got": 509,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2019.n_skipped",
+   "expected": 138,
+   "got": 138,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2020.q_lo",
+   "expected": 366.7953,
+   "got": 366.7953,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2020.q_hi",
+   "expected": 496.7461,
+   "got": 496.7461,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2020.E_lo",
+   "expected": 0.4924,
+   "got": 0.4924,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2020.E_hi",
+   "expected": -0.1387,
+   "got": -0.1387,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2020.skip",
+   "expected": "hi",
+   "got": "hi",
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2020.n_train",
+   "expected": 1089,
+   "got": 1089,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2020.n_test",
+   "expected": 612,
+   "got": 612,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2020.n_skipped",
+   "expected": 113,
+   "got": 113,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2021.q_lo",
+   "expected": 336.0096,
+   "got": 336.0096,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2021.q_hi",
+   "expected": 465.1178,
+   "got": 465.1178,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2021.E_lo",
+   "expected": 0.3934,
+   "got": 0.3934,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2021.E_hi",
+   "expected": -0.0619,
+   "got": -0.0619,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2021.skip",
+   "expected": "hi",
+   "got": "hi",
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2021.n_train",
+   "expected": 1703,
+   "got": 1703,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2021.n_test",
+   "expected": 646,
+   "got": 646,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.folds.2021.n_skipped",
+   "expected": 267,
+   "got": 267,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.fit_for_2022.q_lo",
+   "expected": 348.5868,
+   "got": 348.5868,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.fit_for_2022.q_hi",
+   "expected": 478.284,
+   "got": 478.284,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.fit_for_2022.E_lo",
+   "expected": 0.3187,
+   "got": 0.3187,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.fit_for_2022.E_hi",
+   "expected": -0.1449,
+   "got": -0.1449,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.fit_for_2022.skip",
+   "expected": "hi",
+   "got": "hi",
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.fit_for_2022.n_train",
+   "expected": 2345,
+   "got": 2345,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.skipped_by_year.2018",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.skipped_by_year.2019",
+   "expected": 138,
+   "got": 138,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.skipped_by_year.2020",
+   "expected": 113,
+   "got": 113,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.skipped_by_year.2021",
+   "expected": 267,
+   "got": 267,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_2019_2021.n",
+   "expected": 397,
+   "got": 397,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_2019_2021.exp",
+   "expected": 0.1029,
+   "got": 0.1029,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_2019_2021.total",
+   "expected": 40.86,
+   "got": 40.86,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_2019_2021.win",
+   "expected": 0.4257,
+   "got": 0.4257,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_2019_2021.avg_win",
+   "expected": 1.1947,
+   "got": 1.1947,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_2019_2021.avg_loss",
+   "expected": -0.7064,
+   "got": -0.7064,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_2019_2021.pf",
+   "expected": 1.254,
+   "got": 1.254,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_2019_2021.sd",
+   "expected": 1.2744,
+   "got": 1.2744,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_2019_2021.mean_over_sd",
+   "expected": 0.0808,
+   "got": 0.0808,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_2019_2021.n",
+   "expected": 306,
+   "got": 306,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_2019_2021.exp",
+   "expected": 0.1843,
+   "got": 0.1843,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_2019_2021.total",
+   "expected": 56.4,
+   "got": 56.4,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_2019_2021.win",
+   "expected": 0.4673,
+   "got": 0.4673,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_2019_2021.avg_win",
+   "expected": 1.2153,
+   "got": 1.2153,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_2019_2021.avg_loss",
+   "expected": -0.7201,
+   "got": -0.7201,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_2019_2021.pf",
+   "expected": 1.48,
+   "got": 1.48,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_2019_2021.sd",
+   "expected": 1.3295,
+   "got": 1.3295,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_2019_2021.mean_over_sd",
+   "expected": 0.1386,
+   "got": 0.1386,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_window.n",
+   "expected": 513,
+   "got": 513,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_window.exp",
+   "expected": 0.1875,
+   "got": 0.1875,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_window.total",
+   "expected": 96.2,
+   "got": 96.2,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_window.win",
+   "expected": 0.4405,
+   "got": 0.4405,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_window.avg_win",
+   "expected": 1.3521,
+   "got": 1.3521,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_window.avg_loss",
+   "expected": -0.7295,
+   "got": -0.7295,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_window.pf",
+   "expected": 1.459,
+   "got": 1.459,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_window.sd",
+   "expected": 1.4024,
+   "got": 1.4024,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_window.mean_over_sd",
+   "expected": 0.1337,
+   "got": 0.1337,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_window.n",
+   "expected": 422,
+   "got": 422,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_window.exp",
+   "expected": 0.2648,
+   "got": 0.2648,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_window.total",
+   "expected": 111.75,
+   "got": 111.75,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_window.win",
+   "expected": 0.4739,
+   "got": 0.4739,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_window.avg_win",
+   "expected": 1.3873,
+   "got": 1.3873,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_window.avg_loss",
+   "expected": -0.7464,
+   "got": -0.7464,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_window.pf",
+   "expected": 1.674,
+   "got": 1.674,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_window.sd",
+   "expected": 1.4602,
+   "got": 1.4602,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_window.mean_over_sd",
+   "expected": 0.1814,
+   "got": 0.1814,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2018.n",
+   "expected": 124,
+   "got": 124,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2018.exp",
+   "expected": 0.4225,
+   "got": 0.4225,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2018.total",
+   "expected": 52.38,
+   "got": 52.38,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2018.win",
+   "expected": 0.4758,
+   "got": 0.4758,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2018.avg_win",
+   "expected": 1.7914,
+   "got": 1.7914,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2018.avg_loss",
+   "expected": -0.8202,
+   "got": -0.8202,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2018.pf",
+   "expected": 1.983,
+   "got": 1.983,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2018.sd",
+   "expected": 1.7167,
+   "got": 1.7167,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2018.mean_over_sd",
+   "expected": 0.2461,
+   "got": 0.2461,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2019.n",
+   "expected": 119,
+   "got": 119,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2019.exp",
+   "expected": 0.0763,
+   "got": 0.0763,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2019.total",
+   "expected": 9.08,
+   "got": 9.08,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2019.win",
+   "expected": 0.4118,
+   "got": 0.4118,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2019.avg_win",
+   "expected": 1.0669,
+   "got": 1.0669,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2019.avg_loss",
+   "expected": -0.6171,
+   "got": -0.6171,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2019.pf",
+   "expected": 1.21,
+   "got": 1.21,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2019.sd",
+   "expected": 1.0636,
+   "got": 1.0636,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2019.mean_over_sd",
+   "expected": 0.0717,
+   "got": 0.0717,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2020.n",
+   "expected": 132,
+   "got": 132,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2020.exp",
+   "expected": 0.2411,
+   "got": 0.2411,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2020.total",
+   "expected": 31.83,
+   "got": 31.83,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2020.win",
+   "expected": 0.4318,
+   "got": 0.4318,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2020.avg_win",
+   "expected": 1.5379,
+   "got": 1.5379,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2020.avg_loss",
+   "expected": -0.7444,
+   "got": -0.7444,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2020.pf",
+   "expected": 1.57,
+   "got": 1.57,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2020.sd",
+   "expected": 1.6191,
+   "got": 1.6191,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2020.mean_over_sd",
+   "expected": 0.1489,
+   "got": 0.1489,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2021.n",
+   "expected": 146,
+   "got": 146,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2021.exp",
+   "expected": -0.0004,
+   "got": -0.0004,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2021.total",
+   "expected": -0.05,
+   "got": -0.05,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2021.win",
+   "expected": 0.4315,
+   "got": 0.4315,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2021.avg_win",
+   "expected": 0.9836,
+   "got": 0.9836,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2021.avg_loss",
+   "expected": -0.7472,
+   "got": -0.7472,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2021.pf",
+   "expected": 0.999,
+   "got": 0.999,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2021.sd",
+   "expected": 1.0573,
+   "got": 1.0573,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.base_by_year.2021.mean_over_sd",
+   "expected": -0.0004,
+   "got": -0.0004,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2018.n",
+   "expected": 124,
+   "got": 124,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2018.exp",
+   "expected": 0.4225,
+   "got": 0.4225,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2018.total",
+   "expected": 52.38,
+   "got": 52.38,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2018.win",
+   "expected": 0.4758,
+   "got": 0.4758,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2018.avg_win",
+   "expected": 1.7914,
+   "got": 1.7914,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2018.avg_loss",
+   "expected": -0.8202,
+   "got": -0.8202,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2018.pf",
+   "expected": 1.983,
+   "got": 1.983,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2018.sd",
+   "expected": 1.7167,
+   "got": 1.7167,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2018.mean_over_sd",
+   "expected": 0.2461,
+   "got": 0.2461,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2019.n",
+   "expected": 93,
+   "got": 93,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2019.exp",
+   "expected": 0.1574,
+   "got": 0.1574,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2019.total",
+   "expected": 14.64,
+   "got": 14.64,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2019.win",
+   "expected": 0.4624,
+   "got": 0.4624,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2019.avg_win",
+   "expected": 1.073,
+   "got": 1.073,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2019.avg_loss",
+   "expected": -0.6299,
+   "got": -0.6299,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2019.pf",
+   "expected": 1.465,
+   "got": 1.465,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2019.sd",
+   "expected": 1.1142,
+   "got": 1.1142,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2019.mean_over_sd",
+   "expected": 0.1413,
+   "got": 0.1413,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2020.n",
+   "expected": 118,
+   "got": 118,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2020.exp",
+   "expected": 0.2573,
+   "got": 0.2573,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2020.total",
+   "expected": 30.36,
+   "got": 30.36,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2020.win",
+   "expected": 0.4407,
+   "got": 0.4407,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2020.avg_win",
+   "expected": 1.5425,
+   "got": 1.5425,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2020.avg_loss",
+   "expected": -0.7554,
+   "got": -0.7554,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2020.pf",
+   "expected": 1.609,
+   "got": 1.609,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2020.sd",
+   "expected": 1.6482,
+   "got": 1.6482,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2020.mean_over_sd",
+   "expected": 0.1561,
+   "got": 0.1561,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2021.n",
+   "expected": 95,
+   "got": 95,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2021.exp",
+   "expected": 0.12,
+   "got": 0.12,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2021.total",
+   "expected": 11.4,
+   "got": 11.4,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2021.win",
+   "expected": 0.5053,
+   "got": 0.5053,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2021.avg_win",
+   "expected": 0.9883,
+   "got": 0.9883,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2021.avg_loss",
+   "expected": -0.7666,
+   "got": -0.7666,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2021.pf",
+   "expected": 1.316,
+   "got": 1.316,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2021.sd",
+   "expected": 1.0615,
+   "got": 1.0615,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.var_by_year.2021.mean_over_sd",
+   "expected": 0.1131,
+   "got": 0.1131,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.baseline_trades_removed",
+   "expected": 103,
+   "got": 103,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.R_of_removed",
+   "expected": -21.685,
+   "got": -21.685,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.new_trades",
+   "expected": 12,
+   "got": 12,
+   "ok": true
+  },
+  {
+   "field": "F4.x1.5_labels_run_vs_synthesis_B_C1_stress.R_of_new",
+   "expected": -6.141,
+   "got": -6.141,
+   "ok": true
+  },
+  {
+   "field": "F4 x1.5: E_lo / E_hi with FP labels have the signs of synthesis_B's x1.5-label values (the only fields that change)",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F5 bind_declared_T: T(2022) = 478.284 (the spec) -> accepted",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F5 bind_declared_T: T(2022) = 478.28 (synthesis_B's text) -> accepted",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F5 bind_declared_T: T(2022) = 478.3 (0.016 bp off) -> raises",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "F5 bind_declared_T: T(2021) = 465.1178 through a fold -> accepted",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F5 bind_declared_T: T(2020) = 496.0 through a fold (0.75 bp off) -> raises",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "F5 bind_declared_T: T(2018) = 500 (no fit for 2018: a declared year without a fit) -> raises",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "F5 bind_declared_T: T(2023) = 480 (a later year: not checkable at CUT 2022, recorded) -> accepted",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F5 the run itself with declared T(2022) = 478.3: SL.run raises DeclaredThresholdError before any trade",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "message": "K1: the walk-forward's T(2022) = 478.2840 bp (fit_for_year_starting_at_cut) differs from the declared 478.3 bp by 0.0160 bp (> 0.01 bp): the run stops"
   }
  ]
 }

@@ -9,16 +9,26 @@ A SLEEVE SPEC is a dict:
                          before the simulation; censoring of the payoff lens (crypto: 'eod'; others: closed at the
                          last bar by 'time' or 'eod'), except that crypto gets the non-crypto rule when the CUT does
                          not fall inside the crypto weekend closure (the look's CUT): censored_harness
-    change      None, or one of the CHANGES below (more can be registered with register_change)
+    change      None, or one of the CHANGES below (more can be registered with register_change); a change carries an
+                "id" unique in the spec (the list "changes_in_look" of the spec names the ids that enter the look)
     base        (payoff variants) the reference sleeve key it is compared with
+    refuse      (payoff convention, no change: the '<sleeve>@payoff' references) true = the payoff lens's broker
+                refusal before the simulation, as its variants get it: orders removed where
+                variants.refuse(info.r0, info.spread), i.e. stop distance at the (alone) fill under 3 spreads of the
+                fill bar
 
 CHANGES (kind -> builder; each returns the orders to simulate, the per-order info, and its own diagnostics):
     k1_riskbp   K1 of synthesis_B: skip a brk72 signal when riskbp = 1e4 x stop_dist / P >= T(Y), T refitted every
-                1 January on the sleeve's earlier signals (each taken alone in the run's cost mode, decided before
+                1 January on the sleeve's earlier signals (each taken alone with the costs of `labels_mode`: "fp" =
+                FP costs in both cost modes, the declaration's text, "run" = the run's own cost mode; decided before
                 1 January minus `purge_days`; terciles q; the worse side skipped only if it lost; >= min_train
-                signals; history from 31 January of Y-1). A skipped signal never blocks a later one (the chain is
-                re-simulated). Code: synthesis_B s1_run.signal_table / fit_fold (imported), the walk-forward
-                generalised to any CUT (identical to s1_run.walk_forward at CUT 2022-01-01, checked in the proofs).
+                signals; history from 31 January of Y-1). The skip is applied with each signal's own riskbp in the
+                run's cost mode, and the orders refused alone (stop under 3 spreads) are those of the run's cost
+                mode. A skipped signal never blocks a later one (the chain is re-simulated). `declared_T` {year: bp}
+                is BINDING: a fitted threshold that differs from it by more than 0.01 bp raises
+                DeclaredThresholdError (no result is produced). Code: synthesis_B s1_run.signal_table / fit_fold
+                (imported), the walk-forward generalised to any CUT (identical to s1_run.walk_forward at CUT
+                2022-01-01, checked in the proofs).
     payoff      a payoff-lens variant: family S (k, reentry), T (m), H (j), B (b); code: payoff variants.py
                 (imported): info, S, T, H, B, hold_decision, refuse.
     new         nothing: the frozen rule unchanged on an instrument where it is a NEW sleeve (K2, K3)
@@ -31,9 +41,13 @@ EXECUTION
           trailing and break-even distances unchanged; every position still open is closed at market at the open of
           the first bar starting at or after Friday 16:50 New York of the first Friday on or after its entry's
           New-York date (the hands' InpFridayClose = 23:50 server; if the market is already closed then, at its
-          reopen: the hands close "at the first opportunity"); an entry at or after Friday 16:50 New York and before
-          the Sunday 17:00 New York reopen is not taken (the hands block new positions then). The 3-spread refusal
-          is applied at the live fill bar (a refused order never blocks). How the robot decides that a sleeve is
+          reopen: the hands close "at the first opportunity" -- a us100 position still open on Friday 16:50 New
+          York, when us100 is already shut, is closed at the open of the next reopen bar); a signal is not taken
+          when its DECISION INSTANT (the close of its lab fill bar) or its delayed entry bar falls at or after
+          Friday 16:50 New York and before the Sunday 17:00 New York reopen (the hands block new positions then;
+          spec "live_friday_block": "decision_and_entry", the default; "entry_bar" tests the delayed entry bar
+          only). The 3-spread refusal is applied at the live fill bar, with the open spread of that bar (a refused
+          order never blocks). How the robot decides that a sleeve is
           flat is declared in the spec ("live_one_position", see run()): by default the synthesis_B verifiers' way
           (the chain re-simulated with the live exits, so a trade closed by the Friday close frees the sleeve for
           the next signal; the one-position test at the delayed entry bar); 'rule' keeps the rule's own test at its
@@ -192,10 +206,23 @@ def pre_refuse(mk, o, sym, mode, min_spreads=3.0):
 
 
 # ------------------------------------------------------------------------------------------------- live execution
+FRIDAY_BLOCKS = ("decision_and_entry", "entry_bar")
+
+
+def in_friday_block(ts):
+    """True for UTC instants at or after Friday 16:50 New York and before the Sunday 17:00 New York reopen (the hands
+    open no position then)."""
+    local = pd.DatetimeIndex(ts).tz_convert(NY).tz_localize(None)
+    m = local.hour * 60 + local.minute
+    return np.asarray(((local.dayofweek == 4) & (m >= 16 * 60 + 50)) | (local.dayofweek == 5)
+                      | ((local.dayofweek == 6) & (local.hour < 17)))
+
+
 def friday_close_bar(mk, entry_bar):
     """Index of the first bar starting at or after Friday 16:50 New York of the first Friday on or after the New-York
     date of each entry bar; len(mk) when there is none in the frame. Also: entries at or after that Friday 16:50
-    (same day) are flagged (the hands refuse them)."""
+    (same day) and before the Sunday reopen are flagged (the hands refuse them); and the Friday 16:50 instant itself
+    (UTC), to tell a close at 16:50 from a close at the next reopen (a market already shut at 16:50, e.g. us100)."""
     idx = mk.index
     ent = idx[np.clip(entry_bar, 0, len(idx) - 1)].tz_convert(NY)
     dn = ent.tz_localize(None).normalize()
@@ -203,14 +230,17 @@ def friday_close_bar(mk, entry_bar):
     tc = (fri + pd.Timedelta(hours=16, minutes=50)).tz_localize(NY, ambiguous="NaT", nonexistent="shift_forward")
     tcu = tc.tz_convert("UTC")
     j = np.searchsorted(idx.values, tcu.tz_localize(None).values.astype(idx.values.dtype), side="left")
-    local = ent.tz_localize(None)
-    blocked = ((local.dayofweek == 4) & ((local.hour * 60 + local.minute) >= 16 * 60 + 50)) | (local.dayofweek == 5) | \
-              ((local.dayofweek == 6) & (local.hour < 17))
-    return j.astype(np.int64), np.asarray(blocked)
+    blocked = in_friday_block(idx[np.clip(entry_bar, 0, len(idx) - 1)])
+    return j.astype(np.int64), np.asarray(blocked), tcu
 
 
-def live_orders(o, mk, sym, mode, late=1):
-    """The orders as the live program would send them (see module docstring). Returns (orders, info)."""
+def live_orders(o, mk, sym, mode, late=1, friday_block="decision_and_entry"):
+    """The orders as the live program would send them (see module docstring). Returns (orders, info).
+    friday_block: 'decision_and_entry' (declared): a signal whose decision instant (close of its lab fill bar,
+    idx[fill bar] + 1 minute) OR delayed entry bar falls in the Friday-evening block is not taken; 'entry_bar': the
+    delayed entry bar only."""
+    if friday_block not in FRIDAY_BLOCKS:
+        raise ValueError(friday_block)
     if not len(o):
         return o.copy(), {"orders": 0}
     fb, fp = fills(mk, o, sym, mode)
@@ -219,9 +249,14 @@ def live_orders(o, mk, sym, mode, late=1):
     x = o.loc[ok].copy()
     fb = fb[ok]
     eb = (fb + late).astype(np.int64)
-    fc, blocked = friday_close_bar(mk, eb)
+    fc, blocked_entry, tcu = friday_close_bar(mk, eb)
+    blocked_dec = in_friday_block(mk.index[fb] + pd.Timedelta(minutes=1))
+    blocked = blocked_entry | blocked_dec if friday_block == "decision_and_entry" else blocked_entry
     keep = ~blocked
-    x, eb, fc = x.loc[keep].copy(), eb[keep], fc[keep]
+    late_close = np.zeros(len(fc), bool)
+    inside = fc < N
+    late_close[inside] = (mk.index[fc[inside]] - tcu[inside]) > pd.Timedelta(minutes=60)
+    x, eb, fc, late_close = x.loc[keep].copy(), eb[keep], fc[keep], late_close[keep]
     x["act_i"] = x["entry_i"].to_numpy(np.int64)          # the rule's own activation bar (one-position decision)
     x["entry_i"] = eb
     x["etype"] = 0
@@ -237,6 +272,10 @@ def live_orders(o, mk, sym, mode, late=1):
     x["exit_i"] = new_x.astype(np.int64)
     x["friday_close"] = (fcx >= 0) & ((xe < 0) | (fcx < xe))
     info = {"orders_in": int(len(o)), "never_filled_in_lab": int((~ok).sum()), "blocked_friday_window": int(blocked.sum()),
+            "blocked_entry_bar": int(blocked_entry.sum()),
+            "blocked_decision_instant_only": int((blocked_dec & ~blocked_entry).sum()),
+            "friday_block": friday_block,
+            "friday_close_orders_at_a_later_reopen": int((x["friday_close"].to_numpy() & late_close).sum()),
             "orders_out": int(len(x))}
     return x.reset_index(drop=True), info
 
@@ -296,13 +335,16 @@ def change_none(spec, mk, O, mode, ctx):
     return O, {}
 
 
-def _k1_folds(s, cut, q, purge, min_train, first_year=2013):
+def _k1_folds(s, cut, q, purge, min_train, first_year=2013, x_apply=None):
     """s1_run.walk_forward generalised to any CUT: folds for every year from `first_year` to the year before CUT,
-    plus the fit that would be frozen for the year starting at CUT (signals decided before CUT - purge)."""
+    plus the fit that would be frozen for the year starting at CUT (signals decided before CUT - purge). The folds
+    are fitted on the table `s` (its labels, refusals and riskbp); the skip of each test year is applied to
+    `x_apply` (the riskbp of the same signals in the run's cost mode; default: s.riskbp)."""
     S1 = L.synthesis_B()["S1"]
     use = (s.filled & ~s.refused & ~s.boundary & np.isfinite(s.label)).to_numpy()
     first = s.t_dec.min()
     x = s.riskbp.to_numpy()
+    xa = x if x_apply is None else np.asarray(x_apply, float)
     lab = s.label.to_numpy()
     td = s.t_dec
     folds, skip = {}, np.zeros(len(s), bool)
@@ -317,7 +359,7 @@ def _k1_folds(s, cut, q, purge, min_train, first_year=2013):
         f = S1.fit_fold(x[tr], lab[tr], q)
         te = (s.year == y).to_numpy()
         with np.errstate(invalid="ignore"):
-            m = np.zeros(len(s), bool) if f["skip"] is None else ((x <= f["q_lo"]) if f["skip"] == "lo" else (x >= f["q_hi"]))
+            m = np.zeros(len(s), bool) if f["skip"] is None else ((xa <= f["q_lo"]) if f["skip"] == "lo" else (xa >= f["q_hi"]))
         m &= te
         skip |= m
         f.update(n_test=int(te.sum()), n_skipped=int(m.sum()))
@@ -327,7 +369,14 @@ def _k1_folds(s, cut, q, purge, min_train, first_year=2013):
     return skip, folds, f_next
 
 
-def declared_T_check(dT, folds, f_next, cut):
+class DeclaredThresholdError(RuntimeError):
+    """A K1 threshold fitted by the walk-forward differs from the declared one (F5: the declared T is binding)."""
+
+
+T_TOL_BP = 0.01
+
+
+def declared_T_check(dT, folds, f_next, cut, tol=T_TOL_BP):
     """Each declared threshold {year: bp} against the walk-forward: the fold of that year (the look: 2022 is a fold at
     CUT 2026), or the fit for the year starting at CUT (in sample: 2022 at CUT 2022)."""
     cy = cut.year if cut == pd.Timestamp(f"{cut.year}-01-01", tz="UTC") else None
@@ -337,7 +386,31 @@ def declared_T_check(dT, folds, f_next, cut):
         got = None if f is None else f["q_hi"]
         chk[str(y)] = {"declared": float(v), "fitted": got,
                        "fitted_from": "fold" if int(y) in folds else ("fit_for_year_starting_at_cut" if got is not None else None),
-                       "same_to_0.01bp": bool(got is not None and abs(got - float(v)) < 0.01)}
+                       "fitted_skip_side": None if f is None else f["skip"],
+                       "abs_diff_bp": None if got is None else abs(got - float(v)),
+                       "same_to_0.01bp": bool(got is not None and abs(got - float(v)) <= tol)}
+    return chk
+
+
+def bind_declared_T(dT, folds, f_next, cut, tol=T_TOL_BP):
+    """F5: the declared thresholds are binding. A declared year that the walk-forward fits at this CUT (a fold, or the
+    fit for the year starting at the CUT) must be within `tol` bp of the declared value, else DeclaredThresholdError;
+    a declared year up to the last fold year that has no fit also raises. A year after the CUT cannot be checked
+    (recorded as such)."""
+    chk = declared_T_check(dT, folds, f_next, cut, tol)
+    last_year = (cut - pd.Timedelta(nanoseconds=1)).year
+    for y, c in chk.items():
+        if c["fitted"] is None:
+            if int(y) <= last_year:
+                raise DeclaredThresholdError(f"K1: declared T({y}) = {c['declared']} bp but the walk-forward has no fit "
+                                             f"for {y} at CUT {cut}")
+            c["binding"] = "not checkable at this CUT (a later year)"
+            continue
+        if c["abs_diff_bp"] > tol:
+            raise DeclaredThresholdError(f"K1: the walk-forward's T({y}) = {c['fitted']:.4f} bp ({c['fitted_from']}) "
+                                         f"differs from the declared {c['declared']} bp by {c['abs_diff_bp']:.4f} bp "
+                                         f"(> {tol} bp): the run stops")
+        c["binding"] = "checked: within 0.01 bp"
     return chk
 
 
@@ -350,29 +423,43 @@ def change_k1(spec, mk, O, mode, ctx):
     q = float(ch.get("q", 1 / 3))
     purge = pd.Timedelta(days=float(ch.get("purge_days", 7)))
     min_train = int(ch.get("min_train", 100))
-    # the labels of the walk-forward: every signal taken alone in the cost mode `labels_mode` ("run" = the run's own)
+    # the labels of the walk-forward: every signal taken alone in the cost mode `labels_mode` ("fp" = FP costs in both
+    # cost modes, the declaration's text; "run" = the run's own cost mode)
     lm = ch.get("labels_mode", "run")
     lab_mode = mode if lm == "run" else lm
-    ml = mode_frame(ctx["m1"], lab_mode)
-    L.clear_rule_caches()
-    o_sig, s = S1.signal_table(ml, spec["sym"], lab_mode)
-    assert len(o_sig) == len(O) and (o_sig.entry_i.to_numpy() == O.entry_i.to_numpy()).all() \
-        and (o_sig.side.to_numpy() == O.side.to_numpy()).all(), "K1: signal table orders differ from the sleeve's"
-    skip, folds, f_next = _k1_folds(s, G.current_cut(), q, purge, min_train)
+    if lab_mode not in ("fp", "stress"):
+        raise ValueError(f"K1 labels_mode {lm!r}")
+
+    def table(m):
+        L.clear_rule_caches()
+        o_sig, s_ = S1.signal_table(mode_frame(ctx["m1"], m), spec["sym"], m)
+        assert len(o_sig) == len(O) and (o_sig.entry_i.to_numpy() == O.entry_i.to_numpy()).all() \
+            and (o_sig.side.to_numpy() == O.side.to_numpy()).all(), f"K1: signal table orders ({m}) differ from the sleeve's"
+        return s_
+
+    s = table(lab_mode)                                  # labels, training refusals, riskbp of the fit
+    s_run = s if lab_mode == mode else table(mode)       # the run's own cost mode: refusals of the chain, riskbp of the skip
+    assert (s_run.oid.to_numpy() == s.oid.to_numpy()).all() and (s_run.t_dec.to_numpy() == s.t_dec.to_numpy()).all()
+    skip, folds, f_next = _k1_folds(s, G.current_cut(), q, purge, min_train, x_apply=s_run.riskbp.to_numpy())
     s = s.assign(skip=skip)
-    refused = set(s.oid[s.refused].tolist())
+    refused = set(s_run.oid[s_run.refused].tolist())
     skipped = set(s.oid[skip].tolist())
     base_orders = O[~O.oid.isin(refused)]
     var_orders = O[~O.oid.isin(refused | skipped)]
+    with np.errstate(invalid="ignore"):
+        drb = np.abs(s_run.riskbp.to_numpy() - s.riskbp.to_numpy())
     diag = {"signals": int(len(s)), "refused_alone": int(len(refused)), "skipped": int(len(skipped)),
             "folds": {int(y): {k: (round(v, 4) if isinstance(v, float) else v) for k, v in f.items()} for y, f in folds.items()},
             "folds_full": {int(y): f for y, f in folds.items()},
             "fit_for_year_starting_at_cut": {k: (round(v, 4) if isinstance(v, float) else v) for k, v in f_next.items()},
+            "fit_for_year_starting_at_cut_full": dict(f_next),
             "skipped_by_year": {int(y): int(skip[(s.year == y).to_numpy()].sum()) for y in sorted(s.year.unique())},
-            "labels_mode": lab_mode}
+            "labels_mode": lab_mode, "labels_mode_spec": lm,
+            "refused_alone_in_labels_mode": int(s.refused.sum()),
+            "max_abs_riskbp_diff_run_vs_labels_mode": float(np.nanmax(drb)) if np.isfinite(drb).any() else None}
     dT = ch.get("declared_T")
     if dT:
-        diag["declared_T_check"] = declared_T_check(dT, folds, f_next, G.current_cut())
+        diag["declared_T_check"] = bind_declared_T(dT, folds, f_next, G.current_cut())
     return var_orders, {"diag": diag, "base_orders": base_orders, "signals": s}
 
 
@@ -415,8 +502,18 @@ def change_payoff(spec, mk, O, mode, ctx):
 
 
 # ------------------------------------------------------------------------------------------------- the run
+def reference_refusal(spec, mk, O, mode):
+    """The payoff lens's broker refusal for an unchanged payoff-convention sleeve (a '<sleeve>@payoff' reference with
+    "refuse": true): the orders whose stop distance at their alone fill is under 3 spreads of the fill bar
+    (variants.refuse(info.r0, info.spread), the refusal its variants get). Returns a boolean mask over O."""
+    P = L.payoff()
+    mo, params = rule_params(spec["rule"])
+    I = P["V"].info(spec["rule"], spec["sym"], mk, O, mode == "stress", params, mo)
+    return np.asarray(P["V"].refuse(I["r0"].to_numpy(), I["spread"].to_numpy()), bool)
+
+
 def run(spec, m1, mode, exec_mode="lab", leader=None, every_signal=False, keep_signals=False,
-        live_one_position="entry_bar"):
+        live_one_position="entry_bar", live_friday_block="decision_and_entry"):
     """Trades of one sleeve spec in one cost mode ('fp' | 'stress') and one execution ('lab' | 'live').
     live_one_position (how the live robot decides that a sleeve is flat; declared in the look's spec):
       'entry_bar' (default) the official simulator on the delayed orders: the chain is re-simulated with the live
@@ -426,6 +523,7 @@ def run(spec, m1, mode, exec_mode="lab", leader=None, every_signal=False, keep_s
                   the previous trade's exit minute stays ignored, as the rule text says): live_chain;
       'lab_chain' the lab chain's trades only, each executed live (a robot that follows make_orders' own chain:
                   no extra trade after a Friday close).
+    live_friday_block ('decision_and_entry' declared, or 'entry_bar'): see live_orders.
     Returns (trades, info). trades carry COLS (oid = row of the rule's own order table)."""
     t0 = time.time()
     sym, rule, conv = spec["sym"], spec["rule"], spec.get("convention", "sB")
@@ -438,6 +536,13 @@ def run(spec, m1, mode, exec_mode="lab", leader=None, every_signal=False, keep_s
     info = {"orders": int(len(O)), "change": ch.get("kind"), "convention": conv, "exec": exec_mode}
     if extra.get("diag"):
         info["change_diag"] = extra["diag"]
+    if spec.get("refuse"):
+        if conv != "payoff" or ch["kind"] not in ("none", "new"):
+            raise ValueError(f"{spec['key']}: 'refuse' is for an unchanged payoff-convention sleeve (a payoff "
+                             "variant makes its own refusal)")
+        bad0 = reference_refusal(spec, mk, o, mode)
+        o = o[~bad0]
+        info["reference_refused_orders"] = int(bad0.sum())
     chains = {"main": o}
     if "base_orders" in extra:
         chains["base"] = extra["base_orders"]
@@ -448,7 +553,7 @@ def run(spec, m1, mode, exec_mode="lab", leader=None, every_signal=False, keep_s
             if live_one_position == "lab_chain":         # the lab chain's orders only (same convention as lab)
                 tl = simulate_sB(mk, oo, sym, costs) if conv == "sB" else simulate(mk, oo, sym=sym, costs=costs)
                 oo = oo[oo.oid.isin(set(tl.oid.tolist()))]
-            oo, li = live_orders(oo, mk, sym, mode)
+            oo, li = live_orders(oo, mk, sym, mode, friday_block=live_friday_block)
             bad = live_refuse(mk, oo, sym, mode)         # both conventions: refused at the live fill, never blocks
             nref = int(bad.sum())
             if live_one_position == "rule":
@@ -488,7 +593,7 @@ def run(spec, m1, mode, exec_mode="lab", leader=None, every_signal=False, keep_s
     if every_signal:
         oo = o
         if exec_mode == "live":
-            oo, _ = live_orders(oo, mk, sym, mode)
+            oo, _ = live_orders(oo, mk, sym, mode, friday_block=live_friday_block)
             bad = live_refuse(mk, oo, sym, mode)
         else:
             bad = pre_refuse(mk, oo, sym, mode)

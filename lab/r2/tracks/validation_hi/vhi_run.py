@@ -3,16 +3,23 @@ portfolios (plain sum and capped account, with stakes), then the comparisons. Re
 
 SPEC (JSON; see look_spec.json):
     name
+    changes_in_look  [change ids]: THE LIST THE LEAD EDITS BEFORE THE DECLARATION. Only these changes enter the run;
+                  everything that needs another change is left out mechanically (select_changes below)
     windows       {"in_sample": W, "look": W} with W = {"eval": [start, end], "years": [...], "splits": [[name, a, b]]}
                   the run uses "look" when CUT > 2022-01-01, else "in_sample"
     modes         ["fp", "stress"]            FP costs; spread and slippage x1.5 (orders rebuilt on the wider quotes)
     execs         ["lab", "live"]             as specified; as the live program would (vhi_sleeves docstring)
+    live_one_position, live_friday_block      the live semantics (vhi_sleeves.run / live_orders)
     accounts      ["sum", "capped"]
     official_check  true: the ten unchanged sleeves rebuilt and compared row by row with results/r2/recalc/trades
-    sleeves       [{key, rule, sym, convention, change, every_signal, signals}]
-    portfolios    {name: {"sleeves": [keys], "stakes": {key: stake spec}}}
-    comparisons   [{"name", "ref", "var"}]                 portfolio vs portfolio (same mode / exec / account)
+    sleeves       [{key, rule, sym, convention, change {kind, id, ...}, base, refuse, every_signal, signals}]
+    portfolios    {name: {"sleeves": [keys], "stakes": {key: stake spec with an "id"}}} (or relative to P0)
+    comparisons   [{"name", "ref", "var"}]                 portfolio vs portfolio (same mode / exec / account), the
+                                                           variant at equal weekly swing (scale recomputed on the
+                                                           judged window, vhi_book.equal_swing)
     sleeve_comparisons [{"name", "ref", "var"}]            sleeve chain vs sleeve chain ("<key>" or "<key>:base")
+    criteria      {change id: {"kind": ..., ...}}          the declared criteria, computed in res["verdicts"]
+                                                           (vhi_verdicts; kinds registered with register_criterion)
 """
 import gc
 import hashlib
@@ -64,6 +71,134 @@ def resolve_portfolios(spec):
 
     for n in raw:
         get(n)
+    return out
+
+
+# ------------------------------------------------------------------------------------------------- the changes in the look
+def _sleeve_key(ref):
+    return ref.partition(":")[0]
+
+
+def available_changes(spec):
+    """{change id: {"sleeves": [keys], "stakes": [(portfolio, sleeve)]}}: every change the spec carries (a sleeve's
+    change, or a portfolio stake spec, which must carry an "id")."""
+    out = {}
+    for s in spec["sleeves"]:
+        ch = s.get("change")
+        if ch:
+            if not ch.get("id"):
+                raise ValueError(f"sleeve {s['key']}: its change needs an 'id' (the name the list changes_in_look uses)")
+            out.setdefault(ch["id"], {"sleeves": [], "stakes": []})["sleeves"].append(s["key"])
+    for pn, p in (spec.get("portfolios") or {}).items():
+        for k, st in (p.get("stakes") or {}).items():
+            if st is None:
+                continue
+            if not st.get("id"):
+                raise ValueError(f"portfolio {pn}: the stake rule of {k} needs an 'id' (a stake rule is a change: it "
+                                 "enters the look only when changes_in_look names it)")
+            out.setdefault(st["id"], {"sleeves": [], "stakes": []})["stakes"].append([pn, k])
+    return out
+
+
+def select_changes(spec, cut=None):
+    """The spec restricted to the changes named in spec["changes_in_look"]: a sleeve with a change enters iff its id
+    is listed; an unchanged sleeve that is the 'base' of changed sleeves (a '<sleeve>@payoff' reference) enters iff
+    one of them does; the other unchanged sleeves (the ten) always enter; a portfolio enters iff all its sleeves and
+    the ids of its stake rules do; a comparison iff both its portfolios; a sleeve comparison iff both its sleeves.
+    Without the list, every change enters (refused for a look). Returns (selected spec, record)."""
+    avail = available_changes(spec)
+    lst = spec.get("changes_in_look")
+    if lst is None:
+        if cut is not None and G.is_look(cut):
+            raise ValueError("the look's spec must name its changes in 'changes_in_look'")
+        lst = sorted(avail)
+    unknown = [c for c in lst if c not in avail]
+    if unknown:
+        raise ValueError(f"changes_in_look names unknown changes {unknown}; available: {sorted(avail)}")
+    if len(set(lst)) != len(lst):
+        raise ValueError("changes_in_look lists a change twice")
+    chosen = set(lst)
+    based = {}
+    for s in spec["sleeves"]:
+        if s.get("change") and s.get("base"):
+            based.setdefault(s["base"], []).append(s)
+    keep_sl = []
+    for s in spec["sleeves"]:
+        ch = s.get("change")
+        if ch:
+            ok = ch["id"] in chosen
+        elif s["key"] in based:
+            ok = any(v["change"]["id"] in chosen for v in based[s["key"]])
+        else:
+            ok = True
+        if ok:
+            keep_sl.append(s)
+    kept = {s["key"] for s in keep_sl}
+    for s in keep_sl:
+        if s.get("base") and s["base"] not in kept:
+            raise ValueError(f"{s['key']}: its base {s['base']} is not a sleeve of the spec")
+    allp = resolve_portfolios(spec)
+    raw = spec.get("portfolios") or {}
+    keep_p = {}
+    for pn, p in allp.items():
+        st_ids = {st["id"] for st in (p.get("stakes") or {}).values() if st}
+        if all(k in kept for k in p["sleeves"]) and st_ids <= chosen:
+            keep_p[pn] = raw[pn]
+    keep_c = [c for c in spec.get("comparisons", []) if c["ref"] in keep_p and c["var"] in keep_p]
+    keep_sc = [c for c in spec.get("sleeve_comparisons", [])
+               if _sleeve_key(c["ref"]) in kept and _sleeve_key(c["var"]) in kept]
+    sel = dict(spec)
+    sel.update(sleeves=keep_sl, portfolios=keep_p, comparisons=keep_c, sleeve_comparisons=keep_sc,
+               changes_in_look=list(lst))
+    for pn, p in keep_p.items():                         # a relative portfolio's base must have been kept
+        if "sleeves" not in p:
+            assert p.get("base", "P0") in keep_p, f"{pn}: its base portfolio is not in the run"
+    rec = {"in_look": list(lst), "listed_in_spec": spec.get("changes_in_look") is not None,
+           "available": {k: v for k, v in sorted(avail.items())},
+           "included": {"sleeves": [s["key"] for s in keep_sl], "portfolios": list(keep_p),
+                        "comparisons": [c["name"] for c in keep_c], "sleeve_comparisons": [c["name"] for c in keep_sc]},
+           "left_out": {"sleeves": [s["key"] for s in spec["sleeves"] if s["key"] not in kept],
+                        "portfolios": [p for p in allp if p not in keep_p],
+                        "comparisons": [c["name"] for c in spec.get("comparisons", []) if c not in keep_c],
+                        "sleeve_comparisons": [c["name"] for c in spec.get("sleeve_comparisons", []) if c not in keep_sc]}}
+    return sel, rec
+
+
+def payoff_reference_vs_sB(spec, trades, W, modes, execs):
+    """F6 diagnostic: every '<sleeve>@payoff' reference against the sB sleeve '<sleeve>' of the same run, trade by
+    trade inside the evaluation window (matched on entry time and side): trades only in one of them, matched trades
+    whose exit time, reason or R differ."""
+    a, b = W["eval"]
+    keys = {s["key"] for s in spec["sleeves"]}
+    out = {}
+    for s in spec["sleeves"]:
+        k = s["key"]
+        if not k.endswith("@payoff") or k[:-len("@payoff")] not in keys:
+            continue
+        k0 = k[:-len("@payoff")]
+        out[k] = {}
+        for mode in modes:
+            for ex in execs:
+                tp, ts_ = trades[(k, "main", mode, ex)], trades[(k0, "main", mode, ex)]
+                wp = tp[(tp.entry_time >= a) & (tp.entry_time < b)][["entry_time", "side", "exit_time", "reason", "R"]]
+                ws = ts_[(ts_.entry_time >= a) & (ts_.entry_time < b)][["entry_time", "side", "exit_time", "reason", "R"]]
+                m = wp.merge(ws, on=["entry_time", "side"], how="outer", suffixes=("_payoff", "_sB"), indicator=True)
+                both = m[m["_merge"] == "both"]
+                dR = (both.R_payoff - both.R_sB).abs()
+                dif = both[(dR > 1e-9) | (both.exit_time_payoff != both.exit_time_sB)
+                           | (both.reason_payoff.astype(str) != both.reason_sB.astype(str))]
+                out[k][f"{mode}/{ex}"] = {
+                    "n_payoff_reference": int(len(wp)), "n_sB": int(len(ws)), "matched": int(len(both)),
+                    "only_in_payoff_reference": int((m["_merge"] == "left_only").sum()),
+                    "only_in_sB": int((m["_merge"] == "right_only").sum()), "matched_differing": int(len(dif)),
+                    "max_abs_dR_matched": float(dR.max()) if len(both) else None,
+                    "R_payoff_reference": round(float(wp.R.sum()), 3), "R_sB": round(float(ws.R.sum()), 3),
+                    "identical": bool(len(dif) == 0 and len(both) == len(wp) == len(ws)),
+                    "examples": [{"entry_time": str(r.entry_time), "side": int(r.side), "in": str(r._merge)}
+                                 for r in m[m["_merge"] != "both"].head(5).itertuples()]
+                    + [{"entry_time": str(r.entry_time), "side": int(r.side), "R_payoff": round(float(r.R_payoff), 4),
+                        "R_sB": round(float(r.R_sB), 4), "exit_payoff": str(r.exit_time_payoff),
+                        "exit_sB": str(r.exit_time_sB)} for r in dif.head(5).itertuples()]}
     return out
 
 
@@ -206,9 +341,14 @@ def load_plugins(spec):
 
 
 def run_spec(spec, cut, progress=print):
+    import vhi_verdicts as VD
     plugins = load_plugins(spec)
+    spec_all = spec
+    spec, selection = select_changes(spec_all, cut)
     W = windows_for(spec, cut)
     modes, execs = spec.get("modes", ["fp", "stress"]), spec.get("execs", ["lab"])
+    lop = spec.get("live_one_position", "entry_bar")
+    lfb = spec.get("live_friday_block", "decision_and_entry")
     sleeves = spec["sleeves"]
     keys = [s["key"] for s in sleeves]
     assert len(keys) == len(set(keys)), "duplicate sleeve keys"
@@ -219,8 +359,11 @@ def run_spec(spec, cut, progress=print):
     need_leader = any(s["rule"] == "nq_btc_follow" for s in sleeves)
     res = {"spec": spec.get("name"), "cut": str(cut), "windows": {"eval": [str(x) for x in W["eval"]],
                                                                   "years": W["years"], "splits": [[n, str(a), str(b)] for n, a, b in W["splits"]]},
+           "changes": selection,
            "frames": {}, "official": {}, "sleeves": {}, "portfolios": {}, "comparisons": {}, "sleeve_comparisons": {},
-           "plugins": plugins, "live_one_position": spec.get("live_one_position", "entry_bar")}
+           "plugins": plugins, "live_one_position": lop, "live_friday_block": lfb}
+    progress(f"== changes in this run: {selection['in_look']} ({len(sleeves)} sleeves, "
+             f"{len(selection['included']['portfolios'])} portfolios)")
     trades = {}          # (key, chain, mode, exec) -> DataFrame
     signals = {}         # (key, mode) -> signal table (K1 / generic)
     leader = None
@@ -250,8 +393,7 @@ def run_spec(spec, cut, progress=print):
             for mode in modes:
                 for ex in execs:
                     out, info = SL.run(s, m1, mode, ex, leader, every_signal=bool(s.get("every_signal")),
-                                       keep_signals=True,
-                                       live_one_position=spec.get("live_one_position", "entry_bar"))
+                                       keep_signals=True, live_one_position=lop, live_friday_block=lfb)
                     for chain in ("main", "base", "every_signal"):
                         if chain in out:
                             trades[(k, chain, mode, ex)] = out[chain]
@@ -280,6 +422,7 @@ def run_spec(spec, cut, progress=print):
         gc.collect()
     res["_trades"] = trades
     res["_signals"] = signals
+    res["payoff_reference_vs_sB"] = payoff_reference_vs_sB(spec, trades, W, modes, execs)
     # ------------------------------------------------------------------------------------------- portfolios
     a, b = W["eval"]
     meta = {s["key"]: {"sym": s["sym"], "tie": f"{s['rule']}_{s['sym']}"} for s in sleeves}
@@ -333,6 +476,12 @@ def run_spec(spec, cut, progress=print):
     res["_books"] = books
     res["_meta"] = meta
     res["_W"] = W
+    res["_spec"] = spec
+    res["verdicts"] = VD.compute(spec, res, W)
+    for cid, v in res["verdicts"].items():
+        progress(f"   verdict {cid:16s} " + ("no criterion declared" if not v.get("declared") else
+                                            f"adopted {v['adopted']} ({sum(c['pass'] for c in v['criteria'])}/"
+                                            f"{len(v['criteria'])} criteria)"))
     return res
 
 

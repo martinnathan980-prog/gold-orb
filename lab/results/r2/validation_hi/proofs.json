@@ -1,8 +1,25 @@
 {
  "cut": "2022-01-01 00:00:00+00:00",
  "spec": "/home/user/gold-orb/lab/r2/tracks/validation_hi/look_spec.json",
- "spec_sha256": "2df1e54958ae31c6cdc60e56764e804290b7fb4fee19508d8849cfcbb60ee10a",
- "seconds": 219.1,
+ "spec_sha256": "f097ab176413972beec5ee32c729a796ba99bb1dcaad0bcf509ff3ea58eb67d6",
+ "seconds": 169.6,
+ "changes_in_look_of_the_spec": [
+  "K1",
+  "K2",
+  "K3"
+ ],
+ "changes_rehearsed_by_the_proofs_run": [
+  "K1",
+  "K2",
+  "K3",
+  "F1eth_H2",
+  "ocm4_T1",
+  "donch4h_S0.75r",
+  "nq_T1",
+  "noise30_S0.25",
+  "brk72btc_S0.75r",
+  "orbxau_S0.75r"
+ ],
  "all_ok": true,
  "proofs": {
   "a_official_trades": {
@@ -14,7 +31,7 @@
   },
   "b_K1": {
    "ok": true,
-   "checks": 309,
+   "checks": 468,
    "failed": 0,
    "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_b_K1.json",
    "what": "K1 (brk72_24h_wd ethusd, riskbp skip refitted every 1 January) against synthesis_B sleeve_runs C1 (fp and x1.5), every field; the harness's walk-forward (any CUT) against s1_run.walk_forward"
@@ -28,10 +45,10 @@
   },
   "d_payoff_variants": {
    "ok": true,
-   "checks": 444,
+   "checks": 465,
    "failed": 0,
    "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_d_payoff_variants.json",
-   "what": "the seven payoff variants in play (and their references) against results/r2/autopsy/payoff/variants_table.csv (fp and x1.5 columns, common window 2018-02-01..2021-12-31, earlier entries, refusals, years better) and the lens's trials.jsonl (by year, censored trades, H extensions)"
+   "what": "the seven payoff variants in play (and their references) against results/r2/autopsy/payoff/variants_table.csv (fp and x1.5 columns, common window 2018-02-01..2021-12-31, earlier entries, refusals, years better) and the lens's trials.jsonl (by year, censored trades, H extensions); review F6: the references with the payoff lens's 3-spread refusal, identical to the sB sleeves trade by trade inside the window (lab, fp and x1.5; live reported)"
   },
   "e_portfolios_P0_P1_P2": {
    "ok": true,
@@ -49,10 +66,10 @@
   },
   "g_live_execution": {
    "ok": true,
-   "checks": 17,
+   "checks": 20,
    "failed": 0,
    "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_g_live_execution.json",
-   "what": "the live execution (entry one minute late at market, Friday 16:50 New York close): K2 run this way reproduces the verifiers' figures quoted in synthesis_B (392 trades, +142.1 R; x1.5 +127.9 R) and the harness's declared default is that run without the trade still open at the end of 2021; the alternative chain resolver ('rule') returns the official chain trade for trade when there is no delay and no Friday close, and differs from the default only by signals at the previous trade's exit minute"
+   "what": "the live execution (entry one minute late at market, Friday 16:50 New York close): K2 run this way reproduces the verifiers' figures quoted in synthesis_B (392 trades, +142.1 R; x1.5 +127.9 R) and the harness's declared default is that run without the trade still open at the end of 2021; the alternative chain resolver ('rule') returns the official chain trade for trade when there is no delay and no Friday close, and differs from the default only by signals at the previous trade's exit minute; review F7: the Friday block tested on the decision instant as well (a synthetic order shows the rule acting; no in-sample signal is concerned)"
   },
   "h_stakes": {
    "ok": true,
@@ -63,17 +80,17 @@
   },
   "i_guard": {
    "ok": true,
-   "checks": 25,
+   "checks": 91,
    "failed": 0,
    "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_i_guard.json",
-   "what": "the guard of the harness (vhi_guard): CUT rules, refused reads, the access log untouched"
+   "what": "the guard of the harness (vhi_guard): F1 the declaration bound to the spec (PROTOCOL_V3.md as it stands refused), F2 run once / fixed output / second access, F3 the hardened read guard (probes refused before any byte is read), CUT rules, the access log untouched, every read of the process with its filter"
   },
   "j_entry_point_rehearsal": {
    "ok": true,
-   "checks": 7,
+   "checks": 11,
    "failed": 0,
    "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_j_entry_point_rehearsal.json",
-   "what": "the look's entry point (look.py) run end to end at CUT 2022-01-01 in its own process: same numbers as the proofs' run, nothing logged"
+   "what": "the look's entry point (look.py) run end to end at CUT 2022-01-01 in its own process with the spec as it stands (changes_in_look K1, K2, K3): the right sleeves, portfolios and verdicts, the same numbers as the proofs' run, nothing logged"
   },
   "k_moving_the_cut": {
    "ok": true,
@@ -81,7 +98,30 @@
    "failed": 0,
    "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_k_moving_the_cut.json",
    "what": "MOVING THE CUT, as the look will: the same spec run by look.py at CUT 2021-01-01 (in sample) must give, for\nevery sleeve, chain, cost mode and execution, exactly the trades of the CUT 2022-01-01 run that entered and\nclosed inside the shorter frame -- the harness's results do not depend on where the frame ends except for the\ntrades it cannot finish. K1's fit for the year starting at that CUT must be the CUT-2022 run's 2021 fold."
+  },
+  "l_verdicts": {
+   "ok": true,
+   "checks": 33,
+   "failed": 0,
+   "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_l_verdicts.json",
+   "what": "F10: the verdicts block. Every criterion value equals the run's own statistic (rounded as the run reports it)\nand synthesis_B's published figure where there is one; a change without a declared criterion is reported as\nsuch. In sample the verdicts only check the machinery (the window is 2018-02 .. 2021-12, not the look's)."
   }
  },
- "rehearsal": "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal_in_sample.json"
+ "rehearsal": "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal_in_sample.json",
+ "rehearsal_of_the_spec_as_it_stands": "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01.json",
+ "harness_sha256": {
+  "example_plugins.py": "e8fda9ff41a9b40eee6de509b4c3187c279e2369d6c5b3e97374c7f84d75eb1b",
+  "look.py": "959df13f0ae4a9cd0af76beef3dcade233925a481281168ebf863962aa6795f9",
+  "look_spec.json": "f097ab176413972beec5ee32c729a796ba99bb1dcaad0bcf509ff3ea58eb67d6",
+  "proofs.py": "bab5b78b6d57699e95150f4ad39f26db344b844afcbe4de0f7a621a6e3af664c",
+  "vhi_book.py": "053b3f1cbce8c9f5775a533c7646705ea3c28526361024a8633497d2f7ae51f2",
+  "vhi_data.py": "3b0547b78e6ebf9f4ca8226f59f126a97a640aa0ec53027e943233d5fa72463d",
+  "vhi_guard.py": "39d254dc6de52f276a4726c4e6c0fd80b7e97bbcb8d1b4bfa097e34a0f399f4f",
+  "vhi_lens.py": "c89dd29bf90726b50606c360dd14652060b90f29f470ee5d290452c2e316489e",
+  "vhi_run.py": "36a916fa52e96468795a7bdc5299b0a11d516c251d3627e02542f7dc8ee7a392",
+  "vhi_sleeves.py": "9e96fa838b997cc676e174309892b2f6e85d39ccd74a0b5bd7ad4c35c2041919",
+  "vhi_stakes.py": "99bdca8a34e2727f66cc67859447eb25cae5a2b5a07c52f89f4125cbd1d022dc",
+  "vhi_verdicts.py": "d0e76bd8c45069018a2d2d53582f632af38bf629a33078abd5fee0058bdcc23e"
+ },
+ "protocol_sha256_at_proof_time": "2cadb7df8c279b39b1b882726acff72401eba17a184e0cf1ed17b12016ccd095"
 }

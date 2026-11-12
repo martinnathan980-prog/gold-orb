@@ -763,3 +763,29 @@ swing (reference: 3,985 trades, weekly Sharpe 2.747, +556.2 R, 44.6 % losing wee
   (K1 + K2 + K3) gives ×1.123 in sample, mostly from 2019, with a deeper worst week (−14.0 against −12.5 R).
 Lesson recorded for the user: staking by the odds, by the clock or by sleeve does not raise the gain per unit of swing
 on these rules; the remaining gap to the user's demand (about ×4.4) is untouched by Addenda H and I.
+
+## Addendum J (2026-11-12, 16:00 UTC; written BEFORE any run): round 4 — new rules on markets and clocks the ten do not cover
+The user: "do not stop until you find it; carte blanche". Addenda H and I found that the ten rules cannot be made much
+better: losses are full stops that cannot be sorted early, and stakes by the odds, the clock or the sleeve do not raise
+the gain per unit of swing. The only lever left is breadth: new rules that are independent of the ten. An archivist
+listed what the lab already tried (about 2,300 logged configurations, 3 independent clusters found), three idea teams
+proposed 24 hypotheses, and a judge ranked them (`results/r2/round4_ideas.json`, sha256 `c81387985baf8e43d64caa339c75daf4d3ff936a925ef28d97ff94755b5e225a`, read only from files
+the earlier tracks wrote; no data was run). Five are tested, each exactly as the judge's `rule` and `test_plan` texts in
+that file say, which are frozen here:
+1. **IDXRS_1000** — relative strength between us100, us500 and us30 from 10:00 to 15:55 New York, a hedged pair
+   (12 configurations; prior of passing validation 8.8 %).
+2. **FX weekend overreaction fade**, eight G10 pairs as one basket, decided Sunday 20:00 New York, out Monday 16:00
+   (11 configurations; 2.8 %).
+3. **ger40_noise30_xetra** — the frozen noise30 rule on the DAX's own cash clock (11 configurations; 3.3 %; also needs a
+   weekly correlation of at most 0.30 with the sum of the ten over 2014–2021).
+4. **FOMC-cycle even/odd weeks**, long-short us500, ger40 as a declared mechanism check (10 configurations; 1.5 %).
+5. **LETF_CLOSE_PAIR** — us100 against us30 in the last half hour of big days (11 configurations; 1.6 %; both exit
+   neighbours must keep PF ≥ 1.06).
+- **In sample only** (2013–2021, frames cut while read). The verdict is read on each main configuration only; the
+  others are its neighbours, its cost stress and its random-entry null. Pass = PROTOCOL_V3 section 4 bars (the basket
+  bars for the FX basket), plus the extra condition the judge declared for each.
+- **Every in-sample pass is attacked by an independent re-implementation** before it is kept. A kept rule gets ONE look
+  at 2022–2025, declared separately before it is run.
+- **Said before the run** (the judge's arithmetic): about 0.18 of the five are expected to pass validation (none: about
+  83 %); if one passes with a forward Sharpe of about 0.6 and a low correlation, the account's weekly Sharpe (2.02 on
+  2022–2025) rises by 2–4 %; the user's demand needs about ×4.4, which breadth from this pool cannot reach.

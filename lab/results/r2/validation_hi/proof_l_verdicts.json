@@ -1,0 +1,478 @@
+{
+ "what": "F10: the verdicts block. Every criterion value equals the run's own statistic (rounded as the run reports it)\nand synthesis_B's published figure where there is one; a change without a declared criterion is reported as\nsuch. In sample the verdicts only check the machinery (the window is 2018-02 .. 2021-12, not the look's).",
+ "detail": {
+  "verdicts": {
+   "K1": {
+    "declared": true,
+    "kind": "k1_skip",
+    "text": "synthesis_B: K1 is adopted only if, on 2022-2025, the sleeve's expectancy per trade with the skip is higher than without and its total R is not lower, both with FP costs and with costs x1.5, and the skipped signals taken alone earn less on average than the kept ones.",
+    "criteria": [
+     {
+      "criterion": "fp/lab: expectancy per trade with the skip > without",
+      "value": 0.28903347509568705,
+      "reference": 0.20863785562895754,
+      "rule": ">",
+      "pass": true,
+      "n_with": 420,
+      "n_without": 511
+     },
+     {
+      "criterion": "fp/lab: total R with the skip >= without",
+      "value": 121.39405954018856,
+      "reference": 106.6139442263973,
+      "rule": ">=",
+      "pass": true
+     },
+     {
+      "criterion": "stress/lab: expectancy per trade with the skip > without",
+      "value": 0.2648026164899318,
+      "reference": 0.1875303940000555,
+      "rule": ">",
+      "pass": true,
+      "n_with": 422,
+      "n_without": 513
+     },
+     {
+      "criterion": "stress/lab: total R with the skip >= without",
+      "value": 111.74670415875121,
+      "reference": 96.20309212202847,
+      "rule": ">=",
+      "pass": true
+     },
+     {
+      "criterion": "skipped signals taken alone (FP costs): mean R < that of the kept signals",
+      "value": -0.10510033313658998,
+      "reference": 0.2159025187016199,
+      "rule": "<",
+      "pass": true,
+      "n_skipped": 518,
+      "n_kept": 1807,
+      "labels_mode": "fp"
+     }
+    ],
+    "adopted": true,
+    "readings": {}
+   },
+   "K2": {
+    "declared": true,
+    "kind": "new_sleeve",
+    "text": "synthesis_B: each new sleeve is adopted only if, with FP costs, PF >= 1.06, expectancy > 0, every-signal expectancy > 0, total R positive in at least 3 of the 4 years, and expectancy > 0 with costs x1.5; and the weekly mean / sd of R of the ten plus that sleeve is at least that of the ten alone. Read beside it, for the robot as it is (not a criterion of the rule): the same sleeve with entry one minute late and every position closed on Friday at 16:50 New York; if that version has expectancy <= 0, the sleeve waits for a robot that holds it over the weekend.",
+    "criteria": [
+     {
+      "criterion": "fp/lab: profit factor >= 1.06",
+      "value": 1.7879658470805964,
+      "reference": 1.06,
+      "rule": ">=",
+      "pass": true,
+      "n": 344
+     },
+     {
+      "criterion": "fp/lab: expectancy per trade > 0",
+      "value": 0.45194834282149987,
+      "reference": 0.0,
+      "rule": ">",
+      "pass": true
+     },
+     {
+      "criterion": "fp/lab: every-signal expectancy (each signal taken alone) > 0",
+      "value": 0.40215726201518326,
+      "reference": 0.0,
+      "rule": ">",
+      "pass": true
+     },
+     {
+      "criterion": "fp/lab: total R positive in at least 3 of the 4 years",
+      "value": 4,
+      "reference": 3,
+      "rule": ">=",
+      "pass": true,
+      "total_R_by_year": {
+       "2018": 70.9435544021499,
+       "2019": 33.9263363579487,
+       "2020": 32.03589030946816,
+       "2021": 18.564448861029184
+      }
+     },
+     {
+      "criterion": "stress/lab: expectancy per trade > 0 with costs x1.5",
+      "value": 0.4078164366518535,
+      "reference": 0.0,
+      "rule": ">",
+      "pass": true
+     },
+     {
+      "criterion": "fp/lab/sum: weekly mean / sd of R of P0+orb_eth >= that of P0",
+      "value": 0.4371447254618109,
+      "reference": 0.3984028765316807,
+      "rule": ">=",
+      "pass": true
+     }
+    ],
+    "adopted": true,
+    "readings": {
+     "fp/live": {
+      "n": 391,
+      "expectancy": 0.3626681697813707,
+      "total_R": 141.80325438451592
+     },
+     "stress/live": {
+      "n": 391,
+      "expectancy": 0.326314394486491,
+      "total_R": 127.588928244218
+     },
+     "as_the_live_program_would": "not a criterion of the rule: run as the hands would (entry one minute late at market, every position closed on Friday 16:50 New York), FP costs, expectancy +0.3627 R per trade: positive, the robot as it is can carry it"
+    }
+   },
+   "K3": {
+    "declared": true,
+    "kind": "new_sleeve",
+    "text": "synthesis_B: each new sleeve is adopted only if, with FP costs, PF >= 1.06, expectancy > 0, every-signal expectancy > 0, total R positive in at least 3 of the 4 years, and expectancy > 0 with costs x1.5; and the weekly mean / sd of R of the ten plus that sleeve is at least that of the ten alone. Read beside it, for the robot as it is (not a criterion of the rule): the same sleeve with entry one minute late and every position closed on Friday at 16:50 New York; if that version has expectancy <= 0, the sleeve waits for a robot that holds it over the weekend.",
+    "criteria": [
+     {
+      "criterion": "fp/lab: profit factor >= 1.06",
+      "value": 1.8361778911318047,
+      "reference": 1.06,
+      "rule": ">=",
+      "pass": true,
+      "n": 375
+     },
+     {
+      "criterion": "fp/lab: expectancy per trade > 0",
+      "value": 0.5182384440938628,
+      "reference": 0.0,
+      "rule": ">",
+      "pass": true
+     },
+     {
+      "criterion": "fp/lab: every-signal expectancy (each signal taken alone) > 0",
+      "value": 0.4662834289253818,
+      "reference": 0.0,
+      "rule": ">",
+      "pass": true
+     },
+     {
+      "criterion": "fp/lab: total R positive in at least 3 of the 4 years",
+      "value": 4,
+      "reference": 3,
+      "rule": ">=",
+      "pass": true,
+      "total_R_by_year": {
+       "2018": 93.55079336746337,
+       "2019": 68.29600419862132,
+       "2020": 32.09966691058083,
+       "2021": 0.3929520585330646
+      }
+     },
+     {
+      "criterion": "stress/lab: expectancy per trade > 0 with costs x1.5",
+      "value": 0.4963017911665123,
+      "reference": 0.0,
+      "rule": ">",
+      "pass": true
+     },
+     {
+      "criterion": "fp/lab/sum: weekly mean / sd of R of P0+orb_btc >= that of P0",
+      "value": 0.43263089130062443,
+      "reference": 0.3984028765316807,
+      "rule": ">=",
+      "pass": true
+     }
+    ],
+    "adopted": true,
+    "readings": {
+     "fp/live": {
+      "n": 427,
+      "expectancy": 0.3326472558912834,
+      "total_R": 142.04037826557803
+     },
+     "stress/live": {
+      "n": 426,
+      "expectancy": 0.3138120041832842,
+      "total_R": 133.68391378207906
+     },
+     "as_the_live_program_would": "not a criterion of the rule: run as the hands would (entry one minute late at market, every position closed on Friday 16:50 New York), FP costs, expectancy +0.3326 R per trade: positive, the robot as it is can carry it"
+    }
+   },
+   "F1eth_H2": {
+    "declared": false,
+    "adopted": null,
+    "note": "no criterion declared for this change: add one to spec['criteria'] before the declaration (a kind registered with vhi_verdicts.register_criterion)"
+   },
+   "ocm4_T1": {
+    "declared": false,
+    "adopted": null,
+    "note": "no criterion declared for this change: add one to spec['criteria'] before the declaration (a kind registered with vhi_verdicts.register_criterion)"
+   },
+   "donch4h_S0.75r": {
+    "declared": false,
+    "adopted": null,
+    "note": "no criterion declared for this change: add one to spec['criteria'] before the declaration (a kind registered with vhi_verdicts.register_criterion)"
+   },
+   "nq_T1": {
+    "declared": false,
+    "adopted": null,
+    "note": "no criterion declared for this change: add one to spec['criteria'] before the declaration (a kind registered with vhi_verdicts.register_criterion)"
+   },
+   "noise30_S0.25": {
+    "declared": false,
+    "adopted": null,
+    "note": "no criterion declared for this change: add one to spec['criteria'] before the declaration (a kind registered with vhi_verdicts.register_criterion)"
+   },
+   "brk72btc_S0.75r": {
+    "declared": false,
+    "adopted": null,
+    "note": "no criterion declared for this change: add one to spec['criteria'] before the declaration (a kind registered with vhi_verdicts.register_criterion)"
+   },
+   "orbxau_S0.75r": {
+    "declared": false,
+    "adopted": null,
+    "note": "no criterion declared for this change: add one to spec['criteria'] before the declaration (a kind registered with vhi_verdicts.register_criterion)"
+   }
+  },
+  "in_sample_adopted": {
+   "K1": true,
+   "K2": true,
+   "K3": true
+  }
+ },
+ "checks": 33,
+ "failed": 0,
+ "ok": true,
+ "failures": [],
+ "rows": [
+  {
+   "field": "K1 fp: expectancy with the skip == the run's var window (synthesis_B C1 var_window)",
+   "expected": 0.289,
+   "got": 0.28903347509568705,
+   "ok": true
+  },
+  {
+   "field": "K1 fp: expectancy without == the run's base window (synthesis_B C1 base_window)",
+   "expected": 0.2086,
+   "got": 0.20863785562895754,
+   "ok": true
+  },
+  {
+   "field": "K1 fp: same, against the run's own sleeve stats",
+   "expected": 0.289,
+   "got": 0.28903347509568705,
+   "ok": true
+  },
+  {
+   "field": "K1 fp: total R with / without the skip == synthesis_B C1 var / base window",
+   "expected": 121.39,
+   "got": 121.39405954018856,
+   "ok": true
+  },
+  {
+   "field": "K1 fp: total R without the skip == synthesis_B C1 base window",
+   "expected": 106.61,
+   "got": 106.6139442263973,
+   "ok": true
+  },
+  {
+   "field": "K1 stress: expectancy with the skip == the run's var window (synthesis_B C1 var_window)",
+   "expected": 0.2648,
+   "got": 0.2648026164899318,
+   "ok": true
+  },
+  {
+   "field": "K1 stress: expectancy without == the run's base window (synthesis_B C1 base_window)",
+   "expected": 0.1875,
+   "got": 0.1875303940000555,
+   "ok": true
+  },
+  {
+   "field": "K1 stress: same, against the run's own sleeve stats",
+   "expected": 0.2648,
+   "got": 0.2648026164899318,
+   "ok": true
+  },
+  {
+   "field": "K1 stress: total R with / without the skip == synthesis_B C1 var / base window",
+   "expected": 111.75,
+   "got": 111.74670415875121,
+   "ok": true
+  },
+  {
+   "field": "K1 stress: total R without the skip == synthesis_B C1 base window",
+   "expected": 96.2,
+   "got": 96.20309212202847,
+   "ok": true
+  },
+  {
+   "field": "K1: skipped signals alone (mean R) == the run's k1 extras",
+   "expected": -0.1051,
+   "got": -0.10510033313658998,
+   "ok": true
+  },
+  {
+   "field": "K1: kept signals alone (mean R) == the run's k1 extras",
+   "expected": 0.2159,
+   "got": 0.2159025187016199,
+   "ok": true
+  },
+  {
+   "field": "K1: the skipped / kept signals are labelled with FP costs",
+   "expected": "fp",
+   "got": "fp",
+   "ok": true
+  },
+  {
+   "field": "K2: PF (FP) == synthesis_B N1_K2_orb_ethusd window pf",
+   "expected": 1.788,
+   "got": 1.7879658470805964,
+   "ok": true
+  },
+  {
+   "field": "K2: expectancy (FP) == synthesis_B window exp",
+   "expected": 0.4519,
+   "got": 0.45194834282149987,
+   "ok": true
+  },
+  {
+   "field": "K2: every-signal expectancy == the run's every-signal chain",
+   "expected": 0.4022,
+   "got": 0.40215726201518326,
+   "ok": true
+  },
+  {
+   "field": "K2: total R by year (FP) == synthesis_B N1_K2_orb_ethusd by_year",
+   "expected": {
+    "2018": 70.94,
+    "2019": 33.93,
+    "2020": 32.04,
+    "2021": 18.56
+   },
+   "got": {
+    "2018": 70.94,
+    "2019": 33.93,
+    "2020": 32.04,
+    "2021": 18.56
+   },
+   "ok": true
+  },
+  {
+   "field": "K2: expectancy x1.5 == synthesis_B window exp (stress)",
+   "expected": 0.4078,
+   "got": 0.4078164366518535,
+   "ok": true
+  },
+  {
+   "field": "K2: weekly mean / sd of P0+orb_eth == the run's portfolio metric",
+   "expected": 0.4371,
+   "got": 0.4371447254618109,
+   "ok": true
+  },
+  {
+   "field": "K2: weekly mean / sd of P0 == the run's portfolio metric == synthesis_B P0",
+   "expected": 0.3984,
+   "got": 0.3984028765316807,
+   "ok": true
+  },
+  {
+   "field": "K2: the live reading (FP) == the run's live window expectancy",
+   "expected": 0.3627,
+   "got": 0.3626681697813707,
+   "ok": true
+  },
+  {
+   "field": "K2: the live reading is not a criterion (readings, outside 'criteria')",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "K3: PF (FP) == synthesis_B N2_K3_orb_btcusd window pf",
+   "expected": 1.836,
+   "got": 1.8361778911318047,
+   "ok": true
+  },
+  {
+   "field": "K3: expectancy (FP) == synthesis_B window exp",
+   "expected": 0.5182,
+   "got": 0.5182384440938628,
+   "ok": true
+  },
+  {
+   "field": "K3: every-signal expectancy == the run's every-signal chain",
+   "expected": 0.4663,
+   "got": 0.4662834289253818,
+   "ok": true
+  },
+  {
+   "field": "K3: total R by year (FP) == synthesis_B N2_K3_orb_btcusd by_year",
+   "expected": {
+    "2018": 93.55,
+    "2019": 68.3,
+    "2020": 32.1,
+    "2021": 0.39
+   },
+   "got": {
+    "2018": 93.55,
+    "2019": 68.3,
+    "2020": 32.1,
+    "2021": 0.39
+   },
+   "ok": true
+  },
+  {
+   "field": "K3: expectancy x1.5 == synthesis_B window exp (stress)",
+   "expected": 0.4963,
+   "got": 0.4963017911665123,
+   "ok": true
+  },
+  {
+   "field": "K3: weekly mean / sd of P0+orb_btc == the run's portfolio metric",
+   "expected": 0.4326,
+   "got": 0.43263089130062443,
+   "ok": true
+  },
+  {
+   "field": "K3: weekly mean / sd of P0 == the run's portfolio metric == synthesis_B P0",
+   "expected": 0.3984,
+   "got": 0.3984028765316807,
+   "ok": true
+  },
+  {
+   "field": "K3: the live reading (FP) == the run's live window expectancy",
+   "expected": 0.3326,
+   "got": 0.3326472558912834,
+   "ok": true
+  },
+  {
+   "field": "K3: the live reading is not a criterion (readings, outside 'criteria')",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "every pass flag == its rule applied to its value and reference; adopted == all pass",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "the payoff variants (no declared criterion) are reported 'declared: false' (the hook)",
+   "expected": [
+    "F1eth_H2",
+    "ocm4_T1",
+    "donch4h_S0.75r",
+    "nq_T1",
+    "noise30_S0.25",
+    "brk72btc_S0.75r",
+    "orbxau_S0.75r"
+   ],
+   "got": [
+    "F1eth_H2",
+    "ocm4_T1",
+    "donch4h_S0.75r",
+    "nq_T1",
+    "noise30_S0.25",
+    "brk72btc_S0.75r",
+    "orbxau_S0.75r"
+   ],
+   "ok": true
+  }
+ ]
+}

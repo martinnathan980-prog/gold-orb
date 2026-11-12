@@ -1,5 +1,5 @@
 {
- "what": "the seven payoff variants in play (and their references) against results/r2/autopsy/payoff/variants_table.csv (fp and x1.5 columns, common window 2018-02-01..2021-12-31, earlier entries, refusals, years better) and the lens's trials.jsonl (by year, censored trades, H extensions)",
+ "what": "the seven payoff variants in play (and their references) against results/r2/autopsy/payoff/variants_table.csv (fp and x1.5 columns, common window 2018-02-01..2021-12-31, earlier entries, refusals, years better) and the lens's trials.jsonl (by year, censored trades, H extensions); review F6: the references with the payoff lens's 3-spread refusal, identical to the sB sleeves trade by trade inside the window (lab, fp and x1.5; live reported)",
  "detail": {
   "F1_brk_ridge_filter:ethusd.H2": {
    "variant": {
@@ -394,9 +394,533 @@
    "F1_brk_ridge_filter__ethusd+H2/fp/live": 0,
    "F1_brk_ridge_filter__ethusd+H2/stress/lab": 0,
    "F1_brk_ridge_filter__ethusd+H2/stress/live": 0
+  },
+  "F6_payoff_reference_vs_sB": {
+   "F1_brk_ridge_filter__ethusd@payoff": {
+    "fp/lab": {
+     "n_payoff_reference": 516,
+     "n_sB": 516,
+     "matched": 516,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 103.017,
+     "R_sB": 103.017,
+     "identical": true,
+     "examples": []
+    },
+    "fp/live": {
+     "n_payoff_reference": 514,
+     "n_sB": 514,
+     "matched": 514,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 96.384,
+     "R_sB": 96.384,
+     "identical": true,
+     "examples": []
+    },
+    "stress/lab": {
+     "n_payoff_reference": 518,
+     "n_sB": 518,
+     "matched": 518,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 85.899,
+     "R_sB": 85.899,
+     "identical": true,
+     "examples": []
+    },
+    "stress/live": {
+     "n_payoff_reference": 517,
+     "n_sB": 517,
+     "matched": 517,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 77.597,
+     "R_sB": 77.597,
+     "identical": true,
+     "examples": []
+    }
+   },
+   "ocm4__us100@payoff": {
+    "fp/lab": {
+     "n_payoff_reference": 492,
+     "n_sB": 492,
+     "matched": 492,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 53.78,
+     "R_sB": 53.78,
+     "identical": true,
+     "examples": []
+    },
+    "fp/live": {
+     "n_payoff_reference": 492,
+     "n_sB": 492,
+     "matched": 492,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 51.605,
+     "R_sB": 51.605,
+     "identical": true,
+     "examples": []
+    },
+    "stress/lab": {
+     "n_payoff_reference": 492,
+     "n_sB": 492,
+     "matched": 492,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 50.8,
+     "R_sB": 50.8,
+     "identical": true,
+     "examples": []
+    },
+    "stress/live": {
+     "n_payoff_reference": 492,
+     "n_sB": 492,
+     "matched": 492,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 48.096,
+     "R_sB": 48.096,
+     "identical": true,
+     "examples": []
+    }
+   },
+   "donch4h_stop__xauusd@payoff": {
+    "fp/lab": {
+     "n_payoff_reference": 207,
+     "n_sB": 207,
+     "matched": 207,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 30.033,
+     "R_sB": 30.033,
+     "identical": true,
+     "examples": []
+    },
+    "fp/live": {
+     "n_payoff_reference": 240,
+     "n_sB": 240,
+     "matched": 240,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 19.185,
+     "R_sB": 19.185,
+     "identical": true,
+     "examples": []
+    },
+    "stress/lab": {
+     "n_payoff_reference": 207,
+     "n_sB": 207,
+     "matched": 207,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 27.311,
+     "R_sB": 27.311,
+     "identical": true,
+     "examples": []
+    },
+    "stress/live": {
+     "n_payoff_reference": 241,
+     "n_sB": 241,
+     "matched": 241,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 16.133,
+     "R_sB": 16.133,
+     "identical": true,
+     "examples": []
+    }
+   },
+   "nq_btc_follow__btcusd@payoff": {
+    "fp/lab": {
+     "n_payoff_reference": 943,
+     "n_sB": 943,
+     "matched": 943,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 55.543,
+     "R_sB": 55.543,
+     "identical": true,
+     "examples": []
+    },
+    "fp/live": {
+     "n_payoff_reference": 949,
+     "n_sB": 949,
+     "matched": 949,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 45.768,
+     "R_sB": 45.768,
+     "identical": true,
+     "examples": []
+    },
+    "stress/lab": {
+     "n_payoff_reference": 943,
+     "n_sB": 943,
+     "matched": 943,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 41.35,
+     "R_sB": 41.35,
+     "identical": true,
+     "examples": []
+    },
+    "stress/live": {
+     "n_payoff_reference": 949,
+     "n_sB": 949,
+     "matched": 949,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 27.064,
+     "R_sB": 27.064,
+     "identical": true,
+     "examples": []
+    }
+   },
+   "noise30__us100@payoff": {
+    "fp/lab": {
+     "n_payoff_reference": 795,
+     "n_sB": 795,
+     "matched": 795,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 85.235,
+     "R_sB": 85.235,
+     "identical": true,
+     "examples": []
+    },
+    "fp/live": {
+     "n_payoff_reference": 794,
+     "n_sB": 794,
+     "matched": 794,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 79.71,
+     "R_sB": 79.71,
+     "identical": true,
+     "examples": []
+    },
+    "stress/lab": {
+     "n_payoff_reference": 795,
+     "n_sB": 795,
+     "matched": 795,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 80.051,
+     "R_sB": 80.051,
+     "identical": true,
+     "examples": []
+    },
+    "stress/live": {
+     "n_payoff_reference": 794,
+     "n_sB": 794,
+     "matched": 794,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 74.246,
+     "R_sB": 74.246,
+     "identical": true,
+     "examples": []
+    }
+   },
+   "brk72_24h_wd__btcusd@payoff": {
+    "fp/lab": {
+     "n_payoff_reference": 549,
+     "n_sB": 549,
+     "matched": 549,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 140.684,
+     "R_sB": 140.684,
+     "identical": true,
+     "examples": []
+    },
+    "fp/live": {
+     "n_payoff_reference": 558,
+     "n_sB": 558,
+     "matched": 558,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 132.239,
+     "R_sB": 132.239,
+     "identical": true,
+     "examples": []
+    },
+    "stress/lab": {
+     "n_payoff_reference": 549,
+     "n_sB": 549,
+     "matched": 549,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 135.516,
+     "R_sB": 135.516,
+     "identical": true,
+     "examples": []
+    },
+    "stress/live": {
+     "n_payoff_reference": 558,
+     "n_sB": 558,
+     "matched": 558,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 127.999,
+     "R_sB": 127.999,
+     "identical": true,
+     "examples": []
+    }
+   },
+   "orb_asia_2d_buf10__xauusd@payoff": {
+    "fp/lab": {
+     "n_payoff_reference": 464,
+     "n_sB": 464,
+     "matched": 464,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 27.059,
+     "R_sB": 27.059,
+     "identical": true,
+     "examples": []
+    },
+    "fp/live": {
+     "n_payoff_reference": 510,
+     "n_sB": 510,
+     "matched": 510,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": -21.762,
+     "R_sB": -21.762,
+     "identical": true,
+     "examples": []
+    },
+    "stress/lab": {
+     "n_payoff_reference": 464,
+     "n_sB": 464,
+     "matched": 464,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": 15.11,
+     "R_sB": 15.11,
+     "identical": true,
+     "examples": []
+    },
+    "stress/live": {
+     "n_payoff_reference": 508,
+     "n_sB": 508,
+     "matched": 508,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0,
+     "max_abs_dR_matched": 0.0,
+     "R_payoff_reference": -28.389,
+     "R_sB": -28.389,
+     "identical": true,
+     "examples": []
+    }
+   }
+  },
+  "F6_reference_refused_orders": {
+   "F1_brk_ridge_filter__ethusd@payoff": {
+    "fp/lab": 0,
+    "fp/live": 0,
+    "stress/lab": 1,
+    "stress/live": 1
+   },
+   "ocm4__us100@payoff": {
+    "fp/lab": 0,
+    "fp/live": 0,
+    "stress/lab": 0,
+    "stress/live": 0
+   },
+   "donch4h_stop__xauusd@payoff": {
+    "fp/lab": 0,
+    "fp/live": 0,
+    "stress/lab": 0,
+    "stress/live": 0
+   },
+   "nq_btc_follow__btcusd@payoff": {
+    "fp/lab": 0,
+    "fp/live": 0,
+    "stress/lab": 0,
+    "stress/live": 0
+   },
+   "noise30__us100@payoff": {
+    "fp/lab": 0,
+    "fp/live": 0,
+    "stress/lab": 0,
+    "stress/live": 0
+   },
+   "brk72_24h_wd__btcusd@payoff": {
+    "fp/lab": 0,
+    "fp/live": 0,
+    "stress/lab": 0,
+    "stress/live": 0
+   },
+   "orb_asia_2d_buf10__xauusd@payoff": {
+    "fp/lab": 0,
+    "fp/live": 0,
+    "stress/lab": 0,
+    "stress/live": 0
+   }
+  },
+  "F6_live_differences_reported": {
+   "F1_brk_ridge_filter__ethusd@payoff": {
+    "fp/live": {
+     "identical": true,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0
+    },
+    "stress/live": {
+     "identical": true,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0
+    }
+   },
+   "ocm4__us100@payoff": {
+    "fp/live": {
+     "identical": true,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0
+    },
+    "stress/live": {
+     "identical": true,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0
+    }
+   },
+   "donch4h_stop__xauusd@payoff": {
+    "fp/live": {
+     "identical": true,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0
+    },
+    "stress/live": {
+     "identical": true,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0
+    }
+   },
+   "nq_btc_follow__btcusd@payoff": {
+    "fp/live": {
+     "identical": true,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0
+    },
+    "stress/live": {
+     "identical": true,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0
+    }
+   },
+   "noise30__us100@payoff": {
+    "fp/live": {
+     "identical": true,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0
+    },
+    "stress/live": {
+     "identical": true,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0
+    }
+   },
+   "brk72_24h_wd__btcusd@payoff": {
+    "fp/live": {
+     "identical": true,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0
+    },
+    "stress/live": {
+     "identical": true,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0
+    }
+   },
+   "orb_asia_2d_buf10__xauusd@payoff": {
+    "fp/live": {
+     "identical": true,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0
+    },
+    "stress/live": {
+     "identical": true,
+     "only_in_payoff_reference": 0,
+     "only_in_sB": 0,
+     "matched_differing": 0
+    }
+   }
   }
  },
- "checks": 444,
+ "checks": 465,
  "failed": 0,
  "ok": true,
  "failures": [],
@@ -3064,6 +3588,258 @@
    "expected": 0,
    "got": 0,
    "ok": true
+  },
+  {
+   "field": "F6 F1_brk_ridge_filter__ethusd@payoff: the reference carries the 3-spread refusal (spec 'refuse': true, applied in every run)",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F6 F1_brk_ridge_filter__ethusd@payoff fp/lab: identical to the sB sleeve F1_brk_ridge_filter__ethusd trade by trade inside the window",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "n": [
+    516,
+    516
+   ],
+   "only": [
+    0,
+    0
+   ],
+   "matched_differing": 0
+  },
+  {
+   "field": "F6 F1_brk_ridge_filter__ethusd@payoff stress/lab: identical to the sB sleeve F1_brk_ridge_filter__ethusd trade by trade inside the window",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "n": [
+    518,
+    518
+   ],
+   "only": [
+    0,
+    0
+   ],
+   "matched_differing": 0
+  },
+  {
+   "field": "F6 ocm4__us100@payoff: the reference carries the 3-spread refusal (spec 'refuse': true, applied in every run)",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F6 ocm4__us100@payoff fp/lab: identical to the sB sleeve ocm4__us100 trade by trade inside the window",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "n": [
+    492,
+    492
+   ],
+   "only": [
+    0,
+    0
+   ],
+   "matched_differing": 0
+  },
+  {
+   "field": "F6 ocm4__us100@payoff stress/lab: identical to the sB sleeve ocm4__us100 trade by trade inside the window",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "n": [
+    492,
+    492
+   ],
+   "only": [
+    0,
+    0
+   ],
+   "matched_differing": 0
+  },
+  {
+   "field": "F6 donch4h_stop__xauusd@payoff: the reference carries the 3-spread refusal (spec 'refuse': true, applied in every run)",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F6 donch4h_stop__xauusd@payoff fp/lab: identical to the sB sleeve donch4h_stop__xauusd trade by trade inside the window",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "n": [
+    207,
+    207
+   ],
+   "only": [
+    0,
+    0
+   ],
+   "matched_differing": 0
+  },
+  {
+   "field": "F6 donch4h_stop__xauusd@payoff stress/lab: identical to the sB sleeve donch4h_stop__xauusd trade by trade inside the window",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "n": [
+    207,
+    207
+   ],
+   "only": [
+    0,
+    0
+   ],
+   "matched_differing": 0
+  },
+  {
+   "field": "F6 nq_btc_follow__btcusd@payoff: the reference carries the 3-spread refusal (spec 'refuse': true, applied in every run)",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F6 nq_btc_follow__btcusd@payoff fp/lab: identical to the sB sleeve nq_btc_follow__btcusd trade by trade inside the window",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "n": [
+    943,
+    943
+   ],
+   "only": [
+    0,
+    0
+   ],
+   "matched_differing": 0
+  },
+  {
+   "field": "F6 nq_btc_follow__btcusd@payoff stress/lab: identical to the sB sleeve nq_btc_follow__btcusd trade by trade inside the window",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "n": [
+    943,
+    943
+   ],
+   "only": [
+    0,
+    0
+   ],
+   "matched_differing": 0
+  },
+  {
+   "field": "F6 noise30__us100@payoff: the reference carries the 3-spread refusal (spec 'refuse': true, applied in every run)",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F6 noise30__us100@payoff fp/lab: identical to the sB sleeve noise30__us100 trade by trade inside the window",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "n": [
+    795,
+    795
+   ],
+   "only": [
+    0,
+    0
+   ],
+   "matched_differing": 0
+  },
+  {
+   "field": "F6 noise30__us100@payoff stress/lab: identical to the sB sleeve noise30__us100 trade by trade inside the window",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "n": [
+    795,
+    795
+   ],
+   "only": [
+    0,
+    0
+   ],
+   "matched_differing": 0
+  },
+  {
+   "field": "F6 brk72_24h_wd__btcusd@payoff: the reference carries the 3-spread refusal (spec 'refuse': true, applied in every run)",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F6 brk72_24h_wd__btcusd@payoff fp/lab: identical to the sB sleeve brk72_24h_wd__btcusd trade by trade inside the window",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "n": [
+    549,
+    549
+   ],
+   "only": [
+    0,
+    0
+   ],
+   "matched_differing": 0
+  },
+  {
+   "field": "F6 brk72_24h_wd__btcusd@payoff stress/lab: identical to the sB sleeve brk72_24h_wd__btcusd trade by trade inside the window",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "n": [
+    549,
+    549
+   ],
+   "only": [
+    0,
+    0
+   ],
+   "matched_differing": 0
+  },
+  {
+   "field": "F6 orb_asia_2d_buf10__xauusd@payoff: the reference carries the 3-spread refusal (spec 'refuse': true, applied in every run)",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F6 orb_asia_2d_buf10__xauusd@payoff fp/lab: identical to the sB sleeve orb_asia_2d_buf10__xauusd trade by trade inside the window",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "n": [
+    464,
+    464
+   ],
+   "only": [
+    0,
+    0
+   ],
+   "matched_differing": 0
+  },
+  {
+   "field": "F6 orb_asia_2d_buf10__xauusd@payoff stress/lab: identical to the sB sleeve orb_asia_2d_buf10__xauusd trade by trade inside the window",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "n": [
+    464,
+    464
+   ],
+   "only": [
+    0,
+    0
+   ],
+   "matched_differing": 0
   }
  ]
 }

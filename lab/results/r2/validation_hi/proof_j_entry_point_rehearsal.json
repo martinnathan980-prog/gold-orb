@@ -1,8 +1,533 @@
 {
- "what": "the look's entry point (look.py) run end to end at CUT 2022-01-01 in its own process: same numbers as the proofs' run, nothing logged",
+ "what": "the look's entry point (look.py) run end to end at CUT 2022-01-01 in its own process with the spec as it stands (changes_in_look K1, K2, K3): the right sleeves, portfolios and verdicts, the same numbers as the proofs' run, nothing logged",
  "output": "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01.json",
- "seconds": 72.8,
- "checks": 7,
+ "seconds": 31.8,
+ "detail": {
+  "changes": {
+   "in_look": [
+    "K1",
+    "K2",
+    "K3"
+   ],
+   "listed_in_spec": true,
+   "available": {
+    "F1eth_H2": {
+     "sleeves": [
+      "F1_brk_ridge_filter__ethusd+H2"
+     ],
+     "stakes": []
+    },
+    "K1": {
+     "sleeves": [
+      "brk72_24h_wd__ethusd+K1"
+     ],
+     "stakes": []
+    },
+    "K2": {
+     "sleeves": [
+      "orb_asia_2d_buf10__ethusd"
+     ],
+     "stakes": []
+    },
+    "K3": {
+     "sleeves": [
+      "orb_asia_2d_buf10__btcusd"
+     ],
+     "stakes": []
+    },
+    "brk72btc_S0.75r": {
+     "sleeves": [
+      "brk72_24h_wd__btcusd+S0.75r"
+     ],
+     "stakes": []
+    },
+    "donch4h_S0.75r": {
+     "sleeves": [
+      "donch4h_stop__xauusd+S0.75r"
+     ],
+     "stakes": []
+    },
+    "noise30_S0.25": {
+     "sleeves": [
+      "noise30__us100+S0.25"
+     ],
+     "stakes": []
+    },
+    "nq_T1": {
+     "sleeves": [
+      "nq_btc_follow__btcusd+T1"
+     ],
+     "stakes": []
+    },
+    "ocm4_T1": {
+     "sleeves": [
+      "ocm4__us100+T1"
+     ],
+     "stakes": []
+    },
+    "orbxau_S0.75r": {
+     "sleeves": [
+      "orb_asia_2d_buf10__xauusd+S0.75r"
+     ],
+     "stakes": []
+    }
+   },
+   "included": {
+    "sleeves": [
+     "ocm4__us100",
+     "noise30__us100",
+     "donch4h_stop__xauusd",
+     "orb_asia_2d_buf10__xauusd",
+     "GOLD_FRI_PM__xauusd",
+     "brk72_24h_wd__btcusd",
+     "brk72_24h_wd__ethusd",
+     "F1_brk_ridge_filter__btcusd",
+     "F1_brk_ridge_filter__ethusd",
+     "nq_btc_follow__btcusd",
+     "brk72_24h_wd__ethusd+K1",
+     "orb_asia_2d_buf10__ethusd",
+     "orb_asia_2d_buf10__btcusd"
+    ],
+    "portfolios": [
+     "P0",
+     "P1",
+     "P2",
+     "P0+orb_eth",
+     "P0+orb_btc"
+    ],
+    "comparisons": [
+     "P1_vs_P0",
+     "P2_vs_P0",
+     "P0+orb_eth_vs_P0",
+     "P0+orb_btc_vs_P0"
+    ],
+    "sleeve_comparisons": [
+     "K1_skip_vs_without"
+    ]
+   },
+   "left_out": {
+    "sleeves": [
+     "F1_brk_ridge_filter__ethusd@payoff",
+     "F1_brk_ridge_filter__ethusd+H2",
+     "ocm4__us100@payoff",
+     "ocm4__us100+T1",
+     "donch4h_stop__xauusd@payoff",
+     "donch4h_stop__xauusd+S0.75r",
+     "nq_btc_follow__btcusd@payoff",
+     "nq_btc_follow__btcusd+T1",
+     "noise30__us100@payoff",
+     "noise30__us100+S0.25",
+     "brk72_24h_wd__btcusd@payoff",
+     "brk72_24h_wd__btcusd+S0.75r",
+     "orb_asia_2d_buf10__xauusd@payoff",
+     "orb_asia_2d_buf10__xauusd+S0.75r"
+    ],
+    "portfolios": [
+     "P0|F1eth_H2",
+     "P0|ocm4_T1",
+     "P0|donch4h_S0.75r",
+     "P0|nq_T1",
+     "P0|noise30_S0.25",
+     "P0|brk72btc_S0.75r",
+     "P0|orbxau_S0.75r"
+    ],
+    "comparisons": [
+     "F1eth_H2_vs_P0",
+     "ocm4_T1_vs_P0",
+     "donch4h_S0.75r_vs_P0",
+     "nq_T1_vs_P0",
+     "noise30_S0.25_vs_P0",
+     "brk72btc_S0.75r_vs_P0",
+     "orbxau_S0.75r_vs_P0"
+    ],
+    "sleeve_comparisons": [
+     "F1eth_H2",
+     "ocm4_T1",
+     "donch4h_S0.75r",
+     "nq_T1",
+     "noise30_S0.25",
+     "brk72btc_S0.75r",
+     "orbxau_S0.75r"
+    ]
+   }
+  },
+  "verdicts": {
+   "K1": {
+    "declared": true,
+    "kind": "k1_skip",
+    "text": "synthesis_B: K1 is adopted only if, on 2022-2025, the sleeve's expectancy per trade with the skip is higher than without and its total R is not lower, both with FP costs and with costs x1.5, and the skipped signals taken alone earn less on average than the kept ones.",
+    "criteria": [
+     {
+      "criterion": "fp/lab: expectancy per trade with the skip > without",
+      "value": 0.28903347509568705,
+      "reference": 0.20863785562895754,
+      "rule": ">",
+      "pass": true,
+      "n_with": 420,
+      "n_without": 511
+     },
+     {
+      "criterion": "fp/lab: total R with the skip >= without",
+      "value": 121.39405954018856,
+      "reference": 106.6139442263973,
+      "rule": ">=",
+      "pass": true
+     },
+     {
+      "criterion": "stress/lab: expectancy per trade with the skip > without",
+      "value": 0.2648026164899318,
+      "reference": 0.1875303940000555,
+      "rule": ">",
+      "pass": true,
+      "n_with": 422,
+      "n_without": 513
+     },
+     {
+      "criterion": "stress/lab: total R with the skip >= without",
+      "value": 111.74670415875121,
+      "reference": 96.20309212202847,
+      "rule": ">=",
+      "pass": true
+     },
+     {
+      "criterion": "skipped signals taken alone (FP costs): mean R < that of the kept signals",
+      "value": -0.10510033313658998,
+      "reference": 0.2159025187016199,
+      "rule": "<",
+      "pass": true,
+      "n_skipped": 518,
+      "n_kept": 1807,
+      "labels_mode": "fp"
+     }
+    ],
+    "adopted": true,
+    "readings": {}
+   },
+   "K2": {
+    "declared": true,
+    "kind": "new_sleeve",
+    "text": "synthesis_B: each new sleeve is adopted only if, with FP costs, PF >= 1.06, expectancy > 0, every-signal expectancy > 0, total R positive in at least 3 of the 4 years, and expectancy > 0 with costs x1.5; and the weekly mean / sd of R of the ten plus that sleeve is at least that of the ten alone. Read beside it, for the robot as it is (not a criterion of the rule): the same sleeve with entry one minute late and every position closed on Friday at 16:50 New York; if that version has expectancy <= 0, the sleeve waits for a robot that holds it over the weekend.",
+    "criteria": [
+     {
+      "criterion": "fp/lab: profit factor >= 1.06",
+      "value": 1.7879658470805964,
+      "reference": 1.06,
+      "rule": ">=",
+      "pass": true,
+      "n": 344
+     },
+     {
+      "criterion": "fp/lab: expectancy per trade > 0",
+      "value": 0.45194834282149987,
+      "reference": 0.0,
+      "rule": ">",
+      "pass": true
+     },
+     {
+      "criterion": "fp/lab: every-signal expectancy (each signal taken alone) > 0",
+      "value": 0.40215726201518326,
+      "reference": 0.0,
+      "rule": ">",
+      "pass": true
+     },
+     {
+      "criterion": "fp/lab: total R positive in at least 3 of the 4 years",
+      "value": 4,
+      "reference": 3,
+      "rule": ">=",
+      "pass": true,
+      "total_R_by_year": {
+       "2018": 70.9435544021499,
+       "2019": 33.9263363579487,
+       "2020": 32.03589030946816,
+       "2021": 18.564448861029184
+      }
+     },
+     {
+      "criterion": "stress/lab: expectancy per trade > 0 with costs x1.5",
+      "value": 0.4078164366518535,
+      "reference": 0.0,
+      "rule": ">",
+      "pass": true
+     },
+     {
+      "criterion": "fp/lab/sum: weekly mean / sd of R of P0+orb_eth >= that of P0",
+      "value": 0.4371447254618109,
+      "reference": 0.3984028765316807,
+      "rule": ">=",
+      "pass": true
+     }
+    ],
+    "adopted": true,
+    "readings": {
+     "fp/live": {
+      "n": 391,
+      "expectancy": 0.3626681697813707,
+      "total_R": 141.80325438451592
+     },
+     "stress/live": {
+      "n": 391,
+      "expectancy": 0.326314394486491,
+      "total_R": 127.588928244218
+     },
+     "as_the_live_program_would": "not a criterion of the rule: run as the hands would (entry one minute late at market, every position closed on Friday 16:50 New York), FP costs, expectancy +0.3627 R per trade: positive, the robot as it is can carry it"
+    }
+   },
+   "K3": {
+    "declared": true,
+    "kind": "new_sleeve",
+    "text": "synthesis_B: each new sleeve is adopted only if, with FP costs, PF >= 1.06, expectancy > 0, every-signal expectancy > 0, total R positive in at least 3 of the 4 years, and expectancy > 0 with costs x1.5; and the weekly mean / sd of R of the ten plus that sleeve is at least that of the ten alone. Read beside it, for the robot as it is (not a criterion of the rule): the same sleeve with entry one minute late and every position closed on Friday at 16:50 New York; if that version has expectancy <= 0, the sleeve waits for a robot that holds it over the weekend.",
+    "criteria": [
+     {
+      "criterion": "fp/lab: profit factor >= 1.06",
+      "value": 1.8361778911318047,
+      "reference": 1.06,
+      "rule": ">=",
+      "pass": true,
+      "n": 375
+     },
+     {
+      "criterion": "fp/lab: expectancy per trade > 0",
+      "value": 0.5182384440938628,
+      "reference": 0.0,
+      "rule": ">",
+      "pass": true
+     },
+     {
+      "criterion": "fp/lab: every-signal expectancy (each signal taken alone) > 0",
+      "value": 0.4662834289253818,
+      "reference": 0.0,
+      "rule": ">",
+      "pass": true
+     },
+     {
+      "criterion": "fp/lab: total R positive in at least 3 of the 4 years",
+      "value": 4,
+      "reference": 3,
+      "rule": ">=",
+      "pass": true,
+      "total_R_by_year": {
+       "2018": 93.55079336746337,
+       "2019": 68.29600419862132,
+       "2020": 32.09966691058083,
+       "2021": 0.3929520585330646
+      }
+     },
+     {
+      "criterion": "stress/lab: expectancy per trade > 0 with costs x1.5",
+      "value": 0.4963017911665123,
+      "reference": 0.0,
+      "rule": ">",
+      "pass": true
+     },
+     {
+      "criterion": "fp/lab/sum: weekly mean / sd of R of P0+orb_btc >= that of P0",
+      "value": 0.43263089130062443,
+      "reference": 0.3984028765316807,
+      "rule": ">=",
+      "pass": true
+     }
+    ],
+    "adopted": true,
+    "readings": {
+     "fp/live": {
+      "n": 427,
+      "expectancy": 0.3326472558912834,
+      "total_R": 142.04037826557803
+     },
+     "stress/live": {
+      "n": 426,
+      "expectancy": 0.3138120041832842,
+      "total_R": 133.68391378207906
+     },
+     "as_the_live_program_would": "not a criterion of the rule: run as the hands would (entry one minute late at market, every position closed on Friday 16:50 New York), FP costs, expectancy +0.3326 R per trade: positive, the robot as it is can carry it"
+    }
+   }
+  },
+  "reads": [
+   {
+    "path": "goldlab/sim.py",
+    "kind": "open",
+    "filters": "None",
+    "bound": null
+   },
+   {
+    "path": "r2/fp_costs.json",
+    "kind": "open",
+    "filters": "None",
+    "bound": null
+   },
+   {
+    "path": "data/fp/us100_m1.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "tracks/trend/strategy.py",
+    "kind": "open",
+    "filters": "None",
+    "bound": null
+   },
+   {
+    "path": "tracks/orb/strategy.py",
+    "kind": "open",
+    "filters": "None",
+    "bound": null
+   },
+   {
+    "path": "results/r2/recalc/trades/ocm4__us100.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "results/r2/recalc/trades/ocm4__us100.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "r2/tracks/autopsy/payoff/common.py",
+    "kind": "open",
+    "filters": "None",
+    "bound": null
+   },
+   {
+    "path": "results/r2/recalc/trades/noise30__us100.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "results/r2/recalc/trades/noise30__us100.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "data/fp/xauusd_m1.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "results/r2/recalc/trades/donch4h_stop__xauusd.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "results/r2/recalc/trades/donch4h_stop__xauusd.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "results/r2/recalc/trades/orb_asia_2d_buf10__xauusd.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "results/r2/recalc/trades/orb_asia_2d_buf10__xauusd.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "results/r2/recalc/trades/GOLD_FRI_PM__xauusd.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "results/r2/recalc/trades/GOLD_FRI_PM__xauusd.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "data/fp/btcusd_m1.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "results/r2/recalc/trades/brk72_24h_wd__btcusd.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "results/r2/recalc/trades/brk72_24h_wd__btcusd.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "r2/tracks/ml/models/B1_ridge_full.json",
+    "kind": "open",
+    "filters": "None",
+    "bound": null
+   },
+   {
+    "path": "results/r2/recalc/trades/F1_brk_ridge_filter__btcusd.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "results/r2/recalc/trades/F1_brk_ridge_filter__btcusd.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "results/r2/recalc/trades/nq_btc_follow__btcusd.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "results/r2/recalc/trades/nq_btc_follow__btcusd.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "data/fp/ethusd_m1.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "results/r2/recalc/trades/brk72_24h_wd__ethusd.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "results/r2/recalc/trades/brk72_24h_wd__ethusd.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "results/r2/recalc/trades/F1_brk_ridge_filter__ethusd.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "results/r2/recalc/trades/F1_brk_ridge_filter__ethusd.parquet",
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2022-01-01 00:00:00+00:00"
+   }
+  ]
+ },
+ "checks": 11,
  "failed": 0,
  "ok": true,
  "failures": [],
@@ -15,40 +540,131 @@
    "stderr_tail": ""
   },
   {
-   "field": "look.py rehearsal == proofs run: portfolios",
+   "field": "the rehearsal ran the spec's list changes_in_look as it stands",
+   "expected": [
+    "K1",
+    "K2",
+    "K3"
+   ],
+   "got": [
+    "K1",
+    "K2",
+    "K3"
+   ],
+   "ok": true
+  },
+  {
+   "field": "with K1, K2, K3: the ten + K1 + K2 + K3 sleeves, no payoff variant or reference, no stake rule; portfolios P0, P1, P2, P0+orb_eth, P0+orb_btc",
+   "expected": [
+    [
+     "F1_brk_ridge_filter__btcusd",
+     "F1_brk_ridge_filter__ethusd",
+     "GOLD_FRI_PM__xauusd",
+     "brk72_24h_wd__btcusd",
+     "brk72_24h_wd__ethusd",
+     "brk72_24h_wd__ethusd+K1",
+     "donch4h_stop__xauusd",
+     "noise30__us100",
+     "nq_btc_follow__btcusd",
+     "ocm4__us100",
+     "orb_asia_2d_buf10__btcusd",
+     "orb_asia_2d_buf10__ethusd",
+     "orb_asia_2d_buf10__xauusd"
+    ],
+    [
+     "P0",
+     "P1",
+     "P2",
+     "P0+orb_eth",
+     "P0+orb_btc"
+    ]
+   ],
+   "got": [
+    [
+     "F1_brk_ridge_filter__btcusd",
+     "F1_brk_ridge_filter__ethusd",
+     "GOLD_FRI_PM__xauusd",
+     "brk72_24h_wd__btcusd",
+     "brk72_24h_wd__ethusd",
+     "brk72_24h_wd__ethusd+K1",
+     "donch4h_stop__xauusd",
+     "noise30__us100",
+     "nq_btc_follow__btcusd",
+     "ocm4__us100",
+     "orb_asia_2d_buf10__btcusd",
+     "orb_asia_2d_buf10__ethusd",
+     "orb_asia_2d_buf10__xauusd"
+    ],
+    [
+     "P0",
+     "P1",
+     "P2",
+     "P0+orb_eth",
+     "P0+orb_btc"
+    ]
+   ],
+   "ok": true
+  },
+  {
+   "field": "look.py rehearsal == proofs run: portfolios (P0, P1, P2, P0+orb_eth, P0+orb_btc)",
    "expected": true,
    "got": true,
    "ok": true
   },
   {
-   "field": "look.py rehearsal == proofs run: comparisons",
+   "field": "look.py rehearsal == proofs run: comparisons (P1_vs_P0, P2_vs_P0, P0+orb_eth_vs_P0, P0+orb_btc_vs_P0)",
    "expected": true,
    "got": true,
    "ok": true
   },
   {
-   "field": "look.py rehearsal == proofs run: sleeve_comparisons",
+   "field": "look.py rehearsal == proofs run: sleeve_comparisons (K1_skip_vs_without)",
    "expected": true,
    "got": true,
    "ok": true
   },
   {
-   "field": "look.py rehearsal == proofs run: official",
+   "field": "look.py rehearsal == proofs run: verdicts (K1, K2, K3)",
    "expected": true,
    "got": true,
    "ok": true
   },
   {
-   "field": "look.py rehearsal == proofs run: every sleeve run",
+   "field": "look.py rehearsal == proofs run: official check of the ten",
    "expected": true,
    "got": true,
    "ok": true
   },
   {
-   "field": "rehearsal did not log an access (meta.is_look False)",
-   "expected": false,
-   "got": false,
+   "field": "look.py rehearsal == proofs run: every sleeve run (stats and info)",
+   "expected": true,
+   "got": true,
    "ok": true
+  },
+  {
+   "field": "rehearsal did not log an access (meta.is_look False, no marker)",
+   "expected": [
+    false,
+    null
+   ],
+   "got": [
+    false,
+    null
+   ],
+   "ok": true
+  },
+  {
+   "field": "the rehearsal's every parquet read carries a row filter at or before 2022-01-01; it read no CSV",
+   "expected": [
+    0,
+    0
+   ],
+   "got": [
+    0,
+    0
+   ],
+   "ok": true,
+   "parquet_reads": 24
   }
  ]
 }

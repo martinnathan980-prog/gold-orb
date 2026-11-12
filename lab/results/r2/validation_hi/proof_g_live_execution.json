@@ -1,5 +1,5 @@
 {
- "what": "the live execution (entry one minute late at market, Friday 16:50 New York close): K2 run this way reproduces the verifiers' figures quoted in synthesis_B (392 trades, +142.1 R; x1.5 +127.9 R) and the harness's declared default is that run without the trade still open at the end of 2021; the alternative chain resolver ('rule') returns the official chain trade for trade when there is no delay and no Friday close, and differs from the default only by signals at the previous trade's exit minute",
+ "what": "the live execution (entry one minute late at market, Friday 16:50 New York close): K2 run this way reproduces the verifiers' figures quoted in synthesis_B (392 trades, +142.1 R; x1.5 +127.9 R) and the harness's declared default is that run without the trade still open at the end of 2021; the alternative chain resolver ('rule') returns the official chain trade for trade when there is no delay and no Friday close, and differs from the default only by signals at the previous trade's exit minute; review F7: the Friday block tested on the decision instant as well (a synthetic order shows the rule acting; no in-sample signal is concerned)",
  "detail": {
   "example_change_plugin": {
    "empty_skip_equals_reference": true,
@@ -7,6 +7,53 @@
    "trades_ref": 1643,
    "trades_with_skip": 1275,
    "no_trade_left_in_skipped_hours": true
+  },
+  "F7_friday_decision_instant_probe": {
+   "sym": "ethusd",
+   "late_fill_bar": "2021-01-08 21:54:00+00:00",
+   "late_fill_bar_ny": "2021-01-08 16:54:00",
+   "late_decision_instant_ny": "2021-01-08 16:55:00",
+   "late_next_bar_ny": "2021-01-10 17:00:00",
+   "early_fill_bar_ny": "2021-01-08 16:40:00",
+   "entry_bar": {
+    "taken_oids": [
+     0,
+     1
+    ],
+    "entry_bar_ny": [
+     "2021-01-10 17:00:00",
+     "2021-01-08 16:41:00"
+    ],
+    "info": {
+     "orders_in": 2,
+     "never_filled_in_lab": 0,
+     "blocked_friday_window": 0,
+     "blocked_entry_bar": 0,
+     "blocked_decision_instant_only": 1,
+     "friday_block": "entry_bar",
+     "friday_close_orders_at_a_later_reopen": 0,
+     "orders_out": 2
+    }
+   },
+   "decision_and_entry": {
+    "taken_oids": [
+     1
+    ],
+    "entry_bar_ny": [
+     "2021-01-08 16:41:00"
+    ],
+    "info": {
+     "orders_in": 2,
+     "never_filled_in_lab": 0,
+     "blocked_friday_window": 1,
+     "blocked_entry_bar": 0,
+     "blocked_decision_instant_only": 1,
+     "friday_block": "decision_and_entry",
+     "friday_close_orders_at_a_later_reopen": 0,
+     "orders_out": 1
+    }
+   },
+   "ok": true
   },
   "K2_ethusd_fp": {
    "verifier_way_incl_open_trade": {
@@ -745,9 +792,41 @@
      "mean_over_sd": 0.131
     }
    }
+  },
+  "F7_blocked_by_the_decision_instant_only": {
+   "total": 0,
+   "live_runs": 56,
+   "nonzero": {}
+  },
+  "F7_friday_close_orders_at_a_later_reopen": {
+   "by_run": {
+    "ocm4__us100+T1/main/fp/live": 801,
+    "ocm4__us100+T1/main/stress/live": 801,
+    "donch4h_stop__xauusd/main/fp/live": 65,
+    "donch4h_stop__xauusd/main/stress/live": 65,
+    "orb_asia_2d_buf10__xauusd/main/fp/live": 30,
+    "orb_asia_2d_buf10__xauusd/main/stress/live": 30,
+    "donch4h_stop__xauusd@payoff/main/fp/live": 65,
+    "donch4h_stop__xauusd@payoff/main/stress/live": 65,
+    "donch4h_stop__xauusd+S0.75r/main/fp/live": 65,
+    "donch4h_stop__xauusd+S0.75r/main/stress/live": 65,
+    "orb_asia_2d_buf10__xauusd@payoff/main/fp/live": 30,
+    "orb_asia_2d_buf10__xauusd@payoff/main/stress/live": 30,
+    "orb_asia_2d_buf10__xauusd+S0.75r/main/fp/live": 30,
+    "orb_asia_2d_buf10__xauusd+S0.75r/main/stress/live": 30,
+    "orb_asia_2d_buf10__btcusd/main/fp/live": 9,
+    "orb_asia_2d_buf10__btcusd/main/stress/live": 9,
+    "orb_asia_2d_buf10__ethusd/main/fp/live": 7,
+    "orb_asia_2d_buf10__ethusd/main/stress/live": 7
+   },
+   "us100": {
+    "ocm4__us100+T1/main/fp/live": 801,
+    "ocm4__us100+T1/main/stress/live": 801
+   },
+   "note": "orders whose Friday close falls on a bar that starts more than 60 minutes after Friday 16:50 New York (the market already shut then: us100 about 16:15 New York, or an early-closed Friday): such a position is closed at the open of the next bar, the reopen"
   }
  },
- "checks": 17,
+ "checks": 20,
  "failed": 0,
  "ok": true,
  "failures": [],
@@ -825,6 +904,12 @@
    "ok": true
   },
   {
+   "field": "F7: an order filled in the last Friday bar after 16:50 New York (decided inside the block, delayed entry at the Sunday reopen) is entered at the reopen with 'entry_bar' and not taken with the declared 'decision_and_entry'; one filled at 16:40 is taken in both",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
    "field": "K2 ethusd fp: entry +1 min at market and Friday 16:50 NY close, the verifier's one-position test (synthesis_B: 392 trades, +142.1 R)",
    "expected": [
     392,
@@ -882,6 +967,24 @@
    "field": "K2 ethusd stress: every trade the verifier's way adds over the 'rule' alternative is a signal at the previous trade's exit bar",
    "expected": true,
    "got": true,
+   "ok": true
+  },
+  {
+   "field": "F7 in sample: no signal of any live run is decided inside the Friday block with its delayed entry bar after the reopen (the review's census: 0)",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "F7 the spec declares live_one_position 'entry_bar' and live_friday_block 'decision_and_entry', and the run used them",
+   "expected": [
+    "entry_bar",
+    "decision_and_entry"
+   ],
+   "got": [
+    "entry_bar",
+    "decision_and_entry"
+   ],
    "ok": true
   }
  ]

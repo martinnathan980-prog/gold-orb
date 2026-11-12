@@ -30,6 +30,157 @@
    ]
   ]
  },
+ "changes": {
+  "in_look": [
+   "K1",
+   "K2",
+   "K3",
+   "F1eth_H2",
+   "ocm4_T1",
+   "donch4h_S0.75r",
+   "nq_T1",
+   "noise30_S0.25",
+   "brk72btc_S0.75r",
+   "orbxau_S0.75r"
+  ],
+  "listed_in_spec": true,
+  "available": {
+   "F1eth_H2": {
+    "sleeves": [
+     "F1_brk_ridge_filter__ethusd+H2"
+    ],
+    "stakes": []
+   },
+   "K1": {
+    "sleeves": [
+     "brk72_24h_wd__ethusd+K1"
+    ],
+    "stakes": []
+   },
+   "K2": {
+    "sleeves": [
+     "orb_asia_2d_buf10__ethusd"
+    ],
+    "stakes": []
+   },
+   "K3": {
+    "sleeves": [
+     "orb_asia_2d_buf10__btcusd"
+    ],
+    "stakes": []
+   },
+   "brk72btc_S0.75r": {
+    "sleeves": [
+     "brk72_24h_wd__btcusd+S0.75r"
+    ],
+    "stakes": []
+   },
+   "donch4h_S0.75r": {
+    "sleeves": [
+     "donch4h_stop__xauusd+S0.75r"
+    ],
+    "stakes": []
+   },
+   "noise30_S0.25": {
+    "sleeves": [
+     "noise30__us100+S0.25"
+    ],
+    "stakes": []
+   },
+   "nq_T1": {
+    "sleeves": [
+     "nq_btc_follow__btcusd+T1"
+    ],
+    "stakes": []
+   },
+   "ocm4_T1": {
+    "sleeves": [
+     "ocm4__us100+T1"
+    ],
+    "stakes": []
+   },
+   "orbxau_S0.75r": {
+    "sleeves": [
+     "orb_asia_2d_buf10__xauusd+S0.75r"
+    ],
+    "stakes": []
+   }
+  },
+  "included": {
+   "sleeves": [
+    "ocm4__us100",
+    "noise30__us100",
+    "donch4h_stop__xauusd",
+    "orb_asia_2d_buf10__xauusd",
+    "GOLD_FRI_PM__xauusd",
+    "brk72_24h_wd__btcusd",
+    "brk72_24h_wd__ethusd",
+    "F1_brk_ridge_filter__btcusd",
+    "F1_brk_ridge_filter__ethusd",
+    "nq_btc_follow__btcusd",
+    "brk72_24h_wd__ethusd+K1",
+    "orb_asia_2d_buf10__ethusd",
+    "orb_asia_2d_buf10__btcusd",
+    "F1_brk_ridge_filter__ethusd@payoff",
+    "F1_brk_ridge_filter__ethusd+H2",
+    "ocm4__us100@payoff",
+    "ocm4__us100+T1",
+    "donch4h_stop__xauusd@payoff",
+    "donch4h_stop__xauusd+S0.75r",
+    "nq_btc_follow__btcusd@payoff",
+    "nq_btc_follow__btcusd+T1",
+    "noise30__us100@payoff",
+    "noise30__us100+S0.25",
+    "brk72_24h_wd__btcusd@payoff",
+    "brk72_24h_wd__btcusd+S0.75r",
+    "orb_asia_2d_buf10__xauusd@payoff",
+    "orb_asia_2d_buf10__xauusd+S0.75r"
+   ],
+   "portfolios": [
+    "P0",
+    "P1",
+    "P2",
+    "P0+orb_eth",
+    "P0+orb_btc",
+    "P0|F1eth_H2",
+    "P0|ocm4_T1",
+    "P0|donch4h_S0.75r",
+    "P0|nq_T1",
+    "P0|noise30_S0.25",
+    "P0|brk72btc_S0.75r",
+    "P0|orbxau_S0.75r"
+   ],
+   "comparisons": [
+    "P1_vs_P0",
+    "P2_vs_P0",
+    "P0+orb_eth_vs_P0",
+    "P0+orb_btc_vs_P0",
+    "F1eth_H2_vs_P0",
+    "ocm4_T1_vs_P0",
+    "donch4h_S0.75r_vs_P0",
+    "nq_T1_vs_P0",
+    "noise30_S0.25_vs_P0",
+    "brk72btc_S0.75r_vs_P0",
+    "orbxau_S0.75r_vs_P0"
+   ],
+   "sleeve_comparisons": [
+    "K1_skip_vs_without",
+    "F1eth_H2",
+    "ocm4_T1",
+    "donch4h_S0.75r",
+    "nq_T1",
+    "noise30_S0.25",
+    "brk72btc_S0.75r",
+    "orbxau_S0.75r"
+   ]
+  },
+  "left_out": {
+   "sleeves": [],
+   "portfolios": [],
+   "comparisons": [],
+   "sleeve_comparisons": []
+  }
+ },
  "frames": {
   "us100": {
    "bars": 2513306,
@@ -409,6 +560,10 @@
        "orders_in": 999,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 999
       },
       "sec": 0.5
@@ -595,7 +750,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.7
+      "sec": 0.5
      },
      "main": {
       "window": {
@@ -783,9 +938,13 @@
        "orders_in": 999,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 999
       },
-      "sec": 0.7
+      "sec": 0.6
      },
      "main": {
       "window": {
@@ -1167,6 +1326,10 @@
        "orders_in": 1643,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1643
       },
       "sec": 0.3
@@ -1541,6 +1704,10 @@
        "orders_in": 1643,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1643
       },
       "sec": 0.4
@@ -1726,7 +1893,8 @@
     "key": "ocm4__us100@payoff",
     "rule": "ocm4",
     "sym": "us100",
-    "convention": "payoff"
+    "convention": "payoff",
+    "refuse": true
    },
    "runs": {
     "fp/lab": {
@@ -1735,10 +1903,11 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.5
+      "sec": 0.6
      },
      "main": {
       "window": {
@@ -1920,6 +2089,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -1927,9 +2097,13 @@
        "orders_in": 999,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 999
       },
-      "sec": 0.6
+      "sec": 0.5
      },
      "main": {
       "window": {
@@ -2111,10 +2285,11 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.8
+      "sec": 0.9
      },
      "main": {
       "window": {
@@ -2296,6 +2471,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -2303,6 +2479,10 @@
        "orders_in": 999,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 999
       },
       "sec": 0.5
@@ -2491,7 +2671,8 @@
     "convention": "payoff",
     "change": {
      "kind": "payoff",
-     "id": "T1",
+     "id": "ocm4_T1",
+     "variant": "T1",
      "family": "T",
      "m": 1
     },
@@ -2706,9 +2887,13 @@
        "orders_in": 999,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 801,
        "orders_out": 999
       },
-      "sec": 0.6
+      "sec": 0.4
      },
      "main": {
       "window": {
@@ -2899,7 +3084,7 @@
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.9
+      "sec": 0.8
      },
      "main": {
       "window": {
@@ -3094,9 +3279,13 @@
        "orders_in": 999,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 801,
        "orders_out": 999
       },
-      "sec": 0.6
+      "sec": 0.5
      },
      "main": {
       "window": {
@@ -3281,7 +3470,8 @@
     "key": "noise30__us100@payoff",
     "rule": "noise30",
     "sym": "us100",
-    "convention": "payoff"
+    "convention": "payoff",
+    "refuse": true
    },
    "runs": {
     "fp/lab": {
@@ -3290,6 +3480,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -3475,6 +3666,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 3,
       "main_boundary_dropped": 0,
@@ -3482,6 +3674,10 @@
        "orders_in": 1643,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1643
       },
       "sec": 0.4
@@ -3666,10 +3862,11 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.6
+      "sec": 0.5
      },
      "main": {
       "window": {
@@ -3851,6 +4048,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 3,
       "main_boundary_dropped": 0,
@@ -3858,9 +4056,13 @@
        "orders_in": 1643,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1643
       },
-      "sec": 0.4
+      "sec": 0.5
      },
      "main": {
       "window": {
@@ -4046,7 +4248,8 @@
     "convention": "payoff",
     "change": {
      "kind": "payoff",
-     "id": "S0.25",
+     "id": "noise30_S0.25",
+     "variant": "S0.25",
      "family": "S",
      "k": 0.25,
      "reentry": "n/a"
@@ -4260,6 +4463,10 @@
        "orders_in": 1643,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1643
       },
       "sec": 0.4
@@ -4451,7 +4658,7 @@
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.5
+      "sec": 0.6
      },
      "main": {
       "window": {
@@ -4644,6 +4851,10 @@
        "orders_in": 1643,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1643
       },
       "sec": 0.5
@@ -5030,6 +5241,10 @@
        "orders_in": 1654,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 2,
+       "blocked_entry_bar": 2,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 65,
        "orders_out": 1652
       },
       "sec": 0.3
@@ -5218,7 +5433,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
-      "sec": 1.5
+      "sec": 1.6
      },
      "main": {
       "window": {
@@ -5408,6 +5623,10 @@
        "orders_in": 1660,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 1,
+       "blocked_entry_bar": 1,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 65,
        "orders_out": 1659
       },
       "sec": 0.5
@@ -5606,7 +5825,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
-      "sec": 0.8
+      "sec": 0.6
      },
      "main": {
       "window": {
@@ -5794,6 +6013,10 @@
        "orders_in": 1829,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 30,
        "orders_out": 1829
       },
       "sec": 0.6
@@ -5980,7 +6203,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
-      "sec": 1.1
+      "sec": 0.8
      },
      "main": {
       "window": {
@@ -6168,9 +6391,13 @@
        "orders_in": 1826,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 30,
        "orders_out": 1826
       },
-      "sec": 1.3
+      "sec": 0.9
      },
      "main": {
       "window": {
@@ -6550,6 +6777,10 @@
        "orders_in": 443,
        "never_filled_in_lab": 29,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 414
       },
       "sec": 0.1
@@ -6920,9 +7151,13 @@
        "orders_in": 443,
        "never_filled_in_lab": 35,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 408
       },
-      "sec": 0.5
+      "sec": 0.3
      },
      "main": {
       "window": {
@@ -7104,7 +7339,8 @@
     "key": "donch4h_stop__xauusd@payoff",
     "rule": "donch4h_stop",
     "sym": "xauusd",
-    "convention": "payoff"
+    "convention": "payoff",
+    "refuse": true
    },
    "runs": {
     "fp/lab": {
@@ -7113,6 +7349,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
@@ -7300,6 +7537,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -7307,6 +7545,10 @@
        "orders_in": 1654,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 2,
+       "blocked_entry_bar": 2,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 65,
        "orders_out": 1652
       },
       "sec": 0.3
@@ -7493,10 +7735,11 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
-      "sec": 1.2
+      "sec": 0.8
      },
      "main": {
       "window": {
@@ -7680,6 +7923,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -7687,6 +7931,10 @@
        "orders_in": 1660,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 1,
+       "blocked_entry_bar": 1,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 65,
        "orders_out": 1659
       },
       "sec": 0.5
@@ -7877,7 +8125,8 @@
     "convention": "payoff",
     "change": {
      "kind": "payoff",
-     "id": "S0.75r",
+     "id": "donch4h_S0.75r",
+     "variant": "S0.75r",
      "family": "S",
      "k": 0.75,
      "reentry": true
@@ -8092,6 +8341,10 @@
        "orders_in": 1654,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 2,
+       "blocked_entry_bar": 2,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 65,
        "orders_out": 1652
       },
       "sec": 0.3
@@ -8285,7 +8538,7 @@
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
-      "sec": 0.6
+      "sec": 0.9
      },
      "main": {
       "window": {
@@ -8479,9 +8732,13 @@
        "orders_in": 1660,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 1,
+       "blocked_entry_bar": 1,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 65,
        "orders_out": 1659
       },
-      "sec": 1.0
+      "sec": 0.5
      },
      "main": {
       "window": {
@@ -8666,7 +8923,8 @@
     "key": "orb_asia_2d_buf10__xauusd@payoff",
     "rule": "orb_asia_2d_buf10",
     "sym": "xauusd",
-    "convention": "payoff"
+    "convention": "payoff",
+    "refuse": true
    },
    "runs": {
     "fp/lab": {
@@ -8675,10 +8933,11 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
-      "sec": 0.6
+      "sec": 0.8
      },
      "main": {
       "window": {
@@ -8860,6 +9119,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -8867,6 +9127,10 @@
        "orders_in": 1829,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 30,
        "orders_out": 1829
       },
       "sec": 0.7
@@ -9051,10 +9315,11 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
-      "sec": 1.0
+      "sec": 0.9
      },
      "main": {
       "window": {
@@ -9236,6 +9501,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -9243,9 +9509,13 @@
        "orders_in": 1826,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 30,
        "orders_out": 1826
       },
-      "sec": 0.8
+      "sec": 1.1
      },
      "main": {
       "window": {
@@ -9431,7 +9701,8 @@
     "convention": "payoff",
     "change": {
      "kind": "payoff",
-     "id": "S0.75r",
+     "id": "orbxau_S0.75r",
+     "variant": "S0.75r",
      "family": "S",
      "k": 0.75,
      "reentry": true
@@ -9645,9 +9916,13 @@
        "orders_in": 1829,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 30,
        "orders_out": 1829
       },
-      "sec": 0.6
+      "sec": 0.7
      },
      "main": {
       "window": {
@@ -9836,7 +10111,7 @@
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.8
+      "sec": 1.1
      },
      "main": {
       "window": {
@@ -10029,6 +10304,10 @@
        "orders_in": 1826,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 30,
        "orders_out": 1826
       },
       "sec": 0.8
@@ -10413,6 +10692,10 @@
        "orders_in": 2914,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2914
       },
       "sec": 0.1
@@ -10599,7 +10882,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.5
+      "sec": 0.4
      },
      "main": {
       "window": {
@@ -10787,9 +11070,13 @@
        "orders_in": 2914,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2914
       },
-      "sec": 0.2
+      "sec": 0.1
      },
      "main": {
       "window": {
@@ -11171,6 +11458,10 @@
        "orders_in": 1235,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1235
       },
       "sec": 0.1
@@ -11357,7 +11648,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.4
+      "sec": 0.2
      },
      "main": {
       "window": {
@@ -11545,6 +11836,10 @@
        "orders_in": 1234,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1234
       },
       "sec": 0.2
@@ -11741,7 +12036,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 1.0
+      "sec": 0.9
      },
      "main": {
       "window": {
@@ -11929,9 +12224,13 @@
        "orders_in": 2611,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2611
       },
-      "sec": 1.0
+      "sec": 1.3
      },
      "main": {
       "window": {
@@ -12115,7 +12414,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 1.6
+      "sec": 1.2
      },
      "main": {
       "window": {
@@ -12303,9 +12602,13 @@
        "orders_in": 2611,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2611
       },
-      "sec": 1.3
+      "sec": 1.0
      },
      "main": {
       "window": {
@@ -12504,7 +12807,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
-      "sec": 0.3
+      "sec": 0.4
      },
      "main": {
       "window": {
@@ -12703,6 +13006,10 @@
        "orders_in": 785,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 9,
        "orders_out": 785
       },
       "sec": 0.3
@@ -12900,7 +13207,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
-      "sec": 0.4
+      "sec": 0.5
      },
      "main": {
       "window": {
@@ -13099,6 +13406,10 @@
        "orders_in": 783,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 9,
        "orders_out": 783
       },
       "sec": 0.4
@@ -13295,7 +13606,8 @@
     "key": "nq_btc_follow__btcusd@payoff",
     "rule": "nq_btc_follow",
     "sym": "btcusd",
-    "convention": "payoff"
+    "convention": "payoff",
+    "refuse": true
    },
    "runs": {
     "fp/lab": {
@@ -13304,10 +13616,11 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 1.2
+      "sec": 1.0
      },
      "main": {
       "window": {
@@ -13489,6 +13802,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -13496,9 +13810,13 @@
        "orders_in": 2611,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2611
       },
-      "sec": 1.0
+      "sec": 1.1
      },
      "main": {
       "window": {
@@ -13680,10 +13998,11 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 1.3
+      "sec": 1.2
      },
      "main": {
       "window": {
@@ -13865,6 +14184,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -13872,6 +14192,10 @@
        "orders_in": 2611,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2611
       },
       "sec": 1.1
@@ -14060,7 +14384,8 @@
     "convention": "payoff",
     "change": {
      "kind": "payoff",
-     "id": "T1",
+     "id": "nq_T1",
+     "variant": "T1",
      "family": "T",
      "m": 1
     },
@@ -14275,6 +14600,10 @@
        "orders_in": 2611,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2611
       },
       "sec": 1.0
@@ -14468,7 +14797,7 @@
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 1.6
+      "sec": 1.5
      },
      "main": {
       "window": {
@@ -14663,6 +14992,10 @@
        "orders_in": 2611,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2611
       },
       "sec": 1.1
@@ -14850,7 +15183,8 @@
     "key": "brk72_24h_wd__btcusd@payoff",
     "rule": "brk72_24h_wd",
     "sym": "btcusd",
-    "convention": "payoff"
+    "convention": "payoff",
+    "refuse": true
    },
    "runs": {
     "fp/lab": {
@@ -14859,6 +15193,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -15044,6 +15379,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -15051,6 +15387,10 @@
        "orders_in": 2914,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2914
       },
       "sec": 0.1
@@ -15235,6 +15575,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -15420,6 +15761,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -15427,6 +15769,10 @@
        "orders_in": 2914,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2914
       },
       "sec": 0.2
@@ -15615,7 +15961,8 @@
     "convention": "payoff",
     "change": {
      "kind": "payoff",
-     "id": "S0.75r",
+     "id": "brk72btc_S0.75r",
+     "variant": "S0.75r",
      "family": "S",
      "k": 0.75,
      "reentry": true
@@ -15829,6 +16176,10 @@
        "orders_in": 2914,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2914
       },
       "sec": 0.1
@@ -16213,6 +16564,10 @@
        "orders_in": 2914,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2914
       },
       "sec": 0.2
@@ -16597,6 +16952,10 @@
        "orders_in": 2355,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2355
       },
       "sec": 0.1
@@ -16783,7 +17142,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.5
+      "sec": 0.3
      },
      "main": {
       "window": {
@@ -16971,6 +17330,10 @@
        "orders_in": 2355,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2355
       },
       "sec": 0.1
@@ -17354,6 +17717,10 @@
        "orders_in": 995,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 995
       },
       "sec": 0.1
@@ -17539,7 +17906,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.5
+      "sec": 0.2
      },
      "main": {
       "window": {
@@ -17726,6 +18093,10 @@
        "orders_in": 995,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 995
       },
       "sec": 0.2
@@ -17918,7 +18289,7 @@
      "q": 0.3333333333333333,
      "purge_days": 7,
      "min_train": 100,
-     "labels_mode": "run",
+     "labels_mode": "fp",
      "declared_T": {
       "2022": 478.284
      }
@@ -18007,6 +18378,14 @@
         "skip": "hi",
         "n_train": 2345
        },
+       "fit_for_year_starting_at_cut_full": {
+        "q_lo": 348.58681629677045,
+        "q_hi": 478.28395861996614,
+        "E_lo": 0.34235498470533143,
+        "E_hi": -0.13092210672555513,
+        "skip": "hi",
+        "n_train": 2345
+       },
        "skipped_by_year": {
         "2018": 0,
         "2019": 138,
@@ -18014,12 +18393,18 @@
         "2021": 267
        },
        "labels_mode": "fp",
+       "labels_mode_spec": "fp",
+       "refused_alone_in_labels_mode": 0,
+       "max_abs_riskbp_diff_run_vs_labels_mode": 0.0,
        "declared_T_check": {
         "2022": {
          "declared": 478.284,
          "fitted": 478.28395861996614,
          "fitted_from": "fit_for_year_starting_at_cut",
-         "same_to_0.01bp": true
+         "fitted_skip_side": "hi",
+         "abs_diff_bp": 4.13800338492365e-05,
+         "same_to_0.01bp": true,
+         "binding": "checked: within 0.01 bp"
         }
        }
       },
@@ -18027,7 +18412,7 @@
       "main_boundary_dropped": 0,
       "base_refused_3spreads": 0,
       "base_boundary_dropped": 0,
-      "sec": 0.3
+      "sec": 0.2
      },
      "main": {
       "window": {
@@ -18499,6 +18884,14 @@
         "skip": "hi",
         "n_train": 2345
        },
+       "fit_for_year_starting_at_cut_full": {
+        "q_lo": 348.58681629677045,
+        "q_hi": 478.28395861996614,
+        "E_lo": 0.34235498470533143,
+        "E_hi": -0.13092210672555513,
+        "skip": "hi",
+        "n_train": 2345
+       },
        "skipped_by_year": {
         "2018": 0,
         "2019": 138,
@@ -18506,12 +18899,18 @@
         "2021": 267
        },
        "labels_mode": "fp",
+       "labels_mode_spec": "fp",
+       "refused_alone_in_labels_mode": 0,
+       "max_abs_riskbp_diff_run_vs_labels_mode": 0.0,
        "declared_T_check": {
         "2022": {
          "declared": 478.284,
          "fitted": 478.28395861996614,
          "fitted_from": "fit_for_year_starting_at_cut",
-         "same_to_0.01bp": true
+         "fitted_skip_side": "hi",
+         "abs_diff_bp": 4.13800338492365e-05,
+         "same_to_0.01bp": true,
+         "binding": "checked: within 0.01 bp"
         }
        }
       },
@@ -18521,6 +18920,10 @@
        "orders_in": 1837,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1837
       },
       "base_refused_3spreads": 0,
@@ -18529,6 +18932,10 @@
        "orders_in": 2355,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2355
       },
       "sec": 0.2
@@ -18935,8 +19342,8 @@
         "2019": {
          "q_lo": 339.0566,
          "q_hi": 505.8534,
-         "E_lo": 0.7648,
-         "E_hi": -0.24,
+         "E_lo": 0.7958,
+         "E_hi": -0.233,
          "skip": "hi",
          "n_train": 586,
          "n_test": 509,
@@ -18945,8 +19352,8 @@
         "2020": {
          "q_lo": 366.7953,
          "q_hi": 496.7461,
-         "E_lo": 0.4924,
-         "E_hi": -0.1387,
+         "E_lo": 0.5172,
+         "E_hi": -0.1306,
          "skip": "hi",
          "n_train": 1089,
          "n_test": 612,
@@ -18955,8 +19362,8 @@
         "2021": {
          "q_lo": 336.0096,
          "q_hi": 465.1178,
-         "E_lo": 0.3934,
-         "E_hi": -0.0619,
+         "E_lo": 0.4189,
+         "E_hi": -0.0486,
          "skip": "hi",
          "n_train": 1703,
          "n_test": 646,
@@ -18967,8 +19374,8 @@
         "2019": {
          "q_lo": 339.05660377358396,
          "q_hi": 505.8534470299173,
-         "E_lo": 0.7648278995797666,
-         "E_hi": -0.23997409805667558,
+         "E_lo": 0.7958276276585986,
+         "E_hi": -0.23297035856020337,
          "skip": "hi",
          "n_train": 586,
          "n_test": 509,
@@ -18977,8 +19384,8 @@
         "2020": {
          "q_lo": 366.7952975421773,
          "q_hi": 496.74614912368685,
-         "E_lo": 0.49243679456838474,
-         "E_hi": -0.13873791139987215,
+         "E_lo": 0.5172254396287123,
+         "E_hi": -0.13060143993196474,
          "skip": "hi",
          "n_train": 1089,
          "n_test": 612,
@@ -18987,8 +19394,8 @@
         "2021": {
          "q_lo": 336.0095567497519,
          "q_hi": 465.1178140105435,
-         "E_lo": 0.3934181741858479,
-         "E_hi": -0.06187163493979653,
+         "E_lo": 0.4189072066298652,
+         "E_hi": -0.048552582370478006,
          "skip": "hi",
          "n_train": 1703,
          "n_test": 646,
@@ -18998,8 +19405,16 @@
        "fit_for_year_starting_at_cut": {
         "q_lo": 348.5868,
         "q_hi": 478.284,
-        "E_lo": 0.3187,
-        "E_hi": -0.1449,
+        "E_lo": 0.3424,
+        "E_hi": -0.1309,
+        "skip": "hi",
+        "n_train": 2345
+       },
+       "fit_for_year_starting_at_cut_full": {
+        "q_lo": 348.58681629677045,
+        "q_hi": 478.28395861996614,
+        "E_lo": 0.34235498470533143,
+        "E_hi": -0.13092210672555513,
         "skip": "hi",
         "n_train": 2345
        },
@@ -19009,13 +19424,19 @@
         "2020": 113,
         "2021": 267
        },
-       "labels_mode": "stress",
+       "labels_mode": "fp",
+       "labels_mode_spec": "fp",
+       "refused_alone_in_labels_mode": 0,
+       "max_abs_riskbp_diff_run_vs_labels_mode": 2.2737367544323206e-13,
        "declared_T_check": {
         "2022": {
          "declared": 478.284,
          "fitted": 478.28395861996614,
          "fitted_from": "fit_for_year_starting_at_cut",
-         "same_to_0.01bp": true
+         "fitted_skip_side": "hi",
+         "abs_diff_bp": 4.13800338492365e-05,
+         "same_to_0.01bp": true,
+         "binding": "checked: within 0.01 bp"
         }
        }
       },
@@ -19023,7 +19444,7 @@
       "main_boundary_dropped": 0,
       "base_refused_3spreads": 0,
       "base_boundary_dropped": 0,
-      "sec": 0.3
+      "sec": 0.5
      },
      "main": {
       "window": {
@@ -19374,25 +19795,25 @@
      "k1": {
       "skipped_signals_alone": {
        "n": 518,
-       "exp": -0.1189,
-       "total": -61.58,
-       "win": 0.3398,
-       "avg_win": 0.9818,
-       "avg_loss": -0.6853,
-       "pf": 0.737,
-       "sd": 1.0397,
-       "mean_over_sd": -0.1143
+       "exp": -0.1051,
+       "total": -54.44,
+       "win": 0.3436,
+       "avg_win": 0.9882,
+       "avg_loss": -0.6775,
+       "pf": 0.764,
+       "sd": 1.0424,
+       "mean_over_sd": -0.1008
       },
       "kept_signals_alone": {
        "n": 1807,
-       "exp": 0.196,
-       "total": 354.13,
-       "win": 0.4599,
-       "avg_win": 1.269,
-       "avg_loss": -0.7177,
-       "pf": 1.506,
-       "sd": 1.3204,
-       "mean_over_sd": 0.1484
+       "exp": 0.2159,
+       "total": 390.14,
+       "win": 0.4671,
+       "avg_win": 1.2734,
+       "avg_loss": -0.7109,
+       "pf": 1.57,
+       "sd": 1.3251,
+       "mean_over_sd": 0.1629
       },
       "baseline_trades_removed": 103,
       "R_of_removed": -21.685,
@@ -19427,8 +19848,8 @@
         "2019": {
          "q_lo": 339.0566,
          "q_hi": 505.8534,
-         "E_lo": 0.7648,
-         "E_hi": -0.24,
+         "E_lo": 0.7958,
+         "E_hi": -0.233,
          "skip": "hi",
          "n_train": 586,
          "n_test": 509,
@@ -19437,8 +19858,8 @@
         "2020": {
          "q_lo": 366.7953,
          "q_hi": 496.7461,
-         "E_lo": 0.4924,
-         "E_hi": -0.1387,
+         "E_lo": 0.5172,
+         "E_hi": -0.1306,
          "skip": "hi",
          "n_train": 1089,
          "n_test": 612,
@@ -19447,8 +19868,8 @@
         "2021": {
          "q_lo": 336.0096,
          "q_hi": 465.1178,
-         "E_lo": 0.3934,
-         "E_hi": -0.0619,
+         "E_lo": 0.4189,
+         "E_hi": -0.0486,
          "skip": "hi",
          "n_train": 1703,
          "n_test": 646,
@@ -19459,8 +19880,8 @@
         "2019": {
          "q_lo": 339.05660377358396,
          "q_hi": 505.8534470299173,
-         "E_lo": 0.7648278995797666,
-         "E_hi": -0.23997409805667558,
+         "E_lo": 0.7958276276585986,
+         "E_hi": -0.23297035856020337,
          "skip": "hi",
          "n_train": 586,
          "n_test": 509,
@@ -19469,8 +19890,8 @@
         "2020": {
          "q_lo": 366.7952975421773,
          "q_hi": 496.74614912368685,
-         "E_lo": 0.49243679456838474,
-         "E_hi": -0.13873791139987215,
+         "E_lo": 0.5172254396287123,
+         "E_hi": -0.13060143993196474,
          "skip": "hi",
          "n_train": 1089,
          "n_test": 612,
@@ -19479,8 +19900,8 @@
         "2021": {
          "q_lo": 336.0095567497519,
          "q_hi": 465.1178140105435,
-         "E_lo": 0.3934181741858479,
-         "E_hi": -0.06187163493979653,
+         "E_lo": 0.4189072066298652,
+         "E_hi": -0.048552582370478006,
          "skip": "hi",
          "n_train": 1703,
          "n_test": 646,
@@ -19490,8 +19911,16 @@
        "fit_for_year_starting_at_cut": {
         "q_lo": 348.5868,
         "q_hi": 478.284,
-        "E_lo": 0.3187,
-        "E_hi": -0.1449,
+        "E_lo": 0.3424,
+        "E_hi": -0.1309,
+        "skip": "hi",
+        "n_train": 2345
+       },
+       "fit_for_year_starting_at_cut_full": {
+        "q_lo": 348.58681629677045,
+        "q_hi": 478.28395861996614,
+        "E_lo": 0.34235498470533143,
+        "E_hi": -0.13092210672555513,
         "skip": "hi",
         "n_train": 2345
        },
@@ -19501,13 +19930,19 @@
         "2020": 113,
         "2021": 267
        },
-       "labels_mode": "stress",
+       "labels_mode": "fp",
+       "labels_mode_spec": "fp",
+       "refused_alone_in_labels_mode": 0,
+       "max_abs_riskbp_diff_run_vs_labels_mode": 2.2737367544323206e-13,
        "declared_T_check": {
         "2022": {
          "declared": 478.284,
          "fitted": 478.28395861996614,
          "fitted_from": "fit_for_year_starting_at_cut",
-         "same_to_0.01bp": true
+         "fitted_skip_side": "hi",
+         "abs_diff_bp": 4.13800338492365e-05,
+         "same_to_0.01bp": true,
+         "binding": "checked: within 0.01 bp"
         }
        }
       },
@@ -19517,6 +19952,10 @@
        "orders_in": 1837,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1837
       },
       "base_refused_3spreads": 0,
@@ -19525,9 +19964,13 @@
        "orders_in": 2355,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2355
       },
-      "sec": 0.4
+      "sec": 0.5
      },
      "main": {
       "window": {
@@ -19878,25 +20321,25 @@
      "k1": {
       "skipped_signals_alone": {
        "n": 518,
-       "exp": -0.1189,
-       "total": -61.58,
-       "win": 0.3398,
-       "avg_win": 0.9818,
-       "avg_loss": -0.6853,
-       "pf": 0.737,
-       "sd": 1.0397,
-       "mean_over_sd": -0.1143
+       "exp": -0.1051,
+       "total": -54.44,
+       "win": 0.3436,
+       "avg_win": 0.9882,
+       "avg_loss": -0.6775,
+       "pf": 0.764,
+       "sd": 1.0424,
+       "mean_over_sd": -0.1008
       },
       "kept_signals_alone": {
        "n": 1807,
-       "exp": 0.196,
-       "total": 354.13,
-       "win": 0.4599,
-       "avg_win": 1.269,
-       "avg_loss": -0.7177,
-       "pf": 1.506,
-       "sd": 1.3204,
-       "mean_over_sd": 0.1484
+       "exp": 0.2159,
+       "total": 390.14,
+       "win": 0.4671,
+       "avg_win": 1.2734,
+       "avg_loss": -0.7109,
+       "pf": 1.57,
+       "sd": 1.3251,
+       "mean_over_sd": 0.1629
       },
       "baseline_trades_removed": 105,
       "R_of_removed": -23.164,
@@ -19940,7 +20383,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
-      "sec": 0.4
+      "sec": 0.3
      },
      "main": {
       "window": {
@@ -20139,9 +20582,13 @@
        "orders_in": 643,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 7,
        "orders_out": 643
       },
-      "sec": 0.4
+      "sec": 0.3
      },
      "main": {
       "window": {
@@ -20336,7 +20783,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
-      "sec": 0.5
+      "sec": 0.4
      },
      "main": {
       "window": {
@@ -20535,6 +20982,10 @@
        "orders_in": 643,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 7,
        "orders_out": 643
       },
       "sec": 0.4
@@ -20731,7 +21182,8 @@
     "key": "F1_brk_ridge_filter__ethusd@payoff",
     "rule": "F1_brk_ridge_filter",
     "sym": "ethusd",
-    "convention": "payoff"
+    "convention": "payoff",
+    "refuse": true
    },
    "runs": {
     "fp/lab": {
@@ -20740,6 +21192,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -20924,6 +21377,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -20931,6 +21385,10 @@
        "orders_in": 995,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 995
       },
       "sec": 0.1
@@ -21114,6 +21572,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 1,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -21298,14 +21757,19 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 1,
       "main_payoff_rule_differs": 0,
-      "main_refused_3spreads": 1,
+      "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
       "main_live": {
-       "orders_in": 995,
+       "orders_in": 994,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
-       "orders_out": 995
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
+       "orders_out": 994
       },
       "sec": 0.2
      },
@@ -21492,7 +21956,8 @@
     "convention": "payoff",
     "change": {
      "kind": "payoff",
-     "id": "H2",
+     "id": "F1eth_H2",
+     "variant": "H2",
      "family": "H",
      "j": 2
     },
@@ -21708,6 +22173,10 @@
        "orders_in": 995,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 995
       },
       "sec": 0.1
@@ -22094,6 +22563,10 @@
        "orders_in": 994,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 994
       },
       "sec": 0.2
@@ -52420,6 +52893,387 @@
  },
  "plugins": [],
  "live_one_position": "entry_bar",
+ "live_friday_block": "decision_and_entry",
+ "payoff_reference_vs_sB": {
+  "F1_brk_ridge_filter__ethusd@payoff": {
+   "fp/lab": {
+    "n_payoff_reference": 516,
+    "n_sB": 516,
+    "matched": 516,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 103.017,
+    "R_sB": 103.017,
+    "identical": true,
+    "examples": []
+   },
+   "fp/live": {
+    "n_payoff_reference": 514,
+    "n_sB": 514,
+    "matched": 514,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 96.384,
+    "R_sB": 96.384,
+    "identical": true,
+    "examples": []
+   },
+   "stress/lab": {
+    "n_payoff_reference": 518,
+    "n_sB": 518,
+    "matched": 518,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 85.899,
+    "R_sB": 85.899,
+    "identical": true,
+    "examples": []
+   },
+   "stress/live": {
+    "n_payoff_reference": 517,
+    "n_sB": 517,
+    "matched": 517,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 77.597,
+    "R_sB": 77.597,
+    "identical": true,
+    "examples": []
+   }
+  },
+  "ocm4__us100@payoff": {
+   "fp/lab": {
+    "n_payoff_reference": 492,
+    "n_sB": 492,
+    "matched": 492,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 53.78,
+    "R_sB": 53.78,
+    "identical": true,
+    "examples": []
+   },
+   "fp/live": {
+    "n_payoff_reference": 492,
+    "n_sB": 492,
+    "matched": 492,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 51.605,
+    "R_sB": 51.605,
+    "identical": true,
+    "examples": []
+   },
+   "stress/lab": {
+    "n_payoff_reference": 492,
+    "n_sB": 492,
+    "matched": 492,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 50.8,
+    "R_sB": 50.8,
+    "identical": true,
+    "examples": []
+   },
+   "stress/live": {
+    "n_payoff_reference": 492,
+    "n_sB": 492,
+    "matched": 492,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 48.096,
+    "R_sB": 48.096,
+    "identical": true,
+    "examples": []
+   }
+  },
+  "donch4h_stop__xauusd@payoff": {
+   "fp/lab": {
+    "n_payoff_reference": 207,
+    "n_sB": 207,
+    "matched": 207,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 30.033,
+    "R_sB": 30.033,
+    "identical": true,
+    "examples": []
+   },
+   "fp/live": {
+    "n_payoff_reference": 240,
+    "n_sB": 240,
+    "matched": 240,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 19.185,
+    "R_sB": 19.185,
+    "identical": true,
+    "examples": []
+   },
+   "stress/lab": {
+    "n_payoff_reference": 207,
+    "n_sB": 207,
+    "matched": 207,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 27.311,
+    "R_sB": 27.311,
+    "identical": true,
+    "examples": []
+   },
+   "stress/live": {
+    "n_payoff_reference": 241,
+    "n_sB": 241,
+    "matched": 241,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 16.133,
+    "R_sB": 16.133,
+    "identical": true,
+    "examples": []
+   }
+  },
+  "nq_btc_follow__btcusd@payoff": {
+   "fp/lab": {
+    "n_payoff_reference": 943,
+    "n_sB": 943,
+    "matched": 943,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 55.543,
+    "R_sB": 55.543,
+    "identical": true,
+    "examples": []
+   },
+   "fp/live": {
+    "n_payoff_reference": 949,
+    "n_sB": 949,
+    "matched": 949,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 45.768,
+    "R_sB": 45.768,
+    "identical": true,
+    "examples": []
+   },
+   "stress/lab": {
+    "n_payoff_reference": 943,
+    "n_sB": 943,
+    "matched": 943,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 41.35,
+    "R_sB": 41.35,
+    "identical": true,
+    "examples": []
+   },
+   "stress/live": {
+    "n_payoff_reference": 949,
+    "n_sB": 949,
+    "matched": 949,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 27.064,
+    "R_sB": 27.064,
+    "identical": true,
+    "examples": []
+   }
+  },
+  "noise30__us100@payoff": {
+   "fp/lab": {
+    "n_payoff_reference": 795,
+    "n_sB": 795,
+    "matched": 795,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 85.235,
+    "R_sB": 85.235,
+    "identical": true,
+    "examples": []
+   },
+   "fp/live": {
+    "n_payoff_reference": 794,
+    "n_sB": 794,
+    "matched": 794,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 79.71,
+    "R_sB": 79.71,
+    "identical": true,
+    "examples": []
+   },
+   "stress/lab": {
+    "n_payoff_reference": 795,
+    "n_sB": 795,
+    "matched": 795,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 80.051,
+    "R_sB": 80.051,
+    "identical": true,
+    "examples": []
+   },
+   "stress/live": {
+    "n_payoff_reference": 794,
+    "n_sB": 794,
+    "matched": 794,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 74.246,
+    "R_sB": 74.246,
+    "identical": true,
+    "examples": []
+   }
+  },
+  "brk72_24h_wd__btcusd@payoff": {
+   "fp/lab": {
+    "n_payoff_reference": 549,
+    "n_sB": 549,
+    "matched": 549,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 140.684,
+    "R_sB": 140.684,
+    "identical": true,
+    "examples": []
+   },
+   "fp/live": {
+    "n_payoff_reference": 558,
+    "n_sB": 558,
+    "matched": 558,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 132.239,
+    "R_sB": 132.239,
+    "identical": true,
+    "examples": []
+   },
+   "stress/lab": {
+    "n_payoff_reference": 549,
+    "n_sB": 549,
+    "matched": 549,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 135.516,
+    "R_sB": 135.516,
+    "identical": true,
+    "examples": []
+   },
+   "stress/live": {
+    "n_payoff_reference": 558,
+    "n_sB": 558,
+    "matched": 558,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 127.999,
+    "R_sB": 127.999,
+    "identical": true,
+    "examples": []
+   }
+  },
+  "orb_asia_2d_buf10__xauusd@payoff": {
+   "fp/lab": {
+    "n_payoff_reference": 464,
+    "n_sB": 464,
+    "matched": 464,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 27.059,
+    "R_sB": 27.059,
+    "identical": true,
+    "examples": []
+   },
+   "fp/live": {
+    "n_payoff_reference": 510,
+    "n_sB": 510,
+    "matched": 510,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": -21.762,
+    "R_sB": -21.762,
+    "identical": true,
+    "examples": []
+   },
+   "stress/lab": {
+    "n_payoff_reference": 464,
+    "n_sB": 464,
+    "matched": 464,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 15.11,
+    "R_sB": 15.11,
+    "identical": true,
+    "examples": []
+   },
+   "stress/live": {
+    "n_payoff_reference": 508,
+    "n_sB": 508,
+    "matched": 508,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": -28.389,
+    "R_sB": -28.389,
+    "identical": true,
+    "examples": []
+   }
+  }
+ },
  "portfolio_sleeves": {
   "P0": [
    "ocm4__us100",
@@ -52570,5 +53424,233 @@
    "nq_btc_follow__btcusd"
   ]
  },
- "note": "look_spec.json run at CUT 2022-01-01 on its in-sample windows by the look's own code path: every number is in sample"
+ "verdicts": {
+  "K1": {
+   "declared": true,
+   "kind": "k1_skip",
+   "text": "synthesis_B: K1 is adopted only if, on 2022-2025, the sleeve's expectancy per trade with the skip is higher than without and its total R is not lower, both with FP costs and with costs x1.5, and the skipped signals taken alone earn less on average than the kept ones.",
+   "criteria": [
+    {
+     "criterion": "fp/lab: expectancy per trade with the skip > without",
+     "value": 0.28903347509568705,
+     "reference": 0.20863785562895754,
+     "rule": ">",
+     "pass": true,
+     "n_with": 420,
+     "n_without": 511
+    },
+    {
+     "criterion": "fp/lab: total R with the skip >= without",
+     "value": 121.39405954018856,
+     "reference": 106.6139442263973,
+     "rule": ">=",
+     "pass": true
+    },
+    {
+     "criterion": "stress/lab: expectancy per trade with the skip > without",
+     "value": 0.2648026164899318,
+     "reference": 0.1875303940000555,
+     "rule": ">",
+     "pass": true,
+     "n_with": 422,
+     "n_without": 513
+    },
+    {
+     "criterion": "stress/lab: total R with the skip >= without",
+     "value": 111.74670415875121,
+     "reference": 96.20309212202847,
+     "rule": ">=",
+     "pass": true
+    },
+    {
+     "criterion": "skipped signals taken alone (FP costs): mean R < that of the kept signals",
+     "value": -0.10510033313658998,
+     "reference": 0.2159025187016199,
+     "rule": "<",
+     "pass": true,
+     "n_skipped": 518,
+     "n_kept": 1807,
+     "labels_mode": "fp"
+    }
+   ],
+   "adopted": true,
+   "readings": {}
+  },
+  "K2": {
+   "declared": true,
+   "kind": "new_sleeve",
+   "text": "synthesis_B: each new sleeve is adopted only if, with FP costs, PF >= 1.06, expectancy > 0, every-signal expectancy > 0, total R positive in at least 3 of the 4 years, and expectancy > 0 with costs x1.5; and the weekly mean / sd of R of the ten plus that sleeve is at least that of the ten alone. Read beside it, for the robot as it is (not a criterion of the rule): the same sleeve with entry one minute late and every position closed on Friday at 16:50 New York; if that version has expectancy <= 0, the sleeve waits for a robot that holds it over the weekend.",
+   "criteria": [
+    {
+     "criterion": "fp/lab: profit factor >= 1.06",
+     "value": 1.7879658470805964,
+     "reference": 1.06,
+     "rule": ">=",
+     "pass": true,
+     "n": 344
+    },
+    {
+     "criterion": "fp/lab: expectancy per trade > 0",
+     "value": 0.45194834282149987,
+     "reference": 0.0,
+     "rule": ">",
+     "pass": true
+    },
+    {
+     "criterion": "fp/lab: every-signal expectancy (each signal taken alone) > 0",
+     "value": 0.40215726201518326,
+     "reference": 0.0,
+     "rule": ">",
+     "pass": true
+    },
+    {
+     "criterion": "fp/lab: total R positive in at least 3 of the 4 years",
+     "value": 4,
+     "reference": 3,
+     "rule": ">=",
+     "pass": true,
+     "total_R_by_year": {
+      "2018": 70.9435544021499,
+      "2019": 33.9263363579487,
+      "2020": 32.03589030946816,
+      "2021": 18.564448861029184
+     }
+    },
+    {
+     "criterion": "stress/lab: expectancy per trade > 0 with costs x1.5",
+     "value": 0.4078164366518535,
+     "reference": 0.0,
+     "rule": ">",
+     "pass": true
+    },
+    {
+     "criterion": "fp/lab/sum: weekly mean / sd of R of P0+orb_eth >= that of P0",
+     "value": 0.4371447254618109,
+     "reference": 0.3984028765316807,
+     "rule": ">=",
+     "pass": true
+    }
+   ],
+   "adopted": true,
+   "readings": {
+    "fp/live": {
+     "n": 391,
+     "expectancy": 0.3626681697813707,
+     "total_R": 141.80325438451592
+    },
+    "stress/live": {
+     "n": 391,
+     "expectancy": 0.326314394486491,
+     "total_R": 127.588928244218
+    },
+    "as_the_live_program_would": "not a criterion of the rule: run as the hands would (entry one minute late at market, every position closed on Friday 16:50 New York), FP costs, expectancy +0.3627 R per trade: positive, the robot as it is can carry it"
+   }
+  },
+  "K3": {
+   "declared": true,
+   "kind": "new_sleeve",
+   "text": "synthesis_B: each new sleeve is adopted only if, with FP costs, PF >= 1.06, expectancy > 0, every-signal expectancy > 0, total R positive in at least 3 of the 4 years, and expectancy > 0 with costs x1.5; and the weekly mean / sd of R of the ten plus that sleeve is at least that of the ten alone. Read beside it, for the robot as it is (not a criterion of the rule): the same sleeve with entry one minute late and every position closed on Friday at 16:50 New York; if that version has expectancy <= 0, the sleeve waits for a robot that holds it over the weekend.",
+   "criteria": [
+    {
+     "criterion": "fp/lab: profit factor >= 1.06",
+     "value": 1.8361778911318047,
+     "reference": 1.06,
+     "rule": ">=",
+     "pass": true,
+     "n": 375
+    },
+    {
+     "criterion": "fp/lab: expectancy per trade > 0",
+     "value": 0.5182384440938628,
+     "reference": 0.0,
+     "rule": ">",
+     "pass": true
+    },
+    {
+     "criterion": "fp/lab: every-signal expectancy (each signal taken alone) > 0",
+     "value": 0.4662834289253818,
+     "reference": 0.0,
+     "rule": ">",
+     "pass": true
+    },
+    {
+     "criterion": "fp/lab: total R positive in at least 3 of the 4 years",
+     "value": 4,
+     "reference": 3,
+     "rule": ">=",
+     "pass": true,
+     "total_R_by_year": {
+      "2018": 93.55079336746337,
+      "2019": 68.29600419862132,
+      "2020": 32.09966691058083,
+      "2021": 0.3929520585330646
+     }
+    },
+    {
+     "criterion": "stress/lab: expectancy per trade > 0 with costs x1.5",
+     "value": 0.4963017911665123,
+     "reference": 0.0,
+     "rule": ">",
+     "pass": true
+    },
+    {
+     "criterion": "fp/lab/sum: weekly mean / sd of R of P0+orb_btc >= that of P0",
+     "value": 0.43263089130062443,
+     "reference": 0.3984028765316807,
+     "rule": ">=",
+     "pass": true
+    }
+   ],
+   "adopted": true,
+   "readings": {
+    "fp/live": {
+     "n": 427,
+     "expectancy": 0.3326472558912834,
+     "total_R": 142.04037826557803
+    },
+    "stress/live": {
+     "n": 426,
+     "expectancy": 0.3138120041832842,
+     "total_R": 133.68391378207906
+    },
+    "as_the_live_program_would": "not a criterion of the rule: run as the hands would (entry one minute late at market, every position closed on Friday 16:50 New York), FP costs, expectancy +0.3326 R per trade: positive, the robot as it is can carry it"
+   }
+  },
+  "F1eth_H2": {
+   "declared": false,
+   "adopted": null,
+   "note": "no criterion declared for this change: add one to spec['criteria'] before the declaration (a kind registered with vhi_verdicts.register_criterion)"
+  },
+  "ocm4_T1": {
+   "declared": false,
+   "adopted": null,
+   "note": "no criterion declared for this change: add one to spec['criteria'] before the declaration (a kind registered with vhi_verdicts.register_criterion)"
+  },
+  "donch4h_S0.75r": {
+   "declared": false,
+   "adopted": null,
+   "note": "no criterion declared for this change: add one to spec['criteria'] before the declaration (a kind registered with vhi_verdicts.register_criterion)"
+  },
+  "nq_T1": {
+   "declared": false,
+   "adopted": null,
+   "note": "no criterion declared for this change: add one to spec['criteria'] before the declaration (a kind registered with vhi_verdicts.register_criterion)"
+  },
+  "noise30_S0.25": {
+   "declared": false,
+   "adopted": null,
+   "note": "no criterion declared for this change: add one to spec['criteria'] before the declaration (a kind registered with vhi_verdicts.register_criterion)"
+  },
+  "brk72btc_S0.75r": {
+   "declared": false,
+   "adopted": null,
+   "note": "no criterion declared for this change: add one to spec['criteria'] before the declaration (a kind registered with vhi_verdicts.register_criterion)"
+  },
+  "orbxau_S0.75r": {
+   "declared": false,
+   "adopted": null,
+   "note": "no criterion declared for this change: add one to spec['criteria'] before the declaration (a kind registered with vhi_verdicts.register_criterion)"
+  }
+ },
+ "note": "look_spec.json run at CUT 2022-01-01 on its in-sample windows by the look's own code path, with EVERY available change (its list changes_in_look replaced in memory by all of them; the list as it stands is rehearsed by proof j): every number is in sample"
 }

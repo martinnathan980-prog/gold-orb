@@ -22,6 +22,157 @@
    ]
   ]
  },
+ "changes": {
+  "in_look": [
+   "K1",
+   "K2",
+   "K3",
+   "F1eth_H2",
+   "ocm4_T1",
+   "donch4h_S0.75r",
+   "nq_T1",
+   "noise30_S0.25",
+   "brk72btc_S0.75r",
+   "orbxau_S0.75r"
+  ],
+  "listed_in_spec": true,
+  "available": {
+   "F1eth_H2": {
+    "sleeves": [
+     "F1_brk_ridge_filter__ethusd+H2"
+    ],
+    "stakes": []
+   },
+   "K1": {
+    "sleeves": [
+     "brk72_24h_wd__ethusd+K1"
+    ],
+    "stakes": []
+   },
+   "K2": {
+    "sleeves": [
+     "orb_asia_2d_buf10__ethusd"
+    ],
+    "stakes": []
+   },
+   "K3": {
+    "sleeves": [
+     "orb_asia_2d_buf10__btcusd"
+    ],
+    "stakes": []
+   },
+   "brk72btc_S0.75r": {
+    "sleeves": [
+     "brk72_24h_wd__btcusd+S0.75r"
+    ],
+    "stakes": []
+   },
+   "donch4h_S0.75r": {
+    "sleeves": [
+     "donch4h_stop__xauusd+S0.75r"
+    ],
+    "stakes": []
+   },
+   "noise30_S0.25": {
+    "sleeves": [
+     "noise30__us100+S0.25"
+    ],
+    "stakes": []
+   },
+   "nq_T1": {
+    "sleeves": [
+     "nq_btc_follow__btcusd+T1"
+    ],
+    "stakes": []
+   },
+   "ocm4_T1": {
+    "sleeves": [
+     "ocm4__us100+T1"
+    ],
+    "stakes": []
+   },
+   "orbxau_S0.75r": {
+    "sleeves": [
+     "orb_asia_2d_buf10__xauusd+S0.75r"
+    ],
+    "stakes": []
+   }
+  },
+  "included": {
+   "sleeves": [
+    "ocm4__us100",
+    "noise30__us100",
+    "donch4h_stop__xauusd",
+    "orb_asia_2d_buf10__xauusd",
+    "GOLD_FRI_PM__xauusd",
+    "brk72_24h_wd__btcusd",
+    "brk72_24h_wd__ethusd",
+    "F1_brk_ridge_filter__btcusd",
+    "F1_brk_ridge_filter__ethusd",
+    "nq_btc_follow__btcusd",
+    "brk72_24h_wd__ethusd+K1",
+    "orb_asia_2d_buf10__ethusd",
+    "orb_asia_2d_buf10__btcusd",
+    "F1_brk_ridge_filter__ethusd@payoff",
+    "F1_brk_ridge_filter__ethusd+H2",
+    "ocm4__us100@payoff",
+    "ocm4__us100+T1",
+    "donch4h_stop__xauusd@payoff",
+    "donch4h_stop__xauusd+S0.75r",
+    "nq_btc_follow__btcusd@payoff",
+    "nq_btc_follow__btcusd+T1",
+    "noise30__us100@payoff",
+    "noise30__us100+S0.25",
+    "brk72_24h_wd__btcusd@payoff",
+    "brk72_24h_wd__btcusd+S0.75r",
+    "orb_asia_2d_buf10__xauusd@payoff",
+    "orb_asia_2d_buf10__xauusd+S0.75r"
+   ],
+   "portfolios": [
+    "P0",
+    "P1",
+    "P2",
+    "P0+orb_eth",
+    "P0+orb_btc",
+    "P0|F1eth_H2",
+    "P0|ocm4_T1",
+    "P0|donch4h_S0.75r",
+    "P0|nq_T1",
+    "P0|noise30_S0.25",
+    "P0|brk72btc_S0.75r",
+    "P0|orbxau_S0.75r"
+   ],
+   "comparisons": [
+    "P1_vs_P0",
+    "P2_vs_P0",
+    "P0+orb_eth_vs_P0",
+    "P0+orb_btc_vs_P0",
+    "F1eth_H2_vs_P0",
+    "ocm4_T1_vs_P0",
+    "donch4h_S0.75r_vs_P0",
+    "nq_T1_vs_P0",
+    "noise30_S0.25_vs_P0",
+    "brk72btc_S0.75r_vs_P0",
+    "orbxau_S0.75r_vs_P0"
+   ],
+   "sleeve_comparisons": [
+    "K1_skip_vs_without",
+    "F1eth_H2",
+    "ocm4_T1",
+    "donch4h_S0.75r",
+    "nq_T1",
+    "noise30_S0.25",
+    "brk72btc_S0.75r",
+    "orbxau_S0.75r"
+   ]
+  },
+  "left_out": {
+   "sleeves": [],
+   "portfolios": [],
+   "comparisons": [],
+   "sleeve_comparisons": []
+  }
+ },
  "frames": {
   "us100": {
    "bars": 2169414,
@@ -213,7 +364,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.5
+      "sec": 0.4
      },
      "main": {
       "window": {
@@ -336,9 +487,13 @@
        "orders_in": 869,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 869
       },
-      "sec": 0.4
+      "sec": 0.5
      },
      "main": {
       "window": {
@@ -580,6 +735,10 @@
        "orders_in": 869,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 869
       },
       "sec": 0.5
@@ -834,6 +993,10 @@
        "orders_in": 1431,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1431
       },
       "sec": 0.3
@@ -1078,9 +1241,13 @@
        "orders_in": 1431,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1431
       },
-      "sec": 0.4
+      "sec": 0.3
      },
      "main": {
       "window": {
@@ -1198,7 +1365,8 @@
     "key": "ocm4__us100@payoff",
     "rule": "ocm4",
     "sym": "us100",
-    "convention": "payoff"
+    "convention": "payoff",
+    "refuse": true
    },
    "runs": {
     "fp/lab": {
@@ -1207,6 +1375,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -1327,6 +1496,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -1334,6 +1504,10 @@
        "orders_in": 869,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 869
       },
       "sec": 0.4
@@ -1453,10 +1627,11 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.8
+      "sec": 0.5
      },
      "main": {
       "window": {
@@ -1573,6 +1748,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -1580,6 +1756,10 @@
        "orders_in": 869,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 869
       },
       "sec": 0.5
@@ -1703,7 +1883,8 @@
     "convention": "payoff",
     "change": {
      "kind": "payoff",
-     "id": "T1",
+     "id": "ocm4_T1",
+     "variant": "T1",
      "family": "T",
      "m": 1
     },
@@ -1853,6 +2034,10 @@
        "orders_in": 869,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 704,
        "orders_out": 869
       },
       "sec": 0.4
@@ -1981,7 +2166,7 @@
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.8
+      "sec": 0.7
      },
      "main": {
       "window": {
@@ -2111,6 +2296,10 @@
        "orders_in": 869,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 704,
        "orders_out": 869
       },
       "sec": 0.5
@@ -2233,7 +2422,8 @@
     "key": "noise30__us100@payoff",
     "rule": "noise30",
     "sym": "us100",
-    "convention": "payoff"
+    "convention": "payoff",
+    "refuse": true
    },
    "runs": {
     "fp/lab": {
@@ -2242,10 +2432,11 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.3
+      "sec": 0.4
      },
      "main": {
       "window": {
@@ -2362,6 +2553,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 3,
       "main_boundary_dropped": 0,
@@ -2369,6 +2561,10 @@
        "orders_in": 1431,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1431
       },
       "sec": 0.3
@@ -2488,10 +2684,11 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.4
+      "sec": 0.7
      },
      "main": {
       "window": {
@@ -2608,6 +2805,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 3,
       "main_boundary_dropped": 0,
@@ -2615,9 +2813,13 @@
        "orders_in": 1431,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1431
       },
-      "sec": 0.4
+      "sec": 0.5
      },
      "main": {
       "window": {
@@ -2738,7 +2940,8 @@
     "convention": "payoff",
     "change": {
      "kind": "payoff",
-     "id": "S0.25",
+     "id": "noise30_S0.25",
+     "variant": "S0.25",
      "family": "S",
      "k": 0.25,
      "reentry": "n/a"
@@ -2887,6 +3090,10 @@
        "orders_in": 1431,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1431
       },
       "sec": 0.3
@@ -3013,7 +3220,7 @@
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.8
+      "sec": 0.5
      },
      "main": {
       "window": {
@@ -3141,6 +3348,10 @@
        "orders_in": 1431,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1431
       },
       "sec": 0.5
@@ -3272,7 +3483,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.3
+      "sec": 0.2
      },
      "main": {
       "window": {
@@ -3397,9 +3608,13 @@
        "orders_in": 1475,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 2,
+       "blocked_entry_bar": 2,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 53,
        "orders_out": 1473
       },
-      "sec": 0.3
+      "sec": 0.2
      },
      "main": {
       "window": {
@@ -3520,7 +3735,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.8
+      "sec": 1.4
      },
      "main": {
       "window": {
@@ -3645,9 +3860,13 @@
        "orders_in": 1480,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 1,
+       "blocked_entry_bar": 1,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 53,
        "orders_out": 1479
       },
-      "sec": 0.7
+      "sec": 0.4
      },
      "main": {
       "window": {
@@ -3901,6 +4120,10 @@
        "orders_in": 1619,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 27,
        "orders_out": 1619
       },
       "sec": 0.6
@@ -4022,7 +4245,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.8
+      "sec": 0.7
      },
      "main": {
       "window": {
@@ -4145,9 +4368,13 @@
        "orders_in": 1616,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 27,
        "orders_out": 1616
       },
-      "sec": 1.1
+      "sec": 0.7
      },
      "main": {
       "window": {
@@ -4397,6 +4624,10 @@
        "orders_in": 394,
        "never_filled_in_lab": 26,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 368
       },
       "sec": 0.1
@@ -4516,7 +4747,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.5
+      "sec": 0.2
      },
      "main": {
       "window": {
@@ -4637,9 +4868,13 @@
        "orders_in": 394,
        "never_filled_in_lab": 31,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 363
       },
-      "sec": 0.2
+      "sec": 0.3
      },
      "main": {
       "window": {
@@ -4756,7 +4991,8 @@
     "key": "donch4h_stop__xauusd@payoff",
     "rule": "donch4h_stop",
     "sym": "xauusd",
-    "convention": "payoff"
+    "convention": "payoff",
+    "refuse": true
    },
    "runs": {
     "fp/lab": {
@@ -4765,6 +5001,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -4887,6 +5124,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -4894,9 +5132,13 @@
        "orders_in": 1475,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 2,
+       "blocked_entry_bar": 2,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 53,
        "orders_out": 1473
       },
-      "sec": 0.3
+      "sec": 0.2
      },
      "main": {
       "window": {
@@ -5015,10 +5257,11 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 1.2
+      "sec": 0.7
      },
      "main": {
       "window": {
@@ -5137,6 +5380,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -5144,6 +5388,10 @@
        "orders_in": 1480,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 1,
+       "blocked_entry_bar": 1,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 53,
        "orders_out": 1479
       },
       "sec": 0.5
@@ -5269,7 +5517,8 @@
     "convention": "payoff",
     "change": {
      "kind": "payoff",
-     "id": "S0.75r",
+     "id": "donch4h_S0.75r",
+     "variant": "S0.75r",
      "family": "S",
      "k": 0.75,
      "reentry": true
@@ -5290,7 +5539,7 @@
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.3
+      "sec": 0.2
      },
      "main": {
       "window": {
@@ -5419,9 +5668,13 @@
        "orders_in": 1475,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 2,
+       "blocked_entry_bar": 2,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 53,
        "orders_out": 1473
       },
-      "sec": 0.3
+      "sec": 0.2
      },
      "main": {
       "window": {
@@ -5547,7 +5800,7 @@
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 1.0
+      "sec": 0.5
      },
      "main": {
       "window": {
@@ -5676,6 +5929,10 @@
        "orders_in": 1480,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 1,
+       "blocked_entry_bar": 1,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 53,
        "orders_out": 1479
       },
       "sec": 0.5
@@ -5797,7 +6054,8 @@
     "key": "orb_asia_2d_buf10__xauusd@payoff",
     "rule": "orb_asia_2d_buf10",
     "sym": "xauusd",
-    "convention": "payoff"
+    "convention": "payoff",
+    "refuse": true
    },
    "runs": {
     "fp/lab": {
@@ -5806,6 +6064,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -5926,6 +6185,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -5933,6 +6193,10 @@
        "orders_in": 1619,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 27,
        "orders_out": 1619
       },
       "sec": 0.6
@@ -6052,10 +6316,11 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 1.4
+      "sec": 0.7
      },
      "main": {
       "window": {
@@ -6172,6 +6437,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -6179,9 +6445,13 @@
        "orders_in": 1616,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 27,
        "orders_out": 1616
       },
-      "sec": 1.1
+      "sec": 0.7
      },
      "main": {
       "window": {
@@ -6302,7 +6572,8 @@
     "convention": "payoff",
     "change": {
      "kind": "payoff",
-     "id": "S0.75r",
+     "id": "orbxau_S0.75r",
+     "variant": "S0.75r",
      "family": "S",
      "k": 0.75,
      "reentry": true
@@ -6323,7 +6594,7 @@
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.8
+      "sec": 0.5
      },
      "main": {
       "window": {
@@ -6451,6 +6722,10 @@
        "orders_in": 1619,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 27,
        "orders_out": 1619
       },
       "sec": 0.6
@@ -6577,7 +6852,7 @@
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 1.1
+      "sec": 0.7
      },
      "main": {
       "window": {
@@ -6705,9 +6980,13 @@
        "orders_in": 1616,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 27,
        "orders_out": 1616
       },
-      "sec": 1.1
+      "sec": 0.7
      },
      "main": {
       "window": {
@@ -6959,6 +7238,10 @@
        "orders_in": 2273,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2273
       },
       "sec": 0.1
@@ -7203,6 +7486,10 @@
        "orders_in": 2273,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2273
       },
       "sec": 0.1
@@ -7334,7 +7621,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.2
+      "sec": 0.1
      },
      "main": {
       "window": {
@@ -7457,6 +7744,10 @@
        "orders_in": 986,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 986
       },
       "sec": 0.1
@@ -7578,7 +7869,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.4
+      "sec": 0.2
      },
      "main": {
       "window": {
@@ -7701,6 +7992,10 @@
        "orders_in": 985,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 985
       },
       "sec": 0.2
@@ -7955,9 +8250,13 @@
        "orders_in": 1913,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1913
       },
-      "sec": 1.1
+      "sec": 0.7
      },
      "main": {
       "window": {
@@ -8076,7 +8375,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 1.0
+      "sec": 0.9
      },
      "main": {
       "window": {
@@ -8199,9 +8498,13 @@
        "orders_in": 1913,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1913
       },
-      "sec": 1.1
+      "sec": 0.8
      },
      "main": {
       "window": {
@@ -8469,6 +8772,10 @@
        "orders_in": 620,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 9,
        "orders_out": 620
       },
       "sec": 0.3
@@ -8601,7 +8908,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.3
+      "sec": 0.4
      },
      "main": {
       "window": {
@@ -8735,6 +9042,10 @@
        "orders_in": 619,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 9,
        "orders_out": 619
       },
       "sec": 0.4
@@ -8866,7 +9177,8 @@
     "key": "nq_btc_follow__btcusd@payoff",
     "rule": "nq_btc_follow",
     "sym": "btcusd",
-    "convention": "payoff"
+    "convention": "payoff",
+    "refuse": true
    },
    "runs": {
     "fp/lab": {
@@ -8875,10 +9187,11 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.7
+      "sec": 0.8
      },
      "main": {
       "window": {
@@ -8995,6 +9308,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -9002,6 +9316,10 @@
        "orders_in": 1913,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1913
       },
       "sec": 0.7
@@ -9121,10 +9439,11 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.9
+      "sec": 1.0
      },
      "main": {
       "window": {
@@ -9241,6 +9560,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -9248,9 +9568,13 @@
        "orders_in": 1913,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1913
       },
-      "sec": 0.9
+      "sec": 0.8
      },
      "main": {
       "window": {
@@ -9371,7 +9695,8 @@
     "convention": "payoff",
     "change": {
      "kind": "payoff",
-     "id": "T1",
+     "id": "nq_T1",
+     "variant": "T1",
      "family": "T",
      "m": 1
     },
@@ -9391,7 +9716,7 @@
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.7
+      "sec": 0.8
      },
      "main": {
       "window": {
@@ -9521,9 +9846,13 @@
        "orders_in": 1913,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1913
       },
-      "sec": 0.7
+      "sec": 0.9
      },
      "main": {
       "window": {
@@ -9779,6 +10108,10 @@
        "orders_in": 1913,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1913
       },
       "sec": 0.8
@@ -9901,7 +10234,8 @@
     "key": "brk72_24h_wd__btcusd@payoff",
     "rule": "brk72_24h_wd",
     "sym": "btcusd",
-    "convention": "payoff"
+    "convention": "payoff",
+    "refuse": true
    },
    "runs": {
     "fp/lab": {
@@ -9910,6 +10244,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 1,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
@@ -10030,6 +10365,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 1,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
@@ -10037,6 +10373,10 @@
        "orders_in": 2273,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2273
       },
       "sec": 0.1
@@ -10156,6 +10496,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 1,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
@@ -10276,6 +10617,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 1,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
@@ -10283,6 +10625,10 @@
        "orders_in": 2273,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2273
       },
       "sec": 0.1
@@ -10406,7 +10752,8 @@
     "convention": "payoff",
     "change": {
      "kind": "payoff",
-     "id": "S0.75r",
+     "id": "brk72btc_S0.75r",
+     "variant": "S0.75r",
      "family": "S",
      "k": 0.75,
      "reentry": true
@@ -10555,6 +10902,10 @@
        "orders_in": 2273,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2273
       },
       "sec": 0.1
@@ -10681,7 +11032,7 @@
       "main_payoff_rule_differs": 1,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
-      "sec": 0.2
+      "sec": 0.1
      },
      "main": {
       "window": {
@@ -10809,9 +11160,13 @@
        "orders_in": 2273,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2273
       },
-      "sec": 0.2
+      "sec": 0.1
      },
      "main": {
       "window": {
@@ -11063,6 +11418,10 @@
        "orders_in": 1709,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1709
       },
       "sec": 0.1
@@ -11184,7 +11543,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.3
+      "sec": 0.2
      },
      "main": {
       "window": {
@@ -11307,9 +11666,13 @@
        "orders_in": 1709,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1709
       },
-      "sec": 0.2
+      "sec": 0.1
      },
      "main": {
       "window": {
@@ -11561,6 +11924,10 @@
        "orders_in": 732,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 732
       },
       "sec": 0.1
@@ -11682,7 +12049,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.2
+      "sec": 0.5
      },
      "main": {
       "window": {
@@ -11805,9 +12172,13 @@
        "orders_in": 732,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 732
       },
-      "sec": 0.1
+      "sec": 0.3
      },
      "main": {
       "window": {
@@ -11933,7 +12304,7 @@
      "q": 0.3333333333333333,
      "purge_days": 7,
      "min_train": 100,
-     "labels_mode": "run",
+     "labels_mode": "fp",
      "declared_T": {
       "2021": 465.1178
      }
@@ -12002,18 +12373,32 @@
         "skip": "hi",
         "n_train": 1703
        },
+       "fit_for_year_starting_at_cut_full": {
+        "q_lo": 336.0095567497519,
+        "q_hi": 465.1178140105435,
+        "E_lo": 0.4189072066298652,
+        "E_hi": -0.048552582370478006,
+        "skip": "hi",
+        "n_train": 1703
+       },
        "skipped_by_year": {
         "2018": 0,
         "2019": 138,
         "2020": 113
        },
        "labels_mode": "fp",
+       "labels_mode_spec": "fp",
+       "refused_alone_in_labels_mode": 0,
+       "max_abs_riskbp_diff_run_vs_labels_mode": 0.0,
        "declared_T_check": {
         "2021": {
          "declared": 465.1178,
          "fitted": 465.1178140105435,
          "fitted_from": "fit_for_year_starting_at_cut",
-         "same_to_0.01bp": true
+         "fitted_skip_side": "hi",
+         "abs_diff_bp": 1.4010543509357376e-05,
+         "same_to_0.01bp": true,
+         "binding": "checked: within 0.01 bp"
         }
        }
       },
@@ -12343,18 +12728,32 @@
         "skip": "hi",
         "n_train": 1703
        },
+       "fit_for_year_starting_at_cut_full": {
+        "q_lo": 336.0095567497519,
+        "q_hi": 465.1178140105435,
+        "E_lo": 0.4189072066298652,
+        "E_hi": -0.048552582370478006,
+        "skip": "hi",
+        "n_train": 1703
+       },
        "skipped_by_year": {
         "2018": 0,
         "2019": 138,
         "2020": 113
        },
        "labels_mode": "fp",
+       "labels_mode_spec": "fp",
+       "refused_alone_in_labels_mode": 0,
+       "max_abs_riskbp_diff_run_vs_labels_mode": 0.0,
        "declared_T_check": {
         "2021": {
          "declared": 465.1178,
          "fitted": 465.1178140105435,
          "fitted_from": "fit_for_year_starting_at_cut",
-         "same_to_0.01bp": true
+         "fitted_skip_side": "hi",
+         "abs_diff_bp": 1.4010543509357376e-05,
+         "same_to_0.01bp": true,
+         "binding": "checked: within 0.01 bp"
         }
        }
       },
@@ -12364,6 +12763,10 @@
        "orders_in": 1458,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1458
       },
       "base_refused_3spreads": 0,
@@ -12372,6 +12775,10 @@
        "orders_in": 1709,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1709
       },
       "sec": 0.2
@@ -12648,8 +13055,8 @@
         "2019": {
          "q_lo": 339.0566,
          "q_hi": 505.8534,
-         "E_lo": 0.7648,
-         "E_hi": -0.24,
+         "E_lo": 0.7958,
+         "E_hi": -0.233,
          "skip": "hi",
          "n_train": 586,
          "n_test": 509,
@@ -12658,8 +13065,8 @@
         "2020": {
          "q_lo": 366.7953,
          "q_hi": 496.7461,
-         "E_lo": 0.4924,
-         "E_hi": -0.1387,
+         "E_lo": 0.5172,
+         "E_hi": -0.1306,
          "skip": "hi",
          "n_train": 1089,
          "n_test": 612,
@@ -12670,8 +13077,8 @@
         "2019": {
          "q_lo": 339.05660377358396,
          "q_hi": 505.8534470299173,
-         "E_lo": 0.7648278995797666,
-         "E_hi": -0.23997409805667558,
+         "E_lo": 0.7958276276585986,
+         "E_hi": -0.23297035856020337,
          "skip": "hi",
          "n_train": 586,
          "n_test": 509,
@@ -12680,8 +13087,8 @@
         "2020": {
          "q_lo": 366.7952975421773,
          "q_hi": 496.74614912368685,
-         "E_lo": 0.49243679456838474,
-         "E_hi": -0.13873791139987215,
+         "E_lo": 0.5172254396287123,
+         "E_hi": -0.13060143993196474,
          "skip": "hi",
          "n_train": 1089,
          "n_test": 612,
@@ -12691,8 +13098,16 @@
        "fit_for_year_starting_at_cut": {
         "q_lo": 336.0096,
         "q_hi": 465.1178,
-        "E_lo": 0.3934,
-        "E_hi": -0.0619,
+        "E_lo": 0.4189,
+        "E_hi": -0.0486,
+        "skip": "hi",
+        "n_train": 1703
+       },
+       "fit_for_year_starting_at_cut_full": {
+        "q_lo": 336.0095567497519,
+        "q_hi": 465.1178140105435,
+        "E_lo": 0.4189072066298652,
+        "E_hi": -0.048552582370478006,
         "skip": "hi",
         "n_train": 1703
        },
@@ -12701,13 +13116,19 @@
         "2019": 138,
         "2020": 113
        },
-       "labels_mode": "stress",
+       "labels_mode": "fp",
+       "labels_mode_spec": "fp",
+       "refused_alone_in_labels_mode": 0,
+       "max_abs_riskbp_diff_run_vs_labels_mode": 2.2737367544323206e-13,
        "declared_T_check": {
         "2021": {
          "declared": 465.1178,
          "fitted": 465.1178140105435,
          "fitted_from": "fit_for_year_starting_at_cut",
-         "same_to_0.01bp": true
+         "fitted_skip_side": "hi",
+         "abs_diff_bp": 1.4010543509357376e-05,
+         "same_to_0.01bp": true,
+         "binding": "checked: within 0.01 bp"
         }
        }
       },
@@ -12936,25 +13357,25 @@
      "k1": {
       "skipped_signals_alone": {
        "n": 113,
-       "exp": 0.1304,
-       "total": 14.73,
-       "win": 0.354,
-       "avg_win": 1.4438,
-       "avg_loss": -0.5893,
-       "pf": 1.342,
-       "sd": 1.3961,
-       "mean_over_sd": 0.0934
+       "exp": 0.1386,
+       "total": 15.67,
+       "win": 0.3628,
+       "avg_win": 1.4191,
+       "avg_loss": -0.5905,
+       "pf": 1.368,
+       "sd": 1.398,
+       "mean_over_sd": 0.0992
       },
       "kept_signals_alone": {
        "n": 499,
-       "exp": 0.1536,
-       "total": 76.65,
-       "win": 0.4248,
-       "avg_win": 1.373,
-       "avg_loss": -0.7472,
-       "pf": 1.357,
-       "sd": 1.4088,
-       "mean_over_sd": 0.109
+       "exp": 0.174,
+       "total": 86.82,
+       "win": 0.4309,
+       "avg_win": 1.3792,
+       "avg_loss": -0.7384,
+       "pf": 1.414,
+       "sd": 1.4145,
+       "mean_over_sd": 0.123
       },
       "baseline_trades_removed": 45,
       "R_of_removed": -7.089,
@@ -12989,8 +13410,8 @@
         "2019": {
          "q_lo": 339.0566,
          "q_hi": 505.8534,
-         "E_lo": 0.7648,
-         "E_hi": -0.24,
+         "E_lo": 0.7958,
+         "E_hi": -0.233,
          "skip": "hi",
          "n_train": 586,
          "n_test": 509,
@@ -12999,8 +13420,8 @@
         "2020": {
          "q_lo": 366.7953,
          "q_hi": 496.7461,
-         "E_lo": 0.4924,
-         "E_hi": -0.1387,
+         "E_lo": 0.5172,
+         "E_hi": -0.1306,
          "skip": "hi",
          "n_train": 1089,
          "n_test": 612,
@@ -13011,8 +13432,8 @@
         "2019": {
          "q_lo": 339.05660377358396,
          "q_hi": 505.8534470299173,
-         "E_lo": 0.7648278995797666,
-         "E_hi": -0.23997409805667558,
+         "E_lo": 0.7958276276585986,
+         "E_hi": -0.23297035856020337,
          "skip": "hi",
          "n_train": 586,
          "n_test": 509,
@@ -13021,8 +13442,8 @@
         "2020": {
          "q_lo": 366.7952975421773,
          "q_hi": 496.74614912368685,
-         "E_lo": 0.49243679456838474,
-         "E_hi": -0.13873791139987215,
+         "E_lo": 0.5172254396287123,
+         "E_hi": -0.13060143993196474,
          "skip": "hi",
          "n_train": 1089,
          "n_test": 612,
@@ -13032,8 +13453,16 @@
        "fit_for_year_starting_at_cut": {
         "q_lo": 336.0096,
         "q_hi": 465.1178,
-        "E_lo": 0.3934,
-        "E_hi": -0.0619,
+        "E_lo": 0.4189,
+        "E_hi": -0.0486,
+        "skip": "hi",
+        "n_train": 1703
+       },
+       "fit_for_year_starting_at_cut_full": {
+        "q_lo": 336.0095567497519,
+        "q_hi": 465.1178140105435,
+        "E_lo": 0.4189072066298652,
+        "E_hi": -0.048552582370478006,
         "skip": "hi",
         "n_train": 1703
        },
@@ -13042,13 +13471,19 @@
         "2019": 138,
         "2020": 113
        },
-       "labels_mode": "stress",
+       "labels_mode": "fp",
+       "labels_mode_spec": "fp",
+       "refused_alone_in_labels_mode": 0,
+       "max_abs_riskbp_diff_run_vs_labels_mode": 2.2737367544323206e-13,
        "declared_T_check": {
         "2021": {
          "declared": 465.1178,
          "fitted": 465.1178140105435,
          "fitted_from": "fit_for_year_starting_at_cut",
-         "same_to_0.01bp": true
+         "fitted_skip_side": "hi",
+         "abs_diff_bp": 1.4010543509357376e-05,
+         "same_to_0.01bp": true,
+         "binding": "checked: within 0.01 bp"
         }
        }
       },
@@ -13058,6 +13493,10 @@
        "orders_in": 1458,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1458
       },
       "base_refused_3spreads": 0,
@@ -13066,6 +13505,10 @@
        "orders_in": 1709,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1709
       },
       "sec": 0.3
@@ -13289,25 +13732,25 @@
      "k1": {
       "skipped_signals_alone": {
        "n": 113,
-       "exp": 0.1304,
-       "total": 14.73,
-       "win": 0.354,
-       "avg_win": 1.4438,
-       "avg_loss": -0.5893,
-       "pf": 1.342,
-       "sd": 1.3961,
-       "mean_over_sd": 0.0934
+       "exp": 0.1386,
+       "total": 15.67,
+       "win": 0.3628,
+       "avg_win": 1.4191,
+       "avg_loss": -0.5905,
+       "pf": 1.368,
+       "sd": 1.398,
+       "mean_over_sd": 0.0992
       },
       "kept_signals_alone": {
        "n": 499,
-       "exp": 0.1536,
-       "total": 76.65,
-       "win": 0.4248,
-       "avg_win": 1.373,
-       "avg_loss": -0.7472,
-       "pf": 1.357,
-       "sd": 1.4088,
-       "mean_over_sd": 0.109
+       "exp": 0.174,
+       "total": 86.82,
+       "win": 0.4309,
+       "avg_win": 1.3792,
+       "avg_loss": -0.7384,
+       "pf": 1.414,
+       "sd": 1.4145,
+       "mean_over_sd": 0.123
       },
       "baseline_trades_removed": 45,
       "R_of_removed": -6.097,
@@ -13351,7 +13794,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.3
+      "sec": 0.2
      },
      "main": {
       "window": {
@@ -13485,6 +13928,10 @@
        "orders_in": 475,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 7,
        "orders_out": 475
       },
       "sec": 0.2
@@ -13751,6 +14198,10 @@
        "orders_in": 475,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 7,
        "orders_out": 475
       },
       "sec": 0.3
@@ -13882,7 +14333,8 @@
     "key": "F1_brk_ridge_filter__ethusd@payoff",
     "rule": "F1_brk_ridge_filter",
     "sym": "ethusd",
-    "convention": "payoff"
+    "convention": "payoff",
+    "refuse": true
    },
    "runs": {
     "fp/lab": {
@@ -13891,6 +14343,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -14011,6 +14464,7 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 0,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
@@ -14018,6 +14472,10 @@
        "orders_in": 732,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 732
       },
       "sec": 0.1
@@ -14137,10 +14595,11 @@
       "change": "none",
       "convention": "payoff",
       "exec": "lab",
+      "reference_refused_orders": 1,
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.2
+      "sec": 0.1
      },
      "main": {
       "window": {
@@ -14257,16 +14716,21 @@
       "change": "none",
       "convention": "payoff",
       "exec": "live",
+      "reference_refused_orders": 1,
       "main_payoff_rule_differs": 0,
-      "main_refused_3spreads": 1,
+      "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
       "main_live": {
-       "orders_in": 732,
+       "orders_in": 731,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
-       "orders_out": 732
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
+       "orders_out": 731
       },
-      "sec": 0.2
+      "sec": 0.1
      },
      "main": {
       "window": {
@@ -14387,7 +14851,8 @@
     "convention": "payoff",
     "change": {
      "kind": "payoff",
-     "id": "H2",
+     "id": "F1eth_H2",
+     "variant": "H2",
      "family": "H",
      "j": 2
     },
@@ -14539,6 +15004,10 @@
        "orders_in": 732,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 732
       },
       "sec": 0.1
@@ -14667,7 +15136,7 @@
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.2
+      "sec": 0.1
      },
      "main": {
       "window": {
@@ -14797,6 +15266,10 @@
        "orders_in": 731,
        "never_filled_in_lab": 0,
        "blocked_friday_window": 0,
+       "blocked_entry_bar": 0,
+       "blocked_decision_instant_only": 0,
+       "friday_block": "decision_and_entry",
+       "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 731
       },
       "sec": 0.2
@@ -36771,6 +37244,387 @@
  },
  "plugins": [],
  "live_one_position": "entry_bar",
+ "live_friday_block": "decision_and_entry",
+ "payoff_reference_vs_sB": {
+  "F1_brk_ridge_filter__ethusd@payoff": {
+   "fp/lab": {
+    "n_payoff_reference": 141,
+    "n_sB": 141,
+    "matched": 141,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 23.949,
+    "R_sB": 23.949,
+    "identical": true,
+    "examples": []
+   },
+   "fp/live": {
+    "n_payoff_reference": 139,
+    "n_sB": 139,
+    "matched": 139,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 22.602,
+    "R_sB": 22.602,
+    "identical": true,
+    "examples": []
+   },
+   "stress/lab": {
+    "n_payoff_reference": 141,
+    "n_sB": 141,
+    "matched": 141,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 20.139,
+    "R_sB": 20.139,
+    "identical": true,
+    "examples": []
+   },
+   "stress/live": {
+    "n_payoff_reference": 140,
+    "n_sB": 140,
+    "matched": 140,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 18.282,
+    "R_sB": 18.282,
+    "identical": true,
+    "examples": []
+   }
+  },
+  "ocm4__us100@payoff": {
+   "fp/lab": {
+    "n_payoff_reference": 124,
+    "n_sB": 124,
+    "matched": 124,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 2.702,
+    "R_sB": 2.702,
+    "identical": true,
+    "examples": []
+   },
+   "fp/live": {
+    "n_payoff_reference": 124,
+    "n_sB": 124,
+    "matched": 124,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 8.922,
+    "R_sB": 8.922,
+    "identical": true,
+    "examples": []
+   },
+   "stress/lab": {
+    "n_payoff_reference": 124,
+    "n_sB": 124,
+    "matched": 124,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 2.122,
+    "R_sB": 2.122,
+    "identical": true,
+    "examples": []
+   },
+   "stress/live": {
+    "n_payoff_reference": 124,
+    "n_sB": 124,
+    "matched": 124,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 8.337,
+    "R_sB": 8.337,
+    "identical": true,
+    "examples": []
+   }
+  },
+  "donch4h_stop__xauusd@payoff": {
+   "fp/lab": {
+    "n_payoff_reference": 47,
+    "n_sB": 47,
+    "matched": 47,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 18.821,
+    "R_sB": 18.821,
+    "identical": true,
+    "examples": []
+   },
+   "fp/live": {
+    "n_payoff_reference": 63,
+    "n_sB": 63,
+    "matched": 63,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 12.39,
+    "R_sB": 12.39,
+    "identical": true,
+    "examples": []
+   },
+   "stress/lab": {
+    "n_payoff_reference": 47,
+    "n_sB": 47,
+    "matched": 47,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 18.294,
+    "R_sB": 18.294,
+    "identical": true,
+    "examples": []
+   },
+   "stress/live": {
+    "n_payoff_reference": 63,
+    "n_sB": 63,
+    "matched": 63,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 11.927,
+    "R_sB": 11.927,
+    "identical": true,
+    "examples": []
+   }
+  },
+  "nq_btc_follow__btcusd@payoff": {
+   "fp/lab": {
+    "n_payoff_reference": 232,
+    "n_sB": 232,
+    "matched": 232,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 31.215,
+    "R_sB": 31.215,
+    "identical": true,
+    "examples": []
+   },
+   "fp/live": {
+    "n_payoff_reference": 234,
+    "n_sB": 234,
+    "matched": 234,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 27.199,
+    "R_sB": 27.199,
+    "identical": true,
+    "examples": []
+   },
+   "stress/lab": {
+    "n_payoff_reference": 232,
+    "n_sB": 232,
+    "matched": 232,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 26.767,
+    "R_sB": 26.767,
+    "identical": true,
+    "examples": []
+   },
+   "stress/live": {
+    "n_payoff_reference": 234,
+    "n_sB": 234,
+    "matched": 234,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 19.852,
+    "R_sB": 19.852,
+    "identical": true,
+    "examples": []
+   }
+  },
+  "noise30__us100@payoff": {
+   "fp/lab": {
+    "n_payoff_reference": 206,
+    "n_sB": 206,
+    "matched": 206,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 21.009,
+    "R_sB": 21.009,
+    "identical": true,
+    "examples": []
+   },
+   "fp/live": {
+    "n_payoff_reference": 205,
+    "n_sB": 205,
+    "matched": 205,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 21.501,
+    "R_sB": 21.501,
+    "identical": true,
+    "examples": []
+   },
+   "stress/lab": {
+    "n_payoff_reference": 206,
+    "n_sB": 206,
+    "matched": 206,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 19.949,
+    "R_sB": 19.949,
+    "identical": true,
+    "examples": []
+   },
+   "stress/live": {
+    "n_payoff_reference": 205,
+    "n_sB": 205,
+    "matched": 205,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 20.357,
+    "R_sB": 20.357,
+    "identical": true,
+    "examples": []
+   }
+  },
+  "brk72_24h_wd__btcusd@payoff": {
+   "fp/lab": {
+    "n_payoff_reference": 134,
+    "n_sB": 134,
+    "matched": 134,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 49.053,
+    "R_sB": 49.053,
+    "identical": true,
+    "examples": []
+   },
+   "fp/live": {
+    "n_payoff_reference": 137,
+    "n_sB": 137,
+    "matched": 137,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 45.11,
+    "R_sB": 45.11,
+    "identical": true,
+    "examples": []
+   },
+   "stress/lab": {
+    "n_payoff_reference": 134,
+    "n_sB": 134,
+    "matched": 134,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 47.978,
+    "R_sB": 47.978,
+    "identical": true,
+    "examples": []
+   },
+   "stress/live": {
+    "n_payoff_reference": 137,
+    "n_sB": 137,
+    "matched": 137,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 44.017,
+    "R_sB": 44.017,
+    "identical": true,
+    "examples": []
+   }
+  },
+  "orb_asia_2d_buf10__xauusd@payoff": {
+   "fp/lab": {
+    "n_payoff_reference": 109,
+    "n_sB": 109,
+    "matched": 109,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 38.42,
+    "R_sB": 38.42,
+    "identical": true,
+    "examples": []
+   },
+   "fp/live": {
+    "n_payoff_reference": 120,
+    "n_sB": 120,
+    "matched": 120,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 31.128,
+    "R_sB": 31.128,
+    "identical": true,
+    "examples": []
+   },
+   "stress/lab": {
+    "n_payoff_reference": 109,
+    "n_sB": 109,
+    "matched": 109,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 35.539,
+    "R_sB": 35.539,
+    "identical": true,
+    "examples": []
+   },
+   "stress/live": {
+    "n_payoff_reference": 119,
+    "n_sB": 119,
+    "matched": 119,
+    "only_in_payoff_reference": 0,
+    "only_in_sB": 0,
+    "matched_differing": 0,
+    "max_abs_dR_matched": 0.0,
+    "R_payoff_reference": 30.245,
+    "R_sB": 30.245,
+    "identical": true,
+    "examples": []
+   }
+  }
+ },
  "portfolio_sleeves": {
   "P0": [
    "ocm4__us100",
@@ -36921,142 +37775,466 @@
    "nq_btc_follow__btcusd"
   ]
  },
+ "verdicts": {
+  "K1": {
+   "declared": true,
+   "kind": "k1_skip",
+   "text": "synthesis_B: K1 is adopted only if, on 2022-2025, the sleeve's expectancy per trade with the skip is higher than without and its total R is not lower, both with FP costs and with costs x1.5, and the skipped signals taken alone earn less on average than the kept ones.",
+   "criteria": [
+    {
+     "criterion": "fp/lab: expectancy per trade with the skip > without",
+     "value": 0.2983002150501584,
+     "reference": 0.2784983248236812,
+     "rule": ">",
+     "pass": true,
+     "n_with": 116,
+     "n_without": 130
+    },
+    {
+     "criterion": "fp/lab: total R with the skip >= without",
+     "value": 34.60282494581838,
+     "reference": 36.20478222707855,
+     "rule": ">=",
+     "pass": false
+    },
+    {
+     "criterion": "stress/lab: expectancy per trade with the skip > without",
+     "value": 0.25725238033252795,
+     "reference": 0.24114640662202658,
+     "rule": ">",
+     "pass": true,
+     "n_with": 118,
+     "n_without": 132
+    },
+    {
+     "criterion": "stress/lab: total R with the skip >= without",
+     "value": 30.355780879238296,
+     "reference": 31.831325674107507,
+     "rule": ">=",
+     "pass": false
+    },
+    {
+     "criterion": "skipped signals taken alone (FP costs): mean R < that of the kept signals",
+     "value": 0.13864468990076265,
+     "reference": 0.1739970285170851,
+     "rule": "<",
+     "pass": true,
+     "n_skipped": 113,
+     "n_kept": 499,
+     "labels_mode": "fp"
+    }
+   ],
+   "adopted": false,
+   "readings": {}
+  },
+  "K2": {
+   "declared": true,
+   "kind": "new_sleeve",
+   "text": "synthesis_B: each new sleeve is adopted only if, with FP costs, PF >= 1.06, expectancy > 0, every-signal expectancy > 0, total R positive in at least 3 of the 4 years, and expectancy > 0 with costs x1.5; and the weekly mean / sd of R of the ten plus that sleeve is at least that of the ten alone. Read beside it, for the robot as it is (not a criterion of the rule): the same sleeve with entry one minute late and every position closed on Friday at 16:50 New York; if that version has expectancy <= 0, the sleeve waits for a robot that holds it over the weekend.",
+   "criteria": [
+    {
+     "criterion": "fp/lab: profit factor >= 1.06",
+     "value": 1.5215443704418605,
+     "reference": 1.06,
+     "rule": ">=",
+     "pass": true,
+     "n": 97
+    },
+    {
+     "criterion": "fp/lab: expectancy per trade > 0",
+     "value": 0.3302669104068882,
+     "reference": 0.0,
+     "rule": ">",
+     "pass": true
+    },
+    {
+     "criterion": "fp/lab: every-signal expectancy (each signal taken alone) > 0",
+     "value": 0.23177211203741557,
+     "reference": 0.0,
+     "rule": ">",
+     "pass": true
+    },
+    {
+     "criterion": "fp/lab: total R positive in at least 3 of the 1 years",
+     "value": 1,
+     "reference": 3,
+     "rule": ">=",
+     "pass": false,
+     "total_R_by_year": {
+      "2020": 32.03589030946816
+     }
+    },
+    {
+     "criterion": "stress/lab: expectancy per trade > 0 with costs x1.5",
+     "value": 0.28844296839670897,
+     "reference": 0.0,
+     "rule": ">",
+     "pass": true
+    },
+    {
+     "criterion": "fp/lab/sum: weekly mean / sd of R of P0+orb_eth >= that of P0",
+     "value": 0.5154931143433628,
+     "reference": 0.5140010008360072,
+     "rule": ">=",
+     "pass": true
+    }
+   ],
+   "adopted": false,
+   "readings": {
+    "fp/live": {
+     "n": 109,
+     "expectancy": 0.12429415259592923,
+     "total_R": 13.548062632956286
+    },
+    "stress/live": {
+     "n": 109,
+     "expectancy": 0.09517709427239843,
+     "total_R": 10.374303275691428
+    },
+    "as_the_live_program_would": "not a criterion of the rule: run as the hands would (entry one minute late at market, every position closed on Friday 16:50 New York), FP costs, expectancy +0.1243 R per trade: positive, the robot as it is can carry it"
+   }
+  },
+  "K3": {
+   "declared": true,
+   "kind": "new_sleeve",
+   "text": "synthesis_B: each new sleeve is adopted only if, with FP costs, PF >= 1.06, expectancy > 0, every-signal expectancy > 0, total R positive in at least 3 of the 4 years, and expectancy > 0 with costs x1.5; and the weekly mean / sd of R of the ten plus that sleeve is at least that of the ten alone. Read beside it, for the robot as it is (not a criterion of the rule): the same sleeve with entry one minute late and every position closed on Friday at 16:50 New York; if that version has expectancy <= 0, the sleeve waits for a robot that holds it over the weekend.",
+   "criteria": [
+    {
+     "criterion": "fp/lab: profit factor >= 1.06",
+     "value": 1.4770069208260466,
+     "reference": 1.06,
+     "rule": ">=",
+     "pass": true,
+     "n": 101
+    },
+    {
+     "criterion": "fp/lab: expectancy per trade > 0",
+     "value": 0.31781848426317655,
+     "reference": 0.0,
+     "rule": ">",
+     "pass": true
+    },
+    {
+     "criterion": "fp/lab: every-signal expectancy (each signal taken alone) > 0",
+     "value": 0.23894196284881758,
+     "reference": 0.0,
+     "rule": ">",
+     "pass": true
+    },
+    {
+     "criterion": "fp/lab: total R positive in at least 3 of the 1 years",
+     "value": 1,
+     "reference": 3,
+     "rule": ">=",
+     "pass": false,
+     "total_R_by_year": {
+      "2020": 32.09966691058083
+     }
+    },
+    {
+     "criterion": "stress/lab: expectancy per trade > 0 with costs x1.5",
+     "value": 0.29443030682408655,
+     "reference": 0.0,
+     "rule": ">",
+     "pass": true
+    },
+    {
+     "criterion": "fp/lab/sum: weekly mean / sd of R of P0+orb_btc >= that of P0",
+     "value": 0.5450958908490197,
+     "reference": 0.5140010008360072,
+     "rule": ">=",
+     "pass": true
+    }
+   ],
+   "adopted": false,
+   "readings": {
+    "fp/live": {
+     "n": 113,
+     "expectancy": 0.16141923050717727,
+     "total_R": 18.24037304731103
+    },
+    "stress/live": {
+     "n": 113,
+     "expectancy": 0.1357311978884465,
+     "total_R": 15.337625361394455
+    },
+    "as_the_live_program_would": "not a criterion of the rule: run as the hands would (entry one minute late at market, every position closed on Friday 16:50 New York), FP costs, expectancy +0.1614 R per trade: positive, the robot as it is can carry it"
+   }
+  },
+  "F1eth_H2": {
+   "declared": false,
+   "adopted": null,
+   "note": "no criterion declared for this change: add one to spec['criteria'] before the declaration (a kind registered with vhi_verdicts.register_criterion)"
+  },
+  "ocm4_T1": {
+   "declared": false,
+   "adopted": null,
+   "note": "no criterion declared for this change: add one to spec['criteria'] before the declaration (a kind registered with vhi_verdicts.register_criterion)"
+  },
+  "donch4h_S0.75r": {
+   "declared": false,
+   "adopted": null,
+   "note": "no criterion declared for this change: add one to spec['criteria'] before the declaration (a kind registered with vhi_verdicts.register_criterion)"
+  },
+  "nq_T1": {
+   "declared": false,
+   "adopted": null,
+   "note": "no criterion declared for this change: add one to spec['criteria'] before the declaration (a kind registered with vhi_verdicts.register_criterion)"
+  },
+  "noise30_S0.25": {
+   "declared": false,
+   "adopted": null,
+   "note": "no criterion declared for this change: add one to spec['criteria'] before the declaration (a kind registered with vhi_verdicts.register_criterion)"
+  },
+  "brk72btc_S0.75r": {
+   "declared": false,
+   "adopted": null,
+   "note": "no criterion declared for this change: add one to spec['criteria'] before the declaration (a kind registered with vhi_verdicts.register_criterion)"
+  },
+  "orbxau_S0.75r": {
+   "declared": false,
+   "adopted": null,
+   "note": "no criterion declared for this change: add one to spec['criteria'] before the declaration (a kind registered with vhi_verdicts.register_criterion)"
+  }
+ },
  "meta": {
   "cut": "2021-01-01 00:00:00+00:00",
   "is_look": false,
   "spec_path": "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/pseudo_look_cut2021_spec.json",
-  "spec_sha256": "8b7545bc464de0c15bf8aa3abcaacfc638ac1efc5c85c54a5452b25bfe856085",
-  "label": "look:pseudo_look_cut2021:8b7545bc464d",
+  "spec_sha256": "eb3b8c32372e9c2531eb89545ff4e93b9f6e8e1f95954914b8fb280b46581931",
+  "label": "look:pseudo_look_cut2021:eb3b8c32372e",
+  "second_access": null,
+  "marker": null,
   "declared_file": null,
   "declared_sha256": null,
   "declared_text_quotes_spec_sha256": null,
-  "seconds": 59.6,
+  "declaration_check": null,
+  "seconds": 54.6,
   "reads": [
    {
+    "path": "goldlab/sim.py",
+    "kind": "open",
+    "filters": "None",
+    "bound": null
+   },
+   {
+    "path": "r2/fp_costs.json",
+    "kind": "open",
+    "filters": "None",
+    "bound": null
+   },
+   {
     "path": "data/fp/us100_m1.parquet",
-    "kind": "parquet",
-    "filters": "[('ts', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('ts', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "tracks/trend/strategy.py",
+    "kind": "open",
+    "filters": "None",
+    "bound": null
+   },
+   {
+    "path": "tracks/orb/strategy.py",
+    "kind": "open",
+    "filters": "None",
+    "bound": null
    },
    {
     "path": "results/r2/recalc/trades/ocm4__us100.parquet",
-    "kind": "parquet",
-    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
    },
    {
     "path": "results/r2/recalc/trades/ocm4__us100.parquet",
-    "kind": "parquet",
-    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "r2/tracks/autopsy/payoff/common.py",
+    "kind": "open",
+    "filters": "None",
+    "bound": null
    },
    {
     "path": "results/r2/recalc/trades/noise30__us100.parquet",
-    "kind": "parquet",
-    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
    },
    {
     "path": "results/r2/recalc/trades/noise30__us100.parquet",
-    "kind": "parquet",
-    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
    },
    {
     "path": "data/fp/xauusd_m1.parquet",
-    "kind": "parquet",
-    "filters": "[('ts', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('ts', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
    },
    {
     "path": "results/r2/recalc/trades/donch4h_stop__xauusd.parquet",
-    "kind": "parquet",
-    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
    },
    {
     "path": "results/r2/recalc/trades/donch4h_stop__xauusd.parquet",
-    "kind": "parquet",
-    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
    },
    {
     "path": "results/r2/recalc/trades/orb_asia_2d_buf10__xauusd.parquet",
-    "kind": "parquet",
-    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
    },
    {
     "path": "results/r2/recalc/trades/orb_asia_2d_buf10__xauusd.parquet",
-    "kind": "parquet",
-    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
    },
    {
     "path": "results/r2/recalc/trades/GOLD_FRI_PM__xauusd.parquet",
-    "kind": "parquet",
-    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
    },
    {
     "path": "results/r2/recalc/trades/GOLD_FRI_PM__xauusd.parquet",
-    "kind": "parquet",
-    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
    },
    {
     "path": "data/fp/btcusd_m1.parquet",
-    "kind": "parquet",
-    "filters": "[('ts', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('ts', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
    },
    {
     "path": "results/r2/recalc/trades/brk72_24h_wd__btcusd.parquet",
-    "kind": "parquet",
-    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
    },
    {
     "path": "results/r2/recalc/trades/brk72_24h_wd__btcusd.parquet",
-    "kind": "parquet",
-    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
+   },
+   {
+    "path": "r2/tracks/ml/models/B1_ridge_full.json",
+    "kind": "open",
+    "filters": "None",
+    "bound": null
    },
    {
     "path": "results/r2/recalc/trades/F1_brk_ridge_filter__btcusd.parquet",
-    "kind": "parquet",
-    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
    },
    {
     "path": "results/r2/recalc/trades/F1_brk_ridge_filter__btcusd.parquet",
-    "kind": "parquet",
-    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
    },
    {
     "path": "results/r2/recalc/trades/nq_btc_follow__btcusd.parquet",
-    "kind": "parquet",
-    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
    },
    {
     "path": "results/r2/recalc/trades/nq_btc_follow__btcusd.parquet",
-    "kind": "parquet",
-    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
    },
    {
     "path": "data/fp/ethusd_m1.parquet",
-    "kind": "parquet",
-    "filters": "[('ts', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('ts', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
    },
    {
     "path": "results/r2/recalc/trades/brk72_24h_wd__ethusd.parquet",
-    "kind": "parquet",
-    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
    },
    {
     "path": "results/r2/recalc/trades/brk72_24h_wd__ethusd.parquet",
-    "kind": "parquet",
-    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
    },
    {
     "path": "results/r2/recalc/trades/F1_brk_ridge_filter__ethusd.parquet",
-    "kind": "parquet",
-    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
    },
    {
     "path": "results/r2/recalc/trades/F1_brk_ridge_filter__ethusd.parquet",
-    "kind": "parquet",
-    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]"
+    "kind": "pandas.read_parquet",
+    "filters": "[('entry_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2021-01-01 00:00:00+0000', tz='UTC'))]",
+    "bound": "2021-01-01 00:00:00+00:00"
    }
   ],
   "spec": {
    "name": "pseudo_look_cut2021",
-   "_status": "TEMPLATE written 2026-11-12 before any 2022+ read. The lead edits it (which changes enter, stakes of Addendum I), declares it in the protocol, then runs look.py ONCE. proofs.py rehearses this same file at CUT 2022-01-01 on the in-sample windows.",
-   "_how_to_add_a_change": "add a sleeve {key, rule, sym, convention, change} (change kinds: k1_riskbp, payoff, new, or one registered with vhi_sleeves.register_change), put its key in a portfolio, add a comparison. Stakes: portfolios[P].stakes[<sleeve key>] = a stake spec of vhi_stakes.from_spec (const, sleeve_year, trade_table, wf_terciles, python).",
+   "_status": "TEMPLATE written 2026-11-12 before any 2022+ read; revised the same day after the harness review (fixes F1-F7, F10). The lead edits 'changes_in_look' (and, for a change other than K1 / K2 / K3, its 'criteria'), then declares the look in the protocol by quoting the string autopsy_HI_look and the full sha256 of THIS file after its last edit, then runs look.py ONCE. proofs.py rehearses this file at CUT 2022-01-01 on the in-sample windows (every available change, and the list as it stands through look.py).",
+   "changes_in_look": [
+    "K1",
+    "K2",
+    "K3",
+    "F1eth_H2",
+    "ocm4_T1",
+    "donch4h_S0.75r",
+    "nq_T1",
+    "noise30_S0.25",
+    "brk72btc_S0.75r",
+    "orbxau_S0.75r"
+   ],
+   "_changes_in_look": "THE LIST THE LEAD EDITS BEFORE THE DECLARATION. Only the changes named here enter the look; everything else stays available in this file. Mechanically (vhi_run.select_changes): a sleeve with a change enters iff its id is listed; a '<sleeve>@payoff' reference enters iff one of its variants does; the ten unchanged sleeves always enter; a portfolio enters iff all its sleeves (and the ids of its stake rules) do; a comparison iff both its portfolios. The default list is K1, K2, K3 only: no payoff variant, no stake rule. A stake rule of Addendum I enters only as a portfolio stake spec carrying an 'id' listed here. An id that is not available is refused.",
+   "available_changes": {
+    "K1": "synthesis_B: brk72_24h_wd on ethusd, a signal skipped when riskbp = 1e4 x stop_dist / P >= T(Y), T refitted every 1 January (T(2022) = 478.284 bp, binding)",
+    "K2": "synthesis_B: orb_asia_2d_buf10 (frozen gold rule) as a new sleeve on ethusd",
+    "K3": "synthesis_B: orb_asia_2d_buf10 (frozen gold rule) as a new sleeve on btcusd",
+    "F1eth_H2": "payoff variant H2 of F1_brk_ridge_filter ethusd (kept by synthesis_A, declared.json 15:12)",
+    "ocm4_T1": "payoff variant T1 of ocm4 us100 (kept by synthesis_A)",
+    "donch4h_S0.75r": "payoff variant S0.75r of donch4h_stop xauusd (kept by synthesis_A)",
+    "brk72btc_S0.75r": "payoff variant S0.75r of brk72_24h_wd btcusd (kept by synthesis_A)",
+    "orbxau_S0.75r": "payoff variant S0.75r of orb_asia_2d_buf10 xauusd (kept by synthesis_A)",
+    "noise30_S0.25": "payoff variant S0.25 of noise30 us100 (REFUTED by synthesis_A: rehearsal only, not to be listed)",
+    "nq_T1": "payoff variant T1 of nq_btc_follow btcusd (REFUTED by synthesis_A: rehearsal only, not to be listed)"
+   },
+   "notes": {
+    "declaration": "look.py runs a CUT after 2022-01-01 only when LOOK_DECLARED names the protocol addendum whose text contains the string autopsy_HI_look and the full sha256 (64 hexadecimal characters) of this file, the exact bytes that run: sha256sum lab/r2/tracks/validation_hi/look_spec.json after its last edit. Any edit of this file, the list of changes included, changes that sha256. The command: LOOK_DECLARED=<addendum> NUMBA_CACHE_DIR=/tmp/numba_validation_hi PYTHONDONTWRITEBYTECODE=1 python3 lab/r2/tracks/validation_hi/look.py --spec lab/r2/tracks/validation_hi/look_spec.json --cut 2026-01-01.",
+    "run_once": "The look is run once. look.py refuses it when results/val_access.log already holds a line with track autopsy_HI_look or a '<stem>.started' marker exists in results/r2/validation_hi/look/, unless --second-access '<reason>' is given; the reason is then written into the access label and the output gets the suffix __access<N>. --out is refused for a look: the output is results/r2/validation_hi/look/autopsy_HI_look__cut2026-01-01.json (+ __trades.parquet). The access line is appended, then the '.started' marker written, before anything is read.",
+    "changes": "The changes judged are the list changes_in_look (default: K1, K2, K3). P0 = the ten unchanged sleeves; P1 = P0 with K1; P2 = P0 with K1, K2 and K3; P0+orb_eth = P0 with K2; P0+orb_btc = P0 with K3. Nothing is re-tuned: rules and parameters are those of r2/recalc.py::sleeves() (orb_asia_2d_buf10 = FINALISTS['orb_asia_2d_buf10'] of lab/tracks/orb/strategy.py).",
+    "k1_labels": "K1's walk-forward labels are every signal taken alone with FP costs, in both cost modes (labels_mode 'fp': synthesis_B's declaration, 'every signal taken alone with FP costs'). The thresholds are fitted on that FP table (signals decided before 1 January Y minus 7 days, usable = filled, not refused, not still open at the frame end; terciles, q = 1/3; the worse side skipped only if min(E_lo, E_hi) < 0; at least 100 training signals; history from 31 January of Y-1). In the x1.5 run the skip is applied with each signal's own riskbp of that run and the orders refused alone (stop under 3 spreads) are those of x1.5. In sample this changes only E_lo / E_hi of the x1.5 folds: same folds, same T(2022) = 478.284 bp, same x1.5 chain (proof b).",
+    "k1_T2022": "T(2022) = 478.284 bp is binding: at CUT 2026 the walk-forward's 2022 fold (fitted on the signals decided before 2021-12-25) must be within 0.01 bp of it, in each cost mode, otherwise the run raises before any result is written (T(2022) = 478.28 bp of synthesis_B's text is within that tolerance). T(2023), T(2024), T(2025) are refitted on each 1 January by the same procedure.",
+    "live": "'As the live program would' (execution 'live'): every order that fills under the lab rules is entered one minute late at market (the open of the bar after its lab fill bar, ask / bid x (1 +/- market slippage)); an absolute stop stays at its price, a stop distance stays a distance from the new fill; time exits, trailing and break-even distances unchanged. One position per sleeve, 'entry_bar' (the synthesis_B verifiers' way, quoted in synthesis_B: 'run as the current hands would'): the chain is re-simulated with the live exits and the one-position test is made at the delayed entry bar. Friday close: every position still open is closed at market at the open of the first bar starting at or after Friday 16:50 New York (the hands' InpFridayClose = 23:50 server) of the first Friday on or after its entry's New-York date; a us100 position still open on Friday 16:50 New York (us100 is already shut then, about 16:15 New York) is closed at the next reopen, at the open of its first bar. Friday block ('decision_and_entry'): a signal is not taken when its decision instant (the close of its lab fill bar) or its delayed entry bar falls at or after Friday 16:50 New York and before the Sunday 17:00 New York reopen. The broker's 3-spread refusal is applied at the live fill bar with that bar's open spread; a refused order never blocks the sleeve. The K1 skip is decided exactly as in lab.",
+    "equal_weekly_swing": "In every comparison the variant's stakes are scaled by k = weekly sd of the reference / weekly sd of the variant, both measured on the judged window (the look: 2022-01-01 .. 2025-12-31, in the row's cost mode, execution and account): the scale factors are recomputed on the window, not fixed in sample; every amount of 'var_equal_swing' is at that scale ('scale_k' is reported).",
+    "accounts": "Two accounts, both reported. 'sum': every trade of every sleeve's own one-position chain at 1 R (times its stake; no position cap, no compounding): synthesis_B's portfolio metrics, the account the criteria are judged on. 'capped': the same trades offered in entry order (ties within a minute in ASCII order of '<rule>_<sym>') to an account that holds at most 6 positions and 2 per market (r2/tracks/stake/account.py limits); a position blocks a new entry until its exit time is strictly before that entry; a refused trade leaves its sleeve's chain unchanged; run over the whole frame (state warm at the window start), judged on the window.",
+    "weeks": "Server weeks Monday to Sunday, server time = New York + 7 h, a trade booked in the week (day) of its exit time. The weekly series runs from the week of 2022-01-01 to the week of 2025-12-31 23:59, every week counted (a week without an exit is 0), so the first week (27 Dec 2021 - 2 Jan 2022) is 0; sd with ddof 1; weekly Sharpe = mean / sd x sqrt(52). By year: the trades entered in the year over the weeks whose Thursday falls in it, the window's first and last weeks clipped into 2022 and 2025.",
+    "costs_and_conventions": "Costs: FP (r2.costs(sym), the FP frames as they are) and x1.5 (spread and slippage x1.5 around the mid, orders rebuilt on the widened quotes). Convention 'sB' (the ten, K1, K2, K3): an order whose stop is closer than 3 spreads of its fill bar is not taken (iterative re-simulation of the one-position chain); trades still open at the last bar of the frame are dropped. Frames from their start to the last bar before the CUT (warm-up from in-sample bars); trades entered 2022-01-01 .. 2025-12-31 are judged; K2 and K3 are held through weekends as specified (lab).",
+    "payoff_references": "'<sleeve>@payoff' (only when a payoff variant is listed): the payoff lens's convention with the broker refusal before the simulation, as its variants get it (an order whose stop at its alone fill is under 3 spreads of the fill bar is removed); res['payoff_reference_vs_sB'] reports every trade difference from the sB sleeve inside the window (in sample: none, lab, FP and x1.5).",
+    "criteria": "res['verdicts'] computes the declared criteria mechanically from the trades (unrounded): K1 (synthesis_B): expectancy per trade with the skip higher than without and total R not lower, FP and x1.5 (lab), and the skipped signals taken alone (FP costs) earning less on average than the kept ones. K2, K3 (synthesis_B): with FP costs PF >= 1.06, expectancy > 0, every-signal expectancy > 0, total R positive in at least 3 of the 4 years 2022-2025, expectancy > 0 with costs x1.5, and weekly mean / sd of R of the ten plus that sleeve (P0+orb_eth, P0+orb_btc; plain sum, FP, lab) at least that of the ten alone (P0); plus the reading, not a criterion, 'as the live program would' (FP, live): expectancy <= 0 means the sleeve waits for a robot that holds it over the weekend. No criterion is declared for the payoff variants or any stake rule: one listed in changes_in_look gets 'declared: false' until the lead adds its criterion under 'criteria' (a kind registered with vhi_verdicts.register_criterion)."
+   },
+   "_how_to_add_a_change": "add a sleeve {key, rule, sym, convention, change {kind, id, ...}} (change kinds: k1_riskbp, payoff, new, or one registered with vhi_sleeves.register_change), put its key in a portfolio, add a comparison and, before the declaration, its id in changes_in_look and its criterion under criteria. Stakes: portfolios[P].stakes[<sleeve key>] = a stake spec of vhi_stakes.from_spec (const, sleeve_year, trade_table, wf_terciles, python) carrying an 'id'.",
    "windows": {
     "in_sample": {
      "eval": [
@@ -37123,6 +38301,8 @@
    ],
    "live_one_position": "entry_bar",
    "_live_one_position": "entry_bar = the synthesis_B verifiers' 'run as the current hands would' (entry one minute late at market, Friday 16:50 New York close, chain re-simulated, one-position test at the delayed entry bar); alternatives: 'rule' (the rule's own test at its activation bar) or 'lab_chain' (only the lab chain's trades, executed live)",
+   "live_friday_block": "decision_and_entry",
+   "_live_friday_block": "decision_and_entry = no new position when the decision instant (close of the lab fill bar) OR the delayed entry bar falls in Friday 16:50 .. Sunday 17:00 New York; alternative 'entry_bar' (the delayed entry bar only)",
    "accounts": [
     "sum",
     "capped"
@@ -37201,7 +38381,7 @@
       "q": 0.3333333333333333,
       "purge_days": 7,
       "min_train": 100,
-      "labels_mode": "run",
+      "labels_mode": "fp",
       "declared_T": {
        "2021": 465.1178
       }
@@ -37233,7 +38413,8 @@
      "key": "F1_brk_ridge_filter__ethusd@payoff",
      "rule": "F1_brk_ridge_filter",
      "sym": "ethusd",
-     "convention": "payoff"
+     "convention": "payoff",
+     "refuse": true
     },
     {
      "key": "F1_brk_ridge_filter__ethusd+H2",
@@ -37242,7 +38423,8 @@
      "convention": "payoff",
      "change": {
       "kind": "payoff",
-      "id": "H2",
+      "id": "F1eth_H2",
+      "variant": "H2",
       "family": "H",
       "j": 2
      },
@@ -37252,7 +38434,8 @@
      "key": "ocm4__us100@payoff",
      "rule": "ocm4",
      "sym": "us100",
-     "convention": "payoff"
+     "convention": "payoff",
+     "refuse": true
     },
     {
      "key": "ocm4__us100+T1",
@@ -37261,7 +38444,8 @@
      "convention": "payoff",
      "change": {
       "kind": "payoff",
-      "id": "T1",
+      "id": "ocm4_T1",
+      "variant": "T1",
       "family": "T",
       "m": 1
      },
@@ -37271,7 +38455,8 @@
      "key": "donch4h_stop__xauusd@payoff",
      "rule": "donch4h_stop",
      "sym": "xauusd",
-     "convention": "payoff"
+     "convention": "payoff",
+     "refuse": true
     },
     {
      "key": "donch4h_stop__xauusd+S0.75r",
@@ -37280,7 +38465,8 @@
      "convention": "payoff",
      "change": {
       "kind": "payoff",
-      "id": "S0.75r",
+      "id": "donch4h_S0.75r",
+      "variant": "S0.75r",
       "family": "S",
       "k": 0.75,
       "reentry": true
@@ -37291,7 +38477,8 @@
      "key": "nq_btc_follow__btcusd@payoff",
      "rule": "nq_btc_follow",
      "sym": "btcusd",
-     "convention": "payoff"
+     "convention": "payoff",
+     "refuse": true
     },
     {
      "key": "nq_btc_follow__btcusd+T1",
@@ -37300,7 +38487,8 @@
      "convention": "payoff",
      "change": {
       "kind": "payoff",
-      "id": "T1",
+      "id": "nq_T1",
+      "variant": "T1",
       "family": "T",
       "m": 1
      },
@@ -37310,7 +38498,8 @@
      "key": "noise30__us100@payoff",
      "rule": "noise30",
      "sym": "us100",
-     "convention": "payoff"
+     "convention": "payoff",
+     "refuse": true
     },
     {
      "key": "noise30__us100+S0.25",
@@ -37319,7 +38508,8 @@
      "convention": "payoff",
      "change": {
       "kind": "payoff",
-      "id": "S0.25",
+      "id": "noise30_S0.25",
+      "variant": "S0.25",
       "family": "S",
       "k": 0.25,
       "reentry": "n/a"
@@ -37330,7 +38520,8 @@
      "key": "brk72_24h_wd__btcusd@payoff",
      "rule": "brk72_24h_wd",
      "sym": "btcusd",
-     "convention": "payoff"
+     "convention": "payoff",
+     "refuse": true
     },
     {
      "key": "brk72_24h_wd__btcusd+S0.75r",
@@ -37339,7 +38530,8 @@
      "convention": "payoff",
      "change": {
       "kind": "payoff",
-      "id": "S0.75r",
+      "id": "brk72btc_S0.75r",
+      "variant": "S0.75r",
       "family": "S",
       "k": 0.75,
       "reentry": true
@@ -37350,7 +38542,8 @@
      "key": "orb_asia_2d_buf10__xauusd@payoff",
      "rule": "orb_asia_2d_buf10",
      "sym": "xauusd",
-     "convention": "payoff"
+     "convention": "payoff",
+     "refuse": true
     },
     {
      "key": "orb_asia_2d_buf10__xauusd+S0.75r",
@@ -37359,7 +38552,8 @@
      "convention": "payoff",
      "change": {
       "kind": "payoff",
-      "id": "S0.75r",
+      "id": "orbxau_S0.75r",
+      "variant": "S0.75r",
       "family": "S",
       "k": 0.75,
       "reentry": true
@@ -37576,7 +38770,43 @@
      "ref": "orb_asia_2d_buf10__xauusd@payoff",
      "var": "orb_asia_2d_buf10__xauusd+S0.75r"
     }
-   ]
+   ],
+   "criteria": {
+    "K1": {
+     "kind": "k1_skip",
+     "sleeve": "brk72_24h_wd__ethusd+K1",
+     "modes": [
+      "fp",
+      "stress"
+     ],
+     "exec": "lab",
+     "signals_mode": "fp",
+     "text": "synthesis_B: K1 is adopted only if, on 2022-2025, the sleeve's expectancy per trade with the skip is higher than without and its total R is not lower, both with FP costs and with costs x1.5, and the skipped signals taken alone earn less on average than the kept ones."
+    },
+    "K2": {
+     "kind": "new_sleeve",
+     "sleeve": "orb_asia_2d_buf10__ethusd",
+     "with": "P0+orb_eth",
+     "without": "P0",
+     "exec": "lab",
+     "account": "sum",
+     "pf_min": 1.06,
+     "min_positive_years": 3,
+     "text": "synthesis_B: each new sleeve is adopted only if, with FP costs, PF >= 1.06, expectancy > 0, every-signal expectancy > 0, total R positive in at least 3 of the 4 years, and expectancy > 0 with costs x1.5; and the weekly mean / sd of R of the ten plus that sleeve is at least that of the ten alone. Read beside it, for the robot as it is (not a criterion of the rule): the same sleeve with entry one minute late and every position closed on Friday at 16:50 New York; if that version has expectancy <= 0, the sleeve waits for a robot that holds it over the weekend."
+    },
+    "K3": {
+     "kind": "new_sleeve",
+     "sleeve": "orb_asia_2d_buf10__btcusd",
+     "with": "P0+orb_btc",
+     "without": "P0",
+     "exec": "lab",
+     "account": "sum",
+     "pf_min": 1.06,
+     "min_positive_years": 3,
+     "text": "synthesis_B: each new sleeve is adopted only if, with FP costs, PF >= 1.06, expectancy > 0, every-signal expectancy > 0, total R positive in at least 3 of the 4 years, and expectancy > 0 with costs x1.5; and the weekly mean / sd of R of the ten plus that sleeve is at least that of the ten alone. Read beside it, for the robot as it is (not a criterion of the rule): the same sleeve with entry one minute late and every position closed on Friday at 16:50 New York; if that version has expectancy <= 0, the sleeve waits for a robot that holds it over the weekend."
+    }
+   },
+   "_criteria": "HOOK: the payoff variants and Addendum I stake rules have no declared criterion yet. For a change of that kind listed in changes_in_look, add {\"<id>\": {\"kind\": \"<kind>\", ...}} here before the declaration; a new kind is a function registered with vhi_verdicts.register_criterion (in a file listed in \"plugins\" or in vhi_verdicts.py)."
   },
   "trades_file": "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal/pseudo_look_cut2021__cut2021-01-01__trades.parquet"
  }

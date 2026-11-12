@@ -11,18 +11,24 @@
 
    then, in look_spec.json:  "plugins": ["example_plugins.py"]  and a sleeve
        {"key": "noise30__us100+X", "rule": "noise30", "sym": "us100", "convention": "sB",
-        "change": {"kind": "skip_ny_hours", "hours": [12, 13]}}
+        "change": {"kind": "skip_ny_hours", "id": "X", "hours": [12, 13]}}
+   (the "id" is the name the list "changes_in_look" uses: the change enters the look only when it is listed there)
 
 2. A new STAKE RULE (multiplies each trade's R; 0 = not taken, the sleeve's chain unchanged), e.g. from
    lab/r2/tracks/sizing/: a class with .stakes(trades, ctx) (see vhi_stakes.StakeRule and its ctx), referenced in a
-   portfolio of look_spec.json:
-       "stakes": {"noise30__us100": {"kind": "python", "module": "example_plugins.py", "factory": "HourBandStake",
+   portfolio of look_spec.json, with an "id" listed in "changes_in_look":
+       "stakes": {"noise30__us100": {"kind": "python", "id": "S1", "module": "example_plugins.py",
+                                     "factory": "HourBandStake",
                                      "args": {"bands": [[10, 12], [12, 14], [14, 16]], "m_low": 0.5}}}
    Yearly refits go through vhi_stakes.yearly_refit (a fit for year Y sees only outcomes known before
    1 January Y minus 7 days).
 
+3. Its CRITERION (declared before the look): {"<id>": {"kind": ...}} under "criteria" of look_spec.json, a kind
+   registered with vhi_verdicts.register_criterion (see vhi_verdicts' docstring); without one the verdicts block
+   reports the change as 'declared: false'.
+
 Then: rehearse in sample (proofs.py, or look.py --cut 2022-01-01) and compare with the lens that found the change;
-declare; run the look once.
+declare (the addendum quotes autopsy_HI_look and the spec's full sha256); run the look once.
 """
 import numpy as np
 import pandas as pd
