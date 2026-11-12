@@ -391,7 +391,8 @@ public:
       if(t0 == cur_bar) return false;
       // bars that closed since the last call (normally one: the bar that was forming)
       MqlRates r[];
-      int n = (last_closed > 0) ? CopyRates(sym, PERIOD_M1, last_closed + 60, t0 - 1, r) : 0;
+      datetime from = (last_closed > 0) ? last_closed + 60 : cur_bar;      // no history at all: from the first bar seen
+      int n = (from > 0 && from < t0) ? CopyRates(sym, PERIOD_M1, from, t0 - 1, r) : 0;
       bool seen = (cur_bar == 0 || cur_bar <= last_closed);
       for(int i = 0; i < n; i++)
          if(r[i].time == cur_bar) seen = true;
