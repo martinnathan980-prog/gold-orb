@@ -596,3 +596,31 @@ were described as "from about 20,000 EUR". Declared now, before any run (nothing
   does not exceed F2S's by more than a quarter. The price is said with it, as the reviewer of Addendum E required: these
   profiles do not lower the risk, they move it from the number of losing weeks to their size, and with no edge they
   raise the chance of a deep loss.
+
+### Addendum G — outcome of the sixth clarification (2026-11-12, `results/r2/stake/growth.json`; review pending)
+The earlier plans come out unchanged apart from the corrected measure (560,544 cells compared with the previous file:
+only the fall of the balance "as seen" differs). The ladder at half edge, median (one path in ten):
+
+| First risk per trade | Gain at 12 months | Gain at 36 months | Deepest fall of the first 13 weeks | Fall of 50 % or more (paper / half edge) | Stopped | Worthless rules: loss, paid in, month of the stop |
+|---|---|---|---|---|---|---|
+| 0.5 % (A05S) | +1,245 (−396) | +14,617 (+2,544) | 3.7 % (6.5 %), 100 EUR (194) | 0 % / 0 % | 4.2 % | −4,503, 22,000, 20 |
+| 1 % (F1S) | +2,644 (−584) | +16,257 (+2,180) | 8.7 % (15.3 %), 241 EUR (446) | 0 % / 0 % | 7.2 % | −3,564, 14,000, 13 |
+| 2 % (F2S) | +3,242 (−681) | +16,987 (+2,132) | 19.5 % (31.3 %), 552 EUR (964) | 0 % / 0.4 % | 8.2 % | −3,605, 12,000, 11 |
+| 3 % (F3S) | +3,251 (−616) | +17,262 (+2,106) | 26.9 % (40.5 %), 693 EUR (1,157) | 0.7 % / 2.5 % | 8.2 % | −3,605, 12,000, 11 |
+| 5 % (FS) | +3,358 (−746) | +17,228 (+2,171) | 41.3 % (59.1 %), 984 EUR (1,591) | 12.2 % / 23.7 % | 8.5 % | −3,663, 12,000, 11 |
+
+On paper the 12-month gains are +2,489, +4,874, +5,988, +6,184 and +6,474.
+- **By the rule fixed before the run, F3S comes first**: it qualifies (a fall of 50 % or more in 0.7 % and 2.5 % of
+  paths) and has the highest median gain after 12 months at half edge among the plans that qualify. FS does not
+  qualify.
+- **Tie-break added AFTER the run, declared as such:** F2S is 9 EUR behind F3S on that median (+3,242 against +3,251),
+  far inside the noise of 2,000 paths, with a first-quarter fall of 20 % / 31 % instead of 27 % / 41 % and a fall of
+  50 % or more in 0.4 % of paths instead of 2.5 %. Among the qualifying plans whose 12-month median is within 5 % of the
+  best, the plan shown as the advice is the one with the smallest typical fall of the first 13 weeks: **F2S** (2 % under
+  6,000 EUR, 1 % under 12,000, then 0.5 %; stop at −25 % armed once 12,000 EUR are paid in). F3S and FS are shown beside it.
+- **What the start does not change:** after the twelfth month every plan trades the same 0.5 % (deepest fall 15 to 16 %,
+  one path in ten 21 to 24 %); the robot's own gain stays more than 52 weeks under its high in 18 to 27 % of paths at
+  half edge (0.2 to 1.1 % on paper); a run of four losing weeks or more comes in 57 to 61 % of paths; with worthless
+  rules the loss is about 3,600 EUR however fast the start, because the stop fires when it is armed.
+- A start above 2 % buys almost nothing: +9 EUR (3 %) and +116 EUR (5 %) on the 12-month median at half edge, +196 and
+  +486 on paper, for a first-quarter fall that goes from 20 % to 27 % and 41 %.
