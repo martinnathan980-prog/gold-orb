@@ -14,6 +14,27 @@
    "totR_mine_all": 136.879,
    "totR_mine_on_rows_closed_before_cut": 136.878974,
    "totR_official_closed_before_cut": 136.878974,
+   "reproduced_whole_frame": true,
+   "window": {
+    "eval": [
+     "2018-02-01 00:00:00+00:00",
+     "2022-01-01 00:00:00+00:00"
+    ],
+    "n_mine": 492,
+    "n_official": 492,
+    "official_open_at_cut": 0,
+    "official_closed_before_cut": 492,
+    "matched_closed": 492,
+    "mine_not_in_official_closed": 0,
+    "those_open_at_frame_end_in_mine": true,
+    "rows_differing": 0,
+    "totR_mine_all": 53.78,
+    "totR_mine_on_rows_closed_before_cut": 53.780301,
+    "totR_official_closed_before_cut": 53.780301,
+    "totals_equal_on_rows_closed_before_cut": true,
+    "examples_differing": [],
+    "reproduced": true
+   },
    "reproduced": true
   },
   "noise30__us100": {
@@ -29,6 +50,27 @@
    "totR_mine_all": 134.401,
    "totR_mine_on_rows_closed_before_cut": 134.40073,
    "totR_official_closed_before_cut": 134.40073,
+   "reproduced_whole_frame": true,
+   "window": {
+    "eval": [
+     "2018-02-01 00:00:00+00:00",
+     "2022-01-01 00:00:00+00:00"
+    ],
+    "n_mine": 795,
+    "n_official": 795,
+    "official_open_at_cut": 0,
+    "official_closed_before_cut": 795,
+    "matched_closed": 795,
+    "mine_not_in_official_closed": 0,
+    "those_open_at_frame_end_in_mine": true,
+    "rows_differing": 0,
+    "totR_mine_all": 85.235,
+    "totR_mine_on_rows_closed_before_cut": 85.235088,
+    "totR_official_closed_before_cut": 85.235088,
+    "totals_equal_on_rows_closed_before_cut": true,
+    "examples_differing": [],
+    "reproduced": true
+   },
    "reproduced": true
   },
   "donch4h_stop__xauusd": {
@@ -44,6 +86,27 @@
    "totR_mine_all": 85.056,
    "totR_mine_on_rows_closed_before_cut": 84.301414,
    "totR_official_closed_before_cut": 84.301414,
+   "reproduced_whole_frame": true,
+   "window": {
+    "eval": [
+     "2018-02-01 00:00:00+00:00",
+     "2022-01-01 00:00:00+00:00"
+    ],
+    "n_mine": 208,
+    "n_official": 208,
+    "official_open_at_cut": 1,
+    "official_closed_before_cut": 207,
+    "matched_closed": 207,
+    "mine_not_in_official_closed": 1,
+    "those_open_at_frame_end_in_mine": true,
+    "rows_differing": 0,
+    "totR_mine_all": 30.788,
+    "totR_mine_on_rows_closed_before_cut": 30.0328,
+    "totR_official_closed_before_cut": 30.0328,
+    "totals_equal_on_rows_closed_before_cut": true,
+    "examples_differing": [],
+    "reproduced": true
+   },
    "reproduced": true
   },
   "orb_asia_2d_buf10__xauusd": {
@@ -59,6 +122,27 @@
    "totR_mine_all": 232.78,
    "totR_mine_on_rows_closed_before_cut": 231.145314,
    "totR_official_closed_before_cut": 231.145314,
+   "reproduced_whole_frame": true,
+   "window": {
+    "eval": [
+     "2018-02-01 00:00:00+00:00",
+     "2022-01-01 00:00:00+00:00"
+    ],
+    "n_mine": 465,
+    "n_official": 465,
+    "official_open_at_cut": 1,
+    "official_closed_before_cut": 464,
+    "matched_closed": 464,
+    "mine_not_in_official_closed": 1,
+    "those_open_at_frame_end_in_mine": true,
+    "rows_differing": 0,
+    "totR_mine_all": 28.693,
+    "totR_mine_on_rows_closed_before_cut": 27.058714,
+    "totR_official_closed_before_cut": 27.058714,
+    "totals_equal_on_rows_closed_before_cut": true,
+    "examples_differing": [],
+    "reproduced": true
+   },
    "reproduced": true
   },
   "GOLD_FRI_PM__xauusd": {
@@ -74,6 +158,27 @@
    "totR_mine_all": 13.921,
    "totR_mine_on_rows_closed_before_cut": 13.92101,
    "totR_official_closed_before_cut": 13.92101,
+   "reproduced_whole_frame": true,
+   "window": {
+    "eval": [
+     "2018-02-01 00:00:00+00:00",
+     "2022-01-01 00:00:00+00:00"
+    ],
+    "n_mine": 183,
+    "n_official": 183,
+    "official_open_at_cut": 0,
+    "official_closed_before_cut": 183,
+    "matched_closed": 183,
+    "mine_not_in_official_closed": 0,
+    "those_open_at_frame_end_in_mine": true,
+    "rows_differing": 0,
+    "totR_mine_all": -1.295,
+    "totR_mine_on_rows_closed_before_cut": -1.295308,
+    "totR_official_closed_before_cut": -1.295308,
+    "totals_equal_on_rows_closed_before_cut": true,
+    "examples_differing": [],
+    "reproduced": true
+   },
    "reproduced": true
   },
   "brk72_24h_wd__btcusd": {
@@ -89,6 +194,27 @@
    "totR_mine_all": 172.874,
    "totR_mine_on_rows_closed_before_cut": 172.874279,
    "totR_official_closed_before_cut": 172.874279,
+   "reproduced_whole_frame": true,
+   "window": {
+    "eval": [
+     "2018-02-01 00:00:00+00:00",
+     "2022-01-01 00:00:00+00:00"
+    ],
+    "n_mine": 549,
+    "n_official": 549,
+    "official_open_at_cut": 0,
+    "official_closed_before_cut": 549,
+    "matched_closed": 549,
+    "mine_not_in_official_closed": 0,
+    "those_open_at_frame_end_in_mine": true,
+    "rows_differing": 0,
+    "totR_mine_all": 140.684,
+    "totR_mine_on_rows_closed_before_cut": 140.683895,
+    "totR_official_closed_before_cut": 140.683895,
+    "totals_equal_on_rows_closed_before_cut": true,
+    "examples_differing": [],
+    "reproduced": true
+   },
    "reproduced": true
   },
   "brk72_24h_wd__ethusd": {
@@ -104,6 +230,27 @@
    "totR_mine_all": 103.687,
    "totR_mine_on_rows_closed_before_cut": 103.68708,
    "totR_official_closed_before_cut": 103.68708,
+   "reproduced_whole_frame": true,
+   "window": {
+    "eval": [
+     "2018-02-01 00:00:00+00:00",
+     "2022-01-01 00:00:00+00:00"
+    ],
+    "n_mine": 511,
+    "n_official": 511,
+    "official_open_at_cut": 0,
+    "official_closed_before_cut": 511,
+    "matched_closed": 511,
+    "mine_not_in_official_closed": 0,
+    "those_open_at_frame_end_in_mine": true,
+    "rows_differing": 0,
+    "totR_mine_all": 106.614,
+    "totR_mine_on_rows_closed_before_cut": 106.613944,
+    "totR_official_closed_before_cut": 106.613944,
+    "totals_equal_on_rows_closed_before_cut": true,
+    "examples_differing": [],
+    "reproduced": true
+   },
    "reproduced": true
   },
   "F1_brk_ridge_filter__btcusd": {
@@ -119,6 +266,27 @@
    "totR_mine_all": 226.389,
    "totR_mine_on_rows_closed_before_cut": 226.389065,
    "totR_official_closed_before_cut": 226.389065,
+   "reproduced_whole_frame": true,
+   "window": {
+    "eval": [
+     "2018-02-01 00:00:00+00:00",
+     "2022-01-01 00:00:00+00:00"
+    ],
+    "n_mine": 545,
+    "n_official": 545,
+    "official_open_at_cut": 0,
+    "official_closed_before_cut": 545,
+    "matched_closed": 545,
+    "mine_not_in_official_closed": 0,
+    "those_open_at_frame_end_in_mine": true,
+    "rows_differing": 0,
+    "totR_mine_all": 187.922,
+    "totR_mine_on_rows_closed_before_cut": 187.921858,
+    "totR_official_closed_before_cut": 187.921858,
+    "totals_equal_on_rows_closed_before_cut": true,
+    "examples_differing": [],
+    "reproduced": true
+   },
    "reproduced": true
   },
   "F1_brk_ridge_filter__ethusd": {
@@ -134,6 +302,27 @@
    "totR_mine_all": 104.407,
    "totR_mine_on_rows_closed_before_cut": 104.406706,
    "totR_official_closed_before_cut": 104.406706,
+   "reproduced_whole_frame": true,
+   "window": {
+    "eval": [
+     "2018-02-01 00:00:00+00:00",
+     "2022-01-01 00:00:00+00:00"
+    ],
+    "n_mine": 516,
+    "n_official": 516,
+    "official_open_at_cut": 0,
+    "official_closed_before_cut": 516,
+    "matched_closed": 516,
+    "mine_not_in_official_closed": 0,
+    "those_open_at_frame_end_in_mine": true,
+    "rows_differing": 0,
+    "totR_mine_all": 103.017,
+    "totR_mine_on_rows_closed_before_cut": 103.017331,
+    "totR_official_closed_before_cut": 103.017331,
+    "totals_equal_on_rows_closed_before_cut": true,
+    "examples_differing": [],
+    "reproduced": true
+   },
    "reproduced": true
   },
   "nq_btc_follow__btcusd": {
@@ -149,6 +338,27 @@
    "totR_mine_all": 66.346,
    "totR_mine_on_rows_closed_before_cut": 66.345962,
    "totR_official_closed_before_cut": 66.345962,
+   "reproduced_whole_frame": true,
+   "window": {
+    "eval": [
+     "2018-02-01 00:00:00+00:00",
+     "2022-01-01 00:00:00+00:00"
+    ],
+    "n_mine": 943,
+    "n_official": 943,
+    "official_open_at_cut": 0,
+    "official_closed_before_cut": 943,
+    "matched_closed": 943,
+    "mine_not_in_official_closed": 0,
+    "those_open_at_frame_end_in_mine": true,
+    "rows_differing": 0,
+    "totR_mine_all": 55.543,
+    "totR_mine_on_rows_closed_before_cut": 55.542982,
+    "totR_official_closed_before_cut": 55.542982,
+    "totals_equal_on_rows_closed_before_cut": true,
+    "examples_differing": [],
+    "reproduced": true
+   },
    "reproduced": true
   }
  },

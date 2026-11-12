@@ -1,12 +1,17 @@
 {
  "cut": "2022-01-01 00:00:00+00:00",
  "spec": "/home/user/gold-orb/lab/r2/tracks/validation_hi/look_spec.json",
- "spec_sha256": "f097ab176413972beec5ee32c729a796ba99bb1dcaad0bcf509ff3ea58eb67d6",
- "seconds": 169.6,
+ "spec_sha256": "b71f69d59999bdb97442bf0a1beff9a8512b883396886323426e69e55e277960",
+ "seconds": 193.9,
  "changes_in_look_of_the_spec": [
   "K1",
   "K2",
-  "K3"
+  "K3",
+  "ocm4_T1",
+  "F1eth_H2",
+  "brk72btc_S0.75r",
+  "donch4h_S0.75r",
+  "orbxau_S0.75r"
  ],
  "changes_rehearsed_by_the_proofs_run": [
   "K1",
@@ -31,7 +36,7 @@
   },
   "b_K1": {
    "ok": true,
-   "checks": 468,
+   "checks": 482,
    "failed": 0,
    "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_b_K1.json",
    "what": "K1 (brk72_24h_wd ethusd, riskbp skip refitted every 1 January) against synthesis_B sleeve_runs C1 (fp and x1.5), every field; the harness's walk-forward (any CUT) against s1_run.walk_forward"
@@ -80,17 +85,17 @@
   },
   "i_guard": {
    "ok": true,
-   "checks": 91,
+   "checks": 164,
    "failed": 0,
    "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_i_guard.json",
-   "what": "the guard of the harness (vhi_guard): F1 the declaration bound to the spec (PROTOCOL_V3.md as it stands refused), F2 run once / fixed output / second access, F3 the hardened read guard (probes refused before any byte is read), CUT rules, the access log untouched, every read of the process with its filter"
+   "what": "the guard of the harness (vhi_guard): F1 the declaration bound to the spec (PROTOCOL_V3.md as it stands refused), A1 only the protocol's real path accepted as LOOK_DECLARED (the harness's outputs and copies of them refused, also once they quote this run's spec sha256: rows 'A1 (after_write)', added after those files are written), F2 run once / fixed output / second access, F3 / A2 / A3 the hardened read guard (probes refused before any byte is read: the holdout component rule and lab/ CSVs through open() included), CUT rules, the access log untouched, every read of the process with its filter"
   },
   "j_entry_point_rehearsal": {
    "ok": true,
-   "checks": 11,
+   "checks": 16,
    "failed": 0,
    "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_j_entry_point_rehearsal.json",
-   "what": "the look's entry point (look.py) run end to end at CUT 2022-01-01 in its own process with the spec as it stands (changes_in_look K1, K2, K3): the right sleeves, portfolios and verdicts, the same numbers as the proofs' run, nothing logged"
+   "what": "the look's entry point (look.py) run end to end at CUT 2022-01-01 in its own process with the spec as it stands (changes_in_look K1, K2, K3 and synthesis A's five): the right sleeves, portfolios and verdicts, the check first and synthesis A's block, the same numbers as the proofs' run, nothing logged, the imported code's sha256 recorded (A5)"
   },
   "k_moving_the_cut": {
    "ok": true,
@@ -101,27 +106,34 @@
   },
   "l_verdicts": {
    "ok": true,
-   "checks": 33,
+   "checks": 34,
    "failed": 0,
    "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_l_verdicts.json",
    "what": "F10: the verdicts block. Every criterion value equals the run's own statistic (rounded as the run reports it)\nand synthesis_B's published figure where there is one; a change without a declared criterion is reported as\nsuch. In sample the verdicts only check the machinery (the window is 2018-02 .. 2021-12, not the look's)."
+  },
+  "m_synthesis_A_criteria": {
+   "ok": true,
+   "checks": 574,
+   "failed": 0,
+   "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_m_synthesis_A_criteria.json",
+   "what": "synthesis A's criteria V1-V5 (res['verdicts'], kind synthesis_A_change) and its report (res['synthesis_A']) on\nthe in-sample window 2018-02..2021-12, against synthesis A's published in-sample rehearsal of its own criteria\n(synthesis_A.json criteria_rehearsal_in_sample, main window, FP and x1.5: sleeve weekly Sharpe unchanged / changed,\nten-sleeve portfolio weekly Sharpe unchanged / with the change at its frozen factor, total R at a constant stake,\nthe equal-swing gain by entry year, V1, V2, V3, V5), its changed sleeves (changed_sleeves_detail), its frozen\nequal-swing factors (portfolio.equal_swing_factors, reproduced from the in-sample weekly sd as synthesis A computes\nthem), its portfolios through its own frozen measures() (unchanged, all five at a constant stake and at equal\nswing, each change alone); the check first reported first and gating synthesis A's verdicts ('stop and report')."
   }
  },
  "rehearsal": "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal_in_sample.json",
  "rehearsal_of_the_spec_as_it_stands": "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01.json",
  "harness_sha256": {
-  "example_plugins.py": "e8fda9ff41a9b40eee6de509b4c3187c279e2369d6c5b3e97374c7f84d75eb1b",
-  "look.py": "959df13f0ae4a9cd0af76beef3dcade233925a481281168ebf863962aa6795f9",
-  "look_spec.json": "f097ab176413972beec5ee32c729a796ba99bb1dcaad0bcf509ff3ea58eb67d6",
-  "proofs.py": "bab5b78b6d57699e95150f4ad39f26db344b844afcbe4de0f7a621a6e3af664c",
+  "example_plugins.py": "fdd2d6d8ad7bc2ec87b3a7d47c0373913e4aa6f97acea4c04f5f98ddf9447852",
+  "look.py": "642980d1160804db4385517ccdc59c1d1e7ebd53e0aa55d45a0a9c08c8bf4257",
+  "look_spec.json": "b71f69d59999bdb97442bf0a1beff9a8512b883396886323426e69e55e277960",
+  "proofs.py": "a3855c2f807df1c1ddc06836a2e27148a82ba500b88bc5e771bf67e64a48e1e0",
   "vhi_book.py": "053b3f1cbce8c9f5775a533c7646705ea3c28526361024a8633497d2f7ae51f2",
-  "vhi_data.py": "3b0547b78e6ebf9f4ca8226f59f126a97a640aa0ec53027e943233d5fa72463d",
-  "vhi_guard.py": "39d254dc6de52f276a4726c4e6c0fd80b7e97bbcb8d1b4bfa097e34a0f399f4f",
-  "vhi_lens.py": "c89dd29bf90726b50606c360dd14652060b90f29f470ee5d290452c2e316489e",
-  "vhi_run.py": "36a916fa52e96468795a7bdc5299b0a11d516c251d3627e02542f7dc8ee7a392",
-  "vhi_sleeves.py": "9e96fa838b997cc676e174309892b2f6e85d39ccd74a0b5bd7ad4c35c2041919",
+  "vhi_data.py": "2553cb38a2f3e3254aa461dc9aacfcdb5f26d54781e3eeb1304fda3f00a59b3e",
+  "vhi_guard.py": "89baf8714a69144439e8852be7e80f6943e46e9d91f3b37ad900437f6825bbc4",
+  "vhi_lens.py": "67fa812745ae264b4d5ccf372ba0593486be050c6ae477c7b69b9409bfaccd5d",
+  "vhi_run.py": "b942e1e3c3880a97da579116ead4c0d3a421b51f0783f2b9b706f727acac89c4",
+  "vhi_sleeves.py": "f9b504a531c68357c8718ca2888f9ca6106a47d52f95b8a45a816924f67d6b97",
   "vhi_stakes.py": "99bdca8a34e2727f66cc67859447eb25cae5a2b5a07c52f89f4125cbd1d022dc",
-  "vhi_verdicts.py": "d0e76bd8c45069018a2d2d53582f632af38bf629a33078abd5fee0058bdcc23e"
+  "vhi_verdicts.py": "674cb01c331194526d46ae24099b07d9b7427b91de7c3c1304036d160cdf1b87"
  },
- "protocol_sha256_at_proof_time": "2cadb7df8c279b39b1b882726acff72401eba17a184e0cf1ed17b12016ccd095"
+ "protocol_sha256_at_proof_time": "97c1569af63b48c659c661e1496fec97f09d38eee9c02856e08fbaebb920f5be"
 }

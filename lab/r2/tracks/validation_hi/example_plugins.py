@@ -28,7 +28,9 @@
    reports the change as 'declared: false'.
 
 Then: rehearse in sample (proofs.py, or look.py --cut 2022-01-01) and compare with the lens that found the change;
-declare (the addendum quotes autopsy_HI_look and the spec's full sha256); run the look once.
+declare (lab/PROTOCOL_V3.md itself, the only file LOOK_DECLARED may name, quotes autopsy_HI_look and the spec's full
+sha256); run the look once. Before a plugin or a stake rule enters a look: the guard's uncovered readers (vhi_guard
+docstring) and binding the plugin file's own sha256 to the declaration are still to be done (the recheck's open item).
 """
 import numpy as np
 import pandas as pd

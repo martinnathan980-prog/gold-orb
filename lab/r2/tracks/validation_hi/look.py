@@ -8,8 +8,10 @@
 What it does, in this order (plan(), then vhi_guard.open_run, both before any data is read):
   1. Reads the spec file once; its sha256 is computed on those very bytes, which are the spec that runs.
   2. The CUT rules: CUT > 2026-01-01 is always refused. CUT > 2022-01-01 (THE LOOK) is refused unless LOOK_DECLARED
-     names a file whose text contains the string "autopsy_HI_look" AND the full 64-hex sha256 of the spec file
-     (the declaration is bound to this exact spec, its list of changes included).
+     is the protocol itself -- its real path must be exactly /home/user/gold-orb/lab/PROTOCOL_V3.md (A1: any other
+     file is refused before it is read, the harness's own outputs, copies and links elsewhere included) -- and the
+     protocol's text contains the string "autopsy_HI_look" AND the full 64-hex sha256 of the spec file (the
+     declaration is bound to this exact spec, its list of changes included).
   3. Run once: a look is refused if results/val_access.log already holds a line with track "autopsy_HI_look" or a
      '<stem>.started' marker exists in results/r2/validation_hi/look/, unless --second-access "<reason>" is given
      (the reason is written into the access label; the output gets the suffix __access<N>). --out is refused for a
@@ -22,9 +24,13 @@ What it does, in this order (plan(), then vhi_guard.open_run, both before any da
      changes named in its "changes_in_look": every sleeve in FP costs and x1.5, as specified ("lab") and as the
      live program would ("live"), the portfolios as the plain sum of R x stake and through the capped account
      (6 positions, 2 per market), the comparisons at equal weekly swing (scale recomputed on the window), the
-     official-trades check of the ten sleeves, and the declared criteria ("verdicts").
+     official-trades check of the ten sleeves (synthesis A's CHECK FIRST: "check_first", the first key of the
+     output; a failure is printed loudly and synthesis A's changes are then not judged), the declared criteria
+     ("verdicts": synthesis_B's for K1, K2, K3; synthesis A's V1-V5 at the frozen factors for its five changes) and
+     synthesis A's report ("synthesis_A": the passing changes together against the unchanged portfolio, item 6).
   6. Writes <stem>.json (all results, the spec and its sha256, the declared file and its sha256, the declaration
-     check, every read with its filter) and <stem>__trades.parquet (every simulated trade).
+     check, every read with its filter, the sha256 of every harness, lens and strategy file the run imported and of
+     every configuration file it opened) and <stem>__trades.parquet (every simulated trade).
 
 With --cut 2022-01-01 (or earlier) the same command is an in-sample rehearsal: nothing is logged, no marker is
 written, and the output goes to lab/results/r2/validation_hi/rehearsal/ (or --out).
@@ -104,12 +110,24 @@ def main():
     t0 = time.time()
     res = RUN.run_spec(P["spec"], cut)
     d = P["declaration"] or {}
+    reads = G.reads()                                    # the run's reads (before the code files are read to hash)
     meta = {"cut": str(cut), "is_look": look, "spec_path": spec_path, "spec_sha256": P["sha"], "label": P["label"],
             "second_access": P["second_access"], "marker": P["marker"],
-            "declared_file": d.get("file"), "declared_sha256": d.get("sha256"),
+            "declared_file": d.get("file"), "declared_real_path": d.get("real_path"),
+            "declared_is_the_protocol": d.get("is_the_protocol") if look else None,
+            "declared_sha256": d.get("sha256"),
             "declared_text_quotes_spec_sha256": d.get("contains_spec_sha256") if look else None,
             "declaration_check": P["declaration"],
-            "seconds": round(time.time() - t0, 1), "reads": G.reads(), "spec": P["spec"]}
+            "seconds": round(time.time() - t0, 1), "reads": reads, "spec": P["spec"]}
+    # A5: the code the run executed, tied to the reviewed files (sha256 of every lab file imported, and of every
+    # non-data file under lab/ opened for reading, e.g. r2/fp_costs.json and the F1 model)
+    try:
+        meta["code_sha256"] = RUN.imported_code_sha256([p["path"] for p in res.get("plugins") or []])
+        meta["files_opened_sha256"] = RUN.opened_files_sha256(reads)
+    except Exception as e:  # noqa: BLE001 -- the look's output is written whatever happens here
+        meta["code_sha256_error"] = repr(e)[:300]
+    meta["versions"] = {"python": sys.version.split()[0], "numpy": __import__("numpy").__version__,
+                        "pandas": pd.__version__, "pyarrow": __import__("pyarrow").__version__}
     trades = res["_trades"]
     fr = []
     for (k, chain, mode, ex), t in trades.items():
@@ -128,6 +146,10 @@ def main():
     body["meta"] = meta
     RUN.jdump(body, out)
     print(f"written {out} [{meta['seconds']}s]; access logged: {look}")
+    cf = res.get("check_first") or {}
+    if not cf.get("passed"):
+        RUN.loud(print, [cf.get("status", "CHECK FIRST NOT COMPUTED"), f"see 'check_first' at the top of {out}"])
+        print(f"CHECK FIRST FAILED: {cf.get('status', 'not computed')}", file=sys.stderr)
 
 
 if __name__ == "__main__":

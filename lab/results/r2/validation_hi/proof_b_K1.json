@@ -211,9 +211,19 @@
      "fitted": 478.28395861996614,
      "fitted_from": "fit_for_year_starting_at_cut",
      "fitted_skip_side": "hi",
+     "fitted_n_train": 2345,
      "abs_diff_bp": 4.13800338492365e-05,
      "same_to_0.01bp": true,
-     "binding": "checked: within 0.01 bp"
+     "declared_fields": [
+      "n_train",
+      "q_hi",
+      "skip"
+     ],
+     "declared_skip_side": "hi",
+     "same_skip_side": true,
+     "declared_n_train": 2345,
+     "same_n_train": true,
+     "binding": "checked: T within 0.01 bp, same skip side, same n_train"
     }
    },
    "labels_mode": "fp",
@@ -445,9 +455,19 @@
      "fitted": 478.28395861996614,
      "fitted_from": "fit_for_year_starting_at_cut",
      "fitted_skip_side": "hi",
+     "fitted_n_train": 2345,
      "abs_diff_bp": 4.13800338492365e-05,
      "same_to_0.01bp": true,
-     "binding": "checked: within 0.01 bp"
+     "declared_fields": [
+      "n_train",
+      "q_hi",
+      "skip"
+     ],
+     "declared_skip_side": "hi",
+     "same_skip_side": true,
+     "declared_n_train": 2345,
+     "same_n_train": true,
+     "binding": "checked: T within 0.01 bp, same skip side, same n_train"
     }
    },
    "labels_mode": "fp",
@@ -559,9 +579,13 @@
      "fitted": 478.28395861996614,
      "fitted_from": "fit_for_year_starting_at_cut",
      "fitted_skip_side": "hi",
+     "fitted_n_train": 2345,
      "abs_diff_bp": 4.13800338492365e-05,
      "same_to_0.01bp": true,
-     "binding": "checked: within 0.01 bp"
+     "declared_fields": [
+      "q_hi"
+     ],
+     "binding": "checked: T within 0.01 bp"
     }
    },
    "T(2022) = 478.28 (synthesis_B's text)": {
@@ -570,9 +594,13 @@
      "fitted": 478.28395861996614,
      "fitted_from": "fit_for_year_starting_at_cut",
      "fitted_skip_side": "hi",
+     "fitted_n_train": 2345,
      "abs_diff_bp": 0.003958619966169863,
      "same_to_0.01bp": true,
-     "binding": "checked: within 0.01 bp"
+     "declared_fields": [
+      "q_hi"
+     ],
+     "binding": "checked: T within 0.01 bp"
     }
    },
    "T(2022) = 478.3 (0.016 bp off)": "K1: the walk-forward's T(2022) = 478.2840 bp (fit_for_year_starting_at_cut) differs from the declared 478.3 bp by 0.0160 bp (> 0.01 bp): the run stops",
@@ -582,9 +610,13 @@
      "fitted": 465.1178140105435,
      "fitted_from": "fold",
      "fitted_skip_side": "hi",
+     "fitted_n_train": 1703,
      "abs_diff_bp": 1.4010543509357376e-05,
      "same_to_0.01bp": true,
-     "binding": "checked: within 0.01 bp"
+     "declared_fields": [
+      "q_hi"
+     ],
+     "binding": "checked: T within 0.01 bp"
     }
    },
    "T(2020) = 496.0 through a fold (0.75 bp off)": "K1: the walk-forward's T(2020) = 496.7461 bp (fold) differs from the declared 496.0 bp by 0.7461 bp (> 0.01 bp): the run stops",
@@ -595,14 +627,69 @@
      "fitted": null,
      "fitted_from": null,
      "fitted_skip_side": null,
+     "fitted_n_train": null,
      "abs_diff_bp": null,
      "same_to_0.01bp": false,
+     "declared_fields": [
+      "q_hi"
+     ],
      "binding": "not checkable at this CUT (a later year)"
     }
-   }
+   },
+   "A4 2022 = {q_hi 478.284, skip 'hi', n_train 2345} (the spec)": {
+    "2022": {
+     "declared": 478.284,
+     "fitted": 478.28395861996614,
+     "fitted_from": "fit_for_year_starting_at_cut",
+     "fitted_skip_side": "hi",
+     "fitted_n_train": 2345,
+     "abs_diff_bp": 4.13800338492365e-05,
+     "same_to_0.01bp": true,
+     "declared_fields": [
+      "n_train",
+      "q_hi",
+      "skip"
+     ],
+     "declared_skip_side": "hi",
+     "same_skip_side": true,
+     "declared_n_train": 2345,
+     "same_n_train": true,
+     "binding": "checked: T within 0.01 bp, same skip side, same n_train"
+    }
+   },
+   "A4 2022 with skip 'lo' (a side flip with the same T)": "K1: the walk-forward's skip side for 2022 is 'hi' (fit_for_year_starting_at_cut), the declared side is 'lo': the run stops",
+   "A4 2022 with skip None (a fit that would skip nothing)": "K1: the walk-forward's skip side for 2022 is 'hi' (fit_for_year_starting_at_cut), the declared side is None: the run stops",
+   "A4 2022 with n_train 2344": "K1: the walk-forward's fit for 2022 has 2345 training signals (fit_for_year_starting_at_cut), 2344 are declared: the run stops",
+   "A4 2022 with n_train 2346": "K1: the walk-forward's fit for 2022 has 2345 training signals (fit_for_year_starting_at_cut), 2346 are declared: the run stops",
+   "A4 2022 with T 0.016 bp off, right side and count": "K1: the walk-forward's T(2022) = 478.2840 bp (fit_for_year_starting_at_cut) differs from the declared 478.3 bp by 0.0160 bp (> 0.01 bp): the run stops",
+   "A4 2021 = {465.1178, 'hi', 1703} through a fold": {
+    "2021": {
+     "declared": 465.1178,
+     "fitted": 465.1178140105435,
+     "fitted_from": "fold",
+     "fitted_skip_side": "hi",
+     "fitted_n_train": 1703,
+     "abs_diff_bp": 1.4010543509357376e-05,
+     "same_to_0.01bp": true,
+     "declared_fields": [
+      "n_train",
+      "q_hi",
+      "skip"
+     ],
+     "declared_skip_side": "hi",
+     "same_skip_side": true,
+     "declared_n_train": 1703,
+     "same_n_train": true,
+     "binding": "checked: T within 0.01 bp, same skip side, same n_train"
+    }
+   },
+   "A4 2021 through a fold with n_train 1702": "K1: the walk-forward's fit for 2021 has 1703 training signals (fold), 1702 are declared: the run stops",
+   "A4 the look's form: the spec's declared year accepted": null,
+   "A4 the look's form: a threshold alone is refused": "K1: the look's declared year 2022 must carry q_hi, skip and n_train (A4); got 478.284",
+   "A4 the look's form: q_hi and skip without n_train refused": "K1: the look's declared year 2022 must carry q_hi, skip and n_train (A4); got {'q_hi': 478.284, 'skip': 'hi'}"
   }
  },
- "checks": 468,
+ "checks": 482,
  "failed": 0,
  "ok": true,
  "failures": [],
@@ -1596,14 +1683,20 @@
    "ok": true
   },
   {
-   "field": "fp.F5 declared T(2022) = 478.284 bound in the run: fitted within 0.01 bp",
+   "field": "fp.F5/A4 declared 2022 fit (T 478.284 bp, skip 'hi', n_train 2345) bound in the run: fitted within 0.01 bp, same side, same count",
    "expected": [
     true,
-    "fit_for_year_starting_at_cut"
+    "fit_for_year_starting_at_cut",
+    "hi",
+    2345,
+    "checked: T within 0.01 bp, same skip side, same n_train"
    ],
    "got": [
     true,
-    "fit_for_year_starting_at_cut"
+    "fit_for_year_starting_at_cut",
+    "hi",
+    2345,
+    "checked: T within 0.01 bp, same skip side, same n_train"
    ],
    "ok": true,
    "fitted": 478.28395861996614,
@@ -2514,14 +2607,20 @@
    "ok": true
   },
   {
-   "field": "stress.F5 declared T(2022) = 478.284 bound in the run: fitted within 0.01 bp",
+   "field": "stress.F5/A4 declared 2022 fit (T 478.284 bp, skip 'hi', n_train 2345) bound in the run: fitted within 0.01 bp, same side, same count",
    "expected": [
     true,
-    "fit_for_year_starting_at_cut"
+    "fit_for_year_starting_at_cut",
+    "hi",
+    2345,
+    "checked: T within 0.01 bp, same skip side, same n_train"
    ],
    "got": [
     true,
-    "fit_for_year_starting_at_cut"
+    "fit_for_year_starting_at_cut",
+    "hi",
+    2345,
+    "checked: T within 0.01 bp, same skip side, same n_train"
    ],
    "ok": true,
    "fitted": 478.28395861996614,
@@ -3516,11 +3615,105 @@
    "ok": true
   },
   {
+   "field": "F5 bind_declared_T: A4 2022 = {q_hi 478.284, skip 'hi', n_train 2345} (the spec) -> accepted",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F5 bind_declared_T: A4 2022 with skip 'lo' (a side flip with the same T) -> raises",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "F5 bind_declared_T: A4 2022 with skip None (a fit that would skip nothing) -> raises",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "F5 bind_declared_T: A4 2022 with n_train 2344 -> raises",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "F5 bind_declared_T: A4 2022 with n_train 2346 -> raises",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "F5 bind_declared_T: A4 2022 with T 0.016 bp off, right side and count -> raises",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "F5 bind_declared_T: A4 2021 = {465.1178, 'hi', 1703} through a fold -> accepted",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F5 bind_declared_T: A4 2021 through a fold with n_train 1702 -> raises",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "A4 bind_declared_T(require_full=True): A4 the look's form: the spec's declared year accepted",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "A4 bind_declared_T(require_full=True): A4 the look's form: a threshold alone is refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "A4 bind_declared_T(require_full=True): A4 the look's form: q_hi and skip without n_train refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "A4 the spec declares 2022 with q_hi 478.284, skip 'hi' and n_train 2345",
+   "expected": {
+    "q_hi": 478.284,
+    "skip": "hi",
+    "n_train": 2345
+   },
+   "got": {
+    "q_hi": 478.284,
+    "skip": "hi",
+    "n_train": 2345
+   },
+   "ok": true
+  },
+  {
    "field": "F5 the run itself with declared T(2022) = 478.3: SL.run raises DeclaredThresholdError before any trade",
    "expected": true,
    "got": true,
    "ok": true,
    "message": "K1: the walk-forward's T(2022) = 478.2840 bp (fit_for_year_starting_at_cut) differs from the declared 478.3 bp by 0.0160 bp (> 0.01 bp): the run stops"
+  },
+  {
+   "field": "A4 the run itself with the declared 2022 fit's skip side 'lo' (T right): SL.run raises DeclaredThresholdError before any trade",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "message": "K1: the walk-forward's skip side for 2022 is 'hi' (fit_for_year_starting_at_cut), the declared side is 'lo': the run stops"
+  },
+  {
+   "field": "A4 the run itself with the declared 2022 fit's n_train 2344 (T right): SL.run raises DeclaredThresholdError before any trade",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "message": "K1: the walk-forward's fit for 2022 has 2345 training signals (fit_for_year_starting_at_cut), 2344 are declared: the run stops"
   }
  ]
 }

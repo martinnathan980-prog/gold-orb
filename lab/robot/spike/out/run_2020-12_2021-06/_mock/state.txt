@@ -1,0 +1,14 @@
+next 70000001 80000001
+sym BTCUSD 217307
+gv SPK_B72B_atr 0
+gv SPK_B72B_cbar 1625106660
+gv SPK_B72B_dec 0
+gv SPK_B72B_fbar 0
+gv SPK_B72B_fill 0
+gv SPK_B72B_lastx 0
+gv SPK_B72B_lclose 0
+gv SPK_B72B_side 0
+gv SPK_B72B_stop 0
+gv SPK_B72B_tbar 0
+gv SPK_B72B_ticket 0
+gv SPK_B72B_xat 0

@@ -1,10 +1,11 @@
 """validation_hi -- data readers. Every read carries the row filter of the run's CUT (vhi_guard checks it again).
 
 frame(sym)              FP-cost M1 frame of `sym`, rows with bar start ts < CUT (filtered while reading)
-official_count(...)     official rows of a sleeve entered before CUT: count, and how many of them closed at/after CUT
-                        (reads entry_time and exit_time only)
+official_entries(...)   entry times of the official rows of a sleeve entered before CUT (reads the column entry_time only)
 official_closed(...)    official rows entered AND closed before CUT (both filters in the read): no result realised
                         at or after CUT is ever read
+official_count(...)     (entered before CUT, of which still open at CUT) = (official_entries, minus official_closed):
+                        no exit time at or after the CUT is materialised
 """
 import os
 
@@ -30,12 +31,18 @@ def leader_series(m1_us100):
     return ((m1_us100["bc"] + m1_us100["ac"]) / 2).astype("float64")
 
 
-def official_count(name, sym):
+def official_entries(name, sym):
     cut = G.current_cut()
-    t = pd.read_parquet(os.path.join(G.OFFICIAL_DIR, f"{name}__{sym}.parquet"), columns=["entry_time", "exit_time"],
+    t = pd.read_parquet(os.path.join(G.OFFICIAL_DIR, f"{name}__{sym}.parquet"), columns=["entry_time"],
                         filters=[("entry_time", "<", cut)])
+    t.attrs = {}
     assert (t.entry_time < cut).all()
-    return int(len(t)), int((t.exit_time >= cut).sum())
+    return t.sort_values("entry_time", kind="stable").reset_index(drop=True)
+
+
+def official_count(name, sym):
+    n = len(official_entries(name, sym))
+    return int(n), int(n - len(official_closed(name, sym)))
 
 
 def official_closed(name, sym):

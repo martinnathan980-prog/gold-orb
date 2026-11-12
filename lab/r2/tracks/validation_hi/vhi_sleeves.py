@@ -24,9 +24,11 @@ CHANGES (kind -> builder; each returns the orders to simulate, the per-order inf
                 1 January minus `purge_days`; terciles q; the worse side skipped only if it lost; >= min_train
                 signals; history from 31 January of Y-1). The skip is applied with each signal's own riskbp in the
                 run's cost mode, and the orders refused alone (stop under 3 spreads) are those of the run's cost
-                mode. A skipped signal never blocks a later one (the chain is re-simulated). `declared_T` {year: bp}
-                is BINDING: a fitted threshold that differs from it by more than 0.01 bp raises
-                DeclaredThresholdError (no result is produced). Code: synthesis_B s1_run.signal_table / fit_fold
+                mode. A skipped signal never blocks a later one (the chain is re-simulated). `declared_T`
+                {year: {"q_hi": bp, "skip": side, "n_train": n}} (or {year: bp}) is BINDING: a fitted threshold that
+                differs from it by more than 0.01 bp, another skip side or another number of training signals raises
+                DeclaredThresholdError (no result is produced); in the look every declared year must carry the three
+                (A4). Code: synthesis_B s1_run.signal_table / fit_fold
                 (imported), the walk-forward generalised to any CUT (identical to s1_run.walk_forward at CUT
                 2022-01-01, checked in the proofs).
     payoff      a payoff-lens variant: family S (k, reentry), T (m), H (j), B (b); code: payoff variants.py
@@ -374,29 +376,58 @@ class DeclaredThresholdError(RuntimeError):
 
 
 T_TOL_BP = 0.01
+DECLARED_KEYS = ("q_hi", "skip", "n_train")
+
+
+def declared_entry(v):
+    """A declared year of K1: a number (the threshold T = q_hi only) or {"q_hi": T, "skip": side, "n_train": n} (A4:
+    the fitted skip side and the number of training signals are binding too). Returns (q_hi, {key: declared})."""
+    if isinstance(v, dict):
+        unknown = sorted(set(v) - set(DECLARED_KEYS))
+        if unknown or "q_hi" not in v:
+            raise ValueError(f"K1 declared year {v!r}: keys must be {DECLARED_KEYS} with q_hi present")
+        return float(v["q_hi"]), {k: v[k] for k in DECLARED_KEYS if k in v}
+    return float(v), {"q_hi": float(v)}
 
 
 def declared_T_check(dT, folds, f_next, cut, tol=T_TOL_BP):
-    """Each declared threshold {year: bp} against the walk-forward: the fold of that year (the look: 2022 is a fold at
-    CUT 2026), or the fit for the year starting at CUT (in sample: 2022 at CUT 2022)."""
+    """Each declared year {year: T or {q_hi, skip, n_train}} against the walk-forward: the fold of that year (the look:
+    2022 is a fold at CUT 2026), or the fit for the year starting at CUT (in sample: 2022 at CUT 2022)."""
     cy = cut.year if cut == pd.Timestamp(f"{cut.year}-01-01", tz="UTC") else None
     chk = {}
     for y, v in dT.items():
+        q, dec = declared_entry(v)
         f = folds.get(int(y)) or (f_next if int(y) == cy else None)
         got = None if f is None else f["q_hi"]
-        chk[str(y)] = {"declared": float(v), "fitted": got,
-                       "fitted_from": "fold" if int(y) in folds else ("fit_for_year_starting_at_cut" if got is not None else None),
-                       "fitted_skip_side": None if f is None else f["skip"],
-                       "abs_diff_bp": None if got is None else abs(got - float(v)),
-                       "same_to_0.01bp": bool(got is not None and abs(got - float(v)) <= tol)}
+        c = {"declared": q, "fitted": got,
+             "fitted_from": "fold" if int(y) in folds else ("fit_for_year_starting_at_cut" if got is not None else None),
+             "fitted_skip_side": None if f is None else f["skip"],
+             "fitted_n_train": None if f is None else f.get("n_train"),
+             "abs_diff_bp": None if got is None else abs(got - q),
+             "same_to_0.01bp": bool(got is not None and abs(got - q) <= tol),
+             "declared_fields": sorted(dec)}
+        if "skip" in dec:
+            c["declared_skip_side"] = dec["skip"]
+            c["same_skip_side"] = bool(f is not None and f["skip"] == dec["skip"])
+        if "n_train" in dec:
+            c["declared_n_train"] = int(dec["n_train"])
+            c["same_n_train"] = bool(f is not None and f.get("n_train") == int(dec["n_train"]))
+        chk[str(y)] = c
     return chk
 
 
-def bind_declared_T(dT, folds, f_next, cut, tol=T_TOL_BP):
-    """F5: the declared thresholds are binding. A declared year that the walk-forward fits at this CUT (a fold, or the
-    fit for the year starting at the CUT) must be within `tol` bp of the declared value, else DeclaredThresholdError;
-    a declared year up to the last fold year that has no fit also raises. A year after the CUT cannot be checked
-    (recorded as such)."""
+def bind_declared_T(dT, folds, f_next, cut, tol=T_TOL_BP, require_full=False):
+    """F5 / A4: the declared values are binding. A declared year that the walk-forward fits at this CUT (a fold, or the
+    fit for the year starting at the CUT) must have its threshold within `tol` bp of the declared value, and, when
+    declared, the same skip side and the same number of training signals; otherwise DeclaredThresholdError (the run
+    stops, no result). A declared year up to the last fold year that has no fit also raises. A year after the CUT
+    cannot be checked (recorded as such). require_full (the look): every declared year must carry q_hi, skip and
+    n_train."""
+    if require_full:
+        for y, v in dT.items():
+            if not (isinstance(v, dict) and all(k in v for k in DECLARED_KEYS)):
+                raise DeclaredThresholdError(f"K1: the look's declared year {y} must carry q_hi, skip and n_train (A4); "
+                                             f"got {v!r}")
     chk = declared_T_check(dT, folds, f_next, cut, tol)
     last_year = (cut - pd.Timedelta(nanoseconds=1)).year
     for y, c in chk.items():
@@ -410,7 +441,17 @@ def bind_declared_T(dT, folds, f_next, cut, tol=T_TOL_BP):
             raise DeclaredThresholdError(f"K1: the walk-forward's T({y}) = {c['fitted']:.4f} bp ({c['fitted_from']}) "
                                          f"differs from the declared {c['declared']} bp by {c['abs_diff_bp']:.4f} bp "
                                          f"(> {tol} bp): the run stops")
-        c["binding"] = "checked: within 0.01 bp"
+        if "declared_skip_side" in c and not c["same_skip_side"]:
+            raise DeclaredThresholdError(f"K1: the walk-forward's skip side for {y} is {c['fitted_skip_side']!r} "
+                                         f"({c['fitted_from']}), the declared side is {c['declared_skip_side']!r}: the "
+                                         "run stops")
+        if "declared_n_train" in c and not c["same_n_train"]:
+            raise DeclaredThresholdError(f"K1: the walk-forward's fit for {y} has {c['fitted_n_train']} training "
+                                         f"signals ({c['fitted_from']}), {c['declared_n_train']} are declared: the run "
+                                         "stops")
+        c["binding"] = "checked: " + ", ".join(
+            ["T within 0.01 bp"] + (["same skip side"] if "declared_skip_side" in c else [])
+            + (["same n_train"] if "declared_n_train" in c else []))
     return chk
 
 
@@ -458,8 +499,11 @@ def change_k1(spec, mk, O, mode, ctx):
             "refused_alone_in_labels_mode": int(s.refused.sum()),
             "max_abs_riskbp_diff_run_vs_labels_mode": float(np.nanmax(drb)) if np.isfinite(drb).any() else None}
     dT = ch.get("declared_T")
+    if G.is_look(G.current_cut()) and not dT:
+        raise DeclaredThresholdError("K1 in the look needs its declared year(s) ('declared_T', binding)")
     if dT:
-        diag["declared_T_check"] = bind_declared_T(dT, folds, f_next, G.current_cut())
+        diag["declared_T_check"] = bind_declared_T(dT, folds, f_next, G.current_cut(),
+                                                   require_full=G.is_look(G.current_cut()))
     return var_orders, {"diag": diag, "base_orders": base_orders, "signals": s}
 
 

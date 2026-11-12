@@ -1,22 +1,23 @@
 {
- "what": "the guard of the harness (vhi_guard): F1 the declaration bound to the spec (PROTOCOL_V3.md as it stands refused), F2 run once / fixed output / second access, F3 the hardened read guard (probes refused before any byte is read), CUT rules, the access log untouched, every read of the process with its filter",
+ "what": "the guard of the harness (vhi_guard): F1 the declaration bound to the spec (PROTOCOL_V3.md as it stands refused), A1 only the protocol's real path accepted as LOOK_DECLARED (the harness's outputs and copies of them refused, also once they quote this run's spec sha256: rows 'A1 (after_write)', added after those files are written), F2 run once / fixed output / second access, F3 / A2 / A3 the hardened read guard (probes refused before any byte is read: the holdout component rule and lab/ CSVs through open() included), CUT rules, the access log untouched, every read of the process with its filter",
  "plan_tests": {
-  "the real spec with LOOK_DECLARED = PROTOCOL_V3.md as it stands: refused (F1)": "CUT 2026-01-01 00:00:00+00:00: the text of LOOK_DECLARED='/home/user/gold-orb/lab/PROTOCOL_V3.md' must contain the string 'autopsy_HI_look' and the full sha256 of the spec (f097ab176413972beec5ee32c729a796ba99bb1dcaad0bcf509ff3ea58eb67d6); contains 'autopsy_HI_look': False, contains the spec sha256:",
-  "the real spec without LOOK_DECLARED: refused": "CUT 2026-01-01 00:00:00+00:00 is after 2022-01-01: the look is refused until LOOK_DECLARED=<path of the protocol addendum that declares it> is set",
-  "a dummy spec whose sha256 the declaration does not quote (the real spec + the test text): refused": "CUT 2026-01-01 00:00:00+00:00: the text of LOOK_DECLARED='/tmp/vhi_plan_k80hdzmc/addendum_test.md' must contain the string 'autopsy_HI_look' and the full sha256 of the spec (f097ab176413972beec5ee32c729a796ba99bb1dcaad0bcf509ff3ea58eb67d6); contains 'autopsy_HI_look': True, contains the spec sha256:",
+  "the real spec with LOOK_DECLARED = PROTOCOL_V3.md as it stands: refused (F1)": "CUT 2026-01-01 00:00:00+00:00: the protocol /home/user/gold-orb/lab/PROTOCOL_V3.md does not declare this look (F1: its text must contain the look's track name and the full sha256 of the spec file that runs); track named: False, spec sha256 quoted: False",
+  "the real spec without LOOK_DECLARED: refused": "CUT 2026-01-01 00:00:00+00:00 is after 2022-01-01: the look is refused until LOOK_DECLARED=/home/user/gold-orb/lab/PROTOCOL_V3.md is set and the protocol declares it",
+  "A1: a dummy spec with a declaration in /tmp quoting the track and its sha256: refused (not the protocol's path)": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_plan_e036_f2p/addendum_test.md' is refused (A1): its real path '/tmp/vhi_plan_e036_f2p/addendum_test.md' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the look may be declared in (no output of the harness, no copy, no other file, ",
+  "a dummy spec whose sha256 the declaration does not quote (the real spec + the test text): refused": "CUT 2026-01-01 00:00:00+00:00: the protocol /tmp/vhi_plan_e036_f2p/addendum_test.md does not declare this look (F1: its text must contain the look's track name and the full sha256 of the spec file that runs); track named: True, spec sha256 quoted: False",
   "a look of the dummy spec, declaration quoting its sha256, no earlier access: allowed (plan only)": {
-   "out": "/tmp/vhi_plan_k80hdzmc/look/vhi_proof_dummy_spec__cut2026-01-01.json",
-   "marker": "/tmp/vhi_plan_k80hdzmc/look/vhi_proof_dummy_spec__cut2026-01-01.started",
+   "out": "/tmp/vhi_plan_e036_f2p/look/vhi_proof_dummy_spec__cut2026-01-01.json",
+   "marker": "/tmp/vhi_plan_e036_f2p/look/vhi_proof_dummy_spec__cut2026-01-01.started",
    "label": "look:vhi_proof_dummy_spec:1932165d9f29",
    "stem": "vhi_proof_dummy_spec__cut2026-01-01",
    "is_look": true
   },
-  "a look with --out: refused (F2: fixed output path)": "--out is refused for a look: its output path is fixed (/tmp/vhi_plan_k80hdzmc/look/vhi_proof_dummy_spec__cut2026-01-01.json)",
+  "a look with --out: refused (F2: fixed output path)": "--out is refused for a look: its output path is fixed (/tmp/vhi_plan_e036_f2p/look/vhi_proof_dummy_spec__cut2026-01-01.json)",
   "a look when val_access.log already holds an autopsy_HI_look line: refused (F2: run once)": "the look is run once: val_access.log already holds 1 line(s) with track 'autopsy_HI_look' and 0 '.started' marker(s) exist; a second access needs --second-access '<reason>'",
   "a look when a '.started' marker exists: refused (F2)": "the look is run once: val_access.log already holds 0 line(s) with track 'autopsy_HI_look' and 1 '.started' marker(s) exist; a second access needs --second-access '<reason>'",
   "a second access with its reason after a logged first access: allowed (plan only)": {
-   "out": "/tmp/vhi_plan_k80hdzmc/look/vhi_proof_dummy_spec__cut2026-01-01__access2.json",
-   "marker": "/tmp/vhi_plan_k80hdzmc/look/vhi_proof_dummy_spec__cut2026-01-01__access2.started",
+   "out": "/tmp/vhi_plan_e036_f2p/look/vhi_proof_dummy_spec__cut2026-01-01__access2.json",
+   "marker": "/tmp/vhi_plan_e036_f2p/look/vhi_proof_dummy_spec__cut2026-01-01__access2.started",
    "label": "look:vhi_proof_dummy_spec:1932165d9f29:second_access:the first run crashed after its access line",
    "stem": "vhi_proof_dummy_spec__cut2026-01-01__access2",
    "is_look": true
@@ -24,7 +25,7 @@
   "a second access with an empty reason: refused": "--second-access needs a reason (it is written into the access label)",
   "--second-access without an earlier access: refused": "--second-access is for a look whose first access is already logged; there is none",
   "a rehearsal (CUT 2022-01-01) with --out: allowed": {
-   "out": "/tmp/vhi_plan_k80hdzmc/rehearsal.json",
+   "out": "/tmp/vhi_plan_e036_f2p/rehearsal.json",
    "marker": null,
    "label": "look:vhi_proof_dummy_spec:1932165d9f29",
    "stem": "vhi_proof_dummy_spec__cut2022-01-01",
@@ -33,17 +34,82 @@
   "a rehearsal with --second-access: refused": "--second-access is for a look only (CUT after 2022-01-01)",
   "CUT 2026-01-02 with a declaration quoting the spec's sha256: refused": "CUT 2026-01-02 00:00:00+00:00 is after 2026-01-01: the 2026 holdout is never read, whatever LOOK_DECLARED says"
  },
+ "A1_before_write": {
+  "results/r2/validation_hi/proofs.json": {
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json",
+   "content_rule_alone": true,
+   "refused": true,
+   "refused_by_the_path_rule": true
+  },
+  "results/r2/validation_hi/proof_i_guard.json": {
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_i_guard.json",
+   "content_rule_alone": true,
+   "refused": true,
+   "refused_by_the_path_rule": true
+  },
+  "results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01.json": {
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01.json",
+   "content_rule_alone": true,
+   "refused": true,
+   "refused_by_the_path_rule": true
+  },
+  "results/r2/validation_hi/rehearsal_in_sample.json": {
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal_in_sample.json",
+   "content_rule_alone": false,
+   "refused": true,
+   "refused_by_the_path_rule": true
+  },
+  "a copy of proofs.json in /tmp named PROTOCOL_V3.md": {
+   "real_path": "/tmp/vhi_a1_4dglj_du/PROTOCOL_V3.md",
+   "content_rule_alone": true,
+   "refused": true,
+   "refused_by_the_path_rule": true
+  },
+  "a copy of proofs.json in the scratchpad": {
+   "real_path": "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_a1_copy_of_proofs_before_write.json",
+   "content_rule_alone": true,
+   "refused": true,
+   "refused_by_the_path_rule": true
+  },
+  "a copy of proofs.json in the harness folder": {
+   "real_path": "/home/user/gold-orb/lab/r2/tracks/validation_hi/.vhi_a1_copy_of_proofs_before_write.json",
+   "content_rule_alone": true,
+   "refused": true,
+   "refused_by_the_path_rule": true
+  },
+  "a copy of proofs.json under lab/results/": {
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/.vhi_a1_copy_of_proofs_before_write.json",
+   "content_rule_alone": true,
+   "refused": true,
+   "refused_by_the_path_rule": true
+  },
+  "a symlink in /tmp to proofs.json": {
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json",
+   "content_rule_alone": true,
+   "refused": true,
+   "refused_by_the_path_rule": true
+  }
+ },
  "opens_under_lab": [
   "PROTOCOL_V3.md",
   "goldlab/sim.py",
   "r2/fp_costs.json",
   "r2/tracks/autopsy/payoff/common.py",
+  "r2/tracks/autopsy/synthesis_A/portfolio.py",
   "r2/tracks/ml/models/B1_ridge_full.json",
   "r2/tracks/stake/stake.py",
+  "r2/tracks/validation_hi/.vhi_a1_copy_of_proofs_before_write.json",
   "r2/tracks/validation_hi/look_spec.json",
   "results/r2/autopsy/cluster/engine_check.json",
   "results/r2/autopsy/payoff/trials.jsonl",
+  "results/r2/autopsy/payoff/variants_table.csv",
+  "results/r2/autopsy/synthesis_A.json",
   "results/r2/autopsy/synthesis_B.json",
+  "results/r2/validation_hi/.vhi_a1_copy_of_proofs_before_write.json",
+  "results/r2/validation_hi/proof_i_guard.json",
+  "results/r2/validation_hi/proofs.json",
+  "results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01.json",
+  "results/r2/validation_hi/rehearsal_in_sample.json",
   "results/val_access.log",
   "tracks/orb/strategy.py",
   "tracks/trend/strategy.py"
@@ -69,6 +135,12 @@
   },
   {
    "path": "results/r2/autopsy/synthesis_B.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "results/r2/autopsy/synthesis_A.json",
    "kind": "open",
    "filters": "None",
    "bound": null
@@ -240,6 +312,12 @@
    "kind": "pandas.read_parquet",
    "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]",
    "bound": "2022-01-01 00:00:00+00:00"
+  },
+  {
+   "path": "r2/tracks/autopsy/synthesis_A/portfolio.py",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
   },
   {
    "path": "data/fp/us100_m1.parquet",
@@ -458,6 +536,12 @@
    "bound": null
   },
   {
+   "path": "PROTOCOL_V3.md",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
    "path": "r2/tracks/validation_hi/look_spec.json",
    "kind": "open",
    "filters": "None",
@@ -476,6 +560,90 @@
    "bound": null
   },
   {
+   "path": "r2/tracks/validation_hi/look_spec.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "results/r2/validation_hi/proofs.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "results/r2/validation_hi/proofs.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "results/r2/validation_hi/proofs.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "results/r2/validation_hi/proofs.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "results/r2/validation_hi/proofs.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "results/r2/validation_hi/proof_i_guard.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "results/r2/validation_hi/rehearsal_in_sample.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "r2/tracks/validation_hi/.vhi_a1_copy_of_proofs_before_write.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "results/r2/validation_hi/.vhi_a1_copy_of_proofs_before_write.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "results/r2/validation_hi/proofs.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "results/r2/autopsy/payoff/variants_table.csv",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
+   "path": "results/r2/autopsy/cluster/engine_check.json",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
    "path": "results/val_access.log",
    "kind": "open",
    "filters": "None",
@@ -488,7 +656,7 @@
    "bound": null
   }
  ],
- "checks": 91,
+ "checks": 164,
  "failed": 0,
  "ok": true,
  "failures": [],
@@ -510,63 +678,42 @@
    "expected": false,
    "got": false,
    "ok": true,
-   "why": "CUT 2023-01-01 00:00:00+00:00 is after 2022-01-01: the look is refused until LOOK_DECLARED=<path of the protocol addendum that declares it> is set"
+   "why": "CUT 2023-01-01 00:00:00+00:00 is after 2022-01-01: the look is refused until LOOK_DECLARED=/home/user/gold-orb/lab/PROTOCOL_V3.md is set and the protocol declares it"
   },
   {
    "field": "guard.cut_2026_without_env_refused",
    "expected": false,
    "got": false,
    "ok": true,
-   "why": "CUT 2026-01-01 00:00:00+00:00 is after 2022-01-01: the look is refused until LOOK_DECLARED=<path of the protocol addendum that declares it> is set"
+   "why": "CUT 2026-01-01 00:00:00+00:00 is after 2022-01-01: the look is refused until LOOK_DECLARED=/home/user/gold-orb/lab/PROTOCOL_V3.md is set and the protocol declares it"
   },
   {
-   "field": "guard.cut_2026_env_not_a_file_refused",
+   "field": "guard.cut_2026_env_not_a_file_refused (A1: not the protocol)",
    "expected": false,
    "got": false,
    "ok": true,
-   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/nonexistent/addendum.md' is not a readable file"
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/nonexistent/addendum.md' is refused (A1): its real path '/nonexistent/addendum.md' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the look may be declared in (no output of the harness, no copy, no other file, wherever it is)"
+  },
+  {
+   "field": "guard.A1 cut_2026_a_full_test_declaration_in_/tmp_refused (track + full sha, but not the protocol's path)",
+   "expected": false,
+   "got": false,
+   "ok": true,
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_selftest_3avm_dt1/addendum_full.txt' is refused (A1): its real path '/tmp/vhi_selftest_3avm_dt1/addendum_full.txt' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the look may be declared in (no output of the harness, no copy, no ot"
+  },
+  {
+   "field": "guard.A1 cut_2026_a_full_test_declaration_in_capitals_in_/tmp_refused",
+   "expected": false,
+   "got": false,
+   "ok": true,
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_selftest_3avm_dt1/addendum_full_upper.txt' is refused (A1): its real path '/tmp/vhi_selftest_3avm_dt1/addendum_full_upper.txt' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the look may be declared in (no output of the harness, no"
   },
   {
    "field": "guard.cut_2026_text_with_word_declared_only_refused (the old gate)",
    "expected": false,
    "got": false,
    "ok": true,
-   "why": "CUT 2026-01-01 00:00:00+00:00: the text of LOOK_DECLARED='/tmp/vhi_selftest_aaoispdj/addendum_word_declared_only.txt' must contain the string 'autopsy_HI_look' and the full sha256 of the spec (80169f9799866919f60d14c777f2cf536cf76d4a7ec6bb14b7715d0c1d35f9f6); contains 'autopsy_HI_look': False, conta"
-  },
-  {
-   "field": "guard.cut_2026_text_with_track_only_refused",
-   "expected": false,
-   "got": false,
-   "ok": true,
-   "why": "CUT 2026-01-01 00:00:00+00:00: the text of LOOK_DECLARED='/tmp/vhi_selftest_aaoispdj/addendum_track_only.txt' must contain the string 'autopsy_HI_look' and the full sha256 of the spec (80169f9799866919f60d14c777f2cf536cf76d4a7ec6bb14b7715d0c1d35f9f6); contains 'autopsy_HI_look': True, contains the s"
-  },
-  {
-   "field": "guard.cut_2026_text_with_sha_only_refused",
-   "expected": false,
-   "got": false,
-   "ok": true,
-   "why": "CUT 2026-01-01 00:00:00+00:00: the text of LOOK_DECLARED='/tmp/vhi_selftest_aaoispdj/addendum_sha_only.txt' must contain the string 'autopsy_HI_look' and the full sha256 of the spec (80169f9799866919f60d14c777f2cf536cf76d4a7ec6bb14b7715d0c1d35f9f6); contains 'autopsy_HI_look': False, contains the sp"
-  },
-  {
-   "field": "guard.cut_2026_text_with_track_and_sha12_refused",
-   "expected": false,
-   "got": false,
-   "ok": true,
-   "why": "CUT 2026-01-01 00:00:00+00:00: the text of LOOK_DECLARED='/tmp/vhi_selftest_aaoispdj/addendum_track_and_sha12.txt' must contain the string 'autopsy_HI_look' and the full sha256 of the spec (80169f9799866919f60d14c777f2cf536cf76d4a7ec6bb14b7715d0c1d35f9f6); contains 'autopsy_HI_look': True, contains "
-  },
-  {
-   "field": "guard.cut_2026_text_with_track_and_another_specs_sha_refused",
-   "expected": false,
-   "got": false,
-   "ok": true,
-   "why": "CUT 2026-01-01 00:00:00+00:00: the text of LOOK_DECLARED='/tmp/vhi_selftest_aaoispdj/addendum_track_and_other_sha.txt' must contain the string 'autopsy_HI_look' and the full sha256 of the spec (80169f9799866919f60d14c777f2cf536cf76d4a7ec6bb14b7715d0c1d35f9f6); contains 'autopsy_HI_look': True, conta"
-  },
-  {
-   "field": "guard.cut_2026_text_unwritten_refused",
-   "expected": false,
-   "got": false,
-   "ok": true,
-   "why": "CUT 2026-01-01 00:00:00+00:00: the text of LOOK_DECLARED='/tmp/vhi_selftest_aaoispdj/addendum_unwritten.txt' must contain the string 'autopsy_HI_look' and the full sha256 of the spec (80169f9799866919f60d14c777f2cf536cf76d4a7ec6bb14b7715d0c1d35f9f6); contains 'autopsy_HI_look': False, contains the s"
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_selftest_3avm_dt1/addendum_word_declared_only.txt' is refused (A1): its real path '/tmp/vhi_selftest_3avm_dt1/addendum_word_declared_only.txt' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the look may be declared in (no output of"
   },
   {
    "field": "guard.cut_2026_full_declaration_but_no_spec_sha_refused",
@@ -581,18 +728,6 @@
    "got": false,
    "ok": true,
    "why": "CUT 2026-01-01 00:00:00+00:00 is after 2022-01-01: the look needs the full sha256 of its spec file (look.py passes it); got '80169f979986'"
-  },
-  {
-   "field": "guard.cut_2026_text_with_track_and_full_sha_allowed (resolve only, nothing opened)",
-   "expected": true,
-   "got": true,
-   "ok": true
-  },
-  {
-   "field": "guard.cut_2026_text_with_track_and_full_sha_in_capitals_allowed (resolve only)",
-   "expected": true,
-   "got": true,
-   "ok": true
   },
   {
    "field": "guard.cut_2026_01_02_refused_even_with_full_declaration",
@@ -613,7 +748,140 @@
    "expected": false,
    "got": false,
    "ok": true,
-   "why": "CUT 2026-01-01 00:00:00+00:00: the text of LOOK_DECLARED='/home/user/gold-orb/lab/PROTOCOL_V3.md' must contain the string 'autopsy_HI_look' and the full sha256 of the spec (f097ab176413972beec5ee32c729a796ba99bb1dcaad0bcf509ff3ea58eb67d6); contains 'autopsy_HI_look': False, contains the spec sha256:"
+   "why": "CUT 2026-01-01 00:00:00+00:00: the protocol /home/user/gold-orb/lab/PROTOCOL_V3.md does not declare this look (F1: its text must contain the look's track name and the full sha256 of the spec file that runs); track named: False, spec sha256 quoted: False"
+  },
+  {
+   "field": "guard.A1 cut_2026_a_symlink_to_the_protocol: its real path is the protocol, judged on the protocol's text as it stands: refused",
+   "expected": false,
+   "got": false,
+   "ok": true,
+   "why": "CUT 2026-01-01 00:00:00+00:00: the protocol /home/user/gold-orb/lab/PROTOCOL_V3.md does not declare this look (F1: its text must contain the look's track name and the full sha256 of the spec file that runs); track named: False, spec sha256 quoted: False"
+  },
+  {
+   "field": "guard.content_word_declared_only_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.content_track_only_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.content_sha_only_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.content_track_and_sha12_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.content_track_and_another_specs_sha_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.content_unwritten_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.content_track_and_full_sha_accepted",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "guard.content_track_and_full_sha_in_capitals_accepted",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "guard.content_full_text_but_no_spec_sha_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.content_full_text_but_short_spec_sha_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.path_the_protocol_accepted",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "guard.path_the_protocol_written_with_a_dot_component_accepted (same real path)",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "guard.path_a_symlink_to_the_protocol_accepted (its real path is the protocol)",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "guard.path_results_proofs.json_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.path_results_rehearsal_json_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.path_results_proof_i_guard.json_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.path_the_look_output_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.path_the_harness_folder_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.path_a_test_text_in_/tmp_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.path_a_file_named_PROTOCOL_V3.md_elsewhere_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.path_the_scratchpad_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
   },
   {
    "field": "guard.PROTOCOL_V3.md_as_it_stands",
@@ -634,6 +902,36 @@
    "ok": true
   },
   {
+   "field": "guard.A2 results_holdout_dir_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.A2 results_holdout_run.log_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.A2 a_lab_file_named_holdout_refused (lab/holdout.py)",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.A2 a_component_containing_holdout_refused (lab/holdout_candidates.json)",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.A2 a_component_in_capitals_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
    "field": "guard.data_file_dated_2026_refused",
    "expected": false,
    "got": false,
@@ -643,6 +941,18 @@
    "field": "guard.any_file_dated_2026_refused",
    "expected": false,
    "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.control_official_trades_path_accepted_by_check_path",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "guard.control_a_path_outside_lab_named_holdout_accepted (the rule is about lab/)",
+   "expected": true,
+   "got": true,
    "ok": true
   },
   {
@@ -734,10 +1044,10 @@
    "expected": true,
    "got": true,
    "ok": true,
-   "protocol_sha256": "2cadb7df8c279b39b1b882726acff72401eba17a184e0cf1ed17b12016ccd095",
+   "protocol_sha256": "97c1569af63b48c659c661e1496fec97f09d38eee9c02856e08fbaebb920f5be",
    "protocol_contains_autopsy_HI_look": false,
    "protocol_contains_the_spec_sha256": false,
-   "spec_sha256": "f097ab176413972beec5ee32c729a796ba99bb1dcaad0bcf509ff3ea58eb67d6"
+   "spec_sha256": "b71f69d59999bdb97442bf0a1beff9a8512b883396886323426e69e55e277960"
   },
   {
    "field": "plan: the real spec with LOOK_DECLARED = PROTOCOL_V3.md as it stands: refused (F1)",
@@ -747,6 +1057,12 @@
   },
   {
    "field": "plan: the real spec without LOOK_DECLARED: refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "plan: A1: a dummy spec with a declaration in /tmp quoting the track and its sha256: refused (not the protocol's path)",
    "expected": false,
    "got": false,
    "ok": true
@@ -830,6 +1146,12 @@
    "ok": true
   },
   {
+   "field": "A1: vhi_guard.DECLARED_PATH is the protocol again after the plan tests",
+   "expected": "/home/user/gold-orb/lab/PROTOCOL_V3.md",
+   "got": "/home/user/gold-orb/lab/PROTOCOL_V3.md",
+   "ok": true
+  },
+  {
    "field": "the real val_access.log has no autopsy_HI_look line and results/r2/validation_hi/look/ no '.started' marker (check_run_once passes)",
    "expected": [
     0,
@@ -839,6 +1161,156 @@
     0,
     0
    ],
+   "ok": true
+  },
+  {
+   "field": "A1 (before_write): LOOK_DECLARED = results/r2/validation_hi/proofs.json: refused by the path rule (resolve_cut and look.plan)",
+   "expected": [
+    false,
+    false,
+    true
+   ],
+   "got": [
+    false,
+    false,
+    true
+   ],
+   "ok": true,
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json' is refused (A1): its real path '/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, t"
+  },
+  {
+   "field": "A1 (before_write): LOOK_DECLARED = results/r2/validation_hi/proof_i_guard.json: refused by the path rule (resolve_cut and look.plan)",
+   "expected": [
+    false,
+    false,
+    true
+   ],
+   "got": [
+    false,
+    false,
+    true
+   ],
+   "ok": true,
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_i_guard.json",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/home/user/gold-orb/lab/results/r2/validation_hi/proof_i_guard.json' is refused (A1): its real path '/home/user/gold-orb/lab/results/r2/validation_hi/proof_i_guard.json' is not /home/user/gold-orb/lab/PRO"
+  },
+  {
+   "field": "A1 (before_write): LOOK_DECLARED = results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01.json: refused by the path rule (resolve_cut and look.plan)",
+   "expected": [
+    false,
+    false,
+    true
+   ],
+   "got": [
+    false,
+    false,
+    true
+   ],
+   "ok": true,
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01.json",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01.json' is refused (A1): its real path '/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal/autopsy_HI_look__"
+  },
+  {
+   "field": "A1 (before_write): LOOK_DECLARED = results/r2/validation_hi/rehearsal_in_sample.json: refused by the path rule (resolve_cut and look.plan)",
+   "expected": [
+    false,
+    false,
+    true
+   ],
+   "got": [
+    false,
+    false,
+    true
+   ],
+   "ok": true,
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal_in_sample.json",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal_in_sample.json' is refused (A1): its real path '/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal_in_sample.json' is not /home/user/gold"
+  },
+  {
+   "field": "A1 (before_write): LOOK_DECLARED = a copy of proofs.json in /tmp named PROTOCOL_V3.md: refused by the path rule (resolve_cut and look.plan)",
+   "expected": [
+    false,
+    false,
+    true
+   ],
+   "got": [
+    false,
+    false,
+    true
+   ],
+   "ok": true,
+   "real_path": "/tmp/vhi_a1_4dglj_du/PROTOCOL_V3.md",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_a1_4dglj_du/PROTOCOL_V3.md' is refused (A1): its real path '/tmp/vhi_a1_4dglj_du/PROTOCOL_V3.md' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the look may be declared in (no outpu"
+  },
+  {
+   "field": "A1 (before_write): LOOK_DECLARED = a copy of proofs.json in the scratchpad: refused by the path rule (resolve_cut and look.plan)",
+   "expected": [
+    false,
+    false,
+    true
+   ],
+   "got": [
+    false,
+    false,
+    true
+   ],
+   "ok": true,
+   "real_path": "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_a1_copy_of_proofs_before_write.json",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_a1_copy_of_proofs_before_write.json' is refused (A1): its real path '/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d"
+  },
+  {
+   "field": "A1 (before_write): LOOK_DECLARED = a copy of proofs.json in the harness folder: refused by the path rule (resolve_cut and look.plan)",
+   "expected": [
+    false,
+    false,
+    true
+   ],
+   "got": [
+    false,
+    false,
+    true
+   ],
+   "ok": true,
+   "real_path": "/home/user/gold-orb/lab/r2/tracks/validation_hi/.vhi_a1_copy_of_proofs_before_write.json",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/home/user/gold-orb/lab/r2/tracks/validation_hi/.vhi_a1_copy_of_proofs_before_write.json' is refused (A1): its real path '/home/user/gold-orb/lab/r2/tracks/validation_hi/.vhi_a1_copy_of_proofs_before_writ"
+  },
+  {
+   "field": "A1 (before_write): LOOK_DECLARED = a copy of proofs.json under lab/results/: refused by the path rule (resolve_cut and look.plan)",
+   "expected": [
+    false,
+    false,
+    true
+   ],
+   "got": [
+    false,
+    false,
+    true
+   ],
+   "ok": true,
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/.vhi_a1_copy_of_proofs_before_write.json",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/home/user/gold-orb/lab/results/r2/validation_hi/.vhi_a1_copy_of_proofs_before_write.json' is refused (A1): its real path '/home/user/gold-orb/lab/results/r2/validation_hi/.vhi_a1_copy_of_proofs_before_wr"
+  },
+  {
+   "field": "A1 (before_write): LOOK_DECLARED = a symlink in /tmp to proofs.json: refused by the path rule (resolve_cut and look.plan)",
+   "expected": [
+    false,
+    false,
+    true
+   ],
+   "got": [
+    false,
+    false,
+    true
+   ],
+   "ok": true,
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_a1_4dglj_du/link_to_proofs.json' is refused (A1): its real path '/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the loo"
+  },
+  {
+   "field": "A1 (before_write): every copy made for the probes is deleted",
+   "expected": [],
+   "got": [],
    "ok": true
   },
   {
@@ -881,7 +1353,7 @@
    "expected": true,
    "got": true,
    "ok": true,
-   "why": "refused: /home/user/gold-orb/lab/data/holdout/anything.parquet is holdout data (never read by this harness)"
+   "why": "refused: /home/user/gold-orb/lab/data/holdout/anything.parquet is holdout (a path under lab/ with a 'holdout' component, results/holdout_run.log, lab/holdout_raw, lab/data/holdout): never read, at any"
   },
   {
    "field": "refused in process: F3a open file object (builtins.open of an FP frame)",
@@ -1007,7 +1479,7 @@
    "expected": true,
    "got": true,
    "ok": true,
-   "why": "refused: open() of /home/user/gold-orb/lab/holdout_raw/download/xauusd-m1-bid-2026-01-01-2026-11-05.csv (holdout data)"
+   "why": "refused: open() of /home/user/gold-orb/lab/holdout_raw/download/xauusd-m1-bid-2026-01-01-2026-11-05.csv (holdout: a path under lab/ with a 'holdout' component, results/holdout_run.log, lab/holdout_raw"
   },
   {
    "field": "refused in process: open() of a file dated 2026 (results/live/brain_maps_2026-11-11.json)",
@@ -1035,7 +1507,175 @@
    "expected": true,
    "got": true,
    "ok": true,
-   "why": "CUT 2026-01-01 00:00:00+00:00 is after 2022-01-01: the look is refused until LOOK_DECLARED=<path of the protocol addendum that declares it> is set"
+   "why": "CUT 2026-01-01 00:00:00+00:00 is after 2022-01-01: the look is refused until LOOK_DECLARED=/home/user/gold-orb/lab/PROTOCOL_V3.md is set and the protocol declares it"
+  },
+  {
+   "field": "refused in process: A2 open() of results/holdout/holdout_stdout.txt (opened and closed if it passed, nothing read)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of /home/user/gold-orb/lab/results/holdout/holdout_stdout.txt (holdout: a path under lab/ with a 'holdout' component, results/holdout_run.log, lab/holdout_raw, lab/data/holdout)"
+  },
+  {
+   "field": "refused in process: A2 open() of results/holdout_run.log (opened and closed if it passed, nothing read)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of /home/user/gold-orb/lab/results/holdout_run.log (holdout: a path under lab/ with a 'holdout' component, results/holdout_run.log, lab/holdout_raw, lab/data/holdout)"
+  },
+  {
+   "field": "refused in process: A2 pathlib read of a path under results/holdout/ (absent)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of /home/user/gold-orb/lab/results/holdout/__vhi_probe_absent__.json (holdout: a path under lab/ with a 'holdout' component, results/holdout_run.log, lab/holdout_raw, lab/data/holdout)"
+  },
+  {
+   "field": "refused in process: A2 pathlib read of results/holdout_run.log through a path with a '..' component (absent twin name)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of /home/user/gold-orb/lab/results/holdout_run.log.__absent__ (holdout: a path under lab/ with a 'holdout' component, results/holdout_run.log, lab/holdout_raw, lab/data/holdout)"
+  },
+  {
+   "field": "refused in process: A2 a symlink in /tmp to results/holdout/holdout_stdout.txt (realpath; opened and closed if it passed)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of /home/user/gold-orb/lab/results/holdout/holdout_stdout.txt (holdout: a path under lab/ with a 'holdout' component, results/holdout_run.log, lab/holdout_raw, lab/data/holdout)"
+  },
+  {
+   "field": "refused in process: A2 open() in append mode of a path under results/holdout/ (any mode is refused; a folder that does not exist, so nothing could be created)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of /home/user/gold-orb/lab/results/holdout/__vhi_absent_dir__/x.txt (holdout: a path under lab/ with a 'holdout' component, results/holdout_run.log, lab/holdout_raw, lab/data/holdout)"
+  },
+  {
+   "field": "refused in process: A2 parquet under results/holdout/ with a filter at the CUT (absent)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: /home/user/gold-orb/lab/results/holdout/__absent__.parquet is holdout (a path under lab/ with a 'holdout' component, results/holdout_run.log, lab/holdout_raw, lab/data/holdout): never read, a"
+  },
+  {
+   "field": "refused in process: A2 pandas csv under results/holdout/ (absent)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: /home/user/gold-orb/lab/results/holdout/__absent__.csv is holdout (a path under lab/ with a 'holdout' component, results/holdout_run.log, lab/holdout_raw, lab/data/holdout): never read, at an"
+  },
+  {
+   "field": "refused in process: A2 open() of lab/holdout.py (a lab file whose name carries 'holdout')",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of /home/user/gold-orb/lab/holdout.py (holdout: a path under lab/ with a 'holdout' component, results/holdout_run.log, lab/holdout_raw, lab/data/holdout)"
+  },
+  {
+   "field": "refused in process: A2 open() of lab/holdout_candidates.json",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of /home/user/gold-orb/lab/holdout_candidates.json (holdout: a path under lab/ with a 'holdout' component, results/holdout_run.log, lab/holdout_raw, lab/data/holdout)"
+  },
+  {
+   "field": "refused in process: A2 open() of an audit file named *holdout* (lab/audit/scratch/donch4h_stop/statskeptic/s07_holdout.json)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of /home/user/gold-orb/lab/audit/scratch/donch4h_stop/statskeptic/s07_holdout.json (holdout: a path under lab/ with a 'holdout' component, results/holdout_run.log, lab/holdout_raw, lab"
+  },
+  {
+   "field": "refused in process: A2 pyarrow.json.read_json under results/holdout/ (absent)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: /home/user/gold-orb/lab/results/holdout/__absent__.json is holdout (a path under lab/ with a 'holdout' component, results/holdout_run.log, lab/holdout_raw, lab/data/holdout): never read, at a"
+  },
+  {
+   "field": "refused in process: A3 open() of results/trend/trades_val_donch4h_stop.csv (validation trades; opened and closed if it passed)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of csv results/trend/trades_val_donch4h_stop.csv under lab/ in a reading mode (A3; allowed: results/r2/autopsy/payoff/variants_table.csv)"
+  },
+  {
+   "field": "refused in process: A3 csv.reader(open(...)) of the same file",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of csv results/trend/trades_val_donch4h_stop.csv under lab/ in a reading mode (A3; allowed: results/r2/autopsy/payoff/variants_table.csv)"
+  },
+  {
+   "field": "refused in process: A3 pathlib read_text of a lab CSV (absent)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of csv results/r2/validation_hi/.vhi_probe_absent.csv under lab/ in a reading mode (A3; allowed: results/r2/autopsy/payoff/variants_table.csv)"
+  },
+  {
+   "field": "refused in process: A3 open() of a lab *.csv.gz (absent)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of csv results/r2/validation_hi/.vhi_probe_absent.csv.gz under lab/ in a reading mode (A3; allowed: results/r2/autopsy/payoff/variants_table.csv)"
+  },
+  {
+   "field": "refused in process: A3 gzip.open of a lab *.csv.gz (absent)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of csv results/r2/validation_hi/.vhi_probe_absent.csv.gz under lab/ in a reading mode (A3; allowed: results/r2/autopsy/payoff/variants_table.csv)"
+  },
+  {
+   "field": "refused in process: A3 bz2.open of a lab *.csv.bz2 (absent)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of csv results/r2/validation_hi/.vhi_probe_absent.csv.bz2 under lab/ in a reading mode (A3; allowed: results/r2/autopsy/payoff/variants_table.csv)"
+  },
+  {
+   "field": "refused in process: A3 open() in r+ mode of a lab CSV (reading)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of csv results/r2/validation_hi/.vhi_probe_harmless.csv under lab/ in a reading mode (A3; allowed: results/r2/autopsy/payoff/variants_table.csv)"
+  },
+  {
+   "field": "refused in process: A3 numpy.loadtxt of a lab CSV (a harmless one written here)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of csv results/r2/validation_hi/.vhi_probe_harmless.csv under lab/ in a reading mode (A3; allowed: results/r2/autopsy/payoff/variants_table.csv)"
+  },
+  {
+   "field": "refused in process: A3 numpy.genfromtxt of a lab CSV (the harmless one)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: open() of csv results/r2/validation_hi/.vhi_probe_harmless.csv under lab/ in a reading mode (A3; allowed: results/r2/autopsy/payoff/variants_table.csv)"
+  },
+  {
+   "field": "refused in process: A3 pyarrow.csv.read_csv of a lab CSV off the allowlist (the harmless one)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: csv results/r2/validation_hi/.vhi_probe_harmless.csv under lab/ (allowed: results/r2/autopsy/payoff/variants_table.csv)"
+  },
+  {
+   "field": "refused in process: A3 pyarrow.csv.open_csv of a lab CSV off the allowlist (the harmless one)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: csv results/r2/validation_hi/.vhi_probe_harmless.csv under lab/ (allowed: results/r2/autopsy/payoff/variants_table.csv)"
+  },
+  {
+   "field": "refused in process: A3 pyarrow.csv.read_csv of a buffer",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": "refused: pyarrow.csv.read_csv of a BytesIO (only a str or os.PathLike path is accepted)"
   },
   {
    "field": "the refused probes recorded no read and wrote no marker",
@@ -1044,7 +1684,28 @@
    "ok": true
   },
   {
-   "field": "the guard wraps pandas.read_parquet / read_csv, pyarrow.parquet(.core).read_table, read_pandas, pyarrow.dataset.dataset, builtins.open and io.open",
+   "field": "control: A3 open() of the allowlisted results/r2/autopsy/payoff/variants_table.csv is allowed",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": null
+  },
+  {
+   "field": "control: A3 open() of a lab CSV in write mode is allowed (only reading modes are refused)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": null
+  },
+  {
+   "field": "control: A2 a JSON under lab/results/ that is not holdout can still be opened (recorded)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "why": null
+  },
+  {
+   "field": "the guard wraps pandas.read_parquet / read_csv, pyarrow.parquet(.core).read_table, read_pandas, pyarrow.dataset.dataset, builtins.open and io.open, numpy's file opener, bz2's open, pyarrow.csv.read_csv / open_csv and pyarrow.json.read_json",
    "expected": true,
    "got": true,
    "ok": true
@@ -1054,7 +1715,7 @@
    "expected": true,
    "got": true,
    "ok": true,
-   "message": "REFUSED: CUT 2026-01-01 00:00:00+00:00 is after 2022-01-01: the look is refused until LOOK_DECLARED=<path of the protocol addendum that declares it> is set"
+   "message": "REFUSED: CUT 2026-01-01 00:00:00+00:00 is after 2022-01-01: the look is refused until LOOK_DECLARED=/home/user/gold-orb/lab/PROTOCOL_V3.md is set and the protocol declares it"
   },
   {
    "field": "look.py --cut 2026-01-02: refused (after the 2026 boundary)",
@@ -1114,6 +1775,228 @@
    "expected": 0,
    "got": 0,
    "ok": true
+  },
+  {
+   "field": "A1 (after_write): LOOK_DECLARED = results/r2/validation_hi/proofs.json: refused by the path rule (resolve_cut and look.plan) although its text quotes the track and the spec sha256 (the content rule alone would accept it)",
+   "expected": [
+    false,
+    false,
+    true,
+    true
+   ],
+   "got": [
+    false,
+    false,
+    true,
+    true
+   ],
+   "ok": true,
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json' is refused (A1): its real path '/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, t"
+  },
+  {
+   "field": "A1 (after_write): LOOK_DECLARED = results/r2/validation_hi/proof_i_guard.json: refused by the path rule (resolve_cut and look.plan) although its text quotes the track and the spec sha256 (the content rule alone would accept it)",
+   "expected": [
+    false,
+    false,
+    true,
+    true
+   ],
+   "got": [
+    false,
+    false,
+    true,
+    true
+   ],
+   "ok": true,
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_i_guard.json",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/home/user/gold-orb/lab/results/r2/validation_hi/proof_i_guard.json' is refused (A1): its real path '/home/user/gold-orb/lab/results/r2/validation_hi/proof_i_guard.json' is not /home/user/gold-orb/lab/PRO"
+  },
+  {
+   "field": "A1 (after_write): LOOK_DECLARED = results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01.json: refused by the path rule (resolve_cut and look.plan) although its text quotes the track and the spec sha256 (the content rule alone would accept it)",
+   "expected": [
+    false,
+    false,
+    true,
+    true
+   ],
+   "got": [
+    false,
+    false,
+    true,
+    true
+   ],
+   "ok": true,
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01.json",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01.json' is refused (A1): its real path '/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal/autopsy_HI_look__"
+  },
+  {
+   "field": "A1 (after_write): LOOK_DECLARED = results/r2/validation_hi/rehearsal_in_sample.json: refused by the path rule (resolve_cut and look.plan)",
+   "expected": [
+    false,
+    false,
+    true
+   ],
+   "got": [
+    false,
+    false,
+    true
+   ],
+   "ok": true,
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal_in_sample.json",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal_in_sample.json' is refused (A1): its real path '/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal_in_sample.json' is not /home/user/gold"
+  },
+  {
+   "field": "A1 (after_write): LOOK_DECLARED = a copy of proofs.json in /tmp named PROTOCOL_V3.md: refused by the path rule (resolve_cut and look.plan) although its text quotes the track and the spec sha256 (the content rule alone would accept it)",
+   "expected": [
+    false,
+    false,
+    true,
+    true
+   ],
+   "got": [
+    false,
+    false,
+    true,
+    true
+   ],
+   "ok": true,
+   "real_path": "/tmp/vhi_a1_qdx36241/PROTOCOL_V3.md",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_a1_qdx36241/PROTOCOL_V3.md' is refused (A1): its real path '/tmp/vhi_a1_qdx36241/PROTOCOL_V3.md' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the look may be declared in (no outpu"
+  },
+  {
+   "field": "A1 (after_write): LOOK_DECLARED = a copy of proofs.json in the scratchpad: refused by the path rule (resolve_cut and look.plan) although its text quotes the track and the spec sha256 (the content rule alone would accept it)",
+   "expected": [
+    false,
+    false,
+    true,
+    true
+   ],
+   "got": [
+    false,
+    false,
+    true,
+    true
+   ],
+   "ok": true,
+   "real_path": "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_a1_copy_of_proofs_after_write.json",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_a1_copy_of_proofs_after_write.json' is refused (A1): its real path '/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d2"
+  },
+  {
+   "field": "A1 (after_write): LOOK_DECLARED = a copy of proofs.json in the harness folder: refused by the path rule (resolve_cut and look.plan) although its text quotes the track and the spec sha256 (the content rule alone would accept it)",
+   "expected": [
+    false,
+    false,
+    true,
+    true
+   ],
+   "got": [
+    false,
+    false,
+    true,
+    true
+   ],
+   "ok": true,
+   "real_path": "/home/user/gold-orb/lab/r2/tracks/validation_hi/.vhi_a1_copy_of_proofs_after_write.json",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/home/user/gold-orb/lab/r2/tracks/validation_hi/.vhi_a1_copy_of_proofs_after_write.json' is refused (A1): its real path '/home/user/gold-orb/lab/r2/tracks/validation_hi/.vhi_a1_copy_of_proofs_after_write."
+  },
+  {
+   "field": "A1 (after_write): LOOK_DECLARED = a copy of proofs.json under lab/results/: refused by the path rule (resolve_cut and look.plan) although its text quotes the track and the spec sha256 (the content rule alone would accept it)",
+   "expected": [
+    false,
+    false,
+    true,
+    true
+   ],
+   "got": [
+    false,
+    false,
+    true,
+    true
+   ],
+   "ok": true,
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/.vhi_a1_copy_of_proofs_after_write.json",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/home/user/gold-orb/lab/results/r2/validation_hi/.vhi_a1_copy_of_proofs_after_write.json' is refused (A1): its real path '/home/user/gold-orb/lab/results/r2/validation_hi/.vhi_a1_copy_of_proofs_after_writ"
+  },
+  {
+   "field": "A1 (after_write): LOOK_DECLARED = a symlink in /tmp to proofs.json: refused by the path rule (resolve_cut and look.plan) although its text quotes the track and the spec sha256 (the content rule alone would accept it)",
+   "expected": [
+    false,
+    false,
+    true,
+    true
+   ],
+   "got": [
+    false,
+    false,
+    true,
+    true
+   ],
+   "ok": true,
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_a1_qdx36241/link_to_proofs.json' is refused (A1): its real path '/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the loo"
+  },
+  {
+   "field": "A1 (after_write): every copy made for the probes is deleted",
+   "expected": [],
+   "got": [],
+   "ok": true
   }
- ]
+ ],
+ "A1_after_write": {
+  "results/r2/validation_hi/proofs.json": {
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json",
+   "content_rule_alone": true,
+   "refused": true,
+   "refused_by_the_path_rule": true
+  },
+  "results/r2/validation_hi/proof_i_guard.json": {
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_i_guard.json",
+   "content_rule_alone": true,
+   "refused": true,
+   "refused_by_the_path_rule": true
+  },
+  "results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01.json": {
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01.json",
+   "content_rule_alone": true,
+   "refused": true,
+   "refused_by_the_path_rule": true
+  },
+  "results/r2/validation_hi/rehearsal_in_sample.json": {
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal_in_sample.json",
+   "content_rule_alone": false,
+   "refused": true,
+   "refused_by_the_path_rule": true
+  },
+  "a copy of proofs.json in /tmp named PROTOCOL_V3.md": {
+   "real_path": "/tmp/vhi_a1_qdx36241/PROTOCOL_V3.md",
+   "content_rule_alone": true,
+   "refused": true,
+   "refused_by_the_path_rule": true
+  },
+  "a copy of proofs.json in the scratchpad": {
+   "real_path": "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_a1_copy_of_proofs_after_write.json",
+   "content_rule_alone": true,
+   "refused": true,
+   "refused_by_the_path_rule": true
+  },
+  "a copy of proofs.json in the harness folder": {
+   "real_path": "/home/user/gold-orb/lab/r2/tracks/validation_hi/.vhi_a1_copy_of_proofs_after_write.json",
+   "content_rule_alone": true,
+   "refused": true,
+   "refused_by_the_path_rule": true
+  },
+  "a copy of proofs.json under lab/results/": {
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/.vhi_a1_copy_of_proofs_after_write.json",
+   "content_rule_alone": true,
+   "refused": true,
+   "refused_by_the_path_rule": true
+  },
+  "a symlink in /tmp to proofs.json": {
+   "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json",
+   "content_rule_alone": true,
+   "refused": true,
+   "refused_by_the_path_rule": true
+  }
+ }
 }

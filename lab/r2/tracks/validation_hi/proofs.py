@@ -10,7 +10,8 @@ number is compared with what the lenses published:
         478.3 bp, 2019-2021 395 -> 304 trades, +49.1 -> +63.9 R; the generalised walk-forward identical to
         s1_run.walk_forward. Review F4: the declared FP labels in both cost modes leave the folds, T(2022) =
         478.284 bp and the x1.5 chain unchanged (against the x1.5 run with x1.5 labels, synthesis_B's own, rerun).
-        Review F5: the declared T is binding (more than 0.01 bp off raises, in the run itself)
+        Review F5: the declared T is binding (more than 0.01 bp off raises, in the run itself); A4: so are the
+        declared skip side 'hi' and n_train 2345 of 2022 (another side or count raises, in the run itself)
     (c) K2 and K3 (synthesis_B sleeve_runs N1, N2): 344 trades +155.5 R, 375 trades +194.3 R, fp and x1.5
     (d) the seven payoff variants in play and their references (results/r2/autopsy/payoff/variants_table.csv);
         review F6: the '<sleeve>@payoff' references with the payoff lens's 3-spread refusal, and trade by trade
@@ -24,14 +25,23 @@ plus the harness's own checks:
         the decision instant as well as on the delayed entry bar
     (h) stakes: the stake interface reproduces P0 at stake 1, adds exactly what a sleeve-year table adds, and a
         walk-forward stake only uses outcomes known before each 1 January minus 7 days
-    (i) the guard: review F1 (the declaration bound to the spec: PROTOCOL_V3.md as it stands is refused), F2 (run
-        once, fixed output path, second access), F3 (the hardened read guard: probes refused before any byte is
-        read); no line written to val_access.log; every read of the run with its filter
-    (j) look.py --cut 2022-01-01 with the spec AS IT STANDS (changes_in_look = K1, K2, K3), in its own process:
-        equal to the proofs' run on everything both contain, nothing logged
+    (i) the guard: review F1 (the declaration bound to the spec: PROTOCOL_V3.md as it stands is refused), A1 (only
+        the protocol's real path is accepted: proofs.json, the rehearsal JSON, proof_i_guard.json and copies of them
+        in /tmp, the scratchpad, the harness folder and lab/results/ are refused although their text quotes the
+        track and the spec's sha256 -- checked again after those files are written), F2 (run once, fixed output
+        path, second access), F3 / A2 / A3 (the hardened read guard: probes refused before any byte is read, the
+        holdout paths and lab/ CSVs through open() included); no line written to val_access.log; every read of the
+        run with its filter
+    (j) look.py --cut 2022-01-01 with the spec AS IT STANDS (changes_in_look = K1, K2, K3 and synthesis A's five), in
+        its own process: equal to the proofs' run on everything both contain, nothing logged; A5: its meta records
+        the sha256 of every harness, lens and strategy file it imported (equal to the files, and to synthesis A's
+        frozen hashes)
     (k) moving the CUT: look.py at CUT 2021-01-01 (every change) against the CUT 2022 run
     (l) review F10: the verdicts block, synthesis_B's declared criteria computed mechanically, every value equal to
         the run's own statistics and to synthesis_B's published figures
+    (m) synthesis A's criteria V1-V5 (verdicts) and its report (res["synthesis_A"]) against synthesis A's published
+        in-sample rehearsal of its own criteria, its changed sleeves, its frozen equal-swing factors and its
+        portfolios; the check first ("stop and report") reported and gating synthesis A's verdicts
 
     env -u LOOK_DECLARED NUMBA_CACHE_DIR=/tmp/numba_validation_hi PYTHONDONTWRITEBYTECODE=1 \\
         python3 lab/r2/tracks/validation_hi/proofs.py
@@ -97,6 +107,7 @@ NY = "America/New_York"
 K1_KEY = "brk72_24h_wd__ethusd+K1"
 
 SYNTH_B = os.path.join(LAB, "results", "r2", "autopsy", "synthesis_B.json")
+SYNTH_A = os.path.join(LAB, "results", "r2", "autopsy", "synthesis_A.json")
 PAYOFF_TABLE = os.path.join(LAB, "results", "r2", "autopsy", "payoff", "variants_table.csv")
 PAYOFF_TRIALS = os.path.join(LAB, "results", "r2", "autopsy", "payoff", "trials.jsonl")
 ENGINE_CHECK = os.path.join(LAB, "results", "r2", "autopsy", "cluster", "engine_check.json")
@@ -272,11 +283,18 @@ def proof_b(res, sb, k1x):
                    "expected": [True, "fold", False], "got": [ck["2021"]["same_to_0.01bp"], ck["2021"]["fitted_from"],
                                                              ck["2020"]["same_to_0.01bp"]],
                    "ok": ck["2021"]["same_to_0.01bp"] and ck["2021"]["fitted_from"] == "fold" and not ck["2020"]["same_to_0.01bp"]})
-        # F5: the declared T(2022) is binding in the run itself (it did not raise: within 0.01 bp)
+        # F5 / A4: the declared 2022 fit is binding in the run itself (it did not raise: T within 0.01 bp, skip side
+        # 'hi', n_train 2345)
         ck = dg.get("declared_T_check", {}).get("2022", {})
-        rr.append({"field": f"{mode}.F5 declared T(2022) = 478.284 bound in the run: fitted within 0.01 bp",
-                   "expected": [True, "fit_for_year_starting_at_cut"], "got": [ck.get("same_to_0.01bp"), ck.get("fitted_from")],
-                   "ok": ck.get("same_to_0.01bp") is True and ck.get("binding") == "checked: within 0.01 bp",
+        want_b = "checked: T within 0.01 bp, same skip side, same n_train"
+        rr.append({"field": f"{mode}.F5/A4 declared 2022 fit (T 478.284 bp, skip 'hi', n_train 2345) bound in the run: "
+                            "fitted within 0.01 bp, same side, same count",
+                   "expected": [True, "fit_for_year_starting_at_cut", "hi", 2345, want_b],
+                   "got": [ck.get("same_to_0.01bp"), ck.get("fitted_from"), ck.get("fitted_skip_side"),
+                           ck.get("fitted_n_train"), ck.get("binding")],
+                   "ok": ck.get("same_to_0.01bp") is True and ck.get("same_skip_side") is True
+                   and ck.get("same_n_train") is True and ck.get("binding") == want_b
+                   and ck.get("fitted_skip_side") == "hi" and ck.get("fitted_n_train") == 2345,
                    "fitted": ck.get("fitted"), "abs_diff_bp": ck.get("abs_diff_bp")})
         rows += rr
         out[mode] = {"got": got, "declared_T_check": dg.get("declared_T_check"),
@@ -336,7 +354,21 @@ def proof_b(res, sb, k1x):
                            ("T(2021) = 465.1178 through a fold", {"2021": 465.1178}, True),
                            ("T(2020) = 496.0 through a fold (0.75 bp off)", {"2020": 496.0}, False),
                            ("T(2018) = 500 (no fit for 2018: a declared year without a fit)", {"2018": 500.0}, False),
-                           ("T(2023) = 480 (a later year: not checkable at CUT 2022, recorded)", {"2023": 480.0}, True)):
+                           ("T(2023) = 480 (a later year: not checkable at CUT 2022, recorded)", {"2023": 480.0}, True),
+                           ("A4 2022 = {q_hi 478.284, skip 'hi', n_train 2345} (the spec)",
+                            {"2022": {"q_hi": 478.284, "skip": "hi", "n_train": 2345}}, True),
+                           ("A4 2022 with skip 'lo' (a side flip with the same T)",
+                            {"2022": {"q_hi": 478.284, "skip": "lo", "n_train": 2345}}, False),
+                           ("A4 2022 with skip None (a fit that would skip nothing)",
+                            {"2022": {"q_hi": 478.284, "skip": None, "n_train": 2345}}, False),
+                           ("A4 2022 with n_train 2344", {"2022": {"q_hi": 478.284, "skip": "hi", "n_train": 2344}}, False),
+                           ("A4 2022 with n_train 2346", {"2022": {"q_hi": 478.284, "skip": "hi", "n_train": 2346}}, False),
+                           ("A4 2022 with T 0.016 bp off, right side and count",
+                            {"2022": {"q_hi": 478.3, "skip": "hi", "n_train": 2345}}, False),
+                           ("A4 2021 = {465.1178, 'hi', 1703} through a fold",
+                            {"2021": {"q_hi": 465.1178, "skip": "hi", "n_train": 1703}}, True),
+                           ("A4 2021 through a fold with n_train 1702",
+                            {"2021": {"q_hi": 465.1178, "skip": "hi", "n_train": 1702}}, False)):
         try:
             ck = SL.bind_declared_T(dT, folds, fnext, cut)
             accepted, why = True, ck
@@ -345,9 +377,30 @@ def proof_b(res, sb, k1x):
         f5.append({"field": f"F5 bind_declared_T: {name} -> {'accepted' if want else 'raises'}", "expected": want,
                    "got": accepted, "ok": accepted == want})
         f5_out[name] = why
+    # A4, the look's form (require_full, set by change_k1 when the CUT is a look): every declared year carries the three
+    spec_dT = next(s for s in res["_spec"]["sleeves"] if s["key"] == K1_KEY)["change"]["declared_T"]
+    for name, dT, want in (("A4 the look's form: the spec's declared year accepted", spec_dT, True),
+                           ("A4 the look's form: a threshold alone is refused", {"2022": 478.284}, False),
+                           ("A4 the look's form: q_hi and skip without n_train refused",
+                            {"2022": {"q_hi": 478.284, "skip": "hi"}}, False)):
+        try:
+            SL.bind_declared_T(dT, folds, fnext, cut, require_full=True)
+            accepted, why = True, None
+        except SL.DeclaredThresholdError as e:
+            accepted, why = False, str(e)
+        f5.append({"field": f"A4 bind_declared_T(require_full=True): {name}", "expected": want, "got": accepted,
+                   "ok": accepted == want})
+        f5_out[name] = why
+    f5.append({"field": "A4 the spec declares 2022 with q_hi 478.284, skip 'hi' and n_train 2345", "expected":
+               {"q_hi": 478.284, "skip": "hi", "n_train": 2345}, "got": spec_dT.get("2022"),
+               "ok": spec_dT.get("2022") == {"q_hi": 478.284, "skip": "hi", "n_train": 2345}})
     f5.append({"field": "F5 the run itself with declared T(2022) = 478.3: SL.run raises DeclaredThresholdError before "
                         "any trade", "expected": True, "got": k1x["bad_declared_raised"], "ok": k1x["bad_declared_raised"],
                "message": k1x["bad_declared_message"]})
+    for kk, what in (("bad_side", "skip side 'lo'"), ("bad_n_train", "n_train 2344")):
+        f5.append({"field": f"A4 the run itself with the declared 2022 fit's {what} (T right): SL.run raises "
+                            "DeclaredThresholdError before any trade", "expected": True, "got": k1x[f"{kk}_raised"],
+                   "ok": k1x[f"{kk}_raised"], "message": k1x[f"{kk}_message"]})
     rows += f5
     out["F5_binding"] = f5_out
     fp = out["fp"]["got"]
@@ -718,6 +771,17 @@ def frames_pass(res, sb):
                 k1x.update(bad_declared_raised=False, bad_declared_message=None)
             except SL.DeclaredThresholdError as e:
                 k1x.update(bad_declared_raised=True, bad_declared_message=str(e))
+            # A4: the same run with the right T but another skip side, or another number of training signals
+            for kk, dT in (("bad_side", {"2022": {"q_hi": 478.284, "skip": "lo", "n_train": 2345}}),
+                           ("bad_n_train", {"2022": {"q_hi": 478.284, "skip": "hi", "n_train": 2344}})):
+                bad = copy.deepcopy(k1spec)
+                bad["change"]["labels_mode"] = "fp"
+                bad["change"]["declared_T"] = dT
+                try:
+                    SL.run(bad, m1, "fp", "lab")
+                    k1x.update({f"{kk}_raised": False, f"{kk}_message": None})
+                except SL.DeclaredThresholdError as e:
+                    k1x.update({f"{kk}_raised": True, f"{kk}_message": str(e)})
             # F7: the Friday block on the decision instant, on synthetic orders of this frame
             fpb = friday_decision_probe(m1, sym)
             out_g["F7_friday_decision_instant_probe"] = fpb
@@ -936,8 +1000,10 @@ def proof_h(res, signals):
 
 # ------------------------------------------------------------------------------------------------- (i)
 def plan_tests():
-    """F1 / F2 on look.plan (pure: nothing is opened, read or logged beyond the declared text and the access log).
-    The temporary declaration quotes the sha256 of a DUMMY spec, never the real one."""
+    """F1 / A1 / F2 on look.plan (pure: nothing is opened, read or logged beyond the declared text and the access log).
+    The temporary declaration quotes the sha256 of a DUMMY spec, never the real one. A1 refuses it (it is not the
+    protocol); to exercise the F2 rules behind the declaration, vhi_guard.DECLARED_PATH is pointed at the temporary
+    text for those plan() calls only (restored in `finally`; open_run is never called meanwhile)."""
     import importlib.util
     sp = importlib.util.spec_from_file_location("vhi_look_entry", os.path.join(HERE, "look.py"))
     LK = importlib.util.module_from_spec(sp)
@@ -970,10 +1036,15 @@ def plan_tests():
         out[name] = why
         return why
 
+    saved_decl = G.DECLARED_PATH
     try:
         attempt("the real spec with LOOK_DECLARED = PROTOCOL_V3.md as it stands: refused (F1)", False,
                 cut="2026-01-01", raw=raw_real, env={"LOOK_DECLARED": PROTOCOL})
         attempt("the real spec without LOOK_DECLARED: refused", False, cut="2026-01-01", raw=raw_real, env={})
+        attempt("A1: a dummy spec with a declaration in /tmp quoting the track and its sha256: refused (not the "
+                "protocol's path)", False, cut="2026-01-01", raw=raw, env=env, log_path=log0, look_dir=lookd)
+        # ---- behind A1 (the temporary text plays the protocol for the plan() calls below only)
+        G.DECLARED_PATH = os.path.realpath(decl)
         attempt("a dummy spec whose sha256 the declaration does not quote (the real spec + the test text): refused",
                 False, cut="2026-01-01", raw=raw_real, env=env, log_path=log0, look_dir=lookd)
         p = attempt("a look of the dummy spec, declaration quoting its sha256, no earlier access: allowed (plan only)",
@@ -1007,6 +1078,7 @@ def plan_tests():
         attempt("CUT 2026-01-02 with a declaration quoting the spec's sha256: refused", False, cut="2026-01-02", raw=raw,
                 env=env, log_path=log0, look_dir=lookd)
     finally:
+        G.DECLARED_PATH = saved_decl
         for d_ in (lookd, lookd2):
             for fn in os.listdir(d_):
                 os.unlink(os.path.join(d_, fn))
@@ -1014,6 +1086,8 @@ def plan_tests():
         for fn in os.listdir(tmp):
             os.unlink(os.path.join(tmp, fn))
         os.rmdir(tmp)
+    rows.append({"field": "A1: vhi_guard.DECLARED_PATH is the protocol again after the plan tests", "expected": PROTOCOL,
+                 "got": G.DECLARED_PATH, "ok": G.DECLARED_PATH == PROTOCOL == "/home/user/gold-orb/lab/PROTOCOL_V3.md"})
     # the real access log and look directory: the look has never run
     prior, started = G.check_run_once()
     rows.append({"field": "the real val_access.log has no autopsy_HI_look line and results/r2/validation_hi/look/ "
@@ -1022,10 +1096,29 @@ def plan_tests():
     return rows, out
 
 
+def _open_close(path, mode="r"):
+    """open() then close at once, nothing read (a probe that would only create a handle if the guard failed)."""
+    f = open(path, mode)
+    f.close()
+
+
 def guard_probes():
-    """F3: reads the hardened guard must refuse inside this very process (each raises before any byte is read)."""
+    """F3, A2, A3: reads the hardened guard must refuse inside this very process (each raises before any byte is
+    read). Probes of sensitive files either use a path that does not exist (a failing guard then raises
+    FileNotFoundError, which counts as NOT refused, and nothing is read) or only open and close a handle; the
+    numpy / pyarrow CSV probes read a harmless one-line CSV written for the purpose under lab/results/r2/validation_hi/
+    (deleted afterwards)."""
+    import bz2
+    import csv
+    import gzip
+    import pyarrow.csv as pacsv
+    import pyarrow.json as pajson
     FR = os.path.join(LAB, "data", "fp", "ethusd_m1.parquet")
     SK = os.path.join(LAB, "r2", "audit", "brk72_24h_wd", "stat_skeptic", "trades", "every_val_ethusd.parquet")
+    HO = os.path.join(LAB, "results", "holdout")
+    VALCSV = os.path.join(LAB, "results", "trend", "trades_val_donch4h_stop.csv")     # validation trades: never read
+    HARMLESS = os.path.join(OUT, ".vhi_probe_harmless.csv")                           # a, 1 (written here, deleted)
+    ABSENT_CSV = os.path.join(OUT, ".vhi_probe_absent.csv")
     import pyarrow.dataset as pads
     import pyarrow.fs as pafs
     import pyarrow.parquet as pq
@@ -1033,6 +1126,10 @@ def guard_probes():
     link_dir = tempfile.mkdtemp(prefix="vhi_link_")
     link = os.path.join(link_dir, "harmless.parquet")
     os.symlink(FR, link)
+    link_ho = os.path.join(link_dir, "harmless.txt")
+    os.symlink(os.path.join(HO, "holdout_stdout.txt"), link_ho)
+    with open(HARMLESS, "w") as f:                                                    # write mode: allowed
+        f.write("a\n1\n")
     c = pd.Timestamp(CUT, tz="UTC")
     tries = {
         "frame_without_row_filter": lambda: pd.read_parquet(FR),
@@ -1071,6 +1168,52 @@ def guard_probes():
         "open_run of a look in this process (no LOOK_DECLARED; one CUT per process)":
             lambda: G.open_run("2026-01-01", "should_not_be_written", spec_sha=SPEC_SHA,
                                marker=os.path.join(G.LOOK_DIR, "never.started")),
+        # ---- A2: a 'holdout' component under lab/, and results/holdout_run.log, at every CUT, every reader
+        "A2 open() of results/holdout/holdout_stdout.txt (opened and closed if it passed, nothing read)":
+            lambda: _open_close(os.path.join(HO, "holdout_stdout.txt")),
+        "A2 open() of results/holdout_run.log (opened and closed if it passed, nothing read)":
+            lambda: _open_close(os.path.join(LAB, "results", "holdout_run.log")),
+        "A2 pathlib read of a path under results/holdout/ (absent)":
+            lambda: pathlib.Path(HO, "__vhi_probe_absent__.json").read_text(),
+        "A2 pathlib read of results/holdout_run.log through a path with a '..' component (absent twin name)":
+            lambda: pathlib.Path(LAB, "results", "r2", "..", "holdout_run.log.__absent__").read_bytes(),
+        "A2 a symlink in /tmp to results/holdout/holdout_stdout.txt (realpath; opened and closed if it passed)":
+            lambda: _open_close(link_ho),
+        "A2 open() in append mode of a path under results/holdout/ (any mode is refused; a folder that does not exist, "
+        "so nothing could be created)":
+            lambda: _open_close(os.path.join(HO, "__vhi_absent_dir__", "x.txt"), "a"),
+        "A2 parquet under results/holdout/ with a filter at the CUT (absent)":
+            lambda: pd.read_parquet(os.path.join(HO, "__absent__.parquet"), filters=[("entry_time", "<", c)]),
+        "A2 pandas csv under results/holdout/ (absent)": lambda: pd.read_csv(os.path.join(HO, "__absent__.csv")),
+        "A2 open() of lab/holdout.py (a lab file whose name carries 'holdout')":
+            lambda: _open_close(os.path.join(LAB, "holdout.py")),
+        "A2 open() of lab/holdout_candidates.json": lambda: _open_close(os.path.join(LAB, "holdout_candidates.json")),
+        "A2 open() of an audit file named *holdout* (lab/audit/scratch/donch4h_stop/statskeptic/s07_holdout.json)":
+            lambda: _open_close(os.path.join(LAB, "audit", "scratch", "donch4h_stop", "statskeptic", "s07_holdout.json")),
+        "A2 pyarrow.json.read_json under results/holdout/ (absent)":
+            lambda: pajson.read_json(os.path.join(HO, "__absent__.json")),
+        # ---- A3: CSV files under lab/ through open(), whatever reads them, except the allowlist
+        "A3 open() of results/trend/trades_val_donch4h_stop.csv (validation trades; opened and closed if it passed)":
+            lambda: _open_close(VALCSV),
+        "A3 csv.reader(open(...)) of the same file": lambda: csv.reader(open(VALCSV)),
+        "A3 pathlib read_text of a lab CSV (absent)": lambda: pathlib.Path(ABSENT_CSV).read_text(),
+        "A3 open() of a lab *.csv.gz (absent)": lambda: _open_close(ABSENT_CSV + ".gz", "rb"),
+        "A3 gzip.open of a lab *.csv.gz (absent)": lambda: gzip.open(ABSENT_CSV + ".gz").close(),
+        "A3 bz2.open of a lab *.csv.bz2 (absent)": lambda: bz2.open(ABSENT_CSV + ".bz2").close(),
+        "A3 open() in r+ mode of a lab CSV (reading)": lambda: _open_close(HARMLESS, "r+"),
+        "A3 numpy.loadtxt of a lab CSV (a harmless one written here)": lambda: np.loadtxt(HARMLESS, skiprows=1),
+        "A3 numpy.genfromtxt of a lab CSV (the harmless one)": lambda: np.genfromtxt(HARMLESS, skip_header=1),
+        "A3 pyarrow.csv.read_csv of a lab CSV off the allowlist (the harmless one)": lambda: pacsv.read_csv(HARMLESS),
+        "A3 pyarrow.csv.open_csv of a lab CSV off the allowlist (the harmless one)": lambda: pacsv.open_csv(HARMLESS),
+        "A3 pyarrow.csv.read_csv of a buffer": lambda: pacsv.read_csv(io.BytesIO(b"a\n1\n")),
+    }
+    controls = {
+        "A3 open() of the allowlisted results/r2/autopsy/payoff/variants_table.csv is allowed":
+            lambda: _open_close(os.path.join(LAB, G.CSV_ALLOW[0])),
+        "A3 open() of a lab CSV in write mode is allowed (only reading modes are refused)":
+            lambda: _open_close(HARMLESS, "a"),
+        "A2 a JSON under lab/results/ that is not holdout can still be opened (recorded)":
+            lambda: _open_close(ENGINE_CHECK),
     }
     rows = []
     L.registry()                                         # built before counting (its imports read source files)
@@ -1082,20 +1225,109 @@ def guard_probes():
                 refused, why = False, None
             except G.GuardError as e:
                 refused, why = True, str(e)[:200]
+            except Exception as e:  # noqa: BLE001 -- e.g. FileNotFoundError: the guard let it through
+                refused, why = False, f"NOT REFUSED BY THE GUARD: {e!r}"[:200]
             rows.append({"field": f"refused in process: {name}", "expected": True, "got": refused, "ok": refused,
                          "why": why})
+        nothing = len(G.reads()) == n0 and not os.path.exists(os.path.join(G.LOOK_DIR, "never.started"))
+        rows.append({"field": "the refused probes recorded no read and wrote no marker", "expected": True,
+                     "got": nothing, "ok": nothing})
+        for name, fn in controls.items():
+            try:
+                fn()
+                allowed, why = True, None
+            except Exception as e:  # noqa: BLE001
+                allowed, why = False, repr(e)[:200]
+            rows.append({"field": f"control: {name}", "expected": True, "got": allowed, "ok": allowed, "why": why})
     finally:
         os.unlink(link)
+        os.unlink(link_ho)
         os.rmdir(link_dir)
-    nothing = len(G.reads()) == n0 and not os.path.exists(os.path.join(G.LOOK_DIR, "never.started"))
-    rows.append({"field": "the refused probes recorded no read and wrote no marker", "expected": True, "got": nothing,
-                 "ok": nothing})
-    installed = all(getattr(f, "__vhi_guarded__", False) for f in (pd.read_parquet, pd.read_csv, pq.read_table, pqc.read_table,
-                                                                    pq.read_pandas, pads.dataset, open, io.open))
+        if os.path.exists(HARMLESS):
+            os.unlink(HARMLESS)
+    from numpy.lib import _datasource as npds
+    installed = all(getattr(f, "__vhi_guarded__", False) for f in (
+        pd.read_parquet, pd.read_csv, pq.read_table, pqc.read_table, pq.read_pandas, pads.dataset, open, io.open,
+        npds._file_openers._file_openers[None], bz2._builtin_open, pacsv.read_csv, pacsv.open_csv, pajson.read_json))
     rows.append({"field": "the guard wraps pandas.read_parquet / read_csv, pyarrow.parquet(.core).read_table, read_pandas, "
-                          "pyarrow.dataset.dataset, builtins.open and io.open", "expected": True, "got": installed,
-                 "ok": installed})
+                          "pyarrow.dataset.dataset, builtins.open and io.open, numpy's file opener, bz2's open, "
+                          "pyarrow.csv.read_csv / open_csv and pyarrow.json.read_json", "expected": True,
+                 "got": installed, "ok": installed})
     return rows
+
+
+def declared_file_probes(stage):
+    """A1 (the recheck's L1b): files whose text quotes the track and the spec's sha256 -- the harness's own outputs
+    proofs.json, the rehearsal JSONs and proof_i_guard.json, and copies of proofs.json in /tmp (named PROTOCOL_V3.md),
+    the scratchpad, the harness folder and lab/results/, and a symlink in /tmp to proofs.json -- are refused as
+    LOOK_DECLARED by the path rule, through resolve_cut and look.plan on environment dicts (the process environment
+    is never set; no run is opened; nothing is logged). `stage` 'after_write' runs once proofs.json, proof_i_guard.json
+    and the rehearsal hold this run's spec sha256: the content rule alone would then accept them. The copies are
+    deleted afterwards."""
+    import importlib.util
+    import shutil
+    sp = importlib.util.spec_from_file_location(f"vhi_look_entry_a1_{stage}", os.path.join(HERE, "look.py"))
+    LK = importlib.util.module_from_spec(sp)
+    sp.loader.exec_module(LK)
+    raw_real = open(SPEC, "rb").read()
+    targets = {"results/r2/validation_hi/proofs.json": os.path.join(OUT, "proofs.json"),
+               "results/r2/validation_hi/proof_i_guard.json": os.path.join(OUT, "proof_i_guard.json"),
+               "results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01.json":
+                   os.path.join(OUT, "rehearsal", "autopsy_HI_look__cut2022-01-01.json"),
+               "results/r2/validation_hi/rehearsal_in_sample.json": os.path.join(OUT, "rehearsal_in_sample.json")}
+    src = targets["results/r2/validation_hi/proofs.json"]
+    tmpd = tempfile.mkdtemp(prefix="vhi_a1_")
+    os.makedirs(SCRATCH, exist_ok=True)
+    places = {"a copy of proofs.json in /tmp named PROTOCOL_V3.md": os.path.join(tmpd, "PROTOCOL_V3.md"),
+              "a copy of proofs.json in the scratchpad": os.path.join(SCRATCH, f"vhi_a1_copy_of_proofs_{stage}.json"),
+              "a copy of proofs.json in the harness folder": os.path.join(HERE, f".vhi_a1_copy_of_proofs_{stage}.json"),
+              "a copy of proofs.json under lab/results/": os.path.join(OUT, f".vhi_a1_copy_of_proofs_{stage}.json"),
+              "a symlink in /tmp to proofs.json": os.path.join(tmpd, "link_to_proofs.json")}
+    rows, out = [], {}
+    made = []
+    try:
+        if os.path.exists(src):
+            for nm, p in places.items():
+                if nm.startswith("a symlink"):
+                    os.symlink(src, p)
+                else:
+                    shutil.copyfile(src, p)
+                made.append(p)
+        for nm, p in list(targets.items()) + list(places.items()):
+            if not os.path.lexists(p):
+                continue
+            d = G.declaration_check(p, SPEC_SHA)
+            try:
+                G.resolve_cut("2026-01-01", {"LOOK_DECLARED": p}, spec_sha=SPEC_SHA)
+                r_ok, why = True, None
+            except G.GuardError as e:
+                r_ok, why = False, str(e)
+            try:
+                LK.plan("2026-01-01", raw_real, env={"LOOK_DECLARED": p}, log_path=os.path.join(tmpd, "no.log"),
+                        look_dir=os.path.join(tmpd, "look"))
+                p_ok = True
+            except G.GuardError:
+                p_ok = False
+            by_path = bool(why and "(A1)" in why)
+            want_content = stage == "after_write" and not nm.endswith("rehearsal_in_sample.json")
+            ok = (not r_ok) and (not p_ok) and by_path and (d["ok"] if want_content else True)
+            rows.append({"field": f"A1 ({stage}): LOOK_DECLARED = {nm}: refused by the path rule (resolve_cut and "
+                                  "look.plan)" + (" although its text quotes the track and the spec sha256 (the content "
+                                                  "rule alone would accept it)" if want_content else ""),
+                         "expected": [False, False, True] + ([True] if want_content else []),
+                         "got": [r_ok, p_ok, by_path] + ([d["ok"]] if want_content else []), "ok": bool(ok),
+                         "real_path": d["real_path"], "why": (why or "")[:250]})
+            out[nm] = {"real_path": d["real_path"], "content_rule_alone": d["ok"], "refused": not r_ok,
+                       "refused_by_the_path_rule": by_path}
+    finally:
+        for p in made:
+            if os.path.lexists(p):
+                os.unlink(p)
+        shutil.rmtree(tmpd, ignore_errors=True)
+    left = [p for p in made if os.path.lexists(p)]
+    rows.append({"field": f"A1 ({stage}): every copy made for the probes is deleted", "expected": [], "got": left,
+                 "ok": not left})
+    return rows, out
 
 
 def proof_i():
@@ -1114,6 +1346,8 @@ def proof_i():
                  "protocol_contains_the_spec_sha256": prot.get("contains_spec_sha256"), "spec_sha256": SPEC_SHA})
     pr, pout = plan_tests()
     rows += pr
+    a1_rows, a1_out = declared_file_probes("before_write")
+    rows += a1_rows
     rows += guard_probes()
     # the entry point itself, asked for the look without a declared addendum: refused before anything is read
     import subprocess
@@ -1152,20 +1386,41 @@ def proof_i():
     rows.append({"field": "every open() under lab/ of the process: none under lab/data or the holdout, none dated 2026",
                  "expected": 0, "got": len(bad_open), "ok": not bad_open})
     return {"what": "the guard of the harness (vhi_guard): F1 the declaration bound to the spec (PROTOCOL_V3.md as it "
-                    "stands refused), F2 run once / fixed output / second access, F3 the hardened read guard (probes "
-                    "refused before any byte is read), CUT rules, the access log untouched, every read of the "
-                    "process with its filter",
-            "plan_tests": pout, "opens_under_lab": opens, "reads": rd, **verdict(rows), "rows": rows}
+                    "stands refused), A1 only the protocol's real path accepted as LOOK_DECLARED (the harness's "
+                    "outputs and copies of them refused, also once they quote this run's spec sha256: rows "
+                    "'A1 (after_write)', added after those files are written), F2 run once / fixed output / second "
+                    "access, F3 / A2 / A3 the hardened read guard (probes refused before any byte is read: the "
+                    "holdout component rule and lab/ CSVs through open() included), CUT rules, the access log "
+                    "untouched, every read of the process with its filter",
+            "plan_tests": pout, "A1_before_write": a1_out, "opens_under_lab": opens, "reads": rd, **verdict(rows),
+            "rows": rows}
 
 
 # ------------------------------------------------------------------------------------------------- (j)
 TEN_PLUS = RUN.TEN_KEYS + [K1_KEY, "orb_asia_2d_buf10__ethusd", "orb_asia_2d_buf10__btcusd"]
+SA_IDS = ["ocm4_T1", "F1eth_H2", "brk72btc_S0.75r", "donch4h_S0.75r", "orbxau_S0.75r"]
+SA_SLEEVES = ["ocm4__us100@payoff", "ocm4__us100+T1", "F1_brk_ridge_filter__ethusd@payoff",
+              "F1_brk_ridge_filter__ethusd+H2", "brk72_24h_wd__btcusd@payoff", "brk72_24h_wd__btcusd+S0.75r",
+              "donch4h_stop__xauusd@payoff", "donch4h_stop__xauusd+S0.75r", "orb_asia_2d_buf10__xauusd@payoff",
+              "orb_asia_2d_buf10__xauusd+S0.75r"]
+# A5: files the look must record, relative to lab/ (harness, lenses, strategy modules, rules registry, simulator)
+CODE_EXPECTED = (["r2/tracks/validation_hi/" + f for f in ("look.py", "vhi_guard.py", "vhi_run.py", "vhi_sleeves.py",
+                                                            "vhi_lens.py", "vhi_data.py", "vhi_book.py", "vhi_stakes.py",
+                                                            "vhi_verdicts.py")]
+                 + ["r2/tracks/autopsy/synthesis_B/common.py", "r2/tracks/autopsy/synthesis_B/s1_run.py",
+                    "r2/tracks/autopsy/synthesis_B/s2_portfolio.py", "r2/tracks/autopsy/payoff/common.py",
+                    "r2/tracks/autopsy/payoff/variants.py", "r2/tracks/autopsy/synthesis_A/portfolio.py",
+                    "r2/tracks/idx_us/strategy.py", "r2/tracks/crypto/strategy.py", "r2/tracks/ml/strategy.py",
+                    "r2/tracks/leadlag/strategy.py", "r2/tracks/overnight/strategy.py", "tracks/trend/strategy.py",
+                    "tracks/orb/strategy.py", "r2/recalc.py", "goldlab/sim.py", "goldlab/r2.py"])
 
 
-def proof_j(res):
+def proof_j(res, sa):
     """The single command of the look, run at CUT 2022-01-01 (a rehearsal: nothing logged) with the spec AS IT STANDS
-    (its list changes_in_look: K1, K2, K3), in its own process: it runs exactly the ten, K1, K2, K3 and their
-    portfolios / comparisons / verdicts, and every number it shares with the proofs' run (every change) is equal."""
+    (its list changes_in_look: K1, K2, K3 and synthesis A's five), in its own process: it runs exactly the ten, K1,
+    K2, K3, the five changed sleeves and their references, and their portfolios / comparisons / verdicts; every
+    number it shares with the proofs' run (every change) is equal; the check first and synthesis A's block are in its
+    output; A5: its meta records the sha256 of every harness, lens and strategy file it imported."""
     import subprocess
     env = {k: v for k, v in os.environ.items() if k != "LOOK_DECLARED"}
     out = os.path.join(OUT, "rehearsal", "autopsy_HI_look__cut2022-01-01.json")
@@ -1183,12 +1438,24 @@ def proof_j(res):
         ch = theirs["changes"]
         rows.append({"field": "the rehearsal ran the spec's list changes_in_look as it stands", "expected": file_list,
                      "got": ch["in_look"], "ok": ch["in_look"] == file_list})
-        want_p = ["P0", "P1", "P2", "P0+orb_eth", "P0+orb_btc"]
-        rows.append({"field": "with K1, K2, K3: the ten + K1 + K2 + K3 sleeves, no payoff variant or reference, no stake "
-                              "rule; portfolios P0, P1, P2, P0+orb_eth, P0+orb_btc",
-                     "expected": [sorted(TEN_PLUS), want_p], "got": [sorted(theirs["sleeves"]), list(theirs["portfolios"])],
-                     "ok": sorted(theirs["sleeves"]) == sorted(TEN_PLUS) and list(theirs["portfolios"]) == want_p
-                     and not any(v.get("stakes") for v in theirs["meta"]["spec"]["portfolios"].values())})
+        want_p = ["P0", "P1", "P2", "P0+orb_eth", "P0+orb_btc", "P0|F1eth_H2", "P0|ocm4_T1", "P0|donch4h_S0.75r",
+                  "P0|brk72btc_S0.75r", "P0|orbxau_S0.75r"]
+        want_sl = sorted(TEN_PLUS + SA_SLEEVES)
+        rows.append({"field": "with K1, K2, K3 and synthesis A's five: the ten + K1 + K2 + K3 sleeves and the five "
+                              "changed sleeves with their '@payoff' references (not the refuted nq T1 / noise30 S0.25), "
+                              "no stake rule, no plugin; portfolios P0, P1, P2, P0+orb_eth, P0+orb_btc and P0|<each of "
+                              "the five>",
+                     "expected": [want_sl, want_p], "got": [sorted(theirs["sleeves"]), list(theirs["portfolios"])],
+                     "ok": sorted(theirs["sleeves"]) == want_sl and list(theirs["portfolios"]) == want_p
+                     and not any(v.get("stakes") for v in theirs["meta"]["spec"]["portfolios"].values())
+                     and not theirs["meta"]["spec"].get("plugins") and not theirs["plugins"]})
+        want_v = ["K1", "K2", "K3"] + SA_IDS
+        vd = theirs["verdicts"]
+        okv = (sorted(vd) == sorted(want_v) and all(vd[c].get("declared") and not vd[c].get("error") for c in want_v)
+               and all(vd[c]["kind"] == "synthesis_A_change" for c in SA_IDS))
+        rows.append({"field": "verdicts: one per listed change, each with its declared criterion and no error "
+                              "(synthesis_B's for K1-K3, synthesis A's V1-V5 for the five)", "expected": want_v,
+                     "got": list(vd), "ok": bool(okv)})
         for part in ("portfolios", "comparisons", "sleeve_comparisons", "verdicts"):
             names = list(theirs[part])
             same_part = bool(names) and all(theirs[part][n] == mine[part].get(n) for n in names)
@@ -1197,6 +1464,35 @@ def proof_j(res):
         same_off = theirs["official"] == mine["official"]
         rows.append({"field": "look.py rehearsal == proofs run: official check of the ten", "expected": True,
                      "got": same_off, "ok": same_off})
+        cf = theirs.get("check_first") or {}
+        rows.append({"field": "the check first (synthesis A) is the FIRST key of the rehearsal's output, computed and "
+                              "passed, equal to the proofs run's", "expected": ["check_first", True, True, True],
+                     "got": [next(iter(theirs)), cf.get("computed"), cf.get("passed"), cf == mine.get("check_first")],
+                     "ok": next(iter(theirs)) == "check_first" and cf.get("computed") is True and cf.get("passed") is True
+                     and cf == mine.get("check_first")})
+        same_sa = theirs.get("synthesis_A") == mine.get("synthesis_A") and theirs["synthesis_A"].get("changes") == SA_IDS \
+            and not theirs["synthesis_A"].get("error")
+        rows.append({"field": "look.py rehearsal == proofs run: synthesis A's block (the passing changes together, item "
+                              "6), its five changes in the spec's order, no error", "expected": True, "got": bool(same_sa),
+                     "ok": bool(same_sa)})
+        # A5: the code the rehearsal executed
+        code = theirs["meta"].get("code_sha256") or {}
+        missing = [f for f in CODE_EXPECTED if f not in code]
+        wrong = [f for f, v in code.items() if v.get("sha256") != RUN.sha256(os.path.join(LAB, f))]
+        errs = [f for f, v in code.items() if v.get("error")]
+        rows.append({"field": "A5: the rehearsal's meta records the sha256 of every harness, lens and strategy file it "
+                              "imported (the harness, synthesis_B and payoff lens modules, synthesis A's portfolio.py, "
+                              "the seven strategy modules, recalc.py, goldlab), each equal to the file",
+                     "expected": [[], [], []], "got": [missing, wrong, errs], "ok": not missing and not wrong and not errs,
+                     "files_recorded": len(code)})
+        fz = sa["frozen_files_sha256"]
+        rec = dict({f: v.get("sha256") for f, v in code.items()}, **(theirs["meta"].get("files_opened_sha256") or {}))
+        cmpz = {f: [h, rec.get(f)] for f, h in fz.items() if f in rec}
+        okz = bool(cmpz) and all(a == b for a, b in cmpz.values())
+        rows.append({"field": "A5: every file synthesis A froze that the rehearsal imported or opened has synthesis A's "
+                              "frozen sha256 (portfolio.py, goldlab, recalc.py, costs, the strategies, the F1 model)",
+                     "expected": True, "got": okz, "ok": okz, "compared": sorted(cmpz),
+                     "frozen_not_used_by_the_harness": sorted(f for f in fz if f not in rec)})
         def untimed(run):                                # every field of a sleeve run but its timing ('sec')
             return {kk: ({i: w for i, w in v.items() if i != "sec"} if kk == "info" else v) for kk, v in run.items()}
 
@@ -1214,11 +1510,14 @@ def proof_j(res):
         rows.append({"field": "the rehearsal's every parquet read carries a row filter at or before 2022-01-01; it read "
                               "no CSV", "expected": [0, 0], "got": [len(badr), len(csvr)],
                      "ok": not badr and not csvr, "parquet_reads": len(pqr)})
-        detail = {"changes": ch, "verdicts": theirs["verdicts"], "reads": rd}
+        detail = {"changes": ch, "check_first": theirs.get("check_first"), "verdicts": theirs["verdicts"],
+                  "synthesis_A": theirs.get("synthesis_A"), "reads": rd, "code_sha256": code,
+                  "files_opened_sha256": theirs["meta"].get("files_opened_sha256")}
     return {"what": "the look's entry point (look.py) run end to end at CUT 2022-01-01 in its own process with the spec "
-                    "as it stands (changes_in_look K1, K2, K3): the right sleeves, portfolios and verdicts, the same "
-                    "numbers as the proofs' run, nothing logged", "output": out, "seconds": round(time.time() - t0, 1),
-            "detail": detail, **verdict(rows), "rows": rows}
+                    "as it stands (changes_in_look K1, K2, K3 and synthesis A's five): the right sleeves, portfolios "
+                    "and verdicts, the check first and synthesis A's block, the same numbers as the proofs' run, "
+                    "nothing logged, the imported code's sha256 recorded (A5)", "output": out,
+            "seconds": round(time.time() - t0, 1), "detail": detail, **verdict(rows), "rows": rows}
 
 
 # ------------------------------------------------------------------------------------------------- (k)
@@ -1237,8 +1536,8 @@ def proof_k(res):
     spec["windows"]["in_sample"] = {"eval": ["2020-01-01", "2021-01-01"], "years": [2020], "judge_years": [2020],
                                     "splits": [["h1_2020", "2020-01-01", "2020-07-01"], ["h2_2020", "2020-07-01", "2021-01-01"]]}
     for s in spec["sleeves"]:
-        if (s.get("change") or {}).get("kind") == "k1_riskbp":
-            s["change"]["declared_T"] = {"2021": 465.1178}         # binding at CUT 2021 (the fit for 2021)
+        if (s.get("change") or {}).get("kind") == "k1_riskbp":    # binding at CUT 2021 (the fit for 2021), A4 form
+            s["change"]["declared_T"] = {"2021": {"q_hi": 465.1178, "skip": "hi", "n_train": 1703}}
     os.makedirs(SCRATCH, exist_ok=True)
     sp = os.path.join(SCRATCH, "pseudo_look_cut2021_spec.json")
     with open(sp, "w") as f:
@@ -1291,8 +1590,12 @@ def proof_k(res):
         same_fit = all(f21[q] == f22[q] for q in ("q_lo", "q_hi", "E_lo", "E_hi", "skip", "n_train"))
         rows.append({"field": "K1: fit for the year starting at CUT 2021 == the CUT-2022 run's 2021 fold", "expected": True,
                      "got": same_fit, "ok": same_fit, "fit_cut2021": f21})
-        rows.append({"field": "K1: declared-T check at CUT 2021 (T(2021) = 465.1178)", "expected": True,
-                     "got": dg["declared_T_check"]["2021"]["same_to_0.01bp"], "ok": dg["declared_T_check"]["2021"]["same_to_0.01bp"]})
+        c21 = dg["declared_T_check"]["2021"]
+        rows.append({"field": "K1: declared fit checked at CUT 2021 (T(2021) = 465.1178, skip 'hi', n_train 1703: A4 at a "
+                              "moved CUT)", "expected": [True, True, True],
+                     "got": [c21["same_to_0.01bp"], c21.get("same_skip_side"), c21.get("same_n_train")],
+                     "ok": c21["same_to_0.01bp"] is True and c21.get("same_skip_side") is True
+                     and c21.get("same_n_train") is True})
     out["frames_cut2021"] = r21["frames"]
     out["output"] = jp
     return {"what": proof_k.__doc__.strip(), "detail": out, **verdict(rows), "rows": rows}
@@ -1364,20 +1667,214 @@ def proof_l(res, sb):
         rows.append({"field": f"{cid}: the live reading is not a criterion (readings, outside 'criteria')", "expected": True,
                      "got": "as_the_live_program_would" in v["readings"] and len(v["criteria"]) == 6,
                      "ok": "as_the_live_program_would" in v["readings"] and len(v["criteria"]) == 6})
-    # every criterion's pass flag is its rule applied to its value
+    # every criterion's pass flag is its rule applied to its value (every declared change: K1-K3 and synthesis A's)
     ops = {">": lambda a, b: a > b, ">=": lambda a, b: a >= b, "<": lambda a, b: a < b}
+    decl = [c for c, v in V.items() if v.get("declared")]
     flags = all(r["pass"] == (r["value"] is not None and r["reference"] is not None and ops[r["rule"]](r["value"], r["reference"]))
-                for cid in ("K1", "K2", "K3") for r in V[cid]["criteria"])
-    rows.append({"field": "every pass flag == its rule applied to its value and reference; adopted == all pass",
-                 "expected": True, "got": bool(flags and all(V[c]["adopted"] == all(r["pass"] for r in V[c]["criteria"])
-                                                          for c in ("K1", "K2", "K3"))),
-                 "ok": bool(flags and all(V[c]["adopted"] == all(r["pass"] for r in V[c]["criteria"]) for c in ("K1", "K2", "K3")))})
+                for cid in decl for r in V[cid]["criteria"])
+    adopt = all(V[c]["adopted"] == all(r["pass"] for r in V[c]["criteria"]) for c in decl)
+    rows.append({"field": "every pass flag == its rule applied to its value and reference; adopted == all pass "
+                          f"({', '.join(decl)})", "expected": True, "got": bool(flags and adopt), "ok": bool(flags and adopt)})
+    errs = [c for c in decl if V[c].get("error")]
+    rows.append({"field": "no criterion raised (verdict entries without 'error')", "expected": [], "got": errs,
+                 "ok": not errs})
     undeclared = [c for c, v in V.items() if not v.get("declared")]
-    want_und = [c for c in res["changes"]["in_look"] if c not in ("K1", "K2", "K3")]
-    rows.append({"field": "the payoff variants (no declared criterion) are reported 'declared: false' (the hook)",
-                 "expected": want_und, "got": undeclared, "ok": undeclared == want_und})
-    out["in_sample_adopted"] = {c: V[c]["adopted"] for c in ("K1", "K2", "K3")}
+    want_und = [c for c in res["changes"]["in_look"] if c not in (res["_spec"].get("criteria") or {})]
+    rows.append({"field": "the changes without a declared criterion (here only the refuted nq_T1 and noise30_S0.25, "
+                          "rehearsed but not listed) are reported 'declared: false' (the hook)",
+                 "expected": want_und, "got": undeclared,
+                 "ok": undeclared == want_und and sorted(undeclared) == sorted(["nq_T1", "noise30_S0.25"])})
+    out["in_sample_adopted"] = {c: V[c]["adopted"] for c in decl}
     return {"what": proof_l.__doc__.strip(), "detail": out, **verdict(rows), "rows": rows}
+
+
+# ------------------------------------------------------------------------------------------------- (m)
+SA_KEY = {"ocm4_T1": ("ocm4:us100", "T1"), "F1eth_H2": ("F1_brk_ridge_filter:ethusd", "H2"),
+          "brk72btc_S0.75r": ("brk72_24h_wd:btcusd", "S0.75r"), "donch4h_S0.75r": ("donch4h_stop:xauusd", "S0.75r"),
+          "orbxau_S0.75r": ("orb_asia_2d_buf10:xauusd", "S0.75r")}
+
+
+def _near(got, exp, units=1.0):
+    """got within `units` units of the last decimal of exp (exp as published, rounded)."""
+    if exp is None or got is None:
+        return got is None and exp is None
+    if isinstance(exp, (int, np.integer)) and not isinstance(exp, bool):
+        return isinstance(got, (int, np.integer, float)) and float(got) == float(exp)
+    d = decimals(exp)
+    return abs(float(got) - float(exp)) <= units * 10 ** (-d) * 1.000001 + 1e-12
+
+
+def proof_m(res, sa):
+    """synthesis A's criteria V1-V5 (res['verdicts'], kind synthesis_A_change) and its report (res['synthesis_A']) on
+    the in-sample window 2018-02..2021-12, against synthesis A's published in-sample rehearsal of its own criteria
+    (synthesis_A.json criteria_rehearsal_in_sample, main window, FP and x1.5: sleeve weekly Sharpe unchanged / changed,
+    ten-sleeve portfolio weekly Sharpe unchanged / with the change at its frozen factor, total R at a constant stake,
+    the equal-swing gain by entry year, V1, V2, V3, V5), its changed sleeves (changed_sleeves_detail), its frozen
+    equal-swing factors (portfolio.equal_swing_factors, reproduced from the in-sample weekly sd as synthesis A computes
+    them), its portfolios through its own frozen measures() (unchanged, all five at a constant stake and at equal
+    swing, each change alone); the check first reported first and gating synthesis A's verdicts ('stop and report')."""
+    V, S, spec, W = res["verdicts"], res["synthesis_A"], res["_spec"], res["_W"]
+    crit = spec["criteria"]
+    cr, det, port = sa["criteria_rehearsal_in_sample"], sa["changed_sleeves_detail"], sa["portfolio"]
+    rows, out = [], {}
+    LFL = "portfolio_like_for_like (P0 with the unchanged sleeve in the changed sleeve's convention, not a criterion)"
+
+    def add(field, *, got, exp, ok, **kw):
+        rows.append({"field": field, "expected": exp, "got": got, "ok": bool(ok), **kw})
+
+    ms_ = S.get("measures") or {}
+    add("synthesis A's block computed without error, its five changes in the spec's order, frozen measures() loaded "
+        "with its declared sha256", got=[S.get("changes"), ms_.get("sha256"), S.get("error") or ms_.get("error")],
+        exp=[SA_IDS, L.SYNTH_A_PORTFOLIO_SHA256, None],
+        ok=S.get("changes") == SA_IDS and ms_.get("sha256") == L.SYNTH_A_PORTFOLIO_SHA256 and not S.get("error")
+        and not ms_.get("error"))
+    add("the judged weeks are synthesis A's 205 weeks of 2018-02-01..2021-12-31", got=ms_.get("weeks", [0, 0, 0])[2],
+        exp=205, ok=ms_.get("weeks", [0, 0, 0])[2] == 205)
+    for cid in SA_IDS:
+        sk, vv = SA_KEY[cid]
+        c, v = crit[cid], V[cid]
+        e_all = cr[f"{sk}:{vv}"]["main"]
+        f = float(c["frozen_factor"])
+        add(f"{cid}: the spec's frozen factor == synthesis A's declared / published factor", got=f,
+            exp=port["equal_swing_factors"][sk], ok=f == port["equal_swing_factors"][sk])
+        # the factor reproduced as synthesis A computes it: weekly sd of the unchanged and changed sleeves (FP, in sample)
+        # rounded to 4 decimals by its measures(), their ratio rounded to 6 decimals
+        rep = S["report_item_6"]["fp"][f"sleeve_{cid}"]
+        k_rep = round(rep["unchanged"]["weekly_sd_R"] / rep["changed_constant_stake"]["weekly_sd_R"], 6)
+        add(f"{cid}: the frozen factor reproduced from this run's in-sample weekly sd (synthesis A's computation)",
+            got=k_rep, exp=f, ok=k_rep == f)
+        for mode in ("fp", "stress"):
+            e, vals = e_all[mode], v["values"][mode]
+            sh = vals["sleeve_weekly_sharpe"]
+            add(f"{cid} {mode}: sleeve weekly Sharpe [unchanged, changed] == synthesis A's rehearsal",
+                got=[round(x, 4) for x in sh], exp=e["sleeve_weekly_sharpe"],
+                ok=all(_near(g, x, 0.5) for g, x in zip(sh, e["sleeve_weekly_sharpe"])))
+            ps = vals["portfolio_weekly_sharpe_frozen_factor"]
+            add(f"{cid} {mode}: ten-sleeve portfolio weekly Sharpe [P0, with the change at its frozen factor] == synthesis "
+                "A's rehearsal", got=[round(x, 4) for x in ps], exp=e["portfolio_weekly_sharpe_equal_swing"],
+                ok=all(_near(g, x, 0.5) for g, x in zip(ps, e["portfolio_weekly_sharpe_equal_swing"])))
+            tr = vals["total_R_constant_stake"]
+            add(f"{cid} {mode}: sleeve total R at a constant stake [unchanged, changed] == synthesis A's rehearsal",
+                got=[round(x, 2) for x in tr], exp=e["total_R_constant_stake"],
+                ok=all(_near(g, x, 0.5) for g, x in zip(tr, e["total_R_constant_stake"])))
+            rws = [r for r in v["criteria"] if r["criterion"].split(" ", 1)[1].startswith(f"{mode}/")]
+            v1 = all(r["pass"] for r in rws if "weekly Sharpe" in r["criterion"])
+            v2 = all(r["pass"] for r in rws if "total R at a constant stake" in r["criterion"])
+            add(f"{cid} {mode}: the V1 test (sleeve and portfolio weekly Sharpe up) == synthesis A's rehearsal", got=v1,
+                exp=e["V1_gain_per_unit_of_swing"], ok=v1 == e["V1_gain_per_unit_of_swing"])
+            add(f"{cid} {mode}: the V2 test (total R not lower) == synthesis A's rehearsal", got=v2,
+                exp=e["V2_total_R_not_lower"], ok=v2 == e["V2_total_R_not_lower"])
+        e = e_all["fp"]
+        r4 = next(r for r in v["criteria"] if r["test"] == "V4")
+        g_sa = {int(y): round(round(r4["total_R_changed_by_entry_year"][y], 2) * f
+                              - round(r4["total_R_unchanged_by_entry_year"][y], 2), 2) for y in r4["gain_by_entry_year"]}
+        exp_g = {int(y): x for y, x in e["equal_swing_gain_by_entry_year"].items()}
+        add(f"{cid} fp: the equal-swing gain by entry year (rounded as synthesis A's rehearsal.py) == synthesis A's",
+            got=g_sa, exp=exp_g, ok=g_sa == exp_g, unrounded=r4["gain_by_entry_year"])
+        yp = f"{r4['value']}/{len(r4['gain_by_entry_year'])}"
+        add(f"{cid} fp: years with a positive gain == synthesis A's", got=yp, exp=e["years_positive"],
+            ok=yp == e["years_positive"])
+        add(f"{cid}: V3 (V1 and V2 with costs x1.5) == synthesis A's", got=v["V"]["V3"], exp=e_all["V3_holds_with_x1_5"],
+            ok=v["V"]["V3"] == e_all["V3_holds_with_x1_5"])
+        add(f"{cid}: V5 (expectancy > 0, PF >= 1.06) == synthesis A's", got=v["V"]["V5"],
+            exp=e["V5_changed_sleeve_exp_pos_and_pf_1_06"], ok=v["V"]["V5"] == e["V5_changed_sleeve_exp_pos_and_pf_1_06"])
+        sa_pass = bool(e["V1_gain_per_unit_of_swing"] and e["V2_total_R_not_lower"] and e_all["V3_holds_with_x1_5"]
+                       and int(e["years_positive"].split("/")[0]) >= 3 and e["V5_changed_sleeve_exp_pos_and_pf_1_06"])
+        add(f"{cid}: adopted (V1-V5 and the check first) == synthesis A's criteria applied to its own rehearsal "
+            "(in sample, where the change was picked)", got=v["adopted"], exp=sa_pass, ok=v["adopted"] == sa_pass)
+        add(f"{cid}: no rounding tie; the same verdict at synthesis A's rounding",
+            got=[v["rounding_tie"], v["same_verdict_at_synthesis_A_rounding"]], exp=[False, True],
+            ok=v["rounding_tie"] is False and v["same_verdict_at_synthesis_A_rounding"] is True)
+        idt = [v["readings"][f"{m}/lab"]["unchanged_sleeve_identical_to_the_P0_sleeve_in_the_window"] for m in ("fp", "stress")]
+        eqp = [v["readings"][f"{m}/lab"][LFL]["equals_P0"] for m in ("fp", "stress")]
+        add(f"{cid}: the unchanged sleeve '@payoff' is identical to P0's sleeve in the window (lab, FP and x1.5), so the "
+            "like-for-like portfolio's weekly Sharpe is P0's (to 1e-12)", got=idt + eqp, exp=[True, True, True, True],
+            ok=all(idt) and all(eqp), diff=[v["readings"][f"{m}/lab"][LFL]["diff_from_P0"] for m in ("fp", "stress")])
+        # the changed sleeves' measures (frozen measures() on this run's trades) == changed_sleeves_detail
+        for mode in ("fp", "stress"):
+            r6 = S["report_item_6"][mode][f"sleeve_{cid}"]
+            for lab_, key in (("unchanged", "unchanged"), ("changed", "changed_constant_stake")):
+                exp_m = det[sk][f"{lab_}_{mode}_main"]
+                got_m = {k: r6[key].get(k) for k in exp_m}
+                rows += compare(got_m, exp_m, f"{cid}.{mode}.{lab_}_sleeve (changed_sleeves_detail)")
+        # my unrounded criteria values == synthesis A's frozen measures() on the same trades
+        for mode in ("fp", "stress"):
+            r6, vals = S["report_item_6"][mode][f"sleeve_{cid}"], v["values"][mode]
+            ms = [r6["unchanged"]["weekly_sharpe"], r6["changed_constant_stake"]["weekly_sharpe"]]
+            mt = [r6["unchanged"]["total_R"], r6["changed_constant_stake"]["total_R"]]
+            okk = all(_near(g, x, 0.5) for g, x in zip(vals["sleeve_weekly_sharpe"], ms)) and \
+                all(_near(g, x, 0.5) for g, x in zip(vals["total_R_constant_stake"], mt))
+            add(f"{cid} {mode}: the verdict's unrounded sleeve weekly Sharpe and total R == synthesis A's frozen measures() "
+                "on the same trades", got=[vals["sleeve_weekly_sharpe"], vals["total_R_constant_stake"]], exp=[ms, mt],
+                ok=okk)
+            onl = S["report_item_6"][mode][f"only_{cid}_equal_swing"]["weekly_sharpe"]
+            add(f"{cid} {mode}: the portfolio weekly Sharpe of the verdict == synthesis A's frozen measures() of "
+                f"only_{cid}_equal_swing", got=vals["portfolio_weekly_sharpe_frozen_factor"][1], exp=onl,
+                ok=_near(vals["portfolio_weekly_sharpe_frozen_factor"][1], onl, 0.5))
+        # each change alone (FP), against synthesis A's portfolio.each_change_alone_weekly_sharpe
+        for sc in ("constant_stake", "equal_swing"):
+            got = S["report_item_6"]["fp"][f"only_{cid}_{sc}"]["weekly_sharpe"]
+            exp = port["each_change_alone_weekly_sharpe"][f"only_{sk}:{vv}_{sc}"]["main"]
+            add(f"{cid} fp: weekly Sharpe of the ten with only this change at a {sc.replace('_', ' ')} == synthesis A's",
+                got=got, exp=exp, ok=_near(got, exp, 1.0))
+    # the portfolios (frozen measures() on this run's books) == synthesis A's portfolio.main_2018_02_to_2021_12
+    pm = port["main_2018_02_to_2021_12"]
+    for mode in ("fp", "stress"):
+        for nm in ("unchanged", "all_five_constant_stake", "all_five_equal_swing"):
+            got_m, exp_m = S["report_item_6"][mode][nm], pm[nm][mode]
+            # synthesis A scaled by the unrounded ratio, the look by the 6-decimal frozen factor: one unit of the last
+            # published decimal for the equal-swing figures, exact otherwise
+            units = 1.0 if nm.endswith("equal_swing") else 0.5
+            for k, x in exp_m.items():
+                if isinstance(x, dict):
+                    for y, xv in x.items():
+                        gv = (got_m.get(k) or {}).get(int(y), (got_m.get(k) or {}).get(str(y)))
+                        add(f"{mode}.{nm}.{k}.{y} == synthesis A's portfolio", got=gv, exp=xv, ok=_near(gv, xv, units))
+                else:
+                    add(f"{mode}.{nm}.{k} == synthesis A's portfolio", got=got_m.get(k), exp=x,
+                        ok=_near(got_m.get(k), x, units))
+    # in sample every change passes: the passing changes together are the five; the headline is the all-five portfolio
+    same5 = S["report_item_6"]["fp"].get("passing_equal_swing") == S["report_item_6"]["fp"].get("all_five_equal_swing")
+    add("in sample (where the changes were picked) all five pass, so the 'passing together' portfolio is the all-five one",
+        got=[S.get("passing"), same5], exp=[SA_IDS, True], ok=S.get("passing") == SA_IDS and same5)
+    hd = (S.get("together_vs_unchanged_headline") or {}).get("fp", {})
+    hw = hd.get("weekly_sharpe_unchanged_vs_together_equal_swing")
+    add("the headline 'together vs unchanged' (FP) is P0 2.8729 against the five together at equal swing 3.4777",
+        got=hw, exp=[2.8729, 3.4777], ok=hw is not None and all(_near(g, x, 1.0) for g, x in zip(hw, [2.8729, 3.4777])))
+    # the check first: first key, computed, passed, and gating synthesis A's verdicts
+    cf = res["check_first"]
+    add("the check first (synthesis A's '3. CHECK FIRST', the official check) is computed and passes on the ten, "
+        "whole frame and window", got=[cf["computed"], cf["passed"], cf["failed_or_missing"]], exp=[True, True, []],
+        ok=cf["computed"] and cf["passed"] and not cf["failed_or_missing"])
+    add("the check first is the first key of the run's result", got=next(iter(res)), exp="check_first",
+        ok=next(iter(res)) == "check_first")
+    cfp = all(V[c]["check_first_passed"] for c in SA_IDS)
+    add("each synthesis A verdict records the check first as passed", got=cfp, exp=True, ok=cfp)
+    # a failed check first, simulated on a copy of the result: synthesis A's changes are not judged, K1-K3 untouched,
+    # the status says STOP AND REPORT (pure: no data read)
+    fake = dict(res)
+    off = copy.deepcopy(res["official"])
+    k0 = RUN.TEN_KEYS[0]
+    off[k0]["reproduced"] = False
+    fake["official"] = off
+    cf_bad = RUN.check_first(res["_spec"], fake)
+    fake["check_first"] = cf_bad
+    vbad = VD.compute(res["_spec"], fake, W)
+    okb = (cf_bad["passed"] is False and cf_bad["status"].startswith("FAILED -- STOP AND REPORT")
+           and cf_bad["failed_or_missing"] == [k0]
+           and all(vbad[c]["adopted"] is None and vbad[c].get("stopped_by_check_first") for c in SA_IDS)
+           and all(vbad[c]["adopted_if_judged"] == V[c]["adopted"] for c in SA_IDS)
+           and all(RUN.canonical(vbad[c]) == RUN.canonical(V[c]) for c in ("K1", "K2", "K3")))
+    add("a failed check first (simulated on a copy: one official sleeve not reproduced) -> status 'FAILED -- STOP AND "
+        "REPORT', synthesis A's five not judged (adopted null, values kept), K1-K3 unchanged", got=bool(okb), exp=True,
+        ok=okb, status=cf_bad["status"][:200])
+    cf_missing = RUN.check_first(res["_spec"], dict(res, official={k: v for k, v in res["official"].items() if k != k0}))
+    add("a check first with a sleeve missing is not passed", got=cf_missing["passed"], exp=False,
+        ok=cf_missing["passed"] is False)
+    out["verdicts"] = {c: RUN.canonical(V[c]) for c in SA_IDS}
+    out["synthesis_A"] = RUN.canonical({k: v for k, v in S.items() if k != "report_item_6"})
+    out["check_first"] = cf
+    return {"what": proof_m.__doc__.strip(), "detail": out, **verdict(rows), "rows": rows}
 
 
 # ------------------------------------------------------------------------------------------------- main
@@ -1390,6 +1887,7 @@ def main():
     spec = copy.deepcopy(spec_file)
     spec["changes_in_look"] = list(RUN.available_changes(spec))      # every available change is rehearsed (in memory)
     sb = json.load(open(SYNTH_B))
+    sa = json.load(open(SYNTH_A))
     res = RUN.run_spec(spec, cut)
     print(f"run_spec done [{time.time() - t0:.0f}s]", flush=True)
     rows_g, out_g, signals, k1x = frames_pass(res, sb)
@@ -1413,33 +1911,47 @@ def main():
                                   "detail": out_g, **verdict(rows_g), "rows": rows_g}
     proofs["h_stakes"] = proof_h(res, signals)
     proofs["i_guard"] = proof_i()
-    proofs["j_entry_point_rehearsal"] = proof_j(res)
+    proofs["j_entry_point_rehearsal"] = proof_j(res, sa)
     proofs["k_moving_the_cut"] = proof_k(res)
     proofs["l_verdicts"] = proof_l(res, sb)
-    files = {}
-    for k, v in proofs.items():
-        name = f"proof_{k}.json"
-        jdump(v, name)
-        files[k] = os.path.join(OUT, name)
+    proofs["m_synthesis_A_criteria"] = proof_m(res, sa)
+    files = {k: os.path.join(OUT, f"proof_{k}.json") for k in proofs}
     rehearsal = RUN.strip_private(res)
     rehearsal["note"] = ("look_spec.json run at CUT 2022-01-01 on its in-sample windows by the look's own code path, "
                          "with EVERY available change (its list changes_in_look replaced in memory by all of them; the "
                          "list as it stands is rehearsed by proof j): every number is in sample")
+    rehearsal["imported_code_sha256"] = RUN.imported_code_sha256()
+
+    def write_all():
+        for k, v in proofs.items():
+            jdump(v, os.path.basename(files[k]))
+        index = {"cut": str(cut), "spec": SPEC, "spec_sha256": RUN.sha256(SPEC), "seconds": round(time.time() - t0, 1),
+                 "changes_in_look_of_the_spec": spec_file["changes_in_look"],
+                 "changes_rehearsed_by_the_proofs_run": spec["changes_in_look"],
+                 "all_ok": all(v["ok"] for v in proofs.values()),
+                 "proofs": {k: {"ok": v["ok"], "checks": v["checks"], "failed": v["failed"], "file": files[k],
+                                "what": v["what"]} for k, v in proofs.items()},
+                 "rehearsal": os.path.join(OUT, "rehearsal_in_sample.json"),
+                 "rehearsal_of_the_spec_as_it_stands": os.path.join(OUT, "rehearsal", "autopsy_HI_look__cut2022-01-01.json"),
+                 "harness_sha256": {f: RUN.sha256(os.path.join(HERE, f)) for f in sorted(os.listdir(HERE))
+                                    if f.endswith((".py", ".json")) and not f.startswith(".")},
+                 "protocol_sha256_at_proof_time": next((r.get("protocol_sha256") for r in proofs["i_guard"]["rows"]
+                                                        if r.get("protocol_sha256")), None)}
+        assert index["spec_sha256"] == SPEC_SHA, "look_spec.json changed while the proofs ran"
+        jdump(index, "proofs.json")
+        return index
+
     jdump(rehearsal, "rehearsal_in_sample.json")
-    index = {"cut": str(cut), "spec": SPEC, "spec_sha256": RUN.sha256(SPEC), "seconds": round(time.time() - t0, 1),
-             "changes_in_look_of_the_spec": spec_file["changes_in_look"],
-             "changes_rehearsed_by_the_proofs_run": spec["changes_in_look"],
-             "all_ok": all(v["ok"] for v in proofs.values()),
-             "proofs": {k: {"ok": v["ok"], "checks": v["checks"], "failed": v["failed"], "file": files[k],
-                            "what": v["what"]} for k, v in proofs.items()},
-             "rehearsal": os.path.join(OUT, "rehearsal_in_sample.json"),
-             "rehearsal_of_the_spec_as_it_stands": os.path.join(OUT, "rehearsal", "autopsy_HI_look__cut2022-01-01.json"),
-             "harness_sha256": {f: RUN.sha256(os.path.join(HERE, f)) for f in sorted(os.listdir(HERE))
-                                if f.endswith((".py", ".json"))},
-             "protocol_sha256_at_proof_time": next((r.get("protocol_sha256") for r in proofs["i_guard"]["rows"]
-                                                    if r.get("protocol_sha256")), None)}
-    assert index["spec_sha256"] == SPEC_SHA, "look_spec.json changed while the proofs ran"
-    jdump(index, "proofs.json")
+    write_all()
+    # A1, once more now that proofs.json, proof_i_guard.json and the rehearsals quote this run's spec sha256: refused
+    # by the path rule (their content alone would pass); the rows are added to proof i and every file is rewritten
+    a1_rows, a1_out = declared_file_probes("after_write")
+    pi = proofs["i_guard"]
+    pi["rows"] += a1_rows
+    pi["A1_after_write"] = a1_out
+    vi = verdict(pi["rows"])
+    pi.update(checks=vi["checks"], failed=vi["failed"], ok=vi["ok"], failures=vi["failures"])
+    index = write_all()
     for k, v in index["proofs"].items():
         print(f"{k:28s} {'OK ' if v['ok'] else 'FAIL'} {v['checks']:5d} checks, {v['failed']} failed", flush=True)
     print("all_ok", index["all_ok"], f"[{time.time() - t0:.0f}s]")

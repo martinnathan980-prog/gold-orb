@@ -11,7 +11,9 @@ SPEC (JSON; see look_spec.json):
     execs         ["lab", "live"]             as specified; as the live program would (vhi_sleeves docstring)
     live_one_position, live_friday_block      the live semantics (vhi_sleeves.run / live_orders)
     accounts      ["sum", "capped"]
-    official_check  true: the ten unchanged sleeves rebuilt and compared row by row with results/r2/recalc/trades
+    official_check  true: the ten unchanged sleeves rebuilt and compared row by row with results/r2/recalc/trades,
+                  on the whole frame and on the judged window (synthesis A's CHECK FIRST: res["check_first"], the
+                  first key of the output; a failure is printed loudly and synthesis A's changes are then not judged)
     sleeves       [{key, rule, sym, convention, change {kind, id, ...}, base, refuse, every_signal, signals}]
     portfolios    {name: {"sleeves": [keys], "stakes": {key: stake spec with an "id"}}} (or relative to P0)
     comparisons   [{"name", "ref", "var"}]                 portfolio vs portfolio (same mode / exec / account), the
@@ -19,7 +21,11 @@ SPEC (JSON; see look_spec.json):
                                                            judged window, vhi_book.equal_swing)
     sleeve_comparisons [{"name", "ref", "var"}]            sleeve chain vs sleeve chain ("<key>" or "<key>:base")
     criteria      {change id: {"kind": ..., ...}}          the declared criteria, computed in res["verdicts"]
-                                                           (vhi_verdicts; kinds registered with register_criterion)
+                                                           (vhi_verdicts; kinds registered with register_criterion);
+                                                           synthesis A's changes (kind synthesis_A_change: V1-V5 at
+                                                           the FROZEN equal-swing factors) also get res["synthesis_A"]:
+                                                           the passing changes together against the unchanged
+                                                           portfolio, and synthesis A's item-6 report (reported)
 """
 import gc
 import hashlib
@@ -212,21 +218,26 @@ def windows_for(spec, cut):
 
 
 # ------------------------------------------------------------------------------------------------- official check
-def official_check(name, sym, m1, leader):
-    """Rule 2: the official sleeve rebuilt on the cut frame (FP costs, one position, no refusal, as recalc.py) and
-    compared row by row with the official rows closed before CUT; the official rows still open at CUT are counted
-    only (their results are never read) and must be the trades of this run still open at the frame's last bar."""
+def official_check(name, sym, m1, leader, W=None):
+    """Rule 2 / synthesis A's CHECK FIRST: the official sleeve rebuilt on the cut frame (FP costs, one position, no
+    refusal, as recalc.py) and compared row by row with the official rows closed before CUT; the official rows still
+    open at CUT are counted only (neither their results nor their exit times are read) and must be the trades of this
+    run still open at the frame's last bar. With W, the same on the judged window (entries W['eval'], the look:
+    2022-01-01 .. 2025-12-31): count, total R, trade by trade ('window')."""
     O = SL.build_orders(name, m1, leader)
     t = simulate(m1, O, sym=sym, costs=SL.mode_costs(sym, "fp"), no_overlap=True)
-    n_off, n_open = D.official_count(name, sym)
+    ent = D.official_entries(name, sym)
     off = D.official_closed(name, sym)
+    n_off = int(len(ent))
+    n_open = int(n_off - len(off))
     a = t[["entry_time", "side", "R", "exit_time", "reason"]].reset_index(drop=True)
     b = off[["entry_time", "side", "R", "exit_time", "reason"]].reset_index(drop=True)
     m = a.merge(b, on=["entry_time", "side"], how="left", suffixes=("_mine", "_off"), indicator=True)
+    differs = (((m.R_mine - m.R_off).abs() > 1e-9) | (m.exit_time_mine != m.exit_time_off)
+               | (m.reason_mine.astype(str) != m.reason_off.astype(str))) & (m["_merge"] == "both")
     both = m[m["_merge"] == "both"]
     only_mine = m[m["_merge"] == "left_only"]
-    dif = both[((both.R_mine - both.R_off).abs() > 1e-9) | (both.exit_time_mine != both.exit_time_off)
-               | (both.reason_mine.astype(str) != both.reason_off.astype(str))]
+    dif = m[differs]
     last = m1.index[-1]
     only_mine_boundary = bool(((only_mine.exit_time_mine >= last) | (only_mine.reason_mine == "eod")).all())
     res = {"n_mine": int(len(t)), "n_official": n_off, "official_open_at_cut": n_open,
@@ -237,9 +248,74 @@ def official_check(name, sym, m1, leader):
            "totR_mine_all": round(float(t.R.sum()), 3),
            "totR_mine_on_rows_closed_before_cut": round(float(both.R_mine.sum()), 6),
            "totR_official_closed_before_cut": round(float(off.R.sum()), 6)}
-    res["reproduced"] = bool(res["n_mine"] == n_off and len(both) == len(off) and len(dif) == 0
-                             and len(only_mine) == n_open and only_mine_boundary)
+    whole = bool(res["n_mine"] == n_off and len(both) == len(off) and len(dif) == 0
+                 and len(only_mine) == n_open and only_mine_boundary)
+    res["reproduced_whole_frame"] = whole
+    ok_w = True
+    if W is not None:
+        wa, wb = W["eval"]
+
+        def inw(x, col="entry_time"):
+            return ((x[col] >= wa) & (x[col] < wb)).to_numpy()
+
+        mw = m[inw(m)]
+        both_w, only_w = mw[mw["_merge"] == "both"], mw[mw["_merge"] == "left_only"]
+        off_w = off[inw(off)]
+        n_off_w = int(inw(ent).sum())
+        n_open_w = int(n_off_w - len(off_w))
+        dif_w = m[differs & inw(m)]
+        bound_w = bool(((only_w.exit_time_mine >= last) | (only_w.reason_mine == "eod")).all())
+        ok_w = bool(int(inw(t).sum()) == n_off_w and len(both_w) == len(off_w) and len(dif_w) == 0
+                    and len(only_w) == n_open_w and bound_w)
+        res["window"] = {"eval": [str(wa), str(wb)], "n_mine": int(inw(t).sum()), "n_official": n_off_w,
+                         "official_open_at_cut": n_open_w, "official_closed_before_cut": int(len(off_w)),
+                         "matched_closed": int(len(both_w)), "mine_not_in_official_closed": int(len(only_w)),
+                         "those_open_at_frame_end_in_mine": bound_w, "rows_differing": int(len(dif_w)),
+                         "totR_mine_all": round(float(t.R.to_numpy()[inw(t)].sum()), 3),
+                         "totR_mine_on_rows_closed_before_cut": round(float(both_w.R_mine.sum()), 6),
+                         "totR_official_closed_before_cut": round(float(off_w.R.sum()), 6),
+                         "totals_equal_on_rows_closed_before_cut": bool(abs(float(both_w.R_mine.sum())
+                                                                            - float(off_w.R.sum())) < 1e-6),
+                         "examples_differing": [{"entry_time": str(r.entry_time), "side": int(r.side),
+                                                 "R_mine": float(r.R_mine), "R_official": float(r.R_off),
+                                                 "exit_mine": str(r.exit_time_mine), "exit_official": str(r.exit_time_off)}
+                                                for r in dif_w.head(5).itertuples()],
+                         "reproduced": ok_w}
+    res["reproduced"] = bool(whole and ok_w)
     return res
+
+
+def check_first(spec, res):
+    """synthesis A's '3. CHECK FIRST' (the harness's official check): every one of the ten unchanged sleeves rebuilt
+    by this pipeline equals the official recalc trades, on the whole frame and on the judged window (count, total R,
+    trade by trade); otherwise synthesis A says 'stop and report': its changes are then not judged (verdicts
+    adopted = null), and the failure is written at the top of the output."""
+    want = set(TEN_KEYS)
+    got = res.get("official") or {}
+    rows = {k: {"reproduced": bool(v.get("reproduced")), "whole_frame": bool(v.get("reproduced_whole_frame")),
+                "window": {kk: (v.get("window") or {}).get(kk) for kk in
+                           ("n_mine", "n_official", "official_open_at_cut", "rows_differing",
+                            "totR_mine_on_rows_closed_before_cut", "totR_official_closed_before_cut", "reproduced")}}
+            for k, v in sorted(got.items())}
+    missing = sorted(want - set(got))
+    failed = sorted(k for k, v in rows.items() if not v["reproduced"]) + missing
+    computed = bool(spec.get("official_check")) and not missing
+    ok = computed and not failed
+    status = ("PASSED: the ten unchanged sleeves rebuilt by the harness equal the official recalc trades (whole frame "
+              "and judged window: count, total R, trade by trade)") if ok else (
+        "FAILED -- STOP AND REPORT (synthesis A, 3. CHECK FIRST): the unchanged sleeves recomputed by this pipeline do "
+        f"not equal the official recalc trades: {', '.join(failed) or 'the check was not computed'}. synthesis A's "
+        "changes are NOT judged (verdicts adopted = null); every other number of this run is unverified.")
+    return {"what": check_first.__doc__.strip(), "computed": computed, "passed": ok, "status": status,
+            "failed_or_missing": failed, "sleeves": rows}
+
+
+def loud(progress, lines):
+    bar = "!" * 100
+    progress(bar)
+    for ln in lines:
+        progress(f"!!! {ln}")
+    progress(bar)
 
 
 # ------------------------------------------------------------------------------------------------- sleeve statistics
@@ -357,7 +433,8 @@ def run_spec(spec, cut, progress=print):
         by_sym.setdefault(s["sym"], []).append(s)
     syms = [x for x in SYM_ORDER if x in by_sym] + sorted(x for x in by_sym if x not in SYM_ORDER)
     need_leader = any(s["rule"] == "nq_btc_follow" for s in sleeves)
-    res = {"spec": spec.get("name"), "cut": str(cut), "windows": {"eval": [str(x) for x in W["eval"]],
+    res = {"check_first": None,                          # synthesis A's CHECK FIRST: the first thing of the output
+           "spec": spec.get("name"), "cut": str(cut), "windows": {"eval": [str(x) for x in W["eval"]],
                                                                   "years": W["years"], "splits": [[n, str(a), str(b)] for n, a, b in W["splits"]]},
            "changes": selection,
            "frames": {}, "official": {}, "sleeves": {}, "portfolios": {}, "comparisons": {}, "sleeve_comparisons": {},
@@ -383,12 +460,18 @@ def run_spec(spec, cut, progress=print):
             k = s["key"]
             if spec.get("official_check") and not s.get("change") and f"{s['rule']}__{sym}" in TEN_KEYS \
                     and (s["rule"], sym) not in official_done:
-                res["official"][f"{s['rule']}__{sym}"] = official_check(s["rule"], sym, m1, leader)
+                res["official"][f"{s['rule']}__{sym}"] = official_check(s["rule"], sym, m1, leader, W)
                 official_done.add((s["rule"], sym))
                 o = res["official"][f"{s['rule']}__{sym}"]
+                ow = o.get("window") or {}
                 progress(f"   official {s['rule']:20s} {sym}: n {o['n_mine']}/{o['n_official']} open at cut "
-                         f"{o['official_open_at_cut']} differing {o['rows_differing']} -> "
+                         f"{o['official_open_at_cut']} differing {o['rows_differing']} | window n "
+                         f"{ow.get('n_mine')}/{ow.get('n_official')} differing {ow.get('rows_differing')} -> "
                          f"{'OK' if o['reproduced'] else 'MISMATCH'}")
+                if not o["reproduced"]:
+                    loud(progress, [f"OFFICIAL CHECK (synthesis A's CHECK FIRST) FAILED for {s['rule']}__{sym}: the "
+                                    "rebuilt sleeve differs from the official recalc trades",
+                                    "the run continues so that nothing is lost; synthesis A's changes will not be judged"])
             res["sleeves"][k] = {"spec": s, "runs": {}}
             for mode in modes:
                 for ex in execs:
@@ -422,6 +505,11 @@ def run_spec(spec, cut, progress=print):
         gc.collect()
     res["_trades"] = trades
     res["_signals"] = signals
+    res["check_first"] = check_first(spec, res)
+    if not res["check_first"]["passed"]:
+        loud(progress, [res["check_first"]["status"]])
+    else:
+        progress(f"== check first: {res['check_first']['status']}")
     res["payoff_reference_vs_sB"] = payoff_reference_vs_sB(spec, trades, W, modes, execs)
     # ------------------------------------------------------------------------------------------- portfolios
     a, b = W["eval"]
@@ -480,8 +568,19 @@ def run_spec(spec, cut, progress=print):
     res["verdicts"] = VD.compute(spec, res, W)
     for cid, v in res["verdicts"].items():
         progress(f"   verdict {cid:16s} " + ("no criterion declared" if not v.get("declared") else
+                                            f"ERROR {v['error']}" if v.get("error") else
                                             f"adopted {v['adopted']} ({sum(c['pass'] for c in v['criteria'])}/"
-                                            f"{len(v['criteria'])} criteria)"))
+                                            f"{len(v['criteria'])} criteria)"
+                                            + (f" {v['V']}" if v.get("V") else "")
+                                            + (" -- NOT JUDGED: check first failed" if v.get("stopped_by_check_first")
+                                               else "")))
+    res["synthesis_A"] = VD.synthesis_A_block(spec, res, W, res["verdicts"])
+    if res["synthesis_A"].get("changes"):
+        sa = res["synthesis_A"]
+        progress(f"   synthesis A: passing {sa.get('passing')} ; together vs unchanged: "
+                 + json.dumps(sa.get("together_vs_unchanged_headline"), default=str))
+    if not res["check_first"]["passed"]:
+        loud(progress, [res["check_first"]["status"]])
     return res
 
 
@@ -494,6 +593,50 @@ def sha256(path):
     with open(path, "rb") as f:
         h.update(f.read())
     return h.hexdigest()
+
+
+def imported_code_sha256(extra_paths=()):
+    """A5: the sha256 of every file under lab/ that the process imported (every module in sys.modules whose file is
+    under lab/: the harness, the lenses, the strategy modules, recalc.py, goldlab), keyed by its path relative to lab/,
+    with the module names it was imported as; `extra_paths` (files loaded by path, e.g. plugins) are added. A file the
+    guard refuses to open, or that cannot be read, is recorded with its error instead of a hash (never raises)."""
+    import sys
+    out = {}
+    items = [(n, getattr(m, "__file__", None)) for n, m in list(sys.modules.items())]
+    items += [(f"<loaded by path {i}>", p) for i, p in enumerate(extra_paths)]
+    for name, f in items:
+        if not f or not isinstance(f, str):
+            continue
+        p = os.path.realpath(f)
+        if not (p == G.LAB_REAL or p.startswith(G.LAB_REAL + os.sep)) or not os.path.isfile(p):
+            continue
+        rel = os.path.relpath(p, G.LAB_REAL)
+        if rel in out:
+            out[rel]["modules"].append(name)
+            continue
+        try:
+            out[rel] = {"sha256": sha256(p), "modules": [name]}
+        except (OSError, G.GuardError) as e:
+            out[rel] = {"sha256": None, "error": str(e)[:200], "modules": [name]}
+    return dict(sorted(out.items()))
+
+
+def opened_files_sha256(reads):
+    """A5 (beside the code): the sha256 of every non-data file under lab/ the run opened for reading (G.reads() kind
+    'open': configuration such as r2/fp_costs.json and the F1 model JSON); never raises."""
+    out = {}
+    for r in reads:
+        if r.get("kind") != "open":
+            continue
+        rel = r["path"]
+        if rel in out or os.path.isabs(rel):
+            continue
+        p = os.path.join(G.LAB_REAL, rel)
+        try:
+            out[rel] = sha256(p)
+        except (OSError, G.GuardError) as e:
+            out[rel] = f"error: {str(e)[:200]}"
+    return dict(sorted(out.items()))
 
 
 def js_default(o):

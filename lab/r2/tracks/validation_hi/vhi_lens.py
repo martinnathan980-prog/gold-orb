@@ -113,6 +113,47 @@ def payoff():
     return _M["payoff"]
 
 
+SYNTH_A_PORTFOLIO_SHA256 = "56607d818669a9bc2e4cde14bf67a324a76b9882773f229a11bb89da9549f78c"   # its declaration
+
+
+def synthesis_A():
+    """synthesis A's FROZEN measures() (lab/r2/tracks/autopsy/synthesis_A/portfolio.py, sha256 quoted in its
+    proposed_validation_look, checked here), imported unmodified. portfolio.py imports its `synth` module for four
+    constants only; it is given a stand-in that carries NY (the only one measures() uses) and None for MAIN0, CUT and
+    WORK (its in-sample window and work folder, unused here), so nothing of synth.py (its data readers, its numba
+    code) enters the process. sys.path is restored after the import (portfolio.py inserts its own folder).
+    Returns {"P": module, "sha256": ..., "frozen": True} or {"error": ...} (never raises)."""
+    if "sA" not in _M:
+        import hashlib
+        import types
+        p = os.path.join(AUTOPSY, "synthesis_A", "portfolio.py")
+        try:
+            with open(p, "rb") as f:
+                sha = hashlib.sha256(f.read()).hexdigest()
+        except OSError as e:
+            _M["sA"] = {"error": f"cannot read {p}: {e}"}
+            return _M["sA"]
+        if sha != SYNTH_A_PORTFOLIO_SHA256:
+            _M["sA"] = {"error": f"{p} has sha256 {sha}, not the frozen {SYNTH_A_PORTFOLIO_SHA256}: its measures() "
+                                 "is not used", "sha256": sha}
+            return _M["sA"]
+        stub = types.ModuleType("vhi_sA_synth_constants")
+        stub.NY = "America/New_York"
+        stub.MAIN0 = stub.CUT = stub.WORK = None
+
+        def _no_log(*a, **k):
+            raise RuntimeError("synthesis A's trials log is never written by the harness")
+
+        stub.log = _no_log
+        saved = list(sys.path)
+        try:
+            m = load_file(p, "vhi_sA_portfolio", {"synth": stub})
+        finally:
+            sys.path[:] = saved
+        _M["sA"] = {"P": m, "sha256": sha, "frozen": True}
+    return _M["sA"]
+
+
 def cluster_engine():
     """The cluster lens's portfolio engine (run_engine: guards, 6 / 2 position caps)."""
     if "cluster" not in _M:

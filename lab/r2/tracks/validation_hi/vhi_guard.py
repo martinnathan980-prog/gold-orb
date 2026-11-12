@@ -7,17 +7,22 @@ may read and refuses everything else:
     and every trades file with `entry_time < CUT` (results realised at or after CUT are never needed in sample:
     see vhi_data.official_closed, which adds `exit_time < CUT`).
   * CUT <= 2022-01-01 is the in-sample harness (the only CUT this task uses).
-  * 2022-01-01 < CUT <= 2026-01-01 is THE LOOK. It is refused unless (F1, the declaration bound to the spec)
-    the environment variable LOOK_DECLARED names a readable file whose text contains the string "autopsy_HI_look"
-    AND the full 64-hex sha256 of the spec file the run executes (look.py computes it from the very bytes it runs).
-    It is also refused (F2, run once) when results/val_access.log already holds a line with track
-    "autopsy_HI_look" or a '<stem>.started' marker exists, unless a second access is asked with its reason, which is
-    then written into the label. The run appends ONE line to lab/results/val_access.log (track "autopsy_HI_look")
-    and, right after it, the '<stem>.started' marker, before anything is read.
+  * 2022-01-01 < CUT <= 2026-01-01 is THE LOOK. It is refused unless (A1) the environment variable LOOK_DECLARED
+    names a file whose REAL PATH (os.path.realpath) is exactly DECLARED_PATH = /home/user/gold-orb/lab/PROTOCOL_V3.md
+    -- every other file is refused before it is read: anything under lab/results/ (proofs.json, the rehearsals,
+    proof_i_guard.json and every other output of this harness, which quote the spec's sha256), the harness folder,
+    /tmp, the scratchpad, any copy -- AND (F1, the declaration bound to the spec) that file's text contains the
+    string "autopsy_HI_look" AND the full 64-hex sha256 of the spec file the run executes (look.py computes it from
+    the very bytes it runs). It is also refused (F2, run once) when results/val_access.log already holds a line with
+    track "autopsy_HI_look" or a '<stem>.started' marker exists, unless a second access is asked with its reason,
+    which is then written into the label. The run appends ONE line to lab/results/val_access.log (track
+    "autopsy_HI_look") and, right after it, the '<stem>.started' marker, before anything is read.
   * CUT > 2026-01-01 is refused whatever the environment says (the 2026 holdout is never read).
-  * lab/holdout_raw, lab/data/holdout and any file whose name carries "2026" are refused at every CUT.
+  * (A2) At every CUT, any read (open, pathlib, parquet, CSV, JSON) of a path under lab/ with a component whose name
+    contains 'holdout' (any case: lab/holdout_raw, lab/data/holdout, lab/results/holdout/, lab/holdout.py, ...) and of
+    lab/results/holdout_run.log is refused, in any open() mode; so is any file whose name carries "2026" (reading).
 
-THE READ GUARD (F3), installed for the whole process by open_run:
+THE READ GUARD (F3, A2, A3), installed for the whole process by open_run:
   * pandas.read_parquet, pyarrow.parquet(.core).read_table / read_pandas / ParquetDataset: the source must be a str
     or os.PathLike path (file objects, bytes, buffers, lists, '~' and URIs such as 'file://...' are refused), resolved
     with os.path.realpath; EVERY parquet read, wherever the file is, must carry a top-level row filter
@@ -25,14 +30,22 @@ THE READ GUARD (F3), installed for the whole process by open_run:
     `filesystem` argument is refused.
   * pyarrow.parquet(.core).ParquetFile, read_metadata and pyarrow.dataset.dataset cannot carry a row filter: refused
     (they work only inside a read that the guard has already checked, e.g. pandas -> pyarrow internals).
-  * pandas.read_csv / read_table / read_fwf: path only (buffers refused); refused under lab/ except the allowlist
-    CSV_ALLOW; every CSV read is recorded.
-  * builtins.open and io.open (hence pathlib): refused on lab/data/** and the holdout directories (any mode), and on
-    any file whose name carries "2026" (reading modes); every reading open of a file under lab/ is recorded.
+  * CSV: pandas.read_csv / read_table / read_fwf and pyarrow.csv.read_csv / open_csv: path only (buffers refused);
+    refused under lab/ except the allowlist CSV_ALLOW; every CSV read is recorded. (A3) builtins.open / io.open (hence
+    pathlib, the csv module, numpy.loadtxt / genfromtxt through numpy's file openers, gzip, bz2, lzma) in a reading
+    mode of a *.csv / *.csv.gz (.bz2, .xz, .zip) file under lab/ is refused except CSV_ALLOW.
+  * pyarrow.json.read_json: path only, the holdout and 2026 rules, recorded.
+  * builtins.open and io.open (hence pathlib): refused on lab/data/** and the holdout (any mode), on any file whose
+    name carries "2026" (reading modes) and on CSVs under lab/ off the allowlist (reading modes); every reading open
+    of a file under lab/ is recorded (other files under lab/, e.g. JSON configuration and results files, can be
+    opened: they are recorded, not refused).
   Lens and strategy modules call these through their module attribute, so they are covered too: a read that would
   bypass the cut (for example the nq_btc_follow default leader loader, which reads the research file to 2025 when no
-  leader is set) raises instead of reading. What is not covered: pyarrow.fs file objects, os.open / mmap and other
-  processes; nothing in the harness uses them.
+  leader is set) raises instead of reading. What is not covered (no plugin or stake rule enters this look; nothing on
+  its code path uses them): pyarrow.fs file objects and the private pyarrow modules (pyarrow._csv, pyarrow._json,
+  pyarrow._parquet.ParquetReader, dataset fragments), io.FileIO / _io.open / io.open_code, os.open / mmap,
+  numpy.fromfile and other C-level reads, other processes, and reads made by code running inside a read the guard
+  has already checked (the re-entrancy pass-through).
 """
 import builtins
 import datetime as _dt
@@ -61,8 +74,12 @@ LOOK_DIR = os.path.join(LAB, "results", "r2", "validation_hi", "look")
 FORBIDDEN_DIRS = (os.path.join(LAB, "holdout_raw"), os.path.join(LAB, "data", "holdout"))
 DATA_REAL = os.path.realpath(DATA_DIR)
 FORBIDDEN_REAL = tuple(os.path.realpath(d) for d in FORBIDDEN_DIRS)
+HOLDOUT_LOG_REAL = os.path.join(LAB_REAL, "results", "holdout_run.log")   # A2: the 2026 holdout run's log
+# A1: the ONLY file the look may be declared in (its real path, exactly; no other file, copy or link target)
+DECLARED_PATH = "/home/user/gold-orb/lab/PROTOCOL_V3.md"
 TIME_COLS = ("ts", "entry_time", "t_dec")               # the row-filter columns a parquet read may be cut on
 CSV_ALLOW = ("results/r2/autopsy/payoff/variants_table.csv",)   # the only CSV under lab/ the process may read
+CSV_SUFFIXES = (".csv", ".csv.gz", ".csv.bz2", ".csv.xz", ".csv.zip")   # A3: CSV files, refused to open() under lab/
 SHA_RE = re.compile(r"^[0-9a-f]{64}$")
 URI_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]*:")
 
@@ -88,12 +105,27 @@ def _rel(p):
     return os.path.relpath(p, LAB_REAL) if _under(p, LAB_REAL) else p
 
 
-# ------------------------------------------------------------------------------------------------- the declaration (F1)
+# ------------------------------------------------------------------------------------------------- the declaration (A1, F1)
+def declared_path_check(path):
+    """A1: (accepted, real path). LOOK_DECLARED is accepted only when its real path (symbolic links resolved) is
+    exactly DECLARED_PATH, the protocol itself. Pure: nothing is opened."""
+    try:
+        s = os.fspath(path)
+        if isinstance(s, bytes):
+            s = os.fsdecode(s)
+        rp = os.path.realpath(s)
+    except (TypeError, ValueError):
+        return False, None
+    return rp == DECLARED_PATH, rp
+
+
 def declaration_check(path, spec_sha):
-    """What the declared file says about this look: readable, its sha256, whether its text contains the string
-    'autopsy_HI_look' and the full 64-hex sha256 of the spec (any case). ok = both."""
-    out = {"file": path or None, "readable": False, "sha256": None, "contains_track": False,
-           "contains_spec_sha256": False, "spec_sha256": spec_sha, "ok": False}
+    """What the declared file says about this look: its real path and whether it is the protocol (A1), readable,
+    its sha256, whether its text contains the string 'autopsy_HI_look' and the full 64-hex sha256 of the spec (any
+    case). ok = both strings (the content rule only: resolve_cut applies the path rule first, before any read)."""
+    is_prot, rp = declared_path_check(path) if path else (False, None)
+    out = {"file": path or None, "real_path": rp, "is_the_protocol": is_prot, "readable": False, "sha256": None,
+           "contains_track": False, "contains_spec_sha256": False, "spec_sha256": spec_sha, "ok": False}
     if not path or not os.path.isfile(path):
         return out
     check_holdout(path)                          # a protocol text, not data: its name may carry a 2026 date
@@ -108,9 +140,10 @@ def declaration_check(path, spec_sha):
 
 
 def resolve_cut(cut, env=None, spec_sha=None):
-    """The CUT of a run, checked. Raises GuardError when the run is not allowed. For a CUT after 2022-01-01 the
-    declared file (LOOK_DECLARED in `env`, default os.environ) must contain 'autopsy_HI_look' and `spec_sha`, the
-    full sha256 of the spec file the run executes."""
+    """The CUT of a run, checked. Raises GuardError when the run is not allowed. For a CUT after 2022-01-01:
+    LOOK_DECLARED (in `env`, default os.environ) must be the protocol itself (A1: its real path is exactly
+    DECLARED_PATH; checked before the file is read), and its text must contain 'autopsy_HI_look' and `spec_sha`, the
+    full sha256 of the spec file the run executes (F1)."""
     env = os.environ if env is None else env
     c = _utc(cut)
     if c > LOOK_MAX:
@@ -121,15 +154,20 @@ def resolve_cut(cut, env=None, spec_sha=None):
                              f"(look.py passes it); got {spec_sha!r}")
         path = env.get("LOOK_DECLARED", "")
         if not path:
-            raise GuardError(f"CUT {c} is after 2022-01-01: the look is refused until LOOK_DECLARED=<path of the "
-                             "protocol addendum that declares it> is set")
+            raise GuardError(f"CUT {c} is after 2022-01-01: the look is refused until LOOK_DECLARED={DECLARED_PATH} "
+                             "is set and the protocol declares it")
+        is_prot, rp = declared_path_check(path)
+        if not is_prot:
+            raise GuardError(f"CUT {c}: LOOK_DECLARED={path!r} is refused (A1): its real path {rp!r} is not "
+                             f"{DECLARED_PATH}, the only file the look may be declared in (no output of the harness, "
+                             "no copy, no other file, wherever it is)")
         d = declaration_check(path, spec_sha)
         if not d["readable"]:
             raise GuardError(f"CUT {c}: LOOK_DECLARED={path!r} is not a readable file")
         if not d["ok"]:
-            raise GuardError(f"CUT {c}: the text of LOOK_DECLARED={path!r} must contain the string {TRACK!r} and the "
-                             f"full sha256 of the spec ({spec_sha}); contains {TRACK!r}: {d['contains_track']}, "
-                             f"contains the spec sha256: {d['contains_spec_sha256']}")
+            raise GuardError(f"CUT {c}: the protocol {DECLARED_PATH} does not declare this look (F1: its text must "
+                             f"contain the look's track name and the full sha256 of the spec file that runs); "
+                             f"track named: {d['contains_track']}, spec sha256 quoted: {d['contains_spec_sha256']}")
     return c
 
 
@@ -193,15 +231,29 @@ def write_marker(path, body):
 
 
 # ------------------------------------------------------------------------------------------------- paths and filters
+def is_holdout(p):
+    """A2: True for a REAL path inside lab/holdout_raw or lab/data/holdout, equal to lab/results/holdout_run.log, or
+    under lab/ with a path component whose name contains 'holdout' (any case: lab/results/holdout/...,
+    lab/holdout.py, lab/holdout_candidates.json, .../s07_holdout.json, ...)."""
+    for d in FORBIDDEN_REAL:
+        if _under(p, d):
+            return True
+    if p == HOLDOUT_LOG_REAL:
+        return True
+    if _under(p, LAB_REAL) and p != LAB_REAL:
+        return any("holdout" in part.lower() for part in os.path.relpath(p, LAB_REAL).split(os.sep))
+    return False
+
+
 def check_holdout(path):
-    """Refuse the holdout directories (real path). Returns the real path."""
+    """Refuse the holdout (A2, real path). Returns the real path."""
     s = os.fspath(path)
     if isinstance(s, bytes):
         s = os.fsdecode(s)
     p = os.path.realpath(s)
-    for d in FORBIDDEN_REAL:
-        if _under(p, d):
-            raise GuardError(f"refused: {p} is holdout data (never read by this harness)")
+    if is_holdout(p):
+        raise GuardError(f"refused: {p} is holdout (a path under lab/ with a 'holdout' component, "
+                         "results/holdout_run.log, lab/holdout_raw, lab/data/holdout): never read, at any CUT")
     return p
 
 
@@ -280,9 +332,20 @@ def _check_csv(path, kind):
     return p
 
 
+def _check_json(path, kind):
+    """pyarrow.json.read_json: path only, the holdout and 2026 rules; recorded."""
+    p = check_path(source_path(path, kind))
+    _record(p, kind)
+    return p
+
+
+def is_csv_name(p):
+    return os.path.basename(p).lower().endswith(CSV_SUFFIXES)
+
+
 def _open_check(file, args, kwargs):
-    """builtins.open / io.open: refuse lab/data/** and the holdout (any mode), files dated 2026 (reading modes);
-    record every reading open under lab/."""
+    """builtins.open / io.open: refuse the holdout (A2) and lab/data/** in any mode; in a reading mode, refuse files
+    dated 2026 and (A3) CSV files under lab/ except CSV_ALLOW; record every reading open under lab/."""
     if isinstance(file, int):
         return
     try:
@@ -293,9 +356,11 @@ def _open_check(file, args, kwargs):
         s = os.fsdecode(s)
     p = os.path.realpath(s)
     mode = args[0] if args else kwargs.get("mode", "r")
-    for d in FORBIDDEN_REAL:
-        if _under(p, d):
-            raise GuardError(f"refused: open() of {p} (holdout data)")
+    if not isinstance(mode, str):
+        mode = "r"
+    if is_holdout(p):
+        raise GuardError(f"refused: open() of {p} (holdout: a path under lab/ with a 'holdout' component, "
+                         "results/holdout_run.log, lab/holdout_raw, lab/data/holdout)")
     if _under(p, DATA_REAL):
         raise GuardError(f"refused: open() of {p}: lab/data is read only through the guarded parquet readers, with "
                          "a row filter")
@@ -303,6 +368,9 @@ def _open_check(file, args, kwargs):
     if reading and "2026" in os.path.basename(p):
         raise GuardError(f"refused: open() of {p}: dated 2026")
     if reading and _under(p, LAB_REAL):
+        if is_csv_name(p) and _rel(p) not in CSV_ALLOW:
+            raise GuardError(f"refused: open() of csv {_rel(p)} under lab/ in a reading mode (A3; allowed: "
+                             f"{', '.join(CSV_ALLOW)})")
         _record(p, "open")
 
 
@@ -429,6 +497,32 @@ def install_read_guard():
 
     guarded_open.__vhi_guarded__ = True
     builtins.open = io.open = guarded_open
+    # modules that captured the builtin open at their import (before this guard): numpy's file openers (loadtxt,
+    # genfromtxt) and bz2. gzip and lzma look builtins.open up at each call.
+    try:
+        from numpy.lib import _datasource as npds
+        fo = npds._file_openers._file_openers
+        if fo.get(None) is orig_open:
+            fo[None] = guarded_open
+            _ORIG["numpy_opener"] = orig_open
+    except (ImportError, AttributeError):
+        pass
+    import bz2
+    if getattr(bz2, "_builtin_open", None) is orig_open:
+        bz2._builtin_open = guarded_open
+    # pyarrow's CSV and JSON readers (path only; CSV: the lab/ allowlist; both: the holdout and 2026 rules)
+    import pyarrow.csv as pacsv
+    import pyarrow.json as pajson
+
+    def chk_src(name, check_fn, key):
+        def check(a, kw):
+            check_fn(a[0] if a else kw.get(key), name)
+        return check
+
+    _ORIG.update(pa_read_csv=pacsv.read_csv, pa_open_csv=pacsv.open_csv, pa_read_json=pajson.read_json)
+    pacsv.read_csv = _wrap(_ORIG["pa_read_csv"], chk_src("pyarrow.csv.read_csv", _check_csv, "input_file"))
+    pacsv.open_csv = _wrap(_ORIG["pa_open_csv"], chk_src("pyarrow.csv.open_csv", _check_csv, "input_file"))
+    pajson.read_json = _wrap(_ORIG["pa_read_json"], chk_src("pyarrow.json.read_json", _check_json, "input_file"))
     _STATE["installed"] = True
 
 
@@ -489,10 +583,12 @@ def reads():
 
 def self_test(spec_sha=None, protocol=None):
     """The CUT rules checked on SIMULATED environments (dicts: the process environment is never set) with temporary
-    addendum texts; only resolve_cut is called (it returns a timestamp: nothing is opened, read or logged).
-    The temporary texts quote a DUMMY spec sha256 (never the real one), so no file written here could serve as the
-    declaration of the real look. `spec_sha` (the real spec's sha256) and `protocol` (lab/PROTOCOL_V3.md) check that
-    the protocol as it stands is refused."""
+    addendum texts; only resolve_cut, declared_path_check and declaration_check are called (pure: nothing is opened
+    but the test texts and the protocol's text, nothing is read from data, nothing is logged).
+    The temporary texts quote a DUMMY spec sha256 (never the real one). (A1) Since only the protocol's real path is
+    accepted, every temporary text is refused whatever it says: the content rule (F1) is therefore checked on them
+    through declaration_check. `spec_sha` (the real spec's sha256) and `protocol` (lab/PROTOCOL_V3.md) check that the
+    protocol as it stands is refused."""
     import tempfile
     out = {}
     env0 = {}
@@ -508,39 +604,38 @@ def self_test(spec_sha=None, protocol=None):
              "unwritten": "an addendum that has not been written yet"}
     files = {}
     tmpd = tempfile.mkdtemp(prefix="vhi_selftest_")
+    link = os.path.join(tmpd, "PROTOCOL_V3.md")          # a symbolic link TO the protocol (its real path is the protocol)
     try:
         for k, t in texts.items():
             files[k] = os.path.join(tmpd, f"addendum_{k}.txt")
             with open(files[k], "w") as f:
                 f.write(t)
+        os.symlink(DECLARED_PATH, link)
+        # (1) the CUT rules and A1 through resolve_cut on environment dicts
         cases = [("cut_2022_allowed", "2022-01-01", env0, None, True),
                  ("cut_2021_allowed", "2021-06-30", env0, None, True),
                  ("cut_2023_without_env_refused", "2023-01-01", env0, dummy, False),
                  ("cut_2026_without_env_refused", "2026-01-01", env0, dummy, False),
-                 ("cut_2026_env_not_a_file_refused", "2026-01-01", {"LOOK_DECLARED": "/nonexistent/addendum.md"}, dummy, False),
+                 ("cut_2026_env_not_a_file_refused (A1: not the protocol)", "2026-01-01",
+                  {"LOOK_DECLARED": "/nonexistent/addendum.md"}, dummy, False),
+                 ("A1 cut_2026_a_full_test_declaration_in_/tmp_refused (track + full sha, but not the protocol's path)",
+                  "2026-01-01", {"LOOK_DECLARED": files["full"]}, dummy, False),
+                 ("A1 cut_2026_a_full_test_declaration_in_capitals_in_/tmp_refused", "2026-01-01",
+                  {"LOOK_DECLARED": files["full_upper"]}, dummy, False),
                  ("cut_2026_text_with_word_declared_only_refused (the old gate)", "2026-01-01",
                   {"LOOK_DECLARED": files["word_declared_only"]}, dummy, False),
-                 ("cut_2026_text_with_track_only_refused", "2026-01-01", {"LOOK_DECLARED": files["track_only"]}, dummy, False),
-                 ("cut_2026_text_with_sha_only_refused", "2026-01-01", {"LOOK_DECLARED": files["sha_only"]}, dummy, False),
-                 ("cut_2026_text_with_track_and_sha12_refused", "2026-01-01", {"LOOK_DECLARED": files["track_and_sha12"]},
-                  dummy, False),
-                 ("cut_2026_text_with_track_and_another_specs_sha_refused", "2026-01-01",
-                  {"LOOK_DECLARED": files["track_and_other_sha"]}, dummy, False),
-                 ("cut_2026_text_unwritten_refused", "2026-01-01", {"LOOK_DECLARED": files["unwritten"]}, dummy, False),
                  ("cut_2026_full_declaration_but_no_spec_sha_refused", "2026-01-01", {"LOOK_DECLARED": files["full"]},
                   None, False),
                  ("cut_2026_full_declaration_but_short_spec_sha_refused", "2026-01-01", {"LOOK_DECLARED": files["full"]},
                   dummy[:12], False),
-                 ("cut_2026_text_with_track_and_full_sha_allowed (resolve only, nothing opened)", "2026-01-01",
-                  {"LOOK_DECLARED": files["full"]}, dummy, True),
-                 ("cut_2026_text_with_track_and_full_sha_in_capitals_allowed (resolve only)", "2026-01-01",
-                  {"LOOK_DECLARED": files["full_upper"]}, dummy, True),
                  ("cut_2026_01_02_refused_even_with_full_declaration", "2026-01-02", {"LOOK_DECLARED": files["full"]},
                   dummy, False),
                  ("cut_2027_refused_even_with_full_declaration", "2027-01-01", {"LOOK_DECLARED": files["full"]}, dummy, False)]
         if spec_sha and protocol:
             cases.append(("cut_2026_LOOK_DECLARED_PROTOCOL_V3.md_as_it_stands_refused", "2026-01-01",
                           {"LOOK_DECLARED": protocol}, spec_sha, False))
+            cases.append(("A1 cut_2026_a_symlink_to_the_protocol: its real path is the protocol, judged on the "
+                          "protocol's text as it stands: refused", "2026-01-01", {"LOOK_DECLARED": link}, spec_sha, False))
         for name, cut, env, sha, want in cases:
             try:
                 resolve_cut(cut, env, spec_sha=sha)
@@ -548,7 +643,43 @@ def self_test(spec_sha=None, protocol=None):
             except GuardError as e:
                 got, why = False, str(e)[:300]
             out[name] = {"expected_allowed": want, "allowed": got, "ok": got == want, "why": why}
+        # (2) F1, the content rule, on the test texts (declaration_check: reads the test text only)
+        for name, key, sha, want in (("content_word_declared_only_refused", "word_declared_only", dummy, False),
+                                     ("content_track_only_refused", "track_only", dummy, False),
+                                     ("content_sha_only_refused", "sha_only", dummy, False),
+                                     ("content_track_and_sha12_refused", "track_and_sha12", dummy, False),
+                                     ("content_track_and_another_specs_sha_refused", "track_and_other_sha", dummy, False),
+                                     ("content_unwritten_refused", "unwritten", dummy, False),
+                                     ("content_track_and_full_sha_accepted", "full", dummy, True),
+                                     ("content_track_and_full_sha_in_capitals_accepted", "full_upper", dummy, True),
+                                     ("content_full_text_but_no_spec_sha_refused", "full", None, False),
+                                     ("content_full_text_but_short_spec_sha_refused", "full", dummy[:12], False)):
+            d = declaration_check(files[key], sha)
+            out[name] = {"expected_allowed": want, "allowed": d["ok"], "ok": d["ok"] == want,
+                         "is_the_protocol": d["is_the_protocol"]}
+        # (3) A1, the path rule (declared_path_check: pure, nothing opened)
+        V = os.path.join(LAB, "results", "r2", "validation_hi")
+        for name, path, want in (("path_the_protocol_accepted", DECLARED_PATH, True),
+                                 ("path_the_protocol_written_with_a_dot_component_accepted (same real path)",
+                                  os.path.join(LAB, ".", "PROTOCOL_V3.md"), True),
+                                 ("path_a_symlink_to_the_protocol_accepted (its real path is the protocol)", link, True),
+                                 ("path_results_proofs.json_refused", os.path.join(V, "proofs.json"), False),
+                                 ("path_results_rehearsal_json_refused",
+                                  os.path.join(V, "rehearsal", "autopsy_HI_look__cut2022-01-01.json"), False),
+                                 ("path_results_proof_i_guard.json_refused", os.path.join(V, "proof_i_guard.json"), False),
+                                 ("path_the_look_output_refused",
+                                  os.path.join(V, "look", "autopsy_HI_look__cut2026-01-01.json"), False),
+                                 ("path_the_harness_folder_refused", os.path.join(HERE, "look_spec.json"), False),
+                                 ("path_a_test_text_in_/tmp_refused", files["full"], False),
+                                 ("path_a_file_named_PROTOCOL_V3.md_elsewhere_refused",
+                                  os.path.join(tmpd, "x", "PROTOCOL_V3.md"), False),
+                                 ("path_the_scratchpad_refused", "/tmp/claude-0/-home-user-gold-orb/scratchpad/PROTOCOL_V3.md",
+                                  False)):
+            ok_p, rp = declared_path_check(path)
+            out[name] = {"expected_allowed": want, "allowed": ok_p, "ok": ok_p == want, "real_path": rp}
     finally:
+        if os.path.lexists(link):
+            os.unlink(link)
         for p in files.values():
             if os.path.exists(p):
                 os.unlink(p)
@@ -557,9 +688,16 @@ def self_test(spec_sha=None, protocol=None):
         d = declaration_check(protocol, spec_sha)
         out["PROTOCOL_V3.md_as_it_stands"] = {"expected_allowed": False, "allowed": d["ok"], "ok": not d["ok"],
                                               "sha256": d["sha256"], "contains_track": d["contains_track"],
-                                              "contains_spec_sha256": d["contains_spec_sha256"]}
+                                              "contains_spec_sha256": d["contains_spec_sha256"],
+                                              "is_the_protocol": d["is_the_protocol"]}
     for name, path in (("holdout_raw_refused", os.path.join(LAB, "holdout_raw", "x.parquet")),
                        ("data_holdout_refused", os.path.join(LAB, "data", "holdout", "xauusd.parquet")),
+                       ("A2 results_holdout_dir_refused", os.path.join(LAB, "results", "holdout", "results.json")),
+                       ("A2 results_holdout_run.log_refused", os.path.join(LAB, "results", "holdout_run.log")),
+                       ("A2 a_lab_file_named_holdout_refused (lab/holdout.py)", os.path.join(LAB, "holdout.py")),
+                       ("A2 a_component_containing_holdout_refused (lab/holdout_candidates.json)",
+                        os.path.join(LAB, "holdout_candidates.json")),
+                       ("A2 a_component_in_capitals_refused", os.path.join(LAB, "results", "HoldOut", "x.json")),
                        ("data_file_dated_2026_refused", os.path.join(LAB, "data", "fp", "xauusd_2026_m1.parquet")),
                        ("any_file_dated_2026_refused", os.path.join(LAB, "results", "live", "brain_maps_2026-11-11.json"))):
         try:
@@ -568,6 +706,16 @@ def self_test(spec_sha=None, protocol=None):
         except GuardError:
             got = False
         out[name] = {"expected_allowed": False, "allowed": got, "ok": not got}
+    for name, path in (("control_official_trades_path_accepted_by_check_path",
+                        os.path.join(LAB, "results", "r2", "recalc", "trades", "ocm4__us100.parquet")),
+                       ("control_a_path_outside_lab_named_holdout_accepted (the rule is about lab/)",
+                        "/tmp/holdout_elsewhere/x.json")):
+        try:
+            check_path(path)
+            got = True
+        except GuardError:
+            got = False
+        out[name] = {"expected_allowed": True, "allowed": got, "ok": got}
     for name, src, want in (("source_str_path_accepted", os.path.join(LAB, "data", "fp", "ethusd_m1.parquet"), True),
                             ("source_bytes_refused", os.fsencode(os.path.join(LAB, "data", "fp", "ethusd_m1.parquet")), False),
                             ("source_file_uri_refused", "file://" + os.path.join(LAB, "data", "fp", "ethusd_m1.parquet"), False),
