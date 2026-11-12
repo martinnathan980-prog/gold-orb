@@ -455,3 +455,19 @@ Declared plans (the same ten rules, the same 2,000 draws, the same six scenarios
 - **To be said with it:** a limited fall is paid for by a robot that trades small, or not at all, after a bad run, so
   it climbs back more slowly; all of this is sizing on simulations of the validation years; figures rounded to two
   significant digits.
+
+### Addendum G — fourth clarification (2026-11-12, night), written BEFORE the run: the reference line and a start that calms down
+Outcome of the third clarification first (`results/r2/stake/growth.json`): **no declared plan meets the criterion** (deepest
+fall at or under 25 % in 9 paths out of 10 at half edge and with worthless rules): closest are Da and R2a (27.7 %).
+The loss budgets with a ratchet (R) do limit the fall to their budget, but the robot then trades small for most of the
+time: median gain after three years at half edge +5,300 (R1a) and +540 (R2a) against +32,600 at a flat 1 %, and the
+longest stretch under the high grows from 37 weeks to 92 and 106. The fast starts are what produces falls of 40 to
+66 % (on small sums). The time spent under the high does not depend on the size of the stake.
+Declared now, before any run, to show the user the real choice (nothing else will be run):
+- **A05, A025:** 0.5 % and 0.25 % of the balance per trade, always (the reference line: smaller stake, smaller falls).
+- **F "fast, then calm":** 5 % under 3,000 EUR, 2 % under 6,000, 1 % under 12,000, then 0.5 %, the thresholds read on the
+  larger of the balance and the money paid in.
+- **D1:** 1 % multiplied by max(0.2, 1 − fall from the high / 25 %).
+- **Two more measures on every path:** the deepest fall from the high recorded after the twelfth month (share and
+  euros), and the deepest fall in euros over the three years.
+The same criterion applies; if nothing meets it, that is the result.

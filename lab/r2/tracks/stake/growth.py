@@ -39,19 +39,32 @@ SCHEDULES = {                                   # (thresholds in EUR, risk % per
     "E": ((3000.0, 10000.0, 20000.0), (20.0, 10.0, 5.0, 2.0)),
     "C2": ((3000.0, 10000.0, 20000.0), (5.0, 3.0, 2.0, 1.0)),       # clarification of addendum G: thresholds compared with
     "D2": ((3000.0, 10000.0, 20000.0), (10.0, 5.0, 2.0, 1.0)),      # max(balance, money paid in)
+    "A05": ((), (0.5,)),                                            # fourth clarification: the reference line
+    "A025": ((), (0.25,)),
+    "F": ((3000.0, 6000.0, 12000.0), (5.0, 2.0, 1.0, 0.5)),         # fast, then calm (read on max(balance, paid))
 }
-KEYED_ON_PAID = ("C2", "D2")
+KEYED_ON_PAID = ("C2", "D2", "F")
 # second clarification of addendum G: plans that bound the loss. name -> (schedule used as cap, key of the risk rule,
 # its parameters, monthly payments made whatever happens after the first 1,000 EUR, threshold of the steps (< 0 = no
 # steps), catch-up paid with a month that is paid)
 PROTECT = {
-    "P": ("C2", 1, (0.0, 0.0), 2, 1.0, 0.0),
-    "P2": ("C2", 1, (0.0, 0.0), 2, 1.0, 1000.0),
-    "G": ("C2", 2, (0.10, 0.0), 0, -1.0, 0.0),
-    "K70": ("C2", 3, (0.10, 0.70), 0, -1.0, 0.0),
-    "K50": ("C2", 3, (0.10, 0.50), 0, -1.0, 0.0),
-    "GP": ("C2", 2, (0.10, 0.0), 2, 1.0, 0.0),
-    "K70P": ("C2", 3, (0.10, 0.70), 2, 1.0, 0.0),
+    "P": ("C2", 1, (0.0, 0.0, 0.0, 0.0, 0.0), 2, 1.0, 0.0, 0.0),
+    "P2": ("C2", 1, (0.0, 0.0, 0.0, 0.0, 0.0), 2, 1.0, 1000.0, 0.0),
+    "G": ("C2", 2, (0.10, 0.0, 0.0, 0.0, 0.0), 0, -1.0, 0.0, 0.0),
+    "K70": ("C2", 3, (0.10, 0.70, 0.0, 0.0, 0.0), 0, -1.0, 0.0, 0.0),
+    "K50": ("C2", 3, (0.10, 0.50, 0.0, 0.0, 0.0), 0, -1.0, 0.0, 0.0),
+    "GP": ("C2", 2, (0.10, 0.0, 0.0, 0.0, 0.0), 2, 1.0, 0.0, 0.0),
+    "K70P": ("C2", 3, (0.10, 0.70, 0.0, 0.0, 0.0), 2, 1.0, 0.0, 0.0),
+    # third clarification: loss budget with a ratchet (risk = 15 % of what is left of the budget), payments every month
+    # (a), by steps (p), by soft steps (s: a quarter of the month when under water); Da = smaller in a fall
+    "R1a": ("C2", 4, (0.15, 0.50, 0.30, 0.20, 0.15), 0, -1.0, 0.0, 0.0),
+    "R1p": ("C2", 4, (0.15, 0.50, 0.30, 0.20, 0.15), 2, 1.0, 0.0, 0.0),
+    "R1s": ("C2", 4, (0.15, 0.50, 0.30, 0.20, 0.15), 2, 1.0, 0.0, 0.25),
+    "R2a": ("C2", 4, (0.15, 0.30, 0.20, 0.15, 0.10), 0, -1.0, 0.0, 0.0),
+    "R2p": ("C2", 4, (0.15, 0.30, 0.20, 0.15, 0.10), 2, 1.0, 0.0, 0.0),
+    "R2s": ("C2", 4, (0.15, 0.30, 0.20, 0.15, 0.10), 2, 1.0, 0.0, 0.25),
+    "Da": ("C2", 5, (0.25, 0.20, 0.0, 0.0, 0.0), 0, -1.0, 0.0, 0.0),
+    "D1": ("A", 5, (0.25, 0.20, 0.0, 0.0, 0.0), 0, -1.0, 0.0, 0.0),
 }
 PLANS = tuple(SCHEDULES) + tuple(PROTECT)
 EDGES = (1.0, 0.5, 0.25, 0.0, -0.5)
@@ -74,14 +87,20 @@ def _pct(eq, thr, pct):
 
 
 @njit(cache=True)
-def _risk(eq, paid, thr, pct, key, rp):
-    """Risk % of a trade.
+def _risk(eq, paid, thr, pct, key, rp, hwm):
+    """Risk % of a trade. `hwm` = the highest gain (balance minus money paid in) reached so far.
     key 0  the schedule read on the balance;
     key 1  the schedule read on the larger of the balance and the money paid in;
     key 2  'gains pay for the risk': base % (1, or 0.5 / 0.25 when the balance is more than 10 / 20 % under the money
            paid in) + rp[0] x the accumulated gain, capped by the schedule of key 1 (never under the base);
     key 3  'floor': rp[0] x the cushion (balance - rp[1] x money paid in), capped by the schedule of key 1; 0 when the
-           cushion is used up."""
+           cushion is used up;
+    key 4  'loss budget with a ratchet': reference size = money paid in + hwm; budget = rp[1] of its part under thr[0],
+           rp[2] of the part between thr[0] and thr[1], rp[3] between thr[1] and thr[2], rp[4] beyond; what is left =
+           budget - fall from the high (hwm - current gain); risk = rp[0] x what is left, capped by the schedule of
+           key 1; 0 when nothing is left;
+    key 5  the schedule of key 1 multiplied by max(rp[1], 1 - fall from the high / rp[0]), the fall being a share of
+           (money paid in + hwm)."""
     if key == 0:
         return _pct(eq, thr, pct)
     cap = _pct(max(eq, paid), thr, pct)
@@ -93,15 +112,32 @@ def _risk(eq, paid, thr, pct, key, rp):
         g = (eq - paid) / paid if paid > 0.0 else 0.0
         base = 1.0 if g >= -0.10 else (0.5 if g >= -0.20 else 0.25)
         return min(base + 100.0 * rp[0] * max(0.0, eq - paid) / eq, max(cap, base))
-    cushion = eq - rp[1] * paid
-    if cushion <= 0.0:
-        return 0.0
-    return min(100.0 * rp[0] * cushion / eq, cap)
+    if key == 3:
+        cushion = eq - rp[1] * paid
+        if cushion <= 0.0:
+            return 0.0
+        return min(100.0 * rp[0] * cushion / eq, cap)
+    size = paid + hwm
+    fall = hwm - (eq - paid)
+    if key == 4:
+        budget, lo = 0.0, 0.0
+        for k in range(len(thr)):
+            if size > lo:
+                budget += rp[1 + k] * (min(size, thr[k]) - lo)
+            lo = thr[k]
+        if size > lo:
+            budget += rp[1 + len(thr)] * (size - lo)
+        left = budget - fall
+        if left <= 0.0:
+            return 0.0
+        return min(100.0 * rp[0] * left / eq, cap)
+    dd = fall / size if size > 0.0 else 0.0
+    return cap * max(rp[1], 1.0 - dd / rp[0])
 
 
 @njit(cache=True)
 def engine(t_in, t_out, order_out, wk_in, dy_in, wk_out, dy_out, fam, symid, pnl, risk, entry, upl, minlot, step, lev,
-           dep_t, dep_wk, dep_amt, thr, pct, key, rp, gate_free, gate_theta, catch, p, famcap, start, max_pos, max_per_sym,
+           dep_t, dep_wk, dep_amt, thr, pct, key, rp, gate_free, gate_theta, catch, gate_frac, p, famcap, start, max_pos, max_per_sym,
            kill_dd, stop_on_kill, usd_eur, nwk):
     """One account. Returns (balance at the end of each week, money paid in at the end of each week, counts) where
     counts = [taken, skipped by the rule, by the minimum lot, by the position caps, by the margin, week of the first
@@ -121,6 +157,8 @@ def engine(t_in, t_out, order_out, wk_in, dy_in, wk_out, dy_out, fam, symid, pnl
     cur_wk, cur_dy = -1, -1
     wk_paid = start
     held = 0.0                                # money of the skipped months, kept outside the robot
+    hwm = 0.0                                 # the highest gain (balance minus money paid in) reached so far
+    wk_hwm = 0.0                              # the same at the start of the server week
     wk_bal, dy_bal, wk_base, dy_base = start, start, start, start     # *_base = balance at the start + payments since
     prev_wk, prev_res = -2, 0.0
     rec = 0                                   # weeks < rec already have their end-of-week figures
@@ -145,8 +183,8 @@ def engine(t_in, t_out, order_out, wk_in, dy_in, wk_out, dy_out, fam, symid, pnl
                 # payments by steps: after the first `gate_free` monthly payments, a month is paid in only if the balance
                 # is at least gate_theta x the money already paid in; the money of a skipped month stays outside
                 if gate_theta >= 0.0 and q >= gate_free and eq < gate_theta * paid:
-                    held += amt
-                    amt = 0.0
+                    held += amt * (1.0 - gate_frac)      # soft steps: a share of the month is paid in all the same
+                    amt = amt * gate_frac
                 elif catch > 0.0 and held > 0.0:
                     extra = min(held, catch)
                     held -= extra
@@ -176,11 +214,13 @@ def engine(t_in, t_out, order_out, wk_in, dy_in, wk_out, dy_out, fam, symid, pnl
                 rec += 1
             if w_ev != cur_wk:
                 if cur_wk >= 0:
-                    prev_wk, prev_res = cur_wk, (eq - wk_base) / max(_risk(wk_bal, wk_paid, thr, pct, key, rp) / 100.0 * wk_bal, 1e-9)
-                cur_wk, wk_bal, wk_base, wk_paid = w_ev, eq, eq, paid
+                    prev_wk, prev_res = cur_wk, (eq - wk_base) / max(_risk(wk_bal, wk_paid, thr, pct, key, rp, wk_hwm) / 100.0 * wk_bal, 1e-9)
+                cur_wk, wk_bal, wk_base, wk_paid, wk_hwm = w_ev, eq, eq, paid, hwm
             if dy_out[k] != cur_dy:
                 cur_dy, dy_bal, dy_base = dy_out[k], eq, eq
             eq += pnl[k] * o_lots[slot] * upl[k] * usd_eur
+            if eq - paid > hwm:
+                hwm = eq - paid
             o_idx[slot] = -1
             if eq <= 0.0:                      # the account is empty: nothing left to trade with until the next payment
                 eq = 0.0
@@ -210,11 +250,11 @@ def engine(t_in, t_out, order_out, wk_in, dy_in, wk_out, dy_out, fam, symid, pnl
             continue
         if w_ev != cur_wk:
             if cur_wk >= 0:
-                prev_wk, prev_res = cur_wk, (eq - wk_base) / max(_risk(wk_bal, wk_paid, thr, pct, key, rp) / 100.0 * wk_bal, 1e-9)
-            cur_wk, wk_bal, wk_base, wk_paid = w_ev, eq, eq, paid
+                prev_wk, prev_res = cur_wk, (eq - wk_base) / max(_risk(wk_bal, wk_paid, thr, pct, key, rp, wk_hwm) / 100.0 * wk_bal, 1e-9)
+            cur_wk, wk_bal, wk_base, wk_paid, wk_hwm = w_ev, eq, eq, paid, hwm
         if dy_in[i] != cur_dy:
             cur_dy, dy_bal, dy_base = dy_in[i], eq, eq
-        unit = max(_risk(wk_bal, wk_paid, thr, pct, key, rp) / 100.0 * wk_bal, 1e-9)
+        unit = max(_risk(wk_bal, wk_paid, thr, pct, key, rp, wk_hwm) / 100.0 * wk_bal, 1e-9)
         w = (eq - wk_base) / unit
         d = (eq - dy_base) / unit
         pw = prev_res if prev_wk == w_ev - 1 else 0.0
@@ -233,7 +273,7 @@ def engine(t_in, t_out, order_out, wk_in, dy_in, wk_out, dy_out, fam, symid, pnl
             i += 1
             continue
         per_lot = risk[i] * upl[i] * usd_eur
-        lots = np.floor(eq * _risk(eq, paid, thr, pct, key, rp) * m / 100.0 / per_lot / step[i] + 1e-9) * step[i]
+        lots = np.floor(eq * _risk(eq, paid, thr, pct, key, rp, hwm) * m / 100.0 / per_lot / step[i] + 1e-9) * step[i]
         if lots < minlot[i]:
             cnt[2] += 1.0
             i += 1
@@ -322,12 +362,12 @@ def run_one(pk, pnl, sched, dep_t, dep_wk, dep_amt, start=1000.0, stop_on_kill=F
     """`pk` = pack(...) ; `pnl` = the per-trade result in price units for the whole frame (the edge scenario)."""
     p, famcap = S.params(CFG)
     if sched in PROTECT:
-        base, key, rp, gate_free, gate_theta, catch = PROTECT[sched]
+        base, key, rp, gate_free, gate_theta, catch, gate_frac = PROTECT[sched]
     else:
-        base, key, rp, gate_free, gate_theta, catch = sched, (1 if sched in KEYED_ON_PAID else 0), (0.0, 0.0), 0, -1.0, 0.0
+        base, key, rp, gate_free, gate_theta, catch, gate_frac = sched, (1 if sched in KEYED_ON_PAID else 0), (0.0,) * 5, 0, -1.0, 0.0, 0.0
     thr, pct = (np.array(v, dtype=np.float64) for v in SCHEDULES[base])
     return engine(*pk["head"], pnl[pk["idx"]], *pk["tail"], dep_t, dep_wk, dep_amt, thr, pct, key, np.array(rp, dtype=np.float64),
-                  gate_free, gate_theta, catch, p, famcap, start,
+                  gate_free, gate_theta, catch, gate_frac, p, famcap, start,
                   A.LIMITS["max_positions"], A.LIMITS["max_per_sym"], kill_dd, stop_on_kill, A.USD_EUR, pk["nwk"])
 
 
@@ -405,6 +445,39 @@ def draw_paths(x, n_paths, months, rng, without_year=None):
     return plan, n_weeks
 
 
+def _longest(flag):
+    """Longest run of True."""
+    best = run = 0
+    for v in flag:
+        run = run + 1 if v else 0
+        if run > best:
+            best = run
+    return best
+
+
+def path_measures(eq, paid, month_wk):
+    """[deepest fall from the high with payments set aside (share of money paid in + best gain), longest stretch in weeks
+    under that high, deepest fall of the balance as seen (payments included), longest stretch in weeks under the highest
+    balance seen, longest run of losing weeks, longest run of losing months], all read at week ends."""
+    g = eq - paid
+    h = np.maximum.accumulate(np.maximum(g, 0.0))
+    size = paid + h
+    fall = np.where(size > 0, (h - g) / np.where(size > 0, size, 1.0), 0.0)
+    top = np.maximum.accumulate(eq)
+    seen = 1.0 - eq / np.where(top > 0, top, 1.0)
+    wk = np.diff(np.r_[0.0, g])
+    gm = g[month_wk[1:]]
+    mo = np.diff(np.r_[0.0, gm])
+    w12 = int(month_wk[12]) + 1 if len(month_wk) > 12 else len(eq)             # weeks after the twelfth month
+    late = fall[w12:].max() if w12 < len(fall) else 0.0
+    late_eur = (h - g)[w12:].max() if w12 < len(fall) else 0.0
+    return (float(fall.max()), float(_longest(g < h - 1e-9)), float(seen.max()), float(_longest(eq < top - 1e-9)),
+            float(_longest(wk < -1e-9)), float(_longest(mo < -1e-9)), float(late), float(late_eur), float((h - g).max()))
+
+
+SAMPLE_PATHS = 40
+
+
 def resampled(x, months=MONTHS, n_paths=N_PATHS, seed=SEED, only=None):
     """`only` = number of first paths to compute (the plan is always drawn for `n_paths`, so path k is the same path
     whatever `only` is)."""
@@ -426,6 +499,7 @@ def resampled(x, months=MONTHS, n_paths=N_PATHS, seed=SEED, only=None):
     keys = list(EDGES) + [NO_2024]
     res = {s: {f: np.zeros((n_paths, months + 1)) for f in keys} for s in PLANS}
     paid_in = {s: {f: np.zeros((n_paths, months + 1)) for f in keys} for s in PLANS}
+    meas = {s: {f: np.zeros((n_paths, 9)) for f in keys} for s in PLANS}
     fired = {s: {f: np.zeros(n_paths) for f in keys} for s in PLANS}
     zero = {s: {f: np.zeros(n_paths) for f in keys} for s in PLANS}
     paid_m = 1000.0 * np.maximum(np.arange(months + 1), 1)       # paid in by the end of month h: payments at months 0 .. h-1
@@ -445,9 +519,11 @@ def resampled(x, months=MONTHS, n_paths=N_PATHS, seed=SEED, only=None):
                     res[s][f][k, 1:] = eq[month_wk[1:]]
                     paid_in[s][f][k, 0] = 1000.0
                     paid_in[s][f][k, 1:] = pd_[month_wk[1:]]
+                    meas[s][f][k] = path_measures(eq, pd_, month_wk)
                     fired[s][f][k] = c[5]
                     zero[s][f][k] = c[6]
     resampled.paid_in = paid_in                                   # per path: the plans with steps do not pay every month
+    resampled.meas = meas
     return res, fired, zero, paid_m, n_weeks
 
 
@@ -489,6 +565,18 @@ def summarise(res, fired, zero, paid_m):
                     "paid_in_median": round(float(np.median(pin[:, h])), 0), "paid_in_p10": round(float(np.percentile(pin[:, h], 10)), 0),
                     "paid_in_p90": round(float(np.percentile(pin[:, h], 90)), 0), "balance_median": round(float(np.median(m[:, h])), 0),
                     "worst_gain": round(float(gains[:, h].min()), 0)})
+            ms = getattr(resampled, "meas", None)
+            if ms is not None:
+                v = ms[s][f]
+                names = ("fall_from_high_pct", "weeks_under_high", "fall_of_balance_seen_pct", "weeks_under_highest_balance",
+                         "losing_weeks_in_a_row", "losing_months_in_a_row", "fall_from_high_after_12_months_pct",
+                         "fall_from_high_after_12_months_eur", "fall_from_high_eur")
+                pc_ = (0, 2, 6)
+                row["falls"] = {nm: {"median": round(float(np.median(v[:, i]) * (100 if i in pc_ else 1)), 1),
+                                     "p90": round(float(np.percentile(v[:, i], 90) * (100 if i in pc_ else 1)), 1),
+                                     "worst": round(float(v[:, i].max() * (100 if i in pc_ else 1)), 1)} for i, nm in enumerate(names)}
+            row["sample_paths"] = {"balance": [[round(float(z), 0) for z in m[k]] for k in range(min(SAMPLE_PATHS, len(m)))],
+                                   "paid_in": [[round(float(z), 0) for z in pin[k]] for k in range(min(SAMPLE_PATHS, len(m)))]}
             # the first month from which the median path gains at least 1,000 EUR a month, on a 6-month average, for good
             g = np.median(gains, axis=0)
             ok = np.array([(g[h + 6] - g[h]) / 6.0 >= 1000.0 for h in range(len(g) - 6)])
@@ -525,6 +613,11 @@ def main(period):
                 print(f"{s:4s} edge x{str(f):<10}: 36 m gain median {r['gain_median']:>9,.0f} (1 in 10: {r['gain_p10']:>9,.0f} .. {r['gain_p90']:>9,.0f}) paid in {r['paid_in_median']:>7,.0f} "
                       f"in loss {r['in_loss_pct']:5.1f} % worst {r['worst_gain']:>9,.0f} | 12 m gain {a['gain_median']:>8,.0f} (1 in 10: {a['gain_p10']:>8,.0f}) paid {a['paid_in_median']:>6,.0f} | "
                       f"1,000 a month from {summ[s][str(f)]['month_of_a_lasting_1000_a_month']} | stop rule {summ[s][str(f)]['stop_rule_fires_pct']:5.1f} %")
+                fl = summ[s][str(f)]["falls"]
+                print(f"       falls: from the high {fl['fall_from_high_pct']['median']:5.1f} % (1 in 10: {fl['fall_from_high_pct']['p90']:5.1f}, worst {fl['fall_from_high_pct']['worst']:5.1f}) "
+                      f"weeks under it {fl['weeks_under_high']['median']:4.0f} ({fl['weeks_under_high']['p90']:4.0f}) | balance seen {fl['fall_of_balance_seen_pct']['median']:5.1f} % "
+                      f"({fl['fall_of_balance_seen_pct']['p90']:5.1f}) weeks {fl['weeks_under_highest_balance']['median']:4.0f} ({fl['weeks_under_highest_balance']['p90']:4.0f}) | "
+                      f"losing weeks in a row {fl['losing_weeks_in_a_row']['median']:3.0f} ({fl['losing_weeks_in_a_row']['p90']:3.0f}) months {fl['losing_months_in_a_row']['median']:3.0f} ({fl['losing_months_in_a_row']['p90']:3.0f})")
                 continue
             print(f"{s:2s} edge x{str(f):<10}: at 36 months median {r['median']:>10,.0f} (10 %: {r['p10']:>9,.0f}, 90 %: {r['p90']:>10,.0f}) for {r['paid']:,.0f} paid | "
                   f"below paid {r['below_paid_pct']:5.1f} % | lasting 1,000 a month from month {summ[s][str(f)]['month_of_a_lasting_1000_a_month']} | "
@@ -534,7 +627,7 @@ def main(period):
            "edges": list(EDGES), "extra_scenario": {NO_2024: "edge x1, the weeks of 2024 left out of the draw (its own draws, seed + 1)"},
            "keyed_on_max_of_balance_and_paid": list(KEYED_ON_PAID),
            "protect": {k: {"cap_schedule": v[0], "risk_key": v[1], "risk_params": list(v[2]), "free_monthly_payments": v[3], "steps_threshold": v[4],
-                           "catch_up": v[5]} for k, v in PROTECT.items()}, "months": MONTHS, "paths": N_PATHS, "block_weeks": BLOCK, "seed": SEED, "payment_eur": 1000.0,
+                           "catch_up": v[5], "share_paid_under_water": v[6]} for k, v in PROTECT.items()}, "months": MONTHS, "paths": N_PATHS, "block_weeks": BLOCK, "seed": SEED, "payment_eur": 1000.0,
            "paid_by_month": [float(v) for v in paid_m], "self_check": checks, "real_order": ro, "resampled": summ,
            "not_modelled": "slippage on larger sizes, broker margin call, daily-loss lock, minimum stop distance; the -50 % stop is recorded, not applied"}
     json.dump(out, open(os.path.join(S.OUT, "growth.json"), "w"), indent=1)
