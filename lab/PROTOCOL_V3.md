@@ -624,3 +624,40 @@ On paper the 12-month gains are +2,489, +4,874, +5,988, +6,184 and +6,474.
   rules the loss is about 3,600 EUR however fast the start, because the stop fires when it is armed.
 - A start above 2 % buys almost nothing: +9 EUR (3 %) and +116 EUR (5 %) on the 12-month median at half edge, +196 and
   +486 on paper, for a first-quarter fall that goes from 20 % to 27 % and 41 %.
+
+### Addendum G — diagnostic of 2026-11-12: what "double in a month" asks of the ten rules (`results/r2/stake/x2/x2.json`)
+The user: "when I say fast, it is ×2 every month at the start, with losses of 10 %, perhaps 20 %". Not a plan, a measure:
+flat risk per trade on 1,000 EUR, the first four weeks, 2,000 resampled paths of the validation trades. On paper the
+typical month peaks at +12 % for a 5 % stake (a fall of 20 % or more in 58 % of months) and turns negative beyond 7.5 %;
+the chance of doubling never exceeds 19 % (at 15 %, where the account loses half or more in 69 % of months); at half edge
+it never exceeds 12 %. With the edge of every rule multiplied by f at unchanged noise (`x2b`, 1,000 paths), a typical
+month reaches about +100 % with a fall of 20 % or more in under one month in ten only from f = 4 to 5 (stake 4 %): the
+trades must earn about 0.35 R on average instead of 0.08. Sizing cannot close that gap; only better trades can.
+
+## Addendum H (2026-11-12; written BEFORE any run): "understand the losses" — in sample only
+The user: "understand the losses and correct them to turn them into gains; as a human I cut at once a trade that goes
+hard the wrong way and I let run the one that goes well; the algorithm must adapt; do not stop where the others stop".
+A study of the trades themselves, on the ten frozen sleeves, **in sample only** (entries before 2022-01-01; price frames
+cut at 2021-12-31 before anything else; no 2022+ row is read, simulated or looked at). Five lenses, each with its own
+directory under `r2/tracks/autopsy/` and `results/r2/autopsy/`, each logging every variant it simulates:
+- **path** — what a trade shows after its entry: adverse and favourable excursions, the expectancy of the rest of a trade
+  given its state after a given time; rules that cut early or exit on no progress (at most 12 variants per sleeve).
+- **payoff** — the shape of the bet: stop distance at constant money risk, trailing exits and longer holds for winners,
+  break-even (at most 14 variants per sleeve).
+- **context** — when the signals lose: causal descriptors at the decision; filters and two-level stakes judged only on
+  walk-forward years inside the sample (at most 10 filters and one regularised model per sleeve).
+- **cluster** — losses that come together and adaptive rules at the level of the portfolio: one position per market and
+  direction, pauses after losses, weights by trailing results, a daily lock (at most 30 variants).
+- **breadth** — the frozen rules, unchanged, on instruments never tried, after an inventory of what the earlier tracks
+  already tried (each rule × instrument pair is one trial).
+- **What makes a candidate, fixed here:** for its sleeve (for the portfolio in `cluster`), net of FP costs: expectancy per
+  trade up by at least 20 %, or average loss down by at least 20 % at an expectancy at least equal; total R not lower;
+  the improvement has the same sign in at least 3 of the 4 years 2018–2021; it holds with costs × 1.5; the neighbouring
+  parameter values improve too; it is causal (truncation test). For `breadth`: profit factor ≥ 1.15, positive in at
+  least 3 years of 4, positive with costs × 1.5, unchanged parameters.
+- **Every candidate is attacked by an independent re-implementation** written from its specification, before it is
+  kept. At most one change per sleeve is carried forward.
+- **No validation look in this addendum.** If candidates survive, the look at 2022–2025 is declared separately, once,
+  with its criteria, before it is run. The 2026 holdout stays untouched.
+- **To be said with any result:** improvements found by looking at the same in-sample trades that built the rules are
+  optimistic by construction; the measure that counts is the validation look, and then the demo account.
