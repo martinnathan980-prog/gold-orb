@@ -18,7 +18,7 @@ import growth as G  # noqa: E402
 
 LAST = 11                                        # months 1..LAST: before the twelfth payment arms the stop
 FALSE_CUTS = 5.0                                 # % of half-edge paths the red line may cut
-GRID = np.arange(0.1, 10.0001, 0.1)              # candidate percentiles for the red line
+GRID = np.arange(0.0, 10.0001, 0.1)              # candidate percentiles for the red line (0 = the lowest path: cuts nobody)
 SCEN = [(1.0, "paper"), (G.NO_2024, "paper_without_2024"), (0.5, "half"), (0.25, "quarter"), (0.0, "covers_costs"), (-0.5, "worthless")]
 
 

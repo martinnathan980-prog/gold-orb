@@ -477,3 +477,6 @@
 {"time": "2026-11-12T10:09:15+00:00", "track": "stake", "label": "growth_paths:sixth_recompute", "period": "val"}
 {"time": "2026-11-12T10:09:34+00:00", "track": "stake", "label": "growth_paths:sixth_recompute", "period": "val"}
 {"time": "2026-11-12T10:10:46+00:00", "track": "stake", "label": "growth_paths:sixth_recompute", "period": "val"}
+{"time": "2026-11-12T10:12:30+00:00", "track": "stake", "label": "growth_paths:risk_schedules:illustration_no_selection", "period": "val"}
+{"time": "2026-11-12T10:13:28+00:00", "track": "stake", "label": "growth_paths:sixth_critique", "period": "val"}
+{"time": "2026-11-12T10:13:45+00:00", "track": "stake", "label": "growth_paths:sixth_critique", "period": "val"}

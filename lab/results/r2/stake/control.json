@@ -1,0 +1,1345 @@
+{
+ "protocol": "PROTOCOL_V3 addendum G, seventh clarification",
+ "months_checked": 11,
+ "false_cuts_allowed_pct": 5.0,
+ "paths": 2000,
+ "seed": 20261111,
+ "other_draws_seed": 20261113,
+ "plans": {
+  "A05S": {
+   "q_pct": 0.6,
+   "red_line_by_month": [
+    -62.0,
+    -156.0,
+    -249.0,
+    -368.0,
+    -539.0,
+    -690.0,
+    -915.0,
+    -1047.0,
+    -1196.0,
+    -1376.0,
+    -1451.0
+   ],
+   "orange_line_by_month": [
+    -31.0,
+    -71.0,
+    -115.0,
+    -178.0,
+    -205.0,
+    -280.0,
+    -365.0,
+    -354.0,
+    -390.0,
+    -381.0,
+    -378.0
+   ],
+   "scenarios": {
+    "paper": {
+     "cut_pct": 1.6,
+     "cut_before_month_9_pct": 1.6,
+     "median_month_of_the_cut": 2.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": 35382.0,
+      "p10": 19238.0,
+      "p90": 57304.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": 35137.0,
+      "p10": 18547.0,
+      "p90": 57252.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -174.0,
+      "p10": -845.0,
+      "p90": -66.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": 30712.0,
+      "p10": 16107.0,
+      "p90": 53068.0
+     },
+     "other_draws": {
+      "cut_pct": 1.8,
+      "cut_before_month_9_pct": 1.7,
+      "gain_at_the_end_without_the_rule": {
+       "median": 35520.0,
+       "p10": 19472.0,
+       "p90": 58455.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": 35257.0,
+       "p10": 18126.0,
+       "p90": 58116.0
+      }
+     }
+    },
+    "paper_without_2024": {
+     "cut_pct": 2.8,
+     "cut_before_month_9_pct": 2.5,
+     "median_month_of_the_cut": 3.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": 23310.0,
+      "p10": 11606.0,
+      "p90": 39644.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": 22870.0,
+      "p10": 10307.0,
+      "p90": 39485.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -259.0,
+      "p10": -1235.0,
+      "p90": -66.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": 21436.0,
+      "p10": 13759.0,
+      "p90": 37116.0
+     },
+     "other_draws": {
+      "cut_pct": 2.6,
+      "cut_before_month_9_pct": 2.5,
+      "gain_at_the_end_without_the_rule": {
+       "median": 23288.0,
+       "p10": 12404.0,
+       "p90": 38823.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": 23042.0,
+       "p10": 11623.0,
+       "p90": 38713.0
+      }
+     }
+    },
+    "half": {
+     "cut_pct": 4.5,
+     "cut_before_month_9_pct": 3.5,
+     "median_month_of_the_cut": 5.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": 14617.0,
+      "p10": 2544.0,
+      "p90": 29245.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": 14096.0,
+      "p10": 467.0,
+      "p90": 29020.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -649.0,
+      "p10": -1359.0,
+      "p90": -166.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": 11825.0,
+      "p10": -1313.0,
+      "p90": 23174.0
+     },
+     "other_draws": {
+      "cut_pct": 5.7,
+      "cut_before_month_9_pct": 4.3,
+      "gain_at_the_end_without_the_rule": {
+       "median": 14420.0,
+       "p10": 2552.0,
+       "p90": 30161.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": 13853.0,
+       "p10": -173.0,
+       "p90": 29582.0
+      }
+     }
+    },
+    "quarter": {
+     "cut_pct": 10.0,
+     "cut_before_month_9_pct": 7.4,
+     "median_month_of_the_cut": 6.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": 6473.0,
+      "p10": -3986.0,
+      "p90": 19275.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": 5418.0,
+      "p10": -3649.0,
+      "p90": 19038.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -735.0,
+      "p10": -1524.0,
+      "p90": -162.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": 5601.0,
+      "p10": -4562.0,
+      "p90": 16030.0
+     },
+     "other_draws": {
+      "cut_pct": 11.1,
+      "cut_before_month_9_pct": 8.7,
+      "gain_at_the_end_without_the_rule": {
+       "median": 6334.0,
+       "p10": -4051.0,
+       "p90": 19891.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": 5059.0,
+       "p10": -3796.0,
+       "p90": 19199.0
+      }
+     }
+    },
+    "covers_costs": {
+     "cut_pct": 16.4,
+     "cut_before_month_9_pct": 10.9,
+     "median_month_of_the_cut": 6.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": -1157.0,
+      "p10": -6131.0,
+      "p90": 10469.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": -914.0,
+      "p10": -5725.0,
+      "p90": 9853.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -922.0,
+      "p10": -1594.0,
+      "p90": -186.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": -2552.0,
+      "p10": -6437.0,
+      "p90": 7662.0
+     },
+     "other_draws": {
+      "cut_pct": 18.9,
+      "cut_before_month_9_pct": 13.6,
+      "gain_at_the_end_without_the_rule": {
+       "median": -1384.0,
+       "p10": -5960.0,
+       "p90": 11036.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": -816.0,
+       "p10": -5647.0,
+       "p90": 10225.0
+      }
+     }
+    },
+    "worthless": {
+     "cut_pct": 41.3,
+     "cut_before_month_9_pct": 26.3,
+     "median_month_of_the_cut": 7.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": -4503.0,
+      "p10": -6923.0,
+      "p90": -2476.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": -3032.0,
+      "p10": -6313.0,
+      "p90": -404.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -1049.0,
+      "p10": -1714.0,
+      "p90": -272.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": -4272.0,
+      "p10": -6942.0,
+      "p90": -2514.0
+     },
+     "other_draws": {
+      "cut_pct": 43.3,
+      "cut_before_month_9_pct": 30.8,
+      "gain_at_the_end_without_the_rule": {
+       "median": -4498.0,
+       "p10": -6872.0,
+       "p90": -2469.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": -2830.0,
+       "p10": -6246.0,
+       "p90": -322.0
+      }
+     }
+    }
+   },
+   "offered": false,
+   "median_loss_saved_when_worthless_eur": 1471.0
+  },
+  "F1S": {
+   "q_pct": 0.6,
+   "red_line_by_month": [
+    -131.0,
+    -322.0,
+    -557.0,
+    -830.0,
+    -1127.0,
+    -1441.0,
+    -1709.0,
+    -1741.0,
+    -2098.0,
+    -2547.0,
+    -2823.0
+   ],
+   "orange_line_by_month": [
+    -67.0,
+    -155.0,
+    -270.0,
+    -379.0,
+    -439.0,
+    -539.0,
+    -651.0,
+    -624.0,
+    -734.0,
+    -728.0,
+    -653.0
+   ],
+   "scenarios": {
+    "paper": {
+     "cut_pct": 0.8,
+     "cut_before_month_9_pct": 0.7,
+     "median_month_of_the_cut": 2.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": 40873.0,
+      "p10": 22528.0,
+      "p90": 66329.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": 40750.0,
+      "p10": 22099.0,
+      "p90": 66329.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -365.0,
+      "p10": -1587.0,
+      "p90": -148.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": 42040.0,
+      "p10": 22952.0,
+      "p90": 52278.0
+     },
+     "other_draws": {
+      "cut_pct": 1.4,
+      "cut_before_month_9_pct": 1.3,
+      "gain_at_the_end_without_the_rule": {
+       "median": 41008.0,
+       "p10": 22459.0,
+       "p90": 67881.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": 40792.0,
+       "p10": 21567.0,
+       "p90": 67628.0
+      }
+     }
+    },
+    "paper_without_2024": {
+     "cut_pct": 1.9,
+     "cut_before_month_9_pct": 1.7,
+     "median_month_of_the_cut": 3.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": 26548.0,
+      "p10": 13241.0,
+      "p90": 44727.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": 26325.0,
+      "p10": 12577.0,
+      "p90": 44626.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -592.0,
+      "p10": -2353.0,
+      "p90": -163.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": 24075.0,
+      "p10": 10634.0,
+      "p90": 46853.0
+     },
+     "other_draws": {
+      "cut_pct": 1.8,
+      "cut_before_month_9_pct": 1.8,
+      "gain_at_the_end_without_the_rule": {
+       "median": 26656.0,
+       "p10": 14547.0,
+       "p90": 44219.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": 26513.0,
+       "p10": 13829.0,
+       "p90": 44126.0
+      }
+     }
+    },
+    "half": {
+     "cut_pct": 4.9,
+     "cut_before_month_9_pct": 4.0,
+     "median_month_of_the_cut": 5.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": 16257.0,
+      "p10": 2180.0,
+      "p90": 32662.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": 15712.0,
+      "p10": -341.0,
+      "p90": 32476.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -1200.0,
+      "p10": -2642.0,
+      "p90": -151.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": 12883.0,
+      "p10": -3096.0,
+      "p90": 27322.0
+     },
+     "other_draws": {
+      "cut_pct": 5.1,
+      "cut_before_month_9_pct": 4.1,
+      "gain_at_the_end_without_the_rule": {
+       "median": 16146.0,
+       "p10": 1680.0,
+       "p90": 33873.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": 15633.0,
+       "p10": -511.0,
+       "p90": 33528.0
+      }
+     }
+    },
+    "quarter": {
+     "cut_pct": 12.6,
+     "cut_before_month_9_pct": 9.1,
+     "median_month_of_the_cut": 7.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": 6497.0,
+      "p10": -3477.0,
+      "p90": 21227.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": 5000.0,
+      "p10": -3047.0,
+      "p90": 20603.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -1754.0,
+      "p10": -2878.0,
+      "p90": -324.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": 793.0,
+      "p10": -4533.0,
+      "p90": 15013.0
+     },
+     "other_draws": {
+      "cut_pct": 13.0,
+      "cut_before_month_9_pct": 9.8,
+      "gain_at_the_end_without_the_rule": {
+       "median": 6177.0,
+       "p10": -3512.0,
+       "p90": 21635.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": 4634.0,
+       "p10": -3188.0,
+       "p90": 20912.0
+      }
+     }
+    },
+    "covers_costs": {
+     "cut_pct": 22.9,
+     "cut_before_month_9_pct": 15.8,
+     "median_month_of_the_cut": 7.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": -2010.0,
+      "p10": -5232.0,
+      "p90": 10898.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": -1587.0,
+      "p10": -4660.0,
+      "p90": 10436.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -1844.0,
+      "p10": -2992.0,
+      "p90": -360.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": -3031.0,
+      "p10": -5591.0,
+      "p90": 5088.0
+     },
+     "other_draws": {
+      "cut_pct": 25.0,
+      "cut_before_month_9_pct": 18.6,
+      "gain_at_the_end_without_the_rule": {
+       "median": -2141.0,
+       "p10": -5331.0,
+       "p90": 11221.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": -1604.0,
+       "p10": -4843.0,
+       "p90": 10145.0
+      }
+     }
+    },
+    "worthless": {
+     "cut_pct": 54.4,
+     "cut_before_month_9_pct": 39.0,
+     "median_month_of_the_cut": 7.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": -3564.0,
+      "p10": -5895.0,
+      "p90": -2263.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": -2424.0,
+      "p10": -5039.0,
+      "p90": -678.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -1859.0,
+      "p10": -2990.0,
+      "p90": -563.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": -3598.0,
+      "p10": -5541.0,
+      "p90": -2830.0
+     },
+     "other_draws": {
+      "cut_pct": 54.9,
+      "cut_before_month_9_pct": 40.9,
+      "gain_at_the_end_without_the_rule": {
+       "median": -3599.0,
+       "p10": -5858.0,
+       "p90": -2320.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": -2370.0,
+       "p10": -5003.0,
+       "p90": -593.0
+      }
+     }
+    }
+   },
+   "offered": false,
+   "median_loss_saved_when_worthless_eur": 1140.0
+  },
+  "F2S": {
+   "q_pct": 0.7,
+   "red_line_by_month": [
+    -295.0,
+    -715.0,
+    -1057.0,
+    -1567.0,
+    -1999.0,
+    -2000.0,
+    -2253.0,
+    -2253.0,
+    -2295.0,
+    -2762.0,
+    -3018.0
+   ],
+   "orange_line_by_month": [
+    -158.0,
+    -352.0,
+    -540.0,
+    -777.0,
+    -977.0,
+    -986.0,
+    -964.0,
+    -832.0,
+    -882.0,
+    -806.0,
+    -736.0
+   ],
+   "scenarios": {
+    "paper": {
+     "cut_pct": 0.7,
+     "cut_before_month_9_pct": 0.7,
+     "median_month_of_the_cut": 1.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": 43793.0,
+      "p10": 24091.0,
+      "p90": 69756.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": 43771.0,
+      "p10": 23771.0,
+      "p90": 69672.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -376.0,
+      "p10": -1572.0,
+      "p90": -315.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": 28857.0,
+      "p10": 20549.0,
+      "p90": 58544.0
+     },
+     "other_draws": {
+      "cut_pct": 0.9,
+      "cut_before_month_9_pct": 0.8,
+      "gain_at_the_end_without_the_rule": {
+       "median": 43490.0,
+       "p10": 23680.0,
+       "p90": 71972.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": 43257.0,
+       "p10": 23168.0,
+       "p90": 71604.0
+      }
+     }
+    },
+    "paper_without_2024": {
+     "cut_pct": 1.8,
+     "cut_before_month_9_pct": 1.7,
+     "median_month_of_the_cut": 3.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": 28326.0,
+      "p10": 14467.0,
+      "p90": 47048.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": 28070.0,
+      "p10": 13790.0,
+      "p90": 46845.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -1154.0,
+      "p10": -2319.0,
+      "p90": -346.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": 25727.0,
+      "p10": 11390.0,
+      "p90": 40342.0
+     },
+     "other_draws": {
+      "cut_pct": 2.0,
+      "cut_before_month_9_pct": 1.9,
+      "gain_at_the_end_without_the_rule": {
+       "median": 28377.0,
+       "p10": 15091.0,
+       "p90": 46838.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": 28234.0,
+       "p10": 14328.0,
+       "p90": 46817.0
+      }
+     }
+    },
+    "half": {
+     "cut_pct": 4.7,
+     "cut_before_month_9_pct": 3.9,
+     "median_month_of_the_cut": 4.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": 16987.0,
+      "p10": 2132.0,
+      "p90": 34570.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": 16624.0,
+      "p10": -391.0,
+      "p90": 34522.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -1777.0,
+      "p10": -2890.0,
+      "p90": -391.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": 8580.0,
+      "p10": -3496.0,
+      "p90": 23288.0
+     },
+     "other_draws": {
+      "cut_pct": 6.5,
+      "cut_before_month_9_pct": 5.0,
+      "gain_at_the_end_without_the_rule": {
+       "median": 16751.0,
+       "p10": 1811.0,
+       "p90": 35105.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": 16174.0,
+       "p10": -1124.0,
+       "p90": 34509.0
+      }
+     }
+    },
+    "quarter": {
+     "cut_pct": 12.7,
+     "cut_before_month_9_pct": 9.4,
+     "median_month_of_the_cut": 6.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": 6462.0,
+      "p10": -3377.0,
+      "p90": 21943.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": 5379.0,
+      "p10": -3013.0,
+      "p90": 21594.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -2183.0,
+      "p10": -3011.0,
+      "p90": -774.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": -2090.0,
+      "p10": -4324.0,
+      "p90": 12233.0
+     },
+     "other_draws": {
+      "cut_pct": 15.3,
+      "cut_before_month_9_pct": 11.5,
+      "gain_at_the_end_without_the_rule": {
+       "median": 5912.0,
+       "p10": -3575.0,
+       "p90": 22161.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": 4446.0,
+       "p10": -3153.0,
+       "p90": 21608.0
+      }
+     }
+    },
+    "covers_costs": {
+     "cut_pct": 25.2,
+     "cut_before_month_9_pct": 18.8,
+     "median_month_of_the_cut": 6.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": -1968.0,
+      "p10": -4927.0,
+      "p90": 10841.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": -1814.0,
+      "p10": -4306.0,
+      "p90": 10350.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -2272.0,
+      "p10": -3000.0,
+      "p90": -1065.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": -3187.0,
+      "p10": -5342.0,
+      "p90": 4963.0
+     },
+     "other_draws": {
+      "cut_pct": 26.8,
+      "cut_before_month_9_pct": 21.1,
+      "gain_at_the_end_without_the_rule": {
+       "median": -2172.0,
+       "p10": -5065.0,
+       "p90": 11237.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": -1812.0,
+       "p10": -4541.0,
+       "p90": 10514.0
+      }
+     }
+    },
+    "worthless": {
+     "cut_pct": 58.7,
+     "cut_before_month_9_pct": 45.1,
+     "median_month_of_the_cut": 6.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": -3605.0,
+      "p10": -5509.0,
+      "p90": -2160.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": -2478.0,
+      "p10": -4354.0,
+      "p90": -1100.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -2290.0,
+      "p10": -3090.0,
+      "p90": -1069.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": -3814.0,
+      "p10": -5461.0,
+      "p90": -2951.0
+     },
+     "other_draws": {
+      "cut_pct": 60.7,
+      "cut_before_month_9_pct": 47.5,
+      "gain_at_the_end_without_the_rule": {
+       "median": -3663.0,
+       "p10": -5621.0,
+       "p90": -2077.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": -2437.0,
+       "p10": -4452.0,
+       "p90": -940.0
+      }
+     }
+    }
+   },
+   "offered": false,
+   "median_loss_saved_when_worthless_eur": 1127.0
+  },
+  "F3S": {
+   "q_pct": 0.7,
+   "red_line_by_month": [
+    -406.0,
+    -995.0,
+    -1296.0,
+    -1661.0,
+    -2039.0,
+    -2210.0,
+    -2269.0,
+    -2243.0,
+    -2423.0,
+    -2827.0,
+    -2961.0
+   ],
+   "orange_line_by_month": [
+    -263.0,
+    -538.0,
+    -711.0,
+    -842.0,
+    -1018.0,
+    -1006.0,
+    -901.0,
+    -816.0,
+    -906.0,
+    -776.0,
+    -728.0
+   ],
+   "scenarios": {
+    "paper": {
+     "cut_pct": 0.9,
+     "cut_before_month_9_pct": 0.9,
+     "median_month_of_the_cut": 2.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": 44259.0,
+      "p10": 24138.0,
+      "p90": 71120.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": 44112.0,
+      "p10": 23672.0,
+      "p90": 70971.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -1007.0,
+      "p10": -1991.0,
+      "p90": -448.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": 28172.0,
+      "p10": 16348.0,
+      "p90": 56695.0
+     },
+     "other_draws": {
+      "cut_pct": 1.2,
+      "cut_before_month_9_pct": 1.2,
+      "gain_at_the_end_without_the_rule": {
+       "median": 43988.0,
+       "p10": 24025.0,
+       "p90": 72623.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": 43745.0,
+       "p10": 23541.0,
+       "p90": 71982.0
+      }
+     }
+    },
+    "paper_without_2024": {
+     "cut_pct": 1.5,
+     "cut_before_month_9_pct": 1.5,
+     "median_month_of_the_cut": 2.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": 28318.0,
+      "p10": 14465.0,
+      "p90": 47441.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": 28215.0,
+      "p10": 13583.0,
+      "p90": 47375.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -1055.0,
+      "p10": -2123.0,
+      "p90": -444.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": 25833.0,
+      "p10": 11222.0,
+      "p90": 40446.0
+     },
+     "other_draws": {
+      "cut_pct": 1.8,
+      "cut_before_month_9_pct": 1.7,
+      "gain_at_the_end_without_the_rule": {
+       "median": 28650.0,
+       "p10": 15472.0,
+       "p90": 47480.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": 28516.0,
+       "p10": 14694.0,
+       "p90": 47206.0
+      }
+     }
+    },
+    "half": {
+     "cut_pct": 4.8,
+     "cut_before_month_9_pct": 4.0,
+     "median_month_of_the_cut": 5.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": 17262.0,
+      "p10": 2106.0,
+      "p90": 34900.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": 16831.0,
+      "p10": -439.0,
+      "p90": 34824.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -2057.0,
+      "p10": -2994.0,
+      "p90": -507.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": 10945.0,
+      "p10": -3682.0,
+      "p90": 25290.0
+     },
+     "other_draws": {
+      "cut_pct": 6.7,
+      "cut_before_month_9_pct": 5.2,
+      "gain_at_the_end_without_the_rule": {
+       "median": 16886.0,
+       "p10": 1319.0,
+       "p90": 35659.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": 16377.0,
+       "p10": -1043.0,
+       "p90": 35166.0
+      }
+     }
+    },
+    "quarter": {
+     "cut_pct": 13.3,
+     "cut_before_month_9_pct": 10.8,
+     "median_month_of_the_cut": 5.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": 6473.0,
+      "p10": -3370.0,
+      "p90": 21921.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": 5225.0,
+      "p10": -2984.0,
+      "p90": 21353.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -2055.0,
+      "p10": -2985.0,
+      "p90": -417.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": -1264.0,
+      "p10": -4248.0,
+      "p90": 14134.0
+     },
+     "other_draws": {
+      "cut_pct": 16.5,
+      "cut_before_month_9_pct": 12.9,
+      "gain_at_the_end_without_the_rule": {
+       "median": 5800.0,
+       "p10": -3559.0,
+       "p90": 22229.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": 4143.0,
+       "p10": -3131.0,
+       "p90": 21758.0
+      }
+     }
+    },
+    "covers_costs": {
+     "cut_pct": 26.4,
+     "cut_before_month_9_pct": 19.9,
+     "median_month_of_the_cut": 6.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": -2057.0,
+      "p10": -4938.0,
+      "p90": 10664.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": -1805.0,
+      "p10": -4279.0,
+      "p90": 10155.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -2316.0,
+      "p10": -3110.0,
+      "p90": -452.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": -3171.0,
+      "p10": -5209.0,
+      "p90": 4546.0
+     },
+     "other_draws": {
+      "cut_pct": 28.1,
+      "cut_before_month_9_pct": 22.2,
+      "gain_at_the_end_without_the_rule": {
+       "median": -2194.0,
+       "p10": -5115.0,
+       "p90": 11009.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": -1894.0,
+       "p10": -4563.0,
+       "p90": 10359.0
+      }
+     }
+    },
+    "worthless": {
+     "cut_pct": 60.0,
+     "cut_before_month_9_pct": 46.7,
+     "median_month_of_the_cut": 5.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": -3605.0,
+      "p10": -5507.0,
+      "p90": -2155.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": -2507.0,
+      "p10": -4274.0,
+      "p90": -1073.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -2321.0,
+      "p10": -3157.0,
+      "p90": -1013.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": -3817.0,
+      "p10": -5449.0,
+      "p90": -2999.0
+     },
+     "other_draws": {
+      "cut_pct": 62.0,
+      "cut_before_month_9_pct": 48.8,
+      "gain_at_the_end_without_the_rule": {
+       "median": -3706.0,
+       "p10": -5622.0,
+       "p90": -2208.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": -2513.0,
+       "p10": -4489.0,
+       "p90": -1012.0
+      }
+     }
+    }
+   },
+   "offered": false,
+   "median_loss_saved_when_worthless_eur": 1098.0
+  },
+  "FS": {
+   "q_pct": 0.8,
+   "red_line_by_month": [
+    -654.0,
+    -1325.0,
+    -1531.0,
+    -1845.0,
+    -2115.0,
+    -2350.0,
+    -2391.0,
+    -2453.0,
+    -2479.0,
+    -2933.0,
+    -3165.0
+   ],
+   "orange_line_by_month": [
+    -432.0,
+    -935.0,
+    -1004.0,
+    -1082.0,
+    -1198.0,
+    -1157.0,
+    -1140.0,
+    -1049.0,
+    -1026.0,
+    -904.0,
+    -797.0
+   ],
+   "scenarios": {
+    "paper": {
+     "cut_pct": 1.0,
+     "cut_before_month_9_pct": 1.0,
+     "median_month_of_the_cut": 1.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": 44871.0,
+      "p10": 25077.0,
+      "p90": 72246.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": 44685.0,
+      "p10": 24371.0,
+      "p90": 72116.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -672.0,
+      "p10": -1838.0,
+      "p90": -658.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": 36289.0,
+      "p10": 25018.0,
+      "p90": 64680.0
+     },
+     "other_draws": {
+      "cut_pct": 1.3,
+      "cut_before_month_9_pct": 1.2,
+      "gain_at_the_end_without_the_rule": {
+       "median": 44796.0,
+       "p10": 24767.0,
+       "p90": 74399.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": 44660.0,
+       "p10": 24107.0,
+       "p90": 74206.0
+      }
+     }
+    },
+    "paper_without_2024": {
+     "cut_pct": 2.1,
+     "cut_before_month_9_pct": 2.0,
+     "median_month_of_the_cut": 2.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": 28795.0,
+      "p10": 14490.0,
+      "p90": 48144.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": 28515.0,
+      "p10": 13674.0,
+      "p90": 48003.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -1517.0,
+      "p10": -2126.0,
+      "p90": -658.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": 25500.0,
+      "p10": 12252.0,
+      "p90": 42166.0
+     },
+     "other_draws": {
+      "cut_pct": 1.9,
+      "cut_before_month_9_pct": 1.8,
+      "gain_at_the_end_without_the_rule": {
+       "median": 29021.0,
+       "p10": 15619.0,
+       "p90": 47489.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": 28776.0,
+       "p10": 14626.0,
+       "p90": 47396.0
+      }
+     }
+    },
+    "half": {
+     "cut_pct": 4.8,
+     "cut_before_month_9_pct": 4.0,
+     "median_month_of_the_cut": 4.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": 17228.0,
+      "p10": 2171.0,
+      "p90": 35434.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": 16865.0,
+      "p10": -622.0,
+      "p90": 35320.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -1986.0,
+      "p10": -2981.0,
+      "p90": -695.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": 10768.0,
+      "p10": -3874.0,
+      "p90": 22810.0
+     },
+     "other_draws": {
+      "cut_pct": 6.5,
+      "cut_before_month_9_pct": 5.7,
+      "gain_at_the_end_without_the_rule": {
+       "median": 17201.0,
+       "p10": 1564.0,
+       "p90": 36175.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": 16520.0,
+       "p10": -1417.0,
+       "p90": 35720.0
+      }
+     }
+    },
+    "quarter": {
+     "cut_pct": 13.2,
+     "cut_before_month_9_pct": 10.3,
+     "median_month_of_the_cut": 5.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": 6634.0,
+      "p10": -3296.0,
+      "p90": 21936.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": 5222.0,
+      "p10": -2975.0,
+      "p90": 21541.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -2211.0,
+      "p10": -3033.0,
+      "p90": -960.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": -2559.0,
+      "p10": -4261.0,
+      "p90": 11977.0
+     },
+     "other_draws": {
+      "cut_pct": 14.6,
+      "cut_before_month_9_pct": 11.7,
+      "gain_at_the_end_without_the_rule": {
+       "median": 5744.0,
+       "p10": -3528.0,
+       "p90": 22541.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": 4313.0,
+       "p10": -3069.0,
+       "p90": 21957.0
+      }
+     }
+    },
+    "covers_costs": {
+     "cut_pct": 26.7,
+     "cut_before_month_9_pct": 20.4,
+     "median_month_of_the_cut": 5.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": -2046.0,
+      "p10": -4890.0,
+      "p90": 10647.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": -1876.0,
+      "p10": -4117.0,
+      "p90": 9940.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -2365.0,
+      "p10": -3126.0,
+      "p90": -1406.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": -3233.0,
+      "p10": -5307.0,
+      "p90": 4783.0
+     },
+     "other_draws": {
+      "cut_pct": 27.9,
+      "cut_before_month_9_pct": 21.9,
+      "gain_at_the_end_without_the_rule": {
+       "median": -2167.0,
+       "p10": -5116.0,
+       "p90": 11128.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": -1930.0,
+       "p10": -4450.0,
+       "p90": 10281.0
+      }
+     }
+    },
+    "worthless": {
+     "cut_pct": 61.4,
+     "cut_before_month_9_pct": 47.4,
+     "median_month_of_the_cut": 5.0,
+     "gain_at_the_end_without_the_rule": {
+      "median": -3663.0,
+      "p10": -5475.0,
+      "p90": -2130.0
+     },
+     "gain_at_the_end_with_the_rule": {
+      "median": -2558.0,
+      "p10": -4205.0,
+      "p90": -1376.0
+     },
+     "cut_paths_gain_when_cut": {
+      "median": -2415.0,
+      "p10": -3225.0,
+      "p90": -1412.0
+     },
+     "cut_paths_gain_at_the_end_without_the_rule": {
+      "median": -3844.0,
+      "p10": -5406.0,
+      "p90": -3010.0
+     },
+     "other_draws": {
+      "cut_pct": 61.1,
+      "cut_before_month_9_pct": 49.0,
+      "gain_at_the_end_without_the_rule": {
+       "median": -3763.0,
+       "p10": -5702.0,
+       "p90": -2183.0
+      },
+      "gain_at_the_end_with_the_rule": {
+       "median": -2558.0,
+       "p10": -4389.0,
+       "p90": -1364.0
+      }
+     }
+    }
+   },
+   "offered": false,
+   "median_loss_saved_when_worthless_eur": 1105.0
+  }
+ }
+}

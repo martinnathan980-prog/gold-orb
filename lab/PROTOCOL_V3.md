@@ -561,3 +561,38 @@ draws, nothing else will be run):
   information only.
 - The red line is calibrated and tested on the same paths; the false-cut rate is therefore checked on other draws
   (seed + 2), and reported as measured there.
+
+### Addendum G — outcome of the seventh clarification (2026-11-12, `results/r2/stake/control.json`)
+By the rule fixed before the run the monthly check is **not offered**: for every plan of the ladder it cuts fewer than
+half of the worthless robots before month 9 (26 % for A05S, 39 % F1S, 45 % F2S, 47 % F3S and FS). What it would do for
+F2S, for the record: red line at the 0.7th percentile of the half-edge paths (−300 EUR after one month, −1,060 after
+three, −2,000 after six, −2,300 after nine, −3,000 after eleven); worthless rules: 59 % of paths cut, median month 6,
+median loss −2,480 instead of −3,600; rules that cover their costs: 25 % cut; half edge: 4.7 % cut (6.5 % on the other
+draws), and those paths would have ended at +8,600 (median) without the rule; paper: 0.7 %. Result as declared: the
+stop at the twelfth payment is the rule; nothing earlier tells a worthless robot from bad luck well enough; the two
+lines may be shown as information.
+
+### Addendum G — eighth clarification (2026-11-12), written BEFORE the run: fewer losing weeks once the account is large enough
+The user: "the worst is consecutive losses; it is inadmissible". Sizing by the size of the account does not change how
+often losing weeks come (sixth clarification: a run of four losing weeks in 53 to 61 % of three-year paths whatever the
+plan). The only validated lever on their frequency is in Addendum E: the frozen stake profiles `soft` and `strong`, which
+raise the stake inside a week that starts badly (up to 3× on the crypto rules for soft; up to 5× on crypto and 3× on
+us100 for strong) and lower it once the week is ahead; their base stake is 0.58 and 0.39 of the reference's so that the
+worst week stays the same. On 2022–2025 they gave 73 % and 77 % of winning weeks against 70 % for the adopted cushion
+rule (53 % at an equal stake), for 84 % and 76 % of the profit; they failed on a 1,000 EUR account (minimum lots) and
+were described as "from about 20,000 EUR". Declared now, before any run (nothing else will be run):
+- **F2S+soft, F2S+strong:** plan F2S; at the start of each server week, if the balance is at least 20,000 EUR, the week
+  is traded with the frozen profile (its catch-up and cushion parameters; the risk per trade of the schedule
+  multiplied by its base scale, 0.58 or 0.39); otherwise with the cushion rule, as now. The stop of F2S is unchanged.
+- **Measures added on every path:** after the twelfth month, the share of winning weeks (among weeks with a result)
+  and the worst week (its loss over the balance at its start). The share of paths with a run of four losing weeks
+  that starts after the twelfth month is already reported.
+- **Reported against F2S, in the six scenarios:** gains at 12 and 36 months, falls, the losing runs after the twelfth
+  month (share of paths, cost), winning weeks and worst week after the twelfth month, share stopped, share of paths
+  with a fall of 50 % or more.
+- **What decides whether it is offered, fixed here:** offered as an option (not as the default) if, at half edge, the
+  share of paths with a run of four losing weeks starting after the twelfth month falls by at least a third, the
+  median gain after 36 months stays at or above 75 % of F2S's, and the fall after the twelfth month (one path in ten)
+  does not exceed F2S's by more than a quarter. The price is said with it, as the reviewer of Addendum E required: these
+  profiles do not lower the risk, they move it from the number of losing weeks to their size, and with no edge they
+  raise the chance of a deep loss.
