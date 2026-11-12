@@ -471,3 +471,19 @@ Declared now, before any run, to show the user the real choice (nothing else wil
 - **Two more measures on every path:** the deepest fall from the high recorded after the twelfth month (share and
   euros), and the deepest fall in euros over the three years.
 The same criterion applies; if nothing meets it, that is the result.
+
+### Addendum G — fifth clarification (2026-11-12, night), written BEFORE the run: a stop that is armed once the start is over
+Outcome of the fourth clarification (`results/r2/stake/growth.json`): by the declared criterion only **A025** (0.25 % per
+trade) qualifies (deepest fall 10.5 % and 23.6 % in 9 paths out of 10 at half edge and with worthless rules); its median
+gain at half edge is +510 EUR after one year and +6,600 after three. A05 fails only when the rules are worthless (43.8 %),
+D1 by a hair (26.3 %). **F** (5 % under 3,000 EUR, 2 % under 6,000, 1 % under 12,000, then 0.5 %) has the first year of a
+flat 1 % or better (+3,400 at half edge, +6,500 on paper) and, after the twelfth month, the falls of a flat 0.5 %
+(15 % typical, 23 % one path in ten, at half edge); its deep falls (42 % typical) are those of the first months, on
+small sums. With worthless rules every plan that keeps trading keeps falling: only a stop bounds that case.
+Declared now, before any run (nothing else will be run):
+- **FS:** plan F, with the hands' stop applied at −25 % of the reference capital (reference = max(reference + payment,
+  balance right after it), as in the hands 1.11), **armed only once 12,000 EUR have been paid in**; when it fires the
+  robot stops for good and nothing more is paid in.
+- **A05S:** 0.5 % per trade always, the same stop at −25 % armed from the start.
+Reported like the other plans, plus the share of paths stopped. The criterion is unchanged; a plan that stops is judged
+on what the user has lost when it stops.
