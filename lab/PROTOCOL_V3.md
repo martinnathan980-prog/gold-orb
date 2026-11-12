@@ -694,3 +694,38 @@ F2S+strong (the profile switched on at the start of a server week whose opening 
   turns on only from 20,000 EUR (in the median half-edge path, after about 15 months); it makes losing weeks rarer by
   making the remaining ones larger (worst week 7.8 % instead of 6.0 %); on paper it costs a quarter of the gain; the
   hands 1.11 cannot run it (catch-up multipliers up to 5 within the week).
+
+## Addendum I (2026-11-12, 14:00 UTC; written BEFORE any run): gain per unit of swing — bet more where the odds are better
+The user, again: "do not stop until you find it; carte blanche"; as a human he "lets run the trade that has chances and
+cuts the one that has none". Addendum H judged changes by expectancy per trade with the total R not lower. For the
+user's aim (fast growth with small falls) the measure that counts is the gain per unit of swing of the whole account,
+because the stake can then be raised until the swings are as large as before. Removing trades that earn nothing, or
+staking more where the odds are better, can raise that measure while lowering the total at a constant stake: Addendum H
+could not see it. The context lens found strong, monotone, every-year differences inside the sleeves (crypto breakouts
+taken just after their volatility unit expanded, against the 20-day move, or far from the 20-day extreme earn a small
+fraction of the others; clock effects on noise30 and nq_btc_follow; trades taken while another sleeve holds the same side
+of the same market earn more), but these weak contexts are less profitable rather than losing, so skip rules failed.
+**In sample only** (entries before 2022-01-01, frames cut while read; nothing 2022+ is read, simulated or looked at).
+Three lenses, each with its own directories `r2/tracks/sizing/<lens>/` and `results/r2/sizing/<lens>/`:
+- **conviction** — a stake per trade from causal descriptors known at the decision (those of the context lens, and
+  "agreement": another sleeve already holds the same side of the same market): stakes of 0, 0.5, 1, 1.5 or 2 times the
+  base by terciles of one descriptor or of a regularised score; at most 30 variants.
+- **clock** — stakes or skips by hour of the decision and weekday (New York clock), per sleeve; at most 15 variants.
+- **weights** — one stake per sleeve from walk-forward estimates of its mean and variance, shrunk toward equal stakes;
+  a sleeve set to zero while its trailing two-year expectancy is not positive; at most 15 variants.
+- **Walk-forward only**: every threshold, tercile, score or weight is fitted on the years before (expanding window, at
+  least 7 days of purge) and applied to the next year. The out-of-fold years are 2019, 2020 and 2021 for every sleeve
+  (earlier out-of-fold years where a frame allows are reported apart and judge nothing).
+- **What makes a candidate, fixed here** (the portfolio of the ten sleeves, FP costs, the stakes of the variant scaled
+  so that the weekly standard deviation of the portfolio's R equals the reference's on the out-of-fold years): (a) the
+  weekly Sharpe (mean / standard deviation of weekly sums of R booked at the exit, every calendar week counted, × √52)
+  is up by at least 10 % over 2019–2021 pooled; (b) it is up in at least 2 of the 3 out-of-fold years; (c) it holds with
+  costs × 1.5; (d) the neighbouring parameter values improve too; (e) it is causal (truncation test); (f) stakes stay
+  between 0 and 2 times the base and a variant fits at most 3 parameters per sleeve. Reported beside it for the user:
+  losing trades per month, share of losing weeks, worst week and longest run of losing weeks at equal weekly swing.
+- **Every candidate is attacked by an independent re-implementation** before it is kept (selection counted). A final
+  synthesis combines what survives with what survives of Addendum H, compares the portfolio with the unchanged one on
+  the same measures, and writes the text of ONE look at 2022–2025 covering every kept change of H and I, to be declared
+  before it is run. The 2026 holdout stays untouched.
+- **To be said with any result**: found on the years that built the rules, so optimistic; the measure that counts is the
+  validation look, then the demo account. Stakes below the broker's minimum lot are skipped on a small account (Addendum E).
