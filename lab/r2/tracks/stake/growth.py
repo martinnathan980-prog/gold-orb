@@ -66,7 +66,10 @@ PROTECT = {
     "Da": ("C2", 5, (0.25, 0.20, 0.0, 0.0, 0.0), 0, -1.0, 0.0, 0.0),
     "D1": ("A", 5, (0.25, 0.20, 0.0, 0.0, 0.0), 0, -1.0, 0.0, 0.0),
 }
-PLANS = tuple(SCHEDULES) + tuple(PROTECT)
+# fifth clarification: plans with the stop applied. name -> (plan it is built on, stop at this fall of the reference
+# capital, armed once this much has been paid in)
+STOPPED = {"FS": ("F", 0.25, 12000.0), "A05S": ("A05", 0.25, 0.0)}
+PLANS = tuple(SCHEDULES) + tuple(PROTECT) + tuple(STOPPED)
 EDGES = (1.0, 0.5, 0.25, 0.0, -0.5)
 NO_2024 = "1.0_no2024"                          # edge x1 with the weeks of 2024 left out of the draw
 MILESTONES = (15000.0, 26000.0, 52000.0)
@@ -138,7 +141,7 @@ def _risk(eq, paid, thr, pct, key, rp, hwm):
 @njit(cache=True)
 def engine(t_in, t_out, order_out, wk_in, dy_in, wk_out, dy_out, fam, symid, pnl, risk, entry, upl, minlot, step, lev,
            dep_t, dep_wk, dep_amt, thr, pct, key, rp, gate_free, gate_theta, catch, gate_frac, p, famcap, start, max_pos, max_per_sym,
-           kill_dd, stop_on_kill, usd_eur, nwk):
+           kill_dd, stop_on_kill, kill_arm, usd_eur, nwk):
     """One account. Returns (balance at the end of each week, money paid in at the end of each week, counts) where
     counts = [taken, skipped by the rule, by the minimum lot, by the position caps, by the margin, week of the first
     time the -50 % rule fires (-1 = never), times the balance reached zero, 1 if the account was stopped]."""
@@ -227,7 +230,7 @@ def engine(t_in, t_out, order_out, wk_in, dy_in, wk_out, dy_out, fam, symid, pnl
                 cnt[6] += 1.0
                 for s in range(max_pos):
                     o_idx[s] = -1
-            if eq <= ref * (1.0 - kill_dd) and cnt[5] < 0:
+            if eq <= ref * (1.0 - kill_dd) and cnt[5] < 0 and paid >= kill_arm:
                 cnt[5] = float(w_ev)
                 if stop_on_kill:
                     stopped = True
@@ -361,6 +364,10 @@ def pack(x, idx=None, t=None, nwk=None):
 def run_one(pk, pnl, sched, dep_t, dep_wk, dep_amt, start=1000.0, stop_on_kill=False, kill_dd=0.5):
     """`pk` = pack(...) ; `pnl` = the per-trade result in price units for the whole frame (the edge scenario)."""
     p, famcap = S.params(CFG)
+    kill_arm = 0.0
+    if sched in STOPPED:
+        sched, kill_dd, kill_arm = STOPPED[sched]
+        stop_on_kill = True
     if sched in PROTECT:
         base, key, rp, gate_free, gate_theta, catch, gate_frac = PROTECT[sched]
     else:
@@ -368,7 +375,7 @@ def run_one(pk, pnl, sched, dep_t, dep_wk, dep_amt, start=1000.0, stop_on_kill=F
     thr, pct = (np.array(v, dtype=np.float64) for v in SCHEDULES[base])
     return engine(*pk["head"], pnl[pk["idx"]], *pk["tail"], dep_t, dep_wk, dep_amt, thr, pct, key, np.array(rp, dtype=np.float64),
                   gate_free, gate_theta, catch, gate_frac, p, famcap, start,
-                  A.LIMITS["max_positions"], A.LIMITS["max_per_sym"], kill_dd, stop_on_kill, A.USD_EUR, pk["nwk"])
+                  A.LIMITS["max_positions"], A.LIMITS["max_per_sym"], kill_dd, stop_on_kill, kill_arm, A.USD_EUR, pk["nwk"])
 
 
 def self_check(x_is_prices, d, period):
@@ -584,6 +591,10 @@ def summarise(res, fired, zero, paid_m):
             row["month_of_a_lasting_1000_a_month"] = int(np.argmax(later_all_ok)) if later_all_ok.any() else None
             row["gain_per_month_by_year_median_path"] = [round(float((g[12 * (y + 1)] - g[12 * y]) / 12.0), 0) for y in range(3)]
             row["stop_rule_fires_pct"] = round(float(100 * (fired[s][f] >= 0).mean()), 1)
+            if s in STOPPED:
+                wk_ = fired[s][f][fired[s][f] >= 0]
+                row["stopped"] = {"paths_pct": row["stop_rule_fires_pct"],
+                                  "median_month": (round(float(np.median(wk_) * 7 / 30.4375), 0) if len(wk_) else None)}
             row["balance_reaches_zero_pct"] = round(float(100 * (zero[s][f] > 0).mean()), 1)
             out[s][str(f)] = row
     return out
@@ -608,7 +619,7 @@ def main(period):
     for s in PLANS:
         for f in list(EDGES) + [NO_2024]:
             r = summ[s][str(f)]["at_36_months"]
-            if s in PROTECT or s in ("A", "C2"):
+            if s in PROTECT or s in STOPPED or s in ("A", "C2", "A05", "A025", "F"):
                 a = summ[s][str(f)]["at_12_months"]
                 print(f"{s:4s} edge x{str(f):<10}: 36 m gain median {r['gain_median']:>9,.0f} (1 in 10: {r['gain_p10']:>9,.0f} .. {r['gain_p90']:>9,.0f}) paid in {r['paid_in_median']:>7,.0f} "
                       f"in loss {r['in_loss_pct']:5.1f} % worst {r['worst_gain']:>9,.0f} | 12 m gain {a['gain_median']:>8,.0f} (1 in 10: {a['gain_p10']:>8,.0f}) paid {a['paid_in_median']:>6,.0f} | "
@@ -626,6 +637,7 @@ def main(period):
            "schedules": {k: {"thresholds_eur": list(v[0]), "risk_pct": list(v[1])} for k, v in SCHEDULES.items()},
            "edges": list(EDGES), "extra_scenario": {NO_2024: "edge x1, the weeks of 2024 left out of the draw (its own draws, seed + 1)"},
            "keyed_on_max_of_balance_and_paid": list(KEYED_ON_PAID),
+           "stopped": {k: {"plan": v[0], "stop_at_fall_of_reference": v[1], "armed_once_paid_in": v[2]} for k, v in STOPPED.items()},
            "protect": {k: {"cap_schedule": v[0], "risk_key": v[1], "risk_params": list(v[2]), "free_monthly_payments": v[3], "steps_threshold": v[4],
                            "catch_up": v[5], "share_paid_under_water": v[6]} for k, v in PROTECT.items()}, "months": MONTHS, "paths": N_PATHS, "block_weeks": BLOCK, "seed": SEED, "payment_eur": 1000.0,
            "paid_by_month": [float(v) for v in paid_m], "self_check": checks, "real_order": ro, "resampled": summ,

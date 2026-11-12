@@ -455,3 +455,6 @@
 {"time": "2026-11-11T23:01:35+00:00", "track": "stake", "label": "growth_paths:recompute_protect", "period": "val"}
 {"time": "2026-11-12T08:37:42+00:00", "track": "stake", "label": "growth_paths:risk_schedules:illustration_no_selection", "period": "val"}
 {"time": "2026-11-12T08:43:44+00:00", "track": "stake", "label": "growth_paths:risk_schedules:illustration_no_selection", "period": "val"}
+{"time": "2026-11-12T08:49:37+00:00", "track": "stake", "label": "growth_paths:risk_schedules:illustration_no_selection", "period": "val"}
+{"time": "2026-11-12T08:54:39+00:00", "track": "stake", "label": "growth_paths:risk_schedules:illustration_no_selection", "period": "val"}
+{"time": "2026-11-12T09:00:13+00:00", "track": "stake", "label": "growth_paths:risk_schedules:illustration_no_selection", "period": "val"}
